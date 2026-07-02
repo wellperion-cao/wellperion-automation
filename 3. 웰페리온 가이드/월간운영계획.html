@@ -11,15 +11,14 @@
     --text:#f5f2ef; --text-soft:#d4d0cc; --dim:#8c8b83;
     --accent:#7C3AED; --accent-soft:#a875f5;
     --border:#3d3835; --border-strong:#4d4845;
-    --gold:#f0c674; --green:#6abf7b; --blue:#7ac4f0;
+    --gold:#f0c674; --green:#6abf7b; --blue:#7ac4f0; --rose:#e08a7a;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:13px; -webkit-font-smoothing:antialiased; padding:18px 18px 32px;}
   .wrap{max-width:1120px; margin:0 auto;}
 
   header.page-head{margin-bottom:12px; padding-bottom:10px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 16px;}
-  header.page-head h1{font-size:22px; font-weight:800; letter-spacing:-0.02em;}
-  header.page-head .sub{font-size:12px; color:var(--dim); line-height:1.45; flex:1; min-width:220px;}
+  header.page-head h1{font-size:22px; font-weight:800; letter-spacing:-0.02em; flex:1;}
   header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
 
@@ -29,7 +28,6 @@
   .layers a:hover{border-color:var(--accent); color:var(--accent-soft);}
   .layers span.cur{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
   .layers .arw{color:var(--dim); font-size:11px;}
-  .layers .lnote{color:var(--dim); font-size:10.5px; margin-left:4px;}
 
   /* ── 월 선택 바 + 편집 ── */
   .month-bar{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin-bottom:8px;}
@@ -56,31 +54,42 @@
   .mstat.완료{color:var(--green); background:rgba(106,191,123,0.10); border:1px solid rgba(106,191,123,0.35);}
   .mstat.이월{color:var(--gold); background:rgba(240,198,116,0.10); border:1px solid rgba(240,198,116,0.35);}
 
-  h2.sec{font-size:15px; font-weight:700; margin:18px 0 3px; display:flex; align-items:center; gap:7px;}
-  .sec-note{font-size:11px; color:var(--dim); margin-bottom:10px; line-height:1.45;}
+  h2.sec{font-size:15px; font-weight:700; margin:20px 0 9px; display:flex; align-items:center; gap:7px;}
+  h2.sec .stag{font-size:11px; font-weight:400; color:var(--dim);}
 
-  /* ── 목표 보드 ── */
-  .obj-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:11px;}
-  .ocard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:11px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;}
-  .ocard .otop{display:flex; align-items:flex-start; gap:8px; justify-content:space-between;}
-  .ocard .otitle{font-size:14px; font-weight:700; line-height:1.35;}
-  .ocard .ometa{display:flex; flex-wrap:wrap; gap:5px; align-items:center;}
+  /* ── 도달율 진행 막대 (공통) ── */
+  .prog{display:flex; align-items:center; gap:8px; min-width:118px;}
+  .prog .track{flex:1; height:13px; border-radius:8px; background:var(--surface); border:1px solid var(--border); overflow:hidden; min-width:52px;}
+  .prog .track>i{display:block; height:100%; border-radius:8px; transition:width .25s ease;}
+  .prog .track.done>i{background:linear-gradient(90deg,#3f8f4f,var(--green));}
+  .prog .track.prog>i{background:linear-gradient(90deg,var(--accent),var(--accent-soft));}
+  .prog .track.plan>i{background:linear-gradient(90deg,#5a5550,#8c8b83);}
+  .prog .track.carry>i{background:linear-gradient(90deg,#b8860b,var(--gold));}
+  .prog .pnum{font-size:13px; font-weight:800; color:var(--text); min-width:38px; text-align:right;}
+  .prog .pin-num{width:58px; font-size:12px; color:var(--text); background:var(--surface); border:1px solid var(--accent); border-radius:6px; padding:3px 6px; text-align:right;}
+  .prog.big .track{height:20px;}
+  .prog.big .pnum{font-size:17px; min-width:48px;}
+
+  /* ── 보고서형 표 (목표 보드 · 연간 재무) ── */
+  .rpt-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:12px; background:var(--paper);}
+  table.rpt{width:100%; border-collapse:collapse; min-width:720px;}
+  table.rpt thead th{font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--dim); text-align:left; padding:10px 13px; background:var(--surface); border-bottom:1px solid var(--border-strong); white-space:nowrap;}
+  table.rpt tbody td{padding:12px 13px; border-bottom:1px solid var(--border); vertical-align:top; font-size:12.5px; color:var(--text-soft);}
+  table.rpt tbody tr:last-child td{border-bottom:none;}
+  table.rpt tbody tr:hover td{background:rgba(124,58,237,0.04);}
+  .r-title{font-weight:700; font-size:13.5px; color:var(--text); line-height:1.35;}
+  .r-title .chip.ns{margin-left:5px;}
+  .c-own{white-space:nowrap;}
+  .c-own .r-dept{font-size:10.5px; color:var(--dim); margin-top:4px;}
+  .c-prog{min-width:150px;}
+  .c-note .r-note{font-size:11.5px; color:var(--dim); line-height:1.5; white-space:pre-wrap;}
+  .c-note{max-width:280px;}
+
   .chip{display:inline-block; font-size:11px; border-radius:6px; padding:2px 8px; white-space:nowrap;}
   .chip.own{color:var(--accent-soft); background:var(--surface); border:1px solid var(--border-strong);}
   .chip.dept{color:var(--dim); background:var(--surface); border:1px solid var(--border);}
   .chip.ns{color:var(--gold); background:rgba(240,198,116,0.08); border:1px solid rgba(240,198,116,0.30); text-decoration:none;}
   .chip.ns:hover{border-color:var(--gold);}
-  .ocard .otarget{font-size:12px; color:var(--text-soft); line-height:1.45;}
-  .ocard .otarget b{color:var(--dim); font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:0.02em;}
-  .ocard .onote{font-size:11.5px; color:var(--dim); line-height:1.45; white-space:pre-wrap;}
-  .ocard .onote:empty{display:none;}
-
-  /* ── 실무책임자 카드 ── */
-  .pcard{border-left:3px solid var(--gold);}
-  .pcard .plabel{font-size:10.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.02em; margin-top:2px;}
-  .pcard .pgoal{font-size:12px; color:var(--text-soft); line-height:1.45;}
-  .pcard .pns{font-size:12px; color:var(--gold); line-height:1.45;}
-  .pcard .pns.empty{color:var(--dim); font-style:italic;}
 
   .obadge{display:inline-block; font-size:11px; font-weight:700; border-radius:20px; padding:2px 10px; white-space:nowrap;}
   .obadge.계획{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
@@ -88,56 +97,100 @@
   .obadge.완료{color:var(--green); background:rgba(106,191,123,0.12); border:1px solid rgba(106,191,123,0.38);}
   .obadge.이월{color:var(--gold); background:rgba(240,198,116,0.12); border:1px solid rgba(240,198,116,0.38);}
 
-  /* ── 측정 목표(metric) 막대 ── */
-  .metric{margin-top:2px; padding:8px 10px; border:1px solid var(--border-strong); border-radius:9px; background:var(--surface);}
-  .metric-h{display:block; font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:4px;}
+  /* ── metric 막대(목표치 셀 내) ── */
+  .metric{margin-top:7px; padding:7px 9px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface);}
+  .metric-h{display:block; font-size:9.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:4px;}
   .metric-h .live{color:var(--green); text-transform:none; letter-spacing:0; font-weight:700;}
   .metric-h .manual{color:var(--gold); text-transform:none; letter-spacing:0; font-weight:700;}
-  .mbar{height:8px; border-radius:5px; background:var(--paper); border:1px solid var(--border); overflow:hidden; margin:3px 0;}
-  .mbar>i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-soft)); border-radius:5px;}
+  .mbar{height:7px; border-radius:5px; background:var(--paper); border:1px solid var(--border); overflow:hidden; margin:3px 0;}
+  .mbar>i{display:block; height:100%; border-radius:5px; background:linear-gradient(90deg,var(--accent),var(--accent-soft));}
   .mbar.gold>i{background:linear-gradient(90deg,#b8860b,var(--gold));}
   .mbar.green>i{background:linear-gradient(90deg,#3f8f4f,var(--green));}
-  .metric-meta{font-size:12.5px; color:var(--text-soft);}
+  .metric-meta{font-size:11.5px; color:var(--text-soft);}
   .metric-meta b{color:var(--text); font-weight:700;}
   .metric-meta .pct{color:var(--accent-soft); font-weight:700;}
-  .metric-none{font-size:11.5px; color:var(--dim);}
+  .metric-none{font-size:11px; color:var(--dim);}
 
   /* ── 편집 컨트롤 ── */
-  .edit-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:4px;}
-  .edit-row label{font-size:10.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.02em;}
-  .edit-row select, .edit-row input{font-size:12px; color:var(--text); background:var(--surface); border:1px solid var(--border-strong); border-radius:6px; padding:3px 8px;}
-  .note-edit{font-size:11.5px; color:var(--text); background:var(--surface); border:1px dashed var(--accent); border-radius:7px; padding:5px 8px; min-height:34px; white-space:pre-wrap; outline:none;}
+  .rpt select, .rpt input[type=number]{font-size:12px; color:var(--text); background:var(--surface); border:1px solid var(--border-strong); border-radius:6px; padding:3px 8px;}
+  .mc-edit{margin-top:6px; font-size:11px; color:var(--dim);}
+  .mc-edit input{width:88px;}
+  .note-edit{font-size:11.5px; color:var(--text); background:var(--surface); border:1px dashed var(--accent); border-radius:7px; padding:5px 8px; min-height:52px; min-width:200px; white-space:pre-wrap; outline:none;}
   .note-edit:focus{border-color:var(--accent-soft); background:rgba(124,58,237,0.08);}
 
-  /* ── 월말 보고 placeholder ── */
+  /* ── 연간 매출·지출 대시 ── */
+  table.rpt.fin{min-width:520px;}
+  .fin td{font-size:13px;}
+  .fin .fmo{color:var(--text); font-weight:700; white-space:nowrap;}
+  .fin tr.cur-m td{background:rgba(124,58,237,0.12) !important;}
+  .fin tr.cur-m .fmo{color:var(--accent-soft);}
+  .fin .fin-none{color:var(--dim); font-size:12px;}
+  .fin .fin-sub{display:block; font-size:10.5px; color:var(--dim); margin-top:2px;}
+  .fin .fin-live-v{color:var(--green); font-weight:800;}
+  .fin b{color:var(--text);}
+  .fin b.pos{color:var(--green);} .fin b.neg{color:var(--rose);}
+  .fin tr.fin-tot td{border-top:2px solid var(--border-strong); background:var(--surface); font-size:13.5px; font-weight:700;}
+  .fin-in{width:118px !important; text-align:right;}
+  .fin-live{font-size:10px; color:var(--green); margin-top:3px;}
+  .fchart{display:flex; gap:5px; align-items:flex-end; margin-top:12px; padding:14px 12px 8px; background:var(--paper); border:1px solid var(--border); border-radius:12px; overflow-x:auto;}
+  .fcol{flex:1; min-width:36px; display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .fbars{display:flex; align-items:flex-end; gap:3px; height:104px; width:100%; justify-content:center; border-radius:5px; padding:0 2px;}
+  .fbars>i{width:11px; border-radius:3px 3px 0 0; display:block;}
+  .fbars .bs{background:linear-gradient(180deg,var(--accent-soft),var(--accent));}
+  .fbars .be{background:linear-gradient(180deg,var(--gold),#b8860b);}
+  .fcol .fmo{font-size:10.5px; color:var(--dim);}
+  .fcol.cur-m .fmo{color:var(--accent-soft); font-weight:800;}
+  .fcol.cur-m .fbars{background:rgba(124,58,237,0.08);}
+  .flegend{display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin-top:10px; font-size:11px; color:var(--text-soft);}
+  .flegend span{display:inline-flex; align-items:center; gap:5px;}
+  .flegend i{width:12px; height:12px; border-radius:3px; display:inline-block;}
+  .flegend .ls{background:var(--accent);} .flegend .le{background:var(--gold);}
+  .flegend .fnote{color:var(--dim); font-size:10.5px;}
+
+  /* ── 실무책임자 도달율 스코어보드 ── */
+  .pscore{display:flex; flex-direction:column; gap:10px;}
+  .prow{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:12px; padding:13px 16px; display:grid; grid-template-columns:230px 1fr 230px; gap:8px 18px; align-items:center;}
+  .prow .pmeta{display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+  .prow .pname{font-size:15px; font-weight:800; color:var(--text);}
+  .prow .pgoal{font-size:12.5px; color:var(--text-soft); line-height:1.45;}
+  .prow .pns{grid-column:1 / -1; font-size:11.5px; color:var(--gold); border-top:1px dashed var(--border); padding-top:7px; margin-top:2px;}
+  .prow .pns.empty{color:var(--dim); font-style:italic;}
+
   .report-box{padding:13px 15px; border:1px dashed var(--border-strong); border-radius:11px; background:var(--surface); font-size:12px; color:var(--text-soft); line-height:1.55;}
   .report-box.done{border-style:solid; border-left:3px solid var(--green);}
   .report-box .rh{font-size:13px; font-weight:700; color:var(--text); margin-bottom:5px;}
-  .report-box .rnote{font-size:11px; color:var(--dim); margin-top:6px;}
 
   .board-status{padding:16px; font-size:12px; color:var(--dim); text-align:center;}
-  footer.foot{margin-top:20px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
+  footer.foot{margin-top:22px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
 
+  @media (max-width:720px){
+    .prow{grid-template-columns:1fr;}
+  }
   @media (max-width:640px){
-    .obj-grid{grid-template-columns:1fr;}
     header.page-head h1{font-size:19px;}
   }
   @media print{
     @page{size:A4 portrait; margin:10mm;}
     body{background:#fff; color:#111; padding:0; font-size:10px;}
-    .layers, .month-bar, .ebtn, header.page-head .back, .edit-row{display:none !important;}
-    header.page-head, .month-head, .ocard, .metric, .report-box{break-inside:avoid;}
-    .month-head, .ocard, .paper, .metric, .report-box{background:#fff !important; color:#111 !important; border-color:#999 !important;}
-    .ocard .otitle, .month-head .mtitle, .month-head .mtheme, .metric-meta, .metric-meta b, .ocard .otarget, h2.sec{color:#111 !important;}
-    .ocard .onote, .metric-h, .ocard .otarget b{color:#333 !important;}
-    .mbar{background:#eee !important; border-color:#999 !important;}
+    .layers, .month-bar, .ebtn, header.page-head .back{display:none !important;}
+    input, select, .note-edit, .fin-in, .pin-num{display:none !important;}
+    header.page-head, .month-head, .rpt-wrap, .metric, .report-box, .fchart, .prow, table.rpt tr{break-inside:avoid;}
+    .month-head, .rpt-wrap, table.rpt, .metric, .report-box, .fchart, .prow{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    table.rpt thead th{background:#f2f2f2 !important; color:#333 !important; border-color:#999 !important;}
+    table.rpt tbody td, table.rpt tbody tr:hover td, .fin tr.cur-m td{background:#fff !important; color:#222 !important; border-color:#bbb !important;}
+    .fin tr.fin-tot td{background:#f2f2f2 !important;}
+    .r-title, .month-head .mtitle, .month-head .mtheme, .metric-meta, .metric-meta b, h2.sec, .pname, .fmo, .fin b, .prog .pnum{color:#111 !important;}
+    .r-note, .metric-h, .pgoal, .fin-sub{color:#333 !important;}
+    .prog .track, .mbar{background:#eee !important; border-color:#999 !important;}
+    .prog .track>i{background:#555 !important;}
     .mbar>i{background:#666 !important;}
+    .fbars .bs{background:#555 !important;} .fbars .be{background:#999 !important;}
+    .fcol.cur-m .fbars{background:#eee !important;}
     .chip{color:#000 !important; background:#fff !important; border-color:#666 !important;}
     .obadge, .mstat{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
     body.chair-mode .print-head{display:block !important; text-align:center; margin:0 0 12px; padding-bottom:8px; border-bottom:1.5px solid #999;}
     body.chair-mode .print-head .ph-title{font-size:15px; font-weight:800; color:#111 !important;}
     body.chair-mode .print-head .ph-sub{font-size:11px; color:#444 !important; margin-top:3px;}
-    .chip.own{font-weight:700;}
   }
 </style>
 </head>
@@ -146,7 +199,6 @@
 
   <header class="page-head">
     <h1>📅 월간 운영 계획·보고</h1>
-    <div class="sub">헌법(장기 비전)과 오늘의 항로(일일) 사이의 <b>월간 운영</b> 층 — 월초 계획·월말 보고. 정본 = <code>status/monthly_ops_plan.json</code>.</div>
     <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
   </header>
 
@@ -157,7 +209,6 @@
     <span class="cur">📅 월간 운영</span>
     <span class="arw">›</span>
     <a href="wellperion_guide(main).html">🧭 오늘의 항로 (G1)</a>
-    <span class="lnote">장기 비전 → 이달 목표 → 오늘 할 일</span>
   </div>
 
   <!-- 월 선택 + 편집 -->
@@ -175,25 +226,24 @@
   <!-- 월 헤더 -->
   <div class="month-head" id="month-head" style="display:none;"></div>
 
-  <!-- 📋 이달 계획 -->
-  <h2 class="sec">📋 이달 계획 <span style="font-size:11px;font-weight:400;color:var(--dim);">(목표 보드)</span></h2>
-  <div class="sec-note">각 목표 = 담당 C-Level·목표(target)·상태·진행 메모. 📊 측정 목표는 라이브/수동값 대비. <b>정직(L05):</b> metric 없는 목표는 상태만, 미측정은 '미입력' 표기.</div>
-  <div class="obj-grid" id="obj-board">
-    <div class="board-status">월간 계획 정본을 불러오는 중…</div>
-  </div>
+  <!-- 💰 연간 매출·지출 대시 (지속 관리·월 선택 무관) -->
+  <h2 class="sec">💰 2026 연간 매출·지출 <span class="stag">매출 − 지출 = 순액 · 당월 매출 라이브</span></h2>
+  <div id="fin-board"><div class="board-status">연간 재무 정본을 불러오는 중…</div></div>
 
-  <!-- 👤 실무책임자 역할 & 북극성 -->
-  <h2 class="sec" id="prac-sec" style="display:none;">👤 실무책임자 역할 &amp; 북극성</h2>
-  <div class="sec-note" id="prac-note" style="display:none;">GM 직속 실무 3라인 — 이름·소속·역할 / 이달 목표 / 개인 북극성. <b>정직(L05):</b> 개인 북극성 미입력은 '예정'으로 표기(가짜값 없음).</div>
-  <div class="obj-grid" id="prac-board" style="display:none;"></div>
+  <!-- 📋 이달 계획 -->
+  <h2 class="sec">📋 이달 계획 <span class="stag">목표 · 담당 · 상태 · 도달율 · 진행</span></h2>
+  <div id="obj-board"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
+
+  <!-- 👤 실무책임자 도달율 -->
+  <h2 class="sec" id="prac-sec" style="display:none;">👤 실무책임자 도달율 <span class="stag">GM 직속 3라인</span></h2>
+  <div id="prac-board" style="display:none;"></div>
 
   <!-- 📊 월말 결과 보고 -->
   <h2 class="sec">📊 월말 결과 보고</h2>
   <div id="report-area"></div>
 
   <footer class="foot">
-    정본 = <code>status/monthly_ops_plan.json</code> · 페이지는 렌더+편집만. 편집 저장 = GM PIN + GAS commit_file(헌법한장.html 동일 패턴).<br>
-    월초 계획 / 월말 보고 <b>자동 카드 엔진</b>은 후속(배237 GM 보좌 자율화 재사용) — 현재는 GM/담당 수동 입력.
+    정본 = <code>status/monthly_ops_plan.json</code> · 편집 저장 = GM/담당 PIN.
   </footer>
 
 </div>
@@ -204,6 +254,7 @@
   var GAS_URL  = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
   var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
   var PLAN_PATH = 'status/monthly_ops_plan.json';
+  var FIN_YEAR = '2026';
 
   var _data = null;      // monthly_ops_plan.json 전체(정본 모델)
   var _sel = null;       // 선택 월 키
@@ -219,7 +270,6 @@
     return String(s == null ? '' : s)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   };
-  // C-Level 표기: 경영진 보고 모드=공식 직함 / 기본=닉네임. (실무책임자 실명은 이 함수를 쓰지 않아 항상 실명 유지)
   var nickOf = function(role){
     if(_chairMode && TITLE_MAP[role]) return TITLE_MAP[role];
     return (_data && _data.owner_nick && _data.owner_nick[role]) || role || '';
@@ -232,6 +282,8 @@
     if(n >= 10000){ return Math.round(n / 10000).toLocaleString() + '만'; }
     return n.toLocaleString() + '원';
   }
+  function clampPct(v){ v = Number(v); if(isNaN(v)) return 0; return Math.max(0, Math.min(100, Math.round(v))); }
+  function pad2(n){ return ('0' + n).slice(-2); }
 
   // ── 읽기: GAS read_file(최신·캐시없음) → raw GitHub 폴백 ──
   function readPlan(){
@@ -258,7 +310,6 @@
     var keys = Object.keys((_data && _data.months) || {}).sort();
     if(!keys.length){ sel.innerHTML = '<option>—</option>'; return; }
     if(!_sel || keys.indexOf(_sel) < 0){
-      // 기본 = 진행 월(가장 최근), 없으면 마지막 키
       var running = keys.filter(function(k){ return _data.months[k].month_status === '진행'; });
       _sel = running.length ? running[running.length-1] : keys[keys.length-1];
     }
@@ -282,30 +333,51 @@
       '<span class="mtheme">' + esc(m.theme || '') + '</span>';
   }
 
-  // ── 측정 목표 막대 ──
-  //   월 매출(unit 원·name '매출'): 라이브 home_kpi sales.month 대비 metric.target.
-  //   완성도 등(unit %): metric.current(수동) 대비 target. current 없으면 '미입력'.
+  // ── 도달율 진행 막대(공통) ──
+  function progClass(status, v){
+    if(status === '완료' || v >= 100) return 'done';
+    if(status === '이월') return 'carry';
+    if(status === '계획' || !v) return 'plan';
+    return 'prog';
+  }
+  function progBar(val, status, editable, editAttrs, big){
+    var v = clampPct(typeof val === 'number' ? val : (val == null ? 0 : val));
+    var cls = progClass(status, v);
+    var track = '<div class="track ' + cls + '"><i style="width:' + v + '%"></i></div>';
+    var right = editable
+      ? '<input class="pin-num" type="number" min="0" max="100" ' + editAttrs + ' value="' + v + '" oninput="window._pv(this)">'
+      : '<span class="pnum">' + v + '%</span>';
+    return '<div class="prog' + (big ? ' big' : '') + '">' + track + right + '</div>';
+  }
+  // 편집 중 막대 미리보기
+  window._pv = function(el){
+    var v = clampPct(el.value);
+    var box = el.parentNode;
+    var i = box.querySelector('.track > i');
+    if(i) i.style.width = v + '%';
+  };
+
+  // ── 측정 목표 막대(metric) ──
   function metricBlock(o){
     var mt = o.metric;
     if(!mt) return '';
     var isSales = (mt.unit === '원') && /매출/.test(mt.name || '');
     if(isSales){
       var tgt = mt.target || 0;
-      var cur = _homeSales;   // undefined/null/number
+      var cur = _homeSales;
       var lab = '<span class="metric-h"><span class="live">● 라이브</span> ' + esc(mt.name || '매출') + ' · home_kpi 당월 실측</span>';
       if(typeof cur === 'number' && tgt){
         var pct = Math.max(0, Math.round(cur / tgt * 100));
         var w = Math.max(0, Math.min(100, pct));
         return '<div class="metric">' + lab +
           '<div class="mbar green"><i style="width:' + w + '%"></i></div>' +
-          '<div class="metric-meta">현재 <b>' + fmtWon(cur) + '</b> / 목표 <b>' + fmtWon(tgt) + '</b> · 진행 <span class="pct">' + pct + '%</span></div>' +
+          '<div class="metric-meta">현재 <b>' + fmtWon(cur) + '</b> / 목표 <b>' + fmtWon(tgt) + '</b> · <span class="pct">' + pct + '%</span></div>' +
         '</div>';
       }
       return '<div class="metric">' + lab +
-        '<div class="metric-none">목표 <b style="color:var(--text)">' + fmtWon(tgt) + '</b> · 당월 실측 대기(마감 전 또는 조회 실패) — 가짜값 없음</div>' +
+        '<div class="metric-none">목표 <b style="color:var(--text)">' + fmtWon(tgt) + '</b> · 당월 실측 대기(가짜값 없음)</div>' +
       '</div>';
     }
-    // 수동 measurable (완성도 등)
     var tg = mt.target || 0;
     var cr = mt.current;
     var unit = mt.unit || '';
@@ -319,55 +391,172 @@
       '</div>';
     }
     return '<div class="metric">' + lab2 +
-      '<div class="metric-none">목표 <b style="color:var(--text)">' + esc(tg) + unit + '</b> · 현재 <b style="color:var(--gold)">미입력</b> (수동 입력값 — 자동 측정 아님)</div>' +
+      '<div class="metric-none">목표 <b style="color:var(--text)">' + esc(tg) + unit + '</b> · 현재 <b style="color:var(--gold)">미입력</b></div>' +
     '</div>';
   }
 
-  // ── 편집 컨트롤(상태·진행메모·metric.current) ──
-  function editRow(o){
-    var opts = ((_data && _data.status_enum) || ['계획','진행','완료','이월']).map(function(s){
-      return '<option value="' + esc(s) + '"' + (o.status === s ? ' selected' : '') + '>' + esc(s) + '</option>';
-    }).join('');
-    var metricEdit = '';
-    if(o.metric && !((o.metric.unit === '원') && /매출/.test(o.metric.name || ''))){
-      // 매출(라이브)은 편집 대상 아님. 수동 metric.current만 편집.
+  // ── 목표 = 표의 행(보고서형) ──
+  function objRow(o){
+    var ns = o.northstar ? '<a class="chip ns" href="헌법한장.html" title="북극성(헌법)">🌟</a>' : '';
+    var titleCell = '<div class="r-title">' + esc(o.title) + ns + '</div>' + metricBlock(o);
+
+    var ownCell = '<span class="chip own">' + esc(nickOf(o.owner)) + '</span>' +
+      '<div class="r-dept">' + esc(o.dept || '') + '</div>';
+
+    var targetCell = o.target ? esc(o.target) : '—';
+    if(_editMode && o.metric && !((o.metric.unit === '원') && /매출/.test(o.metric.name || ''))){
       var cv = (typeof o.metric.current === 'number') ? o.metric.current : '';
-      metricEdit = '<label>' + esc(o.metric.name || 'current') + '</label>' +
-        '<input type="number" data-id="' + esc(o.id) + '" data-f="current" value="' + esc(cv) + '" placeholder="미입력" style="width:90px;">' +
-        '<span style="font-size:11px;color:var(--dim);">' + esc(o.metric.unit || '') + '</span>';
+      targetCell += '<div class="mc-edit">✍ <input type="number" data-id="' + esc(o.id) + '" data-f="current" value="' + esc(cv) + '" placeholder="미입력"> ' + esc(o.metric.unit || '') + '</div>';
     }
-    return '<div class="edit-row">' +
-      '<label>상태</label><select data-id="' + esc(o.id) + '" data-f="status">' + opts + '</select>' +
-      metricEdit +
-      '</div>' +
-      '<label style="font-size:10.5px;color:var(--dim);display:block;margin-top:4px;">진행 메모</label>' +
-      '<div class="note-edit" contenteditable="true" data-id="' + esc(o.id) + '" data-f="progress_note" ' +
+
+    var statusCell;
+    if(_editMode){
+      var opts = ((_data && _data.status_enum) || ['계획','진행','완료','이월']).map(function(s){
+        return '<option value="' + esc(s) + '"' + (o.status === s ? ' selected' : '') + '>' + esc(s) + '</option>';
+      }).join('');
+      statusCell = '<select data-id="' + esc(o.id) + '" data-f="status">' + opts + '</select>';
+    } else {
+      statusCell = '<span class="obadge ' + esc(o.status || '') + '">' + esc(o.status || '') + '</span>';
+    }
+
+    var progCell = progBar(o.progress, o.status, _editMode, 'data-id="' + esc(o.id) + '" data-f="progress"', false);
+
+    var noteCell;
+    if(_editMode){
+      noteCell = '<div class="note-edit" contenteditable="true" data-id="' + esc(o.id) + '" data-f="progress_note" ' +
         'oncompositionstart="window._compOn()" oncompositionend="window._compOff()">' + esc(o.progress_note || '') + '</div>';
+    } else {
+      noteCell = o.progress_note ? '<div class="r-note">' + esc(o.progress_note) + '</div>' : '<span class="fin-none">—</span>';
+    }
+
+    return '<tr>' +
+      '<td class="c-title">' + titleCell + '</td>' +
+      '<td class="c-own">' + ownCell + '</td>' +
+      '<td>' + targetCell + '</td>' +
+      '<td>' + statusCell + '</td>' +
+      '<td class="c-prog">' + progCell + '</td>' +
+      '<td class="c-note">' + noteCell + '</td>' +
+    '</tr>';
   }
 
-  // ── 목표 카드 ──
-  function objCard(o){
-    var ns = o.northstar ? '<a class="chip ns" href="헌법한장.html" title="북극성(헌법) 보기">🌟 북극성</a>' : '';
-    var top =
-      '<div class="otop">' +
-        '<div class="otitle">' + esc(o.title) + '</div>' +
-        '<span class="obadge ' + esc(o.status || '') + '">' + esc(o.status || '') + '</span>' +
-      '</div>';
-    var meta =
-      '<div class="ometa">' +
-        '<span class="chip own">' + esc(nickOf(o.owner)) + '</span>' +
-        '<span class="chip dept">' + esc(o.dept || '') + '</span>' +
-        ns +
-      '</div>';
-    var target = o.target ? '<div class="otarget"><b>목표</b> ' + esc(o.target) + '</div>' : '';
-    var body;
-    if(_editMode){
-      body = metricBlock(o) + editRow(o);
-    } else {
-      var note = o.progress_note ? '<div class="onote">📝 ' + esc(o.progress_note) + '</div>' : '';
-      body = metricBlock(o) + note;
+  function renderBoard(){
+    var board = document.getElementById('obj-board');
+    var m = _data.months[_sel];
+    var objs = (m && m.objectives) || [];
+    if(!objs.length){ board.innerHTML = '<div class="board-status">이 달의 목표가 없습니다.</div>'; return; }
+    board.innerHTML =
+      '<div class="rpt-wrap"><table class="rpt"><thead><tr>' +
+        '<th>목표</th><th>담당</th><th>목표치</th><th>상태</th><th>도달율</th><th>진행 메모</th>' +
+      '</tr></thead><tbody>' + objs.map(objRow).join('') + '</tbody></table></div>';
+  }
+
+  // ── 연간 매출·지출 대시 ──
+  function renderFinance(){
+    var host = document.getElementById('fin-board');
+    var fy = _data.finance && _data.finance[FIN_YEAR];
+    if(!fy){ host.innerHTML = '<div class="board-status">연간 재무 정본(finance)이 없습니다.</div>'; return; }
+    var now = new Date();
+    var curM = (now.getFullYear() === Number(FIN_YEAR)) ? pad2(now.getMonth() + 1) : null;
+    var months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+
+    var rows = months.map(function(mm){
+      var f = fy[mm] || {sales:null, expense:null};
+      var stored = (typeof f.sales === 'number') ? f.sales : null;
+      var live = (mm === curM && typeof _homeSales === 'number') ? _homeSales : null;
+      var effSales = (stored != null) ? stored : (live != null ? live : null);
+      var exp = (typeof f.expense === 'number') ? f.expense : null;
+      var net = (effSales != null && exp != null) ? (effSales - exp) : null;
+      return {mm:mm, stored:stored, live:live, effSales:effSales, exp:exp, net:net};
+    });
+
+    var maxV = 1, sumS = 0, sumE = 0, cntS = 0, cntE = 0;
+    rows.forEach(function(r){
+      if(r.effSales != null){ maxV = Math.max(maxV, r.effSales); sumS += r.effSales; cntS++; }
+      if(r.exp != null){ maxV = Math.max(maxV, r.exp); sumE += r.exp; cntE++; }
+    });
+    var sumNet = (cntS || cntE) ? (sumS - sumE) : null;
+
+    var trs = rows.map(function(r){
+      var cur = (r.mm === curM) ? ' class="cur-m"' : '';
+      var salesCell;
+      if(_editMode){
+        salesCell = '<input class="fin-in" type="number" data-fin-m="' + r.mm + '" data-fin-f="sales" value="' + (r.stored != null ? r.stored : '') + '" placeholder="미입력">' +
+          (r.live != null ? '<div class="fin-live">● 라이브 ' + fmtWon(r.live) + '</div>' : '');
+      } else if(r.live != null){
+        salesCell = '<span class="fin-live-v">● ' + fmtWon(r.live) + '</span>' +
+          (r.stored != null ? '<span class="fin-sub">편집 ' + fmtWon(r.stored) + '</span>' : '<span class="fin-sub">당월 라이브</span>');
+      } else if(r.stored != null){
+        salesCell = '<b>' + fmtWon(r.stored) + '</b>';
+      } else {
+        salesCell = '<span class="fin-none">미입력</span>';
+      }
+      var expCell = _editMode
+        ? '<input class="fin-in" type="number" data-fin-m="' + r.mm + '" data-fin-f="expense" value="' + (r.exp != null ? r.exp : '') + '" placeholder="미입력">'
+        : (r.exp != null ? ('<b>' + fmtWon(r.exp) + '</b>') : '<span class="fin-none">미입력</span>');
+      var netCell = (r.net != null)
+        ? ('<b class="' + (r.net >= 0 ? 'pos' : 'neg') + '">' + fmtWon(r.net) + '</b>')
+        : '<span class="fin-none">—</span>';
+      return '<tr' + cur + '><td class="fmo">' + r.mm + '월</td><td>' + salesCell + '</td><td>' + expCell + '</td><td>' + netCell + '</td></tr>';
+    }).join('');
+
+    var totRow = '<tr class="fin-tot"><td>누계</td>' +
+      '<td><b>' + fmtWon(sumS) + '</b><span class="fin-sub">평균 ' + (cntS ? fmtWon(Math.round(sumS / cntS)) : '—') + '</span></td>' +
+      '<td><b>' + fmtWon(sumE) + '</b><span class="fin-sub">평균 ' + (cntE ? fmtWon(Math.round(sumE / cntE)) : '—') + '</span></td>' +
+      '<td>' + (sumNet != null ? ('<b class="' + (sumNet >= 0 ? 'pos' : 'neg') + '">' + fmtWon(sumNet) + '</b>') : '—') + '</td></tr>';
+
+    var table = '<div class="rpt-wrap"><table class="rpt fin"><thead><tr>' +
+      '<th>월</th><th>매출</th><th>지출</th><th>순액</th>' +
+      '</tr></thead><tbody>' + trs + totRow + '</tbody></table></div>';
+
+    var chart = '<div class="fchart">' + rows.map(function(r){
+      var hs = r.effSales ? Math.max(3, Math.round(r.effSales / maxV * 100)) : 0;
+      var he = r.exp ? Math.max(3, Math.round(r.exp / maxV * 100)) : 0;
+      return '<div class="fcol' + (r.mm === curM ? ' cur-m' : '') + '"><div class="fbars">' +
+        '<i class="bs" style="height:' + hs + '%" title="매출 ' + (r.effSales ? fmtWon(r.effSales) : '미입력') + '"></i>' +
+        '<i class="be" style="height:' + he + '%" title="지출 ' + (r.exp ? fmtWon(r.exp) : '미입력') + '"></i>' +
+        '</div><span class="fmo">' + r.mm + '</span></div>';
+    }).join('') + '</div>';
+
+    var legend = '<div class="flegend">' +
+      '<span><i class="ls"></i>매출</span><span><i class="le"></i>지출</span>' +
+      '<span class="fnote">● 당월=home_kpi 라이브 실측 · 나머지=편집값 · 미입력=측정 전(가짜값 없음)</span>' +
+    '</div>';
+
+    host.innerHTML = table + legend + chart;
+  }
+
+  // ── 실무책임자 도달율 스코어보드 ──
+  function pracRow(p, goal, prog){
+    var nsHtml = (p.northstar && String(p.northstar).trim())
+      ? '<div class="pns">🌟 ' + esc(p.northstar) + '</div>'
+      : '<div class="pns empty">🌟 미입력 — 예정 (각자 확인)</div>';
+    var bar = progBar(prog, null, _editMode, 'data-pid="' + esc(p.id) + '" data-f="pprogress"', true);
+    return '<div class="prow">' +
+      '<div class="pmeta"><span class="pname">' + esc(p.name) + '</span>' +
+        '<span class="chip dept">' + esc(p.dept || '') + '</span>' +
+        '<span class="chip own">' + esc(p.role || '') + '</span></div>' +
+      '<div class="pgoal">' + (goal ? esc(goal) : '<span style="color:var(--dim)">—</span>') + '</div>' +
+      '<div class="pbarwrap">' + bar + '</div>' +
+      nsHtml +
+    '</div>';
+  }
+
+  function renderPractitioners(){
+    var sec = document.getElementById('prac-sec');
+    var board = document.getElementById('prac-board');
+    var roster = (_data && _data.practitioners) || [];
+    var m = _data.months[_sel];
+    var goals = (m && m.practitioner_goals) || null;
+    if(!roster.length || !goals){
+      sec.style.display = 'none'; board.style.display = 'none'; board.innerHTML = '';
+      return;
     }
-    return '<div class="ocard">' + top + meta + target + body + '</div>';
+    var progMap = (m && m.practitioner_progress) || {};
+    sec.style.display = ''; board.style.display = '';
+    board.innerHTML = '<div class="pscore">' + roster.map(function(p){
+      var pr = (typeof progMap[p.id] === 'number') ? progMap[p.id] : 50;
+      return pracRow(p, goals[p.id], pr);
+    }).join('') + '</div>';
   }
 
   // ── 월말 보고 영역 ──
@@ -380,14 +569,12 @@
       var tot = (m.objectives || []).length;
       el.innerHTML = '<div class="report-box done">' +
         '<div class="rh">✅ ' + esc(_sel) + ' 마감 — 목표 ' + done + '/' + tot + ' 완료</div>' +
-        '테마: ' + esc(m.theme || '') + '. 목표별 최종 상태·진행 메모는 위 보드 참조.' +
-        '<div class="rnote">자동 월말 결과 요약 카드(핵심 성과·미달·이월 사유)는 후속 엔진이 이 자리를 채웁니다.</div>' +
+        '테마: ' + esc(m.theme || '') + '. 목표별 최종 상태·도달율은 위 표 참조.' +
       '</div>';
     } else {
       el.innerHTML = '<div class="report-box">' +
         '<div class="rh">🗓️ ' + esc(_sel) + ' 진행 중 — 월말 보고 대기</div>' +
-        '이 달이 <b>완료</b>로 마감되면, 목표 달성 요약(완료 N/전체 · 핵심 성과 · 미달·이월 사유)이 여기 표시됩니다.' +
-        '<div class="rnote">월초 계획(위 보드)·월말 보고 자동 카드 엔진은 후속(배237 GM 보좌 자율화 재사용). 현재는 GM/담당 수동 편집.</div>' +
+        '이 달이 <b>완료</b>로 마감되면 목표 달성 요약(완료 N/전체 · 도달율)이 여기 표시됩니다.' +
       '</div>';
     }
   }
@@ -403,50 +590,9 @@
     }
   }
 
-  function renderBoard(){
-    var board = document.getElementById('obj-board');
-    var m = _data.months[_sel];
-    var objs = (m && m.objectives) || [];
-    if(!objs.length){ board.innerHTML = '<div class="board-status">이 달의 목표가 없습니다.</div>'; return; }
-    board.innerHTML = objs.map(objCard).join('');
-  }
-
-  // ── 실무책임자 카드 (roster ⨯ 이달 목표) ──
-  function pracCard(p, goal){
-    var nsHtml = (p.northstar && String(p.northstar).trim())
-      ? '<div class="pns">🌟 ' + esc(p.northstar) + '</div>'
-      : '<div class="pns empty">🌟 미입력 — 예정 (각자 확인)</div>';
-    return '<div class="ocard pcard">' +
-      '<div class="otop"><div class="otitle">' + esc(p.name) + '</div></div>' +
-      '<div class="ometa">' +
-        '<span class="chip dept">' + esc(p.dept || '') + '</span>' +
-        '<span class="chip own">' + esc(p.role || '') + '</span>' +
-      '</div>' +
-      '<div class="plabel">이달 목표</div>' +
-      '<div class="pgoal">' + (goal ? esc(goal) : '<span style="color:var(--dim)">—</span>') + '</div>' +
-      '<div class="plabel">개인 북극성</div>' + nsHtml +
-    '</div>';
-  }
-
-  function renderPractitioners(){
-    var sec = document.getElementById('prac-sec');
-    var note = document.getElementById('prac-note');
-    var board = document.getElementById('prac-board');
-    var roster = (_data && _data.practitioners) || [];
-    var m = _data.months[_sel];
-    var goals = (m && m.practitioner_goals) || null;
-    // 데이터 없으면(구월) 섹션 숨김
-    if(!roster.length || !goals){
-      sec.style.display = 'none'; note.style.display = 'none'; board.style.display = 'none';
-      board.innerHTML = '';
-      return;
-    }
-    sec.style.display = ''; note.style.display = ''; board.style.display = '';
-    board.innerHTML = roster.map(function(p){ return pracCard(p, goals[p.id]); }).join('');
-  }
-
   function render(){
     renderMonthHead();
+    renderFinance();
     renderBoard();
     renderPractitioners();
     renderReport();
@@ -489,9 +635,10 @@
   function gatherEdits(){
     var m = _data.months[_sel];
     if(!m) return;
+
+    // 목표(상태·metric.current·도달율·진행메모)
     var byId = {};
     (m.objectives || []).forEach(function(o){ byId[o.id] = o; });
-    // 상태·metric.current (select/input)
     Array.prototype.forEach.call(document.querySelectorAll('#obj-board [data-f]'), function(el){
       var id = el.getAttribute('data-id'), f = el.getAttribute('data-f');
       var o = byId[id]; if(!o) return;
@@ -501,8 +648,27 @@
         var v = el.value.trim();
         o.metric.current = (v === '') ? null : Number(v);
       }
+      else if(f === 'progress'){ o.progress = clampPct(el.value); }
       else if(f === 'progress_note'){ o.progress_note = (el.innerText || el.textContent || '').trim(); }
     });
+
+    // 실무책임자 도달율
+    if(!m.practitioner_progress) m.practitioner_progress = {};
+    Array.prototype.forEach.call(document.querySelectorAll('#prac-board [data-f="pprogress"]'), function(el){
+      var pid = el.getAttribute('data-pid'); if(!pid) return;
+      m.practitioner_progress[pid] = clampPct(el.value);
+    });
+
+    // 연간 매출·지출
+    var fy = _data.finance && _data.finance[FIN_YEAR];
+    if(fy){
+      Array.prototype.forEach.call(document.querySelectorAll('#fin-board [data-fin-m]'), function(el){
+        var mm = el.getAttribute('data-fin-m'), fld = el.getAttribute('data-fin-f');
+        if(!fy[mm]) fy[mm] = {sales:null, expense:null};
+        var v = el.value.trim();
+        fy[mm][fld] = (v === '') ? null : Number(v);
+      });
+    }
   }
 
   window._planSave = function(){
@@ -518,7 +684,7 @@
       method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify({
         action:'commit_file', path:PLAN_PATH, content:content,
-        message:'[월간운영] ' + _sel + ' 상태·진행 편집 ' + _data.updated_at, key:pin
+        message:'[월간운영] ' + _sel + ' 상태·도달율·재무 편집 ' + _data.updated_at, key:pin
       })
     })
       .then(function(r){ return r.json(); })
