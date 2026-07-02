@@ -121,6 +121,22 @@
   table.matrix.editing .col-resizer{display:block;}
   table.matrix.editing .col-resizer:hover{background:var(--accent-soft);}
 
+  /* ── 🌟 회사 비전 배너 (헌법 맨 위 · 골드) — 2026-07-02 ── */
+  .vision{display:flex; gap:12px; align-items:flex-start; margin:2px 0 14px; padding:12px 15px; border:1px solid rgba(240,198,116,0.32); border-left:4px solid #f0c674; border-radius:11px; background:rgba(240,198,116,0.06);}
+  .vision-star{font-size:26px; line-height:1;}
+  .vision-h{font-size:11px; font-weight:800; color:#f0c674; letter-spacing:0.02em; text-transform:uppercase; margin-bottom:3px;}
+  .vision-txt{font-size:14px; color:var(--text); line-height:1.5;}
+  .vision-txt b{color:#ffd97a;}
+  .vision-note{font-size:11px; color:var(--dim); margin-top:5px; line-height:1.45;}
+  /* ── 🗺️ 북극성 지도: 대표 KPI 1개 + 측정 tier + 현재값 + 목표 + 경로 한 줄 (정직·2026-07-02) ── */
+  .nsmap{margin:5px 0 8px; padding:7px 9px; border:1px solid var(--border-strong); border-left:3px solid var(--accent-soft); border-radius:8px; background:var(--surface);}
+  .nsmap-h{display:block; font-size:10px; font-weight:800; color:var(--accent-soft); letter-spacing:0.01em; margin-bottom:4px;}
+  .nsmap-prop{font-size:9px; color:#e0a; background:rgba(238,0,170,0.12); border-radius:3px; padding:1px 5px; font-weight:700; margin-left:5px;}
+  .nsmap-row{font-size:12px; color:var(--text-soft); line-height:1.45; margin-bottom:2px;}
+  .nsmap-row .nsmap-k{display:inline-block; min-width:58px; font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.02em;}
+  .nsmap-row b{color:var(--text);}
+  .nsmap-path{font-size:11.5px; color:#f0c674; margin-top:4px; line-height:1.4;}
+
   /* ── 공통 4섹션 카드 ── */
   .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:4px;}
   .ccard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:11px 13px;}
@@ -168,6 +184,11 @@
     table.matrix.compact td .dim-bul, table.matrix.compact td .dim-val{max-height:none !important; overflow:visible !important;}
     .incd{background:#eef7ef !important; border-color:#8ab894 !important;}
     .incd-h, .incd-meta, .incd-meta b, .incd-recent{color:#111 !important;}
+    /* 신규(2026-07-02): 회사 비전 배너 · 북극성 지도 라이트 강제 */
+    .vision{background:#f8f2dc !important; border-color:#caa84a !important;}
+    .vision-h, .vision-txt, .vision-txt b, .vision-note{color:#111 !important;}
+    .nsmap{background:#f6f6f6 !important; border-color:#999 !important;}
+    .nsmap-h, .nsmap-row, .nsmap-row b, .nsmap-row .nsmap-k, .nsmap-path{color:#111 !important;}
   }
 </style>
 </head>
@@ -179,6 +200,16 @@
     <a class="back" href="wellperion_guide(main).html#S2">← 웰페리온 ERP 운영 가이드(S2)로</a>
     <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
   </header>
+
+  <!-- ════ 🌟 회사 비전 (헌법 맨 위 · 북극성 정본) — 2026-07-02 ════ -->
+  <div class="vision">
+    <span class="vision-star">🌟</span>
+    <div class="vision-body">
+      <div class="vision-h">회사 비전 · 북극성 (전사 정본)</div>
+      <div class="vision-txt"><b>3,000평 종합 스포츠클럽을 굴리는 ERP를 제품화한다</b> — 미션: 지속되지 않는 건강 문제를 해결한다. 전 업무를 자동화→자율화(AI가 판단·완결)해, GM은 방향·결재만.</div>
+      <div class="vision-note">GM = G1(오케스트레이션)만 · 실무 북극성은 아래 7역할이 나눠 진다. 개인 삶 북극성은 헌법에서 제외(헌법 = 회사 운영용). 🔖 초안 3역할(시포·시뽀·시로) 북극성 = 제안본(GM 결재 대기 · KPI 정의 변경 게이트).</div>
+    </div>
+  </div>
 
   <!-- ════ A. 8주체 × 3칸 매트릭스 (편집형 · 2026-06-29) ════ -->
   <h2 class="sec">🧭 8주체 × 3칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
@@ -382,6 +413,33 @@
     return lab + '<ul class="dim-bul">' + lis + '</ul>';
   }
 
+  // 🗺️ 북극성 지도 — 대표 KPI 1개 + 측정 tier + 현재값 + 목표 + 경로 한 줄(정직 정식화 · 2026-07-02).
+  //   정본 = bootsetup_matrix.json role.nsmap {kpi,tier,goal,path,현재,value_key}. 가짜 숫자·진척바 금지(약속 L05 · M4-METRIC-HONESTY).
+  //   현재값: value_key가 kpi_values에 실측 숫자로 있으면 우선 표시, 없으면 nsmap.현재(정직 서술)·그것도 없으면 '미측정'.
+  //   draft 역할(cpo·cfo·chro)은 '제안본 · GM 결재 대기'(kpi.json 정의 변경 게이트).
+  function liveKpiValue(role, m){
+    if(!m || !m.value_key) return null;
+    var v = (_kpiValues && _kpiValues[role.id]) || null;
+    if(!v) return null;
+    var raw = v[m.value_key];
+    if(typeof raw !== 'number') return null;     // null(미측정)·문자 제외 → 정직
+    return /율$/.test(m.value_key) ? (Math.round(raw * 100) + '%') : String(raw);
+  }
+  function nsMapBlock(role){
+    var m = role.nsmap;
+    if(!m) return '';
+    var live = liveKpiValue(role, m);
+    var cur = (live != null) ? live : (m['현재'] || '미측정');
+    var prop = role.draft ? '<span class="nsmap-prop">제안본 · GM 결재 대기</span>' : '';
+    return '<div class="nsmap">' +
+      '<span class="nsmap-h">🗺️ 북극성 지도' + prop + '</span>' +
+      (m.kpi  ? '<div class="nsmap-row"><span class="nsmap-k">대표 KPI</span> <b>' + esc(m.kpi) + '</b></div>' : '') +
+      (m.tier ? '<div class="nsmap-row"><span class="nsmap-k">측정</span> ' + esc(m.tier) + ' · 현재 <b>' + esc(cur) + '</b></div>' : '') +
+      (m.goal ? '<div class="nsmap-row"><span class="nsmap-k">목표</span> ' + esc(m.goal) + '</div>' : '') +
+      (m.path ? '<div class="nsmap-path">🧭 ' + esc(m.path) + '</div>' : '') +
+    '</div>';
+  }
+
   // 🌟 북극성 도달율 — 궁극 목표 · 전면(골드). 정본 = status/kpi_values.json의 '목표 대비 현재 비율' 필드.
   //   측정 가능 = 골드 막대 N%(강조·전면). 측정 불가(대부분) = 거짓 숫자 금지 → "🔧 측정 인프라 구축 필요" 정직 텍스트(막대 없음).
   //   판정: kpi_values 필드 중 키가 (완료율|달성률|도달율|전환율|가동률)로 끝나고 숫자인 것. 완결률(=작업 활동량)은 제외.
@@ -466,7 +524,7 @@
       // 칸1 목표·지표 = 🌟북극성(dims[0]·편집) → 🌟북극성 도달율(궁극 목표·전면·골드) → 📊KPI 지표 정의(읽기전용)
       //   → 작업 처리율(보조·강등) → 📍진행현황 → 🌅오늘 추천.
       //   GM 결재(2026-06-30): 완결률(작업 활동량) 아닌 북극성 도달율이 궁극 목표 → 전면 배치. 처리율은 보조로 강등.
-      var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + northStarReachBlock(role) + kpiBlock(role) +
+      var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + nsMapBlock(role) + northStarReachBlock(role) + kpiBlock(role) +
                workRateBlock(role) + progressBlock(role) + recommendBlock(role) + '</td>';
       // 칸2 일하는 법 = 📚읽는 정본(2) + 🔧일 흐름(1)
       var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🔧 일 흐름') + '</td>';
