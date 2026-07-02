@@ -14,6 +14,9 @@ GM 잠금 결정(2026-06-29):
   - G2: 미승인 추천 = 다음날 새 추천 생성 시 자동 보류(만료)
   - G3: 대상 = 처음부터 전 C-Level(7역할 ceo·cmo·coo·cto·cpo·cfo·chro, gm 제외).
         웰리가 7역할 가로질러 전사 top3 선정 + 각 후보에 역할·북극성 태그.
+        ※ G3 대상범위 수정(2026-07-03 GM): cfo·chro 는 나우열M 실무 담당 도메인이라
+          AI 항로 배 대상이 아님 → top3 후보 선정 대상에서 제외. 남는 대상 = ceo·cmo·coo·cto·cpo(5역할).
+          상세 = .omc/specs/deep-interview-daily-northstar-recommender.md G3.
 
 두뇌(웰리 추천 로직):
   - 1순위: claude CLI (model_router 폴백 경유 — ai_learning_proposer 와 동일 결, API 크레딧 0)
@@ -62,8 +65,10 @@ PENDING_FILE = BASE_DIR / "status" / "northstar_pending.json"
 LOG_FILE = BASE_DIR / "status" / "northstar_log.jsonl"
 ENV_FILE = BASE_DIR / "telegram_bot" / ".env"  # 텔레그램 토큰·챗ID 단일출처(INC-004)
 
-# ── 대상 역할 (gm 제외, 전 C-Level 7역할) ──
-TARGET_ROLES = ["ceo", "cmo", "coo", "cto", "cpo", "cfo", "chro"]
+# ── 대상 역할 (gm 제외) ──
+# 2026-07-03 GM 결정: cfo·chro 는 나우열M 실무 담당 도메인 — top3 후보 선정 대상에서 제외.
+# 남는 대상 = ceo·cmo·coo·cto·cpo (5역할). 상세 = .omc/specs/deep-interview-daily-northstar-recommender.md G3.
+TARGET_ROLES = ["ceo", "cmo", "coo", "cto", "cpo"]
 
 # ── 역할 닉네임 (카드 1줄 표기용) ──
 ROLE_NICK = {
@@ -171,10 +176,13 @@ def _build_prompt(inputs: dict) -> str:
         )
     roles_block = "\n".join(lines)
 
-    return f"""당신은 웰페리온(하이엔드 스포츠클럽 멤버십 커뮤니티) AI CEO '웰리'입니다.
-당신의 본업은 7명의 C-Level을 가로질러 전사를 북극성으로 이끄는 오케스트레이션입니다.
+    role_list_str = "/".join(TARGET_ROLES)
+    nick_map_str = ", ".join(f"{rid}={ROLE_NICK.get(rid, rid.upper())}" for rid in TARGET_ROLES)
 
-아래는 전 C-Level(7역할)의 북극성·KPI·소유·진행상황 현황입니다:
+    return f"""당신은 웰페리온(하이엔드 스포츠클럽 멤버십 커뮤니티) AI CEO '웰리'입니다.
+당신의 본업은 C-Level을 가로질러 전사를 북극성으로 이끄는 오케스트레이션입니다.
+
+아래는 대상 C-Level({role_list_str})의 북극성·KPI·소유·진행상황 현황입니다:
 ---{roles_block}
 ---
 
@@ -186,10 +194,10 @@ def _build_prompt(inputs: dict) -> str:
 - 우선순위 가중: 북극성 직접기여 > KPI 미달 시급 > 브릿지 연속성.
 - 다양성: 3개는 가능하면 서로 다른 역할/신호.
 - 중복방지: 이미 active 인 배와 겹치는 추천 금지.
-- 전사 top3: 7역할 전체에서 가장 가치 높은 3개만(특정 역할 편중 지양).
+- 전사 top3: 대상 역할({role_list_str}) 전체에서 가장 가치 높은 3개만(특정 역할 편중 지양).
 - **반드시 1순위 하나를 명확히 고르고** rank=1로 표시한 뒤, 왜 1순위인지 one_reason에 한 줄로 적는다.
 
-닉네임 매핑(owner 필드에 사용): ceo=웰리, cfo=시뽀, chro=시로, cmo=시모, coo=시우, cpo=시포, cto=시토.
+닉네임 매핑(owner 필드에 사용): {nick_map_str}.
 
 각 후보는 반드시 아래 JSON 배열 형식으로만 응답하세요 (설명문·마크다운·코드블록 없이 순수 JSON만):
 [
@@ -210,7 +218,7 @@ def _build_prompt(inputs: dict) -> str:
 
 규칙:
 - rank 는 1/2/3 (1=최우선 추천, 3개 모두 서로 다른 rank)
-- role 은 반드시 ceo/cmo/coo/cto/cpo/cfo/chro 중 하나
+- role 은 반드시 {role_list_str} 중 하나
 - owner 는 위 닉네임 매핑 그대로
 - difficulty 는 반드시 ⛵돛단배/⛴️여객선/🛳️크루즈 중 하나
 - 정확히 3개. 순수 JSON 배열만 출력(```json 코드블록도 없이)."""

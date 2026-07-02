@@ -2,6 +2,8 @@
 > 작성: 2026-06-29 · 상태: **G1/G2/G3 GM 잠금 확정 · 1단계(두뇌 드라이런 엔진) 빌드 완료** · 스펙 원본: `.omc/specs/deep-interview-daily-northstar-recommender.md`
 >
 > **GM 잠금 결정(2026-06-29):** G1=`status/northstar_pending.json`(git 추적) · G2=미승인은 다음날 06:30 새 추천 시 자동 보류(만료)·당일 자정 아님 · G3=**파일럿 폐기→처음부터 전 C-Level(7역할)**, 웰리가 전사 top3 선정·역할 태그.
+>
+> **G3 범위 수정(2026-07-03 GM):** cfo·chro 는 나우열M 실무 담당 도메인이라 AI 항로 배 대상이 아님 → top3 후보 선정 대상에서 **제외**. 대상 = **ceo·cmo·coo·cto·cpo(5역할)**. 반영 = `scripts/northstar_recommender.py` `TARGET_ROLES`.
 
 ---
 
@@ -198,6 +200,7 @@ kpi_values.json 변화 추적
 | **G1** | `northstar_pending.json` 위치 | ✅ **`status/northstar_pending.json` (git 추적)** |
 | **G2** | 미승인 건 처리 | ✅ **다음날 06:30 새 추천 생성 시 자동 보류(만료)** — 당일 자정 만료 아님 |
 | **G3** | 추천 대상 시작 | ✅ **처음부터 전 C-Level(7역할)** — 파일럿 폐기. 입력=matrix 7 C-Level행 전부, 웰리가 전사 top3 선정·각 후보에 역할·북극성 태그 |
+| **G3 수정(2026-07-03)** | 추천 대상 범위 | ✅ **cfo·chro 제외** — 나우열M 실무 담당 도메인, AI 항로 배 대상 아님. 대상 = ceo·cmo·coo·cto·cpo(5역할) |
 
 ---
 
