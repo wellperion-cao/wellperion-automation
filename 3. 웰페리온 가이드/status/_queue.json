@@ -638,5 +638,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "d9b78d6adbd9071be3540f73becc4eac67081f47",
     "ship_no": 249
+  },
+  {
+    "task_id": "CTO-2026-07-02-ADHOC-10b2ab61",
+    "clevel": "cto",
+    "title": "[시토] 월간 운영 월초/월말 자동카드 엔진 — GM이 물어보고 챙기게 (배247)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-02",
+    "processed_at": "2026-07-02",
+    "artifact": "- scripts/monthly_ops_report.py: --mode start|end · --send/--dry-run(기본), 결정론(LLM불필요)\n  · 월초=전월 미완 이월후보+이번달 시드 요약+계획확정 CTA\n  · 월말=상태요약+측정목표 실측(매출=home_kpi sales.month 라이브 vs 6.5억·ERP%=metric.current)+미완이월+검토 CTA\n  · 정직(L05)=미측정은 상태만, 가짜 달성% 금지 · 말일 가드(오발송 방지) · monthly_ops_log.jsonl\n- 런처: launchers/ (CLI ad-hoc · 커밋 10b2ab61)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "10b2ab618ab7d970d8ed6e2ee9b0e7ae7457ea4b",
+    "ship_no": 250
   }
 ]
