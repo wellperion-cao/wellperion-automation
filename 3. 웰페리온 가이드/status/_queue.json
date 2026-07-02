@@ -1013,5 +1013,19 @@
     "artifact": "- kpi_collector _coo_check_rate GAS fetch 정상 작동 실측 확인(지원부 95/95=100%)\n- bootsetup_matrix coo nsmap: stale \"배관수리(collector null)\"·\"null(collector 못읽음)\"\n  → \"✅ 측정개통(지원부 GAS 라이브)\"·\"라이브 실측\" 정직화\n- kpi_values.json·northstar_reach.json fresh 재산출(coo measured 도달율 100%/목표 95%) (CLI ad-hoc · 커밋 2e205470)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "2e205470791681ead12ffeee52d345b962a88feb"
+  },
+  {
+    "task_id": "COO-2026-07-02-ADHOC-02c02d89",
+    "clevel": "coo",
+    "title": "[시우] 북극성 도달 단일 프록시→복합 축 재설계 (7역할 nsmap.axes·커버리지 병기·coo 과장정직화)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-02",
+    "processed_at": "2026-07-02",
+    "ship_no": 303,
+    "artifact": "- bootsetup_matrix.json: 7역할 nsmap에 axes[] 추가(측정 M/전체 K축), kpi=복합 라벨. reach 유지(엔진 무손상)\n- 헌법한장.html: 축 리스트 렌더(측정=라이브값·미측정=회색) + 종합 도달=측정축+측정 M/K 커버리지 병기\n- coo: '100% 도달' 제거 → '점검 100%·측정 1/5축' 정직 표시(좁은 프록시 100% 방지, L05) (CLI ad-hoc · 커밋 02c02d89)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "02c02d89b0125035c9447b88bd7b875f89d9a0d3"
   }
 ]
