@@ -302,6 +302,7 @@
   var _queueCounts = null;    // status/_queue.json 집계 → role.id별 {active, doneToday}
   var _pendingByRole = null;  // status/northstar_pending.json → role.id별 후보 1개
   var _incidents = null;      // ssot/incidents.json → role.id별 {guarded, recent}
+  var _reachData = null;      // status/northstar_reach.json → role.id별 {reach_pct|null, mode, basis, milestones_done?, milestones_total?}
   var _editMode = false;
   // 뷰 상태(GM PC 세션 한정 · 정본 아님): 역할 필터 · 칸 숨김 · 폴침
   var _roleFilter = null;     // null=전체, 아니면 role.id
@@ -440,33 +441,26 @@
     '</div>';
   }
 
-  // 🌟 북극성 도달율 — 궁극 목표 · 전면(골드). 정본 = status/kpi_values.json의 '목표 대비 현재 비율' 필드.
-  //   측정 가능 = 골드 막대 N%(강조·전면). 측정 불가(대부분) = 거짓 숫자 금지 → "🔧 측정 인프라 구축 필요" 정직 텍스트(막대 없음).
-  //   판정: kpi_values 필드 중 키가 (완료율|달성률|도달율|전환율|가동률)로 끝나고 숫자인 것. 완결률(=작업 활동량)은 제외.
-  //   (현재 데이터 = coo 지원부_점검완료율 하나뿐 → coo만 골드 막대, 나머지는 구축 필요.)
+  // 🌟 북극성 도달율 — 궁극 목표 · 전면(골드). 하이브리드 정본 = status/northstar_reach.json(엔진 northstar_reach.py 산출).
+  //   measured = 실측/목표 % · milestone = 마일스톤 N/M + % (제안본). 측정 불가 = 거짓 숫자 금지 → "측정 개통 전" 정직 텍스트(막대 없음).
+  //   가짜 %·가짜 진척바 금지(약속 L05 · M4-METRIC-HONESTY). 값·basis 계산은 전부 엔진에 위임(HTML은 렌더만).
   function northStarReachBlock(role){
     var lab = '<span class="nsreach-h">🌟 북극성 도달율 <span class="nsreach-note">(궁극 목표)</span></span>';
-    var v = (_kpiValues && _kpiValues[role.id]) || null;
-    var key = null, val = null;
-    if(v){
-      for(var k in v){
-        if(!Object.prototype.hasOwnProperty.call(v, k)) continue;
-        if(k === '완결률') continue;                                    // 완결률 = 작업 처리율(활동량) → 도달율 아님
-        if(typeof v[k] !== 'number') continue;                          // null(미측정)·문자 제외 → 정직
-        if(/(완료율|달성률|도달율|전환율|가동률)$/.test(k)){ key = k; val = v[k]; break; }
-      }
-    }
-    if(key !== null){
-      var pct = Math.max(0, Math.min(100, Math.round(val * 100)));
-      var nm = String(key).replace(/_/g, ' ');
+    var d = (_reachData && _reachData[role.id]) || null;
+    if(d && typeof d.reach_pct === 'number'){
+      var pct = Math.max(0, Math.min(100, Math.round(d.reach_pct)));
+      var meta = (d.mode === 'milestone' && typeof d.milestones_done === 'number')
+        ? ('마일스톤 ' + d.milestones_done + '/' + d.milestones_total + (d.milestones_done === 0 ? ' · 제안본' : ''))
+        : (d.basis || '');
       return '<div class="nsreach">' + lab +
         '<div class="kbar gold" title="북극성 도달율(목표 대비 현재)"><i style="width:' + pct + '%"></i></div>' +
-        '<div class="nsreach-meta">🌟 도달율 <b>' + pct + '%</b> <span class="nsreach-note">· ' + esc(nm) + '</span></div>' +
+        '<div class="nsreach-meta">🌟 도달율 <b>' + pct + '%</b> <span class="nsreach-note">· ' + esc(meta) + '</span></div>' +
       '</div>';
     }
-    // 측정 불가 — 거짓 숫자 금지(kpi_values 원칙: 측정 불가=null·정직). 막대 없이 정직 텍스트.
+    // reach_pct=null(측정 개통 전) 또는 reach 미설정 — 거짓 숫자 금지. 막대 대신 정직 단계칩.
+    var note = (d && d.basis) ? d.basis : '도달율 데이터 확보 후 전면 표시';
     return '<div class="nsreach">' + lab +
-      '<div class="nsreach-build">🔧 측정 인프라 구축 필요 <span class="nsreach-note">— 도달율 데이터 확보 후 전면 표시</span></div>' +
+      '<div class="nsreach-build">🔧 측정 개통 전 <span class="nsreach-note">— ' + esc(note) + '</span></div>' +
     '</div>';
   }
 
@@ -741,7 +735,8 @@
     gasRead('status/kpi_values.json',     RAW_BASE + 'status/kpi_values.json').catch(function(){ return null; }),
     gasRead('status/_queue.json',         RAW_BASE + 'status/_queue.json').catch(function(){ return null; }),
     gasRead('status/northstar_pending.json', RAW_BASE + 'status/northstar_pending.json').catch(function(){ return null; }),
-    gasRead('ssot/incidents.json',        RAW_BASE + 'ssot/incidents.json').catch(function(){ return null; })
+    gasRead('ssot/incidents.json',        RAW_BASE + 'ssot/incidents.json').catch(function(){ return null; }),
+    gasRead('status/northstar_reach.json', RAW_BASE + 'status/northstar_reach.json').catch(function(){ return null; })
   ])
     .then(function(arr){
       _matrixData = arr[0];
@@ -750,6 +745,7 @@
       _queueCounts = computeQueueCounts(arr[3]);
       _pendingByRole = computePending(arr[4]);
       _incidents = computeIncidents(arr[5]);
+      _reachData = (arr[6] && arr[6].roles) || {};
       renderMatrix();
       renderEditBtn();
       initColResizers();

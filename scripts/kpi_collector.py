@@ -192,6 +192,15 @@ def main() -> None:
         print(f"  {role:5s}: 완결률={v['완결률']}  완료={v['완료']}  활성={v['활성']}{extra}")
     print(f"  -> {OUT_PATH}")
 
+    # 북극성 도달율 재산출(best-effort · 실패해도 collector 성공 유지). kpi_values 갱신 직후 물림.
+    try:
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "northstar_reach.py")],
+            cwd=str(ROOT), timeout=60,
+        )
+    except Exception as e:
+        print(f"  [northstar_reach 재산출 스킵] {type(e).__name__}: {str(e)[:80]}")
+
 
 if __name__ == "__main__":
     main()
