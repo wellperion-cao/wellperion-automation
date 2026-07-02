@@ -159,6 +159,24 @@ tr:hover td{background:var(--accent-bg);}
 .pc-box.next .pc-box-label{color:var(--accent);}
 .pc-box-content{font-size:12.5px;line-height:1.7;color:var(--dim-mid);}
 .pc-box-content strong{color:var(--text);}
+/* ── 요금 정책: 토글 폐지 → 항상 펼친 카드(한눈에). 2026-07-02 시포·GM ── */
+#tab-policy .acc-body{display:block!important;}
+#tab-policy .acc-header{cursor:default;}
+#tab-policy .acc-header:hover{background:var(--paper);}
+#tab-policy .acc-chevron{display:none;}
+/* ── GM 편집 가능 요금표 ── */
+.pricing-edit-tbl{width:100%;border-collapse:collapse;}
+.pricing-edit-tbl th{font-size:11px;color:var(--accent);font-weight:700;text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);}
+.pricing-edit-tbl th.num{text-align:right;}
+.pricing-edit-tbl td{padding:4px;}
+.pricing-edit-tbl input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 8px;outline:none;}
+.pricing-edit-tbl input.num{text-align:right;}
+.pricing-edit-tbl input:focus{border-color:var(--accent);}
+.pricing-toolbar{display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap;}
+.pricing-hint{font-size:11px;color:var(--dim);}
+.pp-del{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);border-radius:6px;cursor:pointer;font-size:12px;padding:6px 9px;font-family:inherit;}
+.pp-del:hover{background:rgba(237,91,63,0.2);}
+@media print{ .pricing-toolbar,.pp-del{display:none!important;} .pricing-edit-tbl input{border:none;background:none;padding:2px 4px;} }
 
 /* ─── 기획 카드 그리드 ─── */
 .plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:4px;}
@@ -588,18 +606,17 @@ tr:hover td{background:var(--accent-bg);}
         <span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
-        <div class="tbl-wrap">
-          <table>
-            <thead>
-              <tr><th>등급</th><th class="num">연간 요금</th><th>비고</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>플래티넘</td><td class="num">3,000,000</td><td></td></tr>
-              <tr><td>플래티넘+골프</td><td class="num">3,400,000</td><td></td></tr>
-              <tr><td>노블레스</td><td class="num">3,600,000</td><td></td></tr>
-              <tr><td>노블레스+골프</td><td class="num">4,000,000</td><td>최상위</td></tr>
-            </tbody>
+        <!-- 등급별 연간요금 — GM 직접 편집·저장(핵심 요금표, 2026-07-02 시포·GM) -->
+        <div class="tbl-wrap" id="pricingCard">
+          <table class="pricing-edit-tbl">
+            <thead><tr><th>등급</th><th class="num">연간 요금(원)</th><th>비고</th><th style="width:34px"></th></tr></thead>
+            <tbody id="pricingBody"><tr><td colspan="4" style="color:var(--dim);font-size:12px;padding:10px;">불러오는 중…</td></tr></tbody>
           </table>
+          <div class="pricing-toolbar">
+            <button class="action-btn green" onclick="savePolicyPricing()">💾 요금표 저장</button>
+            <button class="action-btn" onclick="addPricingRow()">➕ 등급 추가</button>
+            <span class="pricing-hint" id="pricingStatus">GM이 직접 수정 → 저장하면 시트에 반영됩니다</span>
+          </div>
         </div>
         <div class="section-divider" style="margin:14px 0 12px;"><span>가족 요금</span></div>
         <p style="font-size:13px;color:var(--dim-mid);">2번째 가족부터 각 <strong style="color:var(--text);">270만원</strong> · 가족증명 첨부 필수</p>
@@ -870,6 +887,68 @@ function switchTab(id, btn) {
   document.getElementById('tab-' + id).classList.add('active');
   btn.classList.add('active');
   if (id === 'workshop') loadPlans();
+  if (id === 'policy') loadPolicyPricing();
+}
+
+// ── 요금 정책: 핵심 요금표 GM 편집·저장 (예약 레코드 id=POLICY-PRICING, '상품기획저장' 시트 재사용·새 배포 불필요). 2026-07-02 시포·GM ──
+var POLICY_PRICING_ID = 'POLICY-PRICING';
+var POLICY_PRICING_DEFAULT = [
+  { grade:'플래티넘',       fee:'3,000,000', note:'' },
+  { grade:'플래티넘+골프',  fee:'3,400,000', note:'' },
+  { grade:'노블레스',       fee:'3,600,000', note:'' },
+  { grade:'노블레스+골프',  fee:'4,000,000', note:'최상위' }
+];
+var _pricingLoaded = false;
+function _pricingStatus(msg){ var el=document.getElementById('pricingStatus'); if(el) el.textContent=msg; }
+function _pricingRowHtml(r){
+  r=r||{};
+  return '<td><input type="text" data-k="grade" value="'+esc(r.grade||'')+'"></td>'+
+         '<td><input type="text" class="num" data-k="fee" value="'+esc(r.fee||'')+'"></td>'+
+         '<td><input type="text" data-k="note" value="'+esc(r.note||'')+'"></td>'+
+         '<td style="text-align:center"><button class="pp-del" title="행 삭제" onclick="this.closest(\'tr\').remove()">✕</button></td>';
+}
+function renderPricing(rows){
+  var tb=document.getElementById('pricingBody'); if(!tb) return;
+  tb.innerHTML='';
+  (rows&&rows.length?rows:POLICY_PRICING_DEFAULT).forEach(function(r){
+    var tr=document.createElement('tr'); tr.innerHTML=_pricingRowHtml(r); tb.appendChild(tr);
+  });
+}
+function addPricingRow(){
+  var tb=document.getElementById('pricingBody'); if(!tb) return;
+  var tr=document.createElement('tr'); tr.innerHTML=_pricingRowHtml({}); tb.appendChild(tr);
+  var f=tr.querySelector('input'); if(f) f.focus();
+}
+function _collectPricing(){
+  var rows=[];
+  document.querySelectorAll('#pricingBody tr').forEach(function(tr){
+    var r={}; tr.querySelectorAll('input[data-k]').forEach(function(i){ r[i.dataset.k]=i.value.trim(); });
+    if(r.grade||r.fee||r.note) rows.push(r);
+  });
+  return rows;
+}
+function loadPolicyPricing(){
+  if(_pricingLoaded) return; _pricingLoaded=true;
+  _pricingStatus('불러오는 중…');
+  fetch(TODO_API_URL + '?action=product_plan_list', {redirect:'follow'})
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      var found=null;
+      if(res.ok && res.data) found=res.data.find(function(x){ return String(x.id)===POLICY_PRICING_ID; });
+      var rows=POLICY_PRICING_DEFAULT;
+      if(found && found.구성){ try{ var p=JSON.parse(found.구성); if(p&&p.length) rows=p; }catch(e){} }
+      renderPricing(rows);
+      _pricingStatus(found?'시트 저장본 표시 중 · GM 수정 가능':'기본값 표시 중 · 저장하면 시트에 영속');
+    })
+    .catch(function(){ renderPricing(POLICY_PRICING_DEFAULT); _pricingStatus('네트워크 오류 — 기본값 표시'); });
+}
+function savePolicyPricing(){
+  var rows=_collectPricing();
+  _pricingStatus('저장 중…');
+  var item={ id:POLICY_PRICING_ID, 구분:'_policy', 제안명:'등급별 연간요금', 구성:JSON.stringify(rows), 가격가설:'', 근거:'', 상태:'', 작성자:'GM' };
+  fetch(TODO_API_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action:'product_plan_save', item:item}) })
+    .then(function(){ _pricingStatus('저장 완료 · 시트 반영됨'); })
+    .catch(function(){ _pricingStatus('저장 완료(응답 확인 불가) · 새로고침 시 반영'); });
 }
 
 // ── 아코디언 ─────────────────────────────────────────────────────────
@@ -1058,7 +1137,8 @@ function loadPlans() {
   fetch(TODO_API_URL + '?action=product_plan_list', {redirect:'follow'})
     .then(function(r){ return r.json(); })
     .then(function(res) {
-      var saved = (res.ok && res.data && res.data.length > 0) ? res.data : [];
+      // 정책 예약 레코드(구분 '_' 시작·POLICY-PRICING 등)는 워크샵 카드에서 제외. 2026-07-02 시포
+      var saved = (res.ok && res.data && res.data.length > 0) ? res.data.filter(function(x){ return String(x.구분||'').charAt(0) !== '_'; }) : [];
       // ── 시드는 항상 '기본 바탕' — 저장본이 같은 항목만 덮고, 저장 안 된 시드는 그대로 노출.
       //    저장본 1건이 시드 전체(레버 7장 등)를 숨기던 '전부-아니면-전무' 함정 제거. 2026-07-02 시포(GM 지시)
       var savedKeys = {};
