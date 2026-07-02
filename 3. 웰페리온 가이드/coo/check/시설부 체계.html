@@ -963,260 +963,25 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-manual" class="content hidden">
 
-  <!-- 직원 구성·역할은 규정 탭으로 이관(F4, 2026-06-11) — 매뉴얼 탭은 작업 절차 전용. -->
+  <!-- 직원 구성·역할은 규정 탭으로 이관(F4, 2026-06-11) — 매뉴얼 탭은 작업 절차 전용.
+       Phase 1(GM 2026-07-02 시우): 지원부 복사분(요일×남/여/외곽 칸반·고아 renderManualItems)
+       제거 → 설비 구역별 편집형 카드로 재구성(가이드 보드 FAC_GUIDE_* 미러: FAC_MANUAL_*). -->
 
+  <p class="board-intro">시설부 매뉴얼 — 설비 구역별 <b>작동법·점검 주기·기준값·비상 대응</b>. 각 카드 <b>편집</b>으로 수정·저장. 일일 측정값 입력은 <b>시설점검</b> 탭에서.</p>
 
-  <!-- ── 요일별 업무 보드 (주 콘텐츠 · 요일 다중선택 + 트렐로 칸반) ── -->
-  <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">요일별 업무 보드 (트렐로 칸반)</div>
-  <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 👨남 / 👩여 / 🏢외곽 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다.</div>
+  <!-- ⚠ 공통 안전수칙 (시설부) -->
+  <div class="manual-section" style="margin-bottom:14px;"><div class="manual-header" onclick="togManual(this)" style="background:var(--orange-bg);"><h3 style="color:var(--orange);">⚠ 공통 안전수칙 (전 구역 필수)</h3><span class="arrow">&#9654;</span></div><div class="manual-body"><ul>
+    <li>전기설비 작업 시 <span class="highlight">전원 차단 후</span> 비닐 포장·보호장비 착용</li>
+    <li>가스 누출 의심 시: <span class="highlight">밸브 차단 → 환기 → 소장·119 통보</span></li>
+    <li>기계실·고온·고압 설비 취급 주의 (보호장비 필수)</li>
+    <li>수질·온도 기준 이탈 시 즉시 조치 후 소장 보고, 회복 전 이용 제한 검토</li>
+    <li>비상(화재·누수·정전·설비 중대고장): <span class="highlight">소장 총괄 지휘</span> / 소장 부재 시 차장 대행 / 119·관계기관 신고</li>
+  </ul></div></div>
 
-  <!-- 요일 툴바 (7요일 다중선택 toggle + 전체 토글) -->
-  <div id="day-toolbar" class="day-toolbar"></div>
+  <!-- 설비 구역별 매뉴얼 카드 보드 -->
+  <div style="font-size:16px;font-weight:700;color:var(--text);padding:2px 0 4px;">설비 구역별 매뉴얼</div>
+  <div class="board-fullwidth"><div class="board-scroll" id="fac-manual-flow"><div id="fac-manual-board" style="display:contents"></div></div></div>
 
-  <!-- 트렐로 칸반 보드 (켠 요일 = 컬럼 · 풀폭 엣지투엣지 · 가로 스크롤) -->
-  <div class="board-fullwidth">
-    <div id="manual-board" class="board-scroll"></div>
-  </div>
-
-  <!-- 셋업 편집기 제거(GM 2026-06-12): 항목 추가=이슈승격 모달·점검 화면 빠른추가로 대체. setupAttr 등 공유 데이터계층은 보존. -->
-
-  <!-- ── 기존 상세 절차 참고 (접이식 · 운영 정보 보존) ── -->
-  <div class="manual-section" style="margin-top:18px;">
-    <div class="manual-header" onclick="togManual(this)"><h3>기존 상세 절차 참고 (구역별 매뉴얼)</h3><span class="arrow">&#9654;</span></div>
-    <div class="manual-body" style="padding:0;">
-    <div style="padding:14px 18px;">
-
-  <!-- 공통 안전 유의사항 -->
-  <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)"><h3>공통 유의사항</h3><span class="arrow open">&#9654;</span></div>
-    <div class="manual-body open">
-      <ul>
-        <li><span class="highlight">대리석/코팅면 산성세제 사용 금지</span></li>
-        <li>전기설비는 반드시 비닐 포장 후 청소</li>
-        <li>청소 시 환기 + 보호장비(장갑/마스크) 필수 착용</li>
-        <li>청소 전/후 사진 촬영 의무 (탕실 / 건습식 사우나 / 화장실)</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- 구역별 상세 절차 -->
-  <div style="font-size:13px;color:var(--dim);margin:8px 0 12px;">구역을 탭하면 상세 절차가 펼쳐집니다.</div>
-
-  <!-- A 사우나 -->
-  <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)">
-      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">A</span>사우나 탕 / 건·습식</h3>
-      <span class="arrow">&#9654;</span>
-    </div>
-    <div class="manual-body">
-      <span class="manual-label">A-1 사우나 탕</span>
-      <ul>
-        <li>오픈 시 수위·온도 확인 후 오버풀 타이머 가동</li>
-        <li>냉탕: 매일 배수 / 온탕·열탕: 격일 배수 (마개+스위치 확인)</li>
-        <li>휴관일 전: 냉탕·온탕·열탕 전부 배수</li>
-      </ul>
-      <span class="manual-label">오버풀 타이머</span>
-      <table class="schedule-table">
-        <tr><th></th><th>온탕</th><th>열탕</th></tr>
-        <tr><td><strong>평일 6회</strong></td><td>06:00·10:00·11:00·12:00·15:00·20:00</td><td>06:00·10:30·11:30·12:30·15:30·20:40</td></tr>
-        <tr><td><strong>주말 3회</strong></td><td>10:00·14:00·18:00</td><td>10:30·14:30·18:30</td></tr>
-      </table>
-      <span class="manual-label">A-2 건/습식 사우나</span>
-      <ul>
-        <li>온도 체크 (건식 90~100°C / 습식 60~70°C 기준)</li>
-        <li>바닥·타일 물때 제거</li>
-        <li><strong>수요일</strong> 고압세척 + <span class="highlight">산성세제 금지</span></li>
-        <li>모래시계 위치 확인</li>
-      </ul>
-      <span class="manual-label">A-3 사우나 내부</span>
-      <ul>
-        <li>배수로·배수구 청소 / 바닥 미끄럼 방지 확인</li>
-        <li>탈수기 밑 / 좌식 의자 / 거울 청결</li>
-        <li>비품: 바가지·목욕의자·거품바구니·쓰레기통·치약·소금·샴푸·린스·바디워시·비누</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- B 락커룸 -->
-  <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)">
-      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">B</span>락커룸 / 파우더</h3>
-      <span class="arrow">&#9654;</span>
-    </div>
-    <div class="manual-body">
-      <span class="manual-label">B-1 파우더</span>
-      <ul>
-        <li>선풍기·드라이기 작동 수시 확인</li>
-        <li>소독기·발건조기·휴지통 상태</li>
-        <li>비품 최소 재고 유지: 빗·면봉·휴지·로션·스킨</li>
-      </ul>
-      <span class="manual-label">B-2 휴게실</span>
-      <ul>
-        <li>TV 관리 / 소파·테이블 청결</li>
-      </ul>
-      <span class="manual-label">B-3 수면실(남) / 찜질방(여)</span>
-      <ul>
-        <li>남: 매트리스·바스타올 청결 관리</li>
-        <li>여: 온도·청결 / 쑥 제거(휴관일 전) · 입고(휴관일 후)</li>
-      </ul>
-      <span class="manual-label">B-4 마루바닥</span>
-      <ul>
-        <li>미끄럼 방지 확인 / 수시 청결</li>
-        <li>1회용 밀대 타올 수시 교체</li>
-      </ul>
-      <span class="manual-label">B-5 사우나 화장실</span>
-      <ul>
-        <li>소변기·대변기·바닥·세면공간 청소</li>
-        <li>비품: 휴지통·화장지·핸드페이퍼·손세정제</li>
-      </ul>
-      <span class="manual-label">B-6 데일리 락커</span>
-      <ul>
-        <li>월 1~30 / 화 31~60 / 수 61~90 / 목 91~120 / 금 121~150 / 토 151~180</li>
-        <li>데일리·개인 락커 키 위 먼지 청소</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- C 세탁물 -->
-  <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)">
-      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--green-bg);color:var(--green);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">C</span>세탁물</h3>
-      <span class="arrow">&#9654;</span>
-    </div>
-    <div class="manual-body">
-      <span class="manual-label">입고 절차</span>
-      <ul>
-        <li>입고 즉시 세탁실로 운반</li>
-        <li>운동복·양말: 상태 체크 후 사이즈별 분리 배치</li>
-        <li>타올류(거품타올·타올·바스타올): 상태 불량 별도 분리</li>
-      </ul>
-      <span class="manual-label">마감 출고</span>
-      <ul>
-        <li>인수인계 시 오전 출고 / 마감 시 최종 출고</li>
-        <li><span class="highlight">마감 출고 빠짐없이 확인</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- D 외부 -->
-  <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)">
-      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">D</span>외부 공간</h3>
-      <span class="arrow">&#9654;</span>
-    </div>
-    <div class="manual-body">
-      <span class="manual-label">D-1 외부 화장실</span>
-      <ul>
-        <li>골프장·B1·B2 화장실 비품 체크</li>
-        <li>비품: 휴지통·화장지·핸드페이퍼·손세정제</li>
-        <li><span class="highlight">악취 관리 최우선</span></li>
-      </ul>
-      <span class="manual-label">D-2 복도 휴지통</span>
-      <ul><li>운영사무실 앞 / B1 복도(헬스장 입구 구석)</li></ul>
-      <span class="manual-label">D-3 메인 계단 <span style="color:var(--accent);font-size:11px;">남 주임 전담</span></span>
-      <ul><li>B1-B2 메인 계단 벽·바닥 청결</li></ul>
-      <span class="manual-label">D-4 메인 복도 휴게공간 <span style="color:var(--purple);font-size:11px;">여 주임 전담</span></span>
-      <ul><li>소파·바닥 청결</li></ul>
-      <span class="manual-label">D-5 분리수거장</span>
-      <ul><li>에스컬레이터 아래 분리수거 진행</li></ul>
-      <span class="manual-label">D-6 G.X룸 <span style="color:var(--accent);font-size:11px;">남 주임 전담 / 화요일 집중</span></span>
-      <ul><li>거울·바닥 청소</li></ul>
-      <span class="manual-label">D-7 센터 화분 <span style="color:var(--purple);font-size:11px;">여 주임 전담 / 금요일 집중</span></span>
-      <ul><li>물 공급</li></ul>
-      <span class="manual-label">D-8 키즈 샤워실 <span style="color:var(--accent);font-size:11px;">남 주임 전담</span></span>
-      <ul>
-        <li>파우더룸 정리 20:30</li>
-        <li>2주 1회 샤워실 청소 — 수요일 13:00</li>
-      </ul>
-      <span class="manual-label">D-9 수영장 계단</span>
-      <ul><li>주 1회 청소</li></ul>
-    </div>
-  </div>
-
-  <!-- E 외곽 -->
-  <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)">
-      <h3><span style="display:inline-block;width:26px;height:26px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-size:13px;font-weight:700;text-align:center;line-height:26px;margin-right:8px;">E</span>외곽 / 헬스장 / 골프장</h3>
-      <span class="arrow">&#9654;</span>
-    </div>
-    <div class="manual-body">
-      <span class="manual-label">E-1 센터 복도 바닥</span>
-      <ul><li>1F/B1/B2 에스컬레이터 공간 전체</li></ul>
-      <span class="manual-label">E-2 거울·유리창 <span style="color:var(--dim);font-size:11px;">화요일 집중</span></span>
-      <ul><li>거울·유리창 물때 / 손톱깍이장 청소</li></ul>
-      <span class="manual-label">E-3 청소 비품 관리</span>
-      <ul><li>지정 위치 배치 / 항상 깔끔하게 관리</li></ul>
-      <span class="manual-label">E-4 헬스장</span>
-      <ul>
-        <li>매일: 머신·런닝머신 땀 제거</li>
-        <li>월·수·금: 런닝머신 바닥</li>
-        <li>화·목: 스트레칭 공간</li>
-        <li>주말: 거울</li>
-      </ul>
-      <span class="manual-label">E-5 골프장</span>
-      <ul>
-        <li>매일: 복도 청소</li>
-        <li>월·수·금: 타석(스크린천)</li>
-        <li>화·목: 타석(기계)</li>
-        <li>주말: 레슨룸</li>
-      </ul>
-      <span class="manual-label">E-6 주차장 <span style="color:var(--dim);font-size:11px;">일요일·휴관일 집중</span></span>
-      <ul>
-        <li>바닥 쓰레기 / 주차장 화장실 / 차단기 확인</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- 골프룸 PC 운영 (F3 추가 2026-06-11) -->
-  <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)">
-      <h3>🖥 골프룸 PC 운영</h3><span class="arrow">&#9654;</span>
-    </div>
-    <div class="manual-body">
-      <ul>
-        <li><strong>PC 본체</strong>: 오픈 시 <strong>ON</strong> / <strong>마감 시에만 OFF</strong> (영업 중 임의 종료 금지)</li>
-        <li><strong>이용·이용종료 시</strong>: <strong>모니터만 ON/OFF</strong> (PC 본체는 계속 켜둠)</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- 천정 센서 (F3 추가 2026-06-11) -->
-  <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)">
-      <h3>💡 천정 센서</h3><span class="arrow">&#9654;</span>
-    </div>
-    <div class="manual-body">
-      <ul>
-        <li>센서 <strong>반응 없을 시</strong>: 별도 <strong>천정센서 OFF</strong> → <strong>5초 후 ON</strong> (재기동)</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- 요일별 집중 청소 -->
-  <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)">
-      <h3>요일별 집중 청소</h3><span class="arrow">&#9654;</span>
-    </div>
-    <div class="manual-body">
-      <table class="schedule-table">
-        <tr><th>요일</th><th>집중 청소 항목</th></tr>
-        <tr><td><strong>월</strong></td><td>화장실 전체 / 탈수기 물때·곰팡이 / B-1 파우더 / B-5 사우나 화장실 (탕 배수: 마개+스위치)</td></tr>
-        <tr><td><strong>화</strong></td><td>세면대 배수 파이프 / 배수구 소독·머리카락 / 탕 내 비품 / E-2 거울·유리창 / D-6 G.X룸</td></tr>
-        <tr><td><strong>수</strong></td><td>건/습식 사우나 바닥 고압세척 / D-8 키즈샤워실</td></tr>
-        <tr><td><strong>목</strong></td><td>화장실 전체 / 탈수기 물때·곰팡이 / B-1 파우더 / B-5 사우나 화장실</td></tr>
-        <tr><td><strong>금</strong></td><td>세면대 배수 파이프 / 배수구 소독·머리카락 / 탕 내 비품 / D-7 센터 화분</td></tr>
-        <tr><td><strong>토</strong></td><td>벽체 곰팡이·물때 / 거울·유리창 물때 / 천정 환기구 먼지 / 방제</td></tr>
-        <tr><td><strong>일</strong></td><td>탕청소 업체 휴무 / E-6 주차장 집중 / 개인락커+미비 부분</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <!-- '현재 전체 점검 항목 체크리스트'는 점검(남)/점검(여) 탭 전용으로 이관(매뉴얼 탭에선 중복이라 제거).
-       데이터·체크상태는 점검 탭이 동일 소스(WEEKDAY+CUSTOM_ITEMS·STATE)로 렌더하므로 손실 없음. -->
-
-    </div><!-- /padding wrapper -->
-    </div><!-- /manual-body (기존 상세 절차 참고) -->
-  </div><!-- /manual-section (기존 상세 절차 참고) -->
 </div>
 
 
@@ -1934,7 +1699,7 @@ function switchTab(tab, opts){
   document.getElementById('tab-vendor').classList.toggle('hidden',tab!=='vendor');
   document.getElementById('tab-fcheck').classList.toggle('hidden',tab!=='fcheck');
   if(tab==='fcheck'){ if(typeof fcLoad==='function') fcLoad(); }
-  if(tab==='manual'){renderBoard();renderManualItems();}
+  if(tab==='manual'){ if(typeof facLoadManualFromBackend==='function') facLoadManualFromBackend(); }
   if(tab==='guide'){ if(typeof facRenderGuideBoard==='function') facRenderGuideBoard(); }
   if(tab==='vendor'){ if(typeof loadVendorCategoriesFromBackend==='function'){ loadVendorCategoriesFromBackend().then(function(){ if(typeof loadVendorFromBackend==='function') loadVendorFromBackend(); }); } }   // 탭 열 때마다 백엔드 재로드(분류→업체) — GM 2026-06-12
 }
@@ -2780,6 +2545,206 @@ function facGuideDeleteCard(colKey,id){
 
 /* 가이드 보드 init — const 선언 완료 후 실행 */
 facLoadGuideData(); facRenderGuideBoard(); facLoadGuideFromBackend();
+
+/* ═══════════════════════════════════════════════
+   시설부 매뉴얼 카드 보드 (매뉴얼 탭) — 가이드 보드(FAC_GUIDE_*) 미러, 로직 동일.
+   Phase 1(GM 2026-07-02 시우): 지원부 복사분(요일×남/여/외곽 칸반) 제거 → 설비 구역별 편집형 카드로 재구성.
+   저장키: FACILITY_MANUAL_CARDS. 인증 게이트 requireEditAuth(1234) 재사용. GAS saveBoard 공용.
+   DOM 접두사 fac-manual-* / fm* (가이드 fac-guide-*·gd* 와 충돌 없음).
+   ═══════════════════════════════════════════════ */
+const FAC_MANUAL_KEY = 'FACILITY_MANUAL_CARDS';
+const FAC_MANUAL_COLS = [
+  {key:'equip', label:'설비 구역별 매뉴얼', cls:'outer'}
+];
+const FAC_MANUAL_SEED = {
+  equip:[
+    {id:'fm_sauna',title:'🧖 사우나',body:'[작동법] 오버풀 타이머 준수 · 배수: 냉탕 매일 / 온탕·열탕 격일 / 휴관일 전 전부(마개+스위치)\n[기준값] 온탕 39℃ · 열탕 42℃ · 건식 78℃ · 습식 48℃ · 찜질방 68℃\n[점검 주기] 온도 회차별 측정 → 시설점검 탭\n[비상] 온도 이상 시 차장 보고 · 설정 조정'},
+    {id:'fm_pool',title:'🏊 수영장 수질',body:'[작동법] 여과·약품(염소·pH 조정) 관리\n[기준값] pH 5.8~8.6 · 유리잔류염소 0.4~4.0mg/L · 탁도 1.5NTU 이하 (체육시설법 시행규칙)\n[점검 주기] 일일 측정·기록\n[비상] 기준 이탈 시 약품 조정·여과 재가동, 회복 전 이용 제한 검토'},
+    {id:'fm_hotwater',title:'♨ 온수탱크·급탕',body:'[작동법] (현장 입력)\n[기준값] 온수탱크 2·3·4번 온도 관리\n[점검 주기] 회차 점검\n[비상] 온도 이상 시 차장 보고'},
+    {id:'fm_ahu',title:'🌀 공조 AHU',body:'[작동법] AHU 1~4 가동/정지 관리\n[기준값] 가동상태 정상(ok)\n[점검 주기] 회차별 가동상태 점검\n[비상] AHU 정지 시 소장 보고·1차 조치'},
+    {id:'fm_machine',title:'⚙ 기계실',body:'[작동법] 심야전기 05:00 · 1번 열교환기 05:00 · 가스점검 06:00 · 고온수기 등 14:00 · 축열조 · 연동펌프\n[기준값] 표준 가동 시각(작업일지 기준)\n[점검 주기] 일일 가동·정지 기록\n[비상] 보일러 고장·가스 누출 시 밸브 차단→환기→소장·119'},
+    {id:'fm_elec',title:'🎥 전기·조명·CCTV',body:'[작동법] CCTV 작동·녹화 상태 확인, 전기·조명 점검\n[기준값] 정상 녹화 · 조명 정상\n[점검 주기] 일일 순회\n[비상] CCTV·전기 불량 시 즉시 보고·복구 의뢰'},
+    {id:'fm_lift',title:'🛗 승강기',body:'[작동법] 엘리베이터·에스컬레이터 가동 확인\n[기준값] 정상 가동\n[점검 주기] 일일 확인 + 법정 점검\n[비상] 고장 시 운행 중지·업체 연락·소장 보고'},
+    {id:'fm_safety',title:'🧯 소방·안전',body:'[작동법] 소방시설 작동점검(소장 총괄책임·과장 실무)\n[기준값] 소방 작동점검 연 1회 · 전기안전점검 3년 1회\n[점검 주기] 일일 확인 + 법정\n[비상] 화재 시 소장 총괄 지휘·119·대피 유도'}
+  ]
+};
+
+let FAC_MANUAL_DATA = {}; // {colKey:[{id,title,body}, ...]}
+
+function facApplyManualStored(stored){
+  FAC_MANUAL_DATA={};
+  FAC_MANUAL_COLS.forEach(c=>{
+    const arr=(stored&&Array.isArray(stored[c.key]))?stored[c.key]:null;
+    if(arr){
+      FAC_MANUAL_DATA[c.key]=arr.map(card=>({
+        id:card&&card.id?String(card.id):facManualGenId(),
+        title:card&&card.title!=null?String(card.title):'',
+        body:card&&card.body!=null?String(card.body):''
+      }));
+    }else{
+      FAC_MANUAL_DATA[c.key]=(FAC_MANUAL_SEED[c.key]||[]).map(card=>({id:card.id,title:card.title,body:card.body}));
+    }
+  });
+}
+function facManualGenId(){ return 'fm_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+function facLoadManualData(){
+  let stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(FAC_MANUAL_KEY)); }catch(e){ stored=null; }
+  facApplyManualStored(stored);
+}
+
+async function facLoadManualFromBackend(){
+  facLoadManualData();
+  facRenderManualBoard();
+  if(!ONLINE) return;
+  try{
+    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(FAC_MANUAL_KEY),{method:'GET',redirect:'follow'});
+    const data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      facApplyManualStored(data.board);
+      localStorage.setItem(FAC_MANUAL_KEY, JSON.stringify(FAC_MANUAL_DATA));
+    }
+  }catch(e){}
+  const wrap=document.getElementById('fac-manual-board');
+  if(wrap && !wrap.querySelector('.dv-cell.editing')) facRenderManualBoard();
+}
+
+function facPersistManualData(){
+  localStorage.setItem(FAC_MANUAL_KEY, JSON.stringify(FAC_MANUAL_DATA));
+  if(!ONLINE) return;
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='매뉴얼 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:FAC_MANUAL_KEY,board:FAC_MANUAL_DATA})
+  }).then(()=>{if(ind){ind.textContent='매뉴얼 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
+    .catch(()=>{if(ind){ind.textContent='매뉴얼 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+}
+
+function facManualCardBodyHTML(body){
+  const lines=(body||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
+  if(!lines.length) return '<div class="dv-empty">내용 없음 — 편집으로 추가</div>';
+  return lines.map(l=>'<div class="pol-line">'+escapeHTML(l)+'</div>').join('');
+}
+
+function facRenderManualBoard(){
+  const wrap=document.getElementById('fac-manual-board');
+  if(!wrap)return;
+  let html='';
+  FAC_MANUAL_COLS.forEach(col=>{
+    const cards=FAC_MANUAL_DATA[col.key]||[];
+    html+='<div class="board-col">';
+    html+='<div class="board-col-head"><span class="bday" style="font-size:17px;">'+escapeHTML(col.label)+'</span>'
+        +'<span class="day-type weekday">'+cards.length+'개</span></div>';
+    html+='<div class="board-col-body">';
+    cards.forEach(card=>{
+      const cid=col.key+'__'+card.id;
+      html+='<div class="dv-cell '+col.cls+'" id="fmcell_'+cid+'">';
+      html+='<div class="dv-cell-head"><span class="dv-cell-label '+col.cls+'">'+escapeHTML(card.title||'(제목 없음)')+'</span>'
+          +'<div style="display:flex;align-items:center;gap:4px">'
+          +'<button type="button" class="dv-edit-btn" id="fmbtn_'+cid+'" onclick="facManualToggleEdit(\''+col.key+'\',\''+card.id+'\')">편집</button>'
+          +'<button type="button" class="dv-edit-btn cancel" id="fmcancel_'+cid+'" style="display:none" onclick="facManualCancelEdit(\''+col.key+'\',\''+card.id+'\')">취소</button>'
+          +'</div></div>';
+      html+='<div class="dv-body">'+facManualCardBodyHTML(card.body)+'</div>';
+      html+='<div class="pol-edit" id="fmedit_'+cid+'">'
+          +'<label class="pol-edit-lab">제목</label>'
+          +'<input type="text" class="pol-edit-title" id="fmtitle_'+cid+'" placeholder="카드 제목">'
+          +'<label class="pol-edit-lab">내용 (줄바꿈으로 항목 구분)</label>'
+          +'<textarea class="pol-edit-body" id="fmbody_'+cid+'" rows="4" placeholder="내용을 입력하세요"></textarea>'
+          +'<button type="button" class="pol-del-btn" onclick="facManualDeleteCard(\''+col.key+'\',\''+card.id+'\')">이 카드 삭제</button>'
+          +'</div>';
+      html+='<div class="dv-edit-hint">제목·내용을 수정하고 <b>저장</b>을 누르면 모든 기기에 반영됩니다.</div>';
+      html+='</div>';
+    });
+    html+='<button type="button" class="dv-g-addrow" onclick="facManualAddCard(\''+col.key+'\')">＋ 카드 추가</button>';
+    html+='</div></div>';
+  });
+  wrap.innerHTML=html;
+}
+
+function facManualFindCard(colKey,id){
+  const arr=FAC_MANUAL_DATA[colKey]||[];
+  for(let i=0;i<arr.length;i++){ if(arr[i].id===id) return {arr:arr,idx:i,card:arr[i]}; }
+  return null;
+}
+
+function facManualHasEditing(){
+  const wrap=document.getElementById('fac-manual-board');
+  return !!(wrap && wrap.querySelector('.dv-cell.editing'));
+}
+
+function facManualToggleEdit(colKey,id){
+  const cid=colKey+'__'+id;
+  const cell=document.getElementById('fmcell_'+cid);
+  const btn=document.getElementById('fmbtn_'+cid);
+  const cancelbtn=document.getElementById('fmcancel_'+cid);
+  const found=facManualFindCard(colKey,id);
+  if(!cell||!btn||!found)return;
+  const editing=cell.classList.contains('editing');
+  if(!editing){
+    if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+    cell.classList.add('editing');
+    const ti=document.getElementById('fmtitle_'+cid);
+    const bo=document.getElementById('fmbody_'+cid);
+    if(ti) ti.value=found.card.title||'';
+    if(bo) bo.value=found.card.body||'';
+    btn.textContent='저장';
+    btn.classList.add('save');
+    if(cancelbtn) cancelbtn.style.display='';
+    if(ti) ti.focus();
+  }else{
+    const ti=document.getElementById('fmtitle_'+cid);
+    const bo=document.getElementById('fmbody_'+cid);
+    found.card.title=ti?ti.value.trim():found.card.title;
+    found.card.body=bo?bo.value:found.card.body;
+    cell.classList.remove('editing');
+    btn.textContent='편집';
+    btn.classList.remove('save');
+    if(cancelbtn) cancelbtn.style.display='none';
+    const labEl=cell.querySelector('.dv-cell-label');
+    if(labEl) labEl.textContent=found.card.title||'(제목 없음)';
+    const bodyEl=cell.querySelector('.dv-body');
+    if(bodyEl) bodyEl.innerHTML=facManualCardBodyHTML(found.card.body);
+    facPersistManualData();
+  }
+}
+
+function facManualCancelEdit(colKey,id){
+  const cid=colKey+'__'+id;
+  const cell=document.getElementById('fmcell_'+cid);
+  const btn=document.getElementById('fmbtn_'+cid);
+  const cancelbtn=document.getElementById('fmcancel_'+cid);
+  if(!cell||!btn)return;
+  cell.classList.remove('editing');
+  btn.textContent='편집';
+  btn.classList.remove('save');
+  if(cancelbtn) cancelbtn.style.display='none';
+}
+
+function facManualAddCard(colKey){
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  if(facManualHasEditing()){ alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.'); return; }
+  if(!Array.isArray(FAC_MANUAL_DATA[colKey])) FAC_MANUAL_DATA[colKey]=[];
+  const nid=facManualGenId();
+  FAC_MANUAL_DATA[colKey].push({id:nid,title:'새 카드',body:''});
+  facPersistManualData();
+  facRenderManualBoard();
+  facManualToggleEdit(colKey,nid);
+}
+
+function facManualDeleteCard(colKey,id){
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  if(!confirm('이 카드를 삭제할까요?')) return;
+  const found=facManualFindCard(colKey,id);
+  if(!found) return;
+  found.arr.splice(found.idx,1);
+  facPersistManualData();
+  facRenderManualBoard();
+}
+
+/* 매뉴얼 카드 보드 init — const 선언 완료 후 실행 */
+facLoadManualData(); facRenderManualBoard(); facLoadManualFromBackend();
 
 // ★거래업체 init(GM 2026-06-16 시우): vendor 함수들이 더 늦은 스크립트 블록에 정의돼 init 시점엔 미정의 → ReferenceError로
 //   보드 렌더 전체가 죽어 페이지가 소스 텍스트로 깨지던 진범. 함수가 준비될 때까지 기다렸다 실행해 순서 무관하게 안전.
