@@ -84,6 +84,19 @@
   footer.foot b{color:var(--text-soft);}
   code{background:rgba(255,255,255,0.07); color:#e6d9ff; border-radius:4px; padding:1px 5px; font-size:11px;}
 
+  /* ── 🌟 북극성 지향 제작 루프 프레임 ── */
+  .loop-frame{margin:2px 0 20px; padding:14px 16px; border:1px solid var(--border-strong); border-radius:12px; background:linear-gradient(135deg,rgba(124,58,237,0.10),rgba(240,198,116,0.05));}
+  .loop-head{display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; margin-bottom:11px;}
+  .loop-head .lh-t{font-size:14px; font-weight:800; letter-spacing:-0.01em; white-space:nowrap;}
+  .loop-head .lh-s{font-size:11.5px; color:var(--text-soft); line-height:1.45; flex:1; min-width:220px;}
+  .loop-head .lh-s b{color:var(--text);}
+  .loop-flow{display:flex; align-items:center; gap:5px; flex-wrap:wrap;}
+  .loop-step{font-size:11.5px; font-weight:700; border:1px solid var(--border-strong); border-radius:8px; padding:5px 10px; background:var(--paper); white-space:nowrap;}
+  .loop-step.ns{border-color:var(--gold); color:var(--gold); background:rgba(240,198,116,0.08);}
+  .loop-step.num{border-color:var(--accent); color:var(--accent-soft); background:rgba(124,58,237,0.10);}
+  .loop-step.repeat{border-color:var(--green); color:var(--green); background:rgba(106,191,123,0.10);}
+  .loop-arrow{color:var(--dim); font-size:13px; flex-shrink:0;}
+
   @media (max-width:560px){
     body{padding:14px 12px 36px; font-size:12.5px;}
     header.page-head h1{font-size:19px;}
@@ -109,25 +122,50 @@
     </div>
   </div>
 
-  <!-- ════ 섹션 1 ════ -->
-  <h2 class="sec">🔴 상시 자율 체계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(라이브 상태)</span></h2>
+  <!-- ════ 🌟 북극성 지향 제작 루프 프레임 ════ -->
+  <section class="loop-frame">
+    <div class="loop-head">
+      <span class="lh-t">🌟 북극성 지향 제작 루프</span>
+      <span class="lh-s">모든 자율 작업은 <b>북극성을 향해</b> 이 루프를 돈다 — 웰리가 각 작업의 단계를 추적하고 완료 시 다음 단계를 자동 촉발한다.</span>
+    </div>
+    <div class="loop-flow">
+      <span class="loop-step ns">🌟 북극성</span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-step">기획·설계</span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-step">초안</span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-step num">① 기능·UI/UX 디자인</span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-step num">② 고도화</span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-step num">③ 단순화</span>
+      <span class="loop-arrow">→</span>
+      <span class="loop-step num">④ 실무 진행</span>
+      <span class="loop-arrow">↻</span>
+      <span class="loop-step repeat">⑤ ①~④ 자동 반복</span>
+    </div>
+  </section>
+
+  <!-- ════ 섹션 1 · 이 루프를 돌리는 자율 기계(라이브) ════ -->
+  <h2 class="sec">🔴 상시 자율 체계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프를 굴리는 라이브 엔진)</span></h2>
   <div class="sec-note">각 자율 루틴의 주기·마지막 실행·최근 결과·ON/OFF. 실행 로그의 최신 항목에서 도출합니다.</div>
   <div class="routines" id="routines">
     <div class="feed-status" style="grid-column:1/-1;">상시 체계 상태를 불러오는 중…</div>
   </div>
 
-  <!-- ════ 섹션 2 ════ -->
-  <h2 class="sec">🕘 최근 자율 처리 이력</h2>
-  <div class="sec-note">여러 로그(포착·추천·자기학습·입항 완료)를 시간 역순으로 통합. 최근 처리 흐름을 한 줄씩.</div>
-  <div class="feed" id="feed">
-    <div class="feed-status">처리 이력을 불러오는 중…</div>
-  </div>
-
-  <!-- ════ 섹션 3 ════ -->
-  <h2 class="sec">📊 성과 요약</h2>
+  <!-- ════ 섹션 2 · 루프가 만든 성과 ════ -->
+  <h2 class="sec">📊 성과 요약 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프가 만든 결과)</span></h2>
   <div class="sec-note">측정 가능한 값만 숫자로. 측정 인프라가 없는 값은 “미측정”으로 정직하게 표기(가짜 수치 금지).</div>
   <div class="stats" id="stats">
     <div class="feed-status" style="grid-column:1/-1;">성과 지표를 계산하는 중…</div>
+  </div>
+
+  <!-- ════ 섹션 3 · 루프가 돈 흔적 ════ -->
+  <h2 class="sec">🕘 최근 자율 처리 이력 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프가 돈 흔적)</span></h2>
+  <div class="sec-note">여러 로그(포착·추천·자기학습·입항 완료)를 시간 역순으로 통합. 최근 처리 흐름을 한 줄씩.</div>
+  <div class="feed" id="feed">
+    <div class="feed-status">처리 이력을 불러오는 중…</div>
   </div>
 
   <footer class="foot">
