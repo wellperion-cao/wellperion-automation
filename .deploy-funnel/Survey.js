@@ -2847,7 +2847,7 @@ function _processAction(body) {
     czRenew.sort(function(a, b){ return a.rem - b.rem; });
     var czTotal = czActive + czLoss;
     var czRate = czTotal > 0 ? Math.round(czLoss / czTotal * 1000) / 10 : 0;
-    return _json({ ok: true, activeCount: czActive, lossCount: czLoss, lossRate: czRate, renewCount: czRenew.length, renewSoon: czRenew.slice(0, 40) });
+    return _json({ ok: true, activeCount: czActive, lossCount: czLoss, lossRate: czRate, renewCount: czRenew.length, renewSoon: czRenew.slice(0, 200) });
   }
 
   // ─── 문의→가입 전환 집계 ───
