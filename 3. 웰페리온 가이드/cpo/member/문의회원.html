@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>웰페리온 통합 회원 관리 — AI CPO</title>
+<title>웰페리온 멤버십 회원 관리 — AI CPO</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
@@ -873,7 +873,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   <div class="header">
     <div class="header-top">
       <div class="header-brand">
-        <h1>통합 회원 관리 <span class="badge">AI CPO v2.0</span></h1>
+        <h1><span id="pageTitleTxt">멤버십 회원 관리</span> <span class="badge">AI CPO v2.0</span></h1>
         <div class="sub">멤버십 · 강습 통합 — 잠재고객 관리 · 체험/견학/상담 예약 달력 · 전체 CRUD — 담당 실무: 임정은M</div>
       </div>
       <div class="header-actions">
@@ -2045,8 +2045,11 @@ function switchFamily(fam) {
   document.querySelectorAll('.type-chip[data-type]').forEach(function(c){
     c.style.display = (types.indexOf(c.getAttribute('data-type')) >= 0) ? '' : 'none';
   });
+  var _famName = (fam === 'lesson') ? '강습 회원관리' : '멤버십 회원관리';
   var famEl = document.getElementById('manageFamilyLabel');
-  if (famEl) famEl.textContent = (fam === 'lesson') ? '강습 회원관리' : '멤버십 회원관리';
+  if (famEl) famEl.textContent = _famName;
+  var titleEl = document.getElementById('pageTitleTxt');   // 상단 H1도 그룹명으로(통합 회원 관리 → 멤버십/강습). 2026-07-02 시포·GM
+  if (titleEl) titleEl.textContent = _famName;
   switchType(types[0]);   // 그룹 첫 유형으로 전환
 }
 
