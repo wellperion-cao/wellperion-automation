@@ -72,6 +72,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .section-badge.read{background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent);}
 .section-badge.edit{background:var(--teal-bg);border:1px solid var(--teal-border);color:var(--teal);}
 .section-badge.policy{background:var(--blue-bg);border:1px solid var(--blue-border);color:var(--blue);}
+/* ── 인쇄: 현재 활성 탭만 인쇄(나머지 탭·내비·버튼 숨김). 2026-07-02 시포·GM ── */
+@media print{
+  .tab-nav,.print-tab,.action-btn{display:none!important;}
+  .tab-panel{display:none!important;}
+  .tab-panel.active{display:block!important;}
+  body{background:#fff!important;color:#000!important;}
+  .card,.section-badge{box-shadow:none!important;}
+}
 
 /* ─── 섹션 구분선 ─── */
 .section-divider{display:flex;align-items:center;gap:16px;margin:28px 0 20px;}
@@ -250,6 +258,7 @@ tr:hover td{background:var(--accent-bg);}
     <button class="tab-btn" role="tab" onclick="switchTab('youth',this)"><span class="tab-icon">👦</span>유소년강습</button>
     <button class="tab-btn" role="tab" onclick="switchTab('policy',this)"><span class="tab-icon">💳</span>요금 정책</button>
     <button class="tab-btn" role="tab" onclick="switchTab('workshop',this)"><span class="tab-icon">✏️</span>기획 작업대</button>
+    <button class="tab-btn print-tab" onclick="window.print()" title="현재 탭 인쇄" style="margin-left:auto;color:var(--accent)"><span class="tab-icon">🖨️</span>인쇄</button>
   </nav>
 </div>
 
