@@ -250,6 +250,10 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   #approvalPrintArea .rr-section-title{font-size:11px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px}
   #approvalPrintArea .rr-section-body{font-size:10px;white-space:pre-wrap;word-break:break-word;padding:8px;border:1px solid #ddd;background:#fafafa;line-height:1.7}
   #approvalPrintArea .rr-result-box{font-size:10px;white-space:pre-wrap;word-break:break-word;padding:8px 10px;border:2px solid #111;background:#f5f5f5;line-height:1.7}
+  /* ── 첨부 사진 인라인 — 이미지 첨부는 문서에 직접 표시(비이미지는 링크). 페이지 넘침 방지 (2026-07-02 시토) ── */
+  #approvalPrintArea .rr-attach{page-break-inside:avoid;margin:4px 0}
+  #approvalPrintArea .rr-attach-img{display:block;max-width:100%;max-height:360px;object-fit:contain;border:1px solid #bbb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #approvalPrintArea .rr-attach-link{font-size:10px;word-break:break-all}
   #approvalPrintArea .rr-log-table{width:100%;border-collapse:collapse;font-size:10px}
   #approvalPrintArea .rr-log-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #approvalPrintArea .rr-log-table td{border:1px solid #ddd;padding:4px 8px;vertical-align:top}
@@ -705,6 +709,26 @@ function buildShareUrl() {
 // 현재 필터·정렬 반영된 카드를 한꺼번에 인쇄. 각 카드에 '아직 서명 안 한 결재자'만 서명칸으로 표시.
 // 결재 보고서 인쇄 — 업무 현황 보고서(rr-page)와 동일 문서 품질로 통일 (2026-06-16 GM).
 //   업무 보고서의 헤더·정보표·섹션·푸터 레이아웃을 그대로 쓰되, 결재 고유 요소(결재선·서명란·대표 서명완료)를 보존·강화.
+// 첨부 인라인 — 이미지면 <img>로 문서에 바로 표시, 아니면 링크. Drive 파일 링크는 표시가능 thumbnail URL로 변환, 실패 시 링크 폴백 (2026-07-02 시토)
+function buildAttachmentHtml(t) {
+  var u = String((t && (t['파일URL'] || t.fileUrl || t['링크'])) || '').trim();
+  if (!u) return '';
+  var m = u.match(/\/file\/d\/([-\w]{20,})/) || u.match(/[?&]id=([-\w]{20,})/);
+  var driveId = m ? m[1] : '';
+  var isImgExt = /\.(jpe?g|png|gif|webp|bmp|heic)(\?|#|$)/i.test(u);
+  var imgSrc = driveId ? ('https://drive.google.com/thumbnail?id=' + driveId + '&sz=w1200') : (isImgExt ? u : '');
+  var title = '<div class="rr-section-title">첨부</div>';
+  if (imgSrc) {
+    // 이미지 로드 실패(권한·비이미지 등) 시 링크로 폴백
+    return title + '<div class="rr-attach">'
+      + '<img class="rr-attach-img" src="' + esc(imgSrc) + '" alt="첨부 이미지" '
+      +   'onerror="this.style.display=\'none\';var f=this.nextElementSibling;if(f)f.style.display=\'block\';">'
+      + '<a class="rr-attach-link" href="' + esc(u) + '" style="display:none">' + esc(u) + '</a>'
+      + '</div>';
+  }
+  return title + '<div class="rr-section-body"><a class="rr-attach-link" href="' + esc(u) + '">' + esc(u) + '</a></div>';
+}
+
 function buildApprovalPrint(list) {
   var nameMap = { 'GM': '김남욱 GM' };
   if (!list.length) return '<div class="rr-page"><div class="rr-empty">인쇄할 결재 건이 없습니다.</div></div>';
@@ -818,6 +842,7 @@ function buildApprovalPrint(list) {
       + logsHtml
       + planHtml
       + budgetHtml
+      + buildAttachmentHtml(t)
       + '<div class="rr-footer">'
       +   '<span>A Day, Well Completed.</span>'
       +   '<span>발행일: ' + today + '</span>'

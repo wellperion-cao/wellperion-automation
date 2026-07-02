@@ -1765,8 +1765,8 @@ function lifecycleStage(task) {
   const hasResult = content.indexOf(RESULT_MARK) >= 0;
 
   if (status === '완료') return 'closed';                // ⑤ 종료
+  if (!approvalReq) return 'free';                        // ① 결재 미요청 — 자유 (리셋 복귀 포함: 결재요청이 비면 결과보고 마커 유무와 무관하게 편집 가능 · 2026-07-02 시토)
   if (hasResult) return 'result';                         // ④ 결과보고 작성 단계
-  if (!approvalReq) return 'free';                        // ① 결재 미요청 — 자유
   if (approvalStatus === '결재완료') return 'execution';   // ③ 결재 완료 → 진척 활성
   if (/반려/.test(approvalStatus)) return 'rejected';     // 반려
   return 'approval';                                       // ② 결재 진행 중
