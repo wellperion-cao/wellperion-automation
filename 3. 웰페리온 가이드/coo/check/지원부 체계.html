@@ -485,6 +485,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 #a3-monthly-print{display:none}
 /* ── A3 둘째주 휴관 작업 인쇄 전용 컨테이너 ── */
 #a3-closedday-print{display:none}
+/* ── A3 매뉴얼(세로 1장) 인쇄 전용 컨테이너 (평일 공통 분리 압축판) ── */
+#a3-manual-portrait-print{display:none}
 /* ── A3 인쇄 모드 (body.a3-print-mode → @media print 분기) ── */
 @media print{
   body.a3-print-mode{font-size:10px;line-height:1.4;color:#111;background:#fff}
@@ -540,6 +542,45 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .a3m-empty{font-size:11px;color:#bbb;padding:2px 0 2px 2px;font-style:italic}
   .a3m-grp{margin-bottom:2px}
   .a3m-grp:last-child{margin-bottom:0}
+  /* ── A3 매뉴얼(세로 1장) 인쇄 모드 — 평일 공통 분리 압축판(printA3ManualPortrait) ── */
+  body.a3-manual-portrait-mode{font-size:9px;line-height:1.25;color:#111;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.a3-manual-portrait-mode .header,
+  body.a3-manual-portrait-mode .tabs,
+  body.a3-manual-portrait-mode .submit-bar,
+  body.a3-manual-portrait-mode .saving,
+  body.a3-manual-portrait-mode .toast-msg,
+  body.a3-manual-portrait-mode .header-util-btns,
+  body.a3-manual-portrait-mode .util-btn,
+  body.a3-manual-portrait-mode .sheet-links,
+  body.a3-manual-portrait-mode #tab-policy,
+  body.a3-manual-portrait-mode #tab-guide,
+  body.a3-manual-portrait-mode #tab-chem,
+  body.a3-manual-portrait-mode #tab-manual,
+  body.a3-manual-portrait-mode #tab-supply,
+  body.a3-manual-portrait-mode #tab-check-m,
+  body.a3-manual-portrait-mode #tab-check-f,
+  body.a3-manual-portrait-mode #a3-guideline-print,
+  body.a3-manual-portrait-mode #a3-manual-print,
+  body.a3-manual-portrait-mode #a3-monthly-print,
+  body.a3-manual-portrait-mode #a3-closedday-print{display:none!important}
+  body.a3-manual-portrait-mode #a3-manual-portrait-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3pv-header{text-align:center;font-size:19px;font-weight:800;letter-spacing:0.04em;padding:2px 0 3px;border-bottom:2.5px solid #4a3a2e;margin-bottom:2px;color:#2a2018}
+  .a3pv-sub{text-align:center;font-size:10.5px;color:#8a7a6c;margin-bottom:6px;letter-spacing:0.02em}
+  .a3pv-sec-title{font-size:14px;font-weight:800;color:#fff!important;background:#4a3a2e!important;padding:3px 8px;border-radius:4px;margin:6px 0 5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3pv-common-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px}
+  .a3pv-col{border:1px solid #b8ada0;border-radius:5px;padding:4px 7px;break-inside:avoid}
+  .a3pv-col-head{font-size:13px;font-weight:800;color:#4a3a2e;border-bottom:1px solid #e0dbd5;padding-bottom:2px;margin-bottom:2px}
+  .a3pv-day-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+  .a3pv-day{border:1px solid #ccc;border-radius:5px;padding:4px 7px;break-inside:avoid;background:#faf8f5}
+  .a3pv-day.is-weekend{background:#f5efe8}
+  .a3pv-day-title{display:inline-block;font-size:13px;font-weight:800;color:#fff!important;background:#4a3a2e!important;padding:1px 8px;border-radius:3px;margin-bottom:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3pv-day.is-weekend .a3pv-day-title{background:#7a5e44!important}
+  .a3pv-day-gender{margin-bottom:2px}
+  .a3pv-day-gender-label{font-size:12px;font-weight:800;color:#7a5e44;margin-right:3px}
+  .a3pv-line{font-size:13px;color:#222;line-height:1.28;padding:1px 0 1px 12px;position:relative;break-inside:avoid}
+  .a3pv-line::before{content:"•";position:absolute;left:1px;top:0;color:#B79F8A;font-size:12px}
+  .a3pv-line .a3pv-t{font-weight:800;color:#7a5e44;margin-right:2px;font-size:12px}
+  .a3pv-empty{font-size:10.5px;color:#bbb;padding:1px 0 1px 2px;font-style:italic}
   body.a3-closedday-mode{background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.a3-closedday-mode .header,
   body.a3-closedday-mode .tabs,
@@ -760,6 +801,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
     <button class="util-btn print-btn" onclick="printA3Manual()" title="매뉴얼 보드를 A3 가로 1장 주간표(월~일 7열)로 인쇄">🖨️ A3 매뉴얼(주간)</button>
+    <button class="util-btn print-btn" onclick="printA3ManualPortrait()" title="평일 공통 항목을 분리해 A3 세로 1장으로 압축 인쇄">🖨 A3 세로(1장)</button>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
     <button class="util-btn share-btn" onclick="copyShare()">공유용</button>
   </div>
@@ -773,6 +815,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="a3m-sub"></div>
   <!-- JS(printA3Manual)가 SUPPORT_MANUAL_BOARD 읽어 표 주입 -->
   <div id="a3m-table-host"></div>
+</div>
+
+<!-- ══ A3 매뉴얼(세로 1장) 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시) — 평일 공통 분리 압축판 ══ -->
+<div id="a3-manual-portrait-print">
+  <div class="a3pv-header">지원부 주간 매뉴얼 (세로)</div>
+  <div class="a3pv-sub"></div>
+  <!-- JS(printA3ManualPortrait)가 BOARD_DATA에서 평일 공통/요일 특화 분리해 주입 -->
+  <div id="a3pv-body-host"></div>
 </div>
 
 <!-- ══ A3 월간 보고 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시) ══ -->
@@ -6654,6 +6704,103 @@ function printA3Manual(){
   window.print();
   document.body.classList.remove('a3-manual-mode');
   styleTag.textContent='';
+}
+
+/* ═══════════════════════════════════════════════
+   A3 매뉴얼(세로 1장) 인쇄 — 평일(월~금) 공통 항목 분리로 압축
+   섹션1: 평일 공통(월~금 5일 전부에 등장하는 항목, 분류별 1회만)
+   섹션2: 요일·주말 특화(공통을 뺀 나머지 + 토/일 그대로)
+   printA3Manual/BOARD_DATA·BOARD_DAYS·BOARD_GENDERS·parseBoardLine 재사용, 기존 함수 무변경.
+   함수명: printA3ManualPortrait / 클래스: a3-manual-portrait-mode
+   style id: a3-manual-portrait-page-style / 컨테이너: #a3-manual-portrait-print
+   ═══════════════════════════════════════════════ */
+function computeA3ManualPortraitData(){
+  if(!BOARD_DATA||!Object.keys(BOARD_DATA).length) loadBoardData();
+  const WEEKDAY_KEYS=['mon','tue','wed','thu','fri'];
+  const common={}, perDay={}, weekend={};
+  WEEKDAY_KEYS.forEach(d=>{ perDay[d]={}; });
+  BOARD_GENDERS.forEach(g=>{
+    const gk=g.gk;
+    const dayLines={};
+    WEEKDAY_KEYS.forEach(d=>{
+      const text=(BOARD_DATA[d]&&BOARD_DATA[d][gk])||'';
+      dayLines[d]=text.split('\n').map(l=>l.trim()).filter(l=>l.length);
+    });
+    // 교집합: 월요일 순서 기준으로 평일 5일 전부(trim 후 정확 일치)에 등장하는 항목만 '평일 공통'
+    const commonLines=dayLines.mon.filter(line=>WEEKDAY_KEYS.every(d=>dayLines[d].includes(line)));
+    common[gk]=commonLines;
+    WEEKDAY_KEYS.forEach(d=>{
+      perDay[d][gk]=dayLines[d].filter(line=>!commonLines.includes(line));
+    });
+  });
+  ['sat','sun'].forEach(d=>{
+    weekend[d]={};
+    BOARD_GENDERS.forEach(g=>{
+      const gk=g.gk;
+      const text=(BOARD_DATA[d]&&BOARD_DATA[d][gk])||'';
+      weekend[d][gk]=text.split('\n').map(l=>l.trim()).filter(l=>l.length);
+    });
+  });
+  return {common, perDay, weekend};
+}
+/* 원본 항목 문자열 배열 → 시간대 순 정렬된 .a3pv-line HTML(a3mCellHTML과 동일 파싱 재사용) */
+function a3pvLinesHTML(lines){
+  if(!lines||!lines.length) return '<div class="a3pv-empty">—</div>';
+  const rows=lines.map(l=>parseBoardLine(l));
+  rows.sort((a,b)=>{
+    const ka=timeslotSortKey(a.tb||'기타'), kb=timeslotSortKey(b.tb||'기타');
+    return ka<kb?-1:(ka>kb?1:0);
+  });
+  let html='';
+  rows.forEach(r=>{
+    const tlabel=r.tb?shortTimeslot(r.tb):'';
+    html+='<div class="a3pv-line">'
+        +(tlabel?'<span class="a3pv-t">'+escapeHTML(tlabel)+'</span>':'')
+        +escapeHTML(r.text)+'</div>';
+  });
+  return html;
+}
+function printA3ManualPortrait(){
+  const data=computeA3ManualPortraitData();
+  let html='<div class="a3pv-sec-title">평일 공통 (월~금 매일)</div>';
+  html+='<div class="a3pv-common-grid">';
+  BOARD_GENDERS.forEach(g=>{
+    html+='<div class="a3pv-col"><div class="a3pv-col-head">'+escapeHTML(g.label)+'</div>'
+        +a3pvLinesHTML(data.common[g.gk])+'</div>';
+  });
+  html+='</div>';
+  html+='<div class="a3pv-sec-title">요일·주말 특화</div>';
+  html+='<div class="a3pv-day-grid">';
+  BOARD_DAYS.forEach(d=>{
+    const cellSet=d.weekend?data.weekend[d.key]:data.perDay[d.key];
+    const hasContent=BOARD_GENDERS.some(g=>cellSet[g.gk]&&cellSet[g.gk].length);
+    if(!hasContent) return; // 특화항목 없는 요일은 생략(컴팩트)
+    html+='<div class="a3pv-day'+(d.weekend?' is-weekend':'')+'">';
+    html+='<div class="a3pv-day-title">'+escapeHTML(d.label)+'</div>';
+    BOARD_GENDERS.forEach(g=>{
+      const lines=cellSet[g.gk]||[];
+      if(!lines.length) return;
+      html+='<div class="a3pv-day-gender"><span class="a3pv-day-gender-label">'+escapeHTML(g.label)+'</span>'
+          +a3pvLinesHTML(lines)+'</div>';
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  const host=document.getElementById('a3pv-body-host');
+  if(host) host.innerHTML=html;
+  const sub=document.querySelector('#a3-manual-portrait-print .a3pv-sub');
+  if(sub) sub.textContent='평일 공통 분리 압축판 — 세로 1장  ·  출력일 '+kstToday();
+  document.body.classList.add('a3-manual-portrait-mode');
+  let pstyleTag=document.getElementById('a3-manual-portrait-page-style');
+  if(!pstyleTag){
+    pstyleTag=document.createElement('style');
+    pstyleTag.id='a3-manual-portrait-page-style';
+    document.head.appendChild(pstyleTag);
+  }
+  pstyleTag.textContent='@media print{ @page{ size:A3 portrait; margin:8mm; } }';
+  window.print();
+  document.body.classList.remove('a3-manual-portrait-mode');
+  pstyleTag.textContent='';
 }
 
 function printA3Closedday(){
