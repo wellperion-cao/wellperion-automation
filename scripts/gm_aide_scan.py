@@ -27,15 +27,27 @@ status/_queue.json 에 '[GM보좌 제안]' PENDING 배로 자동등록한다(③
   를 만들어 Task Scheduler 'Wellperion-GM-Aide-Scan-0630' 에 등록.
   (.bat=영문전용·PYTHONIOENCODING=utf-8 / 참고: reference_powershell_scheduledtasks_limitation)
 
+★ phase 2 = 가역 자율실행 레이어 (휴면 기본 · 이 파일에 추가):
+  - phase1은 '제안'까지. phase2 = 가역 포착 건을 실제 처리(자율실행)하되 **안전경계 엄수**:
+    ① 휴면 기본: GM_AIDE_AUTO_EXEC(기본 OFF·dry-run). OFF면 '무엇을 자율실행할지' 로그만(변경 0). 라이브(ON)=GM go 후.
+    ② 가역만: 비가역(발행·삭제·외부전송·시트·결제·보안·금지·전략·공식값)은 절대 자율실행 X → phase1대로 제안배.
+    ③ 크론-실행 가능한 가역 메타행위만: 현재=drift(next 없는 완료 표류) 배에 '다음 한 수' 후보 next 자동 보강.
+       도메인 실무(콘텐츠·GAS 변경 등)는 C-Level 세션 몫 → 여기서 실행 금지(제안/위임 대기로만).
+    ④ ON 시 G1 기록 + 사후보고: ship.aide_auto_exec(원복 근거) + gm_observation_ledger.jsonl auto_exec 로그.
+    ⑤ 웰리 직접실행 금지 원칙 유지: 스크립트는 '가역 메타행위'까지만, 도메인 실행은 담당 C-Level 경유.
+
 사용법:
-  python scripts/gm_aide_scan.py                 # 드라이런(기본) — 포착 콘솔 출력, 큐 변경 없음
+  python scripts/gm_aide_scan.py                 # 드라이런(기본) — 포착 콘솔 출력 + phase2 휴면(자율실행 예정만 표시)
   python scripts/gm_aide_scan.py --commit        # 제안 배 실제 등록(_queue.json 갱신) + 스캔 로그
+  GM_AIDE_AUTO_EXEC=1 python scripts/gm_aide_scan.py   # phase2 라이브 발효(GM go 후에만) — 가역 메타행위 실제 적용
+  python scripts/gm_aide_scan.py --auto-exec     # 로컬 시뮬(라이브 발효 강제 · 검증용)
 """
 from __future__ import annotations
 
 import argparse
 import io
 import json
+import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -58,6 +70,13 @@ LONG_PENDING_DAYS = 30
 UNAPPROVED_STREAK_GATE = 3     # 추천 미응답 연속 이만큼이면 '접근 재점검' 게이트 제안
 MAX_PROPOSALS_PER_RUN = 5      # 하루 과다등록 방지 cap
 PROPOSAL_TAG = "[GM보좌 제안]"
+
+# ── phase2 가역 자율실행 레이어 스위치 (휴면 기본) ──
+# 기본 OFF(dry-run). ON 은 GM go 후에만(feedback_security_live_activation_needs_gm_go).
+# 라이브 발효 = 환경변수 GM_AIDE_AUTO_EXEC=1 (또는 --auto-exec 로컬 시뮬).
+AUTO_EXEC_ENV = "GM_AIDE_AUTO_EXEC"
+AUTO_EXEC_ON_VALUES = {"1", "true", "on", "yes"}
+MAX_AUTO_ACTIONS_PER_RUN = 5   # 가역 자율실행 폭주 방지 cap
 
 ROLE_NICK = {
     "ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
@@ -319,9 +338,103 @@ def log_scan(event: str, **fields) -> None:
 
 
 # ═══════════════════════════════════════════
+#  phase2 · 가역 자율실행 레이어 (휴면 기본)
+# ═══════════════════════════════════════════
+#  ★경계: 가역(phase1 분류) 포착만 · 크론-실행 가능한 안전 '메타행위'만.
+#  도메인 실무(콘텐츠 제작·GAS 변경 등)는 담당 C-Level 세션 몫 → 여기서 실행 금지.
+#  현재 지원 액션: next_augment — 표류(next 없는 완료) 배에 '다음 한 수' 후보를
+#  자동 보강(가역: aide_auto_exec.old_next 로 원복). 멱등: next 이미 있으면 skip.
+def auto_exec_enabled(cli_flag: bool = False) -> bool:
+    """라이브 발효 여부. --auto-exec(로컬 시뮬) 또는 GM_AIDE_AUTO_EXEC=1 일 때만 ON."""
+    if cli_flag:
+        return True
+    return os.environ.get(AUTO_EXEC_ENV, "").strip().lower() in AUTO_EXEC_ON_VALUES
+
+
+def _augment_next_value(cap: dict) -> str:
+    tid = cap.get("source_task_id") or "?"
+    role = cap.get("target_role", "ceo")
+    nick = ROLE_NICK.get(role, role.upper())
+    return (f"👉 다음 정하세요(자동보강·gm_aide): [{tid}] 완료 후 다음 한 수 미정 표류 — "
+            f"담당 {nick}가 후속 한 수 확정 필요. (가역·원복=next 를 빈 값으로)")
+
+
+def build_auto_actions(rev_caps: list, active: list) -> list:
+    """가역 포착 → 크론-실행 가능한 가역 메타행위 목록. 현재=drift→next_augment 만."""
+    by_tid = {_ship_id(x): x for x in active}
+    actions = []
+    for c in rev_caps:
+        if c.get("type") != "drift":
+            continue  # drift 외 가역(리마인드형)은 새 알림 스트림 금지 → 여기서 실행 안 함
+        tid = c.get("source_task_id")
+        ship = by_tid.get(tid)
+        if not ship:
+            continue
+        if (ship.get("next") or "").strip():
+            continue  # 멱등: 이미 next 있으면 자율실행 대상 아님
+        actions.append({
+            "action_type": "next_augment",
+            "target_task_id": tid,
+            "reversibility": "가역",
+            "new_next": _augment_next_value(c),
+            "desc": f"next 보강 [{tid}] 표류 배에 '다음 한 수' 후보 자동 기입",
+            "dedup_key": f"gmaide_autoexec|next_augment|{tid}",
+        })
+    return actions
+
+
+def log_auto_exec(action_type: str, target: str, old_next: str, new_next: str) -> None:
+    """자율실행 사후로그 — 관찰 원장에 auto_exec 신호 + 원상복구 근거(old_next)."""
+    rec = {
+        "observed_at": now_str(),
+        "source": "gm_aide_auto_exec",
+        "signal_type": "auto_exec",
+        "summary": f"[{target}] 가역 자율실행: {action_type} (표류 배 next 자동보강)",
+        "evidence": f"old_next={old_next!r} new_next_요약={new_next[:60]!r}",
+        "pattern_hint": "가역 메타행위 자율실행 — 원복 가능(ship.aide_auto_exec.old_next)",
+        "reversibility": "가역",
+        "dedup_key": f"gmaide_autoexec|{action_type}|{target}",
+    }
+    try:
+        with open(LEDGER, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"[WARN] auto_exec 원장 기록 실패: {e}")
+
+
+def apply_auto_actions(actions: list, archive: list) -> int:
+    """라이브(ON) 전용: read-before-write 재로드 후 가역 메타행위 적용 + 사후로그.
+    각 배에 aide_auto_exec(원복 근거) 기록. G1 입항 기록 = 원장 auto_exec 로그."""
+    if not actions:
+        return 0
+    fresh = read_json(QUEUE_ACTIVE, [])
+    by_tid = {_ship_id(x): x for x in fresh}
+    applied = 0
+    for a in actions[:MAX_AUTO_ACTIONS_PER_RUN]:
+        ship = by_tid.get(a["target_task_id"])
+        if not ship:
+            continue
+        if (ship.get("next") or "").strip():
+            continue  # 재확인(동시성) — 이미 채워졌으면 skip
+        old_next = ship.get("next", "")
+        ship["next"] = a["new_next"]
+        ship["aide_auto_exec"] = {
+            "action": a["action_type"],
+            "at": now_str(),
+            "old_next": old_next,
+            "restore": "next 를 old_next 값으로 되돌리면 원상복구(가역)",
+        }
+        log_auto_exec(a["action_type"], a["target_task_id"], old_next, a["new_next"])
+        applied += 1
+    if applied:
+        QUEUE_ACTIVE.write_text(json.dumps(fresh, ensure_ascii=False, indent=2), encoding="utf-8")
+    return applied
+
+
+# ═══════════════════════════════════════════
 #  메인
 # ═══════════════════════════════════════════
-def run(commit: bool = False) -> dict:
+def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
     mode = "라이브 제안등록(--commit)" if commit else "드라이런"
     print(f"[시작] GM 보좌 포착 스캔 ({mode}) — {now_str()}")
 
@@ -368,6 +481,22 @@ def run(commit: bool = False) -> dict:
             registered.append(ship)
             print(f"  + #{ship['ship_no']} {ship['title']}  (clevel={ship['clevel']})")
 
+    # ── phase2: 가역 자율실행 레이어 (휴면 기본 · GM go 후에만 ON) ──
+    auto_on = auto_exec_enabled(auto_exec_flag)
+    auto_actions = build_auto_actions(rev, active)
+    switch = "🟢 라이브(ON)" if auto_on else "🌙 휴면(OFF·dry-run)"
+    print(f"\n[phase2] 가역 자율실행 레이어 — {switch} · 대상 {len(auto_actions)}건 (가역 메타행위만)")
+    auto_applied = 0
+    if not auto_actions:
+        print("  (자율실행할 가역 메타행위 없음)")
+    elif not auto_on:
+        for a in auto_actions[:MAX_AUTO_ACTIONS_PER_RUN]:
+            print(f"  [dry-run] 자율실행 예정: {a['desc']}")
+        print(f"  (휴면 — {AUTO_EXEC_ENV} OFF. 실제 변경 0. 라이브 발효=GM go 후 ON)")
+    else:
+        auto_applied = apply_auto_actions(auto_actions, archive)
+        print(f"  ✅ 가역 자율실행 {auto_applied}건 적용 + 사후로그(원장 auto_exec·원복근거 기록).")
+
     result = {
         "captured": len(captures),
         "reversible": len(rev),
@@ -375,10 +504,13 @@ def run(commit: bool = False) -> dict:
         "registered": len(registered),
         "skipped_dedup": skipped_dedup,
         "overflow": len(overflow),
+        "auto_exec_on": auto_on,
+        "auto_actions": len(auto_actions),
+        "auto_applied": auto_applied,
     }
 
     if not commit:
-        print("\n  (드라이런 — 큐 변경 없음. 실제 등록은 --commit)")
+        print("\n  (드라이런 — 제안 배 큐 변경 없음. 실제 등록은 --commit)")
         if overflow:
             print(f"  ※ cap 초과 {len(overflow)}건은 --commit 시 스캔 로그에 기록되고 이번엔 미등록.")
         return result
@@ -409,6 +541,8 @@ def run(commit: bool = False) -> dict:
         skipped_dedup=skipped_dedup,
         overflow=[c["dedup_key"] for c in overflow],
         capture_keys=[c["dedup_key"] for c in captures],
+        auto_exec_on=auto_on,
+        auto_applied=auto_applied,
     )
     print(f"[완료] ({now_str()}) — 스캔 로그: {SCAN_LOG.name}")
     return result
@@ -421,8 +555,11 @@ def main():
     )
     parser.add_argument("--commit", action="store_true",
                         help="제안 배 실제 등록(_queue.json 갱신 + 스캔 로그). 미지정 시 드라이런")
+    parser.add_argument("--auto-exec", action="store_true",
+                        help=f"phase2 가역 자율실행 라이브 발효(로컬 시뮬용). "
+                             f"기본 휴면 · 상시 스위치=환경변수 {AUTO_EXEC_ENV}=1 (GM go 후에만)")
     args = parser.parse_args()
-    run(commit=args.commit)
+    run(commit=args.commit, auto_exec_flag=args.auto_exec)
 
 
 if __name__ == "__main__":
