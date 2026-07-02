@@ -652,5 +652,19 @@
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "10b2ab618ab7d970d8ed6e2ee9b0e7ae7457ea4b",
     "ship_no": 250
+  },
+  {
+    "task_id": "CTO-2026-07-02-ADHOC-8ddffb51",
+    "clevel": "cto",
+    "title": "[시토] 모델 재시도 정책 재설계 - 일반오류엔 opus만 재시도, 강등은 모델차단시만",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-02",
+    "processed_at": "2026-07-02",
+    "artifact": "2026-07-01 실패건 원인=클로드 서버 일시장애인데 opus/sonnet/haiku가 같은\nAnthropic 인프라를 써서 낮은 모델로 강등해도 ①같이 죽어있을 확률이 높고\n②살아도 품질만 깎인다는 GM 지적 반영. 일반/서버성 오류(타임아웃·exit≠0·\n빈응답)는 같은 모델(우선 opus)을 백오프 재시도 후 소진되면 (None,None)\n반환, 낮은 모델로 내려가지 않는다. 강등은 \"모델 자체가 막힌\" 신호\n(_is_model_blocked)일 때만. 벽시계 상한: opus 재시도 최악 450s(7.5분) <\n예약작업 1 (CLI ad-hoc · 커밋 8ddffb51)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8ddffb511d57dde333a4807bdd2fc4021e0b8670",
+    "ship_no": 251
   }
 ]
