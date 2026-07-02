@@ -39,6 +39,11 @@
   .ebtn.edit{background:var(--surface); color:var(--accent-soft); border:1px solid var(--accent);}
   .ebtn.save{background:var(--accent); color:#fff; border:none;}
   .ebtn.cancel{background:var(--surface); color:var(--dim); border:1px solid var(--border-strong);}
+  .ebtn.chair{background:var(--surface); color:var(--gold); border:1px solid var(--border-strong);}
+  .ebtn.chair.on{background:var(--gold); color:#221F20; border-color:var(--gold); font-weight:700;}
+
+  /* ── 경영진 보고 인쇄 배너(화면 숨김·인쇄+경영진 보고 모드에서만) ── */
+  .print-head{display:none;}
 
   /* ── 월 헤더 ── */
   .month-head{margin:6px 0 14px; padding:12px 15px; border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:11px; background:var(--paper); display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;}
@@ -129,6 +134,10 @@
     .mbar>i{background:#666 !important;}
     .chip{color:#000 !important; background:#fff !important; border-color:#666 !important;}
     .obadge, .mstat{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
+    body.chair-mode .print-head{display:block !important; text-align:center; margin:0 0 12px; padding-bottom:8px; border-bottom:1.5px solid #999;}
+    body.chair-mode .print-head .ph-title{font-size:15px; font-weight:800; color:#111 !important;}
+    body.chair-mode .print-head .ph-sub{font-size:11px; color:#444 !important; margin-top:3px;}
+    .chip.own{font-weight:700;}
   }
 </style>
 </head>
@@ -155,9 +164,13 @@
   <div class="month-bar">
     <label for="month-sel">월 선택</label>
     <select id="month-sel"></select>
+    <button class="ebtn chair" id="chair-toggle" onclick="window._toggleChair()" title="C-Level 표기를 공식 직함으로 전환(경영진 제출용)">👔 경영진 보고</button>
     <span id="edit-wrap"></span>
     <span id="save-flag" style="font-size:11px;color:var(--dim);"></span>
   </div>
+
+  <!-- 경영진 보고 인쇄 배너(화면 숨김·인쇄+경영진 보고 모드에서만 표시) -->
+  <div class="print-head" id="print-head"></div>
 
   <!-- 월 헤더 -->
   <div class="month-head" id="month-head" style="display:none;"></div>
@@ -197,11 +210,18 @@
   var _homeSales = undefined; // home_kpi sales.month (라이브) — undefined=미조회, null=미측정
   var _editMode = false;
 
+  // ── 경영진 보고 모드: C-Level 표기를 닉네임 → 공식 직함으로 전환(화면 전환만·정본 무변경) ──
+  var TITLE_MAP = {ceo:"AI CEO", cmo:"AI CMO", coo:"AI COO", cto:"AI CTO", cpo:"AI CPO", cfo:"AI CFO", chro:"AI CHRO", gm:"대표(GM)"};
+  var _chairMode = false;
+  try{ _chairMode = (localStorage.getItem('wp_mops_chair') === '1'); }catch(e){}
+
   var esc = function(s){
     return String(s == null ? '' : s)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   };
+  // C-Level 표기: 경영진 보고 모드=공식 직함 / 기본=닉네임. (실무책임자 실명은 이 함수를 쓰지 않아 항상 실명 유지)
   var nickOf = function(role){
+    if(_chairMode && TITLE_MAP[role]) return TITLE_MAP[role];
     return (_data && _data.owner_nick && _data.owner_nick[role]) || role || '';
   };
 
@@ -431,6 +451,7 @@
     renderPractitioners();
     renderReport();
     renderEditBtn();
+    renderChairBtn();
     var sel = document.getElementById('month-sel');
     if(sel) sel.value = _sel;
   }
@@ -438,6 +459,25 @@
   // ── IME 안전 ──
   window._compOn  = function(){ window._composing = true; };
   window._compOff = function(){ window._composing = false; };
+
+  // ── 경영진 보고 토글(화면 전환만·정본 무변경) ──
+  window._toggleChair = function(){
+    _chairMode = !_chairMode;
+    try{ localStorage.setItem('wp_mops_chair', _chairMode ? '1' : '0'); }catch(e){}
+    render();
+  };
+  function renderChairBtn(){
+    var b = document.getElementById('chair-toggle');
+    if(!b) return;
+    b.className = 'ebtn chair' + (_chairMode ? ' on' : '');
+    b.textContent = _chairMode ? '👔 경영진 보고 ON' : '👔 경영진 보고';
+    document.body.classList.toggle('chair-mode', _chairMode);
+    var ph = document.getElementById('print-head');
+    if(ph){
+      ph.innerHTML = '<div class="ph-title">웰페리온 AI·ERP 운영 보고 — ' + esc(_sel || '') + '</div>' +
+                     '<div class="ph-sub">AI C-Level 7인 체계 운영</div>';
+    }
+  }
 
   window._planEdit = function(){ _editMode = true; render(); };
   window._planCancel = function(){
