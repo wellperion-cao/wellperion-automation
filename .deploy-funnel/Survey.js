@@ -1134,6 +1134,7 @@ function _miReadRows_() {
   var iOwner = _miColIdx_(hdr, ['담당','담당자']);
   var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
   var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게']);
+  var iContent = _miColIdx_(hdr, ['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항','문의사항']);  // N열 자유서술 문의내용(#1). 2026-07-02 시포·GM
   // 연락기록 3칸 — Contact1·Contact2·Contact3 헤더 우선, 못 찾으면 절대 컬럼 18/19/20(0-based 17/18/19) 폴백 (2026-06-26 시포)
   var iC1 = _miColIdx_(hdr, ['Contact1']); if (iC1 < 0) iC1 = 17;
   var iC2 = _miColIdx_(hdr, ['Contact2']); if (iC2 < 0) iC2 = 18;
@@ -1150,16 +1151,15 @@ function _miReadRows_() {
       program:  iProg  >= 0 ? String(row[iProg]  || '') : '',
       status:   iStat  >= 0 ? String(row[iStat]  || '') : '',
       channel:  (iChan >= 0 && row[iChan]) ? _canonicalChannel_(String(row[iChan])) : '',  // 유입채널 표준 10버킷(빈값은 빈값 유지)
-      tourDate: _miToISO_(iTour >= 0 ? row[iTour] : ''),
-      tourTime: _miTime_(iTour >= 0 ? row[iTour] : ''),
-      exp1:     _miToISO_(iExp1 >= 0 ? row[iExp1] : ''),
+      // ── 체험 일정 분리 저장(#4, 2026-07-02 시포·GM): 체험1 날짜=J(시설투어·상담 예약)/시간=K(체험1 확정시간), 체험2 날짜=L(시설 체험 예약2)/시간=M(체험2 확정시간).
+      //    상담=체험1(동일 1차 방문). 하위호환: 분리 날짜칸(J/L)이 비면 옛 결합칸(K/M)의 날짜부로 폴백 → 무손실.
+      exp1:     (_miToISO_(iTour >= 0 ? row[iTour] : '') || _miToISO_(iExp1 >= 0 ? row[iExp1] : '')),
       exp1Time: _miTime_(iExp1 >= 0 ? row[iExp1] : ''),
-      exp2:     _miToISO_(iExp2 >= 0 ? row[iExp2] : ''),
+      exp2:     (_miToISO_(iV2Dt >= 0 ? row[iV2Dt] : '') || _miToISO_(iExp2 >= 0 ? row[iExp2] : '')),
       exp2Time: _miTime_(iExp2 >= 0 ? row[iExp2] : ''),
-      exp3:     _miToISO_(iExp3 >= 0 ? row[iExp3] : ''),
-      exp3Time: _miTime_(iExp3 >= 0 ? row[iExp3] : ''),
-      visit2Date: _miToISO_(iV2Dt >= 0 ? row[iV2Dt] : ''),  // 2차 방문 날짜(col11) — 달력에서 누락되던 일정 보강
-      visit2Time: _miTime_(iV2Dt >= 0 ? row[iV2Dt] : ''),   // 2차 방문 시간 — 같은 셀에서 직독(시간 설정 지원, 2026-06-29 시포)
+      inquiryContent: iContent >= 0 ? String(row[iContent] || '') : '',   // 문의 내용(N열 자유서술) — #1
+      // 하위호환 유지(옛 필드 — 미사용, 잔존 참조 안전용): 상담·체험3·2차방문은 체험1/2로 흡수
+      tourDate: '', tourTime: '', exp3: '', exp3Time: '', visit2Date: '', visit2Time: '',
       visited:    (iVisited >= 0 && String(row[iVisited] == null ? '' : row[iVisited]).trim() !== '') ? true : false,  // 방문 완료 여부(독립·공백/0 오인 방지)
       visitDate:  (iVisited >= 0) ? _miToISO_(row[iVisited]) : '',  // 방문 완료일
       timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
@@ -2036,10 +2036,12 @@ function _processAction(body) {
     _maSet(['문의채널','유입채널','채널','경로'], body.channel || '유선전화');
     _maSet(['담당','담당자'], body.owner);
     _maSet(['메모','비고','담당자메모'], body.memo);
-    _maSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], body.tour);
-    _maSet(['체험1 확정시간','체험1'], body.exp1);
-    _maSet(['체험2 확정시간','체험2'], body.exp2);
-    _maSet(['체험3 확정시간','체험3'], body.exp3);
+    // 체험 일정 분리 저장(#4): 체험1 날짜→J, 시간→K / 체험2 날짜→L, 시간→M. 상담=체험1. 2026-07-02 시포·GM.
+    _maSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], body.exp1Date);  // J = 체험1 날짜
+    _maSet(['체험1 확정시간','체험1'], body.exp1Time);                                          // K = 체험1 시간
+    _maSet(['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2'], body.exp2Date);        // L = 체험2 날짜
+    _maSet(['체험2 확정시간','체험2'], body.exp2Time);                                          // M = 체험2 시간
+    _maSet(['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항'], body.inquiryContent);  // N = 문의내용(#1)
     _maSetCol(['Contact1'], 17, _fmtContact_(body.contact1));
     _maSetCol(['Contact2'], 18, _fmtContact_(body.contact2));
     _maSetCol(['Contact3'], 19, _fmtContact_(body.contact3));
@@ -2071,13 +2073,9 @@ function _processAction(body) {
         // slot = 어느 일정 칸(tour/exp1/exp2/exp3/visit2)인지 — 달력 모달 시간 설정 시 쓰기 대상 식별(2026-06-29 시포).
         mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '', visited: row.visited, visitDate: row.visitDate || '' });
       }
-      // 1차 상담: 날짜=상담칸(col9), 시간=확정시간 텍스트(col10·'11시 등록상담' 등 한글표기). 시간 누락 보강.
-      add(row.tourDate, '상담', row.tourTime || _miTimeKR_(row.exp1), 'tour');
+      // 체험1(=투어·상담·1차 방문): 날짜 J + 시간 K. 체험2(=2차 방문): 날짜 L + 시간 M. 상담=체험1. 2026-07-02 시포·GM.
       add(row.exp1, '체험', row.exp1Time, 'exp1');
       add(row.exp2, '체험', row.exp2Time, 'exp2');
-      add(row.exp3, '체험', row.exp3Time, 'exp3');
-      // 2차 방문: 날짜+시간 = 같은 셀(col11)에서 직독. 옛 데이터(시간 미기재)는 exp2 한글시간으로 폴백. 시간 설정 지원(2026-06-29 시포).
-      add(row.visit2Date, '체험', row.visit2Time || _miTimeKR_(row.exp2), 'visit2');
     });
     return _json({ ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents });
   }
@@ -2124,11 +2122,12 @@ function _processAction(body) {
     _muSet(['문의채널','유입채널','채널','경로'], body.channel);
     _muSet(['메모','비고','담당자메모'], body.memo);
     _muSet(['담당','담당자'], body.owner);
-    _muSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], body.tour);
-    _muSet(['체험1 확정시간','체험1'], body.exp1);
-    _muSet(['체험2 확정시간','체험2'], body.exp2);
-    _muSet(['체험3 확정시간','체험3'], body.exp3);
-    _muSet(['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2'], body.visit2);  // 2차 방문 날짜+시간(시간 설정 지원, 2026-06-29 시포)
+    // 체험 일정 분리 저장(#4): 체험1 날짜→J, 시간→K / 체험2 날짜→L, 시간→M. 상담=체험1. 2026-07-02 시포·GM.
+    _muSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], body.exp1Date);  // J = 체험1 날짜
+    _muSet(['체험1 확정시간','체험1'], body.exp1Time);                                          // K = 체험1 시간
+    _muSet(['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2'], body.exp2Date);        // L = 체험2 날짜
+    _muSet(['체험2 확정시간','체험2'], body.exp2Time);                                          // M = 체험2 시간
+    _muSet(['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항'], body.inquiryContent);  // N = 문의내용(#1)
     _muSetCol(['Contact1'], 17, _fmtContactOrUndef_(body.contact1));
     _muSetCol(['Contact2'], 18, _fmtContactOrUndef_(body.contact2));
     _muSetCol(['Contact3'], 19, _fmtContactOrUndef_(body.contact3));
