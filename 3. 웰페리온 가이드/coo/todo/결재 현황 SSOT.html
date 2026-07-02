@@ -108,6 +108,8 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .opinion-btn-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .opinion-btn{font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,218,0.3);cursor:pointer;font-family:inherit}
 .opinion-btn:hover{opacity:0.85}
+.opinion-del{float:right;background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:0 2px;line-height:1;margin-left:6px}
+.opinion-del:hover{color:var(--red)}
 .detail-toggle{cursor:pointer;font-size:11px;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:4px;user-select:none}
 .detail-toggle:hover{color:var(--accent)}
 .detail-toggle .arrow{transition:transform 0.18s}
@@ -226,6 +228,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   body[data-print-mode="cards"] .dash-overlay{display:none!important}
   body[data-print-mode="cards"] #approvalPrintArea{display:block!important}
   .opinion-btn-row{display:none!important}
+  .opinion-del{display:none!important}
   .opinion-block{border-top:1px solid #ccc}
   .opinion-row{background:#f5f0fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   @page{margin:10mm;size:A4}
@@ -1456,10 +1459,10 @@ function renderOpinions(t, route, midName) {
   var h = '<div class="opinion-block">';
   if (ops.length) {
     h += '<div class="opinion-title">💬 결재 의견 <span style="color:var(--dim);font-weight:600;">' + ops.length + '건 · 최종 결재권자(GM)에게 함께 전달</span></div>';
-    ops.forEach(function(o){
+    ops.forEach(function(o, idx){
       var nm = esc(o.name || o.role || '');
       var tm = esc(String(o.time || '').slice(0,16));
-      h += '<div class="opinion-row"><span class="opinion-who">' + nm + '</span><span class="opinion-time">' + tm + '</span><div class="opinion-text">' + esc(o.text || '') + '</div></div>';
+      h += '<div class="opinion-row"><button onclick="event.stopPropagation();deleteOpinion(\'' + escAttr(t.id) + '\',' + idx + ')" class="opinion-del" title="이 의견 삭제 (GM 비밀번호)">✕</button><span class="opinion-who">' + nm + '</span><span class="opinion-time">' + tm + '</span><div class="opinion-text">' + esc(o.text || '') + '</div></div>';
     });
   }
   var btns = '';
@@ -1481,6 +1484,18 @@ async function addOpinion(taskId, role, name) {
     var res = await r.json();
     if (res.ok) { loadTasks(); }
     else { alert('의견 등록 실패: ' + (res.error || '알 수 없는 오류')); }
+  } catch (e) { alert('연결 실패: ' + e.message); }
+}
+async function deleteOpinion(taskId, idx) {
+  if (!confirm('이 결재 의견을 삭제할까요?')) return;
+  var pin = prompt('GM 비밀번호를 입력하세요 (의견 삭제):');
+  if (pin === null || pin === '') return;
+  var params = new URLSearchParams({ action:'todo_opinion_delete', id:taskId, idx:String(idx), pin:pin });
+  try {
+    var r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect:'follow' });
+    var res = await r.json();
+    if (res.ok) { loadTasks(); }
+    else { alert('의견 삭제 실패: ' + (res.error || '알 수 없는 오류')); }
   } catch (e) { alert('연결 실패: ' + e.message); }
 }
 

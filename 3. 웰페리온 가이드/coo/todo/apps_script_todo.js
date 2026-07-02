@@ -927,6 +927,31 @@ function _processTodoAction(body) {
       return _json({ ok: true, id: id, message: '의견 등록됨', count: _ops.length });
     }
 
+    // ─── [결재 의견 삭제] GM 비밀번호로 특정 의견(index) 제거. 권한=최종 결재권자(GM). (2026-07-02 시우) ───
+    if (action === 'todo_opinion_delete') {
+      const sh = initTodoSheet();
+      const id = body.id;
+      const idx = parseInt(body.idx, 10);
+      if (!id || isNaN(idx)) return _json({ ok: false, error: 'id·idx 필수' });
+      var _expected = String(_prop('APPROVAL_PIN_GM') || '').trim();
+      var _submitted = String(body.pin || '').trim();
+      if (!_expected) return _json({ ok: false, error: 'GM 비밀번호가 서버에 설정되지 않았습니다.' });
+      if (_submitted !== _expected) return _json({ ok: false, error: '비밀번호가 일치하지 않습니다.' });
+      const rowNum = _findRow(sh, id);
+      if (rowNum < 0) return _json({ ok: false, error: '해당 ID를 찾을 수 없습니다: ' + id });
+      const existing = sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).getValues()[0];
+      const _opIdx = TODO_HEADERS.indexOf('결재의견');
+      var _ops = [];
+      try { var _raw = String(existing[_opIdx] || ''); if (_raw) { var _p = JSON.parse(_raw); if (Array.isArray(_p)) _ops = _p; } } catch (e) { _ops = []; }
+      if (idx < 0 || idx >= _ops.length) return _json({ ok: false, error: '삭제할 의견을 찾을 수 없습니다(index 범위 초과).' });
+      _ops.splice(idx, 1);
+      existing[_opIdx] = _ops.length ? JSON.stringify(_ops) : '';
+      existing[TODO_HEADERS.indexOf('수정일')] = _now();
+      sh.getRange(rowNum, 1, 1, TODO_HEADERS.length).setValues([existing]);
+      _notifyTelegram('🗑 <b>[결재 의견 삭제]</b>\n📌 ' + String(existing[TODO_HEADERS.indexOf('업무명')]||'-') + '\n🆔 ' + id + ' · 남은 의견 ' + _ops.length + '건');
+      return _json({ ok: true, id: id, message: '의견 삭제됨', count: _ops.length });
+    }
+
     // ─── 결재 리셋 (GM 전용) — 결재요청 전으로 복원, 업무현황에서 수정 가능 (2026-06-05 GM) ───
     if (action === 'todo_reset') {
       const sh = initTodoSheet();
