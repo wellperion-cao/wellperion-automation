@@ -112,16 +112,6 @@
   .sbar.g>i{background:linear-gradient(90deg,#3f8f4f,var(--green));}
   .sbar.gold>i{background:linear-gradient(90deg,#b8860b,var(--gold));}
 
-  /* ── 📣 시모(CMO) 자율 마케팅 · 최근 자율 발행 리스트 (review_queue 실데이터) ── */
-  .pub-list{border:1px solid var(--border); border-radius:12px; background:var(--paper); overflow:hidden; margin-top:11px;}
-  .pub-item{display:flex; align-items:baseline; gap:9px; padding:8px 13px; border-top:1px solid var(--border); flex-wrap:wrap;}
-  .pub-item:first-child{border-top:none;}
-  .pub-ch{flex-shrink:0; font-size:9.5px; font-weight:800; border-radius:5px; padding:2px 7px; color:var(--pink); background:rgba(232,138,192,0.12); border:1px solid rgba(232,138,192,0.30); white-space:nowrap;}
-  .pub-tt{flex:1; min-width:120px; font-size:12px; color:var(--text-soft);}
-  .pub-tt a{color:var(--accent-soft); text-decoration:none;}
-  .pub-tt a:hover{text-decoration:underline;}
-  .pub-when{flex-shrink:0; font-size:10.5px; color:var(--dim); font-variant-numeric:tabular-nums;}
-
   /* ── 📣 시모 폐루프 5단계 미니 흐름도 (project_cmo_marketing_pipeline_loop) ── */
   .cmo-loop{display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin:2px 0 12px; padding:10px 12px; border:1px solid var(--border-strong); border-radius:10px; background:rgba(232,138,192,0.05);}
   .cmo-loop-lbl{font-size:9px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; color:var(--dim); margin-right:2px; flex-shrink:0;}
@@ -347,10 +337,6 @@
     </div>
     <div class="routines" id="cmo-routines">
       <div class="feed-status" style="grid-column:1/-1;">시모 자율 마케팅 현황을 불러오는 중…</div>
-    </div>
-    <div style="font-size:11px;font-weight:700;color:var(--dim);margin:12px 0 4px;">📤 시모 최근 자율 발행 (최근 5건)</div>
-    <div class="pub-list" id="cmo-pub-list">
-      <div class="feed-status">시모 최근 자율 발행을 불러오는 중…</div>
     </div>
   </section>
 
@@ -743,10 +729,8 @@
   }
   function renderCmoMarketing(queue){
     var routEl = document.getElementById('cmo-routines');
-    var pubEl  = document.getElementById('cmo-pub-list');
     if(!Array.isArray(queue) || !queue.length){
       routEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">발행 큐 데이터 없음.</div>';
-      pubEl.innerHTML = '<div class="feed-status">발행 이력 없음.</div>';
       return;
     }
     var published = queue.filter(function(q){ return q.status === '발행완료'; });
@@ -758,7 +742,8 @@
     // 1) 콘텐츠 자동발행 파이프라인
     cards.push({ ico:'📤', nm:'콘텐츠 자동발행 파이프라인', cy:'제작→M3 검수큐→GM 승인→5채널 자동발행', rc:'var(--pink)',
       pill:['on','상시'], rows:[
-        ['발행완료', '<b>' + published.length + '</b>건 (IG ' + (byCh['IG']||0) + '·블로그 ' + (byCh['블로그']||0) + '·카페 ' + (byCh['카페']||0) + '·카카오 ' + (byCh['카카오']||0) + '·당근 ' + (byCh['당근']||0) + ')'],
+        ['발행완료', '<b>' + published.length + '</b>건 (IG ' + (byCh['IG']||0) + '·블로그 ' + (byCh['블로그']||0) + '·카페 ' + (byCh['카페']||0) + '·카카오 ' + (byCh['카카오']||0) + '·당근 ' + (byCh['당근']||0) + ')' +
+          '<span style="color:var(--dim);font-size:10px"> · 카카오=연동 미비(공개URL·추적 없음)</span>'],
         ['검수대기', '<b>' + pending.length + '</b>건'],
         ['경로', 'IG=봇 자동 · 블로그·카페·카카오·당근=스크립트 자동']
       ]});
@@ -807,24 +792,6 @@
           '<span class="pill ' + c.pill[0] + '">' + esc(c.pill[1]) + '</span></div>' +
         rows + '</div>';
     }).join('');
-
-    // 최근 자율 발행 5건
-    var recent = published.filter(function(q){ return q.published_at; })
-      .slice().sort(function(a,b){ return ts(b.published_at) - ts(a.published_at); }).slice(0, 5);
-    if(!recent.length){
-      pubEl.innerHTML = '<div class="feed-status">최근 발행 이력 없음.</div>';
-    } else {
-      pubEl.innerHTML = recent.map(function(q){
-        var tt = q.post_url
-          ? '<a href="' + esc(q.post_url) + '" target="_blank" rel="noopener">' + esc(q.title || q.id || '') + '</a>'
-          : esc(q.title || q.id || '');
-        return '<div class="pub-item">' +
-          '<span class="pub-ch">' + esc(cmoChannelBucket(q.channel)) + '</span>' +
-          '<span class="pub-tt">' + tt + '</span>' +
-          '<span class="pub-when">' + fmtWhen(q.published_at) + '</span>' +
-        '</div>';
-      }).join('');
-    }
   }
 
   // ═══════════ 섹션 2: 통합 처리 이력 피드 ═══════════
@@ -1102,7 +1069,6 @@
     try{ renderRoutines(d); }catch(e){ document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">상시 체계 표시 오류 — 로그 파싱 실패.</div>'; }
     try{ renderCmoMarketing(cmoQueue); }catch(e){
       document.getElementById('cmo-routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">시모 자율 마케팅 표시 오류.</div>';
-      document.getElementById('cmo-pub-list').innerHTML = '<div class="feed-status">최근 발행 표시 오류.</div>';
     }
     try{ renderFeed(feedItems); }catch(e){ document.getElementById('feed').innerHTML = '<div class="feed-status">처리 이력 표시 오류.</div>'; }
     try{ renderStats(d, feedItems); }catch(e){ document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">성과 지표 계산 오류.</div>'; }
@@ -1115,7 +1081,6 @@
     document.getElementById('ns-embed').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다. 잠시 후 새로고침 해주세요.</div>';
     document.getElementById('cmo-routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
-    document.getElementById('cmo-pub-list').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('feed').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">현황을 아직 불러오지 못했습니다.</span>';
