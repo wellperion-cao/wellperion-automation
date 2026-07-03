@@ -39,6 +39,12 @@
   .hero-line{font-size:14.5px; font-weight:700; color:var(--text-soft); line-height:1.55; padding:13px 16px; border:1px solid rgba(124,58,237,0.32); border-left:4px solid var(--accent); border-radius:11px; background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(240,198,116,0.05));}
   .hero-line b{color:var(--accent-soft); font-size:16px; font-weight:800;}
 
+  /* ── 정직 프레이밍 노트: 자율=제안·감시 위주 현상태 명시(배237) ── */
+  .honest-note{display:flex; gap:9px; align-items:flex-start; margin:2px 0 18px; padding:10px 13px; border:1px solid var(--border-strong); border-left:3px solid var(--dim); border-radius:9px; background:var(--surface);}
+  .honest-note .hn-ico{font-size:14px; line-height:1.4; opacity:0.8;}
+  .honest-note .hn-txt{font-size:11.5px; color:var(--dim); line-height:1.55;}
+  .honest-note .hn-txt b{color:var(--text-soft); font-weight:700;}
+
   /* ── 2층 골격: ① 자율로 한 일 / ② 돌아가는 자동화 (배237) ── */
   h2.layer-h2{font-size:17px; font-weight:800; letter-spacing:-0.01em; margin:8px 0 4px; padding-bottom:8px; border-bottom:2px solid var(--border-strong);}
   #layer-autonomy{margin-top:6px;}
@@ -310,6 +316,12 @@
       <div class="feed-status">오늘의 항로 추천을 불러오는 중…</div>
     </div>
   </section>
+
+  <!-- ════ 정직 프레이밍 노트(배237) ════ -->
+  <div class="honest-note">
+    <span class="hn-ico">ℹ️</span>
+    <div class="hn-txt">지금 자율은 주로 <b>포착·제안·감시</b> 단계입니다. 가역 작업만 자율 실행하고, 비가역은 GM 승인 후 실행합니다. 완료 배에 '다음'이 항상 채워져 표류가 없어 자율실행(phase2)은 대기 상태(정상)입니다.</div>
+  </div>
 
   <!-- ════ 섹션 1 · 이 루프를 돌리는 자율 기계(라이브) ════ -->
   <h2 class="sec" id="sec-routines">🔴 상시 자율 체계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프를 굴리는 라이브 엔진 · 4층 중 ②③④ 실체)</span></h2>
