@@ -311,7 +311,7 @@ function doGet(e) {
   if (action === 'board')     return getBoard(e.parameter);
   if (action === 'weekly')    return handleWeekly(e.parameter);
   if (action === 'today_live') return handleTodayLive(e.parameter);   // 오늘 실시간 현황(cr 원장 기반·읽기전용) — home·대시보드 단일값. 2026-06-16 시우.
-  if (action === 'monthly_report') return handleMonthlyReport(e.parameter);   // 지원부 점검 월간 리포트 집계(snapshot+이슈대장). 완료율=잠정(배14 분모정합 선결). 배208 1단계. 2026-07-03 시우.
+  if (action === 'monthly_report') return handleMonthlyReport(e.parameter);   // 지원부 점검 월간 리포트 집계(snapshot+이슈대장). 완료율=denomNote 월별 분기(7월+ 확정/6월 이전 참고). 배208 후속. 2026-07-03 시우.
   if (action === 'issuelog')  return handleIssueLogGet(e.parameter);
   if (action === 'setup_issue_tabs') { setupIssueLogSheets(); return jsonRes({ok:true,msg:'이슈대장 탭 생성 완료'}); }
   if (action === 'setup_facility_tabs') { return setupFacilitySheets(); }
@@ -2863,7 +2863,7 @@ function handleWeekly(params) {
 // action=monthly_report — 지원부 점검 월간 리포트 집계 (배208 1단계, 2026-07-03 시우)
 // GET ?action=monthly_report&dept=support&month=YYYY-MM (month 생략 시 이번달)
 // IO(handleMonthlyReport)/순수집계(_aggregateMonthly) 분리 — 후자는 SpreadsheetApp 무의존(Node 단위테스트 가능).
-// 완료율=잠정(배14 분모정합 선결 — 화면·서버 분모 통일 후 확정). 라이브 배포는 GM go 별도.
+// 완료율=denomNote 월별 분기(배14 2026-07-03 분모 시트 단일화 기준) — 7월+ 확정, 6월 이전 참고값. 배208 후속.
 // ════════════════════════════════════════════
 
 // 날짜값(Date객체 또는 'YYYY-MM-DD'·'YYYY. M. D' 등 문자열)에서 {y,m,d} 추출. 실패 시 null.
@@ -3043,6 +3043,11 @@ function _aggregateMonthly(snapRows, issueRows, month) {
     improvements.push('표본 부족 — 추세 판단 유보');
   }
 
+  // denomNote — 배14(2026-07-03) 분모 시트 단일화 반영: 대상월이 그 이전이면 참고값, 이후면 확정. 배208 후속(2026-07-03 시우).
+  var denomNote = (month >= '2026-07')
+    ? '완료율=확정(분모 시트 단일화 반영, 배14)'
+    : '완료율=참고값(2026-07-03 분모 통일 이전 데이터·집계기준 상이)';
+
   return {
     ok: true,
     dept: null,   // handleMonthlyReport(IO)에서 채움
@@ -3053,9 +3058,10 @@ function _aggregateMonthly(snapRows, issueRows, month) {
     byZone: byZone,
     byShift: byShift,
     byInspector: byInspector,
-    issues: { total: monthTotals.issueCount, byZone: issueByZone, list: issueList, byStatus: {} },
+    // total=이슈건수(9열) 누적, sessionsWithIssue=이슈내용(10열) 비지 않은 세션 수 — '건수' 오해 방지(배208 후속). 2026-07-03 시우.
+    issues: { total: monthTotals.issueCount, sessionsWithIssue: issueList.length, byZone: issueByZone, list: issueList, byStatus: {} },
     improvements: improvements,
-    denomNote: '완료율=잠정(배14 분모정합 선결 — 화면·서버 분모 통일 후 확정)',
+    denomNote: denomNote,
     denomInconsistent: denomInconsistent
   };
 }

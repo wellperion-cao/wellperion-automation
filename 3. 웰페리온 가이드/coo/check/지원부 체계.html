@@ -7673,8 +7673,11 @@ function mrDefaultMonth(){
 }
 function mrEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function mrPctColor(p){ p=Number(p)||0; return p>=90?'var(--green)':p>=60?'var(--yellow)':'var(--red)'; }
-function mrBadgeProvisional(){
-  return '<span title="분모정합(배14) 확정 전 잠정값" style="display:inline-block;font-size:10px;font-weight:700;color:#a8710a;background:rgba(230,148,78,0.18);border-radius:10px;padding:2px 8px;margin-left:6px;cursor:help;vertical-align:middle;">잠정</span>';
+// denomNote(서버 문구) 기반 확정/참고값 판정 — 배208 후속(하드코딩 '잠정' 제거, 2026-07-03).
+function mrDenomWord(note){ return (String(note||'').indexOf('확정')>=0) ? '확정' : '참고값'; }
+function mrDenomBadge(note){
+  const word=mrDenomWord(note), ok=(word==='확정');
+  return '<span title="'+mrEsc(note||'')+'" style="display:inline-block;font-size:10px;font-weight:700;color:'+(ok?'#1a7f37':'#a8710a')+';background:'+(ok?'rgba(26,127,55,0.14)':'rgba(230,148,78,0.18)')+';border-radius:10px;padding:2px 8px;margin-left:6px;cursor:help;vertical-align:middle;">'+word+'</span>';
 }
 function mrEnsureMonthInput(){
   const el=document.getElementById('mrMonthInput');
@@ -7720,10 +7723,10 @@ function renderMrKpi(data){
     '<div class="dash-stat-row">'
     +'<div class="dash-stat-card"><div class="num">'+(t.sessionCount||0)+'</div><div class="label">세션수</div></div>'
     +'<div class="dash-stat-card"><div class="num">'+(t.activeDays||0)+'</div><div class="label">활성일</div></div>'
-    +'<div class="dash-stat-card"><div class="num" style="color:'+mrPctColor(pct)+'">'+pct+'%'+mrBadgeProvisional()+'</div><div class="label">완료율</div></div>'
+    +'<div class="dash-stat-card"><div class="num" style="color:'+mrPctColor(pct)+'">'+pct+'%'+mrDenomBadge(data.denomNote)+'</div><div class="label">완료율</div></div>'
     +'<div class="dash-stat-card"><div class="num" style="color:var(--red)">'+(t.issueCount||0)+'</div><div class="label">이슈 총계</div></div>'
     +'</div>'
-    +'<div style="font-size:11px;color:var(--dim);margin:-6px 0 16px;">'+mrEsc(data.denomNote||'완료율은 분모정합(배14) 확정 전 잠정값입니다.')+(data.testExcludedCount?(' · 테스트 제외 '+data.testExcludedCount+'건'):'')+'</div>';
+    +'<div style="font-size:11px;color:var(--dim);margin:-6px 0 16px;">'+mrEsc(data.denomNote||'')+(data.testExcludedCount?(' · 테스트 제외 '+data.testExcludedCount+'건'):'')+'</div>';
 }
 
 function renderMrDaily(data){
@@ -7797,7 +7800,8 @@ function renderMrIssues(data){
     if(issues.byZone && typeof issues.byZone==='object'){
       byZoneHtml=Object.keys(issues.byZone).map(function(z){return mrEsc(z)+' '+issues.byZone[z]+'건';}).join(' · ');
     }
-    sumEl.innerHTML='<div style="font-size:13px;margin-bottom:6px;"><b>이슈 총계 '+(issues.total||0)+'건</b>'+(byZoneHtml?' — '+byZoneHtml:'')+'</div>';
+    const swiHtml=(issues.sessionsWithIssue!=null)?(' <span style="color:var(--dim);font-weight:400;">(이슈 있는 세션 '+issues.sessionsWithIssue+'건)</span>'):'';
+    sumEl.innerHTML='<div style="font-size:13px;margin-bottom:6px;"><b>이슈 항목 누적 '+(issues.total||0)+'건</b>'+swiHtml+(byZoneHtml?' — '+byZoneHtml:'')+'</div>';
   }
   if(detailsEl){
     const summaryEl=detailsEl.querySelector('summary');
@@ -7841,7 +7845,7 @@ function renderA3MonthlyFromData(month,data){
   const titleEl=doc.querySelector('.mrp-main-title');
   if(titleEl) titleEl.textContent='지원부 점검 체계 — '+month+' 월간 보고 (KPI 실측)';
   const subEl=doc.querySelector('.mrp-sub-title');
-  if(subEl) subEl.innerHTML=mrEsc(data.denomNote||'완료율은 분모정합(배14) 확정 전 잠정값')+' &nbsp;·&nbsp; 세션·구역·교대·점검자별 실적 및 이슈·개선 시사점 자동 집계';
+  if(subEl) subEl.innerHTML=mrEsc(data.denomNote||'')+' &nbsp;·&nbsp; 세션·구역·교대·점검자별 실적 및 이슈·개선 시사점 자동 집계';
   const metaEl=doc.querySelector('.mrp-title-meta');
   if(metaEl) metaEl.innerHTML='작성: AI COO(시우) &nbsp;·&nbsp; '+kstToday()+'<br>대상월: '+month+' &nbsp;·&nbsp; 보고: 경영진';
 
@@ -7850,7 +7854,7 @@ function renderA3MonthlyFromData(month,data){
     kpiRow.innerHTML=
       mrA3Chip((t.sessionCount||0)+' 세션','월간 점검 세션 수(회차 합계)')
       +mrA3Chip((t.activeDays||0)+' 일','점검이 1회 이상 실시된 활성일수')
-      +mrA3Chip('<span class="mrp-kpi-num">'+pct+'%</span> 완료율 <span style="font-size:10px;color:#a8710a;">(잠정)</span>','분모정합(배14) 확정 전 잠정값 — '+mrEsc(data.denomNote||''))
+      +mrA3Chip('<span class="mrp-kpi-num">'+pct+'%</span> 완료율 <span style="font-size:10px;color:'+(mrDenomWord(data.denomNote)==='확정'?'#1a7f37':'#a8710a')+';">('+mrDenomWord(data.denomNote)+')</span>',mrEsc(data.denomNote||''))
       +mrA3Chip('<span class="mrp-kpi-num">'+(t.issueCount||0)+'건</span> 이슈','월중 등록된 이슈 총계');
   }
 
@@ -7863,7 +7867,7 @@ function renderA3MonthlyFromData(month,data){
 
     bodyRow.innerHTML=
       '<div class="mrp-col"><div class="mrp-col-head">① 일별·구역별 실적</div>'
-      +'<div class="mrp-card"><div class="mrp-card-title">일별 완료율(잠정)</div><div style="font-size:10px;line-height:1.9;word-break:break-all;">'+(dailyCells||'데이터 없음')+'</div></div>'
+      +'<div class="mrp-card"><div class="mrp-card-title">일별 완료율('+mrDenomWord(data.denomNote)+')</div><div style="font-size:10px;line-height:1.9;word-break:break-all;">'+(dailyCells||'데이터 없음')+'</div></div>'
       +'<div class="mrp-card"><div class="mrp-card-title">구역별</div><table style="width:100%;font-size:10px;border-collapse:collapse;"><tr style="font-weight:800;"><td>구역</td><td>세션</td><td>완료율</td><td>이슈</td></tr>'+(zoneRows||'<tr><td colspan="4">데이터 없음</td></tr>')+'</table></div>'
       +'</div>'
       +'<div class="mrp-col"><div class="mrp-col-head">② 교대·점검자별 실적</div>'
@@ -7885,7 +7889,7 @@ function renderA3MonthlyFromData(month,data){
   }
 
   const footerEl=doc.querySelector('.mrp-footer');
-  if(footerEl) footerEl.innerHTML='정본: monthly_report API(라이브) · status/_queue.json(배208) &nbsp;|&nbsp; 완료율은 분모정합(배14) 확정 전 잠정값. 본 인쇄물은 '+kstToday()+' 기준 생성.';
+  if(footerEl) footerEl.innerHTML='정본: monthly_report API(라이브) · status/_queue.json(배208) &nbsp;|&nbsp; '+mrEsc(data.denomNote||'')+'. 본 인쇄물은 '+kstToday()+' 기준 생성.';
 
   return true;
 }
