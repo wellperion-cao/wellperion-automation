@@ -178,6 +178,7 @@
   .findept td.num, .findept th.num{text-align:right; font-variant-numeric:tabular-nums;}
   .findept td.pctc{color:var(--accent-soft); font-weight:700;}
   .findept td.sub2{color:var(--dim); font-size:11px;}
+  .findept td.neg{color:var(--rose);}
   .findept tbody tr.etc td{color:var(--dim); font-style:italic;}
   .findept tbody tr.tot td{border-top:1px solid var(--border-strong); font-weight:700; color:var(--text); background:var(--surface);}
 
@@ -288,7 +289,6 @@
     .fin-hero-sub{color:#3c7a4a !important;}
     .fin-dept-h{color:#222 !important;} .findept tbody td{color:#333 !important;} .findept td.pctc{color:#444 !important;}
     .findept tbody tr.tot td{background:#f2f2f2 !important; color:#111 !important;}
-    .fin-exp-dept{display:none !important;}  /* 세로 1페이지 밀도 — 부서별 매출만(지출 부서분해 생략) */
     /* 📊 월말 결과 보고 히어로 = 맨 위(한눈 요약보다 먼저) 두 단 전폭 */
     .blk.report-hero{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
     .blk.report-hero h2.sec{margin-top:2px;}
@@ -438,6 +438,7 @@
   var GAS_URL  = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
   var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
   var PLAN_PATH = 'status/monthly_ops_plan.json';
+  var TARGETS_PATH = 'status/sales_targets.json'; // 팀별 월 목표매출 정본(고정) — 부서별 매출(목표 vs 실적) 결합표 기준선.
   var FIN_YEAR = '2026';
   var SALES_TARGET_DEFAULT = 650000000; // 월 매출 목표 기본값(6.5억). 해당 월 objectives에 매출 metric.target 있으면 그 값 우선.
   // ── 매출·지출 SSOT = AI CFO 매출현황(cfo/finance/매출지출현황.html). 이 페이지는 그 페이지의 소스를 그대로 미러(읽기전용). ──
@@ -493,8 +494,11 @@
   var _cfoProc = null;   // 구매성: 월별 합계 배열[12](라이브 proc_summary 우선·실패시 폴백) — 전체지출=인건비+구매성
   var _cfoProcDept = null; // 구매성 부서맵 {부서:[12]} — 선택월 부서별 지출 분해용
   var _procLive = false;   // 구매성 라이브 조회 성공 여부(false=폴백 스냅샷 사용중 — 화면에 정직 표기)
-  var _cfoSalesDept = null; // 매출 부서맵 {부서:[12]} — 선택월 부서별 매출 분해용
+  var _cfoSalesDept = null; // 매출 부서맵 {부서:[12]} — 선택월 부서별 매출 분해용(team_sales 실패 시 폴백)
   var _cfoLaborDept = null; // 인건비 부서맵 {부서:[12]}(강사→부서 집계·운영부 포함) — 선택월 부서별 지출 분해용
+  var _salesTargets = null;  // status/sales_targets.json(팀별 월 목표매출 정본, 고정) — 부서별 매출(목표 vs 실적) 결합표 기준선
+  var _instrTeamMap = {};    // 강사이름 → 팀(부서) 매핑(인건비 시트 A/B열 로스터에서 구성) — team_sales의 강사별 실적을 팀 단위로 합산하는 데 사용(PII 미노출·집계에만 사용)
+  var _teamSalesCache = {};  // 'YYYY-M' → {status:'loading'|'done', raw:team_sales 응답} — 선택월별 라이브 팀 매출 실적 캐시
   var _nsMap = null;      // role.id → 북극성 문구(bootsetup_matrix.json dims[0] 첫 줄) — 목표→북극성 뱃지용
   var _editMode = false;
 
@@ -531,6 +535,14 @@
       .then(function(r){ return r.json(); })
       .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'read 실패'); })
       .catch(function(){ return fetch(RAW_BASE + PLAN_PATH + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
+  }
+  // ── 팀별 월 목표매출 정본(고정) 읽기 — monthly_ops_plan.json과 동일 read_file→raw 폴백 패턴 ──
+  function readSalesTargets(){
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:TARGETS_PATH})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || '읽기 실패'); })
+      .catch(function(){ return fetch(RAW_BASE + TARGETS_PATH + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }).catch(function(){ return null; }); });
   }
   // ── 라이브 매출: home_kpi → sales.month(당월 실측). 실패/미측정=null ──
   function readHomeSales(){
@@ -569,6 +581,61 @@
         return found ? map : null;
       })
       .catch(function(){ return null; });
+  }
+  // ── 강사이름 → 팀(부서) 로스터(인건비 시트 A/B열: 부서, 강사이름) — team_sales 강사별 실적을 팀 단위로 합산하는 데 사용. 실패=빈맵({}) ──
+  function readInstructorTeamMap(){
+    return fetch(LABOR_GVIZ, {cache:'no-store'})
+      .then(function(r){ return r.text(); })
+      .then(function(t){
+        var json = JSON.parse(t.substring(t.indexOf('{'), t.lastIndexOf('}') + 1));
+        var rows = (json.table && json.table.rows) || [];
+        var map = {};
+        rows.forEach(function(row){
+          var c = row.c || [];
+          var dept = c[0] && c[0].v;
+          var name = c[1] && c[1].v;
+          if(!dept || !name) return;
+          if(String(name).indexOf('소계') >= 0 || String(dept).indexOf('전체') >= 0) return;
+          map[name] = dept;
+        });
+        return map;
+      })
+      .catch(function(){ return {}; });
+  }
+  // ── 팀별 매출 실적(선택월) 라이브 — GAS action=team_sales(년/월). 응답 teams=[{name,actual}](대부분 강사 개인명 + 일부 팀 직명 뮤지컬/GXE 등). 실패=null ──
+  function readTeamSales(year, mnum){
+    return fetch(GAS_URL + '?action=team_sales&year=' + year + '&month=' + mnum + '&_cb=' + Date.now(), {method:'GET', redirect:'follow', cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ return (res && res.ok) ? res : null; })
+      .catch(function(){ return null; });
+  }
+  // 선택월 team_sales를 1회만 조회·캐시(월별). 도착하면 현재 선택월일 때만 재무 영역 재렌더(다른 섹션·편집 상태는 건드리지 않음).
+  function fetchTeamSalesFor(monKey){
+    if(_teamSalesCache[monKey]) return;
+    _teamSalesCache[monKey] = {status:'loading'};
+    var parts = String(monKey).split('-');
+    readTeamSales(parts[0], Number(parts[1])).then(function(raw){
+      _teamSalesCache[monKey] = {status:'done', raw:raw};
+      if(_sel === monKey) renderFinance();
+    });
+  }
+  // team_sales 강사별 실적 → 팀 키(sales_targets.json 키) 합계. '합계'(운영부 소계)·운영부 강사는 제외(멤버십 실적=GM시트 정본 별도 사용, 중복방지). 매핑 안 되는 이름(루프 메소드·카드발급 등)은 etc.
+  var TEAM_DEPT_TO_KEY = {"수영":"swim", "P.T":"pt", "골프":"golf", "스쿼시":"squash", "체조&트램":"gym", "필라테스":"pilates", "뮤지컬":"musical", "GXE":"gxe"};
+  function teamActualsFor(monKey){
+    var entry = _teamSalesCache[monKey];
+    var raw = (entry && entry.status === 'done') ? entry.raw : null;
+    var sums = {}; for(var k in TEAM_DEPT_TO_KEY){ sums[TEAM_DEPT_TO_KEY[k]] = 0; }
+    var etc = 0;
+    if(raw && raw.teams){
+      raw.teams.forEach(function(t){
+        var name = t.name, val = Number(t.actual) || 0;
+        if(name === '합계') return;
+        var dept = TEAM_DEPT_TO_KEY[name] ? name : _instrTeamMap[name];
+        if(dept === '운영부') return;
+        if(dept && TEAM_DEPT_TO_KEY[dept]){ sums[TEAM_DEPT_TO_KEY[dept]] += val; } else { etc += val; }
+      });
+    }
+    return {sums:sums, etc:etc, live: !!raw};
   }
   // 부서맵 → 월별 합계 배열[12]
   function sumDeptMap(map){
@@ -914,58 +981,54 @@
       '<tr class="cur-m"><td class="fmo">' + mnum + '월</td><td>' + salesCell + '</td><td>' + expCell + '</td><td>' + netCell + '</td></tr>' +
       '</tbody></table></div>';
 
-    // ── 부서별 매출 분해(선택월) ──
-    var salesDeptTbl = '';
-    if(_cfoSalesDept){
-      var srows = [];
-      for(var sd in _cfoSalesDept){ var sv = Number(_cfoSalesDept[sd][idx]) || 0; if(sv !== 0) srows.push({name:sd, val:sv}); }
-      srows.sort(function(a, b){ return b.val - a.val; });
-      var sDeptSum = srows.reduce(function(s, r){ return s + r.val; }, 0);
-      var etc = (sales != null && sDeptSum > 0) ? (sales - sDeptSum) : 0;
-      if(srows.length){
-        var sBody = srows.map(function(r){
-          var pct = sDeptSum > 0 ? Math.round(r.val / sDeptSum * 100) : 0;
-          return '<tr><td>' + esc(r.name) + '</td><td class="num">' + fmtWon(r.val) + '</td><td class="num pctc">' + pct + '%</td></tr>';
-        }).join('');
-        if(etc > 0){
-          var epct = sales > 0 ? Math.round(etc / sales * 100) : 0;
-          sBody += '<tr class="etc"><td>기타·주차 등</td><td class="num">' + fmtWon(etc) + '</td><td class="num pctc">' + epct + '%</td></tr>';
+    // ── 부서별 매출(목표 vs 실적) & 지출 결합표(선택월) ──
+    // 실적매출 = 라이브 GAS action=team_sales(강사별 실적을 인건비 시트 로스터로 팀 합산) 우선, 실패/미도래 시 매출마스터(_cfoSalesDept) 폴백.
+    // 멤버십(운영부)만 항상 GM시트 「2026년도 매출」 정본(_cfoSalesDept.운영부) 사용 — team_sales '합계'(전대 소계)는 중복 방지로 미사용.
+    // 목표 = status/sales_targets.json(고정). 지출 = 기존 인건비(부서)+구매성(부서, 라이브) 재사용(신규 조회 없음).
+    fetchTeamSalesFor(_sel); // 선택월 팀별 실적 라이브 조회 kick-off(캐시 있으면 no-op) — 도착 시 재무 영역만 재렌더
+    var combinedTbl = '';
+    var teamRows = (_salesTargets && _salesTargets.teams) || [];
+    if(teamRows.length){
+      var ta = teamActualsFor(_sel);
+      var KEY_TO_DEPT = {}; for(var kd in TEAM_DEPT_TO_KEY){ KEY_TO_DEPT[TEAM_DEPT_TO_KEY[kd]] = kd; }
+      var rows = teamRows.map(function(tt){
+        var key = tt.key, tgt = Number(tt.target) || 0;
+        var act;
+        if(key === 'membership'){
+          act = (_cfoSalesDept && _cfoSalesDept['운영부']) ? (Number(_cfoSalesDept['운영부'][idx]) || 0) : 0;
+        } else if(ta.live){
+          act = ta.sums[key] || 0;
+        } else {
+          var fbDept = KEY_TO_DEPT[key];
+          act = (fbDept && _cfoSalesDept && _cfoSalesDept[fbDept]) ? (Number(_cfoSalesDept[fbDept][idx]) || 0) : 0;
         }
-        var stotal = (sales != null) ? sales : sDeptSum;
-        sBody += '<tr class="tot"><td>합계(센터전체)</td><td class="num">' + fmtWon(stotal) + '</td><td class="num pctc">100%</td></tr>';
-        salesDeptTbl = '<div class="fin-dept-wrap"><div class="fin-dept-h">🏷️ ' + mnum + '월 부서별 매출</div>' +
-          '<div class="rpt-wrap"><table class="rpt findept"><thead><tr><th>부서/종목</th><th class="num">매출</th><th class="num">비중</th></tr></thead>' +
-          '<tbody>' + sBody + '</tbody></table></div></div>';
-      }
-    }
-
-    // ── 부서별 지출 분해(선택월) = 인건비(부서) + 구매성(부서, 라이브) ──
-    var expDeptTbl = '';
-    if(_cfoLaborDept || _cfoProcDept){
-      var keys = {};
-      if(_cfoLaborDept){ for(var ld in _cfoLaborDept) keys[ld] = 1; }
-      if(_cfoProcDept){ for(var pd in _cfoProcDept) keys[pd] = 1; }
-      var erows = [];
-      for(var ek in keys){
-        var elab = (_cfoLaborDept && _cfoLaborDept[ek]) ? (Number(_cfoLaborDept[ek][idx]) || 0) : 0;
-        var epr = (_cfoProcDept && _cfoProcDept[ek]) ? (Number(_cfoProcDept[ek][idx]) || 0) : 0;
-        var etot = elab + epr;
-        if(etot !== 0) erows.push({name:ek, val:etot, lab:elab, proc:epr});
-      }
-      erows.sort(function(a, b){ return b.val - a.val; });
-      if(erows.length){
-        var eBody = erows.map(function(r){
-          return '<tr><td>' + esc(r.name) + '</td><td class="num">' + fmtWon(r.val) + '</td>' +
-            '<td class="num sub2">' + fmtWon(r.lab) + ' + ' + fmtWon(r.proc) + '</td></tr>';
-        }).join('');
-        if(totalExp != null){
-          eBody += '<tr class="tot"><td>합계</td><td class="num">' + fmtWon(totalExp) + '</td><td class="num sub2">인건비+구매성</td></tr>';
-        }
-        expDeptTbl = '<div class="fin-dept-wrap fin-exp-dept"><div class="fin-dept-h">🧾 ' + mnum + '월 부서별 지출' +
-          (_procLive ? '' : ' <span style="color:var(--dim);font-weight:400">(구매성 라이브 조회 실패 — 폴백 스냅샷)</span>') + '</div>' +
-          '<div class="rpt-wrap"><table class="rpt findept"><thead><tr><th>부서</th><th class="num">지출</th><th class="num">인건비+구매성</th></tr></thead>' +
-          '<tbody>' + eBody + '</tbody></table></div></div>';
-      }
+        var expDept = (key === 'membership') ? '운영부' : KEY_TO_DEPT[key];
+        var lab = (expDept && _cfoLaborDept && _cfoLaborDept[expDept]) ? (Number(_cfoLaborDept[expDept][idx]) || 0) : 0;
+        var pr  = (expDept && _cfoProcDept && _cfoProcDept[expDept]) ? (Number(_cfoProcDept[expDept][idx]) || 0) : 0;
+        return {name:tt.name, target:tgt, actual:act, exp:lab + pr};
+      });
+      if(ta.etc > 0){ rows.push({name:'기타(팀 미매칭 — 루프메소드·카드발급 등)', target:0, actual:ta.etc, exp:0, isEtc:true}); }
+      var totT = 0, totA = 0, totE = 0;
+      var body = rows.map(function(r){
+        totT += r.target; totA += r.actual; totE += r.exp;
+        var pct = r.target ? Math.round(r.actual / r.target * 100) : null;
+        var net = r.actual - r.exp;
+        return '<tr' + (r.isEtc ? ' class="etc"' : '') + '><td>' + esc(r.name) + '</td>' +
+          '<td class="num">' + (r.target ? fmtWon(r.target) : '—') + '</td>' +
+          '<td class="num">' + fmtWon(r.actual) + '</td>' +
+          '<td class="num pctc">' + (pct != null ? pct + '%' : '—') + '</td>' +
+          '<td class="num">' + fmtWon(r.exp) + '</td>' +
+          '<td class="num' + (net < 0 ? ' neg' : '') + '">' + fmtWon(net) + '</td></tr>';
+      }).join('');
+      var totPct = totT ? Math.round(totA / totT * 100) : null;
+      var totNet = totA - totE;
+      body += '<tr class="tot"><td>합계</td><td class="num">' + fmtWon(totT) + '</td><td class="num">' + fmtWon(totA) + '</td>' +
+        '<td class="num pctc">' + (totPct != null ? totPct + '%' : '—') + '</td><td class="num">' + fmtWon(totE) + '</td>' +
+        '<td class="num' + (totNet < 0 ? ' neg' : '') + '">' + fmtWon(totNet) + '</td></tr>';
+      combinedTbl = '<div class="fin-dept-wrap"><div class="fin-dept-h">🏷️ ' + mnum + '월 부서별 매출(목표 vs 실적) & 지출' +
+        (ta.live ? '' : ' <span style="color:var(--dim);font-weight:400">(팀별 실적 라이브 조회 중/실패 — 매출마스터 폴백)</span>') + '</div>' +
+        '<div class="rpt-wrap"><table class="rpt findept"><thead><tr><th>팀</th><th class="num">목표매출</th><th class="num">실적매출</th><th class="num">달성%</th><th class="num">지출</th><th class="num">순액</th></tr></thead>' +
+        '<tbody>' + body + '</tbody></table></div></div>';
     }
 
     var procNote = !_procLive
@@ -975,10 +1038,10 @@
     var legend = '<div class="flegend">' +
       '<span class="fnote">● 선택월(' + mnum + '월) 기준 · 매출·지출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> 미러(읽기전용). ' +
       '<b>매출=센터전체 정본(회원권+강습+기타·주차)</b> / <b>전체 지출=강사+운영부 인건비 + 구매성</b>(정규직 일부·임대료 미포함, 구매성=라이브 조회).' + procNote +
-      ' 부서별 매출=매출마스터(운영부만 GM시트 「2026년도 매출」 정본), 기타·주차=정본−부서합. 연간 12개월 상세는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인. 측정 전=소스 미기재(가짜값 없음).</span>' +
+      ' 부서별 표=팀별 목표(status/sales_targets.json 고정)·실적(라이브 GAS team_sales, 강사→팀은 인건비 시트 로스터로 집계)·지출(인건비+구매성). 멤버십=GM시트 「2026년도 매출」 정본. 연간 12개월 상세는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인. 측정 전=소스 미기재(가짜값 없음).</span>' +
     '</div>';
 
-    host.innerHTML = hero + table + salesDeptTbl + expDeptTbl + legend;
+    host.innerHTML = hero + table + combinedTbl + legend;
   }
 
   // ── 실무책임자 도달율 스코어보드 ──
@@ -1313,7 +1376,9 @@
   Promise.all([
     readPlan(), readHomeSales(), readCfoFinance(),
     withTimeout(readNsMap(), 8000, null),
-    withTimeout(readProcLive(), 8000, {dept:PROC_FALLBACK, live:false})
+    withTimeout(readProcLive(), 8000, {dept:PROC_FALLBACK, live:false}),
+    withTimeout(readSalesTargets(), 8000, null),
+    withTimeout(readInstructorTeamMap(), 8000, {})
   ])
     .then(function(arr){
       _data = arr[0];
@@ -1327,6 +1392,8 @@
       _cfoProcDept = procRes.dept;
       _cfoProc = procMonthArr(procRes.dept); // 구매성 라이브 합계 — 전체지출 = 인건비 + 구매성
       _procLive = procRes.live;
+      _salesTargets = arr[5];
+      _instrTeamMap = arr[6] || {};
       buildMonthSelect();
       render();
     })
