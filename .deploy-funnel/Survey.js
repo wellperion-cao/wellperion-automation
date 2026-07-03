@@ -127,8 +127,7 @@ function _sportBuckets_(raw) {
   hit(/스쿼시/, '스쿼시');
   hit(/골프/, '골프');
   hit(/아쿠아/, '아쿠아로빅');
-  hit(/바레/, '바레');
-  hit(/발레/, '발레');
+  hit(/바레|발레/, '루프메소드');  // 발레·바레 = 외부 파트너 유료 프로그램(루프메소드)로 통합 집계. 2026-07-03 시포·GM
   hit(/뮤지컬/, '뮤지컬');
   hit(/체조/, '체조');
   if (out.length === 0 && s.trim()) out.push('기타');
@@ -407,7 +406,8 @@ function _collectLessonInqByName_(from, to) {
 }
 
 // ─── 종목별 등록 표시 SSOT (GM 지정 2026-06-18) ───
-// GM 종목 ↔ LESSON_TEAM_SHEETS '명' 매핑. 시트 없는 종목(바레·발레)은 sheet:null → registered=null('데이터 미연결').
+// GM 종목 ↔ LESSON_TEAM_SHEETS '명' 매핑. 팀시트 없는 외부 프로그램(루프메소드)은 sheet:null + external:true
+//   → registered=null, 프론트는 '외부 파트너 유료 프로그램·명단 외부관리(등록 명단 미표시)'로 정직 표기.
 var LESSON_DISPLAY = {
   '성인강습': [
     { 명: '수영',   sheet: '수영 성인' },
@@ -415,14 +415,18 @@ var LESSON_DISPLAY = {
     { 명: '스쿼시', sheet: '스쿼시 성인' },
     { 명: 'P.T',    sheet: 'P.T 성인' },
     { 명: '필라테스', sheet: '필라테스 성인' },
-    { 명: '바레',   sheet: null },   // 등록 데이터 출처 없음(2026-06-18 grep 확인) → null
-    { 명: '발레',   sheet: null }    // 등록 데이터 출처 없음 → null
+    { 명: '아쿠아로빅', sheet: '아쿠아로빅' },   // 누락 배선(팀시트 존재하나 display 누락) 2026-07-03
+    // 발레·바레 → 루프메소드 한 줄 통합. 외부 파트너 유료 프로그램, 회원 명단 시트 없음(외부관리) → sheet:null·external
+    { 명: '루프메소드(발레·바레)', sheet: null, external: true, note: '외부 파트너 유료 프로그램 · 회원 명단 외부관리(등록 명단 미표시)' }
   ],
   '유소년강습': [
     { 명: '수영',          sheet: '수영 유소년' },
     { 명: '골프',          sheet: '골프 유소년' },
     { 명: '스쿼시',        sheet: '스쿼시 유소년' },
-    { 명: '체조&트램폴린', sheet: '유소년체조' }
+    { 명: '체조&트램폴린', sheet: '유소년체조' },
+    { 명: 'P.T',          sheet: 'P.T 유소년' },       // 누락 배선(팀시트 gid 1328034138) 2026-07-03
+    { 명: '필라테스',      sheet: '필라테스 유소년' },  // 누락 배선(팀시트 gid 754969527) 2026-07-03
+    { 명: '모자수영',      sheet: '모자수영' }          // 누락 배선(팀시트 gid 1219410707) 2026-07-03
   ]
 };
 
@@ -2230,9 +2234,9 @@ function _processAction(body) {
     var lrrBySport = [];
     var lrrRoster = [];
     lrrDisplay.forEach(function(item){
-      var rec = { 명: item.명, registered: null, sheetFound: false };
+      var rec = { 명: item.명, registered: null, sheetFound: false, external: !!item.external, note: item.note || '' };
       var cfg = item.sheet ? lrrCfgByName[item.sheet] : null;
-      if (!cfg) { lrrBySport.push(rec); return; }  // sheet:null(데이터 미연결) → registered=null 유지
+      if (!cfg) { lrrBySport.push(rec); return; }  // sheet:null(외부관리/미연결) → registered=null 유지
       try {
         var sh = _sheetByGid_(cfg.ssId, cfg.gid);
         if (!sh) { lrrBySport.push(rec); return; }
@@ -3640,7 +3644,7 @@ function _processAction(body) {
   // ─── 종목별 등록 집계 (대시보드 강습 펼침 — GM 2026-06-18) ───
   // 성인/유소년강습을 GM 지정 종목 단위로 펼쳐 '등록' 수만 반환. 문의는 종목 데이터 없음 → 프론트가 대분류로 표기.
   // 등록 = LESSON_TEAM_SHEETS 팀시트 상태열 SUC/등록 등(_isLessonReg_). 정본 = _collectLessonRegByName_.
-  // 정직성: 시트 없는 종목(바레·발레)=registered:null('데이터 미연결'), 0으로 채우지 않음. 시트 있고 등록 0=실측 0.
+  // 정직성: 외부 프로그램(루프메소드)=registered:null('외부관리·명단 미표시'), 0으로 채우지 않음. 시트 있고 등록 0=실측 0.
   if (action === 'lesson_breakdown') {
     var lbFrom = body.from || '';   // YYYY-MM-DD (기간별 문의 집계용)
     var lbTo   = body.to   || '';
@@ -3673,7 +3677,7 @@ function _processAction(body) {
           if (recI) { inq = recI.inquiries; }
           sheetUrl = _lessonSheetUrl(item.sheet);
         }
-        return { 명: item.명, registered: reg, inquiries: inq, sheet: item.sheet || null, sheetUrl: sheetUrl, statusSource: src };
+        return { 명: item.명, registered: reg, inquiries: inq, sheet: item.sheet || null, sheetUrl: sheetUrl, statusSource: src, external: !!item.external, note: item.note || '' };
       });
     });
 
@@ -3693,7 +3697,7 @@ function _processAction(body) {
     var unmatched = [];
     Object.keys(LESSON_DISPLAY).forEach(function(grp) {
       LESSON_DISPLAY[grp].forEach(function(item) {
-        if (!item.sheet) unmatched.push({ 유형: grp, 명: item.명, reason: '등록·문의 데이터 출처 없음' });
+        if (!item.sheet) unmatched.push({ 유형: grp, 명: item.명, external: !!item.external, reason: item.note || '등록·문의 데이터 출처 없음' });
       });
     });
 
@@ -3701,7 +3705,7 @@ function _processAction(body) {
       ok: true,
       generatedAt: _now(),
       range: { from: lbFrom, to: lbTo },
-      basis: '종목별 문의 = 팀시트 행을 타임스탬프 기준 기간 집계 · 등록 = 팀시트 상태열 수강등록(SUC/등록) 누적 · 시트없는종목(바레·발레)=null(데이터 미연결)',
+      basis: '종목별 문의 = 팀시트 행을 타임스탬프 기준 기간 집계 · 등록 = 팀시트 상태열 수강등록(SUC/등록) 누적 · 외부프로그램(루프메소드)=null(외부관리·명단 미표시)',
       data: data,
       others: others,
       unmatched: unmatched

@@ -2304,6 +2304,7 @@ function lessonRegLoad(t) {
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && d.error) || 'GAS 응답 오류');
       st.roster = d.roster || [];
+      st.bySport = d.bySport || [];   // 외부관리 프로그램(루프메소드 등) 정직 표기용
       _lessonRosterChips(t, 'mem'); _lessonRosterRender(t, 'mem');
       var ms = document.getElementById('lessonMemStatLine_' + t);
       if (ms) ms.textContent = '수강 ' + (d.total || 0) + '명';
@@ -2418,13 +2419,25 @@ function _lessonRosterRender(t, kind) {
   var filter = (kind === 'reg') ? st.regSport : st.memSport;
   var rows = st.roster || [];
   if (filter) rows = rows.filter(function(r){ return String(r.sport || '기타').trim() === filter; });
+  // 외부관리 프로그램(루프메소드 등) 정직 안내 — mem 뷰·필터 없을 때만. 명단 시트 없음 → 등록 명단 미표시.
+  var extNote = '';
+  if (kind === 'mem' && !filter) {
+    (st.bySport || []).forEach(function(b){
+      if (b && b.external) {
+        extNote += '<tr><td colspan="4" style="font-size:12px;color:var(--dim);background:var(--paper);' +
+          'border-left:3px solid var(--border);padding:10px 12px;line-height:1.5">' +
+          '🔗 <b>' + esc(b.명 || '외부 프로그램') + '</b> · ' + esc(b.note || '외부 파트너 유료 프로그램 · 회원 명단 외부관리(등록 명단 미표시)') +
+          '</td></tr>';
+      }
+    });
+  }
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
+    tbody.innerHTML = extNote + '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
       '<div class="empty-state-title">등록 회원 없음</div>' +
       '<div class="empty-state-desc">해당 조건의 등록 회원이 없습니다.</div></div></td></tr>';
     return;
   }
-  var html = '';
+  var html = extNote;
   rows.forEach(function(r){
     html += '<tr>' +
       '<td style="font-size:12px">' + esc(r.sport || '—') + '</td>' +
