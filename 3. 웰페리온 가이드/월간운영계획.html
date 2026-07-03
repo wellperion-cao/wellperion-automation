@@ -420,7 +420,7 @@
 
     <!-- 🔧 점검 현황 & 이슈·해결 -->
     <section class="blk">
-      <h2 class="sec">🔧 점검 현황 & 이슈·해결 <span class="stag">4부서 점검 완료율(실측/개통 전) · 이슈 보드 · 월별 PIN 편집</span></h2>
+      <h2 class="sec">🔧 점검 현황 & 이슈·해결 <span class="stag">시설부 · 지원부(남/여) · 종합접수처 — 실측 가능한 것만(가짜값 없음) · 이슈=VOC 실시간 집계(PII 비노출)</span></h2>
       <div id="check-board"><div class="board-status">점검 현황을 불러오는 중…</div></div>
       <div id="issue-board" style="margin-top:14px;"><div class="board-status">이슈 보드를 계산하는 중…</div></div>
     </section>
@@ -447,6 +447,16 @@
   var PLAN_PATH = 'status/monthly_ops_plan.json';
   var TARGETS_PATH = 'status/sales_targets.json'; // 팀별 월 목표매출 정본(고정) — 부서별 매출(목표 vs 실적) 결합표 기준선.
   var KPI_PATH = 'status/kpi_values.json'; // KPI 자동집계(kpi_collector.py, 일 2회) — 🔧 점검 현황 실측치 소스(coo.지원부_점검완료율). 측정 불가=null(가짜값 없음).
+  var CHECK_GAS = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec'; // 지원팀 일일점검 GAS(공용·kpi_collector.py와 동일 소스) — action=get_today_summary rows[].gender(m/f)로 🔧 점검 현황 지원부 남/여 카드 분해.
+  var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec'; // 종합접수처 VOC GAS(coo/reception/종합접수처_현황.html과 동일) — action=reg_board. 🔧 점검 현황④ 카드 + 🗂️ 이슈·해결 공용(PII 미사용·집계만).
+  var VOC_CAT_META = [ // 종합접수처_현황.html CAT_META과 동일(5종 카테고리 → 담당부서)
+    {label:'분실물 접수', icon:'📦', dept:'운영부'},
+    {label:'시설물 고장 접수', icon:'🔧', dept:'시설부'},
+    {label:'청결 이슈 접수', icon:'🧹', dept:'지원부'},
+    {label:'직원·강사 칭찬합니다', icon:'⭐', dept:'운영부'},
+    {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부'}
+  ];
+  var VOC_STATUS_LIST = ['접수','처리중','완료'];
   var FIN_YEAR = '2026';
   var SALES_TARGET_DEFAULT = 650000000; // 월 매출 목표 기본값(6.5억). 해당 월 objectives에 매출 metric.target 있으면 그 값 우선.
   // ── 매출·지출 SSOT = AI CFO 매출현황(cfo/finance/매출지출현황.html). 이 페이지는 그 페이지의 소스를 그대로 미러(읽기전용). ──
@@ -506,6 +516,8 @@
   var _cfoLaborDept = null; // 인건비 부서맵 {부서:[12]}(강사→부서 집계·운영부 포함) — 선택월 부서별 지출 분해용
   var _salesTargets = null;  // status/sales_targets.json(팀별 월 목표매출 정본, 고정) — 부서별 매출(목표 vs 실적) 결합표 기준선
   var _kpiValues = null;    // status/kpi_values.json(KPI 자동집계) — 🔧 점검 현황 실측치. 조회 실패=null(전부 '측정 개통 전' 처리)
+  var _supportGender = null; // 지원부 남/여 오늘 점검 완료율 {m:{done,total,pct}, f:{...}} — CHECK_GAS get_today_summary 실측. 조회 실패/데이터없음=null(해당 성별 카드 '측정 개통 전')
+  var _vocBoard = null;      // 종합접수처 VOC 접수 배열(reg_board.data) — 🔧 점검④ 카드 + 🗂️ 이슈·해결 공용. PII(성함·연락처) 절대 미사용(카테고리·부서·상태 집계만). 조회 실패=null
   var _instrTeamMap = {};    // 강사이름 → 팀(부서) 매핑(인건비 시트 A/B열 로스터에서 구성) — team_sales의 강사별 실적을 팀 단위로 합산하는 데 사용(PII 미노출·집계에만 사용)
   var _teamSalesCache = {};  // 'YYYY-M' → {status:'loading'|'done', raw:team_sales 응답} — 선택월별 라이브 팀 매출 실적 캐시
   var _nsMap = null;      // role.id → 북극성 문구(bootsetup_matrix.json dims[0] 첫 줄) — 목표→북극성 뱃지용
@@ -560,6 +572,34 @@
       .then(function(r){ return r.json(); })
       .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || '읽기 실패'); })
       .catch(function(){ return fetch(RAW_BASE + KPI_PATH + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }).catch(function(){ return null; }); });
+  }
+  // ── 지원부 남/여 오늘 점검 완료율 — kpi_collector.py의 _coo_check_rate()와 동일 GAS·액션(get_today_summary)을 클라이언트에서 gender 필드로 분해.
+  //    행 단위 gender('m'/'f') × submitted(bool)로 완료율 산출. 데이터 없음/조회 실패=null(가짜값 없음) ──
+  function readSupportCheckGender(){
+    var todayStr = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD(로컬=KST 가정)
+    return fetch(CHECK_GAS + '?action=get_today_summary&date=' + todayStr + '&zone=all&_cb=' + Date.now(), {redirect:'follow', cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var rows = (d && Array.isArray(d.rows)) ? d.rows : [];
+        if(!rows.length) return null;
+        var out = {};
+        ['m','f'].forEach(function(g){
+          var grows = rows.filter(function(r){ return r.gender === g; });
+          if(!grows.length){ out[g] = null; return; }
+          var done = grows.filter(function(r){ return !!r.submitted; }).length;
+          out[g] = {done:done, total:grows.length, pct: Math.round(done / grows.length * 100)};
+        });
+        return out;
+      })
+      .catch(function(){ return null; });
+  }
+  // ── 종합접수처 VOC 접수 현황 — coo/reception/종합접수처_현황.html과 동일 GAS·액션(reg_board). 응답 필드(name/contact)는 서버가 이미 마스킹하지만
+  //    이 페이지는 그마저도 사용하지 않는다(카테고리·부서·상태 집계만 — content 등 자유서술 텍스트에 회원 실명이 섞일 수 있어 절대 미노출). 실패=null ──
+  function readVocBoard(){
+    return fetch(REG_API + '?action=reg_board&_=' + Date.now(), {redirect:'follow', cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ return (d && d.ok && Array.isArray(d.data)) ? d.data : null; })
+      .catch(function(){ return null; });
   }
   // ── 라이브 매출: home_kpi → sales.month(당월 실측). 실패/미측정=null ──
   function readHomeSales(){
@@ -1103,71 +1143,100 @@
     }).join('') + '</div>';
   }
 
-  // ── 🔧 점검 현황(4부서 · 주차관리부는 점검 제외 대상·표시 안 함) ──
-  // 실측 가능 = KPI 자동집계(kpi_values.json coo.지원부_점검완료율). 그 외 부서(시설·운영)는 아직 GAS가 지원부 한정이라 '측정 개통 전' + 점검 페이지 링크.
-  var CHK_DEPTS = [
-    {key:'지원부', href:'coo/check/지원부 체계.html'},
-    {key:'시설부', href:'coo/check/시설부 체계.html'},
-    {key:'운영부', href:'coo/check/운영부 체계.html'}
-  ];
+  // ── 🔧 점검 현황(4칸 · GM 지시 2026-07-03) ──
+  // ① 시설부 점검 현황 ② 지원부 점검(남) ③ 지원부 점검(여) ④ 종합접수처 현황. 실측 가능한 것만 숫자 표시, 안 되면 '측정 개통 전' 정직 표기(가짜값 없음).
   function renderCheckStatus(){
     var host = document.getElementById('check-board');
     if(!host) return;
-    var coo = (_kpiValues && _kpiValues.roles && _kpiValues.roles.coo) || null;
-    var cards = CHK_DEPTS.map(function(d){
-      var link = '<a class="clink" href="' + esc(d.href) + '" target="_blank">점검 페이지 →</a>';
-      if(d.key === '지원부' && coo && typeof coo.지원부_점검완료율 === 'number'){
-        var pct = Math.round(coo.지원부_점검완료율 * 100);
-        return '<div class="chk-card"><span class="cl">' + esc(d.key) + ' 점검 완료율</span>' +
-          '<div class="cv">' + pct + '%</div>' +
-          '<span class="csub">완료 ' + (coo.지원부_완료 != null ? coo.지원부_완료 : '—') + ' / 전체 ' + (coo.지원부_전체 != null ? coo.지원부_전체 : '—') +
+    var cards = [];
+
+    // ① 시설부 점검 현황 — 시설점검(fcheck)은 회차별 실측 원장 방식이라 총 항목수 기준 완료율 집계 GAS가 아직 없음 → 정직 표기 + 점검 페이지 링크.
+    cards.push(
+      '<div class="chk-card"><span class="cl">시설부 점검 현황</span>' +
+      '<div class="cv pending">측정 개통 전</div>' +
+      '<span class="csub">시설점검(fcheck) 완료율 집계 GAS 미구축 — 가짜값 없음</span>' +
+      '<a class="clink" href="coo/check/시설부 체계.html" target="_blank">점검 페이지 →</a></div>'
+    );
+
+    // ②③ 지원부 점검(남/여) — 점검 GAS(get_today_summary) gender 필드 실측(kpi_collector.py와 동일 소스).
+    [['m','지원부 점검(남)'], ['f','지원부 점검(여)']].forEach(function(pair){
+      var g = pair[0], label = pair[1];
+      var gd = _supportGender && _supportGender[g];
+      var link = '<a class="clink" href="coo/check/지원부 체계.html" target="_blank">점검 페이지 →</a>';
+      if(gd){
+        cards.push(
+          '<div class="chk-card"><span class="cl">' + esc(label) + '</span>' +
+          '<div class="cv">' + gd.pct + '%</div>' +
+          '<span class="csub">완료 ' + gd.done + ' / 전체 ' + gd.total +
             '<br><span class="warn">⚠ GAS 분모 산출 버그 진단 중(시토→시우 인계) — 실측치지만 신뢰도 검증 전</span></span>' +
-          link + '</div>';
+          link + '</div>'
+        );
+      } else {
+        cards.push(
+          '<div class="chk-card"><span class="cl">' + esc(label) + '</span>' +
+          '<div class="cv pending">측정 개통 전</div>' +
+          '<span class="csub">오늘 점검 데이터 없음/조회 실패 — 가짜값 없음</span>' +
+          link + '</div>'
+        );
       }
-      return '<div class="chk-card"><span class="cl">' + esc(d.key) + ' 점검 완료율</span>' +
+    });
+
+    // ④ 종합접수처 현황 — VOC GAS(reg_board) 실측(종합접수처_현황.html과 동일 소스). PII 미사용(건수 집계만).
+    if(_vocBoard){
+      var total = _vocBoard.length;
+      var byStat = {}; VOC_STATUS_LIST.forEach(function(s){ byStat[s] = 0; });
+      _vocBoard.forEach(function(r){ var s = String(r.status || '접수'); if(byStat[s] === undefined) byStat[s] = 0; byStat[s]++; });
+      var subParts = VOC_STATUS_LIST.map(function(s){ return s + ' ' + (byStat[s] || 0); }).join(' · ');
+      cards.push(
+        '<div class="chk-card"><span class="cl">종합접수처 현황</span>' +
+        '<div class="cv">' + total + '건</div>' +
+        '<span class="csub">' + esc(subParts) + '</span>' +
+        '<a class="clink" href="coo/reception/종합접수처_현황.html" target="_blank">접수 현황 →</a></div>'
+      );
+    } else {
+      cards.push(
+        '<div class="chk-card"><span class="cl">종합접수처 현황</span>' +
         '<div class="cv pending">측정 개통 전</div>' +
-        '<span class="csub">4부서 통합 집계 GAS 미구축(현재 지원부 한정) — 가짜값 없음</span>' +
-        link + '</div>';
-    }).join('');
-    host.innerHTML = '<div class="chk-grid">' + cards + '</div>';
+        '<span class="csub">VOC 접수 조회 실패 — 가짜값 없음</span>' +
+        '<a class="clink" href="coo/reception/종합접수처_현황.html" target="_blank">접수 현황 →</a></div>'
+      );
+    }
+
+    host.innerHTML = '<div class="chk-grid">' + cards.join('') + '</div>';
   }
 
-  // ── 🔧 이슈·해결 보드 (월별 · objectives와 동일 PIN 편집 패턴 · monthly_ops_plan.json issues[]) ──
-  function issueRow(o){
-    var statusCell;
-    if(_editMode){
-      var opts = ((_data && _data.issue_status_enum) || ['미해결','해결중','해결']).map(function(s){
-        return '<option value="' + esc(s) + '"' + (o.status === s ? ' selected' : '') + '>' + esc(s) + '</option>';
-      }).join('');
-      statusCell = '<select data-iid="' + esc(o.id) + '" data-if="status">' + opts + '</select>';
-    } else {
-      statusCell = '<span class="istat ' + esc(o.status || '') + '">' + esc(o.status || '') + '</span>';
-    }
-    var noteCell = _editMode
-      ? '<div class="note-edit" contenteditable="true" data-iid="' + esc(o.id) + '" data-if="note" ' +
-        'oncompositionstart="window._compOn()" oncompositionend="window._compOff()">' + esc(o.note || '') + '</div>'
-      : (o.note ? '<span class="r-note">' + esc(o.note) + '</span>' : '<span class="fin-none">—</span>');
-    return '<tr>' +
-      '<td class="i-title">' + esc(o.title) + '</td>' +
-      '<td>' + esc(o.dept || '') + '</td>' +
-      '<td>' + statusCell + '</td>' +
-      '<td>' + esc(o.reported || '—') + '</td>' +
-      '<td class="i-note">' + noteCell + '</td>' +
-    '</tr>';
-  }
+  // ── 🗂️ 이슈·해결 (GM 지시 2026-07-03: 舊 개발/백엔드 이슈 폐기 → 종합접수처(VOC) 접수 기준 실시간 집계로 대체) ──
+  // 소스=REG_API reg_board(coo/reception/종합접수처_현황.html과 동일). 카테고리×상태 건수만 집계 — 회원명·연락처·자유서술 content 등 PII 절대 미노출.
+  // 월 선택과 무관한 실시간 스냅샷(reg_board는 날짜 필터 없음) — objectives처럼 PIN 편집 대상 아님.
   function renderIssues(){
     var host = document.getElementById('issue-board');
     if(!host) return;
-    var m = _data.months[_sel];
-    var issues = (m && m.issues) || [];
-    if(!issues.length){
-      host.innerHTML = '<div class="issue-h">🗂️ 이슈·해결</div><div class="rep-empty">이 달 등록된 이슈가 없습니다.</div>';
+    if(!_vocBoard){
+      host.innerHTML = '<div class="issue-h">🗂️ 이슈·해결 <span style="font-weight:400;color:var(--dim);">— 종합접수처(VOC) 실시간</span></div>' +
+        '<div class="rep-empty">종합접수처 연동 예정 — VOC 접수 조회 실패(가짜값 없음). <code>coo/reception/종합접수처_현황.html</code>에서 직접 확인 가능.</div>';
       return;
     }
-    host.innerHTML = '<div class="issue-h">🗂️ 이슈·해결 (' + issues.length + ')</div>' +
+    var total = _vocBoard.length;
+    if(!total){
+      host.innerHTML = '<div class="issue-h">🗂️ 이슈·해결 <span style="font-weight:400;color:var(--dim);">— 종합접수처(VOC) 실시간</span></div>' +
+        '<div class="rep-empty">현재 등록된 접수 이슈가 없습니다.</div>';
+      return;
+    }
+    var rows = VOC_CAT_META.map(function(meta){
+      var items = _vocBoard.filter(function(r){ return String(r.category || '') === meta.label; });
+      var byStat = {}; VOC_STATUS_LIST.forEach(function(s){ byStat[s] = 0; });
+      items.forEach(function(r){ var s = String(r.status || '접수'); if(byStat[s] === undefined) byStat[s] = 0; byStat[s]++; });
+      return '<tr><td class="i-title">' + meta.icon + ' ' + esc(meta.label) + '</td>' +
+        '<td>' + esc(meta.dept) + '</td>' +
+        '<td><span class="istat 미해결">접수 ' + byStat['접수'] + '</span></td>' +
+        '<td><span class="istat 해결중">처리중 ' + byStat['처리중'] + '</span></td>' +
+        '<td><span class="istat 해결">완료 ' + byStat['완료'] + '</span></td>' +
+        '<td>' + items.length + '건</td></tr>';
+    }).join('');
+    host.innerHTML = '<div class="issue-h">🗂️ 이슈·해결 (' + total + ') <span style="font-weight:400;color:var(--dim);">— 종합접수처(VOC) 실시간 · PII 비노출(카테고리·부서·상태 집계만)</span></div>' +
       '<div class="rpt-wrap"><table class="rpt issues"><thead><tr>' +
-        '<th>이슈</th><th>부서</th><th>상태</th><th>보고일</th><th>해결 메모</th>' +
-      '</tr></thead><tbody>' + issues.map(issueRow).join('') + '</tbody></table></div>';
+        '<th>유형</th><th>부서</th><th>접수</th><th>처리중</th><th>완료</th><th>합계</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
   // ── 🚀 ERP 월별 진척 타임라인 (공식값·GM 확정) ──
@@ -1432,7 +1501,9 @@
     withTimeout(readProcLive(), 8000, {dept:PROC_FALLBACK, live:false}),
     withTimeout(readSalesTargets(), 8000, null),
     withTimeout(readInstructorTeamMap(), 8000, {}),
-    withTimeout(readKpiValues(), 8000, null)
+    withTimeout(readKpiValues(), 8000, null),
+    withTimeout(readSupportCheckGender(), 8000, null),
+    withTimeout(readVocBoard(), 8000, null)
   ])
     .then(function(arr){
       _data = arr[0];
@@ -1449,6 +1520,8 @@
       _salesTargets = arr[5];
       _instrTeamMap = arr[6] || {};
       _kpiValues = arr[7];
+      _supportGender = arr[8];
+      _vocBoard = arr[9];
       buildMonthSelect();
       render();
     })
