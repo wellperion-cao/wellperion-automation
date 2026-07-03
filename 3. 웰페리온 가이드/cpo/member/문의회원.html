@@ -2133,6 +2133,7 @@ function switchFamily(fam) {
   if (famEl) famEl.textContent = _famName;
   var titleEl = document.getElementById('pageTitleTxt');   // 상단 H1도 그룹명으로(통합 회원 관리 → 멤버십/강습). 2026-07-02 시포·GM
   if (titleEl) titleEl.textContent = _famName;
+  document.title = '웰페리온 ' + _famName.replace('회원관리', '회원 관리') + ' — AI CPO';   // 브라우저 탭 제목도 그룹명 동기화(배299, 2026-07-03 시포)
   switchType(types[0]);   // 그룹 첫 유형으로 전환
 }
 
@@ -2780,8 +2781,10 @@ function renderActiveSummary() {
   var title = _activeScope === 'ended' ? '종료회원 현황' : (_activeScope === 'corp' ? '법인회원 현황' : '유효회원 현황');
   var counts = {};
   var KNOWN = ['멤버십','입주민','중단기','보증금','FAN VIP'];
+  var TYPO_MAP = { '맴버십': '멤버십', '멥버십': '멤버십' };   // 회원구분 오타 정규화(배299, 2026-07-03 시포)
   rows.forEach(function(row){
     var v = String(row['회원\n구분'] || row['회원구분'] || '').trim() || '기타';
+    if (TYPO_MAP[v]) v = TYPO_MAP[v];
     if (KNOWN.indexOf(v) < 0) v = '기타';
     counts[v] = (counts[v] || 0) + 1;
   });
@@ -2797,6 +2800,14 @@ function renderActiveSummary() {
     chipsHtml += '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:var(--accent-bg);border:1px solid var(--accent-border);font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap">기타<span style="font-size:14px;font-weight:800">' + etc + '</span></span>';
   }
 
+  // GM 요청 형식: "유효 N명 (멤버십 X / 입주민 Y / 중단기 Z / 보증금 W / FAN VIP V / 기타 U)" 한눈에(배299, 2026-07-03 시포)
+  var scopeWord = _activeScope === 'ended' ? '종료' : (_activeScope === 'corp' ? '법인' : '유효');
+  var breakdownStr = KNOWN.concat(['기타']).map(function(k){ return k + ' ' + (counts[k] || 0); }).join(' / ');
+  var summaryLine = scopeWord + ' ' + rows.length.toLocaleString() + '명 (' + breakdownStr + ')';
+  var footnote = (_activeScope === 'valid')
+    ? '<div style="font-size:10px;color:var(--dim);margin-top:2px">※ 유효=잔여일&gt;0 기준(다른 화면의 유효회원 수와 소폭 다를 수 있음)</div>'
+    : '';
+
   el.innerHTML =
     _cross + (_cross ? '<div style="height:1px;background:var(--border);margin:11px 0"></div>' : '') +
     '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
@@ -2806,8 +2817,12 @@ function renderActiveSummary() {
         '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
       '</div>' +
       '<div style="width:1px;height:40px;background:var(--border);flex-shrink:0"></div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">' + chipsHtml + '</div>' +
-    '</div>';
+      '<div style="display:flex;flex-direction:column;gap:5px">' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">' + chipsHtml + '</div>' +
+        '<div style="font-size:11px;color:var(--dim)">' + esc(summaryLine) + '</div>' +
+      '</div>' +
+    '</div>' +
+    footnote;
 }
 
 /* ─── 멤버십 표 더블클릭 인라인 편집 위임 ─── */
