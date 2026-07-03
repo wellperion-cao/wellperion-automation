@@ -61,6 +61,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab-btn:hover{color:var(--accent-bright);}
 .tab-btn.active{color:var(--accent-bright);border-bottom-color:var(--accent);}
 .tab-icon{font-size:14px;}
+/* ── 인쇄 용지·방향 선택. 기본=A3 세로(회사 인쇄 표준). 2026-07-03 시포·GM ── */
+.print-size-select{margin-left:8px;font-size:11px;font-weight:600;padding:5px 10px;border-radius:var(--radius-btn);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);font-family:inherit;cursor:pointer;outline:none;}
+.print-size-select:hover{background:rgba(183,159,138,0.2);}
 
 /* ─── 레이아웃 ─── */
 .content{padding:24px;max-width:1100px;margin:0 auto;}
@@ -77,9 +80,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .section-badge-actions{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;}
 /* ── 인쇄: 현재 활성 탭만 인쇄 + 고대비(진한 글자·흰 배경)·큰 글씨(노령 가독성). 2026-07-03 시포·GM ──
    방식 = 업무/결재현황 SSOT와 동일 공식: :root 팔레트 변수를 인쇄용 라이트값으로 재정의
-   → 카드·배지·표 등 var() 기반 색상이 전부 자동 고대비 전환(연한 텍스트/톤온톤 "보호색" 문제 근본 해결). */
+   → 카드·배지·표 등 var() 기반 색상이 전부 자동 고대비 전환(연한 텍스트/톤온톤 "보호색" 문제 근본 해결).
+   용지 크기·방향(size)은 #printPageRule 동적 <style>(JS)이 담당 — 여기선 margin만 고정. 2026-07-03 시포·GM */
 @media print{
-  @page{margin:12mm;size:A4}
+  @page{margin:12mm}
   :root{
     --bg:#fff;--paper:#fff;--paper-raised:#f2f2f2;
     --text:#141414;--dim:#555;--dim-mid:#333;
@@ -94,9 +98,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     --teal:#0d6b6b;--teal-bright:#0a5555;--teal-bg:#dff2f2;--teal-border:#0d6b6b;
     --shadow-card:none;--shadow-header:none;
   }
-  .tab-nav,.print-tab,.action-btn,.section-badge-actions,
+  .tab-nav,.print-tab,.print-size-select,.action-btn,.section-badge-actions,
   .pp-del,.pp-add,.status-msg,.pricing-hint,.plan-card-actions,.btn-sm,
-  .hero-eyebrow,.grade-ribbon,.seed-mark{display:none!important;}
+  .hero-eyebrow,.grade-ribbon,.seed-mark,.cat-filter-bar{display:none!important;}
   .tab-panel{display:none!important;}
   .tab-panel.active{display:block!important;}
   /* 노령 가독성 — 본문·표 최소 14pt급(≈18-19px) 고대비. 여백·장식은 줄여 공간 확보(GM 승인 · 2026-07-03). */
@@ -252,6 +256,19 @@ tr:hover td{background:var(--accent-bg);}
 .btn-sm.del:hover{background:rgba(237,91,63,0.2);}
 .seed-mark{display:inline-flex;font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border);margin-left:4px;}
 
+/* ── 기획 카테고리 배지·필터 칩 — 확장은 JS PLAN_CATEGORIES 배열만 수정. 2026-07-03 시포·GM ── */
+.cat-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;border:1px solid;margin-right:5px;}
+.cat-badge.main{background:var(--accent-bg);color:var(--accent-bright);border-color:var(--accent-border);}
+.cat-badge.pricing{background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border);}
+.cat-badge.lineup{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border);}
+.cat-badge.positioning{background:var(--green-bg);color:var(--green);border-color:var(--green-border);}
+.cat-badge.unclassified{background:var(--paper-raised);color:var(--dim-mid);border-color:var(--border);}
+.cat-filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.cat-chip{font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:99px;background:var(--paper-raised);color:var(--dim-mid);border:1px solid var(--border);cursor:pointer;font-family:inherit;transition:background 0.12s,color 0.12s,border-color 0.12s;}
+.cat-chip:hover{color:var(--text);border-color:var(--accent-border);}
+.cat-chip.active{background:var(--accent-bg);color:var(--accent-bright);border-color:var(--accent-border);}
+.cat-custom-input{margin-top:6px;}
+
 /* ─── 모달 ─── */
 .modal-bg{position:fixed;inset:0;background:rgba(20,18,17,0.78);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.18s;}
 .modal-bg.open{opacity:1;pointer-events:auto;}
@@ -334,6 +351,12 @@ tr:hover td{background:var(--accent-bg);}
     <button class="tab-btn" role="tab" onclick="switchTab('policy',this)"><span class="tab-icon">💳</span>요금 정책</button>
     <button class="tab-btn" role="tab" onclick="switchTab('workshop',this)"><span class="tab-icon">✏️</span>기획 작업대</button>
     <button class="tab-btn print-tab" onclick="window.print()" title="현재 탭 인쇄" style="margin-left:auto;color:var(--accent)"><span class="tab-icon">🖨️</span>인쇄</button>
+    <select id="printSizeSelect" class="print-size-select" onchange="applyPrintSize(this.value)" title="인쇄 용지·방향">
+      <option value="a4-portrait">A4 세로</option>
+      <option value="a4-landscape">A4 가로</option>
+      <option value="a3-portrait" selected>A3 세로</option>
+      <option value="a3-landscape">A3 가로</option>
+    </select>
   </nav>
 </div>
 
@@ -653,6 +676,7 @@ tr:hover td{background:var(--accent-bg);}
     </div>
 
     <div class="status-msg" id="statusMsg" style="margin-bottom:12px;">불러오는 중…</div>
+    <div class="cat-filter-bar" id="planCategoryFilter"></div>
 
     <div class="plan-sections" id="planGrid">
       <!-- 카드 동적 렌더 -->
@@ -669,8 +693,9 @@ tr:hover td{background:var(--accent-bg);}
     <h3 id="modalTitle">기획 추가</h3>
     <input type="hidden" id="editId">
     <div class="form-row">
-      <label>구분</label>
-      <input type="text" id="editGubun" placeholder="예: 포지셔닝 / 차별화레버 / 가격전략 / 라인업" oninput="updateModalLabels(this.value)">
+      <label>카테고리</label>
+      <select id="editGubun" onchange="onCategoryChange(this.value)"></select>
+      <input type="text" id="editGubunCustom" class="cat-custom-input" placeholder="카테고리명 직접 입력" style="display:none;" oninput="updateModalLabels(this.value)">
     </div>
     <div class="form-row">
       <label>제안명</label>
@@ -720,6 +745,20 @@ function switchTab(id, btn) {
   if (id === 'policy') loadPolicyTable();
 }
 
+// ── 인쇄 용지·방향: <select> 선택값 → @page size를 JS로 동적 주입. 기본=A3 세로. 2026-07-03 시포·GM ──
+var PRINT_SIZES = {
+  'a4-portrait':  'A4 portrait',
+  'a4-landscape': 'A4 landscape',
+  'a3-portrait':  'A3 portrait',
+  'a3-landscape': 'A3 landscape'
+};
+function applyPrintSize(key) {
+  var css = PRINT_SIZES[key] || PRINT_SIZES['a3-portrait'];
+  var style = document.getElementById('printPageRule');
+  if (!style) { style = document.createElement('style'); style.id = 'printPageRule'; document.head.appendChild(style); }
+  style.textContent = '@media print{ @page{ size:' + css + '; } }';
+}
+
 // ── 요금 정책: 전체를 한눈에 편집 가능한 표로. 예약 레코드(id=POLICY-TABLE, '상품기획저장' 시트 재사용·새 배포 불필요). 2026-07-02 시포·GM ──
 var POLICY_TABLE_ID = 'POLICY-TABLE';
 var POLICY_TABLE_DEFAULT = [{"cat": "요금체계","item": "플래티넘","val": "3,000,000","note": "연간"},{"cat": "요금체계","item": "플래티넘+골프","val": "3,400,000","note": "연간"},{"cat": "요금체계","item": "노블레스","val": "3,600,000","note": "연간"},{"cat": "요금체계","item": "노블레스+골프","val": "4,000,000","note": "연간·최상위"},{"cat": "요금체계","item": "가족(2번째부터)","val": "각 2,700,000","note": "가족증명 필수·할인 아닌 정가"},{"cat": "요금체계","item": "법인 5인","val": "현행 13,500,000","note": "정가 전환·사업자등록·휴회불가·양도1회 5만"},{"cat": "요금체계","item": "법인 10인","val": "현행 25,500,000","note": "정가 전환·동일 조건"},{"cat": "요금체계","item": "인상 계획","val": "2년 주기(26.10 / 28.10)","note": "인상폭 상향"},{"cat": "신규·웰컴","item": "분기 기획","val": "1~3 / 4~6 / 7~9 / 10~12월 단위","note": "회장 보고 체계"},{"cat": "신규·웰컴","item": "웰컴패키지","val": "일일입장권 3매·손톱깍이 1·강습 3회(PT/필라/골프/스쿼시 택1)","note": "강습 3회 대신 생크몽드 100회 대체 가능·가격할인 아님"},{"cat": "신규·웰컴","item": "환불 공제금","val": "PT 326,700 · 필라테스 326,700 · 스쿼시 237,600 · 골프 195,000","note": "강습 진행 확인 시·일일입장권/손톱깍이 제외"},{"cat": "회원소개","item": "소개 혜택","val": "이용권 5매 + 선물 15만원 상당","note": "비가격 혜택·유지"},{"cat": "재등록","item": "가격 할인","val": "폐지(현행 5%)","note": "비가격 혜택으로 전환"},{"cat": "재등록","item": "바우처","val": "일일입장권 3매","note": "유지"},{"cat": "재등록","item": "90일 미만 이용","val": "2개월 연장 + 일일입장권 3매","note": "저이용 특별선택권"},{"cat": "재등록","item": "만기 후 1년내","val": "재등록 혜택 / 1년 경과=신규 혜택","note": ""},{"cat": "재등록","item": "풀데이 추가 기준","val": "240일","note": "사은품 별도 제공"},{"cat": "등급제(FAN)","item": "단계","val": "26년 4→3단계 축소","note": ""},{"cat": "등급제(FAN)","item": "FAN VIP","val": "누적 1,700만원↑","note": ""},{"cat": "등급제(FAN)","item": "VIP","val": "누적 1,200만원↑","note": ""},{"cat": "등급제(FAN)","item": "M","val": "누적 800만원↑","note": ""},{"cat": "등급제(FAN)","item": "FAN 혜택","val": "전용락커·주차연장·일일입장·카페 크레딧","note": "평가=이용금액·출석·에티켓·경영진 지정"},{"cat": "서비스","item": "입장","val": "1일 1회·풀데이 추가 480,000","note": "책임자 컨펌"},{"cat": "서비스","item": "휴회","val": "연 3회 / 총 60일","note": "특이사항 시 최대 90일"},{"cat": "서비스","item": "양도","val": "1회 한정·양도비 50,000","note": "직계/비가족·단기권 양도 가능"},{"cat": "서비스","item": "환불","val": "위약금 10%·24h내 무위약","note": "일일요금 플래티넘 14,000~노블+골프 17,000"},{"cat": "서비스","item": "일일입장권","val": "1회 55,000(입주민 47,000)·10회 500,000(입주민 420,000)","note": "유효 2개월"},{"cat": "입회나이","item": "17~69세","val": "가능","note": "일반 절차"},{"cat": "입회나이","item": "70~75세","val": "조건부","note": "건강검진+서약서"},{"cat": "입회나이","item": "76세 이상","val": "조건부","note": "건강검진+서약서+수영불가+컨시어지 동반"},{"cat": "입회나이","item": "기존회원 재등록","val": "무조건","note": "나이 제한 미적용·만료 1개월 초과시 시니어정책"},{"cat": "시설운영","item": "휴일","val": "신정·설·추석·둘째넷째 일요일","note": ""},{"cat": "시설운영","item": "주차","val": "기본 4시간 무료·발렛=FAN VIP","note": "1인 1차량 등록제"},{"cat": "시설운영","item": "비치타올","val": "클럽 내 제공","note": ""},{"cat": "시설운영","item": "여자 세신","val": "제공(사우나)","note": ""},{"cat": "시설운영","item": "세미나실","val": "대관 가능","note": ""},{"cat": "시설운영","item": "노블레스 수영복 거치대","val": "노블레스 전용","note": ""},{"cat": "시설운영","item": "강습 할인","val": "정회원 전용 요금","note": ""}];
@@ -740,7 +779,7 @@ function _polCard(cat, items){
   card.appendChild(head);
   var wrap=document.createElement('div'); wrap.className='tbl-wrap';
   var tbl=document.createElement('table');
-  tbl.innerHTML='<thead><tr><th style="width:190px">항목</th><th>내용</th><th style="width:280px">비고</th><th style="width:30px"></th></tr></thead>';
+  tbl.innerHTML='<thead><tr><th style="width:18%">항목</th><th>내용</th><th style="width:26%">비고</th><th style="width:30px"></th></tr></thead>';
   var tb=document.createElement('tbody');
   (items&&items.length?items:[{}]).forEach(function(r){ tb.appendChild(_polItemRow(r)); });
   tbl.appendChild(tb); wrap.appendChild(tbl); card.appendChild(wrap);
@@ -901,6 +940,51 @@ var SEEDS = [
   }
 ];
 
+// ── 기획 카테고리 — 신규 기획 추가 시 선택하는 단일 출처. 확장은 이 배열만 수정. 2026-07-03 시포·GM(요청) ──
+//    key = 저장값(기존 '구분' 칼럼 재사용 · GAS 스키마 변경 없음), label = 섹션 헤더, badge = 카드/필터 짧은 표시.
+var PLAN_CATEGORIES = [
+  { key:'차별화레버', label:'🏛️ 차별화 레버 — 시설·비품·어메니티 (메인)', badge:'🏛️ 차별화 레버', cls:'main' },
+  { key:'가격전략',  label:'💹 가격 전략',                                badge:'💹 가격 전략',  cls:'pricing' },
+  { key:'라인업',   label:'🧱 상품 라인업',                               badge:'🧱 상품 라인업', cls:'lineup' },
+  { key:'포지셔닝',  label:'🎯 포지셔닝',                                 badge:'🎯 포지셔닝',   cls:'positioning' }
+];
+var _activeCategoryFilter = 'all';
+var _lastPlanItems = [];
+function _catInfo(key) { return PLAN_CATEGORIES.filter(function(c){ return c.key === key; })[0] || null; }
+function categoryBadgeHtml(key) {
+  var found = _catInfo(key);
+  var label = found ? found.badge : (key ? esc(key) : '📋 미분류');
+  var cls = found ? found.cls : 'unclassified';
+  return '<span class="cat-badge ' + cls + '">' + label + '</span>';
+}
+function buildCategorySelectOptions() {
+  var sel = document.getElementById('editGubun');
+  if (!sel) return;
+  var html = '<option value="">미분류</option>';
+  PLAN_CATEGORIES.forEach(function(c){ html += '<option value="' + esc(c.key) + '">' + c.badge + '</option>'; });
+  html += '<option value="__custom__">✏️ 기타(직접 입력)</option>';
+  sel.innerHTML = html;
+}
+function onCategoryChange(value) {
+  var custom = document.getElementById('editGubunCustom');
+  var isCustom = (value === '__custom__');
+  custom.style.display = isCustom ? 'block' : 'none';
+  updateModalLabels(isCustom ? custom.value : value);
+}
+function setCategoryFilter(key) {
+  _activeCategoryFilter = key;
+  renderCards(_lastPlanItems);
+}
+function renderCategoryFilterBar() {
+  var bar = document.getElementById('planCategoryFilter');
+  if (!bar) return;
+  var chips = [{ key:'all', badge:'전체' }].concat(PLAN_CATEGORIES).concat([{ key:'__unclassified__', badge:'📋 미분류' }]);
+  bar.innerHTML = chips.map(function(c){
+    var active = (_activeCategoryFilter === c.key) ? ' active' : '';
+    return '<button type="button" class="cat-chip' + active + '" onclick="setCategoryFilter(\'' + c.key + '\')">' + c.badge + '</button>';
+  }).join('');
+}
+
 // ── 카드 렌더 ──────────────────────────────────────────────────────────
 function statusBadge(s) {
   var map = {초안:'draft',검토중:'review',확정:'confirmed'};
@@ -929,7 +1013,7 @@ function renderCard(it) {
   return '<div class="plan-card" data-id="' + esc(it.id) + '">' +
     '<div class="plan-card-head"><div>' +
       '<div class="plan-card-title">' + esc(it.제안명||'') + seedMark + '</div>' +
-      '<div class="plan-card-meta">' + statusBadge(it.상태) + updAt + '</div>' +
+      '<div class="plan-card-meta">' + categoryBadgeHtml(it.구분) + statusBadge(it.상태) + updAt + '</div>' +
     '</div></div>' +
     '<div class="plan-card-body">' + bodyHtml + '</div>' +
     '<div class="plan-card-actions">' +
@@ -942,20 +1026,27 @@ function renderCard(it) {
 }
 
 function renderCards(items) {
+  _lastPlanItems = items || [];
+  renderCategoryFilterBar();
   var grid = document.getElementById('planGrid');
-  if (!items || !items.length) {
+  if (!_lastPlanItems.length) {
     grid.innerHTML = '<div class="info-box" style="text-align:center;padding:24px;">기획안이 없습니다. "새 기획 추가"로 시작하세요.</div>';
     return;
   }
-  var SECTIONS = [
-    { key:'차별화레버', label:'🏛️ 차별화 레버 — 시설·비품·어메니티 (메인)', cls:'main' },
-    { key:'가격전략',  label:'💹 가격 전략',                                cls:'pricing' },
-    { key:'라인업',   label:'🧱 상품 라인업',                               cls:'lineup' }
-  ];
-  var knownKeys = SECTIONS.map(function(s){ return s.key; });
+  var knownKeys = PLAN_CATEGORIES.map(function(c){ return c.key; });
+  var filtered = _lastPlanItems.filter(function(it) {
+    if (_activeCategoryFilter === 'all') return true;
+    var k = it.구분 || '';
+    if (_activeCategoryFilter === '__unclassified__') return !k || knownKeys.indexOf(k) < 0;
+    return k === _activeCategoryFilter;
+  });
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="info-box" style="text-align:center;padding:24px;">이 카테고리에 해당하는 기획안이 없습니다.</div>';
+    return;
+  }
   var groups = {};
   var others = [];
-  items.forEach(function(it) {
+  filtered.forEach(function(it) {
     var k = it.구분 || '';
     if (knownKeys.indexOf(k) >= 0) {
       if (!groups[k]) groups[k] = [];
@@ -965,7 +1056,7 @@ function renderCards(items) {
     }
   });
   var html = '';
-  SECTIONS.forEach(function(sec) {
+  PLAN_CATEGORIES.forEach(function(sec) {
     var list = groups[sec.key] || [];
     if (!list.length) return;
     html += '<div class="plan-section">';
@@ -975,7 +1066,7 @@ function renderCards(items) {
     html += '</div></div>';
   });
   if (others.length) {
-    html += '<div class="plan-section"><div class="plan-section-header">📋 기타</div><div class="plan-grid">';
+    html += '<div class="plan-section"><div class="plan-section-header">📋 미분류</div><div class="plan-grid">';
     others.forEach(function(it){ html += renderCard(it); });
     html += '</div></div>';
   }
@@ -1062,7 +1153,19 @@ function updateModalLabels(gubun) {
 }
 function openModal(it) {
   document.getElementById('editId').value     = it ? (it.id||'') : '';
-  document.getElementById('editGubun').value  = it ? (it.구분||'') : '';
+  var gubun = it ? (it.구분||'') : '';
+  var sel = document.getElementById('editGubun');
+  var custom = document.getElementById('editGubunCustom');
+  var known = gubun === '' || !!_catInfo(gubun);
+  if (known) {
+    sel.value = gubun;
+    custom.value = '';
+    custom.style.display = 'none';
+  } else {
+    sel.value = '__custom__';
+    custom.value = gubun;
+    custom.style.display = 'block';
+  }
   document.getElementById('editName').value   = it ? (it.제안명||'') : '';
   document.getElementById('editComp').value   = it ? (it.구성||'') : '';
   document.getElementById('editPrice').value  = it ? (it.가격가설||'') : '';
@@ -1070,7 +1173,7 @@ function openModal(it) {
   document.getElementById('editStatus').value = it ? (it.상태||'초안') : '초안';
   document.getElementById('editAuthor').value = it ? (it.작성자||'') : '';
   document.getElementById('modalTitle').textContent = it && it.id ? '기획 편집' : '기획 추가';
-  updateModalLabels((it && it.구분) || '');
+  updateModalLabels(gubun);
   document.getElementById('modalBg').classList.add('open');
 }
 function closeModal() {
@@ -1078,9 +1181,11 @@ function closeModal() {
 }
 function submitPlan() {
   var id = document.getElementById('editId').value || ('PP-' + Date.now());
+  var selVal = document.getElementById('editGubun').value;
+  var gubun = (selVal === '__custom__') ? document.getElementById('editGubunCustom').value.trim() : selVal;
   var item = {
     id: id,
-    구분:    document.getElementById('editGubun').value.trim(),
+    구분:    gubun,
     제안명:  document.getElementById('editName').value.trim(),
     구성:    document.getElementById('editComp').value.trim(),
     가격가설:document.getElementById('editPrice').value.trim(),
@@ -1093,6 +1198,10 @@ function submitPlan() {
   closeModal();
   savePlan(item);
 }
+
+// ── 초기화: 카테고리 셀렉트 옵션 구성 + 인쇄 용지 기본값(A3 세로) 주입 ──────
+buildCategorySelectOptions();
+applyPrintSize('a3-portrait');
 
 // ── 게이트 통과 후 앱 시작 ────────────────────────────────────────────
 window.startApp = function() { loadPlans(); };
