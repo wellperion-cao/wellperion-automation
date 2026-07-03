@@ -404,6 +404,9 @@
   // 매출마스터 시트(부서별×월) = 부서별 매출 '분해'용(+ 정본 실패 시 합계 폴백). 정본−부서합 = 기타·주차 등.
   var SALES_SHEET = '18VRvDEYQ7LfaPaHmXROBpIVmYtjqZGrYie75JZnRKDA';
   var SALES_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + SALES_SHEET + '/gviz/tq?tqx=out:json';
+  // 운영부 매출 정본 = GM시트 「2026년도 매출」(1gCQNny…) L열 "합계(매출)"(멤버십 신규+재등록+양도-환불+옵션). AI CFO 매출현황과 동일 소스(2026-07 GM 지시) — 부서별 분해 중 '운영부'만 이 값으로 교체, 나머지 종목은 매출마스터 그대로.
+  var OPS_SHEET = '1gCQNny8TDls5SjrtMkINu4HCltvFkoXmkTeXO_c3q58';
+  var OPS_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + OPS_SHEET + '/gviz/tq?tqx=out:json&gid=195790960';
   // 지출 인건비 = 인건비 시트(부서·강사×월) 전 행 합(강사 인건비 + 운영부 인건비). CFO 페이지 GVIZ와 동일 소스.
   var LABOR_SHEET = '1uAmZXX0GbiDImORxEwnDFm4_C-r0W43s-_tV_cPq9lE';
   var LABOR_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + LABOR_SHEET + '/gviz/tq?tqx=out:json';
@@ -547,14 +550,41 @@
       })
       .catch(function(){ return null; });
   }
+  // 운영부 매출 정본 = GM시트 「2026년도 매출」 gviz. B열(index1)=월 라벨("1월".."12월"), L열(index11)=합계(매출). 실패/미공유=null(운영부는 매출마스터 폴백 유지).
+  function readOpsSalesTruth(){
+    return fetch(OPS_GVIZ, {cache:'no-store'})
+      .then(function(r){ return r.text(); })
+      .then(function(t){
+        var json = JSON.parse(t.substring(t.indexOf('{'), t.lastIndexOf('}') + 1));
+        var rows = (json.table && json.table.rows) || [];
+        var arr = new Array(12).fill(null), found = false;
+        rows.forEach(function(row){
+          var c = row.c || [];
+          var lbl = c[1] && c[1].v;
+          if(!lbl) return;
+          var mi = parseInt(String(lbl), 10) - 1;
+          if(!(mi >= 0 && mi < 12)) return;
+          var cl = c[11];
+          if(cl && typeof cl.v === 'number'){ arr[mi] = cl.v; found = true; }
+        });
+        return found ? arr : null;
+      })
+      .catch(function(){ return null; });
+  }
   // 매출(정본 우선·부서합 폴백)·부서맵·인건비 부서맵 동시 미러
   function readCfoFinance(){
     return Promise.all([
       readGvizDeptMap(SALES_GVIZ, 1, false),
       readGvizDeptMap(LABOR_GVIZ, 2, true),
-      readSalesTruth()
+      readSalesTruth(),
+      readOpsSalesTruth()
     ]).then(function(a){
-      var salesDept = a[0], laborDept = a[1], truth = a[2];
+      var salesDept = a[0], laborDept = a[1], truth = a[2], opsTruth = a[3];
+      // 부서별 매출 분해 중 '운영부'만 GM시트 정본(멤버십+옵션)으로 교체 — 舊 매출마스터는 6월부터 어긋남(2026-07 GM 지시).
+      if(opsTruth && salesDept){
+        var opsBase = salesDept['운영부'] || new Array(12).fill(0);
+        salesDept['운영부'] = opsBase.map(function(v, i){ return (typeof opsTruth[i] === 'number') ? opsTruth[i] : (v || 0); });
+      }
       var deptSum = salesDept ? sumDeptMap(salesDept) : null;
       // 매출 합계 = 정본(센터전체) 우선, 정본 월값 없으면 부서합 폴백(월별)
       var sales;
@@ -904,7 +934,7 @@
     var legend = '<div class="flegend">' +
       '<span class="fnote">● 선택월(' + mnum + '월) 기준 · 매출·지출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> 미러(읽기전용). ' +
       '<b>매출=센터전체 정본(회원권+강습+기타·주차)</b> / <b>전체 지출=강사+운영부 인건비 + 구매성</b>(정규직 일부·임대료 미포함, 구매성=라이브 조회).' + procNote +
-      ' 부서별 매출=매출마스터, 기타·주차=정본−부서합. 연간 12개월 상세는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인. 측정 전=소스 미기재(가짜값 없음).</span>' +
+      ' 부서별 매출=매출마스터(운영부만 GM시트 「2026년도 매출」 정본), 기타·주차=정본−부서합. 연간 12개월 상세는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인. 측정 전=소스 미기재(가짜값 없음).</span>' +
     '</div>';
 
     host.innerHTML = hero + table + salesDeptTbl + expDeptTbl + legend;
