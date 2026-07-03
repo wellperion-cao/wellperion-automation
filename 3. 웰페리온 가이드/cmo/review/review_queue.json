@@ -9,7 +9,7 @@
     "status": "발행완료",
     "post_url": "https://bizprofile.daangn.com/biz_accounts/2769927/manager/posts/?postId=6a470be",
     "published_at": "2026-07-03T10:10:23",
-    "note": "발행 성공 · postId=6a470be · 1차 시도 세션만료 재로그인 후 타이핑 타임아웃 실패, 재시도로 성공. 증거: scripts/poc-evidence/danggn_publish_done.png"
+    "note": "[GM 중복점검 시도 2026-07-03] postId=6a470be는 유지(변경 없음). 중복 여부 확인을 위해 소식 목록 접속 시도했으나 당근 비즈 세션 만료(QR 재로그인 필요, 자동 재로그인은 'QR 스캔' 단계에서 60초 타임아웃 — 자동화 불가). GM이 --mode setup으로 모바일 QR 재로그인 후 재확인 필요. 그 전까지 기존 6a470be만 확인된 상태 유지, 삭제·재발행 등 손대지 않음."
   },
   {
     "id": "CMO-2026-07-01-SUMMER-CAMP-EP3-KAKAO",
@@ -33,18 +33,19 @@
     "status": "발행완료",
     "post_url": "https://cafe.naver.com/ichon1dong/363418",
     "published_at": "2026-07-03T10:04:49",
-    "note": "[자동발행 2026-07-03] 말머리=웰페리온·스티커 2개·UTM 링크(campaign=260701_ep3) 반영, 등록 성공(articleid=363418). 증거: scripts/poc-evidence/cafe-ichon1dong-published-20260703_100449.png"
+    "note": "[자동발행 2026-07-03] 말머리=웰페리온·스티커 2개·UTM 링크(campaign=260701_ep3) 반영, 등록 성공(articleid=363418). [GM 피드백 점검 2026-07-03] GM이 지적한 '문의 링크 중복'을 라이브 재조회로 확인 — 실제 게시글 본문엔 안내문장 + 링크카드 1개뿐, 문자열 중복 없음(중복은 발행 전 원본 _cafe_body.txt에만 있었고 정규화 단계에서 이미 제거되어 게시됨). 소스 파일(_cafe_body.txt)에서도 해당 줄 제거해 SSOT 정리. 라이브 글이 이미 정상이라 삭제·재등록 없이 그대로 유지(댓글·공감 있는 기존 글 보존)."
   },
   {
     "id": "CMO-2026-07-01-SUMMER-CAMP-EP3-BLOG",
-    "title": "여름방학특강 Ep3 — 네이버 블로그 (임시저장)",
+    "title": "여름방학특강 Ep3 — 네이버 블로그 (발행완료)",
     "channel": "네이버 블로그",
     "account": "wellperion",
     "folder": "instagram/260701_여름방학특강_ep3/output(블로그)",
     "preview": "cmo/review/260701_여름방학특강_ep3_preview_20260703095127.png",
-    "status": "임시저장",
-    "published_at": "2026-07-03T10:03:57",
-    "note": "임시저장 완료, GM 게시 대기(SmartEditor 실게시=사람 클릭 필요) · 증거: scripts/poc-evidence/naver-blog-draft-20260703_100357.png"
+    "status": "발행완료",
+    "post_url": "https://blog.naver.com/PostView.naver?blogId=wellperion&logNo=224335061937",
+    "published_at": "2026-07-03T10:37:00",
+    "note": "[GM 실발행 2026-07-03] 실제 게시글 제목 '2026 여름방학 특강 Ep3 지도자편 — 믿고 맡기는 이유, 검증된 지도진'로 발행완료 확인(로그인 필요 없는 공개 열람으로 라이브 대조). 해시태그는 이미 발행 태그칸에 정상 반영, 본문 인라인 링크 중복도 없음(안내문장+링크카드 1개) — 소스 파일도 동일하게 정리. 남은 문제: 스티커가 여전히 본문 맨 위 1개 + 맨 아래 1개(구버전 동작)로 남아 있음 — GM 요청('첫 섹션 다음 1개')이 아직 라이브에 미반영. 원인=네이버 세션 만료(NID_AUT 없음, --mode setup 재로그인 필요) — 자동화로 로그인 불가(비밀번호 입력 필요), 수정 편집 진입 시도 시 nid.naver.com 로그인으로 리다이렉트됨(스크린샷: scripts/poc-evidence/diag_blog_edit_attempt.png). scripts/naver_blog_upload_playwright.py는 스티커 위치(첫 섹션 다음 1개)·--tags 인자를 이미 수정 완료(다음 발행부터 자동 반영) — GM 재로그인 후 기존 글 수정 진입해 스티커만 재배치하면 완결."
   },
   {
     "id": "CMO-2026-07-01-SUMMER-CAMP-EP3",
