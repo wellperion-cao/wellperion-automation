@@ -148,6 +148,20 @@
   .nsax-goal{font-size:10px; color:var(--dim);}
   .nsax-note{font-size:10px; color:var(--dim);}
 
+  /* ── ⚙️ 자동화→자율화 4층 구조 다이어그램 — 2026-07-03 ── */
+  .autoflow{display:flex; flex-wrap:wrap; align-items:stretch; gap:6px; margin:4px 0 10px;}
+  .autolayer{flex:1 1 190px; min-width:170px; background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent-soft); border-radius:10px; padding:9px 11px; display:flex; flex-direction:column; gap:2px;}
+  .autolayer .al-n{font-size:10px; font-weight:800; color:var(--accent-soft); text-transform:uppercase; letter-spacing:0.02em;}
+  .autolayer .al-h{font-size:12.5px; font-weight:700; color:var(--text);}
+  .autolayer .al-d{font-size:11px; color:var(--text-soft); line-height:1.4;}
+  .autoarrow{display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--dim); padding:0 2px;}
+  @media (max-width:640px){ .autoflow{flex-direction:column;} .autoarrow{transform:rotate(90deg);} }
+
+  /* ── 🗺️🎛️ 북극성 지도 · 살아있는 지휘판 한눈에(요약 스트립 · 측정 개통분만) — 2026-07-03 ── */
+  .ns-overview{display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:8px; margin:4px 0 10px;}
+  .ns-role{background:var(--paper); border:1px solid var(--border); border-radius:9px; padding:8px 10px;}
+  .ns-role-h{display:flex; align-items:center; gap:5px; font-size:12.5px; margin-bottom:4px;}
+
   /* ── 공통 4섹션 카드 ── */
   .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:4px;}
   .ccard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:11px 13px;}
@@ -201,6 +215,12 @@
     .nsmap{background:#f6f6f6 !important; border-color:#999 !important;}
     .nsmap-h, .nsmap-row, .nsmap-row b, .nsmap-row .nsmap-k, .nsmap-path{color:#111 !important;}
     .nsax, .nsax b, .nsax .nsax-name, .nsax-goal, .nsax-note{color:#111 !important;}
+    /* 신규(2026-07-03): 자율화 4층 다이어그램 · 지휘판 요약 스트립 라이트 강제 */
+    .autolayer{background:#fff !important; border-color:#999 !important;}
+    .autolayer .al-n, .autolayer .al-h, .autolayer .al-d{color:#111 !important;}
+    .autoarrow{color:#666 !important;}
+    .ns-role{background:#fff !important; border-color:#999 !important;}
+    .ns-role-h, .ns-role-h b{color:#111 !important;}
   }
 </style>
 </head>
@@ -219,14 +239,44 @@
     <div class="vision-body">
       <div class="vision-h">회사 비전 · 북극성 (전사 정본)</div>
       <div class="vision-txt"><b>3,000평 종합 스포츠클럽을 굴리는 ERP를 제품화한다</b> — 미션: 지속되지 않는 건강 문제를 해결한다. 전 업무를 자동화→자율화(AI가 판단·완결)해, GM은 방향·결재만.</div>
-      <div class="vision-note">GM = G1(오케스트레이션)만 · 실무 북극성은 아래 7역할이 나눠 진다. 개인 삶 북극성은 헌법에서 제외(헌법 = 회사 운영용). 🔖 초안 3역할(시포·시뽀·시로) 북극성 = 제안본(GM 결재 대기 · KPI 정의 변경 게이트).</div>
-      <div class="vision-note">🔍 자율 개선 규모 게이트(차등 점검): 안정 페이지(대장 등록)는 자율 점검서 제외 — 신규/변경분만 대상. 좁혀진 대상은 1~2척·Sonnet 선훑기, 딥 전수는 신규 페이지에만. 정본 = <code>status/audit_registry.json</code> + <code>scripts/audit_scope.py</code>(대장·git 대조 자동 산출).</div>
+      <div class="vision-note" title="GM = G1(오케스트레이션)만 · 실무 북극성은 아래 7역할이 나눠 진다. 개인 삶 북극성은 헌법에서 제외(헌법 = 회사 운영용). 🔖 초안 3역할(시포·시뽀·시로) 북극성 = 제안본(GM 결재 대기 · KPI 정의 변경 게이트).">GM=G1(오케스트레이션)만 · 북극성은 7역할 분담(개인 삶 제외). 🔖 시포·시뽀·시로=제안본(결재 대기)</div>
+      <div class="vision-note" title="🔍 자율 개선 규모 게이트(차등 점검): 안정 페이지(대장 등록)는 자율 점검서 제외 — 신규/변경분만 대상. 좁혀진 대상은 1~2척·Sonnet 선훑기, 딥 전수는 신규 페이지에만. 정본 = status/audit_registry.json + scripts/audit_scope.py(대장·git 대조 자동 산출).">🔍 차등 점검: 안정 페이지 제외·신규/변경분만(1~2척 Sonnet 선훑기, 딥전수=신규만). 정본 <code>status/audit_registry.json</code>+<code>audit_scope.py</code></div>
     </div>
   </div>
 
+  <!-- ════ ⚙️ 자동화→자율화 4층 구조 (2026-07-03) ════ -->
+  <h2 class="sec">⚙️ 자동화→자율화 4층 구조</h2>
+  <div class="sec-note">자동화(코드·훅 박제)가 쌓여 자율화(AI 판단·완결)로 이어지는 4층.</div>
+  <div class="autoflow">
+    <div class="autolayer" style="border-left-color:#7ac4f0;">
+      <span class="al-n">① 제작 루프</span><span class="al-h">🎨 GM</span>
+      <span class="al-d">기획→초안→디자인→고도화→단순화→피드백 루프(모든 산출물 표준 라이프사이클)</span>
+    </div>
+    <div class="autoarrow">→</div>
+    <div class="autolayer" style="border-left-color:#7C3AED;">
+      <span class="al-n">② 오케스트레이션</span><span class="al-h">🧭 웰리</span>
+      <span class="al-d">7 C-Level 위임·완결검증·G1 통합보고(웰리는 지시·검증만, 직접실행 금지)</span>
+    </div>
+    <div class="autoarrow">→</div>
+    <div class="autolayer" style="border-left-color:#f0c674;">
+      <span class="al-n">③ GM 보좌 자율화</span><span class="al-h">🤝 배237</span>
+      <span class="al-d" title="GM 성향·습관 학습→관찰·포착·선제. 가역=자율 실행/비가역=제안. 금지5종만 게이트. 스펙=.omc/specs/deep-interview-gm-aide-autonomy.md">GM 성향 학습→선제 포착·실행(가역 자율/비가역 제안, 금지5종만 게이트)</span>
+    </div>
+    <div class="autoarrow">→</div>
+    <div class="autolayer" style="border-left-color:#6abf7b;">
+      <span class="al-n">④ 차등 점검</span><span class="al-h">🔍 규모 게이트</span>
+      <span class="al-d" title="정본 status/audit_registry.json + scripts/audit_scope.py(대장·git 대조 자동 산출)">안정 페이지 제외·신규/변경분만(1~2척 Sonnet 선훑기 ↔ 딥전수=신규만)</span>
+    </div>
+  </div>
+
+  <!-- ════ 🗺️🎛️ 북극성 지도 · 살아있는 지휘판 한눈에(측정 개통분만) — 2026-07-03 ════ -->
+  <h2 class="sec">🗺️ 북극성 지도 · 살아있는 지휘판</h2>
+  <div class="sec-note">7역할 KPI→북극성 경로 한눈에(골드=도달율·회색=처리율). 측정 개통분만 실값, 미측정은 정직 표기.</div>
+  <div class="ns-overview" id="ns-overview"><div class="matrix-status">지휘판 데이터를 불러오는 중…</div></div>
+
   <!-- ════ A. 8주체 × 3칸 매트릭스 (편집형 · 2026-06-29) ════ -->
   <h2 class="sec">🧭 8주체 × 3칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
-  <div class="sec-note">핵심 3칸만 표시. 재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독.</div>
+  <div class="sec-note" title="재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독.">핵심 3칸만(나머지 4차원=S2 본인탭). 📊KPI·🛡️재발방지=직독 정본(읽기전용)</div>
   <div class="mx-controls" id="mx-controls"><!-- JS: 역할·칸 필터 + 폴침 --></div>
   <div class="matrix-scroll">
     <table class="matrix">
@@ -503,7 +553,7 @@
       return '<div class="nsreach">' + labC +
         '<div class="kbar gold" title="측정 커버리지 — 전체 축 중 실측된 비율(도달율 아님)"><i style="width:' + pct + '%"></i></div>' +
         '<div class="nsreach-meta">🌟 ' + kpiLbl + ': <b>' + valTxt + '</b> <span class="nsreach-note">· 측정 ' + cov.M + '/' + cov.K + '축</span></div>' +
-        '<div class="nsreach-build" style="margin-top:2px;">복합 축 종합 — 좁은 프록시 하나로 &lsquo;북극성 도달&rsquo; 단정 금지(L05)</div>' +
+        '<div class="nsreach-build" style="margin-top:2px;" title="복합 축 종합 — 좁은 프록시 하나로 &lsquo;북극성 도달&rsquo; 단정 금지(약속 L05 · M4-METRIC-HONESTY)">복합 축 종합(L05)</div>' +
       '</div>';
     }
     var lab = '<span class="nsreach-h">🌟 북극성 도달율 <span class="nsreach-note">(궁극 목표)</span></span>';
@@ -535,8 +585,7 @@
     return '<div class="workrate"><span class="workrate-h">작업 처리율 · 보조 지표(활동량)</span>' +
       '<div class="kbar neutral" title="작업 처리율 — 할당 작업 처리량(북극성 도달과 다름)"><i style="width:' + pct + '%"></i></div>' +
       '<div class="workrate-meta">처리율 <b>' + pct + '%</b>' +
-      (typeof v['완료'] === 'number' ? (' · 누적 완료 <b>' + v['완료'] + '</b>') : '') +
-      ' <span class="nsreach-note">· 할당 작업 처리량 — 목표 도달과 다름</span></div>' +
+      (typeof v['완료'] === 'number' ? (' · 누적 완료 <b>' + v['완료'] + '</b>') : '') + '</div>' +
     '</div>';
   }
 
@@ -565,6 +614,28 @@
                   ' · ' + esc(String(r.요약 || '').slice(0, 44)) + (String(r.요약 || '').length > 44 ? '…' : '') + '</span>') : '';
     return '<div class="incd"><span class="incd-h">🛡️ 재발방지 GUARDED</span>' +
       '<div class="incd-meta">🛡️ 봉인 <b>' + c.guarded + '</b>건</div>' + rc + '</div>';
+  }
+
+  // 🗺️🎛️ 북극성 지도·살아있는 지휘판 요약 스트립 — 매트릭스 각 행과 같은 데이터(_reachData·_kpiValues)를
+  //   role별 카드로 재구성해 한눈에(스크롤 없이) 보여준다. 신규 fetch 없음 — 기존 로직 재사용(회귀 안전).
+  function renderNsOverview(){
+    var el = document.getElementById('ns-overview');
+    if(!el) return;
+    var roles = (_matrixData && _matrixData.roles) || [];
+    var list = roles.filter(function(r){ return r.nsmap || (_reachData && _reachData[r.id]); });
+    if(!list.length){
+      el.innerHTML = '<div class="matrix-status">역할별 북극성 지도 데이터 없음 — 정본: coo/bootsetup_matrix.json</div>';
+      return;
+    }
+    el.innerHTML = list.map(function(role){
+      var ac = role.accent || 'var(--accent)';
+      var wr = workRateBlock(role);
+      return '<div class="ns-role" style="border-left:3px solid ' + esc(ac) + ';">' +
+        '<div class="ns-role-h"><span>' + esc(role.icon) + '</span> <b style="color:' + esc(ac) + ';">' + esc(role.name) + '</b>' +
+        (role.draft ? '<span class="rdraft">🔖 초안</span>' : '') + '</div>' +
+        northStarReachBlock(role) + wr +
+      '</div>';
+    }).join('');
   }
 
   function renderMatrix(){
@@ -809,6 +880,7 @@
       _incidents = computeIncidents(arr[5]);
       _reachData = (arr[6] && arr[6].roles) || {};
       renderMatrix();
+      renderNsOverview();
       renderEditBtn();
       initColResizers();
       buildControlBar();
@@ -817,6 +889,8 @@
     .catch(function(e){
       body.innerHTML = '<tr><td colspan="4" class="matrix-status">매트릭스 정본을 불러오지 못했습니다 (' + esc(e.message) +
         '). 정본: <code>coo/bootsetup_matrix.json</code></td></tr>';
+      var nsEl = document.getElementById('ns-overview');
+      if(nsEl) nsEl.innerHTML = '<div class="matrix-status">지휘판 데이터를 불러오지 못했습니다.</div>';
     });
 })();
 </script>
