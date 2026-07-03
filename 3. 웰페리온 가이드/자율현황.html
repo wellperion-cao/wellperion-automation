@@ -122,6 +122,20 @@
   .pub-tt a:hover{text-decoration:underline;}
   .pub-when{flex-shrink:0; font-size:10.5px; color:var(--dim); font-variant-numeric:tabular-nums;}
 
+  /* ── 📣 시모 폐루프 5단계 미니 흐름도 (project_cmo_marketing_pipeline_loop) ── */
+  .cmo-loop{display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin:2px 0 12px; padding:10px 12px; border:1px solid var(--border-strong); border-radius:10px; background:rgba(232,138,192,0.05);}
+  .cmo-loop-lbl{font-size:9px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; color:var(--dim); margin-right:2px; flex-shrink:0;}
+  .cmo-step{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10.5px; font-weight:700; color:var(--text-soft); border:1px solid var(--border-strong); border-radius:8px; padding:5px 10px; background:var(--paper); white-space:nowrap;}
+  .cmo-step .cs-s{font-size:8.5px; font-weight:800; letter-spacing:0.02em; border-radius:8px; padding:1px 7px;}
+  .cmo-step.live{border-color:rgba(106,191,123,0.45);}
+  .cmo-step.live .cs-s{color:#0c1a10; background:var(--green);}
+  .cmo-step.partial{border-color:rgba(240,198,116,0.45);}
+  .cmo-step.partial .cs-s{color:#2a2004; background:var(--gold);}
+  .cmo-step.wait{border-color:var(--border);}
+  .cmo-step.wait .cs-s{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  .cmo-loop-arrow{color:var(--dim); font-size:13px; flex-shrink:0;}
+  .cmo-loop-arrow.back{color:var(--accent-soft); font-weight:800; font-size:11px; margin-left:2px;}
+
   footer.foot{margin-top:22px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:11px; line-height:1.6;}
   footer.foot b{color:var(--text-soft);}
   code{background:rgba(255,255,255,0.07); color:#e6d9ff; border-radius:4px; padding:1px 5px; font-size:11px;}
@@ -316,8 +330,21 @@
 
   <!-- ════ 📣 시모(AI CMO) 자율 마케팅 (제작→발행→측정 자율 축 · review_queue 실데이터) ════ -->
   <section>
-    <h2 class="sec">📣 시모 (AI CMO) 자율 마케팅 <span style="font-size:11px;font-weight:400;color:var(--dim);">(콘텐츠→발행→측정 자율 축)</span></h2>
-    <div class="sec-note">시모(AI CMO)가 사람 지시 없이 상시 돌리는 마케팅 자율 축 — 제작·발행·측정. 발행 수치는 <code>cmo/review/review_queue.json</code> 실데이터에서만 산출(가짜 수치 금지).</div>
+    <h2 class="sec">📣 시모 (AI CMO) 자율 마케팅 <span style="font-size:11px;font-weight:400;color:var(--dim);">(폐루프 5단계 자율 축)</span></h2>
+    <div class="sec-note">시모(AI CMO) 정본 폐루프 — ①콘텐츠→②문의→③등록→④측정→⑤평가 환류→(다음 기획으로 순환). 아래 카드는 각 단계를 굴리는 실제 엔진. 발행 수치는 <code>cmo/review/review_queue.json</code> 실데이터에서만 산출(가짜 수치 금지).</div>
+    <div class="cmo-loop">
+      <span class="cmo-loop-lbl">폐루프</span>
+      <div class="cmo-step live"><span>① 콘텐츠 제작</span><span class="cs-s">라이브</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step live"><span>② 문의 유입</span><span class="cs-s">라이브</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step partial"><span>③ 등록·전환</span><span class="cs-s">부분</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step live"><span>④ 측정·대시보드</span><span class="cs-s">라이브</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step wait"><span>⑤ 평가 환류</span><span class="cs-s">대기</span></div>
+      <span class="cmo-loop-arrow back">↻ 다음 기획</span>
+    </div>
     <div class="routines" id="cmo-routines">
       <div class="feed-status" style="grid-column:1/-1;">시모 자율 마케팅 현황을 불러오는 중…</div>
     </div>
@@ -411,7 +438,7 @@
     <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent-soft);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). 수동 재기동: <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code>. <span style="color:var(--dim);">점검 원칙(왜·언제) = S2 CTO탭.</span></div>
 
     <!-- ══ 📸 M5 인스타그램 발행 파이프라인 — T2 사람용 정본 (구 T2 이식) ══ -->
-    <h3 style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📸 M5 인스타그램 발행 파이프라인 <span style="font-size:12px;font-weight:400;color:var(--dim);">— 사람용 정본 · 현행 단계·가드만</span></h3>
+    <h3 id="sec-m5-pipeline" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📸 M5 인스타그램 발행 파이프라인 <span style="font-size:12px;font-weight:400;color:var(--dim);">— 사람용 정본 · 현행 단계·가드만</span></h3>
     <p class="sec-note" style="margin:0 0 12px;">코드·구현 상세 = <code>instagram/_AI시리즈_로드맵.md</code> §3.4 / M5 대화형 보드 = <a href="wellperion_guide(main).html#M5" style="color:var(--accent-soft);font-weight:700;text-decoration:none;">M5 콘텐츠 검수·자동업로드</a>. 본 섹션은 흐름·가드만.</p>
 
     <div class="tbl-wrap"><table>
@@ -473,6 +500,15 @@
       </table></div>
     </div>
     <!-- ══ /M5 인스타그램 발행 파이프라인 ══ -->
+
+    <!-- ══ 매주 (7 C-Level 컨텍스트 정비 · AI 교육자료 자동 정리) — T2 원본에서 이식 2026-07-03 ══ -->
+    <h4 id="sec-weekly">매주</h4>
+    <div class="tbl-wrap"><table>
+      <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
+      <tr><td>🟢</td><td>7 C-Level 컨텍스트 정비</td><td>7 C-Level</td><td>일 09:00</td><td style="font-size:12px;">범위·R/R 정본 = <strong>S2 ▸ 운영 프롬프트 ▸ ① 컨텍스트 정비</strong> <span style="color:var(--dim);">/ 실행 STEP1~5 = T1</span></td></tr>
+      <tr><td>🟢</td><td>AI 교육자료 자동 정리·자기학습</td><td>AI CEO</td><td>월 09:00</td><td style="font-size:12px;">최신 AI 정보 수집·요약 → 아카이브·고도화 제안. 프로세스 정본 = <strong>T1 ▸ 자기학습 프로세스</strong> <span style="color:var(--dim);">/ education_archive_weekly.py</span></td></tr>
+    </table></div>
+    <!-- ══ /매주 ══ -->
 
     <div class="sec-note" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">점검 기준: Windows Task Scheduler + Python 프로세스 실측 (2026-06-03 S3 산출 자동화 이관·정합 · T2 원본에서 이식 2026-07-03)</div>
   </details>
@@ -739,12 +775,26 @@
         ['축적', '채널별 실전환율 축적 시작 · 새 태깅 문의부터(과거 소급X·정직)'],
         ['링크', '<a href="cmo/funnel/마케팅현황대시보드.html" style="color:var(--accent-soft)">마케팅 현황 대시보드</a>']
       ]});
-    // 4) 콘텐츠 반응 읽기
+    // 4) 월간 마케팅 보고서 (Task Scheduler 확인 · scripts/monthly_marketing_report.py)
+    cards.push({ ico:'📅', nm:'월간 마케팅 보고서', cy:'월 1회 · 자동 집계·발송', rc:'var(--accent-soft)',
+      pill:['on','월 1회 자동'], rows:[
+        ['집계', '채널별 문의·유형별 문의·회원 전환·전환율(GAS period_breakdown·funnel_conversion)'],
+        ['발송', '텔레그램(namuki_report_bot) 자동 발송 · Task Scheduler 매월 1일 09:00'],
+        ['상세', '<a href="cmo/funnel/월간마케팅보고서.html" style="color:var(--accent-soft)">월간 마케팅 보고서</a> (월 선택 가능)']
+      ]});
+    // 5) 콘텐츠 반응 읽기
     cards.push({ ico:'📈', nm:'콘텐츠 반응 읽기', cy:'채널 반응 주기 수집', rc:'var(--green)',
       pill:['na','부분 측정'], rows:[
         ['당근', '조회·관심=자동수집'],
         ['IG', '저장·좋아요=플랫폼 비공개(미수집·정직)'],
         ['추적', '팔로워·댓글=하이브리드 추적']
+      ]});
+    // 6) 평가 환류 (폐루프 ⑤ — 아직 미가동, 정직 표기)
+    cards.push({ ico:'🔄', nm:'평가 환류 (폐루프 ⑤)', cy:'통한 콘텐츠 Top/Bottom → 다음 기획 반영', rc:'var(--gold)',
+      pill:['idle','대기'], rows:[
+        ['현재', 'UTM 클릭 데이터 축적 대기 중(배106 · 새 태깅 문의부터)'],
+        ['좋은콘텐츠 지표', '저장+댓글+클릭 가중 사전설계(수집 미완료)'],
+        ['열리면', '주간 통한 콘텐츠 → 다음 편 후킹·방향 자동 반영(폐루프 닫힘)']
       ]});
 
     routEl.innerHTML = cards.map(function(c){
