@@ -107,6 +107,18 @@ UTM_LABELS = {
     "instagram": "인스타그램",
 }
 
+# ── 재생성 시 시모 정성 판정 보존(덮어쓰기 방지) ────────────────────
+# 2026-07-03 사고: 동시 재실행이 시모가 채운 §3/§4 를 빈 placeholder 로 덮어씀(수동 복구됨).
+# 섹션1-2(자동 데이터)는 매번 갱신하되, §3/§4 는 시모가 이미 채웠으면 절대 재생성하지 않는다.
+SECTION_3_HEADING = "## 3. Top / Bottom 정성 판정"
+SECTION_4_HEADING = "## 4. 다음 편 제안"
+# 각 섹션의 "아직 시모가 안 채운" placeholder 를 판별하는 마커.
+# 주의: "_자동 채움 없음 — ..." 안내 문장은 시모가 Top/Bottom 을 채운 뒤에도 안내용으로
+# 그대로 남겨두는 경우가 실제로 있다(2026-07-03 실사례) — 이걸 마커에 넣으면 채운 섹션도
+# "미채움"으로 오판해 재생성해버린다. 그래서 실제 placeholder 문구(▸ (...))만 마커로 쓴다.
+SECTION_3_PLACEHOLDER_MARKERS = ["▸ (시모 정성 판정"]
+SECTION_4_PLACEHOLDER_MARKERS = ["▸ (시모: 통한 패턴"]
+
 # ── 텔레그램 주간 요약 발송 (문의알림방 · 2026-07-03 GM go 라이브) ─────
 ENV_PATH = _REPO_ROOT / "telegram_bot" / ".env"
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
@@ -383,7 +395,7 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
     parts.append(_fmt_conversion_breakdown(fc))
     parts.append("")
 
-    parts.append("## 3. Top / Bottom 정성 판정")
+    parts.append(SECTION_3_HEADING)
     parts.append("")
     parts.append("_자동 채움 없음 — 시모가 위 표·콘텐츠를 보고 직접 판정해 채운다._")
     parts.append("")
@@ -391,7 +403,7 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
     parts.append("- **Bottom(안 통한 콘텐츠):** ▸ (시모 정성 판정 — 안 통한 콘텐츠·이유)")
     parts.append("")
 
-    parts.append("## 4. 다음 편 제안")
+    parts.append(SECTION_4_HEADING)
     parts.append("")
     parts.append("▸ (시모: 통한 패턴 → 다음 편 후킹·소재·채널 제안 → G1 배 등록)")
     parts.append("")
@@ -426,6 +438,85 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
     return "\n".join(parts)
 
 
+# ── 재생성 시 §3/§4 시모 정성 판정 보존 ─────────────────────────────
+def _is_filled(section_text: str | None, placeholder_markers: list[str]) -> bool:
+    """섹션 원문에 해당 섹션의 placeholder 마커가 하나도 없으면 시모가 채운 FILLED 로 판단.
+    비어있음/None = 미채움(placeholder)."""
+    if not section_text or not section_text.strip():
+        return False
+    return not any(marker in section_text for marker in placeholder_markers)
+
+
+def _extract_section(md_text: str, heading: str, stop_headings: list[str]) -> str | None:
+    """heading 줄부터 — stop_headings 중 가장 먼저 나오는 지점 직전(없으면 EOF)까지 — 원문 그대로 추출.
+    heading 을 못 찾으면 None."""
+    start = md_text.find(heading)
+    if start == -1:
+        return None
+    end = len(md_text)
+    for stop in stop_headings:
+        idx = md_text.find(stop, start + len(heading))
+        if idx != -1 and idx < end:
+            end = idx
+    return md_text[start:end].rstrip("\n")
+
+
+def apply_preserved_judgment(fresh_md: str, out_path: Path) -> str:
+    """오늘자 브리프 파일이 이미 있고 §3/§4 에 시모가 실제로 채운 내용이 있으면,
+    새로 생성한 §3/§4 placeholder 를 그 기존 내용으로 되돌려(보존)한다.
+    §1-2(자동 데이터)는 항상 fresh_md 값을 그대로 쓴다.
+    - 기존 파일 없음 → fresh_md 그대로(정상 첫 실행/새 날짜).
+    - 기존 §3/§4 가 아직 placeholder → fresh_md 그대로(정상 재생성).
+    - 기존 §3/§4 가 FILLED → fresh_md 의 해당 구간을 기존 원문으로 치환(보존).
+    - 파싱이 애매/실패 → 유실 방지 우선: 기존 파일의 §3~EOF 원문을 통째로 보존.
+    """
+    if not out_path.exists():
+        return fresh_md
+    try:
+        existing_md = out_path.read_text(encoding="utf-8")
+    except Exception as e:
+        print(f"[WARN] 기존 브리프 읽기 실패({out_path.name}): {e} — 새 placeholder 로 진행")
+        return fresh_md
+
+    try:
+        fresh_s3 = _extract_section(fresh_md, SECTION_3_HEADING, [SECTION_4_HEADING])
+        fresh_s4_tail = _extract_section(fresh_md, SECTION_4_HEADING, [])  # §4부터 EOF(참고 힌트·v2훅 포함)
+        if fresh_s3 is None or fresh_s4_tail is None:
+            print("[WARN] 신규 브리프에서 §3/§4 헤딩을 못 찾음(포맷 변경 의심) — 보존 병합 생략")
+            return fresh_md
+
+        exist_s3 = _extract_section(existing_md, SECTION_3_HEADING, [SECTION_4_HEADING])
+        exist_s4_tail = _extract_section(existing_md, SECTION_4_HEADING, [])
+
+        merged = fresh_md
+
+        if _is_filled(exist_s3, SECTION_3_PLACEHOLDER_MARKERS):
+            merged = merged.replace(fresh_s3, exist_s3, 1)
+            print("[INFO] §3(Top/Bottom 정성 판정) 기존 시모 판정 보존 — 재생성 스킵")
+        else:
+            print("[INFO] §3 기존 콘텐츠 없음/미채움 — placeholder 새로 생성")
+
+        # §4 는 위 §3 치환으로 fresh_md 내용이 바뀌었을 수 있으니 merged 기준으로 재추출.
+        fresh_s4_tail_current = _extract_section(merged, SECTION_4_HEADING, [])
+        if _is_filled(exist_s4_tail, SECTION_4_PLACEHOLDER_MARKERS) and fresh_s4_tail_current is not None:
+            merged = merged.replace(fresh_s4_tail_current, exist_s4_tail, 1)
+            print("[INFO] §4(다음 편 제안) 기존 시모 제안 보존 — 재생성 스킵")
+        else:
+            print("[INFO] §4 기존 콘텐츠 없음/미채움 — placeholder 새로 생성")
+
+        return merged
+    except Exception as e:
+        print(f"[WARN] §3/§4 보존 병합 중 예외: {e} — 유실 방지 위해 기존 §3~EOF 원문 통째 보존")
+        try:
+            idx_exist = existing_md.find(SECTION_3_HEADING)
+            idx_fresh = fresh_md.find(SECTION_3_HEADING)
+            if idx_exist != -1 and idx_fresh != -1:
+                return fresh_md[:idx_fresh] + existing_md[idx_exist:]
+        except Exception:
+            pass
+        return fresh_md
+
+
 # ── 메인 ────────────────────────────────────────────────────────
 def main():
     now = datetime.datetime.now()
@@ -445,6 +536,10 @@ def main():
 
     BRIEFS_DIR.mkdir(parents=True, exist_ok=True)
     out_path = BRIEFS_DIR / f"CMO-weekly-feedback-{now.strftime('%Y%m%d')}.md"
+
+    # §3/§4 는 시모가 이미 채웠으면 재생성으로 절대 덮어쓰지 않는다(2026-07-03 사고 재발방지).
+    brief_md = apply_preserved_judgment(brief_md, out_path)
+
     out_path.write_text(brief_md, encoding="utf-8")
 
     print(f"[INFO] 브리프 생성 완료: {out_path}")
