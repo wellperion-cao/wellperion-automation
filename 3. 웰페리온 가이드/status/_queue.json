@@ -1279,5 +1279,19 @@
     "artifact": "2026-07-03 09시 보고 매출·지출칸이 GAS(home_kpi) 15초 단발 타임아웃으로\n조용히 빈칸 발송된 사고 수리. 실측 재현: 엔드포인트 응답 10.6s(콜드 시 15s 초과).\n- timeout 15→40s + 최대 3회 재시도\n- 3회 실패 시 .finance_cache.txt(직전 정상값)로 폴백, ⚠️ 지연 표기\n- 성공 시 캐시 자동 갱신, 오늘 실수치로 pre-warm 완료 (CLI ad-hoc · 커밋 c1a2876b)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "c1a2876b6b906e8f9be16922dbf190908c74a310"
+  },
+  {
+    "task_id": "CPO-2026-07-03-ADHOC-dab50068",
+    "clevel": "cpo",
+    "title": "[시포] 이탈 신호 매트릭스 정직화 — 실측 2신호 라이브 연결·미측정 6신호 데이터원 태그 (배299 2단계)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-03",
+    "processed_at": "2026-07-03",
+    "ship_no": 314,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Agfnxi2fVoRhgFEQbH5yno (CLI ad-hoc · 커밋 dab50068)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "dab50068c5bec8d78e4f210d36acd21a73603e40"
   }
 ]
