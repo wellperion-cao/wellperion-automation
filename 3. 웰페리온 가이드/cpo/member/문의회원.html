@@ -951,23 +951,23 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:11px">🧭 CPO 운영 가이드</div>
     <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-bottom:13px">
       <div style="display:flex;gap:16px;padding:9px 16px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-border)">
-        <div><div style="font-size:10px;color:var(--red);font-weight:700">오늘 이탈</div><div style="font-size:22px;font-weight:800;color:var(--red)" id="gToLoss">0</div></div>
+        <div><div style="font-size:10px;color:var(--red);font-weight:700">오늘 LOSS</div><div style="font-size:22px;font-weight:800;color:var(--red)" id="gToLoss">0</div></div>
         <div style="width:1px;background:var(--red-border)"></div>
-        <div><div style="font-size:10px;color:var(--red);font-weight:700">이번달 이탈</div><div style="font-size:22px;font-weight:800;color:var(--red)" id="gMoLoss">0</div></div>
+        <div><div style="font-size:10px;color:var(--red);font-weight:700">이번달 LOSS</div><div style="font-size:22px;font-weight:800;color:var(--red)" id="gMoLoss">0</div></div>
       </div>
       <div style="flex:1;min-width:240px">
-        <div style="font-size:11px;font-weight:800;color:var(--text);margin:0 0 7px">⚠️ 이탈 신호 (실측 라이브 — 유효회원 시트)</div>
+        <div style="font-size:11px;font-weight:800;color:var(--text);margin:0 0 7px">⚠️ LOSS 신호 (실측 라이브 — 유효회원 시트)</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px 14px">
-          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 이탈율 <b id="chSigLossRate">—</b>% (<span id="chSigLossCount">—</span>명)</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> LOSS율 <b id="chSigLossRate">—</b>% (<span id="chSigLossCount">—</span>명)</div>
           <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 갱신 D-7 이내 임박 <b id="chSigD7">—</b>명</div>
           <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge med">MED</span> 갱신 D-8~30 임박 <b id="chSigD830">—</b>명</div>
         </div>
       </div>
     </div>
     <div class="guide-acc">
-      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churn')">⚠️ 전체 이탈 신호 매트릭스 <span>▾</span></button>
+      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churn')">⚠️ 전체 LOSS 신호 매트릭스 <span>▾</span></button>
       <div class="guide-acc-body" style="display:none"></div>
-      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churnstat')">📊 이탈 현황 추적 <span>▾</span></button>
+      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churnstat')">📊 LOSS 현황 추적 <span>▾</span></button>
       <div class="guide-acc-body" style="display:none"></div>
       <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'principle')">🎯 CPO 운영원칙 <span>▾</span></button>
       <div class="guide-acc-body" style="display:none"></div>
@@ -1040,9 +1040,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <option value="SUC">SUC(등록)</option>
             <option value="단기SUC">단기SUC</option>
             <option value="결제완납">결제완납</option>
-            <option value="LOSS">LOSS(이탈)</option>
+            <option value="LOSS">LOSS</option>
           </select>
-          <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납)·이탈(LOSS) 건을 숨겨 진행 중 깔때기만 봅니다">
+          <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납)·LOSS 건을 숨겨 진행 중 깔때기만 봅니다">
             <input type="checkbox" id="dbHideRegistered" onchange="renderDbTable()" style="cursor:pointer"> 진행중만 보기
           </label>
         </div>
@@ -1151,7 +1151,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         1. 방문 완료 후 진행상황 → <strong>방문</strong><br>
         2. 상담 → 가입 권유 → 가입 시 진행상황 → <strong>가입</strong><br>
         3. 가입 확정 시 진행상황 → <strong>SUC</strong> → 상단 <strong style="color:var(--accent)">등록 현황 · 멤버십 회원 관리</strong> 탭에 자동 반영<br>
-        4. 이탈 시 진행상황 → <strong>이탈</strong> + 사유 기록
+        4. LOSS 시 진행상황 → <strong>LOSS</strong> + 사유 기록
       </div>
     </div>
 
@@ -1912,7 +1912,7 @@ if (action === 'member_calendar') {
         </tr>
         <tr>
           <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">매주 월</td>
-          <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">이탈 위험 회원 리스트 추출 및 대응 계획 수립</td>
+          <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">LOSS 위험 회원 리스트 추출 및 대응 계획 수립</td>
           <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">AI CPO + 임정은M</td>
         </tr>
         <tr>
@@ -1928,20 +1928,20 @@ if (action === 'member_calendar') {
       </tbody>
     </table>
   </div>
-  <div data-gdoc="churn" data-title="이탈 신호 × 대응 매트릭스">
+  <div data-gdoc="churn" data-title="LOSS 신호 × 대응 매트릭스">
     <div class="info-box purple" style="margin-bottom:14px">
-      이탈 신호 감지 → 위험도 분류 → 대응 액션 순서로 운영합니다. <strong>현재 자동 감지 = 이탈 확정·갱신 임박 2종</strong>(유효회원 시트 잔여일·재등록분류 실측, ✅). 나머지 6종은 데이터원 미연동으로 <strong>미측정</strong>(❌ — 아래 각 행 각주 참조), 데이터원 확보 시 순차 개통합니다. 임정은M이 최종 대면 케어 담당.
+      LOSS 신호 감지 → 위험도 분류 → 대응 액션 순서로 운영합니다. <strong>현재 자동 감지 = LOSS 확정·갱신 임박 2종</strong>(유효회원 시트 잔여일·재등록분류 실측, ✅). 나머지 6종은 데이터원 미연동으로 <strong>미측정</strong>(❌ — 아래 각 행 각주 참조), 데이터원 확보 시 순차 개통합니다. 임정은M이 최종 대면 케어 담당.
     </div>
     <div style="overflow-x:auto">
       <table class="matrix-table">
         <thead>
-          <tr><th>이탈 신호</th><th>위험도</th><th>데이터 상태</th><th>감지 기준</th><th>대응 액션</th><th>담당</th></tr>
+          <tr><th>LOSS 신호</th><th>위험도</th><th>데이터 상태</th><th>감지 기준</th><th>대응 액션</th><th>담당</th></tr>
         </thead>
         <tbody>
           <tr class="unmeasured-row"><td>2주 이상 연속 결석</td><td><span class="signal-badge high">HIGH</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>출석 DB 14일+ 공백<br><span style="font-size:10.5px">📌 데이터원 필요: 출석 DB</span></td><td>텔레그램 알림 → 임정은M 1:1 연락 → 방문 동기 파악</td><td>AI CPO → 임정은M</td></tr>
           <tr class="unmeasured-row"><td>강습 프로그램 중단</td><td><span class="signal-badge high">HIGH</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>강습 예약 3회 연속 취소<br><span style="font-size:10.5px">📌 데이터원 필요: 강습 예약취소 이력</span></td><td>강습 변경 옵션 안내 → 무료 체험 세션 제공 검토</td><td>임정은M</td></tr>
           <tr class="unmeasured-row"><td>CS 컴플레인 2건+</td><td><span class="signal-badge high">HIGH</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>30일 내 컴플레인 2건<br><span style="font-size:10.5px">📌 데이터원 필요: 컴플레인 집계</span></td><td>COO 협조 요청 → 시설·서비스 개선 → 사과 연락</td><td>AI CPO + AI COO</td></tr>
-          <tr><td>이탈 확정</td><td><span class="signal-badge high">HIGH</span></td><td><span class="data-badge live">✅ 실측(라이브)</span></td><td>LOSS/환불/양도/잔여일≤0<br><b id="mxLossLive" style="color:var(--red)">불러오는 중…</b></td><td>재등록 제안 → 이탈 사유 확인 → CEO 월보 반영</td><td>AI CPO → 임정은M</td></tr>
+          <tr><td>LOSS 확정</td><td><span class="signal-badge high">HIGH</span></td><td><span class="data-badge live">✅ 실측(라이브)</span></td><td>LOSS/환불/양도/잔여일≤0<br><b id="mxLossLive" style="color:var(--red)">불러오는 중…</b></td><td>재등록 제안 → LOSS 사유 확인 → CEO 월보 반영</td><td>AI CPO → 임정은M</td></tr>
           <tr><td>갱신 D-14 미응답</td><td><span class="signal-badge med">MED</span></td><td><span class="data-badge live">✅ 실측(라이브)</span></td><td>만료 14일 전<br><span style="font-size:10.5px">📌 '미응답' 여부는 미추적 — 잔여일 기준 임박만 실측</span><br><b id="mxRenewLive" style="color:var(--accent)">불러오는 중…</b></td><td>자동 문자 → 임정은M 전화 → 갱신 혜택 안내</td><td>AI CPO → 임정은M</td></tr>
           <tr class="unmeasured-row"><td>방문 빈도 급감</td><td><span class="signal-badge med">MED</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>평소 대비 50% 이하로 감소<br><span style="font-size:10.5px">📌 데이터원 필요: 방문 로그</span></td><td>관심사 변화 파악 → 개인 맞춤 프로그램 제안</td><td>임정은M</td></tr>
           <tr class="unmeasured-row"><td>NPS 5점 이하</td><td><span class="signal-badge med">MED</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>월 NPS 설문 응답<br><span style="font-size:10.5px">📌 데이터원 필요: NPS 설문 수집</span></td><td>24시간 내 CPO 직접 연락 → 불만 원인 파악·해소</td><td>임정은M</td></tr>
@@ -1951,7 +1951,7 @@ if (action === 'member_calendar') {
       </table>
     </div>
   </div>
-  <div data-gdoc="churnstat" data-title="이탈 현황 추적 (실측)">
+  <div data-gdoc="churnstat" data-title="LOSS 현황 추적 (실측)">
     <div style="font-size:12px;color:var(--dim)">불러오는 중… (유효회원 시트 잔여일·재등록분류 실측)</div>
   </div>
 </div>
@@ -2042,7 +2042,7 @@ function renderChurnMatrixLive(body){
   _fetchChurnStats(function(d){
     if (!d) { if (lossEl) lossEl.textContent = '불러오기 실패'; if (renewEl) renewEl.textContent = '불러오기 실패'; return; }
     var bk = _churnBuckets(d);
-    if (lossEl) lossEl.textContent = '이탈 ' + d.lossCount + '명 (이탈율 ' + d.lossRate + '%)';
+    if (lossEl) lossEl.textContent = 'LOSS ' + d.lossCount + '명 (LOSS율 ' + d.lossRate + '%)';
     if (renewEl) renewEl.textContent = 'D-7 이내 ' + bk.b7 + '명 · D-8~14 ' + bk.b14 + '명';
   });
 }
@@ -2071,8 +2071,8 @@ function loadChurnStats(el){
       el.innerHTML =
         '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:6px">'+
           _kpi('유효 회원', d.activeCount, 'var(--green)')+
-          _kpi('이탈', d.lossCount, 'var(--red)')+
-          _kpi('이탈율', d.lossRate+'%', 'var(--red)')+
+          _kpi('LOSS', d.lossCount, 'var(--red)')+
+          _kpi('LOSS율', d.lossRate+'%', 'var(--red)')+
           _kpi('갱신 임박(30일)', d.renewCount, 'var(--accent)')+
         '</div>'+
         (d.renewCount
@@ -2760,7 +2760,7 @@ function _composeHtml() {
       '</div>' +
       '<div style="font-size:13px;font-weight:700;color:var(--text)">유효 <b style="color:var(--teal)">' + v.toLocaleString() + '</b> · 법인 <b style="color:var(--accent)">' + c + '</b> · 종료 <b style="color:var(--dim-mid)">' + e.toLocaleString() + '</b></div>' +
       bar +
-      '<div style="font-size:12px;color:var(--dim)">이번달 신규 <b style="color:var(--green)">+' + reg + '</b> · 이탈 <b style="color:var(--red)">−' + loss + '</b> → 순증감 <b style="color:' + netCol + '">' + netSgn + Math.abs(net) + '</b> 명</div>' +
+      '<div style="font-size:12px;color:var(--dim)">이번달 신규 <b style="color:var(--green)">+' + reg + '</b> · LOSS <b style="color:var(--red)">−' + loss + '</b> → 순증감 <b style="color:' + netCol + '">' + netSgn + Math.abs(net) + '</b> 명</div>' +
     '</div>';
 }
 
