@@ -24,6 +24,19 @@ GM 텔레그램 탭(수동 승인) 불변 — 스케줄 발행 없음.
   다음편 선정만 출력:     python scripts\\ig_series_producer.py --plan-only
 
 종료코드: 0=성공(또는 소진으로 정상 종료) / 1=오류(텔레그램 경고 발송됨).
+
+──────────────────────────────────────────────────────────
+⑤→① 되먹임 참고 (v1 · 반자동 — 배관만, 2026-07-03)
+──────────────────────────────────────────────────────────
+스펙: .omc/specs/deep-interview-cmo-loop-autonomy.md (deep-interview 확정 · 모호도 9%)
+발효 플래그: CMO_LOOP_FEEDBACK (기본 OFF/미설정). ON("1"/"true"/"on"/"yes")일 때만
+  ⑤ 평가 환류(status/briefs/CMO-weekly-feedback-*.md 최신)의 '다음 편 제안' 슬롯을
+  선정 로그에 **참고**로 출력한다. 다음 편 **선정 자체는 절대 바꾸지 않는다**
+  (pick_next_episode 는 이 값을 읽지도 않음) — 시모가 로드맵을 직접 확정해야 반영(v1=반자동).
+역롤백: 환경변수 CMO_LOOP_FEEDBACK 을 언셋(또는 0/false)하면 즉시 이전 동작으로 복귀
+  (플래그 OFF = 이 블록 전체 스킵, 기존 동작과 100% 동일 — 읽기·출력 모두 없음).
+v2 훅: 제안 텍스트를 파싱해 로드맵 편별 카드에 자동 반영·자동 가중하는 로직은
+  데이터(UTM 표본) 축적 후 추가(현재 미구현 — sparse 과적합 방지, 시모 확정 유지).
 """
 from __future__ import annotations
 
@@ -64,6 +77,12 @@ TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
 
 PLANNED_STATUS = "기획예정"  # 로드맵 편별 표에서 '아직 제작 안 한 다음 예정 편' 상태값
+
+# ⑤→① 되먹임 참고 발효 플래그 (기본 OFF — 위 모듈 docstring '⑤→① 되먹임 참고' 절 참조)
+CMO_LOOP_FEEDBACK_ENV = "CMO_LOOP_FEEDBACK"
+BRIEFS_DIR = ROOT / "status" / "briefs"
+# weekly_marketing_feedback.py 의 '## 4. 다음 편 제안' 미채움 플레이스홀더 첫 글자(정직 판정 기준).
+_PROPOSAL_PLACEHOLDER_PREFIX = "▸ (시모: 통한 패턴"
 
 # 마지막 장 시그니처 슬로건 고정 (2026-06-04 GM 지시 — 전 편 공통 SOP, 로드맵 ★섹션)
 SIGNATURE_SLOGAN = "AI를 다루는 대표가\n살아남는다"
@@ -386,6 +405,40 @@ def pick_next_episode(episodes: list[dict]) -> dict | None:
         return None
     candidates.sort(key=lambda e: e["num"])
     return candidates[0]
+
+
+def _loop_feedback_enabled() -> bool:
+    """CMO_LOOP_FEEDBACK 플래그 판정. 기본 OFF(미설정) — env 부재 시 False."""
+    return os.environ.get(CMO_LOOP_FEEDBACK_ENV, "").strip().lower() in ("1", "true", "on", "yes")
+
+
+def read_latest_marketing_proposal() -> str | None:
+    """⑤ 평가 환류(status/briefs/CMO-weekly-feedback-*.md) 최신 파일의
+    '## 4. 다음 편 제안' 슬롯을 읽어 반환 — **읽기 전용 참고**(선정에 영향 없음).
+
+    정직(L05): 시모가 아직 안 채웠으면(플레이스홀더 그대로) None 반환
+    → 호출부가 "제안 없음(대기)" 로 정직 표기(제안 지어내기 금지).
+    파일 부재·파싱 실패 시에도 None(fail-soft — producer 본 작업에 영향 없음).
+    """
+    try:
+        if not BRIEFS_DIR.is_dir():
+            return None
+        briefs = sorted(BRIEFS_DIR.glob("CMO-weekly-feedback-*.md"))
+        if not briefs:
+            return None
+        text = briefs[-1].read_text(encoding="utf-8")
+    except Exception:
+        return None
+
+    m = re.search(r"##\s*4\.\s*다음\s*편\s*제안\s*\n(.*?)(?=\n##|\Z)", text, re.S)
+    if not m:
+        return None
+    section = m.group(1)
+    # 참고용 힌트 HTML 주석(자동 등록 shape 안내) 제거 — 실제 제안 텍스트만 남긴다.
+    section = re.sub(r"<!--.*?-->", "", section, flags=re.S).strip()
+    if not section or section.startswith(_PROPOSAL_PLACEHOLDER_PREFIX):
+        return None  # 시모 미채움 — 플레이스홀더 그대로(정직: 제안 없음)
+    return section
 
 
 def prev_published_episode(episodes: list[dict], next_num: int) -> dict | None:
@@ -887,6 +940,17 @@ def run(dry_run: bool, plan_only: bool) -> int:
         f"       제작 폴더(코드명): {folder_slug}"
         + (f" / 직전 편 #{prev['num']} 「{prev['title']}」(중복 점검 대상)" if prev else "")
     )
+
+    # ── ⑤→① 되먹임 참고 (v1 · 반자동, CMO_LOOP_FEEDBACK 기본 OFF) ──────────────
+    # 플래그 OFF(미설정) 시 이 블록 전체가 스킵되어 기존 동작과 100% 동일(읽기·출력 없음).
+    # ON이어도 위 선정(nxt) 은 이미 끝났음 — 여기선 '참고' 출력만, 선정 재반영 없음(v1=반자동).
+    # v2 훅: 데이터 축적 후 여기서 자동 반영/가중 로직 추가 가능(현재 미구현).
+    if _loop_feedback_enabled():
+        proposal = read_latest_marketing_proposal()
+        if proposal:
+            print(f"[참고] ⑤ 평가 제안(웰리 오케스트레이션 되먹임) — 선정엔 미반영, 시모 확정 시 로드맵 반영:\n{proposal}")
+        else:
+            print("[참고] ⑤ 평가 제안 없음(대기) — 시모가 아직 다음 편 제안을 채우지 않음.")
 
     if plan_only:
         print("[PLAN-ONLY] 선정만 출력하고 종료(제작 안 함).")
