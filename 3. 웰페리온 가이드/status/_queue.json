@@ -49,13 +49,14 @@
     "task_id": "COO-2026-06-25-CHECK-DENOM-UNIFY",
     "clevel": "coo",
     "title": "[시우] 지원부 점검 분모 단일출처 통일 — 서버 today_live·독려를 화면 계산식(collectDashboardData)에 1:1 정합",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "HIGH",
     "enqueued_at": "2026-06-25",
     "ship_no": 14,
-    "note": "[2026-06-25 GM 옵션A] 점검 분모가 화면(하드코딩+localStorage)·서버(시트)·독려 3소스로 제각각('또 안맞네'). 진행: 1단계 백업 완료(check_items_backup_20260625_181300.json). 3단계(서버 today_live)=라이브 @112 완료 — 성별별+요일/주차 sched 필터+시프트 presence 모델로 시트 기준 재구현(로컬 노드 검증 후 1회 배포). 서버 byGender 남=여 24/20/19, 독려는 today_live byGender 읽어 자동 정합. 스팸 dedup(CHKNOTI @108~) 유지. ★남은 핵심=화면(collectDashboardData)이 아직 하드코딩 WEEKDAY 배열+localStorage라 서버와 다른 엔진 → 화면도 시트 전환 필요(4단계). 같은날 분모 4실측: 화면새기기18/14/2·GM기기26/20/19·서버24/20/19. 4단계 구현사양=설계서 brief. GM 지시=화면 수술은 다음 집중세션(라이브 점검 UI 위험·신중). 오늘 라이브 무리한 실험 교훈→로컬검증 후 1회배포 원칙.\n[2026-07-03 시토→시우 인계] 점검관리방 '오늘의 점검현황' 완료율 무조건 100% 도배(남 25/25·14/14·14/14, 여 24/24·15/15·13/13 = done==total). 파이썬 발송코드 정상, 원인=점검 GAS today_live의 분자/분모. 라이브 실측 total=0/done=0(평일인데 분모 0). 용의=①'all' 강제 done=total ②안전장치 total<done시 클램프 ③per-gender 100%는 _getCheckLedger cr이 예정 항목 전체를 체크됨으로 반환하는지 확인 필요. 진단서 status/briefs/CTO-2026-07-03-CHECK-100PCT-DIAGNOSIS-HANDOFF.md. 라이브 GAS 발효=GM go.\n[2026-07-03 GM 착수·deep-interview] 범위 확정=①분모표시전환+②데이터이관(③독려=확인만·④라이브배포=별도 GM go). 실측 발견: 서버 today_live가 오늘(금 dow=5) 분모(total)=0 반환(인접 평일 정상) → 화면 전환의 전제(서버 신뢰) 미성립. localStorage custom/hidden=이미 서버 단일진실(유실위험 낮음), 항목 드리프트 화면34 vs 시트49 확인. GM 결정=서버 이상치부터(시토 배관·배239 통합). 배14 ①은 서버 today_live 금요일 정상화·검증 후 착수. 진단서=status/briefs/COO-2026-07-03-TODAYLIVE-FRIDAY-ZERO-HANDOFF.md, 스펙=.omc/specs/deep-interview-ship14-check-denom.md.\n[2026-07-03 시토 라이브 수리 완료·GM go] 텔레그램 점검현황 두 버그 라이브 해결: ①today_live 분모 0/0(성별칸 한글'공통·남·여'를 _genderToEnglish 미변환→전항목 집계탈락) = _buildTodayMaster에 getItems와 동일 변환 한 줄(커밋 318f39c8) ②완료율 100% 도배(안전장치가 예정수를 완료수로 끌어올림+성별 glist 미검) = 완료수 캡·glist 멤버십·all강제 제거(커밋 474df5e4). clasp v137 배포·실측 검증 07-02=108/86(80%)·07-03=105/49(47%) 정상. 월간리포트(배208) 무죄 확인. 서버·텔레그램 집계 정합 완료 — 잔여=화면 collectDashboardData 하드코딩→서버 전환(ship14 4단계·시우).",
-    "next": "⚓ 정박(선결 대기) — 선결=배239 시토 today_live 금요일 분모 0 이상치 수리·검증. 서버 정상화 확인 후 화면 collectDashboardData 분모를 today_live로 전환(로컬 모의→라이브 1회+역롤백). 항목 드리프트(34→49) 정합은 후속(②).",
-    "terminal": false
+    "processed_at": "2026-07-03",
+    "note": "[2026-06-25 GM 옵션A] 점검 분모가 화면(하드코딩+localStorage)·서버(시트)·독려 3소스로 제각각('또 안맞네'). 진행: 1단계 백업 완료(check_items_backup_20260625_181300.json). 3단계(서버 today_live)=라이브 @112 완료 — 성별별+요일/주차 sched 필터+시프트 presence 모델로 시트 기준 재구현(로컬 노드 검증 후 1회 배포). 서버 byGender 남=여 24/20/19, 독려는 today_live byGender 읽어 자동 정합. 스팸 dedup(CHKNOTI @108~) 유지. ★남은 핵심=화면(collectDashboardData)이 아직 하드코딩 WEEKDAY 배열+localStorage라 서버와 다른 엔진 → 화면도 시트 전환 필요(4단계). 같은날 분모 4실측: 화면새기기18/14/2·GM기기26/20/19·서버24/20/19. 4단계 구현사양=설계서 brief. GM 지시=화면 수술은 다음 집중세션(라이브 점검 UI 위험·신중). 오늘 라이브 무리한 실험 교훈→로컬검증 후 1회배포 원칙.\n[2026-07-03 시토→시우 인계] 점검관리방 '오늘의 점검현황' 완료율 무조건 100% 도배(남 25/25·14/14·14/14, 여 24/24·15/15·13/13 = done==total). 파이썬 발송코드 정상, 원인=점검 GAS today_live의 분자/분모. 라이브 실측 total=0/done=0(평일인데 분모 0). 용의=①'all' 강제 done=total ②안전장치 total<done시 클램프 ③per-gender 100%는 _getCheckLedger cr이 예정 항목 전체를 체크됨으로 반환하는지 확인 필요. 진단서 status/briefs/CTO-2026-07-03-CHECK-100PCT-DIAGNOSIS-HANDOFF.md. 라이브 GAS 발효=GM go.\n[2026-07-03 GM 착수·deep-interview] 범위 확정=①분모표시전환+②데이터이관(③독려=확인만·④라이브배포=별도 GM go). 실측 발견: 서버 today_live가 오늘(금 dow=5) 분모(total)=0 반환(인접 평일 정상) → 화면 전환의 전제(서버 신뢰) 미성립. localStorage custom/hidden=이미 서버 단일진실(유실위험 낮음), 항목 드리프트 화면34 vs 시트49 확인. GM 결정=서버 이상치부터(시토 배관·배239 통합). 배14 ①은 서버 today_live 금요일 정상화·검증 후 착수. 진단서=status/briefs/COO-2026-07-03-TODAYLIVE-FRIDAY-ZERO-HANDOFF.md, 스펙=.omc/specs/deep-interview-ship14-check-denom.md.\n[2026-07-03 시토 라이브 수리 완료·GM go] 텔레그램 점검현황 두 버그 라이브 해결: ①today_live 분모 0/0(성별칸 한글'공통·남·여'를 _genderToEnglish 미변환→전항목 집계탈락) = _buildTodayMaster에 getItems와 동일 변환 한 줄(커밋 318f39c8) ②완료율 100% 도배(안전장치가 예정수를 완료수로 끌어올림+성별 glist 미검) = 완료수 캡·glist 멤버십·all강제 제거(커밋 474df5e4). clasp v137 배포·실측 검증 07-02=108/86(80%)·07-03=105/49(47%) 정상. 월간리포트(배208) 무죄 확인. 서버·텔레그램 집계 정합 완료 — 잔여=화면 collectDashboardData 하드코딩→서버 전환(ship14 4단계·시우).\n[2026-07-03 완료] 분모 단일출처 통일 달성. 여정: 서버 today_live 금요일 0(시토 배239 _buildTodayMaster 성별 한글→영문 수리 318f39c8)→화면 진단→GM '프론트 기준' 지적→구조확인(시트=항목마스터 단일출처 확정, seed 폐기 이력)→GM (A)확정=화면도 시트 보게→점검 화면 drawUI zoneMap을 buildSchedFromItems(CUSTOM_ITEMS) 직접소스로 굳힘(0c9ddfc7)→폴백 유령6(op8·op9·cl1·cl3·cl8·cl9) 완전제거(66a8abf5). 결과=점검화면·home·텔레그램·독려 모두 시트 하나. 오늘 금 화면분모=서버 6칸 전부 일치 실측. STATE/제출/잠금/오버레이 무변경·페이지 정상.",
+    "next": "🏁 입항완료 — 분모 화면=서버=독려 시트 단일화. 후속(별건): 배208 월간 완료율 '잠정' 딱지는 분모통일 후 신규 데이터부터 확정 가능(과거 6월분만 잠정 유지) — 배208에서 처리.",
+    "terminal": true
   },
   {
     "task_id": "CTO-2026-06-23-SELF-HOSTED-SERVER-SETUP",
@@ -1870,5 +1871,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_0133cA4wyP12yABv4U4NeWbe (CLI ad-hoc · 커밋 bd3d8d88)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "bd3d8d88b43fc3c5b99fe64a90f02c87f827dd2b"
+  },
+  {
+    "task_id": "CPO-2026-07-03-ADHOC-870a6778",
+    "clevel": "cpo",
+    "title": "[시포] 회원관리 표 잔여일순 정렬·미등록사유 우측·재등록상담 통합칸 + 가이드 버튼식 재배치 (GM) [시포]/cpo",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-03",
+    "processed_at": "2026-07-03",
+    "ship_no": 396,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com> (CLI ad-hoc · 커밋 870a6778)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "870a67788684a8e7e41c2e74fa9ec1d0c08c9c3a"
   }
 ]

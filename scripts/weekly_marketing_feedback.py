@@ -34,6 +34,19 @@ schtasks /create ^
 * v1은 수동 실행(run-on-demand)이 기본 — 예약작업 등록은 후속 작업이며 본 스크립트는
   등록을 수행하지 않는다(GM 승인 후 위 명령을 관리자 권한 콘솔에서 1회 실행).
 ──────────────────────────────────────────────────────────
+
+──────────────────────────────────────────────────────────
+텔레그램 주간 요약 발송 (2026-07-03 GM 승인 — 라이브)
+──────────────────────────────────────────────────────────
+브리프 생성 끝에 5~8줄 요약을 문의알림방(chat_id=WEEKLY_SUMMARY_CHAT_ID, 시모 담당방 —
+메모리 project_telegram_3room_split)으로 sendMessage 한다. 발송 로직은 ig_series_producer.py
+telegram()·monthly_marketing_report.py send_message() 와 동일 패턴(urllib POST + tg_outbound_log
+best-effort 로깅) — 신규 배관 없이 기존 발송 방식 재사용.
+정직 원칙: Top/Bottom·다음 편 제안은 이 스크립트가 생성 시점엔 항상 빈 슬롯이므로
+"시모 정리 대기"로만 표기(지어내지 않음). 측정 실패 신호는 "미측정"으로 표기.
+발송 실패는 브리프 생성을 절대 막지 않는다(try/except best-effort, 리포트는 항상 저장됨).
+역롤백: WEEKLY_SUMMARY_CHAT_ID = "" 로 바꾸면 즉시 미발송(브리프 생성·저장은 그대로 계속됨).
+──────────────────────────────────────────────────────────
 """
 from __future__ import annotations
 
@@ -93,6 +106,108 @@ UTM_LABELS = {
     "kakao": "카카오",
     "instagram": "인스타그램",
 }
+
+# ── 텔레그램 주간 요약 발송 (문의알림방 · 2026-07-03 GM go 라이브) ─────
+ENV_PATH = _REPO_ROOT / "telegram_bot" / ".env"
+TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
+
+# 역롤백: 이 값을 "" 로 바꾸면 즉시 미발송(브리프 생성·저장은 그대로 계속됨).
+WEEKLY_SUMMARY_CHAT_ID = "-5516675010"  # 문의알림방(시모 담당) — 메모리 project_telegram_3room_split
+
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
+
+def _load_env_value(key: str) -> str:
+    """환경변수 → telegram_bot/.env 순서로 값 로드 (ig_series_producer.py 와 동일 패턴)."""
+    val = os.environ.get(key, "").strip()
+    if val:
+        return val
+    try:
+        if ENV_PATH.exists():
+            for raw in ENV_PATH.read_text(encoding="utf-8").splitlines():
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, _, v = line.partition("=")
+                if k.strip() == key:
+                    return v.strip().strip('"').strip("'")
+    except Exception:
+        pass
+    return ""
+
+
+def build_telegram_summary(items: list[dict], cs: dict | None, fc: dict | None,
+                            date_from: str, date_to: str, out_path: Path) -> str:
+    """5~8줄 요약. 측정 실패는 '미측정', 정성 슬롯은 '시모 정리 대기'로 정직 표기(지어내지 않음)."""
+    lines = [f"주간 마케팅 정리 — {date_from} ~ {date_to}", ""]
+    lines.append(f"· 이번 주 공식(@wellperion) 발행: {len(items)}건")
+
+    if cs is None:
+        lines.append("· UTM 클릭(채널별): 미측정(수집 실패)")
+    else:
+        by_src = cs.get("byUtmSource") or {}
+        if not by_src:
+            lines.append("· UTM 클릭(채널별): 0건(표본 없음)")
+        else:
+            rows = sorted(by_src.items(), key=lambda kv: kv[1], reverse=True)
+            lines.append(
+                "· UTM 클릭(채널별): "
+                + " · ".join(f"{UTM_LABELS.get(k, k)} {v}회" for k, v in rows)
+            )
+
+    if fc is None:
+        lines.append("· 문의 전환: 미측정(수집 실패)")
+    else:
+        by_ch = fc.get("byChannel") or []
+        if not by_ch:
+            lines.append("· 문의 전환: 0건(표본 없음)")
+        else:
+            total_inq = sum(d.get("inquiries", 0) for d in by_ch)
+            total_conv = sum(d.get("converted", 0) for d in by_ch)
+            lines.append(f"· 문의 전환: {total_inq}건 문의 → {total_conv}명 전환(채널 {len(by_ch)}개, 부분측정)")
+
+    lines.append("· Top/Bottom·다음 편 제안: 시모 정리 대기")
+    lines.append("")
+    lines.append(f"상세=주간 마케팅 정리 보고 ({out_path.name})")
+    return "\n".join(lines)
+
+
+def send_telegram_summary(text: str) -> bool:
+    """문의알림방에 주간 요약 1건 발송. best-effort — 실패해도 브리프 생성 자체는 막지 않는다.
+    역롤백: WEEKLY_SUMMARY_CHAT_ID = "" 로 바꾸면 즉시 미발송."""
+    if not WEEKLY_SUMMARY_CHAT_ID:
+        print("[INFO] WEEKLY_SUMMARY_CHAT_ID 미설정 — 텔레그램 요약 발송 생략(역롤백 상태)")
+        return False
+    token = _load_env_value(TELEGRAM_TOKEN_ENV_KEY)
+    if not token:
+        print("[WARN] TELEGRAM_BOT_TOKEN 미설정 — 텔레그램 요약 발송 생략")
+        return False
+    try:
+        import urllib.parse
+        import urllib.request
+
+        data = urllib.parse.urlencode(
+            {"chat_id": WEEKLY_SUMMARY_CHAT_ID, "text": text, "disable_web_page_preview": "true"}
+        ).encode("utf-8")
+        req = urllib.request.Request(
+            f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            ok = resp.status == 200
+            print(f"[INFO] 텔레그램 주간 요약 {'발송 성공' if ok else '발송 실패'} (문의알림방)")
+            log_outbound(text, chat_id=WEEKLY_SUMMARY_CHAT_ID,
+                         source="weekly_marketing_feedback.send_telegram_summary", ok=ok, kind="sendMessage")
+            return ok
+    except Exception as e:
+        print(f"[WARN] 텔레그램 주간 요약 발송 실패: {e} (브리프 생성은 계속됨)")
+        log_outbound(text, chat_id=WEEKLY_SUMMARY_CHAT_ID,
+                     source="weekly_marketing_feedback.send_telegram_summary", ok=False, kind="sendMessage")
+        return False
+
 
 _TZOFF_RE = re.compile(r"[+-]\d{2}:\d{2}$")
 
@@ -336,6 +451,10 @@ def main():
     print("─" * 60)
     print(brief_md)
     print("─" * 60)
+
+    # 텔레그램 주간 요약 발송(문의알림방, best-effort) — 실패해도 위 브리프 저장은 이미 끝난 상태.
+    summary_text = build_telegram_summary(items, cs, fc, date_from, date_to, out_path)
+    send_telegram_summary(summary_text)
 
 
 if __name__ == "__main__":
