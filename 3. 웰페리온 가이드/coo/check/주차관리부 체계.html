@@ -327,6 +327,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .quickadd-actions button{flex:1;padding:8px 10px;font-size:12px;font-weight:700;border-radius:7px;cursor:pointer;font-family:inherit;border:1px solid var(--border)}
 .quickadd-save{background:var(--accent);color:#fff;border-color:var(--accent)!important}
 .quickadd-cancel{background:var(--bg);color:var(--dim)}
+/* ── PARKING_* 편집형 행 표 (직원구성·응대상황표·장비비품 공용 · 2026-07-03) ── */
+.rt-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:4px}
+.rt-table th{background:var(--accent-bg);color:var(--accent);font-weight:700;padding:8px 10px;border:1px solid var(--border);text-align:left;font-size:12px}
+.rt-table td{padding:0;border:1px solid var(--border);vertical-align:middle}
+.rt-input{width:100%;background:var(--bg);border:none;color:var(--text);padding:8px 10px;font-size:13px;font-family:inherit;box-sizing:border-box}
+.rt-input:focus{outline:none;background:rgba(183,159,138,0.10)}
+.rt-del-btn{width:100%;height:100%;min-height:36px;background:transparent;border:none;color:var(--red);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.rt-del-btn:hover{background:var(--red-bg)}
+.rt-table tr.rt-short td{background:rgba(237,91,63,0.08)}
+.rt-short-tag-row td{padding:4px 10px!important;border-top:none!important}
+.rt-shortage-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--red-bg);color:var(--red)}
 /* ── Dashboard ── */
 .dash-stat-row{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 16px}
 .dash-stat-card{flex:1;min-width:80px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center}
@@ -491,6 +502,27 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   /* 미확정 표시 강조 */
   .a3-unconfirmed-note{font-size:8.5px;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:3px;padding:2px 5px;margin-bottom:4px;break-inside:avoid}
 }
+/* ── A3 응대 상황표 · 장비비품 · 온보딩 인쇄 전용 컨테이너 (화면 숨김 · 인쇄 기계장치 구조=printA3Guideline/Manual 복제, 콘텐츠는 주차 네이티브) ── */
+#a3-pcs-print,#a3-psup-print,#a3-ponb-print{display:none}
+@media print{
+  body.a3-pcs-mode .header,body.a3-pcs-mode .tabs,body.a3-pcs-mode .submit-bar,body.a3-pcs-mode .saving,
+  body.a3-pcs-mode .toast-msg,body.a3-pcs-mode .header-util-btns,body.a3-pcs-mode .util-btn,body.a3-pcs-mode .sheet-links,
+  body.a3-pcs-mode #tab-policy,body.a3-pcs-mode #tab-guide,body.a3-pcs-mode #tab-manual,body.a3-pcs-mode #tab-valet,
+  body.a3-pcs-mode #a3-guideline-print,body.a3-pcs-mode #a3-manual-print,body.a3-pcs-mode #a3-psup-print,body.a3-pcs-mode #a3-ponb-print{display:none!important}
+  body.a3-pcs-mode #a3-pcs-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+  body.a3-psup-mode .header,body.a3-psup-mode .tabs,body.a3-psup-mode .submit-bar,body.a3-psup-mode .saving,
+  body.a3-psup-mode .toast-msg,body.a3-psup-mode .header-util-btns,body.a3-psup-mode .util-btn,body.a3-psup-mode .sheet-links,
+  body.a3-psup-mode #tab-policy,body.a3-psup-mode #tab-guide,body.a3-psup-mode #tab-manual,body.a3-psup-mode #tab-valet,
+  body.a3-psup-mode #a3-guideline-print,body.a3-psup-mode #a3-manual-print,body.a3-psup-mode #a3-pcs-print,body.a3-psup-mode #a3-ponb-print{display:none!important}
+  body.a3-psup-mode #a3-psup-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+  body.a3-ponb-mode .header,body.a3-ponb-mode .tabs,body.a3-ponb-mode .submit-bar,body.a3-ponb-mode .saving,
+  body.a3-ponb-mode .toast-msg,body.a3-ponb-mode .header-util-btns,body.a3-ponb-mode .util-btn,body.a3-ponb-mode .sheet-links,
+  body.a3-ponb-mode #tab-policy,body.a3-ponb-mode #tab-guide,body.a3-ponb-mode #tab-manual,body.a3-ponb-mode #tab-valet,
+  body.a3-ponb-mode #a3-guideline-print,body.a3-ponb-mode #a3-manual-print,body.a3-ponb-mode #a3-pcs-print,body.a3-ponb-mode #a3-psup-print{display:none!important}
+  body.a3-ponb-mode #a3-ponb-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
@@ -523,6 +555,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="util-btn print-btn" onclick="window.print()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
     <button class="util-btn print-btn" onclick="printA3Manual()" title="매뉴얼 구역별 절차를 A3 가로 1장으로 인쇄">🖨️ A3 매뉴얼</button>
+    <button class="util-btn print-btn" onclick="printA3ParkingOnboarding()" title="직원구성·발렛동선·응대상황표·가이드요지를 A3 가로 1장 신입 교육자료로 인쇄">🖨️ A3 온보딩</button>
   </div>
 </div>
 </div><!-- /sticky-top -->
@@ -604,23 +637,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <!-- ── 실제 운영 근무조 ── -->
   <p style="font-size:14px;font-weight:700;color:var(--accent);margin:18px 0 8px;">실제 운영 근무조</p>
   <p style="font-size:13px;color:var(--text);margin:0 0 10px;line-height:1.7;">근무조는 <strong>오전조·오후조 2개조</strong>로 운영하며 <strong>야간조는 없습니다</strong>. 2인 이상 동시 근무 시에는 위 <strong>교대 휴게 규칙</strong>(근무자 A=50분~정시 / 근무자 B=정시~10분)을 적용해 정산 부스·주차장을 비우지 않습니다.</p>
-  <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
-    <tr style="background:var(--paper);">
-      <th style="padding:10px;border:1px solid var(--border);width:64px;">근무조</th>
-      <th style="padding:10px;border:1px solid var(--border);">담당</th>
-      <th style="padding:10px;border:1px solid var(--border);width:180px;">근무시간</th>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">오전</td>
-      <td style="padding:8px;border:1px solid var(--border);">양상규 고문</td>
-      <td style="padding:8px;border:1px solid var(--border);">평일 08:30~17:30 / 주말 09:00~16:00</td>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">오후</td>
-      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">충원 진행 중</td>
-      <td style="padding:8px;border:1px solid var(--border);">평일 10:00~19:00 / 주말 09:00~16:00</td>
-    </tr>
-  </table>
+  <!-- ── PARKING_STAFF 편집형 표 (정적 표 → 편집형 전환 2026-07-03 · 구조=카드보드 saveBoard 벤치마킹) ── -->
+  <div id="parking-staff-body"></div>
+  <button type="button" class="quickadd-btn" style="width:auto;padding:8px 14px;margin:10px 0;" onclick="parkingAddRow('staff')">＋ 직원 추가</button>
   <p style="font-size:12px;color:var(--dim);margin:0 0 4px;line-height:1.6;">※ 야간조 없음. 오후조 담당자는 충원 진행 중 — 확정 시 본 표 갱신 (현황 기준 운영).</p>
 
     </div>
@@ -648,6 +667,21 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div id="guide-board" style="display:contents"></div>
     </div>
   </div>
+
+  <!-- ── 🗣 차량·이용객 응대 상황표 (PARKING_CS_GUIDE 편집형 표 · 구조=카드보드 편집·saveBoard·A3 벤치마킹, 콘텐츠 주차 네이티브·예시 최소) ── -->
+  <div class="manual-section" style="margin-top:16px;">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3>🗣 차량·이용객 응대 상황표</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">현장에서 자주 발생하는 상황을 직접 추가·수정하세요 (예시 최소 제공).</p>
+      <div id="parking-cs-body"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button type="button" class="quickadd-btn" style="width:auto;padding:8px 14px;" onclick="parkingAddRow('cs')">＋ 상황 추가</button>
+        <button type="button" class="util-btn print-btn" onclick="printA3ParkingCS()" title="응대 상황표를 A3로 인쇄">🖨️ A3 인쇄</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="tab-manual" class="content hidden">
@@ -658,6 +692,23 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="board-fullwidth">
     <div class="board-scroll" id="manual-flow">
       <div id="manual-board" style="display:contents"></div>
+    </div>
+  </div>
+
+  <!-- ── 🅿️ 장비·비품 관리 (PARKING_SUPPLY 편집형 표·발주점 부족 알림 · 점검 아님·'관리' · 구조=카드보드/응대표 벤치마킹, 콘텐츠 주차 네이티브·예시 최소) ── -->
+  <div class="manual-section" style="margin-top:16px;">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3>🅿️ 장비·비품 관리</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">발주점 이하로 수량이 떨어지면 자동으로 부족 표시됩니다 (예시 최소 제공).</p>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <span id="parking-supply-shortage-chip" class="mgmt-badge-custom" style="display:none;background:var(--red-bg);color:var(--red);">🔴 발주 필요 0건</span>
+        <button type="button" id="parking-supply-toggle-btn" class="util-btn print-btn" onclick="parkingToggleShortage('supply')">부족만 보기</button>
+        <button type="button" class="util-btn print-btn" onclick="printA3ParkingSupply()" title="장비·비품 현황을 A3로 인쇄">🖨️ A3 인쇄</button>
+      </div>
+      <div id="parking-supply-body"></div>
+      <button type="button" class="quickadd-btn" style="width:auto;padding:8px 14px;margin-top:10px;" onclick="parkingAddRow('supply')">＋ 품목 추가</button>
     </div>
   </div>
 </div>
@@ -684,6 +735,23 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div class="a3-col-head">가이드</div>
     </div>
   </div>
+</div>
+
+<!-- ══ A3 차량·이용객 응대 상황표 인쇄 전용 컨테이너 (화면 숨김) ══ -->
+<div id="a3-pcs-print">
+  <div id="a3-pcs-host"></div>
+</div>
+
+<!-- ══ A3 장비·비품 관리 인쇄 전용 컨테이너 (화면 숨김) ══ -->
+<div id="a3-psup-print">
+  <div id="a3-psup-host"></div>
+</div>
+
+<!-- ══ A3 신입 온보딩 인쇄팩 — 직원구성·발렛동선·응대상황표·가이드요지 라이브 통합 (화면 숨김) ══ -->
+<div id="a3-ponb-print">
+  <div class="a3m-header">주차관리부 신입 교육 자료</div>
+  <div class="a3m-sub" id="a3ponb-sub"></div>
+  <div id="a3ponb-host"></div>
 </div>
 
 <!-- ── 정적 프레젠테이션 전용 미니 스크립트 (탭 전환 + 접이식 토글만) ── -->
@@ -1340,8 +1408,284 @@ function escapeHTML(str){
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+/* ═══════════════════════════════════════════════
+   주차관리부 편집형 행 표 엔진 (board={rows:[...]}) — 직원구성·응대상황표·장비비품 3표 공용
+   구조 = 위 PARK_BOARDS 카드보드(saveBoard 공유 저장·requireEditAuth) 벤치마킹, 행(row) 단위로 단순화.
+   IME 안전: 셀 입력은 onchange(포커스 이탈 후 커밋)에서만 데이터 갱신+재렌더 → 조합 중 재렌더 없음.
+   지원부 체계.html 콘텐츠 복사 아님 — 편집·저장 메커니즘만 이식, 콘텐츠는 주차 네이티브(2026-07-03).
+   ═══════════════════════════════════════════════ */
+const PARKING_TABLES = {
+  staff: {
+    key:'PARKING_STAFF', wrapId:'parking-staff-body', idp:'pst',
+    cols:[
+      {k:'group', label:'조', w:'70px'},
+      {k:'name',  label:'성명', w:'150px'},
+      {k:'hours', label:'근무시간'},
+      {k:'note',  label:'비고', w:'110px'}
+    ],
+    seedRows:[
+      {group:'오전조', name:'양상규(고문)', hours:'평일 08:30~17:30 / 주말 09:00~16:00', note:'—'},
+      {group:'오후조', name:'(충원 진행 중)', hours:'평일 10:00~19:00 / 주말 09:00~16:00', note:'충원 진행 중'}
+    ],
+    addLabel:'＋ 직원 추가', emptyMsg:'＋로 직원을 추가하세요', data:{rows:[]}
+  },
+  cs: {
+    key:'PARKING_CS_GUIDE', wrapId:'parking-cs-body', idp:'pcs',
+    cols:[
+      {k:'sit',  label:'상황', w:'170px'},
+      {k:'resp', label:'응대·조치'},
+      {k:'note', label:'주의점', w:'150px'}
+    ],
+    seedRows:[
+      {sit:'입·출차 문의', resp:'위치·경로 안내, 만차 시 대안 안내', note:'친절·신속'},
+      {sit:'정산 오류·기기 고장', resp:'즉시 확인·수동 정산·팀장 보고', note:'시재 기록 의무'}
+    ],
+    addLabel:'＋ 상황 추가', emptyMsg:'＋로 상황을 추가하세요', data:{rows:[]}
+  },
+  supply: {
+    key:'PARKING_SUPPLY', wrapId:'parking-supply-body', idp:'psup',
+    cols:[
+      {k:'cat',     label:'분류', w:'90px'},
+      {k:'name',    label:'품목'},
+      {k:'qty',     label:'수량', w:'70px', type:'number'},
+      {k:'reorder', label:'발주점', w:'70px', type:'number'},
+      {k:'loc',     label:'보관위치', w:'110px'},
+      {k:'note',    label:'비고', w:'110px'}
+    ],
+    seedRows:[
+      {cat:'출입·차단', name:'차단기 리모컨', qty:0, reorder:0, loc:'관리실', note:'—'},
+      {cat:'정산',     name:'영수증 용지',   qty:0, reorder:0, loc:'정산기함', note:'—'},
+      {cat:'운영',     name:'무전기',       qty:0, reorder:0, loc:'관리실', note:'—'}
+    ],
+    addLabel:'＋ 품목 추가', emptyMsg:'＋로 품목을 추가하세요', data:{rows:[]},
+    reorderCheck:true, showShortageOnly:false
+  }
+};
+
+function parkingRowGenId(cfg){ return cfg.idp+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+function parkingApplyStored(cfg, stored){
+  const src=(stored && Array.isArray(stored.rows)) ? stored.rows : null;
+  const base = src || cfg.seedRows;
+  cfg.data.rows = base.map(function(r){
+    const o={id:(src && r.id)?String(r.id):parkingRowGenId(cfg)};
+    cfg.cols.forEach(function(c){ o[c.k]= r[c.k]!=null ? r[c.k] : (c.type==='number'?0:''); });
+    return o;
+  });
+}
+function parkingLoadLocal(cfg){
+  let stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(cfg.key)); }catch(e){ stored=null; }
+  parkingApplyStored(cfg, stored);
+}
+async function parkingLoadBackend(cfg){
+  parkingLoadLocal(cfg);
+  if(!ONLINE) return;
+  try{
+    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(cfg.key),{method:'GET',redirect:'follow'});
+    const data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      parkingApplyStored(cfg, data.board);
+      localStorage.setItem(cfg.key, JSON.stringify(cfg.data));
+    }
+  }catch(e){ /* 네트워크 실패 → 로컬/시드 유지 */ }
+  const wrap=document.getElementById(cfg.wrapId);
+  if(wrap && !wrap.querySelector('input:focus')) parkingRenderTable(cfg);
+}
+function parkingPersist(cfg){
+  localStorage.setItem(cfg.key, JSON.stringify(cfg.data));
+  if(!ONLINE) return;
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:cfg.key,board:cfg.data})
+  }).then(function(){ if(ind){ind.textContent='저장 완료';setTimeout(function(){ind.style.display='none';},1500);} })
+    .catch(function(){ if(ind){ind.textContent='저장 (로컬 보관됨)';setTimeout(function(){ind.style.display='none';},1500);} });
+}
+function parkingIsShort(cfg,row){
+  return !!cfg.reorderCheck && Number(row.reorder)>0 && Number(row.qty)<=Number(row.reorder);
+}
+function parkingCellInput(name,rowId,colKey,value){
+  const cfg=PARKING_TABLES[name]; if(!cfg) return;
+  const row=cfg.data.rows.find(function(r){return r.id===rowId;});
+  if(!row) return;
+  const col=cfg.cols.find(function(c){return c.k===colKey;});
+  row[colKey] = (col && col.type==='number') ? (value===''?0:Number(value)) : value;
+  parkingPersist(cfg);
+  parkingRenderTable(cfg);
+}
+function parkingAddRow(name){
+  const cfg=PARKING_TABLES[name]; if(!cfg) return;
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  const o={id:parkingRowGenId(cfg)};
+  cfg.cols.forEach(function(c){ o[c.k]= c.type==='number'?0:''; });
+  cfg.data.rows.push(o);
+  parkingPersist(cfg);
+  parkingRenderTable(cfg);
+}
+function parkingDeleteRow(name,rowId){
+  const cfg=PARKING_TABLES[name]; if(!cfg) return;
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  if(!confirm('이 행을 삭제할까요?')) return;
+  cfg.data.rows = cfg.data.rows.filter(function(r){ return r.id!==rowId; });
+  parkingPersist(cfg);
+  parkingRenderTable(cfg);
+}
+function parkingToggleShortage(name){
+  const cfg=PARKING_TABLES[name]; if(!cfg) return;
+  cfg.showShortageOnly = !cfg.showShortageOnly;
+  const btn=document.getElementById('parking-supply-toggle-btn');
+  if(btn) btn.textContent = cfg.showShortageOnly ? '전체 보기' : '부족만 보기';
+  parkingRenderTable(cfg);
+}
+function parkingRenderTable(cfg){
+  const wrap=document.getElementById(cfg.wrapId);
+  if(!wrap) return;
+  let rows=cfg.data.rows||[];
+  if(cfg.reorderCheck){
+    const chip=document.getElementById('parking-supply-shortage-chip');
+    const n=rows.filter(function(r){return parkingIsShort(cfg,r);}).length;
+    if(chip){
+      if(n>0){ chip.style.display=''; chip.textContent='🔴 발주 필요 '+n+'건'; }
+      else{ chip.style.display='none'; }
+    }
+    if(cfg.showShortageOnly) rows=rows.filter(function(r){return parkingIsShort(cfg,r);});
+  }
+  const name = Object.keys(PARKING_TABLES).find(function(k){return PARKING_TABLES[k]===cfg;});
+  if(!rows.length){
+    wrap.innerHTML='<div class="dv-empty" style="padding:14px 4px;">'+cfg.emptyMsg+'</div>';
+    return;
+  }
+  let html='<table class="rt-table"><colgroup>';
+  cfg.cols.forEach(function(c){ html+='<col'+(c.w?' style="width:'+c.w+'"':'')+'>'; });
+  html+='<col style="width:38px">';
+  html+='</colgroup><thead><tr>';
+  cfg.cols.forEach(function(c){ html+='<th>'+escapeHTML(c.label)+'</th>'; });
+  html+='<th></th></tr></thead><tbody>';
+  rows.forEach(function(row){
+    const short=parkingIsShort(cfg,row);
+    html+='<tr'+(short?' class="rt-short"':'')+'>';
+    cfg.cols.forEach(function(c){
+      const v=row[c.k]!=null?row[c.k]:'';
+      const type=c.type==='number'?'number':'text';
+      html+='<td><input type="'+type+'" class="rt-input" value="'+escapeHTML(String(v))+'" '
+          +'onchange="parkingCellInput(\''+name+'\',\''+row.id+'\',\''+c.k+'\',this.value)"></td>';
+    });
+    html+='<td><button type="button" class="rt-del-btn" onclick="parkingDeleteRow(\''+name+'\',\''+row.id+'\')">✕</button></td>';
+    html+='</tr>';
+    if(short){
+      html+='<tr class="rt-short-tag-row"><td colspan="'+(cfg.cols.length+1)+'"><span class="rt-shortage-badge">발주 필요</span></td></tr>';
+    }
+  });
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
+}
+function initParkingTables(){
+  Object.keys(PARKING_TABLES).forEach(function(name){
+    const cfg=PARKING_TABLES[name];
+    parkingLoadLocal(cfg);
+    parkingRenderTable(cfg);
+    parkingLoadBackend(cfg);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   A3 차량·이용객 응대 상황표 인쇄 — printA3Guideline 인쇄 기계장치 구조 복제(주차 네이티브 데이터)
+   ═══════════════════════════════════════════ */
+function printA3ParkingCS(){
+  const cfg=PARKING_TABLES.cs;
+  const host=document.getElementById('a3-pcs-host');
+  if(host){
+    let html='<div class="a3-print-header">차량·이용객 응대 상황표</div>';
+    (cfg.data.rows||[]).forEach(function(r){
+      html+='<div class="a3-card"><div class="a3-card-title">'+escapeHTML(r.sit||'(상황 미입력)')+'</div>';
+      html+='<div class="a3-card-line">응대·조치: '+escapeHTML(r.resp||'-')+'</div>';
+      html+='<div class="a3-card-line">주의점: '+escapeHTML(r.note||'-')+'</div>';
+      html+='</div>';
+    });
+    host.innerHTML=html;
+  }
+  document.body.classList.add('a3-pcs-mode');
+  window.print();
+  document.body.classList.remove('a3-pcs-mode');
+}
+
+/* ═══════════════════════════════════════════
+   A3 장비·비품 관리 인쇄 — 동일 구조 복제, 발주 필요 항목 강조 표기
+   ═══════════════════════════════════════════ */
+function printA3ParkingSupply(){
+  const cfg=PARKING_TABLES.supply;
+  const host=document.getElementById('a3-psup-host');
+  if(host){
+    let html='<div class="a3-print-header">주차 장비·비품 관리</div>';
+    (cfg.data.rows||[]).forEach(function(r){
+      const short=parkingIsShort(cfg,r);
+      html+='<div class="a3-card"><div class="a3-card-title">'+escapeHTML(r.name||'(품목 미입력)')
+          +(short?'<span class="a3-card-unconfirmed">발주 필요</span>':'')+'</div>';
+      html+='<div class="a3-card-line">분류: '+escapeHTML(r.cat||'-')+'</div>';
+      html+='<div class="a3-card-line">수량: '+escapeHTML(String(r.qty!=null?r.qty:'-'))+' / 발주점: '+escapeHTML(String(r.reorder!=null?r.reorder:'-'))+'</div>';
+      html+='<div class="a3-card-line">보관위치: '+escapeHTML(r.loc||'-')+'</div>';
+      if(r.note) html+='<div class="a3-card-line">비고: '+escapeHTML(r.note)+'</div>';
+      html+='</div>';
+    });
+    host.innerHTML=html;
+  }
+  document.body.classList.add('a3-psup-mode');
+  window.print();
+  document.body.classList.remove('a3-psup-mode');
+}
+
+/* ═══════════════════════════════════════════
+   A3 신입 온보딩 인쇄팩 — 직원구성·발렛동선·응대상황표·가이드요지 라이브 통합
+   printA3Manual 인쇄 기계장치(a3m-* 구조) 재사용. 데이터는 PARKING_TABLES·PARK_GUIDE_DATA·A3_GUIDELINE
+   라이브 값을 참조(중복 하드코딩 없음).
+   ═══════════════════════════════════════════ */
+function printA3ParkingOnboarding(){
+  const staffRows=(PARKING_TABLES.staff.data.rows||[]);
+  const csRows=(PARKING_TABLES.cs.data.rows||[]);
+
+  const staffZone={ zone:'직원 구성·역할', lines: staffRows.map(function(r){
+    return {t:(r.group||'-')+' — '+(r.name||'-')+' · '+(r.hours||'-')+(r.note&&r.note!=='—'?(' ('+r.note+')'):'')};
+  })};
+  const csZone={ zone:'차량·이용객 응대 상황표', subs: csRows.map(function(r){
+    return {title:r.sit||'(상황)', lines:[{t:'응대·조치: '+(r.resp||'-')},{t:'주의점: '+(r.note||'-')}]};
+  })};
+
+  let leftHTML=a3mZoneHTML(staffZone);
+  const valetCard=(PARK_GUIDE_DATA.guide||[]).find(function(c){return c.id==='pg_valet';});
+  if(valetCard && valetCard.body && valetCard.body.trim()){
+    const valetZone={ zone:'발렛 동선(가이드 발췌)', lines: valetCard.body.split('\n').filter(function(l){return l.trim();}).map(function(l){return {t:l.trim()};}) };
+    leftHTML += a3mZoneHTML(valetZone);
+  }
+  const guideZone={ zone:'가이드 요지', subs:(A3_GUIDELINE.guide||[]).slice(0,3).map(function(it){
+    return {title:it.h, lines:(it.lines||[]).map(function(l){return {t:l};})};
+  })};
+  const rightHTML=a3mZoneHTML(csZone)+a3mZoneHTML(guideZone);
+
+  const host=document.getElementById('a3ponb-host');
+  if(host){ host.innerHTML='<div class="a3m-grid2"><div>'+leftHTML+'</div><div>'+rightHTML+'</div></div>'; }
+  const sub=document.getElementById('a3ponb-sub');
+  if(sub){
+    const today=new Date();
+    const ymd=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+    sub.textContent='직원 구성·발렛 동선·응대 상황표·가이드 요지 통합  ·  출력일 '+ymd;
+  }
+
+  document.body.classList.add('a3-ponb-mode');
+  let styleTag=document.getElementById('a3-ponb-page-style');
+  if(!styleTag){ styleTag=document.createElement('style'); styleTag.id='a3-ponb-page-style'; document.head.appendChild(styleTag); }
+  styleTag.textContent='@media print{ @page{ size:A3 landscape; margin:8mm; } }';
+
+  window.print();
+
+  document.body.classList.remove('a3-ponb-mode');
+  styleTag.textContent='';
+}
+
 /* 카드 보드 가동 (escapeHTML 정의 이후 호출) */
 initParkBoards();
+initParkingTables();
 </script>
 
 </body>
