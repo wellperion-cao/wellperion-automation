@@ -1191,6 +1191,48 @@ function _miReadRows_() {
 }
 
 // ═══════════════════════════════════════════
+//  재등록 상담 이벤트(유효회원 시트) — 예약 달력 병합용. 2026-07-03 시포·GM.
+//  유효회원 시트 '재등록상담 날짜/시간/내용' 칸이 채워진 회원을 달력 이벤트로 반환.
+//  칸 미신설(헤더 없음)이면 [] 반환 → 기존 신규 이벤트 무손상. rowIndex=member_active_update 저장 대상.
+// ═══════════════════════════════════════════
+function _memberReconEvents_(month) {
+  var sh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+  if (!sh) return [];
+  var last = sh.getLastRow(), cols = sh.getLastColumn();
+  if (last < 2 || cols < 1) return [];
+  var hdr = sh.getRange(1, 1, 1, cols).getValues()[0].map(function(v){ return String(v).trim(); });
+  function idx(want){ var w = String(want).replace(/\s/g, ''); for (var i = 0; i < hdr.length; i++){ if (hdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; } return -1; }
+  var iDate = idx('재등록상담날짜');
+  if (iDate < 0) return [];   // 재등록상담 칸 미신설 → 이벤트 없음(무손상)
+  var iTime = idx('재등록상담시간');
+  var iNote = idx('재등록상담내용');
+  var iName = idx('회원명');
+  var iProg = idx('회원구분');
+  var iPhone = -1;
+  for (var p = 0; p < hdr.length; p++){ var ph = hdr[p].replace(/\s/g, ''); if (ph.indexOf('휴대폰') >= 0 || ph.indexOf('전화') >= 0 || ph.indexOf('연락처') >= 0){ iPhone = p; break; } }
+  var data = sh.getRange(2, 1, last - 1, cols).getValues();
+  var out = [];
+  for (var r = 0; r < data.length; r++) {
+    var row = data[r];
+    var dISO = _miToISO_(row[iDate]);
+    if (!dISO) continue;                                   // 재등록상담 날짜 없는 행 스킵
+    if (month && dISO.slice(0, 7) !== month) continue;     // 표시 월 필터
+    var tRaw = iTime >= 0 ? row[iTime] : '';
+    var tStr = _miTime_(tRaw) || _miTimeKR_(tRaw) || (tRaw ? String(tRaw).trim() : '');
+    var note = iNote >= 0 ? String(row[iNote] == null ? '' : row[iNote]) : '';
+    out.push({
+      date: dISO, kind: '재등록상담', source: 'active', time: tStr, tmin: _miTminKR_(tStr), slot: 'recon',
+      name: iName >= 0 ? String(row[iName] == null ? '' : row[iName]).trim() : '',
+      phone: iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',
+      program: iProg >= 0 ? String(row[iProg] == null ? '' : row[iProg]).trim() : '',
+      status: '', rowIndex: r + 2, memo: note, note: note,
+      owner: '', contact1: '', contact2: '', contact3: '', visited: false, visitDate: ''
+    });
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════
 //  액션 처리
 // ═══════════════════════════════════════════
 // ═══ 등록현황 탭 (Phase 3 — SUC/단기SUC 등록회원 누적 + 1~12월 체크) ═══
@@ -2088,12 +2130,15 @@ function _processAction(body) {
         // rowIndex·memo·owner 동봉 — 달력 일정 클릭 → 상담 모달에서 방문완료·메모 수정용(2026-06-26 CRM)
         // tmin = 시간대별 정렬키(분 단위 정수·미정=null). time 표시 텍스트는 그대로 유지(2026-06-26).
         // slot = 어느 일정 칸(tour/exp1/exp2/exp3/visit2)인지 — 달력 모달 시간 설정 시 쓰기 대상 식별(2026-06-29 시포).
-        mcEvents.push({ date: dateStr, kind: kind, time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '', visited: row.visited, visitDate: row.visitDate || '' });
+        // source='inquiry' — 문의(신규 체험/투어) 이벤트. 유효회원 재등록상담(source='active')과 구분(2026-07-03 시포·GM).
+        mcEvents.push({ date: dateStr, kind: kind, source: 'inquiry', time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '', visited: row.visited, visitDate: row.visitDate || '' });
       }
       // 체험1(=투어·상담·1차 방문): 날짜 J + 시간 K. 체험2(=2차 방문): 날짜 L + 시간 M. 상담=체험1. 2026-07-02 시포·GM.
       add(row.exp1, '체험', row.exp1Time, 'exp1');
       add(row.exp2, '체험', row.exp2Time, 'exp2');
     });
+    // ── 재등록 상담 병합(유효회원 시트) — 재등록상담 날짜/시간 있는 회원을 달력 이벤트로. 기존 신규 이벤트 무손상. 2026-07-03 시포·GM.
+    try { _memberReconEvents_(mcMonth).forEach(function(e){ mcEvents.push(e); }); } catch (eRe) {}
     return _json({ ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents });
   }
 
@@ -2713,9 +2758,10 @@ function _processAction(body) {
   if (action === 'member_active_update') {
     var auRow = parseInt(body.rowIndex, 10);
     if (!auRow || auRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
+    // 다중 필드(fields 객체) 또는 단일(col/value). fields 우선 — 재등록상담 달력 모달=날짜·시간·내용 3칸 동시 저장. 2026-07-03 시포·GM.
+    var auFields = (body.fields && typeof body.fields === 'object') ? body.fields : null;
     var auCol = String(body.col || '').trim();
-    if (!auCol) return _json({ ok: false, error: 'col 필수' });
-    if (auCol.replace(/\s/g, '').indexOf('휴대폰') >= 0) return _json({ ok: false, error: '전화번호는 시트에서 직접 수정해주세요' });
+    if (!auFields && !auCol) return _json({ ok: false, error: 'col 또는 fields 필수' });
     var auSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
     if (!auSh) return _json({ ok: false, error: '유효회원 시트 없음' });
     var auHdr = auSh.getRange(1, 1, 1, auSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
@@ -2731,12 +2777,41 @@ function _processAction(body) {
         }
       }
     }
-    var _auW = auCol.replace(/\s/g, '');
-    var auIdx = -1;
-    for (var au1 = 0; au1 < auHdr.length; au1++) { if (auHdr[au1].replace(/\s/g, '') === _auW) { auIdx = au1; break; } }
-    if (auIdx < 0) { for (var au2 = 0; au2 < auHdr.length; au2++) { if (auHdr[au2] && auHdr[au2].replace(/\s/g, '').indexOf(_auW) >= 0) { auIdx = au2; break; } } }
+    // 컬럼 찾기(정확→부분). 재등록상담 칸(날짜·시간·내용)은 없으면 시트 끝에 안전 추가(ensure·additive·기존 순서 무손상). 휴대폰=-2(편집 금지).
+    function _auFindCol(colName) {
+      var w = String(colName).replace(/\s/g, '');
+      if (w.indexOf('휴대폰') >= 0) return -2;
+      var ix = -1;
+      for (var a1 = 0; a1 < auHdr.length; a1++) { if (auHdr[a1].replace(/\s/g, '') === w) { ix = a1; break; } }
+      if (ix < 0) { for (var a2 = 0; a2 < auHdr.length; a2++) { if (auHdr[a2] && auHdr[a2].replace(/\s/g, '').indexOf(w) >= 0) { ix = a2; break; } } }
+      if (ix < 0 && w.indexOf('재등록상담') >= 0) ix = _miEnsureCol_(auSh, auHdr, String(colName).trim());
+      return ix;
+    }
+    // 셀 쓰기 — 재등록상담 칸(날짜·시간·내용)은 텍스트 서식(@) 강제 후 기록. '09:00'·'2026-07-15'가 시간/날짜 값으로
+    //   자동 변환(구글시트 LMT 오프셋으로 09:00→09:05 드리프트)되는 것을 차단 → 입력값 그대로 보존. 2026-07-03 시포·GM.
+    function _auWriteCell(ix, colName, val) {
+      var cell = auSh.getRange(auRow, ix + 1);
+      if (String(colName).replace(/\s/g, '').indexOf('재등록상담') >= 0) cell.setNumberFormat('@');
+      cell.setValue(val == null ? '' : String(val));
+    }
+    if (auFields) {
+      var _auWrote = [];
+      for (var fk in auFields) {
+        if (!Object.prototype.hasOwnProperty.call(auFields, fk)) continue;
+        var fName = String(fk).trim();
+        if (!fName) continue;
+        var fIx = _auFindCol(fName);
+        if (fIx === -2) continue;                                         // 전화 칸 스킵
+        if (fIx < 0) return _json({ ok: false, error: '컬럼 미발견: ' + fName });
+        _auWriteCell(fIx, fName, auFields[fk]);
+        _auWrote.push(fName);
+      }
+      return _json({ ok: true, rowIndex: auRow, cols: _auWrote });
+    }
+    if (auCol.replace(/\s/g, '').indexOf('휴대폰') >= 0) return _json({ ok: false, error: '전화번호는 시트에서 직접 수정해주세요' });
+    var auIdx = _auFindCol(auCol);
     if (auIdx < 0) return _json({ ok: false, error: '컬럼 미발견: ' + auCol });
-    auSh.getRange(auRow, auIdx + 1).setValue(body.value == null ? '' : String(body.value));
+    _auWriteCell(auIdx, auCol, body.value);
     return _json({ ok: true, rowIndex: auRow, col: auCol });
   }
 
