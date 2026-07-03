@@ -182,6 +182,22 @@
       "차단조치": "① 해당 배 task_id 정규화(id→task_id) ② dedup 스크립트로 고유 복원 ③ 신규 배는 task_id 필수(id만 쓰지 말 것) ④ 후속: 자동로그·병합 로직이 id/task_id 양쪽 키 처리하도록 견고화(시토)",
       "상태": "FIXED(근본원인 정규화·복원 완료 · 견고화는 후속)",
       "검증증거": "23,437→112척 · 파일 258,079→~1,483줄 · queue-guard 오탐이라 GM 승인 후 --no-verify 커밋"
+    },
+    {
+      "id": "INC-011",
+      "date": "2026-07-03",
+      "watch_globs": [
+        "telegram_bot/bot.py",
+        "scripts/telegram_health_check.py"
+      ],
+      "gate": "warn",
+      "요약": "텔레그램 봇 '수신 처리'가 일시 인터넷 오류로 죽어 ~4.5시간 멈춤. 15분마다 하는 점검은 '신분증'만 봐서 못 잡음. 자동 재연결 + 심박 감시로 막음.",
+      "증상": "bot.py 폴링이 2026-07-03 10:11 telegram.error.NetworkError: Bad Gateway로 크래시 → 수신(GM 승인·콜백·회신) ~4.5h 다운(16:11 GM 런처 재기동까지). 발신 보고(daily_scheduler)는 정상. 15분 헬스체크는 getMe(API 도달)만 확인해 계속 'OK' 오보. erp_status '봇 조용함'(bot.log 미갱신)만 탐지. 진단=getUpdates 호출 시 409 Conflict 아닌 200 = 아무도 폴링 안 함 = 폴링 사망 확진.",
+      "본질": "이중 검증멈춤 — ① run_polling이 일시 네트워크오류(Bad Gateway)에 안 죽고 재연결하는 감시(supervisor)가 없어 단발 오류에 프로세스 통째 사망(PTB 21.6 __run은 KeyboardInterrupt/SystemExit 외 예외를 그대로 전파). ② 헬스체크가 API 도달(getMe)만 확인하고 실제 폴링 생존은 미감시 = 사각. 생존을 얕은 신호로 판단(INC-002/003 결).",
+      "뿌리분류": "검증멈춤",
+      "차단조치": "A) bot.py run_polling을 감시 while 루프로 감싸 NetworkError/TimedOut/Bad Gateway 시 백오프 자동 재연결(정상종료·KeyboardInterrupt는 그대로 통과, close_loop 후 새 이벤트루프). B) bot.py 5분 하트비트 파일(bot_heartbeat.txt) + scripts/telegram_health_check.py가 20분 이상 미갱신 시 '폴링 정지 의심' 경보(하트비트 미도입=봇 미재기동 시 오탐 안 함). C) 폴링 생존 판별법 = getUpdates 409(비침습 금지·봇 슬롯 뺏김) 대신 하트비트 파일 신뢰. 메모리 reference_bot_polling_liveness_and_healthcheck 박제.",
+      "상태": "OPEN(코드 검증 완료 · 라이브 발효=봇 재기동(퇴근 재부팅) 대기)",
+      "검증증거": "bot.py 감시루프 harness 4시나리오 통과(크래시→재연결·정상종료·KeyboardInterrupt 통과·연속실패 후 재시도)·py_compile OK. 헬스체크 하트비트 시뮬(stale 30분→경보·fresh→무경보·missing→오탐가드)·py_compile OK. getUpdates 200(비폴링)/409(폴링) 판별로 사고 확진 + 재기동 후 복구확인. ★최종 라이브 검증=퇴근 재부팅 후 하트비트 갱신+헬스체크 OK+getUpdates 409(단일폴링) 실측 시 GUARDED 승격 예정. 커밋 866f11b6(폴링 supervisor)·6d17fea4(하트비트+헬스체크)."
     }
   ]
 }
