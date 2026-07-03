@@ -232,7 +232,7 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
     week_label = f"{date_from} ~ {date_to}"
 
     parts = []
-    parts.append(f"# CMO 주간 마케팅 피드백 브리프 — {generated_at.strftime('%Y-%m-%d')}")
+    parts.append(f"# 주간 마케팅 정리 보고 — {generated_at.strftime('%Y-%m-%d')}")
     parts.append("")
     parts.append(
         "> **v1 = 정성 우선 + 측정 보조.** 측정 안 되는 값은 `미측정`으로 정직 표기(가짜 수치 0). "
@@ -290,7 +290,7 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
         '  "status": "PENDING",\n'
         '  "priority": "⛵돛단배",\n'
         f'  "enqueued_at": "{generated_at.strftime("%Y-%m-%d")}",\n'
-        '  "note": "주간 피드백 브리프(status/briefs/CMO-weekly-feedback-'
+        '  "note": "주간 마케팅 정리 보고(status/briefs/CMO-weekly-feedback-'
         f'{generated_at.strftime("%Y%m%d")}.md) Top 판정 근거로 제안"\n'
         "}\n"
         "-->"
