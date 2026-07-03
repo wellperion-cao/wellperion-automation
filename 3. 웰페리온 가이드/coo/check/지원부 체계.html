@@ -1187,31 +1187,44 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-guide" class="content hidden">
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">지원부 가이드를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <b>＋ 카드 추가</b>로 새 가이드를 추가할 수 있습니다.</p>
-  <!-- ── 👥 지원부 직원 구성·역할 (2026-06-24 시우 실제 명단으로 교체 · FALLBACK_STAFF 배열은 점검자 로직용 유지) ── -->
-  <div style="margin-bottom:18px;">
-    <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--green);overflow:hidden;max-width:640px;">
-      <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-        <span style="font-size:17px;font-weight:800;color:var(--green);">👥 직원 구성 · 역할</span>
+  <!-- ① 2단 레이아웃: 좌=직원 구성·역할 / 우=지원부 가이드 카드. 우측 보드 board-fullwidth(풀블리드) 제거로 좌측을 덮지 않음 (2026-07-03 시우, 시설부 패턴 이식·731c2963) -->
+  <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px;">
+    <!-- 좌: 지원부 직원 구성·역할 (2026-06-24 시우 실제 명단으로 교체 · FALLBACK_STAFF 배열은 점검자 로직용 유지) -->
+    <div style="flex:0 0 auto;min-width:280px;max-width:640px;">
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--green);overflow:hidden;">
+        <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+          <span style="font-size:17px;font-weight:800;color:var(--green);">👥 직원 구성 · 역할</span>
+        </div>
+        <div style="padding:12px 14px;">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
+            <tr style="background:var(--paper);">
+              <th style="padding:8px;border:1px solid var(--border);width:80px;">직책</th>
+              <th style="padding:8px;border:1px solid var(--border);">성명</th>
+              <th style="padding:8px;border:1px solid var(--border);width:58px;">구분</th>
+              <th style="padding:8px;border:1px solid var(--border);">비고</th>
+            </tr>
+            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>팀장</strong></td><td style="padding:8px;border:1px solid var(--border);">황용석</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);font-size:12px;color:var(--orange);">6월말 퇴직 예정</td></tr>
+            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">천진석</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
+            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">박남일</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
+            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">김유정</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
+            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>반장</strong></td><td style="padding:8px;border:1px solid var(--border);">이연희</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">여</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
+            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">우춘화</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">여</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
+          </table>
+          <p style="font-size:12px;color:var(--dim);margin:0;line-height:1.5;">정원 각 8명 TO · 남·여 일부 충원 진행 중. <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--orange-bg);color:var(--orange);border:1px solid rgba(230,148,78,0.4);">최종 등록 기준 2026-06-24</span></p>
+        </div>
       </div>
-      <div style="padding:12px 14px;">
-        <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
-          <tr style="background:var(--paper);">
-            <th style="padding:8px;border:1px solid var(--border);width:80px;">직책</th>
-            <th style="padding:8px;border:1px solid var(--border);">성명</th>
-            <th style="padding:8px;border:1px solid var(--border);width:58px;">구분</th>
-            <th style="padding:8px;border:1px solid var(--border);">비고</th>
-          </tr>
-          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>팀장</strong></td><td style="padding:8px;border:1px solid var(--border);">황용석</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);font-size:12px;color:var(--orange);">6월말 퇴직 예정</td></tr>
-          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">천진석</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
-          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">박남일</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
-          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">김유정</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
-          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>반장</strong></td><td style="padding:8px;border:1px solid var(--border);">이연희</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">여</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
-          <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">우춘화</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">여</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
-        </table>
-        <p style="font-size:12px;color:var(--dim);margin:0;line-height:1.5;">정원 각 8명 TO · 남·여 일부 충원 진행 중. <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--orange-bg);color:var(--orange);border:1px solid rgba(230,148,78,0.4);">최종 등록 기준 2026-06-24</span></p>
+    </div><!-- /좌 -->
+    <!-- 우: 지원부 가이드 카드 -->
+    <div style="flex:1 1 420px;min-width:min(100%,320px);">
+      <div><!-- board-fullwidth(풀블리드) 제거 — 2단에서 우측이 좌측을 덮지 않게. 보드는 우측 칸 안에서 가로 스크롤 -->
+        <!-- 가이드 카드 보드: 규정 보드와 동일 시스템(추가·편집·삭제·공유저장).
+             #support-guide-board는 display:contents → renderSupportGuideBoard()가 만든 .board-col이 흐름에 합류. -->
+        <div class="board-scroll" id="support-guide-flow">
+          <div id="support-guide-board" style="display:contents"></div>
+        </div>
       </div>
-    </div>
-  </div>
+    </div><!-- /우 -->
+  </div><!-- /2단 -->
 
   <!-- ── 🧖 신규회원 사우나 투어 안내 (8단계 순서형 · 배64) ── -->
   <div style="margin-bottom:18px;">
@@ -1231,14 +1244,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
           <li style="margin-bottom:0;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">마무리</strong> — 예약제 이용 안내로 마무리합니다. 문의: wellperion.com/ko/inquiry</li>
         </ol>
       </div>
-    </div>
-  </div>
-
-  <div class="board-fullwidth">
-    <!-- 가이드 카드 보드: 규정 보드와 동일 시스템(추가·편집·삭제·공유저장).
-         #support-guide-board는 display:contents → renderSupportGuideBoard()가 만든 .board-col이 흐름에 합류. -->
-    <div class="board-scroll" id="support-guide-flow">
-      <div id="support-guide-board" style="display:contents"></div>
     </div>
   </div>
 
