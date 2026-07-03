@@ -1128,6 +1128,47 @@ function _miTminKR_(val) {
   }
   return null;
 }
+// ═══ 예약 리스트(가변 · 날짜+시간+내용 한 셀) — 문의현황/유효회원 공용. 2026-07-03 시포·GM ═══
+//  저장 모델: JSON 배열 [{date:'YYYY-MM-DD', time:'HH:MM', note:'...'}]. 컬럼=문의 '예약목록' / 유효회원 '재등록예약목록'.
+//  하위호환(비파괴): JSON 없으면 기존 체험1·2(J/K/L/M) / 재등록 단일 3칸을 예약1·2로 흡수해 읽는다. 저장 시 JSON + 기존칸 미러 동기화.
+var INQ_RES_COL = '예약목록';
+var ACT_RES_COL = '재등록예약목록';
+// 셀/배열/JSON 문자열 → 정규 예약 배열([{date,time,note}]). 완전 빈 항목 제거.
+function _resParse_(raw) {
+  if (!raw) return [];
+  var arr;
+  if (Array.isArray(raw)) { arr = raw; }
+  else {
+    var s = String(raw).trim();
+    if (!s || s.charAt(0) !== '[') return [];
+    try { arr = JSON.parse(s); } catch (e) { return []; }
+  }
+  if (!Array.isArray(arr)) return [];
+  var out = [];
+  for (var i = 0; i < arr.length; i++) {
+    var it = arr[i] || {};
+    var d = _miToISO_(it.date || '');
+    var t = _miTime_(it.time || '') || (it.time ? String(it.time).trim() : '');
+    var n = (it.note == null) ? '' : String(it.note);
+    if (!d && !t && !n) continue;
+    out.push({ date: d, time: t, note: n });
+  }
+  return out;
+}
+// 예약 배열 → JSON 문자열(빈 배열이면 '' → 셀 클리어).
+function _resStringify_(arr) {
+  var clean = [];
+  (arr || []).forEach(function(it){
+    if (!it) return;
+    var d = _miToISO_(it.date || '');
+    var t = it.time ? String(it.time).trim() : '';
+    var n = (it.note == null) ? '' : String(it.note);
+    if (!d && !t && !n) return;
+    clean.push({ date: d, time: t, note: n });
+  });
+  return clean.length ? JSON.stringify(clean) : '';
+}
+
 // 익명 행 배열 반환(이름·전화·메모 비움). 빈 행 스킵.
 function _miReadRows_() {
   var sh = _miSheet_();
@@ -1152,6 +1193,7 @@ function _miReadRows_() {
   var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
   var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게']);
   var iContent = _miColIdx_(hdr, ['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항','문의사항']);  // N열 자유서술 문의내용(#1). 2026-07-02 시포·GM
+  var iRes  = _miColIdx_(hdr, [INQ_RES_COL]);  // 예약목록(JSON) — 가변 예약. 없으면 체험1·2 흡수. 2026-07-03 시포·GM
   // 연락기록 3칸 — Contact1·Contact2·Contact3 헤더 우선, 못 찾으면 절대 컬럼 18/19/20(0-based 17/18/19) 폴백 (2026-06-26 시포)
   var iC1 = _miColIdx_(hdr, ['Contact1']); if (iC1 < 0) iC1 = 17;
   var iC2 = _miColIdx_(hdr, ['Contact2']); if (iC2 < 0) iC2 = 18;
@@ -1161,7 +1203,7 @@ function _miReadRows_() {
     var hasName  = iName  >= 0 && row[iName];
     var hasPhone = iPhone >= 0 && row[iPhone];
     if (!hasName && !hasPhone) continue; // 완전 빈 행 스킵
-    out.push({
+    var _mo = {
       rowIndex: r + 2,
       name:     iName  >= 0 ? String(row[iName]  || '') : '',  // 2026-06-22 GM '전체 공개' — 실명 노출
       phone:    iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',    // 연락처 노출 + 표시 정규화(앞 0 복원·하이픈)
@@ -1185,7 +1227,15 @@ function _miReadRows_() {
       contact1: (iC1 >= 0 && iC1 < row.length) ? _fmtContact_(row[iC1]) : '',
       contact2: (iC2 >= 0 && iC2 < row.length) ? _fmtContact_(row[iC2]) : '',
       contact3: (iC3 >= 0 && iC3 < row.length) ? _fmtContact_(row[iC3]) : ''
-    });
+    };
+    // 예약목록(가변): JSON 우선 → 없으면 체험1·2 흡수(하위호환·무손실). 2026-07-03 시포·GM
+    var _resArr = _resParse_(iRes >= 0 ? row[iRes] : '');
+    if (!_resArr.length) {
+      if (_mo.exp1) _resArr.push({ date: _mo.exp1, time: _mo.exp1Time || '', note: '' });
+      if (_mo.exp2) _resArr.push({ date: _mo.exp2, time: _mo.exp2Time || '', note: '' });
+    }
+    _mo.reservations = _resArr;
+    out.push(_mo);
   }
   return out;
 }
@@ -1202,8 +1252,9 @@ function _memberReconEvents_(month) {
   if (last < 2 || cols < 1) return [];
   var hdr = sh.getRange(1, 1, 1, cols).getValues()[0].map(function(v){ return String(v).trim(); });
   function idx(want){ var w = String(want).replace(/\s/g, ''); for (var i = 0; i < hdr.length; i++){ if (hdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; } return -1; }
+  var iRes  = idx('재등록예약목록');
   var iDate = idx('재등록상담날짜');
-  if (iDate < 0) return [];   // 재등록상담 칸 미신설 → 이벤트 없음(무손상)
+  if (iRes < 0 && iDate < 0) return [];   // 재등록 예약 칸 전무(JSON·단일 모두 없음) → 이벤트 없음(무손상)
   var iTime = idx('재등록상담시간');
   var iNote = idx('재등록상담내용');
   var iName = idx('회원명');
@@ -1214,20 +1265,31 @@ function _memberReconEvents_(month) {
   var out = [];
   for (var r = 0; r < data.length; r++) {
     var row = data[r];
-    var dISO = _miToISO_(row[iDate]);
-    if (!dISO) continue;                                   // 재등록상담 날짜 없는 행 스킵
-    if (month && dISO.slice(0, 7) !== month) continue;     // 표시 월 필터
-    var tRaw = iTime >= 0 ? row[iTime] : '';
-    var tStr = _miTime_(tRaw) || _miTimeKR_(tRaw) || (tRaw ? String(tRaw).trim() : '');
-    var note = iNote >= 0 ? String(row[iNote] == null ? '' : row[iNote]) : '';
-    out.push({
-      date: dISO, kind: '재등록상담', source: 'active', time: tStr, tmin: _miTminKR_(tStr), slot: 'recon',
-      name: iName >= 0 ? String(row[iName] == null ? '' : row[iName]).trim() : '',
-      phone: iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',
-      program: iProg >= 0 ? String(row[iProg] == null ? '' : row[iProg]).trim() : '',
-      status: '', rowIndex: r + 2, memo: note, note: note,
-      owner: '', contact1: '', contact2: '', contact3: '', visited: false, visitDate: ''
-    });
+    // 예약목록(JSON) 우선 → 없으면 단일 재등록상담 3칸 흡수(하위호환·무손실). 2026-07-03 시포·GM
+    var resArr = _resParse_(iRes >= 0 ? row[iRes] : '');
+    if (!resArr.length && iDate >= 0) {
+      var dISO0 = _miToISO_(row[iDate]);
+      if (dISO0) {
+        var tRaw0 = iTime >= 0 ? row[iTime] : '';
+        var tStr0 = _miTime_(tRaw0) || _miTimeKR_(tRaw0) || (tRaw0 ? String(tRaw0).trim() : '');
+        resArr = [{ date: dISO0, time: tStr0, note: iNote >= 0 ? String(row[iNote] == null ? '' : row[iNote]) : '' }];
+      }
+    }
+    if (!resArr.length) continue;
+    var _nm = iName >= 0 ? String(row[iName] == null ? '' : row[iName]).trim() : '';
+    var _ph = iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '';
+    var _pg = iProg >= 0 ? String(row[iProg] == null ? '' : row[iProg]).trim() : '';
+    for (var ri = 0; ri < resArr.length; ri++) {
+      var res = resArr[ri];
+      if (!res.date) continue;                               // 날짜 없는 항목 스킵
+      if (month && res.date.slice(0, 7) !== month) continue; // 표시 월 필터
+      out.push({
+        date: res.date, kind: '재등록상담', source: 'active', time: res.time || '', tmin: _miTminKR_(res.time), slot: (ri === 0 ? 'recon' : 'r' + ri), resIdx: ri,
+        name: _nm, phone: _ph, program: _pg,
+        status: '', rowIndex: r + 2, memo: res.note, note: res.note,
+        owner: '', contact1: '', contact2: '', contact3: '', visited: false, visitDate: ''
+      });
+    }
   }
   return out;
 }
@@ -2124,18 +2186,20 @@ function _processAction(body) {
     var mcRows = _miReadRows_();
     var mcEvents = [];
     mcRows.forEach(function(row){
-      function add(dateStr, kind, timeStr, slot) {
+      function add(dateStr, kind, timeStr, slot, resIdx, noteStr) {
         if (!dateStr) return;
         if (mcMonth && dateStr.slice(0,7) !== mcMonth) return;
         // rowIndex·memo·owner 동봉 — 달력 일정 클릭 → 상담 모달에서 방문완료·메모 수정용(2026-06-26 CRM)
         // tmin = 시간대별 정렬키(분 단위 정수·미정=null). time 표시 텍스트는 그대로 유지(2026-06-26).
-        // slot = 어느 일정 칸(tour/exp1/exp2/exp3/visit2)인지 — 달력 모달 시간 설정 시 쓰기 대상 식별(2026-06-29 시포).
-        // source='inquiry' — 문의(신규 체험/투어) 이벤트. 유효회원 재등록상담(source='active')과 구분(2026-07-03 시포·GM).
-        mcEvents.push({ date: dateStr, kind: kind, source: 'inquiry', time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '', visited: row.visited, visitDate: row.visitDate || '' });
+        // slot = 예약1→exp1(J/K)·예약2→exp2(L/M) 미러 슬롯, 3번째+는 r{i}. resIdx=예약 배열 인덱스(리스트 모달 편집 대상). 2026-07-03 시포·GM.
+        // source='inquiry' — 문의(신규 예약) 이벤트. 유효회원 재등록상담(source='active')과 구분.
+        // note=예약별 내용(칩/패널 표시), memo=행 누적 상담메모(폴백).
+        mcEvents.push({ date: dateStr, kind: kind, source: 'inquiry', time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', resIdx: (resIdx == null ? '' : resIdx), name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', note: noteStr || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '', visited: row.visited, visitDate: row.visitDate || '' });
       }
-      // 체험1(=투어·상담·1차 방문): 날짜 J + 시간 K. 체험2(=2차 방문): 날짜 L + 시간 M. 상담=체험1. 2026-07-02 시포·GM.
-      add(row.exp1, '체험', row.exp1Time, 'exp1');
-      add(row.exp2, '체험', row.exp2Time, 'exp2');
+      // 예약 리스트(가변) — 각 예약이 독립 이벤트. 예약1·2는 exp1/exp2 미러 슬롯(하위 소비자 안전망). 라벨=예약. 2026-07-03 시포·GM.
+      (row.reservations || []).forEach(function(res, ri){
+        add(res.date, '예약', res.time, (ri === 0 ? 'exp1' : (ri === 1 ? 'exp2' : 'r' + ri)), ri, res.note);
+      });
     });
     // ── 재등록 상담 병합(유효회원 시트) — 재등록상담 날짜/시간 있는 회원을 달력 이벤트로. 기존 신규 이벤트 무손상. 2026-07-03 시포·GM.
     try { _memberReconEvents_(mcMonth).forEach(function(e){ mcEvents.push(e); }); } catch (eRe) {}
@@ -2190,6 +2254,35 @@ function _processAction(body) {
     _muSet(['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2'], body.exp2Date);        // L = 체험2 날짜
     _muSet(['체험2 확정시간','체험2'], body.exp2Time);                                          // M = 체험2 시간
     _muSet(['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항'], body.inquiryContent);  // N = 문의내용(#1)
+    // ── 예약 리스트(가변) — JSON 우선 저장 + 체험1·2(J/K/L/M) 미러. 하위호환 편집(exp*)만 오면 JSON 동기화. 2026-07-03 시포·GM
+    if (body.reservations !== undefined) {
+      var _muRes = _resParse_(body.reservations);
+      var _muResCi = _miEnsureCol_(muSh, muHdr, INQ_RES_COL);
+      var _muResCell = muSh.getRange(muRow, _muResCi + 1);
+      _muResCell.setNumberFormat('@');
+      _muResCell.setValue(_resStringify_(_muRes));
+      // 미러: 예약1→J/K, 예약2→L/M (없으면 클리어). 달력 폴백·하위 소비자 안전망(무손실).
+      _muSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], _muRes[0] ? _muRes[0].date : '');
+      _muSet(['체험1 확정시간','체험1'], _muRes[0] ? _muRes[0].time : '');
+      _muSet(['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2'], _muRes[1] ? _muRes[1].date : '');
+      _muSet(['체험2 확정시간','체험2'], _muRes[1] ? _muRes[1].time : '');
+    } else if (body.exp1Date !== undefined || body.exp1Time !== undefined || body.exp2Date !== undefined || body.exp2Time !== undefined) {
+      // 하위호환 경로(상담 모달·구 인라인)가 체험1·2만 편집 → 예약목록 JSON이 이미 있으면 동기화(스테일 방지). 예약3+ 보존.
+      var _rcCi = _miColIdx_(muHdr, [INQ_RES_COL]);
+      if (_rcCi >= 0) {
+        var _prev = _resParse_(muSh.getRange(muRow, _rcCi + 1).getValue());
+        var _cellISO = function(names){ var c = _miColIdx_(muHdr, names); return c >= 0 ? _miToISO_(muSh.getRange(muRow, c + 1).getValue()) : ''; };
+        var _cellTime = function(names){ var c = _miColIdx_(muHdr, names); return c >= 0 ? _miTime_(muSh.getRange(muRow, c + 1).getValue()) : ''; };
+        var _rebuilt = [
+          { date: _cellISO(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담']), time: _cellTime(['체험1 확정시간','체험1']), note: (_prev[0] && _prev[0].note) || '' },
+          { date: _cellISO(['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2']), time: _cellTime(['체험2 확정시간','체험2']), note: (_prev[1] && _prev[1].note) || '' }
+        ];
+        for (var _pi = 2; _pi < _prev.length; _pi++) _rebuilt.push(_prev[_pi]);
+        var _rcCell = muSh.getRange(muRow, _rcCi + 1);
+        _rcCell.setNumberFormat('@');
+        _rcCell.setValue(_resStringify_(_rebuilt));
+      }
+    }
     _muSetCol(['Contact1'], 17, _fmtContactOrUndef_(body.contact1));
     _muSetCol(['Contact2'], 18, _fmtContactOrUndef_(body.contact2));
     _muSetCol(['Contact3'], 19, _fmtContactOrUndef_(body.contact3));
@@ -2784,14 +2877,15 @@ function _processAction(body) {
       var ix = -1;
       for (var a1 = 0; a1 < auHdr.length; a1++) { if (auHdr[a1].replace(/\s/g, '') === w) { ix = a1; break; } }
       if (ix < 0) { for (var a2 = 0; a2 < auHdr.length; a2++) { if (auHdr[a2] && auHdr[a2].replace(/\s/g, '').indexOf(w) >= 0) { ix = a2; break; } } }
-      if (ix < 0 && w.indexOf('재등록상담') >= 0) ix = _miEnsureCol_(auSh, auHdr, String(colName).trim());
+      if (ix < 0 && (w.indexOf('재등록상담') >= 0 || w.indexOf('재등록예약목록') >= 0)) ix = _miEnsureCol_(auSh, auHdr, String(colName).trim());
       return ix;
     }
     // 셀 쓰기 — 재등록상담 칸(날짜·시간·내용)은 텍스트 서식(@) 강제 후 기록. '09:00'·'2026-07-15'가 시간/날짜 값으로
     //   자동 변환(구글시트 LMT 오프셋으로 09:00→09:05 드리프트)되는 것을 차단 → 입력값 그대로 보존. 2026-07-03 시포·GM.
     function _auWriteCell(ix, colName, val) {
       var cell = auSh.getRange(auRow, ix + 1);
-      if (String(colName).replace(/\s/g, '').indexOf('재등록상담') >= 0) cell.setNumberFormat('@');
+      var _cn = String(colName).replace(/\s/g, '');
+      if (_cn.indexOf('재등록상담') >= 0 || _cn.indexOf('재등록예약목록') >= 0) cell.setNumberFormat('@');
       cell.setValue(val == null ? '' : String(val));
     }
     if (auFields) {
@@ -2805,6 +2899,15 @@ function _processAction(body) {
         if (fIx < 0) return _json({ ok: false, error: '컬럼 미발견: ' + fName });
         _auWriteCell(fIx, fName, auFields[fk]);
         _auWrote.push(fName);
+      }
+      // 미러: 재등록예약목록 저장 시 예약1 → 재등록상담 날짜/시간/내용(하위호환·달력 폴백 안전망·무손실). 2026-07-03 시포·GM
+      if (Object.prototype.hasOwnProperty.call(auFields, ACT_RES_COL)) {
+        var _actRes = _resParse_(auFields[ACT_RES_COL]);
+        var _ar0 = _actRes[0] || { date: '', time: '', note: '' };
+        [['재등록상담 날짜', _ar0.date], ['재등록상담 시간', _ar0.time], ['재등록상담 내용', _ar0.note]].forEach(function(pair){
+          var mi = _auFindCol(pair[0]);
+          if (mi >= 0) _auWriteCell(mi, pair[0], pair[1]);
+        });
       }
       return _json({ ok: true, rowIndex: auRow, cols: _auWrote });
     }
@@ -2973,7 +3076,7 @@ function _processAction(body) {
     }
     // 캐시 조회 (범위별 키 — 기간 필터 버전)
     var fcCache = CacheService.getScriptCache();
-    var fcCacheKey = 'fc_v2_' + fcFrom + '_' + fcTo;
+    var fcCacheKey = 'fc_v3_' + fcFrom + '_' + fcTo;  // v3: 전환에 강습 등록 합산 반영(2026-07-03 시모) — 구캐시 무효화
     var fcHit = fcCache.get(fcCacheKey);
     if (fcHit && !_nc) return _json(JSON.parse(fcHit));
 
@@ -2994,10 +3097,22 @@ function _processAction(body) {
       }
     }
 
+    // ①-b 강습 등록자 전화 Set (팀시트 SUC 로스터 실시간 수집 — 2026-07-03 시모, GM 지시)
+    // 전환 판정을 멤버십 전화매칭 단독에서 '멤버십 ∪ 강습등록' 전화 union으로 확대(아래 ②/②-b 매칭부).
+    // 동일인이 멤버십+강습 모두 있어도 union이라 1회만 카운트(중복 방지).
+    // 정직성 한계: 팀시트에 연락처 열이 없거나 탐지 실패한 종목은 그 등록자가 조용히 빠짐(날조 대신 누락 인정).
+    var lessonSet = {};
+    ['성인강습', '유소년강습'].forEach(function(fcType) {
+      _collectLessonRoster_(fcType).forEach(function(m) {
+        var n = _normPhone_(m.phone);
+        if (n) lessonSet[n] = true;
+      });
+    });
+
     // ② 문의접수 시트 집계
     var inqSh   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
     var inqLast = inqSh.getLastRow();
-    var totalInq = 0, totalConv = 0;
+    var totalInq = 0, totalConv = 0, totalConvMemberOnly = 0;  // memberOnly=구버전(멤버십만) 비교용 — 투명성 유지
     var byChannel = {};  // { 채널명: {inquiries, converted} }
 
     if (inqLast >= 2) {
@@ -3016,7 +3131,8 @@ function _processAction(body) {
         if (!byChannel[channel]) byChannel[channel] = { inquiries: 0, converted: 0 };
         byChannel[channel].inquiries++;
 
-        if (phone && memberSet[phone]) {
+        if (phone && memberSet[phone]) totalConvMemberOnly++;   // 구버전(멤버십만) 비교용
+        if (phone && (memberSet[phone] || lessonSet[phone])) {
           totalConv++;
           byChannel[channel].converted++;
         }
@@ -3031,7 +3147,8 @@ function _processAction(body) {
       totalInq++;
       if (!byChannel[channel]) byChannel[channel] = { inquiries: 0, converted: 0 };
       byChannel[channel].inquiries++;
-      if (phone && memberSet[phone]) { totalConv++; byChannel[channel].converted++; }
+      if (phone && memberSet[phone]) totalConvMemberOnly++;   // 구버전(멤버십만) 비교용
+      if (phone && (memberSet[phone] || lessonSet[phone])) { totalConv++; byChannel[channel].converted++; }
     });
 
     // ③ 반환 JSON — 집계 수치만, 개인정보 절대 미포함
@@ -3049,13 +3166,17 @@ function _processAction(body) {
 
     var fcResult = {
       ok: true,
-      total: { inquiries: totalInq, converted: totalConv, rate: rate },
+      total: {
+        inquiries: totalInq, converted: totalConv, rate: rate,
+        convertedMemberOnly: totalConvMemberOnly,  // 구버전(멤버십 전화매칭만) — 강습 합산 전 값, 투명성 위해 상시 병기
+        lessonAdded: totalConv - totalConvMemberOnly  // 강습 등록 union으로 추가된 순증분
+      },
       byChannel: channelArr,
       periodMode: fcPeriod,
       period: { from: fcFrom, to: fcTo },
       convBasis: fcPeriod
-        ? '문의=선택기간(시각 기준) / 전환=선택기간 문의 중 유효회원 전화매칭(등록일 미사용 → 기간 내 문의가 전환된 누적값)'
-        : '전체 누적 — 유효회원 전화매칭',
+        ? '문의=선택기간(시각 기준) / 전환=선택기간 문의 중 유효회원∪강습등록 전화매칭(등록일 미사용 → 기간 내 문의가 전환된 누적값)'
+        : '전체 누적 — 유효회원∪강습등록 전화매칭',
       generatedAt: _now()
     };
     // 캐시 저장 (범위별 키 — 100KB 초과 시 생략)
