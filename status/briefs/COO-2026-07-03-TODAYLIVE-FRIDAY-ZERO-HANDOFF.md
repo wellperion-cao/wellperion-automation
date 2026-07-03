@@ -41,3 +41,13 @@
 ## 별건(배14 ②에서 확인된 것 — 서버 수리와 별개)
 - 항목 구성 드리프트: 화면 하드코딩 배열 **34개** vs 시트 **49개**(시트에 요일별 청소항목 15개 더). ①(숫자만) 전환해도 항목 세트는 여전히 배열 기준 → 장기적으로 항목 렌더도 시트化 필요(배14 ② 후속, 이번 세션 범위 확정=①+②이나 서버 선결 후).
 - localStorage custom/hidden = **이미 서버 단일 진실**(HTML 1630줄 "서버 성공=단일 진실, 캐시 완전 교체"). 유실 위험 낮음 — "폐기"=낡은 캐시 제거 수준.
+
+## [2026-07-03 배포 후 갱신 — 시우] 재배포가 금요일 today_live를 부분 변화시킴
+- 배208 monthly_report 배포를 위해 clasp push -f + `clasp deploy --deploymentId AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1`(=/exec가 쓰는 deploymentId, @134→@135) 실행.
+- **부작용**: /exec 서빙 버전이 134→135로 올라가며 금요일 today_live 동작 변화.
+  - 배포 전(served @134): 금 2026-07-03 amTotal/pmTotal/closeTotal = **0/0/0**.
+  - 배포 후(served @135=최신 저장 코드): 금 = **~40/0/0** (am 회복, pm·close 여전히 0). 값 40 전후로 호출마다 약간 변동.
+  - 인접 요일 정상: 수 48/28/24, 목 44/29/13.
+- **해석 갱신**: 금요일 버그는 **부분적으로 stale deployment**였음(served 구버전@134가 최신 저장코드보다 뒤처짐 — clasp push≠배포 함정 실증). 최신 코드는 금요일 am은 정상화하나 **금요일 pm/close=0은 잔존**(진짜 코드 로직 버그 or 데이터).
+- ⚠️ 주의(진단 대비 오해 방지): 앞선 "로컬 소스 정상으로 보임"의 근거였던 clasp pull은 **최신 저장 코드**(=@135 될 코드)를 받은 것이지 served @134가 아니었음. 즉 서빙본과 최신본이 달랐던 게 핵심.
+- **시토 진단 대상 좁혀짐**: 금요일(dow=5) pm/close 버킷만 0. am은 회복. handleTodayLive/_buildTodayMaster의 pm·close 회차 버킷이 금요일에만 비는 경로(회차 prefix 필터·sched·week) 추적. am/pm/close 로직 차이 비교가 단서.

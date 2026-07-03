@@ -108,7 +108,7 @@ STICKER_PANEL_CLOSE_SELECTORS = [
     ".se-sidebar-container-sticker button.se-sidebar-close-button",
     'button[data-name="sticker"]',  # 토글 — 다시 누르면 패널 닫힘
 ]
-STICKER_COUNT_DEFAULT = 3  # 본문에 삽입할 기본 스티커 개수 (GM 검수 시 교체 전제)
+STICKER_COUNT_DEFAULT = 1  # 본문에 삽입할 기본 스티커 개수 — 위치=첫 섹션 다음 1개 (2026-07-03 GM)
 # 링크 카드(oglink) 삽입 — URL 붙여넣기 자동 카드화 (PoC 실측 2026-06-24)
 # 메커니즘: 본문 끝 빈 줄에 URL 타이핑 → Enter → SmartEditor 자동 og 링크 카드 생성
 # og:image 로딩은 비동기(최대 5초 대기). 감지 셀렉터:
@@ -279,6 +279,11 @@ def build_post(args: argparse.Namespace) -> BlogPost:
     images = collect_images(image_dir, args.image_glob)
     images = append_cta_card(images)  # 4채널 마지막 이미지로 문의 CTA 카드(IG 제외)
     sticker_count = getattr(args, "sticker_count", STICKER_COUNT_DEFAULT)
+    # --tags CLI 명시 지정 시 본문 자동추출 태그(_tags) 대신 사용 — 본문에서 해시태그 줄을
+    # 아예 뺀 경우(발행 태그칸에만 넣고 싶을 때) 대비 (2026-07-03 GM).
+    cli_tags = getattr(args, "tags", None)
+    if cli_tags:
+        _tags = [t if t.startswith("#") else f"#{t}" for t in cli_tags]
     return BlogPost(title, body, images, sticker_count, _link_card_url, _tags)
 
 
@@ -584,18 +589,13 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
     except Exception:
         pass
 
-    # 스티커 2개 위치 지정 삽입 (GM 지시 2026-06-03):
-    #   ① 본문 맨 처음 1개  ② '문의 : http://wellperion.com/ko/inquiry/' 줄 다음 1개.
-    #   순서: 시작 스티커 먼저 → '문의' 줄 재탐색 후 그 다음에 삽입(텍스트 매칭이라 caret 충돌 없음).
-    #   이미지는 맨 마지막에 본문 끝(Ctrl+End)으로 삽입하므로 스티커와 caret 충돌 없음.
+    # 스티커 위치 = 첫 콘텐츠 섹션 다음(두 번째 소제목 앞) — "글 하나 쓰고 그다음 사이에" (2026-07-03 GM).
+    # 이전(맨 처음 삽입)은 스티커가 본문 최상단에 떠 보이는 문제가 있어 위치를 옮김.
     sticker_count = getattr(post, "sticker_count", STICKER_COUNT_DEFAULT)
     if sticker_count > 0:
-        await _place_caret_at_body_start(page, target)
-        await _insert_one_sticker_at_caret(page, target, "본문 맨 처음")
-        # ① 본문 맨 처음 스티커 가운데정렬 (삽입 직후 1회)
+        await _place_caret_before_second_section(page, target)
+        await _insert_one_sticker_at_caret(page, target, "첫 섹션 다음")
         await _center_align_first_sticker(page, target)
-        await _place_caret_after_inquiry_line(page, target)
-        await _insert_one_sticker_at_caret(page, target, "'문의' 줄 다음")
 
     # 링크 카드 삽입 — UTM 추적형 URL로 문의 CTA를 og:image 썸네일 포함 링크 카드로 삽입.
     # URL 타이핑 → Enter → SmartEditor 자동 카드화. 실패해도 draft 진행.
@@ -806,27 +806,29 @@ async def _place_caret_at_body_start(page, target) -> None:
         print(f"[WARN] 본문 시작 caret 이동 실패: {e}")
 
 
-async def _place_caret_after_inquiry_line(page, target) -> bool:
-    """본문에서 '문의' 텍스트가 있는 문단을 찾아 그 문단 끝으로 caret 이동.
-    찾으면 True. 못 찾으면 본문 끝(Ctrl+End)으로 폴백하고 False 반환."""
+async def _place_caret_before_second_section(page, target) -> bool:
+    """본문에서 두 번째 소제목(▍) 컴포넌트를 찾아 그 바로 앞(첫 섹션의 마지막 줄 끝)으로
+    caret 이동. 삽입 위치 = 첫 콘텐츠 섹션 다음, 두 번째 섹션 시작 전(2026-07-03 GM 지시:
+    "글 하나 쓰고 그다음 사이에"). 찾으면 True, 소제목이 2개 미만이면 본문 맨 처음으로
+    폴백하고 False 반환."""
     try:
-        # SmartEditor 문단(span.se-text-paragraph 등)에서 '문의' 포함 노드를 찾아 클릭
-        para = target.locator('p.se-text-paragraph:has-text("문의"), .se-text-paragraph:has-text("문의")').last
-        if await para.count() > 0:
-            await para.click()
-            # 문단 끝으로 caret (End)
+        headings = target.locator('.se-component:has-text("▍")')
+        n = await headings.count()
+        if n >= 2:
+            second = headings.nth(1)
+            await second.scroll_into_view_if_needed()
+            await second.click()
+            await page.keyboard.press("Home")
+            # 두 번째 소제목 시작 지점에서 한 줄 위(=첫 섹션 마지막 줄) 끝으로 이동
+            await page.keyboard.press("ArrowUp")
             await page.keyboard.press("End")
             await page.wait_for_timeout(300)
-            print("[INFO] '문의' 줄 끝으로 caret 이동")
+            print("[INFO] 두 번째 소제목(▍) 앞 — 첫 섹션 끝으로 caret 이동")
             return True
     except Exception as e:
-        print(f"[WARN] '문의' 줄 탐색 실패: {e}")
-    try:
-        await page.keyboard.press("Control+End")
-        await page.wait_for_timeout(200)
-    except Exception:
-        pass
-    print("[WARN] '문의' 줄 미발견 — 본문 끝으로 폴백")
+        print(f"[WARN] 두 번째 소제목 탐색 실패: {e}")
+    await _place_caret_at_body_start(page, target)
+    print("[WARN] 소제목 2개 미만 — 본문 맨 처음으로 폴백")
     return False
 
 
@@ -1412,6 +1414,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--sticker-count", dest="sticker_count", type=int, default=STICKER_COUNT_DEFAULT,
         help=f"본문에 삽입할 스티커 개수 (기본 {STICKER_COUNT_DEFAULT}, 0이면 생략)",
+    )
+    parser.add_argument(
+        "--tags", dest="tags", nargs="+", default=None,
+        help="발행 태그칸에 넣을 해시태그(공백 구분, # 유무 무관). 지정 시 본문 자동추출 태그 대신 사용.",
     )
     parser.add_argument(
         "--i-am-sure", dest="i_am_sure", action="store_true",
