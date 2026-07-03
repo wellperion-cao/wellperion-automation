@@ -18,7 +18,10 @@
   .wrap{max-width:100%; margin:0;}
 
   header.page-head{margin-bottom:12px; padding-bottom:10px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 16px;}
-  header.page-head h1{font-size:22px; font-weight:800; letter-spacing:-0.02em; flex:1;}
+  header.page-head .htitles{flex:1; min-width:200px; display:flex; flex-direction:column; gap:3px;}
+  header.page-head h1{font-size:22px; font-weight:800; letter-spacing:-0.02em;}
+  header.page-head .slogan{font-size:11px; color:var(--dim); letter-spacing:0.02em;}
+  header.page-head .slogan em{font-style:italic; color:var(--accent-soft);}
   header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
 
@@ -214,6 +217,26 @@
   .strat-link{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--accent-soft); background:var(--paper); border:1px solid var(--border-strong); border-radius:8px; padding:6px 13px; text-decoration:none; white-space:nowrap;}
   .strat-link:hover{border-color:var(--accent); background:var(--surface);}
 
+  /* ── 🗺️ 전략 로드맵 6단계 진척(GM 지시 2026-07-03 · ERP 진척과 유사 타임라인) ── */
+  .rm-time{display:flex; gap:8px; align-items:stretch; flex-wrap:wrap;}
+  .rm-step{flex:1; min-width:150px; background:var(--paper); border:1px solid var(--border); border-radius:12px; padding:12px 13px 11px; position:relative; display:flex; flex-direction:column; gap:6px;}
+  .rm-step.rm-nx{opacity:0.62;}
+  .rm-step .rtop{display:flex; align-items:baseline; justify-content:space-between; gap:6px;}
+  .rm-step .rn{font-size:10px; font-weight:800; color:var(--dim); letter-spacing:0.04em;}
+  .rm-step.rm-cur .rn{color:var(--accent-soft);}
+  .rm-step .rbadge{font-size:9px; font-weight:700; border-radius:20px; padding:2px 8px; white-space:nowrap;}
+  .rm-step .rbadge.cur{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.38);}
+  .rm-step .rbadge.nx{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  .rm-step .rtitle{font-size:13px; font-weight:700; color:var(--text); line-height:1.3;}
+  .rm-step .rgoal{font-size:10.5px; color:var(--text-soft); line-height:1.5;}
+  .rm-step .rbar{height:8px; border-radius:5px; background:var(--surface); border:1px solid var(--border); overflow:hidden;}
+  .rm-step .rbar>i{display:block; height:100%; border-radius:5px; background:linear-gradient(90deg,var(--accent),var(--accent-soft));}
+  .rm-step .rmeta{font-size:9.5px; color:var(--dim); display:flex; justify-content:space-between; gap:6px;}
+  .rm-step .rmeta b{color:var(--text-soft); font-weight:700;}
+  .rm-step .rperiod{font-size:9.5px; color:var(--dim);}
+  .rm-legend{font-size:10.5px; color:var(--dim); margin-top:9px;}
+  @media (max-width:720px){ .rm-step{min-width:calc(50% - 4px);} }
+
   /* ── 🎯 이달 핵심 과제 & 진척(맨 위 · 경영진 3초 요약 콤팩트 1줄 + 핵심 과제 통합표 · GM 정정 2026-07-03: 舊 카드형 sumcard 3개+완료/진행 체크리스트 중복 제거) ── */
   .blk.sum-hero{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:6px 14px 16px; margin-bottom:4px;}
   .blk.sum-hero.is-done{border-color:rgba(106,191,123,0.4);}
@@ -292,9 +315,18 @@
     h2.sec .cfo-link{font-size:7.5px; padding:1px 6px; color:#333 !important; border-color:#999 !important;}
     .strat-row{gap:4px;}
     .strat-link{font-size:7.5px; padding:2px 7px; color:#333 !important; background:#fff !important; border-color:#999 !important;}
-    header.page-head, .month-head, .rpt-wrap, .metric, table.rpt tr, .erp-step, .erp-time{break-inside:avoid;}
+    .rm-time{gap:4px;} .rm-step{padding:6px 8px 5px; gap:3px; background:#fff !important; border-color:#999 !important;}
+    .rm-step .rn, .rm-step .rtitle, .rm-step .rmeta b{color:#111 !important;}
+    .rm-step .rgoal, .rm-step .rperiod{color:#444 !important; font-size:7.5px;}
+    .rm-step .rtitle{font-size:9px;} .rm-step .rmeta{font-size:7.5px;}
+    .rm-step .rbar{background:#eee !important; border-color:#999 !important;} .rm-step .rbar>i{background:#555 !important;}
+    .rm-step .rbadge{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
+    .rm-legend{display:none !important;}
+    header.page-head, .month-head, .rpt-wrap, .metric, table.rpt tr, .erp-step, .erp-time, .rm-step, .rm-time{break-inside:avoid;}
     header.page-head{margin-bottom:4px; padding-bottom:4px;}
     header.page-head h1{font-size:14px;}
+    header.page-head .slogan{font-size:8px; color:#555 !important;}
+    header.page-head .slogan em{color:#555 !important;}
     .month-head{margin:3px 0 5px; padding:5px 8px; gap:4px 10px;}
     .month-head .mtitle{font-size:11px;} .month-head .mtheme{font-size:8.5px;}
     .fchart, .erp-legend, .flegend{display:none !important;}  /* 막대차트·범례 생략(밀도) */
@@ -326,7 +358,10 @@
 <div class="wrap">
 
   <header class="page-head">
-    <h1>월간 운영 계획·보고</h1>
+    <div class="htitles">
+      <h1>월간 운영 계획·보고</h1>
+      <div class="slogan"><em>A Day, Well Completed.</em> — 하루의 완성, 웰페리온</div>
+    </div>
     <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
   </header>
 
@@ -375,6 +410,12 @@
     <section class="blk">
       <h2 class="sec">🚀 웰페리온 ERP 월별 진척 <span class="stag">40 → 60 → 80 → 95% · 실적/목표</span></h2>
       <div id="erp-board"><div class="board-status">ERP 진척 정본을 불러오는 중…</div></div>
+    </section>
+
+    <!-- 🗺️ 전략 로드맵 진척 (GM 지시 2026-07-03 · 6단계 실행 로드맵 타임라인 — 월간운영계획이 로드맵 어디에 있는지) -->
+    <section class="blk">
+      <h2 class="sec">🗺️ 전략 로드맵 진척 <span class="stag">6단계 실행 로드맵 · 회사문서 전략 로드맵 v1.5 + S0 기준 · 현재 어느 단계</span></h2>
+      <div id="roadmap-board"><div class="board-status">전략 로드맵 정본을 불러오는 중…</div></div>
     </section>
 
     <!-- 🔧 점검 현황 & 이슈·해결 (2026-07-03 GM 지시: 개발(백·프론트엔드) 6월 진행/완료 카드 추가) -->
@@ -1319,6 +1360,34 @@
     if(i) i.style.width = v + '%';
   };
 
+  // ── 🗺️ 전략 로드맵 6단계 진척 타임라인(GM 지시 2026-07-03 · 읽기 전용 — 원본=회사문서 전략 로드맵) ──
+  function renderRoadmap(){
+    var host = document.getElementById('roadmap-board');
+    if(!host) return;
+    var rm = _data && _data.strategy_roadmap;
+    var items = (rm && rm.items) || [];
+    if(!items.length){ host.innerHTML = '<div class="board-status">전략 로드맵 정본(strategy_roadmap)이 없습니다.</div>'; return; }
+
+    var steps = items.map(function(it){
+      var isCur = (it.status === '진행');
+      var pct = clampPct(it.progress);
+      var badge = isCur
+        ? '<span class="rbadge cur">진행</span>'
+        : (it.status === '완료' ? '<span class="rbadge cur" style="color:var(--green);background:rgba(106,191,123,0.12);border-color:rgba(106,191,123,0.38);">완료</span>' : '<span class="rbadge nx">예정</span>');
+      return '<div class="rm-step' + (isCur ? ' rm-cur' : ' rm-nx') + '">' +
+        '<div class="rtop"><span class="rn">STAGE ' + esc(it.stage) + '</span>' + badge + '</div>' +
+        '<div class="rtitle">' + esc(it.title) + '</div>' +
+        '<div class="rgoal">' + esc(it.goal || '') + '</div>' +
+        '<div class="rbar"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="rmeta"><b>' + pct + '%</b><span class="rperiod">' + esc(it.period || '') + '</span></div>' +
+      '</div>';
+    }).join('');
+
+    host.innerHTML =
+      '<div class="rm-time">' + steps + '</div>' +
+      '<div class="rm-legend">' + esc((rm && rm.note) || '') + ' · 원본 = <a class="strat-link" style="padding:1px 8px;" href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">전략 로드맵 v1.4(A3)</a></div>';
+  }
+
   // ── 🎯 이달 핵심 과제 & 진척 — 맨 위 콤팩트 1줄 요약(GM 정정 2026-07-03: 舊 카드 3개+완료/진행 체크리스트를
   //    표 위 1줄로 압축 · 상세는 아래 핵심 과제 통합표(renderBoard)에서 담당·상태·진척·북극성까지 한 번에 확인 — 중복 제거) ──
   // 데이터 정직: 아래 통계는 전부 monthly_ops_plan.json objectives/erp_progress + CFO 매출·지출 실측 재사용(fin-board와 동일 계산 함수) — 지어낸 값 없음.
@@ -1361,6 +1430,7 @@
   function render(){
     renderMonthHead();
     renderErp();
+    renderRoadmap();
     renderFinance();
     renderBoard();
     renderCheckStatus();
