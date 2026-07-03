@@ -4187,33 +4187,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     </div>
     <!-- ══ /🏁 완료·다음 ══ -->
 
-    <!-- ══ 🌅 오늘의 항로 추천 진입 배너 (북극성 추천기 1차 진입 · pending 있을 때만 표시 · S2→G1 이관 2026-06-30) ══ -->
-    <a id="gm1-northstar-rec" href="northstar_today.html" style="display:none;align-items:center;gap:14px;margin:0 0 16px;padding:14px 20px;background:linear-gradient(135deg,#3a2a14,#1a1a2a);border:1px solid #f0c674;border-radius:14px;text-decoration:none;color:#fff;box-shadow:0 2px 10px rgba(240,198,116,0.14);">
-      <span style="font-size:26px;flex-shrink:0;">🌅</span>
-      <span style="flex:1;">
-        <span style="display:block;font-size:15px;font-weight:800;letter-spacing:-0.01em;">오늘의 항로 추천 <span id="gm1-northstar-rec-count" style="color:#f0c674;"></span></span>
-        <span style="display:block;font-size:12px;color:#e6d2a8;margin-top:3px;line-height:1.5;">웰리가 북극성 대비 현황을 읽어 제안한 오늘 한 수입니다. 풀표로 보고 텔레그램 [승인]으로 배 등록.</span>
-      </span>
-      <span style="font-size:13px;font-weight:800;color:#221F20;background:#f0c674;border-radius:9px;padding:8px 14px;white-space:nowrap;">보기 →</span>
-    </a>
-    <script>
-    (function(){
-      // status/northstar_pending.json 직독 — 후보 N건 있으면 배너 표시, 없으면 숨김(빈 카드 방지 · 헌법한장:335 동일 원칙).
-      var NS_URL = '/wellperion-automation/status/northstar_pending.json';
-      fetch(NS_URL + '?_=' + Date.now(), {cache:'no-store'})
-        .then(function(r){ return r.ok ? r.json() : null; })
-        .then(function(data){
-          var n = (data && Array.isArray(data.candidates)) ? data.candidates.length : 0;
-          if(!n) return;  // 없으면 숨김
-          var el = document.getElementById('gm1-northstar-rec');
-          var ct = document.getElementById('gm1-northstar-rec-count');
-          if(ct) ct.textContent = n + '건';
-          if(el) el.style.display = 'flex';
-        })
-        .catch(function(){});
-    })();
-    </script>
-    <!-- ══ /🌅 오늘의 항로 추천 진입 배너 ══ -->
+    <!-- 오늘의 항로 추천 배너 제거(2026-07-03 GM) — 중복 정리: 오늘 top3는 T2 ▸ 자율 작업 현황(자율현황.html)에 임베드됨. G1엔 별도 배너 두지 않음. -->
+
 
     <!-- 오늘 할 일 (최상단 — GM 진입 즉시 노출, 2026-06-05) -->
     <details id="gm1-todo-section" open style="margin:8px 0 24px;">
