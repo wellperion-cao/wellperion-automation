@@ -1,14 +1,14 @@
 {
-  "_doc": "월간 운영 계획·보고 SSOT. 헌법(장기 비전·KPI)과 G1 오늘의 항로(일일 배) 사이의 '월간 운영' 층. 월초=계획 세우기, 월말=결과 보고. 담당=도메인 C-Level(제안·조정 가능). 정본=이 파일, 페이지(월간운영계획.html)는 렌더만. 매출·지출 SSOT=cfo/finance/매출지출현황.html(그 페이지의 gviz 소스 미러·이 파일엔 매출/지출 값 저장 금지·INC-001). objectives.progress·practitioner_progress=도달율(0~100·편집값·상태기반 기본). erp_progress=ERP 월별 진척(공식값). issues=점검·운영 이슈 보드(월별·PIN 편집·objectives와 동일 편집 패턴). report.theme=월 헤더 상태 라벨('완료'/'진행' 등) 옆 인라인 소형 테마 문구(월 테마 한 줄, GM 정정 2026-07: 舊 별도 배너에서 이동).",
+  "_doc": "월간 운영 계획·보고 SSOT. 헌법(장기 비전·KPI)과 G1 오늘의 항로(일일 배) 사이의 '월간 운영' 층. 월초=계획 세우기, 월말=결과 보고. 담당=도메인 C-Level(제안·조정 가능). 정본=이 파일, 페이지(월간운영계획.html)는 렌더만. 매출·지출 SSOT=cfo/finance/매출지출현황.html(그 페이지의 gviz 소스 미러·이 파일엔 매출/지출 값 저장 금지·INC-001). objectives.progress·practitioner_progress=도달율(0~100·편집값·상태기반 기본). erp_progress=ERP 월별 진척(공식값). issues=舊 점검·개발이슈 보드(월별·PIN 편집) — 2026-07-03 GM 지시로 폐기: 🔧점검현황&이슈·해결 섹션은 이제 종합접수처(VOC reg_board) 라이브 연동으로 대체(개발/백엔드 이슈 노출 금지·PII 절대 미노출). 이 배열은 스키마 호환용 껍데기만 유지(빈 배열)·페이지는 더 이상 이 값을 렌더하지 않음. report.theme=월 헤더 상태 라벨('완료'/'진행' 등) 옆 인라인 소형 테마 문구(월 테마 한 줄, GM 정정 2026-07: 舊 별도 배너에서 이동).",
   "정본": "status/monthly_ops_plan.json",
   "updated_at": "2026-07-03",
   "owner_nick": {"ceo":"웰리", "cmo":"시모", "coo":"시우", "cto":"시토", "cpo":"시포", "cfo":"시뽀", "chro":"시로"},
   "status_enum": ["계획", "진행", "완료", "이월"],
   "issue_status_enum": ["미해결", "해결중", "해결"],
   "practitioners": [
-    {"id": "lee-gy", "name": "이경연", "dept": "운영부", "role": "실장", "northstar": ""},
-    {"id": "lee-jh", "name": "이정헌", "dept": "시설부", "role": "소장", "northstar": ""},
-    {"id": "na-uy", "name": "나우열", "dept": "파트너", "role": "파트너(재무·인사 실무)", "northstar": ""}
+    {"id": "lee-gy", "name": "이경연", "dept": "운영부", "role": "실장", "northstar": "운영부 통합 관리 및 리더십 생성 & AI 공부"},
+    {"id": "lee-jh", "name": "이정헌", "dept": "시설부", "role": "소장", "northstar": "시설부 → 상가관리단 소장 · 시설부·지원부·주차관리부 통합 관리 및 리더십 생성 & 안전사고·시설/설비 문제 예방"},
+    {"id": "na-uy", "name": "나우열", "dept": "파트너", "role": "파트너(재무·인사 실무)", "northstar": "인사 및 파트너팀 운영 관리 + 운영 매출&지출 구조 체계 구축 · 새로운 콘텐츠·공간 활용도 극대화 집중"}
   ],
   "erp_progress": {
     "_doc": "웰페리온 ERP 월별 진척(공식값·GM 확정). pct=완성도 %, target=true는 목표(아직 미달성), false는 실적. 정본=이 키, 페이지는 렌더만. PIN 편집 가능.",
@@ -35,16 +35,13 @@
         {"id": "2026-06-05", "title": "4개 부서 관리 진행 (운영·시설·지원·주차)", "owner": "coo", "dept": "전 부서", "target": "4부서 체계 관리 운영", "metric": null, "status": "진행", "progress": 55, "progress_note": "부서 체계 페이지 틀 완성", "northstar": "coo"},
         {"id": "2026-06-06", "title": "웰페리온 내부 밸류업 작업 준비", "owner": "ceo", "dept": "전사", "target": "내부 밸류업 착수 준비", "metric": null, "status": "진행", "progress": 45, "progress_note": "", "northstar": "ceo"}
       ],
-      "issues": [
-        {"id": "ISS-2026-06-01", "title": "지원부 점검 완료율 분모·항목 마스터 불일치", "dept": "지원부", "status": "해결", "reported": "2026-06-15", "note": "항목 마스터 단일기준 정리(분모 259→76)로 정합 완료."},
-        {"id": "ISS-2026-06-02", "title": "home KPI 지출 칸 밀림", "dept": "전사(재무)", "status": "해결중", "reported": "2026-06-10", "note": "매출 칸 연동은 완료, 지출 칸은 보완 진행 중 → 7월 이월(나우열M 구조개선)."}
-      ]
+      "issues": []
     },
     "2026-07": {
       "month_status": "진행",
       "theme": "매출 상승·체계 정착·채용 마무리·ERP 80%",
       "practitioner_goals": {"lee-gy": "지원부 회원응대·비품 관리 역할 정착·운영부 CS 표준화 · 지원부 회원 응대·비품 관리 가이드 정립·교육(가이드 정립 완료, 교육 실무 진행중)", "lee-jh": "시설부 매뉴얼·점검 체계 정착 — 현재 매뉴얼만 착수(보고·업무 진행 약함). 김종현 차장·박호균 과장 2명이 오전 10시 남자 지원 점검 진행 중. 7/6부로 시설부 점검 리스트·설비 작동 매뉴얼 정리 진행", "na-uy": "채용·교육 적응 마무리·골프팀 파트너 채용·매출 상승 실무"},
-      "practitioner_progress": {"lee-gy": 45, "lee-jh": 10, "na-uy": 45},
+      "practitioner_progress": {"lee-gy": 30, "lee-jh": 5, "na-uy": 30},
       "objectives": [
         {"id": "2026-07-01", "title": "매출 & 지출 — 월 매출 6.5~6.6억 평균으로 상승", "owner": "cfo", "dept": "매출&지출", "target": "월 매출 6.5~6.6억 평균 달성", "metric": {"name": "월 매출", "target": 650000000, "unit": "원", "current": null}, "status": "진행", "progress": 50, "progress_note": "매출 정본 AV열 단일화 완료(7월 실측 연동). AI 기여=KPI 측정개통(배239 시토 배관수리)로 매출 가시화 지원. 매출 상승 실무=나우열M 라인.", "northstar": "cfo"},
         {"id": "2026-07-02", "title": "지원부 회원 응대 및 비품 관리 역할 추가 부여", "owner": "coo", "dept": "지원부", "target": "지원부 역할에 회원 응대+비품 관리 추가·정착", "metric": null, "status": "계획", "progress": 0, "progress_note": "회원 응대+비품 관리 역할 추가 미착수(계획). 시우 4부서 내부(배64) 라인서 반영 예정.", "northstar": "coo"},
@@ -55,10 +52,7 @@
         {"id": "2026-07-07", "title": "회원 관리프로그램 변경", "owner": "cpo", "dept": "회원관리", "target": "대양 CIS → 브로제이 검토 진행, 7월 도입 예정", "metric": null, "status": "진행", "progress": 30, "progress_note": "대양 CIS 대체 후보 브로제이 검토 진행 중. 7월 도입 목표. 실무=회원관리(시포 계열)/실무진.", "northstar": "cpo"},
         {"id": "2026-07-08", "title": "시설 리뉴얼/업그레이드", "owner": "coo", "dept": "시설부", "target": "①야외테라스 리뉴얼 ②헬스장 장비 업데이트 ③사우나 남·여 헤어&바디 드라이기 업그레이드", "metric": null, "status": "계획", "progress": 0, "progress_note": "3개 항목(테라스·헬스장 장비·사우나 드라이기) 착수 전 — 일정·예산 확정 필요. 담당=시설부/COO.", "northstar": "coo"}
       ],
-      "issues": [
-        {"id": "ISS-2026-07-01", "title": "점검현황 100% 도배 버그(지원부 today_live)", "dept": "지원부/시설부", "status": "해결중", "reported": "2026-07-03", "note": "시토 진단 완료(분자 원장 오염 + 안전장치 클램프로 상시 100% 표시) → 시우 인계. 라이브 GAS 수정은 GM go 대기(로컬검증 후 1회배포+역롤백)."},
-        {"id": "ISS-2026-07-02", "title": "업무 GAS API 무인증 노출", "dept": "전사(보안)", "status": "미해결", "reported": "2026-06-24", "note": "todo API 무인증 — 누구나 변조 가능. 보안 과제로 이월, 대응 방안 검토 중."}
-      ]
+      "issues": []
     }
   }
 }
