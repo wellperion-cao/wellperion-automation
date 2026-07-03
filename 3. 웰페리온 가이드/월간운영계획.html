@@ -384,15 +384,16 @@
   <!-- 경영진 A3 결론 한 장 = 아래 report-grid (인쇄 시 2단, 매출은 상단 전폭) -->
   <div class="report-grid">
 
-    <!-- 🎯 이달 한눈 요약 (맨 위 · 한눈요약 기준 병합 — GM 정정 2026-07: 舊 '📊 월말 결과 보고'와 중복 통합, 완료/진행 목표 체크리스트 흡수) -->
+    <!-- 📋 이달 계획 (맨 위 · 한눈요약 통합 — GM 정정 2026-07: 舊 '🎯 이달 한눈 요약'(목표 평균 달성률·매출-지출 순액·ERP 진척+완료/진행 체크리스트)을 이달 계획 기준(base)에 흡수, 별도 한눈요약 섹션 폐지·중복 0) -->
     <section class="blk sum-hero" id="report-hero-wrap">
-      <h2 class="sec">🎯 이달 한눈 요약 <span class="stag">목표 달성률 · 매출-지출 순액 · ERP 진척 · 전월 대비 + 완료/진행 목표</span></h2>
+      <h2 class="sec">📋 이달 계획 <span class="stag">목표 평균 달성률 · 매출-지출 순액 · ERP 진척 · 전월 대비 + 완료/진행 목표 · 목표별 담당·상태·도달율·진행</span></h2>
       <div id="report-area"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
+      <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
     </section>
 
-    <!-- 💰 선택월 매출·지출 (핵심·최상단 · 목표 대비 + 부서별 분해 · 정본 = AI CFO 매출현황 미러) -->
+    <!-- 💰 선택월 매출·지출 (핵심·최상단 · 매출 목표 대비 + 부서별 분해 · 정본 = AI CFO 매출현황 미러 · 2026-07-03 GM 지시: [매출][전체지출][순액] 1행 요약표 삭제(지출=나우열M 구조개선 중이라 순액 무의미), 부서별 표는 유지) -->
     <section class="blk fin-primary">
-      <h2 class="sec has-link">💰 선택월 매출·지출 <span class="stag">목표 대비 + 부서별 · 전체지출(인건비+구매성) · AI CFO 정본 미러</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
+      <h2 class="sec has-link">💰 선택월 매출·지출 <span class="stag">매출 목표 대비 + 부서별(목표vs실적) · AI CFO 정본 미러 · 지출·순액=나우열M 구조개선 중(확정숫자 미표기)</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
       <div id="fin-board"><div class="board-status">선택월 매출·지출 요약을 불러오는 중…</div></div>
     </section>
 
@@ -412,23 +413,18 @@
       </div>
     </section>
 
-    <!-- 📋 이달 계획 -->
+    <!-- 🔧 점검 현황 & 이슈·해결 (2026-07-03 GM 지시: 개발(백·프론트엔드) 6월 진행/완료 카드 추가) -->
     <section class="blk">
-      <h2 class="sec">📋 이달 계획 <span class="stag">목표 · 담당 · 상태 · 도달율 · 진행</span></h2>
-      <div id="obj-board"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
-    </section>
-
-    <!-- 🔧 점검 현황 & 이슈·해결 -->
-    <section class="blk">
-      <h2 class="sec">🔧 점검 현황 & 이슈·해결 <span class="stag">시설부 · 지원부(남/여) · 종합접수처 — 실측 가능한 것만(가짜값 없음) · 이슈=VOC 실시간 집계(PII 비노출)</span></h2>
+      <h2 class="sec">🔧 점검 현황 & 이슈·해결 <span class="stag">시설부 · 지원부(남/여) · 종합접수처 · 개발(백·프론트엔드) — 실측 가능한 것만(가짜값 없음) · 이슈=VOC 실시간 집계(PII 비노출)</span></h2>
       <div id="check-board"><div class="board-status">점검 현황을 불러오는 중…</div></div>
       <div id="issue-board" style="margin-top:14px;"><div class="board-status">이슈 보드를 계산하는 중…</div></div>
     </section>
 
-    <!-- 👤 실무책임자 도달율 -->
+    <!-- 👤 실무책임자 도달율 + 🤖 AI 활용 도달율(초안) -->
     <section class="blk">
       <h2 class="sec" id="prac-sec" style="display:none;">👤 실무책임자 도달율 <span class="stag">GM 직속 3라인</span></h2>
       <div id="prac-board" style="display:none;"></div>
+      <div id="ai-util-board" style="margin-top:16px;"></div>
     </section>
 
   </div>
@@ -447,6 +443,8 @@
   var PLAN_PATH = 'status/monthly_ops_plan.json';
   var TARGETS_PATH = 'status/sales_targets.json'; // 팀별 월 목표매출 정본(고정) — 부서별 매출(목표 vs 실적) 결합표 기준선.
   var KPI_PATH = 'status/kpi_values.json'; // KPI 자동집계(kpi_collector.py, 일 2회) — 🔧 점검 현황 실측치 소스(coo.지원부_점검완료율). 측정 불가=null(가짜값 없음).
+  var QUEUE_ARCHIVE_PATH = 'status/_queue_archive.json'; // 완료·폐기 배(항로) 아카이브 — 🔧 점검 현황 '개발(백·프론트엔드) 6월' 완료 카운트 소스(clevel=cto·status=DONE·processed_at 2026-06).
+  var QUEUE_ACTIVE_PATH = 'status/_queue.json'; // 활성 배(PENDING/IN_PROGRESS) — 같은 카드의 진행 카운트 소스(clevel=cto·status=IN_PROGRESS·enqueued_at 2026-06).
   var CHECK_GAS = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec'; // 지원팀 일일점검 GAS(공용·kpi_collector.py와 동일 소스) — action=get_today_summary rows[].gender(m/f)로 🔧 점검 현황 지원부 남/여 카드 분해.
   var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec'; // 종합접수처 VOC GAS(coo/reception/종합접수처_현황.html과 동일) — action=reg_board. 🔧 점검 현황④ 카드 + 🗂️ 이슈·해결 공용(PII 미사용·집계만).
   var VOC_CAT_META = [ // 종합접수처_현황.html CAT_META과 동일(5종 카테고리 → 담당부서)
@@ -518,6 +516,7 @@
   var _kpiValues = null;    // status/kpi_values.json(KPI 자동집계) — 🔧 점검 현황 실측치. 조회 실패=null(전부 '측정 개통 전' 처리)
   var _supportGender = null; // 지원부 남/여 오늘 점검 완료율 {m:{done,total,pct}, f:{...}} — CHECK_GAS get_today_summary 실측. 조회 실패/데이터없음=null(해당 성별 카드 '측정 개통 전')
   var _vocBoard = null;      // 종합접수처 VOC 접수 배열(reg_board.data) — 🔧 점검④ 카드 + 🗂️ 이슈·해결 공용. PII(성함·연락처) 절대 미사용(카테고리·부서·상태 집계만). 조회 실패=null
+  var _devCounts = null;     // 개발(백·프론트엔드) 6월 진행/완료 카운트 {done,prog} — _queue_archive.json+_queue.json 실측(clevel=cto). 조회 실패=null(측정 개통 전)
   var _instrTeamMap = {};    // 강사이름 → 팀(부서) 매핑(인건비 시트 A/B열 로스터에서 구성) — team_sales의 강사별 실적을 팀 단위로 합산하는 데 사용(PII 미노출·집계에만 사용)
   var _teamSalesCache = {};  // 'YYYY-M' → {status:'loading'|'done', raw:team_sales 응답} — 선택월별 라이브 팀 매출 실적 캐시
   var _nsMap = null;      // role.id → 북극성 문구(bootsetup_matrix.json dims[0] 첫 줄) — 목표→북극성 뱃지용
@@ -600,6 +599,34 @@
       .then(function(r){ return r.json(); })
       .then(function(d){ return (d && d.ok && Array.isArray(d.data)) ? d.data : null; })
       .catch(function(){ return null; });
+  }
+  // ── 개발(백·프론트엔드) 항로 배 카운트 — 🔧 점검 현황 카드 5번째. _queue_archive.json(완료)+_queue.json(진행) 실측. 동일 read_file→raw 폴백 패턴. 실패=null ──
+  function readQueueArchive(){
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:QUEUE_ARCHIVE_PATH})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || '읽기 실패'); })
+      .catch(function(){ return fetch(RAW_BASE + QUEUE_ARCHIVE_PATH + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }).catch(function(){ return null; }); });
+  }
+  function readQueueActive(){
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:QUEUE_ACTIVE_PATH})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || '읽기 실패'); })
+      .catch(function(){ return fetch(RAW_BASE + QUEUE_ACTIVE_PATH + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }).catch(function(){ return null; }); });
+  }
+  // 집계 기준(카드에 동일 문구 명시): clevel='cto'(개발·기술 전담) 배 중 2026-06 처리(완료=archive processed_at)/등록(진행=active enqueued_at). 실패=null(가짜값 없음).
+  var DEV_COUNT_MONTH = '2026-06';
+  var DEV_COUNT_CLEVEL = 'cto';
+  function computeDevCounts(archive, active){
+    if(!Array.isArray(archive) || !Array.isArray(active)) return null;
+    var done = archive.filter(function(x){
+      return x && x.clevel === DEV_COUNT_CLEVEL && x.status === 'DONE' && String(x.processed_at || '').indexOf(DEV_COUNT_MONTH) === 0;
+    }).length;
+    var prog = active.filter(function(x){
+      return x && x.clevel === DEV_COUNT_CLEVEL && x.status === 'IN_PROGRESS' && String(x.enqueued_at || '').indexOf(DEV_COUNT_MONTH) === 0;
+    }).length;
+    return {done:done, prog:prog};
   }
   // ── 라이브 매출: home_kpi → sales.month(당월 실측). 실패/미측정=null ──
   function readHomeSales(){
@@ -998,9 +1025,10 @@
       host.innerHTML = '<div class="board-status">선택월을 확인할 수 없습니다. 매출·지출은 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold)">AI CFO 매출현황</a> 참조.</div>';
       return;
     }
-    var idx = fin.idx, cfoS = fin.cfoS, sales = fin.sales, labor = fin.labor, proc = fin.proc, totalExp = fin.totalExp, net = fin.net;
+    var idx = fin.idx, cfoS = fin.cfoS, sales = fin.sales;
 
-    // ── 매출 목표 대비 진척(핵심·상단) ──
+    // ── 매출 목표 대비 진척(핵심·유일한 선택월 요약 — 2026-07-03 GM 지시: 舊 [매출][전체지출][순액] 3칸 1행 테이블 삭제.
+    //    지출=나우열M 구조개선 중이라 순액이 무의미 · 부서별 매출&지출 표(아래)만 유지) ──
     var target = salesTargetFor(_sel);
     var heroLabel = mnum + '월 매출 · 센터전체(CFO 정본)';
     var hero;
@@ -1020,27 +1048,6 @@
         '<span class="fin-hero-none">측정 전 — 소스 미기재(가짜값 없음)</span></div>' +
         '<div class="fin-hero-target">목표 <b class="tv">' + fmtWon(target) + '</b></div></div>';
     }
-
-    var salesCell = (sales != null)
-      ? ('<span class="fin-live-v">● ' + fmtWon(sales) + '</span><span class="fin-sub">' + (cfoS != null ? 'CFO 매출현황 정본' : '당월 라이브') + '</span>')
-      : '<span class="fin-none">측정 전</span>';
-
-    var expSub = (labor != null)
-      ? ('인건비 ' + fmtWon(labor) + ' + 구매성 ' + fmtWon(proc))
-      : '';
-    var expCell = (totalExp != null)
-      ? ('<b>' + fmtWon(totalExp) + '</b><span class="fin-sub">' + expSub + '</span>')
-      : '<span class="fin-none">측정 전</span>';
-
-    var netCell = (net != null)
-      ? ('<b class="' + (net >= 0 ? 'pos' : 'neg') + '">' + fmtWon(net) + '</b>')
-      : '<span class="fin-none">—</span>';
-
-    var table = '<div class="rpt-wrap"><table class="rpt fin"><thead><tr>' +
-      '<th>선택월</th><th>매출</th><th>전체 지출<span style="font-weight:400;color:var(--dim)"> · 인건비+구매성</span></th><th>순액</th>' +
-      '</tr></thead><tbody>' +
-      '<tr class="cur-m"><td class="fmo">' + mnum + '월</td><td>' + salesCell + '</td><td>' + expCell + '</td><td>' + netCell + '</td></tr>' +
-      '</tbody></table></div>';
 
     // ── 부서별 매출(목표 vs 실적) & 지출 결합표(선택월) ──
     // 실적매출 = 라이브 GAS action=team_sales(강사별 실적을 인건비 시트 로스터로 팀 합산) 우선, 실패/미도래 시 매출마스터(_cfoSalesDept) 폴백.
@@ -1093,17 +1100,12 @@
         '<tbody>' + body + '</tbody></table></div></div>';
     }
 
-    var procNote = !_procLive
-      ? ' 구매성 라이브 조회 실패 — 폴백 스냅샷(2026-06-30 동결) 사용 중, 실제와 다를 수 있음.'
-      : '';
-
     var legend = '<div class="flegend">' +
-      '<span class="fnote">● 선택월(' + mnum + '월) 기준 · 매출·지출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> 미러(읽기전용). ' +
-      '<b>매출=센터전체 정본(회원권+강습+기타·주차)</b> / <b>전체 지출=강사+운영부 인건비 + 구매성</b>(정규직 일부·임대료 미포함, 구매성=라이브 조회).' + procNote +
-      ' 부서별 표=팀별 목표(status/sales_targets.json 고정)·실적(라이브 GAS team_sales, 강사→팀은 인건비 시트 로스터로 집계). 멤버십=GM시트 「2026년도 매출」 정본. <b>부서별 지출·순액=운영 매출&지출 실무 나우열M 이관·구조개선 중이라 확정숫자 미표기</b>(위 선택월 요약의 전체 지출만 참고). 연간 12개월 상세는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인. 측정 전=소스 미기재(가짜값 없음).</span>' +
+      '<span class="fnote">● 선택월(' + mnum + '월) 기준 · 매출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> 미러(읽기전용, 회원권+강습+기타·주차). ' +
+      '부서별 표=팀별 목표(status/sales_targets.json 고정)·실적(라이브 GAS team_sales, 강사→팀은 인건비 시트 로스터로 집계). 멤버십=GM시트 「2026년도 매출」 정본. <b>부서별 지출·순액=운영 매출&지출 실무 나우열M 이관·구조개선 중이라 확정숫자 미표기</b>(지출·순액 실측치는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인). 측정 전=소스 미기재(가짜값 없음).</span>' +
     '</div>';
 
-    host.innerHTML = hero + table + combinedTbl + legend;
+    host.innerHTML = hero + combinedTbl + legend;
   }
 
   // ── 실무책임자 도달율 스코어보드 ──
@@ -1141,6 +1143,40 @@
       var prevPr = (prevMap && typeof prevMap[p.id] === 'number') ? prevMap[p.id] : null;
       return pracRow(p, goals[p.id], pr, prevPr);
     }).join('') + '</div>';
+  }
+
+  // ── 🤖 AI 활용 도달율 (초안 · GM 검토 · 2026-07-03 신설) — monthly_ops_plan.json ai_utilization(전역·월 무관) 렌더 ──
+  function aiUtilTier(pct){
+    var scale = (_data && _data.ai_utilization && _data.ai_utilization.scale) || [];
+    for(var i = 0; i < scale.length; i++){
+      var s = scale[i];
+      if(pct >= s.min && pct < s.max) return s.label;
+    }
+    return '';
+  }
+  function renderAiUtilization(){
+    var host = document.getElementById('ai-util-board');
+    if(!host) return;
+    var au = _data && _data.ai_utilization;
+    var items = (au && au.items) || [];
+    if(!items.length){ host.innerHTML = ''; return; }
+    var rows = items.map(function(it){
+      var pct = clampPct(it.pct);
+      var tgt = (typeof it.target_pct === 'number') ? it.target_pct : null;
+      var remain = (tgt != null) ? Math.max(0, tgt - pct) : null;
+      var tier = aiUtilTier(pct);
+      return '<div class="prow">' +
+        '<div class="pmeta"><span class="pname">' + esc(it.name || '') + '</span>' +
+          '<span class="chip dept">' + esc(it.dept || '') + '</span>' +
+          (tier ? '<span class="chip own">' + esc(tier) + '</span>' : '') + '</div>' +
+        '<div class="pgoal">' + esc(it.direction || '') + '</div>' +
+        '<div class="pbarwrap">' + progBar(pct, null, false, '', true) +
+          (tgt != null ? ('<span class="sd">목표 ' + tgt + '% · 남은 ' + remain + '%p</span>') : '') + '</div>' +
+      '</div>';
+    }).join('');
+    host.innerHTML =
+      '<div class="issue-h" style="margin-bottom:8px;">🤖 AI 활용 도달율 <span style="font-weight:400;color:var(--dim)">— 초안 · GM 검토 · 기준: 0~20 거의안씀 / 20~50 일부보조 / 50~70 구축주도 / 70~90 자율활용 / 90+ 전문</span></div>' +
+      '<div class="pscore">' + rows + '</div>';
   }
 
   // ── 🔧 점검 현황(4칸 · GM 지시 2026-07-03) ──
@@ -1199,6 +1235,22 @@
         '<div class="cv pending">측정 개통 전</div>' +
         '<span class="csub">VOC 접수 조회 실패 — 가짜값 없음</span>' +
         '<a class="clink" href="coo/reception/종합접수처_현황.html" target="_blank">접수 현황 →</a></div>'
+      );
+    }
+
+    // ⑤ 개발(백·프론트엔드) 6월 진행/완료 — status/_queue.json(진행) + _queue_archive.json(완료) 실측(clevel=cto). 2026-07-03 GM 지시 신설.
+    if(_devCounts){
+      cards.push(
+        '<div class="chk-card"><span class="cl">개발(백·프론트엔드) 6월</span>' +
+        '<div class="cv">진행 ' + _devCounts.prog + ' · 완료 ' + _devCounts.done + '</div>' +
+        '<span class="csub">집계 기준: cto 배 중 2026-06 등록·진행중(진행) / 2026-06 처리완료(완료) — _queue.json+_queue_archive.json 실측</span>' +
+        '<a class="clink" href="wellperion_guide(main).html" target="_blank">항로 보드 →</a></div>'
+      );
+    } else {
+      cards.push(
+        '<div class="chk-card"><span class="cl">개발(백·프론트엔드) 6월</span>' +
+        '<div class="cv pending">측정 개통 전</div>' +
+        '<span class="csub">항로 큐 정본(_queue.json/_queue_archive.json) 조회 실패 — 가짜값 없음</span></div>'
       );
     }
 
@@ -1375,6 +1427,7 @@
     renderCheckStatus();
     renderIssues();
     renderPractitioners();
+    renderAiUtilization();
     renderReport();
     renderEditBtn();
     applyChair();
@@ -1503,7 +1556,9 @@
     withTimeout(readInstructorTeamMap(), 8000, {}),
     withTimeout(readKpiValues(), 8000, null),
     withTimeout(readSupportCheckGender(), 8000, null),
-    withTimeout(readVocBoard(), 8000, null)
+    withTimeout(readVocBoard(), 8000, null),
+    withTimeout(readQueueArchive(), 8000, null),
+    withTimeout(readQueueActive(), 8000, null)
   ])
     .then(function(arr){
       _data = arr[0];
@@ -1522,6 +1577,7 @@
       _kpiValues = arr[7];
       _supportGender = arr[8];
       _vocBoard = arr[9];
+      _devCounts = computeDevCounts(arr[10], arr[11]);
       buildMonthSelect();
       render();
     })
