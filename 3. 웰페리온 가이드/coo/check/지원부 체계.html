@@ -899,11 +899,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
+  <button class="tab" onclick="switchTab('monthly')">📊 월간보고</button>
   <div class="tab-dropdown" id="monthlyDropdown">
     <button class="tab" id="monthlyDropdownBtn" onclick="openTabDropdown(this,document.getElementById('monthlyDropdownMenu'),event)">📅 월간 보고 ▾</button>
     <div class="tab-dropdown-menu" id="monthlyDropdownMenu">
-      <!-- 새 달 추가 패턴: 아래 항목 1줄 복사 후 해당 달 인쇄 함수·#a3-monthly-print 블록 추가 (배208 자동 데이터 주입 후속) -->
-      <button onclick="printA3Monthly();closeAllDropdowns()">2026년 6월</button>
+      <!-- 새 달 추가 패턴: 아래 항목 1줄 복사 후 달 문자열(YYYY-MM)만 바꿔 추가 — printA3Monthly가 monthly_report 라이브 데이터를 자동 주입(배208 2단계 Phase B) -->
+      <button onclick="printA3Monthly('2026-06');closeAllDropdowns()">2026년 6월</button>
     </div>
   </div>
   <div style="display:flex;gap:4px;margin-left:auto;">
@@ -1657,6 +1658,40 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <!-- ── 항목 관리 탭 (매뉴얼 탭으로 통합 이전 · 2026-05-29) ──
      폼/목록/유틸 UI는 매뉴얼 탭(tab-manual)으로 이동. 빈 패널 유지(switchTab 참조 보존). -->
 <div id="tab-manage" class="content hidden"></div>
+
+<!-- ══ 월간보고 탭 — 지원부 점검 monthly_report 라이브 대시보드 (배208 2단계 Phase B) ══ -->
+<div id="tab-monthly" class="content hidden">
+  <div class="date-bar">
+    <input type="month" id="mrMonthInput" onchange="loadMonthlyReport()">
+    <button class="btn" onclick="loadMonthlyReport()">조회</button>
+    <button class="btn" onclick="printA3Monthly()">🖨 A3 인쇄</button>
+  </div>
+  <div id="mrStatus"></div>
+
+  <div id="mrKpiRow"></div>
+
+  <div class="dash-section-title">일별 추이 — 완료율 · 이슈</div>
+  <div id="mrDailyView" style="padding:6px 0;"></div>
+
+  <div class="dash-section-title">구역별 현황</div>
+  <div id="mrZoneView"></div>
+
+  <div class="dash-section-title">교대별 현황</div>
+  <div id="mrShiftView"></div>
+
+  <div class="dash-section-title">점검자별 현황</div>
+  <div id="mrInspectorView"></div>
+
+  <div class="dash-section-title">이슈</div>
+  <div id="mrIssuesSummary"></div>
+  <details id="mrIssuesDetails" style="margin:4px 0 16px;">
+    <summary style="cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;">이슈 원문 보기</summary>
+    <div id="mrIssuesList" style="margin-top:8px;"></div>
+  </details>
+
+  <div class="dash-section-title">개선 시사점</div>
+  <div id="mrImprovements"></div>
+</div>
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
@@ -5236,6 +5271,7 @@ function switchTab(tab, opts){
   document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
   document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
   document.getElementById('tab-supply').classList.toggle('hidden',tab!=='supply');
+  document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
   if(tab==='supply'){ if(typeof loadSupplyFromBackend==='function') loadSupplyFromBackend(); }
   if(tab==='guide'){ if(typeof loadCsFromBackend==='function') loadCsFromBackend(); }
   // Show correct submit bar
@@ -5245,6 +5281,7 @@ function switchTab(tab, opts){
   if(tab==='check-f'){activeGenderTab='f';renderG('f')}
   if(tab==='admin'){renderAdmin();renderAdminExtra();}
   if(tab==='manual'){renderBoard();renderManualItems();}
+  if(tab==='monthly'){ if(typeof mrEnsureMonthInput==='function') mrEnsureMonthInput(); if(typeof loadMonthlyReport==='function') loadMonthlyReport(); }
 }
 // 해시 딥링크(예 …#supply) → 로드 시 해당 탭 자동 열기. 잠금 탭(점검 남/여)은 제외(PIN 우회 방지).
 window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h && h!=='check-m' && h!=='check-f' && document.getElementById('tab-'+h)) switchTab(h); }catch(e){} });
@@ -7627,14 +7664,256 @@ function printA3Closedday(){
 }
 
 /* ═══════════════════════════════════════════
+   월간보고 탭 — monthly_report 라이브 대시보드 + A3 인쇄 데이터 주입 (배208 2단계 Phase B)
+   화면(tab-monthly)과 A3 인쇄(printA3Monthly)가 같은 fetch/캐시(MR_LAST) 공유.
+   ═══════════════════════════════════════════ */
+const MR_DEPT = 'support';
+let MR_LAST = null; // {month, data} — 마지막 조회 캐시(화면·A3 인쇄 공유, 같은 달이면 재조회 생략)
+
+function mrDefaultMonth(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function mrEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function mrPctColor(p){ p=Number(p)||0; return p>=90?'var(--green)':p>=60?'var(--yellow)':'var(--red)'; }
+function mrBadgeProvisional(){
+  return '<span title="분모정합(배14) 확정 전 잠정값" style="display:inline-block;font-size:10px;font-weight:700;color:#a8710a;background:rgba(230,148,78,0.18);border-radius:10px;padding:2px 8px;margin-left:6px;cursor:help;vertical-align:middle;">잠정</span>';
+}
+function mrEnsureMonthInput(){
+  const el=document.getElementById('mrMonthInput');
+  if(el && !el.value) el.value=mrDefaultMonth();
+  return el;
+}
+async function fetchMonthlyReport(month){
+  const r=await fetch(API_URL+'?action=monthly_report&dept='+MR_DEPT+'&month='+encodeURIComponent(month),{redirect:'follow'});
+  const j=await r.json();
+  if(!j || j.ok===false) throw new Error('monthly_report 응답 오류');
+  return j;
+}
+
+async function loadMonthlyReport(){
+  const inputEl=mrEnsureMonthInput();
+  const month=(inputEl&&inputEl.value)||mrDefaultMonth();
+  const statusEl=document.getElementById('mrStatus');
+  if(statusEl) statusEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--dim);font-size:13px;">불러오는 중...</div>';
+  try{
+    const data=await fetchMonthlyReport(month);
+    MR_LAST={month:month,data:data};
+    if(statusEl) statusEl.innerHTML='';
+    renderMrKpi(data);
+    renderMrDaily(data);
+    renderMrZone(data);
+    renderMrShift(data);
+    renderMrInspector(data);
+    renderMrIssues(data);
+    renderMrImprovements(data);
+  }catch(e){
+    MR_LAST=null;
+    if(statusEl) statusEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--red);font-size:13px;">월간 데이터 로드 실패 — 잠시 후 다시 시도하세요.</div>';
+    ['mrKpiRow','mrDailyView','mrZoneView','mrShiftView','mrInspectorView','mrIssuesSummary','mrIssuesList','mrImprovements'].forEach(function(id){ var e=document.getElementById(id); if(e) e.innerHTML=''; });
+  }
+}
+
+function renderMrKpi(data){
+  const el=document.getElementById('mrKpiRow');
+  if(!el) return;
+  const t=data.monthTotals||{};
+  const pct=(t.avgPct!=null?t.avgPct:0);
+  el.innerHTML =
+    '<div class="dash-stat-row">'
+    +'<div class="dash-stat-card"><div class="num">'+(t.sessionCount||0)+'</div><div class="label">세션수</div></div>'
+    +'<div class="dash-stat-card"><div class="num">'+(t.activeDays||0)+'</div><div class="label">활성일</div></div>'
+    +'<div class="dash-stat-card"><div class="num" style="color:'+mrPctColor(pct)+'">'+pct+'%'+mrBadgeProvisional()+'</div><div class="label">완료율</div></div>'
+    +'<div class="dash-stat-card"><div class="num" style="color:var(--red)">'+(t.issueCount||0)+'</div><div class="label">이슈 총계</div></div>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--dim);margin:-6px 0 16px;">'+mrEsc(data.denomNote||'완료율은 분모정합(배14) 확정 전 잠정값입니다.')+(data.testExcludedCount?(' · 테스트 제외 '+data.testExcludedCount+'건'):'')+'</div>';
+}
+
+function renderMrDaily(data){
+  const el=document.getElementById('mrDailyView');
+  if(!el) return;
+  const series=data.dailySeries||[];
+  if(series.length===0){ el.innerHTML='<div style="padding:14px;text-align:center;color:var(--dim);font-size:13px;">일별 데이터 없음</div>'; return; }
+  let html='<div style="display:flex;align-items:flex-end;gap:5px;height:120px;padding:6px 0 4px;overflow-x:auto;">';
+  series.forEach(function(d){
+    const pct=Number(d.pct)||0;
+    const barH=Math.max(Math.round((pct/100)*80),2);
+    const dateLabel=(d.date||'').slice(8,10);
+    html+='<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:22px;">'
+      +'<div style="font-size:9px;font-weight:700;color:'+mrPctColor(pct)+';">'+pct+'%</div>'
+      +'<div style="flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;">'
+      +'<div style="width:14px;height:'+barH+'px;border-radius:3px 3px 0 0;background:var(--accent);min-height:2px;" title="'+mrEsc(d.date+' '+pct+'% ('+d.sumDone+'/'+d.sumTotal+') 이슈 '+(d.issueCount||0)+'건')+'"></div>'
+      +'</div>'
+      +'<div style="font-size:9px;color:var(--dim);text-align:center;">'+dateLabel+(d.issueCount?'<br><span style="color:var(--red);">!'+d.issueCount+'</span>':'')+'</div>'
+      +'</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function renderMrZone(data){
+  const el=document.getElementById('mrZoneView');
+  if(!el) return;
+  const rows=data.byZone||[];
+  if(rows.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">구역별 데이터 없음</div>'; return; }
+  let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>구역</th><th>세션</th><th>완료율</th><th>이슈</th></tr>';
+  rows.forEach(function(r){
+    html+='<tr><td>'+mrEsc(r.zone)+'</td><td>'+(r.sessionCount||0)+'</td><td style="color:'+mrPctColor(r.pct)+';font-weight:700;">'+r.pct+'%</td><td>'+(r.issueCount||0)+'</td></tr>';
+  });
+  html+='</table></div>';
+  el.innerHTML=html;
+}
+
+function renderMrShift(data){
+  const el=document.getElementById('mrShiftView');
+  if(!el) return;
+  const rows=data.byShift||[];
+  if(rows.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">교대별 데이터 없음</div>'; return; }
+  let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>교대</th><th>세션</th><th>완료율</th><th>이슈</th></tr>';
+  rows.forEach(function(r){
+    html+='<tr><td>'+mrEsc(r.shift)+'</td><td>'+(r.sessionCount||0)+'</td><td style="color:'+mrPctColor(r.pct)+';font-weight:700;">'+r.pct+'%</td><td>'+(r.issueCount||0)+'</td></tr>';
+  });
+  html+='</table></div>';
+  el.innerHTML=html;
+}
+
+function renderMrInspector(data){
+  const el=document.getElementById('mrInspectorView');
+  if(!el) return;
+  const rows=data.byInspector||[];
+  if(rows.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">점검자별 데이터 없음</div>'; return; }
+  let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>점검자</th><th>세션</th><th>평균완료율</th></tr>';
+  rows.forEach(function(r){
+    html+='<tr><td>'+mrEsc(r.inspector)+'</td><td>'+(r.sessionCount||0)+'</td><td style="color:'+mrPctColor(r.avgPct)+';font-weight:700;">'+r.avgPct+'%</td></tr>';
+  });
+  html+='</table></div>';
+  el.innerHTML=html;
+}
+
+function renderMrIssues(data){
+  const sumEl=document.getElementById('mrIssuesSummary');
+  const listEl=document.getElementById('mrIssuesList');
+  const detailsEl=document.getElementById('mrIssuesDetails');
+  const issues=data.issues||{total:0,byZone:{},list:[]};
+  if(sumEl){
+    let byZoneHtml='';
+    if(issues.byZone && typeof issues.byZone==='object'){
+      byZoneHtml=Object.keys(issues.byZone).map(function(z){return mrEsc(z)+' '+issues.byZone[z]+'건';}).join(' · ');
+    }
+    sumEl.innerHTML='<div style="font-size:13px;margin-bottom:6px;"><b>이슈 총계 '+(issues.total||0)+'건</b>'+(byZoneHtml?' — '+byZoneHtml:'')+'</div>';
+  }
+  if(detailsEl){
+    const summaryEl=detailsEl.querySelector('summary');
+    if(summaryEl) summaryEl.textContent='이슈 원문 보기 ('+(issues.total||0)+'건)';
+  }
+  if(listEl){
+    const list=issues.list||[];
+    if(list.length===0){ listEl.innerHTML='<div style="padding:8px;color:var(--dim);font-size:13px;">이슈 없음</div>'; return; }
+    let html='';
+    list.forEach(function(iss){
+      html+='<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px;"><span style="color:var(--dim);">['+mrEsc(iss.date)+' '+mrEsc(iss.zone)+' '+mrEsc(iss.shift)+' '+mrEsc(iss.inspector)+']</span> '+mrEsc(iss.text)+'</div>';
+    });
+    listEl.innerHTML=html;
+  }
+}
+
+function renderMrImprovements(data){
+  const el=document.getElementById('mrImprovements');
+  if(!el) return;
+  const arr=data.improvements||[];
+  if(arr.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">개선 시사점 없음</div>'; return; }
+  let html='';
+  arr.forEach(function(txt){
+    html+='<div class="admin-card" style="padding:10px 14px;margin-bottom:8px;font-size:13px;">· '+mrEsc(txt)+'</div>';
+  });
+  el.innerHTML=html;
+}
+
+function mrA3Chip(key,desc){
+  return '<div class="mrp-kpi-chip"><div class="mrp-kpi-key">'+key+'</div><div class="mrp-kpi-desc">'+desc+'</div></div>';
+}
+
+/* 선택월 monthly_report 데이터를 기존 #a3-monthly-print(mrp-doc) 구조에 주입.
+   실패 시 false 반환 → 호출부가 기존 정적 내용을 그대로 두고 인쇄(회귀 방지 폴백). */
+function renderA3MonthlyFromData(month,data){
+  const doc=document.querySelector('#a3-monthly-print .mrp-doc');
+  if(!doc) return false;
+  const t=data.monthTotals||{};
+  const pct=(t.avgPct!=null?t.avgPct:0);
+
+  const titleEl=doc.querySelector('.mrp-main-title');
+  if(titleEl) titleEl.textContent='지원부 점검 체계 — '+month+' 월간 보고 (KPI 실측)';
+  const subEl=doc.querySelector('.mrp-sub-title');
+  if(subEl) subEl.innerHTML=mrEsc(data.denomNote||'완료율은 분모정합(배14) 확정 전 잠정값')+' &nbsp;·&nbsp; 세션·구역·교대·점검자별 실적 및 이슈·개선 시사점 자동 집계';
+  const metaEl=doc.querySelector('.mrp-title-meta');
+  if(metaEl) metaEl.innerHTML='작성: AI COO(시우) &nbsp;·&nbsp; '+kstToday()+'<br>대상월: '+month+' &nbsp;·&nbsp; 보고: 경영진';
+
+  const kpiRow=doc.querySelector('.mrp-kpi-row');
+  if(kpiRow){
+    kpiRow.innerHTML=
+      mrA3Chip((t.sessionCount||0)+' 세션','월간 점검 세션 수(회차 합계)')
+      +mrA3Chip((t.activeDays||0)+' 일','점검이 1회 이상 실시된 활성일수')
+      +mrA3Chip('<span class="mrp-kpi-num">'+pct+'%</span> 완료율 <span style="font-size:10px;color:#a8710a;">(잠정)</span>','분모정합(배14) 확정 전 잠정값 — '+mrEsc(data.denomNote||''))
+      +mrA3Chip('<span class="mrp-kpi-num">'+(t.issueCount||0)+'건</span> 이슈','월중 등록된 이슈 총계');
+  }
+
+  const bodyRow=doc.querySelector('.mrp-body-row');
+  if(bodyRow){
+    let zoneRows=''; (data.byZone||[]).forEach(function(r){ zoneRows+='<tr><td>'+mrEsc(r.zone)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+r.pct+'%</td><td>'+(r.issueCount||0)+'</td></tr>'; });
+    let shiftRows=''; (data.byShift||[]).forEach(function(r){ shiftRows+='<tr><td>'+mrEsc(r.shift)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+r.pct+'%</td><td>'+(r.issueCount||0)+'</td></tr>'; });
+    let inspRows=''; (data.byInspector||[]).slice(0,8).forEach(function(r){ inspRows+='<tr><td>'+mrEsc(r.inspector)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+r.avgPct+'%</td></tr>'; });
+    let dailyCells=''; (data.dailySeries||[]).forEach(function(d){ dailyCells+='<span style="display:inline-block;min-width:34px;text-align:center;font-size:9px;padding:1px 3px;color:'+mrPctColor(d.pct)+';">'+(d.date||'').slice(8,10)+':'+d.pct+'%</span>'; });
+
+    bodyRow.innerHTML=
+      '<div class="mrp-col"><div class="mrp-col-head">① 일별·구역별 실적</div>'
+      +'<div class="mrp-card"><div class="mrp-card-title">일별 완료율(잠정)</div><div style="font-size:10px;line-height:1.9;word-break:break-all;">'+(dailyCells||'데이터 없음')+'</div></div>'
+      +'<div class="mrp-card"><div class="mrp-card-title">구역별</div><table style="width:100%;font-size:10px;border-collapse:collapse;"><tr style="font-weight:800;"><td>구역</td><td>세션</td><td>완료율</td><td>이슈</td></tr>'+(zoneRows||'<tr><td colspan="4">데이터 없음</td></tr>')+'</table></div>'
+      +'</div>'
+      +'<div class="mrp-col"><div class="mrp-col-head">② 교대·점검자별 실적</div>'
+      +'<div class="mrp-card"><div class="mrp-card-title">교대별</div><table style="width:100%;font-size:10px;border-collapse:collapse;"><tr style="font-weight:800;"><td>교대</td><td>세션</td><td>완료율</td><td>이슈</td></tr>'+(shiftRows||'<tr><td colspan="4">데이터 없음</td></tr>')+'</table></div>'
+      +'<div class="mrp-card"><div class="mrp-card-title">점검자별(상위)</div><table style="width:100%;font-size:10px;border-collapse:collapse;"><tr style="font-weight:800;"><td>점검자</td><td>세션</td><td>평균완료율</td></tr>'+(inspRows||'<tr><td colspan="3">데이터 없음</td></tr>')+'</table></div>'
+      +'</div>';
+  }
+
+  const bottomRow=doc.querySelector('.mrp-bottom-row');
+  if(bottomRow){
+    const improvements=data.improvements||[];
+    const issues=data.issues||{total:0,byZone:{},list:[]};
+    const impHtml=improvements.length?improvements.map(function(x){return '<div class="mrp-bottom-line">'+mrEsc(x)+'</div>';}).join(''):'<div class="mrp-bottom-line">개선 시사점 없음</div>';
+    const topIssues=(issues.list||[]).slice(0,6);
+    const issueHtml=topIssues.length?topIssues.map(function(i){return '<div class="mrp-bottom-line">['+mrEsc(i.date)+' '+mrEsc(i.zone)+'] '+mrEsc(i.text)+'</div>';}).join(''):'<div class="mrp-bottom-line">이슈 없음</div>';
+    bottomRow.innerHTML=
+      '<div class="mrp-bottom-col"><div class="mrp-bottom-head">개선 시사점</div>'+impHtml+'</div>'
+      +'<div class="mrp-bottom-col"><div class="mrp-bottom-head discuss">이슈 요약(총 '+(issues.total||0)+'건) · 원문 상위 '+topIssues.length+'건</div>'+issueHtml+'</div>';
+  }
+
+  const footerEl=doc.querySelector('.mrp-footer');
+  if(footerEl) footerEl.innerHTML='정본: monthly_report API(라이브) · status/_queue.json(배208) &nbsp;|&nbsp; 완료율은 분모정합(배14) 확정 전 잠정값. 본 인쇄물은 '+kstToday()+' 기준 생성.';
+
+  return true;
+}
+
+/* ═══════════════════════════════════════════
    A3 월간 보고 인쇄
    body.a3-monthly-mode + @page A3 가로 동적 주입 후 복원
    - #a3-monthly-print 전용 컨테이너 표시, 인쇄 후 복원
    - printA3Guideline/printA3Manual과 완전 독립
      (함수명: printA3Monthly / 클래스: a3-monthly-mode
       style id: a3-monthly-page-style / 컨테이너: #a3-monthly-print)
+   - 배208 2단계 Phase B: 인쇄 전 선택월 monthly_report 라이브 데이터를 컨테이너에 주입.
+     데이터 로드 실패 시 기존 정적 내용 그대로 인쇄(회귀 방지 폴백).
    ═══════════════════════════════════════════ */
-function printA3Monthly(){
+async function printA3Monthly(monthArg){
+  const inputEl=document.getElementById('mrMonthInput');
+  const month=monthArg||(inputEl&&inputEl.value)||mrDefaultMonth();
+  try{
+    let data;
+    if(MR_LAST && MR_LAST.month===month){ data=MR_LAST.data; }
+    else{ data=await fetchMonthlyReport(month); MR_LAST={month:month,data:data}; }
+    renderA3MonthlyFromData(month,data);
+  }catch(e){
+    // 라이브 데이터 로드 실패 — 기존 정적 컨테이너 내용 그대로 인쇄(무변경)
+  }
   document.body.classList.add('a3-monthly-mode');
   let styleTag = document.getElementById('a3-monthly-page-style');
   if(!styleTag){
