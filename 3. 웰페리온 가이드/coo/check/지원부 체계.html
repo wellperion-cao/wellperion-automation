@@ -487,6 +487,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 #a3-closedday-print{display:none}
 /* ── A3 매뉴얼(세로 1장) 인쇄 전용 컨테이너 (평일 공통 분리 압축판) ── */
 #a3-manual-portrait-print{display:none}
+/* ── A3 회원 응대 상황표 인쇄 전용 컨테이너 (배64) ── */
+#a3-csguide-print{display:none}
+/* ── A3 비품 목록 인쇄 전용 컨테이너 (배64) ── */
+#a3-supply-print{display:none}
 /* ── A3 인쇄 모드 (body.a3-print-mode → @media print 분기) ── */
 @media print{
   body.a3-print-mode{font-size:10px;line-height:1.4;color:#111;background:#fff}
@@ -681,6 +685,68 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   #a3-monthly-print .mrp-bottom-line{font-size:11px;color:#3a3330;padding:3px 0 3px 13px;position:relative;line-height:1.55}
   #a3-monthly-print .mrp-bottom-line::before{content:"·";position:absolute;left:2px;color:#B79F8A;font-size:15px;line-height:1;top:2px}
   #a3-monthly-print .mrp-footer{padding:8px 22px;font-size:10px;color:#9a8a7a;background:#fdfaf7!important;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* ── A3 회원 응대 상황표 인쇄 모드 (배64) ── */
+  body.a3-csguide-mode{background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.a3-csguide-mode .header,
+  body.a3-csguide-mode .tabs,
+  body.a3-csguide-mode .submit-bar,
+  body.a3-csguide-mode .saving,
+  body.a3-csguide-mode .toast-msg,
+  body.a3-csguide-mode .header-util-btns,
+  body.a3-csguide-mode .util-btn,
+  body.a3-csguide-mode .sheet-links,
+  body.a3-csguide-mode #tab-policy,
+  body.a3-csguide-mode #tab-guide,
+  body.a3-csguide-mode #tab-chem,
+  body.a3-csguide-mode #tab-manual,
+  body.a3-csguide-mode #tab-supply,
+  body.a3-csguide-mode #tab-check-m,
+  body.a3-csguide-mode #tab-check-f,
+  body.a3-csguide-mode #a3-guideline-print,
+  body.a3-csguide-mode #a3-manual-print,
+  body.a3-csguide-mode #a3-manual-portrait-print,
+  body.a3-csguide-mode #a3-closedday-print,
+  body.a3-csguide-mode #a3-monthly-print,
+  body.a3-csguide-mode #a3-supply-print{display:none!important}
+  body.a3-csguide-mode #a3-csguide-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-csguide-print .csg-header{text-align:center;font-size:26px;font-weight:900;letter-spacing:0.04em;padding:4px 0 8px;border-bottom:3px solid #4a3a2e;margin-bottom:6px;color:#2a2018}
+  #a3-csguide-print .csg-sub{text-align:center;font-size:13px;color:#8a7a6c;margin-bottom:14px}
+  #a3-csguide-print table{width:100%;border-collapse:collapse}
+  #a3-csguide-print th,#a3-csguide-print td{border:1px solid #4a3a2e;padding:9px 12px;text-align:left;vertical-align:top;font-size:14px;line-height:1.5;color:#222}
+  #a3-csguide-print th{background:#4a3a2e!important;color:#fff!important;font-size:13px;font-weight:800}
+  #a3-csguide-print td.csg-sit{font-weight:800;color:#2a2018;width:20%}
+  #a3-csguide-print td.csg-note{color:#8a4a2e;width:22%}
+  /* ── A3 비품 목록 인쇄 모드 (배64) ── */
+  body.a3-supply-mode{background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.a3-supply-mode .header,
+  body.a3-supply-mode .tabs,
+  body.a3-supply-mode .submit-bar,
+  body.a3-supply-mode .saving,
+  body.a3-supply-mode .toast-msg,
+  body.a3-supply-mode .header-util-btns,
+  body.a3-supply-mode .util-btn,
+  body.a3-supply-mode .sheet-links,
+  body.a3-supply-mode #tab-policy,
+  body.a3-supply-mode #tab-guide,
+  body.a3-supply-mode #tab-chem,
+  body.a3-supply-mode #tab-manual,
+  body.a3-supply-mode #tab-supply,
+  body.a3-supply-mode #tab-check-m,
+  body.a3-supply-mode #tab-check-f,
+  body.a3-supply-mode #a3-guideline-print,
+  body.a3-supply-mode #a3-manual-print,
+  body.a3-supply-mode #a3-manual-portrait-print,
+  body.a3-supply-mode #a3-closedday-print,
+  body.a3-supply-mode #a3-monthly-print,
+  body.a3-supply-mode #a3-csguide-print{display:none!important}
+  body.a3-supply-mode #a3-supply-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-supply-print .asp-header{text-align:center;font-size:26px;font-weight:900;letter-spacing:0.04em;padding:4px 0 8px;border-bottom:3px solid #4a3a2e;margin-bottom:6px;color:#2a2018}
+  #a3-supply-print .asp-sub{text-align:center;font-size:13px;color:#8a7a6c;margin-bottom:14px}
+  #a3-supply-print .asp-cat{font-size:16px;font-weight:800;color:#fff!important;background:#4a3a2e!important;padding:4px 10px;border-radius:4px;margin:10px 0 6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-supply-print .asp-cat:first-child{margin-top:0}
+  #a3-supply-print table{width:100%;border-collapse:collapse;margin-bottom:4px}
+  #a3-supply-print th,#a3-supply-print td{border:1px solid #b8ada0;padding:6px 10px;text-align:left;font-size:12.5px;color:#222}
+  #a3-supply-print th{background:#f3ede7!important;color:#4a3a2e!important;font-size:11.5px;font-weight:800}
 }
 /* ── Print (기존 A4) ── */
 @media print{
@@ -810,6 +876,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button onclick="printA3ManualPortrait();closeAllDropdowns()">A3 세로 1장 · 전체</button>
         <button onclick="printA3ManualPortrait('m');closeAllDropdowns()">A3 세로 1장 · 남</button>
         <button onclick="printA3ManualPortrait('f');closeAllDropdowns()">A3 세로 1장 · 여</button>
+        <button onclick="printA3CSGuide();closeAllDropdowns()">A3 회원 응대 상황표</button>
+        <button onclick="printA3Supply();closeAllDropdowns()">A3 비품 목록</button>
       </div>
     </div>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
@@ -955,6 +1023,22 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div class="cdp-card"><div class="cdp-zone">C · 내부</div><ul class="cdp-list"><li>비품 관리</li></ul></div>
     <div class="cdp-card"><div class="cdp-zone">E · 외부</div><ul class="cdp-list"><li>주차장 바닥·벽·천정</li><li>분수대 바닥</li></ul></div>
   </div>
+</div>
+
+<!-- ══ A3 회원 응대 상황표 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시 · 배64) ══ -->
+<div id="a3-csguide-print">
+  <div class="csg-header">지원부 · 회원 응대 상황표</div>
+  <div class="csg-sub"></div>
+  <!-- JS(printA3CSGuide)가 CS_DATA 읽어 표 주입 -->
+  <div id="csg-table-host"></div>
+</div>
+
+<!-- ══ A3 비품 목록 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시 · 배64) ══ -->
+<div id="a3-supply-print">
+  <div class="asp-header">지원부 · 비품 목록</div>
+  <div class="asp-sub"></div>
+  <!-- JS(printA3Supply)가 SUPPLY_DATA 분류별로 읽어 표 주입 -->
+  <div id="asp-table-host"></div>
 </div>
 
 <div id="tab-policy" class="content">
@@ -1128,12 +1212,47 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
   </div>
+
+  <!-- ── 🧖 신규회원 사우나 투어 안내 (8단계 순서형 · 배64) ── -->
+  <div style="margin-bottom:18px;">
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--accent);overflow:hidden;max-width:640px;">
+      <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+        <span style="font-size:17px;font-weight:800;color:var(--accent);">🧖 신규회원 사우나 투어 안내</span>
+      </div>
+      <div style="padding:12px 14px;">
+        <ol style="margin:0;padding-left:20px;">
+          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">환영·소개</strong> — "웰페리온에 오신 것을 환영합니다. 회복 구역 안내를 도와드리겠습니다." 밝게 인사하고 본인을 소개합니다.</li>
+          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">락커·탈의</strong> — 개인 락커 위치와 사용법을 안내하고 귀중품 보관 방법을 설명합니다.</li>
+          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">샤워·세면</strong> — 샤워 위치, 비치된 어메니티(샴푸·바디워시), 타월 수령 방법을 안내합니다.</li>
+          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">사우나·회복</strong> — 이용 수칙과 권장 이용 시간을 안내하고 수분 섭취를 권유합니다.</li>
+          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">위생·매너</strong> — 샤워 후 입장, 정숙 유지, 개인물품 관리 매너를 안내합니다.</li>
+          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">편의시설</strong> — 파우더룸, 드라이어, 정수기 위치를 안내합니다.</li>
+          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">도움 요청</strong> — 불편사항 발생 시 직원 호출 방법과 리셉션 위치를 안내합니다.</li>
+          <li style="margin-bottom:0;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">마무리</strong> — 예약제 이용 안내로 마무리합니다. 문의: wellperion.com/ko/inquiry</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
   <div class="board-fullwidth">
     <!-- 가이드 카드 보드: 규정 보드와 동일 시스템(추가·편집·삭제·공유저장).
          #support-guide-board는 display:contents → renderSupportGuideBoard()가 만든 .board-col이 흐름에 합류. -->
     <div class="board-scroll" id="support-guide-flow">
       <div id="support-guide-board" style="display:contents"></div>
     </div>
+  </div>
+
+  <!-- ── 🗣 회원 응대 상황표 (편집 가능 CRUD 표 · 저장키 SUPPORT_CS_GUIDE · 배64) ── -->
+  <div style="margin-top:22px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+      <h3 style="font-size:17px;font-weight:800;color:var(--accent);margin:0;">🗣 회원 응대 상황표</h3>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="csAdd()">＋ 상황 추가</button>
+        <button class="btn" onclick="printA3CSGuide()">🖨 A3 인쇄</button>
+      </div>
+    </div>
+    <p class="board-intro">자주 발생하는 회원 응대 상황과 표준 멘트·조치를 정리했습니다. 각 칸을 바로 입력하면 모든 기기에 저장됩니다(편집 잠금 없음).</p>
+    <div id="cs-guide-table"></div>
   </div>
 </div>
 
@@ -1259,8 +1378,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-supply" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">비품관리</h2>
   <p class="board-intro">지원부 비품을 한 표로 관리합니다. <strong>＋ 비품 추가</strong>로 행을 늘리고 각 칸을 바로 입력하면 모든 기기에 저장됩니다(편집 잠금 없음 — 누구나 추가·수정·삭제). 수량은 <strong>−／＋</strong> 버튼으로 빠르게 조절(0 미만 불가).</p>
+  <p class="board-intro">수량 −／＋ 버튼으로 현재 재고를 조절하세요. 부족한 품목은 발주 후 갱신합니다. 인쇄로 현장 비치용 목록을 뽑을 수 있습니다. 표는 분류(청소·세탁/타월·어메니티/소모품·사무 등)별로 정렬되어 표시됩니다.</p>
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
     <button class="btn" onclick="supplyAdd()">＋ 비품 추가</button>
+    <button class="btn" onclick="printA3Supply()">🖨 A3 인쇄</button>
     <input type="text" id="supplySearch" placeholder="품목명 검색…" oninput="renderSupplyTable()" autocomplete="off"
       style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit;flex:1;min-width:160px;max-width:320px;">
   </div>
@@ -4665,6 +4786,16 @@ const A3_GUIDELINE = {
       '마감조 2명은 휴게를 반드시 엇갈려 운영.',
       '근무자 A: 정시~50분 근무 / 50분~정시 휴게.',
       '근무자 B: 정시~10분 휴게 / 10분~정시 근무.'
+    ]},
+    { h:'신규회원 사우나 투어 안내(8단계)', lines:[
+      '① 환영·소개 — 밝게 인사·본인 소개.',
+      '② 락커·탈의 — 위치·사용법·귀중품 보관 안내.',
+      '③ 샤워·세면 — 어메니티 비치·타월 수령 안내.',
+      '④ 사우나·회복 — 이용 수칙·권장 시간·수분 섭취 권유.',
+      '⑤ 위생·매너 — 샤워 후 입장·정숙·개인물품 관리.',
+      '⑥ 편의시설 — 파우더룸·드라이어·정수기 위치.',
+      '⑦ 도움 요청 — 불편 시 직원 호출·리셉션 위치.',
+      '⑧ 마무리 — 예약제 안내 · 문의: wellperion.com/ko/inquiry.'
     ]}
   ]
 };
@@ -4948,6 +5079,7 @@ function switchTab(tab, opts){
   document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
   document.getElementById('tab-supply').classList.toggle('hidden',tab!=='supply');
   if(tab==='supply'){ if(typeof loadSupplyFromBackend==='function') loadSupplyFromBackend(); }
+  if(tab==='guide'){ if(typeof loadCsFromBackend==='function') loadCsFromBackend(); }
   // Show correct submit bar
   document.getElementById('submitBarM').style.display=(tab==='check-m')?'flex':'none';
   document.getElementById('submitBarF').style.display=(tab==='check-f')?'flex':'none';
@@ -5094,22 +5226,44 @@ function persistBoardData(){
    서버 공유·편집 잠금 없음. IME 안전: 입력 중 표 통째 재렌더 금지(값만 갱신).
    ═══════════════════════════════════════════════ */
 const SUPPLY_STORAGE_KEY = 'SUPPORT_SUPPLY';
-var SUPPLY_DATA = []; // [{id, name, qty, loc, owner, note, updatedAt}]
+var SUPPLY_DATA = []; // [{id, cat, name, qty, loc, owner, note, updatedAt}]
 var supplyIdSeq = 0;  // 같은 세션 내 id 충돌 방지용 시퀀스
 
 /* 고유 id 생성 (Date.now + 증가 시퀀스 — 같은 ms 다중 추가 충돌 방지) */
 function supplyNewId(){ return 'sup_'+Date.now().toString(36)+'_'+(supplyIdSeq++).toString(36); }
 
-/* stored(객체/배열) → SUPPLY_DATA 정규화. board={rows:[...]} 형태 또는 배열 직접 모두 수용 */
+/* 분류 표시·정렬 순서. 목록에 없는 분류는 맨 뒤에 알파벳/입력 순서로 배치 */
+const SUPPLY_CAT_ORDER = ['청소','세탁/타월','어메니티/소모품','사무','기타'];
+function supplyCatSortKey(cat){
+  var idx = SUPPLY_CAT_ORDER.indexOf(cat||'기타');
+  return idx>=0 ? idx : SUPPLY_CAT_ORDER.length;
+}
+/* 초기 셋업용 초안 seed — 서버·로컬 모두 저장 이력이 전혀 없을 때만 1회 주입(applySupplyStored 참조).
+   기존 데이터가 있으면(빈 배열로 저장된 경우 포함) 절대 덮어쓰지 않음(배64). */
+const SUPPLY_SEED = [
+  {cat:'청소', name:'락커 세정제'}, {cat:'청소', name:'유리세정제'}, {cat:'청소', name:'대걸레'}, {cat:'청소', name:'청소포'}, {cat:'청소', name:'고무장갑'},
+  {cat:'세탁/타월', name:'대형타월'}, {cat:'세탁/타월', name:'소형타월'}, {cat:'세탁/타월', name:'세탁세제'}, {cat:'세탁/타월', name:'섬유유연제'},
+  {cat:'어메니티/소모품', name:'샴푸 리필'}, {cat:'어메니티/소모품', name:'바디워시 리필'}, {cat:'어메니티/소모품', name:'면봉'}, {cat:'어메니티/소모품', name:'화장솜'}, {cat:'어메니티/소모품', name:'종이컵'}, {cat:'어메니티/소모품', name:'롤화장지'}, {cat:'어메니티/소모품', name:'핸드타월'},
+  {cat:'사무', name:'볼펜'}, {cat:'사무', name:'A4용지'}, {cat:'사무', name:'프린터 토너'}, {cat:'사무', name:'접수대장'}
+];
+
+/* stored(객체/배열) → SUPPLY_DATA 정규화. board={rows:[...]} 형태 또는 배열 직접 모두 수용.
+   저장 이력이 전혀 없을 때(hadStored=false)만 SUPPLY_SEED 주입 — 사용자가 전부 지우고 빈 배열로
+   저장한 경우(hadStored=true, rows.length===0)는 그대로 존중(재주입 금지). */
 function applySupplyStored(stored){
   var rows = [];
-  if(stored && Array.isArray(stored.rows)) rows = stored.rows;
-  else if(Array.isArray(stored)) rows = stored;
+  var hadStored = false;
+  if(stored && Array.isArray(stored.rows)){ rows = stored.rows; hadStored = true; }
+  else if(Array.isArray(stored)){ rows = stored; hadStored = true; }
+  if(!hadStored && rows.length===0){
+    rows = SUPPLY_SEED.map(function(s){ return {cat:s.cat, name:s.name, qty:0, loc:'', owner:'', note:''}; });
+  }
   SUPPLY_DATA = rows.map(function(r){
     r = r || {};
     var q = parseInt(r.qty,10); if(isNaN(q)||q<0) q=0;
     return {
       id: r.id || supplyNewId(),
+      cat: (r.cat!=null && r.cat!=='' ? String(r.cat) : '기타'),
       name: (r.name!=null?String(r.name):''),
       qty: q,
       loc: (r.loc!=null?String(r.loc):''),
@@ -5167,13 +5321,22 @@ function _supplyPush(){
 function supplyFind(id){ for(var i=0;i<SUPPLY_DATA.length;i++){ if(SUPPLY_DATA[i].id===id) return SUPPLY_DATA[i]; } return null; }
 function supplyEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-/* 표 렌더 (검색 필터 포함, 빈상태 정직표기). 입력 중이 아닐 때만 호출. */
+/* 표 렌더 (검색 필터 포함, 빈상태 정직표기). 입력 중이 아닐 때만 호출.
+   분류(SUPPLY_CAT_ORDER) 순서로 그룹핑해 분류 소제목 행 + 분류 칼럼(편집 가능) 둘 다 표시(배64). */
 function renderSupplyTable(){
   var wrap=document.getElementById('supply-table');
   if(!wrap) return;
   var qEl=document.getElementById('supplySearch');
   var q=(qEl&&qEl.value?qEl.value.trim().toLowerCase():'');
   var rows=SUPPLY_DATA.filter(function(r){ return !q || (r.name||'').toLowerCase().indexOf(q)>=0; });
+  // 분류 순서대로 그룹 정렬(같은 분류 안에서는 기존 순서 유지 — 안정 정렬)
+  var indexed=rows.map(function(r,i){ return {r:r,i:i}; });
+  indexed.sort(function(a,b){
+    var ka=supplyCatSortKey(a.r.cat), kb=supplyCatSortKey(b.r.cat);
+    if(ka!==kb) return ka-kb;
+    return a.i-b.i;
+  });
+  rows=indexed.map(function(x){ return x.r; });
 
   if(SUPPLY_DATA.length===0){
     wrap.innerHTML='<div style="text-align:center;color:var(--dim);padding:32px 12px;font-size:14px;">등록된 비품 없음 — <a href="javascript:void(0)" onclick="supplyAdd()" style="color:var(--accent);font-weight:700;text-decoration:none;">＋ 비품 추가</a></div>';
@@ -5184,17 +5347,25 @@ function renderSupplyTable(){
     return;
   }
   var cell='background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box;';
-  var html='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:680px;">';
+  var html='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:760px;">';
   html+='<thead><tr style="text-align:left;color:var(--dim);font-size:12px;">'
+    +'<th style="padding:6px 8px;min-width:110px;">분류</th>'
     +'<th style="padding:6px 8px;min-width:160px;">품목명</th>'
     +'<th style="padding:6px 8px;width:150px;">수량</th>'
     +'<th style="padding:6px 8px;min-width:120px;">보관위치</th>'
     +'<th style="padding:6px 8px;min-width:90px;">담당</th>'
     +'<th style="padding:6px 8px;min-width:140px;">비고</th>'
     +'<th style="padding:6px 8px;width:48px;"></th></tr></thead><tbody>';
+  var lastCat=null;
   rows.forEach(function(r){
     var id=supplyEsc(r.id);
+    var cat=r.cat||'기타';
+    if(cat!==lastCat){
+      html+='<tr><td colspan="7" style="padding:8px 8px 4px;font-size:12px;font-weight:800;color:var(--accent);border-top:1px solid var(--border);">'+supplyEsc(cat)+'</td></tr>';
+      lastCat=cat;
+    }
     html+='<tr style="border-top:1px solid var(--border);">'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.cat)+'" oninput="supplyEdit(\''+id+'\',\'cat\',this.value)" placeholder="분류" autocomplete="off" style="'+cell+'"></td>'
       +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.name)+'" oninput="supplyEdit(\''+id+'\',\'name\',this.value)" placeholder="품목명" autocomplete="off" style="'+cell+'"></td>'
       +'<td style="padding:6px 8px;"><span style="display:inline-flex;align-items:center;gap:4px;">'
         +'<button class="btn" style="padding:4px 9px;" onclick="supplyQty(\''+id+'\',-1)">−</button>'
@@ -5211,15 +5382,19 @@ function renderSupplyTable(){
   wrap.innerHTML=html;
 }
 
-/* 추가: 빈 행 추가 → 재렌더 → 새 행 품목명에 포커스 */
+/* 추가: 빈 행 추가(분류는 빈값 — 사용자가 직접 지정) → 재렌더 → 새 행 품목명에 포커스 */
 function supplyAdd(){
-  var item={id:supplyNewId(),name:'',qty:0,loc:'',owner:'',note:'',updatedAt:new Date().toISOString()};
+  var item={id:supplyNewId(),cat:'',name:'',qty:0,loc:'',owner:'',note:'',updatedAt:new Date().toISOString()};
   SUPPLY_DATA.push(item);
   var qEl=document.getElementById('supplySearch'); if(qEl) qEl.value=''; // 새 행이 필터에 가려지지 않게
   persistSupplyData();
   renderSupplyTable();
   var wrap=document.getElementById('supply-table');
-  if(wrap){ var inputs=wrap.querySelectorAll('tbody tr:last-child input[type=text]'); if(inputs.length) inputs[0].focus(); }
+  if(wrap){
+    var inputs=wrap.querySelectorAll('tbody tr:last-child input[type=text]');
+    if(inputs.length>1) inputs[1].focus();      // [0]=분류 [1]=품목명 → 품목명에 포커스
+    else if(inputs.length) inputs[0].focus();
+  }
 }
 
 /* 인라인 편집: 값만 갱신·즉시 persist (표 재렌더 안 함 → IME·커서 보호) */
@@ -6013,6 +6188,146 @@ function supportGuideDeleteCard(colKey,id){
 }
 
 loadSupportGuideData(); renderSupportGuideBoard(); loadSupportGuideFromBackend(); // 가이드 보드: 로컬 즉시 렌더 후 백엔드 동기화
+
+/* ═══════════════════════════════════════════════
+   회원 응대 상황표 (목록형 1표 CRUD) — 비품관리(SUPPLY_DATA) 패턴 복제(배64)
+   저장: localStorage(SUPPORT_CS_GUIDE) 즉시 + 범용 saveBoard POST(key=SUPPORT_CS_GUIDE) 비동기.
+   서버 공유·편집 잠금 없음. IME 안전: 입력 중 표 통째 재렌더 금지(값만 갱신).
+   ═══════════════════════════════════════════════ */
+const CS_STORAGE_KEY = 'SUPPORT_CS_GUIDE';
+var CS_DATA = []; // [{id, sit, resp, note, updatedAt}]
+var csIdSeq = 0;
+
+function csNewId(){ return 'cs_'+Date.now().toString(36)+'_'+(csIdSeq++).toString(36); }
+
+/* 초안 seed — 저장 이력이 전혀 없을 때만 1회 주입. 기존 데이터 있으면(빈 배열 저장 포함) 재주입 금지. */
+const CS_SEED = [
+  {sit:'락커 사용법 문의', resp:'위치 안내·번호 배정·사용법 시연', note:'귀중품 개인 책임 안내'},
+  {sit:'분실물 신고', resp:'습득물 확인·연락처 접수·발견 시 연락', note:'종합접수처 기록'},
+  {sit:'타월·어메니티 요청', resp:'여분 제공·비치 위치 안내', note:'부족 시 비품관리 반영'},
+  {sit:'온도·환경 불편', resp:'즉시 확인·조치·시설부 전달', note:'VOC 기록'},
+  {sit:'예약·이용시간 문의', resp:'예약제 안내·문의처 안내', note:'워크인 불가 안내'},
+  {sit:'회원정보 변경 요청', resp:'리셉션·문의처로 안내', note:'직원 임의 처리 금지'}
+];
+
+function applyCsStored(stored){
+  var rows=[];
+  var hadStored=false;
+  if(stored && Array.isArray(stored.rows)){ rows=stored.rows; hadStored=true; }
+  else if(Array.isArray(stored)){ rows=stored; hadStored=true; }
+  if(!hadStored && rows.length===0){
+    rows = CS_SEED.map(function(s){ return {sit:s.sit, resp:s.resp, note:s.note}; });
+  }
+  CS_DATA = rows.map(function(r){
+    r=r||{};
+    return {
+      id: r.id || csNewId(),
+      sit: (r.sit!=null?String(r.sit):''),
+      resp: (r.resp!=null?String(r.resp):''),
+      note: (r.note!=null?String(r.note):''),
+      updatedAt: r.updatedAt || ''
+    };
+  });
+}
+
+/* 로컬 폴백 로드 (오프라인·동기 초기용) */
+function loadCsData(){
+  var stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(CS_STORAGE_KEY)); }catch(e){ stored=null; }
+  applyCsStored(stored);
+}
+
+/* 백엔드 우선 로드 → 있으면 사용·로컬 캐시, 실패/없음 시 로컬 폴백. 편집 중이면 재렌더 보류(IME 보호). */
+async function loadCsFromBackend(){
+  loadCsData();      // 즉시 로컬로 1차 렌더
+  renderCsTable();
+  if(!ONLINE) return;
+  try{
+    var res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(CS_STORAGE_KEY),{method:'GET',redirect:'follow'});
+    var data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      applyCsStored(data.board);
+      localStorage.setItem(CS_STORAGE_KEY, JSON.stringify({rows:CS_DATA}));
+    }
+  }catch(e){ /* 네트워크 실패 → 로컬 유지 */ }
+  var wrap=document.getElementById('cs-guide-table');
+  if(wrap && !wrap.contains(document.activeElement)) renderCsTable();
+}
+
+/* localStorage 즉시 영속 + 범용 saveBoard 서버 저장(디바운스 800ms — 타자마다 POST 방지) */
+var _csSaveTimer=null;
+function persistCsData(){
+  localStorage.setItem(CS_STORAGE_KEY, JSON.stringify({rows:CS_DATA}));
+  if(!ONLINE) return;
+  clearTimeout(_csSaveTimer);
+  _csSaveTimer=setTimeout(_csPush, 800);
+}
+function _csPush(){
+  var ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='응대표 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:CS_STORAGE_KEY,board:{rows:CS_DATA}})
+  }).then(function(){if(ind){ind.textContent='응대표 저장 완료';setTimeout(function(){ind.style.display='none'},1500);}})
+    .catch(function(){if(ind){ind.textContent='응대표 저장 (로컬 보관됨)';setTimeout(function(){ind.style.display='none'},1500);}});
+}
+
+function csFind(id){ for(var i=0;i<CS_DATA.length;i++){ if(CS_DATA[i].id===id) return CS_DATA[i]; } return null; }
+
+/* 표 렌더 (입력 중이 아닐 때만 호출) */
+function renderCsTable(){
+  var wrap=document.getElementById('cs-guide-table');
+  if(!wrap) return;
+  if(CS_DATA.length===0){
+    wrap.innerHTML='<div style="text-align:center;color:var(--dim);padding:24px 12px;font-size:13px;">등록된 상황 없음 — <a href="javascript:void(0)" onclick="csAdd()" style="color:var(--accent);font-weight:700;text-decoration:none;">＋ 상황 추가</a></div>';
+    return;
+  }
+  var cell='background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box;';
+  var html='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:680px;">';
+  html+='<thead><tr style="text-align:left;color:var(--dim);font-size:12px;">'
+    +'<th style="padding:6px 8px;min-width:160px;">상황</th>'
+    +'<th style="padding:6px 8px;min-width:220px;">응대 멘트/조치</th>'
+    +'<th style="padding:6px 8px;min-width:160px;">주의점</th>'
+    +'<th style="padding:6px 8px;width:48px;"></th></tr></thead><tbody>';
+  CS_DATA.forEach(function(r){
+    var id=escapeHTML(r.id);
+    html+='<tr style="border-top:1px solid var(--border);">'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+escapeHTML(r.sit)+'" oninput="csEdit(\''+id+'\',\'sit\',this.value)" placeholder="상황" autocomplete="off" style="'+cell+'"></td>'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+escapeHTML(r.resp)+'" oninput="csEdit(\''+id+'\',\'resp\',this.value)" placeholder="응대 멘트/조치" autocomplete="off" style="'+cell+'"></td>'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+escapeHTML(r.note)+'" oninput="csEdit(\''+id+'\',\'note\',this.value)" placeholder="주의점" autocomplete="off" style="'+cell+'"></td>'
+      +'<td style="padding:6px 8px;text-align:center;"><button class="btn" style="padding:4px 8px;color:var(--red);border-color:var(--red);background:transparent;" onclick="csDelete(\''+id+'\')" title="삭제">✕</button></td>'
+      +'</tr>';
+  });
+  html+='</tbody></table></div>';
+  wrap.innerHTML=html;
+}
+
+/* 추가: 빈 행 추가 → 재렌더 → 새 행 상황칸에 포커스 */
+function csAdd(){
+  var item={id:csNewId(),sit:'',resp:'',note:'',updatedAt:new Date().toISOString()};
+  CS_DATA.push(item);
+  persistCsData();
+  renderCsTable();
+  var wrap=document.getElementById('cs-guide-table');
+  if(wrap){ var inputs=wrap.querySelectorAll('tbody tr:last-child input[type=text]'); if(inputs.length) inputs[0].focus(); }
+}
+
+/* 인라인 편집: 값만 갱신·즉시 persist (표 재렌더 안 함 → IME·커서 보호) */
+function csEdit(id, field, val){
+  var r=csFind(id); if(!r) return;
+  r[field]=val;
+  r.updatedAt=new Date().toISOString();
+  persistCsData();
+}
+
+function csDelete(id){
+  if(!confirm('이 상황을 삭제할까요?')) return;
+  for(var i=0;i<CS_DATA.length;i++){ if(CS_DATA[i].id===id){ CS_DATA.splice(i,1); break; } }
+  persistCsData();
+  renderCsTable();
+}
+
+loadCsData(); renderCsTable(); loadCsFromBackend(); // 응대표: 로컬 즉시 렌더 후 백엔드 동기화
 
 /* ── 관리자 편집 게이트 (비밀번호 1234, 세션당 1회) ──
    조회·열람은 게이트 없음. 추가/편집저장/삭제 등 변경 시에만 호출. */
@@ -6859,6 +7174,69 @@ function printA3Monthly(){
   window.print();
   document.body.classList.remove('a3-monthly-mode');
   styleTag.textContent = '';
+}
+
+/* ═══════════════════════════════════════════
+   A3 회원 응대 상황표 인쇄 (배64)
+   함수명: printA3CSGuide / 클래스: a3-csguide-mode
+   style id: a3-csguide-page-style / 컨테이너: #a3-csguide-print
+   ═══════════════════════════════════════════ */
+function printA3CSGuide(){
+  var sub=document.querySelector('#a3-csguide-print .csg-sub');
+  if(sub) sub.textContent='자주 발생하는 응대 상황 · 표준 멘트·조치 · 출력일 '+kstToday();
+  var host=document.getElementById('csg-table-host');
+  if(host){
+    var html='<table><thead><tr><th>상황</th><th>응대 멘트·조치</th><th>주의점</th></tr></thead><tbody>';
+    CS_DATA.forEach(function(r){
+      html+='<tr><td class="csg-sit">'+escapeHTML(r.sit)+'</td><td>'+escapeHTML(r.resp)+'</td><td class="csg-note">'+escapeHTML(r.note)+'</td></tr>';
+    });
+    html+='</tbody></table>';
+    host.innerHTML=html;
+  }
+  document.body.classList.add('a3-csguide-mode');
+  var styleTag=document.getElementById('a3-csguide-page-style');
+  if(!styleTag){styleTag=document.createElement('style');styleTag.id='a3-csguide-page-style';document.head.appendChild(styleTag);}
+  styleTag.textContent='@media print{ @page{ size:A3 landscape; margin:10mm; } }';
+  window.print();
+  document.body.classList.remove('a3-csguide-mode');
+  styleTag.textContent='';
+}
+
+/* ═══════════════════════════════════════════
+   A3 비품 목록 인쇄 — 분류별 그룹 표(품목|수량|위치|비고) (배64)
+   함수명: printA3Supply / 클래스: a3-supply-mode
+   style id: a3-supply-page-style / 컨테이너: #a3-supply-print
+   ═══════════════════════════════════════════ */
+function printA3Supply(){
+  var sub=document.querySelector('#a3-supply-print .asp-sub');
+  if(sub) sub.textContent='분류별 비품 목록 · 출력일 '+kstToday();
+  var host=document.getElementById('asp-table-host');
+  if(host){
+    var groups={};
+    SUPPLY_DATA.forEach(function(r){
+      var cat=r.cat||'기타';
+      if(!groups[cat]) groups[cat]=[];
+      groups[cat].push(r);
+    });
+    var catKeys=Object.keys(groups).sort(function(a,b){ return supplyCatSortKey(a)-supplyCatSortKey(b); });
+    var html='';
+    catKeys.forEach(function(cat){
+      html+='<div class="asp-cat">'+escapeHTML(cat)+'</div>';
+      html+='<table><thead><tr><th>품목</th><th>수량</th><th>위치</th><th>비고</th></tr></thead><tbody>';
+      groups[cat].forEach(function(r){
+        html+='<tr><td>'+escapeHTML(r.name)+'</td><td>'+r.qty+'</td><td>'+escapeHTML(r.loc)+'</td><td>'+escapeHTML(r.note)+'</td></tr>';
+      });
+      html+='</tbody></table>';
+    });
+    host.innerHTML=html;
+  }
+  document.body.classList.add('a3-supply-mode');
+  var styleTag=document.getElementById('a3-supply-page-style');
+  if(!styleTag){styleTag=document.createElement('style');styleTag.id='a3-supply-page-style';document.head.appendChild(styleTag);}
+  styleTag.textContent='@media print{ @page{ size:A3 portrait; margin:10mm; } }';
+  window.print();
+  document.body.classList.remove('a3-supply-mode');
+  styleTag.textContent='';
 }
 </script>
 
