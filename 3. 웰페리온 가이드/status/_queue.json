@@ -1995,5 +1995,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_0133cA4wyP12yABv4U4NeWbe (CLI ad-hoc · 커밋 a337bf68)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a337bf68f20b7ab886dc23c377d60019cf4d0b47"
+  },
+  {
+    "task_id": "CPO-2026-07-03-ADHOC-RESERVATION-LIST",
+    "clevel": "cpo",
+    "title": "[시포] 예약 가변 리스트 통일 — 체험1·2→예약1·2·가변추가·날짜+시간+내용 한칸, 문의현황·회원관리·달력 통일 (GM)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-03",
+    "processed_at": "2026-07-03",
+    "artifact": "예약을 고정 2개→가변 리스트(JSON 한 셀·날짜+시간+내용)로 통일. 문의현황(예약목록)·유효회원(재등록예약목록) 컬럼 신설(additive·ensure), 범용 예약 리스트 모달(＋예약 추가·삭제·30분시간·IME안전) 3곳 공용(문의현황·회원관리·달력). 하위호환 무손실: 기존 체험1·2(J/K/L/M) 예약1·2 흡수·미러·비파괴. member_calendar 병합 회귀0(2026-07 11건 불변). clasp @129 배포·라이브 왕복 실증(강윤주 예약3·권성혜 재등록 왕복·정리). 코드는 origin/master 커밋 8f83a8b2에 워처 흡수 반영(정식 [시포] 커밋은 watcher 레이스로 미발화 → 본 수동 G1 기록).",
+    "next": "🏁 입항완료 — GM 시크릿 라이브 확인만 잔여(문의현황 일정칸·달력·회원관리 재등록칸 예약 리스트).",
+    "adhoc_commit": "8f83a8b2",
+    "ship_no": 397
   }
 ]
