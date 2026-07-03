@@ -390,7 +390,7 @@
 
     <a data-toggle="cto-nav" data-has-sub="true"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
     <div class="sub-nav" data-parent="cto-nav">
-      <a data-id="T1">🖥️ 기술 & AI 학습 상세</a>      <a data-id="T2">🤖 업무자동화SSOT</a>
+      <a data-id="T1">🖥️ 기술 & AI 학습 상세</a>      <a data-id="T2">🤖 자율 작업 현황</a>
     </div>
   </nav>
 
@@ -678,7 +678,7 @@
         <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">🛠️</span><div><div style="font-weight:800;font-size:15.5px;">기술·자동화 <span style="font-size:11px;color:var(--dim);font-weight:600;">IT</span></div><div style="font-size:11px;color:var(--dim);">실무 책임 · 김남욱 GM</div><div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">🤖 AI CTO (시토)</div></div></div>
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">기술 인프라</a>
-          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">업무자동화</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">자율 작업 현황</a>
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">AI 교육</a>
         </div>
       </div>
@@ -3234,7 +3234,7 @@ window._regAssign = function(id, category) {
         <table>
           <tr><th style="width:200px">원칙</th><th>내용</th></tr>
           <tr><td>핵심 스크립트 git 추적</td><td><code>clevel_post_action.py</code> 등 자동화 심장부 .py는 반드시 git 추적. <code>git ls-files</code> 빈 결과 = 위험. <code>__pycache__</code>에 .pyc만 있고 .py 없으면 소스 소실 신호 → 즉시 복원(.pyc 절대 삭제 금지).</td></tr>
-          <tr><td>상시 프로세스 자동기동 <span style="font-size:11px;color:var(--accent);">(원칙·왜·언제 점검)</span></td><td>봇·스케줄러(<code>bot.py</code>·<code>daily_scheduler.py</code>)는 가동 여부뿐 아니라 <strong>재기동 경로</strong>(ONLOGON 예약작업) 등록 확인. schtasks 생성은 관리자 권한 필수 → GM 직접 실행 라우팅. <strong>재기동 방법 상세 = T2 ▸ 📨 텔레그램 정각 통합보고 10슬롯(🔄 재기동) / 가동 현황 = T2 업무자동화SSOT.</strong></td></tr>
+          <tr><td>상시 프로세스 자동기동 <span style="font-size:11px;color:var(--accent);">(원칙·왜·언제 점검)</span></td><td>봇·스케줄러(<code>bot.py</code>·<code>daily_scheduler.py</code>)는 가동 여부뿐 아니라 <strong>재기동 경로</strong>(ONLOGON 예약작업) 등록 확인. schtasks 생성은 관리자 권한 필수 → GM 직접 실행 라우팅. <strong>재기동 방법 상세 = <a href="자율현황.html" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">자율현황.html</a> ▸ 📨 텔레그램 정각 통합보고 10슬롯(🔄 재기동) / 가동 현황 = 자율현황.html.</strong></td></tr>
           <tr><td>SSOT 하드코딩 동기화</td><td>업무 현황 SSOT 카테고리·예산 추가 시 흩어진 하드코딩 목록 전수 동기화(<code>CATEGORIES</code>·<code>CAT_COLORS</code>·<code>catOrder</code>·<code>BUDGET_CATEGORIES</code>·<code>routeApproval</code> 등). 가능하면 SSOT 상수 파생.</td></tr>
           <tr><td>대기 보고 포맷</td><td>대기 보고 포맷(3섹션 + 🔴 GM 결정·5필드)은 <strong>공통 탭 '작업 사이클 보고 포맷'이 단일 원본</strong> → 참조. CTO는 식별자 시토-N, 링크는 웰페리온 ERP 식별자(S1·S2·S3·M3·T1~T3·G1) 적용.</td></tr>
         </table>
@@ -3825,7 +3825,7 @@ window._regAssign = function(id, category) {
         </div>
 
         <h4 style="margin-top:22px; padding-top:16px; border-top:1px solid var(--border);">운영 실행 도구</h4>
-        <p style="font-size:12.5px; color:var(--dim); margin-bottom:12px;">정기 정비·자기학습을 실제로 돌리는 실행 프롬프트(T1 본 섹션). 누가 무엇을 정비하나(R/R·범위표 단일출처)는 T2 업무자동화SSOT ▸ 매주 ▸ 7 C-Level 컨텍스트 정비 참조.</p>
+        <p style="font-size:12.5px; color:var(--dim); margin-bottom:12px;">정기 정비·자기학습을 실제로 돌리는 실행 프롬프트(T1 본 섹션). 누가 무엇을 정비하나(R/R·범위표 단일출처)는 <a href="자율현황.html#sec-weekly" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">자율현황.html ▸ 매주 ▸ 7 C-Level 컨텍스트 정비</a> 참조.</p>
 
         <div style="margin-bottom:16px; padding:13px 16px; background:#16181c; border-radius:8px; border-left:3px solid var(--accent);">
           <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">컨텍스트 정비 실행 (STEP 1~5) — 빠른 실행</div>
@@ -4059,7 +4059,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         </table>
 
         <h4>자동화 도구</h4>
-        <div class="callout"><strong>가동 현황·주기는 T2 업무자동화SSOT 단일 출처</strong>(중복 표 제거 2026-06-06). 자기학습을 돌리는 자동화 = <code>ai_education_auto_learner.py</code>(웹 수집→요약→텔레그램) · <code>education_archive_weekly.py</code>(매주 일 09:00 교육자료 정리) · 컨텍스트 주간 정비(매주 일 09:00) · CEO 통합보고(매일 08:00). 무엇이 언제 도는지는 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT</a> 참조.</div>
+        <div class="callout"><strong>가동 현황·주기는 자율현황.html 단일 출처</strong>(중복 표 제거 2026-06-06). 자기학습을 돌리는 자동화 = <code>ai_education_auto_learner.py</code>(웹 수집→요약→텔레그램) · <code>education_archive_weekly.py</code>(매주 일 09:00 교육자료 정리) · 컨텍스트 주간 정비(매주 일 09:00) · CEO 통합보고(매일 08:00). 무엇이 언제 도는지는 <a href="자율현황.html" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">자율현황.html</a> 참조.</div>
 
         <h4>고도화 진화 로드맵</h4>
         <ul>
@@ -4082,7 +4082,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <p style="font-size:12px;color:var(--dim);margin-top:6px;">※ 콘텐츠용(캡션·훅·바이럴)은 마케팅(시모/CMO) 영역으로 별도 추가 예정. 새 명령 추가는 <code>.claude/commands/</code>에 .md 한 장이면 끝.</p>
 
         <h3><span class="ico">🔧</span>컨텍스트 정비 범위 정의 (매주 일 09:00)</h3>
-        <div class="callout"><strong>→ 범위표 단일출처 = T2 업무자동화SSOT, 실행 프롬프트 = T1 본 섹션.</strong> 주간 컨텍스트 정비 범위표(6 C-Level 식별자·정비 범위·체크포인트)는 <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-id=T2]');if(t)t.click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 업무자동화SSOT ▸ 매주 ▸ 7 C-Level 컨텍스트 정비</a>에서 단일 관리합니다(2026-06-05 이관). 실행 프롬프트(STEP 1~5)는 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>. 범위표 중복 기재 금지.</div>
+        <div class="callout"><strong>→ 범위표 단일출처 = 자율현황.html, 실행 프롬프트 = T1 본 섹션.</strong> 주간 컨텍스트 정비 범위표(6 C-Level 식별자·정비 범위·체크포인트)는 <a href="자율현황.html#sec-weekly" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">자율현황.html ▸ 매주 ▸ 7 C-Level 컨텍스트 정비</a>에서 단일 관리합니다(2026-06-05 이관). 실행 프롬프트(STEP 1~5)는 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>. 범위표 중복 기재 금지.</div>
 
         <!-- ══ 📓 반영·효과 로그 (2026-06-23 시토 신설) ══ -->
         <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:22px;"><span class="ico">📓</span>반영·효과 로그 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 반영된 제안의 실제 효과 회고</span></h3>
@@ -5166,9 +5166,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     </table>
 
 <!-- ══ 📸 IG 발행 파이프라인 SSOT (2026-06-13) ══ -->
-    <!-- 사람용 정본(단계·가드 상세) = T2 업무자동화SSOT ▸ M3 인스타그램 발행 파이프라인 -->
+    <!-- 사람용 정본(단계·가드 상세) = 자율현황.html ▸ M5 인스타그램 발행 파이프라인 -->
     <div style="background:var(--paper);border:1px solid var(--border);border-left:3px solid #7c3aed;border-radius:12px;padding:16px 20px;margin:6px 0 20px;">
-      <h3 style="margin-top:0;"><span class="ico">📸</span>인스타그램 발행 파이프라인 <span style="font-size:13px;font-weight:400;color:var(--dim);">요약 · 사람용 정본 = <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 ▸ M3 파이프라인</a></span></h3>
+      <h3 style="margin-top:0;"><span class="ico">📸</span>인스타그램 발행 파이프라인 <span style="font-size:13px;font-weight:400;color:var(--dim);">요약 · 사람용 정본 = <a href="자율현황.html#sec-m5-pipeline" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">자율현황.html ▸ M5 파이프라인</a></span></h3>
       <div class="callout" style="margin-bottom:14px;"><strong>승인 ≠ 발행완료.</strong> 발행완료는 웰리가 실제 IG↔M3 대조 후에만.</div>
       <table>
         <tr><th style="width:48px">단계</th><th style="width:260px">동작</th><th style="width:100px">status</th><th>주체</th></tr>
@@ -6314,249 +6314,23 @@ function crTab(btn, panelId) {
 
   <!-- ── G19: 업무자동화 ── -->
   <article class="doc" id="T2">
-    <div class="doc-header"><h2><span class="g-id">T2</span>업무자동화SSOT</h2><div class="meta">자동화·예약작업·PC·업데이트 단일 진실 원장 · 2026-06-03 종합 정립</div></div>
-    <p class="lead">Windows 스케줄러 + Python 프로세스 실측 기반. 무엇이 언제 자동으로 도는지, PC·업데이트·창은 어떻게 동작하는지를 한곳에 모은 SSOT.</p>
+    <div class="doc-header"><h2><span class="g-id">T2</span>자율 작업 현황</h2><div class="meta">진입점 · 상세 = 자율 작업 현황 보드 · 2026-07-03 보드로 일원화</div></div>
+    <p class="lead">Windows 스케줄러 + Python 프로세스 실측 기반 자동화 SSOT와, AI가 사람 지시 없이 스스로 포착·처리한 자율 작업 이력을 한 보드에서 봅니다.</p>
 
-    <!-- ══ 🖥️ 시스템 현황 (status/erp_status.json native 렌더 · 2026-06-16) ══ -->
-    <div id="erp-sysstatus" style="background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:16px 20px;margin:6px 0 22px;">
-      <h3 style="margin-top:0;margin-bottom:4px;"><span class="ico">🖥️</span>시스템 현황 <span style="font-size:13px;font-weight:400;color:var(--dim);">(지금 잘 돌고 있나 — 서버가 자동 발행)</span></h3>
-      <div id="erp-sys-summary" style="font-size:15px;font-weight:800;margin:6px 0 12px;">불러오는 중…</div>
-      <div id="erp-sys-body" style="font-size:13px;margin-bottom:12px;"></div>
-      <div style="font-size:12px;color:var(--dim);margin-bottom:4px;">🤖 각 AI가 맡은 일·할 일은 <strong>G1 ▸ 오늘의 항로</strong>에서 봅니다 (한 곳만 — 여기 중복 표시 안 함).</div>
-      <div id="erp-sys-time" style="font-size:11px;color:var(--dim);margin-top:10px;"></div>
-    </div>
-    <script>
-    (function(){
-      var URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/erp_status.json';
-      function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-      function badge(st){
-        var c = st==='정상' ? ['#1a7a3c','#edf7f0','#b6dfc5'] : st==='이상' ? ['#b42318','#fef3f2','#fecdc9'] : ['#b85c00','#fff4e6','#f5c89a'];
-        var ico = st==='정상'?'🟢':(st==='이상'?'🔴':'⚪');
-        return '<span style="background:'+c[1]+';color:'+c[0]+';border:1px solid '+c[2]+';border-radius:12px;padding:2px 9px;font-weight:700;font-size:12px;white-space:nowrap;">'+ico+' '+esc(st)+'</span>';
-      }
-      fetch(URL+'?t='+Date.now(),{cache:'no-store'})
-        .then(function(r){return r.json();})
-        .then(function(d){
-          var sm=document.getElementById('erp-sys-summary'); if(sm)sm.textContent=d.summary||'';
-          var b=document.getElementById('erp-sys-body'); var h='';
-          (d.systems||[]).forEach(function(s){
-            h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg,#fff);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px;">';
-            h+='<div style="min-width:150px;font-weight:700;">'+esc(s.name)+'</div>'+badge(s.state);
-            h+='<div style="color:var(--dim);">'+esc(s.detail||'')+'</div>';
-            h+='</div>';
-          });
-          if(b)b.innerHTML=h;
-          var t=document.getElementById('erp-sys-time'); if(t)t.textContent='마지막 갱신: '+esc(d.generated_at_kst||'')+' (서버 발행)';
-        })
-        .catch(function(){
-          var sm=document.getElementById('erp-sys-summary'); if(sm)sm.innerHTML='<span style="color:var(--dim);font-weight:400;">현황을 아직 불러오지 못했습니다 (서버 발행 전일 수 있음).</span>';
-        });
-    })();
-    </script>
-    <!-- ══ /시스템 현황 ══ -->
-
-    <!-- ══ 🤖 자율 작업 현황 진입 (시토 자동화 landscape의 자율 축 · 2026-07-02) ══ -->
-    <a href="자율현황.html" style="display:flex;align-items:center;gap:14px;background:var(--paper);border:1px solid var(--border);border-left:3px solid #2fa37a;border-radius:12px;padding:14px 18px;margin:6px 0 22px;text-decoration:none;color:inherit;">
-      <span style="font-size:26px;flex-shrink:0;">🤖</span>
+    <!-- ══ 🤖 자율 작업 현황 진입 (보드 일원화 · 2026-07-03) ══ -->
+    <a href="자율현황.html" style="display:flex;align-items:center;gap:14px;background:var(--paper);border:1px solid var(--border);border-left:3px solid #2fa37a;border-radius:12px;padding:16px 20px;margin:12px 0 22px;text-decoration:none;color:inherit;">
+      <span style="font-size:28px;flex-shrink:0;">🤖</span>
       <span style="flex:1;">
-        <span style="display:block;font-size:15px;font-weight:800;">자율 작업 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">(스스로 포착·처리한 일 — 라이브 상태·이력·성과)</span></span>
-        <span style="display:block;font-size:12px;color:var(--dim);margin-top:3px;line-height:1.5;">위 <strong>🖥️ 시스템 현황 = "잘 도나"</strong>, 이 보드 <strong>= "무엇을 자율로 했나"</strong> — 시토 자동화 현황의 두 축. <code style="font-size:11px;">status/</code> 로그 직독.</span>
+        <span style="display:block;font-size:16px;font-weight:800;">자율 작업 현황 보드 <span style="font-size:12px;font-weight:400;color:var(--dim);">(돌아가는 자동화 + 자율로 한 일 — 두 축 통합)</span></span>
+        <span style="display:block;font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.5;">🖥️ 시스템 현황(잘 도나) · 🤖 자동화 건강 점수판 · 🟢 지금 도는 자동화(예약작업 10슬롯 타임라인) · 📸 M5 인스타그램 발행 파이프라인 · 🔴 상시 자율 체계까지 전부 이 보드 하나에 모여 있습니다. <code style="font-size:11px;">status/</code> 로그 직독.</span>
       </span>
-      <span style="font-size:13px;font-weight:800;color:#0c1a10;background:#2fa37a;border-radius:8px;padding:7px 14px;white-space:nowrap;">열기 →</span>
+      <span style="font-size:14px;font-weight:800;color:#0c1a10;background:#2fa37a;border-radius:8px;padding:9px 16px;white-space:nowrap;">자율 작업 현황 보드 열기 →</span>
     </a>
     <!-- ══ /자율 작업 현황 진입 ══ -->
 
-    <!-- ══ 🤖 자동화 건강 점수판 (automation_health · 2026-06-23) ══ -->
-    <div id="erp-autohealth" style="background:var(--paper);border:1px solid var(--border);border-left:3px solid #1a7a3c;border-radius:12px;padding:16px 20px;margin:6px 0 22px;">
-      <h3 style="margin-top:0;margin-bottom:4px;"><span class="ico">🤖</span>자동화 건강 점수판 <span style="font-size:13px;font-weight:400;color:var(--dim);">(Task Scheduler 실행결과 기반 — 30분 자동 갱신)</span></h3>
-      <div id="erp-ah-headline" style="font-size:18px;font-weight:800;margin:6px 0 12px;color:#1a7a3c;">집계 중…</div>
-      <div id="erp-ah-body" style="font-size:13px;margin-bottom:8px;"></div>
-      <div id="erp-ah-time" style="font-size:11px;color:var(--dim);margin-top:8px;"></div>
-    </div>
-    <script>
-    (function(){
-      var URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/erp_status.json';
-      function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-      function ahBadge(st){
-        if(st==='정상') return '<span style="background:#edf7f0;color:#1a7a3c;border:1px solid #b6dfc5;border-radius:10px;padding:2px 8px;font-weight:700;font-size:12px;">🟢 정상</span>';
-        if(st==='실패') return '<span style="background:#fef3f2;color:#b42318;border:1px solid #fecdc9;border-radius:10px;padding:2px 8px;font-weight:700;font-size:12px;">🔴 실패</span>';
-        if(st==='미실행') return '<span style="background:#f5f5f5;color:#666;border:1px solid #ddd;border-radius:10px;padding:2px 8px;font-weight:700;font-size:12px;">⚪ 미실행</span>';
-        return '<span style="background:#fff4e6;color:#b85c00;border:1px solid #f5c89a;border-radius:10px;padding:2px 8px;font-weight:700;font-size:12px;">❓ '+esc(st)+'</span>';
-      }
-      fetch(URL+'?t='+Date.now(),{cache:'no-store'})
-        .then(function(r){return r.json();})
-        .then(function(d){
-          var ah=d.automation_health||{};
-          var hl=document.getElementById('erp-ah-headline');
-          if(hl){
-            var rate=ah.rate||0;
-            var color=rate===100?'#1a7a3c':(rate>=80?'#b85c00':'#b42318');
-            hl.style.color=color;
-            hl.textContent=ah.summary||(ah.total?'자동화 '+ah.healthy+'/'+ah.total+' 정상 ('+rate+'%)':'집계 중');
-          }
-          var body=document.getElementById('erp-ah-body');
-          if(body){
-            var items=ah.items||[];
-            if(items.length===0){
-              body.innerHTML='<span style="color:var(--dim);">항목 없음 (집계 전)</span>';
-            } else {
-              var h='<div style="display:grid;gap:6px;">';
-              items.forEach(function(item){
-                var failed=item.state==='실패';
-                var border=failed?'border:1px solid #fecdc9;':'border:1px solid var(--border);';
-                var bg=failed?'background:#fef3f2;':'background:var(--bg,#fff);';
-                h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;'+bg+border+'border-radius:8px;padding:7px 12px;">';
-                h+=ahBadge(item.state);
-                h+='<div style="font-weight:'+(failed?'700':'600')+';min-width:220px;color:'+(failed?'#b42318':'inherit')+';">'+esc(item.name)+'</div>';
-                if(item.last_run){
-                  h+='<div style="color:var(--dim);font-size:12px;">마지막: '+esc(item.last_run)+'</div>';
-                }
-                if(item.state==='실패'&&item.last_result!==null&&item.last_result!==undefined){
-                  h+='<div style="color:#b42318;font-size:12px;font-weight:600;">코드: '+esc(String(item.last_result))+'</div>';
-                }
-                h+='</div>';
-              });
-              h+='</div>';
-              body.innerHTML=h;
-            }
-          }
-          var t=document.getElementById('erp-ah-time');
-          if(t) t.textContent='기준: '+esc(d.generated_at_kst||'')+'  |  ※ Task Scheduler 등록 자동화만 집계 (수동 세션 제외)';
-        })
-        .catch(function(){
-          var hl=document.getElementById('erp-ah-headline');
-          if(hl) hl.innerHTML='<span style="color:var(--dim);font-weight:400;">집계 중 (데이터 로드 전)</span>';
-        });
-    })();
-    </script>
-    <!-- ══ /자동화 건강 점수판 ══ -->
+    <p style="font-size:12px;color:var(--dim);margin:6px 0 14px;">📋 7대 자동화 모듈 <strong>전사 로드맵(목표)</strong> = <strong>S2 공통탭 ▸ 🌟 전사 자동화 로드맵</strong>. 이 진입점은 '지금 도는 현황'만 — 상세는 위 보드에서.</p>
 
-    <p style="font-size:12px;color:var(--dim);margin:6px 0 14px;">📋 7대 자동화 모듈 <strong>전사 로드맵(목표)</strong> → <strong>S2 공통탭 ▸ 🌟 전사 자동화 로드맵</strong>으로 이관·고도화(2026-06-16). T2는 '지금 도는 현황'만.</p>
-
-
-
-    <!-- ② 지금 돌고 있는 자동화 -->
-    <h3>🟢 지금 돌고 있는 자동화 <span style="font-size:12px;color:var(--accent);font-weight:600;">(가동 현황 — 무엇이 도는가)</span></h3>
-    <p style="font-size:12px;color:var(--dim);margin:4px 0 0;">※ 재기동 방법 상세 = <strong>아래 📨 10슬롯 표의 🔄 재기동 안내</strong> / 점검 원칙(왜·언제) = <strong>S2 CTO탭</strong>. 본 표는 가동 현황만.</p>
-
-    <h4>상시 가동</h4>
-    <table>
-      <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>텔레그램 봇</td><td>인프라</td><td>상시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> bot.py — C-Level 보고·GM 지시 중계. @namuki_report_bot 단일 채널.</td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>일일 스케줄러</td><td>인프라</td><td>상시</td><td style="color:var(--accent);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> daily_scheduler.py — 정각 보고 발사(10슬롯). 슬롯 정본 = 바로 아래 텔레그램 10슬롯 표.</td></tr>
-    </table>
-
-    <h4>매일 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 타임라인 (10슬롯+)</span></h4>
-    <p style="font-size:12px;color:var(--dim);margin:2px 0 8px;">Windows 스케줄러가 매일 자동 실행하는 예약작업을 <strong>위→아래 = 이른 시각→늦은 시각</strong> 순으로 정리. 텔레그램 정각 보고는 <code>daily_scheduler.py</code> 1개가 10번 발사 → <strong>바로 아래 10슬롯 표</strong>.</p>
-    <table>
-      <tr><th style="width:90px">시각</th><th style="width:230px">자동화</th><th style="width:72px">담당</th><th>무엇을 하나</th></tr>
-      <tr><td>🟢 <strong>05:50</strong></td><td>PC 자동 ON</td><td>CTO</td><td>BIOS RTC로 자동 부팅 → 부팅 후 봇·스케줄러 자동기동(ONLOGON)</td></tr>
-      <tr><td>🟢 <strong>부팅 시</strong></td><td>OMC 자동 업데이트</td><td>CTO</td><td>PC 부팅·CEO(웰리) 배치 시작 시 OMC(플러그인) 1회 자동 업데이트. 실행 중 Claude는 못 바꿔 <strong>창 0개일 때만</strong>(logs\claude_update.log). 검은 창은 숨김 런처(vbs)로 제거. <span style="color:var(--dim);">모델은 세션 선택이라 업데이트 대상 아님.</span></td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢 <strong>06~23시</strong></td><td>텔레그램 정각 통합보고 <span style="color:var(--accent);font-size:12px;">(10슬롯)</span></td><td>인프라</td><td><code>daily_scheduler.py</code>가 정각마다 @namuki_report_bot로 자동 발송 <span style="color:var(--accent);font-size:12px;">— 펼쳐서 10슬롯 보기 ▾</span></td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="4" style="background:var(--paper);padding:12px 14px;">
-        <p style="font-size:12px;color:var(--dim);margin:0 0 6px;">📨 GM이 매일 받는 통합보고 10슬롯 — <code>daily_scheduler.py</code> 정본. ※ 08:00 오늘의 항로는 <code>ceo_morning_pipeline.py</code>(별도) 담당이라 미포함.</p>
-        <table>
-      <tr><th style="width:90px">시각</th><th style="width:70px">구분</th><th style="width:180px">슬롯명</th><th>내용</th></tr>
-      <tr><td><strong>06:00</strong></td><td>개인</td><td>① 아침 루틴+명언</td><td>기상 인사 · <code>quotes.json</code> 06시대 명언 · 운동 5종 체크리스트</td></tr>
-      <tr><td><strong>07:00</strong></td><td>개인&amp;회사</td><td>② 어제 항로 정리</td><td>어제 완료 git 커밋 + todo_list 어제 완료 머지 · 미완료 브릿지 확인</td></tr>
-      <tr><td><strong>07:05</strong></td><td>회사</td><td>② 직원 공유용 카드</td><td>북극성 + 명언 카톡 복붙용 카드 (07:00 슬롯 5분 후 자동 발송)</td></tr>
-      <tr><td><strong>09:00</strong></td><td>회사</td><td>③ 업무·매출·지출</td><td>C-Level별 진행 현황 + CFO 시트 매출·지출 요약</td></tr>
-      <tr><td><strong>12:00</strong></td><td>회사</td><td>④ 오전 점검</td><td>COO 체크앱 지원부·시설부·주차 박스표 대시보드</td></tr>
-      <tr><td><strong>15:00</strong></td><td>개인&amp;회사</td><td>⑤ 오늘 1차 정리</td><td>오늘 진행 현황 + C-Level 진행 요약</td></tr>
-      <tr><td><strong>18:00</strong></td><td>회사</td><td>⑥ 오후 점검+퇴근</td><td>COO 체크앱 박스표 + 퇴근 인사</td></tr>
-      <tr><td><strong>21:00</strong></td><td>개인&amp;회사</td><td>⑦ 최종 정리+내일 항로점</td><td>오늘 완료 요약 + 내일 이어받을 PENDING 브릿지 확인</td></tr>
-      <tr><td><strong>22:00</strong></td><td>개인</td><td>⑧ 취침·전자기기 OFF + 하루 마무리 인사</td><td>북극성 + <code>quotes.json</code> 22시대 핵심 동기부여 명언 · 취침 루틴 + <strong>하루 마무리(종료) 인사 통합</strong>(구 22:25 별도 종료인사 폐지·여기로 합침)</td></tr>
-      <tr><td><strong>23:00</strong></td><td>회사</td><td>⑨ 마감 점검</td><td>COO 체크앱 지원부·시설부·주차 마감 박스표 대시보드 (PC 00:30 종료 전 발송)</td></tr>
-    </table>
-      </td></tr>
-      <tr><td>🟢 <strong>07:30</strong></td><td>IG AI시리즈 제작·검수카드</td><td>CMO</td><td>다음 편 자동 제작 → M3 검수큐 등록 → 텔레그램 [✅승인]/[❌반려] 카드 발송. <strong>발행은 [✅승인] 탭에서만</strong>(무폴링). 안전판: <code>큐레이션_추천.md</code> 자동생성 · 소진 시 생성 중지</td></tr>
-      <tr><td>🟢 <strong>08:00</strong></td><td>CEO 통합보고</td><td>AI CEO</td><td><code>ceo_morning_pipeline.py</code> — 🧭 오늘의 항로 <strong>단일 텔레그램 1건</strong>(전날 정리·오늘 업무·이슈). 🔴 선장(GM) 결정은 항로 보고 <strong>안에 인라인 포함</strong> — 별도 '선장 결정카드' 2차 발송 폐지(2026-06-23 GM 요청·중복 제거).</td></tr>
-      <tr><td>🟢 <strong>22:00</strong></td><td>C-Level 진행 체크</td><td>AI CEO</td><td>일일 C-Level 진행현황 자동 점검</td></tr>
-      <tr><td>🟢 <strong>00:30</strong></td><td>PC 자동 종료</td><td>CTO</td><td>Auto-Shutdown-2330 (<code>shutdown.exe /s /f /t 0</code>) — PC 종료. 22:30 조기종료 사고 후 <strong>00:30로 단일화</strong>(2026-06-16). 자정 전 23:00 마감점검까지 발송 후 종료. <strong>종료 인사는 22:00 취침 슬롯에 통합.</strong></td></tr>
-    </table>
-
-    
-    <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). 수동 재기동: <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code>. <span style="color:var(--dim);">점검 원칙(왜·언제) = S2 CTO탭.</span></div>
-
-    <!-- ══ 📸 M3 인스타그램 발행 파이프라인 — T2 사람용 정본 (2026-06-17) ══ -->
-    <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">📸</span>M3 인스타그램 발행 파이프라인 <span style="font-size:13px;font-weight:400;color:var(--dim);">— 사람용 정본 · 현행 단계·가드만</span></h3>
-    <p style="font-size:12.5px;color:var(--dim);margin:0 0 12px;">코드·구현 상세 = <code>instagram/_AI시리즈_로드맵.md</code> §3.4 / M3 대화형 보드 = <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M3]').click();" style="color:var(--accent);font-weight:700;text-decoration:none;">M3 콘텐츠 검수·자동업로드</a>. 본 섹션은 흐름·가드만.</p>
-
-    <table>
-      <tr><th style="width:40px">단계</th><th style="width:200px">동작</th><th style="width:110px">status값</th><th style="width:130px">담당 스크립트·소유</th><th>가드</th></tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">1</td>
-        <td><strong>제작</strong> — 07:30 <code>ig_series_producer.py</code> 자동 실행 (로드맵 §5 기획 최소번호 기준)</td>
-        <td><span style="color:var(--accent);font-weight:600;">검수 대기</span></td>
-        <td>CMO (시모) · <code>ig_series_producer.py</code></td>
-        <td><code>큐레이션_추천.md</code> 자동생성 필수 · 소진 시 제작 중지 · 콘텐츠 폴더 즉시 git 커밋</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">2</td>
-        <td><strong>M3 검수큐 등록</strong> — <code>cmo/review/review_queue.json</code>에 항목 추가 + <strong>텔레그램 검수카드 1회 발송</strong> ([✅승인]/[❌반려])</td>
-        <td><span style="color:var(--accent);font-weight:600;">검수 대기</span></td>
-        <td>CMO (시모) · <code>review_queue.json</code></td>
-        <td>검수카드 콘텐츠당 1회만 — 재발송 금지 · review_queue.json git push 필수(M3 배포본 stale 차단)</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">3</td>
-        <td><strong>GM 승인</strong> — 텔레그램 [✅승인] 탭 (무폴링 · 텔레그램이 유일 승인경로)</td>
-        <td><span style="color:var(--accent);font-weight:600;">승인</span></td>
-        <td>GM</td>
-        <td>승인 전 발행 절대 금지(비가역 게이트) · [❌반려] 시 CMO 재제작 후 검수 대기 복귀</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">4</td>
-        <td><strong>발행</strong> — 4채널 M3 단일경유 · IG는 Playwright headful (<code>instagram_upload_playwright.py</code>)</td>
-        <td><span style="color:#7c3aed;font-weight:600;">발행검증대기</span></td>
-        <td>CMO (시모) · <code>instagram_upload_playwright.py</code> · <code>bot.py</code> pub 콜백</td>
-        <td><code>발행검증대기</code>는 재처리 대상 아님(이중발행 차단) · 자동 재발행·일괄발행 금지 · .publish.lock 직렬화</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">5</td>
-        <td><strong>웰리 대조</strong> — 실제 IG 게시물 ↔ M3 (캡션·슬라이드) 실대조</td>
-        <td><span style="color:var(--accent);font-weight:600;">대조 중</span></td>
-        <td>웰리 (AI CEO) · <code>ig_review_publish_watcher.py</code></td>
-        <td>① 프로필 그리드 실등장(신규 shortcode) ② M3 배포본 노출 ③ 텔레그램 실수신 — 3종 동시 확인</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">6</td>
-        <td><strong>발행완료 도장</strong> — 실게시 확인 후에만 (약속 L04)</td>
-        <td><span style="color:var(--green);font-weight:600;">발행완료</span></td>
-        <td>웰리 (AI CEO)</td>
-        <td>승인 ≠ 발행완료 · 불일치 시 재처리(발행완료 자동 전환 금지) · 부팅 가드: 미푸시 커밋·발행검증대기 부팅 시 우선 처리</td>
-      </tr>
-    </table>
-
-    <div class="callout fix" style="margin-top:10px;font-size:13px;">
-      <strong>핵심 가드 요약 (한눈에)</strong>
-      <table style="margin-top:8px;">
-        <tr><th style="width:200px">가드</th><th>내용</th></tr>
-        <tr><td>승인 ≠ 발행완료</td><td>발행완료는 웰리가 IG↔M3 실대조 후에만 찍는다 (약속 L04)</td></tr>
-        <tr><td>검수카드 1회</td><td>콘텐츠당 텔레그램 검수카드 1회만 발송 — 재발송 금지</td></tr>
-        <tr><td>무폴링</td><td>발행 트리거 = GM [✅승인] 탭만. 스케줄 자동발행·재발행 금지</td></tr>
-        <tr><td>발행검증대기 보호</td><td><code>발행검증대기</code> 상태는 재처리·이중발행 차단 — 웰리 대조 후에만 다음 단계</td></tr>
-        <tr><td>부팅 미푸시 가드</td><td>부팅 시 <code>welly_boot_guard.py</code> — origin 미푸시 커밋 즉시 push / 검수대기·발행검증대기 확인</td></tr>
-        <tr><td>post-commit 자동 push</td><td>커밋 시 post-commit 훅 자동 push — review_queue.json stale 차단</td></tr>
-      </table>
-    </div>
-    <!-- ══ /M3 인스타그램 발행 파이프라인 ══ -->
-
-    <h4>매주</h4>
-    <table>
-      <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
-      <tr><td>🟢</td><td>7 C-Level 컨텍스트 정비</td><td>7 C-Level</td><td>일 09:00</td><td style="font-size:12px;">범위·R/R 정본 = <strong>S2 ▸ 운영 프롬프트 ▸ ① 컨텍스트 정비</strong> <span style="color:var(--dim);">/ 실행 STEP1~5 = T1</span></td></tr>
-      <tr><td>🟢</td><td>AI 교육자료 자동 정리·자기학습</td><td>AI CEO</td><td>월 09:00</td><td style="font-size:12px;">최신 AI 정보 수집·요약 → 아카이브·고도화 제안. 프로세스 정본 = <strong>T1 ▸ 자기학습 프로세스</strong> <span style="color:var(--dim);">/ education_archive_weekly.py</span></td></tr>
-    </table>
-
-
-
-    
-
-    
-    <div class="source">점검 기준: Windows Task Scheduler + Python 프로세스 실측 (2026-06-03 S3 산출 자동화 이관·정합)</div>
+    <div class="source">점검 기준: Windows Task Scheduler + Python 프로세스 실측 · 상세 보드로 일원화(2026-07-03, 구 T2 상세는 <a href="자율현황.html" style="color:var(--accent);">자율현황.html</a>로 이관)</div>
   </article>
   <article class="doc" id="O3">
     <div class="doc-header"><h2>재등록 대시보드</h2><div class="meta">COO 관할 · 만기 회원 재등록 현황 · 구글시트 실시간(집계 지표)</div></div>
