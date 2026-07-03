@@ -72,13 +72,66 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .section-badge.read{background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent);}
 .section-badge.edit{background:var(--teal-bg);border:1px solid var(--teal-border);color:var(--teal);}
 .section-badge.policy{background:var(--blue-bg);border:1px solid var(--blue-border);color:var(--blue);}
-/* ── 인쇄: 현재 활성 탭만 인쇄(나머지 탭·내비·버튼 숨김). 2026-07-02 시포·GM ── */
+/* ── 편집/저장 버튼 = 제목(section-badge) 줄 맨 우측 배치(세로공간 절약). 2026-07-03 시포·GM ── */
+.section-badge.with-actions{justify-content:space-between;}
+.section-badge-actions{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;}
+/* ── 인쇄: 현재 활성 탭만 인쇄 + 고대비(진한 글자·흰 배경)·큰 글씨(노령 가독성). 2026-07-03 시포·GM ──
+   방식 = 업무/결재현황 SSOT와 동일 공식: :root 팔레트 변수를 인쇄용 라이트값으로 재정의
+   → 카드·배지·표 등 var() 기반 색상이 전부 자동 고대비 전환(연한 텍스트/톤온톤 "보호색" 문제 근본 해결). */
 @media print{
-  .tab-nav,.print-tab,.action-btn{display:none!important;}
+  @page{margin:12mm;size:A4}
+  :root{
+    --bg:#fff;--paper:#fff;--paper-raised:#f2f2f2;
+    --text:#141414;--dim:#555;--dim-mid:#333;
+    --accent:#6b4e2e;--accent-bright:#4a3620;--accent-bg:#f3ece3;--accent-border:#b99b76;
+    --border:#999;--border-subtle:#ccc;
+    --green:#1f6b34;--green-bg:#e6f4e9;--green-border:#1f6b34;
+    --red:#a32a17;--red-bg:#fbe8e4;--red-border:#a32a17;
+    --yellow:#7a5f00;--yellow-bg:#faf3d6;--yellow-border:#7a5f00;
+    --blue:#1c4a7a;--blue-bg:#e4eef7;--blue-border:#1c4a7a;
+    --purple:#5b3fa0;--purple-bg:#ece6f8;--purple-border:#5b3fa0;
+    --orange:#8a4b12;--orange-bg:#f8ead9;--orange-border:#8a4b12;
+    --teal:#0d6b6b;--teal-bright:#0a5555;--teal-bg:#dff2f2;--teal-border:#0d6b6b;
+    --shadow-card:none;--shadow-header:none;
+  }
+  .tab-nav,.print-tab,.action-btn,.section-badge-actions,
+  .pp-del,.pp-add,.status-msg,.pricing-hint,.plan-card-actions,.btn-sm,
+  .hero-eyebrow,.grade-ribbon,.seed-mark{display:none!important;}
   .tab-panel{display:none!important;}
   .tab-panel.active{display:block!important;}
-  body{background:#fff!important;color:#000!important;}
+  /* 노령 가독성 — 본문·표 최소 14pt급(≈18-19px) 고대비. 여백·장식은 줄여 공간 확보(GM 승인 · 2026-07-03). */
+  html,body{background:#fff!important;color:var(--text)!important;font-size:18px!important;line-height:1.6!important;}
+  .header{background:#fff!important;border-bottom:1px solid #999!important;padding:8px 0!important;}
+  .header h1,.header .sub{color:var(--text)!important;}
+  .header .sub{font-size:13px!important;}
+  .content{padding:0!important;max-width:100%!important;}
   .card,.section-badge{box-shadow:none!important;}
+  .card{padding:12px 14px!important;margin-bottom:8px!important;}
+  .section-badge{font-size:16px!important;padding:8px 14px!important;}
+  .card-title{font-size:18px!important;}
+  .info-box,.callout{font-size:17px!important;line-height:1.7!important;padding:10px 14px!important;}
+  /* 표 = 열이 많아 폭 제약 — 헤더 줄바꿈 허용 + 여백 축소로 큰 글씨 확보 */
+  table{font-size:16px!important;}
+  th{font-size:15px!important;padding:6px 7px!important;white-space:normal!important;}
+  td{padding:6px 7px!important;}
+  .num-badge,.tag-badge{font-size:13px!important;}
+  .grade-card-name{font-size:18px!important;}
+  .grade-card-price{font-size:27px!important;}
+  .grade-card-features{font-size:15px!important;}
+  .hero-declaration{padding:12px 14px!important;margin-bottom:10px!important;}
+  .hero-headline{font-size:27px!important;}
+  .hero-body{font-size:17px!important;}
+  .plan-card-title{font-size:17px!important;}
+  .plan-card-body{font-size:16px!important;}
+  .plan-card-meta{font-size:13px!important;}
+  .plan-section-header{font-size:17px!important;}
+  .lever-row{font-size:16px!important;}
+  .pol-cat{font-size:17px!important;}
+  .pol-card input{border:none!important;background:none!important;padding:3px 4px!important;font-size:16px!important;}
+  /* input 값은 한 줄로 잘려 안 보이므로 beforeprint에서 만든 .print-val(줄바꿈 텍스트)로 교체 표시 */
+  .pol-card input,.pol-cat{display:none!important;}
+  .print-val{display:block!important;white-space:normal!important;word-break:keep-all;overflow-wrap:break-word;color:var(--text)!important;font-size:16px!important;line-height:1.5!important;padding:3px 4px!important;}
+  .card-title .print-val{display:inline-block!important;font-size:17px!important;font-weight:700!important;color:var(--accent-bright)!important;padding:0!important;}
 }
 
 /* ─── 섹션 구분선 ─── */
@@ -177,9 +230,9 @@ tr:hover td{background:var(--accent-bg);}
 .pp-del:hover{background:rgba(237,91,63,0.2);}
 .pp-add{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border);border-radius:6px;cursor:pointer;font-size:12px;padding:5px 9px;font-family:inherit;}
 .pp-add:hover{background:rgba(78,196,196,0.2);}
-.pricing-toolbar{display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap;}
-.pricing-hint{font-size:11px;color:var(--dim);}
-@media print{.pricing-toolbar,.pp-del,.pp-add{display:none!important;} .pol-card input{border:none;background:none;padding:2px 4px;}}
+.pricing-hint{display:block;font-size:11px;color:var(--dim);margin:8px 0 14px;}
+/* ── 인쇄 전용: <input> 값은 한 줄로 잘려 보이지 않으므로(요금정책 표) 인쇄 직전 텍스트로 치환해 줄바꿈 표시. 2026-07-03 시포·GM ── */
+.print-val{display:none;}
 @media(max-width:600px){#tab-policy{width:auto;margin-left:0;padding:0;}}
 
 /* ─── 기획 카드 그리드 ─── */
@@ -557,7 +610,17 @@ tr:hover td{background:var(--accent-bg);}
        TAB 3: 요금 정책
   ══════════════════════════════════════ -->
   <div id="tab-policy" class="tab-panel">
-    <div class="section-badge policy">💳 요금 정책 — 현행 운영 규정 · 26년 적용 기준</div>
+    <!-- 요금 정책 — 구분별 카드+표(멤버십 탭과 동일 낯익은 구조) · GM 인라인 편집·저장(POLICY-TABLE).
+         편집/저장 버튼 = 제목(section-badge) 줄 맨 우측 배치. 2026-07-02/07-03 시포·GM -->
+    <div class="section-badge policy with-actions">
+      <span>💳 요금 정책 — 현행 운영 규정 · 26년 적용 기준</span>
+      <div class="section-badge-actions">
+        <button class="action-btn green" onclick="savePolicyTable()">💾 요금 정책 저장</button>
+        <button class="action-btn" onclick="addGroup()">➕ 새 구분</button>
+        <button class="action-btn" onclick="loadPolicyTable(true)">↺ 새로고침</button>
+      </div>
+    </div>
+    <span class="pricing-hint" id="policyStatus">GM이 셀을 직접 수정 → 저장하면 시트에 반영됩니다</span>
 
     <!-- 무할인 원칙 배너 -->
     <div class="callout red" style="margin-bottom:20px;font-size:13.5px;line-height:1.7;border-radius:12px;padding:16px 20px;">
@@ -566,13 +629,6 @@ tr:hover td{background:var(--accent-bg);}
       <span style="font-size:12px;opacity:0.85;">계약 중 기존요금 보장 · 재등록 시 새 정가 적용 · 2년 주기 인상 유지(26.10 / 28.10)</span>
     </div>
 
-    <!-- 요금 정책 — 구분별 카드+표(멤버십 탭과 동일 낯익은 구조) · GM 인라인 편집·저장(POLICY-TABLE). 2026-07-02 시포·GM -->
-    <div class="pricing-toolbar">
-      <button class="action-btn green" onclick="savePolicyTable()">💾 요금 정책 저장</button>
-      <button class="action-btn" onclick="addGroup()">➕ 새 구분</button>
-      <button class="action-btn" onclick="loadPolicyTable(true)">↺ 새로고침</button>
-      <span class="pricing-hint" id="policyStatus">GM이 셀을 직접 수정 → 저장하면 시트에 반영됩니다</span>
-    </div>
     <div id="policyCards"><div class="card"><div style="color:var(--dim);font-size:12px;">불러오는 중…</div></div></div>
 
   </div><!-- /tab-policy -->
@@ -581,7 +637,14 @@ tr:hover td{background:var(--accent-bg);}
        TAB 4: 기획 작업대
   ══════════════════════════════════════ -->
   <div id="tab-workshop" class="tab-panel">
-    <div class="section-badge edit">✏️ 신규 기획 작업대 — 편집·저장 가능 · 시트 공유</div>
+    <!-- 편집/저장 버튼 = 제목(section-badge) 줄 맨 우측 배치. 2026-07-03 시포·GM -->
+    <div class="section-badge edit with-actions">
+      <span>✏️ 신규 기획 작업대 — 편집·저장 가능 · 시트 공유</span>
+      <div class="section-badge-actions">
+        <button class="action-btn" onclick="loadPlans()">↺ 새로고침</button>
+        <button class="action-btn green" onclick="openModal(null)">+ 새 기획 추가</button>
+      </div>
+    </div>
 
     <div class="hero-declaration">
       <div class="hero-eyebrow">🏛️ 포지셔닝 선언 · 확정</div>
@@ -589,13 +652,7 @@ tr:hover td{background:var(--accent-bg);}
       <div class="hero-body">웰페리온은 할인으로 경쟁하지 않습니다. 회원이 정가를 기꺼이 내는 이유 = 내부 시설·비품·어메니티가 만드는 압도적 경험.<br>할인 대신 차별화, 가격 대신 가치 — <strong>1순위는 시설·어메니티 차별화</strong>입니다.</div>
     </div>
 
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-      <div class="status-msg" id="statusMsg">불러오는 중…</div>
-      <div style="display:flex;gap:6px;">
-        <button class="action-btn" onclick="loadPlans()">↺ 새로고침</button>
-        <button class="action-btn green" onclick="openModal(null)">+ 새 기획 추가</button>
-      </div>
-    </div>
+    <div class="status-msg" id="statusMsg" style="margin-bottom:12px;">불러오는 중…</div>
 
     <div class="plan-sections" id="planGrid">
       <!-- 카드 동적 렌더 -->
@@ -739,6 +796,23 @@ function savePolicyTable(){
 function toggleAcc(id) {
   document.getElementById(id).classList.toggle('open');
 }
+
+// ── 인쇄 직전: 요금 정책 표의 <input> 값은 한 줄 밖 내용이 잘려 안 보이므로
+//    인쇄용 텍스트(.print-val, 줄바꿈 허용)로 미리보기 없이 즉시 교체. 값·저장 로직은 손대지 않음(표시만). 2026-07-03 시포·GM
+function _printValSync() {
+  document.querySelectorAll('.print-val').forEach(function(s){ s.remove(); });
+  document.querySelectorAll('.pol-card input, .pol-cat').forEach(function(el){
+    var span = document.createElement('span');
+    span.className = 'print-val';
+    span.textContent = el.value;
+    el.insertAdjacentElement('afterend', span);
+  });
+}
+function _printValClear() {
+  document.querySelectorAll('.print-val').forEach(function(s){ s.remove(); });
+}
+window.addEventListener('beforeprint', _printValSync);
+window.addEventListener('afterprint', _printValClear);
 
 // ── 상수 ──────────────────────────────────────────────────────────
 var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
