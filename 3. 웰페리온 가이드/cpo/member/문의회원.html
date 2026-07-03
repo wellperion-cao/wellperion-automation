@@ -796,6 +796,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .guide-acc-btn.open{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
 .guide-acc-body{padding:8px 4px;font-size:12px;overflow-x:auto}
 .guide-acc-body table{font-size:11px}
+/* 가이드 문서 진입 버튼 묶음 — 모달 열기(openGdoc). 인쇄 등 action-btn과 톤 통일. 2026-07-03 시포·GM */
+.guide-btns{display:flex;flex-wrap:wrap;gap:8px}
+.guide-doc-btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--paper);color:var(--text);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
+.guide-doc-btn:hover{border-color:var(--accent-border);background:var(--accent-bg);color:var(--accent)}
 
 /* ═══════════════════════════════════════
    인쇄
@@ -984,15 +988,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         </div>
       </div>
     </div>
-    <div class="guide-acc">
-      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churn')">⚠️ 전체 LOSS 신호 매트릭스 <span>▾</span></button>
-      <div class="guide-acc-body" style="display:none"></div>
-      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'churnstat')">📊 LOSS 현황 추적 <span>▾</span></button>
-      <div class="guide-acc-body" style="display:none"></div>
-      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'principle')">🎯 CPO 운영원칙 <span>▾</span></button>
-      <div class="guide-acc-body" style="display:none"></div>
-      <button class="guide-acc-btn" onclick="toggleGuideAcc(this,'routine')">📅 정기 루틴 <span>▾</span></button>
-      <div class="guide-acc-body" style="display:none"></div>
+    <!-- 가이드 문서 진입 = 버튼식(모달 열기). 인쇄 등 액션 버튼과 톤 통일. 2026-07-03 시포·GM -->
+    <div class="guide-btns">
+      <button class="guide-doc-btn" onclick="openGdoc('churn')">⚠️ LOSS 신호 매트릭스</button>
+      <button class="guide-doc-btn" onclick="openGdoc('churnstat')">📊 LOSS 현황 추적</button>
+      <button class="guide-doc-btn" onclick="openGdoc('principle')">🎯 CPO 운영원칙</button>
+      <button class="guide-doc-btn" onclick="openGdoc('routine')">📅 정기 루틴</button>
     </div>
   </div>
 
@@ -2052,7 +2053,11 @@ function openGdoc(id) {
   var tpl = document.querySelector('#gdoc-tpl [data-gdoc="' + id + '"]');
   if (!tpl) return;
   document.getElementById('gdocTitle').textContent = tpl.getAttribute('data-title') || '가이드';
-  document.getElementById('gdocBody').innerHTML = tpl.innerHTML;
+  var body = document.getElementById('gdocBody');
+  body.innerHTML = tpl.innerHTML;
+  // 실측 주입(아코디언과 동일) — LOSS 현황=KPI 라이브 / LOSS 매트릭스=2행 라이브 숫자. 2026-07-03 시포·GM
+  if (id === 'churnstat') loadChurnStats(body);
+  if (id === 'churn')     renderChurnMatrixLive(body);
   document.getElementById('gdocOverlay').classList.add('open');
 }
 function closeGdoc() {
@@ -2707,6 +2712,45 @@ function _activeSortBy(col) {
   _activeRender(_activeRows);
 }
 
+// 기본 정렬 = 잔여일 임박순(작은 양수 먼저). 만료(≤0)·미상은 맨뒤. 유효회원 스코프 전용. 2026-07-03 시포·GM
+function _remainSortKey(v) {
+  var n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, ''));
+  if (isNaN(n)) return 1e15;   // 미상(빈칸·비숫자) → 맨뒤
+  if (n <= 0)   return 1e14;   // 만료·이탈(잔여일 ≤ 0) → 양수 뒤로
+  return n;                    // 양수: 작을수록(임박) 위로
+}
+function _applyRemainSort() {
+  var remainCol = null;
+  (_activeHeaders || []).forEach(function(h){ if (remainCol === null && /잔여일/.test(h)) remainCol = h; });
+  if (!remainCol) return;      // 잔여일 컬럼 없으면 원순서 유지
+  _activeRows.sort(function(a, b){ return _remainSortKey(a[remainCol]) - _remainSortKey(b[remainCol]); });
+  _activeSort = { col: null, dir: -1 };   // 헤더 정렬 화살표 초기화(기본정렬은 화살표 없음)
+}
+
+// 회원관리 표 재등록 통합셀 클릭 → 해당 회원 고정으로 재등록 모달 열기(달력 모달 재사용). 2026-07-03 시포·GM
+function openReconForMember(rowIndex) {
+  var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
+  if (!r) return;
+  var name    = String(r['회원명'] || '').trim();
+  var phone   = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
+  var program = String(r['회원\n구분'] || r['회원구분'] || '').trim();
+  var date = String(r[RECON_COLS.date] != null ? r[RECON_COLS.date] : '').trim();
+  var time = String(r[RECON_COLS.time] != null ? r[RECON_COLS.time] : '').trim();
+  var note = String(r[RECON_COLS.note] != null ? r[RECON_COLS.note] : '').trim();
+  var ev = null;
+  // 이미 달력에 로드된 동일 회원 재등록 이벤트가 있으면 그 참조 재사용(저장 시 중복 칩 방지)
+  if (date && typeof calEvents === 'object' && calEvents[date]) {
+    ev = calEvents[date].find(function(x){ return x && x.source === 'active' && x.rowIndex == rowIndex; }) || null;
+  }
+  if (!ev) {
+    ev = { rowIndex: r.rowIndex, name: name, phone: phone, program: program,
+           date: date, time: time, tmin: _tminOf(time), note: note, memo: note,
+           kind: '재등록상담', source: 'active', slot: 'recon', status: '',
+           owner: '', contact1: '', contact2: '', contact3: '', visited: false, visitDate: '' };
+  }
+  openReconModal(ev, date);
+}
+
 // 유효/종료 전환 토글 — 시각 갱신 후 해당 scope 재조회
 function setActiveScope(scope, btn) {
   _activeScope = (scope === 'ended' || scope === 'corp') ? scope : 'valid';
@@ -2733,6 +2777,7 @@ function loadActiveMembers() {
       _activeHeaders = data.headers || [];
       _activeRows    = data.data    || [];
       _activeLoaded  = true;
+      if (_activeScope === 'valid') _applyRemainSort();   // 기본=잔여일 임박순(작은 양수 먼저). 2026-07-03 시포·GM
       _activeRender(_activeRows);
       renderActiveSummary();
       _activeWireSearch();
@@ -2772,13 +2817,57 @@ function _activeFilter(query) {
   _activeRender(filtered, true);
 }
 
+/* ── 표 컬럼 표시 순서(커스텀) — 유효회원 스코프에서만.
+      · 재등록상담 원본 3칸(날짜/시간/내용)은 숨기고 '잔여일' 바로 뒤에 통합셀('__recon__') 1칸으로.
+      · '미등록사유' 칸은 맨 우측으로 이동.
+      · 그 외 컬럼은 시트 원순서 유지(누락 없음). corp/ended 스코프는 제네릭(원순서). 2026-07-03 시포·GM */
+function _activeDisplayCols() {
+  var cols = _activeHeaders.slice();
+  if (_activeScope !== 'valid') return cols;
+  var reconRaw = [RECON_COLS.date, RECON_COLS.time, RECON_COLS.note];
+  var hasRecon = reconRaw.some(function(h){ return cols.indexOf(h) >= 0; });
+  var remainCol = null, unregCol = null;
+  cols.forEach(function(h){
+    if (remainCol === null && /잔여일/.test(h)) remainCol = h;
+    if (unregCol  === null && /미등록/.test(h)) unregCol = h;
+  });
+  var base = cols.filter(function(h){
+    if (hasRecon && reconRaw.indexOf(h) >= 0) return false;   // 재등록 원본 3칸 숨김
+    if (h === unregCol) return false;                          // 미등록사유는 맨뒤로
+    return true;
+  });
+  var out = [];
+  base.forEach(function(h){
+    out.push(h);
+    if (hasRecon && h === remainCol) out.push('__recon__');    // 잔여일 뒤 통합셀
+  });
+  if (hasRecon && !remainCol) out.push('__recon__');           // 잔여일 컬럼 없으면 폴백(뒤)
+  if (unregCol) out.push(unregCol);                            // 미등록사유 맨뒤
+  return out;
+}
+
+// 재등록 상담 통합셀 — "YYYY-MM-DD HH:MM · 내용" 또는 비었으면 "＋ 상담 잡기". 클릭=openReconModal(회원 고정). 2026-07-03 시포·GM
+function _reconCellHtml(row) {
+  var d = String(row[RECON_COLS.date] != null ? row[RECON_COLS.date] : '').trim();
+  var t = String(row[RECON_COLS.time] != null ? row[RECON_COLS.time] : '').trim();
+  var n = String(row[RECON_COLS.note] != null ? row[RECON_COLS.note] : '').trim();
+  var ri = row.rowIndex != null ? esc(String(row.rowIndex)) : '';
+  if (d) {
+    var label = d + (t ? ' ' + t : '') + (n ? ' · ' + n : '');
+    return '<td class="recon-cell" data-recon="' + ri + '" title="재등록 상담 수정" style="white-space:nowrap;cursor:pointer;color:var(--accent);font-weight:600">' + esc(label) + '</td>';
+  }
+  return '<td class="recon-cell recon-empty" data-recon="' + ri + '" title="재등록 상담 잡기" style="white-space:nowrap;cursor:pointer;color:var(--dim)">＋ 상담 잡기</td>';
+}
+
 function _activeRender(rows, isFiltered) {
   var head  = document.getElementById('activeHead');
   var tbody = document.getElementById('activeBody');
   var count = document.getElementById('activeCount');
+  var displayCols = _activeDisplayCols();
 
   if (!isFiltered) {
-    var ths = _activeHeaders.map(function(h){
+    var ths = displayCols.map(function(h){
+      if (h === '__recon__') return '<th style="white-space:nowrap">재등록 상담</th>';   // 통합셀(정렬 대상 아님)
       var leftAlign = (h === '수강반종목명') ? ';text-align:left' : '';
       var arrow = (_activeSort.col === h) ? (_activeSort.dir < 0 ? ' ▼' : ' ▲') : '';
       return '<th data-sortcol="' + esc(h) + '" title="클릭하여 정렬" style="white-space:nowrap;cursor:pointer;user-select:none' + leftAlign + '">' + esc(h) + arrow + '</th>';
@@ -2797,7 +2886,7 @@ function _activeRender(rows, isFiltered) {
     (_activeRows.length !== rows.length ? ' (전체 ' + _activeRows.length + '명 중)' : '');
 
   if (rows.length === 0) {
-    var span = _activeHeaders.length || 1;
+    var span = displayCols.length || 1;
     tbody.innerHTML =
       '<tr><td colspan="' + span + '">' +
       '<div class="empty-state">' +
@@ -2812,7 +2901,8 @@ function _activeRender(rows, isFiltered) {
   rows.forEach(function(row){
     var ri = row.rowIndex != null ? String(row.rowIndex) : '';
     html += '<tr data-rowindex="' + esc(ri) + '">';
-    _activeHeaders.forEach(function(h){
+    displayCols.forEach(function(h){
+      if (h === '__recon__') { html += _reconCellHtml(row); return; }
       var isPhone = (h === '휴대폰 번호');
       var leftStyle = (h === '수강반종목명') ? 'text-align:left;' : '';
       var editAttr = (!isPhone && _activeScope !== 'corp') ? ' data-col="' + esc(h) + '"' : '';
@@ -2908,6 +2998,13 @@ function _wireActiveDblclick(){
   var tbody = document.getElementById('activeBody');
   if (!tbody || tbody.dataset.dblwired) return;
   tbody.dataset.dblwired = '1';
+  // 재등록 상담 통합셀 = 단일 클릭 → 회원 고정 모달(인라인 편집 대상 아님). 2026-07-03 시포·GM
+  tbody.addEventListener('click', function(e){
+    var cell = e.target.closest ? e.target.closest('td.recon-cell') : null;
+    if (!cell) return;
+    var ri = parseInt(cell.getAttribute('data-recon'), 10);
+    if (ri) openReconForMember(ri);
+  });
   tbody.addEventListener('dblclick', function(e){
     var td = e.target.closest('td');
     if (!td) return;
@@ -3479,7 +3576,7 @@ function openReconModal(ev, date) {
   _reconEv = ev || null;
   var pickRow = document.getElementById('rcMemberPickRow');
   var fixedRow = document.getElementById('rcMemberFixedRow');
-  document.getElementById('rcTitle').textContent = _reconEv ? '재등록 상담 수정' : '재등록 상담 추가';
+  document.getElementById('rcTitle').textContent = (_reconEv && (_reconEv.date || _reconEv.note)) ? '재등록 상담 수정' : '재등록 상담 추가';
   _reconFillTimeOptions(document.getElementById('rcTimeSel'), _reconEv ? _reconEv.time : '');
   document.getElementById('rcDateSel').value = (_reconEv && _reconEv.date) ? _reconEv.date : (date || '');
   document.getElementById('rcNoteInput').value = _reconEv ? noteText(_reconEv) : '';
@@ -3552,6 +3649,10 @@ function saveReconModal() {
         calEvents[date].push(newEv);
         calEvents[date] = sortByTime(calEvents[date]);
       }
+      // 회원관리 표 로컬 동기화 — 열려 있으면 통합셀 즉시 반영(재조회 없이). 2026-07-03 시포·GM
+      var _ar = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
+      if (_ar) { _ar[RECON_COLS.date] = date; _ar[RECON_COLS.time] = time; _ar[RECON_COLS.note] = note; }
+      if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
       closeReconModal();
       renderCalendarShell();
       renderCalendarChips();

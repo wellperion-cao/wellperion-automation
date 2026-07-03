@@ -1008,6 +1008,7 @@
     if(st === '정상') return '<span class="statchip ok">🟢 정상</span>';
     if(st === '실패') return '<span class="statchip bad">🔴 실패</span>';
     if(st === '미실행') return '<span class="statchip idle">⚪ 미실행</span>';
+    if(st === '대기') return '<span class="statchip idle">🕒 대기</span>';
     return '<span class="statchip warn">❓ ' + esc(st) + '</span>';
   }
   function renderAutomationHealth(d){

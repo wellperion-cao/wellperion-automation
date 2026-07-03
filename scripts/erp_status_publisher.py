@@ -183,7 +183,13 @@ def collect_automation_health():
                     last_result_code = code
                     # 1999년 기본값 = 한 번도 안 돎
                     if NEVER_RUN_YEAR in last_run:
-                        state = "미실행"
+                        # next_run에 실제 미래 예정 시각이 있으면 = 정상 대기(월간 등)
+                        # sentinel(없음/비활성) 포함 시에만 진짜 '미실행'
+                        never_sentinels = (NEVER_RUN_YEAR, "N/A", "해당 없음", "사용 안 함", "없음")
+                        has_real_next_run = bool(next_run) and not any(
+                            s in next_run for s in never_sentinels
+                        )
+                        state = "대기" if has_real_next_run else "미실행"
                     elif code == 0:
                         state = "정상"
                     else:
@@ -201,7 +207,7 @@ def collect_automation_health():
             })
 
         total = len(items)
-        healthy = sum(1 for i in items if i["state"] == "정상")
+        healthy = sum(1 for i in items if i["state"] in ("정상", "대기"))
         rate = round(healthy / total * 100) if total > 0 else 0
         summary = f"자동화 {healthy}/{total} 정상 ({rate}%)"
 
