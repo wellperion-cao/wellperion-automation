@@ -2114,12 +2114,9 @@ const WEEKDAY=[
       {id:"op2",name:"OP-2 탕 수위 조절 스위치 ON/OFF 확인",detail:"탕 수위 조절 스위치 상태 확인 및 조작",gender:"all"},
       {id:"op3",name:"OP-3 세탁물 확인",detail:"입고된 세탁물을 세탁실로 운반",gender:"all"},
       {id:"op5",name:"OP-4 타올류/운동복/양말 상태 + 배치",detail:"거품타올/타올/바스타올/운동복/양말 상태 체크 후 사이즈별 배치",gender:"all"},
-      {id:"op6",name:"OP-5 사우나 온도·습도·냄새 체크",detail:"사우나 온도 및 습도, 냄새 체크",gender:"all"},
-      {id:"op8",name:"OP-7 코드·스위치 전원 OFF",detail:"선풍기 / 드라이기 / 사우나 / 화장실 / 파우더룸 / 직원룸 / 락커룸 전체 ( 신발장앞)",gender:"all"},
-      {id:"op9",name:"OP-6 분실물 수거·정리",detail:"사우나 ㅣ 파우더룸 ㅣ 락커룸",gender:"all"}
+      {id:"op6",name:"OP-5 사우나 온도·습도·냄새 체크",detail:"사우나 온도 및 습도, 냄새 체크",gender:"all"}
     ]},
     {title:"전일 마감·야간청소 확인",items:[
-      {id:"cl3",name:"사우나/파우더 청결 확인 (전일 마감·야간청소)",detail:"오픈 시 점검: 남/여 사우나 & 파우더 공간 청결 + 전일 야간 탕청소 결과 이상 유무 확인\n미비 시 시설/운영부 보고 (마감엔 마감업무, 상태 확인은 오픈에 — GM 2026-06-22)",gender:"all"}
     ]}
   ]},
   {slot:"내부·외부 점검",shift:"all",groups:[
@@ -2146,8 +2143,6 @@ const WEEKDAY=[
   ]},
   {slot:"마감 22:00~22:30",shift:"pm",groups:[
     {title:"마감 점검",items:[
-      {id:"cl1",name:"세탁물 마감 출고",detail:"마감 세탁물 최종 출고 운반 | 마감 출고 빠짐없이 확인",gender:"all"},
-      {id:"cl8",name:"전 구역 마감 확인",detail:"전 구역 이상 유무 | 잠금·소등 | 미수금 정산 | 다음날 일정 준비 완료 확인",gender:"all"}
     ]}
     // 사우나/파우더 청결 '확인'(cl3)은 오픈조로 이관 — 마감엔 못 보니 다음날 오픈에 실측(GM 2026-06-22)
   ]}
@@ -2177,12 +2172,9 @@ const WEEKEND=[
       {id:"op2",name:"OP-2 탕 수위 조절 스위치 ON/OFF 확인",detail:"탕 수위 조절 스위치 상태 확인 및 조작",gender:"all"},
       {id:"op3",name:"OP-3 세탁물 확인",detail:"입고된 세탁물을 세탁실로 운반",gender:"all"},
       {id:"op5",name:"OP-4 타올류/운동복/양말 상태 + 배치",detail:"거품타올/타올/바스타올/운동복/양말 상태 체크 후 사이즈별 배치",gender:"all"},
-      {id:"op6",name:"OP-5 사우나 온도·습도·냄새 체크",detail:"사우나 온도 및 습도, 냄새 체크",gender:"all"},
-      {id:"op8",name:"OP-7 코드·스위치 전원 OFF",detail:"선풍기 / 드라이기 / 사우나 / 화장실 / 파우더룸 / 직원룸 / 락커룸 전체 ( 신발장앞)",gender:"all"},
-      {id:"op9",name:"OP-6 분실물 수거·정리",detail:"사우나 ㅣ 파우더룸 ㅣ 락커룸",gender:"all"}
+      {id:"op6",name:"OP-5 사우나 온도·습도·냄새 체크",detail:"사우나 온도 및 습도, 냄새 체크",gender:"all"}
     ]},
     {title:"전일 마감·야간청소 확인",items:[
-      {id:"cl3",name:"사우나/파우더 청결 확인 (전일 마감·야간청소)",detail:"오픈 시 점검: 남/여 사우나 & 파우더 청결 + 전일 야간 탕청소 결과 이상 유무 확인 / 미비 시 시설·운영부 보고",gender:"all"}
     ]}
   ]},
   {slot:"내부·외부 점검",shift:"all",groups:[
@@ -2209,9 +2201,6 @@ const WEEKEND=[
   ]},
   {slot:"마감 18:00",shift:"pm",groups:[
     {title:"마감 점검",items:[
-      {id:"cl1",name:"세탁물 마감 출고",detail:"마감 세탁물 운반",gender:"all"},
-      {id:"cl8",name:"전 구역 마감 확인",detail:"전 구역 이상 유무 | 잠금·소등 | 미수금 정산 | 다음날 일정 준비 완료 확인",gender:"all"},
-      {id:"cl9",name:"마감 탕청소",detail:"별도 2인 1조 | 탕청소 업체 20:30 출근",gender:"all"}
     ]}
     // 사우나/파우더 청결 '확인'(cl3)은 오픈조로 이관(GM 2026-06-22)
   ]}
@@ -2533,12 +2522,12 @@ const ROUND_MAP={
   b6:['am1','pm1'],
   /* C 세탁물 = 전 조 */
   /* 오픈 점검(세탁물 입고 등) = 오전조 전용 (마감 점검의 반대, GM 2026-06-12) */
-  op1:['am1'], op2:['am1'], op3:['am1'], op5:['am1'], op6:['am1'], op8:['am1'], op9:['am1'],
+  op1:['am1'], op2:['am1'], op3:['am1'], op5:['am1'], op6:['am1'],
   /* C 내부(c1~c10) + D 업장(d1 헬스장·d2 골프장·d3 G.X) + E 외부(e1 주차장) = 전 조 (2026-06-13 ID정규화) */
   c1:['am1','pm1'], c2:['am1','pm1'], c3:['am1','pm1'], c4:['am1','pm1'], c5:['am1','pm1'],
   c6:['am1','pm1'], c7:['am1','pm1'], c8:['am1','pm1'], c9:['am1','pm1'], c10:['am1','pm1'],
   d1:['am1','pm1'], d2:['am1','pm1'], d3:['am1','pm1'],
-  e1:['am1','pm1'],
+  e1:['am1','pm1']
   /* 정규화 완료(2026-06-15): 웰니스 d4·VIP d5·분수대 e2·신발장 b7·오픈 op1/op2 = 마스터 rounds 필드가 회차 결정.
      ROUND_MAP에 넣으면 isShadowItem이 '기본항목 편집분'으로 오인해 숨김 → 절대 추가 금지. */
   /* GM 2026-06-23: 청결 '확인'은 전부 오픈 실측으로 이관(마감 후 야간 탕청소 업체 작업 때문). 마감 회차엔 '작업'만 남김.
@@ -2547,7 +2536,6 @@ const ROUND_MAP={
      cl2/cl4~cl7은 added(시트 rounds 필드 우선) → ROUND_MAP 제외(isShadowItem 오인 차단). */
   /* cl8='전 구역 마감 확인'(평일·주말 통일). cl9='마감 탕청소'=매일 운영(GM 확정 2026-06-25, 월 6회 정기휴무 제외).
      탕청소는 평일·주말 구분 없이 매일 실시. */
-  cl1:['close1'], cl3:['am1'], cl8:['am1'], cl9:['close1']
 };
 /* 항목 → 멤버 라운드 배열. 우선순위:
    1) 2b-1 CUSTOM 항목의 명시 rounds(이슈 승격 시 선택한 회차 다중) — 유효 키만.
@@ -2642,12 +2630,11 @@ const _LEGACY_ID_MIGRATIONS=[
     'custom_1781258818293_zmiwd':'d4','custom_1781261094618_l2ipe':'d5',
     'custom_1781258912840_8z19q':'e2','custom_1781255718419_bxvec':'b7',
     'custom_1781259775532_ibjd3':'op1','custom_1781259812050_aijw9':'op2',
-    'c1a':'op3','c1b':'op4','c1c':'op5','cls1':'cl1','cls2':'cl2','cls3':'cl3'
+    'c1a':'op3','c1b':'op4','c1c':'op5','cls2':'cl2'
   }},
   /* v2 — 마감점검 cl1~cl8 재정렬 (2026-06-17). 정확매칭: STATE 키 끝이 _<id> 패턴 */
   { ver:'v2', map:{
-    'cls4':'cl4','cls5':'cl7','cls6':'cl6','cls7':'cl5','cls8':'cl2',
-    'cl2':'cl3','cl3':'cl8'
+    'cls4':'cl4','cls5':'cl7','cls6':'cl6','cls7':'cl5','cls8':'cl2'
   }}
 ];
 /* 하위호환: 구 코드가 _LEGACY_ID_MAP 직접 참조하는 경우를 위한 alias (읽기전용) */
