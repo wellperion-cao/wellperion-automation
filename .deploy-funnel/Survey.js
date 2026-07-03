@@ -104,7 +104,7 @@ function _canonicalChannel_(raw) {
   if (/^온라인\s*[\(（]/.test(s)) return '기타·미상';
   if (/인스타|instagram|insta/i.test(s)) return '인스타그램';
   if (/카카오|카톡|챗톡|쳇톡|챗봇|쳇봇|kakao/i.test(s)) return '카카오톡';
-  if (/당근|daangn/i.test(s)) return '당근마켓';
+  if (/당근|daangn|danggn/i.test(s)) return '당근마켓';
   if (/동부이촌동|동커|동\.커|이촌동|카페/.test(s)) return '동부이촌동 커뮤니티';
   if (/네이버|naver|플레이스|블로그|블러그|검색|인터넷/i.test(s)) return '네이버';  // '지도' 단독 제외('인지도' 오탐 방지·네이버지도는 '네이버'로 포착)
   if (/소개|지인|친구|friend|추천|동기/i.test(s)) return '소개·지인';
@@ -223,6 +223,7 @@ function _collectFormInquiries_() {
       var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화', 'Mobile Phone', 'Phone', "Guardian's Mobile Phone"]);
       var idxChan  = _findCol_(headers, cfg.channelKeys);          // 대분류(문의 채널) — 폴백 기준
       var idxChanFine = _findCol_(headers, ['중분류']);             // 문의 경로(중분류) — 정밀(있을 때만, 멤버십 탭)
+      var idxAuto  = _findCol_(headers, ['유입경로(자동)', '유입경로자동', '유입경로_자동']);  // WP 문의폼 프리필 UTM(하드 신호) — 있을 때만, 최우선
       var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
       if (idxDate < 0) idxDate = 0;  // 못 찾으면 1열(구글폼 기본). 26년신규문의=B칸(타임스탬프) 자동 포착
       var idxMemoCfi = _findCol_(headers, ['비고', '메모']);  // [웹접수] 표식 탐지용
@@ -238,6 +239,17 @@ function _collectFormInquiries_() {
         if (idxChanFine >= 0) {
           var midRaw = String(r[idxChanFine] || '').trim();
           if (midRaw && _canonicalChannel_(midRaw) !== '기타·미상') chanRaw = midRaw;
+        }
+        // WP 문의폼이 방문자의 클릭 UTM을 '유입경로(자동)'에 프리필 — 자기신고(대분류/중분류)보다 신뢰도 높은
+        // 하드 신호이므로 최우선 override. 단, 매핑 불가(캠페인 슬러그 등)면 자기신고 유지(절대 후퇴 없음).
+        if (idxAuto >= 0) {
+          var autoRaw = String(r[idxAuto] || '').trim();
+          if (autoRaw) {
+            // 프리필 값은 "source" 또는 "source|campaign"(향후) 또는 캠페인 슬러그일 수 있음.
+            var autoSrc = autoRaw.split('|')[0].trim();
+            var autoCh = _canonicalChannel_(autoSrc);
+            if (autoCh !== '기타·미상') chanRaw = autoSrc;  // 하드 UTM 신호가 자기신고를 이김 — 캠페인 슬러그는 그냥 통과(회귀 없음)
+          }
         }
         out.push({
           시각:     _parseAnyDate_(r[idxDate]),  // 타임스탬프(구글폼 A칸 Date / 26년신규문의 B칸 'YYYY. M. D')
