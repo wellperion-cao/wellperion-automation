@@ -765,6 +765,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .signal-badge.high{background:var(--red-bg);color:var(--red)}
 .signal-badge.med{background:var(--yellow-bg);color:var(--yellow)}
 .signal-badge.low{background:var(--blue-bg);color:var(--blue)}
+/* 데이터 상태 배지 — 실측(라이브) vs 미측정 정직 표기. 2026-07-03 시포·GM */
+.data-badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;white-space:nowrap}
+.data-badge.live{background:var(--green-bg);color:var(--green)}
+.data-badge.unmeasured{background:rgba(125,123,116,0.14);color:var(--dim)}
+.matrix-table tr.unmeasured-row td{opacity:0.6}
 /* CPO 가이드 펼치기 아코디언 — 2026-06-29 시포 */
 .guide-acc{display:flex;flex-direction:column;gap:4px}
 .guide-acc-btn{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:8px 11px;border-radius:7px;border:1px solid var(--border);background:var(--paper);color:var(--text);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
@@ -951,11 +956,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div><div style="font-size:10px;color:var(--red);font-weight:700">이번달 이탈</div><div style="font-size:22px;font-weight:800;color:var(--red)" id="gMoLoss">0</div></div>
       </div>
       <div style="flex:1;min-width:240px">
-        <div style="font-size:11px;font-weight:800;color:var(--text);margin:0 0 7px">⚠️ 이탈 신호 (상위)</div>
+        <div style="font-size:11px;font-weight:800;color:var(--text);margin:0 0 7px">⚠️ 이탈 신호 (실측 라이브 — 유효회원 시트)</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px 14px">
-          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 2주 이상 연속 결석</div>
-          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 강습 3회 연속 취소</div>
-          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> CS 컴플레인 2건+</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 이탈율 <b id="chSigLossRate">—</b>% (<span id="chSigLossCount">—</span>명)</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 갱신 D-7 이내 임박 <b id="chSigD7">—</b>명</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge med">MED</span> 갱신 D-8~30 임박 <b id="chSigD830">—</b>명</div>
         </div>
       </div>
     </div>
@@ -1925,22 +1930,23 @@ if (action === 'member_calendar') {
   </div>
   <div data-gdoc="churn" data-title="이탈 신호 × 대응 매트릭스">
     <div class="info-box purple" style="margin-bottom:14px">
-      이탈 신호 감지 → 위험도 분류 → 대응 액션 순서로 운영합니다. AI CPO가 자동 감지·알림, 임정은M이 최종 대면 케어 담당.
+      이탈 신호 감지 → 위험도 분류 → 대응 액션 순서로 운영합니다. <strong>현재 자동 감지 = 이탈 확정·갱신 임박 2종</strong>(유효회원 시트 잔여일·재등록분류 실측, ✅). 나머지 6종은 데이터원 미연동으로 <strong>미측정</strong>(❌ — 아래 각 행 각주 참조), 데이터원 확보 시 순차 개통합니다. 임정은M이 최종 대면 케어 담당.
     </div>
     <div style="overflow-x:auto">
       <table class="matrix-table">
         <thead>
-          <tr><th>이탈 신호</th><th>위험도</th><th>감지 기준</th><th>대응 액션</th><th>담당</th></tr>
+          <tr><th>이탈 신호</th><th>위험도</th><th>데이터 상태</th><th>감지 기준</th><th>대응 액션</th><th>담당</th></tr>
         </thead>
         <tbody>
-          <tr><td>2주 이상 연속 결석</td><td><span class="signal-badge high">HIGH</span></td><td>출석 DB 14일+ 공백</td><td>텔레그램 알림 → 임정은M 1:1 연락 → 방문 동기 파악</td><td>AI CPO → 임정은M</td></tr>
-          <tr><td>강습 프로그램 중단</td><td><span class="signal-badge high">HIGH</span></td><td>강습 예약 3회 연속 취소</td><td>강습 변경 옵션 안내 → 무료 체험 세션 제공 검토</td><td>임정은M</td></tr>
-          <tr><td>CS 컴플레인 2건+</td><td><span class="signal-badge high">HIGH</span></td><td>30일 내 컴플레인 2건</td><td>COO 협조 요청 → 시설·서비스 개선 → 사과 연락</td><td>AI CPO + AI COO</td></tr>
-          <tr><td>갱신 D-14 미응답</td><td><span class="signal-badge med">MED</span></td><td>만료 14일 전 회신 없음</td><td>자동 문자 → 임정은M 전화 → 갱신 혜택 안내</td><td>AI CPO → 임정은M</td></tr>
-          <tr><td>방문 빈도 급감</td><td><span class="signal-badge med">MED</span></td><td>평소 대비 50% 이하로 감소</td><td>관심사 변화 파악 → 개인 맞춤 프로그램 제안</td><td>임정은M</td></tr>
-          <tr><td>NPS 5점 이하</td><td><span class="signal-badge med">MED</span></td><td>월 NPS 설문 응답</td><td>24시간 내 CPO 직접 연락 → 불만 원인 파악·해소</td><td>임정은M</td></tr>
-          <tr><td>신규 가입 후 3주 미방문</td><td><span class="signal-badge low">LOW</span></td><td>가입일 + 21일 방문 없음</td><td>웰컴 체크인 메시지 → 첫 이용 가이드 재발송</td><td>AI CPO (자동)</td></tr>
-          <tr><td>SNS 언팔·DM 차단</td><td><span class="signal-badge low">LOW</span></td><td>CMO 채널 모니터링</td><td>CPO-CMO 공유 → 오프라인 케어로 전환</td><td>AI CMO → AI CPO</td></tr>
+          <tr class="unmeasured-row"><td>2주 이상 연속 결석</td><td><span class="signal-badge high">HIGH</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>출석 DB 14일+ 공백<br><span style="font-size:10.5px">📌 데이터원 필요: 출석 DB</span></td><td>텔레그램 알림 → 임정은M 1:1 연락 → 방문 동기 파악</td><td>AI CPO → 임정은M</td></tr>
+          <tr class="unmeasured-row"><td>강습 프로그램 중단</td><td><span class="signal-badge high">HIGH</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>강습 예약 3회 연속 취소<br><span style="font-size:10.5px">📌 데이터원 필요: 강습 예약취소 이력</span></td><td>강습 변경 옵션 안내 → 무료 체험 세션 제공 검토</td><td>임정은M</td></tr>
+          <tr class="unmeasured-row"><td>CS 컴플레인 2건+</td><td><span class="signal-badge high">HIGH</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>30일 내 컴플레인 2건<br><span style="font-size:10.5px">📌 데이터원 필요: 컴플레인 집계</span></td><td>COO 협조 요청 → 시설·서비스 개선 → 사과 연락</td><td>AI CPO + AI COO</td></tr>
+          <tr><td>이탈 확정</td><td><span class="signal-badge high">HIGH</span></td><td><span class="data-badge live">✅ 실측(라이브)</span></td><td>LOSS/환불/양도/잔여일≤0<br><b id="mxLossLive" style="color:var(--red)">불러오는 중…</b></td><td>재등록 제안 → 이탈 사유 확인 → CEO 월보 반영</td><td>AI CPO → 임정은M</td></tr>
+          <tr><td>갱신 D-14 미응답</td><td><span class="signal-badge med">MED</span></td><td><span class="data-badge live">✅ 실측(라이브)</span></td><td>만료 14일 전<br><span style="font-size:10.5px">📌 '미응답' 여부는 미추적 — 잔여일 기준 임박만 실측</span><br><b id="mxRenewLive" style="color:var(--accent)">불러오는 중…</b></td><td>자동 문자 → 임정은M 전화 → 갱신 혜택 안내</td><td>AI CPO → 임정은M</td></tr>
+          <tr class="unmeasured-row"><td>방문 빈도 급감</td><td><span class="signal-badge med">MED</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>평소 대비 50% 이하로 감소<br><span style="font-size:10.5px">📌 데이터원 필요: 방문 로그</span></td><td>관심사 변화 파악 → 개인 맞춤 프로그램 제안</td><td>임정은M</td></tr>
+          <tr class="unmeasured-row"><td>NPS 5점 이하</td><td><span class="signal-badge med">MED</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>월 NPS 설문 응답<br><span style="font-size:10.5px">📌 데이터원 필요: NPS 설문 수집</span></td><td>24시간 내 CPO 직접 연락 → 불만 원인 파악·해소</td><td>임정은M</td></tr>
+          <tr class="unmeasured-row"><td>신규 가입 후 3주 미방문</td><td><span class="signal-badge low">LOW</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>가입일 + 21일 방문 없음<br><span style="font-size:10.5px">📌 데이터원 필요: 방문 로그</span></td><td>웰컴 체크인 메시지 → 첫 이용 가이드 재발송</td><td>AI CPO (자동)</td></tr>
+          <tr class="unmeasured-row"><td>SNS 언팔·DM 차단</td><td><span class="signal-badge low">LOW</span></td><td><span class="data-badge unmeasured">❌ 미측정</span></td><td>CMO 채널 모니터링<br><span style="font-size:10.5px">📌 데이터원 필요: 채널 모니터(수동)</span></td><td>CPO-CMO 공유 → 오프라인 케어로 전환</td><td>AI CMO → AI CPO</td></tr>
         </tbody>
       </table>
     </div>
@@ -1997,19 +2003,55 @@ function toggleGuideAcc(btn, id) {
     body.dataset.loaded = '1';
   }
   if (open && id === 'churnstat') loadChurnStats(body);   // 이탈 현황 실측 주입(매 열람 갱신). 2026-07-02 시포·GM
+  if (open && id === 'churn') renderChurnMatrixLive(body);  // 이탈 신호 매트릭스 실측 2행(이탈 확정·갱신 D-14) 라이브 연결. 2026-07-03 시포·GM
   body.style.display = open ? 'block' : 'none';
   btn.classList.toggle('open', open);
   var arrow = btn.querySelector('span'); if (arrow) arrow.textContent = open ? '▴' : '▾';
 }
 
+/* ── 이탈 신호 매트릭스·이탈 현황 공유 캐시(2단계) — cpo_churn_stats 1회 fetch 재사용. 2026-07-03 시포·GM ──
+   force=true: 강제 재조회(이탈 현황 아코디언=열람 시마다 갱신). force 생략/false: 캐시 있으면 재사용(상단 배지·매트릭스). */
+var _churnStatsCache = null;
+function _fetchChurnStats(cb, force){
+  if (_churnStatsCache && !force) { cb(_churnStatsCache); return; }
+  fetch(GAS_URL + '?action=cpo_churn_stats' + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (!d || !d.ok) { cb(null); return; } _churnStatsCache = d; cb(d); })
+    .catch(function(){ cb(null); });
+}
+function _churnBuckets(d){
+  var b7=0, b14=0, b30=0;
+  (d.renewSoon||[]).forEach(function(m){ if (m.rem<=7) b7++; else if (m.rem<=14) b14++; else b30++; });
+  return { b7:b7, b14:b14, b30:b30 };
+}
+// 상단 카드 "이탈 신호 (실측 라이브)" 3배지 — 이탈율·갱신 D-7·갱신 D-8~30. 2026-07-03 시포·GM
+function loadChurnTopBadges(){
+  _fetchChurnStats(function(d){
+    if (!d) return;
+    var bk = _churnBuckets(d);
+    _setTxt('chSigLossRate', d.lossRate); _setTxt('chSigLossCount', d.lossCount);
+    _setTxt('chSigD7', bk.b7); _setTxt('chSigD830', bk.b14 + bk.b30);
+  });
+}
+// 이탈 신호 매트릭스의 실측 2행(이탈 확정·갱신 D-14) 라이브 숫자 주입. 캐시 재사용(강제조회 아님). 2026-07-03 시포·GM
+function renderChurnMatrixLive(body){
+  if (!body) return;
+  var lossEl = body.querySelector('#mxLossLive');
+  var renewEl = body.querySelector('#mxRenewLive');
+  if (!lossEl && !renewEl) return;
+  _fetchChurnStats(function(d){
+    if (!d) { if (lossEl) lossEl.textContent = '불러오기 실패'; if (renewEl) renewEl.textContent = '불러오기 실패'; return; }
+    var bk = _churnBuckets(d);
+    if (lossEl) lossEl.textContent = '이탈 ' + d.lossCount + '명 (이탈율 ' + d.lossRate + '%)';
+    if (renewEl) renewEl.textContent = 'D-7 이내 ' + bk.b7 + '명 · D-8~14 ' + bk.b14 + '명';
+  });
+}
 /* ── 이탈 현황 추적 실측(1단계) — cpo_churn_stats: 유효·이탈·이탈율 + 갱신 임박(D-7/14/30). 2026-07-02 시포·GM ── */
 function loadChurnStats(el){
   if (!el) return;
   el.innerHTML = '<div style="color:var(--dim);font-size:12px">불러오는 중…</div>';
-  fetch(GAS_URL + '?action=cpo_churn_stats' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if (!d || !d.ok) { el.innerHTML = '<div style="color:var(--dim);font-size:12px">불러오기 실패</div>'; return; }
+  _fetchChurnStats(function(d){
+      if (!d) { el.innerHTML = '<div style="color:var(--dim);font-size:12px">불러오기 실패</div>'; return; }
       var b7=[], b14=[], b30=[];
       (d.renewSoon||[]).forEach(function(m){ if (m.rem<=7) b7.push(m); else if (m.rem<=14) b14.push(m); else b30.push(m); });
       function _rlist(title, arr, color){
@@ -2038,8 +2080,7 @@ function loadChurnStats(el){
              _rlist('🔴 D-7 이내', b7, 'var(--red)')+_rlist('🟡 D-8~14', b14, 'var(--yellow)')+_rlist('🟢 D-15~30', b30, 'var(--green)'))
           : '<div style="color:var(--dim);font-size:12px;margin-top:8px">30일 내 갱신 임박 회원 없음</div>')+
         '<div style="color:var(--dim);font-size:10px;margin-top:12px">· 유효회원 시트 잔여일·재등록분류 실측 · 열람 시마다 갱신</div>';
-    })
-    .catch(function(){ el.innerHTML = '<div style="color:var(--dim);font-size:12px">네트워크 오류</div>'; });
+  }, true);
 }
 
 /* ── 탭 전환 ── */
@@ -2871,6 +2912,7 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false }
   renderCalendarShell();
   loadCalendarData();  // 기본 활성 탭=예약 달력 (2026-06-24 GM 변경)
   loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
+  loadChurnTopBadges();  // 상단 "이탈 신호" 3배지 라이브 연결(이탈율·갱신 D-7·D-8~30). 2026-07-03 시포·GM
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
   // 메뉴 그룹 진입(?manage=membership|lesson) — 배6. 기본=멤버십 관리. 2026-07-02 시포·GM.
   try { var _mp = new URLSearchParams(location.search).get('manage'); switchFamily(_mp === 'lesson' ? 'lesson' : 'membership'); }
