@@ -169,6 +169,19 @@
       "차단조치": "격리 git 작업(reset --hard·revert·clean·checkout -- 등 증빙/실험 목적 파괴 명령)은 공유 작업 디렉터리에서 절대 금지. 반드시 임시 worktree(`git worktree add`)또는 별도 clone 에서 수행. 파괴적 명령 전 미커밋 변경(git status)이 있으면 즉시 중단·GM 보고. 서브에이전트 디스패치 시 파일 변조 격리는 isolation=worktree 옵션 사용 의무화. incidents.json + 메모리 파일(feedback_no_destructive_git_in_shared_worktree.md) 박제.",
       "상태": "GUARDED",
       "검증증거": "2026-06-26 사고 확정. 소실 추적파일 6건(git log·reflog 복구 불가). 부분 복구: instagram/_AI시리즈_로드맵.RECOVERED.md(dangling blob cat-file). 미추적 파일 전부 무사(reset --hard는 untracked 미건드림). 가드레일 incidents.json INC-009 박제 + 메모리 파일 작성 완료. 재현 검증은 소실 특성상 사후 실측 불가 — 가드레일 명문화로 GUARDED 처리."
+    },
+    {
+      "id": "INC-010",
+      "date": "2026-07-03",
+      "watch_globs": [],
+      "gate": "warn",
+      "요약": "_queue.json 중복 폭증 — 한 배가 23,328회 복제",
+      "증상": "큐 23,437척(정상 ~29 활성)·258,079줄. ship106(CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK)이 task_id 없이 id 필드만 사용.",
+      "본질": "dedup/자동로그/병합 로직이 task_id 키로 중복판정 → task_id 없는 배는 매 병합마다 새 항목으로 착각해 무한 복제. 이번 세션 반복 stash/merge/자동훅 사이클이 증폭.",
+      "뿌리분류": "식별키 불일치(id vs task_id)",
+      "차단조치": "① 해당 배 task_id 정규화(id→task_id) ② dedup 스크립트로 고유 복원 ③ 신규 배는 task_id 필수(id만 쓰지 말 것) ④ 후속: 자동로그·병합 로직이 id/task_id 양쪽 키 처리하도록 견고화(시토)",
+      "상태": "FIXED(근본원인 정규화·복원 완료 · 견고화는 후속)",
+      "검증증거": "23,437→112척 · 파일 258,079→~1,483줄 · queue-guard 오탐이라 GM 승인 후 --no-verify 커밋"
     }
   ]
 }

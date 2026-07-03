@@ -14,9 +14,11 @@ permissions:
   pages: write
   id-token: write
 
+# 2026-07-03: 커밋 폭주 시 배포 겹침→"try again later" 간헐 실패로 GM 실패메일 폭탄.
+# cancel-in-progress:true = 새 푸시 오면 겹친 옛 배포 취소(취소는 실패 아님·메일 없음), 최신만 배포.
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
