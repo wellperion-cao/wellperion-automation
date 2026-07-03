@@ -2896,9 +2896,11 @@ function _isTestVal_(v) {
 // 순수 집계 함수 — SpreadsheetApp 무호출. snapRows/issueRows = 헤더 제외 2차원 배열(원본 셀값 그대로).
 // snapRows 열: 0제출시각 1날짜 2부서 3구역 4교대 5점검자 6총항목 7완료 8완료율 9이슈건수 10이슈내용 11점검시작 12점검완료 13소요(분)
 // issueRows 열: 0등록일 1구역 2점검자 3이슈내용 4상태 5처리일 6비고
+// (배208-2A, 2026-07-03) 지원_이슈대장이 빈 시트라 issueRows는 더 이상 이슈 집계에 쓰지 않는다.
+// 시그니처는 하위호환 위해 유지하되 미사용 — 이슈는 전부 snapshot 9열(이슈건수)·10열(이슈내용 원문)에서 집계한다.
 function _aggregateMonthly(snapRows, issueRows, month) {
   snapRows = snapRows || [];
-  issueRows = issueRows || [];
+  issueRows = issueRows || []; // 하위호환 유지용(미사용) — 배208-2A
   var testExcludedCount = 0;
 
   // 1) Test 행 제외 + 2) 월 필터
@@ -2933,6 +2935,7 @@ function _aggregateMonthly(snapRows, issueRows, month) {
   var byInspectorMap = {};  // inspector -> {sessionCount,pctSum}
   var zoneShiftTotals = {}; // zone|bucket -> {total:true,...} — denomInconsistent 판정용
   var denomInconsistent = false;
+  var issueList = [];       // snapshot 10열(이슈내용) 원문 목록 — 배208-2A
 
   sessions.forEach(function (s) {
     var row = s.row;
@@ -2959,7 +2962,13 @@ function _aggregateMonthly(snapRows, issueRows, month) {
     var zsKey = s.zone + '|' + s.bucket;
     if (!zoneShiftTotals[zsKey]) zoneShiftTotals[zsKey] = {};
     zoneShiftTotals[zsKey][total] = true;
+
+    var issueText = String(row[10] == null ? '' : row[10]).trim();
+    if (issueText) {
+      issueList.push({ date: s.ymd, zone: s.zone, shift: s.bucket, inspector: inspector, text: issueText });
+    }
   });
+  issueList.sort(function (a, b) { return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
 
   Object.keys(zoneShiftTotals).forEach(function (k) {
     if (Object.keys(zoneShiftTotals[k]).length > 1) denomInconsistent = true;
@@ -3006,25 +3015,33 @@ function _aggregateMonthly(snapRows, issueRows, month) {
     return { inspector: c.inspector, sessionCount: c.sessionCount, avgPct: c.sessionCount > 0 ? Math.round(c.pctSum / c.sessionCount) : null };
   }).sort(function (a, b) { return b.sessionCount - a.sessionCount; });
 
-  // 이슈대장(지원_이슈대장 등) 집계 — 스냅샷 9열(세션별 이슈건수)과는 독립된 별도 시트/월필터
-  var issueByStatus = { '미처리': 0, '처리중': 0, '완료': 0 };
-  var issueByZoneMap = {};
-  var issueTotal = 0;
-  issueRows.forEach(function (row) {
-    var zone = row[1], inspector = row[2];
-    if (_isTestVal_(inspector) || _isTestVal_(zone)) { testExcludedCount++; return; }
-    var ym = _ymOf_(row[0]);
-    if (ym !== month) return;
-    issueTotal++;
-    var status = String(row[4] == null ? '' : row[4]).trim() || '미처리';
-    if (issueByStatus[status] === undefined) issueByStatus[status] = 0;
-    issueByStatus[status]++;
-    var z = String(zone == null ? '' : zone);
-    if (!issueByZoneMap[z]) issueByZoneMap[z] = { zone: z, count: 0 };
-    issueByZoneMap[z].count++;
-  });
-  var issueByZone = Object.keys(issueByZoneMap).map(function (z) { return issueByZoneMap[z]; })
-    .sort(function (a, b) { return b.count - a.count; });
+  // 이슈 집계 — 배208-2A: 지원_이슈대장(빈 시트) 폐기 → snapshot 9열(이슈건수)·10열(이슈내용 원문) 기준.
+  // total/byZone은 위에서 이미 dedup·월필터·test제외까지 끝난 sessions 집계(byDate/byZoneMap)를 그대로 재사용.
+  var issueByZone = Object.keys(byZoneMap).map(function (z) {
+    return { zone: byZoneMap[z].zone, count: byZoneMap[z].issueCount };
+  }).sort(function (a, b) { return b.count - a.count; });
+
+  // 개선시사 자동 문구 — 규칙기반(집계값에서 파생, 지어내기 금지). 완료율은 잠정(denomNote 맥락 유지).
+  var improvements = [];
+  var zonesWithPct = byZone.filter(function (z) { return z.pct !== null && z.sessionCount > 0; });
+  if (zonesWithPct.length > 0) {
+    var worstZone = zonesWithPct.reduce(function (a, b) { return b.pct < a.pct ? b : a; });
+    improvements.push(worstZone.zone + ' 구역 완료율 최저(' + worstZone.pct + '%) — 집중 필요');
+  }
+  if (dailySeries.length > 0) {
+    var maxIssueDay = dailySeries.reduce(function (a, b) { return b.issueCount > a.issueCount ? b : a; });
+    if (maxIssueDay.issueCount > 0) {
+      var dp = maxIssueDay.date.split('-');
+      improvements.push(Number(dp[1]) + '월 ' + Number(dp[2]) + '일 이슈 최다(' + maxIssueDay.issueCount + '건)');
+    }
+    var lowPctDays = dailySeries.filter(function (d) { return d.pct !== null && d.pct < 70; });
+    if (lowPctDays.length > 0) {
+      improvements.push('완료율 70% 미만 ' + lowPctDays.length + '일 — 원인 점검');
+    }
+  }
+  if (sessions.length < 5) {
+    improvements.push('표본 부족 — 추세 판단 유보');
+  }
 
   return {
     ok: true,
@@ -3036,7 +3053,8 @@ function _aggregateMonthly(snapRows, issueRows, month) {
     byZone: byZone,
     byShift: byShift,
     byInspector: byInspector,
-    issues: { total: issueTotal, byStatus: issueByStatus, byZone: issueByZone },
+    issues: { total: monthTotals.issueCount, byZone: issueByZone, list: issueList, byStatus: {} },
+    improvements: improvements,
     denomNote: '완료율=잠정(배14 분모정합 선결 — 화면·서버 분모 통일 후 확정)',
     denomInconsistent: denomInconsistent
   };
