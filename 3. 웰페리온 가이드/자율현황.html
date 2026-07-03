@@ -55,7 +55,7 @@
   details#layer-automation summary::before{content:'▸'; display:inline-block; margin-right:8px; color:var(--dim); transition:transform .15s;}
   details#layer-automation[open] summary::before{transform:rotate(90deg);}
 
-  /* ── 🧭 오늘의 항로 top3 임베드 (northstar_today.html 병합 · 2026-07-03) ── */
+  /* ── 🌟 북극성 추천 top3 임베드 (northstar_today.html 병합 · 2026-07-03) ── */
   .ns-list{display:flex; flex-direction:column; gap:7px; margin-bottom:4px;}
   .ns-row{display:flex; align-items:center; gap:10px; background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:9px 13px;}
   .ns-rank{font-size:17px; flex-shrink:0; width:24px; text-align:center;}
@@ -315,12 +315,12 @@
     </div>
   </section>
 
-  <!-- ════ 🧭 오늘의 항로 top3 (구 northstar_today.html 병합 · 2026-07-03) ════ -->
+  <!-- ════ 🌟 북극성 추천 top3 (구 northstar_today.html 병합 · 2026-07-03) ════ -->
   <section>
-    <h2 class="sec">🧭 오늘의 항로 top3 <span style="font-size:11px;font-weight:400;color:var(--dim);">(웰리 06:30 통합 추천 · 라이브)</span></h2>
+    <h2 class="sec">🌟 북극성 추천 top3 <span style="font-size:11px;font-weight:400;color:var(--dim);">(웰리 06:30 통합 추천 · 라이브)</span></h2>
     <div class="sec-note">매일 06:30 웰리(AI CEO)가 고른 오늘의 전사 통합 1·2·3순위. 승인/보류/만료 상태 표시. 회신은 텔레그램 [승인 N] / [보류]로.</div>
     <div id="ns-embed" class="ns-list">
-      <div class="feed-status">오늘의 항로 추천을 불러오는 중…</div>
+      <div class="feed-status">북극성 추천을 불러오는 중…</div>
     </div>
   </section>
 
@@ -512,7 +512,8 @@
     <div class="tbl-wrap"><table>
       <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
       <tr><td>🟢</td><td>7 C-Level 컨텍스트 정비</td><td>7 C-Level</td><td>일 09:00</td><td style="font-size:12px;">범위·R/R 정본 = <strong>S2 ▸ 운영 프롬프트 ▸ ① 컨텍스트 정비</strong> <span style="color:var(--dim);">/ 실행 STEP1~5 = T1</span></td></tr>
-      <tr><td>🟢</td><td>AI 교육자료 자동 정리·자기학습</td><td>AI CEO</td><td>월 09:00</td><td style="font-size:12px;">최신 AI 정보 수집·요약 → 아카이브·고도화 제안. 프로세스 정본 = <strong>T1 ▸ 자기학습 프로세스</strong> <span style="color:var(--dim);">/ education_archive_weekly.py</span></td></tr>
+      <tr><td>🟢</td><td>AI 교육자료 파일 정리(이관)</td><td>AI CTO</td><td>월 09:00</td><td style="font-size:12px;">Desktop·Downloads 최상위 AI 학습자료를 아카이브 폴더로 이관(7일+ 미수정만). <span style="color:var(--dim);">/ education_archive_weekly.py</span></td></tr>
+      <tr><td>🟢</td><td>AI 자기학습(수집·요약→제안)</td><td>AI CTO</td><td>일 09:30·09:45</td><td style="font-size:12px;">최신 AI 정보 수집·요약(09:30) → 개선제안 생성(09:45). 프로세스 정본 = <strong>T1 ▸ 자기학습 프로세스</strong> <span style="color:var(--dim);">/ ai_education_auto_learner.py + ai_learning_proposer.py</span></td></tr>
     </table></div>
     <!-- ══ /매주 ══ -->
 
@@ -567,7 +568,7 @@
   }
   function localTodayMs(){ var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
 
-  // ═══════════ 🧭 오늘의 항로 top3 임베드 (northstar_today.html 병합) ═══════════
+  // ═══════════ 🌟 북극성 추천 top3 임베드 (northstar_today.html 병합) ═══════════
   var NS_ROLE = {
     ceo:['웰리','🧭'], cfo:['시뽀','💰'], chro:['시로','👥'], cmo:['시모','📣'],
     coo:['시우','⚙️'], cpo:['시포','🎫'], cto:['시토','🛠️']
@@ -1086,7 +1087,7 @@
     var feedItems = [];
     try{ feedItems = buildFeed(d); }catch(e){ feedItems = []; }
     try{ renderHero(d); }catch(e){ document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">히어로 요약 표시 오류.</div>'; }
-    try{ renderNsEmbed(a[5]); }catch(e){ document.getElementById('ns-embed').innerHTML = '<div class="feed-status">오늘의 항로 추천 표시 오류.</div>'; }
+    try{ renderNsEmbed(a[5]); }catch(e){ document.getElementById('ns-embed').innerHTML = '<div class="feed-status">북극성 추천 표시 오류.</div>'; }
     try{ renderRoutines(d); }catch(e){ document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">상시 체계 표시 오류 — 로그 파싱 실패.</div>'; }
     try{ renderCmoMarketing(cmoQueue); }catch(e){
       document.getElementById('cmo-routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">시모 자율 마케팅 표시 오류.</div>';
