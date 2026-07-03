@@ -3206,6 +3206,10 @@ function handleTodayLive(params) {
       if (!id) return;
       var info = master.byId[id];
       if (!info) return;                   // 마스터 밖 고아 → 제외(분모 없음)
+      // [근본수정 2026-07-03 시토] 이 체크가 기록된 성별(g)이 항목의 실제 적용성별(glist)에 없으면 제외.
+      // 기존엔 이 필터가 없어 성별 재배정·id 재사용으로 남은 타성별 잔재 체크가 엉뚱한 성별의 분자에
+      // 얹혔다 → done>total 발생 → 아래 클램프가 분모를 분자로 강제상향 → 매 회차 100% 왜곡의 근본원인.
+      if (info.glist.indexOf(g) < 0) return;
       var b = _roundBucket(round);
       if (info.buckets.indexOf(b) < 0) return;   // 마스터 항목에 없는 시프트 → 제외(분모 없음·night 포함)
       var pk = id + '|' + b;
@@ -3226,13 +3230,17 @@ function handleTodayLive(params) {
       });
     });
   });
-  // gender=all 원장: 분자=분모(항상 100% — 합산 왜곡 방지).
-  buckets.forEach(function (b) { totalByG.all[b] = doneByG.all[b]; });
+  // [근본수정 2026-07-03 시토] 'gender=all 강제 분자=분모(totalByG.all[b] = doneByG.all[b])' 라인 제거.
+  // genderTab은 항상 m|f만 저장되어(_chkGender) gender='all' 원장은 실사용된 적이 없다(doneByG.all 항상 0).
+  // 강제 등식은 아무 것도 고치지 않으면서 향후 'all' 원장이 생기면 '분모=분자 항상 100%' 왜곡을 재도입할
+  // 위험만 있던 죽은 코드 — totalByG.all은 자연값(0)으로 둔다.
 
-  // 최종 안전장치: 분모가 분자보다 작으면 분자로 올림(100% 초과 방지).
+  // 최종 안전장치(2026-07-03 시토 수정): 분모(마스터=오늘 예정)는 절대 불변 유지 — 분자를 분모 이하로
+  // 캡핑해 100% 초과만 차단한다. 기존엔 반대로 분모를 분자에 맞춰 끌어올려(강제 done=total) 부분완료도
+  // 항상 100%로 표시되는 '하한 왜곡' 버그였다(GM 2026-07-03 신고: 매 회차·매 성별 분자=분모 도배).
   genders.forEach(function (g) {
     buckets.forEach(function (b) {
-      if (totalByG[g][b] < doneByG[g][b]) totalByG[g][b] = doneByG[g][b];
+      if (doneByG[g][b] > totalByG[g][b]) doneByG[g][b] = totalByG[g][b];
     });
   });
 
