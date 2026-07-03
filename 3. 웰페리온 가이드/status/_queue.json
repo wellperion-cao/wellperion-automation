@@ -1813,5 +1813,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com> (CLI ad-hoc · 커밋 b907b857)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b907b85762fbffdb64e223c8f5c466b55002c239"
+  },
+  {
+    "task_id": "CTO-2026-07-03-ADHOC-318f39c8",
+    "clevel": "cto",
+    "title": "[시토] 점검현황 today_live 분모 0/0 복구 — _buildTodayMaster 성별칸 한글→영문 변환 (ship14)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-03",
+    "processed_at": "2026-07-03",
+    "ship_no": 335,
+    "artifact": "분모 만드는 _buildTodayMaster가 성별칸을 한글('공통·남·여') 그대로 읽어\nm/f/all 매칭 실패로 전 항목이 집계서 탈락 → 모든 날짜 total=0 되던 잠복결함.\ngetItems와 동일하게 _genderToEnglish(row[4]) 적용(한 줄). 저장경로 무변경.\n이 한 줄로 분모 부활 + 앞선 100% 도배 수정이 비로소 실효. 로컬검증 0/0→10/4(40%).\nclasp 재배포·라이브 실측 검증 완료(rollback -V 134). (CLI ad-hoc · 커밋 318f39c8)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "318f39c80adfdbf787f2a0d4f1dacd99ceb8c4b0"
   }
 ]
