@@ -53,8 +53,8 @@
     "priority": "HIGH",
     "enqueued_at": "2026-06-25",
     "ship_no": 14,
-    "note": "[2026-06-25 GM 옵션A] 점검 분모가 화면(하드코딩+localStorage)·서버(시트)·독려 3소스로 제각각('또 안맞네'). 진행: 1단계 백업 완료(check_items_backup_20260625_181300.json). 3단계(서버 today_live)=라이브 @112 완료 — 성별별+요일/주차 sched 필터+시프트 presence 모델로 시트 기준 재구현(로컬 노드 검증 후 1회 배포). 서버 byGender 남=여 24/20/19, 독려는 today_live byGender 읽어 자동 정합. 스팸 dedup(CHKNOTI @108~) 유지. ★남은 핵심=화면(collectDashboardData)이 아직 하드코딩 WEEKDAY 배열+localStorage라 서버와 다른 엔진 → 화면도 시트 전환 필요(4단계). 같은날 분모 4실측: 화면새기기18/14/2·GM기기26/20/19·서버24/20/19. 4단계 구현사양=설계서 brief. GM 지시=화면 수술은 다음 집중세션(라이브 점검 UI 위험·신중). 오늘 라이브 무리한 실험 교훈→로컬검증 후 1회배포 원칙.",
-    "next": "다음 집중세션: 4단계(화면 분모를 today_live/시트로 전환·하드코딩 배열 폐기). 로컬 노드 모의 검증 후 라이브 1회+역롤백 대기.",
+    "note": "[2026-06-25 GM 옵션A] 점검 분모가 화면(하드코딩+localStorage)·서버(시트)·독려 3소스로 제각각('또 안맞네'). 진행: 1단계 백업 완료(check_items_backup_20260625_181300.json). 3단계(서버 today_live)=라이브 @112 완료 — 성별별+요일/주차 sched 필터+시프트 presence 모델로 시트 기준 재구현(로컬 노드 검증 후 1회 배포). 서버 byGender 남=여 24/20/19, 독려는 today_live byGender 읽어 자동 정합. 스팸 dedup(CHKNOTI @108~) 유지. ★남은 핵심=화면(collectDashboardData)이 아직 하드코딩 WEEKDAY 배열+localStorage라 서버와 다른 엔진 → 화면도 시트 전환 필요(4단계). 같은날 분모 4실측: 화면새기기18/14/2·GM기기26/20/19·서버24/20/19. 4단계 구현사양=설계서 brief. GM 지시=화면 수술은 다음 집중세션(라이브 점검 UI 위험·신중). 오늘 라이브 무리한 실험 교훈→로컬검증 후 1회배포 원칙.\n[2026-07-03 시토→시우 인계] 점검관리방 '오늘의 점검현황' 완료율 무조건 100% 도배(남 25/25·14/14·14/14, 여 24/24·15/15·13/13 = done==total). 파이썬 발송코드 정상, 원인=점검 GAS today_live의 분자/분모. 라이브 실측 total=0/done=0(평일인데 분모 0). 용의=①'all' 강제 done=total ②안전장치 total<done시 클램프 ③per-gender 100%는 _getCheckLedger cr이 예정 항목 전체를 체크됨으로 반환하는지 확인 필요. 진단서 status/briefs/CTO-2026-07-03-CHECK-100PCT-DIAGNOSIS-HANDOFF.md. 라이브 GAS 발효=GM go.",
+    "next": "시우 착수: 진단서(status/briefs/CTO-2026-07-03-CHECK-100PCT-DIAGNOSIS-HANDOFF.md) 기반 → 분자를 실제 체크원장만 반영·'all'/클램프 왜곡 제거·평일 분모0 원인(sched필터) 동반 → 로컬검증 후 라이브 1회배포(GM go)+역롤백. ship14 4단계(화면 분모 단일화)와 함께.",
     "terminal": false
   },
   {
