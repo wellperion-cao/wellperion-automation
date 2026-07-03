@@ -1187,11 +1187,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-guide" class="content hidden">
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">지원부 가이드를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <b>＋ 카드 추가</b>로 새 가이드를 추가할 수 있습니다.</p>
-  <!-- ① 2단 레이아웃: 좌=직원 구성·역할 / 우=지원부 가이드 카드. 우측 보드 board-fullwidth(풀블리드) 제거로 좌측을 덮지 않음 (2026-07-03 시우, 시설부 패턴 이식·731c2963) -->
+  <!-- ① 2단 레이아웃: 좌=직원 구성·역할+사우나 투어(동일폭 세로 적층) / 우=지원부 가이드 카드. 우측 보드 board-fullwidth(풀블리드) 제거로 좌측을 덮지 않음 (2026-07-03 시우, 시설부 패턴 이식·731c2963 / 좌측 컬럼 동일폭 재배치·배64) -->
   <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px;">
-    <!-- 좌: 지원부 직원 구성·역할 (2026-06-24 시우 실제 명단으로 교체 · FALLBACK_STAFF 배열은 점검자 로직용 유지) -->
-    <div style="flex:0 0 auto;min-width:280px;max-width:640px;">
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--green);overflow:hidden;">
+    <!-- 좌 컬럼: 직원 구성·역할 + 사우나 투어 (세로 적층·동일폭 · 배64) -->
+    <div style="flex:0 0 auto;max-width:640px;min-width:min(100%,320px);display:flex;flex-direction:column;gap:18px;">
+      <!-- 지원부 직원 구성·역할 (2026-06-24 시우 실제 명단으로 교체 · FALLBACK_STAFF 배열은 점검자 로직용 유지) -->
+      <div style="width:100%;background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--green);overflow:hidden;">
         <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
           <span style="font-size:17px;font-weight:800;color:var(--green);">👥 직원 구성 · 역할</span>
         </div>
@@ -1213,7 +1214,25 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
           <p style="font-size:12px;color:var(--dim);margin:0;line-height:1.5;">정원 각 8명 TO · 남·여 일부 충원 진행 중. <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--orange-bg);color:var(--orange);border:1px solid rgba(230,148,78,0.4);">최종 등록 기준 2026-06-24</span></p>
         </div>
       </div>
-    </div><!-- /좌 -->
+      <!-- ── 🧖 신규회원 사우나 투어 안내 (8단계 순서형 · 배64) ── -->
+      <div style="width:100%;background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--accent);overflow:hidden;">
+        <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+          <span style="font-size:17px;font-weight:800;color:var(--accent);">🧖 신규회원 사우나 투어 안내</span>
+        </div>
+        <div style="padding:12px 14px;">
+          <ol style="margin:0;padding-left:20px;">
+            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">환영·소개</strong> — "웰페리온에 오신 것을 환영합니다. 회복 구역 안내를 도와드리겠습니다." 밝게 인사하고 본인을 소개합니다.</li>
+            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">락커·탈의</strong> — 개인 락커 위치와 사용법을 안내하고 귀중품 보관 방법을 설명합니다.</li>
+            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">샤워·세면</strong> — 샤워 위치, 비치된 어메니티(샴푸·바디워시), 타월 수령 방법을 안내합니다.</li>
+            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">사우나·회복</strong> — 이용 수칙과 권장 이용 시간을 안내하고 수분 섭취를 권유합니다.</li>
+            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">위생·매너</strong> — 샤워 후 입장, 정숙 유지, 개인물품 관리 매너를 안내합니다.</li>
+            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">편의시설</strong> — 파우더룸, 드라이어, 정수기 위치를 안내합니다.</li>
+            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">도움 요청</strong> — 불편사항 발생 시 직원 호출 방법과 리셉션 위치를 안내합니다.</li>
+            <li style="margin-bottom:0;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">마무리</strong> — 예약제 이용 안내로 마무리합니다. 문의: wellperion.com/ko/inquiry</li>
+          </ol>
+        </div>
+      </div>
+    </div><!-- /좌 컬럼 -->
     <!-- 우: 지원부 가이드 카드 -->
     <div style="flex:1 1 420px;min-width:min(100%,320px);">
       <div><!-- board-fullwidth(풀블리드) 제거 — 2단에서 우측이 좌측을 덮지 않게. 보드는 우측 칸 안에서 가로 스크롤 -->
@@ -1225,27 +1244,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div><!-- /우 -->
   </div><!-- /2단 -->
-
-  <!-- ── 🧖 신규회원 사우나 투어 안내 (8단계 순서형 · 배64) ── -->
-  <div style="margin-bottom:18px;">
-    <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--accent);overflow:hidden;max-width:640px;">
-      <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-        <span style="font-size:17px;font-weight:800;color:var(--accent);">🧖 신규회원 사우나 투어 안내</span>
-      </div>
-      <div style="padding:12px 14px;">
-        <ol style="margin:0;padding-left:20px;">
-          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">환영·소개</strong> — "웰페리온에 오신 것을 환영합니다. 회복 구역 안내를 도와드리겠습니다." 밝게 인사하고 본인을 소개합니다.</li>
-          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">락커·탈의</strong> — 개인 락커 위치와 사용법을 안내하고 귀중품 보관 방법을 설명합니다.</li>
-          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">샤워·세면</strong> — 샤워 위치, 비치된 어메니티(샴푸·바디워시), 타월 수령 방법을 안내합니다.</li>
-          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">사우나·회복</strong> — 이용 수칙과 권장 이용 시간을 안내하고 수분 섭취를 권유합니다.</li>
-          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">위생·매너</strong> — 샤워 후 입장, 정숙 유지, 개인물품 관리 매너를 안내합니다.</li>
-          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">편의시설</strong> — 파우더룸, 드라이어, 정수기 위치를 안내합니다.</li>
-          <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">도움 요청</strong> — 불편사항 발생 시 직원 호출 방법과 리셉션 위치를 안내합니다.</li>
-          <li style="margin-bottom:0;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">마무리</strong> — 예약제 이용 안내로 마무리합니다. 문의: wellperion.com/ko/inquiry</li>
-        </ol>
-      </div>
-    </div>
-  </div>
 
   <!-- ── 🗣 회원 응대 상황표 (편집 가능 CRUD 표 · 저장키 SUPPORT_CS_GUIDE · 배64) ── -->
   <div style="margin-top:22px;">
@@ -6014,7 +6012,6 @@ const SUPPORT_GUIDE_SEED = {
     {id:'gd_etiquette', title:'직원&파트너 기본 에티켓', body:'"내가 지나간 자리는 항상 깨끗하게 정리정돈하자"\n1. 회원이 먼저 — 회원이 보이면 하던 일을 멈추고 먼저 인사\n2. 한 발 앞서 행동 — 요청받기 전에 불편사항 발견·조치\n3. 모르면 바로 연결 — "확인 후 안내드리겠습니다" → 담당자 즉시 연결\n4. 끝까지 책임 — 내가 접수한 건은 끝까지 추적\n5. 프리미엄 격조 — 말투·행동·복장 모두 스포츠클럽 수준'},
     {id:'gd_pride', title:'회원도 왕이지만, 우리도 품격 있는 프로다', body:'회원을 최고로 모시는 것이 우리의 자부심입니다. 그러나 그것은 굴종이 아니라 당당한 프로페셔널의 서비스입니다.\n직원·파트너 한 사람의 품격이 곧 웰페리온의 품격이며, 스스로를 존중하는 사람만이 회원을 진심으로 존중할 수 있습니다.\n무례·폭언에는 정중하되 단호하게 선을 지키고(반복 시 팀장 보고), 회원과 직원이 서로 존중하는 프리미엄 커뮤니티 문화를 함께 지켜갑니다.'},
     {id:'gd_attitude', title:'응대 태도', body:'회원 첫 인사 → 눈 맞춤 + 미소 필수 / 먼저 인사 / 이름 알면 호칭 사용\n불편사항 접수 → 끝까지 경청 → 즉시 해결 가능 여부 판단 → 처리 결과 반드시 고지\n에티켓 위반 → 정중하되 단호하게 안내 / 반복 위반 시 팀장 보고\n긴급·안전 → 즉시 팀장·소장 보고 → 지시 후 조치 / 자의 판단 금지'},
-    {id:'gd_resident_f', title:'상시 회원 응대 (F)', body:'F-1 개인 락커 — 첫 인사 눈맞춤+미소 / 불편사항 접수 / 에티켓 위반 정중·단호 안내\nF-2 데일리 락커 — 락커 사용법 안내 / 분실물 민원 즉시 확인·기록\nF-3 사우나 내부 — 청결 즉시 조치 (바닥 미끄럼, 이물질)\nF-4 파우더 공간 — 소모품 요청 즉시 보충 / 드라이기 등 관리\nF-5 휴게공간 — 소파·테이블 관리 / 혼잡·소음 민원 양해 요청'},
     {id:'gd_dress', title:'복장·용모', body:'유니폼 → 웰페리온 지급 유니폼 착용 / 청결 유지\n명찰 → 항상 패용 / 좌측 가슴\n신발 → 미끄럼 방지 안전화 / 실외화 구역 내 착용 금지\n청소 구역 → 고무장갑·마스크 필수 / 환기 후 작업'}
   ]
 };
@@ -6212,7 +6209,10 @@ const CS_SEED = [
   {sit:'타월·어메니티 요청', resp:'여분 제공·비치 위치 안내', note:'부족 시 비품관리 반영'},
   {sit:'온도·환경 불편', resp:'즉시 확인·조치·시설부 전달', note:'VOC 기록'},
   {sit:'예약·이용시간 문의', resp:'예약제 안내·문의처 안내', note:'워크인 불가 안내'},
-  {sit:'회원정보 변경 요청', resp:'리셉션·문의처로 안내', note:'직원 임의 처리 금지'}
+  {sit:'회원정보 변경 요청', resp:'리셉션·문의처로 안내', note:'직원 임의 처리 금지'},
+  {sit:'사우나 내부 청결', resp:'바닥 미끄럼·이물질 발견 즉시 조치, 안전 표시 후 필요 시 시설부 전달', note:'미끄럼 사고 예방 최우선'},
+  {sit:'파우더룸 소모품·드라이기', resp:'소모품 즉시 보충, 드라이기 등 상태 점검', note:'부족분 비품관리에 반영'},
+  {sit:'휴게공간 혼잡·소음 민원', resp:'양해 요청·정중 안내, 필요 시 자리 조정', note:'다른 회원 배려 우선'}
 ];
 
 function applyCsStored(stored){
