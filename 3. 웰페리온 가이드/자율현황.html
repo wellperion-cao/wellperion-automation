@@ -33,6 +33,19 @@
   h2.sec{font-size:15px; font-weight:700; margin:20px 0 3px; display:flex; align-items:center; gap:7px;}
   .sec-note{font-size:11px; color:var(--dim); margin-bottom:10px; line-height:1.45;}
 
+  /* ── 🧭 오늘의 항로 top3 임베드 (northstar_today.html 병합 · 2026-07-03) ── */
+  .ns-list{display:flex; flex-direction:column; gap:7px; margin-bottom:4px;}
+  .ns-row{display:flex; align-items:center; gap:10px; background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:9px 13px;}
+  .ns-rank{font-size:17px; flex-shrink:0; width:24px; text-align:center;}
+  .ns-body{flex:1; min-width:0; display:flex; flex-wrap:wrap; align-items:baseline; gap:6px;}
+  .ns-title{font-size:12.5px; font-weight:700; color:var(--text);}
+  .owner-tag{display:inline-block; font-size:10.5px; font-weight:700; color:var(--dim); background:var(--surface); border:1px solid var(--border-strong); border-radius:5px; padding:1px 6px; white-space:nowrap;}
+  .ns-badge{flex-shrink:0; font-size:10px; font-weight:800; border-radius:6px; padding:2px 9px; white-space:nowrap;}
+  .ns-badge.proposed{color:var(--gold); border:1px solid var(--gold);}
+  .ns-badge.approved{color:var(--green); border:1px solid var(--green);}
+  .ns-badge.held{color:var(--dim); border:1px solid var(--border-strong);}
+  .ns-badge.expired{color:var(--dim); border:1px dashed var(--border-strong);}
+
   /* ── 섹션1: 상시 자율 루틴 카드 ── */
   .routines{display:grid; grid-template-columns:repeat(auto-fit,minmax(258px,1fr)); gap:11px;}
   .rcard{position:relative; background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--rc,var(--accent)); border-radius:11px; padding:12px 14px 13px;}
@@ -68,7 +81,7 @@
 
   /* ── 섹션3: 성과 요약 ── */
   .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:11px;}
-  .scard{background:var(--paper); border:1px solid var(--border); border-radius:12px; padding:14px 15px;}
+  .scard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--sc,var(--border-strong)); border-radius:12px; padding:14px 15px;}
   .scard .sh{font-size:11px; color:var(--dim); font-weight:700; letter-spacing:0.01em; margin-bottom:6px; display:flex; align-items:center; gap:5px;}
   .scard .sbig{font-size:28px; font-weight:800; letter-spacing:-0.02em; line-height:1; color:var(--sc,var(--text));}
   .scard .sbig small{font-size:14px; font-weight:700; color:var(--dim); margin-left:3px;}
@@ -130,6 +143,15 @@
       <div class="ab-txt"><b>자동화</b>는 정해진 시각에 스크립트가 돈다. <b>자율화</b>는 AI가 스스로 포착·판단·처리하고 사람은 방향·결재만 한다. 이 페이지는 그 자율 활동의 <b>라이브 상태·처리 이력·성과</b>를 모은 곳입니다.</div>
     </div>
   </div>
+
+  <!-- ════ 🧭 오늘의 항로 top3 (구 northstar_today.html 병합 · 2026-07-03) ════ -->
+  <section>
+    <h2 class="sec" style="margin-top:2px;">🧭 오늘의 항로 top3 <span style="font-size:11px;font-weight:400;color:var(--dim);">(웰리 06:30 통합 추천 · 라이브)</span></h2>
+    <div class="sec-note">매일 06:30 웰리(AI CEO)가 고른 오늘의 전사 통합 1·2·3순위. 승인/보류/만료 상태 표시. 회신은 텔레그램 [승인 N] / [보류]로.</div>
+    <div id="ns-embed" class="ns-list">
+      <div class="feed-status">오늘의 항로 추천을 불러오는 중…</div>
+    </div>
+  </section>
 
   <!-- ════ 🌟 북극성 지향 제작 루프 프레임 ════ -->
   <section class="loop-frame">
@@ -242,6 +264,33 @@
   }
   function localTodayMs(){ var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
 
+  // ═══════════ 🧭 오늘의 항로 top3 임베드 (northstar_today.html 병합) ═══════════
+  var NS_ROLE = {
+    ceo:['웰리','🧭'], cfo:['시뽀','💰'], chro:['시로','👥'], cmo:['시모','📣'],
+    coo:['시우','⚙️'], cpo:['시포','🎫'], cto:['시토','🛠️']
+  };
+  function renderNsEmbed(rawTxt){
+    var el = document.getElementById('ns-embed');
+    var pending = parseJson(rawTxt);
+    var cands = (pending && pending.candidates) || [];
+    if(!cands.length){ el.innerHTML = '<div class="feed-status">오늘 등록된 추천이 없습니다.</div>'; return; }
+    var medal = ['🥇','🥈','🥉'];
+    el.innerHTML = cands.map(function(c, i){
+      var role = String(c.role || '').toLowerCase();
+      var r = NS_ROLE[role] || [role.toUpperCase() || '?', '•'];
+      var st = String((c.status || pending.status || 'proposed')).toLowerCase();
+      if(['proposed','approved','held','expired'].indexOf(st) < 0) st = 'proposed';
+      return '<div class="ns-row">' +
+        '<span class="ns-rank">' + (medal[i] || (i + 1)) + '</span>' +
+        '<span class="ns-body">' +
+          '<span class="ns-title">' + esc(c.title || '') + '</span>' +
+          '<span class="owner-tag">' + r[1] + ' ' + esc(r[0]) + '</span>' +
+        '</span>' +
+        '<span class="ns-badge ' + st + '">' + esc(st) + '</span>' +
+      '</div>';
+    }).join('') + '<div class="feed-more">정본 <code>status/northstar_pending.json</code> · 생성 ' + esc(pending.generated_by || '?') + '</div>';
+  }
+
   // ═══════════ 섹션 1: 상시 자율 루틴 카드 ═══════════
   function renderRoutines(d){
     var el = document.getElementById('routines');
@@ -255,12 +304,15 @@
       if(s && typeof s.auto_exec_on === 'boolean') autoOn = s.auto_exec_on;
       var actv = d.obsLedger.filter(function(o){ return o.source === 'gm_aide_phase2' || o.signal_type === 'activation'; });
       if(actv.length) autoOn = true;
+      var actDate = actv.length ? last(actv).observed_at : null;
       if(s && typeof s.auto_applied === 'number') applied = s.auto_applied;
+      var totalApplied = d.scanLog.reduce(function(a, x){ return a + (typeof x.auto_applied === 'number' ? x.auto_applied : 0); }, 0);
       var rows = [];
       if(s){
         rows.push(['마지막', '<b>' + fmtWhen(s.logged_at) + '</b>']);
         rows.push(['결과', '포착 <b>' + (s.captured|0) + '</b>건 · 신규등록 <b>' + (s.registered|0) + '</b> · 중복스킵 ' + (s.skipped_dedup|0)]);
-        if(applied !== null) rows.push(['자율실행', '이번 회차 자동보강 <b>' + applied + '</b>건']);
+        rows.push(['GM_AIDE_AUTO_EXEC', '<b>' + (autoOn ? 'ON' : 'OFF') + '</b>' + (actDate ? (' · ' + fmtWhen(actDate) + ' 발효') : '')]);
+        if(applied !== null) rows.push(['자율실행 이력', '누적 자동보강 <b>' + totalApplied + '</b>건 (오늘 회차 ' + applied + ')']);
       } else { rows.push(['상태', '<span class="warn">스캔 로그 없음</span>', 1]); }
       cards.push({ ico:'🌅', nm:'GM 보좌 포착·자율실행', cy:'매일 06:30 · phase2 가역 자율실행', rc:'var(--gold)',
         pill: autoOn ? ['on','자율 ON'] : ['idle','포착만'], rows: rows });
@@ -316,6 +368,22 @@
       } else { rows.push(['상태', '<span class="warn">아카이브 없음</span>']); }
       cards.push({ ico:'🧹', nm:'하이진 자동 아카이브', cy:'6시간 주기 · 완료 배 정리', rc:'var(--green)',
         pill:['on','상시'], rows: rows });
+    })();
+
+    // 6) 차등 점검 엔진 — audit_registry.json 안정 대장 대조(scripts/audit_scope.py)
+    (function(){
+      var reg = d.auditReg;
+      var pages = (reg && reg.pages) || [];
+      var stable = pages.filter(function(p){ return p.status === 'stable'; }).length;
+      var total = pages.length;
+      var rows = [];
+      if(total){
+        rows.push(['안정 대장', '<b>' + stable + '</b> / ' + total + '개 가이드 페이지 stable(재점검 제외)']);
+        rows.push(['판정 기준', 'audited_commit 이후 재커밋된 파일만 신규/변경 → 좁은 점검, 나머지 스킵']);
+        rows.push(['실행', '<code>python scripts/audit_scope.py --json</code> · CLI 실행 결과(상시 로그 미연동)']);
+      } else { rows.push(['상태', '<span class="warn">안정 대장 없음</span>']); }
+      cards.push({ ico:'🔬', nm:'차등 점검 엔진', cy:'커밋 대조 · 안정 N개·신규/변경 산출', rc:'var(--blue)',
+        pill: total ? ['na','실행 시 산출'] : ['idle','대장 없음'], rows: rows });
     })();
 
     el.innerHTML = cards.map(function(c){
@@ -458,6 +526,23 @@
         '<div class="ssub">06:30 스캔이 신규 등록한 배(중복 제외 누적).</div></div>');
     })();
 
+    // 5) 차등 점검 절감 — audit_registry.json 안정 비율(구조적 설명, 가짜 수치 금지)
+    (function(){
+      var reg = d.auditReg;
+      var pages = (reg && reg.pages) || [];
+      var stable = pages.filter(function(p){ return p.status === 'stable'; }).length;
+      var total = pages.length;
+      if(total){
+        var pct = Math.round(stable / total * 100);
+        cards.push('<div class="scard" style="--sc:var(--blue)"><div class="sh">🔬 차등 점검 스킵률</div>' +
+          '<div class="sbig">' + pct + '<small>%</small></div>' +
+          '<div class="sbar"><i style="width:' + pct + '%"></i></div>' +
+          '<div class="ssub">안정 <b>' + stable + '</b> / 전체 <b>' + total + '</b>개 가이드 페이지가 재점검 대상에서 제외 — 자율 점검이 구조상 <b>전수→신규/변경분만</b>으로 좁아짐(회차별 실측 로그는 별도).</div></div>');
+      } else {
+        cards.push('<div class="scard unmeasured"><div class="sh">🔬 차등 점검 스킵률</div><div class="sbig">미측정</div><div class="ssub">안정 대장(audit_registry.json) 없음.</div></div>');
+      }
+    })();
+
     el.innerHTML = cards.join('');
   }
 
@@ -467,7 +552,9 @@
     gasReadText('status/gm_observation_ledger.jsonl', 'status/gm_observation_ledger.jsonl').catch(function(){ return ''; }),
     gasReadText('status/northstar_log.jsonl',         'status/northstar_log.jsonl').catch(function(){ return ''; }),
     gasReadText('status/learning_proposals.json',     'status/learning_proposals.json').catch(function(){ return ''; }),
-    gasReadText('status/_queue_archive.json',         'status/_queue_archive.json').catch(function(){ return ''; })
+    gasReadText('status/_queue_archive.json',         'status/_queue_archive.json').catch(function(){ return ''; }),
+    gasReadText('status/northstar_pending.json',      'status/northstar_pending.json').catch(function(){ return ''; }),
+    gasReadText('status/audit_registry.json',         'status/audit_registry.json').catch(function(){ return ''; })
   ]).then(function(a){
     var learnRaw = parseJson(a[3]);
     var archRaw  = parseJson(a[4]);
@@ -476,16 +563,19 @@
       obsLedger:parseJsonl(a[1]),
       nsLog:    parseJsonl(a[2]),
       learn:    Array.isArray(learnRaw) ? learnRaw : [],
-      archive:  Array.isArray(archRaw) ? archRaw : (archRaw && Array.isArray(archRaw.items) ? archRaw.items : [])
+      archive:  Array.isArray(archRaw) ? archRaw : (archRaw && Array.isArray(archRaw.items) ? archRaw.items : []),
+      auditReg: parseJson(a[6]) || { pages: [] }
     };
     var feedItems = [];
     try{ feedItems = buildFeed(d); }catch(e){ feedItems = []; }
+    try{ renderNsEmbed(a[5]); }catch(e){ document.getElementById('ns-embed').innerHTML = '<div class="feed-status">오늘의 항로 추천 표시 오류.</div>'; }
     try{ renderRoutines(d); }catch(e){ document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">상시 체계 표시 오류 — 로그 파싱 실패.</div>'; }
     try{ renderFeed(feedItems); }catch(e){ document.getElementById('feed').innerHTML = '<div class="feed-status">처리 이력 표시 오류.</div>'; }
     try{ renderStats(d, feedItems); }catch(e){ document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">성과 지표 계산 오류.</div>'; }
     var fl = document.getElementById('foot-loaded');
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
   }).catch(function(){
+    document.getElementById('ns-embed').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다. 잠시 후 새로고침 해주세요.</div>';
     document.getElementById('feed').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
