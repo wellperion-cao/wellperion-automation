@@ -131,6 +131,8 @@
   .cmo-step.wait .cs-s{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
   .cmo-loop-arrow{color:var(--dim); font-size:13px; flex-shrink:0;}
   .cmo-loop-arrow.back{color:var(--accent-soft); font-weight:800; font-size:11px; margin-left:2px;}
+  .cmo-loop-arrow.back.pending{color:var(--dim); font-weight:700; border:1px dashed var(--border-strong); border-radius:6px; padding:2px 6px; cursor:help;}
+  .cmo-loop-status{font-size:10.5px; color:var(--dim); margin:-6px 0 12px; padding:0 2px;}
 
   footer.foot{margin-top:22px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:11px; line-height:1.6;}
   footer.foot b{color:var(--text-soft);}
@@ -332,10 +334,10 @@
 
   <!-- ════ 📣 시모(AI CMO) 자율 마케팅 (제작→발행→측정 자율 축 · review_queue 실데이터) ════ -->
   <section>
-    <h2 class="sec">📣 시모 (AI CMO) 자율 마케팅 <span style="font-size:11px;font-weight:400;color:var(--dim);">(폐루프 5단계 자율 축)</span></h2>
-    <div class="sec-note">시모(AI CMO) 정본 폐루프 — ①콘텐츠→②문의→③등록→④측정→⑤평가 환류→(다음 기획으로 순환). 아래 카드는 각 단계를 굴리는 실제 엔진. 발행 수치는 <code>cmo/review/review_queue.json</code> 실데이터에서만 산출(가짜 수치 금지).</div>
+    <h2 class="sec">📣 시모 (AI CMO) 자율 마케팅 <span style="font-size:11px;font-weight:400;color:var(--dim);">(마케팅 루프 5단계 자율 축)</span></h2>
+    <div class="sec-note">시모(AI CMO) 정본 마케팅 루프 — ①콘텐츠→②문의→③등록→④측정→⑤평가 환류→(⑤ 연결 시 다음 기획으로 순환·폐루프 완성). 아래 카드는 각 단계를 굴리는 실제 엔진. 발행 수치는 <code>cmo/review/review_queue.json</code> 실데이터에서만 산출(가짜 수치 금지).</div>
     <div class="cmo-loop">
-      <span class="cmo-loop-lbl">폐루프</span>
+      <span class="cmo-loop-lbl">마케팅 루프</span>
       <div class="cmo-step live"><span>① 콘텐츠 제작</span><span class="cs-s">라이브</span></div>
       <span class="cmo-loop-arrow">→</span>
       <div class="cmo-step live"><span>② 문의 유입</span><span class="cs-s">라이브</span></div>
@@ -345,8 +347,9 @@
       <div class="cmo-step live"><span>④ 측정·대시보드</span><span class="cs-s">라이브</span></div>
       <span class="cmo-loop-arrow">→</span>
       <div class="cmo-step wait"><span>⑤ 평가 환류</span><span class="cs-s">대기</span></div>
-      <span class="cmo-loop-arrow back">↻ 다음 기획</span>
+      <span class="cmo-loop-arrow back pending" title="⑤ 평가환류 연결 시 닫힘(현재 미연결)">↻ 다음 기획 (대기)</span>
     </div>
+    <div class="cmo-loop-status">현재 열린 루프 — ⑤ 평가환류 대기 · ⑤ 연결 시 폐루프 완성</div>
     <div class="routines" id="cmo-routines">
       <div class="feed-status" style="grid-column:1/-1;">시모 자율 마케팅 현황을 불러오는 중…</div>
     </div>
