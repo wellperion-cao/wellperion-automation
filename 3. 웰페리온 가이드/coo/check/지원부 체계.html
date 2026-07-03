@@ -3104,7 +3104,9 @@ function toggleCheckTimer(gender){
   }
   // done 상태에서 클릭 = no-op (메인 버튼은 disabled라 여기까지 오지 않음)
   saveState(d,gender);
-  setCheckTime(gender);
+  /* 시작/종료 후 제출버튼(rBtn) 재렌더 — timerGatePassed가 바뀌므로 drawUI로 다시 그린다.
+     (setCheckTime만 부르면 타이머 위젯만 갱신되고 제출버튼은 stale → 새로고침해야 활성화되던 버그. GM 2026-07-03 시우) */
+  drawUI(d,gender);
 }
 /* 완료 후 재측정 — 확인창 통과 시에만 시작·종료 삭제하고 idle로 복귀. */
 function resetCheckTimer(gender){
@@ -3112,7 +3114,7 @@ function resetCheckTimer(gender){
   const d=getDateG(gender);
   const k=activeTimerKeys(gender);
   delete STATE[k.sk]; delete STATE[k.ek];
-  saveState(d,gender); setCheckTime(gender);
+  saveState(d,gender); drawUI(d,gender);   /* 리셋 후 제출버튼 재렌더(게이트 재잠금 반영). GM 2026-07-03 시우 */
 }
 
 /* v2.48 — 점검 항목 사용자 수정 기능. v2.49 onclick HTML 충돌 fix
