@@ -30,8 +30,8 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-29",
     "ship_no": 208,
-    "note": "[2026-06-29 GM] 점검일지_support 6월 리뷰 → 6월=테스트기간(이슈 13건 말일집중·완료율 분모부풀림으로 신뢰불가). GM 희망=7월부터 매월 자동 분석 리포트로 스스로 개선. 풀세트 단계구축: ①데이터 backbone=GAS monthly_report 액션(월별 집계·이슈·점검자정규화·Test제외) ②리포트 페이지(월선택·KPI·완료율·이슈분류·구역회차통계·개선시사) ③매월 1일 자동(전월 집계→텔레그램 점검관리방 요약+페이지 갱신) ④선결=분모정합(배14)이라야 완료율 신뢰. 데이터청소(Test행·이름통일)는 리포트 집계단에서 정규화(시트 비파괴). [2026-07-03 시우] 1단계 착수·완료: GAS monthly_report 집계 액션 구현(.deploy-check/지원팀 일일점검.js, handleWeekly 직후 _aggregateMonthly 순수함수+handleMonthlyReport IO+doGet 라우팅, 213줄 순증). snapshot(점검일지_support 14열)+이슈대장(지원_이슈대장 7열) 월별 집계: Test행 제외·(날짜·구역·교대) dedup·일별시계열·구역/교대/점검자별·이슈 byStatus. ⚠️완료율=잠정(배14 분모정합 선결, denomNote 박음)·과거 snapshot 저장 total 기준이라 today_live 금요일버그 무관. 로컬 검증=node --check OK + _aggregateMonthly 노드 단위테스트 22/22 PASS(dedup·Test제외·월필터·pct·이슈). 커밋 51955d16(라이브 배포 안 함=GM go 별도).",
-    "next": "1단계 코드+로컬검증 완료. 👉 GM 액션=GAS 웹앱 재배포(clasp push≠배포). 배포 후 2단계: ①?action=monthly_report&dept=support&month=2026-06 라이브 6월 실측 → ②리포트 페이지(a3-monthly-mode 껍데기 채우기: 월선택·KPI·완료율차트·이슈분류·구역회차·개선시사) → ③매월1일 자동(전월집계→점검관리방 텔레그램+페이지갱신). 완료율 신뢰는 배14 서버수리 후 확정.",
+    "note": "[2026-06-29 GM] 점검일지_support 6월 리뷰 → 6월=테스트기간(이슈 13건 말일집중·완료율 분모부풀림으로 신뢰불가). GM 희망=7월부터 매월 자동 분석 리포트로 스스로 개선. 풀세트 단계구축: ①데이터 backbone=GAS monthly_report 액션(월별 집계·이슈·점검자정규화·Test제외) ②리포트 페이지(월선택·KPI·완료율·이슈분류·구역회차통계·개선시사) ③매월 1일 자동(전월 집계→텔레그램 점검관리방 요약+페이지 갱신) ④선결=분모정합(배14)이라야 완료율 신뢰. 데이터청소(Test행·이름통일)는 리포트 집계단에서 정규화(시트 비파괴). [2026-07-03 시우] 1단계 착수·완료: GAS monthly_report 집계 액션 구현(.deploy-check/지원팀 일일점검.js, handleWeekly 직후 _aggregateMonthly 순수함수+handleMonthlyReport IO+doGet 라우팅, 213줄 순증). snapshot(점검일지_support 14열)+이슈대장(지원_이슈대장 7열) 월별 집계: Test행 제외·(날짜·구역·교대) dedup·일별시계열·구역/교대/점검자별·이슈 byStatus. ⚠️완료율=잠정(배14 분모정합 선결, denomNote 박음)·과거 snapshot 저장 total 기준이라 today_live 금요일버그 무관. 로컬 검증=node --check OK + _aggregateMonthly 노드 단위테스트 22/22 PASS(dedup·Test제외·월필터·pct·이슈). 커밋 51955d16(라이브 배포 안 함=GM go 별도). [2026-07-03 Phase A·B 완료·라이브] A=monthly_report 이슈 snapshot기준화(total193·원문list52)+개선시사 자동문구3(라이브 재배포). B=지원부 체계.html '월간보고' 탭 대시보드(월선택·KPI 완료율잠정배지·일별추이·구역/교대/점검자별·이슈원문토글·개선시사)+A3 printA3Monthly 채움(커밋 9c9d191c). deep-interview 스펙=.omc/specs/deep-interview-ship208-monthly-report-page.md. C(매월1일 텔레그램)=시토 인계(CTO-2026-07-03-MONTHLY-REPORT-TELEGRAM). 완료율은 배14 분모정합 후 확정(현재 잠정).",
+    "next": "Phase A·B 라이브 완료. Phase C=시토 인계(텔레그램 자동). 잔여 시우: 배14 화면 분모 전환(선결 서버 금요일 수리 시토 완료됨→재개 가능) 후 완료율 '잠정'→확정. 6월 데이터 화면/A3 실측은 라이브 반영됨.",
     "depends_on": ""
   },
   {
@@ -53,8 +53,8 @@
     "priority": "HIGH",
     "enqueued_at": "2026-06-25",
     "ship_no": 14,
-    "note": "[2026-06-25 GM 옵션A] 점검 분모가 화면(하드코딩+localStorage)·서버(시트)·독려 3소스로 제각각('또 안맞네'). 진행: 1단계 백업 완료(check_items_backup_20260625_181300.json). 3단계(서버 today_live)=라이브 @112 완료 — 성별별+요일/주차 sched 필터+시프트 presence 모델로 시트 기준 재구현(로컬 노드 검증 후 1회 배포). 서버 byGender 남=여 24/20/19, 독려는 today_live byGender 읽어 자동 정합. 스팸 dedup(CHKNOTI @108~) 유지. ★남은 핵심=화면(collectDashboardData)이 아직 하드코딩 WEEKDAY 배열+localStorage라 서버와 다른 엔진 → 화면도 시트 전환 필요(4단계). 같은날 분모 4실측: 화면새기기18/14/2·GM기기26/20/19·서버24/20/19. 4단계 구현사양=설계서 brief. GM 지시=화면 수술은 다음 집중세션(라이브 점검 UI 위험·신중). 오늘 라이브 무리한 실험 교훈→로컬검증 후 1회배포 원칙.\n[2026-07-03 시토→시우 인계] 점검관리방 '오늘의 점검현황' 완료율 무조건 100% 도배(남 25/25·14/14·14/14, 여 24/24·15/15·13/13 = done==total). 파이썬 발송코드 정상, 원인=점검 GAS today_live의 분자/분모. 라이브 실측 total=0/done=0(평일인데 분모 0). 용의=①'all' 강제 done=total ②안전장치 total<done시 클램프 ③per-gender 100%는 _getCheckLedger cr이 예정 항목 전체를 체크됨으로 반환하는지 확인 필요. 진단서 status/briefs/CTO-2026-07-03-CHECK-100PCT-DIAGNOSIS-HANDOFF.md. 라이브 GAS 발효=GM go.\n[2026-07-03 GM 착수·deep-interview] 범위 확정=①분모표시전환+②데이터이관(③독려=확인만·④라이브배포=별도 GM go). 실측 발견: 서버 today_live가 오늘(금 dow=5) 분모(total)=0 반환(인접 평일 정상) → 화면 전환의 전제(서버 신뢰) 미성립. localStorage custom/hidden=이미 서버 단일진실(유실위험 낮음), 항목 드리프트 화면34 vs 시트49 확인. GM 결정=서버 이상치부터(시토 배관·배239 통합). 배14 ①은 서버 today_live 금요일 정상화·검증 후 착수. 진단서=status/briefs/COO-2026-07-03-TODAYLIVE-FRIDAY-ZERO-HANDOFF.md, 스펙=.omc/specs/deep-interview-ship14-check-denom.md.\n[2026-07-03 시토 라이브 수리 완료·GM go] 텔레그램 점검현황 두 버그 라이브 해결: ①today_live 분모 0/0(성별칸 한글'공통·남·여'를 _genderToEnglish 미변환→전항목 집계탈락) = _buildTodayMaster에 getItems와 동일 변환 한 줄(커밋 318f39c8) ②완료율 100% 도배(안전장치가 예정수를 완료수로 끌어올림+성별 glist 미검) = 완료수 캡·glist 멤버십·all강제 제거(커밋 474df5e4). clasp v137 배포·실측 검증 07-02=108/86(80%)·07-03=105/49(47%) 정상. 월간리포트(배208) 무죄 확인. 서버·텔레그램 집계 정합 완료 — 잔여=화면 collectDashboardData 하드코딩→서버 전환(ship14 4단계·시우).",
-    "next": "⚓ 정박(선결 대기) — 선결=배239 시토 today_live 금요일 분모 0 이상치 수리·검증. 서버 정상화 확인 후 화면 collectDashboardData 분모를 today_live로 전환(로컬 모의→라이브 1회+역롤백). 항목 드리프트(34→49) 정합은 후속(②).",
+    "note": "[2026-06-25 GM 옵션A] 점검 분모가 화면(하드코딩+localStorage)·서버(시트)·독려 3소스로 제각각('또 안맞네'). 진행: 1단계 백업 완료(check_items_backup_20260625_181300.json). 3단계(서버 today_live)=라이브 @112 완료 — 성별별+요일/주차 sched 필터+시프트 presence 모델로 시트 기준 재구현(로컬 노드 검증 후 1회 배포). 서버 byGender 남=여 24/20/19, 독려는 today_live byGender 읽어 자동 정합. 스팸 dedup(CHKNOTI @108~) 유지. ★남은 핵심=화면(collectDashboardData)이 아직 하드코딩 WEEKDAY 배열+localStorage라 서버와 다른 엔진 → 화면도 시트 전환 필요(4단계). 같은날 분모 4실측: 화면새기기18/14/2·GM기기26/20/19·서버24/20/19. 4단계 구현사양=설계서 brief. GM 지시=화면 수술은 다음 집중세션(라이브 점검 UI 위험·신중). 오늘 라이브 무리한 실험 교훈→로컬검증 후 1회배포 원칙.\n[2026-07-03 시토→시우 인계] 점검관리방 '오늘의 점검현황' 완료율 무조건 100% 도배(남 25/25·14/14·14/14, 여 24/24·15/15·13/13 = done==total). 파이썬 발송코드 정상, 원인=점검 GAS today_live의 분자/분모. 라이브 실측 total=0/done=0(평일인데 분모 0). 용의=①'all' 강제 done=total ②안전장치 total<done시 클램프 ③per-gender 100%는 _getCheckLedger cr이 예정 항목 전체를 체크됨으로 반환하는지 확인 필요. 진단서 status/briefs/CTO-2026-07-03-CHECK-100PCT-DIAGNOSIS-HANDOFF.md. 라이브 GAS 발효=GM go.\n[2026-07-03 GM 착수·deep-interview] 범위 확정=①분모표시전환+②데이터이관(③독려=확인만·④라이브배포=별도 GM go). 실측 발견: 서버 today_live가 오늘(금 dow=5) 분모(total)=0 반환(인접 평일 정상) → 화면 전환의 전제(서버 신뢰) 미성립. localStorage custom/hidden=이미 서버 단일진실(유실위험 낮음), 항목 드리프트 화면34 vs 시트49 확인. GM 결정=서버 이상치부터(시토 배관·배239 통합). 배14 ①은 서버 today_live 금요일 정상화·검증 후 착수. 진단서=status/briefs/COO-2026-07-03-TODAYLIVE-FRIDAY-ZERO-HANDOFF.md, 스펙=.omc/specs/deep-interview-ship14-check-denom.md.\n[2026-07-03 시토 라이브 수리 완료·GM go] 텔레그램 점검현황 두 버그 라이브 해결: ①today_live 분모 0/0(성별칸 한글'공통·남·여'를 _genderToEnglish 미변환→전항목 집계탈락) = _buildTodayMaster에 getItems와 동일 변환 한 줄(커밋 318f39c8) ②완료율 100% 도배(안전장치가 예정수를 완료수로 끌어올림+성별 glist 미검) = 완료수 캡·glist 멤버십·all강제 제거(커밋 474df5e4). clasp v137 배포·실측 검증 07-02=108/86(80%)·07-03=105/49(47%) 정상. 월간리포트(배208) 무죄 확인. 서버·텔레그램 집계 정합 완료 — 잔여=화면 collectDashboardData 하드코딩→서버 전환(ship14 4단계·시우).\n[2026-07-03 선결 해금] 서버 today_live 금요일 분모 0 이상치=시토 배239가 수리 완료(_buildTodayMaster 성별칸 한글→영문 변환, 커밋 318f39c8). 라이브 금 today_live=49/29/27 정상 확인. → 배14 화면(collectDashboardData) 분모 today_live 전환의 전제(서버 신뢰) 성립. 재개 가능(정박 해제 후보). 화면 수술은 로컬검증 후 1회배포+역롤백 원칙 유지.",
+    "next": "정박 해제 후보(선결 풀림). 다음 집중세션: 화면 collectDashboardData 분모를 today_live로 전환·하드코딩 배열 폐기(로컬 모의검증→라이브1회+역롤백). GM 착수 지시 시 진행.",
     "terminal": false
   },
   {
@@ -1619,5 +1619,18 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RC7tdCWKtqtEsuWE5BREuT (CLI ad-hoc · 커밋 105a7a00)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "105a7a005e1a24b2f21dc5b12052fc7cc540f468"
+  },
+  {
+    "task_id": "CTO-2026-07-03-MONTHLY-REPORT-TELEGRAM",
+    "clevel": "cto",
+    "title": "[시토] 점검 월간 리포트 매월1일 텔레그램 자동 — 점검관리방 요약 3~5줄+링크 (배208 Phase C 인계)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-03",
+    "ship_no": 383,
+    "note": "[2026-07-03 시우→시토 인계] 배208 3단계 자동화. 시우가 데이터·콘텐츠 완비(monthly_report 라이브·화면 월간보고 탭·A3). 발송·스케줄만 시토 infra. 매월1일 Task Scheduler→monthly_report(전월) 호출→요약 3~5줄(완료율 잠정·이슈총계·최다이슈일·개선시사1줄+페이지링크)→점검관리방(-5136037543, 기존 daily_scheduler 패턴). 첫 실발송=8/1(7월분). 스펙=status/briefs/COO-2026-07-03-MONTHLY-REPORT-TELEGRAM-HANDOFF.md. 콘텐츠 의미=시우·발송 infra=시토.",
+    "next": "시토: Task Scheduler 매월1일 트리거 + monthly_report 전월호출→요약생성→점검관리방 발송(기존 봇 인프라 확장·새 토큰 불필요). 진단서 참조.",
+    "depends_on": "",
+    "source": "coo_handoff"
   }
 ]
