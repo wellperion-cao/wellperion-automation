@@ -3238,9 +3238,19 @@ function drawUI(d,gender){
     /* ── 2a: 항목 다회차 멤버십 + 구역(group.title)별 그룹핑 ──
        슬롯 필터 대신, 전 슬롯 항목 중 itemRounds(it)가 현재 조를 포함하는 것만 수집.
        옛 슬롯 시간 라벨은 화면에서 비표시(데이터 slot 필드는 보존). 구역 title로 버킷팅. */
+    /* 배14(2026-07-03 시우): 항목 소스 = CUSTOM_ITEMS(시트) 직접. 하드코딩 WEEKDAY/WEEKEND 폴백 배제 —
+       getSched(sched)는 오프라인 폴백 포함이라 시트에서 지운 항목(op8·op9·cl1·cl3·cl8·cl9 등)이
+       살아남을 여지가 있음. 점검(남/여) 화면 분모를 home·텔레그램·독려와 동일하게 시트 하나로 통일:
+       매뉴얼 탭(renderManualItems)과 동일하게 CUSTOM_ITEMS를 직접 그룹핑(buildSchedFromItems) →
+       오늘 요일 필터(_itemOnDay) + 개별 숨김(getHiddenIds)만 적용. STATE 키(id 기반)는 무변경. */
+    const _roundSlots=((typeof buildSchedFromItems==='function')?buildSchedFromItems(CUSTOM_ITEMS):[])
+      .map(slot=>({...slot, groups:slot.groups.map(g=>({...g,
+        items:g.items.filter(it=>!getHiddenIds().has(it.id) && _itemOnDay(it,d))
+      })).filter(g=>g.items.length>0)}))
+      .filter(slot=>slot.groups.length>0);
     const zoneOrder=[];           // 구역 제목 등장 순서
     const zoneMap={};             // title → { items:[{...it,slot,shift,itemShift}], group:<대표 group 객체> }
-    sched.forEach(slot=>{
+    _roundSlots.forEach(slot=>{
       const itemShift=slot.shift==='all'?'pm':slot.shift;
       slot.groups.forEach(g=>{
         g.items.forEach(it=>{
