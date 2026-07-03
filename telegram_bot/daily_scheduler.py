@@ -1337,6 +1337,25 @@ def _kr_amt(n) -> str:
     return f"{sign}{n:,}원"
 
 
+_FINANCE_CACHE = Path(__file__).parent / ".finance_cache.txt"
+
+
+def _write_finance_cache(text: str) -> None:
+    try:
+        _FINANCE_CACHE.write_text(text, encoding="utf-8")
+    except Exception as e:
+        logger.warning(f"매출 캐시 저장 실패: {e}")
+
+
+def _read_finance_cache() -> str:
+    try:
+        if _FINANCE_CACHE.exists():
+            return _FINANCE_CACHE.read_text(encoding="utf-8")
+    except Exception as e:
+        logger.warning(f"매출 캐시 읽기 실패: {e}")
+    return ""
+
+
 def _fetch_cfo_finance_block() -> str:
     """
     매출·지출 현황 조회 — ERP home과 동일 소스(SSOT API home_kpi) 사용.
@@ -1346,14 +1365,27 @@ def _fetch_cfo_finance_block() -> str:
     """
     src_url = CFO_SHEET_URL or SSOT_API_URL
     action = "summary" if CFO_SHEET_URL else "home_kpi"
-    try:
-        resp = requests.get(src_url, params={"action": action}, timeout=15)
-        if resp.status_code != 200:
-            return f"💰 매출·지출 현황\n  조회 실패 (HTTP {resp.status_code})"
-        data = resp.json()
-    except Exception as e:
-        logger.warning(f"매출·지출(home_kpi) 조회 실패: {e}")
-        return f"💰 매출·지출 현황\n  조회 오류: {str(e)[:80]}"
+    # GAS(script.google.com)는 콜드스타트 시 느려 단발 15s로는 조용히 빈칸이 나갔다
+    # (2026-07-03 09시 보고 매출칸 누락 사고). timeout 상향 + 재시도로 견고화.
+    data = None
+    last_err = None
+    for attempt in range(3):
+        try:
+            resp = requests.get(src_url, params={"action": action}, timeout=40)
+            if resp.status_code != 200:
+                last_err = f"HTTP {resp.status_code}"
+                continue
+            data = resp.json()
+            break
+        except Exception as e:
+            last_err = str(e)[:80]
+            logger.warning(f"매출·지출(home_kpi) 조회 실패 (시도 {attempt+1}/3): {e}")
+    if data is None:
+        # 3회 실패 → 마지막 정상값 캐시로 폴백(빈칸 대신 직전 수치 노출)
+        cached = _read_finance_cache()
+        if cached:
+            return f"{cached}\n  ⚠️ 실시간 조회 지연 — 직전 정상값 표시 (원인: {last_err})"
+        return f"💰 매출·지출 현황\n  조회 오류: {last_err}"
 
     if not data.get("ok"):
         return "💰 매출·지출 현황\n  소스 응답 ok=False (home_kpi 미연동 — 보완 중)"
@@ -1379,7 +1411,9 @@ def _fetch_cfo_finance_block() -> str:
     today_line = ""
     if s_today is not None or e_today is not None:
         today_line = f"\n  (오늘 매출 {_kr_amt(s_today)} · 지출 {_kr_amt(e_today)})"
-    return f"💰 매출·지출 현황 (ERP home 동일 소스)\n{table_str}{today_line}"
+    result = f"💰 매출·지출 현황 (ERP home 동일 소스)\n{table_str}{today_line}"
+    _write_finance_cache(result)  # 다음 조회 실패 시 폴백용 마지막 정상값
+    return result
 
 
 def _build_09_body() -> str:
