@@ -1624,8 +1624,38 @@ def main():
         f"Bot starting. cwd={WORKDIR} state={STATE_FILE} log={LOG_FILE} "
         f"claude_bin={CLAUDE_BIN}"
     )
-    # drop_pending_updates=False: 봇 재시작 전 미수신 메시지도 처리
-    app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=False)
+
+    # ── 폴링 크래시 방어 감시 루프 (2026-07-03 CTO, INC·배102) ──────────────────
+    # 오늘 10:11 telegram.error.NetworkError: Bad Gateway 로 run_polling() 프로세스
+    # 전체가 죽어(PTB 21.6 내부 getUpdates 재시도 경로를 벗어난 예외로 추정) 수신
+    # (GM 승인·콜백)이 4.5h 다운됐다(bot.log 10:11:13 이후 6h 무기록 확인).
+    # run_polling()은 정상 종료 신호(SIGINT/SIGTERM)는 내부(__run)에서 흡수해
+    # '정상 반환'하므로, 여기서는 "정상 반환=종료" · "예외 발생=일시 오류→재연결"
+    # 로 구분해 지수 백오프(5s→최대 60s)로 재기동한다.
+    # 싱글톤 pid락(_check_pid_lock)·웹훅가드(_ensure_no_webhook, 위에서 1회만 실행)·
+    # error_handler·핸들러 등록·drop_pending_updates=False(다운 중 미수신 메시지도
+    # 재기동 후 처리)는 전부 무변경.
+    _backoff = 5
+    while True:
+        try:
+            app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=False)
+            break  # 정상 반환(정상 종료 신호) — 재기동하지 않고 프로세스 종료
+        except (KeyboardInterrupt, SystemExit):
+            # run_polling()이 보통 내부에서 흡수해 여기까지 안 오지만, 혹시 올라와도
+            # 정상 종료 신호는 그대로 통과시켜 프로세스를 끝낸다(재기동 금지).
+            raise
+        except Exception as exc:
+            log.error(
+                f"[bot] run_polling 크래시(일시 네트워크 오류 추정) — "
+                f"{_backoff}s 후 재연결: {exc}",
+                exc_info=True,
+            )
+            time.sleep(_backoff)
+            _backoff = min(_backoff * 2, 60)
+            # run_polling()은 close_loop=True로 종료 시 이벤트 루프를 닫는다.
+            # 재기동 전 새 루프를 설정하지 않으면 RuntimeError: Event loop is
+            # closed 로 재기동 자체가 실패한다.
+            asyncio.set_event_loop(asyncio.new_event_loop())
 
 
 if __name__ == "__main__":

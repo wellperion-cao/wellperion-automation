@@ -469,6 +469,33 @@ _AUTO_TASK_RE = re.compile(
 _NICK_RE = re.compile(r"^\[([가-힣A-Za-z0-9]{2,6})\]")
 
 
+# ── GAS(script.google.com) 콜 공용 재시도 헬퍼 (2026-07-03 시토) ────────────────
+# GAS는 콜드스타트 시 15s를 넘겨 응답하는 경우가 있어 단발 timeout=15로는
+# 조용히 빈칸/실패가 났다 (09시 매출칸 누락·12시 "Read timed out" 재발 사고).
+# _fetch_cfo_finance_block에 적용한 timeout=40 + 3회 재시도 패턴을 공용 헬퍼로 일반화.
+def _gas_get(
+    url: str,
+    params: dict | None = None,
+    *,
+    timeout: int = 40,
+    attempts: int = 3,
+    label: str = "GAS",
+) -> requests.Response | None:
+    """GAS(script.google.com) GET 재시도 래퍼. 성공(HTTP 200) 시 Response, 전량 실패 시 None."""
+    last_err = None
+    for attempt in range(1, attempts + 1):
+        try:
+            resp = requests.get(url, params=params, timeout=timeout)
+            if resp.status_code == 200:
+                return resp
+            last_err = f"HTTP {resp.status_code}"
+            logger.warning(f"{label} {last_err} (시도 {attempt}/{attempts})")
+        except Exception as e:
+            last_err = str(e)[:80]
+            logger.warning(f"{label} 조회 실패 (시도 {attempt}/{attempts}): {e}")
+    return None
+
+
 def fetch_yesterday_summary() -> str:
     """
     전날(어제) git 커밋을 집계. SSOT = GitHub (노션 결과물DB 폐기 2026-05-29).
@@ -496,8 +523,10 @@ def _fetch_yesterday_done_todos() -> list[str]:
     실패 시 빈 리스트.
     """
     yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    resp = _gas_get(SSOT_API_URL, params={"action": "todo_list"}, label="_fetch_yesterday_done_todos")
+    if resp is None:
+        return []
     try:
-        resp = requests.get(SSOT_API_URL, params={"action": "todo_list"}, timeout=15)
         if resp.status_code != 200:
             return []
         data = resp.json()
@@ -549,8 +578,10 @@ def _fetch_open_todo_cards_for_tomorrow() -> list[dict]:
     미완료(진행중·보류·대기) 항목 중 내일 항로점 브릿지 대상.
     21시 '내일 항로점' 섹션용. 실패 시 빈 리스트.
     """
+    resp = _gas_get(SSOT_API_URL, params={"action": "todo_list"}, label="_fetch_open_todo_cards_for_tomorrow")
+    if resp is None:
+        return []
     try:
-        resp = requests.get(SSOT_API_URL, params={"action": "todo_list"}, timeout=15)
         if resp.status_code != 200:
             return []
         data = resp.json()
@@ -591,15 +622,10 @@ def fetch_gm_todos(only_in_progress: bool = False) -> list[str] | None:
     - only_in_progress=True 면 상태에 '진행' 포함 건만(보류·대기 제외) — 15시 진행 체크용
     - 실패 시 None 반환
     """
+    resp = _gas_get(SSOT_API_URL, params={"action": "todo_list"}, label="fetch_gm_todos")
+    if resp is None:
+        return None
     try:
-        resp = requests.get(
-            SSOT_API_URL,
-            params={"action": "todo_list"},
-            timeout=15,
-        )
-        if resp.status_code != 200:
-            logger.warning(f"fetch_gm_todos HTTP {resp.status_code}")
-            return None
         data = resp.json()
         if not data.get("ok"):
             logger.warning(f"fetch_gm_todos ok=False: {data}")
@@ -679,15 +705,10 @@ def fetch_gm_todo_cards(only_in_progress: bool = False) -> list[dict] | None:
     각 항목: id_short, 업무명, 담당자, 상태, due(MM/DD), start(date), 비고
     실패 시 None 반환.
     """
+    resp = _gas_get(SSOT_API_URL, params={"action": "todo_list"}, label="fetch_gm_todo_cards")
+    if resp is None:
+        return None
     try:
-        resp = requests.get(
-            SSOT_API_URL,
-            params={"action": "todo_list"},
-            timeout=15,
-        )
-        if resp.status_code != 200:
-            logger.warning(f"fetch_gm_todo_cards HTTP {resp.status_code}")
-            return None
         data = resp.json()
         if not data.get("ok"):
             logger.warning(f"fetch_gm_todo_cards ok=False: {data}")
@@ -917,15 +938,10 @@ def _fetch_current_progress_hangro() -> str | None:
     gm_hangro API에서 C-Level 활성 항목을 집계.
     성공 시 포맷된 문자열 반환, 실패/빈응답/타임아웃 시 None 반환.
     """
+    resp = _gas_get(SSOT_API_URL, params={"action": "gm_hangro"}, label="gm_hangro")
+    if resp is None:
+        return None
     try:
-        resp = requests.get(
-            SSOT_API_URL,
-            params={"action": "gm_hangro"},
-            timeout=15,
-        )
-        if resp.status_code != 200:
-            logger.warning(f"gm_hangro HTTP {resp.status_code}")
-            return None
         data = resp.json()
         if not data.get("ok"):
             logger.warning(f"gm_hangro ok=False: {str(data)[:200]}")
@@ -1438,12 +1454,11 @@ def _fetch_checklist_status_sheets(today: str) -> dict | None:
     """Google Sheets Apps Script API에서 오늘 점검 데이터 조회."""
     if not CHECKLIST_API_URL:
         return None
+    resp = _gas_get(f"{CHECKLIST_API_URL}?date={today}&zone=all", label="12시 Sheets API")
+    if resp is None:
+        return None
     try:
-        resp = requests.get(
-            f"{CHECKLIST_API_URL}?date={today}&zone=all", timeout=15
-        )
-        if resp.status_code == 200:
-            return resp.json()
+        return resp.json()
     except Exception as e:
         logger.warning(f"12시 Sheets API 조회 실패: {e}")
     return None
@@ -1654,10 +1669,10 @@ def _build_21_body() -> str:
     n_commits = len(today_commits)
 
     # ② 오늘 완료된 todo (updatedAt = 오늘 + 상태=완료)
-    try:
-        resp = requests.get(SSOT_API_URL, params={"action": "todo_list"}, timeout=15)
-        done_today: list[str] = []
-        if resp.status_code == 200:
+    done_today: list[str] = []
+    resp = _gas_get(SSOT_API_URL, params={"action": "todo_list"}, label="21시 오늘완료")
+    if resp is not None:
+        try:
             data = resp.json()
             if data.get("ok"):
                 for x in data.get("data", []):
@@ -1666,9 +1681,9 @@ def _build_21_body() -> str:
                     title = str(x.get("업무명", "")).strip()
                     if st in _TODO_DONE_STATUSES and updated.startswith(today_str) and title:
                         done_today.append(title[:50])
-    except Exception as e:
-        logger.warning(f"21시 오늘완료 조회 실패: {e}")
-        done_today = []
+        except Exception as e:
+            logger.warning(f"21시 오늘완료 조회 실패: {e}")
+            done_today = []
 
     # ③ 미완료 → 내일 항로점 (브릿지)
     open_cards = _fetch_open_todo_cards_for_tomorrow()
