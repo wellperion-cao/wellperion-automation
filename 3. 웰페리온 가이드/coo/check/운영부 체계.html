@@ -438,6 +438,39 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .a3m-grp{margin-bottom:2px}
   .a3m-grp:last-child{margin-bottom:0}
 }
+/* ── A3 신입 온보딩 교육자료 인쇄 전용 컨테이너 (화면 숨김) — 운영부(배64) ── */
+#a3-opsonb-print{display:none}
+/* ── A3 신입 온보딩 인쇄 모드 (@page A3 landscape, 좌우 2단) — 가이드라인·매뉴얼 A3와 완전 분리 ── */
+@media print{
+  body.a3-opsonb-mode{background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.a3-opsonb-mode .header,
+  body.a3-opsonb-mode .tabs,
+  body.a3-opsonb-mode .submit-bar,
+  body.a3-opsonb-mode .saving,
+  body.a3-opsonb-mode .toast-msg,
+  body.a3-opsonb-mode .header-util-btns,
+  body.a3-opsonb-mode .util-btn,
+  body.a3-opsonb-mode .sheet-links,
+  body.a3-opsonb-mode #tab-policy,
+  body.a3-opsonb-mode #tab-guide,
+  body.a3-opsonb-mode #tab-manual,
+  body.a3-opsonb-mode #a3-guideline-print,
+  body.a3-opsonb-mode #a3-manual-print{display:none!important}
+  body.a3-opsonb-mode #a3-opsonb-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-opsonb-print .oob-header{text-align:center;font-size:26px;font-weight:900;letter-spacing:0.04em;padding:4px 0 8px;border-bottom:3px solid #4a3a2e;margin-bottom:6px;color:#2a2018}
+  #a3-opsonb-print .oob-sub{text-align:center;font-size:13px;color:#8a7a6c;margin-bottom:14px}
+  #a3-opsonb-print .oob-grid{display:grid;grid-template-columns:1fr 1fr;gap:8mm}
+  #a3-opsonb-print .oob-sec{font-size:15px;font-weight:800;color:#fff!important;background:#4a3a2e!important;padding:4px 10px;border-radius:4px;margin:10px 0 6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-opsonb-print .oob-col .oob-sec:first-child{margin-top:0}
+  #a3-opsonb-print table{width:100%;border-collapse:collapse;margin-bottom:4px}
+  #a3-opsonb-print th,#a3-opsonb-print td{border:1px solid #b8ada0;padding:5px 8px;text-align:left;font-size:11px;color:#222}
+  #a3-opsonb-print th{background:#f3ede7!important;color:#4a3a2e!important;font-size:10.5px;font-weight:800}
+  #a3-opsonb-print .oob-guide-card{border:1px solid #ccc;border-radius:5px;padding:6px 9px;margin-bottom:6px;break-inside:avoid;background:#fff}
+  #a3-opsonb-print .oob-guide-title{font-size:11.5px;font-weight:800;color:#2a2018;margin-bottom:3px;padding-bottom:2px;border-bottom:1px solid #e8e3de}
+  #a3-opsonb-print .oob-guide-line{font-size:10.5px;color:#333;line-height:1.4;padding:1px 0 1px 10px;position:relative}
+  #a3-opsonb-print .oob-guide-line::before{content:"·";position:absolute;left:2px;color:#888}
+  #a3-opsonb-print .oob-empty{font-size:11px;color:#999;font-style:italic;padding:4px 0}
+}
 /* ── Print (기존 A4) ── */
 @media print{
   @page{margin:10mm;size:A4}
@@ -556,6 +589,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
     <button class="util-btn print-btn" onclick="printA3Manual()" title="매뉴얼 보드를 A3 가로 1장 주간표(월~일 7열)로 인쇄">🖨️ A3 매뉴얼(주간)</button>
+    <button class="util-btn print-btn" onclick="printA3OpsOnboarding()" title="회원 응대 절차·운영부 가이드·규정을 신입 온보딩 자료로 A3 통합 인쇄">🖨️ 신입 온보딩 A3</button>
   </div>
 </div>
 </div><!-- /sticky-top -->
@@ -657,6 +691,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-guide" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">가이드</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">운영부 가이드를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <b>＋ 카드 추가</b>로 새 가이드를 추가할 수 있습니다.</p>
+  <div style="margin-bottom:14px;"><button class="btn" onclick="printA3OpsOnboarding()">🖨 신입 온보딩 A3</button></div>
   <div class="board-fullwidth">
     <!-- 가이드 카드 보드: 규정 보드와 동일 시스템(추가·편집·삭제·공유저장).
          #guide-board는 display:contents → renderGuideBoard()가 만든 .board-col이 흐름에 합류. -->
@@ -689,6 +724,26 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="a3m-sub"></div>
   <!-- JS(printA3Manual)가 OPS_MANUAL_BOARD 읽어 표 주입 -->
   <div id="a3m-table-host"></div>
+</div>
+
+<!-- ══ A3 신입 온보딩 교육자료 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시) — 운영부(배64)
+     지원부 인쇄 기계장치 구조만 벤치마킹, 콘텐츠는 운영부 라이브 데이터(WEEKDAY 체크리스트·GUIDE_DATA·POLICY_DATA) ══ -->
+<div id="a3-opsonb-print">
+  <div class="oob-header">운영부 신입 교육 자료</div>
+  <div class="oob-sub"></div>
+  <!-- JS(printA3OpsOnboarding)가 WEEKDAY(O-B~F)·GUIDE_DATA·POLICY_DATA 라이브 데이터를 읽어 3섹션 주입 -->
+  <div class="oob-grid">
+    <div class="oob-col">
+      <div class="oob-sec">① 회원 응대 절차·태도 핵심</div>
+      <div id="oob-conduct-host"></div>
+    </div>
+    <div class="oob-col">
+      <div class="oob-sec">② 운영부 가이드</div>
+      <div id="oob-guide-host"></div>
+      <div class="oob-sec">③ 규정·회의 요지</div>
+      <div id="oob-policy-host"></div>
+    </div>
+  </div>
 </div>
 
 <div id="tab-manual" class="content hidden">
@@ -1562,6 +1617,100 @@ function printA3Manual(){
   // 복원
   document.body.classList.remove('a3-manual-mode');
   styleTag.textContent='';
+}
+
+/* ═══════════════════════════════════════════
+   A3 신입 온보딩 교육자료 인쇄(운영부) — ①회원 응대 절차·태도 핵심(체크리스트 O-B~F 발췌) ②운영부 가이드 ③규정·회의 요지
+   를 WEEKDAY(체크리스트)·GUIDE_DATA·POLICY_DATA 라이브 편집 데이터로 한 문서에 통합 (배64)
+   지원부 printA3Onboarding의 인쇄 기계장치 구조만 벤치마킹 — 콘텐츠는 운영부 자기 데이터(응대 중심)
+   함수명: printA3OpsOnboarding / 클래스: a3-opsonb-mode
+   style id: a3-opsonb-page-style / 컨테이너: #a3-opsonb-print
+   ═══════════════════════════════════════════ */
+/* WEEKDAY 체크리스트에서 O-A(오픈 점검) 제외한 O-B~F 카테고리를 제목 기준 중복 제거해 응대 절차 행 추출 */
+function opsOnboardingConductRows(){
+  var seen={}, rows=[];
+  (WEEKDAY||[]).forEach(function(slot){
+    (slot.groups||[]).forEach(function(g){
+      if(!g.title || g.title.indexOf('O-A')===0) return;
+      if(seen[g.title]) return;
+      seen[g.title]=true;
+      (g.items||[]).forEach(function(it){
+        rows.push({cat:g.title, name:it.name||'', detail:it.detail||''});
+      });
+    });
+  });
+  return rows;
+}
+function printA3OpsOnboarding(){
+  var sub=document.querySelector('#a3-opsonb-print .oob-sub');
+  if(sub) sub.textContent='운영부 신입 직원 교육 자료 · 출력일 '+kstToday();
+
+  // ① 회원 응대 절차·태도 핵심 (체크리스트 O-B~F 발췌)
+  var conductHost=document.getElementById('oob-conduct-host');
+  if(conductHost){
+    var rows=opsOnboardingConductRows();
+    if(!rows.length){
+      conductHost.innerHTML='<div class="oob-empty">내용 없음</div>';
+    }else{
+      var h1='<table><thead><tr><th>구분</th><th>절차·태도</th><th>세부 기준</th></tr></thead><tbody>';
+      rows.forEach(function(r){
+        h1+='<tr><td>'+escapeHTML(r.cat)+'</td><td>'+escapeHTML(r.name)+'</td><td>'+escapeHTML(r.detail)+'</td></tr>';
+      });
+      h1+='</tbody></table>';
+      conductHost.innerHTML=h1;
+    }
+  }
+
+  // ② 운영부 가이드 (GUIDE_DATA.guide — GM 편집 카드)
+  var guideHost=document.getElementById('oob-guide-host');
+  if(guideHost){
+    if(!GUIDE_DATA || !Object.keys(GUIDE_DATA).length) loadGuideData();
+    var guideCards=(GUIDE_DATA && GUIDE_DATA.guide) || [];
+    if(!guideCards.length){
+      guideHost.innerHTML='<div class="oob-empty">내용 없음</div>';
+    }else{
+      var h2='';
+      guideCards.forEach(function(card){
+        var lines=(card.body||'').split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length;});
+        h2+='<div class="oob-guide-card"><div class="oob-guide-title">'+escapeHTML(card.title||'(제목 없음)')+'</div>';
+        if(lines.length){
+          lines.forEach(function(l){ h2+='<div class="oob-guide-line">'+escapeHTML(l)+'</div>'; });
+        }else{
+          h2+='<div class="oob-guide-line">내용 없음</div>';
+        }
+        h2+='</div>';
+      });
+      guideHost.innerHTML=h2;
+    }
+  }
+
+  // ③ 규정·회의 요지 (POLICY_DATA — 운영 기준+정기 회의)
+  var policyHost=document.getElementById('oob-policy-host');
+  if(policyHost){
+    if(!POLICY_DATA || !Object.keys(POLICY_DATA).length) loadPolicyData();
+    var polCards=[];
+    (POLICY_COLS||[]).forEach(function(c){
+      (POLICY_DATA[c.key]||[]).forEach(function(card){ polCards.push({col:c.label, title:card.title, body:card.body}); });
+    });
+    if(!polCards.length){
+      policyHost.innerHTML='<div class="oob-empty">내용 없음</div>';
+    }else{
+      var h3='<table><thead><tr><th>구분</th><th>항목</th><th>내용</th></tr></thead><tbody>';
+      polCards.forEach(function(c){
+        h3+='<tr><td>'+escapeHTML(c.col)+'</td><td>'+escapeHTML(c.title)+'</td><td style="white-space:pre-line;">'+escapeHTML(c.body)+'</td></tr>';
+      });
+      h3+='</tbody></table>';
+      policyHost.innerHTML=h3;
+    }
+  }
+
+  document.body.classList.add('a3-opsonb-mode');
+  var oStyleTag=document.getElementById('a3-opsonb-page-style');
+  if(!oStyleTag){oStyleTag=document.createElement('style');oStyleTag.id='a3-opsonb-page-style';document.head.appendChild(oStyleTag);}
+  oStyleTag.textContent='@media print{ @page{ size:A3 landscape; margin:10mm; } }';
+  window.print();
+  document.body.classList.remove('a3-opsonb-mode');
+  oStyleTag.textContent='';
 }
 
 /* ═══════════════════════════════════════════
