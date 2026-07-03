@@ -390,7 +390,7 @@
 
     <a data-toggle="cto-nav" data-has-sub="true"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
     <div class="sub-nav" data-parent="cto-nav">
-      <a data-id="T1">🖥️ 기술 & AI 학습 상세</a>      <a data-id="T2">🤖 자율 작업 현황</a>
+      <a data-id="T1">🖥️ 기술 & AI 학습 상세</a>      <a data-id="T2">🤖 업무자동화SSOT</a>
     </div>
   </nav>
 
@@ -678,7 +678,7 @@
         <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">🛠️</span><div><div style="font-weight:800;font-size:15.5px;">기술·자동화 <span style="font-size:11px;color:var(--dim);font-weight:600;">IT</span></div><div style="font-size:11px;color:var(--dim);">실무 책임 · 김남욱 GM</div><div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">🤖 AI CTO (시토)</div></div></div>
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">기술 인프라</a>
-          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">자율 작업 현황</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">업무자동화SSOT</a>
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">AI 교육</a>
         </div>
       </div>
@@ -6314,15 +6314,15 @@ function crTab(btn, panelId) {
 
   <!-- ── G19: 업무자동화 ── -->
   <article class="doc" id="T2">
-    <div class="doc-header"><h2><span class="g-id">T2</span>자율 작업 현황</h2><div class="meta">진입점 · 상세 = 자율 작업 현황 보드 · 2026-07-03 보드로 일원화</div></div>
-    <p class="lead">Windows 스케줄러 + Python 프로세스 실측 기반 자동화 SSOT와, AI가 사람 지시 없이 스스로 포착·처리한 자율 작업 이력을 한 보드에서 봅니다.</p>
+    <div class="doc-header"><h2><span class="g-id">T2</span>업무자동화SSOT</h2><div class="meta">자동화 landscape 진입점 · 상세·자율 활동 라이브 = 자율 작업 현황 보드 · 2026-07-03 보드로 일원화</div></div>
+    <p class="lead">Windows 스케줄러 + Python 프로세스 실측 기반 자동화 SSOT(무엇이 언제 자동으로 도는가)와, AI가 사람 지시 없이 스스로 포착·처리한 자율 작업 이력(무엇을 자율로 했는가)을 한 보드에서 봅니다.</p>
 
-    <!-- ══ 🤖 자율 작업 현황 진입 (보드 일원화 · 2026-07-03) ══ -->
+    <!-- ══ 🤖 자율 작업 현황 진입 (보드 일원화 · 2026-07-03 · 배339 설명순서 정합) ══ -->
     <a href="자율현황.html" style="display:flex;align-items:center;gap:14px;background:var(--paper);border:1px solid var(--border);border-left:3px solid #2fa37a;border-radius:12px;padding:16px 20px;margin:12px 0 22px;text-decoration:none;color:inherit;">
       <span style="font-size:28px;flex-shrink:0;">🤖</span>
       <span style="flex:1;">
-        <span style="display:block;font-size:16px;font-weight:800;">자율 작업 현황 보드 <span style="font-size:12px;font-weight:400;color:var(--dim);">(돌아가는 자동화 + 자율로 한 일 — 두 축 통합)</span></span>
-        <span style="display:block;font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.5;">🖥️ 시스템 현황(잘 도나) · 🤖 자동화 건강 점수판 · 🟢 지금 도는 자동화(예약작업 10슬롯 타임라인) · 📸 M5 인스타그램 발행 파이프라인 · 🔴 상시 자율 체계까지 전부 이 보드 하나에 모여 있습니다. <code style="font-size:11px;">status/</code> 로그 직독.</span>
+        <span style="display:block;font-size:16px;font-weight:800;">자율 작업 현황 보드 <span style="font-size:12px;font-weight:400;color:var(--dim);">(자율로 한 일 + 돌아가는 자동화 — 두 축 통합)</span></span>
+        <span style="display:block;font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.5;">🔴 상시 자율 체계 · 📊 성과 요약 · 🕘 처리 이력(무엇을 자율로 했나) · 🖥️ 시스템 현황 · 🤖 자동화 건강 점수판 · 📸 M5 인스타그램 발행 파이프라인(잘 도나)까지 전부 이 보드 하나에 모여 있습니다. <code style="font-size:11px;">status/</code> 로그 직독.</span>
       </span>
       <span style="font-size:14px;font-weight:800;color:#0c1a10;background:#2fa37a;border-radius:8px;padding:9px 16px;white-space:nowrap;">자율 작업 현황 보드 열기 →</span>
     </a>
