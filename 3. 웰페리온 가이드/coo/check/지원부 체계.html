@@ -1193,43 +1193,23 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div style="flex:0 0 auto;max-width:640px;min-width:min(100%,320px);display:flex;flex-direction:column;gap:18px;">
       <!-- 지원부 직원 구성·역할 (2026-06-24 시우 실제 명단으로 교체 · FALLBACK_STAFF 배열은 점검자 로직용 유지) -->
       <div style="width:100%;background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--green);overflow:hidden;">
-        <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+        <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <span style="font-size:17px;font-weight:800;color:var(--green);">👥 직원 구성 · 역할</span>
+          <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="staffAdd()">＋ 직원 추가</button>
         </div>
         <div style="padding:12px 14px;">
-          <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
-            <tr style="background:var(--paper);">
-              <th style="padding:8px;border:1px solid var(--border);width:80px;">직책</th>
-              <th style="padding:8px;border:1px solid var(--border);">성명</th>
-              <th style="padding:8px;border:1px solid var(--border);width:58px;">구분</th>
-              <th style="padding:8px;border:1px solid var(--border);">비고</th>
-            </tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>팀장</strong></td><td style="padding:8px;border:1px solid var(--border);">황용석</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);font-size:12px;color:var(--orange);">6월말 퇴직 예정</td></tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">천진석</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">박남일</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">김유정</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">남</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>반장</strong></td><td style="padding:8px;border:1px solid var(--border);">이연희</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">여</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
-            <tr><td style="padding:8px;border:1px solid var(--border);"><strong>주임</strong></td><td style="padding:8px;border:1px solid var(--border);">우춘화</td><td style="padding:8px;border:1px solid var(--border);text-align:center;">여</td><td style="padding:8px;border:1px solid var(--border);">—</td></tr>
-          </table>
-          <p style="font-size:12px;color:var(--dim);margin:0;line-height:1.5;">정원 각 8명 TO · 남·여 일부 충원 진행 중. <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--orange-bg);color:var(--orange);border:1px solid rgba(230,148,78,0.4);">최종 등록 기준 2026-06-24</span></p>
+          <div id="support-staff-table"></div>
+          <p style="font-size:12px;color:var(--dim);margin:10px 0 0;line-height:1.5;">정원 각 8명 TO · 남·여 일부 충원 진행 중. <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--orange-bg);color:var(--orange);border:1px solid rgba(230,148,78,0.4);">최종 등록 기준 2026-06-24</span></p>
         </div>
       </div>
-      <!-- ── 🧖 신규회원 사우나 투어 안내 (8단계 순서형 · 배64) ── -->
+      <!-- ── 🧖 신규회원 사우나 투어 안내 (8단계 순서형 · 편집가능화 SUPPORT_TOUR · 배64) ── -->
       <div style="width:100%;background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--accent);overflow:hidden;">
-        <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+        <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <span style="font-size:17px;font-weight:800;color:var(--accent);">🧖 신규회원 사우나 투어 안내</span>
+          <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="tourAdd()">＋ 단계 추가</button>
         </div>
         <div style="padding:12px 14px;">
-          <ol style="margin:0;padding-left:20px;">
-            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">환영·소개</strong> — "웰페리온에 오신 것을 환영합니다. 회복 구역 안내를 도와드리겠습니다." 밝게 인사하고 본인을 소개합니다.</li>
-            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">락커·탈의</strong> — 개인 락커 위치와 사용법을 안내하고 귀중품 보관 방법을 설명합니다.</li>
-            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">샤워·세면</strong> — 샤워 위치, 비치된 어메니티(샴푸·바디워시), 타월 수령 방법을 안내합니다.</li>
-            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">사우나·회복</strong> — 이용 수칙과 권장 이용 시간을 안내하고 수분 섭취를 권유합니다.</li>
-            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">위생·매너</strong> — 샤워 후 입장, 정숙 유지, 개인물품 관리 매너를 안내합니다.</li>
-            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">편의시설</strong> — 파우더룸, 드라이어, 정수기 위치를 안내합니다.</li>
-            <li style="margin-bottom:10px;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">도움 요청</strong> — 불편사항 발생 시 직원 호출 방법과 리셉션 위치를 안내합니다.</li>
-            <li style="margin-bottom:0;line-height:1.6;font-size:13px;"><strong style="color:var(--text);">마무리</strong> — 예약제 이용 안내로 마무리합니다. 문의: wellperion.com/ko/inquiry</li>
-          </ol>
+          <div id="support-tour-list"></div>
         </div>
       </div>
     </div><!-- /좌 컬럼 -->
@@ -6333,6 +6313,274 @@ function csDelete(id){
 }
 
 loadCsData(); renderCsTable(); loadCsFromBackend(); // 응대표: 로컬 즉시 렌더 후 백엔드 동기화
+
+/* ═══════════════════════════════════════════════
+   직원 구성·역할 (목록형 1표 CRUD) — 회원 응대 상황표(CS_DATA) 패턴 복제(배64)
+   저장: localStorage(SUPPORT_STAFF) 즉시 + 범용 saveBoard POST(key=SUPPORT_STAFF) 비동기.
+   ⚠ 점검자 드롭다운용 FALLBACK_STAFF/DEFAULT_STAFF 배열과는 완전 별개(건드리지 않음).
+   ═══════════════════════════════════════════════ */
+const STAFF_STORAGE_KEY = 'SUPPORT_STAFF';
+var STAFF_DATA = []; // [{id, role, name, gender, note, updatedAt}]
+var staffIdSeq = 0;
+
+function staffNewId(){ return 'stf_'+Date.now().toString(36)+'_'+(staffIdSeq++).toString(36); }
+
+const STAFF_SEED = [
+  {role:'팀장',name:'황용석',gender:'남',note:'6월말 퇴직 예정'},
+  {role:'주임',name:'천진석',gender:'남',note:'—'},
+  {role:'주임',name:'박남일',gender:'남',note:'—'},
+  {role:'주임',name:'김유정',gender:'남',note:'—'},
+  {role:'반장',name:'이연희',gender:'여',note:'—'},
+  {role:'주임',name:'우춘화',gender:'여',note:'—'}
+];
+
+function applyStaffStored(stored){
+  var rows=[];
+  var hadStored=false;
+  if(stored && Array.isArray(stored.rows)){ rows=stored.rows; hadStored=true; }
+  else if(Array.isArray(stored)){ rows=stored; hadStored=true; }
+  if(!hadStored && rows.length===0){
+    rows = STAFF_SEED.map(function(s){ return {role:s.role, name:s.name, gender:s.gender, note:s.note}; });
+  }
+  STAFF_DATA = rows.map(function(r){
+    r=r||{};
+    return {
+      id: r.id || staffNewId(),
+      role: (r.role!=null?String(r.role):''),
+      name: (r.name!=null?String(r.name):''),
+      gender: (r.gender!=null?String(r.gender):''),
+      note: (r.note!=null?String(r.note):''),
+      updatedAt: r.updatedAt || ''
+    };
+  });
+}
+
+function loadStaffData(){
+  var stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(STAFF_STORAGE_KEY)); }catch(e){ stored=null; }
+  applyStaffStored(stored);
+}
+
+async function loadStaffFromBackend(){
+  loadStaffData();
+  renderStaffTable();
+  if(!ONLINE) return;
+  try{
+    var res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(STAFF_STORAGE_KEY),{method:'GET',redirect:'follow'});
+    var data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      applyStaffStored(data.board);
+      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify({rows:STAFF_DATA}));
+    }
+  }catch(e){ /* 네트워크 실패 → 로컬 유지 */ }
+  var wrap=document.getElementById('support-staff-table');
+  if(wrap && !wrap.contains(document.activeElement)) renderStaffTable();
+}
+
+var _staffSaveTimer=null;
+function persistStaffData(){
+  localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify({rows:STAFF_DATA}));
+  if(!ONLINE) return;
+  clearTimeout(_staffSaveTimer);
+  _staffSaveTimer=setTimeout(_staffPush, 800);
+}
+function _staffPush(){
+  var ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='직원표 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:STAFF_STORAGE_KEY,board:{rows:STAFF_DATA}})
+  }).then(function(){if(ind){ind.textContent='직원표 저장 완료';setTimeout(function(){ind.style.display='none'},1500);}})
+    .catch(function(){if(ind){ind.textContent='직원표 저장 (로컬 보관됨)';setTimeout(function(){ind.style.display='none'},1500);}});
+}
+
+function staffFind(id){ for(var i=0;i<STAFF_DATA.length;i++){ if(STAFF_DATA[i].id===id) return STAFF_DATA[i]; } return null; }
+
+function renderStaffTable(){
+  var wrap=document.getElementById('support-staff-table');
+  if(!wrap) return;
+  if(STAFF_DATA.length===0){
+    wrap.innerHTML='<div style="text-align:center;color:var(--dim);padding:24px 12px;font-size:13px;">등록된 직원 없음 — <a href="javascript:void(0)" onclick="staffAdd()" style="color:var(--accent);font-weight:700;text-decoration:none;">＋ 직원 추가</a></div>';
+    return;
+  }
+  var cell='background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box;';
+  var html='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:420px;">';
+  html+='<thead><tr style="text-align:left;color:var(--dim);font-size:12px;">'
+    +'<th style="padding:6px 8px;width:90px;">직책</th>'
+    +'<th style="padding:6px 8px;min-width:100px;">성명</th>'
+    +'<th style="padding:6px 8px;width:70px;">구분</th>'
+    +'<th style="padding:6px 8px;min-width:140px;">비고</th>'
+    +'<th style="padding:6px 8px;width:48px;"></th></tr></thead><tbody>';
+  STAFF_DATA.forEach(function(r){
+    var id=escapeHTML(r.id);
+    html+='<tr style="border-top:1px solid var(--border);">'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+escapeHTML(r.role)+'" oninput="staffEdit(\''+id+'\',\'role\',this.value)" placeholder="직책" autocomplete="off" style="'+cell+'"></td>'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+escapeHTML(r.name)+'" oninput="staffEdit(\''+id+'\',\'name\',this.value)" placeholder="성명" autocomplete="off" style="'+cell+'"></td>'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+escapeHTML(r.gender)+'" oninput="staffEdit(\''+id+'\',\'gender\',this.value)" placeholder="구분" autocomplete="off" style="'+cell+'text-align:center;"></td>'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+escapeHTML(r.note)+'" oninput="staffEdit(\''+id+'\',\'note\',this.value)" placeholder="비고" autocomplete="off" style="'+cell+'"></td>'
+      +'<td style="padding:6px 8px;text-align:center;"><button class="btn" style="padding:4px 8px;color:var(--red);border-color:var(--red);background:transparent;" onclick="staffDelete(\''+id+'\')" title="삭제">✕</button></td>'
+      +'</tr>';
+  });
+  html+='</tbody></table></div>';
+  wrap.innerHTML=html;
+}
+
+function staffAdd(){
+  var item={id:staffNewId(),role:'',name:'',gender:'',note:'',updatedAt:new Date().toISOString()};
+  STAFF_DATA.push(item);
+  persistStaffData();
+  renderStaffTable();
+  var wrap=document.getElementById('support-staff-table');
+  if(wrap){ var inputs=wrap.querySelectorAll('tbody tr:last-child input[type=text]'); if(inputs.length) inputs[0].focus(); }
+}
+
+/* 인라인 편집: 값만 갱신·즉시 persist (표 재렌더 안 함 → IME·커서 보호) */
+function staffEdit(id, field, val){
+  var r=staffFind(id); if(!r) return;
+  r[field]=val;
+  r.updatedAt=new Date().toISOString();
+  persistStaffData();
+}
+
+function staffDelete(id){
+  if(!confirm('이 직원을 삭제할까요?')) return;
+  for(var i=0;i<STAFF_DATA.length;i++){ if(STAFF_DATA[i].id===id){ STAFF_DATA.splice(i,1); break; } }
+  persistStaffData();
+  renderStaffTable();
+}
+
+loadStaffData(); renderStaffTable(); loadStaffFromBackend(); // 직원표: 로컬 즉시 렌더 후 백엔드 동기화
+
+/* ═══════════════════════════════════════════════
+   신규회원 사우나 투어 안내 (순서형 목록 CRUD) — 회원 응대 상황표(CS_DATA) 패턴 복제(배64)
+   저장: localStorage(SUPPORT_TOUR) 즉시 + 범용 saveBoard POST(key=SUPPORT_TOUR) 비동기.
+   순서=배열 순서(추가는 끝에). IME 안전: 입력 중 목록 통째 재렌더 금지(값만 갱신).
+   ═══════════════════════════════════════════════ */
+const TOUR_STORAGE_KEY = 'SUPPORT_TOUR';
+var TOUR_DATA = []; // [{id, title, body, updatedAt}]
+var tourIdSeq = 0;
+
+function tourNewId(){ return 'tur_'+Date.now().toString(36)+'_'+(tourIdSeq++).toString(36); }
+
+const TOUR_SEED = [
+  {title:'환영·소개', body:'"웰페리온에 오신 것을 환영합니다. 회복 구역 안내를 도와드리겠습니다." 밝게 인사하고 본인을 소개합니다.'},
+  {title:'락커·탈의', body:'개인 락커 위치와 사용법을 안내하고 귀중품 보관 방법을 설명합니다.'},
+  {title:'샤워·세면', body:'샤워 위치, 비치된 어메니티(샴푸·바디워시), 타월 수령 방법을 안내합니다.'},
+  {title:'사우나·회복', body:'이용 수칙과 권장 이용 시간을 안내하고 수분 섭취를 권유합니다.'},
+  {title:'위생·매너', body:'샤워 후 입장, 정숙 유지, 개인물품 관리 매너를 안내합니다.'},
+  {title:'편의시설', body:'파우더룸, 드라이어, 정수기 위치를 안내합니다.'},
+  {title:'도움 요청', body:'불편사항 발생 시 직원 호출 방법과 리셉션 위치를 안내합니다.'},
+  {title:'마무리', body:'예약제 이용 안내로 마무리합니다. 문의: wellperion.com/ko/inquiry'}
+];
+
+function applyTourStored(stored){
+  var rows=[];
+  var hadStored=false;
+  if(stored && Array.isArray(stored.rows)){ rows=stored.rows; hadStored=true; }
+  else if(Array.isArray(stored)){ rows=stored; hadStored=true; }
+  if(!hadStored && rows.length===0){
+    rows = TOUR_SEED.map(function(s){ return {title:s.title, body:s.body}; });
+  }
+  TOUR_DATA = rows.map(function(r){
+    r=r||{};
+    return {
+      id: r.id || tourNewId(),
+      title: (r.title!=null?String(r.title):''),
+      body: (r.body!=null?String(r.body):''),
+      updatedAt: r.updatedAt || ''
+    };
+  });
+}
+
+function loadTourData(){
+  var stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(TOUR_STORAGE_KEY)); }catch(e){ stored=null; }
+  applyTourStored(stored);
+}
+
+async function loadTourFromBackend(){
+  loadTourData();
+  renderTourList();
+  if(!ONLINE) return;
+  try{
+    var res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(TOUR_STORAGE_KEY),{method:'GET',redirect:'follow'});
+    var data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      applyTourStored(data.board);
+      localStorage.setItem(TOUR_STORAGE_KEY, JSON.stringify({rows:TOUR_DATA}));
+    }
+  }catch(e){ /* 네트워크 실패 → 로컬 유지 */ }
+  var wrap=document.getElementById('support-tour-list');
+  if(wrap && !wrap.contains(document.activeElement)) renderTourList();
+}
+
+var _tourSaveTimer=null;
+function persistTourData(){
+  localStorage.setItem(TOUR_STORAGE_KEY, JSON.stringify({rows:TOUR_DATA}));
+  if(!ONLINE) return;
+  clearTimeout(_tourSaveTimer);
+  _tourSaveTimer=setTimeout(_tourPush, 800);
+}
+function _tourPush(){
+  var ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='투어안내 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:TOUR_STORAGE_KEY,board:{rows:TOUR_DATA}})
+  }).then(function(){if(ind){ind.textContent='투어안내 저장 완료';setTimeout(function(){ind.style.display='none'},1500);}})
+    .catch(function(){if(ind){ind.textContent='투어안내 저장 (로컬 보관됨)';setTimeout(function(){ind.style.display='none'},1500);}});
+}
+
+function tourFind(id){ for(var i=0;i<TOUR_DATA.length;i++){ if(TOUR_DATA[i].id===id) return TOUR_DATA[i]; } return null; }
+
+function renderTourList(){
+  var wrap=document.getElementById('support-tour-list');
+  if(!wrap) return;
+  if(TOUR_DATA.length===0){
+    wrap.innerHTML='<div style="text-align:center;color:var(--dim);padding:24px 12px;font-size:13px;">등록된 단계 없음 — <a href="javascript:void(0)" onclick="tourAdd()" style="color:var(--accent);font-weight:700;text-decoration:none;">＋ 단계 추가</a></div>';
+    return;
+  }
+  var cell='background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;';
+  var html='<ol style="margin:0;padding-left:20px;">';
+  TOUR_DATA.forEach(function(r){
+    var id=escapeHTML(r.id);
+    html+='<li style="margin-bottom:10px;line-height:1.6;font-size:13px;">'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">'
+      +'<input type="text" value="'+escapeHTML(r.title)+'" oninput="tourEdit(\''+id+'\',\'title\',this.value)" placeholder="단계명" autocomplete="off" style="'+cell+'font-weight:700;width:130px;flex:0 0 auto;">'
+      +'<input type="text" value="'+escapeHTML(r.body)+'" oninput="tourEdit(\''+id+'\',\'body\',this.value)" placeholder="안내 내용" autocomplete="off" style="'+cell+'flex:1 1 220px;min-width:200px;">'
+      +'<button class="btn" style="padding:4px 8px;color:var(--red);border-color:var(--red);background:transparent;flex:0 0 auto;" onclick="tourDelete(\''+id+'\')" title="삭제">✕</button>'
+      +'</div>'
+      +'</li>';
+  });
+  html+='</ol>';
+  wrap.innerHTML=html;
+}
+
+function tourAdd(){
+  var item={id:tourNewId(),title:'',body:'',updatedAt:new Date().toISOString()};
+  TOUR_DATA.push(item);
+  persistTourData();
+  renderTourList();
+  var wrap=document.getElementById('support-tour-list');
+  if(wrap){ var inputs=wrap.querySelectorAll('li:last-child input[type=text]'); if(inputs.length) inputs[0].focus(); }
+}
+
+/* 인라인 편집: 값만 갱신·즉시 persist (목록 재렌더 안 함 → IME·커서 보호) */
+function tourEdit(id, field, val){
+  var r=tourFind(id); if(!r) return;
+  r[field]=val;
+  r.updatedAt=new Date().toISOString();
+  persistTourData();
+}
+
+function tourDelete(id){
+  if(!confirm('이 단계를 삭제할까요?')) return;
+  for(var i=0;i<TOUR_DATA.length;i++){ if(TOUR_DATA[i].id===id){ TOUR_DATA.splice(i,1); break; } }
+  persistTourData();
+  renderTourList();
+}
+
+loadTourData(); renderTourList(); loadTourFromBackend(); // 투어안내: 로컬 즉시 렌더 후 백엔드 동기화
 
 /* ── 관리자 편집 게이트 (비밀번호 1234, 세션당 1회) ──
    조회·열람은 게이트 없음. 추가/편집저장/삭제 등 변경 시에만 호출. */
