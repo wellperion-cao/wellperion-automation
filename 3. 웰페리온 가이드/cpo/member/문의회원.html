@@ -958,7 +958,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div style="flex:1;min-width:240px">
         <div style="font-size:11px;font-weight:800;color:var(--text);margin:0 0 7px">⚠️ LOSS 신호 (실측 라이브 — 유효회원 시트)</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px 14px">
-          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> LOSS율 <b id="chSigLossRate">—</b>% (<span id="chSigLossCount">—</span>명)</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 이번 달 LOSS <b id="chSigMoLossCount">—</b>명 (<b id="chSigMoLossRate">—</b>%)</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim)"><span class="signal-badge" style="background:var(--dim);color:#fff">누적</span> 명단 잔류 <b id="chSigLossRate">—</b>% (<span id="chSigLossCount">—</span>명)</div>
           <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 갱신 D-7 이내 임박 <b id="chSigD7">—</b>명</div>
           <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge med">MED</span> 갱신 D-8~30 임박 <b id="chSigD830">—</b>명</div>
         </div>
@@ -2029,7 +2030,8 @@ function loadChurnTopBadges(){
   _fetchChurnStats(function(d){
     if (!d) return;
     var bk = _churnBuckets(d);
-    _setTxt('chSigLossRate', d.lossRate); _setTxt('chSigLossCount', d.lossCount);
+    _setTxt('chSigMoLossCount', d.monthLossCount); _setTxt('chSigMoLossRate', d.monthLossRate);   // 당월(주력)
+    _setTxt('chSigLossRate', d.lossRate); _setTxt('chSigLossCount', d.lossCount);                  // 누적(보조)
     _setTxt('chSigD7', bk.b7); _setTxt('chSigD830', bk.b14 + bk.b30);
   });
 }
@@ -2042,7 +2044,7 @@ function renderChurnMatrixLive(body){
   _fetchChurnStats(function(d){
     if (!d) { if (lossEl) lossEl.textContent = '불러오기 실패'; if (renewEl) renewEl.textContent = '불러오기 실패'; return; }
     var bk = _churnBuckets(d);
-    if (lossEl) lossEl.textContent = 'LOSS ' + d.lossCount + '명 (LOSS율 ' + d.lossRate + '%)';
+    if (lossEl) lossEl.textContent = '당월 ' + d.monthLossCount + '명 (' + d.monthLossRate + '%) · 누적 잔류 ' + d.lossCount + '명 (' + d.lossRate + '%)';
     if (renewEl) renewEl.textContent = 'D-7 이내 ' + bk.b7 + '명 · D-8~14 ' + bk.b14 + '명';
   });
 }
@@ -2071,15 +2073,17 @@ function loadChurnStats(el){
       el.innerHTML =
         '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:6px">'+
           _kpi('유효 회원', d.activeCount, 'var(--green)')+
-          _kpi('LOSS', d.lossCount, 'var(--red)')+
-          _kpi('LOSS율', d.lossRate+'%', 'var(--red)')+
+          _kpi('당월 LOSS(이번 달 신규)', d.monthLossCount, 'var(--red)')+
+          _kpi('당월 LOSS율', d.monthLossRate+'%', 'var(--red)')+
+          _kpi('누적 LOSS(명단 잔류)', d.lossCount, 'var(--dim)')+
+          _kpi('누적율', d.lossRate+'%', 'var(--dim)')+
           _kpi('갱신 임박(30일)', d.renewCount, 'var(--accent)')+
         '</div>'+
         (d.renewCount
           ? ('<div style="font-size:12px;font-weight:800;color:var(--text);margin-top:8px">⏰ 갱신 임박 회원 — 지금 챙길 명단</div>'+
              _rlist('🔴 D-7 이내', b7, 'var(--red)')+_rlist('🟡 D-8~14', b14, 'var(--yellow)')+_rlist('🟢 D-15~30', b30, 'var(--green)'))
           : '<div style="color:var(--dim);font-size:12px;margin-top:8px">30일 내 갱신 임박 회원 없음</div>')+
-        '<div style="color:var(--dim);font-size:10px;margin-top:12px">· 유효회원 시트 잔여일·재등록분류 실측 · 열람 시마다 갱신</div>';
+        '<div style="color:var(--dim);font-size:10px;margin-top:12px">· 유효회원 시트 잔여일·재등록분류 실측 · 열람 시마다 갱신<br>· 당월 LOSS=LOSS일자(이탈일/해지일/종료일)가 이번 달인 건 · 당월 LOSS율 분모=유효+당월LOSS 근사(월초 스냅샷 없음) · 누적=명단 잔류 전체 비율</div>';
   }, true);
 }
 

@@ -2829,7 +2829,10 @@ function _processAction(body) {
 
   // ─── 이탈 현황 실측(1단계) — 유효회원 시트 잔여일·재등록분류로 유효/이탈/이탈율 + 갱신 임박 리스트. 2026-07-02 시포·GM ───
   if (action === 'cpo_churn_stats') {
-    var czActive = 0, czLoss = 0, czRenew = [];
+    var czActive = 0, czLoss = 0, czMonthLoss = 0, czRenew = [];
+    // 당월 LOSS 판정용 현재 연-월(KST) — cpo_today_stats 와 동일한 LOSS일자 파싱 방식 재사용. 2026-07-03 시포·GM
+    var czTz = 'Asia/Seoul';
+    var czMonth = Utilities.formatDate(new Date(), czTz, 'yyyy-MM');
     try {
       var czSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
       if (czSh && czSh.getLastRow() >= 2) {
@@ -2838,6 +2841,8 @@ function _processAction(body) {
         function _czIdx(want){ var w = String(want).replace(/\s/g, ''); for (var i = 0; i < czHdr.length; i++){ if (czHdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; } return -1; }
         var czNm = _czIdx('회원명'); var czRem = _czIdx('잔여일'); var czRe = _czIdx('재등록분류');
         var czPg = _czIdx('등급'); if (czPg < 0) czPg = _czIdx('상품'); if (czPg < 0) czPg = _czIdx('프로그램');
+        // LOSS일자 컬럼(cpo_today_stats 와 동일 우선순위: 이탈일→해지일→종료일)
+        var czLossI = _czIdx('이탈일'); if (czLossI < 0) czLossI = _czIdx('해지일'); if (czLossI < 0) czLossI = _czIdx('종료일');
         var _CZ_LOSS = { 'LOSS':1, '환불':1, '양도LOSS':1 };
         var czAll = czSh.getRange(2, 1, czSh.getLastRow() - 1, czCols).getValues();
         for (var czr = 0; czr < czAll.length; czr++) {
@@ -2848,7 +2853,16 @@ function _processAction(body) {
           var czRemN = (czRemRaw === '' || czRemRaw === '-') ? NaN : parseInt(czRemRaw, 10);
           var czReV = czRe >= 0 ? String(czrow[czRe] == null ? '' : czrow[czRe]).trim() : '';
           var czIsLoss = !!_CZ_LOSS[czReV] || (!isNaN(czRemN) && czRemN <= 0);
-          if (czIsLoss) { czLoss++; continue; }
+          if (czIsLoss) {
+            czLoss++;
+            // 당월 LOSS: LOSS일자(이탈일/해지일/종료일)가 현재 연-월인 건만
+            if (czLossI >= 0) {
+              var czlv = czrow[czLossI];
+              var czlD = (czlv instanceof Date && !isNaN(czlv.getTime())) ? Utilities.formatDate(czlv, czTz, 'yyyy-MM-dd') : _miToISO_(czlv);
+              if (czlD && czlD.slice(0, 7) === czMonth) czMonthLoss++;
+            }
+            continue;
+          }
           czActive++;
           if (!isNaN(czRemN) && czRemN > 0 && czRemN <= 30) {
             czRenew.push({ name: czName, rem: czRemN, program: czPg >= 0 ? String(czrow[czPg] || '').trim() : '' });
@@ -2859,7 +2873,10 @@ function _processAction(body) {
     czRenew.sort(function(a, b){ return a.rem - b.rem; });
     var czTotal = czActive + czLoss;
     var czRate = czTotal > 0 ? Math.round(czLoss / czTotal * 1000) / 10 : 0;
-    return _json({ ok: true, activeCount: czActive, lossCount: czLoss, lossRate: czRate, renewCount: czRenew.length, renewSoon: czRenew.slice(0, 200) });
+    // 당월 LOSS율 — 분모=현재 유효+당월LOSS 근사(월초 스냅샷 없음, 라벨에 명시). 2026-07-03 시포·GM
+    var czMonthTotal = czActive + czMonthLoss;
+    var czMonthRate = czMonthTotal > 0 ? Math.round(czMonthLoss / czMonthTotal * 1000) / 10 : 0;
+    return _json({ ok: true, activeCount: czActive, lossCount: czLoss, lossRate: czRate, monthLossCount: czMonthLoss, monthLossRate: czMonthRate, renewCount: czRenew.length, renewSoon: czRenew.slice(0, 200) });
   }
 
   // ─── 문의→가입 전환 집계 ───

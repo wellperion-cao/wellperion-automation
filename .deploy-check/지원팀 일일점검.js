@@ -311,6 +311,7 @@ function doGet(e) {
   if (action === 'board')     return getBoard(e.parameter);
   if (action === 'weekly')    return handleWeekly(e.parameter);
   if (action === 'today_live') return handleTodayLive(e.parameter);   // 오늘 실시간 현황(cr 원장 기반·읽기전용) — home·대시보드 단일값. 2026-06-16 시우.
+  if (action === 'monthly_report') return handleMonthlyReport(e.parameter);   // 지원부 점검 월간 리포트 집계(snapshot+이슈대장). 완료율=잠정(배14 분모정합 선결). 배208 1단계. 2026-07-03 시우.
   if (action === 'issuelog')  return handleIssueLogGet(e.parameter);
   if (action === 'setup_issue_tabs') { setupIssueLogSheets(); return jsonRes({ok:true,msg:'이슈대장 탭 생성 완료'}); }
   if (action === 'setup_facility_tabs') { return setupFacilitySheets(); }
@@ -2856,6 +2857,218 @@ function handleWeekly(params) {
   });
 
   return jsonRes({ ok: true, dept: dept, data: result });
+}
+
+// ════════════════════════════════════════════
+// action=monthly_report — 지원부 점검 월간 리포트 집계 (배208 1단계, 2026-07-03 시우)
+// GET ?action=monthly_report&dept=support&month=YYYY-MM (month 생략 시 이번달)
+// IO(handleMonthlyReport)/순수집계(_aggregateMonthly) 분리 — 후자는 SpreadsheetApp 무의존(Node 단위테스트 가능).
+// 완료율=잠정(배14 분모정합 선결 — 화면·서버 분모 통일 후 확정). 라이브 배포는 GM go 별도.
+// ════════════════════════════════════════════
+
+// 날짜값(Date객체 또는 'YYYY-MM-DD'·'YYYY. M. D' 등 문자열)에서 {y,m,d} 추출. 실패 시 null.
+function _parseDateParts_(v) {
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return null;
+    return { y: v.getFullYear(), m: v.getMonth() + 1, d: v.getDate() };
+  }
+  var s = String(v == null ? '' : v).trim();
+  if (!s) return null;
+  var m = s.match(/(\d{4})\s*[.\-\/]\s*(\d{1,2})(?:\s*[.\-\/]\s*(\d{1,2}))?/);
+  if (!m) return null;
+  return { y: Number(m[1]), m: Number(m[2]), d: m[3] ? Number(m[3]) : 1 };
+}
+function _pad2_(n) { return n < 10 ? '0' + n : '' + n; }
+// 'YYYY-MM' 추출
+function _ymOf_(v) {
+  var p = _parseDateParts_(v);
+  return p ? (p.y + '-' + _pad2_(p.m)) : '';
+}
+// 'YYYY-MM-DD' 추출(일자 미상 시 01일 보정)
+function _ymdOf_(v) {
+  var p = _parseDateParts_(v);
+  return p ? (p.y + '-' + _pad2_(p.m) + '-' + _pad2_(p.d)) : '';
+}
+function _isTestVal_(v) {
+  return /test|테스트/i.test(String(v == null ? '' : v));
+}
+
+// 순수 집계 함수 — SpreadsheetApp 무호출. snapRows/issueRows = 헤더 제외 2차원 배열(원본 셀값 그대로).
+// snapRows 열: 0제출시각 1날짜 2부서 3구역 4교대 5점검자 6총항목 7완료 8완료율 9이슈건수 10이슈내용 11점검시작 12점검완료 13소요(분)
+// issueRows 열: 0등록일 1구역 2점검자 3이슈내용 4상태 5처리일 6비고
+function _aggregateMonthly(snapRows, issueRows, month) {
+  snapRows = snapRows || [];
+  issueRows = issueRows || [];
+  var testExcludedCount = 0;
+
+  // 1) Test 행 제외 + 2) 월 필터
+  var filtered = [];
+  snapRows.forEach(function (row) {
+    var inspector = row[5], zone = row[3];
+    if (_isTestVal_(inspector) || _isTestVal_(zone)) { testExcludedCount++; return; }
+    var ym = _ymOf_(row[1]);
+    if (ym !== month) return;
+    filtered.push(row);
+  });
+
+  // 3) Dedup: (날짜,구역,교대버킷) 키 → 최신 제출시각 1건만(handleWeekly 패턴 참고: at 문자열 비교로 최신 채택)
+  var dedupMap = {};
+  filtered.forEach(function (row) {
+    var ymd = _ymdOf_(row[1]);
+    var zone = String(row[3] == null ? '' : row[3]);
+    var bucket = _shiftBucket(row[4]);
+    var key = ymd + '|' + zone + '|' + bucket;
+    var at = String(row[0] == null ? '' : row[0]);
+    var cell = dedupMap[key];
+    if (!cell || at >= cell.at) {
+      dedupMap[key] = { row: row, at: at, ymd: ymd, zone: zone, bucket: bucket };
+    }
+  });
+  var sessions = Object.keys(dedupMap).map(function (k) { return dedupMap[k]; });
+
+  // 4) 집계
+  var byDate = {};          // ymd -> {sumTotal,sumDone,sessionCount,issueCount}
+  var byZoneMap = {};       // zone -> {...}
+  var byShiftMap = {};      // bucket -> {...}
+  var byInspectorMap = {};  // inspector -> {sessionCount,pctSum}
+  var zoneShiftTotals = {}; // zone|bucket -> {total:true,...} — denomInconsistent 판정용
+  var denomInconsistent = false;
+
+  sessions.forEach(function (s) {
+    var row = s.row;
+    var total = Number(row[6]); if (isNaN(total)) total = 0;
+    var done = Number(row[7]); if (isNaN(done)) done = 0;
+    var issueCnt = Number(row[9]); if (isNaN(issueCnt)) issueCnt = 0;
+    var inspector = String(row[5] == null ? '' : row[5]).trim() || '(미기재)';
+
+    if (!byDate[s.ymd]) byDate[s.ymd] = { sumTotal: 0, sumDone: 0, sessionCount: 0, issueCount: 0 };
+    byDate[s.ymd].sumTotal += total; byDate[s.ymd].sumDone += done;
+    byDate[s.ymd].sessionCount++; byDate[s.ymd].issueCount += issueCnt;
+
+    if (!byZoneMap[s.zone]) byZoneMap[s.zone] = { zone: s.zone, sessionCount: 0, sumTotal: 0, sumDone: 0, issueCount: 0 };
+    byZoneMap[s.zone].sessionCount++; byZoneMap[s.zone].sumTotal += total;
+    byZoneMap[s.zone].sumDone += done; byZoneMap[s.zone].issueCount += issueCnt;
+
+    if (!byShiftMap[s.bucket]) byShiftMap[s.bucket] = { shift: s.bucket, sessionCount: 0, sumTotal: 0, sumDone: 0 };
+    byShiftMap[s.bucket].sessionCount++; byShiftMap[s.bucket].sumTotal += total; byShiftMap[s.bucket].sumDone += done;
+
+    if (!byInspectorMap[inspector]) byInspectorMap[inspector] = { inspector: inspector, sessionCount: 0, pctSum: 0 };
+    byInspectorMap[inspector].sessionCount++;
+    byInspectorMap[inspector].pctSum += (total > 0 ? (done / total * 100) : 0);
+
+    var zsKey = s.zone + '|' + s.bucket;
+    if (!zoneShiftTotals[zsKey]) zoneShiftTotals[zsKey] = {};
+    zoneShiftTotals[zsKey][total] = true;
+  });
+
+  Object.keys(zoneShiftTotals).forEach(function (k) {
+    if (Object.keys(zoneShiftTotals[k]).length > 1) denomInconsistent = true;
+  });
+
+  var dailySeries = Object.keys(byDate).sort().map(function (d) {
+    var c = byDate[d];
+    return {
+      date: d, sumTotal: c.sumTotal, sumDone: c.sumDone,
+      pct: c.sumTotal > 0 ? Math.round(c.sumDone / c.sumTotal * 100) : null,
+      sessionCount: c.sessionCount, issueCount: c.issueCount
+    };
+  });
+
+  var monthSumTotal = 0, monthSumDone = 0, monthIssueCount = 0;
+  dailySeries.forEach(function (d) { monthSumTotal += d.sumTotal; monthSumDone += d.sumDone; monthIssueCount += d.issueCount; });
+
+  var monthTotals = {
+    sumTotal: monthSumTotal, sumDone: monthSumDone,
+    avgPct: monthSumTotal > 0 ? Math.round(monthSumDone / monthSumTotal * 100) : null,
+    sessionCount: sessions.length,
+    activeDays: dailySeries.length,
+    issueCount: monthIssueCount
+  };
+
+  var byZone = Object.keys(byZoneMap).map(function (z) {
+    var c = byZoneMap[z];
+    return {
+      zone: c.zone, sessionCount: c.sessionCount, sumTotal: c.sumTotal, sumDone: c.sumDone,
+      pct: c.sumTotal > 0 ? Math.round(c.sumDone / c.sumTotal * 100) : null, issueCount: c.issueCount
+    };
+  }).sort(function (a, b) { return b.sessionCount - a.sessionCount; });
+
+  var byShift = Object.keys(byShiftMap).map(function (s) {
+    var c = byShiftMap[s];
+    return {
+      shift: c.shift, sessionCount: c.sessionCount, sumTotal: c.sumTotal, sumDone: c.sumDone,
+      pct: c.sumTotal > 0 ? Math.round(c.sumDone / c.sumTotal * 100) : null
+    };
+  });
+
+  var byInspector = Object.keys(byInspectorMap).map(function (i) {
+    var c = byInspectorMap[i];
+    return { inspector: c.inspector, sessionCount: c.sessionCount, avgPct: c.sessionCount > 0 ? Math.round(c.pctSum / c.sessionCount) : null };
+  }).sort(function (a, b) { return b.sessionCount - a.sessionCount; });
+
+  // 이슈대장(지원_이슈대장 등) 집계 — 스냅샷 9열(세션별 이슈건수)과는 독립된 별도 시트/월필터
+  var issueByStatus = { '미처리': 0, '처리중': 0, '완료': 0 };
+  var issueByZoneMap = {};
+  var issueTotal = 0;
+  issueRows.forEach(function (row) {
+    var zone = row[1], inspector = row[2];
+    if (_isTestVal_(inspector) || _isTestVal_(zone)) { testExcludedCount++; return; }
+    var ym = _ymOf_(row[0]);
+    if (ym !== month) return;
+    issueTotal++;
+    var status = String(row[4] == null ? '' : row[4]).trim() || '미처리';
+    if (issueByStatus[status] === undefined) issueByStatus[status] = 0;
+    issueByStatus[status]++;
+    var z = String(zone == null ? '' : zone);
+    if (!issueByZoneMap[z]) issueByZoneMap[z] = { zone: z, count: 0 };
+    issueByZoneMap[z].count++;
+  });
+  var issueByZone = Object.keys(issueByZoneMap).map(function (z) { return issueByZoneMap[z]; })
+    .sort(function (a, b) { return b.count - a.count; });
+
+  return {
+    ok: true,
+    dept: null,   // handleMonthlyReport(IO)에서 채움
+    month: month,
+    testExcludedCount: testExcludedCount,
+    dailySeries: dailySeries,
+    monthTotals: monthTotals,
+    byZone: byZone,
+    byShift: byShift,
+    byInspector: byInspector,
+    issues: { total: issueTotal, byStatus: issueByStatus, byZone: issueByZone },
+    denomNote: '완료율=잠정(배14 분모정합 선결 — 화면·서버 분모 통일 후 확정)',
+    denomInconsistent: denomInconsistent
+  };
+}
+
+// IO 담당: 스냅샷(점검일지_<dept>)+이슈대장 시트 read → _aggregateMonthly 호출 → JSON 반환.
+// GET ?action=monthly_report&dept=support&month=YYYY-MM(생략 시 오늘 기준 이번달)
+function handleMonthlyReport(params) {
+  params = params || {};
+  var dept = params.dept || 'support';
+  var month = params.month || '';
+  if (!/^\d{4}-\d{2}$/.test(month)) {
+    month = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM');
+  }
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  var snapSheet = ss.getSheetByName(_snapshotTabName(dept));
+  var snapRows = [];
+  if (snapSheet && snapSheet.getLastRow() > 1) {
+    snapRows = snapSheet.getDataRange().getValues().slice(1);
+  }
+
+  var issueTabName = dept === 'facility' ? SHEET_ISSUE_FACILITY : SHEET_ISSUE_SUPPORT;
+  var issueSheet = ss.getSheetByName(issueTabName);
+  var issueRows = [];
+  if (issueSheet && issueSheet.getLastRow() > 1) {
+    issueRows = issueSheet.getDataRange().getValues().slice(1);
+  }
+
+  var result = _aggregateMonthly(snapRows, issueRows, month);
+  result.dept = dept;
+  return jsonRes(result);
 }
 
 // ════════════════════════════════════════════

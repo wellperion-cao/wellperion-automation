@@ -47,6 +47,11 @@ a{color:var(--accent);text-decoration:none}
 .cover-meta-table .val{font-weight:600}
 .cover-divider{height:1px;background:var(--border);margin:24px 0}
 .cover-notice{font-size:11px;color:var(--dim);font-style:italic}
+.month-select-wrap{display:inline-flex;align-items:center;gap:8px;margin-bottom:14px}
+.month-select-lbl{font-size:11px;color:var(--dim);font-weight:600}
+.month-select{background:var(--accent-bg);border:1px solid rgba(183,159,138,.35);border-radius:8px;color:var(--accent);font-size:13px;font-weight:700;font-family:inherit;padding:6px 10px;cursor:pointer;outline:none}
+.month-select:hover{background:rgba(183,159,138,.22)}
+@media print{.month-select-wrap{display:none!important}}
 
 /* 섹션 */
 .section{margin-bottom:24px}
@@ -177,6 +182,10 @@ a{color:var(--accent);text-decoration:none}
     <div class="cover-logo">WELLPERION</div>
     <div class="cover-title">마케팅 월간 보고서</div>
     <div class="cover-period" id="coverPeriod">—</div>
+    <div class="month-select-wrap">
+      <span class="month-select-lbl">보고 월</span>
+      <select id="monthSelect" class="month-select"></select>
+    </div>
     <div class="cover-divider"></div>
     <div class="cover-meta-table">
       <span class="lbl">작성</span><span class="val">AI CMO 시모</span>
@@ -277,26 +286,50 @@ function _wpUrl(base) { return base; }
 function _wpGate(json){ return false; }
 
 /* ── 모듈 상태 (채널 퍼널·코멘트 공용) ── */
-let _pb = null;        // period_breakdown 이번달
+let _pb = null;        // period_breakdown 선택 월
 let _fc = null;        // funnel_conversion (채널별 누적 전환율)
-let _prevByCh = null;  // 지난달 채널별 문의 {채널:건수}
+let _prevByCh = null;  // 선택 월 이전달 채널별 문의 {채널:건수}
 
-/* ── 지난달 1일~말일 채널별 문의 (period_breakdown custom range) ── */
+/* ── 월 선택기 상태 (기본=이번달) ── */
+const _now0 = new Date();
+let _selY = _now0.getFullYear();
+let _selM = _now0.getMonth() + 1;   // 1~12
+
+/* ── 연/월 → {from,to} (YYYY-MM-01 ~ YYYY-MM-말일) ── */
+function monthRange(y, m) {
+  const mm = String(m).padStart(2, '0');
+  const last = new Date(y, m, 0).getDate();
+  return { from: y + '-' + mm + '-01', to: y + '-' + mm + '-' + String(last).padStart(2, '0') };
+}
+
+/* ── 월 선택 드롭다운 채우기 (최근 12개월, 이번달부터 역순) ── */
+function populateMonthSelect() {
+  const sel = document.getElementById('monthSelect');
+  if (!sel) return;
+  const opts = [];
+  let y = _now0.getFullYear(), m = _now0.getMonth() + 1;
+  for (let i = 0; i < 12; i++) {
+    const val = y + '-' + String(m).padStart(2, '0');
+    opts.push(`<option value="${val}">${y}년 ${m}월</option>`);
+    m--;
+    if (m === 0) { m = 12; y--; }
+  }
+  sel.innerHTML = opts.join('');
+  sel.value = _selY + '-' + String(_selM).padStart(2, '0');
+}
+
+/* ── 선택 월 이전달 1일~말일 채널별 문의 (period_breakdown custom range) ── */
 async function loadPrevMonthChannels() {
   try {
-    const now = new Date();
-    const py = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-    const pm = now.getMonth() === 0 ? 12 : now.getMonth();   // 1~12 (지난달)
-    const mm = String(pm).padStart(2, '0');
-    const last = new Date(py, pm, 0).getDate();
-    const from = py + '-' + mm + '-01';
-    const to   = py + '-' + mm + '-' + String(last).padStart(2, '0');
+    const py = _selM === 1 ? _selY - 1 : _selY;
+    const pm = _selM === 1 ? 12 : _selM - 1;   // 1~12 (선택월 이전달)
+    const { from, to } = monthRange(py, pm);
     const resp = await fetch(_wpUrl(GAS_URL + '?action=period_breakdown&from=' + from + '&to=' + to));
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
     _prevByCh = (data && data.custom && data.custom.byChannel) ? data.custom.byChannel : {};
   } catch (e) {
-    _prevByCh = null;   // null = 지난달 비교 불가('—' 표시)
+    _prevByCh = null;   // null = 이전달 비교 불가('—' 표시)
   }
   maybeRenderChannelFunnel();
   renderComments();
@@ -317,14 +350,13 @@ function getRateClass(rate) {
   return "rate-low";
 }
 
-/* ── 대상 월 표기 ── */
-(function setMonthLabel() {
+/* ── 대상 월 표기 (선택 월 기준 · 생성일=오늘 고정) ── */
+function setMonthLabel() {
   const now = new Date();
-  const y   = now.getFullYear();
-  const m   = String(now.getMonth() + 1).padStart(2, "0");
-  document.getElementById("coverPeriod").textContent  = y + "년 " + Number(m) + "월";
-  document.getElementById("coverGenDate").textContent = y + "-" + m + "-" + String(now.getDate()).padStart(2, "0");
-})();
+  document.getElementById("coverPeriod").textContent  = _selY + "년 " + _selM + "월";
+  document.getElementById("coverGenDate").textContent = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+}
+setMonthLabel();
 
 /* ── 오류 배너 ── */
 function showError(msg) {
@@ -333,22 +365,30 @@ function showError(msg) {
   el.style.display = "block";
 }
 
-/* ── period_breakdown 로드 ── */
+/* ── period_breakdown 로드 (선택 월 custom range → 이번달 응답 형태로 재매핑) ── */
 async function loadPeriodBreakdown() {
-  let data = null;
+  let mapped = null;
   try {
-    const resp = await fetch(_wpUrl(GAS_URL + "?action=period_breakdown"));
+    const { from, to } = monthRange(_selY, _selM);
+    const resp = await fetch(_wpUrl(GAS_URL + "?action=period_breakdown&from=" + from + "&to=" + to));
     if (!resp.ok) throw new Error("HTTP " + resp.status);
-    data = await resp.json();
-    if (!data.ok) throw new Error("GAS 응답 ok=false");
+    const data = await resp.json();
+    const c = data && data.custom;
+    if (!c) throw new Error("GAS custom 응답 없음");
+    mapped = {
+      ok: true,
+      clicks: { month: c.clicks },
+      inquiries: { month: c.inquiries, byChannelMonth: c.byChannel, byTypeMonth: c.byType },
+      conversion: { month: c.conversion },
+    };
   } catch (e) {
     showError("period_breakdown 로드 실패 — 집계 칸은 '—'으로 표시됩니다. (" + e.message + ")");
-    data = null;
+    mapped = null;
   }
-  _pb = data;
-  renderKpiTable(data);
-  renderTypeBars(data);
-  renderSummary(data);
+  _pb = mapped;
+  renderKpiTable(mapped);
+  renderTypeBars(mapped);
+  renderSummary(mapped);
   maybeRenderChannelFunnel();
   renderComments();
 }
@@ -580,7 +620,25 @@ async function loadDanggnViews() {
   }
 }
 
+/* ── 월 선택 변경 핸들러 — 선택 월 기준으로 표지·집계·이전달 비교 재로드 (funnel_conversion은 누적치라 재로드 불필요) ── */
+async function onMonthChange() {
+  const sel = document.getElementById('monthSelect');
+  if (!sel || !sel.value) return;
+  const [y, m] = sel.value.split('-').map(Number);
+  _selY = y; _selM = m;
+  setMonthLabel();
+  const box = document.getElementById('summaryBox');
+  if (box) box.innerHTML = '<span class="loading">데이터 로딩 중…</span>';
+  await Promise.all([
+    loadPeriodBreakdown(),
+    loadPrevMonthChannels(),
+  ]);
+}
+
 (async function init() {
+  populateMonthSelect();
+  const sel = document.getElementById('monthSelect');
+  if (sel) sel.addEventListener('change', onMonthChange);
   await Promise.all([
     loadPeriodBreakdown(),
     loadFunnelConversion(),
