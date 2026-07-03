@@ -1755,8 +1755,8 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-03",
     "ship_no": 390,
-    "note": "deep-interview 확정(모호도9%·스펙 .omc/specs/deep-interview-cmo-loop-autonomy.md). v1 배관: ⑤→① 되먹임(producer 제안 참고, CMO_LOOP_FEEDBACK OFF 기본)·주간 사이클 오케스트레이션(marketing_loop_cycle.py dry)·발효 플래그+역롤백. 라이브 발효=GM go. 자동조정=v2.",
-    "next": "GM go 시 CMO_LOOP_FEEDBACK ON + 주간 cron 등록 → 라이브 발효. 그전 몇 사이클 수동 검증.",
+    "note": "deep-interview 확정(모호도9%·스펙 .omc/specs/deep-interview-cmo-loop-autonomy.md). v1 배관: ⑤→① 되먹임(producer 제안 참고, CMO_LOOP_FEEDBACK OFF 기본)·주간 사이클 오케스트레이션(marketing_loop_cycle.py dry)·발효 플래그+역롤백. 라이브 발효=GM go. 자동조정=v2. [2026-07-03 GM go 라이브 발효] ①매주 자동 분석 예약작업 Wellperion-CMO-Weekly-Marketing-Feedback(월 09:00) 등록 ②CMO_LOOP_FEEDBACK=1 발효(producer 제안 참고 ON). 역롤백=task 삭제 + setx 0. ②발행 GM승인 게이트 무변경. 첫 되먹임=시모 주간 제안 채우면 흐름.",
+    "next": "월 09:00 첫 자동 사이클 후 ⑤ 브리프 확인 → 시모가 '다음 편 제안' 슬롯 채우면 ①제작 참고로 흐르는지 검증.",
     "depends_on": ""
   },
   {
