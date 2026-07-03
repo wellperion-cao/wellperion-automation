@@ -1265,5 +1265,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_0133cA4wyP12yABv4U4NeWbe (CLI ad-hoc · 커밋 2d4944cc)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "2d4944cc148670531ca8435a94622eda969f9370"
+  },
+  {
+    "task_id": "CTO-2026-07-03-ADHOC-c1a2876b",
+    "clevel": "cto",
+    "title": "[시토] 09시 매출보고 빈칸 방어 — home_kpi 타임아웃 15→40s·3회 재시도·캐시 폴백 (배102)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-03",
+    "processed_at": "2026-07-03",
+    "ship_no": 313,
+    "artifact": "2026-07-03 09시 보고 매출·지출칸이 GAS(home_kpi) 15초 단발 타임아웃으로\n조용히 빈칸 발송된 사고 수리. 실측 재현: 엔드포인트 응답 10.6s(콜드 시 15s 초과).\n- timeout 15→40s + 최대 3회 재시도\n- 3회 실패 시 .finance_cache.txt(직전 정상값)로 폴백, ⚠️ 지연 표기\n- 성공 시 캐시 자동 갱신, 오늘 실수치로 pre-warm 완료 (CLI ad-hoc · 커밋 c1a2876b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c1a2876b6b906e8f9be16922dbf190908c74a310"
   }
 ]
