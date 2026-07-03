@@ -1004,6 +1004,108 @@ function _kpiSalesMonthly() {
   }
 }
 
+// ── 팀별 매출 실적(월별 "202X년 N월 매출 보고" 원장) — 2026-07-03 시토(배354) ──
+// 소스 = 월마다 별도 파일. 알려진 달은 아래 맵 우선, 없으면 Drive 제목 검색 폴백.
+//   말일 탭(탭명=그달 마지막 날짜 숫자, 예 6월="30")의 O8:T74 범위만 읽는다.
+//   ⚠️ 이 스프레드시트엔 다른 탭에 회원 PII가 있음 — O8:T74(매출 범위) 외 절대 접근 안 함.
+// GET ?action=team_sales[&year=2026][&month=6][&fileId=...] →
+//   { ok, year, month, fileId, tab, asOf, teams:[{name, actual}] }
+var MONTHLY_SALES_FILE_MAP = {
+  6: '1oG63rj17-RMk2cdiVbwp4TOp-yN73uc04jDV7RfN9BI' // "2026년 6월 매출 보고" (GM 제공, 2026-07-03)
+};
+
+// 제목 "202X년 N월 매출 보고" 로 Drive 검색(맵에 없는 달 대비). 여러 매치 시 첫 파일. 실패 시 null.
+function _kpiSalesFileByTitle(year, month) {
+  var title = year + '년 ' + month + '월 매출 보고';
+  try {
+    var it = DriveApp.getFilesByName(title);
+    if (it.hasNext()) return it.next().getId();
+  } catch (e) { /* Drive 권한 문제 등 — null 폴백 */ }
+  return null;
+}
+
+function _kpiSalesMonthlyFileId(year, month) {
+  if (MONTHLY_SALES_FILE_MAP[month]) return MONTHLY_SALES_FILE_MAP[month];
+  return _kpiSalesFileByTitle(year, month);
+}
+
+// 말일 탭(탭명=일자 숫자, 예 "30") 자동 선택. 정확히 없으면 숫자 탭 중 lastDay 이하 최대(최신) 탭 폴백.
+function _kpiSalesLastDayTab(ss, year, month) {
+  var lastDay = new Date(year, month, 0).getDate(); // month=1-base → 그 달의 마지막 날
+  var exact = ss.getSheetByName(String(lastDay));
+  if (exact) return exact;
+  var sheets = ss.getSheets();
+  var best = null, bestDay = -1;
+  for (var i = 0; i < sheets.length; i++) {
+    var nm = sheets[i].getName().trim();
+    if (/^\d{1,2}$/.test(nm)) {
+      var d = +nm;
+      if (d <= lastDay && d > bestDay) { bestDay = d; best = sheets[i]; }
+    }
+  }
+  return best;
+}
+
+// O8:T74 파싱 — 팀명(헤더 '구분'/'팀'/'항목' 열, 없으면 O열)+실적(헤더 '실적' 열, 없으면 폴백).
+function _kpiParseTeamSalesRange(sheet) {
+  var header = sheet.getRange(7, 15, 1, 6).getValues()[0]; // O7:T7 (헤더 행 추정)
+  var actualIdx = -1, nameIdx = 0;
+  for (var i = 0; i < header.length; i++) {
+    var h = String(header[i] || '').replace(/\s/g, '');
+    if (actualIdx < 0 && h.indexOf('실적') >= 0) actualIdx = i;
+    if (h.indexOf('구분') >= 0 || h.indexOf('팀') >= 0 || h.indexOf('항목') >= 0) nameIdx = i;
+  }
+
+  var data = sheet.getRange(8, 15, 67, 6).getValues(); // O8:T74
+  var teams = [];
+  for (var r = 0; r < data.length; r++) {
+    var row = data[r];
+    var name = String(row[nameIdx] || '').trim();
+    if (!name) continue;
+    var actual = null;
+    if (actualIdx >= 0) {
+      actual = _kpiNum(row[actualIdx]);
+    } else {
+      // 헤더 탐지 실패 폴백: %가 아닌 마지막(가장 오른쪽) 숫자 셀을 실적으로 채택.
+      for (var c = row.length - 1; c >= 0; c--) {
+        var raw = String(row[c] || '');
+        if (raw.indexOf('%') >= 0) continue;
+        var v = _kpiNum(row[c]);
+        if (v !== null) { actual = v; break; }
+      }
+    }
+    if (actual === null) continue;
+    teams.push({ name: name, actual: actual });
+  }
+  return { teams: teams, actualColDetected: actualIdx >= 0, headerRaw: header };
+}
+
+function _kpiTeamSales(params) {
+  try {
+    var year = Number(params.year) || 2026;
+    var month = Number(params.month) || _kpiToday().m;
+    var fileId = params.fileId || _kpiSalesMonthlyFileId(year, month);
+    if (!fileId) return _json({ ok: false, error: 'monthly_sales_file_not_found: ' + year + '-' + month });
+
+    var ss = SpreadsheetApp.openById(fileId);
+    var tab = _kpiSalesLastDayTab(ss, year, month);
+    if (!tab) return _json({ ok: false, error: 'last_day_tab_not_found' });
+
+    var parsed = _kpiParseTeamSalesRange(tab);
+    var resp = {
+      ok: true, year: year, month: month, fileId: fileId, tab: tab.getName(),
+      asOf: _now(), teams: parsed.teams
+    };
+    if (params.debug === '1') {
+      resp.debugHeader = parsed.headerRaw;
+      resp.actualColDetected = parsed.actualColDetected;
+    }
+    return _json(resp);
+  } catch (err) {
+    return _json({ ok: false, error: String(err) });
+  }
+}
+
 // ── 지출 ── (2026-06-10 시토·시뽀: GM 확정 정본 '지출 현황' 탭으로 재연결)
 // 시트 1umSF… '지출 현황' 탭(gid 821406206) = 구매·지출 거래행 표면. 컬럼 구조(1-base):
 //   1 날짜 · 2 타임스탬프 · 3 구매요청자 · 4 소속 · 5 물품명 · 6 링크 · 7 가격 · 8 목적
@@ -1522,6 +1624,12 @@ function doGet(e) {
     // GET ?action=sales_monthly → { ok, year, yearTarget, curMonth, months, asOf }. 읽기 전용.
     if (action === 'sales_monthly') {
       return _kpiSalesMonthly();
+    }
+
+    // ─── 팀별 매출 실적(월별 "매출 보고" 원장 O8:T74) — 2026-07-03 시토(배354) ───
+    // GET ?action=team_sales[&year=2026&month=6&fileId=...]. PII 없는 매출 범위만 읽기전용.
+    if (action === 'team_sales') {
+      return _kpiTeamSales(e.parameter);
     }
 
     // ─── G1 '오늘의 항로' 서버 단일 머지 (2026-06-11 시토 · ②a 미사용·비파괴) ───
