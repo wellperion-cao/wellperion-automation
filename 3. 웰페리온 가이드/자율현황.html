@@ -816,7 +816,7 @@
   //  · 자기학습 제안    : status==='반영' → 완료 / 그 외('승인' 포함, 미반영) → 대기
   //  · 자기학습 반영    : 항상 완료(정의상 반영일시가 있을 때만 생성됨)
   //  · aide/관찰 신호   : signal_type이 auto_exec(자율실행 적용)·activation(자율실행 라이브 전환) → 완료 /
-  //                       hit_rate·missed·approval 등 관찰·메타 신호는 완료 증거가 아니므로 → 대기
+  //                       hit_rate·missed·approval_pattern 등 관찰·메타 신호는 완료 증거가 아니므로 → 대기
   function buildFeed(d){
     var items = [];
 
@@ -861,7 +861,7 @@
     });
     // aide 포착·승인·활성화·적중률·놓침 관찰(진짜 자율 판단 신호)
     // ※ 루틴 입항완료(_queue_archive adhoc)는 자율 판단이 아니라 일반 처리라 이력에서 제외(노이즈 방지).
-    var AUTO_SIG = { auto_exec:1, approval:1, hit_rate:1, activation:1, missed:1 };
+    var AUTO_SIG = { auto_exec:1, approval_pattern:1, hit_rate:1, activation:1, missed:1 };
     var DONE_SIG = { auto_exec:1, activation:1 }; // 실제 자율실행 증거만 완료로 인정(관찰·통계 신호는 대기)
     d.obsLedger.filter(function(o){ return /^gm_aide/.test(o.source || '') || AUTO_SIG[o.signal_type]; })
       .forEach(function(o){
