@@ -147,6 +147,16 @@
   .flegend .ls{background:var(--accent);} .flegend .le{background:var(--gold);}
   .flegend .fnote{color:var(--dim); font-size:10.5px;}
 
+  /* ── 🎯 한눈 요약(맨 위 · 경영진 3초 요약) ── */
+  .blk.sum-hero{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:6px 14px 14px; margin-bottom:4px;}
+  .sumrow{display:flex; flex-wrap:wrap; gap:12px;}
+  .sumcard{flex:1; min-width:170px; background:var(--surface); border:1px solid var(--border-strong); border-radius:11px; padding:13px 16px;}
+  .sumcard .sl{font-size:11px; color:var(--dim);}
+  .sumcard .sv{font-size:25px; font-weight:800; margin-top:5px; letter-spacing:-0.02em; color:var(--text);}
+  .sumcard .sv.pos{color:var(--green);} .sumcard .sv.neg{color:var(--rose);}
+  .sd{display:block; font-size:11px; color:var(--text-soft); margin-top:5px;}
+  .sd.up{color:var(--green);} .sd.down{color:var(--rose);}
+
   /* ── 💰 매출 핵심 강조(최상단 hero) ── */
   .blk.fin-primary{border:1px solid rgba(240,198,116,0.34); background:rgba(240,198,116,0.045); border-radius:14px; padding:6px 14px 14px; margin-bottom:4px;}
   .blk.fin-primary h2.sec{margin-top:12px;}
@@ -235,9 +245,16 @@
     .wrap{max-width:none;}
     .layers, .month-bar, .ebtn, header.page-head .back{display:none !important;}
     input, select, .note-edit, .fin-in, .pin-num{display:none !important;}
-    /* 매출(fin-primary)=상단 전폭, 나머지=2단 세로 흐름으로 한 장에 밀도있게 배치 */
+    /* 한눈 요약(sum-hero)·매출(fin-primary)=상단 전폭, 나머지=2단 세로 흐름으로 한 장에 밀도있게 배치 */
     .report-grid{column-count:2; column-gap:8mm; column-fill:auto;}
     .blk{break-inside:avoid; margin:0 0 4px;}
+    /* 🎯 한눈 요약 = 두 단 전폭 최상단 */
+    .blk.sum-hero{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
+    .blk.sum-hero h2.sec{margin-top:2px;}
+    .sumcard{background:#f7f7f7 !important; border:1px solid #999 !important;}
+    .sumcard .sl, .sd{color:#444 !important;}
+    .sumcard .sv{color:#111 !important;}
+    .sumcard .sv.pos{color:#3c7a4a !important;} .sumcard .sv.neg{color:#a13a2e !important;}
     /* 💰 매출 핵심 = 두 단 전폭 상단 */
     .blk.fin-primary{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #b9985a !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
     .blk.fin-primary h2.sec{margin-top:2px;}
@@ -320,6 +337,12 @@
   <!-- 경영진 A3 결론 한 장 = 아래 report-grid (인쇄 시 2단, 매출은 상단 전폭) -->
   <div class="report-grid">
 
+    <!-- 🎯 한눈 요약 (맨 위 · 경영진 3초 요약 · 이달 핵심 3숫자 + 전월 대비 델타) -->
+    <section class="blk sum-hero">
+      <h2 class="sec">🎯 이달 한눈 요약 <span class="stag">목표 달성률 · 매출-지출 순액 · ERP 진척 · 전월 대비</span></h2>
+      <div id="sum-board"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
+    </section>
+
     <!-- 💰 선택월 매출·지출 (핵심·최상단 · 목표 대비 + 부서별 분해 · 정본 = AI CFO 매출현황 미러) -->
     <section class="blk fin-primary">
       <h2 class="sec has-link">💰 선택월 매출·지출 <span class="stag">목표 대비 + 부서별 · 전체지출(인건비+구매성) · AI CFO 정본 미러</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
@@ -384,21 +407,51 @@
   // 지출 인건비 = 인건비 시트(부서·강사×월) 전 행 합(강사 인건비 + 운영부 인건비). CFO 페이지 GVIZ와 동일 소스.
   var LABOR_SHEET = '1uAmZXX0GbiDImORxEwnDFm4_C-r0W43s-_tV_cPq9lE';
   var LABOR_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + LABOR_SHEET + '/gviz/tq?tqx=out:json';
-  // 구매성(PROC) = CFO 매출현황 페이지의 PROC_DEPT 상수 미러. CFO에 라이브 조회 엔드포인트가 없어(비번게이트 지출품의만 존재) 값을 그대로 미러한다.
-  // ⚠️ 정본은 CFO 매출현황(cfo/finance/매출지출현황.html)의 PROC_DEPT — CFO가 갱신되면 이 상수도 같이 맞춰야 함(1~6월 승인건 확정, 7월~ 미도래=0).
+  // 구매성(PROC) = CFO 매출현황 페이지와 동일 GAS(action=proc_summary) 실시간 직접 조회로 교체(2026-07-03).
+  // ⚠️ 진단(2026-07-03): 기존엔 아래 스냅샷을 하드코딩 상수로 고정해뒀었는데, 라이브 proc_summary와 대조하니 4월·6월 값이 그새 갱신돼 있었고
+  //   (예: 운영부 6월 스냅샷 -39,060원 vs 라이브 1,659,740원 · 시설 6월 스냅샷 11,081,390원 vs 라이브 14,870,390원 · "기타" 부서는 스냅샷에 아예 없음)
+  //   7월도 이미 실적(전 부서 합 1,029,650원)이 쌓이는 중인데 "미도래"로 취급해 0으로 감춰버리고 있었다.
+  //   INC-001(finance 로컬 저장 금지) 위반이기도 해서 하드코딩 상수 참조를 제거하고 라이브 조회로 전환. 실패 시에만 아래 폴백 스냅샷 사용.
+  var PROC_API = 'https://script.google.com/macros/s/AKfycbxUAQ3DefJt13z5Bsz5KlGw6BwS2lDeLgHDMeTHjifLYGuk1lNyEpARYQ20XcjJXNj5/exec';
+  var PROC_GATE_PW = 'wellperion!@1202'; // CFO 매출지출현황.html과 동일 값(그 페이지 클라이언트 소스에 이미 평문 공개) — 구매성 실시간 합계 조회 전용.
+  var PROC_FALLBACK = {"골프":[262000,0,69300000,0,804960,873200],"운영부":[239600,1118070,242620,13085350,248900,-39060],"시설":[755860,150600,1171878,433280,1019470,11081390],"필라테스":[11880000,0,11230,0,9890,0],"지원":[180470,264110,442630,406300,597600,579460],"스쿼시":[0,0,270340,0,238800,240000],"P.T":[20800,0,0,0,630000,0],"체조&트램":[0,0,0,0,0,478500],"수영":[54350,0,0,0,200100,0],"뮤지컬":[22190,0,0,0,0,0]}; // 라이브 실패 시 최후 폴백(1~6월 스냅샷 · 2026-06-30 동결 — 부정확할 수 있음)
   // 전체 지출 = 인건비(강사+운영부) + 구매성 — CFO 페이지 totalCost와 동일 정의(정규직 일부·임대료 미포함).
-  var PROC_DEPT = {"골프":[262000,0,69300000,0,804960,873200],"운영부":[239600,1118070,242620,13085350,248900,-39060],"시설":[755860,150600,1171878,433280,1019470,11081390],"필라테스":[11880000,0,11230,0,9890,0],"지원":[180470,264110,442630,406300,597600,579460],"스쿼시":[0,0,270340,0,238800,240000],"P.T":[20800,0,0,0,630000,0],"체조&트램":[0,0,0,0,0,478500],"수영":[54350,0,0,0,200100,0],"뮤지컬":[22190,0,0,0,0,0]};
-  var PROC_LAST = 6; // 구매성 확정 개월 수(1~6월). 이후 월은 미도래.
-  function procMonthArr(){ var a = new Array(12).fill(0); for(var d in PROC_DEPT){ var arr = PROC_DEPT[d] || []; for(var m = 0; m < arr.length && m < 12; m++){ a[m] += (Number(arr[m]) || 0); } } return a; }
+  function procMonthArr(deptMap){ var a = new Array(12).fill(0); for(var d in deptMap){ var arr = deptMap[d] || []; for(var m = 0; m < arr.length && m < 12; m++){ a[m] += (Number(arr[m]) || 0); } } return a; }
+  function readProcLive(){
+    return fetch(PROC_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'proc_summary', password:PROC_GATE_PW})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ return (res && res.ok && res.dept) ? {dept:res.dept, live:true} : {dept:PROC_FALLBACK, live:false}; })
+      .catch(function(){ return {dept:PROC_FALLBACK, live:false}; });
+  }
+  // 🗺️ 북극성 지도 정본(헌법한장.html과 동일 raw) — 목표→북극성 뱃지용 role.dims[0](북극성 문구) 조회.
+  var NS_MATRIX_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/coo/bootsetup_matrix.json';
+  function readNsMap(){
+    return fetch(NS_MATRIX_URL, {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var m = {};
+        ((d && d.roles) || []).forEach(function(r){
+          var dims = r.dims || [];
+          var first = dims[0] ? String(dims[0]).split(/\n+/)[0].trim() : '';
+          if(first) m[r.id] = first;
+        });
+        return m;
+      })
+      .catch(function(){ return null; });
+  }
 
   var _data = null;      // monthly_ops_plan.json 전체(정본 모델)
   var _sel = null;       // 선택 월 키
   var _homeSales = undefined; // home_kpi sales.month (라이브) — undefined=미조회, null=미측정
   var _cfoSales = null;  // CFO 매출: 월별 센터전체 매출 배열[12](정본 우선·부서합 폴백) — null=미조회/실패
   var _cfoExp = null;    // CFO 인건비: 월별 총인건비 배열[12](강사+운영부) — null=미조회/실패
-  var _cfoProc = null;   // 구매성: 월별 배열[12](PROC_DEPT 상수 미러) — 전체지출=인건비+구매성
+  var _cfoProc = null;   // 구매성: 월별 합계 배열[12](라이브 proc_summary 우선·실패시 폴백) — 전체지출=인건비+구매성
+  var _cfoProcDept = null; // 구매성 부서맵 {부서:[12]} — 선택월 부서별 지출 분해용
+  var _procLive = false;   // 구매성 라이브 조회 성공 여부(false=폴백 스냅샷 사용중 — 화면에 정직 표기)
   var _cfoSalesDept = null; // 매출 부서맵 {부서:[12]} — 선택월 부서별 매출 분해용
   var _cfoLaborDept = null; // 인건비 부서맵 {부서:[12]}(강사→부서 집계·운영부 포함) — 선택월 부서별 지출 분해용
+  var _nsMap = null;      // role.id → 북극성 문구(bootsetup_matrix.json dims[0] 첫 줄) — 목표→북극성 뱃지용
   var _editMode = false;
 
   // ── 경영진 보고 = 상시(토글 없음): C-Level 표기 항상 공식 직함. 닉네임 뷰 미노출. ──
@@ -415,11 +468,14 @@
   };
 
   // 원 단위 사람친화 포맷: 6.5억 / 2,434만
+  // 음수(순액 적자 등)도 억/만 단위 그대로 표기 — 절대값 기준 분기 후 부호만 앞에 붙임(기존엔 음수가 조건 미충족으로 소수점 그대로 노출되던 버그).
   function fmtWon(n){
     if(typeof n !== 'number' || isNaN(n)) return '—';
-    if(n >= 100000000){ var eok = Math.round(n / 100000000 * 100) / 100; return eok + '억'; }
-    if(n >= 10000){ return Math.round(n / 10000).toLocaleString() + '만'; }
-    return n.toLocaleString() + '원';
+    var sign = n < 0 ? '-' : '';
+    var a = Math.abs(n);
+    if(a >= 100000000){ var eok = Math.round(a / 100000000 * 100) / 100; return sign + eok + '억'; }
+    if(a >= 10000){ return sign + Math.round(a / 10000).toLocaleString() + '만'; }
+    return sign + Math.round(a).toLocaleString() + '원';
   }
   function clampPct(v){ v = Number(v); if(isNaN(v)) return 0; return Math.max(0, Math.min(100, Math.round(v))); }
   function pad2(n){ return ('0' + n).slice(-2); }
@@ -537,6 +593,35 @@
     sel.onchange = function(){ _sel = sel.value; _editMode = false; render(); };
   }
 
+  // ── 전월 대비 추세·델타(공통 헬퍼) ── 정직 원칙: 전월 데이터가 실제로 없으면 델타를 지어내지 않고 '전월 없음'.
+  function prevMonthKey(monKey){
+    var keys = Object.keys((_data && _data.months) || {}).sort();
+    var i = keys.indexOf(monKey);
+    return (i > 0) ? keys[i - 1] : null;
+  }
+  function avgProgress(monKey){
+    var m = _data && _data.months && _data.months[monKey];
+    var objs = (m && m.objectives) || [];
+    if(!objs.length) return null;
+    var s = 0;
+    objs.forEach(function(o){ s += (typeof o.progress === 'number' ? o.progress : 0); });
+    return Math.round(s / objs.length);
+  }
+  function computeErpPctFor(monKey){
+    var items = (_data && _data.erp_progress && _data.erp_progress.items) || [];
+    for(var i = 0; i < items.length; i++){ if(items[i].month === monKey) return items[i].pct; }
+    return null;
+  }
+  // cur·prev 둘 다 숫자일 때만 ▲▼ 델타 뱃지. 하나라도 없으면 '전월 없음'(가짜값 금지).
+  function deltaBadge(cur, prev){
+    if(typeof cur !== 'number' || typeof prev !== 'number') return '<span class="sd">전월 없음</span>';
+    var d = cur - prev;
+    if(d === 0) return '<span class="sd">전월 대비 변동 없음</span>';
+    var cls = d > 0 ? 'up' : 'down';
+    var arw = d > 0 ? '▲' : '▼';
+    return '<span class="sd ' + cls + '">' + arw + ' ' + Math.abs(d) + '%p (전월 대비)</span>';
+  }
+
   // ── 월 헤더 ──
   function renderMonthHead(){
     var mh = document.getElementById('month-head');
@@ -613,9 +698,19 @@
   }
 
   // ── 목표 = 표의 행(보고서형) ──
+  // 목표→북극성 경로 뱃지: o.northstar(role 코드) → 헌법한장 북극성 지도(bootsetup_matrix.json dims[0]) 문구.
+  //   조회 실패·role 미기재·문구 없음 = 전부 '미지정'(가짜 문구 생성 금지).
+  function nsBadge(o){
+    var role = o.northstar;
+    var txt = (role && _nsMap && _nsMap[role]) ? _nsMap[role] : '';
+    var short = txt ? (txt.length > 26 ? txt.slice(0, 26) + '…' : txt) : '미지정';
+    var title = txt ? ('북극성(' + nickOf(role) + ') → ' + txt) : '북극성 미지정(role 미기재 또는 지도에 없음)';
+    return '<a class="chip ns" href="헌법한장.html" title="' + esc(title) + '">🌟 → ' + esc(short) + '</a>';
+  }
+
   function objRow(o){
-    var ns = o.northstar ? '<a class="chip ns" href="헌법한장.html" title="북극성(헌법)">🌟</a>' : '';
-    var titleCell = '<div class="r-title">' + esc(o.title) + ns + '</div>' + metricBlock(o);
+    var ns = nsBadge(o);
+    var titleCell = '<div class="r-title">' + esc(o.title) + '</div><div style="margin-top:4px;">' + ns + '</div>' + metricBlock(o);
 
     var ownCell = '<span class="chip own">' + esc(nickOf(o.owner)) + '</span>' +
       '<div class="r-dept">' + esc(o.dept || '') + '</div>';
@@ -667,6 +762,23 @@
       '</tr></thead><tbody>' + objs.map(objRow).join('') + '</tbody></table></div>';
   }
 
+  // ── 선택월 매출·지출·순액 공통 계산 (fin-board 상세표 + 한눈 요약 히어로카드 공용 · 계산식 중복 방지) ──
+  // 매출 = CFO 매출현황(센터전체 정본, 유효값>0만·없으면 당월 home_kpi 라이브). 전체 지출 = 인건비(라이브) + 구매성(라이브 proc_summary).
+  function calcFinance(mnum){
+    if(!(mnum >= 1 && mnum <= 12)) return null;
+    var idx = mnum - 1;
+    var now = new Date();
+    var isCurMonth = (now.getFullYear() === Number(FIN_YEAR)) && (now.getMonth() + 1 === mnum);
+    var cfoS = (_cfoSales && typeof _cfoSales[idx] === 'number' && _cfoSales[idx] > 0) ? _cfoSales[idx] : null;
+    var live = (isCurMonth && typeof _homeSales === 'number') ? _homeSales : null;
+    var sales = (cfoS != null) ? cfoS : (live != null ? live : null);
+    var labor = (_cfoExp && typeof _cfoExp[idx] === 'number' && _cfoExp[idx] > 0) ? _cfoExp[idx] : null;
+    var proc = (_cfoProc && typeof _cfoProc[idx] === 'number') ? _cfoProc[idx] : 0; // 라이브 조회 — 미래월=진짜 0(요청 없음), 감추지 않음
+    var totalExp = (labor != null) ? (labor + proc) : null;
+    var net = (sales != null && totalExp != null) ? (sales - totalExp) : null;
+    return {idx:idx, cfoS:cfoS, sales:sales, labor:labor, proc:proc, totalExp:totalExp, net:net};
+  }
+
   // ── 선택월 매출·지출 요약 (AI CFO 매출현황 미러 · 읽기전용 · 전체 지출=인건비+구매성) ──
   // 연간 12개월 상세는 재무현황(CFO)에서 파악 — 이 페이지는 선택월 요약 + CFO 바로가기만(GM 피드백 2026-07).
   function renderFinance(){
@@ -682,25 +794,12 @@
 
     // 선택월(_sel = 'YYYY-MM') 기준 인덱스
     var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
-    if(!(mnum >= 1 && mnum <= 12)){
+    var fin = calcFinance(mnum);
+    if(!fin){
       host.innerHTML = '<div class="board-status">선택월을 확인할 수 없습니다. 매출·지출은 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold)">AI CFO 매출현황</a> 참조.</div>';
       return;
     }
-    var idx = mnum - 1;
-    var now = new Date();
-    var isCurMonth = (now.getFullYear() === Number(FIN_YEAR)) && (now.getMonth() + 1 === mnum);
-
-    // 매출 = CFO 매출현황(센터전체 정본). 유효값(>0)만. 당월+정본값 없으면 home_kpi 라이브 오버레이.
-    var cfoS = (_cfoSales && typeof _cfoSales[idx] === 'number' && _cfoSales[idx] > 0) ? _cfoSales[idx] : null;
-    var live = (isCurMonth && typeof _homeSales === 'number') ? _homeSales : null;
-    var sales = (cfoS != null) ? cfoS : (live != null ? live : null);
-
-    // 전체 지출 = 인건비(강사+운영부, 라이브) + 구매성(상수 미러). CFO totalCost 정의와 동일.
-    var labor = (_cfoExp && typeof _cfoExp[idx] === 'number' && _cfoExp[idx] > 0) ? _cfoExp[idx] : null;
-    var procDue = idx < PROC_LAST;                       // 구매성 확정 도래 월인가
-    var proc = (_cfoProc && procDue) ? (_cfoProc[idx] || 0) : null; // 미도래 월=null(가짜 0 배분 금지)
-    var totalExp = (labor != null) ? (labor + (proc || 0)) : null;
-    var net = (sales != null && totalExp != null) ? (sales - totalExp) : null;
+    var idx = fin.idx, cfoS = fin.cfoS, sales = fin.sales, labor = fin.labor, proc = fin.proc, totalExp = fin.totalExp, net = fin.net;
 
     // ── 매출 목표 대비 진척(핵심·상단) ──
     var target = salesTargetFor(_sel);
@@ -728,7 +827,7 @@
       : '<span class="fin-none">측정 전</span>';
 
     var expSub = (labor != null)
-      ? ('인건비 ' + fmtWon(labor) + ' + 구매성 ' + (proc != null ? fmtWon(proc) : '미도래'))
+      ? ('인건비 ' + fmtWon(labor) + ' + 구매성 ' + fmtWon(proc))
       : '';
     var expCell = (totalExp != null)
       ? ('<b>' + fmtWon(totalExp) + '</b><span class="fin-sub">' + expSub + '</span>')
@@ -769,16 +868,16 @@
       }
     }
 
-    // ── 부서별 지출 분해(선택월) = 인건비(부서) + 구매성(부서, 도래월만) ──
+    // ── 부서별 지출 분해(선택월) = 인건비(부서) + 구매성(부서, 라이브) ──
     var expDeptTbl = '';
-    if(_cfoLaborDept || (procDue && PROC_DEPT)){
+    if(_cfoLaborDept || _cfoProcDept){
       var keys = {};
       if(_cfoLaborDept){ for(var ld in _cfoLaborDept) keys[ld] = 1; }
-      if(procDue){ for(var pd in PROC_DEPT) keys[pd] = 1; }
+      if(_cfoProcDept){ for(var pd in _cfoProcDept) keys[pd] = 1; }
       var erows = [];
       for(var ek in keys){
         var elab = (_cfoLaborDept && _cfoLaborDept[ek]) ? (Number(_cfoLaborDept[ek][idx]) || 0) : 0;
-        var epr = (procDue && PROC_DEPT[ek]) ? (Number(PROC_DEPT[ek][idx]) || 0) : 0;
+        var epr = (_cfoProcDept && _cfoProcDept[ek]) ? (Number(_cfoProcDept[ek][idx]) || 0) : 0;
         var etot = elab + epr;
         if(etot !== 0) erows.push({name:ek, val:etot, lab:elab, proc:epr});
       }
@@ -786,25 +885,25 @@
       if(erows.length){
         var eBody = erows.map(function(r){
           return '<tr><td>' + esc(r.name) + '</td><td class="num">' + fmtWon(r.val) + '</td>' +
-            '<td class="num sub2">' + fmtWon(r.lab) + (procDue ? ' + ' + fmtWon(r.proc) : '') + '</td></tr>';
+            '<td class="num sub2">' + fmtWon(r.lab) + ' + ' + fmtWon(r.proc) + '</td></tr>';
         }).join('');
         if(totalExp != null){
           eBody += '<tr class="tot"><td>합계</td><td class="num">' + fmtWon(totalExp) + '</td><td class="num sub2">인건비+구매성</td></tr>';
         }
         expDeptTbl = '<div class="fin-dept-wrap fin-exp-dept"><div class="fin-dept-h">🧾 ' + mnum + '월 부서별 지출' +
-          (procDue ? '' : ' <span style="color:var(--dim);font-weight:400">(구매성 미도래 — 인건비만)</span>') + '</div>' +
-          '<div class="rpt-wrap"><table class="rpt findept"><thead><tr><th>부서</th><th class="num">지출</th><th class="num">인건비' + (procDue ? '+구매성' : '') + '</th></tr></thead>' +
+          (_procLive ? '' : ' <span style="color:var(--dim);font-weight:400">(구매성 라이브 조회 실패 — 폴백 스냅샷)</span>') + '</div>' +
+          '<div class="rpt-wrap"><table class="rpt findept"><thead><tr><th>부서</th><th class="num">지출</th><th class="num">인건비+구매성</th></tr></thead>' +
           '<tbody>' + eBody + '</tbody></table></div></div>';
       }
     }
 
-    var procNote = !procDue
-      ? ' 구매성은 1~' + PROC_LAST + '월까지 승인건 확정 — ' + mnum + '월은 미도래(전체 지출=인건비만 반영).'
+    var procNote = !_procLive
+      ? ' 구매성 라이브 조회 실패 — 폴백 스냅샷(2026-06-30 동결) 사용 중, 실제와 다를 수 있음.'
       : '';
 
     var legend = '<div class="flegend">' +
       '<span class="fnote">● 선택월(' + mnum + '월) 기준 · 매출·지출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> 미러(읽기전용). ' +
-      '<b>매출=센터전체 정본(회원권+강습+기타·주차)</b> / <b>전체 지출=강사+운영부 인건비 + 구매성</b>(정규직 일부·임대료 미포함).' + procNote +
+      '<b>매출=센터전체 정본(회원권+강습+기타·주차)</b> / <b>전체 지출=강사+운영부 인건비 + 구매성</b>(정규직 일부·임대료 미포함, 구매성=라이브 조회).' + procNote +
       ' 부서별 매출=매출마스터, 기타·주차=정본−부서합. 연간 12개월 상세는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인. 측정 전=소스 미기재(가짜값 없음).</span>' +
     '</div>';
 
@@ -812,7 +911,7 @@
   }
 
   // ── 실무책임자 도달율 스코어보드 ──
-  function pracRow(p, goal, prog){
+  function pracRow(p, goal, prog, prevProg){
     var nsHtml = (p.northstar && String(p.northstar).trim())
       ? '<div class="pns">🌟 ' + esc(p.northstar) + '</div>'
       : '<div class="pns empty">🌟 미입력 — 예정 (각자 확인)</div>';
@@ -822,7 +921,7 @@
         '<span class="chip dept">' + esc(p.dept || '') + '</span>' +
         '<span class="chip own">' + esc(p.role || '') + '</span></div>' +
       '<div class="pgoal">' + (goal ? esc(goal) : '<span style="color:var(--dim)">—</span>') + '</div>' +
-      '<div class="pbarwrap">' + bar + '</div>' +
+      '<div class="pbarwrap">' + bar + deltaBadge(prog, prevProg) + '</div>' +
       nsHtml +
     '</div>';
   }
@@ -838,10 +937,13 @@
       return;
     }
     var progMap = (m && m.practitioner_progress) || {};
+    var pmKey = prevMonthKey(_sel);
+    var prevMap = (pmKey && _data.months[pmKey] && _data.months[pmKey].practitioner_progress) || null;
     sec.style.display = ''; board.style.display = '';
     board.innerHTML = '<div class="pscore">' + roster.map(function(p){
       var pr = (typeof progMap[p.id] === 'number') ? progMap[p.id] : 50;
-      return pracRow(p, goals[p.id], pr);
+      var prevPr = (prevMap && typeof prevMap[p.id] === 'number') ? prevMap[p.id] : null;
+      return pracRow(p, goals[p.id], pr, prevPr);
     }).join('') + '</div>';
   }
 
@@ -901,6 +1003,35 @@
     if(i) i.style.width = v + '%';
   };
 
+  // ── 🎯 한눈 요약 (경영진 3초 요약: 목표 평균 달성률·매출-지출 순액·ERP 당월 진척 + 전월 대비 델타) ──
+  function renderSummary(){
+    var host = document.getElementById('sum-board');
+    if(!host) return;
+    var curAvg = avgProgress(_sel);
+    var pmKey = prevMonthKey(_sel);
+    var prevAvg = pmKey ? avgProgress(pmKey) : null;
+
+    var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
+    var fin = calcFinance(mnum);
+    var netVal = fin ? fin.net : null;
+
+    var erpPct = computeErpPctFor(_sel);
+
+    var c1 = '<div class="sumcard"><span class="sl">① 목표 평균 달성률</span>' +
+      '<div class="sv">' + (curAvg != null ? curAvg + '%' : '—') + '</div>' +
+      deltaBadge(curAvg, prevAvg) + '</div>';
+
+    var c2 = '<div class="sumcard"><span class="sl">② 매출−지출 순액 (당월)</span>' +
+      '<div class="sv' + (netVal != null ? (netVal >= 0 ? ' pos' : ' neg') : '') + '">' + (netVal != null ? fmtWon(netVal) : '측정 전') + '</div>' +
+      '<span class="sd">' + (fin && fin.sales != null ? '매출 ' + fmtWon(fin.sales) : '매출 측정 전(가짜값 없음)') + '</span></div>';
+
+    var c3 = '<div class="sumcard"><span class="sl">③ 웰페리온 ERP 당월 진척</span>' +
+      '<div class="sv">' + (erpPct != null ? erpPct + '%' : '미기록') + '</div>' +
+      '<span class="sd">' + (erpPct != null ? '정본 · erp_progress(' + esc(_sel) + ')' : '해당월 erp_progress 항목 없음') + '</span></div>';
+
+    host.innerHTML = '<div class="sumrow">' + c1 + c2 + c3 + '</div>';
+  }
+
   // ── 월말 보고 영역 ──
   function renderReport(){
     var el = document.getElementById('report-area');
@@ -934,6 +1065,7 @@
 
   function render(){
     renderMonthHead();
+    renderSummary();
     renderErp();
     renderFinance();
     renderBoard();
@@ -1041,7 +1173,18 @@
   };
 
   // ── 부팅 ──
-  Promise.all([ readPlan(), readHomeSales(), readCfoFinance() ])
+  // 새 라이브 조회 2건(북극성 지도·구매성)이 느리거나 걸려도 전체 부팅(목표·ERP 등 핵심 렌더)이 무한정 멈추지 않도록 타임아웃 폴백을 씌운다.
+  function withTimeout(promise, ms, fallbackValue){
+    var timer;
+    var timeout = new Promise(function(resolve){ timer = setTimeout(function(){ resolve(fallbackValue); }, ms); });
+    return Promise.race([promise, timeout]).then(function(v){ clearTimeout(timer); return v; });
+  }
+
+  Promise.all([
+    readPlan(), readHomeSales(), readCfoFinance(),
+    withTimeout(readNsMap(), 8000, null),
+    withTimeout(readProcLive(), 8000, {dept:PROC_FALLBACK, live:false})
+  ])
     .then(function(arr){
       _data = arr[0];
       _homeSales = arr[1];
@@ -1049,7 +1192,11 @@
       _cfoExp = arr[2] && arr[2].exp;
       _cfoSalesDept = arr[2] && arr[2].salesDept;
       _cfoLaborDept = arr[2] && arr[2].laborDept;
-      _cfoProc = procMonthArr(); // 구매성(상수 미러) — 전체지출 = 인건비 + 구매성
+      _nsMap = arr[3];
+      var procRes = arr[4] || {dept:PROC_FALLBACK, live:false};
+      _cfoProcDept = procRes.dept;
+      _cfoProc = procMonthArr(procRes.dept); // 구매성 라이브 합계 — 전체지출 = 인건비 + 구매성
+      _procLive = procRes.live;
       buildMonthSelect();
       render();
     })
