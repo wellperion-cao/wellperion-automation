@@ -22,6 +22,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 import time
 from pathlib import Path
 
@@ -94,6 +95,10 @@ BASE = Path(__file__).parent
 STATE_FILE = BASE / "state.json"
 ENV_FILE = BASE / ".env"
 LOG_FILE = BASE / "bot.log"
+# 폴링 생존 하트비트 (2026-07-03 CTO, 배102) — getMe 헬스체크는 API 도달성만
+# 확인하고 실제 run_polling 수신 여부는 모른다. 5분마다 갱신되는 이 파일을
+# 헬스체크가 감시해 20분+ 미갱신이면 "폴링 정지 의심"으로 경보한다.
+HEARTBEAT_FILE = BASE / "bot_heartbeat.txt"
 
 # ── SSOT 소스 경로 (노션 폐기 2026-05-29 → GitHub status/*) ───────────────────
 REPO_ROOT = BASE.parent
@@ -1589,6 +1594,29 @@ def _ensure_no_webhook() -> None:
         log.warning(f"[bot] 웹훅 확인/삭제 실패(무시): {exc}")
 
 
+def _write_heartbeat() -> None:
+    """폴링 생존 신호 기록 (2026-07-03 CTO, 배102). temp write + replace 로 원자적 기록."""
+    import datetime as _dt
+    try:
+        tmp = HEARTBEAT_FILE.with_suffix(".tmp")
+        tmp.write_text(_dt.datetime.now().isoformat(), encoding="utf-8")
+        tmp.replace(HEARTBEAT_FILE)
+    except Exception as exc:
+        log.warning(f"[bot] 하트비트 기록 실패(무시): {exc}")
+
+
+def _heartbeat_loop() -> None:
+    """5분마다 하트비트 기록 — daemon 스레드 폴백(job_queue 미설치 환경용)."""
+    while True:
+        _write_heartbeat()
+        time.sleep(300)
+
+
+async def _heartbeat_job(context) -> None:
+    """job_queue 콜백(설치돼 있을 때 우선 사용)."""
+    _write_heartbeat()
+
+
 def main():
     _check_pid_lock()  # 중복 봇 기동 차단 (자동기동 + 수동 배치 충돌 방지)
     _ensure_no_webhook()  # 웹훅 활성 시 자동 삭제 — getUpdates Conflict 재발 방지
@@ -1619,6 +1647,16 @@ def main():
     app.add_handler(CallbackQueryHandler(cmd_publish_callback, pattern=r"^pub:"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
+
+    # ── 하트비트 기동 (2026-07-03 CTO, 배102) ─────────────────────────────────
+    # job_queue(apscheduler+pytz) 설치돼 있으면 그걸 우선 사용, 없으면 daemon
+    # 스레드로 폴백 — 현재 환경은 pytz 미설치라 스레드 경로를 탄다.
+    if app.job_queue is not None:
+        app.job_queue.run_repeating(_heartbeat_job, interval=300, first=5)
+        log.info("[bot] 하트비트: job_queue 기반 (300s)")
+    else:
+        threading.Thread(target=_heartbeat_loop, daemon=True, name="heartbeat").start()
+        log.info("[bot] 하트비트: daemon 스레드 기반 (job_queue 미설치, 300s)")
 
     log.info(
         f"Bot starting. cwd={WORKDIR} state={STATE_FILE} log={LOG_FILE} "

@@ -130,10 +130,10 @@
     "id": "CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK",
     "clevel": "cmo",
     "title": "[시모] 파이프라인#5 평가 환류 자동화 — 주간 통한콘텐츠 Top/Bottom 시그널→다음 기획 반영",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-23",
-    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정.",
+    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정. | [2026-07-03 v1 프레임 빌드] deep-interview 확정(모호도14%·스펙 .omc/specs/deep-interview-cmo-eval-feedback-loop.md). weekly_marketing_feedback.py = 주간 브리프(공식 전용·정성 우선+측정 보조·정직 꼬리표) 생성. 자동 가중=v2(데이터 축적 후). 주간 cron=후속.",
     "ship_no": 106,
     "next": "🔗 UTM 클릭 데이터 축적 대기 중 — 그동안 좋은콘텐츠 지표 정의(저장+댓글+클릭 가중) 사전설계 (담당 시모).",
     "task_id": "CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK"
@@ -1549,5 +1549,19 @@
     "artifact": "커밋 폭주 시 Pages 배포가 큐로 겹쳐 'Deployment failed, try again later'\n간헐 실패→GM 실패메일 폭탄. 새 푸시가 겹친 옛 배포를 취소(취소=실패아님·무메일),\n최신 콘텐츠만 배포. 최종 반영은 항상 보장. (CLI ad-hoc · 커밋 a44960ff)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a44960ffa728bc113f87f1d799078a0e296b2bc4"
+  },
+  {
+    "task_id": "CTO-2026-07-03-ADHOC-b3f3d76a",
+    "clevel": "cto",
+    "title": "[시토] 자율현황 이력 필터 approval_pattern 누락 수정 (배237)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-03",
+    "processed_at": "2026-07-03",
+    "ship_no": 378,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RC7tdCWKtqtEsuWE5BREuT (CLI ad-hoc · 커밋 b3f3d76a)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b3f3d76a586cad46f2097a7b5eb7b7f50904473c"
   }
 ]

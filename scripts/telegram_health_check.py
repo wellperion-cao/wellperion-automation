@@ -184,6 +184,39 @@ def _check_log_failures() -> list[str]:
     return [f"발송 실패 {len(fail_records)}건 — 대상 chat_id: {', '.join(targets)}"]
 
 
+# ── 점검 5: 봇 폴링 하트비트 (2026-07-03 CTO, 배102) ─────────────────────────
+# getMe(점검 1)는 텔레그램 API 도달성만 확인 — 실제 run_polling() 이 살아서
+# 수신 중인지는 모른다(오늘 Bad Gateway 로 폴링이 죽었는데도 getMe 는 OK 였음).
+# bot.py 가 5분마다 telegram_bot/bot_heartbeat.txt 를 갱신 — 20분(4회) 이상
+# 미갱신이면 폴링 정지 의심으로 경보. 파일 자체가 없으면(이 배포 이후 봇
+# 미재기동) 오탐 방지 위해 경보에서 제외하고 안내만 출력한다.
+_HEARTBEAT_PATH = os.path.join(_ROOT_DIR, 'telegram_bot', 'bot_heartbeat.txt')
+_HEARTBEAT_STALE_MIN = 20
+
+
+def _check_heartbeat(now: datetime.datetime | None = None) -> list[str]:
+    """하트비트 파일 신선도 점검 → 문제 목록 반환(정상/미도입 시 빈 리스트)."""
+    now = now or datetime.datetime.now()
+    if not os.path.exists(_HEARTBEAT_PATH):
+        print(
+            "[INFO] 하트비트 파일 없음 — 봇 미재기동(하트비트 미도입 상태), 경보 제외",
+            flush=True,
+        )
+        return []
+    try:
+        with open(_HEARTBEAT_PATH, encoding='utf-8') as f:
+            ts = datetime.datetime.fromisoformat(f.read().strip())
+    except Exception as e:
+        return [f"하트비트 파일 파싱 실패: {e}"]
+
+    age_min = (now - ts).total_seconds() / 60
+    if age_min > _HEARTBEAT_STALE_MIN:
+        return [
+            f"🔴 봇 폴링 의심 정지 — 하트비트 {age_min:.0f}분째 미갱신 (bot.py 재기동 필요)"
+        ]
+    return []
+
+
 # ── 경보 발송 ─────────────────────────────────────────────────────────────────
 def _send_alert(token: str, owner_id: int, message: str, dry_run: bool) -> None:
     """OWNER DM으로 경보. dry_run=True 면 stdout만."""
@@ -255,7 +288,13 @@ def main() -> None:
     except Exception as e:
         all_issues.append(f"GAS 진단 프로브 예외: {e}")
 
-    # 5. 결과 출력 및 경보
+    # 5. 봇 폴링 하트비트 (getMe 사각지대 보완)
+    try:
+        all_issues.extend(_check_heartbeat())
+    except Exception as e:
+        all_issues.append(f"하트비트 점검 예외: {e}")
+
+    # 6. 결과 출력 및 경보
     if all_issues:
         today_str = datetime.date.today().strftime('%Y-%m-%d')
         alert_msg = (
