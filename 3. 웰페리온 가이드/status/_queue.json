@@ -292,12 +292,14 @@
     "task_id": "CPO-2026-07-03-CHURN-D7-TELEGRAM-ALERT",
     "clevel": "cpo",
     "title": "[시포] 갱신 D-7 임박 회원 텔레그램 실알림 — 실측 신호 첫 자동 이탈방지 액션 (제안·발효 GM go)",
-    "status": "PENDING",
+    "status": "DONE",
+    "terminal": true,
+    "processed_at": "2026-07-03",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-03",
-    "note": "[2026-07-03 시포 제안·배299 후속] CPO 가이드 정직화(배299)로 실측 확인된 신호 중 유일하게 '자동 액션'으로 돌릴 수 있는 레버 = 갱신 D-7 임박 회원(cpo_churn_stats renewSoon, 현재 D-7 14명). 지금은 페이지를 열어야 명단이 보임 → 매일 아침 텔레그램으로 임박 명단 자동 발송하면 시포가 챙기라 안 해도 이탈방지 연락 루프가 돎(실측 신호 첫 자동화). 경계: 텔레그램 배관·발송=시토 소유(feedback_cto_owns_telegram_issues), 알림 내용·주기 정의=시포. 라이브 발효=GM go 게이트(새 예약작업·발송). 미승인 상태.",
-    "next": "GM go 시: 시토와 D-7 임박 명단 텔레그램 발송 배관 설계(예약작업·chat_id 라우팅) → 시포가 알림 문안·주기 정의 → 테스트 발송 → 라이브. 발효 전까지 제안 유지.",
-    "depends_on": "GM 발효 승인 + 시토 텔레그램 배관 협업",
+    "note": "[2026-07-03 시포 제안·배299 후속] CPO 가이드 정직화(배299)로 실측 확인된 신호 중 유일하게 '자동 액션'으로 돌릴 수 있는 레버 = 갱신 D-7 임박 회원(cpo_churn_stats renewSoon, 현재 D-7 14명). [2026-07-03 GM] 이 알림은 '나중에 브로제이(AWS 회원관리 이전 시스템)가 해줄 내용' → 시포 AI 항로 배에서 제외(브로제이 담당 예정). 시포 자율 배 아님·폐기. 개념은 배299 정직화 산출물로 기록 보존.",
+    "next": "🏁 시포 항로 제외(브로제이 담당) — 다음 불필요.",
+    "depends_on": "",
     "ship_no": 377
   },
   {
@@ -1660,5 +1662,19 @@
     "artifact": "monthly_report 보강·월간보고 탭 라이브. 매월1일 텔레그램=시토 인계배 등록.\n배14 서버 금요일 수리(시토 배239) 확인→정박 해제 후보. (CLI ad-hoc · 커밋 c8c8994a)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "c8c8994a3632ccd4318d728458334e756559c2a2"
+  },
+  {
+    "task_id": "CMO-2026-07-03-ADHOC-2a7ea41a",
+    "clevel": "cmo",
+    "title": "[시모] '브리프·피드백' → 쉬운 우리말('정리 보고') — 화면·문서 용어 순화 (약속 L10)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-03",
+    "processed_at": "2026-07-03",
+    "ship_no": 385,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_0133cA4wyP12yABv4U4NeWbe (CLI ad-hoc · 커밋 2a7ea41a)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "2a7ea41ade237115d2d975ad77d399ce1ead6d27"
   }
 ]
