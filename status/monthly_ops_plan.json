@@ -25,6 +25,13 @@
       {"id": "na-uy-gm", "name": "나우열+GM", "dept": "경영지원부", "pct": 65, "target_pct": 80, "direction": "자체서버 도입(인프라·9월)·코딩/구조 이해도 학습·AI 자율화 심화·수동검증 자동화 → 80%+"}
     ]
   },
+  "erp_dev": {
+    "_doc": "웰페리온 ERP 개발 카드(舊 '개발(백·프론트엔드)' clevel=cto 한정 카드 재집계 · 2026-07-03 GM 지시 — ERP=전사 자동화 시스템 전체이므로 cto 국한이 너무 좁았음. 완료=해당월 워크트리 전체 git 커밋 수(자동화 커밋 포함 · 정적 페이지는 git 직접 조회 불가라 스냅샷 저장, 마감월만 갱신). 진행=현재 활성 status/_queue.json 중 status=IN_PROGRESS 전체 배 수(클레벨 무관 · 라이브 조회, 이 키에 저장 안 함). 정본=이 키(완료 스냅샷)+_queue.json(진행 라이브), 페이지는 렌더만. 지어내기 금지·집계기준 카드에 항상 명시.",
+    "basis": "완료: git log --since={월}-01 --until={익월 1일} --oneline | wc -l (워크트리 전체 커밋) · 진행: status/_queue.json status=IN_PROGRESS 전체 실측(라이브)",
+    "months": {
+      "2026-06": {"done": 3557, "note": "git log --since=2026-06-01 --until=2026-07-01 --oneline | wc -l 실측 = 3,557건(2026-07-03 스냅샷 · 자동발행·체인지로그 등 자동화 커밋 포함 전체)"}
+    }
+  },
   "erp_progress": {
     "_doc": "웰페리온 ERP 월별 진척(공식값·GM 확정). pct=완성도 %, target=true는 목표(아직 미달성), false는 실적. 정본=이 키, 페이지는 렌더만. PIN 편집 가능.",
     "unit": "%",
