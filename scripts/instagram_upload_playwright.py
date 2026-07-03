@@ -382,7 +382,13 @@ def collect_post_images(content_folder: Path, slot: str) -> list[Path]:
     VIDEO_EXTS = {".mp4"}
     ALLOWED_EXTS = IMAGE_EXTS | VIDEO_EXTS
 
+    # output/ 우선, 없으면 output(인스타그램)/ 인식 (build_slides가 한글 채널폴더로만
+    # 저장하는 회차 대응 — 여름특강 Ep3 발행실패 재발방지. output/ 미러 불필요).
     output_dir = content_folder / "output"
+    if not output_dir.exists():
+        alt_output_dir = content_folder / "output(인스타그램)"
+        if alt_output_dir.exists():
+            output_dir = alt_output_dir
     if output_dir.exists():
         # --- 1) post_{slot}_N 형식 (output/) ---
         pattern = re.compile(rf"^post_{re.escape(slot)}_(\d+)", re.IGNORECASE)
