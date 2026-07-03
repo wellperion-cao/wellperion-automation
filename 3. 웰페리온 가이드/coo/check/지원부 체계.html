@@ -491,6 +491,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 #a3-csguide-print{display:none}
 /* ── A3 비품 목록 인쇄 전용 컨테이너 (배64) ── */
 #a3-supply-print{display:none}
+/* ── A3 신입 온보딩 교육자료 인쇄 전용 컨테이너 (배64) ── */
+#a3-onboarding-print{display:none}
 /* ── A3 인쇄 모드 (body.a3-print-mode → @media print 분기) ── */
 @media print{
   body.a3-print-mode{font-size:10px;line-height:1.4;color:#111;background:#fff}
@@ -747,6 +749,47 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   #a3-supply-print table{width:100%;border-collapse:collapse;margin-bottom:4px}
   #a3-supply-print th,#a3-supply-print td{border:1px solid #b8ada0;padding:6px 10px;text-align:left;font-size:12.5px;color:#222}
   #a3-supply-print th{background:#f3ede7!important;color:#4a3a2e!important;font-size:11.5px;font-weight:800}
+  /* ── A3 신입 온보딩 교육자료 인쇄 모드 (배64) ── */
+  body.a3-onboarding-mode{background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.a3-onboarding-mode .header,
+  body.a3-onboarding-mode .tabs,
+  body.a3-onboarding-mode .submit-bar,
+  body.a3-onboarding-mode .saving,
+  body.a3-onboarding-mode .toast-msg,
+  body.a3-onboarding-mode .header-util-btns,
+  body.a3-onboarding-mode .util-btn,
+  body.a3-onboarding-mode .sheet-links,
+  body.a3-onboarding-mode #tab-policy,
+  body.a3-onboarding-mode #tab-guide,
+  body.a3-onboarding-mode #tab-chem,
+  body.a3-onboarding-mode #tab-manual,
+  body.a3-onboarding-mode #tab-supply,
+  body.a3-onboarding-mode #tab-check-m,
+  body.a3-onboarding-mode #tab-check-f,
+  body.a3-onboarding-mode #a3-guideline-print,
+  body.a3-onboarding-mode #a3-manual-print,
+  body.a3-onboarding-mode #a3-manual-portrait-print,
+  body.a3-onboarding-mode #a3-closedday-print,
+  body.a3-onboarding-mode #a3-monthly-print,
+  body.a3-onboarding-mode #a3-csguide-print,
+  body.a3-onboarding-mode #a3-supply-print{display:none!important}
+  body.a3-onboarding-mode #a3-onboarding-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-onboarding-print .aob-header{text-align:center;font-size:26px;font-weight:900;letter-spacing:0.04em;padding:4px 0 8px;border-bottom:3px solid #4a3a2e;margin-bottom:6px;color:#2a2018}
+  #a3-onboarding-print .aob-sub{text-align:center;font-size:13px;color:#8a7a6c;margin-bottom:14px}
+  #a3-onboarding-print .aob-grid{display:grid;grid-template-columns:1fr 1fr;gap:8mm}
+  #a3-onboarding-print .aob-sec{font-size:15px;font-weight:800;color:#fff!important;background:#4a3a2e!important;padding:4px 10px;border-radius:4px;margin:10px 0 6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-onboarding-print .aob-col .aob-sec:first-child{margin-top:0}
+  #a3-onboarding-print table{width:100%;border-collapse:collapse;margin-bottom:4px}
+  #a3-onboarding-print th,#a3-onboarding-print td{border:1px solid #b8ada0;padding:5px 8px;text-align:left;font-size:11px;color:#222}
+  #a3-onboarding-print th{background:#f3ede7!important;color:#4a3a2e!important;font-size:10.5px;font-weight:800}
+  #a3-onboarding-print .aob-tour-list{margin:0 0 6px;padding-left:18px}
+  #a3-onboarding-print .aob-tour-list li{font-size:11px;color:#222;line-height:1.5;margin-bottom:3px}
+  #a3-onboarding-print .aob-tour-list li b{color:#4a3a2e}
+  #a3-onboarding-print .aob-guide-card{border:1px solid #ccc;border-radius:5px;padding:6px 9px;margin-bottom:6px;break-inside:avoid;background:#fff}
+  #a3-onboarding-print .aob-guide-title{font-size:11.5px;font-weight:800;color:#2a2018;margin-bottom:3px;padding-bottom:2px;border-bottom:1px solid #e8e3de}
+  #a3-onboarding-print .aob-guide-line{font-size:10.5px;color:#333;line-height:1.4;padding:1px 0 1px 10px;position:relative}
+  #a3-onboarding-print .aob-guide-line::before{content:"·";position:absolute;left:2px;color:#888}
+  #a3-onboarding-print .aob-empty{font-size:11px;color:#999;font-style:italic;padding:4px 0}
 }
 /* ── Print (기존 A4) ── */
 @media print{
@@ -878,6 +921,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button onclick="printA3ManualPortrait('f');closeAllDropdowns()">A3 세로 1장 · 여</button>
         <button onclick="printA3CSGuide();closeAllDropdowns()">A3 회원 응대 상황표</button>
         <button onclick="printA3Supply();closeAllDropdowns()">A3 비품 목록</button>
+        <button onclick="printA3Onboarding();closeAllDropdowns()">A3 신입 온보딩 교육자료</button>
       </div>
     </div>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
@@ -1041,6 +1085,27 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div id="asp-table-host"></div>
 </div>
 
+<!-- ══ A3 신입 온보딩 교육자료 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시 · 배64) ══ -->
+<div id="a3-onboarding-print">
+  <div class="aob-header">지원부 신입 교육 자료</div>
+  <div class="aob-sub"></div>
+  <!-- JS(printA3Onboarding)가 STAFF_DATA·TOUR_DATA·CS_DATA·SUPPORT_GUIDE_DATA 라이브 데이터를 읽어 4섹션 주입 -->
+  <div class="aob-grid">
+    <div class="aob-col">
+      <div class="aob-sec">① 직원 구성·역할</div>
+      <div id="aob-staff-host"></div>
+      <div class="aob-sec">② 신규회원 사우나 투어 안내</div>
+      <div id="aob-tour-host"></div>
+    </div>
+    <div class="aob-col">
+      <div class="aob-sec">③ 회원 응대 상황표</div>
+      <div id="aob-cs-host"></div>
+      <div class="aob-sec">④ 지원부 가이드</div>
+      <div id="aob-guide-host"></div>
+    </div>
+  </div>
+</div>
+
 <div id="tab-policy" class="content">
   <h2 style="font-size:20px;margin-bottom:6px;">지원부 규정</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 규정·회의를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--accent);">운영시간 등 공식값은 임의 변경 금지.</span></p>
@@ -1187,6 +1252,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-guide" class="content hidden">
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">지원부 가이드를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <b>＋ 카드 추가</b>로 새 가이드를 추가할 수 있습니다.</p>
+  <div style="margin-bottom:14px;"><button class="btn" onclick="printA3Onboarding()">🖨 신입 온보딩 A3</button></div>
   <!-- ① 2단 레이아웃: 좌=직원 구성·역할+사우나 투어(동일폭 세로 적층) / 우=지원부 가이드 카드. 우측 보드 board-fullwidth(풀블리드) 제거로 좌측을 덮지 않음 (2026-07-03 시우, 시설부 패턴 이식·731c2963 / 좌측 컬럼 동일폭 재배치·배64) -->
   <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px;">
     <!-- 좌 컬럼: 직원 구성·역할 + 사우나 투어 (세로 적층·동일폭 · 배64) -->
@@ -1224,6 +1290,60 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div><!-- /우 -->
   </div><!-- /2단 -->
+
+  <!-- ── 🗣 회원 응대 가이드 (표준 · 배340 · 지어내지 않음 — 근거: 지원&탕청소 업무 매뉴얼 PDF 구역별 응대 F-1~F-5, 운영부 체계.html 응대 태도 규정, 본 페이지 A3_GUIDELINE) ── -->
+  <div style="margin-top:22px;">
+    <h3 style="font-size:17px;font-weight:800;color:var(--purple);margin:0 0 6px;">🗣 회원 응대 가이드 (표준)</h3>
+    <p class="board-intro">지원부 직원의 회원 응대 표준 — 인사·문의·컴플레인 1차 대응·에스컬레이션. 아래 상황표(다음 섹션)는 이 표준 위에서 상황을 계속 추가·편집하는 실전 목록입니다.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:8px;">
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--purple);padding:14px 16px;">
+        <div style="font-size:14px;font-weight:800;color:var(--purple);margin-bottom:8px;">응대 기본 원칙 (공통 노하우)</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--text);">
+          <li><b>경청 우선</b> — 불만·요청 모두 끝까지 듣고 "확인하겠습니다"로 답변 시작</li>
+          <li><b>빠른 조치</b> — 눈앞에서 바로 해결 가능한 문제는 지체 없이 처리</li>
+          <li><b>표준 멘트 활용</b> — 개인별 말투 차이로 혼선 없도록 기본 멘트 유지</li>
+          <li><b>기록 필수</b> — 응대 후 카톡 보고 + 사진, 필요 시 이슈접수 기록</li>
+        </ul>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--purple);padding:14px 16px;">
+        <div style="font-size:14px;font-weight:800;color:var(--purple);margin-bottom:8px;">인사·응대 태도</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--text);">
+          <li><b>첫 인사</b> — 눈 맞춤 + 미소 필수 / 먼저 인사 / 이름 알면 호칭 사용</li>
+          <li><b>불편사항 접수</b> — 끝까지 경청 → 즉시 해결 가능 여부 판단 → 처리 결과 반드시 고지</li>
+          <li><b>에티켓 위반</b> — 정중하되 단호하게 안내 / 반복 위반 시 팀장 보고</li>
+          <li><b>긴급·안전</b> — 즉시 팀장·소장 보고 → 지시 후 조치 (자의 판단 금지)</li>
+        </ul>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--purple);padding:14px 16px;grid-column:1/-1;">
+        <div style="font-size:14px;font-weight:800;color:var(--purple);margin-bottom:8px;">구역별 표준 멘트 (F-1~F-5)</div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:560px;">
+          <thead><tr style="text-align:left;color:var(--dim);font-size:12px;"><th style="padding:5px 8px;">구역</th><th style="padding:5px 8px;">상황</th><th style="padding:5px 8px;">표준 멘트</th></tr></thead>
+          <tbody>
+            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-1 개인 락커</td><td style="padding:5px 8px;">불편사항 접수</td><td style="padding:5px 8px;">"말씀해주셔서 감사합니다, 바로 확인해보겠습니다"</td></tr>
+            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-1 개인 락커</td><td style="padding:5px 8px;">에티켓 미준수(물튀김·큰소리 등)</td><td style="padding:5px 8px;">정중 + 단호: "안전 문제로 협조 부탁드립니다"</td></tr>
+            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-2 데일리 락커</td><td style="padding:5px 8px;">분실물 민원</td><td style="padding:5px 8px;">즉시 확인·기록 후 인계: "걱정 마시고, 바로 확인해드리겠습니다"</td></tr>
+            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-3·전 구역 공통</td><td style="padding:5px 8px;">청결 즉시 조치(바닥 미끄럼·이물질 등)</td><td style="padding:5px 8px;">즉시 처리 후: "추가 관리까지 바로 요청드리겠습니다"</td></tr>
+            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-4 파우더·전 구역 공통</td><td style="padding:5px 8px;">소모품 요청(옷걸이·비누·샴푸 등)</td><td style="padding:5px 8px;">즉시 보충 + "필요하실 때 언제든 말씀 주세요"</td></tr>
+            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-5 휴게공간</td><td style="padding:5px 8px;">혼잡</td><td style="padding:5px 8px;">양해 요청·대안 제시: "이쪽 공간은 여유가 있습니다"</td></tr>
+            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-5 휴게공간</td><td style="padding:5px 8px;">소음·혼잡 민원(전화통화·과도 점유)</td><td style="padding:5px 8px;">공손한 요청: "다른 회원분들을 위해 조금만 협조 부탁드립니다"</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--purple);padding:14px 16px;grid-column:1/-1;">
+        <div style="font-size:14px;font-weight:800;color:var(--purple);margin-bottom:8px;">에스컬레이션 (담당자·보고 방식)</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--text);">
+          <li><b>1차 대응</b> — 구역 담당 남·여 주임: 즉시조치 가능 시 즉시 조치 후 카톡 보고 + 이슈접수</li>
+          <li><b>2차 에스컬레이션</b> — 즉시조치 불가 / 반복 이슈 / 안전 문제 → 팀장·소장 즉시 보고 (자의 판단 금지)</li>
+          <li><b>마감 미비</b> — 사우나·파우더 청결 마감 체크 미비 시 경고, 3회 누적 시 경징계</li>
+        </ul>
+        <div style="margin-top:10px;padding:9px 12px;background:var(--orange-bg);border:1px solid rgba(230,148,78,0.35);border-radius:8px;font-size:12px;color:var(--orange);line-height:1.6;">
+          <b>[GM/실무 확인 필요]</b> 컴플레인 경중 등급(경/중/중대) 분류 기준 미정 · 지원부 접수건의 종합접수처(운영부) 연계 여부 명시 안 됨(기존 자료엔 운영부만 종합접수 언급)
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ── 🗣 회원 응대 상황표 (편집 가능 CRUD 표 · 저장키 SUPPORT_CS_GUIDE · 배64) ── -->
   <div style="margin-top:22px;">
@@ -1362,9 +1482,50 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <h2 style="font-size:20px;margin-bottom:6px;">비품관리</h2>
   <p class="board-intro">지원부 비품을 한 표로 관리합니다. <strong>＋ 비품 추가</strong>로 행을 늘리고 각 칸을 바로 입력하면 모든 기기에 저장됩니다(편집 잠금 없음 — 누구나 추가·수정·삭제). 수량은 <strong>−／＋</strong> 버튼으로 빠르게 조절(0 미만 불가).</p>
   <p class="board-intro">수량 −／＋ 버튼으로 현재 재고를 조절하세요. 부족한 품목은 발주 후 갱신합니다. 인쇄로 현장 비치용 목록을 뽑을 수 있습니다. 표는 분류(청소·세탁/타월·어메니티/소모품·사무 등)별로 정렬되어 표시됩니다.</p>
+
+  <!-- ── 📦 비품 관리 가이드 (표준 · 배340 · 지어내지 않음 — 근거: 지원&탕청소 업무 매뉴얼 PDF 구역별 비품·소모품 체크리스트, 아래 SUPPLY_SEED 4분류, 본 탭 기존 안내문) ── -->
+  <div style="margin-bottom:18px;">
+    <h3 style="font-size:16px;font-weight:800;color:var(--blue);margin:0 0 6px;">📦 비품 관리 가이드 (표준)</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--blue);padding:14px 16px;">
+        <div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:8px;">분류 체계</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--text);">
+          <li><b>청소</b> — 세정제·대걸레·청소포·고무장갑 등</li>
+          <li><b>세탁/타월</b> — 대·소형 타월·세탁세제·섬유유연제</li>
+          <li><b>어메니티/소모품</b> — 샴푸·바디워시 리필·면봉·화장솜·화장지 등</li>
+          <li><b>사무</b> — 볼펜·A4용지·프린터 토너·접수대장</li>
+        </ul>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--blue);padding:14px 16px;">
+        <div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:8px;">구역별 비치 품목 (매뉴얼 근거)</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--text);">
+          <li><b>사우나 내부(A)</b> — 바가지·좌식목욕의자·거품바구니·쓰레기통 / 치약·소금·샴푸·린스·바디워시·비누</li>
+          <li><b>파우더(B-1)</b> — 빗 / 면봉·휴지·로션·스킨</li>
+          <li><b>사우나 화장실(B-5)</b> — 휴지통 / 화장지·핸드페이퍼·손세정제</li>
+          <li><b>청소 비품(E-3)</b> — 청소기·빗자루·쓰레받이·청소 액체 — "지정 위치 배치 → 깔끔하게 관리"</li>
+        </ul>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--blue);padding:14px 16px;">
+        <div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:8px;">점검</div>
+        <p style="margin:0;font-size:13px;line-height:1.7;color:var(--text);">별도 비품 전용 점검은 없음 — 구역 담당 주임이 일일 오픈·마감 점검(Daily Check List) 수행 시 <b>✔비품 · ☑소모품</b> 상태를 함께 확인합니다(기존 구역별 체크리스트에 포함).</p>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--blue);padding:14px 16px;">
+        <div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:8px;">재고 관리·발주</div>
+        <p style="margin:0 0 8px;font-size:13px;line-height:1.7;color:var(--text);">재고 조절은 아래 표의 <b>−／＋</b> 버튼으로 즉시 반영. 부족한 품목은 발주 후 수량을 갱신합니다.</p>
+        <div style="padding:9px 12px;background:var(--orange-bg);border:1px solid rgba(230,148,78,0.35);border-radius:8px;font-size:12px;color:var(--orange);line-height:1.6;">
+          <b>[GM/실무 확인 필요]</b> 발주 담당자·승인선·구매처·발주 주기·최소 재고 임계치 — 지원부 전용 발주 규정은 기존 자료에 없음 (참고: 탕청소 약품은 약품 가이드 탭에 구매처·가격 기준 있음, 일반 소모품·타월류는 미정)
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
     <button class="btn" onclick="supplyAdd()">＋ 비품 추가</button>
     <button class="btn" onclick="printA3Supply()">🖨 A3 인쇄</button>
+    <span id="supplyLowChip" style="display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:4px 10px;border-radius:10px;background:var(--red-bg);color:var(--red);border:1px solid rgba(237,91,63,0.4);white-space:nowrap;">🔴 발주 필요 0건</span>
+    <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap;">
+      <input type="checkbox" id="supplyLowOnly" onchange="renderSupplyTable()"> 부족만 보기
+    </label>
     <input type="text" id="supplySearch" placeholder="품목명 검색…" oninput="renderSupplyTable()" autocomplete="off"
       style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit;flex:1;min-width:160px;max-width:320px;">
   </div>
@@ -5244,11 +5405,13 @@ function applySupplyStored(stored){
   SUPPLY_DATA = rows.map(function(r){
     r = r || {};
     var q = parseInt(r.qty,10); if(isNaN(q)||q<0) q=0;
+    var ro = parseInt(r.reorder,10); if(isNaN(ro)||ro<0) ro=0; // 발주점(최소수량) — 없으면 0(부족 아님)으로 하위호환
     return {
       id: r.id || supplyNewId(),
       cat: (r.cat!=null && r.cat!=='' ? String(r.cat) : '기타'),
       name: (r.name!=null?String(r.name):''),
       qty: q,
+      reorder: ro,
       loc: (r.loc!=null?String(r.loc):''),
       owner: (r.owner!=null?String(r.owner):''),
       note: (r.note!=null?String(r.note):''),
@@ -5309,9 +5472,13 @@ function supplyEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace
 function renderSupplyTable(){
   var wrap=document.getElementById('supply-table');
   if(!wrap) return;
+  supplyUpdateLowChip();
   var qEl=document.getElementById('supplySearch');
   var q=(qEl&&qEl.value?qEl.value.trim().toLowerCase():'');
+  var lowOnlyEl=document.getElementById('supplyLowOnly');
+  var lowOnly=!!(lowOnlyEl&&lowOnlyEl.checked);
   var rows=SUPPLY_DATA.filter(function(r){ return !q || (r.name||'').toLowerCase().indexOf(q)>=0; });
+  if(lowOnly) rows=rows.filter(supplyIsLow);
   // 분류 순서대로 그룹 정렬(같은 분류 안에서는 기존 순서 유지 — 안정 정렬)
   var indexed=rows.map(function(r,i){ return {r:r,i:i}; });
   indexed.sort(function(a,b){
@@ -5326,15 +5493,16 @@ function renderSupplyTable(){
     return;
   }
   if(rows.length===0){
-    wrap.innerHTML='<div style="text-align:center;color:var(--dim);padding:24px 12px;font-size:13px;">"'+supplyEsc(q)+'" 검색 결과 없음</div>';
+    wrap.innerHTML='<div style="text-align:center;color:var(--dim);padding:24px 12px;font-size:13px;">'+(lowOnly?'부족 품목 없음':'"'+supplyEsc(q)+'" 검색 결과 없음')+'</div>';
     return;
   }
   var cell='background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box;';
-  var html='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:760px;">';
+  var html='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:840px;">';
   html+='<thead><tr style="text-align:left;color:var(--dim);font-size:12px;">'
     +'<th style="padding:6px 8px;min-width:110px;">분류</th>'
     +'<th style="padding:6px 8px;min-width:160px;">품목명</th>'
     +'<th style="padding:6px 8px;width:150px;">수량</th>'
+    +'<th style="padding:6px 8px;width:90px;">발주점</th>'
     +'<th style="padding:6px 8px;min-width:120px;">보관위치</th>'
     +'<th style="padding:6px 8px;min-width:90px;">담당</th>'
     +'<th style="padding:6px 8px;min-width:140px;">비고</th>'
@@ -5344,17 +5512,21 @@ function renderSupplyTable(){
     var id=supplyEsc(r.id);
     var cat=r.cat||'기타';
     if(cat!==lastCat){
-      html+='<tr><td colspan="7" style="padding:8px 8px 4px;font-size:12px;font-weight:800;color:var(--accent);border-top:1px solid var(--border);">'+supplyEsc(cat)+'</td></tr>';
+      html+='<tr><td colspan="8" style="padding:8px 8px 4px;font-size:12px;font-weight:800;color:var(--accent);border-top:1px solid var(--border);">'+supplyEsc(cat)+'</td></tr>';
       lastCat=cat;
     }
-    html+='<tr style="border-top:1px solid var(--border);">'
+    var low=supplyIsLow(r);
+    html+='<tr data-supply-id="'+id+'" style="border-top:1px solid var(--border);'+(low?'background:var(--red-bg);':'')+'">'
       +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.cat)+'" oninput="supplyEdit(\''+id+'\',\'cat\',this.value)" placeholder="분류" autocomplete="off" style="'+cell+'"></td>'
-      +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.name)+'" oninput="supplyEdit(\''+id+'\',\'name\',this.value)" placeholder="품목명" autocomplete="off" style="'+cell+'"></td>'
+      +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.name)+'" oninput="supplyEdit(\''+id+'\',\'name\',this.value)" placeholder="품목명" autocomplete="off" style="'+cell+'">'
+        +'<span class="supply-low-badge" style="display:'+(low?'inline-block':'none')+';margin-left:6px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--red-bg);color:var(--red);border:1px solid rgba(237,91,63,0.4);white-space:nowrap;">발주 필요</span>'
+      +'</td>'
       +'<td style="padding:6px 8px;"><span style="display:inline-flex;align-items:center;gap:4px;">'
         +'<button class="btn" style="padding:4px 9px;" onclick="supplyQty(\''+id+'\',-1)">−</button>'
-        +'<input type="number" min="0" value="'+r.qty+'" oninput="supplyEdit(\''+id+'\',\'qty\',this.value)" style="'+cell+'width:58px;text-align:center;">'
+        +'<input type="number" min="0" class="supply-qty-input" value="'+r.qty+'" oninput="supplyEdit(\''+id+'\',\'qty\',this.value)" style="'+cell+'width:58px;text-align:center;">'
         +'<button class="btn" style="padding:4px 9px;" onclick="supplyQty(\''+id+'\',1)">＋</button>'
       +'</span></td>'
+      +'<td style="padding:6px 8px;"><input type="number" min="0" class="supply-reorder-input" value="'+r.reorder+'" oninput="supplyEdit(\''+id+'\',\'reorder\',this.value)" placeholder="발주점" style="'+cell+'width:70px;text-align:center;"></td>'
       +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.loc)+'" oninput="supplyEdit(\''+id+'\',\'loc\',this.value)" placeholder="보관위치" autocomplete="off" style="'+cell+'"></td>'
       +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.owner)+'" oninput="supplyEdit(\''+id+'\',\'owner\',this.value)" placeholder="담당" autocomplete="off" style="'+cell+'"></td>'
       +'<td style="padding:6px 8px;"><input type="text" value="'+supplyEsc(r.note)+'" oninput="supplyEdit(\''+id+'\',\'note\',this.value)" placeholder="비고" autocomplete="off" style="'+cell+'"></td>'
@@ -5367,7 +5539,7 @@ function renderSupplyTable(){
 
 /* 추가: 빈 행 추가(분류는 빈값 — 사용자가 직접 지정) → 재렌더 → 새 행 품목명에 포커스 */
 function supplyAdd(){
-  var item={id:supplyNewId(),cat:'',name:'',qty:0,loc:'',owner:'',note:'',updatedAt:new Date().toISOString()};
+  var item={id:supplyNewId(),cat:'',name:'',qty:0,reorder:0,loc:'',owner:'',note:'',updatedAt:new Date().toISOString()};
   SUPPLY_DATA.push(item);
   var qEl=document.getElementById('supplySearch'); if(qEl) qEl.value=''; // 새 행이 필터에 가려지지 않게
   persistSupplyData();
@@ -5380,13 +5552,44 @@ function supplyAdd(){
   }
 }
 
+/* 부족 판정: 발주점(reorder) 설정돼 있고(>0) 현재수량이 발주점 이하일 때만 부족 */
+function supplyIsLow(r){
+  var ro=parseInt(r&&r.reorder,10); if(isNaN(ro)||ro<0) ro=0;
+  var q=parseInt(r&&r.qty,10); if(isNaN(q)||q<0) q=0;
+  return ro>0 && q<=ro;
+}
+
+/* 부족 요약 칩 텍스트 갱신 (전체 SUPPLY_DATA 기준 — 검색/필터와 무관) */
+function supplyUpdateLowChip(){
+  var chip=document.getElementById('supplyLowChip');
+  if(!chip) return;
+  var n=SUPPLY_DATA.filter(supplyIsLow).length;
+  chip.textContent='🔴 발주 필요 '+n+'건';
+}
+
+/* 표 재렌더 없이 해당 행의 부족 강조·배지만 갱신 + 요약 칩 갱신 (IME/포커스 보호) */
+function supplyRefreshRowHighlight(id){
+  supplyUpdateLowChip();
+  var wrap=document.getElementById('supply-table');
+  if(!wrap) return;
+  var r=supplyFind(id); if(!r) return;
+  var tr=wrap.querySelector('tr[data-supply-id="'+id+'"]');
+  if(!tr) return;
+  var low=supplyIsLow(r);
+  tr.style.background = low ? 'var(--red-bg)' : '';
+  var badge=tr.querySelector('.supply-low-badge');
+  if(badge) badge.style.display = low ? 'inline-block' : 'none';
+}
+
 /* 인라인 편집: 값만 갱신·즉시 persist (표 재렌더 안 함 → IME·커서 보호) */
 function supplyEdit(id, field, val){
   var r=supplyFind(id); if(!r) return;
   if(field==='qty'){ var q=parseInt(val,10); if(isNaN(q)||q<0) q=0; r.qty=q; }
+  else if(field==='reorder'){ var ro=parseInt(val,10); if(isNaN(ro)||ro<0) ro=0; r.reorder=ro; }
   else r[field]=val;
   r.updatedAt=new Date().toISOString();
   persistSupplyData();
+  if(field==='qty'||field==='reorder') supplyRefreshRowHighlight(id);
 }
 
 /* 수량 −／＋ (0 미만 방지). 해당 number input 값만 갱신 → 표 재렌더 안 함(IME 안전) */
@@ -5397,9 +5600,11 @@ function supplyQty(id, delta){
   persistSupplyData();
   var wrap=document.getElementById('supply-table');
   if(wrap){
-    var inp=wrap.querySelector('input[type=number][oninput*="\''+id+'\'"]');
+    var tr=wrap.querySelector('tr[data-supply-id="'+id+'"]');
+    var inp=tr?tr.querySelector('.supply-qty-input'):null;
     if(inp) inp.value=q;
   }
+  supplyRefreshRowHighlight(id);
 }
 
 /* 삭제: 배열 splice + persist + 재렌더(포커스 없는 변경이라 안전) */
@@ -7475,9 +7680,12 @@ function printA3Supply(){
     var html='';
     catKeys.forEach(function(cat){
       html+='<div class="asp-cat">'+escapeHTML(cat)+'</div>';
-      html+='<table><thead><tr><th>품목</th><th>수량</th><th>위치</th><th>비고</th></tr></thead><tbody>';
+      html+='<table><thead><tr><th>품목</th><th>수량</th><th>발주점</th><th>위치</th><th>비고</th></tr></thead><tbody>';
       groups[cat].forEach(function(r){
-        html+='<tr><td>'+escapeHTML(r.name)+'</td><td>'+r.qty+'</td><td>'+escapeHTML(r.loc)+'</td><td>'+escapeHTML(r.note)+'</td></tr>';
+        var low=supplyIsLow(r);
+        var rowAttr=low?' style="color:#c0392b;font-weight:800;"':'';
+        var badge=low?' <span style="font-size:9.5px;font-weight:800;color:#fff;background:#c0392b;padding:1px 6px;border-radius:8px;margin-left:4px;">발주 필요</span>':'';
+        html+='<tr'+rowAttr+'><td>'+escapeHTML(r.name)+badge+'</td><td>'+r.qty+'</td><td>'+(r.reorder||0)+'</td><td>'+escapeHTML(r.loc)+'</td><td>'+escapeHTML(r.note)+'</td></tr>';
       });
       html+='</tbody></table>';
     });
@@ -7490,6 +7698,92 @@ function printA3Supply(){
   window.print();
   document.body.classList.remove('a3-supply-mode');
   styleTag.textContent='';
+}
+
+/* ═══════════════════════════════════════════
+   A3 신입 온보딩 교육자료 인쇄 — ①직원 구성·역할 ②사우나 투어 안내 ③회원 응대 상황표 ④지원부 가이드
+   를 STAFF_DATA·TOUR_DATA·CS_DATA·SUPPORT_GUIDE_DATA 라이브 편집 데이터로 한 문서에 통합 (배64)
+   함수명: printA3Onboarding / 클래스: a3-onboarding-mode
+   style id: a3-onboarding-page-style / 컨테이너: #a3-onboarding-print
+   ═══════════════════════════════════════════ */
+function printA3Onboarding(){
+  var sub=document.querySelector('#a3-onboarding-print .aob-sub');
+  if(sub) sub.textContent='지원부 신입 직원 교육 자료 · 출력일 '+kstToday();
+
+  // ① 직원 구성·역할
+  var staffHost=document.getElementById('aob-staff-host');
+  if(staffHost){
+    if(!STAFF_DATA.length){
+      staffHost.innerHTML='<div class="aob-empty">내용 없음</div>';
+    }else{
+      var h1='<table><thead><tr><th>직책</th><th>성명</th><th>구분</th><th>비고</th></tr></thead><tbody>';
+      STAFF_DATA.forEach(function(r){
+        h1+='<tr><td>'+escapeHTML(r.role)+'</td><td>'+escapeHTML(r.name)+'</td><td>'+escapeHTML(r.gender)+'</td><td>'+escapeHTML(r.note)+'</td></tr>';
+      });
+      h1+='</tbody></table>';
+      staffHost.innerHTML=h1;
+    }
+  }
+
+  // ② 신규회원 사우나 투어 안내
+  var tourHost=document.getElementById('aob-tour-host');
+  if(tourHost){
+    if(!TOUR_DATA.length){
+      tourHost.innerHTML='<div class="aob-empty">내용 없음</div>';
+    }else{
+      var h2='<ol class="aob-tour-list">';
+      TOUR_DATA.forEach(function(r){
+        h2+='<li><b>'+escapeHTML(r.title)+'</b> — '+escapeHTML(r.body)+'</li>';
+      });
+      h2+='</ol>';
+      tourHost.innerHTML=h2;
+    }
+  }
+
+  // ③ 회원 응대 상황표
+  var csHost=document.getElementById('aob-cs-host');
+  if(csHost){
+    if(!CS_DATA.length){
+      csHost.innerHTML='<div class="aob-empty">내용 없음</div>';
+    }else{
+      var h3='<table><thead><tr><th>상황</th><th>응대 멘트·조치</th><th>주의점</th></tr></thead><tbody>';
+      CS_DATA.forEach(function(r){
+        h3+='<tr><td>'+escapeHTML(r.sit)+'</td><td>'+escapeHTML(r.resp)+'</td><td>'+escapeHTML(r.note)+'</td></tr>';
+      });
+      h3+='</tbody></table>';
+      csHost.innerHTML=h3;
+    }
+  }
+
+  // ④ 지원부 가이드
+  var guideHost=document.getElementById('aob-guide-host');
+  if(guideHost){
+    var guideCards=(SUPPORT_GUIDE_DATA && SUPPORT_GUIDE_DATA.guide) || [];
+    if(!guideCards.length){
+      guideHost.innerHTML='<div class="aob-empty">내용 없음</div>';
+    }else{
+      var h4='';
+      guideCards.forEach(function(card){
+        var lines=(card.body||'').split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length;});
+        h4+='<div class="aob-guide-card"><div class="aob-guide-title">'+escapeHTML(card.title||'(제목 없음)')+'</div>';
+        if(lines.length){
+          lines.forEach(function(l){ h4+='<div class="aob-guide-line">'+escapeHTML(l)+'</div>'; });
+        }else{
+          h4+='<div class="aob-guide-line">내용 없음</div>';
+        }
+        h4+='</div>';
+      });
+      guideHost.innerHTML=h4;
+    }
+  }
+
+  document.body.classList.add('a3-onboarding-mode');
+  var oStyleTag=document.getElementById('a3-onboarding-page-style');
+  if(!oStyleTag){oStyleTag=document.createElement('style');oStyleTag.id='a3-onboarding-page-style';document.head.appendChild(oStyleTag);}
+  oStyleTag.textContent='@media print{ @page{ size:A3 landscape; margin:10mm; } }';
+  window.print();
+  document.body.classList.remove('a3-onboarding-mode');
+  oStyleTag.textContent='';
 }
 </script>
 

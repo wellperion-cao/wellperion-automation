@@ -223,9 +223,32 @@
   .strat-link{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--accent-soft); background:var(--paper); border:1px solid var(--border-strong); border-radius:8px; padding:6px 13px; text-decoration:none; white-space:nowrap;}
   .strat-link:hover{border-color:var(--accent); background:var(--surface);}
 
-  .report-box{padding:13px 15px; border:1px dashed var(--border-strong); border-radius:11px; background:var(--surface); font-size:12px; color:var(--text-soft); line-height:1.55;}
-  .report-box.done{border-style:solid; border-left:3px solid var(--green);}
-  .report-box .rh{font-size:13px; font-weight:700; color:var(--text); margin-bottom:5px;}
+  /* ── 📊 월말 결과 보고 히어로(최상단 · 경영진 임팩트 카드 · GM 지시 2026-07 이동) ── */
+  .blk.report-hero{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:6px 14px 16px; margin-bottom:4px;}
+  .blk.report-hero.is-done{border-color:rgba(106,191,123,0.4);}
+  .rep-head{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:12px;}
+  .rep-badge{display:inline-flex; align-items:center; font-size:12.5px; font-weight:800; border-radius:20px; padding:5px 14px; white-space:nowrap;}
+  .rep-badge.done{color:var(--green); background:rgba(106,191,123,0.12); border:1px solid rgba(106,191,123,0.4);}
+  .rep-badge.live{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.4);}
+  .rep-sub{font-size:12.5px; color:var(--text-soft);}
+  .rep-stats{display:flex; flex-wrap:wrap; gap:12px; margin-bottom:14px;}
+  .rep-card{flex:1; min-width:150px; background:var(--surface); border:1px solid var(--border-strong); border-radius:11px; padding:13px 16px;}
+  .rep-card .rl{font-size:11px; color:var(--dim); display:block;}
+  .rep-card .rv{font-size:26px; font-weight:800; letter-spacing:-0.02em; color:var(--text); margin-top:5px; line-height:1.15;}
+  .rep-card .rv.pos{color:var(--green);} .rep-card .rv.neg{color:var(--rose);} .rep-card .rv.none{color:var(--dim); font-size:15px;}
+  .rep-card .rsub{display:block; font-size:11px; color:var(--text-soft); margin-top:5px;}
+  .rep-lists{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .rep-col{background:var(--surface); border:1px solid var(--border-strong); border-radius:11px; padding:12px 15px;}
+  .rep-col.rep-done{border-left:3px solid var(--green);}
+  .rep-col.rep-carry{border-left:3px solid var(--gold);}
+  .rep-col h3{font-size:12.5px; font-weight:700; margin-bottom:8px; color:var(--text);}
+  .rep-col ul{list-style:none; display:flex; flex-direction:column; gap:6px;}
+  .rep-col li{display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--text-soft); line-height:1.4; border-bottom:1px dashed var(--border); padding-bottom:6px;}
+  .rep-col li:last-child{border-bottom:none; padding-bottom:0;}
+  .rli-t{flex:1;}
+  .rli-m{white-space:nowrap; color:var(--dim); font-size:11px;}
+  .rep-none{font-size:11.5px; color:var(--dim); font-style:italic;}
+  .rep-empty{padding:18px; font-size:12.5px; color:var(--dim); text-align:center; border:1px dashed var(--border-strong); border-radius:11px; background:var(--surface);}
 
   .board-status{padding:16px; font-size:12px; color:var(--dim); text-align:center;}
   footer.foot{margin-top:22px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
@@ -234,6 +257,7 @@
     .prow{grid-template-columns:1fr;}
     .erp-time{flex-wrap:wrap;}
     .erp-step{min-width:calc(50% - 5px);}
+    .rep-lists{grid-template-columns:1fr;}
   }
   @media (max-width:640px){
     header.page-head h1{font-size:19px;}
@@ -265,12 +289,30 @@
     .fin-dept-h{color:#222 !important;} .findept tbody td{color:#333 !important;} .findept td.pctc{color:#444 !important;}
     .findept tbody tr.tot td{background:#f2f2f2 !important; color:#111 !important;}
     .fin-exp-dept{display:none !important;}  /* 세로 1페이지 밀도 — 부서별 매출만(지출 부서분해 생략) */
+    /* 📊 월말 결과 보고 히어로 = 맨 위(한눈 요약보다 먼저) 두 단 전폭 */
+    .blk.report-hero{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
+    .blk.report-hero h2.sec{margin-top:2px;}
+    .rep-badge{border:1px solid #999 !important; background:#f2f2f2 !important; color:#111 !important;}
+    .rep-badge.done{color:#3c7a4a !important; border-color:#3c7a4a !important;}
+    .rep-badge.live{color:#2f5f7a !important; border-color:#2f5f7a !important;}
+    .rep-sub{color:#444 !important;}
+    .rep-stats{gap:6px; margin-bottom:6px;}
+    .rep-card{background:#f7f7f7 !important; border:1px solid #999 !important; padding:5px 8px;}
+    .rep-card .rl{color:#444 !important;} .rep-card .rv{color:#111 !important; font-size:15px; margin-top:2px;}
+    .rep-card .rv.pos{color:#3c7a4a !important;} .rep-card .rv.neg{color:#a13a2e !important;}
+    .rep-card .rsub{color:#444 !important;}
+    .rep-lists{gap:6px;}
+    .rep-col{background:#fff !important; border:1px solid #999 !important; padding:5px 8px;}
+    .rep-col h3{font-size:8.5px; margin-bottom:3px; color:#111 !important;}
+    .rep-col li{color:#333 !important; border-color:#ccc !important; font-size:7.5px; padding-bottom:3px;}
+    .rli-m{color:#555 !important;}
+    .rep-none, .rep-empty{color:#555 !important;}
     h2.sec{font-size:10.5px; margin:0 0 4px; border-bottom:1px solid #bbb; padding-bottom:2px; break-after:avoid;}
     h2.sec .stag{font-size:7.5px;}
     h2.sec .cfo-link{font-size:7.5px; padding:1px 6px; color:#333 !important; border-color:#999 !important;}
     .strat-row{gap:4px;}
     .strat-link{font-size:7.5px; padding:2px 7px; color:#333 !important; background:#fff !important; border-color:#999 !important;}
-    header.page-head, .month-head, .rpt-wrap, .metric, .report-box, .prow, table.rpt tr, .erp-step, .erp-time{break-inside:avoid;}
+    header.page-head, .month-head, .rpt-wrap, .metric, .rep-card, .rep-col, .prow, table.rpt tr, .erp-step, .erp-time{break-inside:avoid;}
     header.page-head{margin-bottom:4px; padding-bottom:4px;}
     header.page-head h1{font-size:14px;}
     .month-head{margin:3px 0 5px; padding:5px 8px; gap:4px 10px;}
@@ -280,9 +322,8 @@
     .erp-step{padding:8px 10px 7px; gap:4px;} .erp-step .ep{font-size:20px;} .erp-step .enote{font-size:8px; line-height:1.4;}
     .erp-time{gap:6px;}
     .prow{padding:5px 9px; gap:4px 12px;}
-    .report-box{padding:8px 11px;}
     footer.foot{margin-top:8px; padding-top:6px; font-size:8px;}
-    .month-head, .rpt-wrap, table.rpt, .metric, .report-box, .prow, .erp-step{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    .month-head, .rpt-wrap, table.rpt, .metric, .rep-card, .rep-col, .prow, .erp-step{background:#fff !important; color:#111 !important; border-color:#999 !important;}
     table.rpt thead th{background:#f2f2f2 !important; color:#333 !important; border-color:#999 !important; padding:3px 6px; font-size:8px;}
     table.rpt tbody td{padding:3px 6px; font-size:8.5px;}
     table.rpt tbody td, table.rpt tbody tr:hover td, .fin tr.cur-m td{background:#fff !important; color:#222 !important; border-color:#ccc !important;}
@@ -337,6 +378,12 @@
   <!-- 경영진 A3 결론 한 장 = 아래 report-grid (인쇄 시 2단, 매출은 상단 전폭) -->
   <div class="report-grid">
 
+    <!-- 📊 월말 결과 보고 (맨 위 · 경영진 최상단 임팩트 히어로 — GM 지시 2026-07: 최하단→최상단 이동) -->
+    <section class="blk report-hero" id="report-hero-wrap">
+      <h2 class="sec">📊 월말 결과 보고 <span class="stag">이달 확정 실적 · 완료/이월 · 매출·ERP 스냅샷</span></h2>
+      <div id="report-area"><div class="board-status">월말 결과를 계산하는 중…</div></div>
+    </section>
+
     <!-- 🎯 한눈 요약 (맨 위 · 경영진 3초 요약 · 이달 핵심 3숫자 + 전월 대비 델타) -->
     <section class="blk sum-hero">
       <h2 class="sec">🎯 이달 한눈 요약 <span class="stag">목표 달성률 · 매출-지출 순액 · ERP 진척 · 전월 대비</span></h2>
@@ -375,12 +422,6 @@
     <section class="blk">
       <h2 class="sec" id="prac-sec" style="display:none;">👤 실무책임자 도달율 <span class="stag">GM 직속 3라인</span></h2>
       <div id="prac-board" style="display:none;"></div>
-    </section>
-
-    <!-- 📊 월말 결과 보고 -->
-    <section class="blk">
-      <h2 class="sec">📊 월말 결과 보고</h2>
-      <div id="report-area"></div>
     </section>
 
   </div>
@@ -1062,24 +1103,83 @@
     host.innerHTML = '<div class="sumrow">' + c1 + c2 + c3 + '</div>';
   }
 
-  // ── 월말 보고 영역 ──
+  // ── 📊 월말 결과 보고 (최상단 히어로 — 경영진이 열자마자 이달 성과를 3초 안에 느끼도록) ──
+  // 데이터 정직: 아래 통계는 전부 monthly_ops_plan.json objectives/erp_progress + CFO 매출·지출 실측 재사용(위 sum-hero·fin-board와 동일 계산 함수) — 지어낸 값 없음.
+  function reportItemLi(o, done){
+    var meta = done ? '완료 100%' : ((typeof o.progress === 'number' ? o.progress : 0) + '%');
+    return '<li><span class="rli-t">' + (done ? '✅' : '⏳') + ' ' + esc(o.title) + '</span>' +
+      '<span class="rli-m">' + esc(nickOf(o.owner)) + ' · ' + meta + '</span></li>';
+  }
   function renderReport(){
+    var wrap = document.getElementById('report-hero-wrap');
     var el = document.getElementById('report-area');
     var m = _data.months[_sel];
     if(!m){ el.innerHTML = ''; return; }
-    if(m.month_status === '완료'){
-      var done = (m.objectives || []).filter(function(o){ return o.status === '완료'; }).length;
-      var tot = (m.objectives || []).length;
-      el.innerHTML = '<div class="report-box done">' +
-        '<div class="rh">✅ ' + esc(_sel) + ' 마감 — 목표 ' + done + '/' + tot + ' 완료</div>' +
-        '테마: ' + esc(m.theme || '') + '. 목표별 최종 상태·도달율은 위 표 참조.' +
-      '</div>';
-    } else {
-      el.innerHTML = '<div class="report-box">' +
-        '<div class="rh">🗓️ ' + esc(_sel) + ' 진행 중 — 월말 보고 대기</div>' +
-        '이 달이 <b>완료</b>로 마감되면 목표 달성 요약(완료 N/전체 · 도달율)이 여기 표시됩니다.' +
-      '</div>';
+    var objs = m.objectives || [];
+
+    if(!objs.length){
+      el.innerHTML = '<div class="rep-empty">이 달의 목표 데이터가 아직 없습니다 — <code>status/monthly_ops_plan.json</code>에 objectives가 등록되면 이 자리에 결과가 표시됩니다(가짜값 없음).</div>';
+      if(wrap) wrap.classList.remove('is-done');
+      return;
     }
+
+    var isDone = (m.month_status === '완료');
+    var doneList = objs.filter(function(o){ return o.status === '완료'; });
+    var restList = objs.filter(function(o){ return o.status !== '완료'; });
+    var avg = avgProgress(_sel);
+    var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
+    var fin = calcFinance(mnum);
+    var target = salesTargetFor(_sel);
+    var erpPct = computeErpPctFor(_sel);
+
+    if(wrap) wrap.classList.toggle('is-done', isDone);
+
+    var badge = isDone
+      ? '<span class="rep-badge done">✅ ' + esc(_sel) + ' 마감 완료</span>'
+      : '<span class="rep-badge live">🔵 ' + esc(_sel) + ' 진행 중 — 실시간 스냅샷</span>';
+    var subline = '테마: ' + esc(m.theme || '') + (isDone ? '' : ' · 마감되면 최종 보고로 자동 전환');
+
+    // ① 목표 달성
+    var goalCard = '<div class="rep-card"><span class="rl">① 목표 달성</span>' +
+      '<div class="rv">' + doneList.length + '<span style="font-size:15px;color:var(--dim)">/' + objs.length + '</span></div>' +
+      '<span class="rsub">평균 진척 ' + (avg != null ? avg + '%' : '—') + '</span></div>';
+
+    // ② 매출 vs 목표
+    var salesCard;
+    if(fin && fin.sales != null){
+      var spct = target ? Math.max(0, Math.round(fin.sales / target * 100)) : null;
+      salesCard = '<div class="rep-card"><span class="rl">② 매출 vs 목표</span>' +
+        '<div class="rv' + (spct != null && spct >= 100 ? ' pos' : '') + '">' + (spct != null ? spct + '%' : '—') + '</div>' +
+        '<span class="rsub">' + fmtWon(fin.sales) + ' / 목표 ' + fmtWon(target) + '</span></div>';
+    } else {
+      salesCard = '<div class="rep-card"><span class="rl">② 매출 vs 목표</span>' +
+        '<div class="rv none">측정 전</div><span class="rsub">목표 ' + fmtWon(target) + '(가짜값 없음)</span></div>';
+    }
+
+    // ③ 매출-지출 순액
+    var netCard = (fin && fin.net != null)
+      ? '<div class="rep-card"><span class="rl">③ 매출−지출 순액</span>' +
+        '<div class="rv ' + (fin.net >= 0 ? 'pos' : 'neg') + '">' + fmtWon(fin.net) + '</div>' +
+        '<span class="rsub">' + (fin.net >= 0 ? '흑자' : '적자') + '</span></div>'
+      : '<div class="rep-card"><span class="rl">③ 매출−지출 순액</span><div class="rv none">측정 전</div><span class="rsub">매출·지출 미기재</span></div>';
+
+    // ④ ERP 진척
+    var erpCard = '<div class="rep-card"><span class="rl">④ 웰페리온 ERP 진척</span>' +
+      '<div class="rv">' + (erpPct != null ? erpPct + '%' : '미기록') + '</div>' +
+      '<span class="rsub">정본 · erp_progress</span></div>';
+
+    var statsHtml = '<div class="rep-stats">' + goalCard + salesCard + netCard + erpCard + '</div>';
+
+    var listsHtml = '<div class="rep-lists">' +
+      '<div class="rep-col rep-done"><h3>✅ 완료 (' + doneList.length + ')</h3>' +
+        (doneList.length ? '<ul>' + doneList.map(function(o){ return reportItemLi(o, true); }).join('') + '</ul>' : '<p class="rep-none">완료 항목 없음</p>') +
+      '</div>' +
+      '<div class="rep-col rep-carry"><h3>⏳ 진행중 · 이월 (' + restList.length + ')</h3>' +
+        (restList.length ? '<ul>' + restList.map(function(o){ return reportItemLi(o, false); }).join('') + '</ul>' : '<p class="rep-none">이월 항목 없음</p>') +
+      '</div>' +
+    '</div>';
+
+    el.innerHTML = '<div class="rep-head">' + badge + '<span class="rep-sub">' + subline + '</span></div>' + statsHtml + listsHtml;
   }
 
   // ── 편집 버튼 ──
