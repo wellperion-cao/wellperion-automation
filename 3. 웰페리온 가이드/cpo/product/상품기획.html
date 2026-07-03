@@ -61,9 +61,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab-btn:hover{color:var(--accent-bright);}
 .tab-btn.active{color:var(--accent-bright);border-bottom-color:var(--accent);}
 .tab-icon{font-size:14px;}
-/* ── 인쇄 용지·방향 선택. 기본=A3 세로(회사 인쇄 표준). 2026-07-03 시포·GM ── */
-.print-size-select{margin-left:8px;font-size:11px;font-weight:600;padding:5px 10px;border-radius:var(--radius-btn);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);font-family:inherit;cursor:pointer;outline:none;}
-.print-size-select:hover{background:rgba(183,159,138,0.2);}
+/* ── 인쇄 드롭다운(지원부 체계 '인쇄 ▾' 패턴 이식). 기본=A3 세로(회사 인쇄 표준). 2026-07-03 시포·GM ── */
+.tab-dropdown{position:relative;flex-shrink:0;margin-left:auto;}
+.tab-dropdown-menu{display:none;position:fixed;background:var(--paper);border:1px solid var(--accent-border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:1000;min-width:150px;padding:4px 0;}
+.tab-dropdown-menu.open{display:block;}
+.tab-dropdown-menu button{display:block;width:100%;padding:9px 16px;font-size:13px;font-weight:600;color:var(--dim-mid);background:none;border:none;cursor:pointer;font-family:inherit;white-space:nowrap;text-align:left;border-radius:0;}
+.tab-dropdown-menu button:hover{background:var(--accent-bg);color:var(--accent-bright);}
+.tab-dropdown-menu button.default{color:var(--accent);}
 
 /* ─── 레이아웃 ─── */
 .content{padding:24px;max-width:1100px;margin:0 auto;}
@@ -98,7 +102,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     --teal:#0d6b6b;--teal-bright:#0a5555;--teal-bg:#dff2f2;--teal-border:#0d6b6b;
     --shadow-card:none;--shadow-header:none;
   }
-  .tab-nav,.print-tab,.print-size-select,.action-btn,.section-badge-actions,
+  .tab-nav,.print-tab,.tab-dropdown-menu,.action-btn,.section-badge-actions,
   .pp-del,.pp-add,.status-msg,.pricing-hint,.plan-card-actions,.btn-sm,
   .hero-eyebrow,.grade-ribbon,.seed-mark,.cat-filter-bar{display:none!important;}
   .tab-panel{display:none!important;}
@@ -350,13 +354,15 @@ tr:hover td{background:var(--accent-bg);}
     <button class="tab-btn" role="tab" onclick="switchTab('youth',this)"><span class="tab-icon">👦</span>유소년강습</button>
     <button class="tab-btn" role="tab" onclick="switchTab('policy',this)"><span class="tab-icon">💳</span>요금 정책</button>
     <button class="tab-btn" role="tab" onclick="switchTab('workshop',this)"><span class="tab-icon">✏️</span>기획 작업대</button>
-    <button class="tab-btn print-tab" onclick="window.print()" title="현재 탭 인쇄" style="margin-left:auto;color:var(--accent)"><span class="tab-icon">🖨️</span>인쇄</button>
-    <select id="printSizeSelect" class="print-size-select" onchange="applyPrintSize(this.value)" title="인쇄 용지·방향">
-      <option value="a4-portrait">A4 세로</option>
-      <option value="a4-landscape">A4 가로</option>
-      <option value="a3-portrait" selected>A3 세로</option>
-      <option value="a3-landscape">A3 가로</option>
-    </select>
+    <div class="tab-dropdown" id="printDropdown">
+      <button class="tab-btn print-tab" id="printDropdownBtn" onclick="openTabDropdown(this,document.getElementById('printDropdownMenu'),event)" title="용지 선택 후 현재 탭 인쇄" style="color:var(--accent)"><span class="tab-icon">🖨️</span>인쇄 ▾</button>
+      <div class="tab-dropdown-menu" id="printDropdownMenu">
+        <button onclick="printWithSize('a4-portrait')">A4 세로</button>
+        <button onclick="printWithSize('a4-landscape')">A4 가로</button>
+        <button class="default" onclick="printWithSize('a3-portrait')">A3 세로 · 기본</button>
+        <button onclick="printWithSize('a3-landscape')">A3 가로</button>
+      </div>
+    </div>
   </nav>
 </div>
 
@@ -758,6 +764,29 @@ function applyPrintSize(key) {
   if (!style) { style = document.createElement('style'); style.id = 'printPageRule'; document.head.appendChild(style); }
   style.textContent = '@media print{ @page{ size:' + css + '; } }';
 }
+// ── 인쇄 드롭다운: 항목 클릭 = 용지 적용 + 즉시 인쇄(현재 활성 탭만, 기존 @media print 규칙이 처리). 2026-07-03 시포·GM ──
+function printWithSize(key) {
+  applyPrintSize(key);
+  closeAllDropdowns();
+  window.print();
+}
+function openTabDropdown(btnEl, menuEl, e) {
+  e.stopPropagation();
+  var isOpen = menuEl.classList.contains('open');
+  closeAllDropdowns();
+  if (!isOpen) {
+    var rect = btnEl.getBoundingClientRect();
+    menuEl.style.top = (rect.bottom + 2) + 'px';
+    menuEl.style.right = (window.innerWidth - rect.right) + 'px';
+    menuEl.classList.add('open');
+  }
+}
+function closeAllDropdowns() {
+  document.querySelectorAll('.tab-dropdown-menu').forEach(function(m){ m.classList.remove('open'); });
+}
+document.addEventListener('click', function(){ closeAllDropdowns(); });
+window.addEventListener('scroll', function(){ closeAllDropdowns(); }, true);
+window.addEventListener('resize', function(){ closeAllDropdowns(); });
 
 // ── 요금 정책: 전체를 한눈에 편집 가능한 표로. 예약 레코드(id=POLICY-TABLE, '상품기획저장' 시트 재사용·새 배포 불필요). 2026-07-02 시포·GM ──
 var POLICY_TABLE_ID = 'POLICY-TABLE';
