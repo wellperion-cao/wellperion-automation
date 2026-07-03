@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deploy3.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Stage pages with external assets
@@ -43,6 +43,24 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: '_pages_build'
-      - name: Deploy to GitHub Pages
-        id: deployment
+      # 2026-07-03: Pages 백엔드가 커밋 폭주 시 "Deployment failed, try again later"를 간헐 반환.
+      # 실패해도 잠깐 대기 후 재배포(백엔드 회복 통상 <1분) → 실패 메일 제거. 즉시 배포는 유지.
+      - name: Deploy to GitHub Pages (attempt 1)
+        id: deploy1
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+      - name: Settle before retry
+        if: steps.deploy1.outcome == 'failure'
+        run: sleep 45
+      - name: Deploy to GitHub Pages (attempt 2)
+        id: deploy2
+        if: steps.deploy1.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+      - name: Settle before final attempt
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
+        run: sleep 60
+      - name: Deploy to GitHub Pages (final attempt)
+        id: deploy3
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
         uses: actions/deploy-pages@v4
