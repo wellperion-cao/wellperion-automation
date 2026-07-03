@@ -165,7 +165,7 @@ table.ep-table .status-cell{white-space:nowrap;width:140px}
     <div class="section-title">범례</div>
     <div class="legend-row">
       <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>발행완료</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>M5 진행 중(검수·발행검증대기)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>M3 진행 중(검수·발행검증대기)</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>제작완료·GM검수대기</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--dim)"></div>기획예정</div>
       <div class="legend-item"><div class="legend-dot" style="background:rgba(140,139,131,.35)"></div>폐기·보류(취소선)</div>
@@ -184,12 +184,12 @@ table.ep-table .status-cell{white-space:nowrap;width:140px}
 
   // ── 상태 배지 결정 ────────────────────────────────────────────────
   function resolveBadge(roadmapStatus, m5Status){
-    // M5 상태 우선
+    // M3 상태 우선
     const s = (m5Status || '').trim();
     if(s){
       if(/발행완료/.test(s))   return {cls:'badge-green', label:'발행완료'};
       if(/발행검증대기/.test(s)) return {cls:'badge-yellow', label:'발행검증대기'};
-      if(/검수대기|검수요청/.test(s)) return {cls:'badge-yellow', label:'M5 검수대기'};
+      if(/검수대기|검수요청/.test(s)) return {cls:'badge-yellow', label:'M3 검수대기'};
       if(/제작완료|GM검수/.test(s)) return {cls:'badge-orange', label:'제작완료·GM검수'};
     }
     // roadmap_status fallback
@@ -197,13 +197,13 @@ table.ep-table .status-cell{white-space:nowrap;width:140px}
     if(/폐기|보류/.test(r))        return {cls:'badge-dim',    label: r.replace(/✅/g,'').trim()};
     if(/발행완료/.test(r))         return {cls:'badge-green',  label:'발행완료'};
     if(/발행검증대기/.test(r))     return {cls:'badge-yellow', label:'발행검증대기'};
-    if(/검수대기|검수요청/.test(r))return {cls:'badge-yellow', label:'M5 검수대기'};
+    if(/검수대기|검수요청/.test(r))return {cls:'badge-yellow', label:'M3 검수대기'};
     if(/제작완료|GM검수/.test(r))  return {cls:'badge-orange', label:'제작완료·GM검수'};
     if(/기획예정/.test(r))         return {cls:'badge-gray',   label:'기획예정'};
     return {cls:'badge-gray', label: r || '—'};
   }
 
-  // ── M5 큐 → 편번호 맵 ────────────────────────────────────────────
+  // ── M3 큐 → 편번호 맵 ────────────────────────────────────────────
   function buildM5Map(items){
     const map = {};
     (items||[]).forEach(item => {
@@ -211,7 +211,7 @@ table.ep-table .status-cell{white-space:nowrap;width:140px}
       const m = id.match(/AI(\d+)/i);
       if(m){
         const num = parseInt(m[1],10);
-        // 같은 편 여러 항목이면 M5 상태 우선순위: 발행완료 < 발행검증대기 < 검수대기 < 기타
+        // 같은 편 여러 항목이면 M3 상태 우선순위: 발행완료 < 발행검증대기 < 검수대기 < 기타
         if(!map[num]) map[num] = item.status || '';
         else {
           // 더 진행된(앞선) 상태로 덮어씌우지 않음 — 가장 최근 상태 유지
@@ -281,7 +281,7 @@ table.ep-table .status-cell{white-space:nowrap;width:140px}
           <td class="num-cell">#${numLabel}</td>
           <td class="title-cell">${esc(ep.title)}${toggleIcon}</td>
           <td class="msg-cell">${esc(ep.message)}</td>
-          <td class="status-cell"><span class="badge ${cls}">${esc(label)}</span>${m5Status && m5Status !== ep.roadmap_status ? `<br><span style="font-size:10px;color:var(--dim);margin-top:3px;display:block">M5 반영</span>` : ''}</td>
+          <td class="status-cell"><span class="badge ${cls}">${esc(label)}</span>${m5Status && m5Status !== ep.roadmap_status ? `<br><span style="font-size:10px;color:var(--dim);margin-top:3px;display:block">M3 반영</span>` : ''}</td>
         </tr>
         <tr class="ep-detail-row" id="${toggleId}">
           <td colspan="4">
@@ -392,7 +392,7 @@ table.ep-table .status-cell{white-space:nowrap;width:140px}
 
     if(reviewResult.status === 'rejected'){
       area.insertAdjacentHTML('afterbegin',
-        '<div class="error-msg" style="margin-bottom:10px">M5 검수 상태 불러오기 실패 — 로드맵 상태만 표시합니다.</div>');
+        '<div class="error-msg" style="margin-bottom:10px">M3 검수 상태 불러오기 실패 — 로드맵 상태만 표시합니다.</div>');
     }
   });
 
