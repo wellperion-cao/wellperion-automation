@@ -1090,7 +1090,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
               <th style="width:85px">담당</th>
               <th style="width:200px">문의 내용</th>
               <th style="width:220px">Contact (연락 기록)</th>
-              <th style="width:200px">일정 (체험1·체험2)</th>
+              <th style="width:200px">일정 (예약)</th>
             </tr>
           </thead>
           <tbody id="dbBody">
@@ -1902,8 +1902,8 @@ if (action === 'member_calendar') {
 <div class="consult-overlay" id="reconOverlay" onclick="if(event.target===this)closeReconModal()">
   <div class="consult-modal" role="dialog" aria-modal="true">
     <div class="consult-modal-head">
-      <span class="consult-modal-kind recon" id="rcKind">재등록상담</span>
-      <span class="consult-modal-title" id="rcTitle">재등록 상담</span>
+      <span class="consult-modal-kind recon" id="rcKind">예약</span>
+      <span class="consult-modal-title" id="rcTitle">예약</span>
     </div>
     <!-- 회원 선택(추가 모드) — 유효회원 검색. 수정 모드에선 고정 표시. -->
     <div class="consult-row" id="rcMemberPickRow"><span class="ck">회원 선택</span><span class="cv" style="display:flex;flex-direction:column;gap:4px;width:100%">
@@ -1914,15 +1914,10 @@ if (action === 'member_calendar') {
     </span></div>
     <div class="consult-row" id="rcMemberFixedRow" style="display:none"><span class="ck">회원</span><span class="cv" id="rcMemberFixed">—</span></div>
 
-    <div class="consult-row"><span class="ck">날짜</span><span class="cv" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <input type="date" id="rcDateSel" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
-    </span></div>
-    <div class="consult-row"><span class="ck">시간</span><span class="cv" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <select id="rcTimeSel" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit"></select>
-    </span></div>
-
-    <div class="consult-field-label">상담 내용</div>
-    <textarea class="consult-memo" id="rcNoteInput" placeholder="재등록 상담·통화 내용을 입력하세요."></textarea>
+    <!-- 예약 리스트(가변) — 예약1·2·3… 각 날짜+시간+내용. ＋예약 추가/삭제. IME 안전(입력 중 재렌더 없음). 2026-07-03 시포·GM -->
+    <div class="consult-field-label">예약 목록</div>
+    <div id="rcResList" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button type="button" id="rcAddBtn" onclick="_resAddRow()" style="margin-top:10px;align-self:flex-start;padding:7px 12px;border-radius:8px;border:1px dashed var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">＋ 예약 추가</button>
 
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeReconModal()">취소</button>
@@ -2727,28 +2722,14 @@ function _applyRemainSort() {
   _activeSort = { col: null, dir: -1 };   // 헤더 정렬 화살표 초기화(기본정렬은 화살표 없음)
 }
 
-// 회원관리 표 재등록 통합셀 클릭 → 해당 회원 고정으로 재등록 모달 열기(달력 모달 재사용). 2026-07-03 시포·GM
+// 회원관리 표 재등록 통합셀 클릭 → 해당 회원 고정으로 예약 리스트 모달 열기. 2026-07-03 시포·GM
 function openReconForMember(rowIndex) {
   var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
   if (!r) return;
   var name    = String(r['회원명'] || '').trim();
   var phone   = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
   var program = String(r['회원\n구분'] || r['회원구분'] || '').trim();
-  var date = String(r[RECON_COLS.date] != null ? r[RECON_COLS.date] : '').trim();
-  var time = String(r[RECON_COLS.time] != null ? r[RECON_COLS.time] : '').trim();
-  var note = String(r[RECON_COLS.note] != null ? r[RECON_COLS.note] : '').trim();
-  var ev = null;
-  // 이미 달력에 로드된 동일 회원 재등록 이벤트가 있으면 그 참조 재사용(저장 시 중복 칩 방지)
-  if (date && typeof calEvents === 'object' && calEvents[date]) {
-    ev = calEvents[date].find(function(x){ return x && x.source === 'active' && x.rowIndex == rowIndex; }) || null;
-  }
-  if (!ev) {
-    ev = { rowIndex: r.rowIndex, name: name, phone: phone, program: program,
-           date: date, time: time, tmin: _tminOf(time), note: note, memo: note,
-           kind: '재등록상담', source: 'active', slot: 'recon', status: '',
-           owner: '', contact1: '', contact2: '', contact3: '', visited: false, visitDate: '' };
-  }
-  openReconModal(ev, date);
+  _openResModal({ source: 'active', rowIndex: r.rowIndex, keyPhone: phone, name: name, phone: phone, program: program, reservations: _rowReservations(r, 'active') });
 }
 
 // 유효/종료 전환 토글 — 시각 갱신 후 해당 scope 재조회
@@ -2825,7 +2806,7 @@ function _activeDisplayCols() {
   var cols = _activeHeaders.slice();
   if (_activeScope !== 'valid') return cols;
   var reconRaw = [RECON_COLS.date, RECON_COLS.time, RECON_COLS.note];
-  var hasRecon = reconRaw.some(function(h){ return cols.indexOf(h) >= 0; });
+  var hasRecon = (cols.indexOf(ACT_RES_KEY) >= 0) || reconRaw.some(function(h){ return cols.indexOf(h) >= 0; });
   var remainCol = null, unregCol = null;
   cols.forEach(function(h){
     if (remainCol === null && /잔여일/.test(h)) remainCol = h;
@@ -2833,6 +2814,7 @@ function _activeDisplayCols() {
   });
   var base = cols.filter(function(h){
     if (hasRecon && reconRaw.indexOf(h) >= 0) return false;   // 재등록 원본 3칸 숨김
+    if (h === ACT_RES_KEY) return false;                       // 재등록예약목록(JSON 원본) 숨김 — 통합셀로 표시. 2026-07-03 시포·GM
     if (h === unregCol) return false;                          // 미등록사유는 맨뒤로
     return true;
   });
@@ -2846,17 +2828,14 @@ function _activeDisplayCols() {
   return out;
 }
 
-// 재등록 상담 통합셀 — "YYYY-MM-DD HH:MM · 내용" 또는 비었으면 "＋ 상담 잡기". 클릭=openReconModal(회원 고정). 2026-07-03 시포·GM
+// 재등록 상담 통합셀 — 예약 리스트(가변) 요약. 비었으면 "＋ 상담 잡기". 클릭=예약 리스트 모달(회원 고정). 2026-07-03 시포·GM
 function _reconCellHtml(row) {
-  var d = String(row[RECON_COLS.date] != null ? row[RECON_COLS.date] : '').trim();
-  var t = String(row[RECON_COLS.time] != null ? row[RECON_COLS.time] : '').trim();
-  var n = String(row[RECON_COLS.note] != null ? row[RECON_COLS.note] : '').trim();
+  var list = _rowReservations(row, 'active');
   var ri = row.rowIndex != null ? esc(String(row.rowIndex)) : '';
-  if (d) {
-    var label = d + (t ? ' ' + t : '') + (n ? ' · ' + n : '');
-    return '<td class="recon-cell" data-recon="' + ri + '" title="재등록 상담 수정" style="white-space:nowrap;cursor:pointer;color:var(--accent);font-weight:600">' + esc(label) + '</td>';
+  if (list.length) {
+    return '<td class="recon-cell" data-recon="' + ri + '" title="재등록 예약 수정" style="white-space:nowrap;cursor:pointer;color:var(--accent);font-weight:600">' + esc(_resSummary(list)) + '</td>';
   }
-  return '<td class="recon-cell recon-empty" data-recon="' + ri + '" title="재등록 상담 잡기" style="white-space:nowrap;cursor:pointer;color:var(--dim)">＋ 상담 잡기</td>';
+  return '<td class="recon-cell recon-empty" data-recon="' + ri + '" title="재등록 예약 잡기" style="white-space:nowrap;cursor:pointer;color:var(--dim)">＋ 상담 잡기</td>';
 }
 
 function _activeRender(rows, isFiltered) {
@@ -3251,10 +3230,58 @@ function processCalendarData(data) {
   renderTopDash();
 }
 
-// 이벤트 칩 색 클래스 — 재등록상담(유효회원)=금색 recon / 신규 체험=teal / 그 외=purple. 2026-07-03 시포·GM
+// ═══ 예약 리스트(가변 · 날짜+시간+내용) 공용 — 문의(inquiry)·유효회원(active). 2026-07-03 시포·GM ═══
+var INQ_RES_KEY = '예약목록';
+var ACT_RES_KEY = '재등록예약목록';
+// 셀/문자열/배열 → [{date,time,note}] (JSON 파싱·완전빈 항목 제거)
+function _parseRes(raw) {
+  if (!raw) return [];
+  var arr = raw;
+  if (typeof raw === 'string') { var s = raw.trim(); if (!s || s.charAt(0) !== '[') return []; try { arr = JSON.parse(s); } catch (e) { return []; } }
+  if (!Array.isArray(arr)) return [];
+  var out = [];
+  for (var i = 0; i < arr.length; i++) {
+    var it = arr[i] || {};
+    var d = String(it.date == null ? '' : it.date).trim();
+    var t = String(it.time == null ? '' : it.time).trim();
+    var n = String(it.note == null ? '' : it.note);
+    if (!d && !t && !n) continue;
+    out.push({ date: d, time: t, note: n });
+  }
+  return out;
+}
+// 행 → 예약 배열(하위호환 흡수). source='inquiry'|'active'
+function _rowReservations(row, source) {
+  if (!row) return [];
+  if (source === 'active') {
+    var a = _parseRes(row[ACT_RES_KEY]);
+    if (a.length) return a;
+    var d = String(row[RECON_COLS.date] || '').trim();
+    if (!d) return [];
+    return [{ date: d, time: String(row[RECON_COLS.time] || '').trim(), note: String(row[RECON_COLS.note] || '').trim() }];
+  }
+  if (Array.isArray(row.reservations)) return _parseRes(row.reservations);   // 서버가 이미 흡수해 내려줌
+  var b = _parseRes(row[INQ_RES_KEY]);
+  if (b.length) return b;
+  var r = [];   // 최종 폴백: 체험1·2 흡수
+  if (row.exp1) r.push({ date: row.exp1, time: row.exp1Time || '', note: '' });
+  if (row.exp2) r.push({ date: row.exp2, time: row.exp2Time || '', note: '' });
+  return r;
+}
+// 예약 요약 텍스트 — "예약1 07-10 14:00 · 상담 / +2건"
+function _resSummary(list) {
+  if (!list || !list.length) return '';
+  var f = list[0];
+  var mmdd = f.date ? f.date.slice(5) : '—';
+  var s = '예약1 ' + mmdd + (f.time ? ' ' + f.time : '') + (f.note ? ' · ' + firstLine(f.note) : '');
+  if (list.length > 1) s += ' / +' + (list.length - 1) + '건';
+  return s;
+}
+
+// 이벤트 칩 색 클래스 — 재등록상담(유효회원)=금색 recon / 문의(신규 예약)=teal. 2026-07-03 시포·GM
 function chipKindClass(ev) {
   if (ev && (ev.source === 'active' || ev.kind === '재등록상담')) return 'recon';
-  return (ev && ev.kind === '체험') ? 'experience' : 'tour';
+  return 'experience';
 }
 // 상담내용(재등록=note, 신규=누적 memo) — 칩/패널 표시용. 2026-07-03 시포·GM
 function noteText(ev) { return (ev && (ev.note || ev.memo)) ? String(ev.note || ev.memo) : ''; }
@@ -3376,9 +3403,9 @@ function openConsultModal(ev) {
   if (ev && (ev.source === 'active' || ev.kind === '재등록상담')) { openReconModal(ev, ev.date); return; }
   _consultEv = ev;
   var kindEl = document.getElementById('cmKind');
-  kindEl.textContent = ev.kind || '상담';
-  kindEl.className = 'consult-modal-kind ' + (ev.kind === '체험' ? 'experience' : 'tour');
-  document.getElementById('cmTitle').textContent = (ev.kind || '상담') + ' 상담 처리';
+  kindEl.textContent = ev.kind || '예약';
+  kindEl.className = 'consult-modal-kind ' + chipKindClass(ev);
+  document.getElementById('cmTitle').textContent = (ev.kind || '예약') + ' 처리';
   document.getElementById('cmName').textContent = ev.name || '—';
   document.getElementById('cmPhone').textContent = ev.phone || '—';
   document.getElementById('cmProgram').textContent = ev.program || '—';
@@ -3533,9 +3560,10 @@ function saveConsultModal() {
 }
 
 /* ─────────────────────────────────────────────
-   재등록 상담 모달 — 유효회원 재등록 상담 일정(날짜·시간·내용). 저장=member_active_update(fields). 2026-07-03 시포·GM
+   예약 리스트 모달(범용) — 문의(inquiry)·유효회원 재등록(active) 공용. 가변 예약(날짜+시간+내용).
+   저장=inquiry→member_inquiry_update(reservations JSON) / active→member_active_update(fields:재등록예약목록). 2026-07-03 시포·GM
 ───────────────────────────────────────────── */
-var _reconEv = null;            // 수정 대상 달력 이벤트(null=신규 추가)
+var _resModal = null;           // { source:'inquiry'|'active', rowIndex, keyPhone, name, phone, program }
 var _reconPickMap = {};         // datalist label → { rowIndex, phone, name, program }
 var RECON_COLS = { date: '재등록상담 날짜', time: '재등록상담 시간', note: '재등록상담 내용' };
 
@@ -3549,7 +3577,7 @@ function ensureActiveMembers(cb) {
     .catch(function(){ cb(); });
 }
 
-function _reconFillTimeOptions(sel, cur) {
+function _resFillTimeOptions(sel, cur) {
   sel.innerHTML = '';
   var blank = document.createElement('option'); blank.value = ''; blank.textContent = '시간 미정'; sel.appendChild(blank);
   for (var _h = 6; _h <= 22; _h++) { ['00','30'].forEach(function(_m){ var _hh = ('0'+_h).slice(-2)+':'+_m; var _o = document.createElement('option'); _o.value = _hh; _o.textContent = _hh; sel.appendChild(_o); }); }
@@ -3571,93 +3599,179 @@ function _reconPopulateMembers() {
   });
 }
 
-// ev=수정 대상(달력 재등록 이벤트) / null=신규. date=기본 날짜(YYYY-MM-DD).
-function openReconModal(ev, date) {
-  _reconEv = ev || null;
+// 예약 1행 DOM 추가(IME 안전: 기존 행 재생성 없음). res={date,time,note}
+function _resAddRow(res) {
+  res = res || { date: '', time: '', note: '' };
+  var list = document.getElementById('rcResList');
+  var item = document.createElement('div');
+  item.className = 'res-item';
+  item.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:10px;background:var(--bg);display:flex;flex-direction:column;gap:6px';
+  var head = document.createElement('div');
+  head.style.cssText = 'display:flex;align-items:center;justify-content:space-between';
+  var lab = document.createElement('span'); lab.className = 'res-item-label'; lab.style.cssText = 'font-size:12px;font-weight:700;color:var(--teal)';
+  head.appendChild(lab);
+  var del = document.createElement('button'); del.type = 'button'; del.textContent = '삭제';
+  del.style.cssText = 'padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--dim);font-size:11px;cursor:pointer;font-family:inherit';
+  del.onclick = function(){ item.remove(); _resRelabel(); };
+  head.appendChild(del);
+  item.appendChild(head);
+  var rowDT = document.createElement('div');
+  rowDT.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+  var di = document.createElement('input'); di.type = 'date'; di.className = 'res-date'; di.value = res.date || '';
+  di.style.cssText = 'padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit';
+  var ti = document.createElement('select'); ti.className = 'res-time';
+  ti.style.cssText = 'padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit';
+  _resFillTimeOptions(ti, res.time);
+  rowDT.appendChild(di); rowDT.appendChild(ti);
+  item.appendChild(rowDT);
+  var note = document.createElement('textarea'); note.className = 'res-note consult-memo'; note.value = res.note || '';
+  note.placeholder = '상담·통화 내용'; note.style.minHeight = '46px'; note.style.marginTop = '0';
+  item.appendChild(note);
+  list.appendChild(item);
+  _resRelabel();
+}
+function _resRelabel() {
+  var items = document.querySelectorAll('#rcResList .res-item');
+  for (var i = 0; i < items.length; i++) {
+    var lab = items[i].querySelector('.res-item-label');
+    if (lab) lab.textContent = '예약' + (i + 1);
+  }
+}
+function _resCollect() {
+  var out = [];
+  document.querySelectorAll('#rcResList .res-item').forEach(function(it){
+    var d = (it.querySelector('.res-date').value || '').trim();
+    var t = (it.querySelector('.res-time').value || '').trim();
+    var n = (it.querySelector('.res-note').value || '').trim();
+    if (!d && !t && !n) return;
+    out.push({ date: d, time: t, note: n });
+  });
+  return out;
+}
+
+// 범용 오픈. cfg={source, rowIndex, keyPhone, name, phone, program, reservations, presetDate, pick}
+function _openResModal(cfg) {
+  _resModal = { source: cfg.source, rowIndex: cfg.rowIndex || 0, keyPhone: cfg.keyPhone || '', name: cfg.name || '', phone: cfg.phone || '', program: cfg.program || '' };
   var pickRow = document.getElementById('rcMemberPickRow');
   var fixedRow = document.getElementById('rcMemberFixedRow');
-  document.getElementById('rcTitle').textContent = (_reconEv && (_reconEv.date || _reconEv.note)) ? '재등록 상담 수정' : '재등록 상담 추가';
-  _reconFillTimeOptions(document.getElementById('rcTimeSel'), _reconEv ? _reconEv.time : '');
-  document.getElementById('rcDateSel').value = (_reconEv && _reconEv.date) ? _reconEv.date : (date || '');
-  document.getElementById('rcNoteInput').value = _reconEv ? noteText(_reconEv) : '';
-  if (_reconEv) {
-    // 수정 — 회원 고정(rowIndex·전화는 이벤트에서)
-    pickRow.style.display = 'none';
-    fixedRow.style.display = '';
-    document.getElementById('rcMemberFixed').textContent = (_reconEv.name || '—') + (_reconEv.phone ? ' · ' + _reconEv.phone : '');
-    document.getElementById('reconOverlay').classList.add('open');
-  } else {
-    // 추가 — 유효회원 검색 선택
-    pickRow.style.display = '';
-    fixedRow.style.display = 'none';
+  document.getElementById('rcKind').textContent = (cfg.source === 'active') ? '재등록' : '예약';
+  document.getElementById('rcKind').className = 'consult-modal-kind ' + (cfg.source === 'active' ? 'recon' : 'experience');
+  document.getElementById('rcTitle').textContent = (cfg.source === 'active') ? '재등록 상담 예약' : ((cfg.name ? cfg.name + '님 ' : '') + '예약');
+  var list = document.getElementById('rcResList'); list.innerHTML = '';
+  var res = cfg.reservations || [];
+  if (res.length) res.forEach(function(r){ _resAddRow(r); });
+  else _resAddRow({ date: cfg.presetDate || '', time: '', note: '' });
+  if (cfg.pick) {
+    pickRow.style.display = ''; fixedRow.style.display = 'none';
     document.getElementById('rcMemberInput').value = '';
-    document.getElementById('reconOverlay').classList.add('open');
     ensureActiveMembers(function(){ _reconPopulateMembers(); });
+  } else {
+    pickRow.style.display = 'none'; fixedRow.style.display = '';
+    document.getElementById('rcMemberFixed').textContent = (cfg.name || '—') + (cfg.phone ? ' · ' + cfg.phone : '');
   }
+  document.getElementById('reconOverlay').classList.add('open');
+}
+
+// 유효회원 재등록 예약 — ev=수정대상 이벤트/null=신규(회원 선택). date=기본 날짜.
+function openReconModal(ev, date) {
+  if (ev && ev.rowIndex) {
+    ensureActiveMembers(function(){
+      var res = _activeReservationsFor(ev.rowIndex);
+      if (!res || !res.length) res = [{ date: ev.date || date || '', time: ev.time || '', note: noteText(ev) || '' }];
+      _openResModal({ source: 'active', rowIndex: ev.rowIndex, keyPhone: ev.phone || '', name: ev.name || '', phone: ev.phone || '', program: ev.program || '', reservations: res });
+    });
+  } else {
+    _openResModal({ source: 'active', pick: true, presetDate: date || '' });
+  }
+}
+function _activeReservationsFor(rowIndex) {
+  var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
+  if (!r) return null;
+  return _rowReservations(r, 'active');
+}
+// 문의(신규) 예약 — 문의현황 일정칸 클릭.
+function openInquiryResModal(row) {
+  if (!row) return;
+  _openResModal({ source: 'inquiry', rowIndex: row.rowIndex, keyPhone: row.phone || '', name: row.name || '', phone: row.phone || '', program: row.program || '', reservations: _rowReservations(row, 'inquiry') });
 }
 
 function closeReconModal() {
   document.getElementById('reconOverlay').classList.remove('open');
-  _reconEv = null;
+  _resModal = null;
+}
+
+// 달력 로컬 동기화 — 이 회원+source의 기존 이벤트 제거 후 예약 배열로 재생성. GAS 재조회 없음.
+function _syncCalendarForRow(source, rowIndex, reservations, meta) {
+  meta = meta || {};
+  Object.keys(calEvents).forEach(function(date){
+    calEvents[date] = (calEvents[date] || []).filter(function(ev){ return !(ev.source === source && ev.rowIndex == rowIndex); });
+    if (!calEvents[date].length) delete calEvents[date];
+  });
+  var kind = (source === 'active') ? '재등록상담' : '예약';
+  var dr = meta.dr || null;
+  reservations.forEach(function(res, ri){
+    if (!res.date) return;
+    var ev = {
+      date: res.date, kind: kind, source: source, time: res.time || '', tmin: _tminOf(res.time),
+      slot: (source === 'active') ? (ri === 0 ? 'recon' : 'r' + ri) : (ri === 0 ? 'exp1' : (ri === 1 ? 'exp2' : 'r' + ri)), resIdx: ri,
+      name: meta.name || '', phone: meta.phone || '', program: meta.program || '',
+      status: dr ? (dr.status || '') : '', rowIndex: rowIndex, memo: dr ? (dr.memo || '') : (res.note || ''), note: res.note || '',
+      owner: dr ? (dr.owner || '') : '', contact1: dr ? (dr.contact1 || '') : '', contact2: dr ? (dr.contact2 || '') : '', contact3: dr ? (dr.contact3 || '') : '',
+      visited: dr ? !!dr.visited : false, visitDate: dr ? (dr.visitDate || '') : ''
+    };
+    if (!calEvents[res.date]) calEvents[res.date] = [];
+    calEvents[res.date].push(ev);
+    calEvents[res.date] = sortByTime(calEvents[res.date]);
+  });
 }
 
 function saveReconModal() {
-  var date = document.getElementById('rcDateSel').value;
-  var time = document.getElementById('rcTimeSel').value;
-  var note = document.getElementById('rcNoteInput').value.trim();
-  if (!date) { showToast('날짜를 선택하세요', 'err'); return; }
-
-  var rowIndex, keyPhone, name, phone, program;
-  if (_reconEv) {
-    rowIndex = _reconEv.rowIndex; keyPhone = _reconEv.phone || '';
-    name = _reconEv.name || ''; phone = _reconEv.phone || ''; program = _reconEv.program || '';
-  } else {
+  if (!_resModal) return;
+  var reservations = _resCollect();
+  var rowIndex = _resModal.rowIndex, keyPhone = _resModal.keyPhone, name = _resModal.name, phone = _resModal.phone, program = _resModal.program;
+  if (_resModal.source === 'active' && !rowIndex) {
     var label = document.getElementById('rcMemberInput').value.trim();
     var m = _reconPickMap[label];
-    if (!m) {   // 라벨 정확 매칭 실패 → 이름 부분매칭 폴백
-      var keys = Object.keys(_reconPickMap);
-      for (var i = 0; i < keys.length; i++) { if (keys[i].indexOf(label) === 0 && label) { m = _reconPickMap[keys[i]]; break; } }
-    }
+    if (!m) { var keys = Object.keys(_reconPickMap); for (var i = 0; i < keys.length; i++) { if (label && keys[i].indexOf(label) === 0) { m = _reconPickMap[keys[i]]; break; } } }
     if (!m) { showToast('목록에서 회원을 선택하세요', 'err'); return; }
     rowIndex = m.rowIndex; keyPhone = m.phone || ''; name = m.name; phone = m.phone || ''; program = m.program || '';
   }
-  if (!rowIndex) { showToast('대상 회원 행을 찾을 수 없습니다', 'err'); return; }
+  if (!rowIndex) { showToast('대상 행을 찾을 수 없습니다', 'err'); return; }
 
-  var fields = {};
-  fields[RECON_COLS.date] = date;
-  fields[RECON_COLS.time] = time;
-  fields[RECON_COLS.note] = note;
-
-  var saveBtn = document.getElementById('rcSaveBtn');
-  saveBtn.disabled = true;
-  apiPost({ action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, fields: fields })
-    .then(function(){
-      showToast('재등록 상담 저장', 'ok');
-      // 낙관적 로컬 반영(GAS 재조회 없이 즉시). 2026-07-03 시포·GM
-      if (_reconEv) {
-        var _old = _reconEv.date;
-        if (_old !== date && calEvents[_old]) calEvents[_old] = calEvents[_old].filter(function(x){ return x !== _reconEv; });
-        _reconEv.date = date; _reconEv.time = time; _reconEv.tmin = _tminOf(time); _reconEv.note = note; _reconEv.memo = note;
-        if (!calEvents[date]) calEvents[date] = [];
-        if (calEvents[date].indexOf(_reconEv) < 0) calEvents[date].push(_reconEv);
-        calEvents[date] = sortByTime(calEvents[date]);
+  var jsonStr = reservations.length ? JSON.stringify(reservations) : '';
+  var payload;
+  if (_resModal.source === 'inquiry') {
+    payload = { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, reservations: jsonStr };
+  } else {
+    var fields = {}; fields[ACT_RES_KEY] = jsonStr;
+    payload = { action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, fields: fields };
+  }
+  var saveBtn = document.getElementById('rcSaveBtn'); saveBtn.disabled = true;
+  var src = _resModal.source, firstDate = reservations.length ? reservations[0].date : '';
+  apiPost(payload)
+    .then(function(data){
+      if (data && data.ok === false) throw new Error(data.error || '저장 실패');
+      showToast('예약 저장', 'ok');
+      if (src === 'inquiry') {
+        var dr = dbRows.find(function(r){ return r.rowIndex === rowIndex; });
+        if (dr) {
+          dr.reservations = reservations.slice();
+          dr.exp1 = reservations[0] ? reservations[0].date : ''; dr.exp1Time = reservations[0] ? reservations[0].time : '';
+          dr.exp2 = reservations[1] ? reservations[1].date : ''; dr.exp2Time = reservations[1] ? reservations[1].time : '';
+        }
+        _syncCalendarForRow('inquiry', rowIndex, reservations, { name: name, phone: phone, program: program, dr: dr });
+        if (_tabLoaded.db) renderDbTable();
       } else {
-        var newEv = { date: date, kind: '재등록상담', source: 'active', time: time, tmin: _tminOf(time), slot: 'recon',
-          name: name, phone: phone, program: program, status: '', rowIndex: rowIndex, memo: note, note: note,
-          owner: '', contact1: '', contact2: '', contact3: '', visited: false, visitDate: '' };
-        if (!calEvents[date]) calEvents[date] = [];
-        calEvents[date].push(newEv);
-        calEvents[date] = sortByTime(calEvents[date]);
+        var ar = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
+        if (ar) { ar[ACT_RES_KEY] = jsonStr; ar[RECON_COLS.date] = reservations[0] ? reservations[0].date : ''; ar[RECON_COLS.time] = reservations[0] ? reservations[0].time : ''; ar[RECON_COLS.note] = reservations[0] ? reservations[0].note : ''; }
+        _syncCalendarForRow('active', rowIndex, reservations, { name: name, phone: phone, program: program });
+        if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
       }
-      // 회원관리 표 로컬 동기화 — 열려 있으면 통합셀 즉시 반영(재조회 없이). 2026-07-03 시포·GM
-      var _ar = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
-      if (_ar) { _ar[RECON_COLS.date] = date; _ar[RECON_COLS.time] = time; _ar[RECON_COLS.note] = note; }
-      if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
       closeReconModal();
       renderCalendarShell();
       renderCalendarChips();
       renderTopDash();
-      openDayPanel(date);   // 해당 날짜 패널 갱신 표시
+      if (firstDate) openDayPanel(firstDate);
     })
     .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
     .then(function(){ saveBtn.disabled = false; });
@@ -3879,12 +3993,13 @@ function buildDbRow(row, isNew) {
   return tr;
 }
 
-/* ─── 일정 셀 표시 렌더 헬퍼 ─── */
+/* ─── 일정 셀 표시 렌더 헬퍼 — 예약 리스트(가변) 요약. 클릭=예약 리스트 모달. 2026-07-03 시포·GM ─── */
 function _renderScheduleCell(td, row) {
-  // 체험1(=투어·상담·1차 방문): 날짜 J + 시간 K / 체험2(=2차 방문): 날짜 L + 시간 M. 2026-07-02 시포·GM.
-  td.innerHTML =
-    '🏃 체험1: ' + esc((row.exp1 || '—') + (row.exp1Time ? ' ' + row.exp1Time : '')) + '<br>' +
-    '🏃 체험2: ' + esc((row.exp2 || '—') + (row.exp2Time ? ' ' + row.exp2Time : ''));
+  var list = _rowReservations(row, 'inquiry');
+  if (!list.length) { td.innerHTML = '<span style="color:var(--dim)">＋ 예약 잡기</span>'; return; }
+  td.innerHTML = list.map(function(r, i){
+    return '📅 예약' + (i + 1) + ': ' + esc((r.date || '—') + (r.time ? ' ' + r.time : '') + (r.note ? ' · ' + firstLine(r.note) : ''));
+  }).join('<br>');
 }
 
 /* ─── 로컬 row 업데이트 + 서버 저장 (전 필드 포함) ─── */
@@ -3908,12 +4023,8 @@ function _saveCell(rowIndex, patch) {
     contact1: r.contact1 !== undefined ? r.contact1 : '',
     contact2: r.contact2 !== undefined ? r.contact2 : '',
     contact3: r.contact3 !== undefined ? r.contact3 : '',
-    inquiryContent: r.inquiryContent !== undefined ? r.inquiryContent : '',   // 문의내용(N열) #1
-    // 체험 일정 분리 저장(#4): 날짜·시간 별도 셀 — 체험1 J/K, 체험2 L/M. 2026-07-02 시포·GM.
-    exp1Date: r.exp1     || '',
-    exp1Time: r.exp1Time || '',
-    exp2Date: r.exp2     || '',
-    exp2Time: r.exp2Time || ''
+    inquiryContent: r.inquiryContent !== undefined ? r.inquiryContent : ''   // 문의내용(N열) #1
+    // 일정(예약)은 예약 리스트 모달에서 body.reservations로 저장 — 인라인 셀 편집에서 제외(스테일 방지). 2026-07-03 시포·GM.
   };
   if (dbSaveTimer) clearTimeout(dbSaveTimer);
   dbSaveTimer = setTimeout(function(){
@@ -4097,47 +4208,11 @@ function _activateCellContact(td, row) {
   td.addEventListener('focusout', onFocusOut);
 }
 
-/* ─── 일정 셀 (상담·체험1·체험2 composite) 활성화 ─── */
+/* ─── 일정 셀 클릭 → 예약 리스트 모달(가변 예약). 2026-07-03 시포·GM ─── */
 function _activateCellSchedule(td, row) {
-  if (td.classList.contains('cell-active')) return;
   var rowIndex = parseInt(td.closest('tr').dataset.rowIndex, 10);
   var live = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || row;
-
-  td.classList.add('cell-active');
-  td.innerHTML = '';
-  var block = buildScheduleEditBlock(live);
-  td.appendChild(block);
-  // 포커스를 첫 번째 date input으로
-  var firstInput = block.querySelector('input');
-  if (firstInput) firstInput.focus();
-
-  // 전체 블록에서 포커스가 완전히 벗어나면 커밋
-  var committed = false;
-  function onFocusOut(e) {
-    // 다음 포커스가 같은 블록 내부면 무시 (requestAnimationFrame으로 확인)
-    requestAnimationFrame(function(){
-      if (td.contains(document.activeElement)) return;
-      if (committed) return;
-      committed = true;
-      td.removeEventListener('focusout', onFocusOut);
-      // 값 수집
-      var patch = {};
-      block.querySelectorAll('[data-field]').forEach(function(el){
-        patch[el.dataset.field] = el.value;
-      });
-      // 체험1(J날짜/K시간)·체험2(L날짜/M시간)만. 2026-07-02 시포·GM.
-      var dataPatch = {
-        exp1:     patch.exp1    || '',
-        exp1Time: patch.exp1Time || '',
-        exp2:     patch.exp2    || '',
-        exp2Time: patch.exp2Time || ''
-      };
-      _renderScheduleCell(td, Object.assign({}, live, dataPatch));
-      td.classList.remove('cell-active');
-      _saveCell(rowIndex, dataPatch);
-    });
-  }
-  td.addEventListener('focusout', onFocusOut);
+  openInquiryResModal(live);
 }
 
 // 날짜+시간 결합: '2026-06-25' + '14:00' → '2026-06-25 14:00' (날짜 없으면 빈값, 시간만이면 무시)
@@ -4175,8 +4250,8 @@ function buildScheduleEditBlock(row) {
     d.appendChild(s); d.appendChild(di); d.appendChild(ti);
     return d;
   }
-  wrap.appendChild(mk('체험1', 'exp1', 'exp1Time', row.exp1, row.exp1Time));
-  wrap.appendChild(mk('체험2', 'exp2', 'exp2Time', row.exp2, row.exp2Time));
+  wrap.appendChild(mk('예약1', 'exp1', 'exp1Time', row.exp1, row.exp1Time));
+  wrap.appendChild(mk('예약2', 'exp2', 'exp2Time', row.exp2, row.exp2Time));
   return wrap;
 }
 
