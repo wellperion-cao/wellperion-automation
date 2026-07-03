@@ -77,7 +77,10 @@ ROLE_NICK = {
 }
 
 # ── 웹 풀표 페이지 (Pages 발행루트=가이드폴더 → URL 접두사 없음·ASCII) ──
-NORTHSTAR_WEB_URL = "https://wellperion-cao.github.io/wellperion-automation/northstar_today.html"
+# 2026-07-03(AI CTO): 구 northstar_today.html 은 자율현황.html 상단 "🧭 오늘의 항로 top3" 라이브 섹션으로
+# 병합·흡수(중복정리). 카드 하단 링크도 자율현황.html 로 교체. 구 URL은 meta refresh 리다이렉트 스텁으로 안전 유지.
+# 본 스크립트는 06:30 Task Scheduler가 매회 새 프로세스로 실행 → 다음 실행부터 즉시 반영(봇 재기동 불필요).
+NORTHSTAR_WEB_URL = "https://wellperion-cao.github.io/wellperion-automation/%EC%9E%90%EC%9C%A8%ED%98%84%ED%99%A9.html"
 
 # ── 난이도 배 ──
 DIFFICULTY_BOATS = ["⛵돛단배", "⛴️여객선", "🛳️크루즈"]
