@@ -112,26 +112,33 @@ def _cred_chip(d: ImageDraw.ImageDraw, text: str, x: int, y: int, font, h: int =
     return h
 
 
+# 표지(사진형 65/35) — Ep1·Ep2 정본 구조 계승. 부제=GM 카피 유지, 대제목=SUMMER CAMP(시리즈 통일).
+COVER_PHOTO    = "방학 유소년 체조 강습.png"   # 활동컷(가로) · Ep2 수영레슨과 비중복
+COVER_TITLE_KR = "믿고 맡기는 이유 — 검증된 지도진"
+COVER_TITLE_EN = "SUMMER CAMP"
+COVER_DATE     = "6.29 ~ 8.14  ·  2019년 이전 출생 유소년"
+
+
 def compose_cover(output_path: Path) -> None:
-    """타이포 신뢰 커버 (얼굴 없음) — 검증된 지도진 + 4종목 라인."""
+    """표지 — Ep1·Ep2 정본 사진형(사진 상단 700px + 차콜 밴드) 구조 계승."""
+    PHOTO_H = 700
     canvas = Image.new("RGB", (W, H), BLACK_BG)
-    canvas = paste_logo(canvas, logo_w=120)
+
+    photo = center_crop_fill(SCENES / COVER_PHOTO, W, PHOTO_H)
+    photo = to_duotone(photo, normalize=True)
+    canvas.paste(photo, (0, 0))
+
+    ImageDraw.Draw(canvas).rectangle([(50, 701), (1030, 702)], fill=SEP_LINE)
+
+    canvas = paste_logo(canvas, logo_w=115)
     d = ImageDraw.Draw(canvas)
     _chip(d)
 
-    # 은은한 상하 프레임 라인
-    d.rectangle([(48, 48), (W - 48, 50)], fill=(70, 66, 60))
-    d.rectangle([(48, H - 50), (W - 48, H - 48)], fill=(70, 66, 60))
+    d.text((W // 2, 789), COVER_TITLE_KR, font=load_font("semibold", 38), fill=BEIGE, anchor="mm")
+    d.text((W // 2, 859), COVER_TITLE_EN, font=load_font("bold", 88), fill=WHITE, anchor="mm")
+    d.rectangle([(W // 2 - 30, 920), (W // 2 + 30, 922)], fill=BEIGE)
+    d.text((W // 2, 962), COVER_DATE, font=load_font("medium", 26), fill=GRAY, anchor="mm")
 
-    d.text((W // 2, 402), "믿고 맡기는 이유", font=load_font("semibold", 36), fill=BEIGE, anchor="mm")
-    d.text((W // 2, 496), "검증된 지도진", font=load_font("bold", 82), fill=WHITE, anchor="mm")
-    d.text((W // 2, 566), "QUALIFIED COACHES", font=load_font("semibold", 27), fill=BEIGE, anchor="mm")
-    d.rectangle([(W // 2 - 34, 612), (W // 2 + 34, 614)], fill=BEIGE)
-    d.text((W // 2, 648), "종목별 자격을 갖춘 전문 팀이 이끕니다",
-           font=load_font("medium", 25), fill=(225, 220, 210), anchor="mm")
-
-    d.text((W // 2, 892), "수영    ·    체조    ·    스쿼시    ·    골프",
-           font=load_font("medium", 28), fill=(205, 196, 178), anchor="mm")
     canvas.convert("RGB").save(output_path, "JPEG", quality=93, optimize=True)
     print(f"  [표지] {output_path.name}")
 
