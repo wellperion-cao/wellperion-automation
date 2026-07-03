@@ -54,6 +54,15 @@
   .col-own{width:200px;}
   .own-chip{display:inline-block; font-size:11px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:2px 8px; margin:0 4px 4px 0;}
   .own-chip:hover{background:var(--surface); border-color:var(--accent);}
+  /* ── 소유 페이지 1줄 설명 + 발행 채널 블록(선택 필드 · role.owns[].desc·role.channels — 없으면 기존과 동일 렌더) ──
+     .own-item = inline-block 유지(칩 없이 desc만 없는 기존 역할은 원래처럼 좌→우 인라인 흐름·자동줄바꿈 유지). desc 있으면 칩 아래 붙는 캡션. */
+  .own-item{display:inline-block; vertical-align:top; margin:0 6px 6px 0; max-width:100%;}
+  .own-item .own-chip{margin:0 0 2px 0;}
+  .own-desc{display:block; font-size:10px; color:var(--dim); line-height:1.4; max-width:190px;}
+  .chan-block{margin-top:6px; padding-top:5px; border-top:1px dashed var(--border);}
+  .chan-h{font-size:10px; font-weight:800; color:var(--accent-soft); letter-spacing:0.02em; margin-bottom:3px;}
+  .chan-item{font-size:10.5px; color:var(--text-soft); line-height:1.45; margin-bottom:2px;}
+  .chan-item b{color:var(--text); margin-right:5px;}
   .matrix-status{padding:14px; font-size:12px; color:var(--dim);}
   /* ── 살아있는 지휘판: KPI 실측 막대 · 진행현황 · 오늘 추천 (2026-06-29) ── */
   .kmeas{margin:4px 0 8px;}
@@ -184,6 +193,9 @@
     td.role-cell .rname, td.role-cell .rtitle, td.role-cell .rowner, .dim-label, .dim-val{color:#111 !important;}
     .dim-bul li{color:#111 !important;}
     .own-chip{color:#000 !important; border-color:#666 !important; background:#fff !important;}
+    .own-desc, .chan-item, .chan-item b{color:#111 !important;}
+    .chan-h{color:#333 !important;}
+    .chan-block{border-color:#999 !important;}
     .matrix-scroll{background:#fff !important; border-color:#999 !important;}
     .ccard, .ccard h3, .ccard .desc{background:#fff !important; color:#111 !important; border-color:#999 !important;}
     h2.sec, header.page-head h1{color:#111 !important;}
@@ -617,11 +629,19 @@
                workRateBlock(role) + progressBlock(role) + recommendBlock(role) + '</td>';
       // 칸2 일하는 법 = 📚읽는 정본(2) + 🔧일 흐름(1)
       var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🔧 일 흐름') + '</td>';
-      // 칸3 소유 관리 = role.owns 링크칩(편집 대상 아님)
+      // 칸3 소유 관리 = role.owns 링크칩(+선택 desc 1줄) + role.channels(선택·발행채널) — 둘 다 없으면 기존과 동일 렌더(하위호환)
       var owns = (role.owns || []).map(function(o){
-        return '<a class="own-chip" href="' + esc(o.href) + '">' + esc(o.label) + '</a>';
+        var desc = o.desc ? '<div class="own-desc">' + esc(o.desc) + '</div>' : '';
+        return '<div class="own-item"><a class="own-chip" href="' + esc(o.href) + '">' + esc(o.label) + '</a>' + desc + '</div>';
       }).join('');
-      var c3 = '<td>' + owns + incidentsBlock(role) + ideasBlock(role) + '</td>';
+      var chans = '';
+      if(role.channels && role.channels.length){
+        chans = '<div class="chan-block"><div class="chan-h">📡 발행 채널 ' + role.channels.length + '</div>' +
+          role.channels.map(function(c){
+            return '<div class="chan-item"><b>' + esc(c.label) + '</b><span>' + esc(c.desc) + '</span></div>';
+          }).join('') + '</div>';
+      }
+      var c3 = '<td>' + owns + chans + incidentsBlock(role) + ideasBlock(role) + '</td>';
       return '<tr data-role="' + esc(role.id) + '" class="' + (gm ? 'role-gm' : '') + '">' +
         '<td class="role-cell" style="border-left:4px solid ' + esc(ac) + ';">' +
           '<div class="ricon">' + esc(role.icon) + '</div>' +
