@@ -3135,7 +3135,10 @@ function _buildTodayMaster(dept, dow, week) {
   vals.forEach(function (row) {
     var id      = String(row[0] || '').trim();
     var name    = String(row[2] || '').trim();
-    var gender  = String(row[4] || 'all').trim() || 'all';
+    // [근본수정 2026-07-03] 원시 성별 셀은 한글로 저장됨(saveItems가 _genderToKorean으로 기록·2026-06-29 시우)인데
+    // 여기선 변환 없이 그대로 비교해 gender==='all' 매치가 전부 실패 → glist에 '공통'/'남'/'여' 원문이 들어가
+    // totalByG/doneByG(m·f·all 키만 존재)에서 전부 스킵되어 total=done=0 도배(getItems는 이미 _genderToEnglish 적용·정합).
+    var gender  = _genderToEnglish(row[4]);
     var sched   = _schedToEnglish(row[ITEM_SCHED_COL] == null ? '' : row[ITEM_SCHED_COL]);   // '일정'(요일|주차) 컬럼 — getItems와 동일 패턴(2026-06-30 시우)
     var deptVal = _itemDept(row[ITEM_DEPT_COL]);
     var roundsRaw = String(row[ITEM_ROUNDS_COL] == null ? '' : row[ITEM_ROUNDS_COL]).trim();   // '회차' 컬럼
