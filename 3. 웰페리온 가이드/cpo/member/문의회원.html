@@ -768,6 +768,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 /* 데이터 상태 배지 — 실측(라이브) vs 미측정 정직 표기. 2026-07-03 시포·GM */
 .data-badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;white-space:nowrap}
 .data-badge.live{background:var(--green-bg);color:var(--green)}
+.data-badge.manual{background:var(--yellow-bg);color:var(--yellow)}
 .data-badge.unmeasured{background:rgba(125,123,116,0.14);color:var(--dim)}
 .matrix-table tr.unmeasured-row td{opacity:0.6}
 /* CPO 가이드 펼치기 아코디언 — 2026-06-29 시포 */
@@ -1888,15 +1889,24 @@ if (action === 'member_calendar') {
 <!-- 가이드 원본 템플릿(숨김 — 페이지 CSS 상속) -->
 <div id="gdoc-tpl" style="display:none">
   <div data-gdoc="principle" data-title="CPO 운영 원칙">
-    <div style="font-size:13px;line-height:1.9;color:var(--text)">
-      1. 모든 회원 데이터 조회는 회원 DB(시트) 선행 조회 후 진행<br>
-      2. 실측 수치 없는 KPI는 &lt;placeholder&gt; 표기 — 임의 수치 작성 금지<br>
-      3. CS 컴플레인 접수 → 24시간 내 담당자 배정 → 72시간 내 회신<br>
-      4. 갱신 마감 7일 전 자동 알림 발송 (텔레그램 봇 연동)<br>
-      5. 매월 NPS 집계 → AI CEO 통합 보고 합류
+    <div class="info-box purple" style="margin-bottom:14px">
+      운영 원칙 5개 뒤 배지 = <strong>실제 자동화 정직 표기</strong>. <strong>현재 자동으로 도는 것 = 갱신 임박 감지 1종</strong>(cpo_churn_stats 실측, ✅)뿐이며, 준수 규칙 2·수동 처리 1·미구현 1이 섞여 있습니다. 컴플레인 대응·NPS·자동 알림 발송은 데이터원·발송 배관이 없어 수동/미구현 — 억지로 자동인 척하지 않습니다.
+    </div>
+    <div style="font-size:13px;line-height:2.3;color:var(--text)">
+      1. 모든 회원 데이터 조회는 회원 DB(시트) 선행 조회 후 진행 <span class="data-badge manual">🖐 준수 원칙</span><br>
+      2. 실측 수치 없는 KPI는 &lt;placeholder&gt; 표기 — 임의 수치 작성 금지 <span class="data-badge manual">🖐 준수 원칙</span><br>
+      3. CS 컴플레인 접수 → 24시간 내 담당자 배정 → 72시간 내 회신 <span class="data-badge manual">🖐 수동</span><br>
+      <span style="font-size:10.5px;color:var(--dim);display:block;margin:-2px 0 6px">📌 컴플레인 집계 자동화 없음 — 리셉션 컴플레인 탭 눈으로 확인·수기 배정(신호 매트릭스 'CS 컴플레인' ❌와 동일 계열)</span>
+      4. 갱신 마감 임박(D-7/14/30) 회원 케어 — 임박 명단 실측 후 연락 <span class="data-badge live">✅ 감지 자동</span> <span class="data-badge manual">🖐 발송 수동</span><br>
+      <span style="font-size:10.5px;color:var(--dim);display:block;margin:-2px 0 6px">📌 갱신 임박 명단=cpo_churn_stats 자동 실측·상단 배지 표시 ✅ / 자동 텔레그램 알림 발송은 미구현 — 현재 명단 보고 임정은M 수동 전화(자동 발송=후속 제안)</span>
+      5. 매월 NPS 집계 → AI CEO 통합 보고 합류 <span class="data-badge unmeasured">❌ 미구현</span><br>
+      <span style="font-size:10.5px;color:var(--dim);display:block;margin:-2px 0 0">📌 데이터원 필요: NPS 설문 수집(현재 설문 발송·응답 수집 파이프라인 없음)</span>
     </div>
   </div>
   <div data-gdoc="routine" data-title="CPO 정기 루틴">
+    <div class="info-box purple" style="margin-bottom:14px">
+      정기 루틴 4건 중 <strong>루틴 전체가 자동 실행되는 건 = 0건</strong>. 자동으로 도는 것은 루틴 안의 개별 <strong>신호 실측·알림</strong>(문의 5분 트리거·LOSS/갱신 임박 실측)뿐이고, 리스트 추출 후 대응·NPS·정비는 사람이 수행합니다. 각 행 배지·각주가 자동/수동/미구현을 정직하게 구분합니다.
+    </div>
     <table style="width:100%;font-size:13px;border-collapse:collapse">
       <thead>
         <tr>
@@ -1908,22 +1918,22 @@ if (action === 'member_calendar') {
       <tbody>
         <tr>
           <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">매일</td>
-          <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">CS 컴플레인·문의 인박스 확인 및 배정</td>
+          <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">CS 컴플레인·문의 인박스 확인 및 배정 <span class="data-badge manual">🖐 수동</span><br><span style="font-size:10.5px;color:var(--dim)">📌 문의 신규 텔레그램 알림=자동(_notifyNewInquiries 5분 트리거) ✅ · 컴플레인 확인·배정은 수동</span></td>
           <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">임정은M</td>
         </tr>
         <tr>
           <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">매주 월</td>
-          <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">LOSS 위험 회원 리스트 추출 및 대응 계획 수립</td>
+          <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">LOSS 위험 회원 리스트 추출 및 대응 계획 수립 <span class="data-badge live">✅ 추출 자동</span> <span class="data-badge manual">🖐 대응 수동</span><br><span style="font-size:10.5px;color:var(--dim)">📌 LOSS·갱신 임박 명단=cpo_churn_stats 실측(페이지 열 때 자동 산출) ✅ · 대응 계획 수립·연락은 수동</span></td>
           <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">AI CPO + 임정은M</td>
         </tr>
         <tr>
           <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">매월 초</td>
-          <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">NPS 설문 발송 → 집계 → CEO 보고</td>
+          <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">NPS 설문 발송 → 집계 → CEO 보고 <span class="data-badge unmeasured">❌ 미구현</span><br><span style="font-size:10.5px;color:var(--dim)">📌 데이터원 필요: NPS 설문 수집(발송·응답 파이프라인 없음)</span></td>
           <td style="padding:8px 12px;border-bottom:1px solid rgba(61,56,53,0.35)">AI CPO</td>
         </tr>
         <tr>
           <td style="padding:8px 12px">매월 셋째 주 월</td>
-          <td style="padding:8px 12px">컨텍스트 정비 (CPO-002) — 회원 DB 정리·고도화</td>
+          <td style="padding:8px 12px">컨텍스트 정비 (CPO-002) — 회원 DB 정리·고도화 <span class="data-badge manual">🖐 수동</span></td>
           <td style="padding:8px 12px">AI CPO</td>
         </tr>
       </tbody>
