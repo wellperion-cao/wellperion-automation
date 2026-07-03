@@ -33,6 +33,19 @@
   h2.sec{font-size:15px; font-weight:700; margin:20px 0 3px; display:flex; align-items:center; gap:7px;}
   .sec-note{font-size:11px; color:var(--dim); margin-bottom:10px; line-height:1.45;}
 
+  /* ── 히어로 슬롯 (후속 Task에서 renderHero()가 채움 · 지금은 비움) ── */
+  .hero:empty{display:none;}
+
+  /* ── 2층 골격: ① 자율로 한 일 / ② 돌아가는 자동화 (배237) ── */
+  h2.layer-h2{font-size:17px; font-weight:800; letter-spacing:-0.01em; margin:8px 0 4px; padding-bottom:8px; border-bottom:2px solid var(--border-strong);}
+  #layer-autonomy{margin-top:6px;}
+  details#layer-automation{margin-top:26px; border:1px solid var(--border-strong); border-radius:12px; padding:12px 16px 16px; background:var(--paper);}
+  details#layer-automation summary{cursor:pointer; list-style:none;}
+  details#layer-automation summary::-webkit-details-marker{display:none;}
+  details#layer-automation summary h2.layer-h2{display:inline-flex; align-items:center; margin:8px 0 0; border-bottom:none; padding-bottom:0;}
+  details#layer-automation summary::before{content:'▸'; display:inline-block; margin-right:8px; color:var(--dim); transition:transform .15s;}
+  details#layer-automation[open] summary::before{transform:rotate(90deg);}
+
   /* ── 🧭 오늘의 항로 top3 임베드 (northstar_today.html 병합 · 2026-07-03) ── */
   .ns-list{display:flex; flex-direction:column; gap:7px; margin-bottom:4px;}
   .ns-row{display:flex; align-items:center; gap:10px; background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:9px 13px;}
@@ -157,6 +170,10 @@
     <a class="back" href="헌법한장.html">🏛️ 헌법 한 장</a>
   </header>
 
+  <section id="hero-autonomy" class="hero">
+    <!-- renderHero() 채움 -->
+  </section>
+
   <div class="auto-banner">
     <span class="ab-ico">🌊</span>
     <div>
@@ -164,6 +181,9 @@
       <div class="ab-txt"><b>자동화</b>는 정해진 시각에 스크립트가 돈다. <b>자율화</b>는 AI가 스스로 포착·판단·처리하고 사람은 방향·결재만 한다. 이 페이지는 그 자율 활동의 <b>라이브 상태·처리 이력·성과</b>를 모은 곳입니다.</div>
     </div>
   </div>
+
+  <div id="layer-autonomy">
+  <h2 class="layer-h2">① 자율로 한 일</h2>
 
   <!-- ════ 🧭 오늘의 항로 top3 (구 northstar_today.html 병합 · 2026-07-03) ════ -->
   <section>
@@ -277,6 +297,13 @@
   <div class="feed" id="feed">
     <div class="feed-status">처리 이력을 불러오는 중…</div>
   </div>
+
+  </div><!-- /#layer-autonomy -->
+
+  <details id="layer-automation" open>
+    <summary><h2 class="layer-h2">② 돌아가는 자동화</h2></summary>
+    <!-- Task4에서 구 T2 위젯 이식 -->
+  </details>
 
   <footer class="foot">
     데이터 정본 = <code>status/</code> 하위 로그 직독 (GAS <b>read_file</b> → raw GitHub 폴백 · no-store).
