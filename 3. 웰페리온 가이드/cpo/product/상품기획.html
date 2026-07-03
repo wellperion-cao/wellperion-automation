@@ -245,6 +245,9 @@ tr:hover td{background:var(--accent-bg);}
 
 /* ─── 기획 카드 그리드 ─── */
 .plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:4px;}
+/* 카드가 1장뿐인 구분(예: 가격 전략)은 auto-fill 그리드가 첫 열만 채워 위 섹션 헤더보다 좁아 보임 —
+   섹션 헤더와 좌우폭을 맞추기 위해 1열 풀폭으로 강제. 2026-07-03 시포·GM(요청) */
+.plan-grid.single-item{grid-template-columns:1fr;}
 .plan-card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-card);padding:16px 18px;box-shadow:var(--shadow-card);position:relative;transition:transform 0.14s,box-shadow 0.14s,border-color 0.14s;}
 .plan-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.25);border-color:var(--accent-border);}
 .plan-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
@@ -1090,12 +1093,12 @@ function renderCards(items) {
     if (!list.length) return;
     html += '<div class="plan-section">';
     html += '<div class="plan-section-header ' + sec.cls + '">' + sec.label + '</div>';
-    html += '<div class="plan-grid">';
+    html += '<div class="plan-grid' + (list.length === 1 ? ' single-item' : '') + '">';
     list.forEach(function(it){ html += renderCard(it); });
     html += '</div></div>';
   });
   if (others.length) {
-    html += '<div class="plan-section"><div class="plan-section-header">📋 미분류</div><div class="plan-grid">';
+    html += '<div class="plan-section"><div class="plan-section-header">📋 미분류</div><div class="plan-grid' + (others.length === 1 ? ' single-item' : '') + '">';
     others.forEach(function(it){ html += renderCard(it); });
     html += '</div></div>';
   }
