@@ -1315,23 +1315,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         </ul>
       </div>
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--purple);padding:14px 16px;grid-column:1/-1;">
-        <div style="font-size:14px;font-weight:800;color:var(--purple);margin-bottom:8px;">구역별 표준 멘트 (F-1~F-5)</div>
-        <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:560px;">
-          <thead><tr style="text-align:left;color:var(--dim);font-size:12px;"><th style="padding:5px 8px;">구역</th><th style="padding:5px 8px;">상황</th><th style="padding:5px 8px;">표준 멘트</th></tr></thead>
-          <tbody>
-            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-1 개인 락커</td><td style="padding:5px 8px;">불편사항 접수</td><td style="padding:5px 8px;">"말씀해주셔서 감사합니다, 바로 확인해보겠습니다"</td></tr>
-            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-1 개인 락커</td><td style="padding:5px 8px;">에티켓 미준수(물튀김·큰소리 등)</td><td style="padding:5px 8px;">정중 + 단호: "안전 문제로 협조 부탁드립니다"</td></tr>
-            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-2 데일리 락커</td><td style="padding:5px 8px;">분실물 민원</td><td style="padding:5px 8px;">즉시 확인·기록 후 인계: "걱정 마시고, 바로 확인해드리겠습니다"</td></tr>
-            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-3·전 구역 공통</td><td style="padding:5px 8px;">청결 즉시 조치(바닥 미끄럼·이물질 등)</td><td style="padding:5px 8px;">즉시 처리 후: "추가 관리까지 바로 요청드리겠습니다"</td></tr>
-            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-4 파우더·전 구역 공통</td><td style="padding:5px 8px;">소모품 요청(옷걸이·비누·샴푸 등)</td><td style="padding:5px 8px;">즉시 보충 + "필요하실 때 언제든 말씀 주세요"</td></tr>
-            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-5 휴게공간</td><td style="padding:5px 8px;">혼잡</td><td style="padding:5px 8px;">양해 요청·대안 제시: "이쪽 공간은 여유가 있습니다"</td></tr>
-            <tr style="border-top:1px solid var(--border);"><td style="padding:5px 8px;">F-5 휴게공간</td><td style="padding:5px 8px;">소음·혼잡 민원(전화통화·과도 점유)</td><td style="padding:5px 8px;">공손한 요청: "다른 회원분들을 위해 조금만 협조 부탁드립니다"</td></tr>
-          </tbody>
-        </table>
-        </div>
-      </div>
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--purple);padding:14px 16px;grid-column:1/-1;">
         <div style="font-size:14px;font-weight:800;color:var(--purple);margin-bottom:8px;">에스컬레이션 (담당자·보고 방식)</div>
         <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--text);">
           <li><b>1차 대응</b> — 구역 담당 남·여 주임: 즉시조치 가능 시 즉시 조치 후 카톡 보고 + 이슈접수</li>
@@ -1481,7 +1464,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-supply" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">비품관리</h2>
   <p class="board-intro">지원부 비품을 한 표로 관리합니다. <strong>＋ 비품 추가</strong>로 행을 늘리고 각 칸을 바로 입력하면 모든 기기에 저장됩니다(편집 잠금 없음 — 누구나 추가·수정·삭제). 수량은 <strong>−／＋</strong> 버튼으로 빠르게 조절(0 미만 불가).</p>
-  <p class="board-intro">수량 −／＋ 버튼으로 현재 재고를 조절하세요. 부족한 품목은 발주 후 갱신합니다. 인쇄로 현장 비치용 목록을 뽑을 수 있습니다. 표는 분류(청소·세탁/타월·어메니티/소모품·사무 등)별로 정렬되어 표시됩니다.</p>
 
   <!-- ── 📦 비품 관리 가이드 (표준 · 배340 · 지어내지 않음 — 근거: 지원&탕청소 업무 매뉴얼 PDF 구역별 비품·소모품 체크리스트, 아래 SUPPLY_SEED 4분류, 본 탭 기존 안내문) ── -->
   <div style="margin-bottom:18px;">
@@ -1513,7 +1495,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <div style="font-size:14px;font-weight:800;color:var(--blue);margin-bottom:8px;">재고 관리·발주</div>
         <p style="margin:0 0 8px;font-size:13px;line-height:1.7;color:var(--text);">재고 조절은 아래 표의 <b>−／＋</b> 버튼으로 즉시 반영. 부족한 품목은 발주 후 수량을 갱신합니다.</p>
         <div style="padding:9px 12px;background:var(--orange-bg);border:1px solid rgba(230,148,78,0.35);border-radius:8px;font-size:12px;color:var(--orange);line-height:1.6;">
-          <b>[GM/실무 확인 필요]</b> 발주 담당자·승인선·구매처·발주 주기·최소 재고 임계치 — 지원부 전용 발주 규정은 기존 자료에 없음 (참고: 탕청소 약품은 약품 가이드 탭에 구매처·가격 기준 있음, 일반 소모품·타월류는 미정)
+          <b>[GM/실무 확인 필요]</b> 발주 담당자·승인선·구매처·발주 주기 — 지원부 전용 발주 규정은 기존 자료에 없음 (참고: 탕청소 약품은 약품 가이드 탭에 구매처·가격 기준 있음, 일반 소모품·타월류는 미정) · 최소 재고 임계치 → 각 품목 '발주점' 칼럼으로 설정 가능(미달 시 자동 '발주 필요' 표시)
         </div>
       </div>
     </div>
@@ -6196,7 +6178,6 @@ const SUPPORT_GUIDE_SEED = {
   guide:[
     {id:'gd_etiquette', title:'직원&파트너 기본 에티켓', body:'"내가 지나간 자리는 항상 깨끗하게 정리정돈하자"\n1. 회원이 먼저 — 회원이 보이면 하던 일을 멈추고 먼저 인사\n2. 한 발 앞서 행동 — 요청받기 전에 불편사항 발견·조치\n3. 모르면 바로 연결 — "확인 후 안내드리겠습니다" → 담당자 즉시 연결\n4. 끝까지 책임 — 내가 접수한 건은 끝까지 추적\n5. 프리미엄 격조 — 말투·행동·복장 모두 스포츠클럽 수준'},
     {id:'gd_pride', title:'회원도 왕이지만, 우리도 품격 있는 프로다', body:'회원을 최고로 모시는 것이 우리의 자부심입니다. 그러나 그것은 굴종이 아니라 당당한 프로페셔널의 서비스입니다.\n직원·파트너 한 사람의 품격이 곧 웰페리온의 품격이며, 스스로를 존중하는 사람만이 회원을 진심으로 존중할 수 있습니다.\n무례·폭언에는 정중하되 단호하게 선을 지키고(반복 시 팀장 보고), 회원과 직원이 서로 존중하는 프리미엄 커뮤니티 문화를 함께 지켜갑니다.'},
-    {id:'gd_attitude', title:'응대 태도', body:'회원 첫 인사 → 눈 맞춤 + 미소 필수 / 먼저 인사 / 이름 알면 호칭 사용\n불편사항 접수 → 끝까지 경청 → 즉시 해결 가능 여부 판단 → 처리 결과 반드시 고지\n에티켓 위반 → 정중하되 단호하게 안내 / 반복 위반 시 팀장 보고\n긴급·안전 → 즉시 팀장·소장 보고 → 지시 후 조치 / 자의 판단 금지'},
     {id:'gd_dress', title:'복장·용모', body:'유니폼 → 웰페리온 지급 유니폼 착용 / 청결 유지\n명찰 → 항상 패용 / 좌측 가슴\n신발 → 미끄럼 방지 안전화 / 실외화 구역 내 착용 금지\n청소 구역 → 고무장갑·마스크 필수 / 환기 후 작업'}
   ]
 };
@@ -6390,14 +6371,15 @@ function csNewId(){ return 'cs_'+Date.now().toString(36)+'_'+(csIdSeq++).toStrin
 /* 초안 seed — 저장 이력이 전혀 없을 때만 1회 주입. 기존 데이터 있으면(빈 배열 저장 포함) 재주입 금지. */
 const CS_SEED = [
   {sit:'락커 사용법 문의', resp:'위치 안내·번호 배정·사용법 시연', note:'귀중품 개인 책임 안내'},
-  {sit:'분실물 신고', resp:'습득물 확인·연락처 접수·발견 시 연락', note:'종합접수처 기록'},
-  {sit:'타월·어메니티 요청', resp:'여분 제공·비치 위치 안내', note:'부족 시 비품관리 반영'},
+  {sit:'락커 에티켓 위반(물튀김·큰소리 등)', resp:'정중+단호 안내 "안전 문제로 협조 부탁드립니다"', note:'반복 위반 시 팀장 보고'},
+  {sit:'분실물 신고', resp:'즉시 확인·기록 후 인계 "걱정 마시고 바로 확인해드리겠습니다"', note:'종합접수처 기록'},
+  {sit:'타월·어메니티 요청', resp:'여분 즉시 제공·비치 위치 안내 "필요하실 때 언제든 말씀 주세요"', note:'부족 시 비품관리 반영'},
   {sit:'온도·환경 불편', resp:'즉시 확인·조치·시설부 전달', note:'VOC 기록'},
   {sit:'예약·이용시간 문의', resp:'예약제 안내·문의처 안내', note:'워크인 불가 안내'},
   {sit:'회원정보 변경 요청', resp:'리셉션·문의처로 안내', note:'직원 임의 처리 금지'},
-  {sit:'사우나 내부 청결', resp:'바닥 미끄럼·이물질 발견 즉시 조치, 안전 표시 후 필요 시 시설부 전달', note:'미끄럼 사고 예방 최우선'},
-  {sit:'파우더룸 소모품·드라이기', resp:'소모품 즉시 보충, 드라이기 등 상태 점검', note:'부족분 비품관리에 반영'},
-  {sit:'휴게공간 혼잡·소음 민원', resp:'양해 요청·정중 안내, 필요 시 자리 조정', note:'다른 회원 배려 우선'}
+  {sit:'사우나 내부 청결', resp:'바닥 미끄럼·이물질 발견 즉시 조치 "추가 관리까지 바로 요청드리겠습니다"', note:'미끄럼 사고 예방 최우선'},
+  {sit:'파우더룸 소모품·드라이기', resp:'소모품 즉시 보충·드라이기 상태 점검', note:'부족분 비품관리에 반영'},
+  {sit:'휴게공간 혼잡·소음 민원', resp:'양해 요청·대안 제시 "다른 회원분들을 위해 조금만 협조 부탁드립니다"', note:'다른 회원 배려 우선'}
 ];
 
 function applyCsStored(stored){
