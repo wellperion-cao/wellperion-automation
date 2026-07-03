@@ -89,6 +89,9 @@
   .fi-body{flex:1; min-width:0;}
   .fi-when{font-size:10.5px; color:var(--dim); font-variant-numeric:tabular-nums;}
   .fi-tag{display:inline-block; font-size:9.5px; font-weight:700; border-radius:5px; padding:1px 6px; margin-left:6px; vertical-align:1px; letter-spacing:0.02em;}
+  .fi-status{display:inline-block; font-size:9.5px; font-weight:800; border-radius:5px; padding:1px 7px; margin-left:5px; vertical-align:1px; letter-spacing:0.01em; white-space:nowrap;}
+  .fi-status--done{color:#0c1a10; background:var(--green);}
+  .fi-status--pending{color:#2a2004; background:var(--gold);}
   .fi-what{font-size:12.5px; color:var(--text); line-height:1.45; margin-top:1px; word-break:break-word;}
   .fi-res{font-size:11px; color:var(--text-soft); margin-top:1px; line-height:1.4;}
   .fi-res b{color:var(--accent-soft);}
@@ -609,6 +612,13 @@
   }
 
   // ═══════════ 섹션 2: 통합 처리 이력 피드 ═══════════
+  // 완료/대기 분류 규칙(배237) — 애매하면 항상 안전 기본값(대기)으로: 자율성을 과장하지 않는다.
+  //  · 포착(scan)     : auto_applied>0 → 완료 / 그 외 → 대기 (아직 실행 안 된 포착일 뿐)
+  //  · 북극성 추천     : proposed → 대기 / approved(GM 채택) → 완료 / held(보류) → 대기(미실행)
+  //  · 자기학습 제안    : status==='반영' → 완료 / 그 외('승인' 포함, 미반영) → 대기
+  //  · 자기학습 반영    : 항상 완료(정의상 반영일시가 있을 때만 생성됨)
+  //  · aide/관찰 신호   : signal_type이 auto_exec(자율실행 적용)·activation(자율실행 라이브 전환) → 완료 /
+  //                       hit_rate·missed·approval 등 관찰·메타 신호는 완료 증거가 아니므로 → 대기
   function buildFeed(d){
     var items = [];
 
@@ -618,7 +628,8 @@
       var reg = s.registered|0, cap = s.captured|0;
       items.push({ t:ts(s.logged_at), when:s.logged_at, ico:'🌅', tag:'포착', tagc:'var(--gold)',
         what:'GM 보좌 06:30 스캔 실행',
-        res:'포착 <b>' + cap + '</b>건 · 신규등록 ' + reg + (s.auto_exec_on ? ' · 자율실행 ON' : '') });
+        res:'포착 <b>' + cap + '</b>건 · 신규등록 ' + reg + (s.auto_exec_on ? ' · 자율실행 ON' : ''),
+        done: (s.auto_applied|0) > 0 });
     });
     // 북극성 추천 (제안·승인·보류 = 진짜 자율 판단)
     d.nsLog.forEach(function(x){
@@ -627,13 +638,13 @@
         var n = (x.titles || x.roles || []).length;
         items.push({ t:ts(x.logged_at), when:x.logged_at, ico:'🌟', tag:'추천', tagc:'var(--gold)',
           what:'북극성 추천 ' + (x.sent ? '발송' : '생성'),
-          res:'<b>' + n + '</b>건 (' + esc((x.roles || []).join('·')) + ')' });
+          res:'<b>' + n + '</b>건 (' + esc((x.roles || []).join('·')) + ')', done:false });
       } else if(ev === 'approved'){
         items.push({ t:ts(x.logged_at), when:x.logged_at, ico:'✅', tag:'승인', tagc:'var(--green)',
-          what:'북극성 추천 승인 — ' + roleTxt, res:'GM 채택' });
+          what:'북극성 추천 승인 — ' + roleTxt, res:'GM 채택', done:true });
       } else if(ev === 'held'){
         items.push({ t:ts(x.logged_at), when:x.logged_at, ico:'⚓', tag:'보류', tagc:'var(--dim)',
-          what:'북극성 추천 보류 — ' + roleTxt, res: esc(x.reason || '') });
+          what:'북극성 추천 보류 — ' + roleTxt, res: esc(x.reason || ''), done:false });
       }
     });
     // 자기학습 제안/반영
@@ -642,21 +653,23 @@
       var what = String(p['무엇을'] || '').slice(0, 64);
       items.push({ t:ts(p['생성시각'] || p['생성일']), when:(p['생성시각'] || p['생성일']), ico:'📚', tag:'학습', tagc:'var(--blue)',
         what:'자기학습 제안 — ' + who + (what ? (' · ' + esc(what) + (String(p['무엇을']||'').length > 64 ? '…' : '')) : ''),
-        res:'상태 <b>' + esc(p.status || '—') + '</b>' + (p['효과'] && p['효과'] !== '미확인' ? (' · ' + esc(p['효과'])) : '') });
+        res:'상태 <b>' + esc(p.status || '—') + '</b>' + (p['효과'] && p['효과'] !== '미확인' ? (' · ' + esc(p['효과'])) : ''),
+        done: p.status === '반영' });
       if(p.status === '반영' && p['반영일시']){
         items.push({ t:ts(p['반영일시']), when:p['반영일시'], ico:'✅', tag:'반영', tagc:'var(--green)',
           what:'자기학습 반영 — ' + who + ' <span style="color:var(--dim)">(' + esc(p['반영위치'] || '') + ')</span>',
-          res: p['효과'] ? ('효과 <b>' + esc(p['효과']) + '</b>') : '' });
+          res: p['효과'] ? ('효과 <b>' + esc(p['효과']) + '</b>') : '', done:true });
       }
     });
     // aide 포착·승인·활성화·적중률·놓침 관찰(진짜 자율 판단 신호)
     // ※ 루틴 입항완료(_queue_archive adhoc)는 자율 판단이 아니라 일반 처리라 이력에서 제외(노이즈 방지).
     var AUTO_SIG = { auto_exec:1, approval:1, hit_rate:1, activation:1, missed:1 };
+    var DONE_SIG = { auto_exec:1, activation:1 }; // 실제 자율실행 증거만 완료로 인정(관찰·통계 신호는 대기)
     d.obsLedger.filter(function(o){ return /^gm_aide/.test(o.source || '') || AUTO_SIG[o.signal_type]; })
       .forEach(function(o){
         items.push({ t:ts(o.observed_at), when:o.observed_at, ico:'🔎', tag:'자율', tagc:'var(--pink)',
           what: esc(String(o.summary || '').slice(0, 80)),
-          res: esc(o.pattern_hint || '') });
+          res: esc(o.pattern_hint || ''), done: !!DONE_SIG[o.signal_type] });
       });
 
     items.sort(function(a,b){ return b.t - a.t; });
@@ -667,11 +680,15 @@
     if(!items.length){ el.innerHTML = '<div class="feed-status">표시할 자율 처리 이력이 없습니다.</div>'; return; }
     var show = items.slice(0, 46);
     el.innerHTML = show.map(function(it){
+      var statusBadge = it.done
+        ? '<span class="fi-status fi-status--done">✅ 자율 처리</span>'
+        : '<span class="fi-status fi-status--pending">🟡 제안(대기)</span>';
       return '<div class="feed-item">' +
         '<span class="fi-ico">' + it.ico + '</span>' +
         '<span class="fi-body">' +
           '<span class="fi-when">' + fmtWhen(it.when) +
-            '<span class="fi-tag" style="color:' + it.tagc + ';background:rgba(255,255,255,0.06);">' + esc(it.tag) + '</span></span>' +
+            '<span class="fi-tag" style="color:' + it.tagc + ';background:rgba(255,255,255,0.06);">' + esc(it.tag) + '</span>' +
+            statusBadge + '</span>' +
           '<span class="fi-what">' + it.what + '</span>' +
           (it.res ? '<span class="fi-res">' + it.res + '</span>' : '') +
         '</span></div>';
