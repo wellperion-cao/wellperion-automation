@@ -33,8 +33,11 @@
   h2.sec{font-size:15px; font-weight:700; margin:20px 0 3px; display:flex; align-items:center; gap:7px;}
   .sec-note{font-size:11px; color:var(--dim); margin-bottom:10px; line-height:1.45;}
 
-  /* ── 히어로 슬롯 (후속 Task에서 renderHero()가 채움 · 지금은 비움) ── */
+  /* ── 히어로 슬롯: renderHero()가 결과물 중심 한 줄 요약을 채움(배237) ── */
   .hero:empty{display:none;}
+  .hero{margin:2px 0 16px;}
+  .hero-line{font-size:14.5px; font-weight:700; color:var(--text-soft); line-height:1.55; padding:13px 16px; border:1px solid rgba(124,58,237,0.32); border-left:4px solid var(--accent); border-radius:11px; background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(240,198,116,0.05));}
+  .hero-line b{color:var(--accent-soft); font-size:16px; font-weight:800;}
 
   /* ── 2층 골격: ① 자율로 한 일 / ② 돌아가는 자동화 (배237) ── */
   h2.layer-h2{font-size:17px; font-weight:800; letter-spacing:-0.01em; margin:8px 0 4px; padding-bottom:8px; border-bottom:2px solid var(--border-strong);}
@@ -378,6 +381,42 @@
         '<span class="ns-badge ' + st + '">' + esc(st) + '</span>' +
       '</div>';
     }).join('') + '<div class="feed-more">정본 <code>status/northstar_pending.json</code> · 생성 ' + esc(pending.generated_by || '?') + '</div>';
+  }
+
+  // ═══════════ 🤖 히어로: 결과물 중심 한 줄 요약(배237) ═══════════
+  function renderHero(d){
+    var el = document.getElementById('hero-autonomy');
+    var t0 = localTodayMs(), t1 = t0 + 86400000;
+    var isToday = function(when){ var m = ts(when); return m >= t0 && m < t1; };
+
+    // 자율 처리 건수 = 오늘 gm_aide_scan_log 회차 중 auto_applied 합(양수 실집행분만)
+    var scan = d.scanLog || [];
+    var todayScan = scan.filter(function(s){ return isToday(s.logged_at); });
+    var autoTxt;
+    if(!scan.length){ autoTxt = '미측정'; }
+    else {
+      var autoSum = todayScan.reduce(function(a, s){ return a + (typeof s.auto_applied === 'number' && s.auto_applied > 0 ? s.auto_applied : 0); }, 0);
+      autoTxt = '<b>' + autoSum + '</b>건';
+    }
+
+    // 포착 건수 = 오늘 gm_aide_scan_log 회차 captured 합
+    var capTxt;
+    if(!scan.length){ capTxt = '미측정'; }
+    else {
+      var capSum = todayScan.reduce(function(a, s){ return a + (s.captured|0); }, 0);
+      capTxt = '<b>' + capSum + '</b>건';
+    }
+
+    // 학습 반영 건수 = 오늘 반영일시로 status '반영' 처리된 learning_proposals 건수
+    var learn = d.learn || [];
+    var learnTxt;
+    if(!learn.length){ learnTxt = '미측정'; }
+    else {
+      var learnN = learn.filter(function(p){ return p.status === '반영' && isToday(p['반영일시']); }).length;
+      learnTxt = '<b>' + learnN + '</b>건';
+    }
+
+    el.innerHTML = '<div class="hero-line">🤖 자율이 오늘 한 일 — 자율 처리 ' + autoTxt + ' · 포착 ' + capTxt + ' · 학습 반영 ' + learnTxt + '</div>';
   }
 
   // ═══════════ 섹션 1: 상시 자율 루틴 카드 ═══════════
@@ -742,6 +781,7 @@
     var cmoQueue = parseJson(a[7]) || [];
     var feedItems = [];
     try{ feedItems = buildFeed(d); }catch(e){ feedItems = []; }
+    try{ renderHero(d); }catch(e){ document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">히어로 요약 표시 오류.</div>'; }
     try{ renderNsEmbed(a[5]); }catch(e){ document.getElementById('ns-embed').innerHTML = '<div class="feed-status">오늘의 항로 추천 표시 오류.</div>'; }
     try{ renderRoutines(d); }catch(e){ document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">상시 체계 표시 오류 — 로그 파싱 실패.</div>'; }
     try{ renderCmoMarketing(cmoQueue); }catch(e){
@@ -753,6 +793,7 @@
     var fl = document.getElementById('foot-loaded');
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
   }).catch(function(){
+    document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('ns-embed').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다. 잠시 후 새로고침 해주세요.</div>';
     document.getElementById('cmo-routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
