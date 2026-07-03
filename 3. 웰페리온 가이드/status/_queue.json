@@ -2037,5 +2037,17 @@
     "artifact": "지원부 인쇄구조만 벤치마킹·콘텐츠는 부서 자기 데이터. 운영=응대중심·시설=설비중심.\nprintA3OpsOnboarding/printA3FacOnboarding. 기존 틀 무변경·억지이식 없음. (CLI ad-hoc · 커밋 e38978f1)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e38978f14aca86f6dd7cf4ab6502c6da2b0e9e7d"
+  },
+  {
+    "task_id": "COO-2026-07-03-FACILITY-MONTHLY-REPORT",
+    "clevel": "coo",
+    "title": "[시우] 시설부 점검 월간 리포트 — 측정값 기반 별도 설계 (지원부 완료율식 이식 불가)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-03",
+    "ship_no": 406,
+    "note": "[2026-07-03 GM 보류] 배208 monthly_report 엔진은 dept 파라미터로 facility도 호출되나 데이터 전부 0 — 시설부 점검(tab-fcheck)은 완료율(총항목/완료) 아닌 '측정값 기반'(수질·온도 등)이라 snapshot(점검일지_facility) 미기록·집계 대상 없음. 지원부 완료율식 리포트 그대로 이식 불가. 시설부 리포트는 성격상 측정값 추이·이상치·점검율 중심으로 별도 설계 필요. 선결 후보=시설 점검이 집계 가능한 기록을 남기게 하거나 측정값 전용 집계 설계. deep-interview로 또렷이 후 착수 권고.",
+    "next": "GM 착수 지시 시 deep-interview로 시설부 측정값 월간 리포트 설계(측정값 추이·이상치·점검율) → 별도 집중세션. 또는 선결로 시설 점검 기록구조 정비.",
+    "depends_on": ""
   }
 ]
