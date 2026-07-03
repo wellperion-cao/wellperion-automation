@@ -147,13 +147,7 @@
   .flegend .ls{background:var(--accent);} .flegend .le{background:var(--gold);}
   .flegend .fnote{color:var(--dim); font-size:10.5px;}
 
-  /* ── 🎯 한눈 요약(맨 위 · 경영진 3초 요약) ── */
-  .blk.sum-hero{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:6px 14px 14px; margin-bottom:4px;}
-  .sumrow{display:flex; flex-wrap:wrap; gap:12px;}
-  .sumcard{flex:1; min-width:170px; background:var(--surface); border:1px solid var(--border-strong); border-radius:11px; padding:13px 16px;}
-  .sumcard .sl{font-size:11px; color:var(--dim);}
-  .sumcard .sv{font-size:25px; font-weight:800; margin-top:5px; letter-spacing:-0.02em; color:var(--text);}
-  .sumcard .sv.pos{color:var(--green);} .sumcard .sv.neg{color:var(--rose);}
+  /* ── 전월 대비 델타 배지(공통 · deltaBadge()가 곳곳에서 재사용 — report-hero·실무책임자 스코어보드) ── */
   .sd{display:block; font-size:11px; color:var(--text-soft); margin-top:5px;}
   .sd.up{color:var(--green);} .sd.down{color:var(--rose);}
 
@@ -251,6 +245,30 @@
   .rep-none{font-size:11.5px; color:var(--dim); font-style:italic;}
   .rep-empty{padding:18px; font-size:12.5px; color:var(--dim); text-align:center; border:1px dashed var(--border-strong); border-radius:11px; background:var(--surface);}
 
+  /* ── 🏷️ 이달 테마(월말 결과 보고 히어로 상단 · 임팩트 배너) ── */
+  .rep-theme{display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-bottom:12px; padding:10px 15px; background:linear-gradient(120deg,rgba(124,58,237,0.16),rgba(240,198,116,0.10)); border:1px solid rgba(124,58,237,0.35); border-radius:10px;}
+  .rep-theme .rt-tag{font-size:10px; font-weight:700; color:var(--accent-soft); text-transform:uppercase; letter-spacing:0.04em; background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:3px 10px; white-space:nowrap;}
+  .rep-theme .rt-txt{font-size:13.5px; font-weight:700; color:var(--text); line-height:1.4;}
+
+  /* ── 🔧 점검 현황 & 이슈·해결 ── */
+  .chk-grid{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;}
+  .chk-card{flex:1; min-width:150px; background:var(--surface); border:1px solid var(--border-strong); border-radius:11px; padding:12px 15px;}
+  .chk-card .cl{font-size:11px; color:var(--dim); display:block;}
+  .chk-card .cv{font-size:22px; font-weight:800; letter-spacing:-0.02em; color:var(--text); margin-top:5px;}
+  .chk-card .cv.pending{font-size:13px; color:var(--dim); font-weight:700;}
+  .chk-card .csub{display:block; font-size:11px; color:var(--text-soft); margin-top:5px; line-height:1.5;}
+  .chk-card .csub .warn{color:var(--gold);}
+  .chk-card .clink{display:inline-block; margin-top:7px; font-size:11px; font-weight:600; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:3px 9px;}
+  .chk-card .clink:hover{border-color:var(--accent);}
+  .issue-h{font-size:12px; font-weight:700; color:var(--text-soft); margin:2px 2px 6px;}
+  table.rpt.issues{min-width:560px;}
+  .issues td.i-title{font-weight:700; color:var(--text); font-size:12.5px;}
+  .issues td.i-note{font-size:11.5px; color:var(--dim); max-width:320px; white-space:pre-wrap;}
+  .istat{display:inline-block; font-size:11px; font-weight:700; border-radius:20px; padding:2px 10px; white-space:nowrap;}
+  .istat.미해결{color:var(--rose); background:rgba(224,138,122,0.12); border:1px solid rgba(224,138,122,0.38);}
+  .istat.해결중{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.38);}
+  .istat.해결{color:var(--green); background:rgba(106,191,123,0.12); border:1px solid rgba(106,191,123,0.38);}
+
   .board-status{padding:16px; font-size:12px; color:var(--dim); text-align:center;}
   footer.foot{margin-top:22px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
 
@@ -270,16 +288,10 @@
     .wrap{max-width:none;}
     .layers, .month-bar, .ebtn, header.page-head .back{display:none !important;}
     input, select, .note-edit, .fin-in, .pin-num{display:none !important;}
-    /* 한눈 요약(sum-hero)·매출(fin-primary)=상단 전폭, 나머지=2단 세로 흐름으로 한 장에 밀도있게 배치 */
+    /* 📊 월말 결과 보고(목표 달성 요약 흡수)·💰 매출(fin-primary)=상단 전폭, 나머지=2단 세로 흐름으로 한 장에 밀도있게 배치 */
     .report-grid{column-count:2; column-gap:8mm; column-fill:auto;}
     .blk{break-inside:avoid; margin:0 0 4px;}
-    /* 🎯 한눈 요약 = 두 단 전폭 최상단 */
-    .blk.sum-hero{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
-    .blk.sum-hero h2.sec{margin-top:2px;}
-    .sumcard{background:#f7f7f7 !important; border:1px solid #999 !important;}
-    .sumcard .sl, .sd{color:#444 !important;}
-    .sumcard .sv{color:#111 !important;}
-    .sumcard .sv.pos{color:#3c7a4a !important;} .sumcard .sv.neg{color:#a13a2e !important;}
+    .sd{color:#444 !important;}
     /* 💰 매출 핵심 = 두 단 전폭 상단 */
     .blk.fin-primary{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #b9985a !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
     .blk.fin-primary h2.sec{margin-top:2px;}
@@ -289,7 +301,7 @@
     .fin-hero-sub{color:#3c7a4a !important;}
     .fin-dept-h{color:#222 !important;} .findept tbody td{color:#333 !important;} .findept td.pctc{color:#444 !important;}
     .findept tbody tr.tot td{background:#f2f2f2 !important; color:#111 !important;}
-    /* 📊 월말 결과 보고 히어로 = 맨 위(한눈 요약보다 먼저) 두 단 전폭 */
+    /* 📊 월말 결과 보고 히어로 = 맨 위 두 단 전폭 */
     .blk.report-hero{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
     .blk.report-hero h2.sec{margin-top:2px;}
     .rep-badge{border:1px solid #999 !important; background:#f2f2f2 !important; color:#111 !important;}
@@ -307,6 +319,17 @@
     .rep-col li{color:#333 !important; border-color:#ccc !important; font-size:7.5px; padding-bottom:3px;}
     .rli-m{color:#555 !important;}
     .rep-none, .rep-empty{color:#555 !important;}
+    .rep-theme{background:#fbf6ea !important; border:1px solid #b9985a !important; padding:5px 8px !important; margin-bottom:5px;}
+    .rep-theme .rt-tag{color:#333 !important; background:#fff !important; border-color:#999 !important;}
+    .rep-theme .rt-txt{color:#111 !important; font-size:9px;}
+    .chk-card{background:#f7f7f7 !important; border:1px solid #999 !important; padding:5px 8px;}
+    .chk-card .cl, .chk-card .csub{color:#444 !important;}
+    .chk-card .cv{color:#111 !important; font-size:14px;}
+    .chk-card .clink{display:none !important;}
+    .issue-h{color:#111 !important;}
+    .issues td.i-title{color:#111 !important;}
+    .issues td.i-note{color:#555 !important;}
+    .istat{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
     h2.sec{font-size:10.5px; margin:0 0 4px; border-bottom:1px solid #bbb; padding-bottom:2px; break-after:avoid;}
     h2.sec .stag{font-size:7.5px;}
     h2.sec .cfo-link{font-size:7.5px; padding:1px 6px; color:#333 !important; border-color:#999 !important;}
@@ -384,12 +407,6 @@
       <div id="report-area"><div class="board-status">월말 결과를 계산하는 중…</div></div>
     </section>
 
-    <!-- 🎯 한눈 요약 (맨 위 · 경영진 3초 요약 · 이달 핵심 3숫자 + 전월 대비 델타) -->
-    <section class="blk sum-hero">
-      <h2 class="sec">🎯 이달 한눈 요약 <span class="stag">목표 달성률 · 매출-지출 순액 · ERP 진척 · 전월 대비</span></h2>
-      <div id="sum-board"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
-    </section>
-
     <!-- 💰 선택월 매출·지출 (핵심·최상단 · 목표 대비 + 부서별 분해 · 정본 = AI CFO 매출현황 미러) -->
     <section class="blk fin-primary">
       <h2 class="sec has-link">💰 선택월 매출·지출 <span class="stag">목표 대비 + 부서별 · 전체지출(인건비+구매성) · AI CFO 정본 미러</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
@@ -418,6 +435,13 @@
       <div id="obj-board"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
     </section>
 
+    <!-- 🔧 점검 현황 & 이슈·해결 -->
+    <section class="blk">
+      <h2 class="sec">🔧 점검 현황 & 이슈·해결 <span class="stag">4부서 점검 완료율(실측/개통 전) · 이슈 보드 · 월별 PIN 편집</span></h2>
+      <div id="check-board"><div class="board-status">점검 현황을 불러오는 중…</div></div>
+      <div id="issue-board" style="margin-top:14px;"><div class="board-status">이슈 보드를 계산하는 중…</div></div>
+    </section>
+
     <!-- 👤 실무책임자 도달율 -->
     <section class="blk">
       <h2 class="sec" id="prac-sec" style="display:none;">👤 실무책임자 도달율 <span class="stag">GM 직속 3라인</span></h2>
@@ -439,6 +463,7 @@
   var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
   var PLAN_PATH = 'status/monthly_ops_plan.json';
   var TARGETS_PATH = 'status/sales_targets.json'; // 팀별 월 목표매출 정본(고정) — 부서별 매출(목표 vs 실적) 결합표 기준선.
+  var KPI_PATH = 'status/kpi_values.json'; // KPI 자동집계(kpi_collector.py, 일 2회) — 🔧 점검 현황 실측치 소스(coo.지원부_점검완료율). 측정 불가=null(가짜값 없음).
   var FIN_YEAR = '2026';
   var SALES_TARGET_DEFAULT = 650000000; // 월 매출 목표 기본값(6.5억). 해당 월 objectives에 매출 metric.target 있으면 그 값 우선.
   // ── 매출·지출 SSOT = AI CFO 매출현황(cfo/finance/매출지출현황.html). 이 페이지는 그 페이지의 소스를 그대로 미러(읽기전용). ──
@@ -497,6 +522,7 @@
   var _cfoSalesDept = null; // 매출 부서맵 {부서:[12]} — 선택월 부서별 매출 분해용(team_sales 실패 시 폴백)
   var _cfoLaborDept = null; // 인건비 부서맵 {부서:[12]}(강사→부서 집계·운영부 포함) — 선택월 부서별 지출 분해용
   var _salesTargets = null;  // status/sales_targets.json(팀별 월 목표매출 정본, 고정) — 부서별 매출(목표 vs 실적) 결합표 기준선
+  var _kpiValues = null;    // status/kpi_values.json(KPI 자동집계) — 🔧 점검 현황 실측치. 조회 실패=null(전부 '측정 개통 전' 처리)
   var _instrTeamMap = {};    // 강사이름 → 팀(부서) 매핑(인건비 시트 A/B열 로스터에서 구성) — team_sales의 강사별 실적을 팀 단위로 합산하는 데 사용(PII 미노출·집계에만 사용)
   var _teamSalesCache = {};  // 'YYYY-M' → {status:'loading'|'done', raw:team_sales 응답} — 선택월별 라이브 팀 매출 실적 캐시
   var _nsMap = null;      // role.id → 북극성 문구(bootsetup_matrix.json dims[0] 첫 줄) — 목표→북극성 뱃지용
@@ -543,6 +569,14 @@
       .then(function(r){ return r.json(); })
       .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || '읽기 실패'); })
       .catch(function(){ return fetch(RAW_BASE + TARGETS_PATH + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }).catch(function(){ return null; }); });
+  }
+  // ── KPI 자동집계(kpi_values.json) 읽기 — 🔧 점검 현황 실측치(coo.지원부_점검완료율 등). 동일 read_file→raw 폴백 패턴. 실패=null ──
+  function readKpiValues(){
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:KPI_PATH})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || '읽기 실패'); })
+      .catch(function(){ return fetch(RAW_BASE + KPI_PATH + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }).catch(function(){ return null; }); });
   }
   // ── 라이브 매출: home_kpi → sales.month(당월 실측). 실패/미측정=null ──
   function readHomeSales(){
@@ -900,7 +934,7 @@
       '</tr></thead><tbody>' + objs.map(objRow).join('') + '</tbody></table></div>';
   }
 
-  // ── 선택월 매출·지출·순액 공통 계산 (fin-board 상세표 + 한눈 요약 히어로카드 공용 · 계산식 중복 방지) ──
+  // ── 선택월 매출·지출·순액 공통 계산 (fin-board 상세표 + 월말 결과 보고 히어로카드 공용 · 계산식 중복 방지) ──
   // 매출 = CFO 매출현황(센터전체 정본, 유효값>0만·없으면 당월 home_kpi 라이브). 전체 지출 = 인건비(라이브) + 구매성(라이브 proc_summary).
   function calcFinance(mnum){
     if(!(mnum >= 1 && mnum <= 12)) return null;
@@ -1008,26 +1042,27 @@
         return {name:tt.name, target:tgt, actual:act, exp:lab + pr};
       });
       if(ta.etc > 0){ rows.push({name:'기타(팀 미매칭 — 루프메소드·카드발급 등)', target:0, actual:ta.etc, exp:0, isEtc:true}); }
-      var totT = 0, totA = 0, totE = 0;
+      // 지출·순액 = 나우열M 구조개선 중(확정숫자 미표기 · 정직 표기). 목표·실적매출·달성%(team_sales)은 그대로 유지.
+      var NAUW_NOTE = '<span class="fin-none" title="운영 매출&지출 실무=나우열M · 구조개선 중">나우열M 구조개선 중</span>';
+      var totT = 0, totA = 0;
       var body = rows.map(function(r){
-        totT += r.target; totA += r.actual; totE += r.exp;
+        totT += r.target; totA += r.actual;
         var pct = r.target ? Math.round(r.actual / r.target * 100) : null;
-        var net = r.actual - r.exp;
         return '<tr' + (r.isEtc ? ' class="etc"' : '') + '><td>' + esc(r.name) + '</td>' +
           '<td class="num">' + (r.target ? fmtWon(r.target) : '—') + '</td>' +
           '<td class="num">' + fmtWon(r.actual) + '</td>' +
           '<td class="num pctc">' + (pct != null ? pct + '%' : '—') + '</td>' +
-          '<td class="num">' + fmtWon(r.exp) + '</td>' +
-          '<td class="num' + (net < 0 ? ' neg' : '') + '">' + fmtWon(net) + '</td></tr>';
+          '<td class="num sub2">' + NAUW_NOTE + '</td>' +
+          '<td class="num sub2">—</td></tr>';
       }).join('');
       var totPct = totT ? Math.round(totA / totT * 100) : null;
-      var totNet = totA - totE;
       body += '<tr class="tot"><td>합계</td><td class="num">' + fmtWon(totT) + '</td><td class="num">' + fmtWon(totA) + '</td>' +
-        '<td class="num pctc">' + (totPct != null ? totPct + '%' : '—') + '</td><td class="num">' + fmtWon(totE) + '</td>' +
-        '<td class="num' + (totNet < 0 ? ' neg' : '') + '">' + fmtWon(totNet) + '</td></tr>';
+        '<td class="num pctc">' + (totPct != null ? totPct + '%' : '—') + '</td><td class="num sub2">' + NAUW_NOTE + '</td>' +
+        '<td class="num sub2">—</td></tr>';
       combinedTbl = '<div class="fin-dept-wrap"><div class="fin-dept-h">🏷️ ' + mnum + '월 부서별 매출(목표 vs 실적) & 지출' +
         (ta.live ? '' : ' <span style="color:var(--dim);font-weight:400">(팀별 실적 라이브 조회 중/실패 — 매출마스터 폴백)</span>') + '</div>' +
-        '<div class="rpt-wrap"><table class="rpt findept"><thead><tr><th>팀</th><th class="num">목표매출</th><th class="num">실적매출</th><th class="num">달성%</th><th class="num">지출</th><th class="num">순액</th></tr></thead>' +
+        '<div class="rpt-wrap"><table class="rpt findept"><thead><tr><th>팀</th><th class="num">목표매출</th><th class="num">실적매출</th><th class="num">달성%</th>' +
+        '<th class="num">지출<span style="font-weight:400;color:var(--dim)"> · 나우열M 구조개선 중</span></th><th class="num">순액</th></tr></thead>' +
         '<tbody>' + body + '</tbody></table></div></div>';
     }
 
@@ -1038,7 +1073,7 @@
     var legend = '<div class="flegend">' +
       '<span class="fnote">● 선택월(' + mnum + '월) 기준 · 매출·지출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> 미러(읽기전용). ' +
       '<b>매출=센터전체 정본(회원권+강습+기타·주차)</b> / <b>전체 지출=강사+운영부 인건비 + 구매성</b>(정규직 일부·임대료 미포함, 구매성=라이브 조회).' + procNote +
-      ' 부서별 표=팀별 목표(status/sales_targets.json 고정)·실적(라이브 GAS team_sales, 강사→팀은 인건비 시트 로스터로 집계)·지출(인건비+구매성). 멤버십=GM시트 「2026년도 매출」 정본. 연간 12개월 상세는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인. 측정 전=소스 미기재(가짜값 없음).</span>' +
+      ' 부서별 표=팀별 목표(status/sales_targets.json 고정)·실적(라이브 GAS team_sales, 강사→팀은 인건비 시트 로스터로 집계). 멤버십=GM시트 「2026년도 매출」 정본. <b>부서별 지출·순액=운영 매출&지출 실무 나우열M 이관·구조개선 중이라 확정숫자 미표기</b>(위 선택월 요약의 전체 지출만 참고). 연간 12개월 상세는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인. 측정 전=소스 미기재(가짜값 없음).</span>' +
     '</div>';
 
     host.innerHTML = hero + table + combinedTbl + legend;
@@ -1079,6 +1114,73 @@
       var prevPr = (prevMap && typeof prevMap[p.id] === 'number') ? prevMap[p.id] : null;
       return pracRow(p, goals[p.id], pr, prevPr);
     }).join('') + '</div>';
+  }
+
+  // ── 🔧 점검 현황(4부서 · 주차관리부는 점검 제외 대상·표시 안 함) ──
+  // 실측 가능 = KPI 자동집계(kpi_values.json coo.지원부_점검완료율). 그 외 부서(시설·운영)는 아직 GAS가 지원부 한정이라 '측정 개통 전' + 점검 페이지 링크.
+  var CHK_DEPTS = [
+    {key:'지원부', href:'coo/check/지원부 체계.html'},
+    {key:'시설부', href:'coo/check/시설부 체계.html'},
+    {key:'운영부', href:'coo/check/운영부 체계.html'}
+  ];
+  function renderCheckStatus(){
+    var host = document.getElementById('check-board');
+    if(!host) return;
+    var coo = (_kpiValues && _kpiValues.roles && _kpiValues.roles.coo) || null;
+    var cards = CHK_DEPTS.map(function(d){
+      var link = '<a class="clink" href="' + esc(d.href) + '" target="_blank">점검 페이지 →</a>';
+      if(d.key === '지원부' && coo && typeof coo.지원부_점검완료율 === 'number'){
+        var pct = Math.round(coo.지원부_점검완료율 * 100);
+        return '<div class="chk-card"><span class="cl">' + esc(d.key) + ' 점검 완료율</span>' +
+          '<div class="cv">' + pct + '%</div>' +
+          '<span class="csub">완료 ' + (coo.지원부_완료 != null ? coo.지원부_완료 : '—') + ' / 전체 ' + (coo.지원부_전체 != null ? coo.지원부_전체 : '—') +
+            '<br><span class="warn">⚠ GAS 분모 산출 버그 진단 중(시토→시우 인계) — 실측치지만 신뢰도 검증 전</span></span>' +
+          link + '</div>';
+      }
+      return '<div class="chk-card"><span class="cl">' + esc(d.key) + ' 점검 완료율</span>' +
+        '<div class="cv pending">측정 개통 전</div>' +
+        '<span class="csub">4부서 통합 집계 GAS 미구축(현재 지원부 한정) — 가짜값 없음</span>' +
+        link + '</div>';
+    }).join('');
+    host.innerHTML = '<div class="chk-grid">' + cards + '</div>';
+  }
+
+  // ── 🔧 이슈·해결 보드 (월별 · objectives와 동일 PIN 편집 패턴 · monthly_ops_plan.json issues[]) ──
+  function issueRow(o){
+    var statusCell;
+    if(_editMode){
+      var opts = ((_data && _data.issue_status_enum) || ['미해결','해결중','해결']).map(function(s){
+        return '<option value="' + esc(s) + '"' + (o.status === s ? ' selected' : '') + '>' + esc(s) + '</option>';
+      }).join('');
+      statusCell = '<select data-iid="' + esc(o.id) + '" data-if="status">' + opts + '</select>';
+    } else {
+      statusCell = '<span class="istat ' + esc(o.status || '') + '">' + esc(o.status || '') + '</span>';
+    }
+    var noteCell = _editMode
+      ? '<div class="note-edit" contenteditable="true" data-iid="' + esc(o.id) + '" data-if="note" ' +
+        'oncompositionstart="window._compOn()" oncompositionend="window._compOff()">' + esc(o.note || '') + '</div>'
+      : (o.note ? '<span class="r-note">' + esc(o.note) + '</span>' : '<span class="fin-none">—</span>');
+    return '<tr>' +
+      '<td class="i-title">' + esc(o.title) + '</td>' +
+      '<td>' + esc(o.dept || '') + '</td>' +
+      '<td>' + statusCell + '</td>' +
+      '<td>' + esc(o.reported || '—') + '</td>' +
+      '<td class="i-note">' + noteCell + '</td>' +
+    '</tr>';
+  }
+  function renderIssues(){
+    var host = document.getElementById('issue-board');
+    if(!host) return;
+    var m = _data.months[_sel];
+    var issues = (m && m.issues) || [];
+    if(!issues.length){
+      host.innerHTML = '<div class="issue-h">🗂️ 이슈·해결</div><div class="rep-empty">이 달 등록된 이슈가 없습니다.</div>';
+      return;
+    }
+    host.innerHTML = '<div class="issue-h">🗂️ 이슈·해결 (' + issues.length + ')</div>' +
+      '<div class="rpt-wrap"><table class="rpt issues"><thead><tr>' +
+        '<th>이슈</th><th>부서</th><th>상태</th><th>보고일</th><th>해결 메모</th>' +
+      '</tr></thead><tbody>' + issues.map(issueRow).join('') + '</tbody></table></div>';
   }
 
   // ── 🚀 ERP 월별 진척 타임라인 (공식값·GM 확정) ──
@@ -1137,37 +1239,8 @@
     if(i) i.style.width = v + '%';
   };
 
-  // ── 🎯 한눈 요약 (경영진 3초 요약: 목표 평균 달성률·매출-지출 순액·ERP 당월 진척 + 전월 대비 델타) ──
-  function renderSummary(){
-    var host = document.getElementById('sum-board');
-    if(!host) return;
-    var curAvg = avgProgress(_sel);
-    var pmKey = prevMonthKey(_sel);
-    var prevAvg = pmKey ? avgProgress(pmKey) : null;
-
-    var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
-    var fin = calcFinance(mnum);
-    var netVal = fin ? fin.net : null;
-
-    var erpPct = computeErpPctFor(_sel);
-
-    var c1 = '<div class="sumcard"><span class="sl">① 목표 평균 달성률</span>' +
-      '<div class="sv">' + (curAvg != null ? curAvg + '%' : '—') + '</div>' +
-      deltaBadge(curAvg, prevAvg) + '</div>';
-
-    var c2 = '<div class="sumcard"><span class="sl">② 매출−지출 순액 (당월)</span>' +
-      '<div class="sv' + (netVal != null ? (netVal >= 0 ? ' pos' : ' neg') : '') + '">' + (netVal != null ? fmtWon(netVal) : '측정 전') + '</div>' +
-      '<span class="sd">' + (fin && fin.sales != null ? '매출 ' + fmtWon(fin.sales) : '매출 측정 전(가짜값 없음)') + '</span></div>';
-
-    var c3 = '<div class="sumcard"><span class="sl">③ 웰페리온 ERP 당월 진척</span>' +
-      '<div class="sv">' + (erpPct != null ? erpPct + '%' : '미기록') + '</div>' +
-      '<span class="sd">' + (erpPct != null ? '정본 · erp_progress(' + esc(_sel) + ')' : '해당월 erp_progress 항목 없음') + '</span></div>';
-
-    host.innerHTML = '<div class="sumrow">' + c1 + c2 + c3 + '</div>';
-  }
-
   // ── 📊 월말 결과 보고 (최상단 히어로 — 경영진이 열자마자 이달 성과를 3초 안에 느끼도록) ──
-  // 데이터 정직: 아래 통계는 전부 monthly_ops_plan.json objectives/erp_progress + CFO 매출·지출 실측 재사용(위 sum-hero·fin-board와 동일 계산 함수) — 지어낸 값 없음.
+  // 데이터 정직: 아래 통계는 전부 monthly_ops_plan.json objectives/erp_progress + CFO 매출·지출 실측 재사용(fin-board와 동일 계산 함수) — 지어낸 값 없음. ①목표 달성 카드에 舊 '🎯 이달 한눈 요약'의 전월대비 델타를 흡수(중복 섹션 제거).
   function reportItemLi(o, done){
     var meta = done ? '완료 100%' : ((typeof o.progress === 'number' ? o.progress : 0) + '%');
     return '<li><span class="rli-t">' + (done ? '✅' : '⏳') + ' ' + esc(o.title) + '</span>' +
@@ -1179,9 +1252,12 @@
     var m = _data.months[_sel];
     if(!m){ el.innerHTML = ''; return; }
     var objs = m.objectives || [];
+    var themeHtml = (m.report && m.report.theme)
+      ? '<div class="rep-theme"><span class="rt-tag">🏷️ 이달 테마</span><span class="rt-txt">' + esc(m.report.theme) + '</span></div>'
+      : '';
 
     if(!objs.length){
-      el.innerHTML = '<div class="rep-empty">이 달의 목표 데이터가 아직 없습니다 — <code>status/monthly_ops_plan.json</code>에 objectives가 등록되면 이 자리에 결과가 표시됩니다(가짜값 없음).</div>';
+      el.innerHTML = themeHtml + '<div class="rep-empty">이 달의 목표 데이터가 아직 없습니다 — <code>status/monthly_ops_plan.json</code>에 objectives가 등록되면 이 자리에 결과가 표시됩니다(가짜값 없음).</div>';
       if(wrap) wrap.classList.remove('is-done');
       return;
     }
@@ -1190,6 +1266,8 @@
     var doneList = objs.filter(function(o){ return o.status === '완료'; });
     var restList = objs.filter(function(o){ return o.status !== '완료'; });
     var avg = avgProgress(_sel);
+    var pmKey = prevMonthKey(_sel);
+    var prevAvg = pmKey ? avgProgress(pmKey) : null;
     var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
     var fin = calcFinance(mnum);
     var target = salesTargetFor(_sel);
@@ -1202,10 +1280,10 @@
       : '<span class="rep-badge live">🔵 ' + esc(_sel) + ' 진행 중 — 실시간 스냅샷</span>';
     var subline = '테마: ' + esc(m.theme || '') + (isDone ? '' : ' · 마감되면 최종 보고로 자동 전환');
 
-    // ① 목표 달성
+    // ① 목표 달성 (평균 진척 + 전월 대비 델타 — 舊 '🎯 이달 한눈 요약'을 이 카드로 흡수·중복 제거)
     var goalCard = '<div class="rep-card"><span class="rl">① 목표 달성</span>' +
       '<div class="rv">' + doneList.length + '<span style="font-size:15px;color:var(--dim)">/' + objs.length + '</span></div>' +
-      '<span class="rsub">평균 진척 ' + (avg != null ? avg + '%' : '—') + '</span></div>';
+      '<span class="rsub">평균 진척 ' + (avg != null ? avg + '%' : '—') + '</span>' + deltaBadge(avg, prevAvg) + '</div>';
 
     // ② 매출 vs 목표
     var salesCard;
@@ -1219,11 +1297,11 @@
         '<div class="rv none">측정 전</div><span class="rsub">목표 ' + fmtWon(target) + '(가짜값 없음)</span></div>';
     }
 
-    // ③ 매출-지출 순액
+    // ③ 매출-지출 순액 — 지출이 아직 라이브 전면 반영 전(나우열M 구조개선 중)이라 흑자/적자 판정은 표시하지 않는다(정직 표기).
     var netCard = (fin && fin.net != null)
       ? '<div class="rep-card"><span class="rl">③ 매출−지출 순액</span>' +
-        '<div class="rv ' + (fin.net >= 0 ? 'pos' : 'neg') + '">' + fmtWon(fin.net) + '</div>' +
-        '<span class="rsub">' + (fin.net >= 0 ? '흑자' : '적자') + '</span></div>'
+        '<div class="rv">' + fmtWon(fin.net) + '</div>' +
+        '<span class="rsub">지출 미반영(나우열M 구조개선 중) — 참고용</span></div>'
       : '<div class="rep-card"><span class="rl">③ 매출−지출 순액</span><div class="rv none">측정 전</div><span class="rsub">매출·지출 미기재</span></div>';
 
     // ④ ERP 진척
@@ -1242,7 +1320,7 @@
       '</div>' +
     '</div>';
 
-    el.innerHTML = '<div class="rep-head">' + badge + '<span class="rep-sub">' + subline + '</span></div>' + statsHtml + listsHtml;
+    el.innerHTML = themeHtml + '<div class="rep-head">' + badge + '<span class="rep-sub">' + subline + '</span></div>' + statsHtml + listsHtml;
   }
 
   // ── 편집 버튼 ──
@@ -1258,10 +1336,11 @@
 
   function render(){
     renderMonthHead();
-    renderSummary();
     renderErp();
     renderFinance();
     renderBoard();
+    renderCheckStatus();
+    renderIssues();
     renderPractitioners();
     renderReport();
     renderEditBtn();
@@ -1316,6 +1395,16 @@
     Array.prototype.forEach.call(document.querySelectorAll('#prac-board [data-f="pprogress"]'), function(el){
       var pid = el.getAttribute('data-pid'); if(!pid) return;
       m.practitioner_progress[pid] = clampPct(el.value);
+    });
+
+    // 🔧 이슈·해결 보드 (상태·해결 메모)
+    var issById = {};
+    (m.issues || []).forEach(function(o){ issById[o.id] = o; });
+    Array.prototype.forEach.call(document.querySelectorAll('#issue-board [data-if]'), function(el){
+      var iid = el.getAttribute('data-iid'), f = el.getAttribute('data-if');
+      var o = issById[iid]; if(!o) return;
+      if(f === 'status'){ o.status = el.value; }
+      else if(f === 'note'){ o.note = (el.innerText || el.textContent || '').trim(); }
     });
 
     // 🚀 ERP 월별 진척 (pct·목표여부·메모)
@@ -1378,7 +1467,8 @@
     withTimeout(readNsMap(), 8000, null),
     withTimeout(readProcLive(), 8000, {dept:PROC_FALLBACK, live:false}),
     withTimeout(readSalesTargets(), 8000, null),
-    withTimeout(readInstructorTeamMap(), 8000, {})
+    withTimeout(readInstructorTeamMap(), 8000, {}),
+    withTimeout(readKpiValues(), 8000, null)
   ])
     .then(function(arr){
       _data = arr[0];
@@ -1394,6 +1484,7 @@
       _procLive = procRes.live;
       _salesTargets = arr[5];
       _instrTeamMap = arr[6] || {};
+      _kpiValues = arr[7];
       buildMonthSelect();
       render();
     })

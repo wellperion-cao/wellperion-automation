@@ -1,9 +1,10 @@
 {
-  "_doc": "월간 운영 계획·보고 SSOT. 헌법(장기 비전·KPI)과 G1 오늘의 항로(일일 배) 사이의 '월간 운영' 층. 월초=계획 세우기, 월말=결과 보고. 담당=도메인 C-Level(제안·조정 가능). 정본=이 파일, 페이지(월간운영계획.html)는 렌더만. 매출·지출 SSOT=cfo/finance/매출지출현황.html(그 페이지의 gviz 소스 미러·이 파일엔 매출/지출 값 저장 금지·INC-001). objectives.progress·practitioner_progress=도달율(0~100·편집값·상태기반 기본). erp_progress=ERP 월별 진척(공식값).",
+  "_doc": "월간 운영 계획·보고 SSOT. 헌법(장기 비전·KPI)과 G1 오늘의 항로(일일 배) 사이의 '월간 운영' 층. 월초=계획 세우기, 월말=결과 보고. 담당=도메인 C-Level(제안·조정 가능). 정본=이 파일, 페이지(월간운영계획.html)는 렌더만. 매출·지출 SSOT=cfo/finance/매출지출현황.html(그 페이지의 gviz 소스 미러·이 파일엔 매출/지출 값 저장 금지·INC-001). objectives.progress·practitioner_progress=도달율(0~100·편집값·상태기반 기본). erp_progress=ERP 월별 진척(공식값). issues=점검·운영 이슈 보드(월별·PIN 편집·objectives와 동일 편집 패턴). report.theme=월말 결과 보고 히어로 상단 임팩트 배너(월 테마 한 줄).",
   "정본": "status/monthly_ops_plan.json",
-  "updated_at": "2026-07-02",
-  "owner_nick": {"ceo":"웰리","cmo":"시모","coo":"시우","cto":"시토","cpo":"시포","cfo":"시뽀","chro":"시로"},
+  "updated_at": "2026-07-03",
+  "owner_nick": {"ceo":"웰리", "cmo":"시모", "coo":"시우", "cto":"시토", "cpo":"시포", "cfo":"시뽀", "chro":"시로"},
   "status_enum": ["계획", "진행", "완료", "이월"],
+  "issue_status_enum": ["미해결", "해결중", "해결"],
   "practitioners": [
     {"id": "lee-gy", "name": "이경연", "dept": "운영부", "role": "실장", "northstar": ""},
     {"id": "lee-jh", "name": "이정헌", "dept": "시설부", "role": "소장", "northstar": ""},
@@ -23,6 +24,7 @@
     "2026-06": {
       "month_status": "완료",
       "theme": "기반 구축 — 특강 준비·ERP 착수·부서 체계·구인",
+      "report": {"theme": "AI 시스템 기반 구축 — 여름방학특강 준비 · ERP 구축 · 중요 4개 부서 체계 구축 · 채용"},
       "practitioner_goals": {"lee-gy": "4부서 관리 체계 착수·리셉션 CS/컴플레인 접수 운영 기반", "lee-jh": "시설부 점검 체계·매뉴얼 착수·시설 관리 기반", "na-uy": "4직군 구인 진행(운영·주차·지원·수행기사)·재무/매출 정리 기반"},
       "practitioner_progress": {"lee-gy": 70, "lee-jh": 65, "na-uy": 60},
       "objectives": [
@@ -32,6 +34,10 @@
         {"id": "2026-06-04", "title": "직원 구인 진행 (운영부·주차관리부·남 지원부·수행기사)", "owner": "chro", "dept": "인사", "target": "4직군 구인 착수·진행", "metric": null, "status": "진행", "progress": 50, "progress_note": "", "northstar": "chro"},
         {"id": "2026-06-05", "title": "4개 부서 관리 진행 (운영·시설·지원·주차)", "owner": "coo", "dept": "전 부서", "target": "4부서 체계 관리 운영", "metric": null, "status": "진행", "progress": 55, "progress_note": "부서 체계 페이지 틀 완성", "northstar": "coo"},
         {"id": "2026-06-06", "title": "웰페리온 내부 밸류업 작업 준비", "owner": "ceo", "dept": "전사", "target": "내부 밸류업 착수 준비", "metric": null, "status": "진행", "progress": 45, "progress_note": "", "northstar": "ceo"}
+      ],
+      "issues": [
+        {"id": "ISS-2026-06-01", "title": "지원부 점검 완료율 분모·항목 마스터 불일치", "dept": "지원부", "status": "해결", "reported": "2026-06-15", "note": "항목 마스터 단일기준 정리(분모 259→76)로 정합 완료."},
+        {"id": "ISS-2026-06-02", "title": "home KPI 지출 칸 밀림", "dept": "전사(재무)", "status": "해결중", "reported": "2026-06-10", "note": "매출 칸 연동은 완료, 지출 칸은 보완 진행 중 → 7월 이월(나우열M 구조개선)."}
       ]
     },
     "2026-07": {
@@ -45,7 +51,13 @@
         {"id": "2026-07-03", "title": "시설부 매뉴얼 및 점검 체계 구축·진행", "owner": "cto", "dept": "시설부", "target": "시설부 매뉴얼+점검 체계 정착", "metric": null, "status": "진행", "progress": 50, "progress_note": "점검 체계 활발 — 시우 점검 월간 리포트(배208)·분모통일(배14)·웰리 home 점검현황(배173). '시설부 매뉴얼' 자체는 별도 착수 필요(빈틈).", "northstar": "cto"},
         {"id": "2026-07-04", "title": "직원 채용 및 교육 통한 적응 마무리", "owner": "chro", "dept": "인사", "target": "채용+교육으로 신규 직원 적응 완료", "metric": null, "status": "진행", "progress": 50, "progress_note": "운영부 3인 30분 교육자료 라이브. 채용·교육 실무=나우열M 라인(AI 항로 제외).", "northstar": "chro"},
         {"id": "2026-07-05", "title": "웰페리온 ERP 완성도 80% 목표", "owner": "cto", "dept": "전사", "target": "완성도 80% (6월 60%→7월 80%→최종)", "status": "진행", "progress": 50, "progress_note": "7월 자율화 집중 — GM보좌 자율화(배237 phase2 라이브)·스킬숙련 학습(배252)·KPI 측정배관(배239)·북극성 추천기(배213 라이브)·텔레그램 신뢰성(배102)·M5 통합(배185)·헌법한장 고도화. ERP 자동화→자율화 대폭 진전.", "northstar": "cto"},
-        {"id": "2026-07-06", "title": "파트너 강사(골프팀) 조건 축소해서 채용 진행", "owner": "chro", "dept": "파트너/인사", "target": "골프팀 파트너 강사 조건 축소 후 채용", "metric": null, "status": "계획", "progress": 0, "progress_note": "나우열M 파트너 라인 진행(AI 항로 밖).", "northstar": "chro"}
+        {"id": "2026-07-06", "title": "파트너 강사(골프팀) 조건 축소해서 채용 진행", "owner": "chro", "dept": "파트너/인사", "target": "골프팀 파트너 강사 조건 축소 후 채용", "metric": null, "status": "계획", "progress": 0, "progress_note": "나우열M 파트너 라인 진행(AI 항로 밖).", "northstar": "chro"},
+        {"id": "2026-07-07", "title": "회원 관리프로그램 변경", "owner": "cpo", "dept": "회원관리", "target": "대양 CIS → 브로제이 검토 진행, 7월 도입 예정", "metric": null, "status": "진행", "progress": 30, "progress_note": "대양 CIS 대체 후보 브로제이 검토 진행 중. 7월 도입 목표. 실무=회원관리(시포 계열)/실무진.", "northstar": "cpo"},
+        {"id": "2026-07-08", "title": "시설 리뉴얼/업그레이드", "owner": "coo", "dept": "시설부", "target": "①야외테라스 리뉴얼 ②헬스장 장비 업데이트 ③사우나 남·여 헤어&바디 드라이기 업그레이드", "metric": null, "status": "계획", "progress": 0, "progress_note": "3개 항목(테라스·헬스장 장비·사우나 드라이기) 착수 전 — 일정·예산 확정 필요. 담당=시설부/COO.", "northstar": "coo"}
+      ],
+      "issues": [
+        {"id": "ISS-2026-07-01", "title": "점검현황 100% 도배 버그(지원부 today_live)", "dept": "지원부/시설부", "status": "해결중", "reported": "2026-07-03", "note": "시토 진단 완료(분자 원장 오염 + 안전장치 클램프로 상시 100% 표시) → 시우 인계. 라이브 GAS 수정은 GM go 대기(로컬검증 후 1회배포+역롤백)."},
+        {"id": "ISS-2026-07-02", "title": "업무 GAS API 무인증 노출", "dept": "전사(보안)", "status": "미해결", "reported": "2026-06-24", "note": "todo API 무인증 — 누구나 변조 가능. 보안 과제로 이월, 대응 방안 검토 중."}
       ]
     }
   }
