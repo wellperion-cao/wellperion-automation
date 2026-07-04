@@ -568,6 +568,13 @@
         '<div class="kbar gold" title="측정 커버리지 — 전체 축 중 실측된 비율(도달율 아님)"><i style="width:' + pct + '%"></i></div>' +
         '<div class="nsreach-meta">🌟 ' + kpiLbl + ': <b>' + valTxt + '</b> <span class="nsreach-note">· 측정 ' + cov.M + '/' + cov.K + '축</span></div>' +
         '<div class="nsreach-build" style="margin-top:2px;" title="복합 축 종합 — 좁은 프록시 하나로 &lsquo;북극성 도달&rsquo; 단정 금지(약속 L05 · M4-METRIC-HONESTY)">복합 축 종합(L05)</div>' +
+        (function(){
+          // 마일스톤 모드 역할(예: 웰리)은 축 커버리지와 별개로 마일스톤 진척도 함께 표기(GM 조정 · 정직 기록).
+          var dM = (_reachData && _reachData[role.id]) || null;
+          return (dM && dM.mode === 'milestone' && typeof dM.milestones_done === 'number')
+            ? '<div class="nsreach-meta" style="margin-top:3px;" title="북극성 마일스톤(GM 조정)">🏁 마일스톤 <b>' + dM.milestones_done + '/' + dM.milestones_total + '</b> <span class="nsreach-note">· ' + Math.round((dM.reach_pct || 0)) + '%</span></div>'
+            : '';
+        })() +
       '</div>';
     }
     var lab = '<span class="nsreach-h">🌟 북극성 도달율 <span class="nsreach-note">(궁극 목표)</span></span>';
