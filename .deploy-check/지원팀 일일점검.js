@@ -3066,8 +3066,183 @@ function _aggregateMonthly(snapRows, issueRows, month) {
   };
 }
 
+// ════════════════════════════════════════════
+// action=monthly_report&dept=facility — 시설부 점검 월간 리포트 집계 (배406, 2026-07-04 시우)
+// 지원부(배208)와 데이터 구조가 근본적으로 다름 — 지원부=구역×교대 완료율 스냅샷(점검일지_support),
+// 시설부=항목×회차 실측정값(시설_공용구역, FACILITY_ITEMS 25종·saveFacilityMeasure 저장).
+// 완료율식 이식 불가 전제 확인(탐색 결과, 2026-07-04): 시설부는 스냅샷 탭 자체가 없음(제출 UI가
+// save_facility_measure만 호출·snapshot_append 미호출) → support처럼 zone/shift가 아니라
+// cat(카테고리 A~F)·round(회차 자유텍스트)·item 단위로 별도 설계.
+// 이슈: 시설_공용구역 6열(이슈) 헤더는 있으나 saveFacilityMeasure가 항상 ''로 저장 —
+// fcheck 화면에 이슈 등록 UI가 없어 실제로 채워지지 않음(정직 확인, ❌ 미측정).
+// 대신 프론트 FC_RANGES(시설부 체계.html, GM·박호균 조정 기준값)를 서버에 1:1 미러해
+// 측정값 기준이탈을 실측 기반으로 집계(지어낸 기준 아님 — 이미 라이브 UI가 쓰는 값 그대로).
+// ════════════════════════════════════════════
+
+// 프론트 FC_RANGES(시설부 체계.html) 1:1 미러 — 값 변경 시 양쪽 동시 수정 필수.
+// 온수탱크(k2/k3/k4)·공조기(AHU ok/x)·안전점검(AI초안 4종)은 프론트에서도 기준 미설정 → 여기도 미포함(❌ 미측정, 지어내기 금지).
+var FC_MEASURE_RANGES = {
+  fc_sauna_ontang_a: { min: 36, max: 42 }, fc_sauna_ontang_b: { min: 36, max: 42 },
+  fc_sauna_yeoltang_a: { min: 39, max: 45 }, fc_sauna_yeoltang_b: { min: 39, max: 45 },
+  fc_sauna_dry_a: { min: 75, max: 81 }, fc_sauna_dry_b: { min: 75, max: 81 },
+  fc_sauna_wet_a: { min: 45, max: 51 }, fc_sauna_wet_b: { min: 45, max: 51 },
+  fc_sauna_jjim_a: { min: 65, max: 71 }, fc_sauna_jjim_b: { min: 65, max: 71 },
+  fc_pool_ph: { min: 7.0, max: 7.8 },
+  fc_pool_temp: { min: 26, max: 30 },
+  fc_pool_cl: { min: 0.4, max: 1.0 }
+};
+// measure(13열) JSON 문자열({"sauna_ontang_a":"39.5",...}) → 필드id 복원('fc_'+key) 후 범위 판정.
+// 파싱 실패·기준 미설정 필드는 조용히 스킵(경보 아님) — 순수함수(SpreadsheetApp 무의존, Node 단위테스트 가능).
+function _facilityRangeHits(measureStr) {
+  var hits = [];
+  if (!measureStr) return hits;
+  var obj = null;
+  try { obj = JSON.parse(measureStr); } catch (e) { return hits; }
+  if (!obj || typeof obj !== 'object') return hits;
+  Object.keys(obj).forEach(function (k) {
+    var cfg = FC_MEASURE_RANGES['fc_' + k];
+    if (!cfg) return;
+    var num = parseFloat(obj[k]);
+    if (isNaN(num)) return;
+    if (num < cfg.min || num > cfg.max) hits.push({ field: k, value: num, min: cfg.min, max: cfg.max });
+  });
+  return hits;
+}
+
+// 순수 집계 함수 — SpreadsheetApp 무호출. rows = 시설_공용구역 헤더 제외 2차원 배열(원본 셀값).
+// 열(HEADERS 정본): 0날짜 1항목ID 2항목명 3카테고리 4회차 5점검결과 6이슈(항상'') 7노하우
+//                   8제출상태 9제출시각 10근무자 11점검자 12측정값 13반영완료(항상'') 14소요시간(주의: 실제론 점검시각 재기록 — 진짜 소요분 아님, 미사용)
+// 세션 = (날짜,회차) 1건 = save_facility_measure 1회 제출(회차 전체 항목을 통째 교체 기록).
+function _aggregateMonthlyFacility(rows, month) {
+  rows = rows || [];
+  var testExcludedCount = 0;
+
+  var filtered = [];
+  rows.forEach(function (row) {
+    var inspector = row[11];
+    if (_isTestVal_(inspector)) { testExcludedCount++; return; }
+    var ym = _ymOf_(row[0]);
+    if (ym !== month) return;
+    filtered.push(row);
+  });
+
+  var byDate = {};        // ymd -> {total,done,roundSet:{}}
+  var byCatMap = {};       // cat -> {cat,total,done}
+  var byRoundMap = {};     // round -> {round,total,done,daySet:{}}
+  var byInspectorMap = {}; // inspector -> {inspector,total,done,sessionSet:{}}
+  var sessionSet = {};     // 'ymd|round' -> true (월 전체 세션 수)
+  var outOfRangeList = [];
+  var outOfRangeByItem = {}; // itemId -> {itemId,name,count}
+
+  filtered.forEach(function (row) {
+    var ymd = _ymdOf_(row[0]);
+    var itemId = String(row[1] == null ? '' : row[1]);
+    var itemName = String(row[2] == null ? '' : row[2]);
+    var cat = String(row[3] == null ? '' : row[3]).trim() || '(미분류)';
+    var round = String(row[4] == null ? '' : row[4]).trim() || '(미기재)';
+    var done = (String(row[5]) === '완료');
+    var inspector = String(row[11] == null ? '' : row[11]).trim() || '(미기재)';
+    var measure = String(row[12] == null ? '' : row[12]);
+    var sKey = ymd + '|' + round;
+    sessionSet[sKey] = true;
+
+    if (!byDate[ymd]) byDate[ymd] = { total: 0, done: 0, roundSet: {} };
+    byDate[ymd].total++; if (done) byDate[ymd].done++;
+    byDate[ymd].roundSet[round] = true;
+
+    if (!byCatMap[cat]) byCatMap[cat] = { cat: cat, total: 0, done: 0 };
+    byCatMap[cat].total++; if (done) byCatMap[cat].done++;
+
+    if (!byRoundMap[round]) byRoundMap[round] = { round: round, total: 0, done: 0, daySet: {} };
+    byRoundMap[round].total++; if (done) byRoundMap[round].done++;
+    byRoundMap[round].daySet[ymd] = true;
+
+    if (!byInspectorMap[inspector]) byInspectorMap[inspector] = { inspector: inspector, total: 0, done: 0, sessionSet: {} };
+    byInspectorMap[inspector].total++; if (done) byInspectorMap[inspector].done++;
+    byInspectorMap[inspector].sessionSet[sKey] = true;
+
+    _facilityRangeHits(measure).forEach(function (h) {
+      outOfRangeList.push({ date: ymd, round: round, itemId: itemId, name: itemName, field: h.field, value: h.value, min: h.min, max: h.max });
+      if (!outOfRangeByItem[itemId]) outOfRangeByItem[itemId] = { itemId: itemId, name: itemName, count: 0 };
+      outOfRangeByItem[itemId].count++;
+    });
+  });
+  outOfRangeList.sort(function (a, b) { return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+
+  var dailySeries = Object.keys(byDate).sort().map(function (d) {
+    var c = byDate[d];
+    var oorThatDay = outOfRangeList.filter(function (o) { return o.date === d; }).length;
+    return { date: d, total: c.total, done: c.done, pct: c.total > 0 ? Math.round(c.done / c.total * 100) : null, sessionCount: Object.keys(c.roundSet).length, outOfRangeCount: oorThatDay };
+  });
+
+  var monthTotal = 0, monthDone = 0;
+  dailySeries.forEach(function (d) { monthTotal += d.total; monthDone += d.done; });
+
+  var monthTotals = {
+    total: monthTotal, done: monthDone,
+    avgPct: monthTotal > 0 ? Math.round(monthDone / monthTotal * 100) : null,
+    sessionCount: Object.keys(sessionSet).length,
+    activeDays: dailySeries.length,
+    outOfRangeCount: outOfRangeList.length
+  };
+
+  var byCategory = Object.keys(byCatMap).map(function (c) {
+    var v = byCatMap[c];
+    return { cat: v.cat, total: v.total, done: v.done, pct: v.total > 0 ? Math.round(v.done / v.total * 100) : null };
+  }).sort(function (a, b) { return b.total - a.total; });
+
+  var byRound = Object.keys(byRoundMap).map(function (r) {
+    var v = byRoundMap[r];
+    return { round: v.round, total: v.total, done: v.done, pct: v.total > 0 ? Math.round(v.done / v.total * 100) : null, sessionCount: Object.keys(v.daySet).length };
+  }).sort(function (a, b) { return b.total - a.total; });
+
+  var byInspector = Object.keys(byInspectorMap).map(function (i) {
+    var v = byInspectorMap[i];
+    return { inspector: v.inspector, sessionCount: Object.keys(v.sessionSet).length, avgPct: v.total > 0 ? Math.round(v.done / v.total * 100) : null };
+  }).sort(function (a, b) { return b.sessionCount - a.sessionCount; });
+
+  var outOfRangeByItemArr = Object.keys(outOfRangeByItem).map(function (k) { return outOfRangeByItem[k]; })
+    .sort(function (a, b) { return b.count - a.count; });
+
+  var improvements = [];
+  var catsWithPct = byCategory.filter(function (c) { return c.pct !== null && c.total > 0; });
+  if (catsWithPct.length > 0) {
+    var worstCat = catsWithPct.reduce(function (a, b) { return b.pct < a.pct ? b : a; });
+    improvements.push(worstCat.cat + ' 입력률 최저(' + worstCat.pct + '%) — 집중 필요');
+  }
+  if (outOfRangeByItemArr.length > 0) {
+    improvements.push(outOfRangeByItemArr[0].name + ' 기준이탈 최다(' + outOfRangeByItemArr[0].count + '건) — 설비 점검 필요');
+  }
+  var roundsLowPct = byRound.filter(function (r) { return r.pct !== null && r.pct < 70; });
+  if (roundsLowPct.length > 0) {
+    improvements.push(roundsLowPct.map(function (r) { return r.round; }).join('·') + ' 회차 입력률 70% 미만 — 원인 점검');
+  }
+  if (Object.keys(sessionSet).length < 5) {
+    improvements.push('표본 부족 — 추세 판단 유보');
+  }
+
+  return {
+    ok: true,
+    dept: null, // handleMonthlyReport(IO)에서 채움
+    month: month,
+    testExcludedCount: testExcludedCount,
+    dailySeries: dailySeries,
+    monthTotals: monthTotals,
+    byCategory: byCategory,
+    byRound: byRound,
+    byInspector: byInspector,
+    outOfRange: { total: outOfRangeList.length, byItem: outOfRangeByItemArr, list: outOfRangeList },
+    // 이슈(사람이 등록하는 정성 이슈)는 시설점검 화면에 등록 UI가 없어 실제 미가동 — 지어내기 금지, 정직 태그.
+    issues: { total: 0, note: '❌ 미측정 · 시설점검 이슈 등록 UI 미가동(시설_이슈대장·측정값 6열 모두 실사용 데이터 없음). 측정값 기준이탈(outOfRange)이 가장 가까운 대체 신호 — 원문 이슈와는 다른 지표.' },
+    improvements: improvements,
+    denomNote: '완료율=입력률(항목 제출완료 수/전체 항목 수, 회차별 항목 구성 상이)',
+    measureNote: '기준이탈 판정은 사우나 5종·수영장 3종(FC_RANGES)만 가능 — 온수탱크 3종·공조기 4종·안전점검(AI초안) 4종은 기준 미설정으로 판정 대상 제외(❌ 미측정, GM 기준 확정 시 추가).'
+  };
+}
+
 // IO 담당: 스냅샷(점검일지_<dept>)+이슈대장 시트 read → _aggregateMonthly 호출 → JSON 반환.
 // GET ?action=monthly_report&dept=support&month=YYYY-MM(생략 시 오늘 기준 이번달)
+// dept=facility는 구조가 근본적으로 달라(시설_공용구역 항목단위 실측) _aggregateMonthlyFacility로 완전 분기(배406).
 function handleMonthlyReport(params) {
   params = params || {};
   var dept = params.dept || 'support';
@@ -3076,6 +3251,14 @@ function handleMonthlyReport(params) {
     month = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM');
   }
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  if (dept === 'facility') {
+    var fcSheet = ss.getSheetByName(SHEET_FACILITY_COMMON);
+    var fcRows = (fcSheet && fcSheet.getLastRow() > 1) ? fcSheet.getDataRange().getValues().slice(1) : [];
+    var fcResult = _aggregateMonthlyFacility(fcRows, month);
+    fcResult.dept = dept;
+    return jsonRes(fcResult);
+  }
 
   var snapSheet = ss.getSheetByName(_snapshotTabName(dept));
   var snapRows = [];
