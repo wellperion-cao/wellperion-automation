@@ -1,13 +1,17 @@
 @echo off
 REM ============================================================
 REM Wellperion - Engagement Collector runner (DAILY 09:30)
-REM Collects danggn + blog engagement metrics (no login required).
+REM Collects danggn + blog engagement metrics (no login required),
+REM then IG follower/comment/like snapshot (reuses saved IG session).
 REM Cafe / kakao are headful channels -> excluded (semi-manual).
 REM
 REM Steps:
 REM   1. Collect danggn engagement -> log
 REM   2. Collect blog   engagement -> log
-REM   3. Commit + push the 3 engagement files via Python helper
+REM   3. Collect IG engagement (read-only, non-fatal if session
+REM      expired -> scripts\ig_engagement_poc.py appends to
+REM      status\ig_engagement_ledger.json; no publish/edit)
+REM   4. Commit + push the 3 engagement files via Python helper
 REM      (scripts\commit_engagement.py handles Korean paths; git
 REM       failures are non-fatal). NEVER git add -A.
 REM
@@ -19,6 +23,7 @@ set ROOT=C:\Users\jjky0\welperion-automation
 set PYTHONIOENCODING=utf-8
 set PY=%ROOT%\.venv\Scripts\python.exe
 set SCRIPT=%ROOT%\scripts\engagement_collector.py
+set IGSCRIPT=%ROOT%\scripts\ig_engagement_poc.py
 set COMMITTER=%ROOT%\scripts\commit_engagement.py
 set LOGDIR=%ROOT%\logs
 set LOGFILE=%LOGDIR%\engagement_collect.log
@@ -37,7 +42,11 @@ REM ---- Step 2: blog ----
 "%PY%" -u "%SCRIPT%" --channel blog >> "%LOGFILE%" 2>&1
 echo [start_engagement_collect] %DATE% %TIME% blog exit=%ERRORLEVEL% >> "%LOGFILE%"
 
-REM ---- Step 3: commit + push (Python, non-fatal) ----
+REM ---- Step 3: IG engagement (read-only, non-fatal if session expired) ----
+"%PY%" -u "%IGSCRIPT%" >> "%LOGFILE%" 2>&1
+echo [start_engagement_collect] %DATE% %TIME% ig exit=%ERRORLEVEL% >> "%LOGFILE%"
+
+REM ---- Step 4: commit + push (Python, non-fatal) ----
 "%PY%" -u "%COMMITTER%" >> "%LOGFILE%" 2>&1
 echo [start_engagement_collect] %DATE% %TIME% commit exit=%ERRORLEVEL% >> "%LOGFILE%"
 
