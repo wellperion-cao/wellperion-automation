@@ -507,7 +507,7 @@
     input, select, .note-edit, .fin-in, .pin-num{display:none !important;}
     /* 📊 월말 결과 보고(목표 달성 요약 흡수)·💰 매출(fin-primary)=상단 전폭, 나머지=2단 세로 흐름으로 한 장에 밀도있게 배치 */
     .report-grid{column-count:2; column-gap:7mm; column-fill:auto;}
-    .blk{break-inside:avoid; margin:0 0 3px;}
+    .blk{break-inside:avoid; margin:0 0 2px;}
     /* 큰 과제표(sum-hero)는 컬럼을 넘어 흐르도록 허용 — 행 단위 break만 방지(공간 낭비·빈 페이지 방지) */
     .blk.sum-hero{break-inside:auto;}
     .sd{color:#444 !important;}
@@ -557,9 +557,10 @@
     .erp-time{gap:6px;}
     .month-head, .rpt-wrap, table.rpt, .metric, .erp-step{background:#fff !important; color:#111 !important; border-color:#999 !important;}
     table.rpt thead th{background:#f2f2f2 !important; color:#333 !important; border-color:#999 !important; padding:3px 6px; font-size:8px;}
-    table.rpt tbody td{padding:2px 5px; font-size:8.5px;}
+    table.rpt tbody td{padding:1px 4px; font-size:8px;}
+    table.rpt.prac tbody td{padding:2px 5px;}
     table.rpt tbody td, table.rpt tbody tr:hover td, .fin tr.cur-m td{background:#fff !important; color:#222 !important; border-color:#ccc !important;}
-    .r-title{font-size:9px;} .r-note{font-size:8px;}
+    .r-title{font-size:8.5px;} .r-note{font-size:7.5px; line-height:1.32;}
     .fin tr.fin-tot td{background:#f2f2f2 !important;}
     .r-title, .month-head .mtitle, .month-head .mtheme, .metric-meta, .metric-meta b, h2.sec, .fmo, .fin b, .prog .pnum, .erp-step .ep, .erp-step .em{color:#111 !important;}
     .r-note, .metric-h, .fin-sub, .erp-step .enote{color:#333 !important;}
