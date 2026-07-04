@@ -1232,21 +1232,18 @@
       '<div class="t3-legend">자동 선정(중요도순) · 매출 과제 제외 · 산식 = 상태(진행&gt;이월&gt;계획&gt;완료) + 전사 과제 + 북극성 연결 + 진척 가중(동점=진척 높은 순) · 결정적(랜덤 없음)</div>';
   }
 
-  // ── 월 헤더 (상태 라벨 옆에 이달 테마 인라인 1개만 — 2026-07-03 GM 지시: report.theme·theme 중복 표시 제거,
-  //    report.theme(월말 결과 확정 문구) 있으면 그것만, 없으면(진행 중인 달) theme로 폴백 — 항상 1개만 렌더) ──
+  // ── 월 헤더 (테마 문구는 핵심과제 표와 중복 → 렌더 제거, GM 지시 2026-07-04. 데이터 m.theme/report.theme는 정본 보존) ──
   function renderMonthHead(){
     var mh = document.getElementById('month-head');
     var m = _data.months[_sel];
     if(!m){ mh.style.display = 'none'; return; }
     mh.style.display = 'flex';
     var ms = m.month_status || '';
-    var themeTxt = (m.report && m.report.theme) ? ('🏷️ ' + esc(m.report.theme)) : esc(m.theme || '');
     // '완료' = 보고 기간(그달) 마감 의미 — 개별 미완 과제가 병존할 수 있으므로 주석 명기(GM 정정 2026-07-04)
     var doneHint = (ms === '완료') ? '<span class="mtheme-report" style="color:var(--dim)">※ \'완료\'=보고 기간(그달) 마감 · 개별 미완 과제는 다음 달 이월</span>' : '';
     mh.innerHTML =
       '<span class="mtitle">' + esc(_sel) + '</span>' +
       '<span class="mstat ' + esc(ms) + '">' + esc(ms) + '</span>' +
-      (themeTxt ? '<span class="mtheme-report">' + themeTxt + '</span>' : '') +
       doneHint;
   }
 
