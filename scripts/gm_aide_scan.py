@@ -21,6 +21,11 @@ status/_queue.json 에 '[GM보좌 제안]' PENDING 배로 자동등록한다(③
   - read-before-write · ship_no=max+1 · dedup(aide_proposal_key) · 하루 과다등록 방지(cap {MAX_PROPOSALS_PER_RUN}).
   - 각 제안 배 note = 사유 + 'KPI→북극성 경로' 한 줄 필수(메모리 feedback_gm_decides_by_seeing_kpi_path 정합).
 
+프로필 연동(2026-07-04 추가 · load_profile_missed_hints):
+  - gm_aide_scan.bat 이 06:30 실행 시 먼저 gm_profile_builder.py 로 gm_profile.md 를 갱신(스펙 '①일일 갱신' 배선 —
+    이전엔 프로필이 2026-07-02 이후 정체돼 있었음). 그 다음 이 스크립트가 갱신된 프로필의
+    '## 자주 놓치는 것' 섹션을 읽어 제안 배 note 에 'GM프로필 근거' 한 줄로 인용한다(①→② 배선 연결).
+
 06:30 스케줄 등록(이번엔 만들지 않음 — GM 확인 후):
   기존 northstar_recommender(06:30)와 충돌 없이 별도 스크립트. 같은 06:30에 붙이려면:
     launchers/gm_aide_scan.vbs(숨김런처) → scripts/gm_aide_scan.bat → python ... --commit
@@ -48,6 +53,7 @@ import argparse
 import io
 import json
 import os
+import re
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -129,6 +135,26 @@ def load_northstar_map() -> dict:
         dims = r.get("dims", []) if isinstance(r, dict) else []
         out[r.get("id")] = (dims[0] if dims else "").strip()
     return out
+
+
+def load_profile_missed_hints(limit: int = 3) -> list:
+    """gm_profile.md '## 자주 놓치는 것' 섹션 불릿을 포착 근거로 연동(①관찰·학습 → ②포착 배선).
+    프로필 없거나 섹션 없으면 빈 리스트(휴먼: profile builder 미실행 시에도 스캔은 무중단)."""
+    if not PROFILE_MD.exists():
+        return []
+    try:
+        text = PROFILE_MD.read_text(encoding="utf-8")
+    except Exception:
+        return []
+    m = re.search(r"## 자주 놓치는 것\s*\n(.*?)(?=\n## |\Z)", text, re.S)
+    if not m:
+        return []
+    hints = []
+    for line in m.group(1).splitlines():
+        line = line.strip()
+        if line.startswith("-"):
+            hints.append(line.lstrip("- ").strip())
+    return hints[:limit]
 
 
 # ═══════════════════════════════════════════
@@ -295,15 +321,19 @@ def existing_proposal_keys(active: list) -> set:
     return keys
 
 
-def make_proposal_ship(cap: dict, ship_no: int, kpi: dict, ns_map: dict) -> dict:
+def make_proposal_ship(cap: dict, ship_no: int, kpi: dict, ns_map: dict, profile_hints: list | None = None) -> dict:
     role = cap.get("target_role", "ceo")
     kpi_path = build_kpi_path(role, kpi, ns_map)
     ctype = cap["type"].upper().replace("_", "-")
     tid = f"AIDE-{today_str()}-{ctype}-{ship_no}"
+    profile_ref = (
+        f" GM프로필 근거(자주 놓치는 것): {profile_hints[0]}"
+        if profile_hints else ""
+    )
     note = (
         f"[{today_str()} GM보좌 제안·웰리 포착] {cap['reason']} "
         f"(포착유형={cap['type']} · 가역성={cap['reversibility']} · 근거={cap['evidence']}). "
-        f"조치안: {cap['remedy']}. {kpi_path}. "
+        f"조치안: {cap['remedy']}. {kpi_path}.{profile_ref} "
         f"※ phase1=제안(대기)까지만 — 실제 도메인 작업은 GM 결정 후."
     )
     return {
@@ -445,7 +475,9 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
     kpi = read_json(STATUS_DIR / "kpi_values.json", {})
     ns_map = load_northstar_map()
     profile_exists = PROFILE_MD.exists()
-    print(f"[1/3] 입력 로드 — 활성큐 {len(active)}척 · 프로필 {'있음' if profile_exists else '없음(먼저 gm_profile_builder 실행 권장)'}")
+    profile_hints = load_profile_missed_hints()
+    print(f"[1/3] 입력 로드 — 활성큐 {len(active)}척 · 프로필 {'있음' if profile_exists else '없음(먼저 gm_profile_builder 실행 권장)'}"
+          f" · 프로필 근거(자주 놓치는 것) {len(profile_hints)}건 연동")
 
     # ── 포착 ──
     captures = []
@@ -477,7 +509,7 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
     if to_register:
         base = max_ship_no(active, archive)
         for i, cap in enumerate(to_register, 1):
-            ship = make_proposal_ship(cap, base + i, kpi, ns_map)
+            ship = make_proposal_ship(cap, base + i, kpi, ns_map, profile_hints)
             registered.append(ship)
             print(f"  + #{ship['ship_no']} {ship['title']}  (clevel={ship['clevel']})")
 
@@ -525,7 +557,7 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
             if cap["dedup_key"] in fresh_keys:
                 continue
             fresh_max += 1
-            fresh.append(make_proposal_ship(cap, fresh_max, kpi, ns_map))
+            fresh.append(make_proposal_ship(cap, fresh_max, kpi, ns_map, profile_hints))
             fresh_keys.add(cap["dedup_key"])
             appended += 1
         QUEUE_ACTIVE.write_text(json.dumps(fresh, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -543,6 +575,7 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         capture_keys=[c["dedup_key"] for c in captures],
         auto_exec_on=auto_on,
         auto_applied=auto_applied,
+        profile_hints_used=profile_hints,
     )
     print(f"[완료] ({now_str()}) — 스캔 로그: {SCAN_LOG.name}")
     return result
