@@ -29,6 +29,8 @@ function route(p){
     case "proc_summary": return procSummary(p);
     case "sales_probe": return salesProbe(p);
     case "sales_dept": return salesDept(p);
+    case "labor_zero": return laborZero(p);
+    case "labor_time": return laborTime(p);
     case "receipt": return addReceipt(p);
     case "photo":   return addPhoto(p);
     case "delete":  return delRow(p);
@@ -290,7 +292,7 @@ function salesProbe(p){ // 구조 점검용(임시): 월 파일의 탭 목록 + 
   var grid = null, tab = String(p.tab||"");
   if (tab){
     var sht = ss.getSheetByName(tab);
-    if (sht) grid = sht.getRange("O8:T74").getDisplayValues();
+    if (sht) grid = sht.getRange(String(p.range||"O8:T74")).getDisplayValues(); // range 지정 가능(진단용)
   }
   return out({ ok:true, month:mo, tabs:names, tab:tab, grid:grid });
 }
@@ -377,6 +379,66 @@ function salesDept(p){
   var res = { ok:true, dept:dept, monthsLoaded:monthsLoaded, src:src, unmapped:Object.keys(unmapped), at:Utilities.formatDate(now,"Asia/Seoul","yyyy-MM-dd HH:mm") };
   try { cache.put("sales_dept_v1", JSON.stringify(res), 1200); } catch(e){} // 20분 캐시(payload 소형)
   return out(res);
+}
+
+/** 타임(시급) 인건비 라이브 — 월별 매출보고 '타임직원' 탭(G.X 및 타임 페이롤)의 블록별 '지급액 합계'(H열) 서버 집계.
+ *  라이프가드 등 시급 인력 = 인건비마스터 밖의 실지출(매니저님 확인 2026-07-04). 집계만 반환(PII 비반환)·20분 캐시.
+ *  함정 처리: 블록 부서/시간 칸에 적힌 날짜의 월이 파일 월과 다르면 템플릿 잔재로 보고 제외(예: 6·7월 탭에 반복된 '2/22 휴관일' 168,000). */
+function laborTime(p){
+  var cache = CacheService.getScriptCache();
+  if (!p.nocache){ var hit = cache.get("labor_time_v1"); if (hit) return out(JSON.parse(hit)); }
+  var files = salesFiles_();
+  var swim = [], other = [], skipped = {};
+  for (var i=0;i<12;i++){ swim.push(null); other.push(null); }
+  for (var m=1;m<=12;m++){
+    if (!files[m]) continue;
+    var sht = SpreadsheetApp.openById(files[m]).getSheetByName("타임직원");
+    if (!sht) continue;
+    var g = sht.getRange(1, 1, Math.min(sht.getLastRow(), 120), 8).getValues();
+    var curDept = "", curSkip = false, sw = 0, ot = 0, sk = 0, any = false;
+    for (var r=0;r<g.length;r++){
+      var a = String(g[r][0]||"").trim(), b = String(g[r][1]||"").trim(), c = String(g[r][2]||"").trim(), d = String(g[r][3]||"").trim();
+      if (a && a !== "구분" && !isNaN(parseInt(a,10))){ // 블록 시작(구분 번호)
+        curDept = c;
+        var dm2 = (c+" "+d).match(/(?:2\d\.\s*(\d{1,2})\.)|(?:(\d{1,2})\s*\/\s*\d{1,2})/); // '26.2.22' 또는 '2/22'
+        var bm = dm2 ? parseInt(dm2[1]||dm2[2],10) : 0;
+        curSkip = (bm >= 1 && bm <= 12 && bm !== m);
+      }
+      if (b.indexOf("지급액 합계") >= 0){
+        var amt = g[r][7]; amt = (typeof amt === "number") ? amt : parseInt(String(amt).replace(/[^0-9\-]/g,""),10);
+        if (isNaN(amt) || !amt) continue;
+        any = true;
+        if (curSkip){ sk += amt; }
+        else if (/수영|가드|아쿠아/.test(curDept)){ sw += amt; }
+        else { ot += amt; }
+      }
+    }
+    if (any || sw || ot){ swim[m-1] = sw; other[m-1] = ot; if (sk) skipped[m] = sk; }
+  }
+  var res = { ok:true, swim:swim, other:other, skipped:skipped, at:Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm") };
+  try { cache.put("labor_time_v1", JSON.stringify(res), 1200); } catch(e){}
+  return out(res);
+}
+
+/** 퇴사자 지급 정리 — 인건비마스터 해당 강사 행의 from월~12월을 0 고정(수식 잔재·선입력 제거, 이전 지급내역 보존).
+ *  adminPassword 필수 · 대상 시트=인건비마스터 한정 · before 반환(감사 로그용). */
+function laborZero(p){
+  if (String(p.adminPassword) !== PW) return out({ ok:false });
+  var name = String(p.name||"").replace(/\s+/g,"");
+  var from = parseInt(p.from,10);
+  if (!name || !(from>=1 && from<=12)) return out({ ok:false, error:"name/from" });
+  var sheet = SpreadsheetApp.openById(LABOR_MASTER_ID).getSheets()[0];
+  var lr = sheet.getLastRow();
+  var names = sheet.getRange(1, 2, lr, 1).getValues();
+  var row = 0;
+  for (var i=0;i<names.length;i++){ if (String(names[i][0]).replace(/\s+/g,"") === name){ row = i+1; break; } }
+  if (!row) return out({ ok:false, error:"not_found" });
+  var rng = sheet.getRange(row, 2+from, 1, 13-from); // m월=열(2+m): from월~12월
+  var before = rng.getValues()[0];
+  var zeros = [];
+  for (var m=from; m<=12; m++) zeros.push(0);
+  rng.setValues([zeros]);
+  return out({ ok:true, row:row, name:String(p.name), from:from, before:before });
 }
 
 function addReceipt(p){

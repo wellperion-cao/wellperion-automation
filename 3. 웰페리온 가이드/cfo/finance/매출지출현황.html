@@ -276,6 +276,7 @@ var SALES_TRUTH=null,SALES_TRUTH_LAST=0,SALES_TRUTH_LIVE=false,SALES_ETC=[],ETC_
 var PROC_DEPT=FB_PROC,PROC_LIVE=false; // 구매성 부서별×월별 — 라이브(loadProc) 성공 시 교체, 실패 시 FB_PROC
 var OPS_SALES=null,OPS_SALES_LIVE=false; // 운영부 매출 정본(GM시트) — 월별 배열, 성공 시 SALES_DEPT.운영부 교체
 var SALES_DEPT_LIVE=false; // 종목별 매출 라이브(매출보고 서버집계 sales_dept) 성공 여부 — 성공 시 매출마스터 대체
+var TIME_SWIM=Array(12).fill(0),TIME_OTHER=Array(12).fill(0),timeMonth=Array(12).fill(0),TIME_G=0,TIME_LIVE=false; // 타임(시급) 인건비 — 라이프가드·아쿠아 등(labor_time 서버집계, 인건비마스터 밖 실지출)
 
 function attemptGate(pw){var err=document.getElementById("gateErr");
   if(!pw){err.textContent="비밀번호를 입력해 주세요.";return;}
@@ -371,6 +372,18 @@ async function loadSalesDept(){
     updateSyncMeta();
   }catch(e){}
 }
+/* 타임(시급) 인건비 라이브(labor_time) — 매출보고 '타임직원' 탭 서버 집계(라이프가드·아쿠아 등, 템플릿 잔재 자동 제외). 비블로킹, 성공 시 총지출·지출 뷰 재렌더. */
+async function loadLaborTime(){
+  try{
+    var j=await procCall("labor_time",{});
+    if(!(j&&j.ok&&j.swim))return;
+    TIME_SWIM=MONTHS.map(function(_,i){return (j.swim[i]!=null?j.swim[i]:0);});
+    TIME_OTHER=MONTHS.map(function(_,i){return (j.other&&j.other[i]!=null?j.other[i]:0);});
+    TIME_LIVE=true;
+    aggregate();renderKpi();renderMain();renderExpTbl();renderContrib();
+    updateSyncMeta();
+  }catch(e){}
+}
 /* 구매성 지출 라이브 집계 — 지출품의(구매요청) 전체 라인아이템을 월별×부서별로 자동 합산. 실집행성(반려·미승인·캔슬 제외)만, 이상지출·예산 정의와 동일. 하드코딩 대체 → 신규 승인분 자동 반영. 실패 시 FB_PROC 폴백. 로드한 rows는 이상지출(ensureAnom)과 공유(중복 fetch 방지). */
 async function loadProc(){
   // 서버측 경량 집계(proc_summary) — 이미지 제외·월별×부서별 합계만(<1KB). 대량 list(이미지 base64 273KB) 회피 → 빠르고 안정적.
@@ -407,10 +420,11 @@ function aggregate(){
   }else{
     salesMonth=deptMonth;SALES_ETC=MONTHS.map(function(){return 0;});SALES_LAST=DATA_LAST;
   }
-  totalCost=MONTHS.map(function(_,i){return laborMonth[i]+(OPER[i]||0)+procMonth[i];});
+  timeMonth=MONTHS.map(function(_,i){return (TIME_SWIM[i]||0)+(TIME_OTHER[i]||0);}); // 타임(시급) 인건비
+  totalCost=MONTHS.map(function(_,i){return laborMonth[i]+(OPER[i]||0)+procMonth[i]+timeMonth[i];});
   LABOR.forEach(function(o){o.t=sum(o.d.slice(0,DATA_LAST));});
-  LABOR_G=sum(laborMonth.slice(0,DATA_LAST));OPER_G=sum(OPER.slice(0,DATA_LAST));PROC_G=sum(procMonth.slice(0,DATA_LAST));
-  MEMBER_G=sum(SALES_MEMBER.slice(0,DATA_LAST));SALES_G=sum(salesMonth.slice(0,SALES_LAST));ETC_G=sum(SALES_ETC.slice(0,SALES_LAST));COST_G=LABOR_G+OPER_G+PROC_G;
+  LABOR_G=sum(laborMonth.slice(0,DATA_LAST));OPER_G=sum(OPER.slice(0,DATA_LAST));PROC_G=sum(procMonth.slice(0,DATA_LAST));TIME_G=sum(timeMonth.slice(0,DATA_LAST));
+  MEMBER_G=sum(SALES_MEMBER.slice(0,DATA_LAST));SALES_G=sum(salesMonth.slice(0,SALES_LAST));ETC_G=sum(SALES_ETC.slice(0,SALES_LAST));COST_G=LABOR_G+OPER_G+PROC_G+TIME_G;
 }
 
 var TABS=[{id:"dash",label:"대시보드"},{id:"sales",label:"매출현황"},{id:"expense",label:"지출현황"},{id:"budget",label:"📊 예산·이상지출"}]; // 구매요청은 직원용(?req=1)으로 분리
@@ -421,7 +435,7 @@ function renderNav(){var nav=document.getElementById("nav");
     document.querySelectorAll(".panel").forEach(function(p){p.classList.toggle("active",p.dataset.panel===b.dataset.p);});};});}
 
 function updateSyncMeta(){var sm=document.getElementById("syncMeta");if(!sm)return;
-  sm.textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_DEPT_LIVE?"🟢실시간(매출보고)":(SALES_LIVE?"🟡마스터(스냅샷)":"⚪폴백"))+" · 운영부 "+(OPS_SALES_LIVE?"🟢GM시트":"⚪마스터")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⏳불러오는 중…");}
+  sm.textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_DEPT_LIVE?"🟢실시간(매출보고)":(SALES_LIVE?"🟡마스터(스냅샷)":"⚪폴백"))+" · 운영부 "+(OPS_SALES_LIVE?"🟢GM시트":"⚪마스터")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⏳불러오는 중…")+" · 타임(시급) "+(TIME_LIVE?"🟢실시간":"⏳");}
 async function startApp(){
   document.getElementById("app").style.display="block";renderNav();
   // 독립 소스(인건비·매출마스터·매출정본·운영부정본) 병렬 로드 — 초기 렌더 지연 최소화. 구매성(loadProc)은 무겁고 느려 블로킹에서 제외.
@@ -437,8 +451,9 @@ async function startApp(){
   renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();
   renderContrib(); // 종목별 기여이익(SALES_DEPT·LABOR 재사용)
   renderBudget();
-  // 구매성 라이브 + 종목별 매출 라이브 + 이상지출 = 백그라운드(초기 화면을 막지 않음). 완료되면 재집계·의존 뷰만 재렌더.
+  // 구매성 라이브 + 종목별 매출 라이브 + 타임 인건비 + 이상지출 = 백그라운드(초기 화면을 막지 않음). 완료되면 재집계·의존 뷰만 재렌더.
   loadSalesDept();
+  loadLaborTime();
   loadProc().then(function(){
     if(PROC_LIVE){aggregate();renderKpi();renderMain();renderExpTbl();renderPeople();renderBudget();}
     updateSyncMeta();
@@ -469,7 +484,7 @@ function renderKpi(){
     {l:"영업수지",v:eok(SALES_G-COST_G),note:"※ 정규직 일부·임대 미포함"},
     {l:"매출 대비 지출률",v:(SALES_G?(COST_G/SALES_G*100).toFixed(1):0)+"%",note:"낮을수록 양호"},
   ].map(function(k){return '<div class="kpi'+(k.up?' up':'')+(k.down?' down':'')+'"><div class="label">'+k.l+'</div><div class="val">'+k.v+'</div><div class="note">'+k.note+'</div></div>';}).join("");
-  document.getElementById("notice").innerHTML="💡 <b>누적 매출 "+eok(SALES_G)+"(정본) · 지출 "+eok(COST_G)+" · 수지 "+eok(SALES_G-COST_G)+"</b> · 지출 중 인건비 비중 "+(COST_G?((LABOR_G+OPER_G)/COST_G*100).toFixed(0):0)+"%. (매출=「26년 매출 분석」 정본 · 지출엔 정규직 일부·임대 미포함, 최근월 진행분 포함 시 수지는 참고)";
+  document.getElementById("notice").innerHTML="💡 <b>누적 매출 "+eok(SALES_G)+"(정본) · 지출 "+eok(COST_G)+" · 수지 "+eok(SALES_G-COST_G)+"</b> · 지출 중 인건비 비중 "+(COST_G?((LABOR_G+OPER_G+TIME_G)/COST_G*100).toFixed(0):0)+"%. (매출=「26년 매출 분석」 정본 · 지출=강사·운영부·타임(시급)·구매성, 정규직 일부·임대 미포함 · 최근월 진행분 포함 시 수지는 참고)";
 }
 function moneyAxis(){return {ticks:{callback:function(v){return (v/1e8).toFixed(1)+"억";}}};}
 function renderMain(){
@@ -499,8 +514,9 @@ function renderContrib(){
     var rev=sum((SALES_DEPT[d]||[]).slice(0,DATA_LAST));
     var matched=LABOR.some(function(x){return x.n===d;}); // 종목명 정확 일치 확인
     var lab=matched?sum(laborArr(d).slice(0,DATA_LAST)):0;
+    if(d==="수영"&&TIME_LIVE)lab+=sum(TIME_SWIM.slice(0,DATA_LAST)); // 수영 = 가드·아쿠아 타임 인건비 포함(실비용)
     var cp=rev-lab;
-    return {d:d,rev:rev,lab:lab,cp:cp,rate:rev>0?(cp/rev*100):0,matched:matched};
+    return {d:d,rev:rev,lab:lab,cp:cp,rate:rev>0?(cp/rev*100):0,matched:matched,swim:(d==="수영"&&TIME_LIVE)};
   });
   // 운영부(회원권) 행 — 매출=회원권(GM시트 정본), 인건비=운영부 고정급(급여대장). 강습 종목과 구분 표기(2026-07-04 매니저님 지시)
   var opRev=sum((SALES_DEPT["운영부"]||[]).slice(0,DATA_LAST)),opLab=sum(OPER.slice(0,DATA_LAST)),opCp=opRev-opLab;
@@ -510,7 +526,7 @@ function renderContrib(){
     options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){var o=arr[c.dataIndex];return "기여이익 "+won(o.cp)+" · 기여율 "+o.rate.toFixed(1)+"%"+(o.oper?" (인건비=운영부 고정급)":(o.matched?"":" (강사비 미매칭)"));}}}},scales:{x:moneyAxis()}}});
   var h='<thead><tr><th>종목</th><th>매출</th><th>인건비</th><th>기여이익</th><th>기여율</th></tr></thead><tbody>';
   arr.forEach(function(o){
-    var neg=o.cp<0,note=o.oper?' <span style="color:var(--ink-faint);font-size:10px">고정급 기준</span>':(o.matched?'':' <span style="color:var(--amber);font-size:10px;font-weight:700">⚠ 강사인건비 미매칭</span>');
+    var neg=o.cp<0,note=o.oper?' <span style="color:var(--ink-faint);font-size:10px">고정급 기준</span>':(o.swim?' <span style="color:var(--ink-faint);font-size:10px">가드·아쿠아 포함</span>':(o.matched?'':' <span style="color:var(--amber);font-size:10px;font-weight:700">⚠ 강사인건비 미매칭</span>'));
     h+='<tr><td>'+o.d+note+'</td><td>'+won(o.rev)+'</td><td>'+(o.matched?won(o.lab):'–')+'</td><td'+(neg?' class="neg"':'')+'><b>'+won(o.cp)+'</b></td><td'+(neg?' class="neg"':'')+'>'+o.rate.toFixed(1)+'%</td></tr>';
   });
   var les=arr.filter(function(o){return !o.oper;});
@@ -540,13 +556,13 @@ function renderSalesTbl(){
 }
 function renderExpTbl(){
   var allDepts=DEPTS_ORDER.slice();["운영부","시설","지원"].forEach(function(d){if(allDepts.indexOf(d)<0)allDepts.push(d);});
-  function dm(d,i){var lab=(d==="운영부")?(OPER[i]||0):laborOf(d,i);return lab+pv(PROC_DEPT,d,i);}
+  function dm(d,i){var lab=(d==="운영부")?(OPER[i]||0):laborOf(d,i);if(d==="수영")lab+=(TIME_SWIM[i]||0);return lab+pv(PROC_DEPT,d,i);} // 수영=가드·아쿠아 타임 포함
   function dt(d){var s=0;for(var i=0;i<DATA_LAST;i++)s+=dm(d,i);return s;}
   var sorted=allDepts.slice().sort(function(a,b){return dt(b)-dt(a);});
   var h='<thead><tr><th>부서</th>'+MONTHS.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>누적</th></tr></thead><tbody>';
   sorted.forEach(function(d){h+='<tr><td>'+d+'</td>'+MONTHS.map(function(m,i){return cell(dm(d,i),i>=DATA_LAST);}).join('')+'<td><b>'+won(dt(d))+'</b></td></tr>';});
   h+='<tr class="subhead"><td colspan="14">구분</td></tr>';
-  [["강사 인건비",laborMonth,LABOR_G],["운영부 인건비",OPER,OPER_G],["구매성 지출",procMonth,PROC_G]].forEach(function(r){
+  [["강사 인건비",laborMonth,LABOR_G],["운영부 인건비",OPER,OPER_G],["타임(시급) 인건비 — 가드·아쿠아 등",timeMonth,TIME_G],["구매성 지출",procMonth,PROC_G]].forEach(function(r){
     h+='<tr><td>'+r[0]+'</td>'+MONTHS.map(function(m,i){return cell(r[1][i],i>=DATA_LAST);}).join('')+'<td><b>'+won(r[2])+'</b></td></tr>';});
   h+='<tr class="totrow"><td>총지출</td>'+MONTHS.map(function(m,i){return i>=DATA_LAST?'<td class="fut">예정</td>':'<td>'+won(totalCost[i])+'</td>';}).join('')+'<td>'+won(COST_G)+'</td></tr></tbody>';
   document.getElementById("expTbl").innerHTML=h;
