@@ -2904,5 +2904,19 @@
     "artifact": "- kpi_collector._coo_check_rate: get_today_summary(스냅샷 25/25=100%) → today_live&dept=support(분모 정합·주말 pm 제외, 배239 라이브)\n- 실측 반영: roles.coo 지원부_점검완료율 1.0→0.3289(25/76) — 페이지·수집기 완료율 통일 (CLI ad-hoc · 커밋 00adb395)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "00adb3956dfc8b52b50a6029ab182fa1ad4572bb"
+  },
+  {
+    "task_id": "CFO-2026-07-04-ADHOC-218f672c",
+    "clevel": "cfo",
+    "title": "[시뽀] 시뽀 매출 측정 개통 — 헌법 cfo 카드 미측정→당월 마감매출 실측 점등",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-04",
+    "processed_at": "2026-07-04",
+    "ship_no": 457,
+    "artifact": "- kpi_collector: sales_monthly(기존 라이브 GAS) 당월 마감매출 수집(6월 622.4M vs 목표 610.5M)\n- bootsetup_matrix cfo.nsmap: reach.source=kpi_values.roles.cfo·target=610.5M SSOT 정합\n- cfo 도달율 null→measured(실적>목표, 정직)·인증 불필요(GAS 기배포)\n- 7역할 중 4역할(시우·시토·시포·시뽀) 측정 개통 (CLI ad-hoc · 커밋 218f672c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "218f672ccf17a1a93b8abfd1ad88e1a37c858218"
   }
 ]
