@@ -85,7 +85,14 @@ _CPO_GAS = (
     "https://script.google.com/macros/s/"
     "AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec"
 )
+# 매출·업무 메가 GAS (.deploy-todo/업무&결재 현황.js — 월간운영계획.html·헌법한장.html과 동일 정본)
+# action=sales_monthly → '26년 매출 분석' AV3:AV14 미러(회사 전체 월별 마감 총매출). cao 인증 배포 완료(배354 phase1, 커밋 859a6bfa) — 신규 배포 불필요.
+_CFO_GAS = (
+    "https://script.google.com/macros/s/"
+    "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+)
 _HTTP_TIMEOUT = 20
+SALES_TARGETS_PATH = ROOT / "status" / "sales_targets.json"
 
 
 def _http_get_json(url: str) -> object:
@@ -102,7 +109,7 @@ def _http_get_json(url: str) -> object:
 def _coo_check_rate() -> dict:
     """
     지원부 일일 점검완료율 (오늘 기준).
-    소스: 점검 GAS get_today_summary?date=YYYY-MM-DD
+    소스: 점검 GAS today_live?dept=support&date=YYYY-MM-DD (분모 정합 통로 · 배239)
     반환: {"지원부_점검완료율": 0~1 또는 null, "지원부_완료": int, "지원부_전체": int,
            "4부서_점검완료율": null, "_note": str}
     — 4부서 전체 완료율은 이 GAS로 측정 불가(지원부 데이터만 제공) → null 유지.
@@ -116,18 +123,20 @@ def _coo_check_rate() -> dict:
     }
     try:
         today_str = datetime.now(KST).strftime("%Y-%m-%d")
-        url = f"{_CHECK_GAS}?action=get_today_summary&date={today_str}&zone=all"
+        # today_live = 분모 정합 통로(주말 오후조 제외·전체 스케줄 기대치 기준, 배239 라이브).
+        # 구 get_today_summary(스냅샷 rows 25/25=100% 버그) 폐기 — 소스별 분모 불일치 원인.
+        url = f"{_CHECK_GAS}?action=today_live&dept=support&date={today_str}"
         data = _http_get_json(url)
-        rows = data.get("rows", []) if isinstance(data, dict) else []
-        if not rows:
-            result["_note"] = "rows 없음(점검 미시작 또는 GAS 오류)"
+        if not isinstance(data, dict) or not data.get("total"):
+            result["_note"] = "today_live 분모 0/응답없음(점검 미시작 또는 GAS 오류)"
             return result
-        total = len(rows)
-        done  = sum(1 for r in rows if isinstance(r, dict) and r.get("submitted"))
+        total = data.get("total")
+        done  = data.get("done") or 0
         rate  = round(done / total, 4) if total > 0 else None
         result["지원부_점검완료율"] = rate
         result["지원부_완료"]       = done
         result["지원부_전체"]       = total
+        result["_note"] = "4부서전체=미측정(GAS가지원부한정) · 지원부=today_live 분모정합 통로(진행중 당일 포함)"
     except Exception as e:
         result["_note"] = f"fetch 실패({type(e).__name__}): {str(e)[:80]}"
     return result
@@ -198,6 +207,59 @@ def _cpo_funnel_conversion() -> dict:
     return result
 
 
+def _sales_target_total() -> int | float | None:
+    """월 목표매출 총액(고정) — status/sales_targets.json 정본(GM 결재). 실패 시 None."""
+    try:
+        data = json.loads(SALES_TARGETS_PATH.read_text(encoding="utf-8"))
+        total = data.get("monthly_target_total")
+        return total if isinstance(total, (int, float)) and not isinstance(total, bool) else None
+    except Exception:
+        return None
+
+
+def _cfo_sales_month() -> dict:
+    """
+    cfo 최근 마감월 매출 실적 실측 — 배354 측정 개통.
+    소스: 매출·업무 메가 GAS action=sales_monthly('26년 매출 분석' AV3:AV14 정본 미러).
+    ⚠️ 진행중인 이번 달은 부분 실적이라 목표(월 고정)대비 왜곡 → curMonth 직전(마감완료)월을 사용.
+    반환: {"sales_month": 실적원 또는 null, "sales_month_label": "YYYY-MM", "sales_month_target": 목표원,
+           "_sales_note": str}
+    """
+    target = _sales_target_total()
+    result: dict = {
+        "sales_month": None,
+        "sales_month_label": None,
+        "sales_month_target": target,
+        "_sales_note": "측정 개통 전",
+    }
+    try:
+        data = _http_get_json(f"{_CFO_GAS}?action=sales_monthly")
+        if not isinstance(data, dict) or not data.get("ok"):
+            result["_sales_note"] = "GAS 응답 오류(ok=false 또는 형식 불일치)"
+            return result
+        cur_month = data.get("curMonth")
+        months = data.get("months") or []
+        if not isinstance(cur_month, int) or not months:
+            result["_sales_note"] = "curMonth/months 없음"
+            return result
+        closed_m = cur_month - 1
+        if closed_m < 1:
+            result["_sales_note"] = "연초(1월 진행중) — 마감완료월 없음"
+            return result
+        row = next((r for r in months if isinstance(r, dict) and r.get("m") == closed_m), None)
+        val = row.get("value") if isinstance(row, dict) else None
+        if not isinstance(val, (int, float)) or isinstance(val, bool):
+            result["_sales_note"] = f"{closed_m}월 마감 실적 미확정(null)"
+            return result
+        label = (row.get("label") if isinstance(row, dict) else None) or f"{data.get('year')}-{closed_m:02d}"
+        result["sales_month"] = val
+        result["sales_month_label"] = label
+        result["_sales_note"] = f"{label}(최근 마감월) 실적 · sales_monthly GAS 실측"
+    except Exception as e:
+        result["_sales_note"] = f"fetch 실패({type(e).__name__}): {str(e)[:80]}"
+    return result
+
+
 def _integration_health() -> str | None:
     """
     integration_health.py check_bridges() 결과 요약.
@@ -234,6 +296,9 @@ def collect() -> dict:
             stats.update(_cpo_loss_rate())
             # 문의→가입 전환율 병합 (배443 funnel_conversion 실측 · null 안전)
             stats.update(_cpo_funnel_conversion())
+        if role == "cfo":
+            # 최근 마감월 매출 실적 병합 (배354 측정 개통 · sales_monthly GAS 실측 · null 안전)
+            stats.update(_cfo_sales_month())
         roles_data[role] = stats
 
     now_kst = datetime.now(KST)
@@ -268,6 +333,8 @@ def main() -> None:
             extra = f"  월_LOSS율={v['월_LOSS율']}(역방향·낮을수록좋음, {v['월_LOSS건수']}건/{v['유효회원수']}명)"
         if role == "cpo" and v.get("문의_가입_전환율") is not None:
             extra += f"  전환율={v['문의_가입_전환율']}%({v['전환_가입수']}/{v['전환_문의수']})"
+        if role == "cfo" and v.get("sales_month") is not None:
+            extra = f"  sales_month={v['sales_month']}({v.get('sales_month_label')}) target={v.get('sales_month_target')}"
         print(f"  {role:5s}: 완결률={v['완결률']}  완료={v['완료']}  활성={v['활성']}{extra}")
     print(f"  -> {OUT_PATH}")
 
