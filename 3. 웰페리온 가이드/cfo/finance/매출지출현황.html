@@ -275,6 +275,7 @@ var SALES_G=0,COST_G=0,LABOR_G=0,OPER_G=0,PROC_G=0,MEMBER_G=0,DATA_LAST=6,selTea
 var SALES_TRUTH=null,SALES_TRUTH_LAST=0,SALES_TRUTH_LIVE=false,SALES_ETC=[],ETC_G=0,SALES_LAST=6; // 매출 정본(월별 총매출)·기타보정
 var PROC_DEPT=FB_PROC,PROC_LIVE=false; // 구매성 부서별×월별 — 라이브(loadProc) 성공 시 교체, 실패 시 FB_PROC
 var OPS_SALES=null,OPS_SALES_LIVE=false; // 운영부 매출 정본(GM시트) — 월별 배열, 성공 시 SALES_DEPT.운영부 교체
+var SALES_DEPT_LIVE=false; // 종목별 매출 라이브(매출보고 서버집계 sales_dept) 성공 여부 — 성공 시 매출마스터 대체
 
 function attemptGate(pw){var err=document.getElementById("gateErr");
   if(!pw){err.textContent="비밀번호를 입력해 주세요.";return;}
@@ -348,6 +349,28 @@ async function loadOpsSales(){
     OPS_SALES=arr;OPS_SALES_LIVE=arr.some(function(v){return v!==null;});
   }catch(e){OPS_SALES=null;OPS_SALES_LIVE=false;}
 }
+/* 종목별 매출 라이브(sales_dept) — 월별 「매출 보고」 파일 말일탭을 백엔드가 서버 집계(강사→종목 매핑=인건비마스터, 집계만 반환·PII 없음).
+   비블로킹: 성공 시 월별 병합(라이브 값 있는 월=라이브, 없는 월=기존 마스터/폴백 유지) 후 매출 의존 뷰만 재렌더. 운영부는 GM시트 정본 우선 유지. */
+async function loadSalesDept(){
+  try{
+    var j=await procCall("sales_dept",{});
+    if(!(j&&j.ok&&j.dept))return;
+    var keys={};Object.keys(SALES_DEPT).forEach(function(k){keys[k]=1;});Object.keys(j.dept).forEach(function(k){keys[k]=1;});
+    var merged={};
+    Object.keys(keys).forEach(function(k){
+      var base=SALES_DEPT[k]||Array(12).fill(0),live=j.dept[k];
+      merged[k]=MONTHS.map(function(_,i){return (live&&live[i]!=null)?live[i]:(base[i]||0);});
+    });
+    SALES_DEPT=merged;SALES_DEPT_LIVE=true;
+    if(OPS_SALES_LIVE&&OPS_SALES){ // 운영부 정본 = GM시트(멤버십+옵션, GM 지시) 재적용
+      var ob=SALES_DEPT["운영부"]||Array(12).fill(0);
+      SALES_DEPT["운영부"]=MONTHS.map(function(_,i){return OPS_SALES[i]!==null?OPS_SALES[i]:(ob[i]||0);});
+    }
+    SALES_MEMBER=SALES_DEPT["운영부"]||[];
+    aggregate();renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderContrib();
+    updateSyncMeta();
+  }catch(e){}
+}
 /* 구매성 지출 라이브 집계 — 지출품의(구매요청) 전체 라인아이템을 월별×부서별로 자동 합산. 실집행성(반려·미승인·캔슬 제외)만, 이상지출·예산 정의와 동일. 하드코딩 대체 → 신규 승인분 자동 반영. 실패 시 FB_PROC 폴백. 로드한 rows는 이상지출(ensureAnom)과 공유(중복 fetch 방지). */
 async function loadProc(){
   // 서버측 경량 집계(proc_summary) — 이미지 제외·월별×부서별 합계만(<1KB). 대량 list(이미지 base64 273KB) 회피 → 빠르고 안정적.
@@ -398,7 +421,7 @@ function renderNav(){var nav=document.getElementById("nav");
     document.querySelectorAll(".panel").forEach(function(p){p.classList.toggle("active",p.dataset.panel===b.dataset.p);});};});}
 
 function updateSyncMeta(){var sm=document.getElementById("syncMeta");if(!sm)return;
-  sm.textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_LIVE?"실시간":"폴백")+" · 운영부 "+(OPS_SALES_LIVE?"🟢GM시트":"⚪마스터")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⏳불러오는 중…");}
+  sm.textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_DEPT_LIVE?"🟢실시간(매출보고)":(SALES_LIVE?"🟡마스터(스냅샷)":"⚪폴백"))+" · 운영부 "+(OPS_SALES_LIVE?"🟢GM시트":"⚪마스터")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⏳불러오는 중…");}
 async function startApp(){
   document.getElementById("app").style.display="block";renderNav();
   // 독립 소스(인건비·매출마스터·매출정본·운영부정본) 병렬 로드 — 초기 렌더 지연 최소화. 구매성(loadProc)은 무겁고 느려 블로킹에서 제외.
@@ -414,7 +437,8 @@ async function startApp(){
   renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();
   renderContrib(); // 종목별 기여이익(SALES_DEPT·LABOR 재사용)
   renderBudget();
-  // 구매성 라이브 + 이상지출 = 백그라운드(초기 화면을 막지 않음). 완료되면 재집계·구매성 의존 뷰만 재렌더.
+  // 구매성 라이브 + 종목별 매출 라이브 + 이상지출 = 백그라운드(초기 화면을 막지 않음). 완료되면 재집계·의존 뷰만 재렌더.
+  loadSalesDept();
   loadProc().then(function(){
     if(PROC_LIVE){aggregate();renderKpi();renderMain();renderExpTbl();renderPeople();renderBudget();}
     updateSyncMeta();
