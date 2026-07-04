@@ -389,6 +389,7 @@
       <option>운영부</option>
       <option>지원부</option>
       <option>시설부</option>
+      <option>주차관리</option>
       <option>강습부</option>
       <option>경영지원부</option>
     </select>
@@ -501,6 +502,7 @@
       <option>운영부</option>
       <option>지원부</option>
       <option>시설부</option>
+      <option>주차관리</option>
       <option>강습부</option>
       <option>경영지원부</option>
     </select>
@@ -1320,6 +1322,32 @@ function obAdaptAvg_(note){
   if(!nums.length) return "-";
   return (nums.reduce(function(x,y){return x+y;},0)/nums.length).toFixed(1);
 }
+// [추가 2026-07-04 r2] 주차별 성찰 질문 미니 사전 — onboarding-self.html WEEK_QUESTIONS와 동일 문구.
+// 답변만 있고 질문이 안 보이던 가독성 문제 보완(obcReflectBox 모달·인사카드 여정 섹션에서 사용). 기존 파서·표시 로직은 그대로 두고 표시만 보강.
+var WEEK_QUESTIONS_MINI={
+  1:["첫 주에 가장 인상 깊었던 순간은?","입사를 결심했을 때 기대한 것은 무엇이었나?"],
+  2:["이번 주 새로 익힌 업무는?","아직 어렵게 느껴지는 것은?"],
+  3:["처음으로 혼자 해낸 일은?","그때 어떤 기분이 들었나?"],
+  4:["한 달 전의 나와 지금의 나, 무엇이 달라졌나?","기대와 달랐던 점은?"],
+  5:["실수에서 배운 것은?","더 잘하고 싶은 업무는?"],
+  6:["힘들었던 순간, 나를 버티게 한 것은?","업무량과 컨디션은 어떤가?"],
+  7:["시키지 않아도 스스로 챙기게 된 일은?","내가 제안하고 싶은 개선점은?"],
+  8:["팀에 기여했다고 느낀 순간은?","동료에게 고마웠던 일은?"],
+  9:["이제 자신 있는 업무는?","나의 강점이 드러난 순간은?"],
+  10:["이 일에서 보람을 느끼는 순간은?","오래 다니기 위해 회사·내가 챙겨야 할 것은?"],
+  11:["지난 11주 중 가장 성장한 부분은?","정규 전환 후 해보고 싶은 역할은?"],
+  12:["입사 첫날의 나에게 해주고 싶은 말은?","1년 뒤 나는 어떤 모습이고 싶은가?"]
+};
+function obReflectWeek_(label){ var m=String(label||"").match(/^(\d{1,2})\s*주차/); return m?+m[1]:null; }
+// 저장 note("1) … | 2) … | 소감: …") 파싱 — obcReflectBox 상세 표시 전용(기존 obReflectSummary_는 소감 요약용으로 그대로 유지)
+function obParseReflectNote_(note){
+  var s=String(note||""); var rest=s, free="";
+  var fi=rest.indexOf("| 소감:");
+  if(fi>=0){ free=rest.slice(fi+5).trim(); rest=rest.slice(0,fi).trim(); }
+  var a1="",a2=""; var m=rest.match(/^1\)\s*([\s\S]*?)\s*\|\s*2\)\s*([\s\S]*)$/);
+  if(m){ a1=m[1].trim(); a2=m[2].trim(); } else { a1=rest.replace(/^1\)\s*/,"").trim(); }
+  return {a1:a1,a2:a2,free:free};
+}
 function obReflectSummary_(note){
   note=String(note||"");
   var m=note.match(/소감:\s*([\s\S]*)$/);
@@ -1350,7 +1378,8 @@ function buildOnboJourneySection_(name){
     var cDone=c?isYes(c["완료 여부"]):false; if(cDone) checkDoneCnt++;
     var rDone=r?isYes(r["완료 여부"]):false; if(rDone) reflectDoneCnt++;
     var adapt=c?obAdaptAvg_(c["비고"]):"-";
-    var summary=r?(rDone?esc(obReflectSummary_(r["비고"])||"-"):'<span style="color:#b08d57">본인 작성 대기</span>'):"-";
+    var qs=WEEK_QUESTIONS_MINI[w]||["",""];
+    var summary=r?(rDone?('<div style="font-size:8pt;color:#8a6f3f;margin-bottom:2px">Q. '+esc(qs[0])+'</div>'+esc(obReflectSummary_(r["비고"])||"-")):'<span style="color:#b08d57">본인 작성 대기</span>'):"-";
     trs+="<tr><td>"+w+"주차</td><td>"+(c?(cDone?"✓":"—"):"·")+"</td><td>"+esc(adapt)+"</td><td>"+summary+"</td></tr>";
   }
 
@@ -1713,8 +1742,13 @@ function obCheck(row){
     __submitBtn.style.display="none";
     if(__isDone){
       var __note=String(r["비고"]||"");
-      var __sm=__note.match(/소감:\s*([\s\S]*)$/);
-      var __html="<b>🪞 "+esc(r["체크 항목"]||"주간 성찰")+" — 작성 완료</b><div style='margin-top:6px;white-space:pre-wrap'>"+esc(__note)+"</div>";
+      var __wk=obReflectWeek_(r["체크 항목"]);
+      var __qs=WEEK_QUESTIONS_MINI[__wk]||["",""];
+      var __pf2=obParseReflectNote_(__note);
+      var __html="<b>🪞 "+esc(r["체크 항목"]||"주간 성찰")+" — 작성 완료</b>"
+        +"<div style='margin-top:8px'><b>Q1. "+esc(__qs[0])+"</b><div style='white-space:pre-wrap;margin-top:2px'>"+esc(__pf2.a1)+"</div></div>"
+        +"<div style='margin-top:8px'><b>Q2. "+esc(__qs[1])+"</b><div style='white-space:pre-wrap;margin-top:2px'>"+esc(__pf2.a2)+"</div></div>"
+        +(__pf2.free?"<div style='margin-top:8px'><b>소감</b><div style='white-space:pre-wrap;margin-top:2px'>"+esc(__pf2.free)+"</div></div>":"");
       __reflectBox.innerHTML=__html;
     } else {
       __reflectBox.innerHTML="<b>🪞 "+esc(r["체크 항목"]||"주간 성찰")+"</b><div style='margin-top:6px;color:#b08d57'>본인 작성 대기 — 신입 직원 본인이 온보딩 성찰 페이지에서 직접 작성합니다. 관리자가 대신 작성할 수 없습니다.</div>";
@@ -1857,7 +1891,7 @@ function renderOnbo(){
   var groups={};
   rows.forEach(function(r){ var nm=String(r["대상 신입 직원"]||"").trim(); if(!nm) return; (groups[nm]=groups[nm]||[]).push(r); });
   var names=Object.keys(groups);
-  var startBtn='<div style="margin:8px 0;display:flex;gap:8px;flex-wrap:wrap"><button class="ob-btn primary" onclick="obStart()">+ 신규 입사자 온보딩 시작</button><a class="ob-btn sec" href="onboarding-self.html" target="_blank" style="text-decoration:none;display:inline-block">🪞 성찰 작성 페이지 링크(신입 직원 공유용)</a></div>';
+  var startBtn='<div style="margin:8px 0;display:flex;gap:8px;flex-wrap:wrap"><button class="ob-btn primary" onclick="obStart()">+ 신규 입사자 온보딩 시작</button><a class="ob-btn sec" href="onboarding.html" target="_blank" style="text-decoration:none;display:inline-block">🖊 온보딩 기입 페이지(체크인·성찰 선택)</a></div>';
   if(!names.length){ setPanel("onbo", html+startBtn+'<div class="card">'+emptyState("온보딩 중인 신규 입사자가 없습니다. 최종 합격자가 입사하면 온보딩 시작을 누르세요.","☑")+'</div>'); return; }
   var today=new Date(); today.setHours(0,0,0,0);
   var riskCount=0, dueSoon=0, cards="";
