@@ -85,6 +85,15 @@ NORTHSTAR_WEB_URL = "https://wellperion-cao.github.io/wellperion-automation/%EC%
 # ── 난이도 배 ──
 DIFFICULTY_BOATS = ["⛵돛단배", "⛴️여객선", "🛳️크루즈"]
 ACTIVE_STATUSES = ("PENDING", "IN_PROGRESS")
+# 중요건 필터(GM 확정 2026-07-04 ③): 이 난이도이거나 신호①/②면 '중요'. ⛵ low·단순 노이즈 컷.
+IMPORTANT_BOATS = ("🛳️크루즈", "⛴️여객선")
+
+# ── 공유 모듈 매퍼 (배→북극성 모듈 단일 소스 — 재구축 금지) ──
+try:
+    import voyage_module_map as vmm  # same scripts/ 디렉터리
+except ImportError:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import voyage_module_map as vmm
 
 
 def now_str() -> str:
@@ -430,6 +439,89 @@ def enrich_candidates(candidates: list, roles_by_id: dict) -> list:
 
 
 # ═══════════════════════════════════════════
+#  모듈 그룹핑 보강 (GM 확정 2026-07-04 ① — 페이지=수단, 프로젝트=목적)
+# ═══════════════════════════════════════════
+def enrich_modules(candidates: list, roles_by_id: dict) -> list:
+    """각 후보에 module·module_label·page_url·serves 부여(공유 매퍼 vmm 단일 소스).
+    serves = '돕는 실무라인 프로젝트 → 북극성' 한 줄(페이지=수단, 프로젝트=목적)."""
+    for c in candidates:
+        role = c.get("role", "")
+        ship = {"clevel": role, "title": c.get("title", ""),
+                "note": c.get("rationale", "")}
+        m = vmm.module_for_ship(ship, role_id=role)
+        # 북극성·모듈 설명은 여러 줄일 수 있음 → serves 한 줄용으로 공백 정규화 후 절단
+        ns = re.sub(r"\s+", " ", (roles_by_id.get(role, {}).get("northstar") or "")).strip()[:50]
+        proj = re.sub(r"\s+", " ", (m.get("desc") or m["label"] or "")).strip()[:60]
+        c["module"] = m["id"]
+        c["module_label"] = m["label"]
+        c["page_url"] = m.get("page_url", "")
+        c["serves"] = f"{proj} → 🌟 {ns or '(북극성 미정)'}"
+    return candidates
+
+
+# ═══════════════════════════════════════════
+#  중요건 필터 (GM 확정 2026-07-04 ③ — ⛵ low·단순 노이즈 컷)
+# ═══════════════════════════════════════════
+def filter_important(candidates: list) -> list:
+    """중요건만 남긴다: 난이도 🛳️/⛴️ 또는 신호①(북극성 갭)/②(KPI 미달) 또는 rank=1.
+    전부 컷되면(전멸 방지) rank 최상위 1건은 보존."""
+    kept = []
+    for c in candidates:
+        diff = c.get("difficulty", "")
+        sig = c.get("signal", "")
+        is_important = (
+            diff in IMPORTANT_BOATS
+            or "①" in sig or "②" in sig
+            or int(c.get("rank", 99)) == 1
+        )
+        if is_important:
+            kept.append(c)
+    if not kept and candidates:
+        kept = [min(candidates, key=lambda x: int(x.get("rank", 99)))]
+    return kept
+
+
+# ═══════════════════════════════════════════
+#  C레벨 병렬 배 (GM 확정 2026-07-04 ③ — depends_on 없는 독립 중요 배)
+# ═══════════════════════════════════════════
+def collect_parallel_ships(exclude_titles: set | None = None, cap: int = 6) -> list:
+    """_queue 에서 '독립(depends_on 없음)·중요(🛳️/⛴️)·활성' 배를 모듈별로 수집.
+    추천 후보와 병렬로 담당 C레벨이 동시에 밀 수 있는 배 → GM 상황인지용(버튼 없음)."""
+    exclude_titles = exclude_titles or set()
+    queue = load_json(QUEUE_FILE, [])
+    if not isinstance(queue, list):
+        return []
+    out = []
+    for ship in queue:
+        role = (ship.get("clevel") or "").lower()
+        if role not in TARGET_ROLES:
+            continue
+        if ship.get("status") not in ACTIVE_STATUSES:
+            continue
+        dep = str(ship.get("depends_on") or "").strip()
+        if dep:  # 독립 배만(의존 있으면 병렬 불가)
+            continue
+        if ship.get("priority", "") not in IMPORTANT_BOATS:
+            continue
+        title = str(ship.get("title", "")).strip()
+        if title[:20] in exclude_titles:
+            continue
+        m = vmm.module_for_ship(ship, role_id=role)
+        out.append({
+            "role": role,
+            "owner": ROLE_NICK.get(role, role.upper()),
+            "ship_no": ship.get("ship_no"),
+            "title": title,
+            "priority": ship.get("priority", ""),
+            "module": m["id"],
+            "module_label": m["label"],
+        })
+    # 모듈 라벨 → 배 오름차순, cap 개까지
+    out.sort(key=lambda x: (x["role"], str(x["module"])))
+    return out[:cap]
+
+
+# ═══════════════════════════════════════════
 #  텔레그램 발송 (.env 직독 · INC-004) + 카드
 # ═══════════════════════════════════════════
 def _env_val(key: str) -> str:
@@ -449,11 +541,12 @@ def _env_val(key: str) -> str:
 
 
 def build_card(pending: dict) -> str:
-    """텔레그램 GM 결재 카드 — 웰리(AI CEO) 통합 Top3 한 목소리(GM 지시 2026-07-02·배213).
+    """텔레그램 GM 결재 카드 — 북극성 모듈 그룹핑 + 탭 인라인버튼(GM 확정 2026-07-04·배420).
 
-    candidates 배열은 rank 순 정렬(0번=rank 1=1순위 → [승인 1]).
-    포맷: 역할별 섹션 분리 없이 웰리가 고른 전사 통합 1·2·3순위를 동일한 틀로 나열,
-    담당 역할은 각 줄 끝 작은 태그(owner)로만 표기.
+    candidates 배열은 rank 순 정렬(0번=rank 1=1순위 → 버튼 'ns:0:approve').
+    포맷: 후보를 (역할·모듈) 그룹으로 묶어 렌더 — 각 모듈 헤더에 대표 페이지 URL(수단) +
+    serves(돕는 프로젝트 → 북극성, 목적) 한 줄. 승인은 텍스트 [승인N] 폐기 → 하단 인라인버튼.
+    말미 '⚓ 병렬 진행 가능(독립 배)' 참고 섹션(버튼 없음, 상황인지용).
 
     ※ 표시 포맷은 이 함수에 격리 — 교체 시 여기만 수정(데이터·콜백 로직 불변)."""
     e = html.escape
@@ -466,44 +559,90 @@ def build_card(pending: dict) -> str:
     medals = {1: "🥇", 2: "🥈", 3: "🥉"}
 
     lines = [
-        "🧭 <b>웰리의 오늘의 항로 — 통합 Top3</b>",
-        f"📅 {e(d)} ({wd})",
+        "🧭 <b>웰리의 오늘의 항로 — 북극성 모듈별 Top 추천</b>",
+        f"📅 {e(d)} ({wd})  ·  중요건만(⛵ 단순 제외)",
         "",
     ]
 
-    for i, c in enumerate(cands, 1):
-        medal = medals.get(i, f"{i}.")
-        title = e(c.get("title", ""))
-        owner = e(c.get("owner", ""))
-        diff = c.get("difficulty", "")
-        fa = e(c.get("first_action", ""))
-        exp = e(c.get("expected", ""))
-        rat = e(c.get("rationale", ""))
-        why = e(c.get("one_reason", "")) if i == 1 else ""
-        lines.append(f"{medal} <b>{title}</b> {diff} <i>({owner})</i>")
-        if fa:
-            lines.append(f"   👉 첫 행동: {fa}")
-        if exp:
-            lines.append(f"   📈 예상 효과: {exp}")
-        if rat:
-            lines.append(f"   💡 추천 이유: {rat}")
-        if why:
-            lines.append(f"   ★ 왜 1순위: {why}")
+    # ── 후보를 (역할·모듈) 순서 유지 그룹핑 (rank 순 보존) ──
+    seen_group: dict[str, list] = {}
+    order: list = []
+    for idx, c in enumerate(cands):
+        gk = f"{c.get('role','')}|{c.get('module','')}"
+        if gk not in seen_group:
+            seen_group[gk] = []
+            order.append(gk)
+        seen_group[gk].append((idx, c))
+
+    for gk in order:
+        first = seen_group[gk][0][1]
+        owner = e(first.get("owner", ""))
+        mod_label = e(first.get("module_label", first.get("module", "")))
+        page = first.get("page_url", "")
+        serves = e(first.get("serves", ""))
+        # 모듈 헤더: 대표 페이지(수단) + serves(프로젝트→북극성, 목적)
+        head = f"📦 <b>{mod_label}</b> <i>({owner})</i>"
+        if page:
+            head += f" · <a href=\"{page}\">대표 페이지</a>"
+        lines.append(head)
+        if serves:
+            lines.append(f"   🎯 {serves}")
+        # 그룹 내 후보들
+        for idx, c in seen_group[gk]:
+            medal = medals.get(idx + 1, f"{idx+1}.")
+            title = e(c.get("title", ""))
+            diff = c.get("difficulty", "")
+            fa = e(c.get("first_action", ""))
+            exp = e(c.get("expected", ""))
+            why = e(c.get("one_reason", "")) if idx == 0 else ""
+            lines.append(f"{medal} <b>{title}</b> {diff}")
+            if fa:
+                lines.append(f"     👉 첫 행동: {fa}")
+            if exp:
+                lines.append(f"     📈 예상 효과: {exp}")
+            if why:
+                lines.append(f"     ★ 왜 1순위: {why}")
         lines.append("")
 
-    # ── 회신 안내 + 고정 승인 효과 ──
-    lines.append(
-        "👉 회신: <b>[승인 1]</b> · <b>[승인 2]</b> · <b>[승인 3]</b> · <b>[보류]</b>"
-    )
-    lines.append(
-        "✅ 승인 시 → 이 배가 G1 큐(_queue)에 등록되고 담당이 바로 착수합니다."
-    )
+    # ── 병렬 진행 가능(독립 배) 참고 — 버튼 없음, 상황인지용 ──
+    parallel = pending.get("parallel_ships", [])
+    if parallel:
+        lines.append("⚓ <b>병렬 진행 가능(독립 배)</b> — 담당이 동시에 밀 수 있는 배")
+        for p in parallel:
+            lines.append(
+                f"   {p.get('priority','')} #{p.get('ship_no','')} "
+                f"{e(str(p.get('title',''))[:44])} <i>({e(p.get('owner',''))}·{e(str(p.get('module_label','')))})</i>"
+            )
+        lines.append("")
+
+    # ── 회신 안내(버튼) ──
+    lines.append("👉 아래 버튼으로 승인하세요 — 승인 시 그 배가 G1 큐(_queue)에 등록·즉시 착수.")
     lines.append(f"📊 표로 자세히: {NORTHSTAR_WEB_URL}")
     return "\n".join(lines)
 
 
+def build_keyboard(pending: dict) -> dict:
+    """탭 인라인 승인버튼(M5 검수카드 패턴 이식). callback_data 규약 ns:<idx>:approve / ns:hold.
+    idx = pending.candidates 배열 인덱스(rank 순) → 봇 CallbackQueryHandler(^ns:) 가 처리."""
+    cands = pending.get("candidates", [])
+    medals = {0: "🥇", 1: "🥈", 2: "🥉"}
+    approve_row = []
+    for idx, c in enumerate(cands):
+        label = medals.get(idx, f"{idx+1}.")
+        approve_row.append({
+            "text": f"{label} {idx+1}순위 승인",
+            "callback_data": f"ns:{idx}:approve",  # 규약·짧음(<64B)
+        })
+    rows = []
+    # 한 행 최대 3버튼(가독성) — 승인 버튼 행 + 보류 행
+    for i in range(0, len(approve_row), 3):
+        rows.append(approve_row[i:i + 3])
+    rows.append([{"text": "⚓ 전체 보류", "callback_data": "ns:hold"}])
+    return {"inline_keyboard": rows}
+
+
 def send_card(pending: dict) -> bool:
-    """북극성 추천 카드를 .env TELEGRAM_CHAT_ID 로 발송. 성공 True."""
+    """북극성 추천 카드를 .env TELEGRAM_CHAT_ID 로 발송(탭 인라인버튼 포함). 성공 True."""
     token = _env_val("TELEGRAM_BOT_TOKEN")
     chat_id = _env_val("TELEGRAM_CHAT_ID")
     if not token or not chat_id:
@@ -515,6 +654,7 @@ def send_card(pending: dict) -> bool:
         "text": text,
         "parse_mode": "HTML",
         "disable_web_page_preview": "true",
+        "reply_markup": json.dumps(build_keyboard(pending)),
     }).encode("utf-8")
     req = urllib.request.Request(
         f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
@@ -603,6 +743,13 @@ def run(stdout_only: bool = False, send: bool = False):
     # 2-b. 3줄 브릿지 보강 (GM 2026-06-29) — northstar·progress·path_map(3줄)
     candidates = enrich_candidates(candidates, roles_by_id)
 
+    # 2-c. 중요건 필터 + 모듈 그룹핑 보강 (GM 확정 2026-07-04·배420)
+    candidates = filter_important(candidates)
+    candidates = enrich_modules(candidates, roles_by_id)
+    excl = {str(c.get("title", ""))[:20] for c in candidates}
+    parallel_ships = collect_parallel_ships(exclude_titles=excl)
+    print(f"[2c] 중요건 필터 후 {len(candidates)}개 · 병렬 독립배 {len(parallel_ships)}척 첨부")
+
     # 3. 결과 조립
     pending = {
         "date": today_str(),
@@ -614,6 +761,7 @@ def run(stdout_only: bool = False, send: bool = False):
             "kpi_generated_at": inputs["kpi_generated_at"],
         },
         "candidates": candidates,
+        "parallel_ships": parallel_ships,
     }
 
     # 콘솔 출력 — 3줄 브릿지(북극성→지금→오늘) 그대로 노출
@@ -646,6 +794,26 @@ def run(stdout_only: bool = False, send: bool = False):
 
     # 드라이런
     print("  (드라이런 — 텔레그램 카드·승인콜백은 --send / 봇)")
+
+    # 샘플 카드 미리보기 — 실발송 없이 카드 텍스트 + 버튼 레이아웃을 파일로 출력(발효 전 GM 검토용)
+    try:
+        card_text = build_card(pending)
+        keyboard = build_keyboard(pending)
+        sample = (
+            "# 북극성 추천 카드 샘플 (드라이런 · 실발송 아님)\n"
+            f"생성: {now_str()} · 두뇌={brain} · 대상={'/'.join(TARGET_ROLES)}\n"
+            f"발효 게이트: 텔레그램 send·cron·봇 재기동 전부 금지 — GM go 별건.\n\n"
+            "## 카드 본문(텔레그램 HTML parse_mode)\n"
+            "```\n" + card_text + "\n```\n\n"
+            "## 인라인 버튼 레이아웃(reply_markup)\n"
+            "```json\n" + json.dumps(keyboard, ensure_ascii=False, indent=2) + "\n```\n"
+        )
+        SAMPLE_FILE = BASE_DIR / "status" / "northstar_card_sample.md"
+        SAMPLE_FILE.write_text(sample, encoding="utf-8")
+        print(f"[샘플] 카드 미리보기 기록: {SAMPLE_FILE}")
+    except Exception as e:
+        print(f"[WARN] 샘플 카드 생성 실패: {type(e).__name__}: {e}")
+
     if stdout_only:
         print("\n[--stdout-only] 파일 기록 생략")
         return pending
