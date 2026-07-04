@@ -130,6 +130,25 @@
   .cmo-stage.wait{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
   .rv-note{display:block; color:var(--dim); font-size:10px; margin-top:1px;}
 
+  /* ── 🔧 시우 실무 3층 v2(배포 배): 라이브 지표 + 실무역할·개선SOP 접기(신규 최소·details 재사용) ── */
+  .coo-tier{margin-top:14px;}
+  .coo-tier-h{font-size:12.5px; font-weight:800; color:var(--text-soft); margin:0 0 6px; display:flex; align-items:center; gap:6px;}
+  .coo-tier-h .tier-badge{font-size:9.5px; font-weight:800; color:#0c1a10; background:var(--green); border-radius:8px; padding:1px 7px;}
+  details.coo-details{margin-top:10px; border:1px solid var(--border-strong); border-radius:10px; padding:9px 13px 12px; background:var(--paper);}
+  details.coo-details summary{cursor:pointer; list-style:none; font-size:12.5px; font-weight:700; color:var(--text-soft);}
+  details.coo-details summary::-webkit-details-marker{display:none;}
+  details.coo-details summary::before{content:'▸'; display:inline-block; margin-right:6px; color:var(--dim); transition:transform .15s;}
+  details.coo-details[open] summary::before{transform:rotate(90deg);}
+  details.coo-details .coo-tbl-wrap{overflow-x:auto; margin-top:9px;}
+  details.coo-details table{border-collapse:collapse; width:100%; min-width:480px; font-size:12px; background:var(--surface); border-radius:8px; overflow:hidden;}
+  details.coo-details th, details.coo-details td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top; color:var(--text-soft);}
+  details.coo-details th{background:var(--paper); font-weight:700; color:var(--text); font-size:11px;}
+  .coo-flow{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:9px;}
+  .coo-flow-step{font-size:11px; font-weight:700; color:var(--text-soft); border:1px solid var(--border-strong); border-radius:8px; padding:5px 9px; background:var(--surface); white-space:nowrap;}
+  .coo-flow-arrow{color:var(--dim); font-size:12px;}
+  .coo-tag{display:inline-block; font-size:9.5px; font-weight:700; border-radius:8px; padding:1px 7px; margin-left:5px; vertical-align:1px;}
+  .coo-tag.wait{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+
   footer.foot{margin-top:22px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:11px; line-height:1.6;}
   footer.foot b{color:var(--text-soft);}
   code{background:rgba(255,255,255,0.07); color:#e6d9ff; border-radius:4px; padding:1px 5px; font-size:11px;}
@@ -362,6 +381,16 @@
       <span class="cmo-loop-arrow back pending" title="⑤ 개선 환류 연결 시 닫힘(완료율 측정 정밀도 확정 후 연결)">↻ 다음달 운영 반영 (대기)</span>
     </div>
     <div class="cmo-loop-status">현재 열린 루프 — ⑤ 개선 환류 대기 · 완료율 측정 정밀도 확정 후 폐루프</div>
+
+    <!-- ════ 1층 · 운영 실측 지표(라이브 · today_live/monthly_report&dept=support 실데이터 · 지원부 체계.html과 동일 GAS 재사용) ════ -->
+    <div class="coo-tier">
+      <div class="coo-tier-h">📊 오늘·이번달 실측 지표 <span class="tier-badge">라이브</span></div>
+      <div class="stats" id="coo-live-metrics">
+        <div class="feed-status" style="grid-column:1/-1;">점검 실측 지표를 불러오는 중…</div>
+      </div>
+      <div class="sec-note" style="margin:6px 0 0;">지원부=<code>today_live</code>·<code>monthly_report&dept=support</code> 라이브 실측(남/여 분리). 시설부=GAS <code>dept=facility</code> 백엔드 배포 대기 → '배포대기' 정직 표기. 주차=점검 체계 자체가 독립 운영(규정·가이드만) → '체계 외' 표기. 가짜 수치 금지(약속 L05).</div>
+    </div>
+
     <div class="routines" id="coo-routines-static">
       <div class="rcard" style="--rc:var(--blue)">
         <div class="rcard-top"><span class="cmo-stage live">②</span><span class="rcard-ico">✅</span>
@@ -394,6 +423,38 @@
         <div class="rrow"><span class="rk">무엇을</span><span class="rv">페이지↔시트 동기·정렬(구체 지시 시에만 실행 — 상시 자율 보강 폐지)</span></div>
       </div>
     </div>
+
+    <!-- ════ 2층 · 실무진 점검 업무·역할(접기 · SUPPORT_STAFF 조편성·monthly_ops_plan practitioner_goals 실측 기반) ════ -->
+    <details class="coo-details">
+      <summary>👥 실무진 점검 업무·역할 — 부서별 누가·무엇을·언제 (핵심: 지원부 남/여 2교대·시설부 오전 10시 · 펼치기)</summary>
+      <div class="coo-tbl-wrap">
+        <table>
+          <tr><th style="width:88px">부서</th><th style="width:190px">점검 주체</th><th>항목/구역</th><th style="width:150px">주기</th></tr>
+          <tr><td>지원부(남)</td><td>남성구역 담당(팀장·주임 체계)</td><td>남성구역 회차별 전 항목</td><td>매일 오전조·마감조 2교대(평일 10·20시, 주말 12·18시)</td></tr>
+          <tr><td>지원부(여)</td><td>여성구역 담당(반장·주임 체계)</td><td>여성구역 회차별 전 항목</td><td>매일 오전조·마감조 2교대(평일 10·20시, 주말 12·18시)</td></tr>
+          <tr><td>시설부</td><td><strong>김종현 차장·박호균 과장</strong></td><td>남자 지원 점검</td><td>매일 오전 10시</td></tr>
+          <tr><td>주차</td><td>주차관리부(양상규 고문)</td><td colspan="2"><span style="color:var(--dim);">점검 체계 미포함 — 독립 운영(규정·가이드·매뉴얼만, 점검 재추가 금지)</span></td></tr>
+        </table>
+      </div>
+      <div class="sec-note" style="margin:8px 0 0;">출처: <code>지원부 체계.html</code> 조편성 구조(오전조·마감조 규정 표) · <code>status/monthly_ops_plan.json</code> 2026-07 practitioner_goals(lee-jh, 2026-07-04 갱신). 지원부 개인 명단은 시트가 정본(수시 변경) — 실시간 명단은 지원부 체계 페이지 참조.</div>
+    </details>
+
+    <!-- ════ 3층 · 개선 액션·SOP 연결(접기 · 루프 ⑤ 개선 환류의 실체) ════ -->
+    <details class="coo-details">
+      <summary>🔁 이슈·미완료 → 개선 반영 흐름 (루프 ⑤ 실체 · 펼치기)</summary>
+      <div class="coo-flow">
+        <span class="coo-flow-step">① 이슈 발생(점검 중)</span><span class="coo-flow-arrow">→</span>
+        <span class="coo-flow-step">② 점검관리방(-5136037543) 자동 알림</span><span class="coo-flow-arrow">→</span>
+        <span class="coo-flow-step">③ 점검일지 시트 G열 기록</span><span class="coo-flow-arrow">→</span>
+        <span class="coo-flow-step">④ 이슈 내 완결(종합접수처 미전송)</span>
+      </div>
+      <div class="coo-flow" style="margin-top:6px;">
+        <span class="coo-flow-step">월 완료율 저조·이슈 다발</span><span class="coo-flow-arrow">→</span>
+        <span class="coo-flow-step">monthly_report improvements 개선시사 생성</span><span class="coo-flow-arrow">→</span>
+        <span class="coo-flow-step">다음달 practitioner_goals·objectives 반영<span class="coo-tag wait">대기</span></span>
+      </div>
+      <div class="sec-note" style="margin:8px 0 0;">①~④=현재 라이브(점검 이슈=점검 내 완결 원칙, GM 확정). 월간→다음달 반영 고리는 아직 사람 판단 개입(월간운영계획 수기 갱신) — 완료율 측정 정밀도 확정 후 자동 폐루프 예정(위 루프 카드 ⑤와 동일 상태·가짜로 '완료' 표시 안 함).</div>
+    </details>
   </section>
 
   <!-- ════ 섹션 2 · 루프가 만든 성과 ════ -->
@@ -827,6 +888,80 @@
     }).join('');
   }
 
+  // ═══════════ 🔧 시우(COO) 실무 3층 v2 — 1층: 운영 실측 지표(today_live/monthly_report&dept=support 라이브) ═══════════
+  // COO_API_URL = 지원부 체계.html(coo/check/지원부 체계.html)과 동일 GAS 웹앱 — 신규 배포 없음, 기존 today_live·monthly_report 액션만 재사용.
+  var COO_API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
+  function cooTodayDate(){
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function cooMonthStr(){
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+  function cooFetchTodayLive(){
+    var url = COO_API_URL + '?action=today_live&dept=support&date=' + encodeURIComponent(cooTodayDate()) + '&_pv=' + Date.now();
+    return fetch(url, {redirect:'follow'}).then(function(r){ return r.json(); })
+      .then(function(j){ return (j && j.ok) ? j : null; })
+      .catch(function(){ return null; });
+  }
+  function cooFetchMonthlyReport(){
+    var url = COO_API_URL + '?action=monthly_report&dept=support&month=' + encodeURIComponent(cooMonthStr());
+    return fetch(url, {redirect:'follow'}).then(function(r){ return r.json(); })
+      .then(function(j){ return (j && j.ok !== false) ? j : null; })
+      .catch(function(){ return null; });
+  }
+  function cooPctColor(p){ p = Number(p) || 0; return p >= 90 ? 'var(--green)' : (p >= 60 ? 'var(--gold)' : '#ff8a80'); }
+  function cooMetricCard(o){
+    if(o.unmeasured){
+      return '<div class="scard unmeasured"><div class="sh">' + esc(o.sh) + '</div><div class="sbig">' + esc(o.big) + '</div><div class="ssub">' + o.sub + '</div></div>';
+    }
+    return '<div class="scard" style="--sc:' + o.sc + '"><div class="sh">' + esc(o.sh) + '</div>' +
+      '<div class="sbig" style="color:' + o.sc + '">' + o.big + (o.small ? '<small>' + esc(o.small) + '</small>' : '') + '</div>' +
+      (o.bar != null ? '<div class="sbar"><i style="width:' + o.bar + '%;background:linear-gradient(90deg,' + o.sc + ',' + o.sc + ')"></i></div>' : '') +
+      '<div class="ssub">' + o.sub + '</div></div>';
+  }
+  function renderCooLiveMetrics(tl, mr){
+    var el = document.getElementById('coo-live-metrics');
+    if(!el) return;
+    var cards = [];
+
+    if(tl){
+      var pc = cooPctColor(tl.pct);
+      cards.push(cooMetricCard({ sc:pc, sh:'🏢 지원부 오늘 완료율', big:tl.pct, small:'%', bar:tl.pct,
+        sub:'완료 <b>' + tl.done + '</b> / 총 <b>' + tl.total + '</b>건 (오전·오후·마감 합산 · today_live 실측)' }));
+      var gm = (tl.byGender && tl.byGender.m) || null, gf = (tl.byGender && tl.byGender.f) || null;
+      if(gm) cards.push(cooMetricCard({ sc:cooPctColor(gm.pct), sh:'남성구역 완료율', big:gm.pct, small:'%', bar:gm.pct,
+        sub:'완료 <b>' + gm.done + '</b> / 총 <b>' + gm.total + '</b>건' }));
+      if(gf) cards.push(cooMetricCard({ sc:cooPctColor(gf.pct), sh:'여성구역 완료율', big:gf.pct, small:'%', bar:gf.pct,
+        sub:'완료 <b>' + gf.done + '</b> / 총 <b>' + gf.total + '</b>건' }));
+      var issN = (tl.allIssues || []).length;
+      cards.push(cooMetricCard({ sc: issN ? '#ff8a80' : 'var(--green)', sh:'🚨 오늘 이슈', big:issN, small:'건',
+        sub: issN ? issN + '건 접수 — 점검관리방 알림·시트 G열 기록(아래 2·3층 참조)' : '오늘 접수된 이슈 없음' }));
+    } else {
+      cards.push(cooMetricCard({ unmeasured:true, sh:'🏢 지원부 오늘 완료율', big:'미측정', sub:'today_live 응답 실패 — 새로고침 시 재시도(가짜 수치 금지)' }));
+    }
+
+    if(mr && mr.monthTotals){
+      var t = mr.monthTotals;
+      var pct = (t.avgPct != null ? t.avgPct : 0);
+      var word = (String(mr.denomNote || '').indexOf('확정') >= 0) ? '확정' : '참고값';
+      cards.push(cooMetricCard({ sc:cooPctColor(pct), sh:'📅 지원부 이번달 완료율', big:pct, small:'%', bar:pct,
+        sub:'세션 <b>' + (t.sessionCount || 0) + '</b> · 활성일 <b>' + (t.activeDays || 0) + '</b> · <span style="color:var(--dim)">' + esc(word) + '</span>' }));
+      cards.push(cooMetricCard({ sc: (t.issueCount ? '#ff8a80' : 'var(--green)'), sh:'📅 이번달 이슈 총계', big:(t.issueCount || 0), small:'건',
+        sub:'월간 monthly_report 실측 누적(지원부)' }));
+    } else {
+      cards.push(cooMetricCard({ unmeasured:true, sh:'📅 지원부 이번달 완료율', big:'미측정', sub:'monthly_report 응답 실패 — 새로고침 시 재시도' }));
+    }
+
+    // 시설부 — GAS dept=facility 백엔드 미배포(정직 태그, 재시도 안 함 · Non-Goal)
+    cards.push(cooMetricCard({ unmeasured:true, sh:'🏗️ 시설부 완료율', big:'배포대기', sub:'점검 프론트는 준비됨(시설부 체계 페이지) · GAS dept=facility 백엔드 미배포 — 실측 숫자 없음(가짜 수치 금지)' }));
+    // 주차 — 점검 체계 자체가 독립(project_parking_dept_standalone)
+    cards.push(cooMetricCard({ unmeasured:true, sh:'🅿️ 주차 완료율', big:'체계 외', sub:'주차관리부는 규정·가이드·매뉴얼만 운영 — 점검(today_live) 체계에 미포함(정책상 독립)' }));
+
+    el.innerHTML = cards.join('');
+  }
+
   // ═══════════ 섹션 2: 통합 처리 이력 피드 ═══════════
   // 완료/대기 분류 규칙(배237) — 애매하면 항상 안전 기본값(대기)으로: 자율성을 과장하지 않는다.
   //  · 포착(scan)     : auto_applied>0 → 완료 / 그 외 → 대기 (아직 실행 안 된 포착일 뿐)
@@ -1091,7 +1226,9 @@
     gasReadText('status/audit_registry.json',         'status/audit_registry.json').catch(function(){ return ''; }),
     gasReadText('3. 웰페리온 가이드/cmo/review/review_queue.json',
                 '3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/cmo/review/review_queue.json').catch(function(){ return ''; }),
-    gasReadText('status/erp_status.json',             'status/erp_status.json').catch(function(){ return ''; })
+    gasReadText('status/erp_status.json',             'status/erp_status.json').catch(function(){ return ''; }),
+    cooFetchTodayLive(),
+    cooFetchMonthlyReport()
   ]).then(function(a){
     var learnRaw = parseJson(a[3]);
     var archRaw  = parseJson(a[4]);
@@ -1112,6 +1249,9 @@
     try{ renderCmoMarketing(cmoQueue); }catch(e){
       document.getElementById('cmo-routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">시모 자율 마케팅 표시 오류.</div>';
     }
+    try{ renderCooLiveMetrics(a[9], a[10]); }catch(e){
+      document.getElementById('coo-live-metrics').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">운영 실측 지표 표시 오류.</div>';
+    }
     try{ renderFeed(feedItems); }catch(e){ document.getElementById('feed').innerHTML = '<div class="feed-status">처리 이력 표시 오류.</div>'; }
     try{ renderStats(d, feedItems); }catch(e){ document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">성과 지표 계산 오류.</div>'; }
     try{ renderErpStatus(erpStatus); }catch(e){ document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">시스템 현황 표시 오류.</span>'; }
@@ -1122,6 +1262,7 @@
     document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다. 잠시 후 새로고침 해주세요.</div>';
     document.getElementById('cmo-routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
+    document.getElementById('coo-live-metrics').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('feed').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">현황을 아직 불러오지 못했습니다.</span>';
