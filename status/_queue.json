@@ -2678,5 +2678,19 @@
     "note": "[2026-07-04 GM 선택카드→전환율 측정 개통] 시포 유일 미측정 북극성 KPI(문의→가입 전환율, kpi.json 🔧→곧✅). 북극성=전환 퍼널 가시화의 마지막 지표. 착수 전 모호성 게이트(L14): 진행상태칸 기반 vs 회원DB(유효회원 휴대폰키) 매칭 기반 갈림 → Explore 실측 조사 중.",
     "next": "조사 결과로 측정 방식 확정 → 집계 배관 → kpi/대시보드 점등.",
     "depends_on": ""
+  },
+  {
+    "task_id": "CEO-2026-07-04-ADHOC-d3d2e655",
+    "clevel": "ceo",
+    "title": "[웰리] GM보좌 자율 정비 액션 5종 — 매일 실제 처리로 '자율이 한 일' ≥1 개통",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-04",
+    "processed_at": "2026-07-04",
+    "ship_no": 444,
+    "artifact": "- gm_aide_scan phase2에 가역·조건부 정비 5종 추가: 미러동기·현황재발행·KPI갱신·죽은워크트리정리·일요일컨텍스트정비(전부 실제문제 있을때만·멱등·사후 auto_exec 로그)\n- 오늘 라이브 1회: 죽은작업 재발행+죽은 워크트리 2개 정리 = 자율 3건 실행(0→3), 억지없이 증명\n- subprocess utf-8 인코딩 수정(cp949 디코드 크래시 방지·무인 크론 안전)\n- 역롤백=GM_AIDE_AUTO_EXEC=0 (CLI ad-hoc · 커밋 d3d2e655)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d3d2e6556d67bf0e1557343e83bfb31a9a9968af"
   }
 ]
