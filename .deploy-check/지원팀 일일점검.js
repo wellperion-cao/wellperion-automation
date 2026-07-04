@@ -2898,9 +2898,13 @@ function _isTestVal_(v) {
 // issueRows 열: 0등록일 1구역 2점검자 3이슈내용 4상태 5처리일 6비고
 // (배208-2A, 2026-07-03) 지원_이슈대장이 빈 시트라 issueRows는 더 이상 이슈 집계에 쓰지 않는다.
 // 시그니처는 하위호환 위해 유지하되 미사용 — 이슈는 전부 snapshot 9열(이슈건수)·10열(이슈내용 원문)에서 집계한다.
-function _aggregateMonthly(snapRows, issueRows, month) {
+// scheduleTotals(옵션, 2026-07-04 배173+배14): { 'YYYY-MM-DD': number } — today_live와 동일 기준(주말 pm 제외)
+// 스케줄 기대 분모 맵(IO인 handleMonthlyReport가 _scheduleExpectedTotal로 만들어 넘김). 순수함수 유지를 위해
+// SpreadsheetApp을 직접 안 부르고 완성된 데이터만 받는다 — 없으면(구버전 호출·facility 등) 기존 방식 그대로 폴백.
+function _aggregateMonthly(snapRows, issueRows, month, scheduleTotals) {
   snapRows = snapRows || [];
   issueRows = issueRows || []; // 하위호환 유지용(미사용) — 배208-2A
+  scheduleTotals = scheduleTotals || null;
   var testExcludedCount = 0;
 
   // 1) Test 행 제외 + 2) 월 필터
@@ -2974,18 +2978,36 @@ function _aggregateMonthly(snapRows, issueRows, month) {
     if (Object.keys(zoneShiftTotals[k]).length > 1) denomInconsistent = true;
   });
 
+  // [배14+배173, 2026-07-04] 분모 단일화: scheduleTotals(today_live와 동일 스케줄 기대치, 주말 pm 제외)가
+  // 있으면 세션기록 합계(c.sumTotal) 대신 그 값을 분모로 쓴다. 진행중인 날(아직 일부 회차 미제출)이 "제출된
+  // 것만 분모"라 100%로 뜨던 버그 제거 — 완결된 과거일은 세션기록 합계 = 스케줄 합계라 값이 그대로 유지된다.
+  // scheduleTotals에 해당 날짜가 없으면(구버전 호출·facility 등) 기존 방식(세션기록 합계) 그대로 폴백 — 하위호환.
   var dailySeries = Object.keys(byDate).sort().map(function (d) {
     var c = byDate[d];
+    var total = c.sumTotal, done = c.sumDone;
+    if (scheduleTotals && Object.prototype.hasOwnProperty.call(scheduleTotals, d) && typeof scheduleTotals[d] === 'number') {
+      total = scheduleTotals[d];
+      if (done > total) done = total;   // 안전장치: today_live 클램프와 동일 원칙(분모 불변, 분자만 상한)
+    }
     return {
-      date: d, sumTotal: c.sumTotal, sumDone: c.sumDone,
-      pct: c.sumTotal > 0 ? Math.round(c.sumDone / c.sumTotal * 100) : null,
+      date: d, sumTotal: total, sumDone: done,
+      pct: total > 0 ? Math.round(done / total * 100) : null,
       sessionCount: c.sessionCount, issueCount: c.issueCount
     };
   });
 
+  // [배208-3, 2026-07-04] top-level avgPct/issueCount 안정화: dailySeries 값에서 항상 재집계하되
+  // Number() 방어로 undefined/NaN 오염이 조용히 top-level만 null로 만드는 경우를 차단.
   var monthSumTotal = 0, monthSumDone = 0, monthIssueCount = 0;
-  dailySeries.forEach(function (d) { monthSumTotal += d.sumTotal; monthSumDone += d.sumDone; monthIssueCount += d.issueCount; });
+  dailySeries.forEach(function (d) {
+    monthSumTotal   += Number(d.sumTotal) || 0;
+    monthSumDone    += Number(d.sumDone) || 0;
+    monthIssueCount += Number(d.issueCount) || 0;
+  });
 
+  // avgPct 정의(scheduleTotals 제공 시): 분모=이번달 활성일들의 스케줄 기대치 합(주말 pm 제외) — 진행중인
+  // 당일도 포함된다("당일 전체 예정 대비 지금까지 완료"). 당일이 아직 안 끝났으면 낮게 나오는 게 정상(왜곡 아님).
+  // sessionCount·activeDays=0이면(이번달 아직 데이터 없음) avgPct=null 그대로(진짜 무데이터 — 지어내지 않음).
   var monthTotals = {
     sumTotal: monthSumTotal, sumDone: monthSumDone,
     avgPct: monthSumTotal > 0 ? Math.round(monthSumDone / monthSumTotal * 100) : null,
@@ -3273,7 +3295,23 @@ function handleMonthlyReport(params) {
     issueRows = issueSheet.getDataRange().getValues().slice(1);
   }
 
-  var result = _aggregateMonthly(snapRows, issueRows, month);
+  // [배14+배173, 2026-07-04] 스케줄 기대치 맵 — 이 달 1일~말일 각 날짜의 today_live 기준 예정 총량.
+  // support 한정(_buildTodayMaster/today_live도 support 전용) — 다른 dept는 빈 맵 → _aggregateMonthly가
+  // 기존 방식(세션기록 합계)으로 폴백해 무변경.
+  var scheduleTotals = {};
+  if (dept === 'support') {
+    var ymParts = month.split('-');
+    var y = Number(ymParts[0]), mo = Number(ymParts[1]);
+    if (y && mo) {
+      var daysInMonth = new Date(y, mo, 0).getDate();
+      for (var dd = 1; dd <= daysInMonth; dd++) {
+        var ymd = y + '-' + _pad2_(mo) + '-' + _pad2_(dd);
+        scheduleTotals[ymd] = _scheduleExpectedTotal(dept, ymd);
+      }
+    }
+  }
+
+  var result = _aggregateMonthly(snapRows, issueRows, month, scheduleTotals);
   result.dept = dept;
   return jsonRes(result);
 }
@@ -3381,6 +3419,47 @@ function _buildTodayMaster(dept, dow, week) {
   return master;
 }
 
+// ─── 스케줄 기대 분모 단일출처 — today_live·monthly_report 공유(배173+배14 정합, 2026-07-04 시우) ───
+// master.byId(=_buildTodayMaster 결과) → 성별×버킷(am/pm/close/night) 카운트. handleTodayLive의 totalByG와
+// monthly_report의 스케줄기대치가 이 함수 하나를 같이 써야 두 값이 절대 어긋나지 않는다(중복코드 금지).
+function _tlTotalByGFromMaster(master) {
+  var totalByG = { m: { am: 0, pm: 0, close: 0, night: 0 }, f: { am: 0, pm: 0, close: 0, night: 0 }, all: { am: 0, pm: 0, close: 0, night: 0 } };
+  Object.keys(master.byId).forEach(function (id) {
+    var info = master.byId[id];
+    info.glist.forEach(function (g) {
+      if (!totalByG[g]) return;
+      info.buckets.forEach(function (b) {
+        if (totalByG[g][b] !== undefined) totalByG[g][b]++;
+      });
+    });
+  });
+  return totalByG;
+}
+
+// 'YYYY-MM-DD' → week(몇째주, 화면 getDayInfo와 동일: Math.ceil(일/7)).
+function _tlWeekOfDate(dateStr) {
+  return Math.ceil(Number(String(dateStr).slice(8, 10)) / 7);
+}
+
+// 날짜 하나의 '오늘 예정' 총 항목수(스케줄 기대 분모) — today_live의 total과 완전히 같은 기준.
+// [배173, 2026-07-04] 주말(토·일)은 오후조가 없다(오전조+마감조만 정상) — pm 버킷은 분모에서 제외.
+//   실측(2026-07-04 토): 시트 sched 필터를 통과한 주말 pm 항목이 분모에 얹혀 105로 부풀림(정답=76).
+// monthly_report(handleMonthlyReport)가 날짜별로 이 함수를 호출해 스케줄 기대치 맵을 만들고,
+// _aggregateMonthly가 세션기록 합계 대신 이 값을 분모로 써 today_live와 정합시킨다(배14).
+function _scheduleExpectedTotal(dept, dateStr) {
+  var dateObj = new Date(dateStr + 'T00:00:00+09:00');
+  var dow = dateObj.getDay();
+  var week = _tlWeekOfDate(dateStr);
+  var master = _buildTodayMaster(dept, dow, week);
+  var totalByG = _tlTotalByGFromMaster(master);
+  var isWeekend = (dow === 0 || dow === 6);
+  var total = 0;
+  ['m', 'f', 'all'].forEach(function (g) {
+    total += totalByG[g].am + (isWeekend ? 0 : totalByG[g].pm) + totalByG[g].close;
+  });
+  return total;
+}
+
 function handleTodayLive(params) {
   var dept = String(params.dept || 'support').trim() || 'support';
   if (dept !== 'support') {
@@ -3398,6 +3477,7 @@ function handleTodayLive(params) {
   var dow = dateObj.getDay();
   var week = Math.ceil(Number(date.slice(8, 10)) / 7);   // 화면 getDayInfo와 동일: Math.ceil(일/7)
   var master = _buildTodayMaster(dept, dow, week);   // { byId:{id:{buckets:[unique shifts],glist}}, count }
+  var isWeekend = (dow === 0 || dow === 6);   // [배173, 2026-07-04] 주말=오전조+마감조만 정상(오후조 없음) — 아래 total/done·genderSummary가 pm 제외
 
   // ─── 분자(done): cr 원장 — (항목,시프트) presence(마스터 항목·시프트당 1회). 분모와 동일 기준 ───
   // 멀티회차 항목이 am1·pm1·close1 체크되면 done도 각 시프트(am/pm/close)에 1회씩(분모 시프트 presence와 정합).
@@ -3430,16 +3510,9 @@ function handleTodayLive(params) {
   });
 
   // ─── 분모(total): 위에서 빌드한 동일 master를 시프트 presence(시프트당 1회)로 계상(성별 분리) ───
-  var totalByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
-  Object.keys(master.byId).forEach(function (id) {
-    var info = master.byId[id];
-    info.glist.forEach(function (g) {
-      if (!totalByG[g]) return;
-      info.buckets.forEach(function (b) {
-        if (totalByG[g][b] !== undefined) totalByG[g][b]++;
-      });
-    });
-  });
+  // _tlTotalByGFromMaster로 단일화(2026-07-04) — monthly_report의 스케줄기대치(_scheduleExpectedTotal)와
+  // 완전히 같은 집계 함수를 공유해 두 소스가 절대 어긋나지 않게 한다(배14).
+  var totalByG = _tlTotalByGFromMaster(master);
   // [근본수정 2026-07-03 시토] 'gender=all 강제 분자=분모(totalByG.all[b] = doneByG.all[b])' 라인 제거.
   // genderTab은 항상 m|f만 저장되어(_chkGender) gender='all' 원장은 실사용된 적이 없다(doneByG.all 항상 0).
   // 강제 등식은 아무 것도 고치지 않으면서 향후 'all' 원장이 생기면 '분모=분자 항상 100%' 왜곡을 재도입할
@@ -3461,8 +3534,10 @@ function handleTodayLive(params) {
   });
   // total/done/pct = am+pm+close 만 (야간은 외주 탕청소 별도 회차 — GM 확정 2026-06-16).
   // night 필드는 참고용으로 응답에 유지하되 합계에서 제외.
-  var done  = sumDone.am  + sumDone.pm  + sumDone.close;
-  var total = sumTotal.am + sumTotal.pm + sumTotal.close;
+  // [배173, 2026-07-04] 주말(토·일)은 오후조 없음(오전조+마감조만 정상) — pm은 분모·분자 모두 제외.
+  // 평일은 기존과 동일(am+pm+close 무변경). pm/pmTotal 필드 자체는 진단용으로 응답엔 그대로 남긴다.
+  var done  = sumDone.am  + (isWeekend ? 0 : sumDone.pm)  + sumDone.close;
+  var total = sumTotal.am + (isWeekend ? 0 : sumTotal.pm) + sumTotal.close;
   var pct = total > 0 ? Math.round(done / total * 100) : 0;
 
   // ─── 이슈 집계 — led.cr 메타에서 iss 필드 수집(2026-06-25 시우): 단일 소스 ───
@@ -3490,8 +3565,8 @@ function handleTodayLive(params) {
 
   function genderSummary(g) {
     var gd = doneByG[g], gt = totalByG[g];
-    var gdone = gd.am + gd.pm + gd.close;   // night 제외
-    var gtot  = gt.am + gt.pm + gt.close;   // night 제외
+    var gdone = gd.am + (isWeekend ? 0 : gd.pm) + gd.close;   // night 제외, 주말은 pm도 제외(배173)
+    var gtot  = gt.am + (isWeekend ? 0 : gt.pm) + gt.close;   // night 제외, 주말은 pm도 제외(배173)
     return { am: gd.am, pm: gd.pm, close: gd.close, night: gd.night,
              amTotal: gt.am, pmTotal: gt.pm, closeTotal: gt.close, nightTotal: gt.night,
              done: gdone, total: gtot, pct: gtot > 0 ? Math.round(gdone / gtot * 100) : 0 };
