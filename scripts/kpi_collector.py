@@ -172,17 +172,24 @@ def _cpo_loss_rate() -> dict:
 
 def _cpo_funnel_conversion() -> dict:
     """
-    cpo 문의→가입 전환율 실측 — .deploy-funnel/Survey.js:3176-3297 funnel_conversion action.
+    cpo 문의→가입 전환율 실측 — .deploy-funnel/Survey.js:3176-3297+ funnel_conversion action.
     동일 CPO GAS(_CPO_GAS) — PII 없음, 집계 수치만(전화번호 등 개인정보 미포함).
-    ⚠️ convBasis=누적 전화매칭 기준(등록일 미사용) — 기간별 부정확·과소집계 가능(GAS 응답 정본 참조).
-    반환: {"문의_가입_전환율": float(%) 또는 null, "전환_문의수": int, "전환_가입수": int, "_전환_note": str}
+    누적치(문의_가입_전환율)=전화매칭 기준(등록일 미사용) — 기간별 부정확·과소집계 가능.
+    이번달치(이번달_전환율)=opt-in 정밀분자(numerator=registered, 2026-07-04 시포) — 등록일이 이번달 1일~오늘인
+    건만 전환 인정. 단 강습원장 시드(2026-06-27) 이전 등록자는 기간필터서 제외되는 한계 있음(GAS convBasis 참조).
+    반환: {"문의_가입_전환율": float(%)|None, "전환_문의수": int|None, "전환_가입수": int|None,
+           "이번달_전환율": float(%)|None, "이번달_전환_문의수": int|None, "이번달_전환_가입수": int|None,
+           "_전환_note": str}
     ⚠️ 키명 "_note"는 _cpo_loss_rate()가 이미 점유(cpo 블록 병합 시 dict.update로 덮어써짐) — 별도 "_전환_note" 사용(무손상).
     """
     result: dict = {
         "문의_가입_전환율": None,
         "전환_문의수": None,
         "전환_가입수": None,
-        "_전환_note": "누적 전화매칭 기준(기간별 부정확 가능) · funnel_conversion 실측",
+        "이번달_전환율": None,
+        "이번달_전환_문의수": None,
+        "이번달_전환_가입수": None,
+        "_전환_note": "누적=전화매칭 기준(기간별 부정확 가능) · 이번달=등록일 기준 정밀(numerator=registered, 강습원장 시드 이전 등록자는 과소집계 가능) · funnel_conversion 실측",
     }
     try:
         data = _http_get_json(f"{_CPO_GAS}?action=funnel_conversion")
@@ -204,6 +211,28 @@ def _cpo_funnel_conversion() -> dict:
             result["전환_가입수"] = converted
     except Exception as e:
         result["_전환_note"] = f"fetch 실패({type(e).__name__}): {str(e)[:80]}"
+        return result  # 누적 실패 = GAS 자체 불통 가능성 → 이번달 조회도 스킵(null 안전)
+
+    # 이번달 정밀 전환율(opt-in numerator=registered) — 누적과 독립 실패 허용(부분 성공, null 안전)
+    try:
+        today = datetime.now(KST)
+        month_from = today.strftime("%Y-%m-01")
+        month_to = today.strftime("%Y-%m-%d")
+        murl = f"{_CPO_GAS}?action=funnel_conversion&numerator=registered&from={month_from}&to={month_to}"
+        mdata = _http_get_json(murl)
+        if isinstance(mdata, dict) and mdata.get("ok") and isinstance(mdata.get("total"), dict):
+            mtotal = mdata["total"]
+            mrate = mtotal.get("rate")
+            if isinstance(mrate, (int, float)) and not isinstance(mrate, bool):
+                result["이번달_전환율"] = mrate
+            minq = mtotal.get("inquiries")
+            if isinstance(minq, (int, float)) and not isinstance(minq, bool):
+                result["이번달_전환_문의수"] = minq
+            mconv = mtotal.get("converted")
+            if isinstance(mconv, (int, float)) and not isinstance(mconv, bool):
+                result["이번달_전환_가입수"] = mconv
+    except Exception:
+        pass  # 이번달 실패해도 누적치는 이미 확보됨(부분 성공 허용)
     return result
 
 

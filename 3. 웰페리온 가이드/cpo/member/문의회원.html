@@ -977,12 +977,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <span style="font-size:13px;font-weight:800;color:var(--text)">문의→가입 전환율</span>
       </div>
       <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:baseline">
-        <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환율</span> <b id="dConvRate" style="font-size:22px;font-weight:800;color:var(--blue);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> %</span></div>
+        <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환율(누적)</span> <b id="dConvRate" style="font-size:22px;font-weight:800;color:var(--blue);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> %</span></div>
         <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환 문의수</span> <b id="dConvInq" style="font-size:16px;font-weight:800;color:var(--text);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> 건</span></div>
         <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환 가입수</span> <b id="dConvJoin" style="font-size:16px;font-weight:800;color:var(--text);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> 명</span></div>
+        <div><span style="font-size:10px;color:var(--dim);font-weight:700">이번달 전환율(정밀)</span> <b id="dConvRateMonth" style="font-size:22px;font-weight:800;color:var(--text);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> %</span></div>
       </div>
     </div>
-    <div style="font-size:10.5px;color:var(--dim);margin-top:8px">⚠️ 누적 전화매칭 기준(등록일 미사용) — 기간별 부정확·과소집계 가능. 정본=funnel_conversion(GAS), 개인정보 미포함(집계 수치만)</div>
+    <div style="font-size:10.5px;color:var(--dim);margin-top:8px">⚠️ 전환율(누적)=전화매칭 기준(등록일 미사용, 기간별 부정확·과소집계 가능) · 이번달 전환율(정밀)=등록일이 이번달인 건만 인정(강습원장 시드 2026-06-27 이전 등록자는 기간필터서 제외=과소집계 가능). 정본=funnel_conversion(GAS), 개인정보 미포함(집계 수치만)</div>
     <div id="convChannelWrap" style="margin-top:12px;display:none">
       <div style="font-size:11px;font-weight:800;color:var(--text);margin-bottom:6px">채널별 전환율 (전환율 내림차순)</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px" id="convChannelTable">
@@ -2245,6 +2246,17 @@ function loadConvRate(){
                '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700;color:var(--blue)">'+(c.rate != null ? c.rate + '%' : '–')+'</td></tr>';
       }).join('');
       wrap.style.display = '';
+    })
+    .catch(function(){});
+  // 이번달 전환율(정밀 — 등록일 기준 opt-in numerator=registered). 실패해도 누적 카드엔 무영향(독립 fetch). 2026-07-04 시포
+  var _cmNow = new Date();
+  var _cmFrom = _cmNow.getFullYear() + '-' + String(_cmNow.getMonth() + 1).padStart(2, '0') + '-01';
+  var _cmTo   = _cmNow.getFullYear() + '-' + String(_cmNow.getMonth() + 1).padStart(2, '0') + '-' + String(_cmNow.getDate()).padStart(2, '0');
+  fetch(GAS_URL + '?action=funnel_conversion&numerator=registered&from=' + _cmFrom + '&to=' + _cmTo + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok || !d.total) return;
+      _setTxt('dConvRateMonth', d.total.rate != null ? d.total.rate : '–');
     })
     .catch(function(){});
 }

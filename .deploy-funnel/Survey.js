@@ -3186,9 +3186,22 @@ function _processAction(body) {
       var t = ts ? _normTs_(ts).getTime() : NaN;   // 단일 정규화 SSOT(클릭/문의 통일)
       return !isNaN(t) && t >= fcF && t <= fcT;
     }
-    // 캐시 조회 (범위별 키 — 기간 필터 버전)
+    // ─── 정밀 분자 opt-in(2026-07-04 시포) — numerator==='registered'(또는 precise==='1')일 때만 등록일 기간필터를 분자에 적용.
+    //     파라미터 없으면 이 블록 전부 미실행 — 기존 누적 로직 100% 그대로(회귀 0, 시모 마케팅 대시보드 등 기존 소비처 무영향).
+    var fcPrecise = (String(body.numerator || '') === 'registered' || String(body.precise || '') === '1');
+    function _fcDateISO_(v) {
+      if (v instanceof Date && !isNaN(v.getTime())) return Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd');
+      return _miToISO_(v);
+    }
+    function _fcDateInRange_(iso) {
+      if (!iso) return false;
+      if (fcFrom && iso < fcFrom) return false;
+      if (fcTo   && iso > fcTo)   return false;
+      return true;
+    }
+    // 캐시 조회 (범위별 키 — 기간 필터 + 분자모드 버전)
     var fcCache = CacheService.getScriptCache();
-    var fcCacheKey = 'fc_v3_' + fcFrom + '_' + fcTo;  // v3: 전환에 강습 등록 합산 반영(2026-07-03 시모) — 구캐시 무효화
+    var fcCacheKey = 'fc_v3_' + (fcPrecise ? 'reg_' : 'acc_') + fcFrom + '_' + fcTo;  // v3: 전환에 강습 등록 합산 반영(2026-07-03 시모) · 분자모드 분리(2026-07-04 시포) — 구캐시 무효화
     var fcHit = fcCache.get(fcCacheKey);
     if (fcHit && !_nc) return _json(JSON.parse(fcHit));
 
@@ -3197,6 +3210,7 @@ function _processAction(body) {
     var memberSh  = memberSs.getSheetByName(MEMBER_SHEET);
     var memberLast = memberSh.getLastRow();
     var memberSet = {};
+    var memberRegMap = {};  // 정밀모드 전용: phone → 등록일(원본 Date/문자열). member_match_autostamp_(:4136-4164) 로직 이식.
     if (memberLast >= 2) {
       var memberHeaders = memberSh.getRange(1, 1, 1, memberSh.getLastColumn()).getValues()[0];
       var phoneColIdx   = memberHeaders.indexOf(MEMBER_PHONE_COL);
@@ -3206,6 +3220,24 @@ function _processAction(body) {
           var n = normalizePhone_(r[0]);
           if (n) memberSet[n] = true;
         });
+      }
+      // 정밀모드에서만 등록일 맵 구성(비정밀 경로는 미실행 — 성능·동작 무영향)
+      if (fcPrecise && phoneColIdx >= 0) {
+        function _fcHdrIdx_(name) {
+          var want = String(name).replace(/\s+/g, '');
+          for (var hi = 0; hi < memberHeaders.length; hi++) {
+            if (String(memberHeaders[hi]).replace(/\s+/g, '') === want) return hi;   // 공백·줄바꿈 무시 매칭(등록\n일자 대응)
+          }
+          return -1;
+        }
+        var dateColIdx = _fcHdrIdx_(MEMBER_DATE_COL);
+        if (dateColIdx >= 0) {
+          var memberFullRows = memberSh.getRange(2, 1, memberLast - 1, memberSh.getLastColumn()).getValues();
+          memberFullRows.forEach(function(r) {
+            var n = normalizePhone_(r[phoneColIdx]);
+            if (n) memberRegMap[n] = r[dateColIdx];
+          });
+        }
       }
     }
 
@@ -3220,6 +3252,40 @@ function _processAction(body) {
         if (n) lessonSet[n] = true;
       });
     });
+
+    // ①-c 강습 등록원장 전화→등록일 맵 (정밀모드 전용 — lesson_registry_list :2503-2521 패턴 재사용)
+    //     강습원장 시드(2026-06-27) 이전 등록자는 기준선 '2000-01-01'이라 기간필터서 제외됨 = 정직한 과소집계(convBasis에 명시).
+    var lessonRegMap = {};  // phone → 등록일 ISO(가장 이른 날짜 채택 — 동일인 다종목 등록 시 최초 전환 시점)
+    if (fcPrecise) {
+      try {
+        _syncLessonRegistry_();
+        var fcLrSh   = _lessonRegSheet_();
+        var fcLrLast = fcLrSh.getLastRow();
+        if (fcLrLast >= 2) {
+          var fcLrRows = fcLrSh.getRange(2, 1, fcLrLast - 1, _LESSON_REG_HEADER.length).getValues();
+          fcLrRows.forEach(function(row) {
+            var n = _normPhone_(row[3]);   // 전화
+            if (!n) return;
+            var iso = _fcDateISO_(row[5]); // 등록일
+            if (iso && (!lessonRegMap.hasOwnProperty(n) || iso < lessonRegMap[n])) lessonRegMap[n] = iso;
+          });
+        }
+      } catch (eFcLr) {}
+    }
+
+    // 전환 판정 — 비정밀(기존): 전화매칭만. 정밀(opt-in): 전화매칭 + 등록일 ∈ [from,to].
+    function _fcConverted_(phone) {
+      if (!phone) return { memberOnly: false, any: false };
+      if (!fcPrecise) {
+        var mo0 = !!memberSet[phone];
+        return { memberOnly: mo0, any: (mo0 || !!lessonSet[phone]) };
+      }
+      var mIso = memberRegMap.hasOwnProperty(phone) ? _fcDateISO_(memberRegMap[phone]) : '';
+      var mOk  = _fcDateInRange_(mIso);
+      var lIso = lessonRegMap.hasOwnProperty(phone) ? lessonRegMap[phone] : '';
+      var lOk  = _fcDateInRange_(lIso);
+      return { memberOnly: mOk, any: (mOk || lOk) };
+    }
 
     // ② 문의접수 시트 집계
     var inqSh   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
@@ -3243,8 +3309,9 @@ function _processAction(body) {
         if (!byChannel[channel]) byChannel[channel] = { inquiries: 0, converted: 0 };
         byChannel[channel].inquiries++;
 
-        if (phone && memberSet[phone]) totalConvMemberOnly++;   // 구버전(멤버십만) 비교용
-        if (phone && (memberSet[phone] || lessonSet[phone])) {
+        var fcConv = _fcConverted_(phone);
+        if (fcConv.memberOnly) totalConvMemberOnly++;   // 구버전(멤버십만) 비교용
+        if (fcConv.any) {
           totalConv++;
           byChannel[channel].converted++;
         }
@@ -3259,8 +3326,9 @@ function _processAction(body) {
       totalInq++;
       if (!byChannel[channel]) byChannel[channel] = { inquiries: 0, converted: 0 };
       byChannel[channel].inquiries++;
-      if (phone && memberSet[phone]) totalConvMemberOnly++;   // 구버전(멤버십만) 비교용
-      if (phone && (memberSet[phone] || lessonSet[phone])) { totalConv++; byChannel[channel].converted++; }
+      var fcConv2 = _fcConverted_(phone);
+      if (fcConv2.memberOnly) totalConvMemberOnly++;   // 구버전(멤버십만) 비교용
+      if (fcConv2.any) { totalConv++; byChannel[channel].converted++; }
     });
 
     // ③ 반환 JSON — 집계 수치만, 개인정보 절대 미포함
@@ -3286,11 +3354,15 @@ function _processAction(body) {
       byChannel: channelArr,
       periodMode: fcPeriod,
       period: { from: fcFrom, to: fcTo },
-      convBasis: fcPeriod
-        ? '문의=선택기간(시각 기준) / 전환=선택기간 문의 중 유효회원∪강습등록 전화매칭(등록일 미사용 → 기간 내 문의가 전환된 누적값)'
-        : '전체 누적 — 유효회원∪강습등록 전화매칭',
+      convBasis: fcPrecise
+        ? '등록일 기준 기간정합 · 단 강습원장 시드(2026-06-27) 이전 등록자는 기준선(2000-01-01)이라 기간필터서 제외=과소집계'
+        : (fcPeriod
+            ? '문의=선택기간(시각 기준) / 전환=선택기간 문의 중 유효회원∪강습등록 전화매칭(등록일 미사용 → 기간 내 문의가 전환된 누적값)'
+            : '전체 누적 — 유효회원∪강습등록 전화매칭'),
       generatedAt: _now()
     };
+    // 정밀모드 표시 — 비정밀(기존) 경로는 필드 자체를 추가하지 않아 응답 스키마 100% 동일 유지(회귀 0).
+    if (fcPrecise) fcResult.numeratorMode = 'registered';
     // 캐시 저장 (범위별 키 — 100KB 초과 시 생략)
     try { fcCache.put(fcCacheKey, JSON.stringify(fcResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
     return _json(fcResult);

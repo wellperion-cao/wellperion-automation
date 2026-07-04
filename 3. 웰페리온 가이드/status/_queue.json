@@ -3012,13 +3012,15 @@
     "task_id": "CPO-2026-07-04-CONVERSION-PRECISION",
     "clevel": "cpo",
     "ship_no": 463,
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-04",
     "title": "[시포] 전환율 정밀화 — 누적 전화매칭→기간별 실전환율(등록일 확보 시)",
-    "note": "[2026-07-04 GM 선택] 현 전환율=누적 전화매칭(convBasis 한계). 기간별 정밀화엔 회원 등록일 필요. 등록일 데이터원 실태 조사 중(없으면 정밀화 불가 정직 확인).",
-    "next": "조사 결과로 등록일 소스 확정 or 정직 한계 보고.",
-    "depends_on": ""
+    "note": "[2026-07-04 GM 선택] 현 전환율=누적 전화매칭(convBasis 한계). 기간별 정밀화엔 회원 등록일 필요. 등록일 데이터원 실태 조사 중(없으면 정밀화 불가 정직 확인). | ✅완결: funnel_conversion 정밀 분자(opt-in numerator=registered) — 멤버십 등록일+강습원장 기간필터. 회귀0(기본호출 스키마·값 불변 실측: 39.3%·numeratorMode없음). clasp @131 배포. kpi 이번달_전환율=3.2%(31/1) 점등+누적39.3% 병기. 문의회원 카드 이번달 병기. 정직한계=강습원장 시드(6/27) 이전 과소집계·각주명시. 단위테스트 15/15.",
+    "next": "🏁 입항완료 — 전환율 기간별 정밀화. 🔗 다음: 월 누적되며 이번달 전환율 성숙(전환 lag 반영)·분기뷰는 후속",
+    "depends_on": "",
+    "terminal": true,
+    "processed_at": "2026-07-04"
   },
   {
     "task_id": "COO-2026-07-04-ADHOC-d15a692a",
