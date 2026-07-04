@@ -7792,18 +7792,32 @@ function renderMrInspector(data){
   el.innerHTML=html;
 }
 
+/* 이슈 요약 강화(배208 후속 · 2026-07-04 시우): 서버가 이미 건수순 정렬해 보내는 issues.byZone(배열)을
+   ①최다 발생 구역 하이라이트 + ②구역별 건수 표로 표시 — '몇 건인지'는 있었으나 '어디서 제일 많은지'가
+   한 줄 텍스트에 섞여 있어 안 보이던 문제 보강. 완료율(pct) 로직은 무관·미수정. */
 function renderMrIssues(data){
   const sumEl=document.getElementById('mrIssuesSummary');
   const listEl=document.getElementById('mrIssuesList');
   const detailsEl=document.getElementById('mrIssuesDetails');
-  const issues=data.issues||{total:0,byZone:{},list:[]};
+  const issues=data.issues||{total:0,byZone:[],list:[]};
+  const byZone=Array.isArray(issues.byZone)?issues.byZone:[]; // 서버 issueByZone: count 내림차순 정렬 완료
   if(sumEl){
-    let byZoneHtml='';
-    if(issues.byZone && typeof issues.byZone==='object'){
-      byZoneHtml=Object.keys(issues.byZone).map(function(z){return mrEsc(z)+' '+issues.byZone[z]+'건';}).join(' · ');
-    }
     const swiHtml=(issues.sessionsWithIssue!=null)?(' <span style="color:var(--dim);font-weight:400;">(이슈 있는 세션 '+issues.sessionsWithIssue+'건)</span>'):'';
-    sumEl.innerHTML='<div style="font-size:13px;margin-bottom:6px;"><b>이슈 항목 누적 '+(issues.total||0)+'건</b>'+swiHtml+(byZoneHtml?' — '+byZoneHtml:'')+'</div>';
+    let html='<div style="font-size:13px;margin-bottom:8px;"><b>이슈 항목 누적 '+(issues.total||0)+'건</b>'+swiHtml+'</div>';
+    if((issues.total||0)===0){
+      html+='<div style="padding:8px 0;color:var(--dim);font-size:12.5px;">이번 달 등록된 이슈가 없습니다.</div>';
+    }else{
+      const top=byZone.filter(function(z){return (z.count||0)>0;})[0];
+      if(top){
+        html+='<div style="font-size:12.5px;color:var(--red);font-weight:600;margin-bottom:6px;">최다 발생 — '+mrEsc(top.zone)+' '+top.count+'건</div>';
+      }
+      if(byZone.length){
+        html+='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>구역</th><th>이슈 건수</th></tr>'
+          +byZone.map(function(z){return '<tr><td>'+mrEsc(z.zone)+'</td><td>'+(z.count||0)+'</td></tr>';}).join('')
+          +'</table></div>';
+      }
+    }
+    sumEl.innerHTML=html;
   }
   if(detailsEl){
     const summaryEl=detailsEl.querySelector('summary');
@@ -7824,8 +7838,8 @@ function renderMrImprovements(data){
   const el=document.getElementById('mrImprovements');
   if(!el) return;
   const arr=data.improvements||[];
-  if(arr.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">개선 시사점 없음</div>'; return; }
-  let html='';
+  if(arr.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">개선 시사점 없음 — 집계 데이터 부족 또는 특이사항 없음</div>'; return; }
+  let html='<div style="font-size:12px;color:var(--dim);margin-bottom:6px;">집계 기반 자동 도출 '+arr.length+'건</div>';
   arr.forEach(function(txt){
     html+='<div class="admin-card" style="padding:10px 14px;margin-bottom:8px;font-size:13px;">· '+mrEsc(txt)+'</div>';
   });
