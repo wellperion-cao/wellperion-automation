@@ -2890,5 +2890,19 @@
     "note": "[2026-07-04 GM 선택·확인대기] 상품기획 표 132,000원이 발레+바레 통합가인지 바레 단독가인지 GM 확인 후 정정. 가격=공식값이라 GM 값 대기.",
     "next": "GM 가격 확인 후 상품기획.html 표 정정.",
     "depends_on": "GM 가격 값"
+  },
+  {
+    "task_id": "COO-2026-07-04-ADHOC-00adb395",
+    "clevel": "coo",
+    "title": "[시우] KPI 수집기 완료율을 분모정합 통로(today_live)로 전환 — 100% 스냅샷 버그 해소",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-04",
+    "processed_at": "2026-07-04",
+    "ship_no": 456,
+    "artifact": "- kpi_collector._coo_check_rate: get_today_summary(스냅샷 25/25=100%) → today_live&dept=support(분모 정합·주말 pm 제외, 배239 라이브)\n- 실측 반영: roles.coo 지원부_점검완료율 1.0→0.3289(25/76) — 페이지·수집기 완료율 통일 (CLI ad-hoc · 커밋 00adb395)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "00adb3956dfc8b52b50a6029ab182fa1ad4572bb"
   }
 ]
