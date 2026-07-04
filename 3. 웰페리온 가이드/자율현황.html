@@ -80,6 +80,7 @@
   .pill.on{color:#0c1a10; background:var(--green);}
   .pill.idle{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
   .pill.na{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.30);}
+  .pill.warn{color:#2a2004; background:var(--gold);}
   .rrow{display:flex; gap:6px; font-size:11.5px; line-height:1.5; padding:2px 0; border-top:1px dashed var(--border); margin-top:2px;}
   .rrow:first-of-type{border-top:none;}
   .rrow .rk{color:var(--dim); min-width:56px; flex-shrink:0;}
@@ -120,6 +121,7 @@
 
   /* ── 📣 시모 폐루프 5단계 미니 흐름도 (project_cmo_marketing_pipeline_loop) ── */
   .cmo-loop{display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin:2px 0 12px; padding:10px 12px; border:1px solid var(--border-strong); border-radius:10px; background:rgba(232,138,192,0.05);}
+  .cmo-loop.coo-loop{background:rgba(122,196,240,0.06);}
   .cmo-loop-lbl{font-size:9px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; color:var(--dim); margin-right:2px; flex-shrink:0;}
   .cmo-step{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10.5px; font-weight:700; color:var(--text-soft); border:1px solid var(--border-strong); border-radius:8px; padding:5px 10px; background:var(--paper); white-space:nowrap;}
   .cmo-step .cs-s{font-size:8.5px; font-weight:800; letter-spacing:0.02em; border-radius:8px; padding:1px 7px;}
@@ -357,6 +359,58 @@
     <div class="cmo-loop-status">현재 열린 루프 — ⑤ 평가환류 대기 · ⑤ 연결 시 폐루프 완성</div>
     <div class="routines" id="cmo-routines">
       <div class="feed-status" style="grid-column:1/-1;">시모 자율 마케팅 현황을 불러오는 중…</div>
+    </div>
+  </section>
+
+  <!-- ════ 🔧 시우(AI COO) 자율 운영 (점검 운영 루프 5단계 자율 축 · today_live·daily_scheduler 실데이터) ════ -->
+  <section>
+    <h2 class="sec">🔧 시우 (AI COO) 자율 운영 <span style="font-size:11px;font-weight:400;color:var(--dim);">(점검 운영 루프 5단계 자율 축)</span></h2>
+    <div class="sec-note">지원부·시설부·주차 일일 점검을 굴리는 운영 루프. 각 단계=실제 라이브 엔진. 완료율·이슈 수치는 점검 GAS(today_live·monthly_report) 실데이터에서만 산출(가짜 수치 금지).</div>
+    <div class="cmo-loop coo-loop">
+      <span class="cmo-loop-lbl">점검 운영 루프</span>
+      <div class="cmo-step live"><span>① 점검 실행</span><span class="cs-s">라이브</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step live"><span>② 집계·현황</span><span class="cs-s">라이브</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step live"><span>③ 독려</span><span class="cs-s">라이브</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step partial"><span>④ 월간 A3 리포트</span><span class="cs-s">부분</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step wait"><span>⑤ 개선 환류</span><span class="cs-s">대기</span></div>
+      <span class="cmo-loop-arrow back pending" title="⑤ 개선 환류 연결 시 닫힘(완료율 측정 정밀도 확정 후 연결)">↻ 다음달 운영 반영 (대기)</span>
+    </div>
+    <div class="cmo-loop-status">현재 열린 루프 — ⑤ 개선 환류 대기 · 완료율 측정 정밀도 확정 후 폐루프</div>
+    <div class="routines" id="coo-routines-static">
+      <div class="rcard" style="--rc:var(--blue)">
+        <div class="rcard-top"><span class="cmo-stage live">②</span><span class="rcard-ico">✅</span>
+          <span class="rcard-tt"><span class="rcard-nm">today_live 점검 집계 (GAS)</span><span class="rcard-cy">매 요청</span></span>
+          <span class="pill on">라이브</span></div>
+        <div class="rrow"><span class="rk">무엇을</span><span class="rv">성별·요일·회차 필터로 시트 기준 완료율 실시간 집계 → 화면·텔레그램·독려 단일 소스</span></div>
+      </div>
+      <div class="rcard" style="--rc:var(--blue)">
+        <div class="rcard-top"><span class="cmo-stage live">③</span><span class="rcard-ico">📢</span>
+          <span class="rcard-tt"><span class="rcard-nm">점검 독려 알림</span><span class="rcard-cy">매일(daily_scheduler)</span></span>
+          <span class="pill on">라이브</span></div>
+        <div class="rrow"><span class="rk">무엇을</span><span class="rv">미완료 점검 점검관리방(-5136037543) 자동 독려, 스팸 dedup</span></div>
+      </div>
+      <div class="rcard" style="--rc:var(--blue)">
+        <div class="rcard-top"><span class="cmo-stage live">④</span><span class="rcard-ico">📅</span>
+          <span class="rcard-tt"><span class="rcard-nm">월간 점검 리포트 발송</span><span class="rcard-cy">매월 1일 09:00</span></span>
+          <span class="pill on">라이브(신규)</span></div>
+        <div class="rrow"><span class="rk">무엇을</span><span class="rv">Wellperion-MonthlyCheckReport-0900-D1 — 전월 집계→점검관리방 텔레그램 요약(첫 발송 8/1)</span></div>
+      </div>
+      <div class="rcard" style="--rc:var(--gold)">
+        <div class="rcard-top"><span class="cmo-stage partial">④</span><span class="rcard-ico">📋</span>
+          <span class="rcard-tt"><span class="rcard-nm">월간보고 A3 페이지</span><span class="rcard-cy">상시</span></span>
+          <span class="pill warn">부분</span></div>
+        <div class="rrow"><span class="rk">무엇을</span><span class="rv">지원부=라이브·시설부=GAS 배포 대기. 월 선택→KPI·이슈·구역/회차·개선시사 A3 인쇄</span></div>
+      </div>
+      <div class="rcard" style="--rc:var(--border-strong)">
+        <div class="rcard-top"><span class="cmo-stage wait">—</span><span class="rcard-ico">🔗</span>
+          <span class="rcard-tt"><span class="rcard-nm">4부서 체계 페이지 정합</span><span class="rcard-cy">지시형</span></span>
+          <span class="pill idle">지시 시</span></div>
+        <div class="rrow"><span class="rk">무엇을</span><span class="rv">페이지↔시트 동기·정렬(구체 지시 시에만 실행 — 상시 자율 보강 폐지)</span></div>
+      </div>
     </div>
   </section>
 
