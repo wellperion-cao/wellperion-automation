@@ -16,6 +16,7 @@ FILES = [
     "3. 웰페리온 가이드/cmo/funnel/engagement/engagement_feed.json",
     "3. 웰페리온 가이드/cmo/funnel/engagement/danggn_snapshot.json",
     "3. 웰페리온 가이드/cmo/funnel/engagement/blog_snapshot.json",
+    "status/ig_engagement_ledger.json",
 ]
 
 
@@ -39,7 +40,7 @@ def main() -> int:
         print("[commit_engagement] no engagement changes -> skip commit")
         return 0
 
-    commit = _run(["git", "commit", "-m", "auto(cmo): scheduled engagement collect (danggn+blog)"])
+    commit = _run(["git", "commit", "-m", "auto(cmo): scheduled engagement collect (danggn+blog+ig ledger)"])
     print("[commit_engagement] commit rc=%s %s" % (commit.returncode, ((commit.stdout or commit.stderr) or "").strip()[-200:]))
     if commit.returncode != 0:
         print("[commit_engagement] commit failed -> skip push")
