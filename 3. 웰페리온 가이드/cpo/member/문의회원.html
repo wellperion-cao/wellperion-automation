@@ -969,6 +969,22 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     </a>
   </div>
 
+  <!-- 전환율 카드 — 문의→가입 전환 실측(배443 funnel_conversion, PII 없음·수치만). 2026-07-04 시포 -->
+  <div class="card" id="convRateCard" style="padding:14px 18px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span class="dash-dot" style="background:var(--blue)"></span>
+        <span style="font-size:13px;font-weight:800;color:var(--text)">문의→가입 전환율</span>
+      </div>
+      <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:baseline">
+        <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환율</span> <b id="dConvRate" style="font-size:22px;font-weight:800;color:var(--blue);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> %</span></div>
+        <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환 문의수</span> <b id="dConvInq" style="font-size:16px;font-weight:800;color:var(--text);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> 건</span></div>
+        <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환 가입수</span> <b id="dConvJoin" style="font-size:16px;font-weight:800;color:var(--text);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> 명</span></div>
+      </div>
+    </div>
+    <div style="font-size:10.5px;color:var(--dim);margin-top:8px">⚠️ 누적 전화매칭 기준(등록일 미사용) — 기간별 부정확·과소집계 가능. 정본=funnel_conversion(GAS), 개인정보 미포함(집계 수치만)</div>
+  </div>
+
   <!-- CPO 운영 가이드 (전체폭 — 이탈 현황·신호 한 줄, 펼치기 4섹션) -->
   <div class="card cpo-guide" style="padding:14px 18px;margin-bottom:16px">
     <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:11px">🧭 CPO 운영 가이드</div>
@@ -2192,6 +2208,19 @@ function loadChurnTopBadges(){
     _setTxt('chSigD7', bk.b7); _setTxt('chSigD830', bk.b14 + bk.b30);
   });
 }
+// 전환율 카드 — 문의→가입 전환 실측(GAS funnel_conversion). PII 없음·집계 수치만. 2026-07-04 시포
+function loadConvRate(){
+  if (GAS_URL === GAS_PLACEHOLDER) return;
+  fetch(GAS_URL + '?action=funnel_conversion' + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok || !d.total) { return; }
+      _setTxt('dConvRate', d.total.rate);
+      _setTxt('dConvInq', d.total.inquiries);
+      _setTxt('dConvJoin', d.total.converted);
+    })
+    .catch(function(){});
+}
 // 이탈 신호 매트릭스의 실측 2행(이탈 확정·갱신 D-14) 라이브 숫자 주입. 캐시 재사용(강제조회 아님). 2026-07-03 시포·GM
 function renderChurnMatrixLive(body){
   if (!body) return;
@@ -3275,6 +3304,7 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false }
   loadCalendarData();  // 기본 활성 탭=예약 달력 (2026-06-24 GM 변경)
   loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
   loadChurnTopBadges();  // 상단 "이탈 신호" 3배지 라이브 연결(이탈율·갱신 D-7·D-8~30). 2026-07-03 시포·GM
+  loadConvRate();  // 전환율 카드 라이브 연결(funnel_conversion). 2026-07-04 시포·GM
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
   // 메뉴 그룹 진입(?manage=membership|lesson) — 배6. 기본=멤버십 관리. 2026-07-02 시포·GM.
   try { var _mp = new URLSearchParams(location.search).get('manage'); switchFamily(_mp === 'lesson' ? 'lesson' : 'membership'); }

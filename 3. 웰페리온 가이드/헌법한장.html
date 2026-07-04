@@ -138,6 +138,9 @@
   .vision-h{font-size:11px; font-weight:800; color:#f0c674; letter-spacing:0.02em; text-transform:uppercase; margin-bottom:3px;}
   .vision-txt{font-size:14px; color:var(--text); line-height:1.5;}
   .vision-txt b{color:#ffd97a;}
+  /* AI CEO 북극성 한 줄 — 정본 coo/bootsetup_matrix.json ceo.dims[0] 직독(JS 삽입·2026-07-04). 빈 값이면 숨김. */
+  .vision-ceo-ns{font-size:11.5px; color:var(--text-soft); margin-top:5px; line-height:1.45;}
+  .vision-ceo-ns b{color:var(--accent-soft); font-weight:600;}
   .vision-note{font-size:11px; color:var(--dim); margin-top:5px; line-height:1.45;}
   /* ── 🗺️ 북극성 지도: 대표 KPI 1개 + 측정 tier + 현재값 + 목표 + 경로 한 줄 (정직·2026-07-02) ── */
   .nsmap{margin:5px 0 8px; padding:7px 9px; border:1px solid var(--border-strong); border-left:3px solid var(--accent-soft); border-radius:8px; background:var(--surface);}
@@ -239,7 +242,7 @@
     .incd-h, .incd-meta, .incd-meta b, .incd-recent{color:#111 !important;}
     /* 신규(2026-07-02): 회사 비전 배너 · 북극성 지도 라이트 강제 */
     .vision{background:#f8f2dc !important; border-color:#caa84a !important;}
-    .vision-h, .vision-txt, .vision-txt b, .vision-note{color:#111 !important;}
+    .vision-h, .vision-txt, .vision-txt b, .vision-ceo-ns, .vision-ceo-ns b, .vision-note{color:#111 !important;}
     .nsmap{background:#f6f6f6 !important; border-color:#999 !important;}
     .nsmap-h, .nsmap-row, .nsmap-row b, .nsmap-row .nsmap-k, .nsmap-path{color:#111 !important;}
     .nsax, .nsax b, .nsax .nsax-name, .nsax-goal, .nsax-note{color:#111 !important;}
@@ -272,7 +275,11 @@
     <span class="vision-star">🌟</span>
     <div class="vision-body">
       <div class="vision-h">회사 비전 · 북극성 (전사 정본)</div>
-      <div class="vision-txt"><b>3,000평 종합 스포츠클럽을 굴리는 ERP를 제품화한다</b> — 미션: 지속되지 않는 건강 문제를 해결한다. 전 업무를 자동화→자율화(AI가 판단·완결)해, GM은 방향·결재만.</div>
+      <!-- 규모(3,000평)=JS가 ssot/canon_values.json(key:company_scale) 직독 후 #vision-scale에 반영(정본 파생·2026-07-04) · 실패 시 이 정적값이 폴백.
+           미션 문장 정본 = CLAUDE.md §0 회사 정보(미션 행) · 닫는 문장(자동화→자율화·GM 방향결재만) 정본 = 사용자 project memory
+           project_northstar_g1_orchestration_erp — 둘 다 라이브 JSON 아님(정적 문서) → 하드코딩 유지, 출처만 주석 명시(약속 L01). -->
+      <div class="vision-txt"><b><span id="vision-scale">3,000평</span> 종합 스포츠클럽을 굴리는 ERP를 제품화한다</b> — 미션: 지속되지 않는 건강 문제를 해결한다. 전 업무를 자동화→자율화(AI가 판단·완결)해, GM은 방향·결재만.</div>
+      <div class="vision-ceo-ns" id="vision-ceo-ns"><!-- JS: AI CEO 북극성(coo/bootsetup_matrix.json ceo.dims[0] 직독·이미 fetch하는 _matrixData 재사용, 신규 fetch 없음) --></div>
       <div class="vision-note" title="GM = G1(오케스트레이션)만 · 실무 북극성은 아래 7역할이 나눠 진다. 개인 삶 북극성은 헌법에서 제외(헌법 = 회사 운영용). 🔖 초안 3역할(시포·시뽀·시로) 북극성 = 제안본(GM 결재 대기 · KPI 정의 변경 게이트).">GM=G1(오케스트레이션)만 · 북극성은 7역할 분담(개인 삶 제외). 🔖 시포·시뽀·시로=제안본(결재 대기)</div>
       <div class="vision-note" title="🔍 자율 개선 규모 게이트(차등 점검): 안정 페이지(대장 등록)는 자율 점검서 제외 — 신규/변경분만 대상. 좁혀진 대상은 1~2척·Sonnet 선훑기, 딥 전수는 신규 페이지에만. 정본 = status/audit_registry.json + scripts/audit_scope.py(대장·git 대조 자동 산출).">🔍 차등 점검: 안정 페이지 제외·신규/변경분만(1~2척 Sonnet 선훑기, 딥전수=신규만). 정본 <code>status/audit_registry.json</code>+<code>audit_scope.py</code></div>
     </div>
@@ -935,6 +942,25 @@
       });
   };
 
+  // 🌟 비전 배너 정본화(부차·2026-07-04) — ssot/canon_values.json 직독(신규 fetch 1개, 기존 gasRead 패턴 재사용).
+  //   company_scale만 대체(가짜 창작 금지 · 나머지 문장은 정적 문서 출처라 하드코딩 유지·주석 명시).
+  //   AI CEO 북극성 줄은 신규 fetch 없이 기존 _matrixData(ceo.dims[0])만 사용.
+  function renderVisionDynamic(canonMap){
+    try{
+      var scaleEl = document.getElementById('vision-scale');
+      if(scaleEl && canonMap && canonMap.company_scale) scaleEl.textContent = canonMap.company_scale;
+    }catch(e){}
+    try{
+      var nsEl = document.getElementById('vision-ceo-ns');
+      var ceoRole = ((_matrixData && _matrixData.roles) || []).filter(function(r){ return r.id === 'ceo'; })[0];
+      if(nsEl && ceoRole){
+        var raw = ((ceoRole.dims || [])[0] == null) ? '' : String(ceoRole.dims[0]);
+        var first = (raw.split(/\n+/)[0] || '').trim();
+        if(first) nsEl.innerHTML = '🧭 <b>AI CEO 북극성</b> <span style="color:var(--dim);">(정본 coo/bootsetup_matrix.json)</span> ' + esc(first);
+      }
+    }catch(e){}
+  }
+
   Promise.all([
     fetchMatrix(),
     fetchKpi().catch(function(){ return null; }),
@@ -942,7 +968,8 @@
     gasRead('status/_queue.json',         RAW_BASE + 'status/_queue.json').catch(function(){ return null; }),
     gasRead('status/northstar_pending.json', RAW_BASE + 'status/northstar_pending.json').catch(function(){ return null; }),
     gasRead('ssot/incidents.json',        RAW_BASE + 'ssot/incidents.json').catch(function(){ return null; }),
-    gasRead('status/northstar_reach.json', RAW_BASE + 'status/northstar_reach.json').catch(function(){ return null; })
+    gasRead('status/northstar_reach.json', RAW_BASE + 'status/northstar_reach.json').catch(function(){ return null; }),
+    gasRead('ssot/canon_values.json',      RAW_BASE + 'ssot/canon_values.json').catch(function(){ return null; })
   ])
     .then(function(arr){
       _matrixData = arr[0];
@@ -953,8 +980,11 @@
       _pendingByRole = computePending(arr[4]);
       _incidents = computeIncidents(arr[5]);
       _reachData = (arr[6] && arr[6].roles) || {};
+      var canonMap = {};
+      ((arr[7] && arr[7].values) || []).forEach(function(v){ if(v && v.key) canonMap[v.key] = v.value; });
       renderMatrix();
       renderNsOverview();
+      renderVisionDynamic(canonMap);
       renderEditBtn();
       initColResizers();
       buildControlBar();

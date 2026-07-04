@@ -161,6 +161,43 @@ def _cpo_loss_rate() -> dict:
     return result
 
 
+def _cpo_funnel_conversion() -> dict:
+    """
+    cpo 문의→가입 전환율 실측 — .deploy-funnel/Survey.js:3176-3297 funnel_conversion action.
+    동일 CPO GAS(_CPO_GAS) — PII 없음, 집계 수치만(전화번호 등 개인정보 미포함).
+    ⚠️ convBasis=누적 전화매칭 기준(등록일 미사용) — 기간별 부정확·과소집계 가능(GAS 응답 정본 참조).
+    반환: {"문의_가입_전환율": float(%) 또는 null, "전환_문의수": int, "전환_가입수": int, "_전환_note": str}
+    ⚠️ 키명 "_note"는 _cpo_loss_rate()가 이미 점유(cpo 블록 병합 시 dict.update로 덮어써짐) — 별도 "_전환_note" 사용(무손상).
+    """
+    result: dict = {
+        "문의_가입_전환율": None,
+        "전환_문의수": None,
+        "전환_가입수": None,
+        "_전환_note": "누적 전화매칭 기준(기간별 부정확 가능) · funnel_conversion 실측",
+    }
+    try:
+        data = _http_get_json(f"{_CPO_GAS}?action=funnel_conversion")
+        if not isinstance(data, dict) or not data.get("ok"):
+            result["_전환_note"] = "GAS 응답 오류(ok=false 또는 형식 불일치)"
+            return result
+        total = data.get("total")
+        if not isinstance(total, dict):
+            result["_전환_note"] = "GAS 응답에 total 없음"
+            return result
+        rate = total.get("rate")
+        if isinstance(rate, (int, float)) and not isinstance(rate, bool):
+            result["문의_가입_전환율"] = rate
+        inquiries = total.get("inquiries")
+        if isinstance(inquiries, (int, float)) and not isinstance(inquiries, bool):
+            result["전환_문의수"] = inquiries
+        converted = total.get("converted")
+        if isinstance(converted, (int, float)) and not isinstance(converted, bool):
+            result["전환_가입수"] = converted
+    except Exception as e:
+        result["_전환_note"] = f"fetch 실패({type(e).__name__}): {str(e)[:80]}"
+    return result
+
+
 def _integration_health() -> str | None:
     """
     integration_health.py check_bridges() 결과 요약.
@@ -195,6 +232,8 @@ def collect() -> dict:
         if role == "cpo":
             # 당월 LOSS율 병합 (배299 cpo_churn_stats 실측 · 역방향 지표)
             stats.update(_cpo_loss_rate())
+            # 문의→가입 전환율 병합 (배443 funnel_conversion 실측 · null 안전)
+            stats.update(_cpo_funnel_conversion())
         roles_data[role] = stats
 
     now_kst = datetime.now(KST)
@@ -227,6 +266,8 @@ def main() -> None:
             extra = f"  지원부점검완료율={v['지원부_점검완료율']}({v['지원부_완료']}/{v['지원부_전체']})"
         if role == "cpo" and v.get("월_LOSS율") is not None:
             extra = f"  월_LOSS율={v['월_LOSS율']}(역방향·낮을수록좋음, {v['월_LOSS건수']}건/{v['유효회원수']}명)"
+        if role == "cpo" and v.get("문의_가입_전환율") is not None:
+            extra += f"  전환율={v['문의_가입_전환율']}%({v['전환_가입수']}/{v['전환_문의수']})"
         print(f"  {role:5s}: 완결률={v['완결률']}  완료={v['완료']}  활성={v['활성']}{extra}")
     print(f"  -> {OUT_PATH}")
 

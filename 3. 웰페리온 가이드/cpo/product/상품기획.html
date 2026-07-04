@@ -70,7 +70,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab-dropdown-menu button.default{color:var(--accent);}
 
 /* ─── 레이아웃 ─── */
-.content{padding:24px;max-width:1100px;margin:0 auto;}
+/* 좌측정렬 풀폭 표준(feedback_page_layout_left_full_width) — 전 탭 공통. 2026-07-04 executor */
+.content{padding:24px;max-width:100%;margin:0;}
 .tab-panel{display:none;}
 .tab-panel.active{display:block;}
 
@@ -220,9 +221,9 @@ tr:hover td{background:var(--accent-bg);}
 .pc-box.next .pc-box-label{color:var(--accent);}
 .pc-box-content{font-size:12.5px;line-height:1.7;color:var(--dim-mid);}
 .pc-box-content strong{color:var(--text);}
-/* ── 요금 정책: 멤버십 탭과 동일한 낯익은 카드+표 구조 · 좌측정렬 · 폭 최대. 2026-07-02 시포·GM ── */
-#tab-policy{width:100vw;margin-left:calc(50% - 50vw);padding:0 24px;box-sizing:border-box;}
-#tab-policy .section-badge,#tab-policy .callout{text-align:left;}
+/* ── 요금 정책: 멤버십 탭과 동일한 낯익은 카드+표 구조 · 좌측정렬 · 폭 최대.
+   2026-07-02 시포·GM 도입 당시 hack(width:100vw)이었으나, 2026-07-04 .content 자체를
+   전 탭 공통 좌측정렬 풀폭으로 전환하며 불필요해져 제거(executor). ── */
 .pol-card table{width:100%;border-collapse:collapse;font-size:12.5px;}
 .pol-card th{background:var(--paper-raised);color:var(--dim-mid);font-weight:600;padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
 .pol-card td{padding:4px 6px;border-bottom:1px solid var(--border-subtle);vertical-align:middle;}
@@ -241,7 +242,6 @@ tr:hover td{background:var(--accent-bg);}
 .pricing-hint{display:block;font-size:11px;color:var(--dim);margin:8px 0 14px;}
 /* ── 인쇄 전용: <input> 값은 한 줄로 잘려 보이지 않으므로(요금정책 표) 인쇄 직전 텍스트로 치환해 줄바꿈 표시. 2026-07-03 시포·GM ── */
 .print-val{display:none;}
-@media(max-width:600px){#tab-policy{width:auto;margin-left:0;padding:0;}}
 
 /* ─── 기획 카드 그리드 ─── */
 .plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:4px;}
@@ -612,8 +612,8 @@ tr:hover td{background:var(--accent-bg);}
           </thead>
           <tbody>
             <tr><td>발레</td><td class="num">월 2회</td><td class="num">66,000</td><td>매주 금 10:00 / 11:00</td><td rowspan="4">외부 파트너(루프메소드) 운영<br>강사: 발레 이수지 / 바레 박상아<br>장소: 웰니스 스튜디오 (여성 락커룸 맞은편)</td></tr>
-            <tr><td>발레</td><td class="num">월 4회</td><td class="num dim">[확인 필요]</td><td class="num dim">—</td></tr>
-            <tr><td>바레</td><td class="num">월 2회</td><td class="num dim">[확인 필요]</td><td class="num dim">—</td></tr>
+            <tr><td>발레</td><td class="num">월 4회</td><td class="num dim">GM 확인 필요</td><td class="num dim">—</td></tr>
+            <tr><td>바레</td><td class="num">월 2회</td><td class="num dim">GM 확인 필요</td><td class="num dim">—</td></tr>
             <tr><td>바레</td><td class="num">월 4회</td><td class="num">132,000 (VAT포함)</td><td>매주 화 10:00</td></tr>
           </tbody>
         </table>
@@ -656,7 +656,7 @@ tr:hover td{background:var(--accent-bg);}
   </div>
 
   <!-- ══════════════════════════════════════
-       TAB 3: 요금 정책
+       TAB 4: 요금 정책
   ══════════════════════════════════════ -->
   <div id="tab-policy" class="tab-panel">
     <!-- 요금 정책 — 구분별 카드+표(멤버십 탭과 동일 낯익은 구조) · GM 인라인 편집·저장(POLICY-TABLE).
@@ -683,7 +683,7 @@ tr:hover td{background:var(--accent-bg);}
   </div><!-- /tab-policy -->
 
   <!-- ══════════════════════════════════════
-       TAB 4: 기획 작업대
+       TAB 5: 기획 작업대
   ══════════════════════════════════════ -->
   <div id="tab-workshop" class="tab-panel">
     <!-- 편집/저장 버튼 = 제목(section-badge) 줄 맨 우측 배치. 2026-07-03 시포·GM -->
