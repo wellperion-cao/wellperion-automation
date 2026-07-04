@@ -983,6 +983,20 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       </div>
     </div>
     <div style="font-size:10.5px;color:var(--dim);margin-top:8px">⚠️ 누적 전화매칭 기준(등록일 미사용) — 기간별 부정확·과소집계 가능. 정본=funnel_conversion(GAS), 개인정보 미포함(집계 수치만)</div>
+    <div id="convChannelWrap" style="margin-top:12px;display:none">
+      <div style="font-size:11px;font-weight:800;color:var(--text);margin-bottom:6px">채널별 전환율 (전환율 내림차순)</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px" id="convChannelTable">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">채널</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">문의수</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">가입수</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">전환율</th>
+          </tr>
+        </thead>
+        <tbody id="convChannelBody"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- CPO 운영 가이드 (전체폭 — 이탈 현황·신호 한 줄, 펼치기 4섹션) -->
@@ -2218,6 +2232,19 @@ function loadConvRate(){
       _setTxt('dConvRate', d.total.rate);
       _setTxt('dConvInq', d.total.inquiries);
       _setTxt('dConvJoin', d.total.converted);
+      var wrap = document.getElementById('convChannelWrap');
+      var body = document.getElementById('convChannelBody');
+      if (!wrap || !body) return;
+      var list = (d.byChannel || []).slice().sort(function(a, b){ return (b.rate || 0) - (a.rate || 0); });
+      if (!list.length) { wrap.style.display = 'none'; body.innerHTML = ''; return; }
+      body.innerHTML = list.map(function(c){
+        var name = c.channel ? esc(c.channel) : '미상';
+        return '<tr><td style="padding:4px 8px;border-bottom:1px solid var(--border-subtle)">'+name+'</td>'+
+               '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle)">'+(c.inquiries != null ? c.inquiries : '–')+'</td>'+
+               '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle)">'+(c.converted != null ? c.converted : '–')+'</td>'+
+               '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700;color:var(--blue)">'+(c.rate != null ? c.rate + '%' : '–')+'</td></tr>';
+      }).join('');
+      wrap.style.display = '';
     })
     .catch(function(){});
 }

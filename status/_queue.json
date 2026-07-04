@@ -2878,32 +2878,37 @@
     "processed_at": "2026-07-04",
     "ship_no": 454,
     "artifact": "- 현황(tab-admin) 탭 실제 구축: 오늘 체크리스트 완료율·시간대별 현황·\n  운영 보드(규정/가이드/매뉴얼) 작성 현황·GM 확정 필요 항목 요약 (지원부\n  tab-admin 패턴 참고, 운영부 실제 데이터 기준)\n- 오전/오후 근무조 표를 입력 가능한 편집 표로 전환(localStorage+API\n  자동저장). 담당·시간·휴게 값은 지어내지 않고 '입력 필요' 플레이스홀더\n- 분실물 대장 절차를 일반 운영 상식 기준 표준 절차 초안으로 제시(보관\n  30일 등), 화면에 '초안 · GM 확정 필요' 배지 명시 (CLI ad-hoc · 커밋 f1e8cdec)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "f1e8cdec97eebaed08463f625039653698d64282"
+    "next": "🏁 입항완료 — 채널별 전환율 가시화",
+    "adhoc_commit": "f1e8cdec97eebaed08463f625039653698d64282",
+    "note": " | ✅완결: 전환율 카드에 채널별 브레이크다운(채널·문의수·가입수·전환율%, 내림차순, 데이터없음 자동숨김) 추가. loadConvRate 재사용(추가 fetch 0). node OK·태그균형."
   },
   {
     "task_id": "CPO-2026-07-04-CHANNEL-CONVERSION",
     "clevel": "cpo",
     "ship_no": 454,
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-04",
     "title": "[시포] 채널별 전환율 가시화 — funnel_conversion byChannel 대시보드화",
-    "note": "[2026-07-04 GM 선택] 어느 채널 문의가 가장 잘 가입으로 이어지는지 채널별 전환율 표면화. funnel_conversion byChannel[]{channel,inquiries,converted,rate} 이미 있음(추가 fetch 불필요·loadConvRate 재사용). 문의회원.html.",
-    "next": "executor 구현 중.",
-    "depends_on": ""
+    "note": "[2026-07-04 GM 선택] 어느 채널 문의가 가장 잘 가입으로 이어지는지 채널별 전환율 표면화. funnel_conversion byChannel[]{channel,inquiries,converted,rate} 이미 있음(추가 fetch 불필요·loadConvRate 재사용). 문의회원.html. | ✅완결: 전환율 카드에 채널별 브레이크다운(채널·문의수·가입수·전환율%, 내림차순, 데이터없음 자동숨김) 추가. loadConvRate 재사용(추가 fetch 0). node OK·태그균형.",
+    "next": "🏁 입항완료 — 채널별 전환율 가시화",
+    "depends_on": "",
+    "terminal": true,
+    "processed_at": "2026-07-04"
   },
   {
     "task_id": "CPO-2026-07-04-BALLET-PRICE-FIX",
     "clevel": "cpo",
     "ship_no": 455,
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-04",
     "title": "[시포] 상품기획 발레/바레 가격 라벨 정정 — 132,000원 통합가/단독가 확인",
-    "note": "[2026-07-04 GM 선택·확인대기] 상품기획 표 132,000원이 발레+바레 통합가인지 바레 단독가인지 GM 확인 후 정정. 가격=공식값이라 GM 값 대기.",
-    "next": "GM 가격 확인 후 상품기획.html 표 정정.",
-    "depends_on": "GM 가격 값"
+    "note": "[2026-07-04 GM 선택·확인대기] 상품기획 표 132,000원이 발레+바레 통합가인지 바레 단독가인지 GM 확인 후 정정. 가격=공식값이라 GM 값 대기. | ✅발레 월4회=132,000(VAT포함) 정정(GM확인:발레·바레 각 단독4회 132,000). 바레 월4회 이미 132,000✓. ⚠️바레 월2회만 GM 미확인 잔여(발레 월2회=66,000 대칭이면 66,000 추정이나 미확정—날조 안 함).",
+    "next": "🏁 발레 정정 완료. 잔여=바레 월2회 값(GM 확인 시 채움)",
+    "depends_on": "GM 가격 값",
+    "terminal": true,
+    "processed_at": "2026-07-04"
   },
   {
     "task_id": "COO-2026-07-04-ADHOC-00adb395",
