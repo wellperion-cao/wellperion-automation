@@ -91,6 +91,7 @@ footer{margin-top:26px;font-size:11px;color:var(--ink-faint);text-align:center;l
 @media(max-width:680px){.bud-row{grid-template-columns:80px 1fr;gap:8px}.bud-meta{grid-column:1/-1;text-align:left}}
 /* ── 승인 전: 최저가 검토 배지 + 비교 링크 (컴팩트·정렬) ── */
 .req-item{font-weight:600;color:var(--ink)}
+.req-purpose{display:block;margin-top:2px;font-size:11px;line-height:1.4;font-weight:400;color:var(--ink-faint);white-space:normal;word-break:break-word;max-width:240px}
 .rev-low{margin-top:4px;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:100%;font-size:11px;color:var(--gold-deep);background:#fbf7ee;border:1px solid #ecdcb3;border-radius:7px;padding:2px 8px;line-height:1.5}
 .rev-low b{color:var(--navy);font-size:11.5px;font-weight:750}
 .rev-delta{font-size:10px;font-weight:700;white-space:nowrap}
@@ -283,6 +284,7 @@ function attemptGate(pw){var err=document.getElementById("gateErr");
 document.getElementById("gateBtn").onclick=function(){attemptGate(document.getElementById("gatePw").value.trim());};
 document.getElementById("gatePw").onkeydown=function(e){if(e.key==="Enter")attemptGate(this.value.trim());};
 
+function escapeHtml(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function won(n){return (Math.round(Number(n)||0)).toLocaleString("ko-KR")+"원";}
 function man(n){return Math.round((Number(n)||0)/1e4).toLocaleString("ko-KR")+"만";}
 function eok(n){return (n/1e8).toFixed(2)+"억";}
@@ -777,7 +779,7 @@ function renderReqTbl(){
     var photo=(r.이미지&&(String(r.이미지).indexOf("http")===0||String(r.이미지).indexOf("data:")===0))?'<img src="'+r.이미지+'" class="'+tc+'" title="첨부사진" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var pf=(r.지출증빙&&String(r.지출증빙).indexOf("http")===0)?'<img src="'+r.지출증빙+'" class="'+tc+'" title="영수증/증빙" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var rcpt=(photo||pf)?(photo+pf):'<button class="reqPhoto" data-row="'+r.row+'" style="font-size:10.5px;padding:4px 9px;cursor:pointer;border:1px dashed var(--gold);border-radius:6px;background:#fbf7ee;color:var(--gold-deep)">+ 사진</button>';
-    h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left"><span class="req-item">'+(r.물품||"")+'</span>'+reviewBadge(r,st)+priceLinks(r,st)+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
+    h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left"><span class="req-item">'+(r.물품||"")+'</span>'+(r.목적?'<div class="req-purpose">'+escapeHtml(r.목적)+'</div>':'')+reviewBadge(r,st)+priceLinks(r,st)+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
   if(!rows.length)h+='<tr><td colspan="10" style="color:var(--ink-faint)">'+(isDone?(REQ_DONE.length?("해당 기간에 "+reqFilter+" 건이 없습니다."):"기간을 선택하고 [검색]을 누르세요."):"해당 단계의 품의가 없습니다.")+'</td></tr>';
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
