@@ -353,7 +353,7 @@
       <span class="cmo-loop-arrow">→</span>
       <div class="cmo-step partial"><span>③ 등록·전환</span><span class="cs-s">부분</span></div>
       <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step live"><span>④ 측정·대시보드</span><span class="cs-s">라이브</span></div>
+      <div class="cmo-step partial"><span>④ 측정·대시보드</span><span class="cs-s">부분</span></div>
       <span class="cmo-loop-arrow">→</span>
       <div class="cmo-step wait"><span>⑤ 평가 환류</span><span class="cs-s">대기</span></div>
       <span class="cmo-loop-arrow back pending" title="⑤ 평가환류 연결 시 닫힘(현재 미연결)">↻ 다음 기획 (대기)</span>
@@ -611,7 +611,7 @@
         <td><strong>M5 검수큐 등록</strong> — <code>cmo/review/review_queue.json</code>에 항목 추가 + <strong>텔레그램 검수카드 1회 발송</strong> ([✅승인]/[❌반려])</td>
         <td><span style="color:var(--accent-soft);font-weight:600;">검수 대기</span></td>
         <td>CMO (시모) · <code>review_queue.json</code></td>
-        <td>검수카드 콘텐츠당 1회만 — 재발송 금지 · review_queue.json git push 필수(M5 배포본 stale 차단)</td>
+        <td>검수카드 콘텐츠당 1회만 — 재발송 금지.<br>review_queue.json git push 필수 — post-commit 훅 자동 push(M5 배포본 stale 차단)</td>
       </tr>
       <tr>
         <td style="text-align:center;font-weight:700;">3</td>
@@ -625,7 +625,7 @@
         <td><strong>발행</strong> — 4채널 M5 단일경유 · IG는 Playwright headful (<code>instagram_upload_playwright.py</code>)</td>
         <td><span style="color:var(--accent-soft);font-weight:600;">발행검증대기</span></td>
         <td>CMO (시모) · <code>instagram_upload_playwright.py</code> · <code>bot.py</code> pub 콜백</td>
-        <td><code>발행검증대기</code>는 재처리 대상 아님(이중발행 차단) · 자동 재발행·일괄발행 금지 · .publish.lock 직렬화</td>
+        <td><code>발행검증대기</code>는 재처리 대상 아님(이중발행 차단).<br>자동 재발행·일괄발행 금지.<br>.publish.lock 직렬화</td>
       </tr>
       <tr>
         <td style="text-align:center;font-weight:700;">5</td>
@@ -639,22 +639,9 @@
         <td><strong>발행완료 도장</strong> — 실게시 확인 후에만 (약속 L04)</td>
         <td><span style="color:var(--green);font-weight:600;">발행완료</span></td>
         <td>웰리 (AI CEO)</td>
-        <td>승인 ≠ 발행완료 · 불일치 시 재처리(발행완료 자동 전환 금지) · 부팅 가드: 미푸시 커밋·발행검증대기 부팅 시 우선 처리</td>
+        <td>승인 ≠ 발행완료 (약속 L04).<br>불일치 시 재처리(발행완료 자동 전환 금지).<br>부팅 가드: <code>welly_boot_guard.py</code> — 미푸시 커밋 즉시 push · 검수대기·발행검증대기 부팅 시 우선 확인</td>
       </tr>
     </table></div>
-
-    <div class="callout fix" style="margin-top:10px;font-size:13px;">
-      <strong>핵심 가드 요약 (한눈에)</strong>
-      <div class="tbl-wrap" style="margin-top:8px;"><table>
-        <tr><th style="width:200px">가드</th><th>내용</th></tr>
-        <tr><td>승인 ≠ 발행완료</td><td>발행완료는 웰리가 IG↔M5 실대조 후에만 찍는다 (약속 L04)</td></tr>
-        <tr><td>검수카드 1회</td><td>콘텐츠당 텔레그램 검수카드 1회만 발송 — 재발송 금지</td></tr>
-        <tr><td>무폴링</td><td>발행 트리거 = GM [✅승인] 탭만. 스케줄 자동발행·재발행 금지</td></tr>
-        <tr><td>발행검증대기 보호</td><td><code>발행검증대기</code> 상태는 재처리·이중발행 차단 — 웰리 대조 후에만 다음 단계</td></tr>
-        <tr><td>부팅 미푸시 가드</td><td>부팅 시 <code>welly_boot_guard.py</code> — origin 미푸시 커밋 즉시 push / 검수대기·발행검증대기 확인</td></tr>
-        <tr><td>post-commit 자동 push</td><td>커밋 시 post-commit 훅 자동 push — review_queue.json stale 차단</td></tr>
-      </table></div>
-    </div>
     <!-- ══ /M5 인스타그램 발행 파이프라인 ══ -->
 
     <!-- ══ 매주 (7 C-Level 컨텍스트 정비 · AI 교육자료 자동 정리) — T2 원본에서 이식 2026-07-03 ══ -->
@@ -882,14 +869,12 @@
     var published = queue.filter(function(q){ return q.status === '발행완료'; });
     var pending   = queue.filter(function(q){ return q.status === '검수대기'; });
     var byCh = {}; published.forEach(function(q){ var b = cmoChannelBucket(q.channel); byCh[b] = (byCh[b]||0) + 1; });
-    var aideN = published.filter(function(q){ return q.channel === '인스타그램 (namuk.wellperion)'; }).length;
 
     var cards = [];
     // 1) AI 개인시리즈 자동제작 — 루프 ① 콘텐츠 제작
     cards.push({ ico:'🎨', nm:'AI 개인시리즈 자동제작', cy:'매일 07:30 · ig_series_producer 다음 편 자동 선정·제작', rc:'var(--blue)',
       stage:['①','live'], pill:['on','상시'], rows:[
-        ['흐름', '다음 편 자동 선정 → 카드 주입 → M3 검수큐'],
-        ['발행', aideN ? ('<b>' + aideN + '</b>건 (namuk 개인계정)') : '<span class="rv-note">발행 건수=②번 카드 합산</span>']
+        ['흐름', '다음 편 자동 선정 → 카드 주입 → M3 검수큐']
       ]});
     // 2) 콘텐츠 자동발행 파이프라인 — 루프 ①→② 제작·발행
     cards.push({ ico:'📤', nm:'콘텐츠 자동발행 파이프라인', cy:'제작→M3 검수큐→GM 승인→5채널 자동발행', rc:'var(--pink)',
