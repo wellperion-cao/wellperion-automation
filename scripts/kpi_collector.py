@@ -236,6 +236,36 @@ def _cpo_funnel_conversion() -> dict:
     return result
 
 
+def _cmo_channel_clicks() -> dict:
+    """
+    cmo 채널별 유입 클릭수 실측 — .deploy-funnel/Survey.js:2072 click_stats action(클릭로그 시트).
+    동일 GAS(_CPO_GAS)가 서빙 — PII 없음(집계 수치만).
+    ⚠️ 이것은 '노출→문의 전환율'의 분모(노출)가 아니라 분자측 신호(채널 귀속 클릭수)만 실측.
+    문의페이지 도달 후 클릭(폼 진입·소셜 아이콘)을 UTM소스별로 집계한 값 — 콘텐츠 자체 노출(IG 도달수 등)은
+    Meta Graph API 토큰 필요(🔒 GM 결재) → 미측정 유지(가짜 분모 금지 · ssot/약속.json L05).
+    반환: {"채널별_클릭수": {utm_source: count}|None, "총_클릭수": int|None, "_클릭_note": str}
+    """
+    result: dict = {
+        "채널별_클릭수": None,
+        "총_클릭수": None,
+        "_클릭_note": "노출(분모) 미측정 — IG Graph API 토큰 필요(GM 결재). 채널귀속 클릭(분자)만 실측 · click_stats 실측",
+    }
+    try:
+        data = _http_get_json(f"{_CPO_GAS}?action=click_stats")
+        if not isinstance(data, dict) or not data.get("ok"):
+            result["_클릭_note"] = "GAS 응답 오류(ok=false 또는 형식 불일치)"
+            return result
+        by_src = data.get("byUtmSource")
+        if isinstance(by_src, dict):
+            result["채널별_클릭수"] = by_src
+        total = data.get("total")
+        if isinstance(total, (int, float)) and not isinstance(total, bool):
+            result["총_클릭수"] = total
+    except Exception as e:
+        result["_클릭_note"] = f"fetch 실패({type(e).__name__}): {str(e)[:80]}"
+    return result
+
+
 def _sales_target_total() -> int | float | None:
     """월 목표매출 총액(고정) — status/sales_targets.json 정본(GM 결재). 실패 시 None."""
     try:
@@ -328,6 +358,9 @@ def collect() -> dict:
         if role == "cfo":
             # 최근 마감월 매출 실적 병합 (배354 측정 개통 · sales_monthly GAS 실측 · null 안전)
             stats.update(_cfo_sales_month())
+        if role == "cmo":
+            # 채널별 유입 클릭수 병합 (click_stats 실측 · 노출 분모는 미측정 유지 · null 안전)
+            stats.update(_cmo_channel_clicks())
         roles_data[role] = stats
 
     now_kst = datetime.now(KST)
@@ -364,6 +397,8 @@ def main() -> None:
             extra += f"  전환율={v['문의_가입_전환율']}%({v['전환_가입수']}/{v['전환_문의수']})"
         if role == "cfo" and v.get("sales_month") is not None:
             extra = f"  sales_month={v['sales_month']}({v.get('sales_month_label')}) target={v.get('sales_month_target')}"
+        if role == "cmo" and v.get("총_클릭수") is not None:
+            extra = f"  총클릭수={v['총_클릭수']}  채널별={v.get('채널별_클릭수')}"
         print(f"  {role:5s}: 완결률={v['완결률']}  완료={v['완료']}  활성={v['활성']}{extra}")
     print(f"  -> {OUT_PATH}")
 

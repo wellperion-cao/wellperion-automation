@@ -61,7 +61,7 @@
     },
     {
       "id": "cmo",
-      "nsmap": { "kpi": "노출→회원 전환 엔진 (3축 복합)", "axes":[ {"name":"노출→문의 전환율","measured":false,"goal":"측정 개통","note":"채널귀속 없음"}, {"name":"발행 무인화율","measured":false,"goal":"완전 무인","note":"부분·검수 GM 게이트"}, {"name":"월 ROI","measured":false,"goal":"양(+)","note":"미측정"} ], "tier": "★ 미측정(배관 필요 · 1순위 투자)", "현재": "미측정(채널귀속 없음)", "goal": "측정 개통", "path": "전환율↑ = 노출이 문의로 = 전환 엔진 가동", "reach": { "mode": "milestone", "note": "제안본 — GM/웰리 조정 가능. done=수동 결재 플래그", "milestones": [ { "key": "ig_bio_link", "label": "IG bio 문의링크", "done": false }, { "key": "utm_tag", "label": "UTM 태깅", "done": false }, { "key": "channel_attr", "label": "채널귀속 측정개통", "done": false }, { "key": "conv_rate", "label": "노출→문의 전환율 실측", "done": false } ] } },
+      "nsmap": { "kpi": "노출→회원 전환 엔진 (3축 복합)", "axes":[ {"name":"노출→문의 전환율","measured":false,"goal":"측정 개통","note":"분자(채널귀속 클릭·문의)는 실측(click_stats·funnel_conversion 라이브) · 분모(노출)는 IG Graph API 토큰 없어 미측정 — 가짜 분모 금지"}, {"name":"발행 무인화율","measured":false,"goal":"완전 무인","note":"부분·검수 GM 게이트"}, {"name":"월 ROI","measured":false,"goal":"양(+)","note":"미측정"} ], "tier": "★ 미측정(배관 필요 · 1순위 투자)", "현재": "채널별 클릭·문의 귀속만 실측(노출 없음)", "goal": "측정 개통", "path": "전환율↑ = 노출이 문의로 = 전환 엔진 가동", "reach": { "mode": "milestone", "note": "제안본 — GM/웰리 조정 가능. done=수동 결재 플래그", "milestones": [ { "key": "ig_bio_link", "label": "IG bio 문의링크", "done": false }, { "key": "utm_tag", "label": "UTM 태깅", "done": true }, { "key": "channel_attr", "label": "채널귀속 측정개통", "done": true }, { "key": "conv_rate", "label": "노출→문의 전환율 실측", "done": false } ] } },
       "icon": "📣",
       "name": "시모",
       "title": "AI CMO",
