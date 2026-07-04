@@ -10,7 +10,7 @@
     --bg:#221F20; --paper:#2a2725; --surface:#1a1817;
     --text:#f5f2ef; --text-soft:#d4d0cc; --dim:#8c8b83;
     --accent:#7C3AED; --accent-soft:#a875f5;
-    --gold:#f0c674; --green:#6abf7b; --blue:#7ac4f0; --pink:#e88ac0;
+    --gold:#f0c674; --green:#6abf7b; --blue:#7ac4f0; --pink:#e88ac0; --teal:#4fc4b0;
     --border:#3d3835; --border-strong:#4d4845;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
@@ -111,6 +111,7 @@
   /* ── 📣 시모 폐루프 5단계 미니 흐름도 (project_cmo_marketing_pipeline_loop) ── */
   .cmo-loop{display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin:2px 0 12px; padding:10px 12px; border:1px solid var(--border-strong); border-radius:10px; background:rgba(232,138,192,0.05);}
   .cmo-loop.coo-loop{background:rgba(122,196,240,0.06);}
+  .cmo-loop.cpo-loop{background:rgba(79,196,176,0.06);}
   .cmo-loop-lbl{font-size:9px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; color:var(--dim); margin-right:2px; flex-shrink:0;}
   .cmo-step{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10.5px; font-weight:700; color:var(--text-soft); border:1px solid var(--border-strong); border-radius:8px; padding:5px 10px; background:var(--paper); white-space:nowrap;}
   .cmo-step .cs-s{font-size:8.5px; font-weight:800; letter-spacing:0.02em; border-radius:8px; padding:1px 7px;}
@@ -455,6 +456,58 @@
       </div>
       <div class="sec-note" style="margin:8px 0 0;">①~④=현재 라이브(점검 이슈=점검 내 완결 원칙, GM 확정). 월간→다음달 반영 고리는 아직 사람 판단 개입(월간운영계획 수기 갱신) — 완료율 측정 정밀도 확정 후 자동 폐루프 예정(위 루프 카드 ⑤와 동일 상태·가짜로 '완료' 표시 안 함).</div>
     </details>
+  </section>
+
+  <!-- ════ 👥 시포(AI CPO) 자율 회원관리 (회원 라이프사이클 루프 5단계 자율 축 · cpo_churn_stats·문의 시트 실데이터) ════ -->
+  <section>
+    <h2 class="sec">👥 시포 (AI CPO) 자율 회원관리 <span style="font-size:11px;font-weight:400;color:var(--dim);">(회원 라이프사이클 루프 5단계 자율 축)</span></h2>
+    <div class="sec-note">문의 접수부터 이탈·갱신까지 회원 라이프사이클을 굴리는 루프. 각 단계=실제 라이브 엔진. 회원·이탈 수치는 회원 GAS(<code>cpo_churn_stats</code>·문의 시트) 실데이터에서만 산출(가짜 수치 금지). 북극성=문의→체험→가입 전환 퍼널 가시화·회원 라이프사이클 관리.</div>
+    <div class="cmo-loop cpo-loop">
+      <span class="cmo-loop-lbl">회원 라이프사이클 루프</span>
+      <div class="cmo-step live"><span>① 문의 접수 (5종 인입)</span><span class="cs-s">라이브</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step live"><span>② 문의 관리·분류</span><span class="cs-s">라이브</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step partial"><span>③ 체험·상담·방문</span><span class="cs-s">부분</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step partial"><span>④ 등록 전환</span><span class="cs-s">부분</span></div>
+      <span class="cmo-loop-arrow">→</span>
+      <div class="cmo-step partial"><span>⑤ 이탈·갱신 관리 (측정)</span><span class="cs-s">부분</span></div>
+      <span class="cmo-loop-arrow back pending" title="↻ 이탈신호→선제 케어 자동 연결 시 닫힘(갱신 D-7 알림=브로제이 이관 예정·현재 미연결)">↻ 이탈신호→선제 케어 (대기)</span>
+    </div>
+    <div class="cmo-loop-status">현재 열린 루프 — ⑤ 이탈·갱신은 <b>측정 라이브</b>(LOSS율·갱신 임박 실측)·↻ 자동 케어 환류 대기 · 케어 자동화 연결 시 폐루프 완성</div>
+    <div class="routines" id="cpo-routines-static">
+      <div class="rcard" style="--rc:var(--teal)">
+        <div class="rcard-top"><span class="cmo-stage live">①</span><span class="rcard-ico">🔔</span>
+          <span class="rcard-tt"><span class="rcard-nm">문의 접수 자동 알림 (_notifyNewInquiries_)</span><span class="rcard-cy">매 5분(트리거)</span></span>
+          <span class="pill on">라이브</span></div>
+        <div class="rrow"><span class="rk">무엇을</span><span class="rv">문의 5종(멤버십·성인·유소년·공간렌트·비즈니스) 신규 자동 감지 → 문의알림방(-5516675010) 5분 폴링 알림</span></div>
+      </div>
+      <div class="rcard" style="--rc:var(--teal)">
+        <div class="rcard-top"><span class="cmo-stage live">②</span><span class="rcard-ico">📋</span>
+          <span class="rcard-tt"><span class="rcard-nm">CPO 문의 관리 대시보드 (문의회원.html)</span><span class="rcard-cy">매 요청</span></span>
+          <span class="pill on">라이브</span></div>
+        <div class="rrow"><span class="rk">무엇을</span><span class="rv">5종 문의 목록·상태·전환을 실데이터로 렌더. 배417로 공간렌트·비즈니스 관리패널 추가 → 관리 커버리지 5종 완성(상태 분류는 수기)</span></div>
+      </div>
+      <div class="rcard" style="--rc:var(--teal)">
+        <div class="rcard-top"><span class="cmo-stage live">⑤</span><span class="rcard-ico">📉</span>
+          <span class="rcard-tt"><span class="rcard-nm">이탈·갱신 측정 (cpo_churn_stats GAS)</span><span class="rcard-cy">매 요청</span></span>
+          <span class="pill on">라이브</span></div>
+        <div class="rrow"><span class="rk">무엇을</span><span class="rv">유효회원·LOSS율(당월/누적)·갱신 임박 D-7/14/30 실측 렌더. 실측 2신호+미측정 7신호 정직 태그(억지 생성 금지)</span></div>
+      </div>
+      <div class="rcard" style="--rc:var(--gold)">
+        <div class="rcard-top"><span class="cmo-stage partial">③④</span><span class="rcard-ico">📅</span>
+          <span class="rcard-tt"><span class="rcard-nm">통합회원 상태·등록 sync-on-load</span><span class="rcard-cy">카드 로드시</span></span>
+          <span class="pill warn">부분</span></div>
+        <div class="rrow"><span class="rk">무엇을</span><span class="rv">달력 방문완료 도장·등록 carry-over 멱등 배관은 라이브. 예약·전환 판단은 수기 운영 의존</span></div>
+      </div>
+      <div class="rcard" style="--rc:var(--border-strong)">
+        <div class="rcard-top"><span class="cmo-stage wait">↻</span><span class="rcard-ico">💌</span>
+          <span class="rcard-tt"><span class="rcard-nm">이탈방지 자동 케어 (갱신 D-7 임박 알림)</span><span class="rcard-cy">대기</span></span>
+          <span class="pill idle">환류 대기</span></div>
+        <div class="rrow"><span class="rk">무엇을</span><span class="rv">실측 갱신임박 신호로 선제 케어 알림 = 브로제이(AWS 회원관리 이전 시스템) 담당 예정 → 자동 환류 미연결(대기)</span></div>
+      </div>
+    </div>
   </section>
 
   <!-- ════ 섹션 2 · 루프가 만든 성과 ════ -->
