@@ -2675,8 +2675,8 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-04",
     "title": "[시포] 문의→가입 전환율 측정 개통 — CPO 마지막 미측정 북극성 KPI 라이브화",
-    "note": "[2026-07-04 GM 선택카드→전환율 측정 개통] 시포 유일 미측정 북극성 KPI(문의→가입 전환율, kpi.json 🔧→곧✅). 북극성=전환 퍼널 가시화의 마지막 지표. 착수 전 모호성 게이트(L14): 진행상태칸 기반 vs 회원DB(유효회원 휴대폰키) 매칭 기반 갈림 → Explore 실측 조사 중.",
-    "next": "조사 결과로 측정 방식 확정 → 집계 배관 → kpi/대시보드 점등.",
+    "note": "[2026-07-04 GM 선택카드→전환율 측정 개통] 시포 유일 미측정 북극성 KPI(문의→가입 전환율, kpi.json 🔧→곧✅). 북극성=전환 퍼널 가시화의 마지막 지표. 착수 전 모호성 게이트(L14): 진행상태칸 기반 vs 회원DB(유효회원 휴대폰키) 매칭 기반 갈림 → Explore 실측 조사 중. ★조사결과: 방식B(funnel_conversion 전화매칭)가 이미 구현·라이브(Survey.js:3176-3297, total.rate+byChannel). 방식A(진행상태)는 수기의존·팀이 배제. 남은일=kpi_collector.py cpo블록에 funnel_conversion 한줄 물림+문의회원.html 전환율 카드. 한계=누적매칭(기간필터 부정확, convBasis 자체경고).",
+    "next": "레인A 에이전트가 전환율 카드+kpi wire 구현(문의회원.html+kpi_collector.py).",
     "depends_on": ""
   },
   {
@@ -2692,5 +2692,53 @@
     "artifact": "- gm_aide_scan phase2에 가역·조건부 정비 5종 추가: 미러동기·현황재발행·KPI갱신·죽은워크트리정리·일요일컨텍스트정비(전부 실제문제 있을때만·멱등·사후 auto_exec 로그)\n- 오늘 라이브 1회: 죽은작업 재발행+죽은 워크트리 2개 정리 = 자율 3건 실행(0→3), 억지없이 증명\n- subprocess utf-8 인코딩 수정(cp949 디코드 크래시 방지·무인 크론 안전)\n- 역롤백=GM_AIDE_AUTO_EXEC=0 (CLI ad-hoc · 커밋 d3d2e655)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "d3d2e6556d67bf0e1557343e83bfb31a9a9968af"
+  },
+  {
+    "task_id": "CPO-2026-07-04-PARALLEL-1",
+    "clevel": "cpo",
+    "ship_no": 445,
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-04",
+    "title": "[시포] 이탈방지 심화 — 미측정 신호 1종 데이터원 연결(강습중단/방문급감)",
+    "note": "[2026-07-04] GM 병행선택. 배299 미측정 7신호 중 데이터 가능한 1종을 신호 매트릭스에 라이브 연결(없으면 정직 미측정 유지). 레인A(문의회원.html) 직렬.",
+    "next": "레인 에이전트 구현 중.",
+    "depends_on": ""
+  },
+  {
+    "task_id": "CPO-2026-07-04-PARALLEL-2",
+    "clevel": "cpo",
+    "ship_no": 446,
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-04",
+    "title": "[시포] 상품 기획 페이지 고도화 — cpo/product/상품기획.html 빈칸 점검·채움",
+    "note": "[2026-07-04] GM 병행선택. 탭4(멤버십·강습·요금정책·기획작업대) 빈칸/미완 점검→우선순위 채움. 레인C(상품기획.html·무충돌).",
+    "next": "레인 에이전트 구현 중.",
+    "depends_on": ""
+  },
+  {
+    "task_id": "CPO-2026-07-04-PARALLEL-3",
+    "clevel": "cpo",
+    "ship_no": 447,
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-04",
+    "title": "[시포] 자율현황 성과요약에 시포 기여 반영",
+    "note": "[2026-07-04] GM 병행선택. 자율현황 📊성과요약(id=stats)에 시포 결과(문의5종·이탈측정·전환율) 반영 여부 확인 후 보강. 레인B(자율현황.html·무충돌).",
+    "next": "레인 에이전트 구현 중.",
+    "depends_on": ""
+  },
+  {
+    "task_id": "CPO-2026-07-04-PARALLEL-4",
+    "clevel": "cpo",
+    "ship_no": 448,
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-04",
+    "title": "[시포] 갱신율 마이페이지 강화 — 갱신임박 명단·액션 표면화",
+    "note": "[2026-07-04] GM 병행선택. cpo_churn_stats renewSoon(D-7/14/30·69명)을 갱신율 뷰로 표면화. 레인A(문의회원.html) 직렬.",
+    "next": "레인 에이전트 구현 중.",
+    "depends_on": ""
   }
 ]
