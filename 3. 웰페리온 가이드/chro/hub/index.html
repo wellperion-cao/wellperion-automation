@@ -2038,9 +2038,9 @@ function renderEval(){
 /* ============ OFFBOARDING ============ */
 function renderExit(){
   var html='<div class="sec-title">퇴사 처리</div>';
-  if(ERR.exit){setPanel("exit",html+errCard("퇴사 처리 DB","exit"));return;}
+  if(ERR.exit){finishExitRender_(html+errCard("퇴사 처리 DB","exit"));return;}
   var ex=DB.exit;
-  if(!ex.length){setPanel("exit",html+'<div class="card">'+
+  if(!ex.length){finishExitRender_(html+'<div class="card">'+
     emptyState("진행 중인 퇴사 처리 건이 없습니다.","◇")+'</div>');return;}
   var open=ex.filter(function(e){return !isYes(e["처리 완료 여부"]);}).length;
   html+='<div class="kpi-grid" style="margin-bottom:6px">'+
@@ -2064,7 +2064,90 @@ function renderExit(){
       (e["면담 내용"]?'<div style="margin-top:8px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+esc(e["면담 내용"])+'</div>':"")+
       '</div>';
   }).join("")+'</div>';
+  finishExitRender_(html);
+}
+
+/* ---- [추가 2026-07-04] 역대 퇴사자 명부 — 퇴사 탭 하단. db:"exitroster"는 탭 진입 시 lazy 1회 로드만
+   (전역 KEYS/loadAll엔 포함하지 않음 — 매 로드 비용 방지). 관리자 전용(백엔드도 admin 비번 요구). ---- */
+var EXITROSTER=null;        // null=미로드, 로드 완료되면 배열로 채워짐(세션당 1회만 fetch)
+var EXITROSTER_ERR=null;    // 로드 실패 시 메시지(조용한 에러 배지용)
+var EXITROSTER_LOADING=false;
+
+function finishExitRender_(bodyHtml){
+  var html=bodyHtml+'<div class="sec-title" style="margin-top:26px">역대 퇴사자 명부</div>';
+  if(SESSION_ROLE!=="admin"){
+    setPanel("exit",html+'<div class="card">'+emptyState("관리자 모드에서만 조회할 수 있습니다.","◇")+'</div>');
+    return;
+  }
+  html+=renderExitRosterSection_();
   setPanel("exit",html);
+  bindExitRosterSearch_();
+  loadExitRosterOnce_();
+}
+function renderExitRosterSection_(){
+  return '<div class="controls">'+
+      '<input type="search" id="erSearch" placeholder="이름 검색">'+
+      '<span class="count-pill" id="erCount"></span>'+
+    '</div>'+
+    '<div class="tbl-wrap scroll-y"><table><thead><tr>'+
+      '<th>이름</th><th>부서</th><th>직책</th><th>입사일</th><th>퇴사일</th><th>재직기간</th><th>연락처</th>'+
+    '</tr></thead><tbody id="erBody"><tr><td colspan="7">'+emptyState("불러오는 중…","◌")+'</td></tr></tbody></table></div>';
+}
+// 퇴사자 시트 비고(S)열엔 addToExitSheet_가 "직책 · 퇴사유형" 순서로 합쳐 저장 — 첫 토큰을 직책으로 표시
+// (원본 열이 아니라 화면 표시용 파생값)
+function exitRosterRank_(note){
+  var seg=String(note||"").split("·")[0];
+  seg=seg?seg.trim():"";
+  return seg||"—";
+}
+function loadExitRosterOnce_(){
+  if(EXITROSTER!==null||EXITROSTER_LOADING){drawExitRoster_();return;}
+  EXITROSTER_LOADING=true;
+  queryDB("exitroster").then(function(raw){
+    EXITROSTER=extractResults(raw);
+  }).catch(function(e){
+    var m=String((e&&e.message)||e);
+    EXITROSTER_ERR=(m==="admin_required")?"관리자 모드에서만 조회할 수 있습니다.":m;
+  }).then(function(){
+    EXITROSTER_LOADING=false;
+    drawExitRoster_();
+  });
+}
+function drawExitRoster_(){
+  var body=document.getElementById("erBody");
+  if(!body)return; // 탭 전환 등으로 DOM이 이미 사라진 경우 조용히 무시
+  var cnt=document.getElementById("erCount");
+  if(EXITROSTER_ERR){
+    body.innerHTML='<tr><td colspan="7">'+emptyState(EXITROSTER_ERR,"⚠")+'</td></tr>';
+    if(cnt)cnt.textContent="";
+    return;
+  }
+  if(EXITROSTER===null){
+    body.innerHTML='<tr><td colspan="7">'+emptyState("불러오는 중…","◌")+'</td></tr>';
+    if(cnt)cnt.textContent="";
+    return;
+  }
+  var q=((document.getElementById("erSearch")||{}).value||"").toLowerCase().trim();
+  var rows=EXITROSTER.filter(function(r){
+    return !q || String(r["이름"]||"").toLowerCase().indexOf(q)>=0;
+  });
+  body.innerHTML=rows.length?rows.map(function(r){
+    return '<tr><td class="t-name">'+esc(txt(r["이름"]))+'</td>'+
+      '<td>'+esc(txt(r["부서"]))+'</td>'+
+      '<td>'+esc(exitRosterRank_(r["비고"]))+'</td>'+
+      '<td>'+fmtD(r["입사일"])+'</td>'+
+      '<td>'+fmtD(r["퇴사일"])+'</td>'+
+      '<td>'+esc(txt(r["재직기간"]))+'</td>'+
+      '<td class="t-sub">'+esc(txt(r["연락처"]))+'</td></tr>';
+  }).join(""):'<tr><td colspan="7">'+emptyState(q?"검색 결과가 없습니다.":"역대 퇴사자 기록이 없습니다.","◇")+'</td></tr>';
+  if(cnt)cnt.textContent=rows.length+" / "+EXITROSTER.length+" 명";
+}
+function bindExitRosterSearch_(){
+  var el=document.getElementById("erSearch");
+  if(el && !el.__erBound){
+    el.addEventListener("input",drawExitRoster_);
+    el.__erBound=true;
+  }
 }
 
 /* ============ STANDARDS ============ */
