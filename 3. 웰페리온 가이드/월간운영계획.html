@@ -1771,7 +1771,7 @@
     if(!host) return;
     var prev = prevMonthKey(_sel);
     var cards = initiativeItems().filter(function(init){
-      return isInitiativeActive(init, _sel) && init.source_ref !== 'strategy_roadmap';
+      return isInitiativeActive(init, _sel) && init.source_ref !== 'strategy_roadmap' && init.band !== false;
     }).map(function(init){
       var cur = initTraj(init, _sel);
       var pv = prev ? initTraj(init, prev) : null;
