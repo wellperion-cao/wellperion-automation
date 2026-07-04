@@ -389,7 +389,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-print-mode #tab-guide,
   body.a3-print-mode #tab-manual,
   body.a3-print-mode #tab-fcheck,
-  body.a3-print-mode #tab-vendor{display:none!important}
+  body.a3-print-mode #tab-vendor,
+  body.a3-print-mode #a3-monthly-print{display:none!important}
   body.a3-print-mode #a3-guideline-print{display:block!important}
   .a3-print-header{text-align:center;font-size:16px;font-weight:800;letter-spacing:0.04em;padding:6px 0 10px;border-bottom:2px solid #333;margin-bottom:10px;color:#111}
   .a3-print-cols{display:grid;grid-template-columns:1fr 1fr;column-gap:6mm;width:100%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -432,7 +433,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-manual-mode #tab-manual,
   body.a3-manual-mode #tab-fcheck,
   body.a3-manual-mode #tab-vendor,
-  body.a3-manual-mode #a3-guideline-print{display:none!important}
+  body.a3-manual-mode #a3-guideline-print,
+  body.a3-manual-mode #a3-monthly-print{display:none!important}
   body.a3-manual-mode #a3-manual-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .a3m-header{text-align:center;font-size:15px;font-weight:800;letter-spacing:0.05em;padding:2px 0 4px;border-bottom:2.5px solid #4a3a2e;margin-bottom:2px;color:#2a2018}
   .a3m-sub{text-align:center;font-size:8.5px;color:#8a7a6c;margin-bottom:5px;letter-spacing:0.02em}
@@ -476,7 +478,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-faconb-mode #tab-fcheck,
   body.a3-faconb-mode #tab-vendor,
   body.a3-faconb-mode #a3-guideline-print,
-  body.a3-faconb-mode #a3-manual-print{display:none!important}
+  body.a3-faconb-mode #a3-manual-print,
+  body.a3-faconb-mode #a3-monthly-print{display:none!important}
   body.a3-faconb-mode #a3-faconb-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #a3-faconb-print .fob-header{text-align:center;font-size:26px;font-weight:900;letter-spacing:0.04em;padding:4px 0 8px;border-bottom:3px solid #4a3a2e;margin-bottom:6px;color:#2a2018}
   #a3-faconb-print .fob-sub{text-align:center;font-size:13px;color:#8a7a6c;margin-bottom:14px}
@@ -491,6 +494,60 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   #a3-faconb-print .fob-guide-line{font-size:10.5px;color:#333;line-height:1.4;padding:1px 0 1px 10px;position:relative}
   #a3-faconb-print .fob-guide-line::before{content:"·";position:absolute;left:2px;color:#888}
   #a3-faconb-print .fob-empty{font-size:11px;color:#999;font-style:italic;padding:4px 0}
+}
+/* ── A3 월간보고 인쇄 전용 컨테이너 (화면 숨김) — 시설부(배406 후속) ── */
+#a3-monthly-print{display:none}
+/* ── A3 월간보고 인쇄 모드 (@page A3 landscape) — 가이드라인·매뉴얼·온보딩 A3와 완전 분리
+     함수명: printA3FacilityMonthly / 클래스: a3-monthly-mode
+     style id: a3-monthly-page-style / 컨테이너: #a3-monthly-print
+     지원부(배208) printA3Monthly 인쇄 기계장치 구조만 벤치마킹, 콘텐츠는 시설부 monthly_report(dept=facility) 데이터 ── */
+@media print{
+  body.a3-monthly-mode{font-size:10px;line-height:1.4;color:#111;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.a3-monthly-mode .header,
+  body.a3-monthly-mode .tabs,
+  body.a3-monthly-mode .submit-bar,
+  body.a3-monthly-mode .saving,
+  body.a3-monthly-mode .toast-msg,
+  body.a3-monthly-mode .header-util-btns,
+  body.a3-monthly-mode .util-btn,
+  body.a3-monthly-mode .sheet-links,
+  body.a3-monthly-mode #tab-policy,
+  body.a3-monthly-mode #tab-guide,
+  body.a3-monthly-mode #tab-manual,
+  body.a3-monthly-mode #tab-fcheck,
+  body.a3-monthly-mode #tab-vendor,
+  body.a3-monthly-mode #a3-guideline-print,
+  body.a3-monthly-mode #a3-manual-print,
+  body.a3-monthly-mode #a3-faconb-print{display:none!important}
+  body.a3-monthly-mode #a3-monthly-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* 월간 보고 인쇄 전용 컴포넌트 스타일 (지원부와 동일 클래스명 mrp-* 재사용 — 문서 레이아웃 표준) */
+  #a3-monthly-print .mrp-doc{background:#fff;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-title-band{background:#f3ede7!important;border-bottom:3px solid #B79F8A;padding:16px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-main-title{font-size:20px;font-weight:800;color:#4a3a2e;letter-spacing:-0.015em;margin-bottom:4px}
+  #a3-monthly-print .mrp-sub-title{font-size:11.5px;color:#7a6a5e;font-weight:500}
+  #a3-monthly-print .mrp-title-meta{text-align:right;font-size:10.5px;color:#7a6a5e;line-height:1.7;flex-shrink:0;white-space:nowrap}
+  #a3-monthly-print .mrp-kpi-row{display:flex;gap:10px;padding:14px 20px;background:#fdfaf7!important;border-bottom:1px solid #e8e0d8;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-kpi-chip{flex:1;background:#fff!important;border:1px solid #ccc;border-radius:6px;padding:12px 14px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-kpi-key{font-size:14px;font-weight:800;color:#4a3a2e;margin-bottom:6px;line-height:1.3}
+  #a3-monthly-print .mrp-kpi-num{color:#c0392b;font-weight:900}
+  #a3-monthly-print .mrp-kpi-desc{font-size:11px;color:#7a6a5e;line-height:1.55}
+  #a3-monthly-print .mrp-body-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e8e0d8}
+  #a3-monthly-print .mrp-col{padding:18px 22px 16px}
+  #a3-monthly-print .mrp-col:first-child{border-right:1px solid #e8e0d8}
+  #a3-monthly-print .mrp-col-head{font-size:13px;font-weight:800;padding:5px 11px 5px 14px;margin-bottom:12px;border-radius:4px;background:#f3ede7!important;color:#4a3a2e;border-left:4px solid #B79F8A;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-card{border:1px solid #ccc;border-radius:5px;padding:11px 14px;margin-bottom:11px;background:#fff!important;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-card:last-child{margin-bottom:0}
+  #a3-monthly-print .mrp-card-title{font-size:12px;font-weight:800;color:#4a3a2e;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #ece8e4}
+  #a3-monthly-print .mrp-card-line{font-size:11px;color:#3a3330;padding:3px 0 3px 13px;position:relative;line-height:1.55}
+  #a3-monthly-print .mrp-card-line::before{content:"·";position:absolute;left:2px;color:#B79F8A;font-size:15px;line-height:1;top:2px}
+  #a3-monthly-print .mrp-bottom-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e8e0d8}
+  #a3-monthly-print .mrp-bottom-col{padding:16px 22px 14px}
+  #a3-monthly-print .mrp-bottom-col:first-child{border-right:1px solid #e8e0d8}
+  #a3-monthly-print .mrp-bottom-head{font-size:12px;font-weight:800;padding:5px 10px 5px 14px;margin-bottom:10px;border-radius:4px;background:#eef7f0!important;color:#1a4a2a;border-left:4px solid #5a9a6e;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #a3-monthly-print .mrp-bottom-head.discuss{background:#eaf3fb!important;color:#1a3a5a;border-left-color:#5b9fd5}
+  #a3-monthly-print .mrp-bottom-line{font-size:11px;color:#3a3330;padding:3px 0 3px 13px;position:relative;line-height:1.55}
+  #a3-monthly-print .mrp-bottom-line::before{content:"·";position:absolute;left:2px;color:#B79F8A;font-size:15px;line-height:1;top:2px}
+  #a3-monthly-print .mrp-footer{padding:8px 22px;font-size:10px;color:#9a8a7a;background:#fdfaf7!important;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 /* ── Print ── */
 @media print{
@@ -646,6 +703,34 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
 </div>
 
+<!-- ══ A3 월간보고 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시) — 시설부(배406 후속)
+     지원부(배208) printA3Monthly 인쇄 기계장치 구조만 벤치마킹, 콘텐츠는 시설부 monthly_report(dept=facility)
+     라이브 데이터(카테고리·회차·점검자·기준이탈·개선시사)를 printA3FacilityMonthly()가 주입 ══ -->
+<div id="a3-monthly-print">
+  <div class="mrp-doc">
+    <div class="mrp-title-band">
+      <div>
+        <div class="mrp-main-title">시설부 점검 체계 — 월간 리포트</div>
+        <div class="mrp-sub-title">데이터 로드 전 · 조회를 눌러 라이브 데이터를 불러온 뒤 인쇄하세요</div>
+      </div>
+      <div class="mrp-title-meta">
+        작성: AI COO(시우)<br>
+        대상월: - &nbsp;·&nbsp; 보고: 경영진
+      </div>
+    </div>
+    <div class="mrp-kpi-row"></div>
+    <div class="mrp-body-row">
+      <div class="mrp-col"><div class="mrp-col-head">① 일별·카테고리별 실적</div></div>
+      <div class="mrp-col"><div class="mrp-col-head">② 회차·점검자별 실적</div></div>
+    </div>
+    <div class="mrp-bottom-row">
+      <div class="mrp-bottom-col"><div class="mrp-bottom-head">개선 시사점</div></div>
+      <div class="mrp-bottom-col"><div class="mrp-bottom-head discuss">측정값 기준이탈(참고)</div></div>
+    </div>
+    <div class="mrp-footer">정본: monthly_report API(라이브, dept=facility) · status/_queue.json(배406)</div>
+  </div>
+</div>
+
 <div id="tab-fcheck" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">시설 일일점검 <span style="font-size:13px;color:var(--dim);font-weight:400;">(작업일지 · PDF 기준)</span></h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜를 고른 뒤 <b>⏱ 점검 시작</b>을 누르고 측정·점검값을 입력한 다음 <b>⏱ 점검 종료</b>로 소요시간·점검시각을 기록합니다. 입력 후 <b>제출</b>하면 모든 기기에 반영됩니다. 한 번 제출하면 입력칸이 비워져 바로 다음 점검을 이어서 할 수 있습니다.</p>
@@ -679,6 +764,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="date-bar">
     <input type="month" id="fmMonthInput" onchange="loadFacilityMonthlyReport()">
     <button class="btn" onclick="loadFacilityMonthlyReport()">조회</button>
+    <button class="btn" onclick="printA3FacilityMonthly()">🖨 A3 인쇄</button>
   </div>
   <div id="fmStatus"></div>
 
@@ -4240,6 +4326,7 @@ function vendorSubmitAddForm(){
    차이: 구역→카테고리(cat A~F), 교대→회차(round 자유텍스트), 이슈원문→측정값 기준이탈(outOfRange, 참고용).
    ═══════════════════════════════════════════ */
 const FM_DEPT = 'facility';
+let FM_LAST = null; // {month, data} — 마지막 조회 캐시(화면·A3 인쇄 공유, 같은 달이면 재조회 생략. 지원부 MR_LAST 패턴)
 
 function fmDefaultMonth(){
   const d=new Date();
@@ -4266,6 +4353,7 @@ async function loadFacilityMonthlyReport(){
   if(statusEl) statusEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--dim);font-size:13px;">불러오는 중...</div>';
   try{
     const data=await fetchFacilityMonthlyReport(month);
+    FM_LAST={month:month,data:data};
     if(statusEl) statusEl.innerHTML='';
     renderFmKpi(data);
     renderFmDaily(data);
@@ -4277,6 +4365,7 @@ async function loadFacilityMonthlyReport(){
     const noteEl=document.getElementById('fmMeasureNote');
     if(noteEl) noteEl.textContent=data.measureNote||'';
   }catch(e){
+    FM_LAST=null;
     if(statusEl) statusEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--red);font-size:13px;">월간 데이터 로드 실패 — 잠시 후 다시 시도하세요.</div>';
     ['fmKpiRow','fmDailyView','fmCategoryView','fmRoundView','fmInspectorView','fmOutOfRangeSummary','fmOutOfRangeList','fmImprovements','fmMeasureNote'].forEach(function(id){ var e=document.getElementById(id); if(e) e.innerHTML=''; });
   }
@@ -4397,6 +4486,104 @@ function renderFmImprovements(data){
     html+='<div class="admin-card" style="padding:10px 14px;margin-bottom:8px;font-size:13px;">· '+fmEsc(txt)+'</div>';
   });
   el.innerHTML=html;
+}
+
+function fmA3Chip(key,desc){
+  return '<div class="mrp-kpi-chip"><div class="mrp-kpi-key">'+key+'</div><div class="mrp-kpi-desc">'+desc+'</div></div>';
+}
+
+/* 선택월 monthly_report(dept=facility) 데이터를 #a3-monthly-print(mrp-doc) 구조에 주입.
+   실패 시 false 반환 → 호출부가 기존 정적 내용을 그대로 두고 인쇄(회귀 방지 폴백). 지원부 renderA3MonthlyFromData 패턴. */
+function renderA3FacilityMonthlyFromData(month,data){
+  const doc=document.querySelector('#a3-monthly-print .mrp-doc');
+  if(!doc) return false;
+  const t=data.monthTotals||{};
+  const pct=(t.avgPct!=null?t.avgPct:0);
+
+  const titleEl=doc.querySelector('.mrp-main-title');
+  if(titleEl) titleEl.textContent='시설부 점검 체계 — '+month+' 월간 보고 (실측정값 기반)';
+  const subEl=doc.querySelector('.mrp-sub-title');
+  if(subEl) subEl.innerHTML=fmEsc(data.denomNote||'')+' &nbsp;·&nbsp; 카테고리·회차·점검자별 실적 및 기준이탈·개선 시사점 자동 집계';
+  const metaEl=doc.querySelector('.mrp-title-meta');
+  if(metaEl) metaEl.innerHTML='작성: AI COO(시우) &nbsp;·&nbsp; '+kstToday()+'<br>대상월: '+month+' &nbsp;·&nbsp; 보고: 경영진';
+
+  const kpiRow=doc.querySelector('.mrp-kpi-row');
+  if(kpiRow){
+    kpiRow.innerHTML=
+      fmA3Chip((t.sessionCount||0)+' 세션','월간 회차 제출 수(카테고리 항목 입력 세션)')
+      +fmA3Chip((t.activeDays||0)+' 일','점검이 1회 이상 실시된 활성일수')
+      +fmA3Chip('<span class="mrp-kpi-num">'+pct+'%</span> 입력률',fmEsc(data.denomNote||''))
+      +fmA3Chip('<span class="mrp-kpi-num">'+(t.outOfRangeCount||0)+'건</span> 기준이탈(참고)','정식 이슈 아님 — 측정값 자동판정');
+  }
+
+  const bodyRow=doc.querySelector('.mrp-body-row');
+  if(bodyRow){
+    let catRows=''; (data.byCategory||[]).forEach(function(r){ catRows+='<tr><td>'+fmEsc(r.cat)+'</td><td>'+(r.total||0)+'</td><td>'+(r.done||0)+'</td><td>'+(r.pct!=null?r.pct+'%':'-')+'</td></tr>'; });
+    let roundRows=''; (data.byRound||[]).forEach(function(r){ roundRows+='<tr><td>'+fmEsc(r.round)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+(r.total||0)+'</td><td>'+(r.pct!=null?r.pct+'%':'-')+'</td></tr>'; });
+    let inspRows=''; (data.byInspector||[]).slice(0,8).forEach(function(r){ inspRows+='<tr><td>'+fmEsc(r.inspector)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+(r.avgPct!=null?r.avgPct+'%':'-')+'</td></tr>'; });
+    let dailyCells=''; (data.dailySeries||[]).forEach(function(d){ dailyCells+='<span style="display:inline-block;min-width:34px;text-align:center;font-size:9px;padding:1px 3px;color:'+fmPctColor(d.pct)+';">'+(d.date||'').slice(8,10)+':'+(Number(d.pct)||0)+'%</span>'; });
+
+    bodyRow.innerHTML=
+      '<div class="mrp-col"><div class="mrp-col-head">① 일별·카테고리별 실적</div>'
+      +'<div class="mrp-card"><div class="mrp-card-title">일별 입력률</div><div style="font-size:10px;line-height:1.9;word-break:break-all;">'+(dailyCells||'데이터 없음')+'</div></div>'
+      +'<div class="mrp-card"><div class="mrp-card-title">카테고리별</div><table style="width:100%;font-size:10px;border-collapse:collapse;"><tr style="font-weight:800;"><td>카테고리</td><td>항목수</td><td>완료</td><td>입력률</td></tr>'+(catRows||'<tr><td colspan="4">데이터 없음</td></tr>')+'</table></div>'
+      +'</div>'
+      +'<div class="mrp-col"><div class="mrp-col-head">② 회차·점검자별 실적</div>'
+      +'<div class="mrp-card"><div class="mrp-card-title">회차별</div><table style="width:100%;font-size:10px;border-collapse:collapse;"><tr style="font-weight:800;"><td>회차</td><td>실시일수</td><td>항목수</td><td>입력률</td></tr>'+(roundRows||'<tr><td colspan="4">데이터 없음</td></tr>')+'</table></div>'
+      +'<div class="mrp-card"><div class="mrp-card-title">점검자별(상위)</div><table style="width:100%;font-size:10px;border-collapse:collapse;"><tr style="font-weight:800;"><td>점검자</td><td>세션</td><td>평균입력률</td></tr>'+(inspRows||'<tr><td colspan="3">데이터 없음</td></tr>')+'</table></div>'
+      +'</div>';
+  }
+
+  const bottomRow=doc.querySelector('.mrp-bottom-row');
+  if(bottomRow){
+    const improvements=data.improvements||[];
+    const oor=data.outOfRange||{total:0,byItem:[],list:[]};
+    const impHtml=improvements.length?improvements.map(function(x){return '<div class="mrp-bottom-line">'+fmEsc(x)+'</div>';}).join(''):'<div class="mrp-bottom-line">개선 시사점 없음</div>';
+    const topOor=(oor.list||[]).slice(0,6);
+    const oorHtml=topOor.length?topOor.map(function(x){return '<div class="mrp-bottom-line">['+fmEsc(x.date)+' '+fmEsc(x.round)+'] '+fmEsc(x.name)+' — '+fmEsc(x.value)+' (기준 '+fmEsc(x.min)+'~'+fmEsc(x.max)+')</div>';}).join(''):'<div class="mrp-bottom-line">기준이탈 없음</div>';
+    bottomRow.innerHTML=
+      '<div class="mrp-bottom-col"><div class="mrp-bottom-head">개선 시사점</div>'+impHtml+'</div>'
+      +'<div class="mrp-bottom-col"><div class="mrp-bottom-head discuss">기준이탈(참고, 총 '+(oor.total||0)+'건) · 상위 '+topOor.length+'건</div>'+oorHtml+'</div>';
+  }
+
+  const footerEl=doc.querySelector('.mrp-footer');
+  if(footerEl) footerEl.innerHTML='정본: monthly_report API(라이브, dept=facility) · status/_queue.json(배406) &nbsp;|&nbsp; '+fmEsc(data.measureNote||data.denomNote||'')+'. 본 인쇄물은 '+kstToday()+' 기준 생성.';
+
+  return true;
+}
+
+/* ═══════════════════════════════════════════
+   A3 월간보고 인쇄 — 시설부(배406 후속)
+   body.a3-monthly-mode + @page A3 가로 동적 주입 후 복원
+   - #a3-monthly-print 전용 컨테이너 표시, 인쇄 후 복원
+   - printA3Guideline/printA3Manual/printA3FacOnboarding과 완전 독립
+     (함수명: printA3FacilityMonthly / 클래스: a3-monthly-mode
+      style id: a3-monthly-page-style / 컨테이너: #a3-monthly-print)
+   - 화면(tab-monthly)과 같은 fetch/캐시(FM_LAST) 공유 — 새 fetch 중복 없음.
+   - 데이터 로드 실패 시 기존 정적 내용 그대로 인쇄(회귀 방지 폴백).
+   ═══════════════════════════════════════════ */
+async function printA3FacilityMonthly(monthArg){
+  const inputEl=document.getElementById('fmMonthInput');
+  const month=monthArg||(inputEl&&inputEl.value)||fmDefaultMonth();
+  try{
+    let data;
+    if(FM_LAST && FM_LAST.month===month){ data=FM_LAST.data; }
+    else{ data=await fetchFacilityMonthlyReport(month); FM_LAST={month:month,data:data}; }
+    renderA3FacilityMonthlyFromData(month,data);
+  }catch(e){
+    // 라이브 데이터 로드 실패 — 기존 정적 컨테이너 내용 그대로 인쇄(무변경)
+  }
+  document.body.classList.add('a3-monthly-mode');
+  let styleTag = document.getElementById('a3-monthly-page-style');
+  if(!styleTag){
+    styleTag = document.createElement('style');
+    styleTag.id = 'a3-monthly-page-style';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent = '@media print{ @page{ size:A3 landscape; margin:8mm; } }';
+  window.print();
+  document.body.classList.remove('a3-monthly-mode');
+  styleTag.textContent = '';
 }
 </script>
 
