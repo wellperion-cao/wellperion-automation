@@ -1019,7 +1019,8 @@
     if(st === '정상') return '<span class="statchip ok">🟢 정상</span>';
     if(st === '실패') return '<span class="statchip bad">🔴 실패</span>';
     if(st === '미실행') return '<span class="statchip idle">⚪ 미실행</span>';
-    if(st === '대기') return '<span class="statchip idle">🕒 대기</span>';
+    // '대기' = 월간·주간 예정 작업의 첫 실행일 전(정상). 실패로 오해 없게 '예정'으로 표기.
+    if(st === '대기') return '<span class="statchip ok" style="opacity:.75;">⏳ 예정</span>';
     return '<span class="statchip warn">❓ ' + esc(st) + '</span>';
   }
   function renderAutomationHealth(d){
@@ -1038,17 +1039,25 @@
       hl.textContent = ah.summary || (ah.total ? '자동화 ' + ah.healthy + '/' + ah.total + ' 정상 (' + rate + '%)' : '집계 중');
     }
     if(body){
-      var items = ah.items || [];
+      // 실패를 맨 위로(눈에 띄게) · 예정/정상은 아래. 원본 순서는 동률 유지.
+      var rank = function(s){ return s === '실패' ? 0 : (s === '불명' ? 1 : 2); };
+      var items = (ah.items || []).slice().sort(function(a, b){ return rank(a.state) - rank(b.state); });
       if(!items.length){
         body.innerHTML = '<span style="color:var(--dim);">항목 없음 (집계 전)</span>';
       } else {
         var h = '<div style="display:grid;gap:6px;">';
         items.forEach(function(item){
           var failed = item.state === '실패';
+          var pending = item.state === '대기';   // 예정(첫 실행 전)
           h += '<div class="ahrow' + (failed ? ' failed' : '') + '">';
           h += erpAhBadge(item.state);
           h += '<div class="ahname">' + esc(item.name) + '</div>';
-          if(item.last_run) h += '<div class="ahmeta">마지막: ' + esc(item.last_run) + '</div>';
+          // 예정 작업은 '마지막:1999'(혼란) 대신 '예정: 다음 실행'을 표기
+          if(pending && item.next_run){
+            h += '<div class="ahmeta">예정: ' + esc(item.next_run) + '</div>';
+          } else if(item.last_run && !pending){
+            h += '<div class="ahmeta">마지막: ' + esc(item.last_run) + '</div>';
+          }
           if(failed && item.last_result !== null && item.last_result !== undefined){
             h += '<div class="ahcode">코드: ' + esc(String(item.last_result)) + '</div>';
           }
