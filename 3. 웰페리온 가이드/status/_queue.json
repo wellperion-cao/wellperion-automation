@@ -26,13 +26,15 @@
     "task_id": "COO-2026-06-29-MONTHLY-CHECK-REPORT",
     "clevel": "coo",
     "title": "[시우] 점검 월간 분석 리포트 자동화 — 7월부터 매월 자동 집계·이슈·완료율·개선시사 + 텔레그램 요약(자기개선 루프)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-29",
     "ship_no": 208,
     "note": "[2026-06-29 GM] 점검일지_support 6월 리뷰 → 6월=테스트기간(이슈 13건 말일집중·완료율 분모부풀림으로 신뢰불가). GM 희망=7월부터 매월 자동 분석 리포트로 스스로 개선. 풀세트 단계구축: ①데이터 backbone=GAS monthly_report 액션(월별 집계·이슈·점검자정규화·Test제외) ②리포트 페이지(월선택·KPI·완료율·이슈분류·구역회차통계·개선시사) ③매월 1일 자동(전월 집계→텔레그램 점검관리방 요약+페이지 갱신) ④선결=분모정합(배14)이라야 완료율 신뢰. 데이터청소(Test행·이름통일)는 리포트 집계단에서 정규화(시트 비파괴). [2026-07-03 시우] 1단계 착수·완료: GAS monthly_report 집계 액션 구현(.deploy-check/지원팀 일일점검.js, handleWeekly 직후 _aggregateMonthly 순수함수+handleMonthlyReport IO+doGet 라우팅, 213줄 순증). snapshot(점검일지_support 14열)+이슈대장(지원_이슈대장 7열) 월별 집계: Test행 제외·(날짜·구역·교대) dedup·일별시계열·구역/교대/점검자별·이슈 byStatus. ⚠️완료율=잠정(배14 분모정합 선결, denomNote 박음)·과거 snapshot 저장 total 기준이라 today_live 금요일버그 무관. 로컬 검증=node --check OK + _aggregateMonthly 노드 단위테스트 22/22 PASS(dedup·Test제외·월필터·pct·이슈). 커밋 51955d16(라이브 배포 안 함=GM go 별도).\n[2026-07-04 시우 비의존 전진] ③매월1일 자동화 스캐폴딩 완비: scripts/monthly_check_report.py(+bat/vbs 숨김런처) — GAS monthly_report&dept=support 전월집계 조회→완료율/세션/활성일/이슈최다일/개선시사 카드→점검관리방(-5136037543) 텔레그램 발송, 매월1일 가드+--dry-run 기본+--force 테스트. 로컬 dry-run(--month 2026-06)=완료율81%·세션66·활성17일·이슈193·최다6/18(33건)·f구역70%최저, handoff 검증값과 완전 일치. 비-1일 --send는 가드가 실발송 차단 확인. 커밋 0db0cc20. GAS재배포(GM)·today_live금요일(시토·배239)은 게이트라 미착수.\n[2026-07-04 시우 자율완결] 매월1일 예약작업 등록(Wellperion-MonthlyCheckReport-0900-D1·09:00·숨김런처 wscript vbs·역롤백=schtasks /delete). monthly_report GAS는 이미 라이브(1단계 배포)라 재배포 불필요 → 자동화 완전 자율 가동, 첫 실발송=8/1(7월 집계). 잔여=완료율 정밀도(today_live 금요일·시토 배239)뿐, 리포트 발송 자체는 자율.",
-    "next": "🔗 매월1일 자동 발송 라이브 가동(예약등록 완료·GM 액션 불필요). 잔여=완료율 정밀도만 배239(시토) 후 확정. 8/1 첫 발송 후 실측 확인.",
-    "depends_on": ""
+    "next": "🏁 입항완료 — 매월1일 자동 점검 리포트 발송 등록(예약작업 다음 실행 2026-08-01 09:00·GAS monthly_report 라이브). 첫 발송 후 실측 확인만 남음(자동).",
+    "depends_on": "",
+    "terminal": true,
+    "processed_at": "2026-07-04"
   },
   {
     "task_id": "CMO-2026-06-26-M5-SSOT-UNIFY",
@@ -76,7 +78,7 @@
     "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-19",
-    "note": "[2026-06-19 GM 지시] AI 시리즈(@namuk.wellperion) 반응 모니터링을 시모가 소유한다. 개인시리즈 목표=도달·브랜드(바이럴 CTA 저장·댓글·팔로우)라 반응이 곧 이 채널의 의미있는 신호(전환 퍼널 SSOT와 별개, 여기선 vanity 아님). 한계: 개인 IG 반응 자동 스크래핑은 신뢰도 낮아 보류 이력 있음(메모리 project_channel_engagement_tracking_ceiling) → 자동 수치판 만들지 말 것. 시모가 발행된 각 편의 반응(댓글 내용·저장·팔로우 변화·도달)을 주기적으로 읽어 '무엇이 통했나'를 정성으로 정리. 첫 대상=CS 3편(#19~#21, GM 승인·발행 후). #13 '반응 기반 방향' 실천. | [2026-06-24] 봇 자동수집 PoC 성공(조건부): 팔로워·댓글 자동수집 가능(세션 재활용), 좋아요=IG 소수 숨김·저장=IG 비공개라 수집 불가. scripts/ig_engagement_poc.py. 운용방침=하이브리드(자동=팔로워·댓글 주간추적 / 수동보완=저장·좋아요 GM 인사이트).",
+    "note": "[2026-06-19 GM 지시] AI 시리즈(@namuk.wellperion) 반응 모니터링을 시모가 소유한다. 개인시리즈 목표=도달·브랜드(바이럴 CTA 저장·댓글·팔로우)라 반응이 곧 이 채널의 의미있는 신호(전환 퍼널 SSOT와 별개, 여기선 vanity 아님). 한계: 개인 IG 반응 자동 스크래핑은 신뢰도 낮아 보류 이력 있음(메모리 project_channel_engagement_tracking_ceiling) → 자동 수치판 만들지 말 것. 시모가 발행된 각 편의 반응(댓글 내용·저장·팔로우 변화·도달)을 주기적으로 읽어 '무엇이 통했나'를 정성으로 정리. 첫 대상=CS 3편(#19~#21, GM 승인·발행 후). #13 '반응 기반 방향' 실천. | [2026-06-24] 봇 자동수집 PoC 성공(조건부): 팔로워·댓글 자동수집 가능(세션 재활용), 좋아요=IG 소수 숨김·저장=IG 비공개라 수집 불가. scripts/ig_engagement_poc.py. 운용방침=하이브리드(자동=팔로워·댓글 주간추적 / 수동보완=저장·좋아요 GM 인사이트). [2026-07-04 정리] 반응읽기 원장(status/ig_engagement_ledger.json) 구축·편별매칭·매일09:30 자동수집·매일 자동커밋까지 완결(핀버그 수정 포함). 이 데이터가 평가환류 루프(배106)로 흘러감 — 31=데이터소스, 106=환류 자동화.",
     "next": "CS 3편 발행되면 시모가 편별 반응 읽기 → '통한 포인트/안 통한 포인트' 1줄 정리 → 다음 챕터(마케팅·점검) 후킹·방향에 반영 + GM 간단 보고.",
     "ship_no": 31
   },
@@ -97,11 +99,11 @@
     "task_id": "COO-2026-06-20-OPS-4DEPT-INTERIOR-OWNERSHIP",
     "clevel": "coo",
     "title": "[시우] 운영 4부서 체계 내부 — 지시형(구체 빈칸·GM/웰리 지시 시에만 착수)",
-    "status": "PENDING",
+    "status": "STANDBY",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-20",
-    "note": "[2026-06-20 GM 확정] 4개 부서 체계 페이지 틀(레이아웃·탭·링크)은 완성. 이제 내부 콘텐츠(부서별 보드·매뉴얼·항목·SOP) 채우기·꾸미기·정렬·고도화 = 시우(COO) 상시 소유. 웰리=디스패치·검증·완료도장만. 페이지↔시트 동기·정렬 등 기본 정합도 시우 기본 책임. 자율 발의·착수(승인게이트 유지). 메모리 feedback_coo_owns_ops_4dept_interior.\n[2026-06-24 GM] 상시 자율 '보강·꾸미기' 폐지 → 지시형 강등. 구체 빈칸·지시 있을 때만.",
-    "next": "시우 자율: 각 부서 체계 내부 빈칸·미완 보드·매뉴얼 점검 → 우선순위 정해 단계적 채움·고도화. 상시 배(완결형 아님).",
+    "note": "[2026-06-20 GM 확정] 4개 부서 체계 페이지 틀(레이아웃·탭·링크)은 완성. 이제 내부 콘텐츠(부서별 보드·매뉴얼·항목·SOP) 채우기·꾸미기·정렬·고도화 = 시우(COO) 상시 소유. 웰리=디스패치·검증·완료도장만. 페이지↔시트 동기·정렬 등 기본 정합도 시우 기본 책임. 자율 발의·착수(승인게이트 유지). 메모리 feedback_coo_owns_ops_4dept_interior.\n[2026-06-24 GM] 상시 자율 '보강·꾸미기' 폐지 → 지시형 강등. 구체 빈칸·지시 있을 때만.\n[2026-07-04 GM] 대기 항로에서 제외(STANDBY) — 상시 자율 배 아님·실무 피드백/구체 지시가 있을 때만 진행하는 조건부 건. 소유(시우=운영 4부서 내부, R/R·메모리 feedback_coo_owns_ops_4dept_interior)는 유지. 트리거(구체 빈칸/지시) 시 신규 구체 배로 착수.",
+    "next": "STANDBY — 항로 미표시. 재개 트리거=GM/웰리 구체 지시 또는 실무 피드백. 그때 신규 구체 배 생성.",
     "ship_no": 64
   },
   {
@@ -125,7 +127,7 @@
     "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-23",
-    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정. | [2026-07-03 v1 프레임 빌드] deep-interview 확정(모호도14%·스펙 .omc/specs/deep-interview-cmo-eval-feedback-loop.md). weekly_marketing_feedback.py = 주간 브리프(공식 전용·정성 우선+측정 보조·정직 꼬리표) 생성. 자동 가중=v2(데이터 축적 후). 주간 cron=후속.",
+    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정. | [2026-07-03 v1 프레임 빌드] deep-interview 확정(모호도14%·스펙 .omc/specs/deep-interview-cmo-eval-feedback-loop.md). weekly_marketing_feedback.py = 주간 브리프(공식 전용·정성 우선+측정 보조·정직 꼬리표) 생성. 자동 가중=v2(데이터 축적 후). 주간 cron=후속. [2026-07-04 병합·항로정리] 배390(마케팅 루프 ⑤→①되먹임 v1 배관) 흡수 — 같은 마케팅 폐루프 단일화. + 반응읽기 원장(status/ig_engagement_ledger.json·배31, 매일09:30 자동수집·매일커밋) 연결됨. 이제 이 배 = 반응(원장)→주간 평가브리프→다음기획 되먹임의 단일 소유.",
     "ship_no": 106,
     "next": "🔗 UTM 클릭 데이터 축적 대기 중 — 그동안 좋은콘텐츠 지표 정의(저장+댓글+클릭 가중) 사전설계 (담당 시모).",
     "task_id": "CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK"
@@ -133,14 +135,14 @@
   {
     "task_id": "COO-2026-06-23-CORE-ROOM-ALERT-SPLIT",
     "clevel": "coo",
-    "status": "PENDING",
+    "status": "STANDBY",
     "terminal": false,
     "priority": "⛵돛단배",
     "enqueued_at": "2026-06-23",
     "ship_no": 102,
     "title": "[시우] 핵심멤버방 알림 용도별 방 분리 (향후) — 종합접수·문의·시설점검 혼재 정리",
-    "note": "[2026-06-23 GM 방향] 현재 핵심멤버방(-5065206276)에 종합 접수·문의 접수·시설 점검 등 알림이 다 몰려 있음. 운영이 조금 정리되면 용도별 별도 방을 만들어 분리. 지금은 한 방 유지(혼재 OK), 정리 후 분리. | 6/24 방ID 확정: 점검관리=-5136037543/문의알림=-5516675010/종합접수처=-5065206276(구 핵심멤버방 전환). .env 3키 박음+점검독려(daily_scheduler) 점검관리방으로 재연결 완료. 잔여=GAS 2종 ScriptProperty 변경(GM 에디터): 점검GAS→-5136037543, 강습문의GAS→-5516675010. VOC GAS=-5065206276 유지(종합접수처). | 6/24 진행: 점검관리(코드상수 -5136037543 @100)·종합접수처(-5065206276, VOC 유지) 연동 완료·테스트 도착 확인. 문의알림(-5516675010)=시모(CMO) 담당으로 이관. 분모부풀림 정합(259→76)·점검기록 정리(백업후)·접수_청결 점검자동접수 삭제(진행)도 본 라인서 수행.",
-    "next": "알림 종류·수신자 정리되면 방 분리 설계 → 각 GAS/봇 chat_id 라우팅 교체"
+    "note": "[2026-06-23 GM 방향] 현재 핵심멤버방(-5065206276)에 종합 접수·문의 접수·시설 점검 등 알림이 다 몰려 있음. 운영이 조금 정리되면 용도별 별도 방을 만들어 분리. 지금은 한 방 유지(혼재 OK), 정리 후 분리. | 6/24 방ID 확정: 점검관리=-5136037543/문의알림=-5516675010/종합접수처=-5065206276(구 핵심멤버방 전환). .env 3키 박음+점검독려(daily_scheduler) 점검관리방으로 재연결 완료. 잔여=GAS 2종 ScriptProperty 변경(GM 에디터): 점검GAS→-5136037543, 강습문의GAS→-5516675010. VOC GAS=-5065206276 유지(종합접수처). | 6/24 진행: 점검관리(코드상수 -5136037543 @100)·종합접수처(-5065206276, VOC 유지) 연동 완료·테스트 도착 확인. 문의알림(-5516675010)=시모(CMO) 담당으로 이관. 분모부풀림 정합(259→76)·점검기록 정리(백업후)·접수_청결 점검자동접수 삭제(진행)도 본 라인서 수행.\n[2026-07-04 GM] 대기 항로에서 제외(STANDBY) — 향후 조건부 건(알림 종류·수신자 정리 완료가 선결). 상시 배 아님. 트리거 시 신규 구체 배로 착수.",
+    "next": "STANDBY — 항로 미표시. 재개 트리거=알림 종류·수신자 정리 완료(그때 방 분리 설계 신규 배)."
   },
   {
     "task_id": "CMO-2026-06-27-OFFICIAL-FACILITY-LESSON-6",
@@ -355,13 +357,15 @@
     "task_id": "CMO-2026-07-03-LOOP-AUTONOMY",
     "clevel": "cmo",
     "title": "[시모] 마케팅 루프 자율화 v1 배관 — ⑤→① 되먹임(참고·OFF기본)·주간 사이클 오케스트레이션·발효 플래그",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-03",
     "ship_no": 390,
-    "note": "deep-interview 확정(모호도9%·스펙 .omc/specs/deep-interview-cmo-loop-autonomy.md). v1 배관: ⑤→① 되먹임(producer 제안 참고, CMO_LOOP_FEEDBACK OFF 기본)·주간 사이클 오케스트레이션(marketing_loop_cycle.py dry)·발효 플래그+역롤백. 라이브 발효=GM go. 자동조정=v2.",
-    "next": "GM go 시 CMO_LOOP_FEEDBACK ON + 주간 cron 등록 → 라이브 발효. 그전 몇 사이클 수동 검증.",
-    "depends_on": ""
+    "note": "deep-interview 확정(모호도9%·스펙 .omc/specs/deep-interview-cmo-loop-autonomy.md). v1 배관: ⑤→① 되먹임(producer 제안 참고, CMO_LOOP_FEEDBACK OFF 기본)·주간 사이클 오케스트레이션(marketing_loop_cycle.py dry)·발효 플래그+역롤백. 라이브 발효=GM go. 자동조정=v2. [2026-07-04 병합·항로정리] 배106(파이프라인#5 평가환류)과 같은 ⑤평가환류→①제작 되먹임 루프라 중복 → 배106으로 병합 종결. 내용·근거 배106 note에 흡수.",
+    "next": "🏁 병합 종결(→시모106). 되먹임 루프는 배106 단일 소유.",
+    "depends_on": "",
+    "terminal": true,
+    "processed_at": "2026-07-04"
   },
   {
     "task_id": "CMO-2026-07-03-NEXT-EPISODE-PROPOSAL",
@@ -379,13 +383,15 @@
     "task_id": "COO-2026-07-03-FACILITY-MONTHLY-REPORT",
     "clevel": "coo",
     "title": "[시우] 시설부 점검 월간 리포트 — 측정값 기반 별도 설계 (지원부 완료율식 이식 불가)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-03",
     "ship_no": 406,
     "note": "[2026-07-03 GM 보류] 배208 monthly_report 엔진은 dept 파라미터로 facility도 호출되나 데이터 전부 0 — 시설부 점검(tab-fcheck)은 완료율(총항목/완료) 아닌 '측정값 기반'(수질·온도 등)이라 snapshot(점검일지_facility) 미기록·집계 대상 없음. 지원부 완료율식 리포트 그대로 이식 불가. 시설부 리포트는 성격상 측정값 추이·이상치·점검율 중심으로 별도 설계 필요. 선결 후보=시설 점검이 집계 가능한 기록을 남기게 하거나 측정값 전용 집계 설계. deep-interview로 또렷이 후 착수 권고.\n[2026-07-04 시우 빌드 완료] 시설점검(fcheck)은 지원부(배208)와 달리 항목(FACILITY_ITEMS 25종·카테고리 A~F)×회차 실측정값 구조(시설_공용구역 시트) 확인 — 완료율식 이식 불가 전제 재검증. GAS _aggregateMonthlyFacility 순수집계(카테고리/회차/점검자별 입력률+FC_MEASURE_RANGES 기준이탈 참고지표) 신설+handleMonthlyReport dept=facility 분기, 시설부 체계.html 월간보고 탭(월선택·KPI·일별추이·카테고리/회차/점검자별·기준이탈·개선시사) 신규 구축. Node vm 단위테스트 ALL_TESTS_PASS·node --check 통과. 커밋 9f07c865. 정직: 이슈=미측정(등록UI 없음), 기준미설정 항목 판정 제외.\n[2026-07-04 시우] 자율 배포 전환 시도 — clasp push 재인증 만료(invalid_rapt). GM 로그인 강요 안 함(배치 인증 원칙) → 코드는 커밋 완료, 다음 clasp 인증창에 자동 배포 예정. 배포 후 라이브 실측만 남음.",
-    "next": "🔗 코드·로컬검증 완료. clasp 재인증 만료로 배포 대기 → 다음 인증창(다른 GAS 작업 시)에 자동 clasp push+deploy 후 라이브 실측. GM 별도 액션 불필요(재인증은 자연 발생 시 배치).",
-    "depends_on": ""
+    "next": "🏁 입항완료 — 시설부 월간 리포트 빌드+GAS 배포 라이브(@141·byCategory/입력률/기준이탈). 현재 시설부 점검 데이터 0(실무 입력 시작되면 자동 채워짐)·GM 시크릿 라이브 최종확인(기능위험 0).",
+    "depends_on": "",
+    "terminal": true,
+    "processed_at": "2026-07-04"
   },
   {
     "task_id": "CEO-2026-07-04-ADHOC-34f95d80",
@@ -3105,5 +3111,19 @@
     "artifact": "- kpi_collector: click_stats 채널별 클릭수 수집(총 594건·naver_cafe42·ig23 등 실측)\n- bootsetup_matrix cmo.nsmap: utm_tag·channel_attr 마일스톤 done(실측 확인)·전환율(conv_rate)은 IG 노출 분모 없어 false 유지(가짜 분모 금지)\n- cmo 도달율 0%→50%(마일스톤 2/4)·정직 하이브리드 (CLI ad-hoc · 커밋 7dffb2d9)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "7dffb2d949f45c9f936cd42458808afc40898a3b"
+  },
+  {
+    "task_id": "CPO-2026-07-04-MEMORY-CLEANUP",
+    "clevel": "cpo",
+    "ship_no": 470,
+    "status": "DONE",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-04",
+    "title": "[시포] 메모리 정리 — 중복 병합·인덱스 압축(164→<140)",
+    "note": "[2026-07-04 GM 선택] 다음단계카드 중복 2개→1개 병합·삭제 완료(feedback_always_prelist_next_steps 유지). 잔여=진짜 중복 메모리 병합+인덱스 압축(고유 사실 손실 금지). | ✅완결: 진짜 중복 2쌍 병합(다음단계카드·봇텔레그램)·죽은링크0·고유사실0손실. 164줄(140 억지압축 거부=정보손실 방지·L05). ★발견=고아 메모리 22개(186파일중 인덱스누락·부팅시 안읽힘, 26~55일전 부채)—재색인/폐기 판단은 후속.",
+    "next": "🏁 중복정리·정합 완료. 🔗 다음(선택): 고아 22개 재색인 vs 폐기 판단.",
+    "depends_on": "",
+    "terminal": true,
+    "processed_at": "2026-07-04"
   }
 ]

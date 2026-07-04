@@ -323,8 +323,11 @@
     header.page-head h1{font-size:19px;}
   }
   /* ── 뷰 토글 (월별 상세 ↔ 연간 A3) ── */
-  .view-toggle{display:inline-flex; gap:4px; margin-left:auto;}
-  .view-toggle .vbtn{font-size:12px; font-weight:700; padding:5px 13px; border-radius:8px; cursor:pointer; background:var(--surface); color:var(--text-soft); border:1px solid var(--border-strong);}
+  /* 헤더 통합 컨트롤바: 월선택 · 편집 · [월별상세｜연간A3] 세그먼트 토글을 제목·슬로건 우측 한 줄로(2026-07-04 GM 지시) */
+  .view-toggle{display:inline-flex; gap:0;}
+  .view-toggle .vbtn{font-size:12px; font-weight:700; padding:5px 13px; border-radius:0; cursor:pointer; background:var(--surface); color:var(--text-soft); border:1px solid var(--border-strong); border-left:none;}
+  .view-toggle .vbtn:first-child{border-radius:8px 0 0 8px; border-left:1px solid var(--border-strong);}
+  .view-toggle .vbtn:last-child{border-radius:0 8px 8px 0;}
   .view-toggle .vbtn.on{background:var(--accent); color:#fff; border-color:var(--accent);}
 
   /* ── 뷰 전환(화면): 연간 A3 뷰에선 월별 전용 요소 숨김 ── */
@@ -773,6 +776,9 @@
   var _nsMap = null;      // role.id → 북극성 문구(bootsetup_matrix.json dims[0] 첫 줄) — 목표→북극성 뱃지용
   var _editMode = false;
   var _view = 'month';    // 'month'=월별 상세(기존 · 기본) | 'annual'=연간 A3(로드맵 한 장)
+  var _finReady = false;      // CFO 재무 미러 도착 여부(false=로딩 중 — fin/sales-history 보드는 '불러오는 중' 표기, 첫 렌더에서 실패 오인 방지)
+  var _checkTriggered = false; // 하단 점검·이슈 보드 지연 로드(IntersectionObserver) 발동 여부
+  var _checkReady = false;    // 점검·이슈 소스(kpi/support/voc) 도착 여부(true일 때만 render()에서 재렌더)
 
   // ── 경영진 보고 = 상시(토글 없음): C-Level 표기 항상 공식 직함. 닉네임 뷰 미노출. ──
   var TITLE_MAP = {ceo:"AI CEO", cmo:"AI CMO", coo:"AI COO", cto:"AI CTO", cpo:"AI CPO", cfo:"AI CFO", chro:"AI CHRO", gm:"대표(GM)"};
@@ -800,29 +806,41 @@
   function clampPct(v){ v = Number(v); if(isNaN(v)) return 0; return Math.max(0, Math.min(100, Math.round(v))); }
   function pad2(n){ return ('0' + n).slice(-2); }
 
-  // ── 읽기: GAS read_file(최신·캐시없음) → raw GitHub 폴백 ──
+  // ── 읽기: 정적 정본(plan)=raw-GitHub 먼저(캐시 허용·수 ms) → 실패 시에만 GAS read_file 폴백. ──
+  //    (기존 GAS-먼저는 매번 느린 길을 먼저 태워 첫 렌더를 지연시켰음. raw는 커밋 즉시 반영 · 편집 저장은 in-memory 모델로 갱신하므로 raw-먼저로 안전 — 2026-07-04 성능개선)
   function readPlan(){
-    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({action:'read_file', path:PLAN_PATH})})
-      .then(function(r){ return r.json(); })
-      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'read 실패'); })
-      .catch(function(){ return fetch(RAW_BASE + PLAN_PATH + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
+    return fetch(RAW_BASE + PLAN_PATH, {cache:'default'})
+      .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.json(); })
+      .catch(function(){
+        return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+            body: JSON.stringify({action:'read_file', path:PLAN_PATH})})
+          .then(function(r){ return r.json(); })
+          .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'read 실패'); });
+      });
   }
-  // ── 팀별 월 목표매출 정본(고정) 읽기 — monthly_ops_plan.json과 동일 read_file→raw 폴백 패턴 ──
+  // ── 팀별 월 목표매출 정본(고정) 읽기 — raw-먼저→GAS 폴백. ──
   function readSalesTargets(){
-    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({action:'read_file', path:TARGETS_PATH})})
-      .then(function(r){ return r.json(); })
-      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || '읽기 실패'); })
-      .catch(function(){ return fetch(RAW_BASE + TARGETS_PATH + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }).catch(function(){ return null; }); });
+    return fetch(RAW_BASE + TARGETS_PATH, {cache:'default'})
+      .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.json(); })
+      .catch(function(){
+        return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+            body: JSON.stringify({action:'read_file', path:TARGETS_PATH})})
+          .then(function(r){ return r.json(); })
+          .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || '읽기 실패'); })
+          .catch(function(){ return null; });
+      });
   }
-  // ── KPI 자동집계(kpi_values.json) 읽기 — 🔧 점검 현황 실측치(coo.지원부_점검완료율 등). 동일 read_file→raw 폴백 패턴. 실패=null ──
+  // ── KPI 자동집계(kpi_values.json) 읽기 — 🔧 점검 현황용. raw-먼저→GAS 폴백. 실패=null ──
   function readKpiValues(){
-    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({action:'read_file', path:KPI_PATH})})
-      .then(function(r){ return r.json(); })
-      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || '읽기 실패'); })
-      .catch(function(){ return fetch(RAW_BASE + KPI_PATH + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }).catch(function(){ return null; }); });
+    return fetch(RAW_BASE + KPI_PATH, {cache:'default'})
+      .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.json(); })
+      .catch(function(){
+        return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+            body: JSON.stringify({action:'read_file', path:KPI_PATH})})
+          .then(function(r){ return r.json(); })
+          .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || '읽기 실패'); })
+          .catch(function(){ return null; });
+      });
   }
   // ── 지원부 남/여 오늘 점검 완료율 — kpi_collector.py의 _coo_check_rate()와 동일 GAS·액션(get_today_summary)을 클라이언트에서 gender 필드로 분해.
   //    행 단위 gender('m'/'f') × submitted(bool)로 완료율 산출. 데이터 없음/조회 실패=null(가짜값 없음) ──
@@ -873,11 +891,18 @@
       })
       .catch(function(){ return null; });
   }
+  // ── gviz 원문(text) 1회 캐시 — 동일 URL 중복 fetch 방지. 특히 LABOR_GVIZ는 인건비 부서맵(readGvizDeptMap) + 강사→팀 로스터(readInstructorTeamMap) 양쪽에서 쓰여 2회 요청되던 것을 1회로 합침. gviz는 짧은 캐시 허용(cache:default). ──
+  var _gvizTextCache = {};
+  function fetchGvizText(url){
+    if(_gvizTextCache[url]) return _gvizTextCache[url];
+    var p = fetch(url, {cache:'default'}).then(function(r){ return r.text(); });
+    _gvizTextCache[url] = p;
+    return p;
+  }
   // ── CFO 소스 미러(공통): gviz 시트 → 부서맵 {부서:[12]}. valCol0=월값 시작 컬럼(매출=1, 인건비=2).
   //    isLabor=true(인건비): 행=강사, col0=부서로 집계 + '소계'·'전체' 집계행 제외(중복합산 방지). 실패=null ──
   function readGvizDeptMap(url, valCol0, isLabor){
-    return fetch(url, {cache:'no-store'})
-      .then(function(r){ return r.text(); })
+    return fetchGvizText(url)
       .then(function(t){
         var json = JSON.parse(t.substring(t.indexOf('{'), t.lastIndexOf('}') + 1));
         var rows = (json.table && json.table.rows) || [];
@@ -903,8 +928,7 @@
   }
   // ── 강사이름 → 팀(부서) 로스터(인건비 시트 A/B열: 부서, 강사이름) — team_sales 강사별 실적을 팀 단위로 합산하는 데 사용. 실패=빈맵({}) ──
   function readInstructorTeamMap(){
-    return fetch(LABOR_GVIZ, {cache:'no-store'})
-      .then(function(r){ return r.text(); })
+    return fetchGvizText(LABOR_GVIZ)
       .then(function(t){
         var json = JSON.parse(t.substring(t.indexOf('{'), t.lastIndexOf('}') + 1));
         var rows = (json.table && json.table.rows) || [];
@@ -979,8 +1003,7 @@
   }
   // 운영부 매출 정본 = GM시트 「2026년도 매출」 gviz. B열(index1)=월 라벨("1월".."12월"), L열(index11)=합계(매출). 실패/미공유=null(운영부는 매출마스터 폴백 유지).
   function readOpsSalesTruth(){
-    return fetch(OPS_GVIZ, {cache:'no-store'})
-      .then(function(r){ return r.text(); })
+    return fetchGvizText(OPS_GVIZ)
       .then(function(t){
         var json = JSON.parse(t.substring(t.indexOf('{'), t.lastIndexOf('}') + 1));
         var rows = (json.table && json.table.rows) || [];
@@ -1370,6 +1393,9 @@
     var host = document.getElementById('fin-board');
     if(!host) return;
 
+    // 라이브 소스 도착 전 = '불러오는 중'(무거운 소스가 뒤에서 채워짐 — 실패 오인·전체 게이팅 방지)
+    if(!_finReady){ host.innerHTML = '<div class="board-status">💰 매출·지출 라이브 미러 불러오는 중… (무거운 소스 · 잠시 후 표시)</div>'; return; }
+
     // 소스 전무(둘 다 실패) → 가짜값 없이 실패 안내 + CFO 링크
     if(!_cfoSales && !_cfoExp){
       host.innerHTML = '<div class="board-status">AI CFO 매출현황 소스(gviz)에 연결하지 못했습니다. ' +
@@ -1474,6 +1500,7 @@
   function renderSalesHistory(){
     var host = document.getElementById('sales-history-board');
     if(!host) return;
+    if(!_finReady){ host.innerHTML = '<div class="board-status">📈 매출 연간 히스토리 불러오는 중…</div>'; return; }
     if(!_cfoSales){
       host.innerHTML = '<div class="board-status">매출 연간 히스토리 소스(sales_monthly)에 연결하지 못했습니다. ' +
         '<a href="cfo/finance/매출지출현황.html" style="color:var(--gold)">AI CFO 매출현황</a>에서 확인하세요.</div>';
@@ -1951,8 +1978,8 @@
     var w = document.getElementById('view-toggle');
     if(!w) return;
     w.innerHTML =
-      '<button class="vbtn' + (_view === 'month' ? ' on' : '') + '" onclick="window._setView(\'month\')">📋 월별 상세</button>' +
-      '<button class="vbtn' + (_view === 'annual' ? ' on' : '') + '" onclick="window._setView(\'annual\')">📅 연간 A3</button>';
+      '<button class="vbtn' + (_view === 'month' ? ' on' : '') + '" onclick="window._setView(\'month\')">📋 월별상세</button>' +
+      '<button class="vbtn' + (_view === 'annual' ? ' on' : '') + '" onclick="window._setView(\'annual\')">📅 연간A3</button>';
   }
   function applyView(){ document.body.classList.toggle('view-annual', _view === 'annual'); }
   window._setView = function(v){ _view = v; applyView(); renderViewToggle(); if(window.scrollTo) window.scrollTo(0, 0); };
@@ -2009,8 +2036,7 @@
     renderFinance();
     renderSalesHistory();
     renderBoard();
-    renderCheckStatus();
-    renderIssues();
+    if(_checkReady){ renderCheckStatus(); renderIssues(); } // 지연 로드: 소스 도착 전엔 HTML 플레이스홀더 유지
     renderPractitioners();
     renderReport();
     renderEditBtn();
@@ -2132,43 +2158,91 @@
     return Promise.race([promise, timeout]).then(function(v){ clearTimeout(timer); return v; });
   }
 
-  Promise.all([
-    readPlan(), readHomeSales(), readCfoFinance(),
-    withTimeout(readNsMap(), 8000, null),
-    withTimeout(readProcLive(), 8000, {dept:PROC_FALLBACK, live:false}),
-    withTimeout(readSalesTargets(), 8000, null),
-    withTimeout(readInstructorTeamMap(), 8000, {}),
-    withTimeout(readKpiValues(), 8000, null),
-    withTimeout(readSupportCheckGender(), 8000, null),
-    withTimeout(readVocBoard(), 8000, null)
-  ])
-    .then(function(arr){
-      _data = arr[0];
-      _homeSales = arr[1];
-      _cfoSales = arr[2] && arr[2].sales;
-      _cfoExp = arr[2] && arr[2].exp;
-      _cfoSalesDept = arr[2] && arr[2].salesDept;
-      _cfoLaborDept = arr[2] && arr[2].laborDept;
-      _nsMap = arr[3];
-      var procRes = arr[4] || {dept:PROC_FALLBACK, live:false};
-      _cfoProcDept = procRes.dept;
-      _cfoProc = procMonthArr(procRes.dept); // 구매성 라이브 합계 — 전체지출 = 인건비 + 구매성
-      _procLive = procRes.live;
-      _salesTargets = arr[5];
-      _instrTeamMap = arr[6] || {};
-      _kpiValues = arr[7];
-      _supportGender = arr[8];
-      _vocBoard = arr[9];
+  // ── 부팅(성능개선 2026-07-04): 정본(plan) 도착 즉시 전체 골격 렌더(과제·한눈요약 포함) → 무거운 라이브 보드는 각자 도착 시 개별 재렌더. ──
+  //   원칙 ① plan=raw먼저(수 ms)로 과제·한눈요약 즉시 그림(한 덩이 Promise.all 게이팅 제거 — 제일 느린 요청에 전체가 끌려가던 병목 해소).
+  //        ② 각 라이브 소스=독립 fetch+withTimeout(≤8s), 도착 시 해당 보드만 갱신(하나 느려도 전체 안 막힘·타임아웃 시 그 보드만 폴백).
+  //        ③ 하단 점검·이슈(kpi/support/voc)=🔧 점검 섹션이 화면에 들어올 때만 지연 로드(첫 화면 요청에서 제외).
+  //        ④ home_kpi=최대 병목(7~8s)이나 이 페이지에선 매출 metric 라이브바·당월 폴백 보조용일 뿐(주 매출=sales_monthly). 게이팅 제거·타임아웃 6s로 격하.
+  function boot(){
+    // 1) 정본(plan) — 최우선·raw먼저. 도착 즉시 월선택 + 전체 렌더.
+    readPlan().then(function(plan){
+      _data = plan;
       _devCounts = computeDevCounts(_data);
       buildMonthSelect();
       render();
-    })
-    .catch(function(e){
+      startLazyChecks();
+    }).catch(function(e){
       document.getElementById('obj-board').innerHTML =
         '<div class="board-status">월간 계획 정본을 불러오지 못했습니다 (' + esc(e.message) +
         '). 정본: <code>status/monthly_ops_plan.json</code></div>';
     });
+
+    // 2) CFO 재무 미러(매출·지출·부서맵) — 도착 시 임팩트·요약·재무·매출히스토리 갱신.
+    withTimeout(readCfoFinance(), 8000, {sales:null, exp:null, salesDept:null, laborDept:null}).then(function(r){
+      r = r || {};
+      _cfoSales = r.sales; _cfoExp = r.exp; _cfoSalesDept = r.salesDept; _cfoLaborDept = r.laborDept;
+      _finReady = true;
+      if(_data){ renderImpact(); renderReport(); renderFinance(); renderSalesHistory(); }
+    });
+
+    // 3) 구매성(proc) 라이브 — 전체지출 = 인건비 + 구매성. 도착 시 임팩트·요약·재무 갱신.
+    withTimeout(readProcLive(), 8000, {dept:PROC_FALLBACK, live:false}).then(function(pr){
+      pr = pr || {dept:PROC_FALLBACK, live:false};
+      _cfoProcDept = pr.dept; _cfoProc = procMonthArr(pr.dept); _procLive = pr.live;
+      if(_data){ renderImpact(); renderReport(); renderFinance(); }
+    });
+
+    // 4) 당월 라이브 매출(home_kpi) — 매출 metric 라이브바·당월 폴백 보조. 타임아웃 짧게·비게이팅.
+    withTimeout(readHomeSales(), 6000, null).then(function(v){
+      _homeSales = v;
+      if(_data){ renderImpact(); renderReport(); renderBoard(); }
+    });
+
+    // 5) 목표매출 정본(정적) — 부서별 결합표 기준선. 도착 시 재무 갱신.
+    withTimeout(readSalesTargets(), 8000, null).then(function(v){
+      _salesTargets = v;
+      if(_data && _finReady) renderFinance();
+    });
+
+    // 6) 강사→팀 로스터(LABOR_GVIZ 공유·중복제거) — team_sales 팀합산용. 도착 시 재무 갱신.
+    withTimeout(readInstructorTeamMap(), 8000, {}).then(function(v){
+      _instrTeamMap = v || {};
+      if(_data && _finReady) renderFinance();
+    });
+
+    // 7) 북극성 지도 — 과제·실무 도달율표 뱃지. 도착 시 갱신.
+    withTimeout(readNsMap(), 8000, null).then(function(v){
+      _nsMap = v;
+      if(_data){ renderBoard(); renderPractitioners(); }
+    });
+  }
+
+  // ── 하단 점검·이슈 보드 지연 로드: 🔧 점검 섹션이 화면에 들어올 때만 kpi/support/voc fetch(첫 화면 요청에서 제외). ──
+  function loadCheckSources(){
+    if(_checkTriggered) return;
+    _checkTriggered = true;
+    Promise.all([
+      withTimeout(readKpiValues(), 8000, null),
+      withTimeout(readSupportCheckGender(), 8000, null),
+      withTimeout(readVocBoard(), 8000, null)
+    ]).then(function(a){
+      _kpiValues = a[0]; _supportGender = a[1]; _vocBoard = a[2];
+      _checkReady = true;
+      if(_data){ renderCheckStatus(); renderIssues(); }
+    });
+  }
+  function startLazyChecks(){
+    var target = document.getElementById('check-board');
+    if(!target || !('IntersectionObserver' in window)){ loadCheckSources(); return; }
+    var io = new IntersectionObserver(function(entries){
+      for(var i = 0; i < entries.length; i++){ if(entries[i].isIntersecting){ io.disconnect(); loadCheckSources(); break; } }
+    }, {rootMargin:'200px'});
+    io.observe(target);
+  }
+
+  boot();
 })();
 </script>
+    <script src="/wellperion-automation/_assets/print_options.js"></script>
 </body>
 </html>
