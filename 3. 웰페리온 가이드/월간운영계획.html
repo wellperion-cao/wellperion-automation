@@ -402,6 +402,23 @@
   .an-msum-card li:before{content:"·"; position:absolute; left:2px; color:var(--accent-soft);}
   .an-msum-card li.none{color:var(--dim);}
 
+  /* ── 🛠️ 실무진 현장 업무 (연간 A3 전용 · 1~7월 카테고리 타임라인 + 연속테마 칩) ── */
+  .fw-themes{display:flex; flex-wrap:wrap; gap:7px; margin:2px 0 12px;}
+  .fw-theme{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; color:var(--text-soft); background:var(--paper); border:1px solid var(--border-strong); border-radius:20px; padding:4px 11px;}
+  .fw-theme .fw-th-p{font-size:9px; font-weight:700; color:var(--accent-soft);}
+  .fw-months{display:flex; flex-wrap:wrap; gap:9px; margin-top:4px;}
+  .fw-mcard{flex:1; min-width:235px; background:var(--paper); border:1px solid var(--border); border-radius:11px; padding:10px 13px;}
+  .fw-mcard.cur{border-color:var(--accent);}
+  .fw-mh{display:flex; align-items:baseline; gap:7px; margin-bottom:7px; padding-bottom:6px; border-bottom:1px solid var(--border);}
+  .fw-mh .fw-mn{font-size:13px; font-weight:800; color:var(--text);}
+  .fw-mh .fw-cnt{font-size:9.5px; font-weight:700; color:var(--accent-soft);}
+  .fw-cats{display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px;}
+  .fw-cat{display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:600; color:var(--text-soft); background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:2px 7px;}
+  .fw-cat b{font-weight:800; color:var(--text);}
+  .fw-hls{list-style:none; display:flex; flex-direction:column; gap:3px;}
+  .fw-hls li{font-size:10.5px; color:var(--text-soft); line-height:1.4; padding-left:11px; position:relative;}
+  .fw-hls li:before{content:"▸"; position:absolute; left:0; color:var(--accent-soft); font-size:8px; top:2px;}
+
   /* ══════════ 경영진 A3 인쇄 (A3 가로 · 월별=결론 한 장 / 연간=로드맵 한 장) ══════════ */
   @media print{
     @page{size:A3 landscape; margin:8mm;}
@@ -434,6 +451,12 @@
     .an-months-sum{gap:5px;} .an-msum-card{min-width:calc(25% - 5px); background:#fff !important; border-color:#999 !important; padding:5px 8px; break-inside:avoid;}
     .an-msum-h{color:#111 !important; font-size:9px;} .an-msum-h .mth-stat{color:#555 !important;}
     .an-msum-card li{color:#333 !important; font-size:7.5px;} .an-msum-card li:before{color:#666 !important;} .an-msum-card li.none{color:#777 !important;}
+    /* 🛠️ 실무진 현장 업무 인쇄(A3 가로) */
+    .fw-themes{gap:4px; margin:2px 0 7px;} .fw-theme{background:#fff !important; border-color:#999 !important; color:#222 !important; font-size:7.5px; padding:2px 7px;} .fw-theme .fw-th-p{color:#555 !important;}
+    .fw-months{gap:5px;} .fw-mcard{min-width:calc(25% - 5px); background:#fff !important; border-color:#999 !important; padding:5px 8px; break-inside:avoid;}
+    .fw-mh{border-bottom-color:#bbb !important;} .fw-mh .fw-mn{color:#111 !important; font-size:9px;} .fw-mh .fw-cnt{color:#555 !important;}
+    .fw-cat{background:#f2f2f2 !important; border-color:#999 !important; color:#333 !important; font-size:7px;} .fw-cat b{color:#000 !important;}
+    .fw-hls li{color:#333 !important; font-size:7.5px;} .fw-hls li:before{color:#666 !important;}
     .obj-split-h{color:#111 !important; margin:6px 0 4px;} .obj-split-h .cnt{color:#555 !important;}
     .obj-split-h .tagn{color:#000 !important; background:#f2f2f2 !important; border:1px solid #666 !important;}
     .obj-empty{color:#555 !important;}
@@ -1796,6 +1819,31 @@
     }).join('');
     return '<div class="an-months-sum">' + cards + '</div>';
   }
+  // ── 🛠️ 실무진 현장 업무(연간 A3 전용) — field_work 정본 렌더만(PII 없는 카테고리·건수·일반 highlights) ──
+  function fieldWorkHtml(curMn){
+    var fw = _data && _data.field_work;
+    if(!fw || !fw.months) return '<div class="board-status">실무진 현장 업무 정본(field_work)이 없습니다.</div>';
+    var catMap = {};
+    (fw.categories || []).forEach(function(c){ catMap[c.key] = c; });
+    var themes = (fw.themes || []).map(function(t){
+      return '<span class="fw-theme">' + esc(t.icon || '') + ' ' + esc(t.title) +
+        ' <span class="fw-th-p">' + esc(t.period || '') + '</span></span>';
+    }).join('');
+    var themeStrip = themes ? '<div class="fw-themes">' + themes + '</div>' : '';
+    var keys = Object.keys(fw.months).sort();
+    var cards = keys.map(function(k){
+      var mo = fw.months[k] || {}, mnum = monNum(k);
+      var badges = Object.keys(mo.by_cat || {}).map(function(ck){
+        var c = catMap[ck] || {icon: '', label: ck};
+        return '<span class="fw-cat">' + esc(c.icon || '') + ' ' + esc(c.label) + ' <b>' + (mo.by_cat[ck]) + '</b></span>';
+      }).join('');
+      var hls = (mo.highlights || []).map(function(h){ return '<li>' + esc(h) + '</li>'; }).join('');
+      return '<div class="fw-mcard' + (mnum === curMn ? ' cur' : '') + '"><div class="fw-mh">' +
+        '<span class="fw-mn">' + mnum + '월</span><span class="fw-cnt">' + (mo.count || 0) + '건</span></div>' +
+        '<div class="fw-cats">' + badges + '</div><ul class="fw-hls">' + hls + '</ul></div>';
+    }).join('');
+    return themeStrip + '<div class="fw-months">' + cards + '</div>';
+  }
   function renderAnnual(){
     var host = document.getElementById('annual-board');
     if(!host) return;
@@ -1808,7 +1856,9 @@
       '<div class="an-sec-h">🗺️ 전략 로드맵 6단계 <span style="font-size:11px;font-weight:400;color:var(--dim)">상위 프레임 — 회사문서 전략 로드맵 v1.5 + S0 기준</span></div>' +
       roadmapStripHtml() +
       '<div class="an-sec-h">🆕 월별 핵심 과제(신규) 요약 <span style="font-size:11px;font-weight:400;color:var(--dim)">그달 시작·완결형 과제(연속 과제 제외)</span></div>' +
-      monthlyNewSummaryHtml(curMn);
+      monthlyNewSummaryHtml(curMn) +
+      '<div class="an-sec-h">🛠️ 실무진 현장 업무 (1~7월) <span style="font-size:11px;font-weight:400;color:var(--dim)">현장 실무진 53건 · 카테고리별 건수 + 연속 테마 · 내부 드라이브 정리(개인정보 제외)</span></div>' +
+      fieldWorkHtml(curMn);
   }
 
   // ── 뷰 토글(월별 상세 ↔ 연간 A3) ──
