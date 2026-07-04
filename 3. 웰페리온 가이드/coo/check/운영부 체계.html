@@ -365,6 +365,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-print-mode #tab-policy,
   body.a3-print-mode #tab-guide,
   body.a3-print-mode #tab-manual,
+  body.a3-print-mode #tab-admin,
   body.a3-print-mode #tab-voc{display:none!important}
   body.a3-print-mode #a3-guideline-print{display:block!important}
   .a3-print-header{text-align:center;font-size:13px;font-weight:800;letter-spacing:0.04em;padding:3px 0 6px;border-bottom:2px solid #333;margin-bottom:6px;color:#111}
@@ -412,6 +413,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-manual-mode #tab-policy,
   body.a3-manual-mode #tab-guide,
   body.a3-manual-mode #tab-manual,
+  body.a3-manual-mode #tab-admin,
   body.a3-manual-mode #tab-voc,
   body.a3-manual-mode #a3-guideline-print{display:none!important}
   body.a3-manual-mode #a3-manual-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -454,6 +456,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-opsonb-mode #tab-policy,
   body.a3-opsonb-mode #tab-guide,
   body.a3-opsonb-mode #tab-manual,
+  body.a3-opsonb-mode #tab-admin,
   body.a3-opsonb-mode #a3-guideline-print,
   body.a3-opsonb-mode #a3-manual-print{display:none!important}
   body.a3-opsonb-mode #a3-opsonb-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -559,9 +562,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="header-top">
     <h1>운영부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.0 · 2026-06-08</span> <span id="dayType"></span></h1>
     <div class="sheet-links">
-      <a class="sheet-link" style="opacity:0.6;cursor:default;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);" title="현황 대시보드 탭 구축 예정 (tab-admin 미구현)">
+      <a class="sheet-link" onclick="switchTab('admin')" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);" title="운영부 현황 대시보드">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-        현황 대시보드(구축 예정)
+        현황 대시보드
       </a>
       <a class="sheet-link" style="opacity:0.6;cursor:default;" title="운영부 전용 시트 연동 예정">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-6h8v2H8v-2zm0-3h8v2H8v-2z"/></svg>
@@ -585,6 +588,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab active" onclick="switchTab('policy')">운영부 규정</button>
   <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
+  <button class="tab" onclick="switchTab('admin')">현황</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
@@ -667,18 +671,18 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </tr>
     <tr>
       <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">오전</td>
-      <td style="padding:8px;border:1px solid var(--border);">이경연 실장</td>
-      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);white-space:nowrap;">미정</td>
-      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">미정</td>
+      <td style="padding:4px;border:1px solid var(--border);"><input type="text" id="shift_am_who" placeholder="입력 필요" oninput="onShiftFieldChange('am','who',this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;"></td>
+      <td style="padding:4px;border:1px solid var(--border);"><input type="text" id="shift_am_time" placeholder="입력 필요" oninput="onShiftFieldChange('am','time',this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;"></td>
+      <td style="padding:4px;border:1px solid var(--border);"><input type="text" id="shift_am_rest" placeholder="입력 필요" oninput="onShiftFieldChange('am','rest',this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;"></td>
     </tr>
     <tr>
       <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">오후</td>
-      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">충원 예정</td>
-      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);white-space:nowrap;">미정</td>
-      <td style="padding:8px;border:1px solid var(--border);color:var(--dim);">미정</td>
+      <td style="padding:4px;border:1px solid var(--border);"><input type="text" id="shift_pm_who" placeholder="입력 필요" oninput="onShiftFieldChange('pm','who',this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;"></td>
+      <td style="padding:4px;border:1px solid var(--border);"><input type="text" id="shift_pm_time" placeholder="입력 필요" oninput="onShiftFieldChange('pm','time',this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;"></td>
+      <td style="padding:4px;border:1px solid var(--border);"><input type="text" id="shift_pm_rest" placeholder="입력 필요" oninput="onShiftFieldChange('pm','rest',this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;"></td>
     </tr>
   </table>
-  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;line-height:1.6;">※ 근무시간·담당자는 임의로 채우지 않고, GM 확정 후 갱신합니다.</p>
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;line-height:1.6;">※ 이 표는 <strong>편집 가능</strong>합니다 — 담당자·근무시간·고정휴게를 입력하면 자동 저장되어 모든 기기에 반영됩니다. 값은 임의로 채우지 않았으며 <strong>GM·실무 확정 후 직접 입력</strong>합니다.</p>
       </div><!-- /board-col-body -->
     </div><!-- ── /근무·휴게 컬럼 ── -->
 
@@ -1041,30 +1045,29 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
 
-  <!-- 업무 6: 분실물 관리 (시트 근거 없음 · 빈 양식) -->
+  <!-- 업무 6: 분실물 관리 (시트 근거 없음 · 표준 절차 초안 · GM 확정 필요) -->
   <div class="manual-section">
-    <div class="manual-header" onclick="togManual(this)" style="background:var(--yellow-bg);">
-      <h3 style="color:var(--yellow);">6. 분실물 관리 <span class="src-tag empty">빈 양식 · 입력 대기</span></h3><span class="arrow">&#9654;</span>
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--purple-bg);">
+      <h3 style="color:var(--purple);">6. 분실물 관리 <span class="src-tag ai">초안 · GM 확정 필요</span></h3><span class="arrow">&#9654;</span>
     </div>
     <div class="manual-body">
-      <div class="placeholder-note">
-        운영부 리셉션 시트에 <strong>분실물 관리 표·절차가 존재하지 않습니다</strong>. 아래는 <strong>빈 양식 틀(제안)</strong>일 뿐이며 내용은 채우지 않았습니다 — <strong>실무·GM 입력 대기</strong>. 임의 작성 금지.
+      <div class="ai-note">
+        운영부 리셉션 시트에 <strong>분실물 관리 표·절차가 존재하지 않습니다</strong>. 아래는 일반적인 스포츠클럽 리셉션 운영 상식을 바탕으로 한 <strong>표준 절차 초안(AI 발의)</strong>이며, 확정된 회사 정책이 아닙니다 — <strong>GM 확정 필요</strong>. 사실로 단정 금지.
       </div>
-      <span class="manual-label">제안 양식 — 분실물 대장(빈 틀)</span>
+      <span class="manual-label">제안 양식 — 분실물 대장</span>
       <table class="recep-tbl">
-        <tr><th>컬럼</th><th>내용(입력 대기)</th></tr>
-        <tr><td>접수일자</td><td>　</td></tr>
-        <tr><td>품목 / 특징</td><td>　</td></tr>
-        <tr><td>습득 장소</td><td>　</td></tr>
-        <tr><td>보관 위치</td><td>　 (제안: 보관함 위치·번호 규칙 입력 필요)</td></tr>
-        <tr><td>보관 기한</td><td>　 (제안: 보관 기간·폐기 기준 입력 필요)</td></tr>
-        <tr><td>인계/반환 절차</td><td>　 (제안: 회원 확인 방법·반환 기록 입력 필요)</td></tr>
-        <tr><td>담당자 / 처리상태</td><td>　</td></tr>
+        <tr><th>컬럼</th><th>내용</th></tr>
+        <tr><td>접수일자</td><td>습득 당일 기록</td></tr>
+        <tr><td>품목 / 특징</td><td>품목명·색상·브랜드 등 특징 메모</td></tr>
+        <tr><td>습득 장소</td><td>락커룸·운동공간·로비 등 구체 위치</td></tr>
+        <tr><td>보관 위치 <span class="src-tag ai">초안</span></td><td>리셉션 분실물 보관함(잠금) — 구체적 위치·번호 규칙은 <strong>GM 확정 필요</strong></td></tr>
+        <tr><td>보관 기한 <span class="src-tag ai">초안</span></td><td>접수일로부터 <strong>30일</strong> 보관 후 미인계 시 내규에 따라 처리(폐기·기부 등) — 기간·폐기 기준 <strong>GM 확정 필요</strong></td></tr>
+        <tr><td>인계/반환 절차 <span class="src-tag ai">초안</span></td><td>회원 본인 확인(성함+연락처 또는 회원카드) 후 반환, 대장에 반환일·수령인 기록 — 확인 방법·기록 방식 <strong>GM 확정 필요</strong></td></tr>
+        <tr><td>담당자 / 처리상태</td><td>접수·반환 처리 담당자명, 상태(보관중/반환완료/폐기)</td></tr>
       </table>
-      <span class="manual-label">입력이 필요한 항목 (GM·실무)</span>
-      <ul>
-        <li>보관 위치(보관함·프론트 위치), 보관 기한·폐기 기준, 회원 인계·반환 절차, 대장 운용 방식 — 전부 미정.</li>
-      </ul>
+      <div class="placeholder-note" style="margin-top:8px;">
+        <strong>이 절차는 아직 초안입니다.</strong> 보관 위치(구체적 보관함·번호 규칙), 보관 기한(30일 제안 — 변경 가능), 인계·반환 확인 방법, 대장 운용 방식(수기/디지털)은 <strong>GM·실무 확정 후 이 양식을 갱신</strong>합니다. 위 제안값(30일 등)은 일반 운영 상식 기준의 예시일 뿐 회사 공식 정책이 아닙니다.
+      </div>
     </div>
   </div>
 
@@ -1104,6 +1107,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
   <!-- ===== [리셉션 업무 토글 끝] ===== -->
+
+<div id="tab-admin" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:6px;">현황 대시보드</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">운영부(리셉션) 오늘 체크리스트 진행률과 규정·가이드·매뉴얼 보드 작성 현황, GM 확정이 필요한 항목을 한눈에 요약합니다. 탭을 열 때마다 최신 데이터로 갱신됩니다.</p>
+  <div id="admin-dash"><div class="loading">불러오는 중...</div></div>
+</div>
 
   <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
@@ -1377,7 +1386,7 @@ function _copyToClipboard(text){
    현재 활성 탭 판별
    ═══════════════════════════════════════════ */
 function getActiveTab(){
-  const tabs=['policy','manual','guide'];
+  const tabs=['policy','manual','guide','admin'];
   for(const t of tabs){
     const el=document.getElementById('tab-'+t);
     if(el&&!el.classList.contains('hidden'))return t;
@@ -1725,7 +1734,9 @@ function switchTab(tab, opts){
   document.getElementById('tab-policy').classList.toggle('hidden',tab!=='policy');
   document.getElementById('tab-guide').classList.toggle('hidden',tab!=='guide');
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
+  document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
   if(tab==='manual'){renderBoard();renderManualItems();}
+  if(tab==='admin'){renderAdmin();}
 }
 
 /* ═══════════════════════════════════════════════
@@ -2571,6 +2582,167 @@ const today=new Date().toISOString().slice(0,10);
 loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로컬 즉시 렌더 후 백엔드 동기화(모든 기기 반영)
 loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐로 보드: 로컬 즉시 렌더 후 백엔드 동기화
 loadGuideData(); renderGuideBoard(); loadGuideFromBackend(); // 가이드 보드: 로컬 즉시 렌더 후 백엔드 동기화
+loadShiftData(); renderShiftTable(); loadShiftFromBackend(); // 오전/오후 근무조 표: 로컬 즉시 렌더 후 백엔드 동기화
+
+/* ═══════════════════════════════════════════════
+   오전/오후 근무조 표 — 편집 가능(담당·근무시간·고정휴게)
+   저장: localStorage(OPS_SHIFT_TABLE) 즉시 영속 + 기존 보드와 동일 패턴으로 API 베스트에포트 POST.
+   실제 담당자·시간 값은 임의 작성 금지 — 시드는 전부 빈 값, GM·실무가 직접 입력. ── */
+const SHIFT_STORAGE_KEY='OPS_SHIFT_TABLE';
+const SHIFT_SEED={am:{who:'',time:'',rest:''},pm:{who:'',time:'',rest:''}};
+let SHIFT_DATA=null;
+function applyShiftStored(stored){
+  const base=(stored&&typeof stored==='object')?stored:{};
+  SHIFT_DATA={
+    am:Object.assign({who:'',time:'',rest:''},base.am||{}),
+    pm:Object.assign({who:'',time:'',rest:''},base.pm||{})
+  };
+}
+function loadShiftData(){
+  let stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(SHIFT_STORAGE_KEY)); }catch(e){ stored=null; }
+  applyShiftStored(stored||SHIFT_SEED);
+}
+async function loadShiftFromBackend(){
+  loadShiftData();
+  if(!ONLINE) return;
+  try{
+    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(SHIFT_STORAGE_KEY),{method:'GET',redirect:'follow'});
+    const data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      applyShiftStored(data.board);
+      localStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify(SHIFT_DATA));
+      renderShiftTable();
+    }
+  }catch(e){ /* 네트워크 실패 → 로컬 유지 */ }
+}
+function persistShiftData(){
+  localStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify(SHIFT_DATA));
+  if(!ONLINE) return;
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='근무조 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:SHIFT_STORAGE_KEY,board:SHIFT_DATA})
+  }).then(()=>{if(ind){ind.textContent='근무조 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
+    .catch(()=>{if(ind){ind.textContent='근무조 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+}
+function onShiftFieldChange(shift,field,val){
+  if(!SHIFT_DATA) SHIFT_DATA=JSON.parse(JSON.stringify(SHIFT_SEED));
+  if(!SHIFT_DATA[shift]) SHIFT_DATA[shift]={who:'',time:'',rest:''};
+  SHIFT_DATA[shift][field]=val;
+  persistShiftData();
+}
+function renderShiftTable(){
+  if(!SHIFT_DATA) return;
+  ['am','pm'].forEach(shift=>{
+    const d=SHIFT_DATA[shift]||{};
+    const who=document.getElementById('shift_'+shift+'_who');
+    const time=document.getElementById('shift_'+shift+'_time');
+    const rest=document.getElementById('shift_'+shift+'_rest');
+    if(who && document.activeElement!==who) who.value=d.who||'';
+    if(time && document.activeElement!==time) time.value=d.time||'';
+    if(rest && document.activeElement!==rest) rest.value=d.rest||'';
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   현황 대시보드 (tab-admin) — 실제 데이터 요약
+   - 오늘 리셉션 체크리스트(WEEKDAY 기준) 완료율 (STATE는 매뉴얼 탭 체크 저장분을 로컬에서 읽어옴)
+   - 시간대(슬롯)별 완료 현황
+   - 운영 보드(규정·가이드·매뉴얼) 작성 현황
+   - GM 확정이 필요한 항목 목록(근무조·분실물 등)
+   ══════════════════════════════════════════════ */
+function renderAdmin(){
+  const el=document.getElementById('admin-dash');
+  if(!el) return;
+
+  // 오늘 저장된 체크 상태를 STATE에 병합(페이지 로드시 STATE는 비어있으므로 로컬 저장분을 읽어와야 실제 값이 보임)
+  try{ STATE=Object.assign({}, loadLocal(getDateG()), STATE); }catch(e){}
+
+  const sched=typeof WEEKDAY!=='undefined'?WEEKDAY:[];
+  const seen=new Set();
+  let total=0, checked=0;
+  const bySlot=[];
+  sched.forEach(slot=>{
+    let sTotal=0, sChecked=0;
+    slot.groups.forEach(grp=>{
+      grp.items.forEach(it=>{
+        if(seen.has(it.id)) return;
+        seen.add(it.id);
+        total++; sTotal++;
+        if(STATE[it.id]){ checked++; sChecked++; }
+      });
+    });
+    if(sTotal>0) bySlot.push({slot:slot.slot,total:sTotal,checked:sChecked});
+  });
+  if(typeof CUSTOM_ITEMS!=='undefined'){
+    CUSTOM_ITEMS.forEach(ci=>{
+      if(seen.has(ci.id)) return;
+      seen.add(ci.id);
+      total++;
+      if(STATE[ci.id]) checked++;
+    });
+  }
+  const pct = total>0 ? Math.round(checked/total*100) : 0;
+
+  // 보드(규정·가이드) 카드 수
+  const policyCount = Object.values(POLICY_DATA||{}).reduce((s,arr)=>s+(Array.isArray(arr)?arr.length:0),0);
+  const guideCount = Object.values(GUIDE_DATA||{}).reduce((s,arr)=>s+(Array.isArray(arr)?arr.length:0),0);
+
+  // 매뉴얼(요일별) 보드 작성률 — 7요일 × 3분류(오전/오후/상시) 중 내용 있는 셀
+  const boardDays=typeof BOARD_DAYS!=='undefined'?BOARD_DAYS:[];
+  const boardGenders=typeof BOARD_GENDERS!=='undefined'?BOARD_GENDERS:[];
+  let filledCells=0, totalCells=0;
+  boardDays.forEach(d=>{
+    boardGenders.forEach(g=>{
+      totalCells++;
+      const v=(BOARD_DATA&&BOARD_DATA[d.key])?BOARD_DATA[d.key][g.gk]:'';
+      if(v && String(v).trim()) filledCells++;
+    });
+  });
+
+  // 근무조 표 입력 여부
+  const shiftFilled = SHIFT_DATA ? ['am','pm'].filter(s=>SHIFT_DATA[s] && (SHIFT_DATA[s].who||SHIFT_DATA[s].time||SHIFT_DATA[s].rest)).length : 0;
+
+  let html='';
+  html+=`<div class="dash-section-title">오늘(${fmtLocalDate(new Date())}) 리셉션 체크리스트 현황 <span style="font-size:11px;color:var(--dim);font-weight:400;">— 평일(WEEKDAY) 기준</span></div>`;
+  html+=`<div class="dash-stat-row">`;
+  html+=`<div class="dash-stat-card"><div class="num">${total}</div><div class="label">총 항목</div></div>`;
+  html+=`<div class="dash-stat-card"><div class="num" style="color:var(--green)">${checked}</div><div class="label">완료</div></div>`;
+  html+=`<div class="dash-stat-card"><div class="num" style="color:var(--red)">${total-checked}</div><div class="label">미완료</div></div>`;
+  html+=`<div class="dash-stat-card"><div class="num">${pct}%</div><div class="label">완료율</div></div>`;
+  html+=`</div>`;
+
+  html+=`<div class="dash-section-title">시간대(슬롯)별 현황</div>`;
+  if(bySlot.length){
+    html+=`<div style="overflow-x:auto;"><table class="dash-table"><tr><th>시간대</th><th>완료</th><th>총 항목</th><th>완료율</th><th style="min-width:80px">그래프</th></tr>`;
+    bySlot.forEach(s=>{
+      const p = s.total>0 ? Math.round(s.checked/s.total*100) : 0;
+      html+=`<tr><td>${s.slot}</td><td>${s.checked}</td><td>${s.total}</td><td>${p}%</td>`;
+      html+=`<td><div class="dash-bar-wrap"><div class="dash-bar accent" style="width:${p}%"></div></div></td></tr>`;
+    });
+    html+=`</table></div>`;
+  }else{
+    html+=`<div style="color:var(--dim);font-size:13px;">항목 없음</div>`;
+  }
+
+  html+=`<div class="dash-section-title">운영 보드 작성 현황</div>`;
+  html+=`<div class="dash-stat-row">`;
+  html+=`<div class="dash-stat-card"><div class="num">${policyCount}</div><div class="label">규정 카드</div></div>`;
+  html+=`<div class="dash-stat-card"><div class="num">${guideCount}</div><div class="label">가이드 카드</div></div>`;
+  html+=`<div class="dash-stat-card"><div class="num">${filledCells}/${totalCells}</div><div class="label">매뉴얼 보드 작성(요일×분류)</div></div>`;
+  html+=`<div class="dash-stat-card"><div class="num">${shiftFilled}/2</div><div class="label">근무조 입력(오전/오후)</div></div>`;
+  html+=`</div>`;
+
+  html+=`<div class="dash-section-title">GM 확정 필요 항목</div>`;
+  html+=`<div class="dash-issue-card">`;
+  html+=`<div class="dash-issue-item"><span class="dash-issue-name">오전/오후 근무조 — 담당·근무시간·고정휴게</span><div class="dash-issue-meta">운영부 규정 탭 — 실제 운영 근무조 표(현재 ${shiftFilled}/2행 입력됨). 직접 입력 시 자동 저장.</div></div>`;
+  html+=`<div class="dash-issue-item"><span class="dash-issue-name">분실물 대장 — 보관 위치·기한·인계 절차</span><div class="dash-issue-meta">가이드 탭 6번 — AI 초안 제시됨(30일 보관 등). 확정된 정책 아님.</div></div>`;
+  html+=`</div>`;
+
+  el.innerHTML=html;
+}
 /* ═══════════════════════════════════════════════
    항목 관리 (CRUD) — localStorage 기반
    ═══════════════════════════════════════════════ */
