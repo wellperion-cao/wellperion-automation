@@ -43,6 +43,7 @@ async def collect_engagement():
         "status": None,
         "blocked_reason": None,
         "latest_post_url": None,
+        "pinned_posts_skipped": None,
         "metrics": {},
         "follower_count": None,
     }
@@ -106,21 +107,45 @@ async def collect_engagement():
         except Exception as e:
             print(f"[2] 팔로워 수집 실패: {e}")
 
-        # 3단계: 최신 게시물 링크 추출
-        print("[3] 최신 게시물 링크 추출")
+        # 3단계: 최신 게시물 링크 추출 (핀 게시물 skip)
+        # IG 프로필 그리드에서 고정 게시물은 각 앵커 내부에 svg[aria-label="고정 게시물"]
+        # (영문 로케일 "Pinned post")가 렌더됨. 실측 확인(2026-07-04): namuk.wellperion
+        # 상위 3개 전부 이 마커 보유(6/17 수영장 사진 핀 3개), 4번째부터 실제 최신
+        # 게시물(svg[aria-label="슬라이드"] = 여러 장 아이콘, 핀 아님)이 시작됨.
+        print("[3] 최신 게시물 링크 추출 (핀 게시물 skip)")
         try:
-            post_links = await page.query_selector_all('a[href*="/p/"]')
-            if not post_links:
+            posts_info = await page.evaluate("""() => {
+                const anchors = Array.from(document.querySelectorAll('a[href*="/p/"]')).slice(0, 8);
+                return anchors.map(a => {
+                    const svgLabels = Array.from(a.querySelectorAll('svg'))
+                        .map(s => s.getAttribute('aria-label') || '');
+                    const isPinned = svgLabels.some(
+                        l => l.includes('고정') || l.toLowerCase().includes('pinned')
+                    );
+                    return { href: a.getAttribute('href'), isPinned };
+                });
+            }""")
+
+            if not posts_info:
                 result["status"] = "BLOCKED"
                 result["blocked_reason"] = "게시물 링크 없음 — 로그인 게이트 또는 DOM 변경"
                 await page.screenshot(path=str(EVIDENCE_DIR / f"ig_poc_{ts}_no_posts.png"))
                 await ctx.close()
                 return result
 
-            latest_href = await post_links[0].get_attribute("href")
+            pinned_count = sum(1 for p in posts_info if p["isPinned"])
+            latest_post = next((p for p in posts_info if not p["isPinned"]), None)
+            if not latest_post:
+                result["status"] = "BLOCKED"
+                result["blocked_reason"] = "핀 게시물 제외 후 실제 최신 게시물 없음 — 그리드 상위가 전부 핀"
+                await ctx.close()
+                return result
+
+            latest_href = latest_post["href"]
             latest_url = f"https://www.instagram.com{latest_href}"
             result["latest_post_url"] = latest_url
-            print(f"[3] 최신 게시물: {latest_url}")
+            result["pinned_posts_skipped"] = pinned_count
+            print(f"[3] 핀 게시물 {pinned_count}개 skip / 최신 게시물: {latest_url}")
         except Exception as e:
             result["status"] = "BLOCKED"
             result["blocked_reason"] = f"게시물 링크 추출 예외: {e}"
@@ -210,7 +235,7 @@ async def main():
     print(f"\n결과 저장: {out_path}")
 
     if result["status"] == "OK":
-        print(f"\nDONE: 수집 성공 | 팔로워={result['follower_count']} | 좋아요={result['metrics'].get('likes')} | 댓글={result['metrics'].get('comments')} | 저장=비공개지표")
+        print(f"\nDONE: 수집 성공 | 핀skip={result['pinned_posts_skipped']} | 최신={result['latest_post_url']} | 팔로워={result['follower_count']} | 좋아요={result['metrics'].get('likes')} | 댓글={result['metrics'].get('comments')} | 저장=비공개지표")
     else:
         print(f"\nBLOCKED: {result['blocked_reason']}")
 
