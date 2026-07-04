@@ -1313,6 +1313,63 @@ function fmtMemoG(mm){
   }
   return out;
 }
+// [추가 2026-07-04] 온보딩 여정/초심카드 — buildHrCard 내 신설 섹션 헬퍼
+function obAdaptAvg_(note){
+  var pf=obParseCheckNote(note);
+  var nums=[pf.work,pf.rel,pf.cul].filter(function(x){return x;}).map(Number);
+  if(!nums.length) return "-";
+  return (nums.reduce(function(x,y){return x+y;},0)/nums.length).toFixed(1);
+}
+function obReflectSummary_(note){
+  note=String(note||"");
+  var m=note.match(/소감:\s*([\s\S]*)$/);
+  var s=(m?m[1]:note).trim();
+  if(!s) return "";
+  return s.length>60 ? s.slice(0,60)+"…" : s;
+}
+function buildOnboJourneySection_(name){
+  var rows=(DB.onbo||[]).filter(function(r){return String(r["대상 신입 직원"]||"").trim()===String(name||"").trim();});
+  if(!rows.length) return "";
+  var checkByWeek={}, reflectByWeek={};
+  rows.forEach(function(r){
+    var cat=String(r["카테고리"]||"").trim();
+    var label=String(r["체크 항목"]||"");
+    var wm=label.match(/^(\d{1,2})\s*주차/);
+    if(!wm) return;
+    var w=+wm[1];
+    if(cat==="주간 체크인") checkByWeek[w]=r;
+    else if(cat==="주간 성찰") reflectByWeek[w]=r;
+  });
+  var hasAny=false; for(var w0=1;w0<=12;w0++){ if(checkByWeek[w0]||reflectByWeek[w0]){ hasAny=true; break; } }
+  if(!hasAny) return "";
+
+  var checkDoneCnt=0, reflectDoneCnt=0;
+  var trs="";
+  for(var w=1;w<=12;w++){
+    var c=checkByWeek[w], r=reflectByWeek[w];
+    var cDone=c?isYes(c["완료 여부"]):false; if(cDone) checkDoneCnt++;
+    var rDone=r?isYes(r["완료 여부"]):false; if(rDone) reflectDoneCnt++;
+    var adapt=c?obAdaptAvg_(c["비고"]):"-";
+    var summary=r?(rDone?esc(obReflectSummary_(r["비고"])||"-"):'<span style="color:#b08d57">본인 작성 대기</span>'):"-";
+    trs+="<tr><td>"+w+"주차</td><td>"+(c?(cDone?"✓":"—"):"·")+"</td><td>"+esc(adapt)+"</td><td>"+summary+"</td></tr>";
+  }
+
+  var totalDone=checkDoneCnt+reflectDoneCnt;
+  var isComplete=(checkDoneCnt>=12 && reflectDoneCnt>=12);
+  var title=isComplete?"🌱 초심카드":("🧭 온보딩 여정 "+totalDone+"/24");
+
+  var insight="";
+  if(isComplete){
+    var meta=rows.filter(function(r){return String(r["카테고리"]||"").trim()==="온보딩정보";})[0];
+    var bi=meta?String(meta["비고"]||""):"";
+    var im=bi.match(/■\s*CHRO\s*인사이트[:：]?\s*([\s\S]*)$/);
+    if(im && im[1] && im[1].trim()){
+      insight='<div style="margin-top:8px;padding:9px 11px;background:#faf6ea;border:1px solid #e7ddc8;border-radius:4px;font-size:8.8pt;color:#5c4a24"><b>■ CHRO 인사이트</b><br>'+esc(im[1].trim())+'</div>';
+    }
+  }
+
+  return "<h2>4. "+title+"</h2><table><thead><tr><th>주차</th><th>체크인</th><th>적응도</th><th>성찰 요약</th></tr></thead><tbody>"+trs+"</tbody></table>"+insight;
+}
 function buildHrCard(a){
   var memo=String(a["메모"]||"");var nm=normMemo(memo);
   var __pi=String(memo||"").replace(/\[자동 수집[^\]]*\]/g,"");
@@ -1328,7 +1385,7 @@ function buildHrCard(a){
   var CSS="@page{size:A4;margin:11mm}*{box-sizing:border-box}body{font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;font-size:9pt;line-height:1.45;color:#1f1e1b;margin:0;padding:10mm 0;background:#f4f3ef}.page{width:190mm;max-width:100%;margin:0 auto;background:#fff;padding:11mm 12mm;box-shadow:0 0 10px rgba(0,0,0,.08);border-radius:4px;page-break-inside:avoid}@media print{body{background:#fff;padding:0}.page{box-shadow:none;border-radius:0;padding:0;width:auto}.no-print{display:none!important}}h1{font-size:15pt;border-bottom:2px solid #a98a52;padding-bottom:5px;margin:0 0 4px}.subtitle{color:#6c6961;font-size:9.5pt;margin-bottom:10px}h2{font-size:10.5pt;color:#8a6f3f;border-left:3px solid #a98a52;padding-left:8px;margin:13px 0 6px}h2:first-of-type{margin-top:4px}.idrow{display:flex;gap:14px;align-items:flex-start;margin:6px 0 4px}.photo{width:30mm;height:38mm;object-fit:cover;border:1px solid #d8d4c8;border-radius:6px;flex:0 0 auto;background:#eee}table{width:100%;border-collapse:collapse;margin:0;font-size:9pt}th,td{border:1px solid #d8d4c8;padding:4px 8px;text-align:left;vertical-align:top}th{background:#f8f5ee;font-weight:600;width:62px;white-space:nowrap;color:#6c6961}.grade{display:inline-block;padding:3px 14px;border-radius:4px;font-weight:700;color:#fff;font-size:12pt}.memo{font-size:9pt;line-height:1.5;padding:11px 13px;background:#faf9f6;border-radius:4px;border:1px solid #efece4}.rs-h{font-weight:700;color:#8a6f3f;font-size:9.5pt;margin:9px 0 3px;padding-bottom:2px;border-bottom:1px solid #e7ddc8}.rs-h:first-child{margin-top:0}.rs-p{margin:3px 0;font-size:8.8pt;color:#1f1e1b;line-height:1.45}.rs-li{margin:2px 0 2px 13px;text-indent:-9px;font-size:8.8pt;color:#3a3833;line-height:1.45}.rs-row{display:flex;gap:8px;margin:3px 0;font-size:8.8pt}.rs-k{flex:0 0 88px;font-weight:700;color:#6c6961}.rs-v{flex:1}.foot{margin-top:14px;padding-top:7px;border-top:1px solid #efece4;font-size:8pt;color:#9a978e;display:flex;justify-content:space-between}.print-btn{position:fixed;top:14px;right:14px;background:#a98a52;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:600;cursor:pointer;font-size:11pt}";
   var rows="<tr><th>성명</th><td>"+esc(a["지원자명"]||"")+"</td><th>생년월일</th><td>"+esc(birth)+"</td></tr><tr><th>지원 포지션</th><td colspan='3'>"+esc(a["지원 포지션"]||"")+"</td></tr><tr><th>연락처</th><td>"+esc(a["연락처"]||"")+"</td><th>이메일</th><td>"+esc(a["이메일"]||"")+"</td></tr><tr><th>주소</th><td colspan='3'>"+esc(addr)+"</td></tr><tr><th>학력</th><td>"+esc(edu)+"</td><th>총 경력</th><td>"+esc(careerTot)+"</td></tr><tr><th>지원일</th><td>"+esc(applyD)+"</td><th>전형 단계</th><td>"+esc(a["전형 단계"]||"")+"</td></tr><tr><th>면접 일정</th><td>"+esc(iv)+"</td><th>담당 면접관</th><td>"+esc(a["담당 면접관"]||"—")+"</td></tr>";
   var d=new Date().toISOString().slice(0,10);
-  return "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+esc(a["지원자명"]||"")+" — 인사카드</title><style>"+CSS+"</style></head><body><button class='print-btn no-print' onclick='window.print()'>🖨 인쇄 / PDF 저장</button><div class='page'><h1>웰페리온 채용 인사카드</h1><div class='subtitle'>"+esc(a["지원 포지션"]||"")+" · 작성일 "+d+"</div><h2>1. 지원자 정보</h2><div class='idrow'>"+(photo?"<img src='"+photo+"' alt='지원자 사진' class='photo'/>":"<div class='photo'></div>")+"<table>"+rows+"</table></div><h2>2. 이력서 요약 (잡코리아·자기소개서 기반)</h2><div class='memo'>"+fmtMemoG(memo)+"</div><h2>3. AI 서류 평가 — 종합 등급</h2><p style='font-size:11pt;margin:7px 0'>종합 등급: <span class='grade' style='background:"+gcol+"'>"+esc(a["면접 평점"]||"미평가")+"</span> &nbsp;&nbsp; <span style='color:#6c6961;font-size:9pt'>(인재상별 평가 근거·강점·확인사항은 위 '이력 요약'에 포함)</span></p><div class='foot'><span>평가일자: "+d+" · AI CHRO 자동 생성</span></div></div></body></html>";
+  return "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+esc(a["지원자명"]||"")+" — 인사카드</title><style>"+CSS+"</style></head><body><button class='print-btn no-print' onclick='window.print()'>🖨 인쇄 / PDF 저장</button><div class='page'><h1>웰페리온 채용 인사카드</h1><div class='subtitle'>"+esc(a["지원 포지션"]||"")+" · 작성일 "+d+"</div><h2>1. 지원자 정보</h2><div class='idrow'>"+(photo?"<img src='"+photo+"' alt='지원자 사진' class='photo'/>":"<div class='photo'></div>")+"<table>"+rows+"</table></div><h2>2. 이력서 요약 (잡코리아·자기소개서 기반)</h2><div class='memo'>"+fmtMemoG(memo)+"</div><h2>3. AI 서류 평가 — 종합 등급</h2><p style='font-size:11pt;margin:7px 0'>종합 등급: <span class='grade' style='background:"+gcol+"'>"+esc(a["면접 평점"]||"미평가")+"</span> &nbsp;&nbsp; <span style='color:#6c6961;font-size:9pt'>(인재상별 평가 근거·강점·확인사항은 위 '이력 요약'에 포함)</span></p>"+buildOnboJourneySection_(a["지원자명"]||"")+"<div class='foot'><span>평가일자: "+d+" · AI CHRO 자동 생성</span></div></div></body></html>";
 }
 function openPrintView(pageId, noQ){
   var a=(DB.appl||[]).find(function(x){return normId(x.url)===pageId;});
@@ -1572,10 +1629,10 @@ function obCloseModal(id){ var m=document.getElementById(id); if(m) m.style.disp
 function obInjectModals(){
   if(document.getElementById("obStartModal")) return;
   var css=document.createElement("style");
-  css.textContent=".ob-chip{display:inline-block;padding:5px 11px;border-radius:14px;font-size:12px;background:var(--surface-2);color:var(--ink-soft);cursor:pointer;border:1px solid var(--line);font-weight:600;transition:border-color .12s,background .12s}.ob-chip:hover{border-color:var(--gold)}.ob-chip.done{background:var(--green-bg);color:var(--green);border-color:#bfe6cf}.ob-chip.over{background:var(--red-bg);color:var(--red);border-color:#f3c0c0}.ob-fld{margin:8px 0}.ob-fld label{display:block;font-size:12px;color:#666;margin-bottom:3px}.ob-fld input,.ob-fld select,.ob-fld textarea{width:100%;box-sizing:border-box;padding:7px;border:1px solid #ccc;border-radius:6px;font-size:13px}.ob-btn{padding:8px 16px;border:none;border-radius:6px;font-size:13px;cursor:pointer}.ob-btn.primary{background:linear-gradient(180deg,#b8975c,var(--gold-deep));color:#fff;font-weight:650;box-shadow:0 1px 3px rgba(138,111,63,.28)}.ob-btn.primary:hover{filter:brightness(1.06)}.ob-btn.sec{background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line)}";
+  css.textContent=".ob-chip{display:inline-block;padding:5px 11px;border-radius:14px;font-size:12px;background:var(--surface-2);color:var(--ink-soft);cursor:pointer;border:1px solid var(--line);font-weight:600;transition:border-color .12s,background .12s}.ob-chip:hover{border-color:var(--gold)}.ob-chip.done{background:var(--green-bg);color:var(--green);border-color:#bfe6cf}.ob-chip.over{background:var(--red-bg);color:var(--red);border-color:#f3c0c0}.ob-chip.reflect{border-style:dashed}.ob-fld input:disabled,.ob-fld select:disabled,.ob-fld textarea:disabled{background:#f2f1ec;color:#8a8880;cursor:not-allowed}.ob-fld{margin:8px 0}.ob-fld label{display:block;font-size:12px;color:#666;margin-bottom:3px}.ob-fld input,.ob-fld select,.ob-fld textarea{width:100%;box-sizing:border-box;padding:7px;border:1px solid #ccc;border-radius:6px;font-size:13px}.ob-btn{padding:8px 16px;border:none;border-radius:6px;font-size:13px;cursor:pointer}.ob-btn.primary{background:linear-gradient(180deg,#b8975c,var(--gold-deep));color:#fff;font-weight:650;box-shadow:0 1px 3px rgba(138,111,63,.28)}.ob-btn.primary:hover{filter:brightness(1.06)}.ob-btn.sec{background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line)}";
   document.head.appendChild(css);
   var d=document.createElement("div");
-  d.innerHTML='<div class="modal-bg" id="obStartModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center"><div style="background:#fff;padding:20px;border-radius:10px;max-width:440px;width:92%"><h3 style="margin:0 0 10px">신규 입사자 온보딩 시작</h3><div class="ob-fld"><label>성명 *</label><input id="obsName"></div><div class="ob-fld"><label>부서</label><input id="obsDept" placeholder="예: 운영부"></div><div class="ob-fld"><label>멘토(버디)</label><input id="obsMentor" placeholder="예: 이경연"></div><div class="ob-fld"><label>입사일 *</label><input id="obsJoin" type="date"></div><div class="ob-fld"><label>담당</label><input id="obsOwner" value="관리자+HR"></div><div id="obsMsg" style="font-size:12px;margin:6px 0;color:#c0392b"></div><div style="text-align:right;margin-top:10px"><button class="ob-btn sec" onclick="obCloseModal(\'obStartModal\')">취소</button> <button class="ob-btn primary" id="obsSubmit" onclick="obSubmitStart()">90일 체크인 생성</button></div></div></div><div class="modal-bg" id="obCheckModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center"><div style="background:#fff;padding:20px;border-radius:10px;max-width:480px;width:92%;max-height:88vh;overflow:auto"><h3 id="obcTitle" style="margin:0 0 2px">체크인</h3><div id="obcSub" style="font-size:12px;color:#888;margin-bottom:8px"></div><div id="obcGuide" style="font-size:11.5px;background:#fbf7ef;border:1px solid #ecdfc4;border-radius:6px;padding:8px 10px;margin-bottom:8px;color:#6b5a32;display:none"></div><div id="obcChecklist" style="margin-bottom:8px"></div><div style="font-size:10.5px;color:#888;margin-bottom:3px">적응도 1~5점 — 1 매우미흡 · 3 보통 · 5 매우우수 (업무/관계/문화)</div><div style="display:flex;gap:8px"><div class="ob-fld" style="flex:1"><label>업무</label><select id="obcWork">'+obScoreOpts()+'</select></div><div class="ob-fld" style="flex:1"><label>관계</label><select id="obcRel">'+obScoreOpts()+'</select></div><div class="ob-fld" style="flex:1"><label>문화</label><select id="obcCul">'+obScoreOpts()+'</select></div></div><div class="ob-fld"><label>어려운 점 / 이슈</label><textarea id="obcIssue" rows="2"></textarea></div><div class="ob-fld"><label>조치 / 후속</label><textarea id="obcAction" rows="2"></textarea></div><div class="ob-fld"><label><input type="checkbox" id="obcRisk" style="width:auto"> 이탈위험으로 표시</label></div><div class="ob-fld"><label>담당</label><input id="obcOwner" value="관리자+HR"></div><div id="obcPrev" style="font-size:11px;color:#888;background:#f7f7f7;padding:6px;border-radius:6px;display:none"></div><div id="obcVerdictWrap" class="ob-fld" style="display:none"><label>수습 판정 (90일)</label><select id="obcVerdict"><option value="">-</option><option>정규 전환</option><option>조건부 전환</option><option>수습 1개월 연장</option><option>부적합</option></select></div><div id="obcMsg" style="font-size:12px;margin:6px 0"></div><div style="display:flex;justify-content:space-between;margin-top:10px"><button class="ob-btn sec" onclick="obCloseModal(\'obCheckModal\')">취소</button><button class="ob-btn primary" id="obcSubmit" onclick="obSubmitCheck()">완료 기록</button></div></div></div>';
+  d.innerHTML='<div class="modal-bg" id="obStartModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center"><div style="background:#fff;padding:20px;border-radius:10px;max-width:440px;width:92%"><h3 style="margin:0 0 10px">신규 입사자 온보딩 시작</h3><div class="ob-fld"><label>성명 *</label><input id="obsName"></div><div class="ob-fld"><label>부서</label><input id="obsDept" placeholder="예: 운영부"></div><div class="ob-fld"><label>멘토(버디)</label><input id="obsMentor" placeholder="예: 이경연"></div><div class="ob-fld"><label>입사일 *</label><input id="obsJoin" type="date"></div><div class="ob-fld"><label>담당</label><input id="obsOwner" value="관리자+HR"></div><div id="obsMsg" style="font-size:12px;margin:6px 0;color:#c0392b"></div><div style="text-align:right;margin-top:10px"><button class="ob-btn sec" onclick="obCloseModal(\'obStartModal\')">취소</button> <button class="ob-btn primary" id="obsSubmit" onclick="obSubmitStart()">90일 체크인 생성</button></div></div></div><div class="modal-bg" id="obCheckModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center"><div style="background:#fff;padding:20px;border-radius:10px;max-width:480px;width:92%;max-height:88vh;overflow:auto"><h3 id="obcTitle" style="margin:0 0 2px">체크인</h3><div id="obcSub" style="font-size:12px;color:#888;margin-bottom:8px"></div><div id="obcLockBadge" style="display:none;font-size:12px;font-weight:700;background:#eef6f0;color:#1a7f5a;border:1px solid #bfe6cf;border-radius:6px;padding:6px 10px;margin-bottom:8px">✅ 완료된 체크인 · 잠금(수정 불가)</div><div id="obcReflectBox" style="display:none;font-size:12.5px;line-height:1.6;background:#faf9f6;border:1px solid #efece4;border-radius:6px;padding:10px 12px;margin-bottom:8px;color:#3a3833"></div><div id="obcEditFields"><div id="obcGuide" style="font-size:11.5px;background:#fbf7ef;border:1px solid #ecdfc4;border-radius:6px;padding:8px 10px;margin-bottom:8px;color:#6b5a32;display:none"></div><div id="obcChecklist" style="margin-bottom:8px"></div><div style="font-size:10.5px;color:#888;margin-bottom:3px">적응도 1~5점 — 1 매우미흡 · 3 보통 · 5 매우우수 (업무/관계/문화)</div><div style="display:flex;gap:8px"><div class="ob-fld" style="flex:1"><label>업무</label><select id="obcWork">'+obScoreOpts()+'</select></div><div class="ob-fld" style="flex:1"><label>관계</label><select id="obcRel">'+obScoreOpts()+'</select></div><div class="ob-fld" style="flex:1"><label>문화</label><select id="obcCul">'+obScoreOpts()+'</select></div></div><div class="ob-fld"><label>어려운 점 / 이슈</label><textarea id="obcIssue" rows="2"></textarea></div><div class="ob-fld"><label>조치 / 후속</label><textarea id="obcAction" rows="2"></textarea></div><div class="ob-fld"><label><input type="checkbox" id="obcRisk" style="width:auto"> 이탈위험으로 표시</label></div><div class="ob-fld"><label>담당</label><input id="obcOwner" value="관리자+HR"></div><div id="obcPrev" style="font-size:11px;color:#888;background:#f7f7f7;padding:6px;border-radius:6px;display:none"></div><div id="obcVerdictWrap" class="ob-fld" style="display:none"><label>수습 판정 (90일)</label><select id="obcVerdict"><option value="">-</option><option>정규 전환</option><option>조건부 전환</option><option>수습 1개월 연장</option><option>부적합</option></select></div></div><div id="obcMsg" style="font-size:12px;margin:6px 0"></div><div style="display:flex;justify-content:space-between;margin-top:10px"><button class="ob-btn sec" onclick="obCloseModal(\'obCheckModal\')">취소</button><button class="ob-btn primary" id="obcSubmit" onclick="obSubmitCheck()">완료 기록</button></div></div></div>';
   document.body.appendChild(d);
   ["obStartModal","obCheckModal"].forEach(function(id){ document.getElementById(id).addEventListener("click",function(e){ if(e.target.id===id) obCloseModal(id); }); });
 }
@@ -1640,6 +1697,43 @@ function obCheck(row){
   var prev=document.getElementById("obcPrev");
   if(r["비고"]){ prev.style.display="block"; prev.textContent="이전 기록: "+r["비고"]; } else { prev.style.display="none"; }
   document.getElementById("obcMsg").textContent="";
+
+  // [추가 2026-07-04] 잠금 UI + '주간 성찰' 열람 전용 UI
+  var __cat=String(r["카테고리"]||"").trim();
+  var __isReflect=(__cat==="주간 성찰");
+  var __isDone=isYes(r["완료 여부"]);
+  var __editFields=document.getElementById("obcEditFields");
+  var __lockBadge=document.getElementById("obcLockBadge");
+  var __reflectBox=document.getElementById("obcReflectBox");
+  var __submitBtn=document.getElementById("obcSubmit");
+  if(__isReflect){
+    // 관리자는 열람 전용 — 본인 작성 대필 방지(저장 버튼 자체를 노출하지 않음)
+    __editFields.style.display="none";
+    __lockBadge.style.display="none";
+    __submitBtn.style.display="none";
+    if(__isDone){
+      var __note=String(r["비고"]||"");
+      var __sm=__note.match(/소감:\s*([\s\S]*)$/);
+      var __html="<b>🪞 "+esc(r["체크 항목"]||"주간 성찰")+" — 작성 완료</b><div style='margin-top:6px;white-space:pre-wrap'>"+esc(__note)+"</div>";
+      __reflectBox.innerHTML=__html;
+    } else {
+      __reflectBox.innerHTML="<b>🪞 "+esc(r["체크 항목"]||"주간 성찰")+"</b><div style='margin-top:6px;color:#b08d57'>본인 작성 대기 — 신입 직원 본인이 온보딩 성찰 페이지에서 직접 작성합니다. 관리자가 대신 작성할 수 없습니다.</div>";
+    }
+    __reflectBox.style.display="block";
+  } else {
+    __reflectBox.style.display="none";
+    __editFields.style.display="block";
+    if(__isDone){
+      __lockBadge.style.display="block";
+      __submitBtn.style.display="none";
+      __editFields.querySelectorAll("input,select,textarea").forEach(function(el){ el.disabled=true; });
+    } else {
+      __lockBadge.style.display="none";
+      __submitBtn.style.display="";
+      __editFields.querySelectorAll("input,select,textarea").forEach(function(el){ el.disabled=false; });
+    }
+  }
+
   document.getElementById("obCheckModal").style.display="flex";
 }
 async function obSubmitCheck(){
@@ -1763,7 +1857,7 @@ function renderOnbo(){
   var groups={};
   rows.forEach(function(r){ var nm=String(r["대상 신입 직원"]||"").trim(); if(!nm) return; (groups[nm]=groups[nm]||[]).push(r); });
   var names=Object.keys(groups);
-  var startBtn='<div style="margin:8px 0"><button class="ob-btn primary" onclick="obStart()">+ 신규 입사자 온보딩 시작</button></div>';
+  var startBtn='<div style="margin:8px 0;display:flex;gap:8px;flex-wrap:wrap"><button class="ob-btn primary" onclick="obStart()">+ 신규 입사자 온보딩 시작</button><a class="ob-btn sec" href="onboarding-self.html" target="_blank" style="text-decoration:none;display:inline-block">🪞 성찰 작성 페이지 링크(신입 직원 공유용)</a></div>';
   if(!names.length){ setPanel("onbo", html+startBtn+'<div class="card">'+emptyState("온보딩 중인 신규 입사자가 없습니다. 최종 합격자가 입사하면 온보딩 시작을 누르세요.","☑")+'</div>'); return; }
   var today=new Date(); today.setHours(0,0,0,0);
   var riskCount=0, dueSoon=0, cards="";
@@ -1772,6 +1866,9 @@ function renderOnbo(){
     var meta=g.filter(function(r){return r["카테고리"]==="온보딩정보";})[0];
     var checks=g.filter(function(r){return r["카테고리"]==="격주 체크리스트"||r["카테고리"]==="월간 체크인"||r["카테고리"]==="주간 체크인";});
     checks.sort(function(a,b){return new Date(obD(a))-new Date(obD(b));});
+    // [추가 2026-07-04] '주간 성찰' 행 — 체크인과 별도 배열로 표시(🪞 아이콘, 진행률 계산에는 미포함)
+    var reflects=g.filter(function(r){return r["카테고리"]==="주간 성찰";});
+    reflects.sort(function(a,b){return new Date(obD(a))-new Date(obD(b));});
     var done=checks.filter(function(r){return isYes(r["완료 여부"]);}).length;
     var total=checks.length||1; var pct=Math.round(done/total*100);
     var dept="-",mentor="-",joinStr="—";
@@ -1788,6 +1885,13 @@ function renderOnbo(){
       var lbl=String(r["체크 항목"]||"").replace(" 체크인","").replace(" 수습평가","수습");
       return '<span class="'+cls+'" onclick="obCheck('+r["_sheet_row"]+')">'+esc(lbl)+(dn?" ✓":"")+'</span>';
     }).join(" ");
+    // [추가 2026-07-04] 성찰 칩 — 🪞 아이콘 + 점선 테두리로 체크인과 구분, 클릭 시 obCheck가 열람 전용 UI 분기
+    var reflectChips=reflects.map(function(r){
+      var dn=isYes(r["완료 여부"]); var od=!dn&&new Date(obD(r))<today;
+      var cls=dn?"ob-chip reflect done":(od?"ob-chip reflect over":"ob-chip reflect");
+      var lbl="🪞"+String(r["체크 항목"]||"").replace(" 성찰","");
+      return '<span class="'+cls+'" onclick="obCheck('+r["_sheet_row"]+')">'+esc(lbl)+(dn?" ✓":"")+'</span>';
+    }).join(" ");
     cards+='<div class="card ob-card" style="margin-bottom:11px">'+
       '<div class="ob-card-top">'+
         '<div class="ob-card-id"><b class="ob-name" data-nm="'+esc(nm)+'" onclick="obOpenCard(this.dataset.nm)" title="클릭: 인사카드">'+esc(nm)+'</b>'+
@@ -1799,6 +1903,7 @@ function renderOnbo(){
       '</div>'+
       '<div class="ob-bar"><div style="width:'+pct+'%"></div></div>'+
       '<div class="ob-chips">'+chips+'<button class="ob-del" onclick="obDelete(\''+esc(nm).replace(/\'/g,"")+'\')">✕ 삭제</button></div>'+
+      (reflectChips?('<div class="ob-chips" style="margin-top:4px">'+reflectChips+'</div>'):"")+
       '</div>';
   });
   var kpis='<div class="kpi-grid" style="margin:10px 0">'+kpi("온보딩 중",names.length+'<small> 명</small>',"입사 90일 이내")+kpi("7일 내 체크인",dueSoon+'<small> 건</small>',"예정된 체크인")+kpi("이탈위험",riskCount+'<small> 명</small>',riskCount>0?"주의 필요":"안정적")+'</div>';
