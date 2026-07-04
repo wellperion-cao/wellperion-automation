@@ -1592,6 +1592,32 @@ async function obSubmitStart(){
     obCloseModal("obStartModal"); reloadData();
   }catch(e){ msg.textContent="실패: "+(e.message||e); btn.disabled=false; btn.textContent="90일 체크인 생성"; }
 }
+function obSelHasVal(sel,val){ if(!sel)return false; for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===val) return true; } return false; }
+function obParseCheckNote(note){
+  var out={}; note=String(note||""); if(!note) return out;
+  var parts=note.split(" | ");
+  parts.forEach(function(seg){
+    seg=seg.replace(/\s*\[위험\]\s*$/,"").trim();
+    var m;
+    if((m=seg.match(/^적응도 종합:[^(]*\(업무([^\s)]+)\s*관계([^\s)]+)\s*문화([^\s)]+)\)/))){
+      if(m[1]!=="-") out.work=m[1];
+      if(m[2]!=="-") out.rel=m[2];
+      if(m[3]!=="-") out.cul=m[3];
+    } else if(/^면담:/.test(seg)){
+      var qtext=seg.replace(/^면담:\s*/,"");
+      var re=/(\d+)\)\s*([\s\S]*?)(?=\s\d+\)\s|$)/g, mm, qa=[];
+      while((mm=re.exec(qtext))){ qa[parseInt(mm[1],10)-1]=mm[2].trim(); }
+      out.qa=qa;
+    } else if(/^어려운점:\s*/.test(seg)){
+      out.issue=seg.replace(/^어려운점:\s*/,"").trim();
+    } else if(/^조치:\s*/.test(seg)){
+      out.action=seg.replace(/^조치:\s*/,"").trim();
+    } else if(/^수습판정:\s*/.test(seg)){
+      out.verdict=seg.replace(/^수습판정:\s*/,"").trim();
+    }
+  });
+  return out;
+}
 function obCheck(row){
   obInjectModals();
   var r=(DB.onbo||[]).filter(function(x){return x["_sheet_row"]==row;})[0];
@@ -1603,6 +1629,14 @@ function obCheck(row){
   document.getElementById("obcIssue").value=""; document.getElementById("obcAction").value="";
   document.getElementById("obcRisk").checked=String(r["비고"]||"").indexOf("[위험]")>=0;
   document.getElementById("obcOwner").value=r["담당자"]||"관리자+HR";
+  var __pf=obParseCheckNote(r["비고"]);
+  if(__pf.work){var __pw=document.getElementById("obcWork");if(obSelHasVal(__pw,__pf.work))__pw.value=__pf.work;}
+  if(__pf.rel){var __pr=document.getElementById("obcRel");if(obSelHasVal(__pr,__pf.rel))__pr.value=__pf.rel;}
+  if(__pf.cul){var __pc=document.getElementById("obcCul");if(obSelHasVal(__pc,__pf.cul))__pc.value=__pf.cul;}
+  if(__pf.qa){__pf.qa.forEach(function(v,qi){if(v){var __qe2=document.getElementById("obcq"+qi);if(__qe2)__qe2.value=v;}});}
+  if(__pf.issue)document.getElementById("obcIssue").value=__pf.issue;
+  if(__pf.action)document.getElementById("obcAction").value=__pf.action;
+  if(__pf.verdict){var __pv=document.getElementById("obcVerdict");if(obSelHasVal(__pv,__pf.verdict))__pv.value=__pf.verdict;}
   var prev=document.getElementById("obcPrev");
   if(r["비고"]){ prev.style.display="block"; prev.textContent="이전 기록: "+r["비고"]; } else { prev.style.display="none"; }
   document.getElementById("obcMsg").textContent="";
