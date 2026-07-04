@@ -76,7 +76,7 @@
     "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-19",
-    "note": "[2026-06-19 GM 지시] AI 시리즈(@namuk.wellperion) 반응 모니터링을 시모가 소유한다. 개인시리즈 목표=도달·브랜드(바이럴 CTA 저장·댓글·팔로우)라 반응이 곧 이 채널의 의미있는 신호(전환 퍼널 SSOT와 별개, 여기선 vanity 아님). 한계: 개인 IG 반응 자동 스크래핑은 신뢰도 낮아 보류 이력 있음(메모리 project_channel_engagement_tracking_ceiling) → 자동 수치판 만들지 말 것. 시모가 발행된 각 편의 반응(댓글 내용·저장·팔로우 변화·도달)을 주기적으로 읽어 '무엇이 통했나'를 정성으로 정리. 첫 대상=CS 3편(#19~#21, GM 승인·발행 후). #13 '반응 기반 방향' 실천. | [2026-06-24] 봇 자동수집 PoC 성공(조건부): 팔로워·댓글 자동수집 가능(세션 재활용), 좋아요=IG 소수 숨김·저장=IG 비공개라 수집 불가. scripts/ig_engagement_poc.py. 운용방침=하이브리드(자동=팔로워·댓글 주간추적 / 수동보완=저장·좋아요 GM 인사이트).",
+    "note": "[2026-06-19 GM 지시] AI 시리즈(@namuk.wellperion) 반응 모니터링을 시모가 소유한다. 개인시리즈 목표=도달·브랜드(바이럴 CTA 저장·댓글·팔로우)라 반응이 곧 이 채널의 의미있는 신호(전환 퍼널 SSOT와 별개, 여기선 vanity 아님). 한계: 개인 IG 반응 자동 스크래핑은 신뢰도 낮아 보류 이력 있음(메모리 project_channel_engagement_tracking_ceiling) → 자동 수치판 만들지 말 것. 시모가 발행된 각 편의 반응(댓글 내용·저장·팔로우 변화·도달)을 주기적으로 읽어 '무엇이 통했나'를 정성으로 정리. 첫 대상=CS 3편(#19~#21, GM 승인·발행 후). #13 '반응 기반 방향' 실천. | [2026-06-24] 봇 자동수집 PoC 성공(조건부): 팔로워·댓글 자동수집 가능(세션 재활용), 좋아요=IG 소수 숨김·저장=IG 비공개라 수집 불가. scripts/ig_engagement_poc.py. 운용방침=하이브리드(자동=팔로워·댓글 주간추적 / 수동보완=저장·좋아요 GM 인사이트). [2026-07-04 정리] 반응읽기 원장(status/ig_engagement_ledger.json) 구축·편별매칭·매일09:30 자동수집·매일 자동커밋까지 완결(핀버그 수정 포함). 이 데이터가 평가환류 루프(배106)로 흘러감 — 31=데이터소스, 106=환류 자동화.",
     "next": "CS 3편 발행되면 시모가 편별 반응 읽기 → '통한 포인트/안 통한 포인트' 1줄 정리 → 다음 챕터(마케팅·점검) 후킹·방향에 반영 + GM 간단 보고.",
     "ship_no": 31
   },
@@ -125,7 +125,7 @@
     "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-23",
-    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정. | [2026-07-03 v1 프레임 빌드] deep-interview 확정(모호도14%·스펙 .omc/specs/deep-interview-cmo-eval-feedback-loop.md). weekly_marketing_feedback.py = 주간 브리프(공식 전용·정성 우선+측정 보조·정직 꼬리표) 생성. 자동 가중=v2(데이터 축적 후). 주간 cron=후속.",
+    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정. | [2026-07-03 v1 프레임 빌드] deep-interview 확정(모호도14%·스펙 .omc/specs/deep-interview-cmo-eval-feedback-loop.md). weekly_marketing_feedback.py = 주간 브리프(공식 전용·정성 우선+측정 보조·정직 꼬리표) 생성. 자동 가중=v2(데이터 축적 후). 주간 cron=후속. [2026-07-04 병합·항로정리] 배390(마케팅 루프 ⑤→①되먹임 v1 배관) 흡수 — 같은 마케팅 폐루프 단일화. + 반응읽기 원장(status/ig_engagement_ledger.json·배31, 매일09:30 자동수집·매일커밋) 연결됨. 이제 이 배 = 반응(원장)→주간 평가브리프→다음기획 되먹임의 단일 소유.",
     "ship_no": 106,
     "next": "🔗 UTM 클릭 데이터 축적 대기 중 — 그동안 좋은콘텐츠 지표 정의(저장+댓글+클릭 가중) 사전설계 (담당 시모).",
     "task_id": "CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK"
@@ -355,13 +355,15 @@
     "task_id": "CMO-2026-07-03-LOOP-AUTONOMY",
     "clevel": "cmo",
     "title": "[시모] 마케팅 루프 자율화 v1 배관 — ⑤→① 되먹임(참고·OFF기본)·주간 사이클 오케스트레이션·발효 플래그",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-03",
     "ship_no": 390,
-    "note": "deep-interview 확정(모호도9%·스펙 .omc/specs/deep-interview-cmo-loop-autonomy.md). v1 배관: ⑤→① 되먹임(producer 제안 참고, CMO_LOOP_FEEDBACK OFF 기본)·주간 사이클 오케스트레이션(marketing_loop_cycle.py dry)·발효 플래그+역롤백. 라이브 발효=GM go. 자동조정=v2.",
-    "next": "GM go 시 CMO_LOOP_FEEDBACK ON + 주간 cron 등록 → 라이브 발효. 그전 몇 사이클 수동 검증.",
-    "depends_on": ""
+    "note": "deep-interview 확정(모호도9%·스펙 .omc/specs/deep-interview-cmo-loop-autonomy.md). v1 배관: ⑤→① 되먹임(producer 제안 참고, CMO_LOOP_FEEDBACK OFF 기본)·주간 사이클 오케스트레이션(marketing_loop_cycle.py dry)·발효 플래그+역롤백. 라이브 발효=GM go. 자동조정=v2. [2026-07-04 병합·항로정리] 배106(파이프라인#5 평가환류)과 같은 ⑤평가환류→①제작 되먹임 루프라 중복 → 배106으로 병합 종결. 내용·근거 배106 note에 흡수.",
+    "next": "🏁 병합 종결(→시모106). 되먹임 루프는 배106 단일 소유.",
+    "depends_on": "",
+    "terminal": true,
+    "processed_at": "2026-07-04"
   },
   {
     "task_id": "CMO-2026-07-03-NEXT-EPISODE-PROPOSAL",
@@ -3105,5 +3107,17 @@
     "artifact": "- kpi_collector: click_stats 채널별 클릭수 수집(총 594건·naver_cafe42·ig23 등 실측)\n- bootsetup_matrix cmo.nsmap: utm_tag·channel_attr 마일스톤 done(실측 확인)·전환율(conv_rate)은 IG 노출 분모 없어 false 유지(가짜 분모 금지)\n- cmo 도달율 0%→50%(마일스톤 2/4)·정직 하이브리드 (CLI ad-hoc · 커밋 7dffb2d9)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "7dffb2d949f45c9f936cd42458808afc40898a3b"
+  },
+  {
+    "task_id": "CPO-2026-07-04-MEMORY-CLEANUP",
+    "clevel": "cpo",
+    "ship_no": 470,
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-04",
+    "title": "[시포] 메모리 정리 — 중복 병합·인덱스 압축(164→<140)",
+    "note": "[2026-07-04 GM 선택] 다음단계카드 중복 2개→1개 병합·삭제 완료(feedback_always_prelist_next_steps 유지). 잔여=진짜 중복 메모리 병합+인덱스 압축(고유 사실 손실 금지).",
+    "next": "executor 보수적 압축 → 검수.",
+    "depends_on": ""
   }
 ]
