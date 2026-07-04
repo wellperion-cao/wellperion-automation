@@ -277,6 +277,7 @@ var PROC_DEPT=FB_PROC,PROC_LIVE=false; // 구매성 부서별×월별 — 라이
 var OPS_SALES=null,OPS_SALES_LIVE=false; // 운영부 매출 정본(GM시트) — 월별 배열, 성공 시 SALES_DEPT.운영부 교체
 var SALES_DEPT_LIVE=false; // 종목별 매출 라이브(매출보고 서버집계 sales_dept) 성공 여부 — 성공 시 매출마스터 대체
 var TIME_SWIM=Array(12).fill(0),TIME_OTHER=Array(12).fill(0),timeMonth=Array(12).fill(0),TIME_G=0,TIME_LIVE=false; // 타임(시급) 인건비 — 라이프가드·아쿠아 등(labor_time 서버집계, 인건비마스터 밖 실지출)
+var GOAL_H1=3500000000,GOAL_YR=7200000000; // 매출 목표 — 상반기 35억(25년 전사회의 제시)·연간 72억(매니저님 확정 2026-07-04)
 
 function attemptGate(pw){var err=document.getElementById("gateErr");
   if(!pw){err.textContent="비밀번호를 입력해 주세요.";return;}
@@ -483,6 +484,7 @@ function renderKpi(){
     {l:"누적 지출",v:eok(COST_G),note:"인건비+구매성",down:true},
     {l:"영업수지",v:eok(SALES_G-COST_G),note:"※ 정규직 일부·임대 미포함"},
     {l:"매출 대비 지출률",v:(SALES_G?(COST_G/SALES_G*100).toFixed(1):0)+"%",note:"낮을수록 양호"},
+    {l:"연간 목표 진행률 (72억)",v:(SALES_G/GOAL_YR*100).toFixed(1)+"%",note:"상반기 35억 목표 "+(sum(salesMonth.slice(0,6))/GOAL_H1*100).toFixed(1)+"% · 하반기 필요 "+eok(Math.max(0,GOAL_YR-SALES_G)),up:true},
   ].map(function(k){return '<div class="kpi'+(k.up?' up':'')+(k.down?' down':'')+'"><div class="label">'+k.l+'</div><div class="val">'+k.v+'</div><div class="note">'+k.note+'</div></div>';}).join("");
   document.getElementById("notice").innerHTML="💡 <b>누적 매출 "+eok(SALES_G)+"(정본) · 지출 "+eok(COST_G)+" · 수지 "+eok(SALES_G-COST_G)+"</b> · 지출 중 인건비 비중 "+(COST_G?((LABOR_G+OPER_G+TIME_G)/COST_G*100).toFixed(0):0)+"%. (매출=「26년 매출 분석」 정본 · 지출=강사·운영부·타임(시급)·구매성, 정규직 일부·임대 미포함 · 최근월 진행분 포함 시 수지는 참고)";
 }
@@ -495,8 +497,11 @@ function renderMain(){
       scales:{x:{grid:{display:false}},y:moneyAxis()}}});
 }
 function renderSalesDept(){
-  var arr=Object.keys(SALES_DEPT).map(function(d){return {n:d,t:sum(SALES_DEPT[d].slice(0,DATA_LAST))};}).sort(function(a,b){return b.t-a.t;}); // 운영부(회원권) 포함 — 네이비 구분(2026-07-04 매니저님 지시)
-  newChart("chartSalesDept",{type:"bar",data:{labels:arr.map(function(o){return o.n;}),datasets:[{data:arr.map(function(o){return o.t;}),backgroundColor:arr.map(function(o){return o.n==="운영부"?"#22324a":"#a98a52";}),borderRadius:4}]},
+  var arr=Object.keys(SALES_DEPT).map(function(d){return {n:d,t:sum(SALES_DEPT[d].slice(0,DATA_LAST))};}); // 운영부(회원권) 포함 — 네이비 구분(2026-07-04 매니저님 지시)
+  var les=Object.keys(SALES_DEPT).reduce(function(s,d){return d==="운영부"?s:s+sum(SALES_DEPT[d].slice(0,DATA_LAST));},0);
+  arr.push({n:"강습 전체",t:les}); // 강습부 전체 합계(매니저님 지시 2026-07-04)
+  arr.sort(function(a,b){return b.t-a.t;});
+  newChart("chartSalesDept",{type:"bar",data:{labels:arr.map(function(o){return o.n;}),datasets:[{data:arr.map(function(o){return o.t;}),backgroundColor:arr.map(function(o){return o.n==="운영부"?"#22324a":(o.n==="강습 전체"?"#8a6f3f":"#a98a52");}),borderRadius:4}]},
     options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return won(c.raw);}}}},scales:{x:moneyAxis()}}});
 }
 function renderMix(){var gradesum=Object.keys(SALES_DEPT).reduce(function(s,d){return d==="운영부"?s:s+sum(SALES_DEPT[d].slice(0,DATA_LAST));},0);
