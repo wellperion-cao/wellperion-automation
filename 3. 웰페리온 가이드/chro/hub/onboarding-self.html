@@ -92,13 +92,13 @@
   <a href="index.html" style="display:block;text-align:center;margin-top:18px;font-size:12px;color:var(--dim);text-decoration:underline">← 웰페리온 인사 허브로 돌아가기</a>
 </div>
 
-<!-- PIN 게이트 -->
+<!-- 본인 확인 게이트 -->
 <div class="ov" id="ovLogin">
   <div class="modal">
     <h3>🌱 나의 성찰 기록 입장</h3>
-    <p class="sub" id="lg_sub">신입직원 본인 작성 전용 페이지입니다. 담당자에게 안내받은 PIN을 입력하세요. (다른 직원의 기록은 조회·수정할 수 없습니다)</p>
-    <label>PIN</label>
-    <input type="password" id="lg_pw" inputmode="numeric" autocomplete="off" placeholder="PIN 입력">
+    <p class="sub" id="lg_sub">본인 확인 후 자신의 성찰만 열람·작성할 수 있습니다.</p>
+    <label>본인 연락처 뒤 4자리</label>
+    <input type="password" id="lg_pw" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="예: 0000">
     <div id="lg_err" style="display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:8px"></div>
     <div class="modal-actions">
       <button class="primary" id="lg_btn" onclick="submitLogin()">입장</button>
@@ -111,10 +111,10 @@
   <div class="modal wide">
     <h3 id="wf_title">성찰 작성</h3>
     <p class="sub" id="wf_sub"></p>
-    <div class="wf-q">1) 이번 주 나는 무엇을 배우고 느꼈나?</div>
-    <textarea id="wf_q1" rows="3" placeholder="이번 주 배운 것·느낀 점을 자유롭게 적어주세요"></textarea>
-    <div class="wf-q">2) 입사할 때의 마음가짐 중 지키고 싶은 것은?</div>
-    <textarea id="wf_q2" rows="3" placeholder="처음 입사할 때 다짐·초심 중 지키고 싶은 것"></textarea>
+    <div class="wf-q" id="wf_q1_label">1) …</div>
+    <textarea id="wf_q1" rows="3" placeholder="자유롭게 적어주세요"></textarea>
+    <div class="wf-q" id="wf_q2_label">2) …</div>
+    <textarea id="wf_q2" rows="3" placeholder="자유롭게 적어주세요"></textarea>
     <div class="wf-q">자유 소감 (선택)</div>
     <textarea id="wf_free" rows="2" placeholder="이번 주를 돌아보며 자유롭게 남겨보세요"></textarea>
     <div class="lock-note">⚠ 저장 후에는 수정할 수 없습니다. 내용을 확인한 뒤 저장해 주세요.</div>
@@ -127,12 +127,40 @@
 </div>
 
 <script>
-/* ===== 백엔드 연동 — 자가성찰 전용 스코프 액션(onbo-self-*, PIN 1202)만 사용.
-   관리자 마스터 비밀번호는 이 페이지 어디에도 없음. 멘토용 onboarding.html과 완전히 분리된 스코프. ===== */
+/* ===== 백엔드 연동 — 자가성찰 전용 스코프 액션(onbo-self-*)만 사용.
+   [변경 2026-07-04 r2] 인증 = 본인 연락처(현재근무자 시트) 뒤 4자리. 관리자 마스터 비밀번호·멘토 PIN(1202)과 완전히 무관.
+   멘토는 체크인만(onboarding.html, PIN 1202), 신입 본인은 본인 성찰만(이 페이지) — 상호 교차 접근 불가. ===== */
 const EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
 const SS_KEY = "wp_onbo_self";
-let SESSION = null; // { pin, name }
+let SESSION = null; // { pin, name } — pin은 이제 "연락처 뒤4자리" 값(백엔드 파라미터명은 하위호환 위해 pin 유지)
 let ROWS = [];       // 인증 후 해당 인원 성찰 12행
+
+// 주차별 질문 12세트 (매니저 확정본 — 문구 그대로, 저장 note "1) … | 2) … | 소감: …" 파서와 함께 사용)
+const WEEK_QUESTIONS = {
+  1:  ["첫 주에 가장 인상 깊었던 순간은?", "입사를 결심했을 때 기대한 것은 무엇이었나?"],
+  2:  ["이번 주 새로 익힌 업무는?", "아직 어렵게 느껴지는 것은?"],
+  3:  ["처음으로 혼자 해낸 일은?", "그때 어떤 기분이 들었나?"],
+  4:  ["한 달 전의 나와 지금의 나, 무엇이 달라졌나?", "기대와 달랐던 점은?"],
+  5:  ["실수에서 배운 것은?", "더 잘하고 싶은 업무는?"],
+  6:  ["힘들었던 순간, 나를 버티게 한 것은?", "업무량과 컨디션은 어떤가?"],
+  7:  ["시키지 않아도 스스로 챙기게 된 일은?", "내가 제안하고 싶은 개선점은?"],
+  8:  ["팀에 기여했다고 느낀 순간은?", "동료에게 고마웠던 일은?"],
+  9:  ["이제 자신 있는 업무는?", "나의 강점이 드러난 순간은?"],
+  10: ["이 일에서 보람을 느끼는 순간은?", "오래 다니기 위해 회사·내가 챙겨야 할 것은?"],
+  11: ["지난 11주 중 가장 성장한 부분은?", "정규 전환 후 해보고 싶은 역할은?"],
+  12: ["입사 첫날의 나에게 해주고 싶은 말은?", "1년 뒤 나는 어떤 모습이고 싶은가?"]
+};
+// 저장된 note("1) … | 2) … | 소감: …")를 파싱 — 파서 호환 불변(저장 형식 그대로 유지)
+function parseReflectNote(note){
+  const s = String(note||"");
+  let rest = s, free = "";
+  const fi = rest.indexOf("| 소감:");
+  if(fi >= 0){ free = rest.slice(fi + 5).trim(); rest = rest.slice(0, fi).trim(); }
+  let a1 = "", a2 = "";
+  const m = rest.match(/^1\)\s*([\s\S]*?)\s*\|\s*2\)\s*([\s\S]*)$/);
+  if(m){ a1 = m[1].trim(); a2 = m[2].trim(); } else { a1 = rest.replace(/^1\)\s*/, "").trim(); }
+  return { a1, a2, free };
+}
 
 async function erpPost(payload){
   const res = await fetch(EXEC_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(payload) });
@@ -194,12 +222,13 @@ async function submitLogin(){
   const pin = (document.getElementById("lg_pw").value||"").trim();
   const err = document.getElementById("lg_err"), btn = document.getElementById("lg_btn");
   err.style.display = "none";
-  if(!pin){ err.textContent = "PIN을 입력하세요"; err.style.display="block"; return; }
+  if(!pin){ err.textContent = "연락처 뒤 4자리를 입력하세요"; err.style.display="block"; return; }
   btn.disabled = true; btn.textContent = "확인 중…";
   try{
     const res = await verifyAndLoad(pin, name);
     if(!res.ok){
-      err.textContent = res.error==="pin_invalid" ? "PIN이 올바르지 않습니다" :
+      err.textContent = res.error==="pin_invalid" ? "본인 확인에 실패했습니다. 연락처 뒤 4자리를 확인하세요." :
+                         res.error==="no_phone" ? "연락처 정보가 없어 본인 확인이 불가합니다. 관리자에게 문의하세요." :
                          res.error==="not_found" ? "해당 이름의 성찰 대상을 찾을 수 없습니다" :
                          "확인 실패 — 잠시 후 다시 시도하세요";
       err.style.display = "block";
@@ -242,10 +271,14 @@ function renderWeekList(){
     const cls = done ? "done" : (isTarget ? "target" : "future");
     const label = (w===12) ? "12주차 성찰" : (w+"주차 성찰");
     const due = String(r.due||"").slice(0,10);
+    const qs = WEEK_QUESTIONS[w] || ["", ""];
     let badge, body;
     if(done){
       badge = `<span class="pill done">✅ 완료 · 잠금 ${esc(String(r.completedDate||'').slice(0,10))}</span>`;
-      body = `<div class="item-note">${esc(r.note||"")}</div>`;
+      const parsed = parseReflectNote(r.note);
+      body = `<div class="item-note"><b>Q1. ${esc(qs[0])}</b><br>${esc(parsed.a1)}</div>`
+           + `<div class="item-note"><b>Q2. ${esc(qs[1])}</b><br>${esc(parsed.a2)}</div>`
+           + (parsed.free ? `<div class="item-note"><b>소감</b><br>${esc(parsed.free)}</div>` : "");
     } else if(isTarget){
       badge = `<span class="pill target">✍️ 작성 대상</span>` + (due?`<span class="pill due">기한 ${esc(due)}</span>`:"");
       body = `<div class="item-hint">아래를 눌러 이번 주 성찰을 작성하세요.</div>`;
@@ -273,8 +306,11 @@ function openWrite(sr){
   if(!row) return;
   __targetRow = row;
   const w = weekOf(row.item);
+  const qs = WEEK_QUESTIONS[w] || ["", ""];
   document.getElementById("wf_title").textContent = (w===12?"12주차":w+"주차") + " 성찰 작성";
   document.getElementById("wf_sub").textContent = "기한 " + (String(row.due||"").slice(0,10)||"—") + " · 저장 후 수정 불가";
+  document.getElementById("wf_q1_label").textContent = "1) " + qs[0];
+  document.getElementById("wf_q2_label").textContent = "2) " + qs[1];
   document.getElementById("wf_q1").value = "";
   document.getElementById("wf_q2").value = "";
   document.getElementById("wf_free").value = "";
