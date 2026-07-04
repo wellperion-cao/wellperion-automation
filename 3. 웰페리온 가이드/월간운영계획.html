@@ -17,7 +17,7 @@
   body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:13px; -webkit-font-smoothing:antialiased; padding:18px 18px 32px;}
   .wrap{max-width:100%; margin:0;}
 
-  header.page-head{margin-bottom:12px; padding-bottom:10px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 16px;}
+  header.page-head{margin-bottom:12px; padding-bottom:10px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px;}
   header.page-head .htitles{flex:1; min-width:200px; display:flex; flex-direction:column; gap:3px;}
   header.page-head h1{font-size:22px; font-weight:800; letter-spacing:-0.02em;}
   header.page-head .slogan{font-size:11px; color:var(--dim); letter-spacing:0.02em;}
@@ -53,7 +53,7 @@
   @media (max-width:720px){ .impact-card{min-width:calc(50% - 5px);} }
 
   /* ── 월 선택 바 + 편집 ── */
-  .month-bar{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin-bottom:8px;}
+  .month-bar{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin:0;}
   .month-bar label{font-size:12px; color:var(--dim);}
   .month-bar select{font-size:14px; font-weight:700; color:var(--text); background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; padding:5px 12px; cursor:pointer;}
   .ebtn{font-size:12px; padding:5px 13px; border-radius:8px; cursor:pointer;}
@@ -465,44 +465,47 @@
     .mb-badge{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;} .mb-card .sd{color:#444 !important;}
     /* 📅 연간 A3 그리드 = 가로 한 장 */
     .annual-board{break-inside:auto;}
-    .annual-head{font-size:13px; color:#111 !important; border-bottom:1.5px solid #999;} .annual-head span{color:#555 !important;}
-    .an-sec-h{font-size:10.5px; color:#111 !important; margin:8px 0 5px; border-bottom:1px solid #bbb; padding-bottom:2px;}
+    .annual-head{font-size:12px; color:#111 !important; border-bottom:1.5px solid #999; margin:2px 0 5px; padding-bottom:3px;} .annual-head span{color:#555 !important;}
+    .an-sec-h{font-size:10px; color:#111 !important; margin:4px 0 2px; border-bottom:1px solid #bbb; padding-bottom:1px;}
     .an-grid-wrap{border-color:#999 !important; background:#fff !important; overflow:visible;}
     table.an-grid{min-width:0;} table.an-grid th, table.an-grid td{border-color:#999 !important;}
     table.an-grid thead th{background:#f2f2f2 !important; color:#333 !important; padding:3px 2px; font-size:7.5px;}
-    table.an-grid td.an-lead{padding:4px 7px;} .an-i-title{font-size:8.5px; color:#111 !important;} .an-i-sub{font-size:7px; color:#444 !important;}
+    table.an-grid td.an-lead{padding:2px 6px;} .an-i-title{font-size:8.5px; color:#111 !important; line-height:1.2;} .an-i-sub{font-size:7px; color:#444 !important; margin-top:1px;}
     .an-i-tag{font-size:6.5px; color:#5b3aa6 !important; background:#efeaf9 !important; border-color:#b7a6e0 !important; padding:0 4px;}
-    .an-i-subrow{font-size:7px; color:#333 !important; margin-top:2px;} .an-i-subhint{color:#666 !important; font-size:6.5px;}
-    .an-cell{height:26px;} .an-p{font-size:8.5px; color:#111 !important;} .an-mini{display:none;} .an-tp{font-size:6.5px; color:#7a5f2f !important;} .an-spanlab{color:#555 !important; font-size:6.5px;}
+    .an-i-subrow{font-size:6.5px; color:#333 !important; margin-top:1px; line-height:1.25;} .an-i-subhint{color:#666 !important; font-size:6px;}
+    .an-cell{height:17px;} .an-p{font-size:8px; color:#111 !important;} .an-mini{display:none;} .an-tp{font-size:6.5px; color:#7a5f2f !important;} .an-spanlab{color:#555 !important; font-size:6.5px;}
     .an-cell.span{background:repeating-linear-gradient(45deg, #fff, #fff 3px, #ddd 3px, #ddd 6px) !important;}
     .an-cell.pt-진행{background:#dbeeff !important;} .an-cell.pt-완료{background:#dff0e2 !important;} .an-cell.pt-이월, .an-cell.pt-target{background:#f6ecd2 !important;} .an-cell.pt-계획{background:#eee !important;}
     .an-cell.cur-col{box-shadow:inset 0 0 0 1.5px #555 !important;}
-    .annual-note{color:#444 !important; font-size:7.5px;}
-    .an-months-sum{gap:5px;} .an-msum-card{min-width:calc(25% - 5px); background:#fff !important; border-color:#999 !important; padding:5px 8px; break-inside:avoid;}
+    .annual-note{color:#444 !important; font-size:7px; margin-top:2px; line-height:1.35;}
+    .an-months-sum{gap:5px;} .an-msum-card{min-width:calc(25% - 5px); background:#fff !important; border-color:#999 !important; padding:3px 7px; break-inside:avoid;}
     .an-msum-h{color:#111 !important; font-size:9px;} .an-msum-h .mth-stat{color:#555 !important;}
-    .an-msum-card li{color:#333 !important; font-size:7.5px;} .an-msum-card li:before{color:#666 !important;} .an-msum-card li.none{color:#777 !important;}
+    .an-msum-card li{color:#333 !important; font-size:7.5px; line-height:1.3;} .an-msum-card li:before{color:#666 !important;} .an-msum-card li.none{color:#777 !important;}
     /* 🛠️ 실무진 현장 업무 인쇄(A3 가로) */
     .fw-themes{gap:4px; margin:2px 0 7px;} .fw-theme{background:#fff !important; border-color:#999 !important; color:#222 !important; font-size:7.5px; padding:2px 7px;} .fw-theme .fw-th-p{color:#555 !important;}
-    .fw-months{gap:5px;} .fw-mcard{min-width:calc(25% - 5px); background:#fff !important; border-color:#999 !important; padding:5px 8px; break-inside:avoid;}
-    .fw-mh{border-bottom-color:#bbb !important;} .fw-mh .fw-mn{color:#111 !important; font-size:9px;} .fw-mh .fw-cnt{color:#555 !important;}
+    .fw-months{gap:5px;} .fw-mcard{min-width:calc(25% - 5px); background:#fff !important; border-color:#999 !important; padding:3px 7px; break-inside:avoid;}
+    .fw-mh{border-bottom-color:#bbb !important; margin-bottom:3px; padding-bottom:3px;} .fw-mh .fw-mn{color:#111 !important; font-size:9px;} .fw-mh .fw-cnt{color:#555 !important;}
+    .fw-cats{margin-bottom:3px; gap:3px;}
     .fw-cat{background:#f2f2f2 !important; border-color:#999 !important; color:#333 !important; font-size:7px;} .fw-cat b{color:#000 !important;}
-    .fw-hls li{color:#333 !important; font-size:7.5px;} .fw-hls li:before{color:#666 !important;}
+    .fw-hls li{color:#333 !important; font-size:7.5px; line-height:1.3;} .fw-hls li:before{color:#666 !important;}
     /* 🎯 상반기 전략 활동 인쇄(A3 가로) */
-    .sa-q1{background:#fff !important; border-color:#999 !important; border-left:2px solid #b8860b !important; padding:5px 8px; margin-bottom:6px;}
+    .sa-q1{background:#fff !important; border-color:#999 !important; border-left:2px solid #b8860b !important; padding:4px 8px; margin-bottom:4px;}
     .sa-q1-h .sa-q1-t{color:#111 !important; font-size:9px;} .sa-q1-h .sa-q1-p{color:#7a5f2f !important;}
     .sa-chip{background:#f2f2f2 !important; border-color:#999 !important; color:#333 !important; font-size:7.5px; padding:2px 8px;}
-    .sa-cards{gap:5px;} .sa-card{min-width:calc(33.33% - 5px); background:#fff !important; border-color:#999 !important; border-left:2px solid #666 !important; padding:5px 8px; gap:4px; break-inside:avoid;}
+    .sa-cards{gap:5px;} .sa-card{min-width:calc(33.33% - 5px); background:#fff !important; border-color:#999 !important; border-left:2px solid #666 !important; padding:4px 7px; gap:2px; break-inside:avoid;}
     .sa-card.dig{border-left:2px solid #b8860b !important;}
     .sa-t{color:#111 !important; font-size:9px;} .sa-dept{background:#f2f2f2 !important; border-color:#999 !important; color:#333 !important; font-size:7px;}
     .sa-period{color:#555 !important; font-size:7.5px;} .sa-link{color:#7a5f2f !important; background:#f6ecd2 !important; border-color:#b7a6e0 !important; font-size:6.5px;}
-    .sa-hls li{color:#333 !important; font-size:7.5px;} .sa-hls li:before{color:#666 !important;}
+    .sa-hls li{color:#333 !important; font-size:7.5px; line-height:1.25;} .sa-hls li:before{color:#666 !important;}
     .obj-split-h{color:#111 !important; margin:6px 0 4px;} .obj-split-h .cnt{color:#555 !important;}
     .obj-split-h .tagn{color:#000 !important; background:#f2f2f2 !important; border:1px solid #666 !important;}
     .obj-empty{color:#555 !important;}
     input, select, .note-edit, .fin-in, .pin-num{display:none !important;}
     /* 📊 월말 결과 보고(목표 달성 요약 흡수)·💰 매출(fin-primary)=상단 전폭, 나머지=2단 세로 흐름으로 한 장에 밀도있게 배치 */
-    .report-grid{column-count:2; column-gap:8mm; column-fill:auto;}
-    .blk{break-inside:avoid; margin:0 0 4px;}
+    .report-grid{column-count:2; column-gap:7mm; column-fill:auto;}
+    .blk{break-inside:avoid; margin:0 0 3px;}
+    /* 큰 과제표(sum-hero)는 컬럼을 넘어 흐르도록 허용 — 행 단위 break만 방지(공간 낭비·빈 페이지 방지) */
+    .blk.sum-hero{break-inside:auto;}
     .sd{color:#444 !important;}
     /* 💰 매출 핵심 = 두 단 전폭 상단 */
     .blk.fin-primary{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #b9985a !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
@@ -532,19 +535,18 @@
     h2.sec .cfo-link{font-size:7.5px; padding:1px 6px; color:#333 !important; border-color:#999 !important;}
     .strat-row{gap:4px;}
     .strat-link{font-size:7.5px; padding:2px 7px; color:#333 !important; background:#fff !important; border-color:#999 !important;}
-    .rm-time{gap:4px;} .rm-step{padding:6px 8px 5px; gap:3px; background:#fff !important; border-color:#999 !important;}
+    .rm-time{gap:4px;} .rm-step{padding:4px 7px 3px; gap:2px; background:#fff !important; border-color:#999 !important;}
     .rm-step .rn, .rm-step .rtitle, .rm-step .rmeta b{color:#111 !important;}
-    .rm-step .rgoal, .rm-step .rperiod{color:#444 !important; font-size:7.5px;}
-    .rm-step .rtitle{font-size:9px;} .rm-step .rmeta{font-size:7.5px;}
+    .rm-step .rperiod{color:#444 !important; font-size:7.5px;}
+    .rm-step .rgoal{display:none !important;}  /* A3 1장 압축 — 6단계 목표설명은 인쇄 생략(제목·진척·기간은 유지) */
+    .rm-step .rtitle{font-size:8.5px; line-height:1.2;} .rm-step .rmeta{font-size:7px;} .rm-step .rperiod{font-size:7px;}
     .rm-step .rbar{background:#eee !important; border-color:#999 !important;} .rm-step .rbar>i{background:#555 !important;}
     .rm-step .rbadge{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
-    .rm-quarters{gap:6px;} .rm-qgroup{border-top-color:#bbb !important; padding-top:5px;} .rm-qhead{font-size:9px; color:#111 !important; margin:0 2px 4px;}
+    .rm-quarters{gap:3px;} .rm-qgroup{border-top-color:#bbb !important; padding-top:3px;} .rm-qhead{font-size:8.5px; color:#111 !important; margin:0 2px 2px;}
     .rm-legend{display:none !important;}
-    header.page-head, .month-head, .rpt-wrap, .metric, table.rpt tr, .erp-step, .erp-time, .rm-step, .rm-time, .rm-qgroup{break-inside:avoid;}
-    header.page-head{margin-bottom:4px; padding-bottom:4px;}
-    header.page-head h1{font-size:14px;}
-    header.page-head .slogan{font-size:8px; color:#555 !important;}
-    header.page-head .slogan em{color:#555 !important;}
+    .month-head, .rpt-wrap, .metric, table.rpt tr, .erp-step, .erp-time, .rm-step, .rm-time, .rm-qgroup{break-inside:avoid;}
+    /* 인쇄 제목 = print-head 배너 1개만(GM 지적 2026-07-04 중복 제거) — 화면 헤더(제목·슬로건·컨트롤)는 인쇄 시 숨김 */
+    header.page-head{display:none !important;}
     .month-head{margin:3px 0 5px; padding:5px 8px; gap:4px 10px;}
     .month-head .mtitle{font-size:11px;} .month-head .mtheme{font-size:8.5px;}
     .fchart, .erp-legend, .flegend{display:none !important;}  /* 막대차트·범례 생략(밀도) */
@@ -552,9 +554,10 @@
     .erp-step{padding:8px 10px 7px; gap:4px;} .erp-step .ep{font-size:20px;} .erp-step .enote{font-size:8px; line-height:1.4;}
     .erp-time{gap:6px;}
     footer.foot{margin-top:8px; padding-top:6px; font-size:8px;}
+    body.view-annual footer.foot{display:none !important;}  /* 연간 A3 1장 — 각주는 print-head 배너로 대체 */
     .month-head, .rpt-wrap, table.rpt, .metric, .erp-step{background:#fff !important; color:#111 !important; border-color:#999 !important;}
     table.rpt thead th{background:#f2f2f2 !important; color:#333 !important; border-color:#999 !important; padding:3px 6px; font-size:8px;}
-    table.rpt tbody td{padding:3px 6px; font-size:8.5px;}
+    table.rpt tbody td{padding:2px 5px; font-size:8.5px;}
     table.rpt tbody td, table.rpt tbody tr:hover td, .fin tr.cur-m td{background:#fff !important; color:#222 !important; border-color:#ccc !important;}
     .r-title{font-size:9px;} .r-note{font-size:8px;}
     .fin tr.fin-tot td{background:#f2f2f2 !important;}
@@ -566,9 +569,9 @@
     .mbar>i{background:#666 !important;}
     .chip{color:#000 !important; background:#fff !important; border-color:#666 !important;}
     .obadge, .mstat, .erp-step .ebadge{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
-    .print-head{display:block !important; text-align:center; margin:0 0 8px; padding-bottom:6px; border-bottom:1.5px solid #999;}
-    .print-head .ph-title{font-size:14px; font-weight:800; color:#111 !important;}
-    .print-head .ph-sub{font-size:9.5px; color:#444 !important; margin-top:3px;}
+    .print-head{display:block !important; text-align:center; margin:0 0 4px; padding-bottom:3px; border-bottom:1.5px solid #999;}
+    .print-head .ph-title{font-size:12px; font-weight:800; color:#111 !important;}
+    .print-head .ph-sub{font-size:8.5px; color:#444 !important; margin-top:1px;}
   }
 </style>
 </head>
@@ -579,6 +582,14 @@
     <div class="htitles">
       <h1>월간 운영 계획·보고</h1>
       <div class="slogan"><em>A Day, Well Completed.</em> — 하루의 완성, 웰페리온</div>
+    </div>
+    <!-- 월 선택 + GM/담당 편집 + 뷰 토글 = 제목·슬로건 우측(GM 지적 2026-07-04 이동 · 반응형 wrap) -->
+    <div class="month-bar">
+      <label for="month-sel">월 선택</label>
+      <select id="month-sel"></select>
+      <span id="edit-wrap"></span>
+      <span id="save-flag" style="font-size:11px;color:var(--dim);"></span>
+      <span class="view-toggle" id="view-toggle"></span>
     </div>
     <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
   </header>
@@ -596,15 +607,6 @@
 
   <!-- 🔥 임팩트 현황 4칸 (최상단 · 계층 띠 바로 아래 · GM 지시 2026-07-03) — ① 선택월 매출 실적/목표 ②③④ 핵심 과제 상위 3(담당·상태·진척) · 결과만 담백하게 -->
   <div class="impact-grid" id="impact-grid" style="display:none;"></div>
-
-  <!-- 월 선택 + 편집 (경영진 보고 = 상시 공식직함, 토글 없음) -->
-  <div class="month-bar">
-    <label for="month-sel">월 선택</label>
-    <select id="month-sel"></select>
-    <span id="edit-wrap"></span>
-    <span id="save-flag" style="font-size:11px;color:var(--dim);"></span>
-    <span class="view-toggle" id="view-toggle"></span>
-  </div>
 
   <!-- 경영진 보고 인쇄 배너(A3 한 장 상단 · 상시) -->
   <div class="print-head" id="print-head"></div>
@@ -633,7 +635,7 @@
 
     <!-- 💰 선택월 매출·지출 (핵심·최상단 · 매출 목표 대비 + 부서별 분해 · 정본 = AI CFO 매출현황 미러 · 2026-07-03 GM 지시: [매출][전체지출][순액] 1행 요약표 삭제(지출=나우열M 구조개선 중이라 순액 무의미), 부서별 표는 유지) -->
     <section class="blk fin-primary">
-      <h2 class="sec has-link">💰 선택월 매출·지출 <span class="stag">매출 목표 대비 + 부서별(목표vs실적) · AI CFO 정본 미러 · 지출·순액=나우열M 구조개선 중(확정숫자 미표기)</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
+      <h2 class="sec has-link">💰 선택월 매출·지출 <span class="stag">매출 목표 대비 + 부서별(목표vs실적) · AI CFO 정본 미러 · 지출·순액=파트너팀 구조개선 중(확정숫자 미표기)</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
       <div id="fin-board"><div class="board-status">선택월 매출·지출 요약을 불러오는 중…</div></div>
     </section>
 
@@ -657,14 +659,14 @@
 
     <!-- 🔧 점검 현황 & 이슈·해결 (2026-07-03 GM 지시: 개발(백·프론트엔드) 6월 진행/완료 카드 추가) -->
     <section class="blk">
-      <h2 class="sec">🔧 점검 현황 & 이슈·해결 <span class="stag">시설부 · 지원부(남/여) · 종합접수처 · 웰페리온 ERP 개발 — 실측 가능한 것만(가짜값 없음) · 이슈=VOC 실시간 집계(PII 비노출)</span></h2>
+      <h2 class="sec">🔧 점검 현황 & 이슈·해결 <span class="stag">⏱ 실시간(월 무관) · 시설부 · 지원부(남/여) · 종합접수처 · 웰페리온 ERP 개발 — 실측 가능한 것만(가짜값 없음) · 이슈=VOC 실시간 집계(PII 비노출)</span></h2>
       <div id="check-board"><div class="board-status">점검 현황을 불러오는 중…</div></div>
       <div id="issue-board" style="margin-top:14px;"><div class="board-status">이슈 보드를 계산하는 중…</div></div>
     </section>
 
     <!-- 👤 실무책임자 도달율 + 🤖 AI 활용 도달율 (병합 · GM 지시 2026-07-03: 담당당 한 행에 실무 진척·AI 활용·방향 병합) -->
     <section class="blk">
-      <h2 class="sec" id="prac-sec">👤 실무 도달율 &amp; 🤖 AI 활용 도달율 <span class="stag">GM 직속 3라인 · 담당 | 실무 도달율% | AI 활용%(GM 확정) | 북극성·방향</span></h2>
+      <h2 class="sec" id="prac-sec">👤 실무 도달율 &amp; 🤖 AI 활용 도달율 <span class="stag">GM 직속 3라인 · 담당 | 실무 도달율% | AI 활용%(GM 확정) | 북극성·방향 · 도달율=신규 목표 기준(월별 목표 상이·전월 델타 미표시)</span></h2>
       <div id="prac-board"></div>
     </section>
 
@@ -672,7 +674,7 @@
     <section class="blk">
       <h2 class="sec">🗺️ 전략 · 확장 <span class="stag">참고 원본 문서 — 08월 ERP 확장 스토리</span></h2>
       <div class="strat-row">
-        <a class="strat-link" href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">🗺️ 전략 로드맵 (v1.4 · A3)</a>
+        <a class="strat-link" href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">🗺️ 전략 로드맵 (v1.5 · A3)</a>
         <a class="strat-link" href="회사문서/1. 웰페리온_회사소개서_v2.19.html" target="_blank">📄 회사소개서 (v2.19)</a>
         <a class="strat-link" href="회사문서/4. 웰페리온_브랜드확장_회사소개서_v1_단일파일.html" target="_blank">🆕 브랜드확장 소개서 (Cinq Mondes)</a>
       </div>
@@ -1179,10 +1181,13 @@
     mh.style.display = 'flex';
     var ms = m.month_status || '';
     var themeTxt = (m.report && m.report.theme) ? ('🏷️ ' + esc(m.report.theme)) : esc(m.theme || '');
+    // '완료' = 보고 기간(그달) 마감 의미 — 개별 미완 과제가 병존할 수 있으므로 주석 명기(GM 정정 2026-07-04)
+    var doneHint = (ms === '완료') ? '<span class="mtheme-report" style="color:var(--dim)">※ \'완료\'=보고 기간(그달) 마감 · 개별 미완 과제는 다음 달 이월</span>' : '';
     mh.innerHTML =
       '<span class="mtitle">' + esc(_sel) + '</span>' +
       '<span class="mstat ' + esc(ms) + '">' + esc(ms) + '</span>' +
-      (themeTxt ? '<span class="mtheme-report">' + themeTxt + '</span>' : '');
+      (themeTxt ? '<span class="mtheme-report">' + themeTxt + '</span>' : '') +
+      doneHint;
   }
 
   // ── 도달율 진행 막대(공통) ──
@@ -1431,7 +1436,7 @@
       });
       if(ta.etc > 0){ rows.push({name:'기타(팀 미매칭 — 루프메소드·카드발급 등)', target:0, actual:ta.etc, exp:0, isEtc:true}); }
       // 지출·순액 = 나우열M 구조개선 중(확정숫자 미표기 · 정직 표기). 목표·실적매출·달성%(team_sales)은 그대로 유지.
-      var NAUW_NOTE = '<span class="fin-none" title="운영 매출&지출 실무=나우열M · 구조개선 중">나우열M 구조개선 중</span>';
+      var NAUW_NOTE = '<span class="fin-none" title="운영 매출·지출 실무=파트너팀 · 구조개선 중">파트너팀 구조개선 중</span>';
       var totT = 0, totA = 0;
       var body = rows.map(function(r){
         totT += r.target; totA += r.actual;
@@ -1450,13 +1455,13 @@
       combinedTbl = '<div class="fin-dept-wrap"><div class="fin-dept-h">🏷️ ' + mnum + '월 부서별 매출(목표 vs 실적) & 지출' +
         (ta.live ? '' : ' <span style="color:var(--dim);font-weight:400">(팀별 실적 라이브 조회 중/실패 — 매출마스터 폴백)</span>') + '</div>' +
         '<div class="rpt-wrap"><table class="rpt findept"><thead><tr><th>팀</th><th class="num">목표매출</th><th class="num">실적매출</th><th class="num">달성%</th>' +
-        '<th class="num">지출<span style="font-weight:400;color:var(--dim)"> · 나우열M 구조개선 중</span></th><th class="num">순액</th></tr></thead>' +
+        '<th class="num">지출<span style="font-weight:400;color:var(--dim)"> · 파트너팀 구조개선 중</span></th><th class="num">순액</th></tr></thead>' +
         '<tbody>' + body + '</tbody></table></div></div>';
     }
 
     var legend = '<div class="flegend">' +
       '<span class="fnote">● 선택월(' + mnum + '월) 기준 · 매출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> 미러(읽기전용, 회원권+강습+기타·주차). ' +
-      '부서별 표=팀별 목표(status/sales_targets.json 고정)·실적(라이브 GAS team_sales, 강사→팀은 인건비 시트 로스터로 집계). 멤버십=GM시트 「2026년도 매출」 정본. <b>부서별 지출·순액=운영 매출&지출 실무 나우열M 이관·구조개선 중이라 확정숫자 미표기</b>(지출·순액 실측치는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인). 측정 전=소스 미기재(가짜값 없음).</span>' +
+      '부서별 표=팀별 목표(status/sales_targets.json 고정)·실적(라이브 GAS team_sales, 강사→팀은 인건비 시트 로스터로 집계). 멤버십=GM시트 「2026년도 매출」 정본. <b>부서별 지출·순액=운영 매출·지출 실무 파트너팀 이관·구조개선 중이라 확정숫자 미표기</b>(지출·순액 실측치는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인). 측정 전=소스 미기재(가짜값 없음).</span>' +
     '</div>';
 
     host.innerHTML = hero + combinedTbl + legend;
@@ -1522,7 +1527,8 @@
       (goal ? '<div class="r-note">' + esc(goal) + '</div>' : '');
 
     var pracBar = progBar(prog, null, _editMode, 'data-pid="' + esc(p.id) + '" data-f="pprogress"', false);
-    var pracCell = pracBar + deltaBadge(prog, prevProg);
+    // 전월 델타 뱃지 끔(GM 정정 2026-07-04) — 월별 목표가 상이해 델타(▼40 등)가 성과 폭락처럼 오독됨. 도달율은 '신규 목표 기준'.
+    var pracCell = pracBar;
 
     var aiCell;
     if(aiItem){
@@ -1601,7 +1607,7 @@
           '<div class="chk-card"><span class="cl">' + esc(label) + '</span>' +
           '<div class="cv">' + gd.pct + '%</div>' +
           '<span class="csub">완료 ' + gd.done + ' / 전체 ' + gd.total +
-            '<br><span class="warn">⚠ GAS 분모 산출 버그 진단 중(시토→시우 인계) — 실측치지만 신뢰도 검증 전</span></span>' +
+            '<br><span class="warn">⚠ 완료율 분모(점검 항목 수) 정합성 검증 중 — 실측치지만 신뢰도 확정 전</span></span>' +
           link + '</div>'
         );
       } else {
@@ -1791,7 +1797,7 @@
     if(!host) return;
     var rm = _data && _data.strategy_roadmap;
     host.innerHTML = roadmapStripHtml() +
-      '<div class="rm-legend">' + esc((rm && rm.note) || '') + ' · 원본 = <a class="strat-link" style="padding:1px 8px;" href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">전략 로드맵 v1.4(A3)</a></div>';
+      '<div class="rm-legend">' + esc((rm && rm.note) || '') + ' · 원본 = <a class="strat-link" style="padding:1px 8px;" href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">전략 로드맵 v1.5(A3)</a></div>';
   }
 
   // ── 📊 연속 이니셔티브 상단밴드(월별 A3 상단 · 그달 진척 + 델타 궤적) — strategy-roadmap(상위 프레임·월별 pct 없음)은 제외, 진척 있는 연속 4개만 ──
@@ -1829,7 +1835,8 @@
   // ── 📅 연간 A3 뷰(이니셔티브 5행 × 12개월 타임라인 + 전략 로드맵 6단계 + 월별 신규 과제 요약) ──
   var AN_MONTHS = [1,2,3,4,5,6,7,8,9,10,11,12];
   function annualGridHtml(curMn){
-    var inits = initiativeItems();
+    // strategy-roadmap(상위 프레임)은 월별 pct가 없어 12개월 전부 빗금(정보 0)이고 바로 아래 6단계 스트립과 중복 → 그리드에서 제외(GM 정정 2026-07-04). 6단계 스트립(roadmapStripHtml)은 별도 유지.
+    var inits = initiativeItems().filter(function(it){ return it.source_ref !== 'strategy_roadmap'; });
     if(!inits.length) return '<div class="board-status">연속 과제 정본(initiatives)이 없습니다.</div>';
     var thead = '<tr><th class="an-lead">과제</th>' + AN_MONTHS.map(function(m){
       return '<th' + (m === curMn ? ' style="color:var(--accent-soft)"' : '') + '>' + m + '월</th>';
@@ -1883,11 +1890,7 @@
     if(!fw || !fw.months) return '<div class="board-status">실무진 현장 업무 정본(field_work)이 없습니다.</div>';
     var catMap = {};
     (fw.categories || []).forEach(function(c){ catMap[c.key] = c; });
-    var themes = (fw.themes || []).map(function(t){
-      return '<span class="fw-theme">' + esc(t.icon || '') + ' ' + esc(t.title) +
-        ' <span class="fw-th-p">' + esc(t.period || '') + '</span></span>';
-    }).join('');
-    var themeStrip = themes ? '<div class="fw-themes">' + themes + '</div>' : '';
+    // 테마 칩(themes)은 상반기 전략 활동과 중복이라 렌더 제거(GM 결정 2026-07-04) — 월별 카테고리·건수·highlights만 표시. 데이터(fw.themes)는 정본에 보존.
     var keys = Object.keys(fw.months).sort();
     var cards = keys.map(function(k){
       var mo = fw.months[k] || {}, mnum = monNum(k);
@@ -1900,7 +1903,7 @@
         '<span class="fw-mn">' + mnum + '월</span><span class="fw-cnt">' + (mo.count || 0) + '건</span></div>' +
         '<div class="fw-cats">' + badges + '</div><ul class="fw-hls">' + hls + '</ul></div>';
     }).join('');
-    return themeStrip + '<div class="fw-months">' + cards + '</div>';
+    return '<div class="fw-months">' + cards + '</div>';
   }
   // ── 🎯 상반기 전략 활동(연간 A3 전용) — strategic_activities 정본 렌더만(PII 없는 사업·프로그램 3맥락 + 1분기 정책 기반) ──
   function strategicActivitiesHtml(){
@@ -1939,7 +1942,7 @@
       roadmapStripHtml() +
       '<div class="an-sec-h">🆕 월별 핵심 과제(신규) 요약 <span style="font-size:11px;font-weight:400;color:var(--dim)">그달 시작·완결형 과제(연속 과제 제외)</span></div>' +
       monthlyNewSummaryHtml(curMn) +
-      '<div class="an-sec-h">🛠️ 실무진 현장 업무 (1~7월) <span style="font-size:11px;font-weight:400;color:var(--dim)">현장 실무진 53건 · 카테고리별 건수 + 연속 테마 · 내부 드라이브 정리(개인정보 제외)</span></div>' +
+      '<div class="an-sec-h">🛠️ 실무진 현장 업무 (1~7월) <span style="font-size:11px;font-weight:400;color:var(--dim)">현장 실무진 53건 · 월별 카테고리별 건수 + 주요 활동 · 내부 드라이브 정리(개인정보 제외)</span></div>' +
       fieldWorkHtml(curMn);
   }
 
@@ -1973,11 +1976,12 @@
 
     if(wrap) wrap.classList.toggle('is-done', isDone);
 
-    var netTxt = (fin && fin.net != null) ? (fmtWon(fin.net) + ' <span class="sd">(지출 미반영·나우열M 구조개선 중)</span>') : '측정 전';
+    // ② = 당월 매출만 표기(GM 정정 2026-07-04) — 지출은 구조개선 중이라 순액 산출이 무의미했고, 라벨('지출 미반영')과 계산(매출−지출)이 모순이었음. 순액 삭제 정책과 일치.
+    var salesTxt = (fin && typeof fin.sales === 'number') ? fmtWon(fin.sales) : '측정 전';
 
     el.innerHTML = '<div class="sum-compact">' +
       '<span>① 목표 평균 달성률 <b>' + (avg != null ? avg + '%' : '—') + '</b>' + deltaBadge(avg, prevAvg) + '</span>' +
-      '<span>② 매출−지출 순액(당월) <b>' + netTxt + '</b></span>' +
+      '<span>② 당월 매출 <b>' + salesTxt + '</b></span>' +
       '<span>③ 웰페리온 ERP 당월 진척 <b>' + (erpPct != null ? erpPct + '%' : '미기록') + '</b></span>' +
     '</div>';
   }
