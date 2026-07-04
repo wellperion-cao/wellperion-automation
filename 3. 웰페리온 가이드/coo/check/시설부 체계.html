@@ -4447,19 +4447,32 @@ function renderFmInspector(data){
   el.innerHTML=html;
 }
 
+/* 기준이탈 요약 강화(배406 후속 · 2026-07-04 시우): 서버가 이미 건수순 정렬해 보내는
+   outOfRange.byItem(배열)을 ①최다 발생 항목 하이라이트 + ②항목별 건수 표로 표시 — 지원부
+   renderMrIssues와 동일한 강화 패턴. 이 값은 정식 '이슈'가 아니라 측정값 자동판정(참고용) —
+   issues.note 안내 문구는 그대로 유지. 완료율(입력률 pct) 로직은 무관·미수정. */
 function renderFmOutOfRange(data){
   const sumEl=document.getElementById('fmOutOfRangeSummary');
   const listEl=document.getElementById('fmOutOfRangeList');
   const detailsEl=document.getElementById('fmOutOfRangeDetails');
   const oor=data.outOfRange||{total:0,byItem:[],list:[]};
   const issues=data.issues||{total:0,note:''};
+  const byItem=Array.isArray(oor.byItem)?oor.byItem:[]; // 서버 outOfRangeByItemArr: count 내림차순 정렬 완료
   if(sumEl){
-    let byItemHtml='';
-    if(Array.isArray(oor.byItem) && oor.byItem.length){
-      byItemHtml=oor.byItem.map(function(i){return fmEsc(i.name)+' '+i.count+'건';}).join(' · ');
+    let html='<div style="font-size:13px;margin-bottom:6px;"><b>기준이탈(자동판정) '+(oor.total||0)+'건</b></div>';
+    if((oor.total||0)===0){
+      html+='<div style="padding:4px 0 8px;color:var(--dim);font-size:12.5px;">이번 달 기준이탈 없음.</div>';
+    }else{
+      const top=byItem[0];
+      if(top){
+        html+='<div style="font-size:12.5px;color:var(--yellow);font-weight:600;margin-bottom:6px;">최다 발생 — '+fmEsc(top.name)+' '+top.count+'건</div>';
+      }
+      html+='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>항목</th><th>기준이탈 건수</th></tr>'
+        +byItem.map(function(i){return '<tr><td>'+fmEsc(i.name)+'</td><td>'+(i.count||0)+'</td></tr>';}).join('')
+        +'</table></div>';
     }
-    sumEl.innerHTML='<div style="font-size:13px;margin-bottom:4px;"><b>기준이탈(자동판정) '+(oor.total||0)+'건</b>'+(byItemHtml?' — '+byItemHtml:'')+'</div>'
-      +'<div style="font-size:11.5px;color:var(--dim);">'+fmEsc(issues.note||'')+'</div>';
+    html+='<div style="font-size:11.5px;color:var(--dim);margin-top:8px;">'+fmEsc(issues.note||'')+'</div>';
+    sumEl.innerHTML=html;
   }
   if(detailsEl){
     const summaryEl=detailsEl.querySelector('summary');
@@ -4480,8 +4493,8 @@ function renderFmImprovements(data){
   const el=document.getElementById('fmImprovements');
   if(!el) return;
   const arr=data.improvements||[];
-  if(arr.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">개선 시사점 없음</div>'; return; }
-  let html='';
+  if(arr.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">개선 시사점 없음 — 집계 데이터 부족 또는 특이사항 없음</div>'; return; }
+  let html='<div style="font-size:12px;color:var(--dim);margin-bottom:6px;">집계 기반 자동 도출 '+arr.length+'건</div>';
   arr.forEach(function(txt){
     html+='<div class="admin-card" style="padding:10px 14px;margin-bottom:8px;font-size:13px;">· '+fmEsc(txt)+'</div>';
   });

@@ -559,9 +559,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="header-top">
     <h1>운영부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.0 · 2026-06-08</span> <span id="dayType"></span></h1>
     <div class="sheet-links">
-      <a class="sheet-link" onclick="switchTab('admin')" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
+      <a class="sheet-link" style="opacity:0.6;cursor:default;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);" title="현황 대시보드 탭 구축 예정 (tab-admin 미구현)">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-        현황 대시보드
+        현황 대시보드(구축 예정)
       </a>
       <a class="sheet-link" style="opacity:0.6;cursor:default;" title="운영부 전용 시트 연동 예정">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-6h8v2H8v-2zm0-3h8v2H8v-2z"/></svg>
@@ -1849,7 +1849,7 @@ function persistBoardData(){
 
 /* 선택된 요일 집합(다중선택). JS getDay(): 0=일~6=토 → BOARD_DAYS 순서로 매핑 */
 const DOW_TO_DAYKEY=['sun','mon','tue','wed','thu','fri','sat'];
-const BOARD_SELDAYS_KEY='PARKING_MANUAL_BOARD_SELDAYS'; // 선택 요일 영속 키(localStorage)
+const BOARD_SELDAYS_KEY='OPS_MANUAL_BOARD_SELDAYS'; // 선택 요일 영속 키(localStorage)
 const ALL_DAY_KEYS=BOARD_DAYS.map(d=>d.key);
 /* KST 오늘 날짜 문자열 (YYYY-MM-DD). UTC+9 보정 */
 function kstToday(){
