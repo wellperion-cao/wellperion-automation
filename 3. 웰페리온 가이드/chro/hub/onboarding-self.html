@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WELLPERION · 온보딩 자가성찰</title>
+<style>
+  :root{
+    --bg:#221F20; --paper:#2a2725; --ink:#f5f2ef; --dim:#8c8b83;
+    --line:#3d3835; --accent:#B79F8A; --accent2:#6e6052;
+    --green:#5fbf8a; --red:#e0726a; --amber:#e0b15c; --blue:#7fa8d8;
+    --card:#fbf8f2; --card-ink:#2b2622; --card-dim:#8a8178; --card-line:#e3dccf;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Pretendard",'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+  header{background:var(--paper);border-bottom:1px solid var(--line);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .brand{font-size:17px;font-weight:800;letter-spacing:.5px}
+  .brand span{color:var(--accent)}
+  .brand small{display:block;font-size:11px;font-weight:500;color:var(--dim);letter-spacing:0;margin-top:2px}
+  .wrap{max-width:600px;margin:16px auto;padding:0 14px 60px}
+  button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:9px;padding:9px 15px;font-size:13.5px;transition:.15s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent);color:#221F20;border-color:var(--accent);font-weight:700}
+  button.primary:hover{background:#d4b89e;color:#221F20}
+  button.ghost{background:transparent}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  input,textarea,select{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#1f1c1a;color:var(--ink)}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  label{display:block;font-size:12px;font-weight:600;color:var(--dim);margin:12px 0 6px}
+
+  /* ===== 게이트 오버레이 ===== */
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+  .ov.on{display:flex}
+  .modal{background:var(--paper);border-radius:14px;width:100%;max-width:400px;padding:24px;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+  .modal h3{font-size:17px;margin-bottom:6px}
+  .modal p.sub{color:var(--dim);font-size:12.5px;margin-bottom:16px}
+  .modal-actions{margin-top:18px}
+  .modal-actions button{width:100%;padding:12px}
+  .modal.wide{max-width:480px;max-height:88vh;overflow:auto}
+
+  /* ===== 직원 선택 화면 ===== */
+  .emp-empty{background:var(--card);border:1px solid var(--card-line);border-radius:14px;padding:34px 20px;text-align:center;color:var(--card-dim);font-size:13.5px}
+  .emp-list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .emp-btn{background:var(--card);border:1px solid var(--card-line);border-radius:12px;padding:15px 16px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;color:var(--card-ink);text-decoration:none}
+  .emp-btn:hover{border-color:var(--accent)}
+  .emp-btn b{font-size:15px}
+
+  /* ===== 12주 목록 화면 ===== */
+  .empHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+  .empHead h2{font-size:19px}
+  .progress-bar{background:var(--line);border-radius:20px;height:9px;overflow:hidden;margin:12px 0 4px}
+  .progress-fill{height:100%;background:var(--green);transition:width .3s}
+  .progress-txt{font-size:12px;color:var(--dim);margin-bottom:16px}
+
+  .item{background:var(--card);border:1px solid var(--card-line);border-radius:13px;padding:14px 16px;margin-bottom:11px;color:var(--card-ink)}
+  .item.done{border-left:4px solid var(--green)}
+  .item.target{border-left:4px solid var(--amber);cursor:pointer}
+  .item.target:hover{border-color:var(--accent)}
+  .item.future{opacity:.55}
+  .item-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:7px}
+  .pill{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:#efe7d8;color:#8a6a3a}
+  .pill.due{background:#f3eee4;color:#9b8e7c}
+  .pill.done{background:#e3f4ea;color:#1a7f5a}
+  .pill.target{background:#fbeadb;color:#a8641f}
+  .pill.future{background:#f0efe9;color:#a8a290}
+  .item-title{font-size:14.5px;font-weight:700;margin-bottom:3px}
+  .item-note{font-size:11.5px;color:var(--card-dim);margin-top:4px;white-space:pre-wrap}
+  .item-hint{font-size:11.5px;color:var(--card-dim);margin-top:4px}
+
+  .banner{background:#322e2b;border:1px dashed var(--accent2);border-radius:10px;padding:11px 14px;font-size:12px;color:#bdb3a6;margin-bottom:16px}
+  .banner.err{border-color:var(--red);color:#e8908a;background:#3a2a28}
+  .banner.ok{border-color:var(--green);color:#bfe6cf;background:#233530}
+  .loading{padding:50px 0;text-align:center;color:var(--dim);font-size:13px}
+
+  .wf-q{font-size:12.5px;font-weight:600;color:var(--accent);margin:4px 0 6px}
+  .wf-msg{font-size:12px;margin:8px 0;min-height:16px}
+  .wf-msg.err{color:var(--red)}
+  .wf-msg.ok{color:var(--green)}
+  .lock-note{font-size:11px;color:var(--dim);background:#1f1c1a;padding:8px 10px;border-radius:8px;margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">WELL<span>PERION</span> · 온보딩 자가성찰
+    <small id="hdrSub">신입직원 본인 작성 전용 · 한번 저장하면 수정 불가</small>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="banner"></div>
+  <div id="app"><div class="loading">불러오는 중…</div></div>
+  <a href="index.html" style="display:block;text-align:center;margin-top:18px;font-size:12px;color:var(--dim);text-decoration:underline">← 웰페리온 인사 허브로 돌아가기</a>
+</div>
+
+<!-- PIN 게이트 -->
+<div class="ov" id="ovLogin">
+  <div class="modal">
+    <h3>🌱 나의 성찰 기록 입장</h3>
+    <p class="sub" id="lg_sub">신입직원 본인 작성 전용 페이지입니다. 담당자에게 안내받은 PIN을 입력하세요. (다른 직원의 기록은 조회·수정할 수 없습니다)</p>
+    <label>PIN</label>
+    <input type="password" id="lg_pw" inputmode="numeric" autocomplete="off" placeholder="PIN 입력">
+    <div id="lg_err" style="display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:8px"></div>
+    <div class="modal-actions">
+      <button class="primary" id="lg_btn" onclick="submitLogin()">입장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 성찰 작성 모달 -->
+<div class="ov" id="ovWrite">
+  <div class="modal wide">
+    <h3 id="wf_title">성찰 작성</h3>
+    <p class="sub" id="wf_sub"></p>
+    <div class="wf-q">1) 이번 주 나는 무엇을 배우고 느꼈나?</div>
+    <textarea id="wf_q1" rows="3" placeholder="이번 주 배운 것·느낀 점을 자유롭게 적어주세요"></textarea>
+    <div class="wf-q">2) 입사할 때의 마음가짐 중 지키고 싶은 것은?</div>
+    <textarea id="wf_q2" rows="3" placeholder="처음 입사할 때 다짐·초심 중 지키고 싶은 것"></textarea>
+    <div class="wf-q">자유 소감 (선택)</div>
+    <textarea id="wf_free" rows="2" placeholder="이번 주를 돌아보며 자유롭게 남겨보세요"></textarea>
+    <div class="lock-note">⚠ 저장 후에는 수정할 수 없습니다. 내용을 확인한 뒤 저장해 주세요.</div>
+    <div class="wf-msg" id="wf_msg"></div>
+    <div style="display:flex;justify-content:space-between;gap:10px;margin-top:8px">
+      <button class="ghost" onclick="closeOv('ovWrite')">취소</button>
+      <button class="primary" id="wf_submit" onclick="submitReflect()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 백엔드 연동 — 자가성찰 전용 스코프 액션(onbo-self-*, PIN 1202)만 사용.
+   관리자 마스터 비밀번호는 이 페이지 어디에도 없음. 멘토용 onboarding.html과 완전히 분리된 스코프. ===== */
+const EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+const SS_KEY = "wp_onbo_self";
+let SESSION = null; // { pin, name }
+let ROWS = [];       // 인증 후 해당 인원 성찰 12행
+
+async function erpPost(payload){
+  const res = await fetch(EXEC_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(payload) });
+  return await res.json();
+}
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+function isYes(v){ return v===true || v==="Y" || v==="true" || v==="__YES__"; }
+function openOv(id){ document.getElementById(id).classList.add("on"); }
+function closeOv(id){ document.getElementById(id).classList.remove("on"); }
+function setBanner(html, cls){
+  const b=document.getElementById("banner");
+  if(!html){ b.innerHTML=""; return; }
+  b.innerHTML = `<div class="banner${cls?(' '+cls):''}">${html}</div>`;
+}
+function getParamName(){
+  try{ return (new URLSearchParams(location.search).get("name")||"").trim(); }catch(_){ return ""; }
+}
+function weekOf(label){
+  const m=String(label||"").match(/^(\d{1,2})\s*주차/);
+  return m ? +m[1] : null;
+}
+
+/* ===== 이름 미지정 시: 공개(비밀번호 불필요) 진행중 명단만 보여주고 선택 =====
+   ※ onbo-active-names는 '주간 체크인' 진행 상태 기준 명단이다(성찰과 체크인은 같은 12주 기간 동시 생성).
+     체크인을 모두 마쳤는데 성찰만 남은 극히 드문 경우, 명단에서 조기에 빠질 수 있음 — 그 경우 인사담당자에게 문의. */
+async function renderPickList(){
+  document.getElementById("hdrSub").textContent = "온보딩 진행중인 신입직원을 선택하세요";
+  document.getElementById("app").innerHTML = `<div class="loading">불러오는 중…</div>`;
+  try{
+    const r = await erpPost({ action:"onbo-active-names" });
+    const names = (r && r.ok===true && Array.isArray(r.names)) ? r.names : [];
+    if(!names.length){
+      document.getElementById("app").innerHTML = `<div class="emp-empty">현재 진행중인 온보딩이 없습니다.</div>`;
+      return;
+    }
+    document.getElementById("app").innerHTML = `<div class="emp-list">` + names.map(n=>
+      `<a class="emp-btn" href="?name=${encodeURIComponent(n)}"><b>🌱 ${esc(n)}</b><span style="color:var(--card-dim);font-size:12px">나의 성찰 기록 →</span></a>`
+    ).join("") + `</div>`;
+  }catch(e){
+    document.getElementById("app").innerHTML = `<div class="emp-empty">명단을 불러오지 못했습니다. 잠시 후 다시 시도하세요.</div>`;
+  }
+}
+
+/* ===== PIN 게이트 ===== */
+async function verifyAndLoad(pin, name){
+  const r = await erpPost({ action:"onbo-self-read", pin, name });
+  if(r && r.ok===true && Array.isArray(r.rows)){
+    SESSION = { pin, name };
+    ROWS = r.rows;
+    try{ sessionStorage.setItem(SS_KEY, JSON.stringify(SESSION)); }catch(_){}
+    closeOv("ovLogin");
+    renderWeekList();
+    return { ok:true };
+  }
+  return { ok:false, error: (r&&r.error)||"unknown" };
+}
+async function submitLogin(){
+  const name = getParamName();
+  const pin = (document.getElementById("lg_pw").value||"").trim();
+  const err = document.getElementById("lg_err"), btn = document.getElementById("lg_btn");
+  err.style.display = "none";
+  if(!pin){ err.textContent = "PIN을 입력하세요"; err.style.display="block"; return; }
+  btn.disabled = true; btn.textContent = "확인 중…";
+  try{
+    const res = await verifyAndLoad(pin, name);
+    if(!res.ok){
+      err.textContent = res.error==="pin_invalid" ? "PIN이 올바르지 않습니다" :
+                         res.error==="not_found" ? "해당 이름의 성찰 대상을 찾을 수 없습니다" :
+                         "확인 실패 — 잠시 후 다시 시도하세요";
+      err.style.display = "block";
+    }
+  }catch(e){
+    err.textContent = "서버 연결 실패 — 잠시 후 다시 시도하세요"; err.style.display = "block";
+  }finally{
+    btn.disabled = false; btn.textContent = "입장";
+  }
+}
+document.getElementById("lg_pw").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); submitLogin(); } });
+
+/* ===== 12주 목록 화면 ===== */
+let __targetRow = null;
+function renderWeekList(){
+  const name = SESSION.name;
+  document.getElementById("hdrSub").textContent = name + " 님의 12주 성찰 기록 · 신입직원 본인 작성 전용";
+  setBanner("");
+
+  const byWeek = {};
+  ROWS.forEach(r=>{ const w = weekOf(r.item); if(w) byWeek[w] = r; });
+
+  let doneCount = 0;
+  for(let w=1; w<=12; w++){ if(byWeek[w] && isYes(byWeek[w].done)) doneCount++; }
+  const pct = Math.round(doneCount/12*100);
+
+  // 미완료 최초 주차 = 현재 작성 대상 (순서대로 열림)
+  let targetWeek = null;
+  for(let w=1; w<=12; w++){ if(byWeek[w] && !isYes(byWeek[w].done)){ targetWeek = w; break; } }
+
+  let html = `<div class="empHead"><h2>🌱 ${esc(name)}</h2></div>`;
+  html += `<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`;
+  html += `<div class="progress-txt">${doneCount} / 12 주차 완료</div>`;
+
+  for(let w=1; w<=12; w++){
+    const r = byWeek[w];
+    if(!r){ continue; }
+    const done = isYes(r.done);
+    const isTarget = (w === targetWeek);
+    const cls = done ? "done" : (isTarget ? "target" : "future");
+    const label = (w===12) ? "12주차 성찰" : (w+"주차 성찰");
+    const due = String(r.due||"").slice(0,10);
+    let badge, body;
+    if(done){
+      badge = `<span class="pill done">✅ 완료 · 잠금 ${esc(String(r.completedDate||'').slice(0,10))}</span>`;
+      body = `<div class="item-note">${esc(r.note||"")}</div>`;
+    } else if(isTarget){
+      badge = `<span class="pill target">✍️ 작성 대상</span>` + (due?`<span class="pill due">기한 ${esc(due)}</span>`:"");
+      body = `<div class="item-hint">아래를 눌러 이번 주 성찰을 작성하세요.</div>`;
+    } else {
+      badge = `<span class="pill future">대기</span>`;
+      body = `<div class="item-hint">이전 주차 작성을 먼저 완료하면 순서대로 열립니다.</div>`;
+    }
+    html += `<div class="item ${cls}" ${isTarget?`onclick="openWrite(${r._sheet_row})"`:""}>
+      <div class="item-top">${badge}</div>
+      <div class="item-title">${esc(label)}</div>
+      ${body}
+    </div>`;
+  }
+
+  document.getElementById("app").innerHTML = html;
+
+  if(!targetWeek && doneCount >= 12){
+    setBanner("🌱 12주 성찰을 모두 완료했습니다 — 이 기록은 '초심카드'가 됩니다. 수고 많으셨습니다!", "ok");
+  }
+}
+
+/* ===== 작성 모달 ===== */
+function openWrite(sr){
+  const row = ROWS.find(r=>r._sheet_row===sr);
+  if(!row) return;
+  __targetRow = row;
+  const w = weekOf(row.item);
+  document.getElementById("wf_title").textContent = (w===12?"12주차":w+"주차") + " 성찰 작성";
+  document.getElementById("wf_sub").textContent = "기한 " + (String(row.due||"").slice(0,10)||"—") + " · 저장 후 수정 불가";
+  document.getElementById("wf_q1").value = "";
+  document.getElementById("wf_q2").value = "";
+  document.getElementById("wf_free").value = "";
+  document.getElementById("wf_msg").textContent = "";
+  document.getElementById("wf_msg").className = "wf-msg";
+  openOv("ovWrite");
+  setTimeout(()=>{ const i=document.getElementById("wf_q1"); if(i) i.focus(); }, 60);
+}
+async function submitReflect(){
+  const row = __targetRow; if(!row) return;
+  const q1 = document.getElementById("wf_q1").value.trim();
+  const q2 = document.getElementById("wf_q2").value.trim();
+  const free = document.getElementById("wf_free").value.trim();
+  const msg = document.getElementById("wf_msg"), btn = document.getElementById("wf_submit");
+  if(!q1 || !q2){ msg.className="wf-msg err"; msg.textContent="1), 2) 질문에 모두 답해 주세요."; return; }
+  const note = "1) " + q1 + " | 2) " + q2 + (free ? (" | 소감: " + free) : "");
+  btn.disabled = true; btn.textContent = "저장 중…"; msg.className="wf-msg"; msg.textContent="";
+  try{
+    const r = await erpPost({ action:"onbo-self-save", pin: SESSION.pin, name: SESSION.name, sheetRow: row._sheet_row, done:true, note });
+    if(!r || r.ok!==true) throw new Error((r&&r.message)||(r&&r.error)||"저장 실패");
+    closeOv("ovWrite");
+    await reloadRows();
+    setBanner("저장 완료 — 이 기록은 12주 후 '초심카드'가 됩니다 🌱", "ok");
+  }catch(e){
+    msg.className = "wf-msg err"; msg.textContent = "실패: " + (e.message||e);
+  }finally{
+    btn.disabled = false; btn.textContent = "저장";
+  }
+}
+async function reloadRows(){
+  const r = await erpPost({ action:"onbo-self-read", pin: SESSION.pin, name: SESSION.name });
+  if(r && r.ok===true && Array.isArray(r.rows)) ROWS = r.rows;
+  renderWeekList();
+}
+
+/* ===== 초기화 ===== */
+(function init(){
+  const name = getParamName();
+  if(!name){ renderPickList(); return; }
+  document.getElementById("hdrSub").textContent = name + " 님의 성찰 기록";
+  document.getElementById("app").innerHTML = "";
+  let sess=null; try{ const raw=sessionStorage.getItem(SS_KEY); if(raw) sess=JSON.parse(raw); }catch(_){}
+  if(sess && sess.name===name && sess.pin){
+    verifyAndLoad(sess.pin, name).then(res=>{
+      if(!res.ok){ try{ sessionStorage.removeItem(SS_KEY); }catch(_){} openOv("ovLogin"); }
+    }).catch(()=>{ openOv("ovLogin"); });
+  } else {
+    openOv("ovLogin");
+    setTimeout(()=>{ const i=document.getElementById("lg_pw"); if(i) i.focus(); }, 60);
+  }
+})();
+</script>
+</body>
+</html>
