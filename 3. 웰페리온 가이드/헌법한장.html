@@ -199,11 +199,13 @@
     table.matrix th, table.matrix td{padding:3px 4px;}
     .matrix-scroll, table.matrix tr, .ccard, .ns-role{break-inside:avoid;}
     .cards{grid-template-columns:repeat(2,1fr); gap:6px;}
-    /* A3 인쇄 주인공 = ns-overview 카드 그리드(2026-07-04). 3열 · 잘리지 않게 · 크게. */
-    .ns-overview{grid-template-columns:repeat(3,1fr); gap:7px; margin:3px 0 8px;}
-    .ns-role{padding:7px 8px;}
-    .ns-role-h{font-size:11px;}
-    .ns-line{font-size:9.5px; padding-bottom:4px; margin-bottom:4px;}
+    /* A3 인쇄 주인공 = ns-overview 카드 그리드(2026-07-04). A3는 여유 → 2열로 크게(스캔성 우선), 잘리지 않게. */
+    .ns-overview{grid-template-columns:repeat(2,1fr); gap:12px; margin:4px 0 10px;}
+    .ns-role{padding:12px 14px;}
+    .ns-role-h{font-size:15px; margin-bottom:6px;}
+    .ns-role-title{font-size:11.5px;}
+    .ns-badge{font-size:11px; padding:3px 10px;}
+    .ns-line{font-size:12.5px; padding-bottom:7px; margin-bottom:7px;}
     /* 매트릭스 = 상세 참조 · 인쇄 시 2페이지로(주인공은 위 카드) */
     #matrix-section{page-break-before:always;}
     header.page-head .back, .ccard a.lk, .ebtn{display:none;}
