@@ -116,18 +116,20 @@ def _coo_check_rate() -> dict:
     }
     try:
         today_str = datetime.now(KST).strftime("%Y-%m-%d")
-        url = f"{_CHECK_GAS}?action=get_today_summary&date={today_str}&zone=all"
+        # today_live = 분모 정합 통로(주말 오후조 제외·전체 스케줄 기대치 기준, 배239 라이브).
+        # 구 get_today_summary(스냅샷 rows 25/25=100% 버그) 폐기 — 소스별 분모 불일치 원인.
+        url = f"{_CHECK_GAS}?action=today_live&dept=support&date={today_str}"
         data = _http_get_json(url)
-        rows = data.get("rows", []) if isinstance(data, dict) else []
-        if not rows:
-            result["_note"] = "rows 없음(점검 미시작 또는 GAS 오류)"
+        if not isinstance(data, dict) or not data.get("total"):
+            result["_note"] = "today_live 분모 0/응답없음(점검 미시작 또는 GAS 오류)"
             return result
-        total = len(rows)
-        done  = sum(1 for r in rows if isinstance(r, dict) and r.get("submitted"))
+        total = data.get("total")
+        done  = data.get("done") or 0
         rate  = round(done / total, 4) if total > 0 else None
         result["지원부_점검완료율"] = rate
         result["지원부_완료"]       = done
         result["지원부_전체"]       = total
+        result["_note"] = "4부서전체=미측정(GAS가지원부한정) · 지원부=today_live 분모정합 통로(진행중 당일 포함)"
     except Exception as e:
         result["_note"] = f"fetch 실패({type(e).__name__}): {str(e)[:80]}"
     return result

@@ -2866,5 +2866,29 @@
     "artifact": "- GAS 배포: today_live 주말 pm 제외(105→76)·today_live↔monthly 분모 단일화·avgPct 안정화(배239)+시설부406 동시 발효\n- 라이브 검증: 주말 정상·소스 정합(7/4 둘다 33%)·평일 회귀는 과소분모 보정(91→80 정직)\n- 자율현황: 완료율 잠정→실측 점등(오늘 33%·이번달 74%·이슈 33건) (CLI ad-hoc · 커밋 cec90e9e)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "cec90e9e94d2955a051e5235d85c56f30821f115"
+  },
+  {
+    "task_id": "CPO-2026-07-04-CHANNEL-CONVERSION",
+    "clevel": "cpo",
+    "ship_no": 454,
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-04",
+    "title": "[시포] 채널별 전환율 가시화 — funnel_conversion byChannel 대시보드화",
+    "note": "[2026-07-04 GM 선택] 어느 채널 문의가 가장 잘 가입으로 이어지는지 채널별 전환율 표면화. funnel_conversion byChannel[]{channel,inquiries,converted,rate} 이미 있음(추가 fetch 불필요·loadConvRate 재사용). 문의회원.html.",
+    "next": "executor 구현 중.",
+    "depends_on": ""
+  },
+  {
+    "task_id": "CPO-2026-07-04-BALLET-PRICE-FIX",
+    "clevel": "cpo",
+    "ship_no": 455,
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-04",
+    "title": "[시포] 상품기획 발레/바레 가격 라벨 정정 — 132,000원 통합가/단독가 확인",
+    "note": "[2026-07-04 GM 선택·확인대기] 상품기획 표 132,000원이 발레+바레 통합가인지 바레 단독가인지 GM 확인 후 정정. 가격=공식값이라 GM 값 대기.",
+    "next": "GM 가격 확인 후 상품기획.html 표 정정.",
+    "depends_on": "GM 가격 값"
   }
 ]

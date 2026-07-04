@@ -949,7 +949,8 @@
   // COO_API_URL = 지원부 체계.html(coo/check/지원부 체계.html)과 동일 GAS 웹앱 — 신규 배포 없음, 기존 today_live·monthly_report 액션만 재사용.
   var COO_API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
   // CPO_CHURN_URL = 회원 GAS(cpo_churn_stats 액션) — 시포 라이프사이클 루프 라이브 스탯 스트립용
-  var CPO_CHURN_URL = 'https://script.google.com/macros/s/AKfycbwdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+  // 2026-07-04 수정(시토): 배포 ID 오타(AKfycbw…) → 문의회원.html과 동일 정상 배포(AKfycbz…)로 정합. 라이브 CORS 실패 2건 해소.
+  var CPO_CHURN_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
   function cpoFetchChurnStats(){
     return fetch(CPO_CHURN_URL + '?action=cpo_churn_stats&_pv=' + Date.now(), {redirect:'follow'})
       .then(function(r){ return r.json(); })
