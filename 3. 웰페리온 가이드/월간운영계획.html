@@ -285,6 +285,30 @@
   .sum-compact b{color:var(--text); font-weight:800;}
   .sum-compact .sd{display:inline; margin:0 0 0 5px;}
 
+  /* ── 0순위 배지(💰 매출 섹션 헤더 · 월별 상단 재구성 · GM 확정 2026-07-04) ── */
+  .rank0-badge{display:inline-block; font-size:11px; font-weight:800; color:#221F20; background:var(--gold); border-radius:7px; padding:2px 9px; margin-right:6px; letter-spacing:-0.01em; vertical-align:middle;}
+
+  /* ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · 중요도 자동 선정 · GM 확정 2026-07-04) ── */
+  .blk.top3-wrap{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:5px 14px 10px; margin-bottom:4px;}
+  .blk.top3-wrap h2.sec{margin-top:8px;}
+  .t3-grid{display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;}
+  .t3-card{flex:1; min-width:220px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:12px; padding:12px 14px 13px; display:flex; flex-direction:column; gap:8px;}
+  .t3-card.st-완료{border-left-color:var(--green);}
+  .t3-card.st-진행{border-left-color:var(--blue);}
+  .t3-card.st-이월{border-left-color:var(--gold);}
+  .t3-card.st-계획{border-left-color:var(--dim);}
+  .t3-top{display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .t3-rank{font-size:11.5px; font-weight:800; color:#fff; background:var(--accent); border-radius:7px; padding:3px 9px; white-space:nowrap; letter-spacing:-0.01em;}
+  .t3-rank.t3-r1{background:linear-gradient(90deg,#b8860b,var(--gold)); color:#221F20;}
+  .t3-rank.t3-r2{background:var(--blue); color:#221F20;}
+  .t3-rank.t3-r3{background:var(--accent);}
+  .t3-own{font-size:10.5px; color:var(--dim); margin-left:auto; white-space:nowrap; text-align:right;}
+  .t3-title{font-size:13.5px; font-weight:700; color:var(--text); line-height:1.35;}
+  .t3-prog .prog{min-width:0;}
+  .t3-ns{display:flex;}
+  .t3-legend{font-size:10.5px; color:var(--dim); line-height:1.5; margin-top:9px;}
+  @media (max-width:720px){ .t3-card{min-width:calc(50% - 5px);} }
+
   /* ── 🏷️ 이달 테마(월 헤더 상태 라벨 옆 인라인 · 舊 별도 그라디언트 배너 제거 · GM 정정 2026-07) ── */
   .mtheme-report{font-size:11px; color:var(--accent-soft); white-space:normal;}
 
@@ -507,21 +531,33 @@
     input, select, .note-edit, .fin-in, .pin-num{display:none !important;}
     /* 📊 월말 결과 보고(목표 달성 요약 흡수)·💰 매출(fin-primary)=상단 전폭, 나머지=2단 세로 흐름으로 한 장에 밀도있게 배치 */
     .report-grid{column-count:2; column-gap:7mm; column-fill:auto;}
-    .blk{break-inside:avoid; margin:0 0 2px;}
+    .blk{break-inside:avoid; margin:0 0 1px;}
     /* 큰 과제표(sum-hero)는 컬럼을 넘어 흐르도록 허용 — 행 단위 break만 방지(공간 낭비·빈 페이지 방지) */
     .blk.sum-hero{break-inside:auto;}
     .sd{color:#444 !important;}
     /* 💰 매출 핵심 = 두 단 전폭 상단 */
-    .blk.fin-primary{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #b9985a !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
+    .blk.fin-primary{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #b9985a !important; border-radius:6px; padding:2px 8px 5px !important; margin-bottom:2px;}
     .blk.fin-primary h2.sec{margin-top:2px;}
+    #obj-board{margin-top:5px !important;}  /* 화면 16px → 인쇄 축소(A3 2장 유지) */
     .fin-hero{background:#fbf6ea !important; border:1px solid #b9985a !important; padding:6px 10px !important; margin-bottom:6px; gap:6px 18px;}
     .fin-hero-val{font-size:18px; color:#8a6f3f !important;} .fin-hero-label{color:#444 !important;}
     .fin-hero-target, .fin-hero-target b{color:#222 !important;} .fin-hero-target b.tv{color:#8a6f3f !important;}
     .fin-hero-sub{color:#3c7a4a !important;}
     .fin-dept-h{color:#222 !important;} .findept tbody td{color:#333 !important;} .findept td.pctc{color:#444 !important;}
     .findept tbody tr.tot td{background:#f2f2f2 !important; color:#111 !important;}
-    /* 🎯 이달 핵심 과제 & 진척 = 맨 위 두 단 전폭 (콤팩트 요약 1줄 + 핵심 과제 표) */
-    .blk.sum-hero{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
+    /* 🎯 이달 핵심 과제 top3 = 두 단 전폭(월별 상단 재구성) · A3 밀도 압축(북극성 칩 생략·한 줄 3카드) */
+    .blk.top3-wrap{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 4px !important; margin-bottom:2px;}
+    .blk.top3-wrap h2.sec{margin-top:2px;}
+    .t3-grid{gap:4px;}
+    .t3-card{min-width:calc(33.33% - 4px); background:#fff !important; border:1px solid #999 !important; border-left:2px solid #666 !important; padding:3px 7px 4px; gap:2px;}
+    .t3-top{gap:4px;}
+    .t3-title{color:#111 !important; font-size:8.5px; line-height:1.2;}
+    .t3-rank, .t3-rank.t3-r1, .t3-rank.t3-r2, .t3-rank.t3-r3{color:#000 !important; background:#f2f2f2 !important; border:1px solid #666 !important; padding:1px 6px; font-size:8px;}
+    .t3-own{color:#444 !important; font-size:7px;}
+    .t3-ns{display:none !important;}  /* 북극성 칩 = 화면 전용(밀도) · 인쇄 생략 */
+    .t3-legend{color:#444 !important; font-size:6.5px; margin-top:2px;}
+    /* 🎯 이달 핵심 과제 상세 = 두 단 전폭 (콤팩트 요약 1줄 + 신규/이월 표) */
+    .blk.sum-hero{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 5px !important; margin-bottom:2px;}
     .blk.sum-hero h2.sec{margin-top:2px;}
     .sum-compact{color:#333 !important; font-size:8px; gap:3px 12px; padding:3px 0;}
     .rep-empty{color:#555 !important;}
@@ -534,7 +570,7 @@
     .issues td.i-title{color:#111 !important;}
     .issues td.i-note{color:#555 !important;}
     .istat{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
-    h2.sec{font-size:10.5px; margin:0 0 4px; border-bottom:1px solid #bbb; padding-bottom:2px; break-after:avoid;}
+    h2.sec{font-size:10.5px; margin:0 0 2px; border-bottom:1px solid #bbb; padding-bottom:1px; break-after:avoid;}
     h2.sec .stag{font-size:7.5px;}
     h2.sec .cfo-link{font-size:7.5px; padding:1px 6px; color:#333 !important; border-color:#999 !important;}
     .rm-time{gap:4px;} .rm-step{padding:4px 7px 3px; gap:2px; background:#fff !important; border-color:#999 !important;}
@@ -549,7 +585,7 @@
     .month-head, .rpt-wrap, .metric, table.rpt tr, .erp-step, .erp-time, .rm-step, .rm-time, .rm-qgroup{break-inside:avoid;}
     /* 인쇄 제목 = print-head 배너 1개만(GM 지적 2026-07-04 중복 제거) — 화면 헤더(제목·슬로건·컨트롤)는 인쇄 시 숨김 */
     header.page-head{display:none !important;}
-    .month-head{margin:3px 0 5px; padding:5px 8px; gap:4px 10px;}
+    .month-head{margin:2px 0 3px; padding:3px 8px; gap:3px 10px;}
     .month-head .mtitle{font-size:11px;} .month-head .mtheme{font-size:8.5px;}
     .fchart, .erp-legend, .flegend{display:none !important;}  /* 막대차트·범례 생략(밀도) */
     .metric{margin-top:4px; padding:4px 7px;}
@@ -570,7 +606,17 @@
     .mbar>i{background:#666 !important;}
     .chip{color:#000 !important; background:#fff !important; border-color:#666 !important;}
     .obadge, .mstat, .erp-step .ebadge{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
-    .print-head{display:block !important; text-align:center; margin:0 0 4px; padding-bottom:3px; border-bottom:1.5px solid #999;}
+    /* 월별 A3 2장 유지 압축 — 상단 재구성 후 💰매출+🎯top3+📋상세 3블록을 1페이지에 수용(원래 2장 패킹 복원) */
+    .fin-hero{padding:3px 9px !important; gap:3px 14px !important; margin-bottom:3px !important;} .fin-hero-val{font-size:15px !important;}
+    .fin-dept-wrap{margin-top:5px !important;} .fin-dept-h{margin:0 2px 3px !important;}
+    .findept tbody td, .findept thead th{padding:0 4px !important; font-size:7.5px !important; line-height:1.25 !important;}
+    #obj-board .metric{margin-top:2px !important; padding:2px 5px !important;} #obj-board .metric-h{margin-bottom:1px !important;} #obj-board .mbar{margin:1px 0 !important;}
+    #obj-board .r-note{font-size:7px !important; line-height:1.12 !important; margin-top:1px !important;}
+    #obj-board table.rpt tbody td{padding:0.5px 4px !important;}
+    #obj-board .metric-meta{line-height:1.2 !important;}
+    .obj-split-h{margin:2px 0 1px !important;}
+    .t3-legend{margin-top:1px !important;} .blk.top3-wrap h2.sec{margin-bottom:1px !important;}
+    .print-head{display:block !important; text-align:center; margin:0 0 2px; padding-bottom:2px; border-bottom:1.5px solid #999;}
     .print-head .ph-title{font-size:12px; font-weight:800; color:#111 !important;}
     .print-head .ph-sub{font-size:8.5px; color:#444 !important; margin-top:1px;}
   }
@@ -606,8 +652,7 @@
     <a href="wellperion_guide(main).html">🧭 오늘의 항로 (G1)</a>
   </div>
 
-  <!-- 🔥 임팩트 현황 4칸 (최상단 · 계층 띠 바로 아래 · GM 지시 2026-07-03) — ① 선택월 매출 실적/목표 ②③④ 핵심 과제 상위 3(담당·상태·진척) · 결과만 담백하게 -->
-  <div class="impact-grid" id="impact-grid" style="display:none;"></div>
+  <!-- 🔥 임팩트 현황 4칸 = 폐지(GM 확정 2026-07-04 월별 상단 재구성). 매출=💰 0순위 섹션 + 핵심 과제=🎯 top3 섹션(중요도 자동)으로 대체·중복 제거. -->
 
   <!-- 경영진 보고 인쇄 배너(A3 한 장 상단 · 상시) -->
   <div class="print-head" id="print-head"></div>
@@ -621,23 +666,23 @@
   <!-- 경영진 A3 결론 한 장 = 아래 report-grid (인쇄 시 2단, 상단밴드·매출은 상단 전폭) -->
   <div class="report-grid">
 
-    <!-- 📊 연속 이니셔티브 상단밴드 (월별 A3 상단 · 그달 진척+델타 궤적 · 2층 모델 층①) -->
-    <section class="blk mband-wrap" id="mband-wrap">
-      <h2 class="sec">📊 이어지는 과제 진척 <span class="stag">여러 달 이어지는 큰 줄기(ERP·부서체계·채용) · 그달 완성도% + 전월 대비 궤적</span></h2>
-      <div id="month-band"><div class="board-status">이어지는 과제를 불러오는 중…</div></div>
+    <!-- 💰 선택월 매출·지출 (0순위·맨앞 · 헤더 바로 아래 · GM 확정 2026-07-04 월별 상단 재구성 — 舊 중간 위치에서 최상단 이동. 라이브 gviz 미러·보드 독립렌더라 도착 시 채워짐·INC-001 값 저장 금지) -->
+    <section class="blk fin-primary">
+      <h2 class="sec has-link"><span class="rank0-badge">0순위</span>💰 선택월 매출·지출 <span class="stag">매출 목표 대비 + 부서별(목표vs실적) · AI CFO 정본 미러 · 지출·순액=파트너팀 구조개선 중(확정숫자 미표기)</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
+      <div id="fin-board"><div class="board-status">선택월 매출·지출 요약을 불러오는 중…</div></div>
     </section>
 
-    <!-- 📋 이달 계획 (맨 위 · 한눈요약 통합 — GM 정정 2026-07: 舊 '🎯 이달 한눈 요약'(목표 평균 달성률·매출-지출 순액·ERP 진척+완료/진행 체크리스트)을 이달 계획 기준(base)에 흡수, 별도 한눈요약 섹션 폐지·중복 0) -->
+    <!-- 🎯 이달 핵심 과제 top3 (1·2·3순위 · 매출 제외 · 중요도 자동 선정 · GM 확정 2026-07-04) -->
+    <section class="blk top3-wrap" id="top3-wrap">
+      <h2 class="sec">🎯 이달 핵심 과제 top3 <span class="stag">매출 과제 제외 · 중요도 자동 선정(상태·전사·북극성·진척) · 1·2·3순위 · 결정적(랜덤 없음)</span></h2>
+      <div id="top3-board"><div class="board-status">핵심 과제 top3를 선정하는 중…</div></div>
+    </section>
+
+    <!-- 📋 이달 핵심 과제 상세 (신규/이월 상세표 + 콤팩트 요약 · 舊 sum-hero — 상단 top3 아래 상세) -->
     <section class="blk sum-hero" id="report-hero-wrap">
-      <h2 class="sec">🎯 이달 핵심 과제 & 진척 <span class="stag">콤팩트 요약(평균 달성률·매출-지출 순액·ERP 진척·전월 대비) + 핵심 과제 통합표(담당·목표치·상태·진척·북극성)</span></h2>
+      <h2 class="sec">📋 이달 핵심 과제 상세 <span class="stag">콤팩트 요약(평균 달성률·당월 매출·ERP 진척·전월 대비) + 신규/이월 상세표(담당·목표치·상태·진척·북극성)</span></h2>
       <div id="report-area"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
-    </section>
-
-    <!-- 💰 선택월 매출·지출 (핵심·최상단 · 매출 목표 대비 + 부서별 분해 · 정본 = AI CFO 매출현황 미러 · 2026-07-03 GM 지시: [매출][전체지출][순액] 1행 요약표 삭제(지출=나우열M 구조개선 중이라 순액 무의미), 부서별 표는 유지) -->
-    <section class="blk fin-primary">
-      <h2 class="sec has-link">💰 선택월 매출·지출 <span class="stag">매출 목표 대비 + 부서별(목표vs실적) · AI CFO 정본 미러 · 지출·순액=파트너팀 구조개선 중(확정숫자 미표기)</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
-      <div id="fin-board"><div class="board-status">선택월 매출·지출 요약을 불러오는 중…</div></div>
     </section>
 
     <!-- 📈 2026 매출 연간 히스토리 (1~7월 실측 · GM 승인 2026-07-03 — 라이브 sales_monthly 재사용, 신규 배관 없음. 미도래월=정직 표기) -->
@@ -1128,56 +1173,63 @@
     return s + '~' + u;
   }
 
-  // ── 🔥 임팩트 현황 4칸(최상단 · 계층 띠 바로 아래 · GM 지시 2026-07-03) ──
-  // ① 선택월 매출 실적/목표(fin-board와 동일 calcFinance 재사용·계산 중복 없음) ②③④ 핵심 과제 통합표 상위 3(담당·상태·진척).
-  // '결과만' 담백하게 — 큰 숫자 + 상태색만, 상세는 하단 각 섹션에 그대로 유지.
-  function renderImpact(){
-    var host = document.getElementById('impact-grid');
+  // ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · 중요도 자동 선정 · GM 확정 2026-07-04 월별 상단 재구성) ──
+  // 중요도 산식(문서화·결정적·랜덤 없음 · 지어내기 금지=기존 objective 필드만 사용):
+  //   ① 매출 과제(💰 0순위 별도 섹션) 제외 →
+  //   ② score = 상태가중(진행 300 · 이월 200 · 계획 100 · 완료 0)
+  //             + 전사/핵심 여부(dept에 '전사' 또는 '전 부서' 포함 시 +40)
+  //             + 북극성 직접연결(북극성 지도에 role 문구 존재 시 +20)
+  //             + 진척 가중(progress × 0.1 = 0~10 · 최소 영향·tie-break)
+  //   ③ 정렬 = score 내림차순 → 진척 내림차순(동점 규칙) → 원배열 순서(안정 정렬).
+  //   ⚠ 난이도(priority 🛳️/⛴️/⛵)는 objectives 스키마에 필드가 없어 미사용(지어내기 금지). status로 대체 반영.
+  var TOP3_STATUS_W = {'진행':300, '이월':200, '계획':100, '완료':0};
+  function isSalesObj(o){
+    if(!o) return false;
+    if(o.metric && /매출/.test(o.metric.name || '')) return true;
+    if(/매출/.test(o.dept || '')) return true;
+    return false;
+  }
+  function isCompanyWide(o){
+    var d = (o && o.dept) || '';
+    return d.indexOf('전사') >= 0 || d.indexOf('전 부서') >= 0;
+  }
+  function top3Score(o){
+    var sw = (TOP3_STATUS_W[o.status] != null) ? TOP3_STATUS_W[o.status] : 100;
+    var cw = isCompanyWide(o) ? 40 : 0;
+    var ns = (o.northstar && _nsMap && _nsMap[o.northstar]) ? 20 : 0;
+    return sw + cw + ns + clampPct(o.progress) * 0.1;
+  }
+  function selectTop3(objs){
+    return (objs || []).filter(function(o){ return !isSalesObj(o); })
+      .map(function(o, i){ return {o:o, i:i, s:top3Score(o)}; })
+      .sort(function(a, b){
+        if(b.s !== a.s) return b.s - a.s;
+        var pb = clampPct(b.o.progress), pa = clampPct(a.o.progress);
+        if(pb !== pa) return pb - pa;
+        return a.i - b.i;
+      }).map(function(x){ return x.o; }).slice(0, 3);
+  }
+  function renderTop3(){
+    var host = document.getElementById('top3-board');
     if(!host) return;
     var m = _data.months[_sel];
-    if(!m){ host.style.display = 'none'; host.innerHTML = ''; return; }
-    host.style.display = 'flex';
-
-    var cards = [];
-
-    // ① 선택월 매출 실적/목표
-    var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
-    var fin = calcFinance(mnum);
-    var target = salesTargetFor(_sel);
-    var salesVal = fin && fin.sales;
-    if(typeof salesVal === 'number'){
-      var spct = target ? Math.max(0, Math.round(salesVal / target * 100)) : null;
-      var sw = (spct != null) ? Math.max(0, Math.min(100, spct)) : 0;
-      cards.push(
-        '<div class="impact-card fin"><span class="impact-label">💰 ' + mnum + '월 매출</span>' +
-        '<div class="impact-val">' + fmtWon(salesVal) + '</div>' +
-        '<div class="impact-sub">목표 ' + fmtWon(target) + ' 대비 <b style="color:var(--gold)">' + (spct != null ? spct + '%' : '—') + '</b></div>' +
-        '<div class="impact-bar"><i style="width:' + sw + '%"></i></div></div>'
-      );
-    } else {
-      cards.push(
-        '<div class="impact-card fin"><span class="impact-label">💰 ' + mnum + '월 매출</span>' +
-        '<div class="impact-val" style="color:var(--dim);font-size:15px;">측정 전</div>' +
-        '<div class="impact-sub">목표 ' + fmtWon(target) + ' · 소스 미기재(가짜값 없음)</div></div>'
-      );
-    }
-
-    // ②③④ 핵심 과제 통합표 상위 3 (표와 동일 정렬 기준: 진행 → 계획/이월 → 완료)
-    var objs = (m.objectives || []);
-    var top3 = sortObjsByStatus(objs).slice(0, 3);
-    top3.forEach(function(o, i){
-      var p = clampPct(o.progress);
+    var objs = (m && m.objectives) || [];
+    var top = selectTop3(objs);
+    if(!top.length){ host.innerHTML = '<div class="board-status">이 달의 핵심 과제가 없습니다.</div>'; return; }
+    var cards = top.map(function(o, i){
+      var rank = i + 1;
       var st = o.status || '';
-      cards.push(
-        '<div class="impact-card st-' + esc(st) + '"><span class="impact-label">🎯 핵심 과제 ' + (i + 1) + '<span class="irank">' + esc(nickOf(o.owner)) + '</span></span>' +
-        '<div class="impact-val">' + p + '<span class="iunit">%</span></div>' +
-        '<div class="impact-title">' + esc(o.title) + '</div>' +
-        '<span class="obadge ' + esc(st) + '">' + esc(st) + '</span>' +
-        '<div class="impact-bar"><i style="width:' + p + '%"></i></div></div>'
-      );
-    });
-
-    host.innerHTML = cards.join('');
+      return '<div class="t3-card st-' + esc(st) + '">' +
+        '<div class="t3-top"><span class="t3-rank t3-r' + rank + '">' + rank + '순위</span>' +
+          '<span class="obadge ' + esc(st) + '">' + esc(st) + '</span>' +
+          '<span class="t3-own">' + esc(nickOf(o.owner)) + (o.dept ? ' · ' + esc(o.dept) : '') + '</span></div>' +
+        '<div class="t3-title">' + esc(o.title) + '</div>' +
+        '<div class="t3-prog">' + progBar(o.progress, o.status, false, '', false) + '</div>' +
+        '<div class="t3-ns">' + nsBadge(o) + '</div>' +
+      '</div>';
+    }).join('');
+    host.innerHTML = '<div class="t3-grid">' + cards + '</div>' +
+      '<div class="t3-legend">자동 선정(중요도순) · 매출 과제 제외 · 산식 = 상태(진행&gt;이월&gt;계획&gt;완료) + 전사 과제 + 북극성 연결 + 진척 가중(동점=진척 높은 순) · 결정적(랜덤 없음)</div>';
   }
 
   // ── 월 헤더 (상태 라벨 옆에 이달 테마 인라인 1개만 — 2026-07-03 GM 지시: report.theme·theme 중복 표시 제거,
@@ -1812,37 +1864,8 @@
       '<div class="rm-legend">' + esc((rm && rm.note) || '') + '</div>';
   }
 
-  // ── 📊 연속 이니셔티브 상단밴드(월별 A3 상단 · 그달 진척 + 델타 궤적) — strategy-roadmap(상위 프레임·월별 pct 없음)은 제외, 진척 있는 연속 4개만 ──
-  function renderMonthBand(){
-    var host = document.getElementById('month-band');
-    if(!host) return;
-    var prev = prevMonthKey(_sel);
-    var cards = initiativeItems().filter(function(init){
-      return isInitiativeActive(init, _sel) && init.source_ref !== 'strategy_roadmap' && init.band !== false;
-    }).map(function(init){
-      var cur = initTraj(init, _sel);
-      var pv = prev ? initTraj(init, prev) : null;
-      var st = initStatus(init, _sel);
-      var isTgt = initTrajTarget(init, _sel);
-      var pctHtml;
-      if(typeof cur === 'number'){
-        pctHtml = '<div class="mb-pct">' + clampPct(cur) + '<span>%' + (isTgt ? ' 목표' : '') + '</span></div>' +
-          '<div class="mb-bar"><i style="width:' + clampPct(cur) + '%"></i></div>';
-      } else {
-        pctHtml = '<div class="mb-pct none">상세 없음</div>';
-      }
-      var badge = st ? '<span class="mb-badge ' + esc(st) + '">' + esc(st) + '</span>' : '';
-      var delta = deltaBadge((typeof cur === 'number') ? cur : null, (typeof pv === 'number') ? pv : null);
-      return '<div class="mb-card st-' + esc(st || 'none') + '">' +
-        '<div class="mb-top"><span class="mb-title">' + esc(init.icon || '') + ' ' + esc(init.title) + '</span>' +
-          '<span class="mb-own">' + esc(nickOf(init.owner)) + '</span></div>' +
-        pctHtml +
-        '<div class="mb-meta">' + badge + delta + '</div>' +
-      '</div>';
-    }).join('');
-    host.innerHTML = cards ? '<div class="mband">' + cards + '</div>' :
-      '<div class="board-status">이 달에 활성인 연속 과제가 없습니다.</div>';
-  }
+  // ── 📊 연속 이니셔티브 상단밴드(renderMonthBand) = 폐지(GM 확정 2026-07-04 월별 상단 재구성) ──
+  //    월별 상단이 🎯 top3(중요도 자동)로 대체되어 상단밴드와 중복 → 삭제. 연간 A3의 '이어지는 과제 타임라인'(annualGridHtml)은 무접촉 유지.
 
   // ── 📅 연간 A3 뷰(이니셔티브 5행 × 12개월 타임라인 + 전략 로드맵 6단계 + 월별 신규 과제 요약) ──
   var AN_MONTHS = [1,2,3,4,5,6,7,8,9,10,11,12];
@@ -2011,10 +2034,9 @@
 
   function render(){
     renderMonthHead();
-    renderImpact();
     renderViewToggle();
     applyView();
-    renderMonthBand();
+    renderTop3();
     renderAnnual();
     renderErp();
     renderRoadmap();
@@ -2167,20 +2189,20 @@
       r = r || {};
       _cfoSales = r.sales; _cfoExp = r.exp; _cfoSalesDept = r.salesDept; _cfoLaborDept = r.laborDept;
       _finReady = true;
-      if(_data){ renderImpact(); renderReport(); renderFinance(); renderSalesHistory(); }
+      if(_data){ renderReport(); renderFinance(); renderSalesHistory(); }
     });
 
     // 3) 구매성(proc) 라이브 — 전체지출 = 인건비 + 구매성. 도착 시 임팩트·요약·재무 갱신.
     withTimeout(readProcLive(), 8000, {dept:PROC_FALLBACK, live:false}).then(function(pr){
       pr = pr || {dept:PROC_FALLBACK, live:false};
       _cfoProcDept = pr.dept; _cfoProc = procMonthArr(pr.dept); _procLive = pr.live;
-      if(_data){ renderImpact(); renderReport(); renderFinance(); }
+      if(_data){ renderReport(); renderFinance(); }
     });
 
     // 4) 당월 라이브 매출(home_kpi) — 매출 metric 라이브바·당월 폴백 보조. 타임아웃 짧게·비게이팅.
     withTimeout(readHomeSales(), 6000, null).then(function(v){
       _homeSales = v;
-      if(_data){ renderImpact(); renderReport(); renderBoard(); }
+      if(_data){ renderReport(); renderBoard(); }
     });
 
     // 5) 목표매출 정본(정적) — 부서별 결합표 기준선. 도착 시 재무 갱신.
@@ -2198,7 +2220,7 @@
     // 7) 북극성 지도 — 과제·실무 도달율표 뱃지. 도착 시 갱신.
     withTimeout(readNsMap(), 8000, null).then(function(v){
       _nsMap = v;
-      if(_data){ renderBoard(); renderPractitioners(); }
+      if(_data){ renderTop3(); renderBoard(); renderPractitioners(); }
     });
   }
 
