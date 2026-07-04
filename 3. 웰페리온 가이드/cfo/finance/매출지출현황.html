@@ -710,7 +710,7 @@ function apprFor(dept){
   return "김남욱GM";
 }
 function renderReq(){
-  var depts=["시설","운영부","지원","주차","P.T","수영","골프","스쿼시","체조","필라테스","뮤지컬"];
+  var depts=["시설","운영부","지원","주차","경영지원부","P.T","수영","골프","스쿼시","체조","필라테스","뮤지컬"]; // 경영지원부 추가(2026-07-04 매니저님 지시, 승인자=김남욱GM 자동)
   document.getElementById("reqDept").innerHTML=depts.map(function(d){return '<option>'+d+'</option>';}).join('');
   var dd=document.getElementById("reqDept");
   dd.onchange=function(){document.getElementById("reqApprover").value=apprFor(this.value);};
