@@ -3535,7 +3535,7 @@ function handleTodayLive(params) {
   // total/done/pct = am+pm+close 만 (야간은 외주 탕청소 별도 회차 — GM 확정 2026-06-16).
   // night 필드는 참고용으로 응답에 유지하되 합계에서 제외.
   // [배173, 2026-07-04] 주말(토·일)은 오후조 없음(오전조+마감조만 정상) — pm은 분모·분자 모두 제외.
-  // 평일은 기존과 동일(am+pm+close 무변경). pm/pmTotal 필드 자체는 진단용으로 응답엔 그대로 남긴다.
+  // 평일은 기존과 동일(am+pm+close 무변경). [2026-07-04 시우] pm/pmTotal 버킷도 주말엔 0으로 반환 — 독려 pm빌더·화면 교대표가 raw를 읽어 없는 주말 오후조를 표시/독려하던 누수 봉합(오후조=주말 미운영 확정 규칙 반영).
   var done  = sumDone.am  + (isWeekend ? 0 : sumDone.pm)  + sumDone.close;
   var total = sumTotal.am + (isWeekend ? 0 : sumTotal.pm) + sumTotal.close;
   var pct = total > 0 ? Math.round(done / total * 100) : 0;
@@ -3567,16 +3567,16 @@ function handleTodayLive(params) {
     var gd = doneByG[g], gt = totalByG[g];
     var gdone = gd.am + (isWeekend ? 0 : gd.pm) + gd.close;   // night 제외, 주말은 pm도 제외(배173)
     var gtot  = gt.am + (isWeekend ? 0 : gt.pm) + gt.close;   // night 제외, 주말은 pm도 제외(배173)
-    return { am: gd.am, pm: gd.pm, close: gd.close, night: gd.night,
-             amTotal: gt.am, pmTotal: gt.pm, closeTotal: gt.close, nightTotal: gt.night,
+    return { am: gd.am, pm: (isWeekend ? 0 : gd.pm), close: gd.close, night: gd.night,
+             amTotal: gt.am, pmTotal: (isWeekend ? 0 : gt.pm), closeTotal: gt.close, nightTotal: gt.night,
              done: gdone, total: gtot, pct: gtot > 0 ? Math.round(gdone / gtot * 100) : 0 };
   }
 
   return jsonRes({
     ok: true, dept: dept, date: date,
     dow: dow, schedType: (dow === 0 || dow === 6 ? 'weekend' : 'weekday'),  // 진단용
-    am: sumDone.am, pm: sumDone.pm, close: sumDone.close, night: sumDone.night,
-    amTotal: sumTotal.am, pmTotal: sumTotal.pm, closeTotal: sumTotal.close, nightTotal: sumTotal.night,
+    am: sumDone.am, pm: (isWeekend ? 0 : sumDone.pm), close: sumDone.close, night: sumDone.night,
+    amTotal: sumTotal.am, pmTotal: (isWeekend ? 0 : sumTotal.pm), closeTotal: sumTotal.close, nightTotal: sumTotal.night,
     total: total, done: done, pct: pct,
     allIssues: allIssues,   // 2026-06-25 시우: led.cr 메타에서 이슈 집계 — 쓰기·읽기 단일 소스 정합
     byGender: { m: genderSummary('m'), f: genderSummary('f'), all: genderSummary('all') }
