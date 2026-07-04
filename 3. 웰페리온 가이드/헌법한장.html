@@ -158,9 +158,25 @@
   .nsax-note{font-size:10px; color:var(--dim);}
 
   /* ── 🗺️🎛️ 북극성 지도 · 살아있는 지휘판 한눈에(요약 스트립 · 측정 개통분만) — 2026-07-03 ── */
-  .ns-overview{display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:8px; margin:4px 0 10px;}
-  .ns-role{background:var(--paper); border:1px solid var(--border); border-radius:9px; padding:8px 10px;}
-  .ns-role-h{display:flex; align-items:center; gap:5px; font-size:12.5px; margin-bottom:4px;}
+  /* ── A3 인쇄 주인공 승격(2026-07-04): 카드 위계 강화(북극성 한줄 + 정직 배지 + 범례) ── */
+  .ns-overview{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin:4px 0 10px;}
+  .ns-role{background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:9px 11px;}
+  .ns-role-h{display:flex; align-items:center; flex-wrap:wrap; gap:5px; font-size:13px; margin-bottom:4px;}
+  .ns-role-title{font-size:10px; color:var(--dim); font-weight:400;}
+  .ns-role-h .ns-badge{margin-left:auto;}
+  .ns-line{font-size:11.5px; color:var(--text-soft); line-height:1.42; margin:0 0 6px; padding-bottom:6px; border-bottom:1px dashed var(--border);}
+  /* 정직 상태 배지 3종 — 단일 판정(reachStatus): measured/draft/unmeasured */
+  .ns-badge{display:inline-block; font-size:10px; font-weight:700; border-radius:20px; padding:2px 8px; white-space:nowrap; line-height:1.5;}
+  .ns-badge.measured{color:#8fd89e; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
+  .ns-badge.draft{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
+  .ns-badge.unmeasured{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  /* 범례 + 집계 한 줄 — ns-overview 위 · 실측 카운트(JS 산출, 하드코딩 금지) */
+  .ns-legend{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin:2px 0 8px; font-size:11.5px; color:var(--text-soft);}
+  .ns-legend-item{display:inline-flex; align-items:center; gap:4px;}
+  .ns-legend-item b{color:var(--text); font-size:12px;}
+  .ns-legend-note{color:var(--dim); font-size:11px;}
+  /* 매트릭스 칸1 중복 제거 후 안내(도달율 큰 블록은 요약 스트립 단일 표시처) */
+  .nsreach-mini{font-size:10.5px; color:var(--dim); margin:3px 0 6px; font-style:italic;}
 
   /* ── 공통 4섹션 카드 ── */
   .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:4px;}
@@ -181,8 +197,15 @@
     h2.sec{margin:9px 0 2px; font-size:12px;}
     table.matrix{min-width:0; font-size:8px;}
     table.matrix th, table.matrix td{padding:3px 4px;}
-    .matrix-scroll, table.matrix tr, .ccard{break-inside:avoid;}
+    .matrix-scroll, table.matrix tr, .ccard, .ns-role{break-inside:avoid;}
     .cards{grid-template-columns:repeat(2,1fr); gap:6px;}
+    /* A3 인쇄 주인공 = ns-overview 카드 그리드(2026-07-04). 3열 · 잘리지 않게 · 크게. */
+    .ns-overview{grid-template-columns:repeat(3,1fr); gap:7px; margin:3px 0 8px;}
+    .ns-role{padding:7px 8px;}
+    .ns-role-h{font-size:11px;}
+    .ns-line{font-size:9.5px; padding-bottom:4px; margin-bottom:4px;}
+    /* 매트릭스 = 상세 참조 · 인쇄 시 2페이지로(주인공은 위 카드) */
+    #matrix-section{page-break-before:always;}
     header.page-head .back, .ccard a.lk, .ebtn{display:none;}
     .ccard a.lk{display:none;}
     /* 인쇄 색상 강제 라이트 — 다크배경/밝은글자 충돌(보호색) 방지 */
@@ -220,7 +243,16 @@
     .nsax, .nsax b, .nsax .nsax-name, .nsax-goal, .nsax-note{color:#111 !important;}
     /* 신규(2026-07-03): 지휘판 요약 스트립 라이트 강제 */
     .ns-role{background:#fff !important; border-color:#999 !important;}
-    .ns-role-h, .ns-role-h b{color:#111 !important;}
+    .ns-role-h, .ns-role-h b, .ns-role-title{color:#111 !important;}
+    /* 신규(2026-07-04): 범례·정직 배지·북극성 한줄·매트릭스 중복안내 라이트 강제(색은 유지·명도만 인쇄용) */
+    .ns-legend, .ns-legend-note{color:#111 !important;}
+    .ns-legend-item b{color:#000 !important;}
+    .ns-line{color:#222 !important; border-color:#ccc !important;}
+    .ns-badge{border-width:1px !important;}
+    .ns-badge.measured{color:#1a6b34 !important; background:#e8f6ec !important; border-color:#7fbd91 !important;}
+    .ns-badge.draft{color:#9c1c74 !important; background:#fbe6f3 !important; border-color:#e0a0c8 !important;}
+    .ns-badge.unmeasured{color:#555 !important; background:#f0f0f0 !important; border-color:#bbb !important;}
+    .nsreach-mini{color:#777 !important;}
   }
 </style>
 </head>
@@ -246,12 +278,14 @@
 
   <!-- ════ 🗺️🎛️ 북극성 지도 · 살아있는 지휘판 한눈에(측정 개통분만) — 2026-07-03 ════ -->
   <h2 class="sec">🗺️ 북극성 지도 · 살아있는 지휘판</h2>
-  <div class="sec-note">7역할 KPI→북극성 경로 한눈에(골드=도달율·회색=처리율). 측정 개통분만 실값, 미측정은 정직 표기.</div>
+  <div class="sec-note">7역할 KPI→북극성 경로 한눈에(골드=도달율·회색=처리율). 측정 개통분만 실값, 미측정은 정직 표기. <strong>A3 인쇄 주인공 = 아래 카드.</strong></div>
+  <div class="ns-legend" id="ns-legend"><!-- JS: 정직 상태 3종 범례 + 실측 집계 --></div>
   <div class="ns-overview" id="ns-overview"><div class="matrix-status">지휘판 데이터를 불러오는 중…</div></div>
 
-  <!-- ════ A. 8주체 × 3칸 매트릭스 (편집형 · 2026-06-29) ════ -->
+  <!-- ════ A. 8주체 × 3칸 매트릭스 (편집형 · 2026-06-29 · 인쇄 시 상세참조=2페이지) ════ -->
+  <div id="matrix-section">
   <h2 class="sec">🧭 8주체 × 3칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
-  <div class="sec-note" title="재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독.">핵심 3칸만(나머지 4차원=S2 본인탭). 📊KPI·🛡️재발방지=직독 정본(읽기전용)</div>
+  <div class="sec-note" title="재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독.">핵심 3칸만(나머지 4차원=S2 본인탭). 📊KPI·🛡️재발방지=직독 정본(읽기전용) · 🌟도달율=위 지휘판 카드가 단일 표시처</div>
   <div class="mx-controls" id="mx-controls"><!-- JS: 역할·칸 필터 + 폴침 --></div>
   <div class="matrix-scroll">
     <table class="matrix">
@@ -268,6 +302,7 @@
       </tbody>
     </table>
   </div>
+  </div><!-- /matrix-section -->
 
   <!-- ════ B. 공통 헌법 4섹션 (S2 정본으로 링크만) ════ -->
   <h2 class="sec">📜 공통 헌법 4섹션</h2>
@@ -285,7 +320,8 @@
   var cards = [
     {
       h:'⚖️ 절대기준 2종',
-      d:'절대 원칙 3대 + 완료의 단일 정의(4요건 · ③ "다음"=브릿지 흡수)',
+      // 인쇄 시 링크 숨김 → desc가 유일한 노출 지점(정직 요약 · S2 con-absolute/con-done4 원문 축약, 재열거 아닌 발췌).
+      d:'절대원칙 3: ①SSOT=웰페리온 ERP(Notion 아님) ②중복 금지(기존 업데이트만·신규는 진짜 신규일 때만) ③현황파악=GitHub commit·PR. 완료=4요건(①커밋 ②상태 ③다음 ④증거) 모두 충족해야 완료 — 증거 없으면 자동 거부.',
       links:[
         ['절대 원칙 3대', 'con-absolute'],
         ['완료 4요건', 'con-done4']
@@ -293,7 +329,7 @@
     },
     {
       h:'🔗 통합원칙 10',
-      d:'전 C-Level 통합 원칙 (S2 공통탭 토글)',
+      d:'기존건 마무리 우선(병행 시 결과보고) · 반복질문 금지 · 결재부하 제로(GM 결재 5종 외 항상 바로 진행) · 위임=R/R 위탁만(방향설정은 "지시") · 과거 회수 금지 등 9테마(S2 토글 상세)',
       links:[
         ['통합 원칙 보기', 'con-unified']
       ]
@@ -309,7 +345,8 @@
     },
     {
       h:'🔌 운영 SOP 5',
-      d:'부팅 · 보고표 · GM 결재 5종(5종 단일출처) · 입력금지 5종 · 텔레그램',
+      // GM 결재 5종 실제 정의(S2 con-gm5 원문) — 인쇄본에서 카드 하나만 봐도 결재 기준이 서게.
+      d:'GM 결재 5종(이 5종 외 전부 자율 진행 후 보고): 💰결제(1원 이상) · 🔒보안(비밀번호·결제·키값) · 🚫금지 항목 변경 · 📐전략·방향·포지셔닝 · 🏷️브랜드·공식값 변경',
       links:[
         ['🎯 GM 결재 5종', 'con-gm5'],
         ['🚫 입력 금지 5종', 'con-input5'],
@@ -591,24 +628,67 @@
       '<div class="incd-meta">🛡️ 봉인 <b>' + c.guarded + '</b>건</div>' + rc + '</div>';
   }
 
-  // 🗺️🎛️ 북극성 지도·살아있는 지휘판 요약 스트립 — 매트릭스 각 행과 같은 데이터(_reachData·_kpiValues)를
+  // 🏷️ 정직 상태 배지(3종 단일 판정 · A3 인쇄 카드용 · 2026-07-04) — 신규 fetch 없음, 기존 _reachData만 사용.
+  //   ✅measured = reach 실측(mode=measured & reach_pct 숫자) · 🔖draft = 마일스톤/제안본(mode=milestone, role.draft 있으면 우선) ·
+  //   🔧unmeasured = 그 외(reach null·미설정). 가짜 숫자 금지(약속 L05) — 판정 자체가 정직 표기 그대로.
+  function reachStatus(role){
+    if(role.draft) return 'draft';
+    var d = (_reachData && _reachData[role.id]) || null;
+    if(d && d.mode === 'measured' && typeof d.reach_pct === 'number') return 'measured';
+    if(d && d.mode === 'milestone') return 'draft';
+    return 'unmeasured';
+  }
+  var STATUS_META = {
+    measured:   { badge: '✅ 측정개통',   cls: 'measured' },
+    draft:      { badge: '🔖 제안본',     cls: 'draft' },
+    unmeasured: { badge: '🔧 측정개통전', cls: 'unmeasured' }
+  };
+  function statusBadge(status){
+    var meta = STATUS_META[status] || STATUS_META.unmeasured;
+    return '<span class="ns-badge ' + meta.cls + '">' + meta.badge + '</span>';
+  }
+  // 🌟 북극성 한 줄 — dims[0] 첫 줄만 압축(카드 스캔성). 원문은 매트릭스 편집칸(dimBlock)이 그대로 보유 · 여긴 표시만.
+  function nsOneLiner(role){
+    var raw = ((role.dims || [])[0] == null) ? '' : String(role.dims[0]);
+    var first = (raw.split(/\n+/)[0] || '').trim();
+    if(first.length > 58) first = first.slice(0, 57) + '…';
+    return first;
+  }
+
+  // 🗺️🎛️ 북극성 지도·살아있는 지휘판 요약 스트립(★A3 인쇄 주인공) — 매트릭스 각 행과 같은 데이터(_reachData·_kpiValues)를
   //   role별 카드로 재구성해 한눈에(스크롤 없이) 보여준다. 신규 fetch 없음 — 기존 로직 재사용(회귀 안전).
+  //   카드 구성: 아이콘·이름 + 정직 배지(3종) + 북극성 한 줄 + 핵심 지표(northStarReachBlock 재사용).
+  //   범례+집계(#ns-legend)도 여기서 같은 실측 카운트로 산출(하드코딩 금지).
   function renderNsOverview(){
     var el = document.getElementById('ns-overview');
+    var legendEl = document.getElementById('ns-legend');
     if(!el) return;
     var roles = (_matrixData && _matrixData.roles) || [];
     var list = roles.filter(function(r){ return r.nsmap || (_reachData && _reachData[r.id]); });
     if(!list.length){
       el.innerHTML = '<div class="matrix-status">역할별 북극성 지도 데이터 없음 — 정본: coo/bootsetup_matrix.json</div>';
+      if(legendEl) legendEl.innerHTML = '';
       return;
+    }
+    var counts = { measured:0, draft:0, unmeasured:0 };
+    list.forEach(function(role){ counts[reachStatus(role)]++; });
+    if(legendEl){
+      var notYet = counts.draft + counts.unmeasured;
+      legendEl.innerHTML =
+        '<span class="ns-legend-item">' + statusBadge('measured') + ' <b>' + counts.measured + '</b></span>' +
+        '<span class="ns-legend-item">' + statusBadge('draft') + ' <b>' + counts.draft + '</b></span>' +
+        '<span class="ns-legend-item">' + statusBadge('unmeasured') + ' <b>' + counts.unmeasured + '</b></span>' +
+        '<span class="ns-legend-note">· ' + notYet + '/' + list.length + '역할 아직 측정 개통 전(제안본 포함)</span>';
     }
     el.innerHTML = list.map(function(role){
       var ac = role.accent || 'var(--accent)';
-      var wr = workRateBlock(role);
+      var status = reachStatus(role);
       return '<div class="ns-role" style="border-left:3px solid ' + esc(ac) + ';">' +
         '<div class="ns-role-h"><span>' + esc(role.icon) + '</span> <b style="color:' + esc(ac) + ';">' + esc(role.name) + '</b>' +
-        (role.draft ? '<span class="rdraft">🔖 초안</span>' : '') + '</div>' +
-        northStarReachBlock(role) + wr +
+        '<span class="ns-role-title">' + esc(role.title || '') + '</span>' +
+        statusBadge(status) + '</div>' +
+        '<div class="ns-line">🌟 ' + esc(nsOneLiner(role)) + '</div>' +
+        northStarReachBlock(role) +
       '</div>';
     }).join('');
   }
@@ -622,11 +702,13 @@
     body.innerHTML = roles.map(function(role){
       var ac = role.accent || 'var(--accent)';
       var gm = role.id === 'gm';
-      // 칸1 목표·지표 = 🌟북극성(dims[0]·편집) → 🌟북극성 도달율(궁극 목표·전면·골드) → 📊KPI 지표 정의(읽기전용)
+      // 칸1 목표·지표 = 🌟북극성(dims[0]·편집) → 🗺️북극성 지도(축별 상세) → 📊KPI 지표 정의(읽기전용)
       //   → 작업 처리율(보조·강등) → 📍진행현황 → 🌅오늘 추천.
-      //   GM 결재(2026-06-30): 완결률(작업 활동량) 아닌 북극성 도달율이 궁극 목표 → 전면 배치. 처리율은 보조로 강등.
-      var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + nsMapBlock(role) + northStarReachBlock(role) + kpiBlock(role) +
-               workRateBlock(role) + progressBlock(role) + recommendBlock(role) + '</td>';
+      //   2026-07-04 중복 제거: 🌟북극성 도달율 큰 블록(골드바+정직배지)은 위 지휘판 요약 카드가 단일 표시처.
+      //   여기선 참조 안내 한 줄만(요약 스트립과 중복 렌더 금지 · WYSIWYG 위계: 카드=주인공, 매트릭스=상세).
+      var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + nsMapBlock(role) +
+               '<div class="nsreach-mini">🌟 북극성 도달율·정직 배지 = 위 지휘판 요약 카드 참고(중복 표시 안 함)</div>' +
+               kpiBlock(role) + workRateBlock(role) + progressBlock(role) + recommendBlock(role) + '</td>';
       // 칸2 일하는 법 = 📚읽는 정본(2) + 🔧일 흐름(1)
       var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🔧 일 흐름') + '</td>';
       // 칸3 소유 관리 = role.owns 링크칩(+선택 desc 1줄) + role.channels(선택·발행채널) — 둘 다 없으면 기존과 동일 렌더(하위호환)

@@ -2255,13 +2255,15 @@
     "task_id": "CPO-2026-07-04-INQUIRY-5TYPE-COVERAGE",
     "clevel": "cpo",
     "title": "[시포] 문의 5종 단일체계 커버리지 완성 — 미구축 1종(공간렌트/비즈니스) 문의 흐름(폼→시트→알림) 구축",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-04",
     "ship_no": 417,
-    "note": "[2026-07-04 GM 승인·북극성 추천기 rank1 착수] 시포 유휴=표류 → 북극성 문의→전환 퍼널 가시화 직결. ★인벤토리 실측 정정: 추천기 전제(미구축 1종)는 오류 — 문의 5종 인입(폼→시트→텔레그램)은 이미 전부 라이브. 진짜 공백=CPO 대시보드 공간렌트·비즈니스 관리화면 2개(prep-slot 껍데기). GM go=둘 다 구축. ✅빌드 완료(worktree→메인): 백엔드 Survey.js에 rentbiz_inquiry_list·rentbiz_stats 신설(gid 렌트2014877540/비즈1356708303, lesson 패턴 미러·읽기전용·_SURVEY_PUBLIC_ACTIONS 등록)+프론트 문의회원.html 두 prep-slot→린 패널(스탯4·scope토글·6열 목록)·soon칩 해제. 검증=node --check PASS·단위 15/15·실폼헤더 5컬럼 정확매칭·상태컬럼 부재는 hasStatus=false 정직degrade. 라이브 배포·스모크 대기.",
-    "next": "코드 완료·로컬검증. 다음=GAS clasp 배포→라이브 스모크(?action=rentbiz_inquiry_list&type=rent 실데이터)→프론트 Pages 반영→GM 시크릿 확인→DONE.",
-    "depends_on": ""
+    "note": "[2026-07-04 GM 승인·북극성 추천기 rank1 착수] 시포 유휴=표류 → 북극성 문의→전환 퍼널 가시화 직결. ★인벤토리 실측 정정: 추천기 전제(미구축 1종)는 오류 — 문의 5종 인입(폼→시트→텔레그램)은 이미 전부 라이브. 진짜 공백=CPO 대시보드 공간렌트·비즈니스 관리화면 2개(prep-slot 껍데기). GM go=둘 다 구축. ✅빌드 완료(worktree→메인): 백엔드 Survey.js에 rentbiz_inquiry_list·rentbiz_stats 신설(gid 렌트2014877540/비즈1356708303, lesson 패턴 미러·읽기전용·_SURVEY_PUBLIC_ACTIONS 등록)+프론트 문의회원.html 두 prep-slot→린 패널(스탯4·scope토글·6열 목록)·soon칩 해제. 검증=node --check PASS·단위 15/15·실폼헤더 5컬럼 정확매칭·상태컬럼 부재는 hasStatus=false 정직degrade. ✅라이브 완결(2026-07-04): GM clasp 재인증→clasp push+deploy @130(exec URL AKfycbzdwSC… 고정 유지)→라이브 스모크 ok:true. rent·biz stats/list 정상 JSON. total=0=진짜 0건(신설 gid가 이미 라이브 _notifyNewInquiries_와 동일 스프레드시트12AWcAlg·동일gid 확인=시트해석 정상, 두 폼 2026-06-15 신설·실문의 미수신). hasStatus=false 정직. 프론트 68bea980 origin 반영·Pages.",
+    "next": "🏁 입항완료 — 문의 5종 관리 커버리지 3→5종. 🔗 다음: 실 렌트·비즈 문의 유입 시 자동 표시(관찰). 운영자가 두 응답탭에 진행상태 칸 추가하면 상태 스탯카드 자동 점등(멤버십과 동일 패턴·코드 준비됨).",
+    "depends_on": "",
+    "terminal": true,
+    "processed_at": "2026-07-04"
   },
   {
     "task_id": "COO-2026-07-04-ADHOC-e6674a73",
@@ -2384,5 +2386,19 @@
     "note": "[2026-07-04 GM 택] 5차 아크=측정·정직 챕터 확정(3안 중 GM 선택). 4차 자율아크(#32 '나는 방향만 잡는다') 완주 후 다음. 종착='감이 아니라 숫자로 방향을 본다 — 못 재는 건 정직하게'. §5 표 5행(#33~#37)+§5.1 기획카드 5장+§4.1 5차아크 추가. 실재근거: KPI지도·kpi.json tier·북극성 추천기 06:30 라이브·5채널 UTM 귀속 라이브(당일 실측). 정직 최우선(미측정·추정 카드 REALITY_GUARD 명시). producer가 #33부터 순차 자동제작(소진 해소).",
     "next": "🔗 매일 07:30 자동제작기가 #33부터 순차 제작 → M5 검수카드 → GM 승인·발행. 시모는 편별 룩·사실성(정직) 검수.",
     "ship_no": 426
+  },
+  {
+    "task_id": "CMO-2026-07-04-ADHOC-6f60d1a5",
+    "clevel": "cmo",
+    "title": "[시모] AI시리즈 5차 아크 '측정·정직' #33~#37 로드맵 박제 — 자동제작 대기",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-04",
+    "processed_at": "2026-07-04",
+    "ship_no": 427,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01PRrnmjx65QHKcysZvdY6fw (CLI ad-hoc · 커밋 6f60d1a5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6f60d1a5624ff99adac085f6adfa651220ea6695"
   }
 ]
