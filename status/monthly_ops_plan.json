@@ -30,12 +30,12 @@
     "source": "회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html · wellperion_guide(main).html#S0",
     "note": "회사소개서·A3 보고서 원문 기준 1·2단계 동시 진행 중",
     "items": [
-      {"stage": 1, "title": "자동화 및 매뉴얼 체계 완성", "goal": "사람이 바뀌어도 품질이 흔들리지 않는 시스템 기반 운영", "status": "진행", "progress": 60, "period": "2026-01 ~", "note": "웰페리온 ERP 진척 연동 — 6월 실적 60%(erp_progress), 7월 목표 80%"},
-      {"stage": 2, "title": "체크리스트 경영 + 핵심 인재 확보", "goal": "현장은 시스템+인재가, GM은 성장 전략에 전념", "status": "진행", "progress": 40, "period": "2026-05 ~ 08 (90일 부서 안정화)", "note": "GM 직속 3라인 배치 + 4부서(운영·시설·지원·주차) 매뉴얼·조직체계 안정화 진행 중 — 3개월(90일) 목표 자율 운영"},
-      {"stage": 3, "title": "브랜드 구축", "goal": "\"웰페리온 = 대체 불가능한 프리미엄\" 인식 확립", "status": "예정", "progress": 0, "period": "미정", "note": ""},
-      {"stage": 4, "title": "파트너팀 채용 구조 정비", "goal": "인력 변동에도 흔들리지 않는 강습·서비스 공급", "status": "예정", "progress": 0, "period": "미정", "note": ""},
-      {"stage": 5, "title": "BM(비즈니스 모델) 생성", "goal": "단일 멤버십 의존을 벗어난 복합 수익 포트폴리오", "status": "예정", "progress": 0, "period": "미정", "note": ""},
-      {"stage": 6, "title": "비즈니스 확장", "goal": "웰페리온을 넘어선 하이엔드 웰니스 브랜드로 성장", "status": "예정", "progress": 0, "period": "미정", "note": ""}
+      {"stage": 1, "title": "자동화 및 매뉴얼 체계 완성", "goal": "사람이 바뀌어도 품질이 흔들리지 않는 시스템 기반 운영", "status": "진행", "progress": 60, "period": "2026-01 ~", "quarter": "3분기(6~8월)", "note": "2026-01 착수 · 3분기 마무리 목표 · 웰페리온 ERP 진척 연동 — 6월 실적 60%(erp_progress), 7월 목표 80%"},
+      {"stage": 2, "title": "체크리스트 경영 + 핵심 인재 확보", "goal": "현장은 시스템+인재가, GM은 성장 전략에 전념", "status": "진행", "progress": 40, "period": "2026-05 ~ 08 (90일 부서 안정화)", "quarter": "3분기(6~8월)", "note": "GM 직속 3라인 배치 + 4부서(운영·시설·지원·주차) 매뉴얼·조직체계 안정화 진행 중 — 3개월(90일) 목표 자율 운영"},
+      {"stage": 3, "title": "브랜드 구축", "goal": "\"웰페리온 = 대체 불가능한 프리미엄\" 인식 확립", "status": "예정", "progress": 0, "period": "미정", "quarter": "4분기(9~12월)", "note": ""},
+      {"stage": 4, "title": "파트너팀 채용 구조 정비", "goal": "인력 변동에도 흔들리지 않는 강습·서비스 공급", "status": "예정", "progress": 0, "period": "미정", "quarter": "4분기(9~12월)", "note": ""},
+      {"stage": 5, "title": "BM(비즈니스 모델) 생성", "goal": "단일 멤버십 의존을 벗어난 복합 수익 포트폴리오", "status": "예정", "progress": 0, "period": "미정", "quarter": "이후(미정)", "note": ""},
+      {"stage": 6, "title": "비즈니스 확장", "goal": "웰페리온을 넘어선 하이엔드 웰니스 브랜드로 성장", "status": "예정", "progress": 0, "period": "미정", "quarter": "이후(미정)", "note": ""}
     ]
   },
   "erp_dev": {
@@ -58,12 +58,11 @@
     ]
   },
   "initiatives": {
-    "_doc": "2층 모델 층① — 여러 달 이어지는 연속 이니셔티브 레지스트리(GM 승인 2026-07-04). 연간 A3 타임라인·월별 A3 상단밴드의 소스. erp-build·strategy-roadmap은 기존 정본(erp_progress·strategy_roadmap)을 source_ref로 참조만(값 복제 금지·중복 금지 L01). dept-system·hiring·support-manual만 monthly에 월별 진척점 신규 보유(기존 objectives progress에서 유도·정직). months.*.objectives[].initiative_id로 당월 실행분(이월·연속) 연결. initiative_id=null=당월 신규. since~until=연간 타임라인 스팬(상세 없는 달은 정직 표기). 정본=이 키, 페이지는 렌더만.",
+    "_doc": "2층 모델 층① — 여러 달 이어지는 연속 이니셔티브 레지스트리(GM 승인 2026-07-04). 연간 A3 타임라인·월별 A3 상단밴드의 소스. erp-build·strategy-roadmap은 기존 정본(erp_progress·strategy_roadmap)을 source_ref로 참조만(값 복제 금지·중복 금지 L01). dept-system·hiring만 monthly에 월별 진척점 신규 보유(기존 objectives progress에서 유도·정직). 지원부 매뉴얼·점검은 별도 이니셔티브가 아니라 dept-system(4부서 안정화)의 6월 하위 작업 — dept-system.sub[]에 흡수(GM 확정 2026-07-04·계층 병합). stage_tag=연간 A3 라벨칸 소형 태그(분기·STAGE 매핑). months.*.objectives[].initiative_id로 당월 실행분(이월·연속) 연결. initiative_id=null=당월 신규. since~until=연간 타임라인 스팬(상세 없는 달은 정직 표기). 정본=이 키, 페이지는 렌더만.",
     "items": [
       {"id": "erp-build", "title": "웰페리온 ERP 구축", "icon": "🚀", "owner": "cto", "since": "2026-01", "until": "2026-08", "northstar": "cto", "target": "ERP 완성도 95%(8월) 후 ERP 비즈니스 확장", "source_ref": "erp_progress"},
-      {"id": "dept-system", "title": "4부서 체계 안정화(90일)", "icon": "🏢", "owner": "coo", "since": "2026-05", "until": "2026-08", "northstar": "coo", "target": "운영·시설·지원·주차 4부서 자율 운영 체계 정착", "monthly": {"2026-06": {"pct": 55, "status": "진행", "note": "4부서 체계 페이지 틀 완성(06-05)"}, "2026-07": {"pct": 55, "status": "이월", "note": "부서 체계 정착 지속·부서별 실행 구체화(07-10)"}}},
+      {"id": "dept-system", "title": "4부서 체계 안정화(90일)", "icon": "🏢", "owner": "coo", "since": "2026-05", "until": "2026-08", "northstar": "coo", "target": "운영·시설·지원·주차 4부서 자율 운영 체계 정착", "stage_tag": "3분기·STAGE 2", "monthly": {"2026-06": {"pct": 55, "status": "진행", "note": "4부서 체계 페이지 틀 완성(06-05)"}, "2026-07": {"pct": 55, "status": "이월", "note": "부서 체계 정착 지속·부서별 실행 구체화(07-10)"}}, "sub": [{"month": "2026-06", "title": "지원부 매뉴얼·점검 체계 정착 마무리", "note": "4부서 안정화의 6월 하위 작업"}]},
       {"id": "hiring", "title": "직원 채용·교육(4직군)", "icon": "👥", "owner": "chro", "since": "2026-06", "until": null, "northstar": "chro", "target": "운영·주차·지원·수행기사+골프 파트너 채용·교육 적응 완료(실무=나우열M)", "monthly": {"2026-06": {"pct": 50, "status": "진행", "note": "4직군 구인 착수·진행(06-04)"}, "2026-07": {"pct": 50, "status": "진행", "note": "채용+교육 적응 마무리(07-04)·골프팀 파트너 채용 준비(07-06)"}}},
-      {"id": "support-manual", "title": "지원부 매뉴얼·점검 체계", "icon": "📋", "owner": "coo", "since": "2026-06", "until": null, "northstar": "coo", "target": "지원부 매뉴얼+점검 체계 정착·회원 응대·비품 역할 확장", "monthly": {"2026-06": {"pct": 55, "status": "진행", "note": "지원부 매뉴얼+점검 체계 착수(06-03)"}, "2026-07": {"pct": 55, "status": "이월", "note": "점검 체계 정착 마무리 이월(07-09)·회원 응대·비품 역할 확장 병행"}}},
       {"id": "strategy-roadmap", "title": "전략 로드맵 6단계", "icon": "🗺️", "owner": "ceo", "since": "2026-01", "until": "2026-12", "northstar": "ceo", "target": "6단계 실행 로드맵(자동화→체크리스트→브랜드→채용구조→BM→확장)", "source_ref": "strategy_roadmap"}
     ]
   },
@@ -109,7 +108,7 @@
       "objectives": [
         {"id": "2026-06-01", "initiative_id": null, "title": "여름방학특강 준비", "owner": "cmo", "dept": "마케팅", "target": "특강 기획·콘텐츠·발행 라인 준비", "metric": null, "status": "완료", "progress": 100, "progress_note": "Ep1~Ep3 시리즈로 진행", "northstar": "cmo"},
         {"id": "2026-06-02", "initiative_id": "erp-build", "title": "웰페리온 ERP 완성도 60%", "owner": "cto", "dept": "전사", "target": "완성도 60% (매월 +20% → 최종본)", "status": "완료", "progress": 100, "progress_note": "", "northstar": "cto"},
-        {"id": "2026-06-03", "initiative_id": "support-manual", "title": "지원부 매뉴얼 및 점검 체계 구축·진행", "owner": "coo", "dept": "지원부", "target": "지원부 매뉴얼+점검 체계 정착", "metric": null, "status": "진행", "progress": 55, "progress_note": "점검 분모 정합·항목 마스터 정리 진행", "northstar": "coo"},
+        {"id": "2026-06-03", "initiative_id": "dept-system", "title": "지원부 매뉴얼 및 점검 체계 구축·진행", "owner": "coo", "dept": "지원부", "target": "지원부 매뉴얼+점검 체계 정착", "metric": null, "status": "진행", "progress": 55, "progress_note": "점검 분모 정합·항목 마스터 정리 진행", "northstar": "coo"},
         {"id": "2026-06-04", "initiative_id": "hiring", "title": "직원 구인 진행 (운영부·주차관리부·남 지원부·수행기사)", "owner": "chro", "dept": "인사", "target": "4직군 구인 착수·진행", "metric": null, "status": "진행", "progress": 50, "progress_note": "", "northstar": "chro"},
         {"id": "2026-06-05", "initiative_id": "dept-system", "title": "4개 부서 관리 진행 (운영·시설·지원·주차)", "owner": "coo", "dept": "전 부서", "target": "4부서 체계 관리 운영", "metric": null, "status": "진행", "progress": 55, "progress_note": "부서 체계 페이지 틀 완성", "northstar": "coo"},
         {"id": "2026-06-06", "initiative_id": null, "title": "웰페리온 내부 밸류업 작업 준비", "owner": "ceo", "dept": "전사", "target": "내부 밸류업 착수 준비", "metric": null, "status": "진행", "progress": 45, "progress_note": "", "northstar": "ceo"}
@@ -127,7 +126,7 @@
         {"id": "2026-07-04", "initiative_id": "hiring", "title": "직원 채용 및 교육 통한 적응 마무리", "owner": "chro", "dept": "인사", "target": "채용+교육으로 신규 직원 적응 완료", "metric": null, "status": "진행", "progress": 50, "progress_note": "운영부 3인 30분 교육자료 라이브. 채용·교육 실무=나우열M 라인(AI 항로 제외).", "northstar": "chro"},
         {"id": "2026-07-06", "initiative_id": "hiring", "title": "파트너 강사(골프팀) 조건 축소해서 채용 진행", "owner": "chro", "dept": "파트너/인사", "target": "골프팀 파트너 강사 조건 축소 후 채용", "metric": null, "status": "계획", "progress": 0, "progress_note": "나우열M 파트너 라인 진행(AI 항로 밖).", "northstar": "chro"},
         {"id": "2026-07-02", "initiative_id": null, "title": "지원부 회원 응대 및 비품 관리 역할 추가 부여", "owner": "coo", "dept": "지원부", "target": "지원부 역할에 회원 응대+비품 관리 추가·정착", "metric": null, "status": "진행", "progress": 80, "progress_note": "회원응대 가이드(CS_DATA 응대 10종)·비품관리(SUPPLY_DATA 분류별)·A3 신입 온보딩팩(⑤비품관리 포함 5섹션) 라이브 완비. 컴플레인 등급·발주규정 초안 2건 GM 승인 완료(2026-07-04)·정착. 남은 20%=지원부장/GM 실교육 실시(교육자료·A3는 준비 완료).", "northstar": "coo"},
-        {"id": "2026-07-09", "initiative_id": "support-manual", "title": "지원부 매뉴얼·점검 체계 정착 마무리 (6월 이월)", "owner": "coo", "dept": "지원부", "target": "6월 착수한 지원부 매뉴얼+점검 체계(55%) 정착 마무리", "metric": null, "status": "이월", "progress": 55, "progress_note": "6월 착수(점검 분모·항목 마스터 정리 진행) 이월. 7월=회원 응대·비품 관리 역할 확장(07-02)과 병행 정착.", "northstar": "coo"},
+        {"id": "2026-07-09", "initiative_id": "dept-system", "title": "지원부 매뉴얼·점검 체계 정착 마무리 (6월 이월)", "owner": "coo", "dept": "지원부", "target": "6월 착수한 지원부 매뉴얼+점검 체계(55%) 정착 마무리", "metric": null, "status": "이월", "progress": 55, "progress_note": "6월 착수(점검 분모·항목 마스터 정리 진행) 이월. 7월=회원 응대·비품 관리 역할 확장(07-02)과 병행 정착.", "northstar": "coo"},
         {"id": "2026-07-03", "initiative_id": null, "title": "시설부 매뉴얼 및 점검 체계 구축·진행", "owner": "cto", "dept": "시설부", "target": "시설부 매뉴얼+점검 체계 정착", "metric": null, "status": "진행", "progress": 50, "progress_note": "점검 체계 활발 — 시우 점검 월간 리포트(배208)·분모통일(배14)·웰리 home 점검현황(배173). '시설부 매뉴얼' 자체는 별도 착수 필요(빈틈).", "northstar": "cto"},
         {"id": "2026-07-08", "initiative_id": null, "title": "시설 리뉴얼/업그레이드", "owner": "coo", "dept": "시설부", "target": "①야외테라스 리뉴얼 ②헬스장 장비 업데이트 ③사우나 남·여 헤어&바디 드라이기 업그레이드", "metric": null, "status": "계획", "progress": 0, "progress_note": "3개 항목(테라스·헬스장 장비·사우나 드라이기) 착수 전 — 일정·예산 확정 필요. 담당=시설부/COO.", "northstar": "coo"},
         {"id": "2026-07-10", "initiative_id": "dept-system", "title": "4개 부서(운영·시설·지원·주차) 통합 관리 안정화 지속 (6월 이월)", "owner": "coo", "dept": "전 부서", "target": "부서 체계 정착 지속(90일 부서 안정화 로드맵 2단계)", "metric": null, "status": "이월", "progress": 55, "progress_note": "6월 부서 체계 페이지 틀 완성(55%) 이월. 7월=시설부 매뉴얼(07-03)·지원부 역할확장(07-02·07-09)·시설 리뉴얼(07-08) 등 부서별 실행으로 구체화.", "northstar": "coo"},
