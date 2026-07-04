@@ -2692,5 +2692,19 @@
     "artifact": "- gm_aide_scan phase2에 가역·조건부 정비 5종 추가: 미러동기·현황재발행·KPI갱신·죽은워크트리정리·일요일컨텍스트정비(전부 실제문제 있을때만·멱등·사후 auto_exec 로그)\n- 오늘 라이브 1회: 죽은작업 재발행+죽은 워크트리 2개 정리 = 자율 3건 실행(0→3), 억지없이 증명\n- subprocess utf-8 인코딩 수정(cp949 디코드 크래시 방지·무인 크론 안전)\n- 역롤백=GM_AIDE_AUTO_EXEC=0 (CLI ad-hoc · 커밋 d3d2e655)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "d3d2e6556d67bf0e1557343e83bfb31a9a9968af"
+  },
+  {
+    "task_id": "CEO-2026-07-04-ADHOC-62855796",
+    "clevel": "ceo",
+    "title": "[웰리] today_live·monthly_report 완료율 분모 정합 (배173+배14, 로컬 수리)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-04",
+    "processed_at": "2026-07-04",
+    "ship_no": 445,
+    "artifact": "- A: today_live 주말(토·일) 오후조를 분모·분자에서 제외(오전조+마감조만 정상, 배173).\n  pm/pmTotal 원시값은 진단용으로 응답에 그대로 유지.\n- B: monthly_report 일자별 완료율 분모를 today_live와 동일한 스케줄 기대치(_scheduleExpectedTotal)로\n  단일화 — 진행중인 날이 \"제출된 것만 분모\"라 100%로 뜨던 버그 제거. 완결된 과거일은 세션기록 합계와\n  스케줄 합계가 같아 값이 그대로 유지됨(하위호환 폴백 포함).\n- C: monthTotals.avgPct (CLI ad-hoc · 커밋 62855796)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6285579674427292375b9023b3a6e1621a880e88"
   }
 ]
