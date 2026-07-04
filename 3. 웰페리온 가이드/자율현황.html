@@ -131,6 +131,13 @@
   .cmo-stage.wait{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
   .rv-note{display:block; color:var(--dim); font-size:10px; margin-top:1px;}
 
+  /* ── 👥 시포(CPO) 라이브 회원 스탯 스트립(cpo_churn_stats 실데이터) ── */
+  .cpo-live-strip{display:flex; align-items:center; flex-wrap:wrap; gap:14px 22px; margin:8px 0 12px; padding:10px 14px; border:1px solid var(--border-strong); border-radius:10px; background:rgba(79,196,176,0.05);}
+  .cls-item{font-size:12px; color:var(--text-soft); white-space:nowrap;}
+  .cls-item b{font-size:15px; color:var(--teal); margin:0 3px;}
+  .cls-lbl{color:var(--dim); margin-right:2px;}
+  .cls-src{margin-left:auto; font-size:10px; color:var(--dim);}
+
   /* ── 🔧 시우 실무 3층 v2(배포 배): 라이브 지표 + 실무역할·개선SOP 접기(신규 최소·details 재사용) ── */
   .coo-tier{margin-top:14px;}
   .coo-tier-h{font-size:12.5px; font-weight:800; color:var(--text-soft); margin:0 0 6px; display:flex; align-items:center; gap:6px;}
@@ -461,21 +468,28 @@
   <!-- ════ 👥 시포(AI CPO) 자율 회원관리 (회원 라이프사이클 루프 5단계 자율 축 · cpo_churn_stats·문의 시트 실데이터) ════ -->
   <section>
     <h2 class="sec">👥 시포 (AI CPO) 자율 회원관리 <span style="font-size:11px;font-weight:400;color:var(--dim);">(회원 라이프사이클 루프 5단계 자율 축)</span></h2>
-    <div class="sec-note">문의 접수부터 이탈·갱신까지 회원 라이프사이클을 굴리는 루프. 각 단계=실제 라이브 엔진. 회원·이탈 수치는 회원 GAS(<code>cpo_churn_stats</code>·문의 시트) 실데이터에서만 산출(가짜 수치 금지). 북극성=문의→체험→가입 전환 퍼널 가시화·회원 라이프사이클 관리.</div>
+    <div class="sec-note">문의 접수부터 이탈·갱신까지 회원 라이프사이클을 굴리는 루프. 각 단계=실제 라이브 엔진. 수치는 <code>cpo_churn_stats</code>·문의 시트 실데이터만(가짜 금지).</div>
+    <div class="cpo-live-strip" id="cpo-live-strip">
+      <div class="cls-item"><span class="cls-lbl">유효회원</span><b id="cpoStatActive">–</b>명</div>
+      <div class="cls-item"><span class="cls-lbl">당월 LOSS</span><b id="cpoStatMonthLoss">–</b></div>
+      <div class="cls-item"><span class="cls-lbl">갱신임박 D-7</span><b id="cpoStatD7">–</b>명</div>
+      <div class="cls-item"><span class="cls-lbl">누적 LOSS율</span><b id="cpoStatLossRate">–</b></div>
+      <span class="cls-src">출처: cpo_churn_stats(회원 GAS)·실시간</span>
+    </div>
     <div class="cmo-loop cpo-loop">
       <span class="cmo-loop-lbl">회원 라이프사이클 루프</span>
       <div class="cmo-step live"><span>① 문의 접수 (5종 인입)</span><span class="cs-s">라이브</span></div>
       <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step live"><span>② 문의 관리·분류</span><span class="cs-s">라이브</span></div>
+      <div class="cmo-step live"><span>② 문의 현황(대시보드)</span><span class="cs-s">라이브</span></div>
       <span class="cmo-loop-arrow">→</span>
       <div class="cmo-step partial"><span>③ 체험·상담·방문</span><span class="cs-s">부분</span></div>
       <span class="cmo-loop-arrow">→</span>
       <div class="cmo-step partial"><span>④ 등록 전환</span><span class="cs-s">부분</span></div>
       <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step partial"><span>⑤ 이탈·갱신 관리 (측정)</span><span class="cs-s">부분</span></div>
+      <div class="cmo-step live"><span>⑤ 이탈·갱신 측정</span><span class="cs-s">라이브</span></div>
       <span class="cmo-loop-arrow back pending" title="↻ 이탈신호→선제 케어 자동 연결 시 닫힘(갱신 D-7 알림=브로제이 이관 예정·현재 미연결)">↻ 이탈신호→선제 케어 (대기)</span>
     </div>
-    <div class="cmo-loop-status">현재 열린 루프 — ⑤ 이탈·갱신은 <b>측정 라이브</b>(LOSS율·갱신 임박 실측)·↻ 자동 케어 환류 대기 · 케어 자동화 연결 시 폐루프 완성</div>
+    <div class="cmo-loop-status">현재 열린 루프 — ⑤ 측정은 <b>라이브</b>·↻ 자동 케어 환류 대기(케어 자동화 연결 시 폐루프)</div>
     <div class="routines" id="cpo-routines-static">
       <div class="rcard" style="--rc:var(--teal)">
         <div class="rcard-top"><span class="cmo-stage live">①</span><span class="rcard-ico">🔔</span>
@@ -929,6 +943,14 @@
   // ═══════════ 🔧 시우(COO) 실무 3층 v2 — 1층: 운영 실측 지표(today_live/monthly_report&dept=support 라이브) ═══════════
   // COO_API_URL = 지원부 체계.html(coo/check/지원부 체계.html)과 동일 GAS 웹앱 — 신규 배포 없음, 기존 today_live·monthly_report 액션만 재사용.
   var COO_API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
+  // CPO_CHURN_URL = 회원 GAS(cpo_churn_stats 액션) — 시포 라이프사이클 루프 라이브 스탯 스트립용
+  var CPO_CHURN_URL = 'https://script.google.com/macros/s/AKfycbwdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+  function cpoFetchChurnStats(){
+    return fetch(CPO_CHURN_URL + '?action=cpo_churn_stats&_pv=' + Date.now(), {redirect:'follow'})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ return (j && j.ok !== false) ? j : null; })
+      .catch(function(){ return null; });
+  }
   function cooTodayDate(){
     var d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -998,6 +1020,22 @@
     cards.push(cooMetricCard({ unmeasured:true, sh:'🅿️ 주차 완료율', big:'체계 외', sub:'주차관리부는 규정·가이드·매뉴얼만 운영 — 점검(today_live) 체계에 미포함(정책상 독립)' }));
 
     el.innerHTML = cards.join('');
+  }
+
+  // ═══════════ 👥 시포(CPO) 라이프사이클 루프 — 라이브 회원 스탯 스트립(cpo_churn_stats) ═══════════
+  function renderCpoLiveStrip(j){
+    if(!j) return; // 미응답 시 초기 "–" 그대로 유지(가짜 수치 금지) · 조용히 실패
+    var active = document.getElementById('cpoStatActive');
+    var monthLoss = document.getElementById('cpoStatMonthLoss');
+    var d7 = document.getElementById('cpoStatD7');
+    var lossRate = document.getElementById('cpoStatLossRate');
+    if(active && j.activeCount != null) active.textContent = j.activeCount;
+    if(monthLoss && j.monthLossCount != null) monthLoss.textContent = j.monthLossCount + '명 (' + (j.monthLossRate != null ? j.monthLossRate : '–') + '%)';
+    if(d7){
+      var soon = Array.isArray(j.renewSoon) ? j.renewSoon : [];
+      d7.textContent = soon.filter(function(m){ return m && m.rem <= 7; }).length;
+    }
+    if(lossRate && j.lossRate != null) lossRate.textContent = j.lossRate + '%';
   }
 
   // ═══════════ 섹션 2: 통합 처리 이력 피드 ═══════════
@@ -1266,7 +1304,8 @@
                 '3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/cmo/review/review_queue.json').catch(function(){ return ''; }),
     gasReadText('status/erp_status.json',             'status/erp_status.json').catch(function(){ return ''; }),
     cooFetchTodayLive(),
-    cooFetchMonthlyReport()
+    cooFetchMonthlyReport(),
+    cpoFetchChurnStats()
   ]).then(function(a){
     var learnRaw = parseJson(a[3]);
     var archRaw  = parseJson(a[4]);
@@ -1290,6 +1329,7 @@
     try{ renderCooLiveMetrics(a[9], a[10]); }catch(e){
       document.getElementById('coo-live-metrics').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">운영 실측 지표 표시 오류.</div>';
     }
+    try{ renderCpoLiveStrip(a[11]); }catch(e){ /* 조용히 실패 — 초기 "–" 유지(가짜 수치 금지) */ }
     try{ renderFeed(feedItems); }catch(e){ document.getElementById('feed').innerHTML = '<div class="feed-status">처리 이력 표시 오류.</div>'; }
     try{ renderStats(d, feedItems); }catch(e){ document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">성과 지표 계산 오류.</div>'; }
     try{ renderErpStatus(erpStatus); }catch(e){ document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">시스템 현황 표시 오류.</span>'; }
