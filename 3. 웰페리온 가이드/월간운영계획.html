@@ -370,13 +370,18 @@
   table.an-grid{width:100%; border-collapse:collapse; min-width:840px;}
   table.an-grid th, table.an-grid td{border:1px solid var(--border); padding:0; text-align:center; font-size:10px;}
   table.an-grid thead th{background:var(--surface); color:var(--dim); font-weight:700; padding:6px 3px; white-space:nowrap;}
-  table.an-grid thead th.an-lead{text-align:left; padding-left:11px; min-width:196px;}
-  table.an-grid td.an-lead{text-align:left; padding:8px 11px; vertical-align:middle;}
-  .an-i-title{font-size:12px; font-weight:700; color:var(--text); line-height:1.3;}
-  .an-i-sub{font-size:9.5px; color:var(--dim); margin-top:2px; line-height:1.4;}
-  .an-cell{height:40px;}
+  table.an-grid thead th.an-lead{text-align:left; padding-left:9px; width:132px; min-width:132px; max-width:132px;}
+  table.an-grid td.an-lead{text-align:left; padding:8px 9px; vertical-align:middle; width:132px; max-width:132px; overflow-wrap:break-word;}
+  .an-i-title{font-size:11px; font-weight:700; color:var(--text); line-height:1.3; overflow-wrap:break-word;}
+  .an-i-sub{font-size:9px; color:var(--dim); margin-top:2px; line-height:1.4;}
+  .an-cell{height:44px;}
   .an-dot{display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:1px;}
-  .an-p{font-size:12px; font-weight:800; color:var(--text);}
+  .an-p{font-size:11.5px; font-weight:800; color:var(--text);}
+  .an-mini{width:26px; height:3px; border-radius:2px; background:var(--paper); border:1px solid var(--border); overflow:hidden; margin-top:1px;}
+  .an-mini>i{display:block; height:100%; background:var(--dim);}
+  .an-cell.pt-진행 .an-mini>i{background:var(--blue);}
+  .an-cell.pt-완료 .an-mini>i{background:var(--green);}
+  .an-cell.pt-이월 .an-mini>i, .an-cell.pt-target .an-mini>i{background:var(--gold);}
   .an-tp{font-size:8px; color:#8a6f3f; font-weight:700;}
   .an-spanlab{font-size:8px; color:var(--dim);}
   .an-cell.span{background:repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(140,139,131,0.13) 4px, rgba(140,139,131,0.13) 8px);}
@@ -421,7 +426,7 @@
     table.an-grid{min-width:0;} table.an-grid th, table.an-grid td{border-color:#999 !important;}
     table.an-grid thead th{background:#f2f2f2 !important; color:#333 !important; padding:3px 2px; font-size:7.5px;}
     table.an-grid td.an-lead{padding:4px 7px;} .an-i-title{font-size:8.5px; color:#111 !important;} .an-i-sub{font-size:7px; color:#444 !important;}
-    .an-cell{height:26px;} .an-p{font-size:8.5px; color:#111 !important;} .an-tp{font-size:6.5px; color:#7a5f2f !important;} .an-spanlab{color:#555 !important; font-size:6.5px;}
+    .an-cell{height:26px;} .an-p{font-size:8.5px; color:#111 !important;} .an-mini{display:none;} .an-tp{font-size:6.5px; color:#7a5f2f !important;} .an-spanlab{color:#555 !important; font-size:6.5px;}
     .an-cell.span{background:repeating-linear-gradient(45deg, #fff, #fff 3px, #ddd 3px, #ddd 6px) !important;}
     .an-cell.pt-진행{background:#dbeeff !important;} .an-cell.pt-완료{background:#dff0e2 !important;} .an-cell.pt-이월, .an-cell.pt-target{background:#f6ecd2 !important;} .an-cell.pt-계획{background:#eee !important;}
     .an-cell.cur-col{box-shadow:inset 0 0 0 1.5px #555 !important;}
@@ -552,8 +557,8 @@
 
     <!-- 📊 연속 이니셔티브 상단밴드 (월별 A3 상단 · 그달 진척+델타 궤적 · 2층 모델 층①) -->
     <section class="blk mband-wrap" id="mband-wrap">
-      <h2 class="sec">📊 연속 이니셔티브 진척 <span class="stag">여러 달 이어지는 큰 줄기(ERP·부서체계·채용·지원부매뉴얼) · 그달 완성도% + 전월 대비 궤적</span></h2>
-      <div id="month-band"><div class="board-status">연속 이니셔티브를 불러오는 중…</div></div>
+      <h2 class="sec">📊 이어지는 과제 진척 <span class="stag">여러 달 이어지는 큰 줄기(ERP·부서체계·채용·지원부매뉴얼) · 그달 완성도% + 전월 대비 궤적</span></h2>
+      <div id="month-band"><div class="board-status">이어지는 과제를 불러오는 중…</div></div>
     </section>
 
     <!-- 📋 이달 계획 (맨 위 · 한눈요약 통합 — GM 정정 2026-07: 舊 '🎯 이달 한눈 요약'(목표 평균 달성률·매출-지출 순액·ERP 진척+완료/진행 체크리스트)을 이달 계획 기준(base)에 흡수, 별도 한눈요약 섹션 폐지·중복 0) -->
@@ -1741,15 +1746,15 @@
       '</div>';
     }).join('');
     host.innerHTML = cards ? '<div class="mband">' + cards + '</div>' :
-      '<div class="board-status">이 달에 활성인 연속 이니셔티브가 없습니다.</div>';
+      '<div class="board-status">이 달에 활성인 연속 과제가 없습니다.</div>';
   }
 
   // ── 📅 연간 A3 뷰(이니셔티브 5행 × 12개월 타임라인 + 전략 로드맵 6단계 + 월별 신규 과제 요약) ──
   var AN_MONTHS = [1,2,3,4,5,6,7,8,9,10,11,12];
   function annualGridHtml(curMn){
     var inits = initiativeItems();
-    if(!inits.length) return '<div class="board-status">연속 이니셔티브 정본(initiatives)이 없습니다.</div>';
-    var thead = '<tr><th class="an-lead">이니셔티브</th>' + AN_MONTHS.map(function(m){
+    if(!inits.length) return '<div class="board-status">연속 과제 정본(initiatives)이 없습니다.</div>';
+    var thead = '<tr><th class="an-lead">과제</th>' + AN_MONTHS.map(function(m){
       return '<th' + (m === curMn ? ' style="color:var(--accent-soft)"' : '') + '>' + m + '월</th>';
     }).join('') + '</tr>';
     var rows = inits.map(function(init){
@@ -1764,7 +1769,9 @@
         if(typeof pct === 'number'){
           var st = initStatus(init, monKey);
           var cls = isTgt ? 'pt-target' : ('pt-' + (st || '진행'));
-          return '<td class="an-cell ' + cls + curCls + '"><div class="an-dot"><span class="an-p">' + clampPct(pct) + '</span>' +
+          var p = clampPct(pct);
+          return '<td class="an-cell ' + cls + curCls + '"><div class="an-dot"><span class="an-p">' + p + '%</span>' +
+            '<div class="an-mini"><i style="width:' + p + '%"></i></div>' +
             (isTgt ? '<span class="an-tp">목표</span>' : '') + '</div></td>';
         }
         // 활성 스팬이나 월별 상세 미기록 → 빗금(정직 표기)
@@ -1783,7 +1790,7 @@
       var news = (m.objectives || []).filter(function(o){ return !o.initiative_id; });
       var lis = news.length ? news.map(function(o){
         return '<li>' + esc(o.title) + ' <span style="color:var(--dim)">(' + esc(nickOf(o.owner)) + ' · ' + clampPct(o.progress) + '%)</span></li>';
-      }).join('') : '<li class="none">신규 과제 없음(연속 이니셔티브만)</li>';
+      }).join('') : '<li class="none">신규 과제 없음(연속 과제만)</li>';
       return '<div class="an-msum-card' + (mnum === curMn ? ' cur' : '') + '"><div class="an-msum-h">' + esc(k) +
         '<span class="mth-stat">' + esc(m.month_status || '') + '</span></div><ul>' + lis + '</ul></div>';
     }).join('');
@@ -1794,13 +1801,13 @@
     if(!host) return;
     var curMn = monNum(_sel);
     host.innerHTML =
-      '<div class="annual-head">📅 2026 연간 로드맵 (A3)<span>연속 이니셔티브 타임라인 · 전략 로드맵 6단계 · 월별 신규 과제 요약</span></div>' +
-      '<div class="an-sec-h">🧵 연속 이니셔티브 타임라인 <span style="font-size:11px;font-weight:400;color:var(--dim)">진척점 = 그달 완성도% · 빗금 = 스팬(상세 없음) · 골드 = 목표(미달성)</span></div>' +
+      '<div class="annual-head">📅 2026 연간 로드맵 (A3)<span>이어지는 과제 진척률 · 전략 로드맵 6단계 · 월별 신규 과제 요약</span></div>' +
+      '<div class="an-sec-h">🧵 이어지는 과제 진척률 <span style="font-size:11px;font-weight:400;color:var(--dim)">진척점 = 그달 완성도% · 빗금 = 스팬(상세 없음) · 골드 = 목표(미달성)</span></div>' +
       annualGridHtml(curMn) +
-      '<div class="annual-note">● 빗금 셀 = 이니셔티브 활성 스팬이나 월별 상세 미기록(레포·ERP 체계 2026-05-25 착수 — 이전 소급 없음, 정직 표기) · 색 셀 = 그달 완성도%(진행=청 / 완료=녹 / 이월=금 / 목표=골드) · 파란 테두리 = 현재 선택월(' + (curMn || '—') + '월).</div>' +
+      '<div class="annual-note">● 빗금 셀 = 과제 활성 스팬이나 월별 상세 미기록(레포·ERP 체계 2026-05-25 착수 — 이전 소급 없음, 정직 표기) · 색 셀 = 그달 완성도%(진행=청 / 완료=녹 / 이월=금 / 목표=골드) · 파란 테두리 = 현재 선택월(' + (curMn || '—') + '월).</div>' +
       '<div class="an-sec-h">🗺️ 전략 로드맵 6단계 <span style="font-size:11px;font-weight:400;color:var(--dim)">상위 프레임 — 회사문서 전략 로드맵 v1.5 + S0 기준</span></div>' +
       roadmapStripHtml() +
-      '<div class="an-sec-h">🆕 월별 핵심 과제(신규) 요약 <span style="font-size:11px;font-weight:400;color:var(--dim)">그달 시작·완결형 과제(연속 이니셔티브 제외)</span></div>' +
+      '<div class="an-sec-h">🆕 월별 핵심 과제(신규) 요약 <span style="font-size:11px;font-weight:400;color:var(--dim)">그달 시작·완결형 과제(연속 과제 제외)</span></div>' +
       monthlyNewSummaryHtml(curMn);
   }
 
