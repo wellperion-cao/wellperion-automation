@@ -223,8 +223,8 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-02",
     "ship_no": 239,
-    "note": "[2026-07-02 스펙 .omc/specs/deep-interview-gm-northstar-kpi-autonomy.md] 헌법 북극성·KPI 지도 정직 정식화(배236 ②③)의 후속 = 실제 측정 배관 수리. 웰리 순차 위임 #1(가장 쉬운 첫 성공사례): 시우(COO) 일일 점검 완료율 — 배관은 있는데 값만 null(kpi_collector.py가 지원부_점검완료율·4부서_점검완료율을 못 읽음, kpi_values.json coo 전부 null·_note='rows 없음(점검 미시작 또는 GAS 오류)'). 수리만 하면 즉시 실측 → 헌법 🗺️북극성 지도(coo.nsmap value_key=지원부_점검완료율)가 정직 텍스트에서 라이브 %로 자동 점등 = 7역할 중 첫 '측정 개통' 신뢰 사례. 기술 배관=시토, 지표 의미=시우. 경계: 매출 GAS 배선(시뽀)·시모 전환율 bio는 별도 후속 배(순차).\n[2026-07-03 시우 실측 핸드오프] collector null의 상류 원인 발견: 라이브 today_live(action=today_live&dept=support)가 오늘(2026-07-03 금 dow=5) 분모(amTotal/pmTotal/closeTotal) 전부 0 반환. 인접 평일(목 25/14/13·화 정상) 정상 → 배포낡음 아닌 금요일/오늘 특정 경로. 로컬 소스(.deploy-check/지원팀 일일점검.js)는 금요일 처리 정상으로 보임(_TL_DOW_TOKEN[5]=fri·공용 빈sched는 항상통과)이라 공용까지 0인 게 sched만으론 설명불가 → week계산 예외/_buildTodayMaster 빈마스터/배포코드 diff 의심. 진단 리드·요일 스윕 제안=status/briefs/COO-2026-07-03-TODAYLIVE-FRIDAY-ZERO-HANDOFF.md. 기술배관=시토, 지표의미·검수=시우. 라이브 GAS 배포=GM go+역롤백.\n[2026-07-04 시우 라이브 실측 추가발견] 자율현황 시우섹션 완료율 표시 검증 중 GAS 완료율 소스 불일치 재확인: 같은 날(7/4 토)을 today_live=25/105(24%), monthly_report=25/25(100%)로 **분모가 소스별 제각각**(배14가 잡으려던 문제 잔존). 추가로 ①주말인데 today_live가 오후조(pm) 슬롯 포함(m pmTotal14·f pmTotal15) → 주말 분모 부풀림(정상=오전+마감=76, 배173 주말 회차버그) ②top-level avgPct/issueCount 응답 불안정(파싱 시 null 관측). ⇒ 완료율(%)은 아직 신뢰 불가. 자율현황 표시는 정직 대체(완료율=잠정·이슈는 dailySeries 합산=33 신뢰) 라이브 처리(baf82a76). 백엔드 근본수리 필요: today_live 주말 pm 제외·today_live↔monthly_report 분모 단일화·avgPct 안정화.",
-    "next": "웰리 순차 위임 #1(재정의): today_live 금요일 dow=5 분모 0 근본원인 진단(요일 스윕으로 금요일특정 확정→배포코드 vs 로컬 diff→week계산 로그) → 수리 → kpi_values coo 점검완료율 실측 개통 → 헌법 coo 카드 라이브% 점등. 이게 배14 화면전환(시우)의 선결. 진단서=status/briefs/COO-2026-07-03-TODAYLIVE-FRIDAY-ZERO-HANDOFF.md.",
+    "note": "[2026-07-02 스펙 .omc/specs/deep-interview-gm-northstar-kpi-autonomy.md] 헌법 북극성·KPI 지도 정직 정식화(배236 ②③)의 후속 = 실제 측정 배관 수리. 웰리 순차 위임 #1(가장 쉬운 첫 성공사례): 시우(COO) 일일 점검 완료율 — 배관은 있는데 값만 null(kpi_collector.py가 지원부_점검완료율·4부서_점검완료율을 못 읽음, kpi_values.json coo 전부 null·_note='rows 없음(점검 미시작 또는 GAS 오류)'). 수리만 하면 즉시 실측 → 헌법 🗺️북극성 지도(coo.nsmap value_key=지원부_점검완료율)가 정직 텍스트에서 라이브 %로 자동 점등 = 7역할 중 첫 '측정 개통' 신뢰 사례. 기술 배관=시토, 지표 의미=시우. 경계: 매출 GAS 배선(시뽀)·시모 전환율 bio는 별도 후속 배(순차).\n[2026-07-03 시우 실측 핸드오프] collector null의 상류 원인 발견: 라이브 today_live(action=today_live&dept=support)가 오늘(2026-07-03 금 dow=5) 분모(amTotal/pmTotal/closeTotal) 전부 0 반환. 인접 평일(목 25/14/13·화 정상) 정상 → 배포낡음 아닌 금요일/오늘 특정 경로. 로컬 소스(.deploy-check/지원팀 일일점검.js)는 금요일 처리 정상으로 보임(_TL_DOW_TOKEN[5]=fri·공용 빈sched는 항상통과)이라 공용까지 0인 게 sched만으론 설명불가 → week계산 예외/_buildTodayMaster 빈마스터/배포코드 diff 의심. 진단 리드·요일 스윕 제안=status/briefs/COO-2026-07-03-TODAYLIVE-FRIDAY-ZERO-HANDOFF.md. 기술배관=시토, 지표의미·검수=시우. 라이브 GAS 배포=GM go+역롤백.\n[2026-07-04 시우 라이브 실측 추가발견] 자율현황 시우섹션 완료율 표시 검증 중 GAS 완료율 소스 불일치 재확인: 같은 날(7/4 토)을 today_live=25/105(24%), monthly_report=25/25(100%)로 **분모가 소스별 제각각**(배14가 잡으려던 문제 잔존). 추가로 ①주말인데 today_live가 오후조(pm) 슬롯 포함(m pmTotal14·f pmTotal15) → 주말 분모 부풀림(정상=오전+마감=76, 배173 주말 회차버그) ②top-level avgPct/issueCount 응답 불안정(파싱 시 null 관측). ⇒ 완료율(%)은 아직 신뢰 불가. 자율현황 표시는 정직 대체(완료율=잠정·이슈는 dailySeries 합산=33 신뢰) 라이브 처리(baf82a76). 백엔드 근본수리 필요: today_live 주말 pm 제외·today_live↔monthly_report 분모 단일화·avgPct 안정화.\n[2026-07-04 시우 라이브 배포·검증 완료·GM go] 완료율 분모 정합 라이브 발효(clasp @140): ①today_live 주말 오후조 제외(7/4 105→76) ②today_live↔monthly 분모 _scheduleExpectedTotal 단일화(7/4 24%vs100% 모순→둘다33%) ③monthTotals.avgPct/issueCount 안정(74%·33건). 라이브 실측 검증: 주말 76 정상·소스 정합·시설부406 신규형식 동시 발효. 평일 완료율 하락(7/2 91→80·7/3 89→78)=이전 과소분모(95)→정집계(108) 정직 보정(버그 아님). 자율현황 완료율 잠정→실측 점등(오늘33%·이번달74%). 역롤백=clasp deploy -i ...RQiX0IpekBu1 -V 139. 잔여=분모 정의(전체 스케줄 기대치가 옳은지) 근본 재검은 후속·시토 배관 성능검토.",
+    "next": "🔗 완료율 측정 개통 라이브 완료(배239 핵심 달성) — kpi_collector가 이제 실완료율 읽음(coo KPI null→실측). 후속: ①kpi_values coo 점검완료율 실측 반영 확인 ②분모 정의(전체 스케줄 vs 시프트별 기대) 근본 재검(선택) ③시토 성능검토(monthly 다회 시트읽기).",
     "depends_on": ""
   },
   {
@@ -686,12 +686,12 @@
     "task_id": "CMO-2026-07-04-AI-SERIES-MEASUREMENT-CH-33-37",
     "clevel": "cmo",
     "owner": "cmo",
-    "title": "[시모] AI 개인시리즈 5차 아크 '실전 생존기'(연결형) #33~#37 — 예약제·첫10분·믿음등록·재방문·소개. AI 티 안 냄·리빌형. 로드맵 박제·자동제작 대기",
+    "title": "[시모] 개인계정 '한 달 웰페리온 ERP 자율화' 22편 시리즈 — 하이브리드(웰리 영상 hook+캐러셀). 캘린더 확정·구조 리뷰 완료, 힉스필드 결재 대기",
     "status": "IN_PROGRESS",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-04",
-    "note": "[2026-07-04 GM 택] 5차 아크=측정·정직 챕터 확정(3안 중 GM 선택). 4차 자율아크(#32 '나는 방향만 잡는다') 완주 후 다음. 종착='감이 아니라 숫자로 방향을 본다 — 못 재는 건 정직하게'. §5 표 5행(#33~#37)+§5.1 기획카드 5장+§4.1 5차아크 추가. 실재근거: KPI지도·kpi.json tier·북극성 추천기 06:30 라이브·5채널 UTM 귀속 라이브(당일 실측). 정직 최우선(미측정·추정 카드 REALITY_GUARD 명시). producer가 #33부터 순차 자동제작(소진 해소). [2026-07-04 GM 재설계] 측정·정직 아크→실전 생존기로 교체(GM '너무 AI적' 지적+측정 소재 중복). 연결형 5부작(손님여정 오게→맞이→신뢰등록→유지→소개), AI 티 안 내고 #37에서만 '알아서 돌아간다' 리빌. 측정안은 _AI시리즈_이력.md 보존. #33~#37 상태 기획예정 복귀=자동제작 재개.",
-    "next": "🔗 내일 07:30 자동제작기가 #33('문 앞에서')부터 순차 제작 → M5 검수카드 → GM 승인·발행. 시모는 편별 연결·톤(AI 티 안 남)·사실성 검수.",
+    "note": "[2026-07-04 GM 택] 5차 아크=측정·정직 챕터 확정(3안 중 GM 선택). 4차 자율아크(#32 '나는 방향만 잡는다') 완주 후 다음. 종착='감이 아니라 숫자로 방향을 본다 — 못 재는 건 정직하게'. §5 표 5행(#33~#37)+§5.1 기획카드 5장+§4.1 5차아크 추가. 실재근거: KPI지도·kpi.json tier·북극성 추천기 06:30 라이브·5채널 UTM 귀속 라이브(당일 실측). 정직 최우선(미측정·추정 카드 REALITY_GUARD 명시). producer가 #33부터 순차 자동제작(소진 해소). [2026-07-04 GM 재설계] 측정·정직 아크→실전 생존기로 교체(GM '너무 AI적' 지적+측정 소재 중복). 연결형 5부작(손님여정 오게→맞이→신뢰등록→유지→소개), AI 티 안 내고 #37에서만 '알아서 돌아간다' 리빌. 측정안은 _AI시리즈_이력.md 보존. #33~#37 상태 기획예정 복귀=자동제작 재개. [2026-07-04 재설계·구조확정] GM 방향 대전환: '측정·정직/실전 생존기'→폐기, 새 시리즈='한 달 웰페리온 ERP 자율화'(입문2+ERP2+실증17+피날레1=22편, 평일 데일리). 콘텐츠 시안=Artifact 캘린더(에메랄드). 포맷=하이브리드(웰리 영상 hook 3~6초+기존 캐러셀 상세) GM확정. 웰리=공식 마스코트(정장 곰) 재사용. 영상툴 조사완료: 주력 Kling3.0/바이럴 힉스필드(Kling·Veo 통합)/말하는웰리 Veo3.1, Sora2 종료예정. 구조리뷰: 검수(M5)·발행(IG mp4 지원)·표지(무료) 기존 재사용, 웰리 hook만 반자동 신규. 개인계정 시그니처색=에메랄드 박제. 무료 베이스라인 모션클립 GM 전달함.",
+    "next": "👉 GM 결재 대기 = 힉스필드 Plus($39/월) 구독 승인 → 웰리 Soul ID로 EP1 hook 테스트클립(힉스필드 내 Kling·Veo 비교)+캐러셀 결합 → 실물 검수 → 22편 롤아웃(07:30 자동제작 재개, #33~ 자동제작은 현재 보류중).",
     "ship_no": 426
   },
   {
@@ -717,7 +717,7 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-07-04",
     "processed_at": "2026-07-04",
-    "ship_no": 426,
+    "ship_no": 452,
     "artifact": "지원부 printA3Monthly 인쇄 기계장치(버튼·컨테이너·@media print CSS·JS함수)를\n시설부 monthly_report(dept=facility) 데이터 구조(카테고리·회차·점검자·기준이탈)에\n맞게 이식. printA3FacilityMonthly()가 화면과 같은 FM_LAST 캐시를 공유해 중복\nfetch 없이 A3 컨테이너에 실지표를 주입 후 인쇄. 기존 A3 가이드라인/매뉴얼/\n온보딩 모드와 네임스페이스 완전 분리(상호 무간섭), 각 모드 hide-list에\n#a3-monthly-print 상호 제외 추가. (CLI ad-hoc · 커밋 68948d60)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "68948d600deaf106e2b4e81bc46eac49108f8529"
@@ -2852,5 +2852,19 @@
     "artifact": "- 규모 3,000평=ssot/canon_values.json company_scale 라이브 fetch로 갱신\n- CEO 북극성 한 줄=bootsetup_matrix ceo.dims[0] 재사용(신규 fetch 없음)\n- 미션 문장은 라이브 정본 없어 정적 유지+출처주석(가짜 요약 금지)\n- 4섹션 인쇄 본문은 앞선 커밋(e73ed898)에 이미 반영 확인 (CLI ad-hoc · 커밋 1ec0c593)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "1ec0c593c9b5d07403d87501bcfd03fddc1974fa"
+  },
+  {
+    "task_id": "COO-2026-07-04-ADHOC-cec90e9e",
+    "clevel": "coo",
+    "title": "[시우] 완료율 분모 정합 라이브 배포(@140)+자율현황 완료율 점등",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-04",
+    "processed_at": "2026-07-04",
+    "ship_no": 453,
+    "artifact": "- GAS 배포: today_live 주말 pm 제외(105→76)·today_live↔monthly 분모 단일화·avgPct 안정화(배239)+시설부406 동시 발효\n- 라이브 검증: 주말 정상·소스 정합(7/4 둘다 33%)·평일 회귀는 과소분모 보정(91→80 정직)\n- 자율현황: 완료율 잠정→실측 점등(오늘 33%·이번달 74%·이슈 33건) (CLI ad-hoc · 커밋 cec90e9e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "cec90e9e94d2955a051e5235d85c56f30821f115"
   }
 ]
