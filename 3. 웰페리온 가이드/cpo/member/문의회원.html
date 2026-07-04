@@ -925,8 +925,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <button type="button" class="type-chip active" data-type="membership" onclick="switchType('membership')">멤버십</button>
     <button type="button" class="type-chip" data-type="lessonAdult" onclick="switchType('lessonAdult')">성인 강습</button>
     <button type="button" class="type-chip" data-type="lessonYouth" onclick="switchType('lessonYouth')">유소년 강습</button>
-    <button type="button" class="type-chip soon" data-type="rent" onclick="switchType('rent')">공간 렌트 🚧</button>
-    <button type="button" class="type-chip soon" data-type="biz" onclick="switchType('biz')">비즈니스 🚧</button>
+    <button type="button" class="type-chip" data-type="rent" onclick="switchType('rent')">공간 렌트</button>
+    <button type="button" class="type-chip" data-type="biz" onclick="switchType('biz')">비즈니스</button>
   </div>
 
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
@@ -1819,22 +1819,114 @@ if (action === 'member_calendar') {
     </div>
   </div>
 
-  <!-- ══════════════════════════════ 유형: 공간 렌트 (준비 중) ══════════════════════════════ -->
+  <!-- ══════════════════════════════ 유형: 공간 렌트 (문의 스트림 — 강습문의 패널 미러링, 린 버전) ══════════════════════════════ -->
   <div id="type-rent" class="type-pane">
-    <div class="card"><div class="prep-slot">
-      <div class="prep-icon">🚧</div>
-      <div class="prep-title">공간 렌트 문의 — 준비 중</div>
-      <div class="prep-desc">전용 문의 시트 연결 후 이곳에 통합됩니다.</div>
-    </div></div>
+    <div class="info-box accent" style="margin-bottom:14px">
+      <strong>공간 렌트 문의 현황</strong> — 워드프레스 공간 렌트 문의 폼 접수 내역입니다. (달력·등록전환 없는 문의 스트림 뷰)
+    </div>
+    <div class="dash-grid" style="margin-bottom:18px">
+      <div class="dash-card" data-kind="inq">
+        <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">총 문의</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v"><b class="lead" id="rentbizStatTotal_rent">–</b></span></div></div>
+      </div>
+      <div class="dash-card" data-kind="tour">
+        <div class="dash-head"><span class="dash-dot tour"></span><span class="dash-title">신규(미처리)</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v"><b class="lead" id="rentbizStatNew_rent">–</b></span></div></div>
+      </div>
+      <div class="dash-card" data-kind="reg">
+        <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">처리중</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v"><b class="lead" id="rentbizStatProgress_rent">–</b></span></div></div>
+      </div>
+      <div class="dash-card" data-kind="mem">
+        <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">완료</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v"><b class="lead" id="rentbizStatDone_rent">–</b></span></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">🏢</span>공간 렌트 문의 목록
+        <span id="rentbizStatLine_rent" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <button type="button" class="rentbiz-scope-btn" onclick="rentbizSetScope('year', this, 'rent')"
+          style="padding:7px 14px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">올해(2026)만</button>
+        <button type="button" class="rentbiz-scope-btn" onclick="rentbizSetScope('all', this, 'rent')"
+          style="padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">전체 기간</button>
+        <button class="btn-refresh" onclick="renderRentbiz('rent');rentbizLoadStats('rent')" style="margin-left:auto">새로고침</button>
+      </div>
+      <div class="reg-table-wrap">
+        <table class="reg-table">
+          <thead>
+            <tr>
+              <th class="left" style="min-width:90px">문의일</th>
+              <th class="left" style="min-width:110px">성함/단체명</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:90px">유입경로</th>
+              <th style="min-width:80px">상태</th>
+              <th class="left" style="min-width:200px">문의내용</th>
+            </tr>
+          </thead>
+          <tbody id="rentbizBody_rent">
+            <tr><td colspan="6"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
-  <!-- ══════════════════════════════ 유형: 비즈니스 (준비 중) ══════════════════════════════ -->
+  <!-- ══════════════════════════════ 유형: 비즈니스 (문의 스트림 — 강습문의 패널 미러링, 린 버전) ══════════════════════════════ -->
   <div id="type-biz" class="type-pane">
-    <div class="card"><div class="prep-slot">
-      <div class="prep-icon">🚧</div>
-      <div class="prep-title">비즈니스 제휴 문의 — 준비 중</div>
-      <div class="prep-desc">전용 문의 시트 연결 후 이곳에 통합됩니다.</div>
-    </div></div>
+    <div class="info-box accent" style="margin-bottom:14px">
+      <strong>비즈니스 제휴 문의 현황</strong> — 워드프레스 비즈니스 파트너 문의 폼 접수 내역입니다. (달력·등록전환 없는 문의 스트림 뷰)
+    </div>
+    <div class="dash-grid" style="margin-bottom:18px">
+      <div class="dash-card" data-kind="inq">
+        <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">총 문의</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v"><b class="lead" id="rentbizStatTotal_biz">–</b></span></div></div>
+      </div>
+      <div class="dash-card" data-kind="tour">
+        <div class="dash-head"><span class="dash-dot tour"></span><span class="dash-title">신규(미처리)</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v"><b class="lead" id="rentbizStatNew_biz">–</b></span></div></div>
+      </div>
+      <div class="dash-card" data-kind="reg">
+        <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">처리중</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v"><b class="lead" id="rentbizStatProgress_biz">–</b></span></div></div>
+      </div>
+      <div class="dash-card" data-kind="mem">
+        <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">완료</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-v"><b class="lead" id="rentbizStatDone_biz">–</b></span></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">🤝</span>비즈니스 제휴 문의 목록
+        <span id="rentbizStatLine_biz" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <button type="button" class="rentbiz-scope-btn" onclick="rentbizSetScope('year', this, 'biz')"
+          style="padding:7px 14px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">올해(2026)만</button>
+        <button type="button" class="rentbiz-scope-btn" onclick="rentbizSetScope('all', this, 'biz')"
+          style="padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">전체 기간</button>
+        <button class="btn-refresh" onclick="renderRentbiz('biz');rentbizLoadStats('biz')" style="margin-left:auto">새로고침</button>
+      </div>
+      <div class="reg-table-wrap">
+        <table class="reg-table">
+          <thead>
+            <tr>
+              <th class="left" style="min-width:90px">문의일</th>
+              <th class="left" style="min-width:110px">성함/단체명</th>
+              <th style="min-width:120px">연락처</th>
+              <th style="min-width:90px">유입경로</th>
+              <th style="min-width:80px">상태</th>
+              <th class="left" style="min-width:200px">문의내용</th>
+            </tr>
+          </thead>
+          <tbody id="rentbizBody_biz">
+            <tr><td colspan="6"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
 </div><!-- /content -->
@@ -2182,6 +2274,8 @@ function switchType(type) {
   });
   if (type === 'lessonAdult') { lessonSwitchCard('adult', 'inq'); lessonInit('adult'); }   // 기본=문의 현황 + 최초 1회 로드
   if (type === 'lessonYouth') { lessonSwitchCard('youth', 'inq'); lessonInit('youth'); }
+  if (type === 'rent') { rentbizInit('rent'); }
+  if (type === 'biz')  { rentbizInit('biz'); }
 }
 
 /* ── 관리 그룹(family) — AI CPO 메뉴 3칸 분리(배6, 2026-07-02 시포·GM). 한 페이지 유지·접수 통합,
@@ -2502,6 +2596,101 @@ function _lessonRosterRender(t, kind) {
     '</tr>';
   });
   tbody.innerHTML = html;
+}
+
+/* ─────────────────────────────────────────────
+   공간 렌트·비즈니스 문의(inline) — 강습문의(lesson_inquiry_list/lesson_stats) 패턴 미러링.
+   달력·등록전환 없는 린 버전 — 문의 목록 + 통계(총·신규·처리중·완료)만. t='rent' | 'biz'.
+   2026-07-04 시포.
+───────────────────────────────────────────── */
+var _rentbizState = {
+  rent: { rows: [], scope: 'year', loaded: false },
+  biz:  { rows: [], scope: 'year', loaded: false }
+};
+
+function rentbizInit(t) {
+  var st = _rentbizState[t];
+  if (!st || st.loaded) return;
+  st.loaded = true;
+  renderRentbiz(t);
+  rentbizLoadStats(t);
+}
+
+function rentbizSetScope(scope, btn, t) {
+  var st = _rentbizState[t];
+  if (!st) return;
+  st.scope = (scope === 'all') ? 'all' : 'year';
+  document.querySelectorAll('#type-' + t + ' .rentbiz-scope-btn').forEach(function(b){
+    b.style.background = 'var(--bg)'; b.style.color = 'var(--dim)'; b.style.borderColor = 'var(--border)';
+  });
+  if (btn) { btn.style.background = 'var(--teal-bg)'; btn.style.color = 'var(--teal)'; btn.style.borderColor = 'var(--teal-border)'; }
+  renderRentbiz(t);
+  rentbizLoadStats(t);
+}
+
+function _rentbizEmpty(t, title, desc) {
+  var b = document.getElementById('rentbizBody_' + t);
+  if (b) b.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
+    '<div class="empty-state-title">' + esc(title) + '</div>' +
+    '<div class="empty-state-desc">' + esc(desc) + '</div></div></td></tr>';
+}
+
+function _rentbizRenderTable(t) {
+  var tbody = document.getElementById('rentbizBody_' + t);
+  if (!tbody) return;
+  var rows = (_rentbizState[t] || {}).rows || [];
+  if (rows.length === 0) { _rentbizEmpty(t, '문의 없음', '해당 조건의 문의가 없습니다.'); return; }
+  var html = '';
+  rows.forEach(function(r){
+    html += '<tr>' +
+      '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(r.timestamp || '—') + '</td>' +
+      '<td class="left" style="font-weight:700">' + esc(r.name || '—') + '</td>' +
+      '<td style="font-size:12px;color:var(--dim)">' + esc(r.phone || '—') + '</td>' +
+      '<td style="font-size:12px">' + esc(r.channel || '—') + '</td>' +
+      '<td style="font-size:12px">' + esc(r.status || '—') + '</td>' +
+      '<td class="left" style="font-size:11px;color:var(--dim);white-space:pre-wrap">' + esc(r.note || '—') + '</td>' +
+    '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function renderRentbiz(t) {
+  var st = _rentbizState[t];
+  if (!st) return;
+  if (GAS_URL === GAS_PLACEHOLDER) { _rentbizEmpty(t, '미연동', 'GAS URL이 교체되면 자동으로 문의가 표시됩니다.'); return; }
+  var b = document.getElementById('rentbizBody_' + t);
+  if (b) b.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="loading-spinner"></div>' +
+    '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
+  fetch(GAS_URL + '?action=rentbiz_inquiry_list&type=' + t + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : ''))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
+      st.rows = d.data || [];
+      _rentbizRenderTable(t);
+    })
+    .catch(function(e){ _rentbizEmpty(t, '데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
+}
+
+function rentbizLoadStats(t) {
+  var st = _rentbizState[t];
+  if (!st || GAS_URL === GAS_PLACEHOLDER) return;
+  fetch(GAS_URL + '?action=rentbiz_stats&type=' + t + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : ''))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok) return;
+      var elTotal = document.getElementById('rentbizStatTotal_' + t);
+      var elNew   = document.getElementById('rentbizStatNew_' + t);
+      var elProg  = document.getElementById('rentbizStatProgress_' + t);
+      var elDone  = document.getElementById('rentbizStatDone_' + t);
+      var elLine  = document.getElementById('rentbizStatLine_' + t);
+      if (elTotal) elTotal.textContent = (d.total || 0);
+      // 상태 컬럼이 시트에 없으면(hasStatus=false) '—'로 정직 표기 — 0 지어내지 않음.
+      if (elNew)  elNew.textContent  = d.hasStatus ? (d.new || 0) : '—';
+      if (elProg) elProg.textContent = d.hasStatus ? (d.inProgress || 0) : '—';
+      if (elDone) elDone.textContent = d.hasStatus ? (d.done || 0) : '—';
+      if (elLine) elLine.textContent = '총 ' + (d.total || 0) + '건 · 이번달 ' + (d.thisMonth || 0) + '건';
+    })
+    .catch(function(){});
 }
 
 /* ─────────────────────────────────────────────

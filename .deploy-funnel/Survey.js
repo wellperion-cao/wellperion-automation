@@ -957,6 +957,9 @@ var _SURVEY_PUBLIC_ACTIONS = {
   lesson_inquiry_update:      true,  // 진행상태·담당·상담메모·상담예약·방문상태 수정
   lesson_registered_roster:   true,  // 강습 등록현황·회원 명단(팀시트 상태열 _isLessonReg_) — PII 노출(전체공개 2026-06-22) 2026-06-27 시포
   lesson_registry_list:       true,  // 강습 금일 등록현황(원장 sync-on-load) — PII 노출(전체공개) 2026-06-27 시포
+  // 공간렌트·비즈니스 문의 패널(CPO) — lesson_inquiry_list/lesson_stats 와 동일 취급(PII 노출·전체공개). 2026-07-04 시포.
+  rentbiz_inquiry_list:       true,  // 공간렌트·비즈니스 문의 목록(성함/단체명·연락처 등 원시 필드 포함)
+  rentbiz_stats:              true,  // 공간렌트·비즈니스 통계(총·이번달·경로 분포·상태별 — 상태컬럼 없으면 상태 집계 생략)
   pii_status:                 true,  // [진단] PII_MASK/토큰 설정 상태(비밀값 미노출) 2026-06-25 시토
   // 트리거 관리 — 설치/조회/테스트 (2026-06-25 시모, 즉시알림 전환)
   install_inquiry_triggers:   true,  // onFormSubmit 트리거 + 폴링 백스톱 설치 (웹앱 호출 시 cao 계정으로 실행)
@@ -1434,6 +1437,7 @@ function _lessonReadRows_(gid) {
 
 // 강습 데이터 범위 필터 — 기본=올해(현재연도)만, scope=all이면 전체(시포·GM 2026-06-26).
 // 타임스탬프는 _miToISO_로 'YYYY-MM-DD' 정규화됨 → 앞 4자리=연도(Asia/Seoul 기준 현재연도와 비교).
+// ★ 필드 무관 범용 로직(row.timestamp만 사용) — 아래 공간렌트·비즈니스 문의(rentbiz_*)도 그대로 재사용.
 function _lessonScopeFilter_(rows, body) {
   if (String((body && body.scope) || '') === 'all') return rows;
   var yr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy');
@@ -1442,6 +1446,74 @@ function _lessonScopeFilter_(rows, body) {
     if (!/^\d{4}$/.test(y)) return true;  // ★타임스탬프 파싱 실패(빈/비표준)는 버리지 않고 포함 — 조용한 누락 방지
     return y === yr;
   });
+}
+
+// ═══════════════════════════════════════════
+//  문의회원 페이지(CPO) — 공간 렌트·비즈니스 파트너 문의 관리 패널
+//  ★ 강습문의(lesson_inquiry_list/lesson_stats) 패턴을 그대로 미러링 — 컬럼탐지·마스킹 정책 동일(마스킹 없음·전체공개).
+//     두 문의는 이미 FORM_SHEETS(멤버십과 동일 스프레드시트 12AWcAlg…)의 응답탭에 귀속되어 있다(2026-06-15).
+//     달력·등록전환 없는 린(lean) 버전 — 문의 목록·통계만. 쓰기 액션 없음(읽기 전용). 2026-07-04 시포.
+// ═══════════════════════════════════════════
+var RENTBIZ_GID = { rent: 2014877540, biz: 1356708303 };  // FORM_SHEETS 공간렌트·비즈니스파트너 gid와 동일(단일 출처)
+
+// 대상(type) → gid 해석. 'biz'/'business'/'비즈니스'/'비즈니스파트너'만 비즈니스, 그 외(미지정 포함)=공간렌트.
+function _rentbizGidOf_(body) {
+  var t = String((body && body.type) || '').trim().toLowerCase();
+  if (t === 'biz' || t === 'business' || t === '비즈니스' || t === '비즈니스파트너') return RENTBIZ_GID.biz;
+  return RENTBIZ_GID.rent;
+}
+
+// 응답탭 시트 핸들 — 멤버십과 동일 스프레드시트(MEMBER_SPREADSHEET_ID)의 gid 매칭(탭명 변경에 강함).
+function _rentbizSheet_(gid) {
+  return _sheetByGid_(MEMBER_SPREADSHEET_ID, gid);
+}
+
+// 문의 행 배열 — 유연 컬럼탐지(_findCol_ 재사용). 구글폼 원본 그대로 읽음(관리 컬럼 추가·쓰기 없음 — 읽기 전용 패널).
+//   시트 헤더가 폼마다 다를 수 있어 성함/단체명·연락처·문의내용·상태·타임스탬프 모두 유연 매칭. 빈 행(이름·연락처 둘 다 없음) 스킵.
+function _rentbizReadRows_(gid) {
+  var sh = _rentbizSheet_(gid);
+  if (!sh) return [];
+  var lastCol = sh.getLastColumn();
+  if (lastCol < 1) return [];
+  var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+  var data = sh.getRange(2, 1, last - 1, lastCol).getValues();
+  var iTs    = _findCol_(hdr, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '날짜']);
+  var iName  = _findCol_(hdr, ['성함', '이름', '성명', '단체명', '업체명', '상호', '회사명', '담당자']);
+  var iPhone = _findCol_(hdr, ['연락처', '전화', '휴대폰']);
+  var iChan  = _findCol_(hdr, ['경로', '채널', '알게']);
+  var iNote  = _findCol_(hdr, INQUIRY_CONTENT_KEYS);
+  var iStat  = _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '상태']);
+  var iOwner = _findCol_(hdr, ['접수 담당자', '관리담당', '담당자', '담당']);
+  var out = [];
+  for (var r = 0; r < data.length; r++) {
+    var row = data[r];
+    var hasName  = iName  >= 0 && row[iName];
+    var hasPhone = iPhone >= 0 && row[iPhone];
+    if (!hasName && !hasPhone) continue;  // 완전 빈 행 스킵
+    out.push({
+      rowIndex: r + 2,
+      timestamp: _miToISO_(iTs >= 0 ? row[iTs] : ''),
+      name:    iName  >= 0 ? String(row[iName]  || '') : '',
+      phone:   iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',
+      channel: iChan  >= 0 ? String(row[iChan]  || '') : '',
+      note:    iNote  >= 0 ? String(row[iNote]  || '') : '',
+      status:  iStat  >= 0 ? String(row[iStat]  || '') : '',
+      owner:   iOwner >= 0 ? String(row[iOwner] || '') : ''
+    });
+  }
+  return out;
+}
+
+// 진행상태 칼럼 존재 여부만 별도 확인(집계 정직성용) — 컬럼 자체가 없으면 상태별 집계를 아예 반환하지 않는다(0 날조 금지).
+function _rentbizHasStatusCol_(gid) {
+  var sh = _rentbizSheet_(gid);
+  if (!sh) return false;
+  var lastCol = sh.getLastColumn();
+  if (lastCol < 1) return false;
+  var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+  return _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '상태']) >= 0;
 }
 
 function _processAction(body) {
@@ -2538,6 +2610,46 @@ function _processAction(body) {
     } catch (e) {}
     try { _notifyTelegram('📝 강습문의 수정 — 행 ' + luRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
     return _json({ ok: true, rowIndex: luRow, message: '수정되었습니다.' });
+  }
+
+  // ─── 공간렌트·비즈니스 문의 페이지(CPO): 전체 목록 ───
+  //   강습문의(lesson_inquiry_list)와 동일 구조 — type=rent|biz, scope=all(미지정=올해만).
+  if (action === 'rentbiz_inquiry_list') {
+    var rbRows = _lessonScopeFilter_(_rentbizReadRows_(_rentbizGidOf_(body)), body);
+    return _json({ ok: true, count: rbRows.length, data: rbRows });
+  }
+
+  // ─── 공간렌트·비즈니스 문의 페이지(CPO): 통계 (총·이번달·유입경로 분포·상태별) ───
+  //   상태 컬럼이 시트에 없으면 hasStatus:false만 반환(신규/처리중/완료 지어내지 않음).
+  if (action === 'rentbiz_stats') {
+    var rsGid  = _rentbizGidOf_(body);
+    var rsRows = _lessonScopeFilter_(_rentbizReadRows_(rsGid), body);
+    var rsTotal = rsRows.length;
+    var rsMonth = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM');
+    var rsThisMonth = 0;
+    var rsChan = {};
+    rsRows.forEach(function(row) {
+      if (row.timestamp && row.timestamp.slice(0, 7) === rsMonth) rsThisMonth++;
+      var ch = _canonicalChannel_(row.channel || '');
+      rsChan[ch] = (rsChan[ch] || 0) + 1;
+    });
+    function _rsSort(obj) {
+      return Object.keys(obj).map(function(k){ return { k: k, v: obj[k] }; })
+        .sort(function(a, b){ return b.v - a.v; });
+    }
+    var rsResult = { ok: true, total: rsTotal, thisMonth: rsThisMonth, byChannel: _rsSort(rsChan) };
+    rsResult.hasStatus = _rentbizHasStatusCol_(rsGid);
+    if (rsResult.hasStatus) {
+      var rsNew = 0, rsInProgress = 0, rsDone = 0;
+      rsRows.forEach(function(row) {
+        var st = String(row.status || '').trim();
+        if (/완료|처리완료|해결|종료/.test(st)) rsDone++;
+        else if (/처리중|진행중|응대|컨택|연락중|검토중/.test(st)) rsInProgress++;
+        else rsNew++;  // 빈값·미인식 상태 = 미처리(신규)로 정직 분류
+      });
+      rsResult.new = rsNew; rsResult.inProgress = rsInProgress; rsResult.done = rsDone;
+    }
+    return _json(rsResult);
   }
 
   // ─── UTM 귀속(파일럿): 구글폼에 '유입경로(자동)' 텍스트 항목 추가 + prefill entry ID 회수 (2026-06-23 ship113) ───
