@@ -54,8 +54,9 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -83,6 +84,11 @@ PROPOSAL_TAG = "[GM보좌 제안]"
 AUTO_EXEC_ENV = "GM_AIDE_AUTO_EXEC"
 AUTO_EXEC_ON_VALUES = {"1", "true", "on", "yes"}
 MAX_AUTO_ACTIONS_PER_RUN = 5   # 가역 자율실행 폭주 방지 cap
+
+# ── 정비 액션 5종(2026-07-04 추가) 조건 임계값 — 전부 '실제 문제 있을 때만' 게이트 ──
+STALE_HOURS_ERP = 6   # erp_status.json generated_at 이 이만큼 지나면 재발행 대상
+STALE_HOURS_KPI = 6   # kpi_values.json generated_at 이 이만큼 지나면 재집계 대상
+WORKTREES_DIR = ROOT / ".claude" / "worktrees"
 
 ROLE_NICK = {
     "ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
@@ -374,8 +380,16 @@ def log_scan(event: str, **fields) -> None:
 # ═══════════════════════════════════════════
 #  ★경계: 가역(phase1 분류) 포착만 · 크론-실행 가능한 안전 '메타행위'만.
 #  도메인 실무(콘텐츠 제작·GAS 변경 등)는 담당 C-Level 세션 몫 → 여기서 실행 금지.
-#  현재 지원 액션: next_augment — 표류(next 없는 완료) 배에 '다음 한 수' 후보를
-#  자동 보강(가역: aide_auto_exec.old_next 로 원복). 멱등: next 이미 있으면 skip.
+#  지원 액션:
+#   - next_augment — 표류(next 없는 완료) 배에 '다음 한 수' 후보를
+#     자동 보강(가역: aide_auto_exec.old_next 로 원복). 멱등: next 이미 있으면 skip.
+#   - 정비 액션 5종(2026-07-04 추가 · plan_maintenance_actions) — 전부 조건부(실제
+#     문제 있을 때만 등재 · 억지 발동 금지) · 가역 · 기존 스크립트 재사용:
+#       mirror_sync                — 라이브↔미러 드리프트 시 sync_queue_mirror.py 재동기
+#       stale_republish            — 현황 오래됨/죽은작업 잔존 시 erp_status_publisher.py 재발행
+#       kpi_refresh                — KPI 오래됨 시 kpi_collector.py(+northstar_reach.py) 재집계
+#       dead_artifact_prune        — clean·비활성·비메인 워크트리만 git worktree remove(+prune)
+#       sunday_context_maintenance — 일요일 한정, context_budget_report.py 금주분 미갱신 시 재측정
 def auto_exec_enabled(cli_flag: bool = False) -> bool:
     """라이브 발효 여부. --auto-exec(로컬 시뮬) 또는 GM_AIDE_AUTO_EXEC=1 일 때만 ON."""
     if cli_flag:
@@ -391,8 +405,8 @@ def _augment_next_value(cap: dict) -> str:
             f"담당 {nick}가 후속 한 수 확정 필요. (가역·원복=next 를 빈 값으로)")
 
 
-def build_auto_actions(rev_caps: list, active: list) -> list:
-    """가역 포착 → 크론-실행 가능한 가역 메타행위 목록. 현재=drift→next_augment 만."""
+def _build_next_augment_actions(rev_caps: list, active: list) -> list:
+    """가역 포착(drift) → next_augment 액션. 표류(next 없는 완료) 배에 '다음 한 수' 보강."""
     by_tid = {_ship_id(x): x for x in active}
     actions = []
     for c in rev_caps:
@@ -415,15 +429,234 @@ def build_auto_actions(rev_caps: list, active: list) -> list:
     return actions
 
 
-def log_auto_exec(action_type: str, target: str, old_next: str, new_next: str) -> None:
-    """자율실행 사후로그 — 관찰 원장에 auto_exec 신호 + 원상복구 근거(old_next)."""
+# ── 정비 액션 5종 · 탐지(detector) — 전부 '실제 문제 있을 때만' 조건부(억지 발동 금지) ──
+def _detect_mirror_sync() -> list:
+    """라이브↔미러 드리프트 감지(sync_queue_mirror.SYNC_PAIRS 그대로 재사용).
+    드리프트 없으면 빈 리스트(정직 skip)."""
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import sync_queue_mirror as sq  # type: ignore
+    except Exception:
+        return []
+    drifted = []
+    for src_rel, dst_rel in sq.SYNC_PAIRS:
+        src_bytes = sq.read_bytes(str(ROOT / src_rel))
+        if src_bytes is None:
+            continue  # 원본 없음 → 대상 아님
+        dst_bytes = sq.read_bytes(str(ROOT / Path(*dst_rel.split("/"))))
+        if src_bytes != dst_bytes:
+            drifted.append(dst_rel)
+    if not drifted:
+        return []
+    return [{
+        "action_type": "mirror_sync",
+        "target_task_id": "mirror_sync",
+        "reversibility": "가역",
+        "desc": f"라이브↔미러 드리프트 감지({len(drifted)}건: {', '.join(drifted)}) → sync_queue_mirror.py 재동기",
+        "dedup_key": "gmaide_autoexec|mirror_sync|mirror_sync",
+        "drifted": drifted,
+    }]
+
+
+def _detect_stale_republish() -> list:
+    """erp_status.json 오래됨(>{STALE_HOURS_ERP}h) 또는 automation_health 에
+    Task Scheduler 실측에 이미 없는 죽은 작업명 존재 시 재발행 대상."""
+    data = read_json(STATUS_DIR / "erp_status.json", {})
+    reasons = []
+    gen_at = data.get("generated_at")
+    if gen_at:
+        try:
+            gen_dt = datetime.strptime(gen_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+            age_hours = (datetime.now(timezone.utc) - gen_dt).total_seconds() / 3600
+            if age_hours > STALE_HOURS_ERP:
+                reasons.append(f"generated_at {age_hours:.1f}h 경과(>{STALE_HOURS_ERP}h)")
+        except Exception:
+            pass
+    dead = []
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import erp_status_publisher as esp  # type: ignore
+        live_names = {i.get("name") for i in esp.collect_automation_health().get("items", [])}
+        recorded_names = {i.get("name") for i in (data.get("automation_health") or {}).get("items", [])}
+        dead = sorted(n for n in (recorded_names - live_names) if n)
+        if dead:
+            reasons.append(f"죽은작업 잔존: {', '.join(dead)}")
+    except Exception:
+        pass
+    if not reasons:
+        return []
+    return [{
+        "action_type": "stale_republish",
+        "target_task_id": "erp_status",
+        "reversibility": "가역",
+        "desc": f"erp_status.json 재발행 필요({' / '.join(reasons)}) → erp_status_publisher.py 재실행",
+        "dedup_key": "gmaide_autoexec|stale_republish|erp_status",
+        "reasons": reasons,
+    }]
+
+
+def _detect_kpi_refresh() -> list:
+    """kpi_values.json 오래됨(>{STALE_HOURS_KPI}h) 시 재집계 대상."""
+    data = read_json(STATUS_DIR / "kpi_values.json", {})
+    gen_at = data.get("generated_at")
+    if not gen_at:
+        return []
+    try:
+        gen_dt = datetime.strptime(gen_at, "%Y-%m-%dT%H:%M:%S%z")
+        age_hours = (datetime.now(timezone.utc) - gen_dt.astimezone(timezone.utc)).total_seconds() / 3600
+    except Exception:
+        return []
+    if age_hours <= STALE_HOURS_KPI:
+        return []
+    return [{
+        "action_type": "kpi_refresh",
+        "target_task_id": "kpi_values",
+        "reversibility": "가역",
+        "desc": f"KPI 측정치 {age_hours:.1f}h 경과(>{STALE_HOURS_KPI}h) → kpi_collector.py 재실행",
+        "dedup_key": "gmaide_autoexec|kpi_refresh|kpi_values",
+        "age_hours": age_hours,
+    }]
+
+
+def _git_worktree_list_porcelain() -> list:
+    """`git worktree list --porcelain` 파싱 → [{"path":, "locked": bool}, ...] (메인 포함)."""
+    try:
+        r = subprocess.run(["git", "worktree", "list", "--porcelain"],
+                            cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
+        if r.returncode != 0:
+            return []
+    except Exception:
+        return []
+    entries, cur = [], {}
+    for line in r.stdout.splitlines():
+        if not line.strip():
+            if cur:
+                entries.append(cur)
+                cur = {}
+            continue
+        if line.startswith("worktree "):
+            if cur:
+                entries.append(cur)
+            cur = {"path": line[len("worktree "):].strip(), "locked": False}
+        elif line.startswith("locked"):
+            cur["locked"] = True
+    if cur:
+        entries.append(cur)
+    return entries
+
+
+def _detect_dead_artifact_prune() -> list:
+    """죽은 워크트리(clean·비활성잠금·비메인·.claude/worktrees 하위)만 정리 대상.
+    dirty·잠금·메인은 절대 제외(안전 우선 · reference_prune_dead_subagent_worktrees 준수)."""
+    entries = _git_worktree_list_porcelain()
+    if not entries:
+        return []
+    root_resolved = str(ROOT.resolve()).replace("\\", "/")
+    scope_resolved = str(WORKTREES_DIR.resolve()).replace("\\", "/")
+    candidates = []
+    for e in entries:
+        p = e.get("path", "")
+        if not p:
+            continue
+        try:
+            p_resolved = str(Path(p).resolve()).replace("\\", "/")
+        except Exception:
+            continue
+        if p_resolved == root_resolved:
+            continue  # 메인 워킹트리 절대 제외
+        if not p_resolved.startswith(scope_resolved):
+            continue  # .claude/worktrees 하위만 대상(안전 스코프)
+        if e.get("locked"):
+            continue  # 활성 잠금 제외
+        try:
+            st = subprocess.run(["git", "-C", p, "status", "--porcelain"],
+                                 capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
+        except Exception:
+            continue
+        if st.returncode != 0 or st.stdout.strip():
+            continue  # 조회 실패/dirty(미커밋 있음) 제외
+        candidates.append(p)
+    if not candidates:
+        return []
+    return [{
+        "action_type": "dead_artifact_prune",
+        "target_task_id": p,
+        "reversibility": "가역",
+        "desc": f"죽은 워크트리(clean·비활성) 정리: {p}",
+        "dedup_key": f"gmaide_autoexec|dead_artifact_prune|{p}",
+    } for p in candidates]
+
+
+def _detect_sunday_context_maintenance() -> list:
+    """일요일 한정. context_budget_report.py(기존 · 읽기전용 측정 스크립트) 금주분
+    미갱신 시만 재측정 대상. 일요일 아니면 억지로 만들지 않음(정직 skip)."""
+    if TODAY.weekday() != 6:  # 월=0 … 일=6
+        return []
+    script = ROOT / "scripts" / "context_budget_report.py"
+    if not script.exists():
+        return []
+    out = STATUS_DIR / "context_budget.json"
+    stale = True
+    if out.exists():
+        try:
+            stale = datetime.fromtimestamp(out.stat().st_mtime).date() != TODAY
+        except Exception:
+            stale = True
+    if not stale:
+        return []
+    return [{
+        "action_type": "sunday_context_maintenance",
+        "target_task_id": "context_budget",
+        "reversibility": "가역",
+        "desc": "일요일 컨텍스트 정비 — context_budget_report.py 금주분 미갱신 → 재측정",
+        "dedup_key": "gmaide_autoexec|sunday_context_maintenance|context_budget",
+    }]
+
+
+def plan_maintenance_actions() -> list:
+    """가역 정비 액션 5종 탐지 레이어(2026-07-04 추가). 각 액션 = 실제 조건 충족 시만
+    등재(억지 발동 금지) · 하나 실패해도 나머지 탐지는 계속(개별 try/except)."""
+    actions = []
+    for detect_fn in (
+        _detect_mirror_sync,
+        _detect_stale_republish,
+        _detect_kpi_refresh,
+        _detect_dead_artifact_prune,
+        _detect_sunday_context_maintenance,
+    ):
+        try:
+            actions += detect_fn()
+        except Exception as e:
+            print(f"  [WARN] 정비 액션 탐지 실패({detect_fn.__name__}): {e}")
+    return actions
+
+
+def build_auto_actions(rev_caps: list, active: list) -> list:
+    """가역 포착 → 크론-실행 가능한 가역 메타행위 목록.
+    ① drift→next_augment(기존) ② 정비 액션 5종(신규 · plan_maintenance_actions)."""
+    return _build_next_augment_actions(rev_caps, active) + plan_maintenance_actions()
+
+
+def log_auto_exec(action_type: str, target: str, before: str, after: str,
+                   restore_hint: str | None = None) -> None:
+    """자율실행 사후로그 — 관찰 원장에 auto_exec 신호 + 원상복구 근거.
+    next_augment(기존)는 old_next/new_next 표기 그대로 유지 · 정비 액션 5종(신규)은
+    before/after 일반 표기(restore_hint 로 원복법 명시)."""
+    if action_type == "next_augment":
+        summary = f"[{target}] 가역 자율실행: {action_type} (표류 배 next 자동보강)"
+        evidence = f"old_next={before!r} new_next_요약={after[:60]!r}"
+        pattern_hint = "가역 메타행위 자율실행 — 원복 가능(ship.aide_auto_exec.old_next)"
+    else:
+        summary = f"[{target}] 가역 자율실행: {action_type} — {after}"
+        evidence = f"before={before!r} after={after!r}"
+        pattern_hint = restore_hint or "가역 메타행위 자율실행 — 원복 가능"
     rec = {
         "observed_at": now_str(),
         "source": "gm_aide_auto_exec",
         "signal_type": "auto_exec",
-        "summary": f"[{target}] 가역 자율실행: {action_type} (표류 배 next 자동보강)",
-        "evidence": f"old_next={old_next!r} new_next_요약={new_next[:60]!r}",
-        "pattern_hint": "가역 메타행위 자율실행 — 원복 가능(ship.aide_auto_exec.old_next)",
+        "summary": summary,
+        "evidence": evidence,
+        "pattern_hint": pattern_hint,
         "reversibility": "가역",
         "dedup_key": f"gmaide_autoexec|{action_type}|{target}",
     }
@@ -434,32 +667,128 @@ def log_auto_exec(action_type: str, target: str, old_next: str, new_next: str) -
         print(f"[WARN] auto_exec 원장 기록 실패: {e}")
 
 
+# ── 정비 액션 5종 · 적용(executor) — 라이브(ON) 전용, 전부 기존 스크립트 재사용·가역 ──
+def _apply_next_augment(a: dict, fresh_queue: list) -> bool:
+    by_tid = {_ship_id(x): x for x in fresh_queue}
+    ship = by_tid.get(a["target_task_id"])
+    if not ship:
+        return False
+    if (ship.get("next") or "").strip():
+        return False  # 재확인(동시성) — 이미 채워졌으면 skip
+    old_next = ship.get("next", "")
+    ship["next"] = a["new_next"]
+    ship["aide_auto_exec"] = {
+        "action": a["action_type"],
+        "at": now_str(),
+        "old_next": old_next,
+        "restore": "next 를 old_next 값으로 되돌리면 원상복구(가역)",
+    }
+    log_auto_exec(a["action_type"], a["target_task_id"], old_next, a["new_next"])
+    return True
+
+
+def _apply_mirror_sync(a: dict) -> bool:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import sync_queue_mirror as sq  # type: ignore
+    before = f"드리프트 {len(a['drifted'])}건: {', '.join(a['drifted'])}"
+    sq.main()  # 단방향 동기화(멱등) — 원본 무변경, 미러만 갱신(+git add, 커밋은 안 함)
+    log_auto_exec(a["action_type"], a["target_task_id"], before, "미러 재동기 완료(원본 무변경)",
+                  restore_hint="원복=미러 파일을 이전 git 커밋 상태로 되돌리면 됨(원본=SSOT는 항상 그대로)")
+    return True
+
+
+def _apply_stale_republish(a: dict) -> bool:
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "erp_status_publisher.py")],
+        cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
+    )
+    if r.returncode != 0:
+        raise RuntimeError(f"erp_status_publisher 실패: {(r.stderr or '')[:200]}")
+    log_auto_exec(a["action_type"], a["target_task_id"], " / ".join(a["reasons"]),
+                  "재발행 완료(erp_status_publisher.py 재실행)",
+                  restore_hint="원복=이전 erp_status.json git 커밋 상태로 되돌리면 됨(순수 재생성 산출물)")
+    return True
+
+
+def _apply_kpi_refresh(a: dict) -> bool:
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "kpi_collector.py")],
+        cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=90,
+    )
+    if r.returncode != 0:
+        raise RuntimeError(f"kpi_collector 실패: {(r.stderr or '')[:200]}")
+    log_auto_exec(a["action_type"], a["target_task_id"], f"{a['age_hours']:.1f}h 경과",
+                  "갱신 완료(kpi_collector.py+northstar_reach.py 재실행)",
+                  restore_hint="원복=이전 kpi_values.json git 커밋 상태로 되돌리면 됨(순수 재집계 산출물)")
+    return True
+
+
+def _apply_dead_artifact_prune(a: dict) -> bool:
+    p = a["target_task_id"]
+    st = subprocess.run(["git", "-C", p, "status", "--porcelain"],
+                         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
+    if st.returncode != 0 or st.stdout.strip():
+        return False  # 재확인(동시성) — 사이 dirty 됐으면 skip(안전)
+    r = subprocess.run(["git", "worktree", "remove", p],
+                        cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
+    if r.returncode != 0:
+        raise RuntimeError(f"worktree remove 실패({p}): {(r.stderr or '')[:200]}")
+    subprocess.run(["git", "worktree", "prune"], cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
+    log_auto_exec(a["action_type"], p, "clean 워크트리 존재", "제거 완료(git worktree remove + prune)",
+                  restore_hint="손실 없음(clean=미커밋 변경 0) — 재필요시 EnterWorktree로 재생성")
+    return True
+
+
+def _apply_sunday_context_maintenance(a: dict) -> bool:
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "context_budget_report.py")],
+        cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
+    )
+    if r.returncode != 0:
+        raise RuntimeError(f"context_budget_report 실패: {(r.stderr or '')[:200]}")
+    log_auto_exec(a["action_type"], a["target_task_id"], "금주 미갱신",
+                  "측정 갱신 완료(context_budget_report.py 재실행 · 읽기전용 측정)",
+                  restore_hint="원복 불요(순수 측정 산출물 · 삭제 판단은 사람 확인 몫)")
+    return True
+
+
+_MAINTENANCE_APPLIERS = {
+    "mirror_sync": _apply_mirror_sync,
+    "stale_republish": _apply_stale_republish,
+    "kpi_refresh": _apply_kpi_refresh,
+    "dead_artifact_prune": _apply_dead_artifact_prune,
+    "sunday_context_maintenance": _apply_sunday_context_maintenance,
+}
+
+
 def apply_auto_actions(actions: list, archive: list) -> int:
     """라이브(ON) 전용: read-before-write 재로드 후 가역 메타행위 적용 + 사후로그.
-    각 배에 aide_auto_exec(원복 근거) 기록. G1 입항 기록 = 원장 auto_exec 로그."""
+    각 액션 실행은 독립 try/except — 하나 실패해도 나머지는 계속 진행.
+    next_augment 는 _queue.json 배치 재로드/재저장(기존 동작 유지) · 정비 액션 5종은
+    각자 자기 산출물 파일만 건드리는 독립 실행(기존 스크립트 재사용)."""
     if not actions:
         return 0
-    fresh = read_json(QUEUE_ACTIVE, [])
-    by_tid = {_ship_id(x): x for x in fresh}
     applied = 0
+    fresh_queue = None
+    queue_dirty = False
     for a in actions[:MAX_AUTO_ACTIONS_PER_RUN]:
-        ship = by_tid.get(a["target_task_id"])
-        if not ship:
-            continue
-        if (ship.get("next") or "").strip():
-            continue  # 재확인(동시성) — 이미 채워졌으면 skip
-        old_next = ship.get("next", "")
-        ship["next"] = a["new_next"]
-        ship["aide_auto_exec"] = {
-            "action": a["action_type"],
-            "at": now_str(),
-            "old_next": old_next,
-            "restore": "next 를 old_next 값으로 되돌리면 원상복구(가역)",
-        }
-        log_auto_exec(a["action_type"], a["target_task_id"], old_next, a["new_next"])
-        applied += 1
-    if applied:
-        QUEUE_ACTIVE.write_text(json.dumps(fresh, ensure_ascii=False, indent=2), encoding="utf-8")
+        atype = a.get("action_type")
+        try:
+            if atype == "next_augment":
+                if fresh_queue is None:
+                    fresh_queue = read_json(QUEUE_ACTIVE, [])
+                ok = _apply_next_augment(a, fresh_queue)
+                queue_dirty = queue_dirty or ok
+            else:
+                applier = _MAINTENANCE_APPLIERS.get(atype)
+                ok = applier(a) if applier else False
+        except Exception as e:
+            print(f"  [WARN] 자율실행 실패({atype}·{a.get('target_task_id', '')}): {e}")
+            ok = False
+        if ok:
+            applied += 1
+    if queue_dirty and fresh_queue is not None:
+        QUEUE_ACTIVE.write_text(json.dumps(fresh_queue, ensure_ascii=False, indent=2), encoding="utf-8")
     return applied
 
 
