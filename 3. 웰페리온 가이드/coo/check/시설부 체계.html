@@ -590,6 +590,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <!-- 옛 점검(남)/(여) 탭 제거(2026-06-12). 신규 '시설점검'=날짜별 측정 작업일지(2026-06-16 GM·PDF 기반). -->
   <button class="tab" onclick="switchTab('fcheck')">시설점검</button>
+  <button class="tab" onclick="switchTab('monthly')">📊 월간보고</button>
   <button class="tab" onclick="switchTab('vendor')">거래업체</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
@@ -668,6 +669,43 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--text);">오늘 제출 이력 <span id="fc-history-count">(0건)</span></summary>
     <div id="fc-history-list" style="margin-top:8px;font-size:12px;color:var(--dim);"></div>
   </details>
+</div>
+
+<!-- ══ 월간보고 탭 — 시설부 점검 monthly_report&dept=facility 라이브 대시보드 (배406) ══
+     지원부(배208) 탭 구조 벤치마킹 + 시설부 실측정값 구조(카테고리·회차·기준이탈)로 재설계.
+     완료율식(구역×교대) 이식 불가 전제 확인 — 시설부는 카테고리(A~F)×회차(자유텍스트)×항목 단위. ══ -->
+<div id="tab-monthly" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:6px;">시설부 점검 월간 리포트 <span style="font-size:13px;color:var(--dim);font-weight:400;">(실측정값 기반)</span></h2>
+  <div class="date-bar">
+    <input type="month" id="fmMonthInput" onchange="loadFacilityMonthlyReport()">
+    <button class="btn" onclick="loadFacilityMonthlyReport()">조회</button>
+  </div>
+  <div id="fmStatus"></div>
+
+  <div id="fmKpiRow"></div>
+
+  <div class="dash-section-title">일별 추이 — 입력률 · 기준이탈</div>
+  <div id="fmDailyView" style="padding:6px 0;"></div>
+
+  <div class="dash-section-title">카테고리별 현황 (사우나·수영장·온수탱크·공조기·기계실·안전)</div>
+  <div id="fmCategoryView"></div>
+
+  <div class="dash-section-title">회차별 현황</div>
+  <div id="fmRoundView"></div>
+
+  <div class="dash-section-title">점검자별 현황</div>
+  <div id="fmInspectorView"></div>
+
+  <div class="dash-section-title">측정값 기준이탈 (참고 — 정식 이슈 아님)</div>
+  <div id="fmOutOfRangeSummary"></div>
+  <details id="fmOutOfRangeDetails" style="margin:4px 0 16px;">
+    <summary style="cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;">기준이탈 상세 보기</summary>
+    <div id="fmOutOfRangeList" style="margin-top:8px;"></div>
+  </details>
+  <div id="fmMeasureNote" style="font-size:11px;color:var(--dim);margin:-4px 0 16px;"></div>
+
+  <div class="dash-section-title">개선 시사점</div>
+  <div id="fmImprovements"></div>
 </div>
 
 <div id="tab-vendor" class="content hidden">
@@ -1873,7 +1911,9 @@ function switchTab(tab, opts){
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
   document.getElementById('tab-vendor').classList.toggle('hidden',tab!=='vendor');
   document.getElementById('tab-fcheck').classList.toggle('hidden',tab!=='fcheck');
+  document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
   if(tab==='fcheck'){ if(typeof fcLoad==='function') fcLoad(); }
+  if(tab==='monthly'){ if(typeof fmEnsureMonthInput==='function') fmEnsureMonthInput(); if(typeof loadFacilityMonthlyReport==='function') loadFacilityMonthlyReport(); }
   if(tab==='manual'){ if(typeof facLoadManualFromBackend==='function') facLoadManualFromBackend(); }
   if(tab==='guide'){ if(typeof facRenderGuideBoard==='function') facRenderGuideBoard(); }
   if(tab==='vendor'){ if(typeof loadVendorCategoriesFromBackend==='function'){ loadVendorCategoriesFromBackend().then(function(){ if(typeof loadVendorFromBackend==='function') loadVendorFromBackend(); }); } }   // 탭 열 때마다 백엔드 재로드(분류→업체) — GM 2026-06-12
@@ -4191,6 +4231,173 @@ function vendorSubmitAddForm(){
   };
   try{ var fd=document.getElementById('fcDate'); if(fd){ fd.value=new Date().toLocaleDateString('sv-SE'); fcRender(); fcLoad(); } }catch(e){}
 })();
+</script>
+
+<script>
+/* ═══════════════════════════════════════════
+   월간보고 탭 — 시설부 점검 monthly_report&dept=facility 라이브 대시보드 (배406)
+   지원부(배208, 9c9d191c) 탭 구조 벤치마킹 + 시설부 실측정값 구조로 재설계.
+   차이: 구역→카테고리(cat A~F), 교대→회차(round 자유텍스트), 이슈원문→측정값 기준이탈(outOfRange, 참고용).
+   ═══════════════════════════════════════════ */
+const FM_DEPT = 'facility';
+
+function fmDefaultMonth(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function fmEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmPctColor(p){ if(p===null||p===undefined) return 'var(--dim)'; p=Number(p)||0; return p>=90?'var(--green)':p>=60?'var(--yellow)':'var(--red)'; }
+function fmEnsureMonthInput(){
+  const el=document.getElementById('fmMonthInput');
+  if(el && !el.value) el.value=fmDefaultMonth();
+  return el;
+}
+async function fetchFacilityMonthlyReport(month){
+  const r=await fetch(API_URL+'?action=monthly_report&dept='+FM_DEPT+'&month='+encodeURIComponent(month),{redirect:'follow'});
+  const j=await r.json();
+  if(!j || j.ok===false) throw new Error('monthly_report(facility) 응답 오류');
+  return j;
+}
+
+async function loadFacilityMonthlyReport(){
+  const inputEl=fmEnsureMonthInput();
+  const month=(inputEl&&inputEl.value)||fmDefaultMonth();
+  const statusEl=document.getElementById('fmStatus');
+  if(statusEl) statusEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--dim);font-size:13px;">불러오는 중...</div>';
+  try{
+    const data=await fetchFacilityMonthlyReport(month);
+    if(statusEl) statusEl.innerHTML='';
+    renderFmKpi(data);
+    renderFmDaily(data);
+    renderFmCategory(data);
+    renderFmRound(data);
+    renderFmInspector(data);
+    renderFmOutOfRange(data);
+    renderFmImprovements(data);
+    const noteEl=document.getElementById('fmMeasureNote');
+    if(noteEl) noteEl.textContent=data.measureNote||'';
+  }catch(e){
+    if(statusEl) statusEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--red);font-size:13px;">월간 데이터 로드 실패 — 잠시 후 다시 시도하세요.</div>';
+    ['fmKpiRow','fmDailyView','fmCategoryView','fmRoundView','fmInspectorView','fmOutOfRangeSummary','fmOutOfRangeList','fmImprovements','fmMeasureNote'].forEach(function(id){ var e=document.getElementById(id); if(e) e.innerHTML=''; });
+  }
+}
+
+function renderFmKpi(data){
+  const el=document.getElementById('fmKpiRow');
+  if(!el) return;
+  const t=data.monthTotals||{};
+  const pct=(t.avgPct!=null?t.avgPct:0);
+  el.innerHTML =
+    '<div class="dash-stat-row">'
+    +'<div class="dash-stat-card"><div class="num">'+(t.sessionCount||0)+'</div><div class="label">세션수(회차 제출)</div></div>'
+    +'<div class="dash-stat-card"><div class="num">'+(t.activeDays||0)+'</div><div class="label">활성일</div></div>'
+    +'<div class="dash-stat-card"><div class="num" style="color:'+fmPctColor(pct)+'">'+pct+'%</div><div class="label">입력률</div></div>'
+    +'<div class="dash-stat-card"><div class="num" style="color:var(--yellow)">'+(t.outOfRangeCount||0)+'</div><div class="label">기준이탈(참고)</div></div>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--dim);margin:-6px 0 16px;">'+fmEsc(data.denomNote||'')+(data.testExcludedCount?(' · 테스트 제외 '+data.testExcludedCount+'건'):'')+'</div>';
+}
+
+function renderFmDaily(data){
+  const el=document.getElementById('fmDailyView');
+  if(!el) return;
+  const series=data.dailySeries||[];
+  if(series.length===0){ el.innerHTML='<div style="padding:14px;text-align:center;color:var(--dim);font-size:13px;">일별 데이터 없음</div>'; return; }
+  let html='<div style="display:flex;align-items:flex-end;gap:5px;height:120px;padding:6px 0 4px;overflow-x:auto;">';
+  series.forEach(function(d){
+    const pct=Number(d.pct)||0;
+    const barH=Math.max(Math.round((pct/100)*80),2);
+    const dateLabel=(d.date||'').slice(8,10);
+    html+='<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:22px;">'
+      +'<div style="font-size:9px;font-weight:700;color:'+fmPctColor(pct)+';">'+pct+'%</div>'
+      +'<div style="flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;">'
+      +'<div style="width:14px;height:'+barH+'px;border-radius:3px 3px 0 0;background:var(--accent);min-height:2px;" title="'+fmEsc(d.date+' '+pct+'% ('+d.done+'/'+d.total+') 기준이탈 '+(d.outOfRangeCount||0)+'건')+'"></div>'
+      +'</div>'
+      +'<div style="font-size:9px;color:var(--dim);text-align:center;">'+dateLabel+(d.outOfRangeCount?'<br><span style="color:var(--yellow);">!'+d.outOfRangeCount+'</span>':'')+'</div>'
+      +'</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function renderFmCategory(data){
+  const el=document.getElementById('fmCategoryView');
+  if(!el) return;
+  const rows=data.byCategory||[];
+  if(rows.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">카테고리별 데이터 없음</div>'; return; }
+  let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>카테고리</th><th>항목수</th><th>입력완료</th><th>입력률</th></tr>';
+  rows.forEach(function(r){
+    html+='<tr><td>'+fmEsc(r.cat)+'</td><td>'+(r.total||0)+'</td><td>'+(r.done||0)+'</td><td style="color:'+fmPctColor(r.pct)+';font-weight:700;">'+(r.pct!=null?r.pct+'%':'-')+'</td></tr>';
+  });
+  html+='</table></div>';
+  el.innerHTML=html;
+}
+
+function renderFmRound(data){
+  const el=document.getElementById('fmRoundView');
+  if(!el) return;
+  const rows=data.byRound||[];
+  if(rows.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">회차별 데이터 없음</div>'; return; }
+  let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>회차</th><th>실시일수</th><th>항목수</th><th>입력률</th></tr>';
+  rows.forEach(function(r){
+    html+='<tr><td>'+fmEsc(r.round)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+(r.total||0)+'</td><td style="color:'+fmPctColor(r.pct)+';font-weight:700;">'+(r.pct!=null?r.pct+'%':'-')+'</td></tr>';
+  });
+  html+='</table></div>';
+  el.innerHTML=html;
+}
+
+function renderFmInspector(data){
+  const el=document.getElementById('fmInspectorView');
+  if(!el) return;
+  const rows=data.byInspector||[];
+  if(rows.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">점검자별 데이터 없음</div>'; return; }
+  let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>점검자</th><th>세션</th><th>평균입력률</th></tr>';
+  rows.forEach(function(r){
+    html+='<tr><td>'+fmEsc(r.inspector)+'</td><td>'+(r.sessionCount||0)+'</td><td style="color:'+fmPctColor(r.avgPct)+';font-weight:700;">'+(r.avgPct!=null?r.avgPct+'%':'-')+'</td></tr>';
+  });
+  html+='</table></div>';
+  el.innerHTML=html;
+}
+
+function renderFmOutOfRange(data){
+  const sumEl=document.getElementById('fmOutOfRangeSummary');
+  const listEl=document.getElementById('fmOutOfRangeList');
+  const detailsEl=document.getElementById('fmOutOfRangeDetails');
+  const oor=data.outOfRange||{total:0,byItem:[],list:[]};
+  const issues=data.issues||{total:0,note:''};
+  if(sumEl){
+    let byItemHtml='';
+    if(Array.isArray(oor.byItem) && oor.byItem.length){
+      byItemHtml=oor.byItem.map(function(i){return fmEsc(i.name)+' '+i.count+'건';}).join(' · ');
+    }
+    sumEl.innerHTML='<div style="font-size:13px;margin-bottom:4px;"><b>기준이탈(자동판정) '+(oor.total||0)+'건</b>'+(byItemHtml?' — '+byItemHtml:'')+'</div>'
+      +'<div style="font-size:11.5px;color:var(--dim);">'+fmEsc(issues.note||'')+'</div>';
+  }
+  if(detailsEl){
+    const summaryEl=detailsEl.querySelector('summary');
+    if(summaryEl) summaryEl.textContent='기준이탈 상세 보기 ('+(oor.total||0)+'건)';
+  }
+  if(listEl){
+    const list=oor.list||[];
+    if(list.length===0){ listEl.innerHTML='<div style="padding:8px;color:var(--dim);font-size:13px;">기준이탈 없음</div>'; return; }
+    let html='';
+    list.forEach(function(x){
+      html+='<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px;"><span style="color:var(--dim);">['+fmEsc(x.date)+' '+fmEsc(x.round)+']</span> '+fmEsc(x.name)+' — <span style="color:var(--yellow);font-weight:700;">'+x.value+'</span> (기준 '+x.min+'~'+x.max+')</div>';
+    });
+    listEl.innerHTML=html;
+  }
+}
+
+function renderFmImprovements(data){
+  const el=document.getElementById('fmImprovements');
+  if(!el) return;
+  const arr=data.improvements||[];
+  if(arr.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">개선 시사점 없음</div>'; return; }
+  let html='';
+  arr.forEach(function(txt){
+    html+='<div class="admin-card" style="padding:10px 14px;margin-bottom:8px;font-size:13px;">· '+fmEsc(txt)+'</div>';
+  });
+  el.innerHTML=html;
+}
 </script>
 
 </body>
