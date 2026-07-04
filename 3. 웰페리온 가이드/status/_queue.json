@@ -30,8 +30,8 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-06-29",
     "ship_no": 208,
-    "note": "[2026-06-29 GM] 점검일지_support 6월 리뷰 → 6월=테스트기간(이슈 13건 말일집중·완료율 분모부풀림으로 신뢰불가). GM 희망=7월부터 매월 자동 분석 리포트로 스스로 개선. 풀세트 단계구축: ①데이터 backbone=GAS monthly_report 액션(월별 집계·이슈·점검자정규화·Test제외) ②리포트 페이지(월선택·KPI·완료율·이슈분류·구역회차통계·개선시사) ③매월 1일 자동(전월 집계→텔레그램 점검관리방 요약+페이지 갱신) ④선결=분모정합(배14)이라야 완료율 신뢰. 데이터청소(Test행·이름통일)는 리포트 집계단에서 정규화(시트 비파괴). [2026-07-03 시우] 1단계 착수·완료: GAS monthly_report 집계 액션 구현(.deploy-check/지원팀 일일점검.js, handleWeekly 직후 _aggregateMonthly 순수함수+handleMonthlyReport IO+doGet 라우팅, 213줄 순증). snapshot(점검일지_support 14열)+이슈대장(지원_이슈대장 7열) 월별 집계: Test행 제외·(날짜·구역·교대) dedup·일별시계열·구역/교대/점검자별·이슈 byStatus. ⚠️완료율=잠정(배14 분모정합 선결, denomNote 박음)·과거 snapshot 저장 total 기준이라 today_live 금요일버그 무관. 로컬 검증=node --check OK + _aggregateMonthly 노드 단위테스트 22/22 PASS(dedup·Test제외·월필터·pct·이슈). 커밋 51955d16(라이브 배포 안 함=GM go 별도).\n[2026-07-04 시우 비의존 전진] ③매월1일 자동화 스캐폴딩 완비: scripts/monthly_check_report.py(+bat/vbs 숨김런처) — GAS monthly_report&dept=support 전월집계 조회→완료율/세션/활성일/이슈최다일/개선시사 카드→점검관리방(-5136037543) 텔레그램 발송, 매월1일 가드+--dry-run 기본+--force 테스트. 로컬 dry-run(--month 2026-06)=완료율81%·세션66·활성17일·이슈193·최다6/18(33건)·f구역70%최저, handoff 검증값과 완전 일치. 비-1일 --send는 가드가 실발송 차단 확인. 커밋 0db0cc20. GAS재배포(GM)·today_live금요일(시토·배239)은 게이트라 미착수.",
-    "next": "③ 매월1일 자동 스캐폴딩 완료·dry-run 검증. 👉 GM 액션=GAS 웹앱 재배포 확인 후 관리자 PowerShell 1회 등록: schtasks /create /tn \"Wellperion-MonthlyCheckReport-0900-D1\" /tr \"wscript.exe ...launchers/monthly_check_report_hidden.vbs\" /sc MONTHLY /d 1 /st 09:00 /f (첫 실발송=8/1·7월집계). 남은 게이트: GAS재배포(GM)·today_live 금요일 수리(시토 배239).",
+    "note": "[2026-06-29 GM] 점검일지_support 6월 리뷰 → 6월=테스트기간(이슈 13건 말일집중·완료율 분모부풀림으로 신뢰불가). GM 희망=7월부터 매월 자동 분석 리포트로 스스로 개선. 풀세트 단계구축: ①데이터 backbone=GAS monthly_report 액션(월별 집계·이슈·점검자정규화·Test제외) ②리포트 페이지(월선택·KPI·완료율·이슈분류·구역회차통계·개선시사) ③매월 1일 자동(전월 집계→텔레그램 점검관리방 요약+페이지 갱신) ④선결=분모정합(배14)이라야 완료율 신뢰. 데이터청소(Test행·이름통일)는 리포트 집계단에서 정규화(시트 비파괴). [2026-07-03 시우] 1단계 착수·완료: GAS monthly_report 집계 액션 구현(.deploy-check/지원팀 일일점검.js, handleWeekly 직후 _aggregateMonthly 순수함수+handleMonthlyReport IO+doGet 라우팅, 213줄 순증). snapshot(점검일지_support 14열)+이슈대장(지원_이슈대장 7열) 월별 집계: Test행 제외·(날짜·구역·교대) dedup·일별시계열·구역/교대/점검자별·이슈 byStatus. ⚠️완료율=잠정(배14 분모정합 선결, denomNote 박음)·과거 snapshot 저장 total 기준이라 today_live 금요일버그 무관. 로컬 검증=node --check OK + _aggregateMonthly 노드 단위테스트 22/22 PASS(dedup·Test제외·월필터·pct·이슈). 커밋 51955d16(라이브 배포 안 함=GM go 별도).\n[2026-07-04 시우 비의존 전진] ③매월1일 자동화 스캐폴딩 완비: scripts/monthly_check_report.py(+bat/vbs 숨김런처) — GAS monthly_report&dept=support 전월집계 조회→완료율/세션/활성일/이슈최다일/개선시사 카드→점검관리방(-5136037543) 텔레그램 발송, 매월1일 가드+--dry-run 기본+--force 테스트. 로컬 dry-run(--month 2026-06)=완료율81%·세션66·활성17일·이슈193·최다6/18(33건)·f구역70%최저, handoff 검증값과 완전 일치. 비-1일 --send는 가드가 실발송 차단 확인. 커밋 0db0cc20. GAS재배포(GM)·today_live금요일(시토·배239)은 게이트라 미착수.\n[2026-07-04 시우 자율완결] 매월1일 예약작업 등록(Wellperion-MonthlyCheckReport-0900-D1·09:00·숨김런처 wscript vbs·역롤백=schtasks /delete). monthly_report GAS는 이미 라이브(1단계 배포)라 재배포 불필요 → 자동화 완전 자율 가동, 첫 실발송=8/1(7월 집계). 잔여=완료율 정밀도(today_live 금요일·시토 배239)뿐, 리포트 발송 자체는 자율.",
+    "next": "🔗 매월1일 자동 발송 라이브 가동(예약등록 완료·GM 액션 불필요). 잔여=완료율 정밀도만 배239(시토) 후 확정. 8/1 첫 발송 후 실측 확인.",
     "depends_on": ""
   },
   {
@@ -2062,8 +2062,8 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-03",
     "ship_no": 406,
-    "note": "[2026-07-03 GM 보류] 배208 monthly_report 엔진은 dept 파라미터로 facility도 호출되나 데이터 전부 0 — 시설부 점검(tab-fcheck)은 완료율(총항목/완료) 아닌 '측정값 기반'(수질·온도 등)이라 snapshot(점검일지_facility) 미기록·집계 대상 없음. 지원부 완료율식 리포트 그대로 이식 불가. 시설부 리포트는 성격상 측정값 추이·이상치·점검율 중심으로 별도 설계 필요. 선결 후보=시설 점검이 집계 가능한 기록을 남기게 하거나 측정값 전용 집계 설계. deep-interview로 또렷이 후 착수 권고.\n[2026-07-04 시우 빌드 완료] 시설점검(fcheck)은 지원부(배208)와 달리 항목(FACILITY_ITEMS 25종·카테고리 A~F)×회차 실측정값 구조(시설_공용구역 시트) 확인 — 완료율식 이식 불가 전제 재검증. GAS _aggregateMonthlyFacility 순수집계(카테고리/회차/점검자별 입력률+FC_MEASURE_RANGES 기준이탈 참고지표) 신설+handleMonthlyReport dept=facility 분기, 시설부 체계.html 월간보고 탭(월선택·KPI·일별추이·카테고리/회차/점검자별·기준이탈·개선시사) 신규 구축. Node vm 단위테스트 ALL_TESTS_PASS·node --check 통과. 커밋 9f07c865. 정직: 이슈=미측정(등록UI 없음), 기준미설정 항목 판정 제외.",
-    "next": "🔗 [2026-07-04] 시설부 월간리포트 빌드 완료(코드+로컬검증). 👉 GM 액션=GAS clasp deploy(라이브 발효 게이트) → 배포 후 시크릿 크롬 라이브 실측(배포 전엔 신규 액션 미서빙이라 화면 \"로드 실패\" 정상). 정직태그: 이슈건수·이슈원문=미측정(시설점검 이슈 등록 UI 미가동)→측정값 기준이탈로 대체 노출. 온수탱크·공조기·안전점검 기준값 미설정분은 판정 제외(GM·박호균 확정 전).",
+    "note": "[2026-07-03 GM 보류] 배208 monthly_report 엔진은 dept 파라미터로 facility도 호출되나 데이터 전부 0 — 시설부 점검(tab-fcheck)은 완료율(총항목/완료) 아닌 '측정값 기반'(수질·온도 등)이라 snapshot(점검일지_facility) 미기록·집계 대상 없음. 지원부 완료율식 리포트 그대로 이식 불가. 시설부 리포트는 성격상 측정값 추이·이상치·점검율 중심으로 별도 설계 필요. 선결 후보=시설 점검이 집계 가능한 기록을 남기게 하거나 측정값 전용 집계 설계. deep-interview로 또렷이 후 착수 권고.\n[2026-07-04 시우 빌드 완료] 시설점검(fcheck)은 지원부(배208)와 달리 항목(FACILITY_ITEMS 25종·카테고리 A~F)×회차 실측정값 구조(시설_공용구역 시트) 확인 — 완료율식 이식 불가 전제 재검증. GAS _aggregateMonthlyFacility 순수집계(카테고리/회차/점검자별 입력률+FC_MEASURE_RANGES 기준이탈 참고지표) 신설+handleMonthlyReport dept=facility 분기, 시설부 체계.html 월간보고 탭(월선택·KPI·일별추이·카테고리/회차/점검자별·기준이탈·개선시사) 신규 구축. Node vm 단위테스트 ALL_TESTS_PASS·node --check 통과. 커밋 9f07c865. 정직: 이슈=미측정(등록UI 없음), 기준미설정 항목 판정 제외.\n[2026-07-04 시우] 자율 배포 전환 시도 — clasp push 재인증 만료(invalid_rapt). GM 로그인 강요 안 함(배치 인증 원칙) → 코드는 커밋 완료, 다음 clasp 인증창에 자동 배포 예정. 배포 후 라이브 실측만 남음.",
+    "next": "🔗 코드·로컬검증 완료. clasp 재인증 만료로 배포 대기 → 다음 인증창(다른 GAS 작업 시)에 자동 clasp push+deploy 후 라이브 실측. GM 별도 액션 불필요(재인증은 자연 발생 시 배치).",
     "depends_on": ""
   },
   {
@@ -2344,5 +2344,19 @@
     "artifact": "공유 모듈 매퍼 scripts/voyage_module_map.py 신설 — 배→북극성 모듈(owns) 단일 소스\n(휴리스틱+module 수동교정+기타 폴백). 추천기·항해지도 둘 다 import(재구축 금지). (CLI ad-hoc · 커밋 b25928a5)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b25928a5693add5c4f83a1fba6db825d012fa409"
+  },
+  {
+    "task_id": "COO-2026-07-04-ADHOC-a6cefd15",
+    "clevel": "coo",
+    "title": "[시우] 208 매월1일 예약작업 등록 완결·406 재인증 대기 자동배포 반영",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-04",
+    "processed_at": "2026-07-04",
+    "ship_no": 424,
+    "artifact": "- 배208: 매월1일 09:00 예약작업 등록 완료 → 자동화 완전 자율(첫 발송 8/1). GM 액션 불필요\n- 배406: clasp 재인증 만료(invalid_rapt) → GM 로그인 강요 안 함, 다음 인증창 자동배포 대기 (CLI ad-hoc · 커밋 a6cefd15)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a6cefd15e6ae71a38b99e877a0897a59abfd0b71"
   }
 ]
