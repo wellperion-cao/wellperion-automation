@@ -80,6 +80,11 @@ _CHECK_GAS = (
     "https://script.google.com/macros/s/"
     "AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec"
 )
+# 회원 문의/이탈 GAS (문의회원.html과 동일 정본 — cpo_churn_stats 등)
+_CPO_GAS = (
+    "https://script.google.com/macros/s/"
+    "AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec"
+)
 _HTTP_TIMEOUT = 20
 
 
@@ -128,6 +133,34 @@ def _coo_check_rate() -> dict:
     return result
 
 
+def _cpo_loss_rate() -> dict:
+    """
+    cpo 당월 회원 이탈률(LOSS) 실측 — 배299 cpo_churn_stats GAS.
+    ⚠️ 역방향 지표(낮을수록 좋음) — 유지율로 뒤집거나 도달율%로 과장 금지(약속 L05).
+    소스: cpo_churn_stats action (monthLossRate = 이미 % 단위 실측값).
+    반환: {"월_LOSS율": "0.9%"(문자열·그대로 표기) 또는 null, "월_LOSS건수": int, "유효회원수": int, "_note": str}
+    """
+    result: dict = {
+        "월_LOSS율": None,
+        "월_LOSS건수": None,
+        "유효회원수": None,
+        "_note": "역방향 지표(낮을수록 좋음) · cpo_churn_stats 실측",
+    }
+    try:
+        data = _http_get_json(f"{_CPO_GAS}?action=cpo_churn_stats")
+        if not isinstance(data, dict) or not data.get("ok"):
+            result["_note"] = "GAS 응답 오류(ok=false 또는 형식 불일치)"
+            return result
+        rate = data.get("monthLossRate")
+        if isinstance(rate, (int, float)) and not isinstance(rate, bool):
+            result["월_LOSS율"] = f"{rate}%"
+        result["월_LOSS건수"] = data.get("monthLossCount")
+        result["유효회원수"] = data.get("activeCount")
+    except Exception as e:
+        result["_note"] = f"fetch 실패({type(e).__name__}): {str(e)[:80]}"
+    return result
+
+
 def _integration_health() -> str | None:
     """
     integration_health.py check_bridges() 결과 요약.
@@ -159,6 +192,9 @@ def collect() -> dict:
         if role == "coo":
             # 점검완료율 병합 (지원부 한정 · 4부서 전체는 null)
             stats.update(coo_check)
+        if role == "cpo":
+            # 당월 LOSS율 병합 (배299 cpo_churn_stats 실측 · 역방향 지표)
+            stats.update(_cpo_loss_rate())
         roles_data[role] = stats
 
     now_kst = datetime.now(KST)
@@ -189,6 +225,8 @@ def main() -> None:
         extra = ""
         if role == "coo" and v.get("지원부_점검완료율") is not None:
             extra = f"  지원부점검완료율={v['지원부_점검완료율']}({v['지원부_완료']}/{v['지원부_전체']})"
+        if role == "cpo" and v.get("월_LOSS율") is not None:
+            extra = f"  월_LOSS율={v['월_LOSS율']}(역방향·낮을수록좋음, {v['월_LOSS건수']}건/{v['유효회원수']}명)"
         print(f"  {role:5s}: 완결률={v['완결률']}  완료={v['완료']}  활성={v['활성']}{extra}")
     print(f"  -> {OUT_PATH}")
 
