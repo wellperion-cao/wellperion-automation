@@ -397,7 +397,7 @@
       <div class="stats" id="coo-live-metrics">
         <div class="feed-status" style="grid-column:1/-1;">점검 실측 지표를 불러오는 중…</div>
       </div>
-      <div class="sec-note" style="margin:6px 0 0;">지원부=<code>today_live</code>·<code>monthly_report&dept=support</code> 라이브 실측(남/여 분리). 완료율(%)은 분모 정합(배14·주말 배173·today_live 배239) 확정 후 점등 — 현재는 이슈·세션 등 신뢰 카운트만. 가짜/잠정 수치 구분 표기. 시설부=GAS <code>dept=facility</code> 백엔드 배포 대기 → '배포대기' 정직 표기. 주차=점검 체계 자체가 독립 운영(규정·가이드만) → '체계 외' 표기. 가짜 수치 금지(약속 L05).</div>
+      <div class="sec-note" style="margin:6px 0 0;">지원부=<code>today_live</code>·<code>monthly_report&dept=support</code> 라이브 실측(남/여 분리). 완료율(%) <b>점등 완료</b> — 분모 정합(주말 오후조 제외·today_live↔monthly 분모 통일·배239) 라이브 발효. 분모=전체 스케줄 기대치(진행중 당일 포함). 시설부=GAS <code>dept=facility</code> 배포 완료(배406) — 입력률·기준이탈 구조라 완료율 아님, 집계는 시설부 체계 월간보고 탭. 주차=점검 체계 독립 운영(규정·가이드만) → '체계 외'. 가짜 수치 금지(약속 L05).</div>
     </div>
 
     <div class="routines" id="coo-routines-static">
@@ -992,8 +992,8 @@
     var cards = [];
 
     if(tl){
-      cards.push(cooMetricCard({ unmeasured:true, sh:'🏢 지원부 오늘 진행', big:'잠정',
-        sub:'완료 <b>' + tl.done + '</b>건(분모 정합 확정 전=잠정) · 주말 오후조 분모 버그(배173)·소스별 분모 불일치(배14) 정합 전 — %는 신뢰 불가' }));
+      cards.push(cooMetricCard({ sc:cooPctColor(tl.pct), sh:'🏢 지원부 오늘 완료율', big:tl.pct, small:'%', bar:tl.pct,
+        sub:'완료 <b>' + tl.done + '</b> / 총 <b>' + tl.total + '</b>건 · 주말=오전+마감조 정상·소스 분모 통일(배239 라이브) · 진행중 당일이라 시간 경과에 따라 상승' }));
       var gm = (tl.byGender && tl.byGender.m) || null, gf = (tl.byGender && tl.byGender.f) || null;
       if(gm) cards.push(cooMetricCard({ sc:cooPctColor(gm.pct), sh:'남성구역 완료율', big:gm.pct, small:'%', bar:gm.pct,
         sub:'완료 <b>' + gm.done + '</b> / 총 <b>' + gm.total + '</b>건' }));
@@ -1009,8 +1009,8 @@
     if(mr && mr.monthTotals){
       var t = mr.monthTotals;
       var daily = Array.isArray(mr.dailySeries) ? mr.dailySeries : [];
-      cards.push(cooMetricCard({ unmeasured:true, sh:'📅 지원부 이번달 완료율', big:'잠정',
-        sub:'분모 정합 확정 전(배14/239) — 확정 후 점등. 세션 <b>' + (t.sessionCount || 0) + '</b> · 활성일 <b>' + (t.activeDays || 0) + '</b>은 신뢰 카운트' }));
+      cards.push(cooMetricCard({ sc:cooPctColor(t.avgPct), sh:'📅 지원부 이번달 완료율', big:(t.avgPct != null ? t.avgPct : 0), small:'%', bar:(t.avgPct != null ? t.avgPct : 0),
+        sub:'분모=전체 스케줄 기대치(today_live와 통일·배239 라이브) · 세션 <b>' + (t.sessionCount || 0) + '</b> · 활성일 <b>' + (t.activeDays || 0) + '</b> · 진행중 당일 포함' }));
       var issueSum = daily.reduce(function(s, d){ return s + (Number(d && d.issueCount) || 0); }, 0);
       cards.push(cooMetricCard({ sc: (issueSum ? '#ff8a80' : 'var(--green)'), sh:'📅 이번달 이슈 총계', big:issueSum, small:'건',
         sub:'일별 dailySeries 합산 실측(지원부) · top-level 집계값 결측이라 일별 합산으로 산출' }));
@@ -1019,7 +1019,7 @@
     }
 
     // 시설부 — GAS dept=facility 백엔드 미배포(정직 태그, 재시도 안 함 · Non-Goal)
-    cards.push(cooMetricCard({ unmeasured:true, sh:'🏗️ 시설부 완료율', big:'배포대기', sub:'점검 프론트는 준비됨(시설부 체계 페이지) · GAS dept=facility 백엔드 미배포 — 실측 숫자 없음(가짜 수치 금지)' }));
+    cards.push(cooMetricCard({ unmeasured:true, sh:'🏗️ 시설부 월간', big:'페이지', sub:'GAS dept=facility 배포 완료(배406 라이브) · 시설부는 입력률·기준이탈 구조라 완료율 아님 — 집계는 시설부 체계 ▸ 월간보고 탭 참조' }));
     // 주차 — 점검 체계 자체가 독립(project_parking_dept_standalone)
     cards.push(cooMetricCard({ unmeasured:true, sh:'🅿️ 주차 완료율', big:'체계 외', sub:'주차관리부는 규정·가이드·매뉴얼만 운영 — 점검(today_live) 체계에 미포함(정책상 독립)' }));
 
