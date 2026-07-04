@@ -141,6 +141,14 @@
         'font-size:12.5px; font-weight:700; font-family:inherit; background:var(--accent,var(--po-fb-accent)); color:#fff;}' +
       '.po-print-btn:hover{filter:brightness(1.08);}' +
       '.po-print-btn:focus-visible{outline:2px solid var(--accent,var(--po-fb-accent)); outline-offset:2px;}' +
+      // 폴백(트리거 없는 페이지) 전용: 화면 우상단 고정 미니 버튼. .po-toggle 리셋 위에 자체 시각 chrome만 얹음
+      // — 기존 트리거 승격 케이스(.po-toggle만 쓰고 페이지 class를 같이 상속)에는 영향 없음(별도 modifier class).
+      '.po-toggle.po-toggle-fallback{display:inline-flex; align-items:center; gap:2px; white-space:nowrap;' +
+        'font-size:12px; padding:6px 12px; border-radius:20px;' +
+        'background:var(--paper,var(--po-fb-bg)); color:var(--accent-soft,var(--text,var(--po-fb-text)));' +
+        'border:1px solid var(--border-strong,var(--po-fb-border)); box-shadow:0 4px 14px rgba(0,0,0,0.18);}' +
+      '.po-toggle.po-toggle-fallback:hover{filter:brightness(1.06);}' +
+      '.po-wrap.po-floating{position:fixed; top:12px; right:12px;}' +
       '@media print{ .po-print-hide{ display:none !important; } .po-wrap{ display:none !important; } }';
     var st = document.createElement('style');
     st.id = 'po-style';
@@ -170,7 +178,7 @@
 
   function init(){
     var trigger = findTrigger();
-    if(!trigger) return; // 트리거 없으면 아무 것도 안 함(비파괴)
+    var isFallback = !trigger; // 인쇄 트리거가 없는 페이지 — 플로팅 버튼을 스스로 생성(전 페이지 커버리지)
     injectWidgetStyle();
 
     var sections = detectSections();
@@ -188,12 +196,13 @@
 
     // ── DOM 구성 ──
     var wrap = document.createElement('span');
-    wrap.className = 'po-wrap';
+    wrap.className = 'po-wrap' + (isFallback ? ' po-floating' : '');
 
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.id = 'po-toggle-btn';
-    btn.className = 'po-toggle' + (trigger.className ? (' ' + trigger.className) : '');
+    btn.className = 'po-toggle' + (isFallback ? ' po-toggle-fallback' : '') +
+      (trigger && trigger.className ? (' ' + trigger.className) : '');
     btn.setAttribute('aria-haspopup', 'true');
     btn.setAttribute('aria-expanded', 'false');
     btn.textContent = '🖨️ 인쇄 ▾'; // 🖨️ 인쇄 ▾
@@ -333,7 +342,11 @@
     wrap.appendChild(btn);
     wrap.appendChild(panel);
 
-    trigger.parentNode.replaceChild(wrap, trigger);
+    if(isFallback){
+      document.body.appendChild(wrap); // 트리거 없는 페이지 — 우상단 플로팅으로 스스로 부착
+    } else {
+      trigger.parentNode.replaceChild(wrap, trigger); // 트리거 있는 페이지 — 기존대로 그 자리에 승격
+    }
 
     apply(); // 저장된 선택 즉시 반영(초기 @page·섹션 숨김)
   }
