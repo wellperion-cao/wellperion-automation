@@ -263,7 +263,9 @@ def scan_unapproved_recommendation(ns_log: list, ns_pending: dict) -> list:
             reason=f"추천 카드 {streak}일 연속 자동만료 — 도달/노출 방식 재점검이 필요한 구조 신호",
             evidence=f"missed_streak={streak} pending_status={pending_status}",
             remedy="GM 결정 필요: 추천 전달 방식·시점 재설계 여부(전략 게이트) → 제안만",
-            dedup_key=f"gmaide|unapproved_streak|{streak}|{today_str()}",
+            # 안정 키(날짜·streak숫자 미포함, 2026-07-04 수정) — 이 유형 열린 카드가 있는 한
+            # 매일 재등록되지 않도록 한다(구 키에 날짜가 껴 매일 새 카드 증식하던 버그 수정).
+            dedup_key="gmaide|unapproved_streak",
         ))
     elif aging_unapproved:
         caps.append(make_capture(
