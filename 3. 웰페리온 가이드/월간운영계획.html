@@ -317,12 +317,121 @@
   @media (max-width:640px){
     header.page-head h1{font-size:19px;}
   }
-  /* ══════════ 경영진 A3 결론 한 장 (A3 세로 인쇄 · 매출 상단 전폭) ══════════ */
+  /* ── 뷰 토글 (월별 상세 ↔ 연간 A3) ── */
+  .view-toggle{display:inline-flex; gap:4px; margin-left:auto;}
+  .view-toggle .vbtn{font-size:12px; font-weight:700; padding:5px 13px; border-radius:8px; cursor:pointer; background:var(--surface); color:var(--text-soft); border:1px solid var(--border-strong);}
+  .view-toggle .vbtn.on{background:var(--accent); color:#fff; border-color:var(--accent);}
+
+  /* ── 뷰 전환(화면): 연간 A3 뷰에선 월별 전용 요소 숨김 ── */
+  .annual-board{display:none;}
+  body.view-annual .annual-board{display:block;}
+  body.view-annual .report-grid, body.view-annual .impact-grid, body.view-annual #month-head{display:none !important;}
+
+  /* ── 📊 연속 이니셔티브 상단밴드 (월별 A3 상단 · 그달 진척+델타 궤적) ── */
+  .blk.mband-wrap{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:6px 14px 14px; margin-bottom:4px;}
+  .mband{display:flex; flex-wrap:wrap; gap:9px; margin-top:6px;}
+  .mb-card{flex:1; min-width:186px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:11px; padding:11px 13px 12px; display:flex; flex-direction:column; gap:6px;}
+  .mb-card.st-완료{border-left-color:var(--green);}
+  .mb-card.st-진행{border-left-color:var(--blue);}
+  .mb-card.st-이월{border-left-color:var(--gold);}
+  .mb-card.st-계획, .mb-card.st-none{border-left-color:var(--dim);}
+  .mb-top{display:flex; align-items:baseline; justify-content:space-between; gap:6px;}
+  .mb-title{font-size:12px; font-weight:700; color:var(--text-soft); line-height:1.3;}
+  .mb-own{font-size:9.5px; color:var(--dim); white-space:nowrap;}
+  .mb-pct{font-size:24px; font-weight:800; letter-spacing:-0.02em; color:var(--text); line-height:1;}
+  .mb-pct span{font-size:12px; font-weight:700; color:var(--dim); margin-left:1px;}
+  .mb-pct.none{font-size:13px; color:var(--dim); font-weight:700;}
+  .mb-bar{height:7px; border-radius:5px; background:var(--paper); border:1px solid var(--border); overflow:hidden;}
+  .mb-bar>i{display:block; height:100%; border-radius:5px; background:linear-gradient(90deg,var(--accent),var(--accent-soft));}
+  .mb-card.st-완료 .mb-bar>i{background:linear-gradient(90deg,#3f8f4f,var(--green));}
+  .mb-card.st-이월 .mb-bar>i{background:linear-gradient(90deg,#b8860b,var(--gold));}
+  .mb-meta{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .mb-badge{font-size:9.5px; font-weight:700; border-radius:20px; padding:1px 8px; white-space:nowrap;}
+  .mb-badge.진행{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.38);}
+  .mb-badge.완료{color:var(--green); background:rgba(106,191,123,0.12); border:1px solid rgba(106,191,123,0.38);}
+  .mb-badge.이월{color:var(--gold); background:rgba(240,198,116,0.12); border:1px solid rgba(240,198,116,0.38);}
+  .mb-badge.계획{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  .mb-card .sd{margin-top:0;}
+
+  /* ── 신규 / 이월 2구획 분리 소제목 ── */
+  .obj-split-h{font-size:12.5px; font-weight:800; color:var(--text); margin:16px 2px 8px; display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .obj-split-h .cnt{font-size:10.5px; font-weight:700; color:var(--dim);}
+  .obj-split-h .tagn{font-size:10px; font-weight:700; border-radius:20px; padding:2px 9px;}
+  .obj-split-h .tagn.new{color:var(--accent-soft); background:rgba(124,58,237,0.10); border:1px solid rgba(124,58,237,0.35);}
+  .obj-split-h .tagn.carry{color:var(--gold); background:rgba(240,198,116,0.10); border:1px solid rgba(240,198,116,0.35);}
+  .obj-empty{font-size:11.5px; color:var(--dim); padding:4px 2px 8px;}
+
+  /* ── 📅 연간 A3 (전체 로드맵 · 이니셔티브 5행 × 12개월) ── */
+  .annual-board{margin-bottom:10px;}
+  .annual-head{font-size:16px; font-weight:800; margin:6px 0 12px; padding-bottom:8px; border-bottom:2px solid var(--border-strong);}
+  .annual-head span{font-size:11px; font-weight:400; color:var(--dim); margin-left:8px;}
+  .an-sec-h{font-size:13px; font-weight:700; margin:18px 0 8px; display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .an-grid-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:12px; background:var(--paper);}
+  table.an-grid{width:100%; border-collapse:collapse; min-width:840px;}
+  table.an-grid th, table.an-grid td{border:1px solid var(--border); padding:0; text-align:center; font-size:10px;}
+  table.an-grid thead th{background:var(--surface); color:var(--dim); font-weight:700; padding:6px 3px; white-space:nowrap;}
+  table.an-grid thead th.an-lead{text-align:left; padding-left:11px; min-width:196px;}
+  table.an-grid td.an-lead{text-align:left; padding:8px 11px; vertical-align:middle;}
+  .an-i-title{font-size:12px; font-weight:700; color:var(--text); line-height:1.3;}
+  .an-i-sub{font-size:9.5px; color:var(--dim); margin-top:2px; line-height:1.4;}
+  .an-cell{height:40px;}
+  .an-dot{display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:1px;}
+  .an-p{font-size:12px; font-weight:800; color:var(--text);}
+  .an-tp{font-size:8px; color:#8a6f3f; font-weight:700;}
+  .an-spanlab{font-size:8px; color:var(--dim);}
+  .an-cell.span{background:repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(140,139,131,0.13) 4px, rgba(140,139,131,0.13) 8px);}
+  .an-cell.pt-진행{background:rgba(122,196,240,0.16);}
+  .an-cell.pt-완료{background:rgba(106,191,123,0.16);}
+  .an-cell.pt-이월{background:rgba(240,198,116,0.16);}
+  .an-cell.pt-계획{background:rgba(140,139,131,0.10);}
+  .an-cell.pt-target{background:rgba(240,198,116,0.13);}
+  .an-cell.cur-col{box-shadow:inset 0 0 0 2px var(--accent);}
+  .annual-note{font-size:10.5px; color:var(--dim); margin-top:8px; line-height:1.55;}
+  .an-months-sum{display:flex; flex-wrap:wrap; gap:9px; margin-top:8px;}
+  .an-msum-card{flex:1; min-width:230px; background:var(--paper); border:1px solid var(--border); border-radius:11px; padding:10px 13px;}
+  .an-msum-card.cur{border-color:var(--accent);}
+  .an-msum-h{font-size:12px; font-weight:800; color:var(--text); margin-bottom:5px;}
+  .an-msum-h .mth-stat{font-size:9.5px; font-weight:700; color:var(--dim); margin-left:6px;}
+  .an-msum-card ul{list-style:none; display:flex; flex-direction:column; gap:3px;}
+  .an-msum-card li{font-size:10.5px; color:var(--text-soft); line-height:1.4; padding-left:11px; position:relative;}
+  .an-msum-card li:before{content:"·"; position:absolute; left:2px; color:var(--accent-soft);}
+  .an-msum-card li.none{color:var(--dim);}
+
+  /* ══════════ 경영진 A3 인쇄 (A3 가로 · 월별=결론 한 장 / 연간=로드맵 한 장) ══════════ */
   @media print{
-    @page{size:A3 portrait; margin:9mm;}
+    @page{size:A3 landscape; margin:8mm;}
     body{background:#fff; color:#111; padding:0; font-size:8.5px; line-height:1.4;}
     .wrap{max-width:none;}
-    .layers, .impact-grid, .month-bar, .ebtn, header.page-head .back{display:none !important;}
+    .layers, .impact-grid, .month-bar, .ebtn, header.page-head .back, .view-toggle{display:none !important;}
+    /* 연간 뷰 인쇄 = 로드맵 한 장(월별 상세 숨김) / 월별 뷰 인쇄 = 결론 한 장(연간 숨김·base CSS) */
+    body.view-annual .report-grid, body.view-annual #month-head{display:none !important;}
+    /* 📊 연속 이니셔티브 상단밴드 = 두 단 전폭 상단(월별 A3) */
+    .blk.mband-wrap{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
+    .blk.mband-wrap h2.sec{margin-top:2px;}
+    .mband{gap:5px;}
+    .mb-card{min-width:calc(20% - 5px); background:#fff !important; border:1px solid #999 !important; border-left:2px solid #666 !important; padding:5px 8px 6px; gap:3px;}
+    .mb-title, .mb-pct{color:#111 !important;} .mb-own, .mb-pct span{color:#444 !important;}
+    .mb-pct{font-size:15px;} .mb-bar{background:#eee !important; border-color:#999 !important;} .mb-bar>i{background:#555 !important;}
+    .mb-badge{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;} .mb-card .sd{color:#444 !important;}
+    /* 📅 연간 A3 그리드 = 가로 한 장 */
+    .annual-board{break-inside:auto;}
+    .annual-head{font-size:13px; color:#111 !important; border-bottom:1.5px solid #999;} .annual-head span{color:#555 !important;}
+    .an-sec-h{font-size:10.5px; color:#111 !important; margin:8px 0 5px; border-bottom:1px solid #bbb; padding-bottom:2px;}
+    .an-grid-wrap{border-color:#999 !important; background:#fff !important; overflow:visible;}
+    table.an-grid{min-width:0;} table.an-grid th, table.an-grid td{border-color:#999 !important;}
+    table.an-grid thead th{background:#f2f2f2 !important; color:#333 !important; padding:3px 2px; font-size:7.5px;}
+    table.an-grid td.an-lead{padding:4px 7px;} .an-i-title{font-size:8.5px; color:#111 !important;} .an-i-sub{font-size:7px; color:#444 !important;}
+    .an-cell{height:26px;} .an-p{font-size:8.5px; color:#111 !important;} .an-tp{font-size:6.5px; color:#7a5f2f !important;} .an-spanlab{color:#555 !important; font-size:6.5px;}
+    .an-cell.span{background:repeating-linear-gradient(45deg, #fff, #fff 3px, #ddd 3px, #ddd 6px) !important;}
+    .an-cell.pt-진행{background:#dbeeff !important;} .an-cell.pt-완료{background:#dff0e2 !important;} .an-cell.pt-이월, .an-cell.pt-target{background:#f6ecd2 !important;} .an-cell.pt-계획{background:#eee !important;}
+    .an-cell.cur-col{box-shadow:inset 0 0 0 1.5px #555 !important;}
+    .annual-note{color:#444 !important; font-size:7.5px;}
+    .an-months-sum{gap:5px;} .an-msum-card{min-width:calc(25% - 5px); background:#fff !important; border-color:#999 !important; padding:5px 8px; break-inside:avoid;}
+    .an-msum-h{color:#111 !important; font-size:9px;} .an-msum-h .mth-stat{color:#555 !important;}
+    .an-msum-card li{color:#333 !important; font-size:7.5px;} .an-msum-card li:before{color:#666 !important;} .an-msum-card li.none{color:#777 !important;}
+    .obj-split-h{color:#111 !important; margin:6px 0 4px;} .obj-split-h .cnt{color:#555 !important;}
+    .obj-split-h .tagn{color:#000 !important; background:#f2f2f2 !important; border:1px solid #666 !important;}
+    .obj-empty{color:#555 !important;}
     input, select, .note-edit, .fin-in, .pin-num{display:none !important;}
     /* 📊 월말 결과 보고(목표 달성 요약 흡수)·💰 매출(fin-primary)=상단 전폭, 나머지=2단 세로 흐름으로 한 장에 밀도있게 배치 */
     .report-grid{column-count:2; column-gap:8mm; column-fill:auto;}
@@ -426,6 +535,7 @@
     <select id="month-sel"></select>
     <span id="edit-wrap"></span>
     <span id="save-flag" style="font-size:11px;color:var(--dim);"></span>
+    <span class="view-toggle" id="view-toggle"></span>
   </div>
 
   <!-- 경영진 보고 인쇄 배너(A3 한 장 상단 · 상시) -->
@@ -434,8 +544,17 @@
   <!-- 월 헤더 -->
   <div class="month-head" id="month-head" style="display:none;"></div>
 
-  <!-- 경영진 A3 결론 한 장 = 아래 report-grid (인쇄 시 2단, 매출은 상단 전폭) -->
+  <!-- 📅 연간 A3 뷰 (뷰 토글 '연간 A3' 시 표시 · 월별 상세는 CSS로 숨김) -->
+  <section class="annual-board" id="annual-board"><div class="board-status">연간 로드맵을 불러오는 중…</div></section>
+
+  <!-- 경영진 A3 결론 한 장 = 아래 report-grid (인쇄 시 2단, 상단밴드·매출은 상단 전폭) -->
   <div class="report-grid">
+
+    <!-- 📊 연속 이니셔티브 상단밴드 (월별 A3 상단 · 그달 진척+델타 궤적 · 2층 모델 층①) -->
+    <section class="blk mband-wrap" id="mband-wrap">
+      <h2 class="sec">📊 연속 이니셔티브 진척 <span class="stag">여러 달 이어지는 큰 줄기(ERP·부서체계·채용·지원부매뉴얼) · 그달 완성도% + 전월 대비 궤적</span></h2>
+      <div id="month-band"><div class="board-status">연속 이니셔티브를 불러오는 중…</div></div>
+    </section>
 
     <!-- 📋 이달 계획 (맨 위 · 한눈요약 통합 — GM 정정 2026-07: 舊 '🎯 이달 한눈 요약'(목표 평균 달성률·매출-지출 순액·ERP 진척+완료/진행 체크리스트)을 이달 계획 기준(base)에 흡수, 별도 한눈요약 섹션 폐지·중복 0) -->
     <section class="blk sum-hero" id="report-hero-wrap">
@@ -583,6 +702,7 @@
   var _teamSalesCache = {};  // 'YYYY-M' → {status:'loading'|'done', raw:team_sales 응답} — 선택월별 라이브 팀 매출 실적 캐시
   var _nsMap = null;      // role.id → 북극성 문구(bootsetup_matrix.json dims[0] 첫 줄) — 목표→북극성 뱃지용
   var _editMode = false;
+  var _view = 'month';    // 'month'=월별 상세(기존 · 기본) | 'annual'=연간 A3(로드맵 한 장)
 
   // ── 경영진 보고 = 상시(토글 없음): C-Level 표기 항상 공식 직함. 닉네임 뷰 미노출. ──
   var TITLE_MAP = {ceo:"AI CEO", cmo:"AI CMO", coo:"AI COO", cto:"AI CTO", cpo:"AI CPO", cfo:"AI CFO", chro:"AI CHRO", gm:"대표(GM)"};
@@ -889,6 +1009,47 @@
     return '<span class="sd ' + cls + '">' + arw + ' ' + Math.abs(d) + '%p (전월 대비)</span>';
   }
 
+  // ── 층① 연속 이니셔티브 헬퍼 (2층 모델) ──
+  function initiativeItems(){ return (_data && _data.initiatives && _data.initiatives.items) || []; }
+  function findInitiative(id){ if(!id) return null; var a = initiativeItems(); for(var i = 0; i < a.length; i++){ if(a[i].id === id) return a[i]; } return null; }
+  function monNum(ym){ var p = ym ? String(ym).split('-') : []; return p[1] ? Number(p[1]) : null; }
+  function monYear(ym){ var p = ym ? String(ym).split('-') : []; return p[0] ? Number(p[0]) : null; }
+  // 이니셔티브가 해당 월에 활성인지(since~until 스팬 · until 없음=진행중)
+  function isInitiativeActive(init, monKey){
+    if(!init) return false;
+    var my = monYear(monKey), mn = monNum(monKey);
+    if(init.since){ var sy = monYear(init.since), sm = monNum(init.since); if(my < sy || (my === sy && mn < sm)) return false; }
+    if(init.until){ var uy = monYear(init.until), um = monNum(init.until); if(my > uy || (my === uy && mn > um)) return false; }
+    return true;
+  }
+  // 그달 완성도 궤적 pct — source_ref면 정본(erp_progress) 참조, 아니면 initiatives.monthly. 없음=null(가짜값 없음)
+  function initTraj(init, monKey){
+    if(!init) return null;
+    if(init.source_ref === 'erp_progress') return computeErpPctFor(monKey);
+    if(init.source_ref === 'strategy_roadmap') return null; // 상위 프레임 — 월별 pct 없음(6단계 스트립 별도)
+    var mo = init.monthly && init.monthly[monKey];
+    return (mo && typeof mo.pct === 'number') ? mo.pct : null;
+  }
+  function initTrajTarget(init, monKey){ // erp_progress의 target(목표치·미달성) 여부
+    if(init && init.source_ref === 'erp_progress'){
+      var items = (_data.erp_progress && _data.erp_progress.items) || [];
+      for(var i = 0; i < items.length; i++){ if(items[i].month === monKey) return !!items[i].target; }
+    }
+    return false;
+  }
+  function initStatus(init, monKey){
+    if(!init) return '';
+    if(init.source_ref === 'erp_progress') return initTrajTarget(init, monKey) ? '계획' : '진행';
+    if(init.source_ref === 'strategy_roadmap') return '진행';
+    var mo = init.monthly && init.monthly[monKey];
+    return (mo && mo.status) ? mo.status : '';
+  }
+  function spanLabel(init){
+    var s = init.since ? (monNum(init.since) + '월') : '';
+    var u = init.until ? (monNum(init.until) + '월') : '진행중';
+    return s + '~' + u;
+  }
+
   // ── 🔥 임팩트 현황 4칸(최상단 · 계층 띠 바로 아래 · GM 지시 2026-07-03) ──
   // ① 선택월 매출 실적/목표(fin-board와 동일 calcFinance 재사용·계산 중복 없음) ②③④ 핵심 과제 통합표 상위 3(담당·상태·진척).
   // '결과만' 담백하게 — 큰 숫자 + 상태색만, 상세는 하단 각 섹션에 그대로 유지.
@@ -1029,7 +1190,7 @@
     return '<a class="chip ns" href="헌법한장.html" title="' + esc(title) + '">🌟 → ' + esc(short) + '</a>';
   }
 
-  function objRow(o){
+  function objRow(o, withDelta){
     var titleCell = '<div class="r-title">' + esc(o.title) + '</div>' + metricBlock(o);
     var noteCell;
     if(_editMode){
@@ -1059,6 +1220,14 @@
     }
 
     var progCell = progBar(o.progress, o.status, _editMode, 'data-id="' + esc(o.id) + '" data-f="progress"', false);
+    // 이월(연속) 과제 = 이니셔티브 궤적 델타(당월 pct − 전월 pct). 신규는 델타 없음(당월 착수).
+    if(withDelta && o.initiative_id && !_editMode){
+      var init = findInitiative(o.initiative_id);
+      var pm = prevMonthKey(_sel);
+      var cur = initTraj(init, _sel);
+      var pv = pm ? initTraj(init, pm) : null;
+      progCell += deltaBadge((typeof cur === 'number') ? cur : null, (typeof pv === 'number') ? pv : null);
+    }
 
     var nsCell = nsBadge(o);
 
@@ -1082,16 +1251,27 @@
     }).map(function(x){ return x.o; });
   }
 
+  // ── 🎯 당월 핵심 과제 = 2구획 분리(당월 신규 / 이월·연속) — 2층 모델 층② ──
+  //    신규 = initiative_id 없음(그달 시작·완결형) · 이월 = initiative_id 있음(연속 이니셔티브의 당월 실행분·궤적 델타)
+  function objSplitSection(label, cls, list, withDelta){
+    var head = '<div class="obj-split-h"><span class="tagn ' + cls + '">' + (cls === 'new' ? '신규' : '이월/연속') + '</span>' +
+      esc(label) + ' <span class="cnt">' + list.length + '건</span></div>';
+    if(!list.length) return head + '<div class="obj-empty">해당 과제가 없습니다.</div>';
+    var sorted = sortObjsByStatus(list);
+    return head + '<div class="rpt-wrap"><table class="rpt"><thead><tr>' +
+      '<th>핵심 과제</th><th>담당</th><th>목표치</th><th>상태</th><th>진척' + (withDelta ? ' · 궤적' : '') + '</th><th>→ 북극성</th>' +
+      '</tr></thead><tbody>' + sorted.map(function(o){ return objRow(o, withDelta); }).join('') + '</tbody></table></div>';
+  }
   function renderBoard(){
     var board = document.getElementById('obj-board');
     var m = _data.months[_sel];
     var objs = (m && m.objectives) || [];
     if(!objs.length){ board.innerHTML = '<div class="board-status">이 달의 목표가 없습니다.</div>'; return; }
-    var sorted = sortObjsByStatus(objs);
+    var neu = objs.filter(function(o){ return !o.initiative_id; });
+    var carry = objs.filter(function(o){ return !!o.initiative_id; });
     board.innerHTML =
-      '<div class="rpt-wrap"><table class="rpt"><thead><tr>' +
-        '<th>핵심 과제</th><th>담당</th><th>목표치</th><th>상태</th><th>진척</th><th>→ 북극성</th>' +
-      '</tr></thead><tbody>' + sorted.map(objRow).join('') + '</tbody></table></div>';
+      objSplitSection('🆕 당월 신규 과제', 'new', neu, false) +
+      objSplitSection('🔁 이월·연속 과제', 'carry', carry, true);
   }
 
   // ── 선택월 매출·지출·순액 공통 계산 (fin-board 상세표 + 월말 결과 보고 히어로카드 공용 · 계산식 중복 방지) ──
@@ -1502,14 +1682,11 @@
     if(i) i.style.width = v + '%';
   };
 
-  // ── 🗺️ 전략 로드맵 6단계 진척 타임라인(GM 지시 2026-07-03 · 읽기 전용 — 원본=회사문서 전략 로드맵) ──
-  function renderRoadmap(){
-    var host = document.getElementById('roadmap-board');
-    if(!host) return;
+  // ── 🗺️ 전략 로드맵 6단계 진척 스트립(재사용 — 월별 로드맵 섹션 + 연간 A3 공용) ──
+  function roadmapStripHtml(){
     var rm = _data && _data.strategy_roadmap;
     var items = (rm && rm.items) || [];
-    if(!items.length){ host.innerHTML = '<div class="board-status">전략 로드맵 정본(strategy_roadmap)이 없습니다.</div>'; return; }
-
+    if(!items.length) return '<div class="board-status">전략 로드맵 정본(strategy_roadmap)이 없습니다.</div>';
     var steps = items.map(function(it){
       var isCur = (it.status === '진행');
       var pct = clampPct(it.progress);
@@ -1524,11 +1701,119 @@
         '<div class="rmeta"><b>' + pct + '%</b><span class="rperiod">' + esc(it.period || '') + '</span></div>' +
       '</div>';
     }).join('');
-
-    host.innerHTML =
-      '<div class="rm-time">' + steps + '</div>' +
+    return '<div class="rm-time">' + steps + '</div>';
+  }
+  // ── 🗺️ 전략 로드맵 6단계 진척 타임라인(GM 지시 2026-07-03 · 읽기 전용 — 원본=회사문서 전략 로드맵) ──
+  function renderRoadmap(){
+    var host = document.getElementById('roadmap-board');
+    if(!host) return;
+    var rm = _data && _data.strategy_roadmap;
+    host.innerHTML = roadmapStripHtml() +
       '<div class="rm-legend">' + esc((rm && rm.note) || '') + ' · 원본 = <a class="strat-link" style="padding:1px 8px;" href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">전략 로드맵 v1.4(A3)</a></div>';
   }
+
+  // ── 📊 연속 이니셔티브 상단밴드(월별 A3 상단 · 그달 진척 + 델타 궤적) — strategy-roadmap(상위 프레임·월별 pct 없음)은 제외, 진척 있는 연속 4개만 ──
+  function renderMonthBand(){
+    var host = document.getElementById('month-band');
+    if(!host) return;
+    var prev = prevMonthKey(_sel);
+    var cards = initiativeItems().filter(function(init){
+      return isInitiativeActive(init, _sel) && init.source_ref !== 'strategy_roadmap';
+    }).map(function(init){
+      var cur = initTraj(init, _sel);
+      var pv = prev ? initTraj(init, prev) : null;
+      var st = initStatus(init, _sel);
+      var isTgt = initTrajTarget(init, _sel);
+      var pctHtml;
+      if(typeof cur === 'number'){
+        pctHtml = '<div class="mb-pct">' + clampPct(cur) + '<span>%' + (isTgt ? ' 목표' : '') + '</span></div>' +
+          '<div class="mb-bar"><i style="width:' + clampPct(cur) + '%"></i></div>';
+      } else {
+        pctHtml = '<div class="mb-pct none">상세 없음</div>';
+      }
+      var badge = st ? '<span class="mb-badge ' + esc(st) + '">' + esc(st) + '</span>' : '';
+      var delta = deltaBadge((typeof cur === 'number') ? cur : null, (typeof pv === 'number') ? pv : null);
+      return '<div class="mb-card st-' + esc(st || 'none') + '">' +
+        '<div class="mb-top"><span class="mb-title">' + esc(init.icon || '') + ' ' + esc(init.title) + '</span>' +
+          '<span class="mb-own">' + esc(nickOf(init.owner)) + '</span></div>' +
+        pctHtml +
+        '<div class="mb-meta">' + badge + delta + '</div>' +
+      '</div>';
+    }).join('');
+    host.innerHTML = cards ? '<div class="mband">' + cards + '</div>' :
+      '<div class="board-status">이 달에 활성인 연속 이니셔티브가 없습니다.</div>';
+  }
+
+  // ── 📅 연간 A3 뷰(이니셔티브 5행 × 12개월 타임라인 + 전략 로드맵 6단계 + 월별 신규 과제 요약) ──
+  var AN_MONTHS = [1,2,3,4,5,6,7,8,9,10,11,12];
+  function annualGridHtml(curMn){
+    var inits = initiativeItems();
+    if(!inits.length) return '<div class="board-status">연속 이니셔티브 정본(initiatives)이 없습니다.</div>';
+    var thead = '<tr><th class="an-lead">이니셔티브</th>' + AN_MONTHS.map(function(m){
+      return '<th' + (m === curMn ? ' style="color:var(--accent-soft)"' : '') + '>' + m + '월</th>';
+    }).join('') + '</tr>';
+    var rows = inits.map(function(init){
+      var lead = '<td class="an-lead"><div class="an-i-title">' + esc(init.icon || '') + ' ' + esc(init.title) + '</div>' +
+        '<div class="an-i-sub">' + esc(nickOf(init.owner)) + ' · ' + esc(spanLabel(init)) + '</div></td>';
+      var cells = AN_MONTHS.map(function(mnum){
+        var monKey = '2026-' + pad2(mnum);
+        var curCls = (mnum === curMn) ? ' cur-col' : '';
+        if(!isInitiativeActive(init, monKey)) return '<td class="an-cell' + curCls + '"></td>';
+        var pct = initTraj(init, monKey);
+        var isTgt = initTrajTarget(init, monKey);
+        if(typeof pct === 'number'){
+          var st = initStatus(init, monKey);
+          var cls = isTgt ? 'pt-target' : ('pt-' + (st || '진행'));
+          return '<td class="an-cell ' + cls + curCls + '"><div class="an-dot"><span class="an-p">' + clampPct(pct) + '</span>' +
+            (isTgt ? '<span class="an-tp">목표</span>' : '') + '</div></td>';
+        }
+        // 활성 스팬이나 월별 상세 미기록 → 빗금(정직 표기)
+        return '<td class="an-cell span' + curCls + '"><div class="an-dot"><span class="an-spanlab">진행</span></div></td>';
+      }).join('');
+      return '<tr>' + lead + cells + '</tr>';
+    }).join('');
+    return '<div class="an-grid-wrap"><table class="an-grid"><thead>' + thead + '</thead><tbody>' + rows + '</tbody></table></div>';
+  }
+  function monthlyNewSummaryHtml(curMn){
+    var months = (_data && _data.months) || {};
+    var keys = Object.keys(months).sort();
+    if(!keys.length) return '<div class="board-status">월별 계획이 없습니다.</div>';
+    var cards = keys.map(function(k){
+      var m = months[k], mnum = monNum(k);
+      var news = (m.objectives || []).filter(function(o){ return !o.initiative_id; });
+      var lis = news.length ? news.map(function(o){
+        return '<li>' + esc(o.title) + ' <span style="color:var(--dim)">(' + esc(nickOf(o.owner)) + ' · ' + clampPct(o.progress) + '%)</span></li>';
+      }).join('') : '<li class="none">신규 과제 없음(연속 이니셔티브만)</li>';
+      return '<div class="an-msum-card' + (mnum === curMn ? ' cur' : '') + '"><div class="an-msum-h">' + esc(k) +
+        '<span class="mth-stat">' + esc(m.month_status || '') + '</span></div><ul>' + lis + '</ul></div>';
+    }).join('');
+    return '<div class="an-months-sum">' + cards + '</div>';
+  }
+  function renderAnnual(){
+    var host = document.getElementById('annual-board');
+    if(!host) return;
+    var curMn = monNum(_sel);
+    host.innerHTML =
+      '<div class="annual-head">📅 2026 연간 로드맵 (A3)<span>연속 이니셔티브 타임라인 · 전략 로드맵 6단계 · 월별 신규 과제 요약</span></div>' +
+      '<div class="an-sec-h">🧵 연속 이니셔티브 타임라인 <span style="font-size:11px;font-weight:400;color:var(--dim)">진척점 = 그달 완성도% · 빗금 = 스팬(상세 없음) · 골드 = 목표(미달성)</span></div>' +
+      annualGridHtml(curMn) +
+      '<div class="annual-note">● 빗금 셀 = 이니셔티브 활성 스팬이나 월별 상세 미기록(레포·ERP 체계 2026-05-25 착수 — 이전 소급 없음, 정직 표기) · 색 셀 = 그달 완성도%(진행=청 / 완료=녹 / 이월=금 / 목표=골드) · 파란 테두리 = 현재 선택월(' + (curMn || '—') + '월).</div>' +
+      '<div class="an-sec-h">🗺️ 전략 로드맵 6단계 <span style="font-size:11px;font-weight:400;color:var(--dim)">상위 프레임 — 회사문서 전략 로드맵 v1.5 + S0 기준</span></div>' +
+      roadmapStripHtml() +
+      '<div class="an-sec-h">🆕 월별 핵심 과제(신규) 요약 <span style="font-size:11px;font-weight:400;color:var(--dim)">그달 시작·완결형 과제(연속 이니셔티브 제외)</span></div>' +
+      monthlyNewSummaryHtml(curMn);
+  }
+
+  // ── 뷰 토글(월별 상세 ↔ 연간 A3) ──
+  function renderViewToggle(){
+    var w = document.getElementById('view-toggle');
+    if(!w) return;
+    w.innerHTML =
+      '<button class="vbtn' + (_view === 'month' ? ' on' : '') + '" onclick="window._setView(\'month\')">📋 월별 상세</button>' +
+      '<button class="vbtn' + (_view === 'annual' ? ' on' : '') + '" onclick="window._setView(\'annual\')">📅 연간 A3</button>';
+  }
+  function applyView(){ document.body.classList.toggle('view-annual', _view === 'annual'); }
+  window._setView = function(v){ _view = v; applyView(); renderViewToggle(); if(window.scrollTo) window.scrollTo(0, 0); };
 
   // ── 🎯 이달 핵심 과제 & 진척 — 맨 위 콤팩트 1줄 요약(GM 정정 2026-07-03: 舊 카드 3개+완료/진행 체크리스트를
   //    표 위 1줄로 압축 · 상세는 아래 핵심 과제 통합표(renderBoard)에서 담당·상태·진척·북극성까지 한 번에 확인 — 중복 제거) ──
@@ -1572,6 +1857,10 @@
   function render(){
     renderMonthHead();
     renderImpact();
+    renderViewToggle();
+    applyView();
+    renderMonthBand();
+    renderAnnual();
     renderErp();
     renderRoadmap();
     renderFinance();
