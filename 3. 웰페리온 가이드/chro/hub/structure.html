@@ -295,5 +295,170 @@
   fit();
 })();
 </script>
+
+<!-- ============================================================
+     🤖 자동화 로그 — 구조도 스케일 컨테이너(#scaleRoot) 아래(무관 영역)
+     CHRO가 스스로 처리한 작업 내역 표시. 인사 내역 포함 — 관리자 인증 후에만 노출.
+     ============================================================ -->
+<style>
+  #autologSection{width:100%;max-width:1600px;margin:0 auto;padding:16px 36px 30px;box-sizing:border-box;font-family:'Malgun Gothic','Segoe UI',sans-serif;color:#22293a}
+  .alg-card{background:#fff;border:1px solid #d8d5cc;border-radius:12px;box-shadow:0 1px 3px rgba(20,30,60,.06);padding:14px 18px 18px}
+  .alg-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #eee9df}
+  .alg-title{font-size:15px;font-weight:800;color:#0F1E3D}
+  .alg-actions{display:none;align-items:center;gap:10px}
+  .alg-count{font-size:11.5px;color:#7b8394}
+  .alg-btn{font-family:inherit;font-size:12px;cursor:pointer;border:1px solid #d8d5cc;background:#f7f6f1;color:#1c2440;border-radius:7px;padding:6px 12px;transition:.15s}
+  .alg-btn:hover{border-color:#B88A44;color:#8a6d2f}
+  .alg-btn.primary{background:#1F3864;color:#fff;border-color:#1F3864}
+  .alg-btn.primary:hover{background:#16294a;color:#fff}
+  .alg-btn:disabled{opacity:.6;cursor:default}
+  .alg-locked p{font-size:12.5px;color:#4a5266;margin:2px 0 12px;line-height:1.6}
+  .alg-pwrow{display:flex;gap:8px;max-width:360px}
+  .alg-pwrow input{flex:1;font-family:inherit;font-size:12.5px;padding:8px 10px;border:1px solid #d8d5cc;border-radius:7px;color:#22293a;background:#faf9f5}
+  .alg-pwrow input:focus{outline:none;border-color:#B88A44}
+  .alg-err{margin-top:8px;font-size:11.5px;font-weight:700;color:#a83a3a}
+  .alg-tablewrap{overflow-x:auto;border:1px solid #e3e0d6;border-radius:8px}
+  #algTable{width:100%;border-collapse:collapse;font-size:11.8px;white-space:nowrap}
+  #algTable th,#algTable td{border-bottom:1px solid #eee9df;padding:7px 10px;text-align:left}
+  #algTable td:nth-child(4){white-space:normal;min-width:220px}
+  #algTable thead th{background:#f7f6f1;color:#4a5266;font-weight:700}
+  #algTable tbody tr:hover{background:#faf9f5}
+  .alg-empty{padding:20px;text-align:center;color:#7b8394;font-size:12.5px}
+  @media (max-width:700px){ #autologSection{padding:14px 14px 24px} }
+</style>
+<div id="autologSection">
+  <div class="alg-card">
+    <div class="alg-head">
+      <div class="alg-title">🤖 자동화 로그</div>
+      <div class="alg-actions" id="algActions">
+        <span class="alg-count" id="algCount"></span>
+        <button class="alg-btn" id="algRefreshBtn" type="button">↻ 새로고침</button>
+      </div>
+    </div>
+    <div class="alg-locked" id="algLocked">
+      <p>🔒 CHRO가 스스로 처리한 작업 내역입니다. 인사 내역이 포함되어 있어 관리자 비밀번호 확인 후에만 표시됩니다.</p>
+      <div class="alg-pwrow">
+        <input type="password" id="algPw" autocomplete="current-password" placeholder="관리자 비밀번호">
+        <button class="alg-btn primary" id="algLoginBtn" type="button">확인</button>
+      </div>
+      <div class="alg-err" id="algErr" style="display:none"></div>
+    </div>
+    <div id="algUnlocked" style="display:none">
+      <div class="alg-tablewrap">
+        <table id="algTable">
+          <thead><tr><th>일시</th><th>주체</th><th>작업</th><th>상세</th><th>결과</th></tr></thead>
+          <tbody id="algBody"></tbody>
+        </table>
+      </div>
+      <div class="alg-empty" id="algEmpty" style="display:none">기록 없음</div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+  var SS_PW_KEY = "wp_pw"; // 휴무표 페이지(leave.html) 게이트와 동일 키 재사용 — 같은 세션이면 자동 통과
+  var ALG_PW = null;
+
+  function esc_(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  async function algPost_(payload){
+    var res = await fetch(EXEC_URL, { method: "POST", body: JSON.stringify(payload) });
+    return await res.json();
+  }
+
+  function renderRows_(rows){
+    var body = document.getElementById('algBody');
+    var empty = document.getElementById('algEmpty');
+    var table = document.getElementById('algTable');
+    var count = document.getElementById('algCount');
+    if(!rows || !rows.length){
+      body.innerHTML = "";
+      table.style.display = "none";
+      empty.textContent = "기록 없음";
+      empty.style.display = "block";
+      count.textContent = "0건";
+      return;
+    }
+    table.style.display = "table";
+    empty.style.display = "none";
+    body.innerHTML = rows.map(function(r){
+      return "<tr><td>" + esc_(r["일시"]) + "</td><td>" + esc_(r["주체"]) + "</td><td>" + esc_(r["작업"]) + "</td><td>" + esc_(r["상세"]) + "</td><td>" + esc_(r["결과"]) + "</td></tr>";
+    }).join("");
+    count.textContent = rows.length + "건";
+  }
+
+  function showUnlockedUI_(){
+    document.getElementById('algLocked').style.display = "none";
+    document.getElementById('algUnlocked').style.display = "block";
+    document.getElementById('algActions').style.display = "flex";
+  }
+
+  async function loadLog_(){
+    var btn = document.getElementById('algRefreshBtn');
+    if(btn){ btn.disabled = true; btn.textContent = "불러오는 중…"; }
+    try{
+      var r = await algPost_({ db: "autolog", password: ALG_PW, limit: 100 });
+      if(!r || !r.ok || !Array.isArray(r.results)) throw new Error((r && r.error) || "응답 오류");
+      renderRows_(r.results);
+    }catch(e){
+      var empty = document.getElementById('algEmpty');
+      document.getElementById('algTable').style.display = "none";
+      empty.textContent = "불러오기 실패 — 잠시 후 새로고침 해주세요.";
+      empty.style.display = "block";
+    }finally{
+      if(btn){ btn.disabled = false; btn.textContent = "↻ 새로고침"; }
+    }
+  }
+
+  async function submitLogin_(){
+    var inp = document.getElementById('algPw');
+    var err = document.getElementById('algErr');
+    var btn = document.getElementById('algLoginBtn');
+    var pw = (inp.value || "").trim();
+    err.style.display = "none";
+    if(!pw){ err.textContent = "비밀번호를 입력하세요"; err.style.display = "block"; return; }
+    btn.disabled = true; btn.textContent = "확인 중…";
+    try{
+      var r = await algPost_({ db: "autolog", password: pw, limit: 100 });
+      if(r && r.ok && Array.isArray(r.results)){
+        try{ sessionStorage.setItem(SS_PW_KEY, pw); }catch(_){}
+        ALG_PW = pw;
+        showUnlockedUI_();
+        renderRows_(r.results);
+      } else {
+        err.textContent = "비밀번호가 올바르지 않습니다"; err.style.display = "block";
+      }
+    }catch(e2){
+      err.textContent = "서버 연결 실패 — 잠시 후 다시 시도하세요"; err.style.display = "block";
+    }finally{
+      btn.disabled = false; btn.textContent = "확인";
+    }
+  }
+
+  document.getElementById('algLoginBtn').addEventListener('click', submitLogin_);
+  document.getElementById('algPw').addEventListener('keydown', function(e){ if(e.key === "Enter"){ e.preventDefault(); submitLogin_(); } });
+  document.getElementById('algRefreshBtn').addEventListener('click', function(){ if(ALG_PW) loadLog_(); });
+
+  // 세션에 이미 저장된 관리자 비번이 있으면(예: 같은 탭에서 휴무표 먼저 인증) 자동으로 시도.
+  // 실패(예: 저장된 게 관리자 아닌 조회용 비번)해도 조용히 잠금 화면 유지 — 별도 오류 표시 없음.
+  (function initGate_(){
+    var sess = null;
+    try{ sess = sessionStorage.getItem(SS_PW_KEY); }catch(_){}
+    if(!sess) return;
+    algPost_({ db: "autolog", password: sess, limit: 100 }).then(function(r){
+      if(r && r.ok && Array.isArray(r.results)){
+        ALG_PW = sess;
+        showUnlockedUI_();
+        renderRows_(r.results);
+      }
+    }).catch(function(){ /* 조용히 무시 — 잠금 화면 유지 */ });
+  })();
+})();
+</script>
 </body>
 </html>
