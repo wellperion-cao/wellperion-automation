@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웰페리온 AI CHRO 모듈·파이프라인 구조도 (Light)</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{overflow-x:auto}
+  body{background:#f4f3ef;font-family:'Malgun Gothic','Segoe UI',sans-serif;color:#22293a}
+  #scaleRoot{width:1600px;transform-origin:0 0}
+  .gold{color:#d9b26a}
+  .hd{background:#0F1E3D;color:#fff;display:flex;justify-content:space-between;align-items:flex-end;padding:18px 36px}
+  .hd h1{font-size:27px;letter-spacing:.5px}
+  .hd .sub{font-size:12px;color:#9db1d8;margin-top:6px}
+  .hd .right{font-size:12px;color:#c8d2e6;text-align:right;line-height:1.6}
+  .wrap{padding:16px 36px 22px}
+
+  .sec{position:relative;border:1px solid #d8d5cc;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(20,30,60,.06);padding:11px 13px 11px 110px;margin-bottom:10px}
+  .sec .tag{position:absolute;left:11px;top:11px;width:86px;text-align:center;font-size:12px;font-weight:bold;color:#fff;background:#1F3864;border-radius:6px;padding:6px 3px;line-height:1.3}
+  .sec .tag small{display:block;font-weight:normal;font-size:9px;margin-top:1px;opacity:.9}
+  .sec.exec .tag{background:#2E5D3E}
+  .sec.pstage .tag{background:#B88A44}
+  .sec.found .tag{background:#1F3864}
+  .sec.skill .tag{background:#6d4a8f}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+
+  .steps{display:flex;align-items:stretch;gap:0}
+  .step{flex:1;background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:7px 9px;position:relative}
+  .step b{display:block;font-size:11.5px;color:#1c2440;margin-bottom:3px}
+  .step p{font-size:9.8px;color:#4a5266;line-height:1.55}
+  .sarr{display:flex;align-items:center;padding:0 3px;color:#B88A44;font-size:13px;font-weight:bold}
+  .ac{display:inline-block;font-size:8.5px;font-weight:bold;color:#fff;background:#1F3864;border-radius:3px;padding:0 4px;vertical-align:1px;margin-left:3px}
+  .ac.dim{background:#6b7280;color:#fff}
+  .sk{display:inline-block;font-size:8.5px;font-weight:bold;color:#fff;background:#6d4a8f;border-radius:3px;padding:0 4px;vertical-align:1px;margin-left:3px}
+  .track{display:flex;gap:6px;margin-top:6px}
+  .trackbox{flex:1;background:#faf9f5;border:1px solid #e3e0d6;border-left:3px solid #B88A44;border-radius:7px;padding:6px 9px}
+  .trackbox b{display:block;font-size:11px;color:#1c2440;margin-bottom:2px}
+  .trackbox p{font-size:9.8px;color:#4a5266;line-height:1.55}
+  .lockbox{border-left-color:#c96a6a;background:#fdf7f7}
+  .lockbox b{color:#a83a3a}
+  .agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .agrid .agent:nth-child(n+5){grid-column:span 1}
+  .agent{background:#fff;border:1px solid #e3e0d6;border-radius:9px;padding:8px 10px}
+  .agent .top{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+  .agent .code{font-size:11px;font-weight:bold;color:#fff;background:#1F3864;border-radius:4px;padding:1px 7px}
+  .agent .name{font-size:12px;font-weight:bold;color:#1c2440}
+  .agent .grade{margin-left:auto;font-size:8.5px;color:#1F3864;border:1px solid #9db1d8;background:#eef2fa;border-radius:4px;padding:0 5px}
+  .agent .trig{font-size:9.3px;color:#8a6d2f;font-weight:bold;margin-bottom:3px}
+  .agent .pipe{font-size:9.5px;color:#4a5266;line-height:1.6;background:#f7f6f1;border:1px dashed #d8d5cc;border-radius:5px;padding:4px 7px;margin-bottom:3px}
+  .agent .pipe span{color:#8a6d2f;font-weight:bold}
+  .agent .co{font-size:9px;color:#7b8394}
+  .agent.common{background:#f4f3ef}
+  .skillcard{background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:6px 8px}
+  .skillcard .stop{display:flex;align-items:center;gap:5px;margin-bottom:3px}
+  .skillcard .scode{font-size:10.5px;font-weight:bold;color:#fff;background:#6d4a8f;border-radius:4px;padding:1px 6px}
+  .skillcard .sname{font-size:11px;font-weight:bold;color:#1c2440}
+  .skillcard .sdesc{font-size:9px;color:#4a5266;line-height:1.45;margin-bottom:3px}
+  .skillcard .suse{font-size:8.5px;color:#7b8394;line-height:1.4}
+  .skillcard .suse b{color:#6d4a8f;font-weight:bold;margin-right:2px}
+  .duo{display:flex;gap:9px;margin-bottom:10px}
+  .duo .sec{flex:1;margin-bottom:0}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+  .box{background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:7px 10px}
+  .box b{display:block;font-size:11px;color:#1c2440;margin-bottom:3px}
+  .box p{font-size:9.8px;color:#4a5266;line-height:1.55}
+  .gate{background:#fdf7f7;border:1px solid #c96a6a}
+  .gate b{color:#a83a3a}
+  .loopb{background:#f5faf6;border:1px solid #6a9c7d}
+  .loopb b{color:#2E5D3E}
+  footer{display:flex;justify-content:space-between;font-size:10px;color:#6b7280;margin-top:4px;border-top:1px solid #d8d5cc;padding-top:8px}
+  .stagechips{display:flex;gap:4px;align-items:center;margin-top:5px;flex-wrap:wrap}
+  .chip{font-size:9.5px;border-radius:5px;padding:1px 7px;border:1px solid #d8d5cc;background:#f7f6f1;color:#4a5266}
+  .chip.g{border-color:#6a9c7d;color:#2E5D3E;background:#eef7f0}
+  .chip.b{border-color:#9db1d8;color:#1F3864;background:#eef2fa}
+  .chip.y{border-color:#c2a35c;color:#8a6d2f;background:#fbf6e8}
+  .chip.r{border-color:#c96a6a;color:#a83a3a;background:#fdf2f2}
+  .carr{color:#B88A44;font-size:10px}
+  .orc{display:flex;gap:7px}
+  .orc .box{flex:1}
+</style>
+</head>
+<body>
+<div id="scaleRoot">
+<div class="hd">
+  <div>
+    <h1>AI CHRO <span class="gold">모듈 · 파이프라인 구조도</span></h1>
+    <div class="sub">웰페리온 인사 운영 허브 — 1개 오케스트레이터 + 7개 전문 에이전트 모듈이 4대 업무 파이프라인을 처리하는 구조 (2026-07-04 기준)</div>
+  </div>
+  <div class="right">2026-07-04 · 경영지원부 나우열M · WELLPERION</div>
+</div>
+<div class="wrap">
+
+<div class="sec ctl">
+  <div class="tag">🧠 컨트롤<small>오케스트레이터</small></div>
+  <div class="orc">
+    <div class="box"><b>1. 입력 수신</b><p>매니저 지시(한 줄이면 충분) · 자동 유입(이력서 메일) · 정기 루틴(아침 처리·리마인드)</p></div>
+    <div class="box"><b>2. 컨텍스트 복원</b><p>"CHRO" 부팅 → 규칙 13조·현재 상태·함정노트·메모리 정독 → 지난 세션을 그대로 이어받음</p></div>
+    <div class="box"><b>3. 판별·분해</b><p>지시를 할 일 목록으로 분해 → 모호하면 추측 대신 선택지 질문(5% 룰) → 담당 모듈 결정</p></div>
+    <div class="box"><b>4. 위임·병렬 투입</b><p>도메인 작업은 반드시 전문 에이전트로 · 독립 작업은 동시 병렬 · 판단=고성능/기계작업=경량 모델 배분</p></div>
+    <div class="box"><b>5. 검증·보고<span class="sk">S-3</span></b><p>에이전트 "완료"를 그대로 믿지 않고 직접 재확인 → 표·✅·팩트만으로 간단 보고 → 상태 기록</p></div>
+  </div>
+</div>
+
+<div class="sec exec">
+  <div class="tag">🤖 실행<small>에이전트 모듈 7</small></div>
+  <div class="agrid">
+    <div class="agent">
+      <div class="top"><span class="code">A-1</span><span class="name">이력서 처리</span><span class="grade">판단형 · 고성능</span></div>
+      <div class="trig">발동: "이력서 올렸어" · 아침 자동처리</div>
+      <div class="pipe">암호 해제 <span>→</span> 본문 판독(비전) <span>→</span> 중복 판별 <span>→</span> 5축 서류평가 <span>→</span> 등록 <span>→</span> 증명사진 연결</div>
+      <div class="co">협업: 사진 게시는 A-5 · 등록 확정 전 A-6 감사</div>
+    </div>
+    <div class="agent">
+      <div class="top"><span class="code">A-2</span><span class="name">채용 단계·공고</span><span class="grade">정형·중간</span></div>
+      <div class="trig">발동: "면접 잡아줘" · "최종합격 처리" · "공고 마감"</div>
+      <div class="pipe">현재 단계 실측 <span>→</span> 단계·일정·면접관 변경 <span>→</span> 사유 메모 <span>→</span> 재읽기 검증</div>
+      <div class="co">협업: 사이트 반영은 A-5 · 단계 변경은 매니저 지시로만</div>
+    </div>
+    <div class="agent">
+      <div class="top"><span class="code">A-3</span><span class="name">온보딩</span><span class="grade">정형·중간</span></div>
+      <div class="trig">발동: "입사 확정" · 멘토 지정 · 체크인 관리</div>
+      <div class="pipe">빈 슬롯 기입(행 고정) <span>→</span> 25건 자동 생성 <span>→</span> 멘토 배정 <span>→</span> 12주 체크인·성찰 운영</div>
+      <div class="co">협업: 12주 완료 시 CHRO 인사이트 → 초심카드</div>
+    </div>
+    <div class="agent">
+      <div class="top"><span class="code">A-4</span><span class="name">인사평가</span><span class="grade">판단형 · 고성능</span></div>
+      <div class="trig">발동: "평가 저장" · "평가지 만들어줘"</div>
+      <div class="pipe">평가 기록(총점·등급·포상) <span>→</span> 평가지 자동 렌더 <span>→</span> 인쇄 화면</div>
+      <div class="co">연계: 서류평가→수습평가→반기평가로 기록이 이어짐</div>
+    </div>
+    <div class="agent">
+      <div class="top"><span class="code">A-5</span><span class="name">배포</span><span class="sk">S-1</span><span class="sk">S-2</span><span class="sk">S-3</span><span class="sk">S-12</span><span class="grade">정형·중간</span></div>
+      <div class="trig">발동: "배포해줘" · 화면/사이트/백엔드 수정 반영</div>
+      <div class="pipe">백업 <span>→</span> 수정 검사 <span>→</span> 커밋·게시 <span>→</span> 실제 라이브 화면 확인까지</div>
+      <div class="co">규칙: 백엔드는 '새 버전'까지 · 라이브 확인 없인 완료 아님</div>
+    </div>
+    <div class="agent">
+      <div class="top"><span class="code">A-6</span><span class="name">감사 게이트</span><span class="sk">S-1</span><span class="grade">판단형 · 고성능</span></div>
+      <div class="trig">발동: 배포·데이터 쓰기 직전(자동) · "허브 점검해줘"</div>
+      <div class="pipe">산출물 vs 라이브 사실 대조 <span>→</span> 창작·누락·오류 적발 <span>→</span> GO/수정/반려 판정</div>
+      <div class="co">모드 2: 정기 자가점검 — 화면·데이터 정합성 순찰</div>
+    </div>
+    <div class="agent">
+      <div class="top"><span class="code">A-7</span><span class="name">효율화</span><span class="sk">S-13</span><span class="grade">판단형 · 고성능</span></div>
+      <div class="trig">발동: 복잡·반복 작업 착수 전 · 작업 후 회고</div>
+      <div class="pipe">중복·불필요 단계 제거 <span>→</span> 병렬·배치 재설계 <span>→</span> 실수는 규칙으로 박제</div>
+      <div class="co">산출: 함정노트·에이전트 규칙 개선안 (같은 실수 재발 방지)</div>
+    </div>
+    <div class="agent common">
+      <div class="top"><span class="code" style="background:#6b7280">공통</span><span class="name">동작 원칙</span><span class="sk">S-3</span></div>
+      <div class="pipe">쓰기 전 <span>A-6 감사</span> → 안전 간격 쓰기 → <span>재읽기 검증</span> → 메인 재확인 → 상태 기록</div>
+      <div class="co">최종 보고는 전문 그대로(회고로 대체 금지) · 허위 완료보고 절대 금지 · 행 고정/잠금/PII 규칙 상시 적용</div>
+    </div>
+  </div>
+</div>
+
+<div class="sec skill">
+  <div class="tag">🧰 스킬<small>표준 절차 공구함</small></div>
+  <div class="grid4">
+    <div class="skillcard"><div class="stop"><span class="scode">S-1</span><span class="sname">코드 검수</span></div><p class="sdesc">허브 화면·백엔드 수정본에서 버그·회귀를 배포 전에 탐지.</p><p class="suse"><b>주 사용처</b>A-5 배포 직전·감사 보조</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-2</span><span class="sname">코드 정리</span></div><p class="sdesc">중복·군더더기 제거로 유지보수 비용 절감.</p><p class="suse"><b>주 사용처</b>화면·백엔드 리팩터링</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-3</span><span class="sname">실행 확인</span></div><p class="sdesc">고친 기능을 실제 화면·라이브 데이터로 구동해 검증(문서상 완료 금지).</p><p class="suse"><b>주 사용처</b>모든 배포 후 최종 관문</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-4</span><span class="sname">보안 점검</span></div><p class="sdesc">개인정보 노출·권한 우회 경로 점검.</p><p class="suse"><b>주 사용처</b>위임 인증·명부·마스킹 변경 시</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-5</span><span class="sname">예약·반복 실행</span></div><p class="sdesc">정기 루틴 생성·관리.</p><p class="suse"><b>주 사용처</b>아침 자동처리·08시 리마인드</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-6</span><span class="sname">심층 리서치</span></div><p class="sdesc">채용 시장·제도 등 외부 근거 조사→보고서.</p><p class="suse"><b>주 사용처</b>공고 전략·제도 검토</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-7</span><span class="sname">환경 설정</span></div><p class="sdesc">권한 허용목록·자동 알림 규칙 등 작업 환경 구성.</p><p class="suse"><b>주 사용처</b>자동화·위임 규칙 변경</p></div>
+  </div>
+  <div style="font-size:9.5px;color:#6d4a8f;font-weight:bold;margin-top:8px;margin-bottom:4px">내부 표준 절차 — 함정노트로 검증된 패턴</div>
+  <div class="grid4">
+    <div class="skillcard"><div class="stop"><span class="scode">S-8</span><span class="sname">왕복 검증</span></div><p class="sdesc">쓴 뒤 반드시 다시 읽어 값 대조.</p><p class="suse"><b>주 사용처</b>모든 데이터 쓰기</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-9</span><span class="sname">비전 판독</span></div><p class="sdesc">한글 PDF·이미지를 화면 그대로 읽어 추출(문자 추출 한계 우회).</p><p class="suse"><b>주 사용처</b>이력서 처리</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-10</span><span class="sname">안전 정정</span></div><p class="sdesc">행 고정·잠금 원칙에 맞는 시트 교정(값만·수식 보존).</p><p class="suse"><b>주 사용처</b>데이터 교정·퇴사 처리</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-11</span><span class="sname">병렬 위임</span></div><p class="sdesc">독립 작업 동시 투입·결과 취합으로 시간 단축.</p><p class="suse"><b>주 사용처</b>다건 처리·다부문 작업</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-12</span><span class="sname">배포 확인</span></div><p class="sdesc">반영 완료를 실제 라이브 화면으로 확정(캐시 함정 우회).</p><p class="suse"><b>주 사용처</b>모든 배포 마무리</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-13</span><span class="sname">박제</span></div><p class="sdesc">실수·함정을 규칙 문서로 영구화해 재발 차단.</p><p class="suse"><b>주 사용처</b>회고·학습 루프</p></div>
+  </div>
+  <div style="font-size:9px;color:#7b8394;margin-top:5px">에이전트가 '누가'라면 스킬은 '어떻게' — 오케스트레이터·에이전트가 작업 중 필요한 절차를 장착해 수행. 감사(A-6)·검증 파이프라인과 함께 품질을 받치는 층.</div>
+</div>
+
+<div class="sec pstage">
+  <div class="tag">P1 채용<small>공고 → 확정</small></div>
+  <div class="steps">
+    <div class="step"><b>📢 공고 등록<span class="ac">A-2</span><span class="ac">A-5</span></b><p>채용공고 시트 등록 → 허브 채용탭 + 리크루팅 사이트(부서별 페이지) 게시</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>📧 유입·판독<span class="ac">A-1</span><span class="sk">S-9</span></b><p>잡코리아 메일 → 15분 자동수신 → 암호 PDF 해제 → 본문·사진 판독</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>🔍 중복 판별<span class="ac">A-1</span></b><p>이메일+연락처 일치로 기존 지원자 대조 — 중복은 이력만 보강</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>🤖 AI 서류평가<span class="ac">A-1</span></b><p>인재상 4축+서비스마인드 A~F + 강점·우려·면접 확인포인트 메모</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>📝 등록·사진<span class="ac">A-1</span><span class="ac">A-6</span><span class="sk">S-8</span></b><p>감사 통과 후 지원자 시트 기록 + 증명사진 인사카드 연결</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>🗓 면접<span class="ac">A-2</span><span class="ac">A-4</span></b><p>일정·면접관 지정 → 달력 표시 → 평가지 출력 → 평점 기록</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>🏁 확정·마감<span class="ac">A-2</span><span class="ac">A-5</span><span class="sk">S-11</span></b><p>최종 합격 → 공고 마감 + 사이트 반영 → 남은 후보 정리(사유 기록)</p></div>
+  </div>
+  <div class="stagechips">
+    <span style="font-size:9.5px;color:#6b7280">전형 7단계:</span>
+    <span class="chip">서류 검토</span><span class="carr">→</span><span class="chip b">1차 면접</span><span class="carr">→</span><span class="chip b">2차 면접</span><span class="carr">→</span><span class="chip g">최종 합격</span>
+    <span style="color:#c9c5b8;font-size:9.5px;margin:0 3px">|</span>
+    <span class="chip y">보류</span><span class="chip r">불합격</span><span class="chip r">탈락</span>
+    <span style="font-size:9px;color:#7b8394;margin-left:6px">※ 합격 확정 한 마디면 합격 처리·후보 정리·공고 마감·온보딩 개시까지 연쇄 실행</span>
+  </div>
+</div>
+
+<div class="sec pstage">
+  <div class="tag">P2 온보딩<small>입사 → 초심카드</small></div>
+  <div class="steps">
+    <div class="step"><b>✅ 입사 확정<span class="ac">A-3</span><span class="sk">S-10</span></b><p>임직원 명단의 부서 구역 <b style="display:inline;color:#8a6d2f">빈 슬롯 행에 기입</b> — 행 추가·삭제 절대 없음(외부 수식 보호)</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>📋 25건 자동 생성<span class="ac">A-3</span></b><p>서류·계약 8 + 온보딩 정보 1 + 주간 체크인 12 + 자가성찰 12</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>👥 멘토 지정<span class="ac">A-3</span></b><p>부서·멘토 기록 → 1주차 담당을 멘토로 → 신입에게 성찰 페이지 안내</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>🔄 12주 병행 운영<span class="ac">A-3</span><span class="ac dim">자동</span></b><p>멘토 체크인 + 본인 성찰 같은 주차 진행 — 아침 리마인드가 임박·지연 통지</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>🎓 수습평가<span class="ac">A-4</span></b><p>12주차 판정: 정규 전환/조건부/연장/부적합</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>🌱 초심카드<span class="ac dim">CHRO</span></b><p>24건 완료 시 인사카드 전환 — 멘토의 관찰 + 본인의 초심 + CHRO 인사이트 종합</p></div>
+  </div>
+  <div class="track">
+    <div class="trackbox"><b>👥 멘토 체크인 트랙 (주 1회)</b><p>주차별 가이드 질문 3 + 적응도 3점수(업무·관계·문화) + 이탈위험 표시 — 위임 페이지에서 전용 번호 입장</p></div>
+    <div class="trackbox"><b>🪞 본인 성찰 트랙 (주 1회)</b><p>주차별 질문 2(1주 "입사 결심의 기대" → 12주 "첫날의 나에게") + 소감 — 본인 연락처 뒤 4자리 입장</p></div>
+    <div class="trackbox lockbox"><b>🔒 접근·잠금 규칙<span class="sk">S-4</span></b><p>멘토=체크인만 · 본인=자기 성찰만 · 매니저=전부 / 한 번 저장하면 수정 불가 — 정정은 시트에서만</p></div>
+  </div>
+</div>
+
+<div class="duo">
+  <div class="sec pstage">
+    <div class="tag">P3 평가<small>기록 연결</small></div>
+    <div class="steps">
+      <div class="step"><b>📊 평가 저장<span class="ac">A-4</span></b><p>반기 평가 — 총점·등급·가산점·포상·피드백</p></div>
+      <div class="sarr">▶</div>
+      <div class="step"><b>🖨 평가지<span class="ac">A-4</span></b><p>인사카드 메모 기반 자동 렌더 → 인쇄</p></div>
+    </div>
+  </div>
+  <div class="sec pstage">
+    <div class="tag">P4 퇴사<small>기록 보존</small></div>
+    <div class="steps">
+      <div class="step"><b>🚪 퇴사 처리<span class="ac dim">메인</span><span class="ac">A-6</span><span class="sk">S-10</span></b><p>임직원 행은 남기고 값만 비움(수식 보존·슬롯 재사용)</p></div>
+      <div class="sarr">▶</div>
+      <div class="step"><b>🗂 이중 기록<span class="sk">S-8</span></b><p>퇴사자 명부(역대) + 퇴사처리(최근) 동시 기록</p></div>
+      <div class="sarr">▶</div>
+      <div class="step"><b>🖥 화면·정리</b><p>퇴사 탭 표시 + 잔존 데이터(평가·휴무) 정리 점검</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="sec pstage">
+  <div class="tag">P5 자동화<small>사람 개입 0</small></div>
+  <div class="steps">
+    <div class="step"><b>📥 이력서 자동수신<span class="ac dim">클라우드</span></b><p>지원 메일 → 15분마다 Drive 수신함 적재</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>🌅 아침 자동처리<span class="ac dim">클라우드</span><span class="ac">A-1</span><span class="sk">S-5</span></b><p>매일 아침 일괄 처리(해제→판독→평가→등록) + 결과 리포트</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>🔔 아침 리마인드<span class="ac dim">클라우드</span><span class="sk">S-5</span><span class="sk">S-7</span></b><p>매일 08시: 면접·체크인·성찰·지연 집계 → 텔레그램 발송</p></div>
+    <div class="sarr">▶</div>
+    <div class="step"><b>🗓 달력·KPI 자동 반영<span class="ac dim">자동</span></b><p>체크인·면접 일정 → 허브 달력·KPI(온보딩 중·7일 내·이탈위험)</p></div>
+  </div>
+</div>
+
+<div class="sec found">
+  <div class="tag">🗄 기반<small>데이터·안전·학습</small></div>
+  <div class="grid3">
+    <div class="box"><b>📊 데이터 모듈 — 인사현황 시트 8탭 (단일 원본)</b><p>현재근무자(행 고정) · 휴무 · 퇴사자 명부 · 채용공고 · 지원자 · 인사평가 · 입사온보딩 · 퇴사처리 ⇄ 클라우드 백엔드(계약 30여 종 · 권한 3단계 · 읽기 캐시 1분) ⇄ 화면 4종(운영허브·리크루팅·ERP·위임 입력)</p></div>
+    <div class="box gate"><b>🛡 안전 모듈 — 4중 게이트<span class="sk">S-1</span><span class="sk">S-3</span><span class="sk">S-4</span></b><p>①감사 승인(A-6, 근거 없는 통과 금지) ②쓰기 규칙(행 고정·안전 간격·잠금·PII 최소화) ③재읽기 대조 ④메인 직접 재확인 — 이 4개를 통과해야만 "완료"</p></div>
+    <div class="box loopb"><b>♻ 학습 모듈 — 자기 개선 루프<span class="sk">S-7</span><span class="sk">S-13</span></b><p>작업마다 상태 기록(다음 세션이 이어받음) → 실수는 원인 분석 후 함정노트·에이전트 규칙에 박제 → 다음 작업부터 강제 적용. 같은 지적을 두 번 받지 않는 것이 목표</p></div>
+  </div>
+</div>
+
+<footer>
+  <div>웰페리온 인사 운영 허브 · AI CHRO 모듈·파이프라인 구조도 v3.0 · 보고 원칙: 한국어·표·✅·기술용어 없이·팩트만</div>
+  <div>기준일 2026-07-04 · 임직원 73명 · 지원자 78명 · 온보딩 진행 2명 · 역대 퇴사자 67명 · 오케스트레이터 1 + 에이전트 7</div>
+</footer>
+</div>
+</div>
+<script>
+(function(){
+  var root = document.getElementById('scaleRoot');
+  var NATURAL_W = 1600;
+  function fit(){
+    try{
+      var w = document.documentElement.clientWidth || window.innerWidth || NATURAL_W;
+      var scale = Math.min(1, w / NATURAL_W); // 축소만 — 확대 없음
+      root.style.transform = 'scale(' + scale + ')';
+      var rect = root.getBoundingClientRect(); // transform 반영된 실측 높이
+      document.body.style.height = Math.ceil(rect.height) + 'px';
+    }catch(e){
+      // 실패 시 가로 스크롤 폴백 (html,body{overflow-x:auto} 기본 적용됨)
+    }
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+})();
+</script>
+</body>
+</html>
