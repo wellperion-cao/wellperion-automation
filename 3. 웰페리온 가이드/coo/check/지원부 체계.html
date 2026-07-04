@@ -1090,7 +1090,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="a3-onboarding-print">
   <div class="aob-header">지원부 신입 교육 자료</div>
   <div class="aob-sub"></div>
-  <!-- JS(printA3Onboarding)가 STAFF_DATA·TOUR_DATA·CS_DATA·SUPPORT_GUIDE_DATA 라이브 데이터를 읽어 4섹션 주입 -->
+  <!-- JS(printA3Onboarding)가 STAFF_DATA·TOUR_DATA·CS_DATA·SUPPORT_GUIDE_DATA·SUPPLY_DATA 라이브 데이터를 읽어 5섹션 주입 (배340: ⑤ 비품관리 추가) -->
   <div class="aob-grid">
     <div class="aob-col">
       <div class="aob-sec">① 직원 구성·역할</div>
@@ -1105,6 +1105,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div id="aob-guide-host"></div>
     </div>
   </div>
+  <div class="aob-sec">⑤ 비품 관리 (분류별 위치·발주점)</div>
+  <div id="aob-supply-host"></div>
 </div>
 
 <div id="tab-policy" class="content">
@@ -7995,8 +7997,8 @@ function printA3Supply(){
 }
 
 /* ═══════════════════════════════════════════
-   A3 신입 온보딩 교육자료 인쇄 — ①직원 구성·역할 ②사우나 투어 안내 ③회원 응대 상황표 ④지원부 가이드
-   를 STAFF_DATA·TOUR_DATA·CS_DATA·SUPPORT_GUIDE_DATA 라이브 편집 데이터로 한 문서에 통합 (배64)
+   A3 신입 온보딩 교육자료 인쇄 — ①직원 구성·역할 ②사우나 투어 안내 ③회원 응대 상황표 ④지원부 가이드 ⑤비품 관리
+   를 STAFF_DATA·TOUR_DATA·CS_DATA·SUPPORT_GUIDE_DATA·SUPPLY_DATA 라이브 편집 데이터로 한 문서에 통합 (배64 신설·⑤는 배340 보강)
    함수명: printA3Onboarding / 클래스: a3-onboarding-mode
    style id: a3-onboarding-page-style / 컨테이너: #a3-onboarding-print
    ═══════════════════════════════════════════ */
@@ -8068,6 +8070,32 @@ function printA3Onboarding(){
         h4+='</div>';
       });
       guideHost.innerHTML=h4;
+    }
+  }
+
+  // ⑤ 비품 관리 (분류별 그룹 표 — printA3Supply와 동일 그룹핑 재사용, 배340)
+  var supplyHost=document.getElementById('aob-supply-host');
+  if(supplyHost){
+    if(!SUPPLY_DATA.length){
+      supplyHost.innerHTML='<div class="aob-empty">내용 없음</div>';
+    }else{
+      var groups5={};
+      SUPPLY_DATA.forEach(function(r){
+        var cat=r.cat||'기타';
+        if(!groups5[cat]) groups5[cat]=[];
+        groups5[cat].push(r);
+      });
+      var catKeys5=Object.keys(groups5).sort(function(a,b){ return supplyCatSortKey(a)-supplyCatSortKey(b); });
+      var h5='';
+      catKeys5.forEach(function(cat){
+        h5+='<div class="aob-guide-title" style="margin:6px 0 3px;">'+escapeHTML(cat)+'</div>';
+        h5+='<table><thead><tr><th>품목</th><th>수량</th><th>발주점</th><th>위치</th></tr></thead><tbody>';
+        groups5[cat].forEach(function(r){
+          h5+='<tr><td>'+escapeHTML(r.name)+'</td><td>'+r.qty+'</td><td>'+(r.reorder||0)+'</td><td>'+escapeHTML(r.loc)+'</td></tr>';
+        });
+        h5+='</tbody></table>';
+      });
+      supplyHost.innerHTML=h5;
     }
   }
 
