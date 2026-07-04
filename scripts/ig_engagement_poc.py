@@ -5,6 +5,7 @@
 
 import asyncio
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -26,6 +27,138 @@ PROFILE_DIR = Path(r"C:\Users\jjky0\welperion-automation\profiles\instagram\namu
 EVIDENCE_DIR = Path(r"C:\Users\jjky0\welperion-automation\scripts\poc-evidence")
 ACCOUNT = "namuk.wellperion"
 IG_PROFILE_URL = f"https://www.instagram.com/{ACCOUNT}/"
+
+LEDGER_PATH = Path(r"C:\Users\jjky0\welperion-automation\status\ig_engagement_ledger.json")
+REVIEW_QUEUE_PATH = Path(r"C:\Users\jjky0\welperion-automation\3. 웰페리온 가이드\cmo\review\review_queue.json")
+
+VIDEO_EXTS = (".mp4", ".mov", ".m4v", ".webm")
+
+
+def _extract_shortcode(post_url):
+    """IG post_url 두 형태(도메인 직후 /p/.. 또는 계정경유 /account/p/..) 모두에서
+    고유 shortcode만 뽑아 episode_key로 정규화. 매칭 실패 시 None."""
+    if not post_url:
+        return None
+    m = re.search(r"/p/([^/?]+)", post_url)
+    return m.group(1) if m else None
+
+
+def _load_json(path, default):
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return default
+
+
+def _detect_format(entry):
+    """review_queue 매칭 항목의 channel 텍스트·folder 내 실제 파일 확장자로 포맷 판별.
+    지금은 전부 carousel(영상편 없음) — 영상편 등장 시 이 로직이 자동으로 reel 잡아냄."""
+    channel = (entry.get("channel") or "") if entry else ""
+    if "릴스" in channel or "reel" in channel.lower():
+        return "reel"
+    folder = entry.get("folder") if entry else None
+    if folder:
+        folder_path = Path(r"C:\Users\jjky0\welperion-automation") / folder
+        try:
+            if folder_path.exists():
+                for f in folder_path.rglob("*"):
+                    if f.suffix.lower() in VIDEO_EXTS:
+                        return "reel"
+        except Exception:
+            pass
+    return "carousel"
+
+
+def _match_review_queue_entry(shortcode):
+    """namuk.wellperion 계정 발행 이력에서 post_url shortcode로 편(제목·포맷) 매칭."""
+    if not shortcode:
+        return None
+    queue = _load_json(REVIEW_QUEUE_PATH, [])
+    if not isinstance(queue, list):
+        return None
+    for entry in queue:
+        if entry.get("account") != ACCOUNT:
+            continue
+        entry_code = _extract_shortcode(entry.get("post_url"))
+        if entry_code and entry_code == shortcode:
+            return entry
+    return None
+
+
+def update_ledger(result):
+    """수집 결과를 status/ig_engagement_ledger.json 누적 원장에 반영.
+    (a) follower_series: 날짜별 팔로워 — 같은 날 재실행 시 갱신(멱등, 중복행 없음).
+    (b) episode_snapshots: 편별 반응 누적 스냅샷 — 같은 날 재실행 시 그날 스냅샷 갱신(멱등).
+    발행·게시물 변경 없음 — 이 파일에만 읽기전용 수집치를 append/갱신."""
+    ledger = _load_json(LEDGER_PATH, {"follower_series": [], "episode_snapshots": []})
+    ledger.setdefault("follower_series", [])
+    ledger.setdefault("episode_snapshots", [])
+
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # (a) follower_series — 날짜별 upsert
+    follower_count = result.get("follower_count")
+    if follower_count is not None:
+        existing = next((f for f in ledger["follower_series"] if f.get("date") == today), None)
+        if existing:
+            existing["follower_count"] = follower_count
+        else:
+            ledger["follower_series"].append({"date": today, "follower_count": follower_count})
+
+    # (b) episode_snapshots — 최신 게시물 1건 반영 (post_url 있을 때만)
+    post_url = result.get("latest_post_url")
+    shortcode = _extract_shortcode(post_url)
+    if shortcode:
+        episode = next(
+            (e for e in ledger["episode_snapshots"] if e.get("episode_key") == shortcode), None
+        )
+        matched = _match_review_queue_entry(shortcode)
+        title = matched.get("title") if matched else "unmapped"
+        fmt = _detect_format(matched) if matched else "unmapped"
+
+        if not episode:
+            episode = {
+                "episode_key": shortcode,
+                "post_url": post_url,
+                "title": title,
+                "format": fmt,
+                "first_seen": today,
+                "snapshots": [],
+            }
+            ledger["episode_snapshots"].append(episode)
+        else:
+            # 매핑이 나중에 성공하면(예: review_queue 갱신 후) title/format 갱신
+            if title != "unmapped":
+                episode["title"] = title
+            if fmt != "unmapped":
+                episode["format"] = fmt
+
+        metrics = result.get("metrics", {}) or {}
+        likes = metrics.get("likes")
+        comments = metrics.get("comments")
+        saves_note = metrics.get("saves")
+
+        snapshot = {
+            "date": today,
+            "comments": comments,
+            "likes": likes,
+            "views": None,
+            "_note": "views/좋아요 다수 케이스는 IG 비공개 지표라 자동 수집 불가 — null 유지(지어내지 않음)",
+        }
+        if saves_note:
+            snapshot["_saves_note"] = saves_note
+
+        existing_snap = next((s for s in episode["snapshots"] if s.get("date") == today), None)
+        if existing_snap:
+            existing_snap.update(snapshot)
+        else:
+            episode["snapshots"].append(snapshot)
+
+    LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    LEDGER_PATH.write_text(json.dumps(ledger, ensure_ascii=False, indent=2), encoding="utf-8")
+    return ledger
 
 FIXED_UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -233,6 +366,13 @@ async def main():
     out_path = Path(r"C:\Users\jjky0\welperion-automation\scripts\poc-evidence") / f"ig_engagement_poc_{result['timestamp']}.json"
     out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n결과 저장: {out_path}")
+
+    # 누적 원장 반영 (follower_series + episode_snapshots) — 기존 개별 JSON 저장과 별개, 가산만
+    try:
+        update_ledger(result)
+        print(f"원장 갱신: {LEDGER_PATH}")
+    except Exception as e:
+        print(f"원장 갱신 실패(비치명적, 개별 JSON은 정상 저장됨): {e}")
 
     if result["status"] == "OK":
         print(f"\nDONE: 수집 성공 | 핀skip={result['pinned_posts_skipped']} | 최신={result['latest_post_url']} | 팔로워={result['follower_count']} | 좋아요={result['metrics'].get('likes')} | 댓글={result['metrics'].get('comments')} | 저장=비공개지표")
