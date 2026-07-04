@@ -427,6 +427,26 @@
   .fw-hls li{font-size:10.5px; color:var(--text-soft); line-height:1.4; padding-left:11px; position:relative;}
   .fw-hls li:before{content:"▸"; position:absolute; left:0; color:var(--accent-soft); font-size:8px; top:2px;}
 
+  /* ── 🎯 상반기 전략 활동 (연간 A3 전용 · 사업·프로그램 3맥락 카드 + 1분기 정책 기반 칩 · 실무 주도) ── */
+  .sa-q1{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:11px; padding:10px 13px 11px; margin-bottom:10px;}
+  .sa-q1-h{display:flex; align-items:baseline; gap:7px; margin-bottom:7px; flex-wrap:wrap;}
+  .sa-q1-h .sa-q1-t{font-size:12.5px; font-weight:800; color:var(--text);}
+  .sa-q1-h .sa-q1-p{font-size:9.5px; font-weight:700; color:var(--gold);}
+  .sa-chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .sa-chip{display:inline-flex; align-items:center; font-size:10.5px; font-weight:600; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:3px 11px;}
+  .sa-cards{display:flex; flex-wrap:wrap; gap:9px;}
+  .sa-card{flex:1; min-width:235px; background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:11px; padding:11px 13px 12px; display:flex; flex-direction:column; gap:7px;}
+  .sa-card.dig{border-left-color:var(--gold);}
+  .sa-top{display:flex; align-items:baseline; justify-content:space-between; gap:6px; flex-wrap:wrap;}
+  .sa-t{font-size:13px; font-weight:700; color:var(--text); line-height:1.3;}
+  .sa-meta{display:flex; align-items:center; gap:5px; flex-wrap:wrap;}
+  .sa-dept{font-size:9.5px; font-weight:600; color:var(--text-soft); background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:2px 7px;}
+  .sa-period{font-size:9.5px; font-weight:700; color:var(--accent-soft); white-space:nowrap;}
+  .sa-link{font-size:9px; font-weight:700; color:var(--gold); background:rgba(240,198,116,0.08); border:1px solid rgba(240,198,116,0.30); border-radius:20px; padding:1px 8px; white-space:nowrap;}
+  .sa-hls{list-style:none; display:flex; flex-direction:column; gap:3px;}
+  .sa-hls li{font-size:10.5px; color:var(--text-soft); line-height:1.4; padding-left:11px; position:relative;}
+  .sa-hls li:before{content:"▸"; position:absolute; left:0; color:var(--accent-soft); font-size:8px; top:2px;}
+
   /* ══════════ 경영진 A3 인쇄 (A3 가로 · 월별=결론 한 장 / 연간=로드맵 한 장) ══════════ */
   @media print{
     @page{size:A3 landscape; margin:8mm;}
@@ -467,6 +487,15 @@
     .fw-mh{border-bottom-color:#bbb !important;} .fw-mh .fw-mn{color:#111 !important; font-size:9px;} .fw-mh .fw-cnt{color:#555 !important;}
     .fw-cat{background:#f2f2f2 !important; border-color:#999 !important; color:#333 !important; font-size:7px;} .fw-cat b{color:#000 !important;}
     .fw-hls li{color:#333 !important; font-size:7.5px;} .fw-hls li:before{color:#666 !important;}
+    /* 🎯 상반기 전략 활동 인쇄(A3 가로) */
+    .sa-q1{background:#fff !important; border-color:#999 !important; border-left:2px solid #b8860b !important; padding:5px 8px; margin-bottom:6px;}
+    .sa-q1-h .sa-q1-t{color:#111 !important; font-size:9px;} .sa-q1-h .sa-q1-p{color:#7a5f2f !important;}
+    .sa-chip{background:#f2f2f2 !important; border-color:#999 !important; color:#333 !important; font-size:7.5px; padding:2px 8px;}
+    .sa-cards{gap:5px;} .sa-card{min-width:calc(33.33% - 5px); background:#fff !important; border-color:#999 !important; border-left:2px solid #666 !important; padding:5px 8px; gap:4px; break-inside:avoid;}
+    .sa-card.dig{border-left:2px solid #b8860b !important;}
+    .sa-t{color:#111 !important; font-size:9px;} .sa-dept{background:#f2f2f2 !important; border-color:#999 !important; color:#333 !important; font-size:7px;}
+    .sa-period{color:#555 !important; font-size:7.5px;} .sa-link{color:#7a5f2f !important; background:#f6ecd2 !important; border-color:#b7a6e0 !important; font-size:6.5px;}
+    .sa-hls li{color:#333 !important; font-size:7.5px;} .sa-hls li:before{color:#666 !important;}
     .obj-split-h{color:#111 !important; margin:6px 0 4px;} .obj-split-h .cnt{color:#555 !important;}
     .obj-split-h .tagn{color:#000 !important; background:#f2f2f2 !important; border:1px solid #666 !important;}
     .obj-empty{color:#555 !important;}
@@ -1873,6 +1902,28 @@
     }).join('');
     return themeStrip + '<div class="fw-months">' + cards + '</div>';
   }
+  // ── 🎯 상반기 전략 활동(연간 A3 전용) — strategic_activities 정본 렌더만(PII 없는 사업·프로그램 3맥락 + 1분기 정책 기반) ──
+  function strategicActivitiesHtml(){
+    var sa = _data && _data.strategic_activities;
+    if(!sa) return '<div class="board-status">상반기 전략 활동 정본(strategic_activities)이 없습니다.</div>';
+    var q1 = sa.q1_foundation;
+    var q1Html = '';
+    if(q1){
+      var chips = (q1.items || []).map(function(it){ return '<span class="sa-chip">' + esc(it) + '</span>'; }).join('');
+      q1Html = '<div class="sa-q1"><div class="sa-q1-h"><span class="sa-q1-t">' + esc(q1.icon || '') + ' ' + esc(q1.title) +
+        '</span><span class="sa-q1-p">' + esc(q1.period || '') + ' 마일스톤</span></div><div class="sa-chips">' + chips + '</div></div>';
+    }
+    var cards = (sa.items || []).map(function(it){
+      var link = it.link ? '<span class="sa-link">🚀 ' + esc(it.link) + '</span>' : '';
+      var hls = (it.highlights || []).map(function(h){ return '<li>' + esc(h) + '</li>'; }).join('');
+      return '<div class="sa-card' + (it.link ? ' dig' : '') + '">' +
+        '<div class="sa-top"><span class="sa-t">' + esc(it.icon || '') + ' ' + esc(it.title) + '</span>' +
+          '<span class="sa-meta"><span class="sa-dept">' + esc(it.dept || '') + '</span>' +
+          '<span class="sa-period">' + esc(it.period || '') + '</span>' + link + '</span></div>' +
+        '<ul class="sa-hls">' + hls + '</ul></div>';
+    }).join('');
+    return q1Html + '<div class="sa-cards">' + cards + '</div>';
+  }
   function renderAnnual(){
     var host = document.getElementById('annual-board');
     if(!host) return;
@@ -1882,6 +1933,8 @@
       '<div class="an-sec-h">🧵 이어지는 과제 진척률 <span style="font-size:11px;font-weight:400;color:var(--dim)">진척점 = 그달 완성도% · 빗금 = 스팬(상세 없음) · 골드 = 목표(미달성)</span></div>' +
       annualGridHtml(curMn) +
       '<div class="annual-note">● 빗금 셀 = 과제 활성 스팬이나 월별 상세 미기록(레포·ERP 체계 2026-05-25 착수 — 이전 소급 없음, 정직 표기) · 색 셀 = 그달 완성도%(진행=청 / 완료=녹 / 이월=금 / 목표=골드) · 파란 테두리 = 현재 선택월(' + (curMn || '—') + '월).</div>' +
+      '<div class="an-sec-h">🎯 상반기 전략 활동 (사업·프로그램) <span style="font-size:11px;font-weight:400;color:var(--dim)">실무 주도 · 강습 경쟁력·디지털AI 전환·외부 제휴 3맥락 + 1분기 정책 기반 · 개인정보 제외</span></div>' +
+      strategicActivitiesHtml() +
       '<div class="an-sec-h">🗺️ 전략 로드맵 6단계 <span style="font-size:11px;font-weight:400;color:var(--dim)">상위 프레임 — 회사문서 전략 로드맵 v1.5 + S0 기준</span></div>' +
       roadmapStripHtml() +
       '<div class="an-sec-h">🆕 월별 핵심 과제(신규) 요약 <span style="font-size:11px;font-weight:400;color:var(--dim)">그달 시작·완결형 과제(연속 과제 제외)</span></div>' +
