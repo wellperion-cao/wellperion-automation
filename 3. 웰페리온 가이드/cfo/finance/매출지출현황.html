@@ -480,8 +480,8 @@ function renderMain(){
       scales:{x:{grid:{display:false}},y:moneyAxis()}}});
 }
 function renderSalesDept(){
-  var arr=Object.keys(SALES_DEPT).filter(function(d){return d!=="운영부";}).map(function(d){return {n:d,t:sum(SALES_DEPT[d].slice(0,DATA_LAST))};}).sort(function(a,b){return b.t-a.t;});
-  newChart("chartSalesDept",{type:"bar",data:{labels:arr.map(function(o){return o.n;}),datasets:[{data:arr.map(function(o){return o.t;}),backgroundColor:"#a98a52",borderRadius:4}]},
+  var arr=Object.keys(SALES_DEPT).map(function(d){return {n:d,t:sum(SALES_DEPT[d].slice(0,DATA_LAST))};}).sort(function(a,b){return b.t-a.t;}); // 운영부(회원권) 포함 — 네이비 구분(2026-07-04 매니저님 지시)
+  newChart("chartSalesDept",{type:"bar",data:{labels:arr.map(function(o){return o.n;}),datasets:[{data:arr.map(function(o){return o.t;}),backgroundColor:arr.map(function(o){return o.n==="운영부"?"#22324a":"#a98a52";}),borderRadius:4}]},
     options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return won(c.raw);}}}},scales:{x:moneyAxis()}}});
 }
 function renderMix(){var gradesum=Object.keys(SALES_DEPT).reduce(function(s,d){return d==="운영부"?s:s+sum(SALES_DEPT[d].slice(0,DATA_LAST));},0);
@@ -501,16 +501,22 @@ function renderContrib(){
     var lab=matched?sum(laborArr(d).slice(0,DATA_LAST)):0;
     var cp=rev-lab;
     return {d:d,rev:rev,lab:lab,cp:cp,rate:rev>0?(cp/rev*100):0,matched:matched};
-  }).sort(function(a,b){return b.cp-a.cp;});
-  newChart("chartContrib",{type:"bar",data:{labels:arr.map(function(o){return o.d+(o.matched?"":"*");}),datasets:[{data:arr.map(function(o){return o.cp;}),backgroundColor:arr.map(function(o){return o.cp<0?"#b14238":(o.matched?"#22324a":"#a98a52");}),borderRadius:4}]},
-    options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){var o=arr[c.dataIndex];return "기여이익 "+won(o.cp)+" · 기여율 "+o.rate.toFixed(1)+"%"+(o.matched?"":" (강사비 미매칭)");}}}},scales:{x:moneyAxis()}}});
-  var h='<thead><tr><th>종목</th><th>강습매출</th><th>강사인건비</th><th>기여이익</th><th>기여율</th></tr></thead><tbody>';
+  });
+  // 운영부(회원권) 행 — 매출=회원권(GM시트 정본), 인건비=운영부 고정급(급여대장). 강습 종목과 구분 표기(2026-07-04 매니저님 지시)
+  var opRev=sum((SALES_DEPT["운영부"]||[]).slice(0,DATA_LAST)),opLab=sum(OPER.slice(0,DATA_LAST)),opCp=opRev-opLab;
+  arr.push({d:"운영부(회원권)",rev:opRev,lab:opLab,cp:opCp,rate:opRev>0?(opCp/opRev*100):0,matched:true,oper:true});
+  arr.sort(function(a,b){return b.cp-a.cp;});
+  newChart("chartContrib",{type:"bar",data:{labels:arr.map(function(o){return o.d+(o.matched?"":"*");}),datasets:[{data:arr.map(function(o){return o.cp;}),backgroundColor:arr.map(function(o){return o.cp<0?"#b14238":(o.oper?"#0F1E3D":(o.matched?"#22324a":"#a98a52"));}),borderRadius:4}]},
+    options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){var o=arr[c.dataIndex];return "기여이익 "+won(o.cp)+" · 기여율 "+o.rate.toFixed(1)+"%"+(o.oper?" (인건비=운영부 고정급)":(o.matched?"":" (강사비 미매칭)"));}}}},scales:{x:moneyAxis()}}});
+  var h='<thead><tr><th>종목</th><th>매출</th><th>인건비</th><th>기여이익</th><th>기여율</th></tr></thead><tbody>';
   arr.forEach(function(o){
-    var neg=o.cp<0,note=o.matched?'':' <span style="color:var(--amber);font-size:10px;font-weight:700">⚠ 강사인건비 미매칭</span>';
+    var neg=o.cp<0,note=o.oper?' <span style="color:var(--ink-faint);font-size:10px">고정급 기준</span>':(o.matched?'':' <span style="color:var(--amber);font-size:10px;font-weight:700">⚠ 강사인건비 미매칭</span>');
     h+='<tr><td>'+o.d+note+'</td><td>'+won(o.rev)+'</td><td>'+(o.matched?won(o.lab):'–')+'</td><td'+(neg?' class="neg"':'')+'><b>'+won(o.cp)+'</b></td><td'+(neg?' class="neg"':'')+'>'+o.rate.toFixed(1)+'%</td></tr>';
   });
-  var tr=sum(arr.map(function(o){return o.rev;})),tl=sum(arr.map(function(o){return o.lab;})),tc=tr-tl;
-  h+='<tr class="totrow"><td>강습 합계</td><td>'+won(tr)+'</td><td>'+won(tl)+'</td><td>'+won(tc)+'</td><td>'+(tr?(tc/tr*100).toFixed(1):0)+'%</td></tr></tbody>';
+  var les=arr.filter(function(o){return !o.oper;});
+  var tr=sum(les.map(function(o){return o.rev;})),tl=sum(les.map(function(o){return o.lab;})),tc=tr-tl;
+  h+='<tr class="totrow"><td>강습 합계</td><td>'+won(tr)+'</td><td>'+won(tl)+'</td><td>'+won(tc)+'</td><td>'+(tr?(tc/tr*100).toFixed(1):0)+'%</td></tr>';
+  h+='<tr class="totrow"><td>센터 전체(운영부 포함)</td><td>'+won(tr+opRev)+'</td><td>'+won(tl+opLab)+'</td><td>'+won(tc+opCp)+'</td><td>'+((tr+opRev)?((tc+opCp)/(tr+opRev)*100).toFixed(1):0)+'%</td></tr></tbody>';
   document.getElementById("contribTbl").innerHTML=h;
 }
 
