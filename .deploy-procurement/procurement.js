@@ -5,7 +5,7 @@
 var SHEET_ID = "1umSF9rf3K0TuAvR5l0F_gvXHxcOLVKKvkSUfTtbRhdc";
 var TAB = "지출품의";
 var PW = "wellperion!@1202";
-var RECEIPT_FOLDER = "1k7WHBwvsPWA4W201qkqWDBlOLUctxoUJ"; // cfo 폴더(영수증 저장)
+var RECEIPT_FOLDER = "1WmKrK4cbbZWLluozwkLi_RslGeRL1Vqa"; // cfo ▸ 구매요청 사진백업 폴더(첨부·영수증 원본, 2026-07-04 매니저님 지시로 분리)
 var FIRST_ROW = 3; // 헤더 2행, 데이터 3행부터 (배포 후 실데이터로 검증·보정)
 var REVIEW_SHEET_ID = "1rUjnf_oxVTnT89B1aU46Z2txYc8k_MdKYdwhulpgw48"; // 검토결과 시트(별도·cao 소유)
 
