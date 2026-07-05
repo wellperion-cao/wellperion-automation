@@ -1173,9 +1173,9 @@
         if(_wpGate(d)) return;
         if(!d || !d.ok) return;
         var rows = Array.isArray(d.data) ? d.data : [];
-        var nNew = rows.filter(function(r){ return r['상태'] === '접수'; }).length;
-        var nWip = rows.filter(function(r){ return r['상태'] === '처리중'; }).length;
-        var nDone = rows.filter(function(r){ return r['상태'] === '완료'; }).length;
+        var nNew = rows.filter(function(r){ return (r['상태'] || r['status']) === '접수'; }).length;
+        var nWip = rows.filter(function(r){ return (r['상태'] || r['status']) === '처리중'; }).length;
+        var nDone = rows.filter(function(r){ return (r['상태'] || r['status']) === '완료'; }).length;
         setV('kpiVocNew',  String(nNew));
         setV('kpiVocWip',  String(nWip));
         setV('kpiVocDone', String(nDone));
