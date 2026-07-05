@@ -1305,7 +1305,9 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       // 시설·청결·칭찬·쓴소리 extras
       equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
       issueKind:'유형', urgency:'시급도',
-      targetStaff:'대상직원·강사', episode:'사례', anonymousPref:'익명희망'
+      targetStaff:'대상직원·강사', episode:'사례', anonymousPref:'익명희망',
+      area:'분야', occurredAt:'발생시점',
+      smsReceived:'접수문자', smsResolved:'조치문자'
     };
     function _regNormalize(rows){
       return (rows||[]).map(function(row){
@@ -1404,10 +1406,12 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       var contact = _regEsc(it['연락처'] || '');
       var assignee = _regEsc(it['담당'] || '');
       var memo = _regEsc(it['처리메모'] || '');
+      var smsRcv = _regEsc(it['접수문자'] || '');
+      var smsRsv = _regEsc(it['조치문자'] || '');
       var photo = String(it['사진URL'] || '').trim();
       var dt = _regEsc(String(it['접수일시'] || '').slice(0, 16));
       // 공통 외 추가필드 (접수ID·카테고리·접수일시·이름·연락처·위치·내용·사진URL·상태·담당·처리메모·부서 제외)
-      var COMMON_KEYS = ['접수ID','카테고리','접수일시','이름','연락처','위치','내용','사진URL','상태','담당','처리메모','부서','slaHours','deadline','remainH','slaStatus'];
+      var COMMON_KEYS = ['접수ID','카테고리','접수일시','이름','연락처','위치','내용','사진URL','상태','담당','처리메모','부서','slaHours','deadline','remainH','slaStatus','접수문자','조치문자'];
       var extras = '';
       Object.keys(it).forEach(function(k){
         if(COMMON_KEYS.indexOf(k) === -1 && it[k] !== '' && it[k] !== null && it[k] !== undefined){
@@ -1456,6 +1460,10 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
             '<div style="margin:0 0 7px;">'
           + '<textarea placeholder="조치내용 — 어떻게 처리했는지 기록 (완료 시 필수)" id="regmemo-' + id + '" rows="2" style="width:100%;box-sizing:border-box;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;">' + memo + '</textarea>'
           + '<button onclick="_regMemoSave(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',this)" style="margin-top:4px;font-size:11px;padding:3px 9px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">메모 저장</button></div>')
+        + '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 8px;font-size:11.5px;color:var(--dim);">'
+        + '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox"' + (smsRcv?' checked':'') + ' onchange="_regSms(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'smsReceived\',this)"> 접수문자<span id="regsms-smsReceived-' + id + '" style="color:var(--accent);font-weight:700;">' + (smsRcv?(' '+smsRcv):'') + '</span></label>'
+        + '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox"' + (smsRsv?' checked':'') + ' onchange="_regSms(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'smsResolved\',this)"> 조치문자<span id="regsms-smsResolved-' + id + '" style="color:var(--accent);font-weight:700;">' + (smsRsv?(' '+smsRsv):'') + '</span></label>'
+        + '</div>'
         + '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + actions + '</div></div>';
     }
 
@@ -1480,6 +1488,18 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)})
         .catch(function(){});
       setTimeout(function(){ if(btn){ btn.textContent = '메모 저장'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; } }, 2000);
+    };
+    // 문자 발송 체크 — 체크 시 오늘 날짜 기록(시트 저장·양방향), 해제 시 비움. 화면 새로고침 없음.
+    window._regSms = function(id, category, field, chk){
+      var d = new Date();
+      var val = chk.checked ? (d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2)) : '';
+      var span = document.getElementById('regsms-' + field + '-' + id);
+      if(span) span.textContent = val ? (' ' + val) : '';
+      var payload = {action:'reg_update', id:id, category:category};
+      payload[field] = val;
+      var _k = (typeof _wpKey === 'function') ? _wpKey() : ''; if(_k) payload.key = _k;
+      fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)})
+        .catch(function(){});
     };
 
     // 3. 🌟 핵심! 배정 시에는 화면 새로고침 없이 초록색 피드백만 주도록 독립시킴
