@@ -6346,8 +6346,50 @@ function crTab(btn, panelId) {
     <div class="doc-header"><h2>🗺 구조도</h2><div class="meta">CHRO 관할 · 나우열M · 🤖 AI CHRO (시로) · 모듈·파이프라인 구조도</div></div>
     <p class="lead">1개 오케스트레이터 + 7개 전문 에이전트 모듈이 4대 업무 파이프라인을 처리하는 구조와, 함정노트로 검증된 표준 절차(스킬) 목록입니다.</p>
     <div style="margin-top:14px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--paper)">
-      <iframe id="structureFrame" src="chro/hub/structure.html" title="AI CHRO 모듈·파이프라인 구조도" loading="lazy" style="width:100%;height:80vh;min-height:560px;border:0;display:block"></iframe>
+      <iframe id="structureFrame" src="chro/hub/structure.html" title="AI CHRO 모듈·파이프라인 구조도" loading="lazy" scrolling="no" style="width:100%;height:400px;border:0;display:block;overflow:hidden"></iframe>
     </div>
+    <script>
+    (function(){
+      // [추가 2026-07-05] 구조도 iframe 고정 80vh 제거 → 내용 높이에 맞춰 자동 확장.
+      // 동일 출처(github.io 하위 경로)라 iframe.contentWindow.document에 직접 접근 가능 —
+      // 로드 직후 + ResizeObserver(구조도 쪽 "전체 펼치기"로 로그 수백 건이 늘어나는 변화 포착) +
+      // 저빈도 폴백 폴링(옵저버가 못 잡는 변화 대비)으로 주기적 재측정한다. 내부 스크롤은 만들지
+      // 않음(항상 컨텐츠 실제 높이로 iframe을 키워 스크롤바가 생기지 않게 함).
+      var frame = document.getElementById('structureFrame');
+      if(!frame) return;
+      var lastH = 0;
+      function measure_(){
+        try{
+          var doc = frame.contentWindow && frame.contentWindow.document;
+          if(!doc) return;
+          var h = Math.max(
+            doc.documentElement ? doc.documentElement.scrollHeight : 0,
+            doc.body ? doc.body.scrollHeight : 0
+          );
+          if(h && h !== lastH){
+            lastH = h;
+            frame.style.height = h + 'px';
+          }
+        }catch(e){ /* 교차출처 등으로 접근 실패 시 조용히 무시 — 기본 height(400px) 유지 */ }
+      }
+      function attachObserver_(){
+        try{
+          var doc = frame.contentWindow.document;
+          if(window.ResizeObserver && doc.documentElement){
+            var ro = new ResizeObserver(function(){ measure_(); });
+            ro.observe(doc.documentElement);
+            if(doc.body) ro.observe(doc.body);
+          }
+        }catch(e){ /* 무시 */ }
+      }
+      frame.addEventListener('load', function(){
+        measure_();
+        attachObserver_();
+      });
+      // 폴백 — 옵저버가 못 잡는 변화(예: 폰트 로딩 후 리플로우) 대비 저빈도 재측정
+      setInterval(measure_, 1000);
+    })();
+    </script>
   </article>
 
   <!-- ── G19: 업무자동화 ── -->
