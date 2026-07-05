@@ -6,82 +6,103 @@
 <title>웰페리온 AI CHRO 모듈·파이프라인 구조도 (Light)</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  html,body{overflow-x:auto}
+  html,body{overflow-x:hidden;max-width:100%}
   body{background:#f4f3ef;font-family:'Malgun Gothic','Segoe UI',sans-serif;color:#22293a}
-  #scaleRoot{width:1600px;transform-origin:0 0}
+  #pageRoot{width:100%;max-width:1560px;margin:0 auto}
   .gold{color:#d9b26a}
-  .hd{background:#0F1E3D;color:#fff;display:flex;justify-content:space-between;align-items:flex-end;padding:18px 36px}
-  .hd h1{font-size:27px;letter-spacing:.5px}
-  .hd .sub{font-size:12px;color:#9db1d8;margin-top:6px}
+  .hd{background:#0F1E3D;color:#fff;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:8px 24px;padding:18px 36px}
+  .hd h1{font-size:24px;letter-spacing:.5px}
+  .hd .sub{font-size:12.5px;color:#9db1d8;margin-top:6px}
   .hd .right{font-size:12px;color:#c8d2e6;text-align:right;line-height:1.6}
-  .wrap{padding:16px 36px 22px}
+  .wrap{padding:16px 36px 22px;max-width:100%}
 
-  .sec{position:relative;border:1px solid #d8d5cc;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(20,30,60,.06);padding:11px 13px 11px 110px;margin-bottom:10px}
-  .sec .tag{position:absolute;left:11px;top:11px;width:86px;text-align:center;font-size:12px;font-weight:bold;color:#fff;background:#1F3864;border-radius:6px;padding:6px 3px;line-height:1.3}
-  .sec .tag small{display:block;font-weight:normal;font-size:9px;margin-top:1px;opacity:.9}
+  .sec{position:relative;border:1px solid #d8d5cc;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(20,30,60,.06);padding:12px 14px 12px 112px;margin-bottom:10px}
+  .sec .tag{position:absolute;left:12px;top:12px;width:86px;text-align:center;font-size:12.5px;font-weight:bold;color:#fff;background:#1F3864;border-radius:6px;padding:6px 3px;line-height:1.3}
+  .sec .tag small{display:block;font-weight:normal;font-size:10px;margin-top:1px;opacity:.9}
   .sec.exec .tag{background:#2E5D3E}
   .sec.pstage .tag{background:#B88A44}
   .sec.found .tag{background:#1F3864}
   .sec.skill .tag{background:#6d4a8f}
-  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
 
-  .steps{display:flex;align-items:stretch;gap:0}
-  .step{flex:1;background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:7px 9px;position:relative}
-  .step b{display:block;font-size:11.5px;color:#1c2440;margin-bottom:3px}
-  .step p{font-size:9.8px;color:#4a5266;line-height:1.55}
-  .sarr{display:flex;align-items:center;padding:0 3px;color:#B88A44;font-size:13px;font-weight:bold}
-  .ac{display:inline-block;font-size:8.5px;font-weight:bold;color:#fff;background:#1F3864;border-radius:3px;padding:0 4px;vertical-align:1px;margin-left:3px}
+  .steps{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
+  .step{flex:1 1 150px;min-width:150px;background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:8px 10px;position:relative}
+  .step b{display:block;font-size:13px;color:#1c2440;margin-bottom:4px}
+  .step p{font-size:12.3px;color:#4a5266;line-height:1.55}
+  .sarr{display:flex;flex:0 0 auto;align-items:center;padding:0 3px;color:#B88A44;font-size:14px;font-weight:bold}
+  .ac{display:inline-block;font-size:10.5px;font-weight:bold;color:#fff;background:#1F3864;border-radius:3px;padding:0 5px;vertical-align:1px;margin-left:3px}
   .ac.dim{background:#6b7280;color:#fff}
-  .sk{display:inline-block;font-size:8.5px;font-weight:bold;color:#fff;background:#6d4a8f;border-radius:3px;padding:0 4px;vertical-align:1px;margin-left:3px}
-  .track{display:flex;gap:6px;margin-top:6px}
-  .trackbox{flex:1;background:#faf9f5;border:1px solid #e3e0d6;border-left:3px solid #B88A44;border-radius:7px;padding:6px 9px}
-  .trackbox b{display:block;font-size:11px;color:#1c2440;margin-bottom:2px}
-  .trackbox p{font-size:9.8px;color:#4a5266;line-height:1.55}
+  .sk{display:inline-block;font-size:10.5px;font-weight:bold;color:#fff;background:#6d4a8f;border-radius:3px;padding:0 5px;vertical-align:1px;margin-left:3px}
+  .track{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .trackbox{flex:1 1 220px;min-width:200px;background:#faf9f5;border:1px solid #e3e0d6;border-left:3px solid #B88A44;border-radius:7px;padding:7px 10px}
+  .trackbox b{display:block;font-size:12.5px;color:#1c2440;margin-bottom:2px}
+  .trackbox p{font-size:12.3px;color:#4a5266;line-height:1.55}
   .lockbox{border-left-color:#c96a6a;background:#fdf7f7}
   .lockbox b{color:#a83a3a}
-  .agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-  .agrid .agent:nth-child(n+5){grid-column:span 1}
-  .agent{background:#fff;border:1px solid #e3e0d6;border-radius:9px;padding:8px 10px}
-  .agent .top{display:flex;align-items:center;gap:6px;margin-bottom:4px}
-  .agent .code{font-size:11px;font-weight:bold;color:#fff;background:#1F3864;border-radius:4px;padding:1px 7px}
-  .agent .name{font-size:12px;font-weight:bold;color:#1c2440}
-  .agent .grade{margin-left:auto;font-size:8.5px;color:#1F3864;border:1px solid #9db1d8;background:#eef2fa;border-radius:4px;padding:0 5px}
-  .agent .trig{font-size:9.3px;color:#8a6d2f;font-weight:bold;margin-bottom:3px}
-  .agent .pipe{font-size:9.5px;color:#4a5266;line-height:1.6;background:#f7f6f1;border:1px dashed #d8d5cc;border-radius:5px;padding:4px 7px;margin-bottom:3px}
+  .agrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}
+  .agent{background:#fff;border:1px solid #e3e0d6;border-radius:9px;padding:9px 11px}
+  .agent .top{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
+  .agent .code{font-size:12px;font-weight:bold;color:#fff;background:#1F3864;border-radius:4px;padding:1px 7px}
+  .agent .name{font-size:13.5px;font-weight:bold;color:#1c2440}
+  .agent .grade{margin-left:auto;font-size:10.5px;color:#1F3864;border:1px solid #9db1d8;background:#eef2fa;border-radius:4px;padding:0 5px}
+  .agent .trig{font-size:11.5px;color:#8a6d2f;font-weight:bold;margin-bottom:3px}
+  .agent .pipe{font-size:12.3px;color:#4a5266;line-height:1.6;background:#f7f6f1;border:1px dashed #d8d5cc;border-radius:5px;padding:5px 8px;margin-bottom:3px}
   .agent .pipe span{color:#8a6d2f;font-weight:bold}
-  .agent .co{font-size:9px;color:#7b8394}
+  .agent .co{font-size:12px;color:#7b8394}
   .agent.common{background:#f4f3ef}
-  .skillcard{background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:6px 8px}
-  .skillcard .stop{display:flex;align-items:center;gap:5px;margin-bottom:3px}
-  .skillcard .scode{font-size:10.5px;font-weight:bold;color:#fff;background:#6d4a8f;border-radius:4px;padding:1px 6px}
-  .skillcard .sname{font-size:11px;font-weight:bold;color:#1c2440}
-  .skillcard .sdesc{font-size:9px;color:#4a5266;line-height:1.45;margin-bottom:3px}
-  .skillcard .suse{font-size:8.5px;color:#7b8394;line-height:1.4}
+  .skillcard{background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:7px 9px}
+  .skillcard .stop{display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap}
+  .skillcard .scode{font-size:12px;font-weight:bold;color:#fff;background:#6d4a8f;border-radius:4px;padding:1px 6px}
+  .skillcard .sname{font-size:13px;font-weight:bold;color:#1c2440}
+  .skillcard .sdesc{font-size:12.3px;color:#4a5266;line-height:1.5;margin-bottom:3px}
+  .skillcard .suse{font-size:11.5px;color:#7b8394;line-height:1.5}
   .skillcard .suse b{color:#6d4a8f;font-weight:bold;margin-right:2px}
-  .duo{display:flex;gap:9px;margin-bottom:10px}
-  .duo .sec{flex:1;margin-bottom:0}
-  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
-  .box{background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:7px 10px}
-  .box b{display:block;font-size:11px;color:#1c2440;margin-bottom:3px}
-  .box p{font-size:9.8px;color:#4a5266;line-height:1.55}
+  .duo{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:10px}
+  .duo .sec{flex:1 1 320px;margin-bottom:0}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+  .box{background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:8px 11px}
+  .box b{display:block;font-size:13px;color:#1c2440;margin-bottom:3px}
+  .box p{font-size:12.3px;color:#4a5266;line-height:1.55}
   .gate{background:#fdf7f7;border:1px solid #c96a6a}
   .gate b{color:#a83a3a}
   .loopb{background:#f5faf6;border:1px solid #6a9c7d}
   .loopb b{color:#2E5D3E}
-  footer{display:flex;justify-content:space-between;font-size:10px;color:#6b7280;margin-top:4px;border-top:1px solid #d8d5cc;padding-top:8px}
+  footer{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:space-between;font-size:11.5px;color:#6b7280;margin-top:4px;border-top:1px solid #d8d5cc;padding-top:8px}
   .stagechips{display:flex;gap:4px;align-items:center;margin-top:5px;flex-wrap:wrap}
-  .chip{font-size:9.5px;border-radius:5px;padding:1px 7px;border:1px solid #d8d5cc;background:#f7f6f1;color:#4a5266}
+  .chip{font-size:11px;border-radius:5px;padding:2px 7px;border:1px solid #d8d5cc;background:#f7f6f1;color:#4a5266}
   .chip.g{border-color:#6a9c7d;color:#2E5D3E;background:#eef7f0}
   .chip.b{border-color:#9db1d8;color:#1F3864;background:#eef2fa}
   .chip.y{border-color:#c2a35c;color:#8a6d2f;background:#fbf6e8}
   .chip.r{border-color:#c96a6a;color:#a83a3a;background:#fdf2f2}
-  .carr{color:#B88A44;font-size:10px}
-  .orc{display:flex;gap:7px}
-  .orc .box{flex:1}
+  .carr{color:#B88A44;font-size:11px}
+  .orc{display:flex;flex-wrap:wrap;gap:8px}
+  .orc .box{flex:1 1 170px;min-width:150px}
+
+  /* ── 반응형: 중간 폭 — 파이프라인 화살표 숨김(줄바꿈 시 불필요) ── */
+  @media (max-width:1024px){
+    .wrap{padding:14px 22px 20px}
+    .hd{padding:16px 22px}
+    .sarr{display:none}
+  }
+  /* ── 반응형: 좁은 폭 — 단계 세로 스택, 듀오 세로 분리, 헤더 스택 ── */
+  @media (max-width:760px){
+    .wrap{padding:12px 12px 18px}
+    .hd{padding:12px 14px;flex-direction:column;align-items:flex-start;gap:6px}
+    .hd h1{font-size:19px}
+    .hd .sub{font-size:11.5px}
+    .hd .right{text-align:left;font-size:11px}
+    .sec{padding:11px 11px 11px 92px}
+    .sec .tag{width:72px;left:9px;top:9px;font-size:11px;padding:5px 3px}
+    .sec .tag small{font-size:9px}
+    .steps{flex-direction:column}
+    .step{flex:0 0 auto;width:100%;min-width:0}
+    .duo{flex-direction:column}
+    .duo .sec{flex:0 0 auto;margin-bottom:10px}
+  }
 </style>
 </head>
 <body>
-<div id="scaleRoot">
+<div id="pageRoot">
 <div class="hd">
   <div>
     <h1>AI CHRO <span class="gold">모듈 · 파이프라인 구조도</span></h1>
@@ -166,7 +187,7 @@
     <div class="skillcard"><div class="stop"><span class="scode">S-6</span><span class="sname">심층 리서치</span></div><p class="sdesc">채용 시장·제도 등 외부 근거 조사→보고서.</p><p class="suse"><b>주 사용처</b>공고 전략·제도 검토</p></div>
     <div class="skillcard"><div class="stop"><span class="scode">S-7</span><span class="sname">환경 설정</span></div><p class="sdesc">권한 허용목록·자동 알림 규칙 등 작업 환경 구성.</p><p class="suse"><b>주 사용처</b>자동화·위임 규칙 변경</p></div>
   </div>
-  <div style="font-size:9.5px;color:#6d4a8f;font-weight:bold;margin-top:8px;margin-bottom:4px">내부 표준 절차 — 함정노트로 검증된 패턴</div>
+  <div style="font-size:11.5px;color:#6d4a8f;font-weight:bold;margin-top:8px;margin-bottom:4px">내부 표준 절차 — 함정노트로 검증된 패턴</div>
   <div class="grid4">
     <div class="skillcard"><div class="stop"><span class="scode">S-8</span><span class="sname">왕복 검증</span></div><p class="sdesc">쓴 뒤 반드시 다시 읽어 값 대조.</p><p class="suse"><b>주 사용처</b>모든 데이터 쓰기</p></div>
     <div class="skillcard"><div class="stop"><span class="scode">S-9</span><span class="sname">비전 판독</span></div><p class="sdesc">한글 PDF·이미지를 화면 그대로 읽어 추출(문자 추출 한계 우회).</p><p class="suse"><b>주 사용처</b>이력서 처리</p></div>
@@ -175,7 +196,7 @@
     <div class="skillcard"><div class="stop"><span class="scode">S-12</span><span class="sname">배포 확인</span></div><p class="sdesc">반영 완료를 실제 라이브 화면으로 확정(캐시 함정 우회).</p><p class="suse"><b>주 사용처</b>모든 배포 마무리</p></div>
     <div class="skillcard"><div class="stop"><span class="scode">S-13</span><span class="sname">박제</span></div><p class="sdesc">실수·함정을 규칙 문서로 영구화해 재발 차단.</p><p class="suse"><b>주 사용처</b>회고·학습 루프</p></div>
   </div>
-  <div style="font-size:9px;color:#7b8394;margin-top:5px">에이전트가 '누가'라면 스킬은 '어떻게' — 오케스트레이터·에이전트가 작업 중 필요한 절차를 장착해 수행. 감사(A-6)·검증 파이프라인과 함께 품질을 받치는 층.</div>
+  <div style="font-size:11.5px;color:#7b8394;margin-top:5px">에이전트가 '누가'라면 스킬은 '어떻게' — 오케스트레이터·에이전트가 작업 중 필요한 절차를 장착해 수행. 감사(A-6)·검증 파이프라인과 함께 품질을 받치는 층.</div>
 </div>
 
 <div class="sec pstage">
@@ -196,11 +217,11 @@
     <div class="step"><b>🏁 확정·마감<span class="ac">A-2</span><span class="ac">A-5</span><span class="sk">S-11</span></b><p>최종 합격 → 공고 마감 + 사이트 반영 → 남은 후보 정리(사유 기록)</p></div>
   </div>
   <div class="stagechips">
-    <span style="font-size:9.5px;color:#6b7280">전형 7단계:</span>
+    <span style="font-size:11px;color:#6b7280">전형 7단계:</span>
     <span class="chip">서류 검토</span><span class="carr">→</span><span class="chip b">1차 면접</span><span class="carr">→</span><span class="chip b">2차 면접</span><span class="carr">→</span><span class="chip g">최종 합격</span>
-    <span style="color:#c9c5b8;font-size:9.5px;margin:0 3px">|</span>
+    <span style="color:#c9c5b8;font-size:11px;margin:0 3px">|</span>
     <span class="chip y">보류</span><span class="chip r">불합격</span><span class="chip r">탈락</span>
-    <span style="font-size:9px;color:#7b8394;margin-left:6px">※ 합격 확정 한 마디면 합격 처리·후보 정리·공고 마감·온보딩 개시까지 연쇄 실행</span>
+    <span style="font-size:11px;color:#7b8394;margin-left:6px">※ 합격 확정 한 마디면 합격 처리·후보 정리·공고 마감·온보딩 개시까지 연쇄 실행</span>
   </div>
 </div>
 
@@ -275,29 +296,8 @@
 </footer>
 </div>
 </div>
-<script>
-(function(){
-  var root = document.getElementById('scaleRoot');
-  var NATURAL_W = 1600;
-  function fit(){
-    try{
-      var w = document.documentElement.clientWidth || window.innerWidth || NATURAL_W;
-      var scale = Math.min(1, w / NATURAL_W); // 축소만 — 확대 없음
-      root.style.transform = 'scale(' + scale + ')';
-      var rect = root.getBoundingClientRect(); // transform 반영된 실측 높이
-      document.body.style.height = Math.ceil(rect.height) + 'px';
-    }catch(e){
-      // 실패 시 가로 스크롤 폴백 (html,body{overflow-x:auto} 기본 적용됨)
-    }
-  }
-  window.addEventListener('resize', fit);
-  window.addEventListener('load', fit);
-  fit();
-})();
-</script>
-
 <!-- ============================================================
-     🤖 자동화 로그 — 구조도 스케일 컨테이너(#scaleRoot) 아래(무관 영역)
+     🤖 자동화 로그 — 구조도 본문 컨테이너(#pageRoot) 아래(무관 영역)
      CHRO가 스스로 처리한 작업 내역 표시. 인사 내역 포함 — 관리자 인증 후에만 노출.
      ============================================================ -->
 <style>
