@@ -1193,8 +1193,70 @@
       {status:'처리중', color:'#5b9fd5', bg:'rgba(91,159,213,0.12)'},
       {status:'완료',  color:'#6abf7b', bg:'rgba(106,191,123,0.12)'}
     ];
-    var _regCurrentCat = '';
+var _regCurrentCat = '';
     var _regAllItems = [];  // 항상 전체(무필터) 캐시 — 건수요약·즉시필터용
+    // ── 연/분기/월 기간 필터 ('' = 전체). 기본값 = 올해 전체 ──
+    var _regPeriod = { y: String(new Date().getFullYear()), q: '', m: '' };
+    function _regItemYM(it){
+      var s = String(it['접수일시'] || '');
+      var mm = s.match(/^(\d{4})-(\d{2})/);
+      if(!mm) return null;
+      return { y: mm[1], m: mm[2], q: String(Math.floor((parseInt(mm[2],10)-1)/3)+1) };
+    }
+    function _regFilterPeriod(items){
+      var p = _regPeriod;
+      if(!p.y && !p.q && !p.m) return items;
+      return items.filter(function(it){
+        var ym = _regItemYM(it);
+        if(!ym) return false;
+        if(p.y && ym.y !== p.y) return false;
+        if(p.q && ym.q !== p.q) return false;
+        if(p.m && ym.m !== p.m) return false;
+        return true;
+      });
+    }
+    function _regRenderPeriodChips(){
+      var box = document.getElementById('regPeriodChips');
+      if(!box) return;
+      var p = _regPeriod;
+      var years = {};
+      _regAllItems.forEach(function(it){ var ym=_regItemYM(it); if(ym) years[ym.y]=1; });
+      var yearList = Object.keys(years).sort().reverse();
+      if(p.y && yearList.indexOf(p.y) === -1) yearList.unshift(p.y);
+      function chip(label, active, oc){
+        return '<button onclick="' + oc + '" style="padding:3px 11px;border-radius:16px;border:1px solid '
+          + (active?'var(--accent,#7c5f3d)':'var(--border)') + ';background:'
+          + (active?'var(--accent-bg,#f5ede3)':'var(--paper)') + ';color:'
+          + (active?'var(--accent,#7c5f3d)':'var(--dim)') + ';font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">' + label + '</button>';
+      }
+      var h = '';
+      h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;"><span style="font-size:11px;color:var(--dim);min-width:30px;">연도</span>';
+      h += chip('전체', p.y==='', "_regSetPeriod('y','')");
+      yearList.forEach(function(y){ h += chip(y, p.y===y, "_regSetPeriod('y','"+y+"')"); });
+      h += '</div>';
+      if(p.y){
+        h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;"><span style="font-size:11px;color:var(--dim);min-width:30px;">분기</span>';
+        h += chip('전체', p.q==='', "_regSetPeriod('q','')");
+        ['1','2','3','4'].forEach(function(q){ h += chip(q+'분기', p.q===q, "_regSetPeriod('q','"+q+"')"); });
+        h += '</div>';
+      }
+      if(p.y && p.q){
+        var qn = parseInt(p.q,10);
+        h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;"><span style="font-size:11px;color:var(--dim);min-width:30px;">월</span>';
+        h += chip('전체', p.m==='', "_regSetPeriod('m','')");
+        [ (qn-1)*3+1, (qn-1)*3+2, (qn-1)*3+3 ].forEach(function(mo){ var mm=('0'+mo).slice(-2); h += chip(mo+'월', p.m===mm, "_regSetPeriod('m','"+mm+"')"); });
+        h += '</div>';
+      }
+      box.innerHTML = h;
+    }
+    window._regSetPeriod = function(level, val){
+      if(level==='y'){ _regPeriod.y=val; _regPeriod.q=''; _regPeriod.m=''; }
+      else if(level==='q'){ _regPeriod.q=val; _regPeriod.m=''; }
+      else { _regPeriod.m=val; }
+      _regRenderPeriodChips();
+      _regRenderSummary(_regAllItems);
+      _regBoardRender(_regAllItems);
+    };
 
     // 카테고리 → 아이콘·짧은이름 (건수요약·컴팩트 칩용)
     var _REG_CAT_META = [
@@ -1269,6 +1331,7 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
           if(_wpGate(d)) return;
           if(!d || !d.ok){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">현황을 불러오지 못했습니다 — ' + _regEsc(d && d.error || '') + '</div>'; return; }
           _regAllItems = _regNormalize(d.data || []);
+          _regRenderPeriodChips();
           _regRenderSummary(_regAllItems);
           _regBoardRender(_regAllItems);
         })
@@ -1279,6 +1342,7 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
     function _regRenderSummary(items){
       var sum = document.getElementById('regCatSummary');
       if(!sum) return;
+      items = _regFilterPeriod(items);
       var total = items.length;
       var html = '<button onclick="regChipClick(_regChipForCat(\'\'))" data-sum-cat="" style="display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:18px;border:1px solid '
         + (_regCurrentCat === '' ? 'var(--accent,#7c5f3d)' : 'var(--border)') + ';background:'
@@ -1305,7 +1369,8 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
     function _regBoardRender(items){
       var board = document.getElementById('regBoard');
       board.innerHTML = '';
-      var filtered = _regCurrentCat ? items.filter(function(it){ return String(it['카테고리']||'') === _regCurrentCat; }) : items;
+      var filtered = _regFilterPeriod(items);
+      if(_regCurrentCat) filtered = filtered.filter(function(it){ return String(it['카테고리']||'') === _regCurrentCat; });
       _REG_COLS.forEach(function(col){
         var list = filtered.filter(function(it){ return String(it['상태'] || '접수') === col.status; });
         var colEl = document.createElement('div');
@@ -6444,7 +6509,8 @@ function crTab(btn, panelId) {
     </div>
 
     <!-- 카테고리 필터칩 -->
-    <div id="regCatChips" style="display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 14px;">
+    <div id="regPeriodChips" style="display:flex;flex-direction:column;gap:6px;margin:16px 0 10px;"></div>
+    <div id="regCatChips" style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px;">
       <button class="reg-chip reg-chip-active" data-cat="" onclick="regChipClick(this)" style="font-size:12.5px;font-weight:700;padding:5px 14px;border-radius:20px;border:1.5px solid var(--accent,#7c5f3d);background:var(--accent-bg,#f5ede3);color:var(--accent,#7c5f3d);cursor:pointer;font-family:inherit;">전체</button>
       <button class="reg-chip" data-cat="분실물 접수" onclick="regChipClick(this)" style="font-size:12.5px;font-weight:700;padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">📦 분실물 접수</button>
       <button class="reg-chip" data-cat="시설물 고장 접수" onclick="regChipClick(this)" style="font-size:12.5px;font-weight:700;padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">🔧 시설물 고장 접수</button>
