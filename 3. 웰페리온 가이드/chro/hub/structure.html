@@ -371,6 +371,33 @@
     return await res.json();
   }
 
+  // 전량 열람 — db:"autolog"는 1회 호출당 limit 상한이 없지만, 앞으로 계속 쌓일 것을 감안해
+  // offset을 이어가며 페이지 단위(200건)로 반복 조회 후 합친다. 인증(비밀번호 확인)은 첫 페이지
+  // 응답의 ok 여부로만 판단 — 로그인 실패 메시지 로직은 기존과 동일하게 유지.
+  var ALG_PAGE_SIZE = 200;
+  async function fetchAllAutolog_(password){
+    var first = await algPost_({ db: "autolog", password: password, limit: ALG_PAGE_SIZE, offset: 0 });
+    if(!first || !first.ok || !Array.isArray(first.results)){
+      return { ok: false, error: (first && first.error) || "응답 오류" };
+    }
+    var all = first.results.slice();
+    var offset = first.results.length;
+    var more = first.results.length === ALG_PAGE_SIZE; // 첫 페이지가 꽉 찼을 때만 다음 페이지 존재 가능
+    while(more){
+      var r = await algPost_({ db: "autolog", password: password, limit: ALG_PAGE_SIZE, offset: offset });
+      if(!r || !r.ok || !Array.isArray(r.results) || r.results.length === 0) break;
+      all = all.concat(r.results);
+      offset += r.results.length;
+      more = r.results.length === ALG_PAGE_SIZE; // 마지막 페이지(PAGE_SIZE 미만)면 종료
+    }
+    return { ok: true, results: all };
+  }
+
+  function fmtAlgDate_(s){
+    s = String(s || "");
+    return s.slice(0, 10);
+  }
+
   function renderRows_(rows){
     var body = document.getElementById('algBody');
     var empty = document.getElementById('algEmpty');
@@ -381,7 +408,7 @@
       table.style.display = "none";
       empty.textContent = "기록 없음";
       empty.style.display = "block";
-      count.textContent = "0건";
+      count.textContent = "총 0건";
       return;
     }
     table.style.display = "table";
@@ -389,7 +416,10 @@
     body.innerHTML = rows.map(function(r){
       return "<tr><td>" + esc_(r["일시"]) + "</td><td>" + esc_(r["주체"]) + "</td><td>" + esc_(r["작업"]) + "</td><td>" + esc_(r["상세"]) + "</td><td>" + esc_(r["결과"]) + "</td></tr>";
     }).join("");
-    count.textContent = rows.length + "건";
+    // rows는 최신순(내림차순) — 첫 건이 최신, 마지막 건이 최고(最古)
+    var newest = fmtAlgDate_(rows[0]["일시"]);
+    var oldest = fmtAlgDate_(rows[rows.length - 1]["일시"]);
+    count.textContent = "총 " + rows.length + "건 · 기간 " + oldest + " ~ " + newest;
   }
 
   function showUnlockedUI_(){
@@ -402,7 +432,7 @@
     var btn = document.getElementById('algRefreshBtn');
     if(btn){ btn.disabled = true; btn.textContent = "불러오는 중…"; }
     try{
-      var r = await algPost_({ db: "autolog", password: ALG_PW, limit: 100 });
+      var r = await fetchAllAutolog_(ALG_PW);
       if(!r || !r.ok || !Array.isArray(r.results)) throw new Error((r && r.error) || "응답 오류");
       renderRows_(r.results);
     }catch(e){
@@ -424,7 +454,7 @@
     if(!pw){ err.textContent = "비밀번호를 입력하세요"; err.style.display = "block"; return; }
     btn.disabled = true; btn.textContent = "확인 중…";
     try{
-      var r = await algPost_({ db: "autolog", password: pw, limit: 100 });
+      var r = await fetchAllAutolog_(pw);
       if(r && r.ok && Array.isArray(r.results)){
         try{ sessionStorage.setItem(SS_PW_KEY, pw); }catch(_){}
         ALG_PW = pw;
@@ -450,7 +480,7 @@
     var sess = null;
     try{ sess = sessionStorage.getItem(SS_PW_KEY); }catch(_){}
     if(!sess) return;
-    algPost_({ db: "autolog", password: sess, limit: 100 }).then(function(r){
+    fetchAllAutolog_(sess).then(function(r){
       if(r && r.ok && Array.isArray(r.results)){
         ALG_PW = sess;
         showUnlockedUI_();
