@@ -3,70 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>웰페리온 AI CHRO 모듈·파이프라인 구조도</title>
+<title>웰페리온 AI CHRO 모듈·파이프라인 구조도 (Light)</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{overflow-x:hidden;max-width:100%}
-  :root{
-    --navy:#0F1E3D; --navy2:#16294a; --parchment:#F4F3EF; --paper:#fff;
-    --ink:#1c2440; --slate:#4a5266; --mist:#7b8394;
-    --line:#e3e0d6; --line-soft:#eee9df;
-    --gold:#B88A44; --gold-soft:#d9b26a;
-    --forest:#2E5D3E; --plum:#6d4a8f; --rose:#a83a3a; --steel:#2f5d7a;
-  }
-  body{
-    background-color:var(--parchment);
-    background-image:
-      linear-gradient(rgba(15,30,61,.045) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(15,30,61,.045) 1px, transparent 1px);
-    background-size:27px 27px;
-    font-family:'Malgun Gothic','Segoe UI',sans-serif;color:var(--ink)
-  }
+  body{background:#f4f3ef;font-family:'Malgun Gothic','Segoe UI',sans-serif;color:#22293a}
   #pageRoot{width:100%;max-width:1560px;margin:0 auto}
-  .gold{color:var(--gold-soft)}
-
-  /* ── 헤더: 도면 표제란(title block) 모티프 ── */
-  .hd{background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:10px 24px;padding:20px 36px;border-bottom:2px solid var(--gold-soft)}
-  .hd-left{display:flex;align-items:center;gap:14px}
-  .crest{flex:0 0 auto;width:42px;height:42px;border:1.5px solid var(--gold-soft);border-radius:50%;position:relative}
-  .crest::before{content:"";position:absolute;inset:6px;border:1px solid var(--gold-soft);border-radius:50%}
-  .crest::after{content:"AI";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--gold-soft)}
-  .kicker{font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:var(--gold-soft);font-weight:800;margin-bottom:5px}
-  .hd h1{font-size:26px;letter-spacing:.3px;font-weight:800}
+  .gold{color:#d9b26a}
+  .hd{background:#0F1E3D;color:#fff;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:8px 24px;padding:18px 36px}
+  .hd h1{font-size:24px;letter-spacing:.5px}
   .hd .sub{font-size:12.5px;color:#9db1d8;margin-top:6px}
-  .titleblock{display:grid;grid-template-columns:repeat(2,auto);gap:3px 18px}
-  .tb-cell{display:flex;gap:6px;align-items:baseline;border-bottom:1px solid rgba(255,255,255,.14);padding-bottom:2px;white-space:nowrap}
-  .tb-k{font-size:9px;font-weight:800;letter-spacing:.8px;color:var(--gold-soft)}
-  .tb-v{font-size:11.5px;font-weight:650;color:#e7ecf7}
+  .hd .right{font-size:12px;color:#c8d2e6;text-align:right;line-height:1.6}
   .wrap{padding:16px 36px 22px;max-width:100%}
 
-  .sec{position:relative;border:1px solid #d8d5cc;border-radius:12px;background:var(--paper);
-    box-shadow:0 1px 3px rgba(20,30,60,.06), inset 0 3px 0 0 var(--line);
-    padding:12px 14px 12px 112px;margin-bottom:10px}
-  .sec.exec{box-shadow:0 1px 3px rgba(20,30,60,.06), inset 0 3px 0 0 var(--forest)}
-  .sec.pstage{box-shadow:0 1px 3px rgba(20,30,60,.06), inset 0 3px 0 0 var(--gold)}
-  .sec.found{box-shadow:0 1px 3px rgba(20,30,60,.06), inset 0 3px 0 0 var(--navy)}
-  .sec.skill{box-shadow:0 1px 3px rgba(20,30,60,.06), inset 0 3px 0 0 var(--plum)}
-  .sec.aiskill{box-shadow:0 1px 3px rgba(20,30,60,.06), inset 0 3px 0 0 var(--steel)}
-
-  /* ── 섹션 태그: 청사진 명판(코너 표식) ── */
-  .sec .tag{position:absolute;left:12px;top:12px;width:86px;text-align:center;font-size:12.5px;font-weight:800;letter-spacing:.2px;color:#fff;background:var(--navy);border-radius:5px;padding:6px 3px;line-height:1.3;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+  .sec{position:relative;border:1px solid #d8d5cc;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(20,30,60,.06);padding:12px 14px 12px 112px;margin-bottom:10px}
+  .sec .tag{position:absolute;left:12px;top:12px;width:86px;text-align:center;font-size:12.5px;font-weight:bold;color:#fff;background:#1F3864;border-radius:6px;padding:6px 3px;line-height:1.3}
   .sec .tag small{display:block;font-weight:normal;font-size:10px;margin-top:1px;opacity:.9}
-  .sec .tag::before,.sec .tag::after{content:"";position:absolute;width:6px;height:6px;border:1px solid rgba(255,255,255,.6)}
-  .sec .tag::before{top:2px;left:2px;border-right:none;border-bottom:none}
-  .sec .tag::after{bottom:2px;right:2px;border-left:none;border-top:none}
-  .sec.exec .tag{background:var(--forest)}
-  .sec.pstage .tag{background:var(--gold)}
-  .sec.found .tag{background:var(--navy)}
-  .sec.skill .tag{background:var(--plum)}
-  .sec.aiskill .tag{background:var(--steel)}
+  .sec.exec .tag{background:#2E5D3E}
+  .sec.pstage .tag{background:#B88A44}
+  .sec.found .tag{background:#1F3864}
+  .sec.skill .tag{background:#6d4a8f}
   .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
 
   .steps{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
-  .step{flex:1 1 150px;min-width:150px;background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:8px 10px;position:relative;transition:box-shadow .15s,transform .15s}
+  .step{flex:1 1 150px;min-width:150px;background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:8px 10px;position:relative}
   .step b{display:block;font-size:13px;color:#1c2440;margin-bottom:4px}
   .step p{font-size:12.3px;color:#4a5266;line-height:1.55}
-  .sarr{display:flex;flex:0 0 auto;align-items:center;padding:0 3px;color:var(--gold);font-size:14px;font-weight:bold}
+  .sarr{display:flex;flex:0 0 auto;align-items:center;padding:0 3px;color:#B88A44;font-size:14px;font-weight:bold}
   .ac{display:inline-block;font-size:10.5px;font-weight:bold;color:#fff;background:#1F3864;border-radius:3px;padding:0 5px;vertical-align:1px;margin-left:3px}
   .ac.dim{background:#6b7280;color:#fff}
   .sk{display:inline-block;font-size:10.5px;font-weight:bold;color:#fff;background:#6d4a8f;border-radius:3px;padding:0 5px;vertical-align:1px;margin-left:3px}
@@ -77,7 +40,7 @@
   .lockbox{border-left-color:#c96a6a;background:#fdf7f7}
   .lockbox b{color:#a83a3a}
   .agrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}
-  .agent{background:#fff;border:1px solid #e3e0d6;border-radius:9px;padding:9px 11px;transition:box-shadow .15s,transform .15s}
+  .agent{background:#fff;border:1px solid #e3e0d6;border-radius:9px;padding:9px 11px}
   .agent .top{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
   .agent .code{font-size:12px;font-weight:bold;color:#fff;background:#1F3864;border-radius:4px;padding:1px 7px}
   .agent .name{font-size:13.5px;font-weight:bold;color:#1c2440}
@@ -87,22 +50,17 @@
   .agent .pipe span{color:#8a6d2f;font-weight:bold}
   .agent .co{font-size:12px;color:#7b8394}
   .agent.common{background:#f4f3ef}
-  .skillcard{background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:7px 9px;transition:box-shadow .15s,transform .15s}
-  .skillcard.pending{border-style:dashed;background:#fbfaf7}
+  .skillcard{background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:7px 9px}
   .skillcard .stop{display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap}
   .skillcard .scode{font-size:12px;font-weight:bold;color:#fff;background:#6d4a8f;border-radius:4px;padding:1px 6px}
   .skillcard .sname{font-size:13px;font-weight:bold;color:#1c2440}
   .skillcard .sdesc{font-size:12.3px;color:#4a5266;line-height:1.5;margin-bottom:3px}
   .skillcard .suse{font-size:11.5px;color:#7b8394;line-height:1.5}
   .skillcard .suse b{color:#6d4a8f;font-weight:bold;margin-right:2px}
-  .badge-new{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.3px;color:var(--navy);background:var(--gold-soft);border-radius:20px;padding:1px 7px;vertical-align:1px}
-  .badge-pending{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.2px;color:var(--mist);background:transparent;border:1px dashed var(--mist);border-radius:20px;padding:0 7px;vertical-align:1px}
-  .grouplbl{font-size:11.5px;font-weight:800;margin:10px 0 6px}
-  .grouplbl:first-child{margin-top:0}
   .duo{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:10px}
   .duo .sec{flex:1 1 320px;margin-bottom:0}
   .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
-  .box{background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:8px 11px;transition:box-shadow .15s,transform .15s}
+  .box{background:#fff;border:1px solid #e3e0d6;border-radius:8px;padding:8px 11px}
   .box b{display:block;font-size:13px;color:#1c2440;margin-bottom:3px}
   .box p{font-size:12.3px;color:#4a5266;line-height:1.55}
   .gate{background:#fdf7f7;border:1px solid #c96a6a}
@@ -120,13 +78,6 @@
   .orc{display:flex;flex-wrap:wrap;gap:8px}
   .orc .box{flex:1 1 170px;min-width:150px}
 
-  @media (hover:hover){
-    .step:hover,.agent:hover,.skillcard:hover,.box:hover{box-shadow:0 5px 16px rgba(20,30,60,.12);transform:translateY(-1px)}
-  }
-  @media (prefers-reduced-motion:reduce){
-    .step,.agent,.skillcard,.box{transition:none}
-  }
-
   /* ── 반응형: 중간 폭 — 파이프라인 화살표 숨김(줄바꿈 시 불필요) ── */
   @media (max-width:1024px){
     .wrap{padding:14px 22px 20px}
@@ -136,11 +87,10 @@
   /* ── 반응형: 좁은 폭 — 단계 세로 스택, 듀오 세로 분리, 헤더 스택 ── */
   @media (max-width:760px){
     .wrap{padding:12px 12px 18px}
-    .hd{padding:12px 14px;flex-direction:column;align-items:flex-start;gap:8px}
+    .hd{padding:12px 14px;flex-direction:column;align-items:flex-start;gap:6px}
     .hd h1{font-size:19px}
     .hd .sub{font-size:11.5px}
-    .crest{width:32px;height:32px}
-    .titleblock{grid-template-columns:1fr}
+    .hd .right{text-align:left;font-size:11px}
     .sec{padding:11px 11px 11px 92px}
     .sec .tag{width:72px;left:9px;top:9px;font-size:11px;padding:5px 3px}
     .sec .tag small{font-size:9px}
@@ -154,27 +104,18 @@
 <body>
 <div id="pageRoot">
 <div class="hd">
-  <div class="hd-left">
-    <div class="crest" aria-hidden="true"></div>
-    <div>
-      <div class="kicker">Operations Blueprint · Wellperion CHRO</div>
-      <h1>AI CHRO <span class="gold">모듈 · 파이프라인 구조도</span></h1>
-      <div class="sub">웰페리온 인사 운영 허브 — 1개 오케스트레이터 + 7개 전문 에이전트 모듈이 4대 업무 파이프라인을 처리하는 구조</div>
-    </div>
+  <div>
+    <h1>AI CHRO <span class="gold">모듈 · 파이프라인 구조도</span></h1>
+    <div class="sub">웰페리온 인사 운영 허브 — 1개 오케스트레이터 + 7개 전문 에이전트 모듈이 4대 업무 파이프라인을 처리하는 구조 (2026-07-04 기준)</div>
   </div>
-  <div class="titleblock">
-    <div class="tb-cell"><span class="tb-k">REV</span><span class="tb-v">v4.0</span></div>
-    <div class="tb-cell"><span class="tb-k">DATE</span><span class="tb-v">2026-07-06</span></div>
-    <div class="tb-cell"><span class="tb-k">DRAWN BY</span><span class="tb-v">경영지원부 나우열M</span></div>
-    <div class="tb-cell"><span class="tb-k">ORG</span><span class="tb-v">WELLPERION</span></div>
-  </div>
+  <div class="right">2026-07-04 · 경영지원부 나우열M · WELLPERION</div>
 </div>
 <div class="wrap">
 
 <div class="sec ctl">
   <div class="tag">🧠 컨트롤<small>오케스트레이터</small></div>
   <div class="orc">
-    <div class="box"><b>1. 입력 수신</b><p>매니저 지시(한 줄이면 충분) · 자동 유입(이력서 메일) · 정기 루틴(아침 처리·브리핑)</p></div>
+    <div class="box"><b>1. 입력 수신</b><p>매니저 지시(한 줄이면 충분) · 자동 유입(이력서 메일) · 정기 루틴(아침 처리·리마인드)</p></div>
     <div class="box"><b>2. 컨텍스트 복원</b><p>"CHRO" 부팅 → 규칙 13조·현재 상태·함정노트·메모리 정독 → 지난 세션을 그대로 이어받음</p></div>
     <div class="box"><b>3. 판별·분해</b><p>지시를 할 일 목록으로 분해 → 모호하면 추측 대신 선택지 질문(5% 룰) → 담당 모듈 결정</p></div>
     <div class="box"><b>4. 위임·병렬 투입</b><p>도메인 작업은 반드시 전문 에이전트로 · 독립 작업은 동시 병렬 · 판단=고성능/기계작업=경량 모델 배분</p></div>
@@ -200,7 +141,7 @@
     <div class="agent">
       <div class="top"><span class="code">A-3</span><span class="name">온보딩</span><span class="grade">정형·중간</span></div>
       <div class="trig">발동: "입사 확정" · 멘토 지정 · 체크인 관리</div>
-      <div class="pipe">빈 슬롯 기입(행 고정) <span>→</span> 33건 자동 생성 <span>→</span> 멘토 배정 <span>→</span> 12주 체크인·성찰 운영</div>
+      <div class="pipe">빈 슬롯 기입(행 고정) <span>→</span> 25건 자동 생성 <span>→</span> 멘토 배정 <span>→</span> 12주 체크인·성찰 운영</div>
       <div class="co">협업: 12주 완료 시 CHRO 인사이트 → 초심카드</div>
     </div>
     <div class="agent">
@@ -236,13 +177,13 @@
 </div>
 
 <div class="sec skill">
-  <div class="tag">🧰 SOP<small>내부 절차 S1~13</small></div>
+  <div class="tag">🧰 스킬<small>표준 절차 공구함</small></div>
   <div class="grid4">
     <div class="skillcard"><div class="stop"><span class="scode">S-1</span><span class="sname">코드 검수</span></div><p class="sdesc">허브 화면·백엔드 수정본에서 버그·회귀를 배포 전에 탐지.</p><p class="suse"><b>주 사용처</b>A-5 배포 직전·감사 보조</p></div>
     <div class="skillcard"><div class="stop"><span class="scode">S-2</span><span class="sname">코드 정리</span></div><p class="sdesc">중복·군더더기 제거로 유지보수 비용 절감.</p><p class="suse"><b>주 사용처</b>화면·백엔드 리팩터링</p></div>
     <div class="skillcard"><div class="stop"><span class="scode">S-3</span><span class="sname">실행 확인</span></div><p class="sdesc">고친 기능을 실제 화면·라이브 데이터로 구동해 검증(문서상 완료 금지).</p><p class="suse"><b>주 사용처</b>모든 배포 후 최종 관문</p></div>
     <div class="skillcard"><div class="stop"><span class="scode">S-4</span><span class="sname">보안 점검</span></div><p class="sdesc">개인정보 노출·권한 우회 경로 점검.</p><p class="suse"><b>주 사용처</b>위임 인증·명부·마스킹 변경 시</p></div>
-    <div class="skillcard"><div class="stop"><span class="scode">S-5</span><span class="sname">예약·반복 실행</span></div><p class="sdesc">정기 루틴 생성·관리.</p><p class="suse"><b>주 사용처</b>아침 자동처리·아침 브리핑</p></div>
+    <div class="skillcard"><div class="stop"><span class="scode">S-5</span><span class="sname">예약·반복 실행</span></div><p class="sdesc">정기 루틴 생성·관리.</p><p class="suse"><b>주 사용처</b>아침 자동처리·08시 리마인드</p></div>
     <div class="skillcard"><div class="stop"><span class="scode">S-6</span><span class="sname">심층 리서치</span></div><p class="sdesc">채용 시장·제도 등 외부 근거 조사→보고서.</p><p class="suse"><b>주 사용처</b>공고 전략·제도 검토</p></div>
     <div class="skillcard"><div class="stop"><span class="scode">S-7</span><span class="sname">환경 설정</span></div><p class="sdesc">권한 허용목록·자동 알림 규칙 등 작업 환경 구성.</p><p class="suse"><b>주 사용처</b>자동화·위임 규칙 변경</p></div>
   </div>
@@ -255,31 +196,7 @@
     <div class="skillcard"><div class="stop"><span class="scode">S-12</span><span class="sname">배포 확인</span></div><p class="sdesc">반영 완료를 실제 라이브 화면으로 확정(캐시 함정 우회).</p><p class="suse"><b>주 사용처</b>모든 배포 마무리</p></div>
     <div class="skillcard"><div class="stop"><span class="scode">S-13</span><span class="sname">박제</span></div><p class="sdesc">실수·함정을 규칙 문서로 영구화해 재발 차단.</p><p class="suse"><b>주 사용처</b>회고·학습 루프</p></div>
   </div>
-  <div style="font-size:11.5px;color:#7b8394;margin-top:5px">에이전트가 '누가'라면 SOP는 '어떻게' — 오케스트레이터·에이전트가 작업 중 필요한 절차를 장착해 수행. 감사(A-6)·검증 파이프라인과 함께 품질을 받치는 층. (아래 "AI 스킬"과는 별개 — 이쪽은 하네스 내부 작업 절차, 아래쪽은 실제 설치된 Claude 확장 도구.)</div>
-</div>
-
-<div class="sec aiskill">
-  <div class="tag">🧩 AI 스킬<small>Claude 확장 도구</small></div>
-  <div class="grouplbl" style="color:var(--steel)">설치됨 — 웹 화면 디자인 품질</div>
-  <div class="grid4">
-    <div class="skillcard">
-      <div class="stop"><span class="scode" style="background:var(--steel)">frontend-design</span><span class="badge-new">★ NEW</span></div>
-      <p class="sdesc">화면 작업 착수 전 필수 로드 — 브리프에 맞는 팔레트·타이포·레이아웃을 설계하고 템플릿식 기본값을 피하게 하는 가이드.</p>
-      <p class="suse"><b>설치</b>2026-07-05 · Anthropic 공식 저장소 · 이번 구조도 개편에 실사용</p>
-    </div>
-  </div>
-  <div class="grouplbl" style="color:var(--mist)">설치 예정 — 매니저 승인(2026-07-06)</div>
-  <div class="grid4">
-    <div class="skillcard pending"><div class="stop"><span class="scode" style="background:var(--mist)">pptx</span><span class="badge-pending">예정</span></div><p class="sdesc">발표자료(PPT) 슬라이드 자동 생성.</p></div>
-    <div class="skillcard pending"><div class="stop"><span class="scode" style="background:var(--mist)">pdf</span><span class="badge-pending">예정</span></div><p class="sdesc">PDF 문서·양식 자동 생성.</p></div>
-    <div class="skillcard pending"><div class="stop"><span class="scode" style="background:var(--mist)">xlsx</span><span class="badge-pending">예정</span></div><p class="sdesc">엑셀 표·서식 자동 생성.</p></div>
-    <div class="skillcard pending"><div class="stop"><span class="scode" style="background:var(--mist)">internal-comms</span><span class="badge-pending">예정</span></div><p class="sdesc">사내 공지·커뮤니케이션 문서 표준화.</p></div>
-  </div>
-  <div style="font-size:11px;color:#7b8394;margin-top:5px">설치 방식은 frontend-design과 동일 — Anthropic 공식 저장소에서 <code>wellperion-hr\.claude\skills\</code>에 추가 예정.</div>
-  <div class="grouplbl" style="color:var(--mist)">세션 기본 — 항상 사용 가능</div>
-  <div style="display:flex;flex-wrap:wrap;gap:6px">
-    <span class="chip">code-review</span><span class="chip">verify</span><span class="chip">security-review</span><span class="chip">simplify</span><span class="chip">deep-research</span><span class="chip">등</span>
-  </div>
+  <div style="font-size:11.5px;color:#7b8394;margin-top:5px">에이전트가 '누가'라면 스킬은 '어떻게' — 오케스트레이터·에이전트가 작업 중 필요한 절차를 장착해 수행. 감사(A-6)·검증 파이프라인과 함께 품질을 받치는 층.</div>
 </div>
 
 <div class="sec pstage">
@@ -313,11 +230,11 @@
   <div class="steps">
     <div class="step"><b>✅ 입사 확정<span class="ac">A-3</span><span class="sk">S-10</span></b><p>임직원 명단의 부서 구역 <b style="display:inline;color:#8a6d2f">빈 슬롯 행에 기입</b> — 행 추가·삭제 절대 없음(외부 수식 보호)</p></div>
     <div class="sarr">▶</div>
-    <div class="step"><b>📋 33건 자동 생성<span class="ac">A-3</span></b><p>서류·계약 8 + 온보딩 정보 1 + 주간 체크인 12 + 자가성찰 12 = 인당 33건</p></div>
+    <div class="step"><b>📋 25건 자동 생성<span class="ac">A-3</span></b><p>서류·계약 8 + 온보딩 정보 1 + 주간 체크인 12 + 자가성찰 12</p></div>
     <div class="sarr">▶</div>
     <div class="step"><b>👥 멘토 지정<span class="ac">A-3</span></b><p>부서·멘토 기록 → 1주차 담당을 멘토로 → 신입에게 성찰 페이지 안내</p></div>
     <div class="sarr">▶</div>
-    <div class="step"><b>🔄 12주 병행 운영<span class="ac">A-3</span><span class="ac dim">자동</span></b><p>멘토 체크인 + 본인 성찰 같은 주차 진행 — 아침 브리핑이 임박·지연 통지</p></div>
+    <div class="step"><b>🔄 12주 병행 운영<span class="ac">A-3</span><span class="ac dim">자동</span></b><p>멘토 체크인 + 본인 성찰 같은 주차 진행 — 아침 리마인드가 임박·지연 통지</p></div>
     <div class="sarr">▶</div>
     <div class="step"><b>🎓 수습평가<span class="ac">A-4</span></b><p>12주차 판정: 정규 전환/조건부/연장/부적합</p></div>
     <div class="sarr">▶</div>
@@ -356,9 +273,9 @@
   <div class="steps">
     <div class="step"><b>📥 이력서 자동수신<span class="ac dim">클라우드</span></b><p>지원 메일 → 15분마다 Drive 수신함 적재</p></div>
     <div class="sarr">▶</div>
-    <div class="step"><b>🌅 아침 자동처리<span class="ac dim">클라우드</span><span class="ac">A-1</span><span class="sk">S-5</span></b><p>매일 08:00(KST) 일괄 처리(해제→판독→평가→등록) + 결과 리포트 · 루틴 trig_01K5nUhpr7ZGv9KAZSe7bTkL <span style="color:#a83a3a">(네트워크 허용 전까진 감지+리포트까지, 자동등록은 매니저 설정 후)</span></p></div>
+    <div class="step"><b>🌅 아침 자동처리<span class="ac dim">클라우드</span><span class="ac">A-1</span><span class="sk">S-5</span></b><p>매일 아침 일괄 처리(해제→판독→평가→등록) + 결과 리포트</p></div>
     <div class="sarr">▶</div>
-    <div class="step"><b>🔔 아침 브리핑<span class="ac dim">클라우드</span><span class="sk">S-5</span><span class="sk">S-7</span></b><p>매일 09시대: 당일 이력서·면접·온보딩 + 지연 1줄 요약 → 텔레그램 발송(Apps Script v38)</p></div>
+    <div class="step"><b>🔔 아침 리마인드<span class="ac dim">클라우드</span><span class="sk">S-5</span><span class="sk">S-7</span></b><p>매일 08시: 면접·체크인·성찰·지연 집계 → 텔레그램 발송</p></div>
     <div class="sarr">▶</div>
     <div class="step"><b>🗓 달력·KPI 자동 반영<span class="ac dim">자동</span></b><p>체크인·면접 일정 → 허브 달력·KPI(온보딩 중·7일 내·이탈위험)</p></div>
   </div>
@@ -367,15 +284,15 @@
 <div class="sec found">
   <div class="tag">🗄 기반<small>데이터·안전·학습</small></div>
   <div class="grid3">
-    <div class="box"><b>📊 데이터 모듈 — 인사현황 시트 (단일 원본)</b><p>현재근무자(행 고정) · 휴무 · 퇴사자 명부 · 채용공고 · 지원자 · 인사평가 · 입사온보딩 · 퇴사처리 ⇄ 클라우드 백엔드 Apps Script v38(계약 30여 종 · 권한 3단계 · 읽기 캐시 1분) ⇄ 화면 4종(운영허브·리크루팅·ERP·위임 입력)</p></div>
+    <div class="box"><b>📊 데이터 모듈 — 인사현황 시트 8탭 (단일 원본)</b><p>현재근무자(행 고정) · 휴무 · 퇴사자 명부 · 채용공고 · 지원자 · 인사평가 · 입사온보딩 · 퇴사처리 ⇄ 클라우드 백엔드(계약 30여 종 · 권한 3단계 · 읽기 캐시 1분) ⇄ 화면 4종(운영허브·리크루팅·ERP·위임 입력)</p></div>
     <div class="box gate"><b>🛡 안전 모듈 — 4중 게이트<span class="sk">S-1</span><span class="sk">S-3</span><span class="sk">S-4</span></b><p>①감사 승인(A-6, 근거 없는 통과 금지) ②쓰기 규칙(행 고정·안전 간격·잠금·PII 최소화) ③재읽기 대조 ④메인 직접 재확인 — 이 4개를 통과해야만 "완료"</p></div>
     <div class="box loopb"><b>♻ 학습 모듈 — 자기 개선 루프<span class="sk">S-7</span><span class="sk">S-13</span></b><p>작업마다 상태 기록(다음 세션이 이어받음) → 실수는 원인 분석 후 함정노트·에이전트 규칙에 박제 → 다음 작업부터 강제 적용. 같은 지적을 두 번 받지 않는 것이 목표</p></div>
   </div>
 </div>
 
 <footer>
-  <div>웰페리온 인사 운영 허브 · AI CHRO 모듈·파이프라인 구조도 v4.0(frontend-design 스킬 적용 개편) · 보고 원칙: 한국어·표·✅·기술용어 없이·팩트만</div>
-  <div>기준일 2026-07-06 · 오케스트레이터 1 + 에이전트 7 + AI 스킬 1(설치)·4(예정)</div>
+  <div>웰페리온 인사 운영 허브 · AI CHRO 모듈·파이프라인 구조도 v3.0 · 보고 원칙: 한국어·표·✅·기술용어 없이·팩트만</div>
+  <div>기준일 2026-07-04 · 임직원 73명 · 지원자 78명 · 온보딩 진행 2명 · 역대 퇴사자 67명 · 오케스트레이터 1 + 에이전트 7</div>
 </footer>
 </div>
 </div>
@@ -385,11 +302,10 @@
      액션)가 이름을 성+○○로 서버측 마스킹해 반환하므로 인증 없이도 안전하게 노출 가능.
      기본 최근 30건만 표시하고, [전체 펼치기] 클릭 시 offset 이어받기로 전량을 같은 페이지에
      이어붙인다(내부 스크롤 영역을 만들지 않음 — 페이지 자체가 아래로 길어짐).
-     [스타일 2026-07-06] 구조도 본문 재설계 톤(청사진 모티프)에 맞춰 카드·버튼 색만 조정 — JS 로직 불변.
      ============================================================ -->
 <style>
   #autologSection{width:100%;max-width:1600px;margin:0 auto;padding:16px 36px 30px;box-sizing:border-box;font-family:'Malgun Gothic','Segoe UI',sans-serif;color:#22293a}
-  .alg-card{background:#fff;border:1px solid #d8d5cc;border-radius:12px;box-shadow:0 1px 3px rgba(20,30,60,.06), inset 0 3px 0 0 var(--steel);padding:14px 18px 18px}
+  .alg-card{background:#fff;border:1px solid #d8d5cc;border-radius:12px;box-shadow:0 1px 3px rgba(20,30,60,.06);padding:14px 18px 18px}
   .alg-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #eee9df}
   .alg-title{font-size:15px;font-weight:800;color:#0F1E3D}
   .alg-actions{display:flex;align-items:center;gap:10px}
