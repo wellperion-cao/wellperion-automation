@@ -475,6 +475,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .util-btn.report-btn:hover{background:rgba(167,139,218,0.22)}
 .util-btn.share-btn{background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3)}
 .util-btn.share-btn:hover{background:rgba(91,159,213,0.22)}
+/* print_options.js가 인쇄 버튼을 #po-toggle-btn으로 승격시키며 .po-toggle{font:inherit}가 상위 폰트크기(15px)를 상속해 34px로 커짐 → 보고용·공유용(25px)과 높이 불일치. ID셀렉터로 util-btn 폰트/줄높이 복원(공용 print_options.js는 무수정). 2026-07-06 시우, GM */
+#po-toggle-btn{font-size:11px;line-height:normal;padding:4px 10px;box-sizing:border-box}
 /* ── Toast ── */
 .toast-msg{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;display:none;z-index:300;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
 /* ── A3 가이드라인 인쇄 전용 컨테이너 (화면에선 숨김) ── */
