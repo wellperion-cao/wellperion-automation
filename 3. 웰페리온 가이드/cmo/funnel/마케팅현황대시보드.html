@@ -545,6 +545,10 @@ details.footnote-toggle > .fn-body{
     <div id="utm-source-wrap">
       <div class="flow-skeleton sk-pulse" style="height:100px;border-radius:var(--radius-md)"></div>
     </div>
+    <!-- 채널별 클릭→문의(→가입) 퍼널 — click_stats × funnel_conversion 조합(배 신규) -->
+    <div id="channel-funnel-wrap" style="margin-top:14px">
+      <div class="flow-skeleton sk-pulse" style="height:80px;border-radius:var(--radius-md)"></div>
+    </div>
   </div>
 
 </div>
@@ -611,6 +615,7 @@ var MONTHLY_CONVERT_TARGET = null;   // GM 설정 — 월 신규 등록(전환) 
 
 // 채널별 비교 표 라이브 렌더 — 두 소스 모두 저장 후 합산
 var _fcData = null;   // funnel_conversion 응답 (byChannel 배열)
+var _csByUtmSource = null;  // click_stats.byUtmSource 최근 응답(채널 클릭→문의 퍼널 조합용)
 var _pbData = null;   // period_breakdown 응답 (inquiries.byChannelMonth 객체)
 var _flow = null;     // 핵심 지표 전환 흐름의 현재 날짜뷰 정규화 데이터 {clicks,inq,conv,byType,mode,label}
 var _rangeFromTo = { from: '', to: '' };  // 현재 선택된 기간 (클릭 fetch에 붙임)
@@ -1113,6 +1118,7 @@ async function loadFunnelConversion() {
     // 모듈 변수 저장 후 유형별 전환표 렌더 (유입채널 현황은 loadTypeChannel이 담당)
     _fcData = data;
     renderConversionFlow();
+    renderChannelClickInquiry();  // 채널별 클릭→문의(→가입) 퍼널(click_stats와 조합)
 
   } catch (e) {
     console.warn('[funnel_conversion] 로드 실패:', e.message);
@@ -1176,11 +1182,92 @@ async function loadClickStats() {
 
     // ⑤ UTM 유입 출처 렌더 (ship 123 — byUtmSource 정직 측정)
     renderUtmSource(data.byUtmSource || {});
+
+    // 채널별 클릭→문의(→가입) 퍼널 — byUtmSource 저장 후 funnel_conversion과 조합
+    _csByUtmSource = data.byUtmSource || {};
+    renderChannelClickInquiry();
   } catch (e) {
     // 우아한 fallback — 클릭 데이터 없이도 표는 렌더(클릭칸 '집계 중')
     console.warn('[click_stats] 로드 실패:', e.message);
     renderUtmSource(null);
   }
+}
+
+// ─── 채널별 클릭→문의(→가입) 퍼널 (click_stats × funnel_conversion 조합 · 배 신규) ────
+// utm_source 코드(cta_utm.py CHANNEL_UTM 발행 태그) → 유입채널 정규 라벨(Survey.js _canonicalChannel_ 정합).
+// naver_blog/naver_cafe는 문의쪽에서 모두 '네이버'로 귀속됨 — 클릭은 두 코드 합산해 비교.
+// ⚠️ 정직 한계: 노출(분모) 미측정 · 클릭↔문의는 채널레벨 비율(1:1 조인 아님) · 둘 다 전체 누적.
+var _UTM_TO_CANON_CHANNEL = {
+  instagram:  '인스타그램',
+  naver_blog: '네이버',
+  naver_cafe: '네이버',
+  danggn:     '당근마켓',
+  kakao:      '카카오톡'
+};
+
+function renderChannelClickInquiry() {
+  var wrap = document.getElementById('channel-funnel-wrap');
+  if (!wrap) return;
+
+  if (!_csByUtmSource || !_fcData || !Array.isArray(_fcData.byChannel)) {
+    wrap.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;color:var(--dim);font-size:12px">클릭→문의 전환 집계 준비 중</div>';
+    return;
+  }
+
+  // UTM코드 → 정규 채널 클릭수 합산
+  var clicksByChannel = {};
+  Object.keys(_csByUtmSource).forEach(function(k) {
+    var ch = _UTM_TO_CANON_CHANNEL[k];
+    if (!ch) return;
+    clicksByChannel[ch] = (clicksByChannel[ch] || 0) + (_csByUtmSource[k] || 0);
+  });
+
+  // funnel_conversion byChannel → 정규 채널 문의·가입 (매핑 밖 채널은 제외)
+  var canonSet = {};
+  Object.keys(_UTM_TO_CANON_CHANNEL).forEach(function(k) { canonSet[_UTM_TO_CANON_CHANNEL[k]] = true; });
+  var inqByChannel = {};
+  _fcData.byChannel.forEach(function(d) {
+    if (!canonSet[d.channel]) return;
+    inqByChannel[d.channel] = { inquiries: d.inquiries, converted: d.converted, rate: d.rate };
+  });
+
+  var channels = Object.keys(canonSet).filter(function(ch) { return clicksByChannel[ch] || inqByChannel[ch]; });
+
+  if (channels.length === 0) {
+    wrap.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;color:var(--dim);font-size:12px">UTM 매핑 채널 클릭·문의 데이터 없음</div>';
+    return;
+  }
+
+  var rows = channels.map(function(ch) {
+    var clicks = clicksByChannel[ch] || 0;
+    var info   = inqByChannel[ch] || {};
+    var inq    = info.inquiries || 0;
+    var conv   = info.converted || 0;
+    var c2i    = clicks > 0 ? Math.round(inq / clicks * 1000) / 10 : null;
+    var i2c    = (typeof info.rate === 'number') ? info.rate : null;
+    return '<tr>'
+      + '<td style="padding:6px 10px;font-size:12px">' + ch + '</td>'
+      + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + clicks.toLocaleString('ko-KR') + '</td>'
+      + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + inq.toLocaleString('ko-KR') + '</td>'
+      + '<td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:600">' + (c2i === null ? '—' : c2i + '%') + '</td>'
+      + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + conv.toLocaleString('ko-KR') + '</td>'
+      + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + (i2c === null ? '—' : i2c + '%') + '</td>'
+      + '</tr>';
+  }).join('');
+
+  wrap.innerHTML =
+    '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow)">'
+    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">클릭→문의→가입 채널 퍼널 · 전체 누적 · 노출(분모)은 여전히 미측정 — 채널레벨 비율(개별 클릭↔문의 1:1 조인 아님) · UTM코드 매핑 채널만(인스타그램·네이버·당근마켓·카카오톡)</div>'
+    + '<table style="width:100%;border-collapse:collapse">'
+    + '<thead><tr style="border-bottom:1px solid var(--border)">'
+    + '<th style="text-align:left;padding:6px 10px;font-size:10px;color:var(--dim)">채널</th>'
+    + '<th style="text-align:right;padding:6px 10px;font-size:10px;color:var(--dim)">클릭</th>'
+    + '<th style="text-align:right;padding:6px 10px;font-size:10px;color:var(--dim)">문의</th>'
+    + '<th style="text-align:right;padding:6px 10px;font-size:10px;color:var(--dim)">클릭→문의</th>'
+    + '<th style="text-align:right;padding:6px 10px;font-size:10px;color:var(--dim)">가입</th>'
+    + '<th style="text-align:right;padding:6px 10px;font-size:10px;color:var(--dim)">문의→가입</th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table>'
+    + '</div>';
 }
 
 // ─── ⑤ UTM 유입 출처 렌더 (ship 123) ────────────────────────────────

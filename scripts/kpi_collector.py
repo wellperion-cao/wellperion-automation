@@ -266,6 +266,104 @@ def _cmo_channel_clicks() -> dict:
     return result
 
 
+# utm_source 코드(cta_utm.py CHANNEL_UTM 발행 태그) → 유입채널 정규 라벨.
+# Survey.js _canonicalChannel_() 정규식과 정합 확인됨(naver_blog/naver_cafe 모두 '네이버'로 귀속,
+# instagram→인스타그램, danggn→당근마켓, kakao→카카오톡). 매핑 밖 자유텍스트 유입은 집계 제외(날조 금지).
+_UTM_TO_CANON_CHANNEL = {
+    "instagram":  "인스타그램",
+    "naver_blog": "네이버",
+    "naver_cafe": "네이버",
+    "danggn":     "당근마켓",
+    "kakao":      "카카오톡",
+}
+
+
+def _cmo_channel_conversion() -> dict:
+    """
+    cmo 채널별 클릭→문의(→가입) 전환율 — click_stats(byUtmSource) × funnel_conversion(byChannel) 조합(배 신규).
+    ⚠️ 정직 한계(대시보드 동일 문구 병기):
+       ① 노출(분모) 미측정 — 이 값은 '클릭 대비 문의' 채널레벨 비율일 뿐 도달수 기준 전환율 아님.
+       ② 개별 클릭↔문의 1:1 조인 아님(둘 다 채널 단위 집계 합산 비율).
+       ③ 클릭·문의 모두 전체 누적(기간 무필터, 각 GAS 기본 응답 기준).
+       ④ _UTM_TO_CANON_CHANNEL 매핑 밖 자유텍스트 유입(소개·오프라인 등)은 클릭 쪽 대응 불가 → 집계 제외.
+    반환: {"채널별_클릭문의전환": {채널명: {클릭, 문의, 가입, 클릭_문의_전환율, 문의_가입_전환율}}|None,
+           "_채널전환_note": str}
+    """
+    result: dict = {
+        "채널별_클릭문의전환": None,
+        "_채널전환_note": (
+            "노출(분모) 미측정 · 클릭 대비 문의 채널레벨 비율(1:1 조인 아님) · "
+            "클릭·문의 전체 누적(기간무필터) · UTM코드 매핑 채널만(instagram/naver_blog/naver_cafe/danggn/kakao)"
+        ),
+    }
+
+    clicks_by_channel: dict[str, float] = {}
+    try:
+        click_data = _http_get_json(f"{_CPO_GAS}?action=click_stats")
+        if not isinstance(click_data, dict) or not click_data.get("ok"):
+            result["_채널전환_note"] = "click_stats 응답 오류(ok=false 또는 형식 불일치)"
+            return result
+        by_utm = click_data.get("byUtmSource")
+        if not isinstance(by_utm, dict):
+            result["_채널전환_note"] = "click_stats byUtmSource 없음"
+            return result
+        for utm_key, cnt in by_utm.items():
+            channel = _UTM_TO_CANON_CHANNEL.get(str(utm_key))
+            if channel is None or not isinstance(cnt, (int, float)) or isinstance(cnt, bool):
+                continue
+            clicks_by_channel[channel] = clicks_by_channel.get(channel, 0) + cnt
+    except Exception as e:
+        result["_채널전환_note"] = f"click_stats fetch 실패({type(e).__name__}): {str(e)[:80]}"
+        return result
+
+    inquiries_by_channel: dict[str, dict] = {}
+    try:
+        funnel_data = _http_get_json(f"{_CPO_GAS}?action=funnel_conversion")
+        if not isinstance(funnel_data, dict) or not funnel_data.get("ok"):
+            result["_채널전환_note"] += " · funnel_conversion 응답 오류(ok=false 또는 형식 불일치)"
+            return result
+        by_channel_arr = funnel_data.get("byChannel")
+        if not isinstance(by_channel_arr, list):
+            result["_채널전환_note"] += " · funnel_conversion byChannel 없음"
+            return result
+        for row in by_channel_arr:
+            if not isinstance(row, dict):
+                continue
+            ch = row.get("channel")
+            if ch in _UTM_TO_CANON_CHANNEL.values():
+                inquiries_by_channel[ch] = {
+                    "문의": row.get("inquiries"),
+                    "가입": row.get("converted"),
+                    "문의_가입_전환율": row.get("rate"),
+                }
+    except Exception as e:
+        result["_채널전환_note"] += f" · funnel_conversion fetch 실패({type(e).__name__}): {str(e)[:80]}"
+        return result
+
+    combined: dict[str, dict] = {}
+    for channel in set(list(clicks_by_channel.keys()) + list(inquiries_by_channel.keys())):
+        clicks = clicks_by_channel.get(channel)
+        inq_info = inquiries_by_channel.get(channel, {})
+        inquiries = inq_info.get("문의")
+        rate = None
+        if isinstance(clicks, (int, float)) and clicks > 0 and isinstance(inquiries, (int, float)):
+            rate = round(inquiries / clicks * 100, 1)
+        combined[channel] = {
+            "클릭": clicks,
+            "문의": inquiries,
+            "가입": inq_info.get("가입"),
+            "클릭_문의_전환율": rate,
+            "문의_가입_전환율": inq_info.get("문의_가입_전환율"),
+        }
+
+    if not combined:
+        result["_채널전환_note"] += " · 매핑된 채널 클릭·문의 데이터 없음"
+        return result
+
+    result["채널별_클릭문의전환"] = combined
+    return result
+
+
 def _sales_target_total() -> int | float | None:
     """월 목표매출 총액(고정) — status/sales_targets.json 정본(GM 결재). 실패 시 None."""
     try:
@@ -361,6 +459,8 @@ def collect() -> dict:
         if role == "cmo":
             # 채널별 유입 클릭수 병합 (click_stats 실측 · 노출 분모는 미측정 유지 · null 안전)
             stats.update(_cmo_channel_clicks())
+            # 채널별 클릭→문의(→가입) 전환율 병합 (click_stats × funnel_conversion 조합 · 노출분모 없이 채널레벨 · null 안전)
+            stats.update(_cmo_channel_conversion())
         roles_data[role] = stats
 
     now_kst = datetime.now(KST)
@@ -399,6 +499,8 @@ def main() -> None:
             extra = f"  sales_month={v['sales_month']}({v.get('sales_month_label')}) target={v.get('sales_month_target')}"
         if role == "cmo" and v.get("총_클릭수") is not None:
             extra = f"  총클릭수={v['총_클릭수']}  채널별={v.get('채널별_클릭수')}"
+        if role == "cmo" and v.get("채널별_클릭문의전환") is not None:
+            extra += f"  채널별_클릭문의전환={v['채널별_클릭문의전환']}"
         print(f"  {role:5s}: 완결률={v['완결률']}  완료={v['완료']}  활성={v['활성']}{extra}")
     print(f"  -> {OUT_PATH}")
 
