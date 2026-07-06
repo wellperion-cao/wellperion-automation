@@ -326,5 +326,19 @@
     "artifact": "9시 매출보고 텔레그램 사진 아래 인라인버튼(📤 카톡 3방 전송) 탭 한 번으로\n카톡 3방(차의주 회장님/웰페리온 관리부/웰페리온 운영부)에 그 사진+캡션을\n그대로 자동 전송. 카톡 그룹방은 공식 API 불가 → 카카오톡 PC 앱 UI 자동화\n(pywinauto+pywin32 클립보드)로 처리. (CLI ad-hoc · 커밋 f91ffae6)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f91ffae606416af5a7e85d729db3700915545e51"
+  },
+  {
+    "task_id": "CTO-2026-07-06-ADHOC-a11c20dc",
+    "clevel": "cto",
+    "title": "[시토] 카톡 매출보고 전송기 확장 — 로컬 월 archive 저장 + 방별 캡션 prefix (배488)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 490,
+    "artifact": "GM 최종 스펙 반영: bot.py 콜백이 텔레그램 사진을 로컬 월 폴더\n(archive_dir/YYYY-MM/웰페리온_일일보고_YYYYMMDD.png, 수신일 기준)에 저장하고\n그 저장본을 그대로 카톡 전송에 재사용(중복 다운로드 제거). kakao_rooms.json에\n방별 prefix(회장님방=\"회장님, \")를 추가해 sender가 원본 캡션과 조합해 발송.\nkakao_report_sender.py에 --from-folder 옵션 추가(이미지 미지정 시 archive_dir\n에서 오늘자 파일 자동 선택). (CLI ad-hoc · 커밋 a11c20dc)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a11c20dc2f6efeb360a753b685237499ab535d20"
   }
 ]
