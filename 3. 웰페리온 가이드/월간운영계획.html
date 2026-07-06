@@ -354,6 +354,14 @@
   .h1rteam td.num, .h1rteam th.num{text-align:right; font-variant-numeric:tabular-nums;}
   .h1rteam td.pctc{color:var(--accent-soft); font-weight:700;}
   .h1rteam td.h2v{color:var(--gold); font-weight:700;}
+  .h1rteam td .qv{display:block;}
+  .h1rteam td .qp{display:block; font-size:10.5px; color:var(--accent-soft); font-weight:700; margin-top:1px;}
+  /* 🏆 2분기 포상 배너(GM 확정값·SSOT=half_year_review.award) */
+  .h1r-award{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin:0 0 10px; padding:11px 15px; background:linear-gradient(120deg,rgba(240,198,116,0.16),rgba(240,198,116,0.05)); border:1px solid var(--gold); border-radius:11px;}
+  .h1r-award .aw-ic{font-size:16px;}
+  .h1r-award .aw-t{font-size:13.5px; font-weight:800; color:var(--text);}
+  .h1r-award .aw-p{font-size:13px; font-weight:800; color:var(--gold);}
+  .h1r-award .aw-b{font-size:10.5px; color:var(--dim);}
   .h1rteam tbody tr.best td{background:rgba(240,198,116,0.08);}
   .h1rteam tbody tr.corp td{color:var(--dim); font-style:italic;}
   .h1rteam tbody tr.tot td{border-top:1px solid var(--border-strong); font-weight:700; color:var(--text); background:var(--surface); font-style:normal;}
@@ -872,7 +880,7 @@
 
     <!-- 📋 상반기 리뷰 & 하반기 방향 (GM 상반기 전사회의 반영 2026-07-06 · 상반기 실적=라이브 실측) -->
     <section class="blk h1review-wrap" data-blkid="h1review">
-      <h2 class="sec">📋 상반기 리뷰 &amp; 하반기 방향 <span class="stag">1~6월 실측 · 강습팀·잘한 팀·하반기 3축</span></h2>
+      <h2 class="sec">📋 상반기 리뷰 &amp; 하반기 방향 <span class="stag">1·2분기 분리 실측 · 포상 · 하반기 3축</span></h2>
       <div id="h1review-board"><div class="board-status">상반기 리뷰를 계산하는 중…</div></div>
     </section>
 
@@ -1799,13 +1807,12 @@
   }
 
   // ── 📋 상반기 리뷰 & 하반기 방향(GM 상반기 전사회의 반영 2026-07-06) ──
-  // 상반기(1~6월) 강습팀 실적 = _cfoSalesDept[부서] 0~5월 합(부팅 시 이미 조회한 매출마스터 재사용·신규 배관 없음·INC-001 값 저장 없음).
-  // 목표 = status/sales_targets.json 월 목표(고정). 상반기 목표=하반기 목표=월 목표×6(월별 동일·팀별 조정 전=정직 표기). 잘한 팀=강습팀 중 달성률 최고(실측 있을 때만·지어내기 금지).
+  // 상반기(1~6월) 강습팀 실적을 1분기(1~3월·idx0~2)·2분기(4~6월·idx3~5)로 분리 = _cfoSalesDept[부서] 분기 합(부팅 시 이미 조회한 매출마스터 재사용·신규 배관 없음·INC-001 값 저장 없음).
+  // 목표 = status/sales_targets.json 월 목표(고정). 분기 목표=월목표×3·상반기=하반기=월목표×6(팀별 조정 전=정직 표기). 잘한 팀=2분기 실적 달성률 최고(GM: 근거=2분기)·포상=half_year_review.award(GM 확정값). 미도래=정직 표기·지어내기 금지.
   function renderH1Review(){
     var host = document.getElementById('h1review-board');
     if(!host) return;
     var hr = (_data && _data.half_year_review) || null;
-    var HALF = 6;
 
     var banner = hr ? ('<div class="h1r-banner"><span class="b-h">🤖 <em>' + esc(hr.headline || '') + '</em></span>' +
       (hr.headline_sub ? '<span class="b-sub">' + esc(hr.headline_sub) + '</span>' : '') + '</div>') : '';
@@ -1813,63 +1820,83 @@
     var teamRows = (_salesTargets && _salesTargets.teams) || [];
     var KEY_TO_DEPT = {}; for(var kd in TEAM_DEPT_TO_KEY){ KEY_TO_DEPT[TEAM_DEPT_TO_KEY[kd]] = kd; }
     var haveActual = !!_cfoSalesDept;
-    function h1ActualFor(key){
+    // 분기 합: q=0 → 1~3월(idx0~2), q=1 → 4~6월(idx3~5). 실측 없으면 null(정직).
+    function qActualFor(key, q){
       var dept = (key === 'membership') ? '운영부' : KEY_TO_DEPT[key];
       if(!dept || !_cfoSalesDept || !_cfoSalesDept[dept]) return null;
-      var arr = _cfoSalesDept[dept], s = 0;
-      for(var m = 0; m < HALF && m < arr.length; m++){ s += Number(arr[m]) || 0; }
+      var arr = _cfoSalesDept[dept], s = 0, start = q * 3;
+      for(var m = start; m < start + 3 && m < arr.length; m++){ s += Number(arr[m]) || 0; }
       return s;
     }
 
     var lessonRows = [], membershipRow = null;
     teamRows.forEach(function(tt){
-      var mtgt = Number(tt.target) || 0, act = h1ActualFor(tt.key), htgt = mtgt * HALF;
-      var pct = (act != null && htgt) ? Math.round(act / htgt * 100) : null;
-      var row = {key: tt.key, name: tt.name, mtgt: mtgt, htgt: htgt, act: act, pct: pct};
+      var mtgt = Number(tt.target) || 0, qtgt = mtgt * 3, htgt = mtgt * 6;
+      var q1 = qActualFor(tt.key, 0), q2 = qActualFor(tt.key, 1);
+      var h1 = (q1 != null || q2 != null) ? ((q1 || 0) + (q2 || 0)) : null;
+      var row = {key: tt.key, name: tt.name, mtgt: mtgt, qtgt: qtgt, htgt: htgt, q1: q1, q2: q2, h1: h1,
+        q1pct: (q1 != null && qtgt) ? Math.round(q1 / qtgt * 100) : null,
+        q2pct: (q2 != null && qtgt) ? Math.round(q2 / qtgt * 100) : null,
+        h1pct: (h1 != null && htgt) ? Math.round(h1 / htgt * 100) : null};
       if(tt.key === 'membership') membershipRow = row; else lessonRows.push(row);
     });
 
+    // 잘한 팀 = 2분기 실적 달성률 최고(GM: 근거=2분기).
     var best = null;
-    if(haveActual){ lessonRows.forEach(function(r){ if(r.pct != null && (!best || r.pct > best.pct)) best = r; }); }
+    if(haveActual){ lessonRows.forEach(function(r){ if(r.q2pct != null && (!best || r.q2pct > best.q2pct)) best = r; }); }
+
+    // 🏆 2분기 포상(GM 확정값·SSOT=half_year_review.award).
+    var aw = hr && hr.award;
+    var awardHtml = aw ? ('<div class="h1r-award"><span class="aw-ic">🏆</span>' +
+      '<span class="aw-t">' + esc(aw.quarter || '2분기') + ' 포상 — ' + esc(aw.team || '') + '</span>' +
+      '<span class="aw-p">' + esc(aw.prize || '') + '</span>' +
+      (aw.basis ? '<span class="aw-b">' + esc(aw.basis) + '</span>' : '') + '</div>') : '';
+
     var bestHtml;
     if(best){
-      bestHtml = '<div class="h1r-best"><div class="h1r-best-card"><span class="bc-top">🏆 목표 대비 잘한 팀</span>' +
+      bestHtml = '<div class="h1r-best"><div class="h1r-best-card"><span class="bc-top">🏅 2분기 잘한 팀</span>' +
         '<span class="bc-team">' + esc(best.name) + '</span>' +
-        '<span class="bc-meta">상반기 <b>' + fmtWon(best.act) + '</b> · 달성률 <b>' + best.pct + '%</b> (목표 ' + fmtWon(best.htgt) + ')</span></div></div>';
+        '<span class="bc-meta">2분기 <b>' + fmtWon(best.q2) + '</b> · 달성률 <b>' + best.q2pct + '%</b> (분기목표 ' + fmtWon(best.qtgt) + ')</span></div></div>';
     } else if(!haveActual){
-      bestHtml = '<div class="h1r-none">잘한 팀 하이라이트 — 상반기 실측(sales_monthly) 도착 대기(지어내기 없음).</div>';
+      bestHtml = '<div class="h1r-none">잘한 팀 하이라이트 — 상반기 실측 도착 대기(지어내기 없음).</div>';
     } else {
       bestHtml = '<div class="h1r-none">잘한 팀 하이라이트 — 달성률 산출 가능한 실측 없음.</div>';
     }
 
+    function qcell(act, pct){
+      return '<td class="num"><span class="qv">' + (act != null ? fmtWon(act) : '—') + '</span>' +
+        '<span class="qp">' + (pct != null ? pct + '%' : '—') + '</span></td>';
+    }
     var tbody = lessonRows.map(function(r){
       var isBest = best && r.key === best.key;
-      return '<tr' + (isBest ? ' class="best"' : '') + '><td>' + esc(r.name) + (isBest ? ' 🏆' : '') + '</td>' +
-        '<td class="num">' + (r.act != null ? fmtWon(r.act) : '—') + '</td>' +
-        '<td class="num pctc">' + (r.pct != null ? r.pct + '%' : '—') + '</td>' +
-        '<td class="num">' + fmtWon(r.mtgt) + '</td>' +
+      return '<tr' + (isBest ? ' class="best"' : '') + '><td>' + esc(r.name) + (isBest ? ' 🏅' : '') + '</td>' +
+        qcell(r.q1, r.q1pct) + qcell(r.q2, r.q2pct) + qcell(r.h1, r.h1pct) +
         '<td class="num h2v">' + fmtWon(r.htgt) + '</td></tr>';
     }).join('');
     if(membershipRow){
       var mr = membershipRow;
       tbody += '<tr class="corp"><td>' + esc(mr.name) + ' · 전사(강습팀 아님)</td>' +
-        '<td class="num">' + (mr.act != null ? fmtWon(mr.act) : '—') + '</td>' +
-        '<td class="num pctc">' + (mr.pct != null ? mr.pct + '%' : '—') + '</td>' +
-        '<td class="num">' + fmtWon(mr.mtgt) + '</td>' +
+        qcell(mr.q1, mr.q1pct) + qcell(mr.q2, mr.q2pct) + qcell(mr.h1, mr.h1pct) +
         '<td class="num h2v">' + fmtWon(mr.htgt) + '</td></tr>';
     }
     var allRows = lessonRows.concat(membershipRow ? [membershipRow] : []);
-    var totAct = null, totMtgt = 0, totHtgt = 0;
-    allRows.forEach(function(r){ totMtgt += r.mtgt; totHtgt += r.htgt; if(r.act != null){ totAct = (totAct || 0) + r.act; } });
-    var totPct = (totAct != null && totHtgt) ? Math.round(totAct / totHtgt * 100) : null;
-    tbody += '<tr class="tot"><td>전사 합계</td><td class="num">' + (totAct != null ? fmtWon(totAct) : '—') + '</td>' +
-      '<td class="num pctc">' + (totPct != null ? totPct + '%' : '—') + '</td>' +
-      '<td class="num">' + fmtWon(totMtgt) + '</td><td class="num h2v">' + fmtWon(totHtgt) + '</td></tr>';
+    var t = {q1: null, q2: null, h1: null, qtgt: 0, htgt: 0};
+    allRows.forEach(function(r){
+      t.qtgt += r.qtgt; t.htgt += r.htgt;
+      if(r.q1 != null){ t.q1 = (t.q1 || 0) + r.q1; }
+      if(r.q2 != null){ t.q2 = (t.q2 || 0) + r.q2; }
+      if(r.h1 != null){ t.h1 = (t.h1 || 0) + r.h1; }
+    });
+    var tq1p = (t.q1 != null && t.qtgt) ? Math.round(t.q1 / t.qtgt * 100) : null;
+    var tq2p = (t.q2 != null && t.qtgt) ? Math.round(t.q2 / t.qtgt * 100) : null;
+    var th1p = (t.h1 != null && t.htgt) ? Math.round(t.h1 / t.htgt * 100) : null;
+    tbody += '<tr class="tot"><td>전사 합계</td>' + qcell(t.q1, tq1p) + qcell(t.q2, tq2p) + qcell(t.h1, th1p) +
+      '<td class="num h2v">' + fmtWon(t.htgt) + '</td></tr>';
 
     var table = teamRows.length ?
       ('<div class="rpt-wrap"><table class="rpt findept h1rteam"><thead><tr>' +
-        '<th>팀</th><th class="num">상반기 실적(1~6월·실측)</th><th class="num">달성%</th>' +
-        '<th class="num">월 목표</th><th class="num">하반기 목표(7~12월)</th></tr></thead><tbody>' +
+        '<th>팀</th><th class="num">1분기(1~3월)<br>실적·달성%</th><th class="num">2분기(4~6월)<br>실적·달성%</th>' +
+        '<th class="num">상반기 합<br>실적·달성%</th><th class="num">하반기 목표<br>(7~12월)</th></tr></thead><tbody>' +
         tbody + '</tbody></table></div>') :
       '<div class="h1r-none">팀별 목표 정본(sales_targets.json) 로딩 중…</div>';
 
@@ -1881,8 +1908,8 @@
     }).join('') + '</div>') : '';
 
     host.innerHTML = banner +
-      '<div class="h1r-sub-h">🏆 상반기 매출 리뷰 · 잘한 팀</div>' + bestHtml +
-      '<div class="h1r-sub-h">📊 강습팀 상반기 리뷰 + 하반기 목표 <span class="h1r-tag">하반기=월 목표×6 · 달성%=상반기÷(월×6) · 기준 목표(팀별 조정 전)</span></div>' + table +
+      '<div class="h1r-sub-h">🏆 2분기 포상 · 잘한 팀</div>' + awardHtml + bestHtml +
+      '<div class="h1r-sub-h">📊 강습팀 1·2분기 실적 + 하반기 목표 <span class="h1r-tag">분기 달성%=분기실적÷(월목표×3) · 상반기=÷(월목표×6) · 기준 목표(팀별 조정 전)</span></div>' + table +
       (dirHtml ? ('<div class="h1r-sub-h">🧭 하반기 방향 3축</div>' + dirHtml) : '');
   }
 
