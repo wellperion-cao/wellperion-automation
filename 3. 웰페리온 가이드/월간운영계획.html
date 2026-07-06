@@ -1052,12 +1052,15 @@
       .catch(function(){ return null; });
   }
   // 매출(정본 우선·부서합 폴백)·부서맵·인건비 부서맵 동시 미러
+  // 2026-07-06 수리: 4개 소스를 하나의 Promise.all로만 묶으면 가장 느린 소스(LABOR_GVIZ 실측 5.5s)가 전체를 지연시켜,
+  // 네트워크 변동 시 boot()의 바깥 8s 타임아웃에 걸려 이미 도착한 정상 매출(readSalesTruth 실측 2.78s)까지 통째 null 폴백됨(간헐 "연결 실패").
+  // 소스별 개별 withTimeout으로 각자 상한을 두어(느린 소스만 null 폴백) 이 Promise.all 자체의 최대 대기시간을 보장 상한 이내로 묶는다 — 값·소스·정직표기 로직은 불변, 타이밍 결합만 분리.
   function readCfoFinance(){
     return Promise.all([
-      readGvizDeptMap(SALES_GVIZ, 1, false),
-      readGvizDeptMap(LABOR_GVIZ, 2, true),
-      readSalesTruth(),
-      readOpsSalesTruth()
+      withTimeout(readGvizDeptMap(SALES_GVIZ, 1, false), 6000, null),
+      withTimeout(readGvizDeptMap(LABOR_GVIZ, 2, true), 6000, null),
+      withTimeout(readSalesTruth(), 8000, null),
+      withTimeout(readOpsSalesTruth(), 6000, null)
     ]).then(function(a){
       var salesDept = a[0], laborDept = a[1], truth = a[2], opsTruth = a[3];
       // 부서별 매출 분해 중 '운영부'만 GM시트 정본(멤버십+옵션)으로 교체 — 舊 매출마스터는 6월부터 어긋남(2026-07 GM 지시).
@@ -2182,7 +2185,9 @@
     });
 
     // 2) CFO 재무 미러(매출·지출·부서맵) — 도착 시 임팩트·요약·재무·매출히스토리 갱신.
-    withTimeout(readCfoFinance(), 8000, {sales:null, exp:null, salesDept:null, laborDept:null}).then(function(r){
+    // 2026-07-06: 내부(readCfoFinance)가 이제 소스별 개별 타임아웃(최대 8s)을 가지므로, 바깥 타임아웃은 그 내부 상한보다 여유를 두어
+    // 내부가 정상적으로 부분 폴백(느린 소스만 null)할 시간을 보장한다 — 바깥이 먼저 끊겨 전체가 통째 null이 되는 것을 방지.
+    withTimeout(readCfoFinance(), 12000, {sales:null, exp:null, salesDept:null, laborDept:null}).then(function(r){
       r = r || {};
       _cfoSales = r.sales; _cfoExp = r.exp; _cfoSalesDept = r.salesDept; _cfoLaborDept = r.laborDept;
       _finReady = true;
