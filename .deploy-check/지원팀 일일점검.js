@@ -534,6 +534,14 @@ function doGet(e) {
   if (action === 'show_issue_col') { return showIssueColumn(e.parameter.dept || 'support'); }   // G열 숨김 해제 — hide_issue_col 실행 후 이슈 저장 재활성화 시 1회 실행. 2026-06-25 시우.
   if (action === 'clear_old_duration') { return clearOldDuration(e.parameter.dept || 'support'); }   // O열(소요시간·인덱스14) 옛 시각값(1899-12-30 시리얼) 비우기. 컬럼 숨김 X — 소요시간은 화면 표시 유지. 1회성. 2026-06-20 시우.
   if (action === 'reset_facility_common') { return resetFacilityCommon(); }   // 시설_공용구역 옛 데이터 백업 후 데이터행 비움(헤더 보존). 1회성. 2026-07-06 시우.
+  if (action === 'restore_facility_backup') { return restoreFacilityFromBackup(e.parameter.bak, e.parameter.date); }   // 백업탭에서 특정날짜 행만 복원(제출시각 최신·소요시간 정정). 1회성. 2026-07-06 시우.
+  if (action === 'count_backup_date') {   // 읽기전용 진단: 백업탭 내 특정 날짜 원본 행수(복원 전 확인용). 1회성. 2026-07-06 시우.
+    var _cbSs = SpreadsheetApp.getActiveSpreadsheet();
+    var _cbSh = _cbSs.getSheetByName(e.parameter.bak || ''); if (!_cbSh) return jsonRes({ ok:false, error:'백업탭 없음' });
+    var _cbVals = _cbSh.getDataRange().getValues(), _cbN = 0;
+    for (var _cbI = 1; _cbI < _cbVals.length; _cbI++) { if (String(_cbVals[_cbI][0]) === e.parameter.date || formatDate(_cbVals[_cbI][0]) === e.parameter.date) _cbN++; }
+    return jsonRes({ ok:true, bak: e.parameter.bak, date: e.parameter.date, rawRows: _cbN });
+  }
   if (action === 'fix_item_type_dept') {   // 지정 항목ID의 타입(7열)→check·부서(9열)→support 정정. F/G 칸어긋남 교정. GET ?action=fix_item_type_dept&ids=f1,f2,...,g1. 2026-06-27 시우.
     var _fim = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ITEMS);
     if (!_fim) return jsonRes({ error: 'no SHEET_ITEMS' });
@@ -940,6 +948,31 @@ function resetFacilityCommon() {
   var removed = Math.max(0, last-1);
   if (last > 1) sh.getRange(2,1,last-1,Math.max(HEADERS.length, sh.getLastColumn())).clearContent();
   return jsonRes({ ok:true, backup: bak.getName(), removedRows: removed });
+}
+
+// 백업탭에서 date 행만 시설_공용구역으로 복원 — (회차+항목ID)별 제출시각(col9) 최신 1행만, 소요시간(col14)은 빈칸으로 정정. 1회성. 2026-07-06 시우·GM.
+function restoreFacilityFromBackup(bakName, date){
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var bak=ss.getSheetByName(bakName); if(!bak) return jsonRes({ok:false,error:'백업탭 없음:'+bakName});
+  var tgt=ss.getSheetByName(SHEET_FACILITY_COMMON); if(!tgt) return jsonRes({ok:false,error:'대상 없음'});
+  _ensureHeaders(tgt);
+  var vals=bak.getDataRange().getValues();
+  function ts(v){ var s=(v instanceof Date)?v.getTime():new Date(String(v==null?'':v).replace(' ','T')).getTime(); return isNaN(s)?-1:s; }
+  var pick={};
+  for(var i=1;i<vals.length;i++){
+    var r=vals[i];
+    if(!(String(r[0])===date || formatDate(r[0])===date)) continue;
+    var key=String(r[4])+'|'+String(r[1]);   // 회차|항목ID
+    var t=ts(r[9]);
+    if(!pick[key] || t>=pick[key].t){
+      var row=r.slice(0,HEADERS.length); while(row.length<HEADERS.length) row.push('');
+      row[14]='';   // 소요시간 칸 옛 버그값 제거
+      pick[key]={row:row, t:t};
+    }
+  }
+  var rows=Object.keys(pick).map(function(k){ return pick[k].row; });
+  if(rows.length){ tgt.getRange(tgt.getLastRow()+1,1,rows.length,HEADERS.length).setValues(rows); _sortByDateDesc(tgt); }
+  return jsonRes({ok:true, restored:rows.length, from:bakName, date:date});
 }
 
 // 항목 마스터(지원_매뉴얼)에서 특정 dept 행 제거(GM 2026-06-12) — 깨진 인코딩 facility 데드행 정리·경량화.
