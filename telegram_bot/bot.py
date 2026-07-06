@@ -655,7 +655,7 @@ async def route_approval(update: Update, text: str) -> bool:
 
 
 # ─── 북극성 추천 카드 승인 회신 (CTO 2026-06-29, 2단계) ──────────────────────
-# 06:30 northstar_recommender.py --send 가 보낸 카드에 GM이 [승인 1/2/3]/[보류] 회신.
+# 06:30 northstar_recommender.py --send 가 보낸 카드에 GM이 [승인]/[보류] 회신.
 # 승인 → 해당 후보를 status/_queue.json PENDING 배로 등록(read-before-write, ship_no=max+1)
 #       + northstar_pending.json 후보 status=approved. 보류 → status=held(무파괴).
 # 토큰: 대괄호 형태만 인식 → 결재 키워드("승인"/"보류" startswith) 라우터와 충돌 없음.
@@ -796,17 +796,18 @@ def _ns_build_keyboard(cands: list):
     """미승인 후보만 남긴 인라인 승인버튼 재구성(승인된 건 버튼 소거). 없으면 None.
     callback_data 규약 = ns:<idx>:approve / ns:hold (recommender.build_keyboard 와 동일)."""
     medals = {0: "🥇", 1: "🥈", 2: "🥉"}
+    single = len(cands) <= 1
     approve = []
     for idx, c in enumerate(cands):
         if c.get("status") == "approved":
             continue
-        label = medals.get(idx, f"{idx+1}.")
+        text = "✅ 승인" if single else f"{medals.get(idx, f'{idx+1}.')} {idx+1}순위 승인"
         approve.append(InlineKeyboardButton(
-            f"{label} {idx+1}순위 승인", callback_data=f"ns:{idx}:approve"))
+            text, callback_data=f"ns:{idx}:approve"))
     if not approve:
         return None
     rows = [approve[i:i + 3] for i in range(0, len(approve), 3)]
-    rows.append([InlineKeyboardButton("⚓ 전체 보류", callback_data="ns:hold")])
+    rows.append([InlineKeyboardButton("⚓ 보류" if single else "⚓ 전체 보류", callback_data="ns:hold")])
     return InlineKeyboardMarkup(rows)
 
 

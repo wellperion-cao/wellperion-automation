@@ -2,7 +2,7 @@
 """일일 북극성 추천기 — 1단계: 두뇌 드라이런 엔진 (northstar_recommender.py)
 
 매일(2단계에서 06:30) 전 C-Level의 **북극성(목표)** 대비 현재 위치를 읽어,
-북극성↔오늘을 잇는 과정(브릿지)을 밟게 하는 **'오늘의 다음 한 수' 전사 top3 후보**를 제안한다.
+북극성↔오늘을 잇는 과정(브릿지)을 밟게 하는 **'오늘의 다음 한 수' — 웰리 단일 추천 1개**를 제안한다.
 
 설계 정본:
   - 스펙   : .omc/specs/deep-interview-daily-northstar-recommender.md
@@ -13,7 +13,7 @@ GM 잠금 결정(2026-06-29):
   - G1: 상태 파일 = status/northstar_pending.json (git 추적)
   - G2: 미승인 추천 = 다음날 새 추천 생성 시 자동 보류(만료)
   - G3: 대상 = 처음부터 전 C-Level(7역할 ceo·cmo·coo·cto·cpo·cfo·chro, gm 제외).
-        웰리가 7역할 가로질러 전사 top3 선정 + 각 후보에 역할·북극성 태그.
+        웰리가 7역할 가로질러 웰리 단일 추천 1개 선정 + 해당 후보에 역할·북극성 태그.
         ※ G3 대상범위 수정(2026-07-03 GM): cfo·chro 는 나우열M 실무 담당 도메인이라
           AI 항로 배 대상이 아님 → top3 후보 선정 대상에서 제외. 남는 대상 = ceo·cmo·coo·cto·cpo(5역할).
           상세 = .omc/specs/deep-interview-daily-northstar-recommender.md G3.
@@ -22,7 +22,7 @@ GM 잠금 결정(2026-06-29):
   - 1순위: claude CLI (model_router 폴백 경유 — ai_learning_proposer 와 동일 결, API 크레딧 0)
   - 2순위: 규칙기반 폴백 — CLI 불가 시 최소동작 보장(신호 기반 후보 생성)
   [규칙] 신호 3종: ①북극성 갭 ②KPI 미달 ③다음 한 걸음. 우선순위=북극성 직접기여 > KPI 시급 > 브릿지 연속성.
-         다양성(서로 다른 신호/역할), 중복방지(_queue active 배 제외), 전사 top3.
+         중복방지(_queue active 배 제외), 웰리 단일 추천 1개(RECOMMEND_COUNT).
 
 ★ 1단계 안전 원칙 (라이브 부작용 0):
   - 입력 수집 + 두뇌 호출 + status/northstar_pending.json 쓰기 + 콘솔 출력만.
@@ -37,7 +37,7 @@ GM 잠금 결정(2026-06-29):
   - GM 보강: 후보별 3줄 브릿지(🌟 북극성 → 📍 지금 → 👉 오늘 한 수)를 path_map 에 담고
              northstar·progress 필드도 함께 저장(2b 추적용).
   - 06:30 Task Scheduler → launchers/northstar_recommender.vbs → scripts/northstar_recommender.bat → --send
-  - 카드 [승인 1/2/3]/[보류] 회신 → telegram_bot/bot.py 가 _queue.json PENDING 배 등록 + pending status 갱신.
+  - 카드 [승인]/[보류] 회신 → telegram_bot/bot.py 가 _queue.json PENDING 배 등록 + pending status 갱신.
   - G2: 새 추천 생성 시 이전 'proposed' 미승인 건 자동 만료(expired) — northstar_log.jsonl 기록.
 """
 from __future__ import annotations
@@ -69,6 +69,8 @@ ENV_FILE = BASE_DIR / "telegram_bot" / ".env"  # 텔레그램 토큰·챗ID 단�
 # 2026-07-03 GM 결정: cfo·chro 는 나우열M 실무 담당 도메인 — top3 후보 선정 대상에서 제외.
 # 남는 대상 = ceo·cmo·coo·cto·cpo (5역할). 상세 = .omc/specs/deep-interview-daily-northstar-recommender.md G3.
 TARGET_ROLES = ["ceo", "cmo", "coo", "cto", "cpo"]
+
+RECOMMEND_COUNT = 1  # 웰리 단일 추천(2026-07-06 GM). 후보 수 = 이 값 하나로 조절
 
 # ── 역할 닉네임 (카드 1줄 표기용) ──
 ROLE_NICK = {
@@ -199,19 +201,18 @@ def _build_prompt(inputs: dict) -> str:
 ---
 
 위 현황을 바탕으로, 각 C-Level이 '북극성'으로 나아가는 **최상급 과정(브릿지)**을 밟게 하는
-**'오늘의 다음 한 수'를 전사 관점에서 단 3개(top3)** 선정하세요.
+**'오늘의 다음 한 수'를 전사 관점에서 단 1개**(웰리가 북극성에 가장 맞는 '오늘의 한 수' 하나만 스스로 선정) 선정하세요.
 
 [추천 규칙]
-- 신호 3종 중 각기 다른 근거로: ①북극성 갭(북극성 서술 대비 비어있는 다음 걸음·owns/ideas 참고) ②KPI 미달(KPI 현재치가 목표·정의 밑) ③다음 한 걸음(완료건 next 중 미착수).
+- 신호 3종 중 가장 적합한 근거로: ①북극성 갭(북극성 서술 대비 비어있는 다음 걸음·owns/ideas 참고) ②KPI 미달(KPI 현재치가 목표·정의 밑) ③다음 한 걸음(완료건 next 중 미착수).
 - 우선순위 가중: 북극성 직접기여 > KPI 미달 시급 > 브릿지 연속성.
-- 다양성: 3개는 가능하면 서로 다른 역할/신호.
 - 중복방지: 이미 active 인 배와 겹치는 추천 금지.
-- 전사 top3: 대상 역할({role_list_str}) 전체에서 가장 가치 높은 3개만(특정 역할 편중 지양).
+- 대상 역할({role_list_str}) 전체에서 **가장 가치 높은 단 하나**만(웰리의 판단으로 결정).
 - **반드시 1순위 하나를 명확히 고르고** rank=1로 표시한 뒤, 왜 1순위인지 one_reason에 한 줄로 적는다.
 
 닉네임 매핑(owner 필드에 사용): {nick_map_str}.
 
-각 후보는 반드시 아래 JSON 배열 형식으로만 응답하세요 (설명문·마크다운·코드블록 없이 순수 JSON만):
+후보 1개만 담은 JSON 배열로 응답하세요 (설명문·마크다운·코드블록 없이 순수 JSON만):
 [
   {{
     "rank": 1,
@@ -229,15 +230,15 @@ def _build_prompt(inputs: dict) -> str:
 ]
 
 규칙:
-- rank 는 1/2/3 (1=최우선 추천, 3개 모두 서로 다른 rank)
+- rank 는 1 (단일 추천이므로 항상 1)
 - role 은 반드시 {role_list_str} 중 하나
 - owner 는 위 닉네임 매핑 그대로
 - difficulty 는 반드시 ⛵돛단배/⛴️여객선/🛳️크루즈 중 하나
-- 정확히 3개. 순수 JSON 배열만 출력(```json 코드블록도 없이)."""
+- 정확히 1개. 순수 JSON 배열만 출력(```json 코드블록도 없이)."""
 
 
 def brain_claude_cli(inputs: dict) -> list | None:
-    """claude CLI(model_router 폴백)로 전사 top3 후보 생성. 실패 시 None."""
+    """claude CLI(model_router 폴백)로 웰리 단일 추천 1개 후보 생성. 실패 시 None."""
     prompt = _build_prompt(inputs)
     try:
         from model_router import run_claude  # same scripts/ 디렉터리
@@ -364,7 +365,7 @@ def brain_fallback(inputs: dict) -> list:
 
     # 반환: rank 순(①>②>③), None 제거
     cands = [c for c in [sig1, sig2, sig3] if c is not None]
-    return cands[:3]
+    return cands[:RECOMMEND_COUNT]
 
 
 # ═══════════════════════════════════════════
@@ -372,7 +373,7 @@ def brain_fallback(inputs: dict) -> list:
 # ═══════════════════════════════════════════
 def normalize_candidates(raw: list) -> list:
     out = []
-    for i, c in enumerate(raw[:3], 1):
+    for i, c in enumerate(raw[:RECOMMEND_COUNT], 1):
         if not isinstance(c, dict):
             continue
         role = (c.get("role") or "").lower()
@@ -546,7 +547,7 @@ def build_card(pending: dict) -> str:
     candidates 배열은 rank 순 정렬(0번=rank 1=1순위 → 버튼 'ns:0:approve').
     포맷: 후보를 (역할·모듈) 그룹으로 묶어 렌더 — 각 모듈 헤더에 대표 페이지 URL(수단) +
     serves(돕는 프로젝트 → 북극성, 목적) 한 줄. 승인은 텍스트 [승인N] 폐기 → 하단 인라인버튼.
-    말미 '⚓ 병렬 진행 가능(독립 배)' 참고 섹션(버튼 없음, 상황인지용).
+    웰리 단일 추천(RECOMMEND_COUNT=1)이라 '⚓ 병렬 진행 가능(독립 배)' 참고 섹션은 렌더하지 않음.
 
     ※ 표시 포맷은 이 함수에 격리 — 교체 시 여기만 수정(데이터·콜백 로직 불변)."""
     e = html.escape
@@ -559,8 +560,8 @@ def build_card(pending: dict) -> str:
     medals = {1: "🥇", 2: "🥈", 3: "🥉"}
 
     lines = [
-        "🧭 <b>웰리의 오늘의 항로 — 북극성 모듈별 Top 추천</b>",
-        f"📅 {e(d)} ({wd})  ·  중요건만(⛵ 단순 제외)",
+        "🧭 <b>웰리의 오늘의 북극성 한 수</b>",
+        f"📅 {e(d)} ({wd})  ·  웰리 추천 1건",
         "",
     ]
 
@@ -587,32 +588,21 @@ def build_card(pending: dict) -> str:
         lines.append(head)
         if serves:
             lines.append(f"   🎯 {serves}")
-        # 그룹 내 후보들
+        # 그룹 내 후보들 (단일 추천이면 메달 생략 — title 강조 우선)
         for idx, c in seen_group[gk]:
-            medal = medals.get(idx + 1, f"{idx+1}.")
+            medal = "" if len(cands) <= 1 else medals.get(idx + 1, f"{idx+1}.")
             title = e(c.get("title", ""))
             diff = c.get("difficulty", "")
             fa = e(c.get("first_action", ""))
             exp = e(c.get("expected", ""))
             why = e(c.get("one_reason", "")) if idx == 0 else ""
-            lines.append(f"{medal} <b>{title}</b> {diff}")
+            lines.append(f"{medal} <b>{title}</b> {diff}".strip())
             if fa:
                 lines.append(f"     👉 첫 행동: {fa}")
             if exp:
                 lines.append(f"     📈 예상 효과: {exp}")
             if why:
                 lines.append(f"     ★ 왜 1순위: {why}")
-        lines.append("")
-
-    # ── 병렬 진행 가능(독립 배) 참고 — 버튼 없음, 상황인지용 ──
-    parallel = pending.get("parallel_ships", [])
-    if parallel:
-        lines.append("⚓ <b>병렬 진행 가능(독립 배)</b> — 담당이 동시에 밀 수 있는 배")
-        for p in parallel:
-            lines.append(
-                f"   {p.get('priority','')} #{p.get('ship_no','')} "
-                f"{e(str(p.get('title',''))[:44])} <i>({e(p.get('owner',''))}·{e(str(p.get('module_label','')))})</i>"
-            )
         lines.append("")
 
     # ── 회신 안내(버튼) ──
@@ -626,18 +616,19 @@ def build_keyboard(pending: dict) -> dict:
     idx = pending.candidates 배열 인덱스(rank 순) → 봇 CallbackQueryHandler(^ns:) 가 처리."""
     cands = pending.get("candidates", [])
     medals = {0: "🥇", 1: "🥈", 2: "🥉"}
+    single = len(cands) <= 1
     approve_row = []
     for idx, c in enumerate(cands):
-        label = medals.get(idx, f"{idx+1}.")
+        text = "✅ 승인" if single else f"{medals.get(idx, f'{idx+1}.')} {idx+1}순위 승인"
         approve_row.append({
-            "text": f"{label} {idx+1}순위 승인",
+            "text": text,
             "callback_data": f"ns:{idx}:approve",  # 규약·짧음(<64B)
         })
     rows = []
     # 한 행 최대 3버튼(가독성) — 승인 버튼 행 + 보류 행
     for i in range(0, len(approve_row), 3):
         rows.append(approve_row[i:i + 3])
-    rows.append([{"text": "⚓ 전체 보류", "callback_data": "ns:hold"}])
+    rows.append([{"text": "⚓ 보류" if single else "⚓ 전체 보류", "callback_data": "ns:hold"}])
     return {"inline_keyboard": rows}
 
 
@@ -729,14 +720,14 @@ def run(stdout_only: bool = False, send: bool = False):
         print(f"  → ClaudeCLI 생성: {len(raw)}개")
 
     candidates = normalize_candidates(raw)
-    if len(candidates) < 3:
-        # 부족분 규칙폴백으로 보충(전사 top3 보장)
+    if len(candidates) < RECOMMEND_COUNT:
+        # 부족분 규칙폴백으로 보충(웰리 단일 추천 보장)
         for c in brain_fallback(inputs):
-            if len(candidates) >= 3:
+            if len(candidates) >= RECOMMEND_COUNT:
                 break
             if c["role"] not in {x["role"] for x in candidates}:
                 candidates.append(c)
-        candidates = candidates[:3]
+        candidates = candidates[:RECOMMEND_COUNT]
         if brain == "ClaudeCLI":
             brain = "ClaudeCLI+폴백보충"
 
@@ -766,7 +757,7 @@ def run(stdout_only: bool = False, send: bool = False):
 
     # 콘솔 출력 — 3줄 브릿지(북극성→지금→오늘) 그대로 노출
     print(f"\n{'='*60}")
-    print(f"  🧭 전사 북극성 추천 — 전사 top3  (생성두뇌={brain})")
+    print(f"  🧭 전사 북극성 추천 — 웰리 단일 추천 1개  (생성두뇌={brain})")
     print(f"{'='*60}")
     for i, c in enumerate(candidates, 1):
         print(f"\n┌ 후보 {i} {c['difficulty']}  [{c['role']}]")
@@ -826,7 +817,7 @@ def run(stdout_only: bool = False, send: bool = False):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="일일 북극성 추천기 1단계 — 두뇌 드라이런 엔진(전 C-Level·전사 top3)",
+        description="일일 북극성 추천기 1단계 — 두뇌 드라이런 엔진(전 C-Level·웰리 단일 추천 1개)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--dry-run", action="store_true",
@@ -834,7 +825,7 @@ def main():
     parser.add_argument("--stdout-only", action="store_true", dest="stdout_only",
                         help="파일 기록 없이 콘솔 출력만")
     parser.add_argument("--send", action="store_true",
-                        help="2단계 라이브 — 3후보 생성 + G2 만료 + northstar_pending.json 기록 "
+                        help="2단계 라이브 — 단일 후보 생성 + G2 만료 + northstar_pending.json 기록 "
                              "+ 텔레그램 카드 발송 + 폐루프 로그 (06:30 예약 진입점)")
     args = parser.parse_args()
     # --dry-run 은 기본 동작. --send 는 라이브 발송(06:30 가동).
