@@ -2282,32 +2282,38 @@ function loadStageFunnel(){
   fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam())
     .then(function(r){ return r.json(); })
     .then(function(d){
-      if (!d || !d.ok || !d.total) return;
+      if (!d || !d.ok) return;
       var wrap = document.getElementById('stageFunnelWrap');
       var body = document.getElementById('stageFunnelBody');
       if (!wrap || !body) return;
       var order = [['문의','① 문의'],['응대','② 응대'],['예약','③ 예약'],['방문','④ 방문'],['가입','⑤ 가입']];
-      var tot = d.total || {}, mon = d.month || {};
-      var prev = null, rows = '';
-      order.forEach(function(s){
-        var key = s[0], label = s[1];
-        var cur = tot[key] != null ? tot[key] : 0;
-        var mcur = mon[key] != null ? mon[key] : 0;
-        var ret = (prev == null) ? '–' : (prev > 0 ? (Math.round(cur / prev * 1000) / 10) + '%' : '–');
-        var isJoin = (key === '가입');
-        var drop = (prev != null && prev > 0 && (cur / prev) < 0.5);
-        rows += '<tr>'+
-          '<td style="padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:'+(isJoin?'800':'600')+';color:'+(isJoin?'var(--blue)':'var(--text)')+'">'+label+'</td>'+
-          '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700">'+cur.toLocaleString()+'</td>'+
-          '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700;color:'+(drop?'#c0392b':'var(--dim-mid)')+'">'+ret+'</td>'+
-          '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim-mid)">'+mcur+'</td>'+
-        '</tr>';
-        prev = cur;
-      });
-      body.innerHTML = rows;
-      var lossT = (tot['이탈'] != null ? tot['이탈'] : 0);
+      function sectionRows(title, funnel){
+        var tot = (funnel && funnel.total) || {}, mon = (funnel && funnel.month) || {};
+        var html = '<tr><td colspan="4" style="padding:9px 8px 3px;font-size:11px;font-weight:800;color:var(--blue)">'+title+'</td></tr>';
+        var prev = null;
+        order.forEach(function(s){
+          var key = s[0], label = s[1];
+          var cur = tot[key] != null ? tot[key] : 0;
+          var mcur = mon[key] != null ? mon[key] : 0;
+          var ret = (prev == null) ? '–' : (prev > 0 ? (Math.round(cur / prev * 1000) / 10) + '%' : '–');
+          var isJoin = (key === '가입');
+          var drop = (prev != null && prev > 0 && (cur / prev) < 0.5);
+          html += '<tr>'+
+            '<td style="padding:4px 8px 4px 16px;border-bottom:1px solid var(--border-subtle);font-weight:'+(isJoin?'800':'600')+';color:'+(isJoin?'var(--blue)':'var(--text)')+'">'+label+'</td>'+
+            '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700">'+cur.toLocaleString()+'</td>'+
+            '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700;color:'+(drop?'#c0392b':'var(--dim-mid)')+'">'+ret+'</td>'+
+            '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim-mid)">'+mcur+'</td>'+
+          '</tr>';
+          prev = cur;
+        });
+        return html;
+      }
+      var mem = d.membership || { total: d.total, month: d.month };
+      var html = sectionRows('🏅 멤버십 문의 퍼널', mem);
+      if (d.lesson && d.lesson.total && d.lesson.total['문의']) html += sectionRows('🏊 강습 문의 퍼널', d.lesson);
+      body.innerHTML = html;
       var note = document.getElementById('stageFunnelNote');
-      if (note) note.innerHTML = '명시 이탈(보류·거절·취소 등) 전체 '+lossT+'건 · 단계값=진행상태 칸 기록 기반(rank 매핑) — 문의→응대 큰 낙폭은 대부분 신규 문의가 진행상태 미기록으로 남기 때문(전환율 카드는 전화매칭 기준이라 분모 다름).';
+      if (note) note.innerHTML = '멤버십·강습 <b>별도 퍼널</b>(제품이 달라 분리). 단계=담당배정→응대 · 예약칸→예약 · 방문칸→방문 · 회원매칭→가입. 강습은 상담예약/방문상태 칸이 대부분 비어 중간단계가 등록(회원매칭)으로 수렴 — 등록 정본은 강습팀 시트. 문의접수 CTA웹은 현재 0건(자체폼 휴면).';
       wrap.style.display = '';
     })
     .catch(function(){});

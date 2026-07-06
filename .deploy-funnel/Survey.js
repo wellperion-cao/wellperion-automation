@@ -3802,136 +3802,93 @@ function _processAction(body) {
 
   // ─── 전환 단계 퍼널 (5단계 누적 깔때기) ───
   if (action === 'stage_funnel') {
-    // 캐시 조회
+    // ★ 2026-07-06 시포 정직 재배선: 멤버십·강습을 별도 2퍼널로 분리(원본은 두 제품을 한 퍼널에 섞어 문의 8,677=멤버십749+강습8,448 착시).
+    //   소스: 멤버십=문의접수(현재 0)+26년신규문의(gid1902010032) / 강습=성인(111889422)+유소년WSC(268994754).
+    //   단계=칸 신호 파생(각 시트 헤더 키워드로 탐지, 실재 신호만 승격·비강등). 검증=임시배포 getLastRow/실집계(gviz는 강습 undercount·신뢰불가).
     var sfCache = CacheService.getScriptCache();
-    var sfHit   = sfCache.get('sf_v1');
+    var sfHit   = sfCache.get('sf_v3');
     if (sfHit && !_nc) return _json(JSON.parse(sfHit));
 
-    // ① 회원부 전화번호 Set 생성 (funnel_conversion 방식 그대로)
-    var sfMemberSs   = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
-    var sfMemberSh   = sfMemberSs.getSheetByName(MEMBER_SHEET);
+    // ① 회원부 전화번호 Set (funnel_conversion 방식 그대로)
+    var sfMemberSet = {};
+    var sfMemberSh  = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
     var sfMemberLast = sfMemberSh.getLastRow();
-    var sfMemberSet  = {};
     if (sfMemberLast >= 2) {
-      var sfMemberHeaders  = sfMemberSh.getRange(1, 1, 1, sfMemberSh.getLastColumn()).getValues()[0];
-      var sfPhoneColIdx    = sfMemberHeaders.indexOf(MEMBER_PHONE_COL);
-      if (sfPhoneColIdx >= 0) {
-        var sfMemberPhones = sfMemberSh.getRange(2, sfPhoneColIdx + 1, sfMemberLast - 1, 1).getValues();
-        sfMemberPhones.forEach(function(r) {
+      var sfMH = sfMemberSh.getRange(1, 1, 1, sfMemberSh.getLastColumn()).getValues()[0];
+      var sfPCol = sfMH.indexOf(MEMBER_PHONE_COL);
+      if (sfPCol >= 0) {
+        sfMemberSh.getRange(2, sfPCol + 1, sfMemberLast - 1, 1).getValues().forEach(function(r) {
           var n = normalizePhone_(r[0]); if (n) sfMemberSet[n] = true;
         });
       }
     }
 
-    // ② 이번달 기준일 산출 (period_breakdown 방식)
-    var sfNow       = new Date();
-    var sfMonthStr  = Utilities.formatDate(sfNow, 'Asia/Seoul', 'yyyy-MM') + '-01';
-    var sfMonthStart = new Date(sfMonthStr + 'T00:00:00+09:00');
-
-    // 타임스탬프 → Date 변환 헬퍼 (period_breakdown._toDate_ 동일 로직)
-    function _sfToDate_(ts) {
-      if (ts instanceof Date) return ts;
-      var s = String(ts || '').trim();
-      if (!s) return new Date(NaN);
-      return new Date(s.replace(' ', 'T') + '+09:00');
-    }
-
-    // ③ 집계 버킷 초기화
-    // total: 전체기간 / month: 이번달
-    // 각 단계 = 해당 rank 이상 도달한 문의 수(누적 깔때기). 이탈(rank 0)은 이탈 버킷만.
-    var sfTotal = { 문의: 0, 응대: 0, 예약: 0, 방문: 0, 가입: 0, 이탈: 0 };
-    var sfMonth = { 문의: 0, 응대: 0, 예약: 0, 방문: 0, 가입: 0, 이탈: 0 };
-
-    // 문의 1건 집계 내부 함수
-    function _sfCount_(rank, isThisMonth) {
-      var buckets = [sfTotal];
-      if (isThisMonth) buckets.push(sfMonth);
+    var sfMonthStart = new Date(Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM') + '-01T00:00:00+09:00');
+    function _sfToDate_(ts) { if (ts instanceof Date) return ts; var s = String(ts || '').trim(); return s ? new Date(s.replace(' ', 'T') + '+09:00') : new Date(NaN); }
+    function _mkB_() { return { 문의: 0, 응대: 0, 예약: 0, 방문: 0, 가입: 0, 이탈: 0 }; }
+    function _sfAddB_(buckets, rank) {
       buckets.forEach(function(b) {
-        if (rank === 0) {
-          b.이탈++;
-          b.문의++; // 이탈도 ①문의에는 포함(SSOT §집계)
-        } else {
-          if (rank >= 1) b.문의++;
-          if (rank >= 2) b.응대++;
-          if (rank >= 3) b.예약++;
-          if (rank >= 4) b.방문++;
-          if (rank >= 5) b.가입++;
-        }
+        if (rank === 0) { b.이탈++; b.문의++; }
+        else { if (rank >= 1) b.문의++; if (rank >= 2) b.응대++; if (rank >= 3) b.예약++; if (rank >= 4) b.방문++; if (rank >= 5) b.가입++; }
+      });
+    }
+    // 멤버십/강습 버킷(전체·이번달)
+    var memT = _mkB_(), memM = _mkB_(), lesT = _mkB_(), lesM = _mkB_();
+
+    // 시트 1개 처리 — headers·rows·칸키맵(keys)·대상버킷. 단계=상태칸+담당자/예약/방문 신호+회원매칭.
+    function _sfProc_(headers, rows, keys, totB, monB) {
+      var iStatus = _findCol_(headers, ['진행상태', '상태', '단계']);
+      var iPhone  = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화']);
+      var iDate   = _findCol_(headers, ['타임스탬프', '문의일', '시각', '일시', '접수일', '접수', '날짜']); if (iDate < 0) iDate = 0;
+      var iMemo   = _findCol_(headers, ['비고', '메모']);
+      var iOwner  = _findCol_(headers, keys.owner);
+      var iBook   = _findCol_(headers, keys.book);
+      var iVisit  = _findCol_(headers, keys.visit);
+      rows.forEach(function(r) {
+        if (!r[iDate] && (iPhone < 0 || !r[iPhone])) return;                                   // 빈 행 스킵
+        if (iMemo >= 0 && String(r[iMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) return;         // [웹접수] 미러 제외
+        var rank = _stageOf_(iStatus >= 0 ? r[iStatus] : '');
+        if (iOwner >= 0 && String(r[iOwner] || '').trim()) rank = Math.max(rank, 2);           // 담당배정 → 응대
+        if (iBook  >= 0 && String(r[iBook]  || '').trim()) rank = Math.max(rank, 3);           // 예약/투어 → 예약
+        if (iVisit >= 0 && String(r[iVisit] || '').trim()) rank = Math.max(rank, 4);           // 방문/체험확정 → 방문
+        var phone = iPhone >= 0 ? normalizePhone_(r[iPhone]) : '';
+        if (phone && sfMemberSet[phone]) rank = Math.max(rank, 5);                             // 회원매칭 → 가입
+        var d = _sfToDate_(_parseAnyDate_(r[iDate]));
+        _sfAddB_((!isNaN(d.getTime()) && d >= sfMonthStart) ? [totB, monB] : [totB], rank);
       });
     }
 
-    // ④-a INQUIRY_SHEET 순회
-    // 상태=INQUIRY_HEADERS idx9, 전화=idx3, 날짜=idx1
-    var sfInqSh   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
-    var sfInqLast = sfInqSh.getLastRow();
-    if (sfInqLast >= 2) {
-      var sfInqData = sfInqSh.getRange(2, 1, sfInqLast - 1, INQUIRY_HEADERS.length).getValues();
-      sfInqData.forEach(function(row) {
-        var statusRaw = row[9]; // '상태' idx9
-        var phone     = normalizePhone_(row[3]);
-        var dateVal   = row[1];
-        var rank      = _stageOf_(statusRaw);
-        if (phone && sfMemberSet[phone]) rank = Math.max(rank, 5); // 회원 신뢰 우선
-        if (rank === 0 && phone && sfMemberSet[phone]) rank = 5;   // 이탈+회원매칭 → 가입 우선
-        var d = _sfToDate_(dateVal);
-        var isThisMonth = !isNaN(d.getTime()) && d >= sfMonthStart;
-        _sfCount_(rank, isThisMonth);
-      });
-    }
+    var MEM_KEYS = { owner: ['접수 담당자', '담당'], book: ['희망하는 날짜', '시설투어', '투어'], visit: ['확정시간', '체험1', '체험2'] };
+    var LES_KEYS = { owner: ['관리담당', '접수 담당자', '진행 상황'], book: ['상담예약'], visit: ['방문상태'] };
+    var LES_GIDS = { 111889422: 1, 268994754: 1 };
 
-    // ④-b FORM_SHEETS 순회 (상태 칸 _findCol_ 탐색, 없으면 rank=1)
+    // 멤버십 ①-a: INQUIRY_SHEET(문의접수 — 현재 0행이나 부활 대비 유지)
+    try {
+      var sfInqSh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
+      var sfInqLast = sfInqSh.getLastRow();
+      if (sfInqLast >= 2) _sfProc_(INQUIRY_HEADERS, sfInqSh.getRange(2, 1, sfInqLast - 1, INQUIRY_HEADERS.length).getValues(), MEM_KEYS, memT, memM);
+    } catch (e) { /* 무중단 */ }
+
+    // ①-b: FORM_SHEETS → gid로 멤버십/강습 분기
     FORM_SHEETS.forEach(function(cfg) {
       try {
-        var sfSh = _sheetByGid_(cfg.ssId, cfg.gid);
-        if (!sfSh) return;
-        var sfLast    = sfSh.getLastRow();
-        var sfLastCol = sfSh.getLastColumn();
-        if (sfLast < 2 || sfLastCol < 1) return;
-        var sfHeaders  = sfSh.getRange(1, 1, 1, sfLastCol).getValues()[0];
-        var sfIdxStatus = _findCol_(sfHeaders, ['진행상태', '상태', '진행', '단계']);
-        var sfIdxPhone  = _findCol_(sfHeaders, ['연락처', '휴대폰', '핸드폰', '전화']);
-        var sfIdxDate   = _findCol_(sfHeaders, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
-        if (sfIdxDate < 0) sfIdxDate = 0;
-        var sfIdxMemo = _findCol_(sfHeaders, ['비고', '메모']);  // [웹접수] 표식 탐지용
-        var sfRows = sfSh.getRange(2, 1, sfLast - 1, sfLastCol).getValues();
-        sfRows.forEach(function(r) {
-          if (!r[sfIdxDate] && (sfIdxPhone < 0 || !r[sfIdxPhone])) return; // 빈 행 스킵
-          // CTA 웹폼 미러 행([웹접수])은 문의접수(④-a)로 이미 집계 → 제외(이중집계 방지)
-          if (sfIdxMemo >= 0 && String(r[sfIdxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) return;
-          var statusRaw = sfIdxStatus >= 0 ? r[sfIdxStatus] : '';
-          var phone     = sfIdxPhone  >= 0 ? normalizePhone_(r[sfIdxPhone]) : '';
-          var rank      = _stageOf_(statusRaw); // 상태 칸 없으면 statusRaw='' → rank=1
-          if (phone && sfMemberSet[phone]) rank = Math.max(rank, 5);
-          if (rank === 0 && phone && sfMemberSet[phone]) rank = 5;
-          var dateRaw = _parseAnyDate_(r[sfIdxDate]);
-          var d = _sfToDate_(dateRaw);
-          var isThisMonth = !isNaN(d.getTime()) && d >= sfMonthStart;
-          _sfCount_(rank, isThisMonth);
-        });
-      } catch (e) { /* 폼 시트 접근 실패는 무시(대시보드 무중단) */ }
+        var sh = _sheetByGid_(cfg.ssId, cfg.gid); if (!sh) return;
+        var last = sh.getLastRow(), lc = sh.getLastColumn(); if (last < 2 || lc < 1) return;
+        var hd = sh.getRange(1, 1, 1, lc).getValues()[0];
+        var rows = sh.getRange(2, 1, last - 1, lc).getValues();
+        if (LES_GIDS[cfg.gid]) _sfProc_(hd, rows, LES_KEYS, lesT, lesM);   // 강습 퍼널
+        else                   _sfProc_(hd, rows, MEM_KEYS, memT, memM);   // 멤버십 퍼널(그 외 폼=소량·멤버십 편입)
+      } catch (e) { /* 무중단 */ }
     });
 
-    // ⑤ retain 계산 (이번달 기준, 각 단계/직전단계 × 100, 소수1자리)
-    function _pct_(num, den) {
-      if (!den) return 0;
-      return Math.round((num / den) * 1000) / 10;
-    }
-    var sfRetain = {
-      응대: _pct_(sfMonth.응대, sfMonth.문의),
-      예약: _pct_(sfMonth.예약, sfMonth.응대),
-      방문: _pct_(sfMonth.방문, sfMonth.예약),
-      가입: _pct_(sfMonth.가입, sfMonth.방문)
-    };
-
+    function _retain_(b) { function p(n, dd) { return dd ? Math.round(n / dd * 1000) / 10 : 0; } return { 응대: p(b.응대, b.문의), 예약: p(b.예약, b.응대), 방문: p(b.방문, b.예약), 가입: p(b.가입, b.방문) }; }
     var sfResult = {
-      ok:          true,
-      generatedAt: _now(),
-      total:  sfTotal,
-      month:  sfMonth,
-      retain: sfRetain
+      ok: true, generatedAt: _now(),
+      membership: { total: memT, month: memM, retain: _retain_(memT) }, // ★ 멤버십 문의 퍼널
+      lesson:     { total: lesT, month: lesM, retain: _retain_(lesT) }, // ★ 강습 문의 퍼널
+      total: memT, month: memM, retain: _retain_(memT)                  // 하위호환(기본=멤버십)
     };
-    // 캐시 저장 (100KB 초과 시 생략)
-    try { sfCache.put('sf_v1', JSON.stringify(sfResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    try { sfCache.put('sf_v3', JSON.stringify(sfResult), 1800); } catch (e) { /* 무시 */ }
     return _json(sfResult);
   }
 
