@@ -375,6 +375,50 @@
   body.view-annual .annual-board{display:block;}
   body.view-annual .report-grid, body.view-annual .impact-grid, body.view-annual #month-head{display:none !important;}
 
+  /* ── 🎯 1장 요약 뷰(경영진 결론 A3 한 장) ── GM 지시 2026-07-06: 상세 3장은 유지하고 헤드라인만 담은 별도 뷰 */
+  .summary-board{display:none;}
+  body.view-summary .summary-board{display:block;}
+  body.view-summary .report-grid, body.view-summary .annual-board, body.view-summary .impact-grid, body.view-summary #month-head{display:none !important;}
+  .sm-head{display:flex; flex-direction:column; gap:4px; border-bottom:2px solid var(--border-strong); padding-bottom:8px; margin-bottom:12px;}
+  .sm-h-l{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .sm-h-title{font-size:18px; font-weight:800; color:var(--text); letter-spacing:-0.01em;}
+  .sm-h-month{font-size:14px; font-weight:700; color:var(--accent-soft);}
+  .sm-h-theme{font-size:13px; color:var(--text-soft); line-height:1.4;}
+  .sm-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .sm-span{grid-column:1 / -1;}
+  .sm-blk{border:1px solid var(--border); background:var(--paper); border-radius:12px; padding:12px 14px;}
+  .sm-sec{font-size:13px; font-weight:800; color:var(--text); margin-bottom:8px; padding-bottom:5px; border-bottom:1px solid var(--border);}
+  .sm-fin{display:flex; flex-direction:column; gap:6px;}
+  .sm-fin-main{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
+  .sm-cap{font-size:12px; color:var(--dim); font-weight:700;}
+  .sm-fin-val{font-size:26px; font-weight:800; color:var(--gold); letter-spacing:-0.02em;}
+  .sm-fin-tgt{font-size:13px; color:var(--text-soft);}
+  .sm-fin-tgt b{color:var(--text); font-weight:800;}
+  .sm-bar{height:8px; border-radius:5px; background:var(--surface); border:1px solid var(--border); overflow:hidden;}
+  .sm-bar>i{display:block; height:100%; background:linear-gradient(90deg,#b8860b,var(--gold));}
+  .sm-fin-cum{font-size:12.5px; color:var(--text-soft);}
+  .sm-fin-cum b{color:var(--text); font-weight:800;}
+  .sm-dim{color:var(--dim); font-weight:400; font-size:11px;}
+  .sm-t3-grid{display:flex; gap:9px;}
+  .sm-t3{flex:1; min-width:0; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:9px 11px; display:flex; flex-direction:column; gap:5px;}
+  .sm-t3.st-완료{border-left-color:var(--green);} .sm-t3.st-이월{border-left-color:var(--gold);}
+  .sm-t3-top{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .sm-t3-rank{font-size:11px; font-weight:800; color:var(--accent-soft);}
+  .sm-t3-title{font-size:12.5px; font-weight:700; color:var(--text); line-height:1.3;}
+  .sm-t3-own{font-size:10.5px; color:var(--dim);}
+  .sm-chk{display:flex; flex-direction:column; gap:6px;}
+  .sm-chk-i{font-size:12.5px; color:var(--text-soft);}
+  .sm-chk-i b{color:var(--text); font-weight:700;}
+  .sm-prac-list{display:flex; flex-direction:column; gap:7px;}
+  .sm-prac{display:flex; flex-direction:column; gap:2px; padding-bottom:6px; border-bottom:1px dashed var(--border);}
+  .sm-prac:last-child{border-bottom:none; padding-bottom:0;}
+  .sm-prac-n{font-size:12.5px; font-weight:700; color:var(--text);}
+  .sm-prac-m{font-size:12px; color:var(--text-soft);}
+  .sm-prac-m b{color:var(--text);}
+  .sm-prac-ns{font-size:10.5px; color:var(--dim); line-height:1.4;}
+  .sm-empty{font-size:12px; color:var(--dim); padding:6px;}
+  .sm-foot{font-size:10.5px; color:var(--dim); text-align:center; margin-top:12px; padding-top:8px; border-top:1px solid var(--border);}
+
   /* ── 📊 연속 이니셔티브 상단밴드 (월별 A3 상단 · 그달 진척+델타 궤적) ── */
   .blk.mband-wrap{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:5px 14px 10px; margin-bottom:4px;}
   .mband{display:flex; flex-wrap:wrap; gap:9px; margin-top:6px;}
@@ -659,6 +703,32 @@
     .print-head{display:block !important; text-align:center; margin:0 0 2px; padding-bottom:2px; border-bottom:1.5px solid #999;}
     .print-head .ph-title{font-size:12px; font-weight:800; color:#111 !important;}
     .print-head .ph-sub{font-size:8.5px; color:#444 !important; margin-top:1px;}
+    /* ══ 🎯 1장 요약 인쇄(A3 landscape 1장 보장 · 요약만 남기고 상세·연간·배너 전부 숨김) ══ */
+    body.view-summary .report-grid, body.view-summary .annual-board, body.view-summary #month-head, body.view-summary .print-head{display:none !important;}
+    body.view-summary .summary-board{display:block !important;}
+    .summary-board{font-size:8px;}
+    .sm-head{border-bottom:1.5px solid #999 !important; padding-bottom:4px; margin-bottom:6px;}
+    .sm-h-title{font-size:13px; color:#111 !important;} .sm-h-month{font-size:11px; color:#5b3aa6 !important;} .sm-h-theme{font-size:10px; color:#444 !important;}
+    .summary-board .mstat{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
+    .sm-grid{gap:6px;}
+    .sm-blk{border-color:#999 !important; background:#fff !important; padding:6px 9px; break-inside:avoid;}
+    .sm-sec{font-size:10px; color:#111 !important; border-bottom-color:#bbb !important; margin-bottom:5px; padding-bottom:3px;}
+    .sm-cap{color:#555 !important; font-size:9px;}
+    .sm-fin-val{font-size:20px; color:#8a6f3f !important;}
+    .sm-fin-tgt{color:#333 !important; font-size:10px;} .sm-fin-tgt b{color:#111 !important;}
+    .sm-bar{background:#eee !important; border-color:#999 !important;} .sm-bar>i{background:#8a6f3f !important;}
+    .sm-fin-cum{color:#333 !important; font-size:9.5px;} .sm-fin-cum b{color:#111 !important;}
+    .sm-dim{color:#666 !important; font-size:8.5px;}
+    .sm-t3-grid{gap:5px;}
+    .sm-t3{background:#fff !important; border-color:#999 !important; border-left:2px solid #666 !important; padding:5px 8px; gap:3px;}
+    .sm-t3.st-완료{border-left:2px solid #3f8f4f !important;} .sm-t3.st-이월{border-left:2px solid #b8860b !important;}
+    .sm-t3-rank{color:#5b3aa6 !important; font-size:9px;} .sm-t3-title{color:#111 !important; font-size:9.5px;} .sm-t3-own{color:#555 !important; font-size:8.5px;}
+    .summary-board .obadge{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
+    .sm-chk-i{color:#333 !important; font-size:10px;} .sm-chk-i b{color:#111 !important;}
+    .sm-prac{border-bottom-color:#ccc !important; padding-bottom:4px;}
+    .sm-prac-n{color:#111 !important; font-size:10px;} .sm-prac-m{color:#333 !important; font-size:9.5px;} .sm-prac-m b{color:#111 !important;}
+    .sm-prac-ns{color:#555 !important; font-size:8.5px;}
+    .sm-foot{color:#555 !important; font-size:8px; border-top-color:#bbb !important; margin-top:6px; padding-top:4px;}
   }
 </style>
 </head>
@@ -702,6 +772,9 @@
 
   <!-- 📅 연간 A3 뷰 (뷰 토글 '연간 A3' 시 표시 · 월별 상세는 CSS로 숨김) -->
   <section class="annual-board" id="annual-board"><div class="board-status">연간 로드맵을 불러오는 중…</div></section>
+
+  <!-- 🎯 1장 요약 뷰 (뷰 토글 '1장 요약' 시 표시 · 상세/연간은 CSS로 숨김 · GM 지시 2026-07-06 경영진 결론 A3 한 장) -->
+  <section class="summary-board" id="summary-board"><div class="board-status">경영진 1장 요약을 불러오는 중…</div></section>
 
   <!-- 경영진 A3 결론 한 장 = 아래 report-grid (인쇄 시 2단, 상단밴드·매출은 상단 전폭) -->
   <div class="report-grid">
@@ -845,7 +918,7 @@
   var _checkMonthlyCache = {}; // 'YYYY-MM' → {status:'loading'|'done', data:monthly_report 응답} — 선택월별 지원부 점검 월간 집계 캐시(CHECK_GAS action=monthly_report)
   var _nsMap = null;      // role.id → 북극성 문구(bootsetup_matrix.json dims[0] 첫 줄) — 목표→북극성 뱃지용
   var _editMode = false;
-  var _view = 'month';    // 'month'=월별 상세(기존 · 기본) | 'annual'=연간 A3(로드맵 한 장)
+  var _view = 'month';    // 'month'=월별 상세(기존 · 기본) | 'summary'=🎯 1장 요약(경영진 결론 A3 한 장) | 'annual'=연간 A3(로드맵 한 장)
   var _finReady = false;      // CFO 재무 미러 도착 여부(false=로딩 중 — fin/sales-history 보드는 '불러오는 중' 표기, 첫 렌더에서 실패 오인 방지)
   var _checkTriggered = false; // 하단 점검·이슈 보드 로드(부팅 시 eager) 중복호출 방지 — 페이지당 1회만 발동
   var _checkReady = false;    // 점검·이슈 소스(kpi/support/voc) 도착 여부(true일 때만 render()에서 재렌더)
@@ -927,7 +1000,7 @@
     _checkMonthlyCache[monKey] = {status:'loading'};
     readCheckMonthly(monKey).then(function(d){
       _checkMonthlyCache[monKey] = {status:'done', data:d};
-      if(_sel === monKey && _checkReady) renderCheckStatus();
+      if(_sel === monKey && _checkReady){ renderCheckStatus(); renderSummaryBoard(); }
     });
   }
   // ── 종합접수처 VOC 접수 현황 — coo/reception/종합접수처_현황.html과 동일 GAS·액션(reg_board). 응답 필드(name/contact)는 서버가 이미 마스킹하지만
@@ -1027,7 +1100,7 @@
     var parts = String(monKey).split('-');
     readTeamSales(parts[0], Number(parts[1])).then(function(raw){
       _teamSalesCache[monKey] = {status:'done', raw:raw};
-      if(_sel === monKey) renderFinance();
+      if(_sel === monKey){ renderFinance(); renderSummaryBoard(); }
     });
   }
   // team_sales 강사별 실적 → 팀 키(sales_targets.json 키) 합계. '합계'(운영부 소계)·운영부 강사는 제외(멤버십 실적=GM시트 정본 별도 사용, 중복방지). 매핑 안 되는 이름(루프 메소드·카드발급 등)은 etc.
@@ -2050,16 +2123,118 @@
       fieldWorkHtml(curMn);
   }
 
-  // ── 뷰 토글(월별 상세 ↔ 연간 A3) ──
+  // ── 🎯 1장 요약 뷰 렌더 (경영진 결론 A3 한 장 · GM 지시 2026-07-06) ──
+  // 신규 조회·신규 배관·값 하드코딩 없음(INC-001): calcFinance/salesTargetFor/selectTop3/월간 점검 캐시/_vocBoard/도달율 등 이미 로드된 진짜 값만 재사용.
+  // 데이터가 async로 나중에 도착하는 값(_finReady 매출·_checkMonthlyCache 점검·_vocBoard·_cfoSales 누계)은 각 도착 핸들러에서 renderSummaryBoard() 재호출로 갱신.
+  function renderSummaryBoard(){
+    var host = document.getElementById('summary-board');
+    if(!host) return;
+    var m = _data && _data.months && _data.months[_sel];
+    if(!m){ host.innerHTML = '<div class="board-status">경영진 1장 요약을 불러오는 중…</div>'; return; }
+    var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
+    var ms = m.month_status || '';
+
+    // ① 헤더 밴드(월·테마·상태)
+    var head = '<div class="sm-head">' +
+      '<div class="sm-h-l"><span class="sm-h-title">🎯 경영진 1장 요약</span>' +
+        '<span class="sm-h-month">' + esc(_sel || '') + '</span>' +
+        '<span class="mstat ' + esc(ms) + '">' + esc(ms) + '</span></div>' +
+      (m.theme ? '<div class="sm-h-theme">' + esc(m.theme) + '</div>' : '') +
+    '</div>';
+
+    // ② 💰 매출 헤드라인 (당월 매출·목표 대비% · 연간 누계) — calcFinance/salesTargetFor/_cfoSales 재사용
+    var fin = (!isNaN(mnum)) ? calcFinance(mnum) : null;
+    var target = salesTargetFor(_sel);
+    var salesTxt, spctTxt = '—', sw = 0;
+    if(fin && typeof fin.sales === 'number'){
+      salesTxt = fmtWon(fin.sales);
+      var spct = target ? Math.round(fin.sales / target * 100) : null;
+      if(spct != null){ spctTxt = spct + '%'; sw = Math.max(0, Math.min(100, spct)); }
+    } else { salesTxt = _finReady ? '측정 전(가짜값 없음)' : '불러오는 중…'; }
+    var cumTxt = _finReady ? '측정 전' : '불러오는 중…';
+    if(_cfoSales){
+      var known = _cfoSales.filter(function(v){ return typeof v === 'number'; });
+      if(known.length){ cumTxt = fmtWon(known.reduce(function(a, b){ return a + b; }, 0)); }
+    }
+    var salesBlock = '<div class="sm-fin">' +
+      '<div class="sm-fin-main"><span class="sm-cap">💰 ' + (isNaN(mnum) ? '' : mnum + '월 ') + '매출 · 센터전체(CFO 정본)</span>' +
+        '<span class="sm-fin-val">' + salesTxt + '</span>' +
+        '<span class="sm-fin-tgt">목표 ' + fmtWon(target) + ' 대비 <b>' + spctTxt + '</b></span></div>' +
+      '<div class="sm-bar"><i style="width:' + sw + '%"></i></div>' +
+      '<div class="sm-fin-cum">📈 연간 누계(측정월 합) <b>' + cumTxt + '</b> <span class="sm-dim">· 지출·순액=파트너팀 구조개선 중(확정숫자 미표기)</span></div>' +
+    '</div>';
+
+    // ③ 🎯 이달 핵심 과제 top3 (selectTop3 재사용)
+    var objs = (m.objectives) || [];
+    var top = selectTop3(objs);
+    var t3 = top.length ? top.map(function(o, i){
+      return '<div class="sm-t3 st-' + esc(o.status || '') + '">' +
+        '<div class="sm-t3-top"><span class="sm-t3-rank">' + (i + 1) + '순위</span>' +
+          '<span class="obadge ' + esc(o.status || '') + '">' + esc(o.status || '') + '</span></div>' +
+        '<div class="sm-t3-title">' + esc(o.title) + '</div>' +
+        '<div class="sm-t3-own">' + esc(nickOf(o.owner)) + (o.dept ? ' · ' + esc(o.dept) : '') + ' · 진척 ' + clampPct(o.progress) + '%</div>' +
+      '</div>';
+    }).join('') : '<div class="sm-empty">이 달의 핵심 과제가 없습니다.</div>';
+
+    // ④ 🔧 점검 요약 (지원부 남/여 월간 완료율·이슈 · 시설부 정직 · 종합접수처 건수) — _checkMonthlyCache/_vocBoard 재사용
+    var cmEntry = _checkMonthlyCache[_sel];
+    var cmData = (cmEntry && cmEntry.status === 'done') ? cmEntry.data : null;
+    var byZoneC = {}; if(cmData && Array.isArray(cmData.byZone)){ cmData.byZone.forEach(function(z){ byZoneC[z.zone] = z; }); }
+    function zoneChip(g, label){
+      var zd = byZoneC[g];
+      if(zd && zd.sessionCount){
+        return '<span class="sm-chk-i"><b>' + esc(label) + '</b> ' + zd.pct + '% <span class="sm-dim">(완료 ' + zd.sumDone + '/' + zd.sumTotal + ' · 이슈 ' + zd.issueCount + '건)</span></span>';
+      }
+      return '<span class="sm-chk-i"><b>' + esc(label) + '</b> <span class="sm-dim">' + (_checkReady ? '측정 개통 전' : '월간 집계 조회 중…') + '</span></span>';
+    }
+    var vocTxt = _vocBoard ? (_vocBoard.length + '건') : (_checkReady ? '측정 개통 전' : '조회 중…');
+    var chkBlock = '<div class="sm-chk">' +
+      zoneChip('m', '지원부 점검(남)') + zoneChip('f', '지원부 점검(여)') +
+      '<span class="sm-chk-i"><b>시설부 점검</b> <span class="sm-dim">월간 완료율 집계 GAS 미구축 — 정직 표기(가짜값 없음)</span></span>' +
+      '<span class="sm-chk-i"><b>종합접수처</b> ' + esc(vocTxt) + ' <span class="sm-dim">(실시간 · PII 비노출)</span></span>' +
+    '</div>';
+
+    // ⑤ 👤 실무·AI 도달율 3라인 (roster·goals·progMap·ai_utilization 재사용)
+    var roster = (_data && _data.practitioners) || [];
+    var goals = (m.practitioner_goals) || {};
+    var progMap = (m.practitioner_progress) || {};
+    var aiItems = (_data && _data.ai_utilization && _data.ai_utilization.items) || [];
+    var aiById = {}; aiItems.forEach(function(it){ aiById[it.id] = it; });
+    var pracLines = (roster.length && goals) ? roster.map(function(p){
+      var pr = (typeof progMap[p.id] === 'number') ? progMap[p.id] : 50;
+      var ai = aiById[PRAC_TO_AI_ID[p.id] || p.id] || null;
+      var aiPct = (ai && typeof ai.pct === 'number') ? (ai.pct + '%') : '—';
+      return '<div class="sm-prac"><span class="sm-prac-n">' + esc(p.name) + ' <span class="sm-dim">' + esc(p.dept || '') + (p.role ? ' · ' + esc(p.role) : '') + '</span></span>' +
+        '<span class="sm-prac-m">실무 도달율 <b>' + pr + '%</b> · AI 활용 <b>' + aiPct + '</b></span>' +
+        (p.northstar ? '<span class="sm-prac-ns">🌟 ' + esc(p.northstar) + '</span>' : '') +
+      '</div>';
+    }).join('') : '<div class="sm-empty">실무 도달율 정본이 없습니다.</div>';
+
+    host.innerHTML =
+      head +
+      '<div class="sm-grid">' +
+        '<section class="sm-blk sm-span"><h3 class="sm-sec">💰 매출 헤드라인</h3>' + salesBlock + '</section>' +
+        '<section class="sm-blk sm-span"><h3 class="sm-sec">🎯 이달 핵심 과제 top3</h3><div class="sm-t3-grid">' + t3 + '</div></section>' +
+        '<section class="sm-blk"><h3 class="sm-sec">🔧 점검 요약</h3>' + chkBlock + '</section>' +
+        '<section class="sm-blk"><h3 class="sm-sec">👤 실무 · AI 활용 도달율</h3><div class="sm-prac-list">' + pracLines + '</div></section>' +
+      '</div>' +
+      '<div class="sm-foot">웰페리온 AI·ERP 월간 운영 보고 · 경영진 제출용(A3 결론 1장) · 값=라이브 미러(가짜값 없음)</div>';
+  }
+
+  // ── 뷰 토글(월별 상세 ↔ 1장 요약 ↔ 연간 A3) ──
   function renderViewToggle(){
     var w = document.getElementById('view-toggle');
     if(!w) return;
     w.innerHTML =
       '<button class="vbtn' + (_view === 'month' ? ' on' : '') + '" onclick="window._setView(\'month\')">📋 월별상세</button>' +
+      '<button class="vbtn' + (_view === 'summary' ? ' on' : '') + '" onclick="window._setView(\'summary\')">🎯 1장 요약</button>' +
       '<button class="vbtn' + (_view === 'annual' ? ' on' : '') + '" onclick="window._setView(\'annual\')">📅 연간A3</button>';
   }
-  function applyView(){ document.body.classList.toggle('view-annual', _view === 'annual'); }
-  window._setView = function(v){ _view = v; applyView(); renderViewToggle(); if(window.scrollTo) window.scrollTo(0, 0); };
+  function applyView(){
+    document.body.classList.toggle('view-annual', _view === 'annual');
+    document.body.classList.toggle('view-summary', _view === 'summary');
+  }
+  window._setView = function(v){ _view = v; applyView(); renderViewToggle(); if(v === 'summary') renderSummaryBoard(); if(window.scrollTo) window.scrollTo(0, 0); };
 
   // ── 🎯 이달 핵심 과제 & 진척 — 맨 위 콤팩트 1줄 요약(GM 정정 2026-07-03: 舊 카드 3개+완료/진행 체크리스트를
   //    표 위 1줄로 압축 · 상세는 아래 핵심 과제 통합표(renderBoard)에서 담당·상태·진척·북극성까지 한 번에 확인 — 중복 제거) ──
@@ -2115,6 +2290,7 @@
     if(_checkReady){ renderCheckStatus(); renderIssues(); } // 지연 로드: 소스 도착 전엔 HTML 플레이스홀더 유지
     renderPractitioners();
     renderReport();
+    renderSummaryBoard();
     renderEditBtn();
     applyChair();
     var sel = document.getElementById('month-sel');
@@ -2260,7 +2436,7 @@
       r = r || {};
       _cfoSales = r.sales; _cfoExp = r.exp; _cfoSalesDept = r.salesDept; _cfoLaborDept = r.laborDept;
       _finReady = true;
-      if(_data){ renderReport(); renderFinance(); renderSalesHistory(); }
+      if(_data){ renderReport(); renderFinance(); renderSalesHistory(); renderSummaryBoard(); }
     });
 
     // 3) 구매성(proc) 라이브 — 전체지출 = 인건비 + 구매성. 도착 시 임팩트·요약·재무 갱신.
@@ -2291,7 +2467,7 @@
     // 7) 북극성 지도 — 과제·실무 도달율표 뱃지. 도착 시 갱신.
     withTimeout(readNsMap(), 8000, null).then(function(v){
       _nsMap = v;
-      if(_data){ renderTop3(); renderBoard(); renderPractitioners(); }
+      if(_data){ renderTop3(); renderBoard(); renderPractitioners(); renderSummaryBoard(); }
     });
   }
 
@@ -2307,7 +2483,7 @@
     ]).then(function(a){
       _kpiValues = a[0]; _vocBoard = a[1];
       _checkReady = true;
-      if(_data){ renderCheckStatus(); renderIssues(); }
+      if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); }
     });
   }
 
