@@ -2856,7 +2856,11 @@ function _processAction(body) {
     var raDate  = String(body.regDate || '').trim() || _todayKR_();
     if (!raPhone) return _json({ ok: false, error: '전화번호 필수(중복 방지 키)' });
     _regUpsert_(raName, raPhone, raProg, raDate);  // 기존 전화면 갱신, 없으면 등록일 도장 추가
-    try { _notifyTelegram('➕ 등록현황 직접 추가 — ' + (raName || '-') + ' · ' + (raProg || '-') + ' (' + raDate + ')'); } catch (e) {}
+    // 등록 추가 알림 → '문의 알림' 방(전환 3경로와 정합). override 누락 시 개인 OWNER방으로 새던 버그 수정 — 직접·법인 등록건도 문의알림방에 통보. 2026-07-06 시토·GM.
+    try {
+      var _raRegChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+      _notifyTelegram('➕ <b>등록 추가</b> — 직접/법인 등록\n· 이름: ' + (raName || '-') + '\n· 프로그램: ' + (raProg || '-') + '\n· 등록일: ' + raDate, _raRegChatId);
+    } catch (e) {}
     return _json({ ok: true, message: '등록 추가되었습니다.' });
   }
 
