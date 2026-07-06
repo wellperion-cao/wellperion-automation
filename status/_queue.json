@@ -525,5 +525,19 @@
     "artifact": "측정은 7/4 이미 개통(누적 39.4% 라이브)인데 매트릭스가 '미측정'으로 뒤처져 있어 헌법·추천기가 오판(482 재발행 뿌리). cpo nsmap: axis1 measured=true, tier=측정개통, milestones 데이터축적·매칭·전환율개통 done=true. GM go. (CLI ad-hoc · 커밋 b42bcab5)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b42bcab59366943f8c8e8c12d779edc25b606765"
+  },
+  {
+    "task_id": "CMO-2026-07-06-ADHOC-0397bbc4",
+    "clevel": "cmo",
+    "title": "[시모] 클릭→문의 전환율 기존 배관 개통 (노출분모 없이·채널레벨·시모)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 504,
+    "artifact": "click_stats(byUtmSource) × funnel_conversion(byChannel)을 utm_source 코드\n매핑(_UTM_TO_CANON_CHANNEL)으로 조합해 채널별 클릭→문의→가입 3단 요약을\nkpi_values.json cmo 섹션에 추가. 마케팅현황대시보드 UTM 유입 출처 섹션에\n같은 조합을 라이브 렌더로 붙임. 노출(분모)은 여전히 미측정, 클릭↔문의는\n채널레벨 비율(1:1 조인 아님)임을 명시. 기존 키·파일 파괴 없음(추가만). (CLI ad-hoc · 커밋 0397bbc4)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "0397bbc4d1fa37fcf96afee8c33ae27bebb6de0f"
   }
 ]
