@@ -1693,6 +1693,78 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 text=f"⚠️ 발행 엔진 기동 실패: {exc}\n수동 발행 필요: {title_label}")
 
 
+# ─── 카톡 매출보고 원클릭 3방 전송 콜백 (kakao_send) — 2026-07-06 CTO, 배488 ───
+# 9시 매출보고 사진 아래 인라인버튼 "📤 카톡 3방 전송" 탭 → 그 메시지의 사진(file_id)+캡션을
+# 그대로 다운로드해 scripts/kakao_report_sender.py 로 카톡 방 3개(kakao_rooms.json) 실발송.
+# 이미지 재생성 없음·시트 접근 없음. GAS(매출보고_자동발송.js sendTelegramPhoto)가 버튼을 붙인다.
+_KAKAO_SENDER = WORKDIR / "scripts" / "kakao_report_sender.py"
+
+
+async def cmd_kakao_send_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """callback_data == "kakao_send" 처리 — 버튼 달린 메시지의 사진+캡션을 카톡 3방 전송.
+
+    이미지는 그 텔레그램 메시지 그대로(file_id→getFile→다운로드), 캡션도 그대로 동봉.
+    실행은 서브프로세스(kakao_report_sender.py, 옵션 없음=3방 실발송)로 위임하고
+    결과 1줄만 회신한다. 카톡 UI 자동화 실패는 방별 사유와 함께 그대로 노출한다."""
+    q = update.callback_query
+    if not q or not q.data or q.data != "kakao_send":
+        return
+    await q.answer()
+
+    msg = q.message
+    photos = getattr(msg, "photo", None) if msg else None
+    if not msg or not photos:
+        await ctx.bot.send_message(
+            chat_id=(msg.chat_id if msg else q.from_user.id),
+            text="⚠️ 카톡 전송 실패: 이 메시지에서 사진을 찾지 못했습니다.")
+        return
+
+    caption = msg.caption or ""
+    file_id = photos[-1].file_id  # 최대 해상도
+
+    try:
+        await q.edit_message_reply_markup(reply_markup=None)  # 중복 탭 방지 — 버튼 즉시 제거
+    except Exception:
+        pass
+
+    await ctx.bot.send_message(chat_id=msg.chat_id, text="⏳ 카톡 3방 전송 처리 시작...")
+
+    try:
+        tg_file = await ctx.bot.get_file(file_id)
+        tmp_dir = WORKDIR / "telegram_bot" / "_kakao_tmp"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        local_path = tmp_dir / f"kakao_{file_id[-16:]}.jpg"
+        await tg_file.download_to_drive(str(local_path))
+    except Exception as exc:
+        await ctx.bot.send_message(chat_id=msg.chat_id,
+            text=f"⚠️ 카톡 전송 실패: 이미지 다운로드 오류 — {exc}")
+        return
+
+    out_text = ""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            str(_VENV_PY), "-u", str(_KAKAO_SENDER),
+            "--image", str(local_path), "--caption", caption,
+            cwd=str(WORKDIR),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            env=dict(os.environ, PYTHONIOENCODING="utf-8"),
+        )
+        out, _ = await proc.communicate()
+        out_text = (out or b"").decode("utf-8", errors="replace")
+        log.info(f"[kakao_send] rc={proc.returncode} out_tail={out_text[-500:]}")
+    except Exception as exc:
+        await ctx.bot.send_message(chat_id=msg.chat_id,
+            text=f"⚠️ 카톡 전송 실패: 실행 오류 — {exc}")
+        return
+
+    if proc.returncode == 0 and "DONE:" in out_text:
+        await ctx.bot.send_message(chat_id=msg.chat_id, text="✅ 카톡 3방 전송 완료")
+    else:
+        tail = out_text.strip().splitlines()[-1] if out_text.strip() else "알 수 없는 오류"
+        await ctx.bot.send_message(chat_id=msg.chat_id, text=f"⚠️ 카톡 전송 실패: {tail}")
+
+
 # ── 중복 기동 방지 PID 락 (daily_scheduler.py와 동일 패턴, 2026-06-02) ──────────
 _PID_FILE = BASE / "bot.pid"
 
@@ -1791,6 +1863,9 @@ def main():
     # 북극성 추천 카드 탭 인라인버튼 콜백 (ns:) — 텍스트 [승인N] 폐기 대체 (2026-07-04 CTO·배420).
     # 코드만 등록 — 발효는 다음 봇 자동재기동 때(GM go). route_northstar 텍스트 경로와 병존.
     app.add_handler(CallbackQueryHandler(cmd_northstar_callback, pattern=r"^ns:"))
+    # 카톡 매출보고 원클릭 3방 전송 콜백 (kakao_send) — 2026-07-06 CTO, 배488.
+    # 코드만 등록 — 발효는 다음 봇 자동재기동 때(GM PC 재부팅 또는 아침 자동재기동).
+    app.add_handler(CallbackQueryHandler(cmd_kakao_send_callback, pattern=r"^kakao_send$"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
 

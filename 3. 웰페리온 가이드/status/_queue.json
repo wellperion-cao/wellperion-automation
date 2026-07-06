@@ -356,5 +356,17 @@
     "artifact": "readCfoFinance()의 4개 소스(SALES_GVIZ/LABOR_GVIZ 부서맵, sales_monthly, OPS_GVIZ)를\n단일 Promise.all + 바깥 8s 타임아웃으로만 묶으면, 가장 느린 LABOR_GVIZ(실측 5.5s)가\n전체를 끌고 가 네트워크 변동 시 바깥 타임아웃에 걸려 이미 도착한 정상 매출까지\n통째 null 폴백되던 문제(간헐 \"연결하지 못했습니다\")를 해결.\n소스별 개별 withTimeout(6~8s)으로 이 Promise.all 자체의 최대 대기 상한을 보장하고,\n바깥 boot() 타임아웃을 (CLI ad-hoc · 커밋 5d8027ef)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "5d8027ef40dc8886cfc4df77b1c7b5b49bc74e21"
+  },
+  {
+    "task_id": "CTO-2026-07-06-KAKAO-REPORT-SENDER",
+    "clevel": "cto",
+    "title": "[시토] 카톡 매출보고 원클릭 전송기 — 텔레그램 버튼→카톡 3방 UI자동 전송",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-06",
+    "ship_no": 488,
+    "note": "[2026-07-06 GM 지시] 9시 매출보고 텔레그램 사진 아래 인라인버튼(\"📤 카톡 3방 전송\") 탭 → 카톡 3방(차의주 회장님/웰페리온 관리부/웰페리온 운영부) UI자동 전송. 구현 완료: ①scripts/kakao_report_sender.py(핵심 실행기, pywinauto+pywin32 클립보드 CF_DIB, --dry-run/--only-room 안전장치, py_compile+의존성 자동설치 확인) ②scripts/kakao_rooms.json(방 목록 설정) ③telegram_bot/bot.py cmd_kakao_send_callback(callback_data=kakao_send, 사진+캡션 그대로 다운로드→서브프로세스 실행→1줄 회신, 기존 폴링 무접촉·모듈 임포트 검증 완료) ④GAS 매출보고_자동발송.js sendTelegramPhoto에 인라인버튼 추가·clasp push -f 성공(라이브 반영). 스펙=docs/superpowers/specs/2026-07-06-카톡-매출보고-원클릭-전송기-design.md. 한계: 카톡 UI자동화는 개발환경에 카톡 미설치라 실제 방검색·전송은 GM PC 실환경에서만 검증 가능. 봇 콜백은 다음 재기동 시 발효.",
+    "next": "GM PC 실발송 테스트(dry-run→회장님방 제외 1방→3방)",
+    "depends_on": ""
   }
 ]
