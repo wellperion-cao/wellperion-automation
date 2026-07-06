@@ -22,6 +22,11 @@
   header.page-head .sub{font-size:12px; color:var(--dim); line-height:1.45; flex:1; min-width:220px;}
   header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
+  .layers{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:2px 0 14px; padding:8px 11px; background:var(--paper); border:1px solid var(--border); border-radius:10px; font-size:12px;}
+  .layers a, .layers span.cur{text-decoration:none; border:1px solid var(--border-strong); border-radius:20px; padding:3px 12px; color:var(--text-soft); white-space:nowrap;}
+  .layers a:hover{border-color:var(--accent); color:var(--accent-soft);}
+  .layers span.cur{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
+  .layers .arw{color:var(--dim); font-size:11px;}
 
   /* 자율화 배너 */
   .auto-banner{display:flex; gap:12px; align-items:flex-start; margin:2px 0 18px; padding:12px 15px; border:1px solid rgba(124,58,237,0.30); border-left:4px solid var(--accent); border-radius:11px; background:rgba(124,58,237,0.06);}
@@ -248,6 +253,18 @@
     <a class="back" href="wellperion_guide(main).html#T2">← T2 업무자동화SSOT</a>
     <a class="back" href="헌법한장.html">🏛️ 헌법 한 장</a>
   </header>
+
+  <div class="layers">
+    <a href="헌법한장.html">🌟 북극성 (헌법)</a>
+    <span class="arw">›</span>
+    <span class="cur">🤖 자율 작업 현황</span>
+    <span class="arw">›</span>
+    <a href="월간운영계획.html">📋 월간 운영</a>
+    <span class="arw">›</span>
+    <a href="wellperion_guide(main).html#G1">🧭 오늘의 항로 (G1)</a>
+    <span class="arw">›</span>
+    <a href="항해지도.html">🗺️ 항해 지도</a>
+  </div>
 
   <section id="hero-autonomy" class="hero">
     <!-- renderHero() 채움 -->

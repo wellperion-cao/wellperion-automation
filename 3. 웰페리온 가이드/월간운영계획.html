@@ -786,6 +786,8 @@
     <span class="cur">📋 월간 운영</span>
     <span class="arw">›</span>
     <a href="wellperion_guide(main).html">🧭 오늘의 항로 (G1)</a>
+    <span class="arw">›</span>
+    <a href="항해지도.html">🗺️ 항해 지도</a>
   </div>
 
   <!-- 🔥 임팩트 현황 4칸 = 폐지(GM 확정 2026-07-04 월별 상단 재구성). 매출=💰 0순위 섹션 + 핵심 과제=🎯 top3 섹션(중요도 자동)으로 대체·중복 제거. -->
@@ -813,14 +815,14 @@
 
     <!-- 💰 매출 종합 (0순위·맨앞 · GM 지시 2026-07-06 매출 라인 통합: 상단 좌=선택월 매출/우=연간 히스토리, 하단 전폭=부서별 월간실적|연간누계. 라이브 gviz 미러·보드 독립렌더·INC-001 값 저장 금지) -->
     <section class="blk fin-primary" data-blkid="fin">
-      <h2 class="sec has-link"><span class="rank0-badge">0순위</span>💰 매출 종합 <span class="stag">선택월 매출(목표 대비) + 2026 연간 히스토리 + 부서별 월간 실적·연간 누계 · AI CFO 정본 미러 · 지출·순액=구조개선 중(확정숫자 미표기)</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
+      <h2 class="sec has-link"><span class="rank0-badge">0순위</span>💰 매출 종합 <span class="stag">선택월·연간·부서별 · 목표 72억 대비</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
       <div class="fin-top-split">
         <div class="fin-top-left">
           <div class="fin-sub-h">💰 선택월 매출 · 목표 대비</div>
           <div id="fin-board"><div class="board-status">선택월 매출·지출 요약을 불러오는 중…</div></div>
         </div>
         <div class="fin-top-right">
-          <div class="fin-sub-h">📈 2026 매출 연간 히스토리 <span class="fin-sub-note">1~7월 · sales_monthly 정본 재사용 · 미도래월=정직 표기</span></div>
+          <div class="fin-sub-h">📈 2026 매출 연간 히스토리 <span class="fin-sub-note">미도래월=정직 표기</span></div>
           <div id="sales-history-board"><div class="board-status">매출 연간 히스토리를 불러오는 중…</div></div>
         </div>
       </div>
@@ -829,33 +831,33 @@
 
     <!-- 🎯 이달 핵심 과제 top3 (1·2·3순위 · 매출 제외 · 중요도 자동 선정 · GM 확정 2026-07-04) -->
     <section class="blk top3-wrap" id="top3-wrap" data-blkid="top3">
-      <h2 class="sec">🎯 이달 핵심 과제 top3 <span class="stag">매출 과제 제외 · 중요도 자동 선정(상태·전사·북극성·진척) · 1·2·3순위 · 결정적(랜덤 없음)</span></h2>
+      <h2 class="sec">🎯 이달 핵심 과제 top3 <span class="stag">매출 제외 · 중요도순 1·2·3</span></h2>
       <div id="top3-board"><div class="board-status">핵심 과제 top3를 선정하는 중…</div></div>
     </section>
 
     <!-- 📋 이달 핵심 과제 상세 (신규/이월 상세표 + 콤팩트 요약 · 舊 sum-hero — 상단 top3 아래 상세) -->
     <section class="blk sum-hero" id="report-hero-wrap" data-blkid="detail">
-      <h2 class="sec">📋 이달 핵심 과제 상세 <span class="stag">콤팩트 요약(평균 달성률·당월 매출·ERP 진척·전월 대비) + 신규/이월 상세표(담당·목표치·상태·진척·북극성)</span></h2>
+      <h2 class="sec">📋 이달 핵심 과제 상세 <span class="stag">요약 + 신규·이월 상세</span></h2>
       <div id="report-area"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
     </section>
 
     <!-- 🗺️ 전략 로드맵 (단독 · GM 지시 2026-07-06 2차: 🚀 ERP 월별 진척은 이월/연속 과제로 중복이라 제거) -->
     <section class="blk erp-roadmap-merge" data-blkid="roadmap">
-      <h2 class="sec">🗺️ 전략 로드맵 진척 <span class="stag">6단계 실행 로드맵 · 회사문서 전략 로드맵 v1.5 + S0 기준 · 현재 어느 단계</span></h2>
+      <h2 class="sec">🗺️ 전략 로드맵 진척 <span class="stag">6단계 · 현재 단계</span></h2>
       <div id="roadmap-board"><div class="board-status">전략 로드맵 정본을 불러오는 중…</div></div>
     </section>
 
     <!-- 🔧 점검 현황 & 종합 접수처 (GM 지시 2026-07-06: 점검=선택월 월간 집계 전환·명칭 정합) -->
     <section class="blk" data-blkid="check">
-      <h2 class="sec"><span class="chk-title-nw">🔧 점검 현황 &amp; 종합 접수처</span> <span class="stag">선택월 기준(월간 집계) · 시설부(월간 GAS 미구축=정직 표기) · 지원부(남/여, 월간 완료율) · 종합접수처(실시간) · 웰페리온 ERP 개발 — 실측 가능한 것만(가짜값 없음) · VOC 집계(PII 비노출)</span></h2>
+      <h2 class="sec"><span class="chk-title-nw">🔧 점검 현황 &amp; 종합 접수처</span> <span class="stag">선택월 월간 집계 · 지원부·종합접수처·ERP · 실측만</span></h2>
       <div id="check-board"><div class="board-status">점검 현황을 불러오는 중…</div></div>
       <div id="issue-board" style="margin-top:14px;"><div class="board-status">종합 접수처 보드를 계산하는 중…</div></div>
     </section>
 
     <!-- 👤 실무책임자 도달율 + 🤖 AI 활용 도달율 (병합 · 한 칸 확대 · GM 지시 2026-07-06) -->
     <section class="blk prac-full" data-blkid="prac">
-      <h2 class="sec" id="prac-sec">👤 실무 도달율 &amp; 🤖 AI 활용 도달율 <span class="stag">GM 직속 3라인 · 담당 | 실무 도달율% | AI 활용%(GM 확정) | 북극성·방향 · 도달율=신규 목표 기준(월별 목표 상이·전월 델타 미표시)</span></h2>
+      <h2 class="sec" id="prac-sec">👤 실무 도달율 &amp; 🤖 AI 활용 도달율 <span class="stag">GM 직속 3라인 · 실무%·AI 활용%·북극성</span></h2>
       <div id="prac-board"></div>
     </section>
 

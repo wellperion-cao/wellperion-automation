@@ -36,6 +36,8 @@ SYNC_PAIRS = [
     ("status/learning_proposals.json",   "3. 웰페리온 가이드/status/learning_proposals.json"),
     # 북극성 추천기 2단계 (CTO 2026-06-29): northstar_today.html 이 발행루트 상대경로로 직독.
     ("status/northstar_pending.json",    "3. 웰페리온 가이드/status/northstar_pending.json"),
+    # 항해 지도 (2026-07-06): 항해지도.html 이 발행루트 절대경로로 직독.
+    ("status/voyage_map.json",           "3. 웰페리온 가이드/status/voyage_map.json"),
 ]
 
 # 하위 호환: 기존 단일 변수 참조 코드를 위해 유지

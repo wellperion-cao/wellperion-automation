@@ -21,6 +21,11 @@
   header.page-head .sub{font-size:12px; color:var(--dim); line-height:1.45; flex:1; min-width:240px;}
   header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
+  .layers{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:2px 0 14px; padding:8px 11px; background:var(--paper); border:1px solid var(--border); border-radius:10px; font-size:12px;}
+  .layers a, .layers span.cur{text-decoration:none; border:1px solid var(--border-strong); border-radius:20px; padding:3px 12px; color:var(--text-soft); white-space:nowrap;}
+  .layers a:hover{border-color:var(--accent); color:var(--accent-soft);}
+  .layers span.cur{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
+  .layers .arw{color:var(--dim); font-size:11px;}
 
   h2.sec{font-size:15px; font-weight:700; margin:16px 0 2px; display:flex; align-items:center; gap:7px;}
   .sec-note{font-size:11px; color:var(--dim); margin-bottom:8px;}
@@ -270,6 +275,18 @@
     <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
     <script src="/wellperion-automation/_assets/print_options.js"></script>
   </header>
+
+  <div class="layers">
+    <span class="cur">🌟 북극성 (헌법)</span>
+    <span class="arw">›</span>
+    <a href="자율현황.html">🤖 자율 작업 현황</a>
+    <span class="arw">›</span>
+    <a href="월간운영계획.html">📋 월간 운영</a>
+    <span class="arw">›</span>
+    <a href="wellperion_guide(main).html#G1">🧭 오늘의 항로 (G1)</a>
+    <span class="arw">›</span>
+    <a href="항해지도.html">🗺️ 항해 지도</a>
+  </div>
 
   <!-- ════ 🌟 회사 비전 (헌법 맨 위 · 북극성 정본) — 2026-07-02 ════ -->
   <div class="vision">

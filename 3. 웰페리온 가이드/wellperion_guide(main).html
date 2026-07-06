@@ -332,6 +332,12 @@
   }
   /* ── /KPI 대시보드 v1 ──────────────────────────────────────── */
   @media(max-width:600px){.ops-detail-grid{grid-template-columns:1fr;}}
+  /* ── 공유 네비 링크바 (4층+항해지도) ── */
+  .layers{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:2px 0 14px; padding:8px 11px; background:var(--paper); border:1px solid var(--border); border-radius:10px; font-size:12px;}
+  .layers a, .layers span.cur{text-decoration:none; border:1px solid var(--border-strong); border-radius:20px; padding:3px 12px; color:var(--text-soft); white-space:nowrap;}
+  .layers a:hover{border-color:var(--accent); color:var(--accent-soft);}
+  .layers span.cur{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
+  .layers .arw{color:var(--dim); font-size:11px;}
 </style>
 </head>
 <body>
@@ -4258,6 +4264,18 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     </div>
     <div id="gm1-content" style="display:none;">
     <div class="doc-header"><h2><span class="g-id">G1</span>김남욱 GM</h2><div class="meta">할 일 · 루틴 · 건강 · 목표 통합</div></div>
+
+    <div class="layers">
+      <a href="헌법한장.html">🌟 북극성 (헌법)</a>
+      <span class="arw">›</span>
+      <a href="자율현황.html">🤖 자율 작업 현황</a>
+      <span class="arw">›</span>
+      <a href="월간운영계획.html">📋 월간 운영</a>
+      <span class="arw">›</span>
+      <span class="cur">🧭 오늘의 항로 (G1)</span>
+      <span class="arw">›</span>
+      <a href="항해지도.html">🗺️ 항해 지도</a>
+    </div>
 
     <!-- ══ 🌟 북극성 — 우리가 가는 곳 (비전·목적지 정의 본체 · 홈→G1 이관 단일 배치 · 웰리·GM 2026-06-12) ══ -->
     <div style="background:linear-gradient(135deg,#1a1830 0%,#2a2545 100%);border:1px solid var(--accent);border-radius:16px;padding:18px 22px;margin:8px 0 16px;">

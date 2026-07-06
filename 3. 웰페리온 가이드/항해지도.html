@@ -1,0 +1,412 @@
+<title>항해 지도</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="배(업무)를 북극성 모듈로 그룹핑한 전사 항해 지도 — 누가·무엇을·어디까지 왔는지">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --ink: #16212b;
+    --ink-soft: #4a5764;
+    --dim: #8592a0;
+    --line: #e4e7ec;
+    --star: #c69a3f;
+    --star-soft: #f0e4c8;
+    --run: #2f8f83;      /* 진행중 */
+    --run-bg: #dcefec;
+    --wait: #8a97a3;     /* 대기 */
+    --wait-bg: #eceff2;
+    --done: #3a8f4f;
+    --done-bg: #dcefe0;
+    --bad: #c0483f;
+    --bad-bg: #f6e0dd;
+    --sky-1: #1b2a3a;
+    --sky-2: #26405a;
+    --star-on-sky: #f2d488;
+    --shadow: 0 1px 2px rgba(20,33,43,.06), 0 6px 20px rgba(20,33,43,.06);
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e141b;
+      --panel: #18212b;
+      --ink: #eef2f6;
+      --ink-soft: #b3bfca;
+      --dim: #7d8b98;
+      --line: #263442;
+      --star: #e0b85c;
+      --star-soft: #3a3018;
+      --run: #4bbfae;
+      --run-bg: #17332f;
+      --wait: #8090a0;
+      --wait-bg: #212c37;
+      --done: #5cc072;
+      --done-bg: #17321f;
+      --bad: #e07a70;
+      --bad-bg: #351d1a;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e141b; --panel: #18212b; --ink: #eef2f6; --ink-soft: #b3bfca;
+    --dim: #7d8b98; --line: #263442; --star: #e0b85c; --star-soft: #3a3018;
+    --run: #4bbfae; --run-bg: #17332f; --wait: #8090a0; --wait-bg: #212c37;
+    --done: #5cc072; --done-bg: #17321f; --bad: #e07a70; --bad-bg: #351d1a;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f5f7; --panel: #ffffff; --ink: #16212b; --ink-soft: #4a5764;
+    --dim: #8592a0; --line: #e4e7ec; --star: #c69a3f; --star-soft: #f0e4c8;
+    --run: #2f8f83; --run-bg: #dcefec; --wait: #8a97a3; --wait-bg: #eceff2;
+    --done: #3a8f4f; --done-bg: #dcefe0; --bad: #c0483f; --bad-bg: #f6e0dd;
+    --shadow: 0 1px 2px rgba(20,33,43,.06), 0 6px 20px rgba(20,33,43,.06);
+  }
+  /* ── 공유 네비 링크바 별칭 변수(정본 스니펫 var 매핑) ── */
+  :root {
+    --paper: var(--panel); --border: var(--line); --border-strong: var(--dim);
+    --text-soft: var(--ink-soft); --accent: var(--star); --accent-soft: var(--star);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap { max-width: 100%; margin: 0; padding: 18px 20px 56px; }
+  @media (min-width: 900px) { .wrap { padding: 22px 32px 64px; } }
+
+  /* ── 공유 네비 링크바 ── */
+  .layers{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:2px 0 14px; padding:8px 11px; background:var(--paper); border:1px solid var(--border); border-radius:10px; font-size:12px;}
+  .layers a, .layers span.cur{text-decoration:none; border:1px solid var(--border-strong); border-radius:20px; padding:3px 12px; color:var(--text-soft); white-space:nowrap;}
+  .layers a:hover{border-color:var(--accent); color:var(--accent-soft);}
+  .layers span.cur{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
+  .layers .arw{color:var(--dim); font-size:11px;}
+
+  /* ── 북극성 히어로 ── */
+  .polaris {
+    position: relative; overflow: hidden;
+    background: linear-gradient(155deg, var(--sky-1), var(--sky-2));
+    border-radius: var(--radius); padding: 24px 22px 22px;
+    box-shadow: var(--shadow); color: #eaf1f8;
+  }
+  .polaris .star { font-size: 22px; color: var(--star-on-sky); }
+  .polaris .eyebrow {
+    font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: #9db4cc; margin: 0 0 6px;
+  }
+  .polaris h1 {
+    margin: 0; font-size: clamp(20px, 4.4vw, 27px); font-weight: 750;
+    text-wrap: balance; letter-spacing: -.01em; line-height: 1.24; max-width: 40ch;
+  }
+  .polaris .sub { margin: 10px 0 0; font-size: 13.5px; color: #b9cbdd; max-width: 60ch; }
+  .polaris .dots {
+    position: absolute; inset: 0; pointer-events: none; opacity: .5;
+    background-image:
+      radial-gradient(1.5px 1.5px at 82% 30%, #fff 50%, transparent),
+      radial-gradient(1.5px 1.5px at 66% 62%, #cfe0f0 50%, transparent),
+      radial-gradient(1px 1px at 90% 70%, #fff 50%, transparent),
+      radial-gradient(1px 1px at 74% 22%, #dfeaf5 50%, transparent);
+  }
+  .overall {
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+    margin-top: 18px; position: relative;
+  }
+  .overall .metric { display: flex; flex-direction: column; }
+  .overall .metric b { font-size: 22px; font-weight: 730; letter-spacing: -.01em; }
+  .overall .metric span { font-size: 11.5px; color: #9db4cc; }
+  .overall .sep { width: 1px; align-self: stretch; background: rgba(255,255,255,.16); }
+
+  /* ── 스트림 카드 ── */
+  .streams {
+    display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 16px;
+  }
+  @media (min-width: 1180px) { .streams { grid-template-columns: 1fr 1fr; } }
+  .stream {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+  }
+  .s-head {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 14px 16px 12px;
+  }
+  .s-who { display: flex; flex-direction: column; min-width: 0; }
+  .s-nick-row { display: flex; align-items: baseline; gap: 8px; }
+  .s-nick { font-size: 15.5px; font-weight: 700; letter-spacing: -.01em; }
+  .s-role { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
+  .s-goal { font-size: 12px; color: var(--ink-soft); margin: 2px 0 0; }
+  .s-count { margin-left: auto; display: flex; gap: 6px; flex-shrink: 0; }
+  .chip {
+    font-size: 11px; font-weight: 650; padding: 3px 8px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip.run { background: var(--run-bg); color: var(--run); }
+  .chip.wait { background: var(--wait-bg); color: var(--wait); }
+  .chip.done { background: var(--done-bg); color: var(--done); }
+
+  /* ── 모듈 그룹 ── */
+  .mods { padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .mod { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .mod-head {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 9px 12px; background: var(--bg);
+  }
+  .mod-title { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .mod-title a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--dim); }
+  .mod-owner { font-size: 11px; color: var(--dim); }
+  .mod-badge {
+    margin-left: auto; font-size: 10.5px; font-weight: 650;
+    padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .mod-badge.needmeasure { background: var(--wait-bg); color: var(--wait); }
+  .mod-badge.measured { background: var(--done-bg); color: var(--done); }
+
+  .mod-prog { padding: 8px 12px 0; }
+  .bar { height: 7px; background: var(--wait-bg); position: relative; border-radius: 4px; overflow: hidden; }
+  .bar > i { position: absolute; inset: 0 auto 0 0; background: var(--run); border-radius: 4px; }
+  .prog-txt { font-size: 11.5px; color: var(--ink-soft); margin: 5px 0 0; }
+  .prog-txt b { color: var(--run); }
+  .caveat { font-size: 10.5px; color: var(--dim); margin: 3px 0 0; }
+
+  .signals { display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 4px 0 0; }
+  .sig { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); }
+  .sig .lamp { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .sig .lamp.ok { background: var(--done); }
+  .sig .lamp.bad { background: var(--bad); }
+  .sig .val { font-size: 11px; color: var(--dim); }
+
+  .statchips { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 0 0; }
+
+  .ships { list-style: none; margin: 6px 0 0; padding: 0; }
+  .ship {
+    display: grid; grid-template-columns: 20px auto 1fr; align-items: start;
+    gap: 9px; padding: 8px 4px; border-radius: 10px;
+  }
+  .ship + .ship { border-top: 1px solid var(--line); }
+  .ship .dot {
+    width: 15px; height: 15px; border-radius: 50%; margin-top: 2px;
+    display: grid; place-items: center; font-size: 10px; font-weight: 800; flex-shrink: 0;
+  }
+  .ship.run .dot { background: var(--run); color: #fff; }
+  .ship.wait .dot { border: 1.8px solid var(--wait); color: transparent; }
+  .ship .boat { font-size: 13px; margin-top: 1px; }
+  .ship .t { min-width: 0; }
+  .ship .t .title { font-size: 13px; color: var(--ink); line-height: 1.4; }
+  .ship.wait .t .title { color: var(--ink-soft); }
+  .ship .t .meta { font-size: 11px; color: var(--dim); margin-top: 1px; }
+  .ship .no { color: var(--star); font-weight: 700; }
+  .mod-empty { font-size: 11.5px; color: var(--dim); padding: 8px 2px 2px; }
+
+  /* ── 기타 섹션 ── */
+  .etc {
+    margin-top: 18px; background: var(--panel); border: 1px dashed var(--dim);
+    border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px;
+  }
+  .etc h2 { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
+  .etc .etc-sub { font-size: 11.5px; color: var(--dim); margin: 0 0 10px; }
+
+  .legend {
+    display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+    margin: 18px 2px 0; font-size: 11.5px; color: var(--dim);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  .note {
+    margin: 14px 2px 0; font-size: 11.5px; color: var(--dim); line-height: 1.6;
+    border-top: 1px dashed var(--line); padding-top: 12px;
+  }
+  .fallback {
+    margin-top: 16px; padding: 22px; border: 1px dashed var(--line); border-radius: var(--radius);
+    text-align: center; color: var(--ink-soft); background: var(--panel);
+  }
+  .fallback b { color: var(--ink); }
+</style>
+
+<div class="wrap">
+
+  <div class="layers">
+    <a href="헌법한장.html">🌟 북극성 (헌법)</a>
+    <span class="arw">›</span>
+    <a href="자율현황.html">🤖 자율 작업 현황</a>
+    <span class="arw">›</span>
+    <a href="월간운영계획.html">📋 월간 운영</a>
+    <span class="arw">›</span>
+    <a href="wellperion_guide(main).html#G1">🧭 오늘의 항로 (G1)</a>
+    <span class="arw">›</span>
+    <span class="cur">🗺️ 항해 지도</span>
+  </div>
+
+  <div id="root"></div>
+
+</div>
+
+<script>
+(function () {
+  var NICK_ROLE = { ceo:"CEO", cmo:"CMO", coo:"COO", cto:"CTO", cpo:"CPO", cfo:"CFO", chro:"CHRO" };
+  var URL = '/wellperion-automation/status/voyage_map.json?_=' + Date.now();
+
+  function esc(s){ s = (s==null?'':String(s)); return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function boatEmoji(p){ p = p||''; if(p.indexOf('크루즈')>=0) return '🛳️'; if(p.indexOf('여객선')>=0) return '⛴️'; return '⛵'; }
+  function clip(s,n){ s = s||''; return s.length>n ? s.slice(0,n)+'…' : s; }
+  function isRun(st){ return String(st||'').toUpperCase()==='IN_PROGRESS'; }
+
+  function renderShip(sh){
+    var run = isRun(sh.status);
+    var cls = run ? 'run' : 'wait';
+    var dot = run ? '✓' : '';
+    var note = sh.note ? (' · ' + esc(clip(sh.note, 46))) : '';
+    var no = (sh.ship_no!=null) ? ('<span class="no">#' + esc(sh.ship_no) + '</span> · ') : '';
+    var stTxt = run ? '진행중' : '대기';
+    return '<li class="ship ' + cls + '">' +
+      '<span class="dot">' + dot + '</span>' +
+      '<span class="boat">' + boatEmoji(sh.priority) + '</span>' +
+      '<div class="t"><div class="title">' + esc(clip(sh.title, 72)) + '</div>' +
+      '<div class="meta">' + no + stTxt + note + '</div></div></li>';
+  }
+
+  function renderProgress(p){
+    p = p || { type:'status' };
+    if (p.type === 'percent') {
+      var val = (typeof p.value==='number') ? p.value : 0;
+      var tgt = (typeof p.target==='number' && p.target>0) ? p.target : 1;
+      var w = Math.min(val/tgt*100, 100);
+      var txt = '실측 <b>' + (val*100).toFixed(1) + '%</b> / 목표 ' + Math.round(tgt*100) + '%';
+      var cav = p.axis_note ? '<div class="caveat">' + esc(p.axis_note) + '</div>' : '';
+      var nm = p.axis_name ? ('<div class="prog-txt" style="color:var(--dim);margin-bottom:5px">' + esc(p.axis_name) + '</div>') : '';
+      return '<div class="mod-prog">' + nm + '<div class="bar"><i style="width:' + w.toFixed(1) + '%"></i></div>' +
+        '<p class="prog-txt">' + txt + '</p>' + cav + '</div>';
+    }
+    if (p.type === 'signal') {
+      var lights = p.lights || [];
+      var chips = lights.map(function(l){
+        return '<span class="sig"><span class="lamp ' + (l.ok?'ok':'bad') + '"></span>' +
+          esc(l.label||l.key) + ' <span class="val">' + esc(l.value) + '</span></span>';
+      }).join('');
+      var cav2 = p.axis_note ? '<div class="caveat">' + esc(p.axis_note) + '</div>' : '';
+      var nm2 = p.axis_name ? ('<div class="prog-txt" style="color:var(--dim)">' + esc(p.axis_name) + '</div>') : '';
+      return '<div class="mod-prog">' + nm2 + '<div class="signals">' + chips + '</div>' + cav2 + '</div>';
+    }
+    return ''; // status → 진척 막대 없음(칩+배지로 표기)
+  }
+
+  function renderModule(m){
+    var owner = m.owner ? ('<span class="mod-owner">' + esc(m.owner) + '</span>') : '';
+    var titleHtml = esc(m.label || m.module);
+    if (m.page_url) titleHtml = '<a href="' + esc(m.page_url) + '" target="_blank" rel="noopener">' + titleHtml + '</a>';
+    var badge = m.measured
+      ? '<span class="mod-badge measured">실측</span>'
+      : '<span class="mod-badge needmeasure">측정개통필요</span>';
+
+    var prog = renderProgress(m.progress);
+
+    var sc = m.status_counts || {};
+    var statChips = '<div class="statchips">' +
+      '<span class="chip run">◐ 진행 ' + (sc['진행']||0) + '</span>' +
+      '<span class="chip wait">○ 대기 ' + (sc['대기']||0) + '</span>' +
+      '<span class="chip done">🏁 이번주입항 ' + (sc['이번주입항']||0) + '</span></div>';
+
+    var ships = m.ships || [];
+    var shipsHtml = ships.length
+      ? '<ul class="ships">' + ships.map(renderShip).join('') + '</ul>'
+      : '<div class="mod-empty">떠 있는 배 없음</div>';
+
+    return '<div class="mod">' +
+      '<div class="mod-head"><span class="mod-title">' + titleHtml + '</span>' + owner + badge + '</div>' +
+      prog +
+      '<div class="mods-body" style="padding:8px 12px 12px">' + statChips + shipsHtml + '</div>' +
+      '</div>';
+  }
+
+  function renderRole(r){
+    var role = String(r.id||'').toUpperCase();
+    var goal = r.northstar ? ('<p class="s-goal">🌟 ' + esc(clip(r.northstar, 90)) + '</p>') : '';
+    var mods = (r.modules||[]);
+    // 역할 요약 카운트
+    var run=0, wait=0;
+    mods.forEach(function(m){ var sc=m.status_counts||{}; run+=(sc['진행']||0); wait+=(sc['대기']||0); });
+    var counts = '<div class="s-count">' +
+      '<span class="chip run">◐ ' + run + '</span>' +
+      '<span class="chip wait">○ ' + wait + '</span></div>';
+    var modsHtml = mods.length
+      ? '<div class="mods">' + mods.map(renderModule).join('') + '</div>'
+      : '<div class="mods"><div class="mod-empty">모듈 정의 없음</div></div>';
+    return '<article class="stream">' +
+      '<div class="s-head"><div class="s-who">' +
+      '<div class="s-nick-row"><span class="s-nick">' + esc(r.nick||role) + '</span> <span class="s-role">' + esc(role) + '</span></div>' +
+      goal + '</div>' + counts + '</div>' +
+      modsHtml + '</article>';
+  }
+
+  function renderEtc(etc){
+    if (!etc || !etc.length) return '';
+    var rows = etc.map(function(e){
+      var run = isRun(e.status);
+      var no = (e.ship_no!=null) ? ('<span class="no">#' + esc(e.ship_no) + '</span> · ') : '';
+      var who = e.owner ? (esc(e.owner) + ' · ') : '';
+      var stTxt = run ? '진행중' : '대기';
+      var note = e.note ? (' · ' + esc(clip(e.note, 60))) : '';
+      return '<li class="ship ' + (run?'run':'wait') + '">' +
+        '<span class="dot">' + (run?'✓':'') + '</span>' +
+        '<span class="boat">' + boatEmoji(e.priority) + '</span>' +
+        '<div class="t"><div class="title">' + esc(clip(e.title, 80)) + '</div>' +
+        '<div class="meta">' + no + who + stTxt + note + '</div></div></li>';
+    }).join('');
+    return '<section class="etc"><h2>🗂️ 기타 (모듈 미지정 · 수동 지정 대기)</h2>' +
+      '<p class="etc-sub">자동 추론 규칙이 불명확한 배 — 담당 C레벨/웰리가 모듈을 수동 지정하면 위 스트림으로 합류합니다.</p>' +
+      '<ul class="ships">' + rows + '</ul></section>';
+  }
+
+  function render(data){
+    var roles = data.roles || [];
+    var etc = data.etc_bucket || [];
+
+    // 전체 집계
+    var total=0, run=0, wait=0;
+    roles.forEach(function(r){
+      (r.modules||[]).forEach(function(m){
+        (m.ships||[]).forEach(function(s){ total++; if(isRun(s.status)) run++; else wait++; });
+      });
+    });
+    etc.forEach(function(e){ total++; if(isRun(e.status)) run++; else wait++; });
+    var rate = total ? Math.round(run/total*100) : 0;
+
+    var ns = (roles[0] && roles[0].northstar) ? roles[0].northstar
+      : 'ERP 전 업무를 자율화하고, 문의를 회원으로 잇는 전환 엔진을 완성한다';
+
+    var hero = '<section class="polaris"><div class="dots"></div>' +
+      '<p class="eyebrow"><span class="star">✦</span> 우리가 가는 곳</p>' +
+      '<h1>' + esc(clip(ns, 80)) + '</h1>' +
+      '<p class="sub">지금 항로에 떠 있는 배 ' + total + '척은 전부 이 북극성으로 가는 일들입니다. 아래는 역할·모듈별로 누가·무엇을·어디까지 왔는지.</p>' +
+      '<div class="overall">' +
+      '<div class="metric"><b>' + total + '</b><span>가는 중인 배</span></div><div class="sep"></div>' +
+      '<div class="metric"><b>' + run + '</b><span>◐ 진행중</span></div><div class="sep"></div>' +
+      '<div class="metric"><b>' + wait + '</b><span>○ 대기</span></div><div class="sep"></div>' +
+      '<div class="metric"><b>' + rate + '%</b><span>착수율</span></div></div></section>';
+
+    var streams = '<div class="streams">' + roles.map(renderRole).join('') + '</div>';
+
+    var legend = '<div class="legend">' +
+      '<span><i style="background:var(--run)"></i> ◐ 진행중</span>' +
+      '<span><i style="border:1.8px solid var(--wait)"></i> ○ 대기</span>' +
+      '<span><i style="background:var(--done)"></i> 🏁 이번주입항</span>' +
+      '<span>🛳️ 크루즈 · ⛴️ 여객선 · ⛵ 돛단배 (무게)</span></div>';
+
+    var note = '<p class="note"><b>정직 하이브리드.</b> 모듈 진척은 <b>실측 가능한 축</b>(현재 시우 4부서 점검 완료율·시토 자동화 신호등)만 실제 수치로 채우고, ' +
+      '나머지는 <b>측정개통필요</b>로 표기합니다. 실측값은 배 수와 무관하게 KPI 소스에서 직접 옵니다(배가 늘어도 진척률은 변하지 않음).</p>';
+
+    document.getElementById('root').innerHTML = hero + streams + renderEtc(etc) + legend + note;
+  }
+
+  function fallback(msg){
+    document.getElementById('root').innerHTML =
+      '<div class="fallback"><b>항해 지도 생성 대기</b><br>' +
+      (msg || 'status/voyage_map.json 을 아직 불러오지 못했습니다.') +
+      '<br><span style="font-size:11.5px;color:var(--dim)">scripts/build_voyage_map.py 실행 후 이 페이지를 새로고침하세요.</span></div>';
+  }
+
+  fetch(URL, { cache:'no-store' })
+    .then(function(res){ if(!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+    .then(function(data){ try { render(data); } catch(e){ fallback('렌더 오류: ' + e.message); } })
+    .catch(function(e){ fallback('불러오기 실패: ' + e.message); });
+})();
+</script>
