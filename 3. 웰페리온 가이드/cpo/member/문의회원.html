@@ -998,6 +998,22 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <tbody id="convChannelBody"></tbody>
       </table>
     </div>
+    <div id="stageFunnelWrap" style="margin-top:16px;display:none;border-top:1px solid var(--border-subtle);padding-top:12px">
+      <div style="font-size:11px;font-weight:800;color:var(--text);margin-bottom:2px">단계별 잔류·이탈 (①문의 → ⑤가입)</div>
+      <div style="font-size:10.5px;color:var(--dim);margin-bottom:8px">각 단계에 몇 명이 남는지 = 어디서 새는지. 잔존%=직전 단계 대비(전체 기준).</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">단계</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">건수(전체)</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">직전 대비 잔존</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">이번달</th>
+          </tr>
+        </thead>
+        <tbody id="stageFunnelBody"></tbody>
+      </table>
+      <div id="stageFunnelNote" style="font-size:10.5px;color:var(--dim);margin-top:8px"></div>
+    </div>
   </div>
 
   <!-- CPO 운영 가이드 (전체폭 — 이탈 현황·신호 한 줄, 펼치기 4섹션) -->
@@ -2260,6 +2276,42 @@ function loadConvRate(){
     })
     .catch(function(){});
 }
+// 단계별 잔류·이탈 퍼널(stage_funnel) — 백엔드 완성 액션 소비. 잔존%=전체 기준 직전 대비(이번달 n작아 노이즈 → 전체로 계산). 2026-07-06 시포·GM
+function loadStageFunnel(){
+  if (GAS_URL === GAS_PLACEHOLDER) return;
+  fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok || !d.total) return;
+      var wrap = document.getElementById('stageFunnelWrap');
+      var body = document.getElementById('stageFunnelBody');
+      if (!wrap || !body) return;
+      var order = [['문의','① 문의'],['응대','② 응대'],['예약','③ 예약'],['방문','④ 방문'],['가입','⑤ 가입']];
+      var tot = d.total || {}, mon = d.month || {};
+      var prev = null, rows = '';
+      order.forEach(function(s){
+        var key = s[0], label = s[1];
+        var cur = tot[key] != null ? tot[key] : 0;
+        var mcur = mon[key] != null ? mon[key] : 0;
+        var ret = (prev == null) ? '–' : (prev > 0 ? (Math.round(cur / prev * 1000) / 10) + '%' : '–');
+        var isJoin = (key === '가입');
+        var drop = (prev != null && prev > 0 && (cur / prev) < 0.5);
+        rows += '<tr>'+
+          '<td style="padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:'+(isJoin?'800':'600')+';color:'+(isJoin?'var(--blue)':'var(--text)')+'">'+label+'</td>'+
+          '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700">'+cur.toLocaleString()+'</td>'+
+          '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700;color:'+(drop?'#c0392b':'var(--dim-mid)')+'">'+ret+'</td>'+
+          '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim-mid)">'+mcur+'</td>'+
+        '</tr>';
+        prev = cur;
+      });
+      body.innerHTML = rows;
+      var lossT = (tot['이탈'] != null ? tot['이탈'] : 0);
+      var note = document.getElementById('stageFunnelNote');
+      if (note) note.innerHTML = '명시 이탈(보류·거절·취소 등) 전체 '+lossT+'건 · 단계값=진행상태 칸 기록 기반(rank 매핑) — 문의→응대 큰 낙폭은 대부분 신규 문의가 진행상태 미기록으로 남기 때문(전환율 카드는 전화매칭 기준이라 분모 다름).';
+      wrap.style.display = '';
+    })
+    .catch(function(){});
+}
 // 이탈 신호 매트릭스의 실측 2행(이탈 확정·갱신 D-14) 라이브 숫자 주입. 캐시 재사용(강제조회 아님). 2026-07-03 시포·GM
 function renderChurnMatrixLive(body){
   if (!body) return;
@@ -3344,6 +3396,7 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false }
   loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
   loadChurnTopBadges();  // 상단 "이탈 신호" 3배지 라이브 연결(이탈율·갱신 D-7·D-8~30). 2026-07-03 시포·GM
   loadConvRate();  // 전환율 카드 라이브 연결(funnel_conversion). 2026-07-04 시포·GM
+  loadStageFunnel();  // 단계별 잔류·이탈 퍼널 라이브 연결(stage_funnel). 2026-07-06 시포·GM
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
   // 메뉴 그룹 진입(?manage=membership|lesson) — 배6. 기본=멤버십 관리. 2026-07-02 시포·GM.
   try { var _mp = new URLSearchParams(location.search).get('manage'); switchFamily(_mp === 'lesson' ? 'lesson' : 'membership'); }

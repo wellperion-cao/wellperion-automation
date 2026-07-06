@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "CPO-2026-07-06-FUNNEL-STAGE-RESIDUAL",
+    "clevel": "cpo",
+    "title": "[시포] 퍼널 잔류 가시화 — 문의회원.html 단계별 잔류·이탈(stage_funnel) 화면 렌더",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-06",
+    "ship_no": 509,
+    "note": "[2026-07-06 GM go·추천 진행] 북극성 지도 갱신 후 다음 미개통 축=퍼널 잔류. 스카우트 결과 백엔드 stage_funnel(단계별 잔류/이탈+retain)은 이미 완성·라이브(총 문의8675→응대1545→예약1504→방문1455→가입1438·이탈4). 화면 소비처만 부재 → 문의회원.html 전환율 카드 안에 loadStageFunnel() 렌더 추가(1문의~5가입 건수+직전대비잔존%+이번달, 전체기준 계산·이번달 병기). 새 GAS 0. 정직: 단계값=진행상태 칸 rank매핑(전환율 카드=전화매칭이라 분모 다름). 문의→응대 17.8% 대낙폭=신규문의 진행상태 미기록.",
+    "next": "라이브 렌더 검증(시크릿 크롬) 후 입항. 후속(선택): kpi_collector stage_funnel 수집·채널별 단계잔류(stage_funnel byChannel 확장).",
+    "depends_on": ""
+  },
+  {
     "task_id": "CMO-2026-07-02-NORTHSTAR-MEASUREMENT-BIO",
     "clevel": "cmo",
     "title": "[시모] 북극성 측정 개통 확인 완료 → 브랜드 IG bio 설치(GM)+M4 진단 (내일)",
