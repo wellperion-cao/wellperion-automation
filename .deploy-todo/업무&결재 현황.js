@@ -394,6 +394,56 @@ function _processProductPlanAction(body) {
   return _json({ ok: false, error: '알 수 없는 product_plan action: ' + action });
 }
 
+// ═══ 카톡 매출보고 전송 방 목록 공유 저장 (T2 카톡전송관리) — 2026-07-06 CTO, 배488 ═══
+// 웹 = 편집 SSOT, kakao_report_sender.py 로컬 kakao_rooms.json = 폴백 캐시(GAS 다운 시 사용).
+// 방 순서 = 시트 행 순서 = 전송 순서(kakao_report_sender.py가 순서대로 순회).
+var KAKAO_ROOMS_SHEET = '카톡전송방목록';
+var KAKAO_ROOMS_HEADERS = ['name','prefix','updated_at'];
+function _getKakaoRoomsSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(KAKAO_ROOMS_SHEET);
+  if (!sh) { sh = ss.insertSheet(KAKAO_ROOMS_SHEET); sh.appendRow(KAKAO_ROOMS_HEADERS); }
+  else if (sh.getLastRow() === 0) { sh.appendRow(KAKAO_ROOMS_HEADERS); }
+  return sh;
+}
+function _processKakaoRoomsAction(body) {
+  var action = body.action || '';
+  var sh = _getKakaoRoomsSheet();
+  var data = sh.getDataRange().getValues();
+  var headers = (data[0] && data[0].length) ? data[0] : KAKAO_ROOMS_HEADERS;
+  if (action === 'kakao_rooms_get') {
+    var items = [];
+    for (var r = 1; r < data.length; r++) {
+      if (!String(data[r][0])) continue;
+      var o = {};
+      for (var c = 0; c < headers.length; c++) o[headers[c]] = data[r][c];
+      items.push({ name: String(o.name || ''), prefix: String(o.prefix || '') });
+    }
+    return _json({ ok: true, count: items.length, rooms: items });
+  }
+  if (action === 'kakao_rooms_save') {
+    var name = String(body.name || '').trim();
+    if (!name) return _json({ ok: false, error: '방 이름 필수' });
+    var prefix = (body.prefix !== undefined && body.prefix !== null) ? String(body.prefix) : '';
+    var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+    var rowArr = [name, prefix, now];
+    var foundRow = -1;
+    for (var r2 = 1; r2 < data.length; r2++) { if (String(data[r2][0]) === name) { foundRow = r2 + 1; break; } }
+    var targetRow = foundRow > 0 ? foundRow : sh.getLastRow() + 1;
+    var rng = sh.getRange(targetRow, 1, 1, KAKAO_ROOMS_HEADERS.length);
+    try { rng.setNumberFormat('@'); } catch (e) {}
+    rng.setValues([rowArr]);
+    return _json({ ok: true, name: name });
+  }
+  if (action === 'kakao_rooms_delete') {
+    var dname = String(body.name || '').trim();
+    if (!dname) return _json({ ok: false, error: '방 이름 필수' });
+    for (var r3 = 1; r3 < data.length; r3++) { if (String(data[r3][0]) === dname) { sh.deleteRow(r3 + 1); return _json({ ok: true, name: dname }); } }
+    return _json({ ok: false, error: '해당 방 없음' });
+  }
+  return _json({ ok: false, error: '알 수 없는 kakao_rooms action: ' + action });
+}
+
 // ═══ GitHub 콘텐츠 파일 중계 (GM 편집 → 자동 커밋·push) — 2026-05-29 ═══
 // 보안: ① 커밋 가능 경로는 coo 하위 .json 으로 한정(코드 조작 차단)
 //       ② EDIT_KEY 일치 필수  ③ 토큰은 ScriptProperties 서버측 보관(브라우저 비노출)
@@ -1707,6 +1757,17 @@ function doGet(e) {
       return _processProductPlanAction(pbody);
     }
 
+    // 카톡 매출보고 전송 방 목록 — get(GET 조회)·save/delete(POST 본문) 공용
+    if (action.startsWith('kakao_rooms_')) {
+      const kbody = {};
+      Object.keys(e.parameter).forEach(k => kbody[k] = e.parameter[k]);
+      if (e.postData && e.postData.contents) {
+        try { const kb4 = JSON.parse(e.postData.contents); Object.keys(kb4).forEach(k => kbody[k] = kb4[k]); } catch(ignored4){}
+      }
+      kbody.action = action;
+      return _processKakaoRoomsAction(kbody);
+    }
+
     // ─── AI배(C레벨) 전용 탭 조회 (2026-06-08 GM 결정: 탭 분리 설계) ───
     // GET ?action=ai_list[&sheet=AI배(C레벨)]
     // 전용 탭에서 모든 행을 todo_list 와 동일한 컬럼 구조로 반환한다.
@@ -2383,6 +2444,7 @@ function doPost(e) {
     if (act === 'expense_set_budget') return _expenseSetBudget(body.amount || '', body.key || '');
     if (act.indexOf('notice_') === 0) return _processNoticeAction(body);
     if (act.indexOf('product_plan_') === 0) return _processProductPlanAction(body);
+    if (act.indexOf('kakao_rooms_') === 0) return _processKakaoRoomsAction(body);
     if (act.indexOf('ai_') === 0) return _processAiAction(_mapFields(body));
     return _processTodoAction(body);
   } catch (err) {

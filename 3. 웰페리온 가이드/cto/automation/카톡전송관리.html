@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📤 카톡 매출보고 전송 관리 — AI CTO</title>
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#221F20;--paper:#272422;--paper-raised:#2e2b28;
+  --text:#f0ece7;--dim:#7d7b74;--dim-mid:#9e9b93;
+  --accent:#B79F8A;--accent-bright:#c9b49e;--accent-bg:rgba(183,159,138,0.10);--accent-border:rgba(183,159,138,0.25);
+  --border:#38322e;--border-subtle:rgba(56,50,46,0.6);
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.10);--green-border:rgba(106,191,123,0.28);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.10);--red-border:rgba(237,91,63,0.28);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.10);--yellow-border:rgba(230,200,78,0.28);
+  --teal:#4ec4c4;--teal-bg:rgba(78,196,196,0.10);--teal-border:rgba(78,196,196,0.28);
+  --shadow-card:0 2px 12px rgba(0,0,0,0.35);--shadow-header:0 1px 0 var(--border),0 4px 16px rgba(0,0,0,0.4);
+  --radius-card:14px;--radius-btn:8px;--radius-chip:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+.sticky-top{position:sticky;top:0;z-index:100;background:var(--bg);box-shadow:var(--shadow-header);}
+.header{background:linear-gradient(180deg,#2f2b28 0%,#272422 100%);padding:14px 24px;border-bottom:1px solid var(--border);}
+.header-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.header h1{font-size:16px;font-weight:800;margin:0;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px;}
+.header .sub{font-size:11px;color:var(--dim-mid);line-height:1.5;margin-top:3px;}
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 9px;border-radius:var(--radius-chip);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);letter-spacing:0.02em;}
+.header-actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.action-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--radius-btn);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);text-decoration:none;cursor:pointer;font-family:inherit;transition:background 0.15s,color 0.15s,border-color 0.15s;white-space:nowrap;}
+.action-btn:hover{background:rgba(183,159,138,0.2);color:var(--accent-bright);border-color:rgba(183,159,138,0.4)}
+.action-btn.green{background:var(--green-bg);color:var(--green);border-color:var(--green-border);}
+.action-btn.green:hover{background:rgba(106,191,123,0.2);}
+
+/* 좌측정렬 풀폭 표준(feedback_page_layout_left_full_width) */
+.content{padding:24px;max-width:900px;margin:0;}
+
+.card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-card);padding:18px 20px;margin-bottom:18px;box-shadow:var(--shadow-card);}
+.card-title{font-size:14px;font-weight:700;color:var(--accent-bright);margin-bottom:12px;display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap;}
+.card-title-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.info-box{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-top:10px;font-size:12.5px;color:var(--dim-mid);line-height:1.7;}
+.info-box strong{color:var(--text);}
+.callout{background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:10px;padding:12px 16px;font-size:12.5px;color:var(--accent-bright);margin-top:12px;line-height:1.7;}
+.callout.yellow{background:var(--yellow-bg);border-color:var(--yellow-border);color:var(--yellow);}
+.callout.red{background:var(--red-bg);border-color:var(--red-border);color:var(--red);}
+.callout.green{background:var(--green-bg);border-color:var(--green-border);color:var(--green);}
+
+.tbl-wrap{overflow-x:auto;margin-top:6px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--paper-raised);color:var(--dim-mid);font-weight:600;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:8px 10px;border-bottom:1px solid var(--border-subtle);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.dim{color:var(--dim-mid);}
+
+.room-order{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:99px;background:var(--paper-raised);color:var(--dim-mid);font-size:10.5px;font-weight:700;}
+.btn-del{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);border-radius:6px;cursor:pointer;font-size:11.5px;padding:5px 10px;font-family:inherit;}
+.btn-del:hover{background:rgba(237,91,63,0.2);}
+
+/* 방 추가 폼 — 입력 중 rerender 없음(IME 안전, feedback_input_no_rerender_ime) */
+.add-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border-subtle);}
+.add-row input{flex:1;min-width:140px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font:13px/1.5 inherit;outline:none;}
+.add-row input:focus{border-color:var(--accent);}
+.add-row input#addPrefix{flex:0.7;min-width:110px;}
+.btn-add{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);border-radius:var(--radius-btn);padding:9px 16px;font:600 12.5px/1 inherit;cursor:pointer;white-space:nowrap;}
+.btn-add:hover{background:rgba(106,191,123,0.2);}
+
+.status-msg{font-size:11.5px;color:var(--dim-mid);padding:6px 0 0;min-height:18px;}
+.status-msg.err{color:var(--red);}
+.status-msg.ok{color:var(--green);}
+
+.accordion{border:1px solid var(--border);border-radius:var(--radius-card);overflow:hidden;margin-bottom:10px;}
+.acc-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--paper);cursor:pointer;user-select:none;transition:background 0.14s;gap:12px;}
+.acc-header:hover{background:var(--paper-raised);}
+.acc-title{font-size:13px;font-weight:700;color:var(--text);}
+.acc-chevron{font-size:11px;color:var(--dim-mid);transition:transform 0.2s;flex-shrink:0;}
+.accordion.open .acc-chevron{transform:rotate(180deg);}
+.acc-body{display:none;padding:14px 16px;background:var(--paper-raised);border-top:1px solid var(--border);font-size:12.5px;color:var(--dim-mid);line-height:1.75;}
+.accordion.open .acc-body{display:block;}
+.acc-body strong{color:var(--text);}
+.acc-body ul{padding-left:18px;margin-top:6px;}
+.acc-body li{margin-bottom:4px;}
+.acc-body code{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:11.5px;}
+
+.status-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.status-dot{width:9px;height:9px;border-radius:99px;background:var(--dim-mid);flex-shrink:0;}
+.status-dot.ok{background:var(--green);}
+.status-dot.err{background:var(--red);}
+
+@media print{
+  .header-actions,.add-row,.btn-del,.status-msg{display:none!important;}
+}
+@media(max-width:480px){
+  .content{padding:14px;}
+  .card{padding:14px 14px;}
+}
+</style>
+</head>
+<body>
+
+<div class="sticky-top">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>📤 카톡 매출보고 전송 관리 <span class="badge">AI CTO v1.0</span></h1>
+        <div class="sub">AI CTO (시토) · 카톡 3방 전송 대상 방 관리 + 사용 가이드 · 배488</div>
+      </div>
+      <div class="header-actions">
+        <a href="../../자율현황.html" class="action-btn">← 자율현황(T2)</a>
+        <a href="../../wellperion_guide(main).html" class="action-btn">← ERP 홈</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ══ 방 목록 관리 ══ -->
+  <div class="card">
+    <div class="card-title">
+      <span>📋 전송 대상 톡방</span>
+      <div class="card-title-actions">
+        <button class="action-btn" onclick="loadRooms()">↺ 새로고침</button>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:0;margin-bottom:12px;">
+      여기서 추가·삭제한 방 목록이 <strong>텔레그램 봇의 "📤 카톡 3방 전송" 버튼</strong>이 실제로 사용하는
+      전송 대상입니다. <strong>순서 = 전송 순서</strong>. 방 이름은 카카오톡에서 실제로 열려 있는 채팅방
+      창 제목과 <strong>정확히 일치</strong>해야 전송됩니다.
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="width:34px"></th><th>방 이름</th><th>캡션 앞머리(prefix)</th><th style="width:70px"></th></tr></thead>
+        <tbody id="roomsBody">
+          <tr><td colspan="4" class="dim">불러오는 중…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="add-row">
+      <input type="text" id="addName" placeholder="방 이름 (카톡 채팅방 제목과 정확히 일치)">
+      <input type="text" id="addPrefix" placeholder="캡션 앞머리(선택, 예: 회장님, )">
+      <button class="btn-add" onclick="addRoom()">+ 방 추가</button>
+    </div>
+    <div class="status-msg" id="roomsStatus"></div>
+  </div>
+
+  <!-- ══ 상태 ══ -->
+  <div class="card">
+    <div class="card-title"><span>🩺 최근 전송 상태</span></div>
+    <div class="status-row" id="lastSendRow">
+      <span class="status-dot"></span>
+      <span class="dim" id="lastSendText">불러오는 중…</span>
+    </div>
+    <div class="info-box">
+      텔레그램 봇이 "📤 카톡 3방 전송" 버튼 처리 결과를 <code>status/kakao_last_send.json</code>에
+      남기면 여기 표시됩니다(저장소에 커밋·푸시된 이후 반영 — 실시간 아님).
+    </div>
+  </div>
+
+  <!-- ══ 가이드 ══ -->
+  <h2 style="font-size:14px;font-weight:700;color:var(--accent-bright);margin:22px 0 10px;">📖 사용 가이드</h2>
+
+  <div class="accordion open" onclick="toggleAcc(this)">
+    <div class="acc-header"><span class="acc-title">⚙️ 작동 원리</span><span class="acc-chevron">▾</span></div>
+    <div class="acc-body">
+      매일 <strong>09:00 텔레그램 정각 매출·업무 보고</strong>의 매출보고 이미지 아래 <strong>"📤 카톡 3방 전송"</strong>
+      인라인 버튼을 GM이 탭하면, 텔레그램 봇(<code>bot.py</code>)이 그 사진을 로컬 archive 폴더에 저장한 뒤
+      <code>scripts/kakao_report_sender.py</code>를 실행합니다. 이 스크립트는 카카오톡 PC 앱 화면을 직접
+      자동조작(pywinauto)해 <strong>이미 열려 있는 채팅방 창을 이름으로 찾아</strong> 이미지+캡션을 순서대로 붙여넣고 전송합니다.
+      방 목록·캡션 앞머리는 <strong>이 페이지에서 편집한 값(웹 SSOT)</strong>을 우선 사용하고,
+      웹(GAS) 연결이 안 되면 로컬 <code>kakao_rooms.json</code> 캐시로 자동 폴백합니다.
+    </div>
+  </div>
+  <div class="accordion" onclick="toggleAcc(this)">
+    <div class="acc-header"><span class="acc-title">✅ 사용 조건</span><span class="acc-chevron">▾</span></div>
+    <div class="acc-body">
+      <ul>
+        <li>GM PC가 켜져 있고 <strong>카카오톡 PC 앱에 로그인</strong>된 상태여야 합니다.</li>
+        <li>방이 미리 열려 있지 않아도 자동으로 검색해 열지만(실측 검증됨), 실패 시 GM이 먼저 방을 한 번 열어두면 가장 안정적입니다.</li>
+        <li>방 이름은 여기 목록의 이름과 <strong>완전히 동일한 글자</strong>여야 합니다(공백·오탈자 불일치 시 전송 실패).</li>
+      </ul>
+    </div>
+  </div>
+  <div class="accordion" onclick="toggleAcc(this)">
+    <div class="acc-header"><span class="acc-title">🧪 안전한 테스트 방법</span><span class="acc-chevron">▾</span></div>
+    <div class="acc-body">
+      실제 방으로 바로 실전송하지 말고, 아래처럼 CLI에서 <code>--dry-run</code>(전송 트리거 없이 미리보기까지만)과
+      <code>--only-room</code>(방 1개만)을 함께 써서 검증하세요:
+      <div class="info-box" style="margin-top:8px;">
+        <code>python scripts\kakao_report_sender.py --image "C:\...\report.png" --caption "테스트" --dry-run --only-room "웰페리온 운영부"</code>
+      </div>
+      회장님방·관리부방 등 실제 업무 채널에는 안전 검증 없이 바로 실전송하지 않는 것을 원칙으로 합니다.
+    </div>
+  </div>
+  <div class="accordion" onclick="toggleAcc(this)">
+    <div class="acc-header"><span class="acc-title">⚠️ 한계 · 실패 시</span><span class="acc-chevron">▾</span></div>
+    <div class="acc-body">
+      카카오톡 PC 앱 UI(창 클래스·팝업 구조·검색 아이콘 위치)는 <strong>버전 업데이트로 바뀔 수 있어
+      취약</strong>합니다. 카톡이 업데이트된 후 갑자기 전송이 안 되면 이 UI 자동화 좌표/구조가 깨졌을 가능성이 큽니다 —
+      이 경우 명확한 실패 메시지가 텔레그램으로 회신되며, GM이 해당 방에 <strong>수동으로 직접 전달</strong>하는 것이
+      안전한 폴백입니다. 자동 복구를 시도하지 않고 정직하게 실패를 알립니다.
+    </div>
+  </div>
+  <div class="accordion" onclick="toggleAcc(this)">
+    <div class="acc-header"><span class="acc-title">🗂️ 관련 위치</span><span class="acc-chevron">▾</span></div>
+    <div class="acc-body">
+      <ul>
+        <li>전송기: <code>scripts/kakao_report_sender.py</code></li>
+        <li>텔레그램 봇 콜백: <code>telegram_bot/bot.py</code> (<code>cmd_kakao_send_callback</code>)</li>
+        <li>이미지 archive: <code>1. AI학습자료_아카이브\10_매출보고\YYYY-MM\</code></li>
+        <li>스펙 문서: <code>docs/superpowers/specs/2026-07-06-카톡-매출보고-원클릭-전송기-design.md</code></li>
+      </ul>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+// ── GAS 공유 저장(kakao_rooms_get/save/delete) — 상품기획.html과 동일 패턴 ──
+var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+function _roomsStatus(msg, cls){
+  var el = document.getElementById('roomsStatus');
+  el.textContent = msg || '';
+  el.className = 'status-msg' + (cls ? ' ' + cls : '');
+}
+
+function renderRooms(rooms){
+  var body = document.getElementById('roomsBody');
+  if(!rooms || !rooms.length){
+    body.innerHTML = '<tr><td colspan="4" class="dim">등록된 방이 없습니다. 아래에서 추가하세요.</td></tr>';
+    return;
+  }
+  body.innerHTML = rooms.map(function(r, i){
+    return '<tr>' +
+      '<td><span class="room-order">' + (i+1) + '</span></td>' +
+      '<td>' + esc(r.name) + '</td>' +
+      '<td class="dim">' + (r.prefix ? esc(r.prefix) : '<span style="opacity:.5">(없음)</span>') + '</td>' +
+      '<td><button class="btn-del" onclick="deleteRoom(' + "'" + r.name.replace(/'/g,"\\'") + "'" + ')">삭제</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function loadRooms(){
+  _roomsStatus('불러오는 중…');
+  fetch(TODO_API_URL + '?action=kakao_rooms_get', {redirect:'follow'})
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res.ok){ renderRooms(res.rooms||[]); _roomsStatus(''); }
+      else { _roomsStatus('불러오기 실패: ' + (res.error||''), 'err'); }
+    })
+    .catch(function(){ _roomsStatus('네트워크 오류 — 새로고침을 눌러 다시 시도하세요', 'err'); });
+}
+
+function addRoom(){
+  var nameEl = document.getElementById('addName');
+  var prefixEl = document.getElementById('addPrefix');
+  var name = nameEl.value.trim();
+  var prefix = prefixEl.value;
+  if(!name){ _roomsStatus('방 이름을 입력하세요', 'err'); nameEl.focus(); return; }
+  _roomsStatus('저장 중…');
+  fetch(TODO_API_URL, {
+    method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({action:'kakao_rooms_save', name:name, prefix:prefix})
+  })
+    .then(function(){
+      nameEl.value=''; prefixEl.value='';
+      _roomsStatus('저장 완료 · 목록 갱신 중…', 'ok');
+      setTimeout(loadRooms, 700);
+    })
+    .catch(function(){ _roomsStatus('저장 요청 전송(응답 확인 불가) · 새로고침으로 확인하세요', 'err'); });
+}
+
+function deleteRoom(name){
+  if(!confirm('"' + name + '" 방을 전송 목록에서 삭제할까요?')) return;
+  _roomsStatus('삭제 중…');
+  fetch(TODO_API_URL, {
+    method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({action:'kakao_rooms_delete', name:name})
+  })
+    .then(function(){
+      _roomsStatus('삭제 완료 · 목록 갱신 중…', 'ok');
+      setTimeout(loadRooms, 700);
+    })
+    .catch(function(){ _roomsStatus('삭제 요청 전송(응답 확인 불가) · 새로고침으로 확인하세요', 'err'); });
+}
+
+// ── 상태(선택·간단) — status/kakao_last_send.json을 공개 raw로 직접 조회. 없으면 "아직 없음". ──
+function loadLastSend(){
+  var dot = document.querySelector('#lastSendRow .status-dot');
+  var text = document.getElementById('lastSendText');
+  fetch(RAW_BASE + 'status/kakao_last_send.json?t=' + Date.now(), {cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('no file'); return r.json(); })
+    .then(function(j){
+      dot.className = 'status-dot ' + (j.ok ? 'ok' : 'err');
+      text.textContent = (j.ok ? '✅ 성공' : '⚠️ 실패') + ' · ' + (j.at||'') + ' · ' + (j.detail||'');
+    })
+    .catch(function(){
+      dot.className = 'status-dot';
+      text.textContent = '아직 전송 기록이 없습니다(첫 전송 후 표시됩니다).';
+    });
+}
+
+function toggleAcc(el){ el.classList.toggle('open'); }
+
+loadRooms();
+loadLastSend();
+</script>
+
+<script src="/wellperion-automation/_assets/print_options.js"></script>
+</body>
+</html>

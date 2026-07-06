@@ -82,6 +82,7 @@ import json
 import subprocess
 import sys
 import time
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -97,6 +98,14 @@ ROOMS_CONFIG = Path(__file__).resolve().parent / "kakao_rooms.json"
 EVIDENCE_DIR = Path(__file__).resolve().parent / "poc-evidence"
 DEFAULT_ARCHIVE_DIR = ROOT / "1. AI학습자료_아카이브" / "10_매출보고"
 ARCHIVE_FILENAME_FMT = "웰페리온_일일보고_%Y%m%d.png"
+
+# 방 목록 편집 SSOT = T2 "카톡전송관리" 웹(GAS 시트). 로컬 kakao_rooms.json은 폴백 캐시.
+# GAS scriptId=1VUMgK-vJvxCUO_mjQPpTFLjtv3NWWt8ESkCHH-l3QyCYrpBw2RXsYFFg(업무&결재 현황 GAS,
+# 다른 여러 스크립트가 이미 공유하는 동일 exec URL — 신규 배포 아님). action=kakao_rooms_get.
+KAKAO_ROOMS_GAS_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -184,6 +193,37 @@ def _normalize_room(entry) -> dict:
     if isinstance(entry, str):
         return {"name": entry, "prefix": ""}
     return {"name": entry.get("name", ""), "prefix": entry.get("prefix", "")}
+
+
+def fetch_rooms_from_gas(timeout: float = 6.0) -> list[dict] | None:
+    """T2 "카톡전송관리" 웹에서 GM이 편집한 방 목록을 GAS(kakao_rooms_get)로 조회.
+
+    실패(네트워크 오류·GAS 다운·빈 목록 등) 시 None을 반환 — 호출측이 로컬
+    kakao_rooms.json으로 안전하게 폴백한다(웹=편집 SSOT, 로컬=폴백 캐시)."""
+    try:
+        req = urllib.request.Request(KAKAO_ROOMS_GAS_URL + "?action=kakao_rooms_get")
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+        if not payload.get("ok"):
+            return None
+        rooms = [_normalize_room(r) for r in (payload.get("rooms") or []) if r.get("name")]
+        return rooms or None
+    except Exception as exc:
+        log(f"[kakao_rooms] GAS 방 목록 조회 실패(로컬 kakao_rooms.json으로 폴백): {exc}")
+        return None
+
+
+def _update_local_rooms_cache(rooms: list[dict]) -> None:
+    """GAS 조회 성공 시 로컬 kakao_rooms.json의 rooms[]만 갱신(archive_dir 등 나머지 칸은 보존).
+    GAS 장애 시에도 최근에 성공했던 목록으로 폴백할 수 있도록 캐시를 최신 상태로 유지한다."""
+    try:
+        cfg = load_rooms_config()
+        cfg["rooms"] = rooms
+        ROOMS_CONFIG.write_text(
+            json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except Exception as exc:
+        log(f"[kakao_rooms] 로컬 캐시 갱신 실패(무시, 전송은 계속 진행): {exc}")
 
 
 def get_archive_dir(cfg: dict) -> Path:
@@ -579,6 +619,15 @@ def main() -> int:
         return 1
 
     cfg = load_rooms_config()
+    gas_rooms = fetch_rooms_from_gas()
+    if gas_rooms:
+        cfg["rooms"] = gas_rooms
+        log(f"[kakao_rooms] T2 카톡전송관리(GAS) 방 목록 사용 — {len(gas_rooms)}개")
+        _update_local_rooms_cache(gas_rooms)
+    else:
+        log(f"[kakao_rooms] GAS 미가용 — 로컬 kakao_rooms.json 방 목록으로 폴백 "
+            f"({len(cfg.get('rooms', []))}개)")
+
     image_path = resolve_image_path(cfg, args)
     if not image_path.exists():
         print(f"BLOCKED: 이미지 파일을 찾을 수 없음: {image_path}")
