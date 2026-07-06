@@ -4902,10 +4902,11 @@ function _copyToClipboard(text){
    현재 활성 탭 판별
    ═══════════════════════════════════════════ */
 function getActiveTab(){
-  const tabs=['manual','check-m','check-f','admin'];
-  for(const t of tabs){
-    const el=document.getElementById('tab-'+t);
-    if(el&&!el.classList.contains('hidden'))return t;
+  // 현재 보이는(hidden 아님) 탭 콘텐츠를 자동 감지 — 하드코딩 목록에서 빠진 탭(monthly 등)이
+  // 활성일 때 기본값(check-m)으로 떨어져 '현재 화면 인쇄'가 엉뚱한 숨은 탭을 인쇄하던 버그 수정. 2026-07-06 시우.
+  const els=document.querySelectorAll('.content[id^="tab-"]');
+  for(const el of els){
+    if(!el.classList.contains('hidden'))return el.id.slice(4);
   }
   return 'check-m';
 }
