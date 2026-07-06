@@ -382,5 +382,19 @@
     "artifact": "find_room_window 실패 시(방 창 안 열림) 카톡 메인창 검색으로 자동으로 방을\n열고 전송을 진행하도록 확장. GM PC 라이브로 메인창 컨트롤 트리를 직접\n조사(uia+win32 print_control_identifiers, EnumChildWindows)해 실측 함정\n2가지를 규명: ①검색 Edit는 비활성 시 폭 0으로 붕괴돼 UIA로 못 찾음 → 우상단\n돋보기 아이콘 고정 오프셋 클릭으로 활성화 후 EnumChildWindows로 식별\n②Edit에 Ctrl+A를 보내면 이 앱이 전역 단축키(\"친구 추가\" 다이얼 (CLI ad-hoc · 커밋 c195eab2)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "c195eab2832b0e33eea51d4ce28271c5ec3f4d0b"
+  },
+  {
+    "task_id": "CTO-2026-07-06-ADHOC-d013cbf9",
+    "clevel": "cto",
+    "title": "[시토] 카톡 매출보고 3방 전송기 관리페이지 + GAS 방목록 SSOT (배488)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 494,
+    "artifact": "T2 자동화에 방 추가/삭제·가이드용 관리 페이지(cto/automation/카톡전송관리.html)를\n박제하고, GAS(업무&결재 현황)에 kakao_rooms_get/save/delete 액션을 추가해 웹 편집을\n전송 SSOT로 승격. kakao_report_sender.py는 실행 시 GAS를 우선 조회하고 실패 시\n로컬 kakao_rooms.json으로 폴백(양쪽 경로 라이브 검증 완료). bot.py는 전송 결과를\nstatus/kakao_last_send.json에 남겨 페이지가 표시. (CLI ad-hoc · 커밋 d013cbf9)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d013cbf95e0f4cfa9cff3a5d128b6d4f8cbd68c5"
   }
 ]
