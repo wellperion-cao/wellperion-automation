@@ -761,7 +761,21 @@ function attachPhoto(base,f,cb){ // 원본 base64 + 이미지면 캔버스 썸�
 }
 async function doSubmit(base,msg,fp){
   var d=await procCall("add",base);
-  if(d&&d.ok){msg.textContent="✅ 등록 완료"+(d.no?(" — 번호 #"+d.no+" (영수증에 기재)"):"");["reqWho","reqItem","reqAmt","reqLink","reqPurpose"].forEach(function(id){document.getElementById(id).value="";});if(fp)fp.value="";loadReq();}
+  if(d&&d.ok){
+    var m="✅ 등록 완료"+(d.no?(" — 번호 #"+d.no+" (영수증에 기재)"):"");
+    // 제출 즉시 AI 최저가 조사 결과를 바로 안내 (백엔드 instant 응답 활용, 2026-07-06)
+    var ins=d.instant;
+    if(ins&&ins.ok&&ins.found&&ins.low){
+      var rp=Number(String(base.가격||"").replace(/[^0-9]/g,""));
+      var diff=(isFinite(rp)&&rp>0)?(rp-Number(ins.low)):null;
+      m+=" · 🤖 AI 시세: 시중 최저 "+Number(ins.low).toLocaleString("ko-KR")+"원";
+      if(diff!==null&&diff>0)m+=" — 품의가보다 "+diff.toLocaleString("ko-KR")+"원 저렴한 판매처 있음(참고)";
+      else if(diff!==null&&diff<0)m+=" — 품의가가 더 저렴(적정)";
+    } else if(ins&&ins.ok&&!ins.found){ m+=" · 🤖 AI 시세: 검색결과 없음 — 모델명 보완 권장"; }
+    msg.textContent=m;
+    ["reqWho","reqItem","reqAmt","reqLink","reqPurpose"].forEach(function(id){document.getElementById(id).value="";});if(fp)fp.value="";
+    loadReq();loadReviewLowest(); // 목록 + 검토시트 재로드 → 💡배지 즉시 반영(구: 새로고침 전까지 미표시)
+  }
   else msg.textContent="⚠️ 실패: "+((d&&d.error)||"서버 오류");
 }
 var STAGES=["품의","검토","정산","완료"];
