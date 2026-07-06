@@ -1800,7 +1800,7 @@
     cards.push(
       '<div class="chk-card"><span class="cl">시설부 점검 현황</span>' +
       '<div class="cv pending">데이터 축적 중</div>' +
-      '<span class="csub">시설점검(fcheck)=입력률·이상건수 지표(완료율 아님) · 월간 데이터 극소로 카드 연동 준비 중 — 가짜값 없음</span>' +
+      '<span class="csub">시설점검(fcheck)=입력률·이상건수 지표(완료율 아님) · 6월 매뉴얼·점검 체계 구축(설계)→7/6부터 라이브 데이터 체크 시작이라 아직 데이터 적음(정직 표기·가짜값 없음)</span>' +
       '<a class="clink" href="coo/check/시설부 체계.html" target="_blank">점검 페이지 →</a></div>'
     );
 
@@ -1812,10 +1812,8 @@
       if(zd && zd.sessionCount){
         cards.push(
           '<div class="chk-card"><span class="cl">' + esc(label) + '</span>' +
-          '<div class="cv">' + zd.pct + '%</div>' +
-          '<span class="csub">' + esc(mLabelC) + ' 월간 · 완료 ' + zd.sumDone + ' / 점검 ' + zd.sumTotal +
-            ' · ' + zd.sessionCount + '회 · 이슈 ' + zd.issueCount + '건' +
-            '<br><span class="warn">⚠ 구역별 %=세션기록 분모(잠정·재점검일 부풀림 가능) · 월간 정합 완료율은 아래 종합(평균 완료율) 참조</span></span>' +
+          '<div class="cv">점검 ' + zd.sessionCount + '회</div>' +
+          '<span class="csub">' + esc(mLabelC) + ' 월간 실적 · 이슈 ' + zd.issueCount + '건 · 완료율(이행률)은 아래 지원부 월간 종합 참조</span>' +
           link + '</div>'
         );
       } else {
@@ -1879,7 +1877,7 @@
       var trust = /확정/.test(dn)
         ? ' <span style="color:var(--green);font-weight:700">✓ 월간 실측(분모 정합 완료·배14)</span>'
         : (dn ? ' <span style="color:var(--dim)">· ' + esc(dn) + '</span>' : '');
-      cap = '<div class="chk-cap">📊 지원부 월간 종합(' + esc(_sel || '') + '): 평균 완료율 <b>' + mt.avgPct + '%</b> · 점검일 ' + mt.activeDays + '일 · 세션 ' + mt.sessionCount + '회 · 이슈 ' + mt.issueCount + '건' + trust + '</div>';
+      cap = '<div class="chk-cap">📊 지원부 월간 종합(' + esc(_sel || '') + '): <b>월간 이행률 ' + mt.avgPct + '%</b> <span style="color:var(--dim)">(대표 신뢰지표 · 스케줄 기대분모)</span> · 점검일 ' + mt.activeDays + '일 · 점검 ' + mt.sessionCount + '회 · 이슈 ' + mt.issueCount + '건' + trust + '</div>';
     }
     host.innerHTML = '<div class="chk-grid">' + cards.join('') + '</div>' + cap;
   }
@@ -2144,14 +2142,17 @@
     function zoneChip(g, label){
       var zd = byZoneC[g];
       if(zd && zd.sessionCount){
-        return '<span class="sm-chk-i"><b>' + esc(label) + '</b> ' + zd.pct + '% <span class="sm-dim">(완료 ' + zd.sumDone + '/' + zd.sumTotal + ' · 이슈 ' + zd.issueCount + '건)</span></span>';
+        return '<span class="sm-chk-i"><b>' + esc(label) + '</b> 점검 ' + zd.sessionCount + '회 <span class="sm-dim">(이슈 ' + zd.issueCount + '건 · 실적)</span></span>';
       }
       return '<span class="sm-chk-i"><b>' + esc(label) + '</b> <span class="sm-dim">' + (_checkReady ? '측정 개통 전' : '월간 집계 조회 중…') + '</span></span>';
     }
+    var mtSum = (cmData && cmData.monthTotals) ? cmData.monthTotals : null;
+    var ihChip = mtSum ? '<span class="sm-chk-i"><b>지원부 월간 이행률</b> ' + mtSum.avgPct + '% <span class="sm-dim">(대표 신뢰지표 · 분모 정합)</span></span>' : '';
     var vocTxt = _vocBoard ? (_vocBoard.length + '건') : (_checkReady ? '측정 개통 전' : '조회 중…');
     var chkBlock = '<div class="sm-chk">' +
+      ihChip +
       zoneChip('m', '지원부 점검(남)') + zoneChip('f', '지원부 점검(여)') +
-      '<span class="sm-chk-i"><b>시설부 점검</b> <span class="sm-dim">월간 완료율 집계 GAS 미구축 — 정직 표기(가짜값 없음)</span></span>' +
+      '<span class="sm-chk-i"><b>시설부 점검</b> <span class="sm-dim">데이터 축적 중 — 7/6 라이브 시작(가짜값 없음)</span></span>' +
       '<span class="sm-chk-i"><b>종합접수처</b> ' + esc(vocTxt) + ' <span class="sm-dim">(실시간 · PII 비노출)</span></span>' +
     '</div>';
 
