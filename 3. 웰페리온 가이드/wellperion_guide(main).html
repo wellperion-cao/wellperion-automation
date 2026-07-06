@@ -1387,12 +1387,48 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
           + '<span style="font-size:14px;font-weight:700;color:' + col.color + ';">' + col.status + '</span>'
           + '<span style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:10px;background:' + col.bg + ';color:' + col.color + ';">' + list.length + '</span></div>';
         if(!list.length){ html += '<div style="color:var(--dim);font-size:12px;padding:14px 4px;text-align:center;">건이 없습니다</div>'; }
-        list.forEach(function(it){ html += _regCard(it, col); });
+        else { html += _regGroupByCat(list, col); }
         colEl.innerHTML = html;
         board.appendChild(colEl);
       });
     }
 
+    // ── 카테고리별 묶음(접기/펼치기) — 컬럼 안에서 카테고리별 그룹 ──
+    function _regGrpCollapsed(key){
+      try { var o = JSON.parse(localStorage.getItem('regGrpCollapse') || '{}'); return o[key] === false ? false : true; } catch(e){ return true; }
+    }
+    window._regToggleGrp = function(headEl){
+      var key = headEl.getAttribute('data-grpkey');
+      var body = headEl.nextElementSibling;
+      if(!body) return;
+      var willShow = (body.style.display === 'none');
+      body.style.display = willShow ? 'block' : 'none';
+      var arrow = headEl.querySelector('.reg-grp-arrow'); if(arrow) arrow.textContent = willShow ? '▾' : '▸';
+      try { var o = JSON.parse(localStorage.getItem('regGrpCollapse') || '{}'); o[key] = willShow ? false : true; localStorage.setItem('regGrpCollapse', JSON.stringify(o)); } catch(e){}
+    };
+    function _regGrpBlock(status, cat, icon, shortName, grp, col){
+      var key = status + '|' + cat;
+      var collapsed = _regGrpCollapsed(key);
+      var head = '<div onclick="_regToggleGrp(this)" data-grpkey="' + _regEsc(key) + '" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 8px;margin-bottom:6px;border-radius:8px;background:var(--bg);border:1px solid var(--border);user-select:none;">'
+        + '<span class="reg-grp-arrow" style="font-size:10px;color:var(--dim);width:10px;">' + (collapsed?'▸':'▾') + '</span>'
+        + '<span style="font-size:12px;font-weight:700;color:var(--text);">' + icon + ' ' + _regEsc(shortName) + '</span>'
+        + '<span style="margin-left:auto;font-size:11px;font-weight:700;padding:1px 8px;border-radius:9px;background:' + col.bg + ';color:' + col.color + ';">' + grp.length + '</span></div>';
+      var body = '<div style="display:' + (collapsed?'none':'block') + ';margin-bottom:4px;">';
+      grp.forEach(function(it){ body += _regCard(it, col); });
+      body += '</div>';
+      return head + body;
+    }
+    function _regGroupByCat(list, col){
+      var out = '', known = [];
+      _REG_CAT_META.forEach(function(m){
+        known.push(m.cat);
+        var grp = list.filter(function(it){ return String(it['카테고리']||'') === m.cat; });
+        if(grp.length) out += _regGrpBlock(col.status, m.cat, m.icon, m.short, grp, col);
+      });
+      var other = list.filter(function(it){ return known.indexOf(String(it['카테고리']||'')) === -1; });
+      if(other.length) out += _regGrpBlock(col.status, '기타', '📋', '기타', other, col);
+      return out;
+    }
     // 카드 내용 펼침 토글 (인라인)
     window._regToggle = function(id, btn){
       var body = document.getElementById('regbody-' + id);
