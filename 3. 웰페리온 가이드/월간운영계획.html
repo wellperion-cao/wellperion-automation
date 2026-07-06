@@ -327,11 +327,12 @@
 
   /* ── 🔧 점검 현황 & 종합 접수처 ── */
   .chk-grid{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;}
-  .chk-card{flex:1; min-width:150px; background:var(--surface); border:1px solid var(--border-strong); border-radius:11px; padding:12px 15px;}
-  .chk-card .cl{font-size:11px; color:var(--dim); display:block;}
+  /* 점검 카드 = 대비 상향(GM 지시 2026-07-06 2차 · 다크테마 가독성) — 바탕 paper(밝게)·라벨/보조 텍스트 밝기 up */
+  .chk-card{flex:1; min-width:150px; background:var(--paper); border:1px solid var(--border-strong); border-radius:11px; padding:12px 15px;}
+  .chk-card .cl{font-size:11.5px; font-weight:700; color:var(--text-soft); display:block;}
   .chk-card .cv{font-size:22px; font-weight:800; letter-spacing:-0.02em; color:var(--text); margin-top:5px;}
-  .chk-card .cv.pending{font-size:13px; color:var(--dim); font-weight:700;}
-  .chk-card .csub{display:block; font-size:11px; color:var(--text-soft); margin-top:5px; line-height:1.5;}
+  .chk-card .cv.pending{font-size:13px; color:var(--text-soft); font-weight:700;}
+  .chk-card .csub{display:block; font-size:11px; color:var(--text); margin-top:5px; line-height:1.55;}
   .chk-card .csub .warn{color:var(--gold);}
   .chk-card .clink{display:inline-block; margin-top:7px; font-size:11px; font-weight:600; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:3px 9px;}
   .chk-card .clink:hover{border-color:var(--accent);}
@@ -371,14 +372,12 @@
   .view-toggle .vbtn.on{background:var(--accent); color:#fff; border-color:var(--accent);}
 
   /* ── 뷰 전환(화면): 연간 A3 뷰에선 월별 전용 요소 숨김 ── */
+  /* 연간 A3 뷰 = 연간 로드맵(annual-board) + 그 아래 월별 상세(report-grid) 전부 표시 — 연간 뷰가 월별 상세의 상위집합(GM 지시 2026-07-06 2차). impact-grid는 폐지분이라 계속 숨김. */
   .annual-board{display:none;}
   body.view-annual .annual-board{display:block;}
-  body.view-annual .report-grid, body.view-annual .impact-grid, body.view-annual #month-head{display:none !important;}
+  body.view-annual .impact-grid, body.view-annual #month-head{display:none !important;}
 
-  /* ── 🎯 1장 요약 뷰(경영진 결론 A3 한 장) ── GM 지시 2026-07-06: 상세 3장은 유지하고 헤드라인만 담은 별도 뷰 */
-  .summary-board{display:none;}
-  body.view-summary .summary-board{display:block;}
-  body.view-summary .report-grid, body.view-summary .annual-board, body.view-summary .impact-grid, body.view-summary #month-head{display:none !important;}
+  /* 🎯 1장 요약 뷰 = 폐지(GM 지시 2026-07-06 2차) — 연간 A3가 월별 상세를 포함하므로 별도 요약 뷰 불필요. summary-board 관련 CSS/JS는 비활성(섹션·토글 제거). */
   .sm-head{display:flex; flex-direction:column; gap:4px; border-bottom:2px solid var(--border-strong); padding-bottom:8px; margin-bottom:12px;}
   .sm-h-l{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .sm-h-title{font-size:18px; font-weight:800; color:var(--text); letter-spacing:-0.01em;}
@@ -540,8 +539,8 @@
     body{background:#fff; color:#111; padding:0; font-size:8.5px; line-height:1.4;}
     .wrap{max-width:none;}
     .layers, .impact-grid, .month-bar, .ebtn, header.page-head .back, .view-toggle{display:none !important;}
-    /* 연간 뷰 인쇄 = 로드맵 한 장(월별 상세 숨김) / 월별 뷰 인쇄 = 결론 한 장(연간 숨김·base CSS) */
-    body.view-annual .report-grid, body.view-annual #month-head{display:none !important;}
+    /* 연간 뷰 인쇄 = 연간 로드맵 + 그 아래 월별 상세 전부(GM 지시 2026-07-06 2차) / 월별 뷰 인쇄 = 결론(연간 숨김·base CSS) */
+    body.view-annual #month-head{display:none !important;}
     /* 📊 연속 이니셔티브 상단밴드 = 두 단 전폭 상단(월별 A3) */
     .blk.mband-wrap{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
     .blk.mband-wrap h2.sec{margin-top:2px;}
@@ -633,7 +632,8 @@
     h2.sec{font-size:10.5px; margin:0 0 2px; border-bottom:1px solid #bbb; padding-bottom:1px; break-after:avoid;}
     h2.sec .stag{font-size:7.5px;}
     h2.sec .cfo-link{font-size:7.5px; padding:1px 6px; color:#333 !important; border-color:#999 !important;}
-    .rm-time{gap:4px;} .rm-step{padding:4px 7px 3px; gap:2px; background:#fff !important; border-color:#999 !important;}
+    /* 🗺️ 로드맵: 3Q·4Q·이후 전 분기가 우측 컬럼에 다 들어오게 스텝 밀도 압축(GM 지시 2026-07-06 2차 · 2단 컬럼 폭에 2개씩 수용) */
+    .rm-time{gap:3px;} .rm-step{min-width:calc(50% - 3px) !important; padding:3px 6px 2px; gap:1px; background:#fff !important; border-color:#999 !important;}
     .rm-step .rn, .rm-step .rtitle, .rm-step .rmeta b{color:#111 !important;}
     .rm-step .rperiod{color:#444 !important; font-size:7.5px;}
     .rm-step .rgoal{display:none !important;}  /* A3 1장 압축 — 6단계 목표설명은 인쇄 생략(제목·진척·기간은 유지) */
@@ -665,13 +665,19 @@
     /* 부서별 표 월간|연간 구분선 흑백 */
     .findept thead th.grp-mon{color:#333 !important;} .findept thead th.grp-cum{color:#7a5f2f !important;}
     .findept td.grp-cum{color:#7a5f2f !important; border-left-color:#999 !important;} .findept th.grp-cum{border-left-color:#999 !important;}
-    /* 🚀ERP+🗺️로드맵 병합 = 한 컬럼에 두 보드 세로 스택(둘이 안 쪼개지고 몰리게) */
-    .blk.erp-roadmap-merge{break-inside:auto;}
-    /* 👤 실무·AI 도달율 = 한 칸 full-height(반칸에 눌리지 않게 밀도 상향 · 강제 컬럼분할은 3페이지 유발이라 미사용) */
-    .blk.prac-full{break-inside:avoid;}
-    .blk.prac-full table.rpt.prac tbody td{padding:4px 8px !important; font-size:9px !important; line-height:1.4 !important;}
-    .blk.prac-full table.rpt.prac thead th{padding:4px 8px !important; font-size:9px !important;}
+    /* 🗺️ 로드맵 단독 블록 = 한 컬럼에 통째(전 분기 3Q·4Q·이후 잘림 없이 · GM 지시 2026-07-06 2차) */
+    .blk.erp-roadmap-merge{break-inside:avoid;}
+    /* 👤 실무·AI 도달율 = 전폭 한 줄 가로 스트립(GM 지시 2026-07-06 2차 · 맨 마지막 · 3라인을 가로로 쭉 카드 나열) */
+    .blk.prac-full{column-span:all !important; break-inside:avoid;}
+    .blk.prac-full .rpt-wrap{overflow:visible !important; border:none !important; background:#fff !important;}
+    .blk.prac-full table.rpt.prac{display:block !important; width:100% !important; min-width:0 !important;}
+    .blk.prac-full table.rpt.prac thead{display:none !important;}
+    .blk.prac-full table.rpt.prac tbody{display:flex !important; gap:5px !important; width:100% !important;}
+    .blk.prac-full table.rpt.prac tr{display:flex !important; flex-direction:column !important; flex:1 1 0 !important; min-width:0 !important; border:1px solid #999 !important; border-radius:4px; padding:2px 0;}
+    .blk.prac-full table.rpt.prac td{display:block !important; width:auto !important; border:none !important; padding:2px 7px !important; font-size:8.5px !important; line-height:1.35 !important;}
+    .blk.prac-full table.rpt.prac td.c-own{border-left:3px solid #b8860b !important; border-bottom:1px solid #ddd !important; margin-bottom:1px;}
     .blk.prac-full .r-title{font-size:9.5px !important;} .blk.prac-full .r-note{font-size:8px !important;}
+    .blk.prac-full .prog{min-width:0 !important;}
     .metric{margin-top:4px; padding:4px 7px;}
     .erp-step{padding:8px 10px 7px; gap:4px;} .erp-step .ep{font-size:20px;} .erp-step .enote{font-size:8px; line-height:1.4;}
     .erp-time{gap:6px;}
@@ -773,15 +779,15 @@
   <!-- 📅 연간 A3 뷰 (뷰 토글 '연간 A3' 시 표시 · 월별 상세는 CSS로 숨김) -->
   <section class="annual-board" id="annual-board"><div class="board-status">연간 로드맵을 불러오는 중…</div></section>
 
-  <!-- 🎯 1장 요약 뷰 (뷰 토글 '1장 요약' 시 표시 · 상세/연간은 CSS로 숨김 · GM 지시 2026-07-06 경영진 결론 A3 한 장) -->
-  <section class="summary-board" id="summary-board"><div class="board-status">경영진 1장 요약을 불러오는 중…</div></section>
+  <!-- 🎯 1장 요약 뷰 = 폐지(GM 지시 2026-07-06 2차) — 연간 A3 뷰가 월별 상세를 포함하도록 전환 -->
 
-  <!-- 경영진 A3 결론 한 장 = 아래 report-grid (인쇄 시 2단, 상단밴드·매출은 상단 전폭) -->
+  <!-- 경영진 A3 결론 = 아래 report-grid (월별 뷰 = 이것만 / 연간 뷰 = annual-board + 이것) -->
+  <!-- 인쇄 시 2단, 상단밴드·매출은 상단 전폭 -->
   <div class="report-grid">
 
     <!-- 💰 매출 종합 (0순위·맨앞 · GM 지시 2026-07-06 매출 라인 통합: 상단 좌=선택월 매출/우=연간 히스토리, 하단 전폭=부서별 월간실적|연간누계. 라이브 gviz 미러·보드 독립렌더·INC-001 값 저장 금지) -->
     <section class="blk fin-primary">
-      <h2 class="sec has-link"><span class="rank0-badge">0순위</span>💰 매출 종합 <span class="stag">선택월 매출(목표 대비) + 2026 연간 히스토리 + 부서별 월간 실적·연간 누계 · AI CFO 정본 미러 · 지출·순액=파트너팀 구조개선 중(확정숫자 미표기)</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
+      <h2 class="sec has-link"><span class="rank0-badge">0순위</span>💰 매출 종합 <span class="stag">선택월 매출(목표 대비) + 2026 연간 히스토리 + 부서별 월간 실적·연간 누계 · AI CFO 정본 미러 · 지출·순액=구조개선 중(확정숫자 미표기)</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
       <div class="fin-top-split">
         <div class="fin-top-left">
           <div class="fin-sub-h">💰 선택월 매출 · 목표 대비</div>
@@ -808,11 +814,9 @@
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
     </section>
 
-    <!-- 🚀 ERP 진척 + 🗺️ 전략 로드맵 (병합 · 한 칸 · GM 지시 2026-07-06: 인쇄 시 한 컬럼에 두 보드 세로 스택) -->
+    <!-- 🗺️ 전략 로드맵 (단독 · GM 지시 2026-07-06 2차: 🚀 ERP 월별 진척은 이월/연속 과제로 중복이라 제거) -->
     <section class="blk erp-roadmap-merge">
-      <h2 class="sec">🚀 웰페리온 ERP 월별 진척 <span class="stag">40 → 60 → 80 → 95% · 실적/목표</span></h2>
-      <div id="erp-board"><div class="board-status">ERP 진척 정본을 불러오는 중…</div></div>
-      <h2 class="sec" style="margin-top:16px;">🗺️ 전략 로드맵 진척 <span class="stag">6단계 실행 로드맵 · 회사문서 전략 로드맵 v1.5 + S0 기준 · 현재 어느 단계</span></h2>
+      <h2 class="sec">🗺️ 전략 로드맵 진척 <span class="stag">6단계 실행 로드맵 · 회사문서 전략 로드맵 v1.5 + S0 기준 · 현재 어느 단계</span></h2>
       <div id="roadmap-board"><div class="board-status">전략 로드맵 정본을 불러오는 중…</div></div>
     </section>
 
@@ -1616,7 +1620,7 @@
       });
       if(ta.etc > 0){ rows.push({name:'기타(팀 미매칭 — 루프메소드·카드발급 등)', target:0, actual:ta.etc, exp:0, cum:null, isEtc:true}); }
       // 지출·순액 = 나우열M 구조개선 중(확정숫자 미표기 · 정직 표기). 목표·실적매출·달성%(team_sales)은 그대로 유지.
-      var NAUW_NOTE = '<span class="fin-none" title="운영 매출·지출 실무=파트너팀 · 구조개선 중">파트너팀 구조개선 중</span>';
+      var NAUW_NOTE = '<span class="fin-none" title="운영 매출·지출 실무 · 구조개선 중">구조개선 중</span>';
       var totT = 0, totA = 0, totCum = 0, haveCum = false;
       var body = rows.map(function(r){
         totT += r.target; totA += r.actual;
@@ -1641,21 +1645,17 @@
         '<div class="rpt-wrap"><table class="rpt findept"><thead>' +
         '<tr><th rowspan="2">팀</th><th class="num grp-mon" colspan="3">📅 ' + mnum + '월 실적</th>' +
         '<th class="num grp-cum" colspan="1">📈 연간 누계</th>' +
-        '<th class="num" rowspan="2">지출<span style="font-weight:400;color:var(--dim)"> · 파트너팀 구조개선 중</span></th>' +
+        '<th class="num" rowspan="2">지출<span style="font-weight:400;color:var(--dim)"> · 구조개선 중</span></th>' +
         '<th class="num" rowspan="2">순액</th></tr>' +
         '<tr><th class="num">목표매출</th><th class="num">실적매출</th><th class="num">달성%</th><th class="num grp-cum">누계매출</th></tr>' +
         '</thead><tbody>' + body + '</tbody></table></div></div>';
     }
 
-    var legend = '<div class="flegend">' +
-      '<span class="fnote">● 선택월(' + mnum + '월) 기준 · 매출 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a> 미러(읽기전용, 회원권+강습+기타·주차). ' +
-      '부서별 표=팀별 목표(status/sales_targets.json 고정)·실적(라이브 GAS team_sales, 강사→팀은 인건비 시트 로스터로 집계). 멤버십=GM시트 「2026년도 매출」 정본. <b>부서별 지출·순액=운영 매출·지출 실무 파트너팀 이관·구조개선 중이라 확정숫자 미표기</b>(지출·순액 실측치는 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출·지출 현황</a>에서 확인). 측정 전=소스 미기재(가짜값 없음).</span>' +
-    '</div>';
-
-    // 상단 좌측(#fin-board)=선택월 매출 hero, 하단 전폭(#fin-dept-board)=부서별 표+범례 (매출 라인 통합 · GM 지시 2026-07-06)
+    // 상단 좌측(#fin-board)=선택월 매출 hero, 하단 전폭(#fin-dept-board)=부서별 표 (매출 라인 통합 · GM 지시 2026-07-06)
+    // 회색 안내 footnote 제거(GM 지시 2026-07-06 2차) — 표만 남기고 군더더기 안내문 삭제(소스·정본은 헤더 stag·CFO 링크로 안내).
     host.innerHTML = hero;
     var deptHost = document.getElementById('fin-dept-board');
-    if(deptHost) deptHost.innerHTML = combinedTbl + legend;
+    if(deptHost) deptHost.innerHTML = combinedTbl;
   }
 
   // ── 📈 2026 매출 연간 히스토리(1~7월) — _cfoSales(sales_monthly 정본, 부팅 시 이미 조회) 재사용, 신규 배관 없음(GM 승인 2026-07-03) ──
@@ -1789,11 +1789,11 @@
     var cmLoading = (cmEntry && cmEntry.status === 'loading');
     var byZoneC = {}; if(cmData && Array.isArray(cmData.byZone)){ cmData.byZone.forEach(function(z){ byZoneC[z.zone] = z; }); }
 
-    // ① 시설부 점검 현황 — 시설점검(fcheck)은 회차별 실측 원장 방식이라 총 항목수 기준 월간 완료율 집계 GAS가 아직 없음 → 정직 표기 + 점검 페이지 링크.
+    // ① 시설부 점검 현황 — 시설점검(fcheck)은 항목×회차 실측(입력률·이상건수 지표 · 완료율 아님). 월간 GAS(dept=facility·배406)는 구축됐으나 데이터 극소(월 1일·2세션)라 월간 카드 연동은 데이터 축적 후로 보류 — 지금은 정직 표기 + 점검 페이지 링크(가짜값 없음).
     cards.push(
       '<div class="chk-card"><span class="cl">시설부 점검 현황</span>' +
-      '<div class="cv pending">측정 개통 전</div>' +
-      '<span class="csub">시설점검(fcheck) 월간 완료율 집계 GAS 미구축 — 가짜값 없음</span>' +
+      '<div class="cv pending">데이터 축적 중</div>' +
+      '<span class="csub">시설점검(fcheck)=입력률·이상건수 지표(완료율 아님) · 월간 데이터 극소로 카드 연동 준비 중 — 가짜값 없음</span>' +
       '<a class="clink" href="coo/check/시설부 체계.html" target="_blank">점검 페이지 →</a></div>'
     );
 
@@ -1808,7 +1808,7 @@
           '<div class="cv">' + zd.pct + '%</div>' +
           '<span class="csub">' + esc(mLabelC) + ' 월간 · 완료 ' + zd.sumDone + ' / 점검 ' + zd.sumTotal +
             ' · ' + zd.sessionCount + '회 · 이슈 ' + zd.issueCount + '건' +
-            '<br><span class="warn">⚠ 완료율 분모(점검 항목 수) 정합성 검증 중 — 실측치지만 신뢰도 확정 전</span></span>' +
+            '<br><span class="warn">⚠ 구역별 %=세션기록 분모(잠정·재점검일 부풀림 가능) · 월간 정합 완료율은 아래 종합(평균 완료율) 참조</span></span>' +
           link + '</div>'
         );
       } else {
@@ -1867,7 +1867,12 @@
     var cap = '';
     if(cmData && cmData.monthTotals){
       var mt = cmData.monthTotals;
-      cap = '<div class="chk-cap">📊 지원부 월간 종합(' + esc(_sel || '') + '): 평균 완료율 <b>' + mt.avgPct + '%</b> · 점검일 ' + mt.activeDays + '일 · 세션 ' + mt.sessionCount + '회 · 이슈 ' + mt.issueCount + '건</div>';
+      // 월간 평균 완료율=스케줄 기대 분모 단일화(배14 _scheduleExpectedTotal, 주말 pm 제외) 반영 = 정합 완료. denomNote로 확정/참고 신뢰 표시(GM 지시 2026-07-06 2차).
+      var dn = String(cmData.denomNote || '');
+      var trust = /확정/.test(dn)
+        ? ' <span style="color:var(--green);font-weight:700">✓ 월간 실측(분모 정합 완료·배14)</span>'
+        : (dn ? ' <span style="color:var(--dim)">· ' + esc(dn) + '</span>' : '');
+      cap = '<div class="chk-cap">📊 지원부 월간 종합(' + esc(_sel || '') + '): 평균 완료율 <b>' + mt.avgPct + '%</b> · 점검일 ' + mt.activeDays + '일 · 세션 ' + mt.sessionCount + '회 · 이슈 ' + mt.issueCount + '건' + trust + '</div>';
     }
     host.innerHTML = '<div class="chk-grid">' + cards.join('') + '</div>' + cap;
   }
@@ -1906,61 +1911,8 @@
       '</tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
-  // ── 🚀 ERP 월별 진척 타임라인 (공식값·GM 확정) ──
-  function renderErp(){
-    var host = document.getElementById('erp-board');
-    if(!host) return;
-    var ep = _data && _data.erp_progress;
-    var items = (ep && ep.items) || [];
-    if(!items.length){ host.innerHTML = '<div class="board-status">ERP 진척 정본(erp_progress)이 없습니다.</div>'; return; }
-    var n = items.length;
-    var steps = items.map(function(it, i){
-      var pct = clampPct(it.pct);
-      var isTgt = !!it.target;
-      var parts = String(it.month || '').split('-');
-      var mLab = parts[1] ? (Number(parts[1]) + '월') : esc(it.month || '');
-      var yLab = parts[0] ? ("'" + String(parts[0]).slice(2)) : '';
-      var badge = isTgt
-        ? '<span class="ebadge tg">🎯 목표</span>'
-        : '<span class="ebadge done">✓ 실적</span>';
-      var arw = (i < n - 1) ? '<span class="arw-c">›</span>' : '';
-
-      var body;
-      if(_editMode){
-        var tgOpts = '<option value="0"' + (!isTgt ? ' selected' : '') + '>실적</option>' +
-                     '<option value="1"' + (isTgt ? ' selected' : '') + '>목표</option>';
-        body =
-          '<div class="etop"><span class="em">' + yLab + ' ' + mLab + '</span></div>' +
-          '<div class="erp-edit">' +
-            '<input type="number" min="0" max="100" data-erp-i="' + i + '" data-ef="pct" value="' + pct + '" oninput="window._epv(this)"> %' +
-            '<select data-erp-i="' + i + '" data-ef="target">' + tgOpts + '</select>' +
-          '</div>' +
-          '<div class="ebar"><i style="width:' + pct + '%"></i></div>' +
-          '<div class="erp-note-edit" contenteditable="true" data-erp-i="' + i + '" data-ef="note" ' +
-            'oncompositionstart="window._compOn()" oncompositionend="window._compOff()">' + esc(it.note || '') + '</div>';
-      } else {
-        body =
-          '<div class="etop"><span class="em">' + yLab + ' ' + mLab + '</span>' + badge + '</div>' +
-          '<div class="ep">' + pct + '<span>%</span></div>' +
-          '<div class="ebar"><i style="width:' + pct + '%"></i></div>' +
-          (it.note ? '<div class="enote">' + esc(it.note) + '</div>' : '');
-      }
-      return '<div class="erp-step' + (isTgt ? ' tgt' : '') + '">' + body + arw + '</div>';
-    }).join('');
-
-    host.innerHTML =
-      '<div class="erp-time">' + steps + '</div>' +
-      '<div class="erp-legend"><span>보라 막대 = <b style="color:var(--accent-soft)">실적</b></span>' +
-      '<span>골드 점선 = <b>목표(미달성)</b></span>' +
-      '<span style="color:var(--dim)">완성도 % · 월별 누적 · 08월 이후 ERP 비즈니스 확장 준비</span></div>';
-  }
-  // 편집 중 ERP 막대 미리보기
-  window._epv = function(el){
-    var v = clampPct(el.value);
-    var step = el.closest ? el.closest('.erp-step') : null;
-    var i = step && step.querySelector('.ebar > i');
-    if(i) i.style.width = v + '%';
-  };
+  // ── 🚀 ERP 월별 진척 타임라인(renderErp) = 폐지(GM 지시 2026-07-06 2차) ──
+  //    이미 이월/연속 과제(전략 로드맵·핵심 과제)로 명시돼 중복 → #erp-board 렌더 제거. erp_progress 정본은 computeErpPctFor(콤팩트 요약 ③ 당월 진척)에서 계속 재사용.
 
   // ── 🗺️ 전략 로드맵 6단계 진척 스트립(재사용 — 월별 로드맵 섹션 + 연간 A3 공용) ──
   function roadmapStepHtml(it){
@@ -2161,7 +2113,7 @@
         '<span class="sm-fin-val">' + salesTxt + '</span>' +
         '<span class="sm-fin-tgt">목표 ' + fmtWon(target) + ' 대비 <b>' + spctTxt + '</b></span></div>' +
       '<div class="sm-bar"><i style="width:' + sw + '%"></i></div>' +
-      '<div class="sm-fin-cum">📈 연간 누계(측정월 합) <b>' + cumTxt + '</b> <span class="sm-dim">· 지출·순액=파트너팀 구조개선 중(확정숫자 미표기)</span></div>' +
+      '<div class="sm-fin-cum">📈 연간 누계(측정월 합) <b>' + cumTxt + '</b> <span class="sm-dim">· 지출·순액=구조개선 중(확정숫자 미표기)</span></div>' +
     '</div>';
 
     // ③ 🎯 이달 핵심 과제 top3 (selectTop3 재사용)
@@ -2227,14 +2179,12 @@
     if(!w) return;
     w.innerHTML =
       '<button class="vbtn' + (_view === 'month' ? ' on' : '') + '" onclick="window._setView(\'month\')">📋 월별상세</button>' +
-      '<button class="vbtn' + (_view === 'summary' ? ' on' : '') + '" onclick="window._setView(\'summary\')">🎯 1장 요약</button>' +
       '<button class="vbtn' + (_view === 'annual' ? ' on' : '') + '" onclick="window._setView(\'annual\')">📅 연간A3</button>';
   }
   function applyView(){
     document.body.classList.toggle('view-annual', _view === 'annual');
-    document.body.classList.toggle('view-summary', _view === 'summary');
   }
-  window._setView = function(v){ _view = v; applyView(); renderViewToggle(); if(v === 'summary') renderSummaryBoard(); if(window.scrollTo) window.scrollTo(0, 0); };
+  window._setView = function(v){ _view = v; applyView(); renderViewToggle(); if(window.scrollTo) window.scrollTo(0, 0); };
 
   // ── 🎯 이달 핵심 과제 & 진척 — 맨 위 콤팩트 1줄 요약(GM 정정 2026-07-03: 舊 카드 3개+완료/진행 체크리스트를
   //    표 위 1줄로 압축 · 상세는 아래 핵심 과제 통합표(renderBoard)에서 담당·상태·진척·북극성까지 한 번에 확인 — 중복 제거) ──
@@ -2282,7 +2232,6 @@
     applyView();
     renderTop3();
     renderAnnual();
-    renderErp();
     renderRoadmap();
     renderFinance();
     renderSalesHistory();
@@ -2355,17 +2304,7 @@
       else if(f === 'note'){ o.note = (el.innerText || el.textContent || '').trim(); }
     });
 
-    // 🚀 ERP 월별 진척 (pct·목표여부·메모)
-    var ep = _data.erp_progress;
-    if(ep && ep.items){
-      Array.prototype.forEach.call(document.querySelectorAll('#erp-board [data-erp-i]'), function(el){
-        var i = Number(el.getAttribute('data-erp-i')), f = el.getAttribute('data-ef');
-        var it = ep.items[i]; if(!it) return;
-        if(f === 'pct'){ it.pct = clampPct(el.value); }
-        else if(f === 'target'){ it.target = (el.value === '1'); }
-        else if(f === 'note'){ it.note = (el.innerText || el.textContent || '').trim(); }
-      });
-    }
+    // 🚀 ERP 월별 진척 편집 수집 = 폐지(GM 지시 2026-07-06 2차 · #erp-board 렌더 제거) — erp_progress는 화면 편집 대상 아님(정본 파일 직접 관리).
 
     // 연간 매출·지출 = AI CFO 매출현황 미러(읽기전용) → 이 페이지에서 저장 안 함(SSOT·INC-001). 편집 대상 아님.
   }
