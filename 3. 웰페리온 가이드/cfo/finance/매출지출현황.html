@@ -821,7 +821,7 @@ function renderReqTbl(){
   rows.forEach(function(r){
     var st=r.상태||"품의",act="";
     if(st==="품의"||st==="승인")act='<button class="reqAct" data-row="'+r.row+'" data-next="검토" data-pw="1" style="'+btnCss("#3c7a4a")+'">승인</button>';
-    else if(st==="검토")act='<button class="reqAct" data-row="'+r.row+'" data-next="정산" style="'+btnCss("#2f6d9e")+'">검토완료</button>';
+    else if(st==="검토")act='<button class="reqAct" data-row="'+r.row+'" data-next="정산" data-pw="1" style="'+btnCss("#2f6d9e")+'">검토완료</button>';
     else if(st==="정산")act='<button class="reqAct" data-row="'+r.row+'" data-next="완료" style="'+btnCss("#a98a52")+'">최종확인</button>';
     else if(st==="완료")act='<span style="color:var(--green);font-size:12px;font-weight:700">✔ 완료</span>';
     else act='<span style="color:var(--ink-faint);font-size:11px">'+st+'</span>';
@@ -853,7 +853,7 @@ function addPhotoTo(row,btn){
 }
 function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border:none;border-radius:6px;color:#fff;font-weight:600;background:"+c;}
 async function doAct(row,next,needPw,btn){
-  if(needPw){var _a=(next==="반려")?"반려":"승인";var pw=prompt(_a+" 처리 — 부서장 비밀번호를 입력하세요");if(pw===null)return;if(String(pw).trim()!=="1202"){alert("비밀번호가 올바르지 않습니다");return;}}
+  if(needPw){var _a=(next==="반려")?"반려":(next==="정산")?"검토완료":"승인";var pw=prompt(_a+" 처리 — 부서장 비밀번호를 입력하세요");if(pw===null)return;if(String(pw).trim()!=="1202"){alert("비밀번호가 올바르지 않습니다");return;}}
   if(btn){btn.disabled=true;btn.textContent="처리중…";}
   var src=(reqFilter==="완료"||reqFilter==="반려")?REQ_DONE:REQ_ACTIVE;var item=src.filter(function(x){return String(x.row)===String(row);})[0];
   if(item){item.상태=next;renderReqTbl();}  // 즉시 반영(낙관적)
