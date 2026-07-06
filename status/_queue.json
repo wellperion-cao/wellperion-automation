@@ -342,5 +342,19 @@
     "artifact": "chore(parking): 주차 매출 현황 자동 발행 (parking_revenue.json) (CLI ad-hoc · 커밋 d2282954)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "d22829543e41a5e8cf1763f202ab980d7df80a03"
+  },
+  {
+    "task_id": "CTO-2026-07-06-ADHOC-5d8027ef",
+    "clevel": "cto",
+    "title": "[시토] 매출 히스토리를 느린 인건비 gviz 타임아웃 결합에서 분리 (간헐 연결실패 해소) [시토]/finance",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 487,
+    "artifact": "readCfoFinance()의 4개 소스(SALES_GVIZ/LABOR_GVIZ 부서맵, sales_monthly, OPS_GVIZ)를\n단일 Promise.all + 바깥 8s 타임아웃으로만 묶으면, 가장 느린 LABOR_GVIZ(실측 5.5s)가\n전체를 끌고 가 네트워크 변동 시 바깥 타임아웃에 걸려 이미 도착한 정상 매출까지\n통째 null 폴백되던 문제(간헐 \"연결하지 못했습니다\")를 해결.\n소스별 개별 withTimeout(6~8s)으로 이 Promise.all 자체의 최대 대기 상한을 보장하고,\n바깥 boot() 타임아웃을 (CLI ad-hoc · 커밋 5d8027ef)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "5d8027ef40dc8886cfc4df77b1c7b5b49bc74e21"
   }
 ]
