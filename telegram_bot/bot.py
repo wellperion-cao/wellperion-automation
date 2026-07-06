@@ -1701,7 +1701,7 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # 이미지 재생성 없음·시트 접근 없음. GAS(매출보고_자동발송.js sendTelegramPhoto)가 버튼을 붙인다.
 _KAKAO_SENDER = WORKDIR / "scripts" / "kakao_report_sender.py"
 _KAKAO_ROOMS_CONFIG = WORKDIR / "scripts" / "kakao_rooms.json"
-_KAKAO_DEFAULT_ARCHIVE_DIR = Path.home() / "Documents" / "매출보고"
+_KAKAO_DEFAULT_ARCHIVE_DIR = WORKDIR / "1. AI학습자료_아카이브" / "10_매출보고"
 
 
 def _kakao_archive_dir() -> Path:
