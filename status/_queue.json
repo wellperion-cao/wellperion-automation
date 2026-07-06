@@ -340,5 +340,19 @@
     "artifact": "GM 최종 스펙 반영: bot.py 콜백이 텔레그램 사진을 로컬 월 폴더\n(archive_dir/YYYY-MM/웰페리온_일일보고_YYYYMMDD.png, 수신일 기준)에 저장하고\n그 저장본을 그대로 카톡 전송에 재사용(중복 다운로드 제거). kakao_rooms.json에\n방별 prefix(회장님방=\"회장님, \")를 추가해 sender가 원본 캡션과 조합해 발송.\nkakao_report_sender.py에 --from-folder 옵션 추가(이미지 미지정 시 archive_dir\n에서 오늘자 파일 자동 선택). (CLI ad-hoc · 커밋 a11c20dc)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a11c20dc2f6efeb360a753b685237499ab535d20"
+  },
+  {
+    "task_id": "CEO-2026-07-06-ADHOC-07dd3faf",
+    "clevel": "ceo",
+    "title": "[웰리] 카톡 3방 전송기 창-제목 방식 재설계(검색창 함정 폐기)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 491,
+    "artifact": "메인창 검색으로 방을 여는 기존 방식이 검색창(Edit) 미탐지로 실패. 실측\n(win32gui.EnumWindows)으로 열린 카톡 채팅방은 각각 독립 최상위 창(클래스\nEVA_Window_Dblclk·제목=방 이름)임을 확인해, 이미 열린 방 창을 제목으로\n직접 찾는 방식으로 전면 재설계(find_room_window). 검색 폴백은 최후수단으로만\n유지. 라이브 검증 중 \"클립보드 이미지 전송\" 팝업이 메인 입력창과 별개 창임을\n추가로 발견해 팝업 전용 확인/취소 로직(confirm_clipboard_popup/\ncancel_c (CLI ad-hoc · 커밋 07dd3faf)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "07dd3faf2d0b949c6ac7c1b855a83ff3d90a7748"
   }
 ]
