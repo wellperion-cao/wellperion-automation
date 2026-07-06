@@ -286,14 +286,19 @@ def _cmo_channel_conversion() -> dict:
        ② 개별 클릭↔문의 1:1 조인 아님(둘 다 채널 단위 집계 합산 비율).
        ③ 클릭·문의 모두 전체 누적(기간 무필터, 각 GAS 기본 응답 기준).
        ④ _UTM_TO_CANON_CHANNEL 매핑 밖 자유텍스트 유입(소개·오프라인 등)은 클릭 쪽 대응 불가 → 집계 제외.
-    반환: {"채널별_클릭문의전환": {채널명: {클릭, 문의, 가입, 클릭_문의_전환율, 문의_가입_전환율}}|None,
-           "_채널전환_note": str}
+       ⑤ 비율>100%(문의가 클릭보다 많음) = 네이버·당근 등은 문의 bucket에 검색·플레이스·자기신고 등
+          UTM 미태깅 유입이 함께 섞여 클릭(UTM만) 대비 문의가 부풀어 보이는 것 — 전환율 미산출(measurable=False),
+          클릭≤문의(즉 비율≤100%)·클릭>0인 채널(예: 인스타그램=양방향 UTM 귀속)만 실제 %로 표기.
+    반환: {"채널별_클릭문의전환": {채널명: {클릭, 문의, 가입, 클릭_문의_전환율, measurable, 상태,
+           문의_가입_전환율}}|None, "_채널전환_note": str}
     """
     result: dict = {
         "채널별_클릭문의전환": None,
         "_채널전환_note": (
             "노출(분모) 미측정 · 클릭 대비 문의 채널레벨 비율(1:1 조인 아님) · "
-            "클릭·문의 전체 누적(기간무필터) · UTM코드 매핑 채널만(instagram/naver_blog/naver_cafe/danggn/kakao)"
+            "클릭·문의 전체 누적(기간무필터) · UTM코드 매핑 채널만(instagram/naver_blog/naver_cafe/danggn/kakao) · "
+            "비율>100%=클릭(UTM) 외 자기신고·플레이스/검색 유입이 문의 bucket에 섞여 전환율 미산출(measurable=False) · "
+            "인스타그램 등 클릭·문의 양쪽 UTM 귀속 채널만 실% 표기"
         ),
     }
 
@@ -345,14 +350,25 @@ def _cmo_channel_conversion() -> dict:
         clicks = clicks_by_channel.get(channel)
         inq_info = inquiries_by_channel.get(channel, {})
         inquiries = inq_info.get("문의")
-        rate = None
-        if isinstance(clicks, (int, float)) and clicks > 0 and isinstance(inquiries, (int, float)):
-            rate = round(inquiries / clicks * 100, 1)
+
+        has_clicks = isinstance(clicks, (int, float)) and clicks > 0
+        has_inq = isinstance(inquiries, (int, float))
+        # measurable = 클릭>0 이고 문의≤클릭(비율≤100%)일 때만 — 그 외(클릭 없음/0 또는 문의>클릭)는
+        # UTM 미태깅 자기신고·검색·플레이스 유입이 문의 bucket에 섞여 신뢰 불가(비고 ⑤ 참조).
+        measurable = bool(has_clicks and has_inq and inquiries <= clicks)
+        rate = round(inquiries / clicks * 100, 1) if measurable else None
+        상태 = "실측" if measurable else "추적밖유입우세"
         combined[channel] = {
             "클릭": clicks,
             "문의": inquiries,
             "가입": inq_info.get("가입"),
             "클릭_문의_전환율": rate,
+            "measurable": measurable,
+            "상태": 상태,
+            "비고": (
+                None if measurable
+                else "추적 밖 유입 우세(자기신고·플레이스/검색) — 전환율 측정 불가"
+            ),
             "문의_가입_전환율": inq_info.get("문의_가입_전환율"),
         }
 

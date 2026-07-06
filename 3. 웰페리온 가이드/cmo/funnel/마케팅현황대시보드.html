@@ -1238,18 +1238,31 @@ function renderChannelClickInquiry() {
     return;
   }
 
+  // measurable = 클릭>0 이고 문의≤클릭(비율≤100%)일 때만 실제 %로 표기.
+  // 비율>100%(네이버·당근 등)는 문의 bucket에 UTM 미태깅 자기신고·검색·플레이스 유입이 섞여
+  // 클릭(UTM만) 대비 부풀어 보이는 것 — %를 숨기고 정직 플래그로 대체(측정 불가 오해 방지).
   var rows = channels.map(function(ch) {
-    var clicks = clicksByChannel[ch] || 0;
+    var clicksRaw = clicksByChannel[ch];
+    var clicks = clicksRaw || 0;
     var info   = inqByChannel[ch] || {};
     var inq    = info.inquiries || 0;
     var conv   = info.converted || 0;
-    var c2i    = clicks > 0 ? Math.round(inq / clicks * 1000) / 10 : null;
     var i2c    = (typeof info.rate === 'number') ? info.rate : null;
+
+    var measurable = clicksRaw > 0 && inq <= clicksRaw;
+    var c2iCell;
+    if (measurable) {
+      var c2i = Math.round(inq / clicks * 1000) / 10;
+      c2iCell = '<span style="font-weight:600">' + c2i + '%</span>';
+    } else {
+      c2iCell = '<span style="font-size:10px;color:var(--dim);font-style:italic">추적 밖 유입 우세<br>(자기신고·플레이스/검색)<br>전환율 측정 불가</span>';
+    }
+
     return '<tr>'
       + '<td style="padding:6px 10px;font-size:12px">' + ch + '</td>'
       + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + clicks.toLocaleString('ko-KR') + '</td>'
       + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + inq.toLocaleString('ko-KR') + '</td>'
-      + '<td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:600">' + (c2i === null ? '—' : c2i + '%') + '</td>'
+      + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + c2iCell + '</td>'
       + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + conv.toLocaleString('ko-KR') + '</td>'
       + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + (i2c === null ? '—' : i2c + '%') + '</td>'
       + '</tr>';
@@ -1257,7 +1270,7 @@ function renderChannelClickInquiry() {
 
   wrap.innerHTML =
     '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow)">'
-    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">클릭→문의→가입 채널 퍼널 · 전체 누적 · 노출(분모)은 여전히 미측정 — 채널레벨 비율(개별 클릭↔문의 1:1 조인 아님) · UTM코드 매핑 채널만(인스타그램·네이버·당근마켓·카카오톡)</div>'
+    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">클릭→문의→가입 채널 퍼널 · 전체 누적 · 노출(분모)은 여전히 미측정 — 채널레벨 비율(개별 클릭↔문의 1:1 조인 아님) · UTM코드 매핑 채널만(인스타그램·네이버·당근마켓·카카오톡) · 클릭≤문의(비율&gt;100%)인 채널은 자기신고·검색/플레이스 유입이 섞여 전환율을 %로 표기하지 않음</div>'
     + '<table style="width:100%;border-collapse:collapse">'
     + '<thead><tr style="border-bottom:1px solid var(--border)">'
     + '<th style="text-align:left;padding:6px 10px;font-size:10px;color:var(--dim)">채널</th>'
