@@ -7850,6 +7850,11 @@ function mrA3Chip(key,desc){
   return '<div class="mrp-kpi-chip"><div class="mrp-kpi-key">'+key+'</div><div class="mrp-kpi-desc">'+desc+'</div></div>';
 }
 
+// 월간보고 구역·교대 표준 순서 강제 정렬 — GAS 응답이 무순서라 표가 뒤죽박죽이던 문제 수정(시설부 fmSortByCat 대응). 2026-07-06 시우.
+function mrZoneRank(z){ var s=String(z||''); if(s.indexOf('남')>=0) return 0; if(s.indexOf('여')>=0) return 1; if(s.indexOf('공용')>=0) return 2; return 9; }
+function mrShiftRank(s){ var v=String(s||''); if(v.indexOf('오전')>=0) return 0; if(v.indexOf('오후')>=0) return 1; if(v.indexOf('마감')>=0||v.indexOf('close')>=0) return 2; if(v.indexOf('야간')>=0||v.indexOf('탕청소')>=0) return 3; return 9; }
+function mrSortRows(rows,rankFn,key){ return (rows||[]).slice().sort(function(a,b){ var ra=rankFn(a&&a[key]), rb=rankFn(b&&b[key]); if(ra!==rb) return ra-rb; return String((a&&a[key])||'').localeCompare(String((b&&b[key])||'')); }); }
+
 /* 선택월 monthly_report 데이터를 기존 #a3-monthly-print(mrp-doc) 구조에 주입.
    실패 시 false 반환 → 호출부가 기존 정적 내용을 그대로 두고 인쇄(회귀 방지 폴백). */
 function renderA3MonthlyFromData(month,data){
@@ -7876,8 +7881,8 @@ function renderA3MonthlyFromData(month,data){
 
   const bodyRow=doc.querySelector('.mrp-body-row');
   if(bodyRow){
-    let zoneRows=''; (data.byZone||[]).forEach(function(r){ zoneRows+='<tr><td>'+mrEsc(r.zone)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+r.pct+'%</td><td>'+(r.issueCount||0)+'</td></tr>'; });
-    let shiftRows=''; (data.byShift||[]).forEach(function(r){ shiftRows+='<tr><td>'+mrEsc(r.shift)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+r.pct+'%</td><td>'+(r.issueCount||0)+'</td></tr>'; });
+    let zoneRows=''; mrSortRows(data.byZone,mrZoneRank,'zone').forEach(function(r){ zoneRows+='<tr><td>'+mrEsc(r.zone)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+r.pct+'%</td><td>'+(r.issueCount||0)+'</td></tr>'; });
+    let shiftRows=''; mrSortRows(data.byShift,mrShiftRank,'shift').forEach(function(r){ shiftRows+='<tr><td>'+mrEsc(r.shift)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+r.pct+'%</td><td>'+(r.issueCount||0)+'</td></tr>'; });
     let inspRows=''; (data.byInspector||[]).slice(0,8).forEach(function(r){ inspRows+='<tr><td>'+mrEsc(r.inspector)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+r.avgPct+'%</td></tr>'; });
     let dailyCells=''; (data.dailySeries||[]).forEach(function(d){ dailyCells+='<span style="display:inline-block;min-width:34px;text-align:center;font-size:9px;padding:1px 3px;color:'+mrPctColor(d.pct)+';">'+(d.date||'').slice(8,10)+':'+d.pct+'%</span>'; });
 

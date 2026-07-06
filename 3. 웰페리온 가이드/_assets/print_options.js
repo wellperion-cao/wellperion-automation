@@ -69,14 +69,17 @@
     return document.body;
   }
 
+  // 화면에 실제로 보이는 요소만 인쇄 섹션 후보로 — 숨은 탭(display:none)의 h2·섹션이 섞여
+  // '현재 화면 인쇄'가 안 보이는 탭까지 잡아 이상한 미리보기가 뜨던 문제 차단. display:none은 getClientRects 0. 2026-07-06 시우.
+  function poVisible(el){ return !!(el && el.getClientRects && el.getClientRects().length); }
   function detectSections(){
-    // 우선순위 1: 최상위 <section>/<article> 2개 이상이면 그대로 사용
+    // 우선순위 1: 최상위 <section>/<article> 2개 이상이면 그대로 사용 (보이는 것만)
     var semantic = [];
     ['body', '.wrap', 'main', '#app'].forEach(function(sel){
       var host = sel === 'body' ? document.body : document.querySelector(sel);
       if(!host) return;
       Array.prototype.forEach.call(host.children, function(c){
-        if(/^(SECTION|ARTICLE)$/.test(c.tagName) && semantic.indexOf(c) === -1) semantic.push(c);
+        if(/^(SECTION|ARTICLE)$/.test(c.tagName) && semantic.indexOf(c) === -1 && poVisible(c)) semantic.push(c);
       });
     });
     if(semantic.length >= 2){
@@ -88,7 +91,7 @@
     }
     // 우선순위 2: h2 기준 그룹핑 — h2(또는 h2를 품은 블록)를 새 섹션 시작점으로,
     // 첫 h2 이전 콘텐츠(헤더·배너 등)는 토글 대상에서 제외(항상 인쇄).
-    var h2s = Array.prototype.slice.call(document.querySelectorAll('h2'));
+    var h2s = Array.prototype.slice.call(document.querySelectorAll('h2')).filter(poVisible);
     if(!h2s.length) return [];
     var root = findCommonParent(h2s);
     var children = Array.prototype.slice.call(root.children);

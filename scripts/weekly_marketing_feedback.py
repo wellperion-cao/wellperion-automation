@@ -14,12 +14,20 @@ v1 = **정성 우선 + 측정 보조**. 자동 가중 점수는 UTM 데이터가
   - 공식 발행 콘텐츠: 3. 웰페리온 가이드/cmo/review/review_queue.json
       (account=="wellperion" AND status=="발행완료" AND published_at 최근 7일)
   - 측정 보조 신호: 문의Survey GAS(funnel) — click_stats(byUtmSource) · funnel_conversion(byChannel)
+  - 신규 등록 상세(2026-07-06 가산): 동일 GAS — member_registered_list(멤버십, 등록일 기간필터)
+      · lesson_registry_list(강습 종목별, 등록일 기간필터). 발레·바레(루프메소드)·뮤지컬은 팀시트 없음
+      (외부관리) → 항상 "미집계" 정직 표기. 강습 원장은 2026-06-27 시드 이전 등록자 누락(신규만 집계).
 
-산출물: status/briefs/CMO-weekly-feedback-<YYYYMMDD>.md
+산출물: status/briefs/CMO-weekly-feedback-<YYYYMMDD>.md (--mode weekly, 기본)
   1) 이번 주 공식 발행 콘텐츠 표
-  2) 측정 보조 참고표 (신호별 정직 꼬리표: 측정/부분/미측정/연동 미비)
+  2) 측정 보조 참고표 (신호별 정직 꼬리표: 측정/부분/미측정/연동 미비) + 신규 등록 상세(멤버십/강습종목)
   3) Top/Bottom 정성 판정 — 시모가 채우는 빈 슬롯(자동 채움 금지)
   4) 다음 편 제안 — 시모가 채우는 빈 슬롯(자동 G1 등록 금지, 제안 shape 힌트만 출력)
+
+일일 모드(2026-07-06 가산, --mode daily): status/briefs/CMO-daily-feedback-<YYYYMMDD>.md —
+  오늘(KST) 하루로 좁힌 가벼운 카드: ①오늘 발행 ②오늘 UTM 클릭 ③오늘 문의→전환 ④오늘 신규 등록 상세.
+  Top/Bottom·다음 편 제안 섹션은 daily 에선 제외(그건 weekly 정성 판정 전용으로 유지).
+  --dry-run: 브리프는 그대로 생성·저장하되 텔레그램 실제 발송만 생략(카드 텍스트는 stdout 출력).
 
 ──────────────────────────────────────────────────────────
 Task Scheduler 주간 cron 등록 명령 (FOLLOW-UP — 아직 미등록. GM 승인 후 관리자 권한으로 1회 실행)
@@ -107,6 +115,11 @@ UTM_LABELS = {
     "instagram": "인스타그램",
 }
 
+# 강습 종목 중 팀시트가 없어(외부관리) lesson_registry_list 원장에 절대 잡히지 않는 종목.
+# .deploy-funnel/Survey.js LESSON_DISPLAY: 루프메소드(발레·바레)=sheet:null·external.
+# 뮤지컬은 LESSON_DISPLAY 자체에 항목 없음(팀시트 매핑 없음) — 둘 다 0 위장 대신 "미집계" 고정 표기.
+LESSON_EXTERNAL_UNTRACKED = ["루프메소드(발레·바레)", "뮤지컬"]
+
 # ── 재생성 시 시모 정성 판정 보존(덮어쓰기 방지) ────────────────────
 # 2026-07-03 사고: 동시 재실행이 시모가 채운 §3/§4 를 빈 placeholder 로 덮어씀(수동 복구됨).
 # 섹션1-2(자동 데이터)는 매번 갱신하되, §3/§4 는 시모가 이미 채웠으면 절대 재생성하지 않는다.
@@ -153,6 +166,7 @@ def _load_env_value(key: str) -> str:
 
 
 def build_telegram_summary(items: list[dict], cs: dict | None, fc: dict | None,
+                            mr: dict | None, lr: dict | None,
                             date_from: str, date_to: str, out_path: Path) -> str:
     """5~8줄 요약. 측정 실패는 '미측정', 정성 슬롯은 '시모 정리 대기'로 정직 표기(지어내지 않음)."""
     lines = [f"주간 마케팅 정리 — {date_from} ~ {date_to}", ""]
@@ -182,6 +196,7 @@ def build_telegram_summary(items: list[dict], cs: dict | None, fc: dict | None,
             total_conv = sum(d.get("converted", 0) for d in by_ch)
             lines.append(f"· 문의 전환: {total_inq}건 문의 → {total_conv}명 전환(채널 {len(by_ch)}개, 부분측정)")
 
+    lines.append(_registration_oneliner(mr, lr))
     lines.append("· Top/Bottom·다음 편 제안: 시모 정리 대기")
     lines.append("")
     lines.append(f"상세=주간 마케팅 정리 보고 ({out_path.name})")
@@ -308,6 +323,121 @@ def fetch_funnel_conversion(date_from: str, date_to: str) -> dict | None:
         return None
 
 
+# ── ②-보강 신규 등록 상세 (동일 GAS 재사용, 신규 배관 없음, 2026-07-06) ─────
+def fetch_member_registered(date_from: str, date_to: str) -> dict | None:
+    """member_registered_list — 등록일 기준 기간 내 멤버십 신규 등록 명단.
+    실패 시 None(→ 미집계 표기, 0 위장 금지). 회원관리 페이지와 동일 소스(유효회원 시트 등록일자)."""
+    try:
+        data = _http_get(
+            f"{GAS_URL}?action=member_registered_list&from={date_from}&to={date_to}", timeout=40
+        )
+        if not data.get("ok"):
+            print(f"[WARN] member_registered_list ok=false: {data}")
+            return None
+        return data
+    except Exception as e:
+        print(f"[WARN] member_registered_list 수집 실패: {e}")
+        return None
+
+
+def fetch_lesson_registry(date_from: str, date_to: str) -> dict | None:
+    """lesson_registry_list — 등록일 기준 기간 내 강습 신규 등록 명단(종목별, type 미지정=성인+유소년 전체).
+    실패 시 None(→ 미집계 표기). 2026-06-27 원장 시드 이전 등록자는 원장 자체에 없어 과소집계될 수 있음."""
+    try:
+        data = _http_get(
+            f"{GAS_URL}?action=lesson_registry_list&from={date_from}&to={date_to}", timeout=40
+        )
+        if not data.get("ok"):
+            print(f"[WARN] lesson_registry_list ok=false: {data}")
+            return None
+        return data
+    except Exception as e:
+        print(f"[WARN] lesson_registry_list 수집 실패: {e}")
+        return None
+
+
+def _member_registered_summary(mr: dict | None) -> dict | None:
+    """member_registered_list 원응답 → {total, by_program}. program 칼럼이 실제로 채워진 경우만 세부 분해,
+    아니면 by_program={} (단일 버킷 "멤버십"으로 표기하도록 상위에서 처리)."""
+    if mr is None:
+        return None
+    data = mr.get("data") or []
+    by_program: dict[str, int] = {}
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        p = str(row.get("program") or "").strip()
+        if p:
+            by_program[p] = by_program.get(p, 0) + 1
+    total = mr.get("count")
+    if not isinstance(total, int):
+        total = len(data)
+    return {"total": total, "by_program": by_program}
+
+
+def _lesson_registered_summary(lr: dict | None) -> dict | None:
+    """lesson_registry_list 원응답 → {total, by_sport}. 종목 필드 그대로 집계(라벨 재해석 없음)."""
+    if lr is None:
+        return None
+    data = lr.get("data") or []
+    by_sport: dict[str, int] = {}
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        s = str(row.get("종목") or "").strip() or "기타"
+        by_sport[s] = by_sport.get(s, 0) + 1
+    total = lr.get("count")
+    if not isinstance(total, int):
+        total = len(data)
+    return {"total": total, "by_sport": by_sport}
+
+
+def _fmt_registration_detail_md(mr: dict | None, lr: dict | None, date_from: str, date_to: str) -> str:
+    """§2 가산 섹션 — 신규 등록 상세(멤버십/강습종목) 마크다운 블록. 정직 꼬리표 필수 동봉."""
+    mrs = _member_registered_summary(mr)
+    lrs = _lesson_registered_summary(lr)
+    lines = [f"**신규 등록 상세(멤버십/강습종목 · 등록일 기준 {date_from} ~ {date_to})**", ""]
+
+    if mrs is None:
+        lines.append("- 멤버십 신규: 미집계(수집 실패)")
+    elif mrs["by_program"]:
+        detail = " · ".join(f"{k} {v}건" for k, v in sorted(mrs["by_program"].items(), key=lambda kv: kv[1], reverse=True))
+        lines.append(f"- 멤버십 신규: {mrs['total']}건 ({detail})")
+    else:
+        lines.append(f"- 멤버십 신규: {mrs['total']}건 (세부상품 칼럼 미기재 — 단일 버킷 집계)")
+
+    if lrs is None:
+        lines.append("- 강습 신규 등록(종목별): 미집계(수집 실패)")
+    elif lrs["by_sport"]:
+        detail = " · ".join(f"{k} {v}건" for k, v in sorted(lrs["by_sport"].items(), key=lambda kv: kv[1], reverse=True))
+        lines.append(f"- 강습 신규 등록(종목별): {lrs['total']}건 — {detail}")
+    else:
+        lines.append("- 강습 신규 등록(종목별): 0건(표본 없음)")
+
+    lines.append(f"- {' · '.join(LESSON_EXTERNAL_UNTRACKED)}: 외부/팀시트 없음 — 등록 집계 미지원(회원 명단 외부관리)")
+    lines.append("- ⚠️ 강습 등록 원장은 2026-06-27 시드 이전 등록자 누락 — **신규 등록만 집계(과거 과소)**")
+    lines.append("- ⚠️ 멤버십 세부상품 분해는 회원 DB 시트 칼럼(수강반종목/종목명/회원권/상품) 존재 여부에 종속")
+    return "\n".join(lines)
+
+
+def _registration_oneliner(mr: dict | None, lr: dict | None) -> str:
+    """텔레그램 카드용 1줄(+미집계 각주) 요약 — 종목 브레이크다운 축약, 정직 꼬리표는 짧게 동봉."""
+    mrs = _member_registered_summary(mr)
+    lrs = _lesson_registered_summary(lr)
+    parts = []
+    parts.append("멤버십 미측정" if mrs is None else f"멤버십 {mrs['total']}건")
+    if lrs is None:
+        parts.append("강습 미측정")
+    elif lrs["by_sport"]:
+        rows = sorted(lrs["by_sport"].items(), key=lambda kv: kv[1], reverse=True)
+        parts.append(f"강습 {lrs['total']}건(" + "·".join(f"{k} {v}" for k, v in rows) + ")")
+    else:
+        parts.append(f"강습 {lrs['total']}건")
+    line1 = "· 신규 등록: " + " / ".join(parts)
+    line2 = f"· ({' · '.join(LESSON_EXTERNAL_UNTRACKED)}=미집계·외부관리 / 강습원장 6-27 시드 이전 과소)"
+    return line1 + "\n" + line2
+
+
 # ── 마크다운 조립 ──────────────────────────────────────────────────
 def _fmt_content_table(items: list[dict]) -> str:
     if not items:
@@ -355,6 +485,7 @@ def _fmt_conversion_breakdown(fc: dict | None) -> str:
 
 
 def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
+                 mr: dict | None, lr: dict | None,
                  date_from: str, date_to: str, generated_at: datetime.datetime) -> str:
     week_label = f"{date_from} ~ {date_to}"
 
@@ -393,6 +524,9 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
     parts.append("**문의 전환 상세(부분 — 위 설명 참조)**")
     parts.append("")
     parts.append(_fmt_conversion_breakdown(fc))
+    parts.append("")
+
+    parts.append(_fmt_registration_detail_md(mr, lr, date_from, date_to))
     parts.append("")
 
     parts.append(SECTION_3_HEADING)
@@ -436,6 +570,82 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
     parts.append("")
 
     return "\n".join(parts)
+
+
+# ── daily 모드 (2026-07-06 가산) — 오늘(KST) 하루 스냅샷, Top/Bottom·다음편 제외 ──
+def build_daily_brief(items: list[dict], cs: dict | None, fc: dict | None,
+                       mr: dict | None, lr: dict | None,
+                       date_str: str, generated_at: datetime.datetime) -> str:
+    """daily 브리프 — weekly 의 §1/§2 형태를 그대로 재사용하되 기간을 오늘 하루로 좁히고,
+    시모 정성 판정(§3/§4)은 daily 산출물에서 제외(그건 weekly 전용으로 유지 — 매일 채울 슬롯 아님)."""
+    parts = []
+    parts.append(f"# 일일 마케팅 정리 보고 — {generated_at.strftime('%Y-%m-%d')}")
+    parts.append("")
+    parts.append(
+        "> **daily = 오늘(KST) 스냅샷.** 정성 Top/Bottom·다음 편 제안은 daily 에 없음(주간 보고 전용 유지). "
+        "측정 안 되는 값은 `미측정`/`미집계`로 정직 표기."
+    )
+    parts.append("")
+    parts.append(f"집계 대상: {date_str} (오늘) · 범위: 공식 @wellperion 전용(개인 시리즈 namuk 제외)")
+    parts.append("")
+
+    parts.append("## 1. 오늘 발행 콘텐츠")
+    parts.append("")
+    parts.append(_fmt_content_table(items))
+    parts.append("")
+
+    parts.append("## 2. 오늘 UTM 클릭(채널별)")
+    parts.append("")
+    parts.append(_fmt_click_breakdown(cs))
+    parts.append("")
+
+    parts.append("## 3. 오늘 문의 → 전환(채널별)")
+    parts.append("")
+    parts.append(_fmt_conversion_breakdown(fc))
+    parts.append("")
+
+    parts.append("## 4. 오늘 신규 등록 상세(멤버십/강습종목)")
+    parts.append("")
+    parts.append(_fmt_registration_detail_md(mr, lr, date_str, date_str))
+    parts.append("")
+
+    return "\n".join(parts)
+
+
+def build_daily_telegram_summary(items: list[dict], cs: dict | None, fc: dict | None,
+                                  mr: dict | None, lr: dict | None,
+                                  date_str: str, out_path: Path) -> str:
+    """daily 텔레그램 카드 — ①발행 ②클릭 ③전환 ④등록상세 4줄+각주. send_telegram_summary() 재사용(발송 로직 신규 없음)."""
+    lines = [f"오늘 마케팅 정리 — {date_str}", ""]
+    lines.append(f"· ① 오늘 공식(@wellperion) 발행: {len(items)}건")
+
+    if cs is None:
+        lines.append("· ② UTM 클릭(채널별): 미측정(수집 실패)")
+    else:
+        by_src = cs.get("byUtmSource") or {}
+        if not by_src:
+            lines.append("· ② UTM 클릭(채널별): 0건(표본 없음)")
+        else:
+            rows = sorted(by_src.items(), key=lambda kv: kv[1], reverse=True)
+            lines.append("· ② UTM 클릭(채널별): " + " · ".join(f"{UTM_LABELS.get(k, k)} {v}회" for k, v in rows))
+
+    if fc is None:
+        lines.append("· ③ 문의 전환: 미측정(수집 실패)")
+    else:
+        by_ch = fc.get("byChannel") or []
+        if not by_ch:
+            lines.append("· ③ 문의 전환: 0건(표본 없음)")
+        else:
+            total_inq = sum(d.get("inquiries", 0) for d in by_ch)
+            total_conv = sum(d.get("converted", 0) for d in by_ch)
+            lines.append(f"· ③ 문의 전환: {total_inq}건 문의 → {total_conv}명 전환(채널 {len(by_ch)}개, 부분측정)")
+
+    reg_lines = _registration_oneliner(mr, lr).split("\n")
+    lines.append("· ④ " + reg_lines[0].lstrip("· "))
+    lines.append(reg_lines[1])
+    lines.append("")
+    lines.append(f"상세=일일 마케팅 정리 보고 ({out_path.name})")
+    return "\n".join(lines)
 
 
 # ── 재생성 시 §3/§4 시모 정성 판정 보존 ─────────────────────────────
@@ -518,7 +728,7 @@ def apply_preserved_judgment(fresh_md: str, out_path: Path) -> str:
 
 
 # ── 메인 ────────────────────────────────────────────────────────
-def main():
+def run_weekly(dry_run: bool = False):
     now = datetime.datetime.now()
     date_from = (now - datetime.timedelta(days=6)).strftime("%Y-%m-%d")
     date_to = now.strftime("%Y-%m-%d")
@@ -531,8 +741,10 @@ def main():
 
     cs = fetch_click_stats(date_from, date_to)
     fc = fetch_funnel_conversion(date_from, date_to)
+    mr = fetch_member_registered(date_from, date_to)
+    lr = fetch_lesson_registry(date_from, date_to)
 
-    brief_md = build_brief(items, cs, fc, date_from, date_to, now)
+    brief_md = build_brief(items, cs, fc, mr, lr, date_from, date_to, now)
 
     BRIEFS_DIR.mkdir(parents=True, exist_ok=True)
     out_path = BRIEFS_DIR / f"CMO-weekly-feedback-{now.strftime('%Y%m%d')}.md"
@@ -548,8 +760,70 @@ def main():
     print("─" * 60)
 
     # 텔레그램 주간 요약 발송(문의알림방, best-effort) — 실패해도 위 브리프 저장은 이미 끝난 상태.
-    summary_text = build_telegram_summary(items, cs, fc, date_from, date_to, out_path)
-    send_telegram_summary(summary_text)
+    summary_text = build_telegram_summary(items, cs, fc, mr, lr, date_from, date_to, out_path)
+    if dry_run:
+        print("[INFO] --dry-run: 텔레그램 실제 발송 생략 — 카드 텍스트만 stdout 출력")
+        print("─" * 60)
+        print(summary_text)
+        print("─" * 60)
+    else:
+        send_telegram_summary(summary_text)
+
+
+def run_daily(dry_run: bool = False):
+    now = datetime.datetime.now()
+    date_str = now.strftime("%Y-%m-%d")
+
+    print("[INFO] 시모 일일 마케팅 정리 카드 생성 시작")
+    print(f"[INFO] 집계 대상: {date_str} (오늘)")
+
+    # load_official_recent 는 7일 윈도우 기준 재사용 함수 — days=2 로 넉넉히 받아 오늘자만 필터링(신규 배관 없음).
+    recent = load_official_recent(days=2, now=now)
+    items = [it for it in recent if (it.get("published_at") or "")[:10] == date_str]
+    print(f"[INFO] 공식(@wellperion) 발행완료 콘텐츠 {len(items)}건 (오늘)")
+
+    cs = fetch_click_stats(date_str, date_str)
+    fc = fetch_funnel_conversion(date_str, date_str)
+    mr = fetch_member_registered(date_str, date_str)
+    lr = fetch_lesson_registry(date_str, date_str)
+
+    brief_md = build_daily_brief(items, cs, fc, mr, lr, date_str, now)
+
+    BRIEFS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = BRIEFS_DIR / f"CMO-daily-feedback-{now.strftime('%Y%m%d')}.md"
+    out_path.write_text(brief_md, encoding="utf-8")
+
+    print(f"[INFO] 일일 브리프 생성 완료: {out_path}")
+    print("─" * 60)
+    print(brief_md)
+    print("─" * 60)
+
+    summary_text = build_daily_telegram_summary(items, cs, fc, mr, lr, date_str, out_path)
+    if dry_run:
+        print("[INFO] --dry-run: 텔레그램 실제 발송 생략 — 카드 텍스트만 stdout 출력")
+        print("─" * 60)
+        print(summary_text)
+        print("─" * 60)
+    else:
+        send_telegram_summary(summary_text)
+
+
+def _parse_args():
+    import argparse
+    p = argparse.ArgumentParser(description="시모 마케팅 정리 브리프 생성기(weekly 기본 · daily 옵션)")
+    p.add_argument("--mode", choices=["weekly", "daily"], default="weekly",
+                    help="weekly(기본, 최근 7일) 또는 daily(오늘 하루)")
+    p.add_argument("--dry-run", action="store_true",
+                    help="브리프 생성·저장은 그대로 하되 텔레그램 실제 발송만 생략(카드 텍스트 stdout 출력)")
+    return p.parse_args()
+
+
+def main():
+    args = _parse_args()
+    if args.mode == "daily":
+        run_daily(dry_run=args.dry_run)
+    else:
+        run_weekly(dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
