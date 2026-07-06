@@ -427,5 +427,19 @@
     "artifact": "- 💰 매출 종합: 상단 좌우 50/50(선택월 매출 hero | 📈 연간 히스토리) + 하단 전폭 부서별 표에 연간 누계 매출 칼럼 그룹 추가(월간 실적 | 연간 누계 구분). 별도 sales-history 블록 제거·fin-primary 내부로 흡수. 인쇄 시 .fchart.hist 표시 오버라이드(흑백 가독).\n- 🚀ERP + 🗺️로드맵 병합: 한 .blk(erp-roadmap-merge)로 두 보드 세로 스택, 인쇄 break-inside:auto(한 컬럼에 몰림).\n- 🔧 점검 현황: CHECK_GAS monthly_rep (CLI ad-hoc · 커밋 dcc10c3f)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "dcc10c3f9098e50439f4b19a04113d11761510a2"
+  },
+  {
+    "task_id": "CPO-2026-07-06-ADHOC-40a3f2af",
+    "clevel": "cpo",
+    "title": "[시포] 북극성 재발행 카드 482 입항 처리 + 시토 재발행차단 가드 배(496) 인계",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 497,
+    "artifact": "전환율 측정은 7/4 이미 개통(누적 39.4% 라이브). 482는 추천기가 collector 일시 null을 '미측정'으로 오판해 재발행한 착시 → 입항 처리. 재발행 차단(완료건 dedup+일시null 억제)은 시토 엔진 가드 배 496로 인계. (CLI ad-hoc · 커밋 40a3f2af)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "40a3f2af739e31b08f259fd608d107d17f2d2e82"
   }
 ]
