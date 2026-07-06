@@ -173,17 +173,17 @@
   .flegend .fnote{color:var(--dim); font-size:10.5px;}
 
   /* ── 📈 2026 매출 연간 히스토리(1~7월 · sales_monthly 정본 재사용, .fchart/.fcol 공통 클래스 확장) ── */
-  .fchart.hist{gap:9px; padding:16px 14px 10px;}
-  .fchart.hist .fcol{min-width:52px; gap:5px;}
-  .fchart.hist .fval{font-size:11px; font-weight:700; color:var(--text-soft); white-space:nowrap; letter-spacing:-0.01em;}
+  .fchart.hist{gap:7px; padding:9px 12px 6px;}
+  .fchart.hist .fcol{min-width:48px; gap:3px;}
+  .fchart.hist .fval{font-size:10.5px; font-weight:700; color:var(--text-soft); white-space:nowrap; letter-spacing:-0.01em;}
   .fchart.hist .fval-none{color:var(--dim); font-weight:400;}
   .fchart.hist .fcol.cur-m .fval{color:var(--gold);}
-  .fchart.hist .fbars{height:118px;}
+  .fchart.hist .fbars{height:72px;}
   .fchart.hist .fbars>i.bs{width:22px; border-radius:5px 5px 2px 2px; background:linear-gradient(180deg,var(--gold),#b8860b); box-shadow:0 0 0 1px rgba(240,198,116,0.25) inset;}
   .fchart.hist .fcol.cur-m .fbars>i.bs{background:linear-gradient(180deg,#ffe1a3,var(--gold)); box-shadow:0 0 0 1px rgba(255,255,255,0.35) inset;}
   .fchart.hist .fbars>i.bn{width:22px; height:5px; border-radius:3px; background:var(--border-strong); opacity:0.55;}
   .fchart.hist .fcol-none .fmo{color:var(--dim);}
-  .fhist-sum{display:flex; flex-wrap:wrap; gap:8px 22px; margin-top:11px; padding:9px 13px; background:var(--paper); border:1px solid var(--border); border-radius:10px; font-size:12.5px; color:var(--text-soft);}
+  .fhist-sum{display:flex; flex-wrap:wrap; gap:4px 16px; margin-top:7px; padding:6px 11px; background:var(--paper); border:1px solid var(--border); border-radius:10px; font-size:11.5px; color:var(--text-soft);}
   .fhist-sum b{color:var(--gold); font-weight:800;}
 
   /* ── 전월 대비 델타 배지(공통 · deltaBadge()가 곳곳에서 재사용 — 한눈 요약·실무책임자 스코어보드) ── */
@@ -221,6 +221,8 @@
   .fin-sub-note{font-size:10.5px; font-weight:400; color:var(--dim);}
   .fin-dept-full{margin-top:6px;}
   @media (max-width:720px){ .fin-top-split{flex-direction:column;} }
+  /* 매출 라인 표 정렬(GM 지시 2026-07-06 4차): 넓은 칸에서 100% 늘어나 숫자가 우측으로 쏠려 보임 → 내용 폭으로 줄이고 칸 안 가운데 정렬(약간 왼쪽+균형). 넘치면 .rpt-wrap이 스크롤. */
+  table.rpt.findept, table.rpt.h1rteam{width:auto; max-width:100%; margin-left:auto; margin-right:auto;}
   /* 부서별 표: 월간 실적 | 연간 누계 칼럼 그룹 구분선 */
   .findept .grp-cum{border-left:2px solid var(--border-strong);}
   .findept thead th.grp-mon{color:var(--accent-soft); text-align:center; font-size:11px;}
@@ -232,6 +234,15 @@
   tr.obj-sub td{border-top:none; padding-top:2px; padding-bottom:2px; background:transparent;}
   tr.obj-sub td.sub-cell{font-size:11.5px; color:var(--text-soft); padding-left:22px;}
   tr.obj-sub .prog .pnum{font-size:11px;}
+
+  /* ── 🔄 4부서 4단계 구축 사이클(GM 지시 2026-07-06 4차 · ①매뉴얼→②점검리스트→③피드백루프→④AI 고도화) ── */
+  .cyc{margin-top:7px; padding:8px 10px; border:1px solid var(--border-strong); border-radius:9px; background:var(--surface);}
+  .cyc-h{font-size:9.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:5px;}
+  .cyc-flow{display:flex; flex-wrap:wrap; gap:3px 4px; align-items:center; font-size:10.5px; font-weight:700; color:var(--accent-soft); margin-bottom:6px; line-height:1.4;}
+  .cyc-flow .cyc-arw{color:var(--dim); font-weight:400;}
+  .cyc-depts{display:flex; flex-wrap:wrap; gap:4px 10px;}
+  .cyc-d{font-size:10.5px; color:var(--text-soft); white-space:nowrap;}
+  .cyc-d b{color:var(--gold); font-weight:800;} .cyc-d .cyc-nt{color:var(--dim); font-size:9.5px;}
 
   /* ── 실무 도달율 + AI 활용 도달율 병합표(공용 .rpt 재사용 · 골드 악센트만 유지) ── */
   table.rpt.prac tbody td:first-child{border-left:3px solid var(--gold);}
@@ -268,6 +279,9 @@
   .erp-legend b{color:var(--gold); font-weight:700;}
   .cfo-link{font-size:11px; font-weight:600; color:var(--gold); text-decoration:none; border:1px solid rgba(240,198,116,0.32); background:rgba(240,198,116,0.06); border-radius:7px; padding:3px 10px; white-space:nowrap; margin-left:auto;}
   .cfo-link:hover{border-color:var(--gold); background:rgba(240,198,116,0.12);}
+  /* 📋 상반기 전사회의 자료 버튼(상단 컨트롤바 · 새 탭 · GM 지시 2026-07-06 4차) */
+  .allhands-link{font-size:12px; font-weight:700; color:#221F20; background:var(--gold); border:1px solid var(--gold); border-radius:8px; padding:4px 12px; text-decoration:none; white-space:nowrap; box-shadow:0 1px 4px rgba(240,198,116,0.3);}
+  .allhands-link:hover{background:#ffe1a3; border-color:#ffe1a3;}
   h2.sec.has-link{flex-wrap:wrap;}
 
   /* ── 🗺️ 전략 로드맵 6단계 진척(GM 지시 2026-07-03 · ERP 진척과 유사 타임라인) ── */
@@ -771,6 +785,7 @@
     .findept tbody td, .findept thead th{padding:0 4px !important; font-size:7.5px !important; line-height:1.25 !important;}
     #obj-board .metric{margin-top:2px !important; padding:2px 5px !important;} #obj-board .metric-h{margin-bottom:1px !important;} #obj-board .mbar{margin:1px 0 !important;}
     #obj-board .r-note{font-size:7px !important; line-height:1.12 !important; margin-top:1px !important;}
+    #obj-board .cyc{padding:2px 5px !important; margin-top:2px !important;} #obj-board .cyc-h{margin-bottom:1px !important;} #obj-board .cyc-flow{font-size:7px !important; margin-bottom:2px !important;} #obj-board .cyc-d{font-size:7px !important;} #obj-board .cyc-d .cyc-nt{font-size:6.5px !important;}
     #obj-board table.rpt tbody td{padding:0.5px 4px !important;}
     #obj-board .metric-meta{line-height:1.2 !important;}
     .obj-split-h{margin:2px 0 1px !important;}
@@ -822,6 +837,7 @@
       <span id="edit-wrap"></span>
       <span id="save-flag" style="font-size:11px;color:var(--dim);"></span>
       <span class="view-toggle" id="view-toggle"></span>
+      <a class="allhands-link" href="상반기전사회의.html" target="_blank" rel="noopener">📋 상반기 전사회의 자료 →</a>
     </div>
     <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
   </header>
@@ -865,7 +881,7 @@
           <div id="fin-board"><div class="board-status">선택월 매출·지출 요약을 불러오는 중…</div></div>
         </div>
         <div class="fin-top-right">
-          <div class="fin-sub-h">📈 2026 매출 연간 히스토리 <span class="fin-sub-note">미도래월=정직 표기</span></div>
+          <div class="fin-sub-h">📈 연간 매출 <span class="fin-sub-note">2026 히스토리 · 미도래월=정직 표기</span></div>
           <div id="sales-history-board"><div class="board-status">매출 연간 히스토리를 불러오는 중…</div></div>
         </div>
       </div>
@@ -876,12 +892,6 @@
     <section class="blk erp-roadmap-merge" data-blkid="roadmap">
       <h2 class="sec">🗺️ 전략 로드맵 진척 <span class="stag">6단계 · 현재 단계</span></h2>
       <div id="roadmap-board"><div class="board-status">전략 로드맵 정본을 불러오는 중…</div></div>
-    </section>
-
-    <!-- 📋 상반기 리뷰 & 하반기 방향 (GM 상반기 전사회의 반영 2026-07-06 · 상반기 실적=라이브 실측) -->
-    <section class="blk h1review-wrap" data-blkid="h1review">
-      <h2 class="sec">📋 상반기 리뷰 &amp; 하반기 방향 <span class="stag">1·2분기 분리 실측 · 포상 · 하반기 3축</span></h2>
-      <div id="h1review-board"><div class="board-status">상반기 리뷰를 계산하는 중…</div></div>
     </section>
 
     <!-- 🎯 이달 핵심 과제 top3 (1·2·3순위 · 매출 제외 · 중요도 자동 선정 · GM 확정 2026-07-04) -->
@@ -908,6 +918,12 @@
     <section class="blk prac-full" data-blkid="prac">
       <h2 class="sec" id="prac-sec">👤 실무 도달율 &amp; 🤖 AI 활용 도달율 <span class="stag">GM 직속 3라인 · 실무%·AI 활용%·북극성</span></h2>
       <div id="prac-board"></div>
+    </section>
+
+    <!-- 📋 상반기 리뷰 & 하반기 방향 (GM 상반기 전사회의 반영 2026-07-06 · 맨 아래 이동 4차: 일일 보고 흐름 방해 방지) -->
+    <section class="blk h1review-wrap" data-blkid="h1review">
+      <h2 class="sec">📋 상반기 리뷰 &amp; 하반기 방향 <span class="stag">1·2분기 분리 실측 · 포상 · 하반기 3축</span></h2>
+      <div id="h1review-board"><div class="board-status">상반기 리뷰를 계산하는 중…</div></div>
     </section>
 
   </div>
@@ -1511,13 +1527,28 @@
     return '<a class="chip ns" href="헌법한장.html" title="' + esc(title) + '">🌟 → ' + esc(short) + '</a>';
   }
 
+  // 🔄 4부서 4단계 구축 사이클 콤팩트 렌더(핵심만 · 부모%는 sub 평균 유지 · GM 지시 2026-07-06 4차)
+  function cycleBlock(cyc){
+    if(!cyc || !cyc.stages || !cyc.stages.length) return '';
+    var flow = cyc.stages.map(function(s, i){
+      return '<span>' + '①②③④⑤'.charAt(i) + esc(s) + '</span>';
+    }).join('<span class="cyc-arw">→</span>');
+    var depts = (cyc.depts || []).map(function(d){
+      var mark = '①②③④⑤'.charAt(Math.max(0, (clampPct(d.reached) || 0) - 1)) || '';
+      return '<span class="cyc-d">' + esc(d.dept) + ' <b>' + mark + '</b>' +
+        (d.note ? ' <span class="cyc-nt">' + esc(d.note) + '</span>' : '') + '</span>';
+    }).join('');
+    return '<div class="cyc"><div class="cyc-h">🔄 4단계 구축 사이클</div>' +
+      '<div class="cyc-flow">' + flow + '</div>' +
+      '<div class="cyc-depts">' + depts + '</div></div>';
+  }
   function objRow(o, withDelta){
     // 서브항목(부모-자식)이 있으면 부모 진척% = 서브 %의 집계(평균) — 렌더에서 계산(GM 지시 2026-07-06 3차).
     var hasSub = o.sub && o.sub.length;
     var displayProg = (hasSub && !_editMode)
       ? Math.round(o.sub.reduce(function(s, x){ return s + clampPct(x.progress); }, 0) / o.sub.length)
       : o.progress;
-    var titleCell = '<div class="r-title">' + esc(o.title) + '</div>' + metricBlock(o);
+    var titleCell = '<div class="r-title">' + esc(o.title) + '</div>' + metricBlock(o) + (o.cycle ? cycleBlock(o.cycle) : '');
     var noteCell;
     if(_editMode){
       noteCell = '<div class="note-edit" contenteditable="true" data-id="' + esc(o.id) + '" data-f="progress_note" ' +
@@ -1734,14 +1765,14 @@
         '<td class="num grp-cum">' + (haveCum ? fmtWon(totCum) : '—') + '</td>' +
         '<td class="num sub2">' + NAUW_NOTE + '</td><td class="num sub2">—</td></tr>';
       combinedTbl = '<div class="fin-dept-wrap"><div class="fin-dept-h">🏷️ 부서별 매출 · 지출 ' +
-        '<span style="font-weight:400;color:var(--dim)">(' + mnum + '월 실적 | 1~' + mnum + '월 누계 · 지출·순액=집계 예정)</span>' +
+        '<span style="font-weight:400;color:var(--dim)">(' + mnum + '월 실적 | 연간 매출 · 지출·순액=집계 예정)</span>' +
         (ta.live ? '' : ' <span style="color:var(--dim);font-weight:400">(팀별 실적 라이브 조회 중/실패 — 매출마스터 폴백)</span>') + '</div>' +
         '<div class="rpt-wrap"><table class="rpt findept"><thead>' +
         '<tr><th rowspan="2">팀</th><th class="num grp-mon" colspan="5">📅 ' + mnum + '월 실적</th>' +
-        '<th class="num grp-cum" colspan="3">📈 연간 누계</th></tr>' +
+        '<th class="num grp-cum" colspan="3">📈 연간 매출</th></tr>' +
         '<tr><th class="num">목표매출</th><th class="num">실적매출</th><th class="num">달성%</th>' +
         '<th class="num">지출</th><th class="num">순액</th>' +
-        '<th class="num grp-cum">누계매출</th><th class="num">연 지출</th><th class="num">순액</th></tr>' +
+        '<th class="num grp-cum">연간매출</th><th class="num">연 지출</th><th class="num">순액</th></tr>' +
         '</thead><tbody>' + body + '</tbody></table></div></div>';
     }
 
@@ -1795,7 +1826,7 @@
     var yearPct = Math.round(total / KPI_YEAR_TARGET * 1000) / 10;  // 연 72억 대비 %
     var gapTxt = known.length ? ((gap > 0 ? '−' : '+') + fmtWon(Math.abs(gap))) : '—';
     var summary = '<div class="fhist-sum">' +
-      '<span>누계 실측(1~' + upto + '월) <b>' + (known.length ? fmtWon(total) : '—') + '</b></span>' +
+      '<span>연간 매출(1~' + upto + '월) <b>' + (known.length ? fmtWon(total) : '—') + '</b></span>' +
       '<span>목표 누계(6억×' + upto + ') <b>' + fmtWon(tgtCum) + '</b></span>' +
       '<span>부족분 <b>' + gapTxt + '</b></span>' +
       '<span>연 72억 대비 <b>' + (known.length ? yearPct + '%' : '—') + '</b></span>' +
@@ -2323,7 +2354,7 @@
         '<span class="sm-fin-val">' + salesTxt + '</span>' +
         '<span class="sm-fin-tgt">목표 ' + fmtWon(target) + ' 대비 <b>' + spctTxt + '</b></span></div>' +
       '<div class="sm-bar"><i style="width:' + sw + '%"></i></div>' +
-      '<div class="sm-fin-cum">📈 연간 누계(측정월 합) <b>' + cumTxt + '</b> <span class="sm-dim">· 지출·순액=구조개선 중(확정숫자 미표기)</span></div>' +
+      '<div class="sm-fin-cum">📈 연간 매출(측정월 합) <b>' + cumTxt + '</b> <span class="sm-dim">· 지출·순액=구조개선 중(확정숫자 미표기)</span></div>' +
     '</div>';
 
     // ③ 🎯 이달 핵심 과제 top3 (selectTop3 재사용)
