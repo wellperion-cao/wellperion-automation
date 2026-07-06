@@ -1,9 +1,18 @@
 # scripts/kakao_report_sender.py
-# 카톡 매출보고 원클릭 3방 전송기 (2026-07-06 CTO, 배488)
+# 카톡 매출보고 원클릭 3방 전송기 (2026-07-06 CTO, 배488 / 확장: 로컬 archive+방별 캡션)
 #
 # 배경: 카톡 그룹방은 공식 API 불가 → 카카오톡 PC 앱 UI 자동화(pywinauto+pywin32)로
 #       텔레그램 9시 매출보고 이미지+캡션을 카톡 방(들)에 그대로 전달한다.
 #       이미지 재생성 없음(텔레그램 사진 원본 그대로) · 시트 접근 불필요.
+#
+# 방별 캡션: kakao_rooms.json의 rooms[].prefix + --caption(원본 그대로) 조합.
+#   예) 차의주 회장님: "회장님, 7.5(일) 매출 및 운영사항 보고드립니다."
+#       웰페리온 관리부/운영부: "7.5(일) 매출 및 운영사항 보고드립니다." (prefix 없음)
+#
+# 이미지 소스 2가지 지원(택1):
+#   --image PATH      : 이미지 경로 직접 지정(봇 콜백은 통상 이 방식 — 이미 archive 저장한 파일 재사용).
+#   --from-folder      : 미지정 시 kakao_rooms.json의 archive_dir/YYYY-MM/ 에서
+#                         오늘 날짜 파일(웰페리온_일일보고_YYYYMMDD.png)을 자동 선택.
 #
 # 필수 사전 설치(1회, GM PC — 없으면 아래 _check_and_import_deps()가 자동 설치 시도):
 #   pip install pywinauto pyautogui pyperclip pywin32 Pillow
@@ -25,6 +34,8 @@
 #          --caption "..." --only-room "웰페리온 운영부"
 #   3) 3방 전체 실발송(검증 완료 후에만):
 #      python scripts\kakao_report_sender.py --image "C:\...\report.png" --caption "..."
+#   4) 이미지 직접 지정 없이 오늘자 archive 파일 자동 사용:
+#      python scripts\kakao_report_sender.py --from-folder --caption "..." --dry-run --only-room "웰페리온 운영부"
 #
 # 한계(정직히 기록): 카카오톡 PC 앱 UI(창 제목·검색창 UIA 트리)는 버전 업데이트로
 #   바뀔 수 있어 취약하다. GM PC 켜짐·카톡 로그인·화면잠금해제가 전제.
@@ -52,6 +63,8 @@ except Exception:
 ROOT = Path(__file__).resolve().parent.parent
 ROOMS_CONFIG = Path(__file__).resolve().parent / "kakao_rooms.json"
 EVIDENCE_DIR = Path(__file__).resolve().parent / "poc-evidence"
+DEFAULT_ARCHIVE_DIR = Path.home() / "Documents" / "매출보고"
+ARCHIVE_FILENAME_FMT = "웰페리온_일일보고_%Y%m%d.png"
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -120,11 +133,34 @@ def log(msg: str) -> None:
     print(f"[{ts}] {msg}", flush=True)
 
 
-def load_rooms(only_room: str | None) -> list[str]:
+def load_rooms_config() -> dict:
+    return json.loads(ROOMS_CONFIG.read_text(encoding="utf-8"))
+
+
+def _normalize_room(entry) -> dict:
+    """rooms[] 항목을 {"name":..., "prefix":...} 로 정규화(구 형식=순수 문자열도 허용)."""
+    if isinstance(entry, str):
+        return {"name": entry, "prefix": ""}
+    return {"name": entry.get("name", ""), "prefix": entry.get("prefix", "")}
+
+
+def get_archive_dir(cfg: dict) -> Path:
+    raw = cfg.get("archive_dir")
+    return Path(raw).expanduser() if raw else DEFAULT_ARCHIVE_DIR
+
+
+def load_rooms(cfg: dict, only_room: str | None) -> list[dict]:
+    """전송 대상 방 목록 반환(각 항목: {"name", "prefix"}).
+
+    --only-room 지정 시 kakao_rooms.json에서 이름이 일치하는 항목의 prefix를 그대로 쓰고,
+    설정에 없는 이름이면 prefix="" 로 폴백(검증용 임시 방 이름 등)."""
+    rooms = [_normalize_room(r) for r in cfg.get("rooms", [])]
     if only_room:
-        return [only_room]
-    cfg = json.loads(ROOMS_CONFIG.read_text(encoding="utf-8"))
-    return cfg.get("rooms", [])
+        for r in rooms:
+            if r["name"] == only_room:
+                return [r]
+        return [{"name": only_room, "prefix": ""}]
+    return rooms
 
 
 def image_to_clipboard(image_path: Path) -> None:
@@ -261,8 +297,15 @@ def screenshot(room_win, room_name: str, tag: str) -> Path:
     return path
 
 
-def send_to_room(room_name: str, image_path: Path, caption: str, dry_run: bool) -> None:
-    log(f"── {room_name} 처리 시작 (dry_run={dry_run}) ──")
+def build_caption(room: dict, base_caption: str) -> str:
+    """방별 prefix + 원본 캡션(그대로, 날짜 재계산 없음) 조합."""
+    return f"{room.get('prefix', '')}{base_caption}"
+
+
+def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool) -> None:
+    room_name = room["name"]
+    caption = build_caption(room, base_caption)
+    log(f"── {room_name} 처리 시작 (dry_run={dry_run}, caption={caption!r}) ──")
     main_win = find_kakao_main_window()
     room_win = open_room(main_win, room_name)
     image_to_clipboard(image_path)
@@ -271,7 +314,7 @@ def send_to_room(room_name: str, image_path: Path, caption: str, dry_run: bool) 
     if dry_run:
         screenshot(room_win, room_name, "dryrun_preview")
         clear_input(input_box)
-        log(f"[{room_name}] DRY-RUN: 미리보기까지 확인, Enter 전송 생략(안전)")
+        log(f"[{room_name}] DRY-RUN: 미리보기까지 확인, Enter 전송 생략(안전) — 캡션 미리보기: {caption!r}")
         return
 
     send_enter(input_box)  # 이미지 전송
@@ -288,11 +331,23 @@ def send_to_room(room_name: str, image_path: Path, caption: str, dry_run: bool) 
     log(f"[{room_name}] 전송 완료")
 
 
+def resolve_image_path(cfg: dict, args) -> Path:
+    """--image 직접지정 우선, 없고 --from-folder면 archive_dir/YYYY-MM/에서 오늘자 파일 자동선택."""
+    if args.image:
+        return Path(args.image)
+    archive_dir = get_archive_dir(cfg)
+    today = datetime.now()
+    candidate = archive_dir / today.strftime("%Y-%m") / today.strftime(ARCHIVE_FILENAME_FMT)
+    return candidate
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="텔레그램 매출보고 이미지를 카톡 방(들)에 전송(카톡 PC 앱 UI 자동화)")
-    ap.add_argument("--image", required=True, help="전송할 이미지 파일 경로")
-    ap.add_argument("--caption", default="", help="함께 보낼 캡션 텍스트")
+    ap.add_argument("--image", default=None, help="전송할 이미지 파일 경로(미지정 시 --from-folder 필요)")
+    ap.add_argument("--from-folder", action="store_true",
+                     help="--image 미지정 시 kakao_rooms.json의 archive_dir/YYYY-MM/에서 오늘 날짜 파일 자동 선택")
+    ap.add_argument("--caption", default="", help="함께 보낼 원본 캡션 텍스트(방별 prefix는 자동 조합)")
     ap.add_argument("--dry-run", action="store_true",
                      help="방 열기+클립보드+미리보기까지만, 실제 전송(Enter) 안 함")
     ap.add_argument("--only-room", default=None, help="지정한 방 1개만 처리(검증용)")
@@ -302,22 +357,29 @@ def main() -> int:
         print("BLOCKED: 이 스크립트는 Windows(카카오톡 PC 앱) 전용입니다.")
         return 1
 
-    image_path = Path(args.image)
+    if not args.image and not args.from_folder:
+        print("BLOCKED: --image 또는 --from-folder 중 하나는 필수입니다.")
+        return 1
+
+    cfg = load_rooms_config()
+    image_path = resolve_image_path(cfg, args)
     if not image_path.exists():
         print(f"BLOCKED: 이미지 파일을 찾을 수 없음: {image_path}")
         return 1
 
-    rooms = load_rooms(args.only_room)
+    rooms = load_rooms(cfg, args.only_room)
     if not rooms:
         print("BLOCKED: 전송 대상 방이 없음 (kakao_rooms.json 확인)")
         return 1
 
-    log(f"대상 방 {len(rooms)}개: {rooms} / dry_run={args.dry_run}")
+    room_names = [r["name"] for r in rooms]
+    log(f"대상 방 {len(rooms)}개: {room_names} / image={image_path} / dry_run={args.dry_run}")
 
     failures = []
-    for idx, room_name in enumerate(rooms):
+    for idx, room in enumerate(rooms):
+        room_name = room["name"]
         try:
-            send_to_room(room_name, image_path, args.caption, args.dry_run)
+            send_to_room(room, image_path, args.caption, args.dry_run)
         except Exception as exc:
             log(f"실패 [{room_name}]: {exc}")
             failures.append((room_name, str(exc)))

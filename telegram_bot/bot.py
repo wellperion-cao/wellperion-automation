@@ -1693,17 +1693,36 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 text=f"⚠️ 발행 엔진 기동 실패: {exc}\n수동 발행 필요: {title_label}")
 
 
-# ─── 카톡 매출보고 원클릭 3방 전송 콜백 (kakao_send) — 2026-07-06 CTO, 배488 ───
+# ─── 카톡 매출보고 원클릭 3방 전송 콜백 (kakao_send) — 2026-07-06 CTO, 배488(확장) ───
 # 9시 매출보고 사진 아래 인라인버튼 "📤 카톡 3방 전송" 탭 → 그 메시지의 사진(file_id)+캡션을
-# 그대로 다운로드해 scripts/kakao_report_sender.py 로 카톡 방 3개(kakao_rooms.json) 실발송.
+# 로컬 월 폴더(archive_dir)에 수신일 기준 파일명으로 저장 후, 그 저장본을 그대로
+# scripts/kakao_report_sender.py 로 카톡 방 3개(kakao_rooms.json) 실발송(중복 다운로드 없음).
+# 방별 캡션 prefix(예: 회장님방 "회장님, ")는 sender가 kakao_rooms.json에서 읽어 조합한다.
 # 이미지 재생성 없음·시트 접근 없음. GAS(매출보고_자동발송.js sendTelegramPhoto)가 버튼을 붙인다.
 _KAKAO_SENDER = WORKDIR / "scripts" / "kakao_report_sender.py"
+_KAKAO_ROOMS_CONFIG = WORKDIR / "scripts" / "kakao_rooms.json"
+_KAKAO_DEFAULT_ARCHIVE_DIR = Path.home() / "Documents" / "매출보고"
+
+
+def _kakao_archive_dir() -> Path:
+    """kakao_rooms.json의 archive_dir 읽기(없으면 기본값). 저장소 밖 GM 개인 폴더 기본."""
+    try:
+        cfg = json.loads(_KAKAO_ROOMS_CONFIG.read_text(encoding="utf-8"))
+        raw = cfg.get("archive_dir")
+        if raw:
+            return Path(raw).expanduser()
+    except Exception:
+        pass
+    return _KAKAO_DEFAULT_ARCHIVE_DIR
 
 
 async def cmd_kakao_send_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """callback_data == "kakao_send" 처리 — 버튼 달린 메시지의 사진+캡션을 카톡 3방 전송.
 
-    이미지는 그 텔레그램 메시지 그대로(file_id→getFile→다운로드), 캡션도 그대로 동봉.
+    이미지는 그 텔레그램 메시지 그대로(file_id→getFile→다운로드) 로컬 월 폴더에 archive 저장
+    (경로: <archive_dir>/YYYY-MM/웰페리온_일일보고_YYYYMMDD.png, 날짜=수신일 기준),
+    그 저장본을 그대로 전송에 사용(중복 다운로드 없음). 캡션은 원본 그대로 전달 —
+    방별 prefix 조합은 kakao_report_sender.py가 kakao_rooms.json 기준으로 수행한다.
     실행은 서브프로세스(kakao_report_sender.py, 옵션 없음=3방 실발송)로 위임하고
     결과 1줄만 회신한다. 카톡 UI 자동화 실패는 방별 사유와 함께 그대로 노출한다."""
     q = update.callback_query
@@ -1730,14 +1749,16 @@ async def cmd_kakao_send_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE
     await ctx.bot.send_message(chat_id=msg.chat_id, text="⏳ 카톡 3방 전송 처리 시작...")
 
     try:
+        import datetime as _dt
         tg_file = await ctx.bot.get_file(file_id)
-        tmp_dir = WORKDIR / "telegram_bot" / "_kakao_tmp"
-        tmp_dir.mkdir(parents=True, exist_ok=True)
-        local_path = tmp_dir / f"kakao_{file_id[-16:]}.jpg"
+        today = _dt.datetime.now()  # 수신일 기준(보고 캡션 날짜 아님)
+        month_dir = _kakao_archive_dir() / today.strftime("%Y-%m")
+        month_dir.mkdir(parents=True, exist_ok=True)
+        local_path = month_dir / f"웰페리온_일일보고_{today.strftime('%Y%m%d')}.png"
         await tg_file.download_to_drive(str(local_path))
     except Exception as exc:
         await ctx.bot.send_message(chat_id=msg.chat_id,
-            text=f"⚠️ 카톡 전송 실패: 이미지 다운로드 오류 — {exc}")
+            text=f"⚠️ 카톡 전송 실패: 이미지 다운로드/archive 저장 오류 — {exc}")
         return
 
     out_text = ""
