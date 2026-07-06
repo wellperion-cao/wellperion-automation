@@ -857,7 +857,8 @@
   ];
   var VOC_STATUS_LIST = ['접수','처리중','완료'];
   var FIN_YEAR = '2026';
-  var SALES_TARGET_DEFAULT = 650000000; // 월 매출 목표 기본값(6.5억). 해당 월 objectives에 매출 metric.target 있으면 그 값 우선.
+  var SALES_TARGET_DEFAULT = 600000000; // 대표 월 매출 목표 = 6억(=연 72억÷12, GM 06-20 결재). 헤드라인 '목표 대비' 통일 기준(2026-07-06).
+  var KPI_YEAR_TARGET = 7200000000;     // 연 매출 목표 72억(GM 06-20 결재·공식값). 히스토리 72억 프레임·부족분 계산에 사용.
   // ── 매출·지출 SSOT = AI CFO 매출현황(cfo/finance/매출지출현황.html). 이 페이지는 그 페이지의 소스를 그대로 미러(읽기전용). ──
   // 매출(센터전체) 정본 = 「26년 매출 분석」 GAS(action=sales_monthly) — CFO 매출현황이 표시하는 '매출'과 동일 소스(회원권+강습+기타·주차). 실패 시 매출마스터 부서합 폴백.
   // 매출마스터 시트(부서별×월) = 부서별 매출 '분해'용(+ 정본 실패 시 합계 폴백). 정본−부서합 = 기타·주차 등.
@@ -1194,14 +1195,9 @@
       return {sales:sales, exp:exp, salesDept:salesDept, laborDept:laborDept};
     }).catch(function(){ return {sales:null, exp:null, salesDept:null, laborDept:null}; });
   }
-  // 선택월 매출 목표 = 해당 월 objectives의 매출 metric.target 우선, 없으면 기본값
+  // 대표 월 매출 목표 = 6억(=연 72억÷12)으로 통일(GM 지시 2026-07-06). 헤드라인 '목표 대비'는 월별 상이한
+  // objectives.metric.target(예 7월 스트레치 6.5~6.6억) 대신 대표값 6억 단일 프레임 — 부서별 표(sales_targets.json 합 6.105억)는 별도 유지.
   function salesTargetFor(monKey){
-    var m = _data && _data.months && _data.months[monKey];
-    var objs = (m && m.objectives) || [];
-    for(var i = 0; i < objs.length; i++){
-      var mt = objs[i].metric;
-      if(mt && mt.unit === '원' && /매출/.test(mt.name || '') && mt.target) return Number(mt.target);
-    }
     return SALES_TARGET_DEFAULT;
   }
 
@@ -1671,14 +1667,17 @@
         '<a href="cfo/finance/매출지출현황.html" style="color:var(--gold)">AI CFO 매출현황</a>에서 확인하세요.</div>';
       return;
     }
+    // 히스토리 = 선택월(_sel) 기준(GM 지시 2026-07-06): 6월 선택 시 1~6월까지만 막대·누계·월평균·부족분.
     var curMnum = _sel ? Number(String(_sel).split('-')[1]) : null;
-    var vals = HIST_MONTHS.map(function(_, i){ return (typeof _cfoSales[i] === 'number') ? _cfoSales[i] : null; });
+    var upto = (curMnum >= 1 && curMnum <= HIST_MONTHS.length) ? curMnum : HIST_MONTHS.length;
+    var months = HIST_MONTHS.slice(0, upto);
+    var vals = months.map(function(_, i){ return (typeof _cfoSales[i] === 'number') ? _cfoSales[i] : null; });
     var known = vals.filter(function(v){ return v != null; });
     var max = known.length ? Math.max.apply(null, known) : 0;
     var total = known.reduce(function(a, b){ return a + b; }, 0);
     var avg = known.length ? total / known.length : null;
 
-    var cols = HIST_MONTHS.map(function(lab, i){
+    var cols = months.map(function(lab, i){
       var v = vals[i], mnum = i + 1;
       var curCls = (curMnum === mnum) ? ' cur-m' : '';
       if(v != null){
@@ -1687,17 +1686,25 @@
           '<div class="fbars"><i class="bs" style="height:' + h + '%" title="' + lab + ' · ' + fmtWon(v) + '"></i></div>' +
           '<span class="fmo">' + lab + '</span></div>';
       }
-      return '<div class="fcol' + curCls + ' fcol-none"><span class="fval fval-none">미도래</span>' +
-        '<div class="fbars"><i class="bn" title="' + lab + ' · 미도래"></i></div>' +
+      return '<div class="fcol' + curCls + ' fcol-none"><span class="fval fval-none">미측정</span>' +
+        '<div class="fbars"><i class="bn" title="' + lab + ' · 미측정"></i></div>' +
         '<span class="fmo">' + lab + '</span></div>';
     }).join('');
 
+    // 연 72억 프레임(GM 06-20 결재): 누계 실측(1~선택월) · 목표 누계(6억×선택월수) · 부족분 · 연 72억 대비 진척%.
+    var tgtCum = SALES_TARGET_DEFAULT * upto;                       // 목표 누계 = 6억 × 선택월수
+    var gap = tgtCum - total;                                       // 부족분(+ 미달 · − 초과)
+    var yearPct = Math.round(total / KPI_YEAR_TARGET * 1000) / 10;  // 연 72억 대비 %
+    var gapTxt = known.length ? ((gap > 0 ? '−' : '+') + fmtWon(Math.abs(gap))) : '—';
     var summary = '<div class="fhist-sum">' +
-      '<span>누계(' + known.length + '개월) <b>' + (known.length ? fmtWon(total) : '—') + '</b></span>' +
-      '<span>월평균(도래월 기준) <b>' + (avg != null ? fmtWon(avg) : '—') + '</b></span>' +
+      '<span>누계 실측(1~' + upto + '월) <b>' + (known.length ? fmtWon(total) : '—') + '</b></span>' +
+      '<span>목표 누계(6억×' + upto + ') <b>' + fmtWon(tgtCum) + '</b></span>' +
+      '<span>부족분 <b>' + gapTxt + '</b></span>' +
+      '<span>연 72억 대비 <b>' + (known.length ? yearPct + '%' : '—') + '</b></span>' +
+      '<span>월평균(측정 ' + known.length + '개월) <b>' + (avg != null ? fmtWon(avg) : '—') + '</b></span>' +
     '</div>';
 
-    var legend = '<div class="flegend"><span class="fnote">● 센터전체 매출(회원권+강습+기타·주차) · 소스 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a>과 동일 sales_monthly 정본(신규 조회 없음, 부팅 시 미러 재사용) · 미도래월은 지어내지 않고 정직 표기 · 강조 막대 = 현재 선택월(' + (curMnum || '—') + '월).</span></div>';
+    var legend = '<div class="flegend"><span class="fnote">● 센터전체 매출(회원권+강습+기타·주차) · 소스 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a>과 동일 sales_monthly 정본(신규 조회 없음, 부팅 시 미러 재사용) · 범위 = 1~선택월(' + (curMnum || '—') + '월)까지만 · 미측정월은 지어내지 않고 정직 표기 · 목표 = 대표 월 6억(연 72억÷12) · 강조 막대 = 선택월.</span></div>';
 
     host.innerHTML = '<div class="fchart hist">' + cols + '</div>' + summary + legend;
   }
@@ -1929,7 +1936,7 @@
       '<div class="rmeta"><b>' + pct + '%</b><span class="rperiod">' + esc(it.period || '') + '</span></div>' +
     '</div>';
   }
-  function quarterIcon(q){ var s = String(q || ''); if(s.indexOf('3분기') === 0) return '🔷'; if(s.indexOf('4분기') === 0) return '🔶'; return '🕓'; }
+  function quarterIcon(q){ var s = String(q || ''); if(s.indexOf('1분기') === 0) return '🟢'; if(s.indexOf('2분기') === 0) return '🔵'; if(s.indexOf('3분기') === 0) return '🔷'; if(s.indexOf('4분기') === 0) return '🔶'; return '🕓'; }
   // 분기(quarter)로 그룹핑 — 🔷 3분기 / 🔶 4분기 / 🕓 이후. 그룹 첫 등장 순서 유지, quarter 없으면 단일 그룹 폴백.
   function roadmapStripHtml(){
     var rm = _data && _data.strategy_roadmap;
@@ -2103,9 +2110,11 @@
       var spct = target ? Math.round(fin.sales / target * 100) : null;
       if(spct != null){ spctTxt = spct + '%'; sw = Math.max(0, Math.min(100, spct)); }
     } else { salesTxt = _finReady ? '측정 전(가짜값 없음)' : '불러오는 중…'; }
+    // 연간 누계 = 선택월 기준(1~선택월 실측 합, GM 지시 2026-07-06) — 미래월 포함 방지
     var cumTxt = _finReady ? '측정 전' : '불러오는 중…';
     if(_cfoSales){
-      var known = _cfoSales.filter(function(v){ return typeof v === 'number'; });
+      var upto = (mnum >= 1 && mnum <= 12) ? mnum : _cfoSales.length;
+      var known = _cfoSales.slice(0, upto).filter(function(v){ return typeof v === 'number'; });
       if(known.length){ cumTxt = fmtWon(known.reduce(function(a, b){ return a + b; }, 0)); }
     }
     var salesBlock = '<div class="sm-fin">' +
