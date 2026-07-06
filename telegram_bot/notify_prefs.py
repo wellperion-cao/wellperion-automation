@@ -9,7 +9,7 @@ MUTED = {
     "pre_task": True,       # 정기 루틴 H-15분 사전 알림 (pre_task_notifier.py)
     "produce_done": True,   # 🎨 제작완료 사진카드 (scripts/publish_register.py, 검수카드와 중복)
     "pending_ping": True,   # ⏳ 발행 처리 시작(발행검증대기) 안내 (telegram_bot/bot.py)
-    "personal_0600": True,  # 🕕 06시 · 개인 — 하루시작·운동 슬롯 (telegram_bot/daily_scheduler.py)
+    "personal_0600": False,  # 🕕 06시 · 개인 — 하루시작·운동 슬롯. GM 2026-07-06: 개인은 유지·확대 방향 → 무음 해제(되살림)
 }
 
 
