@@ -397,5 +397,19 @@
     "artifact": "T2 자동화에 방 추가/삭제·가이드용 관리 페이지(cto/automation/카톡전송관리.html)를\n박제하고, GAS(업무&결재 현황)에 kakao_rooms_get/save/delete 액션을 추가해 웹 편집을\n전송 SSOT로 승격. kakao_report_sender.py는 실행 시 GAS를 우선 조회하고 실패 시\n로컬 kakao_rooms.json으로 폴백(양쪽 경로 라이브 검증 완료). bot.py는 전송 결과를\nstatus/kakao_last_send.json에 남겨 페이지가 표시. (CLI ad-hoc · 커밋 d013cbf9)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "d013cbf95e0f4cfa9cff3a5d128b6d4f8cbd68c5"
+  },
+  {
+    "task_id": "CEO-2026-07-06-ADHOC-dcc10c3f",
+    "clevel": "ceo",
+    "title": "[웰리] A3 매출라인 통합·ERP+로드맵 병합·점검 월간화·도달율 확대 [웰리]/월간운영계획",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 495,
+    "artifact": "- 💰 매출 종합: 상단 좌우 50/50(선택월 매출 hero | 📈 연간 히스토리) + 하단 전폭 부서별 표에 연간 누계 매출 칼럼 그룹 추가(월간 실적 | 연간 누계 구분). 별도 sales-history 블록 제거·fin-primary 내부로 흡수. 인쇄 시 .fchart.hist 표시 오버라이드(흑백 가독).\n- 🚀ERP + 🗺️로드맵 병합: 한 .blk(erp-roadmap-merge)로 두 보드 세로 스택, 인쇄 break-inside:auto(한 컬럼에 몰림).\n- 🔧 점검 현황: CHECK_GAS monthly_rep (CLI ad-hoc · 커밋 dcc10c3f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "dcc10c3f9098e50439f4b19a04113d11761510a2"
   }
 ]
