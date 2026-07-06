@@ -553,5 +553,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01GbYjz9GtmPZXSY2Sv2Rers (CLI ad-hoc · 커밋 fcaebaa2)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "fcaebaa2f821058a36d6e3fab85258e97e0cf897"
+  },
+  {
+    "task_id": "CEO-2026-07-06-ADHOC-38a308d6",
+    "clevel": "ceo",
+    "title": "[웰리] 채널별 전환율 >100% 오해 방지 — 추적밖유입 우세 채널 정직 플래그",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 506,
+    "artifact": "클릭(UTM만)≤문의(비율≤100%)·클릭>0인 채널(인스타그램 등 양방향 UTM 귀속)만\n실제 클릭→문의 전환율%로 표기. 네이버·당근마켓처럼 문의>클릭이거나 클릭=0인\n채널은 %를 숨기고 measurable=false + \"추적 밖 유입 우세(자기신고·플레이스/검색)\n— 전환율 측정 불가\" 플래그로 대체(원인=문의 bucket에 UTM 미태깅 자기신고 유입\n혼입). 클릭·문의·가입 원시 카운트는 그대로 노출. kpi_collector.py·\n마케팅현황대시보드.html 양쪽 동일 기준 적용. 기존 키 파괴 없음(추가만). (CLI ad-hoc · 커밋 38a308d6)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "38a308d6babaff9534d7655f37d2c2011ef7c64c"
   }
 ]

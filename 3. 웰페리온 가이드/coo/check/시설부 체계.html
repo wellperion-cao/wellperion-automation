@@ -4408,10 +4408,14 @@ function renderFmDaily(data){
   el.innerHTML=html;
 }
 
+// 카테고리 표준 순서(A 사우나→F 안전) 강제 정렬 — GAS 응답이 무순서라 표가 뒤죽박죽이던 문제 수정. cat 앞글자 A~F, 미상은 맨 뒤. 2026-07-06 시우.
+function fmCatRank(cat){ var c=String(cat||'').trim().charAt(0).toUpperCase(); var i='ABCDEF'.indexOf(c); return i<0?99:i; }
+function fmSortByCat(rows){ return (rows||[]).slice().sort(function(a,b){ var ra=fmCatRank(a&&a.cat), rb=fmCatRank(b&&b.cat); if(ra!==rb) return ra-rb; return String((a&&a.cat)||'').localeCompare(String((b&&b.cat)||'')); }); }
+
 function renderFmCategory(data){
   const el=document.getElementById('fmCategoryView');
   if(!el) return;
-  const rows=data.byCategory||[];
+  const rows=fmSortByCat(data.byCategory);
   if(rows.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">카테고리별 데이터 없음</div>'; return; }
   let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>카테고리</th><th>항목수</th><th>입력완료</th><th>입력률</th></tr>';
   rows.forEach(function(r){
@@ -4531,7 +4535,7 @@ function renderA3FacilityMonthlyFromData(month,data){
 
   const bodyRow=doc.querySelector('.mrp-body-row');
   if(bodyRow){
-    let catRows=''; (data.byCategory||[]).forEach(function(r){ catRows+='<tr><td>'+fmEsc(r.cat)+'</td><td>'+(r.total||0)+'</td><td>'+(r.done||0)+'</td><td>'+(r.pct!=null?r.pct+'%':'-')+'</td></tr>'; });
+    let catRows=''; fmSortByCat(data.byCategory).forEach(function(r){ catRows+='<tr><td>'+fmEsc(r.cat)+'</td><td>'+(r.total||0)+'</td><td>'+(r.done||0)+'</td><td>'+(r.pct!=null?r.pct+'%':'-')+'</td></tr>'; });
     let roundRows=''; (data.byRound||[]).forEach(function(r){ roundRows+='<tr><td>'+fmEsc(r.round)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+(r.total||0)+'</td><td>'+(r.pct!=null?r.pct+'%':'-')+'</td></tr>'; });
     let inspRows=''; (data.byInspector||[]).slice(0,8).forEach(function(r){ inspRows+='<tr><td>'+fmEsc(r.inspector)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+(r.avgPct!=null?r.avgPct+'%':'-')+'</td></tr>'; });
     let dailyCells=''; (data.dailySeries||[]).forEach(function(d){ dailyCells+='<span style="display:inline-block;min-width:34px;text-align:center;font-size:9px;padding:1px 3px;color:'+fmPctColor(d.pct)+';">'+(d.date||'').slice(8,10)+':'+(Number(d.pct)||0)+'%</span>'; });
