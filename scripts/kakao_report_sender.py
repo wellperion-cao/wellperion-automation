@@ -1,5 +1,6 @@
 # scripts/kakao_report_sender.py
-# 카톡 매출보고 원클릭 3방 전송기 (2026-07-06 CTO, 배488 / 확장: 창-제목 기반 재설계)
+# 카톡 매출보고 원클릭 3방 전송기 (2026-07-06 CTO, 배488 / 확장: 창-제목 기반 재설계
+#                                    + 자동 방 열기 추가, 실측 기반)
 #
 # 배경: 카톡 그룹방은 공식 API 불가 → 카카오톡 PC 앱 UI 자동화(pywinauto+pywin32)로
 #       텔레그램 9시 매출보고 이미지+캡션을 카톡 방(들)에 그대로 전달한다.
@@ -12,9 +13,20 @@
 #   (메인창도 클래스는 같으나 제목이 "카카오톡"이라 이름 불일치로 자연 제외됨.)
 #   → 방을 "검색해서 여는" 대신 "이미 열려 있는 방 창을 제목으로 찾는" 방식이
 #     훨씬 안정적이다(카톡 메인창 검색창 UIA 트리는 버전에 취약·find 실패 잦음).
-#   **전제조건: 전송 대상 3방을 카톡에서 미리 열어(대화창을 띄워)둬야 한다.**
-#   방이 안 열려 있으면 명확한 에러로 실패한다(자동으로 검색해 열려는 폴백은
-#   최후수단으로만 시도 — 주 경로 아님, 실패해도 정상).
+#   이 창-제목 탐색이 **1차 경로**(이미 열려 있으면 즉시 성공, 가장 빠르고 안정적)다.
+#
+# 자동 방 열기 추가(2026-07-06, GM PC 라이브 실측 검증 완료) — PC 재부팅 시 방이
+#   자동으로 안 열려 있는 문제 해결:
+#   방 창을 못 찾으면(RoomNotOpenError) **카톡 메인창 검색으로 자동으로 방을 연 뒤**
+#   전송을 진행한다(`open_room_via_search`). 실측으로 확인한 핵심 함정 2가지:
+#     ①검색 Edit 컨트롤은 win32 클래스="Edit"로 실존하지만 비활성 시 rect가 0폭으로
+#       붕괴돼 있어(GetWindowRect 폭=0) UIA descendants(control_type="Edit")로는 전혀
+#       안 잡힌다(당초 실패 원인) → 메인창 우상단 돋보기 아이콘을 먼저 클릭해 검색을
+#       활성화해야 Edit가 실제 폭을 가지고 나타난다(고정 픽셀 오프셋 클릭, §0-4 참조).
+#     ②검색 Edit에 **Ctrl+A(전체선택)를 보내면 안 됨** — 실측 확인: 이 앱은 Ctrl+A를
+#       편집칸 단위가 아닌 **전역 단축키("친구 추가" 다이얼로그 오픈)**로 가로챈다.
+#       기존 텍스트 제거는 End→Shift+Home→Delete로만 한다(§0-5 참조).
+#   방이 정말 안 열려 있으면(자동 열기까지 실패) 명확한 에러로 실패한다(RoomNotOpenError).
 # ══════════════════════════════════════════════════════════════════════════
 #
 # 방별 캡션: kakao_rooms.json의 rooms[].prefix + --caption(원본 그대로) 조합.
@@ -52,11 +64,15 @@
 #
 # 한계(정직히 기록): 창-제목 방식이라도 카카오톡 PC 앱 UI(창 클래스·팝업 구조)는
 #   버전 업데이트로 바뀔 수 있어 취약하다(2026-07-06 실측 기준). GM PC 켜짐·카톡
-#   로그인·화면잠금해제·**전송 대상 3방이 미리 열려 있어야 함**이 전제.
-#   검색 폴백(open_room_via_search)은 최후수단이며 그 자체도 취약함(당초 실패 원인과 동일).
+#   로그인·화면잠금해제가 전제. **방이 미리 열려 있지 않아도 자동으로 열도록
+#   2026-07-06 확장**(open_room_via_search, GM PC 라이브 실측 검증 완료 — "김남욱"
+#   방을 의도적으로 닫은 뒤 검색으로 자동 재오픈 성공 확인). 자동 열기도 카톡 PC 앱
+#   UI(검색 아이콘 고정 픽셀 오프셋)에 의존해 버전 변경에 취약할 수 있음 — 실패 시
+#   RoomNotOpenError로 명확히 실패하며 GM 수동 열기로 폴백.
 #   2026-07-06 GM PC 라이브 검증: "웰페리온 운영부" 방 dry-run+실전송 둘 다 성공
 #   확인(scripts/poc-evidence/ 스크린샷 증빙). 나머지 2방(회장님·관리부)은 오발송
 #   방지를 위해 이번 세션에서 열지 않아 미검증 — GM이 3방을 열어둔 뒤 재확인 필요.
+#   (자동 방 열기 자체는 "김남욱" 방으로 안전 검증 완료.)
 
 from __future__ import annotations
 
@@ -249,38 +265,110 @@ def focus_window(win, room_name: str) -> None:
     time.sleep(0.3)
 
 
-# ── 폴백(최후수단) — 방 창이 안 열려 있을 때만 시도. 카톡 메인창 검색은
-#    UIA 트리가 버전에 취약해 실패가 잦다(당초 실패 원인). 주 경로는 항상
-#    find_room_window(이미 열린 방 창 제목 탐색)이며, 이 폴백은 보너스일 뿐이다.
-def find_kakao_main_window():
-    """카카오톡 메인창(친구/채팅 목록) 탐색. 실행 안 돼 있으면 예외."""
-    candidates = Desktop(backend="uia").windows(title_re=".*카카오톡.*", top_level_only=True)
-    for w in candidates:
-        if w.window_text().strip() == "카카오톡":
-            return w
-    if candidates:
-        return candidates[0]
+# ── 자동 방 열기(2026-07-06 추가, GM PC 라이브 실측 검증 완료) — 방 창을 못 찾았을 때
+#    카톡 메인창 검색으로 자동으로 방을 연다. §0-4/§0-5 실측 함정 참조.
+def find_kakao_main_window() -> int:
+    """카카오톡 메인창(친구/채팅 목록) hwnd 탐색. 실행 안 돼 있으면 예외.
+
+    창-제목 탐색과 동일한 방식(_enum_visible_top_level_windows)으로 클래스=
+    EVA_Window_Dblclk·제목="카카오톡" 완전일치를 찾는다. hwnd(int)를 반환하는 이유:
+    검색 Edit 활성화 여부 판정에 win32 EnumChildWindows가 필요해 uia
+    WindowSpecification보다 hwnd가 다루기 쉽다(open_room_via_search 참조)."""
+    for hwnd, title, cls in _enum_visible_top_level_windows():
+        if cls == KAKAO_ROOM_WINDOW_CLASS and title.strip() == KAKAO_MAIN_WINDOW_TITLE:
+            return hwnd
     raise RuntimeError("카카오톡 메인창을 찾지 못함 — 앱이 실행 중인지 확인 필요")
 
 
-def open_room_via_search(main_win, room_name: str, timeout: float = 15.0):
-    """메인창 상단 검색으로 room_name 검색 → 첫 결과 열기 → 해당 채팅방 창 반환.
-    (폴백 전용 — 취약함을 알고 최후수단으로만 사용)"""
-    main_win.set_focus()
-    time.sleep(0.3)
+def _find_visible_search_edit(main_hwnd: int):
+    """메인창 자식 중 '검색이 활성화된' Edit 컨트롤(hwnd)을 찾는다.
 
-    edits = main_win.descendants(control_type="Edit")
-    if not edits:
-        raise RuntimeError(f"[{room_name}] 카카오톡 검색창(Edit)을 찾지 못함")
-    search_box = edits[0]
-    search_box.click_input()
-    time.sleep(0.2)
-    search_box.type_keys("^a", pause=0.05)  # 기존 검색어 있으면 전체선택
-    search_box.type_keys(room_name, with_spaces=True, pause=0.03)
+    실측(2026-07-06): 카톡 검색 Edit는 평소(비활성) rect가 폭 0으로 붕괴돼 있어
+    (GetWindowRect 좌우폭=0) UIA descendants(control_type="Edit")로는 아예 안 잡힌다
+    (당초 "검색창 Edit 못 찾음" 실패 원인). win32 EnumChildWindows로 class_name="Edit"
+    이면서 visible=True + 폭/높이 > 0인 것만 골라내면 활성화된 실제 검색창을 정확히
+    특정할 수 있다(우상단 돋보기 아이콘 클릭 직후에만 폭>0으로 나타남)."""
+    found = []
+
+    def _cb(hwnd, _acc):
+        try:
+            if win32gui.GetClassName(hwnd) == "Edit" and win32gui.IsWindowVisible(hwnd):
+                left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+                if right > left and bottom > top:
+                    found.append(hwnd)
+        except Exception:
+            pass
+        return True
+
+    win32gui.EnumChildWindows(main_hwnd, _cb, None)
+    return found[0] if found else None
+
+
+def _click_search_icon(main_hwnd: int) -> None:
+    """메인창 우상단 돋보기(검색) 아이콘 클릭 — 검색 Edit 활성화 트리거.
+
+    실측(2026-07-06): 이 아이콘은 UIA/win32 컨트롤 트리에 별도 버튼으로 노출되지
+    않는 커스텀 그림 아이콘이라, 창 우상단 기준 고정 픽셀 오프셋으로 클릭한다
+    (창 우측 끝에서 좌로 112px, 상단에서 아래로 57px 지점 — 라이브 실측·검증됨).
+    창 크기가 달라져도 이 아이콘 행은 고정 높이 툴바라 오프셋이 유지될 것으로 본다."""
+    left, top, right, _bottom = win32gui.GetWindowRect(main_hwnd)
+    pyautogui.click(right - 112, top + 57)
+
+
+def open_room_via_search(main_hwnd: int, room_name: str, timeout: float = 10.0):
+    """카톡 메인창 검색으로 room_name을 찾아 자동으로 열고 그 채팅방 창을 반환한다.
+
+    (2026-07-06 GM PC 라이브 실측 검증 완료 — "김남욱" 방을 의도적으로 닫은 뒤
+    이 경로로 자동 재오픈 성공 확인.) 절차:
+      1) 검색 Edit이 이미 활성 상태가 아니면 우상단 돋보기 아이콘 클릭으로 활성화
+         (_click_search_icon) → _find_visible_search_edit로 재탐색.
+      2) Edit 클릭해 포커스 확보 → 기존 텍스트는 End/Shift+Home/Delete로만 제거
+         (★Ctrl+A 절대 금지 — 실측 확인: 이 앱은 Ctrl+A를 편집칸 전체선택이 아닌
+         **전역 단축키("친구 추가" 다이얼로그 오픈)**로 가로챈다. 라이브에서 실제로
+         이 다이얼로그가 뜬 것을 확인하고 Escape로 안전하게 닫아 회피했다).
+      3) 클립보드 경유 Ctrl+V로 room_name 붙여넣기(paste_text와 동일 원칙 — 한글은
+         type_keys로 직접 타이핑 시 IME 조합이 안 돼 깨진다).
+      4) Enter로 최상단 검색결과 열기(라이브 실측: 정확히 일치하는 방 이름이면
+         Enter 한 번으로 그 방이 곧바로 열림 — Down 키 불필요).
+      5) 새 방 창(EVA_Window_Dblclk·제목=room_name **완전일치**)이 뜰 때까지 폴링.
+         제목이 정확히 일치하는 창만 성공으로 인정한다 — 오발송 방지: 확인 안 된
+         창에는 절대 진행하지 않는다(엉뚱한 방이 열려도 타임아웃으로 안전 실패)."""
+    main_win = Desktop(backend="win32").window(handle=main_hwnd)
+    focus_window(main_win, "카카오톡(메인창)")
+
+    edit_hwnd = _find_visible_search_edit(main_hwnd)
+    if edit_hwnd is None:
+        _click_search_icon(main_hwnd)
+        time.sleep(0.6)
+        edit_hwnd = _find_visible_search_edit(main_hwnd)
+    if edit_hwnd is None:
+        raise RuntimeError(f"[{room_name}] 카톡 검색창 활성화 실패(돋보기 아이콘 클릭 후에도 Edit 못 찾음)")
+
+    edit = Desktop(backend="win32").window(handle=edit_hwnd)
+    edit.click_input()
+    time.sleep(0.15)
+    # 기존 검색어 제거(Ctrl+A 금지 — 위 함정 참조) — End→Shift+Home→Delete만 사용
+    edit.type_keys("{END}", pause=0.05)
+    edit.type_keys("+{HOME}", pause=0.05)
+    edit.type_keys("{DELETE}", pause=0.05)
+    time.sleep(0.15)
+
+    prev_clip = None
+    try:
+        prev_clip = pyperclip.paste()
+    except Exception:
+        pass
+    pyperclip.copy(room_name)
+    time.sleep(0.1)
+    edit.type_keys("^v", pause=0.1)
     time.sleep(0.8)  # 검색 결과 렌더 대기
-    search_box.type_keys("{DOWN}", pause=0.1)  # 첫 결과 하이라이트
-    time.sleep(0.2)
-    search_box.type_keys("{ENTER}", pause=0.1)  # 채팅방 열기
+    if prev_clip is not None:
+        try:
+            pyperclip.copy(prev_clip)
+        except Exception:
+            pass
+
+    edit.type_keys("{ENTER}", pause=0.1)  # 최상단 검색결과 열기
 
     # 새 채팅방 창이 뜰 때까지 폴링(주 경로와 동일하게 창-제목 완전일치로 확인)
     deadline = time.time() + timeout
@@ -290,9 +378,9 @@ def open_room_via_search(main_win, room_name: str, timeout: float = 15.0):
                 room_win = Desktop(backend="uia").window(handle=hwnd)
                 focus_window(room_win, room_name)
                 return room_win
-        time.sleep(0.5)
+        time.sleep(0.4)
 
-    raise RuntimeError(f"[{room_name}] 채팅방 창을 열지 못함(검색 폴백도 실패, {timeout}초 대기)")
+    raise RuntimeError(f"[{room_name}] 검색으로 열었으나 방 창을 확인 못함({timeout}초 대기)")
 
 
 def get_input_box(room_win, room_name: str):
@@ -417,15 +505,17 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
 
     try:
         room_win = find_room_window(room_name)
-        log(f"[{room_name}] 방 창 발견(창-제목 탐색 성공)")
-    except RoomNotOpenError as exc:
-        log(f"[{room_name}] 방 창 탐색 실패 — 검색 폴백 시도(최후수단): {exc}")
+        log(f"[{room_name}] 방 창 발견(창-제목 탐색 성공, 이미 열려 있었음)")
+    except RoomNotOpenError:
+        log(f"[{room_name}] 방 창이 안 열려 있음 — 카톡 메인창 검색으로 자동 열기 시도")
         try:
-            main_win = find_kakao_main_window()
-            room_win = open_room_via_search(main_win, room_name)
-            log(f"[{room_name}] 검색 폴백으로 방 창 확보")
-        except Exception:
-            raise exc  # 원인은 "방이 안 열려 있음" — 폴백 실패는 부가정보일 뿐
+            main_hwnd = find_kakao_main_window()
+            room_win = open_room_via_search(main_hwnd, room_name)
+            log(f"[{room_name}] 자동 열기 성공(검색)")
+        except Exception as open_exc:
+            raise RoomNotOpenError(
+                f"방 '{room_name}'을 자동으로 열지 못함({open_exc}). 카톡에서 직접 열어두세요."
+            ) from open_exc
 
     focus_window(room_win, room_name)
     image_to_clipboard(image_path)
