@@ -28,7 +28,67 @@
     },
     {
       "id": "ceo",
-      "nsmap": { "kpi": "ERP 자율화·상품화 (4축 복합)", "axes":[ {"name":"ERP 완성도%","measured":true,"value_key":"erp_progress","goal":"100%","note":"수동 집계"}, {"name":"C레벨 실행 완결률","measured":false,"goal":"누적 완결","note":"배관수리·누적 분리 필요"}, {"name":"자율 액션/주","measured":true,"value_key":"autoscan_actions","goal":"증가","note":"라이브 로그(gm_observation/scan)"}, {"name":"상품화 준비","measured":false,"goal":"외부 판매","note":"미착수"} ], "tier": "🔧 배관수리(누적 분리 필요)", "현재": "일일 스냅샷만(매일 0 리셋)", "goal": "목표 GM 확정 필요 — 누적 분리 후", "path": "완결률↑ = 전사 배가 북극성까지 도달", "reach": { "mode": "milestone", "note": "제안본 — GM/웰리 조정 가능. done=수동 결재 플래그", "milestones": [ { "key": "loop", "label": "C레벨 자율완결 루프 가동", "done": true }, { "key": "kpi_infra", "label": "KPI 측정 인프라 구축(엔진 완비·역할별 개통 진행)", "done": true }, { "key": "erp_internal", "label": "ERP 내부 완성도 100%", "done": false }, { "key": "first_sale", "label": "외부 판매 첫 사례", "done": false } ] } },
+      "nsmap": {
+        "kpi": "ERP 자율화·상품화 (4축 복합)",
+        "axes": [
+          {
+            "name": "ERP 완성도%",
+            "measured": true,
+            "value_key": "erp_progress",
+            "goal": "100%",
+            "note": "수동 집계"
+          },
+          {
+            "name": "C레벨 실행 완결률",
+            "measured": false,
+            "goal": "누적 완결",
+            "note": "배관수리·누적 분리 필요"
+          },
+          {
+            "name": "자율 액션/주",
+            "measured": true,
+            "value_key": "autoscan_actions",
+            "goal": "증가",
+            "note": "라이브 로그(gm_observation/scan)"
+          },
+          {
+            "name": "상품화 준비",
+            "measured": false,
+            "goal": "외부 판매",
+            "note": "미착수"
+          }
+        ],
+        "tier": "🔧 배관수리(누적 분리 필요)",
+        "현재": "일일 스냅샷만(매일 0 리셋)",
+        "goal": "목표 GM 확정 필요 — 누적 분리 후",
+        "path": "완결률↑ = 전사 배가 북극성까지 도달",
+        "reach": {
+          "mode": "milestone",
+          "note": "제안본 — GM/웰리 조정 가능. done=수동 결재 플래그",
+          "milestones": [
+            {
+              "key": "loop",
+              "label": "C레벨 자율완결 루프 가동",
+              "done": true
+            },
+            {
+              "key": "kpi_infra",
+              "label": "KPI 측정 인프라 구축(엔진 완비·역할별 개통 진행)",
+              "done": true
+            },
+            {
+              "key": "erp_internal",
+              "label": "ERP 내부 완성도 100%",
+              "done": false
+            },
+            {
+              "key": "first_sale",
+              "label": "외부 판매 첫 사례",
+              "done": false
+            }
+          ]
+        }
+      },
       "icon": "🧭",
       "name": "웰리",
       "title": "AI CEO",
@@ -61,7 +121,59 @@
     },
     {
       "id": "cmo",
-      "nsmap": { "kpi": "노출→회원 전환 엔진 (3축 복합)", "axes":[ {"name":"노출→문의 전환율","measured":false,"goal":"측정 개통","note":"분자(채널귀속 클릭·문의)는 실측(click_stats·funnel_conversion 라이브) · 분모(노출)는 IG Graph API 토큰 없어 미측정 — 가짜 분모 금지"}, {"name":"발행 무인화율","measured":false,"goal":"완전 무인","note":"부분·검수 GM 게이트"}, {"name":"월 ROI","measured":false,"goal":"양(+)","note":"미측정"} ], "tier": "★ 미측정(배관 필요 · 1순위 투자)", "현재": "채널별 클릭·문의 귀속만 실측(노출 없음)", "goal": "측정 개통", "path": "전환율↑ = 노출이 문의로 = 전환 엔진 가동", "reach": { "mode": "milestone", "note": "제안본 — GM/웰리 조정 가능. done=수동 결재 플래그", "milestones": [ { "key": "ig_bio_link", "label": "IG bio 문의링크", "done": false }, { "key": "utm_tag", "label": "UTM 태깅", "done": true }, { "key": "channel_attr", "label": "채널귀속 측정개통", "done": true }, { "key": "conv_rate", "label": "노출→문의 전환율 실측", "done": false } ] } },
+      "nsmap": {
+        "kpi": "노출→회원 전환 엔진 (3축 복합)",
+        "axes": [
+          {
+            "name": "노출→문의 전환율",
+            "measured": false,
+            "goal": "측정 개통",
+            "note": "분자(채널귀속 클릭·문의)는 실측(click_stats·funnel_conversion 라이브) · 분모(노출)는 IG Graph API 토큰 없어 미측정 — 가짜 분모 금지"
+          },
+          {
+            "name": "발행 무인화율",
+            "measured": false,
+            "goal": "완전 무인",
+            "note": "부분·검수 GM 게이트"
+          },
+          {
+            "name": "월 ROI",
+            "measured": false,
+            "goal": "양(+)",
+            "note": "미측정"
+          }
+        ],
+        "tier": "★ 미측정(배관 필요 · 1순위 투자)",
+        "현재": "채널별 클릭·문의 귀속만 실측(노출 없음)",
+        "goal": "측정 개통",
+        "path": "전환율↑ = 노출이 문의로 = 전환 엔진 가동",
+        "reach": {
+          "mode": "milestone",
+          "note": "제안본 — GM/웰리 조정 가능. done=수동 결재 플래그",
+          "milestones": [
+            {
+              "key": "ig_bio_link",
+              "label": "IG bio 문의링크",
+              "done": true
+            },
+            {
+              "key": "utm_tag",
+              "label": "UTM 태깅",
+              "done": true
+            },
+            {
+              "key": "channel_attr",
+              "label": "채널귀속 측정개통",
+              "done": true
+            },
+            {
+              "key": "conv_rate",
+              "label": "노출→문의 전환율 실측",
+              "done": false
+            }
+          ]
+        }
+      },
       "icon": "📣",
       "name": "시모",
       "title": "AI CMO",
@@ -95,17 +207,78 @@
         }
       ],
       "channels": [
-        {"label":"인스타그램","desc":"@wellperion 공식 + @namuk.wellperion 개인 AI시리즈 · M3 승인→봇 자동발행"},
-        {"label":"네이버 블로그","desc":"SmartEditor 실발행 · 해시태그 발행칸 · 문의 링크카드"},
-        {"label":"네이버 카페","desc":"동부이촌동 커뮤니티 · 자동 발행"},
-        {"label":"카카오 채널","desc":"비즈채널 · 자동 발행"},
-        {"label":"당근","desc":"비즈프로필 · 완전 자동 발행"}
+        {
+          "label": "인스타그램",
+          "desc": "@wellperion 공식 + @namuk.wellperion 개인 AI시리즈 · M3 승인→봇 자동발행"
+        },
+        {
+          "label": "네이버 블로그",
+          "desc": "SmartEditor 실발행 · 해시태그 발행칸 · 문의 링크카드"
+        },
+        {
+          "label": "네이버 카페",
+          "desc": "동부이촌동 커뮤니티 · 자동 발행"
+        },
+        {
+          "label": "카카오 채널",
+          "desc": "비즈채널 · 자동 발행"
+        },
+        {
+          "label": "당근",
+          "desc": "비즈프로필 · 완전 자동 발행"
+        }
       ],
       "ideas": "📣 채널 반응 폐루프 자동화(통한 콘텐츠→다음 기획 자동 반영) + 문의 유입 예측·개인화 CTA"
     },
     {
       "id": "coo",
-      "nsmap": { "kpi": "무인 운영 (5축 복합)", "axes":[ {"name":"4부서 점검 완료율","measured":true,"value_key":"지원부_점검완료율","goal":"≥95%","note":"지원부만 실측·타 부서 미개통"}, {"name":"결재 자동화율","measured":false,"goal":"자동 승인 라우팅","note":"수동 결재·배관 전"}, {"name":"VOC 무인 처리율","measured":false,"goal":"예외만 사람","note":"라우팅 수동"}, {"name":"SOP 자동화 커버리지","measured":false,"goal":"핵심 SOP 자동","note":"미착수"}, {"name":"운영 마찰 인시던트","measured":false,"goal":"0 지향","note":"집계 전"} ], "tier": "✅ 측정개통 (지원부 GAS 라이브)", "value_key": "지원부_점검완료율", "현재": "라이브 실측 (kpi_values · 점검 전=대기)", "goal": "≥95% (확정)", "path": "점검 완료율↑ = 무인 운영에 근접", "reach": { "mode": "measured", "source": "kpi_values.roles.coo", "value_key": "지원부_점검완료율", "target": 0.95 } },
+      "nsmap": {
+        "kpi": "무인 운영 (5축 복합)",
+        "axes": [
+          {
+            "name": "4부서 점검 완료율",
+            "measured": true,
+            "value_key": "지원부_점검완료율",
+            "goal": "≥95%",
+            "note": "지원부만 실측·타 부서 미개통"
+          },
+          {
+            "name": "결재 자동화율",
+            "measured": false,
+            "goal": "자동 승인 라우팅",
+            "note": "수동 결재·배관 전"
+          },
+          {
+            "name": "VOC 무인 처리율",
+            "measured": false,
+            "goal": "예외만 사람",
+            "note": "라우팅 수동"
+          },
+          {
+            "name": "SOP 자동화 커버리지",
+            "measured": false,
+            "goal": "핵심 SOP 자동",
+            "note": "미착수"
+          },
+          {
+            "name": "운영 마찰 인시던트",
+            "measured": false,
+            "goal": "0 지향",
+            "note": "집계 전"
+          }
+        ],
+        "tier": "✅ 측정개통 (지원부 GAS 라이브)",
+        "value_key": "지원부_점검완료율",
+        "현재": "라이브 실측 (kpi_values · 점검 전=대기)",
+        "goal": "≥95% (확정)",
+        "path": "점검 완료율↑ = 무인 운영에 근접",
+        "reach": {
+          "mode": "measured",
+          "source": "kpi_values.roles.coo",
+          "value_key": "지원부_점검완료율",
+          "target": 0.95
+        }
+      },
       "icon": "🗂️",
       "name": "시우",
       "title": "AI COO",
@@ -143,7 +316,74 @@
     },
     {
       "id": "cto",
-      "nsmap": { "kpi": "백엔드 자율·보안 (5축 복합)", "axes":[ {"name":"자동화 가동률","measured":false,"goal":"≥99%","note":"가동률 집계 전"}, {"name":"장애 0","measured":true,"value_key":"health","goal":"0","note":"헬스체크"}, {"name":"무인증 GAS 0","measured":true,"value_key":"unauth_gas","goal":"0","note":"TODO API 공개·미해소"}, {"name":"미푸시 0","measured":true,"value_key":"unpushed","goal":"0"}, {"name":"정합 어긋남 0","measured":true,"value_key":"mirror_ok","goal":"0","note":"미러 검증"} ], "tier": "✅ 측정중", "현재": "미푸시 0 · drift/warn 감시중", "goal": "0 유지 · 자동화 가동률 ≥99% (확정)", "path": "0에 가까울수록 = GM이 백엔드 신경 끔", "reach": { "mode": "measured", "source": "kpi_values.global", "indicators": [ { "key": "unpushed", "label": "미푸시", "ok": "eq0" }, { "key": "health", "label": "장애", "ok": "eq:ok" }, { "key": "unauth_gas", "label": "무인증", "ok": "eq0" }, { "key": "mirror_ok", "label": "정합", "ok": "eq:ok" } ] } },
+      "nsmap": {
+        "kpi": "백엔드 자율·보안 (5축 복합)",
+        "axes": [
+          {
+            "name": "자동화 가동률",
+            "measured": false,
+            "goal": "≥99%",
+            "note": "가동률 집계 전"
+          },
+          {
+            "name": "장애 0",
+            "measured": true,
+            "value_key": "health",
+            "goal": "0",
+            "note": "헬스체크"
+          },
+          {
+            "name": "무인증 GAS 0",
+            "measured": true,
+            "value_key": "unauth_gas",
+            "goal": "0",
+            "note": "TODO API 공개·미해소"
+          },
+          {
+            "name": "미푸시 0",
+            "measured": true,
+            "value_key": "unpushed",
+            "goal": "0"
+          },
+          {
+            "name": "정합 어긋남 0",
+            "measured": true,
+            "value_key": "mirror_ok",
+            "goal": "0",
+            "note": "미러 검증"
+          }
+        ],
+        "tier": "✅ 측정중",
+        "현재": "미푸시 0 · drift/warn 감시중",
+        "goal": "0 유지 · 자동화 가동률 ≥99% (확정)",
+        "path": "0에 가까울수록 = GM이 백엔드 신경 끔",
+        "reach": {
+          "mode": "measured",
+          "source": "kpi_values.global",
+          "indicators": [
+            {
+              "key": "unpushed",
+              "label": "미푸시",
+              "ok": "eq0"
+            },
+            {
+              "key": "health",
+              "label": "장애",
+              "ok": "eq:ok"
+            },
+            {
+              "key": "unauth_gas",
+              "label": "무인증",
+              "ok": "eq0"
+            },
+            {
+              "key": "mirror_ok",
+              "label": "정합",
+              "ok": "eq:ok"
+            }
+          ]
+        }
+      },
       "icon": "🖥️",
       "name": "시토",
       "title": "AI CTO",
@@ -173,7 +413,72 @@
     },
     {
       "id": "cpo",
-      "nsmap": { "kpi": "문의→가입 퍼널 (5축 복합)", "axes":[ {"name":"문의→가입 전환율","measured":false,"goal":"측정 개통","note":"데이터 축적 전"}, {"name":"퍼널 잔류","measured":false,"goal":"단계별 가시화","note":"미집계"}, {"name":"진행상태 입력율","measured":false,"goal":"100%","note":"칸 라이브 전"}, {"name":"예약 활성","measured":false,"goal":"활성 추적","note":"미집계"}, {"name":"당월 회원 이탈률(LOSS)","measured":true,"value_key":"월_LOSS율","goal":"낮게 유지","note":"낮을수록 좋음(실측)"} ], "tier": "🔧 배관수리(곧)", "현재": "미측정(데이터 축적 전)", "goal": "측정 개통", "path": "전환율↑ = 문의→가입 퍼널 가시화·개선", "reach": { "mode": "milestone", "note": "제안본 — GM/웰리 조정 가능. done=수동 결재 플래그", "milestones": [ { "key": "stage_col_live", "label": "진행상태 칸 라이브", "done": false }, { "key": "inquiry_data", "label": "문의 데이터 축적", "done": false }, { "key": "inquiry_join_match", "label": "문의→가입 매칭", "done": false }, { "key": "conv_rate", "label": "전환율 측정개통", "done": false } ] } },
+      "nsmap": {
+        "kpi": "문의→가입 퍼널 (5축 복합)",
+        "axes": [
+          {
+            "name": "문의→가입 전환율",
+            "measured": false,
+            "goal": "측정 개통",
+            "note": "데이터 축적 전"
+          },
+          {
+            "name": "퍼널 잔류",
+            "measured": false,
+            "goal": "단계별 가시화",
+            "note": "미집계"
+          },
+          {
+            "name": "진행상태 입력율",
+            "measured": false,
+            "goal": "100%",
+            "note": "칸 라이브 전"
+          },
+          {
+            "name": "예약 활성",
+            "measured": false,
+            "goal": "활성 추적",
+            "note": "미집계"
+          },
+          {
+            "name": "당월 회원 이탈률(LOSS)",
+            "measured": true,
+            "value_key": "월_LOSS율",
+            "goal": "낮게 유지",
+            "note": "낮을수록 좋음(실측)"
+          }
+        ],
+        "tier": "🔧 배관수리(곧)",
+        "현재": "미측정(데이터 축적 전)",
+        "goal": "측정 개통",
+        "path": "전환율↑ = 문의→가입 퍼널 가시화·개선",
+        "reach": {
+          "mode": "milestone",
+          "note": "제안본 — GM/웰리 조정 가능. done=수동 결재 플래그",
+          "milestones": [
+            {
+              "key": "stage_col_live",
+              "label": "진행상태 칸 라이브",
+              "done": false
+            },
+            {
+              "key": "inquiry_data",
+              "label": "문의 데이터 축적",
+              "done": false
+            },
+            {
+              "key": "inquiry_join_match",
+              "label": "문의→가입 매칭",
+              "done": false
+            },
+            {
+              "key": "conv_rate",
+              "label": "전환율 측정개통",
+              "done": false
+            }
+          ]
+        }
+      },
       "icon": "👥",
       "name": "시포",
       "title": "AI CPO",
@@ -199,7 +504,46 @@
     },
     {
       "id": "cfo",
-      "nsmap": { "kpi": "재무 정확화 (4축 복합)", "axes":[ {"name":"월 매출 정확도","measured":true,"value_key":"sales_month","goal":"610.5M/월","note":"최근 마감월 실적(sales_monthly GAS 실측·배354)"}, {"name":"연간 달성률","measured":false,"goal":"연 목표","note":"부분·26년 분석시트 수동"}, {"name":"지출 연동","measured":false,"goal":"자동 연동","note":"구매성 상수·부분"}, {"name":"이상감지 소요","measured":false,"goal":"자동 경보","note":"미구현"} ], "tier": "🔧 배관수리(매출 배선+지출 칸)", "현재": "미측정", "goal": "측정 개통", "path": "매출·지출 연동↑ = 재무 한눈에", "reach": { "mode": "measured", "source": "kpi_values.roles.cfo", "value_key": "sales_month", "target": 610500000 } },
+      "nsmap": {
+        "kpi": "재무 정확화 (4축 복합)",
+        "axes": [
+          {
+            "name": "월 매출 정확도",
+            "measured": true,
+            "value_key": "sales_month",
+            "goal": "610.5M/월",
+            "note": "최근 마감월 실적(sales_monthly GAS 실측·배354)"
+          },
+          {
+            "name": "연간 달성률",
+            "measured": false,
+            "goal": "연 목표",
+            "note": "부분·26년 분석시트 수동"
+          },
+          {
+            "name": "지출 연동",
+            "measured": false,
+            "goal": "자동 연동",
+            "note": "구매성 상수·부분"
+          },
+          {
+            "name": "이상감지 소요",
+            "measured": false,
+            "goal": "자동 경보",
+            "note": "미구현"
+          }
+        ],
+        "tier": "🔧 배관수리(매출 배선+지출 칸)",
+        "현재": "미측정",
+        "goal": "측정 개통",
+        "path": "매출·지출 연동↑ = 재무 한눈에",
+        "reach": {
+          "mode": "measured",
+          "source": "kpi_values.roles.cfo",
+          "value_key": "sales_month",
+          "target": 610500000
+        }
+      },
       "icon": "💰",
       "name": "시뽀",
       "title": "AI CFO",
@@ -225,7 +569,65 @@
     },
     {
       "id": "chro",
-      "nsmap": { "kpi": "인사 시스템화 (4축 복합)", "axes":[ {"name":"평가 체계 가동","measured":false,"goal":"가동","note":"미구현"}, {"name":"교육 이수율","measured":false,"goal":"100%","note":"집계 미구현"}, {"name":"이슈 리드타임","measured":false,"goal":"단축","note":"미측정"}, {"name":"소속 정합","measured":false,"goal":"정합","note":"미측정"} ], "tier": "★ 미측정(후순위)", "현재": "미측정(집계 미구현)", "goal": "목표 GM 확정 필요", "path": "이수율↑ = 인사가 시스템으로", "reach": { "mode": "milestone", "note": "제안본 — GM/웰리 조정 가능. done=수동 결재 플래그", "milestones": [ { "key": "edu_material_live", "label": "교육자료 라이브", "done": false }, { "key": "completion_pipe", "label": "이수 집계 배관", "done": false }, { "key": "eval_parity", "label": "평가체계 정합", "done": false }, { "key": "completion_rate", "label": "교육이수율 실측", "done": false } ] } },
+      "nsmap": {
+        "kpi": "인사 시스템화 (4축 복합)",
+        "axes": [
+          {
+            "name": "평가 체계 가동",
+            "measured": false,
+            "goal": "가동",
+            "note": "미구현"
+          },
+          {
+            "name": "교육 이수율",
+            "measured": false,
+            "goal": "100%",
+            "note": "집계 미구현"
+          },
+          {
+            "name": "이슈 리드타임",
+            "measured": false,
+            "goal": "단축",
+            "note": "미측정"
+          },
+          {
+            "name": "소속 정합",
+            "measured": false,
+            "goal": "정합",
+            "note": "미측정"
+          }
+        ],
+        "tier": "★ 미측정(후순위)",
+        "현재": "미측정(집계 미구현)",
+        "goal": "목표 GM 확정 필요",
+        "path": "이수율↑ = 인사가 시스템으로",
+        "reach": {
+          "mode": "milestone",
+          "note": "제안본 — GM/웰리 조정 가능. done=수동 결재 플래그",
+          "milestones": [
+            {
+              "key": "edu_material_live",
+              "label": "교육자료 라이브",
+              "done": false
+            },
+            {
+              "key": "completion_pipe",
+              "label": "이수 집계 배관",
+              "done": false
+            },
+            {
+              "key": "eval_parity",
+              "label": "평가체계 정합",
+              "done": false
+            },
+            {
+              "key": "completion_rate",
+              "label": "교육이수율 실측",
+              "done": false
+            }
+          ]
+        }
+      },
       "icon": "🧑‍💼",
       "name": "시로",
       "title": "AI CHRO",
