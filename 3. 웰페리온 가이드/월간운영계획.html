@@ -847,7 +847,7 @@
   var _editMode = false;
   var _view = 'month';    // 'month'=월별 상세(기존 · 기본) | 'annual'=연간 A3(로드맵 한 장)
   var _finReady = false;      // CFO 재무 미러 도착 여부(false=로딩 중 — fin/sales-history 보드는 '불러오는 중' 표기, 첫 렌더에서 실패 오인 방지)
-  var _checkTriggered = false; // 하단 점검·이슈 보드 지연 로드(IntersectionObserver) 발동 여부
+  var _checkTriggered = false; // 하단 점검·이슈 보드 로드(부팅 시 eager) 중복호출 방지 — 페이지당 1회만 발동
   var _checkReady = false;    // 점검·이슈 소스(kpi/support/voc) 도착 여부(true일 때만 render()에서 재렌더)
 
   // ── 경영진 보고 = 상시(토글 없음): C-Level 표기 항상 공식 직함. 닉네임 뷰 미노출. ──
@@ -2246,7 +2246,7 @@
       _devCounts = computeDevCounts(_data);
       buildMonthSelect();
       render();
-      startLazyChecks();
+      loadCheckSources();
     }).catch(function(e){
       document.getElementById('obj-board').innerHTML =
         '<div class="board-status">월간 계획 정본을 불러오지 못했습니다 (' + esc(e.message) +
@@ -2295,7 +2295,9 @@
     });
   }
 
-  // ── 하단 점검·이슈 보드 지연 로드: 🔧 점검 섹션이 화면에 들어올 때만 kpi/voc fetch(첫 화면 요청에서 제외). 지원부 점검 월간 집계는 renderCheckStatus가 선택월별로 kick-off. ──
+  // ── 하단 점검·이슈 보드 로드: 부팅 시 즉시(eager) kpi/voc fetch — GM 지시 2026-07-06: 舊 IntersectionObserver 지연로드(스크롤해야 발동)는
+  //    무스크롤 print(Ctrl+P·print-to-PDF)에서 GAS 호출조차 안 돼 점검 보드가 인쇄본에 영구 '불러오는 중…'으로 남는 결함(요청#4 무력화) → eager 전환.
+  //    _checkTriggered로 페이지당 1회만 호출(중복 방지). 지원부 점검 월간 집계(monthly_report)는 renderCheckStatus가 선택월별로 별도 kick-off. ──
   function loadCheckSources(){
     if(_checkTriggered) return;
     _checkTriggered = true;
@@ -2307,14 +2309,6 @@
       _checkReady = true;
       if(_data){ renderCheckStatus(); renderIssues(); }
     });
-  }
-  function startLazyChecks(){
-    var target = document.getElementById('check-board');
-    if(!target || !('IntersectionObserver' in window)){ loadCheckSources(); return; }
-    var io = new IntersectionObserver(function(entries){
-      for(var i = 0; i < entries.length; i++){ if(entries[i].isIntersecting){ io.disconnect(); loadCheckSources(); break; } }
-    }, {rootMargin:'200px'});
-    io.observe(target);
   }
 
   boot();
