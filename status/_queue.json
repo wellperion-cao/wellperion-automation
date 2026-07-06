@@ -368,5 +368,19 @@
     "note": "[2026-07-06 GM 지시] 9시 매출보고 텔레그램 사진 아래 인라인버튼(\"📤 카톡 3방 전송\") 탭 → 카톡 3방(차의주 회장님/웰페리온 관리부/웰페리온 운영부) UI자동 전송. 구현 완료: ①scripts/kakao_report_sender.py(핵심 실행기, pywinauto+pywin32 클립보드 CF_DIB, --dry-run/--only-room 안전장치, py_compile+의존성 자동설치 확인) ②scripts/kakao_rooms.json(방 목록 설정) ③telegram_bot/bot.py cmd_kakao_send_callback(callback_data=kakao_send, 사진+캡션 그대로 다운로드→서브프로세스 실행→1줄 회신, 기존 폴링 무접촉·모듈 임포트 검증 완료) ④GAS 매출보고_자동발송.js sendTelegramPhoto에 인라인버튼 추가·clasp push -f 성공(라이브 반영). 스펙=docs/superpowers/specs/2026-07-06-카톡-매출보고-원클릭-전송기-design.md. 한계: 카톡 UI자동화는 개발환경에 카톡 미설치라 실제 방검색·전송은 GM PC 실환경에서만 검증 가능. 봇 콜백은 다음 재기동 시 발효.",
     "next": "GM PC 실발송 테스트(dry-run→회장님방 제외 1방→3방)",
     "depends_on": ""
+  },
+  {
+    "task_id": "CTO-2026-07-06-ADHOC-f91ffae6",
+    "clevel": "cto",
+    "title": "[시토] 카톡 매출보고 원클릭 3방 전송기 — 텔레그램 버튼→카톡 UI자동 전송",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 489,
+    "artifact": "9시 매출보고 텔레그램 사진 아래 인라인버튼(📤 카톡 3방 전송) 탭 한 번으로\n카톡 3방(차의주 회장님/웰페리온 관리부/웰페리온 운영부)에 그 사진+캡션을\n그대로 자동 전송. 카톡 그룹방은 공식 API 불가 → 카카오톡 PC 앱 UI 자동화\n(pywinauto+pywin32 클립보드)로 처리. (CLI ad-hoc · 커밋 f91ffae6)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f91ffae606416af5a7e85d729db3700915545e51"
   }
 ]
