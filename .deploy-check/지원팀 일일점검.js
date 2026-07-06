@@ -533,6 +533,7 @@ function doGet(e) {
   if (action === 'hide_issue_col') { return hideIssueColumn(e.parameter.dept || 'support'); }   // G열(이슈·인덱스6) 데이터행 비우기 + 컬럼 숨김(물리삭제 X·인덱스 보존). 1회성. 2026-06-20 시우.
   if (action === 'show_issue_col') { return showIssueColumn(e.parameter.dept || 'support'); }   // G열 숨김 해제 — hide_issue_col 실행 후 이슈 저장 재활성화 시 1회 실행. 2026-06-25 시우.
   if (action === 'clear_old_duration') { return clearOldDuration(e.parameter.dept || 'support'); }   // O열(소요시간·인덱스14) 옛 시각값(1899-12-30 시리얼) 비우기. 컬럼 숨김 X — 소요시간은 화면 표시 유지. 1회성. 2026-06-20 시우.
+  if (action === 'reset_facility_common') { return resetFacilityCommon(); }   // 시설_공용구역 옛 데이터 백업 후 데이터행 비움(헤더 보존). 1회성. 2026-07-06 시우.
   if (action === 'fix_item_type_dept') {   // 지정 항목ID의 타입(7열)→check·부서(9열)→support 정정. F/G 칸어긋남 교정. GET ?action=fix_item_type_dept&ids=f1,f2,...,g1. 2026-06-27 시우.
     var _fim = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ITEMS);
     if (!_fim) return jsonRes({ error: 'no SHEET_ITEMS' });
@@ -924,6 +925,21 @@ function clearOldDuration(dept) {
     log.push(name + ' O열 옛값 비움' + cleared + '행');
   });
   return jsonRes({ ok: true, dept: dept, col: 'O(소요시간/index14)', log: log });
+}
+
+// 시설_공용구역 옛/테스트 데이터 백업 후 청소 — 오늘 라이브 클린스타트(2026-07-06 시우·GM).
+// 안전: ① 백업 탭(시설_공용구역_bak_yyyyMMdd_HHmm) 사본 먼저 생성 ② 헤더 보존, 데이터행만 삭제.
+// GET ?action=reset_facility_common
+function resetFacilityCommon() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(SHEET_FACILITY_COMMON);
+  if (!sh) return jsonRes({ ok:false, error:'시설_공용구역 없음' });
+  var last = sh.getLastRow();
+  var stamp = Utilities.formatDate(new Date(),'Asia/Seoul','yyyyMMdd_HHmm');
+  var bak = sh.copyTo(ss).setName(SHEET_FACILITY_COMMON+'_bak_'+stamp);
+  var removed = Math.max(0, last-1);
+  if (last > 1) sh.getRange(2,1,last-1,Math.max(HEADERS.length, sh.getLastColumn())).clearContent();
+  return jsonRes({ ok:true, backup: bak.getName(), removedRows: removed });
 }
 
 // 항목 마스터(지원_매뉴얼)에서 특정 dept 행 제거(GM 2026-06-12) — 깨진 인코딩 facility 데드행 정리·경량화.
@@ -2737,12 +2753,13 @@ function saveFacilityMeasure(body) {
       done ? '완료' : '미완료', '', '',
       done ? '제출완료' : '미제출', done ? now : '',
       inspector, inspector,
-      measure, '', done ? now : ''
-    ];   // 15열(HEADERS와 일치): …측정값·반영완료·점검시각. 점검시각=입력시각(done일 때).
+      measure, '', ''
+    ];   // 15열(HEADERS와 일치): …측정값·반영완료·소요시간. 소요시간=항상 빈값(시설 단발측정=타이머 없음, 제출시각은 col9). 2026-07-06 시우.
   });
   if (rows.length) {
     var startRow = sheet.getLastRow() + 1;
     sheet.getRange(startRow, 1, rows.length, HEADERS.length).setValues(rows);
+    _sortByDateDesc(sheet);   // 날짜 내림차순 정렬(+제출시각). 2026-07-06 시우.
   }
   var doneCnt = 0; rows.forEach(function (r) { if (r[5] === '완료') doneCnt++; });
   return jsonRes({ ok: true, dept: 'facility', date: date, round: round, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0 });
