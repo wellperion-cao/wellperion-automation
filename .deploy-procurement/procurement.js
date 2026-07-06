@@ -13,14 +13,15 @@ function doGet(e){ return route((e && e.parameter) || {}); }
 function doPost(e){
   var p = {};
   try { p = JSON.parse(e.postData.contents); } catch(err){ p = (e && e.parameter) || {}; }
-  return route(p);
+  try { return route(p); }
+  catch(err2){ console.error("[route]", p && p.action, String(err2)); return out({ ok:false, error:"server_error: " + String(err2) }); } // 무음 장애 방지(2026-07-06 감사)
 }
 function route(p){
   if (p.action === "lowprice_set") return lowpriceSet(p); // 검토결과 쓰기(별도 시트·adminPassword) — 기존 게이트 앞 분기
   if (p.action === "lowprice_del") return lowpriceDel(p); // 검토결과 행삭제(별도 시트·adminPassword) — 기존 게이트 앞 분기
-  if (p.action === "diag_naver") return diagNaver(p);     // 임시 진단: GAS→네이버 UrlFetchApp 가능 여부·스코프 확인
   if (String(p.password) !== PW) return out({ ok:false, error:"unauthorized" });
   switch (p.action){
+    case "diag_naver": return diagNaver(p); // 진단(2026-07-06 감사: 무인증→비번 게이트 뒤로 이동)
     case "list":    return listItems(p);
     case "add":     return addItem(p);
     case "status":  return setStatus(p);
@@ -78,6 +79,7 @@ function dateNum(s){
 }
 function listItems(p){
   p = p || {};
+  var noimg = !!p.noimg; // 경량 모드: 이미지·증빙 base64 제외(이상지출 집계 등 필드만 필요할 때 — 2026-07-06 감사)
   var mode = p.mode || "active"; // active=품의/검토/정산(미완료), done=그 외(완료/승인 등, 기간필터)
   var ACTIVE = {"품의":1,"검토":1,"정산":1};
   var s = sh(); var lr = s.getLastRow();
@@ -100,8 +102,8 @@ function listItems(p){
     data.push({
       row: FIRST_ROW + i,
       날짜: fmtDate(r[0]), 요청자: r[2], 소속: r[3], 물품: r[4], 링크: r[5],
-      가격: r[6], 목적: r[7], 승인자: r[8], 이미지: extractImage(r[10], fm[i][0]), 상태: st,
-      승인날짜: fmtDate(r[12]), 지출증빙: driveThumb(String(r[14]||"")), 항목1: r[15], 항목2: r[16],
+      가격: r[6], 목적: r[7], 승인자: r[8], 이미지: noimg ? "" : extractImage(r[10], fm[i][0]), 상태: st,
+      승인날짜: fmtDate(r[12]), 지출증빙: noimg ? "" : driveThumb(String(r[14]||"")), 항목1: r[15], 항목2: r[16],
       번호: nos ? nos[i][0] : ""
     });
   }
@@ -112,6 +114,9 @@ function addItem(p){
   var s = sh();
   var now = new Date();
   var ts = Utilities.formatDate(now,"Asia/Seoul","yyyy. M. d a h:mm:ss");
+  // 동시 제출 경합 방지(2026-07-06 감사): append~행번호~고정번호 발급 전 구간을 LockService로 보호
+  var lock = LockService.getScriptLock();
+  var locked = false; try { locked = lock.tryLock(5000); } catch(eL){}
   // 컬럼순 채워서 append: 날짜,타임,요청자,소속,물품,링크,가격,목적,승인자,비고,이미지,진행상황
   s.appendRow([ today(), ts, p.요청자||"", p.소속||"", p.물품||"", p.링크||"",
                 p.가격||"", p.목적||"", p.승인자||"", p.비고||"", "", "품의",
@@ -123,16 +128,17 @@ function addItem(p){
   var mx = 0; for (var k=0;k<nos.length;k++){ var x=parseInt(String(nos[k][0]).replace(/[^0-9]/g,''),10); if(x>mx) mx=x; }
   var no = mx + 1;
   s.getRange(row, 25).setValue(no);
+  if (locked) { try { lock.releaseLock(); } catch(eL2){} }
   if (p.fileData) putPhoto(s, row, p); // 품의 첨부사진 → 이미지 열(=IMAGE 썸네일)
   var instant = null;
-  try { instant = instantLowprice_(row, p.물품||"", p.가격||""); } catch(e){ instant = { ok:false, error:String(e) }; } // 제출즉시 최저가(실패해도 품의는 성공)
+  try { instant = instantLowprice_(row, p.물품||"", p.가격||"", no); } catch(e){ console.error("[instant]", String(e)); instant = { ok:false, error:String(e) }; } // 제출즉시 최저가(실패해도 품의는 성공)
   return out({ ok:true, no:no, instant:instant });
 }
 
 /** 제출 즉시 최저가 조사 — 네이버 쇼핑 검색(가격 낮은순 1건) → 검토시트 upsert.
  *  키(Script Properties NAVER_CLIENT_ID/SECRET) 없으면 안전하게 skip. 단순검색이라 신뢰도 '하(참고)' → 9시 cron 에이전트가 보완(2단 구조).
  */
-function instantLowprice_(row, 물품, 가격){
+function instantLowprice_(row, 물품, 가격, no){
   var props = PropertiesService.getScriptProperties();
   var cid = props.getProperty("NAVER_CLIENT_ID"), csec = props.getProperty("NAVER_CLIENT_SECRET");
   if (!cid || !csec) return { ok:false, skipped:"no_api_key" }; // 키 미설정 → 조사 생략(기존 동작 유지)
@@ -149,7 +155,7 @@ function instantLowprice_(row, 물품, 가격){
   var price = parseInt(String(가격).replace(/[^0-9]/g,""), 10) || 0;
   var 검토일 = today();
   if (!items.length){ // 검색결과 없음 → '검색결과없음'으로 기록(배지에 '시세 미확인' 노출)
-    reviewUpsert_(row, [물품||"", "", "", "", price||"", "", "하", 검토일, "자동·네이버쇼핑 제출즉시·검색결과없음 → 모델명 보완요"]);
+    reviewUpsert_(row, [물품||"", "", "", "", price||"", "", "하", 검토일, "자동·네이버쇼핑 제출즉시·검색결과없음 → 모델명 보완요"], no);
     return { ok:true, found:0 };
   }
   // 관련성 필터: 검색어 핵심토큰(2자+)이 제목에 모두 포함된 결과군 → 그중 최저가. 매칭 없으면 sim 1위(대표상품) fallback.
@@ -178,17 +184,11 @@ function instantLowprice_(row, 물품, 가격){
   }
   var 비고 = "자동·네이버쇼핑 제출즉시(참고시세) · 9시 보완예정" + (matched ? "" : " · ⚠관련성낮음(모델명 보완요)") + (mall ? " · "+mall : "");
   // B품의물품 C동일제품 D최저가 E판매처링크 F품의가 G품의가대비 H신뢰도 I검토일 J비고
-  reviewUpsert_(row, [물품||"", name, low||"", link, price||"", 대비, "하", 검토일, 비고]);
+  reviewUpsert_(row, [물품||"", name, low||"", link, price||"", 대비, "하", 검토일, 비고], no);
   return { ok:true, found:1, matched:matched, low:low, name:name };
 }
 
 function comma_(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); } // 천단위 콤마(로케일 무관)
-
-// 권한 동의 강제용: try 없이 UrlFetchApp 직접 호출 → 미동의 시 편집기 실행에서 '권한 검토' 모달이 강제로 뜸. 1회 허용 후 재배포하면 web app 반영.
-function authConsent(){
-  var r = UrlFetchApp.fetch("https://openapi.naver.com/v1/search/shop.json?display=1&query=test", { muteHttpExceptions:true });
-  return r.getResponseCode();
-}
 
 // 임시 진단: GAS 런타임에서 네이버 쇼핑 API 호출이 되는지(스코프·연결) 확인. 키는 스크립트 속성서.
 function diagNaver(p){
@@ -292,7 +292,7 @@ function salesProbe(p){ // 구조 점검용(임시): 월 파일의 탭 목록 + 
   var grid = null, tab = String(p.tab||"");
   if (tab){
     var sht = ss.getSheetByName(tab);
-    if (sht) grid = sht.getRange(String(p.range||"O8:T74")).getDisplayValues(); // range 지정 가능(진단용)
+    if (sht) grid = sht.getRange("O8:T80").getDisplayValues(); // 팀 집계 영역 고정(2026-07-06 감사: 임의 range 차단 — PII 통로 봉쇄)
   }
   return out({ ok:true, month:mo, tabs:names, tab:tab, grid:grid });
 }
@@ -474,13 +474,16 @@ function lowpriceSet(p){
   var row = parseInt(p.row, 10); if (!row) return out({ ok:false, error:"no row" });
   var bj = [ p.품의물품||"", p.제품||"", p.최저가||"", p.판매처||"", p.품의가||"",
              p.품의가대비||"", p.신뢰도||"", p.검토일||"", p.비고||"" ]; // B~J
-  var r = reviewUpsert_(row, bj);
+  var no = (p.번호 != null && p.번호 !== "") ? p.번호 : (p.no != null ? p.no : ""); // 고정 일련번호(#) — 있으면 K열 기록
+  var r = reviewUpsert_(row, bj, no);
   return out({ ok:true, row:row, mode:r });
 }
 
-// 내부 전용: 검토시트 A열(품의행) 기준 upsert (외부=lowpriceSet, 내부=제출즉시조사 공용). 행번호 row + B~J 9칸 배열.
-function reviewUpsert_(row, bj){
+// 내부 전용: 검토시트 A열(품의행) 기준 upsert (외부=lowpriceSet, 내부=제출즉시조사 공용). 행번호 row + B~J 9칸 배열 + K열 고정번호(#, 선택).
+// K열(품의번호)은 행 삭제·재정렬에도 불변인 매칭키 — 대시보드 배지가 번호 우선 매칭(2026-07-06 감사).
+function reviewUpsert_(row, bj, no){
   var sheet = SpreadsheetApp.openById(REVIEW_SHEET_ID).getSheets()[0]; // 첫 시트
+  if (String(sheet.getRange(1, 11).getValue() || "") === "") sheet.getRange(1, 11).setValue("품의번호"); // K1 헤더(1회성)
   var lr = sheet.getLastRow();
   var found = 0;
   if (lr >= 2){ // 헤더 1행 건너뛰고 2행부터 A열(품의행) 검색
@@ -491,9 +494,10 @@ function reviewUpsert_(row, bj){
   }
   if (found){
     sheet.getRange(found, 2, 1, 9).setValues([bj]); // 기존행 B~J 갱신
+    if (no != null && no !== "") sheet.getRange(found, 11).setValue(no);
     return "update";
   }
-  sheet.appendRow([row].concat(bj)); // 새 행 A~J append
+  sheet.appendRow([row].concat(bj).concat([no != null ? no : ""])); // 새 행 A~K append
   return "append";
 }
 
