@@ -418,9 +418,10 @@
         "axes": [
           {
             "name": "문의→가입 전환율",
-            "measured": false,
-            "goal": "측정 개통",
-            "note": "데이터 축적 전"
+            "measured": true,
+            "value_key": "문의_가입_전환율",
+            "goal": "측정 개통·정밀화",
+            "note": "누적 39.4% 라이브(전화매칭·2026-07-04 개통) · 이번달값은 그달 등록 얇으면 정상 null"
           },
           {
             "name": "퍼널 잔류",
@@ -448,9 +449,9 @@
             "note": "낮을수록 좋음(실측)"
           }
         ],
-        "tier": "🔧 배관수리(곧)",
-        "현재": "미측정(데이터 축적 전)",
-        "goal": "측정 개통",
+        "tier": "✅ 측정 개통(누적 라이브·정밀화 국면)",
+        "현재": "누적 전환율 39.4% 라이브(문의 8,669→가입 3,414) · 다음 미개통=퍼널 잔류·예약 활성",
+        "goal": "정밀화 + 퍼널 잔류·예약 활성 개통",
         "path": "전환율↑ = 문의→가입 퍼널 가시화·개선",
         "reach": {
           "mode": "milestone",
@@ -464,17 +465,17 @@
             {
               "key": "inquiry_data",
               "label": "문의 데이터 축적",
-              "done": false
+              "done": true
             },
             {
               "key": "inquiry_join_match",
               "label": "문의→가입 매칭",
-              "done": false
+              "done": true
             },
             {
               "key": "conv_rate",
               "label": "전환율 측정개통",
-              "done": false
+              "done": true
             }
           ]
         }
