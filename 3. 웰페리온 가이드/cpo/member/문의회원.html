@@ -2547,12 +2547,47 @@ function lessonRender(t) {
       '<td class="left" style="font-weight:700">' + esc(r.name || '—') + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(r.phone || '—') + '</td>' +
       '<td style="font-size:12px">' + esc(r.sport || '—') + '</td>' +
-      '<td style="font-size:12px">' + esc(r.status || '—') + '</td>' +
+      '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, r.status) + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(r.owner || '—') + '</td>' +
       '<td class="left" style="font-size:11px;color:var(--dim);white-space:pre-wrap">' + esc(r.memo || '—') + '</td>' +
     '</tr>';
   });
   tbody.innerHTML = html;
+}
+
+/* ── 강습 문의 진행상태 인라인 편집 — 멤버십 SUC 등록 체크와 동형(배6 후속, 2026-07-06 시포·GM).
+      옵션 고정 5종(미정/상담중/등록/보류/취소). 시트 기존값이 목록 밖이면 보존(데이터 손실 방지). ── */
+var LESSON_STATUS_OPTIONS = ['미정', '상담중', '등록', '보류', '취소'];
+function _lessonStatusSelectHtml(t, rowIndex, current) {
+  var cur = String(current || '').trim();
+  var opts = LESSON_STATUS_OPTIONS.slice();
+  if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);   // 목록에 없는 기존값도 옵션으로 보존
+  var html = '<select class="cell-select" style="font-size:12px;padding:2px 6px" onchange="lessonStatusChange(this,\'' + t + '\',' + rowIndex + ')">';
+  if (!cur) html += '<option value="" selected>— 미정 —</option>';
+  opts.forEach(function(o){
+    html += '<option value="' + esc(o) + '"' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>';
+  });
+  html += '</select>';
+  return html;
+}
+// 저장 — member_inquiry_update의 _saveCell POST 패턴 그대로 미러링(no-cors apiPost, keyPhone 행키검증). 2026-07-06 시포·GM.
+function lessonStatusChange(sel, t, rowIndex) {
+  var st = _lessonState[t];
+  var row = null;
+  for (var i = 0; i < st.rows.length; i++) { if (st.rows[i].rowIndex === rowIndex) { row = st.rows[i]; break; } }
+  var newVal = sel.value;
+  var prevVal = row ? row.status : '';
+  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', status: newVal };
+  apiPost(payload)
+    .then(function(data){
+      if (!data.ok) throw new Error(data.error || '저장 실패');
+      if (row) row.status = newVal;
+      showToast('저장', 'ok');
+    })
+    .catch(function(err){
+      sel.value = prevVal;   // 실패 시 화면 원복(서버 미반영 상태와 정합)
+      showToast('저장 실패: ' + err.message, 'err');
+    });
 }
 
 /* ─────────────────────────────────────────────

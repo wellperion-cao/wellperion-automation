@@ -1,5 +1,17 @@
 [
   {
+    "task_id": "CPO-2026-07-06-LESSON-REGISTER-CHECK",
+    "clevel": "cpo",
+    "title": "[시포] 강습 문의 등록 체크 기능 — 문의회원?manage=lesson 성인·유소년 진행상태(등록) 편집·저장 (멤버십 동형)",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-06",
+    "ship_no": 529,
+    "note": "[2026-07-06 GM go] 강습 문의(성인·유소년) 목록이 읽기전용이라 등록 체크 불가 — 멤버십(member_inquiry_update)과 동형으로 편집 가능화. 백엔드 lesson_inquiry_update 액션은 이미 기존 코드(강습문의.html 전용페이지)에 구현·라이브 배포돼 있어 신규 배포 불필요(Survey.js 무변경). 이번 작업=문의회원.html lessonRender() 진행상태 셀을 <select>(미정/상담중/등록/보류/취소)로 교체+onchange 시 lesson_inquiry_update POST(member_inquiry_update _saveCell 패턴 미러링·keyPhone 행키검증·no-cors apiPost). 라이브 검증: 성인강습 테스트행(rowIndex 3430·웰니스 바레·발레 버킷)에 status='등록' POST→lesson_inquiry_list 반영 확인→원복(빈값) 재확인 완료(회귀0). 유소년강습 목록 엔드포인트 정상 응답도 확인. 정직 한계: 소급 반영 안 됨(과거 진행상태 미기록 건은 그대로 공란), 등록 판정은 담당자가 셀렉트로 직접 표시하는 습관 전제(자동판정 아님).",
+    "next": "시모: 마케팅 카드 강습등록=진행상태 집계 배선(후속)",
+    "depends_on": ""
+  },
+  {
     "task_id": "CPO-2026-07-06-FUNNEL-HONEST-REWIRE",
     "clevel": "cpo",
     "title": "[시포] 퍼널 정직 재배선 — 분모(7천 과거웹덤프) 분리 + 체험/방문 날짜칸을 단계신호로 배선(stage_funnel)",
