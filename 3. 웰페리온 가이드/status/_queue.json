@@ -354,5 +354,19 @@
     "artifact": "메인창 검색으로 방을 여는 기존 방식이 검색창(Edit) 미탐지로 실패. 실측\n(win32gui.EnumWindows)으로 열린 카톡 채팅방은 각각 독립 최상위 창(클래스\nEVA_Window_Dblclk·제목=방 이름)임을 확인해, 이미 열린 방 창을 제목으로\n직접 찾는 방식으로 전면 재설계(find_room_window). 검색 폴백은 최후수단으로만\n유지. 라이브 검증 중 \"클립보드 이미지 전송\" 팝업이 메인 입력창과 별개 창임을\n추가로 발견해 팝업 전용 확인/취소 로직(confirm_clipboard_popup/\ncancel_c (CLI ad-hoc · 커밋 07dd3faf)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "07dd3faf2d0b949c6ac7c1b855a83ff3d90a7748"
+  },
+  {
+    "task_id": "CTO-2026-07-06-ADHOC-e1dadb63",
+    "clevel": "cto",
+    "title": "[시토] fix(funnel)[시토]: 직접/법인 등록 알림 문의알림방 누락 수정 — _notifyTelegram override 추가(4경로 정합)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 492,
+    "artifact": "fix(funnel)[시토]: 직접/법인 등록 알림 문의알림방 누락 수정 — _notifyTelegram override 추가(4경로 정합) (CLI ad-hoc · 커밋 e1dadb63)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e1dadb637eb691046aa235032d113c6e7c448988"
   }
 ]
