@@ -24,7 +24,8 @@
     "ship_no": 300,
     "note": "[2026-07-02] 측정 개통(#1) 이미 완성 실측 확인 — 5채널 UTM 태깅 라이브(blog·cafe·danggn·kakao=발행시 apply_cta_utm 자동 / IG namuk bio) → 클릭로그 저장 → M4 채널별 문의·전환 뷰 집계. 새 배관 불필요(중복 안 지음). 정직한 한계=네이버플레이스(~82%)는 자기신고 채널로 집계(UTM 미경유). [2026-07-03 시모 실측 정정] 브랜드 @wellperion bio도 이미 설치됨(stale 노트 정정) — 로그인 세션 accounts/edit 실측: link=wellperion.com/ko/inquiry/?utm_source=instagram&utm_medium=bio&utm_content=official (utm_source=instagram 확인). 증빙=scripts/poc-evidence/wellperion-bio-verify-20260703_091011*.png. ⇒ 마지막 클릭 누수 봉합 완료. EN폼 UTM 캡처=별도 영문폼3개 entry ID 필요(폼 편집권한)·임팩트 낮음→후순위. 전환율 조인뷰=정밀화 후순위. ⚠️브랜드보이스 관찰: 현 bio '헬스'·계정명 'SPA & FITNESS'=L08 금지어(피트니스) 저촉 → 별도 제안(GM 결정). [2026-07-03 시모 측정개통②] _collectFormInquiries_가 '유입경로(자동)' 프리필 UTM을 최우선 채널신호로 읽게 배선+danggn 오타수정. clasp 재인증(cao) 후 @122 배포·라이브 검증(ok:true, 회귀0, byChannel 인스타4·네이버252·당근7 유지). 정직: 기존 8652건 불변, 새 태깅문의부터 하드UTM 귀속(bio 인스타 링크 문의=인스타그램 자동귀속). Phase2(공개폼 프리필 source우선)=GM go 대기.",
     "next": "[2026-07-03] ✅측정 개통 ①bio(양계정 UTM 라이브)+②조인(문의 UTM 귀속 배선 라이브 @122, f0b9bf42) 완료. 남은: (A) Phase2=공개 문의페이지 프리필 source-우선 수정→콘텐츠링크(블로그·카페 utm_campaign) 문의도 채널귀속 (공개페이지 수정=GM go 필요). (B) M4 채널별 실전환율 축적 관찰(새 태깅문의부터 채워짐·과거분 소급X). (C) 별건 Ep3 발행(ship220).",
-    "depends_on": ""
+    "depends_on": "",
+    "module": "M2"
   },
   {
     "task_id": "CTO-2026-06-30-TELEGRAM-RELIABILITY-OWNERSHIP",
@@ -35,7 +36,8 @@
     "enqueued_at": "2026-06-30",
     "note": "[2026-06-30 GM] '텔레그램은 시토가 면밀히 보고 자동화 가능한 건 진행'. 촉발=종합접수처 분실물 알림 조용한 실패. ✅2단계 전부 라이브: ①헬스체크(scripts/telegram_health_check.py·봇/3방 getChatMember/발송원장 리컨실, 매일13시 Wellperion-Telegram-HealthCheck-1300, 문제시만 OWNER경보) ②GAS 원격진단 ?action=diag — VOC·문의(Survey)·점검(.deploy-check @134, 배포전후 점검읽기 동일=무영향) 3종 hasToken/hasChatId 매일 ping ③chat_id drift 가드(scripts/check_chatid_drift.py·pre-commit warn-only·.env 정본). 이제 오늘 유형(조용한 실패)은 매일 자동 탐지. 정본 메모리=reference_telegram_alert_healthcheck_and_gas_diag.",
     "next": "🔗 상시 모니터링 단계(헬스체크 자동가동). 잔여=토큰 로테이션(.env 평문 다곳·보안, GM 보류) — 별도 집중세션 시 7곳 동시갱신+봇 재기동. chat_id 런타임 SSOT 단일화도 후속(가드는 적용됨).",
-    "ship_no": 102
+    "ship_no": 102,
+    "module": "T2"
   },
   {
     "task_id": "CMO-2026-06-26-M5-SSOT-UNIFY",
@@ -46,7 +48,8 @@
     "enqueued_at": "2026-06-26",
     "note": "[2026-06-26 GM 결정#3] M5 정본=review_queue.json 단일 통합. ✅(2026-06-26) 봉합 3축 구축: ①보드=CMO파이프라인.html을 시트 CRUD→review_queue.json 읽기 거울로 전면 재작성·라이브 배포(6채널 매트릭스·URL클릭·요약/필터, Playwright 검증 카드38·골프5채널·콘솔0). ②발행시점 캡처=당근 발행 직후 business-posts URL 자동기록(정규식 실측), 카카오 best-effort(공개ID 미노출 구조), IG 기존캡처. review_queue_util.py 공유헬퍼. ③수동발행 콜백=봇 handle_message에 네이버 블로그·카페 URL 회신→대기글 발행완료+URL 자동기록(애매시 GM확인·비파괴). ⚠️봇 변경은 다음 재기동 시 발효. 사후 스크래퍼(retrieve_post_url/reconcile_published)는 실험적·신뢰성낮음(자동스케줄 미배선). 잔여(후순위): 채널/status enum 데이터 정규화·published_at ISO. 진단서 status/briefs/CMO-2026-06-26-M1-M5-AUDIT.md. 메모리 project_m5_channel_sync_gap.",
     "next": "검증 대기: ①다음 봇 재기동 후 네이버 URL 회신 자동기록 실동작 확인 ②다음 당근 발행 시 URL 자동캡처 확인. 그 후 채널/status enum 데이터 정규화(후순위).",
-    "ship_no": 185
+    "ship_no": 185,
+    "module": "M3"
   },
   {
     "task_id": "CTO-2026-06-23-SELF-HOSTED-SERVER-SETUP",
@@ -58,7 +61,8 @@
     "note": "[2026-06-23 GM go] GM 보유 8년된 윈도우 서버를 리셋해 자체 서버로 전환. PII 인증(JWT 세션·ship_no 21)과 자체 문의DB(ship_no 18)의 공통 전제조건=자체 서버 도입을 푸는 배. 5단계 로드맵: ①현황파악(부팅·사양·OS·내부데이터) ②백업 ③OS 클린설치(최신 윈도우 서버) ④보안기본(패치·방화벽·고정IP·원격접속) ⑤JWT 인증서버+자체 문의DB 호스팅. 리셋=파괴적·비가역 → 백업·부팅확인을 1관문으로. 시토가 단계별 리드, 물리작업은 GM 동반. [2026-06-23 후속] 현황 확인: 그 서버는 옛 회원관리 '대양CIS' 구동처(부팅 정상). 회사 회원관리는 브로제이(AWS 웹서버)로 이전 중. 그릇 결정=8년 자체서버 재활용(GM 택, 비용0; 시토는 보안서버엔 AWS 권장했으나 GM 결정). 안전게이트=리셋·대양CIS 삭제는 브로제이 이전 100% 완료·검증 후(그 전 대양CIS=회원PII 유일본 가능). 8년 하드웨어 약점은 OS최신·SSD교체·시토관리로 보강. [2026-06-24 병합] 자체 문의 DB(구 ship18)=본 배 ⑤단계 산출물로 흡수(별도 배 종료). 자체 서버 실사용 가용 ≈ 3개월 뒤(2026-09경, GM) → 그때까지 문의·예약은 현행 구글시트 유지, 자체DB 설계는 서버 OS확정 후 착수. [2026-06-24 GM] 정박(대기) — 자체 윈도우 서버 실사용 가용 ≈ 3개월 뒤(2026-09경). 그때까지 출항 보류. 21·18 등 서버 전제 배도 동반 정박.",
     "next": "⚓ 정박(대기) — 재개 조건=자체 서버 가용(≈2026-09). 그 전까지 현황파악만 가능, 리셋·셋업 출항 보류.",
     "depends_on": "브로제이 이전 100% 완료·검증 (대양CIS=회원PII 유일본 가능) + GM 물리작업 동반",
-    "ship_no": 101
+    "ship_no": 101,
+    "module": "T1"
   },
   {
     "task_id": "CTO-2026-06-18-PII-PROTECTION-REDESIGN",
@@ -70,7 +74,8 @@
     "note": "[2026-06-18 GM] 토큰 게이트(부분 발효)는 페이지 잠김으로 폐기·롤백(서버 TOKEN_ENFORCE 양 GAS 껐음 → 현재 회원 개인정보 이름·연락처가 다시 무인증 공개 상태 = 의도된 임시). GM 지시='부분 게이트 말고 더 큰 틀로 재설계'. 범위=문의·VOC·회원 데이터 전체의 인증·접근통제 아키텍처(누가·어떻게 보나)를 한 틀로. 자체 문의 DB(CTO-2026-06-16-SELF-HOSTED-INQUIRY-DB)와 묶어 설계. 시토 운영 헌장 축6 준수=라이브 발효는 GM go+즉시 역롤백. 교훈 메모리 feedback_security_live_activation_needs_gm_go. [2026-06-20 시토 착수] 설계안 작성 완료 — .omc/specs/pii-protection-architecture.md. 현황(무인증 PII 통로 4곳: 문의회원.html CRUD·Survey.js inquiry_list·VOC_배포.js reg_list/voc_list·apps_script_survey.js)·4축(인증·저장소·열람권한·발효게이트)·옵션 2~3·로드맵 4단계 정리. 핵심 발견=TOKEN_ENFORCE 무중단 게이트가 이미 3곳에 OFF로 깔려있고, 문의회원.html(#1)만 게이트 미존재가 직접 원인. 라이브 차단 미발효(코드 0변경). GM 방향 결재 대기. [2026-06-20 시토] GM 옵션2 결재·진행: 5통로 게이트 규격 정합·발효 절차서·GM go 대기. 5통로 실측 비교 → 불일치 3종(플래그명 TOKEN_ENFORCE vs PII_GATE·기본방향 OPEN vs CLOSED·면제목록/토큰검증 유무) 발견. 통일 규격(spec §6) 확정: 공유 ACCESS_TOKEN 단일화·거부응답·면제목록 정합. #1 문의회원.html 임베드 GAS에 _INQ_PUBLIC_ACTIONS 면제맵+ACCESS_TOKEN 공통토큰검증 가산(시포 default-CLOSED·PII_GATE_CLOSED·_piiActions_ 보존). #2·#3·#4 이미 규격일치=무변경. 발효 절차서(spec §7) 작성: P1토큰발급·P2재배포(영향0)→1단계 PII_GATE=on→2단계 TOKEN_ENFORCE=1 통로별, 각 단계 속성1개 삭제로 1초 역롤백. 전 스위치 OFF/잠금 유지=라이브 영향 0. [2026-06-23 GM 방향 확정] 인증 아키텍처=JWT 세션 기반으로 확정. 단, 자체 윈도우 서버 도입이 전제(GAS는 서명키 보관·세션관리·접근로그가 반쪽 → 서버 없이 구현하면 폐기될 반쪽안). 따라서 본 배는 '자체 윈도우 서버 도입'까지 정박(보류). 기존 GAS TOKEN_ENFORCE/PII_GATE 게이트는 서버 도입 전까지의 임시 안전망으로만 휴면 유지(OFF). 자체 문의DB(ship_no 18)와 한 틀 — 서버 생기면 둘 다 착수. [2026-06-25 GM 결정 ⓑ] 회원 실명·전화 무인증 공개를 9월 자체서버까지 '의도된 임시 공개'로 유지. 시토 보안 점검서 member_inquiry_list 580건 평문 노출 실측 확인했으나(어제 배42 서버측 토큰잠금 코드는 기본 OFF·휴면 그대로 배포) GM 정책상 지금 켜지 않음. 실제 차단은 서버 도입 시 JWT로 통합 발효. ※어제 배42 보고의 '차단'은 '잠금 코드 배포(휴면)'였고 라이브 차단은 미발효였음을 정합 기록. [2026-07-02 웰리 하이진 상태정합] status를 IN_PROGRESS→PENDING으로 정합(본문·next가 이미 정박(보류) 명시 — 형제배 CTO-2026-06-23-SELF-HOSTED-SERVER-SETUP(ship101, 동일 의존성)과 상태 표기 통일). 내용·근거·재개조건 변경 없음.",
     "next": "정박(보류) — 재개 조건=자체 윈도우 서버 도입. 서버 생기면: ① JWT 발급·검증·만료·회수를 서버가 담당 ② 로그인 수단·출입 대상·잠금 범위는 서버 도입 시점에 재확정(현 cao 구글 SSO 재사용 유력) ③ 접근 로그(누가·언제 PII 열람) 적재. 자체 문의DB(ship_no 18)와 묶어 동시 설계·착수.",
     "depends_on": "자체 윈도우 서버 도입 (JWT 발급·세션·접근로그 호스팅) — 방향(JWT 세션)은 확정됨",
-    "ship_no": 21
+    "ship_no": 21,
+    "module": "T1"
   },
   {
     "task_id": "CMO-2026-06-19-AI-SERIES-REACTION-OWNERSHIP",
@@ -81,7 +86,8 @@
     "enqueued_at": "2026-06-19",
     "note": "[2026-06-19 GM 지시] AI 시리즈(@namuk.wellperion) 반응 모니터링을 시모가 소유한다. 개인시리즈 목표=도달·브랜드(바이럴 CTA 저장·댓글·팔로우)라 반응이 곧 이 채널의 의미있는 신호(전환 퍼널 SSOT와 별개, 여기선 vanity 아님). 한계: 개인 IG 반응 자동 스크래핑은 신뢰도 낮아 보류 이력 있음(메모리 project_channel_engagement_tracking_ceiling) → 자동 수치판 만들지 말 것. 시모가 발행된 각 편의 반응(댓글 내용·저장·팔로우 변화·도달)을 주기적으로 읽어 '무엇이 통했나'를 정성으로 정리. 첫 대상=CS 3편(#19~#21, GM 승인·발행 후). #13 '반응 기반 방향' 실천. | [2026-06-24] 봇 자동수집 PoC 성공(조건부): 팔로워·댓글 자동수집 가능(세션 재활용), 좋아요=IG 소수 숨김·저장=IG 비공개라 수집 불가. scripts/ig_engagement_poc.py. 운용방침=하이브리드(자동=팔로워·댓글 주간추적 / 수동보완=저장·좋아요 GM 인사이트). [2026-07-04 정리] 반응읽기 원장(status/ig_engagement_ledger.json) 구축·편별매칭·매일09:30 자동수집·매일 자동커밋까지 완결(핀버그 수정 포함). 이 데이터가 평가환류 루프(배106)로 흘러감 — 31=데이터소스, 106=환류 자동화.",
     "next": "CS 3편 발행되면 시모가 편별 반응 읽기 → '통한 포인트/안 통한 포인트' 1줄 정리 → 다음 챕터(마케팅·점검) 후킹·방향에 반영 + GM 간단 보고.",
-    "ship_no": 31
+    "ship_no": 31,
+    "module": "M2"
   },
   {
     "task_id": "COO-2026-06-20-OPS-4DEPT-INTERIOR-OWNERSHIP",
@@ -104,7 +110,8 @@
     "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정. | [2026-07-03 v1 프레임 빌드] deep-interview 확정(모호도14%·스펙 .omc/specs/deep-interview-cmo-eval-feedback-loop.md). weekly_marketing_feedback.py = 주간 브리프(공식 전용·정성 우선+측정 보조·정직 꼬리표) 생성. 자동 가중=v2(데이터 축적 후). 주간 cron=후속. [2026-07-04 병합·항로정리] 배390(마케팅 루프 ⑤→①되먹임 v1 배관) 흡수 — 같은 마케팅 폐루프 단일화. + 반응읽기 원장(status/ig_engagement_ledger.json·배31, 매일09:30 자동수집·매일커밋) 연결됨. 이제 이 배 = 반응(원장)→주간 평가브리프→다음기획 되먹임의 단일 소유.",
     "ship_no": 106,
     "next": "🔗 UTM 클릭 데이터 축적 대기 중 — 그동안 좋은콘텐츠 지표 정의(저장+댓글+클릭 가중) 사전설계 (담당 시모).",
-    "task_id": "CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK"
+    "task_id": "CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK",
+    "module": "M2"
   },
   {
     "task_id": "COO-2026-06-23-CORE-ROOM-ALERT-SPLIT",
@@ -128,7 +135,8 @@
     "enqueued_at": "2026-06-27",
     "note": "[2026-06-27 GM 지시] 공식 @wellperion 시설3(F1종합·F2회복·F3공간)+강습3(L1코어스포츠·L2바디밸런스·L3유소년WSC). 사진=기존자산(094A 전문촬영·골프·스쿼시·필라테스·발레). 엔진=사진형 정본(compose_barre). 파일럿 F1 먼저→GM 룩 확정→나머지5편 일괄양산. 회사톤·풀로고·CTA 문의 inquiry. [2026-06-30 GM] ⚓ 접어둠(보류) — F1 골프문구 정정·검수대기까지 했으나 GM이 일시 정지. 텔레그램 F1 검수카드 삭제. 필요 시 GM 재요청. F1 콘텐츠·정정본은 review_queue에 검수대기로 보존.",
     "next": "⚓ 보류 — GM 재요청 시 F1 룩 검수부터 재개(F2·F3·L1~L3 양산).",
-    "ship_no": 198
+    "ship_no": 198,
+    "module": "M1"
   },
   {
     "task_id": "CEO-2026-06-27-HOME-CHECK-STATUS",
@@ -140,7 +148,8 @@
     "note": "GM 지시(2026-06-27) '웰리는 home에 점검 현황 챙겨'. home 점검 위젯(#home-check-kpi: 시설부·지원부 남/여) 표면을 웰리가 소유·검증. 현재 지원부 주말 회차가 '오후조'로 잘못 표시(정답=오전조+마감조). 백엔드/시트 회차 정합은 시우 담당(GM 직접 지시) — 인계 brief=status/briefs/COO-2026-06-27-SUPPORT-WEEKEND-ROUNDS-HANDOFF.md. home fetch 캐시끄기(no-store)는 이미 적용(커밋 af7b6646). 라이브 점검 GAS 즉흥수정 금지·로컬검증 후 1회배포 교훈.",
     "next": "시우 지원_매뉴얼 회차 정합 완료 후 → home 시크릿 라이브 검증(주말 남/여 오전조+마감조 2칸 표시·오후조 사라짐) → 정상이면 GM 보고. depends_on=시우 시트정합.",
     "depends_on": "시우 지원부 회차 시트 정합",
-    "ship_no": 173
+    "ship_no": 173,
+    "module": "home"
   },
   {
     "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -152,7 +161,8 @@
     "note": "[2026-06-29 GM GO·deep-interview 확정] 스펙=.omc/specs/deep-interview-daily-northstar-recommender.md. 브릿지=북극성↔오늘 잇는 과정. 최상급 과정 4박자=경로지도+품질완주(기존 완료4요건·웰리검수 게이트 활용·새 실행권 없음)+지표환류+근거투명. 자율=제안까지(GM 승인 후 실행). 개인 북극성 v1 제외. 두뇌=웰리(추천 로직)/손=시토(엔진). [2026-06-29 GM 잠금결정] G1=상태파일 status/northstar_pending.json(git추적) · G2=미승인은 다음날 06:30 새 추천 시 자동보류(만료) · G3=파일럿 폐기→처음부터 전 C-Level(7역할 ceo·cmo·coo·cto·cpo·cfo·chro, gm제외), 웰리가 전사 top3 선정·역할 태그. ✅1단계 빌드 완료(2026-06-29): scripts/northstar_recommender.py 드라이런 엔진(입력=matrix 7행+_queue+kpi_values, 두뇌=claude CLI model_router폴백, 출력=status/northstar_pending.json·라이브 부작용0). ✅2단계 라이브 완료·검증(2026-07-02): 예약작업 Wellperion-NorthStar-0630(런처 launchers/northstar_recommender_hidden.vbs→scripts/northstar_recommender.bat --send) 3일 정상 가동(06-30·07-01·07-02 각 06:30 카드 발송 sent:true, Last Result 0)·G2 만료 정상. 봇 route_northstar 핸들러 라이브([승인1/2/3]→_queue PENDING 배 read-before-write ship_no=max+1 등록, [보류]→held 무파괴, 폐루프 northstar_log.jsonl). 웹 표 northstar_today.html 발행. ★검증서 발견=3일간 GM 승인·보류 회신 0건, 매일 자동만료만 반복(polyloop 사람고리 미참여) — 엔진 완비, 잔여=GM 카드 실수신·참여 확인 + stage4 기여추적(승인배 완료→KPI진척 측정).",
     "next": "🔗 stage2 라이브 완료. 잔여: ①GM 06:30 카드 실수신 확인(3일 sent:true인데 회신0 — 도달 여부 점검) ②오늘(07-02) 후보 cfo/cpo/cmo 아직 proposed=GM 승인 가능 ③stage4 기여추적(승인배 완료→KPI진척 정성 환류).",
     "depends_on": "",
-    "ship_no": 213
+    "ship_no": 213,
+    "module": "T2"
   },
   {
     "task_id": "CEO-2026-07-02-GM-AIDE-AUTONOMY",
@@ -164,7 +174,8 @@
     "ship_no": 237,
     "note": "[2026-07-02 GM] '정말 중요' 지시. 헌법 GM칸(제작 루프)·웰리칸(오케스트레이션)에 이은 자율화 다음 지평. 3층: ①관찰=GM 지시·결정·루틴·추천 승인/보류·텔레그램 응답·일일 스케줄 준수 로그 학습 ②포착=패턴 대비 GM이 놓친 것·다음 할 것 선제 감지(미승인·표류·루틴 누락·대기 지연) ③선제=자율 화이트리스트는 스스로 처리, 게이트 밖은 선제 제안. 두뇌=웰리, 엔진=시토(로그·패턴감지·자기학습 파이프라인 확장), 전 C-Level=도메인별 GM 놓친 것 포착. 기존 물림=북극성 추천기·bridge_mechanized·ai_self_learning·G1·GM 개인 북극성. 보안·프라이버시 게이트+자율 화이트리스트 준수. GM 인정 '어려울 수 있는데'→슬슬 단계적. [2026-07-02 deep-interview 완료·모호성 4.5%(<5% GM기준 통과)] 8라운드 잠금결정: 학습=수치지표+LLM 서술 프로필(gm_profile.md) / 포착범위=확정신호+GM지시함의(예측형 제외=비목표) / 안전=가역성(가역=자율·비가역=제안만) / 성공기준=GM개입감소+포착적중률+사후보고신뢰 / C-Level=공유원장 append→웰리 단일두뇌 통합 / 보고=G1 통합(자율=입항기록·제안=대기배+사유+경로, 새 알림금지) / 루프=하이브리드(GM지시 이벤트 즉시+06:30 일일스캔+프로필 일일갱신) / 실행주체=웰리 위임→담당 C-Level 실행→웰리 검증→G1 기록(직접실행 금지 유지). 스펙 정본=.omc/specs/deep-interview-gm-aide-autonomy.md. [2026-07-03 시토 병합 라이브 완료·GM 정직확정] T2(업무자동화SSOT)+자율현황.html 단일 보드 병합 라이브: 히어로(결과물 요약)·층①자율로한일(이력 제안/처리 배지)·층②돌아가는자동화(구T2 시스템현황·건강점수판·10슬롯·M5 흡수)·T2 나브 라벨/링크 일원화(자율현황.html)·정직 프레이밍 노트. 스펙=docs/superpowers/specs/2026-07-03-자율작업현황-T2-병합-design.md, 계획=docs/superpowers/plans/2026-07-03-자율작업현황-T2-병합.md. ★핵심 발견(Task6): phase2 auto_applied:0은 버그 아님 — 완료 훅(clevel_post_action --next)이 모든 배에 next 강제→표류 배가 안 생겨 자율실행 대상 0, 엔진은 mock으로 정상 확인. GM 결정=정직한 상태 그대로(크론 재라벨·억지 발동 금지). 진짜 자율 처리 확대=배237 별도 집중세션(GM이 원하면 진행). 잔여 미소: ①이력 approval_pattern 필터 오타로 관찰신호 1종 누락(사전존재) ②봇 outbound '조용함' 플래그(봇 alive·헬스체크 OK, 12시 outbound 발신 여부 시토 후속 확인). [2026-07-04 executor 실측·phase1 마감] 실측 결과 phase1 핵심 3종(gm_profile_builder.py·gm_aide_scan.py 포착+제안등록·G1 자율/제안 배선)은 이미 구현·라이브였음(중복 빌드 금지 확인). 실측으로 드러난 진짜 갭 2건만 보강: ①gm_profile.md가 스펙의 \"일일 갱신\" 취지와 달리 07-02 이후 정체(2일간 미갱신) → gm_aide_scan.bat 06:30 실행 순서 맨 앞에 gm_profile_builder.py 호출 추가(기존 예약작업 Wellperion-GM-Aide-Scan-0630 재사용, 새 예약작업 아님·가역·file write만). ②gm_aide_scan.py가 프로필 존재 여부만 확인하고 실제 서술을 포착에 반영 안 함 → load_profile_missed_hints()로 \"## 자주 놓치는 것\" 섹션을 읽어 제안 배 note에 \"GM프로필 근거\" 한 줄로 인용(①→②배선 연결), 스캔 로그에도 profile_hints_used 기록. 로컬검증: gm_profile_builder.py 재실행(ClaudeCLI 정상 생성)+gm_aide_scan.py 드라이런으로 \"프로필 근거 3건 연동\" 확인, _queue.json 미변경(드라이런 안전) 확인. 잔여 미소 재확인: ①approval_pattern 필터는 07-03 커밋(b3f3d76a)으로 이미 수정 완료(자율현황.html AUTO_SIG에 포함 확인) — 추가 조치 불요. ②봇 outbound \"조용함\": 텔레그램 12시 슬롯은 daily_scheduler.py CronTrigger(12:00 KST) 정상 등록, 어제(07-03) 12:00:18 daily_scheduler.send_telegram 성공 로그 확인, 오늘은 아직 정오 전(실측 시각 09:4x)이라 미발신은 정상(조용한 실패 아님) — daily_scheduler.py PID(daily_scheduler.pid=7496) 가동 확인. ★신규 관찰(별도 결정 필요·수정은 보류): unapproved_recommendation 포착의 dedup_key가 날짜 포함이라 스트릭이 풀리지 않는 한 매일 새 [GM보좌 제안] 카드가 쌓임(현재 #257·#305·#409 3장 미해결 누적, 드라이런 상 #412도 대기) — \"카드 3일 미응답 재발방지\" 취지와 반대로 카드 자체가 중복 누적되는 역설. 본 세션 범위 밖(지정 4항목 아님)이라 코드 미수정, 웰리 판단 대기로 남김.",
     "next": "phase1 핵심 배선 완료(프로필 일일갱신+포착 근거 연동). 남은 갈래: (a) unapproved_recommendation 중복 제안 dedup 정책 웰리·GM 결정, (b) 진짜 도메인 자율 실행 확대는 GM이 원할 때 별도 집중세션.",
-    "depends_on": ""
+    "depends_on": "",
+    "module": "home"
   },
   {
     "task_id": "CTO-2026-07-02-KPI-PIPELINE-REPAIR-COO-CHECK",
@@ -176,7 +187,8 @@
     "ship_no": 239,
     "note": "[2026-07-02 스펙 .omc/specs/deep-interview-gm-northstar-kpi-autonomy.md] 헌법 북극성·KPI 지도 정직 정식화(배236 ②③)의 후속 = 실제 측정 배관 수리. 웰리 순차 위임 #1(가장 쉬운 첫 성공사례): 시우(COO) 일일 점검 완료율 — 배관은 있는데 값만 null(kpi_collector.py가 지원부_점검완료율·4부서_점검완료율을 못 읽음, kpi_values.json coo 전부 null·_note='rows 없음(점검 미시작 또는 GAS 오류)'). 수리만 하면 즉시 실측 → 헌법 🗺️북극성 지도(coo.nsmap value_key=지원부_점검완료율)가 정직 텍스트에서 라이브 %로 자동 점등 = 7역할 중 첫 '측정 개통' 신뢰 사례. 기술 배관=시토, 지표 의미=시우. 경계: 매출 GAS 배선(시뽀)·시모 전환율 bio는 별도 후속 배(순차).\n[2026-07-03 시우 실측 핸드오프] collector null의 상류 원인 발견: 라이브 today_live(action=today_live&dept=support)가 오늘(2026-07-03 금 dow=5) 분모(amTotal/pmTotal/closeTotal) 전부 0 반환. 인접 평일(목 25/14/13·화 정상) 정상 → 배포낡음 아닌 금요일/오늘 특정 경로. 로컬 소스(.deploy-check/지원팀 일일점검.js)는 금요일 처리 정상으로 보임(_TL_DOW_TOKEN[5]=fri·공용 빈sched는 항상통과)이라 공용까지 0인 게 sched만으론 설명불가 → week계산 예외/_buildTodayMaster 빈마스터/배포코드 diff 의심. 진단 리드·요일 스윕 제안=status/briefs/COO-2026-07-03-TODAYLIVE-FRIDAY-ZERO-HANDOFF.md. 기술배관=시토, 지표의미·검수=시우. 라이브 GAS 배포=GM go+역롤백.\n[2026-07-04 시우 라이브 실측 추가발견] 자율현황 시우섹션 완료율 표시 검증 중 GAS 완료율 소스 불일치 재확인: 같은 날(7/4 토)을 today_live=25/105(24%), monthly_report=25/25(100%)로 **분모가 소스별 제각각**(배14가 잡으려던 문제 잔존). 추가로 ①주말인데 today_live가 오후조(pm) 슬롯 포함(m pmTotal14·f pmTotal15) → 주말 분모 부풀림(정상=오전+마감=76, 배173 주말 회차버그) ②top-level avgPct/issueCount 응답 불안정(파싱 시 null 관측). ⇒ 완료율(%)은 아직 신뢰 불가. 자율현황 표시는 정직 대체(완료율=잠정·이슈는 dailySeries 합산=33 신뢰) 라이브 처리(baf82a76). 백엔드 근본수리 필요: today_live 주말 pm 제외·today_live↔monthly_report 분모 단일화·avgPct 안정화.\n[2026-07-04 시우 라이브 배포·검증 완료·GM go] 완료율 분모 정합 라이브 발효(clasp @140): ①today_live 주말 오후조 제외(7/4 105→76) ②today_live↔monthly 분모 _scheduleExpectedTotal 단일화(7/4 24%vs100% 모순→둘다33%) ③monthTotals.avgPct/issueCount 안정(74%·33건). 라이브 실측 검증: 주말 76 정상·소스 정합·시설부406 신규형식 동시 발효. 평일 완료율 하락(7/2 91→80·7/3 89→78)=이전 과소분모(95)→정집계(108) 정직 보정(버그 아님). 자율현황 완료율 잠정→실측 점등(오늘33%·이번달74%). 역롤백=clasp deploy -i ...RQiX0IpekBu1 -V 139. 잔여=분모 정의(전체 스케줄 기대치가 옳은지) 근본 재검은 후속·시토 배관 성능검토.\n[2026-07-04 완료율 방식 재검(analyst)] ✅핵심 숫자는 today_live 단일소스로 정합(monthly·화면헤드라인·kpi_collector·독려 모두 today_live 기준). get_today_summary=폐기(호출부0). ⚠️잔여 2곳=today_live 응답의 raw pmTotal 버킷을 직접 읽어 주말 어긋남: ①독려 pm 빌더(daily_scheduler 2004)=없는 주말 오후조 미완 독려 위험 ②화면 교대별 통계표(지원부체계.html 4768)=주말 오후행 표시. 헤드라인%는 무영향, 주말 국소 불일치. 💡근본해결=시트에서 주말 pm 항목 sched 정리→_tlPassesSched가 자연히 걸러 isWeekend 하드코딩+raw오염 동시 제거. 분모 정의(전체 스케줄 기대치)=현행 유지 권고. isWeekend 하드코딩보다 시트 sched가 조 배정을 결정하게 하는 게 정석(평일 축소·주말 특별운영 예외 대비).\n[2026-07-04 시우 시트 정리·GM go] 주말 오후조 원천 정리 완료(GM 확정=주말엔 오후조 없음). 지원부 점검항목 실측: 주말(sat/sun) sched+오후조(pm1) 항목 3개(a4 쑥교체 sat|2,4·e1 주차장 sun|2·e2 분수대 sun|2)를 마감조(close1)로 이동(saveItems ok·49항목 무손실·백업 tmp/items_backup_20260704.json). 검증=남은 주말 오후조 0·today_live 7/4 회귀0(76). ⇒ 데이터 클린. isWeekend 하드코딩은 이제 확정 규칙(오후조=주말 미운영)의 정당한 구현이라 유지. 잔여(코드·last-mile)=today_live 응답의 raw pmTotal 버킷이 주말에도 일상항목(a1 등 매일 오후조) pm을 남겨 독려 pm빌더(scheduler 2004)·화면 교대표(지원부체계 4768)에 주말 오후 표시/독려 누수 가능 → 주말 raw pm 버킷 0 처리 코드 1곳 필요(선택·별도 배포).\n[2026-07-04 시우 last-mile 완료·라이브] 주말 raw pm 누수 봉합: today_live genderSummary+최상위 pm/pmTotal 버킷을 주말 0 반환(clasp @141). 검증=7/4(토) pm/pmTotal 0·총계 76 유지, 7/3(금) pmTotal 29 무영향. ⇒ 독려 pm빌더·화면 교대표가 더는 없는 주말 오후조 표시/독려 안 함. 완료율 측정 개통 체인 완결(데이터 정합+시트 클린+코드 누수봉합).",
     "next": "🏁 완료율 측정 개통·정합 완결(데이터·시트·코드 3층 모두 클린). 배239 핵심 달성. 후속(선택): 마감조로 옮긴 3항목(쑥교체·주차장·분수대) 조 적정성 GM 확인 / 4부서 전체 완료율(현재 지원부만)은 별건.",
-    "depends_on": ""
+    "depends_on": "",
+    "module": "T2"
   },
   {
     "task_id": "CTO-2026-07-02-SKILL-MASTERY-LEARNING",
@@ -188,7 +200,8 @@
     "ship_no": 252,
     "note": "[2026-07-02 GM·brainstorming 설계 승인] 시토 자기학습(ai_learning_proposer)에 '설치 스킬·플러그인' 학습 통합(별도 아님·학습대상 확장). 깊이=발굴+추천(행동 자동변경 없음·카드 status제안·반영 수동). 신규 skill_inventory.py(플러그인캐시 SKILL.md 스캔·미활용 표시) + proposer '스킬·플러그인 활용' 영역 추가 + docs/skill_cheatsheet.md 반영대상. 입력=외부사례요약+스킬인벤토리+최근작업(gm_observation_ledger·_queue). 새 예약작업 0(기존 Wellperion-AI-Learning-Proposer-Weekly 슬롯). 설계=docs/superpowers/specs/2026-07-02-skill-mastery-learning-design.md.",
     "next": "GM 스펙 검토 → 구현(writing-plans or 시토 직접): skill_inventory.py 수집기 → proposer 확장 → 치트시트 반영경로 → 효과 환류 편입.",
-    "depends_on": ""
+    "depends_on": "",
+    "module": "T2"
   },
   {
     "task_id": "AIDE-2026-07-02-UNAPPROVED-RECOMMENDATION-257",
@@ -203,7 +216,8 @@
     "depends_on": "",
     "source": "gm_aide_scan",
     "reversibility": "비가역",
-    "aide_proposal_key": "gmaide|unapproved_streak"
+    "aide_proposal_key": "gmaide|unapproved_streak",
+    "module": "home"
   },
   {
     "task_id": "CTO-2026-07-03-AUTOSTATUS-T2-TIDY",
@@ -214,7 +228,8 @@
     "enqueued_at": "2026-07-03",
     "ship_no": 339,
     "note": "[2026-07-03 GM top3-2] 자율현황(오늘 top3 병합 완료분)과 T2 시스템현황 페이지 관계 정리·중복/역할 정합.",
-    "next": "T2↔자율현황 역할·링크 정리, 중복 제거"
+    "next": "T2↔자율현황 역할·링크 정리, 중복 제거",
+    "module": "T2"
   },
   {
     "task_id": "CTO-2026-07-03-SALES-EXPENSE-LIVE-WIRING",
@@ -226,7 +241,8 @@
     "ship_no": 354,
     "note": "[2026-07-03 GM 다음 집중세션] 월간운영계획 부서별 매출을 매출&지출 결합(목표 vs 실적)으로. 소스=202X년 N월 매출 보고 월별 별도 파일(6월=1oG63rj17-RMk2cdiVbwp4TOp-yN73uc04jDV7RfN9BI) 말일탭(6월 gid 615455871=30번탭) O8:T74 팀별. 막힘=이 시트 gviz 401 공개막힘, 브라우저 직접불가 → cao 인증 GAS 리더 필요(MCP 접근되나 range read 불가 전체반환 PII위험). 목표정본=status/sales_targets.json 610.5M 매월고정 팀9. 버그=매출마스터 18VRvD 팀값 부정확(6월 뮤지컬 380000 vs 실제 3777500) → 매출보고 시트가 실적정본. 지출=인건비시트 1uAmZXX 팀별+구매성. 팀=멤버십+옵션 수영 P.T 골프 스쿼시 체조 P.L(필라테스) 뮤지컬 GXE(파트너) 루프매소드. 운영부 멤버십+옵션은 salesfix로 2026년도 매출시트 정본배선 완료(6월 264471218).",
     "next": "집중세션: 1 cao GAS 리더(월별 파일 by title 검색·말일탭·O8:T74 파싱) 구축배포 2 월간계획 매출&지출 섹션(목표 vs 실적+팀별지출) 3 라이브검증 6월 뮤지컬 3777500. GAS 배포 clasp 인증 GM 동반 가능.",
-    "depends_on": ""
+    "depends_on": "",
+    "module": "T2"
   },
   {
     "task_id": "CTO-2026-07-03-MONTHLY-REPORT-TELEGRAM",
@@ -239,7 +255,8 @@
     "note": "[2026-07-03 시우→시토 인계] 배208 3단계 자동화. 시우가 데이터·콘텐츠 완비(monthly_report 라이브·화면 월간보고 탭·A3). 발송·스케줄만 시토 infra. 매월1일 Task Scheduler→monthly_report(전월) 호출→요약 3~5줄(완료율 잠정·이슈총계·최다이슈일·개선시사1줄+페이지링크)→점검관리방(-5136037543, 기존 daily_scheduler 패턴). 첫 실발송=8/1(7월분). 스펙=status/briefs/COO-2026-07-03-MONTHLY-REPORT-TELEGRAM-HANDOFF.md. 콘텐츠 의미=시우·발송 infra=시토.",
     "next": "시토: Task Scheduler 매월1일 트리거 + monthly_report 전월호출→요약생성→점검관리방 발송(기존 봇 인프라 확장·새 토큰 불필요). 진단서 참조.",
     "depends_on": "",
-    "source": "coo_handoff"
+    "source": "coo_handoff",
+    "module": "T2"
   },
   {
     "task_id": "CMO-2026-07-03-NEXT-EPISODE-PROPOSAL",
@@ -251,7 +268,8 @@
     "ship_no": 401,
     "note": "[2026-07-03 평가환류 ⑤ 첫 실가동] 주간 마케팅 정리 보고(status/briefs/CMO-weekly-feedback-20260703.md) Top 판정 근거=카페 문의클릭 39회 압도적 1위. 통한 채널(카페·지역 커뮤니티) 강화 + 당근은 방학특강서 약했으니 다른각(성인·회복) 테스트. 마케팅 루프가 평가→제안→G1로 처음 한 바퀴 돈 산출물.",
     "next": "카페 후속 1편 소재 확정→제작(compose)→M3 검수큐→GM 승인. 당근용 다른각 소재는 별도 테스트편.",
-    "source": "eval_feedback_loop"
+    "source": "eval_feedback_loop",
+    "module": "M1"
   },
   {
     "task_id": "CTO-2026-07-04-NORTHSTAR-REDESIGN",
@@ -263,7 +281,8 @@
     "ship_no": 420,
     "note": "GM 확정 3항: ①그룹핑축=북극성 모듈(owns, 페이지=수단·프로젝트=목적) ②승인UI=탭 인라인버튼([승인1] 텍스트 폐기·M5패턴) ③추천범위=중요건만(🛳️/⛴️·북극성갭·KPI미달)+C레벨 병렬 독립배(depends_on 없음). ★발효게이트: 라이브 send·cron·봇재기동 전부 금지 — 코드+드라이런+샘플카드까지만. 발효=GM go 별건.",
     "next": "샘플 카드 GM 검토→GM go 시 봇 재기동+06:30 라이브 발효",
-    "depends_on": ""
+    "depends_on": "",
+    "module": "T2"
   },
   {
     "task_id": "CMO-2026-07-04-AI-SERIES-MEASUREMENT-CH-33-37",
@@ -275,7 +294,8 @@
     "enqueued_at": "2026-07-04",
     "note": "[2026-07-04 GM 택] 5차 아크=측정·정직 챕터 확정(3안 중 GM 선택). 4차 자율아크(#32 '나는 방향만 잡는다') 완주 후 다음. 종착='감이 아니라 숫자로 방향을 본다 — 못 재는 건 정직하게'. §5 표 5행(#33~#37)+§5.1 기획카드 5장+§4.1 5차아크 추가. 실재근거: KPI지도·kpi.json tier·북극성 추천기 06:30 라이브·5채널 UTM 귀속 라이브(당일 실측). 정직 최우선(미측정·추정 카드 REALITY_GUARD 명시). producer가 #33부터 순차 자동제작(소진 해소). [2026-07-04 GM 재설계] 측정·정직 아크→실전 생존기로 교체(GM '너무 AI적' 지적+측정 소재 중복). 연결형 5부작(손님여정 오게→맞이→신뢰등록→유지→소개), AI 티 안 내고 #37에서만 '알아서 돌아간다' 리빌. 측정안은 _AI시리즈_이력.md 보존. #33~#37 상태 기획예정 복귀=자동제작 재개. [2026-07-04 재설계·구조확정] GM 방향 대전환: '측정·정직/실전 생존기'→폐기, 새 시리즈='한 달 웰페리온 ERP 자율화'(입문2+ERP2+실증17+피날레1=22편, 평일 데일리). 콘텐츠 시안=Artifact 캘린더(에메랄드). 포맷=하이브리드(웰리 영상 hook 3~6초+기존 캐러셀 상세) GM확정. 웰리=공식 마스코트(정장 곰) 재사용. 영상툴 조사완료: 주력 Kling3.0/바이럴 힉스필드(Kling·Veo 통합)/말하는웰리 Veo3.1, Sora2 종료예정. 구조리뷰: 검수(M5)·발행(IG mp4 지원)·표지(무료) 기존 재사용, 웰리 hook만 반자동 신규. 개인계정 시그니처색=에메랄드 박제. 무료 베이스라인 모션클립 GM 전달함.",
     "next": "👉 영상툴 재선정 중(GM) — 소라/캔바/Vrew/클링 중 택1(힉스필드 폐기). 선택 후: 선택툴로 웰리 hook EP1 테스트클립+캐러셀 결합 → 실물 검수 → 22편 롤아웃(07:30 자동제작 재개, #33~ 자동제작은 현재 보류중). [2026-07-06 GM] 힉스필드($39/월) 결재 폐기 — 다른 영상툴로 결정 예정.",
-    "ship_no": 426
+    "ship_no": 426,
+    "module": "M1"
   },
   {
     "task_id": "CPO-2026-07-05-NORTHSTAR-482",
@@ -303,7 +323,8 @@
     "note": "[2026-07-06 시포→시토 인계·GM 지시 '482 재발행 차단'] 원인: 북극성 추천기(scripts/northstar_recommender.py)가 kpi_values 스냅샷만 보고 KPI가 null이면 '미측정'으로 신호② 측정개통 카드를 발행하는데, 완료된 측정 배(_queue_archive)를 대조하지 않음 + kpi_collector가 GAS 일시 실패 시 전체 null 반환(2026-07-05 cpo 전환율 전 지표 None → 실제로는 7/4 이미 개통·누적 39.4% 라이브였음에도 재발행 착시 → ship482). 가드 2겹 제안: ①run()에서 candidates를 _queue+_queue_archive 완료건 제목과 dedup(정규화 매칭 시 드롭) ②측정개통류 신호②는 해당 역할 KPI가 '최근 N일 연속 null'일 때만 발행(1회 null=일시장애로 간주 억제). 발효게이트=시토 엔진 라이브(06:30 send)는 GM go·역롤백 준수. 로컬 드라이런 검증까지 자율.",
     "next": "시토: run() 완료건 dedup + 일시 null 억제 가드 구현 → 드라이런 검증(482류 재발행 0 확인) → GM go 시 라이브.",
     "depends_on": "",
-    "source": "cpo_handoff"
+    "source": "cpo_handoff",
+    "module": "T2"
   },
   {
     "task_id": "CEO-2026-07-06-ADHOC-d2282954",
@@ -343,7 +364,8 @@
     "ship_no": 488,
     "note": "[2026-07-06 GM 지시] 9시 매출보고 텔레그램 사진 아래 인라인버튼(\"📤 카톡 3방 전송\") 탭 → 카톡 3방(차의주 회장님/웰페리온 관리부/웰페리온 운영부) UI자동 전송. 구현 완료: ①scripts/kakao_report_sender.py(핵심 실행기, pywinauto+pywin32 클립보드 CF_DIB, --dry-run/--only-room 안전장치, py_compile+의존성 자동설치 확인) ②scripts/kakao_rooms.json(방 목록 설정) ③telegram_bot/bot.py cmd_kakao_send_callback(callback_data=kakao_send, 사진+캡션 그대로 다운로드→서브프로세스 실행→1줄 회신, 기존 폴링 무접촉·모듈 임포트 검증 완료) ④GAS 매출보고_자동발송.js sendTelegramPhoto에 인라인버튼 추가·clasp push -f 성공(라이브 반영). 스펙=docs/superpowers/specs/2026-07-06-카톡-매출보고-원클릭-전송기-design.md. [2026-07-06 확장] GM 최종 스펙 반영: ⑤bot.py 콜백이 사진을 로컬 월 폴더(kakao_rooms.json archive_dir, 기본 C:\\Users\\jjky0\\Documents\\매출보고)에 <YYYY-MM>/웰페리온_일일보고_<수신일YYYYMMDD>.png로 저장 후 그 저장본을 그대로 전송에 사용(중복 다운로드 제거) ⑥kakao_rooms.json 각 방에 prefix 필드 추가(차의주 회장님=\"회장님, \", 관리부/운영부=\"\") — 캡션=prefix+원본캡션(날짜 재계산 없음) ⑦kakao_report_sender.py에 --from-folder 옵션 추가(이미지 미지정 시 archive_dir/YYYY-MM/에서 오늘자 파일 자동선택), 방별 caption 조합은 sender가 kakao_rooms.json 기준 수행. 검증: py_compile(sender+bot.py) OK, C:\\Python314\\python.exe로 bot.py 전체 import OK, kakao_rooms.json JSON 유효+prefix 3방 정확, --from-folder(파일없음)·--image 없음 두 경우 모두 BLOCKED 에러 명확 출력 확인, 캡션 조합 단위테스트로 회장님방='회장님, 7.5(일) 매출 및 운영사항 보고드립니다.' / 관리부·운영부='7.5(일) 매출 및 운영사항 보고드립니다.' 정확히 조합됨 확인. 한계: 카톡 UI자동화·실제 archive 저장 트리거(텔레그램 콜백 실행)는 개발환경에 카톡 미설치+실 텔레그램 이벤트 없어 GM PC 실환경에서만 검증 가능. 봇 콜백은 다음 재기동 시 발효. [2026-07-06 자동 방 열기 추가] GM 지시로 ⑧kakao_report_sender.py에 자동 방 열기 추가: find_room_window 실패 시(RoomNotOpenError) 카톡 메인창 검색으로 자동으로 방을 연 뒤 전송 진행(open_room_via_search 재작성). GM PC 라이브로 메인창 컨트롤 트리 직접 조사(print_control_identifiers uia+win32, win32gui.EnumChildWindows)해 실측: 검색 Edit는 win32 클래스=Edit로 실존하나 비활성 시 폭 0으로 붕괴돼 UIA로 못 찾음(당초 실패 원인) → 우상단 돋보기 아이콘 고정 픽셀 오프셋 클릭(우측끝-112px, 상단+57px)으로 활성화 후 EnumChildWindows로 폭>0인 Edit만 식별. 검색 Edit에 Ctrl+A를 보내면 이 앱이 전역 단축키(\"친구 추가\" 다이얼로그)로 가로채는 함정을 라이브에서 실제로 겪고 확인(Escape로 안전 회피) → 기존텍스트 제거는 End/Shift+Home/Delete만 사용. 텍스트 입력은 클립보드 Ctrl+V(한글 IME 우회), Enter로 최상단 검색결과 열기. 방 창 확인은 기존과 동일하게 제목 완전일치만 성공 인정(엉뚱한 방 열려도 타임아웃으로 안전실패). 라이브 검증: \"김남욱\" 방을 의도적으로 닫은 뒤(WM_CLOSE) --dry-run --only-room \"김남욱\" 실행 → 로그 \"방 창이 안 열려 있음→자동 열기 시도→자동 열기 성공(검색)→DRY-RUN 미리보기 확인, 전송 생략\" 확인, 스크린샷 증빙(scripts/poc-evidence/kakao_send_김남욱_dryrun_preview_20260706_132543.png)으로 방이 실제 열려 포커스+클립보드 이미지 팝업까지 뜨고 Enter 없이 안전 취소됨 확인. 회장님·관리부 방은 오발송 방지로 이번에도 열지 않음(미검증 유지). py_compile OK. 스펙 §0-4~0-6 반영.",
     "next": "GM PC 실발송 테스트: ①dry-run --only-room 웰페리온 운영부로 캡션·미리보기 확인(완료) ②운영부 1방 실발송(완료) ③나머지 2방(차의주 회장님·웰페리온 관리부) 방 닫힌 상태에서 dry-run으로 자동 열기 확인 후 실발송 ④봇 재기동 후 버튼 전체경로(archive 저장 포함) 확인",
-    "depends_on": ""
+    "depends_on": "",
+    "module": "T2"
   },
   {
     "task_id": "CTO-2026-07-06-ADHOC-f91ffae6",
@@ -677,7 +699,8 @@
     "ship_no": 514,
     "note": "[2026-07-06 GM go] GM \"북극성 가는 항로 배들을 담당별 체크·진척률로 한눈에\" 요구. 기존 재료 재활용(voyage_module_map.py 매퍼·bootsetup_matrix owns·kpi_values 실측·nsmap)+이미 통과된 스펙/계획(.omc/plans/2026-07-04-voyage-map-module-grouping.md, deep-interview 3.6%). 오늘 만든 시안(scratchpad/northstar_progress.html) 룩 계승. 정직 하이브리드 진척(KPI 개통=%바·미개통=상태신호). 새 페이지지만 자율현황/G1과 역할분리(흡수 아님). 단계별 배 진척%(milestone)는 후속(각 배 관문 정의 필요).",
     "next": "엔진(build_voyage_map.py)→voyage_map.json→항해지도.html→5페이지 네비바→라이브. GM 시크릿 크롬 룩 확인 후 완료. 후속=배별 관문 진척%.",
-    "depends_on": ""
+    "depends_on": "",
+    "module": "T2"
   },
   {
     "task_id": "COO-2026-07-06-ADHOC-b8a95425",
