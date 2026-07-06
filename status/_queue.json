@@ -706,5 +706,19 @@
     "artifact": "- daily 런처 신설: scripts/weekly_marketing_feedback_daily.bat + launchers/weekly_marketing_feedback_daily_hidden.vbs\n  (기존 weekly_marketing_feedback.bat/.vbs 구조 그대로 미러링 — ASCII .bat + 숨김실행 vbs)\n- Windows 예약작업 Wellperion-CMO-Daily-Marketing-2100 등록(매일 21:00, wscript 숨김런처)\n- run_daily()는 이미 send_telegram (CLI ad-hoc · 커밋 1e779fc7)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "1e779fc7c0425b1b6aeb24297f01c27d45ba934a"
+  },
+  {
+    "task_id": "CEO-2026-07-06-ADHOC-97876736",
+    "clevel": "ceo",
+    "title": "[웰리] 항해 지도 신설 — 북극성 모듈로 배 그룹핑 + 정직 하이브리드 진척",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 517,
+    "artifact": "- scripts/build_voyage_map.py: voyage_module_map(vmm) 단일 매퍼 import해 _queue.json\n  활성 배를 role×모듈로 그룹핑, nsmap axis.module 태그(coo=O1·cto=T1) 기반으로만\n  실측 %바/신호등 렌더(나머지는 측정개통필요) → status/voyage_map.json 산출\n- bootsetup_matrix.json: coo·cto 해당 axis에 module 태그 5곳 추가(owns 재사용, 새 체계 아님)\n- sync_queue_mirror.py: (CLI ad-hoc · 커밋 97876736)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "978767365f343287dc96cb2dbbba5855dd3ba1f5"
   }
 ]
