@@ -455,5 +455,19 @@
     "artifact": "IntersectionObserver 기반 지연로드(startLazyChecks)는 check-board가 뷰포트에\n스크롤되어야만 발동 — 무스크롤 print(Ctrl+P·print-to-PDF)에선 GAS 호출조차\n안 돼 점검 현황이 인쇄본에 영구 '불러오는 중…'으로 남는 결함(요청#4 무력화).\nboot()에서 startLazyChecks() 대신 loadCheckSources()를 즉시 호출(eager)로\n전환 — _data는 이미 set된 상태라 레이스 없음, _checkTriggered로 중복호출\n방지 유지. Inters (CLI ad-hoc · 커밋 ef394a27)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "ef394a27d490f95f541538319a225e7a539e2056"
+  },
+  {
+    "task_id": "CEO-2026-07-06-ADHOC-198c50ed",
+    "clevel": "ceo",
+    "title": "[웰리] 경영진 1장 요약 뷰 추가 [웰리]/월간운영계획",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 499,
+    "artifact": "- 뷰 토글에 🎯 1장 요약 세그먼트 추가(body.view-summary 상호배타 토글)\n- summary-board: 헤더밴드·💰매출헤드라인·🎯top3·🔧점검요약·👤도달율 3라인\n- 이미 로드된 값만 재사용(calcFinance/selectTop3/점검월간캐시/VOC/도달율) — 신규 조회·하드코딩 없음(INC-001)\n- async 도착 핸들러(CFO매출·팀매출·점검월간·점검소스·NS맵)에 renderSummaryBoard 재호출 배선\n- @media print A3 landscape 1장 압축 규칙(요약만 남기고 상세·연간· (CLI ad-hoc · 커밋 198c50ed)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "198c50ed811b6ea85dff8f8172f768b5e5fe04e0"
   }
 ]
