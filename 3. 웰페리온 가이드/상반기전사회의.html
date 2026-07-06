@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웰페리온 2026 상반기 전사회의</title>
+<!--
+  웰페리온 2026 상반기 전사회의 — A3 가로 1장 인쇄용 자료(GM 요청 2026-07-06 · 재활용).
+  자기완결(인라인 CSS·다크 화면/밝은 인쇄). 라이브 데이터 = 월간운영계획.html과 동일 소스 재사용(신규 배관·하드코딩 없음):
+   · 매출 = 매출마스터 gviz(SALES_GVIZ) 부서맵 + 운영부(멤버십) GM시트 정본(OPS_GVIZ) 오버라이드 — INC-001 값 저장 없음.
+   · 목표 = status/sales_targets.json(월목표 고정). 분기목표=월×3·상반기=월×6.
+   · 기조·포상·하반기 3축 = status/monthly_ops_plan.json half_year_review(SSOT).
+  강습팀 실적은 1분기(1~3월)·2분기(4~6월) 분리. 미도래·미측정=정직 표기(지어내기 금지).
+-->
+<style>
+  :root{
+    --bg:#141319; --paper:#1c1b23; --surface:#232230; --border:#33313f; --border-strong:#454356;
+    --text:#f2f0f6; --text-soft:#cdcad8; --dim:#8f8ca0; --accent:#7c6cf0; --accent-soft:#a99cff;
+    --gold:#e6c074; --emerald:#63bba0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased;}
+  .sheet{max-width:1400px; margin:0; padding:22px 26px 34px;}
+  .doc-head{display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 16px; padding-bottom:14px; border-bottom:2px solid var(--gold); margin-bottom:16px;}
+  .doc-head h1{margin:0; font-size:26px; font-weight:800; letter-spacing:-0.02em;}
+  .doc-head .period{font-size:13.5px; color:var(--dim); font-weight:700;}
+  .doc-head .brand{margin-left:auto; font-size:12px; color:var(--emerald); font-weight:800; letter-spacing:0.04em;}
+  .kicker{display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 12px; padding:12px 18px; margin-bottom:18px; border-radius:12px;
+    background:linear-gradient(120deg,rgba(124,108,240,0.16),rgba(240,198,116,0.06)); border:1px solid rgba(124,108,240,0.4);}
+  .kicker .k-h{font-size:18px; font-weight:800;}
+  .kicker .k-h em{font-style:normal; color:var(--accent-soft);}
+  .kicker .k-sub{font-size:12px; color:var(--dim);}
+  .cols{display:grid; grid-template-columns:1.55fr 1fr; gap:20px; align-items:start;}
+  h2.sec{font-size:15px; font-weight:800; margin:0 0 10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  h2.sec .tag{font-size:10.5px; font-weight:400; color:var(--dim);}
+  .card{background:var(--paper); border:1px solid var(--border-strong); border-radius:14px; padding:14px 16px; margin-bottom:16px;}
+  table{width:100%; border-collapse:collapse;}
+  thead th{font-size:11px; font-weight:700; color:var(--dim); text-align:left; padding:7px 10px; border-bottom:1px solid var(--border-strong); line-height:1.35;}
+  thead th.num{text-align:right;}
+  tbody td{padding:8px 10px; font-size:12px; color:var(--text-soft); border-bottom:1px solid var(--border);}
+  tbody td.team{font-weight:700; color:var(--text);}
+  td.num{text-align:right; font-variant-numeric:tabular-nums;}
+  td.num .qv{display:block; color:var(--text);}
+  td.num .qp{display:block; font-size:10.5px; color:var(--accent-soft); font-weight:700; margin-top:1px;}
+  td.h2v{color:var(--gold); font-weight:700;}
+  tr.best td{background:rgba(240,198,116,0.09);}
+  tr.corp td{color:var(--dim); font-style:italic;}
+  tr.tot td{border-top:1px solid var(--border-strong); font-weight:700; color:var(--text); background:var(--surface); font-style:normal;}
+  .best-card{background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:12px; padding:12px 15px; margin-bottom:14px;}
+  .best-card .bc-top{font-size:10.5px; color:var(--gold); font-weight:800; display:block;}
+  .best-card .bc-team{font-size:16px; font-weight:800; display:block; margin-top:3px;}
+  .best-card .bc-meta{font-size:12px; color:var(--text-soft); display:block; margin-top:2px;}
+  .best-card .bc-meta b{color:var(--gold);}
+  .award{display:flex; flex-direction:column; gap:3px; background:linear-gradient(120deg,rgba(240,198,116,0.18),rgba(240,198,116,0.05));
+    border:1px solid var(--gold); border-radius:12px; padding:13px 16px; margin-bottom:16px;}
+  .award .aw-top{font-size:11px; color:var(--gold); font-weight:800;}
+  .award .aw-team{font-size:17px; font-weight:800;}
+  .award .aw-prize{font-size:15px; font-weight:800; color:var(--gold);}
+  .award .aw-basis{font-size:10.5px; color:var(--dim);}
+  .dirs{display:flex; flex-direction:column; gap:10px;}
+  .dir{background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:12px; padding:11px 14px;}
+  .dir .d-n{font-size:10px; font-weight:800; color:var(--dim); letter-spacing:0.04em;}
+  .dir .d-t{font-size:14px; font-weight:800; display:block; margin:2px 0 3px;}
+  .dir .d-d{font-size:11.5px; color:var(--text-soft); line-height:1.5;}
+  .none{font-size:11.5px; color:var(--dim); padding:6px 2px;}
+  .foot{margin-top:20px; font-size:10.5px; color:var(--dim); line-height:1.6;}
+  @media (max-width:820px){ .cols{grid-template-columns:1fr;} .doc-head h1{font-size:22px;} }
+
+  /* ── 인쇄: A3 가로 딱 1장 · 밝은 종이(A3 인쇄 가독) ── */
+  @page{ size:A3 landscape; margin:11mm; }
+  @media print{
+    :root{
+      --bg:#fff; --paper:#fff; --surface:#f7f6fa; --border:#d8d5e0; --border-strong:#b8b4c6;
+      --text:#1a1826; --text-soft:#33313f; --dim:#6c6a78; --accent:#6a5adf; --accent-soft:#5a49c9; --gold:#a9822e; --emerald:#2e6e5b;
+    }
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .cols{gap:16px;}
+    .card,.award,.best-card,.dir,.kicker{page-break-inside:avoid; break-inside:avoid;}
+    .doc-head,.kicker,.cols{page-break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="doc-head">
+      <h1>웰페리온 2026 상반기 전사회의</h1>
+      <span class="period">2026년 1월 ~ 6월 리뷰 · 하반기 방향</span>
+      <span class="brand">WELLPERION</span>
+    </div>
+
+    <div class="kicker" id="kicker"><span class="k-h">🤖 <em>불러오는 중…</em></span></div>
+
+    <div class="cols">
+      <div>
+        <h2 class="sec">📊 상반기 매출 리뷰 <span class="tag">강습팀 1·2분기 분리 · 실측 · 미도래=정직</span></h2>
+        <div class="card" id="sales-card"><div class="none">매출 실측을 불러오는 중…</div></div>
+      </div>
+      <div>
+        <h2 class="sec">🏆 2분기 포상 · 잘한 팀</h2>
+        <div id="award-card"><div class="none">포상 정보를 불러오는 중…</div></div>
+        <h2 class="sec" style="margin-top:6px;">🎯 하반기 방향 3축</h2>
+        <div class="dirs" id="dirs-card"><div class="none">하반기 방향을 불러오는 중…</div></div>
+      </div>
+    </div>
+
+    <div class="foot" id="foot">
+      데이터 = 월간운영계획과 동일 라이브 소스(매출마스터·GM시트 매출 정본·sales_targets.json·monthly_ops_plan.json half_year_review). 분기 달성% = 분기실적 ÷ (월목표×3) · 상반기 = ÷ (월목표×6) · 기준 목표(팀별 조정 전). 미측정·미도래는 '—'로 정직 표기(지어내기 없음).
+    </div>
+  </div>
+
+<script>
+(function(){
+  'use strict';
+  var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+  var GAS_URL  = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  var PLAN_PATH = 'status/monthly_ops_plan.json';
+  var TARGETS_PATH = 'status/sales_targets.json';
+  var SALES_SHEET = '18VRvDEYQ7LfaPaHmXROBpIVmYtjqZGrYie75JZnRKDA';
+  var SALES_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + SALES_SHEET + '/gviz/tq?tqx=out:json';
+  var OPS_SHEET = '1gCQNny8TDls5SjrtMkINu4HCltvFkoXmkTeXO_c3q58';
+  var OPS_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + OPS_SHEET + '/gviz/tq?tqx=out:json&gid=195790960';
+  var TEAM_DEPT_TO_KEY = {"수영":"swim","P.T":"pt","골프":"golf","스쿼시":"squash","체조&트램":"gym","필라테스":"pilates","뮤지컬":"musical","GXE":"gxe"};
+
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtWon(n){
+    if(typeof n !== 'number' || isNaN(n)) return '—';
+    var sign = n < 0 ? '-' : '', a = Math.abs(n);
+    if(a >= 100000000){ return sign + (Math.round(a / 100000000 * 100) / 100) + '억'; }
+    if(a >= 10000){ return sign + Math.round(a / 10000).toLocaleString() + '만'; }
+    return sign + Math.round(a).toLocaleString() + '원';
+  }
+  function withTimeout(p, ms, fb){ var t; var to = new Promise(function(res){ t = setTimeout(function(){ res(fb); }, ms); }); return Promise.race([p, to]).then(function(v){ clearTimeout(t); return v; }); }
+
+  function readJson(path){
+    return fetch(RAW_BASE + path, {cache:'default'})
+      .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.json(); })
+      .catch(function(){
+        return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:'read_file', path:path})})
+          .then(function(r){ return r.json(); })
+          .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error('read'); })
+          .catch(function(){ return null; });
+      });
+  }
+  function fetchGvizText(url){ return fetch(url, {cache:'default'}).then(function(r){ return r.text(); }); }
+  function readGvizDeptMap(url, valCol0){
+    return fetchGvizText(url).then(function(t){
+      var json = JSON.parse(t.substring(t.indexOf('{'), t.lastIndexOf('}') + 1));
+      var rows = (json.table && json.table.rows) || [], map = {}, found = false;
+      rows.forEach(function(row){
+        var c = row.c || [], dept = c[0] && c[0].v; if(!dept) return;
+        if(!map[dept]) map[dept] = new Array(12).fill(0);
+        for(var m = 0; m < 12; m++){ var cl = c[valCol0 + m]; if(cl && typeof cl.v === 'number'){ map[dept][m] += cl.v; found = true; } }
+      });
+      return found ? map : null;
+    }).catch(function(){ return null; });
+  }
+  function readOpsSalesTruth(){
+    return fetchGvizText(OPS_GVIZ).then(function(t){
+      var json = JSON.parse(t.substring(t.indexOf('{'), t.lastIndexOf('}') + 1));
+      var rows = (json.table && json.table.rows) || [], arr = new Array(12).fill(null), found = false;
+      rows.forEach(function(row){
+        var c = row.c || [], lbl = c[1] && c[1].v; if(!lbl) return;
+        var mi = parseInt(String(lbl), 10) - 1; if(!(mi >= 0 && mi < 12)) return;
+        var cl = c[11]; if(cl && typeof cl.v === 'number'){ arr[mi] = cl.v; found = true; }
+      });
+      return found ? arr : null;
+    }).catch(function(){ return null; });
+  }
+
+  var _plan = null, _targets = null, _salesDept = null;
+
+  function renderKicker(){
+    var hr = (_plan && _plan.half_year_review) || null;
+    var el = document.getElementById('kicker');
+    if(!hr){ el.innerHTML = '<span class="k-h">🤖 <em>기조 정본(half_year_review) 로딩 실패</em></span>'; return; }
+    el.innerHTML = '<span class="k-h">🤖 <em>' + esc(hr.headline || '') + '</em></span>' +
+      (hr.headline_sub ? '<span class="k-sub">' + esc(hr.headline_sub) + '</span>' : '');
+  }
+
+  function computeRows(){
+    var teams = (_targets && _targets.teams) || [];
+    var KEY_TO_DEPT = {}; for(var k in TEAM_DEPT_TO_KEY){ KEY_TO_DEPT[TEAM_DEPT_TO_KEY[k]] = k; }
+    function qActual(key, q){
+      var dept = (key === 'membership') ? '운영부' : KEY_TO_DEPT[key];
+      if(!dept || !_salesDept || !_salesDept[dept]) return null;
+      var arr = _salesDept[dept], s = 0, start = q * 3;
+      for(var m = start; m < start + 3 && m < arr.length; m++){ s += Number(arr[m]) || 0; }
+      return s;
+    }
+    var lesson = [], membership = null;
+    teams.forEach(function(tt){
+      var mtgt = Number(tt.target) || 0, qtgt = mtgt * 3, htgt = mtgt * 6;
+      var q1 = qActual(tt.key, 0), q2 = qActual(tt.key, 1);
+      var h1 = (q1 != null || q2 != null) ? ((q1 || 0) + (q2 || 0)) : null;
+      var row = {key: tt.key, name: tt.name, qtgt: qtgt, htgt: htgt, q1: q1, q2: q2, h1: h1,
+        q1pct: (q1 != null && qtgt) ? Math.round(q1 / qtgt * 100) : null,
+        q2pct: (q2 != null && qtgt) ? Math.round(q2 / qtgt * 100) : null,
+        h1pct: (h1 != null && htgt) ? Math.round(h1 / htgt * 100) : null};
+      if(tt.key === 'membership') membership = row; else lesson.push(row);
+    });
+    return {lesson: lesson, membership: membership};
+  }
+
+  function renderSales(){
+    var host = document.getElementById('sales-card');
+    if(!(_targets && _targets.teams && _targets.teams.length)){ host.innerHTML = '<div class="none">팀별 목표 정본(sales_targets.json) 로딩 중…</div>'; return; }
+    var rc = computeRows(), lesson = rc.lesson, membership = rc.membership;
+    var haveActual = !!_salesDept;
+    var best = null;
+    if(haveActual){ lesson.forEach(function(r){ if(r.q2pct != null && (!best || r.q2pct > best.q2pct)) best = r; }); }
+    window._h1best = best; window._h1have = haveActual;
+
+    function qcell(a, p){ return '<td class="num"><span class="qv">' + (a != null ? fmtWon(a) : '—') + '</span><span class="qp">' + (p != null ? p + '%' : '—') + '</span></td>'; }
+    var body = lesson.map(function(r){
+      var isB = best && r.key === best.key;
+      return '<tr' + (isB ? ' class="best"' : '') + '><td class="team">' + esc(r.name) + (isB ? ' 🏅' : '') + '</td>' +
+        qcell(r.q1, r.q1pct) + qcell(r.q2, r.q2pct) + qcell(r.h1, r.h1pct) + '<td class="num h2v">' + fmtWon(r.htgt) + '</td></tr>';
+    }).join('');
+    if(membership){
+      var mr = membership;
+      body += '<tr class="corp"><td class="team">' + esc(mr.name) + ' · 전사</td>' + qcell(mr.q1, mr.q1pct) + qcell(mr.q2, mr.q2pct) + qcell(mr.h1, mr.h1pct) + '<td class="num h2v">' + fmtWon(mr.htgt) + '</td></tr>';
+    }
+    var all = lesson.concat(membership ? [membership] : []);
+    var t = {q1:null, q2:null, h1:null, qtgt:0, htgt:0};
+    all.forEach(function(r){ t.qtgt += r.qtgt; t.htgt += r.htgt; if(r.q1 != null) t.q1 = (t.q1||0)+r.q1; if(r.q2 != null) t.q2 = (t.q2||0)+r.q2; if(r.h1 != null) t.h1 = (t.h1||0)+r.h1; });
+    var tq1 = (t.q1 != null && t.qtgt) ? Math.round(t.q1/t.qtgt*100) : null;
+    var tq2 = (t.q2 != null && t.qtgt) ? Math.round(t.q2/t.qtgt*100) : null;
+    var th1 = (t.h1 != null && t.htgt) ? Math.round(t.h1/t.htgt*100) : null;
+    body += '<tr class="tot"><td class="team">전사 합계</td>' + qcell(t.q1, tq1) + qcell(t.q2, tq2) + qcell(t.h1, th1) + '<td class="num h2v">' + fmtWon(t.htgt) + '</td></tr>';
+
+    host.innerHTML = '<table><thead><tr><th>팀</th><th class="num">1분기(1~3월)<br>실적·달성%</th><th class="num">2분기(4~6월)<br>실적·달성%</th><th class="num">상반기 합<br>실적·달성%</th><th class="num">하반기 목표<br>(7~12월)</th></tr></thead><tbody>' + body + '</tbody></table>';
+    renderAward();
+  }
+
+  function renderAward(){
+    var host = document.getElementById('award-card');
+    var hr = (_plan && _plan.half_year_review) || null, aw = hr && hr.award;
+    var best = window._h1best, haveActual = window._h1have;
+    var html = '';
+    if(aw){
+      html += '<div class="award"><span class="aw-top">🏆 ' + esc(aw.quarter || '2분기') + ' 포상</span>' +
+        '<span class="aw-team">' + esc(aw.team || '') + '</span>' +
+        '<span class="aw-prize">' + esc(aw.prize || '') + '</span>' +
+        (aw.basis ? '<span class="aw-basis">' + esc(aw.basis) + '</span>' : '') + '</div>';
+    }
+    if(best){
+      html += '<div class="best-card"><span class="bc-top">🏅 2분기 잘한 팀</span>' +
+        '<span class="bc-team">' + esc(best.name) + '</span>' +
+        '<span class="bc-meta">2분기 <b>' + fmtWon(best.q2) + '</b> · 달성률 <b>' + best.q2pct + '%</b> (분기목표 ' + fmtWon(best.qtgt) + ')</span></div>';
+    } else if(haveActual === false){
+      html += '<div class="none">잘한 팀 — 상반기 실측 도착 대기(지어내기 없음).</div>';
+    } else if(haveActual){
+      html += '<div class="none">잘한 팀 — 달성률 산출 가능한 실측 없음.</div>';
+    }
+    if(!html) html = '<div class="none">포상 정본(half_year_review.award) 로딩 실패.</div>';
+    host.innerHTML = html;
+  }
+
+  function renderDirs(){
+    var hr = (_plan && _plan.half_year_review) || null;
+    var dirs = (hr && hr.directions) || [];
+    var host = document.getElementById('dirs-card');
+    if(!dirs.length){ host.innerHTML = '<div class="none">하반기 방향 정본 로딩 실패.</div>'; return; }
+    host.innerHTML = dirs.map(function(d, i){
+      return '<div class="dir"><span class="d-n">' + (i + 1) + '축</span>' +
+        '<span class="d-t">' + esc(d.icon || '') + ' ' + esc(d.title || '') + '</span>' +
+        '<span class="d-d">' + esc(d.desc || '') + '</span></div>';
+    }).join('');
+  }
+
+  // ── 부팅: 정본(plan)·목표(정적) 먼저 → 즉시 렌더. 매출(gviz)은 도착 시 표·잘한팀 갱신. ──
+  readJson(PLAN_PATH).then(function(p){ _plan = p; renderKicker(); renderSales(); renderAward(); renderDirs(); });
+  withTimeout(readJson(TARGETS_PATH), 8000, null).then(function(v){ _targets = v; renderSales(); });
+  // 매출 = 매출마스터 부서맵 + 운영부(멤버십) GM시트 정본 오버라이드(월간운영계획과 동일 규칙).
+  Promise.all([ withTimeout(readGvizDeptMap(SALES_GVIZ, 1), 8000, null), withTimeout(readOpsSalesTruth(), 6000, null) ]).then(function(a){
+    var salesDept = a[0], opsTruth = a[1];
+    if(opsTruth && salesDept){
+      var base = salesDept['운영부'] || new Array(12).fill(0);
+      salesDept['운영부'] = base.map(function(v, i){ return (typeof opsTruth[i] === 'number') ? opsTruth[i] : (v || 0); });
+    }
+    _salesDept = salesDept;
+    renderSales();
+  });
+})();
+</script>
+</body>
+</html>
