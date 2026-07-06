@@ -337,6 +337,38 @@
   .t3-legend{font-size:10.5px; color:var(--dim); line-height:1.5; margin-top:9px;}
   @media (max-width:720px){ .t3-card{min-width:calc(50% - 5px);} }
 
+  /* ── 📋 상반기 리뷰 & 하반기 방향(GM 상반기 전사회의 2026-07-06 · data-blkid=h1review) ── */
+  .blk.h1review-wrap{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:5px 14px 12px; margin-bottom:4px;}
+  .blk.h1review-wrap h2.sec{margin-top:8px;}
+  .h1r-banner{display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 12px; padding:12px 16px; margin:4px 0 12px; background:linear-gradient(120deg,rgba(124,58,237,0.14),rgba(240,198,116,0.08)); border:1px solid rgba(124,58,237,0.38); border-radius:12px;}
+  .h1r-banner .b-h{font-size:18px; font-weight:800; color:var(--text); letter-spacing:-0.01em;}
+  .h1r-banner .b-h em{font-style:normal; color:var(--accent-soft);}
+  .h1r-banner .b-sub{font-size:11.5px; color:var(--dim);}
+  .h1r-sub-h{font-size:12.5px; font-weight:700; color:var(--text-soft); margin:14px 2px 7px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .h1r-sub-h .h1r-tag{font-size:10.5px; font-weight:400; color:var(--dim);}
+  .h1r-best{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 10px;}
+  .h1r-best-card{flex:1; min-width:190px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:11px; padding:11px 14px; display:flex; flex-direction:column; gap:4px;}
+  .h1r-best-card .bc-top{font-size:10.5px; color:var(--gold); font-weight:800; letter-spacing:0.02em;}
+  .h1r-best-card .bc-team{font-size:14px; font-weight:800; color:var(--text);}
+  .h1r-best-card .bc-meta{font-size:11.5px; color:var(--text-soft);}
+  .h1r-best-card .bc-meta b{color:var(--gold); font-weight:800;}
+  .h1r-none{font-size:11.5px; color:var(--dim); padding:6px 2px;}
+  table.rpt.h1rteam{min-width:0;}
+  .h1rteam thead th{padding:7px 12px;}
+  .h1rteam tbody td{padding:8px 12px; font-size:12px; color:var(--text-soft);}
+  .h1rteam td.num, .h1rteam th.num{text-align:right; font-variant-numeric:tabular-nums;}
+  .h1rteam td.pctc{color:var(--accent-soft); font-weight:700;}
+  .h1rteam td.h2v{color:var(--gold); font-weight:700;}
+  .h1rteam tbody tr.best td{background:rgba(240,198,116,0.08);}
+  .h1rteam tbody tr.corp td{color:var(--dim); font-style:italic;}
+  .h1rteam tbody tr.tot td{border-top:1px solid var(--border-strong); font-weight:700; color:var(--text); background:var(--surface); font-style:normal;}
+  .h1r-dir-grid{display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;}
+  .h1r-dir{flex:1; min-width:200px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:12px; padding:12px 14px 13px; display:flex; flex-direction:column; gap:6px;}
+  .h1r-dir .d-n{font-size:10px; font-weight:800; color:var(--dim); letter-spacing:0.04em;}
+  .h1r-dir .d-t{font-size:13.5px; font-weight:700; color:var(--text); line-height:1.3;}
+  .h1r-dir .d-d{font-size:11px; color:var(--text-soft); line-height:1.5;}
+  @media (max-width:720px){ .h1r-dir{min-width:calc(50% - 5px);} .h1r-best-card{min-width:calc(50% - 4px);} }
+
   /* ── 🏷️ 이달 테마(월 헤더 상태 라벨 옆 인라인 · 舊 별도 그라디언트 배너 제거 · GM 정정 2026-07) ── */
   .mtheme-report{font-size:11px; color:var(--accent-soft); white-space:normal;}
 
@@ -827,6 +859,12 @@
         </div>
       </div>
       <div class="fin-dept-full" id="fin-dept-board"></div>
+    </section>
+
+    <!-- 📋 상반기 리뷰 & 하반기 방향 (GM 상반기 전사회의 반영 2026-07-06 · 상반기 실적=라이브 실측 · 정렬모드 편입 data-blkid=h1review) -->
+    <section class="blk h1review-wrap" data-blkid="h1review">
+      <h2 class="sec">📋 상반기 리뷰 &amp; 하반기 방향 <span class="stag">1~6월 실측 · 강습팀·잘한 팀·하반기 3축</span></h2>
+      <div id="h1review-board"><div class="board-status">상반기 리뷰를 계산하는 중…</div></div>
     </section>
 
     <!-- 🎯 이달 핵심 과제 top3 (1·2·3순위 · 매출 제외 · 중요도 자동 선정 · GM 확정 2026-07-04) -->
@@ -1370,8 +1408,8 @@
         '<div class="t3-ns">' + nsBadge(o) + '</div>' +
       '</div>';
     }).join('');
-    host.innerHTML = '<div class="t3-grid">' + cards + '</div>' +
-      '<div class="t3-legend">자동 선정(중요도순) · 매출 과제 제외 · 산식 = 상태(진행&gt;이월&gt;계획&gt;완료) + 전사 과제 + 북극성 연결 + 진척 가중(동점=진척 높은 순) · 결정적(랜덤 없음)</div>';
+    // t3-legend(산식 부연) 제거(GM 지시 2026-07-06 가독성 정리) — 요지는 헤더 stag('매출 제외 · 중요도순 1·2·3')로 충분.
+    host.innerHTML = '<div class="t3-grid">' + cards + '</div>';
   }
 
   // ── 월 헤더 (테마 문구는 핵심과제 표와 중복 → 렌더 제거, GM 지시 2026-07-04. 데이터 m.theme/report.theme는 정본 보존) ──
@@ -1732,9 +1770,96 @@
       '<span>월평균(측정 ' + known.length + '개월) <b>' + (avg != null ? fmtWon(avg) : '—') + '</b></span>' +
     '</div>';
 
-    var legend = '<div class="flegend"><span class="fnote">● 센터전체 매출(회원권+강습+기타·주차) · 소스 = <a href="cfo/finance/매출지출현황.html" style="color:var(--gold);text-decoration:none">AI CFO 매출현황</a>과 동일 sales_monthly 정본(신규 조회 없음, 부팅 시 미러 재사용) · 범위 = 1~선택월(' + (curMnum || '—') + '월)까지만 · 미측정월은 지어내지 않고 정직 표기 · 목표 = 대표 월 6억(연 72억÷12) · 강조 막대 = 선택월.</span></div>';
+    // 회색 범례(.flegend/.fnote) 제거(GM 지시 2026-07-06 가독성 정리) — 소스·범위·목표 설명은 헤더 stag·CFO 링크로 안내. 데이터(누계·목표·부족분·연 72억 대비)는 위 summary(fhist-sum)에 유지.
+    host.innerHTML = '<div class="fchart hist">' + cols + '</div>' + summary;
+  }
 
-    host.innerHTML = '<div class="fchart hist">' + cols + '</div>' + summary + legend;
+  // ── 📋 상반기 리뷰 & 하반기 방향(GM 상반기 전사회의 반영 2026-07-06) ──
+  // 상반기(1~6월) 강습팀 실적 = _cfoSalesDept[부서] 0~5월 합(부팅 시 이미 조회한 매출마스터 재사용·신규 배관 없음·INC-001 값 저장 없음).
+  // 목표 = status/sales_targets.json 월 목표(고정). 상반기 목표=하반기 목표=월 목표×6(월별 동일·팀별 조정 전=정직 표기). 잘한 팀=강습팀 중 달성률 최고(실측 있을 때만·지어내기 금지).
+  function renderH1Review(){
+    var host = document.getElementById('h1review-board');
+    if(!host) return;
+    var hr = (_data && _data.half_year_review) || null;
+    var HALF = 6;
+
+    var banner = hr ? ('<div class="h1r-banner"><span class="b-h">🤖 <em>' + esc(hr.headline || '') + '</em></span>' +
+      (hr.headline_sub ? '<span class="b-sub">' + esc(hr.headline_sub) + '</span>' : '') + '</div>') : '';
+
+    var teamRows = (_salesTargets && _salesTargets.teams) || [];
+    var KEY_TO_DEPT = {}; for(var kd in TEAM_DEPT_TO_KEY){ KEY_TO_DEPT[TEAM_DEPT_TO_KEY[kd]] = kd; }
+    var haveActual = !!_cfoSalesDept;
+    function h1ActualFor(key){
+      var dept = (key === 'membership') ? '운영부' : KEY_TO_DEPT[key];
+      if(!dept || !_cfoSalesDept || !_cfoSalesDept[dept]) return null;
+      var arr = _cfoSalesDept[dept], s = 0;
+      for(var m = 0; m < HALF && m < arr.length; m++){ s += Number(arr[m]) || 0; }
+      return s;
+    }
+
+    var lessonRows = [], membershipRow = null;
+    teamRows.forEach(function(tt){
+      var mtgt = Number(tt.target) || 0, act = h1ActualFor(tt.key), htgt = mtgt * HALF;
+      var pct = (act != null && htgt) ? Math.round(act / htgt * 100) : null;
+      var row = {key: tt.key, name: tt.name, mtgt: mtgt, htgt: htgt, act: act, pct: pct};
+      if(tt.key === 'membership') membershipRow = row; else lessonRows.push(row);
+    });
+
+    var best = null;
+    if(haveActual){ lessonRows.forEach(function(r){ if(r.pct != null && (!best || r.pct > best.pct)) best = r; }); }
+    var bestHtml;
+    if(best){
+      bestHtml = '<div class="h1r-best"><div class="h1r-best-card"><span class="bc-top">🏆 목표 대비 잘한 팀</span>' +
+        '<span class="bc-team">' + esc(best.name) + '</span>' +
+        '<span class="bc-meta">상반기 <b>' + fmtWon(best.act) + '</b> · 달성률 <b>' + best.pct + '%</b> (목표 ' + fmtWon(best.htgt) + ')</span></div></div>';
+    } else if(!haveActual){
+      bestHtml = '<div class="h1r-none">잘한 팀 하이라이트 — 상반기 실측(sales_monthly) 도착 대기(지어내기 없음).</div>';
+    } else {
+      bestHtml = '<div class="h1r-none">잘한 팀 하이라이트 — 달성률 산출 가능한 실측 없음.</div>';
+    }
+
+    var tbody = lessonRows.map(function(r){
+      var isBest = best && r.key === best.key;
+      return '<tr' + (isBest ? ' class="best"' : '') + '><td>' + esc(r.name) + (isBest ? ' 🏆' : '') + '</td>' +
+        '<td class="num">' + (r.act != null ? fmtWon(r.act) : '—') + '</td>' +
+        '<td class="num pctc">' + (r.pct != null ? r.pct + '%' : '—') + '</td>' +
+        '<td class="num">' + fmtWon(r.mtgt) + '</td>' +
+        '<td class="num h2v">' + fmtWon(r.htgt) + '</td></tr>';
+    }).join('');
+    if(membershipRow){
+      var mr = membershipRow;
+      tbody += '<tr class="corp"><td>' + esc(mr.name) + ' · 전사(강습팀 아님)</td>' +
+        '<td class="num">' + (mr.act != null ? fmtWon(mr.act) : '—') + '</td>' +
+        '<td class="num pctc">' + (mr.pct != null ? mr.pct + '%' : '—') + '</td>' +
+        '<td class="num">' + fmtWon(mr.mtgt) + '</td>' +
+        '<td class="num h2v">' + fmtWon(mr.htgt) + '</td></tr>';
+    }
+    var allRows = lessonRows.concat(membershipRow ? [membershipRow] : []);
+    var totAct = null, totMtgt = 0, totHtgt = 0;
+    allRows.forEach(function(r){ totMtgt += r.mtgt; totHtgt += r.htgt; if(r.act != null){ totAct = (totAct || 0) + r.act; } });
+    var totPct = (totAct != null && totHtgt) ? Math.round(totAct / totHtgt * 100) : null;
+    tbody += '<tr class="tot"><td>전사 합계</td><td class="num">' + (totAct != null ? fmtWon(totAct) : '—') + '</td>' +
+      '<td class="num pctc">' + (totPct != null ? totPct + '%' : '—') + '</td>' +
+      '<td class="num">' + fmtWon(totMtgt) + '</td><td class="num h2v">' + fmtWon(totHtgt) + '</td></tr>';
+
+    var table = teamRows.length ?
+      ('<div class="rpt-wrap"><table class="rpt findept h1rteam"><thead><tr>' +
+        '<th>팀</th><th class="num">상반기 실적(1~6월·실측)</th><th class="num">달성%</th>' +
+        '<th class="num">월 목표</th><th class="num">하반기 목표(7~12월)</th></tr></thead><tbody>' +
+        tbody + '</tbody></table></div>') :
+      '<div class="h1r-none">팀별 목표 정본(sales_targets.json) 로딩 중…</div>';
+
+    var dirs = (hr && hr.directions) || [];
+    var dirHtml = dirs.length ? ('<div class="h1r-dir-grid">' + dirs.map(function(d, i){
+      return '<div class="h1r-dir"><span class="d-n">' + (i + 1) + '축</span>' +
+        '<span class="d-t">' + esc(d.icon || '') + ' ' + esc(d.title || '') + '</span>' +
+        '<span class="d-d">' + esc(d.desc || '') + '</span></div>';
+    }).join('') + '</div>') : '';
+
+    host.innerHTML = banner +
+      '<div class="h1r-sub-h">🏆 상반기 매출 리뷰 · 잘한 팀</div>' + bestHtml +
+      '<div class="h1r-sub-h">📊 강습팀 상반기 리뷰 + 하반기 목표 <span class="h1r-tag">하반기=월 목표×6 · 달성%=상반기÷(월×6) · 기준 목표(팀별 조정 전)</span></div>' + table +
+      (dirHtml ? ('<div class="h1r-sub-h">🧭 하반기 방향 3축</div>' + dirHtml) : '');
   }
 
   // ── 실무 도달율 + AI 활용 도달율 병합표 (GM 지시 2026-07-03: 담당당 한 행에 실무 진척·AI 활용·북극성/방향 병합) ──
@@ -1986,9 +2111,8 @@
   function renderRoadmap(){
     var host = document.getElementById('roadmap-board');
     if(!host) return;
-    var rm = _data && _data.strategy_roadmap;
-    host.innerHTML = roadmapStripHtml() +
-      '<div class="rm-legend">' + esc((rm && rm.note) || '') + '</div>';
+    // rm-legend(소스·밴드 설명 부연) 제거(GM 지시 2026-07-06 가독성 정리) — 데이터(6단계·분기 밴드)는 타임라인 자체가 표시. 정본 note는 JSON 보존.
+    host.innerHTML = roadmapStripHtml();
   }
 
   // ── 📊 연속 이니셔티브 상단밴드(renderMonthBand) = 폐지(GM 확정 2026-07-04 월별 상단 재구성) ──
@@ -2273,6 +2397,7 @@
     renderRoadmap();
     renderFinance();
     renderSalesHistory();
+    renderH1Review();
     renderBoard();
     if(_checkReady){ renderCheckStatus(); renderIssues(); } // 지연 로드: 소스 도착 전엔 HTML 플레이스홀더 유지
     renderPractitioners();
@@ -2383,8 +2508,8 @@
   //   값·데이터 변경 아님(표시·순서 UI만) · 기존 렌더 함수/데이터 무손상(요소 이동만·재생성 없음).
   //   상태={표시여부·순서}는 이 브라우저 localStorage(mop_arrange_v1)에만 저장 — GM 로컬(공유 아님).
   var ARR_KEY = 'mop_arrange_v1';
-  var ARR_DEFAULT = ['fin','top3','detail','roadmap','check','prac']; // 기본(HTML 원래) 순서·전체 표시
-  var ARR_LABELS = {fin:'💰 매출 종합', top3:'🎯 이달 핵심 과제 top3', detail:'📋 이달 핵심 과제 상세', roadmap:'🗺️ 전략 로드맵 진척', check:'🔧 점검 현황 & 종합 접수처', prac:'👤 실무 · AI 활용 도달율'};
+  var ARR_DEFAULT = ['fin','h1review','top3','detail','roadmap','check','prac']; // 기본(HTML 원래) 순서·전체 표시
+  var ARR_LABELS = {fin:'💰 매출 종합', h1review:'📋 상반기 리뷰 & 하반기 방향', top3:'🎯 이달 핵심 과제 top3', detail:'📋 이달 핵심 과제 상세', roadmap:'🗺️ 전략 로드맵 진척', check:'🔧 점검 현황 & 종합 접수처', prac:'👤 실무 · AI 활용 도달율'};
   var _arrangeMode = false;
 
   function arrGrid(){ return document.querySelector('.report-grid'); }
@@ -2495,7 +2620,7 @@
       r = r || {};
       _cfoSales = r.sales; _cfoExp = r.exp; _cfoSalesDept = r.salesDept; _cfoLaborDept = r.laborDept;
       _finReady = true;
-      if(_data){ renderReport(); renderFinance(); renderSalesHistory(); renderSummaryBoard(); }
+      if(_data){ renderReport(); renderFinance(); renderSalesHistory(); renderH1Review(); renderSummaryBoard(); }
     });
 
     // 3) 구매성(proc) 라이브 — 전체지출 = 인건비 + 구매성. 도착 시 임팩트·요약·재무 갱신.
@@ -2515,6 +2640,7 @@
     withTimeout(readSalesTargets(), 8000, null).then(function(v){
       _salesTargets = v;
       if(_data && _finReady) renderFinance();
+      if(_data) renderH1Review();
     });
 
     // 6) 강사→팀 로스터(LABOR_GVIZ 공유·중복제거) — team_sales 팀합산용. 도착 시 재무 갱신.
