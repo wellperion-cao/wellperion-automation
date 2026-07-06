@@ -62,6 +62,21 @@
   .ebtn.cancel{background:var(--surface); color:var(--dim); border:1px solid var(--border-strong);}
   .ebtn.chair{background:var(--surface); color:var(--gold); border:1px solid var(--border-strong);}
   .ebtn.chair.on{background:var(--gold); color:#221F20; border-color:var(--gold); font-weight:700;}
+  .ebtn.arrange{background:var(--surface); color:var(--accent-soft); border:1px solid var(--border-strong);}
+  .ebtn.arrange.on{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
+  /* ══ 🧩 정렬 모드 (GM 로컬 편집 — 블록 표시/숨김 + 순서 · localStorage mop_arrange_v1) ══ */
+  .arrange-bar{display:none; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 10px; padding:9px 13px; border:1px dashed var(--accent); background:rgba(240,198,116,0.05); border-radius:10px;}
+  body.arrange-mode .arrange-bar{display:flex;}
+  .arrange-bar .arr-note{font-size:12px; color:var(--text-soft); line-height:1.5; flex:1 1 300px;}
+  .arrange-ctl{display:none;}
+  body.arrange-mode .arrange-ctl{display:flex; align-items:center; gap:8px; margin:0 0 8px; padding:5px 9px; border-radius:8px; background:var(--surface); border:1px solid var(--accent); font-size:12px; color:var(--text-soft);}
+  .arrange-ctl label{display:inline-flex; align-items:center; gap:5px; cursor:pointer; font-weight:700;}
+  .arrange-ctl .arr-title{flex:1 1 auto; font-weight:700; color:var(--text);}
+  .arrange-ctl .arr-move{cursor:pointer; border:1px solid var(--border-strong); background:var(--paper); color:var(--text-soft); border-radius:6px; padding:1px 8px; font-size:13px; line-height:1.3;}
+  .arrange-ctl .arr-move:disabled{opacity:0.35; cursor:default;}
+  body.arrange-mode .report-grid .blk{outline:1px dashed rgba(240,198,116,0.5); outline-offset:2px;}
+  .blk.arr-hidden{display:none;}
+  body.arrange-mode .blk.arr-hidden{display:block; opacity:0.42;}
 
   /* ── 경영진 보고 인쇄 배너(화면 숨김·인쇄+경영진 보고 모드에서만) ── */
   .print-head{display:none;}
@@ -539,6 +554,10 @@
     body{background:#fff; color:#111; padding:0; font-size:8.5px; line-height:1.4;}
     .wrap{max-width:none;}
     .layers, .impact-grid, .month-bar, .ebtn, header.page-head .back, .view-toggle{display:none !important;}
+    /* 🧩 정렬 모드: 컨트롤 UI는 인쇄 숨김, 숨긴 블록은 인쇄에서도 제외(정렬 모드가 켜져 있어도) */
+    .arrange-bar, .arrange-ctl{display:none !important;}
+    body.arrange-mode .blk.arr-hidden, .blk.arr-hidden{display:none !important;}
+    body.arrange-mode .report-grid .blk{outline:none !important;}
     /* 연간 뷰 인쇄 = 연간 로드맵 + 그 아래 월별 상세 전부(GM 지시 2026-07-06 2차) / 월별 뷰 인쇄 = 결론(연간 숨김·base CSS) */
     body.view-annual #month-head{display:none !important;}
     /* 📊 연속 이니셔티브 상단밴드 = 두 단 전폭 상단(월별 A3) */
@@ -753,6 +772,7 @@
       <span id="edit-wrap"></span>
       <span id="save-flag" style="font-size:11px;color:var(--dim);"></span>
       <span class="view-toggle" id="view-toggle"></span>
+      <button class="ebtn arrange" id="arrange-btn" onclick="window._toggleArrange()">🧩 정렬</button>
     </div>
     <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
   </header>
@@ -781,12 +801,18 @@
 
   <!-- 🎯 1장 요약 뷰 = 폐지(GM 지시 2026-07-06 2차) — 연간 A3 뷰가 월별 상세를 포함하도록 전환 -->
 
+  <!-- 🧩 정렬 모드 안내바 (정렬 모드에서만 표시 · 인쇄 숨김) — GM이 화면에서 블록을 켜고/끄고 순서를 바꿔 그대로 인쇄 -->
+  <div class="arrange-bar" id="arrange-bar">
+    <span class="arr-note">🧩 정렬 모드 — 각 블록 상단의 ☑로 표시/숨김, ↑↓로 순서를 바꿔 그대로 인쇄하세요. <b>이 설정은 GM 이 브라우저에만 저장</b>됩니다(공유 아님·데이터 변경 아님).</span>
+    <button class="ebtn cancel" onclick="window._arrangeReset()">↺ 기본값 복원</button>
+  </div>
+
   <!-- 경영진 A3 결론 = 아래 report-grid (월별 뷰 = 이것만 / 연간 뷰 = annual-board + 이것) -->
   <!-- 인쇄 시 2단, 상단밴드·매출은 상단 전폭 -->
   <div class="report-grid">
 
     <!-- 💰 매출 종합 (0순위·맨앞 · GM 지시 2026-07-06 매출 라인 통합: 상단 좌=선택월 매출/우=연간 히스토리, 하단 전폭=부서별 월간실적|연간누계. 라이브 gviz 미러·보드 독립렌더·INC-001 값 저장 금지) -->
-    <section class="blk fin-primary">
+    <section class="blk fin-primary" data-blkid="fin">
       <h2 class="sec has-link"><span class="rank0-badge">0순위</span>💰 매출 종합 <span class="stag">선택월 매출(목표 대비) + 2026 연간 히스토리 + 부서별 월간 실적·연간 누계 · AI CFO 정본 미러 · 지출·순액=구조개선 중(확정숫자 미표기)</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
       <div class="fin-top-split">
         <div class="fin-top-left">
@@ -802,33 +828,33 @@
     </section>
 
     <!-- 🎯 이달 핵심 과제 top3 (1·2·3순위 · 매출 제외 · 중요도 자동 선정 · GM 확정 2026-07-04) -->
-    <section class="blk top3-wrap" id="top3-wrap">
+    <section class="blk top3-wrap" id="top3-wrap" data-blkid="top3">
       <h2 class="sec">🎯 이달 핵심 과제 top3 <span class="stag">매출 과제 제외 · 중요도 자동 선정(상태·전사·북극성·진척) · 1·2·3순위 · 결정적(랜덤 없음)</span></h2>
       <div id="top3-board"><div class="board-status">핵심 과제 top3를 선정하는 중…</div></div>
     </section>
 
     <!-- 📋 이달 핵심 과제 상세 (신규/이월 상세표 + 콤팩트 요약 · 舊 sum-hero — 상단 top3 아래 상세) -->
-    <section class="blk sum-hero" id="report-hero-wrap">
+    <section class="blk sum-hero" id="report-hero-wrap" data-blkid="detail">
       <h2 class="sec">📋 이달 핵심 과제 상세 <span class="stag">콤팩트 요약(평균 달성률·당월 매출·ERP 진척·전월 대비) + 신규/이월 상세표(담당·목표치·상태·진척·북극성)</span></h2>
       <div id="report-area"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
     </section>
 
     <!-- 🗺️ 전략 로드맵 (단독 · GM 지시 2026-07-06 2차: 🚀 ERP 월별 진척은 이월/연속 과제로 중복이라 제거) -->
-    <section class="blk erp-roadmap-merge">
+    <section class="blk erp-roadmap-merge" data-blkid="roadmap">
       <h2 class="sec">🗺️ 전략 로드맵 진척 <span class="stag">6단계 실행 로드맵 · 회사문서 전략 로드맵 v1.5 + S0 기준 · 현재 어느 단계</span></h2>
       <div id="roadmap-board"><div class="board-status">전략 로드맵 정본을 불러오는 중…</div></div>
     </section>
 
     <!-- 🔧 점검 현황 & 종합 접수처 (GM 지시 2026-07-06: 점검=선택월 월간 집계 전환·명칭 정합) -->
-    <section class="blk">
+    <section class="blk" data-blkid="check">
       <h2 class="sec"><span class="chk-title-nw">🔧 점검 현황 &amp; 종합 접수처</span> <span class="stag">선택월 기준(월간 집계) · 시설부(월간 GAS 미구축=정직 표기) · 지원부(남/여, 월간 완료율) · 종합접수처(실시간) · 웰페리온 ERP 개발 — 실측 가능한 것만(가짜값 없음) · VOC 집계(PII 비노출)</span></h2>
       <div id="check-board"><div class="board-status">점검 현황을 불러오는 중…</div></div>
       <div id="issue-board" style="margin-top:14px;"><div class="board-status">종합 접수처 보드를 계산하는 중…</div></div>
     </section>
 
     <!-- 👤 실무책임자 도달율 + 🤖 AI 활용 도달율 (병합 · 한 칸 확대 · GM 지시 2026-07-06) -->
-    <section class="blk prac-full">
+    <section class="blk prac-full" data-blkid="prac">
       <h2 class="sec" id="prac-sec">👤 실무 도달율 &amp; 🤖 AI 활용 도달율 <span class="stag">GM 직속 3라인 · 담당 | 실무 도달율% | AI 활용%(GM 확정) | 북극성·방향 · 도달율=신규 목표 기준(월별 목표 상이·전월 델타 미표시)</span></h2>
       <div id="prac-board"></div>
     </section>
@@ -2351,6 +2377,88 @@
       });
   };
 
+  // ══ 🧩 정렬 모드: 블록 표시/숨김 + 순서 (GM 로컬 편집) ═══════════════════════════════════
+  //   값·데이터 변경 아님(표시·순서 UI만) · 기존 렌더 함수/데이터 무손상(요소 이동만·재생성 없음).
+  //   상태={표시여부·순서}는 이 브라우저 localStorage(mop_arrange_v1)에만 저장 — GM 로컬(공유 아님).
+  var ARR_KEY = 'mop_arrange_v1';
+  var ARR_DEFAULT = ['fin','top3','detail','roadmap','check','prac']; // 기본(HTML 원래) 순서·전체 표시
+  var ARR_LABELS = {fin:'💰 매출 종합', top3:'🎯 이달 핵심 과제 top3', detail:'📋 이달 핵심 과제 상세', roadmap:'🗺️ 전략 로드맵 진척', check:'🔧 점검 현황 & 종합 접수처', prac:'👤 실무 · AI 활용 도달율'};
+  var _arrangeMode = false;
+
+  function arrGrid(){ return document.querySelector('.report-grid'); }
+  function arrBlks(){ var g = arrGrid(); return g ? Array.prototype.slice.call(g.querySelectorAll(':scope > .blk')) : []; }
+  function arrBlkById(id){ var g = arrGrid(); return g ? g.querySelector(':scope > .blk[data-blkid="' + id + '"]') : null; }
+  function arrReadState(){
+    try{ var s = JSON.parse(localStorage.getItem(ARR_KEY) || 'null'); if(s && s.order) return s; }catch(e){}
+    return null;
+  }
+  function arrCurrentOrder(){ return arrBlks().map(function(b){ return b.getAttribute('data-blkid'); }); }
+  function arrSaveState(){
+    var hidden = {};
+    arrBlks().forEach(function(b){ if(b.classList.contains('arr-hidden')) hidden[b.getAttribute('data-blkid')] = true; });
+    try{ localStorage.setItem(ARR_KEY, JSON.stringify({order:arrCurrentOrder(), hidden:hidden})); }catch(e){}
+  }
+  function arrApplyState(s){
+    var grid = arrGrid(); if(!grid) return;
+    var map = {}; arrBlks().forEach(function(b){ map[b.getAttribute('data-blkid')] = b; });
+    // 순서 적용: 저장 순서대로 요소 재배치(appendChild=이동만·재생성 없음) · 저장에 없는 신규 blk는 기본 순서로 뒤에 편입(무회귀)
+    var order = (s && s.order) ? s.order.slice() : ARR_DEFAULT.slice();
+    ARR_DEFAULT.forEach(function(id){ if(order.indexOf(id) < 0) order.push(id); });
+    order.forEach(function(id){ if(map[id]) grid.appendChild(map[id]); });
+    // 표시/숨김 적용
+    var hidden = (s && s.hidden) || {};
+    arrBlks().forEach(function(b){ b.classList.toggle('arr-hidden', !!hidden[b.getAttribute('data-blkid')]); });
+    arrSyncCtls();
+  }
+  function arrCtlHtml(id){
+    return '<div class="arrange-ctl" data-arrctl="' + id + '">' +
+      '<label><input type="checkbox" onchange="window._arrToggle(\'' + id + '\', this.checked)"> 표시</label>' +
+      '<span class="arr-title">' + esc(ARR_LABELS[id] || id) + '</span>' +
+      '<button class="arr-move" title="위로 이동" onclick="window._arrMove(\'' + id + '\',-1)">↑</button>' +
+      '<button class="arr-move" title="아래로 이동" onclick="window._arrMove(\'' + id + '\',1)">↓</button>' +
+    '</div>';
+  }
+  function arrSyncCtls(){
+    var blks = arrBlks();
+    blks.forEach(function(b, i){
+      var ctl = b.querySelector(':scope > .arrange-ctl'); if(!ctl) return;
+      var cb = ctl.querySelector('input[type=checkbox]'); if(cb) cb.checked = !b.classList.contains('arr-hidden');
+      var mv = ctl.querySelectorAll('.arr-move');
+      if(mv[0]) mv[0].disabled = (i === 0);
+      if(mv[1]) mv[1].disabled = (i === blks.length - 1);
+    });
+  }
+  function initArrange(){
+    var blks = arrBlks(); if(!blks.length) return;
+    blks.forEach(function(b){
+      var id = b.getAttribute('data-blkid'); if(!id) return;
+      if(!b.querySelector(':scope > .arrange-ctl')) b.insertAdjacentHTML('afterbegin', arrCtlHtml(id));
+    });
+    arrApplyState(arrReadState()); // 부팅 렌더 후 저장된 순서·표시 적용
+  }
+  window._toggleArrange = function(){
+    _arrangeMode = !_arrangeMode;
+    document.body.classList.toggle('arrange-mode', _arrangeMode);
+    var btn = document.getElementById('arrange-btn'); if(btn) btn.classList.toggle('on', _arrangeMode);
+    if(_arrangeMode) arrSyncCtls();
+  };
+  window._arrToggle = function(id, checked){
+    var b = arrBlkById(id); if(!b) return;
+    b.classList.toggle('arr-hidden', !checked);
+    arrSaveState(); arrSyncCtls();
+  };
+  window._arrMove = function(id, dir){
+    var grid = arrGrid(); if(!grid) return;
+    var b = arrBlkById(id); if(!b) return;
+    if(dir < 0){ var prev = b.previousElementSibling; while(prev && !prev.classList.contains('blk')) prev = prev.previousElementSibling; if(prev) grid.insertBefore(b, prev); }
+    else { var next = b.nextElementSibling; while(next && !next.classList.contains('blk')) next = next.nextElementSibling; if(next) grid.insertBefore(next, b); }
+    arrSaveState(); arrSyncCtls();
+  };
+  window._arrangeReset = function(){
+    try{ localStorage.removeItem(ARR_KEY); }catch(e){}
+    arrApplyState(null); // 기본 순서·전체 표시 복원
+  };
+
   // ── 부팅 ──
   // 새 라이브 조회 2건(북극성 지도·구매성)이 느리거나 걸려도 전체 부팅(목표·ERP 등 핵심 렌더)이 무한정 멈추지 않도록 타임아웃 폴백을 씌운다.
   function withTimeout(promise, ms, fallbackValue){
@@ -2436,6 +2544,7 @@
     });
   }
 
+  initArrange(); // 🧩 정렬 컨트롤 주입 + 저장된 순서·표시 적용(정적 .blk 섹션 대상 · 데이터 무관)
   boot();
 })();
 </script>
