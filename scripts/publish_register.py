@@ -37,6 +37,15 @@ except Exception:
     def log_outbound(*a, **k):
         pass
 
+try:  # 저신호 무음 플래그(best-effort) — 임포트 실패해도 발신 무영향(False 폴백)
+    _tgb = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'telegram_bot'))
+    if _tgb not in sys.path:
+        sys.path.insert(0, _tgb)
+    from notify_prefs import muted
+except Exception:
+    def muted(kind: str) -> bool:
+        return False
+
 # -----------------------------------------------------------------
 # 콘솔 인코딩 하드닝 — Windows cp949 콘솔에서 대시(—)·이모지 print 시
 # UnicodeEncodeError 로 죽지 않게 stdout/stderr 를 UTF-8(replace)로 강제.
@@ -373,7 +382,14 @@ def register_publish(
             f"웰페리온 ERP M5에서 미리보기·검수\n"
             f"https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M5"
         )
-        _telegram_send_photo(montage_path, msg)
+        try:
+            skip_produce_done = muted("produce_done")
+        except Exception:
+            skip_produce_done = False
+        if skip_produce_done:
+            print("[무음] produce_done 저신호 설정 — 제작완료 사진카드 발송 스킵 (notify_prefs.py)")
+        else:
+            _telegram_send_photo(montage_path, msg)
 
         # (d) 수동 경로 승인버튼 카드 — send_card=True 일 때만 (자동생성기는 별도 호출이라 무영향).
         #     montage(버튼 없음) 뒤 [✅승인]/[❌반려] 버튼 카드 1회. 실패해도 등록은 유효(경고만).

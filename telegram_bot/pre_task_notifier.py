@@ -32,6 +32,12 @@ except Exception:
     def log_outbound(*a, **k):
         pass
 
+try:  # 저신호 무음 플래그(best-effort) — 임포트 실패해도 발신 무영향(False 폴백)
+    from notify_prefs import muted
+except Exception:
+    def muted(kind: str) -> bool:
+        return False
+
 # ── 환경 변수 ──────────────────────────────────────────────────────────────────
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 OWNER_ID       = os.getenv('OWNER_ID')
@@ -209,6 +215,10 @@ def check_and_notify():
     """
     now = datetime.now(KST)
     logger.info('=== pre_task_notifier 체크 시작 ===')
+
+    if muted('pre_task'):
+        logger.info('[무음] pre_task 저신호 설정 — 사전 알림 발송 스킵 (notify_prefs.py)')
+        return 0
 
     records = fetch_scheduled_records()
     logger.info(f'보류 레코드 {len(records)}건 조회')

@@ -41,6 +41,12 @@ from telegram.ext import (
 from message_store import append_message as _inbox_log
 from bidirectional_handler import classify_message as _bidir_classify
 
+try:  # 저신호 무음 플래그(best-effort) — 임포트 실패해도 발신 무영향(False 폴백)
+    from notify_prefs import muted
+except Exception:
+    def muted(kind: str) -> bool:
+        return False
+
 try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
     _scr = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts"))
     if _scr not in __import__("sys").path:
@@ -1686,9 +1692,14 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 env=dict(os.environ, PYTHONIOENCODING="utf-8",
                          TELEGRAM_BOT_TOKEN=(TOKEN or "")),
             )
-            await ctx.bot.send_message(chat_id=q.message.chat_id,
-                text=f"⏳ <b>{title_label}</b> 발행 처리 시작 — 결과는 발행 엔진이 곧 보고합니다.",
-                parse_mode="HTML")
+            try:
+                skip_pending_ping = muted("pending_ping")
+            except Exception:
+                skip_pending_ping = False
+            if not skip_pending_ping:
+                await ctx.bot.send_message(chat_id=q.message.chat_id,
+                    text=f"⏳ <b>{title_label}</b> 발행 처리 시작 — 결과는 발행 엔진이 곧 보고합니다.",
+                    parse_mode="HTML")
         except Exception as exc:
             await ctx.bot.send_message(chat_id=q.message.chat_id,
                 text=f"⚠️ 발행 엔진 기동 실패: {exc}\n수동 발행 필요: {title_label}")

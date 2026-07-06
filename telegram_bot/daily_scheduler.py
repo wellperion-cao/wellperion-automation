@@ -78,6 +78,12 @@ except Exception:
     def log_outbound(*a, **k):
         pass
 
+try:  # 저신호 무음 플래그(best-effort) — 임포트 실패해도 발신 무영향(False 폴백)
+    from notify_prefs import muted
+except Exception:
+    def muted(kind: str) -> bool:
+        return False
+
 # 배 분류 공유 모듈 (scripts/ship_classify.py)
 try:
     import os as _os2, sys as _sys2
@@ -2332,6 +2338,16 @@ def run_report(slot: str, test_mode: bool = False) -> None:
 
     if test_mode:
         body = f"[테스트 발송] {now_str}\n\n" + body
+
+    # 06시 개인(하루시작·운동) 슬롯만 저신호 무음 대상 — 다른 슬롯(07/08/12/21 등 고신호)은 무영향.
+    if slot == "06" and not test_mode:
+        try:
+            skip_personal_0600 = muted("personal_0600")
+        except Exception:
+            skip_personal_0600 = False
+        if skip_personal_0600:
+            logger.info(f"{label} [무음] personal_0600 저신호 설정 — 06시 개인 슬롯 발송 스킵 (notify_prefs.py)")
+            return
 
     success = send_telegram(owner_id, body)
     if success:
