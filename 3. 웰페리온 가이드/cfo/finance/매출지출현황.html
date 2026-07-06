@@ -251,14 +251,13 @@ var OPS_GVIZ="https://docs.google.com/spreadsheets/d/"+OPS_SHEET+"/gviz/tq?tqx=o
 /* 최저가검토(자동) 시트 — 회계 백엔드와 무관, gviz 읽기 전용. 컬럼 A품의행·B품의물품·C동일제품·D최저가·E판매처링크·F품의가·G품의가대비·H신뢰도·I검토일·J비고. A(품의행)를 r.row와 매칭. */
 var REVIEW_SHEET="1rUjnf_oxVTnT89B1aU46Z2txYc8k_MdKYdwhulpgw48";
 var REVIEW_GVIZ="https://docs.google.com/spreadsheets/d/"+REVIEW_SHEET+"/gviz/tq?tqx=out:json";
-var REVIEW_LOW={},REVIEW_LOADED=false;
+var REVIEW_LOW={},REVIEW_NO={},REVIEW_LOADED=false; // REVIEW_NO = 고정번호(#) 키 맵 — 행 삭제·재정렬에도 불변(2026-07-06 감사)
 var FB_SALES={"운영부":[291174533,318993972,312998498,282246580,210399498,217283030],"P.T":[79298450,119547350,114219650,63273500,55391100,90687210],"필라테스":[17216900,16998900,22667800,20978500,28890100,23257200],"수영":[106374150,81905700,108413500,107943500,100604500,89640250],"스쿼시":[29118700,21351100,27627250,24290500,24678600,26502780],"골프":[27883750,26713000,27699000,18726000,27163000,25669000],"체조&트램":[31737750,23977250,31264750,28998750,27038000,21777250],"뮤지컬":[2505000,8450000,1570000,2700000,660000,380000],"GXE":[1062000,1188000,1008000,1584000,144000,414000],"루프매소드":[0,0,0,1452000,1496000,1210000]};
 var SALES_DEPT={},SALES_MEMBER=[]; // 운영부 = 회원권 매출 (매출 마스터 시트 실시간)
 /* 구매성 폴백(하드코딩 1~6월 스냅샷) — 라이브 로드(loadProc) 실패 시에만 사용. 평상시엔 지출품의에서 월별 자동 집계. */
 var FB_PROC={"골프":[262000,0,69300000,0,804960,873200],"운영부":[239600,1118070,242620,13085350,248900,-39060],"시설":[755860,150600,1171878,433280,1019470,11081390],"필라테스":[11880000,0,11230,0,9890,0],"지원":[180470,264110,442630,406300,597600,579460],"스쿼시":[0,0,270340,0,238800,240000],"P.T":[20800,0,0,0,630000,0],"체조&트램":[0,0,0,0,0,478500],"수영":[54350,0,0,0,200100,0],"뮤지컬":[22190,0,0,0,0,0]};
 var FB_LABOR={"골프":[15469018,12720271,16901114,16422307,13815335,12810239],"P.T":[46607840,41390419,47422370,45572009,43450392,38817814],"수영":[43578251,34885477,43639470,44832435,42688800,38009034],"스쿼시":[12307298,10065683,12842770,11397199,8684634,15188782],"체조&트램":[12471128,10484004,12526288,12401927,12037764,8719279],"필라테스":[7702254,8225256,10696879,10926820,12929559,4934696],"루프매소드":[0,0,0,280800,1038960,0],"뮤지컬":[0,0,0,0,0,0]};
 var FB_OPER=[34045838,35419025,36274362,32826139,30100000,30100000];
-var REQ_SAMPLE=[{날짜:"2026-06-20",부서:"골프",항목:"GDR 소모품",금액:430000,요청자:"최현준",상태:"승인"},{날짜:"2026-06-22",부서:"시설",항목:"사우나 약품",금액:1280000,요청자:"이지영",상태:"대기"}];
 /* ══════════ [예산 상수 교체 블록 — 매니저님 확정 시 이 3개(BUDGET_YR/MO/H1)만 교체] ══════════
    ⚠️ 잠정·미확정(2026 예산안 초안) — 매니저님 확정 시 실값으로 교체
    ── 2026 부서별 경상(운영) 예산 — 출처: '웰페리온 2026 부서별·항목별 예산안' 시트(ID 1lj6Lf5VxItNAbYN3nk1K6gqGqLToGeFHmrh9qXbvBbk) '경상 부서별' 표 (CFO 판단형·2026-06-25, 초안). 연 경상 합계 55,930,000원(월 4,710,000원). 정의: 단건<100만=경상 / 단건>=100만=자본·대형(건별 통제). 키는 PROC_DEPT 명칭에 맞춤(체조→체조&트램). */
@@ -385,7 +384,7 @@ async function loadLaborTime(){
     updateSyncMeta();
   }catch(e){}
 }
-/* 구매성 지출 라이브 집계 — 지출품의(구매요청) 전체 라인아이템을 월별×부서별로 자동 합산. 실집행성(반려·미승인·캔슬 제외)만, 이상지출·예산 정의와 동일. 하드코딩 대체 → 신규 승인분 자동 반영. 실패 시 FB_PROC 폴백. 로드한 rows는 이상지출(ensureAnom)과 공유(중복 fetch 방지). */
+/* 구매성 지출 라이브 집계 — 서버측 경량 집계(proc_summary)만 사용. 이상지출 라인아이템은 ensureAnom이 별도 경량(noimg) list로 로드(2026-07-06 감사 정리). */
 async function loadProc(){
   // 서버측 경량 집계(proc_summary) — 이미지 제외·월별×부서별 합계만(<1KB). 대량 list(이미지 base64 273KB) 회피 → 빠르고 안정적.
   try{
@@ -399,10 +398,12 @@ async function loadReviewLowest(){
   try{
     var r=await fetch(REVIEW_GVIZ,{cache:"no-store"});var t=await r.text();
     var json=JSON.parse(t.substring(t.indexOf("{"),t.lastIndexOf("}")+1));var rows=json.table.rows||[];
-    var map={};
+    var map={},mapNo={};
     rows.forEach(function(row){var c=row.c||[];var key=(c[0]&&c[0].v!=null)?String(c[0].v):"";if(!key)return; // A 품의행
-      map[key]={item:c[1]&&c[1].v,same:c[2]&&c[2].v,lowest:c[3]&&c[3].v,link:c[4]&&c[4].v,reqPrice:c[5]&&c[5].v,vs:c[6]&&c[6].v,conf:c[7]&&c[7].v,date:c[8]&&c[8].v,note:c[9]&&c[9].v};});
-    REVIEW_LOW=map;REVIEW_LOADED=true;
+      var rec={item:c[1]&&c[1].v,same:c[2]&&c[2].v,lowest:c[3]&&c[3].v,link:c[4]&&c[4].v,reqPrice:c[5]&&c[5].v,vs:c[6]&&c[6].v,conf:c[7]&&c[7].v,date:c[8]&&c[8].v,note:c[9]&&c[9].v,no:c[10]&&c[10].v};
+      map[key]=rec;
+      if(rec.no!=null&&String(rec.no)!=="")mapNo[String(rec.no)]=rec;}); // K 품의번호(#) — 있으면 우선 매칭키
+    REVIEW_LOW=map;REVIEW_NO=mapNo;REVIEW_LOADED=true;
     try{if(document.getElementById("reqTbl"))renderReqTbl();}catch(e2){} // 로드되면 배지 갱신
   }catch(e){ if(window.console&&console.warn)console.warn("[review] 최저가검토 시트 로드 실패(미공유 가능) — 배지 생략:",e); }
 }
@@ -436,7 +437,11 @@ function renderNav(){var nav=document.getElementById("nav");
     document.querySelectorAll(".panel").forEach(function(p){p.classList.toggle("active",p.dataset.panel===b.dataset.p);});};});}
 
 function updateSyncMeta(){var sm=document.getElementById("syncMeta");if(!sm)return;
-  sm.textContent="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_DEPT_LIVE?"🟢실시간(매출보고)":(SALES_LIVE?"🟡마스터(스냅샷)":"⚪폴백"))+" · 운영부 "+(OPS_SALES_LIVE?"🟢GM시트":"⚪마스터")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⏳불러오는 중…")+" · 타임(시급) "+(TIME_LIVE?"🟢실시간":"⏳");}
+  var t="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_DEPT_LIVE?"🟢실시간(매출보고)":(SALES_LIVE?"🟡마스터(스냅샷)":"⚪폴백"))+" · 운영부 "+(OPS_SALES_LIVE?"🟢GM시트":"⚪마스터")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⏳불러오는 중…")+" · 타임(시급) "+(TIME_LIVE?"🟢실시간":"⏳");
+  // 폴백 소스는 6월 스냅샷까지만 담고 있어 7월 이후 라이브와 혼합 시 과소집계 가능 — 명시 경고(2026-07-06 감사)
+  var fb=[];if(!LIVE)fb.push("인건비");if(!SALES_TRUTH_LIVE&&!SALES_LIVE)fb.push("매출");if(!PROC_LIVE&&PROC_LIVE!==undefined)fb.push("구매성");
+  if(fb.length&&curMonth()>6)t+=" · ⚠️폴백("+fb.join("·")+")은 6월 스냅샷까지만 반영 — 이후 월 과소 표시 가능";
+  sm.textContent=t;}
 async function startApp(){
   document.getElementById("app").style.display="block";renderNav();
   // 독립 소스(인건비·매출마스터·매출정본·운영부정본) 병렬 로드 — 초기 렌더 지연 최소화. 구매성(loadProc)은 무겁고 느려 블로킹에서 제외.
@@ -458,8 +463,7 @@ async function startApp(){
   loadProc().then(function(){
     if(PROC_LIVE){aggregate();renderKpi();renderMain();renderExpTbl();renderPeople();renderBudget();}
     updateSyncMeta();
-    if(ANOM_ROWS&&ANOM_ROWS.length){ANOM_LOADED=true;computeAnom();renderAnom();} // loadProc가 받아온 라인아이템 재사용
-    else ensureAnom(); // 폴백: 별도 로드 시도
+    ensureAnom(); // 이상지출 라인아이템 — 경량(noimg) list 병렬 로드 (구 데드브랜치 정리, 2026-07-06 감사)
   });
 }
 
@@ -542,14 +546,14 @@ function renderContrib(){
 }
 
 function renderSales(){
-  newChart("chartSalesTrend",{type:"bar",data:{labels:MONTHS,datasets:[{label:"매출",data:salesMonth.map(function(v,i){return i<Math.min(DATA_LAST,6)?v:null;}),backgroundColor:"#a98a52",borderRadius:4}]},
+  newChart("chartSalesTrend",{type:"bar",data:{labels:MONTHS,datasets:[{label:"매출",data:salesMonth.map(function(v,i){return i<SALES_LAST?v:null;}),backgroundColor:"#a98a52",borderRadius:4}]},
     options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return won(c.raw);}}}},scales:{x:{grid:{display:false}},y:{ticks:{callback:function(v){return (v/1e8).toFixed(1)+"억";}}}}}});
-  var arr=Object.keys(SALES_DEPT).map(function(d){return {n:d,t:sum((SALES_DEPT[d]||[]).slice(0,Math.min(DATA_LAST,6)))};}).sort(function(a,b){return b.t-a.t;});
+  var arr=Object.keys(SALES_DEPT).map(function(d){return {n:d,t:sum((SALES_DEPT[d]||[]).slice(0,SALES_LAST))};}).sort(function(a,b){return b.t-a.t;});
   newChart("chartSalesAll",{type:"bar",data:{labels:arr.map(function(o){return o.n;}),datasets:[{data:arr.map(function(o){return o.t;}),backgroundColor:arr.map(function(o){return o.n==="운영부"?"#22324a":"#a98a52";}),borderRadius:4}]},
     options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return won(c.raw);}}}},scales:{x:{ticks:{callback:function(v){return (v/1e8).toFixed(1)+"억";}}}}}});
 }
 function renderSalesTbl(){
-  var L6=Math.min(DATA_LAST,6);var oper=SALES_DEPT["운영부"]||[];
+  var L6=SALES_LAST;var oper=SALES_DEPT["운영부"]||[]; // 6월 하드캡 제거(2026-07-06 감사) — 라이브 최신월까지 표시, 누적(SALES_G)과 일치
   var h='<thead><tr><th>부서/항목</th>'+MONTHS.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>누적</th></tr></thead><tbody>';
   h+='<tr class="subhead"><td colspan="14">운영부 (회원권)</td></tr>';
   h+='<tr><td>운영부 · 회원권</td>'+MONTHS.map(function(m,i){return cell(oper[i]||0,i>=L6);}).join('')+'<td><b>'+won(sum(oper.slice(0,L6)))+'</b></td></tr>';
@@ -584,7 +588,7 @@ function teamCost(d){return teamLabor(d)+teamProc(d);}
 function teams(){var t=DEPTS_ORDER.slice();t.push("운영부");["시설","지원"].forEach(function(d){if(t.indexOf(d)<0)t.push(d);});
   return t.filter(function(d){return INSTRUCTORS.some(function(x){return x.dept===d;})||(PROC_DEPT[d]&&sum(PROC_DEPT[d])!==0);});}
 function renderPeople(){
-  var L6=Math.min(DATA_LAST,6);
+  var L6=DATA_LAST; // 6월 하드캡 제거(2026-07-06 감사) — 인건비·구매성 라이브 최신월까지 기간 칩 제공
   // 기간 칩 (전체 / 월별)
   var ps='<button class="team-chip'+(period<0?' on':'')+'" data-pv="-1">전체</button>';
   for(var m=0;m<L6;m++)ps+='<button class="team-chip'+(period===m?' on':'')+'" data-pv="'+m+'">'+MONTHS[m]+'</button>';
@@ -649,11 +653,15 @@ function isWhitelist(item){var s=String(item||"");return GDR_KEYWORDS.some(funct
 function monthOf(ds){try{var m=String(ds).match(/^(\d{4})-(\d{2})/);if(m)return parseInt(m[2],10)-1;}catch(e){}return -1;}
 async function ensureAnom(){
   if(ANOM_LOADED)return;ANOM_LOADED=true;
-  if(ANOM_ROWS&&ANOM_ROWS.length){computeAnom();renderAnom();return;} // loadProc가 이미 로드 → 재사용(중복 fetch 방지)
   document.getElementById("flagBadges").innerHTML='<span style="color:var(--ink-soft);font-size:12px">불러오는 중…</span>';
   var rows=[];
-  try{var a=await procCall("list",{mode:"active"});if(a&&a.data)rows=rows.concat(a.data);}catch(e){}
-  try{var y=new Date().getFullYear();var d=await procCall("list",{mode:"done",from:y+"-01-01",to:fmtToday()});if(d&&d.data)rows=rows.concat(d.data);}catch(e){}
+  // 경량(noimg) + 병렬 로드 — 이상지출 판정엔 날짜·소속·가격·물품·상태만 필요(이미지 base64 불필요, 2026-07-06 감사)
+  var y=new Date().getFullYear();
+  var rs=await Promise.allSettled([
+    procCall("list",{mode:"active",noimg:1}),
+    procCall("list",{mode:"done",from:y+"-01-01",to:fmtToday(),noimg:1})
+  ]);
+  rs.forEach(function(r){if(r.status==="fulfilled"&&r.value&&r.value.data)rows=rows.concat(r.value.data);});
   ANOM_ROWS=rows;computeAnom();renderAnom();
 }
 function computeAnom(){
@@ -790,7 +798,7 @@ function priceLinks(r,st){
 /* 최저가검토(자동) 배지 — 검토시트에 이 품의행(r.row) 레코드가 있고 최저가가 있으면 승인 전 행에 표시. 없으면 조용히 미표시. */
 function reviewBadge(r,st){
   if(!(st==="품의"||st==="승인"))return "";                        // 승인 전 단계만
-  var rec=REVIEW_LOW[String(r.row)];                               // A(품의행) === r.row 매칭 (예시행 '예시-삭제가능'은 미매칭→무시)
+  var rec=(r.번호!=null&&String(r.번호)!==""?REVIEW_NO[String(r.번호)]:null)||REVIEW_LOW[String(r.row)]; // 고정번호(#) 우선, 없으면 행번호(구 데이터 호환)
   if(!rec||rec.lowest==null||rec.lowest==="")return "";            // 레코드/최저가 없으면 미표시
   // stale 방지: B(품의물품)과 현재 r.물품이 일치할 때만 표시. row 재사용·물품 수정 시 옛 검토값 차단. 공백 차이 무시.
   var _norm=function(x){return String(x==null?"":x).trim().replace(/\s+/g," ");};
