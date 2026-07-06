@@ -441,5 +441,19 @@
     "artifact": "전환율 측정은 7/4 이미 개통(누적 39.4% 라이브). 482는 추천기가 collector 일시 null을 '미측정'으로 오판해 재발행한 착시 → 입항 처리. 재발행 차단(완료건 dedup+일시null 억제)은 시토 엔진 가드 배 496로 인계. (CLI ad-hoc · 커밋 40a3f2af)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "40a3f2af739e31b08f259fd608d107d17f2d2e82"
+  },
+  {
+    "task_id": "CEO-2026-07-06-ADHOC-ef394a27",
+    "clevel": "ceo",
+    "title": "[웰리] 점검 보드 인쇄 시 미로딩 수정 — 지연로딩→부팅 eager 로드 [웰리]/월간운영계획",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-06",
+    "processed_at": "2026-07-06",
+    "ship_no": 498,
+    "artifact": "IntersectionObserver 기반 지연로드(startLazyChecks)는 check-board가 뷰포트에\n스크롤되어야만 발동 — 무스크롤 print(Ctrl+P·print-to-PDF)에선 GAS 호출조차\n안 돼 점검 현황이 인쇄본에 영구 '불러오는 중…'으로 남는 결함(요청#4 무력화).\nboot()에서 startLazyChecks() 대신 loadCheckSources()를 즉시 호출(eager)로\n전환 — _data는 이미 set된 상태라 레이스 없음, _checkTriggered로 중복호출\n방지 유지. Inters (CLI ad-hoc · 커밋 ef394a27)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "ef394a27d490f95f541538319a225e7a539e2056"
   }
 ]
