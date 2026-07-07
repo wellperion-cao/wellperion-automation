@@ -160,22 +160,23 @@ EPISODES = [
         "caption": (
             "운동 뒤의 시간도 웰페리온입니다.\n\n"
             "따뜻한 원목의 건식 사우나, 몸을 데우는 습식 사우나,\n"
-            "뜨끈한 찜질방과 온·냉탕까지.\n"
+            "뜨끈한 찜질방과 온탕·냉탕·열탕까지.\n"
+            "여성 사우나에는 세신 관리도 준비되어 있습니다.\n"
             "땀을 흘린 만큼, 제대로 회복하세요.\n\n"
             "문의: wellperion.com/ko/inquiry\n\n"
             "#웰페리온 #한남동 #스포츠클럽 #사우나 #건식사우나 #습식사우나 "
-            "#찜질방 #온냉탕 #회복"
+            "#찜질방 #열탕 #세신 #회복"
         ),
         "slides": [
             {"kind": "hero", "photo": KAKAO / "건식사우나.jpg",
-             "title": "회복,\n하루의 마무리", "sub": "건식 · 습식 · 찜질 · 온냉탕",
+             "title": "회복,\n하루의 마무리", "sub": "건식 · 습식 · 찜질 · 탕",
              "cta": ""},
             {"kind": "feature", "photo": KAKAO / "습식사우나.jpg",
              "title": "습식 사우나", "sub": "깊게 데우는 스팀"},
             {"kind": "feature", "photo": KAKAO / "여자사우나 찜질방.jpg",
              "title": "찜질방", "sub": "뜨끈하게 지지는 온기"},
             {"kind": "feature", "photo": KAKAO / "남자 탕.jpg",
-             "title": "온·냉탕", "sub": "번갈아, 개운하게"},
+             "title": "온탕·냉탕·열탕", "sub": "번갈아, 개운하게"},
             {"kind": "hero", "photo": KAKAO / "여자사우나 휴게공간.jpg",
              "title": "충분히 쉬어가는\n자리", "sub": "",
              "cta": "문의 · wellperion.com/ko/inquiry", "title_size": 58},

@@ -756,6 +756,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .mdash-sec:last-child{margin-bottom:0}
 .mdash-sec-hd{font-size:12px;font-weight:800;color:var(--accent);margin-bottom:9px;letter-spacing:-0.01em}
 .mdash-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mdash-metrics.cols2{grid-template-columns:repeat(2,1fr)}
 .mdash-metric{padding:11px 13px;border-radius:9px;background:rgba(125,123,116,0.07);border:1px solid var(--border-subtle)}
 .mdash-metric-k{font-size:10.5px;font-weight:700;color:var(--dim-mid);white-space:nowrap;margin-bottom:5px}
 .mdash-3col{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
@@ -781,7 +782,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .mdash-chip.red{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red)}
 .mdash-chip.yellow{background:var(--yellow-bg);border:1px solid var(--yellow-border);color:var(--yellow)}
 .mdash-chip.green{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)}
-@media(max-width:520px){.mdash-metrics{grid-template-columns:1fr}}
+@media(max-width:520px){.mdash-metrics,.mdash-metrics.cols2{grid-template-columns:1fr}}
 
 /* ── 강습 sub-pane(문의/등록/회원) 토글 — 멤버십 dash-card 패턴 차용, 강습 전용 lessonSwitchCard ── */
 .lesson-dash{grid-template-columns:repeat(3,1fr)}
@@ -986,7 +987,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <a class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
         <button class="action-btn" onclick="openGuidePopup()">📖 문의 가이드</button>
         <button class="action-btn" onclick="openGdoc('principle,routine')">📋 운영 원칙·루틴</button>
-        <button class="action-btn" onclick="openMembershipDash()">📊 멤버십 현황</button>
+        <button class="action-btn" id="btnMembershipDash" onclick="openMembershipDash()">📊 멤버십 문의 현황</button>
+        <button class="action-btn" id="btnLessonDash" onclick="openLessonDash()" style="display:none">📊 강습 문의 현황</button>
         <button class="action-btn" onclick="openAnalytics('conv')">📈 전환율</button>
         <button class="action-btn" onclick="openAnalytics('funnel')">🔻 잔류·이탈</button>
         <button class="action-btn" onclick="openChurnManage()">🚪 이탈관리</button>
@@ -1975,10 +1977,23 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 <div class="gdoc-overlay" id="mdashModalOverlay" onclick="if(event.target===this)closeMembershipDash()">
   <div class="gdoc-modal" role="dialog" aria-modal="true">
     <div class="gdoc-modal-head">
-      <span class="gdoc-modal-title">📊 멤버십 현황</span>
+      <span class="gdoc-modal-title">📊 멤버십 문의 현황</span>
       <button class="gdoc-close" type="button" onclick="closeMembershipDash()" aria-label="닫기">&times;</button>
     </div>
     <div id="mdashModalBody">
+      <div style="color:var(--dim);font-size:12px">불러오는 중…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 강습 문의 현황 집중형 대시보드 모달 (버튼 📊 강습 문의 현황 → openLessonDash). 멤버십 팝업 패턴 복제, type(성인/유소년)별 배선. 2026-07-07 시포·GM ══ -->
+<div class="gdoc-overlay" id="lessonDashModalOverlay" onclick="if(event.target===this)closeLessonDash()">
+  <div class="gdoc-modal" role="dialog" aria-modal="true">
+    <div class="gdoc-modal-head">
+      <span class="gdoc-modal-title" id="lessonDashModalTitle">📊 강습 문의 현황</span>
+      <button class="gdoc-close" type="button" onclick="closeLessonDash()" aria-label="닫기">&times;</button>
+    </div>
+    <div id="lessonDashModalBody">
       <div style="color:var(--dim);font-size:12px">불러오는 중…</div>
     </div>
   </div>
@@ -2062,9 +2077,11 @@ document.addEventListener('keydown', function(e){
   var conv = document.getElementById('convModalOverlay');
   var funnel = document.getElementById('funnelModalOverlay');
   var mdash = document.getElementById('mdashModalOverlay');
+  var ldash = document.getElementById('lessonDashModalOverlay');
   if (conv && conv.classList.contains('open')) closeAnalytics('conv');
   if (funnel && funnel.classList.contains('open')) closeAnalytics('funnel');
   if (mdash && mdash.classList.contains('open')) closeMembershipDash();
+  if (ldash && ldash.classList.contains('open')) closeLessonDash();
 });
 // 우측 CPO 가이드 펼치기 — 기존 gdoc 템플릿 콘텐츠를 인라인으로 clone(중복 없음). 2026-06-29 시포
 function toggleGuideAcc(btn, id) {
@@ -2399,6 +2416,119 @@ function _mdashRenderMemberSection(){
       '</div>';
   });
 }
+
+/* ── 강습 문의 현황 집중형 대시보드 모달 — 멤버십 팝업 패턴 복제(진입 버튼 📊 강습 문의 현황 → #lessonDashModalOverlay).
+   type(성인강습/유소년강습)는 현재 활성 강습 뷰(.type-chip.active)를 따라감 — 뷰별 대칭 팝업.
+   정직성: stage_funnel의 강습 퍼널(예약/방문/가입 단계)은 백엔드 소스 신호 미분리로 값이 붕괴(예약=방문=가입 동일값 확인) → 병목 섹션 자체 미표시.
+   cpo_churn_stats는 유효회원 시트(멤버십) 전용이라 강습 이탈 데이터 없음 → 이탈 서브섹션 미표시.
+   funnel_conversion은 멤버십+강습 문의가 뒤섞여 강습 단독 채널 집계 불가 → 채널은 lesson_stats(type 스코프)의 byChannel 사용(올해 누적 기준, 실제 연도 필터 백엔드 확인됨).
+   등록 수 이번달·지난달 델타는 lesson_registry_list(from/to) 실측(가벼운 소량 응답, 확인됨). 문의 지난달 델타는 lesson_stats가 기간필터 미지원이라 "–". 2026-07-07 시포·GM ── */
+var _lessonDashLoaded = { adult: false, youth: false };
+function _curLessonType(){
+  var chip = document.querySelector('.type-chip.active[data-type]');
+  var v = chip ? chip.getAttribute('data-type') : '';
+  return v === 'lessonYouth' ? 'youth' : 'adult';
+}
+function openLessonDash(){
+  var ov = document.getElementById('lessonDashModalOverlay');
+  if (!ov) return;
+  var t = _curLessonType();
+  var titleEl = document.getElementById('lessonDashModalTitle');
+  if (titleEl) titleEl.textContent = '📊 강습 문의 현황 (' + (t === 'youth' ? '유소년' : '성인') + ')';
+  ov.classList.add('open');
+  if (!_lessonDashLoaded[t]) { _lessonDashLoaded[t] = true; loadLessonDash(t); }
+}
+function closeLessonDash(){
+  var ov = document.getElementById('lessonDashModalOverlay');
+  if (ov) ov.classList.remove('open');
+}
+function _lessonFetchRegistry(lsType, from, to, cb){
+  if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
+  fetch(GAS_URL + '?action=lesson_registry_list&type=' + encodeURIComponent(lsType) + '&from=' + from + '&to=' + to + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){ cb(d && d.ok ? d : null); })
+    .catch(function(){ cb(null); });
+}
+function loadLessonDash(t){
+  var st = _lessonState[t];
+  var lsType = st ? st.type : (t === 'youth' ? '유소년강습' : '성인강습');
+  var body = document.getElementById('lessonDashModalBody');
+  if (!body) return;
+  var _ld = '<div style="color:var(--dim);font-size:11px">불러오는 중…</div>';
+  body.innerHTML =
+    '<div class="mdash-sec"><div class="mdash-sec-hd">① 이번달 성과</div>' +
+      '<div id="lessonDashSecPerf_' + t + '" class="mdash-metrics cols2">' + _ld + '</div>' +
+      '<div class="mdash-caveat">문의=강습 문의 접수 실측(lesson_stats, 등록일 기준 지난달 비교 미지원 — 델타 "–") · 등록=강습 등록 원장 실측(lesson_registry_list, 등록일 기준) · 지난달 델타=같은 일자까지 공정 비교 · 올해=1월~오늘 누적(추세·작년비 없음). 문의↔등록 코호트가 매칭되지 않아 전환율은 표시하지 않음(강습 전용 매칭 액션 없음).</div></div>' +
+    '<div class="mdash-sec"><div class="mdash-sec-hd">② 채널 효율 (올해 누적)</div>' +
+      '<div id="lessonDashSecChannel_' + t + '">' + _ld + '</div></div>' +
+    '<div class="mdash-sec"><div class="mdash-sec-hd">③ 회원 구성 (수강 중)</div>' +
+      '<div id="lessonDashSecMember_' + t + '">' + _ld + '</div></div>';
+  // ── §1 이번달·지난달·올해 문의(lesson_stats, from/to 미지원=연도 스코프 고정) + 등록(lesson_registry_list, from/to 실측) ──
+  var now = new Date();
+  var mStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  var lStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  var _prevLen = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+  var lEnd = new Date(now.getFullYear(), now.getMonth() - 1, Math.min(now.getDate(), _prevLen));
+  var yStart = new Date(now.getFullYear(), 0, 1);
+  var res = { stats: undefined, regNow: undefined, regPrev: undefined, regYtd: undefined };
+  function _perfReady(){
+    if (res.stats === undefined || res.regNow === undefined || res.regPrev === undefined || res.regYtd === undefined) return;
+    var el = document.getElementById('lessonDashSecPerf_' + t); if (!el) return;
+    var inqNow = res.stats ? res.stats.thisMonth : null;
+    var inqYtd = res.stats ? res.stats.total : null;   // 백엔드 기본 scope=올해(연도 필터), 전체누적 아님
+    var regNowN = res.regNow ? res.regNow.count : null;
+    var regPrevN = res.regPrev ? res.regPrev.count : null;
+    var regYtdN = res.regYtd ? res.regYtd.count : null;
+    el.innerHTML =
+      _mdashMetric('신규 문의', inqNow, null, inqYtd, false, false) +
+      _mdashMetric('등록', regNowN, regPrevN, regYtdN, false, !!res.regPrev);
+    // §2 채널 — lesson_stats.byChannel(연도 스코프) 재사용, 별도 fetch 없음
+    _lessonDashRenderChannel(t, res.stats);
+  }
+  fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(lsType))
+    .then(function(r){ return r.json(); }).then(function(d){ res.stats = (d && d.ok) ? d : null; _perfReady(); }).catch(function(){ res.stats = null; _perfReady(); });
+  _lessonFetchRegistry(lsType, _mdashYmd(mStart), _mdashYmd(now),  function(d){ res.regNow = d; _perfReady(); });
+  _lessonFetchRegistry(lsType, _mdashYmd(lStart), _mdashYmd(lEnd), function(d){ res.regPrev = d; _perfReady(); });
+  _lessonFetchRegistry(lsType, _mdashYmd(yStart), _mdashYmd(now),  function(d){ res.regYtd = d; _perfReady(); });
+  // §3 회원 구성 — 독립 fetch(수강 중 headcount, roster 전체명단 재사용 없음)
+  _lessonDashRenderMember(t, lsType);
+}
+// §2 채널 효율 — lesson_stats(type).byChannel(연도 스코프) 상위 5, 문의 수+비중%. funnel_conversion 대신 사용(그쪽은 멤버십+강습 혼합이라 강습 단독 집계 불가).
+function _lessonDashRenderChannel(t, statsD){
+  var el = document.getElementById('lessonDashSecChannel_' + t); if (!el) return;
+  if (!statsD || !statsD.byChannel) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">채널 데이터 없음</div>'; return; }
+  var list = (statsD.byChannel || []).filter(function(c){ return (c.v || 0) > 0; }).slice(0, 5);
+  if (!list.length) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">채널 데이터 없음</div>'; return; }
+  var maxN = Math.max.apply(null, list.map(function(c){ return c.v || 0; }));
+  var totalN = list.reduce(function(s, c){ return s + (c.v || 0); }, 0);
+  el.innerHTML = list.map(function(c){
+    var name = c.k ? esc(c.k) : '기타·미상';
+    var n = c.v || 0;
+    var w = maxN > 0 ? Math.max(n / maxN * 100, n > 0 ? 3 : 0) : 0;
+    var pct = totalN > 0 ? Math.round(n / totalN * 100) : 0;
+    return '<div class="mdash-ch-row"><div class="mdash-ch-name">' + name + '</div>' +
+           '<div class="mdash-ch-track"><div class="mdash-ch-fill" style="width:' + w.toFixed(1) + '%"></div></div>' +
+           '<div class="mdash-ch-pct">' + n + '건 · ' + pct + '%</div></div>';
+  }).join('');
+}
+// §3 회원 구성 — lesson_registered_roster(type) 종목별 수강 headcount. 외부관리(루프메소드 등) sheetFound=false는 별도 배지로 정직 표기(0 날조 금지).
+function _lessonDashRenderMember(t, lsType){
+  var el = document.getElementById('lessonDashSecMember_' + t); if (!el) return;
+  if (GAS_URL === GAS_PLACEHOLDER) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">구성 데이터 없음</div>'; return; }
+  fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(lsType) + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">구성 데이터 불러오기 실패</div>'; return; }
+      var chips = '<span class="mdash-chip teal">수강 중 <b>' + (d.total || 0).toLocaleString() + '</b></span>';
+      (d.bySport || []).filter(function(s){ return s.registered != null && s.registered > 0; })
+        .sort(function(a, b){ return b.registered - a.registered; }).slice(0, 6)
+        .forEach(function(s){ chips += '<span class="mdash-chip accent">' + esc(s.명) + ' <b>' + s.registered + '</b></span>'; });
+      var extNote = (d.bySport || []).filter(function(s){ return s.external; }).map(function(s){ return s.명; });
+      el.innerHTML = '<div class="mdash-chips">' + chips + '</div>' +
+        (extNote.length ? '<div class="mdash-caveat">' + esc(extNote.join('·')) + '=외부 파트너 프로그램(명단 외부관리·본 집계 미포함, 날조 방지)</div>' : '');
+    })
+    .catch(function(){ el.innerHTML = '<div style="color:var(--dim);font-size:11px">구성 데이터 불러오기 실패</div>'; });
+}
 // 이탈 신호 매트릭스의 실측 2행(이탈 확정·갱신 D-14) 라이브 숫자 주입. 캐시 재사용(강제조회 아님). 2026-07-03 시포·GM
 function renderChurnMatrixLive(body){
   if (!body) return;
@@ -2497,6 +2627,10 @@ function switchFamily(fam) {
     c.style.display = (types.indexOf(c.getAttribute('data-type')) >= 0) ? '' : 'none';
   });
   var _famName = (fam === 'lesson') ? '강습 회원관리' : '멤버십 회원관리';
+  // 현황 팝업 버튼도 family 대칭 전환(멤버십/강습 배타 표시) — 배3 후속, 2026-07-07 시포·GM
+  var _btnMem = document.getElementById('btnMembershipDash'), _btnLes = document.getElementById('btnLessonDash');
+  if (_btnMem) _btnMem.style.display = (fam === 'lesson') ? 'none' : '';
+  if (_btnLes) _btnLes.style.display = (fam === 'lesson') ? '' : 'none';
   var famEl = document.getElementById('manageFamilyLabel');
   if (famEl) famEl.textContent = _famName;
   var titleEl = document.getElementById('pageTitleTxt');   // 상단 H1도 그룹명으로(통합 회원 관리 → 멤버십/강습). 2026-07-02 시포·GM
