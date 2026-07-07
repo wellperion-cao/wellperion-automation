@@ -2924,11 +2924,14 @@ function mgmtMergeSchedule(baseSched, customSlots){
 /* 현재 스케줄에 커스텀 항목 반영 (이 함수를 getSched/getNightSched 래핑에 사용) */
 /* 초기 렌더링 */
 renderManualItems();
-
+</script>
+<script>
 /* ═══════════════════════════════════════════
    이달 부서 현황 탭 — monthly_ops_plan.json 실무·AI 도달율 + 월목표 진척 읽기전용 렌더
    SSOT = 월간운영계획(status/monthly_ops_plan.json). 4부서(운영·시설·지원·주차) 공통 패턴 —
    PAGE CONFIG(PRAC_ID/OWNER_LABEL/MP_DEPT)만 다르고 렌더 함수 본문은 동일 복제(룩 수정 시 4곳 동일 적용).
+   별도 <script> 태그로 분리 — 위 메인 스크립트의 기존 SHIFT_SEED TDZ 오류(무관한 선행 버그)가
+   이 블록 실행을 막지 않도록 격리(스크립트 태그 간 오류는 전파되지 않음).
    ═══════════════════════════════════════════ */
 var MP_DEPT = '운영';
 var PRAC_ID = 'lee-gy';
