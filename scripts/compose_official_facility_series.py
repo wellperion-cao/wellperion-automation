@@ -28,7 +28,8 @@ from brand_constants import BEIGE, WHITE, GRAY, PROJECT_ROOT  # noqa: E402
 
 FAC = PROJECT_ROOT / "2. 브랜드_공식문서" / "01_시설_사진"
 PRO = FAC / "web_10mb아래"     # 094A* 프로컷
-KAKAO = FAC / "시설 사진"       # 사우나·탕·휴게 등
+KAKAO = FAC / "시설 사진"       # 사우나·탕·휴게·로비·카페·테라스 등
+CINQ = PROJECT_ROOT / "instagram" / "Image" / "생크몽드_소개(원본 이미지)"  # 생크몽드 스파
 FOOT = "WELLPERION  ·  FACILITY"
 META = "한남동 3,000평 종합 스포츠클럽"
 
@@ -90,56 +91,63 @@ def build_montage(slide_paths, dest, cols=4, cell=360):
     print(f"  montage → {dest.name}")
 
 
-# ── 3편 구성 (테마 2·2·2) ────────────────────────────────────────────
+# ── 3편 구성 (GM 2026-07-07 재편: 운동 / 편의시설 / 회복) ──────────────
 EPISODES = [
     {
-        "slug": "260707_공식_시설_F1_물과근력",
-        "queue_id": "CMO-2026-07-07-OFFICIAL-F1-물과근력",
-        "title": "공식 #F1 — 물과 근력 (수영·헬스)",
+        "slug": "260707_공식_시설_F1_운동",
+        "queue_id": "CMO-2026-07-07-OFFICIAL-F1-운동",
+        "title": "공식 #F1 — 운동 시설 (수영·헬스·골프·스쿼시)",
         "caption": (
-            "운동의 하루는 물과 근력에서 시작됩니다.\n\n"
-            "25m 정규 수영장에서 몸을 풀고,\n"
-            "테크노짐 카디오·프리웨이트 존에서 오늘의 강도를 채웁니다.\n"
-            "한남동 3,000평, 한 공간에서.\n\n"
+            "실내에서, 사계절 언제나 운동.\n\n"
+            "25m 정규 수영장, 테크노짐 헬스존,\n"
+            "GDR·QED 15타석 오토티업 골프, 정식 규격 스쿼시 코트까지.\n"
+            "한남동 3,000평, 한 곳에서 원하는 운동을.\n\n"
             "문의: wellperion.com/ko/inquiry\n\n"
-            "#웰페리온 #한남동 #스포츠클럽 #수영 #25m수영장 #헬스 "
-            "#테크노짐 #근력운동 #프리미엄"
+            "#웰페리온 #한남동 #스포츠클럽 #수영 #헬스 #골프 #스쿼시 "
+            "#실내스포츠 #프리미엄"
         ),
         "slides": [
             {"kind": "hero", "photo": PRO / "094A0032.jpg",
-             "title": "물과 근력,\n하루가 깨어난다", "sub": META, "cta": ""},
+             "title": "운동은,\n한 곳에서", "sub": META, "cta": ""},
             {"kind": "feature", "photo": PRO / "094A9901.jpg",
              "title": "수영", "sub": "25m 정규 레인"},
             {"kind": "feature", "photo": PRO / "094A9977.jpg",
              "title": "헬스", "sub": "테크노짐 카디오존"},
+            {"kind": "feature", "photo": PRO / "094A0008.jpg",
+             "title": "골프", "sub": "GDR·QED 15타석 오토티업"},
+            {"kind": "feature", "photo": PRO / "094A9943.jpg",
+             "title": "스쿼시", "sub": "정식 규격 코트"},
             {"kind": "hero", "photo": PRO / "094A9961.jpg",
-             "title": "근력,\n오늘의 강도를 채우다", "sub": "",
+             "title": "오늘의 운동,\n여기서 시작", "sub": "",
              "cta": "문의 · wellperion.com/ko/inquiry", "title_size": 60},
         ],
     },
     {
-        "slug": "260707_공식_시설_F2_스포츠",
-        "queue_id": "CMO-2026-07-07-OFFICIAL-F2-스포츠",
-        "title": "공식 #F2 — 스포츠 (골프·스쿼시)",
+        "slug": "260707_공식_시설_F2_편의시설",
+        "queue_id": "CMO-2026-07-07-OFFICIAL-F2-편의시설",
+        "title": "공식 #F2 — 편의시설 (생크몽드·카페·테라스)",
         "caption": (
-            "집중해서 즐기는 운동, 웰페리온의 스포츠존.\n\n"
-            "GDR·QED 15타석 오토티업 골프 연습장과 강습룸,\n"
-            "정식 규격 스쿼시 코트까지.\n"
-            "날씨와 상관없이, 실내에서 제대로.\n\n"
+            "운동, 그 이상의 하루.\n\n"
+            "파리의 스파 생크몽드, 여유로운 카페,\n"
+            "탁 트인 야외 테라스까지.\n"
+            "운동 전후의 시간마저 웰페리온에서.\n\n"
             "문의: wellperion.com/ko/inquiry\n\n"
-            "#웰페리온 #한남동 #스포츠클럽 #골프 #실내골프 #스크린골프 "
-            "#스쿼시 #스쿼시코트 #프리미엄"
+            "#웰페리온 #한남동 #스포츠클럽 #생크몽드 #CinqMondes #스파 "
+            "#카페 #라운지 #프리미엄"
         ),
         "slides": [
-            {"kind": "hero", "photo": PRO / "094A0008.jpg",
-             "title": "스포츠,\n제대로 즐기다", "sub": "골프 · 스쿼시", "cta": ""},
-            {"kind": "feature", "photo": PRO / "094A9943.jpg",
-             "title": "스쿼시", "sub": "정식 규격 코트"},
-            {"kind": "feature", "photo": KAKAO / "골프장.jpg",
-             "title": "골프", "sub": "GDR·QED 15타석 오토티업"},
-            {"kind": "hero", "photo": KAKAO / "야외테라스.jpg",
-             "title": "운동 후,\n한숨 돌리는 자리", "sub": "",
-             "cta": "문의 · wellperion.com/ko/inquiry", "title_size": 60},
+            {"kind": "hero", "photo": KAKAO / "메인로비.jpg",
+             "title": "운동, 그 이상의\n하루", "sub": "생크몽드 · 카페 · 테라스",
+             "cta": ""},
+            {"kind": "feature", "photo": CINQ / "5-1. DSC09535.jpg",
+             "title": "생크몽드 스파", "sub": "Cinq Mondes 파리 리추얼"},
+            {"kind": "feature", "photo": KAKAO / "카페.jpg",
+             "title": "카페", "sub": "운동 후 한 잔의 여유"},
+            {"kind": "feature", "photo": KAKAO / "야외테라스.jpg",
+             "title": "야외 테라스", "sub": "탁 트인 휴식"},
+            {"kind": "hero", "photo": KAKAO / "휴게공간.jpg",
+             "title": "머무는 것만으로,\n완성되는 하루", "sub": "",
+             "cta": "문의 · wellperion.com/ko/inquiry", "title_size": 56},
         ],
     },
     {
@@ -163,8 +171,8 @@ EPISODES = [
              "title": "습식 사우나", "sub": "깊게 데우는 스팀"},
             {"kind": "feature", "photo": KAKAO / "남자 탕.jpg",
              "title": "온·냉탕", "sub": "번갈아, 개운하게"},
-            {"kind": "hero", "photo": KAKAO / "휴게공간.jpg",
-             "title": "운동의 하루,\n여기서 완성됩니다", "sub": "",
+            {"kind": "hero", "photo": KAKAO / "남자 사우나 수면실.jpg",
+             "title": "충분히 쉬어가는\n자리", "sub": "",
              "cta": "문의 · wellperion.com/ko/inquiry", "title_size": 58},
         ],
     },
