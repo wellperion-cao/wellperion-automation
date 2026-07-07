@@ -597,7 +597,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('admin')">현황</button>
   <button class="tab" onclick="switchTab('mplan')">📅 월간 운영부 계획·보고</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
-    <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <!-- 인쇄 버튼 통합 드롭다운 (지원부 체계 동일 패턴 · 버튼 난립 해소) -->
     <div class="tab-dropdown" id="printDropdown">
       <button class="util-btn print-btn" id="printDropdownBtn" onclick="openTabDropdown(this,document.getElementById('printDropdownMenu'),event)">🖨 인쇄 ▾</button>
@@ -605,6 +604,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button onclick="printA3Guideline();closeAllDropdowns()">A3 가이드라인 (규정+가이드)</button>
         <button onclick="printA3Manual();closeAllDropdowns()">A3 매뉴얼(주간)</button>
         <button onclick="printA3OpsOnboarding();closeAllDropdowns()">A3 신입 온보딩 교육자료</button>
+        <hr style="border:none;border-top:1px dashed rgba(183,159,138,0.3);margin:4px 8px;">
+        <button onclick="printCurrentTab();closeAllDropdowns()">현재 화면 그대로 인쇄</button>
       </div>
     </div>
   </div>
@@ -3080,6 +3081,5 @@ async function loadMonthlyPlanTab(){
 
 
 
-    <script src="/wellperion-automation/_assets/print_options.js"></script>
 </body>
 </html>
