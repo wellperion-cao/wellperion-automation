@@ -2621,6 +2621,16 @@ function guideDeleteCard(colKey,id){
   renderGuideBoard();
 }
 
+/* ═══════════════════════════════════════════════
+   오전/오후 근무조 표 — 편집 가능(담당·근무시간·고정휴게)
+   저장: localStorage(OPS_SHIFT_TABLE) 즉시 영속 + 기존 보드와 동일 패턴으로 API 베스트에포트 POST.
+   실제 담당자·시간 값은 임의 작성 금지 — 시드는 전부 빈 값, GM·실무가 직접 입력. ──
+   ※ 아래 3개 선언은 Init 블록(loadShiftData 등 즉시 호출)보다 반드시 위에 있어야 함
+   — 아래로 내리면 const/let TDZ로 "Cannot access 'SHIFT_SEED' before initialization" 발생 (2026-07-07 수리). */
+const SHIFT_STORAGE_KEY='OPS_SHIFT_TABLE';
+const SHIFT_SEED={am:{who:'',time:'',rest:''},pm:{who:'',time:'',rest:''}};
+let SHIFT_DATA=null;
+
 /* ── Init ── */
 const today=new Date().toISOString().slice(0,10);
 loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로컬 즉시 렌더 후 백엔드 동기화(모든 기기 반영)
@@ -2628,13 +2638,6 @@ loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐
 loadGuideData(); renderGuideBoard(); loadGuideFromBackend(); // 가이드 보드: 로컬 즉시 렌더 후 백엔드 동기화
 loadShiftData(); renderShiftTable(); loadShiftFromBackend(); // 오전/오후 근무조 표: 로컬 즉시 렌더 후 백엔드 동기화
 
-/* ═══════════════════════════════════════════════
-   오전/오후 근무조 표 — 편집 가능(담당·근무시간·고정휴게)
-   저장: localStorage(OPS_SHIFT_TABLE) 즉시 영속 + 기존 보드와 동일 패턴으로 API 베스트에포트 POST.
-   실제 담당자·시간 값은 임의 작성 금지 — 시드는 전부 빈 값, GM·실무가 직접 입력. ── */
-const SHIFT_STORAGE_KEY='OPS_SHIFT_TABLE';
-const SHIFT_SEED={am:{who:'',time:'',rest:''},pm:{who:'',time:'',rest:''}};
-let SHIFT_DATA=null;
 function applyShiftStored(stored){
   const base=(stored&&typeof stored==='object')?stored:{};
   SHIFT_DATA={
@@ -2934,8 +2937,8 @@ renderManualItems();
    이달 부서 현황 탭 — monthly_ops_plan.json 실무·AI 도달율 + 월목표 진척 읽기전용 렌더
    SSOT = 월간운영계획(status/monthly_ops_plan.json). 4부서(운영·시설·지원·주차) 공통 패턴 —
    PAGE CONFIG(PRAC_ID/OWNER_LABEL/MP_DEPT)만 다르고 렌더 함수 본문은 동일 복제(룩 수정 시 4곳 동일 적용).
-   별도 <script> 태그로 분리 — 위 메인 스크립트의 기존 SHIFT_SEED TDZ 오류(무관한 선행 버그)가
-   이 블록 실행을 막지 않도록 격리(스크립트 태그 간 오류는 전파되지 않음).
+   별도 <script> 태그로 분리 — 위 메인 스크립트에 예기치 못한 오류가 나도(예: 과거 SHIFT_SEED TDZ,
+   2026-07-07 수리 완료) 이 블록 실행을 막지 않도록 격리(스크립트 태그 간 오류는 전파되지 않음).
    ═══════════════════════════════════════════ */
 var MP_DEPT = '운영';
 var PRAC_ID = 'lee-gy';
