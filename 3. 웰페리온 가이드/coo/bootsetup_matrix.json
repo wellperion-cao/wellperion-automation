@@ -121,6 +121,107 @@
       "ideas": "🧭 제작 루프 오케스트레이션 — 각 배가 지금 어느 단계인지 G1에 표시·추적, 완료 시 다음 단계 자동 촉발\n담당 C-Level 위임·검증(③단순화 우선·북극성 강제) · 표류 배는 다음 단계 자동 부여\n🤖 GM 보좌 자율화 — GM 성향·습관 학습해 놓친 것·다음 할 것 선제 포착\n자율 화이트리스트=스스로 처리 · 게이트 밖=선제 제안(북극성 추천기 확장)"
     },
     {
+      "id": "cto",
+      "nsmap": {
+        "kpi": "백엔드 자율·보안 (5축 복합)",
+        "axes": [
+          {
+            "name": "자동화 가동률",
+            "measured": false,
+            "goal": "≥99%",
+            "note": "가동률 집계 전"
+          },
+          {
+            "name": "장애 0",
+            "measured": true,
+            "value_key": "health",
+            "goal": "0",
+            "note": "헬스체크",
+            "module": "T1"
+          },
+          {
+            "name": "무인증 GAS 0",
+            "measured": true,
+            "value_key": "unauth_gas",
+            "goal": "0",
+            "note": "TODO API 공개·미해소",
+            "module": "T1"
+          },
+          {
+            "name": "미푸시 0",
+            "measured": true,
+            "value_key": "unpushed",
+            "goal": "0",
+            "module": "T1"
+          },
+          {
+            "name": "정합 어긋남 0",
+            "measured": true,
+            "value_key": "mirror_ok",
+            "goal": "0",
+            "note": "미러 검증",
+            "module": "T1"
+          }
+        ],
+        "tier": "✅ 측정중",
+        "현재": "미푸시 0 · drift/warn 감시중",
+        "goal": "0 유지 · 자동화 가동률 ≥99% (확정)",
+        "path": "0에 가까울수록 = GM이 백엔드 신경 끔",
+        "reach": {
+          "mode": "measured",
+          "source": "kpi_values.global",
+          "indicators": [
+            {
+              "key": "unpushed",
+              "label": "미푸시",
+              "ok": "eq0"
+            },
+            {
+              "key": "health",
+              "label": "장애",
+              "ok": "eq:ok"
+            },
+            {
+              "key": "unauth_gas",
+              "label": "무인증",
+              "ok": "eq0"
+            },
+            {
+              "key": "mirror_ok",
+              "label": "정합",
+              "ok": "eq:ok"
+            }
+          ]
+        }
+      },
+      "icon": "🖥️",
+      "name": "시토",
+      "title": "AI CTO",
+      "owner": "김남욱 GM",
+      "accent": "#7C3AED",
+      "dims": [
+        "서버·ERP 백엔드(서버+시트)단을 GM이 신경 안 써도 되게\n①자동화→자율화(AI가 판단·완결)\n②보안·안정성 철저\n③무의미·중복 데이터 제거·단순화.\n새 자동화 전 단순화 먼저",
+        "모호성 제거(L14) → ralph·ulw·team → 실무진 바로 쓰는 수준",
+        "ssot/ 4종(약속·incidents·canon·kpi) + 시토.md + S2 공통·cto탭",
+        "- 자동화 가동률\n- 장애 0\n- 무인증 GAS 0\n- 미푸시 0\n- 정합 어긋남 0",
+        "incidents.json GUARDED · 트렁케이션게이트·GitLock·부팅가드·연동헬스",
+        "보안·결제·금지·전략·공식값·KPI정의 = GM 결재. 라이브발효 = GM 승인",
+        "소유: 시설·지원·주차 + 기술 인프라·자동화·재발방지. 도메인데이터 = 소유자 경유",
+        "웰리 → GM. 시설이상·보안사고 = 즉시 텔레그램 경보. 예산 = 시뽀 조율"
+      ],
+      "owns": [
+        {
+          "label": "T1 기술",
+          "href": "wellperion_guide(main).html#T1"
+        },
+        {
+          "label": "T2 자동화",
+          "href": "wellperion_guide(main).html#T2"
+        }
+      ],
+      "ideas": "🤖 GM 보좌 자율화 엔진(웰리 지원) — GM 로그 적재 → 패턴 감지 → 자기학습으로 웰리에 '놓친 것·다음 할 것' 신호 공급\n보안·프라이버시 게이트 준수"
+    },
+    {
       "id": "cmo",
       "nsmap": {
         "kpi": "노출→회원 전환 엔진 (3축 복합)",
@@ -315,107 +416,6 @@
         }
       ],
       "ideas": "🗂️ 예외기반 무인 운영 — 정상=무인 · 예외만 사람에게\n점검 월간 자기개선 리포트 상시화"
-    },
-    {
-      "id": "cto",
-      "nsmap": {
-        "kpi": "백엔드 자율·보안 (5축 복합)",
-        "axes": [
-          {
-            "name": "자동화 가동률",
-            "measured": false,
-            "goal": "≥99%",
-            "note": "가동률 집계 전"
-          },
-          {
-            "name": "장애 0",
-            "measured": true,
-            "value_key": "health",
-            "goal": "0",
-            "note": "헬스체크",
-            "module": "T1"
-          },
-          {
-            "name": "무인증 GAS 0",
-            "measured": true,
-            "value_key": "unauth_gas",
-            "goal": "0",
-            "note": "TODO API 공개·미해소",
-            "module": "T1"
-          },
-          {
-            "name": "미푸시 0",
-            "measured": true,
-            "value_key": "unpushed",
-            "goal": "0",
-            "module": "T1"
-          },
-          {
-            "name": "정합 어긋남 0",
-            "measured": true,
-            "value_key": "mirror_ok",
-            "goal": "0",
-            "note": "미러 검증",
-            "module": "T1"
-          }
-        ],
-        "tier": "✅ 측정중",
-        "현재": "미푸시 0 · drift/warn 감시중",
-        "goal": "0 유지 · 자동화 가동률 ≥99% (확정)",
-        "path": "0에 가까울수록 = GM이 백엔드 신경 끔",
-        "reach": {
-          "mode": "measured",
-          "source": "kpi_values.global",
-          "indicators": [
-            {
-              "key": "unpushed",
-              "label": "미푸시",
-              "ok": "eq0"
-            },
-            {
-              "key": "health",
-              "label": "장애",
-              "ok": "eq:ok"
-            },
-            {
-              "key": "unauth_gas",
-              "label": "무인증",
-              "ok": "eq0"
-            },
-            {
-              "key": "mirror_ok",
-              "label": "정합",
-              "ok": "eq:ok"
-            }
-          ]
-        }
-      },
-      "icon": "🖥️",
-      "name": "시토",
-      "title": "AI CTO",
-      "owner": "김남욱 GM",
-      "accent": "#7C3AED",
-      "dims": [
-        "서버·ERP 백엔드(서버+시트)단을 GM이 신경 안 써도 되게\n①자동화→자율화(AI가 판단·완결)\n②보안·안정성 철저\n③무의미·중복 데이터 제거·단순화.\n새 자동화 전 단순화 먼저",
-        "모호성 제거(L14) → ralph·ulw·team → 실무진 바로 쓰는 수준",
-        "ssot/ 4종(약속·incidents·canon·kpi) + 시토.md + S2 공통·cto탭",
-        "- 자동화 가동률\n- 장애 0\n- 무인증 GAS 0\n- 미푸시 0\n- 정합 어긋남 0",
-        "incidents.json GUARDED · 트렁케이션게이트·GitLock·부팅가드·연동헬스",
-        "보안·결제·금지·전략·공식값·KPI정의 = GM 결재. 라이브발효 = GM 승인",
-        "소유: 시설·지원·주차 + 기술 인프라·자동화·재발방지. 도메인데이터 = 소유자 경유",
-        "웰리 → GM. 시설이상·보안사고 = 즉시 텔레그램 경보. 예산 = 시뽀 조율"
-      ],
-      "owns": [
-        {
-          "label": "T1 기술",
-          "href": "wellperion_guide(main).html#T1"
-        },
-        {
-          "label": "T2 자동화",
-          "href": "wellperion_guide(main).html#T2"
-        }
-      ],
-      "ideas": "🤖 GM 보좌 자율화 엔진(웰리 지원) — GM 로그 적재 → 패턴 감지 → 자기학습으로 웰리에 '놓친 것·다음 할 것' 신호 공급\n보안·프라이버시 게이트 준수"
     },
     {
       "id": "cpo",
