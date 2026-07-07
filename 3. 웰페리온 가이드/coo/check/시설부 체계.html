@@ -31,6 +31,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 #tab-vendor.content{text-align:left}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
+/* ── 월 선택 바(월간운영계획.html 룩 통일 · 네이티브 달력 입력 대체 · 2026-07-07) ── */
+.month-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
+.month-bar label{font-size:12px;color:var(--dim)}
+.month-bar select{font-size:14px;font-weight:700;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer}
 .btn{padding:8px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .submitter-bar{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
 .submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
@@ -774,9 +778,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
      지원부(배208) 탭 구조 벤치마킹 + 시설부 실측정값 구조(카테고리·회차·기준이탈)로 재설계.
      완료율식(구역×교대) 이식 불가 전제 확인 — 시설부는 카테고리(A~F)×회차(자유텍스트)×항목 단위. ══ -->
 <div id="tab-monthly" class="content hidden">
-  <div class="date-bar">
-    <input type="month" id="fmMonthInput" onchange="loadFacilityMonthlyReport()">
-    <button class="btn" onclick="loadFacilityMonthlyReport()">조회</button>
+  <div class="month-bar">
+    <label for="fmMonthInput">월 선택</label>
+    <select id="fmMonthInput" onchange="loadFacilityMonthlyReport()"></select>
   </div>
 
   <div id="mpStatus" style="color:var(--dim);font-size:13px;padding:20px 0;text-align:center;">불러오는 중...</div>
@@ -4423,8 +4427,21 @@ function fmDefaultMonth(){
 }
 function fmEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function fmPctColor(p){ if(p===null||p===undefined) return 'var(--dim)'; p=Number(p)||0; return p>=90?'var(--green)':p>=60?'var(--yellow)':'var(--red)'; }
+function fmBuildMonthOptions(){
+  const el=document.getElementById('fmMonthInput');
+  if(!el || el.options.length) return;
+  const d=new Date(); const y=d.getFullYear(), m=d.getMonth();
+  let opts='';
+  for(let i=0;i<12;i++){
+    const dt=new Date(y, m-i, 1);
+    const val=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+    opts+='<option value="'+val+'">'+dt.getFullYear()+'년 '+(dt.getMonth()+1)+'월</option>';
+  }
+  el.innerHTML=opts;
+}
 function fmEnsureMonthInput(){
   const el=document.getElementById('fmMonthInput');
+  fmBuildMonthOptions();
   if(el && !el.value) el.value=fmDefaultMonth();
   return el;
 }
