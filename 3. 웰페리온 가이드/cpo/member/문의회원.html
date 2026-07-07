@@ -745,6 +745,42 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .dash-card[data-kind="mem"] .dash-v b.lead{color:var(--accent)}
 @media(max-width:900px){.dash-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr}}
+
+/* ═══════════════════════════════════════
+   멤버십 현황 한눈에 대시보드(요약) — 배3, 2026-07-07 시포·GM
+   기존 액션 재사용(funnel_conversion·stage_funnel·dbRows·cpo_today_stats), 새 GAS 0.
+   요약=앞면(본 섹션), 상세=기존 팝업(openAnalytics) 연결.
+   ═══════════════════════════════════════ */
+.mdash-section-title{font-size:12px;font-weight:800;color:var(--dim-mid);letter-spacing:0.02em;margin-bottom:11px}
+.mdash-tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+.mdash-tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;
+  border-radius:9px;background:rgba(125,123,116,0.08);border:1px solid var(--border-subtle);
+  text-decoration:none;transition:border-color .15s,transform .15s;cursor:pointer}
+.mdash-tile:hover{border-color:var(--accent-border);transform:translateY(-1px)}
+.mdash-v{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-0.02em;line-height:1.1}
+.mdash-k{font-size:10.5px;font-weight:700;color:var(--dim-mid);white-space:nowrap}
+.mdash-sub{font-size:9.5px;color:var(--dim);margin-top:1px}
+.mdash-row{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}
+.mdash-funnel,.mdash-channel{padding:12px 14px;border-radius:9px;background:rgba(125,123,116,0.06);
+  border:1px solid var(--border-subtle);cursor:pointer;transition:border-color .15s}
+.mdash-funnel:hover,.mdash-channel:hover{border-color:var(--accent-border)}
+.mdash-sec-title{font-size:10.5px;font-weight:800;color:var(--dim);margin-bottom:8px}
+.mdash-fbar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.mdash-fbar-row:last-child{margin-bottom:0}
+.mdash-fbar-label{flex:0 0 40px;font-size:10.5px;font-weight:700;color:var(--dim-mid)}
+.mdash-fbar-track{flex:1 1 auto;height:14px;border-radius:4px;background:rgba(125,123,116,0.14);overflow:hidden}
+.mdash-fbar-fill{height:100%;background:var(--teal);border-radius:4px 0 0 4px}
+.mdash-fbar-fill.is-join{background:var(--emerald)}
+.mdash-fbar-count{flex:0 0 auto;font-size:10.5px;font-weight:700;color:var(--text);min-width:30px;text-align:right}
+.mdash-ch-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.mdash-ch-row:last-child{margin-bottom:0}
+.mdash-ch-name{flex:0 0 70px;font-size:10.5px;color:var(--dim-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mdash-ch-track{flex:1 1 auto;height:12px;border-radius:4px;background:rgba(125,123,116,0.14);overflow:hidden}
+.mdash-ch-fill{height:100%;background:var(--accent);border-radius:4px 0 0 4px}
+.mdash-ch-pct{flex:0 0 auto;font-size:10px;font-weight:700;color:var(--text);min-width:60px;text-align:right}
+@media(max-width:900px){.mdash-tiles{grid-template-columns:repeat(3,1fr)}.mdash-row{grid-template-columns:1fr}}
+@media(max-width:520px){.mdash-tiles{grid-template-columns:repeat(2,1fr)}}
+
 /* ── 강습 sub-pane(문의/등록/회원) 토글 — 멤버십 dash-card 패턴 차용, 강습 전용 lessonSwitchCard ── */
 .lesson-dash{grid-template-columns:repeat(3,1fr)}
 @media(max-width:680px){.lesson-dash{grid-template-columns:1fr}}
@@ -1010,6 +1046,48 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
       </div>
     </a>
+  </div>
+
+  <!-- ══ 멤버십 현황 한눈에 — KPI 타일+미니 퍼널+채널 미니(요약=앞면, 상세=기존 팝업 연결). 배3, 2026-07-07 시포·GM ══ -->
+  <div class="card" id="membershipDashboard">
+    <div class="mdash-section-title">📊 멤버십 현황 한눈에</div>
+    <div class="mdash-tiles">
+      <a class="mdash-tile" href="javascript:void(0)" onclick="switchTab('db')">
+        <div class="mdash-v" id="mdInqTotal">–</div>
+        <div class="mdash-k">총 문의</div>
+      </a>
+      <a class="mdash-tile" href="javascript:void(0)" onclick="switchTab('db')">
+        <div class="mdash-v" id="mdInqOpen">–</div>
+        <div class="mdash-k">진행중</div>
+      </a>
+      <a class="mdash-tile" href="javascript:void(0)" onclick="switchTab('db')">
+        <div class="mdash-v" id="mdInqMonth">–</div>
+        <div class="mdash-k">이번달 신규 문의</div>
+      </a>
+      <a class="mdash-tile" href="javascript:void(0)" onclick="openAnalytics('funnel')">
+        <div class="mdash-v" id="mdJoinMonth">–</div>
+        <div class="mdash-k">이번달 가입</div>
+      </a>
+      <a class="mdash-tile" href="javascript:void(0)" onclick="openAnalytics('conv')">
+        <div class="mdash-v" id="mdConvRate">–</div>
+        <div class="mdash-k">전환율(문의→가입)</div>
+      </a>
+      <a class="mdash-tile" href="javascript:void(0)" onclick="switchTab('active')">
+        <div class="mdash-v" id="mdMemActive">–</div>
+        <div class="mdash-k">유효회원</div>
+        <div class="mdash-sub" id="mdMemSub">–</div>
+      </a>
+    </div>
+    <div class="mdash-row">
+      <div class="mdash-funnel" id="mdashFunnel" onclick="openAnalytics('funnel')" role="button" tabindex="0">
+        <div class="mdash-sec-title">🔻 문의 → 가입 미니 퍼널</div>
+        <div id="mdashFunnelBody"><div style="color:var(--dim);font-size:11px">불러오는 중…</div></div>
+      </div>
+      <div class="mdash-channel" id="mdashChannel" onclick="openAnalytics('conv')" role="button" tabindex="0">
+        <div class="mdash-sec-title">📡 채널별 문의</div>
+        <div id="mdashChannelBody"><div style="color:var(--dim);font-size:11px">불러오는 중…</div></div>
+      </div>
+    </div>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
@@ -1989,6 +2067,8 @@ function openChurnManage() {
 
 /* ── 전환율·퍼널 분석 팝업 — 최초 오픈 시에만 fetch(캐시), family 전환 시 퍼널만 재조회. 2026-07-07 시포·GM ── */
 var _analyticsLoaded = { conv: false, funnelFamily: null };
+// 멤버십 한눈에 대시보드가 먼저 fetch해둔 funnel_conversion·stage_funnel 응답 캐시 — 팝업 오픈 시 재사용(중복 fetch 회피). 배3, 2026-07-07 시포·GM
+var _mdashCache = { conv: null, funnel: null };
 function openAnalytics(kind) {
   var overlay = document.getElementById(kind === 'conv' ? 'convModalOverlay' : 'funnelModalOverlay');
   if (!overlay) return;
@@ -2051,30 +2131,36 @@ function loadChurnTopBadges(){
   });
 }
 // 전환율 카드 — 문의→가입 전환 실측(GAS funnel_conversion). PII 없음·집계 수치만. 2026-07-04 시포
+// 렌더 로직 분리(_applyConvRateData) — 멤버십 대시보드(loadMembershipDashboard)가 먼저 fetch해두면 캐시 재사용(중복 fetch 회피). 2026-07-07 시포·GM
+function _applyConvRateData(d){
+  if (!d || !d.ok || !d.total) { return; }
+  _setTxt('dConvRate', d.total.rate);
+  _setTxt('dConvInq', d.total.inquiries);
+  _setTxt('dConvJoin', d.total.converted);
+  var wrap = document.getElementById('convChannelWrap');
+  var body = document.getElementById('convChannelBody');
+  if (!wrap || !body) return;
+  var list = (d.byChannel || []).slice().sort(function(a, b){ return (b.rate || 0) - (a.rate || 0); });
+  if (!list.length) { wrap.style.display = 'none'; body.innerHTML = ''; return; }
+  body.innerHTML = list.map(function(c){
+    var name = c.channel ? esc(c.channel) : '미상';
+    return '<tr><td style="padding:4px 8px;border-bottom:1px solid var(--border-subtle)">'+name+'</td>'+
+           '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle)">'+(c.inquiries != null ? c.inquiries : '–')+'</td>'+
+           '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle)">'+(c.converted != null ? c.converted : '–')+'</td>'+
+           '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700;color:var(--blue)">'+(c.rate != null ? c.rate + '%' : '–')+'</td></tr>';
+  }).join('');
+  wrap.style.display = '';
+}
 function loadConvRate(){
   if (GAS_URL === GAS_PLACEHOLDER) return;
-  fetch(GAS_URL + '?action=funnel_conversion' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if (!d || !d.ok || !d.total) { return; }
-      _setTxt('dConvRate', d.total.rate);
-      _setTxt('dConvInq', d.total.inquiries);
-      _setTxt('dConvJoin', d.total.converted);
-      var wrap = document.getElementById('convChannelWrap');
-      var body = document.getElementById('convChannelBody');
-      if (!wrap || !body) return;
-      var list = (d.byChannel || []).slice().sort(function(a, b){ return (b.rate || 0) - (a.rate || 0); });
-      if (!list.length) { wrap.style.display = 'none'; body.innerHTML = ''; return; }
-      body.innerHTML = list.map(function(c){
-        var name = c.channel ? esc(c.channel) : '미상';
-        return '<tr><td style="padding:4px 8px;border-bottom:1px solid var(--border-subtle)">'+name+'</td>'+
-               '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle)">'+(c.inquiries != null ? c.inquiries : '–')+'</td>'+
-               '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle)">'+(c.converted != null ? c.converted : '–')+'</td>'+
-               '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700;color:var(--blue)">'+(c.rate != null ? c.rate + '%' : '–')+'</td></tr>';
-      }).join('');
-      wrap.style.display = '';
-    })
-    .catch(function(){});
+  if (_mdashCache.conv) {
+    _applyConvRateData(_mdashCache.conv);
+  } else {
+    fetch(GAS_URL + '?action=funnel_conversion' + _wpKeyParam())
+      .then(function(r){ return r.json(); })
+      .then(function(d){ _mdashCache.conv = d; _applyConvRateData(d); })
+      .catch(function(){});
+  }
   // 이번달 전환율(정밀 — 등록일 기준 opt-in numerator=registered). 실패해도 누적 카드엔 무영향(독립 fetch). 2026-07-04 시포
   var _cmNow = new Date();
   var _cmFrom = _cmNow.getFullYear() + '-' + String(_cmNow.getMonth() + 1).padStart(2, '0') + '-01';
@@ -2089,11 +2175,8 @@ function loadConvRate(){
 }
 // 단계별 잔류·이탈 퍼널(stage_funnel) — 백엔드 완성 액션 소비. 잔존%=전체 기준 직전 대비(이번달 n작아 노이즈 → 전체로 계산). 2026-07-06 시포·GM
 // 2026-07-07 시포·GM: 숫자표 → 가로 퍼널 바 격상(배3). 계산 로직 그대로, 시각만 바+숫자 하이브리드로 교체.
-function loadStageFunnel(){
-  if (GAS_URL === GAS_PLACEHOLDER) return;
-  fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
-    .then(function(d){
+// 렌더 로직 분리(_applyStageFunnelData) — 멤버십 대시보드(loadMembershipDashboard)가 먼저 fetch해두면 캐시 재사용(중복 fetch 회피). 2026-07-07 시포·GM
+function _applyStageFunnelData(d){
       if (!d || !d.ok) return;
       var wrap = document.getElementById('stageFunnelWrap');
       var body = document.getElementById('stageFunnelBody');
@@ -2149,8 +2232,84 @@ function loadStageFunnel(){
       var note = document.getElementById('stageFunnelNote');
       if (note) note.innerHTML = '단계=담당배정→응대 · 예약칸→예약 · 방문칸→방문 · 회원매칭→가입. 강습은 상담예약/방문상태 칸이 대부분 비어 중간단계가 등록(회원매칭)으로 수렴 — 등록 정본은 강습팀 시트. 문의접수 CTA웹은 현재 0건(자체폼 휴면).';
       wrap.style.display = '';
-    })
+}
+function loadStageFunnel(){
+  if (GAS_URL === GAS_PLACEHOLDER) return;
+  if (_mdashCache.funnel) {
+    _applyStageFunnelData(_mdashCache.funnel);
+  } else {
+    fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam())
+      .then(function(r){ return r.json(); })
+      .then(function(d){ _mdashCache.funnel = d; _applyStageFunnelData(d); })
+      .catch(function(){});
+  }
+}
+/* ── 멤버십 현황 한눈에 대시보드 — 기존 액션(funnel_conversion·stage_funnel) 재사용, 새 GAS 0.
+   응답을 _mdashCache에 저장해두면 분석 팝업(loadConvRate/loadStageFunnel)이 재사용(중복 fetch 회피).
+   요약=본 대시보드, 상세=기존 팝업(openAnalytics). 배3, 2026-07-07 시포·GM ── */
+function loadMembershipDashboard(){
+  if (GAS_URL === GAS_PLACEHOLDER) return;
+  fetch(GAS_URL + '?action=funnel_conversion' + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (!d || !d.ok) return; _mdashCache.conv = d; _renderMdashConv(d); })
     .catch(function(){});
+  fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (!d || !d.ok) return; _mdashCache.funnel = d; _renderMdashFunnel(d); })
+    .catch(function(){});
+}
+// 전환율 타일 + 채널 미니(상위 4, 문의건수 기준) — funnel_conversion 응답 소비. 실패 시 '–' 유지(조용히). 2026-07-07 시포·GM
+function _renderMdashConv(d){
+  if (!d || !d.total) return;
+  _setTxt('mdConvRate', d.total.rate != null ? d.total.rate + '%' : '–');
+  var wrap = document.getElementById('mdashChannelBody');
+  if (!wrap) return;
+  var list = (d.byChannel || []).slice().filter(function(c){ return (c.inquiries || 0) > 0; })
+    .sort(function(a, b){ return (b.inquiries || 0) - (a.inquiries || 0); }).slice(0, 4);
+  if (!list.length) { wrap.innerHTML = '<div style="color:var(--dim);font-size:11px">데이터 없음</div>'; return; }
+  var maxN = Math.max.apply(null, list.map(function(c){ return c.inquiries || 0; }));
+  var totalN = d.total.inquiries || list.reduce(function(s, c){ return s + (c.inquiries || 0); }, 0);
+  wrap.innerHTML = list.map(function(c){
+    var name = c.channel ? esc(c.channel) : '기타·미상';
+    var n = c.inquiries || 0;
+    var w = maxN > 0 ? Math.max(n / maxN * 100, n > 0 ? 3 : 0) : 0;
+    var pct = totalN > 0 ? Math.round(n / totalN * 100) : 0;
+    return '<div class="mdash-ch-row"><div class="mdash-ch-name">' + name + '</div>' +
+           '<div class="mdash-ch-track"><div class="mdash-ch-fill" style="width:' + w.toFixed(1) + '%"></div></div>' +
+           '<div class="mdash-ch-pct">' + n + '건 · ' + pct + '%</div></div>';
+  }).join('');
+}
+// 미니 퍼널(문의→응대→예약→방문→가입) + 이번달 가입 타일 — stage_funnel d.membership 소비(family 무관, 항상 멤버십). 2026-07-07 시포·GM
+function _renderMdashFunnel(d){
+  var mem = (d && d.membership) || {};
+  var tot = mem.total || {}, mon = mem.month || {};
+  var order = [['문의','문의'],['응대','응대'],['예약','예약'],['방문','방문'],['가입','가입']];
+  var base = tot['문의'] || 0;
+  var body = document.getElementById('mdashFunnelBody');
+  _setTxt('mdJoinMonth', mon['가입'] != null ? mon['가입'] : 0);
+  if (!body) return;
+  if (!base) { body.innerHTML = '<div style="color:var(--dim);font-size:11px">데이터 없음</div>'; return; }
+  body.innerHTML = order.map(function(s){
+    var key = s[0], label = s[1];
+    var cur = tot[key] != null ? tot[key] : 0;
+    var w = base > 0 ? Math.max(cur / base * 100, cur > 0 ? 2 : 0) : 0;
+    var isJoin = (key === '가입');
+    return '<div class="mdash-fbar-row"><div class="mdash-fbar-label">' + label + '</div>' +
+           '<div class="mdash-fbar-track"><div class="mdash-fbar-fill' + (isJoin ? ' is-join' : '') + '" style="width:' + w.toFixed(1) + '%"></div></div>' +
+           '<div class="mdash-fbar-count">' + cur.toLocaleString() + '</div></div>';
+  }).join('');
+}
+// 문의 타일(총문의·진행중·이번달 신규) — dbRows 재계산 훅. renderDbTable() 호출마다 갱신(로드완료·검색·필터 무관, dbRows 전체 기준). 배3, 2026-07-07 시포·GM
+function _updateMdashInquiryTiles(){
+  if (!document.getElementById('mdInqTotal')) return;   // 강습 등 다른 family에선 DOM 부재(정상)
+  var _TERMINAL = ['SUC','단기SUC','결제완납','LOSS'];
+  var openN = dbRows.filter(function(row){ return _TERMINAL.indexOf(row.status) < 0; }).length;
+  var now = new Date();
+  var monthPrefix = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  var monthN = dbRows.filter(function(row){ return String(row.timestamp || '').indexOf(monthPrefix) === 0; }).length;
+  _setTxt('mdInqTotal', dbRows.length);
+  _setTxt('mdInqOpen', openN);
+  _setTxt('mdInqMonth', monthN);
 }
 // 이탈 신호 매트릭스의 실측 2행(이탈 확정·갱신 D-14) 라이브 숫자 주입. 캐시 재사용(강제조회 아님). 2026-07-03 시포·GM
 function renderChurnMatrixLive(body){
@@ -3152,7 +3311,11 @@ function renderActiveSummary() {
     if (KNOWN.indexOf(v) < 0) v = '기타';
     counts[v] = (counts[v] || 0) + 1;
   });
-  if (_activeScope === 'valid') _setTxt('dMemShort', counts['중단기'] || 0);   // 단기권(중단기) 카드 표시 — valid 스코프만(배299, 2026-07-07 시포·GM)
+  if (_activeScope === 'valid') {
+    _setTxt('dMemShort', counts['중단기'] || 0);   // 단기권(중단기) 카드 표시 — valid 스코프만(배299, 2026-07-07 시포·GM)
+    var _corpN = (_cpoStats && Number(_cpoStats.memberCorp)) || 0;
+    _setTxt('mdMemSub', '단기 ' + (counts['중단기'] || 0) + '·법인 ' + _corpN);   // 대시보드 유효회원 타일 보조 라인. 배3, 2026-07-07 시포·GM
+  }
 
   var chipsHtml = KNOWN.map(function(k){
     var n = counts[k] || 0;
@@ -3304,6 +3467,8 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false }
   loadCalendarData();  // 기본 활성 탭=예약 달력 (2026-06-24 GM 변경)
   loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
   _tabLoaded.active = true; loadActiveMembers();  // 유효회원 사전로드 — pane 미개방에도 단기권 카드·통합검색 데이터 채움(배299, 2026-07-07 시포·GM)
+  _tabLoaded.db = true; loadDbData();  // 문의 DB 사전로드 — pane 미개방에도 대시보드 문의 타일(총문의·진행중·이번달) 채움(배3, 2026-07-07 시포·GM)
+  loadMembershipDashboard();  // 멤버십 한눈에 대시보드(전환율·미니퍼널·채널 미니). 배3, 2026-07-07 시포·GM
   // 전환율·퍼널·LOSS신호 3배지 = 분석 팝업 오픈 시 lazy fetch로 이전(배3, 2026-07-07 시포·GM). openAnalytics()/openChurnManage() 참조.
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
   // 메뉴 그룹 진입(?manage=membership|lesson) — 배6. 기본=멤버십 관리. 2026-07-02 시포·GM.
@@ -3323,6 +3488,7 @@ function loadCpoTodayStats() {
       _setTxt('dRegToday', d.todayReg);     _setTxt('dRegMonth', d.monthReg);
       // 유효=단기(memberActive, 유효회원시트 잔여일>0)+법인(memberCorp, 별도 법인현황시트) 합산 총원 — 두 소스는 disjoint(다른 시트)라 합산이 정직. 2026-07-07 시포·GM
       _setTxt('dMemActive', (Number(d.memberActive) || 0) + (Number(d.memberCorp) || 0)); _setTxt('dMemCorp', d.memberCorp);
+      _setTxt('mdMemActive', (Number(d.memberActive) || 0) + (Number(d.memberCorp) || 0));   // 대시보드 유효회원 타일. 배3, 2026-07-07 시포·GM
       _cpoStats = d; renderActiveSummary();   // 회원관리 탭 요약카드(유효·법인·종료·비율바·순증감)
       _setTxt('gToLoss', d.todayLoss); _setTxt('gMoLoss', d.monthLoss);   // CPO 가이드 이탈 현황(오늘/월)
     })
@@ -4128,6 +4294,7 @@ function _updateDbGraduatedInfo() {
 }
 
 function renderDbTable() {
+  _updateMdashInquiryTiles();   // 대시보드 문의 타일(총문의·진행중·이번달) 재계산 훅 — 배3, 2026-07-07 시포·GM
   var filtered = _dbFilteredRows();
   var tbody = document.getElementById('dbBody');
 
