@@ -271,7 +271,7 @@ var GDR_KEYWORDS=["GDR","골프존","gdr"]; // 라인아이템(물품명) 화이
 
 var LABOR=[],OPER=[],INSTRUCTORS=[],laborMonth=[],procMonth=[],salesMonth=[],totalCost=[],LIVE=false,SALES_LIVE=false;
 var SALES_G=0,COST_G=0,LABOR_G=0,OPER_G=0,PROC_G=0,MEMBER_G=0,DATA_LAST=6,selTeam=null,period=-1,_charts={};
-var SALES_TRUTH=null,SALES_TRUTH_LAST=0,SALES_TRUTH_LIVE=false,SALES_ETC=[],ETC_G=0,SALES_LAST=6; // 매출 정본(월별 총매출)·기타보정
+var SALES_TRUTH=null,SALES_TRUTH_LAST=0,SALES_TRUTH_LIVE=false,SALES_TRUTH_SRC="",SALES_ETC=[],ETC_G=0,SALES_LAST=6; // 매출 정본 = 보고서 31탭 Y70:80(1순위)·분석시트(폴백)·기타보정
 var PROC_DEPT=FB_PROC,PROC_LIVE=false; // 구매성 부서별×월별 — 라이브(loadProc) 성공 시 교체, 실패 시 FB_PROC
 var OPS_SALES=null,OPS_SALES_LIVE=false,OPS_REFUND=null,OPS_SRC=""; // 운영부 매출 정본 = 매출보고 총매출탭(환불반영, sales_ops) · GM시트는 폴백. OPS_REFUND=월별 환불(음수)
 var SALES_DEPT_LIVE=false; // 종목별 매출 라이브(매출보고 서버집계 sales_dept) 성공 여부 — 성공 시 매출마스터 대체
@@ -328,13 +328,22 @@ async function loadSales(){
 }
 /* 매출 총액 정본 로드 — 「26년 매출 분석」 GAS(sales_monthly). 실패 시 조용히 폴백(매출마스터 종목합 사용). 매출현황 페이지와 동일 소스 → 자동 동기화. */
 async function loadSalesTruth(){
+  // 1순위: 매출보고 말일탭 Y70:Y80 월 집계(sales_month — ★매니저 확정 2026-07-07 "제일 정확한 매출"). 멤버십(환불반영)+강습 합.
+  try{
+    var jm=await procCall("sales_month",{});
+    if(jm&&jm.ok&&jm.total&&jm.total.some(function(v){return v!==null;})){
+      var last1=0;jm.total.forEach(function(v,i){if(v!==null)last1=i+1;});
+      SALES_TRUTH=jm.total;SALES_TRUTH_LAST=last1;SALES_TRUTH_LIVE=true;SALES_TRUTH_SRC="보고서(31탭)";return;
+    }
+  }catch(e){}
+  // 2순위(폴백): '26년 매출 분석' 시트(sales_monthly GAS) — 보고서 대비 월 -240만~-960만 낮게 집계되는 차이 있음
   try{
     var r=await fetch(SALES_TRUTH_API+"?action=sales_monthly&_cb="+Date.now(),{cache:"no-store"});
     var j=await r.json();
     if(j&&j.ok&&j.months&&j.months.length){
       var arr=Array(12).fill(null),last=0;
       j.months.forEach(function(m){var i=(m.m||0)-1;if(i>=0&&i<12){arr[i]=(typeof m.value==="number")?m.value:null;if(arr[i]!==null)last=m.m;}});
-      SALES_TRUTH=arr;SALES_TRUTH_LAST=last;SALES_TRUTH_LIVE=true;
+      SALES_TRUTH=arr;SALES_TRUTH_LAST=last;SALES_TRUTH_LIVE=true;SALES_TRUTH_SRC="분석시트";
     }else{SALES_TRUTH=null;SALES_TRUTH_LIVE=false;}
   }catch(e){SALES_TRUTH=null;SALES_TRUTH_LIVE=false;}
 }
@@ -444,7 +453,7 @@ function renderNav(){var nav=document.getElementById("nav");
     document.querySelectorAll(".panel").forEach(function(p){p.classList.toggle("active",p.dataset.panel===b.dataset.p);});};});}
 
 function updateSyncMeta(){var sm=document.getElementById("syncMeta");if(!sm)return;
-  var t="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_DEPT_LIVE?"🟢실시간(매출보고)":(SALES_LIVE?"🟡마스터(스냅샷)":"⚪폴백"))+" · 운영부 "+(OPS_SALES_LIVE?(OPS_SRC==="보고서"?"🟢보고서(환불반영)":"🟡GM시트(환불 미반영 가능)"):"⚪마스터")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⏳불러오는 중…")+" · 타임(시급) "+(TIME_LIVE?"🟢실시간":"⏳");
+  var t="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?(SALES_TRUTH_SRC==="보고서(31탭)"?"🟢보고서 31탭(환불반영)":"🟡분석시트(폴백)"):(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_DEPT_LIVE?"🟢실시간(매출보고)":(SALES_LIVE?"🟡마스터(스냅샷)":"⚪폴백"))+" · 운영부 "+(OPS_SALES_LIVE?(OPS_SRC==="보고서"?"🟢보고서(환불반영)":"🟡GM시트(환불 미반영 가능)"):"⚪마스터")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⏳불러오는 중…")+" · 타임(시급) "+(TIME_LIVE?"🟢실시간":"⏳");
   // 폴백 소스는 6월 스냅샷까지만 담고 있어 7월 이후 라이브와 혼합 시 과소집계 가능 — 명시 경고(2026-07-06 감사)
   var fb=[];if(!LIVE)fb.push("인건비");if(!SALES_TRUTH_LIVE&&!SALES_LIVE)fb.push("매출");if(!PROC_LIVE&&PROC_LIVE!==undefined)fb.push("구매성");
   if(fb.length&&curMonth()>6)t+=" · ⚠️폴백("+fb.join("·")+")은 6월 스냅샷까지만 반영 — 이후 월 과소 표시 가능";

@@ -31,6 +31,7 @@ function route(p){
     case "sales_probe": return salesProbe(p);
     case "sales_dept": return salesDept(p);
     case "sales_ops":  return salesOps(p);
+    case "sales_month": return salesMonthTot(p);
     case "labor_zero": return laborZero(p);
     case "labor_time": return laborTime(p);
     case "receipt": return addReceipt(p);
@@ -293,9 +294,10 @@ function salesProbe(p){ // 구조 점검용(임시): 월 파일의 탭 목록 + 
   var grid = null, tab = String(p.tab||"");
   if (tab){
     var sht = ss.getSheetByName(tab);
-    // 허용 영역 화이트리스트(PII 차단): 일자탭=팀 집계 O8:T80 / 집계탭('총 매출'류)=상단 집계표만
+    // 허용 영역 화이트리스트(PII 차단): 일자탭=팀 집계 O8:T80(기본)/월집계 블록 V60:AB90(win=monthly) / 집계탭('총 매출'류)=상단 집계표만
     var AGG = { "총 매출":"A1:P80", "총 매출(분류)":"A1:P80", "보고":"A1:P80" };
-    if (sht) grid = sht.getRange(AGG[tab] || "O8:T80").getDisplayValues();
+    var rng = AGG[tab] || (String(p.win||"") === "monthly" ? "V60:AB90" : "O8:T80");
+    if (sht) grid = sht.getRange(rng).getDisplayValues();
   }
   return out({ ok:true, month:mo, tabs:names, tab:tab, grid:grid });
 }
@@ -412,6 +414,34 @@ function salesOps(p){
   }
   var res = { ok:true, net:net, refund:refund, gross:gross, monthsLoaded:monthsLoaded, at:Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm") };
   try { cache.put("sales_ops_v1", JSON.stringify(res), 1200); } catch(e){}
+  return out(res);
+}
+
+/** 월 총매출 정본 — 월별 매출보고 말일탭 Y70:Y80 월 집계 블록(★매니저 확인 2026-07-07 "제일 정확한 매출").
+ *  Y70=멤버십(환불반영) · Y71~79=종목별 · Y80=강습 합계. 총매출 = Y70+Y80. 31탭부터 역방향으로 값 있는 첫 탭 채택(진행월 대응).
+ *  집계만 반환(PII 없음)·20분 캐시. 대시보드 총매출 1순위 소스. */
+function salesMonthTot(p){
+  var cache = CacheService.getScriptCache();
+  if (!p.nocache){ var hit = cache.get("sales_month_v1"); if (hit) return out(JSON.parse(hit)); }
+  var files = salesFiles_();
+  var member=[], lessons=[], total=[], monthsLoaded=[], src={};
+  for (var i=0;i<12;i++){ member.push(null); lessons.push(null); total.push(null); }
+  function ynum(s){ s=String(s==null?"":s); var neg=/\(/.test(s); var v=parseInt(s.replace(/[^0-9]/g,""),10); if(isNaN(v)) return 0; return neg? -v : v; }
+  for (var m=1;m<=12;m++){
+    if (!files[m]) continue;
+    var ss = SpreadsheetApp.openById(files[m]);
+    for (var d=31; d>=1; d--){
+      var sht = ss.getSheetByName(String(d));
+      if (!sht) continue;
+      var g = sht.getRange("Y70:Y80").getDisplayValues();
+      var mem = ynum(g[0][0]), les = ynum(g[10][0]);
+      if (!mem && !les) continue; // 빈 탭 → 이전 일자 탭으로
+      member[m-1]=mem; lessons[m-1]=les; total[m-1]=mem+les; src[m]=d; monthsLoaded.push(m);
+      break;
+    }
+  }
+  var res = { ok:true, member:member, lessons:lessons, total:total, monthsLoaded:monthsLoaded, src:src, at:Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm") };
+  try { cache.put("sales_month_v1", JSON.stringify(res), 1200); } catch(e){}
   return out(res);
 }
 
