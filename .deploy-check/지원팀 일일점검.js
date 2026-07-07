@@ -333,10 +333,18 @@ function doGet(e) {
   if (action === 'migrate_sheet_korean') { return migrateSheetKorean(e.parameter.dept || 'support'); }   // 성별·타입·부서·회차 기존값 한글 전환(왕복검증) + 시드칸 삭제. 2026-06-29 시우.
   if (action === 'list_tabs') { return jsonRes({ tabs: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function(s){ return { name: s.getName(), gid: s.getSheetId() }; }) }); }   // gid→탭 확인용. 2026-06-15 시우.
   if (action === 'dump_snapshot') {   // 점검일지 스냅샷 전체행 덤프 — 진단용. 2026-06-16 시우.
-    var _ssh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_snapshotTabName(e.parameter.dept || 'support'));
+    var _sdept = e.parameter.dept || 'support';
+    var _ssh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(_snapshotTabName(_sdept));
     if (!_ssh) return jsonRes({ error: 'no snapshot sheet' });
     var _sdd = _ssh.getDataRange().getValues(), _sout = [];
-    for (var _sx = 1; _sx < _sdd.length; _sx++) { if(!String(_sdd[_sx][1]||'')&&!String(_sdd[_sx][0]||''))continue; _sout.push({ at: String(_sdd[_sx][0]), date: String(_sdd[_sx][1]), zone: String(_sdd[_sx][3]), shift: String(_sdd[_sx][4]), by: String(_sdd[_sx][5]), done: String(_sdd[_sx][7]), total: String(_sdd[_sx][6]) }); }
+    // facility 스냅샷은 support와 열 배치가 달라(회차만 있고 구역/교대 분리 없음) 이상건수·이상내용을
+    // idx8/9에서 읽음(FACILITY_SNAPSHOT_HEADERS). support는 기존 매핑 유지(무회귀). 2026-07-07 시토.
+    for (var _sx = 1; _sx < _sdd.length; _sx++) {
+      if(!String(_sdd[_sx][1]||'')&&!String(_sdd[_sx][0]||''))continue;
+      var _srow = { at: String(_sdd[_sx][0]), date: String(_sdd[_sx][1]), zone: String(_sdd[_sx][3]), shift: String(_sdd[_sx][4]), by: String(_sdd[_sx][5]), done: String(_sdd[_sx][7]), total: String(_sdd[_sx][6]) };
+      if (_sdept === 'facility') { _srow.abnormalCount = String(_sdd[_sx][8]); _srow.abnormalNote = String(_sdd[_sx][9]); }
+      _sout.push(_srow);
+    }
     return jsonRes({ total: _sout.length, rows: _sout });
   }
   if (action === 'dedup_snapshot') { return dedupSnapshot(e.parameter.dept || 'support'); }   // 점검일지 중복(버킷줄·재제출줄) 청소. 2026-06-16 시우.
