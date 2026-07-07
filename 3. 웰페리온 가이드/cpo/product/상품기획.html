@@ -141,6 +141,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .pol-card input,.pol-cat{display:none!important;}
   .print-val{display:block!important;white-space:normal!important;word-break:keep-all;overflow-wrap:break-word;color:var(--text)!important;font-size:16px!important;line-height:1.5!important;padding:3px 4px!important;}
   .card-title .print-val{display:inline-block!important;font-size:17px!important;font-weight:700!important;color:var(--accent-bright)!important;padding:0!important;}
+  /* A3 설계 콘텐츠(요금정책 표·기획작업대)가 A4 용지에서 잘리지 않도록 안전 축소.
+     data-print-paper는 공용 print_options.js가 세팅(전사회의.html과 동일 훅). 2026-07-07 시포·GM */
+  :root[data-print-paper="A4"] .content{zoom:0.75;}
 }
 
 /* ─── 섹션 구분선 ─── */
@@ -357,14 +360,8 @@ tr:hover td{background:var(--accent-bg);}
     <button class="tab-btn" role="tab" onclick="switchTab('youth',this)"><span class="tab-icon">👦</span>유소년강습</button>
     <button class="tab-btn" role="tab" onclick="switchTab('policy',this)"><span class="tab-icon">💳</span>요금 정책</button>
     <button class="tab-btn" role="tab" onclick="switchTab('workshop',this)"><span class="tab-icon">✏️</span>기획 작업대</button>
-    <div class="tab-dropdown" id="printDropdown">
-      <button class="tab-btn print-tab" id="printDropdownBtn" onclick="openTabDropdown(this,document.getElementById('printDropdownMenu'),event)" title="용지 선택 후 현재 탭 인쇄" style="color:var(--accent)"><span class="tab-icon">🖨️</span>인쇄 ▾</button>
-      <div class="tab-dropdown-menu" id="printDropdownMenu">
-        <button onclick="printWithSize('a4-portrait')">A4 세로</button>
-        <button onclick="printWithSize('a4-landscape')">A4 가로</button>
-        <button class="default" onclick="printWithSize('a3-portrait')">A3 세로 · 기본</button>
-        <button onclick="printWithSize('a3-landscape')">A3 가로</button>
-      </div>
+    <div class="tab-dropdown">
+      <button class="tab-btn print-tab" title="현재 탭 인쇄" style="color:var(--accent)">🖨️ 인쇄</button>
     </div>
   </nav>
 </div>
@@ -771,25 +768,7 @@ function switchTab(id, btn) {
   if (id === 'policy') loadPolicyTable();
 }
 
-// ── 인쇄 용지·방향: <select> 선택값 → @page size를 JS로 동적 주입. 기본=A3 세로. 2026-07-03 시포·GM ──
-var PRINT_SIZES = {
-  'a4-portrait':  'A4 portrait',
-  'a4-landscape': 'A4 landscape',
-  'a3-portrait':  'A3 portrait',
-  'a3-landscape': 'A3 landscape'
-};
-function applyPrintSize(key) {
-  var css = PRINT_SIZES[key] || PRINT_SIZES['a3-portrait'];
-  var style = document.getElementById('printPageRule');
-  if (!style) { style = document.createElement('style'); style.id = 'printPageRule'; document.head.appendChild(style); }
-  style.textContent = '@media print{ @page{ size:' + css + '; } }';
-}
-// ── 인쇄 드롭다운: 항목 클릭 = 용지 적용 + 즉시 인쇄(현재 활성 탭만, 기존 @media print 규칙이 처리). 2026-07-03 시포·GM ──
-function printWithSize(key) {
-  applyPrintSize(key);
-  closeAllDropdowns();
-  window.print();
-}
+// ── 인쇄: 공용 위젯(_assets/print_options.js)이 용지·방향 선택 + @page 주입을 전담. 2026-07-07 시포·GM ──
 function openTabDropdown(btnEl, menuEl, e) {
   e.stopPropagation();
   var isOpen = menuEl.classList.contains('open');
@@ -1248,9 +1227,8 @@ function submitPlan() {
   savePlan(item);
 }
 
-// ── 초기화: 카테고리 셀렉트 옵션 구성 + 인쇄 용지 기본값(A3 세로) 주입 ──────
+// ── 초기화: 카테고리 셀렉트 옵션 구성 ──────────────────────────────────
 buildCategorySelectOptions();
-applyPrintSize('a3-portrait');
 
 // ── 게이트 통과 후 앱 시작 ────────────────────────────────────────────
 window.startApp = function() { loadPlans(); };
