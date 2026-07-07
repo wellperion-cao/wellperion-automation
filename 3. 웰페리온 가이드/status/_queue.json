@@ -1228,14 +1228,17 @@
     "task_id": "CMO-2026-07-07-IMPRESSION-DENOMINATOR",
     "clevel": "cmo",
     "title": "[시모] 노출·도달 분모 측정 — IG 도달 데이터로 진짜 ROI(노출→클릭→문의) 완성 (GM 결재 대기)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-07",
-    "note": "[2026-07-07 마케팅 자동화 진단 갭①] 현재 '클릭 이후'만 측정, 노출·도달(분모)=0이라 진짜 ROI(콘텐츠가 몇 명에게 닿아 몇 명이 눌렀나)를 정직하게 계산 불가. IG Graph API 도달 데이터 토큰=GM 결재 사항(💰/공식 계정 권한). 준비=수집 배관 설계+토큰 발급 절차·비용 정리(결재 전 코드 0). 결재 후=도달 집계→대시보드 ROI 카드(노출→클릭→문의 전 구간). 정직: 개인 namuk 도달은 별개(ship31 정성). | [2026-07-07 결재안건 스코핑] ★비용 정정: IG Graph API reach/impressions=무료(과금 없음·레이트리밋만 사실상 무제한). 기존 '💰유료' 표기 부정확→정정. 자기계정 전용이라 Meta 앱검수(App Review) 불필요, FB 페이지 연결도 불필요(2024 IG Login 경로·FACEBOOK_ENABLED=OFF와 무관). GM 액션 2건뿐: ①@wellperion 프로페셔널 계정 확인/전환(무료·2분·코드상 미확인·namuk은 프로 확인됨) ②Meta 앱 생성 후 1회 OAuth 로그인 동의(결제·PII 없음·읽기권한). 나머지(앱생성·장기토큰 60일 자동갱신·수집스크립트 engagement_collector 패턴 재사용·대시보드 배선)=시토/시모 자율. 얻는것=계정/게시물별 도달·노출→마케팅현황대시보드 채널퍼널 인스타 행 노출칸 추가로 노출→클릭→문의 ROI 완성(소급=프로전환 이후만). 세션 스크레이핑=도달은 비공개 인사이트라 비추천. 권고=무료+저공수, 진행. | [2026-07-07 GM go] 진행 승인(무료 확인). 자율 준비 착수=셋업 절차서+수집 스크립트 골격+계정확인법(토큰 없이 가능분). GM 1회 로그인(배치 인증)으로 완결. 토큰 60일 자동갱신 스케줄=시토 인프라 협업. | [2026-07-07 자율 준비 완료] 셋업 절차서(status/briefs/CMO-2026-07-07-IMPRESSION-SETUP-RUNBOOK.md)+수집기 골격(scripts/ig_reach_collector.py·문법OK·토큰없으면 BLOCKED 부작용0) 작성. 실측: .env에 META_APP_ID/SECRET/LONG_LIVED_TOKEN 잔재 있으나 읽는 코드 0건(과거 미완성·유효성 미검증→재사용 금지, 신규 IG_ACCESS_TOKEN/IG_BUSINESS_ID 제안). 기존 IG 자동화=세션 스크레이핑이라 도달 불가=546이 메우는 공백. 대시보드 배선지점=renderChannelClickInquiry 노출 미측정 각주(라인1304). | [2026-07-07 라이브 셋업 시도·Meta 권한 벽 보류] @wellperion=비즈니스 계정 확인(프로 전환 불요·인사이트 자격 OK). Meta 앱 Wellperion-CMO-Auto(app 2142410846299225·2026-04-29 생성)·관리자=김남욱GM(fb user 4294450604139637) 1명 존재. 그러나 GM 현 로그인 계정으로 기존앱+신규앱(Wellperion-CMO-Auto-IG·Wellperion Insights KMW-IG) 전부 Instagram 설정 진입 시 개발자 역할 권한 부족으로 막힘 → Meta 비즈니스 포트폴리오/개발자 역할 권한 이슈(앱 개수·계정유형 무관). 코드로 못 푸는 계정 거버넌스. 대시보드는 노출=미측정 정직표기 유지(라이브 영향 0). | [2026-07-07 측정 개통·라이브] GM Meta 셋업 완료(자신 소유 신규앱에 @wellperion Instagram 테스터 추가·수락→IG Login 토큰 생성). 토큰 라이브 검증: @wellperion BUSINESS·도달 실측(계정 7/5=34·7/6=17·게시물 94/110/154). ig_reach_collector.py 라이브 수정(graph.instagram.com 버전없음·media reach만·impressions 캐러셀 미지원 검증)→status/ig_reach_ledger.json 적재. 토큰=scripts/.env IG_ACCESS_TOKEN(gitignore·60일). 노출 분모 측정 개통.",
-    "next": "🔗 측정 개통(도달 실측 라이브). 진행=대시보드 인스타 노출칸 배선(ig_reach_ledger→Pages served→렌더). 시토 협업 후속: 일일 수집 스케줄(engagement 파이프라인 4스텝)+60일 토큰 자동갱신(refresh_access_token). 정직 한계: 계정 reach 날짜라벨 end_time 정밀화·프로전환 이후만 소급.",
+    "note": "[2026-07-07 마케팅 자동화 진단 갭①] 현재 '클릭 이후'만 측정, 노출·도달(분모)=0이라 진짜 ROI(콘텐츠가 몇 명에게 닿아 몇 명이 눌렀나)를 정직하게 계산 불가. IG Graph API 도달 데이터 토큰=GM 결재 사항(💰/공식 계정 권한). 준비=수집 배관 설계+토큰 발급 절차·비용 정리(결재 전 코드 0). 결재 후=도달 집계→대시보드 ROI 카드(노출→클릭→문의 전 구간). 정직: 개인 namuk 도달은 별개(ship31 정성). | [2026-07-07 결재안건 스코핑] ★비용 정정: IG Graph API reach/impressions=무료(과금 없음·레이트리밋만 사실상 무제한). 기존 '💰유료' 표기 부정확→정정. 자기계정 전용이라 Meta 앱검수(App Review) 불필요, FB 페이지 연결도 불필요(2024 IG Login 경로·FACEBOOK_ENABLED=OFF와 무관). GM 액션 2건뿐: ①@wellperion 프로페셔널 계정 확인/전환(무료·2분·코드상 미확인·namuk은 프로 확인됨) ②Meta 앱 생성 후 1회 OAuth 로그인 동의(결제·PII 없음·읽기권한). 나머지(앱생성·장기토큰 60일 자동갱신·수집스크립트 engagement_collector 패턴 재사용·대시보드 배선)=시토/시모 자율. 얻는것=계정/게시물별 도달·노출→마케팅현황대시보드 채널퍼널 인스타 행 노출칸 추가로 노출→클릭→문의 ROI 완성(소급=프로전환 이후만). 세션 스크레이핑=도달은 비공개 인사이트라 비추천. 권고=무료+저공수, 진행. | [2026-07-07 GM go] 진행 승인(무료 확인). 자율 준비 착수=셋업 절차서+수집 스크립트 골격+계정확인법(토큰 없이 가능분). GM 1회 로그인(배치 인증)으로 완결. 토큰 60일 자동갱신 스케줄=시토 인프라 협업. | [2026-07-07 자율 준비 완료] 셋업 절차서(status/briefs/CMO-2026-07-07-IMPRESSION-SETUP-RUNBOOK.md)+수집기 골격(scripts/ig_reach_collector.py·문법OK·토큰없으면 BLOCKED 부작용0) 작성. 실측: .env에 META_APP_ID/SECRET/LONG_LIVED_TOKEN 잔재 있으나 읽는 코드 0건(과거 미완성·유효성 미검증→재사용 금지, 신규 IG_ACCESS_TOKEN/IG_BUSINESS_ID 제안). 기존 IG 자동화=세션 스크레이핑이라 도달 불가=546이 메우는 공백. 대시보드 배선지점=renderChannelClickInquiry 노출 미측정 각주(라인1304). | [2026-07-07 라이브 셋업 시도·Meta 권한 벽 보류] @wellperion=비즈니스 계정 확인(프로 전환 불요·인사이트 자격 OK). Meta 앱 Wellperion-CMO-Auto(app 2142410846299225·2026-04-29 생성)·관리자=김남욱GM(fb user 4294450604139637) 1명 존재. 그러나 GM 현 로그인 계정으로 기존앱+신규앱(Wellperion-CMO-Auto-IG·Wellperion Insights KMW-IG) 전부 Instagram 설정 진입 시 개발자 역할 권한 부족으로 막힘 → Meta 비즈니스 포트폴리오/개발자 역할 권한 이슈(앱 개수·계정유형 무관). 코드로 못 푸는 계정 거버넌스. 대시보드는 노출=미측정 정직표기 유지(라이브 영향 0). | [2026-07-07 측정 개통·라이브] GM Meta 셋업 완료(자신 소유 신규앱에 @wellperion Instagram 테스터 추가·수락→IG Login 토큰 생성). 토큰 라이브 검증: @wellperion BUSINESS·도달 실측(계정 7/5=34·7/6=17·게시물 94/110/154). ig_reach_collector.py 라이브 수정(graph.instagram.com 버전없음·media reach만·impressions 캐러셀 미지원 검증)→status/ig_reach_ledger.json 적재. 토큰=scripts/.env IG_ACCESS_TOKEN(gitignore·60일). 노출 분모 측정 개통. | [2026-07-07 대시보드 위젯 라이브·입항] 마케팅현황대시보드에 IG 노출(도달) 별도 위젯(④-3) 라이브: 계정 일별 도달+게시물 top5(도달 합산X 중복방지·인스타 전용·노출→클릭→문의 참고선은 기간 다름 명시). collector가 Pages 서빙 ig_reach_summary.json 발행→대시보드 fetch. 라이브 검증 200(NFC)·위젯 마커·요약 도달17 실재. 노출 분모 측정+시각화 완결. 지속가동(일일수집·60일토큰갱신)=시토 인계(CTO-2026-07-07-IG-REACH-AUTOMATION).",
+    "next": "🏁 노출 측정 개통+대시보드 표출 완결(라이브). 지속가동=시토 인계배. 정직 한계: 안 돌리면 위젯 today값 고정·60일후 토큰만료(시토 갱신).",
     "depends_on": "@wellperion 프로페셔널 계정 확인 + Meta 앱 1회 OAuth 로그인 동의(무료·저공수)",
     "module": "M2",
-    "ship_no": 546
+    "ship_no": 546,
+    "terminal": true,
+    "processed_at": "2026-07-07",
+    "artifact": "@wellperion IG 도달 측정 라이브 개통(토큰 발급·collector·ledger·대시보드 위젯 전부 라이브). 노출→클릭→문의 ROI 전구간 정직 표출. 아침 진단 갭① 봉합."
   },
   {
     "task_id": "CMO-2026-07-07-NAVER-PLACE-VISIBILITY",
@@ -1802,5 +1805,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01FEFiW1A1WuQz2Bhx6L2Foj (CLI ad-hoc · 커밋 8d8fe09e)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8d8fe09e96d2555c68b55c662e30f95489e4ec2d"
+  },
+  {
+    "task_id": "CTO-2026-07-07-IG-REACH-AUTOMATION",
+    "clevel": "cto",
+    "title": "[시토] IG 도달 수집 자동화 — 일일 수집 스케줄 + 60일 토큰 자동갱신 (시모 배546 인계)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-07",
+    "note": "[2026-07-07 시모→시토 인계] 배546 IG 노출측정 개통·대시보드 위젯 라이브 완료. 지속 가동 위해 인프라 2건: ①일일 수집=scripts/ig_reach_collector.py 매일 1회 실행(기존 engagement 파이프라인 ops/start_engagement_collect.bat 4스텝 추가 or 신규 예약작업)→ledger+summary 갱신→자동 커밋(대시보드 자동 최신화). ②60일 토큰 자동갱신=IG Login 장기토큰은 https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=현토큰 으로 갱신(시크릿 불요·만료 24h전부터·매일 시도 안전)→성공시 scripts/.env IG_ACCESS_TOKEN 갱신·실패시 텔레그램 경보. 토큰=scripts/.env(gitignore·07-07 발급·IG_BUSINESS_ID=17841407265295068). 스펙=status/briefs/CMO-2026-07-07-IMPRESSION-SETUP-RUNBOOK.md §3.",
+    "next": "시토: ①일일 수집 스케줄(기존 인프라 재사용·자동커밋) ②토큰 갱신 예약작업+실패 경보. 안 붙이면 위젯 today값 고정·60일후 토큰만료.",
+    "depends_on": "",
+    "source": "cmo_handoff",
+    "module": "T2",
+    "ship_no": 588
   }
 ]
