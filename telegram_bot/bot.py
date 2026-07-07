@@ -115,6 +115,10 @@ CEO_LOG_FILE = STATUS_DIR / "_ceo_log.jsonl"
 # 북극성 추천기 2단계 (CTO 2026-06-29) — 카드 승인 회신 → _queue PENDING 배 등록
 NORTHSTAR_PENDING = STATUS_DIR / "northstar_pending.json"
 NORTHSTAR_LOG = STATUS_DIR / "northstar_log.jsonl"
+# 재설계(배420·GM go 2026-07-07 발효) 역롤백 단일 스위치(notify_prefs.py 중앙플래그 패턴과 동일).
+# False → 인라인버튼 콜백(ns:) 처리 중단, 텍스트 [승인N]/[보류] 경로(route_northstar, 기존 무파괴 경로)만 사용.
+# 다른 봇 코드변경과 동일하게 다음 봇 재기동 시점부터 반영.
+NORTHSTAR_NS_ENABLED = True
 
 WORKDIR = Path.home() / "welperion-automation"  # Claude 실행 기준 디렉토리 (2026-05-23 fix: Desktop → 메인 repo)
 
@@ -826,6 +830,10 @@ async def cmd_northstar_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE)
     ※ 텍스트 [승인N] 라우터(route_northstar)와 병존 — 콜백은 버튼 경로."""
     q = update.callback_query
     if not q or not q.data or not q.data.startswith("ns:"):
+        return
+    if not NORTHSTAR_NS_ENABLED:
+        # 역롤백 발동 중 — 인라인버튼 무시, 텍스트 [승인N]/[보류]로 안내(route_northstar 경로 무파괴 유지)
+        await q.answer("인라인 버튼 일시 비활성 — 텍스트 [승인1] 또는 [보류]로 회신해 주세요.", show_alert=True)
         return
     await q.answer()
     parts = q.data.split(":")
