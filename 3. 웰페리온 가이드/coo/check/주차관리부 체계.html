@@ -716,7 +716,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div id="pkStatus" style="color:var(--dim);font-size:13px;padding:6px 0;"></div>
   <div id="pkKpiRow"></div>
   <div style="font-size:11px;color:var(--dim);margin:-6px 0 4px;" id="pkSubline"></div>
-  <div style="font-size:11px;color:var(--dim);margin:0 0 20px;">※ 매출=카드 실결제(payAmt). 회원 무료(할인감면)는 매출 아님.</div>
+  <div style="font-size:11px;color:var(--dim);margin:0 0 20px;">※ 매출=카드 실결제(payAmt).</div>
 </div>
 
 <div id="tab-guide" class="content hidden">
@@ -1899,7 +1899,6 @@ async function loadParkingRevenue(){
       '<div class="dash-stat-row">'
       +'<div class="dash-stat-card"><div class="num" style="color:var(--green)">'+pkWon(d.매출금액)+'</div><div class="label">실결제 매출</div></div>'
       +'<div class="dash-stat-card"><div class="num">'+Number(d.결제건수||0).toLocaleString('ko-KR')+'건</div><div class="label">결제 건수</div></div>'
-      +'<div class="dash-stat-card"><div class="num" style="color:var(--dim)">'+pkWon(d.할인감면액)+'</div><div class="label">회원 무료(할인감면)</div></div>'
       +'<div class="dash-stat-card"><div class="num">'+pkWon(d.취소금액)+'</div><div class="label">취소</div></div>'
       +'</div>';
     var period=String(d.기간||'').split('~');
