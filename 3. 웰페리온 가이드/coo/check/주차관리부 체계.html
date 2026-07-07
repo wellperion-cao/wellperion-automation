@@ -878,8 +878,12 @@ function openTabDropdown(btnEl, menuEl, e){
   if(!isOpen){
     var rect = btnEl.getBoundingClientRect();
     menuEl.style.top = (rect.bottom + 2) + 'px';
-    menuEl.style.left = rect.left + 'px';
-    menuEl.classList.add('open');
+    menuEl.classList.add('open');            // 폭 측정 위해 먼저 표시
+    var _m = 8;                               // 화면 가장자리 여백
+    var _mw = menuEl.offsetWidth;
+    var _left = rect.left;
+    if(_left + _mw > window.innerWidth - _m){ _left = Math.max(_m, window.innerWidth - _mw - _m); }
+    menuEl.style.left = _left + 'px';
   }
 }
 function closeAllDropdowns(){
