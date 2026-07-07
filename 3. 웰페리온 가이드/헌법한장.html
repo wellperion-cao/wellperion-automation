@@ -512,7 +512,10 @@
     var raw = (v && (value_key in v)) ? v[value_key]
             : (_kpiGlobal && (value_key in _kpiGlobal)) ? _kpiGlobal[value_key] : undefined;
     if(raw === undefined || raw === null) return null;   // 미측정 → 정직
-    if(typeof raw === 'number') return /율$/.test(value_key) ? (Math.round(raw * 100) + '%') : String(raw);
+    if(typeof raw === 'number'){
+      if(/율$/.test(value_key)) return (raw <= 1 ? Math.round(raw * 100) : Math.round(raw)) + '%';
+      return String(raw);
+    }
     return String(raw);                                   // 문자 상태(예: ok)
   }
   // 축 1개 렌더. measured=true → 라이브 값(없으면 note로 상태 표기·회색 아님) / measured=false → 회색 '미측정'.
@@ -520,13 +523,12 @@
     var measured = !!(ax && ax.measured);
     var live = measured ? liveVal(role, ax.value_key) : null;
     var goal = ax.goal ? ' <span class="nsax-goal">→ ' + esc(ax.goal) + '</span>' : '';
+    var tip = ax.note ? ' title="' + esc(ax.note) + '"' : '';
     if(measured){
-      var body = (live != null) ? esc(live) : esc(ax.note || '측정중');
-      var note = (live != null && ax.note) ? ' <span class="nsax-note">' + esc(ax.note) + '</span>' : '';
-      return '<div class="nsax nsax-live"><span class="nsax-name">' + esc(ax.name) + '</span> <b>' + body + '</b>' + goal + note + '</div>';
+      var body = (live != null) ? esc(live) : '측정중';
+      return '<div class="nsax nsax-live"' + tip + '><span class="nsax-name">' + esc(ax.name) + '</span> <b>' + body + '</b>' + goal + '</div>';
     }
-    var un = ax.note ? ' <span class="nsax-note">' + esc(ax.note) + '</span>' : '';
-    return '<div class="nsax nsax-none"><span class="nsax-name">' + esc(ax.name) + '</span> <b>미측정</b>' + goal + un + '</div>';
+    return '<div class="nsax nsax-none"' + tip + '><span class="nsax-name">' + esc(ax.name) + '</span> <b>미측정</b>' + goal + '</div>';
   }
   // 복합 축 커버리지: measured 개수 M / 전체 K + 측정 축의 표시값 목록(정직 병기용).
   function axesCoverage(role){
@@ -552,7 +554,7 @@
       var cov = axesCoverage(role);
       var pct = cov.K ? Math.round(cov.M / cov.K * 100) : 0;   // 측정 커버리지(도달율 아님·좁은 프록시 100% 방지)
       out += '<div class="kbar gold" title="측정 커버리지 — 전체 축 중 실측된 비율(도달율 아님)"><i style="width:' + pct + '%"></i></div>';
-      out += '<div class="nsreach-meta" style="font-size:11.5px;" title="복합 축 종합 — 좁은 프록시 하나로 &lsquo;북극성 도달&rsquo; 단정 금지(L05)">측정 <b>' + cov.M + '/' + cov.K + '축</b> <span class="nsreach-note">· 복합 축 종합(L05)</span></div>';
+      out += '<div class="nsreach-meta" style="font-size:11.5px;" title="복합 축 종합 — 좁은 프록시 하나로 &lsquo;북극성 도달&rsquo; 단정 금지(L05)">측정 <b>' + cov.M + '/' + cov.K + '축</b></div>';
       out += '<div class="nsax-list">' + m.axes.map(function(a){ return axisRow(role, a); }).join('') + '</div>';
       var dM = (_reachData && _reachData[role.id]) || null;
       if(dM && dM.mode === 'milestone' && typeof dM.milestones_done === 'number'){
