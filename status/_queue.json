@@ -340,15 +340,17 @@
     "task_id": "CTO-2026-07-06-NORTHSTAR-DEDUP-COMPLETED",
     "clevel": "cto",
     "title": "[시토] 북극성 추천기 완료건 재발행 차단 — 일시 null '미측정' 오판 방지 + 완료·아카이브 배 dedup",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-06",
     "ship_no": 496,
     "note": "[2026-07-06 시포→시토 인계·GM 지시 '482 재발행 차단'] 원인: 북극성 추천기(scripts/northstar_recommender.py)가 kpi_values 스냅샷만 보고 KPI가 null이면 '미측정'으로 신호② 측정개통 카드를 발행하는데, 완료된 측정 배(_queue_archive)를 대조하지 않음 + kpi_collector가 GAS 일시 실패 시 전체 null 반환(2026-07-05 cpo 전환율 전 지표 None → 실제로는 7/4 이미 개통·누적 39.4% 라이브였음에도 재발행 착시 → ship482). 가드 2겹 제안: ①run()에서 candidates를 _queue+_queue_archive 완료건 제목과 dedup(정규화 매칭 시 드롭) ②측정개통류 신호②는 해당 역할 KPI가 '최근 N일 연속 null'일 때만 발행(1회 null=일시장애로 간주 억제). 발효게이트=시토 엔진 라이브(06:30 send)는 GM go·역롤백 준수. 로컬 드라이런 검증까지 자율.",
-    "next": "시토: run() 완료건 dedup + 일시 null 억제 가드 구현 → 드라이런 검증(482류 재발행 0 확인) → GM go 시 라이브.",
+    "next": "재설계 배420에도 동일 가드 승계",
     "depends_on": "",
     "source": "cpo_handoff",
-    "module": "T2"
+    "module": "T2",
+    "processed_at": "2026-07-07",
+    "artifact": "커밋 d0781ab1(scripts/northstar_recommender.py 가드①②) — 드라이런 2회 재발행 0 + 합성 ship482 케이스 가드①②단위테스트(test_guard.py) PASS 콘솔로그"
   },
   {
     "task_id": "CEO-2026-07-06-ADHOC-d2282954",
@@ -2070,5 +2072,16 @@
     "artifact": "- 카드4: 종료 제거, 유효=단기+법인 합산 총원, 아래줄 '단기 N / 법인 N'\n- 강습 진행상태 select 상태별 색(등록=초록·상담중=청록·보류=주황·취소=빨강·미정=앰버)+가시성 강화 (CLI ad-hoc · 커밋 d0781ab1)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "d0781ab13e3bd78db1a357c4b2267c331f8b7b76"
+  },
+  {
+    "task_id": "NEXT-20260707-161539",
+    "clevel": "cto",
+    "title": "재설계 배420에도 동일 가드 승계",
+    "status": "PENDING",
+    "depends_on": "CTO-2026-07-06-NORTHSTAR-DEDUP-COMPLETED",
+    "from": "cto",
+    "origin": "bridge",
+    "enqueued_at": "2026-07-07T07:15:39Z",
+    "ship_no": 605
   }
 ]
