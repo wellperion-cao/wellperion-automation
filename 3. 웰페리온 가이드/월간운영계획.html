@@ -369,7 +369,9 @@
   .h1rteam td .qv{display:block;}
   .h1rteam td .qavg{display:block; font-size:10px; color:var(--dim); margin-top:1px;}
   .h1rteam td .qp{display:block; font-size:10.5px; color:var(--accent-soft); font-weight:700; margin-top:1px;}
-  /* 🏆 2분기 포상 배너(GM 확정값·SSOT=half_year_review.award) */
+  /* 🏆 1·2분기 포상 배너(GM 확정값·SSOT=half_year_review.awards, 舊 award는 하위호환) */
+  .h1r-awards-row{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 10px;}
+  .h1r-awards-row .h1r-award{flex:1; min-width:220px; margin:0;}
   .h1r-award{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin:0 0 10px; padding:11px 15px; background:linear-gradient(120deg,rgba(240,198,116,0.16),rgba(240,198,116,0.05)); border:1px solid var(--gold); border-radius:11px;}
   .h1r-award .aw-ic{font-size:16px;}
   .h1r-award .aw-t{font-size:13.5px; font-weight:800; color:var(--text);}
@@ -940,12 +942,13 @@
   var KPI_PATH = 'status/kpi_values.json'; // KPI 자동집계(kpi_collector.py, 일 2회) — 🔧 점검 현황 실측치 소스(coo.지원부_점검완료율). 측정 불가=null(가짜값 없음).
   var CHECK_GAS = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec'; // 지원팀 일일점검 GAS(공용·kpi_collector.py와 동일 소스) — action=monthly_report&month=YYYY-MM byZone(m/f)로 🔧 점검 현황 지원부 남/여 월간 완료율 카드 분해(GM 지시 2026-07-06 월간 전환).
   var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec'; // 종합접수처 VOC GAS(coo/reception/종합접수처_현황.html과 동일) — action=reg_board. 🔧 점검 현황④ 카드 + 🗂️ 이슈·해결 공용(PII 미사용·집계만).
-  var VOC_CAT_META = [ // 종합접수처_현황.html CAT_META과 동일(5종 카테고리 → 담당부서)
+  var VOC_CAT_META = [ // 종합접수처_현황.html CAT_META과 동일(6종 카테고리 → 담당부서)
     {label:'분실물 접수', icon:'📦', dept:'운영부'},
     {label:'시설물 고장 접수', icon:'🔧', dept:'시설부'},
     {label:'청결 이슈 접수', icon:'🧹', dept:'지원부'},
     {label:'직원·강사 칭찬합니다', icon:'⭐', dept:'운영부'},
-    {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부'}
+    {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부'},
+    {label:'컴플레인 접수', icon:'📣', dept:'운영부'}
   ];
   var VOC_STATUS_LIST = ['접수','처리중','완료'];
   var FIN_YEAR = '2026';
@@ -1908,12 +1911,15 @@
     var best = null;
     if(haveActual){ lessonRows.forEach(function(r){ if(r.q2pct != null && (!best || r.q2pct > best.q2pct)) best = r; }); }
 
-    // 🏆 2분기 포상(GM 확정값·SSOT=half_year_review.award).
+    // 🏆 1·2분기 포상(GM 확정값·SSOT=half_year_review.awards, 舊 award는 하위호환).
     var aw = hr && hr.award;
-    var awardHtml = aw ? ('<div class="h1r-award"><span class="aw-ic">🏆</span>' +
-      '<span class="aw-t">' + esc(aw.quarter || '2분기') + ' 포상 — ' + esc(aw.team || '') + '</span>' +
-      '<span class="aw-p">' + esc(aw.prize || '') + '</span>' +
-      (aw.basis ? '<span class="aw-b">' + esc(aw.basis) + '</span>' : '') + '</div>') : '';
+    var awards = (hr && hr.awards && hr.awards.length) ? hr.awards : (aw ? [aw] : []);
+    var awardHtml = awards.length ? ('<div class="h1r-awards-row">' + awards.map(function(a){
+      return '<div class="h1r-award"><span class="aw-ic">🏆</span>' +
+        '<span class="aw-t">' + esc(a.quarter || '') + ' 포상 — ' + esc(a.team || '') + '</span>' +
+        '<span class="aw-p">' + esc(a.prize || '') + '</span>' +
+        (a.basis ? '<span class="aw-b">' + esc(a.basis) + '</span>' : '') + '</div>';
+    }).join('') + '</div>') : '';
 
     var bestHtml;
     if(best){

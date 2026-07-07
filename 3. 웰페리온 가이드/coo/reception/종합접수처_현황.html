@@ -107,7 +107,7 @@ a { color:var(--accent); text-decoration:none; }
   <div class="header">
     <div>
       <h1>🙋 웰페리온 종합접수처 현황</h1>
-      <div class="header-meta">COO 관할 · 5종 접수 통합 칸반 · GAS 실시간 (단일 SSOT)</div>
+      <div class="header-meta">COO 관할 · 6종 접수 통합 칸반 · GAS 실시간 (단일 SSOT)</div>
     </div>
     <div class="header-btns">
       <a href="http://wellperion.com/ko/reception/" target="_blank">📲 회원 접수 폼</a>
@@ -152,13 +152,14 @@ var STATUS_LIST  = ['접수','처리중','완료'];
 var STATUS_COLOR = {'접수':'var(--yellow)','처리중':'var(--blue)','완료':'var(--green)'};
 var STATUS_BG    = {'접수':'var(--yellow-bg)','처리중':'var(--blue-bg)','완료':'var(--green-bg)'};
 
-/* 5종 카테고리 (백엔드 REG_CATEGORIES 라벨과 동일) */
+/* 6종 카테고리 (백엔드 REG_CATEGORIES 라벨과 동일) */
 var CAT_META = [
   {label:'분실물 접수',          icon:'📦', dept:'운영부', color:'var(--orange)', bg:'var(--orange-bg)'},
   {label:'시설물 고장 접수',      icon:'🔧', dept:'시설부', color:'var(--blue)',   bg:'var(--blue-bg)'},
   {label:'청결 이슈 접수',        icon:'🧹', dept:'지원부', color:'var(--green)',  bg:'var(--green-bg)'},
   {label:'직원·강사 칭찬합니다',   icon:'⭐', dept:'운영부', color:'var(--green)',  bg:'var(--green-bg)'},
-  {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'}
+  {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'},
+  {label:'컴플레인 접수',        icon:'📣', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'}
 ];
 var DEPT_LIST = ['운영부','시설부','지원부'];
 
@@ -168,7 +169,8 @@ var EXTRA_LABEL = {
   itemName:'분실물품', lostWhen:'분실시점', keepWhere:'보관요청',
   equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
   issueKind:'유형', urgency:'시급도',
-  targetStaff:'대상직원·강사', episode:'사례', anonymousPref:'익명희망'
+  targetStaff:'대상직원·강사', episode:'사례', anonymousPref:'익명희망',
+  area:'분야', occurredAt:'발생시점'
 };
 
 var _allItems = [];

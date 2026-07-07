@@ -39,7 +39,8 @@ var REG_CATEGORIES = [
   { key: 'facility', label: '시설물 고장 접수',     sheet: '접수_시설고장', dept: '시설부', slaHours: 24 },
   { key: 'clean',    label: '청결 이슈 접수',       sheet: '접수_청결',     dept: '지원부', slaHours: 12 },
   { key: 'praise',   label: '직원·강사 칭찬합니다', sheet: '접수_칭찬',     dept: '운영부', slaHours: null },
-  { key: 'voice',    label: '직원·강사 쓴소리합니다', sheet: '접수_쓴소리', dept: '운영부', slaHours: 72 }
+  { key: 'voice',    label: '직원·강사 쓴소리합니다', sheet: '접수_쓴소리', dept: '운영부', slaHours: 72 },
+  { key: 'complaint', label: '컴플레인 접수',        sheet: '접수_컴플레인', dept: '운영부', slaHours: 48 }
   // praise/voice → dept: '인사부' 로 바꿀 때 위 두 줄만 수정
 ];
 
@@ -83,6 +84,10 @@ var REG_EXTRA_HEADERS = {
     { key: 'targetStaff',    label: '대상직원·강사' },
     { key: 'episode',        label: '사례'          },
     { key: 'anonymousPref',  label: '익명희망'      }
+  ],
+  complaint: [
+    { key: 'area',        label: '분야'     },
+    { key: 'occurredAt',  label: '발생시점' }
   ]
 };
 
@@ -156,7 +161,7 @@ function _vGenId() {
 
 // ─── 전체 통합 순번 ID — VOC-1, VOC-2 … (식별자 겸 순번) ───
 // ScriptProperties 'VOC_SEQ' 를 단조증가(monotonic) 카운터로 사용 → 행을 삭제해도 번호 재사용 안 함(식별자 안정).
-// LockService 로 동시 접수 시 같은 번호 발급 충돌 방지. 5종 카테고리 통틀어 하나의 일련번호.
+// LockService 로 동시 접수 시 같은 번호 발급 충돌 방지. 6종 카테고리 통틀어 하나의 일련번호.
 function _vNextSeqId() {
   var lock = LockService.getScriptLock();
   try { lock.waitLock(5000); } catch (e) {}
