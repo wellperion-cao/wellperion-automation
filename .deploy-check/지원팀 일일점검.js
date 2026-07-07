@@ -2748,6 +2748,40 @@ var FACILITY_ITEMS = [
   { id:'fc_ai_alarm',      name:'측정 기준범위 이탈 경보 확인',      cat:'F 안전(AI초안)',  unit:'ok/x', ai:true }
 ];
 
+// ════════════════════════════════════════════
+// 시설 점검 제출 이력 스냅샷 — 점검일지_facility (지원부 점검일지_support의 시설 트윈. 2026-07-07 시토)
+// 시설 지표 = 입력률(입력완료/총항목) + 이상건수. 완료율 흉내 금지(억지 통일 금지 — L05).
+// 시트명은 _snapshotTabName('facility') = '점검일지_facility' (지원부와 동일 명명 패밀리).
+// 지원부 점검일지_support·_initSnapshotSheet·handleSnapshotAppend는 일절 미접촉 — 본 함수·시트만 신설.
+// ════════════════════════════════════════════
+var FACILITY_SNAPSHOT_HEADERS = ['제출시각','날짜','부서','회차','점검자','총항목','입력완료','입력률(%)','이상건수','이상내용','점검시작','점검완료','소요(분)'];
+
+function _initFacilitySnapshot() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var name = _snapshotTabName('facility');   // '점검일지_facility'
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) { sheet = ss.insertSheet(name); }
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(FACILITY_SNAPSHOT_HEADERS);
+    sheet.getRange(1, 1, 1, FACILITY_SNAPSHOT_HEADERS.length)
+      .setBackground('#2a2725').setFontColor('#B79F8A')
+      .setFontWeight('bold').setHorizontalAlignment('center');
+    sheet.setFrozenRows(1);
+    var widths = [160, 100, 80, 70, 110, 70, 70, 90, 80, 360, 140, 140, 80];
+    for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
+  } else if (sheet.getLastColumn() < FACILITY_SNAPSHOT_HEADERS.length) {
+    // 기존 시트 컬럼 부족 시 나머지 헤더 라벨만 보강(향후 헤더 확장 대비 — 지원부 _initSnapshotSheet와 동일 패턴)
+    var start = sheet.getLastColumn() + 1;
+    var labels = FACILITY_SNAPSHOT_HEADERS.slice(start - 1);
+    sheet.getRange(1, start, 1, labels.length).setValues([labels])
+      .setBackground('#2a2725').setFontColor('#B79F8A')
+      .setFontWeight('bold').setHorizontalAlignment('center');
+    var extra = [140, 140, 80];
+    for (var j = 0; j < labels.length; j++) sheet.setColumnWidth(start + j, extra[j] || 100);
+  }
+  return sheet;
+}
+
 // ─── 시설 측정값 저장 (POST {action:'save_facility_measure', date, round, inspector, items:[{id,name,cat,measure,done}]}) ───
 // 시설_공용구역 시트에 해당 (날짜,회차) 행을 측정 항목 단위로 교체 기록. col5(점검결과)='완료'면 입력완료, col12=측정값.
 // col4=회차 라벨(예 '07시'·'1일'). round 미지정 시 '측정'(하위호환 — 기존 단일스냅샷 동작).
@@ -2795,6 +2829,30 @@ function saveFacilityMeasure(body) {
     _sortByDateDesc(sheet);   // 날짜 내림차순 정렬(+제출시각). 2026-07-06 시우.
   }
   var doneCnt = 0; rows.forEach(function (r) { if (r[5] === '완료') doneCnt++; });
+
+  // 3) 제출 이력 스냅샷 적립(점검일지_facility) — 시설_공용구역 본 저장과 독립, 실패해도 본 저장에 영향 없음.
+  try {
+    var totalCnt = rows.length;
+    var inputRate = totalCnt ? Math.round(doneCnt / totalCnt * 100) : 0;
+    // 이상 정보 미수신 — 프론트(시설부 체계.html save_facility_measure 호출부)가 items에 이상 플래그를
+    // 전송하지 않음(측정값만 전송). 추후 프론트가 이상 플래그 전송 시 이 값을 배선(기준비교는 monthly
+    // report의 outOfRange 로직이 담당 — 여기서 신규 기준비교 로직 생성 금지).
+    var abnormalCount = '';
+    var abnormalNote = '';
+    var fsheet = _initFacilitySnapshot();
+    var snapRow = [now, date, 'facility', round, inspector, totalCnt, doneCnt, inputRate, abnormalCount, abnormalNote, '', '', ''];
+    var fdata = fsheet.getDataRange().getValues();
+    var fhit = 0;
+    for (var fr = fdata.length - 1; fr >= 1; fr--) {
+      var fSameDate = (String(fdata[fr][1]) === date || formatDate(fdata[fr][1]) === date);
+      var fSameRound = (String(fdata[fr][3]) === round);
+      if (fSameDate && fSameRound) { fsheet.getRange(fr + 1, 1, 1, snapRow.length).setValues([snapRow]); fhit = 1; break; }
+    }
+    if (!fhit) fsheet.appendRow(snapRow);
+    var fLast = fsheet.getLastRow();
+    if (fLast > 2) fsheet.getRange(2, 1, fLast - 1, fsheet.getLastColumn()).sort({ column: 1, ascending: false });
+  } catch (e) {}
+
   return jsonRes({ ok: true, dept: 'facility', date: date, round: round, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0 });
 }
 
