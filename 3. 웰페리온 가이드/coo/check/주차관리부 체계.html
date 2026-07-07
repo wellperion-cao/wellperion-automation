@@ -711,6 +711,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div style="font-size:13px;color:var(--text);margin-top:10px;" id="mpOwnerLine"></div>
   </div>
+
+  <div class="dash-section-title">✅ 주차 실적 (월간)</div>
+  <div id="pkStatus" style="color:var(--dim);font-size:13px;padding:6px 0;"></div>
+  <div id="pkKpiRow"></div>
+  <div style="font-size:11px;color:var(--dim);margin:-6px 0 4px;" id="pkSubline"></div>
+  <div style="font-size:11px;color:var(--dim);margin:0 0 20px;">※ 매출=카드 실결제(payAmt). 회원 무료(할인감면)는 매출 아님.</div>
 </div>
 
 <div id="tab-guide" class="content hidden">
@@ -818,7 +824,7 @@ function switchTab(tab){
     var el=document.getElementById('tab-'+id);
     if(el) el.classList.toggle('hidden', id!==tab);
   });
-  if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
+  if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); if(typeof loadParkingRevenue==='function') loadParkingRevenue(); }
 }
 /* ── 인쇄 통합 드롭다운 헬퍼 (지원부·운영부·시설부 체계와 동일 패턴) ── */
 function openTabDropdown(btnEl, menuEl, e){
@@ -1867,6 +1873,43 @@ async function loadMonthlyPlanTab(){
     mpRender(j, key, months[key]);
   }catch(e){
     if(statusEl){ statusEl.style.display='block'; statusEl.textContent='월간 계획을 불러오지 못했습니다 — 새로고침'; statusEl.style.color='var(--red)'; }
+  }
+}
+
+/* ── ✅ 주차 실적(월간) — status/parking_revenue.json 직독 (크롤러 매일 07:00 발행 · 실결제 payAmt 기준) ── */
+var PARKING_REVENUE_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/parking_revenue.json';
+var PK_LOADED = false;
+function pkWon(n){ return '₩'+Number(n||0).toLocaleString('ko-KR'); }
+function pkFmtDate(ymd){
+  var s=String(ymd||'');
+  return s.length===8 ? (s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8)) : s;
+}
+async function loadParkingRevenue(){
+  if(PK_LOADED) return;
+  var statusEl=document.getElementById('pkStatus');
+  var kpiEl=document.getElementById('pkKpiRow');
+  var subEl=document.getElementById('pkSubline');
+  try{
+    var r=await fetch(PARKING_REVENUE_URL+'?t='+Date.now(),{cache:'no-store'});
+    var d=await r.json();
+    if(!d || d.status!=='정상') throw new Error('not normal');
+    PK_LOADED=true;
+    if(statusEl) statusEl.textContent='';
+    if(kpiEl) kpiEl.innerHTML =
+      '<div class="dash-stat-row">'
+      +'<div class="dash-stat-card"><div class="num" style="color:var(--green)">'+pkWon(d.매출금액)+'</div><div class="label">실결제 매출</div></div>'
+      +'<div class="dash-stat-card"><div class="num">'+Number(d.결제건수||0).toLocaleString('ko-KR')+'건</div><div class="label">결제 건수</div></div>'
+      +'<div class="dash-stat-card"><div class="num" style="color:var(--dim)">'+pkWon(d.할인감면액)+'</div><div class="label">회원 무료(할인감면)</div></div>'
+      +'<div class="dash-stat-card"><div class="num">'+pkWon(d.취소금액)+'</div><div class="label">취소</div></div>'
+      +'</div>';
+    var period=String(d.기간||'').split('~');
+    var periodLabel=period.length===2?(pkFmtDate(period[0])+'~'+pkFmtDate(period[1]).slice(5)):(d.기간||'');
+    if(subEl) subEl.textContent='기간 '+periodLabel+' · 갱신 '+(d.갱신시각||'')+' · 수집 '+(d.수집일수||0)+'일';
+  }catch(e){
+    PK_LOADED=false;
+    if(statusEl){ statusEl.textContent='주차 매출 데이터 없음/수집 실패'; statusEl.style.color='var(--dim)'; }
+    if(kpiEl) kpiEl.innerHTML='';
+    if(subEl) subEl.textContent='';
   }
 }
 </script>
