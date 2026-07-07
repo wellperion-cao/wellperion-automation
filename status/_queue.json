@@ -1812,7 +1812,7 @@
     "task_id": "CTO-2026-07-07-IG-REACH-AUTOMATION",
     "clevel": "cto",
     "title": "[시토] IG 도달 수집 자동화 — 일일 수집 스케줄 + 60일 토큰 자동갱신 (시모 배546 인계)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-07",
     "note": "[2026-07-07 시모→시토 인계] 배546 IG 노출측정 개통·대시보드 위젯 라이브 완료. 지속 가동 위해 인프라 2건: ①일일 수집=scripts/ig_reach_collector.py 매일 1회 실행(기존 engagement 파이프라인 ops/start_engagement_collect.bat 4스텝 추가 or 신규 예약작업)→ledger+summary 갱신→자동 커밋(대시보드 자동 최신화). ②60일 토큰 자동갱신=IG Login 장기토큰은 https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=현토큰 으로 갱신(시크릿 불요·만료 24h전부터·매일 시도 안전)→성공시 scripts/.env IG_ACCESS_TOKEN 갱신·실패시 텔레그램 경보. 토큰=scripts/.env(gitignore·07-07 발급·IG_BUSINESS_ID=17841407265295068). 스펙=status/briefs/CMO-2026-07-07-IMPRESSION-SETUP-RUNBOOK.md §3.",
@@ -1820,7 +1820,10 @@
     "depends_on": "",
     "source": "cmo_handoff",
     "module": "T2",
-    "ship_no": 588
+    "ship_no": 588,
+    "processed_at": "2026-07-07",
+    "artifact": "https://github.com/wellperion-cao/wellperion-automation/commit/25659278",
+    "terminal": true
   },
   {
     "task_id": "CTO-2026-07-07-ADHOC-0c3cd859",
