@@ -1014,12 +1014,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     </a>
   </div>
 
-  <!-- 통합(문의+회원) 검색 — 성함·전화 부분일치, 멤버십 문의(dbRows)+등록/유효 회원(_regRows/_activeRows) 대상. IME 안전(입력칸 재생성 없음). 요약대시 아래·예약달력 바로 위(2026-07-07 GM). 2026-07-07 시포·GM -->
-  <div id="unifiedSearchWrap" style="position:relative;max-width:360px;margin-bottom:10px">
-    <input type="text" id="unifiedSearch" class="db-search" style="width:100%" placeholder="성함·전화로 회원·문의 통합 검색…" autocomplete="off">
-    <div id="unifiedSearchResults" class="unified-search-panel" style="display:none"></div>
-  </div>
-
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
   <div id="pane-calendar" class="pane active">
 
@@ -1029,6 +1023,17 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <button class="cal-nav-btn" onclick="changeMonth(-1)">&#8249;</button>
         <div class="cal-nav-title" id="calTitle">—</div>
         <button class="cal-nav-btn" onclick="changeMonth(1)">&#8250;</button>
+      </div>
+
+      <!-- 통합(문의+회원) 검색 + 재등록 상담 추가 — 문의현황 db-toolbar와 동일 톤(카드 안·또렷). 성함·전화 부분일치, 멤버십 문의(dbRows)+등록/유효 회원(_regRows/_activeRows) 대상. IME 안전(입력칸 재생성 없음). 2026-07-07 시포·GM -->
+      <div class="db-toolbar">
+        <div id="unifiedSearchWrap" class="db-toolbar-search-group" style="position:relative">
+          <input type="text" id="unifiedSearch" class="db-search" placeholder="성함·전화로 회원·문의 통합 검색…" autocomplete="off">
+          <div id="unifiedSearchResults" class="unified-search-panel" style="display:none"></div>
+        </div>
+        <div class="db-toolbar-actions">
+          <button class="btn-add" id="btnAddRecon" onclick="openReconModalFromToolbar()">＋ 재등록 상담 추가</button>
+        </div>
       </div>
 
       <div class="cal-grid" id="calGrid">
@@ -4176,6 +4181,14 @@ function _openResModal(cfg) {
 }
 
 // 유효회원 재등록 예약 — ev=수정대상 이벤트/null=신규(회원 선택). date=기본 날짜.
+// 달력 카드 툴바 '＋ 재등록 상담 추가' 버튼 — 선택된 날짜 있으면 그 날짜, 없으면 오늘. openReconModal 재사용(신규 저장로직 없음). 2026-07-07 시포·GM
+function openReconModalFromToolbar() {
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
+  openReconModal(null, _selectedDate || todayStr);
+}
 function openReconModal(ev, date) {
   if (ev && ev.rowIndex) {
     ensureActiveMembers(function(){
