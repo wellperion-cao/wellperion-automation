@@ -973,6 +973,7 @@
         var raw = ((ceoRole.dims || [])[0] == null) ? '' : String(ceoRole.dims[0]);
         var first = (raw.split(/\n+/)[0] || '').trim();
         if(first) nsEl.innerHTML = '🧭 <b>AI CEO 북극성</b> <span style="color:var(--dim);">(정본 coo/bootsetup_matrix.json)</span> ' + esc(first);
+        var yr=(ceoRole.year_northstar_2026==null)?'':String(ceoRole.year_northstar_2026); if(nsEl && yr){ nsEl.innerHTML += '<br>🎯 <b>2026 북극성<\/b> <span style="color:var(--dim);">(웰리·올해)<\/span> ' + esc(yr); }
       }
     }catch(e){}
   }
