@@ -162,8 +162,10 @@ def build_holiday_notice(target: datetime, as_of: datetime) -> str:
     resume = next_business_day(biz + timedelta(days=1))
     biz_dow = _WEEKDAY_KR[biz.weekday()]
     resume_dow = _WEEKDAY_KR[resume.weekday()]
+    # 조사(은/는)는 요일 글자의 받침 유무로 결정 — 월·목·금·일=은 / 화·수·토=는
+    josa = "은" if (ord(target_dow) - 0xAC00) % 28 != 0 else "는"
     return (
-        f"{target_md}({target_dow})은(는) 휴관일이었습니다. {resume_dow}요일에 "
+        f"{target_md}({target_dow}){josa} 휴관일이었습니다. {resume_dow}요일에 "
         f"{biz_dow}요일분부터 이어서 매출·운영사항 보고드리겠습니다."
     )
 
