@@ -585,10 +585,15 @@
     var v = (_kpiValues && _kpiValues[role.id]) || null;
     if(!v || typeof v['완결률'] !== 'number') return '';
     var pct = Math.max(0, Math.min(100, Math.round(v['완결률'] * 100)));
-    return '<div class="workrate"><span class="workrate-h">작업 처리율 · 보조 지표(활동량)</span>' +
-      '<div class="kbar neutral" title="작업 처리율 — 할당 작업 처리량(북극성 도달과 다름)"><i style="width:' + pct + '%"></i></div>' +
-      '<div class="workrate-meta">처리율 <b>' + pct + '%</b>' +
-      (typeof v['완료'] === 'number' ? (' · 누적 완료 <b>' + v['완료'] + '</b>') : '') + '</div>' +
+    var done = (typeof v['완료'] === 'number') ? v['완료'] : null;
+    var act  = (typeof v['활성'] === 'number') ? v['활성'] : null;
+    var frac = (done != null && act != null)
+        ? ('완료 <b>' + done + '</b> / 진행중 <b>' + act + '</b> → 처리율 <b>' + pct + '%</b>')
+        : (done != null ? ('누적 완료 <b>' + done + '</b> · 처리율 <b>' + pct + '%</b>')
+                        : ('처리율 <b>' + pct + '%</b>'));
+    return '<div class="workrate"><span class="workrate-h">작업 처리율 <span class="nsreach-note">· 활동량(≠ 북극성 도달)</span></span>' +
+      '<div class="kbar neutral" title="작업 처리율 = 완료 ÷ (완료+진행중). 활동량 지표 — 낮으면 진행중 배가 많다는 뜻이지 북극성 미달이 아님"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="workrate-meta">' + frac + '</div>' +
     '</div>';
   }
 
