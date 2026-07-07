@@ -376,7 +376,11 @@
   .h1r-award .aw-ic{font-size:16px;}
   .h1r-award .aw-t{font-size:13.5px; font-weight:800; color:var(--text);}
   .h1r-award .aw-p{font-size:13px; font-weight:800; color:var(--gold);}
+  .h1r-award .aw-meal{font-size:11px; color:var(--text-soft);}
   .h1r-award .aw-b{font-size:10.5px; color:var(--dim);}
+  .h1r-award .aw-status{font-size:9.5px; font-weight:800; padding:1px 8px; border-radius:20px; letter-spacing:0.2px; white-space:nowrap;}
+  .h1r-award .aw-status.done{background:rgba(99,187,160,0.2); color:var(--emerald); border:1px solid rgba(99,187,160,0.55);}
+  .h1r-award .aw-status.pending{background:transparent; color:var(--gold); border:1px solid var(--gold);}
   .h1rteam tbody tr.best td{background:rgba(240,198,116,0.08);}
   .h1rteam tbody tr.corp td{color:var(--dim); font-style:italic;}
   .h1rteam tbody tr.tot td{border-top:1px solid var(--border-strong); font-weight:700; color:var(--text); background:var(--surface); font-style:normal;}
@@ -1907,29 +1911,44 @@
       if(tt.key === 'membership') membershipRow = row; else lessonRows.push(row);
     });
 
-    // 잘한 팀 = 2분기 실적 달성률 최고(GM: 근거=2분기).
-    var best = null;
-    if(haveActual){ lessonRows.forEach(function(r){ if(r.q2pct != null && (!best || r.q2pct > best.q2pct)) best = r; }); }
+    // 잘한 팀 = 분기별 달성률 최고(1분기·2분기 각각 산출 · GM 2026-07-07: 1분기 잘한 팀도 표시).
+    var best1 = null, best = null;
+    if(haveActual){
+      lessonRows.forEach(function(r){
+        if(r.q1pct != null && (!best1 || r.q1pct > best1.q1pct)) best1 = r;
+        if(r.q2pct != null && (!best || r.q2pct > best.q2pct)) best = r;
+      });
+    }
 
-    // 🏆 1·2분기 포상(GM 확정값·SSOT=half_year_review.awards, 舊 award는 하위호환).
+    // 🏆 1·2분기 포상(GM 확정값·SSOT=half_year_review.awards, 舊 award는 하위호환). status=지급상태(정직 표기).
     var aw = hr && hr.award;
     var awards = (hr && hr.awards && hr.awards.length) ? hr.awards : (aw ? [aw] : []);
     var awardHtml = awards.length ? ('<div class="h1r-awards-row">' + awards.map(function(a){
+      var done = /완료/.test(a.status || '');
       return '<div class="h1r-award"><span class="aw-ic">🏆</span>' +
         '<span class="aw-t">' + esc(a.quarter || '') + ' 포상 — ' + esc(a.team || '') + '</span>' +
+        (a.status ? '<span class="aw-status ' + (done ? 'done' : 'pending') + '">' + esc(a.status) + '</span>' : '') +
         '<span class="aw-p">' + esc(a.prize || '') + '</span>' +
+        (a.meal ? '<span class="aw-meal">🍽️ 회식비 ' + esc(a.meal) + '</span>' : '') +
         (a.basis ? '<span class="aw-b">' + esc(a.basis) + '</span>' : '') + '</div>';
     }).join('') + '</div>') : '';
 
-    var bestHtml;
+    // 🏅 잘한 팀 — 2분기 카드 먼저, 그 아래 1분기 카드(GM 2026-07-07: 순서 지정·나란히 금지·각자 별도 행).
+    var bestHtml = '';
     if(best){
-      bestHtml = '<div class="h1r-best"><div class="h1r-best-card"><span class="bc-top">🏅 2분기 잘한 팀</span>' +
+      bestHtml += '<div class="h1r-best"><div class="h1r-best-card"><span class="bc-top">🏅 2분기 잘한 팀</span>' +
         '<span class="bc-team">' + esc(best.name) + '</span>' +
         '<span class="bc-meta">2분기 <b>' + fmtWon(best.q2) + '</b> · 달성률 <b>' + best.q2pct + '%</b> (분기목표 ' + fmtWon(best.qtgt) + ')</span></div></div>';
-    } else if(!haveActual){
-      bestHtml = '<div class="h1r-none">잘한 팀 하이라이트 — 상반기 실측 도착 대기(지어내기 없음).</div>';
-    } else {
-      bestHtml = '<div class="h1r-none">잘한 팀 하이라이트 — 달성률 산출 가능한 실측 없음.</div>';
+    }
+    if(best1){
+      bestHtml += '<div class="h1r-best"><div class="h1r-best-card"><span class="bc-top">🏅 1분기 잘한 팀</span>' +
+        '<span class="bc-team">' + esc(best1.name) + '</span>' +
+        '<span class="bc-meta">1분기 <b>' + fmtWon(best1.q1) + '</b> · 달성률 <b>' + best1.q1pct + '%</b> (분기목표 ' + fmtWon(best1.qtgt) + ')</span></div></div>';
+    }
+    if(!best && !best1){
+      bestHtml = !haveActual ?
+        '<div class="h1r-none">잘한 팀 하이라이트 — 상반기 실측 도착 대기(지어내기 없음).</div>' :
+        '<div class="h1r-none">잘한 팀 하이라이트 — 달성률 산출 가능한 실측 없음.</div>';
     }
 
     function qcell(act, avg, pct){

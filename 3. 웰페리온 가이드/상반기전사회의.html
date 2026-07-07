@@ -73,10 +73,14 @@
   .awards-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
   .award{flex:1 1 0; min-width:150px; display:flex; flex-direction:column; gap:3px; background:linear-gradient(120deg,rgba(240,198,116,0.18),rgba(240,198,116,0.05));
     border:1px solid var(--gold); border-radius:12px; padding:11px 14px; margin:0;}
-  .award .aw-top{font-size:11px; color:var(--gold); font-weight:800;}
+  .award .aw-top{font-size:11px; color:var(--gold); font-weight:800; display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
   .award .aw-team{font-size:16px; font-weight:800;}
   .award .aw-prize{font-size:13.5px; font-weight:800; color:var(--gold);}
+  .award .aw-meal{font-size:10.5px; color:var(--text-soft);}
   .award .aw-basis{font-size:10px; color:var(--dim);}
+  .aw-status{font-size:9px; font-weight:800; padding:1px 7px; border-radius:20px; letter-spacing:0.2px; white-space:nowrap;}
+  .aw-status.done{background:rgba(99,187,160,0.2); color:var(--emerald); border:1px solid rgba(99,187,160,0.55);}
+  .aw-status.pending{background:transparent; color:var(--gold); border:1px solid var(--gold);}
   .dirs{display:flex; flex-direction:column; gap:8px;}
   .dir{background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:12px; padding:9px 14px;}
   .dir .d-n{font-size:10px; font-weight:800; color:var(--dim); letter-spacing:0.04em;}
@@ -93,10 +97,14 @@
       --bg:#fff; --paper:#fff; --surface:#f7f6fa; --border:#d8d5e0; --border-strong:#b8b4c6;
       --text:#1a1826; --text-soft:#33313f; --dim:#6c6a78; --accent:#6a5adf; --accent-soft:#5a49c9; --gold:#a9822e; --emerald:#2e6e5b;
     }
+    /* GM 2026-07-07 재강조: "그냥 인쇄"해도 결재란·배경색이 반드시 보여야 함 —
+       브라우저 인쇄 대화상자의 '배경 그래픽' 체크 여부와 무관하게 배경·테두리 색을 강제 출력. */
+    *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
     body{background:#fff;}
     .sheet{max-width:none; padding:0;}
     .cols{gap:16px;}
     .approval-wrap{box-shadow:none;}
+    .doc-head{align-items:center;}
     .card,.award,.best-card,.dir,.kicker,.approval-wrap{page-break-inside:avoid; break-inside:avoid;}
     .doc-head,.kicker,.cols{page-break-inside:avoid;}
   }
@@ -258,13 +266,19 @@
     if(!(_targets && _targets.teams && _targets.teams.length)){ host.innerHTML = '<div class="none">팀별 목표 정본(sales_targets.json) 로딩 중…</div>'; return; }
     var rc = computeRows(), lesson = rc.lesson, membership = rc.membership;
     var haveActual = !!(_h1Sales && _h1Sales.ok);
-    var best = null;
-    if(haveActual){ lesson.forEach(function(r){ if(r.q2pct != null && (!best || r.q2pct > best.q2pct)) best = r; }); }
-    window._h1best = best; window._h1have = haveActual;
+    // 잘한 팀 = 분기별 달성률 최고(1분기·2분기 각각 산출 · GM 2026-07-07: 1분기 잘한 팀도 표시).
+    var best1 = null, best2 = null;
+    if(haveActual){
+      lesson.forEach(function(r){
+        if(r.q1pct != null && (!best1 || r.q1pct > best1.q1pct)) best1 = r;
+        if(r.q2pct != null && (!best2 || r.q2pct > best2.q2pct)) best2 = r;
+      });
+    }
+    window._h1best = best2; window._h1best1 = best1; window._h1best2 = best2; window._h1have = haveActual;
 
     function qcell(a, avg, p){ return '<td class="num"><span class="qv">' + (a != null ? fmtWon(a) : '—') + '</span><span class="qavg">월평균 ' + (avg != null ? fmtWon(avg) : '—') + '</span><span class="qp">' + (p != null ? p + '%' : '—') + '</span></td>'; }
     var body = lesson.map(function(r){
-      var isB = best && r.key === best.key;
+      var isB = (best1 && r.key === best1.key) || (best2 && r.key === best2.key);
       return '<tr' + (isB ? ' class="best"' : '') + '><td class="team">' + esc(r.name) + (isB ? ' 🏅' : '') + '</td>' +
         qcell(r.q1, r.q1avg, r.q1pct) + qcell(r.q2, r.q2avg, r.q2pct) + qcell(r.h1, r.h1avg, r.h1pct) + '<td class="num h2v">' + fmtWon(r.htgt) + '</td></tr>';
     }).join('');
@@ -291,24 +305,33 @@
     var host = document.getElementById('award-card');
     var hr = (_plan && _plan.half_year_review) || null, aw = hr && hr.award;
     var awards = (hr && hr.awards && hr.awards.length) ? hr.awards : (aw ? [aw] : []);
-    var best = window._h1best, haveActual = window._h1have;
+    var best1 = window._h1best1, best2 = window._h1best2, haveActual = window._h1have;
     var html = '';
     if(awards.length){
       html += '<div class="awards-row">' + awards.map(function(a){
-        return '<div class="award"><span class="aw-top">🏆 ' + esc(a.quarter || '') + ' 포상</span>' +
+        var done = /완료/.test(a.status || '');
+        return '<div class="award"><span class="aw-top">🏆 ' + esc(a.quarter || '') + ' 포상' +
+          (a.status ? ' <span class="aw-status ' + (done ? 'done' : 'pending') + '">' + esc(a.status) + '</span>' : '') + '</span>' +
           '<span class="aw-team">' + esc(a.team || '') + '</span>' +
           '<span class="aw-prize">' + esc(a.prize || '') + '</span>' +
+          (a.meal ? '<span class="aw-meal">🍽️ 회식비 ' + esc(a.meal) + '</span>' : '') +
           (a.basis ? '<span class="aw-basis">' + esc(a.basis) + '</span>' : '') + '</div>';
       }).join('') + '</div>';
     }
-    if(best){
+    // 🏅 잘한 팀 — 2분기 카드 먼저, 그 아래 1분기 카드(GM 2026-07-07: 순서 지정·나란히 금지).
+    if(best2){
       html += '<div class="best-card"><span class="bc-top">🏅 2분기 잘한 팀</span>' +
-        '<span class="bc-team">' + esc(best.name) + '</span>' +
-        '<span class="bc-meta">2분기 <b>' + fmtWon(best.q2) + '</b> · 달성률 <b>' + best.q2pct + '%</b> (분기목표 ' + fmtWon(best.qtgt) + ')</span></div>';
-    } else if(haveActual === false){
-      html += '<div class="none">잘한 팀 — 상반기 실측 도착 대기(지어내기 없음).</div>';
-    } else if(haveActual){
-      html += '<div class="none">잘한 팀 — 달성률 산출 가능한 실측 없음.</div>';
+        '<span class="bc-team">' + esc(best2.name) + '</span>' +
+        '<span class="bc-meta">2분기 <b>' + fmtWon(best2.q2) + '</b> · 달성률 <b>' + best2.q2pct + '%</b> (분기목표 ' + fmtWon(best2.qtgt) + ')</span></div>';
+    }
+    if(best1){
+      html += '<div class="best-card"><span class="bc-top">🏅 1분기 잘한 팀</span>' +
+        '<span class="bc-team">' + esc(best1.name) + '</span>' +
+        '<span class="bc-meta">1분기 <b>' + fmtWon(best1.q1) + '</b> · 달성률 <b>' + best1.q1pct + '%</b> (분기목표 ' + fmtWon(best1.qtgt) + ')</span></div>';
+    }
+    if(!best1 && !best2){
+      if(haveActual === false){ html += '<div class="none">잘한 팀 — 상반기 실측 도착 대기(지어내기 없음).</div>'; }
+      else if(haveActual){ html += '<div class="none">잘한 팀 — 달성률 산출 가능한 실측 없음.</div>'; }
     }
     if(!html) html = '<div class="none">포상 정본(half_year_review.award) 로딩 실패.</div>';
     host.innerHTML = html;
