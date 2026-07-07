@@ -68,6 +68,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 @media (max-width:760px){#tab-chem .cg-twocol{grid-template-columns:1fr}}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
+/* ── 월 선택 바(월간운영계획.html 룩 통일 · 네이티브 달력 입력 대체 · 2026-07-07) ── */
+.month-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
+.month-bar label{font-size:12px;color:var(--dim)}
+.month-bar select{font-size:14px;font-weight:700;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer}
 /* ── 점검 날짜칸 요일 칩 (점검 남/여 날짜바에 합류 · 상단 공통바 폐지 · GM 2026-06-22) ── */
 .dow-chip{display:inline-block;font-size:14px;font-weight:800;padding:5px 12px;border-radius:999px;line-height:1;letter-spacing:0.02em}
 .dow-chip.weekday{background:var(--green-bg);color:var(--green)}
@@ -1778,9 +1782,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <!-- ══ 「📅 월간 지원부 계획·보고」 통합 탭 — monthly_ops_plan.json 핵심과제(주인공·상단) + 점검 monthly_report 라이브 대시보드 (배208 2단계 Phase B + 이달 부서 현황 통합 2026-07-07) ══ -->
 <div id="tab-monthly" class="content hidden">
-  <div class="date-bar">
-    <input type="month" id="mrMonthInput" onchange="loadMonthlyReport()">
-    <button class="btn" onclick="loadMonthlyReport()">조회</button>
+  <div class="month-bar">
+    <label for="mrMonthInput">월 선택</label>
+    <select id="mrMonthInput" onchange="loadMonthlyReport()"></select>
   </div>
 
   <div id="mpStatus" style="color:var(--dim);font-size:13px;padding:20px 0;text-align:center;">불러오는 중...</div>
@@ -7839,8 +7843,21 @@ function mrDenomBadge(note){
   const word=mrDenomWord(note), ok=(word==='확정');
   return '<span title="'+mrEsc(note||'')+'" style="display:inline-block;font-size:10px;font-weight:700;color:'+(ok?'#1a7f37':'#a8710a')+';background:'+(ok?'rgba(26,127,55,0.14)':'rgba(230,148,78,0.18)')+';border-radius:10px;padding:2px 8px;margin-left:6px;cursor:help;vertical-align:middle;">'+word+'</span>';
 }
+function mrBuildMonthOptions(){
+  const el=document.getElementById('mrMonthInput');
+  if(!el || el.options.length) return;
+  const d=new Date(); const y=d.getFullYear(), m=d.getMonth();
+  let opts='';
+  for(let i=0;i<12;i++){
+    const dt=new Date(y, m-i, 1);
+    const val=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+    opts+='<option value="'+val+'">'+dt.getFullYear()+'년 '+(dt.getMonth()+1)+'월</option>';
+  }
+  el.innerHTML=opts;
+}
 function mrEnsureMonthInput(){
   const el=document.getElementById('mrMonthInput');
+  mrBuildMonthOptions();
   if(el && !el.value) el.value=mrDefaultMonth();
   return el;
 }
