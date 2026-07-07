@@ -177,17 +177,6 @@ a:hover{color:var(--text)}
 .exp-badge.pending{background:var(--yellow-bg);color:var(--yellow)}
 .exp-body{font-size:12px;color:var(--dim);line-height:1.7}
 
-/* ── Info box (읽는 법) ── */
-.info-box{
-  background:var(--paper2);
-  border:1px solid rgba(196,168,130,0.18);
-  border-left:3px solid var(--accent);
-  border-radius:var(--radius-sm);
-  padding:14px 16px;margin-bottom:16px;font-size:12px;
-  line-height:1.7;
-}
-.info-box strong{color:var(--accent)}
-
 /* ── Period toggle ── */
 .period-bar{display:flex;align-items:center;gap:6px;margin-bottom:20px;flex-wrap:wrap}
 .period-btn{
@@ -1196,7 +1185,7 @@ async function loadClickStats() {
 // ─── 채널별 클릭→문의(→가입) 퍼널 (click_stats × funnel_conversion 조합 · 배 신규) ────
 // utm_source 코드(cta_utm.py CHANNEL_UTM 발행 태그) → 유입채널 정규 라벨(Survey.js _canonicalChannel_ 정합).
 // naver_blog/naver_cafe는 문의쪽에서 모두 '네이버'로 귀속됨 — 클릭은 두 코드 합산해 비교.
-// ⚠️ 정직 한계: 노출(분모) 미측정 · 클릭↔문의는 채널레벨 비율(1:1 조인 아님) · 둘 다 전체 누적.
+// ⚠️ 정직 한계: 노출(분모) 미측정 · 클릭↔문의는 채널레벨 비율(1:1 조인 아님) · 둘 다 선택 기간 기준.
 var _UTM_TO_CANON_CHANNEL = {
   instagram:  '인스타그램',
   naver_blog: '네이버',
@@ -1204,6 +1193,14 @@ var _UTM_TO_CANON_CHANNEL = {
   danggn:     '당근마켓',
   kakao:      '카카오톡'
 };
+
+// 화이트리스트(배#545 감사) — Survey.js _canonicalChannel_의 '네이버'는 플레이스·검색·블로그·인터넷을
+// 한 버킷으로 합치는데 UTM 클릭은 naver_blog/naver_cafe만 잡는다 → 네이버·카카오는 문의 대부분이
+// UTM 미태깅 경로(플레이스 등)에서 와 클릭↔문의 인과를 담보 못 함. %표기는 클릭이 문의 유입경로를
+// 실제로 대표하는 채널(무태깅 대체경로가 없는 인스타그램·당근마켓)만 허용.
+var _MEASURABLE_CHANNELS = { '인스타그램': true, '당근마켓': true };
+// 화이트리스트 채널이라도 클릭 표본이 이 값 미만이면 %가 우연 표본으로 튈 수 있어 표기 보류.
+var _MIN_SAMPLE_CLICKS = 10;
 
 function renderChannelClickInquiry() {
   var wrap = document.getElementById('channel-funnel-wrap');
@@ -1238,9 +1235,10 @@ function renderChannelClickInquiry() {
     return;
   }
 
-  // measurable = 클릭>0 이고 문의≤클릭(비율≤100%)일 때만 실제 %로 표기.
-  // 비율>100%(네이버·당근 등)는 문의 bucket에 UTM 미태깅 자기신고·검색·플레이스 유입이 섞여
-  // 클릭(UTM만) 대비 부풀어 보이는 것 — %를 숨기고 정직 플래그로 대체(측정 불가 오해 방지).
+  // 화이트리스트 게이트(배#545) — 채널이 measurable로 허용돼도 아래 순서로 재확인 후에만 %를 켠다.
+  //  1) 화이트리스트 채널인가(_MEASURABLE_CHANNELS) — 아니면(네이버·카카오) %는 애초에 계산하지 않음.
+  //  2) 클릭 표본이 최소치(_MIN_SAMPLE_CLICKS) 이상인가 — 미만이면 표본부족으로 보류.
+  //  3) 문의≤클릭(비율≤100%)인가 — 기존 가드 유지(이중 안전, 화이트리스트 채널도 예외 없음).
   var rows = channels.map(function(ch) {
     var clicksRaw = clicksByChannel[ch];
     var clicks = clicksRaw || 0;
@@ -1249,13 +1247,20 @@ function renderChannelClickInquiry() {
     var conv   = info.converted || 0;
     var i2c    = (typeof info.rate === 'number') ? info.rate : null;
 
-    var measurable = clicksRaw > 0 && inq <= clicksRaw;
+    var whitelisted = !!_MEASURABLE_CHANNELS[ch];
+    var lowSample   = whitelisted && clicksRaw > 0 && clicksRaw < _MIN_SAMPLE_CLICKS;
+    var measurable  = whitelisted && !lowSample && clicksRaw > 0 && inq <= clicksRaw;
+
     var c2iCell;
     if (measurable) {
       var c2i = Math.round(inq / clicks * 1000) / 10;
       c2iCell = '<span style="font-weight:600">' + c2i + '%</span>';
+    } else if (!whitelisted) {
+      c2iCell = '<span style="font-size:10px;color:var(--dim);font-style:italic">추적 밖 유입 우세<br>(플레이스·검색 등 UTM 미경유)<br>%비교 불가</span>';
+    } else if (lowSample) {
+      c2iCell = '<span style="font-size:10px;color:var(--dim);font-style:italic">표본부족(클릭 ' + clicksRaw + '건)<br>%비교 보류</span>';
     } else {
-      c2iCell = '<span style="font-size:10px;color:var(--dim);font-style:italic">추적 밖 유입 우세<br>(자기신고·플레이스/검색)<br>전환율 측정 불가</span>';
+      c2iCell = '<span style="font-size:10px;color:var(--dim);font-style:italic">클릭 대비 문의 과다<br>%비교 보류</span>';
     }
 
     return '<tr>'
@@ -1268,9 +1273,16 @@ function renderChannelClickInquiry() {
       + '</tr>';
   }).join('');
 
+  var periodLabel = (_flow && _flow.label) ? _flow.label : '선택 기간';
+
   wrap.innerHTML =
     '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow)">'
-    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">클릭→문의→가입 채널 퍼널 · 전체 누적 · 노출(분모)은 여전히 미측정 — 채널레벨 비율(개별 클릭↔문의 1:1 조인 아님) · UTM코드 매핑 채널만(인스타그램·네이버·당근마켓·카카오톡) · 클릭≤문의(비율&gt;100%)인 채널은 자기신고·검색/플레이스 유입이 섞여 전환율을 %로 표기하지 않음</div>'
+    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px;line-height:1.7">'
+    + '클릭→문의→가입 채널 퍼널 · ' + periodLabel + ' · UTM코드(링크 꼬리표) 매핑 채널만(인스타그램·네이버·당근마켓·카카오톡)<br>'
+    + '· 노출(분모)은 미측정 · %는 개별 손님 한 명씩 이어붙인 값이 아니라 채널 전체 클릭·문의를 나눈 값(1:1 조인 아님)<br>'
+    + '· <b>인스타그램·당근마켓</b>만 %표기 — 이 두 채널은 클릭 말고 다른 유입경로가 거의 없어 클릭이 문의경로를 대표(클릭 ' + _MIN_SAMPLE_CLICKS + '건 미만은 표본부족으로 보류)<br>'
+    + '· <b>네이버·카카오톡</b>은 %표기 안 함 — 플레이스·검색 등 링크 꼬리표 없이 들어오는 문의가 더 많아 클릭과 문의를 인과로 묶을 수 없음(원수치만 표시)'
+    + '</div>'
     + '<table style="width:100%;border-collapse:collapse">'
     + '<thead><tr style="border-bottom:1px solid var(--border)">'
     + '<th style="text-align:left;padding:6px 10px;font-size:10px;color:var(--dim)">채널</th>'
