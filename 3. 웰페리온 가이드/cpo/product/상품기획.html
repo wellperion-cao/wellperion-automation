@@ -147,7 +147,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .card-title .print-val{display:inline-block!important;font-size:17px!important;font-weight:700!important;color:var(--accent-bright)!important;padding:0!important;}
   /* A3 설계 콘텐츠(요금정책 표·기획작업대)가 A4 용지에서 잘리지 않도록 안전 축소.
      data-print-paper는 공용 print_options.js가 세팅(전사회의.html과 동일 훅). 2026-07-07 시포·GM */
-  :root[data-print-paper="A4"] .content{zoom:0.75;}
+  :root[data-print-paper="A4"] .content{zoom:0.72;}
+  /* 카드·표가 페이지 경계에서 세로로 절단되는 문제 방지. 2026-07-07 시포·GM */
+  .card,.grade-card{break-inside:avoid;page-break-inside:avoid;}
+  table tr{break-inside:avoid;page-break-inside:avoid;}
+  thead{display:table-header-group;}
 }
 
 /* ─── 섹션 구분선 ─── */
