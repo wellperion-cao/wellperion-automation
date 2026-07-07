@@ -682,6 +682,7 @@ function _regSubmit(body) {
     photoUrl
   );
 
+  try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
   return _vJson({ ok: true, id: id, dept: cat.dept });
 }
 
@@ -772,6 +773,7 @@ function _regUpdate(body) {
 
     var statusIdx = _idx('status');
     var assigneeIdx = _idx('assignee');
+    try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
     return _vJson({
       ok: true, id: id,
       status:   statusIdx  >= 0 ? existing[statusIdx]  : '',
@@ -799,6 +801,7 @@ function _regDelete(body) {
     var rowNum = _vFindRow(sh, id);
     if (rowNum < 0) continue;
     sh.deleteRow(rowNum);
+    try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
     return _vJson({ ok: true, id: id, category: cat.label, deleted: 1, message: '접수건이 삭제되었습니다.' });
   }
   return _vJson({ ok: false, error: '해당 접수ID를 찾을 수 없습니다: ' + id });
@@ -861,6 +864,7 @@ function _regRenumber(body) {
   });
   PropertiesService.getScriptProperties().setProperty('VOC_SEQ', String(n));
 
+  try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
   return _vJson({ ok: true, renumbered: n, message: '전체 접수 ' + n + '건을 VOC-1..VOC-' + n + '로 재부여했습니다.' });
 }
 
@@ -935,9 +939,22 @@ function _vProcess(action, body, params) {
   if (action === 'reg_list')   return _regList(params || body);
   if (action === 'reg_board') {
     // 마스킹 공개 보드 — _regList 결과에 _regMask 적용 후 카드별 SLA(처리기한) 계산
+    // 필터 없는 호출(페이지 실사용 경로)만 45초 서버 캐시 — 재조회·다수 열람 즉답. 쓰기(reg_submit/update/delete/renumber) 시 즉시 무효화.
+    var _rbSrc = params || body || {};
+    var _rbNoFilter = !_rbSrc.category && !_rbSrc.dept;
+    if (_rbNoFilter) {
+      try {
+        var _rbHit = CacheService.getScriptCache().get('reg_board_v1');
+        if (_rbHit) return _vJson(JSON.parse(_rbHit));
+      } catch (e) {}
+    }
     var boardResult = JSON.parse(_regList(params || body).getContent());
     var masked = (boardResult.data || []).map(_regMask).map(_regComputeSla);
-    return _vJson({ ok: true, count: masked.length, data: masked });
+    var _rbOut = { ok: true, count: masked.length, data: masked };
+    if (_rbNoFilter) {
+      try { CacheService.getScriptCache().put('reg_board_v1', JSON.stringify(_rbOut), 45); } catch (e) {}
+    }
+    return _vJson(_rbOut);
   }
   if (action === 'reg_update') return _regUpdate(body);
   if (action === 'reg_delete') return _regDelete(body);   // 접수ID로 행 정밀 삭제(배포검증 더미 청소용·GATED). 2026-06-20 시우.
