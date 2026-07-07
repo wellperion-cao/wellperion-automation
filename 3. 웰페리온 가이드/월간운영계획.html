@@ -1718,6 +1718,7 @@
     // ── 부서별 매출(목표 vs 실적) & 지출 결합표(선택월) ──
     // 실적매출 = 라이브 GAS action=team_sales(강사별 실적을 인건비 시트 로스터로 팀 합산) 우선, 실패/미도래 시 매출마스터(_cfoSalesDept) 폴백.
     // 멤버십(운영부)만 항상 GM시트 「2026년도 매출」 정본(_cfoSalesDept.운영부) 사용 — team_sales '합계'(전대 소계)는 중복 방지로 미사용.
+    // 연간매출(누계) = 강습팀 team_sales_h1(정본) · 멤버십 _cfoSalesDept.운영부(정본) [2026-07-07 시뽀 정합].
     // 목표 = status/sales_targets.json(고정). 지출 = 기존 인건비(부서)+구매성(부서, 라이브) 재사용(신규 조회 없음).
     fetchTeamSalesFor(_sel); // 선택월 팀별 실적 라이브 조회 kick-off(캐시 있으면 no-op) — 도착 시 재무 영역만 재렌더
     var combinedTbl = '';
@@ -1739,11 +1740,25 @@
         var expDept = (key === 'membership') ? '운영부' : KEY_TO_DEPT[key];
         var lab = (expDept && _cfoLaborDept && _cfoLaborDept[expDept]) ? (Number(_cfoLaborDept[expDept][idx]) || 0) : 0;
         var pr  = (expDept && _cfoProcDept && _cfoProcDept[expDept]) ? (Number(_cfoProcDept[expDept][idx]) || 0) : 0;
-        // 연간 누계 매출(1~선택월) = 매출마스터 부서맵(_cfoSalesDept) 해당 부서 배열 0~idx 합. 멤버십=운영부. 소스 없음=null(정직 표기).
-        var cumDept = expDept, cum = null;
-        if(cumDept && _cfoSalesDept && _cfoSalesDept[cumDept]){
-          var carr = _cfoSalesDept[cumDept]; cum = 0;
-          for(var ci = 0; ci <= idx && ci < carr.length; ci++){ cum += Number(carr[ci]) || 0; }
+        // 연간 누계 매출(1~선택월). 멤버십=운영부(_cfoSalesDept, GM시트 정본 · 기존대로 정확).
+        // 강습팀 = _cfoSalesDept(매출마스터 gviz) 대신 team_sales_h1(정본) 사용 [2026-07-07 시뽀 정합·GM지시]:
+        //   매출마스터는 부정확 확인됨(주석 참조: 6월 뮤지컬 38만 오독 vs 실측 377만) — 같은 표의 실적매출(team_sales)과
+        //   불일치하는 옛 소스를 누계에 남겨두지 않는다. 단, team_sales_h1은 분기 단위(1~3월/4~6월) 응답이라
+        //   분기 경계월(3·6월)만 정확 산출 가능 + 7월 이후는 상반기 정본 + 선택월 team_sales(ta) 합산.
+        //   비경계월(1·2·4·5월)은 정확한 부분합을 낼 수 없어 지어내지 않고 cum=null(정직 표기).
+        var cum = null;
+        if(key === 'membership'){
+          if(_cfoSalesDept && _cfoSalesDept['운영부']){
+            var mArr = _cfoSalesDept['운영부']; cum = 0;
+            for(var mi = 0; mi <= idx && mi < mArr.length; mi++){ cum += Number(mArr[mi]) || 0; }
+          }
+        } else if(_h1Sales && _h1Sales.ok){
+          var q1c = _h1Sales.q1 && _h1Sales.q1[key], q2c = _h1Sales.q2 && _h1Sales.q2[key];
+          var q1a = (q1c && q1c.actual != null) ? Number(q1c.actual) : null;
+          var q2a = (q2c && q2c.actual != null) ? Number(q2c.actual) : null;
+          if(mnum === 3 && q1a != null){ cum = q1a; }
+          else if(mnum === 6 && q1a != null && q2a != null){ cum = q1a + q2a; }
+          else if(mnum > 6 && q1a != null && q2a != null && ta.live){ cum = q1a + q2a + (ta.sums[key] || 0); }
         }
         return {name:tt.name, target:tgt, actual:act, exp:lab + pr, cum:cum};
       });

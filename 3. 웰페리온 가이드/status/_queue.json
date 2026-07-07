@@ -1319,5 +1319,18 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VYqjP1CEJ2BNud9yE3H3nz (CLI ad-hoc · 커밋 8164e176)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8164e176bdb6f468179566be54ef254e843b301c"
+  },
+  {
+    "task_id": "CPO-2026-07-07-MEMBER-PAGE-DECLUTTER",
+    "clevel": "cpo",
+    "title": "[시포] 회원관리 페이지 정리 — 전환율·퍼널·이탈을 버튼→팝업으로, 앞면=달력·목록. 퍼널 family 분리",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-07",
+    "ship_no": 556,
+    "note": "[2026-07-07 GM go·라이브 관찰 지시] 문의회원.html 복잡 → 분석 블록(전환율 #convRateCard+퍼널 #stageFunnelWrap+이탈/가이드 .cpo-guide)을 앞면에서 제거, '분석·참고 버튼바'(📈전환율/🔻단계잔류이탈/🚪이탈관리/📖운영가이드)→모달 팝업으로. 앞면=요약대시+버튼바+달력·목록만. 퍼널=family 분리(멤버십뷰=멤버십퍼널·강습뷰=강습퍼널, _curFamily). 분석 fetch=팝업 오픈시 lazy(init 즉시fetch 제거, loadCpoTodayStats만 유지). 기존 범용모달 gdocOverlay 재사용·바깥클릭+ESC 닫기. 546/547 시각화·미입력독려 보존. node파싱0에러·검수통과.",
+    "next": "라이브 렌더 검증(Pages 시크릿) 후 입항.",
+    "depends_on": "",
+    "module": "M2"
   }
 ]

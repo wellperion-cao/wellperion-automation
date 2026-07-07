@@ -1001,69 +1001,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     </a>
   </div>
 
-  <!-- 전환율 카드 — 문의→가입 전환 실측(배443 funnel_conversion, PII 없음·수치만). 2026-07-04 시포 -->
-  <div class="card" id="convRateCard" style="padding:14px 18px;margin-bottom:16px">
-    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:9px">
-        <span class="dash-dot" style="background:var(--blue)"></span>
-        <span style="font-size:13px;font-weight:800;color:var(--text)">문의→가입 전환율</span>
-      </div>
-      <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:baseline">
-        <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환율(누적)</span> <b id="dConvRate" style="font-size:22px;font-weight:800;color:var(--blue);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> %</span></div>
-        <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환 문의수</span> <b id="dConvInq" style="font-size:16px;font-weight:800;color:var(--text);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> 건</span></div>
-        <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환 가입수</span> <b id="dConvJoin" style="font-size:16px;font-weight:800;color:var(--text);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> 명</span></div>
-        <div><span style="font-size:10px;color:var(--dim);font-weight:700">이번달 전환율(정밀)</span> <b id="dConvRateMonth" style="font-size:22px;font-weight:800;color:var(--text);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> %</span></div>
-      </div>
-    </div>
-    <div style="font-size:10.5px;color:var(--dim);margin-top:8px">⚠️ 전환율(누적)=전화매칭 기준(등록일 미사용, 기간별 부정확·과소집계 가능) · 이번달 전환율(정밀)=등록일이 이번달인 건만 인정(강습원장 시드 2026-06-27 이전 등록자는 기간필터서 제외=과소집계 가능). 정본=funnel_conversion(GAS), 개인정보 미포함(집계 수치만)</div>
-    <div id="convChannelWrap" style="margin-top:12px;display:none">
-      <div style="font-size:11px;font-weight:800;color:var(--text);margin-bottom:6px">채널별 전환율 (전환율 내림차순)</div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px" id="convChannelTable">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">채널</th>
-            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">문의수</th>
-            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">가입수</th>
-            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">전환율</th>
-          </tr>
-        </thead>
-        <tbody id="convChannelBody"></tbody>
-      </table>
-    </div>
-    <div id="stageFunnelWrap" style="margin-top:16px;display:none;border-top:1px solid var(--border-subtle);padding-top:12px">
-      <div style="font-size:11px;font-weight:800;color:var(--text);margin-bottom:2px">단계별 잔류·이탈 (①문의 → ⑤가입)</div>
-      <div style="font-size:10.5px;color:var(--dim);margin-bottom:10px">막대 너비=①문의 대비 비율 · 숫자=건수 · %=직전 단계 대비 잔존(전체 기준) · 색=건강(청록 ≥80%)·주의(앰버 50~80%)·급락(빨강 &lt;50%)</div>
-      <div id="stageFunnelBody"></div>
-      <div id="stageFunnelNote" style="font-size:10.5px;color:var(--dim);margin-top:8px"></div>
-    </div>
-  </div>
-
-  <!-- CPO 운영 가이드 (전체폭 — 이탈 현황·신호 한 줄, 펼치기 4섹션) -->
-  <div class="card cpo-guide" style="padding:14px 18px;margin-bottom:16px">
-    <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:11px">🧭 CPO 운영 가이드</div>
-    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-bottom:13px">
-      <div style="display:flex;gap:16px;padding:9px 16px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-border)">
-        <div><div style="font-size:10px;color:var(--red);font-weight:700">오늘 LOSS</div><div style="font-size:22px;font-weight:800;color:var(--red)" id="gToLoss">0</div></div>
-        <div style="width:1px;background:var(--red-border)"></div>
-        <div><div style="font-size:10px;color:var(--red);font-weight:700">이번달 LOSS</div><div style="font-size:22px;font-weight:800;color:var(--red)" id="gMoLoss">0</div></div>
-      </div>
-      <div style="flex:1;min-width:240px">
-        <div style="font-size:11px;font-weight:800;color:var(--text);margin:0 0 7px">⚠️ LOSS 신호 (실측 라이브 — 유효회원 시트)</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px 14px">
-          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 이번 달 LOSS <b id="chSigMoLossCount">—</b>명 (<b id="chSigMoLossRate">—</b>%)</div>
-          <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim)"><span class="signal-badge" style="background:var(--dim);color:#fff">누적</span> 명단 잔류 <b id="chSigLossRate">—</b>% (<span id="chSigLossCount">—</span>명)</div>
-          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 갱신 D-7 이내 임박 <b id="chSigD7">—</b>명</div>
-          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge med">MED</span> 갱신 D-8~30 임박 <b id="chSigD830">—</b>명</div>
-        </div>
-      </div>
-    </div>
-    <!-- 가이드 문서 진입 = 버튼식(모달 열기). 인쇄 등 액션 버튼과 톤 통일. 2026-07-03 시포·GM -->
-    <div class="guide-btns">
-      <button class="guide-doc-btn" onclick="openGdoc('churn')">⚠️ LOSS 신호 매트릭스</button>
-      <button class="guide-doc-btn" onclick="openGdoc('churnstat')">📊 LOSS 현황 추적</button>
-      <button class="guide-doc-btn" onclick="openGdoc('principle')">🎯 CPO 운영원칙</button>
-      <button class="guide-doc-btn" onclick="openGdoc('routine')">📅 정기 루틴</button>
-    </div>
+  <!-- 분석·참고 진입 버튼 바 — 전환율/퍼널/이탈관리/운영가이드는 팝업으로 이전, 앞면은 달력·목록만. 2026-07-07 시포·GM -->
+  <div class="guide-btns" style="margin-bottom:16px">
+    <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
+    <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
+    <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
+    <button class="guide-doc-btn" onclick="openGdoc('principle,routine')">📖 운영 가이드</button>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
@@ -1676,6 +1619,14 @@ if (action === 'member_calendar') {
       </a>
     </div>
 
+    <!-- 분석·참고 진입 버튼 바 (멤버십 뷰와 공유 — 강습 퍼널도 확인 가능). 2026-07-07 시포·GM -->
+    <div class="guide-btns" style="margin-bottom:18px">
+      <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
+      <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
+      <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
+      <button class="guide-doc-btn" onclick="openGdoc('principle,routine')">📖 운영 가이드</button>
+    </div>
+
     <!-- sub-pane: 문의 현황 -->
     <div id="lessonPane_adult_inq" class="lesson-subpane active">
     <div class="info-box accent" style="margin-bottom:14px">
@@ -1792,6 +1743,14 @@ if (action === 'member_calendar') {
         <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
         <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">수강 회원 명단</span></div></div>
       </a>
+    </div>
+
+    <!-- 분석·참고 진입 버튼 바 (멤버십 뷰와 공유 — 강습 퍼널도 확인 가능). 2026-07-07 시포·GM -->
+    <div class="guide-btns" style="margin-bottom:18px">
+      <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
+      <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
+      <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
+      <button class="guide-doc-btn" onclick="openGdoc('principle,routine')">📖 운영 가이드</button>
     </div>
 
     <!-- sub-pane: 문의 현황 -->
@@ -2157,6 +2116,24 @@ if (action === 'member_calendar') {
       </tbody>
     </table>
   </div>
+  <div data-gdoc="churnsummary" data-title="오늘 LOSS 요약 · 이탈 신호">
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-bottom:4px">
+      <div style="display:flex;gap:16px;padding:9px 16px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-border)">
+        <div><div style="font-size:10px;color:var(--red);font-weight:700">오늘 LOSS</div><div style="font-size:22px;font-weight:800;color:var(--red)" id="gToLoss">0</div></div>
+        <div style="width:1px;background:var(--red-border)"></div>
+        <div><div style="font-size:10px;color:var(--red);font-weight:700">이번달 LOSS</div><div style="font-size:22px;font-weight:800;color:var(--red)" id="gMoLoss">0</div></div>
+      </div>
+      <div style="flex:1;min-width:240px">
+        <div style="font-size:11px;font-weight:800;color:var(--text);margin:0 0 7px">⚠️ LOSS 신호 (실측 라이브 — 유효회원 시트)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 14px">
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 이번 달 LOSS <b id="chSigMoLossCount">—</b>명 (<b id="chSigMoLossRate">—</b>%)</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim)"><span class="signal-badge" style="background:var(--dim);color:#fff">누적</span> 명단 잔류 <b id="chSigLossRate">—</b>% (<span id="chSigLossCount">—</span>명)</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 갱신 D-7 이내 임박 <b id="chSigD7">—</b>명</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge med">MED</span> 갱신 D-8~30 임박 <b id="chSigD830">—</b>명</div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div data-gdoc="churn" data-title="LOSS 신호 × 대응 매트릭스">
     <div class="info-box purple" style="margin-bottom:14px">
       LOSS 신호 감지 → 위험도 분류 → 대응 액션 순서로 운영합니다. <strong>현재 자동 감지 = LOSS 확정·갱신 임박 2종</strong>(유효회원 시트 잔여일·재등록분류 실측, ✅). 나머지 6종은 데이터원 미연동으로 <strong>미측정</strong>(❌ — 아래 각 행 각주 참조), 데이터원 확보 시 순차 개통합니다. 임정은M이 최종 대면 케어 담당.
@@ -2185,6 +2162,52 @@ if (action === 'member_calendar') {
   </div>
 </div>
 
+<!-- ══ 전환율 분석 모달 (구 #convRateCard 이전 — 앞면 카드 → 팝업화). 2026-07-07 시포·GM ══ -->
+<div class="gdoc-overlay" id="convModalOverlay" onclick="if(event.target===this)closeAnalytics('conv')">
+  <div class="gdoc-modal" role="dialog" aria-modal="true">
+    <div class="gdoc-modal-head">
+      <span class="gdoc-modal-title">📈 문의→가입 전환율</span>
+      <button class="gdoc-close" type="button" onclick="closeAnalytics('conv')" aria-label="닫기">&times;</button>
+    </div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:baseline">
+      <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환율(누적)</span> <b id="dConvRate" style="font-size:22px;font-weight:800;color:var(--blue);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> %</span></div>
+      <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환 문의수</span> <b id="dConvInq" style="font-size:16px;font-weight:800;color:var(--text);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> 건</span></div>
+      <div><span style="font-size:10px;color:var(--dim);font-weight:700">전환 가입수</span> <b id="dConvJoin" style="font-size:16px;font-weight:800;color:var(--text);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> 명</span></div>
+      <div><span style="font-size:10px;color:var(--dim);font-weight:700">이번달 전환율(정밀)</span> <b id="dConvRateMonth" style="font-size:22px;font-weight:800;color:var(--text);margin-left:6px">–</b><span style="font-size:12px;color:var(--dim-mid)"> %</span></div>
+    </div>
+    <div style="font-size:10.5px;color:var(--dim);margin-top:8px">⚠️ 전환율(누적)=전화매칭 기준(등록일 미사용, 기간별 부정확·과소집계 가능) · 이번달 전환율(정밀)=등록일이 이번달인 건만 인정(강습원장 시드 2026-06-27 이전 등록자는 기간필터서 제외=과소집계 가능). 정본=funnel_conversion(GAS), 개인정보 미포함(집계 수치만)</div>
+    <div id="convChannelWrap" style="margin-top:12px;display:none">
+      <div style="font-size:11px;font-weight:800;color:var(--text);margin-bottom:6px">채널별 전환율 (전환율 내림차순)</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px" id="convChannelTable">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">채널</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">문의수</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">가입수</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">전환율</th>
+          </tr>
+        </thead>
+        <tbody id="convChannelBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 단계별 잔류·이탈 퍼널 모달 (구 stageFunnelWrap 이전 — family 탭별 분리 렌더). 2026-07-07 시포·GM ══ -->
+<div class="gdoc-overlay" id="funnelModalOverlay" onclick="if(event.target===this)closeAnalytics('funnel')">
+  <div class="gdoc-modal" role="dialog" aria-modal="true">
+    <div class="gdoc-modal-head">
+      <span class="gdoc-modal-title" id="funnelModalTitle">🔻 단계별 잔류·이탈 (①문의 → ⑤가입)</span>
+      <button class="gdoc-close" type="button" onclick="closeAnalytics('funnel')" aria-label="닫기">&times;</button>
+    </div>
+    <div id="stageFunnelWrap">
+      <div style="font-size:10.5px;color:var(--dim);margin-bottom:10px">막대 너비=①문의 대비 비율 · 숫자=건수 · %=직전 단계 대비 잔존(전체 기준) · 색=건강(청록 ≥80%)·주의(앰버 50~80%)·급락(빨강 &lt;50%)</div>
+      <div id="stageFunnelBody"></div>
+      <div id="stageFunnelNote" style="font-size:10.5px;color:var(--dim);margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ── GAS URL (퍼널 Survey 웹앱 /exec — 2026-06-22 연결) ── */
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
@@ -2210,21 +2233,59 @@ function openGuidePopup() {
   } catch(e) { showToast('가이드 팝업을 열 수 없습니다.'); }
 }
 
-/* ── 가이드 문서 모달(운영원칙·정기루틴·이탈대응·이탈현황) ── */
+/* ── 가이드 문서 모달(운영원칙·정기루틴·이탈대응·이탈현황) ── 콤마로 여러 id 넘기면 한 모달에 순서대로 이어붙임(예: 'principle,routine'). 2026-07-07 시포·GM 확장 */
 function openGdoc(id) {
-  var tpl = document.querySelector('#gdoc-tpl [data-gdoc="' + id + '"]');
-  if (!tpl) return;
-  document.getElementById('gdocTitle').textContent = tpl.getAttribute('data-title') || '가이드';
+  var ids = String(id).split(',');
+  var titles = [];
+  var bodyHtml = '';
+  ids.forEach(function(one){
+    var tpl = document.querySelector('#gdoc-tpl [data-gdoc="' + one + '"]');
+    if (!tpl) return;
+    var t = tpl.getAttribute('data-title') || '가이드';
+    titles.push(t);
+    if (ids.length > 1) bodyHtml += '<div style="font-size:14px;font-weight:800;color:var(--accent);margin:' + (bodyHtml ? '22px' : '0') + ' 0 10px">' + esc(t) + '</div>';
+    bodyHtml += tpl.innerHTML;
+  });
+  if (!bodyHtml) return;
+  document.getElementById('gdocTitle').textContent = titles.join(' · ');
   var body = document.getElementById('gdocBody');
-  body.innerHTML = tpl.innerHTML;
+  body.innerHTML = bodyHtml;
   // 실측 주입(아코디언과 동일) — LOSS 현황=KPI 라이브 / LOSS 매트릭스=2행 라이브 숫자. 2026-07-03 시포·GM
-  if (id === 'churnstat') loadChurnStats(body);
-  if (id === 'churn')     renderChurnMatrixLive(body);
+  if (ids.indexOf('churnstat') >= 0) loadChurnStats(body);
+  if (ids.indexOf('churn') >= 0)     renderChurnMatrixLive(body);
   document.getElementById('gdocOverlay').classList.add('open');
 }
 function closeGdoc() {
   document.getElementById('gdocOverlay').classList.remove('open');
 }
+
+/* ── 이탈 관리(요약+매트릭스+현황 통합 모달) — 구 cpo-guide 카드 이전. 2026-07-07 시포·GM ── */
+function openChurnManage() {
+  openGdoc('churnsummary,churn,churnstat');
+  loadChurnTopBadges();  // 상단 LOSS 신호 3배지(chSig*) — 구 init 전용 → 모달 오픈 시 갱신
+}
+
+/* ── 전환율·퍼널 분석 팝업 — 최초 오픈 시에만 fetch(캐시), family 전환 시 퍼널만 재조회. 2026-07-07 시포·GM ── */
+var _analyticsLoaded = { conv: false, funnelFamily: null };
+function openAnalytics(kind) {
+  var overlay = document.getElementById(kind === 'conv' ? 'convModalOverlay' : 'funnelModalOverlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  if (kind === 'conv' && !_analyticsLoaded.conv) { _analyticsLoaded.conv = true; loadConvRate(); }
+  if (kind === 'funnel' && _analyticsLoaded.funnelFamily !== _curFamily) { _analyticsLoaded.funnelFamily = _curFamily; loadStageFunnel(); }
+}
+function closeAnalytics(kind) {
+  var overlay = document.getElementById(kind === 'conv' ? 'convModalOverlay' : 'funnelModalOverlay');
+  if (overlay) overlay.classList.remove('open');
+}
+// ESC로 신규 분석 모달 닫기(입력칸 셀편집 ESC와 별개 — 열려있을 때만 동작). 2026-07-07 시포·GM
+document.addEventListener('keydown', function(e){
+  if (e.key !== 'Escape') return;
+  var conv = document.getElementById('convModalOverlay');
+  var funnel = document.getElementById('funnelModalOverlay');
+  if (conv && conv.classList.contains('open')) closeAnalytics('conv');
+  if (funnel && funnel.classList.contains('open')) closeAnalytics('funnel');
+});
 // 우측 CPO 가이드 펼치기 — 기존 gdoc 템플릿 콘텐츠를 인라인으로 clone(중복 없음). 2026-06-29 시포
 function toggleGuideAcc(btn, id) {
   var body = btn.nextElementSibling;
@@ -2347,12 +2408,24 @@ function loadStageFunnel(){
         var bottleneck = worst ? ('<span class="funnel-bottleneck-badge">🔻 병목 '+worst.label+' ('+worst.retPct+'%)</span>') : '';
         return '<div class="funnel-bar-section"><div class="funnel-bar-title">'+title+bottleneck+'</div>'+rowsHtml+'</div>';
       }
-      var mem = d.membership || { total: d.total, month: d.month };
-      var html = sectionRows('🏅 멤버십 문의 퍼널', mem);
-      if (d.lesson && d.lesson.total && d.lesson.total['문의']) html += sectionRows('🏊 강습 문의 퍼널', d.lesson);
+      // family 탭별 분리(배3, 2026-07-07 시포·GM) — 현재 열려있는 family(_curFamily)의 퍼널만 렌더, 모달 제목도 함께 반영.
+      var titleEl = document.getElementById('funnelModalTitle');
+      var html;
+      if (_curFamily === 'lesson') {
+        if (d.lesson && d.lesson.total && d.lesson.total['문의']) {
+          html = sectionRows('🏊 강습 문의 퍼널', d.lesson);
+        } else {
+          html = '<div style="color:var(--dim);font-size:12px;padding:8px 0">강습 퍼널 데이터 없음(문의 0건 또는 미집계)</div>';
+        }
+        if (titleEl) titleEl.textContent = '🔻 강습 문의 퍼널 (①문의 → ⑤가입)';
+      } else {
+        var mem = d.membership || { total: d.total, month: d.month };
+        html = sectionRows('🏅 멤버십 문의 퍼널', mem);
+        if (titleEl) titleEl.textContent = '🔻 멤버십 문의 퍼널 (①문의 → ⑤가입)';
+      }
       body.innerHTML = html;
       var note = document.getElementById('stageFunnelNote');
-      if (note) note.innerHTML = '멤버십·강습 <b>별도 퍼널</b>(제품이 달라 분리). 단계=담당배정→응대 · 예약칸→예약 · 방문칸→방문 · 회원매칭→가입. 강습은 상담예약/방문상태 칸이 대부분 비어 중간단계가 등록(회원매칭)으로 수렴 — 등록 정본은 강습팀 시트. 문의접수 CTA웹은 현재 0건(자체폼 휴면).';
+      if (note) note.innerHTML = '단계=담당배정→응대 · 예약칸→예약 · 방문칸→방문 · 회원매칭→가입. 강습은 상담예약/방문상태 칸이 대부분 비어 중간단계가 등록(회원매칭)으로 수렴 — 등록 정본은 강습팀 시트. 문의접수 CTA웹은 현재 0건(자체폼 휴면).';
       wrap.style.display = '';
     })
     .catch(function(){});
@@ -2446,7 +2519,9 @@ function switchType(type) {
 /* ── 관리 그룹(family) — AI CPO 메뉴 3칸 분리(배6, 2026-07-02 시포·GM). 한 페이지 유지·접수 통합,
       메뉴가 ?manage=membership|lesson 로 그룹 진입. 멤버십 관리=멤버십·공간렌트·비즈니스 / 강습 관리=성인·유소년. ── */
 var TYPE_FAMILIES = { membership: ['membership','rent','biz'], lesson: ['lessonAdult','lessonYouth'] };
+var _curFamily = 'membership';   // 분석 팝업(전환율·퍼널)이 참조하는 현재 family. 2026-07-07 시포·GM
 function switchFamily(fam) {
+  _curFamily = TYPE_FAMILIES[fam] ? fam : 'membership';
   var types = TYPE_FAMILIES[fam] || TYPE_FAMILIES.membership;
   // 그룹에 속한 유형 칩만 노출
   document.querySelectorAll('.type-chip[data-type]').forEach(function(c){
@@ -3518,9 +3593,7 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false }
   renderCalendarShell();
   loadCalendarData();  // 기본 활성 탭=예약 달력 (2026-06-24 GM 변경)
   loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
-  loadChurnTopBadges();  // 상단 "이탈 신호" 3배지 라이브 연결(이탈율·갱신 D-7·D-8~30). 2026-07-03 시포·GM
-  loadConvRate();  // 전환율 카드 라이브 연결(funnel_conversion). 2026-07-04 시포·GM
-  loadStageFunnel();  // 단계별 잔류·이탈 퍼널 라이브 연결(stage_funnel). 2026-07-06 시포·GM
+  // 전환율·퍼널·LOSS신호 3배지 = 분석 팝업 오픈 시 lazy fetch로 이전(배3, 2026-07-07 시포·GM). openAnalytics()/openChurnManage() 참조.
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
   // 메뉴 그룹 진입(?manage=membership|lesson) — 배6. 기본=멤버십 관리. 2026-07-02 시포·GM.
   try { var _mp = new URLSearchParams(location.search).get('manage'); switchFamily(_mp === 'lesson' ? 'lesson' : 'membership'); }
