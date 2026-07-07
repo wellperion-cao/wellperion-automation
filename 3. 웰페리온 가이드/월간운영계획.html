@@ -186,7 +186,7 @@
   .fhist-sum{display:flex; flex-wrap:wrap; gap:4px 16px; margin-top:7px; padding:6px 11px; background:var(--paper); border:1px solid var(--border); border-radius:10px; font-size:11.5px; color:var(--text-soft);}
   .fhist-sum b{color:var(--gold); font-weight:800;}
 
-  /* ── 전월 대비 델타 배지(공통 · deltaBadge()가 곳곳에서 재사용 — 한눈 요약·실무책임자 스코어보드) ── */
+  /* ── 전월 대비 델타 배지(공통 · deltaBadge()가 곳곳에서 재사용 — 한눈 요약·중간관리자 스코어보드) ── */
   .sd{display:block; font-size:11px; color:var(--text-soft); margin-top:5px;}
   .sd.up{color:var(--green);} .sd.down{color:var(--rose);}
 
@@ -243,22 +243,11 @@
   .cyc-d b{color:var(--gold); font-weight:800;} .cyc-d .cyc-nt{color:var(--dim); font-size:9.5px;}
 
   /* ── 🗂️ 부서별 내용 카드(실무 도달율+AI 활용%+월 목표·진척 · GM 지시 2026-07-07 실무 도달율표 대체) ── */
-  .dept-cards-grid{display:flex; flex-wrap:wrap; gap:10px;}
-  .dc-card{flex:1; min-width:255px; background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:11px; padding:11px 14px 12px; display:flex; flex-direction:column; gap:7px;}
-  .dc-head{display:flex; align-items:baseline; justify-content:space-between; gap:6px; flex-wrap:wrap;}
-  .dc-name{font-size:13.5px; font-weight:800; color:var(--text);}
-  .dc-note-tag{font-size:9.5px; font-weight:600; color:var(--text-soft); background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:2px 7px;}
-  .dc-own{font-size:11px; color:var(--dim);}
-  .dc-own b{color:var(--text-soft); font-weight:600;}
-  .dc-ns{font-size:10.5px; color:var(--dim); line-height:1.4;}
-  .dc-metrics{display:flex; flex-direction:column; gap:5px;}
-  .dc-m-row{display:flex; flex-direction:column; gap:2px;}
-  .dc-m-l{display:flex; justify-content:space-between; font-size:10.5px; color:var(--dim); gap:6px;}
-  .dc-m-l b{color:var(--text-soft); font-weight:600;}
-  .dc-obj{font-size:10.5px; color:var(--text-soft); line-height:1.45; border-top:1px solid var(--border); padding-top:6px; margin-top:1px;}
-  .dc-obj b{color:var(--text);}
-  .dc-link{font-size:9px; font-weight:700; color:var(--gold); background:rgba(240,198,116,0.08); border:1px solid rgba(240,198,116,0.30); border-radius:20px; padding:2px 10px; align-self:flex-start; text-decoration:none;}
-  .dc-nolink{font-size:9px; color:var(--dim); align-self:flex-start;}
+  /* 🗂️ 부서별 내용 = 표(table.rpt 재사용) 전용 소형 배지·꼬리표(GM 지시 2026-07-07 3차: 카드 그리드 → 표 전환) */
+  .dc-note-tag{font-size:9.5px; font-weight:600; color:var(--text-soft); background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:2px 7px; margin-left:6px;}
+  .dc-goal{font-size:10.5px; color:var(--dim); margin-top:2px;}
+  .dc-link{font-size:9px; font-weight:700; color:var(--gold); background:rgba(240,198,116,0.08); border:1px solid rgba(240,198,116,0.30); border-radius:20px; padding:2px 10px; text-decoration:none; white-space:nowrap;}
+  .dc-nolink{font-size:9px; color:var(--dim);}
   .dc-dim{color:var(--dim); font-weight:600;}
 
   /* ── 🚀 ERP 월별 진척 타임라인 ── */
@@ -716,17 +705,17 @@
     /* 🗺️ 로드맵 단독 블록 = 전폭 스팬(1~4분기 한 줄 · GM 지시 2026-07-06 3차) · 2p 시작(GM 지시 2026-07-07: 1p=매출·점검·부서별 고정) */
     .blk.erp-roadmap-merge{column-span:all !important; break-inside:avoid; break-before:page; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 5px !important; margin-bottom:2px;}
     .blk.erp-roadmap-merge h2.sec{margin-top:2px;}
-    /* 🗂️ 부서별 내용 = 전폭 스팬·카드 한 행 다열(GM 지시 2026-07-07 · 1p 고정 · 실무·AI 도달율표 대체) */
+    /* 🗂️ 부서별 내용 = 전폭 스팬·표(table.rpt) 6행(GM 지시 2026-07-07 3차: 카드 → 표 전환 · 1p 고정) */
     .blk.dept-cards{column-span:all !important; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 5px !important; margin-bottom:2px;}
     .blk.dept-cards h2.sec{margin-top:2px;}
-    .dept-cards-grid{flex-wrap:nowrap; gap:5px;}
-    .dc-card{background:#fff !important; border:1px solid #999 !important; border-left:2px solid #666 !important; padding:3px 7px 4px; gap:3px; min-width:0; flex:1 1 0;}
-    .dc-name{color:#111 !important; font-size:9px;}
+    .blk.dept-cards table.rpt{min-width:0;}
+    .blk.dept-cards table.rpt thead th{padding:2px 6px; font-size:7px;}
+    .blk.dept-cards table.rpt tbody td{padding:1.5px 6px; font-size:7.5px;}
+    .blk.dept-cards .prog{min-width:0; gap:4px;}
+    .blk.dept-cards .prog .track{height:7px; min-width:28px;}
+    .blk.dept-cards .prog .pnum{font-size:7px; min-width:18px;}
     .dc-note-tag{color:#333 !important; background:#f2f2f2 !important; border-color:#999 !important; font-size:6.5px;}
-    .dc-own{color:#444 !important; font-size:7px;} .dc-own b{color:#111 !important;}
-    .dc-ns{color:#444 !important; font-size:6.5px; line-height:1.3;}
-    .dc-m-l{color:#444 !important; font-size:6.5px;} .dc-m-l b{color:#111 !important;}
-    .dc-obj{color:#333 !important; font-size:6.5px; border-top-color:#bbb !important; line-height:1.3;} .dc-obj b{color:#111 !important;}
+    .dc-goal{color:#555 !important; font-size:6.5px;}
     .dc-link{color:#7a5f2f !important; background:#f6ecd2 !important; border-color:#b7a6e0 !important; font-size:6.5px;}
     .dc-nolink{color:#777 !important; font-size:6.5px;}
     .dc-dim{color:#777 !important;}
@@ -861,7 +850,7 @@
       <div id="issue-board" style="margin-top:14px;"><div class="board-status">종합 접수처 보드를 계산하는 중…</div></div>
     </section>
 
-    <!-- 🗂️ 부서별 내용 (실무 도달율+AI 활용%+월 목표·진척+체계 페이지 매핑 · GM 지시 2026-07-07 실무 도달율표 대체) -->
+    <!-- 🗂️ 부서별 내용 = 표(table.rpt) 전환(실무 도달율+AI 활용%+월 목표·진척+체계 페이지 매핑 · GM 지시 2026-07-07 3차: 카드 그리드 → 표·A3 1p 맞춤) -->
     <section class="blk dept-cards" data-blkid="deptcards">
       <h2 class="sec">🗂️ 부서별 내용 <span class="stag">부서별 도달율 + 월 목표·진척 · 체계 페이지 매핑</span></h2>
       <div id="dept-cards-board"></div>
@@ -1822,7 +1811,7 @@
     host.innerHTML = '<div class="fchart hist">' + cols + '</div>' + summary;
   }
 
-  // ── 🗂️ 부서별 내용 카드 (실무 도달율 + AI 활용% + 월 목표·진척 + 체계 페이지 매핑 · GM 지시 2026-07-07 · 舊 실무 도달율표 대체) ──
+  // ── 🗂️ 부서별 내용 표 (실무 도달율 + AI 활용% + 월 목표·진척 + 체계 페이지 매핑 · GM 지시 2026-07-07 3차: 카드 그리드 → 표 전환·A3 1p 맞춤) ──
   // ai_utilization.items의 id는 practitioner.id와 완전 일치하지 않음(나우열=GM 합산 계정 'na-uy-gm') — 아래 매핑으로만 연결.
   var PRAC_TO_AI_ID = {'na-uy':'na-uy-gm'};
   var DEPT_CARDS = [
@@ -1833,37 +1822,34 @@
    {key:'파트너팀',            prac:'na-uy',  ai:'na-uy-gm', deptKeys:['파트너'],                  link:'coo/check/파트너팀 체계.html'},
    {key:'경영지원(재무·인사)', prac:'na-uy',  ai:'na-uy-gm', deptKeys:['인사','재무','경영지원'], link:null}
   ];
-  function deptCardHtml(cfg, roster, progMap, aiById, objs){
+  function deptRowHtml(cfg, roster, progMap, aiById, objs){
     var p = null;
     for(var i = 0; i < roster.length; i++){ if(roster[i].id === cfg.prac){ p = roster[i]; break; } }
+    var nsTitle = (p && p.northstar && String(p.northstar).trim()) ? (' title="🌟 ' + esc(p.northstar) + '"') : '';
     var ownerHtml = p
-      ? (esc(p.name) + (p.role ? ' <span class="chip own">' + esc(p.role) + '</span>' : ''))
+      ? ('<span' + nsTitle + '>' + esc(p.name) + (p.role ? ' <span class="chip own">' + esc(p.role) + '</span>' : '') + '</span>')
       : esc(cfg.prac);
-    var nsHtml = (p && p.northstar && String(p.northstar).trim()) ? ('<div class="dc-ns">🌟 ' + esc(p.northstar) + '</div>') : '';
 
     var prPct = (typeof progMap[cfg.prac] === 'number') ? progMap[cfg.prac] : null;
-    var prRow = '<div class="dc-m-row"><div class="dc-m-l"><span>실무 도달율</span>' +
-      (prPct != null ? ('<b>' + prPct + '%</b>') : '<span class="dc-dim">미입력</span>') + '</div>' +
-      (prPct != null ? progBar(prPct, null, false, '', false) : '') + '</div>';
+    var prCell = (prPct != null) ? progBar(prPct, null, false, '', false) : '<span class="dc-dim">미입력</span>';
 
     var aiItem = aiById[cfg.ai] || null;
-    var aiRow;
+    var aiCell;
     if(aiItem){
       var pct = clampPct(aiItem.pct);
       var tgt = (typeof aiItem.target_pct === 'number') ? aiItem.target_pct : null;
-      aiRow = '<div class="dc-m-row"><div class="dc-m-l"><span>AI 활용</span><b>' + pct + '%' + (tgt != null ? (' · 목표 ' + tgt + '%') : '') + '</b></div>' +
-        progBar(pct, null, false, '', false) + '</div>';
+      aiCell = progBar(pct, null, false, '', false) + (tgt != null ? ('<div class="dc-goal">목표 ' + tgt + '%</div>') : '');
     } else {
-      aiRow = '<div class="dc-m-row"><div class="dc-m-l"><span>AI 활용</span><span class="dc-dim">미입력</span></div></div>';
+      aiCell = '<span class="dc-dim">미입력</span>';
     }
 
     var objsForCard = objs.filter(function(o){
       var d = o.dept || '';
       return cfg.deptKeys.some(function(k){ return d.indexOf(k) >= 0; });
     });
-    var objBlock;
+    var objCell;
     if(!objsForCard.length){
-      objBlock = '<div class="dc-obj">이번 달 과제 없음</div>';
+      objCell = '<span class="dc-dim">이번 달 과제 없음</span>';
     } else {
       var doneN = 0, progN = 0, planN = 0;
       objsForCard.forEach(function(o){
@@ -1871,27 +1857,21 @@
         else if(o.status === '진행') progN++;
         else planN++; // 계획·이월 통합(기존 OBJ_STATUS_ORDER 관례 재사용)
       });
-      var topTitles = objsForCard.slice().sort(function(a, b){
-        var wa = (TOP3_STATUS_W[a.status] != null) ? TOP3_STATUS_W[a.status] : 100;
-        var wb = (TOP3_STATUS_W[b.status] != null) ? TOP3_STATUS_W[b.status] : 100;
-        if(wb !== wa) return wb - wa;
-        return clampPct(b.progress) - clampPct(a.progress);
-      }).slice(0, 2).map(function(o){ return esc(o.title); }).join(' · ');
-      objBlock = '<div class="dc-obj">월목표 ' + objsForCard.length + '건 (완료 ' + doneN + '·진행 ' + progN + '·계획 ' + planN + ')<br><b>' + topTitles + '</b></div>';
+      objCell = objsForCard.length + '건 · 진행 ' + progN + '·완료 ' + doneN + (planN ? ('·계획 ' + planN) : '');
     }
 
-    var linkHtml = cfg.link ? ('<a class="dc-link" href="' + esc(cfg.link) + '">체계 페이지 →</a>') : '<span class="dc-nolink">전용 체계 페이지 없음</span>';
+    var linkHtml = cfg.link ? ('<a class="dc-link" href="' + esc(cfg.link) + '">페이지 →</a>') : '<span class="dc-nolink">—</span>';
 
-    return '<div class="dc-card">' +
-      '<div class="dc-head"><span class="dc-name">' + esc(cfg.key) + '</span>' + (cfg.note ? '<span class="dc-note-tag">' + esc(cfg.note) + '</span>' : '') + '</div>' +
-      '<div class="dc-own">실무책임자 ' + ownerHtml + '</div>' +
-      nsHtml +
-      '<div class="dc-metrics">' + prRow + aiRow + '</div>' +
-      objBlock +
-      linkHtml +
-    '</div>';
+    return '<tr>' +
+      '<td class="c-title">' + esc(cfg.key) + (cfg.note ? ('<span class="dc-note-tag">' + esc(cfg.note) + '</span>') : '') + '</td>' +
+      '<td class="c-own">' + ownerHtml + '</td>' +
+      '<td class="c-prog">' + prCell + '</td>' +
+      '<td class="c-prog">' + aiCell + '</td>' +
+      '<td>' + objCell + '</td>' +
+      '<td>' + linkHtml + '</td>' +
+    '</tr>';
   }
-  function renderDeptCards(){
+  function renderDeptTable(){
     var board = document.getElementById('dept-cards-board');
     if(!board) return;
     var roster = (_data && _data.practitioners) || [];
@@ -1900,9 +1880,11 @@
     var aiItems = (_data && _data.ai_utilization && _data.ai_utilization.items) || [];
     var aiById = {}; aiItems.forEach(function(it){ aiById[it.id] = it; });
     var objs = (m && m.objectives) || [];
-    board.innerHTML = '<div class="dept-cards-grid">' + DEPT_CARDS.map(function(cfg){
-      return deptCardHtml(cfg, roster, progMap, aiById, objs);
-    }).join('') + '</div>';
+    board.innerHTML = '<div class="rpt-wrap"><table class="rpt"><thead><tr>' +
+      '<th>부서</th><th>중간관리자</th><th>실무 도달율</th><th>AI 활용</th><th>월 목표·진척</th><th>체계</th>' +
+      '</tr></thead><tbody>' + DEPT_CARDS.map(function(cfg){
+        return deptRowHtml(cfg, roster, progMap, aiById, objs);
+      }).join('') + '</tbody></table></div>';
   }
 
   // ── 🔧 점검 현황(4칸 · GM 지시 2026-07-06 선택월 월간 집계 전환) ──
@@ -2370,7 +2352,7 @@
     renderSalesHistory();
     renderBoard();
     if(_checkReady){ renderCheckStatus(); renderIssues(); } // 지연 로드: 소스 도착 전엔 HTML 플레이스홀더 유지
-    renderDeptCards();
+    renderDeptTable();
     renderReport();
     renderSummaryBoard();
     renderEditBtn();
@@ -2538,7 +2520,7 @@
     // 7) 북극성 지도 — 과제·실무 도달율표 뱃지. 도착 시 갱신.
     withTimeout(readNsMap(), 8000, null).then(function(v){
       _nsMap = v;
-      if(_data){ renderTop3(); renderBoard(); renderDeptCards(); renderSummaryBoard(); }
+      if(_data){ renderTop3(); renderBoard(); renderDeptTable(); renderSummaryBoard(); }
     });
   }
 
