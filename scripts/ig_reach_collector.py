@@ -47,11 +47,12 @@ LEDGER_PATH = ROOT / "status" / "ig_reach_ledger.json"
 
 KST = timezone(timedelta(hours=9))
 
-GRAPH_API_BASE = "https://graph.instagram.com"
-GRAPH_API_VERSION = "v21.0"  # 미검증 — 실전 호출 시 최신 버전 재확인
+GRAPH_API_BASE = "https://graph.instagram.com"  # 2026-07-07 라이브 검증: 버전 접두사 없이 호출
 
-ACCOUNT_METRIC = "reach"  # 계정 일별 도달. impressions는 media-level에서만 시도(§ 메트릭명 주석 참조)
-MEDIA_METRICS = "reach,impressions"  # 미검증 — impressions는 일부 버전에서 deprecated 이력 있음
+ACCOUNT_METRIC = "reach"  # 계정 일별 도달 — 라이브 검증됨(7/5=34·7/6=17)
+# 2026-07-07 라이브 검증: media impressions는 CAROUSEL 등에서 미지원("does not support the impressions
+# metric for this media product type") → reach만 사용(안정). views는 지원되나 유형별 편차 있어 v1 제외.
+MEDIA_METRICS = "reach"
 
 
 def now_kst() -> str:
@@ -88,7 +89,7 @@ def fetch_account_reach(token: str, business_id: str) -> dict | None:
     if requests is None:
         print("[BLOCKED] requests 라이브러리 미설치 — 호출 불가")
         return None
-    url = f"{GRAPH_API_BASE}/{GRAPH_API_VERSION}/{business_id}/insights"
+    url = f"{GRAPH_API_BASE}/{business_id}/insights"
     params = {
         "metric": ACCOUNT_METRIC,
         "period": "day",
@@ -103,7 +104,7 @@ def fetch_recent_media(token: str, business_id: str, limit: int = 10) -> list[di
     """최근 게시물 목록(id·permalink·timestamp)만 조회 — 노출·도달은 미디어별로 별도 호출."""
     if requests is None:
         return []
-    url = f"{GRAPH_API_BASE}/{GRAPH_API_VERSION}/{business_id}/media"
+    url = f"{GRAPH_API_BASE}/{business_id}/media"
     params = {
         "fields": "id,permalink,timestamp",
         "limit": limit,
@@ -118,7 +119,7 @@ def fetch_media_insights(token: str, media_id: str) -> dict | None:
     """게시물 단위 노출·도달. impressions 메트릭 가용성은 API 버전·게시물 유형에 따라 다름(미검증)."""
     if requests is None:
         return None
-    url = f"{GRAPH_API_BASE}/{GRAPH_API_VERSION}/{media_id}/insights"
+    url = f"{GRAPH_API_BASE}/{media_id}/insights"
     params = {
         "metric": MEDIA_METRICS,
         "access_token": token,
