@@ -1568,14 +1568,16 @@
     "task_id": "CPO-2026-07-07-MEMBER-PAGE-TWEAKS",
     "clevel": "cpo",
     "title": "[시포] 회원관리 페이지 미세조정 — 분석 버튼바 상단 이동 + 운영가이드 헤더 이전 + 통합(문의+회원) 검색칸",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-07",
     "ship_no": 573,
     "note": "[2026-07-07 GM 라이브 관찰·556 후속] ①분석 버튼바를 요약대시 위로 이동(멤버십·성인강습·유소년 3뷰) ②운영가이드=버튼바에서 빼 헤더 '문의 가이드' 우측으로 이전+라벨 '📋 운영 원칙·루틴'(내용=principle+routine 명확화, 앞면 버튼바는 전환율·퍼널·이탈 3개) ③통합 검색칸(성함·전화): 멤버십 문의(dbRows)+유효회원(_activeRows 동적헤더)+등록(_regRows) 부분일치→결과패널 클릭 시 switchTab+스크롤·하이라이트, lazy 로드(_unifiedEnsureLoaded Promise.all), IME안전(결과패널만 갱신)·ESC닫기. 정직범위=멤버십 스코프(강습 제외·패널헤더 명시). node 0에러·div균형(427/427)·회귀0·검수통과.",
-    "next": "라이브 렌더 검증(Pages 시크릿) 후 입항.",
+    "next": "🏁 입항 완료 — 라이브 검증(마커 unifiedSearch·_unifiedSearchRun·운영 원칙·루틴 존재). 후속(선택): GM 라이브 반응 반영(검색칸 위치·통합범위 강습 확장) or 검색 결과 강습 포함.",
     "depends_on": "",
-    "module": "M2"
+    "module": "M2",
+    "terminal": true,
+    "processed_at": "2026-07-07"
   },
   {
     "task_id": "CPO-2026-07-07-ADHOC-a427bae8",
@@ -1590,5 +1592,19 @@
     "artifact": "- 분석 버튼바를 요약대시 위로 이동(3뷰), 앞면 즉시 노출\n- 운영가이드→헤더 '문의 가이드' 우측 이전 + 라벨 '운영 원칙·루틴'\n- 통합(문의+회원) 검색칸: 성함·전화 부분일치→클릭 시 해당 탭 이동·하이라이트 (CLI ad-hoc · 커밋 a427bae8)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a427bae8a80b893fe503c51047aeaa84bba66339"
+  },
+  {
+    "task_id": "CEO-2026-07-07-ADHOC-b0fe5a0f",
+    "clevel": "ceo",
+    "title": "[웰리] 강습팀 표 분기·상반기 헤더 가운데 정렬+좌우 칸 높이 정합 [웰리]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-07",
+    "processed_at": "2026-07-07",
+    "ship_no": 575,
+    "artifact": "- thead th.num 가운데 정렬(헤더칸만, 데이터 정렬 유지) — 이전 커밋(62d65a9a)에 이미 반영\n- .cols 좌(매출표)·우(포상+방향) 컬럼 flex column+stretch로 세로 높이 동일화(sales-card flex:1) (CLI ad-hoc · 커밋 b0fe5a0f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b0fe5a0f77708a92cc84f73556dc5d04d9271ad2"
   }
 ]
