@@ -347,6 +347,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .util-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background 0.15s}
 .util-btn.print-btn{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3)}
 .util-btn.print-btn:hover{background:rgba(183,159,138,0.22)}
+.tab-dropdown{position:relative;flex-shrink:0}
+.tab-dropdown-menu{display:none;position:fixed;background:var(--bg);border:1px solid rgba(183,159,138,0.25);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:1000;min-width:130px;padding:4px 0}
+.tab-dropdown-menu.open{display:block}
+.tab-dropdown-menu button{display:block;width:100%;padding:9px 16px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;cursor:pointer;font-family:inherit;white-space:nowrap;text-align:left;border-radius:0}
+.tab-dropdown-menu button:hover{background:var(--accent-bg);color:var(--accent)}
+.tab-dropdown-menu button.active{background:var(--accent-bg);color:var(--accent)}
 /* ── Toast ── */
 .toast-msg{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;display:none;z-index:300;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
 /* ── A3 가이드라인 인쇄 전용 컨테이너 (화면에선 숨김) ── */
@@ -592,9 +598,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('mplan')">📅 월간 운영부 계획·보고</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
-    <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
-    <button class="util-btn print-btn" onclick="printA3Manual()" title="매뉴얼 보드를 A3 가로 1장 주간표(월~일 7열)로 인쇄">🖨️ A3 매뉴얼(주간)</button>
-    <button class="util-btn print-btn" onclick="printA3OpsOnboarding()" title="회원 응대 절차·운영부 가이드·규정을 신입 온보딩 자료로 A3 통합 인쇄">🖨️ 신입 온보딩 A3</button>
+    <!-- 인쇄 버튼 통합 드롭다운 (지원부 체계 동일 패턴 · 버튼 난립 해소) -->
+    <div class="tab-dropdown" id="printDropdown">
+      <button class="util-btn print-btn" id="printDropdownBtn" onclick="openTabDropdown(this,document.getElementById('printDropdownMenu'),event)">🖨 인쇄 ▾</button>
+      <div class="tab-dropdown-menu" id="printDropdownMenu">
+        <button onclick="printA3Guideline();closeAllDropdowns()">A3 가이드라인 (규정+가이드)</button>
+        <button onclick="printA3Manual();closeAllDropdowns()">A3 매뉴얼(주간)</button>
+        <button onclick="printA3OpsOnboarding();closeAllDropdowns()">A3 신입 온보딩 교육자료</button>
+      </div>
+    </div>
   </div>
 </div>
 </div><!-- /sticky-top -->
@@ -696,7 +708,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-guide" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">가이드</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">운영부 가이드를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <b>＋ 카드 추가</b>로 새 가이드를 추가할 수 있습니다.</p>
-  <div style="margin-bottom:14px;"><button class="btn" onclick="printA3OpsOnboarding()">🖨 신입 온보딩 A3</button></div>
   <div class="board-fullwidth">
     <!-- 가이드 카드 보드: 규정 보드와 동일 시스템(추가·편집·삭제·공유저장).
          #guide-board는 display:contents → renderGuideBoard()가 만든 .board-col이 흐름에 합류. -->
@@ -2931,6 +2942,25 @@ function mgmtMergeSchedule(baseSched, customSlots){
 /* 현재 스케줄에 커스텀 항목 반영 (이 함수를 getSched/getNightSched 래핑에 사용) */
 /* 초기 렌더링 */
 renderManualItems();
+
+/* ── 인쇄 통합 드롭다운 헬퍼 (지원부 체계와 동일 패턴) ── */
+function openTabDropdown(btnEl, menuEl, e){
+  e.stopPropagation();
+  var isOpen = menuEl.classList.contains('open');
+  closeAllDropdowns();
+  if(!isOpen){
+    var rect = btnEl.getBoundingClientRect();
+    menuEl.style.top = (rect.bottom + 2) + 'px';
+    menuEl.style.left = rect.left + 'px';
+    menuEl.classList.add('open');
+  }
+}
+function closeAllDropdowns(){
+  document.querySelectorAll('.tab-dropdown-menu').forEach(function(m){ m.classList.remove('open'); });
+}
+document.addEventListener('click', function(){ closeAllDropdowns(); });
+window.addEventListener('scroll', function(){ closeAllDropdowns(); }, true);
+window.addEventListener('resize', function(){ closeAllDropdowns(); });
 </script>
 <script>
 /* ═══════════════════════════════════════════
