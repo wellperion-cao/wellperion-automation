@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>웰페리온 2026 상반기 전사회의</title>
 <!--
-  웰페리온 2026 상반기 전사회의 — A3 가로 1장 인쇄용 자료(GM 요청 2026-07-06 · 재활용). ★GM 결재 인쇄 대상(최우선 정확도).
+  웰페리온 2026 상반기 전사회의 — A3·A4 가로 1장 인쇄용 자료(GM 요청 2026-07-06 · 재활용, A4 대응 2026-07-07). ★GM 결재 인쇄 대상(최우선 정확도).
+  용지는 우상단 🖨️▾(_assets/print_options.js)에서 선택 — A4는 zoom:0.7로 A3와 동일 레이아웃을 축소 적용(재조판 없음).
   자기완결(인라인 CSS·다크 화면/밝은 인쇄). 라이브 데이터 = 월간운영계획.html과 동일 소스 재사용:
    · 강습팀 매출 = GAS action=team_sales_h1(월별 "매출 보고" 31시트 U:Y 직독 합산) — 2026-07-07 정정.
      [이전] 매출마스터 gviz(SALES_GVIZ) 부서맵은 부정확(예 6월 뮤지컬 38만 오독 vs 실측 377만) → 폐기.
@@ -93,8 +94,11 @@
   .foot{margin-top:13px; font-size:10px; color:var(--dim); line-height:1.5;}
   @media (max-width:820px){ .cols{grid-template-columns:1fr;} .doc-head h1{font-size:22px;} .awards-row{flex-direction:column;} }
 
-  /* ── 인쇄: A3 가로 딱 1장 · 밝은 종이(A3 인쇄 가독) ── */
-  @page{ size:A3 landscape; margin:11mm; }
+  /* ── 인쇄: A4·A3 양쪽 대응 · 밝은 종이 ──
+     용지 크기는 공용 인쇄 옵션 위젯(_assets/print_options.js)이 <style id="po-page-style">로
+     이 @page 규칙 뒤에 주입해 결정한다(문서상 나중=우선). 여기 @page는 위젯 로드 전/실패 시의
+     폴백일 뿐이라 특정 용지를 강제하지 않는다(margin만 기본값 유지). */
+  @page{ margin:8mm; }
   @media print{
     :root{
       --bg:#fff; --paper:#fff; --surface:#f7f6fa; --border:#d8d5e0; --border-strong:#b8b4c6;
@@ -110,6 +114,13 @@
     .doc-head{align-items:center;}
     .card,.award,.best-card,.dir,.kicker,.approval-wrap{page-break-inside:avoid; break-inside:avoid;}
     .doc-head,.kicker,.cols{page-break-inside:avoid;}
+  }
+  /* A4 = A3 절반 면적(같은 1:1.414 비율) — 콘텐츠는 A3 1장 밀도로 고정, A4 선택 시에는
+     zoom으로 축소해 같은 레이아웃을 그대로 1장에 맞춘다(재조판·잘림 없음).
+     zoom은 transform과 달리 레이아웃 자체를 다시 흐르게 해 표·2단 그리드가 좁은 폭에서
+     줄바꿈 없이 A3때와 동일하게 짜인다. data-print-paper는 print_options.js가 세팅. */
+  @media print{
+    :root[data-print-paper="A4"] .sheet{ zoom:0.7; }
   }
 </style>
 </head>

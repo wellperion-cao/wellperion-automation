@@ -171,6 +171,11 @@
   }
   function applyPageStyle(paper, orientation){
     ensurePageStyleEl().textContent = '@page{ size: ' + paper + ' ' + orientation + '; margin: 8mm; }';
+    // 선택 용지·방향을 문서 루트 data-attr로 노출 — 페이지가 @media print 안에서
+    // :root[data-print-paper="A4"] 등으로 걸어 용지별 밀도(zoom 등)를 스스로 맞출 수 있게 하는 훅.
+    // 기존 페이지는 이 attr을 안 쓰므로 무해(additive). 2026-07-07.
+    document.documentElement.setAttribute('data-print-paper', paper);
+    document.documentElement.setAttribute('data-print-orientation', orientation);
   }
   function applySections(sections, checkedMap){
     sections.forEach(function(sec){
