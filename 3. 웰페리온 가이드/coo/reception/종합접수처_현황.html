@@ -318,7 +318,9 @@ function _card(r){
   var extras = [];
   Object.keys(r).forEach(function(k){
     if(KNOWN_KEYS.indexOf(k)<0 && r[k]!=null && r[k]!==''){
-      extras.push('<span class="k">' + _esc(EXTRA_LABEL[k]||k) + ': </span><span class="v">' + _esc(String(r[k])) + '</span>');
+      var _v = String(r[k]);
+      if(k==='lostWhen') _v = _v.replace('T',' ');  // 분실시점 datetime-local 표시: 2026-07-07T14:30 → 2026-07-07 14:30
+      extras.push('<span class="k">' + _esc(EXTRA_LABEL[k]||k) + ': </span><span class="v">' + _esc(_v) + '</span>');
     }
   });
 
