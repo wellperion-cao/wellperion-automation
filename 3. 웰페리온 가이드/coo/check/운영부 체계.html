@@ -589,6 +589,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <button class="tab" onclick="switchTab('admin')">현황</button>
+  <button class="tab" onclick="switchTab('mplan')">📅 이달 부서 현황</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
@@ -1112,6 +1113,43 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <h2 style="font-size:20px;margin-bottom:6px;">현황 대시보드</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">운영부(리셉션) 오늘 체크리스트 진행률과 규정·가이드·매뉴얼 보드 작성 현황, GM 확정이 필요한 항목을 한눈에 요약합니다. 탭을 열 때마다 최신 데이터로 갱신됩니다.</p>
   <div id="admin-dash"><div class="loading">불러오는 중...</div></div>
+</div>
+
+<!-- ══ 이달 부서 현황 탭 — monthly_ops_plan.json 실무·AI 도달율 + 월목표 진척 읽기전용 렌더 (지원부 파일럿과 동일 패턴 · PAGE CONFIG만 다름) ══ -->
+<div id="tab-mplan" class="content hidden">
+  <div id="mpStatus" style="color:var(--dim);font-size:13px;padding:20px 0;text-align:center;">불러오는 중...</div>
+  <div id="mpHeader" style="display:none;margin-bottom:16px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:18px;font-weight:700;" id="mpMonthLabel"></span>
+          <span id="mpStatusBadge"></span>
+        </div>
+        <div style="font-size:13px;color:var(--dim);margin-top:4px;" id="mpTheme"></div>
+      </div>
+      <a href="/wellperion-automation/월간운영계획.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;">▸ 전체 월간운영계획 보기</a>
+    </div>
+  </div>
+  <div id="mpReachHeader" style="display:none;margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">실무 도달율</div>
+        <div style="font-size:24px;font-weight:800;" id="mpPracVal">—</div>
+        <div id="mpPracBarWrap"></div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpPracGoal"></div>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">AI 활용 도달율</div>
+        <div style="font-size:24px;font-weight:800;" id="mpAiVal">—</div>
+        <div id="mpAiBarWrap"></div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpAiGoal"></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--text);margin-top:10px;" id="mpOwnerLine"></div>
+    <div style="font-size:12px;color:var(--dim);font-weight:700;margin:18px 0 4px;border-top:1px dashed var(--border);padding-top:14px;">─ 월 목표 &amp; 진척 ─</div>
+  </div>
+  <div id="mpCards"></div>
+  <div style="font-size:11px;color:var(--dim);margin-top:20px;padding-top:12px;border-top:1px solid var(--border);">정본 = 월간운영계획 · 이 화면은 자동 반영(읽기 전용)</div>
 </div>
 
   <script>
@@ -1735,8 +1773,10 @@ function switchTab(tab, opts){
   document.getElementById('tab-guide').classList.toggle('hidden',tab!=='guide');
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
   document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
+  document.getElementById('tab-mplan').classList.toggle('hidden',tab!=='mplan');
   if(tab==='manual'){renderBoard();renderManualItems();}
   if(tab==='admin'){renderAdmin();}
+  if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
 }
 
 /* ═══════════════════════════════════════════════
@@ -2885,6 +2925,116 @@ function mgmtMergeSchedule(baseSched, customSlots){
 /* 초기 렌더링 */
 renderManualItems();
 
+/* ═══════════════════════════════════════════
+   이달 부서 현황 탭 — monthly_ops_plan.json 실무·AI 도달율 + 월목표 진척 읽기전용 렌더
+   SSOT = 월간운영계획(status/monthly_ops_plan.json). 4부서(운영·시설·지원·주차) 공통 패턴 —
+   PAGE CONFIG(PRAC_ID/OWNER_LABEL/MP_DEPT)만 다르고 렌더 함수 본문은 동일 복제(룩 수정 시 4곳 동일 적용).
+   ═══════════════════════════════════════════ */
+var MP_DEPT = '운영';
+var PRAC_ID = 'lee-gy';
+var OWNER_LABEL = '이경연 실장';
+var PLAN_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_ops_plan.json';
+var MP_LOADED = false;
+var MP_STATUS_STYLE = {
+  '계획': {color:'var(--dim)', bg:'rgba(140,139,131,0.14)'},
+  '진행': {color:'var(--blue)', bg:'var(--blue-bg)'},
+  '완료': {color:'var(--green)', bg:'var(--green-bg)'},
+  '이월': {color:'var(--yellow)', bg:'var(--yellow-bg)'}
+};
+function mpEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function mpMonthLabel(key){
+  var m=String(key||'').match(/^(\d{4})-(\d{2})$/);
+  if(!m) return key||'';
+  return m[1]+'년 '+parseInt(m[2],10)+'월';
+}
+function mpCurrentMonthKey(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function mpStatusBadgeHtml(status){
+  var st=MP_STATUS_STYLE[status]||MP_STATUS_STYLE['계획'];
+  return '<span style="display:inline-block;font-size:11px;font-weight:700;color:'+st.color+';background:'+st.bg+';border-radius:10px;padding:3px 10px;">'+mpEsc(status||'계획')+'</span>';
+}
+function mpObjectiveCard(o){
+  var pct=Math.max(0,Math.min(100,Number(o.progress)||0));
+  var st=MP_STATUS_STYLE[o.status]||MP_STATUS_STYLE['계획'];
+  var html='<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;">';
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">';
+  html+='<div style="font-weight:700;font-size:14px;">'+mpEsc(o.title)+'</div>';
+  html+=mpStatusBadgeHtml(o.status);
+  html+='</div>';
+  html+='<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%;background:'+st.color+';"></div></div>';
+  html+='<div style="font-size:12px;color:var(--dim);margin-top:4px;">진척 '+pct+'%</div>';
+  if(o.target) html+='<div style="font-size:12px;color:var(--dim);margin-top:6px;">목표: '+mpEsc(o.target)+'</div>';
+  if(o.progress_note) html+='<div style="font-size:12px;color:var(--dim);margin-top:2px;">'+mpEsc(o.progress_note)+'</div>';
+  html+='</div>';
+  return html;
+}
+function mpReachBarHtml(pct, colorVar){
+  var p=Math.max(0,Math.min(100,Number(pct)||0));
+  return '<div class="progress-bar"><div class="progress-fill" style="width:'+p+'%;background:'+colorVar+';"></div></div>';
+}
+function mpRenderReachHeader(planData, monthData){
+  var prac=(planData.practitioners||[]).filter(function(p){return p.id===PRAC_ID;})[0];
+  var aiItem=(planData.ai_utilization&&planData.ai_utilization.items||[]).filter(function(a){return a.id===PRAC_ID;})[0];
+  var pg=(monthData.practitioner_progress||{})[PRAC_ID];
+  var goal=(monthData.practitioner_goals||{})[PRAC_ID];
+  var pracValEl=document.getElementById('mpPracVal');
+  var pracBarWrap=document.getElementById('mpPracBarWrap');
+  var pracGoalEl=document.getElementById('mpPracGoal');
+  if(pracValEl){
+    if(pg!=null){ pracValEl.textContent=pg+'%'; pracBarWrap.innerHTML=mpReachBarHtml(pg,'var(--green)'); }
+    else { pracValEl.textContent='미입력'; pracBarWrap.innerHTML=mpReachBarHtml(0,'var(--green)'); }
+    pracGoalEl.textContent=goal?('목표: '+goal):'';
+  }
+  var aiValEl=document.getElementById('mpAiVal');
+  var aiBarWrap=document.getElementById('mpAiBarWrap');
+  var aiGoalEl=document.getElementById('mpAiGoal');
+  if(aiValEl){
+    if(aiItem){ aiValEl.textContent=aiItem.pct+'%'; aiBarWrap.innerHTML=mpReachBarHtml(aiItem.pct,'var(--blue)'); aiGoalEl.textContent='목표 '+aiItem.target_pct+'% · '+(aiItem.direction||''); }
+    else { aiValEl.textContent='미입력'; aiBarWrap.innerHTML=mpReachBarHtml(0,'var(--blue)'); aiGoalEl.textContent=''; }
+  }
+  var ownerEl=document.getElementById('mpOwnerLine');
+  if(ownerEl) ownerEl.textContent=OWNER_LABEL+(prac&&prac.northstar?(' · 🌟 '+prac.northstar):'');
+}
+function mpRender(planData, monthKey, monthData){
+  var statusEl=document.getElementById('mpStatus');
+  var headerEl=document.getElementById('mpHeader');
+  var reachEl=document.getElementById('mpReachHeader');
+  var cardsEl=document.getElementById('mpCards');
+  if(statusEl) statusEl.style.display='none';
+  if(headerEl) headerEl.style.display='block';
+  if(reachEl) reachEl.style.display='block';
+  document.getElementById('mpMonthLabel').textContent=mpMonthLabel(monthKey);
+  var theme=(monthData.report&&monthData.report.theme)||monthData.theme||'';
+  document.getElementById('mpTheme').textContent=theme;
+  var badgeEl=document.getElementById('mpStatusBadge');
+  if(badgeEl) badgeEl.innerHTML=monthData.month_status?mpStatusBadgeHtml(monthData.month_status):'';
+  mpRenderReachHeader(planData, monthData);
+  var objectives=(monthData.objectives||[]).filter(function(o){ return (o.dept||'').indexOf(MP_DEPT)>=0; });
+  if(!objectives.length){
+    cardsEl.innerHTML='<div style="color:var(--dim);font-size:13px;padding:12px 0;">이번 달 '+mpEsc(MP_DEPT)+' 핵심과제가 없습니다.</div>';
+    return;
+  }
+  cardsEl.innerHTML=objectives.map(mpObjectiveCard).join('');
+}
+async function loadMonthlyPlanTab(){
+  if(MP_LOADED) return;
+  var statusEl=document.getElementById('mpStatus');
+  try{
+    var r=await fetch(PLAN_URL,{cache:'no-store'});
+    var j=await r.json();
+    var months=j&&j.months;
+    if(!months) throw new Error('no months');
+    var curKey=mpCurrentMonthKey();
+    var keys=Object.keys(months).sort();
+    var key=months[curKey]?curKey:keys[keys.length-1];
+    MP_LOADED=true;
+    mpRender(j, key, months[key]);
+  }catch(e){
+    if(statusEl){ statusEl.style.display='block'; statusEl.textContent='월간 계획을 불러오지 못했습니다 — 새로고침'; statusEl.style.color='var(--red)'; }
+  }
+}
 </script>
 
 
