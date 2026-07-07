@@ -509,7 +509,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .a3-unconfirmed-note{font-size:8.5px;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:3px;padding:2px 5px;margin-bottom:4px;break-inside:avoid}
 }
 /* ── A3 응대 상황표 · 장비비품 · 온보딩 인쇄 전용 컨테이너 (화면 숨김 · 인쇄 기계장치 구조=printA3Guideline/Manual 복제, 콘텐츠는 주차 네이티브) ── */
-#a3-pcs-print,#a3-psup-print,#a3-ponb-print{display:none}
+#a3-pcs-print,#a3-psup-print,#a3-ponb-print,#a3-pchk-print{display:none}
 @media print{
   body.a3-pcs-mode .header,body.a3-pcs-mode .tabs,body.a3-pcs-mode .submit-bar,body.a3-pcs-mode .saving,
   body.a3-pcs-mode .toast-msg,body.a3-pcs-mode .header-util-btns,body.a3-pcs-mode .util-btn,body.a3-pcs-mode .sheet-links,
@@ -526,8 +526,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-ponb-mode .header,body.a3-ponb-mode .tabs,body.a3-ponb-mode .submit-bar,body.a3-ponb-mode .saving,
   body.a3-ponb-mode .toast-msg,body.a3-ponb-mode .header-util-btns,body.a3-ponb-mode .util-btn,body.a3-ponb-mode .sheet-links,
   body.a3-ponb-mode #tab-policy,body.a3-ponb-mode #tab-guide,body.a3-ponb-mode #tab-manual,body.a3-ponb-mode #tab-valet,
-  body.a3-ponb-mode #a3-guideline-print,body.a3-ponb-mode #a3-manual-print,body.a3-ponb-mode #a3-pcs-print,body.a3-ponb-mode #a3-psup-print{display:none!important}
+  body.a3-ponb-mode #a3-guideline-print,body.a3-ponb-mode #a3-manual-print,body.a3-ponb-mode #a3-pcs-print,body.a3-ponb-mode #a3-psup-print,body.a3-ponb-mode #a3-pchk-print{display:none!important}
   body.a3-ponb-mode #a3-ponb-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+  body.a3-pchk-mode .header,body.a3-pchk-mode .tabs,body.a3-pchk-mode .submit-bar,body.a3-pchk-mode .saving,
+  body.a3-pchk-mode .toast-msg,body.a3-pchk-mode .header-util-btns,body.a3-pchk-mode .util-btn,body.a3-pchk-mode .sheet-links,
+  body.a3-pchk-mode #tab-policy,body.a3-pchk-mode #tab-guide,body.a3-pchk-mode #tab-manual,body.a3-pchk-mode #tab-valet,
+  body.a3-pchk-mode #a3-guideline-print,body.a3-pchk-mode #a3-manual-print,body.a3-pchk-mode #a3-pcs-print,body.a3-pchk-mode #a3-psup-print,body.a3-pchk-mode #a3-ponb-print{display:none!important}
+  body.a3-pchk-mode #a3-pchk-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 </style>
 </head>
@@ -568,6 +574,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button onclick="printA3ParkingOnboarding();closeAllDropdowns()">A3 온보딩</button>
         <button onclick="printA3ParkingCS();closeAllDropdowns()">A3 응대 상황표</button>
         <button onclick="printA3ParkingSupply();closeAllDropdowns()">A3 비품 현황</button>
+        <button onclick="printA3ParkingChecklist();closeAllDropdowns()">A3 주차장 청결·점검표</button>
         <hr style="border:none;border-top:1px dashed rgba(183,159,138,0.3);margin:4px 8px;">
         <button onclick="window.print();closeAllDropdowns()">현재 화면 그대로 인쇄</button>
       </div>
@@ -770,6 +777,38 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <button type="button" class="quickadd-btn" style="width:auto;padding:8px 14px;margin-top:10px;" onclick="parkingAddRow('supply')">＋ 품목 추가</button>
     </div>
   </div>
+
+  <!-- ── 🧹 주차장 청결·점검 체크리스트 (GM 2026-07-07 주차부 자체 점검. 지원부 점검 GAS와 별개·독립·정적 — 제출/저장/API 연동 없음, 인쇄·육안 체크 전용) ── -->
+  <div class="manual-section" style="margin-top:16px;">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3>🧹 주차장 청결·점검 체크리스트</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
+        <span style="display:inline-block;margin-right:6px;padding:1px 8px;border-radius:8px;background:var(--purple-bg);color:var(--purple);font-weight:700;font-size:11px;">[AI 초안 — GM 검토]</span>
+        지원부 점검 시스템과 별개·독립 운영 — 제출·저장·API 연동 없는 정적 점검표(인쇄 후 육안 체크 전용). 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
+      </p>
+      <table class="schedule-table">
+        <colgroup><col style="width:64px;"><col><col style="width:56px;"></colgroup>
+        <thead><tr><th>주기</th><th>점검 항목</th><th>체크</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="8">일일</td><td>지상·지하 바닥 청결 — 오염·기름때 제거</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>통행로 적치물 정리 / 쓰레기 수거</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>배수구 막힘·이물질 제거</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>주차장 화장실 청결·비품(화장지·손세정제)·악취·조명</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>주차선·표시선 식별 상태</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>조명 점등·사각지대 조도</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>차단기·정산기 정상 작동</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>CCTV 화면 이상·녹화 정상</td><td style="text-align:center;">☐</td></tr>
+          <tr><td rowspan="4">주간</td><td>소화기·소화전 위치·수량·압력게이지 / 통로 가림 여부</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>비상구 유도등 점등·피난통로 적치물·비상벨</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>발렛 동선·안전표지 점검</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>계절 대비(여름 배수·겨울 제설)</td><td style="text-align:center;">☐</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.6;"><b style="color:var(--accent);">운영 원칙</b> — 주차관리인이 청결관리(청소)를 겸임합니다. 청소 시 고무장갑·마스크 착용, 환기 후 작업합니다.</p>
+    </div>
+  </div>
 </div>
 
 <!-- 점검(지상)·점검(지하)·현황 대시보드 탭 전면 제거 (GM 2026-06-12). 점검은 지원부 점검 시스템과 충돌·동기화 문제로 제거.
@@ -811,6 +850,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="a3m-header">주차관리부 신입 교육 자료</div>
   <div class="a3m-sub" id="a3ponb-sub"></div>
   <div id="a3ponb-host"></div>
+</div>
+
+<!-- ══ A3 주차장 청결·점검표 인쇄 전용 컨테이너 (화면 숨김 · 정적 체크리스트 — 지원부 점검 GAS 미연동) ══ -->
+<div id="a3-pchk-print">
+  <div id="a3-pchk-host"></div>
 </div>
 
 <!-- ── 정적 프레젠테이션 전용 미니 스크립트 (탭 전환 + 접이식 토글만) ── -->
@@ -1712,6 +1756,48 @@ function printA3ParkingSupply(){
   document.body.classList.add('a3-psup-mode');
   window.print();
   document.body.classList.remove('a3-psup-mode');
+}
+
+/* ═══════════════════════════════════════════
+   A3 주차장 청결·점검표 인쇄 — 정적 체크리스트(GM 2026-07-07 주차부 자체 점검).
+   지원부 점검 GAS 미연동 · 제출/저장/API 없음 · 화면 매뉴얼 탭 표와 동일 내용 하드코딩.
+   ═══════════════════════════════════════════ */
+const PARK_CHECKLIST = {
+  daily: [
+    '지상·지하 바닥 청결 — 오염·기름때 제거',
+    '통행로 적치물 정리 / 쓰레기 수거',
+    '배수구 막힘·이물질 제거',
+    '주차장 화장실 청결·비품(화장지·손세정제)·악취·조명',
+    '주차선·표시선 식별 상태',
+    '조명 점등·사각지대 조도',
+    '차단기·정산기 정상 작동',
+    'CCTV 화면 이상·녹화 정상'
+  ],
+  weekly: [
+    '소화기·소화전 위치·수량·압력게이지 / 통로 가림 여부',
+    '비상구 유도등 점등·피난통로 적치물·비상벨',
+    '발렛 동선·안전표지 점검',
+    '계절 대비(여름 배수·겨울 제설)'
+  ]
+};
+function printA3ParkingChecklist(){
+  const host=document.getElementById('a3-pchk-host');
+  if(host){
+    let html='<div class="a3-print-header">주차장 청결·점검 체크리스트 <span style="font-size:9px;font-weight:600;color:#8a7a6c;">[AI 초안 — GM 검토]</span></div>';
+    html+='<div class="a3-col-head">일일 점검</div>';
+    PARK_CHECKLIST.daily.forEach(function(t){
+      html+='<div class="a3-card"><div class="a3-card-title">☐ '+escapeHTML(t)+'</div></div>';
+    });
+    html+='<div class="a3-col-head" style="margin-top:6px;">주간 점검</div>';
+    PARK_CHECKLIST.weekly.forEach(function(t){
+      html+='<div class="a3-card"><div class="a3-card-title">☐ '+escapeHTML(t)+'</div></div>';
+    });
+    html+='<div class="a3m-note">운영 원칙 — 주차관리인이 청결관리(청소)를 겸임합니다. 청소 시 고무장갑·마스크 착용, 환기 후 작업합니다.</div>';
+    host.innerHTML=html;
+  }
+  document.body.classList.add('a3-pchk-mode');
+  window.print();
+  document.body.classList.remove('a3-pchk-mode');
 }
 
 /* ═══════════════════════════════════════════
