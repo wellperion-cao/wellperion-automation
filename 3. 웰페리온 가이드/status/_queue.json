@@ -272,15 +272,17 @@
     "task_id": "CTO-2026-07-03-MONTHLY-REPORT-TELEGRAM",
     "clevel": "cto",
     "title": "[시토] 점검 월간 리포트 매월1일 텔레그램 자동 — 점검관리방 요약 3~5줄+링크 (배208 Phase C 인계)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-03",
     "ship_no": 383,
     "note": "[2026-07-03 시우→시토 인계] 배208 3단계 자동화. 시우가 데이터·콘텐츠 완비(monthly_report 라이브·화면 월간보고 탭·A3). 발송·스케줄만 시토 infra. 매월1일 Task Scheduler→monthly_report(전월) 호출→요약 3~5줄(완료율 잠정·이슈총계·최다이슈일·개선시사1줄+페이지링크)→점검관리방(-5136037543, 기존 daily_scheduler 패턴). 첫 실발송=8/1(7월분). 스펙=status/briefs/COO-2026-07-03-MONTHLY-REPORT-TELEGRAM-HANDOFF.md. 콘텐츠 의미=시우·발송 infra=시토.",
-    "next": "시토: Task Scheduler 매월1일 트리거 + monthly_report 전월호출→요약생성→점검관리방 발송(기존 봇 인프라 확장·새 토큰 불필요). 진단서 참조.",
+    "next": "8/1 첫 발송 도착 확인(시우 콘텐츠 검수)",
     "depends_on": "",
     "source": "coo_handoff",
-    "module": "T2"
+    "module": "T2",
+    "processed_at": "2026-07-07",
+    "artifact": "schtasks Wellperion-MonthlyCheckReport-0900-D1: Status=Ready, Next Run=2026-08-01 09:00 (실측). 드라이런 6월 실측 카드: 완료율(잠정)76%·세션66·활성17일·이슈총193건·최다6월18일(33건)·개선시사 f구역70%+링크. py_compile OK."
   },
   {
     "task_id": "CMO-2026-07-03-NEXT-EPISODE-PROPOSAL",
@@ -2097,5 +2099,16 @@
     "artifact": "_queue DONE 등록 + 후속 배(재설계 배420 가드 승계) 브릿지 등록. (CLI ad-hoc · 커밋 90e89970)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "90e899708d9a70197d3d7316a188e651257471e4"
+  },
+  {
+    "task_id": "NEXT-20260707-162046",
+    "clevel": "cto",
+    "title": "8/1 첫 발송 도착 확인(시우 콘텐츠 검수)",
+    "status": "PENDING",
+    "depends_on": "CTO-2026-07-03-MONTHLY-REPORT-TELEGRAM",
+    "from": "cto",
+    "origin": "bridge",
+    "enqueued_at": "2026-07-07T07:20:46Z",
+    "ship_no": 607
   }
 ]
