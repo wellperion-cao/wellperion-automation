@@ -1158,7 +1158,7 @@ function _kpiTeamSales(params) {
 
 // ── 강습팀 상반기(1~6월) 실적 집계 — '31'탭 직독 월별 합산(gviz 매출마스터 완전 대체) ──
 // 2026-07-07 시토(배354 완결): 부정확한 매출마스터(_cfoSalesDept/_salesDept) 대신 이 액션이
-// 월간운영계획.html·상반기전사회의.html 강습팀 1·2분기 표의 정본이 된다.
+// 월간운영계획.html·전사회의.html 강습팀 1·2분기 표의 정본이 된다.
 // 한 달이라도 못 읽으면 그 분기·그 팀은 actual/avg=null(부분합 위조 금지 — 정직 표기).
 // GET ?action=team_sales_h1[&year=2026][&nocache=1] →
 //   { ok, year, monthsCovered, monthlyOk:{1:true,...}, q1:{key:{actual,avg}}, q2:{...}, asOf }
@@ -1742,7 +1742,7 @@ function doGet(e) {
     }
 
     // ─── 강습팀 상반기 1·2분기 실적 집계(월별 '31'탭 직독 합산) — 2026-07-07 시토(배354 완결) ───
-    // GET ?action=team_sales_h1[&year=2026]. 월간운영계획·상반기전사회의 강습팀표 공유 정본.
+    // GET ?action=team_sales_h1[&year=2026]. 월간운영계획·전사회의 강습팀표 공유 정본.
     if (action === 'team_sales_h1') {
       return _kpiTeamSalesH1(e.parameter);
     }
