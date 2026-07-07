@@ -901,8 +901,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
-  <button class="tab" onclick="switchTab('monthly')">📊 월간보고</button>
-  <button class="tab" onclick="switchTab('mplan')">📅 이달 부서 현황</button>
+  <button class="tab" onclick="switchTab('monthly')">📅 월간 지원부 계획·보고</button>
   <!-- 구 '📅 월간 보고 ▾' 드롭다운(2026-06 고정 A3 인쇄) 삭제 — 월간보고 탭 안 '🖨 A3 인쇄' 버튼(선택월 동적)과 중복. 2026-07-06 시우·GM -->
   <div style="display:flex;gap:4px;margin-left:auto;align-items:center;">
     <!-- 인쇄 버튼 통합 드롭다운 (월간 보고와 동일 패턴 · 버튼 난립 해소 2026-07-02 시우, GM) -->
@@ -1658,13 +1657,52 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
      폼/목록/유틸 UI는 매뉴얼 탭(tab-manual)으로 이동. 빈 패널 유지(switchTab 참조 보존). -->
 <div id="tab-manage" class="content hidden"></div>
 
-<!-- ══ 월간보고 탭 — 지원부 점검 monthly_report 라이브 대시보드 (배208 2단계 Phase B) ══ -->
+<!-- ══ 「📅 월간 지원부 계획·보고」 통합 탭 — monthly_ops_plan.json 핵심과제(주인공·상단) + 점검 monthly_report 라이브 대시보드 (배208 2단계 Phase B + 이달 부서 현황 통합 2026-07-07) ══ -->
 <div id="tab-monthly" class="content hidden">
   <div class="date-bar">
     <input type="month" id="mrMonthInput" onchange="loadMonthlyReport()">
     <button class="btn" onclick="loadMonthlyReport()">조회</button>
     <button class="btn" onclick="printA3Monthly()">🖨 A3 인쇄</button>
   </div>
+
+  <div id="mpStatus" style="color:var(--dim);font-size:13px;padding:20px 0;text-align:center;">불러오는 중...</div>
+  <div id="mpHeader" style="display:none;margin-bottom:16px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:18px;font-weight:700;" id="mpMonthLabel"></span>
+          <span id="mpStatusBadge"></span>
+        </div>
+        <div style="font-size:13px;color:var(--dim);margin-top:4px;" id="mpTheme"></div>
+      </div>
+      <a href="/wellperion-automation/월간운영계획.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;">▸ 전체 월간운영계획 보기</a>
+    </div>
+  </div>
+
+  <div class="dash-section-title" style="font-size:17px;font-weight:800;margin-top:2px;">🎯 이달 핵심과제</div>
+  <div id="mpCards"></div>
+  <div style="font-size:11px;color:var(--dim);margin:4px 0 20px;">정본 = 월간운영계획 · 이 화면은 자동 반영(읽기 전용)</div>
+
+  <div class="dash-section-title">📊 도달율</div>
+  <div id="mpReachHeader" style="display:none;margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">실무 도달율</div>
+        <div style="font-size:24px;font-weight:800;" id="mpPracVal">—</div>
+        <div id="mpPracBarWrap"></div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpPracGoal"></div>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">AI 활용 도달율</div>
+        <div style="font-size:24px;font-weight:800;" id="mpAiVal">—</div>
+        <div id="mpAiBarWrap"></div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpAiGoal"></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--text);margin-top:10px;" id="mpOwnerLine"></div>
+  </div>
+
+  <div class="dash-section-title">✅ 점검 실적(월간)</div>
   <div id="mrStatus"></div>
 
   <div id="mrKpiRow"></div>
@@ -1690,43 +1728,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <div class="dash-section-title">개선 시사점</div>
   <div id="mrImprovements"></div>
-</div>
-
-<!-- ══ 월간 보고 탭 — monthly_ops_plan.json 지원부 핵심과제 읽기전용 렌더 (파일럿·부서명 상수만 바꾸면 4부서 확장) ══ -->
-<div id="tab-mplan" class="content hidden">
-  <div id="mpStatus" style="color:var(--dim);font-size:13px;padding:20px 0;text-align:center;">불러오는 중...</div>
-  <div id="mpHeader" style="display:none;margin-bottom:16px;">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:18px;font-weight:700;" id="mpMonthLabel"></span>
-          <span id="mpStatusBadge"></span>
-        </div>
-        <div style="font-size:13px;color:var(--dim);margin-top:4px;" id="mpTheme"></div>
-      </div>
-      <a href="/wellperion-automation/월간운영계획.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;">▸ 전체 월간운영계획 보기</a>
-    </div>
-  </div>
-  <div id="mpReachHeader" style="display:none;margin-bottom:20px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
-        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">실무 도달율</div>
-        <div style="font-size:24px;font-weight:800;" id="mpPracVal">—</div>
-        <div id="mpPracBarWrap"></div>
-        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpPracGoal"></div>
-      </div>
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
-        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">AI 활용 도달율</div>
-        <div style="font-size:24px;font-weight:800;" id="mpAiVal">—</div>
-        <div id="mpAiBarWrap"></div>
-        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpAiGoal"></div>
-      </div>
-    </div>
-    <div style="font-size:13px;color:var(--text);margin-top:10px;" id="mpOwnerLine"></div>
-    <div style="font-size:12px;color:var(--dim);font-weight:700;margin:18px 0 4px;border-top:1px dashed var(--border);padding-top:14px;">─ 월 목표 &amp; 진척 ─</div>
-  </div>
-  <div id="mpCards"></div>
-  <div style="font-size:11px;color:var(--dim);margin-top:20px;padding-top:12px;border-top:1px solid var(--border);">정본 = 월간운영계획 · 이 화면은 자동 반영(읽기 전용)</div>
 </div>
 
 <script>
@@ -5306,7 +5307,6 @@ function switchTab(tab, opts){
   document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
   document.getElementById('tab-supply').classList.toggle('hidden',tab!=='supply');
   document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
-  document.getElementById('tab-mplan').classList.toggle('hidden',tab!=='mplan');
   if(tab==='supply'){ if(typeof loadSupplyFromBackend==='function') loadSupplyFromBackend(); }
   if(tab==='guide'){ if(typeof loadCsFromBackend==='function') loadCsFromBackend(); }
   // Show correct submit bar
@@ -5316,8 +5316,7 @@ function switchTab(tab, opts){
   if(tab==='check-f'){activeGenderTab='f';renderG('f')}
   if(tab==='admin'){renderAdmin();renderAdminExtra();}
   if(tab==='manual'){renderBoard();renderManualItems();}
-  if(tab==='monthly'){ if(typeof mrEnsureMonthInput==='function') mrEnsureMonthInput(); if(typeof loadMonthlyReport==='function') loadMonthlyReport(); }
-  if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
+  if(tab==='monthly'){ if(typeof mrEnsureMonthInput==='function') mrEnsureMonthInput(); if(typeof loadMonthlyReport==='function') loadMonthlyReport(); if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
 }
 // 해시 딥링크(예 …#supply) → 로드 시 해당 탭 자동 열기. 잠금 탭(점검 남/여)은 제외(PIN 우회 방지).
 window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h && h!=='check-m' && h!=='check-f' && document.getElementById('tab-'+h)) switchTab(h); }catch(e){} });
