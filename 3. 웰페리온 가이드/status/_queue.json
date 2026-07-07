@@ -2194,5 +2194,19 @@
     "artifact": "auto(cto): scheduled IG reach collect (ledger+summary, 배588) (CLI ad-hoc · 커밋 f7701e72)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f7701e7252f23bb888d1a2ae3c487d7d2071c712"
+  },
+  {
+    "task_id": "CTO-2026-07-07-ADHOC-25659278",
+    "clevel": "cto",
+    "title": "[시토] IG reach daily schedule + 60-day token auto-refresh (ship588)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-07",
+    "processed_at": "2026-07-07",
+    "ship_no": 614,
+    "artifact": "- scripts/ig_token_refresh.py: Meta long-lived token refresh\n  (graph.instagram.com/refresh_access_token, ig_refresh_token grant),\n  writes back scripts/.env in place, OWNER Telegram alert on failure.\n  Live-verified: refreshed token, new expiry 2026-09-05.\n- scripts/commit_ig_reach.py: dedicated co (CLI ad-hoc · 커밋 25659278)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "25659278952ae1770139a00e36e97cc80f41f4ea"
   }
 ]
