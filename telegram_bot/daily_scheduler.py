@@ -898,7 +898,7 @@ def _fetch_current_progress_local() -> str:
     for clevel in sorted(per_clevel):
         items = per_clevel[clevel]
         lines.append("")
-        lines.append(f"[{clevel}] {len(items)}건")
+        lines.append(f"[{_clevel_display(clevel)}] {len(items)}건")
         for it in items[:5]:
             lines.append(f"  - {it}")
         if len(items) > 5:
@@ -916,6 +916,23 @@ _GM_HANGRO_OWNER_TO_CLEVEL: dict[str, str] = {
     "AI CPO": "CPO", "시포": "CPO",
     "AI CHRO": "CHRO", "시로": "CHRO",
 }
+
+# C-Level 표시 라벨: 공식 AI 직함 + 닉네임 (GM 2026-07-07 지시 — 보고 라벨 통일)
+_CLEVEL_DISPLAY: dict[str, str] = {
+    "CEO": "AI CEO-웰리",
+    "CFO": "AI CFO-시뽀",
+    "CHRO": "AI CHRO-시로",
+    "CMO": "AI CMO-시모",
+    "COO": "AI COO-시우",
+    "CPO": "AI CPO-시포",
+    "CTO": "AI CTO-시토",
+}
+
+
+def _clevel_display(clevel: str) -> str:
+    """C-Level 코드(CEO 등) → 보고 표시 라벨(AI CEO-웰리). 미매핑은 원본 유지."""
+    return _CLEVEL_DISPLAY.get(clevel, clevel)
+
 
 # GM 소유자 패턴 (C-Level 집계에서 제외)
 _GM_OWNER_KEYWORDS = ("김남욱", "GM")
@@ -988,7 +1005,7 @@ def _fetch_current_progress_hangro() -> str | None:
         for clevel in sorted(per_clevel):
             clevel_items = per_clevel[clevel]
             lines.append("")
-            lines.append(f"[{clevel}] {len(clevel_items)}건")
+            lines.append(f"[{_clevel_display(clevel)}] {len(clevel_items)}건")
             for it in clevel_items[:5]:
                 lines.append(f"  - {it}")
             if len(clevel_items) > 5:
