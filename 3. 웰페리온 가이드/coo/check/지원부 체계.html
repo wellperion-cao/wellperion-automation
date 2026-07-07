@@ -475,8 +475,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .util-btn.report-btn:hover{background:rgba(167,139,218,0.22)}
 .util-btn.share-btn{background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3)}
 .util-btn.share-btn:hover{background:rgba(91,159,213,0.22)}
-/* print_options.js가 인쇄 버튼을 #po-toggle-btn으로 승격시키며 .po-toggle{font:inherit}가 상위 폰트크기(15px)를 상속해 34px로 커짐 → 보고용·공유용(25px)과 높이 불일치. ID셀렉터로 util-btn 폰트/줄높이 복원(공용 print_options.js는 무수정). 2026-07-06 시우, GM */
-#po-toggle-btn{font-size:11px;line-height:normal;padding:4px 10px;box-sizing:border-box}
 /* ── Toast ── */
 .toast-msg{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;display:none;z-index:300;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
 /* ── A3 가이드라인 인쇄 전용 컨테이너 (화면에선 숨김) ── */
@@ -908,7 +906,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div class="tab-dropdown" id="printDropdown">
       <button class="util-btn print-btn" id="printDropdownBtn" onclick="openTabDropdown(this,document.getElementById('printDropdownMenu'),event)">🖨 인쇄 ▾</button>
       <div class="tab-dropdown-menu" id="printDropdownMenu">
-        <button onclick="printCurrentTab();closeAllDropdowns()">현재 화면 인쇄</button>
         <button onclick="printA3Guideline();closeAllDropdowns()">A3 가이드라인 (규정+가이드)</button>
         <button onclick="printA3Manual();closeAllDropdowns()">A3 주간(가로) · 전체</button>
         <button onclick="printA3Manual('m');closeAllDropdowns()">A3 주간(가로) · 남</button>
@@ -919,6 +916,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button onclick="printA3CSGuide();closeAllDropdowns()">A3 회원 응대 상황표</button>
         <button onclick="printA3Supply();closeAllDropdowns()">A3 비품 목록</button>
         <button onclick="printA3Onboarding();closeAllDropdowns()">A3 신입 온보딩 교육자료</button>
+        <button onclick="printA3Monthly();closeAllDropdowns()">A3 월간보고</button>
+        <button onclick="printA3Closedday();closeAllDropdowns()">A3 둘째주 휴관</button>
+        <hr style="border:none;border-top:1px dashed rgba(183,159,138,0.3);margin:4px 8px;">
+        <button onclick="printCurrentTab();closeAllDropdowns()">현재 화면 그대로 인쇄</button>
       </div>
     </div>
     <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
@@ -1251,7 +1252,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-guide" class="content hidden">
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">지원부 가이드를 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <b>＋ 카드 추가</b>로 새 가이드를 추가할 수 있습니다.</p>
-  <div style="margin-bottom:14px;"><button class="btn" onclick="printA3Onboarding()">🖨 신입 온보딩 A3</button></div>
   <!-- ① 2단 레이아웃: 좌=직원 구성·역할+사우나 투어(동일폭 세로 적층) / 우=지원부 가이드 카드. 우측 보드 board-fullwidth(풀블리드) 제거로 좌측을 덮지 않음 (2026-07-03 시우, 시설부 패턴 이식·731c2963 / 좌측 컬럼 동일폭 재배치·배64) -->
   <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px;">
     <!-- 좌 컬럼: 직원 구성·역할 + 사우나 투어 (세로 적층·동일폭 · 배64) -->
@@ -1350,7 +1350,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <h3 style="font-size:17px;font-weight:800;color:var(--accent);margin:0;">🗣 회원 응대 상황표</h3>
       <div style="display:flex;gap:8px;">
         <button class="btn" onclick="csAdd()">＋ 상황 추가</button>
-        <button class="btn" onclick="printA3CSGuide()">🖨 A3 인쇄</button>
       </div>
     </div>
     <p class="board-intro">자주 발생하는 회원 응대 상황과 표준 멘트·조치를 정리했습니다. 각 칸을 바로 입력하면 모든 기기에 저장됩니다(편집 잠금 없음).</p>
@@ -1450,7 +1449,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="manual-section" style="margin-bottom:16px;">
     <div class="manual-header" onclick="togManual(this)" style="background:var(--blue-bg);"><h3 style="color:var(--blue);">🗓 둘째주 휴관 작업 (구역별 · 직원 배포용)</h3><span class="arrow">&#9654;</span></div>
     <div class="manual-body">
-      <div style="margin-bottom:12px;"><button class="btn" onclick="printA3Closedday()" style="font-size:15px;padding:9px 16px;">🖨 A3 인쇄 (직원 배포용 · 큰 글씨)</button></div>
       <div class="cd-grid">
         <div class="cd-card"><div class="cd-zone">A · 사우나</div><ul class="cd-list"><li>세수대야·바가지 <b>세제로 씻기</b></li><li>칸막이·거울 청결 관리 <b>(거울 위 먼지 주의)</b></li><li>화장실 청소</li></ul></div>
         <div class="cd-card"><div class="cd-zone">B · 락커룸</div><ul class="cd-list"><li>거울·등(조명) <b>(거울 위 먼지 주의)</b></li><li>선풍기 집중 청소</li><li>에어컨 내부</li><li>파우더룸 작은 쓰레기통</li><li>화장품 받침대 소독</li></ul></div>
@@ -1534,7 +1532,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
     <button class="btn" onclick="supplyAdd()">＋ 비품 추가</button>
-    <button class="btn" onclick="printA3Supply()">🖨 A3 인쇄</button>
     <span id="supplyLowChip" style="display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:4px 10px;border-radius:10px;background:var(--red-bg);color:var(--red);border:1px solid rgba(237,91,63,0.4);white-space:nowrap;">🔴 발주 필요 0건</span>
     <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap;">
       <input type="checkbox" id="supplyLowOnly" onchange="renderSupplyTable()"> 부족만 보기
@@ -1662,7 +1659,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="date-bar">
     <input type="month" id="mrMonthInput" onchange="loadMonthlyReport()">
     <button class="btn" onclick="loadMonthlyReport()">조회</button>
-    <button class="btn" onclick="printA3Monthly()">🖨 A3 인쇄</button>
   </div>
 
   <div id="mpStatus" style="color:var(--dim);font-size:13px;padding:20px 0;text-align:center;">불러오는 중...</div>
@@ -8275,6 +8271,5 @@ async function loadMonthlyPlanTab(){
 }
 </script>
 
-    <script src="/wellperion-automation/_assets/print_options.js"></script>
 </body>
 </html>
