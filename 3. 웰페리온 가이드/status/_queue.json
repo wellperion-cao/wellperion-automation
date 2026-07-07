@@ -2376,5 +2376,19 @@
     "artifact": "- 월 목표·진척: 좁은 표 칸 삭제 → 부서 표 아래 '📌 부서별 월 목표·진척' 전용 섹션(부서별 카드·제목·진척바·월목표·크게)\n- 종합접수처: 접수 내용 상세 삭제 → 접수/처리중/완료 집계만(원복)\n- 부서별 매출·지출 인쇄 폰트 11→13px(숫자 포함)\n- 월간계획 게이트 제거(집계만이라 PII 없음) · 리셉션 게이트는 유지 (CLI ad-hoc · 커밋 b313f12c)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b313f12c876bc6495820b47de2c9e70391664259"
+  },
+  {
+    "task_id": "CPO-2026-07-07-ADHOC-040efc08",
+    "clevel": "cpo",
+    "title": "[시포] 멤버십 팝업 정확성 교정 + 전환율·잔류이탈 버튼 통합 + 문의 입력폼 정비",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-07",
+    "processed_at": "2026-07-07",
+    "ship_no": 675,
+    "artifact": "A) 멤버십 문의 현황 팝업 ①③ 유형 스코프 교정(정확성 최우선)\n   구 funnel_conversion은 멤버십+강습+렌트+비즈 전 채널 합산이라 과대집계\n   (7월 예: 신규문의 53·전환율 11.3%). member_inquiry_list(dbRows, 26년\n   신규문의 시트, 프로그램=플래티넘/노블레스 또는 빈칸만)·member_registered_list\n   (유효회원 시트 등록일자)로 재배선 — 둘 다 멤버십 전용 소스, 새 GAS 0.\n   백엔드 cpo_today_stats(monthInquiry) 로직과  (CLI ad-hoc · 커밋 040efc08)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "040efc08db1ce2880161f0cb5a087bacf4291be0"
   }
 ]
