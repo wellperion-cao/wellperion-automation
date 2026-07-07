@@ -379,14 +379,16 @@
     "task_id": "CTO-2026-07-06-KAKAO-REPORT-SENDER",
     "clevel": "cto",
     "title": "[시토] 카톡 매출보고 원클릭 전송기 — 텔레그램 버튼→카톡 3방 UI자동 전송",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-06",
     "ship_no": 488,
     "note": "[2026-07-06 GM 지시] 9시 매출보고 텔레그램 사진 아래 인라인버튼(\"📤 카톡 3방 전송\") 탭 → 카톡 3방(차의주 회장님/웰페리온 관리부/웰페리온 운영부) UI자동 전송. 구현 완료: ①scripts/kakao_report_sender.py(핵심 실행기, pywinauto+pywin32 클립보드 CF_DIB, --dry-run/--only-room 안전장치, py_compile+의존성 자동설치 확인) ②scripts/kakao_rooms.json(방 목록 설정) ③telegram_bot/bot.py cmd_kakao_send_callback(callback_data=kakao_send, 사진+캡션 그대로 다운로드→서브프로세스 실행→1줄 회신, 기존 폴링 무접촉·모듈 임포트 검증 완료) ④GAS 매출보고_자동발송.js sendTelegramPhoto에 인라인버튼 추가·clasp push -f 성공(라이브 반영). 스펙=docs/superpowers/specs/2026-07-06-카톡-매출보고-원클릭-전송기-design.md. [2026-07-06 확장] GM 최종 스펙 반영: ⑤bot.py 콜백이 사진을 로컬 월 폴더(kakao_rooms.json archive_dir, 기본 C:\\Users\\jjky0\\Documents\\매출보고)에 <YYYY-MM>/웰페리온_일일보고_<수신일YYYYMMDD>.png로 저장 후 그 저장본을 그대로 전송에 사용(중복 다운로드 제거) ⑥kakao_rooms.json 각 방에 prefix 필드 추가(차의주 회장님=\"회장님, \", 관리부/운영부=\"\") — 캡션=prefix+원본캡션(날짜 재계산 없음) ⑦kakao_report_sender.py에 --from-folder 옵션 추가(이미지 미지정 시 archive_dir/YYYY-MM/에서 오늘자 파일 자동선택), 방별 caption 조합은 sender가 kakao_rooms.json 기준 수행. 검증: py_compile(sender+bot.py) OK, C:\\Python314\\python.exe로 bot.py 전체 import OK, kakao_rooms.json JSON 유효+prefix 3방 정확, --from-folder(파일없음)·--image 없음 두 경우 모두 BLOCKED 에러 명확 출력 확인, 캡션 조합 단위테스트로 회장님방='회장님, 7.5(일) 매출 및 운영사항 보고드립니다.' / 관리부·운영부='7.5(일) 매출 및 운영사항 보고드립니다.' 정확히 조합됨 확인. 한계: 카톡 UI자동화·실제 archive 저장 트리거(텔레그램 콜백 실행)는 개발환경에 카톡 미설치+실 텔레그램 이벤트 없어 GM PC 실환경에서만 검증 가능. 봇 콜백은 다음 재기동 시 발효. [2026-07-06 자동 방 열기 추가] GM 지시로 ⑧kakao_report_sender.py에 자동 방 열기 추가: find_room_window 실패 시(RoomNotOpenError) 카톡 메인창 검색으로 자동으로 방을 연 뒤 전송 진행(open_room_via_search 재작성). GM PC 라이브로 메인창 컨트롤 트리 직접 조사(print_control_identifiers uia+win32, win32gui.EnumChildWindows)해 실측: 검색 Edit는 win32 클래스=Edit로 실존하나 비활성 시 폭 0으로 붕괴돼 UIA로 못 찾음(당초 실패 원인) → 우상단 돋보기 아이콘 고정 픽셀 오프셋 클릭(우측끝-112px, 상단+57px)으로 활성화 후 EnumChildWindows로 폭>0인 Edit만 식별. 검색 Edit에 Ctrl+A를 보내면 이 앱이 전역 단축키(\"친구 추가\" 다이얼로그)로 가로채는 함정을 라이브에서 실제로 겪고 확인(Escape로 안전 회피) → 기존텍스트 제거는 End/Shift+Home/Delete만 사용. 텍스트 입력은 클립보드 Ctrl+V(한글 IME 우회), Enter로 최상단 검색결과 열기. 방 창 확인은 기존과 동일하게 제목 완전일치만 성공 인정(엉뚱한 방 열려도 타임아웃으로 안전실패). 라이브 검증: \"김남욱\" 방을 의도적으로 닫은 뒤(WM_CLOSE) --dry-run --only-room \"김남욱\" 실행 → 로그 \"방 창이 안 열려 있음→자동 열기 시도→자동 열기 성공(검색)→DRY-RUN 미리보기 확인, 전송 생략\" 확인, 스크린샷 증빙(scripts/poc-evidence/kakao_send_김남욱_dryrun_preview_20260706_132543.png)으로 방이 실제 열려 포커스+클립보드 이미지 팝업까지 뜨고 Enter 없이 안전 취소됨 확인. 회장님·관리부 방은 오발송 방지로 이번에도 열지 않음(미검증 유지). py_compile OK. 스펙 §0-4~0-6 반영.",
-    "next": "GM PC 실발송 테스트: ①dry-run --only-room 웰페리온 운영부로 캡션·미리보기 확인(완료) ②운영부 1방 실발송(완료) ③나머지 2방(차의주 회장님·웰페리온 관리부) 방 닫힌 상태에서 dry-run으로 자동 열기 확인 후 실발송 ④봇 재기동 후 버튼 전체경로(archive 저장 포함) 확인",
+    "next": "첫 무인 발송 내일 09:30 도착 확인. 보안 근본화=자체서버+법인폰 카톡(≈9월·배101)",
     "depends_on": "",
-    "module": "T2"
+    "module": "T2",
+    "processed_at": "2026-07-07",
+    "artifact": "scripts/poc-evidence/kakao_send_김남욱_dryrun_preview_20260706_132543.png (자동 방열기 실증)+운영부 1방 실발송 완료(GM확인)"
   },
   {
     "task_id": "CTO-2026-07-06-ADHOC-f91ffae6",
@@ -714,14 +716,16 @@
     "task_id": "CTO-2026-07-06-VOYAGE-MAP-PAGE",
     "clevel": "cto",
     "title": "[시토] 항해 지도(항해지도.html) — 배를 북극성 모듈로 묶어 담당별·진척 조망 (계획서 3.6% 통과·시안 룩)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-06",
     "ship_no": 514,
     "note": "[2026-07-06 GM go] GM \"북극성 가는 항로 배들을 담당별 체크·진척률로 한눈에\" 요구. 기존 재료 재활용(voyage_module_map.py 매퍼·bootsetup_matrix owns·kpi_values 실측·nsmap)+이미 통과된 스펙/계획(.omc/plans/2026-07-04-voyage-map-module-grouping.md, deep-interview 3.6%). 오늘 만든 시안(scratchpad/northstar_progress.html) 룩 계승. 정직 하이브리드 진척(KPI 개통=%바·미개통=상태신호). 새 페이지지만 자율현황/G1과 역할분리(흡수 아님). 단계별 배 진척%(milestone)는 후속(각 배 관문 정의 필요).",
-    "next": "엔진(build_voyage_map.py)→voyage_map.json→항해지도.html→5페이지 네비바→라이브. GM 시크릿 크롬 룩 확인 후 완료. 후속=배별 관문 진척%.",
+    "next": "북극성별 보기는 G1 토글로 유지·고도화(별도 배 불필요)",
     "depends_on": "",
-    "module": "T2"
+    "module": "T2",
+    "processed_at": "2026-07-07",
+    "artifact": "https://wellperion-cao.github.io/wellperion-automation/항해지도.html"
   },
   {
     "task_id": "COO-2026-07-06-ADHOC-b8a95425",
@@ -1969,6 +1973,29 @@
     "note": "[2026-07-07 GM 지시·방향 승인] 개인계정 @namuk.wellperion 디자인 시스템 전면 개편(여름). 이야기=시스템은 AI가·공간은 내가(AI로 ERP 짓고 번 시간에 스포츠클럽 공간의 본질 연구·실효). 디자인=여백(빈공간)이 메시지 그릇(형식=메시지)+하단 자동화 신호줄+에메랄드/W 유지, 따뜻한종이 폐기. 시안 3안→여백 그릇 확정, GM 승인. 스펙=docs/superpowers/specs/2026-07-07-namuk-summer-story3-design.md. 정직=자동처리 건수·공간연구 내용 실값만.",
     "next": "writing-plans로 제작 템플릿(표지·본문·마무리) 구현계획→compose 템플릿 빌드. 열린항목 GM 인풋 대기: 실제 공간연구 콘텐츠·마무리 카피. A안(심야)·C안(리소)=서브무드 보존.",
     "depends_on": "",
-    "module": "M1"
+    "module": "M1",
+    "ship_no": 589
+  },
+  {
+    "task_id": "NEXT-20260707-160103",
+    "clevel": "cto",
+    "title": "첫 무인 발송 내일 09:30 도착 확인. 보안 근본화=자체서버+법인폰 카톡(≈9월·배101)",
+    "status": "PENDING",
+    "depends_on": "CTO-2026-07-06-KAKAO-REPORT-SENDER",
+    "from": "cto",
+    "origin": "bridge",
+    "enqueued_at": "2026-07-07T07:01:03Z",
+    "ship_no": 599
+  },
+  {
+    "task_id": "NEXT-20260707-160113",
+    "clevel": "cto",
+    "title": "북극성별 보기는 G1 토글로 유지·고도화(별도 배 불필요)",
+    "status": "PENDING",
+    "depends_on": "CTO-2026-07-06-VOYAGE-MAP-PAGE",
+    "from": "cto",
+    "origin": "bridge",
+    "enqueued_at": "2026-07-07T07:01:13Z",
+    "ship_no": 600
   }
 ]
