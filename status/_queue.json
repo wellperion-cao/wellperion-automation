@@ -185,14 +185,16 @@
     "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
     "clevel": "cto",
     "title": "[시토] 일일 북극성 추천기 v1 엔진 — 06:30 텔레그램 3후보 제안→승인→_queue 등록(웰리 파일럿). 두뇌=웰리 로직/손=시토 엔진",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-06-29",
     "note": "[2026-06-29 GM GO·deep-interview 확정] 스펙=.omc/specs/deep-interview-daily-northstar-recommender.md. 브릿지=북극성↔오늘 잇는 과정. 최상급 과정 4박자=경로지도+품질완주(기존 완료4요건·웰리검수 게이트 활용·새 실행권 없음)+지표환류+근거투명. 자율=제안까지(GM 승인 후 실행). 개인 북극성 v1 제외. 두뇌=웰리(추천 로직)/손=시토(엔진). [2026-06-29 GM 잠금결정] G1=상태파일 status/northstar_pending.json(git추적) · G2=미승인은 다음날 06:30 새 추천 시 자동보류(만료) · G3=파일럿 폐기→처음부터 전 C-Level(7역할 ceo·cmo·coo·cto·cpo·cfo·chro, gm제외), 웰리가 전사 top3 선정·역할 태그. ✅1단계 빌드 완료(2026-06-29): scripts/northstar_recommender.py 드라이런 엔진(입력=matrix 7행+_queue+kpi_values, 두뇌=claude CLI model_router폴백, 출력=status/northstar_pending.json·라이브 부작용0). ✅2단계 라이브 완료·검증(2026-07-02): 예약작업 Wellperion-NorthStar-0630(런처 launchers/northstar_recommender_hidden.vbs→scripts/northstar_recommender.bat --send) 3일 정상 가동(06-30·07-01·07-02 각 06:30 카드 발송 sent:true, Last Result 0)·G2 만료 정상. 봇 route_northstar 핸들러 라이브([승인1/2/3]→_queue PENDING 배 read-before-write ship_no=max+1 등록, [보류]→held 무파괴, 폐루프 northstar_log.jsonl). 웹 표 northstar_today.html 발행. ★검증서 발견=3일간 GM 승인·보류 회신 0건, 매일 자동만료만 반복(polyloop 사람고리 미참여) — 엔진 완비, 잔여=GM 카드 실수신·참여 확인 + stage4 기여추적(승인배 완료→KPI진척 측정).",
-    "next": "🔗 stage2 라이브 완료. 잔여: ①GM 06:30 카드 실수신 확인(3일 sent:true인데 회신0 — 도달 여부 점검) ②오늘(07-02) 후보 cfo/cpo/cmo 아직 proposed=GM 승인 가능 ③stage4 기여추적(승인배 완료→KPI진척 정성 환류).",
+    "next": "재설계=배420(모듈그룹핑·탭승인·중요건필터)으로 이어짐. stage4 기여추적은 420에 통합 검토",
     "depends_on": "",
     "ship_no": 213,
-    "module": "T2"
+    "module": "T2",
+    "processed_at": "2026-07-07",
+    "artifact": "https://wellperion-cao.github.io/wellperion-automation/northstar_today.html"
   },
   {
     "task_id": "CEO-2026-07-02-GM-AIDE-AUTONOMY",
@@ -211,14 +213,16 @@
     "task_id": "CTO-2026-07-02-KPI-PIPELINE-REPAIR-COO-CHECK",
     "clevel": "cto",
     "title": "[시토] KPI 측정 배관 수리 #1 — 시우 점검 완료율 collector null 수리(값이 안 읽힘, 배관 있음). 개통 시 첫 신뢰 카드 사례",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-02",
     "ship_no": 239,
     "note": "[2026-07-02 스펙 .omc/specs/deep-interview-gm-northstar-kpi-autonomy.md] 헌법 북극성·KPI 지도 정직 정식화(배236 ②③)의 후속 = 실제 측정 배관 수리. 웰리 순차 위임 #1(가장 쉬운 첫 성공사례): 시우(COO) 일일 점검 완료율 — 배관은 있는데 값만 null(kpi_collector.py가 지원부_점검완료율·4부서_점검완료율을 못 읽음, kpi_values.json coo 전부 null·_note='rows 없음(점검 미시작 또는 GAS 오류)'). 수리만 하면 즉시 실측 → 헌법 🗺️북극성 지도(coo.nsmap value_key=지원부_점검완료율)가 정직 텍스트에서 라이브 %로 자동 점등 = 7역할 중 첫 '측정 개통' 신뢰 사례. 기술 배관=시토, 지표 의미=시우. 경계: 매출 GAS 배선(시뽀)·시모 전환율 bio는 별도 후속 배(순차).\n[2026-07-03 시우 실측 핸드오프] collector null의 상류 원인 발견: 라이브 today_live(action=today_live&dept=support)가 오늘(2026-07-03 금 dow=5) 분모(amTotal/pmTotal/closeTotal) 전부 0 반환. 인접 평일(목 25/14/13·화 정상) 정상 → 배포낡음 아닌 금요일/오늘 특정 경로. 로컬 소스(.deploy-check/지원팀 일일점검.js)는 금요일 처리 정상으로 보임(_TL_DOW_TOKEN[5]=fri·공용 빈sched는 항상통과)이라 공용까지 0인 게 sched만으론 설명불가 → week계산 예외/_buildTodayMaster 빈마스터/배포코드 diff 의심. 진단 리드·요일 스윕 제안=status/briefs/COO-2026-07-03-TODAYLIVE-FRIDAY-ZERO-HANDOFF.md. 기술배관=시토, 지표의미·검수=시우. 라이브 GAS 배포=GM go+역롤백.\n[2026-07-04 시우 라이브 실측 추가발견] 자율현황 시우섹션 완료율 표시 검증 중 GAS 완료율 소스 불일치 재확인: 같은 날(7/4 토)을 today_live=25/105(24%), monthly_report=25/25(100%)로 **분모가 소스별 제각각**(배14가 잡으려던 문제 잔존). 추가로 ①주말인데 today_live가 오후조(pm) 슬롯 포함(m pmTotal14·f pmTotal15) → 주말 분모 부풀림(정상=오전+마감=76, 배173 주말 회차버그) ②top-level avgPct/issueCount 응답 불안정(파싱 시 null 관측). ⇒ 완료율(%)은 아직 신뢰 불가. 자율현황 표시는 정직 대체(완료율=잠정·이슈는 dailySeries 합산=33 신뢰) 라이브 처리(baf82a76). 백엔드 근본수리 필요: today_live 주말 pm 제외·today_live↔monthly_report 분모 단일화·avgPct 안정화.\n[2026-07-04 시우 라이브 배포·검증 완료·GM go] 완료율 분모 정합 라이브 발효(clasp @140): ①today_live 주말 오후조 제외(7/4 105→76) ②today_live↔monthly 분모 _scheduleExpectedTotal 단일화(7/4 24%vs100% 모순→둘다33%) ③monthTotals.avgPct/issueCount 안정(74%·33건). 라이브 실측 검증: 주말 76 정상·소스 정합·시설부406 신규형식 동시 발효. 평일 완료율 하락(7/2 91→80·7/3 89→78)=이전 과소분모(95)→정집계(108) 정직 보정(버그 아님). 자율현황 완료율 잠정→실측 점등(오늘33%·이번달74%). 역롤백=clasp deploy -i ...RQiX0IpekBu1 -V 139. 잔여=분모 정의(전체 스케줄 기대치가 옳은지) 근본 재검은 후속·시토 배관 성능검토.\n[2026-07-04 완료율 방식 재검(analyst)] ✅핵심 숫자는 today_live 단일소스로 정합(monthly·화면헤드라인·kpi_collector·독려 모두 today_live 기준). get_today_summary=폐기(호출부0). ⚠️잔여 2곳=today_live 응답의 raw pmTotal 버킷을 직접 읽어 주말 어긋남: ①독려 pm 빌더(daily_scheduler 2004)=없는 주말 오후조 미완 독려 위험 ②화면 교대별 통계표(지원부체계.html 4768)=주말 오후행 표시. 헤드라인%는 무영향, 주말 국소 불일치. 💡근본해결=시트에서 주말 pm 항목 sched 정리→_tlPassesSched가 자연히 걸러 isWeekend 하드코딩+raw오염 동시 제거. 분모 정의(전체 스케줄 기대치)=현행 유지 권고. isWeekend 하드코딩보다 시트 sched가 조 배정을 결정하게 하는 게 정석(평일 축소·주말 특별운영 예외 대비).\n[2026-07-04 시우 시트 정리·GM go] 주말 오후조 원천 정리 완료(GM 확정=주말엔 오후조 없음). 지원부 점검항목 실측: 주말(sat/sun) sched+오후조(pm1) 항목 3개(a4 쑥교체 sat|2,4·e1 주차장 sun|2·e2 분수대 sun|2)를 마감조(close1)로 이동(saveItems ok·49항목 무손실·백업 tmp/items_backup_20260704.json). 검증=남은 주말 오후조 0·today_live 7/4 회귀0(76). ⇒ 데이터 클린. isWeekend 하드코딩은 이제 확정 규칙(오후조=주말 미운영)의 정당한 구현이라 유지. 잔여(코드·last-mile)=today_live 응답의 raw pmTotal 버킷이 주말에도 일상항목(a1 등 매일 오후조) pm을 남겨 독려 pm빌더(scheduler 2004)·화면 교대표(지원부체계 4768)에 주말 오후 표시/독려 누수 가능 → 주말 raw pm 버킷 0 처리 코드 1곳 필요(선택·별도 배포).\n[2026-07-04 시우 last-mile 완료·라이브] 주말 raw pm 누수 봉합: today_live genderSummary+최상위 pm/pmTotal 버킷을 주말 0 반환(clasp @141). 검증=7/4(토) pm/pmTotal 0·총계 76 유지, 7/3(금) pmTotal 29 무영향. ⇒ 독려 pm빌더·화면 교대표가 더는 없는 주말 오후조 표시/독려 안 함. 완료율 측정 개통 체인 완결(데이터 정합+시트 클린+코드 누수봉합).",
-    "next": "🏁 완료율 측정 개통·정합 완결(데이터·시트·코드 3층 모두 클린). 배239 핵심 달성. 후속(선택): 마감조로 옮긴 3항목(쑥교체·주차장·분수대) 조 적정성 GM 확인 / 4부서 전체 완료율(현재 지원부만)은 별건.",
+    "next": "4부서 전체 완료율 확장은 별건. 마감조로 옮긴 3항목 조 적정성 GM 확인(선택)",
     "depends_on": "",
-    "module": "T2"
+    "module": "T2",
+    "processed_at": "2026-07-07",
+    "artifact": "https://wellperion-cao.github.io/wellperion-automation/자율현황.html"
   },
   {
     "task_id": "CTO-2026-07-02-SKILL-MASTERY-LEARNING",
@@ -259,19 +263,6 @@
     "ship_no": 339,
     "note": "[2026-07-03 GM top3-2] 자율현황(오늘 top3 병합 완료분)과 T2 시스템현황 페이지 관계 정리·중복/역할 정합.",
     "next": "T2↔자율현황 역할·링크 정리, 중복 제거",
-    "module": "T2"
-  },
-  {
-    "task_id": "CTO-2026-07-03-SALES-EXPENSE-LIVE-WIRING",
-    "clevel": "cto",
-    "title": "[시토] 월간계획 부서별 매출&지출 라이브 배관 — cao GAS 리더(월별 매출보고 시트)+목표 대비 실적",
-    "status": "DONE",
-    "priority": "여객선",
-    "enqueued_at": "2026-07-03",
-    "ship_no": 354,
-    "note": "[2026-07-07 시토 완결·라이브검증까지 완료] 근본원인 확정: team_sales GAS가 '말일 숫자' 탭(예 6월='30')의 O8:T74를 읽었는데 그 탭은 일별 개별거래 원장이라 팀합계가 아니었음(6월 뮤지컬 38만 오독 vs 실측 377만). 정본=모든 월별 파일 공통 '31'이름 요약탭 U:Y열 — 1~6월 실측 검증 완료. GM clasp 재인증 후 .deploy-todo 배포(@106→@107) 완료. 배포 직후 라이브검증에서 2차 결함 발견·즉시 수정: team_sales_h1이 파일 6개 순차 openById로 실측 19.5~22초 걸려 클라 타임아웃(15초)을 넘겨 두 페이지 다 '—'로 폴백 → GAS CacheService 10분 캐시(콜드 21.9초→캐시 1.3초) + 클라 타임아웃 30초로 재수정·재배포(@107)·재검증. Playwright로 두 라이브 페이지(월간운영계획·상반기전사회의) 강습팀표가 실제 숫자로 렌더됨을 스크린샷·텍스트 추출로 확정(수영 1분기 2.97억·2분기 3.31억 등 8개 팀 전부 정상).",
-    "next": "웰리: 상반기전사회의.html에 결재란 추가 후 인쇄 진행(수치 재검증 불요·본 배에서 확정).",
-    "depends_on": "",
     "module": "T2"
   },
   {
@@ -1931,5 +1922,41 @@
     "artifact": "fix(운영부체계): 이달 부서 현황 스크립트 분리 — 기존 SHIFT_SEED TDZ 오류 격리 (CLI ad-hoc · 커밋 742aafa4)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "742aafa49fb5318dad0ec029ba057447163ce993"
+  },
+  {
+    "task_id": "NEXT-20260707-155721",
+    "clevel": "cto",
+    "title": "재설계=배420(모듈그룹핑·탭승인·중요건필터)으로 이어짐. stage4 기여추적은 420에 통합 검토",
+    "status": "PENDING",
+    "depends_on": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
+    "from": "cto",
+    "origin": "bridge",
+    "enqueued_at": "2026-07-07T06:57:21Z",
+    "ship_no": 597
+  },
+  {
+    "task_id": "NEXT-20260707-155730",
+    "clevel": "cto",
+    "title": "4부서 전체 완료율 확장은 별건. 마감조로 옮긴 3항목 조 적정성 GM 확인(선택)",
+    "status": "PENDING",
+    "depends_on": "CTO-2026-07-02-KPI-PIPELINE-REPAIR-COO-CHECK",
+    "from": "cto",
+    "origin": "bridge",
+    "enqueued_at": "2026-07-07T06:57:30Z",
+    "ship_no": 598
+  },
+  {
+    "task_id": "CPO-2026-07-07-ADHOC-966b36ea",
+    "clevel": "cpo",
+    "title": "[시포] 회원관리 카드에 단기권(중단기) 인원수 추가 [시포]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-07",
+    "processed_at": "2026-07-07",
+    "ship_no": 598,
+    "artifact": "- 유효회원 카드에 '단기권 N명' 줄 추가(회원구분 '중단기' 집계·valid 스코프)\n- init에서 유효회원 목록 사전로드로 pane 미개방에도 카운트 표시(검색 데이터도 프리워밍)\n- 법인은 기존 별도 숫자 유지, GAS 무변경 (CLI ad-hoc · 커밋 966b36ea)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "966b36ea76bedd602fba4b1f7f73c601b4b21a1a"
   }
 ]
