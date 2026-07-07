@@ -902,6 +902,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
   <button class="tab" onclick="switchTab('monthly')">📊 월간보고</button>
+  <button class="tab" onclick="switchTab('mplan')">📅 월간 보고</button>
   <!-- 구 '📅 월간 보고 ▾' 드롭다운(2026-06 고정 A3 인쇄) 삭제 — 월간보고 탭 안 '🖨 A3 인쇄' 버튼(선택월 동적)과 중복. 2026-07-06 시우·GM -->
   <div style="display:flex;gap:4px;margin-left:auto;align-items:center;">
     <!-- 인쇄 버튼 통합 드롭다운 (월간 보고와 동일 패턴 · 버튼 난립 해소 2026-07-02 시우, GM) -->
@@ -1689,6 +1690,25 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <div class="dash-section-title">개선 시사점</div>
   <div id="mrImprovements"></div>
+</div>
+
+<!-- ══ 월간 보고 탭 — monthly_ops_plan.json 지원부 핵심과제 읽기전용 렌더 (파일럿·부서명 상수만 바꾸면 4부서 확장) ══ -->
+<div id="tab-mplan" class="content hidden">
+  <div id="mpStatus" style="color:var(--dim);font-size:13px;padding:20px 0;text-align:center;">불러오는 중...</div>
+  <div id="mpHeader" style="display:none;margin-bottom:16px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:18px;font-weight:700;" id="mpMonthLabel"></span>
+          <span id="mpStatusBadge"></span>
+        </div>
+        <div style="font-size:13px;color:var(--dim);margin-top:4px;" id="mpTheme"></div>
+      </div>
+      <a href="/wellperion-automation/월간운영계획.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;">▸ 전체 월간운영계획 보기</a>
+    </div>
+  </div>
+  <div id="mpCards"></div>
+  <div style="font-size:11px;color:var(--dim);margin-top:20px;padding-top:12px;border-top:1px solid var(--border);">정본 = 월간운영계획 · 이 화면은 자동 반영(읽기 전용)</div>
 </div>
 
 <script>
@@ -5268,6 +5288,7 @@ function switchTab(tab, opts){
   document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
   document.getElementById('tab-supply').classList.toggle('hidden',tab!=='supply');
   document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
+  document.getElementById('tab-mplan').classList.toggle('hidden',tab!=='mplan');
   if(tab==='supply'){ if(typeof loadSupplyFromBackend==='function') loadSupplyFromBackend(); }
   if(tab==='guide'){ if(typeof loadCsFromBackend==='function') loadCsFromBackend(); }
   // Show correct submit bar
@@ -5278,6 +5299,7 @@ function switchTab(tab, opts){
   if(tab==='admin'){renderAdmin();renderAdminExtra();}
   if(tab==='manual'){renderBoard();renderManualItems();}
   if(tab==='monthly'){ if(typeof mrEnsureMonthInput==='function') mrEnsureMonthInput(); if(typeof loadMonthlyReport==='function') loadMonthlyReport(); }
+  if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
 }
 // 해시 딥링크(예 …#supply) → 로드 시 해당 탭 자동 열기. 잠금 탭(점검 남/여)은 제외(PIN 우회 방지).
 window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h && h!=='check-m' && h!=='check-f' && document.getElementById('tab-'+h)) switchTab(h); }catch(e){} });
@@ -8122,6 +8144,85 @@ function printA3Onboarding(){
   window.print();
   document.body.classList.remove('a3-onboarding-mode');
   oStyleTag.textContent='';
+}
+
+/* ═══════════════════════════════════════════
+   월간 보고 탭 — monthly_ops_plan.json 지원부 핵심과제 읽기전용 렌더
+   SSOT = 월간운영계획(status/monthly_ops_plan.json). 다른 3부서(운영부·시설부·주차관리부)
+   페이지엔 MP_DEPT 상수만 바꿔 이 블록 그대로 복붙하면 됨.
+   ═══════════════════════════════════════════ */
+var MP_DEPT = '지원부';
+var PLAN_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_ops_plan.json';
+var MP_LOADED = false;
+var MP_STATUS_STYLE = {
+  '계획': {color:'var(--dim)', bg:'rgba(140,139,131,0.14)'},
+  '진행': {color:'var(--blue)', bg:'var(--blue-bg)'},
+  '완료': {color:'var(--green)', bg:'var(--green-bg)'},
+  '이월': {color:'var(--yellow)', bg:'var(--yellow-bg)'}
+};
+function mpEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function mpMonthLabel(key){
+  var m=String(key||'').match(/^(\d{4})-(\d{2})$/);
+  if(!m) return key||'';
+  return m[1]+'년 '+parseInt(m[2],10)+'월';
+}
+function mpCurrentMonthKey(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function mpStatusBadgeHtml(status){
+  var st=MP_STATUS_STYLE[status]||MP_STATUS_STYLE['계획'];
+  return '<span style="display:inline-block;font-size:11px;font-weight:700;color:'+st.color+';background:'+st.bg+';border-radius:10px;padding:3px 10px;">'+mpEsc(status||'계획')+'</span>';
+}
+function mpObjectiveCard(o){
+  var pct=Math.max(0,Math.min(100,Number(o.progress)||0));
+  var st=MP_STATUS_STYLE[o.status]||MP_STATUS_STYLE['계획'];
+  var html='<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;">';
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">';
+  html+='<div style="font-weight:700;font-size:14px;">'+mpEsc(o.title)+'</div>';
+  html+=mpStatusBadgeHtml(o.status);
+  html+='</div>';
+  html+='<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%;background:'+st.color+';"></div></div>';
+  html+='<div style="font-size:12px;color:var(--dim);margin-top:4px;">진척 '+pct+'%</div>';
+  if(o.target) html+='<div style="font-size:12px;color:var(--dim);margin-top:6px;">목표: '+mpEsc(o.target)+'</div>';
+  if(o.progress_note) html+='<div style="font-size:12px;color:var(--dim);margin-top:2px;">'+mpEsc(o.progress_note)+'</div>';
+  html+='</div>';
+  return html;
+}
+function mpRender(monthKey, monthData){
+  var statusEl=document.getElementById('mpStatus');
+  var headerEl=document.getElementById('mpHeader');
+  var cardsEl=document.getElementById('mpCards');
+  if(statusEl) statusEl.style.display='none';
+  if(headerEl) headerEl.style.display='block';
+  document.getElementById('mpMonthLabel').textContent=mpMonthLabel(monthKey);
+  var theme=(monthData.report&&monthData.report.theme)||monthData.theme||'';
+  document.getElementById('mpTheme').textContent=theme;
+  var badgeEl=document.getElementById('mpStatusBadge');
+  if(badgeEl) badgeEl.innerHTML=monthData.month_status?mpStatusBadgeHtml(monthData.month_status):'';
+  var objectives=(monthData.objectives||[]).filter(function(o){ return (o.dept||'').indexOf(MP_DEPT)>=0; });
+  if(!objectives.length){
+    cardsEl.innerHTML='<div style="color:var(--dim);font-size:13px;padding:12px 0;">이번 달 지원부 핵심과제가 없습니다.</div>';
+    return;
+  }
+  cardsEl.innerHTML=objectives.map(mpObjectiveCard).join('');
+}
+async function loadMonthlyPlanTab(){
+  if(MP_LOADED) return;
+  var statusEl=document.getElementById('mpStatus');
+  try{
+    var r=await fetch(PLAN_URL,{cache:'no-store'});
+    var j=await r.json();
+    var months=j&&j.months;
+    if(!months) throw new Error('no months');
+    var curKey=mpCurrentMonthKey();
+    var keys=Object.keys(months).sort();
+    var key=months[curKey]?curKey:keys[keys.length-1];
+    MP_LOADED=true;
+    mpRender(key, months[key]);
+  }catch(e){
+    if(statusEl){ statusEl.style.display='block'; statusEl.textContent='월간 계획을 불러오지 못했습니다 — 새로고침'; statusEl.style.color='var(--red)'; }
+  }
 }
 </script>
 
