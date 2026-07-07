@@ -1143,27 +1143,31 @@
     "task_id": "CPO-2026-07-07-FUNNEL-CARD-VISUAL",
     "clevel": "cpo",
     "title": "[시포] 멤버십·강습 퍼널 카드 가로 바 시각화 — 숫자표→퍼널 바(잔존율 색등급+병목 뱃지)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-07",
     "ship_no": 546,
     "note": "[2026-07-07 GM go·추천진행] loadStageFunnel 4열 숫자표를 가로 퍼널 바로 격상. 막대너비=단계건수/①문의, 색등급 청록(잔존≥80%)/앰버(50~80%)/빨강(<50%)+잔존% 텍스트 병기(색만 의존X), 최대낙폭=병목 뱃지, 멤버십·강습 2섹션 구분. 계산·데이터 로직 원본 보존·순수 시각 레이어. node 문법검사 0에러·검수 통과. 프론트(Pages)라 GAS 무변경.",
-    "next": "라이브 렌더 검증(Pages 시크릿) 후 입항.",
+    "next": "🏁 입항 완료 — 라이브 렌더 검증(Pages 시크릿, funnel-bar-fill 마커 확인). 후속(선택): kpi_collector stage_funnel 수집 or 채널별 단계잔류.",
     "depends_on": "",
-    "module": "M2"
+    "module": "M2",
+    "terminal": true,
+    "processed_at": "2026-07-07"
   },
   {
     "task_id": "CPO-2026-07-07-STATUS-NUDGE-UX",
     "clevel": "cpo",
     "title": "[시포] 진행상태 미입력 독려 UX — 문의→응대 대낙폭(진행상태 미기록) 개선",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-07",
     "ship_no": 547,
     "note": "[2026-07-07 GM go·추천진행] 문의→응대 대낙폭 원인=신규문의 진행상태 미기록 방치. 빈값/'미정' 행 select·칩에 앰버 강조+'미입력' 표식, 목록별 '진행상태 미입력 N건—채워주시면 퍼널 정확' 요약 배지(N=0 숨김). 순수 프론트(백엔드 호출 추가 0). select onchange만 사용·DOM 재생성 없이 토글(IME 안전). keyPhone 행키·저장 payload 보존.",
-    "next": "라이브 렌더 검증(Pages 시크릿) 후 입항.",
+    "next": "🏁 입항 완료 — 라이브 검증(unfilled-summary-badge 마커 확인). 후속(선택): 신규문의 유입 시 진행상태 자동알림에 미입력 리마인드 편입.",
     "depends_on": "",
-    "module": "M2"
+    "module": "M2",
+    "terminal": true,
+    "processed_at": "2026-07-07"
   },
   {
     "task_id": "CTO-2026-07-07-ADHOC-c5ff8ca5",
