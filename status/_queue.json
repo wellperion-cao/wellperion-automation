@@ -1231,8 +1231,8 @@
     "status": "IN_PROGRESS",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-07",
-    "note": "[2026-07-07 마케팅 자동화 진단 갭①] 현재 '클릭 이후'만 측정, 노출·도달(분모)=0이라 진짜 ROI(콘텐츠가 몇 명에게 닿아 몇 명이 눌렀나)를 정직하게 계산 불가. IG Graph API 도달 데이터 토큰=GM 결재 사항(💰/공식 계정 권한). 준비=수집 배관 설계+토큰 발급 절차·비용 정리(결재 전 코드 0). 결재 후=도달 집계→대시보드 ROI 카드(노출→클릭→문의 전 구간). 정직: 개인 namuk 도달은 별개(ship31 정성). | [2026-07-07 결재안건 스코핑] ★비용 정정: IG Graph API reach/impressions=무료(과금 없음·레이트리밋만 사실상 무제한). 기존 '💰유료' 표기 부정확→정정. 자기계정 전용이라 Meta 앱검수(App Review) 불필요, FB 페이지 연결도 불필요(2024 IG Login 경로·FACEBOOK_ENABLED=OFF와 무관). GM 액션 2건뿐: ①@wellperion 프로페셔널 계정 확인/전환(무료·2분·코드상 미확인·namuk은 프로 확인됨) ②Meta 앱 생성 후 1회 OAuth 로그인 동의(결제·PII 없음·읽기권한). 나머지(앱생성·장기토큰 60일 자동갱신·수집스크립트 engagement_collector 패턴 재사용·대시보드 배선)=시토/시모 자율. 얻는것=계정/게시물별 도달·노출→마케팅현황대시보드 채널퍼널 인스타 행 노출칸 추가로 노출→클릭→문의 ROI 완성(소급=프로전환 이후만). 세션 스크레이핑=도달은 비공개 인사이트라 비추천. 권고=무료+저공수, 진행. | [2026-07-07 GM go] 진행 승인(무료 확인). 자율 준비 착수=셋업 절차서+수집 스크립트 골격+계정확인법(토큰 없이 가능분). GM 1회 로그인(배치 인증)으로 완결. 토큰 60일 자동갱신 스케줄=시토 인프라 협업.",
-    "next": "GM 결재 대기: 무료 확인됨(유료 아님). GM go 시 → 시토/시모가 Meta 앱 생성+수집스크립트+대시보드 배선, GM은 계정유형 확인 1건+1회 로그인 동의만(배치 인증창).",
+    "note": "[2026-07-07 마케팅 자동화 진단 갭①] 현재 '클릭 이후'만 측정, 노출·도달(분모)=0이라 진짜 ROI(콘텐츠가 몇 명에게 닿아 몇 명이 눌렀나)를 정직하게 계산 불가. IG Graph API 도달 데이터 토큰=GM 결재 사항(💰/공식 계정 권한). 준비=수집 배관 설계+토큰 발급 절차·비용 정리(결재 전 코드 0). 결재 후=도달 집계→대시보드 ROI 카드(노출→클릭→문의 전 구간). 정직: 개인 namuk 도달은 별개(ship31 정성). | [2026-07-07 결재안건 스코핑] ★비용 정정: IG Graph API reach/impressions=무료(과금 없음·레이트리밋만 사실상 무제한). 기존 '💰유료' 표기 부정확→정정. 자기계정 전용이라 Meta 앱검수(App Review) 불필요, FB 페이지 연결도 불필요(2024 IG Login 경로·FACEBOOK_ENABLED=OFF와 무관). GM 액션 2건뿐: ①@wellperion 프로페셔널 계정 확인/전환(무료·2분·코드상 미확인·namuk은 프로 확인됨) ②Meta 앱 생성 후 1회 OAuth 로그인 동의(결제·PII 없음·읽기권한). 나머지(앱생성·장기토큰 60일 자동갱신·수집스크립트 engagement_collector 패턴 재사용·대시보드 배선)=시토/시모 자율. 얻는것=계정/게시물별 도달·노출→마케팅현황대시보드 채널퍼널 인스타 행 노출칸 추가로 노출→클릭→문의 ROI 완성(소급=프로전환 이후만). 세션 스크레이핑=도달은 비공개 인사이트라 비추천. 권고=무료+저공수, 진행. | [2026-07-07 GM go] 진행 승인(무료 확인). 자율 준비 착수=셋업 절차서+수집 스크립트 골격+계정확인법(토큰 없이 가능분). GM 1회 로그인(배치 인증)으로 완결. 토큰 60일 자동갱신 스케줄=시토 인프라 협업. | [2026-07-07 자율 준비 완료] 셋업 절차서(status/briefs/CMO-2026-07-07-IMPRESSION-SETUP-RUNBOOK.md)+수집기 골격(scripts/ig_reach_collector.py·문법OK·토큰없으면 BLOCKED 부작용0) 작성. 실측: .env에 META_APP_ID/SECRET/LONG_LIVED_TOKEN 잔재 있으나 읽는 코드 0건(과거 미완성·유효성 미검증→재사용 금지, 신규 IG_ACCESS_TOKEN/IG_BUSINESS_ID 제안). 기존 IG 자동화=세션 스크레이핑이라 도달 불가=546이 메우는 공백. 대시보드 배선지점=renderChannelClickInquiry 노출 미측정 각주(라인1304).",
+    "next": "GM 배치 인증 대기(~5분·다음 인증창): @wellperion 프로 계정 확인 + Meta OAuth 1회 동의. 그 후 시모=토큰교환·수집 라이브·대시보드 노출칸 배선 / 시토=60일 토큰 자동갱신 스케줄러 협업. ★기존 .env META_APP_ID 잔재 유효하면 앱생성 단축 가능(로그인 시 확인).",
     "depends_on": "@wellperion 프로페셔널 계정 확인 + Meta 앱 1회 OAuth 로그인 동의(무료·저공수)",
     "module": "M2",
     "ship_no": 546
@@ -1535,5 +1535,19 @@
     "artifact": "옛 셀프 VOC 폼 방치분 3건(현재 6종 체계 미참조)을 GM 결정으로 시트째 삭제. 삭제 전 status/briefs/회원셀프VOC_backup_20260707.json 스냅샷 보존. (CLI ad-hoc · 커밋 a7156202)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a715620284db47c1b19070f902659749cbf80c68"
+  },
+  {
+    "task_id": "CEO-2026-07-07-ADHOC-4ee5bf3e",
+    "clevel": "ceo",
+    "title": "[웰리] 회사 비전·전사 북극성 정본 문구 변경(반복 자동화·본질 집중) [웰리]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-07",
+    "processed_at": "2026-07-07",
+    "ship_no": 571,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01FEFiW1A1WuQz2Bhx6L2Foj (CLI ad-hoc · 커밋 4ee5bf3e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4ee5bf3e39c2c7ac44e3a907c5e255d596148456"
   }
 ]
