@@ -296,21 +296,21 @@
            project_northstar_g1_orchestration_erp — 둘 다 라이브 JSON 아님(정적 문서) → 하드코딩 유지, 출처만 주석 명시(약속 L01). -->
       <div class="vision-txt"><b>ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자</b> — <span id="vision-scale">3,000평</span> 종합 스포츠클럽 ERP · 미션: 지속되지 않는 건강 문제를 해결한다.</div>
       <div class="vision-ceo-ns" id="vision-ceo-ns"><!-- JS: AI CEO 북극성(coo/bootsetup_matrix.json ceo.dims[0] 직독·이미 fetch하는 _matrixData 재사용, 신규 fetch 없음) --></div>
-      <div class="vision-note" title="GM = G1(오케스트레이션)만 · 실무 북극성은 아래 7역할이 나눠 진다. 개인 삶 북극성은 헌법에서 제외(헌법 = 회사 운영용). 🔖 초안 3역할(시포·시뽀·시로) 북극성 = 제안본(GM 결재 대기 · KPI 정의 변경 게이트).">GM=G1(오케스트레이션)만 · 북극성은 7역할 분담(개인 삶 제외). 🔖 시포·시뽀·시로=제안본(결재 대기)</div>
-      <div class="vision-note" title="🔍 자율 개선 규모 게이트(차등 점검): 안정 페이지(대장 등록)는 자율 점검서 제외 — 신규/변경분만 대상. 좁혀진 대상은 1~2척·Sonnet 선훑기, 딥 전수는 신규 페이지에만. 정본 = status/audit_registry.json + scripts/audit_scope.py(대장·git 대조 자동 산출).">🔍 차등 점검: 안정 페이지 제외·신규/변경분만(1~2척 Sonnet 선훑기, 딥전수=신규만). 정본 <code>status/audit_registry.json</code>+<code>audit_scope.py</code></div>
+      <div class="vision-note" title="GM = G1(오케스트레이션)만 · 실무 북극성은 아래 7역할이 나눠 진다. 개인 삶 북극성은 헌법에서 제외(헌법 = 회사 운영용). 🔖 초안 3역할(시포·시뽀·시로) 북극성 = 제안본(GM 결재 대기 · KPI 정의 변경 게이트).">GM=G1(오케스트레이션)만 · 북극성은 7역할 분담(개인 삶 제외)</div>
+      <!-- 🔍 차등 점검(비전 배너에서 제거 · 2026-07-07 GM승인): 자율 개선 규모 게이트 — 안정 페이지(대장 등록)는 자율 점검서 제외, 신규/변경분만 대상. 좁혀진 대상은 1~2척·Sonnet 선훑기, 딥 전수는 신규 페이지에만. 정본 = status/audit_registry.json + scripts/audit_scope.py(대장·git 대조 자동 산출). -->
     </div>
   </div>
 
   <!-- ════ 🗺️🎛️ 북극성 지도 · 살아있는 지휘판 한눈에(측정 개통분만) — 2026-07-03 ════ -->
   <h2 class="sec">🗺️ 북극성 지도 · 살아있는 지휘판</h2>
-  <div class="sec-note">7역할 KPI→북극성 경로 한눈에(골드=도달율·회색=처리율). 측정 개통분만 실값, 미측정은 정직 표기. <strong>A3 인쇄 주인공 = 아래 카드.</strong></div>
+  <div class="sec-note">7역할 KPI→북극성 경로 한눈에. 측정 개통분만 실값, 미측정은 정직 표기.</div>
   <div class="ns-legend" id="ns-legend"><!-- JS: 정직 상태 3종 범례 + 실측 집계 --></div>
   <div class="ns-overview" id="ns-overview"><div class="matrix-status">지휘판 데이터를 불러오는 중…</div></div>
 
   <!-- ════ A. 8주체 × 3칸 매트릭스 (편집형 · 2026-06-29 · 인쇄 시 상세참조=2페이지) ════ -->
   <div id="matrix-section">
   <h2 class="sec">🧭 8주체 × 3칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
-  <div class="sec-note" title="재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독.">핵심 3칸만(나머지 4차원=S2 본인탭). 📊KPI·🛡️재발방지=직독 정본(읽기전용) · 🌟도달율=위 지휘판 카드가 단일 표시처</div>
+  <div class="sec-note" title="재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독.">핵심 3칸 요약 (상세 4차원은 S2 본인탭)</div>
   <div class="mx-controls" id="mx-controls"><!-- JS: 역할·칸 필터 + 폴침 --></div>
   <div class="matrix-scroll">
     <table class="matrix">
@@ -499,7 +499,7 @@
   // 📊 KPI 블록 — 정본=ssot/kpi.json 직독(읽기전용 · 복사발산 차단). 편집 모드와 무관하게 항상 읽기전용.
   //   kpi.json roles[id].kpi_html = 렌더 셀(이미 HTML이므로 escape 금지). kpi.json에 없는 주체(GM)는 dims[3] 폴백.
   function kpiBlock(role){
-    var note = '<span style="font-size:9.5px;color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0;"> · 정본 ssot/kpi.json</span>';
+    var note = ''; // 2026-07-07 GM승인: '· 정본 ssot/kpi.json' 역할별 반복 안내 제거(출처는 위 sec-note title에 이미 명시)
     var lab = '<span class="dim-label">📊 KPI' + note + '</span>';
     var kd = (_kpiData && _kpiData[role.id]) || null;
     if(kd && kd.kpi_html){
@@ -559,7 +559,7 @@
   function nsMapBlock(role){
     var m = role.nsmap;
     if(!m) return '';
-    var prop = role.draft ? '<span class="nsmap-prop">제안본 · GM 결재 대기</span>' : '';
+    var prop = ''; // 2026-07-07 GM승인: '제안본·GM 결재 대기' 배지 제거 — role-cell의 🔖 초안 배지(rname 옆)로 단일화
     var out = '<div class="nsmap"><span class="nsmap-h">🗺️ 북극성 지도' + prop + '</span>';
     if(m.kpi) out += '<div class="nsmap-row"><span class="nsmap-k">복합 KPI</span> <b>' + esc(m.kpi) + '</b></div>';
     if(Array.isArray(m.axes) && m.axes.length){
@@ -738,8 +738,8 @@
       //   → 작업 처리율(보조·강등) → 📍진행현황 → 🌅오늘 추천.
       //   2026-07-04 중복 제거: 🌟북극성 도달율 큰 블록(골드바+정직배지)은 위 지휘판 요약 카드가 단일 표시처.
       //   여기선 참조 안내 한 줄만(요약 스트립과 중복 렌더 금지 · WYSIWYG 위계: 카드=주인공, 매트릭스=상세).
+      // 2026-07-07 GM승인: 8역할마다 반복되던 '🌟 북극성 도달율·정직 배지 = 위 지휘판 요약 카드 참고(중복 표시 안 함)' 안내 제거(주석으로 대체)
       var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + nsMapBlock(role) +
-               '<div class="nsreach-mini">🌟 북극성 도달율·정직 배지 = 위 지휘판 요약 카드 참고(중복 표시 안 함)</div>' +
                kpiBlock(role) + workRateBlock(role) + progressBlock(role) + recommendBlock(role) + '</td>';
       // 칸2 일하는 법 = 📚읽는 정본(2) + 🔧일 흐름(1)
       var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🔧 일 흐름') + '</td>';

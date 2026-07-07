@@ -2834,11 +2834,17 @@ function saveFacilityMeasure(body) {
   try {
     var totalCnt = rows.length;
     var inputRate = totalCnt ? Math.round(doneCnt / totalCnt * 100) : 0;
-    // 이상 정보 미수신 — 프론트(시설부 체계.html save_facility_measure 호출부)가 items에 이상 플래그를
-    // 전송하지 않음(측정값만 전송). 추후 프론트가 이상 플래그 전송 시 이 값을 배선(기준비교는 monthly
-    // report의 outOfRange 로직이 담당 — 여기서 신규 기준비교 로직 생성 금지).
-    var abnormalCount = '';
-    var abnormalNote = '';
+    // 이상 판정: 프론트는 측정값만 전송(이상 플래그 없음) — monthly report가 쓰는 기존 기준비교
+    // 함수 _facilityRangeHits(FC_MEASURE_RANGES 대조, 라인 ~3226)를 그대로 재사용해 동일 규칙으로
+    // 계산(신규 기준비교 로직 생성 금지 — 여기서 새로 만들면 monthly와 어긋날 수 있음).
+    var abnormalHits = [];
+    rows.forEach(function (r) {
+      _facilityRangeHits(r[12]).forEach(function (h) {
+        abnormalHits.push(r[2] + '(' + h.field + '):' + h.value);
+      });
+    });
+    var abnormalCount = abnormalHits.length;
+    var abnormalNote = abnormalHits.join(' / ');
     var fsheet = _initFacilitySnapshot();
     var snapRow = [now, date, 'facility', round, inspector, totalCnt, doneCnt, inputRate, abnormalCount, abnormalNote, '', '', ''];
     var fdata = fsheet.getDataRange().getValues();
