@@ -1210,5 +1210,44 @@
     "artifact": "라이브 렌더 검증 완료(Pages 3마커 확인) (CLI ad-hoc · 커밋 ce187854)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "ce1878549e2ec9c7040761774386705b764180c0"
+  },
+  {
+    "task_id": "CMO-2026-07-07-DASHBOARD-NORMALIZE",
+    "clevel": "cmo",
+    "title": "[시모] 마케팅 대시보드 정상화 — 실무진 눈높이 + 정확·신뢰 데이터 (M2·문의흐름·채널전환 감사·정직 정합)",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-07",
+    "note": "[2026-07-07 GM 미션 정의] 시모 역할 재확정=마케팅 자동화 + 대시보드(실무진이 이해 쉬운) 정상화 · 정확하고 신뢰할 수 있는 데이터. 이 배=미션 본진(상시 소유). 첫 착수=현 마케팅 대시보드 3종(M2 마케팅현황대시보드·문의흐름지도·채널별 클릭문의전환 뷰) 신뢰성·가독성 감사: ①데이터 정확성(분모 정합·소스 단일·집계 라이브 실측 검증) ②실무진 가독성(전문용어·게이트·해석 난이도 낮추기·한눈에) ③정직 꼬리표 일관성(측정/부분/미측정/표본부족). 사고이력=stage_funnel 분모폭증(reference_stage_funnel_source_composition_trap)·완료율 다중소스 불일치(reference_check_completion_rate_untrustworthy_multisource) → 신뢰=최우선, 정합 후 라이브.",
+    "next": "대시보드 3종 현 상태 감사(라이브 시크릿 실측)→부정확·난해 지점 목록화→정합·단순화(실무진 눈높이)→라이브 검증.",
+    "depends_on": "",
+    "module": "M2",
+    "ship_no": 545
+  },
+  {
+    "task_id": "CMO-2026-07-07-IMPRESSION-DENOMINATOR",
+    "clevel": "cmo",
+    "title": "[시모] 노출·도달 분모 측정 — IG 도달 데이터로 진짜 ROI(노출→클릭→문의) 완성 (GM 결재 대기)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-07",
+    "note": "[2026-07-07 마케팅 자동화 진단 갭①] 현재 '클릭 이후'만 측정, 노출·도달(분모)=0이라 진짜 ROI(콘텐츠가 몇 명에게 닿아 몇 명이 눌렀나)를 정직하게 계산 불가. IG Graph API 도달 데이터 토큰=GM 결재 사항(💰/공식 계정 권한). 준비=수집 배관 설계+토큰 발급 절차·비용 정리(결재 전 코드 0). 결재 후=도달 집계→대시보드 ROI 카드(노출→클릭→문의 전 구간). 정직: 개인 namuk 도달은 별개(ship31 정성).",
+    "next": "IG Graph API 토큰 발급 절차·비용·배관 설계 정리→GM 결재 요청→결재 시 도달 수집 배선+ROI 카드.",
+    "depends_on": "IG Graph API 도달 토큰 GM 결재",
+    "module": "M2",
+    "ship_no": 546
+  },
+  {
+    "task_id": "CMO-2026-07-07-NAVER-PLACE-VISIBILITY",
+    "clevel": "cmo",
+    "title": "[시모] 네이버 플레이스 유입 정직 가시화 — 최대 문의채널(UTM 밖)을 대시보드에 신뢰 표현 + 관리레버 진단",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-07",
+    "note": "[2026-07-07 마케팅 자동화 진단 갭②] 문의 최대 유입=네이버 플레이스(지도·검색·자기신고)인데 클릭링크 미경유라 UTM 측정 사각(reference_inquiry_traffic_naver_place_dominant ~82%). 자동 태깅 불가 → ①대시보드에 '플레이스=최대 채널·측정 밖' 정직 표현(현재는 클릭 있는 채널만 보여 최대 레버가 안 보임) ②플레이스 관리 지표(리뷰·순위·플레이스 유입수) 수집 가능성 진단 ③관리 레버=별도 전략(GM). 마케팅 병목 정본=feedback_marketing_conversion_bottleneck·project_inquiry_traffic_naver_place_dominant.",
+    "next": "플레이스 유입 규모 대시보드 정직 표현→플레이스 관리 지표 수집 가능성 진단→관리 전략 GM 제안.",
+    "depends_on": "",
+    "module": "M2",
+    "ship_no": 547
   }
 ]
