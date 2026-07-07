@@ -17,6 +17,9 @@
 #   python scripts/ig_reach_collector.py --dry-run    # 파일 저장 없이 결과만 출력
 #
 # 출력: status/ig_reach_ledger.json (account_reach_series + media_snapshots, 멱등 upsert)
+#       3. 웰페리온 가이드/cmo/funnel/ig_reach_summary.json (Pages 서빙 경로 요약 — 대시보드 fetch용, 배#546)
+#
+# 요약 JSON만 재생성(네트워크 호출 0회): python scripts/ig_reach_collector.py --summary-only
 
 import argparse
 import json
@@ -44,6 +47,11 @@ except ImportError:
 ROOT = Path(__file__).resolve().parent.parent
 ENV_PATH = ROOT / "scripts" / ".env"
 LEDGER_PATH = ROOT / "status" / "ig_reach_ledger.json"
+# Pages는 "3. 웰페리온 가이드/**"·"ssot/**"만 서빙(status/는 미서빙) → 대시보드가 fetch할 요약본을
+# Pages 서빙 경로에 별도 발행. 정본(SSOT)은 위 LEDGER_PATH — 이 파일은 파생 요약(재생성 가능).
+SUMMARY_PATH = ROOT / "3. 웰페리온 가이드" / "cmo" / "funnel" / "ig_reach_summary.json"
+ACCOUNT_RECENT_N = 14  # 대시보드에 넘기는 최근 계정 일별 도달 개수(전체 이력 아님)
+MEDIA_TOP_N = 5        # 게시물 도달 상위 N(최신 스냅샷 기준 reach 내림차순)
 
 KST = timezone(timedelta(hours=9))
 
@@ -71,6 +79,51 @@ def _load_ledger() -> dict:
 def _save_ledger(ledger: dict) -> None:
     LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
     LEDGER_PATH.write_text(json.dumps(ledger, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def build_summary(ledger: dict) -> dict:
+    """ledger(SSOT) → Pages 서빙용 요약. 정직 원칙: 계정 도달은 합산하지 않고 일별 그대로 넘긴다
+    (여러 날을 더하면 동일인 중복집계 — '고유 도달'이 아니게 됨). 게시물은 최신 스냅샷 reach 상위 N만."""
+    account_series = sorted(
+        (r for r in ledger.get("account_reach_series", []) if r.get("date")),
+        key=lambda r: r["date"],
+    )
+    account_recent = account_series[-ACCOUNT_RECENT_N:]
+    latest_account = account_recent[-1] if account_recent else None
+
+    media_latest = []
+    for m in ledger.get("media_snapshots", []):
+        snaps = [s for s in (m.get("snapshots") or []) if s.get("date")]
+        if not snaps:
+            continue
+        last = sorted(snaps, key=lambda s: s["date"])[-1]
+        media_latest.append({
+            "media_id": m.get("media_id"),
+            "permalink": m.get("permalink"),
+            "reach": last.get("reach"),
+            "impressions": last.get("impressions"),
+            "date": last.get("date"),
+        })
+    media_latest.sort(key=lambda x: (x.get("reach") or 0), reverse=True)
+
+    return {
+        "channel": "인스타그램",
+        "updated_at": now_kst(),
+        "latest_account_reach": latest_account,
+        "account_reach_recent": account_recent,
+        "media_reach_top": media_latest[:MEDIA_TOP_N],
+        "media_tracked_count": len(media_latest),
+        "note": (
+            "계정 도달=일별 스냅샷(기간 합산 시 동일인 중복 집계 — '고유 도달' 아님, 최근 값만 표시) · "
+            "게시물 도달=Graph API reach(고유 도달 근사) · impressions는 게시물 유형 제약으로 수집 제외"
+            "(2026-07-07 라이브 검증, reach만) · ig_reach_collector.py 자동 생성(배#546)"
+        ),
+    }
+
+
+def _save_summary(summary: dict) -> None:
+    SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SUMMARY_PATH.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _get_credentials():
@@ -178,13 +231,21 @@ def update_ledger(account_result: dict | None, media_results: list[dict], dry_ru
 def main() -> int:
     parser = argparse.ArgumentParser(description="@wellperion IG 노출·도달 수집기 (배#546, 미검증 골격)")
     parser.add_argument("--dry-run", action="store_true", help="파일 저장 없이 결과만 출력")
+    parser.add_argument("--summary-only", action="store_true", help="네트워크 호출 없이 기존 ledger로 요약 JSON만 재생성")
     args = parser.parse_args()
 
     print(f"=== IG 노출·도달 수집 [{now_kst()}] (배#546) ===")
 
+    if args.summary_only:
+        summary = build_summary(_load_ledger())
+        _save_summary(summary)
+        print(f"DONE: 네트워크 호출 없음 — 기존 ledger로 요약만 재생성 → {SUMMARY_PATH}")
+        return 0
+
     token, business_id = _get_credentials()
     if not token or not business_id:
-        print("BLOCKED: IG_ACCESS_TOKEN 또는 IG_BUSINESS_ID 미설정 — GM 배치 인증 세션 전. 부작용 없음, 종료.")
+        _save_summary(build_summary(_load_ledger()))
+        print("BLOCKED: IG_ACCESS_TOKEN 또는 IG_BUSINESS_ID 미설정 — GM 배치 인증 세션 전. 외부 API 호출 없음(기존 ledger로 요약만 갱신 후 종료).")
         return 0
 
     # 여기부터는 토큰 존재 시 실행되는 경로 — 배#546 준비 단계(현재 실행)에서는
@@ -209,8 +270,10 @@ def main() -> int:
     except Exception as e:
         print(f"BLOCKED: 게시물 목록 조회 실패 — {e}")
 
-    update_ledger(account_result, media_results, dry_run=args.dry_run)
-    print(f"DONE: 계정 도달 1건 + 게시물 {len(media_results)}건 수집 → {LEDGER_PATH}")
+    ledger = update_ledger(account_result, media_results, dry_run=args.dry_run)
+    if not args.dry_run:
+        _save_summary(build_summary(ledger))
+    print(f"DONE: 계정 도달 1건 + 게시물 {len(media_results)}건 수집 → {LEDGER_PATH} (요약 → {SUMMARY_PATH})")
     return 0
 
 
