@@ -15,12 +15,18 @@
    · 기조·포상·하반기 3축 = status/monthly_ops_plan.json half_year_review(SSOT).
   강습팀 실적은 1분기(1~3월)·2분기(4~6월) 분리 + 월평균(=분기실적÷3·상반기÷6, GM 지시 2026-07-07) 병기.
   미도래·미측정=정직 표기(지어내기 금지).
+
+  ── 기간 셀렉터(2026-07-07 추가) ──
+  상단에 24 상반기·24 하반기·25 상반기·25 하반기·26 상반기 버튼. 기본=26 상반기(위 라이브 그대로, 로직 무변경).
+  24/25 선택 시 = status/allhands_archive.json(원본 PPT 추출본 성실 이관, md 원본 대조)을 정적 렌더 —
+  라이브 GAS 호출 없음. 두 뷰(#live-view/#archive-view)는 display 토글만, 기존 라이브 스크립트는 그대로 상시 실행.
+  재현 불가/원본에 없는 섹션은 조용히 생략(지어내기 금지) — 회차별 실제 포함 범위는 코드 주석 대신 커밋 로그 참조.
 -->
 <style>
   :root{
     --bg:#141319; --paper:#1c1b23; --surface:#232230; --border:#33313f; --border-strong:#454356;
     --text:#f2f0f6; --text-soft:#cdcad8; --dim:#8f8ca0; --accent:#7c6cf0; --accent-soft:#a99cff;
-    --gold:#e6c074; --emerald:#63bba0;
+    --gold:#e6c074; --emerald:#63bba0; --pos:#63bba0; --neg:#e2836b;
   }
   *{box-sizing:border-box;}
   body{margin:0; background:var(--bg); color:var(--text); font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased;}
@@ -91,6 +97,32 @@
   .dir .d-t{font-size:15.5px; font-weight:800; display:block; margin:3px 0 4px;}
   .dir .d-d{font-size:13px; color:var(--text-soft); line-height:1.5;}
   .none{font-size:11.5px; color:var(--dim); padding:6px 2px;}
+
+  /* ── 기간 셀렉터 + 과거 회차 재현 뷰(2026-07-07) ── */
+  .period-bar{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 12px;}
+  .pbtn{font-size:12px; font-weight:700; padding:6px 15px; border-radius:20px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text-soft); cursor:pointer; font-family:inherit;}
+  .pbtn:hover{border-color:var(--accent); color:var(--text);}
+  .pbtn.on{background:var(--accent); color:#fff; border-color:var(--accent);}
+  @media print{ .period-bar{display:none;} }
+  .arc-note{font-size:11px; color:var(--dim); margin:-4px 0 12px;}
+  h2.sec .arc-badge{font-size:10px; font-weight:800; color:var(--dim); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:1px 9px;}
+  .arc-grid{display:grid; gap:8px; margin-bottom:13px;}
+  .arc-grid.g3{grid-template-columns:repeat(3,1fr);}
+  .arc-grid.g4{grid-template-columns:repeat(4,1fr);}
+  @media (max-width:820px){ .arc-grid.g3,.arc-grid.g4{grid-template-columns:1fr 1fr;} }
+  .arc-card{background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:12px; padding:10px 14px;}
+  .arc-card .a-n{font-size:10px; font-weight:800; color:var(--dim); letter-spacing:0.04em;}
+  .arc-card .a-t{font-size:14px; font-weight:800; display:block; margin:3px 0 5px;}
+  .arc-card ul{margin:0; padding-left:16px; font-size:12px; color:var(--text-soft); line-height:1.65;}
+  .arc-kw{background:linear-gradient(120deg,rgba(230,192,116,0.16),rgba(124,108,240,0.07)); border:1px solid var(--gold); border-radius:12px;
+    padding:11px 12px; font-size:13px; font-weight:800; text-align:center; color:var(--text); display:flex; align-items:center; justify-content:center; min-height:44px;}
+  .arc-quote{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 10px; font-size:14.5px; font-weight:800;
+    text-align:center; font-style:italic; color:var(--text-soft); display:flex; align-items:center; justify-content:center; min-height:56px;}
+  .pos{color:var(--pos); font-weight:700;}
+  .neg{color:var(--neg); font-weight:700;}
+  .arc-table-wrap{overflow-x:auto;}
+  .arc-yoy{font-size:10px; margin-top:1px; display:block;}
+  #archive-view{display:none;}
   .foot{margin-top:13px; font-size:10px; color:var(--dim); line-height:1.5;}
   @media (max-width:820px){ .cols{grid-template-columns:1fr;} .doc-head h1{font-size:22px;} .awards-row{flex-direction:column;} }
 
@@ -103,6 +135,7 @@
     :root{
       --bg:#fff; --paper:#fff; --surface:#f7f6fa; --border:#d8d5e0; --border-strong:#b8b4c6;
       --text:#1a1826; --text-soft:#33313f; --dim:#6c6a78; --accent:#6a5adf; --accent-soft:#5a49c9; --gold:#a9822e; --emerald:#2e6e5b;
+      --pos:#2e6e5b; --neg:#b23b2e;
     }
     /* GM 2026-07-07 재강조: "그냥 인쇄"해도 결재란·배경색이 반드시 보여야 함 —
        브라우저 인쇄 대화상자의 '배경 그래픽' 체크 여부와 무관하게 배경·테두리 색을 강제 출력. */
@@ -112,7 +145,7 @@
     .cols{gap:16px;}
     .approval-wrap{display:inline-block; box-shadow:none;}
     .doc-head{align-items:center;}
-    .card,.award,.best-card,.dir,.kicker,.approval-wrap{page-break-inside:avoid; break-inside:avoid;}
+    .card,.award,.best-card,.dir,.kicker,.approval-wrap,.arc-card,.arc-kw,.arc-quote{page-break-inside:avoid; break-inside:avoid;}
     .doc-head,.kicker,.cols{page-break-inside:avoid;}
   }
   /* A4 = A3 절반 면적(같은 1:1.414 비율) — 콘텐츠는 A3 1장 밀도로 고정, A4 선택 시에는
@@ -152,24 +185,32 @@
       </div>
     </div>
 
-    <div class="kicker" id="kicker"><span class="k-h">🤖 <em>불러오는 중…</em></span></div>
+    <!-- 기간 셀렉터(2026-07-07 추가): 26 상반기=라이브, 24/25=allhands_archive.json 정적 재현 -->
+    <div class="period-bar" id="period-bar"></div>
 
-    <div class="cols">
-      <div>
-        <h2 class="sec">📊 상반기 매출 리뷰 <span class="tag">강습팀 1·2분기 분리 · 실적·월평균·달성% · 실측 · 미도래=정직</span></h2>
-        <div class="card" id="sales-card"><div class="none">매출 실측을 불러오는 중…</div></div>
+    <div id="live-view">
+      <div class="kicker" id="kicker"><span class="k-h">🤖 <em>불러오는 중…</em></span></div>
+
+      <div class="cols">
+        <div>
+          <h2 class="sec">📊 상반기 매출 리뷰 <span class="tag">강습팀 1·2분기 분리 · 실적·월평균·달성% · 실측 · 미도래=정직</span></h2>
+          <div class="card" id="sales-card"><div class="none">매출 실측을 불러오는 중…</div></div>
+        </div>
+        <div>
+          <h2 class="sec">🏆 1·2분기 포상 · 잘한 팀</h2>
+          <div id="award-card"><div class="none">포상 정보를 불러오는 중…</div></div>
+          <h2 class="sec" style="margin-top:6px;">🎯 하반기 방향 3축</h2>
+          <div class="dirs" id="dirs-card"><div class="none">하반기 방향을 불러오는 중…</div></div>
+        </div>
       </div>
-      <div>
-        <h2 class="sec">🏆 1·2분기 포상 · 잘한 팀</h2>
-        <div id="award-card"><div class="none">포상 정보를 불러오는 중…</div></div>
-        <h2 class="sec" style="margin-top:6px;">🎯 하반기 방향 3축</h2>
-        <div class="dirs" id="dirs-card"><div class="none">하반기 방향을 불러오는 중…</div></div>
+
+      <div class="foot" id="foot">
+        데이터 = 월간운영계획과 동일 라이브 소스(강습팀=team_sales_h1 · 멤버십=GM시트 매출 정본 · sales_targets.json · monthly_ops_plan.json half_year_review). 월평균 = 분기실적 ÷ 3(상반기 합 = ÷ 6). 분기 달성% = 분기실적 ÷ (월목표×3) · 상반기 = ÷ (월목표×6) · 기준 목표(팀별 조정 전). 미측정·미도래는 '—'로 정직 표기(지어내기 없음).
       </div>
     </div>
 
-    <div class="foot" id="foot">
-      데이터 = 월간운영계획과 동일 라이브 소스(강습팀=team_sales_h1 · 멤버십=GM시트 매출 정본 · sales_targets.json · monthly_ops_plan.json half_year_review). 월평균 = 분기실적 ÷ 3(상반기 합 = ÷ 6). 분기 달성% = 분기실적 ÷ (월목표×3) · 상반기 = ÷ (월목표×6) · 기준 목표(팀별 조정 전). 미측정·미도래는 '—'로 정직 표기(지어내기 없음).
-    </div>
+    <!-- 과거 회차(24/25 상·하) 재현 뷰 — allhands_archive.json 정적 렌더, 라이브 GAS 호출 없음 -->
+    <div id="archive-view"></div>
   </div>
 
 <script>
@@ -382,6 +423,205 @@
   // 강습팀 매출 = GAS action=team_sales_h1('31'시트 U:Y 직독 합산 정본) — 2026-07-07 정정, 매출마스터 gviz 완전 대체.
   // 타임아웃 30초(라이브검증: 6파일 순차 openById 실측 ~19.5초 확인·GAS측 CacheService 10분 캐시 병행 추가).
   withTimeout(readTeamSalesH1(2026), 30000, null).then(function(v){ _h1Sales = v; renderSales(); });
+})();
+</script>
+<script>
+// ── 기간 셀렉터 + 과거 회차(24/25 상·하) 재현 뷰 (2026-07-07 추가) ──
+// 26 상반기 = 위 라이브 IIFE 그대로(무변경). 24/25 = allhands_archive.json 정적 렌더(라이브 GAS 호출 없음).
+(function(){
+  'use strict';
+  var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+  var ARCHIVE_PATH = 'status/allhands_archive.json';
+  var PERIODS = [
+    { id: '24H1', label: '24 상반기' },
+    { id: '24H2', label: '24 하반기' },
+    { id: '25H1', label: '25 상반기' },
+    { id: '25H2', label: '25 하반기' },
+    { id: '26H1', label: '26 상반기' }
+  ];
+  var DEFAULT_ID = '26H1';
+  var _sel = DEFAULT_ID;
+  var _archive = null;
+  var _origTitle = null, _origPeriod = null;
+
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtWon(n){
+    if(typeof n !== 'number' || isNaN(n)) return '—';
+    var sign = n < 0 ? '-' : '', a = Math.abs(n);
+    if(a >= 100000000){ return sign + (Math.round(a / 100000000 * 100) / 100) + '억'; }
+    if(a >= 10000){ return sign + Math.round(a / 10000).toLocaleString() + '만'; }
+    return sign + Math.round(a).toLocaleString() + '원';
+  }
+  function pctCls(t){ if(!t) return ''; if(/하락/.test(t)) return 'neg'; if(/상승/.test(t)) return 'pos'; return ''; }
+  function list(arr){ return '<ul>' + (arr || []).map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'; }
+
+  function readArchive(){
+    return fetch(RAW_BASE + ARCHIVE_PATH, {cache:'default'})
+      .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.json(); })
+      .catch(function(){ return null; });
+  }
+
+  // ── 섹션 렌더러들 (없는 섹션은 조용히 생략 — 지어내기 금지) ──
+  function secPurpose(items){
+    if(!items || !items.length) return '';
+    return '<h2 class="sec">🎯 전사회의 목적</h2><div class="arc-grid g3">' + items.map(function(p, i){
+      return '<div class="arc-card"><span class="a-n">' + (i + 1) + '</span><span class="a-t">' + esc(p.제목 || '') + '</span>' + list(p.설명) + '</div>';
+    }).join('') + '</div>';
+  }
+  function secKeywords(title, arr){
+    if(!arr || !arr.length) return '';
+    return '<h2 class="sec">' + title + '</h2><div class="arc-grid g4">' + arr.map(function(k){
+      return '<div class="arc-kw">' + esc(k) + '</div>';
+    }).join('') + '</div>';
+  }
+  function secProgress(prog){
+    if(!prog || !Object.keys(prog).length) return '';
+    var html = '<h2 class="sec">📋 진행사항</h2>';
+    Object.keys(prog).forEach(function(dept){
+      var cats = prog[dept] || {};
+      var catKeys = Object.keys(cats);
+      if(!catKeys.length) return;
+      html += '<div class="card"><span class="a-n" style="display:block;margin-bottom:7px;">' + esc(dept) + ' 진행사항</span><div class="arc-grid g4">' +
+        catKeys.map(function(ck){
+          return '<div class="arc-card"><span class="a-n">' + esc(ck) + '</span>' + list(cats[ck]) + '</div>';
+        }).join('') + '</div></div>';
+    });
+    return html;
+  }
+  function secTeamPerf(tp){
+    if(!tp || !tp.팀들 || !tp.팀들.length) return '';
+    var rows = tp.팀들.map(function(t){
+      return '<tr><td class="team">' + esc(t.팀) + '</td><td class="num">' + esc(t.목표) + '</td><td class="num">' + esc(t.실적) + '</td><td class="num h2v">' + esc(t.달성률) + '</td></tr>';
+    }).join('');
+    var sum = (tp.총목표 || tp.총실적) ? '<div class="arc-sub">총 목표액 ' + esc(tp.총목표 || '—') + ' · 실적 ' + esc(tp.총실적 || '—') + (tp.총달성률 ? ' (달성률 ' + esc(tp.총달성률) + ')' : '') + (tp.비고 ? ' · ' + esc(tp.비고) : '') + '</div>' : '';
+    return '<h2 class="sec">📈 ' + esc(tp.제목 || '팀별 목표 달성 현황') + '</h2><div class="card"><div class="arc-table-wrap"><table><thead><tr><th>팀</th><th class="num">목표</th><th class="num">실적</th><th class="num">달성률</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + sum + '</div>';
+  }
+  function secSales(sales){
+    if(!sales || !sales.rows || !sales.rows.length) return '';
+    var rows = sales.rows.map(function(r){
+      return '<tr><td class="team">' + esc(r.월) + '</td>' +
+        '<td class="num"><span class="qv">' + fmtWon(r.운영부) + '</span><span class="qp ' + pctCls(r.운영부증감) + '">' + esc(r.운영부증감 || '—') + '</span></td>' +
+        '<td class="num"><span class="qv">' + fmtWon(r.강습부) + '</span><span class="qp ' + pctCls(r.강습부증감) + '">' + esc(r.강습부증감 || '—') + '</span></td>' +
+        '<td class="num h2v">' + fmtWon(r.총합) + '</td>' +
+        '<td class="num" style="color:var(--dim);">' + fmtWon(r.전년총합) + '</td>' +
+        '<td class="num"><span class="qv">' + fmtWon(r.전년대비금액) + '</span><span class="qp ' + pctCls(r.전년대비율) + '">' + esc(r.전년대비율 || '—') + '</span></td></tr>';
+    }).join('');
+    var memo = (sales.합계메모 && sales.합계메모.length) ? '<div class="arc-sub">' + sales.합계메모.map(esc).join(' · ') + '</div>' : '';
+    return '<h2 class="sec">💰 매출 실적 <span class="tag">' + esc(sales.당해라벨 || '') + ' vs ' + esc(sales.전년라벨 || '') + '</span></h2>' +
+      '<div class="card"><div class="arc-table-wrap"><table><thead><tr><th>월</th><th class="num">운영부</th><th class="num">강습부</th><th class="num">총합</th><th class="num">전년 총합</th><th class="num">전년대비</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + memo + '</div>';
+  }
+  function secAwards(aw){
+    if(!aw) return '';
+    var html = '';
+    var rowsHtml = '';
+    if(aw.우수부서 && aw.우수부서.length){ rowsHtml += '<div class="arc-card"><span class="a-n">🏆 우수 부서(회식비 지원)</span>' + list(aw.우수부서) + '</div>'; }
+    if(aw.개인탑3 && aw.개인탑3.length){
+      rowsHtml += '<div class="arc-card"><span class="a-n">🥇 개인 매출 TOP3</span>' + list(aw.개인탑3.map(function(a){ return a.순위 + '등 · ' + a.내용 + ' → ' + a.포상; })) + '</div>';
+    }
+    if(aw.마케팅 && aw.마케팅.length){
+      rowsHtml += '<div class="arc-card"><span class="a-n">📣 마케팅 협조 포상</span>' + list(aw.마케팅.map(function(a){ return a.순위 + '등 · ' + a.내용 + ' → ' + a.포상; })) + '</div>';
+    }
+    if(aw.패널티 && aw.패널티.length){ rowsHtml += '<div class="arc-card" style="border-left-color:var(--neg);"><span class="a-n">⚠️ 패널티 / 계약 해지</span>' + list(aw.패널티) + '</div>'; }
+    if(rowsHtml){ html += '<h2 class="sec">🏆 포상 · 패널티</h2><div class="arc-grid g4">' + rowsHtml + '</div>'; }
+    if(aw.정책변경 && aw.정책변경.rows && aw.정책변경.rows.length){
+      var pr = aw.정책변경.rows.map(function(r){ return '<tr><td class="team">' + esc(r.구분) + '</td><td>' + esc(r.y25) + '</td><td>' + esc(r.y26) + '</td></tr>'; }).join('');
+      html += '<div class="card"><span class="a-n" style="display:block;margin-bottom:7px;">' + esc(aw.정책변경.제목 || '포상 정책 변경') + '</span><div class="arc-table-wrap"><table><thead><tr><th>구분</th><th>25년</th><th>26년</th></tr></thead><tbody>' + pr + '</tbody></table></div></div>';
+    }
+    if(aw.개인정책변경 && (aw.개인정책변경.y25 || aw.개인정책변경.y26)){
+      html += '<div class="card"><span class="a-n" style="display:block;margin-bottom:5px;">' + esc(aw.개인정책변경.제목 || '개인 포상 정책 변경') + '</span>' +
+        '<div class="arc-sub">25년: ' + esc(aw.개인정책변경.y25 || '—') + '</div><div class="arc-sub" style="margin-top:0;">26년: ' + esc(aw.개인정책변경.y26 || '—') + '</div></div>';
+    }
+    if(aw.인사고과26){ html += '<div class="arc-sub">' + esc(aw.인사고과26) + '</div>'; }
+    return html;
+  }
+  function secTeamKeywords(tk){
+    if(!tk || !tk.키워드 || !tk.키워드.length) return '';
+    return '<h2 class="sec">🏷️ ' + esc(tk.제목 || '팀별 키워드 발표') + '</h2>' +
+      '<div class="card"><div class="arc-sub" style="margin-top:0;">팀 순서: ' + esc((tk.팀순서 || []).join(' · ')) + '</div>' +
+      '<div class="arc-grid g4">' + tk.키워드.map(function(k){ return '<div class="arc-kw">' + esc(k) + '</div>'; }).join('') + '</div>' +
+      (tk.비고 ? '<div class="arc-note" style="margin-top:8px;">⚠️ ' + esc(tk.비고) + '</div>' : '') + '</div>';
+  }
+  function secPlan(plan){
+    if(!plan || !plan.length) return '';
+    return '<h2 class="sec">🧭 다음기간 계획</h2><div class="arc-grid g3">' + plan.map(function(p, i){
+      return '<div class="arc-card"><span class="a-n">' + (i + 1) + '축</span><span class="a-t">' + esc(p.제목 || '') + '</span>' + list(p.설명) + '</div>';
+    }).join('') + '</div>';
+  }
+  function secNotices(notices){
+    if(!notices || !notices.length) return '';
+    return '<h2 class="sec">📣 전달사항</h2><div class="arc-grid g3">' + notices.map(function(n, i){
+      return '<div class="arc-card"><span class="a-n">' + (i + 1) + '</span><span class="a-t">' + esc(n.제목 || '') + '</span>' + list(n.설명) + '</div>';
+    }).join('') + '</div>';
+  }
+  function secClosing(arr){
+    if(!arr || !arr.length) return '';
+    var cls = arr.length >= 4 ? 'g4' : (arr.length === 3 ? 'g3' : '');
+    var wrap = cls ? ('<div class="arc-grid ' + cls + '">' + arr.map(function(s){ return '<div class="arc-quote">' + esc(s) + '</div>'; }).join('') + '</div>')
+      : arr.map(function(s){ return '<div class="arc-quote" style="margin-bottom:8px;">' + esc(s) + '</div>'; }).join('');
+    return '<h2 class="sec">💬 마무리</h2>' + wrap;
+  }
+
+  function renderArchive(id){
+    var host = document.getElementById('archive-view');
+    if(!_archive){ host.innerHTML = '<div class="none">과거 회차 정본(allhands_archive.json) 로딩 실패.</div>'; return; }
+    var d = _archive[id];
+    if(!d){ host.innerHTML = '<div class="none">' + esc(id) + ' 회차 데이터 없음.</div>'; return; }
+    var html = '<div class="arc-note">📄 원본 PPT 추출본 기반 재현 · ' + esc(d.date || '') + ' 진행 · 정적 자료(라이브 데이터 아님)</div>';
+    html += secPurpose(d.목적);
+    html += secKeywords('🏷️ 목표 키워드', d.목표키워드);
+    html += secProgress(d.진행사항);
+    html += secTeamPerf(d.팀별성과);
+    html += secSales(d.실적);
+    html += secAwards(d.포상);
+    html += secTeamKeywords(d.팀키워드);
+    html += secKeywords('🏷️ 다음 반기 목표 키워드', d.다음반기목표키워드);
+    html += secPlan(d.계획);
+    html += secKeywords('🧭 방향성 키워드', d.방향성키워드);
+    html += secNotices(d.전달사항);
+    html += secClosing(d.마무리);
+    host.innerHTML = html;
+  }
+
+  function selectPeriod(id){
+    _sel = id;
+    var buttons = document.querySelectorAll('#period-bar .pbtn');
+    for(var i = 0; i < buttons.length; i++){ buttons[i].classList.toggle('on', buttons[i].getAttribute('data-id') === id); }
+    var live = document.getElementById('live-view'), archive = document.getElementById('archive-view');
+    var h1 = document.querySelector('.doc-head h1'), period = document.querySelector('.doc-head .period');
+    if(id === DEFAULT_ID){
+      live.style.display = ''; archive.style.display = 'none';
+      if(_origTitle != null){ h1.textContent = _origTitle; period.textContent = _origPeriod; }
+      return;
+    }
+    live.style.display = 'none'; archive.style.display = '';
+    var apply = function(){
+      var d = _archive && _archive[id];
+      if(d){ h1.textContent = d.title || h1.textContent; period.textContent = d.period || ''; }
+      renderArchive(id);
+    };
+    if(_archive){ apply(); }
+    else{
+      archive.innerHTML = '<div class="none">' + esc(id) + ' 회차 자료를 불러오는 중…</div>';
+      readArchive().then(function(v){ _archive = v; apply(); });
+    }
+  }
+
+  function buildBar(){
+    var bar = document.getElementById('period-bar');
+    bar.innerHTML = PERIODS.map(function(p){
+      return '<button type="button" class="pbtn' + (p.id === DEFAULT_ID ? ' on' : '') + '" data-id="' + p.id + '">' + esc(p.label) + '</button>';
+    }).join('');
+    bar.addEventListener('click', function(e){
+      var btn = e.target.closest ? e.target.closest('.pbtn') : null;
+      if(!btn) return;
+      selectPeriod(btn.getAttribute('data-id'));
+    });
+  }
+
+  var h1El = document.querySelector('.doc-head h1'), periodEl = document.querySelector('.doc-head .period');
+  _origTitle = h1El ? h1El.textContent : null;
+  _origPeriod = periodEl ? periodEl.textContent : null;
+  buildBar();
 })();
 </script>
 <script src="_assets/print_options.js"></script>
