@@ -5663,7 +5663,32 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <div class="doc-header"><h2>공식 채널 · 검수·발행 · 성과 현황</h2><div class="meta">CMO 관할 · 온라인 채널 통합 허브 + 검수·발행 · 제목 → 슬라이드·캡션 생성 → 검수 → 승인 발행 · v2.0 · 2026-07-02 + 발행 후 현황·전환(구 M2 통합)</div></div>
     <p class="lead">콘텐츠 제작부터 검수, 자동 업로드까지 한 곳에서 관리하는 전용 페이지입니다. 채널별 특성을 미리 학습해 기록하고, 제목만 입력하면 슬라이드와 캡션이 생성되며, 검수 후 승인 시 자동 발행됩니다. <span style="color:var(--dim);">(1단계는 골격·흐름 UI. 실제 자동 생성·업로드 풀가동은 다음 단계.)</span></p>
 
-    <h3><span class="ico">📡</span>채널 현황</h3>
+    <h3 style="margin-top:8px;"><span class="ico">📊</span>발행 후 현황 · 전환</h3>
+    <p>올린 콘텐츠가 실제 문의·등록으로 이어지는지 추적합니다.</p>
+
+    <h3><span class="ico">🔭</span>퍼널 한눈에</h3>
+    <p>고객이 콘텐츠를 보고 문의하기까지의 흐름과, 그 데이터가 대시보드로 모이는 경로입니다.</p>
+    <table>
+      <tr><th style="width:120px">단계</th><th>무슨 일이 일어나나</th><th style="width:180px">데이터가 쌓이는 곳</th></tr>
+      <tr><td>① 노출·클릭</td><td>5채널(인스타·블로그·카페·카카오·당근) 콘텐츠에서 <code>wellperion.com/ko/inquiry</code> 버튼 클릭</td><td>랜딩 추적 시트(클릭 로그)</td></tr>
+      <tr><td>② 문의 접수</td><td>문의 페이지에서 구글폼 작성 (멤버십 · 성인 강습 · 유소년 · 여름특강)</td><td>각 구글폼 응답 시트</td></tr>
+      <tr><td>③ 상담·등록</td><td>휴대폰 번호를 키로 회원부 유효회원과 매칭 → 실제 가입 확인</td><td>회원 관리 시트(유효회원 탭)</td></tr>
+      <tr><td>④ 대시보드</td><td>위 데이터를 채널별 · 전환율로 집계해 표시</td><td>마케팅 현황 대시보드</td></tr>
+    </table>
+
+    <h3><span class="ico">📊</span>대시보드 열기</h3>
+    <p>실시간 현황은 아래 버튼으로 엽니다. 매일 08:00 자동 갱신됩니다.</p>
+    <a href="cmo/funnel/마케팅현황대시보드.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:8px;text-decoration:none;">📊 마케팅 현황 대시보드 열기</a>
+
+    <h3 style="margin-top:18px;"><span class="ico">🔗</span>문의 진입점</h3>
+    <ul>
+      <li>한국어 — <a href="http://wellperion.com/ko/inquiry/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">wellperion.com/ko/inquiry/</a></li>
+      <li>영어 — <a href="http://wellperion.com/en/inquiry/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">wellperion.com/en/inquiry/</a></li>
+    </ul>
+
+    <div class="source">SSOT: reference_inquiry_funnel_map · cmo/funnel/마케팅현황대시보드.html · 2026-06-05 시모(CMO) 신설</div>
+
+    <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">📡</span>채널 현황</h3>
     <table>
       <tr><th>채널</th><th>URL / 계정</th><th>역할</th><th>상태</th></tr>
       <tr>
@@ -6095,31 +6120,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <div class="callout"><strong>관리 기준:</strong> 모든 채널 콘텐츠는 브랜드 가이드 준수. "피트니스" 금지 → "스포츠클럽". 문의 CTA는 문의Survey 페이지 단일. CMO 라인 관할 (김남욱 GM).</div>
       </div>
     </details>
-
-    <h3 style="margin-top:26px;border-top:1px solid var(--border);padding-top:22px;"><span class="ico">📊</span>발행 후 현황 · 전환</h3>
-    <p>올린 콘텐츠가 실제 문의·등록으로 이어지는지 추적합니다.</p>
-
-    <h3><span class="ico">🔭</span>퍼널 한눈에</h3>
-    <p>고객이 콘텐츠를 보고 문의하기까지의 흐름과, 그 데이터가 대시보드로 모이는 경로입니다.</p>
-    <table>
-      <tr><th style="width:120px">단계</th><th>무슨 일이 일어나나</th><th style="width:180px">데이터가 쌓이는 곳</th></tr>
-      <tr><td>① 노출·클릭</td><td>5채널(인스타·블로그·카페·카카오·당근) 콘텐츠에서 <code>wellperion.com/ko/inquiry</code> 버튼 클릭</td><td>랜딩 추적 시트(클릭 로그)</td></tr>
-      <tr><td>② 문의 접수</td><td>문의 페이지에서 구글폼 작성 (멤버십 · 성인 강습 · 유소년 · 여름특강)</td><td>각 구글폼 응답 시트</td></tr>
-      <tr><td>③ 상담·등록</td><td>휴대폰 번호를 키로 회원부 유효회원과 매칭 → 실제 가입 확인</td><td>회원 관리 시트(유효회원 탭)</td></tr>
-      <tr><td>④ 대시보드</td><td>위 데이터를 채널별 · 전환율로 집계해 표시</td><td>마케팅 현황 대시보드</td></tr>
-    </table>
-
-    <h3><span class="ico">📊</span>대시보드 열기</h3>
-    <p>실시간 현황은 아래 버튼으로 엽니다. 매일 08:00 자동 갱신됩니다.</p>
-    <a href="cmo/funnel/마케팅현황대시보드.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border-radius:8px;text-decoration:none;">📊 마케팅 현황 대시보드 열기</a>
-
-    <h3 style="margin-top:18px;"><span class="ico">🔗</span>문의 진입점</h3>
-    <ul>
-      <li>한국어 — <a href="http://wellperion.com/ko/inquiry/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">wellperion.com/ko/inquiry/</a></li>
-      <li>영어 — <a href="http://wellperion.com/en/inquiry/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">wellperion.com/en/inquiry/</a></li>
-    </ul>
-
-    <div class="source">SSOT: reference_inquiry_funnel_map · cmo/funnel/마케팅현황대시보드.html · 2026-06-05 시모(CMO) 신설</div>
   </article>
 
   <!-- ── COO 투두리스트 소개 ── -->
