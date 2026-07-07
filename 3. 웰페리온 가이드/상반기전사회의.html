@@ -303,7 +303,8 @@
     renderSales();
   });
   // 강습팀 매출 = GAS action=team_sales_h1('31'시트 U:Y 직독 합산 정본) — 2026-07-07 정정, 매출마스터 gviz 완전 대체.
-  withTimeout(readTeamSalesH1(2026), 15000, null).then(function(v){ _h1Sales = v; renderSales(); });
+  // 타임아웃 30초(라이브검증: 6파일 순차 openById 실측 ~19.5초 확인·GAS측 CacheService 10분 캐시 병행 추가).
+  withTimeout(readTeamSalesH1(2026), 30000, null).then(function(v){ _h1Sales = v; renderSales(); });
 })();
 </script>
 </body>

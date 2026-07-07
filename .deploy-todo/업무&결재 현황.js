@@ -1160,11 +1160,22 @@ function _kpiTeamSales(params) {
 // 2026-07-07 시토(배354 완결): 부정확한 매출마스터(_cfoSalesDept/_salesDept) 대신 이 액션이
 // 월간운영계획.html·상반기전사회의.html 강습팀 1·2분기 표의 정본이 된다.
 // 한 달이라도 못 읽으면 그 분기·그 팀은 actual/avg=null(부분합 위조 금지 — 정직 표기).
-// GET ?action=team_sales_h1[&year=2026] →
+// GET ?action=team_sales_h1[&year=2026][&nocache=1] →
 //   { ok, year, monthsCovered, monthlyOk:{1:true,...}, q1:{key:{actual,avg}}, q2:{...}, asOf }
+// ⚠️ [2026-07-07 라이브검증] 6개 파일 SpreadsheetApp.openById 순차 실행은 실측 ~19.5초 — 클라이언트
+// 타임아웃(15초)을 넘겨 두 HTML 모두 강습팀 표가 '—'로 폴백되는 결함 발견(GM 확인 요청 세션).
+// CacheService로 10분 캐시(1차 로드만 느리고 그 뒤엔 즉시)+클라 타임아웃도 30초로 별도 상향 완료.
 function _kpiTeamSalesH1(params) {
+  var year = Number(params.year) || 2026;
+  var cache = CacheService.getScriptCache();
+  var cacheKey = 'team_sales_h1_' + year;
+  if (params.nocache !== '1') {
+    try {
+      var cached = cache.get(cacheKey);
+      if (cached) return _json(JSON.parse(cached));
+    } catch (cacheReadErr) { /* 캐시 읽기 실패는 무시하고 아래에서 재계산 */ }
+  }
   try {
-    var year = Number(params.year) || 2026;
     var keys = ['swim', 'pt', 'golf', 'squash', 'gym', 'pilates', 'musical', 'gxe'];
     var monthly = {}, monthlyOk = {}, monthsCovered = [];
     for (var m = 1; m <= 6; m++) {
@@ -1193,10 +1204,12 @@ function _kpiTeamSalesH1(params) {
       });
       return out;
     }
-    return _json({
+    var resp = {
       ok: true, year: year, monthsCovered: monthsCovered, monthlyOk: monthlyOk,
       q1: qSum(1), q2: qSum(4), asOf: _now()
-    });
+    };
+    try { cache.put(cacheKey, JSON.stringify(resp), 600); } catch (cacheWriteErr) { /* 캐시 저장 실패=무영향 */ }
+    return _json(resp);
   } catch (err) {
     return _json({ ok: false, error: String(err) });
   }
