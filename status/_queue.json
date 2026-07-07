@@ -1563,5 +1563,18 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01677jvQBCvitAknP9P8M3eo (CLI ad-hoc · 커밋 4109cd18)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4109cd189164950fa180a8c5f11d7abfdc116668"
+  },
+  {
+    "task_id": "CPO-2026-07-07-MEMBER-PAGE-TWEAKS",
+    "clevel": "cpo",
+    "title": "[시포] 회원관리 페이지 미세조정 — 분석 버튼바 상단 이동 + 운영가이드 헤더 이전 + 통합(문의+회원) 검색칸",
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-07",
+    "ship_no": 573,
+    "note": "[2026-07-07 GM 라이브 관찰·556 후속] ①분석 버튼바를 요약대시 위로 이동(멤버십·성인강습·유소년 3뷰) ②운영가이드=버튼바에서 빼 헤더 '문의 가이드' 우측으로 이전+라벨 '📋 운영 원칙·루틴'(내용=principle+routine 명확화, 앞면 버튼바는 전환율·퍼널·이탈 3개) ③통합 검색칸(성함·전화): 멤버십 문의(dbRows)+유효회원(_activeRows 동적헤더)+등록(_regRows) 부분일치→결과패널 클릭 시 switchTab+스크롤·하이라이트, lazy 로드(_unifiedEnsureLoaded Promise.all), IME안전(결과패널만 갱신)·ESC닫기. 정직범위=멤버십 스코프(강습 제외·패널헤더 명시). node 0에러·div균형(427/427)·회귀0·검수통과.",
+    "next": "라이브 렌더 검증(Pages 시크릿) 후 입항.",
+    "depends_on": "",
+    "module": "M2"
   }
 ]

@@ -387,6 +387,15 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
   box-shadow:0 0 0 3px rgba(78,196,196,0.12);
 }
 .db-search::placeholder{color:var(--dim)}
+/* 통합(문의+회원) 검색 결과 패널 — 배3(작업3), 2026-07-07 시포·GM */
+.unified-search-panel{
+  position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:40;
+  background:var(--paper);border:1px solid var(--border);border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.18);max-height:360px;overflow-y:auto;
+}
+.unified-search-row{padding:9px 12px;display:flex;gap:8px;align-items:center;cursor:pointer;border-bottom:1px solid var(--border)}
+.unified-search-row:last-child{border-bottom:none}
+.unified-search-row:hover{background:var(--teal-bg)}
 .db-filter{
   padding:8px 10px;border-radius:var(--radius-btn);
   background:var(--bg);border:1px solid var(--border);
@@ -940,6 +949,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <a class="action-btn" href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">🔗 문의 페이지 →</a>
         <a class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
         <button class="action-btn" onclick="openGuidePopup()">📖 문의 가이드</button>
+        <button class="action-btn" onclick="openGdoc('principle,routine')">📋 운영 원칙·루틴</button>
         <a class="action-btn" href="../../wellperion_guide(main).html">ERP 홈</a>
         <button class="action-btn" onclick="window.print()">인쇄</button>
       </div>
@@ -963,6 +973,19 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
   <div id="type-membership" class="type-pane active">
+
+  <!-- 통합(문의+회원) 검색 — 성함·전화 부분일치, 멤버십 문의(dbRows)+등록/유효 회원(_regRows/_activeRows) 대상. IME 안전(입력칸 재생성 없음). 2026-07-07 시포·GM -->
+  <div id="unifiedSearchWrap" style="position:relative;max-width:360px;margin-bottom:10px">
+    <input type="text" id="unifiedSearch" class="db-search" style="width:100%" placeholder="성함·전화로 회원·문의 통합 검색…" autocomplete="off">
+    <div id="unifiedSearchResults" class="unified-search-panel" style="display:none"></div>
+  </div>
+
+  <!-- 분석·참고 진입 버튼 바 — 요약대시 위쪽 고정(2026-07-07 GM: 카드 위쪽 배치). 3버튼(운영가이드는 헤더로 이동). 2026-07-07 시포·GM -->
+  <div class="guide-btns" style="margin-bottom:16px">
+    <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
+    <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
+    <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
+  </div>
 
   <!-- ══ 통합 회원 현황판 — 카드 현황 + CPO 가이드(전체폭) · 2026-06-29 시포 ══ -->
   <div class="dash-grid" id="cpoTodayStrip">
@@ -999,14 +1022,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line"><span class="dash-k">종료</span><span class="dash-v"><b id="dMemEnded">0</b> 명</span></div>
       </div>
     </a>
-  </div>
-
-  <!-- 분석·참고 진입 버튼 바 — 전환율/퍼널/이탈관리/운영가이드는 팝업으로 이전, 앞면은 달력·목록만. 2026-07-07 시포·GM -->
-  <div class="guide-btns" style="margin-bottom:16px">
-    <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
-    <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
-    <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
-    <button class="guide-doc-btn" onclick="openGdoc('principle,routine')">📖 운영 가이드</button>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
@@ -1603,6 +1618,13 @@ if (action === 'member_calendar') {
 
   <!-- ══════════════════════════════ 유형: 성인 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
   <div id="type-lessonAdult" class="type-pane">
+    <!-- 분석·참고 진입 버튼 바 (멤버십 뷰와 공유 — 강습 퍼널도 확인 가능). 요약대시 위쪽 고정, 3버튼(운영가이드는 헤더로 이동). 2026-07-07 시포·GM -->
+    <div class="guide-btns" style="margin-bottom:18px">
+      <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
+      <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
+      <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
+    </div>
+
     <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리 (강습 전용 lessonSwitchCard) -->
     <div class="dash-grid lesson-dash" style="margin-bottom:18px">
       <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('adult','inq')">
@@ -1617,14 +1639,6 @@ if (action === 'member_calendar') {
         <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
         <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">수강 회원 명단</span></div></div>
       </a>
-    </div>
-
-    <!-- 분석·참고 진입 버튼 바 (멤버십 뷰와 공유 — 강습 퍼널도 확인 가능). 2026-07-07 시포·GM -->
-    <div class="guide-btns" style="margin-bottom:18px">
-      <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
-      <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
-      <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
-      <button class="guide-doc-btn" onclick="openGdoc('principle,routine')">📖 운영 가이드</button>
     </div>
 
     <!-- sub-pane: 문의 현황 -->
@@ -1729,6 +1743,13 @@ if (action === 'member_calendar') {
 
   <!-- ══════════════════════════════ 유형: 유소년 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
   <div id="type-lessonYouth" class="type-pane">
+    <!-- 분석·참고 진입 버튼 바 (멤버십 뷰와 공유 — 강습 퍼널도 확인 가능). 요약대시 위쪽 고정, 3버튼(운영가이드는 헤더로 이동). 2026-07-07 시포·GM -->
+    <div class="guide-btns" style="margin-bottom:18px">
+      <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
+      <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
+      <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
+    </div>
+
     <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리 -->
     <div class="dash-grid lesson-dash" style="margin-bottom:18px">
       <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('youth','inq')">
@@ -1743,14 +1764,6 @@ if (action === 'member_calendar') {
         <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
         <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">수강 회원 명단</span></div></div>
       </a>
-    </div>
-
-    <!-- 분석·참고 진입 버튼 바 (멤버십 뷰와 공유 — 강습 퍼널도 확인 가능). 2026-07-07 시포·GM -->
-    <div class="guide-btns" style="margin-bottom:18px">
-      <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
-      <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
-      <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
-      <button class="guide-doc-btn" onclick="openGdoc('principle,routine')">📖 운영 가이드</button>
     </div>
 
     <!-- sub-pane: 문의 현황 -->
@@ -3059,7 +3072,7 @@ function setRegRange(mode) {
     btn.style.borderColor  = active ? TEAL_BD  : ACC_BD;
   });
 
-  loadRegistered();
+  return loadRegistered();
 }
 
 // 직접 등록 추가 폼 — 토글 + 제출(문의 퍼널 안 거친 직접·법인 계약). 2026-06-29 시포
@@ -3108,7 +3121,7 @@ function loadRegistered() {
 
   _regSetLoading(true);
 
-  fetch(url)
+  return fetch(url)
     .then(function(r){ return r.json(); })
     .then(function(data){
       _regSetLoading(false);
@@ -3258,7 +3271,7 @@ function loadActiveMembers() {
   }
   _activeRenderState('loading');
   var _seq = ++_activeReqSeq;
-  fetch(GAS_URL + '?action=member_active_list&scope=' + (_activeScope || 'valid') + _wpKeyParam())
+  return fetch(GAS_URL + '?action=member_active_list&scope=' + (_activeScope || 'valid') + _wpKeyParam())
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (_seq !== _activeReqSeq) return;   // 더 최신 요청이 있으면 이 응답 무시(경쟁 가드)
@@ -4333,7 +4346,7 @@ function loadDbData() {
     return;
   }
   document.getElementById('dbCount').textContent = '불러오는 중…';
-  fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam())
+  return fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam())
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (!data.ok) {
@@ -4941,6 +4954,129 @@ function submitNewRow(tr) {
   searchEl.addEventListener('compositionend', function(){ composing = false; renderDbTable(); });
   searchEl.addEventListener('input', function(){ if (!composing) renderDbTable(); });
   document.getElementById('dbFilter').addEventListener('change', renderDbTable);
+})();
+
+/* ─────────────────────────────────────────────
+   통합(문의+회원) 검색 — 멤버십 문의(dbRows)+등록(_regRows)+유효회원(_activeRows) 대상, 성함·전화 부분일치.
+   IME 안전: 입력칸(#unifiedSearch)은 재생성하지 않고 결과 패널(#unifiedSearchResults)만 innerHTML 갱신. 배3(작업3), 2026-07-07 시포·GM
+───────────────────────────────────────────── */
+function _unifiedHeaderKey(headers, re) {
+  return (headers || []).find(function(h){ return re.test(h); }) || null;
+}
+// 아직 로드 안 된 pane(문의·유효회원·등록)만 로더 재사용해 로드 후 cb 호출 — 기존 loadDbData/loadActiveMembers/setRegRange 그대로 사용(각 함수에 return 추가해 완료 시점 포착).
+function _unifiedEnsureLoaded(cb) {
+  var loads = [];
+  if (!_tabLoaded.db)         { _tabLoaded.db = true;         loads.push(Promise.resolve(loadDbData())); }
+  if (!_tabLoaded.active)     { _tabLoaded.active = true;     loads.push(Promise.resolve(loadActiveMembers())); }
+  if (!_tabLoaded.registered) { _tabLoaded.registered = true; loads.push(Promise.resolve(setRegRange(_regRangeMode || 'day'))); }
+  if (!loads.length) { cb(); return; }
+  Promise.all(loads).then(cb);
+}
+function _unifiedSearchClose() {
+  var panel = document.getElementById('unifiedSearchResults');
+  if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+}
+function _unifiedSearchRun(query) {
+  var q = String(query || '').trim();
+  if (q.length < 2) { _unifiedSearchClose(); return; }
+  _unifiedEnsureLoaded(function(){ _unifiedSearchRender(q); });
+}
+function _unifiedSearchRender(query) {
+  var panel = document.getElementById('unifiedSearchResults');
+  if (!panel) return;
+  var q = query.toLowerCase();
+  var qDigits = query.replace(/\D/g, '');
+  var results = [];
+
+  // 1) 멤버십 문의(dbRows) — 고정 필드 name/phone/status/rowIndex
+  dbRows.forEach(function(row){
+    var nameHit  = String(row.name || '').toLowerCase().indexOf(q) !== -1;
+    var phoneHit = !!qDigits && String(row.phone || '').replace(/\D/g,'').indexOf(qDigits) !== -1;
+    if (nameHit || phoneHit) {
+      results.push({ kind:'문의', tab:'db', name: row.name || '—', phone: row.phone || '—', sub: row.status || '', rowIndex: row.rowIndex });
+    }
+  });
+
+  // 2) 유효회원(_activeRows) — 헤더가 시트 원본(동적)이라 성함·전화 컬럼을 정규식으로 탐색(기존 _activeDisplayCols 패턴과 동일 방식)
+  var nameKey  = _unifiedHeaderKey(_activeHeaders, /성함|이름/);
+  var phoneKey = _unifiedHeaderKey(_activeHeaders, /연락처|전화|휴대폰/);
+  if (nameKey || phoneKey) {
+    (_activeRows || []).forEach(function(row){
+      var nm = nameKey  ? String(row[nameKey]  || '') : '';
+      var ph = phoneKey ? String(row[phoneKey] || '') : '';
+      var nameHit  = nm.toLowerCase().indexOf(q) !== -1;
+      var phoneHit = !!qDigits && ph.replace(/\D/g,'').indexOf(qDigits) !== -1;
+      if (nameHit || phoneHit) {
+        results.push({ kind:'회원', tab:'active', name: nm || '—', phone: ph || '—', sub: '유효회원', rowIndex: row.rowIndex });
+      }
+    });
+  }
+
+  // 3) 등록현황(_regRows) — 고정 필드 name/phone/program
+  (_regRows || []).forEach(function(m){
+    var nameHit  = String(m.name || '').toLowerCase().indexOf(q) !== -1;
+    var phoneHit = !!qDigits && String(m.phone || '').replace(/\D/g,'').indexOf(qDigits) !== -1;
+    if (nameHit || phoneHit) {
+      results.push({ kind:'등록', tab:'registered', name: m.name || '—', phone: m.phone || '—', sub: m.program || '', rowIndex: null });
+    }
+  });
+
+  results = results.slice(0, 20);
+
+  if (!results.length) {
+    panel.innerHTML = '<div style="padding:14px;font-size:12.5px;color:var(--dim)">멤버십 문의·회원 범위에서 일치하는 결과가 없습니다</div>';
+    panel.style.display = '';
+    return;
+  }
+
+  var html = '<div style="padding:8px 12px;font-size:11px;color:var(--dim);border-bottom:1px solid var(--border)">멤버십 문의·회원 검색 결과 ' + results.length + '건</div>';
+  html += results.map(function(r, i){
+    var badgeColor = r.kind === '문의' ? 'var(--teal)' : (r.kind === '회원' ? 'var(--accent)' : 'var(--dim)');
+    return '<div class="unified-search-row" data-idx="' + i + '">' +
+      '<span style="font-size:10px;font-weight:700;color:' + badgeColor + ';border:1px solid ' + badgeColor + ';border-radius:99px;padding:1px 7px;white-space:nowrap">' + esc(r.kind) + '</span>' +
+      '<span style="font-weight:700;min-width:56px">' + esc(r.name) + '</span>' +
+      '<span style="font-size:12px;color:var(--dim)">' + esc(r.phone) + '</span>' +
+      (r.sub ? '<span style="font-size:11px;color:var(--dim-mid);margin-left:auto;white-space:nowrap">' + esc(r.sub) + '</span>' : '') +
+    '</div>';
+  }).join('');
+  panel.innerHTML = html;
+  panel.style.display = '';
+
+  Array.prototype.forEach.call(panel.querySelectorAll('.unified-search-row'), function(el){
+    el.addEventListener('click', function(){
+      var r = results[parseInt(el.getAttribute('data-idx'), 10)];
+      _unifiedSearchGoto(r);
+    });
+  });
+}
+function _unifiedSearchGoto(r) {
+  _unifiedSearchClose();
+  switchTab(r.tab);
+  setTimeout(function(){
+    var row = null;
+    if (r.tab === 'db' && r.rowIndex != null)       row = document.querySelector('#dbBody tr[data-row-index="' + CSS.escape(String(r.rowIndex)) + '"]');
+    if (r.tab === 'active' && r.rowIndex != null)    row = document.querySelector('#activeBody tr[data-rowindex="' + CSS.escape(String(r.rowIndex)) + '"]');
+    if (r.tab === 'registered')                      row = document.querySelector('#regBody tr[data-phone="' + CSS.escape(String(r.phone)) + '"]');
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      var prevBg = row.style.backgroundColor;
+      row.style.transition = 'background-color .4s';
+      row.style.backgroundColor = 'var(--teal-bg)';
+      setTimeout(function(){ row.style.backgroundColor = prevBg; }, 1500);
+    }
+  }, 300);
+}
+(function(){
+  var input = document.getElementById('unifiedSearch');
+  if (!input) return;
+  var composing = false;
+  var timer = null;
+  function run(){ _unifiedSearchRun(input.value); }
+  function debounced(){ clearTimeout(timer); timer = setTimeout(run, 220); }
+  input.addEventListener('compositionstart', function(){ composing = true; });
+  input.addEventListener('compositionend',   function(){ composing = false; debounced(); });
+  input.addEventListener('input', function(){ if (!composing) debounced(); });
+  input.addEventListener('keydown', function(e){ if (e.key === 'Escape') _unifiedSearchClose(); });
 })();
 
 /* ─────────────────────────────────────────────
