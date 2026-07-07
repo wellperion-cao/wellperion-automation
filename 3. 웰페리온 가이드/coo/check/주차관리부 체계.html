@@ -30,6 +30,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 #tab-guide,#tab-policy,#tab-mplan{max-width:none;margin-left:0;margin-right:0}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
+/* ── 월 선택 바(월간운영계획.html 룩 통일 · 2026-07-07) ── */
+.month-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
+.month-bar label{font-size:12px;color:var(--dim)}
+.month-bar select{font-size:14px;font-weight:700;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer}
 .btn{padding:8px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .submitter-bar{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
 .submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
@@ -695,6 +699,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
       <a href="/wellperion-automation/월간운영계획.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;">▸ 전체 월간운영계획 보기</a>
     </div>
+  </div>
+  <div id="mpMonthBar" class="month-bar" style="display:none;">
+    <label for="mpMonthSelect">월 선택</label>
+    <select id="mpMonthSelect" onchange="mpOnMonthChange()"></select>
   </div>
   <div class="dash-section-title" style="font-size:17px;font-weight:800;margin-top:2px;">🎯 이달 핵심과제</div>
   <div id="mpCards"></div>
@@ -1865,6 +1873,8 @@ var PRAC_ID = 'lee-jh';
 var OWNER_LABEL = '이정헌 소장 (통합관리)';
 var PLAN_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_ops_plan.json';
 var MP_LOADED = false;
+var MP_PLAN_DATA = null;
+var MP_CURRENT_KEY = null;
 var MP_STATUS_STYLE = {
   '계획': {color:'var(--dim)', bg:'rgba(140,139,131,0.14)'},
   '진행': {color:'var(--blue)', bg:'var(--blue-bg)'},
@@ -1948,19 +1958,37 @@ function mpRender(planData, monthKey, monthData){
   }
   cardsEl.innerHTML=objectives.map(mpObjectiveCard).join('');
 }
-async function loadMonthlyPlanTab(){
-  if(MP_LOADED) return;
+function mpBuildMonthSelect(planData){
+  var selEl=document.getElementById('mpMonthSelect');
+  if(!selEl) return;
+  var keys=Object.keys(planData.months||{}).sort().reverse();
+  selEl.innerHTML=keys.map(function(k){ return '<option value="'+k+'">'+mpMonthLabel(k)+'</option>'; }).join('');
+}
+function mpOnMonthChange(){
+  var selEl=document.getElementById('mpMonthSelect');
+  if(selEl && selEl.value) loadMonthlyPlanTab(selEl.value);
+}
+async function loadMonthlyPlanTab(monthKey){
   var statusEl=document.getElementById('mpStatus');
   try{
-    var r=await fetch(PLAN_URL,{cache:'no-store'});
-    var j=await r.json();
-    var months=j&&j.months;
-    if(!months) throw new Error('no months');
+    if(!MP_PLAN_DATA){
+      var r=await fetch(PLAN_URL,{cache:'no-store'});
+      var j=await r.json();
+      if(!(j&&j.months)) throw new Error('no months');
+      MP_PLAN_DATA=j;
+      mpBuildMonthSelect(j);
+    }
+    var months=MP_PLAN_DATA.months;
     var curKey=mpCurrentMonthKey();
     var keys=Object.keys(months).sort();
-    var key=months[curKey]?curKey:keys[keys.length-1];
+    var key=(monthKey&&months[monthKey])?monthKey:((MP_CURRENT_KEY&&months[MP_CURRENT_KEY])?MP_CURRENT_KEY:(months[curKey]?curKey:keys[keys.length-1]));
+    MP_CURRENT_KEY=key;
     MP_LOADED=true;
-    mpRender(j, key, months[key]);
+    mpRender(MP_PLAN_DATA, key, months[key]);
+    var selEl=document.getElementById('mpMonthSelect');
+    if(selEl) selEl.value=key;
+    var barEl=document.getElementById('mpMonthBar');
+    if(barEl) barEl.style.display='flex';
   }catch(e){
     if(statusEl){ statusEl.style.display='block'; statusEl.textContent='월간 계획을 불러오지 못했습니다 — 새로고침'; statusEl.style.color='var(--red)'; }
   }
