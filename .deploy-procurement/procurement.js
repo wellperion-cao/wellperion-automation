@@ -41,6 +41,20 @@ function route(p){
   }
 }
 function sh(){ return SpreadsheetApp.openById(SHEET_ID).getSheetByName(TAB); }
+/** SWR 이중 캐시(2026-07-07 성능 수술): 신선 20분 + 보존 6시간.
+ *  신선 만료 시 보존본을 즉시 반환(stale:true) → 클라이언트가 백그라운드 nocache 재계산 유발.
+ *  콜드 재계산(월별 보고서 7파일 오픈, 최대 3분+)을 사용자가 직접 기다리는 일 제거. */
+function swrGet_(p, key){
+  if (p && p.nocache) return null;
+  var c = CacheService.getScriptCache();
+  var hit = c.get(key); if (hit) return JSON.parse(hit);
+  var st = c.get(key + "_L"); if (st){ var o = JSON.parse(st); o.stale = true; return o; }
+  return null;
+}
+function swrPut_(key, res){
+  try{ var js = JSON.stringify(res); var c = CacheService.getScriptCache(); c.put(key, js, 1200); c.put(key + "_L", js, 21600); }catch(e){}
+}
+
 function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 function today(){ return Utilities.formatDate(new Date(),"Asia/Seoul","yyyy. M. d"); }
 
@@ -353,8 +367,7 @@ function parseSalesTab_(sht, dmap, unmapped){
 
 /** 매출 종목별×월별 라이브 — 월 파일 자동탐색·말일(최신)탭 파싱·20분 캐시. 값 없는 월은 null(프론트가 기존값 유지 병합). */
 function salesDept(p){
-  var cache = CacheService.getScriptCache();
-  if (!p.nocache){ var hit = cache.get("sales_dept_v1"); if (hit) return out(JSON.parse(hit)); }
+  var hit = swrGet_(p, "sales_dept_v1"); if (hit) return out(hit);
   var now = new Date();
   var year = parseInt(Utilities.formatDate(now,"Asia/Seoul","yyyy"),10);
   var curMo = parseInt(Utilities.formatDate(now,"Asia/Seoul","M"),10);
@@ -382,7 +395,7 @@ function salesDept(p){
     monthsLoaded.push(m); src[m] = usedTab;
   }
   var res = { ok:true, dept:dept, monthsLoaded:monthsLoaded, src:src, unmapped:Object.keys(unmapped), at:Utilities.formatDate(now,"Asia/Seoul","yyyy-MM-dd HH:mm") };
-  try { cache.put("sales_dept_v1", JSON.stringify(res), 1200); } catch(e){} // 20분 캐시(payload 소형)
+  swrPut_("sales_dept_v1", res);
   return out(res);
 }
 
@@ -390,8 +403,7 @@ function salesDept(p){
  *  컬럼: B신규 D재등록 F양도 H환불(괄호음수) J옵션 N합계매출(=신규+재등+양도+환불+옵션, 굿즈·카드 제외 — 시트 산식 그대로 신뢰).
  *  반환: 월별 net(합계매출)·refund(환불)·gross(환불 전). 집계만 반환(PII 없음)·20분 캐시. GM시트 대체 정본(대시보드 운영부 소스). */
 function salesOps(p){
-  var cache = CacheService.getScriptCache();
-  if (!p.nocache){ var hit = cache.get("sales_ops_v1"); if (hit) return out(JSON.parse(hit)); }
+  var hit = swrGet_(p, "sales_ops_v1"); if (hit) return out(hit);
   var files = salesFiles_();
   var net=[], refund=[], gross=[], monthsLoaded=[];
   for (var i=0;i<12;i++){ net.push(null); refund.push(null); gross.push(null); }
@@ -413,7 +425,7 @@ function salesOps(p){
     }
   }
   var res = { ok:true, net:net, refund:refund, gross:gross, monthsLoaded:monthsLoaded, at:Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm") };
-  try { cache.put("sales_ops_v1", JSON.stringify(res), 1200); } catch(e){}
+  swrPut_("sales_ops_v1", res);
   return out(res);
 }
 
@@ -421,8 +433,7 @@ function salesOps(p){
  *  Y70=멤버십(환불반영) · Y71~79=종목별 · Y80=강습 합계. 총매출 = Y70+Y80. 31탭부터 역방향으로 값 있는 첫 탭 채택(진행월 대응).
  *  집계만 반환(PII 없음)·20분 캐시. 대시보드 총매출 1순위 소스. */
 function salesMonthTot(p){
-  var cache = CacheService.getScriptCache();
-  if (!p.nocache){ var hit = cache.get("sales_month_v1"); if (hit) return out(JSON.parse(hit)); }
+  var hit = swrGet_(p, "sales_month_v1"); if (hit) return out(hit);
   var files = salesFiles_();
   var member=[], lessons=[], total=[], monthsLoaded=[], src={};
   for (var i=0;i<12;i++){ member.push(null); lessons.push(null); total.push(null); }
@@ -441,7 +452,7 @@ function salesMonthTot(p){
     }
   }
   var res = { ok:true, member:member, lessons:lessons, total:total, monthsLoaded:monthsLoaded, src:src, at:Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm") };
-  try { cache.put("sales_month_v1", JSON.stringify(res), 1200); } catch(e){}
+  swrPut_("sales_month_v1", res);
   return out(res);
 }
 
@@ -449,8 +460,7 @@ function salesMonthTot(p){
  *  라이프가드 등 시급 인력 = 인건비마스터 밖의 실지출(매니저님 확인 2026-07-04). 집계만 반환(PII 비반환)·20분 캐시.
  *  함정 처리: 블록 부서/시간 칸에 적힌 날짜의 월이 파일 월과 다르면 템플릿 잔재로 보고 제외(예: 6·7월 탭에 반복된 '2/22 휴관일' 168,000). */
 function laborTime(p){
-  var cache = CacheService.getScriptCache();
-  if (!p.nocache){ var hit = cache.get("labor_time_v1"); if (hit) return out(JSON.parse(hit)); }
+  var hit = swrGet_(p, "labor_time_v1"); if (hit) return out(hit);
   var files = salesFiles_();
   var swim = [], other = [], skipped = {};
   for (var i=0;i<12;i++){ swim.push(null); other.push(null); }
@@ -480,7 +490,7 @@ function laborTime(p){
     if (any || sw || ot){ swim[m-1] = sw; other[m-1] = ot; if (sk) skipped[m] = sk; }
   }
   var res = { ok:true, swim:swim, other:other, skipped:skipped, at:Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm") };
-  try { cache.put("labor_time_v1", JSON.stringify(res), 1200); } catch(e){}
+  swrPut_("labor_time_v1", res);
   return out(res);
 }
 

@@ -3,7 +3,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>💰 운영매출&지출 현황 · 웰페리온</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/complete/WantedSansVariable.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="icon" id="favicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>💰</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
@@ -119,7 +119,8 @@ body{background:radial-gradient(1200px 500px at 20% -8%, #FDFCF8 0%, #F6F4EE 55%
 header{background:transparent;color:#0F1E3D;border-bottom:none;padding:34px 0 6px}
 .brand{align-items:center}
 .brand .mark{color:#8A6630;letter-spacing:.44em;font-size:11px}
-.brand h1{font-family:'Noto Serif KR',serif;font-weight:900;font-size:30px;color:#0F1E3D;letter-spacing:-.01em}
+.brand h1{font-family:'Wanted Sans Variable','Pretendard Variable',Pretendard,sans-serif;font-weight:800;font-size:29px;color:#0F1E3D;letter-spacing:-.03em}
+.card h3,.gate-card h2{font-family:'Wanted Sans Variable','Pretendard Variable',Pretendard,sans-serif;font-weight:800;letter-spacing:-.015em}
 .hd-sub{color:#98A0B3;font-size:12.5px;margin-top:6px}
 .hd-meta{color:#98A0B3}
 .hd-btn{background:#FFFFFF;border:1px solid #EAE6DB;color:#0F1E3D;border-radius:999px;padding:9px 18px;box-shadow:0 8px 20px -14px rgba(15,30,61,.35)}
@@ -375,13 +376,21 @@ async function loadSales(){
   SALES_MEMBER=SALES_DEPT["운영부"]||[];
 }
 /* 매출 총액 정본 로드 — 「26년 매출 분석」 GAS(sales_monthly). 실패 시 조용히 폴백(매출마스터 종목합 사용). 매출현황 페이지와 동일 소스 → 자동 동기화. */
+/* SWR 새로고침(2026-07-07 성능 수술): 서버가 stale(보존캐시) 응답을 주면 백그라운드로 nocache 재계산을 1회 유발, 도착 시 재렌더. 사용자는 기다리지 않음. */
+var SWR_KICKED={};
+function kickSWR(action,apply){ if(SWR_KICKED[action])return; SWR_KICKED[action]=1;
+  procCall(action,{nocache:1}).then(function(j){ if(j&&j.ok)apply(j); }).catch(function(){}); }
+function applyTruthData(jm){ if(!(jm&&jm.ok&&jm.total&&jm.total.some(function(v){return v!==null;})))return false;
+  var last1=0;jm.total.forEach(function(v,i){if(v!==null)last1=i+1;});
+  SALES_TRUTH=jm.total;SALES_TRUTH_LAST=last1;SALES_TRUTH_LIVE=true;SALES_TRUTH_SRC="보고서(31탭)";return true;}
+function rerenderSalesViews(){aggregate();renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();updateSyncMeta();}
 async function loadSalesTruth(){
   // 1순위: 매출보고 말일탭 Y70:Y80 월 집계(sales_month — ★매니저 확정 2026-07-07 "제일 정확한 매출"). 멤버십(환불반영)+강습 합.
   try{
     var jm=await procCall("sales_month",{});
-    if(jm&&jm.ok&&jm.total&&jm.total.some(function(v){return v!==null;})){
-      var last1=0;jm.total.forEach(function(v,i){if(v!==null)last1=i+1;});
-      SALES_TRUTH=jm.total;SALES_TRUTH_LAST=last1;SALES_TRUTH_LIVE=true;SALES_TRUTH_SRC="보고서(31탭)";return;
+    if(applyTruthData(jm)){
+      if(jm.stale)kickSWR("sales_month",function(j2){if(applyTruthData(j2))rerenderSalesViews();});
+      return;
     }
   }catch(e){}
   // 2순위(폴백): '26년 매출 분석' 시트(sales_monthly GAS) — 보고서 대비 월 -240만~-960만 낮게 집계되는 차이 있음
@@ -396,12 +405,20 @@ async function loadSalesTruth(){
   }catch(e){SALES_TRUTH=null;SALES_TRUTH_LIVE=false;}
 }
 /* 운영부 매출 정본 로드 — GM시트 「2026년도 매출」(1gCQNny…) gviz. B열=월 라벨("1월".."12월"), L열(index 11)=합계(매출). 실패·미공유 시 조용히 폴백(매출마스터 SALES_DEPT.운영부 유지). */
+function applyOpsData(j){ if(!(j&&j.ok&&j.net&&j.net.some(function(v){return v!==null;})))return false;
+  OPS_SALES=j.net;OPS_REFUND=j.refund||null;OPS_SALES_LIVE=true;OPS_SRC="보고서";return true;}
+function opsSwapRender(){
+  if(OPS_SALES_LIVE&&OPS_SALES){ var ob=SALES_DEPT["운영부"]||Array(12).fill(0);
+    SALES_DEPT["운영부"]=MONTHS.map(function(_,i){return OPS_SALES[i]!==null?OPS_SALES[i]:(ob[i]||0);});
+    SALES_MEMBER=SALES_DEPT["운영부"]; }
+  rerenderSalesViews();}
 async function loadOpsSales(){
   // 1순위: 매출보고 「총 매출」 탭 서버집계(sales_ops — ★환불 차감 반영, 매니저 지시 2026-07-07). 실패 시 GM시트 gviz 폴백(환불 미반영 가능).
   try{
     var j=await procCall("sales_ops",{});
-    if(j&&j.ok&&j.net&&j.net.some(function(v){return v!==null;})){
-      OPS_SALES=j.net;OPS_REFUND=j.refund||null;OPS_SALES_LIVE=true;OPS_SRC="보고서";return;
+    if(applyOpsData(j)){
+      if(j.stale)kickSWR("sales_ops",function(j2){if(applyOpsData(j2))opsSwapRender();});
+      return;
     }
   }catch(e){}
   try{
@@ -427,6 +444,7 @@ async function loadSalesDept(){
       merged[k]=MONTHS.map(function(_,i){return (live&&live[i]!=null)?live[i]:(base[i]||0);});
     });
     SALES_DEPT=merged;SALES_DEPT_LIVE=true;
+    if(j.stale)kickSWR("sales_dept",function(){loadSalesDept();}); // 보존본 표시 후 백그라운드 갱신
     if(OPS_SALES_LIVE&&OPS_SALES){ // 운영부 정본 = GM시트(멤버십+옵션, GM 지시) 재적용
       var ob=SALES_DEPT["운영부"]||Array(12).fill(0);
       SALES_DEPT["운영부"]=MONTHS.map(function(_,i){return OPS_SALES[i]!==null?OPS_SALES[i]:(ob[i]||0);});
@@ -444,6 +462,7 @@ async function loadLaborTime(){
     TIME_SWIM=MONTHS.map(function(_,i){return (j.swim[i]!=null?j.swim[i]:0);});
     TIME_OTHER=MONTHS.map(function(_,i){return (j.other&&j.other[i]!=null?j.other[i]:0);});
     TIME_LIVE=true;
+    if(j.stale)kickSWR("labor_time",function(){loadLaborTime();}); // 보존본 표시 후 백그라운드 갱신
     aggregate();renderKpi();renderMain();renderExpTbl();
     updateSyncMeta();
   }catch(e){}
@@ -508,19 +527,16 @@ function updateSyncMeta(){var sm=document.getElementById("syncMeta");if(!sm)retu
   sm.textContent=t;}
 async function startApp(){
   document.getElementById("app").style.display="block";renderNav();
-  // 독립 소스(인건비·매출마스터·매출정본·운영부정본) 병렬 로드 — 초기 렌더 지연 최소화. 구매성(loadProc)은 무겁고 느려 블로킹에서 제외.
-  await Promise.all([loadData(),loadSales(),loadSalesTruth(),loadOpsSales()]);
-  if(OPS_SALES_LIVE&&OPS_SALES){ // 운영부 매출 = 매출마스터 대신 GM시트(멤버십+옵션) 정본으로 교체. 월별 값 없으면(null) 매출마스터 유지.
-    var opsBase=SALES_DEPT["운영부"]||Array(12).fill(0);
-    SALES_DEPT["운영부"]=MONTHS.map(function(_,i){return OPS_SALES[i]!==null?OPS_SALES[i]:(opsBase[i]||0);});
-    SALES_MEMBER=SALES_DEPT["운영부"];
-  }
-  aggregate(); // 구매성은 우선 폴백(FB_PROC)으로 즉시 표시
+  // 첫 화면 = 빠른 소스(인건비·매출마스터 gviz)만 블로킹(2026-07-07 성능 수술 — 구 구조는 정본 sales_month 콜드 재계산 최대 3분을 통째로 대기).
+  await Promise.all([loadData(),loadSales()]);
+  aggregate(); // 정본·운영부·구매성은 폴백/마스터 기준으로 즉시 표시 후 도착 순 갱신
   document.getElementById("loading").style.display="none";document.getElementById("content").style.display="block";
   updateSyncMeta();
   renderKpi();renderMain();renderSalesDept();renderMix();renderSales();renderSalesTbl();renderExpTbl();renderPeople();
   renderBudget();
-  // 구매성 라이브 + 종목별 매출 라이브 + 타임 인건비 + 이상지출 = 백그라운드(초기 화면을 막지 않음). 완료되면 재집계·의존 뷰만 재렌더.
+  // 정본 총매출 + 운영부(환불반영) + 종목별 + 타임 + 구매성 = 전부 백그라운드. 도착하면 재집계·재렌더(SWR 보존캐시라 보통 2초 내).
+  loadSalesTruth().then(function(){ if(SALES_TRUTH_LIVE)rerenderSalesViews(); else updateSyncMeta(); });
+  loadOpsSales().then(opsSwapRender);
   loadSalesDept();
   loadLaborTime();
   loadProc().then(function(){
