@@ -538,11 +538,9 @@ def build_caption(room: dict, base_caption: str) -> str:
     return f"{room.get('prefix', '')}{base_caption}"
 
 
-def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool) -> None:
-    room_name = room["name"]
-    caption = build_caption(room, base_caption)
-    log(f"── {room_name} 처리 시작 (dry_run={dry_run}, caption={caption!r}) ──")
-
+def open_or_find_room(room_name: str):
+    """방 창-제목 탐색(주 경로) → 실패 시 카톡 메인창 검색으로 자동 열기(폴백).
+    send_to_room·send_message_to_room 공용 — 방 열기 로직 중복 방지."""
     try:
         room_win = find_room_window(room_name)
         log(f"[{room_name}] 방 창 발견(창-제목 탐색 성공, 이미 열려 있었음)")
@@ -556,7 +554,41 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
             raise RoomNotOpenError(
                 f"방 '{room_name}'을 자동으로 열지 못함({open_exc}). 카톡에서 직접 열어두세요."
             ) from open_exc
+    return room_win
 
+
+def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> None:
+    """이미지 없이 텍스트만 전송(휴관일 안내문 등). 이미지 팝업 경로를 전혀 타지 않고
+    채팅 입력창에 바로 paste_text → send_enter 한다."""
+    room_name = room["name"]
+    text = build_caption(room, base_message)
+    log(f"── {room_name} 텍스트 전용 처리 시작 (dry_run={dry_run}, text={text!r}) ──")
+
+    room_win = open_or_find_room(room_name)
+    focus_window(room_win, room_name)
+    input_box = get_input_box(room_win, room_name)
+    input_box.click_input()
+    time.sleep(0.2)
+    paste_text(input_box, text)
+
+    if dry_run:
+        screenshot(room_win, room_name, "dryrun_message_preview")
+        clear_input(input_box)  # 실제 전송 안 하고 미리보기 텍스트만 지워 잔여물 방지
+        log(f"[{room_name}] DRY-RUN: 텍스트 미리보기까지 확인, 전송 생략(안전) — {text!r}")
+        return
+
+    send_enter(input_box)
+    time.sleep(0.5)
+    screenshot(room_win, room_name, "message_sent")
+    log(f"[{room_name}] 텍스트 전송 완료")
+
+
+def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool) -> None:
+    room_name = room["name"]
+    caption = build_caption(room, base_caption)
+    log(f"── {room_name} 처리 시작 (dry_run={dry_run}, caption={caption!r}) ──")
+
+    room_win = open_or_find_room(room_name)
     focus_window(room_win, room_name)
     image_to_clipboard(image_path)
     input_box = paste_image_preview(room_win, room_name)
@@ -605,6 +637,8 @@ def main() -> int:
     ap.add_argument("--from-folder", action="store_true",
                      help="--image 미지정 시 kakao_rooms.json의 archive_dir/YYYY-MM/에서 오늘 날짜 파일 자동 선택")
     ap.add_argument("--caption", default="", help="함께 보낼 원본 캡션 텍스트(방별 prefix는 자동 조합)")
+    ap.add_argument("--message", default=None,
+                     help="이미지 없이 텍스트만 전송(휴관일 안내문 등). 지정 시 --image/--from-folder 무시")
     ap.add_argument("--dry-run", action="store_true",
                      help="방 열기+클립보드+미리보기까지만, 실제 전송(Enter) 안 함")
     ap.add_argument("--only-room", default=None, help="지정한 방 1개만 처리(검증용)")
@@ -614,8 +648,8 @@ def main() -> int:
         print("BLOCKED: 이 스크립트는 Windows(카카오톡 PC 앱) 전용입니다.")
         return 1
 
-    if not args.image and not args.from_folder:
-        print("BLOCKED: --image 또는 --from-folder 중 하나는 필수입니다.")
+    if not args.image and not args.from_folder and not args.message:
+        print("BLOCKED: --image, --from-folder, --message 중 하나는 필수입니다.")
         return 1
 
     cfg = load_rooms_config()
@@ -628,20 +662,38 @@ def main() -> int:
         log(f"[kakao_rooms] GAS 미가용 — 로컬 kakao_rooms.json 방 목록으로 폴백 "
             f"({len(cfg.get('rooms', []))}개)")
 
+    rooms = load_rooms(cfg, args.only_room)
+    if not rooms:
+        print("BLOCKED: 전송 대상 방이 없음 (kakao_rooms.json 확인)")
+        return 1
+    room_names = [r["name"] for r in rooms]
+
+    failures = []
+
+    if args.message:
+        log(f"대상 방 {len(rooms)}개: {room_names} / message={args.message!r} / dry_run={args.dry_run}")
+        for idx, room in enumerate(rooms):
+            room_name = room["name"]
+            try:
+                send_message_to_room(room, args.message, args.dry_run)
+            except Exception as exc:
+                log(f"실패 [{room_name}]: {exc}")
+                failures.append((room_name, str(exc)))
+            if idx < len(rooms) - 1:
+                time.sleep(2.0)  # 방 사이 지연
+        if failures:
+            print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")
+            return 1
+        print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료(텍스트) — {len(rooms)}개 방")
+        return 0
+
     image_path = resolve_image_path(cfg, args)
     if not image_path.exists():
         print(f"BLOCKED: 이미지 파일을 찾을 수 없음: {image_path}")
         return 1
 
-    rooms = load_rooms(cfg, args.only_room)
-    if not rooms:
-        print("BLOCKED: 전송 대상 방이 없음 (kakao_rooms.json 확인)")
-        return 1
-
-    room_names = [r["name"] for r in rooms]
     log(f"대상 방 {len(rooms)}개: {room_names} / image={image_path} / dry_run={args.dry_run}")
 
-    failures = []
     for idx, room in enumerate(rooms):
         room_name = room["name"]
         try:
