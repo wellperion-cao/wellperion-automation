@@ -1054,14 +1054,21 @@ function _kpiSalesMonthly() {
   }
 }
 
-// ── 팀별 매출 실적(월별 "202X년 N월 매출 보고" 원장) — 2026-07-03 시토(배354) ──
+// ── 팀별 매출 실적(월별 "202X년 N월 매출 보고" 원장) — 2026-07-03 시토(배354), 2026-07-07 정정 ──
 // 소스 = 월마다 별도 파일. 알려진 달은 아래 맵 우선, 없으면 Drive 제목 검색 폴백.
-//   말일 탭(탭명=그달 마지막 날짜 숫자, 예 6월="30")의 O8:T74 범위만 읽는다.
-//   ⚠️ 이 스프레드시트엔 다른 탭에 회원 PII가 있음 — O8:T74(매출 범위) 외 절대 접근 안 함.
+//   ⚠️ [2026-07-07 정정] 예전엔 '말일 숫자' 탭(예 6월="30")의 O8:T74를 읽었는데, 그 탭은 일별 개별
+//   거래 원장이라 팀합계가 아니었다(뮤지컬 6월 오독 38만 vs 실측 377만 — GM 지적). 정본 = 모든 달 공통
+//   '31'이라는 이름의 요약 탭(그 달 실제 일수와 무관하게 항상 '31', 1·4·6월 실측 검증 완료) U:Y열.
+//   ⚠️ 이 스프레드시트엔 다른 탭에 회원 PII가 있음 — '31'탭 U:Y(매출 요약 범위) 외 절대 접근 안 함.
 // GET ?action=team_sales[&year=2026][&month=6][&fileId=...] →
-//   { ok, year, month, fileId, tab, asOf, teams:[{name, actual}] }
+//   { ok, year, month, fileId, tab, asOf, teams:[{name, key, actual, count}] }
 var MONTHLY_SALES_FILE_MAP = {
-  6: '1oG63rj17-RMk2cdiVbwp4TOp-yN73uc04jDV7RfN9BI' // "2026년 6월 매출 보고" (GM 제공, 2026-07-03)
+  1: '1Ijdshcdpx7foom4RSiIsk3WOEM19bEEsCm3zKEK05Bw', // "2026년 1월 매출 보고"
+  2: '11QwSYpYxse5Y9AmDZaeHRPm0TqgXW6BpNBesEe-mEEQ', // "2026년 2월 매출 보고"
+  3: '1MkZaLeJHEYYIpJ1kQiWfqaMiEEoRB9j0zAG3WosZ-3o', // "2026년 3월 매출 보고"
+  4: '1U54eXej1UEefOG2VQL6Jof4pbwUCk9Pe3ESXsGpJbLg', // "2026년 4월 매출 보고"
+  5: '1CK8cbogJoraFw9XcyoKZdPgt-xT9EPpFI0EW2lBnhd8', // "2026년 5월 매출 보고"
+  6: '1oG63rj17-RMk2cdiVbwp4TOp-yN73uc04jDV7RfN9BI'  // "2026년 6월 매출 보고" (GM 제공, 2026-07-03)
 };
 
 // 제목 "202X년 N월 매출 보고" 로 Drive 검색(맵에 없는 달 대비). 여러 매치 시 첫 파일. 실패 시 null.
@@ -1079,8 +1086,11 @@ function _kpiSalesMonthlyFileId(year, month) {
   return _kpiSalesFileByTitle(year, month);
 }
 
-// 말일 탭(탭명=일자 숫자, 예 "30") 자동 선택. 정확히 없으면 숫자 탭 중 lastDay 이하 최대(최신) 탭 폴백.
+// 요약 탭 선택: 모든 달 공통 '31'(그 달 실제 일수와 무관하게 고정 템플릿명·1·4·6월 실측 검증) 우선.
+// 혹시 없는(구조가 다른) 파일 대비 옛 '말일 숫자' 탭 폴백 유지(방어적, 정상 파일에선 안 탐).
 function _kpiSalesLastDayTab(ss, year, month) {
+  var summary = ss.getSheetByName('31');
+  if (summary) return summary;
   var lastDay = new Date(year, month, 0).getDate(); // month=1-base → 그 달의 마지막 날
   var exact = ss.getSheetByName(String(lastDay));
   if (exact) return exact;
@@ -1096,38 +1106,33 @@ function _kpiSalesLastDayTab(ss, year, month) {
   return best;
 }
 
-// O8:T74 파싱 — 팀명(헤더 '구분'/'팀'/'항목' 열, 없으면 O열)+실적(헤더 '실적' 열, 없으면 폴백).
+// '31' 요약탭의 팀별 매출 블록 라벨→키 매핑(멤버십/기타/강습총계는 강습팀표 대상 아님 — 제외).
+var TEAM_LABEL_MAP = {
+  'P.T 매출':    { name: 'P.T',     key: 'pt' },
+  '필라테스 매출': { name: '필라테스',  key: 'pilates' },
+  '수영 매출':    { name: '수영',     key: 'swim' },
+  '스쿼시 매출':  { name: '스쿼시',   key: 'squash' },
+  '체조 매출':    { name: '체조&트램', key: 'gym' },
+  '골프 매출':    { name: '골프',     key: 'golf' },
+  '뮤지컬 매출':  { name: '뮤지컬',   key: 'musical' },
+  'GXE 매출':     { name: 'GXE',      key: 'gxe' }
+};
+// U:Y열 라벨 매칭 스캔(행 번호 하드코딩 금지 — 템플릿마다 행이 살짝 흔들릴 수 있음).
+// U=라벨(항목명) · W=가입수 · Y=누적 매출. 실측(1·4·6월) U69:AI80 블록 검증 완료.
 function _kpiParseTeamSalesRange(sheet) {
-  var header = sheet.getRange(7, 15, 1, 6).getValues()[0]; // O7:T7 (헤더 행 추정)
-  var actualIdx = -1, nameIdx = 0;
-  for (var i = 0; i < header.length; i++) {
-    var h = String(header[i] || '').replace(/\s/g, '');
-    if (actualIdx < 0 && h.indexOf('실적') >= 0) actualIdx = i;
-    if (h.indexOf('구분') >= 0 || h.indexOf('팀') >= 0 || h.indexOf('항목') >= 0) nameIdx = i;
-  }
-
-  var data = sheet.getRange(8, 15, 67, 6).getValues(); // O8:T74
-  var teams = [];
-  for (var r = 0; r < data.length; r++) {
-    var row = data[r];
-    var name = String(row[nameIdx] || '').trim();
-    if (!name) continue;
-    var actual = null;
-    if (actualIdx >= 0) {
-      actual = _kpiNum(row[actualIdx]);
-    } else {
-      // 헤더 탐지 실패 폴백: %가 아닌 마지막(가장 오른쪽) 숫자 셀을 실적으로 채택.
-      for (var c = row.length - 1; c >= 0; c--) {
-        var raw = String(row[c] || '');
-        if (raw.indexOf('%') >= 0) continue;
-        var v = _kpiNum(row[c]);
-        if (v !== null) { actual = v; break; }
-      }
-    }
+  var lastRow = Math.min(sheet.getLastRow() || 1, 150);
+  var vals = sheet.getRange(1, 21, lastRow, 5).getValues(); // U:Y, 1행부터
+  var teams = [], seen = {};
+  for (var r = 0; r < vals.length; r++) {
+    var label = String(vals[r][0] || '').trim(); // U열
+    var m = TEAM_LABEL_MAP[label];
+    if (!m || seen[m.key]) continue;
+    var actual = _kpiNum(vals[r][4]); // Y열
     if (actual === null) continue;
-    teams.push({ name: name, actual: actual });
+    teams.push({ name: m.name, key: m.key, actual: actual, count: _kpiNum(vals[r][2]) }); // W열
+    seen[m.key] = true;
   }
-  return { teams: teams, actualColDetected: actualIdx >= 0, headerRaw: header };
+  return { teams: teams };
 }
 
 function _kpiTeamSales(params) {
@@ -1139,18 +1144,59 @@ function _kpiTeamSales(params) {
 
     var ss = SpreadsheetApp.openById(fileId);
     var tab = _kpiSalesLastDayTab(ss, year, month);
-    if (!tab) return _json({ ok: false, error: 'last_day_tab_not_found' });
+    if (!tab) return _json({ ok: false, error: 'summary_tab_not_found' });
 
     var parsed = _kpiParseTeamSalesRange(tab);
-    var resp = {
+    return _json({
       ok: true, year: year, month: month, fileId: fileId, tab: tab.getName(),
       asOf: _now(), teams: parsed.teams
-    };
-    if (params.debug === '1') {
-      resp.debugHeader = parsed.headerRaw;
-      resp.actualColDetected = parsed.actualColDetected;
+    });
+  } catch (err) {
+    return _json({ ok: false, error: String(err) });
+  }
+}
+
+// ── 강습팀 상반기(1~6월) 실적 집계 — '31'탭 직독 월별 합산(gviz 매출마스터 완전 대체) ──
+// 2026-07-07 시토(배354 완결): 부정확한 매출마스터(_cfoSalesDept/_salesDept) 대신 이 액션이
+// 월간운영계획.html·상반기전사회의.html 강습팀 1·2분기 표의 정본이 된다.
+// 한 달이라도 못 읽으면 그 분기·그 팀은 actual/avg=null(부분합 위조 금지 — 정직 표기).
+// GET ?action=team_sales_h1[&year=2026] →
+//   { ok, year, monthsCovered, monthlyOk:{1:true,...}, q1:{key:{actual,avg}}, q2:{...}, asOf }
+function _kpiTeamSalesH1(params) {
+  try {
+    var year = Number(params.year) || 2026;
+    var keys = ['swim', 'pt', 'golf', 'squash', 'gym', 'pilates', 'musical', 'gxe'];
+    var monthly = {}, monthlyOk = {}, monthsCovered = [];
+    for (var m = 1; m <= 6; m++) {
+      monthsCovered.push(m);
+      try {
+        var fileId = _kpiSalesMonthlyFileId(year, m);
+        var tab = fileId ? _kpiSalesLastDayTab(SpreadsheetApp.openById(fileId), year, m) : null;
+        if (!tab) { monthly[m] = null; monthlyOk[m] = false; continue; }
+        var byKey = {};
+        _kpiParseTeamSalesRange(tab).teams.forEach(function (t) { byKey[t.key] = t.actual; });
+        monthly[m] = byKey; monthlyOk[m] = true;
+      } catch (mErr) {
+        monthly[m] = null; monthlyOk[m] = false;
+      }
     }
-    return _json(resp);
+    function qSum(startM) {
+      var out = {};
+      keys.forEach(function (k) {
+        var sum = 0, ok = true;
+        for (var mm = startM; mm < startM + 3; mm++) {
+          var mv = monthly[mm];
+          if (!mv || typeof mv[k] !== 'number') { ok = false; break; }
+          sum += mv[k];
+        }
+        out[k] = ok ? { actual: sum, avg: sum / 3 } : { actual: null, avg: null };
+      });
+      return out;
+    }
+    return _json({
+      ok: true, year: year, monthsCovered: monthsCovered, monthlyOk: monthlyOk,
+      q1: qSum(1), q2: qSum(4), asOf: _now()
+    });
   } catch (err) {
     return _json({ ok: false, error: String(err) });
   }
@@ -1676,10 +1722,16 @@ function doGet(e) {
       return _kpiSalesMonthly();
     }
 
-    // ─── 팀별 매출 실적(월별 "매출 보고" 원장 O8:T74) — 2026-07-03 시토(배354) ───
+    // ─── 팀별 매출 실적(월별 "매출 보고" 원장 '31'탭 U:Y) — 2026-07-03 시토(배354), 2026-07-07 정정 ───
     // GET ?action=team_sales[&year=2026&month=6&fileId=...]. PII 없는 매출 범위만 읽기전용.
     if (action === 'team_sales') {
       return _kpiTeamSales(e.parameter);
+    }
+
+    // ─── 강습팀 상반기 1·2분기 실적 집계(월별 '31'탭 직독 합산) — 2026-07-07 시토(배354 완결) ───
+    // GET ?action=team_sales_h1[&year=2026]. 월간운영계획·상반기전사회의 강습팀표 공유 정본.
+    if (action === 'team_sales_h1') {
+      return _kpiTeamSalesH1(e.parameter);
     }
 
     // ─── G1 '오늘의 항로' 서버 단일 머지 (2026-06-11 시토 · ②a 미사용·비파괴) ───

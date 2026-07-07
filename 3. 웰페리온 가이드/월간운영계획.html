@@ -367,6 +367,7 @@
   .h1rteam td.pctc{color:var(--accent-soft); font-weight:700;}
   .h1rteam td.h2v{color:var(--gold); font-weight:700;}
   .h1rteam td .qv{display:block;}
+  .h1rteam td .qavg{display:block; font-size:10px; color:var(--dim); margin-top:1px;}
   .h1rteam td .qp{display:block; font-size:10.5px; color:var(--accent-soft); font-weight:700; margin-top:1px;}
   /* 🏆 2분기 포상 배너(GM 확정값·SSOT=half_year_review.award) */
   .h1r-award{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin:0 0 10px; padding:11px 15px; background:linear-gradient(120deg,rgba(240,198,116,0.16),rgba(240,198,116,0.05)); border:1px solid var(--gold); border-radius:11px;}
@@ -1011,6 +1012,7 @@
   var _devCounts = null;     // 웰페리온 ERP 개발 월별 완료 {items:[{month,done,note,cur}]} — monthly_ops_plan.json erp_dev.months 스냅샷(git 커밋 실측). 조회 실패=null(측정 개통 전)
   var _instrTeamMap = {};    // 강사이름 → 팀(부서) 매핑(인건비 시트 A/B열 로스터에서 구성) — team_sales의 강사별 실적을 팀 단위로 합산하는 데 사용(PII 미노출·집계에만 사용)
   var _teamSalesCache = {};  // 'YYYY-M' → {status:'loading'|'done', raw:team_sales 응답} — 선택월별 라이브 팀 매출 실적 캐시
+  var _h1Sales = null;       // GAS action=team_sales_h1 응답({ok,q1:{key:{actual,avg}},q2:{...}}) — 강습팀 1·2분기 표 정본(매출마스터 완전 대체·2026-07-07)
   var _checkMonthlyCache = {}; // 'YYYY-MM' → {status:'loading'|'done', data:monthly_report 응답} — 선택월별 지원부 점검 월간 집계 캐시(CHECK_GAS action=monthly_report)
   var _nsMap = null;      // role.id → 북극성 문구(bootsetup_matrix.json dims[0] 첫 줄) — 목표→북극성 뱃지용
   var _editMode = false;
@@ -1198,6 +1200,14 @@
       _teamSalesCache[monKey] = {status:'done', raw:raw};
       if(_sel === monKey){ renderFinance(); renderSummaryBoard(); }
     });
+  }
+  // ── 강습팀 상반기 1·2분기 실적 정본 — GAS action=team_sales_h1(월별 "매출 보고" 31시트 U:Y 직독 합산).
+  //    2026-07-07 시토(배354 완결): 부정확했던 매출마스터(_cfoSalesDept 분기합) 대체. 1회 조회·boot()에서 kick-off.
+  function readTeamSalesH1(year){
+    return fetch(GAS_URL + '?action=team_sales_h1&year=' + year + '&_cb=' + Date.now(), {method:'GET', redirect:'follow', cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ return (res && res.ok) ? res : null; })
+      .catch(function(){ return null; });
   }
   // team_sales 강사별 실적 → 팀 키(sales_targets.json 키) 합계. '합계'(운영부 소계)·운영부 강사는 제외(멤버십 실적=GM시트 정본 별도 사용, 중복방지). 매핑 안 되는 이름(루프 메소드·카드발급 등)은 etc.
   var TEAM_DEPT_TO_KEY = {"수영":"swim", "P.T":"pt", "골프":"golf", "스쿼시":"squash", "체조&트램":"gym", "필라테스":"pilates", "뮤지컬":"musical", "GXE":"gxe"};
@@ -1836,8 +1846,12 @@
   }
 
   // ── 📋 상반기 리뷰 & 하반기 방향(GM 상반기 전사회의 반영 2026-07-06) ──
-  // 상반기(1~6월) 강습팀 실적을 1분기(1~3월·idx0~2)·2분기(4~6월·idx3~5)로 분리 = _cfoSalesDept[부서] 분기 합(부팅 시 이미 조회한 매출마스터 재사용·신규 배관 없음·INC-001 값 저장 없음).
-  // 목표 = status/sales_targets.json 월 목표(고정). 분기 목표=월목표×3·상반기=하반기=월목표×6(팀별 조정 전=정직 표기). 잘한 팀=2분기 실적 달성률 최고(GM: 근거=2분기)·포상=half_year_review.award(GM 확정값). 미도래=정직 표기·지어내기 금지.
+  // 상반기(1~6월) 강습팀 실적을 1분기(1~3월)·2분기(4~6월)로 분리 = GAS action=team_sales_h1(_h1Sales, 월별 "매출 보고" 31시트 U:Y 직독 합산·정본).
+  //   ⚠️ [2026-07-07 정정] 예전엔 _cfoSalesDept(매출마스터 gviz) 분기합을 썼으나 부정확(예 6월 뮤지컬 38만 오독 vs 실측 377만) — team_sales_h1로 교체.
+  //   멤버십(운영부)만 기존대로 _cfoSalesDept 정본(GM시트 오버라이드 반영본) 유지(이미 정확 — 중복배관 없음).
+  // 목표 = status/sales_targets.json 월 목표(고정). 분기 목표=월목표×3·상반기=하반기=월목표×6(팀별 조정 전=정직 표기).
+  // 월평균(GM 지시 2026-07-07) = 분기실적÷3, 상반기 합 월평균 = 상반기합÷6 — 실적 null이면 월평균도 '—'(지어내기 금지).
+  // 잘한 팀=2분기 실적 달성률 최고(GM: 근거=2분기)·포상=half_year_review.award(GM 확정값). 미도래=정직 표기·지어내기 금지.
   function renderH1Review(){
     var host = document.getElementById('h1review-board');
     if(!host) return;
@@ -1847,23 +1861,28 @@
       (hr.headline_sub ? '<span class="b-sub">' + esc(hr.headline_sub) + '</span>' : '') + '</div>') : '';
 
     var teamRows = (_salesTargets && _salesTargets.teams) || [];
-    var KEY_TO_DEPT = {}; for(var kd in TEAM_DEPT_TO_KEY){ KEY_TO_DEPT[TEAM_DEPT_TO_KEY[kd]] = kd; }
-    var haveActual = !!_cfoSalesDept;
-    // 분기 합: q=0 → 1~3월(idx0~2), q=1 → 4~6월(idx3~5). 실측 없으면 null(정직).
+    var haveActual = !!(_h1Sales && _h1Sales.ok);
+    // 분기 실적+월평균: q=0 → 1분기, q=1 → 2분기. 멤버십=_cfoSalesDept 운영부, 강습팀=_h1Sales(team_sales_h1). 실측 없으면 둘 다 null(정직).
     function qActualFor(key, q){
-      var dept = (key === 'membership') ? '운영부' : KEY_TO_DEPT[key];
-      if(!dept || !_cfoSalesDept || !_cfoSalesDept[dept]) return null;
-      var arr = _cfoSalesDept[dept], s = 0, start = q * 3;
-      for(var m = start; m < start + 3 && m < arr.length; m++){ s += Number(arr[m]) || 0; }
-      return s;
+      if(key === 'membership'){
+        if(!_cfoSalesDept || !_cfoSalesDept['운영부']) return {actual: null, avg: null};
+        var arr = _cfoSalesDept['운영부'], s = 0, start = q * 3;
+        for(var m = start; m < start + 3 && m < arr.length; m++){ s += Number(arr[m]) || 0; }
+        return {actual: s, avg: s / 3};
+      }
+      var qd = _h1Sales && _h1Sales['q' + (q + 1)];
+      var cell = qd && qd[key];
+      return (cell && cell.actual != null) ? {actual: cell.actual, avg: cell.avg} : {actual: null, avg: null};
     }
 
     var lessonRows = [], membershipRow = null;
     teamRows.forEach(function(tt){
       var mtgt = Number(tt.target) || 0, qtgt = mtgt * 3, htgt = mtgt * 6;
-      var q1 = qActualFor(tt.key, 0), q2 = qActualFor(tt.key, 1);
+      var c1 = qActualFor(tt.key, 0), c2 = qActualFor(tt.key, 1);
+      var q1 = c1.actual, q2 = c2.actual;
       var h1 = (q1 != null || q2 != null) ? ((q1 || 0) + (q2 || 0)) : null;
-      var row = {key: tt.key, name: tt.name, mtgt: mtgt, qtgt: qtgt, htgt: htgt, q1: q1, q2: q2, h1: h1,
+      var row = {key: tt.key, name: tt.name, mtgt: mtgt, qtgt: qtgt, htgt: htgt,
+        q1: q1, q1avg: c1.avg, q2: q2, q2avg: c2.avg, h1: h1, h1avg: (h1 != null) ? (h1 / 6) : null,
         q1pct: (q1 != null && qtgt) ? Math.round(q1 / qtgt * 100) : null,
         q2pct: (q2 != null && qtgt) ? Math.round(q2 / qtgt * 100) : null,
         h1pct: (h1 != null && htgt) ? Math.round(h1 / htgt * 100) : null};
@@ -1892,20 +1911,21 @@
       bestHtml = '<div class="h1r-none">잘한 팀 하이라이트 — 달성률 산출 가능한 실측 없음.</div>';
     }
 
-    function qcell(act, pct){
+    function qcell(act, avg, pct){
       return '<td class="num"><span class="qv">' + (act != null ? fmtWon(act) : '—') + '</span>' +
+        '<span class="qavg">월평균 ' + (avg != null ? fmtWon(avg) : '—') + '</span>' +
         '<span class="qp">' + (pct != null ? pct + '%' : '—') + '</span></td>';
     }
     var tbody = lessonRows.map(function(r){
       var isBest = best && r.key === best.key;
       return '<tr' + (isBest ? ' class="best"' : '') + '><td>' + esc(r.name) + (isBest ? ' 🏅' : '') + '</td>' +
-        qcell(r.q1, r.q1pct) + qcell(r.q2, r.q2pct) + qcell(r.h1, r.h1pct) +
+        qcell(r.q1, r.q1avg, r.q1pct) + qcell(r.q2, r.q2avg, r.q2pct) + qcell(r.h1, r.h1avg, r.h1pct) +
         '<td class="num h2v">' + fmtWon(r.htgt) + '</td></tr>';
     }).join('');
     if(membershipRow){
       var mr = membershipRow;
       tbody += '<tr class="corp"><td>' + esc(mr.name) + ' · 전사(강습팀 아님)</td>' +
-        qcell(mr.q1, mr.q1pct) + qcell(mr.q2, mr.q2pct) + qcell(mr.h1, mr.h1pct) +
+        qcell(mr.q1, mr.q1avg, mr.q1pct) + qcell(mr.q2, mr.q2avg, mr.q2pct) + qcell(mr.h1, mr.h1avg, mr.h1pct) +
         '<td class="num h2v">' + fmtWon(mr.htgt) + '</td></tr>';
     }
     var allRows = lessonRows.concat(membershipRow ? [membershipRow] : []);
@@ -1916,16 +1936,19 @@
       if(r.q2 != null){ t.q2 = (t.q2 || 0) + r.q2; }
       if(r.h1 != null){ t.h1 = (t.h1 || 0) + r.h1; }
     });
+    var tq1avg = (t.q1 != null) ? (t.q1 / 3) : null;
+    var tq2avg = (t.q2 != null) ? (t.q2 / 3) : null;
+    var th1avg = (t.h1 != null) ? (t.h1 / 6) : null;
     var tq1p = (t.q1 != null && t.qtgt) ? Math.round(t.q1 / t.qtgt * 100) : null;
     var tq2p = (t.q2 != null && t.qtgt) ? Math.round(t.q2 / t.qtgt * 100) : null;
     var th1p = (t.h1 != null && t.htgt) ? Math.round(t.h1 / t.htgt * 100) : null;
-    tbody += '<tr class="tot"><td>전사 합계</td>' + qcell(t.q1, tq1p) + qcell(t.q2, tq2p) + qcell(t.h1, th1p) +
+    tbody += '<tr class="tot"><td>전사 합계</td>' + qcell(t.q1, tq1avg, tq1p) + qcell(t.q2, tq2avg, tq2p) + qcell(t.h1, th1avg, th1p) +
       '<td class="num h2v">' + fmtWon(t.htgt) + '</td></tr>';
 
     var table = teamRows.length ?
       ('<div class="rpt-wrap"><table class="rpt findept h1rteam"><thead><tr>' +
-        '<th>팀</th><th class="num">1분기(1~3월)<br>실적·달성%</th><th class="num">2분기(4~6월)<br>실적·달성%</th>' +
-        '<th class="num">상반기 합<br>실적·달성%</th><th class="num">하반기 목표<br>(7~12월)</th></tr></thead><tbody>' +
+        '<th>팀</th><th class="num">1분기(1~3월)<br>실적·월평균·달성%</th><th class="num">2분기(4~6월)<br>실적·월평균·달성%</th>' +
+        '<th class="num">상반기 합<br>실적·월평균·달성%</th><th class="num">하반기 목표<br>(7~12월)</th></tr></thead><tbody>' +
         tbody + '</tbody></table></div>') :
       '<div class="h1r-none">팀별 목표 정본(sales_targets.json) 로딩 중…</div>';
 
@@ -1938,7 +1961,7 @@
 
     host.innerHTML = banner +
       '<div class="h1r-sub-h">🏆 2분기 포상 · 잘한 팀</div>' + awardHtml + bestHtml +
-      '<div class="h1r-sub-h">📊 강습팀 1·2분기 실적 + 하반기 목표 <span class="h1r-tag">분기 달성%=분기실적÷(월목표×3) · 상반기=÷(월목표×6) · 기준 목표(팀별 조정 전)</span></div>' + table +
+      '<div class="h1r-sub-h">📊 강습팀 1·2분기 실적 + 하반기 목표 <span class="h1r-tag">월평균=분기실적÷3(상반기=÷6) · 달성%=분기실적÷(월목표×3) · 상반기=÷(월목표×6) · 기준 목표(팀별 조정 전)</span></div>' + table +
       (dirHtml ? ('<div class="h1r-sub-h">🧭 하반기 방향 3축</div>' + dirHtml) : '');
   }
 
@@ -2645,6 +2668,12 @@
     withTimeout(readInstructorTeamMap(), 8000, {}).then(function(v){
       _instrTeamMap = v || {};
       if(_data && _finReady) renderFinance();
+    });
+
+    // 6-1) 강습팀 상반기 1·2분기 실적 정본(team_sales_h1) — 도착 시 H1 리뷰 표만 갱신.
+    withTimeout(readTeamSalesH1(2026), 15000, null).then(function(v){
+      _h1Sales = v;
+      if(_data) renderH1Review();
     });
 
     // 7) 북극성 지도 — 과제·실무 도달율표 뱃지. 도착 시 갱신.
