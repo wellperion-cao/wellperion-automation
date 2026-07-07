@@ -1090,7 +1090,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <option value="LOSS">LOSS</option>
           </select>
           <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납)·LOSS 건을 숨겨 진행 중 깔때기만 봅니다">
-            <input type="checkbox" id="dbHideRegistered" onchange="renderDbTable()" style="cursor:pointer"> 진행중만 보기
+            <input type="checkbox" id="dbHideRegistered" checked onchange="renderDbTable()" style="cursor:pointer"> 진행중만 보기 <span style="font-size:11px;color:var(--dim)">(가입완료·이탈 숨김)</span>
           </label>
         </div>
         <div class="db-toolbar-actions">
@@ -1136,6 +1136,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       </div>
       <div class="db-count-bar" style="margin-top:10px">
         <span id="dbCount"></span>
+        <span id="dbGraduatedInfo" style="color:var(--dim);font-size:12px"></span>
       </div>
     </div>
   </div>
@@ -4384,6 +4385,18 @@ function _updateDbUnfilledBadge(filtered) {
   el.style.display = '';
   el.innerHTML = '진행상태 미입력 <b>' + n + '</b>건 — 채워주시면 퍼널이 정확해집니다';
 }
+// '진행중만 보기' 켜짐 시 숨겨진 종결건(가입완료·이탈) 투명 카운트 — 2026-07-07 시포·GM
+function _updateDbGraduatedInfo() {
+  var el = document.getElementById('dbGraduatedInfo');
+  if (!el) return;
+  var _hideRegEl = document.getElementById('dbHideRegistered');
+  var hideReg = _hideRegEl && _hideRegEl.checked;
+  if (!hideReg) { el.textContent = ''; return; }
+  var sucN = dbRows.filter(function(row){ return ['SUC','단기SUC','결제완납'].indexOf(row.status) >= 0; }).length;
+  var lossN = dbRows.filter(function(row){ return row.status === 'LOSS'; }).length;
+  if (!sucN && !lossN) { el.textContent = ''; return; }
+  el.textContent = '· 가입완료 ' + sucN + '건 · 이탈 ' + lossN + '건 졸업(등록현황·회원관리에서 확인)';
+}
 
 function renderDbTable() {
   var filtered = _dbFilteredRows();
@@ -4396,6 +4409,7 @@ function renderDbTable() {
     );
     document.getElementById('dbCount').textContent = '총 ' + dbRows.length + '건 중 0건';
     _updateDbUnfilledBadge(filtered);
+    _updateDbGraduatedInfo();
     return;
   }
 
@@ -4405,6 +4419,7 @@ function renderDbTable() {
   });
   document.getElementById('dbCount').textContent = '총 ' + dbRows.length + '건 중 ' + filtered.length + '건 표시';
   _updateDbUnfilledBadge(filtered);
+  _updateDbGraduatedInfo();
 }
 
 function buildDbRow(row, isNew) {
