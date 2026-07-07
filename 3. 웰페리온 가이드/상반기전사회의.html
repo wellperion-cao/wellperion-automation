@@ -31,7 +31,7 @@
   .doc-head .brand{font-size:12px; color:var(--emerald); font-weight:800; letter-spacing:0.04em; align-self:center;}
   /* ── 결재란: 프리미엄 재디자인(GM 2026-07-07 — 옛날틱한 검정 도장틀 제거) ──
      화면·인쇄 색상 전부 하드코딩(다크테마 변수 영향 X) · @media print에서도 동일 유지·잘림 없이 그대로 출력. */
-  .approval-wrap{display:inline-block; align-self:center; border:1px solid #c9a34e; border-radius:11px; overflow:hidden;
+  .approval-wrap{display:none; align-self:center; border:1px solid #c9a34e; border-radius:11px; overflow:hidden;
     background:#fffcf5; box-shadow:0 1px 4px rgba(0,0,0,0.28);}
   .approval-box{border-collapse:collapse;}
   .approval-box td{background:#fff; color:#2a2317; text-align:center; padding:0; font-family:inherit;}
@@ -58,7 +58,7 @@
   tbody td{padding:5px 10px; font-size:11.5px; color:var(--text-soft); border-bottom:1px solid var(--border);}
   tbody td.team{font-weight:700; color:var(--text);}
   td.num{text-align:right; font-variant-numeric:tabular-nums;}
-  td.num .qv{display:block; color:var(--text);}
+  td.num .qv{display:block; color:var(--text); font-size:15px; font-weight:700; text-align:left;}
   td.num .qavg{display:block; font-size:9.5px; color:var(--dim); margin-top:1px;}
   td.num .qp{display:block; font-size:10.5px; color:var(--accent-soft); font-weight:700; margin-top:1px;}
   td.h2v{color:var(--gold); font-weight:700;}
@@ -103,7 +103,7 @@
     body{background:#fff;}
     .sheet{max-width:none; padding:0;}
     .cols{gap:16px;}
-    .approval-wrap{box-shadow:none;}
+    .approval-wrap{display:inline-block; box-shadow:none;}
     .doc-head{align-items:center;}
     .card,.award,.best-card,.dir,.kicker,.approval-wrap{page-break-inside:avoid; break-inside:avoid;}
     .doc-head,.kicker,.cols{page-break-inside:avoid;}
@@ -367,5 +367,6 @@
   withTimeout(readTeamSalesH1(2026), 30000, null).then(function(v){ _h1Sales = v; renderSales(); });
 })();
 </script>
+<script src="_assets/print_options.js"></script>
 </body>
 </html>
