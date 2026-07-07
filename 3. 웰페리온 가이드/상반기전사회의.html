@@ -118,9 +118,12 @@
   /* A4 = A3 절반 면적(같은 1:1.414 비율) — 콘텐츠는 A3 1장 밀도로 고정, A4 선택 시에는
      zoom으로 축소해 같은 레이아웃을 그대로 1장에 맞춘다(재조판·잘림 없음).
      zoom은 transform과 달리 레이아웃 자체를 다시 흐르게 해 표·2단 그리드가 좁은 폭에서
-     줄바꿈 없이 A3때와 동일하게 짜인다. data-print-paper는 print_options.js가 세팅. */
+     줄바꿈 없이 A3때와 동일하게 짜인다. data-print-paper는 print_options.js가 세팅.
+     zoom=0.74 확정(2026-07-07 실측 수렴): 헤드리스 크롬 A4 가로 print-to-pdf 실측 결과
+     1→2페이지 분기점=zoom 0.77(0.765=1장·0.77=2장, card page-break-inside:avoid로 급격한
+     문턱). 0.74는 그 아래 안전마진을 두면서 기존 0.7보다 가독성 확대. */
   @media print{
-    :root[data-print-paper="A4"] .sheet{ zoom:0.7; }
+    :root[data-print-paper="A4"] .sheet{ zoom:0.74; }
   }
 </style>
 </head>
