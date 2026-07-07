@@ -643,9 +643,13 @@
     .sum-compact{color:#333 !important; font-size:8px; gap:3px 12px; padding:3px 0;}
     .rep-empty{color:#555 !important;}
     .mtheme-report{color:#333 !important; font-size:7.5px;}
-    .chk-card{background:#f7f7f7 !important; border:1px solid #999 !important; padding:5px 8px;}
+    /* 🔧 점검 현황 & 종합 접수처 = 두 단 전폭 상단·5카드 한 줄(GM 지시 2026-07-07: 인쇄 시 종합접수처·ERP 카드가 아래로 내려가던 것 방지 — 반쪽 폭 2단 안에서 wrap 발생) */
+    .blk[data-blkid="check"]{column-span:all; break-inside:avoid; margin-bottom:2px;}
+    .chk-grid{flex-wrap:nowrap; gap:5px; margin-bottom:6px;}
+    .chk-card{background:#f7f7f7 !important; border:1px solid #999 !important; padding:5px 8px; min-width:0; flex:1 1 0;}
     .chk-card .cl, .chk-card .csub{color:#444 !important;}
     .chk-card .cv{color:#111 !important; font-size:14px;}
+    .chk-card .cv-timeline{gap:6px;} .chk-card .cv-timeline .cvt-item span{font-size:12px;}
     /* 🚀 ERP 개발 카드 월별 완료 숫자 — 흰 배경 인쇄 대비 확보(GM 지시 2026-07-06 3차 · var(--text)/--dim은 인쇄에서 안 보임) */
     .chk-card .cv-timeline .cvt-item b{color:#333 !important;}
     .chk-card .cv-timeline .cvt-item span{color:#111 !important;}
