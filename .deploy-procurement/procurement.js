@@ -30,6 +30,7 @@ function route(p){
     case "proc_summary": return procSummary(p);
     case "sales_probe": return salesProbe(p);
     case "sales_dept": return salesDept(p);
+    case "sales_ops":  return salesOps(p);
     case "labor_zero": return laborZero(p);
     case "labor_time": return laborTime(p);
     case "receipt": return addReceipt(p);
@@ -292,7 +293,9 @@ function salesProbe(p){ // 구조 점검용(임시): 월 파일의 탭 목록 + 
   var grid = null, tab = String(p.tab||"");
   if (tab){
     var sht = ss.getSheetByName(tab);
-    if (sht) grid = sht.getRange("O8:T80").getDisplayValues(); // 팀 집계 영역 고정(2026-07-06 감사: 임의 range 차단 — PII 통로 봉쇄)
+    // 허용 영역 화이트리스트(PII 차단): 일자탭=팀 집계 O8:T80 / 집계탭('총 매출'류)=상단 집계표만
+    var AGG = { "총 매출":"A1:P80", "총 매출(분류)":"A1:P80", "보고":"A1:P80" };
+    if (sht) grid = sht.getRange(AGG[tab] || "O8:T80").getDisplayValues();
   }
   return out({ ok:true, month:mo, tabs:names, tab:tab, grid:grid });
 }
@@ -378,6 +381,37 @@ function salesDept(p){
   }
   var res = { ok:true, dept:dept, monthsLoaded:monthsLoaded, src:src, unmapped:Object.keys(unmapped), at:Utilities.formatDate(now,"Asia/Seoul","yyyy-MM-dd HH:mm") };
   try { cache.put("sales_dept_v1", JSON.stringify(res), 1200); } catch(e){} // 20분 캐시(payload 소형)
+  return out(res);
+}
+
+/** 운영부(회원권) 매출 정밀 — 월별 매출보고 「총 매출」 탭 '합계'행 서버 집계(★환불 차감 반영, 매니저 지시 2026-07-07).
+ *  컬럼: B신규 D재등록 F양도 H환불(괄호음수) J옵션 N합계매출(=신규+재등+양도+환불+옵션, 굿즈·카드 제외 — 시트 산식 그대로 신뢰).
+ *  반환: 월별 net(합계매출)·refund(환불)·gross(환불 전). 집계만 반환(PII 없음)·20분 캐시. GM시트 대체 정본(대시보드 운영부 소스). */
+function salesOps(p){
+  var cache = CacheService.getScriptCache();
+  if (!p.nocache){ var hit = cache.get("sales_ops_v1"); if (hit) return out(JSON.parse(hit)); }
+  var files = salesFiles_();
+  var net=[], refund=[], gross=[], monthsLoaded=[];
+  for (var i=0;i<12;i++){ net.push(null); refund.push(null); gross.push(null); }
+  function pnum(s){ s=String(s==null?"":s).trim(); if(!s) return 0; var neg=/^\(.*\)$/.test(s); s=s.replace(/[(),\s원]/g,""); var v=parseInt(s,10); if(isNaN(v)) return 0; return neg? -v : v; }
+  for (var m=1;m<=12;m++){
+    if (!files[m]) continue;
+    var sht = SpreadsheetApp.openById(files[m]).getSheetByName("총 매출");
+    if (!sht) continue;
+    var g = sht.getRange(1,1,Math.min(sht.getLastRow(),60),14).getDisplayValues();
+    for (var r=0;r<g.length;r++){
+      if (String(g[r][0]).trim() !== "합계") continue;
+      var sin=pnum(g[r][1]), jae=pnum(g[r][3]), yang=pnum(g[r][5]), hwan=pnum(g[r][7]), opt=pnum(g[r][9]);
+      var hap=pnum(g[r][13]);
+      var gr = sin+jae+yang+opt;
+      net[m-1] = hap || (gr + hwan); // 시트 합계열 우선, 비면 구성요소 재계산
+      refund[m-1] = hwan; gross[m-1] = gr;
+      monthsLoaded.push(m);
+      break;
+    }
+  }
+  var res = { ok:true, net:net, refund:refund, gross:gross, monthsLoaded:monthsLoaded, at:Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm") };
+  try { cache.put("sales_ops_v1", JSON.stringify(res), 1200); } catch(e){}
   return out(res);
 }
 

@@ -273,7 +273,7 @@ var LABOR=[],OPER=[],INSTRUCTORS=[],laborMonth=[],procMonth=[],salesMonth=[],tot
 var SALES_G=0,COST_G=0,LABOR_G=0,OPER_G=0,PROC_G=0,MEMBER_G=0,DATA_LAST=6,selTeam=null,period=-1,_charts={};
 var SALES_TRUTH=null,SALES_TRUTH_LAST=0,SALES_TRUTH_LIVE=false,SALES_ETC=[],ETC_G=0,SALES_LAST=6; // 매출 정본(월별 총매출)·기타보정
 var PROC_DEPT=FB_PROC,PROC_LIVE=false; // 구매성 부서별×월별 — 라이브(loadProc) 성공 시 교체, 실패 시 FB_PROC
-var OPS_SALES=null,OPS_SALES_LIVE=false; // 운영부 매출 정본(GM시트) — 월별 배열, 성공 시 SALES_DEPT.운영부 교체
+var OPS_SALES=null,OPS_SALES_LIVE=false,OPS_REFUND=null,OPS_SRC=""; // 운영부 매출 정본 = 매출보고 총매출탭(환불반영, sales_ops) · GM시트는 폴백. OPS_REFUND=월별 환불(음수)
 var SALES_DEPT_LIVE=false; // 종목별 매출 라이브(매출보고 서버집계 sales_dept) 성공 여부 — 성공 시 매출마스터 대체
 var TIME_SWIM=Array(12).fill(0),TIME_OTHER=Array(12).fill(0),timeMonth=Array(12).fill(0),TIME_G=0,TIME_LIVE=false; // 타임(시급) 인건비 — 라이프가드·아쿠아 등(labor_time 서버집계, 인건비마스터 밖 실지출)
 var GOAL_H1=3500000000,GOAL_YR=7200000000; // 매출 목표 — 상반기 35억(25년 전사회의 제시)·연간 72억(매니저님 확정 2026-07-04)
@@ -340,6 +340,13 @@ async function loadSalesTruth(){
 }
 /* 운영부 매출 정본 로드 — GM시트 「2026년도 매출」(1gCQNny…) gviz. B열=월 라벨("1월".."12월"), L열(index 11)=합계(매출). 실패·미공유 시 조용히 폴백(매출마스터 SALES_DEPT.운영부 유지). */
 async function loadOpsSales(){
+  // 1순위: 매출보고 「총 매출」 탭 서버집계(sales_ops — ★환불 차감 반영, 매니저 지시 2026-07-07). 실패 시 GM시트 gviz 폴백(환불 미반영 가능).
+  try{
+    var j=await procCall("sales_ops",{});
+    if(j&&j.ok&&j.net&&j.net.some(function(v){return v!==null;})){
+      OPS_SALES=j.net;OPS_REFUND=j.refund||null;OPS_SALES_LIVE=true;OPS_SRC="보고서";return;
+    }
+  }catch(e){}
   try{
     var r=await fetch(OPS_GVIZ,{cache:"no-store"});var t=await r.text();
     var json=JSON.parse(t.substring(t.indexOf("{"),t.lastIndexOf("}")+1));var rows=json.table.rows||[];
@@ -347,7 +354,7 @@ async function loadOpsSales(){
     rows.forEach(function(row){var c=row.c||[];var lbl=c[1]&&c[1].v;if(!lbl)return;
       var mi=parseInt(String(lbl),10)-1;if(!(mi>=0&&mi<12))return;
       var cl=c[11];if(cl&&typeof cl.v==="number")arr[mi]=cl.v;});
-    OPS_SALES=arr;OPS_SALES_LIVE=arr.some(function(v){return v!==null;});
+    OPS_SALES=arr;OPS_SALES_LIVE=arr.some(function(v){return v!==null;});OPS_SRC="GM시트";
   }catch(e){OPS_SALES=null;OPS_SALES_LIVE=false;}
 }
 /* 종목별 매출 라이브(sales_dept) — 월별 「매출 보고」 파일 말일탭을 백엔드가 서버 집계(강사→종목 매핑=인건비마스터, 집계만 반환·PII 없음).
@@ -437,7 +444,7 @@ function renderNav(){var nav=document.getElementById("nav");
     document.querySelectorAll(".panel").forEach(function(p){p.classList.toggle("active",p.dataset.panel===b.dataset.p);});};});}
 
 function updateSyncMeta(){var sm=document.getElementById("syncMeta");if(!sm)return;
-  var t="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_DEPT_LIVE?"🟢실시간(매출보고)":(SALES_LIVE?"🟡마스터(스냅샷)":"⚪폴백"))+" · 운영부 "+(OPS_SALES_LIVE?"🟢GM시트":"⚪마스터")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⏳불러오는 중…")+" · 타임(시급) "+(TIME_LIVE?"🟢실시간":"⏳");
+  var t="인건비 "+(LIVE?"🟢실시간":"⚪폴백")+" · 매출 "+(SALES_TRUTH_LIVE?"🟢정본 실시간":(SALES_LIVE?"🟡마스터":"⚪폴백"))+" · 종목분해 "+(SALES_DEPT_LIVE?"🟢실시간(매출보고)":(SALES_LIVE?"🟡마스터(스냅샷)":"⚪폴백"))+" · 운영부 "+(OPS_SALES_LIVE?(OPS_SRC==="보고서"?"🟢보고서(환불반영)":"🟡GM시트(환불 미반영 가능)"):"⚪마스터")+" · 구매성 "+(PROC_LIVE?"🟢실시간(지출품의)":"⏳불러오는 중…")+" · 타임(시급) "+(TIME_LIVE?"🟢실시간":"⏳");
   // 폴백 소스는 6월 스냅샷까지만 담고 있어 7월 이후 라이브와 혼합 시 과소집계 가능 — 명시 경고(2026-07-06 감사)
   var fb=[];if(!LIVE)fb.push("인건비");if(!SALES_TRUTH_LIVE&&!SALES_LIVE)fb.push("매출");if(!PROC_LIVE&&PROC_LIVE!==undefined)fb.push("구매성");
   if(fb.length&&curMonth()>6)t+=" · ⚠️폴백("+fb.join("·")+")은 6월 스냅샷까지만 반영 — 이후 월 과소 표시 가능";
@@ -557,6 +564,9 @@ function renderSalesTbl(){
   var h='<thead><tr><th>부서/항목</th>'+MONTHS.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>누적</th></tr></thead><tbody>';
   h+='<tr class="subhead"><td colspan="14">운영부 (회원권)</td></tr>';
   h+='<tr><td>운영부 · 회원권</td>'+MONTHS.map(function(m,i){return cell(oper[i]||0,i>=L6);}).join('')+'<td><b>'+won(sum(oper.slice(0,L6)))+'</b></td></tr>';
+  if(OPS_REFUND&&OPS_REFUND.some(function(v){return v;})){ // 환불 참고 행(매출보고 총매출탭) — 위 운영부 값에 이미 차감 반영됨(합산 금지)
+    h+='<tr><td style="color:var(--ink-faint);font-size:11px">└ 환불 (참고 · 위에 이미 차감 반영)</td>'+MONTHS.map(function(m,i){var v=OPS_REFUND[i]||0;return i>=L6?'<td class="fut">—</td>':'<td style="color:var(--ink-faint);font-size:11px">'+(v?won(v):"0")+'</td>';}).join('')+'<td style="color:var(--ink-faint);font-size:11px">'+won(sum(OPS_REFUND.slice(0,L6).map(function(v){return v||0;})))+'</td></tr>';
+  }
   h+='<tr class="subhead"><td colspan="14">강습 (부서별)</td></tr>';
   Object.keys(SALES_DEPT).filter(function(d){return d!=="운영부";}).sort(function(a,b){return sum(SALES_DEPT[b].slice(0,L6))-sum(SALES_DEPT[a].slice(0,L6));}).forEach(function(d){
     h+='<tr><td>'+d+'</td>'+MONTHS.map(function(m,i){return cell(pv(SALES_DEPT,d,i),i>=L6);}).join('')+'<td><b>'+won(sum(SALES_DEPT[d].slice(0,L6)))+'</b></td></tr>';});
