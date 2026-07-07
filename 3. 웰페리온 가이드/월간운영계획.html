@@ -255,6 +255,20 @@
   .dc-objitem .obadge{flex:0 0 auto; font-size:9px; padding:1px 7px;}
   .dc-objt{flex:1 1 auto; color:var(--text-soft); font-size:11.5px; word-break:keep-all;}
   .dc-objp{flex:0 0 auto; color:var(--accent-soft); font-weight:700; font-size:10.5px; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  /* 🗂️ 종합접수처 접수 내용 상세(GM 지시 2026-07-07 4차) — 성함·연락처 미표시(PII 보호), 내용·위치·상태·일자만 */
+  .vc-detail{display:flex; flex-direction:column; gap:9px; margin-top:11px;}
+  .vc-cat{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px 11px 9px;}
+  .vc-cat-h{font-size:12px; font-weight:700; color:var(--text); margin-bottom:5px; display:flex; align-items:center; gap:7px;}
+  .vc-cat-h .vc-dept{font-size:10px; font-weight:600; color:var(--dim); background:var(--paper); border:1px solid var(--border); border-radius:6px; padding:1px 7px;}
+  .vc-cat-h .vc-n{font-size:10px; font-weight:700; color:var(--accent-soft); margin-left:auto;}
+  .vc-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px;}
+  .vc-item{display:flex; align-items:baseline; gap:7px; font-size:11.5px; line-height:1.4; color:var(--text-soft); padding:3px 0; border-top:1px solid var(--border);}
+  .vc-item:first-child{border-top:none;}
+  .vc-item .istat{flex:0 0 auto;}
+  .vc-c{flex:1 1 auto; color:var(--text); word-break:break-word;}
+  .vc-loc{color:var(--dim); font-weight:600;}
+  .vc-none{color:var(--dim); font-style:italic;}
+  .vc-dt{flex:0 0 auto; font-size:10px; color:var(--dim); font-variant-numeric:tabular-nums; white-space:nowrap;}
 
   /* ── 🚀 ERP 월별 진척 타임라인 ── */
   .erp-time{display:flex; gap:10px; align-items:stretch; position:relative;}
@@ -749,6 +763,8 @@
     .findept td.sub2{font-size:9.5px !important;}
     /* 🗂️ 부서별 내용 표 '월 목표·진척' 과제 목록 인쇄 압축(A3 1p 유지) */
     #dept-cards-board .dc-objt{font-size:8.5px !important;} #dept-cards-board .dc-objp{font-size:8px !important;} #dept-cards-board .dc-objitem .obadge{font-size:7.5px !important; padding:0 4px !important;} #dept-cards-board .dc-objlist{gap:1.5px !important;} #dept-cards-board .dc-objitem{gap:3px !important; line-height:1.22 !important;}
+    /* 🗂️ 종합접수처 접수 내용 상세 인쇄 압축 */
+    .vc-detail{gap:4px !important; margin-top:5px !important;} .vc-cat{padding:4px 7px 5px !important; background:#fff !important; border-color:#999 !important;} .vc-cat-h{font-size:9px !important; margin-bottom:2px !important;} .vc-item{font-size:8px !important; padding:1px 0 !important; line-height:1.2 !important; gap:4px !important;} .vc-dt{font-size:7px !important;} .vc-cat-h .vc-dept, .vc-cat-h .vc-n{font-size:7.5px !important;}
     #obj-board .metric{margin-top:2px !important; padding:2px 5px !important;} #obj-board .metric-h{margin-bottom:1px !important;} #obj-board .mbar{margin:1px 0 !important;}
     #obj-board .r-note{font-size:7px !important; line-height:1.12 !important; margin-top:1px !important;}
     #obj-board .cyc{padding:2px 5px !important; margin-top:2px !important;} #obj-board .cyc-h{margin-bottom:1px !important;} #obj-board .cyc-flow{font-size:7px !important; margin-bottom:2px !important;} #obj-board .cyc-d{font-size:7px !important;} #obj-board .cyc-d .cyc-nt{font-size:6.5px !important;}
@@ -2014,6 +2030,7 @@
         '<div class="rep-empty">현재 등록된 접수 이슈가 없습니다.</div>';
       return;
     }
+    var STAT_CLS = {'접수':'미해결', '처리중':'해결중', '완료':'해결'};
     var rows = VOC_CAT_META.map(function(meta){
       var items = _vocBoard.filter(function(r){ return String(r.category || '') === meta.label; });
       var byStat = {}; VOC_STATUS_LIST.forEach(function(s){ byStat[s] = 0; });
@@ -2025,10 +2042,29 @@
         '<td><span class="istat 해결">완료 ' + byStat['완료'] + '</span></td>' +
         '<td>' + items.length + '건</td></tr>';
     }).join('');
-    host.innerHTML = '<div class="issue-h">🗂️ 종합 접수처 (' + total + ') <span style="font-weight:400;color:var(--dim);">— VOC 실시간 · PII 비노출(카테고리·부서·상태 집계만)</span></div>' +
+    // 각 접수 내용 상세(GM 지시 2026-07-07 4차) — 카테고리별 접수 내용·위치·상태·일자. 회원 성함·연락처는 서버 마스킹 + 미표시(PII 보호).
+    var detail = VOC_CAT_META.map(function(meta){
+      var items = _vocBoard.filter(function(r){ return String(r.category || '') === meta.label; });
+      if(!items.length) return '';
+      var lis = items.map(function(r){
+        var c = String(r.content || '').trim();
+        var loc = String(r.loc || '').trim();
+        var st = String(r.status || '접수');
+        var dt = String(r.createdAt || '').slice(0, 10);
+        return '<li class="vc-item"><span class="istat ' + (STAT_CLS[st] || '미해결') + '">' + esc(st) + '</span>' +
+          '<span class="vc-c">' + (c ? esc(c) : '<span class="vc-none">(내용 미기재)</span>') +
+          (loc ? ' <span class="vc-loc">· ' + esc(loc) + '</span>' : '') + '</span>' +
+          (dt ? '<span class="vc-dt">' + esc(dt) + '</span>' : '') + '</li>';
+      }).join('');
+      return '<div class="vc-cat"><div class="vc-cat-h">' + meta.icon + ' ' + esc(meta.label) +
+        ' <span class="vc-dept">' + esc(meta.dept) + '</span> <span class="vc-n">' + items.length + '건</span></div>' +
+        '<ul class="vc-list">' + lis + '</ul></div>';
+    }).join('');
+    host.innerHTML = '<div class="issue-h">🗂️ 종합 접수처 (' + total + ') <span style="font-weight:400;color:var(--dim);">— VOC 실시간 · 접수 내용 표시 · 성함·연락처 비노출(마스킹)</span></div>' +
       '<div class="rpt-wrap"><table class="rpt issues"><thead><tr>' +
         '<th>유형</th><th>부서</th><th>접수</th><th>처리중</th><th>완료</th><th>합계</th>' +
-      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="vc-detail">' + detail + '</div>';
   }
 
   // ── 🚀 ERP 월별 진척 타임라인(renderErp) = 폐지(GM 지시 2026-07-06 2차) ──
