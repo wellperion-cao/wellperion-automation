@@ -27,6 +27,7 @@
   --purple:#a78bda;--purple-bg:rgba(167,139,218,0.10);--purple-border:rgba(167,139,218,0.28);
   --orange:#e6944e;--orange-bg:rgba(230,148,78,0.10);--orange-border:rgba(230,148,78,0.28);
   --teal:#4ec4c4;--teal-bright:#6dd4d4;--teal-bg:rgba(78,196,196,0.10);--teal-border:rgba(78,196,196,0.28);
+  --emerald:#63BBA0;--emerald-bg:rgba(99,187,160,.12);--emerald-border:rgba(99,187,160,.30);
   --shadow-card:0 2px 12px rgba(0,0,0,0.35);
   --shadow-header:0 1px 0 var(--border),0 4px 16px rgba(0,0,0,0.4);
   --radius-card:14px;
@@ -473,10 +474,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   width:100%;background:var(--bg);
   border:1px solid var(--border);
   color:var(--text);font-size:12px;font-family:inherit;
-  padding:4px 8px;border-radius:6px;
+  padding:5px 9px;border-radius:8px;
   outline:none;cursor:pointer;
+  transition:border-color 0.12s,box-shadow 0.12s;
 }
-.cell-select:focus{border-color:var(--teal)}
+.cell-select:focus{border-color:var(--emerald);box-shadow:0 0 0 1px var(--emerald) inset}
 
 /* ── 편집 가능 셀 어포던스 ── */
 .editable-cell{cursor:pointer;position:relative}
@@ -826,13 +828,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .funnel-bar-ret.drop{color:var(--red)}
 .funnel-bar-month{color:var(--dim-mid);font-size:10px;white-space:nowrap}
 
-/* ── 진행상태 미입력 강조·독려(배4) — 담당자 입력 유도. 2026-07-07 시포·GM ── */
-.cell-select-unfilled{background:var(--yellow-bg)!important;border-color:var(--yellow-border)!important;color:var(--yellow)!important;font-weight:700}
-/* ── 강습 진행상태 상태별 컬러(배4 후속) — 색만으로 구분 아님(옵션 텍스트 그대로 표시), 가시성 강화용 굵게+좌측 강조선. 2026-07-07 시포·GM ── */
+/* ── 강습 진행상태 상태별 컬러(배4 후속, 에메랄드 기반 재정비) — 등록=에메랄드(주인공), 나머지는 약하게 구분. 2026-07-07 시포·GM ── */
 .cell-select.st-consult{color:var(--teal);background:var(--teal-bg);border-color:var(--teal-border);font-weight:700;border-left:3px solid var(--teal)}
-.cell-select.st-registered{color:var(--green);background:var(--green-bg);border-color:var(--green-border);font-weight:700;border-left:3px solid var(--green)}
+.cell-select.st-registered{color:var(--emerald);background:var(--emerald-bg);border-color:var(--emerald-border);font-weight:700;border-left:4px solid var(--emerald)}
 .cell-select.st-hold{color:var(--orange);background:var(--orange-bg);border-color:var(--orange-border);font-weight:700;border-left:3px solid var(--orange)}
-.cell-select.st-cancel{color:var(--red);background:var(--red-bg);border-color:var(--red-border);font-weight:700;border-left:3px solid var(--red)}
+.cell-select.st-cancel{color:var(--red);background:var(--red-bg);border-color:var(--red-border);font-weight:600;border-left:3px solid var(--red);opacity:.72}
 .status-chip.status-chip-unfilled{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border)}
 .status-unfilled-tag{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-left:5px;white-space:nowrap;vertical-align:middle}
 .unfilled-summary-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-bottom:10px}
@@ -1621,15 +1621,15 @@ if (action === 'member_calendar') {
     <div class="dash-grid lesson-dash" style="margin-bottom:18px">
       <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('adult','inq')">
         <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">문의 현황</span></div>
-        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardInq_adult">종목별 강습 문의</span></div></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">종목별</span><span class="dash-v"><b class="lead" id="lessonCardInq_adult">–</b> 건</span></div></div>
       </a>
       <a class="dash-card" data-kind="reg" data-lcard="reg" href="javascript:void(0)" onclick="lessonSwitchCard('adult','reg')">
         <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">금일 등록 현황</span></div>
-        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardReg_adult">오늘 등록 회원</span></div></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">오늘</span><span class="dash-v"><b class="lead" id="lessonCardReg_adult">–</b> 명</span></div></div>
       </a>
       <a class="dash-card" data-kind="mem" data-lcard="mem" href="javascript:void(0)" onclick="lessonSwitchCard('adult','mem')">
         <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
-        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">수강 회원 명단</span></div></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">수강</span><span class="dash-v"><b class="lead" id="lessonCardMem_adult">–</b> 명</span></div></div>
       </a>
     </div>
 
@@ -1637,7 +1637,6 @@ if (action === 'member_calendar') {
     <div id="lessonPane_adult_inq" class="lesson-subpane active">
     <div class="info-box accent" style="margin-bottom:14px">
       <strong>성인 강습 문의 현황</strong> — 종목 버킷으로 필터해 보세요.
-      상담예약 달력은 <a href="강습문의.html" style="color:var(--teal);font-weight:700">강습 상담예약 달력 →</a>에서.
     </div>
     <div class="card">
       <div class="card-title">
@@ -1654,8 +1653,6 @@ if (action === 'member_calendar') {
       </div>
 
       <div id="lessonSportBar_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
-
-      <div id="lessonUnfilledBadge_adult" class="unfilled-summary-badge" style="display:none"></div>
 
       <div class="reg-table-wrap">
         <table class="reg-table">
@@ -1739,15 +1736,15 @@ if (action === 'member_calendar') {
     <div class="dash-grid lesson-dash" style="margin-bottom:18px">
       <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('youth','inq')">
         <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">문의 현황</span></div>
-        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardInq_youth">종목별 강습 문의</span></div></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">종목별</span><span class="dash-v"><b class="lead" id="lessonCardInq_youth">–</b> 건</span></div></div>
       </a>
       <a class="dash-card" data-kind="reg" data-lcard="reg" href="javascript:void(0)" onclick="lessonSwitchCard('youth','reg')">
         <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">금일 등록 현황</span></div>
-        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)" id="lessonCardReg_youth">오늘 등록 회원</span></div></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">오늘</span><span class="dash-v"><b class="lead" id="lessonCardReg_youth">–</b> 명</span></div></div>
       </a>
       <a class="dash-card" data-kind="mem" data-lcard="mem" href="javascript:void(0)" onclick="lessonSwitchCard('youth','mem')">
         <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
-        <div class="dash-metrics"><div class="dash-line"><span class="dash-v" style="font-size:12px;color:var(--dim-mid)">수강 회원 명단</span></div></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">수강</span><span class="dash-v"><b class="lead" id="lessonCardMem_youth">–</b> 명</span></div></div>
       </a>
     </div>
 
@@ -1755,7 +1752,6 @@ if (action === 'member_calendar') {
     <div id="lessonPane_youth_inq" class="lesson-subpane active">
     <div class="info-box accent" style="margin-bottom:14px">
       <strong>유소년 강습 문의 현황</strong> — 종목 버킷으로 필터해 보세요.
-      상담예약 달력은 <a href="강습문의.html" style="color:var(--teal);font-weight:700">강습 상담예약 달력 →</a>에서.
     </div>
     <div class="card">
       <div class="card-title">
@@ -1772,8 +1768,6 @@ if (action === 'member_calendar') {
       </div>
 
       <div id="lessonSportBar_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
-
-      <div id="lessonUnfilledBadge_youth" class="unfilled-summary-badge" style="display:none"></div>
 
       <div class="reg-table-wrap">
         <table class="reg-table">
@@ -2614,6 +2608,8 @@ function lessonLoadStats(t) {
       if (!d || !d.ok) return;
       var el = document.getElementById('lessonStatLine_' + t);
       if (el) el.textContent = '총 ' + (d.total || 0) + '건 · 이번달 ' + (d.thisMonth || 0) + '건';
+      var card = document.getElementById('lessonCardInq_' + t);   // 대시카드1(문의 현황) 숫자 배선. 2026-07-07 시포
+      if (card) card.textContent = d.total || 0;
     })
     .catch(function(){});
 }
@@ -2646,7 +2642,7 @@ function lessonFilterSport(btn, t) {
   lessonRender(t);
 }
 
-// 종목칩 필터 반영 후 현재 화면에 보이는 행 — lessonRender·상태변경 후 미입력 배지 갱신에서 공유. 2026-07-07 시포·GM
+// 종목칩 필터 반영 후 현재 화면에 보이는 행(문의일 최신순) — lessonRender에서 공유. 2026-07-07 시포·GM
 function _lessonVisibleRows(t) {
   var st = _lessonState[t];
   var rows = st.rows;
@@ -2656,6 +2652,7 @@ function _lessonVisibleRows(t) {
       return s === st.sport;
     });
   }
+  rows = rows.slice().sort(function(a,b){ return String(b.timestamp||'').localeCompare(String(a.timestamp||'')); });   // 문의일 최신순
   return rows;
 }
 
@@ -2663,7 +2660,7 @@ function lessonRender(t) {
   var tbody = document.getElementById('lessonBody_' + t);
   if (!tbody) return;
   var rows = _lessonVisibleRows(t);
-  if (rows.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); _updateLessonUnfilledBadge(t, rows); return; }
+  if (rows.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
   var html = '';
   rows.forEach(function(r){
     html += '<tr>' +
@@ -2677,63 +2674,36 @@ function lessonRender(t) {
     '</tr>';
   });
   tbody.innerHTML = html;
-  _updateLessonUnfilledBadge(t, rows);
 }
 
 /* ── 강습 문의 진행상태 인라인 편집 — 멤버십 SUC 등록 체크와 동형(배6 후속, 2026-07-06 시포·GM).
       옵션 고정 5종(미정/상담중/등록/보류/취소). 시트 기존값이 목록 밖이면 보존(데이터 손실 방지). ── */
 var LESSON_STATUS_OPTIONS = ['미정', '상담중', '등록', '보류', '취소'];
 
-/* ── 진행상태 미입력 강조·독려(배4) — 멤버십·강습 공용. 2026-07-07 시포·GM ──
-   판정: 값이 없거나(빈값) '미정'이면 미입력으로 간주(멤버십은 '미정' 옵션이 없어 빈값만 해당). */
+/* ── 미입력 판정(멤버십 전용 공유 함수) — 강습 진행상태 select는 미입력 강조 없이 상태색만 사용.
+   판정: 값이 없거나(빈값) '미정'이면 미입력으로 간주(멤버십은 '미정' 옵션이 없어 빈값만 해당). ── */
 function _isStatusUnfilled(val) {
   var v = String(val || '').trim();
   return !v || v === '미정';
 }
-// select 등 엘리먼트 바로 다음에 '미입력' 표식을 붙이거나 뗀다 — DOM 재생성 없이 토글만(IME/포커스 안전).
-function _toggleUnfilledTag(anchorEl, unfilled) {
-  if (!anchorEl) return;
-  var tag = anchorEl.nextElementSibling;
-  var hasTag = !!(tag && tag.classList && tag.classList.contains('status-unfilled-tag'));
-  if (unfilled && !hasTag) {
-    tag = document.createElement('span');
-    tag.className = 'status-unfilled-tag';
-    tag.textContent = '미입력';
-    anchorEl.insertAdjacentElement('afterend', tag);
-  } else if (!unfilled && hasTag) {
-    tag.remove();
-  }
-}
-// 강습 목록 상단 "진행상태 미입력 N건" 요약 배지 — N=0이면 숨김.
-function _updateLessonUnfilledBadge(t, rows) {
-  var el = document.getElementById('lessonUnfilledBadge_' + t);
-  if (!el) return;
-  var n = rows.filter(function(r){ return _isStatusUnfilled(r.status); }).length;
-  if (!n) { el.style.display = 'none'; el.textContent = ''; return; }
-  el.style.display = '';
-  el.innerHTML = '진행상태 미입력 <b>' + n + '</b>건 — 채워주시면 퍼널이 정확해집니다';
-}
 
-// 진행상태→색 클래스 매핑(미입력은 기존 앰버 유지, 값 있으면 상태별 색). 배4 후속, 2026-07-07 시포·GM
+// 진행상태→색 클래스 매핑(값 있으면 상태별 색, 없으면 무색). 배4 후속, 2026-07-07 시포·GM
 var LESSON_STATUS_CLASS_MAP = { '상담중': 'st-consult', '등록': 'st-registered', '보류': 'st-hold', '취소': 'st-cancel' };
 function _lessonStatusClass(val) {
   var v = String(val || '').trim();
-  if (_isStatusUnfilled(v)) return '';   // 미입력=cell-select-unfilled로 별도 처리(호출부에서 합성)
   return LESSON_STATUS_CLASS_MAP[v] || '';
 }
 function _lessonStatusSelectHtml(t, rowIndex, current) {
   var cur = String(current || '').trim();
-  var unfilled = _isStatusUnfilled(cur);   // 미입력(빈값/미정) 강조 판정 — 배4, 2026-07-07 시포·GM
   var stCls = _lessonStatusClass(cur);   // 상담중/등록/보류/취소 색 클래스(배4 후속)
   var opts = LESSON_STATUS_OPTIONS.slice();
   if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);   // 목록에 없는 기존값도 옵션으로 보존
-  var html = '<select class="cell-select' + (unfilled ? ' cell-select-unfilled' : '') + (stCls ? ' ' + stCls : '') + '" style="font-size:12px;padding:2px 6px" onchange="lessonStatusChange(this,\'' + t + '\',' + rowIndex + ')">';
+  var html = '<select class="cell-select' + (stCls ? ' ' + stCls : '') + '" style="font-size:12px;padding:2px 6px" onchange="lessonStatusChange(this,\'' + t + '\',' + rowIndex + ')">';
   if (!cur) html += '<option value="" selected>— 미정 —</option>';
   opts.forEach(function(o){
     html += '<option value="' + esc(o) + '"' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>';
   });
   html += '</select>';
-  if (unfilled) html += '<span class="status-unfilled-tag">미입력</span>';
   return html;
 }
 // 저장 — member_inquiry_update의 _saveCell POST 패턴 그대로 미러링(no-cors apiPost, keyPhone 행키검증). 2026-07-06 시포·GM.
@@ -2748,12 +2718,9 @@ function lessonStatusChange(sel, t, rowIndex) {
     .then(function(data){
       if (!data.ok) throw new Error(data.error || '저장 실패');
       if (row) row.status = newVal;
-      var unfilled = _isStatusUnfilled(newVal);   // 강조 갱신(배4) — select 재생성 없이 클래스·표식만 토글
-      sel.classList.remove('cell-select-unfilled', 'st-consult', 'st-registered', 'st-hold', 'st-cancel');   // 기존 상태색 전부 제거 후 재설정(배4 후속)
+      sel.classList.remove('st-consult', 'st-registered', 'st-hold', 'st-cancel');   // 기존 상태색 전부 제거 후 재설정(배4 후속)
       var stCls = _lessonStatusClass(newVal);
-      if (unfilled) sel.classList.add('cell-select-unfilled'); else if (stCls) sel.classList.add(stCls);
-      _toggleUnfilledTag(sel, unfilled);
-      _updateLessonUnfilledBadge(t, _lessonVisibleRows(t));
+      if (stCls) sel.classList.add(stCls);
       showToast('저장', 'ok');
     })
     .catch(function(err){
@@ -2784,6 +2751,8 @@ function lessonRegLoad(t) {
       _lessonRosterChips(t, 'mem'); _lessonRosterRender(t, 'mem');
       var ms = document.getElementById('lessonMemStatLine_' + t);
       if (ms) ms.textContent = '수강 ' + (d.total || 0) + '명';
+      var card = document.getElementById('lessonCardMem_' + t);   // 대시카드3(강습 회원 관리) 숫자 배선. 2026-07-07 시포
+      if (card) card.textContent = d.total || 0;
     })
     .catch(function(e){ if (b) b.innerHTML = _lessonRegRow('데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
 }
@@ -2804,6 +2773,8 @@ function lessonRegistryLoad(t) {
       _lessonRegistryChips(t); _lessonRegistryRender(t);
       var rs = document.getElementById('lessonRegStatLine_' + t);
       if (rs) rs.textContent = '금일 등록 ' + (d.count || 0) + '명';
+      var card = document.getElementById('lessonCardReg_' + t);   // 대시카드2(금일 등록 현황) 숫자 배선. 2026-07-07 시포
+      if (card) card.textContent = d.count || 0;
     })
     .catch(function(e){ if (b) b.innerHTML = _lessonRegRow('데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
 }
