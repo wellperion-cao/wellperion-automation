@@ -273,7 +273,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
   font-family:inherit;transition:background 0.15s;flex-shrink:0;
 }
 .cal-nav-btn:hover{background:rgba(183,159,138,0.2)}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:10px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:auto;grid-auto-rows:92px;gap:3px;margin-bottom:10px}
 .cal-day-label{
   text-align:center;font-size:10px;font-weight:700;color:var(--dim);
   padding:6px 2px;letter-spacing:0.06em;text-transform:uppercase;
@@ -281,10 +281,11 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .cal-day-label:first-child{color:rgba(237,91,63,0.7)}
 .cal-day-label:last-child{color:rgba(91,159,213,0.7)}
 .cal-cell{
-  min-height:88px;background:var(--paper);
+  background:var(--paper);
   border:1px solid var(--border);
   border-radius:8px;padding:6px 7px;
   cursor:default;
+  display:flex;flex-direction:column;overflow:hidden;
   transition:border-color 0.15s,background 0.15s;
 }
 .cal-cell:not(.empty):hover{border-color:rgba(183,159,138,0.4);background:var(--paper-raised)}
@@ -306,7 +307,7 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .cal-date{font-size:11px;font-weight:700;margin-bottom:4px;line-height:1;color:var(--dim-mid)}
 .cal-cell.today .cal-date{color:var(--teal);font-weight:800}
 .cal-cell.selected .cal-date{color:var(--accent);font-weight:800}
-.cal-chips{display:flex;flex-direction:column;gap:2px}
+.cal-chips{display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-height:0;flex:1}
 .cal-chip{
   font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;
@@ -354,14 +355,6 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .day-item-name{font-weight:700}
 .day-item-meta{font-size:11px;color:var(--dim-mid)}
 .day-item-note{font-size:11px;color:var(--dim);margin-top:3px;white-space:pre-wrap;line-height:1.5}
-/* 재등록 상담 추가 버튼(날짜 패널 하단) 2026-07-03 시포·GM */
-.day-add-recon{
-  display:block;width:100%;margin-top:12px;padding:9px 12px;
-  border:1px dashed var(--yellow-border);border-radius:8px;
-  background:var(--yellow-bg);color:var(--yellow);font-size:12px;font-weight:700;
-  font-family:inherit;cursor:pointer;
-}
-.day-add-recon:hover{background:rgba(230,200,78,0.16)}
 
 /* ═══════════════════════════════════════
    문의 DB 툴바 — 그룹화 개선
@@ -878,7 +871,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
   .kpi-box{padding:14px 10px 12px}
   .kpi-value{font-size:24px}
-  .cal-cell{min-height:52px}
+  .cal-grid{grid-auto-rows:60px}
   .cal-chip{font-size:9px}
   .db-table{font-size:12px}
   .db-table td,.db-table th{padding:9px 8px}
@@ -3885,13 +3878,6 @@ function openDayPanel(date) {
     _empty.textContent = '이 날은 예약이 없습니다.';
     listEl.appendChild(_empty);
   }
-  // ＋ 재등록 상담 추가 — 이 날짜로 유효회원 재등록 상담 신규 등록. 2026-07-03 시포·GM
-  var addBtn = document.createElement('button');
-  addBtn.type = 'button';
-  addBtn.className = 'day-add-recon';
-  addBtn.textContent = '＋ 재등록 상담 추가';
-  addBtn.addEventListener('click', (function(d){ return function(){ openReconModal(null, d); }; })(date));
-  listEl.appendChild(addBtn);
   panel.classList.add('open');
 }
 
