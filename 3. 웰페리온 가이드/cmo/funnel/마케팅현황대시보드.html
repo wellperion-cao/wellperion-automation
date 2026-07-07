@@ -512,18 +512,6 @@ details.footnote-toggle > .fn-body{
   </div>
 
   <!-- ════════════════════════════════════════════
-       ④-2 채널 반응 스냅 — 자동수집 가능 채널만(당근) · 노출 프록시
-       데이터소스: engagement/danggn_snapshot.json (engagement_collector.py 자동 생성)
-       정직 원칙: 문의 기여와 자동 대조 안 함 — 노출(조회수) 실측만 표시, 나머지는 안내문.
-       ════════════════════════════════════════════ -->
-  <div class="section">
-    <div class="section-title">채널 반응 스냅 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">자동수집 가능 채널만(당근) · 노출 프록시</span></div>
-    <div id="channel-engagement-wrap">
-      <div class="flow-skeleton sk-pulse" style="height:80px;border-radius:var(--radius-md)"></div>
-    </div>
-  </div>
-
-  <!-- ════════════════════════════════════════════
        ④-3 인스타그램 노출(도달) — ig_reach_collector.py 자동수집 (배#546)
        데이터소스: ig_reach_summary.json (같은 폴더 · ig_reach_ledger.json 요약본, Pages 서빙 경로 발행)
        정직 원칙: 계정 도달=일별 스냅샷만 표시(기간 합산 시 동일인 중복 집계 — '고유 도달' 아님).
@@ -546,10 +534,6 @@ details.footnote-toggle > .fn-body{
     <div class="section-title">UTM 유입 출처 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">UTM 태깅 채널만 · 미태깅 채널은 측정 안 함</span></div>
     <div id="utm-source-wrap">
       <div class="flow-skeleton sk-pulse" style="height:100px;border-radius:var(--radius-md)"></div>
-    </div>
-    <!-- 채널별 클릭→문의(→가입) 퍼널 — click_stats × funnel_conversion 조합(배 신규) -->
-    <div id="channel-funnel-wrap" style="margin-top:14px">
-      <div class="flow-skeleton sk-pulse" style="height:80px;border-radius:var(--radius-md)"></div>
     </div>
   </div>
 
@@ -1143,7 +1127,6 @@ async function loadFunnelConversion() {
     // 모듈 변수 저장 후 유형별 전환표 렌더 (유입채널 현황은 loadTypeChannel이 담당)
     _fcData = data;
     renderConversionFlow();
-    renderChannelClickInquiry();  // 채널별 클릭→문의(→가입) 퍼널(click_stats와 조합)
     if (_igReachSummary) renderIgReach(_igReachSummary);  // IG 노출 위젯의 참고 흐름(문의)도 최신화
 
   } catch (e) {
@@ -1209,9 +1192,8 @@ async function loadClickStats() {
     // ⑤ UTM 유입 출처 렌더 (ship 123 — byUtmSource 정직 측정)
     renderUtmSource(data.byUtmSource || {});
 
-    // 채널별 클릭→문의(→가입) 퍼널 — byUtmSource 저장 후 funnel_conversion과 조합
+    // byUtmSource 저장(IG 노출 위젯의 참고 흐름 조합용)
     _csByUtmSource = data.byUtmSource || {};
-    renderChannelClickInquiry();
     if (_igReachSummary) renderIgReach(_igReachSummary);  // IG 노출 위젯의 참고 흐름(클릭)도 최신화
   } catch (e) {
     // 우아한 fallback — 클릭 데이터 없이도 표는 렌더(클릭칸 '집계 중')
@@ -1220,118 +1202,11 @@ async function loadClickStats() {
   }
 }
 
-// ─── 채널별 클릭→문의(→가입) 퍼널 (click_stats × funnel_conversion 조합 · 배 신규) ────
-// utm_source 코드(cta_utm.py CHANNEL_UTM 발행 태그) → 유입채널 정규 라벨(Survey.js _canonicalChannel_ 정합).
-// naver_blog/naver_cafe는 문의쪽에서 모두 '네이버'로 귀속됨 — 클릭은 두 코드 합산해 비교.
-// ⚠️ 정직 한계: 노출(분모) 미측정 · 클릭↔문의는 채널레벨 비율(1:1 조인 아님) · 둘 다 선택 기간 기준.
-var _UTM_TO_CANON_CHANNEL = {
-  instagram:  '인스타그램',
-  naver_blog: '네이버',
-  naver_cafe: '네이버',
-  danggn:     '당근마켓',
-  kakao:      '카카오톡'
-};
-
 // 화이트리스트(배#545 감사) — Survey.js _canonicalChannel_의 '네이버'는 플레이스·검색·블로그·인터넷을
 // 한 버킷으로 합치는데 UTM 클릭은 naver_blog/naver_cafe만 잡는다 → 네이버·카카오는 문의 대부분이
 // UTM 미태깅 경로(플레이스 등)에서 와 클릭↔문의 인과를 담보 못 함. %표기는 클릭이 문의 유입경로를
 // 실제로 대표하는 채널(무태깅 대체경로가 없는 인스타그램·당근마켓)만 허용.
 var _MEASURABLE_CHANNELS = { '인스타그램': true, '당근마켓': true };
-// 화이트리스트 채널이라도 클릭 표본이 이 값 미만이면 %가 우연 표본으로 튈 수 있어 표기 보류.
-var _MIN_SAMPLE_CLICKS = 10;
-
-function renderChannelClickInquiry() {
-  var wrap = document.getElementById('channel-funnel-wrap');
-  if (!wrap) return;
-
-  if (!_csByUtmSource || !_fcData || !Array.isArray(_fcData.byChannel)) {
-    wrap.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;color:var(--dim);font-size:12px">클릭→문의 전환 집계 준비 중</div>';
-    return;
-  }
-
-  // UTM코드 → 정규 채널 클릭수 합산
-  var clicksByChannel = {};
-  Object.keys(_csByUtmSource).forEach(function(k) {
-    var ch = _UTM_TO_CANON_CHANNEL[k];
-    if (!ch) return;
-    clicksByChannel[ch] = (clicksByChannel[ch] || 0) + (_csByUtmSource[k] || 0);
-  });
-
-  // funnel_conversion byChannel → 정규 채널 문의·가입 (매핑 밖 채널은 제외)
-  var canonSet = {};
-  Object.keys(_UTM_TO_CANON_CHANNEL).forEach(function(k) { canonSet[_UTM_TO_CANON_CHANNEL[k]] = true; });
-  var inqByChannel = {};
-  _fcData.byChannel.forEach(function(d) {
-    if (!canonSet[d.channel]) return;
-    inqByChannel[d.channel] = { inquiries: d.inquiries, converted: d.converted, rate: d.rate };
-  });
-
-  var channels = Object.keys(canonSet).filter(function(ch) { return clicksByChannel[ch] || inqByChannel[ch]; });
-
-  if (channels.length === 0) {
-    wrap.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;color:var(--dim);font-size:12px">UTM 매핑 채널 클릭·문의 데이터 없음</div>';
-    return;
-  }
-
-  // 화이트리스트 게이트(배#545) — 채널이 measurable로 허용돼도 아래 순서로 재확인 후에만 %를 켠다.
-  //  1) 화이트리스트 채널인가(_MEASURABLE_CHANNELS) — 아니면(네이버·카카오) %는 애초에 계산하지 않음.
-  //  2) 클릭 표본이 최소치(_MIN_SAMPLE_CLICKS) 이상인가 — 미만이면 표본부족으로 보류.
-  //  3) 문의≤클릭(비율≤100%)인가 — 기존 가드 유지(이중 안전, 화이트리스트 채널도 예외 없음).
-  var rows = channels.map(function(ch) {
-    var clicksRaw = clicksByChannel[ch];
-    var clicks = clicksRaw || 0;
-    var info   = inqByChannel[ch] || {};
-    var inq    = info.inquiries || 0;
-    var conv   = info.converted || 0;
-    var i2c    = (typeof info.rate === 'number') ? info.rate : null;
-
-    var whitelisted = !!_MEASURABLE_CHANNELS[ch];
-    var lowSample   = whitelisted && clicksRaw > 0 && clicksRaw < _MIN_SAMPLE_CLICKS;
-    var measurable  = whitelisted && !lowSample && clicksRaw > 0 && inq <= clicksRaw;
-
-    var c2iCell;
-    if (measurable) {
-      var c2i = Math.round(inq / clicks * 1000) / 10;
-      c2iCell = '<span style="font-weight:600">' + c2i + '%</span>';
-    } else if (!whitelisted) {
-      c2iCell = '<span style="font-size:10px;color:var(--dim);font-style:italic">추적 밖 유입 우세<br>(플레이스·검색 등 UTM 미경유)<br>%비교 불가</span>';
-    } else if (lowSample) {
-      c2iCell = '<span style="font-size:10px;color:var(--dim);font-style:italic">표본부족(클릭 ' + clicksRaw + '건)<br>%비교 보류</span>';
-    } else {
-      c2iCell = '<span style="font-size:10px;color:var(--dim);font-style:italic">클릭 대비 문의 과다<br>%비교 보류</span>';
-    }
-
-    return '<tr>'
-      + '<td style="padding:6px 10px;font-size:12px">' + ch + '</td>'
-      + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + clicks.toLocaleString('ko-KR') + '</td>'
-      + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + inq.toLocaleString('ko-KR') + '</td>'
-      + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + c2iCell + '</td>'
-      + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + conv.toLocaleString('ko-KR') + '</td>'
-      + '<td style="padding:6px 10px;font-size:12px;text-align:right">' + (i2c === null ? '—' : i2c + '%') + '</td>'
-      + '</tr>';
-  }).join('');
-
-  var periodLabel = (_flow && _flow.label) ? _flow.label : '선택 기간';
-
-  wrap.innerHTML =
-    '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow)">'
-    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px;line-height:1.7">'
-    + '클릭→문의→가입 채널 퍼널 · ' + periodLabel + ' · UTM코드(링크 꼬리표) 매핑 채널만(인스타그램·네이버·당근마켓·카카오톡)<br>'
-    + '· 노출(분모)은 미측정 · %는 개별 손님 한 명씩 이어붙인 값이 아니라 채널 전체 클릭·문의를 나눈 값(1:1 조인 아님)<br>'
-    + '· <b>인스타그램·당근마켓</b>만 %표기 — 이 두 채널은 클릭 말고 다른 유입경로가 거의 없어 클릭이 문의경로를 대표(클릭 ' + _MIN_SAMPLE_CLICKS + '건 미만은 표본부족으로 보류)<br>'
-    + '· <b>네이버·카카오톡</b>은 %표기 안 함 — 플레이스·검색 등 링크 꼬리표 없이 들어오는 문의가 더 많아 클릭과 문의를 인과로 묶을 수 없음(원수치만 표시)'
-    + '</div>'
-    + '<table style="width:100%;border-collapse:collapse">'
-    + '<thead><tr style="border-bottom:1px solid var(--border)">'
-    + '<th style="text-align:left;padding:6px 10px;font-size:10px;color:var(--dim)">채널</th>'
-    + '<th style="text-align:right;padding:6px 10px;font-size:10px;color:var(--dim)">클릭</th>'
-    + '<th style="text-align:right;padding:6px 10px;font-size:10px;color:var(--dim)">문의</th>'
-    + '<th style="text-align:right;padding:6px 10px;font-size:10px;color:var(--dim)">클릭→문의</th>'
-    + '<th style="text-align:right;padding:6px 10px;font-size:10px;color:var(--dim)">가입</th>'
-    + '<th style="text-align:right;padding:6px 10px;font-size:10px;color:var(--dim)">문의→가입</th>'
-    + '</tr></thead><tbody>' + rows + '</tbody></table>'
-    + '</div>';
-}
 
 // ─── ⑤ UTM 유입 출처 렌더 (ship 123) ────────────────────────────────
 // UTM 꼬리표가 달린 채널 클릭만 집계·표시. '직접/홈'(UTM 없음)은 미태깅으로 분리 표기.
@@ -1857,48 +1732,6 @@ async function loadTypeChannel() {
   }
 }
 
-// ─── 채널 반응 스냅 (당근 자동수집 · engagement_collector.py) ─────────
-// 로그인 없이 자동수집 가능한 채널은 현재 당근뿐 — 노출(조회수) 프록시만 표시.
-// 문의 기여는 이 스냅과 자동 대조하지 않음(정직 원칙) — 위 '유입채널 현황' 표를 참고 안내.
-async function loadChannelEngagement() {
-  var el = document.getElementById('channel-engagement-wrap');
-  if (!el) return;
-  try {
-    var res = await fetch('engagement/danggn_snapshot.json');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var snap = await res.json();
-    renderChannelEngagement(snap);
-  } catch (e) {
-    el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px">집계 준비 중</div>';
-    console.warn('[channel_engagement] 로드 실패:', e.message);
-  }
-}
-
-function renderChannelEngagement(snap) {
-  var el = document.getElementById('channel-engagement-wrap');
-  if (!el) return;
-  var posts = (snap && snap.posts) || [];
-  if (!posts.length) {
-    el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px;font-style:italic">당근 발행 포스트 없음</div>';
-    return;
-  }
-  var totalViews = posts.reduce(function(s, p) { return s + (p.viewCount || 0); }, 0);
-  var totalBookmarks = posts.reduce(function(s, p) { return s + (p.bookmarkCount || 0); }, 0);
-  var measuredAt = snap.collected_at || '—';
-
-  el.innerHTML =
-    '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow)">'
-    + '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:10px">'
-    +   '<div><div style="font-size:22px;font-weight:800;color:var(--accent)">' + totalViews.toLocaleString('ko-KR') + '</div><div style="font-size:10px;color:var(--dim);margin-top:2px">당근 게시물 누적 조회수(' + posts.length + '건)</div></div>'
-    +   '<div><div style="font-size:22px;font-weight:800;color:var(--f5)">' + totalBookmarks.toLocaleString('ko-KR') + '</div><div style="font-size:10px;color:var(--dim);margin-top:2px">누적 찜(관심)</div></div>'
-    + '</div>'
-    + '<div style="font-size:11px;color:var(--dim)">측정 시각: ' + measuredAt + ' · 로그인 없이 자동수집 가능한 채널은 현재 당근뿐 — 블로그는 신규 발행만 감지(조회수는 로그인 필요), 카페·카카오는 GM 데스크톱 세션 필요, 인스타그램은 정책상 제외</div>'
-    + '<details class="footnote-toggle" style="margin-top:8px"><summary>정직 표기 — 문의 기여로 바로 잇지 않는 이유</summary>'
-    +   '<div class="fn-body">이 수치는 당근 게시물의 <b>노출(조회수) 프록시</b>일 뿐 문의 전환과 자동으로 연결돼 있지 않습니다. 실제 문의 기여는 위 \'유입채널 현황\' 표의 \'당근\' 행(행이 없으면 이번 달 당근 경유 문의 0건)을 참고하세요. 노출·문의를 잇는 대조 집계는 아직 없음 — 있는 척하지 않습니다.</div>'
-    + '</details>'
-    + '</div>';
-}
-
 // ─── ④-3 인스타그램 노출(도달) — ig_reach_collector.py 자동수집 (배#546) ────────
 // 데이터소스: ig_reach_summary.json (같은 폴더 · ig_reach_ledger.json 요약본, Pages 서빙 경로 발행)
 // 정직 원칙: 계정 도달은 일별 스냅샷만 표시(기간 합산 시 동일인 중복 집계 — '고유 도달' 아님).
@@ -2087,7 +1920,6 @@ document.addEventListener('DOMContentLoaded', function() {
   loadClickStats();              // ↑ #1 유형별 클릭수에 필요 — period 응답 대기 없이 병렬
   loadTypeChannel();             // ↑ #3 유입채널 현황(기간 연동) — period 응답 대기 없이 병렬
   loadCampaignStats();           // ↑ #4 콘텐츠별 문의 유입 — 누적 전체(기간 무관)
-  loadChannelEngagement();       // ↑ #4-2 채널 반응 스냅(당근 자동수집) — 기간 무관 정적 파일
   loadIgReach();                 // ↑ #4-3 인스타그램 노출(도달)(ig_reach_collector.py 자동수집, 배#546) — 기간 무관 정적 파일
   loadLeadTime();                // ↑ ★ 문의→등록 평균 전환 소요일(이번 달 범위) — 병렬 발사
   // 이후 기간/월 전환 등 사용자 인터랙션에서는 _applyPeriodData가 평소대로 자식 fetch 수행
