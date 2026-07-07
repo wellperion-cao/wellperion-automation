@@ -1278,7 +1278,7 @@ def _build_share_card_body() -> str:
     # 복붙용 본문 — 헤더/서명 없이 깔끔하게
     share_text = (
         f"🌟 {today_str} ({weekday_kor}) 북극성\n"
-        f"지속되지 않는 건강 문제를 해결한다\n\n"
+        f"회원 한 사람의 건강한 하루를 완성한다\n\n"
         f"💬 오늘의 한 마디\n"
         f"{quote_line}"
     )
