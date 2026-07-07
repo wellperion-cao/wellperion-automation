@@ -802,6 +802,35 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .guide-doc-btn:hover{border-color:var(--accent-border);background:var(--accent-bg);color:var(--accent)}
 
 /* ═══════════════════════════════════════
+   단계별 퍼널 바(stage_funnel) — 배3, 2026-07-07 시포·GM
+   숫자 표 → 가로 바 격상. 데이터·계산 로직은 JS 그대로, 시각만 하이브리드(바+숫자).
+   ═══════════════════════════════════════ */
+.funnel-bar-section + .funnel-bar-section{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border-subtle)}
+.funnel-bar-title{font-size:11px;font-weight:800;color:var(--blue);margin-bottom:8px;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.funnel-bottleneck-badge{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 7px;border-radius:6px;background:var(--red-bg);color:var(--red);white-space:nowrap}
+.funnel-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.funnel-bar-label{flex:0 0 54px;font-size:11.5px;font-weight:700;color:var(--text)}
+.funnel-bar-label.is-join{color:var(--blue);font-weight:800}
+.funnel-bar-track{flex:1 1 auto;min-width:50px;height:19px;border-radius:5px;background:rgba(125,123,116,0.14);overflow:hidden}
+.funnel-bar-fill{height:100%;border-radius:5px 0 0 5px}
+.funnel-bar-fill.ok{background:var(--teal)}
+.funnel-bar-fill.warn{background:var(--yellow)}
+.funnel-bar-fill.drop{background:var(--red)}
+.funnel-bar-nums{flex:0 0 auto;display:flex;align-items:baseline;gap:8px;font-size:11.5px;min-width:118px;justify-content:flex-end}
+.funnel-bar-count{font-weight:800;color:var(--text);white-space:nowrap}
+.funnel-bar-ret{font-weight:700;min-width:40px;text-align:right;white-space:nowrap}
+.funnel-bar-ret.ok{color:var(--teal)}
+.funnel-bar-ret.warn{color:var(--yellow)}
+.funnel-bar-ret.drop{color:var(--red)}
+.funnel-bar-month{color:var(--dim-mid);font-size:10px;white-space:nowrap}
+
+/* ── 진행상태 미입력 강조·독려(배4) — 담당자 입력 유도. 2026-07-07 시포·GM ── */
+.cell-select-unfilled{background:var(--yellow-bg)!important;border-color:var(--yellow-border)!important;color:var(--yellow)}
+.status-chip.status-chip-unfilled{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border)}
+.status-unfilled-tag{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-left:5px;white-space:nowrap;vertical-align:middle}
+.unfilled-summary-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-bottom:10px}
+
+/* ═══════════════════════════════════════
    인쇄
    ═══════════════════════════════════════ */
 @media print{
@@ -854,6 +883,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   .btn-add,.btn-query,.btn-refresh,.action-btn{min-height:36px}
   .db-filter,.db-search{min-height:36px}
   .cal-nav-btn{width:40px;height:40px}
+  .funnel-bar-row{flex-wrap:wrap}
+  .funnel-bar-label{flex:0 0 100%}
+  .funnel-bar-nums{flex:0 0 100%;justify-content:flex-start;margin-top:2px}
 }
 </style>
 <script>
@@ -1000,18 +1032,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     </div>
     <div id="stageFunnelWrap" style="margin-top:16px;display:none;border-top:1px solid var(--border-subtle);padding-top:12px">
       <div style="font-size:11px;font-weight:800;color:var(--text);margin-bottom:2px">단계별 잔류·이탈 (①문의 → ⑤가입)</div>
-      <div style="font-size:10.5px;color:var(--dim);margin-bottom:8px">각 단계에 몇 명이 남는지 = 어디서 새는지. 잔존%=직전 단계 대비(전체 기준).</div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">단계</th>
-            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">건수(전체)</th>
-            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">직전 대비 잔존</th>
-            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim);font-size:10.5px;font-weight:700">이번달</th>
-          </tr>
-        </thead>
-        <tbody id="stageFunnelBody"></tbody>
-      </table>
+      <div style="font-size:10.5px;color:var(--dim);margin-bottom:10px">막대 너비=①문의 대비 비율 · 숫자=건수 · %=직전 단계 대비 잔존(전체 기준) · 색=건강(청록 ≥80%)·주의(앰버 50~80%)·급락(빨강 &lt;50%)</div>
+      <div id="stageFunnelBody"></div>
       <div id="stageFunnelNote" style="font-size:10.5px;color:var(--dim);margin-top:8px"></div>
     </div>
   </div>
@@ -1123,6 +1145,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
           <button class="action-btn" id="btnRefreshDb" onclick="loadDbData()">새로고침</button>
         </div>
       </div>
+
+      <div id="dbUnfilledBadge" class="unfilled-summary-badge" style="display:none"></div>
 
       <div class="db-table-wrap">
         <table class="db-table" id="dbTable">
@@ -1674,6 +1698,8 @@ if (action === 'member_calendar') {
 
       <div id="lessonSportBar_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
 
+      <div id="lessonUnfilledBadge_adult" class="unfilled-summary-badge" style="display:none"></div>
+
       <div class="reg-table-wrap">
         <table class="reg-table">
           <thead>
@@ -1789,6 +1815,8 @@ if (action === 'member_calendar') {
       </div>
 
       <div id="lessonSportBar_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+
+      <div id="lessonUnfilledBadge_youth" class="unfilled-summary-badge" style="display:none"></div>
 
       <div class="reg-table-wrap">
         <table class="reg-table">
@@ -2277,6 +2305,7 @@ function loadConvRate(){
     .catch(function(){});
 }
 // 단계별 잔류·이탈 퍼널(stage_funnel) — 백엔드 완성 액션 소비. 잔존%=전체 기준 직전 대비(이번달 n작아 노이즈 → 전체로 계산). 2026-07-06 시포·GM
+// 2026-07-07 시포·GM: 숫자표 → 가로 퍼널 바 격상(배3). 계산 로직 그대로, 시각만 바+숫자 하이브리드로 교체.
 function loadStageFunnel(){
   if (GAS_URL === GAS_PLACEHOLDER) return;
   fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam())
@@ -2287,26 +2316,36 @@ function loadStageFunnel(){
       var body = document.getElementById('stageFunnelBody');
       if (!wrap || !body) return;
       var order = [['문의','① 문의'],['응대','② 응대'],['예약','③ 예약'],['방문','④ 방문'],['가입','⑤ 가입']];
+      // 잔존율 등급 — 건강(≥80%)=청록 · 주의(50~80%)=앰버 · 급락(<50%)=빨강. 색만으로 구분 안 함(% 텍스트 항상 병기).
+      function _grade(retPct){ if (retPct == null) return 'ok'; if (retPct < 50) return 'drop'; if (retPct < 80) return 'warn'; return 'ok'; }
       function sectionRows(title, funnel){
         var tot = (funnel && funnel.total) || {}, mon = (funnel && funnel.month) || {};
-        var html = '<tr><td colspan="4" style="padding:9px 8px 3px;font-size:11px;font-weight:800;color:var(--blue)">'+title+'</td></tr>';
+        var base = tot[order[0][0]] || 0;   // ①문의 = 막대 100% 기준
         var prev = null;
+        var worst = null;   // 잔존율이 가장 낮은(가장 크게 새는) 단계 = 병목
+        var rowsHtml = '';
         order.forEach(function(s){
           var key = s[0], label = s[1];
           var cur = tot[key] != null ? tot[key] : 0;
           var mcur = mon[key] != null ? mon[key] : 0;
-          var ret = (prev == null) ? '–' : (prev > 0 ? (Math.round(cur / prev * 1000) / 10) + '%' : '–');
+          var retPct = (prev == null) ? null : (prev > 0 ? Math.round(cur / prev * 1000) / 10 : null);
+          var grade = _grade(retPct);
+          var widthPct = base > 0 ? Math.max(cur / base * 100, cur > 0 ? 1.5 : 0) : 0;
           var isJoin = (key === '가입');
-          var drop = (prev != null && prev > 0 && (cur / prev) < 0.5);
-          html += '<tr>'+
-            '<td style="padding:4px 8px 4px 16px;border-bottom:1px solid var(--border-subtle);font-weight:'+(isJoin?'800':'600')+';color:'+(isJoin?'var(--blue)':'var(--text)')+'">'+label+'</td>'+
-            '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700">'+cur.toLocaleString()+'</td>'+
-            '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);font-weight:700;color:'+(drop?'#c0392b':'var(--dim-mid)')+'">'+ret+'</td>'+
-            '<td style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--dim-mid)">'+mcur+'</td>'+
-          '</tr>';
+          if (retPct != null && (!worst || retPct < worst.retPct)) worst = { label: label, retPct: retPct };
+          rowsHtml += '<div class="funnel-bar-row">'+
+            '<div class="funnel-bar-label'+(isJoin?' is-join':'')+'">'+label+'</div>'+
+            '<div class="funnel-bar-track"><div class="funnel-bar-fill '+grade+'" style="width:'+widthPct.toFixed(1)+'%"></div></div>'+
+            '<div class="funnel-bar-nums">'+
+              '<span class="funnel-bar-count">'+cur.toLocaleString()+'</span>'+
+              '<span class="funnel-bar-ret '+grade+'">'+(retPct == null ? '–' : retPct+'%')+'</span>'+
+              '<span class="funnel-bar-month">이번달 '+mcur+'</span>'+
+            '</div>'+
+          '</div>';
           prev = cur;
         });
-        return html;
+        var bottleneck = worst ? ('<span class="funnel-bottleneck-badge">🔻 병목 '+worst.label+' ('+worst.retPct+'%)</span>') : '';
+        return '<div class="funnel-bar-section"><div class="funnel-bar-title">'+title+bottleneck+'</div>'+rowsHtml+'</div>';
       }
       var mem = d.membership || { total: d.total, month: d.month };
       var html = sectionRows('🏅 멤버십 문의 퍼널', mem);
@@ -2534,9 +2573,8 @@ function lessonFilterSport(btn, t) {
   lessonRender(t);
 }
 
-function lessonRender(t) {
-  var tbody = document.getElementById('lessonBody_' + t);
-  if (!tbody) return;
+// 종목칩 필터 반영 후 현재 화면에 보이는 행 — lessonRender·상태변경 후 미입력 배지 갱신에서 공유. 2026-07-07 시포·GM
+function _lessonVisibleRows(t) {
   var st = _lessonState[t];
   var rows = st.rows;
   if (st.sport) {
@@ -2545,7 +2583,14 @@ function lessonRender(t) {
       return s === st.sport;
     });
   }
-  if (rows.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
+  return rows;
+}
+
+function lessonRender(t) {
+  var tbody = document.getElementById('lessonBody_' + t);
+  if (!tbody) return;
+  var rows = _lessonVisibleRows(t);
+  if (rows.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); _updateLessonUnfilledBadge(t, rows); return; }
   var html = '';
   rows.forEach(function(r){
     html += '<tr>' +
@@ -2559,21 +2604,55 @@ function lessonRender(t) {
     '</tr>';
   });
   tbody.innerHTML = html;
+  _updateLessonUnfilledBadge(t, rows);
 }
 
 /* ── 강습 문의 진행상태 인라인 편집 — 멤버십 SUC 등록 체크와 동형(배6 후속, 2026-07-06 시포·GM).
       옵션 고정 5종(미정/상담중/등록/보류/취소). 시트 기존값이 목록 밖이면 보존(데이터 손실 방지). ── */
 var LESSON_STATUS_OPTIONS = ['미정', '상담중', '등록', '보류', '취소'];
+
+/* ── 진행상태 미입력 강조·독려(배4) — 멤버십·강습 공용. 2026-07-07 시포·GM ──
+   판정: 값이 없거나(빈값) '미정'이면 미입력으로 간주(멤버십은 '미정' 옵션이 없어 빈값만 해당). */
+function _isStatusUnfilled(val) {
+  var v = String(val || '').trim();
+  return !v || v === '미정';
+}
+// select 등 엘리먼트 바로 다음에 '미입력' 표식을 붙이거나 뗀다 — DOM 재생성 없이 토글만(IME/포커스 안전).
+function _toggleUnfilledTag(anchorEl, unfilled) {
+  if (!anchorEl) return;
+  var tag = anchorEl.nextElementSibling;
+  var hasTag = !!(tag && tag.classList && tag.classList.contains('status-unfilled-tag'));
+  if (unfilled && !hasTag) {
+    tag = document.createElement('span');
+    tag.className = 'status-unfilled-tag';
+    tag.textContent = '미입력';
+    anchorEl.insertAdjacentElement('afterend', tag);
+  } else if (!unfilled && hasTag) {
+    tag.remove();
+  }
+}
+// 강습 목록 상단 "진행상태 미입력 N건" 요약 배지 — N=0이면 숨김.
+function _updateLessonUnfilledBadge(t, rows) {
+  var el = document.getElementById('lessonUnfilledBadge_' + t);
+  if (!el) return;
+  var n = rows.filter(function(r){ return _isStatusUnfilled(r.status); }).length;
+  if (!n) { el.style.display = 'none'; el.textContent = ''; return; }
+  el.style.display = '';
+  el.innerHTML = '진행상태 미입력 <b>' + n + '</b>건 — 채워주시면 퍼널이 정확해집니다';
+}
+
 function _lessonStatusSelectHtml(t, rowIndex, current) {
   var cur = String(current || '').trim();
+  var unfilled = _isStatusUnfilled(cur);   // 미입력(빈값/미정) 강조 판정 — 배4, 2026-07-07 시포·GM
   var opts = LESSON_STATUS_OPTIONS.slice();
   if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);   // 목록에 없는 기존값도 옵션으로 보존
-  var html = '<select class="cell-select" style="font-size:12px;padding:2px 6px" onchange="lessonStatusChange(this,\'' + t + '\',' + rowIndex + ')">';
+  var html = '<select class="cell-select' + (unfilled ? ' cell-select-unfilled' : '') + '" style="font-size:12px;padding:2px 6px" onchange="lessonStatusChange(this,\'' + t + '\',' + rowIndex + ')">';
   if (!cur) html += '<option value="" selected>— 미정 —</option>';
   opts.forEach(function(o){
     html += '<option value="' + esc(o) + '"' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>';
   });
   html += '</select>';
+  if (unfilled) html += '<span class="status-unfilled-tag">미입력</span>';
   return html;
 }
 // 저장 — member_inquiry_update의 _saveCell POST 패턴 그대로 미러링(no-cors apiPost, keyPhone 행키검증). 2026-07-06 시포·GM.
@@ -2588,6 +2667,10 @@ function lessonStatusChange(sel, t, rowIndex) {
     .then(function(data){
       if (!data.ok) throw new Error(data.error || '저장 실패');
       if (row) row.status = newVal;
+      var unfilled = _isStatusUnfilled(newVal);   // 강조 갱신(배4) — select 재생성 없이 클래스·표식만 토글
+      sel.classList.toggle('cell-select-unfilled', unfilled);
+      _toggleUnfilledTag(sel, unfilled);
+      _updateLessonUnfilledBadge(t, _lessonVisibleRows(t));
       showToast('저장', 'ok');
     })
     .catch(function(err){
@@ -4210,7 +4293,8 @@ function renderDbEmpty(title, desc) {
   document.getElementById('dbCount').textContent = '';
 }
 
-function renderDbTable() {
+// 검색·필터·'진행중만 보기' 반영한 현재 표시 대상 — renderDbTable·미입력 배지 갱신에서 공유. 2026-07-07 시포·GM
+function _dbFilteredRows() {
   var search = document.getElementById('dbSearch').value.trim().toLowerCase();
   var filter = document.getElementById('dbFilter').value;
 
@@ -4218,7 +4302,7 @@ function renderDbTable() {
   var hideReg = _hideRegEl && _hideRegEl.checked;   // '진행중만 보기' — 등록·완납·이탈 종결건 숨김
   var _TERMINAL = ['SUC','단기SUC','결제완납','LOSS'];
   var searchDigits = search.replace(/\D/g, '');   // 연락처 숫자만 매칭용(하이픈·공백 무시). 2026-07-02 시포(GM)
-  var filtered = dbRows.filter(function(row){
+  return dbRows.filter(function(row){
     var matchStatus = !filter || row.status === filter;
     var matchSearch = true;
     if (search) {
@@ -4234,7 +4318,19 @@ function renderDbTable() {
     var matchHide = !hideReg || _TERMINAL.indexOf(row.status) < 0;
     return matchStatus && matchSearch && matchHide;
   });
+}
+// 문의 DB 목록 상단 "진행상태 미입력 N건" 요약 배지 — N=0이면 숨김. 배4, 2026-07-07 시포·GM
+function _updateDbUnfilledBadge(filtered) {
+  var el = document.getElementById('dbUnfilledBadge');
+  if (!el) return;
+  var n = filtered.filter(function(row){ return _isStatusUnfilled(row.status); }).length;
+  if (!n) { el.style.display = 'none'; el.textContent = ''; return; }
+  el.style.display = '';
+  el.innerHTML = '진행상태 미입력 <b>' + n + '</b>건 — 채워주시면 퍼널이 정확해집니다';
+}
 
+function renderDbTable() {
+  var filtered = _dbFilteredRows();
   var tbody = document.getElementById('dbBody');
 
   if (filtered.length === 0) {
@@ -4243,6 +4339,7 @@ function renderDbTable() {
       dbRows.length === 0 ? '아직 문의 기록이 없습니다. [+ 새 문의]로 추가하세요.' : '검색어 또는 필터를 변경해보세요.'
     );
     document.getElementById('dbCount').textContent = '총 ' + dbRows.length + '건 중 0건';
+    _updateDbUnfilledBadge(filtered);
     return;
   }
 
@@ -4251,6 +4348,7 @@ function renderDbTable() {
     tbody.appendChild(buildDbRow(row, false));
   });
   document.getElementById('dbCount').textContent = '총 ' + dbRows.length + '건 중 ' + filtered.length + '건 표시';
+  _updateDbUnfilledBadge(filtered);
 }
 
 function buildDbRow(row, isNew) {
@@ -4298,10 +4396,17 @@ function buildDbRow(row, isNew) {
 
   // ── [3] 진행상황 ──
   var tdStatus = document.createElement('td');
+  var statusUnfilled = _isStatusUnfilled(row.status);   // 빈값(미입력) 강조 — 배4, 2026-07-07 시포·GM
   var chip = document.createElement('span');
-  chip.className = 'status-chip ' + statusCls;
+  chip.className = 'status-chip ' + statusCls + (statusUnfilled ? ' status-chip-unfilled' : '');
   chip.textContent = row.status || '신규';
   tdStatus.appendChild(chip);
+  if (statusUnfilled) {
+    var utag = document.createElement('span');
+    utag.className = 'status-unfilled-tag';
+    utag.textContent = '미입력';
+    tdStatus.appendChild(utag);
+  }
   if (!READ_ONLY) { tdStatus.className = 'editable-cell'; tdStatus.addEventListener('click', function(){ _activateCellSelect(this, row, 'status', STATUS_OPTIONS); }); }
   tr.appendChild(tdStatus);
 
@@ -4443,10 +4548,18 @@ function _activateCellSelect(td, row, field, options) {
     td.innerHTML = '';
     if (field === 'status') {
       var cls = STATUS_CLASS[newVal] || 'new';
+      var stUnfilled = _isStatusUnfilled(newVal);
       var chip = document.createElement('span');
-      chip.className = 'status-chip ' + cls;
+      chip.className = 'status-chip ' + cls + (stUnfilled ? ' status-chip-unfilled' : '');
       chip.textContent = newVal || '신규';
       td.appendChild(chip);
+      if (stUnfilled) {
+        var utag2 = document.createElement('span');
+        utag2.className = 'status-unfilled-tag';
+        utag2.textContent = '미입력';
+        td.appendChild(utag2);
+      }
+      _updateDbUnfilledBadge(_dbFilteredRows());   // 요약 배지 갱신(배4)
     } else {
       td.textContent = newVal || '—';
     }

@@ -3,13 +3,16 @@
     "task_id": "CPO-2026-07-06-LESSON-REGISTER-CHECK",
     "clevel": "cpo",
     "title": "[시포] 강습 문의 등록 체크 기능 — 문의회원?manage=lesson 성인·유소년 진행상태(등록) 편집·저장 (멤버십 동형)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-06",
     "ship_no": 529,
     "note": "[2026-07-06 GM go] 강습 문의(성인·유소년) 목록이 읽기전용이라 등록 체크 불가 — 멤버십(member_inquiry_update)과 동형으로 편집 가능화. 백엔드 lesson_inquiry_update 액션은 이미 기존 코드(강습문의.html 전용페이지)에 구현·라이브 배포돼 있어 신규 배포 불필요(Survey.js 무변경). 이번 작업=문의회원.html lessonRender() 진행상태 셀을 <select>(미정/상담중/등록/보류/취소)로 교체+onchange 시 lesson_inquiry_update POST(member_inquiry_update _saveCell 패턴 미러링·keyPhone 행키검증·no-cors apiPost). 라이브 검증: 성인강습 테스트행(rowIndex 3430·웰니스 바레·발레 버킷)에 status='등록' POST→lesson_inquiry_list 반영 확인→원복(빈값) 재확인 완료(회귀0). 유소년강습 목록 엔드포인트 정상 응답도 확인. 정직 한계: 소급 반영 안 됨(과거 진행상태 미기록 건은 그대로 공란), 등록 판정은 담당자가 셀렉트로 직접 표시하는 습관 전제(자동판정 아님).",
-    "next": "시모: 마케팅 카드 강습등록=진행상태 집계 배선(후속)",
-    "depends_on": ""
+    "next": "🏁 입항 완료 — 강습 진행상태 편집·저장 라이브. 후속(시모): 마케팅 카드 강습등록=진행상태 집계 배선.",
+    "depends_on": "",
+    "terminal": true,
+    "processed_at": "2026-07-07",
+    "artifact": "lessonRender 진행상태 select 5종+lesson_inquiry_update POST 라이브 반영 실측 확인(정찰). 등록정본=팀시트 sync-on-load(lesson_registry_list/_syncLessonRegistry_) 별도 배선 존재 확인. 입항."
   },
   {
     "task_id": "CPO-2026-07-06-FUNNEL-HONEST-REWIRE",
@@ -1135,5 +1138,45 @@
     "artifact": "monthly_ops_plan.json에서 당월 지원부 핵심과제를 읽기전용 자동 렌더. SSOT=월간운영계획 단일 소스. 부서명 상수만 바꾸면 4부서 확장 가능. (CLI ad-hoc · 커밋 724f55d5)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "724f55d52619e80c3601b21be0af1011a81e4fec"
+  },
+  {
+    "task_id": "CPO-2026-07-07-FUNNEL-CARD-VISUAL",
+    "clevel": "cpo",
+    "title": "[시포] 멤버십·강습 퍼널 카드 가로 바 시각화 — 숫자표→퍼널 바(잔존율 색등급+병목 뱃지)",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-07",
+    "ship_no": 546,
+    "note": "[2026-07-07 GM go·추천진행] loadStageFunnel 4열 숫자표를 가로 퍼널 바로 격상. 막대너비=단계건수/①문의, 색등급 청록(잔존≥80%)/앰버(50~80%)/빨강(<50%)+잔존% 텍스트 병기(색만 의존X), 최대낙폭=병목 뱃지, 멤버십·강습 2섹션 구분. 계산·데이터 로직 원본 보존·순수 시각 레이어. node 문법검사 0에러·검수 통과. 프론트(Pages)라 GAS 무변경.",
+    "next": "라이브 렌더 검증(Pages 시크릿) 후 입항.",
+    "depends_on": "",
+    "module": "M2"
+  },
+  {
+    "task_id": "CPO-2026-07-07-STATUS-NUDGE-UX",
+    "clevel": "cpo",
+    "title": "[시포] 진행상태 미입력 독려 UX — 문의→응대 대낙폭(진행상태 미기록) 개선",
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-07",
+    "ship_no": 547,
+    "note": "[2026-07-07 GM go·추천진행] 문의→응대 대낙폭 원인=신규문의 진행상태 미기록 방치. 빈값/'미정' 행 select·칩에 앰버 강조+'미입력' 표식, 목록별 '진행상태 미입력 N건—채워주시면 퍼널 정확' 요약 배지(N=0 숨김). 순수 프론트(백엔드 호출 추가 0). select onchange만 사용·DOM 재생성 없이 토글(IME 안전). keyPhone 행키·저장 payload 보존.",
+    "next": "라이브 렌더 검증(Pages 시크릿) 후 입항.",
+    "depends_on": "",
+    "module": "M2"
+  },
+  {
+    "task_id": "CTO-2026-07-07-ADHOC-c5ff8ca5",
+    "clevel": "cto",
+    "title": "[시토] 강습팀 상반기 실적 정본을 '31'시트 U:Y 직독합산(team_sales_h1)으로 교체 [시토]/ship354",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-07",
+    "processed_at": "2026-07-07",
+    "ship_no": 548,
+    "artifact": "근본원인: team_sales GAS가 월별 매출보고 파일의 '말일 숫자' 탭(예 6월='30')을 O8:T74로 읽었는데\n그 탭은 일별 개별거래 원장이라 팀합계가 아니었음(6월 뮤지컬 38만 오독 vs 실측 377만, GM 지적). (CLI ad-hoc · 커밋 c5ff8ca5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c5ff8ca5e1327e0cf95db5bd623d59d83a43e155"
   }
 ]
