@@ -197,8 +197,11 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
   var T='https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
   function qp(k){ try{ return (new URLSearchParams(location.search).get(k)||'').slice(0,40); }catch(e){ return ''; } }
 
-  // ── 폼 UTM 귀속 프리필 (2026-06-23 ship113 — 6폼 일반화) ──
-  //   방문자 현재 URL의 utm_campaign(없으면 utm_source) 값을 해당 구글폼 '유입경로(자동)' 칸에 프리필.
+  // ── 폼 UTM 귀속 프리필 (2026-06-23 ship113 — 6폼 일반화 / 2026-07-07 ship300 Phase2 — source-우선 수정) ──
+  //   방문자 현재 URL의 utm_source(채널 귀속 신호, 최우선) + utm_campaign(콘텐츠 단위, 있으면 '|'로 병기)
+  //   값을 해당 구글폼 '유입경로(자동)' 칸에 프리필. 백엔드 _collectFormInquiries_(Survey.js)가
+  //   이 값을 split('|')[0]로 파싱해 채널 귀속 — source 없이 campaign만 넣으면(구 로직) 캠페인 슬러그가
+  //   _canonicalChannel_에 매칭 안 돼 '기타·미상'으로 빠져 콘텐츠링크 문의가 채널귀속 안 되는 함정 수정.
   //   버튼명 → { base: 프리필 view URL, entry: '유입경로(자동)' entry ID } 매핑(add_utm_field 회수값).
   //   entry ID 회수 못 한 폼(성인·유소년·여름특강 = cao 편집권한 없음)은 매핑서 제외 → 원래 링크 유지.
   var WP_PREFILL_MAP={
@@ -214,7 +217,9 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
     try{
       var m=WP_PREFILL_MAP[name];
       if(!m) return;                                     // 매핑 없는 폼 = 원래 링크
-      var v=qp('utm_campaign')||qp('utm_source')||'';    // 콘텐츠 단위 우선, 없으면 채널 출처
+      var src=qp('utm_source')||'';                       // 채널 귀속 신호(naver_blog 등) — 백엔드 캐논화 매칭 대상
+      var cmp=qp('utm_campaign')||'';                      // 콘텐츠 단위 귀속(예: 260620_KPGA_ep1)
+      var v=src ? (cmp ? src+'|'+cmp : src) : cmp;         // source 우선(있으면 항상 선두) + campaign 병기, source 없으면 campaign만(구형 호환)
       if(!v) return;                                      // 값 없으면 원래 링크 유지
       a.href=m.base+'?usp=pp_url&entry.'+m.entry+'='+encodeURIComponent(v);
     }catch(e){}
