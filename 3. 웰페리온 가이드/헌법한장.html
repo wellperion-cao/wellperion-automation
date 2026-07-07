@@ -485,7 +485,7 @@
   //   kpi.json roles[id].kpi_html = 렌더 셀(이미 HTML이므로 escape 금지). kpi.json에 없는 주체(GM)는 dims[3] 폴백.
   function kpiBlock(role){
     var note = ''; // 2026-07-07 GM승인: '· 정본 ssot/kpi.json' 역할별 반복 안내 제거(출처는 위 sec-note title에 이미 명시)
-    var lab = '<span class="dim-label">📊 KPI' + note + '</span>';
+    var lab = '<span class="dim-label">📊 담당 KPI' + note + '</span>';
     var kd = (_kpiData && _kpiData[role.id]) || null;
     if(kd && kd.kpi_html){
       return lab + '<div class="dim-val" style="white-space:normal;">' + kd.kpi_html + '</div>';
@@ -541,67 +541,41 @@
     });
     return { K: ax.length, M: M, vals: vals };
   }
-  function nsMapBlock(role){
+  // 🌟 북극성 지도·도달율 (병합 2026-07-07 GM승인) — 지도(KPI명·축별 실측·경로) + 도달율(커버리지 바·마일스톤)을
+  //   한 블록으로. 축 값 이중나열 제거. 정직측정(가짜 %·진척바 금지 · 약속 L05 · M4-METRIC-HONESTY) 그대로 보존.
+  function northStarBlock(role){
     var m = role.nsmap;
     if(!m) return '';
-    var prop = ''; // 2026-07-07 GM승인: '제안본·GM 결재 대기' 배지 제거 — role-cell의 🔖 초안 배지(rname 옆)로 단일화
-    var out = '<div class="nsmap"><span class="nsmap-h">🗺️ 북극성 지도' + prop + '</span>';
+    var out = '<div class="nsmap"><span class="nsmap-h">🌟 북극성 지도·도달율</span>';
     if(m.kpi) out += '<div class="nsmap-row"><span class="nsmap-k">복합 KPI</span> <b>' + esc(m.kpi) + '</b></div>';
     if(Array.isArray(m.axes) && m.axes.length){
+      var cov = axesCoverage(role);
+      var pct = cov.K ? Math.round(cov.M / cov.K * 100) : 0;   // 측정 커버리지(도달율 아님·좁은 프록시 100% 방지)
+      out += '<div class="kbar gold" title="측정 커버리지 — 전체 축 중 실측된 비율(도달율 아님)"><i style="width:' + pct + '%"></i></div>';
+      out += '<div class="nsreach-meta" style="font-size:11.5px;" title="복합 축 종합 — 좁은 프록시 하나로 &lsquo;북극성 도달&rsquo; 단정 금지(L05)">측정 <b>' + cov.M + '/' + cov.K + '축</b> <span class="nsreach-note">· 복합 축 종합(L05)</span></div>';
       out += '<div class="nsax-list">' + m.axes.map(function(a){ return axisRow(role, a); }).join('') + '</div>';
+      var dM = (_reachData && _reachData[role.id]) || null;
+      if(dM && dM.mode === 'milestone' && typeof dM.milestones_done === 'number'){
+        out += '<div class="nsreach-meta" style="margin-top:2px;" title="북극성 마일스톤(GM 조정)">🏁 마일스톤 <b>' + dM.milestones_done + '/' + dM.milestones_total + '</b> <span class="nsreach-note">· ' + Math.round((dM.reach_pct || 0)) + '%</span></div>';
+      }
     } else {
-      // 축 미설정 폴백(구 단일 프록시) — 회귀 안전.
-      var live = liveVal(role, m.value_key);
-      var cur = (live != null) ? live : (m['현재'] || '미측정');
-      if(m.tier) out += '<div class="nsmap-row"><span class="nsmap-k">측정</span> ' + esc(m.tier) + ' · 현재 <b>' + esc(cur) + '</b></div>';
-      if(m.goal) out += '<div class="nsmap-row"><span class="nsmap-k">목표</span> ' + esc(m.goal) + '</div>';
+      var d = (_reachData && _reachData[role.id]) || null;
+      if(d && typeof d.reach_pct === 'number'){
+        var rpct = Math.max(0, Math.min(100, Math.round(d.reach_pct)));
+        var meta = (d.mode === 'milestone' && typeof d.milestones_done === 'number')
+          ? ('마일스톤 ' + d.milestones_done + '/' + d.milestones_total + (d.milestones_done === 0 ? ' · 제안본' : ''))
+          : (d.basis || '');
+        out += '<div class="kbar gold" title="북극성 도달율(목표 대비 현재)"><i style="width:' + rpct + '%"></i></div>';
+        out += '<div class="nsreach-meta">🌟 도달율 <b>' + rpct + '%</b> <span class="nsreach-note">· ' + esc(meta) + '</span></div>';
+      } else {
+        var live = liveVal(role, m.value_key);
+        var cur = (live != null) ? live : (m['현재'] || '미측정');
+        if(m.tier) out += '<div class="nsmap-row"><span class="nsmap-k">측정</span> ' + esc(m.tier) + ' · 현재 <b>' + esc(cur) + '</b></div>';
+        if(m.goal) out += '<div class="nsmap-row"><span class="nsmap-k">목표</span> ' + esc(m.goal) + '</div>';
+      }
     }
     if(m.path) out += '<div class="nsmap-path">🧭 ' + esc(m.path) + '</div>';
     return out + '</div>';
-  }
-
-  // 🌟 북극성 도달율 — 궁극 목표 · 전면(골드). 하이브리드 정본 = status/northstar_reach.json(엔진 northstar_reach.py 산출).
-  //   measured = 실측/목표 % · milestone = 마일스톤 N/M + % (제안본). 측정 불가 = 거짓 숫자 금지 → "측정 개통 전" 정직 텍스트(막대 없음).
-  //   가짜 %·가짜 진척바 금지(약속 L05 · M4-METRIC-HONESTY). 값·basis 계산은 전부 엔진에 위임(HTML은 렌더만).
-  function northStarReachBlock(role){
-    var m = role.nsmap;
-    // ── 복합 축 종합(정직) — 측정된 축만 종합 + '측정 M/전체 K축' 커버리지 병기. 좁은 프록시 100%로 안 보이게. ──
-    if(m && Array.isArray(m.axes) && m.axes.length){
-      var labC = '<span class="nsreach-h">🌟 북극성 도달율 <span class="nsreach-note">(복합 축 · 커버리지 정직)</span></span>';
-      var cov = axesCoverage(role);
-      var pct = cov.K ? Math.round(cov.M / cov.K * 100) : 0;   // 커버리지(측정된 축 비율) — 도달율 아님, 좁은 프록시 100% 방지
-      var kpiLbl = esc(m.kpi || '북극성');
-      var valTxt = cov.vals.length ? cov.vals.join(' · ') : '측정 축 없음(축적 전)';
-      return '<div class="nsreach">' + labC +
-        '<div class="kbar gold" title="측정 커버리지 — 전체 축 중 실측된 비율(도달율 아님)"><i style="width:' + pct + '%"></i></div>' +
-        '<div class="nsreach-meta">🌟 ' + kpiLbl + ': <b>' + valTxt + '</b> <span class="nsreach-note">· 측정 ' + cov.M + '/' + cov.K + '축</span></div>' +
-        '<div class="nsreach-build" style="margin-top:2px;" title="복합 축 종합 — 좁은 프록시 하나로 &lsquo;북극성 도달&rsquo; 단정 금지(약속 L05 · M4-METRIC-HONESTY)">복합 축 종합(L05)</div>' +
-        (function(){
-          // 마일스톤 모드 역할(예: 웰리)은 축 커버리지와 별개로 마일스톤 진척도 함께 표기(GM 조정 · 정직 기록).
-          var dM = (_reachData && _reachData[role.id]) || null;
-          return (dM && dM.mode === 'milestone' && typeof dM.milestones_done === 'number')
-            ? '<div class="nsreach-meta" style="margin-top:3px;" title="북극성 마일스톤(GM 조정)">🏁 마일스톤 <b>' + dM.milestones_done + '/' + dM.milestones_total + '</b> <span class="nsreach-note">· ' + Math.round((dM.reach_pct || 0)) + '%</span></div>'
-            : '';
-        })() +
-      '</div>';
-    }
-    var lab = '<span class="nsreach-h">🌟 북극성 도달율 <span class="nsreach-note">(궁극 목표)</span></span>';
-    var d = (_reachData && _reachData[role.id]) || null;
-    if(d && typeof d.reach_pct === 'number'){
-      var pct = Math.max(0, Math.min(100, Math.round(d.reach_pct)));
-      var meta = (d.mode === 'milestone' && typeof d.milestones_done === 'number')
-        ? ('마일스톤 ' + d.milestones_done + '/' + d.milestones_total + (d.milestones_done === 0 ? ' · 제안본' : ''))
-        : (d.basis || '');
-      return '<div class="nsreach">' + lab +
-        '<div class="kbar gold" title="북극성 도달율(목표 대비 현재)"><i style="width:' + pct + '%"></i></div>' +
-        '<div class="nsreach-meta">🌟 도달율 <b>' + pct + '%</b> <span class="nsreach-note">· ' + esc(meta) + '</span></div>' +
-      '</div>';
-    }
-    // reach_pct=null(측정 개통 전) 또는 reach 미설정 — 거짓 숫자 금지. 막대 대신 정직 단계칩.
-    var note = (d && d.basis) ? d.basis : '도달율 데이터 확보 후 전면 표시';
-    return '<div class="nsreach">' + lab +
-      '<div class="nsreach-build">🔧 측정 개통 전 <span class="nsreach-note">— ' + esc(note) + '</span></div>' +
-    '</div>';
   }
 
   // 작업 처리율 — 보조 지표(활동량) · 강등. 구 "완결률" = 할당 작업 처리량이지 북극성 도달과 다름.
@@ -681,11 +655,10 @@
     body.innerHTML = roles.map(function(role){
       var ac = role.accent || 'var(--accent)';
       var gm = role.id === 'gm';
-      // 칸1 목표·지표 = 🌟북극성(dims[0]·편집) → 🗺️북극성 지도(축별 상세) → 📊KPI 지표 정의(읽기전용)
+      // 칸1 목표·지표 = 🌟북극성(dims[0]·편집) → 🌟북극성 지도·도달율(축별 실측+커버리지, 병합) → 📊담당 KPI 지표 정의(읽기전용)
       //   → 작업 처리율(보조·강등) → 📍진행현황 → 🌅오늘 추천.
-      // 2026-07-07 GM승인: 북극성 지도 카드 대시보드(#ns-overview) 매트릭스 합병 — 도달율 골드블록(northStarReachBlock)을
-      //   nsMapBlock 뒤·kpiBlock 앞에 흡수(신규 fetch 없음, 기존 함수 재배치만).
-      var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + nsMapBlock(role) + northStarReachBlock(role) +
+      // 2026-07-07 GM승인: 🗺️북극성 지도 + 🌟북극성 도달율 두 블록을 northStarBlock() 하나로 병합(축 값 이중나열 제거).
+      var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + northStarBlock(role) +
                kpiBlock(role) + workRateBlock(role) + progressBlock(role) + recommendBlock(role) + '</td>';
       // 칸2 일하는 법 = 📚읽는 정본(2) + 🔧일 흐름(1)
       var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🔧 일 흐름') + '</td>';
