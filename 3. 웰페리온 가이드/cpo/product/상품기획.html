@@ -55,14 +55,18 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .action-btn.green:hover{background:rgba(106,191,123,0.2);}
 
 /* ─── 탭 내비게이션 ─── */
-.tab-nav{display:flex;gap:2px;padding:0 24px;background:var(--paper);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+/* .tab-bar-row = 탭목록(.tab-nav)+인쇄버튼(.tab-dropdown) 공통 행. 인쇄버튼을 .tab-nav의
+   overflow-x:auto 클리핑 컨텍스트 밖에 두기 위해 분리(그 안에 있으면 po-panel 드롭다운이
+   48px 탭바 높이에 잘려 안 보임). 2026-07-07 시포. */
+.tab-bar-row{display:flex;align-items:center;background:var(--paper);border-bottom:1px solid var(--border);}
+.tab-nav{display:flex;gap:2px;padding:0 24px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;min-width:0;}
 .tab-nav::-webkit-scrollbar{display:none;}
 .tab-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:11px 18px;border:none;background:none;color:var(--dim-mid);cursor:pointer;font-family:inherit;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color 0.15s,border-color 0.15s;}
 .tab-btn:hover{color:var(--accent-bright);}
 .tab-btn.active{color:var(--accent-bright);border-bottom-color:var(--accent);}
 .tab-icon{font-size:14px;}
 /* ── 인쇄 드롭다운(지원부 체계 '인쇄 ▾' 패턴 이식). 기본=A3 세로(회사 인쇄 표준). 2026-07-03 시포·GM ── */
-.tab-dropdown{position:relative;flex-shrink:0;margin-left:auto;}
+.tab-dropdown{position:relative;flex-shrink:0;margin-left:auto;padding-right:24px;}
 .tab-dropdown-menu{display:none;position:fixed;background:var(--paper);border:1px solid var(--accent-border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:1000;min-width:150px;padding:4px 0;}
 .tab-dropdown-menu.open{display:block;}
 .tab-dropdown-menu button{display:block;width:100%;padding:9px 16px;font-size:13px;font-weight:600;color:var(--dim-mid);background:none;border:none;cursor:pointer;font-family:inherit;white-space:nowrap;text-align:left;border-radius:0;}
@@ -103,7 +107,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     --teal:#0d6b6b;--teal-bright:#0a5555;--teal-bg:#dff2f2;--teal-border:#0d6b6b;
     --shadow-card:none;--shadow-header:none;
   }
-  .tab-nav,.print-tab,.tab-dropdown-menu,.action-btn,.section-badge-actions,
+  .tab-bar-row,.tab-nav,.print-tab,.tab-dropdown-menu,.action-btn,.section-badge-actions,
   .pp-del,.pp-add,.status-msg,.pricing-hint,.plan-card-actions,.btn-sm,
   .hero-eyebrow,.grade-ribbon,.seed-mark,.cat-filter-bar{display:none!important;}
   .tab-panel{display:none!important;}
@@ -354,16 +358,18 @@ tr:hover td{background:var(--accent-bg);}
       </div>
     </div>
   </div>
-  <nav class="tab-nav" role="tablist">
-    <button class="tab-btn active" role="tab" onclick="switchTab('membership',this)"><span class="tab-icon">🏅</span>멤버십</button>
-    <button class="tab-btn" role="tab" onclick="switchTab('adult',this)"><span class="tab-icon">🏊</span>성인강습</button>
-    <button class="tab-btn" role="tab" onclick="switchTab('youth',this)"><span class="tab-icon">👦</span>유소년강습</button>
-    <button class="tab-btn" role="tab" onclick="switchTab('policy',this)"><span class="tab-icon">💳</span>요금 정책</button>
-    <button class="tab-btn" role="tab" onclick="switchTab('workshop',this)"><span class="tab-icon">✏️</span>기획 작업대</button>
+  <div class="tab-bar-row">
+    <nav class="tab-nav" role="tablist">
+      <button class="tab-btn active" role="tab" onclick="switchTab('membership',this)"><span class="tab-icon">🏅</span>멤버십</button>
+      <button class="tab-btn" role="tab" onclick="switchTab('adult',this)"><span class="tab-icon">🏊</span>성인강습</button>
+      <button class="tab-btn" role="tab" onclick="switchTab('youth',this)"><span class="tab-icon">👦</span>유소년강습</button>
+      <button class="tab-btn" role="tab" onclick="switchTab('policy',this)"><span class="tab-icon">💳</span>요금 정책</button>
+      <button class="tab-btn" role="tab" onclick="switchTab('workshop',this)"><span class="tab-icon">✏️</span>기획 작업대</button>
+    </nav>
     <div class="tab-dropdown">
       <button class="tab-btn print-tab" title="현재 탭 인쇄" style="color:var(--accent)">🖨️ 인쇄</button>
     </div>
-  </nav>
+  </div>
 </div>
 
 <div class="content">
