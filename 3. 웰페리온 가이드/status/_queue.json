@@ -2320,5 +2320,19 @@
     "artifact": "이달 핵심과제 탭에 월간운영계획 스타일 .month-bar select 추가(월간계획 데이터 캐싱+실제 월 전환 배선). 4페이지 일관. (CLI ad-hoc · 커밋 9a0d6751)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9a0d6751e93fe92ab1288dc5b367d9df1c74105e"
+  },
+  {
+    "task_id": "CEO-2026-07-07-ADHOC-8c582792",
+    "clevel": "ceo",
+    "title": "[웰리] 전환율 % 중복곱 버그 수정 + 축 안내문 툴팁 이동",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-07",
+    "processed_at": "2026-07-07",
+    "ship_no": 671,
+    "artifact": "- liveVal: 율 지표가 이미 %(1 초과)면 재곱셈 없이 반올림만, 0~1 분수만 ×100\n  (문의_가입_전환율 37.7 → 3890%였던 버그 → 정상 38%)\n- axisRow: ax.note 인라인 표시(nsax-note) 제거, 행 title 속성(hover 툴팁)으로 이동\n  → 화면엔 축이름·값·목표만\n- northStarBlock 커버리지 줄: '· 복합 축 종합(L05)' 화면 텍스트 제거(title엔 유지) (CLI ad-hoc · 커밋 8c582792)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8c58279245df9be7686659d622853aedf7f8b784"
   }
 ]
