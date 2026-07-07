@@ -105,7 +105,7 @@
   .c-own{white-space:nowrap;}
   .c-own .r-dept{font-size:10.5px; color:var(--dim); margin-top:4px;}
   .c-prog{min-width:150px;}
-  .c-title{max-width:360px;}
+  .c-title{max-width:360px; white-space:normal;}
   .c-ns{min-width:150px;}
   .r-note{font-size:11.5px; color:var(--dim); line-height:1.5; white-space:pre-wrap; margin-top:4px;}
   .c-note{max-width:280px;}
@@ -705,7 +705,7 @@
     /* 🗺️ 로드맵 단독 블록 = 전폭 스팬(1~4분기 한 줄 · GM 지시 2026-07-06 3차) · 2p 시작(GM 지시 2026-07-07: 1p=매출·점검·부서별 고정) */
     .blk.erp-roadmap-merge{column-span:all !important; break-inside:avoid; break-before:page; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 5px !important; margin-bottom:2px;}
     .blk.erp-roadmap-merge h2.sec{margin-top:2px;}
-    /* 🗂️ 부서별 내용 = 전폭 스팬·표(table.rpt) 6행(GM 지시 2026-07-07 3차: 카드 → 표 전환 · 1p 고정) */
+    /* 🗂️ 부서별 내용 = 전폭 스팬·표(table.rpt) 5행(GM 지시 2026-07-07: 파트너팀→경영지원 흡수 · 1p 고정) */
     .blk.dept-cards{column-span:all !important; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 5px !important; margin-bottom:2px;}
     .blk.dept-cards h2.sec{margin-top:2px;}
     .blk.dept-cards table.rpt{min-width:0;}
@@ -739,7 +739,7 @@
     /* 월별 A3 2장 유지 압축 — 상단 재구성 후 💰매출+🎯top3+📋상세 3블록을 1페이지에 수용(원래 2장 패킹 복원) */
     .fin-hero{padding:3px 9px !important; gap:3px 14px !important; margin-bottom:3px !important;} .fin-hero-val{font-size:15px !important;}
     .fin-dept-wrap{margin-top:5px !important;} .fin-dept-h{margin:0 2px 3px !important;}
-    .findept tbody td, .findept thead th{padding:0 4px !important; font-size:7.5px !important; line-height:1.25 !important;}
+    .findept tbody td, .findept thead th{padding:0.5px 5px !important; font-size:9.5px !important; line-height:1.25 !important;}
     #obj-board .metric{margin-top:2px !important; padding:2px 5px !important;} #obj-board .metric-h{margin-bottom:1px !important;} #obj-board .mbar{margin:1px 0 !important;}
     #obj-board .r-note{font-size:7px !important; line-height:1.12 !important; margin-top:1px !important;}
     #obj-board .cyc{padding:2px 5px !important; margin-top:2px !important;} #obj-board .cyc-h{margin-bottom:1px !important;} #obj-board .cyc-flow{font-size:7px !important; margin-bottom:2px !important;} #obj-board .cyc-d{font-size:7px !important;} #obj-board .cyc-d .cyc-nt{font-size:6.5px !important;}
@@ -748,8 +748,8 @@
     .obj-split-h{margin:2px 0 1px !important;}
     .t3-legend{margin-top:1px !important;} .blk.top3-wrap h2.sec{margin-bottom:1px !important;}
     .print-head{display:block !important; text-align:center; margin:0 0 2px; padding-bottom:2px; border-bottom:1.5px solid #999;}
-    .print-head .ph-title{font-size:12px; font-weight:800; color:#111 !important;}
-    .print-head .ph-sub{font-size:8.5px; color:#444 !important; margin-top:1px;}
+    .print-head .ph-title{font-size:16px; font-weight:800; color:#111 !important;}
+    .print-head .ph-sub{font-size:10px; color:#444 !important; margin-top:1px;}
     /* ══ 🎯 1장 요약 인쇄(A3 landscape 1장 보장 · 요약만 남기고 상세·연간·배너 전부 숨김) ══ */
     body.view-summary .report-grid, body.view-summary .annual-board, body.view-summary #month-head, body.view-summary .print-head{display:none !important;}
     body.view-summary .summary-board{display:block !important;}
@@ -1819,8 +1819,7 @@
    {key:'시설부',              prac:'lee-jh', ai:'lee-jh',   deptKeys:['시설'],                    link:'coo/check/시설부 체계.html'},
    {key:'지원부',              prac:'lee-jh', ai:'lee-jh',   deptKeys:['지원'], note:'통합관리',    link:'coo/check/지원부 체계.html'},
    {key:'주차관리부',          prac:'lee-jh', ai:'lee-jh',   deptKeys:['주차'], note:'통합관리',    link:'coo/check/주차관리부 체계.html'},
-   {key:'파트너팀',            prac:'na-uy',  ai:'na-uy-gm', deptKeys:['파트너'],                  link:'coo/check/파트너팀 체계.html'},
-   {key:'경영지원(재무·인사)', prac:'na-uy',  ai:'na-uy-gm', deptKeys:['인사','재무','경영지원'], link:null}
+   {key:'경영지원(인사&파트너팀 관리 + 운영 매출&지출 관리)', prac:'na-uy', ai:'na-uy-gm', deptKeys:['인사','파트너','경영지원','매출&지출'], link:'coo/check/파트너팀 체계.html'}
   ];
   function deptRowHtml(cfg, roster, progMap, aiById, objs){
     var p = null;
