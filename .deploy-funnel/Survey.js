@@ -2370,17 +2370,18 @@ function _processAction(body) {
     var _muNewStatus = String(body.status == null ? '' : body.status).trim();
     var _isSucNew = (_muNewStatus === 'SUC' || _muNewStatus === '단기SUC');
     var _wasSuc   = (_muOldStatus === 'SUC' || _muOldStatus === '단기SUC');
+    // ★carry-over·알림은 시트 행의 실제 값 사용(body 우선, 없으면 행 직독). 달력 모달은 status만 보내므로 body.phone 부재 시
+    //   _regUpsert_가 전화키 없이 호출돼 등록현황 미반영 + 알림 빈칸('-') 버그 → 행 직독으로 근본 해결. 2026-06-29 시포.
+    //   ★컨택 시작 알림(아래)도 동일 이름/프로그램/담당 재사용 → _isSucNew 여부와 무관하게 항상 계산. 2026-07-07 시토.
+    var _coNameCi = _miColIdx_(muHdr, ['성함','이름']);
+    var _coPhCi   = _miColIdx_(muHdr, ['연락처','전화','휴대폰']);
+    var _coProgCi = _miColIdx_(muHdr, ['관심 있는 프로그램 종류','관심프로그램','프로그램']);
+    var _coOwnCi  = _miColIdx_(muHdr, ['담당','담당자']);
+    var _coName  = body.name    || (_coNameCi >= 0 ? String(muSh.getRange(muRow, _coNameCi + 1).getValue() || '') : '');
+    var _coPhone = body.phone   || (_coPhCi   >= 0 ? String(muSh.getRange(muRow, _coPhCi   + 1).getValue() || '') : '');
+    var _coProg  = body.program || (_coProgCi >= 0 ? String(muSh.getRange(muRow, _coProgCi + 1).getValue() || '') : '');
+    var _coOwner = body.owner   || (_coOwnCi  >= 0 ? String(muSh.getRange(muRow, _coOwnCi  + 1).getValue() || '') : '');
     if (_isSucNew) {
-      // ★carry-over·알림은 시트 행의 실제 값 사용(body 우선, 없으면 행 직독). 달력 모달은 status만 보내므로 body.phone 부재 시
-      //   _regUpsert_가 전화키 없이 호출돼 등록현황 미반영 + 알림 빈칸('-') 버그 → 행 직독으로 근본 해결. 2026-06-29 시포.
-      var _coNameCi = _miColIdx_(muHdr, ['성함','이름']);
-      var _coPhCi   = _miColIdx_(muHdr, ['연락처','전화','휴대폰']);
-      var _coProgCi = _miColIdx_(muHdr, ['관심 있는 프로그램 종류','관심프로그램','프로그램']);
-      var _coOwnCi  = _miColIdx_(muHdr, ['담당','담당자']);
-      var _coName  = body.name    || (_coNameCi >= 0 ? String(muSh.getRange(muRow, _coNameCi + 1).getValue() || '') : '');
-      var _coPhone = body.phone   || (_coPhCi   >= 0 ? String(muSh.getRange(muRow, _coPhCi   + 1).getValue() || '') : '');
-      var _coProg  = body.program || (_coProgCi >= 0 ? String(muSh.getRange(muRow, _coProgCi + 1).getValue() || '') : '');
-      var _coOwner = body.owner   || (_coOwnCi  >= 0 ? String(muSh.getRange(muRow, _coOwnCi  + 1).getValue() || '') : '');
       // _regUpsert_는 멱등(전화키 존재 시 갱신·없으면 today 도장 추가) → SUC 저장 시 항상 등록현황 보장(과거 누락 건도 재저장으로 복구).
       try { _regUpsert_(_coName, _coPhone, _coProg, body.regDate); } catch (e) {}
       // 등록 전환 전용 알림은 '실제 전환(이전≠SUC)' 1회만 — 매 저장 중복 알림 방지. '문의 알림' 방.
@@ -2391,13 +2392,22 @@ function _processAction(body) {
         } catch (e) {}
       }
     }
+    // 컨택 시작 알림: 컨택 상태집합('컨택'/'컨택중'/'응대'/'연락'/'통화'/'상담중') 최초 진입 1회 — 집합 내 이동(예: 컨택→상담중)은 재알림 안 함. 2026-07-07 시토·GM.
+    var _muContactStatuses = ['컨택','컨택중','응대','연락','통화','상담중'];
+    var _muWasContact = _muContactStatuses.indexOf(_muOldStatus) >= 0;
+    var _muIsContact  = _muContactStatuses.indexOf(_muNewStatus) >= 0;
+    if (_muIsContact && !_muWasContact) {
+      try {
+        var _contactChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+        _notifyTelegram('📞 <b>컨택 시작</b> — 문의회원 상담·응대 개시\n· 이름: ' + (_coName || '-') + '\n· 프로그램: ' + (_coProg || '-') + '\n· 담당: ' + (_coOwner || '-') + '\n· 상태: ' + (_muNewStatus || '-'), _contactChatId);
+      } catch (e) {}
+    }
     // 등록 해제(이전 SUC → 신규 비SUC, status 명시 전송 시) — 잘못 등록 되돌리기: 등록현황에서 제거. 2026-06-29 시포.
     if (_wasSuc && !_isSucNew && body.status !== undefined) {
       var _urPhCi = _miColIdx_(muHdr, ['연락처','전화','휴대폰']);
       var _urPhone = (body.keyPhone && String(body.keyPhone)) || (_urPhCi >= 0 ? String(muSh.getRange(muRow, _urPhCi + 1).getValue() || '') : '');
       try { _regRemove_(_urPhone); } catch (e) {}
     }
-    try { _notifyTelegram('📝 문의회원 수정(공개페이지) — 행 ' + muRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
     return _json({ ok: true, rowIndex: muRow, message: '수정되었습니다.' });
   }
 
@@ -2595,20 +2605,30 @@ function _processAction(body) {
     _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
     _luSet(['방문상태', '방문'], body.visited);
     // 강습 등록 전환(신규→SUC/단기SUC 1회) → '문의 알림' 방 통보(멤버십과 정합). 시토 2026-06-29 GM.
+    //   이름/종목 값은 컨택 시작 알림(아래)도 재사용 → _luIsSucNew 여부와 무관하게 항상 계산. 2026-07-07 시토.
+    var _luNewStatus = String(body.status == null ? '' : body.status).trim();
+    var _luIsSucNew  = (_luNewStatus === 'SUC' || _luNewStatus === '단기SUC');
+    var _luWasSuc    = (_luOldStatus === 'SUC' || _luOldStatus === '단기SUC');
+    var _luNameCi  = _findCol_(luHdr, ['이름', '성함']);
+    var _luSportCi = _findCol_(luHdr, ['종목', '과목', '관심종목', '강습종목']);
+    var _luName  = (String(body.name  || (_luNameCi  >= 0 ? luSh.getRange(luRow, _luNameCi  + 1).getValue() : '')).trim()) || '-';
+    var _luSport = (String(body.sport || body.program || (_luSportCi >= 0 ? luSh.getRange(luRow, _luSportCi + 1).getValue() : '')).trim()) || '-';
     try {
-      var _luNewStatus = String(body.status == null ? '' : body.status).trim();
-      var _luIsSucNew  = (_luNewStatus === 'SUC' || _luNewStatus === '단기SUC');
-      var _luWasSuc    = (_luOldStatus === 'SUC' || _luOldStatus === '단기SUC');
       if (_luIsSucNew && !_luWasSuc) {
-        var _luNameCi  = _findCol_(luHdr, ['이름', '성함']);
-        var _luSportCi = _findCol_(luHdr, ['종목', '과목', '관심종목', '강습종목']);
-        var _luName  = (String(body.name  || (_luNameCi  >= 0 ? luSh.getRange(luRow, _luNameCi  + 1).getValue() : '')).trim()) || '-';
-        var _luSport = (String(body.sport || body.program || (_luSportCi >= 0 ? luSh.getRange(luRow, _luSportCi + 1).getValue() : '')).trim()) || '-';
         var _luRegChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
         _notifyTelegram('✅ <b>등록 전환(강습)</b> — 강습문의가 등록(' + _luNewStatus + ')으로 전환\n· 이름: ' + _luName + '\n· 종목: ' + _luSport + '\n· 담당: ' + (body.owner || '-'), _luRegChatId);
       }
     } catch (e) {}
-    try { _notifyTelegram('📝 강습문의 수정 — 행 ' + luRow + ' · 상태:' + (body.status || '-') + ' · 담당:' + (body.owner || '-')); } catch (e) {}
+    // 컨택 시작 알림(강습): 컨택 상태집합('컨택'/'컨택중'/'응대'/'연락'/'통화'/'상담중') 최초 진입 1회 — 집합 내 이동은 재알림 안 함. 2026-07-07 시토·GM.
+    var _luContactStatuses = ['컨택','컨택중','응대','연락','통화','상담중'];
+    var _luWasContact = _luContactStatuses.indexOf(_luOldStatus) >= 0;
+    var _luIsContact  = _luContactStatuses.indexOf(_luNewStatus) >= 0;
+    if (_luIsContact && !_luWasContact) {
+      try {
+        var _luContactChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+        _notifyTelegram('📞 <b>컨택 시작(강습)</b> — 강습문의 상담·응대 개시\n· 이름: ' + _luName + '\n· 종목: ' + _luSport + '\n· 담당: ' + (body.owner || '-') + '\n· 상태: ' + (_luNewStatus || '-'), _luContactChatId);
+      } catch (e) {}
+    }
     return _json({ ok: true, rowIndex: luRow, message: '수정되었습니다.' });
   }
 
