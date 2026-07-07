@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-07-07-IG-REACH-AUTOMATION",
-  "last_task_id": "CTO-2026-07-07-IG-REACH-AUTOMATION",
+  "task_id": "CTO-2026-07-04-NORTHSTAR-REDESIGN",
+  "last_task_id": "CTO-2026-07-04-NORTHSTAR-REDESIGN",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-07-07T07:38:57Z",
+  "last_pushed_at": "2026-07-07T08:19:09Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -69,12 +69,20 @@
       "note": "2026-07-07 ig_token_refresh.py 신설+양 예약작업(Wellperion-IG-Reach-Collect-0945, Wellperion-IG-Token-Refresh-Weekly) 등록 완료",
       "updated_at": "2026-07-07T07:38:57Z",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-07-04-NORTHSTAR-REDESIGN",
+      "title": "북극성 추천기 재설계 라이브 발효 — 모듈그룹핑·탭 인라인승인버튼·중요건필터. 봇 ns 콜백 핸들러 활성(재기동 대기). 역롤백=telegram_bot/bot.py NORTHSTAR_NS_ENABLED=False",
+      "status": "DONE",
+      "note": "발효 배선 진단 결과 코드 게이트 없음(b25928a5부터 --send·ns핸들러 이미 무조건 활성) - 남은 절차게이트만 해제. 역롤백 스위치 신설(af0f6091).",
+      "updated_at": "2026-07-07T08:19:09Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "IG 도달 수집 자동화 — 일일 스케줄 + 60일 토큰 자동갱신",
-  "artifact_url": "https://github.com/wellperion-cao/wellperion-automation/commit/25659278",
+  "title": "북극성 추천기 재설계 라이브 발효 — 모듈그룹핑·탭 인라인승인버튼·중요건필터. 봇 ns 콜백 핸들러 활성(재기동 대기). 역롤백=telegram_bot/bot.py NORTHSTAR_NS_ENABLED=False",
+  "artifact_url": "커밋 af0f6091(bot.py NORTHSTAR_NS_ENABLED 역롤백스위치)+b25928a5(재설계 원구현,07-04). py_compile OK(bot.py·northstar_recommender.py). verify_ns420.py 임시검증: build_card 모듈그룹헤더(📦)+대표페이지 링크+build_keyboard callback_data ns:0:approve/ns:hold 구조 PASS. status/northstar_pending.json·northstar_log.jsonl·northstar_null_streak.json 무오염(run() 미호출).",
   "commit": "",
-  "note": "2026-07-07 ig_token_refresh.py 신설+양 예약작업(Wellperion-IG-Reach-Collect-0945, Wellperion-IG-Token-Refresh-Weekly) 등록 완료",
-  "updated_at": "2026-07-07T07:38:57Z"
+  "note": "발효 배선 진단 결과 코드 게이트 없음(b25928a5부터 --send·ns핸들러 이미 무조건 활성) - 남은 절차게이트만 해제. 역롤백 스위치 신설(af0f6091).",
+  "updated_at": "2026-07-07T08:19:09Z"
 }

@@ -301,14 +301,16 @@
     "task_id": "CTO-2026-07-04-NORTHSTAR-REDESIGN",
     "clevel": "cto",
     "title": "[시토] 페이지(모듈)기준 북극성 추천기 재설계 — 탭 승인버튼·중요건필터·모듈그룹핑 (웰리 두뇌/시토 손·GM go 발효)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-04",
     "ship_no": 420,
     "note": "GM 확정 3항: ①그룹핑축=북극성 모듈(owns, 페이지=수단·프로젝트=목적) ②승인UI=탭 인라인버튼([승인1] 텍스트 폐기·M5패턴) ③추천범위=중요건만(🛳️/⛴️·북극성갭·KPI미달)+C레벨 병렬 독립배(depends_on 없음). ★발효게이트: 라이브 send·cron·봇재기동 전부 금지 — 코드+드라이런+샘플카드까지만. 발효=GM go 별건.",
-    "next": "샘플 카드 GM 검토→GM go 시 봇 재기동+06:30 라이브 발효",
+    "next": "내일 06:30 첫 재설계 카드 도달+인라인 승인 실동작 확인(봇 재기동 후)",
     "depends_on": "",
-    "module": "T2"
+    "module": "T2",
+    "processed_at": "2026-07-07",
+    "artifact": "커밋 af0f6091(bot.py NORTHSTAR_NS_ENABLED 역롤백스위치)+b25928a5(재설계 원구현,07-04). py_compile OK(bot.py·northstar_recommender.py). verify_ns420.py 임시검증: build_card 모듈그룹헤더(📦)+대표페이지 링크+build_keyboard callback_data ns:0:approve/ns:hold 구조 PASS. status/northstar_pending.json·northstar_log.jsonl·northstar_null_streak.json 무오염(run() 미호출)."
   },
   {
     "task_id": "CMO-2026-07-04-AI-SERIES-MEASUREMENT-CH-33-37",
@@ -2337,5 +2339,16 @@
     "artifact": "GM go 수신(2026-07-07). 진단: 재설계 카드포맷(모듈그룹핑·중요건필터)은\nb25928a5 커밋 시점부터 이미 --send 경로의 유일한 구현(플래그 분기 없음,\nv1 코드 잔존 없음) — 06:30 cron 그대로 사용 시 즉시 재설계 카드 발송.\nbot.py cmd_northstar_callback(ns: 콜백)도 같은 커밋에서 이미 등록 완료,\n다음 봇 자동재기동 시 발효(오늘 세션서 재기동 금지 — INC-011). (CLI ad-hoc · 커밋 af0f6091)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "af0f609158e59f0cf532060f4daeb8ec597b1956"
+  },
+  {
+    "task_id": "NEXT-20260707-171909",
+    "clevel": "cto",
+    "title": "내일 06:30 첫 재설계 카드 도달+인라인 승인 실동작 확인(봇 재기동 후)",
+    "status": "PENDING",
+    "depends_on": "CTO-2026-07-04-NORTHSTAR-REDESIGN",
+    "from": "cto",
+    "origin": "bridge",
+    "enqueued_at": "2026-07-07T08:19:09Z",
+    "ship_no": 624
   }
 ]
