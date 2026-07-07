@@ -207,7 +207,7 @@
   .fin-dept-h{font-size:12px; font-weight:700; color:var(--text-soft); margin:0 2px 6px;}
   table.rpt.findept{min-width:0;}
   .findept thead th{padding:7px 12px;}
-  .findept tbody td{padding:8px 12px; font-size:12px; color:var(--text-soft);}
+  .findept tbody td{padding:8px 12px; font-size:13px; color:var(--text-soft);}
   .findept td.num, .findept th.num{text-align:right; font-variant-numeric:tabular-nums;}
   .findept td.pctc{color:var(--accent-soft); font-weight:700;}
   .findept td.sub2{color:var(--dim); font-size:11px;}
@@ -249,6 +249,12 @@
   .dc-link{font-size:9px; font-weight:700; color:var(--gold); background:rgba(240,198,116,0.08); border:1px solid rgba(240,198,116,0.30); border-radius:20px; padding:2px 10px; text-decoration:none; white-space:nowrap;}
   .dc-nolink{font-size:9px; color:var(--dim);}
   .dc-dim{color:var(--dim); font-weight:600;}
+  /* 월 목표·진척 칸 = 과제 내용 목록(건수 아님 · GM 지시 2026-07-07 4차) */
+  .dc-objlist{display:flex; flex-direction:column; gap:4px;}
+  .dc-objitem{display:flex; align-items:baseline; gap:6px; line-height:1.35;}
+  .dc-objitem .obadge{flex:0 0 auto; font-size:9px; padding:1px 7px;}
+  .dc-objt{flex:1 1 auto; color:var(--text-soft); font-size:11.5px; word-break:keep-all;}
+  .dc-objp{flex:0 0 auto; color:var(--accent-soft); font-weight:700; font-size:10.5px; font-variant-numeric:tabular-nums; white-space:nowrap;}
 
   /* ── 🚀 ERP 월별 진척 타임라인 ── */
   .erp-time{display:flex; gap:10px; align-items:stretch; position:relative;}
@@ -739,7 +745,10 @@
     /* 월별 A3 2장 유지 압축 — 상단 재구성 후 💰매출+🎯top3+📋상세 3블록을 1페이지에 수용(원래 2장 패킹 복원) */
     .fin-hero{padding:3px 9px !important; gap:3px 14px !important; margin-bottom:3px !important;} .fin-hero-val{font-size:15px !important;}
     .fin-dept-wrap{margin-top:5px !important;} .fin-dept-h{margin:0 2px 3px !important;}
-    .findept tbody td, .findept thead th{padding:0.5px 5px !important; font-size:9.5px !important; line-height:1.25 !important;}
+    .findept tbody td, .findept thead th{padding:1px 6px !important; font-size:11px !important; line-height:1.28 !important;}
+    .findept td.sub2{font-size:9.5px !important;}
+    /* 🗂️ 부서별 내용 표 '월 목표·진척' 과제 목록 인쇄 압축(A3 1p 유지) */
+    #dept-cards-board .dc-objt{font-size:8.5px !important;} #dept-cards-board .dc-objp{font-size:8px !important;} #dept-cards-board .dc-objitem .obadge{font-size:7.5px !important; padding:0 4px !important;} #dept-cards-board .dc-objlist{gap:1.5px !important;} #dept-cards-board .dc-objitem{gap:3px !important; line-height:1.22 !important;}
     #obj-board .metric{margin-top:2px !important; padding:2px 5px !important;} #obj-board .metric-h{margin-bottom:1px !important;} #obj-board .mbar{margin:1px 0 !important;}
     #obj-board .r-note{font-size:7px !important; line-height:1.12 !important; margin-top:1px !important;}
     #obj-board .cyc{padding:2px 5px !important; margin-top:2px !important;} #obj-board .cyc-h{margin-bottom:1px !important;} #obj-board .cyc-flow{font-size:7px !important; margin-bottom:2px !important;} #obj-board .cyc-d{font-size:7px !important;} #obj-board .cyc-d .cyc-nt{font-size:6.5px !important;}
@@ -890,13 +899,13 @@
   var KPI_PATH = 'status/kpi_values.json'; // KPI 자동집계(kpi_collector.py, 일 2회) — 🔧 점검 현황 실측치 소스(coo.지원부_점검완료율). 측정 불가=null(가짜값 없음).
   var CHECK_GAS = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec'; // 지원팀 일일점검 GAS(공용·kpi_collector.py와 동일 소스) — action=monthly_report&month=YYYY-MM byZone(m/f)로 🔧 점검 현황 지원부 남/여 월간 완료율 카드 분해(GM 지시 2026-07-06 월간 전환).
   var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec'; // 종합접수처 VOC GAS(coo/reception/종합접수처_현황.html과 동일) — action=reg_board. 🔧 점검 현황④ 카드 + 🗂️ 이슈·해결 공용(PII 미사용·집계만).
-  var VOC_CAT_META = [ // 종합접수처_현황.html CAT_META과 동일(6종 카테고리 → 담당부서)
+  var VOC_CAT_META = [ // 6종 카테고리 → 담당부서. 컴플레인 접수 = 청결 이슈 접수 바로 아래 배치(GM 지시 2026-07-07)
     {label:'분실물 접수', icon:'📦', dept:'운영부'},
     {label:'시설물 고장 접수', icon:'🔧', dept:'시설부'},
     {label:'청결 이슈 접수', icon:'🧹', dept:'지원부'},
+    {label:'컴플레인 접수', icon:'📣', dept:'운영부'},
     {label:'직원·강사 칭찬합니다', icon:'⭐', dept:'운영부'},
-    {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부'},
-    {label:'컴플레인 접수', icon:'📣', dept:'운영부'}
+    {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부'}
   ];
   var VOC_STATUS_LIST = ['접수','처리중','완료'];
   var FIN_YEAR = '2026';
@@ -1850,13 +1859,14 @@
     if(!objsForCard.length){
       objCell = '<span class="dc-dim">이번 달 과제 없음</span>';
     } else {
-      var doneN = 0, progN = 0, planN = 0;
-      objsForCard.forEach(function(o){
-        if(o.status === '완료') doneN++;
-        else if(o.status === '진행') progN++;
-        else planN++; // 계획·이월 통합(기존 OBJ_STATUS_ORDER 관례 재사용)
-      });
-      objCell = objsForCard.length + '건 · 진행 ' + progN + '·완료 ' + doneN + (planN ? ('·계획 ' + planN) : '');
+      // 건수 요약이 아니라 실제 과제 내용을 표시(GM 지시 2026-07-07 4차) — 제목 + 상태 배지 + 진척%
+      objCell = '<div class="dc-objlist">' + objsForCard.map(function(o){
+        var st = o.status || '계획';
+        var pct = (typeof o.progress === 'number') ? clampPct(o.progress) : null;
+        return '<div class="dc-objitem"><span class="obadge ' + esc(st) + '">' + esc(st) + '</span>' +
+          '<span class="dc-objt">' + esc(o.title) + '</span>' +
+          (pct != null ? ('<span class="dc-objp">' + pct + '%</span>') : '') + '</div>';
+      }).join('') + '</div>';
     }
 
     var linkHtml = cfg.link ? ('<a class="dc-link" href="' + esc(cfg.link) + '">페이지 →</a>') : '<span class="dc-nolink">—</span>';
