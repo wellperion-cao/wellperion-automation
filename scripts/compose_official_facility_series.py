@@ -29,7 +29,8 @@ from brand_constants import BEIGE, WHITE, GRAY, PROJECT_ROOT  # noqa: E402
 FAC = PROJECT_ROOT / "2. 브랜드_공식문서" / "01_시설_사진"
 PRO = FAC / "web_10mb아래"     # 094A* 프로컷
 KAKAO = FAC / "시설 사진"       # 사우나·탕·휴게·로비·카페·테라스 등
-CINQ = PROJECT_ROOT / "instagram" / "Image" / "생크몽드_소개(원본 이미지)"  # 생크몽드 스파
+CINQ = FAC / "생크몽드(26년도)"   # 생크몽드 스파 (26년 최신 세트)
+BOUTIBU = FAC / "부티부"        # 부티부 헤어살롱
 FOOT = "WELLPERION  ·  FACILITY"
 META = "한남동 3,000평 종합 스포츠클럽"
 
@@ -125,22 +126,24 @@ EPISODES = [
     {
         "slug": "260707_공식_시설_F2_편의시설",
         "queue_id": "CMO-2026-07-07-OFFICIAL-F2-편의시설",
-        "title": "공식 #F2 — 편의시설 (생크몽드·카페·테라스)",
+        "title": "공식 #F2 — 편의시설 (생크몽드·부티부·카페·테라스)",
         "caption": (
             "운동, 그 이상의 하루.\n\n"
-            "파리의 스파 생크몽드, 여유로운 카페,\n"
-            "탁 트인 야외 테라스까지.\n"
+            "파리의 스파 생크몽드, 헤어살롱 부티부,\n"
+            "여유로운 카페와 탁 트인 야외 테라스까지.\n"
             "운동 전후의 시간마저 웰페리온에서.\n\n"
             "문의: wellperion.com/ko/inquiry\n\n"
             "#웰페리온 #한남동 #스포츠클럽 #생크몽드 #CinqMondes #스파 "
-            "#카페 #라운지 #프리미엄"
+            "#헤어살롱 #카페 #프리미엄"
         ),
         "slides": [
             {"kind": "hero", "photo": KAKAO / "메인로비.jpg",
-             "title": "운동, 그 이상의\n하루", "sub": "생크몽드 · 카페 · 테라스",
+             "title": "운동, 그 이상의\n하루", "sub": "생크몽드 · 부티부 · 카페 · 테라스",
              "cta": ""},
-            {"kind": "feature", "photo": CINQ / "5-1. DSC09535.jpg",
+            {"kind": "feature", "photo": CINQ / "DSC09485.jpg",
              "title": "생크몽드 스파", "sub": "Cinq Mondes 파리 리추얼"},
+            {"kind": "feature", "photo": BOUTIBU / "부티부 바버전용.jpg",
+             "title": "헤어 살롱", "sub": "부티부 · 커트 · 스타일링"},
             {"kind": "feature", "photo": KAKAO / "카페.jpg",
              "title": "카페", "sub": "운동 후 한 잔의 여유"},
             {"kind": "feature", "photo": KAKAO / "야외테라스.jpg",
