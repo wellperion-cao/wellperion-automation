@@ -1704,5 +1704,19 @@
     "artifact": "헤드리스 크롬 A4 가로 print-to-pdf 실측(반복 수렴): 1→2페이지 분기점=zoom 0.77\n(0.765=1장·0.77=2장, page-break-inside:avoid 카드 단위 급격한 문턱). 기존\nzoom:0.7은 이미 1장이었으나 안전마진 확보하며 zoom:0.74로 가독성 확대.\nA3(zoom 미적용)도 1장 유지 확인, 2단 그리드·결재란·색상 인쇄 정상. (CLI ad-hoc · 커밋 6cff0686)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "6cff06860e9a8a7d6d273613a3fce4e6622f5f15"
+  },
+  {
+    "task_id": "COO-2026-07-07-ADHOC-4092a106",
+    "clevel": "coo",
+    "title": "[시우] 종합접수처 reg_board 서버 캐시 45초 + 쓰기시 무효화",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-07",
+    "processed_at": "2026-07-07",
+    "ship_no": 583,
+    "artifact": "앱스스크립트 호출 지연 완화 — 필터없는 보드조회 결과를 ScriptCache 45초 캐시, reg_submit/update/delete/renumber 시 즉시 무효화로 최신성 유지. 재조회·다수 열람 즉답. (CLI ad-hoc · 커밋 4092a106)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4092a10694f3eb630c9be2e21d093ceaac2c3757"
   }
 ]
