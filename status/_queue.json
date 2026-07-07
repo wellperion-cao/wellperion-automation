@@ -1245,7 +1245,7 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-07",
     "note": "[2026-07-07 마케팅 자동화 진단 갭②] 문의 최대 유입=네이버 플레이스(지도·검색·자기신고)인데 클릭링크 미경유라 UTM 측정 사각(reference_inquiry_traffic_naver_place_dominant ~82%). 자동 태깅 불가 → ①대시보드에 '플레이스=최대 채널·측정 밖' 정직 표현(현재는 클릭 있는 채널만 보여 최대 레버가 안 보임) ②플레이스 관리 지표(리뷰·순위·플레이스 유입수) 수집 가능성 진단 ③관리 레버=별도 전략(GM). 마케팅 병목 정본=feedback_marketing_conversion_bottleneck·project_inquiry_traffic_naver_place_dominant. | [2026-07-07 진단+가시화 완결·라이브] 진단: 플레이스 지표 자동수집 불가(네이버 오픈API 없음·스크레이핑 비추천)→월1회 수동캡처만 현실적. ★82%(방문 리퍼러)≠28%(문의 자기신고) 별개 깔때기 단계로 정정(기억 project_inquiry_traffic_naver_place_dominant 갱신). 실측 문의 자기신고 네이버=28%(최근36일 91/321) 단일1위·비압도, 전환율은 소개/기존회원이 더 강함(기존 62.5% vs 네이버 24.6%). 가시화 라이브: 대시보드 섹션③ 상단 '최대 유입 채널=자기신고 상위1(동적)' 헤드라인 카드(네이버=플레이스·검색·블로그 통합·측정밖 정직표기·하드코딩0·545 화이트리스트 재사용). 라이브 검증 200(NFC경로)·마커 실재.",
-    "next": "🔗 가시화·진단 완결(대시보드 라이브). GM 결정 3건(대기): ①문의폼 플레이스 선택지 분리(신규부터 측정·소급X·폼변경 결재) ②월1회 스마트플레이스 수동캡처 담당 지정 ③반자동 스크레이핑 여부(비추천). 결정 시 후속 배.",
+    "next": "🏁 완결. [2026-07-07 GM 결정] 플레이스 추가 측정 안 함(폼 분리·수동 캡처·스크레이핑 모두 보류) — 대시보드 정직 표기(최대채널=네이버 자기신고 28%·측정밖)로 충분. 필요해지면 재개.",
     "depends_on": "",
     "module": "M2",
     "ship_no": 547,
@@ -1451,5 +1451,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VYqjP1CEJ2BNud9yE3H3nz (CLI ad-hoc · 커밋 a6d6e82b)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a6d6e82b063af7e9400546c97da69949c5c62d55"
+  },
+  {
+    "task_id": "CEO-2026-07-07-ADHOC-5fb5ec73",
+    "clevel": "ceo",
+    "title": "[웰리] 결재란 인쇄 강제노출+1분기 잘한팀 배치+포상 지급상태 표기 [웰리]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-07",
+    "processed_at": "2026-07-07",
+    "ship_no": 565,
+    "artifact": "GM 추가지시 3건 반영: ① print-color-adjust:exact로 배경그래픽 체크 무관 결재란 상시 노출\n② 1분기 잘한 팀(P.T팀) 카드를 2분기 카드 아래에 배치(나란히 금지)\n③ awards에 prize/meal/status 필드 추가·포상카드에 지급상태 배지(제공 완료/제공 예정) 정직 표기 (CLI ad-hoc · 커밋 5fb5ec73)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "5fb5ec7369072a0b2893cb940493a2161040408c"
   }
 ]
