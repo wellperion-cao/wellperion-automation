@@ -593,7 +593,7 @@
       if(_origTitle != null){ h1.textContent = _origTitle; period.textContent = _origPeriod; }
       return;
     }
-    live.style.display = 'none'; archive.style.display = '';
+    live.style.display = 'none'; archive.style.display = 'block';
     var apply = function(){
       var d = _archive && _archive[id];
       if(d){ h1.textContent = d.title || h1.textContent; period.textContent = d.period || ''; }
