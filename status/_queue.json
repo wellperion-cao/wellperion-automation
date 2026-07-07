@@ -2490,5 +2490,19 @@
     "artifact": "facility 스냅샷은 support와 열 배치가 달라(구역/교대 분리 없음) 기존 dump_snapshot 매핑으론 이상건수·이상내용(idx8/9)이 안 보였음. dept=facility일 때만 추가 노출(support 매핑 무변경). 이상건수 서버 자동계산 검증에 사용. (CLI ad-hoc · 커밋 af13fca6)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "af13fca66cb57ce45f2cf8b57ebcaa03d89eebb5"
+  },
+  {
+    "task_id": "CPO-2026-07-07-ADHOC-47b5116b",
+    "clevel": "cpo",
+    "title": "[시포] 상품기획 인쇄 세로 잘림 해결 — 카드·표행 break-inside:avoid [시포]",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-07",
+    "processed_at": "2026-07-07",
+    "ship_no": 635,
+    "artifact": "- @media print에 .card/.grade-card/tr break-inside:avoid + thead 반복, 카드·행이 페이지 경계서 절단되던 문제\n- A4 안전 zoom 0.75→0.72(폭 여유) (CLI ad-hoc · 커밋 47b5116b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "47b5116bfd16e9626590de41af979c4dca6e2d2b"
   }
 ]
