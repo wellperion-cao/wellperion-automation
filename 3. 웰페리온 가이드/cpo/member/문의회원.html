@@ -950,6 +950,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <a class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
         <button class="action-btn" onclick="openGuidePopup()">📖 문의 가이드</button>
         <button class="action-btn" onclick="openGdoc('principle,routine')">📋 운영 원칙·루틴</button>
+        <button class="action-btn" onclick="openAnalytics('conv')">📈 전환율</button>
+        <button class="action-btn" onclick="openAnalytics('funnel')">🔻 잔류·이탈</button>
+        <button class="action-btn" onclick="openChurnManage()">🚪 이탈관리</button>
         <a class="action-btn" href="../../wellperion_guide(main).html">ERP 홈</a>
         <button class="action-btn" onclick="window.print()">인쇄</button>
       </div>
@@ -973,19 +976,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
   <div id="type-membership" class="type-pane active">
-
-  <!-- 통합(문의+회원) 검색 — 성함·전화 부분일치, 멤버십 문의(dbRows)+등록/유효 회원(_regRows/_activeRows) 대상. IME 안전(입력칸 재생성 없음). 2026-07-07 시포·GM -->
-  <div id="unifiedSearchWrap" style="position:relative;max-width:360px;margin-bottom:10px">
-    <input type="text" id="unifiedSearch" class="db-search" style="width:100%" placeholder="성함·전화로 회원·문의 통합 검색…" autocomplete="off">
-    <div id="unifiedSearchResults" class="unified-search-panel" style="display:none"></div>
-  </div>
-
-  <!-- 분석·참고 진입 버튼 바 — 요약대시 위쪽 고정(2026-07-07 GM: 카드 위쪽 배치). 3버튼(운영가이드는 헤더로 이동). 2026-07-07 시포·GM -->
-  <div class="guide-btns" style="margin-bottom:16px">
-    <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
-    <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
-    <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
-  </div>
 
   <!-- ══ 통합 회원 현황판 — 카드 현황 + CPO 가이드(전체폭) · 2026-06-29 시포 ══ -->
   <div class="dash-grid" id="cpoTodayStrip">
@@ -1022,6 +1012,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line"><span class="dash-k">종료</span><span class="dash-v"><b id="dMemEnded">0</b> 명</span></div>
       </div>
     </a>
+  </div>
+
+  <!-- 통합(문의+회원) 검색 — 성함·전화 부분일치, 멤버십 문의(dbRows)+등록/유효 회원(_regRows/_activeRows) 대상. IME 안전(입력칸 재생성 없음). 요약대시 아래·예약달력 바로 위(2026-07-07 GM). 2026-07-07 시포·GM -->
+  <div id="unifiedSearchWrap" style="position:relative;max-width:360px;margin-bottom:10px">
+    <input type="text" id="unifiedSearch" class="db-search" style="width:100%" placeholder="성함·전화로 회원·문의 통합 검색…" autocomplete="off">
+    <div id="unifiedSearchResults" class="unified-search-panel" style="display:none"></div>
   </div>
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
@@ -1618,13 +1614,6 @@ if (action === 'member_calendar') {
 
   <!-- ══════════════════════════════ 유형: 성인 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
   <div id="type-lessonAdult" class="type-pane">
-    <!-- 분석·참고 진입 버튼 바 (멤버십 뷰와 공유 — 강습 퍼널도 확인 가능). 요약대시 위쪽 고정, 3버튼(운영가이드는 헤더로 이동). 2026-07-07 시포·GM -->
-    <div class="guide-btns" style="margin-bottom:18px">
-      <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
-      <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
-      <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
-    </div>
-
     <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리 (강습 전용 lessonSwitchCard) -->
     <div class="dash-grid lesson-dash" style="margin-bottom:18px">
       <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('adult','inq')">
@@ -1743,13 +1732,6 @@ if (action === 'member_calendar') {
 
   <!-- ══════════════════════════════ 유형: 유소년 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
   <div id="type-lessonYouth" class="type-pane">
-    <!-- 분석·참고 진입 버튼 바 (멤버십 뷰와 공유 — 강습 퍼널도 확인 가능). 요약대시 위쪽 고정, 3버튼(운영가이드는 헤더로 이동). 2026-07-07 시포·GM -->
-    <div class="guide-btns" style="margin-bottom:18px">
-      <button class="guide-doc-btn" onclick="openAnalytics('conv')">📈 전환율</button>
-      <button class="guide-doc-btn" onclick="openAnalytics('funnel')">🔻 단계별 잔류·이탈</button>
-      <button class="guide-doc-btn" onclick="openChurnManage()">🚪 이탈 관리</button>
-    </div>
-
     <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리 -->
     <div class="dash-grid lesson-dash" style="margin-bottom:18px">
       <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('youth','inq')">
