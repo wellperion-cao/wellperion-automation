@@ -647,8 +647,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <!-- 옛 점검(남)/(여) 탭 제거(2026-06-12). 신규 '시설점검'=날짜별 측정 작업일지(2026-06-16 GM·PDF 기반). -->
   <button class="tab" onclick="switchTab('fcheck')">시설점검</button>
-  <button class="tab" onclick="switchTab('monthly')">📊 월간보고</button>
-  <button class="tab" onclick="switchTab('mplan')">📅 이달 부서 현황</button>
+  <button class="tab" onclick="switchTab('monthly')">📅 월간 시설부 계획·보고</button>
   <button class="tab" onclick="switchTab('vendor')">거래업체</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="printCurrentTab()">인쇄</button>
@@ -757,16 +756,54 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </details>
 </div>
 
-<!-- ══ 월간보고 탭 — 시설부 점검 monthly_report&dept=facility 라이브 대시보드 (배406) ══
+<!-- ══ 「📅 월간 시설부 계획·보고」 통합 탭 — monthly_ops_plan.json 핵심과제(주인공·상단) + 점검 monthly_report&dept=facility 라이브 대시보드 (배406 + 이달 부서 현황 통합 2026-07-07) ══
      지원부(배208) 탭 구조 벤치마킹 + 시설부 실측정값 구조(카테고리·회차·기준이탈)로 재설계.
      완료율식(구역×교대) 이식 불가 전제 확인 — 시설부는 카테고리(A~F)×회차(자유텍스트)×항목 단위. ══ -->
 <div id="tab-monthly" class="content hidden">
-  <h2 style="font-size:20px;margin-bottom:6px;">시설부 점검 월간 리포트 <span style="font-size:13px;color:var(--dim);font-weight:400;">(실측정값 기반)</span></h2>
   <div class="date-bar">
     <input type="month" id="fmMonthInput" onchange="loadFacilityMonthlyReport()">
     <button class="btn" onclick="loadFacilityMonthlyReport()">조회</button>
     <button class="btn" onclick="printA3FacilityMonthly()">🖨 A3 인쇄</button>
   </div>
+
+  <div id="mpStatus" style="color:var(--dim);font-size:13px;padding:20px 0;text-align:center;">불러오는 중...</div>
+  <div id="mpHeader" style="display:none;margin-bottom:16px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:18px;font-weight:700;" id="mpMonthLabel"></span>
+          <span id="mpStatusBadge"></span>
+        </div>
+        <div style="font-size:13px;color:var(--dim);margin-top:4px;" id="mpTheme"></div>
+      </div>
+      <a href="/wellperion-automation/월간운영계획.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;">▸ 전체 월간운영계획 보기</a>
+    </div>
+  </div>
+
+  <div class="dash-section-title" style="font-size:17px;font-weight:800;margin-top:2px;">🎯 이달 핵심과제</div>
+  <div id="mpCards"></div>
+  <div style="font-size:11px;color:var(--dim);margin:4px 0 20px;">정본 = 월간운영계획 · 이 화면은 자동 반영(읽기 전용)</div>
+
+  <div class="dash-section-title">📊 도달율</div>
+  <div id="mpReachHeader" style="display:none;margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">실무 도달율</div>
+        <div style="font-size:24px;font-weight:800;" id="mpPracVal">—</div>
+        <div id="mpPracBarWrap"></div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpPracGoal"></div>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">AI 활용 도달율</div>
+        <div style="font-size:24px;font-weight:800;" id="mpAiVal">—</div>
+        <div id="mpAiBarWrap"></div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpAiGoal"></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--text);margin-top:10px;" id="mpOwnerLine"></div>
+  </div>
+
+  <div class="dash-section-title">✅ 점검 실적(월간)</div>
   <div id="fmStatus"></div>
 
   <div id="fmKpiRow"></div>
@@ -793,43 +830,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <div class="dash-section-title">개선 시사점</div>
   <div id="fmImprovements"></div>
-</div>
-
-<!-- ══ 이달 부서 현황 탭 — monthly_ops_plan.json 실무·AI 도달율 + 월목표 진척 읽기전용 렌더 (지원부 파일럿과 동일 패턴 · PAGE CONFIG만 다름) ══ -->
-<div id="tab-mplan" class="content hidden">
-  <div id="mpStatus" style="color:var(--dim);font-size:13px;padding:20px 0;text-align:center;">불러오는 중...</div>
-  <div id="mpHeader" style="display:none;margin-bottom:16px;">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:18px;font-weight:700;" id="mpMonthLabel"></span>
-          <span id="mpStatusBadge"></span>
-        </div>
-        <div style="font-size:13px;color:var(--dim);margin-top:4px;" id="mpTheme"></div>
-      </div>
-      <a href="/wellperion-automation/월간운영계획.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;">▸ 전체 월간운영계획 보기</a>
-    </div>
-  </div>
-  <div id="mpReachHeader" style="display:none;margin-bottom:20px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
-        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">실무 도달율</div>
-        <div style="font-size:24px;font-weight:800;" id="mpPracVal">—</div>
-        <div id="mpPracBarWrap"></div>
-        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpPracGoal"></div>
-      </div>
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
-        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">AI 활용 도달율</div>
-        <div style="font-size:24px;font-weight:800;" id="mpAiVal">—</div>
-        <div id="mpAiBarWrap"></div>
-        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpAiGoal"></div>
-      </div>
-    </div>
-    <div style="font-size:13px;color:var(--text);margin-top:10px;" id="mpOwnerLine"></div>
-    <div style="font-size:12px;color:var(--dim);font-weight:700;margin:18px 0 4px;border-top:1px dashed var(--border);padding-top:14px;">─ 월 목표 &amp; 진척 ─</div>
-  </div>
-  <div id="mpCards"></div>
-  <div style="font-size:11px;color:var(--dim);margin-top:20px;padding-top:12px;border-top:1px solid var(--border);">정본 = 월간운영계획 · 이 화면은 자동 반영(읽기 전용)</div>
 </div>
 
 <div id="tab-vendor" class="content hidden">
@@ -2053,10 +2053,8 @@ function switchTab(tab, opts){
   document.getElementById('tab-vendor').classList.toggle('hidden',tab!=='vendor');
   document.getElementById('tab-fcheck').classList.toggle('hidden',tab!=='fcheck');
   document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
-  document.getElementById('tab-mplan').classList.toggle('hidden',tab!=='mplan');
   if(tab==='fcheck'){ if(typeof fcLoad==='function') fcLoad(); }
-  if(tab==='monthly'){ if(typeof fmEnsureMonthInput==='function') fmEnsureMonthInput(); if(typeof loadFacilityMonthlyReport==='function') loadFacilityMonthlyReport(); }
-  if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
+  if(tab==='monthly'){ if(typeof fmEnsureMonthInput==='function') fmEnsureMonthInput(); if(typeof loadFacilityMonthlyReport==='function') loadFacilityMonthlyReport(); if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
   if(tab==='manual'){ if(typeof facLoadManualFromBackend==='function') facLoadManualFromBackend(); }
   if(tab==='guide'){ if(typeof facRenderGuideBoard==='function') facRenderGuideBoard(); }
   if(tab==='vendor'){ if(typeof loadVendorCategoriesFromBackend==='function'){ loadVendorCategoriesFromBackend().then(function(){ if(typeof loadVendorFromBackend==='function') loadVendorFromBackend(); }); } }   // 탭 열 때마다 백엔드 재로드(분류→업체) — GM 2026-06-12
