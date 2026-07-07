@@ -561,6 +561,8 @@ var DB={emp:[],hire:[],appl:[],onbo:[],eval:[],exit:[]};
 var ERR={},ERRMSG={},ROWCOUNT={},RAWSAMPLE={},STALE={};
 var charts={};
 var empSortState={key:"성명",dir:1};
+/* ===== 채용 블랙리스트 (관리자 전용 · localStorage 캐시 안 함 = PII 미영속) ===== */
+var BLACKLIST=[], BLACKLIST_LOADED=false, BLACKLIST_LOADING=false, BLACKLIST_ERR="";
 
 /* ============ helpers ============ */
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){
@@ -1596,7 +1598,7 @@ function renderHire(){
     html+=all.map(function(a,idx){
       var linked=applLinkedName(a);
       return '<div class="appl-tr" data-applpgrow="'+idx+'"'+(idx<8?'':' style="display:none"')+'>'+
-        '<div class="t-name">'+esc(txt(a["지원자명"]))+'</div>'+
+        '<div class="t-name">'+blBadge(a)+esc(txt(a["지원자명"]))+'</div>'+
         '<div>'+esc(txt(a["지원 포지션"]))+'</div>'+
         '<div>'+(a["지원 경로"]?badge(a["지원 경로"]):'<span class="muted">—</span>')+'</div>'+
         '<div>'+(a["전형 단계"]?badge(a["전형 단계"]):'<span class="muted">—</span>')+'</div>'+
@@ -1630,6 +1632,13 @@ function renderHire(){
     }
   }else{html+='<div class="card">'+emptyState("등록된 채용 공고가 없습니다.","◔")+'</div>';}
 
+  /* ===== C. 채용 블랙리스트 (관리자 전용) ===== */
+  if(SESSION_ROLE==="admin"){
+    ensureBlacklist();   // 최초 진입 시 1회 로드 → 완료되면 자동 재렌더
+    html+='<div class="sec-title">채용 블랙리스트 <span style="font-weight:500;color:var(--ink-faint)">'+(BLACKLIST_LOADED?BLACKLIST.length+'건':'…')+' · 관리자 전용</span></div>';
+    html+=blacklistSectionHtml();
+  }
+
   setPanel("hire",html);
   if(window.__fitApplPage) setTimeout(window.__fitApplPage,30);
   if(!window.__applRO && window.ResizeObserver){ var __hp=document.querySelector('[data-panel="hire"]'); if(__hp){ window.__applRO=new ResizeObserver(function(){ if(window.__fitApplPage) window.__fitApplPage(); }); window.__applRO.observe(__hp); } }
@@ -1641,6 +1650,9 @@ function renderHire(){
     panel.addEventListener("click",function(ev){
       var t=ev.target;
       if(!t||!t.closest)return;
+      if(t.id==="blf_add"||t.closest("#blf_add")){ submitAddBlacklist(); return; }
+      var bd=t.closest("[data-blrow]");
+      if(bd){ submitRemoveBlacklist(bd.getAttribute("data-blrow"), bd.getAttribute("data-blname")); return; }
       var p=t.closest("[data-print]");
       if(p){openPrintView(p.getAttribute("data-print"));return;}
       var s=t.closest("[data-sched]");
@@ -1663,6 +1675,151 @@ function renderHire(){
     });
   }
   try{ window.__lastHireSig=hireSig(); }catch(e){}
+}
+
+/* ============ 채용 블랙리스트 ============ */
+function blNorm(s){return String(s==null?"":s).replace(/\s/g,"").trim();}
+function blDigits(s){return String(s==null?"":s).replace(/\D/g,"");}
+function blLast4(s){var d=blDigits(s);return d.length>=4?d.slice(-4):"";}
+// 4자리 연도만 추출("1983"·"1983-01-01"·"1983년" → "1983", 없으면 "")
+function blYear(v){var m=String(v==null?"":v).match(/(19|20)\d{2}/);return m?m[0]:"";}
+// 지원자 메모에서 생년(연도) 파싱 — buildHrCard 파서 계약과 동일 4형식
+function applBirthYear(a){
+  var m=String((a&&a["메모"])||""); var mm;
+  if((mm=m.match(/생년\s*[:：]\s*(\d{4})\s*년/)))return mm[1];
+  if((mm=m.match(/(\d{4})\s*년\s*생/)))return mm[1];
+  if((mm=m.match(/생년월일[:：]\s*(\d{4})[.\-\/]\d{1,2}[.\-\/]\d{1,2}/)))return mm[1];
+  if((mm=m.match(/(\d{4})-\d{2}-\d{2}/)))return mm[1];
+  return "";
+}
+// 지원자 ↔ 블랙리스트 대조. 반환 {level:"strong"|"weak", entry} 또는 null
+// 규칙(동명이인 오경고 방지): 성명 일치 AND (생년 OR 연락처뒤4 일치)=strong / 성명만 일치·식별키 확인불가=weak
+function blMatch(a){
+  if(!a) return null;
+  var an=blNorm(a["지원자명"]); if(!an) return null;
+  var hits=BLACKLIST.filter(function(b){return blNorm(b["성명"])===an;});
+  if(!hits.length) return null;
+  var aPhone4=blLast4(a["연락처"]);
+  var aBirth=blYear(applBirthYear(a));
+  for(var i=0;i<hits.length;i++){
+    var b=hits[i];
+    var bPhone4=blLast4(b["연락처(뒤4자리)"]);
+    var bBirth=blYear(b["생년"]);
+    var phoneMatch=aPhone4 && bPhone4 && aPhone4===bPhone4;
+    var birthMatch=aBirth && bBirth && aBirth===bBirth;
+    if(phoneMatch||birthMatch) return {level:"strong", entry:b};
+  }
+  return {level:"weak", entry:hits[0]};   // 이름만 일치 — 단정 금지, 확인 유도
+}
+// 지원자 목록용 경고 배지 (관리자·로드완료 시에만)
+function blBadge(a){
+  if(SESSION_ROLE!=="admin"||!BLACKLIST_LOADED) return "";
+  var m=blMatch(a); if(!m) return "";
+  if(m.level==="strong")
+    return '<span class="badge b-red" title="채용 블랙리스트 등록 — 사유: '+esc(m.entry["사유"]||"—")+'" style="margin-right:5px">🚫 블랙리스트</span>';
+  return '<span class="badge b-amber" title="성명 일치 — 생년·연락처로 동일인 여부 확인 필요" style="margin-right:5px">⚠️ 동명 확인</span>';
+}
+// 관리자 진입 시 1회 로드 트리거
+function ensureBlacklist(){
+  if(SESSION_ROLE!=="admin") return;
+  if(BLACKLIST_LOADED||BLACKLIST_LOADING) return;
+  loadBlacklist();
+}
+async function loadBlacklist(){
+  if(SESSION_ROLE!=="admin"){BLACKLIST=[];BLACKLIST_LOADED=true;return;}
+  if(BLACKLIST_LOADING) return;
+  BLACKLIST_LOADING=true; BLACKLIST_ERR="";
+  try{
+    var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({db:"blacklist",password:SESSION_PW})}).then(function(x){return x.json();});
+    if(r && r.ok && r.role==="admin" && Array.isArray(r.results)){ BLACKLIST=r.results; }
+    else { BLACKLIST=[]; BLACKLIST_ERR=(r&&r.error)||"권한 없음"; }
+    BLACKLIST_LOADED=true;
+  }catch(e){ BLACKLIST_ERR=String((e&&e.message)||e); BLACKLIST_LOADED=true; }
+  finally{ BLACKLIST_LOADING=false; rerenderHireForBlacklist(); }
+}
+// 블랙리스트 로드/변경 후 채용 탭 재렌더(배지·목록 반영). 현재 탭이면 즉시, 아니면 다음 방문 시.
+function rerenderHireForBlacklist(){
+  if(!RENDERED.hire) return;
+  RENDERED.hire=false;
+  if(currentTab()==="hire"){ try{showTab("hire");}catch(e){} }
+}
+// 블랙리스트 관리 섹션 HTML (renderHire 안, 관리자 전용)
+function blacklistSectionHtml(){
+  var inp="font-family:inherit;font-size:12.5px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;outline:none;width:100%";
+  var h='';
+  // 추가 폼
+  h+='<div class="card" style="margin-bottom:12px">'+
+     '<h3 style="border-bottom:1px solid var(--line-soft);padding-bottom:9px;margin-bottom:12px">블랙리스트 등록</h3>'+
+     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px">'+
+       '<input id="blf_name" placeholder="성명 *" style="'+inp+'">'+
+       '<input id="blf_birth" placeholder="생년 (예: 1983)" style="'+inp+'">'+
+       '<input id="blf_phone4" placeholder="연락처 뒤 4자리" maxlength="4" inputmode="numeric" style="'+inp+'">'+
+       '<input id="blf_source" placeholder="지원 경로" style="'+inp+'">'+
+       '<input id="blf_reason" placeholder="사유 *" style="'+inp+'">'+
+       '<input id="blf_memo" placeholder="비고" style="'+inp+'">'+
+     '</div>'+
+     '<div style="display:flex;align-items:center;gap:12px;margin-top:12px">'+
+       '<button class="btn" id="blf_add">블랙리스트 등록</button>'+
+       '<span id="blf_msg" style="font-size:12px;min-height:16px"></span>'+
+     '</div></div>';
+  // 목록
+  if(!BLACKLIST_LOADED){
+    h+='<div class="card">'+emptyState("블랙리스트를 불러오는 중…","◌")+'</div>';
+    return h;
+  }
+  if(BLACKLIST_ERR){
+    h+='<div class="card">'+emptyState("블랙리스트를 불러오지 못했습니다 — "+esc(BLACKLIST_ERR),"⚠")+'</div>';
+    return h;
+  }
+  if(!BLACKLIST.length){
+    h+='<div class="card">'+emptyState("등록된 블랙리스트가 없습니다.","○")+'</div>';
+    return h;
+  }
+  h+='<div class="tbl-wrap"><div class="scroll-y"><table>'+
+     '<thead><tr><th>성명</th><th>생년</th><th>연락처 뒤4</th><th>지원 경로</th><th>사유</th><th>등록일</th><th>비고</th><th style="text-align:right">관리</th></tr></thead><tbody>';
+  h+=BLACKLIST.map(function(b){
+    return '<tr>'+
+      '<td class="t-name">'+esc(txt(b["성명"]))+'</td>'+
+      '<td>'+esc(txt(b["생년"]))+'</td>'+
+      '<td>'+esc(txt(b["연락처(뒤4자리)"]))+'</td>'+
+      '<td>'+esc(txt(b["지원경로"]))+'</td>'+
+      '<td>'+esc(txt(b["사유"]))+'</td>'+
+      '<td class="t-sub">'+esc(fmtD(b["등록일"]))+'</td>'+
+      '<td class="t-sub">'+esc(txt(b["비고"]))+'</td>'+
+      '<td style="text-align:right"><button class="btn-sm" data-blrow="'+esc(b["_sheet_row"])+'" data-blname="'+esc(b["성명"])+'" style="color:var(--red);border-color:#e6c4c0">삭제</button></td>'+
+    '</tr>';
+  }).join("");
+  h+='</tbody></table></div></div>';
+  return h;
+}
+async function submitAddBlacklist(){
+  var g=function(id){var e=document.getElementById(id);return e?e.value.trim():"";};
+  var name=g("blf_name"), reason=g("blf_reason");
+  var msg=document.getElementById("blf_msg");
+  if(!name||!reason){ if(msg){msg.style.color="var(--red)";msg.textContent="성명과 사유는 필수입니다.";} return; }
+  var btn=document.getElementById("blf_add"); if(btn){btn.disabled=true;btn.textContent="등록 중…";}
+  if(msg){msg.style.color="var(--ink-soft)";msg.textContent="";}
+  try{
+    var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"add-blacklist",adminPassword:SESSION_PW,
+      name:name, birth:g("blf_birth"), phone4:g("blf_phone4"), source:g("blf_source"), reason:reason, memo:g("blf_memo")})}).then(function(x){return x.json();});
+    if(!r||!r.ok) throw new Error((r&&r.error)||"등록 실패");
+    if(msg){msg.style.color="var(--green)";msg.textContent="✓ 등록 완료 — 목록 갱신 중…";}
+    await loadBlacklist();   // 재조회로 반영 확인 + 재렌더(폼 초기화됨)
+  }catch(e){
+    if(msg){msg.style.color="var(--red)";msg.textContent="실패: "+((e&&e.message)||e);}
+    if(btn){btn.disabled=false;btn.textContent="블랙리스트 등록";}
+  }
+}
+async function submitRemoveBlacklist(sheetRow,name){
+  if(!confirm("블랙리스트에서 삭제할까요?\n"+(name||"")+(sheetRow?" (행 "+sheetRow+")":""))) return;
+  try{
+    var body={action:"remove-blacklist",adminPassword:SESSION_PW};
+    if(sheetRow) body.sheetRow=Number(sheetRow); else body.name=name;
+    var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify(body)}).then(function(x){return x.json();});
+    if(!r||!r.ok) throw new Error((r&&r.error)||"삭제 실패");
+    await loadBlacklist();   // 재조회로 반영 확인 + 재렌더
+  }catch(e){ alert("삭제 실패: "+((e&&e.message)||e)); }
 }
 
 /* ============ ONBOARDING ============ */
