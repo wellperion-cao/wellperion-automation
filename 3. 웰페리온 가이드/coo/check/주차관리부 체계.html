@@ -551,7 +551,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('guide')">가이드</button>
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <button class="tab" onclick="switchTab('valet')">발렛 시스템</button>
-  <button class="tab" onclick="switchTab('mplan')">📅 이달 부서 현황</button>
+  <button class="tab" onclick="switchTab('mplan')">📅 월간 주차관리부 계획·보고</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <button class="util-btn print-btn" onclick="window.print()">인쇄</button>
     <button class="util-btn print-btn" onclick="printA3Guideline()" title="규정+가이드를 A3 세로 좌우2단으로 인쇄">🖨️ A3 가이드라인</button>
@@ -674,6 +674,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <a href="/wellperion-automation/월간운영계획.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;">▸ 전체 월간운영계획 보기</a>
     </div>
   </div>
+  <div class="dash-section-title" style="font-size:17px;font-weight:800;margin-top:2px;">🎯 이달 핵심과제</div>
+  <div id="mpCards"></div>
+  <div style="font-size:11px;color:var(--dim);margin:4px 0 20px;">정본 = 월간운영계획 · 이 화면은 자동 반영(읽기 전용)</div>
+
+  <div class="dash-section-title">📊 도달율</div>
   <div id="mpReachHeader" style="display:none;margin-bottom:20px;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
@@ -690,10 +695,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
     <div style="font-size:13px;color:var(--text);margin-top:10px;" id="mpOwnerLine"></div>
-    <div style="font-size:12px;color:var(--dim);font-weight:700;margin:18px 0 4px;border-top:1px dashed var(--border);padding-top:14px;">─ 월 목표 &amp; 진척 ─</div>
   </div>
-  <div id="mpCards"></div>
-  <div style="font-size:11px;color:var(--dim);margin-top:20px;padding-top:12px;border-top:1px solid var(--border);">정본 = 월간운영계획 · 이 화면은 자동 반영(읽기 전용)</div>
 </div>
 
 <div id="tab-guide" class="content hidden">
