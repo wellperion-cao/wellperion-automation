@@ -827,7 +827,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .funnel-bar-month{color:var(--dim-mid);font-size:10px;white-space:nowrap}
 
 /* ── 진행상태 미입력 강조·독려(배4) — 담당자 입력 유도. 2026-07-07 시포·GM ── */
-.cell-select-unfilled{background:var(--yellow-bg)!important;border-color:var(--yellow-border)!important;color:var(--yellow)}
+.cell-select-unfilled{background:var(--yellow-bg)!important;border-color:var(--yellow-border)!important;color:var(--yellow)!important;font-weight:700}
+/* ── 강습 진행상태 상태별 컬러(배4 후속) — 색만으로 구분 아님(옵션 텍스트 그대로 표시), 가시성 강화용 굵게+좌측 강조선. 2026-07-07 시포·GM ── */
+.cell-select.st-consult{color:var(--teal);background:var(--teal-bg);border-color:var(--teal-border);font-weight:700;border-left:3px solid var(--teal)}
+.cell-select.st-registered{color:var(--green);background:var(--green-bg);border-color:var(--green-border);font-weight:700;border-left:3px solid var(--green)}
+.cell-select.st-hold{color:var(--orange);background:var(--orange-bg);border-color:var(--orange-border);font-weight:700;border-left:3px solid var(--orange)}
+.cell-select.st-cancel{color:var(--red);background:var(--red-bg);border-color:var(--red-border);font-weight:700;border-left:3px solid var(--red)}
 .status-chip.status-chip-unfilled{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border)}
 .status-unfilled-tag{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-left:5px;white-space:nowrap;vertical-align:middle}
 .unfilled-summary-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-bottom:10px}
@@ -1001,9 +1006,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 관리</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">유효</span><span class="dash-v"><b class="lead" id="dMemActive">0</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">단기권</span><span class="dash-v"><b id="dMemShort">–</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp">0</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">종료</span><span class="dash-v"><b id="dMemEnded">0</b> 명</span></div>
+        <!-- 단기=유효의 부분집합(중단기 회원구분 카운트), 법인=별도 법인현황 시트 합산치 — 유효(위 줄)에 합산 반영. 2026-07-07 시포·GM -->
+        <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
       </div>
     </a>
   </div>
@@ -2710,12 +2714,20 @@ function _updateLessonUnfilledBadge(t, rows) {
   el.innerHTML = '진행상태 미입력 <b>' + n + '</b>건 — 채워주시면 퍼널이 정확해집니다';
 }
 
+// 진행상태→색 클래스 매핑(미입력은 기존 앰버 유지, 값 있으면 상태별 색). 배4 후속, 2026-07-07 시포·GM
+var LESSON_STATUS_CLASS_MAP = { '상담중': 'st-consult', '등록': 'st-registered', '보류': 'st-hold', '취소': 'st-cancel' };
+function _lessonStatusClass(val) {
+  var v = String(val || '').trim();
+  if (_isStatusUnfilled(v)) return '';   // 미입력=cell-select-unfilled로 별도 처리(호출부에서 합성)
+  return LESSON_STATUS_CLASS_MAP[v] || '';
+}
 function _lessonStatusSelectHtml(t, rowIndex, current) {
   var cur = String(current || '').trim();
   var unfilled = _isStatusUnfilled(cur);   // 미입력(빈값/미정) 강조 판정 — 배4, 2026-07-07 시포·GM
+  var stCls = _lessonStatusClass(cur);   // 상담중/등록/보류/취소 색 클래스(배4 후속)
   var opts = LESSON_STATUS_OPTIONS.slice();
   if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);   // 목록에 없는 기존값도 옵션으로 보존
-  var html = '<select class="cell-select' + (unfilled ? ' cell-select-unfilled' : '') + '" style="font-size:12px;padding:2px 6px" onchange="lessonStatusChange(this,\'' + t + '\',' + rowIndex + ')">';
+  var html = '<select class="cell-select' + (unfilled ? ' cell-select-unfilled' : '') + (stCls ? ' ' + stCls : '') + '" style="font-size:12px;padding:2px 6px" onchange="lessonStatusChange(this,\'' + t + '\',' + rowIndex + ')">';
   if (!cur) html += '<option value="" selected>— 미정 —</option>';
   opts.forEach(function(o){
     html += '<option value="' + esc(o) + '"' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>';
@@ -2737,7 +2749,9 @@ function lessonStatusChange(sel, t, rowIndex) {
       if (!data.ok) throw new Error(data.error || '저장 실패');
       if (row) row.status = newVal;
       var unfilled = _isStatusUnfilled(newVal);   // 강조 갱신(배4) — select 재생성 없이 클래스·표식만 토글
-      sel.classList.toggle('cell-select-unfilled', unfilled);
+      sel.classList.remove('cell-select-unfilled', 'st-consult', 'st-registered', 'st-hold', 'st-cancel');   // 기존 상태색 전부 제거 후 재설정(배4 후속)
+      var stCls = _lessonStatusClass(newVal);
+      if (unfilled) sel.classList.add('cell-select-unfilled'); else if (stCls) sel.classList.add(stCls);
       _toggleUnfilledTag(sel, unfilled);
       _updateLessonUnfilledBadge(t, _lessonVisibleRows(t));
       showToast('저장', 'ok');
@@ -3606,7 +3620,8 @@ function loadCpoTodayStats() {
       // 카드2 멤버십 문의 / 카드3 등록 / 카드4 회원 현황
       _setTxt('dInqToday', d.todayInquiry); _setTxt('dInqMonth', d.monthInquiry);
       _setTxt('dRegToday', d.todayReg);     _setTxt('dRegMonth', d.monthReg);
-      _setTxt('dMemActive', d.memberActive); _setTxt('dMemCorp', d.memberCorp); _setTxt('dMemEnded', d.memberEnded);
+      // 유효=단기(memberActive, 유효회원시트 잔여일>0)+법인(memberCorp, 별도 법인현황시트) 합산 총원 — 두 소스는 disjoint(다른 시트)라 합산이 정직. 2026-07-07 시포·GM
+      _setTxt('dMemActive', (Number(d.memberActive) || 0) + (Number(d.memberCorp) || 0)); _setTxt('dMemCorp', d.memberCorp);
       _cpoStats = d; renderActiveSummary();   // 회원관리 탭 요약카드(유효·법인·종료·비율바·순증감)
       _setTxt('gToLoss', d.todayLoss); _setTxt('gMoLoss', d.monthLoss);   // CPO 가이드 이탈 현황(오늘/월)
     })

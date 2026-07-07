@@ -523,6 +523,99 @@ def collect_parallel_ships(exclude_titles: set | None = None, cap: int = 6) -> l
 
 
 # ═══════════════════════════════════════════
+#  완료건 dedup + 일시 null 억제 (시토 배496 · 2026-07-06)
+#  근본원인(ship482 재발행 사고): kpi_values 스냅샷만 보고 KPI 값이 null이면
+#  '미측정'으로 신호② 측정개통 카드를 매일 재발행 — 이미 완료된 측정 배(archive)를
+#  대조하지 않았고, kpi_collector GAS 일시 실패로 1회 null인 것도 '미측정'으로 오독.
+#  가드①: role 이 이미 '측정+개통/라이브/점등/신설' 완료건(archive·queue DONE)이면
+#          같은 role 의 '측정' 관련 후보는 dedup(드롭).
+#  가드②: 신호②이면서 '측정' 관련 후보는 해당 role KPI 가 연속 N회(threshold) null
+#          일 때만 통과 — 1회성 null(일시 장애)은 억제.
+#  한계(정직 고지): 연속-null 판정은 본 스크립트 실행 시점마다 1회씩 카운트하는
+#  근사치(northstar_null_streak.json) — kpi_collector 자체의 시계열 로그가 아니므로
+#  "실행 간격"이 곧 "회차"다. 06:30 1일 1회 실행 전제면 threshold=2 는 '이틀 연속'과 동치.
+# ═══════════════════════════════════════════
+QUEUE_ARCHIVE_FILE = BASE_DIR / "status" / "_queue_archive.json"
+NULL_STREAK_FILE = BASE_DIR / "status" / "northstar_null_streak.json"
+NULL_STREAK_THRESHOLD = 2  # 연속 이 값 이상 null 이어야 '미측정' 신호② 발행 허용
+
+_MEASURE_KEYWORD = "측정"
+_MEASURE_DONE_KEYWORDS = ("개통", "라이브", "점등", "신설", "완결")
+
+
+def _completed_measurement_roles() -> set:
+    """_queue_archive.json + _queue.json(DONE/terminal) 중 '측정+개통/라이브/점등/신설'
+    문구가 있는 완료건의 role 집합 — 이미 측정 개통이 끝난 역할로 간주(가드① 근거)."""
+    roles: set = set()
+    for path in (QUEUE_ARCHIVE_FILE, QUEUE_FILE):
+        data = load_json(path, [])
+        if not isinstance(data, list):
+            continue
+        for ship in data:
+            if not isinstance(ship, dict):
+                continue
+            if ship.get("status") != "DONE" and not ship.get("terminal"):
+                continue
+            text = f"{ship.get('title', '')} {ship.get('note', '')} {ship.get('artifact', '')}"
+            if _MEASURE_KEYWORD in text and any(k in text for k in _MEASURE_DONE_KEYWORDS):
+                role = (ship.get("clevel") or "").lower()
+                if role:
+                    roles.add(role)
+    return roles
+
+
+def _is_measurement_candidate(c: dict) -> bool:
+    text = f"{c.get('title', '')} {c.get('rationale', '')}"
+    return _MEASURE_KEYWORD in text
+
+
+def dedup_completed_measurement(candidates: list) -> tuple:
+    """가드① — 이미 측정 개통 완료된 role 의 '측정' 관련 후보를 dedup(드롭)."""
+    done_roles = _completed_measurement_roles()
+    kept, dropped = [], []
+    for c in candidates:
+        if _is_measurement_candidate(c) and c.get("role") in done_roles:
+            dropped.append(c)
+        else:
+            kept.append(c)
+    return kept, dropped
+
+
+def _load_null_streak() -> dict:
+    return load_json(NULL_STREAK_FILE, {})
+
+
+def update_null_streak(roles_by_id: dict) -> dict:
+    """role 별 kpi_values null 연속 실행횟수 갱신(가드② 근거).
+    이번 실행에서 null 이 하나라도 있으면 +1, 전부 값이 있으면 0 으로 리셋."""
+    streak = _load_null_streak()
+    updated = {}
+    for rid, rd in roles_by_id.items():
+        kv = rd.get("kpi_values", {}) or {}
+        has_null = any(v is None for k, v in kv.items() if not k.startswith("_"))
+        prev = int(streak.get(rid, 0) or 0)
+        updated[rid] = (prev + 1) if has_null else 0
+    try:
+        NULL_STREAK_FILE.write_text(json.dumps(updated, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        print(f"[WARN] null_streak 저장 실패: {e}")
+    return updated
+
+
+def filter_transient_null(candidates: list, null_streak: dict) -> tuple:
+    """가드② — 신호②+'측정' 관련 후보는 연속 null 이 threshold 미만이면 억제(드롭)."""
+    kept, suppressed = [], []
+    for c in candidates:
+        if c.get("signal") == "신호②" and _is_measurement_candidate(c):
+            streak = int(null_streak.get(c.get("role"), 0) or 0)
+            if streak < NULL_STREAK_THRESHOLD:
+                suppressed.append(c)
+                continue
+        kept.append(c)
+    return kept, suppressed
+
+
+# ═══════════════════════════════════════════
 #  텔레그램 발송 (.env 직독 · INC-004) + 카드
 # ═══════════════════════════════════════════
 def _env_val(key: str) -> str:
@@ -730,6 +823,27 @@ def run(stdout_only: bool = False, send: bool = False):
         candidates = candidates[:RECOMMEND_COUNT]
         if brain == "ClaudeCLI":
             brain = "ClaudeCLI+폴백보충"
+
+    # 2-a2. 가드①②(시토 배496 · 2026-07-06) — 완료건 dedup + 일시 null 억제
+    null_streak = update_null_streak(roles_by_id)
+    candidates, dropped_done = dedup_completed_measurement(candidates)
+    candidates, suppressed_null = filter_transient_null(candidates, null_streak)
+    if dropped_done or suppressed_null:
+        print(f"[가드] 완료건dedup {len(dropped_done)}건"
+              f"(역할:{[c.get('role') for c in dropped_done]}) · "
+              f"일시null억제 {len(suppressed_null)}건"
+              f"(역할:{[c.get('role') for c in suppressed_null]})")
+        excluded_roles = {c.get("role") for c in dropped_done + suppressed_null}
+        if len(candidates) < RECOMMEND_COUNT:
+            existing_roles = {x["role"] for x in candidates}
+            for c in brain_fallback(inputs):
+                if len(candidates) >= RECOMMEND_COUNT:
+                    break
+                if c["role"] in excluded_roles or c["role"] in existing_roles:
+                    continue
+                candidates.append(c)
+                existing_roles.add(c["role"])
+            candidates = candidates[:RECOMMEND_COUNT]
 
     # 2-b. 3줄 브릿지 보강 (GM 2026-06-29) — northstar·progress·path_map(3줄)
     candidates = enrich_candidates(candidates, roles_by_id)
