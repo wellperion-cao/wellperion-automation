@@ -2555,5 +2555,19 @@
     "artifact": "배173 관찰건 후속. 라이브 GAS 실측(action=weekly&dept=facility)에서 GAS 응답\n자체가 total=15,done=100,pct=667로 100% 초과 산출됨을 확인. 뿌리원인은\nhandleWeekly()가 지원부(support) 스냅샷 열배치(col6=총항목,col7=완료)를\n시설부(facility)에도 그대로 적용한 것 — facility snapRow(saveFacilityMeasure)는\n구역열이 없어 col5=총항목,col6=완료,col7=완료율(%)로 한 칸씩 밀려있어\n완료율(%)이 완료수로  (CLI ad-hoc · 커밋 b2c5069d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b2c5069d9b21d7c2630238c9437e0336f5d12423"
+  },
+  {
+    "task_id": "CEO-2026-07-08-ADHOC-c48cd1b6",
+    "clevel": "ceo",
+    "title": "[웰리] 점검 카드 12초 콜드로드 체감 개선 — stale-while-revalidate + 25s 타임아웃 방어",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 687,
+    "artifact": "localStorage 직전 실측값 즉시표시(갱신 중 표기)·백그라운드 갱신. GM 지시(배685 ④). (CLI ad-hoc · 커밋 c48cd1b6)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c48cd1b60ca11751c81c55adf833d4cb48cc5145"
   }
 ]
