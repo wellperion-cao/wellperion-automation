@@ -1,0 +1,1844 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>웰페리온 · CHRO 복셀 오피스</title>
+<style>
+  /* ===== HR office v2 — FINAL_SPEC restyle: 귀엽고 정교한 라운드 피겨린 + 프리미엄 브라스 톤 =====
+     기능·데이터는 original 그대로(패리티), 시각만 리빌드. 한글 시스템 폰트 스택 + tabular-nums. */
+  :root{
+    color-scheme: light dark;
+    --bg:#0E1116; --ink:#F3ECDD; --muted:#9B9283;
+    --panel:rgba(20,24,31,.64); --panel-brd:rgba(201,169,106,.28);
+    --brass:#C9A96A; --brass-strong:#E8C877; --sage:#7FC8A0; --live:#E8746A;
+    --serif:Georgia,'Times New Roman',serif;
+    --ui:-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic','맑은 고딕','Noto Sans KR',sans-serif;
+  }
+  :root[data-theme="light"]{
+    --bg:#EFE9DB; --ink:#2A2318; --muted:#7C7059;
+    --panel:rgba(255,252,245,.74); --panel-brd:rgba(140,108,44,.30);
+    --brass:#8C6C2C; --brass-strong:#A6822E; --sage:#4E9E77; --live:#C0503F;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme]){
+      --bg:#EFE9DB; --ink:#2A2318; --muted:#7C7059;
+      --panel:rgba(255,252,245,.74); --panel-brd:rgba(140,108,44,.30);
+      --brass:#8C6C2C; --brass-strong:#A6822E; --sage:#4E9E77; --live:#C0503F;
+    }
+  }
+  *{box-sizing:border-box}
+  .wrap{position:relative; width:100%; height:100vh; min-height:520px; overflow:hidden; background:var(--bg); font-family:var(--ui); color:var(--ink)}
+  canvas#scene{position:absolute; inset:0; width:100%; height:100%; display:block; outline:none}
+  canvas#scene:focus-visible{box-shadow:inset 0 0 0 2px var(--brass-strong)}
+
+  .hud{position:absolute; inset:0; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:clamp(12px,2.4vw,26px)}
+  .topbar{display:flex; justify-content:space-between; align-items:flex-start; gap:12px}
+  .brand{display:flex; flex-direction:column; line-height:1}
+  .wordmark{font-family:var(--serif); font-weight:700; letter-spacing:.20em; font-size:clamp(17px,2.7vw,26px); color:var(--ink)}
+  .wordmark .dot{color:var(--brass)}
+  .sub{font-family:var(--serif); font-style:italic; color:var(--muted); font-size:clamp(11px,1.5vw,14px); margin-top:6px; letter-spacing:.02em}
+
+  .status{display:flex; align-items:center; gap:14px; pointer-events:auto}
+  .live{display:flex; align-items:center; gap:7px; font-size:12px; letter-spacing:.16em; color:var(--ink); font-weight:600}
+  .live .bulb{width:8px; height:8px; border-radius:50%; background:var(--live); animation:pulse 2.2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(232,116,106,.55)}70%{box-shadow:0 0 0 8px rgba(232,116,106,0)}100%{box-shadow:0 0 0 0 rgba(232,116,106,0)}}
+  .clock{font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; font-size:15px; letter-spacing:.04em; color:var(--ink); font-weight:600; min-width:88px; text-align:right}
+  .tgl{pointer-events:auto; cursor:pointer; border:1px solid var(--panel-brd); background:var(--panel); color:var(--ink); width:34px; height:34px; border-radius:50%; font-size:16px; display:grid; place-items:center; -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px); transition:transform .2s, border-color .2s}
+  .tgl:hover{transform:rotate(18deg); border-color:var(--brass)}
+  .tgl:focus-visible{outline:2px solid var(--brass-strong); outline-offset:2px}
+
+  .bottom{display:flex; flex-direction:column; gap:12px}
+  .bottom-row{display:flex; justify-content:space-between; align-items:flex-end; gap:14px}
+  .counter{pointer-events:none}
+  .counter .lbl{font-size:11px; letter-spacing:.22em; color:var(--muted); text-transform:uppercase}
+  .counter .num{font-family:var(--serif); font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; font-weight:700; font-size:clamp(40px,7vw,68px); line-height:.9; color:var(--ink)}
+  .counter .num .today-unit{font-size:.34em; letter-spacing:.1em; color:var(--muted); margin-left:8px; font-family:var(--ui); font-weight:600}
+  .tally{display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; max-width:min(62%,440px); pointer-events:none}
+  .chip{display:flex; align-items:center; gap:6px; background:var(--panel); border:1px solid var(--panel-brd); border-radius:9px; padding:5px 9px; font-size:11px; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
+  .chip .sw{width:9px;height:9px;border-radius:3px}
+  .chip .cid{color:var(--muted); font-weight:600}
+  .chip .cn{font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; font-weight:700; color:var(--ink); min-width:12px; text-align:right}
+  .chip.hit{border-color:var(--brass-strong); box-shadow:0 0 0 2px rgba(201,169,106,.25)}
+
+  /* 팀장 · Claude 브리핑 — full-width processing-log feed docked in the bottom HUD (replaces the head bubble) */
+  .leadfeed{width:100%; display:flex; flex-direction:column; gap:5px; background:var(--panel); border:1px solid var(--panel-brd); border-radius:14px; padding:9px 15px; -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px); box-shadow:0 6px 22px rgba(0,0,0,.14)}
+  .leadfeed .lf-head{display:flex; align-items:center; gap:8px; font-size:10px; letter-spacing:.20em; text-transform:uppercase; color:var(--brass); font-weight:700}
+  .leadfeed .lf-dot{width:6px; height:6px; border-radius:50%; background:var(--brass); box-shadow:0 0 0 0 rgba(201,169,106,.5); animation:pulse2 2.6s infinite}
+  @keyframes pulse2{0%{box-shadow:0 0 0 0 rgba(201,169,106,.5)}70%{box-shadow:0 0 0 6px rgba(201,169,106,0)}100%{box-shadow:0 0 0 0 rgba(201,169,106,0)}}
+  .leadfeed .lf-lines{display:flex; flex-direction:column; gap:2px}
+  .lf-row{display:flex; align-items:baseline; gap:9px; font-size:12.5px; line-height:1.42}
+  .lf-row .t{font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; color:var(--muted); font-size:11px; flex:none}
+  .lf-row .ag{display:inline-flex; align-items:center; gap:5px; font-weight:700; color:var(--ink); flex:none}
+  .lf-row .ag .sw{width:8px; height:8px; border-radius:3px; display:inline-block}
+  .lf-row .msg{color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:1 1 auto}
+  .lf-row .k{flex:none; font-size:9.5px; font-weight:700; letter-spacing:.08em; padding:1px 7px; border-radius:6px; color:var(--brass); background:rgba(201,169,106,.14)}
+  .lf-row .k.k-done{color:var(--sage); background:rgba(127,200,160,.18)}
+  .lf-row .k.k-brief{color:var(--muted); background:rgba(155,146,131,.16)}
+  .lf-row.newest{animation:lfin .34s ease both}
+  .lf-row.dim{opacity:.52}
+  .lf-row.dim2{opacity:.34}
+  @keyframes lfin{from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none}}
+
+  .foot{position:absolute; left:50%; transform:translateX(-50%); bottom:6px; font-size:10.5px; color:var(--muted); letter-spacing:.03em; pointer-events:none; text-align:center; width:100%; padding:0 10px}
+
+  @media (max-width:560px){
+    .tally{max-width:100%; justify-content:flex-start}
+    .bottom-row{flex-direction:column; align-items:flex-start; gap:10px}
+    .sub{display:none}
+    .lf-row .k{display:none}
+    .lf-row{font-size:11.5px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .live .bulb{animation:none}
+    .tgl{transition:none}
+    .leadfeed .lf-dot{animation:none}
+    .lf-row.newest{animation:none}
+  }
+
+  /* ===== CHRO 터미널 — 조회 전용 인터랙티브 명령창 (백엔드 미연결 · 페이지 내 데이터만) =====
+     하단 HUD 도크: 데스크톱 = 브리핑 피드 좌 + 터미널 우, 모바일 = 세로 스택.
+     스크린은 양 테마 모두 다크(책상 위 단말기 컨셉) — 패널 테두리·포인트만 페이지 토큰과 동조. */
+  .dockrow{display:flex; align-items:flex-end; gap:12px; width:100%}
+  .dockrow>.leadfeed{flex:1 1 auto; min-width:0; width:auto}
+  .term{
+    --t-ink:#E9E1CC; --t-mut:#9B9283; --t-brass:#E4C27C; --t-sage:#7FC8A0; --t-err:#E8746A;
+    pointer-events:auto; flex:0 0 clamp(300px,34vw,412px); min-width:0;
+    display:flex; flex-direction:column;
+    background:rgba(13,16,22,.92); border:1px solid var(--panel-brd); border-radius:14px; overflow:hidden;
+    -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px);
+    box-shadow:0 6px 22px rgba(0,0,0,.18);
+    font-family:ui-monospace,'Cascadia Mono',Consolas,'Courier New','Malgun Gothic','맑은 고딕',monospace;
+  }
+  :root[data-theme="light"] .term{border-color:rgba(140,108,44,.44)}
+  .term-head{display:flex; align-items:center; gap:8px; padding:7px 12px; background:rgba(201,169,106,.10); border-bottom:1px solid rgba(201,169,106,.22)}
+  .term-dot{width:7px; height:7px; border-radius:50%; background:var(--t-sage); flex:none}
+  .term-title{font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; font-weight:700; color:var(--t-brass)}
+  .term-badge{font-size:9px; font-weight:700; letter-spacing:.08em; color:var(--t-mut); border:1px solid rgba(155,146,131,.45); border-radius:6px; padding:1px 6px; flex:none}
+  .term-tgl{margin-left:auto; cursor:pointer; background:none; border:1px solid transparent; border-radius:6px; color:var(--t-brass); font-size:12px; line-height:1; padding:3px 6px}
+  .term-tgl:hover{border-color:rgba(201,169,106,.5)}
+  .term-tgl:focus-visible{outline:2px solid var(--brass-strong); outline-offset:1px}
+  .term-body{display:flex; flex-direction:column}
+  .term.closed .term-body{display:none}
+  .term-out{height:clamp(122px,20vh,192px); overflow-y:auto; overflow-x:hidden; padding:9px 12px 5px; scrollbar-width:thin; scrollbar-color:rgba(201,169,106,.4) transparent}
+  .term-out::-webkit-scrollbar{width:7px}
+  .term-out::-webkit-scrollbar-thumb{background:rgba(201,169,106,.35); border-radius:4px}
+  .term-out .tl{font-size:12px; line-height:1.55; color:var(--t-ink); white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere; margin:0 0 1px}
+  .term-out .tl-cmd{color:var(--t-brass); margin-top:4px}
+  .term-out .tl-h{color:var(--t-sage); font-weight:700}
+  .term-out .tl-mut{color:var(--t-mut)}
+  .term-out .tl-err{color:var(--t-err)}
+  .term-line{display:flex; align-items:center; gap:7px; padding:7px 12px 9px; border-top:1px dashed rgba(201,169,106,.22)}
+  .term-ps{color:var(--t-sage); font-weight:700; font-size:12.5px; flex:none}
+  .term-ghost{flex:none; width:7px; height:14px; border-radius:1.5px; background:#E8C877; animation:tblink 1.06s step-end infinite}
+  @keyframes tblink{0%,100%{opacity:1} 50%{opacity:0}}
+  .term-in{flex:1 1 auto; min-width:0; background:transparent; border:none; outline:none; color:#F0E8D2; font:inherit; font-size:12.5px; caret-color:#E8C877; padding:0}
+  .term-in::placeholder{color:rgba(155,146,131,.5)}
+  @media (max-width:880px){
+    .dockrow{flex-direction:column; align-items:stretch}
+    .term{flex:1 1 auto; width:100%}
+    .term-out{height:clamp(110px,24vh,170px)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .term-ghost{animation:none}
+  }
+</style>
+<style>
+#gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:var(--bg,#0E1116)}
+.gate-card{background:var(--panel,rgba(20,24,31,.92));border:1px solid var(--panel-brd,rgba(201,169,106,.28));border-radius:14px;padding:32px 28px;width:100%;max-width:344px;text-align:center;font-family:var(--ui,sans-serif);color:var(--ink,#F3ECDD)}
+.gate-card .mark{font-size:11px;letter-spacing:.28em;color:var(--brass,#C9A96A);font-weight:600;text-transform:uppercase}
+.gate-card h2{font-size:18px;margin:9px 0 3px;letter-spacing:-.01em}
+.gate-card p{font-size:12px;opacity:.72;margin-bottom:18px}
+.gate-card input{width:100%;text-align:center;font-size:14px;padding:10px 12px;border-radius:8px;border:1px solid var(--panel-brd,rgba(201,169,106,.4));background:transparent;color:inherit;box-sizing:border-box}
+.gate-card button{width:100%;margin-top:10px;padding:10px;border-radius:8px;border:1px solid var(--brass,#C9A96A);background:var(--brass,#C9A96A);color:#1a1408;font-weight:700;cursor:pointer;font-size:13px}
+.gate-err{color:#E8746A;font-size:12px;margin-top:10px;min-height:16px}
+.gate-foot{margin-top:16px;font-size:10.5px;opacity:.55;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="gate" style="display:none">
+  <div class="gate-card">
+    <div class="mark">WELLPERION</div>
+    <h2>CHRO 복셀 오피스</h2>
+    <p>사내 전용 페이지입니다. 접근 비밀번호를 입력하세요.</p>
+    <input type="password" id="gatePw" placeholder="접근 비밀번호" autocomplete="current-password">
+    <button id="gateBtn">입장</button>
+    <div class="gate-err" id="gateErr"></div>
+    <div class="gate-foot">대외비 — 인사 일정·지원자 정보 포함. 권한 없는 열람·외부 공유를 금합니다.</div>
+  </div>
+</div>
+
+
+
+<div class="wrap">
+  <canvas id="scene" tabindex="0" role="img" aria-label="웰페리온 CHRO 인사팀 AI 오피스 아이소메트릭 시연 — 팀장 Claude와 7개 에이전트가 넓은 회의 테이블에서 업무를 처리합니다. 상석 뒤 벽에는 급훈(매출·긍정·협동·사랑) 현판, 정면 벽에는 실제 채용·온보딩 일정이 반영된 오늘(7월 8일) 일정 게시판과 7월 인사 스케줄 월력, 창문과 벽시계가 걸려 있습니다. 처리 로그는 화면 하단의 '팀장 · Claude 브리핑' 패널에 실시간 피드로 표시되며, 팀장 캐릭터는 말풍선에 가려지지 않습니다."></canvas>
+
+  <div class="hud">
+    <div class="topbar">
+      <div class="brand">
+        <div class="wordmark">WELLPERION<span class="dot">.</span></div>
+        <div class="sub">CHRO AI 오피스 · 인사 운영 허브</div>
+      </div>
+      <div class="status">
+        <div class="live"><span class="bulb"></span>LIVE</div>
+        <div class="clock" id="clock">00:00:00</div>
+        <button class="tgl" id="tgl" aria-label="라이트/다크 테마 전환" title="테마 전환">◐</button>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="bottom-row">
+        <div class="counter">
+          <div class="lbl">오늘 처리</div>
+          <div class="num"><span id="today">0</span><span class="today-unit">건</span></div>
+        </div>
+        <div class="tally" id="tally"></div>
+      </div>
+      <div class="dockrow">
+        <div class="leadfeed" id="leadfeed">
+          <div class="lf-head"><span class="lf-dot"></span>팀장 · Claude 브리핑</div>
+          <div class="lf-lines" id="lf-lines"></div>
+        </div>
+        <div class="term" id="term">
+          <div class="term-head">
+            <span class="term-dot"></span>
+            <span class="term-title">CHRO 터미널</span>
+            <span class="term-badge">조회 전용</span>
+            <button class="term-tgl" id="term-tgl" type="button" aria-expanded="true" aria-controls="term-body" title="터미널 접기/펼치기">▾</button>
+          </div>
+          <div class="term-body" id="term-body">
+            <div class="term-out" id="term-out" role="log" aria-live="polite" aria-label="터미널 출력"></div>
+            <div class="term-line" id="term-line">
+              <span class="term-ps">chro&gt;</span>
+              <span class="term-ghost" id="term-ghost" aria-hidden="true"></span>
+              <input class="term-in" id="term-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" aria-label="CHRO 터미널 명령 입력 — help 입력 시 명령 목록" placeholder="help">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">벽면 달력·오늘 일정 = 실데이터(면접·공고 마감·온보딩) · 데이터: 게이트 인증 후 실시간 로드 · 처리 로그 피드는 목업 시연(자동화 로그 연동 예정)</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const canvas = document.getElementById('scene');
+  const ctx = canvas.getContext('2d');
+  const rootEl = document.documentElement;
+
+  /* ---------- isometric projection (matches verified layout) ---------- */
+  const TW=44, TH=22, TZ=26;
+  function project(gx,gy,gz){ return { x:(gx-gy)*TW/2, y:(gx+gy)*TH/2 - gz*TZ }; }
+
+  const ROOM={x0:-2.8, x1:14.4, y0:0.3, y1:8.8};  // enlarged once more — roomier office, wider aisles + more wall to breathe
+  const WALL_H=3.6;                               // taller walls to carry 급훈 + 월력 + 오늘 일정 signage
+
+  /* ---------- palettes ---------- */
+  const AGENT_COLORS={
+    'A-1':'#5B7FB0', 'A-2':'#B0703E', 'A-3':'#4E9E7C', 'A-4':'#A6863E',
+    'A-5':'#7A6DB4', 'A-6':'#C0603E', 'A-7':'#3E9AA6'
+  };
+  const PAL={
+    dark:{
+      bg:'#0E1116', floorA:'#3A342C', floorB:'#332E27',
+      rugA:'#3C4A44', rugB:'#374540', rugEdge:'#C9A96A',
+      wall:'#28241F', wallTrim:'#C9A96A', wallBack:'#211E1A',
+      table:'#5C4A36', chair:'#2C2824', trouser:'#2A2D33',
+      skin:'#D8B48C', hair:'#33291F',
+      monOff:'#141B26', monOn:'#4E86C4', lampBrass:'#C9A96A', lampShade:'#F3C979',
+      glow:'#F3C979', sage:'#7FC8A0', brass:'#C9A96A', muted:'#9B9283',
+      lead:'#3B4150', leadTie:'#E8C877',
+      shadow:'rgba(0,0,0,.34)', plant:'#4C7A56', plantPot:'#7A5236',
+      wood:'#6A5236', cabinet:'#4A443C', cabinet2:'#5A5248', metal:'#8C8478',
+      book:['#8E5B4B','#4E6E86','#7A8C5A','#B08A46','#6A5B86','#3E7A72'],
+      winSky:'#BFD8E8', winSky2:'#8FB6D0', winFrame:'#5A5248', coffee:'#3A2A20', mug:'#D8D0C2',
+      paper:'#EAE2D0', board:'#EDEAE2', boardTrim:'#8C8478', ceil:'#F3C979', steam:'#E8F2F6'
+    },
+    light:{
+      bg:'#EFE9DB', floorA:'#D9C8A7', floorB:'#CEBC99',
+      rugA:'#C6D3C7', rugB:'#BAC9BC', rugEdge:'#8C6C2C',
+      wall:'#E7DFCD', wallTrim:'#8C6C2C', wallBack:'#DED4BE',
+      table:'#BE9E70', chair:'#9C8C74', trouser:'#6C6454',
+      skin:'#E3C39A', hair:'#4A3A2C',
+      monOff:'#AEB6BE', monOn:'#7FA9D6', lampBrass:'#8C6C2C', lampShade:'#E7B54E',
+      glow:'#F0C868', sage:'#4E9E77', brass:'#8C6C2C', muted:'#7C7059',
+      lead:'#4A5364', leadTie:'#A6822E',
+      shadow:'rgba(60,44,20,.20)', plant:'#6FA070', plantPot:'#A6714A',
+      wood:'#B08E5E', cabinet:'#B7AE9E', cabinet2:'#C6BDAC', metal:'#C9C1B2',
+      book:['#B87A62','#6E90A8','#93A56E','#C9A24E','#8C7CA8','#5E9C90'],
+      winSky:'#DCEBF4', winSky2:'#B6D2E4', winFrame:'#C6BDAC', coffee:'#5A4030', mug:'#F0EADC',
+      paper:'#FBF6EA', board:'#FDFBF5', boardTrim:'#C6BDAC', ceil:'#F0C868', steam:'#8C8478'
+    }
+  };
+  const mqLightPref=window.matchMedia('(prefers-color-scheme: light)');
+  function currentTheme(){
+    const set = rootEl.getAttribute('data-theme');
+    if(set) return set;
+    return mqLightPref.matches ? 'light' : 'dark';
+  }
+  let P = PAL[currentTheme()];
+
+  /* ---------- shading helpers — 단일 광원(좌상단) 일관 음영 ---------- */
+  const _c={};
+  function fc(hex,f){
+    const key=hex+'|'+f; if(_c[key]) return _c[key];
+    let r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+    r=Math.min(255,r*f)|0; g=Math.min(255,g*f)|0; b=Math.min(255,b*f)|0;
+    return _c[key]=`rgb(${r},${g},${b})`;
+  }
+  let LW=0.7;
+  function poly(pts,fill){
+    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+    ctx.closePath(); ctx.fillStyle=fill; ctx.fill();
+    ctx.lineWidth=LW; ctx.strokeStyle=fill; ctx.stroke();
+  }
+  function box(gx,gy,gz,w,d,h,hex,topF){
+    const Z=gz+h, X=gx+w, Y=gy+d;
+    const tA=project(gx,gy,Z), tB=project(X,gy,Z), tC=project(X,Y,Z), tD=project(gx,Y,Z);
+    const bB=project(X,gy,gz), bC=project(X,Y,gz), bD=project(gx,Y,gz);
+    poly([tB,tC,bC,bB], fc(hex,0.58));            // +gx right face (dark)
+    poly([tD,tC,bC,bD], fc(hex,0.80));            // +gy left face (mid)
+    poly([tA,tB,tC,tD], fc(hex, topF||1.16));     // top (warm light)
+  }
+  function boxC(ccx,ccy,gz,w,d,h,hex,topF){ box(ccx-w/2, ccy-d/2, gz, w,d,h,hex,topF); }
+  function shadeHex(hex,f){
+    if(!hex || hex[0]!=='#') return hex||'#000000';
+    const r=Math.min(255,parseInt(hex.slice(1,3),16)*f)|0;
+    const g=Math.min(255,parseInt(hex.slice(3,5),16)*f)|0;
+    const b=Math.min(255,parseInt(hex.slice(5,7),16)*f)|0;
+    return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+  function tile(gx,gy,gz,w,d,fill){
+    const tA=project(gx,gy,gz), tB=project(gx+w,gy,gz), tC=project(gx+w,gy+d,gz), tD=project(gx,gy+d,gz);
+    poly([tA,tB,tC,tD], fill);
+  }
+  function shadowEllipse(gx,gy,rx){
+    const c=project(gx,gy,0.02);
+    ctx.save(); ctx.beginPath();
+    ctx.ellipse(c.x,c.y, rx*TW*0.5, rx*TH*0.5, 0, 0, Math.PI*2);
+    ctx.fillStyle=P.shadow; ctx.fill(); ctx.restore();
+  }
+
+  /* ---------- v2 rounded primitives (탈복셀 — 귀엽고 정교한 라운드 셰이딩) ----------
+     orb  : 구(球) — 좌상단 하이라이트 방사 그라데이션, 캐릭터 머리/손/관절
+     puck : 둥근 실린더 — 몸통/의자/화분, 밑면 타원 + 측면 수직 그라데이션 + 밝은 탑캡
+     limb : 라운드캡 스트로크 캡슐 — 팔·소매·타이. world transform 안에서 project() 좌표로 그림 */
+  function orb(gx,gy,gz,r,hex,squash){
+    const p=project(gx,gy,gz);
+    const rx=r*TW*0.98, ry=r*TW*(squash||0.92);
+    const g=ctx.createRadialGradient(p.x-rx*0.35,p.y-ry*0.45,rx*0.12, p.x,p.y,rx*1.18);
+    g.addColorStop(0, fc(hex,1.24)); g.addColorStop(0.55, fc(hex,1.0)); g.addColorStop(1, fc(hex,0.62));
+    ctx.beginPath(); ctx.ellipse(p.x,p.y,rx,ry,0,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+  }
+  function puck(gx,gy,gz,r,h,hex){
+    const b=project(gx,gy,gz), tp=project(gx,gy,gz+h);
+    const rx=r*TW*0.92, ry=r*TH*0.92;
+    const g=ctx.createLinearGradient(b.x-rx,0,b.x+rx,0);
+    g.addColorStop(0, fc(hex,0.88)); g.addColorStop(0.42, fc(hex,1.04)); g.addColorStop(1, fc(hex,0.60));
+    ctx.beginPath();
+    ctx.moveTo(tp.x-rx, tp.y);
+    ctx.lineTo(b.x-rx, b.y);
+    ctx.ellipse(b.x,b.y,rx,ry,0, Math.PI, 0, true);   // 앞쪽 밑면 볼록
+    ctx.lineTo(tp.x+rx, tp.y);
+    ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+    const tg=ctx.createRadialGradient(tp.x-rx*0.3,tp.y-ry*0.35,rx*0.1, tp.x,tp.y,rx*1.1);
+    tg.addColorStop(0, fc(hex,1.28)); tg.addColorStop(1, fc(hex,1.02));
+    ctx.beginPath(); ctx.ellipse(tp.x,tp.y,rx,ry,0,0,Math.PI*2); ctx.fillStyle=tg; ctx.fill();
+  }
+  function limb(x1,y1,z1,x2,y2,z2,wpx,hex,f){
+    const a=project(x1,y1,z1), b=project(x2,y2,z2);
+    ctx.save(); ctx.strokeStyle=fc(hex,f||0.98); ctx.lineWidth=wpx; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); ctx.restore();
+  }
+
+  /* ---------- characters ---------- */
+  const lead={ id:'LEAD', name:'팀장 · Claude', gx:0.0, gy:4.0, face:'x+', lead:true, phase:0.0 };
+  const agents=[
+    {id:'A-1', tag:'이력서',  gx:2.2, gy:2.4, face:'y+'},
+    {id:'A-2', tag:'채용',    gx:4.7, gy:2.4, face:'y+'},
+    {id:'A-3', tag:'온보딩',  gx:7.2, gy:2.4, face:'y+'},
+    {id:'A-4', tag:'평가',    gx:9.7, gy:2.4, face:'y+'},
+    {id:'A-5', tag:'배포',    gx:3.45, gy:5.5, face:'y-'},
+    {id:'A-6', tag:'감사',    gx:5.95, gy:5.5, face:'y-'},
+    {id:'A-7', tag:'효율',    gx:8.45, gy:5.5, face:'y-'}
+  ];
+  // per-character personality — distinct idle facial-expression bias + a staggered starting behavior
+  const EXPR_IDLE=[ ['calm','smile','ponder'], ['smile','grin','calm'], ['smile','content','wink'],
+    ['calm','ponder','tired'], ['smile','calm','surprise'], ['focus','calm','ponder'], ['grin','smile','wink'] ];
+  const INIT_BEH=['read','mouse','coffee','think','glance','type','stretch'];
+  agents.forEach((a,i)=>{
+    a.phase=i*0.9; a.status='idle'; a.task=''; a.tStart=0; a.tDur=0; a.tDone=0; a.color=AGENT_COLORS[a.id];
+    a.nod=0; a.nodAt=2+Math.random()*4; a._nodStart=0;
+    a.beh=INIT_BEH[i%INIT_BEH.length]; a.behStart=0; a.behDur=2.5; a.behEnd=1.2+i*0.55+Math.random()*1.4;
+    a.behPrev=null; a.behBlendStart=-99;
+    a.exprIdle=EXPR_IDLE[i%EXPR_IDLE.length]; a.expr=null; a.exprEnd=0.8+i*0.4;
+    a.blinkAt=1.5+Math.random()*4; a._blinkT=-9;
+  });
+  lead.status='idle'; lead.color=null; lead.nod=0; lead.nodAt=3; lead._nodStart=0; lead.tag='';
+  lead.beh='rest'; lead.behStart=0; lead.behDur=3; lead.behEnd=2.5; lead.behPrev=null; lead.behBlendStart=-99;
+  lead.exprIdle=['smile','smile','content','grin','calm']; lead.expr='smile'; lead.exprEnd=2;
+  lead.blinkAt=2.2; lead._blinkT=-9;
+  const chars=[lead, ...agents];
+  const byId={}; chars.forEach(c=>byId[c.id]=c);
+
+  function faceVec(f){ return f==='y+'?[0,1] : f==='y-'?[0,-1] : [1,0]; }
+
+  /* ---------- behavior / pose engine (varied, desynced idle motion) ----------
+     Each character cycles through a small repertoire of behaviors (typing, coffee sip, stretch,
+     reading, chin-thinking, mouse, glance, chair swivel) at randomized durations with a per-seat
+     phase offset, so no two do the same thing at once. Busy agents lock to focused typing. A pose
+     object (arm reach/lift, head pitch/tilt/turn, held prop) is produced per frame and blended
+     briefly across switches so transitions read smoothly. Under prefers-reduced-motion the current
+     pose is HELD (gesture envelope pinned to its peak) with no oscillation → a still, varied tableau. */
+  const IDLE_BEHS=['rest','coffee','stretch','read','think','mouse','glance','swivel'];
+  const LEAD_BEHS=['rest','think','glance','nod'];
+  const BEH_DUR={ rest:[2.5,4.5], type:[99,99], coffee:[2.2,3.0], stretch:[1.4,2.0],
+    read:[3.6,5.4], think:[2.6,4.2], mouse:[2.4,4.0], glance:[1.4,2.4], swivel:[2.2,3.4], nod:[1.6,2.6] };
+  function behDur(nb){ const r=BEH_DUR[nb]||[2.5,4]; return r[0]+Math.random()*(r[1]-r[0]); }
+  function setBeh(c,beh,t){ c.behPrev=c.beh; c.behStart=t; c.behDur=behDur(beh); c.behEnd=t+c.behDur; c.behBlendStart=t; c.beh=beh; }
+  function updateBehavior(c,t){
+    if(c.status==='busy'){ if(c.beh!=='type') setBeh(c,'type',t); return; }   // busy → focused typing
+    if(c.beh==='type'){ setBeh(c,'rest',t); return; }                          // just finished → settle
+    if(MOTION===0) return;                                                     // reduced motion → hold pose
+    if(t>=c.behEnd){
+      const pool=c.lead?LEAD_BEHS:IDLE_BEHS;
+      let nb, guard=0; do{ nb=pool[(Math.random()*pool.length)|0]; guard++; }while(nb===c.beh && guard<4);
+      setBeh(c,nb,t);
+    }
+  }
+  function armObj(spread,fReach,hReach,dz){ return {spread:spread,fReach:fReach,hReach:hReach,dz:dz}; }
+  function rawPose(beh,c,t,m){
+    const ph=c.phase;
+    const p=Math.max(0,Math.min(1,(t-(c.behStart||0))/(c.behDur||1)));
+    const env = m? Math.sin(Math.PI*p) : 1;                 // 0→1→0 gesture envelope (held at peak when still)
+    let A=armObj(0.31,0.24,0.44, m*Math.sin(t*3+ph)*0.03);
+    let B=armObj(0.31,0.24,0.44, m*Math.sin(t*3+ph+1.7)*0.024);
+    let nodF=0, tilt=0, yaw=0, prop=null, propSide=1;
+    switch(beh){
+      case 'type':
+        A=armObj(0.30,0.27,0.47, m*Math.sin(t*13+ph)*0.10);
+        B=armObj(0.30,0.27,0.47, m*Math.sin(t*13+ph+Math.PI)*0.10);
+        nodF=0.06; break;
+      case 'coffee':                                        // one hand lifts a mug to the mouth
+        A=armObj(0.31-0.17*env, 0.30-0.05*env, 0.44-0.16*env, 0.50*env);
+        nodF=0.10*env; prop='coffee'; propSide=1; break;
+      case 'stretch':                                       // both arms up, head leans back
+        A=armObj(0.31+0.10*env, 0.24-0.16*env, 0.44-0.28*env, 0.52*env);
+        B=armObj(0.31+0.10*env, 0.24-0.16*env, 0.44-0.28*env, 0.52*env);
+        nodF=-0.18*env; break;
+      case 'read':                                          // both hands hold a sheet, head down
+        A=armObj(0.22,0.30,0.40, 0.06+m*Math.sin(t*2+ph)*0.02);
+        B=armObj(0.22,0.30,0.40, 0.06+m*Math.sin(t*2+ph+1)*0.02);
+        nodF=0.30; prop='paper'; break;
+      case 'think':                                         // chin rest, slight head tilt
+        A=armObj(0.10,0.18,0.20, 0.40);
+        nodF=0.12; tilt=0.05; break;
+      case 'mouse':                                         // one hand nudges the mouse
+        A=armObj(0.31+m*Math.sin(t*3.4+ph)*0.06, 0.30, 0.48, 0.02+m*Math.sin(t*7+ph)*0.02);
+        break;
+      case 'glance':                                        // quick look aside
+        yaw = m? Math.sin(t*1.2+ph)*0.45 : 0.35; break;
+      case 'swivel':                                        // slow chair turn
+        yaw = m? Math.sin(t*0.6+ph)*0.60 : 0.45; break;
+      case 'nod':                                           // gentle approving nod (lead)
+        nodF = m? Math.max(0,Math.sin(t*3+ph))*0.16 : 0.08; break;
+      case 'rest': default: break;
+    }
+    return {A:A,B:B,nodF:nodF,tilt:tilt,yaw:yaw,prop:prop,propSide:propSide};
+  }
+  function lerpArm(a,b,k){ return armObj(a.spread+(b.spread-a.spread)*k, a.fReach+(b.fReach-a.fReach)*k, a.hReach+(b.hReach-a.hReach)*k, a.dz+(b.dz-a.dz)*k); }
+  function poseFor(c,t,busy,m){
+    const cur=rawPose(c.beh||'rest',c,t,m);
+    const BLEND=0.4, bt=t-(c.behBlendStart||-99);
+    if(c.behPrev && c.behPrev!==c.beh && bt<BLEND){
+      const prev=rawPose(c.behPrev,c,t,m), k=bt/BLEND;
+      return { A:lerpArm(prev.A,cur.A,k), B:lerpArm(prev.B,cur.B,k),
+        nodF:prev.nodF+(cur.nodF-prev.nodF)*k, tilt:prev.tilt+(cur.tilt-prev.tilt)*k,
+        yaw:prev.yaw+(cur.yaw-prev.yaw)*k, prop:k>0.5?cur.prop:prev.prop, propSide:k>0.5?cur.propSide:prev.propSide };
+    }
+    return cur;
+  }
+
+  /* ---------- one drawable per character (internal painter order, back → front) ----------
+     v2 「라운드 피겨린」: 의자(퍽+캡슐) → 무릎 → 몸통 캡슐 → 어깨 돔 → 카라·타이 →
+     팔(라운드캡 캡슐 + 손 orb) → 목 → 큰 둥근 머리 orb → 헤어캡(상반부 아크) + 앞머리 + 옆머리 →
+     복셀 박스 탈피, 단일 광원 그라데이션 구체 셰이딩. 팀장은 다크 수트 + 골드 타이 + 가르마 하이라이트.
+     Preserves c._headZ (bubble anchor) and c._face (expression anchor). */
+  function drawChar(c,t){
+    const busy=c.status==='busy';
+    const m=MOTION;
+    const s=c.lead?0.98:0.80;
+    const cx=c.gx, cy=c.gy;
+    const pose=poseFor(c,t,busy,m);             // varied behavior pose (arms / head / prop)
+    let fv=faceVec(c.face);
+    if(c.lead && c.lookTarget){                 // lead turns toward the agent she just assigned
+      fv = (c.lookTarget.gy < c.gy) ? [0.5,-0.86] : [0.5,0.86];
+    }
+    if(pose.yaw){                               // glance / chair-swivel turns the upper body
+      const cs=Math.cos(pose.yaw), sn=Math.sin(pose.yaw);
+      fv=[fv[0]*cs - fv[1]*sn, fv[0]*sn + fv[1]*cs];
+    }
+    const fl=Math.hypot(fv[0],fv[1])||1, fx=fv[0]/fl, fy=fv[1]/fl;   // facing unit
+    const px=-fy, py=fx;                        // in-plane perpendicular (shoulder axis)
+    const alongX=Math.abs(fx)>=Math.abs(fy);
+
+    const shirt = c.lead?P.lead:c.color;        // jacket / shirt
+    const shirtHi = shadeHex(shirt,1.10);
+    const tieCol = c.lead?P.leadTie:shadeHex(c.color,0.60);   // lead gold tie / agent uniform accent
+    const skin=P.skin, hair=P.hair;
+
+    shadowEllipse(cx,cy, 0.72*s);               // AO 바닥 타원 그림자
+
+    const breathe=Math.sin(t*1.7 + c.phase)*0.016*m;
+    const nod=(c.nod||0)*0.085*m + pose.nodF;   // micro-nod + behavior head pitch (read/stretch/think…)
+
+    /* ----- chair (behind) — rounded swivel chair ----- */
+    puck(cx - fx*0.42*s, cy - fy*0.42*s, 0.04, 0.30*s, 1.02*s, P.chair);                 // back post (rounded)
+    orb(cx - fx*0.42*s, cy - fy*0.42*s, 1.18*s, 0.24*s, shadeHex(P.chair,1.14), 0.66);   // headrest cushion
+    puck(cx, cy, 0.02, 0.42*s, 0.42, P.chair);                                           // seat cushion
+    limb(cx + px*0.38*s, cy + py*0.38*s, 0.16, cx + px*0.38*s, cy + py*0.38*s, 0.52, 0.10*TW*s, shadeHex(P.chair,0.9)); // armrest R
+    limb(cx - px*0.38*s, cy - py*0.38*s, 0.16, cx - px*0.38*s, cy - py*0.38*s, 0.52, 0.10*TW*s, shadeHex(P.chair,0.9)); // armrest L
+
+    /* ----- lap / knees (trousers), reaching forward ----- */
+    puck(cx + fx*0.16*s, cy + fy*0.16*s, 0.44, 0.30*s, 0.22, P.trouser);
+    orb(cx + fx*0.32*s + px*0.15*s, cy + fy*0.32*s + py*0.15*s, 0.60, 0.11*s, shadeHex(P.trouser,1.05), 0.8); // knee R
+    orb(cx + fx*0.32*s - px*0.15*s, cy + fy*0.32*s - py*0.15*s, 0.60, 0.11*s, shadeHex(P.trouser,1.05), 0.8); // knee L
+
+    /* ----- torso: soft capsule + shoulder dome ----- */
+    const waistZ=0.52;
+    puck(cx, cy, waistZ+breathe*0.5, 0.34*s, 0.74*s, shirt);                             // waist→chest capsule
+    const shZ=waistZ+0.74*s;
+    orb(cx, cy, shZ+breathe, 0.32*s, shirtHi, 0.52);                                     // shoulders (rounded dome)
+
+    /* ----- collar + tie / uniform accent (on the camera-facing chest) ----- */
+    orb(cx + fx*0.22*s, cy + fy*0.22*s, shZ-0.04+breathe, 0.11*s, c.lead? shadeHex(shirt,0.8):'#ECE4D2', 0.6); // collar
+    limb(cx + fx*0.28*s, cy + fy*0.28*s, shZ-0.06+breathe,
+         cx + fx*0.30*s, cy + fy*0.30*s, shZ-0.06-(c.lead?0.36:0.28)*s+breathe, 0.085*TW*s, tieCol, 1.15);      // tie / lanyard
+
+    /* ----- rounded arms (pose-driven: reach / lift / spread vary by behavior) ----- */
+    let propHand=null;
+    for(let i=0;i<2;i++){
+      const side=i===0?1:-1, ap=i===0?pose.A:pose.B;
+      const sxo=cx+px*0.30*s*side, syo=cy+py*0.30*s*side;      // shoulder joint (sleeve anchor)
+      const armPx=ap.spread*s*side;
+      const ez=shZ-0.42*s + ap.dz;
+      const hxp=cx+px*armPx + fx*ap.hReach*s, hyp=cy+py*armPx + fy*ap.hReach*s;
+      limb(sxo, syo, shZ-0.04+breathe, hxp, hyp, ez+0.07, 0.125*TW*s, shirt, 1.0);       // sleeve capsule
+      if(pose.prop==='coffee' && side===pose.propSide){ propHand={x:hxp,y:hyp,z:ez}; }   // draw hand+mug atop the face later
+      else { orb(hxp, hyp, ez+0.05, 0.085*s, skin); }                                    // hand
+    }
+    // held sheet (reading) — upright in front of the chest, below the face
+    if(pose.prop==='paper'){
+      boxC(cx+fx*0.40*s, cy+fy*0.40*s, waistZ+0.28*s, (alongX?0.10:0.42)*s,(alongX?0.42:0.10)*s,0.30*s, P.paper, 1.22);
+    }
+
+    /* ----- neck ----- */
+    puck(cx + fx*0.02*s, cy + fy*0.02*s, shZ+0.02+breathe, 0.09*s, 0.12*s, shadeHex(skin,0.94));
+
+    /* ----- head: big cute orb + hair cap / bangs / side locks ----- */
+    const hz=shZ+0.14*s + breathe - nod*0.30;
+    const hx=cx + fx*nod*0.5 + px*pose.tilt*s, hy=cy + fy*nod*0.5 + py*pose.tilt*s;
+    const headC=hz+0.26*s;                                                               // head orb center z
+    orb(hx, hy, headC, 0.275*s, skin, 0.96);                                             // head
+    const hp=project(hx,hy,headC);
+    const hrx=0.275*s*TW*1.0, hry=0.275*s*TW*0.96;
+    const fscr=project(hx+fx*0.3, hy+fy*0.3, headC);                                     // facing dir on screen
+    const fsx=Math.sign(fscr.x-hp.x)||1;
+    // hair cap — upper hemisphere chord fill with soft gradient
+    const hg=ctx.createRadialGradient(hp.x-hrx*0.3,hp.y-hry*0.55,hrx*0.1, hp.x,hp.y-hry*0.2,hrx*1.15);
+    hg.addColorStop(0, fc(hair,1.35)); hg.addColorStop(1, fc(hair,0.85));
+    ctx.beginPath(); ctx.ellipse(hp.x,hp.y,hrx*1.03,hry*1.0,0, Math.PI, 0, false);
+    ctx.closePath(); ctx.fillStyle=hg; ctx.fill();
+    // bangs — soft fringe blob dipping onto the camera-facing forehead
+    ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.34, hp.y-hry*0.34, hrx*0.46, hry*0.30, fsx*0.3, 0, Math.PI*2);
+    ctx.fillStyle=fc(hair,1.08); ctx.fill();
+    // side locks
+    ctx.beginPath(); ctx.ellipse(hp.x-hrx*0.88, hp.y+hry*0.05, hrx*0.20, hry*0.34, 0, 0, Math.PI*2); ctx.fillStyle=fc(hair,0.92); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hp.x+hrx*0.88, hp.y+hry*0.05, hrx*0.20, hry*0.34, 0, 0, Math.PI*2); ctx.fillStyle=fc(hair,0.78); ctx.fill();
+    if(c.lead){                                                                          // neat side part highlight
+      ctx.beginPath(); ctx.ellipse(hp.x-fsx*hrx*0.12, hp.y-hry*0.62, hrx*0.34, hry*0.10, -fsx*0.5, 0, Math.PI*2);
+      ctx.fillStyle=fc(hair,1.5); ctx.fill();
+    }
+    // blush dots — 볼터치 (귀여움 포인트, 표정과 무관한 고정 디테일)
+    ctx.globalAlpha=0.30;
+    ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.52, hp.y+hry*0.28, hrx*0.14, hry*0.09, 0, 0, Math.PI*2);
+    ctx.fillStyle='#E08A6A'; ctx.fill();
+    ctx.globalAlpha=1;
+
+    c._headZ = hz+0.58*s;
+
+    // coffee: the raised hand + mug sit in FRONT of the face → drawn after the head
+    if(propHand){
+      orb(propHand.x, propHand.y, propHand.z+0.04, 0.085*s, skin);                       // hand
+      puck(propHand.x, propHand.y, propHand.z+0.06, 0.085*s, 0.16, P.mug);               // mug
+      const cs=project(propHand.x, propHand.y, propHand.z+0.22);
+      ctx.beginPath(); ctx.ellipse(cs.x,cs.y, 0.055*s*TW, 0.055*s*TH, 0,0,Math.PI*2);
+      ctx.fillStyle=fc(P.coffee,1.0); ctx.fill();                                        // coffee surface
+    }
+
+    // anchor for the (billboard) facial expression, on the camera-facing front of the head
+    const fWx = hx + fx*0.20*s, fWy = hy + fy*0.19*s;
+    const fp = toScreen(fWx, fWy, hz+0.24*s);
+    c._face = { x:fp.x, y:fp.y, s:s };
+  }
+
+  /* ---------- desk props per seat ---------- */
+  function propAnchor(c){
+    if(c.face==='y+') return {px:c.gx, py:3.05, dir:'row'};
+    if(c.face==='y-') return {px:c.gx, py:4.72, dir:'row'};
+    return {px:0.95, py:c.gy-0.30, dir:'lead'};
+  }
+  function drawMonitor(c,t){
+    const a=propAnchor(c); const on=c.status==='busy';
+    // 모니터 글로우 플리커 — busy 화면은 미세하게 명멸 (micro-animation, MOTION 게이트)
+    const flick = on ? (1.46 + 0.10*Math.sin(t*9+ (c.phase||0))*MOTION) : 1.0;
+    const scr = on?P.monOn:P.monOff;
+    if(a.dir==='lead'){
+      puck(a.px+0.05, a.py+0.30, 1.0, 0.10, 0.12, P.chair);                    // rounded stand
+      box(a.px, a.py, 1.10, 0.06,0.60,0.42, scr, flick);
+      box(a.px-0.005, a.py-0.02, 1.08, 0.05,0.64,0.02, shadeHex(P.chair,1.3), 1.2); // slim bezel foot
+    } else {
+      puck(a.px, a.py+0.05, 1.0, 0.12, 0.12, P.chair);                          // rounded stand
+      box(a.px-0.30, a.py, 1.10, 0.60,0.06,0.42, scr, flick);
+      box(a.px-0.32, a.py-0.005, 1.08, 0.64,0.05,0.02, shadeHex(P.chair,1.3), 1.2);
+    }
+    c._mon={x:a.px, y:a.py, on};
+  }
+  function drawLamp(c){
+    const a=propAnchor(c); const lit=c.status==='busy'||c.status==='done';
+    let lx,ly;
+    if(a.dir==='lead'){ lx=a.px+0.02; ly=a.py+0.66; } else { lx=a.px+0.48; ly=a.py-0.02; }
+    puck(lx+0.04, ly+0.04, 1.0, 0.09, 0.04, P.lampBrass);                       // round base
+    limb(lx+0.04, ly+0.04, 1.04, lx+0.02, ly+0.02, 1.44, 0.045*TW, P.lampBrass, 1.1); // stem
+    orb(lx+0.04, ly+0.04, 1.50, 0.12, lit?P.lampShade:P.lampBrass, 0.72);       // rounded shade
+    c._lamp={x:lx+0.04, y:ly+0.04, lit};
+  }
+  function drawPlate(c){
+    const a=propAnchor(c);
+    if(a.dir==='lead'){ box(a.px-0.12, a.py+0.10, 1.0, 0.05,0.42,0.06, P.brass,1.25); }
+    else { box(a.px-0.26, a.py+0.62, 1.0, 0.52,0.05,0.06, P.brass,1.25); }
+  }
+
+  // 식물 흔들림 — foliage orbs sway (micro-animation, MOTION 게이트)
+  function drawPlant(gx,gy,t,ph){
+    const sw=Math.sin(t*1.1+(ph||0))*0.035*MOTION;
+    shadowEllipse(gx+0.36,gy+0.36,0.62);
+    puck(gx+0.36, gy+0.36, 0.0, 0.14, 0.14, P.plantPot);                        // pedestal foot
+    puck(gx+0.36, gy+0.36, 0.14, 0.26, 0.34, P.plantPot);                       // rounded pot
+    orb(gx+0.36, gy+0.36, 0.52, 0.27, shadeHex(P.plantPot,1.18), 0.32);         // rim
+    orb(gx+0.36, gy+0.36, 0.66, 0.30, P.plant, 0.82);                           // foliage base
+    orb(gx+0.36+sw*0.6, gy+0.36, 0.94, 0.24, shadeHex(P.plant,1.10), 0.86);     // mid tuft (sways)
+    orb(gx+0.40+sw, gy+0.30+sw*0.5, 1.16, 0.16, shadeHex(P.plant,1.22), 0.9);   // top tuft (sways more)
+  }
+  // 커피 김 — mug 위로 피어오르는 수증기 (micro-animation; reduced-motion이면 정지 한 가닥)
+  function drawSteam(wx,wy,z,t,ph){
+    ctx.save();
+    for(let i=0;i<3;i++){
+      const tt = MOTION? ((t*0.35 + i/3 + (ph||0))%1) : (0.25+i*0.22);
+      const p=project(wx + Math.sin((t*2.2*MOTION)+(ph||0)+i*2.1)*0.03, wy, z + 0.10 + tt*0.55);
+      const r=(0.028 + tt*0.05)*TW, alpha=(1-tt)*0.30*(MOTION?1:0.5);
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+      ctx.fillStyle=hexA(P.steam, alpha); ctx.fill();
+    }
+    ctx.restore();
+  }
+  // per-seat clutter — coffee mug + paper stack (small, adds warmth without many nodes)
+  function drawDeskExtras(c,t){
+    const a=propAnchor(c);
+    let mx,my,ppx,ppy;
+    if(a.dir==='lead'){ mx=a.px+0.02; my=a.py-0.34; ppx=a.px-0.06; ppy=a.py-0.62; }
+    else { mx=a.px-0.56; my=a.py+0.10; ppx=a.px+0.44; ppy=a.py+0.04; }
+    // paper stack
+    box(ppx, ppy, 1.0, 0.34,0.26,0.05, P.paper, 1.2);
+    box(ppx+0.03, ppy+0.03, 1.05, 0.30,0.22,0.03, shadeHex(P.paper,0.96), 1.15);
+    // coffee mug — rounded cup + handle + rising steam
+    puck(mx+0.08, my+0.08, 1.0, 0.085, 0.20, P.mug);
+    const cs=project(mx+0.08, my+0.08, 1.19);
+    ctx.beginPath(); ctx.ellipse(cs.x,cs.y, 0.055*TW, 0.055*TH, 0,0,Math.PI*2);
+    ctx.fillStyle=fc(P.coffee,1.0); ctx.fill();
+    limb(mx+0.17, my+0.06, 1.06, mx+0.17, my+0.06, 1.14, 0.05*TW, shadeHex(P.mug,0.9)); // handle
+    drawSteam(mx+0.08, my+0.08, 1.1, t, (c.phase||0)*1.7);
+  }
+  // credenza + bookshelf (premium storage against a wall)
+  function drawCredenza(gx,gy){
+    shadowEllipse(gx+1.0,gy+0.35,1.6);
+    box(gx,gy,0.0, 2.0,0.5,0.86, P.wood, 1.06);                        // cabinet body
+    box(gx,gy,0.86, 2.0,0.5,0.10, shadeHex(P.wood,1.14), 1.2);         // counter top
+    // shelf of books on top
+    const bk=P.book; let x=gx+0.14;
+    for(let i=0;i<9;i++){
+      const h=0.30+((i*7)%3)*0.05, w=0.14+((i*5)%2)*0.03;
+      box(x, gy+0.14, 0.96, w,0.24,h, bk[i%bk.length], 1.12);
+      x+=w+0.03;
+    }
+    // door seams / handles
+    box(gx+0.96,gy,0.10, 0.04,0.02,0.66, shadeHex(P.wood,0.7), 0.9);
+    box(gx+0.42,gy,0.42, 0.14,0.02,0.05, P.metal, 1.2);
+    box(gx+1.44,gy,0.42, 0.14,0.02,0.05, P.metal, 1.2);
+  }
+  // filing cabinet (metal, three drawers)
+  function drawCabinet(gx,gy){
+    shadowEllipse(gx+0.35,gy+0.30,0.8);
+    box(gx,gy,0.0, 0.7,0.6,1.30, P.cabinet, 1.05);
+    for(let i=0;i<3;i++){
+      const z=0.10+i*0.40;
+      box(gx+0.05,gy-0.01,z, 0.60,0.02,0.34, P.cabinet2, 1.12);        // drawer face
+      box(gx+0.28,gy-0.03,z+0.15, 0.14,0.03,0.05, P.metal, 1.25);      // handle
+    }
+    box(gx,gy,1.30, 0.7,0.6,0.06, shadeHex(P.cabinet,1.14),1.2);       // top
+    orb(gx+0.32,gy+0.30,1.44, 0.14, P.plant, 0.8);                     // small succulent on top (rounded)
+  }
+  // freestanding whiteboard / partition on an easel
+  function drawWhiteboard(gx,gy){
+    shadowEllipse(gx+0.5,gy+0.2,1.1);
+    box(gx+0.05,gy+0.14,0.0, 0.10,0.10,1.5, P.boardTrim, 0.95);        // legs
+    box(gx+0.95,gy+0.14,0.0, 0.10,0.10,1.5, P.boardTrim, 0.95);
+    box(gx,gy+0.16,1.05, 1.15,0.06,0.9, P.board, 1.16);               // board face
+    box(gx,gy+0.16,1.02, 1.15,0.06,0.05, P.boardTrim, 1.1);           // tray
+    // faint marker strokes
+    box(gx+0.14,gy+0.13,1.62, 0.5,0.01,0.03, P.sage, 1.2);
+    box(gx+0.14,gy+0.13,1.50, 0.32,0.01,0.03, P.brass, 1.2);
+    box(gx+0.14,gy+0.13,1.38, 0.42,0.01,0.03, shadeHex(P.metal,0.9), 1.1);
+  }
+  // 복합기 (복사·프린터) — premium multifunction unit tucked into the front-left corner (clear of chars/aisles)
+  function drawCopier(gx,gy,t){
+    shadowEllipse(gx+0.5, gy+0.45, 1.18);
+    box(gx, gy, 0.0, 1.0, 0.9, 0.60, P.cabinet, 1.04);                 // lower cabinet body
+    box(gx-0.14, gy+0.28, 0.62, 0.16, 0.44, 0.05, P.paper, 1.14);      // side feed tray (behind)
+    box(gx+0.07, gy-0.01, 0.10, 0.86, 0.02, 0.20, P.cabinet2, 1.12);   // drawer 1 face
+    box(gx+0.07, gy-0.01, 0.34, 0.86, 0.02, 0.18, P.cabinet2, 1.12);   // drawer 2 face
+    box(gx+0.40, gy-0.03, 0.17, 0.20, 0.03, 0.04, P.metal, 1.25);      // drawer handle
+    box(gx+0.40, gy-0.03, 0.42, 0.20, 0.03, 0.04, P.metal, 1.25);      // drawer handle
+    box(gx+0.03, gy+0.05, 0.60, 0.94, 0.80, 0.46, shadeHex(P.cabinet,1.12), 1.10); // print engine
+    box(gx+0.10, gy+0.03, 0.82, 0.72, 0.28, 0.05, shadeHex(P.cabinet,0.88), 0.94); // output recess
+    box(gx+0.20, gy+0.10, 0.86, 0.46, 0.30, 0.02, P.paper, 1.22);      // freshly printed sheet
+    box(gx+0.03, gy+0.07, 1.06, 0.94, 0.78, 0.13, P.cabinet2, 1.16);   // scanner bed
+    box(gx+0.06, gy+0.10, 1.19, 0.88, 0.72, 0.05, shadeHex(P.cabinet2,1.10), 1.20); // scanner lid
+    // scan light — occasional sweep blink under the glass (micro-detail)
+    const cyc=t%6, scanning=cyc<1.3;
+    const scanK=scanning?(0.45+0.55*Math.abs(Math.sin(t*9))):0;
+    const scanCol=scanning?'#BEEFFF':shadeHex(P.cabinet2,0.82);
+    box(gx+0.12, gy+0.12, 1.25, 0.74, 0.09, 0.015, scanCol, 1.0+scanK*0.7); // glass scan line
+    box(gx+0.58, gy+0.70, 0.86, 0.34, 0.16, 0.10, shadeHex(P.cabinet,0.82), 1.02); // control panel housing
+    box(gx+0.63, gy+0.74, 0.94, 0.24, 0.07, 0.07, P.monOn, 1.45);      // lit control screen
+    // 상태 LED — ready 점멸 (micro-animation, MOTION 게이트: reduced면 상시 점등)
+    const led = MOTION? ((t%1.6)<0.8) : true;
+    orb(gx+0.92, gy+0.76, 1.02, 0.035, led?'#7FC8A0':'#3E5C4A', 1.0);
+  }
+
+  /* ---------- wall signage (급훈 현판 + 인사 스케줄 월력) — painted onto the wall planes ----------
+     No longer billboard: each plaque is mapped onto its wall's isometric plane. We sample three
+     world corners of the board with toScreen() and build an absolute setTransform whose axes are
+     the wall's horizontal direction (along the wall) and its vertical (gz) direction. The frame,
+     text and calendar grid are drawn in the board's local pixel space and therefore shear onto the
+     wall like a hung frame / painted board. Emitted BEFORE the agents in painter order, so seated
+     characters in front correctly occlude the lower edges (depth-sort).
+       plane 'x' → wall at x=coord, horizontal axis runs along gy (uStart→uEnd), vertical = gz
+       plane 'y' → wall at y=coord, horizontal axis runs along gx (uStart→uEnd), vertical = gz   */
+  function wallBoard(spec, drawFn){
+    let o,ux,uy;
+    if(spec.plane==='x'){
+      o =toScreen(spec.coord, spec.uStart, spec.zTop);
+      ux=toScreen(spec.coord, spec.uEnd,   spec.zTop);
+      uy=toScreen(spec.coord, spec.uStart, spec.zBot);
+    } else {
+      o =toScreen(spec.uStart, spec.coord, spec.zTop);
+      ux=toScreen(spec.uEnd,   spec.coord, spec.zTop);
+      uy=toScreen(spec.uStart, spec.coord, spec.zBot);
+    }
+    const BW=Math.hypot(ux.x-o.x, ux.y-o.y)||1;   // local px ≈ on-screen px → crisp text
+    const BH=Math.hypot(uy.x-o.x, uy.y-o.y)||1;
+    const a=(ux.x-o.x)/BW, b=(ux.y-o.y)/BW;
+    const c=(uy.x-o.x)/BH, d=(uy.y-o.y)/BH;
+    ctx.save();
+    ctx.setTransform(a*dpr, b*dpr, c*dpr, d*dpr, o.x*dpr, o.y*dpr);   // wall plane (sheared, crisp)
+    drawFn(BW,BH);
+    ctx.restore();                                                     // back to scaled world transform
+  }
+  // shared board specs (used by both the painters above and the on-screen bbox check below)
+  const MOTTO_SPEC = {plane:'x', coord:ROOM.x0+0.12, uStart:6.2, uEnd:2.0, zTop:3.58, zBot:2.35};
+  const TODAY_SPEC = {plane:'y', coord:ROOM.y0+0.12, uStart:0.35, uEnd:6.1, zTop:3.55, zBot:1.36};
+  const CAL_SPEC   = {plane:'y', coord:ROOM.y0+0.12, uStart:6.35, uEnd:11.6, zTop:3.55, zBot:0.8};
+  // screen-space bounding box of a wall board (its four world corners projected) → overlap tests
+  function wallBoardBBox(spec){
+    const c=[];
+    if(spec.plane==='x'){
+      c.push(toScreen(spec.coord,spec.uStart,spec.zTop), toScreen(spec.coord,spec.uEnd,spec.zTop),
+             toScreen(spec.coord,spec.uStart,spec.zBot), toScreen(spec.coord,spec.uEnd,spec.zBot));
+    } else {
+      c.push(toScreen(spec.uStart,spec.coord,spec.zTop), toScreen(spec.uEnd,spec.coord,spec.zTop),
+             toScreen(spec.uStart,spec.coord,spec.zBot), toScreen(spec.uEnd,spec.coord,spec.zBot));
+    }
+    let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+    for(const p of c){ if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x; if(p.y<minY)minY=p.y; if(p.y>maxY)maxY=p.y; }
+    return {minX,maxX,minY,maxY};
+  }
+
+  // 급훈 — painted high on the wall behind the team lead (x = ROOM.x0 plane), clearing her head
+  function drawMotto(){
+    wallBoard(MOTTO_SPEC, drawMottoBoard);
+  }
+  function drawMottoBoard(BW,BH){
+    const lightT=currentTheme()==='light';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    // panel — deliberately brighter than the wall for contrast
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.32)'; ctx.shadowBlur=8; ctx.shadowOffsetX=-3; ctx.shadowOffsetY=4;
+    roundRect(0,0,BW,BH,BH*0.14);
+    ctx.fillStyle=lightT? '#F6EDD3' : '#242a33';
+    ctx.fill(); ctx.shadowColor='transparent';
+    ctx.restore();
+    ctx.lineWidth=Math.max(2,BW*0.014); ctx.strokeStyle=P.brass;
+    roundRect(0,0,BW,BH,BH*0.14); ctx.stroke();
+    ctx.lineWidth=Math.max(1,BW*0.006); ctx.strokeStyle=hexA(P.leadTie,0.85);
+    roundRect(BW*0.045,BH*0.12,BW*0.91,BH*0.76,BH*0.10); ctx.stroke();
+    // 급훈 title label removed by request — the four words now breathe across the full frame
+    let mf=BH*0.60;
+    const words='매출!  긍정!  협동!  사랑!';
+    ctx.font=`800 ${mf}px Georgia,'Times New Roman',serif`;
+    while(ctx.measureText(words).width>BW*0.86 && mf>8){ mf-=1; ctx.font=`800 ${mf}px Georgia,'Times New Roman',serif`; }
+    ctx.fillStyle=lightT? '#241C0B' : '#F4E6C2';
+    ctx.fillText(words, BW/2, BH*0.52);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+  }
+
+  /* ===== 일정 실데이터 — 게이트 인증 후 /exec에서 실시간 로드 (소스에 PII 미포함) ===== */
+  const REAL_SCHEDULE={
+    asOf:'인증 후 로드', monthLabel:'', firstDow:0, days:31, todayDate:0, todayLabel:'',
+    marks:{}, today:[],
+    legend:[ {k:'iv', label:'면접'}, {k:'dl', label:'공고 마감'}, {k:'ob', label:'온보딩'} ]
+  };
+  function markColor(k){ return k==='iv' ? PAL_LIVE() : (k==='dl' ? P.brass : P.sage); }
+
+  // 월력 / 인사 스케줄 — painted on the camera-facing front wall (y = ROOM.y0 plane), right side
+  function drawCalendar(){
+    wallBoard(CAL_SPEC, drawCalBoard);
+  }
+  function drawCalBoard(BW,BH){
+    const lightT=currentTheme()==='light';
+    const live=lightT? '#C0503F':'#E8746A';
+    const sat =lightT? '#4E6FA6':'#7C9BD0';
+    const ink =lightT? '#33291B':'#EBE2CE';
+    const sub =lightT? '#7C7059':'#B7AC93';
+    const pad=BW*0.035;
+    // panel — brighter than wall
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.32)'; ctx.shadowBlur=9; ctx.shadowOffsetX=3; ctx.shadowOffsetY=4;
+    roundRect(0,0,BW,BH,BH*0.05);
+    ctx.fillStyle=lightT? '#FBF6EA':'#171B22';
+    ctx.fill(); ctx.shadowColor='transparent';
+    ctx.restore();
+    ctx.lineWidth=Math.max(1.5,BW*0.005); ctx.strokeStyle=hexA(P.brass,0.9);
+    roundRect(0,0,BW,BH,BH*0.05); ctx.stroke();
+    // header band
+    const hb=BH*0.125;
+    ctx.save(); roundRect(0,0,BW,hb+10,BH*0.05); ctx.clip();
+    ctx.fillStyle=hexA(P.brass, lightT?0.20:0.15); ctx.fillRect(0,0,BW,hb); ctx.restore();
+    ctx.textBaseline='middle'; ctx.textAlign='left';
+    ctx.fillStyle=P.brass; ctx.font=`700 ${hb*0.58}px ${KFONT}`;
+    ctx.fillText('인사 스케줄', pad, hb*0.54);
+    ctx.textAlign='right'; ctx.fillStyle=sub; ctx.font=`600 ${hb*0.48}px ${KFONT}`;
+    ctx.fillText(REAL_SCHEDULE.monthLabel, BW-pad, hb*0.54);
+    // weekday header (Wed = 1st of July 2026; today = 8th, highlighted)
+    const gx0=pad, gw=BW-2*pad, cw=gw/7;
+    const wd=['일','월','화','수','목','금','토'];
+    const wkY=hb+BH*0.02+cw*0.28;
+    ctx.textAlign='center'; ctx.font=`700 ${cw*0.38}px ${KFONT}`;
+    for(let i=0;i<7;i++){
+      ctx.fillStyle=i===0?live:(i===6?sat:sub);
+      ctx.fillText(wd[i], gx0+cw*(i+0.5), wkY);
+    }
+    // date grid + REAL schedule markers — 실데이터 마크(면접/공고 마감/온보딩), 오늘 하이라이트,
+    // 하단 범례. 날짜 숫자·점 크기를 키워 벽면에서도 또렷하게 읽히도록 조정.
+    const firstDow=REAL_SCHEDULE.firstDow, days=REAL_SCHEDULE.days, rows=Math.ceil((firstDow+days)/7);
+    const lgH=BH*0.075;                                   // bottom legend strip
+    const gridTop=wkY+cw*0.42, gridBot=BH-BH*0.025-lgH, ch=(gridBot-gridTop)/rows;
+    const MARKS=REAL_SCHEDULE.marks;
+    ctx.textBaseline='middle';
+    for(let d=1; d<=days; d++){
+      const idx=firstDow+d-1, col=idx%7, row=(idx/7)|0;
+      const ccx=gx0+cw*(col+0.5), ccy=gridTop+ch*(row+0.5), isToday=(d===REAL_SCHEDULE.todayDate);
+      if(isToday){ ctx.beginPath(); ctx.arc(ccx,ccy,Math.min(cw,ch)*0.44,0,Math.PI*2); ctx.fillStyle=P.brass; ctx.fill(); }
+      ctx.font=`${isToday?800:700} ${Math.min(ch*0.58,cw*0.55)}px ${KFONT}`;
+      ctx.fillStyle=isToday? (lightT?'#FBF6EA':'#171B22') : (col===0?live:(col===6?sat:ink));
+      ctx.fillText(String(d), ccx, ccy-ch*0.08);
+      const mk=MARKS[d];
+      if(mk && mk.length){                                 // multiple dots per day, today included
+        const dr=Math.min(cw,ch)*0.115, gap=dr*2.6, y0=ccy+ch*0.30;
+        for(let i=0;i<mk.length;i++){
+          const mx=ccx+(i-(mk.length-1)/2)*gap;
+          ctx.beginPath(); ctx.arc(mx, y0, dr, 0, Math.PI*2);
+          ctx.fillStyle=markColor(mk[i]); ctx.fill();
+          if(isToday){ ctx.lineWidth=Math.max(1,dr*0.38); ctx.strokeStyle=lightT?'#FBF6EA':'#171B22'; ctx.stroke(); }
+        }
+      }
+    }
+    // legend — 마크 색상 의미를 보드 안에서 바로 읽게
+    const lgF=lgH*0.62, lgR=lgF*0.40, lgYm=BH-BH*0.025-lgH*0.42;
+    ctx.font=`700 ${lgF}px ${KFONT}`;
+    let lgW=0; const lgGap=lgF*1.15;
+    for(const it of REAL_SCHEDULE.legend) lgW += lgR*2 + lgF*0.45 + ctx.measureText(it.label).width + lgGap;
+    lgW -= lgGap;
+    let lx0=(BW-lgW)/2;
+    ctx.textAlign='left';
+    for(const it of REAL_SCHEDULE.legend){
+      ctx.beginPath(); ctx.arc(lx0+lgR, lgYm, lgR, 0, Math.PI*2); ctx.fillStyle=markColor(it.k); ctx.fill();
+      ctx.fillStyle=sub; ctx.fillText(it.label, lx0+lgR*2+lgF*0.45, lgYm+0.5);
+      lx0 += lgR*2 + lgF*0.45 + ctx.measureText(it.label).width + lgGap;
+    }
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+  }
+
+  // 오늘 일정 세부 패널 — front wall, left of the 월력 (company-bulletin style time list)
+  function drawToday(){
+    wallBoard(TODAY_SPEC, drawTodayBoard);
+  }
+  // 오늘 실제 일정 = REAL_SCHEDULE.today (빌드타임 실데이터 — 재배포 시 갱신, 시간순)
+  const TODAY_ROWS=REAL_SCHEDULE.today;
+  function drawTodayBoard(BW,BH){
+    const lightT=currentTheme()==='light';
+    const ink =lightT? '#33291B':'#EBE2CE';
+    const sub =lightT? '#7C7059':'#B7AC93';
+    const pad=BW*0.045;
+    // panel
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.32)'; ctx.shadowBlur=9; ctx.shadowOffsetX=3; ctx.shadowOffsetY=4;
+    roundRect(0,0,BW,BH,BH*0.055);
+    ctx.fillStyle=lightT? '#FBF6EA':'#171B22';
+    ctx.fill(); ctx.shadowColor='transparent';
+    ctx.restore();
+    ctx.lineWidth=Math.max(1.5,BW*0.006); ctx.strokeStyle=hexA(P.brass,0.9);
+    roundRect(0,0,BW,BH,BH*0.055); ctx.stroke();
+    // header band
+    const hb=BH*0.155;
+    ctx.save(); roundRect(0,0,BW,hb+10,BH*0.055); ctx.clip();
+    ctx.fillStyle=hexA(P.brass, lightT?0.20:0.15); ctx.fillRect(0,0,BW,hb); ctx.restore();
+    ctx.textBaseline='middle'; ctx.textAlign='left';
+    ctx.fillStyle=P.brass; ctx.font=`700 ${hb*0.52}px ${KFONT}`;
+    ctx.fillText('오늘 일정', pad, hb*0.52);
+    ctx.textAlign='right'; ctx.fillStyle=sub; ctx.font=`600 ${hb*0.44}px ${KFONT}`;
+    ctx.fillText(REAL_SCHEDULE.todayLabel, BW-pad, hb*0.52);
+    // rows — 실데이터 (항목 없으면 '오늘 일정 없음')
+    const rows=TODAY_ROWS;
+    if(!rows.length){
+      ctx.textAlign='center'; ctx.fillStyle=sub; ctx.font=`600 ${BH*0.11}px ${KFONT}`;
+      ctx.fillText('오늘 일정 없음', BW/2, hb+(BH-hb)/2);
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      return;
+    }
+    const top=hb+BH*0.045, rh=(BH-top-BH*0.04)/rows.length;
+    const fz=Math.min(rh*0.44, BW*0.058);
+    for(let i=0;i<rows.length;i++){
+      const r=rows[i], ry=top+rh*(i+0.5);
+      // separator
+      if(i>0){ ctx.strokeStyle=hexA(P.brass,0.16); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,top+rh*i); ctx.lineTo(BW-pad,top+rh*i); ctx.stroke(); }
+      // time / status chip — 색 = 달력 범례와 동일(면접/마감/온보딩), 완료는 세이지
+      const chW=BW*0.17, chH=rh*0.66, chx=pad, chy=ry-chH/2;
+      const chipCol = r.done? P.sage : (r.k? markColor(r.k) : (r.flag? PAL_LIVE() : P.brass));
+      roundRect(chx,chy,chW,chH,chH*0.32);
+      ctx.fillStyle=hexA(chipCol, lightT?0.16:0.22); ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle=hexA(chipCol,0.7); ctx.stroke();
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle=chipCol; ctx.font=`700 ${fz*0.88}px ${KFONT}`;
+      ctx.fillText(r.t, chx+chW/2, ry+0.5);
+      // label
+      ctx.textAlign='left';
+      ctx.fillStyle = r.done? sub : ink;
+      ctx.font=`${r.done?600:700} ${fz}px ${KFONT}`;
+      let label=r.s; const maxW=BW-(chx+chW)-pad*1.4;
+      while(ctx.measureText(label).width>maxW && label.length>4){ label=label.slice(0,-2); }
+      if(label!==r.s) label=label.slice(0,-1)+'…';
+      const lx=chx+chW+pad*0.7;
+      ctx.fillText(label, lx, ry+0.5);
+      if(r.done){ // strike + check
+        const lw=ctx.measureText(label).width;
+        ctx.strokeStyle=hexA(P.sage,0.8); ctx.lineWidth=Math.max(1,fz*0.08);
+        ctx.beginPath(); ctx.moveTo(lx,ry+0.5); ctx.lineTo(lx+lw,ry+0.5); ctx.stroke();
+      }
+    }
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+  }
+  function PAL_LIVE(){ return currentTheme()==='light' ? '#C0503F' : '#E8746A'; }
+
+  // 창문 — soft daylight on the left wall, front corner (+ 흘러가는 구름 micro-animation)
+  function drawWindow(t){
+    wallBoard({plane:'x', coord:ROOM.x0+0.11, uStart:2.05, uEnd:0.5, zTop:3.15, zBot:1.45}, function(BW,BH){ drawWindowBoard(BW,BH,t); });
+  }
+  function drawWindowBoard(BW,BH,t){
+    const lightT=currentTheme()==='light';
+    // frame
+    roundRect(-BW*0.04,-BH*0.05,BW*1.08,BH*1.10,BH*0.06);
+    ctx.fillStyle=P.winFrame; ctx.fill();
+    // sky glass with vertical gradient
+    const g=ctx.createLinearGradient(0,0,0,BH);
+    g.addColorStop(0, P.winSky); g.addColorStop(1, P.winSky2);
+    roundRect(BW*0.05,BH*0.06,BW*0.90,BH*0.88,BH*0.03); ctx.fillStyle=g; ctx.fill();
+    // 구름 — 유리 안쪽을 천천히 흐르는 두 덩이 (reduced-motion이면 정지)
+    ctx.save();
+    roundRect(BW*0.05,BH*0.06,BW*0.90,BH*0.88,BH*0.03); ctx.clip();
+    const cAlpha = lightT?0.85:0.55;
+    const drift1 = MOTION? ((t*BW*0.016)%(BW*1.5))-BW*0.25 : BW*0.30;
+    const drift2 = MOTION? ((t*BW*0.010+BW*0.7)%(BW*1.5))-BW*0.25 : BW*0.62;
+    const cloud=(cx0,cy0,r)=>{
+      ctx.beginPath();
+      ctx.arc(cx0,cy0,r,0,Math.PI*2); ctx.arc(cx0+r*0.9,cy0+r*0.18,r*0.72,0,Math.PI*2); ctx.arc(cx0-r*0.85,cy0+r*0.22,r*0.6,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${cAlpha})`; ctx.fill();
+    };
+    cloud(drift1, BH*0.30, BW*0.085);
+    cloud(drift2, BH*0.52, BW*0.065);
+    ctx.restore();
+    // soft light bloom
+    const gl=ctx.createRadialGradient(BW*0.5,BH*0.28,2, BW*0.5,BH*0.28,BW*0.6);
+    gl.addColorStop(0, hexA('#FFFFFF',lightT?0.55:0.32)); gl.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=gl; ctx.fillRect(BW*0.05,BH*0.06,BW*0.90,BH*0.88);
+    // mullions
+    ctx.strokeStyle=P.winFrame; ctx.lineWidth=Math.max(2,BW*0.03);
+    ctx.beginPath(); ctx.moveTo(BW*0.5,BH*0.06); ctx.lineTo(BW*0.5,BH*0.94);
+    ctx.moveTo(BW*0.05,BH*0.5); ctx.lineTo(BW*0.95,BH*0.5); ctx.stroke();
+    // sill
+    ctx.fillStyle=shadeHex(P.winFrame,1.15); ctx.fillRect(-BW*0.04,BH*0.96,BW*1.08,BH*0.10);
+  }
+
+  // 벽시계 — round wall clock on the front wall, right end (reads 07:08 for today)
+  function drawClockWall(t){
+    wallBoard({plane:'y', coord:ROOM.y0+0.12, uStart:11.75, uEnd:13.05, zTop:3.42, zBot:2.12}, function(BW,BH){ drawClockBoard(BW,BH,t); });
+  }
+  function drawClockBoard(BW,BH,t){
+    const lightT=currentTheme()==='light';
+    const cxp=BW/2, cyp=BH/2, r=Math.min(BW,BH)*0.44;
+    ctx.beginPath(); ctx.arc(cxp,cyp,r+r*0.10,0,Math.PI*2);
+    ctx.fillStyle=P.brass; ctx.fill();                                  // brass bezel
+    ctx.beginPath(); ctx.arc(cxp,cyp,r,0,Math.PI*2);
+    ctx.fillStyle=lightT?'#FBF6EA':'#20242C'; ctx.fill();               // face
+    ctx.strokeStyle=hexA(lightT?'#33291B':'#EBE2CE',0.75);
+    for(let i=0;i<12;i++){ const a=i*Math.PI/6, r1=r*0.82, r2=r*0.94;
+      ctx.lineWidth=(i%3===0)?Math.max(1.5,r*0.06):Math.max(1,r*0.03);
+      ctx.beginPath(); ctx.moveTo(cxp+Math.cos(a)*r1,cyp+Math.sin(a)*r1); ctx.lineTo(cxp+Math.cos(a)*r2,cyp+Math.sin(a)*r2); ctx.stroke(); }
+    // hands → 07:08 (hour = -60°? compute): hour hand at 7h08m, minute at 8m
+    const hrA=(-90 + (7+8/60)*30)*Math.PI/180, mnA=(-90 + 8*6)*Math.PI/180;
+    ctx.strokeStyle=lightT?'#33291B':'#EBE2CE'; ctx.lineCap='round';
+    ctx.lineWidth=Math.max(2,r*0.09); ctx.beginPath(); ctx.moveTo(cxp,cyp); ctx.lineTo(cxp+Math.cos(hrA)*r*0.48,cyp+Math.sin(hrA)*r*0.48); ctx.stroke();
+    ctx.lineWidth=Math.max(1.5,r*0.06); ctx.beginPath(); ctx.moveTo(cxp,cyp); ctx.lineTo(cxp+Math.cos(mnA)*r*0.72,cyp+Math.sin(mnA)*r*0.72); ctx.stroke();
+    // 초침 스윕 — micro-animation (reduced-motion이면 12시 고정)
+    const scA=(-90 + (MOTION? (t*6)%360 : 0))*Math.PI/180;
+    ctx.strokeStyle=hexA(P.brass,0.9); ctx.lineWidth=Math.max(1,r*0.028);
+    ctx.beginPath(); ctx.moveTo(cxp-Math.cos(scA)*r*0.14,cyp-Math.sin(scA)*r*0.14); ctx.lineTo(cxp+Math.cos(scA)*r*0.80,cyp+Math.sin(scA)*r*0.80); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cxp,cyp,r*0.08,0,Math.PI*2); ctx.fillStyle=P.brass; ctx.fill();
+  }
+
+  // subtle carpet medallion — thin inset border on the rug
+  function drawRugPattern(){
+    const inset=[[0.6,2.6],[9.4,2.6],[9.4,5.4],[0.6,5.4]];
+    ctx.save();
+    ctx.beginPath();
+    inset.forEach((p,i)=>{ const s=project(p[0],p[1],0.03); if(i===0)ctx.moveTo(s.x,s.y); else ctx.lineTo(s.x,s.y); });
+    ctx.closePath();
+    ctx.lineWidth=0.06; ctx.strokeStyle=hexA(P.rugEdge,0.55); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ---------- camera fit (guarantees everyone on-screen) ---------- */
+  function computeCamera(W,H){
+    let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+    const acc=(gx,gy,gz)=>{ const p=project(gx,gy,gz); if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x; if(p.y<minY)minY=p.y; if(p.y>maxY)maxY=p.y; };
+    for(const gx of [ROOM.x0,ROOM.x1]) for(const gy of [ROOM.y0,ROOM.y1]) for(const gz of [0,WALL_H]) acc(gx,gy,gz);
+    for(const c of chars) acc(c.gx, c.gy, c.lead?3.3:3.05);
+    const bw=maxX-minX, bh=maxY-minY;
+    const pad=Math.min(W,H)*0.066+18;   // more margin → further zoom-out, open roomy feel
+    const scale=Math.min((W-2*pad)/bw,(H-2*pad)/bh);
+    return { scale, offX:(W-scale*(minX+maxX))/2, offY:(H-scale*(minY+maxY))/2 };
+  }
+  let CAM={scale:1,offX:0,offY:0};
+  function toScreen(gx,gy,gz){ const p=project(gx,gy,gz); return { x:CAM.offX+p.x*CAM.scale, y:CAM.offY+p.y*CAM.scale }; }
+
+  /* ---------- scene assembly (depth-sorted painter's algorithm) ---------- */
+  function buildScene(t){
+    const draws=[];
+    const push=(depth,z,fn)=>draws.push({depth,z,fn});
+
+    // floor + rug
+    for(let gx=ROOM.x0; gx<ROOM.x1; gx++){
+      for(let gy=ROOM.y0; gy<ROOM.y1; gy++){
+        const isRug = gx>=0 && gx<=10 && gy>=2 && gy<=6;
+        const alt=(gx+gy)&1;
+        let fill;
+        if(isRug){
+          const edge = (gx===0||gx===10||gy===2||gy===6);
+          fill = edge ? fc(P.rugEdge,0.70) : fc(alt?P.rugA:P.rugB, 1.0);
+        } else {
+          fill = fc(alt?P.floorA:P.floorB, 1.0);
+        }
+        push(gx+gy-0.05, -1, (function(gx,gy,fill){return function(){ tile(gx,gy,0,1,1,fill); };})(gx,gy,fill));
+      }
+    }
+
+    // back walls
+    push(ROOM.x0+ROOM.y0-0.5, -2, function(){
+      box(ROOM.x0, ROOM.y0, 0, ROOM.x1-ROOM.x0, 0.22, WALL_H, P.wall, 0.92);
+      box(ROOM.x0, ROOM.y0, WALL_H-0.14, ROOM.x1-ROOM.x0, 0.22, 0.14, P.wallTrim, 1.2);
+    });
+    push(ROOM.x0+ROOM.y0-0.4, -2, function(){
+      box(ROOM.x0, ROOM.y0, 0, 0.22, ROOM.y1-ROOM.y0, WALL_H, P.wallBack, 0.86);
+      box(ROOM.x0, ROOM.y0, WALL_H-0.14, 0.22, ROOM.y1-ROOM.y0, 0.14, P.wallTrim, 1.2);
+    });
+
+    // meeting table (per cell)
+    for(let gx=1; gx<11; gx++){
+      for(let gy=3; gy<5; gy++){
+        push(gx+gy, 0.5, (function(gx,gy){return function(){ box(gx,gy,0,1.0,1.0,1.0, P.table); };})(gx,gy));
+      }
+    }
+    // brass center runner
+    for(let gx=1; gx<11; gx++){
+      push(gx+3.5+0.001, 0.6, (function(gx){return function(){ box(gx+0.15,3.85,1.0,0.7,0.30,0.03,P.brass,1.2); };})(gx));
+    }
+
+    // carpet medallion (just above floor tiles, below furniture)
+    push(ROOM.x0+ROOM.y0-0.04, -1, function(){ drawRugPattern(); });
+
+    // wall signage — 급훈 (behind lead), 오늘 일정 + 월력 (front wall), 창문 + 벽시계. Depth just above
+    // walls so seated agents in front correctly occlude them (painter's algorithm).
+    const SIGN_D = ROOM.x0+ROOM.y0-0.3;
+    push(SIGN_D,       -1.5, function(){ drawWindow(t); });
+    push(SIGN_D+0.005, -1.5, function(){ drawMotto(); });
+    push(SIGN_D+0.010, -1.5, function(){ drawClockWall(t); });
+    push(SIGN_D+0.015, -1.5, function(){ drawToday(); });
+    push(SIGN_D+0.020, -1.5, function(){ drawCalendar(); });
+
+    // premium furniture (depth-sorted on the floor)
+    push(11.5+0.55, 4, function(){ drawCredenza(11.5,0.55); });
+    push(-2.15+1.05, 4, function(){ drawCabinet(-2.15,1.05); });
+    push(11.7+3.0,  4, function(){ drawWhiteboard(11.7,3.0); });
+    push(-2.5+7.0,  4, function(){ drawCopier(-2.5,7.0,t); });   // 복합기, front-left corner
+
+    // plants
+    push(10.7+6.6, 5, function(){ drawPlant(10.7,6.6,t,0.0); });
+    push(-2.1+5.4, 5, function(){ drawPlant(-2.1,5.4,t,2.1); });
+
+    // props + characters
+    for(const c of chars){
+      const a=propAnchor(c); const pd=a.px+a.py;
+      push(pd-0.03, 1, (function(c){return function(){ drawPlate(c); };})(c));
+      push(pd-0.01, 1, (function(c){return function(){ drawDeskExtras(c,t); };})(c));
+      push(pd, 2, (function(c){return function(){ drawMonitor(c,t); };})(c));
+      push(pd+0.02, 3, (function(c){return function(){ drawLamp(c); };})(c));
+      push(c.gx+c.gy, 6, (function(c){return function(){ drawChar(c,t); };})(c));
+    }
+
+    draws.sort((a,b)=> (a.depth-b.depth) || (a.z-b.z));
+    for(const d of draws) d.fn();
+  }
+
+  /* ---------- overlays (device-px, crisp) ---------- */
+  const KFONT="-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function hexA(hex,a){
+    if(!hex || hex[0]!=='#') return hex||'rgba(0,0,0,0)';
+    const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+  const CEIL_PTS=[[1.5,3.4],[5.5,3.6],[9.5,3.8],[3.5,5.4],[8,2.4]];
+  function drawOverlays(t,W,H){
+    const lightT = currentTheme()==='light';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+
+    // ceiling downlight pools — soft warm ambience on the floor (premium recessed lighting)
+    for(const p of CEIL_PTS){
+      const s=toScreen(p[0],p[1],0.06);
+      const r=Math.max(34,58*CAM.scale/1.6);
+      const g=ctx.createRadialGradient(s.x,s.y,0, s.x,s.y,r);
+      g.addColorStop(0, hexA(P.ceil, lightT?0.10:0.13)); g.addColorStop(1, hexA(P.ceil,0));
+      ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g;
+      ctx.beginPath(); ctx.ellipse(s.x,s.y,r,r*0.5,0,0,Math.PI*2); ctx.fill(); ctx.restore();
+    }
+
+    // glows — 램프 글로우는 은은하게 맥동 (micro-animation, MOTION 게이트)
+    for(const c of chars){
+      if(c._lamp && c._lamp.lit){
+        const s=toScreen(c._lamp.x, c._lamp.y, 1.52);
+        const r=Math.max(38, 60*CAM.scale/1.6);
+        const pulse=0.88+0.12*Math.sin(t*2.3+(c.phase||0))*MOTION;
+        const g=ctx.createRadialGradient(s.x,s.y,0, s.x,s.y,r);
+        g.addColorStop(0, hexA(P.glow,0.40*pulse)); g.addColorStop(0.5, hexA(P.glow,0.15*pulse)); g.addColorStop(1, hexA(P.glow,0));
+        ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g;
+        ctx.beginPath(); ctx.arc(s.x,s.y,r,0,Math.PI*2); ctx.fill(); ctx.restore();
+      }
+      if(c._mon && c._mon.on){
+        const s=toScreen(c._mon.x, c._mon.y, 1.35);
+        const r=Math.max(18,28*CAM.scale/1.6);
+        const g=ctx.createRadialGradient(s.x,s.y,0, s.x,s.y,r);
+        g.addColorStop(0, hexA(P.monOn,0.38)); g.addColorStop(1, hexA(P.monOn,0));
+        ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g;
+        ctx.beginPath(); ctx.arc(s.x,s.y,r,0,Math.PI*2); ctx.fill(); ctx.restore();
+      }
+    }
+
+    // nameplates — opaque billboard panels (bold, framed, shadowed) so every seat reads clearly
+    for(const c of chars){
+      const a=propAnchor(c);
+      const anchor = a.dir==='lead' ? toScreen(a.px+0.12, a.py+0.30, 1.0) : toScreen(a.px, a.py+0.66, 1.0);
+      const isLead=c.lead;
+      const label = isLead ? '팀장 · Claude' : (c.id+'  '+c.tag);
+      const fs = Math.max(isLead?12:11, Math.min(isLead?18:15, (isLead?12.5:10.5)*CAM.scale/1.6));
+      ctx.font=`700 ${fs}px ${KFONT}`;
+      const tw=ctx.measureText(label).width;
+      const dot = isLead?0:fs*1.05;
+      const padX=fs*0.62, padY=fs*0.42;
+      const w=tw+padX*2+dot, h=fs+padY*2;
+      const px=anchor.x-w/2, py=anchor.y-h/2;
+      ctx.save();
+      ctx.shadowColor= isLead?'rgba(0,0,0,.42)':'rgba(0,0,0,.34)'; ctx.shadowBlur=7; ctx.shadowOffsetY=2.5;
+      roundRect(px,py,w,h,h*0.30);
+      ctx.fillStyle = isLead ? (lightT? '#3B2F16':'#241B0C')
+                             : (lightT? 'rgba(255,251,243,.98)':'rgba(21,25,32,.96)');
+      ctx.fill(); ctx.shadowColor='transparent';
+      ctx.lineWidth = isLead?2.2:1.4;
+      ctx.strokeStyle = isLead ? P.leadTie : hexA(P.brass,0.85);
+      ctx.stroke();
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      let tx=px+padX;
+      if(!isLead){
+        ctx.beginPath(); ctx.arc(tx+fs*0.30, anchor.y, fs*0.30, 0, Math.PI*2);
+        ctx.fillStyle=c.color; ctx.fill();
+        tx += dot;
+      }
+      ctx.fillStyle = isLead ? '#F3D98A' : (lightT? '#2A2318':'#F1E8D4');
+      ctx.fillText(label, tx, anchor.y+0.5);
+      ctx.restore();
+    }
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+
+    // facial expressions (billboard on the camera-facing head, state-driven, + 깜빡임)
+    for(const c of chars) drawFace(c,t);
+
+    // NOTE: the team-lead processing-log bubble has been removed from the scene — the lead now stands
+    // clear with no bubble over her head. That briefing stream is rendered in the bottom HUD panel
+    // (#leadfeed, '팀장 · Claude 브리핑'), driven by setTicker → pushLog below.
+
+    // ---- task bubbles for busy agents — overlap resolution keeps simultaneous ones readable ----
+    const bubs=[];
+    for(const c of chars){
+      if(c.lead) continue;
+      if(c.status==='busy'){
+        const head=toScreen(c.gx,c.gy, c._headZ||2.9);
+        bubs.push({c, hx:head.x, hy:head.y-6, prog:(t-c.tStart)/c.tDur, task:c.task});
+      }
+    }
+    ctx.font=`600 12px ${KFONT}`;
+    for(const b of bubs){
+      let s=b.task; while(ctx.measureText(s).width>186 && s.length>4){ s=s.slice(0,-2); }
+      if(s!==b.task) s=s.slice(0,-1)+'…';
+      b.s=s;
+      b.w=Math.max(92, ctx.measureText(s).width+24); b.h=40;
+      b.cx=Math.max(b.w/2+6, Math.min(W-b.w/2-6, b.hx));   // desired: centered over head, on-screen
+      b.by=b.hy-16-b.h;                                     // desired: floating above head
+    }
+    // stack overlapping bubbles upward; if pinned to the top edge, shift sideways. Leader line
+    // (drawn per-bubble) keeps each tied to its owner's head after a nudge.
+    bubs.sort((a,b)=> (a.hy-b.hy) || (a.hx-b.hx));
+    const GAP=7;
+    const hitTest=(b,a)=> Math.abs(b.cx-a.cx) < (b.w+a.w)/2+GAP && Math.abs((b.by+b.h/2)-(a.by+a.h/2)) < (b.h+a.h)/2+GAP;
+    const placed=[];
+    for(let i=0;i<bubs.length;i++){
+      const b=bubs[i];
+      for(let guard=0; guard<80; guard++){
+        let hit=null;
+        for(const a of placed){ if(hitTest(b,a)){ hit=a; break; } }
+        if(!hit) break;
+        const up=hit.by-b.h-GAP;
+        if(up>=6){ b.by=up; }                              // room above → stack up
+        else {                                             // pinned near top → separate horizontally
+          const dir=(b.cx>=hit.cx)?1:-1;
+          const need=(b.w+hit.w)/2+GAP-Math.abs(b.cx-hit.cx);
+          b.cx=Math.max(b.w/2+6, Math.min(W-b.w/2-6, b.cx+dir*need));
+          b.by=Math.max(6, (Math.abs(b.cx-hit.cx) < (b.w+hit.w)/2+GAP) ? up : b.by);
+        }
+      }
+      b.by=Math.max(6, Math.min(H-b.h-8, b.by));
+      placed.push(b);
+    }
+    for(const b of bubs) drawBubble(b, lightT);
+
+    // completion checks
+    for(const c of chars){
+      if(c.status==='done'){
+        const head=toScreen(c.gx,c.gy, c._headZ||(c.lead?3.2:2.9));
+        drawCheck(head.x, head.y-18, Math.min(1,(t-c.tDone)/0.28));
+      }
+    }
+  }
+  /* expression repertoire — eyebrows + eye shape + mouth combine into calm / smile / grin / focus /
+     ponder / surprise / content / tired / wink. Kept to bold dots + thin lines so it reads at tiny
+     scale. c.expr is chosen per-character by updateExpression(); falls back to a state default.
+     v2: 열린 눈은 주기적 깜빡임(blink micro-animation) — 감은눈 계열 표정에는 미적용. */
+  function drawFace(c,t){
+    const f=c._face; if(!f) return;
+    const es=Math.max(1.3, 2.0*CAM.scale/1.6)*f.s;
+    const dx=es*1.55, cx0=f.x, lightT=currentTheme()==='light';
+    const col=lightT? '#2A2318':'#1B1F26';
+    let expr=c.expr;
+    if(!expr) expr = c.status==='busy'?'focus':(c.status==='done'?'grin':(c.lead?'smile':'calm'));
+    const blink = MOTION===1 && (t-(c._blinkT||-9))<0.13 &&
+      !(expr==='grin'||expr==='content'||expr==='wink'||expr==='tired');
+    const lookUp = expr==='ponder'? -es*0.22 : 0;
+    const eyeY=f.y-es*0.5+lookUp, my=f.y+es*1.32, browY=eyeY-es*1.05;
+    const LWe=Math.max(1,es*0.5), LWb=Math.max(1,es*0.34);
+    ctx.save();
+    ctx.fillStyle=col; ctx.strokeStyle=col; ctx.lineCap='round'; ctx.lineJoin='round';
+    const dot=(x,y,r)=>{ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); };
+    const eyeArcUp=(x)=>{ ctx.lineWidth=LWe; ctx.beginPath(); ctx.arc(x, eyeY+es*0.32, es*0.82, 1.12*Math.PI, 1.88*Math.PI); ctx.stroke(); };   // ∩ happy closed
+    const eyeArcDown=(x)=>{ ctx.lineWidth=LWe; ctx.beginPath(); ctx.arc(x, eyeY-es*0.18, es*0.82, 0.16*Math.PI, 0.84*Math.PI); ctx.stroke(); }; // ∪ droopy/tired
+    const eyeShut=(x)=>{ ctx.lineWidth=LWe; ctx.beginPath(); ctx.moveTo(x-es*0.55,eyeY); ctx.lineTo(x+es*0.55,eyeY); ctx.stroke(); };           // wink closed
+    const dotE=(x,y,r)=>{ if(blink){ eyeShut(x); } else { dot(x,y,r); } };       // 깜빡임 적용 열린 눈
+    const brow=(x,y,innerDy,half)=>{ const sgn=x<cx0?+1:-1; ctx.lineWidth=LWb; ctx.beginPath();
+      ctx.moveTo(x - sgn*half, y - innerDy*0.35); ctx.lineTo(x + sgn*half, y + innerDy); ctx.stroke(); };   // inner end toward face center
+    const mArc=(yc,r,a0,a1)=>{ ctx.lineWidth=LWe; ctx.beginPath(); ctx.arc(cx0,yc,r,a0*Math.PI,a1*Math.PI); ctx.stroke(); };
+    const mLine=(half)=>{ ctx.lineWidth=LWe; ctx.beginPath(); ctx.moveTo(cx0-half,my); ctx.lineTo(cx0+half,my); ctx.stroke(); };
+    const mO=()=>{ ctx.beginPath(); ctx.ellipse(cx0,my,es*0.40,es*0.5,0,0,Math.PI*2); ctx.fill(); };
+    switch(expr){
+      case 'grin':                                     // 활짝웃음 — closed happy eyes, raised brows, big smile
+        eyeArcUp(cx0-dx); eyeArcUp(cx0+dx);
+        brow(cx0-dx, browY-es*0.22, -es*0.14, es*0.58); brow(cx0+dx, browY-es*0.22, -es*0.14, es*0.58);
+        mArc(my-es*0.75, es*1.2, 0.08, 0.92); break;
+      case 'content':                                  // 만족 — closed eyes, soft smile
+        eyeArcUp(cx0-dx); eyeArcUp(cx0+dx);
+        mArc(my-es*0.5, es*0.9, 0.15, 0.85); break;
+      case 'smile':                                    // 옅은 미소
+        dotE(cx0-dx,eyeY,es*0.46); dotE(cx0+dx,eyeY,es*0.46);
+        mArc(my-es*0.5, es*0.92, 0.16, 0.84); break;
+      case 'focus':                                    // 집중 — brows drawn in, firm mouth
+        dotE(cx0-dx,eyeY,es*0.56); dotE(cx0+dx,eyeY,es*0.56);
+        brow(cx0-dx, browY, es*0.38, es*0.62); brow(cx0+dx, browY, es*0.38, es*0.62);
+        mLine(es*0.7); break;
+      case 'ponder':                                   // 골똘 — look up, one brow raised
+        dotE(cx0-dx,eyeY,es*0.5); dotE(cx0+dx,eyeY,es*0.5);
+        brow(cx0+dx, browY-es*0.34, -es*0.12, es*0.6); brow(cx0-dx, browY, es*0.05, es*0.55);
+        mLine(es*0.5); break;
+      case 'surprise':                                 // 놀람 — wide eyes, raised brows, small o
+        dotE(cx0-dx,eyeY,es*0.66); dotE(cx0+dx,eyeY,es*0.66);
+        brow(cx0-dx, browY-es*0.4, -es*0.1, es*0.55); brow(cx0+dx, browY-es*0.4, -es*0.1, es*0.55);
+        mO(); break;
+      case 'tired':                                    // 살짝 피곤 — droopy eyes, worried brows, flat mouth
+        eyeArcDown(cx0-dx); eyeArcDown(cx0+dx);
+        brow(cx0-dx, browY+es*0.05, -es*0.12, es*0.5); brow(cx0+dx, browY+es*0.05, -es*0.12, es*0.5);
+        mLine(es*0.5); break;
+      case 'wink':                                     // 윙크 — one eye shut, half smile
+        dotE(cx0-dx,eyeY,es*0.5); eyeShut(cx0+dx);
+        mArc(my-es*0.5, es*0.9, 0.16, 0.84); break;
+      case 'calm': default:                            // 평온 — soft eyes, faint mouth
+        dotE(cx0-dx,eyeY,es*0.46); dotE(cx0+dx,eyeY,es*0.46);
+        mLine(es*0.5); break;
+    }
+    ctx.restore();
+  }
+  function drawBubble(b, lightT){
+    const w=b.w, h=b.h, x=b.cx-w/2, y=b.by, prog=Math.max(0,Math.min(1,b.prog));
+    const ax=Math.max(x+12, Math.min(x+w-12, b.hx));       // tail root kept under the bubble
+    // leader line to the owner's head so a nudged bubble still reads as theirs
+    ctx.save();
+    ctx.strokeStyle=hexA(P.brass,0.55); ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(ax, y+h); ctx.lineTo(b.hx, b.hy); ctx.stroke();
+    ctx.fillStyle=hexA(P.brass,0.75); ctx.beginPath(); ctx.arc(b.hx,b.hy,2,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    // bubble body
+    const bg=lightT?'rgba(255,252,245,.97)':'rgba(24,28,36,.96)';
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.24)'; ctx.shadowBlur=10; ctx.shadowOffsetY=3;
+    roundRect(x,y,w,h,10); ctx.fillStyle=bg; ctx.fill(); ctx.shadowColor='transparent';
+    ctx.lineWidth=1; ctx.strokeStyle=hexA(P.brass,0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ax-6,y+h-1); ctx.lineTo(ax+6,y+h-1); ctx.lineTo(ax,y+h+7); ctx.closePath();
+    ctx.fillStyle=bg; ctx.fill();
+    ctx.font=`600 12px ${KFONT}`;
+    ctx.fillStyle=lightT?'#2A2318':'#F3ECDD'; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText(b.s, x+12, y+15);
+    const bx=x+12, bw=w-24, byy=y+27, bh=5;
+    roundRect(bx,byy,bw,bh,3); ctx.fillStyle=lightT?'rgba(140,108,44,.18)':'rgba(201,169,106,.18)'; ctx.fill();
+    roundRect(bx,byy,bw*prog,bh,3); ctx.fillStyle=P.brass; ctx.fill();
+    ctx.restore();
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+  }
+  function drawCheck(cx,cy,k){
+    const r=13*k;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.fillStyle=P.sage; ctx.globalAlpha=Math.min(1,k*1.2); ctx.fill();
+    ctx.globalAlpha=1; ctx.strokeStyle='#fff'; ctx.lineWidth=2.4*k; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.beginPath(); ctx.moveTo(cx-5*k,cy); ctx.lineTo(cx-1.5*k,cy+4*k); ctx.lineTo(cx+5.5*k,cy-4.5*k); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ================= EVENT ENGINE ================= */
+  // Demo pool. Replace nextEvent()'s body with an autolog-list poll to go live.
+  const POOL=[
+    {id:'A-5', text:'모집인원 2명 반영 완료'},
+    {id:'A-3', text:'임건우 온보딩 33행 정리'},
+    {id:'A-5', text:'vacate-current 배포'},
+    {id:'A-1', text:'신규 이력서 3건 서류평가'},
+    {id:'A-6', text:'공고 수정안 감사 GO'},
+    {id:'A-2', text:'주차관리 공고 재개'},
+    {id:'A-4', text:'인사평가 저장'},
+    {id:'A-7', text:'중복 단계 제거 제안'},
+    {id:'A-1', text:'사진 추출·인사카드 연결'},
+    {id:'A-6', text:'정합성 점검'},
+    {id:'A-5', text:'리크루팅 페이지 배포'},
+    {id:'A-2', text:'2차 면접 일정 등록'}
+  ];
+  const tally={}; agents.forEach(a=>tally[a.id]=0);
+  let todayCount=0;
+  let nextSpawnAt=1.0;
+  const rand=(a,b)=>a+Math.random()*(b-a);
+
+  function assignOne(now){
+    const idle = POOL.filter(p=> byId[p.id] && byId[p.id].status==='idle');
+    if(!idle.length) return null;
+    const pick = idle[(Math.random()*idle.length)|0];
+    const c=byId[pick.id];
+    c.status='busy'; c.task=pick.text; c.tStart=now; c.tDur=rand(2.2,4.0); c.exprEnd=0;
+    // team lead assigns: gesture toward the agent
+    lead.lookTarget=c; lead.lookUntil=now+1.4; lead.nod=1; lead._nodStart=now;
+    setTicker(c.id, c.tag, c.task, '배정');
+    return c;
+  }
+  // === nextEvent(): swap body for a real autolog-list poll to go live ===
+  function nextEvent(now){
+    const first=assignOne(now);
+    if(first && Math.random()<0.32) assignOne(now); // occasionally two at once
+  }
+
+  function updateEvents(t){
+    if(t>=nextSpawnAt){ nextEvent(t); nextSpawnAt = t + rand(2.5,5.0); }
+    for(const c of agents){
+      if(c.status==='busy' && (t-c.tStart)>=c.tDur){
+        c.status='done'; c.tDone=t; c.nod=1; c._nodStart=t; c.exprEnd=0;
+        todayCount++; tally[c.id]++;
+        setTicker(c.id, c.tag, c.task, '완료');
+        flashChip(c.id);
+        document.getElementById('today').textContent=todayCount;
+        document.getElementById('cn-'+c.id).textContent=tally[c.id];
+      } else if(c.status==='done' && (t-c.tDone)>1.05){
+        c.status='idle'; c.task=''; c.nodAt=t+rand(2.5,6); c.exprEnd=0;
+      }
+    }
+    // idle micro-nods + 눈 깜빡임 스케줄 (blink micro-animation)
+    for(const c of chars){
+      if(c.status==='idle' && t>=c.nodAt){ c.nod=1; c._nodStart=t; c.nodAt=t+rand(3.5,8); }
+      if(c.nod>0){ const k=(t-(c._nodStart||t))/0.55; c.nod=Math.max(0,1-k); }
+      if(MOTION===1 && t>=(c.blinkAt||0)){ c._blinkT=t; c.blinkAt=t+rand(2.4,6.5); }
+    }
+    // varied behavior + facial-expression cycling (desynced per character)
+    for(const c of chars){ updateBehavior(c,t); updateExpression(c,t); }
+    if(lead.lookUntil && t>lead.lookUntil){ lead.lookTarget=null; lead.lookUntil=0; }
+  }
+  function updateExpression(c,t){
+    if(t < (c.exprEnd||0)) return;
+    let pool;
+    if(c.status==='busy') pool=['focus','focus','ponder'];
+    else if(c.status==='done') pool=['grin','content','grin','surprise'];
+    else pool=c.exprIdle||['calm','smile'];
+    let nx, guard=0; do{ nx=pool[(Math.random()*pool.length)|0]; guard++; }while(nx===c.expr && guard<3);
+    c.expr=nx; c.exprEnd=t + rand(1.6,3.6);
+  }
+
+  /* ---------- HUD wiring ---------- */
+  // the processing log now lives in the bottom '팀장 · Claude 브리핑' feed panel (#lf-lines)
+  const escHtml=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  const logFeed=[];                    // newest first, keep last 3
+  function renderFeed(){
+    const wrap=document.getElementById('lf-lines'); if(!wrap) return;
+    wrap.innerHTML='';
+    logFeed.forEach((e,i)=>{
+      const row=document.createElement('div');
+      const emph = i===0?'newest':(i===1?'dim':'dim2');
+      row.className='lf-row '+emph;
+      const kCls = e.kind==='완료'?'k-done':(e.kind==='브리핑'?'k-brief':'');
+      const sw = e.color? `<span class="sw" style="background:${e.color}"></span>` : '';
+      const ag = escHtml(e.id + (e.tag?' '+e.tag:''));
+      row.innerHTML = `<span class="t">${e.time}</span>`+
+        `<span class="ag">${sw}${ag}</span>`+
+        `<span class="msg">${escHtml(e.text)}</span>`+
+        `<span class="k ${kCls}">${escHtml(e.kind)}</span>`;
+      wrap.appendChild(row);
+    });
+  }
+  function pushLog(entry){ logFeed.unshift(entry); if(logFeed.length>3) logFeed.pop(); renderFeed(); }
+  function setTicker(id,tag,task,kind){
+    const color = byId[id]? byId[id].color : null;
+    pushLog({ time:new Date().toTimeString().slice(0,8), id:id, tag:tag, text:task, kind:kind, color:color });
+  }
+  function flashChip(id){ const el=document.getElementById('chip-'+id); if(!el)return; el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'),170); }
+  (function buildTally(){
+    const wrap=document.getElementById('tally');
+    for(const a of agents){
+      const chip=document.createElement('div'); chip.className='chip'; chip.id='chip-'+a.id;
+      chip.innerHTML=`<span class="sw" style="background:${a.color}"></span><span class="cid">${a.id}</span><span class="cn" id="cn-${a.id}">0</span>`;
+      wrap.appendChild(chip);
+    }
+  })();
+  // seed the feed with the lead's opening brief
+  pushLog({ time:new Date().toTimeString().slice(0,8), id:'팀장', tag:'', text:'오늘 업무 시작 · 에이전트에게 작업을 배정합니다', kind:'브리핑', color:null });
+  function updateClock(){ document.getElementById('clock').textContent=new Date().toTimeString().slice(0,8); }
+
+  /* ---------- reduced motion / visibility ---------- */
+  const mqReduce=window.matchMedia('(prefers-reduced-motion: reduce)');
+  let MOTION = mqReduce.matches?0:1;
+  try{ mqReduce.addEventListener('change', e=>{ MOTION=e.matches?0:1; }); }catch(_){ }
+
+  /* ---------- resize (devicePixelRatio) ---------- */
+  let W=0,H=0,dpr=1;
+  function resize(){
+    const wrap=canvas.parentElement;
+    const r=wrap.getBoundingClientRect();
+    W=Math.max(320, r.width); H=Math.max(420, r.height);
+    dpr=Math.min(2.5, window.devicePixelRatio||1);
+    canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr);
+    CAM=computeCamera(W,H);
+    LW=0.7/CAM.scale;
+  }
+  const ro=new ResizeObserver(resize); ro.observe(canvas.parentElement);
+
+  /* ---------- theme toggle ---------- */
+  document.getElementById('tgl').addEventListener('click', ()=>{
+    const now = currentTheme()==='light' ? 'dark' : 'light';
+    rootEl.setAttribute('data-theme', now);
+    P=PAL[now];
+    for(const k in _c) delete _c[k];
+  });
+
+  /* ---------- main loop ---------- */
+  let raf=null, lastClock=0;
+  function frame(ms){
+    const t=ms/1000;
+    // re-sync the canvas palette every frame: the artifact viewer stamps data-theme on :root from
+    // OUTSIDE this page (and the OS prefers-color-scheme can flip live) — without this, CSS vars and
+    // currentTheme() text repaint but the P-based scene (floor/walls/chars/furniture) would stay on
+    // the old theme (mixed-theme render). fc() cache keys are hex-based, so no cache clear is needed.
+    P=PAL[currentTheme()];
+    updateEvents(t);
+    CAM=computeCamera(W,H); LW=0.7/CAM.scale;
+
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=P.bg; ctx.fillRect(0,0,W,H);
+    const vg=ctx.createRadialGradient(W*0.5,H*0.40,H*0.18, W*0.5,H*0.5,H*0.95);
+    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1, currentTheme()==='light'?'rgba(90,70,30,.10)':'rgba(0,0,0,.36)');
+    ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+
+    ctx.save();
+    ctx.translate(CAM.offX,CAM.offY); ctx.scale(CAM.scale,CAM.scale);
+    ctx.lineJoin='round';
+    buildScene(t);
+    ctx.restore();
+
+    drawOverlays(t,W,H);
+
+    if(t-lastClock>0.25){ updateClock(); lastClock=t; }
+    raf=requestAnimationFrame(frame);
+  }
+  function start(){ if(!raf) raf=requestAnimationFrame(frame); }
+  function stop(){ if(raf){ cancelAnimationFrame(raf); raf=null; } }
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stop(); else start(); });
+
+  /* ================= CHRO 터미널 — 조회 전용 인터랙티브 명령창 =================
+     백엔드 미연결(외부 통신 없음): REAL_SCHEDULE 상수·에이전트 명단·시뮬 라이브 상태 등
+     페이지 안의 데이터만 조회. 이스터에그(호출/커피)는 기존 행동 엔진 API setBeh()만 호출(엔진 무수정). */
+  const termEl=document.getElementById('term');
+  const tOut=document.getElementById('term-out');
+  const tIn=document.getElementById('term-in');
+  const tGhost=document.getElementById('term-ghost');
+  const tTgl=document.getElementById('term-tgl');
+
+  // 월력 마크 상세 — 상단 REAL_SCHEDULE 빌드 주석과 동일 출처(빌드타임 실데이터, 재배포 시 갱신)
+  const TERM_IV=[]; const TERM_DL=[]; const TERM_OB=[];
+  const TERM_ROLES={
+    'LEAD':{name:'팀장 · Claude', desc:'오케스트레이터 — 요청 판별·에이전트 배정·결과 브리핑'},
+    'A-1':{name:'이력서담당자', desc:'이력서 PDF 추출 → 중복 판별 → AI 서류평가 → 지원자 등록 → 사진 연결'},
+    'A-2':{name:'채용담당자', desc:'면접 일정 등록·전형 단계 변경 (schedule-interview / set-stage)'},
+    'A-3':{name:'온보딩담당자', desc:'입사 확정·온보딩 등록·12주 체크인 관리'},
+    'A-4':{name:'평가담당자', desc:'인사평가 입력·평가지 렌더 (save-eval)'},
+    'A-5':{name:'배포담당자', desc:'GitHub Pages 커밋 + Apps Script 새 버전 배포'},
+    'A-6':{name:'감사자', desc:'확정·배포 직전 사실 검증 + 운영허브 자가점검(오류 능동 발견)'},
+    'A-7':{name:'효율담당자', desc:'중복·불필요 단계 제거 — 병렬·배치 최적화 + 회고 박제'}
+  };
+  const TERM_BEH_KO={rest:'휴식',coffee:'커피',stretch:'스트레칭',read:'서류 읽기',think:'생각 정리',mouse:'마우스 조작',glance:'두리번',swivel:'의자 회전',type:'타이핑',nod:'끄덕임'};
+  const TERM_ALIAS={
+    'help':'help','?':'help','도움말':'help',
+    '일정':'sched','오늘':'sched','today':'sched','schedule':'sched',
+    '면접':'iv','interview':'iv','interviews':'iv',
+    '마감':'dl','deadline':'dl','deadlines':'dl',
+    '온보딩':'ob','onboarding':'ob',
+    '팀원':'team','team':'team','명단':'team','members':'team',
+    '상태':'status','status':'status','현황':'status',
+    '급훈':'motto','motto':'motto',
+    '호출':'call','call':'call',
+    '커피':'coffee','coffee':'coffee',
+    'clear':'clear','cls':'clear','지우기':'clear'
+  };
+  const TERM_LEGEND={}; REAL_SCHEDULE.legend.forEach(l=>{ TERM_LEGEND[l.k]=l.label; });
+  const TERM_DAY={};
+  function rebuildTermDay(){
+    for(const k in TERM_DAY) delete TERM_DAY[k];
+    TERM_IV.forEach(it=>{ (TERM_DAY[it.day]=TERM_DAY[it.day]||[]).push('[면접] '+it.t+' '+it.s+(it.done?' [완료]':'')); });
+    TERM_DL.forEach(it=>{ (TERM_DAY[it.day]=TERM_DAY[it.day]||[]).push('[공고 마감] '+it.s); });
+    TERM_OB.forEach(it=>{ (TERM_DAY[it.day]=TERM_DAY[it.day]||[]).push('[온보딩] '+it.s+(it.flag?' (기한 임박)':'')); });
+  }
+
+  function tLine(text,cls){ const d=document.createElement('div'); d.className='tl'+(cls?' '+cls:''); d.textContent=text; tOut.appendChild(d); }
+  function tScroll(){ tOut.scrollTop=tOut.scrollHeight; }
+  function termNow(){ return performance.now()/1000; }   // rAF 타임스탬프와 동일 시간축 → 엔진 무수정 호출
+  function termAgentArg(arg){
+    const m=String(arg||'').trim().match(/^[Aa]\s*-?\s*([1-7])$/);
+    return m? 'A-'+m[1] : null;
+  }
+  function termLiveLine(c){
+    if(c.status==='busy') return '작업 중 — '+c.task;
+    if(c.status==='done') return '방금 완료 — '+c.task;
+    return '대기 ('+(TERM_BEH_KO[c.beh]||c.beh)+')';
+  }
+
+  const termCmds={
+    help:function(){
+      tLine('CHRO 터미널 — 조회 + CHRO 세션 실전송 (그 외 명령은 실제 CHRO에게 전달됩니다)','tl-h');
+      tLine('데이터 기준: '+REAL_SCHEDULE.asOf,'tl-mut');
+      tLine('  help · ? · 도움말     명령 목록');
+      tLine('  일정 · 오늘 · today   오늘 일정 보드');
+      tLine('  일정 7/15             해당 날짜 월력 마크');
+      tLine('  면접                  예정 면접 목록');
+      tLine('  마감                  공고 마감일 목록');
+      tLine('  온보딩                체크인·성찰 기한');
+      tLine('  팀원 [A-6]            팀 명단 / 에이전트 상세');
+      tLine('  상태 · status         시뮬 라이브 현황');
+      tLine('  급훈                  급훈');
+      tLine('  호출 A-3              에이전트 호출 (손 흔들기)');
+      tLine('  커피                  커피 타임');
+      tLine('  clear · cls           화면 지우기');
+      tLine('  (그 외 아무 문장)     CHRO 세션으로 전송 — 실제 실행·회신','tl-h');
+    },
+    sched:function(arg){
+      if(!arg){
+        tLine('오늘 일정 — '+REAL_SCHEDULE.todayLabel,'tl-h');
+        if(!REAL_SCHEDULE.today.length){ tLine('오늘 일정 없음','tl-mut'); return; }
+        REAL_SCHEDULE.today.forEach(r=>{ tLine('  '+r.t+'  '+r.s+(r.done?' [완료]':'')); });
+        return;
+      }
+      let mo=(new Date().getMonth()+1), d=null, m=arg.match(/^(\d{1,2})\s*[\/\-\.월]\s*(\d{1,2})\s*일?$/);
+      if(m){ mo=+m[1]; d=+m[2]; }
+      else { m=arg.match(/^(\d{1,2})\s*일?$/); if(m) d=+m[1]; }
+      if(d===null){ tLine('날짜 형식을 몰라요… 예: 일정 7/15','tl-err'); return; }
+      if(mo!==(new Date().getMonth()+1) || d<1 || d>REAL_SCHEDULE.days){ tLine(REAL_SCHEDULE.monthLabel+' 월력만 보유 중이에요 (데이터 기준: '+REAL_SCHEDULE.asOf+')','tl-mut'); return; }
+      const mk=REAL_SCHEDULE.marks[d];
+      const head=(new Date().getMonth()+1)+'/'+d+(d===REAL_SCHEDULE.todayDate?' [오늘]':'');
+      if(!mk||!mk.length){ tLine(head+' — 일정 없음','tl-mut'); return; }
+      tLine(head+' — '+mk.map(k=>TERM_LEGEND[k]||k).join(' · '),'tl-h');
+      (TERM_DAY[d]||[]).forEach(s=>tLine('  · '+s));
+    },
+    iv:function(){
+      tLine('예정 면접 (데이터 기준: '+REAL_SCHEDULE.asOf+')','tl-h');
+      TERM_IV.forEach(it=>{ tLine('  '+it.d+' '+it.t+'  '+it.s+(it.done?' [완료]':'')); });
+    },
+    dl:function(){
+      tLine('공고 마감일','tl-h');
+      TERM_DL.forEach(it=>{ tLine('  '+it.d+'  '+it.s); });
+    },
+    ob:function(){
+      tLine('온보딩 체크인·성찰 기한','tl-h');
+      TERM_OB.forEach(it=>{ tLine('  '+it.d+'  '+it.s+(it.done?' [완료]':(it.flag?' (기한 임박)':''))); });
+    },
+    team:function(arg){
+      if(arg){
+        const id=termAgentArg(arg);
+        if(!id){ tLine('팀원 상세는 A-1 ~ A-7 로 물어봐 주세요 (예: 팀원 A-6)','tl-err'); return; }
+        const r=TERM_ROLES[id], c=byId[id];
+        tLine(id+' '+r.name,'tl-h');
+        tLine('  역할: '+r.desc);
+        if(c) tLine('  지금: '+termLiveLine(c)+' · 오늘 '+(tally[id]||0)+'건','tl-mut');
+        return;
+      }
+      tLine('CHRO 인사팀 명단','tl-h');
+      tLine('  팀장  '+TERM_ROLES.LEAD.name+' — '+TERM_ROLES.LEAD.desc);
+      agents.forEach(a=>{ tLine('  '+a.id+'  '+TERM_ROLES[a.id].name+' ('+a.tag+')'); });
+    },
+    status:function(){
+      const busy=agents.filter(a=>a.status==='busy');
+      tLine('시뮬 현황 — 근무중 '+busy.length+'명 · 대기/완료 '+(agents.length-busy.length)+'명 · 오늘 처리 '+todayCount+'건','tl-h');
+      agents.forEach(a=>{ tLine('  '+a.id+' '+TERM_ROLES[a.id].name+' — '+termLiveLine(a)+' · 오늘 '+(tally[a.id]||0)+'건'); });
+    },
+    motto:function(){ tLine('매출! 긍정! 협동! 사랑!','tl-h'); },
+    call:function(arg){
+      const id=termAgentArg(arg);
+      if(!id){ tLine('호출 대상: A-1 ~ A-7 (예: 호출 A-3)','tl-err'); return; }
+      const c=byId[id], r=TERM_ROLES[id];
+      if(c.status==='busy'){ tLine(id+' '+r.name+' 작업 처리 중: '+c.task,'tl-mut'); return; }
+      setBeh(c,'stretch',termNow());               // 기존 행동 엔진 API — 두 팔 번쩍(손 흔들기)
+      tLine(id+' '+r.name+' 대기 중!','tl-h');
+      tLine('  → 자리에서 손을 번쩍 들어 인사합니다','tl-mut');
+    },
+    coffee:function(){
+      const idle=agents.filter(a=>a.status==='idle');
+      if(!idle.length){ tLine('지금은 모두 업무 중이라 커피 타임을 미뤘어요','tl-mut'); return; }
+      const c=idle[(Math.random()*idle.length)|0];
+      setBeh(c,'coffee',termNow());                // 기존 행동 엔진 API — 커피 한 모금
+      tLine(c.id+' '+TERM_ROLES[c.id].name+'가 커피를 한 모금 마십니다','tl-h');
+    },
+    clear:function(){ tOut.innerHTML=''; }
+  };
+
+  
+  /* ===== Pages판 전용: 백엔드 API + 실데이터 로더 + CHRO 세션 명령 전송(cmd-push/cmd-status @43) ===== */
+  const NOTION_FN='https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec';
+  let SESSION_PW='';
+  async function api(body){
+    const r=await fetch(NOTION_FN,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+    let d={}; try{ d=await r.json(); }catch(e){} d.__status=r.status; return d;
+  }
+  function fmtAsOf(d){ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+  async function loadRealData(){
+    const now=new Date(), y=now.getFullYear(), mo=now.getMonth();
+    const p=n=>String(n).padStart(2,'0');
+    REAL_SCHEDULE.monthLabel=y+'년 '+(mo+1)+'월';
+    REAL_SCHEDULE.firstDow=new Date(y,mo,1).getDay();
+    REAL_SCHEDULE.days=new Date(y,mo+1,0).getDate();
+    REAL_SCHEDULE.todayDate=now.getDate();
+    REAL_SCHEDULE.todayLabel=(mo+1)+'/'+now.getDate()+' ('+'일월화수목금토'[now.getDay()]+')';
+    let appl=[],onbo=[],hire=[];
+    try{
+      const rs=await Promise.all([api({db:'appl',password:SESSION_PW}),api({db:'onbo',password:SESSION_PW}),api({db:'hire',password:SESSION_PW})]);
+      appl=rs[0].results||[]; onbo=rs[1].results||[]; hire=rs[2].results||[];
+    }catch(e){ tLine('실데이터 로드 실패 — 새로고침 해주세요','tl-err'); tScroll(); return; }
+    const ACTIVE=['서류 검토','1차 면접','2차 면접','최종 합격','보류'];
+    TERM_IV.length=0; TERM_DL.length=0; TERM_OB.length=0;
+    for(const k in REAL_SCHEDULE.marks) delete REAL_SCHEDULE.marks[k];
+    REAL_SCHEDULE.today.length=0;
+    const md=d=>(d.getMonth()+1)+'/'+d.getDate();
+    const addMark=(d,k)=>{ if(d.getFullYear()===y&&d.getMonth()===mo){ const a=REAL_SCHEDULE.marks[d.getDate()]=REAL_SCHEDULE.marks[d.getDate()]||[]; if(a.indexOf(k)<0)a.push(k); } };
+    appl.forEach(r=>{
+      const st=r['전형 단계'], iv=r['면접 일정'];
+      if(!iv||ACTIVE.indexOf(st)<0) return;
+      const d=new Date(String(iv)); if(isNaN(d)) return;
+      if(d.getFullYear()!==y||d.getMonth()!==mo) return;
+      TERM_IV.push({day:d.getDate(), d:md(d), t:p(d.getHours())+':'+p(d.getMinutes()), s:(r['지원자명']||'')+' — '+(r['지원 포지션']||'')+' ('+st+')', done:d.getTime()<now.getTime()});
+      addMark(d,'iv');
+    });
+    hire.forEach(r=>{
+      if(r['채용 상태']!=='공고중') return;
+      const dl=r['공고 마감일']; if(!dl) return;
+      const d=new Date(String(dl).slice(0,10)+'T23:59'); if(isNaN(d)) return;
+      if(d.getFullYear()===y&&d.getMonth()===mo){ TERM_DL.push({day:d.getDate(), d:md(d), s:r['포지션명']||''}); addMark(d,'dl'); }
+    });
+    onbo.forEach(r=>{
+      if(String(r['완료 여부'])==='true') return;
+      const due=r['완료 기한']; if(!due) return;
+      const d=new Date(String(due).slice(0,10)+'T09:00'); if(isNaN(d)) return;
+      if(d.getFullYear()===y&&d.getMonth()===mo){ TERM_OB.push({day:d.getDate(), d:md(d), s:(r['대상 신입 직원']||'')+' '+(r['체크 항목']||''), flag:(d-now)<86400000*2}); addMark(d,'ob'); }
+    });
+    TERM_IV.sort((a,b)=>a.day-b.day); TERM_DL.sort((a,b)=>a.day-b.day); TERM_OB.sort((a,b)=>a.day-b.day);
+    TERM_IV.filter(it=>it.day===now.getDate()).forEach(it=>REAL_SCHEDULE.today.push({t:it.t,s:it.s,done:it.done,k:'iv'}));
+    TERM_OB.forEach(it=>{ const dd=it.day-now.getDate(); if(dd>=0&&dd<=1) REAL_SCHEDULE.today.push({t:dd===0?'D-DAY':'D-1',s:it.s+' ('+it.d+' 기한)',flag:true,k:'ob'}); });
+    TERM_DL.forEach(it=>{ const dd=it.day-now.getDate(); if(dd>=0&&dd<=7) REAL_SCHEDULE.today.push({t:'D-'+dd,s:it.s+' 공고 마감',flag:dd<=3,k:'dl'}); });
+    rebuildTermDay();
+    REAL_SCHEDULE.asOf=fmtAsOf(now)+' (실시간)';
+    const f=document.querySelector('.foot'); if(f) f.textContent='데이터 기준: '+REAL_SCHEDULE.asOf+' · 처리 로그 피드는 목업 시연(자동화 로그 연동 예정)';
+    tLine('실데이터 로드 완료 — 면접 '+TERM_IV.length+'건 · 공고 마감 '+TERM_DL.length+'건 · 온보딩 '+TERM_OB.length+'건','tl-mut'); tScroll();
+  }
+  async function termRemote(raw){
+    if(!SESSION_PW){ tLine('게이트 인증 후 이용할 수 있어요','tl-err'); tScroll(); return; }
+    tLine('→ CHRO 세션으로 전송 중…','tl-mut'); tScroll();
+    let res=null; try{ res=await api({action:'cmd-push',adminPassword:SESSION_PW,text:raw}); }catch(e){}
+    if(!res||!res.ok){ tLine('전송 실패: '+((res&&(res.message||res.error))||'네트워크 오류'),'tl-err'); tScroll(); return; }
+    const id=res.id;
+    tLine('→ 전송됨 (#'+id+') — CHRO 응답 대기…','tl-mut'); tScroll();
+    let waited=0, deliveredShown=false;
+    const iv=setInterval(async ()=>{
+      waited+=5;
+      let st=null; try{ st=await api({action:'cmd-status',adminPassword:SESSION_PW,id:id}); }catch(e){}
+      if(st&&st.ok){
+        if(st.status==='delivered'&&!deliveredShown){ deliveredShown=true; tLine('… CHRO가 수신했어요, 처리 중…','tl-mut'); tScroll(); }
+        if(st.status==='done'){
+          clearInterval(iv);
+          tLine('CHRO 응답 (#'+id+'):','tl-h');
+          String(st.result||'(빈 응답)').split('\n').forEach(l=>tLine('  '+l));
+          tScroll(); return;
+        }
+      }
+      if(waited>=300){ clearInterval(iv); tLine('응답 대기 시간 초과 — CHRO 세션이 꺼져 있을 수 있어요. 명령(#'+id+')은 큐에 저장됐고 다음 세션이 처리합니다.','tl-mut'); tScroll(); }
+    },5000);
+  }
+
+  function termExec(raw){
+    tLine('chro> '+raw,'tl-cmd');
+    const parts=raw.split(/\s+/);
+    const cmd=TERM_ALIAS[(parts[0]||'').toLowerCase()];
+    if(cmd && termCmds[cmd]) termCmds[cmd](parts.slice(1).join(' '));
+    else termRemote(raw);
+    tScroll();
+  }
+
+  const termHist=[]; let termHistIdx=0;
+  function termGhostSync(){ tGhost.style.display=(document.activeElement!==tIn && !tIn.value)?'':'none'; }
+  tIn.addEventListener('focus',termGhostSync);
+  tIn.addEventListener('blur',termGhostSync);
+  tIn.addEventListener('input',termGhostSync);
+  tIn.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){
+      const v=tIn.value.trim();
+      if(v){ termExec(v); termHist.push(v); termHistIdx=termHist.length; }
+      tIn.value=''; termGhostSync();
+    } else if(e.key==='ArrowUp'){
+      e.preventDefault();
+      if(termHistIdx>0){ termHistIdx--; tIn.value=termHist[termHistIdx]; tIn.setSelectionRange(tIn.value.length,tIn.value.length); }
+    } else if(e.key==='ArrowDown'){
+      e.preventDefault();
+      if(termHistIdx<termHist.length-1){ termHistIdx++; tIn.value=termHist[termHistIdx]; }
+      else { termHistIdx=termHist.length; tIn.value=''; }
+      tIn.setSelectionRange(tIn.value.length,tIn.value.length);
+    }
+  });
+  document.getElementById('term-line').addEventListener('mousedown',function(e){ if(e.target!==tIn){ e.preventDefault(); tIn.focus(); } });
+  tTgl.addEventListener('click',function(){
+    const closed=termEl.classList.toggle('closed');
+    tTgl.setAttribute('aria-expanded',String(!closed));
+    tTgl.textContent=closed?'▴':'▾';
+  });
+  tLine('CHRO 터미널 — 명령을 입력하면 실제 CHRO 세션으로 전송됩니다 · help','tl-mut');
+  termGhostSync();
+
+  /* ===== 게이트 (허브 index.html 패턴 — 비번은 소스에 없음, 입력값을 백엔드 검증) ===== */
+  const gateEl=document.getElementById('gate');
+  function showGateEl(){ gateEl.style.display='flex'; }
+  function hideGateEl(){ gateEl.style.display='none'; }
+  async function attemptGate(pw){
+    const errEl=document.getElementById('gateErr'), btn=document.getElementById('gateBtn');
+    if(!pw||!String(pw).trim()){ try{sessionStorage.removeItem('wp_hr_pw');}catch(e){} if(errEl)errEl.textContent='비밀번호를 입력해 주세요.'; showGateEl(); return; }
+    if(btn){btn.disabled=true;btn.textContent='확인 중…';}
+    if(errEl)errEl.textContent='';
+    let data=null, netErr=false;
+    try{ data=await api({db:'hire',password:pw}); }catch(e){ netErr=true; }
+    if(netErr||!data){ if(btn){btn.disabled=false;btn.textContent='입장';} if(errEl)errEl.textContent='서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.'; showGateEl(); return; }
+    const bad=(data.__status===401)||(data.error&&/unauthorized|권한|비밀번호/i.test(String(data.error)))||!data.role;
+    if(bad){ try{sessionStorage.removeItem('wp_hr_pw');}catch(e){} if(btn){btn.disabled=false;btn.textContent='입장';} if(errEl)errEl.textContent='비밀번호가 올바르지 않습니다.'; showGateEl(); return; }
+    SESSION_PW=pw;
+    try{sessionStorage.setItem('wp_hr_pw',pw);}catch(e){}
+    hideGateEl();
+    loadRealData();
+  }
+  document.getElementById('gateBtn').addEventListener('click',function(){ attemptGate(document.getElementById('gatePw').value); });
+  document.getElementById('gatePw').addEventListener('keydown',function(e){ if(e.key==='Enter') attemptGate(document.getElementById('gatePw').value); });
+  (function gateBoot(){
+    let sp=''; try{ sp=sessionStorage.getItem('wp_hr_pw')||''; }catch(e){}
+    if(sp){ hideGateEl(); attemptGate(sp); }
+    else { showGateEl(); try{ document.getElementById('gatePw').focus(); }catch(e){} }
+  })();
+
+  resize(); updateClock(); start();
+})();
+</script>
+
+</body>
+</html>
