@@ -850,24 +850,38 @@ async def run_publish(
     #    → '큐레이션_추천.md 누락' FileNotFoundError 즉사 재발방지(오늘 3회 실패 원인 #1).
     #      review_queue 의 caption 이 항상 채워지므로(register_publish) 누락 불가.
     md_path = content_folder / "큐레이션_추천.md"
+    posts: dict[str, PostSpec] = {}
     if md_path.exists():
-        posts = parse_curation_md(md_path)
-        print(f"[INFO] 입력 소스: 큐레이션_추천.md ({md_path.name})")
-    elif caption_file is not None and Path(caption_file).exists():
-        caption_text = Path(caption_file).read_text(encoding="utf-8")
-        posts = build_spec_from_caption(caption_text)
-        print(f"[INFO] 입력 소스: caption_file 단일화 (큐레이션 md 부재 → 큐 caption 합성, {len(caption_text)} chars)")
-    else:
-        print(
-            "[ERROR] 발행 입력 소스 없음 — 큐레이션_추천.md 도 caption_file 도 부재. "
-            "(review_queue.json 의 caption 또는 폴더의 큐레이션_추천.md 중 하나 필수)"
-        )
-        telegram_report(
-            f"⛔ AI CTO 인스타 publish 차단 — 입력 소스 부재\n"
-            f"폴더: {content_folder.name}\n"
-            f"사유: 큐레이션_추천.md·caption_file 모두 없음(누락 사전차단)"
-        )
-        sys.exit(5)
+        try:
+            posts = parse_curation_md(md_path)
+        except Exception as exc:
+            print(f"[WARN] 큐레이션_추천.md 파싱 실패({exc}) → 큐 caption 폴백")
+            posts = {}
+        if any(s in posts for s in POST_SLOTS):
+            print(f"[INFO] 입력 소스: 큐레이션_추천.md ({md_path.name})")
+        else:
+            # 큐레이션_추천.md 는 있으나 유효한 ## post 슬롯이 없음(악형식·# 제목형 등)
+            # → 죽지 말고 큐 caption 으로 폴백. (2026-07-08 재발방지: EP01 종합접수처가
+            #   '# 제목' 형식 md 로 파싱 0슬롯→발행실패, '게시 URL 미회수'로 오표기됐던 사고.
+            #   병목(발행기)에서 박아 모든 제작기 md 형식에 구조적으로 면역.)
+            print("[WARN] 큐레이션_추천.md 에 유효한 ## post 섹션 없음 → 큐 caption 폴백")
+            posts = {}
+    if not any(s in posts for s in POST_SLOTS):
+        if caption_file is not None and Path(caption_file).exists():
+            caption_text = Path(caption_file).read_text(encoding="utf-8")
+            posts = build_spec_from_caption(caption_text)
+            print(f"[INFO] 입력 소스: caption_file 단일화 (큐 caption 합성, {len(caption_text)} chars)")
+        else:
+            print(
+                "[ERROR] 발행 입력 소스 없음 — 큐레이션_추천.md(유효 슬롯) 도 caption_file 도 부재. "
+                "(review_queue.json 의 caption 또는 폴더의 큐레이션_추천.md 중 하나 필수)"
+            )
+            telegram_report(
+                f"⛔ AI CTO 인스타 publish 차단 — 입력 소스 부재\n"
+                f"폴더: {content_folder.name}\n"
+                f"사유: 큐레이션_추천.md(유효 슬롯)·caption_file 모두 없음(누락 사전차단)"
+            )
+            sys.exit(5)
     # 발행 대상 = 존재하는 슬롯(A/B/C 순). 단일 포스트(post A만)도 허용 (2026-05-29 시드 #09).
     present_slots = [s for s in POST_SLOTS if s in posts]
     if not present_slots:

@@ -1692,11 +1692,25 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     if decision == "approve":
         try:
+            # 발행엔진 출력을 로그로 남긴다(구 DEVNULL → 진단 사각 제거).
+            # 2026-07-08 재발방지: DEVNULL 로 버려 EP01 발행실패의 진짜 사유
+            # ('post 섹션 없음')가 '게시 URL 미회수'로 둔갑, 원인추적이 오래 걸린 사고.
+            _pub_log = WORKDIR / "logs" / "ig_publish_engine.log"
+            try:
+                _pub_log.parent.mkdir(parents=True, exist_ok=True)
+                _pub_out = open(_pub_log, "a", encoding="utf-8", buffering=1)
+                _pub_out.write(
+                    f"\n===== {time.strftime('%Y-%m-%d %H:%M:%S')} "
+                    f"publish --once ids={item_ids} =====\n"
+                )
+                _pub_out.flush()
+            except Exception:
+                _pub_out = asyncio.subprocess.DEVNULL  # 로그 열기 실패 시 안전 폴백
             await asyncio.create_subprocess_exec(
                 str(_VENV_PY), "-u", str(_PUBLISH_ENGINE), "--once",
                 cwd=str(WORKDIR),
-                stdout=asyncio.subprocess.DEVNULL,
-                stderr=asyncio.subprocess.DEVNULL,
+                stdout=_pub_out,
+                stderr=asyncio.subprocess.STDOUT,
                 env=dict(os.environ, PYTHONIOENCODING="utf-8",
                          TELEGRAM_BOT_TOKEN=(TOKEN or "")),
             )
