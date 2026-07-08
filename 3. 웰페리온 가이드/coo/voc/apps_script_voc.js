@@ -51,7 +51,7 @@ var REG_COMMON_HEADERS = [
   { key: 'createdAt', label: '접수일시' },
   { key: 'name',      label: '이름'     },
   { key: 'contact',   label: '연락처'   },
-  { key: 'loc',       label: '위치'     },
+  { key: 'loc',       label: '장소'     },
   { key: 'content',   label: '내용'     },
   { key: 'photoUrl',  label: '사진URL'  },
   { key: 'status',    label: '상태'     },
@@ -347,7 +347,7 @@ function _regComputeSla(row) {
 
 // ─── 종합 접수처 라벨→키 별칭 (시트 실헤더 라벨 드리프트 흡수 · SSOT) ───
 // 시트 1행 실제 라벨이 REG_COMMON/EXTRA_HEADERS 정의 라벨과 다른 경우(예: 분실물 탭)를 흡수.
-var REG_LABEL_ALIASES = { '분실위치': 'loc', '물품상세': 'content' };
+var REG_LABEL_ALIASES = { '분실위치': 'loc', '위치': 'loc', '물품상세': 'content' };   // '위치'·'분실위치' = loc 구헤더 하위호환(장소 rename 전/후 모두 정독). '장소'는 REG_COMMON_HEADERS 정의라 자동 매핑.
 
 // ─── 종합 접수처 시트 → 객체 배열 (헤더-이름 기준 매핑 · 컬럼 물리삭제/순서변경에 안전) ───
 // headers({key,label}[])로 라벨→키 맵을 만들고, 시트 1행 실제 헤더 라벨로 각 열의 키를 찾는다.
@@ -962,6 +962,29 @@ function _regCleanColumns() {
   return _vJson({ ok: true, result: result, message: '시트 컬럼 정리 완료' });
 }
 
+// ─── rename_loc_header — loc 헤더셀 '위치'/'분실위치' → '장소' 통일 (GATED·일회성) ───
+// 폼 라벨(장소)과 시트 헤더 문구를 일치시킴. 헤더셀 텍스트만 교체 — 쓰기는 인덱스기반이라 무영향,
+// 읽기는 REG_COMMON_HEADERS('장소') + alias('위치'/'분실위치'→loc)로 rename 전/후 모두 정독. 2026-07-08 시우.
+function _regRenameLocHeader() {
+  var OLD_LOC_LABELS = { '위치': true, '분실위치': true };
+  var result = [];
+  REG_CATEGORIES.forEach(function (cat) {
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { return; }
+    var lastCol = sh.getLastColumn();
+    if (lastCol < 1) { result.push({ sheet: cat.sheet, renamed: 0 }); return; }
+    var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+    var renamedFrom = [];
+    for (var i = 0; i < hdr.length; i++) {
+      var label = String(hdr[i] == null ? '' : hdr[i]).trim();
+      if (OLD_LOC_LABELS[label]) { sh.getRange(1, i + 1).setValue('장소'); renamedFrom.push(label); }
+    }
+    result.push({ sheet: cat.sheet, renamed: renamedFrom.length, from: renamedFrom });
+  });
+  try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
+  return _vJson({ ok: true, result: result, message: 'loc 헤더 → 장소 통일 완료' });
+}
+
 // ═══════════════════════════════════════════
 //  접근 게이트 (PII 보호 — TOKEN_ENFORCE 스위치)
 // ═══════════════════════════════════════════
@@ -1043,6 +1066,8 @@ function _vProcess(action, body, params) {
   }
   // 쓰기(잔재/빈 컬럼 삭제) · 일회성 · GATED(공개 액션 아님). 2026-07-08 시우.
   if (action === 'clean_reg_columns') return _regCleanColumns();
+  // loc 헤더 '위치'/'분실위치' → '장소' 통일(폼 라벨과 시트 헤더 문구 일치). 쓰기 무영향(인덱스기반). 일회성. 2026-07-08 시우.
+  if (action === 'rename_loc_header') return _regRenameLocHeader();
 
   // ── 종합 접수처 액션 ──
   if (action === 'reg_submit') return _regSubmit(body);
