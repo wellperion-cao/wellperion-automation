@@ -85,9 +85,11 @@ AUTO_EXEC_ENV = "GM_AIDE_AUTO_EXEC"
 AUTO_EXEC_ON_VALUES = {"1", "true", "on", "yes"}
 MAX_AUTO_ACTIONS_PER_RUN = 5   # 가역 자율실행 폭주 방지 cap
 
-# ── 자율 틈 감지기(배237(b)) 신규 자율레인 게이트 (독립·기본 OFF) ──
+# ── 자율 틈 감지기(배237(b)) 재개가능 auto 전용 게이트 (독립·기본 OFF) ──
+# ★반반 구성(GM 결정 2026-07-08): 이 게이트는 '재개가능'(resumable) auto 레인만 제어.
+#   '정체'(stalled)는 surface-only(자율 write 0) → 어떤 게이트로도 실행 안 됨. .bat 에는 이 게이트만 추가.
 # ★안전: 기존 GM_AIDE_AUTO_EXEC 와 절대 공유 금지 — 별도 env 별도 체크(라이브 발효=별도 GM go).
-STALL_APPLY_ENV = "AIDE_STALL_APPLY"
+RESUMABLE_APPLY_ENV = "AIDE_RESUMABLE_APPLY"
 
 # ── 정비 액션 5종(2026-07-04 추가) 조건 임계값 — 전부 '실제 문제 있을 때만' 게이트 ──
 STALE_HOURS_ERP = 6   # erp_status.json generated_at 이 이만큼 지나면 재발행 대상
@@ -803,13 +805,14 @@ def apply_auto_actions(actions: list, archive: list) -> int:
 
 
 # ═══════════════════════════════════════════
-#  자율 틈 감지기(배237(b)) 통합 레인 (US-004)
-#  ★신규 자율 write = 독립 게이트 AIDE_STALL_APPLY 뒤에서만.
+#  자율 틈 감지기(배237(b)) 반반 레인 (US-004 · GM 결정 2026-07-08)
+#  ★재개가능(resumable) 자율 write = 독립 게이트 AIDE_RESUMABLE_APPLY 뒤에서만.
+#  ★정체(stalled) = surface-only — 자율 write 0(태그·nudge·의존해소·제안 배 전부 금지). 정보 표시만.
 #   기존 GM_AIDE_AUTO_EXEC 와 무관(별도 env·별도 체크). 캡 MAX_AUTO_ACTIONS_PER_RUN 공유.
 # ═══════════════════════════════════════════
-def stall_apply_enabled() -> bool:
-    """자율 틈 감지기 신규 자율레인 라이브 여부. AIDE_STALL_APPLY=1 일 때만 ON(기본 OFF)."""
-    return os.environ.get(STALL_APPLY_ENV, "").strip().lower() in AUTO_EXEC_ON_VALUES
+def resumable_apply_enabled() -> bool:
+    """재개가능 auto 레인 라이브 여부. AIDE_RESUMABLE_APPLY=1 일 때만 ON(기본 OFF)."""
+    return os.environ.get(RESUMABLE_APPLY_ENV, "").strip().lower() in AUTO_EXEC_ON_VALUES
 
 
 def _gap_to_capture(gap: dict) -> dict:
@@ -829,41 +832,39 @@ def _gap_to_capture(gap: dict) -> dict:
     )
 
 
-def _apply_gap_auto(auto_gaps: list) -> int:
-    """AIDE_STALL_APPLY ON 전용: read-before-write 재로드 후 가역 태그/nudge/의존해소 적용.
-    각 조치를 기존 log_auto_exec → gm_observation_ledger auto_exec 채널로 사유+되돌리기근거 적재.
+def _apply_gap_auto(resumable_gaps: list) -> int:
+    """AIDE_RESUMABLE_APPLY ON 전용 · 재개가능(resumable) gap 만: read-before-write 재로드 후
+    가역 태그(resumable)+담당 재촉(nudge)+구조적 의존 해소 적용(GM 결정 2026-07-08).
+    ★정체(stalled)는 이 함수에 절대 도달 안 함(split_lanes 하드 분리) — 방어적으로 kind 확인.
+    각 조치를 log_auto_exec → gm_observation_ledger auto_exec 채널로 사유+되돌리기근거 적재.
     캡 MAX_AUTO_ACTIONS_PER_RUN(기존 자율레인과 공유). 멱등."""
     fresh = read_json(QUEUE_ACTIVE, [])
     by_tid = {_ship_id(x): x for x in fresh}
     by_sn = {x.get("ship_no"): x for x in fresh if isinstance(x.get("ship_no"), int)}
     applied = 0
     dirty = False
-    for g in auto_gaps[:MAX_AUTO_ACTIONS_PER_RUN]:
+    for g in resumable_gaps[:MAX_AUTO_ACTIONS_PER_RUN]:
+        if g.get("kind") != "resumable":
+            continue  # 방어 — 정체(stalled) surface-only 는 여기서 절대 write 안 함
         ship = by_tid.get(g.get("task_id")) or by_sn.get(g.get("ship_no"))
         if not ship:
             continue
         target = g.get("task_id") or str(g.get("ship_no") or "?")
         did = False
-        if g["kind"] == "stalled":
-            if auto_actions.apply_tag(ship, "stall"):
-                log_auto_exec("stall_tag", target, "aide_flags:no-stall", "aide_flags+=stall",
-                              restore_hint=f"원복=ship['aide_flags']에서 'stall' 제거 · 사유={g['reason']}")
-                did = True
-            if auto_actions.set_nudge(ship, g["clevel"]):
-                log_auto_exec("nudge", target, "aide_nudge:none", f"aide_nudge={g['clevel']}",
-                              restore_hint=f"원복=ship['aide_nudge'] 삭제 · 담당 {g['clevel']} 촉구")
-                did = True
-        elif g["kind"] == "resumable":
-            if auto_actions.apply_tag(ship, "resumable"):
-                log_auto_exec("resumable_tag", target, "aide_flags:no-resumable", "aide_flags+=resumable",
-                              restore_hint=f"원복=ship['aide_flags']에서 'resumable' 제거 · 사유={g['reason']}")
-                did = True
-            old_dep = ship.get("depends_on")
-            if auto_actions.resolve_structural_depends(ship):
-                log_auto_exec("depends_resolved", target, f"depends_on={old_dep!r}",
-                              "depends_on→depends_on_resolved 이전(원문 보존)",
-                              restore_hint="원복=depends_on_resolved 값을 depends_on 으로 되돌림")
-                did = True
+        if auto_actions.apply_tag(ship, "resumable"):
+            log_auto_exec("resumable_tag", target, "aide_flags:no-resumable", "aide_flags+=resumable",
+                          restore_hint=f"원복=ship['aide_flags']에서 'resumable' 제거 · 사유={g['reason']}")
+            did = True
+        if auto_actions.set_nudge(ship, g["clevel"]):
+            log_auto_exec("nudge", target, "aide_nudge:none", f"aide_nudge={g['clevel']}",
+                          restore_hint=f"원복=ship['aide_nudge'] 삭제 · 담당 {g['clevel']} 재촉(재개 가능)")
+            did = True
+        old_dep = ship.get("depends_on")
+        if auto_actions.resolve_structural_depends(ship):
+            log_auto_exec("depends_resolved", target, f"depends_on={old_dep!r}",
+                          "depends_on→depends_on_resolved 이전(원문 보존)",
+                          restore_hint="원복=depends_on_resolved 값을 depends_on 으로 되돌림")
+            did = True
         if did:
             applied += 1
             dirty = True
@@ -892,29 +893,51 @@ def _register_gap_proposals(propose_gaps: list, kpi: dict, ns_map: dict,
     return added
 
 
+def _stall_surface_item(g: dict) -> dict:
+    """정체 surface-only 정보 항목(보드/스캔로그용 · 자율 write 아님)."""
+    return {
+        "ship_no": g.get("ship_no"),
+        "task_id": g.get("task_id"),
+        "clevel": g.get("clevel"),
+        "priority": g.get("priority"),
+        "days_idle": g.get("days_idle"),
+        "threshold": g.get("threshold"),
+        "last_activity": g.get("last_activity"),
+        "reason": g.get("reason"),
+    }
+
+
 def run_gap_detector(active: list, commit: bool, kpi: dict, ns_map: dict,
                      profile_hints: list, archive: list) -> dict:
-    """자율 틈 감지기 파이프라인: 감지 → route → auto(AIDE_STALL_APPLY 뒤)/propose."""
+    """자율 틈 감지기(배237(b)) 반반 라우팅(GM 결정 2026-07-08):
+      - 재개가능(resumable) → auto 레인(AIDE_RESUMABLE_APPLY 게이트 뒤 · 태그+nudge+의존해소).
+      - 정체(stalled)      → surface-only: 자율 write 0. 감지 목록만 산출(스캔로그/보드 정보 표시용).
+      - 그 외              → propose(제안 배 폴백)."""
     gaps = stall_watch.detect_stalled(active, TODAY) + stall_watch.detect_resumable(active)
-    auto_gaps = [g for g in gaps if reversibility.route(g) == "auto"]
-    propose_gaps = [g for g in gaps if reversibility.route(g) == "propose"]
-    apply_on = stall_apply_enabled()
+    resumable_auto, stall_surface, propose_gaps = reversibility.split_lanes(gaps)
+    apply_on = resumable_apply_enabled()
     switch = "🟢 라이브(ON)" if apply_on else "🌙 휴면(OFF·dry-run)"
-    print(f"\n[gap] 자율 틈 감지기(배237(b)) — {switch} · 틈 {len(gaps)}건 "
-          f"(auto {len(auto_gaps)} · propose {len(propose_gaps)})")
+    print(f"\n[gap] 자율 틈 감지기(배237(b) 반반) — 재개가능 auto {switch} · 틈 {len(gaps)}건 "
+          f"(재개가능 {len(resumable_auto)} · 정체 surface {len(stall_surface)} · 제안 {len(propose_gaps)})")
     for g in gaps:
         print(f"  [{g['kind']}] #{g.get('ship_no')} {g.get('task_id')} — {g['reason'][:70]}")
 
-    result = {"gap_detected": len(gaps), "gap_auto": len(auto_gaps),
-              "gap_propose": len(propose_gaps), "stall_apply_on": apply_on,
-              "gap_auto_applied": 0, "gap_proposed": 0}
+    stall_list = [_stall_surface_item(g) for g in stall_surface]
+    result = {"gap_detected": len(gaps), "gap_auto": len(resumable_auto),
+              "gap_stall": len(stall_surface), "gap_propose": len(propose_gaps),
+              "resumable_apply_on": apply_on,
+              "gap_auto_applied": 0, "gap_proposed": 0,
+              "gap_stall_list": stall_list}
 
-    if auto_gaps and apply_on:
-        result["gap_auto_applied"] = _apply_gap_auto(auto_gaps)
-        print(f"  ✅ 가역 자율 조치 {result['gap_auto_applied']}건 적용(태그·nudge·의존해소 + 원장 auto_exec).")
-    elif auto_gaps:
-        for g in auto_gaps[:MAX_AUTO_ACTIONS_PER_RUN]:
-            print(f"  [dry-run] 자율 조치 예정: {g['kind']} #{g.get('ship_no')} ({STALL_APPLY_ENV} OFF·변경 0)")
+    if resumable_auto and apply_on:
+        result["gap_auto_applied"] = _apply_gap_auto(resumable_auto)
+        print(f"  ✅ 재개가능 자율 조치 {result['gap_auto_applied']}건 적용(태그·nudge·의존해소 + 원장 auto_exec).")
+    elif resumable_auto:
+        for g in resumable_auto[:MAX_AUTO_ACTIONS_PER_RUN]:
+            print(f"  [dry-run] 재개가능 자율 조치 예정: #{g.get('ship_no')} ({RESUMABLE_APPLY_ENV} OFF·변경 0)")
+
+    if stall_surface:
+        print(f"  ⏳ 정체 의심 {len(stall_surface)}건 — surface-only(자율 write 0·자율현황/보드 정보 표시만·오탐 소지).")
 
     if propose_gaps and commit:
         result["gap_proposed"] = _register_gap_proposals(propose_gaps, kpi, ns_map, profile_hints, archive)
@@ -1042,12 +1065,14 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         auto_exec_on=auto_on,
         auto_applied=auto_applied,
         profile_hints_used=profile_hints,
-        # 자율 틈 감지기(배237(b) US-005) — 자율현황 "자율 처리 비율" 집계용 배선.
+        # 자율 틈 감지기(배237(b) 반반) — 자율현황 집계·정체 정보패널 배선.
         gap_auto=gap_result["gap_auto"],
+        gap_stall=gap_result["gap_stall"],
         gap_propose=gap_result["gap_propose"],
         gap_auto_applied=gap_result["gap_auto_applied"],
         gap_proposed=gap_result["gap_proposed"],
-        stall_apply_on=gap_result["stall_apply_on"],
+        resumable_apply_on=gap_result["resumable_apply_on"],
+        gap_stall_list=gap_result["gap_stall_list"],  # 정체 surface-only 목록(보드 정보 표시용)
     )
     print(f"[완료] ({now_str()}) — 스캔 로그: {SCAN_LOG.name}")
     return result

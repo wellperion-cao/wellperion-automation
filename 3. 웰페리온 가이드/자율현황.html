@@ -50,6 +50,19 @@
   .honest-note .hn-txt{font-size:11.5px; color:var(--dim); line-height:1.55;}
   .honest-note .hn-txt b{color:var(--text-soft); font-weight:700;}
 
+  /* ── ⏳ 정체 의심 배 surface-only 정보 패널(배237(b) 반반 · 자율 write 아님) ── */
+  .stall-panel{margin:2px 0 18px; padding:11px 14px; border:1px solid var(--border-strong); border-left:3px solid var(--gold); border-radius:9px; background:var(--surface);}
+  .stall-panel .stall-head{font-size:13px; font-weight:800; color:var(--text); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .stall-panel .stall-head b{color:var(--gold);}
+  .stall-panel .stall-badge{font-size:10px; font-weight:700; color:var(--dim); border:1px solid var(--border-strong); border-radius:20px; padding:2px 9px;}
+  .stall-panel .stall-note{font-size:11px; color:var(--dim); line-height:1.55; margin:6px 0 9px;}
+  .stall-panel .stall-note b{color:var(--text-soft); font-weight:700;}
+  .stall-panel .stall-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:11.5px; padding:6px 8px; border-top:1px solid var(--border); color:var(--text-soft);}
+  .stall-panel .stall-row .stall-ship{font-weight:700; color:var(--text); min-width:56px;}
+  .stall-panel .stall-row .stall-tid{flex:1 1 200px; color:var(--text-soft); word-break:break-all;}
+  .stall-panel .stall-row .stall-owner{color:var(--accent-soft); min-width:44px;}
+  .stall-panel .stall-row .stall-idle{color:var(--gold); font-weight:600; white-space:nowrap;}
+
   /* ── 2층 골격: ① 자율로 한 일 / ② 돌아가는 자동화 (배237) ── */
   h2.layer-h2{font-size:17px; font-weight:800; letter-spacing:-0.01em; margin:8px 0 4px; padding-bottom:8px; border-bottom:2px solid var(--border-strong);}
   #layer-autonomy{margin-top:6px;}
@@ -356,6 +369,9 @@
     <span class="hn-ico">ℹ️</span>
     <div class="hn-txt">지금 자율은 주로 <b>포착·제안·감시</b> 단계입니다. 가역 작업만 자율 실행하고, 비가역은 GM 승인 후 실행합니다. 완료 배에 '다음'이 항상 채워져 표류가 없어 자율실행(phase2)은 대기 상태(정상)입니다.</div>
   </div>
+
+  <!-- ════ ⏳ 정체 의심 배 — surface-only 정보 패널(배237(b) 반반 · 자율 write 아님) ════ -->
+  <div id="stall-suspect"></div>
 
   <!-- ════ 섹션 1 · 이 루프를 돌리는 자율 기계(라이브) ════ -->
   <h2 class="sec" id="sec-routines">🔴 상시 자율 체계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프를 굴리는 라이브 엔진 · 4층 중 ②③④ 실체)</span></h2>
@@ -1249,22 +1265,24 @@
       }
     })();
 
-    // 6) 자율 틈 감지기(배237(b)) 자율 처리율 — auto/(auto+propose), scan_log 누적(gap_auto_applied/gap_proposed)
+    // 6) 자율 틈 감지기(배237(b) 반반) 재개가능 자율 처리율 — auto/(auto+propose), scan_log 누적.
+    //    정체(stalled)는 surface-only(자율 write 0)라 이 분모에 안 들어감 — 아래 ⏳ 정체 의심 패널로만 표시.
     (function(){
-      var autoN = 0, proposeN = 0;
+      var autoN = 0, proposeN = 0, stallN = 0;
       (d.scanLog || []).forEach(function(s){
         autoN += (s.gap_auto_applied | 0);
         proposeN += (s.gap_proposed | 0);
+        stallN += (s.gap_stall | 0);
       });
       var total = autoN + proposeN;
       if(total){
         var pct = Math.round(autoN / total * 100);
-        cards.push('<div class="scard" style="--sc:var(--pink)"><div class="sh">🔀 틈 감지기 자율 처리율</div>' +
+        cards.push('<div class="scard" style="--sc:var(--pink)"><div class="sh">🔀 틈 감지기 재개가능 처리율</div>' +
           '<div class="sbig">' + pct + '<small>%</small></div>' +
           '<div class="sbar"><i style="width:' + pct + '%"></i></div>' +
-          '<div class="ssub">자율 처리 <b>' + autoN + '</b> / (자율 <b>' + autoN + '</b> + 제안 <b>' + proposeN + '</b>) — 정체·재개가능 감지 결과(gm_aide_scan_log 누적)</div></div>');
+          '<div class="ssub">자율 처리 <b>' + autoN + '</b> / (자율 <b>' + autoN + '</b> + 제안 <b>' + proposeN + '</b>) — 재개가능 감지 결과(gm_aide_scan_log 누적). 정체는 surface-only(자율 처리 제외).</div></div>');
       } else {
-        cards.push('<div class="scard unmeasured"><div class="sh">🔀 틈 감지기 자율 처리율</div><div class="sbig">미측정</div><div class="ssub">자율 틈 감지기 처리 이력 없음(신규 게이트 AIDE_STALL_APPLY OFF 또는 아직 미포착).</div></div>');
+        cards.push('<div class="scard unmeasured"><div class="sh">🔀 틈 감지기 재개가능 처리율</div><div class="sbig">미측정</div><div class="ssub">재개가능 자율 처리 이력 없음(게이트 AIDE_RESUMABLE_APPLY OFF 또는 아직 미포착). 정체 surface-only 감지는 아래 ⏳ 정체 의심 패널 참조.</div></div>');
       }
     })();
 
@@ -1291,6 +1309,40 @@
     })();
 
     el.innerHTML = cards.join('');
+  }
+
+  // ═══════════ ⏳ 정체 의심 배 — surface-only 정보 패널(배237(b) 반반 · 자율 write 아님) ═══════════
+  // 정체(며칠 무활동) 감지는 note 날짜 시차로 오탐 소지 → 자율 처리 안 함(GM 결정 2026-07-08).
+  // 최신 gm_aide_scan_log 회차의 gap_stall_list(감지 목록)만 정보로 표시. 개별 배 _queue mutation 0.
+  var ROLE_NICK = { ceo:'웰리', cfo:'시뽀', chro:'시로', cmo:'시모', coo:'시우', cpo:'시포', cto:'시토' };
+  function renderStallSuspect(d){
+    var el = document.getElementById('stall-suspect');
+    if(!el) return;
+    // 최신 회차 중 gap_stall_list 필드가 있는 마지막 스캔 로그
+    var list = null;
+    for(var i = (d.scanLog || []).length - 1; i >= 0; i--){
+      if(Array.isArray(d.scanLog[i].gap_stall_list)){ list = d.scanLog[i].gap_stall_list; break; }
+    }
+    if(!list || !list.length){ el.innerHTML = ''; return; }  // 정체 의심 없음 → 패널 숨김
+    var rows = list.map(function(g){
+      var nick = ROLE_NICK[g.clevel] || esc(g.clevel || '—');
+      var idle = (g.days_idle != null) ? (g.days_idle + '일') : '—';
+      var thr = (g.threshold != null) ? ('임계 ' + g.threshold + '일') : '';
+      return '<div class="stall-row">' +
+        '<span class="stall-ship">🚢 #' + esc(String(g.ship_no != null ? g.ship_no : '?')) + '</span>' +
+        '<span class="stall-tid">' + esc(g.task_id || '') + '</span>' +
+        '<span class="stall-owner">' + nick + '</span>' +
+        '<span class="stall-idle">⏳ ' + esc(idle) + (thr ? ' <span style="color:var(--dim)">(' + esc(thr) + ')</span>' : '') + '</span>' +
+        '</div>';
+    }).join('');
+    el.innerHTML =
+      '<div class="stall-panel">' +
+        '<div class="stall-head">⏳ 정체 의심 배 <b>' + list.length + '</b>척 ' +
+          '<span class="stall-badge">정보 표시 · 자율 처리 아님</span></div>' +
+        '<div class="stall-note">며칠 무활동으로 <b>의심</b>되는 진행중 배입니다. 메모 날짜 시차로 <b>오탐 소지</b>가 있어(자기오탐 실측), ' +
+          '자율 태그·재촉·큐 변경은 하지 않고 <b>정보로만</b> 표시합니다(GM 결정 2026-07-08 반반 구성). 실제 상태는 담당 확인 필요.</div>' +
+        rows +
+      '</div>';
   }
 
   // ═══════════ ② 돌아가는 자동화: 🖥️ 시스템 현황 (구 T2 이식 · renderErpStatus) ═══════════
@@ -1425,6 +1477,7 @@
     try{ renderCpoLiveStrip(a[11]); }catch(e){ /* 조용히 실패 — 초기 "–" 유지(가짜 수치 금지) */ }
     try{ renderFeed(feedItems); }catch(e){ document.getElementById('feed').innerHTML = '<div class="feed-status">처리 이력 표시 오류.</div>'; }
     try{ renderStats(d, feedItems); }catch(e){ document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">성과 지표 계산 오류.</div>'; }
+    try{ renderStallSuspect(d); }catch(e){ /* 조용히 실패 — 정보 패널이라 없으면 숨김(가짜 표시 금지) */ }
     try{ renderErpStatus(erpStatus); }catch(e){ document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">시스템 현황 표시 오류.</span>'; }
     try{ renderAutomationHealth(erpStatus); }catch(e){ document.getElementById('erp-ah-headline').innerHTML = '<span style="color:var(--dim);">건강 점수판 표시 오류.</span>'; }
     var fl = document.getElementById('foot-loaded');
