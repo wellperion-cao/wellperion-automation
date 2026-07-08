@@ -548,6 +548,7 @@ function doGet(e) {
   if (action === 'hide_facility_issue_cols') { return hideFacilityIssueCols(); }   // 시설_공용구역 G·H열(이슈·노하우) 숨김 — 신규 생성분은 _createCheckSheet가 자동 처리, 기존분은 1회 실행. 2026-07-08 시우.
   if (action === 'clear_old_duration') { return clearOldDuration(e.parameter.dept || 'support'); }   // O열(소요시간·인덱스14) 옛 시각값(1899-12-30 시리얼) 비우기. 컬럼 숨김 X — 소요시간은 화면 표시 유지. 1회성. 2026-06-20 시우.
   if (action === 'reset_facility_common') { return resetFacilityCommon(); }   // 시설_공용구역 옛 데이터 백업 후 데이터행 비움(헤더 보존). 1회성. 2026-07-06 시우.
+  if (action === 'normalize_facility_rounds') { return normalizeFacilityRounds(); }   // 회차 통합(2026-07-08): 시설_공용구역 비-'1일' 회차(오픈/오전조/오후조/마감조/야간/측정 등 옛 캐시 프론트 잔재)를 '1일'로 재라벨 → (날짜,항목ID)별 측정값 있는 행 우선 병합. 측정 데이터 보존. 백업탭 먼저 생성. 1회성. 2026-07-08 시우.
   if (action === 'restore_facility_backup') { return restoreFacilityFromBackup(e.parameter.bak, e.parameter.date); }   // 백업탭에서 특정날짜 행만 복원(제출시각 최신·소요시간 정정). 1회성. 2026-07-06 시우.
   if (action === 'count_backup_date') {   // 읽기전용 진단: 백업탭 내 특정 날짜 원본 행수(복원 전 확인용). 1회성. 2026-07-06 시우.
     var _cbSs = SpreadsheetApp.getActiveSpreadsheet();
@@ -998,6 +999,46 @@ function restoreFacilityFromBackup(bakName, date){
   var rows=Object.keys(pick).map(function(k){ return pick[k].row; });
   if(rows.length){ tgt.getRange(tgt.getLastRow()+1,1,rows.length,HEADERS.length).setValues(rows); _sortByDateDesc(tgt); }
   return jsonRes({ok:true, restored:rows.length, from:bakName, date:date});
+}
+
+// 회차 통합(2026-07-08 시우·GM): 시설_공용구역 비-'1일' 회차행(옛 캐시 프론트가 '오픈'/'오전조' 등으로 남긴 잔재)을
+// '1일'로 재라벨 후 (날짜,항목ID)별로 병합 — 측정값 있는 행 우선, 동률이면 제출시각(col9) 최신. 측정 데이터 손실 0.
+// 안전: ① 백업탭 먼저 생성 ② 헤더 보존 ③ facility 전용 탭만 접촉(지원부 무관). GET ?action=normalize_facility_rounds
+function normalizeFacilityRounds() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(SHEET_FACILITY_COMMON);
+  if (!sh) return jsonRes({ ok:false, error:'시설_공용구역 없음' });
+  _ensureHeaders(sh);
+  var vals = sh.getDataRange().getValues();
+  if (vals.length < 2) return jsonRes({ ok:true, relabeled:0, merged:0, note:'데이터 없음' });
+  var stamp = Utilities.formatDate(new Date(),'Asia/Seoul','yyyyMMdd_HHmm');
+  sh.copyTo(ss).setName(SHEET_FACILITY_COMMON+'_bak_'+stamp);   // 백업 먼저
+  var W = HEADERS.length;
+  function ts(v){ var s=(v instanceof Date)?v.getTime():new Date(String(v==null?'':v).replace(' ','T')).getTime(); return isNaN(s)?-1:s; }
+  var relabeled = 0;
+  var pick = {}, order = [];   // key=날짜|항목ID → 최적 행
+  for (var i = 1; i < vals.length; i++) {
+    var r = vals[i].slice(0, W); while (r.length < W) r.push('');
+    if (!String(r[0]||'') && !String(r[1]||'')) continue;   // 빈 행 스킵
+    var dt = formatDate(r[0]) || String(r[0]);
+    if (String(r[4]) !== '1일') { r[4] = '1일'; relabeled++; }   // 회차 재라벨
+    var key = dt + '|' + String(r[1]);
+    var hasMeasure = String(r[12]==null?'':r[12]).trim() !== '';
+    var t = ts(r[9]);
+    if (!pick[key]) { pick[key] = { row:r, measure:hasMeasure, t:t }; order.push(key); }
+    else {
+      var cur = pick[key];
+      // 측정값 있는 행 우선 → 동률이면 제출시각 최신
+      if ((hasMeasure && !cur.measure) || (hasMeasure === cur.measure && t >= cur.t)) { pick[key] = { row:r, measure:hasMeasure, t:t }; }
+    }
+  }
+  var out = order.map(function(k){ return pick[k].row; });
+  var merged = (vals.length - 1) - out.length;   // 병합으로 사라진 중복 수
+  // 데이터행 전체 교체(헤더 보존)
+  var last = sh.getLastRow();
+  if (last > 1) sh.getRange(2,1,last-1,Math.max(W, sh.getLastColumn())).clearContent();
+  if (out.length) { sh.getRange(2,1,out.length,W).setValues(out); _sortByDateDesc(sh); }
+  return jsonRes({ ok:true, relabeled:relabeled, merged:merged, rowsAfter:out.length, backup:SHEET_FACILITY_COMMON+'_bak_'+stamp });
 }
 
 // 항목 마스터(지원_매뉴얼)에서 특정 dept 행 제거(GM 2026-06-12) — 깨진 인코딩 facility 데드행 정리·경량화.
