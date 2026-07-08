@@ -217,6 +217,10 @@
   /* ── 💰 매출 종합: 상단 좌우 50/50(선택월 매출 · 연간 히스토리) + 하단 전폭(부서별 월간실적|연간누계) ── */
   .fin-top-split{display:flex; flex-wrap:wrap; gap:16px; align-items:stretch;}
   .fin-top-left, .fin-top-right{flex:1 1 320px; min-width:0;}
+  /* 좌측 카드(#fin-board)를 우측(연간 히스토리) 세로 높이에 맞춰 스트레치(GM 지시 2026-07-08 — 좌우 박스 높이 정합) */
+  .fin-top-left{display:flex; flex-direction:column;}
+  .fin-top-left #fin-board{display:flex; flex-direction:column; flex:1;}
+  .fin-top-left #fin-board .fin-hero{flex:1; margin-bottom:0;}
   .fin-sub-h{font-size:12.5px; font-weight:700; color:var(--text-soft); margin:0 2px 8px;}
   .fin-sub-note{font-size:10.5px; font-weight:400; color:var(--dim);}
   .fin-dept-full{margin-top:6px;}
@@ -761,6 +765,7 @@
     .obadge, .mstat, .erp-step .ebadge{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important;}
     /* 월별 A3 2장 유지 압축 — 상단 재구성 후 💰매출+🎯top3+📋상세 3블록을 1페이지에 수용(원래 2장 패킹 복원) */
     .fin-hero{padding:3px 9px !important; gap:3px 14px !important; margin-bottom:3px !important;} .fin-hero-val{font-size:15px !important;}
+    .fin-top-left #fin-board .fin-hero{margin-bottom:0 !important;}  /* 인쇄 시에도 좌우 박스 하단 라인 정합(GM 지시 2026-07-08) */
     .fin-dept-wrap{margin-top:5px !important;} .fin-dept-h{margin:0 2px 3px !important;}
     .findept tbody td, .findept thead th{padding:3px 8px !important; font-size:13px !important; line-height:1.35 !important;}
     .findept td.sub2{font-size:11px !important;}
