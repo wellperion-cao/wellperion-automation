@@ -2831,5 +2831,19 @@
     "artifact": "- 12시 슬롯을 GM DM + 점검관리방(-5136037543) 둘 다 발송(GM 2026-07-08)\n- 시설부 체크: 옛 지원부 소스엔 없어 '-'였음 → _fetch_facility_today\n  (monthly_report&dept=facility dailySeries 오늘 행)로 입력률+이상건수 채움\n- 18시 체크리스트 블록도 같은 함수라 시설부 자동 반영 (CLI ad-hoc · 커밋 b03ae706)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b03ae7061fa376ba0eb957226637ed710467ce58"
+  },
+  {
+    "task_id": "CEO-2026-07-08-ADHOC-df1c940c",
+    "clevel": "ceo",
+    "title": "[웰리] 자율 틈 감지기 반반 구성 — 재개가능 라이브 활성·정체 surface-only",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 704,
+    "artifact": "GM 결정(2026-07-08) 반반 라우팅:\n- 재개가능(resumable, 선행 참조배 DONE→depends 해소): 자율 ON. 태그+nudge+\n  resolve_structural_depends. .bat 에 게이트 AIDE_RESUMABLE_APPLY=1 추가로 라이브 활성.\n- 정체(stalled, 며칠 무활동): surface-only. 자율 write 0(태그·nudge·제안 배 전부 금지).\n  자율현황 ⏳정체 의심 정보패널로만 표시(note 날짜 시차 오탐 소지). (CLI ad-hoc · 커밋 df1c940c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "df1c940c486cd31b6a1c9b35e0518ad605e8400e"
   }
 ]
