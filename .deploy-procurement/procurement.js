@@ -104,6 +104,7 @@ function listItems(p){
   var fm = s.getRange(FIRST_ROW, 11, lr - FIRST_ROW + 1, 1).getFormulas(); // 이미지열 =IMAGE 수식
   var lc = s.getLastColumn();
   var nos = lc >= 25 ? s.getRange(FIRST_ROW, 25, lr - FIRST_ROW + 1, 1).getValues() : null; // 번호열(25)
+  var pds = lc >= 26 ? s.getRange(FIRST_ROW, 26, lr - FIRST_ROW + 1, 1).getValues() : null; // 구매날짜열(26, 2026-07-08 신설)
   var fromN = p.from ? dateNum(p.from) : 0, toN = p.to ? dateNum(p.to) : 0;
   var data = [];
   for (var i=0;i<v.length;i++){
@@ -120,7 +121,8 @@ function listItems(p){
       날짜: fmtDate(r[0]), 요청자: r[2], 소속: r[3], 물품: r[4], 링크: r[5],
       가격: r[6], 목적: r[7], 승인자: r[8], 이미지: noimg ? "" : extractImage(r[10], fm[i][0]), 상태: st,
       승인날짜: fmtDate(r[12]), 지출증빙: noimg ? "" : driveThumb(String(r[14]||"")), 항목1: r[15], 항목2: r[16],
-      번호: nos ? nos[i][0] : ""
+      번호: nos ? nos[i][0] : "",
+      구매날짜: pds ? fmtDate(pds[i][0]) : ""
     });
   }
   return out({ ok:true, count:data.length, mode:mode, data:data });
@@ -144,6 +146,7 @@ function addItem(p){
   var mx = 0; for (var k=0;k<nos.length;k++){ var x=parseInt(String(nos[k][0]).replace(/[^0-9]/g,''),10); if(x>mx) mx=x; }
   var no = mx + 1;
   s.getRange(row, 25).setValue(no);
+  if (p.구매날짜) s.getRange(row, 26).setValue(p.구매날짜); // 구매(예정)날짜 — 새 행 26열에만 기록(기존·회계열 무관, 2026-07-08)
   if (locked) { try { lock.releaseLock(); } catch(eL2){} }
   if (p.fileData) putPhoto(s, row, p); // 품의 첨부사진 → 이미지 열(=IMAGE 썸네일)
   var instant = null;
