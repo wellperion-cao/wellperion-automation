@@ -1069,17 +1069,34 @@
   //    응답: byZone[{zone:'m'|'f', pct, sumDone, sumTotal, sessionCount, issueCount}] · monthTotals{avgPct, activeDays, issueCount, ...}.
   //    운영보고=최소 월간 기준(GM 지시 2026-07-06 — 舊 get_today_summary 오늘치에서 전환). 조회 실패=null(가짜값 없음) ──
   function readCheckMonthly(monKey){
-    return fetch(CHECK_GAS + '?action=monthly_report&month=' + encodeURIComponent(monKey) + '&dept=support&_cb=' + Date.now(), {redirect:'follow', cache:'no-store'})
+    // 점검 GAS(monthly_report)는 콜드 응답이 ~12초 → 25초 타임아웃 방어(무한 'loading' 방지, 초과=null 정직).
+    var live = fetch(CHECK_GAS + '?action=monthly_report&month=' + encodeURIComponent(monKey) + '&dept=support&_cb=' + Date.now(), {redirect:'follow', cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(d){ return (d && d.ok) ? d : null; })
       .catch(function(){ return null; });
+    var to = new Promise(function(res){ setTimeout(function(){ res(null); }, 25000); });
+    return Promise.race([live, to]);
   }
-  // 선택월 월간 점검을 1회만 조회·캐시(월별). 도착하면 현재 선택월+점검준비 상태일 때만 점검 보드 재렌더.
+  // 점검 월간 stale-while-revalidate — 직전 성공값을 localStorage에 캐시해 재방문 시 즉시 표시(12초 콜드로드 체감 제거), 백그라운드로 갱신.
+  var _CM_LS = 'wp_chkmon_';
+  function _cmLoad(monKey){ try{ var raw = localStorage.getItem(_CM_LS + monKey); return raw ? JSON.parse(raw) : null; }catch(e){ return null; } }
+  function _cmSave(monKey, data){ try{ localStorage.setItem(_CM_LS + monKey, JSON.stringify(data)); }catch(e){} }
+  // 선택월 월간 점검을 1회만 조회·캐시(월별). 캐시 있으면 즉시(stale) 표시 후 라이브로 덮어씀. 도착하면 현재 선택월+점검준비 상태일 때만 재렌더.
   function fetchCheckMonthlyFor(monKey){
     if(!monKey || _checkMonthlyCache[monKey]) return;
-    _checkMonthlyCache[monKey] = {status:'loading'};
+    var cached = _cmLoad(monKey);
+    // 캐시 있으면 즉시 '갱신 중'으로 값 노출(체감 0초) · 없으면 첫 방문만 '불러오는 중'.
+    _checkMonthlyCache[monKey] = cached ? {status:'done', data:cached, stale:true} : {status:'loading'};
+    if(_sel === monKey && _checkReady && cached){ renderCheckStatus(); renderSummaryBoard(); }
     readCheckMonthly(monKey).then(function(d){
-      _checkMonthlyCache[monKey] = {status:'done', data:d};
+      if(d){
+        _checkMonthlyCache[monKey] = {status:'done', data:d, stale:false};
+        _cmSave(monKey, d);
+      } else if(cached){
+        _checkMonthlyCache[monKey] = {status:'done', data:cached, stale:false}; // 갱신 실패=직전 실측값 유지(가짜 아님)
+      } else {
+        _checkMonthlyCache[monKey] = {status:'done', data:null, stale:false}; // 캐시·응답 둘 다 없음=정직 '없음'
+      }
       if(_sel === monKey && _checkReady){ renderCheckStatus(); renderSummaryBoard(); }
     });
   }
@@ -1948,6 +1965,7 @@
     var cmEntry = _checkMonthlyCache[_sel];
     var cmData = (cmEntry && cmEntry.status === 'done') ? cmEntry.data : null;
     var cmLoading = (cmEntry && cmEntry.status === 'loading');
+    var cmStale = !!(cmEntry && cmEntry.stale); // 캐시 즉시표시 중·라이브 갱신 대기
     var byZoneC = {}; if(cmData && Array.isArray(cmData.byZone)){ cmData.byZone.forEach(function(z){ byZoneC[z.zone] = z; }); }
 
     // ① 시설부 점검 현황 — 시설점검(fcheck)은 항목×회차 실측(입력률·이상건수 지표 · 완료율 아님). 월간 GAS(dept=facility·배406)는 구축됐으나 데이터 극소(월 1일·2세션)라 월간 카드 연동은 데이터 축적 후로 보류 — 지금은 정직 표기 + 점검 페이지 링크(가짜값 없음).
@@ -1969,7 +1987,7 @@
         cards.push(
           '<div class="chk-card"><span class="cl">' + esc(label) + '</span>' +
           '<div class="cv">' + (zpct != null ? zpct + '%' : '—') + '</div>' +
-          '<span class="csub">완료율 · 점검 ' + zd.sessionCount + '회 · 이슈 ' + zd.issueCount + '건 · 그 달 점검 기준</span>' +
+          '<span class="csub">완료율 · 점검 ' + zd.sessionCount + '회 · 이슈 ' + zd.issueCount + '건 · 그 달 점검 기준' + (cmStale ? ' · 갱신 중' : '') + '</span>' +
           link + '</div>'
         );
       } else {
