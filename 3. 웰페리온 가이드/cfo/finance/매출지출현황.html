@@ -758,16 +758,28 @@ function renderAnom(){
 }
 
 var REQ_ACTIVE=[],REQ_DONE=[],reqFilter="품의";
-async function procCall(action,extra){
+function _rawCall(action,extra){
   var body=Object.assign({action:action,password:GATE_PW},extra||{});
-  var r=await fetch(PROC_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)});
-  return await r.json();
+  return fetch(PROC_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)}).then(function(r){return r.json();});
+}
+// 무거운 매출 집계(같은 Apps Script)는 직렬 실행 + 구매요청 로딩 중엔 양보 → 구매요청(리스트·사진)이 백엔드를 먼저 잡게(2026-07-08 효율화)
+var HEAVY_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1};
+var _hvQ=[],_hvRunning=false,_reqBusy=0;
+function _hvDrain(){
+  if(_hvRunning||!_hvQ.length)return;
+  if(_reqBusy){setTimeout(_hvDrain,800);return;} // 구매요청 조회 진행 중 → 매출 재계산 대기
+  var j=_hvQ.shift();_hvRunning=true;
+  _rawCall(j.action,j.extra).then(function(v){j.resolve(v);},function(e){j.reject(e);}).then(function(){_hvRunning=false;setTimeout(_hvDrain,200);});
+}
+function procCall(action,extra){
+  if(!HEAVY_ACT[action])return _rawCall(action,extra); // 구매요청 등 경량 = 즉시(양보 대상 아님)
+  return new Promise(function(resolve,reject){_hvQ.push({action:action,extra:extra,resolve:resolve,reject:reject});_hvDrain();});
 }
 function rval(id){return document.getElementById(id).value;}
-async function loadReq(){try{var d=await procCall("list",{mode:"active",noimg:1});REQ_ACTIVE=(d&&d.data)||[];}catch(e){REQ_ACTIVE=[];}renderReqTbl();loadReqPhotos();} // 경량(noimg) 즉시 렌더 → 사진은 백그라운드 병합(2026-07-08 A안: 첫 표시 즉시화·247KB→10KB·백엔드 무변경)
+async function loadReq(){_reqBusy++;try{var d=await procCall("list",{mode:"active",noimg:1});REQ_ACTIVE=(d&&d.data)||[];}catch(e){REQ_ACTIVE=[];}finally{_reqBusy--;_hvDrain();}renderReqTbl();loadReqPhotos();} // 경량(noimg) 즉시 렌더 → 사진은 백그라운드 병합(2026-07-08 A안: 첫 표시 즉시화·247KB→10KB·백엔드 무변경). _reqBusy=구매요청 우선(매출 재계산 양보)
 var _photoLoading=false;
 async function loadReqPhotos(){ // 미완료 리스트 사진(이미지·지출증빙) 백그라운드 로드 → 도착 시 병합·재렌더(논블로킹, 재시도 포함)
-  if(_photoLoading)return;_photoLoading=true;
+  if(_photoLoading)return;_photoLoading=true;_reqBusy++; // _reqBusy=사진 받는 동안 매출 재계산 양보 → 사진이 경합 없이 첫 시도에 도착
   // 관리자 대시보드는 무거운 매출 집계와 같은 백엔드라 사진 full 조회가 경합·간헐 404 → 슬롯 날 때까지 재시도(점증 간격, 사진 안뜨는 문제 해소 2026-07-08)
   var delays=[0,1200,2200,3500,5000,7000,9000];
   for(var a=0;a<delays.length;a++){
@@ -784,7 +796,7 @@ async function loadReqPhotos(){ // 미완료 리스트 사진(이미지·지출�
       }
     }catch(e){}
   }
-  _photoLoading=false;
+  _photoLoading=false;_reqBusy--;_hvDrain(); // 사진 로딩 종료 → 대기 중이던 매출 재계산 재개
 }
 async function loadDone(){var dm=document.getElementById("doneMsg");dm.textContent="검색 중…";
   try{var d=await procCall("list",{mode:"done",from:rval("doneFrom"),to:rval("doneTo")});REQ_DONE=(d&&d.data)||[];dm.textContent="조회 "+REQ_DONE.length+"건";}catch(e){REQ_DONE=[];dm.textContent="검색 실패";}
