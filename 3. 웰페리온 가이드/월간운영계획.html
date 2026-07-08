@@ -292,6 +292,15 @@
   .dg-obj.st-완료 .dg-obj-p{color:var(--green);} .dg-obj.st-이월 .dg-obj-p{color:var(--gold);} .dg-obj.st-계획 .dg-obj-p{color:var(--dim);}
   .dg-obj-goal{font-size:11px; color:var(--dim); line-height:1.45;}
   .dg-empty{font-size:11.5px; color:var(--dim); font-weight:600; padding:4px 0;}
+  /* 🔗 카드 체계 버튼 그룹(GM 지시 2026-07-08: 체계 링크를 카드 안 한 줄 버튼으로 · 경영지원=인사허브+매출지출) */
+  .dg-links{display:flex; flex-wrap:wrap; gap:6px; margin:-2px 0 1px;}
+  .dg-linkbtn{font-size:10px; font-weight:700; color:var(--gold); background:rgba(240,198,116,0.08); border:1px solid rgba(240,198,116,0.30); border-radius:20px; padding:3px 11px; text-decoration:none; white-space:nowrap;}
+  .dg-linkbtn:hover{border-color:var(--gold); background:rgba(240,198,116,0.14);}
+  /* 🗂️ 통합 카드(시설·지원·주차) 내부 3부서 소섹션 = 3컬럼 서브그리드(세로 과확장 방지·밀도 · GM 지시 2026-07-08) */
+  .dg-subgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:9px 12px;}
+  .dg-subgrp{display:flex; flex-direction:column; gap:7px; min-width:0;}
+  .dg-subgrp-h{font-size:11.5px; font-weight:800; color:var(--gold); border-bottom:1px dashed var(--border-strong); padding-bottom:3px; letter-spacing:-0.01em;}
+  @media (max-width:720px){ .dg-subgrid{grid-template-columns:1fr;} }
 
   /* ── 🚀 ERP 월별 진척 타임라인 ── */
   .erp-time{display:flex; gap:10px; align-items:stretch; position:relative;}
@@ -790,6 +799,8 @@
     .dg-card{padding:6px 9px 7px !important; gap:5px !important; background:#fff !important; border-color:#999 !important; break-inside:avoid;}
     .dg-card-h{padding-bottom:4px !important;} .dg-dept{font-size:11px !important; color:#111 !important;} .dg-own{font-size:9px !important;} .dg-note{font-size:8px !important;}
     .dg-objs{gap:6px !important;} .dg-obj{gap:2px !important;} .dg-obj-t{font-size:10px !important;} .dg-obj-p{font-size:10px !important;} .dg-obj-goal{font-size:8.5px !important;} .dg-obj-bar{height:5px !important;}
+    .dg-links{gap:3px !important; margin:0 0 2px !important;} .dg-linkbtn{font-size:7.5px !important; padding:1px 6px !important; color:#7a5c10 !important; border-color:#bb9 !important; background:#fff !important;}
+    .dg-subgrid{gap:4px 6px !important;} .dg-subgrp{gap:4px !important;} .dg-subgrp-h{font-size:8.5px !important; color:#7a5c10 !important; padding-bottom:2px !important;}
     #obj-board .metric{margin-top:2px !important; padding:2px 5px !important;} #obj-board .metric-h{margin-bottom:1px !important;} #obj-board .mbar{margin:1px 0 !important;}
     #obj-board .r-note{font-size:7px !important; line-height:1.12 !important; margin-top:1px !important;}
     #obj-board .cyc{padding:2px 5px !important; margin-top:2px !important;} #obj-board .cyc-h{margin-bottom:1px !important;} #obj-board .cyc-flow{font-size:7px !important; margin-bottom:2px !important;} #obj-board .cyc-d{font-size:7px !important;} #obj-board .cyc-d .cyc-nt{font-size:6.5px !important;}
@@ -1991,74 +2002,98 @@
   // ai_utilization.items의 id는 practitioner.id와 완전 일치하지 않음(나우열=GM 합산 계정 'na-uy-gm') — 아래 매핑으로만 연결.
   var PRAC_TO_AI_ID = {'na-uy':'na-uy-gm'};
   var DEPT_CARDS = [
-   {key:'운영부',              prac:'lee-gy', ai:'lee-gy',   deptKeys:['운영'],                    link:'coo/check/운영부 체계.html'},
-   {key:'시설부',              prac:'lee-jh', ai:'lee-jh',   deptKeys:['시설'],                    link:'coo/check/시설부 체계.html'},
-   {key:'지원부',              prac:'lee-jh', ai:'lee-jh',   deptKeys:['지원'], note:'통합관리',    link:'coo/check/지원부 체계.html'},
-   {key:'주차관리부',          prac:'lee-jh', ai:'lee-jh',   deptKeys:['주차'], note:'통합관리',    link:'coo/check/주차관리부 체계.html'},
-   {key:'경영지원(인사&파트너팀 관리 + 운영 매출&지출 관리)', prac:'na-uy', ai:'na-uy-gm', deptKeys:['인사','파트너','경영지원','매출&지출'], link:'coo/check/파트너팀 체계.html'}
+   {id:'ops',  key:'운영부',              prac:'lee-gy', ai:'lee-gy',   deptKeys:['운영'],                    links:[{label:'운영부 체계', href:'coo/check/운영부 체계.html'}]},
+   {id:'fac',  key:'시설부',              prac:'lee-jh', ai:'lee-jh',   deptKeys:['시설'],                    links:[{label:'시설부 체계', href:'coo/check/시설부 체계.html'}]},
+   {id:'sup',  key:'지원부',              prac:'lee-jh', ai:'lee-jh',   deptKeys:['지원'],                    links:[{label:'지원부 체계', href:'coo/check/지원부 체계.html'}]},
+   {id:'park', key:'주차관리부',          prac:'lee-jh', ai:'lee-jh',   deptKeys:['주차'],                    links:[{label:'주차관리부 체계', href:'coo/check/주차관리부 체계.html'}]},
+   {id:'mgmt', key:'경영지원(인사&파트너팀 관리 + 운영 매출&지출 관리)', prac:'na-uy', ai:'na-uy-gm', deptKeys:['인사','파트너','경영지원','매출&지출'], links:[{label:'인사허브', href:'chro/hub/'}, {label:'매출&지출 현황', href:'cfo/finance/매출지출현황.html'}]}
   ];
-  function deptRowHtml(cfg, roster, progMap, aiById, objs){
-    var p = null;
-    for(var i = 0; i < roster.length; i++){ if(roster[i].id === cfg.prac){ p = roster[i]; break; } }
+  var DEPT_CARD_BY_ID = {}; DEPT_CARDS.forEach(function(c){ DEPT_CARD_BY_ID[c.id] = c; });
+  // 렌더 그룹(GM 지시 2026-07-08): 시설·지원·주차 = 이정헌 소장 통합관리 → 표 1행·카드 1장으로 묶어 렌더.
+  // 데이터(monthly_ops_plan.json)는 부서별 그대로 유지 — 렌더에서만 그룹핑(값 변경 없음). 실무 도달율·AI 활용은 세 부서 동일 실무자(lee-jh)라 1값이 3부서 대표.
+  var DEPT_GROUPS = [
+    {members:['ops']},
+    {members:['fac','sup','park'], merged:true, title:'시설·지원·주차 통합', note:'이정헌 소장 통합관리', head:'fac'},
+    {members:['mgmt']}
+  ];
+  function pracOf(id, roster){ for(var i = 0; i < roster.length; i++){ if(roster[i].id === id){ return roster[i]; } } return null; }
+  function ownerCellHtml(cfg, roster){
+    var p = pracOf(cfg.prac, roster);
     var nsTitle = (p && p.northstar && String(p.northstar).trim()) ? (' title="🌟 ' + esc(p.northstar) + '"') : '';
-    var ownerHtml = p
+    return p
       ? ('<span' + nsTitle + '>' + esc(p.name) + (p.role ? ' <span class="chip own">' + esc(p.role) + '</span>' : '') + '</span>')
       : esc(cfg.prac);
-
-    var prPct = (typeof progMap[cfg.prac] === 'number') ? progMap[cfg.prac] : null;
-    var prCell = (prPct != null) ? progBar(prPct, null, false, '', false) : '<span class="dc-dim">미입력</span>';
-
-    var aiItem = aiById[cfg.ai] || null;
-    var aiCell;
-    if(aiItem){
-      var pct = clampPct(aiItem.pct);
-      var tgt = (typeof aiItem.target_pct === 'number') ? aiItem.target_pct : null;
-      aiCell = progBar(pct, null, false, '', false) + (tgt != null ? ('<div class="dc-goal">목표 ' + tgt + '%</div>') : '');
-    } else {
-      aiCell = '<span class="dc-dim">미입력</span>';
-    }
-
-    var linkHtml = cfg.link ? ('<a class="dc-link" href="' + esc(cfg.link) + '">페이지 →</a>') : '<span class="dc-nolink">—</span>';
-
-    // 월 목표·진척은 표 칸에서 빼고 표 아래 전용 섹션(deptGoalGridHtml)에서 크게 표시(GM 지시 2026-07-07 5차)
+  }
+  function reachCellHtml(prPct){ return (prPct != null) ? progBar(prPct, null, false, '', false) : '<span class="dc-dim">미입력</span>'; }
+  function aiCellHtml(aiItem){
+    if(!aiItem) return '<span class="dc-dim">미입력</span>';
+    var pct = clampPct(aiItem.pct);
+    var tgt = (typeof aiItem.target_pct === 'number') ? aiItem.target_pct : null;
+    return progBar(pct, null, false, '', false) + (tgt != null ? ('<div class="dc-goal">목표 ' + tgt + '%</div>') : '');
+  }
+  // 표 1행 = 렌더 그룹 1개(통합 그룹은 head 실무자 대표값 · 세 부서 동일 실무자라 무손실). 체계 링크는 표에서 빼고 아래 카드 버튼으로(GM 지시 2026-07-08).
+  function deptRowHtml(group, roster, progMap, aiById){
+    var head = DEPT_CARD_BY_ID[group.head || group.members[0]];
+    var title = group.merged ? group.title : head.key;
+    var note = group.merged ? group.note : head.note;
+    var prPct = (typeof progMap[head.prac] === 'number') ? progMap[head.prac] : null;
+    // 월 목표·진척은 표 칸에서 빼고 표 아래 전용 카드(deptGoalGridHtml)에서 크게 표시(GM 지시 2026-07-07 5차)
     return '<tr>' +
-      '<td class="c-title">' + esc(cfg.key) + (cfg.note ? ('<span class="dc-note-tag">' + esc(cfg.note) + '</span>') : '') + '</td>' +
-      '<td class="c-own">' + ownerHtml + '</td>' +
-      '<td class="c-prog">' + prCell + '</td>' +
-      '<td class="c-prog">' + aiCell + '</td>' +
-      '<td>' + linkHtml + '</td>' +
+      '<td class="c-title">' + esc(title) + (note ? ('<span class="dc-note-tag">' + esc(note) + '</span>') : '') + '</td>' +
+      '<td class="c-own">' + ownerCellHtml(head, roster) + '</td>' +
+      '<td class="c-prog">' + reachCellHtml(prPct) + '</td>' +
+      '<td class="c-prog">' + aiCellHtml(aiById[head.ai] || null) + '</td>' +
     '</tr>';
+  }
+  function objsForDept(cfg, objs){ return objs.filter(function(o){ var d = o.dept || ''; return cfg.deptKeys.some(function(k){ return d.indexOf(k) >= 0; }); }); }
+  function objHtml(o){
+    var st = o.status || '계획';
+    var pct = clampPct(o.progress);
+    var tgt = (o.target && String(o.target).trim()) ? ('<div class="dg-obj-goal">🎯 월 목표: ' + esc(o.target) + '</div>') : '';
+    return '<div class="dg-obj st-' + esc(st) + '">' +
+      '<div class="dg-obj-top"><span class="obadge ' + esc(st) + '">' + esc(st) + '</span>' +
+      '<span class="dg-obj-t">' + esc(o.title) + '</span>' +
+      '<span class="dg-obj-p">' + pct + '%</span></div>' +
+      '<div class="dg-obj-bar"><i style="width:' + pct + '%"></i></div>' + tgt +
+    '</div>';
+  }
+  function objsBlockHtml(cfg, objs){
+    var objsFor = objsForDept(cfg, objs);
+    return objsFor.length ? objsFor.map(objHtml).join('') : '<div class="dg-empty">이번 달 과제 없음</div>';
+  }
+  function linkBtnsHtml(cfg){
+    return (cfg.links || []).map(function(l){ return '<a class="dg-linkbtn" href="' + esc(l.href) + '" target="_blank">' + esc(l.label) + ' →</a>'; }).join('');
+  }
+  // 카드 1장 = 렌더 그룹 1개. 통합 그룹(시설·지원·주차)=헤더(이정헌 소장·통합관리)+체계 3버튼+3부서 소섹션(3컬럼 서브그리드·세로 과확장 방지·GM 지시 2026-07-08).
+  function deptCardHtml(group, objs, roster){
+    var head = DEPT_CARD_BY_ID[group.head || group.members[0]];
+    var title = group.merged ? group.title : head.key;
+    var note = group.merged ? group.note : head.note;
+    var p = pracOf(head.prac, roster);
+    var ownName = p ? (esc(p.name) + (p.role ? ' <span class="dg-role">' + esc(p.role) + '</span>' : '')) : esc(head.prac);
+    var links = group.members.map(function(id){ return linkBtnsHtml(DEPT_CARD_BY_ID[id]); }).join('');
+    var body;
+    if(group.merged){
+      body = '<div class="dg-subgrid">' + group.members.map(function(id){
+        var cfg = DEPT_CARD_BY_ID[id];
+        return '<div class="dg-subgrp"><div class="dg-subgrp-h">' + esc(cfg.key) + '</div>' +
+          '<div class="dg-objs">' + objsBlockHtml(cfg, objs) + '</div></div>';
+      }).join('') + '</div>';
+    } else {
+      body = '<div class="dg-objs">' + objsBlockHtml(head, objs) + '</div>';
+    }
+    return '<div class="dg-card' + (group.merged ? ' dg-merged' : '') + '">' +
+      '<div class="dg-card-h"><span class="dg-dept">' + esc(title) + '</span>' +
+      (note ? ('<span class="dg-note">' + esc(note) + '</span>') : '') +
+      '<span class="dg-own">' + ownName + '</span></div>' +
+      (links ? ('<div class="dg-links">' + links + '</div>') : '') +
+      body +
+    '</div>';
   }
   // 📌 부서별 월 목표·진척 — 부서 표 아래 전용 프로미넌트 섹션(GM 지시 2026-07-07 5차: 좁은 표 칸 → 크게·중요하게)
   function deptGoalGridHtml(objs, roster){
     var mLabel = _sel ? (Number(String(_sel).split('-')[1]) + '월') : '';
-    var cards = DEPT_CARDS.map(function(cfg){
-      var p = null;
-      for(var i = 0; i < roster.length; i++){ if(roster[i].id === cfg.prac){ p = roster[i]; break; } }
-      var ownName = p ? (esc(p.name) + (p.role ? ' <span class="dg-role">' + esc(p.role) + '</span>' : '')) : esc(cfg.prac);
-      var objsFor = objs.filter(function(o){ var d = o.dept || ''; return cfg.deptKeys.some(function(k){ return d.indexOf(k) >= 0; }); });
-      var body;
-      if(!objsFor.length){
-        body = '<div class="dg-empty">이번 달 과제 없음</div>';
-      } else {
-        body = objsFor.map(function(o){
-          var st = o.status || '계획';
-          var pct = clampPct(o.progress);
-          var tgt = (o.target && String(o.target).trim()) ? ('<div class="dg-obj-goal">🎯 월 목표: ' + esc(o.target) + '</div>') : '';
-          return '<div class="dg-obj st-' + esc(st) + '">' +
-            '<div class="dg-obj-top"><span class="obadge ' + esc(st) + '">' + esc(st) + '</span>' +
-            '<span class="dg-obj-t">' + esc(o.title) + '</span>' +
-            '<span class="dg-obj-p">' + pct + '%</span></div>' +
-            '<div class="dg-obj-bar"><i style="width:' + pct + '%"></i></div>' + tgt +
-          '</div>';
-        }).join('');
-      }
-      return '<div class="dg-card">' +
-        '<div class="dg-card-h"><span class="dg-dept">' + esc(cfg.key) + '</span>' +
-        (cfg.note ? ('<span class="dg-note">' + esc(cfg.note) + '</span>') : '') +
-        '<span class="dg-own">' + ownName + '</span></div>' +
-        '<div class="dg-objs">' + body + '</div></div>';
-    }).join('');
+    var cards = DEPT_GROUPS.map(function(g){ return deptCardHtml(g, objs, roster); }).join('');
     return '<div class="deptgoal-sec"><div class="deptgoal-h">📌 부서별 월 목표 · 진척 ' +
       '<span class="deptgoal-sub">' + esc(mLabel) + ' 부서별 핵심 과제 · 진척</span></div>' +
       '<div class="deptgoal-grid">' + cards + '</div></div>';
@@ -2073,9 +2108,9 @@
     var aiById = {}; aiItems.forEach(function(it){ aiById[it.id] = it; });
     var objs = (m && m.objectives) || [];
     var tbl = '<div class="rpt-wrap"><table class="rpt"><thead><tr>' +
-      '<th>부서</th><th>중간관리자</th><th>실무 도달율</th><th>AI 활용</th><th>체계</th>' +
-      '</tr></thead><tbody>' + DEPT_CARDS.map(function(cfg){
-        return deptRowHtml(cfg, roster, progMap, aiById, objs);
+      '<th>부서</th><th>중간관리자</th><th>실무 도달율</th><th>AI 활용</th>' +
+      '</tr></thead><tbody>' + DEPT_GROUPS.map(function(g){
+        return deptRowHtml(g, roster, progMap, aiById);
       }).join('') + '</tbody></table></div>';
     board.innerHTML = tbl + deptGoalGridHtml(objs, roster);
   }
