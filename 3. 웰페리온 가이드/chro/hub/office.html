@@ -1605,7 +1605,7 @@
 
   const termCmds={
     help:function(){
-      tLine('CHRO 터미널 — 조회 + CHRO 세션 실전송 (그 외 명령은 실제 CHRO에게 전달됩니다)','tl-h');
+      tLine('CHRO 터미널 — 실시간 조회 전용 (인증 후 실데이터)','tl-h');
       tLine('데이터 기준: '+REAL_SCHEDULE.asOf,'tl-mut');
       tLine('  help · ? · 도움말     명령 목록');
       tLine('  일정 · 오늘 · today   오늘 일정 보드');
@@ -1619,7 +1619,7 @@
       tLine('  호출 A-3              에이전트 호출 (손 흔들기)');
       tLine('  커피                  커피 타임');
       tLine('  clear · cls           화면 지우기');
-      tLine('  (그 외 아무 문장)     CHRO 세션으로 전송 — 실제 실행·회신','tl-h');
+      tLine('  ↑/↓ 이전 명령 · Enter 실행','tl-mut');
     },
     sched:function(arg){
       if(!arg){
@@ -1747,7 +1747,7 @@
     const f=document.querySelector('.foot'); if(f) f.textContent='데이터 기준: '+REAL_SCHEDULE.asOf+' · 처리 로그 피드는 목업 시연(자동화 로그 연동 예정)';
     tLine('실데이터 로드 완료 — 면접 '+TERM_IV.length+'건 · 공고 마감 '+TERM_DL.length+'건 · 온보딩 '+TERM_OB.length+'건','tl-mut'); tScroll();
   }
-  async function termRemote(raw){
+  async function termRemote(raw){ return; /* 실전송 비활성 — 안전상 조회 전용 터미널 */
     if(!SESSION_PW){ tLine('게이트 인증 후 이용할 수 있어요','tl-err'); tScroll(); return; }
     tLine('→ CHRO 세션으로 전송 중…','tl-mut'); tScroll();
     let res=null; try{ res=await api({action:'cmd-push',adminPassword:SESSION_PW,text:raw}); }catch(e){}
@@ -1776,7 +1776,7 @@
     const parts=raw.split(/\s+/);
     const cmd=TERM_ALIAS[(parts[0]||'').toLowerCase()];
     if(cmd && termCmds[cmd]) termCmds[cmd](parts.slice(1).join(' '));
-    else termRemote(raw);
+    else tLine("'"+parts[0]+"' 명령을 몰라요… help 를 입력해 보세요 (쓰기 작업은 허브에서)",'tl-err');
     tScroll();
   }
 
@@ -1806,7 +1806,7 @@
     tTgl.setAttribute('aria-expanded',String(!closed));
     tTgl.textContent=closed?'▴':'▾';
   });
-  tLine('CHRO 터미널 — 명령을 입력하면 실제 CHRO 세션으로 전송됩니다 · help','tl-mut');
+  tLine('CHRO 터미널 — 실시간 조회 전용 · help 를 입력해 보세요','tl-mut');
   termGhostSync();
 
   /* ===== 게이트 (허브 index.html 패턴 — 비번은 소스에 없음, 입력값을 백엔드 검증) ===== */
