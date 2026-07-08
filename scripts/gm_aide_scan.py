@@ -1014,7 +1014,7 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         auto_applied = apply_auto_actions(auto_actions, archive)
         print(f"  ✅ 가역 자율실행 {auto_applied}건 적용 + 사후로그(원장 auto_exec·원복근거 기록).")
 
-    # ── 자율 틈 감지기(배237(b)) — 정체/재개 감시 · 독립 게이트 AIDE_STALL_APPLY 뒤 ──
+    # ── 자율 틈 감지기(배237(b) 반반) — 재개가능=auto(게이트 AIDE_RESUMABLE_APPLY 뒤)·정체=surface-only ──
     gap_result = run_gap_detector(active, commit, kpi, ns_map, profile_hints, archive)
 
     result = {

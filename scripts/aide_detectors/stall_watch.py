@@ -2,7 +2,8 @@
 """자율 틈 감지기 (배237(b)) — 대기/지연 감시 감지기 (US-001).
 
 라이브 write 없음(순수 감지·판정만). gm_aide_scan.run() 이 호출해
-route(reversibility) → auto(AIDE_STALL_APPLY 게이트 뒤)/propose 로 넘긴다.
+reversibility.split_lanes 로 반반 라우팅: 재개가능→auto(게이트 AIDE_RESUMABLE_APPLY 뒤),
+정체→surface-only(자율 write 0·보드 정보 표시만), 그 외→propose.
 
 정직 한계(스펙 AC2): note 날짜브래킷 = note 편집일이지 담당 C-Level 실작업일이
 아님. 웰리 하이진·GM 상태정합 편집도 브래킷을 남겨 정체를 놓칠 수 있음(거짓음성).
