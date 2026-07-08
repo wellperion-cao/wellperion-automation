@@ -1992,12 +1992,14 @@ var ALLOW_ADD = true;     // 2026-06-23 GM: 전화·직접 문의 수기 추가 
 /* ═══════════════════════════════════════════════════════════════════════
    gviz 직접읽기 어댑터 — 문의현황 로딩성능 재설계 (CTO 핸드오프 2026-07-08, GM go 시트공개)
    목표: 첫 로딩 6~9초 → ~1초. Apps Script 콜드리드 대신 구글 gviz(시트 자체 서빙) 직접 조회.
-   ⚠️ USE_GVIZ=false(기본) → 기존 GAS 읽기 그대로(무회귀). true는 검증 완료 후 GM/시포 결정으로만 전환.
+   ✅ USE_GVIZ=true 라이브 전환(2026-07-08, 기본뷰 100% 일치·7~11배 빠름 검증 완료).
+   예외: 강습 '전체보기(scope=all)'는 시트 필터/숨김행으로 gviz 누락 위험 → 그 경로만 GAS 유지(lessonLoad 분기 참고).
+   역롤백: USE_GVIZ=false 1줄이면 즉시 기존 GAS 전체 경로로 복귀.
    쓰기(update/add/delete)는 항상 GAS 유지 — gviz는 읽기전용(member_inquiry_list·lesson_inquiry_list 2건만 대체).
    컬럼탐지·값 포맷은 .deploy-funnel/Survey.js(_miReadRows_/_lessonReadRows_ 및 호출 헬퍼) 1:1 이식.
    ★ 필드 추가/변경 시 Survey.js와 본 블록을 항상 함께 갱신할 것 — 안 그러면 gviz 전환 시 조용히 어긋남.
    ═══════════════════════════════════════════════════════════════════════ */
-var USE_GVIZ = false;   // ⚠️ 라이브 전환 금지(이번 배선은 검증까지만) — true 전환은 별건 승인 후
+var USE_GVIZ = true;   // ✅ 라이브(2026-07-08) — 멤버십·강습 year뷰=gviz, 강습 scope=all(전체보기)만 GAS 폴백(시트 필터 누락 방지). 역롤백=false 1줄
 var GVIZ_MI_SS_ID = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';   // 멤버십(1-1 멤버십 문의 관리) 스프레드시트
 var GVIZ_MI_GID = 1902010032;                                        // '26년 신규문의' 응답탭
 var GVIZ_LESSON_SS_ID = '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw'; // 강습(3-1 강습·WSC 강습 문의 관리) 스프레드시트
@@ -2903,8 +2905,9 @@ function lessonLoad(t) {
   var b = document.getElementById('lessonBody_' + t);
   if (b) b.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  // USE_GVIZ=true → gviz 직접읽기(어댑터가 GAS와 동일 shape 반환) · false(기본) → 기존 GAS 읽기 그대로.
-  var _lessonPromise = USE_GVIZ
+  // 하이브리드(2026-07-08): USE_GVIZ && scope!=='all' → gviz 직접읽기(year 기본뷰만·GAS와 동일 shape).
+  // scope==='all'(강습 전체보기)은 시트 필터/숨김행으로 gviz 누락 위험 → USE_GVIZ여도 항상 GAS 유지.
+  var _lessonPromise = (USE_GVIZ && st.scope !== 'all')
     ? gvizLoadLessonInquiry_(st.type, st.scope === 'all')
     : fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); });
   _lessonPromise
@@ -4852,7 +4855,7 @@ function loadDbData() {
     return;
   }
   document.getElementById('dbCount').textContent = '불러오는 중…';
-  // USE_GVIZ=true → gviz 직접읽기(어댑터가 GAS와 동일 shape 반환) · false(기본) → 기존 GAS 읽기 그대로.
+  // 하이브리드(2026-07-08): 멤버십은 scope 개념 없음 → USE_GVIZ=true면 항상 gviz 직접읽기(GAS와 동일 shape).
   var _dbPromise = USE_GVIZ
     ? gvizLoadMemberInquiry_()
     : fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam()).then(function(r){ return r.json(); });
