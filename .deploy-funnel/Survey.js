@@ -1426,7 +1426,8 @@ function _lessonGidOf_(body) {
   return LESSON_GID;
 }
 // 관리 담당 컬럼명='관리담당'(★'담당'은 폼 원본 '접수담당자'와 부분일치 충돌 → 컬럼 미생성·원본 덮어쓰기 버그. 2026-06-26 시우).
-var _LESSON_MGMT_COLS = ['진행상태', '관리담당', '상담메모', '상담예약', '방문상태'];
+// '연락이력' — 강습 CONTACT(연락 이력, 축2/축4) 멤버십 미러. 상담메모 컬럼은 보존(비파괴)·연락이력이 신규 정본. 2026-07-08 시포·GM.
+var _LESSON_MGMT_COLS = ['진행상태', '관리담당', '상담메모', '상담예약', '방문상태', CONTACT_HIST_COL];
 
 // gid 매칭 시트 핸들(탭명 변경에 강함).
 function _lessonSheet_(gid) {
@@ -1469,6 +1470,7 @@ function _lessonReadRows_(gid) {
   var iMemo  = _findCol_(hdr, ['상담메모', '메모', '비고']);
   var iCons  = _findCol_(hdr, ['상담예약', '상담 예약', '상담일정']);
   var iVisit = _findCol_(hdr, ['방문상태', '방문']);
+  var iHist  = _findColExact_(hdr, [CONTACT_HIST_COL]);  // 연락이력(JSON) — 강습 CONTACT. 2026-07-08 시포·GM(축2·축4)
   var out = [];
   for (var r = 0; r < data.length; r++) {
     var row = data[r];
@@ -1477,6 +1479,11 @@ function _lessonReadRows_(gid) {
     if (!hasName && !hasPhone) continue;  // 완전 빈 행 스킵
     var consVal = iCons >= 0 ? row[iCons] : '';
     var consTime = _miTime_(consVal) || _miTimeKR_(consVal);
+    var _lMemo = iMemo >= 0 ? String(row[iMemo] || '') : '';
+    // 연락이력(가변): JSON 우선 → 없고 기존 상담메모에 값 있으면 {date:'',time:'',note:상담메모}로 합성(비파괴·하위호환).
+    //   상담메모 컬럼 자체는 절대 덮어쓰지 않음(읽기 시 합성만) — 연락이력이 있으면 그것을 우선 사용. 2026-07-08 시포·GM.
+    var _lHistArr = _resParse_(iHist >= 0 ? row[iHist] : '');
+    if (!_lHistArr.length && _lMemo) _lHistArr.push({ date: '', time: '', note: _lMemo });
     out.push({
       rowIndex: r + 2,
       timestamp: _miToISO_(iTs >= 0 ? row[iTs] : ''),
@@ -1489,11 +1496,12 @@ function _lessonReadRows_(gid) {
       wishTime:iWish  >= 0 ? String(row[iWish]  || '') : '',  // 키=wishTime(프론트 row.wishTime와 통일·소문자 wishtime 버그 수정)
       status:  iStat  >= 0 ? String(row[iStat]  || '') : '',
       owner:   iOwner >= 0 ? String(row[iOwner] || '') : '',
-      memo:    iMemo  >= 0 ? String(row[iMemo]  || '') : '',
+      memo:    _lMemo,
       consult: _miToISO_(consVal),
       consultTime: consTime,
       consultTmin: _miTminKR_(consTime),
-      visited: iVisit >= 0 ? String(row[iVisit] || '') : ''
+      visited: iVisit >= 0 ? String(row[iVisit] || '') : '',
+      contacts: _lHistArr
     });
   }
   return out;
@@ -2711,6 +2719,23 @@ function _processAction(body) {
     _luSet(['상담메모', '메모', '비고'], body.memo);
     _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
     _luSet(['방문상태', '방문'], body.visited);
+    // ── 연락이력(가변) — 축2/축4: body.contacts(JSON 문자열/배열) 수신 시 저장. 미전송이면 무영향(기존 필드만 갱신).
+    //    상담메모는 위 _luSet으로 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
+    var _luHistPrevCount = 0;
+    var _luHistNewArr = null;
+    if (body.contacts !== undefined) {
+      try {
+        var _luHistCi = _findColExact_(luHdr, [CONTACT_HIST_COL]);  // _lessonEnsureCols_가 이미 멱등 생성(위 luHdr 조회 시점)
+        var _luPrevHistArr = (_luHistCi >= 0) ? _resParse_(luSh.getRange(luRow, _luHistCi + 1).getValue()) : [];
+        _luHistPrevCount = _luPrevHistArr.length;
+        _luHistNewArr = _resParse_(body.contacts);
+        if (_luHistCi >= 0) {
+          var _luHistCell = luSh.getRange(luRow, _luHistCi + 1);
+          _luHistCell.setNumberFormat('@');
+          _luHistCell.setValue(_resStringify_(_luHistNewArr));
+        }
+      } catch (eHist) { Logger.log('강습 연락이력 저장 실패: ' + eHist.message); }
+    }
     // 강습 등록 전환(신규→SUC/단기SUC 1회) → '문의 알림' 방 통보(멤버십과 정합). 시토 2026-06-29 GM.
     //   이름/종목 값은 컨택 시작 알림(아래)도 재사용 → _luIsSucNew 여부와 무관하게 항상 계산. 2026-07-07 시토.
     var _luNewStatus = String(body.status == null ? '' : body.status).trim();
@@ -2726,14 +2751,17 @@ function _processAction(body) {
         _notifyTelegram('✅ <b>등록 전환(강습)</b> — 강습문의가 등록(' + _luNewStatus + ')으로 전환\n· 이름: ' + _luName + '\n· 종목: ' + _luSport + '\n· 담당: ' + (body.owner || '-'), _luRegChatId);
       }
     } catch (e) {}
-    // 컨택 시작 알림(강습): 컨택 상태집합('컨택'/'컨택중'/'응대'/'연락'/'통화'/'상담중') 최초 진입 1회 — 집합 내 이동은 재알림 안 함. 2026-07-07 시토·GM.
-    var _luContactStatuses = ['컨택','컨택중','응대','연락','통화','상담중'];
-    var _luWasContact = _luContactStatuses.indexOf(_luOldStatus) >= 0;
-    var _luIsContact  = _luContactStatuses.indexOf(_luNewStatus) >= 0;
-    if (_luIsContact && !_luWasContact) {
+    // 1차 컨택 알림(축6, 이력-기준으로 일원화): 연락이력 0건 → ≥1건 전이 시 1회만. 2026-07-08 시포·GM.
+    //   구 '컨택 시작'(상태=상담중 등 진입 기준) 알림은 중복 방지를 위해 이 이력-기준 알림으로 대체(제거) — 멤버십 member_inquiry_update와 정합.
+    if (_luHistNewArr && _luHistPrevCount === 0 && _luHistNewArr.length >= 1) {
       try {
+        var _luTypeLabel = (function(t){ t = String(t || ''); return (t === '유소년강습' || t === '유소년' || t === 'youth') ? '유소년 강습' : '성인 강습'; })(body.type);
+        var _luOwnerCi  = _findColExact_(luHdr, ['관리담당']);
+        var _luOwnerVal = String(body.owner || (_luOwnerCi >= 0 ? luSh.getRange(luRow, _luOwnerCi + 1).getValue() : '') || '').trim();
+        var _luHistFirst = _luHistNewArr[0];
+        var _luHistWhen = ((_luHistFirst.date || '') + ' ' + (_luHistFirst.time || '')).trim();
         var _luContactChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-        _notifyTelegram('📞 <b>컨택 시작(강습)</b> — 강습문의 상담·응대 개시\n· 이름: ' + _luName + '\n· 종목: ' + _luSport + '\n· 담당: ' + (body.owner || '-') + '\n· 상태: ' + (_luNewStatus || '-'), _luContactChatId);
+        _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + _luName + ' (' + _luTypeLabel + ' · ' + _luSport + ')\n일시: ' + (_luHistWhen || '-') + '\n내용: ' + (_luHistFirst.note || '-') + (_luOwnerVal ? '\n담당: ' + _luOwnerVal : ''), _luContactChatId);
       } catch (e) {}
     }
     // 조회 캐시 무효화(축1) — type(성인강습/유소년강습) 두 scope(year/all) 모두 제거해 다음 조회 최신 반영. 2026-07-08 시토.
