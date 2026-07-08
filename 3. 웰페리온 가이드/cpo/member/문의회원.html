@@ -2025,9 +2025,11 @@ var GVIZ_LESSON_GID_ADULT = 111889422;   // 성인 강습 응답탭
 var GVIZ_LESSON_GID_YOUTH = 268994754;   // 유소년 강습 응답탭(WSC)
 var INQ_RES_COL_GZ = '예약목록';
 var CONTACT_HIST_COL_GZ = '연락이력';
+var LESSON_SPORT_MGMT_COL_GZ = '종목별관리';   // 강습 종목별 독립 관리(JSON) — Survey.js LESSON_SPORT_MGMT_COL 미러. 축7, 2026-07-08 시포·GM.
 
 function _gzUrl_(ssId, gid) {
-  return 'https://docs.google.com/spreadsheets/d/' + ssId + '/gviz/tq?tqx=out:json&gid=' + gid + '&headers=1';
+  // 캐시버스터(&_=Date.now()) — 저장 직후 새로고침 시 gviz 캐시로 옛 값이 보이는 것 방지. 2026-07-08 시포·GM.
+  return 'https://docs.google.com/spreadsheets/d/' + ssId + '/gviz/tq?tqx=out:json&gid=' + gid + '&headers=1&_=' + Date.now();
 }
 // gviz JSON 언랩 → 헤더 배열(trim) + 2D 값 배열(GAS sh.getRange().getValues()와 동일 shape·datetime은 실제 Date 객체로 복원).
 function gvizFetchTable_(ssId, gid) {
@@ -2282,6 +2284,7 @@ function gvizLessonRows_(headers, rows) {
   var iCons  = _gzFindCol_(headers, ['상담예약', '상담 예약', '상담일정']);
   var iVisit = _gzFindCol_(headers, ['방문상태', '방문']);
   var iHist  = _gzFindColExact_(headers, [CONTACT_HIST_COL_GZ]);
+  var iSportMgmt = _gzFindColExact_(headers, [LESSON_SPORT_MGMT_COL_GZ]);   // 종목별관리(JSON) — 축7. 2026-07-08 시포·GM
   var out = [];
   for (var r = 0; r < rows.length; r++) {
     var row = rows[r];
@@ -2310,10 +2313,22 @@ function gvizLessonRows_(headers, rows) {
       consultTime: consTime,
       consultTmin: _gzTminKR_(consTime),
       visited: iVisit >= 0 ? String(row[iVisit] || '') : '',
-      contacts: _lHistArr
+      contacts: _lHistArr,
+      // 종목별 독립 관리(축7) — 파싱맵(없으면 {}). 분리 로직은 프론트에서만. Survey.js _lessonSportMgmtParse_ 미러.
+      bySport: _gzLessonSportMgmtParse_(iSportMgmt >= 0 ? row[iSportMgmt] : '')
     });
   }
   return out;
+}
+// 셀 → 종목별관리 객체맵. 파싱 실패·비객체·빈값=안전 {}. Survey.js _lessonSportMgmtParse_ 1:1 이식. 축7, 2026-07-08 시포·GM.
+function _gzLessonSportMgmtParse_(raw) {
+  if (!raw) return {};
+  var s = String(raw).trim();
+  if (!s || s.charAt(0) !== '{') return {};
+  try {
+    var obj = JSON.parse(s);
+    return (obj && typeof obj === 'object' && !Array.isArray(obj)) ? obj : {};
+  } catch (e) { return {}; }
 }
 // 강습 연간 스코프 필터 — Survey.js _lessonScopeFilter_ 이식(scope=all 아니면 올해만).
 function _gzLessonScopeFilter_(rowsArr, scopeAll) {
@@ -3155,21 +3170,102 @@ function _lessonVisibleRows(t) {
   return rows;
 }
 
+// 강습 종목별 담당(강사) 명단 — status/lesson_instructor_roster.json 내용 그대로 임베드
+// (GitHub Pages는 status/ 미서빙 → 페이지 자체 JS const로 복사. 원본 갱신 시 이 블록도 함께 갱신). 축7, 2026-07-08 시포·GM.
+var LESSON_INSTRUCTOR_ROSTER = {
+  "P.T": ["김상식", "김종진", "최동오", "김혜진", "김재용", "김지훈", "이형진", "최도희", "양승문", "김광수"],
+  "필라테스": ["최은지", "조영은", "황동희"],
+  "골프": ["최현준", "김태엽", "박찬중", "김태훈"],
+  "스쿼시": ["이상훈", "박상현"],
+  "수영": ["박민서", "송민근", "강대경", "천주희", "구성우", "박주혜", "김성은", "강승구", "김형기", "아쿠아"],
+  "체조&트램폴린": ["이형주", "배자경", "김영운"],
+  "뮤지컬팀": ["편한별"],
+  "루프 매소드": ["루프 매소드"]
+};
+var LESSON_UNASSIGNED_OPTION = '담당자 X';   // 명단 없음/미배정 공통 옵션(전 종목)
+
+// 문의 종목(원문 split 세그먼트) → 담당 명단 키 브릿지(포함매칭, 우선순위 고정). 미매칭=null(담당자 X만·정직표기). 축7, 2026-07-08 시포·GM.
+function _lessonRosterKeyOf(sportKey) {
+  var s = String(sportKey || '');
+  if (/수영/.test(s)) return '수영';
+  if (/P\.?T/i.test(s)) return 'P.T';
+  if (/필라/.test(s)) return '필라테스';
+  if (/골프/.test(s)) return '골프';
+  if (/스쿼시/.test(s)) return '스쿼시';
+  if (/체조|트램폴린|WSC/i.test(s)) return '체조&트램폴린';
+  if (/뮤지컬/.test(s)) return '뮤지컬팀';
+  if (/루프/.test(s)) return '루프 매소드';
+  return null;
+}
+function _lessonOwnerOptionsFor(sportKey) {
+  var rk = _lessonRosterKeyOf(sportKey);
+  var list = (rk && LESSON_INSTRUCTOR_ROSTER[rk]) ? LESSON_INSTRUCTOR_ROSTER[rk].slice() : [];
+  list.push(LESSON_UNASSIGNED_OPTION);
+  return list;
+}
+
+// rowIndex로 원본 문의 행 찾기(강습 상태/담당/CONTACT 저장 공용). 축7.
+function _lessonFindRow(t, rowIndex) {
+  var st = _lessonState[t];
+  if (!st) return null;
+  for (var i = 0; i < st.rows.length; i++) { if (st.rows[i].rowIndex === rowIndex) return st.rows[i]; }
+  return null;
+}
+// 종목별 mgmt 엔트리 — row.bySport[sportKey] 있으면 그대로, 없으면(아직 종목별 편집 전) 레거시 행단일 값 폴백(비파괴). 축7.
+function _lessonSportMgmt(row, sportKey) {
+  if (!row) return { status: '', owner: '', contacts: [] };
+  var by = row.bySport || {};
+  if (sportKey && by[sportKey]) return by[sportKey];
+  return { status: row.status || '', owner: row.owner || '', contacts: row.contacts || [] };
+}
+// 저장 성공 후 로컬 반영 — sportKey 있으면 bySport[sportKey], 없으면(무종목 행=백엔드 레거시 경로로 저장됨) 행단일 필드.
+// 백엔드 lesson_inquiry_update 라우팅(body.sport 유무)과 동일 분기. 축7.
+function _lessonApplyLocalMgmt(row, sportKey, patch) {
+  if (!row) return;
+  if (sportKey) {
+    row.bySport = row.bySport || {};
+    var entry = row.bySport[sportKey] || { status: '', owner: '', contacts: [] };
+    if (patch.status !== undefined) entry.status = patch.status;
+    if (patch.owner !== undefined) entry.owner = patch.owner;
+    if (patch.contacts !== undefined) entry.contacts = patch.contacts;
+    row.bySport[sportKey] = entry;
+  } else {
+    if (patch.status !== undefined) row.status = patch.status;
+    if (patch.owner !== undefined) row.owner = patch.owner;
+    if (patch.contacts !== undefined) row.contacts = patch.contacts;
+  }
+}
+// 필터 반영 후 화면에 보이는 '종목별 줄' — 문의 1행에 종목이 여러 개면 종목마다 별도 줄로 분리(축7, GM 확정).
+// 종목 미기재 행은 sportKey=''(레거시 단일 경로)로 줄 1개 유지(데이터 손실 방지).
+function _lessonVisibleLines(t) {
+  var rows = _lessonVisibleRows(t);
+  var lines = [];
+  rows.forEach(function(r){
+    var sports = _lessonSportSplit(r.sport);
+    if (!sports.length) sports = [''];
+    sports.forEach(function(sportKey){
+      lines.push({ row: r, sportKey: sportKey, sportLabel: sportKey || '—' });
+    });
+  });
+  return lines;
+}
+
 function lessonRender(t) {
   var tbody = document.getElementById('lessonBody_' + t);
   if (!tbody) return;
-  var rows = _lessonVisibleRows(t);
-  if (rows.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
+  var lines = _lessonVisibleLines(t);
+  if (lines.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
   var html = '';
-  rows.forEach(function(r){
+  lines.forEach(function(ln){
+    var r = ln.row, mgmt = _lessonSportMgmt(r, ln.sportKey), argSport = encodeURIComponent(ln.sportKey);
     html += '<tr data-row-index="' + r.rowIndex + '">' +
       '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(r.timestamp || '—') + '</td>' +
       '<td class="left" style="font-weight:700">' + esc(r.name || '—') + '</td>' +
       '<td style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
-      '<td style="font-size:12px">' + _lessonSportHtml(r.sport) + '</td>' +
-      '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, r.status) + '</td>' +
-      '<td class="editable-cell" style="font-size:12px" onclick="_lessonOwnerEdit(this,\'' + t + '\',' + r.rowIndex + ')">' + esc(r.owner || '—') + '</td>' +
-      '<td class="left editable-cell" style="font-size:11px;color:var(--text);line-height:1.6;max-width:220px;white-space:pre-wrap;word-break:break-word" onclick="_lessonContactClick(\'' + t + '\',' + r.rowIndex + ')">' + _lessonContactCellHtml(r) + '</td>' +
+      '<td style="font-size:12px">' + esc(ln.sportLabel) + '</td>' +
+      '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, ln.sportKey, mgmt.status) + '</td>' +
+      '<td style="font-size:12px">' + _lessonOwnerSelectHtml(t, r.rowIndex, ln.sportKey, mgmt.owner) + '</td>' +
+      '<td class="left editable-cell" style="font-size:11px;color:var(--text);line-height:1.6;max-width:220px;white-space:pre-wrap;word-break:break-word" onclick="_lessonContactClick(\'' + t + '\',' + r.rowIndex + ',\'' + argSport + '\')">' + _lessonContactCellHtml(mgmt) + '</td>' +
     '</tr>';
   });
   tbody.innerHTML = html;
@@ -3178,6 +3274,7 @@ function lessonRender(t) {
 // 종목 여러 개('/' 또는 ',' 구분) → 각 종목 한 줄씩. 단, 괄호 안 '/'·','는 종목 내부 옵션 나열
 // (예: "성인 수영 (개인레슨 / 단체레슨)"=수영 1종목, "아쿠아로빅 (화, 목 13:00 클래스)"=1종목)이라
 // 구분자로 취급하지 않음 — 괄호 밖(최상위) 구분자만 분리. 실측(lesson_inquiry_list) 데이터로 확인. 축4, 2026-07-08 시포·GM.
+// 축7(2026-07-08): 종목별 독립 관리의 분리 단위로도 재사용 — 각 세그먼트가 sportKey.
 function _lessonSportSplit(sport) {
   var raw = String(sport || '').trim();
   if (!raw) return [];
@@ -3192,13 +3289,8 @@ function _lessonSportSplit(sport) {
   parts.push(cur);
   return parts.map(function(s){ return s.trim(); }).filter(Boolean);
 }
-function _lessonSportHtml(sport) {
-  var list = _lessonSportSplit(sport);
-  if (!list.length) return '—';
-  return list.map(function(s){ return '<div>' + esc(s) + '</div>'; }).join('');
-}
 
-// CONTACT 셀 표시 — 멤버십 _renderContactCell과 동일 포맷(내용 그대로, 최신 우선). 축4, 2026-07-08 시포·GM.
+// CONTACT 셀 표시 — 멤버십 _renderContactCell과 동일 포맷(내용 그대로, 최신 우선). entry={contacts:[...]}(mgmt 또는 row). 축4·축7, 2026-07-08 시포·GM.
 function _lessonContactCellHtml(row) {
   var list = _ctSort(_rowContacts(row));
   if (!list.length) return '<span style="color:var(--dim)">＋ CONTACT 내용 추가</span>';
@@ -3209,62 +3301,54 @@ function _lessonContactCellHtml(row) {
   }).join('');
 }
 
-// CONTACT 셀 클릭 → 연락 이력 모달(강습 컨텍스트). 축4, 2026-07-08 시포·GM.
-function _lessonContactClick(t, rowIndex) {
+// CONTACT 셀 클릭 → 연락 이력 모달(강습·종목별 컨텍스트). 축4·축7, 2026-07-08 시포·GM.
+function _lessonContactClick(t, rowIndex, sportKeyEnc) {
+  var sportKey = decodeURIComponent(sportKeyEnc || '');
   var st = _lessonState[t];
-  if (!st) return;
-  var row = null;
-  for (var i = 0; i < st.rows.length; i++) { if (st.rows[i].rowIndex === rowIndex) { row = st.rows[i]; break; } }
-  if (!row) return;
-  openContactModal(row, { source: 'lesson', type: st.type, t: t });
+  var row = _lessonFindRow(t, rowIndex);
+  if (!st || !row) return;
+  var mgmt = _lessonSportMgmt(row, sportKey);
+  openContactModal({ rowIndex: row.rowIndex, name: row.name, contacts: mgmt.contacts }, { source: 'lesson', type: st.type, t: t, sport: sportKey });
 }
 
-// 담당 인라인 편집(자유입력) — 저장=lesson_inquiry_update(owner), lessonStatusChange와 동일 apiPost·keyPhone 패턴 미러.
-// ※ 종목별 파트너팀 담당 옵션 목록 배선은 후속 과제 — 지금은 자유입력으로 열어둠. 축4, 2026-07-08 시포·GM.
-function _lessonOwnerEdit(td, t, rowIndex) {
-  if (td.classList.contains('cell-active')) return;
+// 담당 = 종목별 명단(status/lesson_instructor_roster.json 임베드) 드롭다운 — 축7, 2026-07-08 시포·GM.
+// 자유입력 인라인 편집(_lessonOwnerEdit)은 폐기 — 종목별 명단 정합 우선. 저장=lesson_inquiry_update(sport, owner).
+function _lessonOwnerSelectHtml(t, rowIndex, sportKey, current) {
+  var cur = String(current || '').trim();
+  var opts = _lessonOwnerOptionsFor(sportKey);
+  if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);   // 목록 밖 기존값도 보존(데이터 손실 방지)
+  var selVal = cur || LESSON_UNASSIGNED_OPTION;
+  var argSport = encodeURIComponent(sportKey);
+  var html = '<select class="cell-select" style="font-size:12px;padding:2px 6px" onchange="lessonOwnerChange(this,\'' + t + '\',' + rowIndex + ',\'' + argSport + '\')">';
+  opts.forEach(function(o){
+    html += '<option value="' + esc(o) + '"' + (o === selVal ? ' selected' : '') + '>' + esc(o) + '</option>';
+  });
+  html += '</select>';
+  return html;
+}
+function lessonOwnerChange(sel, t, rowIndex, sportKeyEnc) {
+  var sportKey = decodeURIComponent(sportKeyEnc || '');
   var st = _lessonState[t];
-  var row = null;
-  for (var i = 0; i < st.rows.length; i++) { if (st.rows[i].rowIndex === rowIndex) { row = st.rows[i]; break; } }
-  var prevVal = (row && row.owner) || '';
-
-  td.classList.add('cell-active');
-  td.innerHTML = '';
-  var inp = document.createElement('input');
-  inp.className = 'cell-input';
-  inp.type = 'text';
-  inp.value = prevVal;
-  td.appendChild(inp);
-  inp.focus();
-
-  var committed = false;
-  function commit() {
-    if (committed) return;
-    committed = true;
-    var newVal = inp.value.trim();
-    td.classList.remove('cell-active');
-    td.innerHTML = '';
-    td.textContent = newVal || '—';
-    if (newVal === prevVal) return;
-    var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', owner: newVal };
-    apiPost(payload)
-      .then(function(data){
-        if (!data.ok) throw new Error(data.error || '저장 실패');
-        if (row) row.owner = newVal;
-        showToast('저장', 'ok');
-      })
-      .catch(function(err){
-        td.textContent = prevVal || '—';   // 실패 시 화면 원복
-        showToast('저장 실패: ' + (err.message || ''), 'err');
-      });
-  }
-  inp.addEventListener('blur', commit);
-  inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') inp.blur(); });
+  var row = _lessonFindRow(t, rowIndex);
+  var mgmt = _lessonSportMgmt(row, sportKey);
+  var prevVal = mgmt.owner || '';
+  var newVal = sel.value;
+  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: sportKey, owner: newVal };
+  apiPost(payload)
+    .then(function(data){
+      if (!data.ok) throw new Error(data.error || '저장 실패');
+      _lessonApplyLocalMgmt(row, sportKey, { owner: newVal });
+      showToast('저장', 'ok');
+    })
+    .catch(function(err){
+      sel.value = prevVal || LESSON_UNASSIGNED_OPTION;
+      showToast('저장 실패: ' + (err.message || ''), 'err');
+    });
 }
 
-/* ── 강습 문의 진행상태 인라인 편집 — 멤버십 SUC 등록 체크와 동형(배6 후속, 2026-07-06 시포·GM).
-      옵션 고정 5종(미정/상담중/등록/보류/취소). 시트 기존값이 목록 밖이면 보존(데이터 손실 방지). ── */
-var LESSON_STATUS_OPTIONS = ['미정', '상담중', '등록', '보류', '취소'];
+/* ── 강습 문의 진행상태 — 종목별 독립(축7, GM 2026-07-08 확정). 옵션 4종 고정(컨택중/가망/SUC/LOSS).
+      시트 기존값이 목록 밖이면 보존(데이터 손실 방지). ── */
+var LESSON_STATUS_OPTIONS = ['컨택중', '가망', 'SUC', 'LOSS'];
 
 /* ── 미입력 판정(멤버십 전용 공유 함수) — 강습 진행상태 select는 미입력 강조 없이 상태색만 사용.
    판정: 값이 없거나(빈값) '미정'이면 미입력으로 간주(멤버십은 '미정' 옵션이 없어 빈값만 해당). ── */
@@ -3273,18 +3357,19 @@ function _isStatusUnfilled(val) {
   return !v || v === '미정';
 }
 
-// 진행상태→색 클래스 매핑(값 있으면 상태별 색, 없으면 무색). 배4 후속, 2026-07-07 시포·GM
-var LESSON_STATUS_CLASS_MAP = { '상담중': 'st-consult', '등록': 'st-registered', '보류': 'st-hold', '취소': 'st-cancel' };
+// 진행상태→색 클래스 매핑(값 있으면 상태별 색, 없으면 무색). 축7 4종 매핑(컨택중/가망/SUC/LOSS), 2026-07-08 시포·GM
+var LESSON_STATUS_CLASS_MAP = { '컨택중': 'st-consult', '가망': 'st-hold', 'SUC': 'st-registered', 'LOSS': 'st-cancel' };
 function _lessonStatusClass(val) {
   var v = String(val || '').trim();
   return LESSON_STATUS_CLASS_MAP[v] || '';
 }
-function _lessonStatusSelectHtml(t, rowIndex, current) {
+function _lessonStatusSelectHtml(t, rowIndex, sportKey, current) {
   var cur = String(current || '').trim();
-  var stCls = _lessonStatusClass(cur);   // 상담중/등록/보류/취소 색 클래스(배4 후속)
+  var stCls = _lessonStatusClass(cur);
   var opts = LESSON_STATUS_OPTIONS.slice();
   if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);   // 목록에 없는 기존값도 옵션으로 보존
-  var html = '<select class="cell-select' + (stCls ? ' ' + stCls : '') + '" style="font-size:12px;padding:2px 6px" onchange="lessonStatusChange(this,\'' + t + '\',' + rowIndex + ')">';
+  var argSport = encodeURIComponent(sportKey);
+  var html = '<select class="cell-select' + (stCls ? ' ' + stCls : '') + '" style="font-size:12px;padding:2px 6px" onchange="lessonStatusChange(this,\'' + t + '\',' + rowIndex + ',\'' + argSport + '\')">';
   if (!cur) html += '<option value="" selected>— 미정 —</option>';
   opts.forEach(function(o){
     html += '<option value="' + esc(o) + '"' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>';
@@ -3292,19 +3377,20 @@ function _lessonStatusSelectHtml(t, rowIndex, current) {
   html += '</select>';
   return html;
 }
-// 저장 — member_inquiry_update의 _saveCell POST 패턴 그대로 미러링(no-cors apiPost, keyPhone 행키검증). 2026-07-06 시포·GM.
-function lessonStatusChange(sel, t, rowIndex) {
+// 저장 — 종목별(body.sport)로 lesson_inquiry_update 전송(축7). no-cors apiPost, keyPhone 행키검증. 2026-07-08 시포·GM.
+function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
+  var sportKey = decodeURIComponent(sportKeyEnc || '');
   var st = _lessonState[t];
-  var row = null;
-  for (var i = 0; i < st.rows.length; i++) { if (st.rows[i].rowIndex === rowIndex) { row = st.rows[i]; break; } }
+  var row = _lessonFindRow(t, rowIndex);
+  var mgmt = _lessonSportMgmt(row, sportKey);
   var newVal = sel.value;
-  var prevVal = row ? row.status : '';
-  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', status: newVal };
+  var prevVal = mgmt.status || '';
+  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: sportKey, status: newVal };
   apiPost(payload)
     .then(function(data){
       if (!data.ok) throw new Error(data.error || '저장 실패');
-      if (row) row.status = newVal;
-      sel.classList.remove('st-consult', 'st-registered', 'st-hold', 'st-cancel');   // 기존 상태색 전부 제거 후 재설정(배4 후속)
+      _lessonApplyLocalMgmt(row, sportKey, { status: newVal });
+      sel.classList.remove('st-consult', 'st-registered', 'st-hold', 'st-cancel');   // 기존 상태색 전부 제거 후 재설정
       var stCls = _lessonStatusClass(newVal);
       if (stCls) sel.classList.add(stCls);
       showToast('저장', 'ok');
@@ -4956,14 +5042,12 @@ function saveContactModal() {
   var ctx = _ctModal.ctx || { source: 'member' };
   var saveBtn = document.getElementById('ctSaveBtn'); saveBtn.disabled = true;
   if (ctx.source === 'lesson') {
-    var st = _lessonState[ctx.t];
-    var row = null;
-    if (st) { for (var i = 0; i < st.rows.length; i++) { if (st.rows[i].rowIndex === rowIndex) { row = st.rows[i]; break; } } }
-    var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', contacts: JSON.stringify(contacts) };
+    var row = _lessonFindRow(ctx.t, rowIndex);
+    var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: ctx.sport || '', contacts: JSON.stringify(contacts) };
     apiPost(payload)
       .then(function(data){
         if (!data.ok) throw new Error(data.error || '저장 실패');
-        if (row) row.contacts = contacts;
+        _lessonApplyLocalMgmt(row, ctx.sport || '', { contacts: contacts });
         closeContactModal();
         lessonRender(ctx.t);
         showToast('저장', 'ok');
