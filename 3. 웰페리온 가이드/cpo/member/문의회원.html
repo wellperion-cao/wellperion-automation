@@ -2661,9 +2661,25 @@ function lessonRender(t) {
   tbody.innerHTML = html;
 }
 
-// 종목 여러 개('/' 또는 ',' 구분) → 각 종목 한 줄씩. 축4, 2026-07-08 시포·GM.
+// 종목 여러 개('/' 또는 ',' 구분) → 각 종목 한 줄씩. 단, 괄호 안 '/'·','는 종목 내부 옵션 나열
+// (예: "성인 수영 (개인레슨 / 단체레슨)"=수영 1종목, "아쿠아로빅 (화, 목 13:00 클래스)"=1종목)이라
+// 구분자로 취급하지 않음 — 괄호 밖(최상위) 구분자만 분리. 실측(lesson_inquiry_list) 데이터로 확인. 축4, 2026-07-08 시포·GM.
+function _lessonSportSplit(sport) {
+  var raw = String(sport || '').trim();
+  if (!raw) return [];
+  var parts = [], depth = 0, cur = '';
+  for (var i = 0; i < raw.length; i++) {
+    var ch = raw[i];
+    if (ch === '(' || ch === '（') depth++;
+    else if (ch === ')' || ch === '）') depth = Math.max(0, depth - 1);
+    if (depth === 0 && (ch === '/' || ch === ',')) { parts.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  parts.push(cur);
+  return parts.map(function(s){ return s.trim(); }).filter(Boolean);
+}
 function _lessonSportHtml(sport) {
-  var list = String(sport || '').split(/[\/,]/).map(function(s){ return s.trim(); }).filter(Boolean);
+  var list = _lessonSportSplit(sport);
   if (!list.length) return '—';
   return list.map(function(s){ return '<div>' + esc(s) + '</div>'; }).join('');
 }
