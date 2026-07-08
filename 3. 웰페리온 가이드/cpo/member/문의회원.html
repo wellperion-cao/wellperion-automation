@@ -2849,11 +2849,12 @@ function _postInqRenderFunnel(fd, tcd){
     var ret = null, mismatch = false;
     if (prev != null && cur != null) {
       ret = prev > 0 ? Math.round(cur / prev * 1000) / 10 : null;
-      if (s.snapshot && ret != null && ret > 100) mismatch = true;  // 회원 스냅샷=문의 코호트와 모수 다름 — 초과분은 정직 표기(억지 캡 없음)
+      // 정직성: 어느 단계든 잔존율이 100%를 넘으면 실제 낙폭이 아니라 두 단계 소스(추정↔실측·문의 코호트↔전체 스냅샷)가 달라서임 — 억지 캡 없이 △로만 표기.
+      if (ret != null && ret > 100) mismatch = true;
     }
     var g = mismatch ? 'warn' : grade(ret);
     var w = (cur != null) ? Math.max(cur / inqBase * 100, cur > 0 ? 1.5 : 0) : 0;
-    if (!s.snapshot && ret != null && (!worst || ret < worst.ret)) worst = { label: s.label, ret: ret };
+    if (!mismatch && ret != null && (!worst || ret < worst.ret)) worst = { label: s.label, ret: ret };
     var curStr = cur == null ? '–' : cur.toLocaleString();
     var retStr = ret == null ? '–' : (ret + '%' + (mismatch ? ' △' : ''));
     rowsHtml += '<div class="funnel-bar-row"><div class="funnel-bar-label' + (s.join ? ' is-join' : '') + '">' + s.label + '</div>' +
@@ -2868,7 +2869,7 @@ function _postInqRenderFunnel(fd, tcd){
     ? ('참고: 시모 대시보드 문의 총량(type_channel_breakdown)=' + tcTotal.toLocaleString() + '건 · 본 퍼널 기준(stage_funnel 멤버십+강습 합산)=' + inqBase.toLocaleString() + '건 — 소스 정의 차이로 다를 수 있음(각 액션 응답 그대로, 재계산 아님)')
     : '시모 대시보드 문의 총량(type_channel_breakdown) 불러오기 실패 — 퍼널은 stage_funnel 단독 기준';
   el.innerHTML = '<div class="funnel-bar-title">잔존율=직전 단계 대비 · 막대=①문의 대비 ' + badge + '</div>' + rowsHtml +
-    '<div class="mdash-caveat">*② 1차 컨택=로드된 목록(연락이력) 비율 적용 추정치(강습은 열람한 유형만 반영, 실측 아님) · ⑤ 등록=stage_funnel 가입(전화매칭) · ⑥ 회원=현재 유효회원 스냅샷(cpo_today_stats, 문의 코호트와 모수 달라 △=참고용) · ' + tcNote + '</div>';
+    '<div class="mdash-caveat">*② 1차 컨택=로드된 목록(연락이력) 비율 적용 추정치(강습은 열람한 유형만 반영, 실측 아님) · ⑤ 등록=stage_funnel 가입(전화매칭) · ⑥ 회원=현재 유효회원 스냅샷(cpo_today_stats, 문의 코호트와 모수 다름) · 잔존율 △=100% 초과(추정↔실측 또는 코호트↔전체 스냅샷 등 소스 차이 — 억지로 캡하지 않고 그대로 표기) · ' + tcNote + '</div>';
 }
 // §② 처리 현황 — 미컨택·컨택완료=클라 계산(로드된 목록 연락이력, 추가 GAS 호출 없음) · 등록완료=stage_funnel 가입(①퍼널 ⑤와 동일 값, 재사용) · 당월 이탈=cpo_churn_stats(재사용).
 function _postInqRenderStatus(fd){
