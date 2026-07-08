@@ -80,43 +80,6 @@
     "artifact": "lessonRender 진행상태 select 5종+lesson_inquiry_update POST 라이브 반영 실측 확인(정찰). 등록정본=팀시트 sync-on-load(lesson_registry_list/_syncLessonRegistry_) 별도 배선 존재 확인. 입항."
   },
   {
-    "task_id": "CMO-2026-07-02-NORTHSTAR-MEASUREMENT-BIO",
-    "clevel": "cmo",
-    "title": "[시모] 북극성 측정 개통 확인 완료 → 브랜드 IG bio 설치(GM)+M4 진단 (내일)",
-    "status": "IN_PROGRESS",
-    "priority": "⛴️여객선",
-    "enqueued_at": "2026-07-02",
-    "ship_no": 300,
-    "note": "[2026-07-02] 측정 개통(#1) 이미 완성 실측 확인 — 5채널 UTM 태깅 라이브(blog·cafe·danggn·kakao=발행시 apply_cta_utm 자동 / IG namuk bio) → 클릭로그 저장 → M4 채널별 문의·전환 뷰 집계. 새 배관 불필요(중복 안 지음). 정직한 한계=네이버플레이스(~82%)는 자기신고 채널로 집계(UTM 미경유). [2026-07-03 시모 실측 정정] 브랜드 @wellperion bio도 이미 설치됨(stale 노트 정정) — 로그인 세션 accounts/edit 실측: link=wellperion.com/ko/inquiry/?utm_source=instagram&utm_medium=bio&utm_content=official (utm_source=instagram 확인). 증빙=scripts/poc-evidence/wellperion-bio-verify-20260703_091011*.png. ⇒ 마지막 클릭 누수 봉합 완료. EN폼 UTM 캡처=별도 영문폼3개 entry ID 필요(폼 편집권한)·임팩트 낮음→후순위. 전환율 조인뷰=정밀화 후순위. ⚠️브랜드보이스 관찰: 현 bio '헬스'·계정명 'SPA & FITNESS'=L08 금지어(피트니스) 저촉 → 별도 제안(GM 결정). [2026-07-03 시모 측정개통②] _collectFormInquiries_가 '유입경로(자동)' 프리필 UTM을 최우선 채널신호로 읽게 배선+danggn 오타수정. clasp 재인증(cao) 후 @122 배포·라이브 검증(ok:true, 회귀0, byChannel 인스타4·네이버252·당근7 유지). 정직: 기존 8652건 불변, 새 태깅문의부터 하드UTM 귀속(bio 인스타 링크 문의=인스타그램 자동귀속). Phase2(공개폼 프리필 source우선)=GM go 대기.",
-    "next": "[2026-07-03] ✅측정 개통 ①bio(양계정 UTM 라이브)+②조인(문의 UTM 귀속 배선 라이브 @122, f0b9bf42) 완료. ✅ (A) Phase2 완료·라이브(2026-07-07 GM go): 공개 문의폼 프리필 source-우선 병기(src|cmp) 수정→콘텐츠링크(블로그·카페·당근) 문의도 채널 자동귀속. 로컬 11/11 PASS(구버그 재현 포함)+라이브 검증(wellperion.com/ko/inquiry 200·수정코드 실재). 발견=기존 프리필이 campaign-우선이라 콘텐츠링크 문의가 '기타·미상'으로 새던 버그였음. 남은: (B) M4 채널별 실전환율 축적 관찰(새 태깅문의부터·과거분 소급X). (C) 별건 Ep3 발행(ship220).",
-    "depends_on": "",
-    "module": "M2"
-  },
-  {
-    "task_id": "CTO-2026-06-30-TELEGRAM-RELIABILITY-OWNERSHIP",
-    "clevel": "cto",
-    "title": "[시토] 텔레그램 신뢰성 상시 소유·자동화 — 조용한 실패 자가탐지+GAS 원격진단+chat_id SSOT",
-    "status": "IN_PROGRESS",
-    "priority": "⛴️여객선",
-    "enqueued_at": "2026-06-30",
-    "note": "[2026-06-30 GM] '텔레그램은 시토가 면밀히 보고 자동화 가능한 건 진행'. 촉발=종합접수처 분실물 알림 조용한 실패. ✅2단계 전부 라이브: ①헬스체크(scripts/telegram_health_check.py·봇/3방 getChatMember/발송원장 리컨실, 매일13시 Wellperion-Telegram-HealthCheck-1300, 문제시만 OWNER경보) ②GAS 원격진단 ?action=diag — VOC·문의(Survey)·점검(.deploy-check @134, 배포전후 점검읽기 동일=무영향) 3종 hasToken/hasChatId 매일 ping ③chat_id drift 가드(scripts/check_chatid_drift.py·pre-commit warn-only·.env 정본). 이제 오늘 유형(조용한 실패)은 매일 자동 탐지. 정본 메모리=reference_telegram_alert_healthcheck_and_gas_diag.",
-    "next": "🔗 상시 모니터링 단계(헬스체크 자동가동). 잔여=토큰 로테이션(.env 평문 다곳·보안, GM 보류) — 별도 집중세션 시 7곳 동시갱신+봇 재기동. chat_id 런타임 SSOT 단일화도 후속(가드는 적용됨).",
-    "ship_no": 102,
-    "module": "T2"
-  },
-  {
-    "task_id": "CMO-2026-06-26-M5-SSOT-UNIFY",
-    "clevel": "cmo",
-    "title": "[시모] M5 검수큐 단일 정본 통합 — CMO파이프라인.html(시트·3채널)을 review_queue.json(5채널·URL) 기준으로 재배선·시트모델 폐기 + 채널/status enum 표준화",
-    "status": "IN_PROGRESS",
-    "priority": "🛳️크루즈",
-    "enqueued_at": "2026-06-26",
-    "note": "[2026-06-26 GM 결정#3] M5 정본=review_queue.json 단일 통합. ✅(2026-06-26) 봉합 3축 구축: ①보드=CMO파이프라인.html을 시트 CRUD→review_queue.json 읽기 거울로 전면 재작성·라이브 배포(6채널 매트릭스·URL클릭·요약/필터, Playwright 검증 카드38·골프5채널·콘솔0). ②발행시점 캡처=당근 발행 직후 business-posts URL 자동기록(정규식 실측), 카카오 best-effort(공개ID 미노출 구조), IG 기존캡처. review_queue_util.py 공유헬퍼. ③수동발행 콜백=봇 handle_message에 네이버 블로그·카페 URL 회신→대기글 발행완료+URL 자동기록(애매시 GM확인·비파괴). ⚠️봇 변경은 다음 재기동 시 발효. 사후 스크래퍼(retrieve_post_url/reconcile_published)는 실험적·신뢰성낮음(자동스케줄 미배선). 잔여(후순위): 채널/status enum 데이터 정규화·published_at ISO. 진단서 status/briefs/CMO-2026-06-26-M1-M5-AUDIT.md. 메모리 project_m5_channel_sync_gap.",
-    "next": "검증 대기: ①다음 봇 재기동 후 네이버 URL 회신 자동기록 실동작 확인 ②다음 당근 발행 시 URL 자동캡처 확인. 그 후 채널/status enum 데이터 정규화(후순위).",
-    "ship_no": 185,
-    "module": "M3"
-  },
-  {
     "task_id": "CTO-2026-06-23-SELF-HOSTED-SERVER-SETUP",
     "clevel": "cto",
     "title": "[시토] 자체 윈도우 서버 셋업 — 8년 서버 리셋→OS→보안→JWT 인증서버+자체 문의DB 호스팅 (시토 21 전제 + 시토 18 자체문의DB 흡수)",
@@ -345,7 +308,7 @@
     "status": "IN_PROGRESS",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-04",
-    "note": "[2026-07-04 GM 택] 5차 아크=측정·정직 챕터 확정(3안 중 GM 선택). 4차 자율아크(#32 '나는 방향만 잡는다') 완주 후 다음. 종착='감이 아니라 숫자로 방향을 본다 — 못 재는 건 정직하게'. §5 표 5행(#33~#37)+§5.1 기획카드 5장+§4.1 5차아크 추가. 실재근거: KPI지도·kpi.json tier·북극성 추천기 06:30 라이브·5채널 UTM 귀속 라이브(당일 실측). 정직 최우선(미측정·추정 카드 REALITY_GUARD 명시). producer가 #33부터 순차 자동제작(소진 해소). [2026-07-04 GM 재설계] 측정·정직 아크→실전 생존기로 교체(GM '너무 AI적' 지적+측정 소재 중복). 연결형 5부작(손님여정 오게→맞이→신뢰등록→유지→소개), AI 티 안 내고 #37에서만 '알아서 돌아간다' 리빌. 측정안은 _AI시리즈_이력.md 보존. #33~#37 상태 기획예정 복귀=자동제작 재개. [2026-07-04 재설계·구조확정] GM 방향 대전환: '측정·정직/실전 생존기'→폐기, 새 시리즈='한 달 웰페리온 ERP 자율화'(입문2+ERP2+실증17+피날레1=22편, 평일 데일리). 콘텐츠 시안=Artifact 캘린더(에메랄드). 포맷=하이브리드(웰리 영상 hook 3~6초+기존 캐러셀 상세) GM확정. 웰리=공식 마스코트(정장 곰) 재사용. 영상툴 조사완료: 주력 Kling3.0/바이럴 힉스필드(Kling·Veo 통합)/말하는웰리 Veo3.1, Sora2 종료예정. 구조리뷰: 검수(M5)·발행(IG mp4 지원)·표지(무료) 기존 재사용, 웰리 hook만 반자동 신규. 개인계정 시그니처색=에메랄드 박제. 무료 베이스라인 모션클립 GM 전달함.",
+    "note": "[2026-07-04 GM 택] 5차 아크=측정·정직 챕터 확정(3안 중 GM 선택). 4차 자율아크(#32 '나는 방향만 잡는다') 완주 후 다음. 종착='감이 아니라 숫자로 방향을 본다 — 못 재는 건 정직하게'. §5 표 5행(#33~#37)+§5.1 기획카드 5장+§4.1 5차아크 추가. 실재근거: KPI지도·kpi.json tier·북극성 추천기 06:30 라이브·5채널 UTM 귀속 라이브(당일 실측). 정직 최우선(미측정·추정 카드 REALITY_GUARD 명시). producer가 #33부터 순차 자동제작(소진 해소). [2026-07-04 GM 재설계] 측정·정직 아크→실전 생존기로 교체(GM '너무 AI적' 지적+측정 소재 중복). 연결형 5부작(손님여정 오게→맞이→신뢰등록→유지→소개), AI 티 안 내고 #37에서만 '알아서 돌아간다' 리빌. 측정안은 _AI시리즈_이력.md 보존. #33~#37 상태 기획예정 복귀=자동제작 재개. [2026-07-04 재설계·구조확정] GM 방향 대전환: '측정·정직/실전 생존기'→폐기, 새 시리즈='한 달 웰페리온 ERP 자율화'(입문2+ERP2+실증17+피날레1=22편, 평일 데일리). 콘텐츠 시안=Artifact 캘린더(에메랄드). 포맷=하이브리드(웰리 영상 hook 3~6초+기존 캐러셀 상세) GM확정. 웰리=공식 마스코트(정장 곰) 재사용. 영상툴 조사완료: 주력 Kling3.0/바이럴 힉스필드(Kling·Veo 통합)/말하는웰리 Veo3.1, Sora2 종료예정. 구조리뷰: 검수(M5)·발행(IG mp4 지원)·표지(무료) 기존 재사용, 웰리 hook만 반자동 신규. 개인계정 시그니처색=에메랄드 박제. 무료 베이스라인 모션클립 GM 전달함. [2026-07-08] 상태=능동 대기(정체 아님): 기획·캘린더 확정 완료, 22편 실제 제작은 GM 영상툴 선택(소라/캔바/Vrew/클링) 대기 중.",
     "next": "👉 영상툴 재선정 중(GM) — 소라/캔바/Vrew/클링 중 택1(힉스필드 폐기). 선택 후: 선택툴로 웰리 hook EP1 테스트클립+캐러셀 결합 → 실물 검수 → 22편 롤아웃(07:30 자동제작 재개, #33~ 자동제작은 현재 보류중). [2026-07-06 GM] 힉스필드($39/월) 결재 폐기 — 다른 영상툴로 결정 예정.",
     "ship_no": 426,
     "module": "M1"

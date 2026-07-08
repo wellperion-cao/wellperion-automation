@@ -14985,5 +14985,45 @@
     "artifact": "A) 멤버십 문의 현황 팝업 ①③ 유형 스코프 교정(정확성 최우선)\n   구 funnel_conversion은 멤버십+강습+렌트+비즈 전 채널 합산이라 과대집계\n   (7월 예: 신규문의 53·전환율 11.3%). member_inquiry_list(dbRows, 26년\n   신규문의 시트, 프로그램=플래티넘/노블레스 또는 빈칸만)·member_registered_list\n   (유효회원 시트 등록일자)로 재배선 — 둘 다 멤버십 전용 소스, 새 GAS 0.\n   백엔드 cpo_today_stats(monthInquiry) 로직과  (CLI ad-hoc · 커밋 040efc08)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "040efc08db1ce2880161f0cb5a087bacf4291be0"
+  },
+  {
+    "task_id": "CMO-2026-07-02-NORTHSTAR-MEASUREMENT-BIO",
+    "clevel": "cmo",
+    "title": "[시모] 북극성 측정 개통 확인 완료 → 브랜드 IG bio 설치(GM)+M4 진단 (내일)",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-02",
+    "ship_no": 300,
+    "note": "[2026-07-02] 측정 개통(#1) 이미 완성 실측 확인 — 5채널 UTM 태깅 라이브(blog·cafe·danggn·kakao=발행시 apply_cta_utm 자동 / IG namuk bio) → 클릭로그 저장 → M4 채널별 문의·전환 뷰 집계. 새 배관 불필요(중복 안 지음). 정직한 한계=네이버플레이스(~82%)는 자기신고 채널로 집계(UTM 미경유). [2026-07-03 시모 실측 정정] 브랜드 @wellperion bio도 이미 설치됨(stale 노트 정정) — 로그인 세션 accounts/edit 실측: link=wellperion.com/ko/inquiry/?utm_source=instagram&utm_medium=bio&utm_content=official (utm_source=instagram 확인). 증빙=scripts/poc-evidence/wellperion-bio-verify-20260703_091011*.png. ⇒ 마지막 클릭 누수 봉합 완료. EN폼 UTM 캡처=별도 영문폼3개 entry ID 필요(폼 편집권한)·임팩트 낮음→후순위. 전환율 조인뷰=정밀화 후순위. ⚠️브랜드보이스 관찰: 현 bio '헬스'·계정명 'SPA & FITNESS'=L08 금지어(피트니스) 저촉 → 별도 제안(GM 결정). [2026-07-03 시모 측정개통②] _collectFormInquiries_가 '유입경로(자동)' 프리필 UTM을 최우선 채널신호로 읽게 배선+danggn 오타수정. clasp 재인증(cao) 후 @122 배포·라이브 검증(ok:true, 회귀0, byChannel 인스타4·네이버252·당근7 유지). 정직: 기존 8652건 불변, 새 태깅문의부터 하드UTM 귀속(bio 인스타 링크 문의=인스타그램 자동귀속). Phase2(공개폼 프리필 source우선)=GM go 대기.",
+    "next": "[2026-07-03] ✅측정 개통 ①bio(양계정 UTM 라이브)+②조인(문의 UTM 귀속 배선 라이브 @122, f0b9bf42) 완료. ✅ (A) Phase2 완료·라이브(2026-07-07 GM go): 공개 문의폼 프리필 source-우선 병기(src|cmp) 수정→콘텐츠링크(블로그·카페·당근) 문의도 채널 자동귀속. 로컬 11/11 PASS(구버그 재현 포함)+라이브 검증(wellperion.com/ko/inquiry 200·수정코드 실재). 발견=기존 프리필이 campaign-우선이라 콘텐츠링크 문의가 '기타·미상'으로 새던 버그였음. 남은: (B) M4 채널별 실전환율 축적 관찰(새 태깅문의부터·과거분 소급X). (C) 별건 Ep3 발행(ship220).",
+    "depends_on": "",
+    "module": "M2",
+    "archived_at": "2026-07-08"
+  },
+  {
+    "task_id": "CTO-2026-06-30-TELEGRAM-RELIABILITY-OWNERSHIP",
+    "clevel": "cto",
+    "title": "[시토] 텔레그램 신뢰성 상시 소유·자동화 — 조용한 실패 자가탐지+GAS 원격진단+chat_id SSOT",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-06-30",
+    "note": "[2026-06-30 GM] '텔레그램은 시토가 면밀히 보고 자동화 가능한 건 진행'. 촉발=종합접수처 분실물 알림 조용한 실패. ✅2단계 전부 라이브: ①헬스체크(scripts/telegram_health_check.py·봇/3방 getChatMember/발송원장 리컨실, 매일13시 Wellperion-Telegram-HealthCheck-1300, 문제시만 OWNER경보) ②GAS 원격진단 ?action=diag — VOC·문의(Survey)·점검(.deploy-check @134, 배포전후 점검읽기 동일=무영향) 3종 hasToken/hasChatId 매일 ping ③chat_id drift 가드(scripts/check_chatid_drift.py·pre-commit warn-only·.env 정본). 이제 오늘 유형(조용한 실패)은 매일 자동 탐지. 정본 메모리=reference_telegram_alert_healthcheck_and_gas_diag.",
+    "next": "🔗 상시 모니터링 단계(헬스체크 자동가동). 잔여=토큰 로테이션(.env 평문 다곳·보안, GM 보류) — 별도 집중세션 시 7곳 동시갱신+봇 재기동. chat_id 런타임 SSOT 단일화도 후속(가드는 적용됨).",
+    "ship_no": 102,
+    "module": "T2",
+    "archived_at": "2026-07-08"
+  },
+  {
+    "task_id": "CMO-2026-06-26-M5-SSOT-UNIFY",
+    "clevel": "cmo",
+    "title": "[시모] M5 검수큐 단일 정본 통합 — CMO파이프라인.html(시트·3채널)을 review_queue.json(5채널·URL) 기준으로 재배선·시트모델 폐기 + 채널/status enum 표준화",
+    "status": "DONE",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-06-26",
+    "note": "[2026-06-26 GM 결정#3] M5 정본=review_queue.json 단일 통합. ✅(2026-06-26) 봉합 3축 구축: ①보드=CMO파이프라인.html을 시트 CRUD→review_queue.json 읽기 거울로 전면 재작성·라이브 배포(6채널 매트릭스·URL클릭·요약/필터, Playwright 검증 카드38·골프5채널·콘솔0). ②발행시점 캡처=당근 발행 직후 business-posts URL 자동기록(정규식 실측), 카카오 best-effort(공개ID 미노출 구조), IG 기존캡처. review_queue_util.py 공유헬퍼. ③수동발행 콜백=봇 handle_message에 네이버 블로그·카페 URL 회신→대기글 발행완료+URL 자동기록(애매시 GM확인·비파괴). ⚠️봇 변경은 다음 재기동 시 발효. 사후 스크래퍼(retrieve_post_url/reconcile_published)는 실험적·신뢰성낮음(자동스케줄 미배선). 잔여(후순위): 채널/status enum 데이터 정규화·published_at ISO. 진단서 status/briefs/CMO-2026-06-26-M1-M5-AUDIT.md. 메모리 project_m5_channel_sync_gap.",
+    "next": "✅ 자동캡처 실동작 확인 — review_queue.json 107건 중 62건 발행 URL 보유(당근·카페·카카오). 보드=review_queue 거울 라이브. 잔여=채널/status enum 정규화(후순위 별건, 신규 배로 분리).",
+    "ship_no": 185,
+    "module": "M3",
+    "archived_at": "2026-07-08"
   }
 ]
