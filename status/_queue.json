@@ -1,5 +1,29 @@
 [
   {
+    "task_id": "COO-2026-07-08-MONTHLY-OPS-PLAN-OWNERSHIP",
+    "clevel": "coo",
+    "title": "[시우] 월간운영계획 페이지 소유 — 오작동 수리(④)+디자인 고도화(③, 추천→GM OK 후)",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-08",
+    "ship_no": 685,
+    "note": "[2026-07-08 GM] 월간운영계획.html 시우 소유. GM 방향: ③디자인=지금도 만족스러우니 추천 제안 먼저→GM OK 후 진행 / ④오작동=찾아 수리. ④실측 결과: 콘솔 에러 0·매출/부서/로드맵/이월과제 모두 정상 렌더, 깨진 숫자 없음. 유일 발견=🔧점검 카드가 monthly_report GAS ~12초 콜드로드+클라 타임아웃 없음이라 12초간 '월간 데이터 불러오는 중'으로 보임(12초 뒤 남94%/여92% 정상 표시·자가복구). 하드버그 아님·UX 지연. byZone·monthTotals 응답 정상 확인. ③디자인 추천안 GM 결정 대기.",
+    "next": "GM OK: ④점검 콜드로드 체감 개선 진행 여부 + ③디자인 추천안 채택 여부 결정",
+    "module": "home"
+  },
+  {
+    "task_id": "COO-2026-07-08-COMPANY-MEETING-PPT-REFLECT",
+    "clevel": "coo",
+    "title": "[시우] 전사회의 페이지 소유 — PPT 최종본을 전사회의.html에 반영",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-08",
+    "ship_no": 686,
+    "note": "[2026-07-08 GM] 전사회의.html 시우 소유. 워크플로우=전사회의 PPT 최종본이 나오면 그 내용을 전사회의.html에 반영. PPT 경로=G:\\공유 드라이브\\0. 경영지원\\0. 웰페리온 프로젝트&미션 진행(경영지원부)\\0. 관리부&운영부 회의 자료. 현재 폴더에 '웰페리온_2026_상반기_전사회의_최종.pptx'(07-07 18:34 저장·55KB)+v1(07-07 15:22) 존재. 라이브 페이지는 정상(매출표·기조 렌더 확인). 대기=GM 확인: 이미 있는 _최종.pptx가 반영 대상인지, 더 나올 최종본을 기다릴지.",
+    "next": "GM 확인 후 최종 PPT 텍스트 추출→전사회의.html 반영 섹션 매핑",
+    "module": "home"
+  },
+  {
     "task_id": "CTO-2026-07-08-FACILITY-CHECK-PCT-OVERFLOW",
     "clevel": "cto",
     "title": "[시토] home 시설부 점검 카드 667% 이상값 진단·수리 — GAS handleWeekly 열매핑 버그(배173 관찰 후속)",
@@ -2517,5 +2541,19 @@
     "artifact": "- CMO M2 대시보드: #M2(없는앵커) → cmo/funnel/마케팅현황대시보드.html\n- CFO: F1 재무허브 추가\n- CHRO: H4 구조도·Recruiting 추가\n- COO: O3 재등록 대시보드 추가\n- CPO: 통합회원관리 → 상품기획·멤버십·강습 3분화(실 nav 정합) (CLI ad-hoc · 커밋 e3f33307)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e3f33307a12f9a47fd9448c343cc0746b1925215"
+  },
+  {
+    "task_id": "CEO-2026-07-08-ADHOC-b2c5069d",
+    "clevel": "ceo",
+    "title": "[웰리] 시설부 점검 카드 667% 이상값 — handleWeekly 열매핑 버그 수리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 685,
+    "artifact": "배173 관찰건 후속. 라이브 GAS 실측(action=weekly&dept=facility)에서 GAS 응답\n자체가 total=15,done=100,pct=667로 100% 초과 산출됨을 확인. 뿌리원인은\nhandleWeekly()가 지원부(support) 스냅샷 열배치(col6=총항목,col7=완료)를\n시설부(facility)에도 그대로 적용한 것 — facility snapRow(saveFacilityMeasure)는\n구역열이 없어 col5=총항목,col6=완료,col7=완료율(%)로 한 칸씩 밀려있어\n완료율(%)이 완료수로  (CLI ad-hoc · 커밋 b2c5069d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b2c5069d9b21d7c2630238c9437e0336f5d12423"
   }
 ]
