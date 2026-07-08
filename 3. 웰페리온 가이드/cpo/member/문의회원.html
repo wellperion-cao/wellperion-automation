@@ -857,6 +857,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .funnel-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .funnel-bar-label{flex:0 0 54px;font-size:11.5px;font-weight:700;color:var(--text)}
 .funnel-bar-label.is-join{color:var(--blue);font-weight:800}
+.funnel-bar-label.wide{flex:0 0 72px;white-space:nowrap}
 .funnel-bar-track{flex:1 1 auto;min-width:50px;height:19px;border-radius:5px;background:rgba(125,123,116,0.14);overflow:hidden}
 .funnel-bar-fill{height:100%;border-radius:5px 0 0 5px}
 .funnel-bar-fill.ok{background:var(--teal)}
@@ -934,6 +935,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   .cal-nav-btn{width:40px;height:40px}
   .funnel-bar-row{flex-wrap:wrap}
   .funnel-bar-label{flex:0 0 100%}
+  .funnel-bar-label.wide{flex:0 0 100%}
   .funnel-bar-nums{flex:0 0 100%;justify-content:flex-start;margin-top:2px}
 }
 </style>
@@ -2836,8 +2838,8 @@ function _postInqRenderFunnel(fd, tcd){
   var memberSnap = _cpoStats ? ((Number(_cpoStats.memberActive) || 0) + (Number(_cpoStats.memberCorp) || 0)) : null;
   var stages = [
     { label: '① 문의',      cur: inqBase },
-    { label: '② 1차 컨택',  cur: contactEst, est: true },
-    { label: '③ 상담·예약', cur: sum('응대') },
+    { label: '② 1차 컨택',  cur: contactEst, est: true, wide: true },
+    { label: '③ 상담·예약', cur: sum('응대'), wide: true },
     { label: '④ 방문',      cur: sum('방문') },
     { label: '⑤ 등록',      cur: sum('가입'), join: true },
     { label: '⑥ 회원',      cur: memberSnap, snapshot: true }
@@ -2857,7 +2859,7 @@ function _postInqRenderFunnel(fd, tcd){
     if (!mismatch && ret != null && (!worst || ret < worst.ret)) worst = { label: s.label, ret: ret };
     var curStr = cur == null ? '–' : cur.toLocaleString();
     var retStr = ret == null ? '–' : (ret + '%' + (mismatch ? ' △' : ''));
-    rowsHtml += '<div class="funnel-bar-row"><div class="funnel-bar-label' + (s.join ? ' is-join' : '') + '">' + s.label + '</div>' +
+    rowsHtml += '<div class="funnel-bar-row"><div class="funnel-bar-label' + (s.join ? ' is-join' : '') + (s.wide ? ' wide' : '') + '">' + s.label + '</div>' +
       '<div class="funnel-bar-track"><div class="funnel-bar-fill ' + g + '" style="width:' + w.toFixed(1) + '%"></div></div>' +
       '<div class="funnel-bar-nums"><span class="funnel-bar-count">' + curStr + (s.est ? '*' : '') + '</span>' +
       '<span class="funnel-bar-ret ' + g + '">' + retStr + '</span></div></div>';
