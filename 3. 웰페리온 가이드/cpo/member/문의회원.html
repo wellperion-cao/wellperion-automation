@@ -4792,14 +4792,14 @@ function _activateCellInquiry(td, row) {
 
 /* ─── CONTACT(연락 이력) 셀 표시 요약 + 클릭→모달 (일정형 격상, C1/2/3 인라인 편집 폐기. 축3, 2026-07-08 시포·GM) ─── */
 function _renderContactCell(td, row) {
-  var list = _rowContacts(row);
+  var list = _ctSort(_rowContacts(row));
   if (!list.length) { td.innerHTML = '<span style="color:var(--dim)">＋ 연락 추가</span>'; return; }
-  var withDate = list.filter(function(c){ return c.date; });
-  var latest = withDate.length ? withDate.reduce(function(a, b){
-    return ((b.date || '') + ' ' + (b.time || '')) > ((a.date || '') + ' ' + (a.time || '')) ? b : a;
-  }) : null;
-  var mmdd = latest ? latest.date.slice(5).replace('-', '/') : '';
-  td.textContent = list.length + '건' + (mmdd ? ' · 최근 ' + mmdd : '');
+  // 요약(N건) 대신 내용 그대로 노출 — 날짜·시간 접두 + 상담내용, 최신 우선. 2026-07-08 시포·GM
+  td.innerHTML = list.slice().reverse().map(function(c){
+    var d = c.date ? c.date.slice(5).replace('-', '/') : '';
+    var pre = (d || c.time) ? '<span style="color:var(--dim);font-size:10px">' + esc((d + ' ' + (c.time || '')).trim()) + '</span> ' : '';
+    return '<div style="margin-bottom:3px">' + pre + esc(c.note || '') + '</div>';
+  }).join('');
 }
 // CONTACT 셀 클릭 → 연락 이력 모달 오픈(인라인 편집 아님).
 function _activateCellContact(td, row) {
