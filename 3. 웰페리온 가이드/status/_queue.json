@@ -2917,5 +2917,19 @@
     "artifact": "lesson_inquiry_list·member_inquiry_list가 호출마다 시트 전체를 재조회해\n로딩이 5~43초로 요동. CacheService(TTL 60초) 청크 저장(≤3만자/키, 100KB\n제한 대응)으로 두 번째 조회부터 즉시 응답. lesson_inquiry_update·\nmember_inquiry_update 성공 시 해당 캐시 무효화해 최신 반영. 실측:\n강습 성인 1회차 6.0s→2회차 2.7s, 유효회원 3.96s→2.0s. 무효화 실측 확인\n(히트 1.98s→업데이트→미스 5.81s→히트 1.78s). (CLI ad-hoc · 커밋 4a1d84dd)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4a1d84dd4939c570b5c428a162ffd0782eddf26e"
+  },
+  {
+    "task_id": "CEO-2026-07-08-ADHOC-ec39d26e",
+    "clevel": "ceo",
+    "title": "[웰리] 12시 시설부 조회 재시도 강건화 — GAS 지연에도 '-' 안 새게",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 710,
+    "artifact": "_fetch_facility_today를 _gas_get(3회 재시도·40초)로 교체. 지원부와 동일 강건성. (CLI ad-hoc · 커밋 ec39d26e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "ec39d26ee5b55ffec7fb756c138a6c1823cb29e8"
   }
 ]
