@@ -98,6 +98,39 @@
   .dir .d-d{font-size:13px; color:var(--text-soft); line-height:1.5;}
   .none{font-size:11.5px; color:var(--dim); padding:6px 2px;}
 
+  /* ── Part 발표 흐름(2026-07-08 GM 재구성): Part 1~4 · 인쇄 시 Part별 페이지 분리 ── */
+  .part{margin:0 0 24px;}
+  .part-label{display:inline-block; font-size:11px; font-weight:800; letter-spacing:0.08em; color:var(--accent-soft);
+    background:rgba(124,108,240,0.12); border:1px solid rgba(124,108,240,0.4); border-radius:20px; padding:3px 13px; margin-bottom:11px;}
+  .slide{background:var(--paper); border:1px solid var(--border-strong); border-radius:16px; padding:20px 24px; margin-bottom:13px;}
+  .slide.center{text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; min-height:140px;}
+  .hero-num{font-size:52px; font-weight:800; letter-spacing:-0.02em; color:var(--gold); line-height:1.05;}
+  .hero-cap{font-size:15px; color:var(--text-soft); font-weight:700;}
+  .hero-sub{font-size:12.5px; color:var(--dim);}
+  .big-line{font-size:28px; font-weight:800; letter-spacing:-0.02em; line-height:1.35;}
+  .big-line em{font-style:normal; color:var(--accent-soft);}
+  .slogan-en{font-size:26px; font-weight:800; color:var(--emerald); letter-spacing:-0.01em;}
+  .slogan-kr{font-size:18px; font-weight:800; color:var(--text);}
+  .mission{font-size:13.5px; color:var(--text-soft); margin-top:3px;}
+  .agenda{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; text-align:left; width:100%;}
+  .agenda .ag{display:flex; gap:11px; align-items:flex-start; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:11px 14px;}
+  .agenda .ag .agn{font-size:18px; font-weight:800; color:var(--accent-soft); min-width:26px;}
+  .agenda .ag .agt{font-size:14px; font-weight:800;}
+  .agenda .ag .agd{font-size:11.5px; color:var(--dim); margin-top:2px;}
+  .kpi4{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:13px;}
+  .kpi{background:var(--surface); border:1px solid var(--border-strong); border-left:3px solid var(--border-strong); border-radius:13px; padding:12px 15px; display:flex; flex-direction:column; gap:4px;}
+  .kpi.gold{border-left-color:var(--gold);}
+  .kpi .kl{font-size:10.5px; color:var(--dim); font-weight:700; letter-spacing:0.03em;}
+  .kpi .kv{font-size:23px; font-weight:800; color:var(--text); line-height:1.12;}
+  .kpi.gold .kv{color:var(--gold);}
+  .kpi .ks{font-size:10px; color:var(--dim);}
+  .leader-note{font-size:13px; color:var(--text-soft); margin-bottom:13px; line-height:1.65;}
+  .order{display:grid; grid-template-columns:repeat(4,1fr); gap:9px;}
+  .order .ord{display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:11px; padding:10px 13px;}
+  .order .ord .on{font-size:15px; font-weight:800; color:var(--accent-soft); min-width:20px;}
+  .order .ord .ot{font-size:13px; font-weight:700;}
+  @media (max-width:820px){ .agenda,.kpi4,.order{grid-template-columns:1fr 1fr;} .hero-num{font-size:42px;} }
+
   /* ── 기간 셀렉터 + 과거 회차 재현 뷰(2026-07-07) ── */
   .period-bar{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 12px;}
   .pbtn{font-size:12px; font-weight:700; padding:6px 15px; border-radius:20px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text-soft); cursor:pointer; font-family:inherit;}
@@ -151,8 +184,11 @@
     .cols{gap:16px;}
     .approval-wrap{display:inline-block; box-shadow:none;}
     .doc-head{align-items:center;}
-    .card,.award,.best-card,.dir,.kicker,.approval-wrap,.arc-card,.arc-kw,.arc-quote{page-break-inside:avoid; break-inside:avoid;}
+    .card,.award,.best-card,.dir,.kicker,.approval-wrap,.arc-card,.arc-kw,.arc-quote,.slide,.kpi{page-break-inside:avoid; break-inside:avoid;}
     .doc-head,.kicker,.cols{page-break-inside:avoid;}
+    /* 발표 흐름: Part별 새 페이지(첫 Part 제외) — 팀리더 발표가 들어가 1장 불가 */
+    .part{page-break-before:always;}
+    .part:first-of-type{page-break-before:avoid;}
   }
   /* A4 = A3 절반 면적(같은 1:1.414 비율) — 콘텐츠는 A3 1장 밀도로 고정, A4 선택 시에는
      zoom으로 축소해 같은 레이아웃을 그대로 1장에 맞춘다(재조판·잘림 없음).
@@ -195,19 +231,82 @@
     <div class="period-bar" id="period-bar"></div>
 
     <div id="live-view">
-      <div class="kicker" id="kicker"><span class="k-h">🤖 <em>불러오는 중…</em></span></div>
 
-      <div class="cols">
-        <div>
-          <h2 class="sec">📊 상반기 매출 리뷰 <span class="tag">강습팀 1·2분기 분리 · 실적·월평균·달성% · 실측 · 미도래=정직</span></h2>
-          <div class="card" id="sales-card"><div class="none">매출 실측을 불러오는 중…</div></div>
+      <!-- ══════ PART 1 · 여는 이야기 ══════ -->
+      <div class="part">
+        <span class="part-label">PART 1 · 여는 이야기</span>
+
+        <!-- 1.1 매출 오프닝(상반기 한 숫자) -->
+        <div class="slide center">
+          <span class="hero-cap">2026 상반기, 우리는 이렇게 벌었습니다</span>
+          <span class="hero-num" id="hero-total">—</span>
+          <span class="hero-sub" id="hero-sub">상반기 실적 · 목표 대비</span>
         </div>
-        <div>
-          <h2 class="sec">🏆 1·2분기 포상 · 잘한 팀</h2>
-          <div id="award-card"><div class="none">포상 정보를 불러오는 중…</div></div>
-          <h2 class="sec" style="margin-top:6px;">🎯 하반기 방향 3축</h2>
-          <div class="dirs" id="dirs-card"><div class="none">하반기 방향을 불러오는 중…</div></div>
+
+        <!-- 1.2 나눌 이야기(목차) -->
+        <div class="slide">
+          <h2 class="sec">🗂️ 오늘 나눌 이야기</h2>
+          <div class="agenda">
+            <div class="ag"><span class="agn">01</span><div><div class="agt">상반기 매출 리뷰</div><div class="agd">팀별 실적 · 달성률 · 잘한 팀</div></div></div>
+            <div class="ag"><span class="agn">02</span><div><div class="agt">반복은 AI에게, 우리는 본질에</div><div class="agd">하반기 기조</div></div></div>
+            <div class="ag"><span class="agn">03</span><div><div class="agt">팀 리더 발표</div><div class="agd">각 팀 상반기 리뷰 &amp; 하반기 목표</div></div></div>
+            <div class="ag"><span class="agn">04</span><div><div class="agt">하반기 방향</div><div class="agd">키워드 3가지</div></div></div>
+          </div>
         </div>
+
+        <!-- 1.3 기조: 반복은 AI에게, 우리는 본질에 (half_year_review headline 라이브) -->
+        <div class="slide center">
+          <div class="kicker" id="kicker" style="width:100%; justify-content:center;"><span class="k-h">🤖 <em>불러오는 중…</em></span></div>
+        </div>
+
+        <!-- 1.4 슬로건 + 미션 -->
+        <div class="slide center">
+          <span class="slogan-en">A Day, Well Completed.</span>
+          <span class="slogan-kr">하루의 완성, 웰페리온</span>
+          <span class="mission">미션 — 회원 한 사람의 건강한 하루를 완성한다</span>
+        </div>
+      </div>
+
+      <!-- ══════ PART 2 · 상반기 매출 리뷰 ══════ -->
+      <div class="part">
+        <span class="part-label">PART 2 · 상반기 매출 리뷰</span>
+        <h2 class="sec">💰 숫자로 보는 상반기 <span class="tag">실측 · 미도래=정직</span></h2>
+        <div class="kpi4">
+          <div class="kpi gold"><span class="kl">상반기 총매출</span><span class="kv" id="kpi-total">—</span><span class="ks">1~6월 실측 합계</span></div>
+          <div class="kpi"><span class="kl">전사 달성률</span><span class="kv" id="kpi-pct">—</span><span class="ks">상반기 목표 대비</span></div>
+          <div class="kpi"><span class="kl">잘한 팀 (2분기)</span><span class="kv" id="kpi-best">—</span><span class="ks" id="kpi-best-sub">분기 달성률 최고</span></div>
+          <div class="kpi"><span class="kl">하반기 목표</span><span class="kv" id="kpi-h2">—</span><span class="ks">7~12월 합산 목표</span></div>
+        </div>
+        <h2 class="sec">📊 팀별 상반기 실적 <span class="tag">강습팀 1·2분기 분리 · 실적·월평균·달성%</span></h2>
+        <div class="card" id="sales-card"><div class="none">매출 실측을 불러오는 중…</div></div>
+        <h2 class="sec">🏆 1·2분기 포상 · 잘한 팀</h2>
+        <div id="award-card"><div class="none">포상 정보를 불러오는 중…</div></div>
+      </div>
+
+      <!-- ══════ PART 3 · 팀 리더 발표 ══════ -->
+      <div class="part">
+        <span class="part-label">PART 3 · 팀 리더 발표</span>
+        <h2 class="sec">🎤 팀 리더 상반기 리뷰 &amp; 하반기 목표</h2>
+        <div class="slide">
+          <div class="leader-note">각 팀 리더가 <b>본인 팀의 상반기 성과와 하반기 목표</b>를 직접 발표합니다. <b>팀당 2~3분</b> · 상반기 실적 근거는 PART 2 표 참조.</div>
+          <div class="order">
+            <div class="ord"><span class="on">1</span><span class="ot">수영팀</span></div>
+            <div class="ord"><span class="on">2</span><span class="ot">P.T팀</span></div>
+            <div class="ord"><span class="on">3</span><span class="ot">골프팀</span></div>
+            <div class="ord"><span class="on">4</span><span class="ot">스쿼시팀</span></div>
+            <div class="ord"><span class="on">5</span><span class="ot">체조팀</span></div>
+            <div class="ord"><span class="on">6</span><span class="ot">필라테스팀</span></div>
+            <div class="ord"><span class="on">7</span><span class="ot">뮤지컬팀</span></div>
+            <div class="ord"><span class="on">8</span><span class="ot">GXE(파트너팀)</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ PART 4 · 하반기 방향 ══════ -->
+      <div class="part">
+        <span class="part-label">PART 4 · 하반기 방향</span>
+        <h2 class="sec">🎯 하반기, 세 가지에 집중합니다 <span class="tag">키워드 3</span></h2>
+        <div class="dirs" id="dirs-card"><div class="none">하반기 방향을 불러오는 중…</div></div>
       </div>
 
       <div class="foot" id="foot">
@@ -362,6 +461,18 @@
     body += '<tr class="tot"><td class="team">전사 합계</td>' + qcell(t.q1, tq1avg, tq1) + qcell(t.q2, tq2avg, tq2) + qcell(t.h1, th1avg, th1) + '<td class="num h2v">' + fmtWon(t.htgt) + '</td></tr>';
 
     host.innerHTML = '<table><thead><tr><th>팀</th><th class="num">1분기(1~3월)<br>실적·월평균·달성%</th><th class="num">2분기(4~6월)<br>실적·월평균·달성%</th><th class="num">상반기 합<br>실적·월평균·달성%</th><th class="num">하반기 목표<br>(7~12월)</th></tr></thead><tbody>' + body + '</tbody></table>';
+    // ── PART 1 히어로 + PART 2 4카드(상반기 한눈) — 위에서 계산한 전사 합계 재사용(2026-07-08 재구성) ──
+    (function(){
+      var set = function(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; };
+      set('hero-total', t.h1 != null ? fmtWon(t.h1) : '—');
+      set('hero-sub', '상반기 실적 · 목표 ' + fmtWon(t.htgt) + ' 대비 ' + (th1 != null ? th1 + '%' : '—'));
+      set('kpi-total', t.h1 != null ? fmtWon(t.h1) : '—');
+      set('kpi-pct', th1 != null ? th1 + '%' : '—');
+      set('kpi-h2', fmtWon(t.htgt));
+      if(best2){ set('kpi-best', best2.name); set('kpi-best-sub', '2분기 달성률 ' + best2.q2pct + '%'); }
+      else if(best1){ set('kpi-best', best1.name); set('kpi-best-sub', '1분기 달성률 ' + best1.q1pct + '%'); }
+      else { set('kpi-best', '—'); }
+    })();
     renderAward();
   }
 
