@@ -229,6 +229,11 @@ function _createCheckSheet(ss, name) {
   var widths = [100,70,220,140,150,80,200,200,110,130,100,70,180,90];  // 13열 측정값 + 14열 반영완료
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i+1, widths[i]);
   // G열(이슈·인덱스6) — 2026-06-25 시우·GM: 이슈를 G열에 직접 저장하므로 숨김 가드 제거. G열 표시 유지.
+  // 시설(시설_ 접두) 시트만 이슈·노하우 열 숨김(saveFacilityMeasure가 항상 빈칸 저장 — 시설은 미사용 칸).
+  // hideColumns=표시만 숨김(물리삭제 아님) → idx12 측정값·idx14 소요시간 등 고정 열 인덱스 불변. 지원부는 실사용이라 미적용. 2026-07-08 시우.
+  if (String(name || '').indexOf('시설_') === 0) {
+    try { sheet.hideColumns(7, 2); } catch (e) {}   // G·H열(이슈=1-based7·노하우=1-based8) 2열 숨김
+  }
 }
 
 function _createStaffSheet(ss) {
@@ -540,6 +545,7 @@ function doGet(e) {
   if (action === 'delete_facility_empty_genders') { return deleteFacilityEmptyGenderSheets(); }   // 빈 껍데기 시설_남성/여성구역 2개만 정밀 삭제(공용구역 절대 보존, 데이터행0 확인). 1회성. 2026-06-20 시우.
   if (action === 'hide_issue_col') { return hideIssueColumn(e.parameter.dept || 'support'); }   // G열(이슈·인덱스6) 데이터행 비우기 + 컬럼 숨김(물리삭제 X·인덱스 보존). 1회성. 2026-06-20 시우.
   if (action === 'show_issue_col') { return showIssueColumn(e.parameter.dept || 'support'); }   // G열 숨김 해제 — hide_issue_col 실행 후 이슈 저장 재활성화 시 1회 실행. 2026-06-25 시우.
+  if (action === 'hide_facility_issue_cols') { return hideFacilityIssueCols(); }   // 시설_공용구역 G·H열(이슈·노하우) 숨김 — 신규 생성분은 _createCheckSheet가 자동 처리, 기존분은 1회 실행. 2026-07-08 시우.
   if (action === 'clear_old_duration') { return clearOldDuration(e.parameter.dept || 'support'); }   // O열(소요시간·인덱스14) 옛 시각값(1899-12-30 시리얼) 비우기. 컬럼 숨김 X — 소요시간은 화면 표시 유지. 1회성. 2026-06-20 시우.
   if (action === 'reset_facility_common') { return resetFacilityCommon(); }   // 시설_공용구역 옛 데이터 백업 후 데이터행 비움(헤더 보존). 1회성. 2026-07-06 시우.
   if (action === 'restore_facility_backup') { return restoreFacilityFromBackup(e.parameter.bak, e.parameter.date); }   // 백업탭에서 특정날짜 행만 복원(제출시각 최신·소요시간 정정). 1회성. 2026-07-06 시우.
@@ -907,6 +913,17 @@ function showIssueColumn(dept) {
     log.push(name + ' G열 숨김해제');
   });
   return jsonRes({ ok: true, dept: dept, col: 'G(이슈/index6)', log: log });
+}
+
+// 시설_공용구역(기존 생성분) G·H열(이슈·노하우) 숨김 — _createCheckSheet는 '신규 생성' 시에만 hideColumns를
+// 적용하므로, 이미 존재하는 시설_공용구역엔 소급 적용 안 됨. 배포 후 1회 실행용. 물리삭제 없음(hideColumns만).
+// GET ?action=hide_facility_issue_cols. 2026-07-08 시우.
+function hideFacilityIssueCols() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(SHEET_FACILITY_COMMON);
+  if (!sh) return jsonRes({ ok: false, error: SHEET_FACILITY_COMMON + ' 없음' });
+  sh.hideColumns(7, 2);   // G·H열(이슈=1-based7·노하우=1-based8)
+  return jsonRes({ ok: true, sheet: SHEET_FACILITY_COMMON, col: 'G-H(이슈·노하우/index6-7)' });
 }
 
 // O열(소요시간·15열·0-based 인덱스14) 옛 시각값 비우기(GM 2026-06-20 시우).
@@ -2801,6 +2818,10 @@ function saveFacilityMeasure(body) {
   var round = String(body.round || '').trim() || '측정';   // 회차 라벨(없으면 '측정' = 기존 단일스냅샷 하위호환)
   var inspector = String(body.inspector || '박호균').trim() || '박호균';
   var items = body.items || [];
+  // 소요시간 파이프(2026-07-08 시우): 프론트 타이머(⏱점검 시작/종료)가 캡처한 값 — 없으면 빈값(기존과 동일).
+  var durMin = (body.durMin === null || body.durMin === undefined || body.durMin === '') ? '' : String(body.durMin);
+  var startHHMM = String(body.startHHMM || '').trim();
+  var endHHMM = String(body.endHHMM || '').trim();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var name = SHEET_FACILITY_COMMON;   // 시설_공용구역(단일 점검탭 — 남/여는 측정컬럼으로 구분, §2-E)
   var sheet = ss.getSheetByName(name);
@@ -2828,8 +2849,8 @@ function saveFacilityMeasure(body) {
       done ? '완료' : '미완료', '', '',
       done ? '제출완료' : '미제출', done ? now : '',
       inspector, inspector,
-      measure, '', ''
-    ];   // 15열(HEADERS와 일치): …측정값·반영완료·소요시간. 소요시간=항상 빈값(시설 단발측정=타이머 없음, 제출시각은 col9). 2026-07-06 시우.
+      measure, '', durMin
+    ];   // 15열(HEADERS와 일치): …측정값·반영완료·소요시간. 소요시간=프론트 ⏱점검 시작/종료 타이머값(durMin), 없으면 빈값. 2026-07-08 시우(구: 항상 빈값 하드코딩).
   });
   if (rows.length) {
     var startRow = sheet.getLastRow() + 1;
@@ -2854,7 +2875,7 @@ function saveFacilityMeasure(body) {
     var abnormalCount = abnormalHits.length;
     var abnormalNote = abnormalHits.join(' / ');
     var fsheet = _initFacilitySnapshot();
-    var snapRow = [now, date, 'facility', round, inspector, totalCnt, doneCnt, inputRate, abnormalCount, abnormalNote, '', '', ''];
+    var snapRow = [now, date, 'facility', round, inspector, totalCnt, doneCnt, inputRate, abnormalCount, abnormalNote, startHHMM, endHHMM, durMin];
     var fdata = fsheet.getDataRange().getValues();
     var fhit = 0;
     for (var fr = fdata.length - 1; fr >= 1; fr--) {
