@@ -2931,5 +2931,21 @@
     "artifact": "_fetch_facility_today를 _gas_get(3회 재시도·40초)로 교체. 지원부와 동일 강건성. (CLI ad-hoc · 커밋 ec39d26e)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "ec39d26ee5b55ffec7fb756c138a6c1823cb29e8"
+  },
+  {
+    "task_id": "CFO-2026-07-08-DEPT-SALES-DEPT-REPOINT",
+    "clevel": "cfo",
+    "title": "[시뽀] 월간운영계획 부서별 매출 분해 소스 SALES_GVIZ→sales_dept 재배선",
+    "status": "DONE",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-08",
+    "ship_no": 711,
+    "note": "부서별 월간실적 표의 종목별 매출(_cfoSalesDept)이 옛 매출마스터(SALES_GVIZ 라이브)를 읽어 6월 종목값 부정확(뮤지컬 380,000 등, 부서합 544,008,908로 ~85M 과소). CFO 매출지출현황.html loadSalesDept와 동일하게 「매출 보고」 말일탭 서버집계(action=sales_dept, PROC_API)를 정본으로 배선하고 SALES_GVIZ는 폴백 베이스(라이브 없는 월만)로 격하. readCfoFinance에 readSalesDeptLive() 5번째 소스 추가·월별 라이브 우선/마스터 폴백 병합. 운영부는 기존 GM시트 정본(sales_ops override) 유지. 값·공식값·렌더 로직 무변경, 소스만 교체.",
+    "next": "🏁 입항 완료 — 부서별 분해 정본화 완결. 다음 불필요(루틴 정합).",
+    "depends_on": "",
+    "terminal": true,
+    "processed_at": "2026-07-08",
+    "artifact": "6월 부서카드합 629,329,608 = CFO 정본 일치(sales_dept+운영부 sales_ops). 헤드라인 622,807,408과 갭 +6,590,500=기타·주차 잔차. GAS sales_dept curl 교차검증: 수영 122,893,000·뮤지컬 3,777,500·필라테스 39,362,300 종목 일치. node --check SYNTAX_OK.",
+    "adhoc_commit": "11e227ec"
   }
 ]
