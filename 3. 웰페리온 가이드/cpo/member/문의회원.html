@@ -3137,15 +3137,25 @@ function _lessonChipHtml(t, val, label, n) {
     'color:' + (active ? 'var(--teal)' : 'var(--dim)') + '">' + esc(label) + ' ' + n + '</button>';
 }
 
+// 종목 세그먼트 → 표시 버킷(칩·필터 그룹키). 명단키 매칭 우선, 없으면 괄호 앞 라벨. gviz엔 r.bucket 없어 클라 계산. 축7, 2026-07-08 시포·GM.
+function _lessonSegmentBucket(seg) {
+  var rk = _lessonRosterKeyOf(seg);
+  if (rk) return rk;
+  var s = String(seg || '').replace(/\(.*$/, '').trim();
+  return s || '기타';
+}
 function lessonRenderChips(t) {
   var bar = document.getElementById('lessonSportBar_' + t);
   if (!bar) return;
   var rows = _lessonState[t].rows;
-  var counts = {};
-  // 종목칩 = 표준 버킷(r.bucket) 그룹 — 원문 라벨 대신 압축. 표는 원문 sport 그대로(아래 lessonRender). 2026-06-27 시포.
-  rows.forEach(function(r){ var s = String(r.bucket || '기타').trim() || '기타'; counts[s] = (counts[s] || 0) + 1; });
+  var counts = {}, totalLines = 0;
+  // 종목칩 = 종목별 줄 기준(문의 1건에 종목 여러 개면 각 종목 카운트). 축7 종목분리 정합. 2026-07-08 시포·GM.
+  rows.forEach(function(r){
+    var segs = _lessonSportSplit(r.sport); if (!segs.length) segs = [''];
+    segs.forEach(function(seg){ var b = _lessonSegmentBucket(seg); counts[b] = (counts[b] || 0) + 1; totalLines++; });
+  });
   var sports = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
-  var html = _lessonChipHtml(t, '', '전체', rows.length);
+  var html = _lessonChipHtml(t, '', '전체', totalLines);
   sports.forEach(function(s){ html += _lessonChipHtml(t, s, s, counts[s]); });
   bar.innerHTML = html;
 }
@@ -3157,17 +3167,9 @@ function lessonFilterSport(btn, t) {
 }
 
 // 종목칩 필터 반영 후 현재 화면에 보이는 행(문의일 최신순) — lessonRender에서 공유. 2026-07-07 시포·GM
+// 종목 필터는 이제 '줄' 단위(_lessonVisibleLines)에서 적용 — 여기선 정렬만(문의일 최신순). 축7, 2026-07-08 시포·GM.
 function _lessonVisibleRows(t) {
-  var st = _lessonState[t];
-  var rows = st.rows;
-  if (st.sport) {
-    rows = st.rows.filter(function(r){
-      var s = String(r.bucket || '기타').trim() || '기타';   // 필터는 버킷 기준(칩과 동일)
-      return s === st.sport;
-    });
-  }
-  rows = rows.slice().sort(function(a,b){ return String(b.timestamp||'').localeCompare(String(a.timestamp||'')); });   // 문의일 최신순
-  return rows;
+  return _lessonState[t].rows.slice().sort(function(a,b){ return String(b.timestamp||'').localeCompare(String(a.timestamp||'')); });
 }
 
 // 강습 종목별 담당(강사) 명단 — status/lesson_instructor_roster.json 내용 그대로 임베드
@@ -3238,12 +3240,14 @@ function _lessonApplyLocalMgmt(row, sportKey, patch) {
 // 필터 반영 후 화면에 보이는 '종목별 줄' — 문의 1행에 종목이 여러 개면 종목마다 별도 줄로 분리(축7, GM 확정).
 // 종목 미기재 행은 sportKey=''(레거시 단일 경로)로 줄 1개 유지(데이터 손실 방지).
 function _lessonVisibleLines(t) {
+  var st = _lessonState[t];
   var rows = _lessonVisibleRows(t);
   var lines = [];
   rows.forEach(function(r){
     var sports = _lessonSportSplit(r.sport);
     if (!sports.length) sports = [''];
     sports.forEach(function(sportKey){
+      if (st.sport && _lessonSegmentBucket(sportKey) !== st.sport) return;   // 종목칩 필터(줄 기준)
       lines.push({ row: r, sportKey: sportKey, sportLabel: sportKey || '—' });
     });
   });
