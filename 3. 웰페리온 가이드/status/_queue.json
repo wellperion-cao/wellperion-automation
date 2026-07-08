@@ -3142,5 +3142,19 @@
     "artifact": "- reg 읽기를 위치→헤더 이름 기준으로 교체(별칭 분실위치→loc/물품상세→content)\n- 칭찬·쓴소리 폼 사진칸 제거 + 쓰기경로 photoURL 미기록 짝\n- clean_reg_columns 데이터-안전화: 데이터 있는 잔재컬럼(처리자 등) 보존, 빈칸만 삭제 (CLI ad-hoc · 커밋 2dd8effe)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "2dd8effedfa06dcd0dad037b40902dce1d38ed70"
+  },
+  {
+    "task_id": "CPO-2026-07-08-ADHOC-6d5c62e2",
+    "clevel": "cpo",
+    "title": "[시포] 문의현황 gviz 직접읽기 어댑터 배선(플래그 OFF, 검증 전용)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 726,
+    "artifact": "- GAS: share_inquiry_sheets 액션 추가 — 멤버십·강습 문의 시트를 \"링크 있는\n  누구나 보기\"로 전환(GM go 2026-07-08). 배포(@142~146) 후 1회 호출로\n  실행 완료. 역롤백=구글 드라이브 공유 설정을 '제한됨'으로 변경(1초).\n- 문의회원.html: USE_GVIZ 플래그(기본 false) + gviz 직접읽기 어댑터 추가.\n  member_inquiry_list·lesson_inquiry_list 두 읽기만 gviz로 대체 가능하도록\n  Survey.js(_miReadRows_/ (CLI ad-hoc · 커밋 6d5c62e2)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6d5c62e22dbf043cfb297de24422d8080fbc347e"
   }
 ]
