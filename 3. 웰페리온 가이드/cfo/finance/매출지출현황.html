@@ -766,15 +766,24 @@ async function procCall(action,extra){
 function rval(id){return document.getElementById(id).value;}
 async function loadReq(){try{var d=await procCall("list",{mode:"active",noimg:1});REQ_ACTIVE=(d&&d.data)||[];}catch(e){REQ_ACTIVE=[];}renderReqTbl();loadReqPhotos();} // 경량(noimg) 즉시 렌더 → 사진은 백그라운드 병합(2026-07-08 A안: 첫 표시 즉시화·247KB→10KB·백엔드 무변경)
 var _photoLoading=false;
-async function loadReqPhotos(){ // 미완료 리스트 사진(이미지·지출증빙) 백그라운드 로드 → 도착 시 병합·재렌더(논블로킹)
+async function loadReqPhotos(){ // 미완료 리스트 사진(이미지·지출증빙) 백그라운드 로드 → 도착 시 병합·재렌더(논블로킹, 재시도 포함)
   if(_photoLoading)return;_photoLoading=true;
-  try{
-    var d=await procCall("list",{mode:"active"});var imgs={};
-    ((d&&d.data)||[]).forEach(function(r){imgs[r.row]={i:r.이미지,e:r.지출증빙,k:(r.물품||"")+"|"+(r.요청자||"")+"|"+(r.가격||"")};});
-    var hit=false;
-    REQ_ACTIVE.forEach(function(r){var m=imgs[r.row];if(m&&m.k===((r.물품||"")+"|"+(r.요청자||"")+"|"+(r.가격||""))){r.이미지=m.i;r.지출증빙=m.e;hit=true;}}); // row+물품·요청자·가격 일치 시에만(행 재사용 오염 방지)
-    if(hit)renderReqTbl();
-  }catch(e){}
+  // 관리자 대시보드는 무거운 매출 집계와 같은 백엔드라 사진 full 조회가 경합·간헐 404 → 슬롯 날 때까지 재시도(점증 간격, 사진 안뜨는 문제 해소 2026-07-08)
+  var delays=[0,1200,2200,3500,5000,7000,9000];
+  for(var a=0;a<delays.length;a++){
+    if(delays[a])await new Promise(function(rs){setTimeout(rs,delays[a]);});
+    try{
+      var d=await procCall("list",{mode:"active"});
+      if(d&&d.ok&&d.data){
+        var imgs={};
+        d.data.forEach(function(r){imgs[r.row]={i:r.이미지,e:r.지출증빙,k:(r.물품||"")+"|"+(r.요청자||"")+"|"+(r.가격||"")};});
+        var hit=false;
+        REQ_ACTIVE.forEach(function(r){var m=imgs[r.row];if(m&&m.k===((r.물품||"")+"|"+(r.요청자||"")+"|"+(r.가격||""))){r.이미지=m.i;r.지출증빙=m.e;hit=true;}}); // row+물품·요청자·가격 일치 시에만(행 재사용 오염 방지)
+        if(hit)renderReqTbl();
+        break; // 유효 응답 확보 → 종료
+      }
+    }catch(e){}
+  }
   _photoLoading=false;
 }
 async function loadDone(){var dm=document.getElementById("doneMsg");dm.textContent="검색 중…";
