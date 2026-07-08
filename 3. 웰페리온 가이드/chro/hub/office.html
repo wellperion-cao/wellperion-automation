@@ -203,7 +203,8 @@
           <div class="term-head">
             <span class="term-dot"></span>
             <span class="term-title">CHRO 터미널</span>
-            <span class="term-badge">조회 전용</span>
+            <span class="term-badge" id="term-badge">잠금</span>
+            <button class="term-tgl" id="cmd-open" type="button" title="CMD 열기" style="margin-left:auto">🔒 CMD 열기</button>
             <button class="term-tgl" id="term-tgl" type="button" aria-expanded="true" aria-controls="term-body" title="터미널 접기/펼치기">▾</button>
           </div>
           <div class="term-body" id="term-body">
@@ -1434,7 +1435,7 @@
     setTicker(c.id, c.tag, c.task, '배정');
     return c;
   }
-  function nextEvent(now){ assignReal(now); }
+  function nextEvent(now){ ambientFeed(); assignReal(now); }
 
   function updateEvents(t){
     if(t>=nextSpawnAt){ nextEvent(t); nextSpawnAt = t + rand(2.5,5.0); }
@@ -1628,7 +1629,7 @@
 
   const termCmds={
     help:function(){
-      tLine('CHRO 터미널 — 실시간 조회 전용 (인증 후 실데이터)','tl-h');
+      tLine('CHRO 터미널 — CMD 열기 후: 실데이터 조회 + CHRO 세션 명령 전송','tl-h');
       tLine('데이터 기준: '+REAL_SCHEDULE.asOf,'tl-mut');
       tLine('  help · ? · 도움말     명령 목록');
       tLine('  일정 · 오늘 · today   오늘 일정 보드');
@@ -1771,7 +1772,7 @@
     tLine('실데이터 로드 완료 — 면접 '+TERM_IV.length+'건 · 공고 마감 '+TERM_DL.length+'건 · 온보딩 '+TERM_OB.length+'건','tl-mut'); tScroll();
     initAutolog();
   }
-  async function termRemote(raw){ return; /* 실전송 비활성 — 안전상 조회 전용 터미널 */
+  async function termRemote(raw){ /* 실전송 비활성 — 안전상 조회 전용 터미널 */
     if(!SESSION_PW){ tLine('게이트 인증 후 이용할 수 있어요','tl-err'); tScroll(); return; }
     tLine('→ CHRO 세션으로 전송 중…','tl-mut'); tScroll();
     let res=null; try{ res=await api({action:'cmd-push',adminPassword:SESSION_PW,text:raw}); }catch(e){}
@@ -1795,12 +1796,40 @@
     },5000);
   }
 
+  /* ===== CMD 잠금/연결 상태 ===== */
+  let CMD_UNLOCKED=false, awaitingCmdPw=false, ambientOn=false;
+  const AMBIENT=[{id:'A-1',t:'신규 이력서 검토'},{id:'A-6',t:'정합성 점검'},{id:'A-2',t:'면접 일정 확인'},{id:'A-3',t:'온보딩 진행 점검'},{id:'A-5',t:'배포 준비'},{id:'A-4',t:'평가 정리'},{id:'A-7',t:'작업 흐름 최적화'},{id:'A-1',t:'서류 평가'},{id:'A-6',t:'감사 대기 검토'}];
+  function startAmbient(){ ambientOn=true; }
+  function ambientFeed(){ if(!ambientOn||CMD_UNLOCKED||realQueue.length) return; const a=AMBIENT[(Math.random()*AMBIENT.length)|0]; realQueue.push({agent:a.id,text:a.t,kind:'진행',isLead:false,count:false}); }
+  function promptCmdPw(){ if(CMD_UNLOCKED){ tLine('이미 연결됨','tl-mut'); tScroll(); return; } awaitingCmdPw=true; tIn.type='password'; tIn.placeholder='CMD 비밀번호'; tLine('CMD 비밀번호를 입력하고 Enter','tl-mut'); tScroll(); tIn.focus(); }
+  async function cmdUnlock(pw,silent){
+    if(!pw||!String(pw).trim()){ if(!silent){ tLine('비밀번호를 입력해 주세요','tl-err'); tScroll(); } return false; }
+    let data=null; try{ data=await api({db:'autolog',password:pw}); }catch(e){}
+    const ok=data&&data.ok&&(data.role==='cmd'||data.role==='admin');
+    if(!ok){ try{sessionStorage.removeItem('wp_cmd_pw');}catch(e){} if(!silent){ tLine('CMD 비밀번호가 올바르지 않습니다','tl-err'); tScroll(); } return false; }
+    SESSION_PW=pw; CMD_UNLOCKED=true;
+    try{sessionStorage.setItem('wp_cmd_pw',pw);}catch(e){}
+    const badge=document.getElementById('term-badge'); if(badge) badge.textContent='● 연결됨';
+    const ob=document.getElementById('cmd-open'); if(ob) ob.style.display='none';
+    realQueue.length=0;
+    loadRealData();
+    tLine('CMD 잠금 해제 — 실데이터 연결됨. 이제 명령이 CHRO 세션으로 전달됩니다.','tl-h');
+    tLine('일정·면접·마감·온보딩·팀원·상태 조회 / 그 외 문장은 CHRO에게 전송','tl-mut'); tScroll();
+    return true;
+  }
   function termExec(raw){
+    if(awaitingCmdPw){ awaitingCmdPw=false; tIn.type='text'; tIn.placeholder='help'; cmdUnlock(raw,false); return; }
     tLine('chro> '+raw,'tl-cmd');
     const parts=raw.split(/\s+/);
-    const cmd=TERM_ALIAS[(parts[0]||'').toLowerCase()];
-    if(cmd && termCmds[cmd]) termCmds[cmd](parts.slice(1).join(' '));
-    else tLine("'"+parts[0]+"' 명령을 몰라요… help 를 입력해 보세요 (쓰기 작업은 허브에서)",'tl-err');
+    const key=(parts[0]||'').toLowerCase();
+    if(key==='cmd'||key==='열기'||key==='unlock'){ promptCmdPw(); tScroll(); return; }
+    const cmd=TERM_ALIAS[key];
+    if(cmd && termCmds[cmd]){
+      if(!CMD_UNLOCKED && cmd!=='help' && cmd!=='clear' && cmd!=='motto'){ tLine('실데이터 조회는 "CMD 열기"(비밀번호) 후 이용할 수 있어요','tl-mut'); tScroll(); return; }
+      termCmds[cmd](parts.slice(1).join(' '));
+    }
+    else if(CMD_UNLOCKED){ termRemote(raw); }
+    else tLine("'"+parts[0]+"' — help 또는 'CMD 열기'로 잠금 해제","tl-err");
     tScroll();
   }
 
@@ -1830,7 +1859,7 @@
     tTgl.setAttribute('aria-expanded',String(!closed));
     tTgl.textContent=closed?'▴':'▾';
   });
-  tLine('CHRO 터미널 — 실시간 조회 전용 · help 를 입력해 보세요','tl-mut');
+  tLine('CHRO 터미널 — 자유 열람 중 · "CMD 열기"(비밀번호)로 실데이터·명령 연결 · help','tl-mut');
   termGhostSync();
 
   /* ===== 게이트 (허브 index.html 패턴 — 비번은 소스에 없음, 입력값을 백엔드 검증) ===== */
@@ -1854,10 +1883,13 @@
   }
   document.getElementById('gateBtn').addEventListener('click',function(){ attemptGate(document.getElementById('gatePw').value); });
   document.getElementById('gatePw').addEventListener('keydown',function(e){ if(e.key==='Enter') attemptGate(document.getElementById('gatePw').value); });
+  const _cmdOpenBtn=document.getElementById('cmd-open');
+  if(_cmdOpenBtn) _cmdOpenBtn.addEventListener('click',promptCmdPw);
   (function gateBoot(){
-    let sp=''; try{ sp=sessionStorage.getItem('wp_hr_pw')||''; }catch(e){}
-    if(sp){ hideGateEl(); attemptGate(sp); }
-    else { showGateEl(); try{ document.getElementById('gatePw').focus(); }catch(e){} }
+    hideGateEl();          /* 무비번 자유 열람 */
+    startAmbient();        /* 이름 없는 연출 모드 */
+    let sp=''; try{ sp=sessionStorage.getItem('wp_cmd_pw')||''; }catch(e){}
+    if(sp) cmdUnlock(sp,true);
   })();
 
   resize(); updateClock(); start();
