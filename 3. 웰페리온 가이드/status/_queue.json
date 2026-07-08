@@ -2947,5 +2947,19 @@
     "processed_at": "2026-07-08",
     "artifact": "6월 부서카드합 629,329,608 = CFO 정본 일치(sales_dept+운영부 sales_ops). 헤드라인 622,807,408과 갭 +6,590,500=기타·주차 잔차. GAS sales_dept curl 교차검증: 수영 122,893,000·뮤지컬 3,777,500·필라테스 39,362,300 종목 일치. node --check SYNTAX_OK.",
     "adhoc_commit": "11e227ec"
+  },
+  {
+    "task_id": "CEO-2026-07-08-ADHOC-3cf9f045",
+    "clevel": "ceo",
+    "title": "[웰리] 멤버십 CONTACT 연락이력 백엔드 + 1차 컨택 알림(축2·축6)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 712,
+    "artifact": "- 연락이력 컬럼(JSON 리스트) 멱등 추가 — 예약목록과 동일 스키마 재사용(_resParse_/_resStringify_)\n- member_inquiry_list: contacts 배열 반환. 연락이력 비어있으면 Contact1/2/3 비파괴 흡수(원복 안전)\n- member_inquiry_update: body.contacts 수신 시 저장. 이력 0→1건 전이 감지해 '문의 알림' 방에\n  1차 컨택 알림 발송. 중복 방지를 위해 기존 상태(상담중 등)기준 '컨택 시작' 알림은 이력-기준으로 대체 (CLI ad-hoc · 커밋 3cf9f045)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "3cf9f045fcd63c6a3a05d07c112e2e0b737c42b5"
   }
 ]
