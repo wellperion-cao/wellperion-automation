@@ -1186,6 +1186,11 @@ function _miTminKR_(val) {
 //  하위호환(비파괴): JSON 없으면 기존 체험1·2(J/K/L/M) / 재등록 단일 3칸을 예약1·2로 흡수해 읽는다. 저장 시 JSON + 기존칸 미러 동기화.
 var INQ_RES_COL = '예약목록';
 var ACT_RES_COL = '재등록예약목록';
+// ═══ 연락 이력(가변 · 날짜+시간+상담내용 리스트) — 멤버십 문의회원 CONTACT. 2026-07-08 시포·GM(축2) ═══
+//  저장 모델: 예약목록과 동일 스키마([{date,time,note}]) → _resParse_/_resStringify_ 재사용. 컬럼='연락이력'(멱등 생성).
+//  하위호환(비파괴): '연락이력'이 비어 있고 옛 Contact1/2/3에 값이 있으면 각각 {date:'',time:'',note:Cn}으로 합성해 표시.
+//  Contact1/2/3 컬럼은 절대 삭제·덮어쓰지 않음(원복 안전) — '연락이력'이 있으면 그것을 우선 사용.
+var CONTACT_HIST_COL = '연락이력';
 // 셀/배열/JSON 문자열 → 정규 예약 배열([{date,time,note}]). 완전 빈 항목 제거.
 function _resParse_(raw) {
   if (!raw) return [];
@@ -1251,6 +1256,7 @@ function _miReadRows_() {
   var iC1 = _miColIdx_(hdr, ['Contact1']); if (iC1 < 0) iC1 = 17;
   var iC2 = _miColIdx_(hdr, ['Contact2']); if (iC2 < 0) iC2 = 18;
   var iC3 = _miColIdx_(hdr, ['Contact3']); if (iC3 < 0) iC3 = 19;
+  var iHist = _miColIdx_(hdr, [CONTACT_HIST_COL]);  // 연락이력(JSON) — 가변 컨택 이력. 2026-07-08 시포·GM(축2)
   for (var r = 0; r < data.length; r++) {
     var row = data[r];
     var hasName  = iName  >= 0 && row[iName];
@@ -1288,6 +1294,14 @@ function _miReadRows_() {
       if (_mo.exp2) _resArr.push({ date: _mo.exp2, time: _mo.exp2Time || '', note: '' });
     }
     _mo.reservations = _resArr;
+    // 연락이력(가변): JSON 우선 → 없으면 Contact1/2/3 흡수(비파괴·하위호환). 2026-07-08 시포·GM(축2)
+    var _histArr = _resParse_(iHist >= 0 ? row[iHist] : '');
+    if (!_histArr.length) {
+      [_mo.contact1, _mo.contact2, _mo.contact3].forEach(function(cv){
+        if (cv) _histArr.push({ date: '', time: '', note: cv });
+      });
+    }
+    _mo.contacts = _histArr;
     out.push(_mo);
   }
   return out;
@@ -2417,6 +2431,22 @@ function _processAction(body) {
     _muSetCol(['Contact1'], 17, _fmtContactOrUndef_(body.contact1));
     _muSetCol(['Contact2'], 18, _fmtContactOrUndef_(body.contact2));
     _muSetCol(['Contact3'], 19, _fmtContactOrUndef_(body.contact3));
+    // ── 연락이력(가변) — 축2: body.contacts(JSON 문자열/배열) 수신 시 저장. 미전송이면 무영향(기존 필드만 갱신).
+    //    Contact1/2/3은 위에서 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
+    var _muHistPrevCount = 0;
+    var _muHistNewArr = null;
+    if (body.contacts !== undefined) {
+      try {
+        var _muHistCi = _miColIdx_(muHdr, [CONTACT_HIST_COL]);
+        var _muPrevHistArr = (_muHistCi >= 0) ? _resParse_(muSh.getRange(muRow, _muHistCi + 1).getValue()) : [];
+        _muHistPrevCount = _muPrevHistArr.length;
+        _muHistNewArr = _resParse_(body.contacts);
+        var _muHistCi2 = _miEnsureCol_(muSh, muHdr, CONTACT_HIST_COL);
+        var _muHistCell = muSh.getRange(muRow, _muHistCi2 + 1);
+        _muHistCell.setNumberFormat('@');
+        _muHistCell.setValue(_resStringify_(_muHistNewArr));
+      } catch (eHist) { Logger.log('연락이력 저장 실패: ' + eHist.message); }
+    }
     // 방문 완료 — 진행상황과 독립 칸(방문완료일). 등록(SUC)돼도 방문 기록 유지. body.visited 미전송이면 무변경.
     //   true=방문일자(없으면 오늘) 기록 / false=클리어. 칸 없으면 _miEnsureCol_이 생성. 2026-06-29 시포.
     if (body.visited !== undefined) {
@@ -2451,14 +2481,14 @@ function _processAction(body) {
         } catch (e) {}
       }
     }
-    // 컨택 시작 알림: 컨택 상태집합('컨택'/'컨택중'/'응대'/'연락'/'통화'/'상담중') 최초 진입 1회 — 집합 내 이동(예: 컨택→상담중)은 재알림 안 함. 2026-07-07 시토·GM.
-    var _muContactStatuses = ['컨택','컨택중','응대','연락','통화','상담중'];
-    var _muWasContact = _muContactStatuses.indexOf(_muOldStatus) >= 0;
-    var _muIsContact  = _muContactStatuses.indexOf(_muNewStatus) >= 0;
-    if (_muIsContact && !_muWasContact) {
+    // 1차 컨택 알림(축6, 이력-기준으로 일원화): 연락이력 0건 → ≥1건 전이 시 1회만. 2026-07-08 시포·GM.
+    //   구 '컨택 시작'(상태=상담중 등 진입 기준) 알림은 중복 방지를 위해 이 이력-기준 알림으로 대체(제거).
+    if (_muHistNewArr && _muHistPrevCount === 0 && _muHistNewArr.length >= 1) {
       try {
-        var _contactChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-        _notifyTelegram('📞 <b>컨택 시작</b> — 문의회원 상담·응대 개시\n· 이름: ' + (_coName || '-') + '\n· 프로그램: ' + (_coProg || '-') + '\n· 담당: ' + (_coOwner || '-') + '\n· 상태: ' + (_muNewStatus || '-'), _contactChatId);
+        var _histFirst = _muHistNewArr[0];
+        var _histWhen = ((_histFirst.date || '') + ' ' + (_histFirst.time || '')).trim();
+        var _histChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+        _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + (_coName || '-') + ' (' + (_coProg || '-') + ')\n일시: ' + (_histWhen || '-') + '\n내용: ' + (_histFirst.note || '-') + (_coOwner ? '\n담당: ' + _coOwner : ''), _histChatId);
       } catch (e) {}
     }
     // 등록 해제(이전 SUC → 신규 비SUC, status 명시 전송 시) — 잘못 등록 되돌리기: 등록현황에서 제거. 2026-06-29 시포.
