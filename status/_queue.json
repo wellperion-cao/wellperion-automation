@@ -2975,5 +2975,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_017oKjxxxTYqzPrDhYkLgo7b (CLI ad-hoc · 커밋 47a0aa83)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "47a0aa83cd34ac7c4411219b55fbbb2284de47db"
+  },
+  {
+    "task_id": "CEO-2026-07-08-ADHOC-4f5e71cb",
+    "clevel": "ceo",
+    "title": "[웰리] 문의회원 캐시 무효화 누락 보강 + 삭제 가드 fail-safe",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 714,
+    "artifact": "member_inquiry_add/delete에 조회 캐시(micache) 무효화가 빠져 있어 추가/삭제\n직후 최대 60초간 stale rowIndex가 반환될 수 있었고, 삭제 가드는 대상 행\n전화가 비면 대조를 통과시켜 엉뚱한 행이 삭제될 위험이 있었다. add/delete에\n무효화를 추가하고, 삭제 가드는 keyPhone 동봉 시 대상 전화가 비었거나\n불일치하면 무조건 거부하도록 fail-safe로 강화했다. (CLI ad-hoc · 커밋 4f5e71cb)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4f5e71cb3e28bd9539925466e379c9db05b74d48"
   }
 ]
