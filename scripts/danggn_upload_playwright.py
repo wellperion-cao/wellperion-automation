@@ -1041,6 +1041,23 @@ async def _run_draft_with_context(page, context, args: argparse.Namespace, publi
                         _upd_rq(_folder, "당근", _captured_url)
                     else:
                         print("[WARN] --content-dir 미지정 — review_queue 갱신 생략")
+                elif re.search(r"[?&]postId=([A-Za-z0-9_-]+)", _pub_url):
+                    # 폴백①(2026-07-08 GM 확인): 발행 직후 page.url = 매니저 URL
+                    #   (bizprofile.../manager/posts/?postId={fullId}). 공개 URL 패턴 =
+                    #   www.daangn.com/kr/business-posts/{postId} 로 조립. posts-list 스크레이핑보다 확실.
+                    _pid = re.search(r"[?&]postId=([A-Za-z0-9_-]+)", _pub_url).group(1)
+                    _captured_url = f"https://www.daangn.com/kr/business-posts/{_pid}"
+                    print(f"[INFO] 당근 공개 URL 조립(postId 파라미터): {_captured_url}")
+                    _folder = (getattr(args, "content_dir", None) or "").strip()
+                    if _folder:
+                        try:
+                            from review_queue_util import update_review_post_url as _upd_rq
+                        except ImportError:
+                            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                            from review_queue_util import update_review_post_url as _upd_rq
+                        _upd_rq(_folder, "당근", _captured_url)
+                    else:
+                        print("[WARN] --content-dir 미지정 — review_queue 갱신 생략")
                 else:
                     print(
                         f"[INFO] 당근 URL 패턴 불일치 (현재: {_pub_url[:80]})"
