@@ -764,7 +764,19 @@ async function procCall(action,extra){
   return await r.json();
 }
 function rval(id){return document.getElementById(id).value;}
-async function loadReq(){try{var d=await procCall("list",{mode:"active"});REQ_ACTIVE=(d&&d.data)||[];}catch(e){REQ_ACTIVE=[];}renderReqTbl();}
+async function loadReq(){try{var d=await procCall("list",{mode:"active",noimg:1});REQ_ACTIVE=(d&&d.data)||[];}catch(e){REQ_ACTIVE=[];}renderReqTbl();loadReqPhotos();} // 경량(noimg) 즉시 렌더 → 사진은 백그라운드 병합(2026-07-08 A안: 첫 표시 즉시화·247KB→10KB·백엔드 무변경)
+var _photoLoading=false;
+async function loadReqPhotos(){ // 미완료 리스트 사진(이미지·지출증빙) 백그라운드 로드 → 도착 시 병합·재렌더(논블로킹)
+  if(_photoLoading)return;_photoLoading=true;
+  try{
+    var d=await procCall("list",{mode:"active"});var imgs={};
+    ((d&&d.data)||[]).forEach(function(r){imgs[r.row]={i:r.이미지,e:r.지출증빙,k:(r.물품||"")+"|"+(r.요청자||"")+"|"+(r.가격||"")};});
+    var hit=false;
+    REQ_ACTIVE.forEach(function(r){var m=imgs[r.row];if(m&&m.k===((r.물품||"")+"|"+(r.요청자||"")+"|"+(r.가격||""))){r.이미지=m.i;r.지출증빙=m.e;hit=true;}}); // row+물품·요청자·가격 일치 시에만(행 재사용 오염 방지)
+    if(hit)renderReqTbl();
+  }catch(e){}
+  _photoLoading=false;
+}
 async function loadDone(){var dm=document.getElementById("doneMsg");dm.textContent="검색 중…";
   try{var d=await procCall("list",{mode:"done",from:rval("doneFrom"),to:rval("doneTo")});REQ_DONE=(d&&d.data)||[];dm.textContent="조회 "+REQ_DONE.length+"건";}catch(e){REQ_DONE=[];dm.textContent="검색 실패";}
   reqFilter="완료";renderReqTbl();}
