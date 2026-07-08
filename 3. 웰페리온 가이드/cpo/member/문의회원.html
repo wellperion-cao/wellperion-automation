@@ -1432,13 +1432,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <table class="reg-table">
           <thead>
             <tr>
-              <th class="left" style="min-width:90px">문의일</th>
-              <th class="left" style="min-width:70px">성함</th>
-              <th style="min-width:120px">연락처</th>
-              <th style="min-width:90px">강습종목</th>
+              <th class="left" style="min-width:80px">문의일</th>
+              <th class="left" style="min-width:60px">성함</th>
+              <th style="min-width:100px">연락처</th>
+              <th style="min-width:70px">강습종목</th>
               <th style="min-width:80px">진행상태</th>
               <th style="min-width:70px">담당</th>
-              <th class="left" style="min-width:160px">메모</th>
+              <th class="left" style="min-width:220px">CONTACT (연락 이력)</th>
             </tr>
           </thead>
           <tbody id="lessonBody_adult">
@@ -1547,13 +1547,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <table class="reg-table">
           <thead>
             <tr>
-              <th class="left" style="min-width:90px">문의일</th>
-              <th class="left" style="min-width:70px">성함</th>
-              <th style="min-width:120px">연락처</th>
-              <th style="min-width:90px">강습종목</th>
+              <th class="left" style="min-width:80px">문의일</th>
+              <th class="left" style="min-width:60px">성함</th>
+              <th style="min-width:100px">연락처</th>
+              <th style="min-width:70px">강습종목</th>
               <th style="min-width:80px">진행상태</th>
               <th style="min-width:70px">담당</th>
-              <th class="left" style="min-width:160px">메모</th>
+              <th class="left" style="min-width:220px">CONTACT (연락 이력)</th>
             </tr>
           </thead>
           <tbody id="lessonBody_youth">
@@ -2648,17 +2648,88 @@ function lessonRender(t) {
   if (rows.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
   var html = '';
   rows.forEach(function(r){
-    html += '<tr>' +
+    html += '<tr data-row-index="' + r.rowIndex + '">' +
       '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(r.timestamp || '—') + '</td>' +
       '<td class="left" style="font-weight:700">' + esc(r.name || '—') + '</td>' +
-      '<td style="font-size:12px;color:var(--dim)">' + esc(r.phone || '—') + '</td>' +
-      '<td style="font-size:12px">' + esc(r.sport || '—') + '</td>' +
+      '<td style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
+      '<td style="font-size:12px">' + _lessonSportHtml(r.sport) + '</td>' +
       '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, r.status) + '</td>' +
-      '<td style="font-size:12px;color:var(--dim)">' + esc(r.owner || '—') + '</td>' +
-      '<td class="left" style="font-size:11px;color:var(--dim);white-space:pre-wrap">' + esc(r.memo || '—') + '</td>' +
+      '<td class="editable-cell" style="font-size:12px" onclick="_lessonOwnerEdit(this,\'' + t + '\',' + r.rowIndex + ')">' + esc(r.owner || '—') + '</td>' +
+      '<td class="left editable-cell" style="font-size:11px;color:var(--text);line-height:1.6;max-width:220px;white-space:pre-wrap;word-break:break-word" onclick="_lessonContactClick(\'' + t + '\',' + r.rowIndex + ')">' + _lessonContactCellHtml(r) + '</td>' +
     '</tr>';
   });
   tbody.innerHTML = html;
+}
+
+// 종목 여러 개('/' 또는 ',' 구분) → 각 종목 한 줄씩. 축4, 2026-07-08 시포·GM.
+function _lessonSportHtml(sport) {
+  var list = String(sport || '').split(/[\/,]/).map(function(s){ return s.trim(); }).filter(Boolean);
+  if (!list.length) return '—';
+  return list.map(function(s){ return '<div>' + esc(s) + '</div>'; }).join('');
+}
+
+// CONTACT 셀 표시 — 멤버십 _renderContactCell과 동일 포맷(내용 그대로, 최신 우선). 축4, 2026-07-08 시포·GM.
+function _lessonContactCellHtml(row) {
+  var list = _ctSort(_rowContacts(row));
+  if (!list.length) return '<span style="color:var(--dim)">＋ CONTACT 내용 추가</span>';
+  return list.slice().reverse().map(function(c){
+    var d = c.date ? c.date.slice(5).replace('-', '/') : '';
+    var pre = (d || c.time) ? '<span style="color:var(--dim);font-size:10px">' + esc((d + ' ' + (c.time || '')).trim()) + '</span> ' : '';
+    return '<div style="margin-bottom:3px">' + pre + esc(c.note || '') + '</div>';
+  }).join('');
+}
+
+// CONTACT 셀 클릭 → 연락 이력 모달(강습 컨텍스트). 축4, 2026-07-08 시포·GM.
+function _lessonContactClick(t, rowIndex) {
+  var st = _lessonState[t];
+  if (!st) return;
+  var row = null;
+  for (var i = 0; i < st.rows.length; i++) { if (st.rows[i].rowIndex === rowIndex) { row = st.rows[i]; break; } }
+  if (!row) return;
+  openContactModal(row, { source: 'lesson', type: st.type, t: t });
+}
+
+// 담당 인라인 편집(자유입력) — 저장=lesson_inquiry_update(owner), lessonStatusChange와 동일 apiPost·keyPhone 패턴 미러.
+// ※ 종목별 파트너팀 담당 옵션 목록 배선은 후속 과제 — 지금은 자유입력으로 열어둠. 축4, 2026-07-08 시포·GM.
+function _lessonOwnerEdit(td, t, rowIndex) {
+  if (td.classList.contains('cell-active')) return;
+  var st = _lessonState[t];
+  var row = null;
+  for (var i = 0; i < st.rows.length; i++) { if (st.rows[i].rowIndex === rowIndex) { row = st.rows[i]; break; } }
+  var prevVal = (row && row.owner) || '';
+
+  td.classList.add('cell-active');
+  td.innerHTML = '';
+  var inp = document.createElement('input');
+  inp.className = 'cell-input';
+  inp.type = 'text';
+  inp.value = prevVal;
+  td.appendChild(inp);
+  inp.focus();
+
+  var committed = false;
+  function commit() {
+    if (committed) return;
+    committed = true;
+    var newVal = inp.value.trim();
+    td.classList.remove('cell-active');
+    td.innerHTML = '';
+    td.textContent = newVal || '—';
+    if (newVal === prevVal) return;
+    var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', owner: newVal };
+    apiPost(payload)
+      .then(function(data){
+        if (!data.ok) throw new Error(data.error || '저장 실패');
+        if (row) row.owner = newVal;
+        showToast('저장', 'ok');
+      })
+      .catch(function(err){
+        td.textContent = prevVal || '—';   // 실패 시 화면 원복
+        showToast('저장 실패: ' + (err.message || ''), 'err');
+      });
+  }
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') inp.blur(); });
 }
 
 /* ── 강습 문의 진행상태 인라인 편집 — 멤버십 SUC 등록 체크와 동형(배6 후속, 2026-07-06 시포·GM).
@@ -4330,10 +4401,12 @@ function _ctCollect() {
   });
   return _ctSort(out);   // 저장=오름차순
 }
-// CONTACT 칸 클릭 → 연락 이력 모달. row=현재 행(live).
-function openContactModal(row) {
+// CONTACT 칸 클릭 → 연락 이력 모달. row=현재 행(live). ctx={source:'member'}(기본) | {source:'lesson', type:<GAS type>, t:<state key>}.
+// 강습 재사용 — 축4, 2026-07-08 시포·GM.
+function openContactModal(row, ctx) {
   if (!row) return;
-  _ctModal = { rowIndex: row.rowIndex };
+  ctx = ctx || { source: 'member' };
+  _ctModal = { rowIndex: row.rowIndex, ctx: ctx };
   document.getElementById('ctTitle').textContent = (row.name ? row.name + '님 ' : '') + '연락 이력';
   var list = document.getElementById('ctList'); list.innerHTML = '';
   var contacts = _ctSort(_rowContacts(row));
@@ -4345,15 +4418,36 @@ function closeContactModal() {
   document.getElementById('contactOverlay').classList.remove('open');
   _ctModal = null;
 }
+// 저장 — source별 분기. member=기존 _saveCell(member_inquiry_update) / lesson=lesson_inquiry_update(apiPost, keyPhone 행키검증·no-cors). 축4, 2026-07-08 시포·GM.
 function saveContactModal() {
   if (!_ctModal || !_ctModal.rowIndex) { showToast('대상 행을 찾을 수 없습니다', 'err'); return; }
   var contacts = _ctCollect();
   var rowIndex = _ctModal.rowIndex;
+  var ctx = _ctModal.ctx || { source: 'member' };
   var saveBtn = document.getElementById('ctSaveBtn'); saveBtn.disabled = true;
-  _saveCell(rowIndex, { contacts: contacts });   // _saveCell이 로컬반영+디바운스 저장(member_inquiry_update) 처리
-  closeContactModal();
-  if (_tabLoaded.db) renderDbTable();
-  saveBtn.disabled = false;
+  if (ctx.source === 'lesson') {
+    var st = _lessonState[ctx.t];
+    var row = null;
+    if (st) { for (var i = 0; i < st.rows.length; i++) { if (st.rows[i].rowIndex === rowIndex) { row = st.rows[i]; break; } } }
+    var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', contacts: JSON.stringify(contacts) };
+    apiPost(payload)
+      .then(function(data){
+        if (!data.ok) throw new Error(data.error || '저장 실패');
+        if (row) row.contacts = contacts;
+        closeContactModal();
+        lessonRender(ctx.t);
+        showToast('저장', 'ok');
+      })
+      .catch(function(err){
+        showToast('저장 실패: ' + (err.message || ''), 'err');
+      })
+      .then(function(){ saveBtn.disabled = false; });
+  } else {
+    _saveCell(rowIndex, { contacts: contacts });   // _saveCell이 로컬반영+디바운스 저장(member_inquiry_update) 처리
+    closeContactModal();
+    if (_tabLoaded.db) renderDbTable();
+    saveBtn.disabled = false;
+  }
 }
 
 /* ─────────────────────────────────────────────
