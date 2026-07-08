@@ -403,13 +403,6 @@
   .chk-card .clink:hover{border-color:var(--accent);}
   .chk-cap{margin-top:10px; padding:8px 13px; background:var(--paper); border:1px solid var(--border); border-radius:10px; font-size:12px; color:var(--text-soft); line-height:1.5;}
   .chk-cap b{color:var(--accent-soft); font-weight:800;}
-  /* ── 웰페리온 ERP 개발 카드: 월별 완료 미니 타임라인(2026-07-03 GM 지시 — '진행' 제거·월별 완료만) ── */
-  .cv-timeline{display:flex; gap:14px; margin-top:6px;}
-  .cvt-item{display:flex; flex-direction:column; align-items:flex-start; gap:2px;}
-  .cvt-item b{font-size:10px; font-weight:700; color:var(--dim);}
-  .cvt-item span{font-size:18px; font-weight:800; color:var(--text); letter-spacing:-0.02em;}
-  .cvt-item.cur b{color:var(--accent-soft);}
-  .cvt-item.cur span{color:var(--accent-soft);}
   .issue-h{font-size:12px; font-weight:700; color:var(--text-soft); margin:2px 2px 6px;}
   table.rpt.issues{min-width:560px;}
   .issues td.i-title{font-weight:700; color:var(--text); font-size:12.5px;}
@@ -685,17 +678,12 @@
     .sum-compact{color:#333 !important; font-size:8px; gap:3px 12px; padding:3px 0;}
     .rep-empty{color:#555 !important;}
     .mtheme-report{color:#333 !important; font-size:7.5px;}
-    /* 🔧 점검 현황 & 종합 접수처 = 두 단 전폭 상단·5카드 한 줄(GM 지시 2026-07-07: 인쇄 시 종합접수처·ERP 카드가 아래로 내려가던 것 방지 — 반쪽 폭 2단 안에서 wrap 발생) */
+    /* 🔧 점검 현황 & 종합 접수처 = 두 단 전폭 상단·4카드 한 줄(시설부·지원부 남/여·종합접수처 · GM 지시 2026-07-07: 인쇄 시 카드가 아래로 내려가던 것 방지 — 반쪽 폭 2단 안에서 wrap 발생) */
     .blk[data-blkid="check"]{column-span:all; break-inside:avoid; margin-bottom:2px;}
     .chk-grid{flex-wrap:nowrap; gap:5px; margin-bottom:6px;}
     .chk-card{background:#f7f7f7 !important; border:1px solid #999 !important; padding:5px 8px; min-width:0; flex:1 1 0;}
     .chk-card .cl, .chk-card .csub{color:#444 !important;}
     .chk-card .cv{color:#111 !important; font-size:14px;}
-    .chk-card .cv-timeline{gap:6px;} .chk-card .cv-timeline .cvt-item span{font-size:12px;}
-    /* 🚀 ERP 개발 카드 월별 완료 숫자 — 흰 배경 인쇄 대비 확보(GM 지시 2026-07-06 3차 · var(--text)/--dim은 인쇄에서 안 보임) */
-    .chk-card .cv-timeline .cvt-item b{color:#333 !important;}
-    .chk-card .cv-timeline .cvt-item span{color:#111 !important;}
-    .chk-card .cv-timeline .cvt-item.cur b, .chk-card .cv-timeline .cvt-item.cur span{color:#111 !important;}
     .chk-card .clink{display:none !important;}
     /* 이월 과제 서브항목·부서별 지출/순액 placeholder 인쇄 대비 */
     tr.obj-sub td.sub-cell{color:#333 !important;}
@@ -1030,7 +1018,6 @@
   var _salesTargets = null;  // status/sales_targets.json(팀별 월 목표매출 정본, 고정) — 부서별 매출(목표 vs 실적) 결합표 기준선
   var _kpiValues = null;    // status/kpi_values.json(KPI 자동집계) — 🔧 점검 현황 실측치. 조회 실패=null(전부 '측정 개통 전' 처리)
   var _vocBoard = null;      // 종합접수처 VOC 접수 배열(reg_board.data) — 🔧 점검④ 카드 + 🗂️ 이슈·해결 공용. PII(성함·연락처) 절대 미사용(카테고리·부서·상태 집계만). 조회 실패=null
-  var _devCounts = null;     // 웰페리온 ERP 개발 월별 완료 {items:[{month,done,note,cur}]} — monthly_ops_plan.json erp_dev.months 스냅샷(git 커밋 실측). 조회 실패=null(측정 개통 전)
   var _instrTeamMap = {};    // 강사이름 → 팀(부서) 매핑(인건비 시트 A/B열 로스터에서 구성) — team_sales의 강사별 실적을 팀 단위로 합산하는 데 사용(PII 미노출·집계에만 사용)
   var _teamSalesCache = {};  // 'YYYY-M' → {status:'loading'|'done', raw:team_sales 응답} — 선택월별 라이브 팀 매출 실적 캐시
   var _h1Sales = null;       // GAS action=team_sales_h1 응답({ok,q1:{key:{actual,avg}},q2:{...}}) — 강습팀 1·2분기 표 정본(매출마스터 완전 대체·2026-07-07)
@@ -1109,10 +1096,23 @@
   //    운영보고=최소 월간 기준(GM 지시 2026-07-06 — 舊 get_today_summary 오늘치에서 전환). 조회 실패=null(가짜값 없음) ──
   function readCheckMonthly(monKey){
     // 점검 GAS(monthly_report)는 콜드 응답이 ~12초 → 25초 타임아웃 방어(무한 'loading' 방지, 초과=null 정직).
-    var live = fetch(CHECK_GAS + '?action=monthly_report&month=' + encodeURIComponent(monKey) + '&dept=support&_cb=' + Date.now(), {redirect:'follow', cache:'no-store'})
+    var cb = Date.now();
+    var sup = fetch(CHECK_GAS + '?action=monthly_report&month=' + encodeURIComponent(monKey) + '&dept=support&_cb=' + cb, {redirect:'follow', cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(d){ return (d && d.ok) ? d : null; })
       .catch(function(){ return null; });
+    // 시설부 월간(dept=facility·배406) — home과 동일 CHECK_GAS. 시설점검은 입력률+이상건수 지표(완료율 아님·metric map). 데이터 없는 달=null(정직).
+    var fac = fetch(CHECK_GAS + '?action=monthly_report&month=' + encodeURIComponent(monKey) + '&dept=facility&_cb=' + cb, {redirect:'follow', cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ return (d && d.ok) ? d : null; })
+      .catch(function(){ return null; });
+    var live = Promise.all([sup, fac]).then(function(arr){
+      var s = arr[0], f = arr[1];
+      if(!s && !f) return null;
+      var out = s || {ok:true}; // 지원부 없어도 시설부만 있으면 담아 전달(②③은 정직 '없음' 처리)
+      out.facilityReport = f;   // 시설부 월간 report(monthTotals.avgPct=입력률 · outOfRange=이상건수) — ① 카드·요약 재사용
+      return out;
+    });
     var to = new Promise(function(res){ setTimeout(function(){ res(null); }, 25000); });
     return Promise.race([live, to]);
   }
@@ -1146,17 +1146,6 @@
       .then(function(r){ return r.json(); })
       .then(function(d){ return (d && d.ok && Array.isArray(d.data)) ? d.data : null; })
       .catch(function(){ return null; });
-  }
-  // ── 웰페리온 ERP 개발 월별 완료 — 🔧 점검 현황 카드(2026-07-03 GM 재지시: 월간 보고니까 금일 활성 '진행' 카운트는 제거,
-  //    월별 완료건만 표시). 소스=monthly_ops_plan.json erp_dev.months 스냅샷(정적 페이지는 git 직접 조회 불가). 소스 없음=null(가짜값 없음).
-  function computeDevCounts(plan){
-    var months = plan && plan.erp_dev && plan.erp_dev.months;
-    if(!months) return null;
-    var keys = Object.keys(months).sort();
-    if(!keys.length) return null;
-    var todayKey = new Date().toISOString().slice(0, 7);
-    var items = keys.map(function(k){ return {month:k, done:months[k].done, note:months[k].note || '', cur:(k === todayKey)}; });
-    return {items:items};
   }
   // ── 라이브 매출: home_kpi → sales.month(당월 실측). 실패/미측정=null ──
   function readHomeSales(){
@@ -2107,13 +2096,28 @@
     var cmStale = !!(cmEntry && cmEntry.stale); // 캐시 즉시표시 중·라이브 갱신 대기
     var byZoneC = {}; if(cmData && Array.isArray(cmData.byZone)){ cmData.byZone.forEach(function(z){ byZoneC[z.zone] = z; }); }
 
-    // ① 시설부 점검 현황 — 시설점검(fcheck)은 항목×회차 실측(입력률·이상건수 지표 · 완료율 아님). 월간 GAS(dept=facility·배406)는 구축됐으나 데이터 극소(월 1일·2세션)라 월간 카드 연동은 데이터 축적 후로 보류 — 지금은 정직 표기 + 점검 페이지 링크(가짜값 없음).
-    cards.push(
-      '<div class="chk-card"><span class="cl">시설부 점검 현황</span>' +
-      '<div class="cv pending">데이터 축적 중</div>' +
-      '<span class="csub">입력률·이상건수 지표 · 7/6 라이브 시작(데이터 적음)</span>' +
-      '<a class="clink" href="coo/check/시설부 체계.html" target="_blank">점검 페이지 →</a></div>'
-    );
+    // ① 시설부 점검 현황 — 시설점검(fcheck)은 항목×회차 실측(입력률+이상건수 지표 · 완료율 아님·metric map). CHECK_GAS monthly_report dept=facility(선택월).
+    //    home은 weekly&dept=facility 오늘치 스냅샷(입력률 %)을 쓰고, 이 페이지는 선택월 월간 집계(avgPct=입력률·outOfRange=이상건수)라 granularity가 달라 값이 다를 수 있음(둘 다 실측·가짜값 없음). 데이터 없는 달=정직 '데이터 축적 중'.
+    var fRep = (cmData && cmData.facilityReport) ? cmData.facilityReport : null;
+    var fMt = (fRep && fRep.monthTotals) ? fRep.monthTotals : null;
+    var fLink = '<a class="clink" href="coo/check/시설부 체계.html" target="_blank">점검 페이지 →</a>';
+    if(fMt && fMt.sessionCount){
+      var fOor = (fRep.outOfRange && typeof fRep.outOfRange.total === 'number') ? fRep.outOfRange.total
+               : (typeof fMt.outOfRangeCount === 'number' ? fMt.outOfRangeCount : 0);
+      cards.push(
+        '<div class="chk-card"><span class="cl">시설부 점검 현황</span>' +
+        '<div class="cv">' + fMt.avgPct + '%</div>' +
+        '<span class="csub">입력률 · 점검 ' + fMt.sessionCount + '회 · 이상 ' + fOor + '건 · 그 달 점검 기준' + (cmStale ? ' · 갱신 중' : '') + '</span>' +
+        fLink + '</div>'
+      );
+    } else {
+      cards.push(
+        '<div class="chk-card"><span class="cl">시설부 점검 현황</span>' +
+        '<div class="cv pending">' + (cmLoading ? '조회 중…' : '데이터 축적 중') + '</div>' +
+        '<span class="csub">입력률·이상건수 지표 · ' + (cmLoading ? '월간 데이터 불러오는 중' : '해당 월 점검 데이터 없음(가짜값 없음)') + '</span>' +
+        fLink + '</div>'
+      );
+    }
 
     // ②③ 지원부 점검(남/여) — CHECK_GAS monthly_report byZone(선택월 월간 완료율·시우/COO 구축).
     [['m','지원부 점검(남)'], ['f','지원부 점검(여)']].forEach(function(pair){
@@ -2160,27 +2164,7 @@
       );
     }
 
-    // ⑤ 웰페리온 ERP 개발 — 월별 완료 미니 타임라인(2026-07-03 GM 재지시: 월간 보고니까 금일 활성 '진행' 카운트 제거, 월별 완료건만).
-    //    소스=erp_dev.months 스냅샷(feat+fix 커밋 실측, 워크트리 전체).
-    if(_devCounts && _devCounts.items && _devCounts.items.length){
-      var devItems = _devCounts.items.map(function(it){
-        var parts = String(it.month).split('-');
-        var mLab = parts[1] ? (Number(parts[1]) + '월') : it.month;
-        return '<div class="cvt-item' + (it.cur ? ' cur' : '') + '"><b>' + esc(mLab) + (it.cur ? '*' : '') + '</b><span>' + it.done.toLocaleString() + '</span></div>';
-      }).join('');
-      cards.push(
-        '<div class="chk-card"><span class="cl">웰페리온 ERP 개발 (월별 완료)</span>' +
-        '<div class="cv-timeline">' + devItems + '</div>' +
-        '<span class="csub">핵심개발 커밋(feat+fix) 월별 실측 · *=진행중</span>' +
-        '<a class="clink" href="wellperion_guide(main).html" target="_blank">항로 보드 →</a></div>'
-      );
-    } else {
-      cards.push(
-        '<div class="chk-card"><span class="cl">웰페리온 ERP 개발</span>' +
-        '<div class="cv pending">측정 개통 전</div>' +
-        '<span class="csub">erp_dev 스냅샷 조회 실패 — 가짜값 없음</span></div>'
-      );
-    }
+    // ⑤ 웰페리온 ERP 개발 카드 = 폐지(GM 승인 2026-07-08) — 전략 로드맵·핵심 과제와 중복이라 점검 현황에서 제거.
 
     var cap = '';
     if(cmData && cmData.monthTotals){
@@ -2459,10 +2443,21 @@
     var mtSum = (cmData && cmData.monthTotals) ? cmData.monthTotals : null;
     var ihChip = mtSum ? '<span class="sm-chk-i"><b>지원부 월간 이행률</b> ' + mtSum.avgPct + '% <span class="sm-dim">(대표 신뢰지표 · 분모 정합)</span></span>' : '';
     var vocTxt = _vocBoard ? (_vocBoard.length + '건') : (_checkReady ? '측정 개통 전' : '조회 중…');
+    // 시설부 점검 = CHECK_GAS monthly_report dept=facility(선택월) 입력률+이상건수(metric map · home은 오늘치 스냅샷이라 값 다를 수 있음·둘 다 실측)
+    var fRepS = (cmData && cmData.facilityReport) ? cmData.facilityReport : null;
+    var fMtS = (fRepS && fRepS.monthTotals) ? fRepS.monthTotals : null;
+    var facChip;
+    if(fMtS && fMtS.sessionCount){
+      var fOorS = (fRepS.outOfRange && typeof fRepS.outOfRange.total === 'number') ? fRepS.outOfRange.total
+                : (typeof fMtS.outOfRangeCount === 'number' ? fMtS.outOfRangeCount : 0);
+      facChip = '<span class="sm-chk-i"><b>시설부 점검</b> 입력률 ' + fMtS.avgPct + '% <span class="sm-dim">(점검 ' + fMtS.sessionCount + '회 · 이상 ' + fOorS + '건 · 그 달 기준)</span></span>';
+    } else {
+      facChip = '<span class="sm-chk-i"><b>시설부 점검</b> <span class="sm-dim">' + (_checkReady ? '해당 월 데이터 없음(가짜값 없음)' : '월간 집계 조회 중…') + '</span></span>';
+    }
     var chkBlock = '<div class="sm-chk">' +
       ihChip +
       zoneChip('m', '지원부 점검(남)') + zoneChip('f', '지원부 점검(여)') +
-      '<span class="sm-chk-i"><b>시설부 점검</b> <span class="sm-dim">데이터 축적 중 — 7/6 라이브 시작(가짜값 없음)</span></span>' +
+      facChip +
       '<span class="sm-chk-i"><b>종합접수처</b> ' + esc(vocTxt) + ' <span class="sm-dim">(실시간 · PII 비노출)</span></span>' +
     '</div>';
 
@@ -2671,7 +2666,6 @@
     // 1) 정본(plan) — 최우선·raw먼저. 도착 즉시 월선택 + 전체 렌더.
     readPlan().then(function(plan){
       _data = plan;
-      _devCounts = computeDevCounts(_data);
       buildMonthSelect();
       render();
       loadCheckSources();
