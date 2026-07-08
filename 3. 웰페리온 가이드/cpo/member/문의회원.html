@@ -1133,8 +1133,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <option value="결제완납">결제완납</option>
             <option value="LOSS">LOSS</option>
           </select>
-          <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납)·LOSS 건을 숨겨 진행 중 깔때기만 봅니다">
-            <input type="checkbox" id="dbHideRegistered" checked onchange="renderDbTable()" style="cursor:pointer"> 진행중만 보기 <span style="font-size:11px;color:var(--dim)">(가입완료·이탈 숨김)</span>
+          <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납) 건을 숨겨 진행 중·이탈(LOSS) 건만 봅니다">
+            <input type="checkbox" id="dbHideRegistered" checked onchange="renderDbTable()" style="cursor:pointer"> 진행중만 보기 <span style="font-size:11px;color:var(--dim)">(가입완료 숨김 · 이탈 노출)</span>
           </label>
         </div>
         <div class="db-toolbar-actions">
@@ -4244,12 +4244,17 @@ var dbSaveTimer = null;  // 디바운스 타이머 (셀 자동저장용)
 
 // 실무진 실제 사용 코드 (2026-06-20 GM 확정). 등록=SUC, 이탈=LOSS 등 시트 어휘 그대로.
 var STATUS_OPTIONS = ['신규','컨택중','가망','예약','방문','SUC','단기SUC','LOSS'];
-var PROGRAM_OPTIONS = [
-  '플래티넘 (Gym + G.X + Sauna 이용)',
-  '노블레스 (Gym + G.X + Swimming + Sauna 이용)',
-  '플래티넘+골프 (Gym + Golf + G.X + Sauna 이용)',
-  '노블레스+골프 (Gym + Golf + G.X + Swimming + Sauna 이용)'
-];
+// 관심 프로그램 = 4종 축약(노블레스/플래티넘/±골프). 상세설명 괄호 제거. 2026-07-08 시포·GM
+var PROGRAM_OPTIONS = ['노블레스', '플래티넘', '노블레스+골프', '플래티넘+골프'];
+// 저장값(구 상세 라벨 포함)을 4종 표시로 정규화 — 표시만 축약, 저장값 보존. 알 수 없는 값은 원본 유지. 2026-07-08 시포·GM
+function _shortProgram(p){
+  var s = String(p || '').trim();
+  if (!s) return '';
+  var golf = s.indexOf('골프') >= 0 || /golf/i.test(s);
+  if (s.indexOf('노블레스') >= 0) return golf ? '노블레스+골프' : '노블레스';
+  if (s.indexOf('플래티넘') >= 0) return golf ? '플래티넘+골프' : '플래티넘';
+  return s;
+}
 var OWNER_OPTIONS = ['임정은','최준용','이경연','이지영','김남욱','고수자','강경희','윤병현'];
 // 유입채널 표준 10버킷 (Survey.js CANONICAL_CHANNELS 와 동일 — 마케팅 채널 귀속)
 var CHANNEL_OPTIONS = ['네이버','동부이촌동 커뮤니티','인스타그램','카카오톡','당근마켓',
@@ -4324,7 +4329,7 @@ function _dbFilteredRows() {
 
   var _hideRegEl = document.getElementById('dbHideRegistered');
   var hideReg = _hideRegEl && _hideRegEl.checked;   // '진행중만 보기' — 등록·완납·이탈 종결건 숨김
-  var _TERMINAL = ['SUC','단기SUC','결제완납','LOSS'];
+  var _TERMINAL = ['SUC','단기SUC','결제완납'];   // LOSS는 진행중만 보기에서도 노출(재등록 대응 대상). 2026-07-08 시포·GM
   var searchDigits = search.replace(/\D/g, '');   // 연락처 숫자만 매칭용(하이픈·공백 무시). 2026-07-02 시포(GM)
   return dbRows.filter(function(row){
     var matchStatus = !filter || row.status === filter;
@@ -4360,9 +4365,8 @@ function _updateDbGraduatedInfo() {
   var hideReg = _hideRegEl && _hideRegEl.checked;
   if (!hideReg) { el.textContent = ''; return; }
   var sucN = dbRows.filter(function(row){ return ['SUC','단기SUC','결제완납'].indexOf(row.status) >= 0; }).length;
-  var lossN = dbRows.filter(function(row){ return row.status === 'LOSS'; }).length;
-  if (!sucN && !lossN) { el.textContent = ''; return; }
-  el.textContent = '· 가입완료 ' + sucN + '건 · 이탈 ' + lossN + '건 졸업(등록현황·회원관리에서 확인)';
+  if (!sucN) { el.textContent = ''; return; }
+  el.textContent = '· 가입완료 ' + sucN + '건 졸업(등록현황·회원관리에서 확인)';   // LOSS는 목록에 노출되므로 졸업 카운트에서 제외. 2026-07-08 시포·GM
 }
 
 function renderDbTable() {
@@ -4428,7 +4432,7 @@ function buildDbRow(row, isNew) {
   // ── [2] 관심 프로그램 ──
   var tdProg = document.createElement('td');
   tdProg.style.color = 'var(--dim)'; tdProg.style.fontSize = '12px';
-  tdProg.textContent = row.program || '—';
+  tdProg.textContent = _shortProgram(row.program) || '—';
   if (!READ_ONLY) { tdProg.className = 'editable-cell'; tdProg.addEventListener('click', function(){ _activateCellSelect(this, row, 'program', PROGRAM_OPTIONS); }); }
   tr.appendChild(tdProg);
 
