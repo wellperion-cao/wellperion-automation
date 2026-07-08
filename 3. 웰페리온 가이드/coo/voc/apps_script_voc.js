@@ -64,8 +64,7 @@ var REG_COMMON_HEADERS = [
 var REG_EXTRA_HEADERS = {
   lost:     [
     { key: 'itemName',   label: '분실물품'   },
-    { key: 'lostWhen',   label: '분실시점'   },
-    { key: 'keepWhere',  label: '보관요청'   }
+    { key: 'lostWhen',   label: '분실시점'   }
   ],
   facility: [
     { key: 'equipName',  label: '고장설비'     },
@@ -106,10 +105,18 @@ function _regCatByLabel(label) {
   }
   return null;
 }
+// 사진 미수집 카테고리 — GM 결정(2026-07-08): 칭찬·쓴소리는 폼+시트컬럼 모두 사진 제거.
+// _regHeadersFor 가 photoUrl 을 정의에서 빼야 reg_submit/reg_update 의 위치기반(_set) 쓰기가
+// clean_reg_columns 로 물리 삭제된 실제 시트 컬럼과 계속 정렬된다(안 그러면 컬럼 밀림 발생).
+var REG_NO_PHOTO_CATS = { praise: true, voice: true };
+
 // 카테고리 키에 대한 전체 헤더 배열 반환 ({key,label}[])
 function _regHeadersFor(catKey) {
   var extra = REG_EXTRA_HEADERS[catKey] || [];
-  return REG_COMMON_HEADERS.concat(extra);
+  var common = REG_NO_PHOTO_CATS[catKey]
+    ? REG_COMMON_HEADERS.filter(function (h) { return h.key !== 'photoUrl'; })
+    : REG_COMMON_HEADERS;
+  return common.concat(extra);
 }
 
 // ─── ScriptProperties 헬퍼 ───
@@ -338,31 +345,57 @@ function _regComputeSla(row) {
   return out;
 }
 
-// ─── 종합 접수처 시트 → 객체 배열 (헤더 배열({key,label}[]) 인자) ───
+// ─── 종합 접수처 라벨→키 별칭 (시트 실헤더 라벨 드리프트 흡수 · SSOT) ───
+// 시트 1행 실제 라벨이 REG_COMMON/EXTRA_HEADERS 정의 라벨과 다른 경우(예: 분실물 탭)를 흡수.
+var REG_LABEL_ALIASES = { '분실위치': 'loc', '물품상세': 'content' };
+
+// ─── 종합 접수처 시트 → 객체 배열 (헤더-이름 기준 매핑 · 컬럼 물리삭제/순서변경에 안전) ───
+// headers({key,label}[])로 라벨→키 맵을 만들고, 시트 1행 실제 헤더 라벨로 각 열의 키를 찾는다.
+// 매칭 안 되는 컬럼(빈칸·잔재 라벨)은 조용히 무시 — 위치기반이 아니므로 중간 컬럼 삭제에도 값이 안 밀림.
 function _regReadAll(sh, headers) {
+  var lastCol = sh.getLastColumn();
   var last = sh.getLastRow();
-  if (last < 2) return [];
-  var data = sh.getRange(2, 1, last - 1, headers.length).getValues();
+  if (last < 2 || lastCol < 1) return [];
+
+  var label2key = {};
+  headers.forEach(function (h) { label2key[h.label] = h.key; });
+  Object.keys(REG_LABEL_ALIASES).forEach(function (label) {
+    if (!(label in label2key)) label2key[label] = REG_LABEL_ALIASES[label];
+  });
+
+  var sheetHeaderLabels = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  var data = sh.getRange(2, 1, last - 1, lastCol).getValues();
   return data.map(function (row) {
     var obj = {};
-    headers.forEach(function (h, i) {
+    sheetHeaderLabels.forEach(function (label, i) {
+      var key = label2key[label];
+      if (!key) return; // 매칭 안 되는 컬럼(빈칸·잔재)은 무시
       var v = row[i];
       if (v instanceof Date) {
         v = Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
       }
-      obj[h.key] = v;
+      obj[key] = v;
     });
     return obj;
   });
 }
 
-// ─── 종합 접수처 상태 셀 색상 (헤더 배열 기준) ───
+// ─── 종합 접수처 상태 셀 색상 ───
+// 실제 시트 1행에서 '상태' 라벨 위치를 우선 탐색(컬럼 삭제/이동에도 안전) — 못 찾으면
+// 정의(headers) 기반 위치로 폴백(기존 동작 유지, index 기반 그대로).
 function _regApplyStatusColor(sh, row, status, headers) {
-  var idx = -1;
-  for (var i = 0; i < headers.length; i++) {
-    if (headers[i].key === 'status') { idx = i + 1; break; }
+  var idx = 0;
+  try {
+    var lastCol = sh.getLastColumn();
+    var actualLabels = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+    idx = actualLabels.indexOf('상태') + 1; // 1-based; 0 이면 못 찾음
+  } catch (e) { idx = 0; }
+  if (idx <= 0) {
+    for (var i = 0; i < headers.length; i++) {
+      if (headers[i].key === 'status') { idx = i + 1; break; }
+    }
   }
-  if (idx < 0) return;
+  if (idx <= 0) return;
   var color = VOC_STATUS_COLORS[status] || '#ffffff';
   sh.getRange(row, idx).setBackground(color).setFontColor('#ffffff');
 }
@@ -868,6 +901,67 @@ function _regRenumber(body) {
   return _vJson({ ok: true, renumbered: n, message: '전체 접수 ' + n + '건을 VOC-1..VOC-' + n + '로 재부여했습니다.' });
 }
 
+// ─── clean_reg_columns — 시트 잔재/빈 컬럼 정리 (GATED·일회성) ───
+// REG_CATEGORIES 각 시트에서 잔재 라벨 컬럼을 화이트리스트 기준으로 삭제.
+// ★ 데이터-안전: 잔재 라벨이라도 헤더 아래에 값이 하나라도 있으면 삭제하지 않고 보존 → keptWithData 리포트(GM 확인용).
+// 화이트리스트: 빈 라벨('' 공백) · '접수문자'·'조치문자'·'처리자'·'접수 문자'·'조치 문자'.
+// 추가로 시트명이 '접수_칭찬'/'접수_쓴소리'면 '사진URL' 컬럼도 삭제(GM 결정: 칭찬·쓴소리 사진 미수집 —
+// _regHeadersFor 의 REG_NO_PHOTO_CATS 와 짝. 이 두 사이트만 물리 컬럼도 함께 없어져야 정합).
+// 공통12+카테고리 extras(데이터 컬럼)는 화이트리스트에 없으므로 항상 보존 — 지원부/점검 시트 무관(이 시트=VOC 전용).
+// 오른쪽(높은 인덱스)부터 deleteColumn 해서 인덱스 밀림 방지.
+function _regCleanColumns() {
+  var GHOST_LABELS = { '': true, '접수문자': true, '조치문자': true, '처리자': true, '접수 문자': true, '조치 문자': true };
+  var result = [];
+  REG_CATEGORIES.forEach(function (cat) {
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { return; }
+    var lastCol = sh.getLastColumn();
+    if (lastCol < 1) { result.push({ sheet: cat.sheet, deletedCount: 0, deletedLabels: [] }); return; }
+
+    var lastRow = sh.getLastRow();
+    var headerRow = sh.getRange(1, 1, 1, lastCol).getValues()[0]
+      .map(function (v) { return String(v == null ? '' : v).trim(); });
+    // 데이터 유무 판정용: 헤더(1행) 아래 전 컬럼 값 스냅샷
+    var dataVals = (lastRow > 1) ? sh.getRange(2, 1, lastRow - 1, lastCol).getValues() : [];
+    function colHasData(col1) {
+      var idx = col1 - 1;
+      for (var r = 0; r < dataVals.length; r++) {
+        if (String(dataVals[r][idx] == null ? '' : dataVals[r][idx]).trim() !== '') return true;
+      }
+      return false;
+    }
+    var isPhotoCleanupTarget = (cat.sheet === '접수_칭찬' || cat.sheet === '접수_쓴소리');
+
+    var toDelete = []; // { col:1-based, label }
+    var keptWithData = []; // 데이터가 있어 보존한 잔재 컬럼
+    headerRow.forEach(function (label, i) {
+      var col1 = i + 1;
+      var isGhost = !!GHOST_LABELS[label];
+      var isPhoto = isPhotoCleanupTarget && label === '사진URL';
+      if (isPhoto) { toDelete.push({ col: col1, label: label }); return; }
+      if (isGhost) {
+        // 데이터-안전: 잔재 라벨이라도 값이 있으면 삭제하지 않고 보존(GM 확인용 리포트)
+        if (colHasData(col1)) { keptWithData.push({ col: col1, label: label || '(빈칸)' }); }
+        else { toDelete.push({ col: col1, label: label }); }
+      }
+    });
+
+    // 오른쪽(높은 인덱스)부터 삭제 — 인덱스 밀림 방지
+    toDelete.sort(function (a, b) { return b.col - a.col; });
+    toDelete.forEach(function (d) { sh.deleteColumn(d.col); });
+
+    result.push({
+      sheet: cat.sheet,
+      deletedCount: toDelete.length,
+      deletedLabels: toDelete.map(function (d) { return d.label || '(빈칸)'; }),
+      keptWithData: keptWithData
+    });
+  });
+
+  try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
+  return _vJson({ ok: true, result: result, message: '시트 컬럼 정리 완료' });
+}
+
 // ═══════════════════════════════════════════
 //  접근 게이트 (PII 보호 — TOKEN_ENFORCE 스위치)
 // ═══════════════════════════════════════════
@@ -933,6 +1027,22 @@ function _vProcess(action, body, params) {
 
   // ── 진단 액션 ──
   if (action === 'diag') return _vDiag();
+  // 읽기전용: 전 시트 헤더행 덤프(카테고리별 컬럼 정합 점검용·1회성). 2026-07-08 시우.
+  if (action === 'dump_headers') {
+    var _dss = SpreadsheetApp.openById(_vprop('SPREADSHEET_ID'));
+    var _dout = _dss.getSheets().map(function (sh) {
+      var lc = sh.getLastColumn();
+      return {
+        name: sh.getName(),
+        cols: lc,
+        dataRows: Math.max(0, sh.getLastRow() - 1),
+        headers: lc ? sh.getRange(1, 1, 1, lc).getValues()[0].map(String) : []
+      };
+    });
+    return _vJson({ ok: true, sheets: _dout });
+  }
+  // 쓰기(잔재/빈 컬럼 삭제) · 일회성 · GATED(공개 액션 아님). 2026-07-08 시우.
+  if (action === 'clean_reg_columns') return _regCleanColumns();
 
   // ── 종합 접수처 액션 ──
   if (action === 'reg_submit') return _regSubmit(body);
