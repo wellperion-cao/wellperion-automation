@@ -190,6 +190,21 @@
   .autoarrow{display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--dim); padding:0 2px;}
   @media (max-width:640px){ .autoflow{flex-direction:column;} .autoarrow{transform:rotate(90deg);} }
 
+  /* ── 🤖 자율 처리 토글(히어로 하위 · 오늘 판단형 자율 실행 내역 + 증거) ── */
+  .auto-detail{margin:2px 0 14px; font-size:12px;}
+  .auto-detail > summary{cursor:pointer; color:var(--accent-soft); font-weight:700; list-style:none; padding:4px 0;}
+  .auto-detail > summary::-webkit-details-marker{display:none;}
+  .auto-detail > summary::before{content:'▸ '; color:var(--dim);}
+  .auto-detail[open] > summary::before{content:'▾ ';}
+  .auto-detail .ax-note{color:var(--dim); font-size:11px; line-height:1.55; margin:4px 0 8px;}
+  .auto-detail .ax-note b{color:var(--text-soft); font-weight:700;}
+  .ax-grp{border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:8px; padding:7px 11px; margin:6px 0; background:var(--surface);}
+  .ax-tgt{font-weight:700; color:var(--text); font-size:12px; margin-bottom:3px;}
+  .ax-badge{font-size:9.5px; font-weight:700; color:var(--dim); border:1px solid var(--border-strong); border-radius:20px; padding:1px 7px; margin-left:6px; white-space:nowrap;}
+  .ax-act{color:var(--text-soft); font-size:11.5px; line-height:1.5; padding:1px 0; word-break:break-all;}
+  .ax-ev{color:var(--dim); font-size:10.5px;}
+  .ax-routine{color:var(--dim); font-size:11px; margin-top:8px; padding-top:6px; border-top:1px dashed var(--border);}
+
   /* ── 🌟 북극성 지향 제작 루프 프레임 ── */
   .loop-frame{margin:2px 0 20px; padding:14px 16px; border:1px solid var(--border-strong); border-radius:12px; background:linear-gradient(135deg,rgba(124,58,237,0.10),rgba(240,198,116,0.05));}
   .loop-head{display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; margin-bottom:11px;}
@@ -293,37 +308,34 @@
   <h2 class="layer-h2">① 자율로 한 일</h2>
 
   <!-- ════ ⚙️ 자동화→자율화 4층 구조 (헌법한장.html 병합 · 2026-07-03 · 개요를 라이브 데이터보다 앞으로 재배치 · 배339) ════ -->
-  <h2 class="sec" style="margin-top:2px;">⚙️ 자동화→자율화 4층 구조</h2>
-  <div class="sec-note">자동화(코드·훅 박제)가 쌓여 자율화(AI 판단·완결)로 이어지는 4층. ①은 바로 아래 루프로 상세 전개, ②~④는 각 라이브 섹션과 연결(중복 신설 없음).</div>
+  <h2 class="sec" style="margin-top:2px;">🏛️ 자율화를 떠받치는 4대 축</h2>
+  <div class="sec-note">순서가 아니라 <b>나란히 함께 작동하는 4개 축(기둥)</b>입니다 — 코드·훅으로 박제된 자동화 위에서 AI가 판단·완결합니다. 축①은 바로 아래 제작 루프로 상세 전개, 축②~④는 각 라이브 섹션과 연결(중복 신설 없음).</div>
   <div class="autoflow">
     <div class="autolayer" style="border-left-color:#7ac4f0;">
-      <span class="al-n">① 제작 루프</span><span class="al-h">🎨 GM</span>
-      <span class="al-d">기획→초안→디자인→고도화→단순화→피드백 루프(모든 산출물 표준 라이프사이클)</span>
-      <a class="al-link" href="#loop-frame">↓ 아래 루프 상세 →</a>
+      <span class="al-n">축 ① · 제작 루프</span><span class="al-h">🎨 GM 주도</span>
+      <span class="al-d">모든 산출물의 표준 라이프사이클 — 기획→초안→디자인→고도화→단순화→피드백</span>
+      <a class="al-link" href="#loop-frame">↓ 제작 루프 상세</a>
     </div>
-    <div class="autoarrow">→</div>
     <div class="autolayer" style="border-left-color:#7C3AED;">
-      <span class="al-n">② 오케스트레이션</span><span class="al-h">🧭 웰리</span>
+      <span class="al-n">축 ② · 오케스트레이션</span><span class="al-h">🧭 웰리</span>
       <span class="al-d">7 C-Level 위임·완결검증·G1 통합보고(웰리는 지시·검증만, 직접실행 금지)</span>
     </div>
-    <div class="autoarrow">→</div>
     <div class="autolayer" style="border-left-color:#f0c674;">
-      <span class="al-n">③ GM 보좌 자율화</span><span class="al-h">🤝 웰리</span>
-      <span class="al-d" title="GM 성향·습관 학습→관찰·포착·선제. 가역=자율 실행/비가역=제안. 금지5종만 게이트. 스펙=.omc/specs/deep-interview-gm-aide-autonomy.md">GM 성향 학습→선제 포착·실행(가역 자율/비가역 제안, 금지5종만 게이트)</span>
-      <a class="al-link" href="#sec-routines">↓ 상시 자율 체계 카드 →</a>
+      <span class="al-n">축 ③ · GM 보좌 자율화</span><span class="al-h">🤝 웰리</span>
+      <span class="al-d" title="GM 성향·습관 학습→관찰·포착·선제. 가역=자율 실행/비가역=제안. 금지5종만 게이트. 스펙=.omc/specs/deep-interview-gm-aide-autonomy.md">GM 성향 학습→선제 포착·실행(가역=자율 실행 / 비가역=제안, 금지5종만 게이트)</span>
+      <a class="al-link" href="#sec-routines">↓ 상시 자율 체계 카드</a>
     </div>
-    <div class="autoarrow">→</div>
     <div class="autolayer" style="border-left-color:#6abf7b;">
-      <span class="al-n">④ 차등 점검</span><span class="al-h">🔍 규모 게이트</span>
-      <span class="al-d" title="정본 status/audit_registry.json + scripts/audit_scope.py(대장·git 대조 자동 산출)">안정 페이지 제외·신규/변경분만(1~2척 Sonnet 선훑기 ↔ 딥전수=신규만)</span>
-      <a class="al-link" href="#sec-routines">↓ 바뀐 페이지만 점검 카드 →</a>
+      <span class="al-n">축 ④ · 차등 점검</span><span class="al-h">🔍 규모 게이트</span>
+      <span class="al-d" title="정본 status/audit_registry.json + scripts/audit_scope.py(대장·git 대조 자동 산출)">안정 페이지 제외·신규/변경분만 점검(전수→변경분만으로 좁힘)</span>
+      <a class="al-link" href="#sec-routines">↓ 바뀐 페이지만 점검 카드</a>
     </div>
   </div>
 
   <!-- ════ 🌟 북극성 지향 제작 루프 프레임 ════ -->
   <section class="loop-frame" id="loop-frame">
     <div class="loop-head">
-      <span class="lh-t">🌟 북극성 지향 제작 루프 <span style="font-size:10px;font-weight:700;color:var(--accent-soft);">(4층 중 ① 제작 루프 상세)</span></span>
+      <span class="lh-t">🌟 북극성 지향 제작 루프 <span style="font-size:10px;font-weight:700;color:var(--accent-soft);">(4대 축 중 축① 제작 루프 상세)</span></span>
       <span class="lh-s">모든 자율 작업은 <b>북극성을 향해</b> 이 루프를 돈다 — 웰리가 각 작업의 단계를 추적하고 완료 시 다음 단계를 자동 촉발한다.</span>
     </div>
     <div class="loop-flow">
@@ -374,7 +386,7 @@
   <div id="stall-suspect"></div>
 
   <!-- ════ 섹션 1 · 이 루프를 돌리는 자율 기계(라이브) ════ -->
-  <h2 class="sec" id="sec-routines">🔴 상시 자율 체계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프를 굴리는 라이브 엔진 · 4층 중 ②③④ 실체)</span></h2>
+  <h2 class="sec" id="sec-routines">🔴 상시 자율 체계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프를 굴리는 라이브 엔진 · 4대 축 중 축②③④ 실체)</span></h2>
   <div class="sec-note">각 자율 루틴의 주기·마지막 실행·최근 결과·ON/OFF. 실행 로그의 최신 항목에서 도출합니다.</div>
   <div class="routines" id="routines">
     <div class="feed-status" style="grid-column:1/-1;">상시 체계 상태를 불러오는 중…</div>
@@ -778,15 +790,43 @@
     var t0 = localTodayMs(), t1 = t0 + 86400000;
     var isToday = function(when){ var m = ts(when); return m >= t0 && m < t1; };
 
-    // 자율 처리 건수 = 오늘 gm_aide_scan_log 회차 중 auto_applied 합(양수 실집행분만)
     var scan = d.scanLog || [];
     var todayScan = scan.filter(function(s){ return isToday(s.logged_at); });
-    var autoTxt;
-    if(!scan.length){ autoTxt = '미측정'; }
-    else {
-      var autoSum = todayScan.reduce(function(a, s){ return a + (typeof s.auto_applied === 'number' && s.auto_applied > 0 ? s.auto_applied : 0); }, 0);
-      autoTxt = '<b>' + autoSum + '</b>건';
-    }
+
+    // 자율 처리 = 오늘 관찰원장 auto_exec 판단 실행(대상별) — 증거(before→after) 실재분만.
+    // 카드#6(틈 감지기)과 동일 소스로 통일 → 옛 scan auto_applied 카운터 폐기(숫자 불일치 해소).
+    var ledger = d.obsLedger || [];
+    var todayAuto = ledger.filter(function(o){ return o.signal_type === 'auto_exec' && isToday(o.observed_at); });
+    function autoTarget(o){ var m = String(o.summary || '').match(/^\[([^\]]+)\]/); return m ? m[1] : '기타'; }
+    var judgeGroups = {}, routineGroups = {};
+    todayAuto.forEach(function(o){
+      var t = autoTarget(o);
+      var g = /^NEXT-/.test(t) ? judgeGroups : routineGroups;
+      (g[t] = g[t] || []).push(o);
+    });
+    var judgeKeys = Object.keys(judgeGroups);
+    var autoTxt = todayAuto.length ? ('<b>' + judgeKeys.length + '</b>건') : '미측정';
+
+    // 토글 상세 — 판단형 자율(NEXT 대상)별 실제 행동 + 증거 (개발자 용어→한글 라벨)
+    var GAP_LABEL = { resumable_tag:'🔓 재개 가능 표시', nudge:'📣 담당 촉구', depends_resolved:'🔗 의존 해소', stall_tag:'🐌 정체 표시' };
+    var axGroups = judgeKeys.map(function(k){
+      var acts = judgeGroups[k].map(function(o){
+        var s = String(o.summary || '').replace(/^\[[^\]]*\]\s*/, '').replace(/^가역 자율실행:\s*/, '');
+        var code = s.split(/\s*[—-]\s*/)[0].trim();
+        var label = GAP_LABEL[code] || esc(s);
+        var ev = o.evidence ? ' <span class="ax-ev">' + esc(String(o.evidence).slice(0, 90)) + '</span>' : '';
+        return '<div class="ax-act">· ' + label + ev + '</div>';
+      }).join('');
+      return '<div class="ax-grp"><div class="ax-tgt">🚢 ' + esc(k) + '<span class="ax-badge">가역 · 자동 원복 가능</span></div>' + acts + '</div>';
+    }).join('');
+    var routineKeys = Object.keys(routineGroups);
+    var axRoutine = routineKeys.length ? ('<div class="ax-routine">그 외 루틴 자동 동기화 ' + routineKeys.length + '건: ' + routineKeys.map(esc).join(' · ') + '</div>') : '';
+    var autoDetailHtml = todayAuto.length
+      ? ('<details class="auto-detail"><summary>자율 처리 ' + judgeKeys.length + '건 — 내역 보기</summary>'
+         + '<div class="ax-note">GM 보좌 자율화(축③)가 오늘 스스로 처리한 <b>가역</b> 작업입니다. 선행 완료로 재개 가능해진 배에 태그·의존해소를 적용 — 모두 원장에 before→after로 기록(언제든 원복 가능).</div>'
+         + (axGroups || '<div class="ax-note">오늘 판단형 자율 처리 없음(루틴 동기화만 수행).</div>')
+         + axRoutine + '</details>')
+      : '';
 
     // 포착 건수 = 오늘 gm_aide_scan_log 회차 captured 합
     var capTxt;
@@ -805,7 +845,7 @@
       learnTxt = '<b>' + learnN + '</b>건';
     }
 
-    el.innerHTML = '<div class="hero-line">🤖 자율이 오늘 한 일 — 자율 처리 ' + autoTxt + ' · 포착 ' + capTxt + ' · 학습 반영 ' + learnTxt + '</div>';
+    el.innerHTML = '<div class="hero-line">🤖 자율이 오늘 한 일 — 자율 처리 ' + autoTxt + ' · 포착 ' + capTxt + ' · 학습 반영 ' + learnTxt + '</div>' + autoDetailHtml;
   }
 
   // ═══════════ 섹션 1: 상시 자율 루틴 카드 ═══════════
