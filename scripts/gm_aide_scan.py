@@ -1042,6 +1042,12 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         auto_exec_on=auto_on,
         auto_applied=auto_applied,
         profile_hints_used=profile_hints,
+        # 자율 틈 감지기(배237(b) US-005) — 자율현황 "자율 처리 비율" 집계용 배선.
+        gap_auto=gap_result["gap_auto"],
+        gap_propose=gap_result["gap_propose"],
+        gap_auto_applied=gap_result["gap_auto_applied"],
+        gap_proposed=gap_result["gap_proposed"],
+        stall_apply_on=gap_result["stall_apply_on"],
     )
     print(f"[완료] ({now_str()}) — 스캔 로그: {SCAN_LOG.name}")
     return result

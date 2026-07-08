@@ -1135,9 +1135,19 @@
     // ※ 루틴 입항완료(_queue_archive adhoc)는 자율 판단이 아니라 일반 처리라 이력에서 제외(노이즈 방지).
     var AUTO_SIG = { auto_exec:1, approval_pattern:1, hit_rate:1, activation:1, missed:1 };
     var DONE_SIG = { auto_exec:1, activation:1 }; // 실제 자율실행 증거만 완료로 인정(관찰·통계 신호는 대기)
+    // 자율 틈 감지기(배237(b) US-005) 신규 action_type 전용 아이콘/태그 — dedup_key 파싱만(신규 필드 없이 기존 원장 재사용)
+    var GAP_TAG = {
+      stall_tag:        { ico:'🐌', tag:'정체태그', tagc:'var(--gold)' },
+      resumable_tag:    { ico:'🔓', tag:'재개가능', tagc:'var(--green)' },
+      nudge:            { ico:'📣', tag:'촉구', tagc:'var(--blue)' },
+      depends_resolved: { ico:'🔗', tag:'의존해소', tagc:'var(--green)' }
+    };
     d.obsLedger.filter(function(o){ return /^gm_aide/.test(o.source || '') || AUTO_SIG[o.signal_type]; })
       .forEach(function(o){
-        items.push({ t:ts(o.observed_at), when:o.observed_at, ico:'🔎', tag:'자율', tagc:'var(--pink)',
+        var m = /^gmaide_autoexec\|([a-z_]+)\|/.exec(o.dedup_key || '');
+        var g = m && GAP_TAG[m[1]];
+        items.push({ t:ts(o.observed_at), when:o.observed_at,
+          ico: g ? g.ico : '🔎', tag: g ? g.tag : '자율', tagc: g ? g.tagc : 'var(--pink)',
           what: esc(String(o.summary || '').slice(0, 80)),
           res: esc(o.pattern_hint || ''), done: !!DONE_SIG[o.signal_type] });
       });
@@ -1237,6 +1247,47 @@
           '<div class="ssub">안정 <b>' + stable + '</b> / 전체 <b>' + total + '</b>개 가이드 페이지가 재점검 대상에서 제외 — 자율 점검이 구조상 <b>전수→신규/변경분만</b>으로 좁아짐(회차별 실측 로그는 별도).</div></div>');
       } else {
         cards.push('<div class="scard unmeasured"><div class="sh">🔬 차등 점검 스킵률</div><div class="sbig">미측정</div><div class="ssub">안정 대장(audit_registry.json) 없음.</div></div>');
+      }
+    })();
+
+    // 6) 자율 틈 감지기(배237(b)) 자율 처리율 — auto/(auto+propose), scan_log 누적(gap_auto_applied/gap_proposed)
+    (function(){
+      var autoN = 0, proposeN = 0;
+      (d.scanLog || []).forEach(function(s){
+        autoN += (s.gap_auto_applied | 0);
+        proposeN += (s.gap_proposed | 0);
+      });
+      var total = autoN + proposeN;
+      if(total){
+        var pct = Math.round(autoN / total * 100);
+        cards.push('<div class="scard" style="--sc:var(--pink)"><div class="sh">🔀 틈 감지기 자율 처리율</div>' +
+          '<div class="sbig">' + pct + '<small>%</small></div>' +
+          '<div class="sbar"><i style="width:' + pct + '%"></i></div>' +
+          '<div class="ssub">자율 처리 <b>' + autoN + '</b> / (자율 <b>' + autoN + '</b> + 제안 <b>' + proposeN + '</b>) — 정체·재개가능 감지 결과(gm_aide_scan_log 누적)</div></div>');
+      } else {
+        cards.push('<div class="scard unmeasured"><div class="sh">🔀 틈 감지기 자율 처리율</div><div class="sbig">미측정</div><div class="ssub">자율 틈 감지기 처리 이력 없음(신규 게이트 AIDE_STALL_APPLY OFF 또는 아직 미포착).</div></div>');
+      }
+    })();
+
+    // 7) 자율 틈 감지기 되돌림률 — reverted/auto, 관찰원장 auto_exec dedup_key 재적용(2회+) = 외부에서 되돌린 뒤 재감지
+    (function(){
+      var re = /^gmaide_autoexec\|(stall_tag|resumable_tag|nudge|depends_resolved)\|/;
+      var counts = {};
+      (d.obsLedger || []).forEach(function(o){
+        var k = o.dedup_key || '';
+        if(re.test(k)) counts[k] = (counts[k] || 0) + 1;
+      });
+      var keys = Object.keys(counts);
+      var autoTotal = keys.length;
+      var reverted = keys.filter(function(k){ return counts[k] > 1; }).length;
+      if(autoTotal){
+        var pct = Math.round(reverted / autoTotal * 100);
+        cards.push('<div class="scard" style="--sc:var(--gold)"><div class="sh">🔁 틈 감지기 되돌림률</div>' +
+          '<div class="sbig">' + pct + '<small>%</small></div>' +
+          '<div class="sbar gold"><i style="width:' + pct + '%"></i></div>' +
+          '<div class="ssub">되돌림(재적용) <b>' + reverted + '</b> / 자율 조치 <b>' + autoTotal + '</b>건 — 동일 태그가 원장에 2회+ 기록되면 외부에서 되돌린 뒤 재감지된 것(멱등 위반 없음 확인용)</div></div>');
+      } else {
+        cards.push('<div class="scard unmeasured"><div class="sh">🔁 틈 감지기 되돌림률</div><div class="sbig">미측정</div><div class="ssub">자율 틈 감지기 조치 이력 없음(신규 게이트 OFF).</div></div>');
       }
     })();
 
