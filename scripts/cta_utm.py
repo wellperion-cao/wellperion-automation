@@ -109,7 +109,7 @@ _TAIL_TAGS = ["#종합스포츠클럽", "#웰페리온", "#WELLPERION"]
 _SPORT_CLUB_RE = re.compile(r"(?<!\S)#스포츠클럽(?!\S)")
 
 # 소제목 줄: ▍로 시작
-_SUBHEADING_RE = re.compile(r"^(▍.+)$", re.MULTILINE)
+_SUBHEADING_RE = re.compile(r"^([▍■].+)$", re.MULTILINE)  # ▍(카카오)·■(블로그·카페) 둘 다 소제목 인식 (2026-07-08 — ■ 사각지대 봉합)
 
 
 def _normalize_hashtags(tag_line: str) -> str:
