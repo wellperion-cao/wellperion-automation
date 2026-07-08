@@ -2875,5 +2875,19 @@
     "artifact": "당근 공개URL 패턴 = daangn.com/kr/business-posts/{full postId} (GM 발견). 발행로그의 postId(6a4dacd)는 표시 절삭이었고 전체=6a4dacdc2f7da403d691b4ef. HTTP200 실재 확인. 문의알림방 5채널 링크+좋아요/댓글 요청 전송. (CLI ad-hoc · 커밋 cabdcf3c)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "cabdcf3cd53cf09d2bac831b99e296dce846a750"
+  },
+  {
+    "task_id": "CMO-2026-07-08-ADHOC-27fbccdc",
+    "clevel": "cmo",
+    "title": "[시모] 당근 발행 후 공개 URL 자동 회수 — 매니저 URL postId 파라미터로 조립",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 707,
+    "artifact": "발행 직후 page.url(bizprofile.../manager/posts/?postId={fullId})에서 postId 추출→\nwww.daangn.com/kr/business-posts/{postId} 공개 URL 조립(GM 확인 패턴). 기존\n직접패턴매칭·posts-list 스크레이핑이 실패하던 사각지대 봉합. 검증: 실 매니저URL로\n조립→GM 제공 링크와 일치 확인. py_compile OK. (CLI ad-hoc · 커밋 27fbccdc)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "27fbccdcddb32259af7ed8a3c74237b93109f46e"
   }
 ]
