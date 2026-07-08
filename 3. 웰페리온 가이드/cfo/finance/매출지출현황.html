@@ -238,6 +238,7 @@ tr:nth-child(even) td{background:transparent}
         <div class="field"><label>소속</label><select id="reqDept"></select></div>
         <div class="field"><label>요청자</label><input type="text" id="reqWho" placeholder="이름"></div>
         <div class="field"><label>금액(원)</label><input type="number" id="reqAmt" placeholder="0"></div>
+        <div class="field"><label>구매(예정)날짜 <span style="color:var(--ink-faint);font-weight:400">· 선택</span></label><input type="date" id="reqPDate"></div>
         <div class="field"><label>승인자</label><select id="reqApprover"><option>이정헌소장</option><option>이경연실장</option><option>김남욱GM</option></select></div>
         <div class="field" style="grid-column:1/-1"><label>필요 물품 <span style="color:var(--ink-faint);font-weight:400">· 모델명 권장</span></label><textarea id="reqItem" rows="1" placeholder="모델명 포함 권장 (예: 샥즈 오픈런 프로2)"></textarea></div>
         <div class="field" style="grid-column:1/-1"><label>관련 링크 <span style="color:var(--ink-faint);font-weight:400">· 공개 링크 권장</span></label><textarea id="reqLink" rows="1" placeholder="공개 상품 링크 권장 (회원 주문상세·장바구니 링크 X)"></textarea></div>
@@ -824,7 +825,7 @@ async function submitReq(){
   if(lk){var memberPats=[/order_detail/i,/mycoupang/i,/mypage/i,/sourceType=CART/i,/(?:^|[?&\/=])cart(?![a-z])/i];
     if(memberPats.some(function(p){return p.test(lk);})&&!confirm("회원 전용/장바구니 링크는 다른 사람이 열 수 없어 최저가 비교가 어렵습니다. 공개 상품 페이지 링크를 권장합니다. 그래도 제출할까요?")){msg.textContent="제출 취소됨 — 링크 확인 후 다시 시도";return;}}
   msg.textContent="제출 중…";
-  var base={요청자:rval("reqWho"),소속:rval("reqDept"),물품:rval("reqItem"),가격:rval("reqAmt"),링크:rval("reqLink"),목적:rval("reqPurpose"),승인자:rval("reqApprover"),항목1:rval("reqCat1"),항목2:rval("reqCat2")};
+  var base={요청자:rval("reqWho"),소속:rval("reqDept"),물품:rval("reqItem"),가격:rval("reqAmt"),링크:rval("reqLink"),목적:rval("reqPurpose"),승인자:rval("reqApprover"),항목1:rval("reqCat1"),항목2:rval("reqCat2"),구매날짜:rval("reqPDate")};
   var fp=document.getElementById("reqPhoto");var f=fp&&fp.files&&fp.files[0];
   if(f){attachPhoto(base,f,function(){doSubmit(base,msg,fp);});}
   else doSubmit(base,msg,fp);
@@ -862,7 +863,7 @@ async function doSubmit(base,msg,fp){
       else if(diff!==null&&diff<0)m+=" — 품의가가 더 저렴(적정)";
     } else if(ins&&ins.ok&&!ins.found){ m+=" · 🤖 AI 시세: 검색결과 없음 — 모델명 보완 권장"; }
     msg.textContent=m;
-    ["reqWho","reqItem","reqAmt","reqLink","reqPurpose"].forEach(function(id){document.getElementById(id).value="";});if(fp)fp.value="";
+    ["reqWho","reqItem","reqAmt","reqLink","reqPurpose","reqPDate"].forEach(function(id){document.getElementById(id).value="";});if(fp)fp.value="";
     loadReq();loadReviewLowest(); // 목록 + 검토시트 재로드 → 💡배지 즉시 반영(구: 새로고침 전까지 미표시)
   }
   else msg.textContent="⚠️ 실패: "+((d&&d.error)||"서버 오류");
@@ -929,7 +930,7 @@ function renderReqTbl(){
   var rows=src.slice().reverse();
   var stc={"품의":"wait","검토":"rev","정산":"set","완료":"ok","승인":"wait","미승인":"no","캔슬":"no","반려":"no"};
   var tc=(reqFilter==="정산")?"thumb2":"thumb"; // 정산 탭에서 사진 2배
-  var h='<thead><tr><th style="text-align:center">#</th><th>날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
+  var h='<thead><tr><th style="text-align:center">#</th><th>제출일</th><th>구매날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var st=r.상태||"품의",act="";
     if(st==="품의"||st==="승인")act='<button class="reqAct" data-row="'+r.row+'" data-next="검토" data-pw="1" style="'+btnCss("#3c7a4a")+'">승인</button>';
@@ -942,9 +943,9 @@ function renderReqTbl(){
     var photo=(r.이미지&&(String(r.이미지).indexOf("http")===0||String(r.이미지).indexOf("data:")===0))?'<img src="'+r.이미지+'" class="'+tc+'" title="첨부사진" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var pf=(r.지출증빙&&String(r.지출증빙).indexOf("http")===0)?'<img src="'+r.지출증빙+'" class="'+tc+'" title="영수증/증빙" onclick="window.open(this.src,\'_blank\')" loading="lazy">':'';
     var rcpt=(photo||pf)?(photo+pf):'<button class="reqPhoto" data-row="'+r.row+'" style="font-size:10.5px;padding:4px 9px;cursor:pointer;border:1px dashed var(--gold);border-radius:6px;background:#fbf7ee;color:var(--gold-deep)">+ 사진</button>';
-    h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left"><span class="req-item">'+(r.물품||"")+'</span>'+(r.목적?'<div class="req-purpose">'+escapeHtml(r.목적)+'</div>':'')+reviewBadge(r,st)+priceLinks(r,st)+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
+    h+='<tr><td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+r.날짜+'</td><td style="text-align:left;font-size:12px;color:var(--ink-soft)">'+(r.구매날짜||"")+'</td><td style="text-align:left">'+(r.소속||"")+'</td><td style="text-align:left">'+(r.요청자||"")+'</td><td style="text-align:left">'+(r.승인자||"")+'</td><td style="text-align:left"><span class="req-item">'+(r.물품||"")+'</span>'+(r.목적?'<div class="req-purpose">'+escapeHtml(r.목적)+'</div>':'')+reviewBadge(r,st)+priceLinks(r,st)+'</td><td>'+won(r.가격)+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
-  if(!rows.length)h+='<tr><td colspan="10" style="color:var(--ink-faint)">'+(isDone?(REQ_DONE.length?("해당 기간에 "+reqFilter+" 건이 없습니다."):"기간을 선택하고 [검색]을 누르세요."):"해당 단계의 품의가 없습니다.")+'</td></tr>';
+  if(!rows.length)h+='<tr><td colspan="11" style="color:var(--ink-faint)">'+(isDone?(REQ_DONE.length?("해당 기간에 "+reqFilter+" 건이 없습니다."):"기간을 선택하고 [검색]을 누르세요."):"해당 단계의 품의가 없습니다.")+'</td></tr>';
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
   document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw,b);};});
   document.querySelectorAll(".reqPhoto").forEach(function(b){b.onclick=function(){addPhotoTo(b.dataset.row,b);};});
