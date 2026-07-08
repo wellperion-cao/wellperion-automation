@@ -1566,6 +1566,28 @@ def _compile_checklist_dashboard(rows: list[dict]) -> tuple[list[tuple], str, li
     return table_rows, parking_str, issues
 
 
+def _fetch_facility_today() -> dict | None:
+    """시설부 오늘자 점검 진행 — monthly_report&dept=facility의 dailySeries에서 오늘 행 추출.
+    시설부는 지원부와 달리 weekly엔 값이 없고 monthly_report 경로에 실데이터가 있다(입력률·이상 구조).
+    반환: {date,total,done,pct,sessionCount,outOfRangeCount} 또는 None."""
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+        resp = requests.get(
+            f"{SUPPORT_CHECK_API_URL}?action=monthly_report&dept=facility&date={today}&_pv={int(time.time())}",
+            timeout=20,
+            allow_redirects=True,
+        )
+        if resp.status_code == 200:
+            d = resp.json()
+            if d.get("ok"):
+                for row in d.get("dailySeries", []):
+                    if row.get("date") == today:
+                        return row
+    except Exception as e:
+        logger.warning(f"12시 시설부 오늘자 조회 실패: {e}")
+    return None
+
+
 def _build_checklist_block(slot_label: str) -> str:
     """
     12시/18시 공용 — 체크리스트 대시보드 박스표 블록 생성.
@@ -1577,10 +1599,27 @@ def _build_checklist_block(slot_label: str) -> str:
     day_kor = ["월", "화", "수", "목", "금", "토", "일"][now.weekday()]
 
     sheets_data = _fetch_checklist_status_sheets(today)
+    facility_today = _fetch_facility_today()  # 시설부 오늘자(monthly_report dailySeries) — 2026-07-08 GM: 12시 시설부 '-' 해소
     dashboard_url = "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"
+
+    def _facility_cell() -> str:
+        # 옛 지원부 소스(CHECKLIST_API_URL)엔 시설부가 없음 → 시설부 전용 경로로 채운다.
+        # 시설부 지표=입력률(입력/전체)+이상건수 — 지원부 완료율과 다른 체계(억지 통일 안 함).
+        if facility_today is None:
+            return "-"
+        f_total = facility_today.get("total", 0)
+        if not f_total:
+            return "미가동"
+        f_done = facility_today.get("done", 0)
+        f_pct = facility_today.get("pct", round(f_done / f_total * 100))
+        ooc = facility_today.get("outOfRangeCount", 0)
+        cell = f"{f_done}/{f_total}({f_pct}%)"
+        return cell + (f" ⚠{ooc}" if ooc else "")
 
     if sheets_data and sheets_data.get("rows"):
         table_rows, parking_str, issues = _compile_checklist_dashboard(sheets_data["rows"])
+        # 시설부 행은 지원부 소스에 없음 → 전용 시설부 소스로 교체
+        table_rows = [(lbl, _facility_cell() if lbl == "시설부 체크" else val) for lbl, val in table_rows]
         table_lines = _count_table(table_rows)
         table_str = "\n".join(table_lines)
 
@@ -1590,7 +1629,12 @@ def _build_checklist_block(slot_label: str) -> str:
             if len(issues) > 5:
                 issue_block += f"\n  ... 외 {len(issues) - 5}건"
     else:
-        table_str = "(점검 데이터 없음 — 실무진 점검앱 미입력 또는 API 미연결)"
+        # 지원부 소스 실패 — 시설부만이라도 있으면 표기
+        fac_cell = _facility_cell()
+        if fac_cell != "-":
+            table_str = "\n".join(_count_table([("지원부 체크", "-"), ("시설부 체크", fac_cell), ("주차 현황", "-")]))
+        else:
+            table_str = "(점검 데이터 없음 — 실무진 점검앱 미입력 또는 API 미연결)"
         issue_block = ""
 
     return (
@@ -2372,6 +2416,17 @@ def run_report(slot: str, test_mode: bool = False) -> None:
     else:
         logger.error(f"{label} 텔레그램 발송 실패 — 재시도 소진")
         logger.critical(f"{label} CRITICAL: 텔레그램 도달 불가 — 수동 확인 필요")
+
+    # 12시 오전 점검 현황은 점검관리방에도 발송 (GM DM + 점검관리방) — 2026-07-08 GM
+    if slot == "12" and not test_mode:
+        try:
+            room_ok = send_telegram(CHECK_NUDGE_CHAT_ID, body)
+            if room_ok:
+                logger.info(f"{label} 점검관리방 추가 발송 완료 chat_id={CHECK_NUDGE_CHAT_ID}")
+            else:
+                logger.error(f"{label} 점검관리방 추가 발송 실패")
+        except Exception as e:
+            logger.error(f"{label} 점검관리방 추가 발송 예외: {e}")
 
 
 # ── 테스트 모드 슬롯 결정 ──────────────────────────────────────────────────────
