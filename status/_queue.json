@@ -2989,5 +2989,19 @@
     "artifact": "member_inquiry_add/delete에 조회 캐시(micache) 무효화가 빠져 있어 추가/삭제\n직후 최대 60초간 stale rowIndex가 반환될 수 있었고, 삭제 가드는 대상 행\n전화가 비면 대조를 통과시켜 엉뚱한 행이 삭제될 위험이 있었다. add/delete에\n무효화를 추가하고, 삭제 가드는 keyPhone 동봉 시 대상 전화가 비었거나\n불일치하면 무조건 거부하도록 fail-safe로 강화했다. (CLI ad-hoc · 커밋 4f5e71cb)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4f5e71cb3e28bd9539925466e379c9db05b74d48"
+  },
+  {
+    "task_id": "CPO-2026-07-08-ADHOC-3bc7a3bd",
+    "clevel": "cpo",
+    "title": "[시포] 멤버십 CONTACT 연락이력 일정형 모달",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 715,
+    "artifact": "CONTACT 열을 C1/2/3 고정 3칸 인라인 편집에서 예약 모달과 동형 골격의\n연락 이력 모달(무제한 추가·날짜+시간+상담내용·수정삭제)로 격상.\n셀 표시=요약(N건·최근 MM/DD), 저장=_saveCell 경유 member_inquiry_update\n(contacts JSON). 백엔드(@140)가 이미 C1/2/3→contacts 합성 반환하므로\n기존 값 비파괴 흡수. 스펙=docs/superpowers/specs/2026-07-08-contact-연락이력-일정형-design.md 축3. (CLI ad-hoc · 커밋 3bc7a3bd)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "3bc7a3bd658a0f1a99352c25472172c31cd02c77"
   }
 ]
