@@ -1161,7 +1161,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
               <th style="width:110px">유입채널</th>
               <th style="width:85px" class="db-owner-col">담당</th>
               <th style="width:200px">문의 내용</th>
-              <th style="width:220px">Contact (연락 기록)</th>
+              <th style="width:220px">CONTACT (연락 이력)</th>
               <th style="width:200px">일정 (예약)</th>
             </tr>
           </thead>
@@ -1814,6 +1814,26 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeReconModal()">취소</button>
       <button class="consult-btn-save" id="rcSaveBtn" onclick="saveReconModal()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONTACT(연락 이력) 모달 — 문의 CONTACT 칸 클릭 시. 예약 모달과 골격 공유(별개 리스트). 저장=member_inquiry_update(contacts). 축3, 2026-07-08 시포·GM ══ -->
+<div class="consult-overlay" id="contactOverlay" onclick="if(event.target===this)closeContactModal()">
+  <div class="consult-modal" role="dialog" aria-modal="true">
+    <div class="consult-modal-head">
+      <span class="consult-modal-kind experience">연락</span>
+      <span class="consult-modal-title" id="ctTitle">연락 이력</span>
+    </div>
+
+    <!-- 연락 이력 리스트(가변) — 날짜+시간+상담내용. ＋연락 추가/삭제. IME 안전(입력 중 재렌더 없음). -->
+    <div class="consult-field-label">연락 이력</div>
+    <div id="ctList" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button type="button" id="ctAddBtn" onclick="_ctAddRow()" style="margin-top:10px;align-self:flex-start;padding:7px 12px;border-radius:8px;border:1px dashed var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">＋ 연락 추가</button>
+
+    <div class="consult-actions">
+      <button class="consult-btn-cancel" onclick="closeContactModal()">취소</button>
+      <button class="consult-btn-save" id="ctSaveBtn" onclick="saveContactModal()">저장</button>
     </div>
   </div>
 </div>
@@ -4015,6 +4035,7 @@ function saveConsultModal() {
    저장=inquiry→member_inquiry_update(reservations JSON) / active→member_active_update(fields:재등록예약목록). 2026-07-03 시포·GM
 ───────────────────────────────────────────── */
 var _resModal = null;           // { source:'inquiry'|'active', rowIndex, keyPhone, name, phone, program }
+var _ctModal = null;            // CONTACT(연락 이력) 모달 상태 — { rowIndex }. 축3, 2026-07-08 시포·GM
 var _reconPickMap = {};         // datalist label → { rowIndex, phone, name, program }
 var RECON_COLS = { date: '재등록상담 날짜', time: '재등록상담 시간', note: '재등록상담 내용' };
 
@@ -4234,6 +4255,105 @@ function saveReconModal() {
     })
     .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
     .then(function(){ saveBtn.disabled = false; });
+}
+
+/* ═══ CONTACT(연락 이력) 모달 — 예약 모달과 골격 공유(별개 리스트). 축3, 2026-07-08 시포·GM ═══
+   행 → 연락 이력 배열. 서버가 이미 흡수(비면 C1/2/3 합성)해 row.contacts로 내려주지만,
+   구버전 응답(폴백) 대비해 프론트에서도 한 번 더 안전망을 둔다. */
+function _rowContacts(row) {
+  if (!row) return [];
+  if (Array.isArray(row.contacts)) {
+    var parsed = _parseRes(row.contacts);
+    if (parsed.length) return parsed;
+  }
+  var out = [];
+  ['contact1', 'contact2', 'contact3'].forEach(function(f){
+    var v = String(row[f] || '').trim();
+    if (v) out.push({ date: '', time: '', note: v });
+  });
+  return out;
+}
+// date+time 오름차순 정렬(저장 순서 — 스펙 §2 축2)
+function _ctSort(list) {
+  return (list || []).slice().sort(function(a, b){
+    var ka = (a.date || '') + ' ' + (a.time || '');
+    var kb = (b.date || '') + ' ' + (b.time || '');
+    return ka < kb ? -1 : (ka > kb ? 1 : 0);
+  });
+}
+// 연락 1행 DOM 추가(IME 안전: 기존 행 재생성 없음). item={date,time,note}
+function _ctAddRow(item) {
+  item = item || { date: '', time: '', note: '' };
+  var list = document.getElementById('ctList');
+  var el = document.createElement('div');
+  el.className = 'res-item';
+  el.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:10px;background:var(--bg);display:flex;flex-direction:column;gap:6px';
+  var head = document.createElement('div');
+  head.style.cssText = 'display:flex;align-items:center;justify-content:space-between';
+  var lab = document.createElement('span'); lab.className = 'ct-item-label'; lab.style.cssText = 'font-size:12px;font-weight:700;color:var(--teal)';
+  head.appendChild(lab);
+  var del = document.createElement('button'); del.type = 'button'; del.textContent = '삭제';
+  del.style.cssText = 'padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--dim);font-size:11px;cursor:pointer;font-family:inherit';
+  del.onclick = function(){ el.remove(); _ctRelabel(); };
+  head.appendChild(del);
+  el.appendChild(head);
+  var rowDT = document.createElement('div');
+  rowDT.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+  var di = document.createElement('input'); di.type = 'date'; di.className = 'ct-date'; di.value = item.date || '';
+  di.style.cssText = 'padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit';
+  var ti = document.createElement('select'); ti.className = 'ct-time';
+  ti.style.cssText = 'padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit';
+  _resFillTimeOptions(ti, item.time);   // 06~22시 30분 단위 드롭다운 — 예약 모달과 동일 로직 재사용
+  rowDT.appendChild(di); rowDT.appendChild(ti);
+  el.appendChild(rowDT);
+  var note = document.createElement('textarea'); note.className = 'ct-note consult-memo'; note.value = item.note || '';
+  note.placeholder = '상담·통화 내용'; note.style.minHeight = '46px'; note.style.marginTop = '0';
+  el.appendChild(note);
+  list.appendChild(el);
+  _ctRelabel();
+}
+function _ctRelabel() {
+  var items = document.querySelectorAll('#ctList .res-item');
+  for (var i = 0; i < items.length; i++) {
+    var lab = items[i].querySelector('.ct-item-label');
+    if (lab) lab.textContent = '연락' + (i + 1);
+  }
+}
+function _ctCollect() {
+  var out = [];
+  document.querySelectorAll('#ctList .res-item').forEach(function(it){
+    var d = (it.querySelector('.ct-date').value || '').trim();
+    var t = (it.querySelector('.ct-time').value || '').trim();
+    var n = (it.querySelector('.ct-note').value || '').trim();
+    if (!d && !t && !n) return;
+    out.push({ date: d, time: t, note: n });
+  });
+  return _ctSort(out);   // 저장=오름차순
+}
+// CONTACT 칸 클릭 → 연락 이력 모달. row=현재 행(live).
+function openContactModal(row) {
+  if (!row) return;
+  _ctModal = { rowIndex: row.rowIndex };
+  document.getElementById('ctTitle').textContent = (row.name ? row.name + '님 ' : '') + '연락 이력';
+  var list = document.getElementById('ctList'); list.innerHTML = '';
+  var contacts = _ctSort(_rowContacts(row));
+  if (contacts.length) contacts.slice().reverse().forEach(function(c){ _ctAddRow(c); });   // 표시=최신 우선
+  else _ctAddRow({ date: '', time: '', note: '' });
+  document.getElementById('contactOverlay').classList.add('open');
+}
+function closeContactModal() {
+  document.getElementById('contactOverlay').classList.remove('open');
+  _ctModal = null;
+}
+function saveContactModal() {
+  if (!_ctModal || !_ctModal.rowIndex) { showToast('대상 행을 찾을 수 없습니다', 'err'); return; }
+  var contacts = _ctCollect();
+  var rowIndex = _ctModal.rowIndex;
+  var saveBtn = document.getElementById('ctSaveBtn'); saveBtn.disabled = true;
+  _saveCell(rowIndex, { contacts: contacts });   // _saveCell이 로컬반영+디바운스 저장(member_inquiry_update) 처리
+  closeContactModal();
+  if (_tabLoaded.db) renderDbTable();
+  saveBtn.disabled = false;
 }
 
 /* ─────────────────────────────────────────────
@@ -4523,7 +4643,8 @@ function _saveCell(rowIndex, patch) {
     contact1: r.contact1 !== undefined ? r.contact1 : '',
     contact2: r.contact2 !== undefined ? r.contact2 : '',
     contact3: r.contact3 !== undefined ? r.contact3 : '',
-    inquiryContent: r.inquiryContent !== undefined ? r.inquiryContent : ''   // 문의내용(N열) #1
+    inquiryContent: r.inquiryContent !== undefined ? r.inquiryContent : '',   // 문의내용(N열) #1
+    contacts: r.contacts !== undefined ? JSON.stringify(r.contacts) : ''      // CONTACT(연락 이력) 배열 — 축2/3, 2026-07-08 시포·GM
     // 일정(예약)은 예약 리스트 모달에서 body.reservations로 저장 — 인라인 셀 편집에서 제외(스테일 방지). 2026-07-03 시포·GM.
   };
   if (dbSaveTimer) clearTimeout(dbSaveTimer);
@@ -4669,51 +4790,22 @@ function _activateCellInquiry(td, row) {
   ta.addEventListener('blur', commit);
 }
 
-/* ─── Contact 셀 (contact1·2·3 composite) 표시 + 활성화 (2026-06-26 GM: 메모칸→Contact, 체험1~3처럼) ─── */
+/* ─── CONTACT(연락 이력) 셀 표시 요약 + 클릭→모달 (일정형 격상, C1/2/3 인라인 편집 폐기. 축3, 2026-07-08 시포·GM) ─── */
 function _renderContactCell(td, row) {
-  td.innerHTML =
-    'C1: ' + esc(row.contact1 || '—') + '<br>' +
-    'C2: ' + esc(row.contact2 || '—') + '<br>' +
-    'C3: ' + esc(row.contact3 || '—');
+  var list = _rowContacts(row);
+  if (!list.length) { td.innerHTML = '<span style="color:var(--dim)">＋ 연락 추가</span>'; return; }
+  var withDate = list.filter(function(c){ return c.date; });
+  var latest = withDate.length ? withDate.reduce(function(a, b){
+    return ((b.date || '') + ' ' + (b.time || '')) > ((a.date || '') + ' ' + (a.time || '')) ? b : a;
+  }) : null;
+  var mmdd = latest ? latest.date.slice(5).replace('-', '/') : '';
+  td.textContent = list.length + '건' + (mmdd ? ' · 최근 ' + mmdd : '');
 }
+// CONTACT 셀 클릭 → 연락 이력 모달 오픈(인라인 편집 아님).
 function _activateCellContact(td, row) {
-  if (td.classList.contains('cell-active')) return; // 이미 편집 중
   var rowIndex = parseInt(td.closest('tr').dataset.rowIndex, 10);
   var live = dbRows.find(function(r){ return r.rowIndex === rowIndex; }) || row;
-
-  td.classList.add('cell-active');
-  td.innerHTML = '';
-  var block = document.createElement('div');
-  block.style.display = 'flex'; block.style.flexDirection = 'column'; block.style.gap = '4px';
-  ['contact1','contact2','contact3'].forEach(function(f, i){
-    var inp = document.createElement('input');
-    inp.className = 'cell-input'; inp.type = 'text';
-    inp.style.width = '200px';
-    inp.placeholder = 'Contact ' + (i+1) + ' — ' + (i+1) + '차 연락 기록';
-    inp.value = live[f] || '';
-    inp.dataset.field = f;
-    block.appendChild(inp);
-  });
-  td.appendChild(block);
-  var firstInput = block.querySelector('input');
-  if (firstInput) firstInput.focus();
-
-  // 블록 밖으로 포커스 완전히 벗어나면 커밋 (IME 안전 — 입력 중 재생성 없음)
-  var committed = false;
-  function onFocusOut() {
-    requestAnimationFrame(function(){
-      if (td.contains(document.activeElement)) return;
-      if (committed) return;
-      committed = true;
-      td.removeEventListener('focusout', onFocusOut);
-      var patch = {};
-      block.querySelectorAll('[data-field]').forEach(function(el){ patch[el.dataset.field] = el.value; });
-      _renderContactCell(td, Object.assign({}, live, patch));
-      td.classList.remove('cell-active');
-      _saveCell(rowIndex, patch);
-    });
-  }
-  td.addEventListener('focusout', onFocusOut);
+  openContactModal(live);
 }
 
 /* ─── 일정 셀 클릭 → 예약 리스트 모달(가변 예약). 2026-07-03 시포·GM ─── */
