@@ -129,14 +129,17 @@
     "task_id": "CEO-2026-06-27-HOME-CHECK-STATUS",
     "clevel": "ceo",
     "title": "[웰리] home 점검 현황 챙김 — 시설·지원(남/여) 점검 표면 관리·검증",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-27",
-    "note": "GM 지시(2026-06-27) '웰리는 home에 점검 현황 챙겨'. home 점검 위젯(#home-check-kpi: 시설부·지원부 남/여) 표면을 웰리가 소유·검증. 현재 지원부 주말 회차가 '오후조'로 잘못 표시(정답=오전조+마감조). 백엔드/시트 회차 정합은 시우 담당(GM 직접 지시) — 인계 brief=status/briefs/COO-2026-06-27-SUPPORT-WEEKEND-ROUNDS-HANDOFF.md. home fetch 캐시끄기(no-store)는 이미 적용(커밋 af7b6646). 라이브 점검 GAS 즉흥수정 금지·로컬검증 후 1회배포 교훈.",
-    "next": "시우 지원_매뉴얼 회차 정합 완료 후 → home 시크릿 라이브 검증(주말 남/여 오전조+마감조 2칸 표시·오후조 사라짐) → 정상이면 GM 보고. depends_on=시우 시트정합.",
+    "note": "GM 지시(2026-06-27) '웰리는 home에 점검 현황 챙겨'. home 점검 위젯(#home-check-kpi: 시설부·지원부 남/여) 표면을 웰리가 소유·검증. 현재 지원부 주말 회차가 '오후조'로 잘못 표시(정답=오전조+마감조). 백엔드/시트 회차 정합은 시우 담당(GM 직접 지시) — 인계 brief=status/briefs/COO-2026-06-27-SUPPORT-WEEKEND-ROUNDS-HANDOFF.md. home fetch 캐시끄기(no-store)는 이미 적용(커밋 af7b6646). 라이브 점검 GAS 즉흥수정 금지·로컬검증 후 1회배포 교훈. [2026-07-08 웰리 라이브 재검 PASS] 시우 주말 회차정합(clasp @141) 발효 실측 확인 — today_live 주말(7/4토·7/5일) pm/pmTotal 버킷=0(top-level+byGender.m/f 모두), am/close만 유효값. 시크릿 헤드리스 크롬 라이브 스크린샷=오늘(수) 위젯↔GAS응답 1:1 일치·회귀0. home 위젯 주말 표시=오전조+마감조(오후조 소멸) 교정 확인. 라이브 https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html",
+    "next": "🏁 입항 완료 — home 점검 위젯 주말 회차 교정 라이브 검증 완료. 별건 관찰: 시설부 카드 667% 이상값(100% 초과)은 배173 범위 밖·후속 확인 필요.",
     "depends_on": "시우 지원부 회차 시트 정합",
     "ship_no": 173,
-    "module": "home"
+    "module": "home",
+    "terminal": true,
+    "processed_at": "2026-07-08",
+    "artifact": "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html (주말 today_live pmTotal=0 실측·위젯 오전+마감 표시 확인)"
   },
   {
     "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
