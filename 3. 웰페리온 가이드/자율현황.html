@@ -364,6 +364,20 @@
     <div class="feed-status" style="grid-column:1/-1;">상시 체계 상태를 불러오는 중…</div>
   </div>
 
+  <!-- 📌 매출보고 카톡 3방 발송 설정 가이드 (배488 · ★이름 접두) -->
+  <details class="coo-details" style="margin-top:12px;">
+    <summary>📌 매출보고 카톡 3방 설정 — 방 이름 <b>★</b> 접두 가이드 (한 번만 설정)</summary>
+    <div style="font-size:12.5px;line-height:1.7;padding:6px 2px;">
+      <p style="margin:4px 0 8px;">매일 09:30 자동발송이 <b>카톡 방을 '창 제목'으로 찾아</b> 전송합니다. 방 이름 앞에 <b>★</b>를 붙여두면 다른 창과 안 헷갈리고 정확히 찾습니다. 3방 모두 아래처럼 설정하세요(별명은 나만 보이고 상대는 모릅니다).</p>
+      <ol style="margin:0 0 8px;padding-left:20px;">
+        <li>카카오톡에서 해당 <b>채팅방/친구</b>를 엽니다.</li>
+        <li>이름(프로필) → <b>편집 ✎</b> → <b>별명</b>을 <code>★회장님</code>·<code>★관리부</code>·<code>★운영부</code>처럼 <b>★로 시작</b>하게 저장.</li>
+        <li>발송 시각(09:30)에 그 <b>3개 방 창을 열어둡니다</b>(최소화해도 됨).</li>
+      </ol>
+      <p style="margin:4px 0;color:var(--dim);">※ 방 이름을 바꾸면 발송 대상 목록(<code>scripts/kakao_rooms.json</code>)도 같은 이름으로 맞춰야 합니다 — 바꾸시면 시토에게 말씀하시면 즉시 반영합니다. 현재 등록: <b>차의주 회장님 · 웰페리온 관리부 · ★ 운영부</b>.</p>
+    </div>
+  </details>
+
   <!-- ════ 📣 시모(AI CMO) 자율 마케팅 (제작→발행→측정 자율 축 · review_queue 실데이터) ════ -->
   <section>
     <h2 class="sec">📣 시모 (AI CMO) 자율 마케팅 <span style="font-size:11px;font-weight:400;color:var(--dim);">(마케팅 루프 5단계 자율 축)</span></h2>
@@ -840,6 +854,14 @@
       pill:['na','무소식=정상'], rows:[
         ['방식', '문제 발생 시에만 경보(정상 시 무발신)'],
         ['로그', '<span style="color:var(--dim)">전용 실행 로그 미연동 — 경보 원장으로만 추적</span>']
+      ]});
+
+    // 4-b) 매출보고 카톡 3방 자동발송 (배488) — 매일 09:30 무인, 텔레그램 버튼 없이 완전자동
+    cards.push({ ico:'💰', nm:'매출보고 카톡 3방 자동발송', cy:'매일 09:30 · PNG 자체생성→카톡 3방', rc:'var(--gold)',
+      pill:['on','라이브'], rows:[
+        ['무엇을', '매출시트→PNG 자체생성→지정 카톡 3방(회장님·관리부·운영부) 무인 전송 (텔레그램 버튼 클릭 불필요)'],
+        ['안전', '세션만료·휴관일 자동인지 · 실패 시 OWNER 경보 · 킬스위치=<code>status/kakao_auto_send.json</code>'],
+        ['전제', '카톡 3방 창 열어둠(방 이름 <b>★</b> 접두 권장) · cao 구글세션 유효']
       ]});
 
     // 5) 하이진 자동 아카이브 (6h)
