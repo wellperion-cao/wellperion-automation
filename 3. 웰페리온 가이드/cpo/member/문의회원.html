@@ -992,6 +992,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <button class="action-btn" onclick="openGdoc('principle,routine')">📋 운영 원칙·루틴</button>
         <button class="action-btn" id="btnMembershipDash" onclick="openMembershipDash()">📊 멤버십 문의 현황</button>
         <button class="action-btn" id="btnLessonDash" onclick="openLessonDash()" style="display:none">📊 강습 문의 현황</button>
+        <button class="action-btn" onclick="openPostInquiryDash()">📊 문의 이후 현황</button>
         <button class="action-btn" onclick="openChurnManage()">🚪 이탈관리</button>
         <a class="action-btn" href="../../wellperion_guide(main).html">ERP 홈</a>
         <button class="action-btn" onclick="window.print()">인쇄</button>
@@ -1976,6 +1977,21 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </div>
 </div>
 
+<!-- ══ 문의 이후 현황 대시보드 모달 v1 (버튼 📊 문의 이후 현황 → openPostInquiryDash). 시포(CPO) 신규 소유, R/R=project_cpo_owns_post_inquiry_funnel.
+     ★이음새 원칙: 문의 수·채널=시모 대시보드와 단일 소스(type_channel_breakdown) · 퍼널=stage_funnel(멤버십+강습 백엔드 자체 합산) — 재계산 금지, 응답 그대로 신뢰.
+     멤버십 팝업 패턴 미러, 멤버십+강습 통합 뷰. lazy load. 2026-07-08 시포·GM, 배=GM 확정 "문의회원 페이지 안 대시보드" ══ -->
+<div class="gdoc-overlay" id="postInqModalOverlay" onclick="if(event.target===this)closePostInquiryDash()">
+  <div class="gdoc-modal" role="dialog" aria-modal="true">
+    <div class="gdoc-modal-head">
+      <span class="gdoc-modal-title">📊 문의 이후 현황</span>
+      <button class="gdoc-close" type="button" onclick="closePostInquiryDash()" aria-label="닫기">&times;</button>
+    </div>
+    <div id="postInqModalBody">
+      <div style="color:var(--dim);font-size:12px">불러오는 중…</div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ── GAS URL (퍼널 Survey 웹앱 /exec — 2026-06-22 연결) ── */
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
@@ -2372,8 +2388,10 @@ document.addEventListener('keydown', function(e){
   if (e.key !== 'Escape') return;
   var mdash = document.getElementById('mdashModalOverlay');
   var ldash = document.getElementById('lessonDashModalOverlay');
+  var pdash = document.getElementById('postInqModalOverlay');
   if (mdash && mdash.classList.contains('open')) closeMembershipDash();
   if (ldash && ldash.classList.contains('open')) closeLessonDash();
+  if (pdash && pdash.classList.contains('open')) closePostInquiryDash();
 });
 // 우측 CPO 가이드 펼치기 — 기존 gdoc 템플릿 콘텐츠를 인라인으로 clone(중복 없음). 2026-06-29 시포
 function toggleGuideAcc(btn, id) {
@@ -2737,6 +2755,163 @@ function _lessonDashRenderMember(t, lsType){
     })
     .catch(function(){ el.innerHTML = '<div style="color:var(--dim);font-size:11px">구성 데이터 불러오기 실패</div>'; });
 }
+
+/* ══ 문의 이후 현황 대시보드(v1) — 시포(CPO) 신규 소유, R/R=project_cpo_owns_post_inquiry_funnel. 배=GM 확정 "문의회원 페이지 안 대시보드".
+   ★이음새 원칙(최우선): 문의 수·채널=시모 대시보드와 동일 소스(type_channel_breakdown) · 퍼널=stage_funnel(백엔드가 이미 멤버십+강습 분리 집계한 것을 합산). 재계산 금지 — 응답 그대로 신뢰.
+   1차 컨택만 예외적으로 클라 계산(연락이력, 추가 GAS 호출 없이 — 현재 이미 로드된 dbRows/_lessonState.rows 재사용).
+   숫자 정의(분모·기간·dedup)가 다른 소스는 억지로 통일하지 않고 각자 표기(정직성 — 재계산·날조 금지). 2026-07-08 시포·GM ══ */
+var _postInqLoaded = false;
+var _postInqCache = { tc: null };  // type_channel_breakdown 캐시(재열람 시 재사용, stage_funnel은 _mdashCache.funnel 공유)
+function openPostInquiryDash(){
+  var ov = document.getElementById('postInqModalOverlay');
+  if (!ov) return;
+  ov.classList.add('open');
+  if (!_postInqLoaded) { _postInqLoaded = true; loadPostInquiryDash(); }
+}
+function closePostInquiryDash(){
+  var ov = document.getElementById('postInqModalOverlay');
+  if (ov) ov.classList.remove('open');
+}
+// 현재 이미 로드된 문의 목록만 반환(추가 GAS 호출 없음) — 멤버십 dbRows(항상 사전로드)+열람된 강습 유형(성인/유소년)만.
+function _postInqLoadedRows_(){
+  var rows = (dbRows || []).slice();
+  var lessonLoadedTypes = [];
+  ['adult', 'youth'].forEach(function(t){
+    var st = _lessonState[t];
+    if (st && st.loaded && st.rows && st.rows.length) { rows = rows.concat(st.rows); lessonLoadedTypes.push(t === 'youth' ? '유소년강습' : '성인강습'); }
+  });
+  return { rows: rows, lessonLoadedTypes: lessonLoadedTypes };
+}
+function loadPostInquiryDash(){
+  var body = document.getElementById('postInqModalBody');
+  if (!body) return;
+  var _ld = '<div style="color:var(--dim);font-size:11px">불러오는 중…</div>';
+  body.innerHTML =
+    '<div class="mdash-sec"><div class="mdash-sec-hd">① 문의 이후 퍼널</div>' +
+      '<div id="postInqSecFunnel">' + _ld + '</div></div>' +
+    '<div class="mdash-sec"><div class="mdash-sec-hd">② 처리 현황</div>' +
+      '<div id="postInqSecStatus">' + _ld + '</div></div>' +
+    '<div class="mdash-sec"><div class="mdash-sec-hd">③ 회원 현황</div>' +
+      '<div id="postInqSecMember">' + _ld + '</div></div>' +
+    '<div class="mdash-sec"><div class="mdash-sec-hd">④ 월간 보고</div>' +
+      '<div style="color:var(--dim);font-size:11px">준비중(v1 범위 밖 — 후속)</div></div>';
+  // stage_funnel — 멤버십 팝업이 이미 캐시해뒀으면 재사용(중복 fetch 회피). 성공 후 type_channel_breakdown 1회만 추가 fetch.
+  _postInqFetchFunnel(function(fd){
+    _postInqFetchTc(function(tcd){ _postInqRenderFunnel(fd, tcd); });
+    _postInqRenderStatus(fd);   // ②도 동일 fd 재사용(퍼널 ⑤ 등록과 동일 값) — 별도 fetch 없음
+  });
+  _postInqRenderMember();  // ③은 _cpoStats(사전로드)+cpo_churn_stats(캐시) — 독립
+}
+function _postInqFetchFunnel(cb){
+  if (_mdashCache.funnel) { cb(_mdashCache.funnel); return; }
+  if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
+  fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d && d.ok) _mdashCache.funnel = d; cb(d && d.ok ? d : null); })
+    .catch(function(){ cb(null); });
+}
+function _postInqFetchTc(cb){
+  if (_postInqCache.tc) { cb(_postInqCache.tc); return; }
+  if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
+  fetch(GAS_URL + '?action=type_channel_breakdown' + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d && d.ok) _postInqCache.tc = d; cb(d && d.ok ? d : null); })
+    .catch(function(){ cb(null); });
+}
+// §① 문의 이후 퍼널 — 문의→1차 컨택→상담·예약→방문→등록→회원. backbone=stage_funnel(멤버십+강습 total 합산) + 1차 컨택만 클라 추정(연락이력 비율).
+// 잔존율 색등급 청록≥80(ok)/앰버50~80(warn)/빨강<50(drop) — 기존 funnel-bar-* CSS 재사용(색+숫자 병기, 색만 의존 금지).
+// ⑥ 회원(현재 유효회원 스냅샷)은 ⑤ 등록(문의 코호트 전화매칭 건수)과 모수가 달라 100%를 넘나들 수 있음 — 그 경우 억지로 캡하지 않고 '△모수차이' 배지로 정직 표기.
+function _postInqRenderFunnel(fd, tcd){
+  var el = document.getElementById('postInqSecFunnel'); if (!el) return;
+  if (!fd) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">퍼널 데이터 없음</div>'; return; }
+  var mt = (fd.membership && fd.membership.total) || {};
+  var lt = (fd.lesson && fd.lesson.total) || {};
+  function sum(k){ return (mt[k] || 0) + (lt[k] || 0); }
+  var inqBase = sum('문의');
+  if (!inqBase) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">퍼널 데이터 없음</div>'; return; }
+  var loaded = _postInqLoadedRows_();
+  var lRows = loaded.rows;
+  var contactRatio = lRows.length ? (lRows.filter(function(r){ return (r.contacts || []).length > 0; }).length / lRows.length) : null;
+  var contactEst = contactRatio != null ? Math.round(inqBase * contactRatio) : null;
+  var memberSnap = _cpoStats ? ((Number(_cpoStats.memberActive) || 0) + (Number(_cpoStats.memberCorp) || 0)) : null;
+  var stages = [
+    { label: '① 문의',      cur: inqBase },
+    { label: '② 1차 컨택',  cur: contactEst, est: true },
+    { label: '③ 상담·예약', cur: sum('응대') },
+    { label: '④ 방문',      cur: sum('방문') },
+    { label: '⑤ 등록',      cur: sum('가입'), join: true },
+    { label: '⑥ 회원',      cur: memberSnap, snapshot: true }
+  ];
+  function grade(r){ if (r == null) return 'ok'; if (r < 50) return 'drop'; if (r < 80) return 'warn'; return 'ok'; }
+  var prev = null, worst = null, rowsHtml = '';
+  stages.forEach(function(s){
+    var cur = s.cur;
+    var ret = null, mismatch = false;
+    if (prev != null && cur != null) {
+      ret = prev > 0 ? Math.round(cur / prev * 1000) / 10 : null;
+      if (s.snapshot && ret != null && ret > 100) mismatch = true;  // 회원 스냅샷=문의 코호트와 모수 다름 — 초과분은 정직 표기(억지 캡 없음)
+    }
+    var g = mismatch ? 'warn' : grade(ret);
+    var w = (cur != null) ? Math.max(cur / inqBase * 100, cur > 0 ? 1.5 : 0) : 0;
+    if (!s.snapshot && ret != null && (!worst || ret < worst.ret)) worst = { label: s.label, ret: ret };
+    var curStr = cur == null ? '–' : cur.toLocaleString();
+    var retStr = ret == null ? '–' : (ret + '%' + (mismatch ? ' △' : ''));
+    rowsHtml += '<div class="funnel-bar-row"><div class="funnel-bar-label' + (s.join ? ' is-join' : '') + '">' + s.label + '</div>' +
+      '<div class="funnel-bar-track"><div class="funnel-bar-fill ' + g + '" style="width:' + w.toFixed(1) + '%"></div></div>' +
+      '<div class="funnel-bar-nums"><span class="funnel-bar-count">' + curStr + (s.est ? '*' : '') + '</span>' +
+      '<span class="funnel-bar-ret ' + g + '">' + retStr + '</span></div></div>';
+    if (cur != null) prev = cur;
+  });
+  var badge = worst ? '<span class="funnel-bottleneck-badge">🔻 병목 ' + worst.label + ' (' + worst.ret + '%)</span>' : '';
+  var tcTotal = (tcd && tcd.overall) ? tcd.overall.total : null;
+  var tcNote = tcTotal != null
+    ? ('참고: 시모 대시보드 문의 총량(type_channel_breakdown)=' + tcTotal.toLocaleString() + '건 · 본 퍼널 기준(stage_funnel 멤버십+강습 합산)=' + inqBase.toLocaleString() + '건 — 소스 정의 차이로 다를 수 있음(각 액션 응답 그대로, 재계산 아님)')
+    : '시모 대시보드 문의 총량(type_channel_breakdown) 불러오기 실패 — 퍼널은 stage_funnel 단독 기준';
+  el.innerHTML = '<div class="funnel-bar-title">잔존율=직전 단계 대비 · 막대=①문의 대비 ' + badge + '</div>' + rowsHtml +
+    '<div class="mdash-caveat">*② 1차 컨택=로드된 목록(연락이력) 비율 적용 추정치(강습은 열람한 유형만 반영, 실측 아님) · ⑤ 등록=stage_funnel 가입(전화매칭) · ⑥ 회원=현재 유효회원 스냅샷(cpo_today_stats, 문의 코호트와 모수 달라 △=참고용) · ' + tcNote + '</div>';
+}
+// §② 처리 현황 — 미컨택·컨택완료=클라 계산(로드된 목록 연락이력, 추가 GAS 호출 없음) · 등록완료=stage_funnel 가입(①퍼널 ⑤와 동일 값, 재사용) · 당월 이탈=cpo_churn_stats(재사용).
+function _postInqRenderStatus(fd){
+  var el = document.getElementById('postInqSecStatus'); if (!el) return;
+  var loaded = _postInqLoadedRows_();
+  var rows = loaded.rows;
+  var uncontacted = rows.filter(function(r){ return !((r.contacts || []).length > 0); }).length;
+  var contacted = rows.length - uncontacted;
+  var scopeNote = loaded.lessonLoadedTypes.length ? ('멤버십 + ' + loaded.lessonLoadedTypes.join('·')) : '멤버십만(강습 미열람)';
+  var mt = (fd && fd.membership && fd.membership.total) || {};
+  var lt = (fd && fd.lesson && fd.lesson.total) || {};
+  var regN = fd ? ((mt.가입 || 0) + (lt.가입 || 0)) : null;
+  _fetchChurnStats(function(cd){
+    var lossN = cd ? cd.monthLossCount : null;
+    el.innerHTML = '<div class="mdash-chips">' +
+      '<span class="mdash-chip red">미컨택 <b>' + uncontacted.toLocaleString() + '</b></span>' +
+      '<span class="mdash-chip accent">컨택완료(진행중) <b>' + contacted.toLocaleString() + '</b></span>' +
+      '<span class="mdash-chip teal">등록완료 <b>' + (regN == null ? '–' : regN.toLocaleString()) + '</b></span>' +
+      '<span class="mdash-chip yellow">당월 이탈 <b>' + (lossN == null ? '–' : lossN) + '</b></span></div>' +
+      '<div class="mdash-caveat">미컨택·컨택완료=로드된 목록(' + esc(scopeNote) + ') 연락이력 기준(총 ' + rows.length.toLocaleString() + '건 · 추가 GAS 호출 없음) · 등록완료=stage_funnel 가입(①퍼널 ⑤와 동일 값) · 당월 이탈=cpo_churn_stats(③회원 현황과 동일 소스)</div>';
+  });
+}
+// §③ 회원 현황 — 유효회원·이번달 신규=cpo_today_stats(_cpoStats, 사전로드) · 당월 이탈=cpo_churn_stats(캐시 재사용).
+function _postInqRenderMember(){
+  var el = document.getElementById('postInqSecMember'); if (!el) return;
+  var d = _cpoStats || null;
+  var chipsHtml;
+  if (d) {
+    var valid = (Number(d.memberActive) || 0) + (Number(d.memberCorp) || 0);
+    chipsHtml = '<span class="mdash-chip teal">유효회원 <b>' + valid.toLocaleString() + '</b></span>' +
+      '<span class="mdash-chip accent">이번달 신규 <b>' + (Number(d.monthReg) || 0).toLocaleString() + '</b></span>';
+  } else {
+    chipsHtml = '<span style="color:var(--dim);font-size:11px">회원 구성 데이터 로딩 전(초기화 중) — 잠시 후 재열람</span>';
+  }
+  el.innerHTML = '<div class="mdash-chips" id="postInqMemChips">' + chipsHtml + '</div>' +
+    '<div class="mdash-caveat">유효회원·이번달 신규=cpo_today_stats(유효회원 시트) · 당월 이탈=cpo_churn_stats — 멤버십 문의 현황과 동일 소스</div>';
+  _fetchChurnStats(function(cd){
+    var chips = document.getElementById('postInqMemChips'); if (!chips) return;
+    if (!cd) { chips.insertAdjacentHTML('beforeend', '<span style="color:var(--dim);font-size:11px">이탈 데이터 불러오기 실패</span>'); return; }
+    chips.insertAdjacentHTML('beforeend', '<span class="mdash-chip red">당월 이탈확정 <b>' + (cd.monthLossCount != null ? cd.monthLossCount : '–') + '</b></span>');
+  });
+}
+
 // 이탈 신호 매트릭스의 실측 2행(이탈 확정·갱신 D-14) 라이브 숫자 주입. 캐시 재사용(강제조회 아님). 2026-07-03 시포·GM
 function renderChurnMatrixLive(body){
   if (!body) return;
