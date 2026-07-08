@@ -1599,12 +1599,24 @@ def _build_checklist_block(slot_label: str) -> str:
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
     day_kor = ["월", "화", "수", "목", "금", "토", "일"][now.weekday()]
 
-    sheets_data = _fetch_checklist_status_sheets(today)
-    facility_today = _fetch_facility_today()  # 시설부 오늘자(monthly_report dailySeries) — 2026-07-08 GM: 12시 시설부 '-' 해소
     dashboard_url = "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"
 
+    # 지원부·시설부 라이브 소스로 조회 — 옛 CHECKLIST_API_URL은 오늘 빈 응답(rows=0)이라 폐기(2026-07-08 GM):
+    #   지원부=today_live&dept=support(실데이터·완료율) · 시설부=monthly_report 오늘행(입력률+이상). 두 지표 체계는 다름(억지 통일 안 함).
+    #   주차관리부는 SSOT상 독립·점검 제외 부서(weekly가 구조상 전부 0) → 12시 표에서 제외.
+    support_live = _fetch_support_today_live(today)
+    facility_today = _fetch_facility_today()
+
+    def _support_cell() -> str:
+        if not support_live:
+            return "-"
+        t = support_live.get("total", 0)
+        if not t:
+            return "미가동"
+        dn = support_live.get("done", 0)
+        return f"{dn}/{t}({round(dn / t * 100)}%)"
+
     def _facility_cell() -> str:
-        # 옛 지원부 소스(CHECKLIST_API_URL)엔 시설부가 없음 → 시설부 전용 경로로 채운다.
         # 시설부 지표=입력률(입력/전체)+이상건수 — 지원부 완료율과 다른 체계(억지 통일 안 함).
         if facility_today is None:
             return "-"
@@ -1614,29 +1626,16 @@ def _build_checklist_block(slot_label: str) -> str:
         f_done = facility_today.get("done", 0)
         f_pct = facility_today.get("pct", round(f_done / f_total * 100))
         ooc = facility_today.get("outOfRangeCount", 0)
-        cell = f"{f_done}/{f_total}({f_pct}%)"
-        return cell + (f" ⚠{ooc}" if ooc else "")
+        return f"{f_done}/{f_total}({f_pct}%)" + (f" ⚠{ooc}" if ooc else "")
 
-    if sheets_data and sheets_data.get("rows"):
-        table_rows, parking_str, issues = _compile_checklist_dashboard(sheets_data["rows"])
-        # 시설부 행은 지원부 소스에 없음 → 전용 시설부 소스로 교체
-        table_rows = [(lbl, _facility_cell() if lbl == "시설부 체크" else val) for lbl, val in table_rows]
-        table_lines = _count_table(table_rows)
-        table_str = "\n".join(table_lines)
+    table_str = "\n".join(_count_table([
+        ("지원부 체크", _support_cell()),
+        ("시설부 체크", _facility_cell()),
+    ]))
 
-        issue_block = ""
-        if issues:
-            issue_block = "\n\n[이슈 발생]\n" + "\n".join(issues[:5])
-            if len(issues) > 5:
-                issue_block += f"\n  ... 외 {len(issues) - 5}건"
-    else:
-        # 지원부 소스 실패 — 시설부만이라도 있으면 표기
-        fac_cell = _facility_cell()
-        if fac_cell != "-":
-            table_str = "\n".join(_count_table([("지원부 체크", "-"), ("시설부 체크", fac_cell), ("주차 현황", "-")]))
-        else:
-            table_str = "(점검 데이터 없음 — 실무진 점검앱 미입력 또는 API 미연결)"
-        issue_block = ""
+    # 시설부 기준이탈(outOfRange) 있으면 이슈 한 줄(today_live엔 지원부 개별 이슈 없음)
+    ooc_cnt = (facility_today or {}).get("outOfRangeCount", 0)
+    issue_block = f"\n\n[시설부 기준이탈] {ooc_cnt}건 — 대시보드 확인" if ooc_cnt else ""
 
     return (
         f"🛠 시설·지원 점검 현황 — {slot_label} ({day_kor})\n"
