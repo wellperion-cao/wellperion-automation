@@ -3127,5 +3127,19 @@
     "artifact": "- loadCampaignStats에 _rangeFromTo from/to 부착(#3 유입채널과 동일 기간정의 → 분모 정합)\n- 일/주/월/올해/기간 전환 시 #4 카드 재집계, 헤더 라벨 동적화(오늘/최근7일/이번 달/올해)\n- GAS campaign_stats는 기존부터 from/to 필터 지원 → 프론트 배선만 추가(백엔드 무변경)\n- 검증: node --check 통과, GAS 라이브 누적671/이번달192/오늘8 차등 반영 확인 (CLI ad-hoc · 커밋 5eeedf93)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "5eeedf9392081b274ffdfcf3da11c3c1a3ba1e9e"
+  },
+  {
+    "task_id": "CEO-2026-07-08-ADHOC-2dd8effe",
+    "clevel": "ceo",
+    "title": "[웰리] 종합접수처 스키마 정합 — 헤더기준 읽기 + 칭찬·쓴소리 사진 제거 (배723)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 725,
+    "artifact": "- reg 읽기를 위치→헤더 이름 기준으로 교체(별칭 분실위치→loc/물품상세→content)\n- 칭찬·쓴소리 폼 사진칸 제거 + 쓰기경로 photoURL 미기록 짝\n- clean_reg_columns 데이터-안전화: 데이터 있는 잔재컬럼(처리자 등) 보존, 빈칸만 삭제 (CLI ad-hoc · 커밋 2dd8effe)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "2dd8effedfa06dcd0dad037b40902dce1d38ed70"
   }
 ]
