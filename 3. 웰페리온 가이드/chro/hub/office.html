@@ -1375,54 +1375,77 @@
     ctx.restore();
   }
 
-  /* ================= EVENT ENGINE ================= */
-  // Demo pool. Replace nextEvent()'s body with an autolog-list poll to go live.
-  const POOL=[
-    {id:'A-5', text:'모집인원 2명 반영 완료'},
-    {id:'A-3', text:'임건우 온보딩 33행 정리'},
-    {id:'A-5', text:'vacate-current 배포'},
-    {id:'A-1', text:'신규 이력서 3건 서류평가'},
-    {id:'A-6', text:'공고 수정안 감사 GO'},
-    {id:'A-2', text:'주차관리 공고 재개'},
-    {id:'A-4', text:'인사평가 저장'},
-    {id:'A-7', text:'중복 단계 제거 제안'},
-    {id:'A-1', text:'사진 추출·인사카드 연결'},
-    {id:'A-6', text:'정합성 점검'},
-    {id:'A-5', text:'리크루팅 페이지 배포'},
-    {id:'A-2', text:'2차 면접 일정 등록'}
-  ];
+  /* ================= EVENT ENGINE — 실 자동화로그(db:autolog) 연동 ================= */
   const tally={}; agents.forEach(a=>tally[a.id]=0);
   let todayCount=0;
   let nextSpawnAt=1.0;
   const rand=(a,b)=>a+Math.random()*(b-a);
 
-  function assignOne(now){
-    const idle = POOL.filter(p=> byId[p.id] && byId[p.id].status==='idle');
-    if(!idle.length) return null;
-    const pick = idle[(Math.random()*idle.length)|0];
-    const c=byId[pick.id];
-    c.status='busy'; c.task=pick.text; c.tStart=now; c.tDur=rand(2.2,4.0); c.exprEnd=0;
-    // team lead assigns: gesture toward the agent
+  let realQueue=[];          // {agent,text,kind,isLead,count} — 오래된→최신 순 소진
+  let autologMaxRow=0;
+  const actorToAgent=actor=>{ const m=String(actor||'').match(/A-?([1-7])/); return m? ('A-'+m[1]) : null; };
+  const todayStr=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
+  function enqueueLog(rows,opts){ opts=opts||{}; rows.forEach(r=>{ const agent=actorToAgent(r['주체']); realQueue.push({ agent, text:String(r['작업']||'').slice(0,80), kind:String(r['결과']||'완료'), isLead:!agent, count:!!opts.count }); }); }
+
+  async function initAutolog(){
+    let rows=[];
+    try{ const j=await api({db:'autolog',password:SESSION_PW}); rows=j.results||[]; }catch(e){}
+    if(!rows.length){ return; }
+    autologMaxRow = rows.reduce((m,r)=>Math.max(m,Number(r['_sheet_row'])||0),0);
+    const td=todayStr();
+    const todays=rows.filter(r=>String(r['일시']).slice(0,10)===td);
+    todayCount=todays.length;
+    todays.forEach(r=>{ const a=actorToAgent(r['주체']); if(a&&tally[a]!=null) tally[a]++; });
+    const te=document.getElementById('today'); if(te) te.textContent=todayCount;
+    agents.forEach(a=>{ const el=document.getElementById('cn-'+a.id); if(el) el.textContent=tally[a.id]; });
+    // 피드: 최신 3건 실제 로그
+    logFeed.length=0;
+    rows.slice(0,3).forEach(r=>{ const a=actorToAgent(r['주체']); logFeed.push({ time:String(r['일시']).slice(11,16), id:(a||'팀장'), tag:(a&&byId[a]?byId[a].tag:''), text:String(r['작업']||'').slice(0,80), kind:String(r['결과']||''), color:(a&&byId[a]?byId[a].color:null) }); });
+    renderFeed();
+    // 최근 12건 오래된→최신 재생(생동감) — 카운터는 실값이므로 count:false
+    enqueueLog(rows.slice(0,12).reverse(), {count:false});
+    setInterval(pollAutolog, 25000);
+  }
+  async function pollAutolog(){
+    let rows=[];
+    try{ const j=await api({db:'autolog',password:SESSION_PW}); rows=j.results||[]; }catch(e){ return; }
+    const fresh=rows.filter(r=>(Number(r['_sheet_row'])||0)>autologMaxRow);
+    if(!fresh.length) return;
+    autologMaxRow = rows.reduce((m,r)=>Math.max(m,Number(r['_sheet_row'])||0),autologMaxRow);
+    enqueueLog(fresh.reverse(), {count:true});
+  }
+
+  function assignReal(now){
+    if(!realQueue.length) return null;
+    const ev=realQueue[0];
+    if(ev.isLead){
+      realQueue.shift();
+      pushLog({ time:new Date().toTimeString().slice(0,8), id:'팀장', tag:'', text:ev.text, kind:'브리핑', color:null });
+      lead.nod=1; lead._nodStart=now;
+      if(ev.count){ todayCount++; const te=document.getElementById('today'); if(te) te.textContent=todayCount; }
+      return true;
+    }
+    const c=byId[ev.agent];
+    if(!c){ realQueue.shift(); return null; }
+    if(c.status!=='idle') return null;   // 해당 에이전트 바쁨 → 다음 스폰에서 재시도
+    realQueue.shift();
+    c.status='busy'; c.task=ev.text; c.tStart=now; c.tDur=rand(2.2,4.0); c.exprEnd=0; c._count=ev.count;
     lead.lookTarget=c; lead.lookUntil=now+1.4; lead.nod=1; lead._nodStart=now;
     setTicker(c.id, c.tag, c.task, '배정');
     return c;
   }
-  // === nextEvent(): swap body for a real autolog-list poll to go live ===
-  function nextEvent(now){
-    const first=assignOne(now);
-    if(first && Math.random()<0.32) assignOne(now); // occasionally two at once
-  }
+  function nextEvent(now){ assignReal(now); }
 
   function updateEvents(t){
     if(t>=nextSpawnAt){ nextEvent(t); nextSpawnAt = t + rand(2.5,5.0); }
     for(const c of agents){
       if(c.status==='busy' && (t-c.tStart)>=c.tDur){
         c.status='done'; c.tDone=t; c.nod=1; c._nodStart=t; c.exprEnd=0;
-        todayCount++; tally[c.id]++;
+        if(c._count){ todayCount++; tally[c.id]++; }
         setTicker(c.id, c.tag, c.task, '완료');
         flashChip(c.id);
-        document.getElementById('today').textContent=todayCount;
-        document.getElementById('cn-'+c.id).textContent=tally[c.id];
+        if(c._count){ var _te=document.getElementById('today'); if(_te)_te.textContent=todayCount; }
+        if(c._count){ var _ce=document.getElementById('cn-'+c.id); if(_ce)_ce.textContent=tally[c.id]; } c._count=false;
       } else if(c.status==='done' && (t-c.tDone)>1.05){
         c.status='idle'; c.task=''; c.nodAt=t+rand(2.5,6); c.exprEnd=0;
       }
@@ -1746,6 +1769,7 @@
     REAL_SCHEDULE.asOf=fmtAsOf(now)+' (실시간)';
     const f=document.querySelector('.foot'); if(f) f.textContent='데이터 기준: '+REAL_SCHEDULE.asOf+' · 처리 로그 피드는 목업 시연(자동화 로그 연동 예정)';
     tLine('실데이터 로드 완료 — 면접 '+TERM_IV.length+'건 · 공고 마감 '+TERM_DL.length+'건 · 온보딩 '+TERM_OB.length+'건','tl-mut'); tScroll();
+    initAutolog();
   }
   async function termRemote(raw){ return; /* 실전송 비활성 — 안전상 조회 전용 터미널 */
     if(!SESSION_PW){ tLine('게이트 인증 후 이용할 수 있어요','tl-err'); tScroll(); return; }
