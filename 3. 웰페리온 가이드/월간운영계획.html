@@ -935,7 +935,7 @@
   var KPI_YEAR_TARGET = 7200000000;     // 연 매출 목표 72억(GM 06-20 결재·공식값). 히스토리 72억 프레임·부족분 계산에 사용.
   // ── 매출·지출 SSOT = AI CFO 매출현황(cfo/finance/매출지출현황.html). 이 페이지는 그 페이지의 소스를 그대로 미러(읽기전용). ──
   // 매출(센터전체) 정본 = 「26년 매출 분석」 GAS(action=sales_monthly) — CFO 매출현황이 표시하는 '매출'과 동일 소스(회원권+강습+기타·주차). 실패 시 매출마스터 부서합 폴백.
-  // 매출마스터 시트(부서별×월) = 부서별 매출 '분해'용(+ 정본 실패 시 합계 폴백). 정본−부서합 = 기타·주차 등.
+  // 종목별 매출 분해 정본 = 「매출 보고」 말일탭 서버집계(action=sales_dept, PROC_API) — CFO 매출지출현황과 동일 소스(2026-07-08 재배선). 매출마스터 시트(SALES_GVIZ)는 폴백 베이스(라이브 없는 월만). 정본−부서합 = 기타·주차 등.
   var SALES_SHEET = '18VRvDEYQ7LfaPaHmXROBpIVmYtjqZGrYie75JZnRKDA';
   var SALES_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + SALES_SHEET + '/gviz/tq?tqx=out:json';
   // 운영부 매출 정본 = GM시트 「2026년도 매출」(1gCQNny…) L열 "합계(매출)"(멤버십 신규+재등록+양도-환불+옵션). AI CFO 매출현황과 동일 소스(2026-07 GM 지시) — 부서별 분해 중 '운영부'만 이 값으로 교체, 나머지 종목은 매출마스터 그대로.
@@ -960,6 +960,14 @@
       .then(function(r){ return r.json(); })
       .then(function(res){ return (res && res.ok && res.dept) ? {dept:res.dept, live:true} : {dept:PROC_FALLBACK, live:false}; })
       .catch(function(){ return {dept:PROC_FALLBACK, live:false}; });
+  }
+  // ── 종목별 매출 정본 = 「매출 보고」 말일탭 서버집계(action=sales_dept, PROC_API). CFO 매출지출현황.html loadSalesDept와 동일 소스 — 강사→종목 매핑=인건비마스터(서버측), 집계만 반환(PII 없음). 응답 {ok, dept:{부서:[12]}}. 실패=null → SALES_GVIZ 매출마스터 폴백. ──
+  function readSalesDeptLive(){
+    return fetch(PROC_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'sales_dept', password:PROC_GATE_PW})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ return (res && res.ok && res.dept) ? res.dept : null; })
+      .catch(function(){ return null; });
   }
   // 🗺️ 북극성 지도 정본(헌법한장.html과 동일 raw) — 목표→북극성 뱃지용 role.dims[0](북극성 문구) 조회.
   var NS_MATRIX_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/coo/bootsetup_matrix.json';
@@ -1273,12 +1281,25 @@
   // 소스별 개별 withTimeout으로 각자 상한을 두어(느린 소스만 null 폴백) 이 Promise.all 자체의 최대 대기시간을 보장 상한 이내로 묶는다 — 값·소스·정직표기 로직은 불변, 타이밍 결합만 분리.
   function readCfoFinance(){
     return Promise.all([
-      withTimeout(readGvizDeptMap(SALES_GVIZ, 1, false), 6000, null),
+      withTimeout(readGvizDeptMap(SALES_GVIZ, 1, false), 6000, null), // a[0] 매출마스터(폴백 베이스)
       withTimeout(readGvizDeptMap(LABOR_GVIZ, 2, true), 6000, null),
       withTimeout(readSalesTruth(), 8000, null),
-      withTimeout(readOpsSalesTruth(), 6000, null)
+      withTimeout(readOpsSalesTruth(), 6000, null),
+      withTimeout(readSalesDeptLive(), 8000, null)                    // a[4] 종목별 매출 정본(sales_dept 서버집계)
     ]).then(function(a){
-      var salesDept = a[0], laborDept = a[1], truth = a[2], opsTruth = a[3];
+      var salesMaster = a[0], laborDept = a[1], truth = a[2], opsTruth = a[3], salesLive = a[4];
+      // 종목별 매출 = 서버집계(sales_dept) 정본 우선, 월별로 라이브 값 없으면 매출마스터(SALES_GVIZ) 폴백 — CFO 매출지출현황 loadSalesDept와 동일 미러(舊 SALES_GVIZ 라이브는 6월부터 종목값 어긋남).
+      var salesDept = null;
+      if(salesLive || salesMaster){
+        var _base = salesMaster || {}, _live = salesLive || {};
+        var _keys = {}; Object.keys(_base).forEach(function(k){ _keys[k] = 1; }); Object.keys(_live).forEach(function(k){ _keys[k] = 1; });
+        salesDept = {};
+        Object.keys(_keys).forEach(function(k){
+          var b = _base[k] || new Array(12).fill(0), lv = _live[k];
+          salesDept[k] = new Array(12);
+          for(var i = 0; i < 12; i++){ salesDept[k][i] = (lv && lv[i] != null) ? lv[i] : (b[i] || 0); }
+        });
+      }
       // 부서별 매출 분해 중 '운영부'만 GM시트 정본(멤버십+옵션)으로 교체 — 舊 매출마스터는 6월부터 어긋남(2026-07 GM 지시).
       if(opsTruth && salesDept){
         var opsBase = salesDept['운영부'] || new Array(12).fill(0);
