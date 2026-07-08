@@ -135,8 +135,8 @@ def normalize_body(body: str, for_cafe: bool = False) -> tuple[str, list[str]]:
     for_cafe=True 이면 본문에서 해시태그 줄을 제거하고 태그 리스트만 반환.
 
     적용 규칙:
-    ① 소제목(▍) 다음 빈 줄을 제거해 내용이 '바로 아랫줄'에 오게 (GM 2026-06-25)
-    ② 인라인 CTA 줄(wellperion.com/ko/inquiry 포함) 제거 (링크카드가 단일 CTA)
+    ① 소제목(▍·■) 다음 빈 줄을 제거해 내용이 '바로 아랫줄'에 오게 (GM 2026-06-25 · ■ 추가 07-08)
+    ② (폐지 2026-07-08) 인라인 CTA 줄 제거 안 함 — 링크카드 실패 시 문의 링크 소실 방지
     ③ 해시태그 정렬·#스포츠클럽→#종합스포츠클럽 치환
     ④ 카페: 본문에서 해시태그 줄 제거 + 태그 리스트 반환
     """
@@ -146,14 +146,12 @@ def normalize_body(body: str, for_cafe: bool = False) -> tuple[str, list[str]]:
     lines = body.split("\n")
     out: list[str] = []
 
-    # ① 소제목 아래 빈 줄 보장 + ② 인라인 CTA 제거
+    # ① 소제목 아래 빈 줄 보장 (② 인라인 CTA 제거는 폐지 — 2026-07-08 GM)
+    #   폐지 사유: 링크카드가 라이브에서 삽입 실패하면 본문 문의 CTA도 이미 지워져
+    #   '문의 링크 통째 소실' 발생(F1 카페 사고). 문의 텍스트 CTA는 항상 본문에 남긴다.
     i = 0
     while i < len(lines):
         ln = lines[i]
-        # 인라인 CTA 줄 제거
-        if _INLINE_CTA_RE.match(ln.strip()) and "wellperion.com/ko/inquiry" in ln:
-            i += 1
-            continue
         out.append(ln)
         # 소제목이면 그 다음 빈 줄을 건너뛰어 내용이 '바로 아랫줄'에 오게 (GM 2026-06-25)
         if _SUBHEADING_RE.match(ln):

@@ -38,11 +38,11 @@ from pathlib import Path
 
 # UTM 딱지 헬퍼 — 본문 문의 CTA URL에 채널 출처 부착 (scripts/ 동일 디렉터리)
 try:
-    from cta_utm import apply_cta_utm, append_cta_card
+    from cta_utm import apply_cta_utm, append_cta_card, normalize_body
 except ImportError:
     import sys as _sys, os as _os
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-    from cta_utm import apply_cta_utm, append_cta_card
+    from cta_utm import apply_cta_utm, append_cta_card, normalize_body
 
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
@@ -213,6 +213,9 @@ def build_post(args: argparse.Namespace) -> ChannelPost:
         if not title:
             title = parsed_title
         body = parsed_body
+    # 소제목(▍·■) 다음 빈 줄 제거 등 본문 정규화 (2026-07-08 — 카카오 미적용 사각지대 봉합).
+    # 문의 CTA 줄은 유지(normalize ② 폐지) → 아래 apply_cta_utm이 그 URL에 utm 부착.
+    body, _ = normalize_body(body, for_cafe=False)
     # 문의 CTA URL에 카카오 채널 utm_source+medium+campaign 부착 (발행 직전 원본 미변경·중복 안전)
     body = apply_cta_utm(body, "kakao", campaign=args.campaign)
     images = collect_images(image_dir, args.image_glob)
