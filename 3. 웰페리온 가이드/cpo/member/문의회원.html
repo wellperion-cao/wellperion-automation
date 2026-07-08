@@ -4793,7 +4793,7 @@ function _activateCellInquiry(td, row) {
 /* ─── CONTACT(연락 이력) 셀 표시 요약 + 클릭→모달 (일정형 격상, C1/2/3 인라인 편집 폐기. 축3, 2026-07-08 시포·GM) ─── */
 function _renderContactCell(td, row) {
   var list = _ctSort(_rowContacts(row));
-  if (!list.length) { td.innerHTML = '<span style="color:var(--dim)">＋ 연락 추가</span>'; return; }
+  if (!list.length) { td.innerHTML = '<span style="color:var(--dim)">＋ CONTACT 내용 추가</span>'; return; }
   // 요약(N건) 대신 내용 그대로 노출 — 날짜·시간 접두 + 상담내용, 최신 우선. 2026-07-08 시포·GM
   td.innerHTML = list.slice().reverse().map(function(c){
     var d = c.date ? c.date.slice(5).replace('-', '/') : '';
