@@ -1569,22 +1569,23 @@ def _compile_checklist_dashboard(rows: list[dict]) -> tuple[list[tuple], str, li
 def _fetch_facility_today() -> dict | None:
     """시설부 오늘자 점검 진행 — monthly_report&dept=facility의 dailySeries에서 오늘 행 추출.
     시설부는 지원부와 달리 weekly엔 값이 없고 monthly_report 경로에 실데이터가 있다(입력률·이상 구조).
+    GAS 일시 지연에도 '-'로 새지 않게 _gas_get 재시도(3회·40초)를 사용한다.
     반환: {date,total,done,pct,sessionCount,outOfRangeCount} 또는 None."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    resp = _gas_get(
+        f"{SUPPORT_CHECK_API_URL}?action=monthly_report&dept=facility&date={today}&_pv={int(time.time())}",
+        label="12시 시설부",
+    )
+    if resp is None:
+        return None
     try:
-        today = datetime.now().strftime("%Y-%m-%d")
-        resp = requests.get(
-            f"{SUPPORT_CHECK_API_URL}?action=monthly_report&dept=facility&date={today}&_pv={int(time.time())}",
-            timeout=20,
-            allow_redirects=True,
-        )
-        if resp.status_code == 200:
-            d = resp.json()
-            if d.get("ok"):
-                for row in d.get("dailySeries", []):
-                    if row.get("date") == today:
-                        return row
+        d = resp.json()
+        if d.get("ok"):
+            for row in d.get("dailySeries", []):
+                if row.get("date") == today:
+                    return row
     except Exception as e:
-        logger.warning(f"12시 시설부 오늘자 조회 실패: {e}")
+        logger.warning(f"12시 시설부 응답 파싱 실패: {e}")
     return None
 
 
