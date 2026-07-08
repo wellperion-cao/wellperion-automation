@@ -253,6 +253,7 @@ tr:nth-child(even) td{background:transparent}
     <div class="sec-title">품의 현황 <span style="font-size:11px;color:var(--ink-faint)" id="reqCount"></span></div>
     <div class="team-chips" id="reqFilter" style="margin-bottom:8px"></div>
     <div id="reqDoneSearch" style="display:none;margin-bottom:10px;font-size:12px;color:var(--ink-soft)">완료건 기간: <input type="date" id="doneFrom" style="padding:5px;border:1px solid var(--line);border-radius:6px"> ~ <input type="date" id="doneTo" style="padding:5px;border:1px solid var(--line);border-radius:6px"> <button class="btn" id="doneSearchBtn" style="padding:6px 12px;font-size:12px">검색</button> <span id="doneMsg" style="margin-left:6px"></span></div>
+    <div id="reqSort" class="team-chips" style="display:none;margin-bottom:8px;align-items:center;gap:6px"></div>
     <div class="tbl-wrap"><table id="reqTbl"></table></div>
     <div class="notice">품의 → 검토 → 집행 → 정산(영수증). 상태를 바꾸거나 영수증을 올리면 시트에 실시간 반영됩니다.</div>
   </section>
@@ -758,7 +759,8 @@ function renderAnom(){
   document.getElementById("flagNote").innerHTML="대상 "+((ANOM_ROWS||[]).length)+"건(반려·캔슬 제외) · 화이트리스트(정기·계약성) 제외 "+(G.wl?G.wl.length:0)+"건"+(ov?(" · 예산초과 부서·월: "+ov):"")+". 임계값: 대형 100만↑ / 경상주의 50만↑ / 월예산 110%↑ / 중복 / 품질.";
 }
 
-var REQ_ACTIVE=[],REQ_DONE=[],reqFilter="품의";
+var REQ_ACTIVE=[],REQ_DONE=[],reqFilter="품의",reqSort=""; // reqSort: ''=제출순 · 'pd_asc'/'pd_desc'=구매날짜 정렬(정산 탭)
+function pdNum(s){var m=String(s||"").match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);return m?(+m[1]*10000+ +m[2]*100+ +m[3]):0;} // 구매날짜 "2026. 7. 15" → 20260715 (빈값=0)
 function _rawCall(action,extra){
   var body=Object.assign({action:action,password:GATE_PW},extra||{});
   return fetch(PROC_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)}).then(function(r){return r.json();});
@@ -925,9 +927,20 @@ function renderReqTbl(){
   fc.querySelectorAll(".team-chip").forEach(function(b){b.onclick=function(){reqFilter=b.dataset.f;renderReqTbl();};});
   var isDone=(reqFilter==="완료"||reqFilter==="반려");
   document.getElementById("reqDoneSearch").style.display=isDone?"block":"none";
+  var sortBox=document.getElementById("reqSort"); // 구매날짜 정렬 — 정산 탭에서만 노출
+  if(reqFilter==="정산"){
+    sortBox.style.display="flex";
+    var sopts=[{k:"",l:"제출순"},{k:"pd_asc",l:"구매날짜 ↑ 빠른순"},{k:"pd_desc",l:"구매날짜 ↓ 늦은순"}];
+    sortBox.innerHTML='<span style="font-size:12px;color:var(--ink-faint);margin-right:2px">정렬</span>'+sopts.map(function(o){return '<button class="team-chip'+(reqSort===o.k?" on":"")+'" data-s="'+o.k+'">'+o.l+'</button>';}).join('');
+    sortBox.querySelectorAll(".team-chip").forEach(function(b){b.onclick=function(){reqSort=b.dataset.s;renderReqTbl();};});
+  } else { sortBox.style.display="none"; }
   var src=isDone?REQ_DONE.filter(function(r){return (reqFilter==="반려")?(r.상태==="반려"):(r.상태!=="반려");}):REQ_ACTIVE.filter(function(r){return r.상태===reqFilter;});
   document.getElementById("reqCount").textContent=isDone?"("+reqFilter+" "+src.length+"건)":"("+reqFilter+" "+src.length+"건 · 미완료 합 "+REQ_ACTIVE.length+")";
   var rows=src.slice().reverse();
+  if(reqFilter==="정산"&&reqSort){ // 구매날짜 정렬(빈 구매날짜는 항상 뒤로)
+    var dir=(reqSort==="pd_asc")?1:-1;
+    rows.sort(function(a,b){var da=pdNum(a.구매날짜),db=pdNum(b.구매날짜);if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return (da-db)*dir;});
+  }
   var stc={"품의":"wait","검토":"rev","정산":"set","완료":"ok","승인":"wait","미승인":"no","캔슬":"no","반려":"no"};
   var tc=(reqFilter==="정산")?"thumb2":"thumb"; // 정산 탭에서 사진 2배
   var h='<thead><tr><th style="text-align:center">#</th><th>제출일</th><th>구매날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
