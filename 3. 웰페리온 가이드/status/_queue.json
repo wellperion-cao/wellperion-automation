@@ -1,5 +1,19 @@
 [
   {
+    "task_id": "CTO-2026-07-08-FACILITY-CHECK-PCT-OVERFLOW",
+    "clevel": "cto",
+    "title": "[시토] home 시설부 점검 카드 667% 이상값 진단·수리 — GAS handleWeekly 열매핑 버그(배173 관찰 후속)",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-08",
+    "ship_no": 684,
+    "note": "[2026-07-08 GM go·즉시 진단수리] 배173(ship173) 관찰건 후속. 라이브 GAS 실측(GET action=weekly&dept=facility): 2026-07-08 응답 {total:15,done:100,pct:667} — GAS 응답 자체가 100% 초과(HTML 렌더 버그 아님, parseKpi에 클램프 없음도 부수 확인). 뿌리원인=.deploy-check/지원팀 일일점검.js handleWeekly()의 스냅샷 열배치가 지원부(support) 기준(col3=구역,col4=교대,col6=총항목,col7=완료)으로 하드코딩돼 있는데, 시설부(facility) 스냅샷 행(saveFacilityMeasure snapRow, 열 2857)은 구역열이 없어 col5=총항목,col6=완료,col7=완료율(%)로 1칸씩 밀려있음 → handleWeekly가 col6(실제=완료수)을 total로, col7(실제=입력률%, 최대100)을 done으로 잘못 읽어 done>total 발생(pct=done/total*100 폭주). 실측 15/15(100% 완료)가 15(=doneCnt)/100(=inputRate%)로 오독되어 667% 산출 — 로컬 재현 스크립트(scratchpad/verify_facility_pct_fix.js)로 실측치 667% 정확히 재현·수정후 100% 확인. monthly_report(_aggregateMonthlyFacility)는 별도 경로(시설_공용구역 원본 직독)라 이 버그 무관·회귀 대상 아님. 수정: dept==='facility'분기로 col5/col6 사용하도록 handleWeekly 교정 + 방어용 100% 캡(Math.min(100,pct)) 추가(진짜원인 수정이 1차, 캡은 최후 방어). 지원부 경로(col6/col7)는 완전 무변경(회귀 0, 코드 리뷰로 보증). node --check 문법검증 PASS. ⚠️배포 차단: clasp push/deployments 전부 invalid_rapt(reauth) 에러 — GM 로그인 강요 안 함(배치인증 원칙, 배406/424 동일 전례). 역롤백 참고=코드 주석상 CHECK_API 현재 배포 @56(wellperion_guide(main).html 10361행). 코드는 커밋 완료·다음 clasp 인증창에 배포 대기. 라이브는 아직 667%로 미수정 상태(정직 표기, DONE 아님).",
+    "next": "⚓ 대기 — clasp 재인증(invalid_rapt) 해소 후 clasp deploy 1회+홈 위젯 시크릿 재검(≤100% 확인) 필요. 코드·로컬검증만 완료.",
+    "depends_on": "",
+    "module": "home",
+    "artifact": "코드 커밋(핸들러 수정 .deploy-check/지원팀 일일점검.js handleWeekly)만 완료, GAS 라이브 미배포"
+  },
+  {
     "task_id": "CPO-2026-07-06-LESSON-REGISTER-CHECK",
     "clevel": "cpo",
     "title": "[시포] 강습 문의 등록 체크 기능 — 문의회원?manage=lesson 성인·유소년 진행상태(등록) 편집·저장 (멤버십 동형)",

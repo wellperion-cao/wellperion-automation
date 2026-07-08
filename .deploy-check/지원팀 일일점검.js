@@ -2932,8 +2932,19 @@ function handleWeekly(params) {
       if (!dayset[sd]) continue;
       var zone = String(sdata[r][3] || '');
       var bucket = _shiftBucket(sdata[r][4]);
-      var tot = Number(sdata[r][6]); if (isNaN(tot)) tot = 0;
-      var don = Number(sdata[r][7]); if (isNaN(don)) don = 0;
+      // 시설(facility) 스냅샷 열배치는 지원부와 달라(구역열 없음, saveFacilityMeasure snapRow 참고):
+      // 0제출시각 1날짜 2부서 3회차 4점검자 5총항목 6완료 7완료율(%). 지원부는 6=총항목,7=완료.
+      // 이 함수가 지원부 열배치(6,7)를 그대로 썼더니 시설은 6=완료수·7=입력률(%)이 들어와
+      // done(=입력률, 최대100)이 total(=완료수, 보통 <100)보다 커져 pct가 100% 초과(예 667%)로 깨졌었다.
+      // (root cause, 2026-07-08 시토)
+      var tot, don;
+      if (dept === 'facility') {
+        tot = Number(sdata[r][5]); if (isNaN(tot)) tot = 0;
+        don = Number(sdata[r][6]); if (isNaN(don)) don = 0;
+      } else {
+        tot = Number(sdata[r][6]); if (isNaN(tot)) tot = 0;
+        don = Number(sdata[r][7]); if (isNaN(don)) don = 0;
+      }
       var at = String(sdata[r][0] || '');
       var cellKey = zone + '|' + bucket;
       if (!snapByDate[sd]) snapByDate[sd] = {};
@@ -2974,7 +2985,7 @@ function handleWeekly(params) {
       var lg = legacyByDate[dt];
       total = lg.total; done = lg.done; src = 'sheet';
     }
-    var pct = total > 0 ? Math.round(done / total * 100) : 0;
+    var pct = total > 0 ? Math.min(100, Math.round(done / total * 100)) : 0;   // 100% 캡 = 최후 방어(진짜 원인은 위 dept별 열매핑 수정, 2026-07-08 시토)
     return { date: dt, total: total, done: done, pct: pct, src: src, measure: legacyByDate[dt].measure };
   });
 
