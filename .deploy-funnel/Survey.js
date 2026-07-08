@@ -2322,6 +2322,8 @@ function _processAction(body) {
       } catch (e) {}
     }
     try { _notifyTelegram('➕ 전화·직접 문의 추가 — ' + (body.name || '(이름없음)') + ' · ' + (body.phone || '-') + ' · 채널:' + (body.channel || '유선전화')); } catch (e) {}
+    // 조회 캐시 무효화(축1) — add 직후 최대 60초 stale 반환 방지(rowIndex 오삭제 위험 차단). 2026-07-08 시토 안전수리.
+    try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
     return _json({ ok: true, message: '추가되었습니다.', rowIndex: maSh.getLastRow() });
   }
 
@@ -2509,19 +2511,21 @@ function _processAction(body) {
     var mdSh = _miSheet_();
     if (!mdSh) return _json({ ok: false, error: '시트 없음' });
     if (mdRow > mdSh.getLastRow()) return _json({ ok: false, error: '행 범위 초과' });
-    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 후에만 삭제(rowIndex 밀림 오삭제 방지). 미전송이면 폴백.
+    // ★행키 검증(fail-safe·keyPhone 동봉 권장): keyPhone 동봉 시 대상 행 전화가 비었거나(검증 불가) keyPhone과 다르면
+    //   삭제를 거부한다(구버전은 전화 공백이면 통과시켜 rowIndex 밀림 시 오삭제 위험 — 2026-07-08 시토 안전수리).
+    //   keyPhone 미전송(구 폴백)은 하위호환으로 검증 생략 — 신규 호출부는 keyPhone 동봉 권장.
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
       var _mdHdr = _miHeaders_(mdSh);
       var _mdPhCi = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰']);
-      if (_mdPhCi >= 0) {
-        var _mdRowPh = _normPhone_(mdSh.getRange(mdRow, _mdPhCi + 1).getValue());
-        var _mdKeyPh = _normPhone_(body.keyPhone);
-        if (_mdRowPh && _mdKeyPh && _mdRowPh !== _mdKeyPh) {
-          return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
-        }
+      var _mdRowPh = (_mdPhCi >= 0) ? _normPhone_(mdSh.getRange(mdRow, _mdPhCi + 1).getValue()) : '';
+      var _mdKeyPh = _normPhone_(body.keyPhone);
+      if (!_mdRowPh || _mdRowPh !== _mdKeyPh) {
+        return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 불일치/불명) — 목록 새로고침 후 다시 시도' });
       }
     }
     mdSh.deleteRow(mdRow);
+    // 조회 캐시 무효화(축1) — delete 직후 최대 60초 stale 반환 방지(연쇄 오삭제 위험 차단). 2026-07-08 시토 안전수리.
+    try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
     try { _notifyTelegram('🗑 문의회원 삭제(공개페이지) — 행 ' + mdRow); } catch (e) {}
     return _json({ ok: true, rowIndex: mdRow, message: '삭제되었습니다.' });
   }
