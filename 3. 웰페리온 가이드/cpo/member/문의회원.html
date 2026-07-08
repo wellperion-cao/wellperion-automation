@@ -1989,6 +1989,336 @@ var READ_ONLY = false;
 var ALLOW_DELETE = false;  // 2026-06-23 GM: 삭제 제거 — 삭제는 시트에서 수동으로만
 var ALLOW_ADD = true;     // 2026-06-23 GM: 전화·직접 문의 수기 추가 허용
 
+/* ═══════════════════════════════════════════════════════════════════════
+   gviz 직접읽기 어댑터 — 문의현황 로딩성능 재설계 (CTO 핸드오프 2026-07-08, GM go 시트공개)
+   목표: 첫 로딩 6~9초 → ~1초. Apps Script 콜드리드 대신 구글 gviz(시트 자체 서빙) 직접 조회.
+   ⚠️ USE_GVIZ=false(기본) → 기존 GAS 읽기 그대로(무회귀). true는 검증 완료 후 GM/시포 결정으로만 전환.
+   쓰기(update/add/delete)는 항상 GAS 유지 — gviz는 읽기전용(member_inquiry_list·lesson_inquiry_list 2건만 대체).
+   컬럼탐지·값 포맷은 .deploy-funnel/Survey.js(_miReadRows_/_lessonReadRows_ 및 호출 헬퍼) 1:1 이식.
+   ★ 필드 추가/변경 시 Survey.js와 본 블록을 항상 함께 갱신할 것 — 안 그러면 gviz 전환 시 조용히 어긋남.
+   ═══════════════════════════════════════════════════════════════════════ */
+var USE_GVIZ = false;   // ⚠️ 라이브 전환 금지(이번 배선은 검증까지만) — true 전환은 별건 승인 후
+var GVIZ_MI_SS_ID = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';   // 멤버십(1-1 멤버십 문의 관리) 스프레드시트
+var GVIZ_MI_GID = 1902010032;                                        // '26년 신규문의' 응답탭
+var GVIZ_LESSON_SS_ID = '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw'; // 강습(3-1 강습·WSC 강습 문의 관리) 스프레드시트
+var GVIZ_LESSON_GID_ADULT = 111889422;   // 성인 강습 응답탭
+var GVIZ_LESSON_GID_YOUTH = 268994754;   // 유소년 강습 응답탭(WSC)
+var INQ_RES_COL_GZ = '예약목록';
+var CONTACT_HIST_COL_GZ = '연락이력';
+
+function _gzUrl_(ssId, gid) {
+  return 'https://docs.google.com/spreadsheets/d/' + ssId + '/gviz/tq?tqx=out:json&gid=' + gid + '&headers=1';
+}
+// gviz JSON 언랩 → 헤더 배열(trim) + 2D 값 배열(GAS sh.getRange().getValues()와 동일 shape·datetime은 실제 Date 객체로 복원).
+function gvizFetchTable_(ssId, gid) {
+  return fetch(_gzUrl_(ssId, gid)).then(function(r) {
+    if (!r.ok) throw new Error('gviz HTTP ' + r.status);
+    return r.text();
+  }).then(function(text) {
+    var m = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
+    if (!m) throw new Error('gviz 응답 파싱 실패');
+    var json = JSON.parse(m[1]);
+    if (json.status !== 'ok') throw new Error('gviz status=' + json.status);
+    var cols = json.table.cols;
+    var headers = cols.map(function(c) { return String(c.label || '').trim(); });
+    var rows = (json.table.rows || []).map(function(row) {
+      var c = row.c || [];
+      return cols.map(function(col, j) { return _gzCellVal_(c[j], col.type); });
+    });
+    return { headers: headers, rows: rows };
+  });
+}
+function _gzCellVal_(cell, colType) {
+  if (!cell || cell.v === null || cell.v === undefined) return '';
+  if (colType === 'date' || colType === 'datetime') {
+    var m = String(cell.v).match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
+    if (m) return new Date(+m[1], +m[2], +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+    return cell.f || '';
+  }
+  return cell.v;
+}
+
+/* ── Survey.js 컬럼탐지·포맷 헬퍼 1:1 이식(읽기전용, gviz 어댑터 전용 — 함수명 _gz 접두 충돌 방지) ── */
+function _gzFindCol_(headers, keys) {
+  for (var i = 0; i < headers.length; i++) {
+    var h = String(headers[i] || '');
+    for (var k = 0; k < keys.length; k++) { if (h.indexOf(keys[k]) >= 0) return i; }
+  }
+  return -1;
+}
+function _gzFindColExact_(headers, keys) {
+  for (var k = 0; k < keys.length; k++) {
+    for (var i = 0; i < headers.length; i++) {
+      if (String(headers[i] || '').trim() === keys[k]) return i;
+    }
+  }
+  return -1;
+}
+function _gzColIdx_(headers, names) {
+  var arr = Array.isArray(names) ? names : [names];
+  for (var i = 0; i < arr.length; i++) { var idx = headers.indexOf(arr[i]); if (idx >= 0) return idx; }
+  for (var k = 0; k < arr.length; k++) { for (var j = 0; j < headers.length; j++) { if (headers[j].indexOf(arr[k]) >= 0) return j; } }
+  return -1;
+}
+function _gzFmtPhone_(v) {
+  var src = String(v == null ? '' : v);
+  var digits = src.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 10 && digits.slice(0, 2) === '10') digits = '0' + digits;
+  if (digits.length === 11) return digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7);
+  if (digits.length === 10) {
+    if (digits.slice(0, 2) === '02') return '02-' + digits.slice(2, 6) + '-' + digits.slice(6);
+    return digits.slice(0, 3) + '-' + digits.slice(3, 6) + '-' + digits.slice(6);
+  }
+  if (digits.length === 9 && digits.slice(0, 2) === '02') return '02-' + digits.slice(2, 5) + '-' + digits.slice(5);
+  return src;
+}
+function _gzFmtContact_(v) {
+  var s = String(v == null ? '' : v);
+  if (s.trim() && /^[\d\s\-+().]+$/.test(s.trim())) return _gzFmtPhone_(s);
+  return s;
+}
+var GZ_CANONICAL_CHANNELS = ['네이버', '동부이촌동 커뮤니티', '인스타그램', '카카오톡', '당근마켓',
+                              '소개·지인', '기존·과거 회원', '오프라인', '기타·미상'];
+function _gzCanonicalChannel_(raw) {
+  var s = String(raw == null ? '' : raw).trim();
+  if (!s) return '기타·미상';
+  if (/^온라인\s*[\(（]/.test(s)) return '기타·미상';
+  if (/인스타|instagram|insta/i.test(s)) return '인스타그램';
+  if (/카카오|카톡|챗톡|쳇톡|챗봇|쳇봇|kakao/i.test(s)) return '카카오톡';
+  if (/당근|daangn|danggn/i.test(s)) return '당근마켓';
+  if (/동부이촌동|동커|동\.커|이촌동|카페/.test(s)) return '동부이촌동 커뮤니티';
+  if (/네이버|naver|플레이스|블로그|블러그|검색|인터넷/i.test(s)) return '네이버';
+  if (/소개|지인|친구|friend|추천|동기/i.test(s)) return '소개·지인';
+  if (/회원|가족|자녀|아이|아들|딸|형|누나|언니|동생|둘째|첫째|보호자|학부모|부모|母|수강|강습|다녔|다니|이용|경험|기존|과거|재수강|정회원|연회원|멤버십회원|멤버쉽|wsc|준회원|수강생/i.test(s)) return '기존·과거 회원';
+  if (/간판|현수막|홍보물|우편|워크인|방문|지나가|지나는|집근처|근처|동네|거주|입주|하이페리온|길에|봤|보여서|아파트|오프라인/.test(s)) return '오프라인';
+  return '기타·미상';
+}
+function _gzToISO_(val) {
+  if (!val) return '';
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    return val.getFullYear() + '-' + String(val.getMonth() + 1).padStart(2, '0') + '-' + String(val.getDate()).padStart(2, '0');
+  }
+  var s = String(val).trim();
+  var m = s.match(/(\d{4})[\.\-\/]?\s*(\d{1,2})[\.\-\/]?\s*(\d{1,2})/);
+  if (m) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+  return s;
+}
+function _gzTime_(val) {
+  if (!val) return '';
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    var hh = val.getHours(), mm = val.getMinutes();
+    if (hh === 0 && mm === 0) return '';
+    return ('0' + hh).slice(-2) + ':' + ('0' + mm).slice(-2);
+  }
+  var t = String(val).match(/(\d{1,2}):(\d{2})/);
+  return t ? ('0' + t[1]).slice(-2) + ':' + t[2] : '';
+}
+function _gzTimeKR_(val) {
+  if (!val) return '';
+  var s = String(val);
+  var km = s.match(/(오전|오후)?\s*(\d{1,2})\s*시\s*(반|\d{1,2}\s*분)?/);
+  if (km) {
+    var ap = km[1] ? km[1] + ' ' : '';
+    var mn = '';
+    if (km[3]) mn = (km[3].indexOf('반') >= 0) ? '30분' : km[3].replace(/\s/g, '');
+    return ap + km[2] + '시' + mn;
+  }
+  var hm = s.match(/(오전|오후)?\s*(\d{1,2}):(\d{2})/);
+  if (hm) {
+    var ap2 = hm[1] ? hm[1] + ' ' : '';
+    return ap2 + ('0' + hm[2]).slice(-2) + ':' + hm[3];
+  }
+  return '';
+}
+function _gzTminKR_(val) {
+  if (!val) return null;
+  var s = String(val).trim();
+  if (!s) return null;
+  var km = s.match(/(오전|오후)?\s*(\d{1,2})\s*시\s*(반|\d{1,2}\s*분)?/);
+  if (km) {
+    var h = parseInt(km[2], 10);
+    var ap = km[1] || '';
+    var mn = 0;
+    if (km[3]) mn = (km[3].indexOf('반') >= 0) ? 30 : (parseInt(km[3].replace(/[^0-9]/g, ''), 10) || 0);
+    if (ap === '오전') { if (h === 12) h = 0; }
+    else if (ap === '오후') { if (h !== 12) h += 12; }
+    var t = h * 60 + mn;
+    return (t >= 0 && t <= 1439) ? t : null;
+  }
+  var hm = s.match(/(오전|오후)?\s*(\d{1,2}):(\d{2})/);
+  if (hm) {
+    var h2 = parseInt(hm[2], 10), m2 = parseInt(hm[3], 10);
+    var ap2 = hm[1] || '';
+    if (ap2 === '오전') { if (h2 === 12) h2 = 0; }
+    else if (ap2 === '오후') { if (h2 !== 12) h2 += 12; }
+    var t2 = h2 * 60 + m2;
+    return (t2 >= 0 && t2 <= 1439) ? t2 : null;
+  }
+  return null;
+}
+function _gzResParse_(raw) {
+  if (!raw) return [];
+  var arr;
+  if (Array.isArray(raw)) { arr = raw; }
+  else {
+    var s = String(raw).trim();
+    if (!s || s.charAt(0) !== '[') return [];
+    try { arr = JSON.parse(s); } catch (e) { return []; }
+  }
+  if (!Array.isArray(arr)) return [];
+  var out = [];
+  for (var i = 0; i < arr.length; i++) {
+    var it = arr[i] || {};
+    var d = _gzToISO_(it.date || '');
+    var t = _gzTime_(it.time || '') || (it.time ? String(it.time).trim() : '');
+    var n = (it.note == null) ? '' : String(it.note);
+    if (!d && !t && !n) continue;
+    out.push({ date: d, time: t, note: n });
+  }
+  return out;
+}
+
+// 멤버십 문의 행객체 배열 — Survey.js _miReadRows_ 1:1 이식(익명화 없음 — 원본과 동일 정책).
+function gvizMiRows_(headers, rows) {
+  var iName  = _gzColIdx_(headers, ['성함','이름']);
+  var iPhone = _gzColIdx_(headers, ['연락처','전화','휴대폰']);
+  var iProg  = _gzColIdx_(headers, ['관심 있는 프로그램 종류','관심프로그램','프로그램']);
+  var iStat  = _gzColIdx_(headers, ['진행현황','진행상황','진행상태','상태']);
+  var iTs    = _gzColIdx_(headers, ['타임스탬프','접수일','날짜']);
+  var iTour  = _gzColIdx_(headers, ['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담']);
+  var iExp1  = _gzColIdx_(headers, ['체험1 확정시간','체험1']);
+  var iExp2  = _gzColIdx_(headers, ['체험2 확정시간','체험2']);
+  var iV2Dt  = _gzColIdx_(headers, ['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2']);
+  var iVisited = _gzColIdx_(headers, ['방문완료일','방문완료','방문일자']);
+  var iOwner = _gzColIdx_(headers, ['담당','담당자']);
+  var iMemo  = _gzColIdx_(headers, ['메모','비고','담당자메모']);
+  var iChan  = _gzColIdx_(headers, ['문의채널','유입채널','채널','경로','알게']);
+  var iContent = _gzColIdx_(headers, ['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항','문의사항']);
+  var iRes  = _gzColIdx_(headers, [INQ_RES_COL_GZ]);
+  var iC1 = _gzColIdx_(headers, ['Contact1']); if (iC1 < 0) iC1 = 17;
+  var iC2 = _gzColIdx_(headers, ['Contact2']); if (iC2 < 0) iC2 = 18;
+  var iC3 = _gzColIdx_(headers, ['Contact3']); if (iC3 < 0) iC3 = 19;
+  var iHist = _gzColIdx_(headers, [CONTACT_HIST_COL_GZ]);
+  var out = [];
+  for (var r = 0; r < rows.length; r++) {
+    var row = rows[r];
+    var hasName  = iName  >= 0 && row[iName];
+    var hasPhone = iPhone >= 0 && row[iPhone];
+    if (!hasName && !hasPhone) continue;
+    var _mo = {
+      rowIndex: r + 2,
+      name:     iName  >= 0 ? String(row[iName]  || '') : '',
+      phone:    iPhone >= 0 ? _gzFmtPhone_(row[iPhone]) : '',
+      program:  iProg  >= 0 ? String(row[iProg]  || '') : '',
+      status:   iStat  >= 0 ? String(row[iStat]  || '') : '',
+      channel:  (iChan >= 0 && row[iChan]) ? _gzCanonicalChannel_(String(row[iChan])) : '',
+      exp1:     (_gzToISO_(iTour >= 0 ? row[iTour] : '') || _gzToISO_(iExp1 >= 0 ? row[iExp1] : '')),
+      exp1Time: _gzTime_(iExp1 >= 0 ? row[iExp1] : ''),
+      exp2:     (_gzToISO_(iV2Dt >= 0 ? row[iV2Dt] : '') || _gzToISO_(iExp2 >= 0 ? row[iExp2] : '')),
+      exp2Time: _gzTime_(iExp2 >= 0 ? row[iExp2] : ''),
+      inquiryContent: iContent >= 0 ? String(row[iContent] || '') : '',
+      tourDate: '', tourTime: '', exp3: '', exp3Time: '', visit2Date: '', visit2Time: '',
+      visited:    (iVisited >= 0 && String(row[iVisited] == null ? '' : row[iVisited]).trim() !== '') ? true : false,
+      visitDate:  (iVisited >= 0) ? _gzToISO_(row[iVisited]) : '',
+      timestamp:_gzToISO_(iTs   >= 0 ? row[iTs]   : ''),
+      memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
+      owner:    iOwner >= 0 ? String(row[iOwner] || '') : '',
+      contact1: (iC1 >= 0 && iC1 < row.length) ? _gzFmtContact_(row[iC1]) : '',
+      contact2: (iC2 >= 0 && iC2 < row.length) ? _gzFmtContact_(row[iC2]) : '',
+      contact3: (iC3 >= 0 && iC3 < row.length) ? _gzFmtContact_(row[iC3]) : ''
+    };
+    var _resArr = _gzResParse_(iRes >= 0 ? row[iRes] : '');
+    if (!_resArr.length) {
+      if (_mo.exp1) _resArr.push({ date: _mo.exp1, time: _mo.exp1Time || '', note: '' });
+      if (_mo.exp2) _resArr.push({ date: _mo.exp2, time: _mo.exp2Time || '', note: '' });
+    }
+    _mo.reservations = _resArr;
+    var _histArr = _gzResParse_(iHist >= 0 ? row[iHist] : '');
+    if (!_histArr.length) {
+      [_mo.contact1, _mo.contact2, _mo.contact3].forEach(function(cv){
+        if (cv) _histArr.push({ date: '', time: '', note: cv });
+      });
+    }
+    _mo.contacts = _histArr;
+    out.push(_mo);
+  }
+  return out;
+}
+
+// 강습 문의 행객체 배열 — Survey.js _lessonReadRows_ 1:1 이식.
+function gvizLessonRows_(headers, rows) {
+  var iTs    = _gzFindCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '날짜']);
+  var iName  = _gzFindCol_(headers, ['성함', '이름']);
+  var iPhone = _gzFindCol_(headers, ['연락처', '전화', '휴대폰']);
+  var iAge   = _gzFindCol_(headers, ['나이', '연령', '자녀 나이', '자녀나이', '학년']);
+  var iSport = _gzFindCol_(headers, ['성인 강습 종목', 'WSC 강습 종목', 'WSC 강습 종류', '강습 종목', '종목', '과목']);
+  var iChan  = _gzFindCol_(headers, ['문의 경로', '경로', '채널', '알게']);
+  var iNote  = _gzFindCol_(headers, ['문의 사항', '문의사항', '문의 내용', '내용']);
+  var iWish  = _gzFindCol_(headers, ['희망하시는 레슨 시간', '희망 레슨', '희망시간', '레슨 시간']);
+  var iStat  = _gzFindCol_(headers, ['진행상태', '진행현황', '진행상황', '상태']);
+  var iOwner = _gzFindColExact_(headers, ['관리담당']);
+  var iMemo  = _gzFindCol_(headers, ['상담메모', '메모', '비고']);
+  var iCons  = _gzFindCol_(headers, ['상담예약', '상담 예약', '상담일정']);
+  var iVisit = _gzFindCol_(headers, ['방문상태', '방문']);
+  var iHist  = _gzFindColExact_(headers, [CONTACT_HIST_COL_GZ]);
+  var out = [];
+  for (var r = 0; r < rows.length; r++) {
+    var row = rows[r];
+    var hasName  = iName  >= 0 && row[iName];
+    var hasPhone = iPhone >= 0 && row[iPhone];
+    if (!hasName && !hasPhone) continue;
+    var consVal = iCons >= 0 ? row[iCons] : '';
+    var consTime = _gzTime_(consVal) || _gzTimeKR_(consVal);
+    var _lMemo = iMemo >= 0 ? String(row[iMemo] || '') : '';
+    var _lHistArr = _gzResParse_(iHist >= 0 ? row[iHist] : '');
+    if (!_lHistArr.length && _lMemo) _lHistArr.push({ date: '', time: '', note: _lMemo });
+    out.push({
+      rowIndex: r + 2,
+      timestamp: _gzToISO_(iTs >= 0 ? row[iTs] : ''),
+      name:    iName  >= 0 ? String(row[iName]  || '') : '',
+      phone:   iPhone >= 0 ? _gzFmtPhone_(row[iPhone]) : '',
+      age:     iAge   >= 0 ? String(row[iAge]   || '') : '',
+      sport:   iSport >= 0 ? String(row[iSport] || '') : '',
+      channel: iChan  >= 0 ? String(row[iChan]  || '') : '',
+      note:    iNote  >= 0 ? String(row[iNote]  || '') : '',
+      wishTime:iWish  >= 0 ? String(row[iWish]  || '') : '',
+      status:  iStat  >= 0 ? String(row[iStat]  || '') : '',
+      owner:   iOwner >= 0 ? String(row[iOwner] || '') : '',
+      memo:    _lMemo,
+      consult: _gzToISO_(consVal),
+      consultTime: consTime,
+      consultTmin: _gzTminKR_(consTime),
+      visited: iVisit >= 0 ? String(row[iVisit] || '') : '',
+      contacts: _lHistArr
+    });
+  }
+  return out;
+}
+// 강습 연간 스코프 필터 — Survey.js _lessonScopeFilter_ 이식(scope=all 아니면 올해만).
+function _gzLessonScopeFilter_(rowsArr, scopeAll) {
+  if (scopeAll) return rowsArr;
+  var yr = String(new Date().getFullYear());
+  return rowsArr.filter(function(row) {
+    var y = String(row.timestamp || '').slice(0, 4);
+    if (!/^\d{4}$/.test(y)) return true;
+    return y === yr;
+  });
+}
+// 멤버십 문의 목록 — gviz 어댑터(GAS member_inquiry_list 대체). USE_GVIZ=true일 때만 호출.
+function gvizLoadMemberInquiry_() {
+  return gvizFetchTable_(GVIZ_MI_SS_ID, GVIZ_MI_GID).then(function(t) {
+    return { ok: true, count: 0, data: gvizMiRows_(t.headers, t.rows), anon: false };
+  });
+}
+// 강습 문의 목록 — gviz 어댑터(GAS lesson_inquiry_list 대체). USE_GVIZ=true일 때만 호출.
+function gvizLoadLessonInquiry_(type, scopeAll) {
+  var gid = (type === '유소년강습' || type === '유소년' || type === 'youth') ? GVIZ_LESSON_GID_YOUTH : GVIZ_LESSON_GID_ADULT;
+  return gvizFetchTable_(GVIZ_LESSON_SS_ID, gid).then(function(t) {
+    return { ok: true, data: _gzLessonScopeFilter_(gvizLessonRows_(t.headers, t.rows), scopeAll) };
+  });
+}
+
 /* ── 문의 가이드 팝업 ── */
 function openGuidePopup() {
   try {
@@ -2569,12 +2899,15 @@ function _lessonEmpty(t, title, desc) {
 
 function lessonLoad(t) {
   var st = _lessonState[t];
-  if (GAS_URL === GAS_PLACEHOLDER) { _lessonEmpty(t, '미연동', 'GAS URL이 교체되면 자동으로 강습 문의가 표시됩니다.'); return; }
+  if (!USE_GVIZ && GAS_URL === GAS_PLACEHOLDER) { _lessonEmpty(t, '미연동', 'GAS URL이 교체되면 자동으로 강습 문의가 표시됩니다.'); return; }
   var b = document.getElementById('lessonBody_' + t);
   if (b) b.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : ''))
-    .then(function(r){ return r.json(); })
+  // USE_GVIZ=true → gviz 직접읽기(어댑터가 GAS와 동일 shape 반환) · false(기본) → 기존 GAS 읽기 그대로.
+  var _lessonPromise = USE_GVIZ
+    ? gvizLoadLessonInquiry_(st.type, st.scope === 'all')
+    : fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); });
+  _lessonPromise
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
       st.rows = d.data || [];
@@ -4514,13 +4847,16 @@ var STATUS_CLASS   = {
 };
 
 function loadDbData() {
-  if (GAS_URL === GAS_PLACEHOLDER) {
+  if (!USE_GVIZ && GAS_URL === GAS_PLACEHOLDER) {
     renderDbEmpty('GAS 미연동 상태', 'GM이 GAS를 배포하고 URL을 교체하면 문의 DB가 활성화됩니다.');
     return;
   }
   document.getElementById('dbCount').textContent = '불러오는 중…';
-  return fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  // USE_GVIZ=true → gviz 직접읽기(어댑터가 GAS와 동일 shape 반환) · false(기본) → 기존 GAS 읽기 그대로.
+  var _dbPromise = USE_GVIZ
+    ? gvizLoadMemberInquiry_()
+    : fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam()).then(function(r){ return r.json(); });
+  return _dbPromise
     .then(function(data){
       if (!data.ok) {
         if (data.error === 'PII_GATE_CLOSED') {

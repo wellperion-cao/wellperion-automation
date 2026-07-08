@@ -1641,6 +1641,25 @@ function _processAction(body) {
     }
   }
 
+  // ─── [일회용] 문의 시트 공개 전환(gviz 직접읽기 성능개선 전제 — GM go 2026-07-08, 시토). ───
+  //   멤버십('26년 신규문의' 소속 SS)·강습(성인·유소년 소속 SS) 스프레드시트를 "링크 있는 누구나 보기(읽기전용)"로 전환.
+  //   멱등(이미 공개면 재적용해도 무해) — 배포 후 1회 호출로 실행. 다시 부를 필요 없음.
+  //   ⚠️ 역롤백(공유 해제): 구글 드라이브에서 해당 파일 → 공유 → '일반 액세스'를 '제한됨'으로 변경(1초, 재배포 불필요).
+  if (action === 'share_inquiry_sheets') {
+    var _shareTargets = [_MI_SS_ID, LESSON_SS_ID];  // 멤버십 SS + 강습 SS(성인·유소년 탭 공용 SS)
+    var _shareResults = [];
+    _shareTargets.forEach(function(ssId) {
+      try {
+        var f = DriveApp.getFileById(ssId);
+        f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        _shareResults.push({ ssId: ssId, name: f.getName(), ok: true, access: String(f.getSharingAccess()), permission: String(f.getSharingPermission()) });
+      } catch (e) {
+        _shareResults.push({ ssId: ssId, ok: false, error: e.message });
+      }
+    });
+    return _json({ ok: _shareResults.every(function(r){ return r.ok; }), results: _shareResults });
+  }
+
   // ─── onFormSubmit 트리거 + 폴링 백스톱 설치 (2026-06-25 시모) ───
   if (action === 'install_inquiry_triggers') {
     try {
