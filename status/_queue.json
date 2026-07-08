@@ -2903,5 +2903,19 @@
     "artifact": ".dg-dept가 @media print 재정의에서 누락되어 var(--text)(거의 흰색) 유지 →\n흰 배경 인쇄물에서 부서명 미표시. color:#111 강제 지정으로 해결. (CLI ad-hoc · 커밋 2934e10f)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "2934e10faf8059c707075b92d54e860fb165f009"
+  },
+  {
+    "task_id": "CEO-2026-07-08-ADHOC-4a1d84dd",
+    "clevel": "ceo",
+    "title": "[웰리] 강습·멤버십 문의 목록 조회 캐시(축1) 추가",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 709,
+    "artifact": "lesson_inquiry_list·member_inquiry_list가 호출마다 시트 전체를 재조회해\n로딩이 5~43초로 요동. CacheService(TTL 60초) 청크 저장(≤3만자/키, 100KB\n제한 대응)으로 두 번째 조회부터 즉시 응답. lesson_inquiry_update·\nmember_inquiry_update 성공 시 해당 캐시 무효화해 최신 반영. 실측:\n강습 성인 1회차 6.0s→2회차 2.7s, 유효회원 3.96s→2.0s. 무효화 실측 확인\n(히트 1.98s→업데이트→미스 5.81s→히트 1.78s). (CLI ad-hoc · 커밋 4a1d84dd)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4a1d84dd4939c570b5c428a162ffd0782eddf26e"
   }
 ]
