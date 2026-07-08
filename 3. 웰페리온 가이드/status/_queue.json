@@ -2709,5 +2709,19 @@
     "artifact": "'텔레그램 헬스체크'→'텔레그램 알림 자가 점검'(전문용어 제거), 매출보고 카드\n라벨을 옆 카드와 일관되게(하는 일/미리 할 것/문제 생기면)+가이드 연결. (CLI ad-hoc · 커밋 eddd37cf)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "eddd37cfbdd22afc6c004305f896a66cd7df5377"
+  },
+  {
+    "task_id": "CMO-2026-07-08-ADHOC-4892f33e",
+    "clevel": "cmo",
+    "title": "[시모] 발행 파이프라인 3건 재발방지 — 문의링크 소실·카카오 빈줄·소제목■",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-08",
+    "processed_at": "2026-07-08",
+    "ship_no": 698,
+    "artifact": "F1 4채널 defect 근본수리(2026-07-08 GM 지적):\n① 문의 링크 소실 방지: normalize_body 인라인 CTA 제거 규칙 폐지 → 문의 텍스트 CTA를 본문에 항상 유지(링크카드 실패해도 소실 안 됨). 카페·블로그 공통.\n② 카카오 소제목 빈줄: kakao build_post에 normalize_body 호출 추가(그동안 미적용 사각지대) → ▍ 소제목 바로 아래 내용.\n③ 소제목 ■ 인식(앞 커밋 완료).\n검증(실측): normalize 문의줄 유지+▍/■ 빈줄 제거 PASS. 카카오 실본문 변환 PAS (CLI ad-hoc · 커밋 4892f33e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4892f33e977c82e8c1cb1855d192b4f7b16854d0"
   }
 ]
