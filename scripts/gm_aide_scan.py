@@ -85,6 +85,10 @@ AUTO_EXEC_ENV = "GM_AIDE_AUTO_EXEC"
 AUTO_EXEC_ON_VALUES = {"1", "true", "on", "yes"}
 MAX_AUTO_ACTIONS_PER_RUN = 5   # 가역 자율실행 폭주 방지 cap
 
+# ── 자율 틈 감지기(배237(b)) 신규 자율레인 게이트 (독립·기본 OFF) ──
+# ★안전: 기존 GM_AIDE_AUTO_EXEC 와 절대 공유 금지 — 별도 env 별도 체크(라이브 발효=별도 GM go).
+STALL_APPLY_ENV = "AIDE_STALL_APPLY"
+
 # ── 정비 액션 5종(2026-07-04 추가) 조건 임계값 — 전부 '실제 문제 있을 때만' 게이트 ──
 STALE_HOURS_ERP = 6   # erp_status.json generated_at 이 이만큼 지나면 재발행 대상
 STALE_HOURS_KPI = 6   # kpi_values.json generated_at 이 이만큼 지나면 재집계 대상
@@ -96,6 +100,12 @@ ROLE_NICK = {
 }
 
 TODAY = datetime.now().date()
+
+# ── 자율 틈 감지기 모듈(배237(b)) — scripts/aide_detectors/ ──
+sys.path.insert(0, str(ROOT / "scripts" / "aide_detectors"))
+import stall_watch      # type: ignore  # noqa: E402
+import reversibility    # type: ignore  # noqa: E402
+import auto_actions     # type: ignore  # noqa: E402
 
 
 def now_str() -> str:
@@ -793,6 +803,127 @@ def apply_auto_actions(actions: list, archive: list) -> int:
 
 
 # ═══════════════════════════════════════════
+#  자율 틈 감지기(배237(b)) 통합 레인 (US-004)
+#  ★신규 자율 write = 독립 게이트 AIDE_STALL_APPLY 뒤에서만.
+#   기존 GM_AIDE_AUTO_EXEC 와 무관(별도 env·별도 체크). 캡 MAX_AUTO_ACTIONS_PER_RUN 공유.
+# ═══════════════════════════════════════════
+def stall_apply_enabled() -> bool:
+    """자율 틈 감지기 신규 자율레인 라이브 여부. AIDE_STALL_APPLY=1 일 때만 ON(기본 OFF)."""
+    return os.environ.get(STALL_APPLY_ENV, "").strip().lower() in AUTO_EXEC_ON_VALUES
+
+
+def _gap_to_capture(gap: dict) -> dict:
+    """propose 폴백용 — gap → 기존 capture 스키마(make_proposal_ship 재사용)."""
+    kind = gap.get("kind", "gap")
+    tid = gap.get("task_id") or str(gap.get("ship_no") or "?")
+    return make_capture(
+        ctype=f"aide_{kind}",
+        reversibility="비가역",   # propose 경로 = 가역 확신 못한 건 → 게이트 제안
+        target_role=gap.get("clevel", "ceo"),
+        title=f"[{tid}] {'정체' if kind == 'stalled' else '재개가능'} 감지",
+        reason=gap.get("reason", ""),
+        evidence=f"kind={kind} ship_no={gap.get('ship_no')} "
+                 f"revert_ok={gap.get('revert_ok')} external={gap.get('external')} data_loss={gap.get('data_loss')}",
+        remedy="GM 결정 필요(가역 확신 못함) → 제안만",
+        dedup_key=f"gmaide|aide_{kind}|{tid}",
+    )
+
+
+def _apply_gap_auto(auto_gaps: list) -> int:
+    """AIDE_STALL_APPLY ON 전용: read-before-write 재로드 후 가역 태그/nudge/의존해소 적용.
+    각 조치를 기존 log_auto_exec → gm_observation_ledger auto_exec 채널로 사유+되돌리기근거 적재.
+    캡 MAX_AUTO_ACTIONS_PER_RUN(기존 자율레인과 공유). 멱등."""
+    fresh = read_json(QUEUE_ACTIVE, [])
+    by_tid = {_ship_id(x): x for x in fresh}
+    by_sn = {x.get("ship_no"): x for x in fresh if isinstance(x.get("ship_no"), int)}
+    applied = 0
+    dirty = False
+    for g in auto_gaps[:MAX_AUTO_ACTIONS_PER_RUN]:
+        ship = by_tid.get(g.get("task_id")) or by_sn.get(g.get("ship_no"))
+        if not ship:
+            continue
+        target = g.get("task_id") or str(g.get("ship_no") or "?")
+        did = False
+        if g["kind"] == "stalled":
+            if auto_actions.apply_tag(ship, "stall"):
+                log_auto_exec("stall_tag", target, "aide_flags:no-stall", "aide_flags+=stall",
+                              restore_hint=f"원복=ship['aide_flags']에서 'stall' 제거 · 사유={g['reason']}")
+                did = True
+            if auto_actions.set_nudge(ship, g["clevel"]):
+                log_auto_exec("nudge", target, "aide_nudge:none", f"aide_nudge={g['clevel']}",
+                              restore_hint=f"원복=ship['aide_nudge'] 삭제 · 담당 {g['clevel']} 촉구")
+                did = True
+        elif g["kind"] == "resumable":
+            if auto_actions.apply_tag(ship, "resumable"):
+                log_auto_exec("resumable_tag", target, "aide_flags:no-resumable", "aide_flags+=resumable",
+                              restore_hint=f"원복=ship['aide_flags']에서 'resumable' 제거 · 사유={g['reason']}")
+                did = True
+            old_dep = ship.get("depends_on")
+            if auto_actions.resolve_structural_depends(ship):
+                log_auto_exec("depends_resolved", target, f"depends_on={old_dep!r}",
+                              "depends_on→depends_on_resolved 이전(원문 보존)",
+                              restore_hint="원복=depends_on_resolved 값을 depends_on 으로 되돌림")
+                did = True
+        if did:
+            applied += 1
+            dirty = True
+    if dirty:
+        QUEUE_ACTIVE.write_text(json.dumps(fresh, ensure_ascii=False, indent=2), encoding="utf-8")
+    return applied
+
+
+def _register_gap_proposals(propose_gaps: list, kpi: dict, ns_map: dict,
+                            profile_hints: list, archive: list) -> int:
+    """propose 폴백 — 기존 make_proposal_ship 경로 재사용(새 제안타입 없음·dedup·캡 상속)."""
+    fresh = read_json(QUEUE_ACTIVE, [])
+    existing = existing_proposal_keys(fresh)
+    fresh_max = max_ship_no(fresh, archive)
+    added = 0
+    for g in propose_gaps[:MAX_PROPOSALS_PER_RUN]:
+        cap = _gap_to_capture(g)
+        if cap["dedup_key"] in existing:
+            continue
+        fresh_max += 1
+        fresh.append(make_proposal_ship(cap, fresh_max, kpi, ns_map, profile_hints))
+        existing.add(cap["dedup_key"])
+        added += 1
+    if added:
+        QUEUE_ACTIVE.write_text(json.dumps(fresh, ensure_ascii=False, indent=2), encoding="utf-8")
+    return added
+
+
+def run_gap_detector(active: list, commit: bool, kpi: dict, ns_map: dict,
+                     profile_hints: list, archive: list) -> dict:
+    """자율 틈 감지기 파이프라인: 감지 → route → auto(AIDE_STALL_APPLY 뒤)/propose."""
+    gaps = stall_watch.detect_stalled(active, TODAY) + stall_watch.detect_resumable(active)
+    auto_gaps = [g for g in gaps if reversibility.route(g) == "auto"]
+    propose_gaps = [g for g in gaps if reversibility.route(g) == "propose"]
+    apply_on = stall_apply_enabled()
+    switch = "🟢 라이브(ON)" if apply_on else "🌙 휴면(OFF·dry-run)"
+    print(f"\n[gap] 자율 틈 감지기(배237(b)) — {switch} · 틈 {len(gaps)}건 "
+          f"(auto {len(auto_gaps)} · propose {len(propose_gaps)})")
+    for g in gaps:
+        print(f"  [{g['kind']}] #{g.get('ship_no')} {g.get('task_id')} — {g['reason'][:70]}")
+
+    result = {"gap_detected": len(gaps), "gap_auto": len(auto_gaps),
+              "gap_propose": len(propose_gaps), "stall_apply_on": apply_on,
+              "gap_auto_applied": 0, "gap_proposed": 0}
+
+    if auto_gaps and apply_on:
+        result["gap_auto_applied"] = _apply_gap_auto(auto_gaps)
+        print(f"  ✅ 가역 자율 조치 {result['gap_auto_applied']}건 적용(태그·nudge·의존해소 + 원장 auto_exec).")
+    elif auto_gaps:
+        for g in auto_gaps[:MAX_AUTO_ACTIONS_PER_RUN]:
+            print(f"  [dry-run] 자율 조치 예정: {g['kind']} #{g.get('ship_no')} ({STALL_APPLY_ENV} OFF·변경 0)")
+
+    if propose_gaps and commit:
+        result["gap_proposed"] = _register_gap_proposals(propose_gaps, kpi, ns_map, profile_hints, archive)
+        if result["gap_proposed"]:
+            print(f"  + 제안 배 {result['gap_proposed']}건 등록(propose 폴백·make_proposal_ship 재사용).")
+    return result
+
+
+# ═══════════════════════════════════════════
 #  메인
 # ═══════════════════════════════════════════
 def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
@@ -860,6 +991,9 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         auto_applied = apply_auto_actions(auto_actions, archive)
         print(f"  ✅ 가역 자율실행 {auto_applied}건 적용 + 사후로그(원장 auto_exec·원복근거 기록).")
 
+    # ── 자율 틈 감지기(배237(b)) — 정체/재개 감시 · 독립 게이트 AIDE_STALL_APPLY 뒤 ──
+    gap_result = run_gap_detector(active, commit, kpi, ns_map, profile_hints, archive)
+
     result = {
         "captured": len(captures),
         "reversible": len(rev),
@@ -870,6 +1004,7 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         "auto_exec_on": auto_on,
         "auto_actions": len(auto_actions),
         "auto_applied": auto_applied,
+        **gap_result,
     }
 
     if not commit:
