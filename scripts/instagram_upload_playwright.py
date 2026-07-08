@@ -40,6 +40,13 @@ from pathlib import Path
 
 from playwright.async_api import async_playwright
 
+# 계정별 고정 선두 해시태그 헬퍼 (scripts/ 동일 디렉터리 · SSOT=cta_utm)
+try:
+    from cta_utm import apply_head_tags
+except ImportError:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from cta_utm import apply_head_tags
+
 
 # -----------------------------------------------------------------
 # 콘솔 인코딩 하드닝 (수정 3) — Windows cp949 콘솔에서 대시(—)·이모지 print 시
@@ -1123,6 +1130,8 @@ async def _publish_single_post(
         raise RuntimeError("캡션 textbox 미발견")
 
     await caption_box.click()
+    # 계정 고정 선두 해시태그 박제 (개인=#AI자동화 #스포츠클럽자동화 앞자리 보장; 공식=고정없음·기획 태그 유지). 중복 제거.
+    spec.hashtags = apply_head_tags(spec.hashtags, account)
     final_caption = spec.merged_caption(extra_mentions=mentions)
     await page.keyboard.type(final_caption, delay=15)
     print(f"[INFO]   캡션 입력 완료 ({len(final_caption)} chars)")

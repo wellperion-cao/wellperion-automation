@@ -105,6 +105,33 @@ _HASHTAG_LINE_RE = re.compile(r"^(#\S+\s*){2,}$", re.MULTILINE)
 
 # 고정 꼬리 태그 (항상 마지막에 이 순서로)
 _TAIL_TAGS = ["#종합스포츠클럽", "#웰페리온", "#WELLPERION"]
+
+# 계정별 고정 선두(앞자리) 해시태그 — 발행 시 항상 이 순서로 맨 앞에 박제 (GM 2026-07-08)
+#   개인(namuk.wellperion): 브랜드 축 2개 고정. 3번째부터는 콘텐츠 주제 맞춤 인기태그(기획 단계 리서치).
+#   공식(wellperion): 고정 없음 — 앞 3개 전부 콘텐츠 주제별 상위 인기태그를 기획 단계에서 선정(키워드 인기도 기반).
+# 구조: [계정 고정 선두] + [주제 맞춤 인기태그(기획)] + … + [_TAIL_TAGS 브랜드 꼬리]
+HEAD_TAGS_FIXED = {
+    "namuk.wellperion": ["#AI자동화", "#스포츠클럽자동화"],
+    "wellperion": [],
+}
+
+
+def apply_head_tags(tags, account: str):
+    """계정 고정 선두 태그를 해시태그 리스트 맨 앞에 보장(중복 제거·순서 유지).
+    - tags: 기존 해시태그 list[str] (기획 단계에서 적은 주제 맞춤 태그 포함)
+    - account: 'namuk.wellperion'(개인) | 'wellperion'(공식) 등
+    반환: [고정 선두] + [중복 제외한 기존 태그]. 고정 선두 없으면 원본 순서 유지.
+    태그 비교는 '#' 제거 + 소문자 기준(영문 대소문자만 정규화, 한글 불변)."""
+    head = HEAD_TAGS_FIXED.get(account, [])
+    seen = set()
+    result = []
+    for t in list(head) + list(tags or []):
+        key = t.lstrip("#").lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(t)
+    return result
 # #스포츠클럽 → #종합스포츠클럽 치환 (단독 태그만, #종합스포츠클럽은 건드리지 않음)
 _SPORT_CLUB_RE = re.compile(r"(?<!\S)#스포츠클럽(?!\S)")
 
