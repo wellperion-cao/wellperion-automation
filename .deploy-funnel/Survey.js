@@ -577,6 +577,56 @@ function _prop(key) {
   return PropertiesService.getScriptProperties().getProperty(key) || '';
 }
 
+// ─── 조회 캐시(청크) 유틸 — 축1 성능개선(강습·멤버십 문의 목록 조회 캐시). 2026-07-08 시토 ───
+//   CacheService 값은 키당 최대 100KB. 강습 목록 응답(~190KB)처럼 큰 JSON은 단일 키 저장 불가 →
+//   직렬화 문자열을 3만자(3바이트/자 최악치 기준 ≤90KB) 청크로 분할해 putAll로 원자 저장,
+//   읽을 때 메타키(청크수)로 재조립. 어느 단계든 실패하면 null 반환 → 호출부는 시트 재조회 폴백
+//   (캐시가 장애점이 되면 안 됨). ok:false 응답은 호출부에서 애초에 저장하지 않음(정책).
+var _CACHE_CHUNK_CHARS_ = 30000;
+
+function _cachePutJson_(cache, key, obj, ttlSec) {
+  try {
+    var str = JSON.stringify(obj);
+    var n = Math.max(1, Math.ceil(str.length / _CACHE_CHUNK_CHARS_));
+    var payload = {};
+    payload[key + '__meta'] = String(n);
+    for (var i = 0; i < n; i++) {
+      payload[key + '__' + i] = str.substr(i * _CACHE_CHUNK_CHARS_, _CACHE_CHUNK_CHARS_);
+    }
+    cache.putAll(payload, ttlSec);
+  } catch (e) { /* 저장 실패 무시 — 폴백=시트 재조회 */ }
+}
+
+function _cacheGetJson_(cache, key) {
+  try {
+    var meta = cache.get(key + '__meta');
+    if (!meta) return null;
+    var n = parseInt(meta, 10);
+    if (!n || n < 1) return null;
+    var keys = [];
+    for (var i = 0; i < n; i++) keys.push(key + '__' + i);
+    var chunks = cache.getAll(keys);
+    var parts = [];
+    for (var j = 0; j < n; j++) {
+      var part = chunks[key + '__' + j];
+      if (part === undefined || part === null) return null;  // 부분 만료(TTL 경계) → 미스 취급(폴백)
+      parts.push(part);
+    }
+    return JSON.parse(parts.join(''));
+  } catch (e) { return null; }
+}
+
+function _cacheInvalidateJson_(cache, key) {
+  try {
+    var meta = cache.get(key + '__meta');
+    var n = meta ? parseInt(meta, 10) : 0;
+    var keys = [key + '__meta'];
+    var max = Math.max(n, 12);  // 메타 유실 대비 여유 청크까지 제거
+    for (var i = 0; i < max; i++) keys.push(key + '__' + i);
+    cache.removeAll(keys);
+  } catch (e) { /* 무효화 실패 무시 — TTL(60초) 만료로 자연 해소 */ }
+}
+
 // 전화번호 정규화 — 숫자만 추출, 국가코드 82→0 치환, 빈값→''
 function normalizePhone_(s) {
   if (!s) return '';
@@ -2196,9 +2246,18 @@ function _processAction(body) {
 
   // ─── 문의회원 페이지(CPO): 익명 문의 목록 (A안 공개·이름/전화/메모 0) ───
   if (action === 'member_inquiry_list') {
+    // 조회 캐시(축1, TTL 60초) — nocache=1 우회. 미스·실패 시 그대로 시트 재조회 폴백. 2026-07-08 시토.
+    var miCache = CacheService.getScriptCache();
+    var miCacheKey = 'micache';
+    if (!_nc) {
+      var miHit = _cacheGetJson_(miCache, miCacheKey);
+      if (miHit) return _json(miHit);
+    }
     var miRows = _miReadRows_();
     var _miFull = true;  // 2026-06-25 GM '성함·연락처 다 공개' — 마스킹 해제(무인증 공개 주의·시토 인증게이트 전제)
-    return _json({ ok: true, count: miRows.length, data: miRows, anon: !_miFull });
+    var miResult = { ok: true, count: miRows.length, data: miRows, anon: !_miFull };
+    _cachePutJson_(miCache, miCacheKey, miResult, 60);
+    return _json(miResult);
   }
 
   // ─── 문의회원 페이지(CPO): 행 추가 (전화·직접 문의 수기 입력) ───
@@ -2408,6 +2467,8 @@ function _processAction(body) {
       var _urPhone = (body.keyPhone && String(body.keyPhone)) || (_urPhCi >= 0 ? String(muSh.getRange(muRow, _urPhCi + 1).getValue() || '') : '');
       try { _regRemove_(_urPhone); } catch (e) {}
     }
+    // 조회 캐시 무효화(축1) — 다음 목록 조회부터 최신 반영. 2026-07-08 시토.
+    try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
     return _json({ ok: true, rowIndex: muRow, message: '수정되었습니다.' });
   }
 
@@ -2437,10 +2498,22 @@ function _processAction(body) {
 
   // ─── 강습문의 페이지(CPO): 전체 목록 (성인 강습 문의 + 관리 필드) ───
   if (action === 'lesson_inquiry_list') {
+    // 조회 캐시(축1, TTL 60초) — type+scope별 키(청크 분할, 응답이 100KB 넘음). nocache=1 우회.
+    //   미스·실패 시 그대로 시트 재조회 폴백. 2026-07-08 시토.
+    var liType = String(body.type || '');
+    var liScope = (String(body.scope || '') === 'all') ? 'all' : 'year';
+    var liCache = CacheService.getScriptCache();
+    var liCacheKey = 'licache|' + liType + '|' + liScope;
+    if (!_nc) {
+      var liHit = _cacheGetJson_(liCache, liCacheKey);
+      if (liHit) return _json(liHit);
+    }
     var liRows = _lessonScopeFilter_(_lessonReadRows_(_lessonGidOf_(body)), body);
     // 종목 표준 버킷 — 프론트 칩 그룹/필터용(원문 sport 필드는 표 표시용으로 유지). 2026-06-27 시포.
     liRows.forEach(function(r){ var b = _sportBuckets_(r.sport); r.bucket = (b && b.length) ? b[0] : '기타'; });
-    return _json({ ok: true, count: liRows.length, data: liRows });
+    var liResult = { ok: true, count: liRows.length, data: liRows };
+    _cachePutJson_(liCache, liCacheKey, liResult, 60);
+    return _json(liResult);
   }
 
   // ─── 강습 등록현황·회원 명단(CPO): 팀시트 상태열 '등록'/'SUC' 행 → 종목별 집계 + 회원 명단 ───
@@ -2629,6 +2702,13 @@ function _processAction(body) {
         _notifyTelegram('📞 <b>컨택 시작(강습)</b> — 강습문의 상담·응대 개시\n· 이름: ' + _luName + '\n· 종목: ' + _luSport + '\n· 담당: ' + (body.owner || '-') + '\n· 상태: ' + (_luNewStatus || '-'), _luContactChatId);
       } catch (e) {}
     }
+    // 조회 캐시 무효화(축1) — type(성인강습/유소년강습) 두 scope(year/all) 모두 제거해 다음 조회 최신 반영. 2026-07-08 시토.
+    try {
+      var _luCache = CacheService.getScriptCache();
+      var _luType = String(body.type || '');
+      _cacheInvalidateJson_(_luCache, 'licache|' + _luType + '|year');
+      _cacheInvalidateJson_(_luCache, 'licache|' + _luType + '|all');
+    } catch (e) {}
     return _json({ ok: true, rowIndex: luRow, message: '수정되었습니다.' });
   }
 
