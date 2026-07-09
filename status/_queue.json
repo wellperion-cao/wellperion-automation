@@ -1338,5 +1338,19 @@
     "artifact": "기존엔 헤더 .header-brand(flex-direction:column) 안에서 담당실무(임정은M) 줄 아래\n별도 행으로 세로 추가되던 구조 — GM이 세로칸 늘리는 걸 싫어해서 같은 줄(.sub) 안에\n가로로 병합. flex+ellipsis로 한 줄 강제(내용이 아무리 길어도 절대 줄바꿈 안 됨 —\n세로높이 불변 보장). 표시 텍스트는 가로 폭에 맞게 축약(예: \"🤖 자동보고 ⚪OFF 일✓ 주· 월✓\")\n하고 전체 상세(방·시각별 발신여부)는 title 툴팁으로 그대로 보존(정보손실 0).\n헤더가 멤버십/강습 공용이라 ?ma (CLI ad-hoc · 커밋 f4f98e34)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f4f98e3470e676b0847d661dd7a01cb5050b10ea"
+  },
+  {
+    "task_id": "CMO-2026-07-09-ADHOC-bc6a8bad",
+    "clevel": "cmo",
+    "title": "[시모] 4채널 CTA/링크 설계 재정립 — 원시 UTM URL 노출·문의 중복 근본수리 (GM 설계단 재정립)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 815,
+    "artifact": "근본(신규 발견): 원시 UTM URL 정리가 DOM evaluate라 화면만 지워지고 SmartEditor 내부\n모델에 남아 발행시 재직렬화로 부활. + body 문의줄과 링크카드 URL 2중.\n설계: cta_utm.py 단일출처(CLEAN_CTA_TEXT·href전용 UTM·strip/ensure single CTA).\n- 블로그/카페: 카드+키보드 URL제거(모델갱신)+텍스트 폴백·본문→이미지→카드(맨끝)·공개URL 회수시만 발행완료\n- 카카오/당근: 깨끗한 문의줄 1개(텍스트=링크라 UTM 숨길곳 없음→깨끗함 우선, GM원칙 (CLI ad-hoc · 커밋 bc6a8bad)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "bc6a8badf7033872dde5f06080620e72023eea71"
   }
 ]
