@@ -113,3 +113,17 @@ def test_get_modules_by_role_filters_by_owner_role():
 
     none_modules = mr.get_modules_by_role("cfo", registry=registry)
     assert none_modules == []
+
+
+def test_registry_all_modules_pass_validation():
+    # 실제 등록부(status/module_registry.json)의 모든 모듈이 validate_module 통과(위반 0)
+    registry = mr.load_registry()
+    for mod in registry["modules"]:
+        violations = mr.validate_module(mod)
+        assert violations == [], f"{mod.get('id')} 위반: {violations}"
+
+
+def test_registry_has_at_least_3_cto_modules():
+    # 시토(CTO) 도메인 모듈 최소 3개 등록 확인
+    cto_modules = mr.get_modules_by_role("cto")
+    assert len(cto_modules) >= 3

@@ -1,4 +1,57 @@
 {
-  "_doc": "모듈 단일 등록부(SSOT). 화면·알림·자율이 이 한 곳을 읽는다.",
-  "modules": []
+  "_doc": "모듈 단일 등록부(SSOT). 전 C레벨 공유 — 각 도메인은 자기 모듈만 등록(헌법 원리1). 웰리가 스키마 계약 관리. 화면·알림·자율이 이 한 곳을 읽는다. 제품화 가능 설계(단일 테넌트=웰페리온 now, 모듈 단위라 테넌트 축 확장 여지).",
+  "_schema": {
+    "id": "고유 식별자",
+    "owner_role": "담당 C-Level 역할(cto 등)",
+    "owner_nick": "담당 C-Level 닉네임(시토 등)",
+    "feature": "특징 기능(무엇을 하는 모듈인지)",
+    "data_source": "{kind: gas|json|sheet, ref: 경로/식별자} — 가리킬 뿐 복사 금지",
+    "notify_spec": "{daily, weekly, monthly, channel, bot_id} 알림 규격",
+    "front_card": "{window, anchor} 프론트 렌더 위치",
+    "autonomy": "auto|semi|mech|propose|manual 자율수준",
+    "ai_free_fallback": "AI 없이도 이 모듈이 어떻게 도는지",
+    "feedback": "{enabled, audience, entries} 실무진 피드백 칸",
+    "reversible": "가역 여부(bool) — 자율 완료 게이트"
+  },
+  "modules": [
+    {
+      "id": "cto-automation-health",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "자동화 건강 점수판 — 예약작업 실행결과 30분 갱신",
+      "data_source": {"kind": "json", "ref": "status/erp_status.json"},
+      "notify_spec": {"daily": false, "weekly": true, "monthly": false, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "autonomy": "mech",
+      "ai_free_fallback": "예약작업이 사람 세션 없이 상시 가동·30분 갱신",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true
+    },
+    {
+      "id": "cto-aide-gap-detector",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "자율 틈 감지기 — 정체/재개가능 배 감시(재개=자율태그·정체=surface)",
+      "data_source": {"kind": "json", "ref": "status/gm_aide_scan_log.jsonl"},
+      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "autonomy": "auto",
+      "ai_free_fallback": "06:30 예약 스캔이 무인 가동(게이트 AIDE_RESUMABLE_APPLY)",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true
+    },
+    {
+      "id": "cto-check-gas",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "점검 GAS 파이프 — 시설/지원부 점검 today_live·monthly 집계",
+      "data_source": {"kind": "gas", "ref": "CHECK_API weekly/monthly"},
+      "notify_spec": {"daily": true, "weekly": false, "monthly": true, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "autonomy": "mech",
+      "ai_free_fallback": "GAS가 시트에서 자동 집계·12시 점검관리방 발송",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true
+    }
+  ]
 }

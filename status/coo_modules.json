@@ -1,0 +1,28 @@
+{
+  "_doc": "COO 자율화 두뇌 모듈 레지스트리 — 한 곳 원천(L01). ERP 허브 카드·텔레그램 자동보고·부팅 두뇌가 전부 여기서 읽는다. 모듈 1개 추가 = 여기 1줄 → 세 소비자 자동 점등.",
+  "정본": "status/coo_modules.json",
+  "modules": [
+    {
+      "id": "check_status",
+      "name": "점검 현황",
+      "hub": "O1",
+      "erp_paths": ["coo/check/지원부 체계.html", "coo/check/시설부 체계.html", "coo/check/운영부 체계.html", "coo/check/주차관리부 체계.html", "coo/check/강습팀 업장관리.html", "coo/check/파트너팀 체계.html"],
+      "data_source": {
+        "type": "gas",
+        "endpoint": "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec",
+        "queries": {"facility": "action=weekly&dept=facility", "support": "action=today_live&dept=support"}
+      },
+      "headline_feature": "부서별 점검 완료율·이상 한눈에",
+      "status_metric": {"compute": "dept별 pct (facility=weekly, support=today_live)", "display": "{pct}% {badge}"},
+      "telegram": {"bot": "@namuki_report_bot", "daily_join": true, "anomaly_immediate": true, "weekly": false, "monthly": false},
+      "autonomy": {"reversible": ["aggregate", "report", "flag", "route"], "gated": ["sheet_edit", "gas_deploy", "security"]},
+      "honesty_tags": ["measured"],
+      "enabled": true
+    },
+    {"id": "reception_locker", "name": "리셉션·라커", "hub": "O1", "erp_paths": ["coo/reception/종합접수처_현황.html", "coo/리셉션 업무/라커관리/index.html"], "data_source": {"type": "gas", "endpoint": "", "queries": {}}, "headline_feature": "접수·컴플레인·라커 배정", "status_metric": {"compute": "TBD(복제 시)", "display": "-"}, "telegram": {"bot": "@namuki_report_bot", "daily_join": false, "anomaly_immediate": false, "weekly": false, "monthly": false}, "autonomy": {"reversible": ["aggregate", "report", "flag", "route"], "gated": ["sheet_edit", "gas_deploy", "security"]}, "honesty_tags": ["unmeasured"], "enabled": false},
+    {"id": "work_approval", "name": "업무·결재 SSOT", "hub": "O1", "erp_paths": ["coo/todo/업무 현황 SSOT.html", "coo/todo/결재 현황 SSOT.html"], "data_source": {"type": "gas", "endpoint": "", "queries": {}}, "headline_feature": "실무진 todo·결재 흐름", "status_metric": {"compute": "TBD(복제 시)", "display": "-"}, "telegram": {"bot": "@namuki_report_bot", "daily_join": false, "anomaly_immediate": false, "weekly": false, "monthly": false}, "autonomy": {"reversible": ["aggregate", "report", "flag", "route"], "gated": ["sheet_edit", "gas_deploy", "security"]}, "honesty_tags": ["unmeasured"], "enabled": false},
+    {"id": "notice", "name": "공지/안내문", "hub": "O1", "erp_paths": ["coo/notice/notice_template.html"], "data_source": {"type": "local", "endpoint": "", "queries": {}}, "headline_feature": "안내문 생성·발행", "status_metric": {"compute": "TBD(복제 시)", "display": "-"}, "telegram": {"bot": "@namuki_report_bot", "daily_join": false, "anomaly_immediate": false, "weekly": false, "monthly": false}, "autonomy": {"reversible": ["aggregate", "report", "flag", "route"], "gated": ["sheet_edit", "gas_deploy", "security"]}, "honesty_tags": ["unmeasured"], "enabled": false},
+    {"id": "monthly_ops", "name": "월간운영계획·전사회의", "hub": "O1", "erp_paths": ["coo/월간운영계획.html", "coo/전사회의.html"], "data_source": {"type": "gas", "endpoint": "", "queries": {}}, "headline_feature": "매출·부서·로드맵", "status_metric": {"compute": "TBD(복제 시)", "display": "-"}, "telegram": {"bot": "@namuki_report_bot", "daily_join": false, "anomaly_immediate": false, "weekly": false, "monthly": false}, "autonomy": {"reversible": ["aggregate", "report", "flag", "route"], "gated": ["sheet_edit", "gas_deploy", "security"]}, "honesty_tags": ["unmeasured"], "enabled": false},
+    {"id": "reregister", "name": "재등록 대시보드", "hub": "O1", "erp_paths": ["coo/reregister/O3.html"], "data_source": {"type": "gas", "endpoint": "", "queries": {}}, "headline_feature": "재등록율·이탈", "status_metric": {"compute": "TBD(복제 시)", "display": "-"}, "telegram": {"bot": "@namuki_report_bot", "daily_join": false, "anomaly_immediate": false, "weekly": false, "monthly": false}, "autonomy": {"reversible": ["aggregate", "report", "flag", "route"], "gated": ["sheet_edit", "gas_deploy", "security"]}, "honesty_tags": ["unmeasured"], "enabled": false}
+  ]
+}
