@@ -2061,6 +2061,14 @@
     {members:['fac','sup','park'], merged:true, title:'시설·지원·주차 통합', note:'이정헌 소장 통합관리', head:'fac'},
     {members:['mgmt']}
   ];
+  // 📌 부서별 월 목표·진척 전용 그룹 — 시설·지원·주차 통합하지 않고 부서별로 분리 렌더(GM 지시 2026-07-09 원상복구). 부서별 내용 표(DEPT_GROUPS)는 통합 유지.
+  var DEPT_GOAL_GROUPS = [
+    {members:['ops']},
+    {members:['fac']},
+    {members:['sup']},
+    {members:['park']},
+    {members:['mgmt']}
+  ];
   function pracOf(id, roster){ for(var i = 0; i < roster.length; i++){ if(roster[i].id === id){ return roster[i]; } } return null; }
   function ownerCellHtml(cfg, roster){
     var p = pracOf(cfg.prac, roster);
@@ -2138,7 +2146,7 @@
   // 📌 부서별 월 목표·진척 — 부서 표 아래 전용 프로미넌트 섹션(GM 지시 2026-07-07 5차: 좁은 표 칸 → 크게·중요하게)
   function deptGoalGridHtml(objs, roster){
     var mLabel = _sel ? (Number(String(_sel).split('-')[1]) + '월') : '';
-    var cards = DEPT_GROUPS.map(function(g){ return deptCardHtml(g, objs, roster); }).join('');
+    var cards = DEPT_GOAL_GROUPS.map(function(g){ return deptCardHtml(g, objs, roster); }).join('');
     return '<div class="deptgoal-sec"><div class="deptgoal-h">📌 부서별 월 목표 · 진척 ' +
       '<span class="deptgoal-sub">' + esc(mLabel) + ' 부서별 핵심 과제 · 진척</span></div>' +
       '<div class="deptgoal-grid">' + cards + '</div></div>';
