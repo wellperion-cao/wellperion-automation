@@ -913,11 +913,11 @@
     "task_id": "CEO-2026-07-09-AUTONOMY-PILOT-EXPAND",
     "clevel": "ceo",
     "title": "[웰리] 자율 실행 루프 확산 — automation_health 병합·환류 프론트 전송·타 C레벨 자율 실행 확대",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-09",
-    "note": "[2026-07-09] 시토 파일럿 1바퀴 완주 성공(웰리 위임→시토 실행→검증→기록, GM개입0·거짓완료0, 배NEXT-160113 처리). 확산 3갈래: ①automation_health 중복 병합(계약서 §4, CMO 세션이 module_reporter를 정본 스키마로 수렴한 뒤 웰리 단독) ②환류 프론트 GAS 전송 경로(append_feedback 백엔드는 완료, 프론트→GAS write 후속) ③타 C레벨(시모·시우 등) 자율 실행 모드 확대. 부트스트랩: 반복 검증을 코드·게이트로 점차 이관.",
-    "next": "①CMO 수렴 확인 후 automation_health 병합 ②환류 GAS 전송 ③타 도메인 자율 실행 프로토콜 복제.",
+    "note": "[2026-07-09] 시토 파일럿 1바퀴 완주 성공(웰리 위임→시토 실행→검증→기록, GM개입0·거짓완료0, 배NEXT-160113 처리). 확산 3갈래: ①automation_health 중복 병합(계약서 §4, CMO 세션이 module_reporter를 정본 스키마로 수렴한 뒤 웰리 단독) ②환류 프론트 GAS 전송 경로(append_feedback 백엔드는 완료, 프론트→GAS write 후속) ③타 C레벨(시모·시우 등) 자율 실행 모드 확대. 부트스트랩: 반복 검증을 코드·게이트로 점차 이관. [2026-07-09 executor 착수·웰리 검증] 3갈래: ①automation_health 병합=CTO 세션이 이미 수렴+중복제거(e896f42c) 완료, 등록부 9모듈 레거시필드 0·중복 0 재확인(추가 작업 없음) ②환류 프론트 GAS 전송=코드 100% 준비완료(자율현황.html submitModuleFeedback 폼+commit_file write, _ghPathAllowed에 module_registry.json 허용, clasp push HEAD 반영)—단 라이브 왕복은 GAS 웹앱 재배포(clasp deploy) 1회 필요=배포행위라 GM go 대기 ③타 C레벨 프로토콜 복제=ai-cmo·coo·cpo.md §7 신설(등록모듈 보유 도메인만·cfo/chro/ceo 제외), welly_orchestrate.select_autonomous_ships 코드무변경 범용동작·pytest 37 passed. 커밋 f01bc366(GitLock). 라이브발효 강제 없음(§7 별도 GM go 명시).",
+    "next": "②환류 라이브 왕복 = GAS 웹앱 재배포(clasp deploy) GM go 대기. 승인 시 라이브 입력→저장→재로드 실측으로 입항. ③은 도메인별 자율 라이브 활성 원할 때 각 GM go.",
     "depends_on": "",
     "ship_no": 783,
     "module": "home"
@@ -1480,5 +1480,31 @@
     "artifact": "- 헌법한장.html에 status/module_registry.json 직독 렌더 섹션 삽입(등록부 SSOT)\n- owner_role별 8주체 그룹핑 · autonomy 정직 배지(auto/semi/mech/propose/manual) · 가역여부 · AI없이도-fallback 표시\n- 모듈 없는 주체/등록부 비어있음 = \"수렴 대기\" 정직 표기, 기존 8주체×3칸 매트릭스와 중복 카드 없음\n- 기존 매트릭스·불변원리3·자율화루프 블록 무변경, 이 블록만 최소삽입 (CLI ad-hoc · 커밋 fe05aa58)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "fe05aa58d5cf694d4d0398a85f881ff6551f7e11"
+  },
+  {
+    "task_id": "CEO-2026-07-09-ADHOC-f01bc366",
+    "clevel": "ceo",
+    "title": "[웰리] 자율 실행 루프 확산 — 환류 GAS 전송 경로+3 C-Level 자율모드 복제 (배783)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 825,
+    "artifact": "- module_registry.json 정본 수렴 게이트 확인: module_reporter.py(commit e896f42c)가 이미\n  공유 스키마만 소비, 레거시 automation_health 중복 엔트리도 이미 제거·병합됨(재확인만, 추가 병합 불필요)\n- 자율현황.html 환류 칸: GAS read_file->수정->commit_file 왕복(기존 write 패턴 재사용)으로\n  module_registry.json feedback.entries에 실제 append. append_feedback()과 동일 멱등 규칙 클 (CLI ad-hoc · 커밋 f01bc366)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f01bc3664cd4c9b0855d57157c4a29f9277562ca"
+  },
+  {
+    "task_id": "CMO-2026-07-09-5CH-AUTOPUBLISH",
+    "clevel": "cmo",
+    "title": "[시모] 5채널 자동발행 완결 — 공식 발행 시 IG·블로그·카페·카카오·당근 5채널 전부 자동발행+링크 회수까지 무인 완결",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-09",
+    "ship_no": 826,
+    "note": "[2026-07-09 GM 지시] F2 발행 시 블로그·카페가 수동발행대기로 남아 GM이 직접 발행함. 내일부터는 무조건 시모가 5채널 자동발행까지 마무리(수동발행대기 0). 현재 IG·카카오·당근은 자동, 블로그·카페(네이버 SmartEditor)는 watcher 임시저장까지만 → 발행+URL회수 자동화 완결 필요.",
+    "next": "",
+    "depends_on": ""
   }
 ]
