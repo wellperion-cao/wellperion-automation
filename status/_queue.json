@@ -1714,5 +1714,19 @@
     "artifact": "_KNOWN_STATUS에 STANDBY 누락 → 매일 08시 보고에 '형식오류 경고 1건'이\n불필요하게 떴다. STANDBY는 실제로 쓰이는 정박/대기 상태값(운영 4부서\n대기건 등)이고, hangro_board.fetch_queue_items()가 이미 이를 활성/완료\n어느 쪽으로도 오분류하지 않고 보드에서 제외 처리 중임을 확인 후 추가. (CLI ad-hoc · 커밋 6c316ab9)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "6c316ab9c8fc2610c1e10444889b674fdefce5fa"
+  },
+  {
+    "task_id": "CEO-2026-07-10-ADHOC-f91a0a8f",
+    "clevel": "ceo",
+    "title": "[웰리] INC-012 박제 — 08시 항로 0건 버그(정합어긋남)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 844,
+    "artifact": "ceo_morning_pipeline이 G1 시트만 읽고 _queue.json 활성 배(27건)를 병합 안 해\n'오늘의 항로'가 매일 0건으로 발행되던 사고를 재발방지 대장에 기록. hangro_board\n정본 머지 재사용으로 차단(커밋 51e1505b·6c316ab9). INC-007 동류(큐 읽기 경로\n정합 어긋남). (CLI ad-hoc · 커밋 f91a0a8f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f91a0a8ff14cded0cdf50ef699a1dd49bf65623b"
   }
 ]
