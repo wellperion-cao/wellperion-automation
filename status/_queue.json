@@ -2122,5 +2122,19 @@
     "artifact": "- verify_complete.py: verify(log_contains·since경계·예외안전)+close_ship+handle(재개가능·가역·verify스펙 배만·PASS+gate만 완결·거짓완료0)\n- gm_aide_scan.py +67: 재개가능 레인 뒤 핸들러 호출, AIDE_VERIFY_APPLY 게이트(기본OFF=드라이런·델타0)\n- pytest 14통과(AC-1~7)+기존47 회귀0. 라이브 발효=파일럿 verify주입+set AIDE_VERIFY_APPLY=1(GM go) (CLI ad-hoc · 커밋 3f1fd479)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "3f1fd479d34d3ee6c952ccdfb068439c880d575a"
+  },
+  {
+    "task_id": "CMO-2026-07-09-ADHOC-d362e4f0",
+    "clevel": "cmo",
+    "title": "[시모] 네이버 블로그 본문소실 회귀 수리 — 링크카드 정리가 본문 CTA줄까지 삭제하던 버그",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 807,
+    "artifact": "근본원인(2커밋 상호작용): 4892f33e(인라인 CTA '문의:wellperion.com' 본문보존)로 그 줄이\n본문 se-component에 상주 → _insert_link_card의 느슨한 도메인매칭이 그 줄까지 잡아\nancestor se-component 통삭제 → SmartEditor 붕괴 → 이미지첨부시 본문 전체소실.\nF1(수정전 07-08)됐고 F2(07-09)만 실패한 이유 정합.\n수정: 매칭조건 utm_source= 요구(자동 링크카드 URL만 보유)+해당 p노드만 제거(se-component 통삭제 제거).\n검 (CLI ad-hoc · 커밋 d362e4f0)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d362e4f0fd4f162db7e38fff1a23072bf3649f50"
   }
 ]
