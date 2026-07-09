@@ -685,6 +685,14 @@ var KPI_YEAR_TARGET = 7200000000;
 // '지출 현황' 탭(gid 821406206) = 거래행(승인건 포함) 표면. 첫 탭 자동선택 금지(칸밀림 오판 원인).
 var KPI_EXPENSE_SHEET_ID = '1umSF9rf3K0TuAvR5l0F_gvXHxcOLVKKvkSUfTtbRhdc';
 var KPI_EXPENSE_GID      = 821406206;
+// 지출 재배선(2026-07-09 시토): home_kpi.expense 정본을 '지출 현황' 탭(위 GID·7월 미갱신 확인)에서
+// '지출품의' 탭(구매성, procurement.js 동일 시트·정본 SHEET_ID)+인건비마스터 실집계 조합으로 교체.
+// 재무허브(매출지출현황.html) "총지출=인건비+구매성" 정의와 정합. KPI_EXPENSE_GID 이하 구 함수
+// (_kpiExpenseBudget/_kpiExpenseMonthly/_expenseSetBudget)는 별도 진단 액션(expense_monthly 등)이
+// 계속 쓰므로 무변경 유지 — home_kpi 출력에만 영향.
+var KPI_EXPENSE_TAB    = '지출품의';   // procurement.js TAB과 동일(같은 스프레드시트)
+var KPI_LABOR_SHEET_ID = '1uAmZXX0GbiDImORxEwnDFm4_C-r0W43s-_tV_cPq9lE'; // 인건비마스터(procurement.js LABOR_MASTER_ID·매출지출현황.html SHEET_ID와 동일 정본)
+var EXPENSE_DEPT_NORM  = { '체조': '체조&트램' }; // 지출품의 소속 표기 → 대시보드 표준 부서명(procSummary와 동형 정규화)
 // ⚠️ 옛 VOC 응답시트(구 구글폼 280/241) — 2026-07-02 시토 은퇴. home_kpi.voc 는 이제 종합접수처(reg) 실집계.
 //   시트 자체는 데이터 보존(삭제 금지). 아래 두 상수는 미사용(하위 참조 안전망만).
 var KPI_VOC_SHEET_ID     = '1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ';
@@ -1332,92 +1340,109 @@ function _expenseSetBudget(amount, key) {
   }
 }
 
-function _kpiExpense() {
+// 구매성(품의) — '지출품의' 탭 실집행성 거래(반려·미승인·캔슬 제외) 오늘/이번달/연 누적 + 부서별(이번달) 합.
+// 컬럼(1-base, procurement.js와 동일): 1날짜 3요청자 4소속 7가격 12진행상황. 헤더 2행·데이터 3행부터.
+function _kpiProcExpense() {
+  var t = _kpiToday();
+  var result = { todayAmt: 0, monthAmt: 0, yearAmt: 0, deptMonth: {}, any: false };
   try {
-    var ss = SpreadsheetApp.openById(KPI_EXPENSE_SHEET_ID);
-    var sheets = ss.getSheets();
-    var sh = null;
-    for (var i = 0; i < sheets.length; i++) {
-      if (sheets[i].getSheetId() === KPI_EXPENSE_GID) { sh = sheets[i]; break; }
-    }
-    if (!sh) {
-      // gid 미발견 → 이름 추정('지출 현황' 포함). 첫 탭 자동선택은 칸밀림 오판 원인 → 최후수단.
-      for (var k = 0; k < sheets.length; k++) {
-        if (sheets[k].getName().replace(/\s/g, '').indexOf('지출현황') >= 0) { sh = sheets[k]; break; }
-      }
-    }
-    if (!sh) return { today: null, month: null, year: null, budget: null, rate: null,
-                      error: 'expense_tab_not_found' };
+    var sh = SpreadsheetApp.openById(KPI_EXPENSE_SHEET_ID).getSheetByName(KPI_EXPENSE_TAB);
+    if (!sh) { result.error = 'proc_tab_not_found'; return result; }
     var lastRow = sh.getLastRow();
-    var lastCol = sh.getLastColumn();
-    if (lastRow < 2 || lastCol < 2) {
-      return { today: null, month: null, year: null, budget: null, rate: null };
-    }
-    var values = sh.getRange(1, 1, lastRow, lastCol).getValues();
-    var hdr = values[0].map(function (h) { return String(h || '').replace(/\s/g, '').trim(); });
-    function _col(names) {
-      for (var i2 = 0; i2 < hdr.length; i2++) {
-        for (var j = 0; j < names.length; j++) {
-          if (hdr[i2].indexOf(names[j]) >= 0) return i2;
-        }
-      }
-      return -1;
-    }
-    var dateCol   = _col(['날짜']);
-    var priceCol  = _col(['가격', '금액']);
-    var statusCol = _col(['진행상황', '승인상태']);
-    var deptCol   = _col(['소속', '부서']);  // 부서별 breakdown용(없으면 -1 → '기타')
-    if (priceCol < 0 || statusCol < 0 || dateCol < 0) {
-      return { today: null, month: null, year: null, budget: null, rate: null,
-               error: 'expense_cols_not_found' };
-    }
-    var t = _kpiToday();
-    var today = 0, month = 0, year = 0, any = false;
-    var deptMonth = {};  // 부서명 → 이번달 승인지출 합
-    for (var r = 1; r < values.length; r++) {
-      var row = values[r];
-      // 진행상황이 정확히 '승인'인 행만. '미승인'·'캔슬'은 제외(부분일치 금지).
-      var st = String(row[statusCol] || '').replace(/\s/g, '').trim();
-      if (st !== '승인') continue;
-      var d = _kpiParseDate(row[dateCol]);
-      if (!d) continue;  // 거래행이 아님(요약 블록 등) → 제외
-      var price = _kpiNum(row[priceCol]);
-      if (price === null) continue;  // 음수(환불)는 유지, 빈 값만 제외
-      any = true;
+    if (lastRow < 3) return result;  // 헤더 2행, 데이터 3행부터
+    var values = sh.getRange(3, 1, lastRow - 2, 17).getValues();
+    var EXCL = { '반려': 1, '미승인': 1, '캔슬': 1 };  // procSummary와 동일 제외 규칙(실집행성만)
+    for (var i = 0; i < values.length; i++) {
+      var row = values[i];
+      if (!row[2]) continue;  // 요청자(3열) 없으면 빈행
+      var st = String(row[11] || '품의').trim();
+      if (EXCL[st]) continue;
+      var d = _kpiParseDate(row[0]);
+      if (!d) continue;
+      var price = _kpiNum(row[6]);
+      if (price === null) continue;
+      result.any = true;
       if (d.y === t.y) {
-        year += price;
+        result.yearAmt += price;
         if (d.m === t.m) {
-          month += price;
-          if (d.d === t.d) today += price;
-          // 이번달 부서별 합산(소속 4열). 빈 소속은 '기타'.
-          var dept = (deptCol >= 0) ? String(row[deptCol] || '').trim() : '';
-          if (!dept) dept = '기타';
-          deptMonth[dept] = (deptMonth[dept] || 0) + price;
+          result.monthAmt += price;
+          if (d.d === t.d) result.todayAmt += price;
+          var dept = String(row[3] || '').trim() || '기타';
+          if (EXPENSE_DEPT_NORM[dept]) dept = EXPENSE_DEPT_NORM[dept];
+          result.deptMonth[dept] = (result.deptMonth[dept] || 0) + price;
         }
       }
     }
-    // 부서별 breakdown — 이번달 합 큰 순. share=부서합/month(비중%). 매출 breakdown과 동형.
-    var breakdown = [];
-    for (var dn in deptMonth) {
-      if (!deptMonth.hasOwnProperty(dn)) continue;
-      breakdown.push({
-        name:  dn,
-        month: deptMonth[dn],
-        share: (month !== 0) ? Math.round((deptMonth[dn] / month) * 10000) / 100 : null
-      });
-    }
-    breakdown.sort(function (a, b) { return b.month - a.month; });
-    // 예산 — '지출 현황' 시트의 '예산' 라벨 셀 우측값 우선, 없으면 상수 fallback.
-    var budget = _kpiExpenseBudget(values);
-    if (budget === null && MONTHLY_EXPENSE_BUDGET && MONTHLY_EXPENSE_BUDGET > 0) {
-      budget = MONTHLY_EXPENSE_BUDGET;
-    }
-    var rate = (budget && budget > 0) ? Math.round((month / budget) * 10000) / 100 : null;
-    if (!any) return { today: null, month: null, year: null, budget: budget, rate: rate, breakdown: [] };
-    return { today: today, month: month, year: year, budget: budget, rate: rate, breakdown: breakdown };
   } catch (err) {
-    return { today: null, month: null, year: null, budget: null, rate: null, error: String(err) };
+    result.error = String(err);
   }
+  return result;
+}
+
+// 인건비 — 인건비마스터 실집계(소계/전체 행 제외). A부서 B강사 C~N=1~12월(매출지출현황.html loadData()와 동일 필터).
+// 연 누적(1~당월)+이번달+부서별(이번달) 합. '운영부' 행도 dept 그대로 유지(구매성 부서 breakdown과 병합용).
+function _kpiLaborExpense() {
+  var t = _kpiToday();
+  var result = { monthAmt: 0, yearAmt: 0, deptMonth: {}, any: false };
+  try {
+    var sh = SpreadsheetApp.openById(KPI_LABOR_SHEET_ID).getSheets()[0];
+    var lastRow = sh.getLastRow();
+    if (lastRow < 1) return result;
+    var values = sh.getRange(1, 1, lastRow, 14).getValues();  // A~N(부서·이름·1~12월)
+    for (var i = 0; i < values.length; i++) {
+      var row = values[i];
+      var dept = String(row[0] || '').trim();
+      var name = String(row[1] || '').trim();
+      if (!dept || !name) continue;
+      if (name.indexOf('소계') >= 0 || dept.indexOf('전체') >= 0) continue;
+      for (var m = 1; m <= t.m; m++) {
+        var v = row[1 + m];
+        v = (typeof v === 'number') ? v : _kpiNum(v);
+        if (v === null || isNaN(v)) continue;
+        result.any = true;
+        result.yearAmt += v;
+        if (m === t.m) {
+          result.monthAmt += v;
+          result.deptMonth[dept] = (result.deptMonth[dept] || 0) + v;
+        }
+      }
+    }
+  } catch (err) {
+    result.error = String(err);
+  }
+  return result;
+}
+
+// 지출 — 구매성(지출품의)+인건비(인건비마스터) 조합 = 재무허브(매출지출현황.html) "총지출" 정의와 정합.
+// 예산은 조합 총액 기준 정본이 아직 없어 null 유지(프론트가 "예산 미설정" 정직 표기, 기존 소비처와 호환).
+function _kpiExpense() {
+  var proc  = _kpiProcExpense();
+  var labor = _kpiLaborExpense();
+  if (!proc.any && !labor.any) {
+    return { today: null, month: null, year: null, budget: null, rate: null, breakdown: [],
+             error: proc.error || labor.error || 'no_data' };
+  }
+  var month = (proc.monthAmt || 0) + (labor.monthAmt || 0);
+  var year  = (proc.yearAmt  || 0) + (labor.yearAmt  || 0);
+  var today = proc.todayAmt || 0;  // 인건비는 일단위 데이터 없음 — 구매성만(부분치·정직)
+
+  // 부서별 breakdown = 인건비+구매성 부서 합(부서명 병합) — 재무허브 '부서별 총지출' 정의와 동형.
+  var deptSet = {};
+  for (var k1 in proc.deptMonth)  { if (proc.deptMonth.hasOwnProperty(k1))  deptSet[k1] = 1; }
+  for (var k2 in labor.deptMonth) { if (labor.deptMonth.hasOwnProperty(k2)) deptSet[k2] = 1; }
+  var breakdown = [];
+  for (var dn in deptSet) {
+    if (!deptSet.hasOwnProperty(dn)) continue;
+    var amt = (proc.deptMonth[dn] || 0) + (labor.deptMonth[dn] || 0);
+    breakdown.push({
+      name:  dn,
+      month: amt,
+      share: (month !== 0) ? Math.round((amt / month) * 10000) / 100 : null
+    });
+  }
+  breakdown.sort(function (a, b) { return b.month - a.month; });
+
+  return { today: today, month: month, year: year, budget: null, rate: null, breakdown: breakdown };
 }
 
 // ── 이슈(VOC) ──

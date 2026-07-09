@@ -1885,5 +1885,19 @@
     "artifact": "auto(cmo): 검수 승인 건 발행 1건 / 수동대기 0건 (CLI ad-hoc · 커밋 cbde00ae)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "cbde00ae39470aeebc9be7932a3f1fa567a73b30"
+  },
+  {
+    "task_id": "CPO-2026-07-09-ADHOC-05c0e055",
+    "clevel": "cpo",
+    "title": "[시포] 오늘 할 일 패널에 강습(lesson) 라이프사이클 편입 — placeholder 제거(배754 후속, GM 지시)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 790,
+    "artifact": "switchFamily('lesson') 시 실제 강습 데이터로 4분류 동작. 멤버십과 데이터 구조가 달라\n억지 매핑 대신 구조에 맞게 적응:\n- ①오늘 신규·③오늘 상담예약=행(row) 단위(문의일·consult 모두 행 공통, 종목별 아님)\n- ②미컨택·④이탈위험=종목별 줄(line) 단위(ship738 종목별 독립관리라 종목마다 별도 판정)\n- 소스=_lessonState[adult|youth].rows(열람해 로드된 유형만, 추가 GAS 호출 없음 —\n  기존 _postInqLoadedRows_와 동일 원칙) · 클릭 → 기 (CLI ad-hoc · 커밋 05c0e055)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "05c0e05502167bac779489bec40c471ec94f0e33"
   }
 ]
