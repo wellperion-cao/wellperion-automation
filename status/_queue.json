@@ -2108,5 +2108,19 @@
     "artifact": "style(coo): 월간운영계획 선택월 매출 세로 슬림화 — 전월대비·구성바·월말예상 제거·회원권/강습 표 가운데정렬 (배685·시우) (CLI ad-hoc · 커밋 b83d01a9)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b83d01a970a1f9fc477f68b4e31c96e323182546"
+  },
+  {
+    "task_id": "CTO-2026-07-09-ADHOC-3f1fd479",
+    "clevel": "cto",
+    "title": "[시토] 자동 검증-완결 핸들러 — 자율 실행 루프 첫 닫힘(게이트 OFF)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 806,
+    "artifact": "- verify_complete.py: verify(log_contains·since경계·예외안전)+close_ship+handle(재개가능·가역·verify스펙 배만·PASS+gate만 완결·거짓완료0)\n- gm_aide_scan.py +67: 재개가능 레인 뒤 핸들러 호출, AIDE_VERIFY_APPLY 게이트(기본OFF=드라이런·델타0)\n- pytest 14통과(AC-1~7)+기존47 회귀0. 라이브 발효=파일럿 verify주입+set AIDE_VERIFY_APPLY=1(GM go) (CLI ad-hoc · 커밋 3f1fd479)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "3f1fd479d34d3ee6c952ccdfb068439c880d575a"
   }
 ]
