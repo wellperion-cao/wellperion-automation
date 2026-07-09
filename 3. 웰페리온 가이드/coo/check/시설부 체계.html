@@ -4071,11 +4071,7 @@ function vendorSubmitAddForm(){
   function td(inner){return '<td style="border:1px solid var(--border);padding:2px;">'+inner+'</td>';}
   function sec(t){return '<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">'+t+'</div>';}
   function ta(id,rows,ph){return '<textarea id="'+id+'" rows="'+rows+'" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:7px;font-size:13px;font-family:inherit;" placeholder="'+ph+'"></textarea>';}
-  // 상단: 금일 작업사항 · 지시사항 (1일 단위 공통 — 회차 무관)
-  function topBox(){
-    return sec('금일 작업사항')+ta('fc_work',3,'예) 헬스장 온도 점검 · 소방 작동점검 · 시설 정리')
-         + sec('지시사항')+ta('fc_order',3,'예) 통합관리실 CCTV 추가 · 비번 변경 등');
-  }
+  // (topBox 제거 2026-07-09 — 금일 작업사항·지시사항은 정적 #fc-daybox로 이동, fcRender 미사용 죽은 코드 제거)
   // 사우나: 하루 1행 입력 (필드 id에 회차 토큰 없음, fcStore.rounds[ROUND_DAILY]에 보존)
   function saunaTbl(){
     var h=sec('사우나 탕 온도 (작업일지 기준값)')+'<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:560px;text-align:center;">';
