@@ -1007,9 +1007,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="header-top">
       <div class="header-brand">
         <h1><span id="pageTitleTxt">멤버십 회원 관리</span> <span class="badge">AI CPO v2.0</span></h1>
-        <div class="sub">멤버십·강습 통합 잠재고객 관리 — 담당 실무: 임정은M</div>
-        <!-- CPO 자율화 두뇌 첫 배(④) — 일/주/월 자동보고 상태 확인 지점(v1=표시전용). 스펙: .omc/specs/deep-interview-cpo-autonomy-brain.md -->
-        <div id="cpoReportStatusLine" style="font-size:11.5px;color:var(--dim);margin-top:4px">🤖 CPO 자동보고 상태 불러오는 중…</div>
+        <!-- CPO 자율화 두뇌 첫 배(④) — 일/주/월 자동보고 상태(v1=표시전용, 스펙: .omc/specs/deep-interview-cpo-autonomy-brain.md).
+             GM 지시(2026-07-09): 세로 별도 줄→임정은M 옆 가로 칸으로 이동(세로높이 증가 금지). 한 줄 유지(overflow ellipsis)
+             + 축약 표시, 전체 상세는 title 툴팁으로 보존(정보손실 0). 멤버십·강습 공용 헤더라 양쪽 화면 다 적용됨. -->
+        <div class="sub" style="display:flex;align-items:center;gap:8px;overflow:hidden">
+          <span style="flex-shrink:0">멤버십·강습 통합 잠재고객 관리 — 담당 실무: 임정은M</span>
+          <span id="cpoReportStatusLine" style="flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:8px;border-left:1px solid var(--border)">🤖 자동보고 상태 불러오는 중…</span>
+        </div>
       </div>
       <div class="header-actions">
         <a class="action-btn" href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">🔗 문의 페이지 →</a>
@@ -6381,17 +6385,22 @@ function esc(s) {
       .then(function(r){ if(!r.ok) throw new Error('no file'); return r.json(); })
       .then(function(j){
         var gate = null;
-        var parts = ['daily','weekly','monthly'].map(function(kind){
+        var fullParts = [], shortParts = [];
+        ['daily','weekly','monthly'].forEach(function(kind){
           var d = j[kind];
-          if(!d) return KIND_LABEL[kind] + ':기록없음';
+          if(!d) { fullParts.push(KIND_LABEL[kind] + ':기록없음'); shortParts.push(KIND_LABEL[kind] + '－'); return; }
           if(gate === null) gate = !!d.live_gate;
-          return KIND_LABEL[kind] + ':' + (d.sent ? '발신' : '렌더만') + '(' + ROOM_LABEL[kind] + ' · ' + (d.at || '-') + ')';
+          fullParts.push(KIND_LABEL[kind] + ':' + (d.sent ? '발신' : '렌더만') + '(' + ROOM_LABEL[kind] + ' · ' + (d.at || '-') + ')');
+          shortParts.push(KIND_LABEL[kind] + (d.sent ? '✓' : '·'));
         });
-        var gateTxt = gate ? '🟢 라이브(실발신)' : '⚪ OFF(GM 룩 확인 후 발효 대기)';
-        el.textContent = '🤖 CPO 자동보고 [' + gateTxt + '] — ' + parts.join(' · ');
+        var gateTxt = gate ? '🟢라이브' : '⚪OFF';
+        // 임정은M 옆 가로 칸 배치(2026-07-09 GM 지시, 세로높이 증가 금지) — 한 줄 축약 표시, 전체 상세는 title 툴팁으로 보존.
+        el.textContent = '🤖 자동보고 ' + gateTxt + ' ' + shortParts.join(' ');
+        el.title = 'CPO 자동보고 [' + (gate ? '🟢 라이브(실발신)' : '⚪ OFF(GM 룩 확인 후 발효 대기)') + '] — ' + fullParts.join(' · ');
       })
       .catch(function(){
-        el.textContent = '🤖 CPO 자동보고: 아직 실행 기록이 없습니다(첫 실행 후 표시됩니다).';
+        el.textContent = '🤖 자동보고: 첫 실행 전';
+        el.title = '🤖 CPO 자동보고: 아직 실행 기록이 없습니다(첫 실행 후 표시됩니다).';
       });
   }
   loadCpoReportStatus();
