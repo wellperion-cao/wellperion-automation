@@ -871,6 +871,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div class="mgmt-field" style="flex:2;"><label>분류 삭제</label><select id="vcf-del-key"><!-- 동적 렌더 --></select></div>
       <div class="mgmt-field" style="flex:0 0 auto;align-self:flex-end;"><button type="button" class="mgmt-btn cancel" style="padding:9px 16px;" onclick="vendorDeleteCategory()">삭제</button></div>
     </div>
+    <div class="mgmt-row">
+      <div class="mgmt-field" style="flex:2;"><label>대상 분류</label><select id="vcf-ren-key"><!-- 동적 렌더 --></select></div>
+      <div class="mgmt-field" style="flex:2;"><label>새 분류 이름</label><input type="text" id="vcf-ren-label" placeholder="새 분류 이름"></div>
+      <div class="mgmt-field" style="flex:0 0 auto;align-self:flex-end;"><button type="button" class="mgmt-btn" style="padding:9px 16px;" onclick="vendorRenameCategory()">이름변경</button></div>
+    </div>
     <div class="mgmt-actions">
       <button type="button" class="mgmt-btn" onclick="vendorToggleCatMgmt()">닫기</button>
     </div>
@@ -3484,6 +3489,16 @@ function vendorRenderCategorySelects(){
     }).join('');
     if(prev && VENDOR_COLS.some(c=>c.key===prev)) del.value = prev;
   }
+  // 분류 이름변경 대상 select
+  const ren = document.getElementById('vcf-ren-key');
+  if(ren){
+    const prev = ren.value;
+    ren.innerHTML = VENDOR_COLS.map(c=>{
+      const cnt = (VENDOR_DATA[c.key]||[]).length;
+      return '<option value="'+escapeHTML(c.key)+'">'+escapeHTML(c.label)+(cnt?(' ('+cnt+'개 업체)'):'')+'</option>';
+    }).join('');
+    if(prev && VENDOR_COLS.some(c=>c.key===prev)) ren.value = prev;
+  }
 }
 
 /* 라벨 → 안정적 key 자동생성 (영문/숫자 slug, 한글 등은 cat_타임스탬프 폴백). 중복 회피. */
@@ -3548,6 +3563,27 @@ function vendorDeleteCategory(){
   renderVendorBoard();
   if(typeof renderVendorList==='function') renderVendorList();
   if(typeof showToast==='function') showToast('분류 "'+col.label+'"가 삭제되었습니다.');
+}
+
+/* ── 분류 이름변경 (key는 유지 — 업체 재배치 불필요) ── */
+function vendorRenameCategory(){
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  const renKey = document.getElementById('vcf-ren-key');
+  const renLabel = document.getElementById('vcf-ren-label');
+  const key = renKey ? renKey.value : '';
+  const label = renLabel ? renLabel.value.trim() : '';
+  if(!key){ alert('이름을 변경할 분류를 선택해 주세요.'); return; }
+  if(!label){ alert('새 분류 이름을 입력해 주세요.'); if(renLabel) renLabel.focus(); return; }
+  const col = VENDOR_COLS.find(c=>c.key===key);
+  if(!col){ alert('분류를 찾을 수 없습니다.'); return; }
+  if(VENDOR_COLS.some(c=>c.key!==key && c.label===label)){ alert('이미 같은 이름의 분류가 있습니다.'); return; }
+  col.label = label;
+  persistVendorCategories();
+  vendorRenderCategorySelects();
+  renderVendorBoard();
+  if(typeof renderVendorList==='function') renderVendorList();
+  if(renLabel) renLabel.value='';
+  if(typeof showToast==='function') showToast('분류 이름이 "'+label+'"로 변경되었습니다.');
 }
 
 function vendorNormalizeRow(v){
