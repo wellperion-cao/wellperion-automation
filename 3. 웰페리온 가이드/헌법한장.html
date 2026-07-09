@@ -186,6 +186,17 @@
   /* 매트릭스 칸1 중복 제거 후 안내(도달율 큰 블록은 요약 스트립 단일 표시처) */
   .nsreach-mini{font-size:10.5px; color:var(--dim); margin:3px 0 6px; font-style:italic;}
 
+  /* ── 🌟 북극성 목표 카드 (GM 승인 시안 반영 · 순수 신규 삽입 · 2026-07-09) ── */
+  .ns-goal-card{display:flex; gap:12px; align-items:flex-start; margin:0 0 14px; padding:13px 16px; border:1px solid rgba(240,198,116,0.32); border-left:4px solid #f0c674; border-radius:11px; background:rgba(240,198,116,0.05);}
+  .ns-goal-star{font-size:24px; line-height:1;}
+  .ns-goal-h{font-size:11px; font-weight:800; color:#f0c674; letter-spacing:0.02em; text-transform:uppercase; margin-bottom:5px;}
+  .ns-goal-txt{font-size:14px; color:var(--text); line-height:1.55;}
+  .ns-goal-txt b{color:#ffd97a;}
+  .ns-goal-sub{font-size:11.5px; color:var(--text-soft); line-height:1.5; margin-top:7px;}
+  .ns-goal-chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px;}
+  .ns-goal-chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:999px; padding:4px 11px;}
+  .ns-goal-chip em{font-style:normal; color:var(--dim); font-weight:400;}
+
   /* ── 공통 4섹션 카드 ── */
   .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:4px;}
   .ccard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:11px 13px;}
@@ -254,6 +265,10 @@
     .ns-badge.draft{color:#9c1c74 !important; background:#fbe6f3 !important; border-color:#e0a0c8 !important;}
     .ns-badge.unmeasured{color:#555 !important; background:#f0f0f0 !important; border-color:#bbb !important;}
     .nsreach-mini{color:#777 !important;}
+    /* 신규(2026-07-09): 북극성 목표 카드 인쇄 라이트 강제 */
+    .ns-goal-card{background:#f8f2dc !important; border-color:#caa84a !important;}
+    .ns-goal-h, .ns-goal-txt, .ns-goal-txt b, .ns-goal-sub{color:#111 !important;}
+    .ns-goal-chip{color:#111 !important; border-color:#666 !important; background:#fff !important;}
   }
 </style>
 </head>
@@ -289,6 +304,21 @@
       <div class="vision-ceo-ns" id="vision-ceo-ns"><!-- JS: AI CEO 북극성(coo/bootsetup_matrix.json ceo.dims[0] 직독·이미 fetch하는 _matrixData 재사용, 신규 fetch 없음) --></div>
       <div class="vision-note" title="GM = G1(오케스트레이션)만 · 실무 북극성은 아래 7역할이 나눠 진다. 개인 삶 북극성은 헌법에서 제외(헌법 = 회사 운영용). 🔖 초안 3역할(시포·시뽀·시로) 북극성 = 제안본(GM 결재 대기 · KPI 정의 변경 게이트).">GM=G1(오케스트레이션)만 · 북극성은 7역할 분담(개인 삶 제외)</div>
       <!-- 🔍 차등 점검(비전 배너에서 제거 · 2026-07-07 GM승인): 자율 개선 규모 게이트 — 안정 페이지(대장 등록)는 자율 점검서 제외, 신규/변경분만 대상. 좁혀진 대상은 1~2척·Sonnet 선훑기, 딥 전수는 신규 페이지에만. 정본 = status/audit_registry.json + scripts/audit_scope.py(대장·git 대조 자동 산출). -->
+    </div>
+  </div>
+
+  <!-- ════ 🌟 북극성 목표 (GM 승인 시안 반영 · 사람 중심 3기준 · 순수 신규 삽입 · 2026-07-09) ════ -->
+  <div class="ns-goal-card">
+    <span class="ns-goal-star">🌟</span>
+    <div class="ns-goal-body">
+      <div class="ns-goal-h">북극성 목표</div>
+      <div class="ns-goal-txt">회원 한 사람의 <b>건강한 하루를 완성</b>한다.<br>그 하루를 짓는 실무진이 <b>본질에 집중</b>하도록, 반복은 ERP가 대신한다.</div>
+      <div class="ns-goal-sub">자율화는 목적이 아니라 수단입니다. 기계가 잘 도는 것으로 완성을 재지 않습니다 — 결과물이 회원·실무진에게 맞을 때 비로소 완성입니다.</div>
+      <div class="ns-goal-chips">
+        <span class="ns-goal-chip">👤 회원 <em>· 경험의 주인</em></span>
+        <span class="ns-goal-chip">🧑‍💼 실무진 <em>· 결과물의 사용자이자 기준</em></span>
+        <span class="ns-goal-chip">🎖️ GM <em>· 최종 판단</em></span>
+      </div>
     </div>
   </div>
 
