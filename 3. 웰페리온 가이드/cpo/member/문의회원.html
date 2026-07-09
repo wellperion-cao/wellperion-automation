@@ -3083,7 +3083,7 @@ function switchFamily(fam) {
   var titleEl = document.getElementById('pageTitleTxt');   // 상단 H1도 그룹명으로(통합 회원 관리 → 멤버십/강습). 2026-07-02 시포·GM
   if (titleEl) titleEl.textContent = _famName;
   document.title = '웰페리온 ' + _famName.replace('회원관리', '회원 관리') + ' — AI CPO';   // 브라우저 탭 제목도 그룹명 동기화(배299, 2026-07-03 시포)
-  if (_tapReady) renderTodayActionPanel();   // 오늘 할 일 패널도 family 전환에 맞춰 스코프 갱신(배754)
+  renderTodayActionPanel();   // 오늘 할 일 패널도 family 전환에 맞춰 스코프 갱신(배754) — 멤버십/강습 각자 내부에서 준비상태 판단(강습이 dbRows 대기에 묶이지 않게, 배754 강습편입)
   switchType(types[0]);   // 그룹 첫 유형으로 전환
 }
 
@@ -3156,8 +3156,11 @@ function lessonLoad(t) {
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
       st.rows = d.data || [];
+      st.rowsLoaded = true;   // st.loaded(lessonInit 진입가드, fetch 시작 시점에 이미 true)와 별개 —
+                               // '오늘 할 일' 패널 강습 분기는 실제 데이터 도착 시점을 알아야 해서 신규 플래그(배754 강습편입)
       lessonRenderChips(t);
       lessonRender(t);
+      renderTodayActionPanel();   // 오늘 할 일 패널(배754) — 강습 유형 로드 완료 시 갱신(멤버십과 동일 패턴)
     })
     .catch(function(e){ _lessonEmpty(t, '데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
 }
@@ -5509,16 +5512,121 @@ function _tapSectionHtml(s) {
     '<div class="tap-sec-body' + (open ? ' open' : '') + '">' + listHtml + '</div>' +
   '</div>';
 }
+/* ── 강습(lesson) 라이프사이클 편입 — 배754 후속(GM 지시, 2026-07-09). 멤버십과 데이터 구조가 달라 억지 매핑 대신 적응:
+   ①오늘 신규·③오늘 상담예약=행(row) 단위(문의일·consult 모두 행 공통 필드, 종목별 아님)
+   ②미컨택·④이탈위험=종목별 줄(line) 단위(진행상태·컨택이력이 종목별 독립관리·ship738이라 종목마다 별도 판정)
+   소스=_lessonState[adult|youth].rows(이미 열람해 로드된 유형만, 추가 GAS 호출 없음 — §②처리현황 _postInqLoadedRows_와 동일 원칙).
+   클릭 → 기존 강습 CONTACT 연락이력 모달(_lessonContactClick, ship719) 그대로 재사용 — GM 지시로 전 섹션 통일(멤버십처럼 예약모달 분리 안 함,
+   강습엔 별도 예약 상세 모달이 없어 CONTACT가 유일한 처리 창구). ── */
+function _tapIsActiveLesson(status) {
+  var s = String(status || '').trim();
+  return s !== 'SUC' && s !== 'LOSS';   // 빈값(미정)도 활성 취급 — 아직 미분류일 뿐 처리 대상에서 빠지면 안 됨
+}
+function _tapLessonTypes() {
+  var out = [];
+  ['adult', 'youth'].forEach(function(t){ var st = _lessonState[t]; if (st && st.rowsLoaded) out.push(t); });
+  return out;
+}
+function _tapClassifyLesson(today) {
+  var types = _tapLessonTypes();
+  var todayNew = [], todaysConsult = [], uncontacted = [], churn = [];
+  var cutoffDt = new Date(today + 'T00:00:00'); cutoffDt.setDate(cutoffDt.getDate() - 14);
+  var cutoffStr = _mdashYmd(cutoffDt);
+  types.forEach(function(t){
+    (_lessonState[t].rows || []).forEach(function(r){
+      if (r.timestamp === today) todayNew.push({ t: t, row: r });
+      if (r.consult === today) todaysConsult.push({ t: t, row: r, time: r.consultTime || '' });
+      var segs = _lessonSportSplit(r.sport); if (!segs.length) segs = [''];
+      segs.forEach(function(sportKey){
+        var mgmt = _lessonSportMgmt(r, sportKey);
+        var active = _tapIsActiveLesson(mgmt.status);
+        if (active && !((mgmt.contacts || []).length > 0)) uncontacted.push({ t: t, row: r, sportKey: sportKey, sportLabel: sportKey || '종목미상' });
+        if (active) {
+          var ts = r.timestamp || '';
+          var hasFutureConsult = !!(r.consult && r.consult >= today);
+          if (ts && ts <= cutoffStr && !hasFutureConsult) churn.push({ t: t, row: r, sportKey: sportKey, sportLabel: sportKey || '종목미상' });
+        }
+      });
+    });
+  });
+  todaysConsult.sort(function(a, b){ return (a.time || '').localeCompare(b.time || ''); });
+  return { todayNew: todayNew, uncontacted: uncontacted, todaysConsult: todaysConsult, churn: churn, types: types };
+}
+// rowIndex 클릭(강습) → 유형탭+문의현황 서브카드 전환 → 행 하이라이트 → 기존 강습 CONTACT 모달(_lessonContactClick) 오픈.
+function _tapOpenLessonRow(t, rowIndex, sportKeyEnc) {
+  switchType(t === 'youth' ? 'lessonYouth' : 'lessonAdult');
+  lessonSwitchCard(t, 'inq');
+  setTimeout(function(){
+    var trEl = document.querySelector('#lessonBody_' + t + ' tr[data-row-index="' + CSS.escape(String(rowIndex)) + '"]');
+    if (trEl) {
+      trEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      var prevBg = trEl.style.backgroundColor;
+      trEl.style.transition = 'background-color .4s';
+      trEl.style.backgroundColor = 'var(--teal-bg)';
+      setTimeout(function(){ trEl.style.backgroundColor = prevBg; }, 1500);
+    }
+    _lessonContactClick(t, rowIndex, sportKeyEnc || '');
+  }, 260);
+}
+function _tapRowHtmlLesson(item, timeLabel) {
+  var r = item.row;
+  var sportKey = item.sportKey !== undefined ? item.sportKey : (_lessonSportSplit(r.sport)[0] || '');
+  var sub = item.sportLabel || (r.sport || '종목미상');
+  if (r.phone) sub += ' · ' + r.phone;
+  return '<div class="tap-row" onclick="_tapOpenLessonRow(\'' + item.t + '\',' + r.rowIndex + ',\'' + encodeURIComponent(sportKey) + '\')">' +
+    '<span class="tap-row-name">' + esc(r.name || '(이름없음)') + '</span>' +
+    '<span class="tap-row-sub">' + esc(sub) + '</span>' +
+    (timeLabel ? '<span class="tap-row-time">' + esc(timeLabel) + '</span>' : '') +
+    '</div>';
+}
+function _tapSectionHtmlLesson(s) {
+  var n = s.items.length;
+  var open = _tapOpenKey === s.key;
+  var listHtml;
+  if (!n) {
+    listHtml = '<div class="tap-empty">' + esc(s.empty) + '</div>';
+  } else {
+    var shown = s.items.slice(0, 12);
+    listHtml = shown.map(function(it){ return _tapRowHtmlLesson(it, s.showTime ? (it.time || '시간미정') : ''); }).join('');
+    if (n > shown.length) listHtml += '<div class="tap-row-more">…외 ' + (n - shown.length) + '건 (강습 문의 탭·필터에서 전체 확인)</div>';
+  }
+  if (s.caveat) listHtml += '<div class="tap-caveat">' + esc(s.caveat) + '</div>';
+  return '<div class="tap-sec">' +
+    '<button type="button" class="tap-sec-head' + (open ? ' open' : '') + '" onclick="_tapToggle(\'' + s.key + '\')">' +
+      '<span class="tap-sec-label">' + s.icon + ' ' + esc(s.label) + '</span>' +
+      '<span class="mdash-chip ' + s.color + '"><b>' + n + '</b></span>' +
+      '<span class="tap-caret">▾</span>' +
+    '</button>' +
+    '<div class="tap-sec-body' + (open ? ' open' : '') + '">' + listHtml + '</div>' +
+  '</div>';
+}
 function renderTodayActionPanel() {
   var body = document.getElementById('tapBody');
   var scopeEl = document.getElementById('tapScopeNote');
   if (!body) return;
-  if (!_tapReady) { body.innerHTML = '<div class="tap-empty">불러오는 중…</div>'; return; }
   if (_curFamily === 'lesson') {
-    if (scopeEl) scopeEl.textContent = '강습 회원관리 화면';
-    body.innerHTML = '<div class="tap-empty">🚧 강습 오늘 할 일은 v1 범위 밖입니다 — 강습 예약은 상담 1건(consult)만 기록되어 멤버십과 구조가 달라 후속 확장 과제로 남깁니다. 강습 문의 처리는 위 성인·유소년 강습 탭에서 계속하세요.</div>';
+    var typesL = _tapLessonTypes();
+    if (!typesL.length) {
+      if (scopeEl) scopeEl.textContent = '';
+      body.innerHTML = '<div class="tap-empty">불러오는 중…</div>';
+      return;
+    }
+    var todayL = _tapToday();
+    var clsL = _tapClassifyLesson(todayL);
+    var typeLabelL = typesL.map(function(t){ return t === 'youth' ? '유소년강습' : '성인강습'; }).join('·');
+    if (scopeEl) scopeEl.textContent = '강습(' + typeLabelL + ') 기준' + (typesL.length < 2 ? ' · 유소년 탭 방문 시 자동 포함' : '');
+    var sectionsL = [
+      { key: 'lnew',   icon: '🆕', label: '오늘 신규 문의',          color: 'teal',   items: clsL.todayNew,      empty: '오늘 신규 문의 없음' },
+      { key: 'lunc',   icon: '📵', label: '미컨택 문의(연락이력 0건)', color: 'red',    items: clsL.uncontacted,   empty: '미컨택 없음 — 전원 컨택 완료' },
+      { key: 'lres',   icon: '📅', label: '오늘 상담 예약',           color: 'accent', items: clsL.todaysConsult, empty: '오늘 상담 예약 없음', showTime: true },
+      { key: 'lchurn', icon: '⚠️', label: '이탈위험 후보(추정)',      color: 'yellow', items: clsL.churn,         empty: '이탈위험 후보 없음',
+        caveat: '※ 추정치: 최초 문의일 기준 14일+ 무진전 근사(멤버십과 동일 기준) — 강습은 상담예약이 1건(consult 단일필드)만 기록되어 예약 배열 대비 근사도가 낮고, 연락메모 속 날짜도 미반영 · 실측 아님' }
+    ];
+    if (_tapOpenKey === null && (clsL.uncontacted.length || clsL.todaysConsult.length)) _tapOpenKey = 'lunc';
+    body.innerHTML = sectionsL.map(_tapSectionHtmlLesson).join('');
     return;
   }
+  if (!_tapReady) { body.innerHTML = '<div class="tap-empty">불러오는 중…</div>'; return; }
   if (scopeEl) scopeEl.textContent = '멤버십 문의 ' + dbRows.length.toLocaleString() + '건 기준';
   var today = _tapToday();
   var cls = _tapClassify(dbRows, today);
