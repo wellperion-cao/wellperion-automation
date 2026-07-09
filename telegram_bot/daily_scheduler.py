@@ -1211,6 +1211,22 @@ DAILY_WORKOUT_ITEMS = [
 ]
 _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 
+# ── 18시 저녁 명언 (개인 톤·정적 리스트·지어내기 아님) — GM 2026-07-09 ──────────
+# 18시는 운영 데이터 0의 개인 메시지(퇴근+저녁루틴+명언). 날짜 결정론 선택(day % len)
+# 으로 매일 하나 고정 노출 — 랜덤/외부호출 없음. 카피는 GM이 자유롭게 다듬을 수 있음.
+EVENING_QUOTES = [
+    "잘 쉰 하루가 내일의 힘이 됩니다.",
+    "오늘 못 다한 일은 내일의 몫으로 남겨두세요.",
+    "저녁의 여유가 하루의 무게를 덜어줍니다.",
+    "천천히 걸어도 멈추지만 않으면 도착합니다.",
+    "가장 좋은 재충전은 완전히 손을 놓는 것입니다.",
+    "하루를 잘 마무리하는 사람이 내일을 잘 시작합니다.",
+    "지금 이 순간, 나에게 수고했다고 말해주세요.",
+    "작은 성취도 오늘의 나를 앞으로 데려갑니다.",
+    "몸이 쉬어야 마음도 회복됩니다.",
+    "오늘의 마침표가 내일의 시작을 가볍게 합니다.",
+]
+
 # ── 통일 포맷 헬퍼 (2026-06-11 GM 지시) ────────────────────────────────────────
 # 9슬롯(06/07/09/12/15/18/21/22/23) 출력 포맷을 단일 템플릿으로 통일.
 #   · 공통 헤더:  🕐 HH시 · 분류 — 짧은목적  + 짧은날짜줄 + 구분선
@@ -1691,33 +1707,20 @@ def _build_15_body() -> str:
 
 
 def _build_18_body() -> str:
-    """18시 — 퇴근 인사 + 체크리스트 최종 현황 + 오늘 성과"""
+    """18시 — 퇴근 인사 + 저녁 루틴 + 명언 [개인] (운영 데이터 0·GM 2026-07-09)
+
+    [GM 2026-07-09] 18시를 개인 메시지로 축소 — 점검 현황·오늘 성과(커밋)·대시보드
+    링크 전부 제거. 시설·지원·주차 마감 현황은 23시로 일원화. 여기는 퇴근+저녁루틴+
+    명언만. 명언은 EVENING_QUOTES 정적 리스트에서 날짜 결정론(day % len) 선택.
+    """
     now = datetime.now()
-    today_str = now.strftime("%Y-%m-%d")
-    weekday_kor = _WEEKDAY_KOR[now.weekday()]
+    quote = EVENING_QUOTES[now.day % len(EVENING_QUOTES)]
 
-    # 체크리스트 현황 (12시와 동일 소스, 18시 기준으로 재조회)
-    checklist_block = _build_checklist_block("18:00")
-
-    # 오늘 성과: 오늘자 git 커밋 집계
-    today = now.strftime("%Y-%m-%d")
-    tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
-    today_commits = _git_log_between(f"{today} 00:00", f"{tomorrow} 00:00", max_lines=10)
-    if today_commits:
-        commit_section = f"  커밋 {len(today_commits)}건\n" + "\n".join(f"  - {c}" for c in today_commits[:7])
-        if len(today_commits) > 7:
-            commit_section += f"\n  ... 외 {len(today_commits) - 7}건"
-    else:
-        commit_section = "  오늘 기록된 커밋 없음"
-
-    # 명언 = 아침(06시)·밤(22시) 2회만 (GM 2026-06-29 중복 정리) — 18시 명언 제거
     return (
-        f"{_unified_header('18', '회사', '오후 점검·퇴근')}\n"
-        f"🌙 오늘도 수고하셨습니다.\n\n"
-        f"{checklist_block}\n\n"
-        f"{_DIVIDER}\n"
-        f"📊 오늘 성과\n"
-        f"{commit_section}\n\n"
+        f"{_unified_header('18', '개인', '퇴근·저녁')}\n"
+        f"🌙 오늘도 수고하셨습니다.\n"
+        f"🌆 저녁 루틴 — 오늘 마무리하고 재충전하세요.\n"
+        f'\n> "{quote}"\n\n'
         f"{_AUTO_FOOTER}"
     )
 
@@ -1827,10 +1830,7 @@ def _build_22_body() -> str:
 
 
 # ── 23시 마감 점검 차트 상세형 헬퍼 (today_live 지원부 회차×성별) ──────────────
-_SUPPORT_DASHBOARD_URL = (
-    "https://wellperion-cao.github.io/wellperion-automation/coo/check/"
-    "%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"
-)
+# [GM 2026-07-09] 23시 마감 대시보드 링크 제거 → 기준이탈은 내용으로 정리(_build_facility_ooc_detail).
 
 
 def _cjk_w(s: str) -> int:
@@ -1977,9 +1977,58 @@ def _build_support_weakspot(d: dict) -> str:
     return f"⚠️ 짚을 점: {gl} {rl} {done}/{total}({p}%) — 독려 필요"
 
 
-def _dept_status_lines() -> str:
-    """4부서 상태 줄 (지원=별도 차트, 나머지 3개)."""
-    facility = _fetch_dept_weekly("facility")
+def _fetch_facility_monthly(today: str) -> dict | None:
+    """시설부 monthly_report 전체 응답(dailySeries + outOfRange 상세). 실패 시 None.
+    시설부는 weekly엔 값이 없고 monthly_report에 실데이터(입력률+기준이탈 항목·값)가 있다."""
+    resp = _gas_get(
+        f"{SUPPORT_CHECK_API_URL}?action=monthly_report&dept=facility&date={today}&_pv={int(time.time())}",
+        label="23시 시설부 monthly",
+    )
+    if resp is None:
+        return None
+    try:
+        d = resp.json()
+        return d if d.get("ok") else None
+    except Exception as e:
+        logger.warning(f"23시 시설부 monthly 파싱 실패: {e}")
+        return None
+
+
+def _facility_today_row(monthly: dict | None, today: str) -> dict | None:
+    """monthly_report dailySeries에서 오늘 행({total,done,pct,outOfRangeCount}) 추출."""
+    if not monthly:
+        return None
+    for row in monthly.get("dailySeries", []):
+        if row.get("date") == today:
+            return row
+    return None
+
+
+def _build_facility_ooc_detail(monthly: dict | None, today: str) -> str:
+    """오늘자 시설부 기준이탈(outOfRange) 항목·값·기준 나열 블록. 없으면 '' (줄 생략).
+    데이터 지어내기 없음 — monthly_report outOfRange.list의 오늘 date만 사용."""
+    if not monthly:
+        return ""
+    lst = [
+        x for x in ((monthly.get("outOfRange") or {}).get("list") or [])
+        if str(x.get("date", "")) == today
+    ]
+    if not lst:
+        return ""
+    lines = []
+    for x in lst[:6]:
+        name = str(x.get("name", "")).strip() or "(항목미상)"
+        val, lo, hi = x.get("value", ""), x.get("min", ""), x.get("max", "")
+        lines.append(f"  · {name}: {val} (기준 {lo}~{hi})")
+    extra = len(lst) - 6
+    if extra > 0:
+        lines.append(f"  ... 외 {extra}건")
+    return f"⚠️ 시설부 기준이탈 {len(lst)}건\n" + "\n".join(lines)
+
+
+def _dept_status_lines(facility_row: dict | None) -> str:
+    """4부서 상태 줄 (지원=별도 차트, 나머지). 시설=monthly_report 오늘행(실데이터),
+    주차=weekly(점검 제외 부서라 통상 미가동)."""
     parking = _fetch_dept_weekly("parking")
 
     def dept_line(icon: str, name: str, data: dict | None) -> str:
@@ -1989,11 +2038,12 @@ def _dept_status_lines() -> str:
         if total == 0:
             return f"{icon} {name}: 미가동(자체점검 준비 중)"
         done = data.get("done", 0)
-        pct = round(done / total * 100) if total else 0
-        return f"{icon} {name}: {done}/{total}({pct}%)"
+        pct = data.get("pct", round(done / total * 100) if total else 0)
+        ooc = data.get("outOfRangeCount", 0)
+        return f"{icon} {name}: {done}/{total}({pct}%)" + (f" ⚠{ooc}" if ooc else "")
 
     return (
-        f"{dept_line('🏗', '시설부', facility)}\n"
+        f"{dept_line('🏗', '시설부', facility_row)}\n"
         f"{dept_line('🅿', '주차', parking)}\n"
         f"🏢 운영부: 점검 체계 없음(규정·매뉴얼 운영)"
     )
@@ -2023,14 +2073,20 @@ def _build_23_body() -> str:
 
     chart = _build_support_check_chart(live)
     weakspot = _build_support_weakspot(live)
-    dept_lines = _dept_status_lines()
+
+    # 시설·주차 통합 현황 + 기준이탈 내용(대시보드 링크 대체) — monthly_report 1회 조회로 재사용
+    facility_monthly = _fetch_facility_monthly(today)
+    facility_row = _facility_today_row(facility_monthly, today)
+    dept_lines = _dept_status_lines(facility_row)
+    ooc_detail = _build_facility_ooc_detail(facility_monthly, today)
+    ooc_block = f"\n\n{ooc_detail}" if ooc_detail else ""
 
     return (
         f"{_unified_header('23', '회사', '마감 점검')}\n"
         f"{chart}\n"
         f"{weakspot}\n\n"
-        f"{dept_lines}\n\n"
-        f"🔗 대시보드: {_SUPPORT_DASHBOARD_URL}\n\n"
+        f"{dept_lines}"
+        f"{ooc_block}\n\n"
         f"{_AUTO_FOOTER}"
     )
 
