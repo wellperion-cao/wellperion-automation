@@ -732,6 +732,29 @@
     <!-- ══ /매주 ══ -->
 
     <div class="sec-note" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">📄 위 표들의 구성 근거: Windows Task Scheduler 등록내용 + Python 코드 확인(2026-06-03 S3 산출 자동화 이관·정합 · T2 원본에서 이식 2026-07-03). <b>지금 실제로 정상 가동 중인지 실측</b>은 이 층 맨 위 🤖 자동화 건강 점수판 참조.</div>
+
+    <!-- ══ 📡 모듈 보고 현황 (status/module_registry.json 실값 렌더 · additive · 2026-07-09) ══ -->
+    <h3 id="sec-module-registry" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📡 모듈 보고 현황</h3>
+    <p class="sec-note" style="margin:0 0 10px;">각 모듈이 봇ID·주기를 등록하면 자동으로 일/주/월 텔레그램 보고가 나갑니다. 아래는 등록 현황.</p>
+    <div class="tbl-wrap" id="module-registry-wrap">
+      <table>
+        <thead>
+          <tr><th style="width:220px">모듈</th><th style="width:80px">담당</th><th style="width:90px">주기</th><th style="width:190px">채널·봇</th><th style="width:110px">상태</th></tr>
+        </thead>
+        <tbody id="module-registry-tbody">
+          <tr><td colspan="5" style="color:var(--dim);">불러오는 중…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- ══ /모듈 보고 현황 ══ -->
+
+    <!-- ══ 📋 등록부 모듈 카드 (status/module_registry.json 신규 스키마 · owner_role 있는 이 창 소속만 · additive · 계약 2026-07-09) ══ -->
+    <h3 id="sec-registry-cards" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📋 등록부 모듈 카드</h3>
+    <p class="sec-note" style="margin:0 0 10px;">위 표(📡 모듈 보고 현황)는 알림 배선 상태만 봅니다. 아래는 같은 등록부에서 <b>특징기능·자율수준·AI없이도 근거·정직 꼬리표·환류 접점</b>을 카드로 봅니다 — 신규 스키마(<code>owner_role</code> 보유)이면서 이 창(자율현황) 소속(<code>front_card.window</code>)만 표시. 레거시 <code>automation_health</code> 엔트리는 module_reporter.py 소관이라 여기서 건드리지 않습니다.</p>
+    <div id="registry-card-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
+    <div class="routines" id="registry-cards"></div>
+    <div class="sec-note" style="margin:8px 0 0;">자율수준: <b>자율ON</b>=사람 개입 없이 판단·실행 · <b>반자율</b>=일부 사람 확인 · <b>자동집계</b>=기계적 집계(판단 아님) · <b>부분</b>=일부만 자동 · <b>수동</b>=사람 작업. 💬 표시는 접점 자리만(실제 전송 경로는 후속 Task 7에서 연결).</div>
+    <!-- ══ /등록부 모듈 카드 ══ -->
   </details>
 
   <footer class="foot">
@@ -1466,6 +1489,109 @@
     if(t) t.textContent = '기준: ' + esc(d.generated_at_kst || '') + '  |  ※ Task Scheduler 등록 자동화만 집계 (수동 세션 제외)';
   }
 
+  // ═══════════ ② 돌아가는 자동화: 📡 모듈 보고 현황 (status/module_registry.json 실값 렌더 · 2026-07-09) ═══════════
+  var CYCLE_LABEL = { daily:'매일', weekly:'주간', monthly:'월간' };
+  function renderModuleRegistry(reg){
+    var tbody = document.getElementById('module-registry-tbody');
+    if(!tbody) return;
+    var mods = (reg && Array.isArray(reg.modules)) ? reg.modules : null;
+    if(!mods){
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
+      return;
+    }
+    if(!mods.length){
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--dim);">등록된 모듈이 없습니다.</td></tr>';
+      return;
+    }
+    var rows = mods.map(function(m){
+      m = m || {};
+      var name  = esc(m.name || m.feature || m.id || '—');
+      var owner = esc(m.owner_nick || m.owner_role || '—');
+      var ns = (m.notify_spec && typeof m.notify_spec === 'object') ? m.notify_spec : null;
+      var cycles = [];
+      if(ns){ ['daily','weekly','monthly'].forEach(function(k){ if(ns[k]) cycles.push(CYCLE_LABEL[k]); }); }
+      var cycleTxt = cycles.length ? cycles.join(', ') : '—';
+      var channelCell, statusCell;
+      if(!ns || !ns.channel){
+        channelCell = '—';
+        statusCell = '<span class="statchip static">준비중</span>';
+      } else if(ns.channel !== 'telegram'){
+        channelCell = esc(ns.channel);
+        statusCell = '<span class="statchip static">준비중</span>';
+      } else if(ns.bot_id){
+        channelCell = esc(ns.channel) + ' · ' + esc(ns.bot_id);
+        statusCell = '<span class="statchip ok">🟢 발효</span>';
+      } else {
+        channelCell = esc(ns.channel) + ' · <span class="statchip idle" style="font-size:10px;">미발효</span>';
+        statusCell = '<span class="statchip idle">⚪ 미발효</span>';
+      }
+      return '<tr><td><strong>' + name + '</strong></td><td>' + owner + '</td><td>' + cycleTxt + '</td><td>' + channelCell + '</td><td>' + statusCell + '</td></tr>';
+    }).join('');
+    tbody.innerHTML = rows;
+  }
+
+  // ═══════════ ② 돌아가는 자동화: 📋 등록부 모듈 카드 (status/module_registry.json 신규 스키마 · 2026-07-09) ═══════════
+  // 소비자는 자기 필드만 읽는다(계약 §2 관대 원칙) — feature·autonomy·ai_free_fallback·honesty_default·feedback만.
+  // 필터: owner_role 있는 신규 스키마만(레거시 automation_health류 배제) + front_card.window==='자율현황'(이 창 소속만 — M1/M2/O1/문의회원 소속은 각자 창에서 렌더).
+  var REG_ICO = { cto:'🛠️', cmo:'📣', coo:'🔧', cpo:'👥', cfo:'💰', chro:'🧑‍🤝‍🧑', ceo:'🌟' };
+  var REG_AUTONOMY = {
+    auto:    { label:'자율ON',   pill:'on'   },
+    semi:    { label:'반자율',   pill:'na'   },
+    mech:    { label:'자동집계', pill:'na'   },
+    propose: { label:'부분',     pill:'warn' },
+    manual:  { label:'수동',     pill:'idle' }
+  };
+  var REG_HONESTY = { measured:'실측', estimated:'추정', unmeasured:'미측정' };
+  function registryCadenceTxt(ns){
+    if(!ns) return '';
+    var parts = [];
+    if(ns.daily) parts.push('매일');
+    if(ns.weekly) parts.push('매주');
+    if(ns.monthly) parts.push('매월');
+    return parts.join('·');
+  }
+  function renderRegistryCards(reg){
+    var sm = document.getElementById('registry-card-summary');
+    var el = document.getElementById('registry-cards');
+    if(!el) return;
+    var mods = (reg && Array.isArray(reg.modules)) ? reg.modules : null;
+    if(!mods){
+      if(sm) sm.textContent = '등록부를 불러오지 못했습니다.';
+      el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부를 불러오지 못했습니다.</div>';
+      return;
+    }
+    var mine = mods.filter(function(m){
+      return m && m.owner_role && m.front_card && m.front_card.window === '자율현황';
+    });
+    if(sm) sm.textContent = '이 창 소속 등록 모듈 ' + mine.length + '건 (전체 등록부 ' + mods.length + '건 중 · owner_role 보유 신규 스키마만)';
+    if(!mine.length){
+      el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부에 이 창(자율현황) 소속 모듈이 아직 없습니다.</div>';
+      return;
+    }
+    el.innerHTML = mine.map(function(m){
+      var au  = REG_AUTONOMY[m.autonomy] || { label: esc(m.autonomy || '미표기'), pill:'idle' };
+      var ico = REG_ICO[m.owner_role] || '📦';
+      var cad = registryCadenceTxt(m.notify_spec);
+      var cy  = esc(m.owner_nick || m.owner_role || '') + (cad ? (' · ' + cad) : '');
+      var rows = [];
+      rows.push(['AI 없이도', esc(m.ai_free_fallback || '미표기')]);
+      if(m.honesty_default){
+        rows.push(['정직표기', esc(REG_HONESTY[m.honesty_default] || m.honesty_default)]);
+      }
+      if(m.feedback && m.feedback.enabled){
+        rows.push(['환류', '💬 이거 맞아요? <span class="rv-note">전송 경로는 준비 중(후속 연결)</span>']);
+      }
+      var rowsHtml = rows.map(function(r){
+        return '<div class="rrow"><span class="rk">' + esc(r[0]) + '</span><span class="rv">' + r[1] + '</span></div>';
+      }).join('');
+      return '<div class="rcard">' +
+        '<div class="rcard-top"><span class="rcard-ico">' + ico + '</span>' +
+          '<span class="rcard-tt"><span class="rcard-nm">' + esc(m.feature || m.id || '') + '</span><span class="rcard-cy">' + cy + '</span></span>' +
+          '<span class="pill ' + au.pill + '">' + esc(au.label) + '</span></div>' +
+        rowsHtml + '</div>';
+    }).join('');
+  }
+
   // ═══════════ ② 돌아가는 자동화: 상시가동 표 펼치기(구 T2 wpAutoToggle 이식) ═══════════
   window.wpAutoToggle = function(row){
     var d = row.nextElementSibling;
@@ -1490,7 +1616,8 @@
     gasReadText('status/erp_status.json',             'status/erp_status.json').catch(function(){ return ''; }),
     cooFetchTodayLive(),
     cooFetchMonthlyReport(),
-    cpoFetchChurnStats()
+    cpoFetchChurnStats(),
+    gasReadText('status/module_registry.json',        'status/module_registry.json').catch(function(){ return ''; })
   ]).then(function(a){
     var learnRaw = parseJson(a[3]);
     var archRaw  = parseJson(a[4]);
@@ -1520,6 +1647,15 @@
     try{ renderStallSuspect(d); }catch(e){ /* 조용히 실패 — 정보 패널이라 없으면 숨김(가짜 표시 금지) */ }
     try{ renderErpStatus(erpStatus); }catch(e){ document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">시스템 현황 표시 오류.</span>'; }
     try{ renderAutomationHealth(erpStatus); }catch(e){ document.getElementById('erp-ah-headline').innerHTML = '<span style="color:var(--dim);">건강 점수판 표시 오류.</span>'; }
+    var moduleRegistry = parseJson(a[12]);
+    try{ renderModuleRegistry(moduleRegistry); }catch(e){
+      var mrt = document.getElementById('module-registry-tbody');
+      if(mrt) mrt.innerHTML = '<tr><td colspan="5" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
+    }
+    try{ renderRegistryCards(moduleRegistry); }catch(e){
+      var rcEl = document.getElementById('registry-cards');
+      if(rcEl) rcEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부 모듈 카드 표시 오류.</div>';
+    }
     var fl = document.getElementById('foot-loaded');
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
   }).catch(function(){
@@ -1531,6 +1667,8 @@
     document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">현황을 아직 불러오지 못했습니다.</span>';
     document.getElementById('erp-ah-headline').innerHTML = '<span style="color:var(--dim);">집계 중 (데이터 로드 전)</span>';
+    var mrt = document.getElementById('module-registry-tbody');
+    if(mrt) mrt.innerHTML = '<tr><td colspan="5" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
   });
 })();
 </script>
