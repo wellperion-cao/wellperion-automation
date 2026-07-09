@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-07-04-NORTHSTAR-REDESIGN",
-  "last_task_id": "CTO-2026-07-04-NORTHSTAR-REDESIGN",
+  "task_id": "NEXT-20260707-160113",
+  "last_task_id": "NEXT-20260707-160113",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-07-07T08:19:09Z",
+  "last_pushed_at": "2026-07-09T03:36:46Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -77,12 +77,20 @@
       "note": "발효 배선 진단 결과 코드 게이트 없음(b25928a5부터 --send·ns핸들러 이미 무조건 활성) - 남은 절차게이트만 해제. 역롤백 스위치 신설(af0f6091).",
       "updated_at": "2026-07-07T08:19:09Z",
       "blocks": []
+    },
+    {
+      "task_id": "NEXT-20260707-160113",
+      "title": "북극성별 보기는 G1 토글로 유지·고도화(별도 배 불필요)",
+      "status": "DONE",
+      "note": "북극성별 보기=G1 토글로 이미 완료·고도화, 별도 배 불필요 확정(선행배 CTO-2026-07-06-VOYAGE-MAP-PAGE DONE·항해지도.html→G1 리다이렉트 스텁 확인)",
+      "updated_at": "2026-07-09T03:36:46Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "북극성 추천기 재설계 라이브 발효 — 모듈그룹핑·탭 인라인승인버튼·중요건필터. 봇 ns 콜백 핸들러 활성(재기동 대기). 역롤백=telegram_bot/bot.py NORTHSTAR_NS_ENABLED=False",
-  "artifact_url": "커밋 af0f6091(bot.py NORTHSTAR_NS_ENABLED 역롤백스위치)+b25928a5(재설계 원구현,07-04). py_compile OK(bot.py·northstar_recommender.py). verify_ns420.py 임시검증: build_card 모듈그룹헤더(📦)+대표페이지 링크+build_keyboard callback_data ns:0:approve/ns:hold 구조 PASS. status/northstar_pending.json·northstar_log.jsonl·northstar_null_streak.json 무오염(run() 미호출).",
+  "title": "북극성별 보기는 G1 토글로 유지·고도화(별도 배 불필요)",
+  "artifact_url": "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#G1/northstar (gm1-northstar-view 라이브 구현·항해지도.html은 리다이렉트 스텁)",
   "commit": "",
-  "note": "발효 배선 진단 결과 코드 게이트 없음(b25928a5부터 --send·ns핸들러 이미 무조건 활성) - 남은 절차게이트만 해제. 역롤백 스위치 신설(af0f6091).",
-  "updated_at": "2026-07-07T08:19:09Z"
+  "note": "북극성별 보기=G1 토글로 이미 완료·고도화, 별도 배 불필요 확정(선행배 CTO-2026-07-06-VOYAGE-MAP-PAGE DONE·항해지도.html→G1 리다이렉트 스텁 확인)",
+  "updated_at": "2026-07-09T03:36:46Z"
 }

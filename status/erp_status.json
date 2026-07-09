@@ -1,19 +1,19 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-07-09T03:07:55Z",
-  "generated_at_kst": "2026-07-09 12:07",
-  "summary": "✅ 전체 정상",
+  "generated_at": "2026-07-09T03:37:55Z",
+  "generated_at_kst": "2026-07-09 12:37",
+  "summary": "⚠️ 점검 필요: 큐 미러 동기",
   "systems": [
     {
       "name": "일일 스케줄러",
       "state": "정상",
-      "detail": "0분 전 활동",
+      "detail": "13분 전 활동",
       "note": "정각 보고를 쏘는 시계"
     },
     {
       "name": "텔레그램 봇",
       "state": "정상",
-      "detail": "116분 전 활동",
+      "detail": "146분 전 활동",
       "note": "보고·승인 중계"
     },
     {
@@ -31,12 +31,12 @@
     {
       "name": "G1 큐 라이브",
       "state": "정상",
-      "detail": "HTTP 200 · active 28건 라이브=로컬 일치"
+      "detail": "CDN 캐시 지연 — 라이브 28건 ≠ 로컬 27건 (미푸시 0 · Pages 반영 대기 중, 정상)"
     },
     {
       "name": "큐 미러 동기",
-      "state": "정상",
-      "detail": "일치 · active 28건/118072B"
+      "state": "이상",
+      "detail": "미러 드리프트 — 로컬 active 27건/124109B ≠ 미러 28건/123853B"
     },
     {
       "name": "시트 GAS(todo_list)",
@@ -51,7 +51,7 @@
     {
       "name": "미푸시 커밋",
       "state": "정상",
-      "detail": "1건 동기화 진행 중(68s, 자가복구 창 내) — 정상"
+      "detail": "없음 — 로컬=origin/master 동기화"
     }
   ],
   "automation_health": {
