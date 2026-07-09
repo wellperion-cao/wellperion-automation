@@ -75,6 +75,23 @@ def _pick_today(resp: dict) -> dict:
     return resp
 
 
+_ISSUE_TEXT_KEYS = ["text", "issue", "내용", "memo", "비고", "detail", "area"]
+
+
+def _issue_text(iss) -> str:
+    """allIssues 항목을 사람이 읽을 문자열로 정제 — 라이브 GAS가 dict로 반환하는 경우 대비."""
+    if not isinstance(iss, dict):
+        return str(iss)
+    for k in _ISSUE_TEXT_KEYS:
+        v = iss.get(k)
+        if v:
+            return str(v)
+    parts = [str(v) for v in iss.values() if v]
+    if parts:
+        return " ".join(parts)
+    return str(iss)
+
+
 def fetch_check_status(module: dict, fetch_fn=_http_get_json) -> dict:
     depts, reasons = {}, []
     for dept, query in CHECK_QUERIES.items():
@@ -87,5 +104,5 @@ def fetch_check_status(module: dict, fetch_fn=_http_get_json) -> dict:
         if pct is None or pct > 100:
             reasons.append(f"{dept} 완료율 이상({pct}% — 100% 초과/미산출)")
         for iss in (row.get("allIssues") or []):
-            reasons.append(f"{dept}: {iss}")
+            reasons.append(f"{dept}: {_issue_text(iss)}")
     return {"depts": depts, "anomaly": bool(reasons), "reasons": reasons, "tag": "measured"}
