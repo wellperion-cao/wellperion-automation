@@ -49,6 +49,19 @@
   .tgl:focus-visible{outline:2px solid var(--brass-strong); outline-offset:2px}
 
   .bottom{display:flex; flex-direction:column; gap:12px}
+
+  /* 정직 배지(실가동 상태) — 자동화 6종의 "할 수 있다"와 "지금 진짜 돈다"를 분리 표시 */
+  .hbstrip{display:flex; flex-wrap:wrap; align-items:center; gap:6px; pointer-events:none}
+  .hbstrip .hb-title{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-right:2px}
+  .hbchip{display:flex; align-items:center; gap:5px; background:var(--panel); border:1px solid var(--panel-brd); border-radius:9px; padding:4px 9px; font-size:10.5px; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); color:var(--muted)}
+  .hbchip .hb-dot{width:7px; height:7px; border-radius:50%; flex:none; background:var(--muted); opacity:.5}
+  .hbchip .hb-nm{color:var(--muted)}
+  .hbchip .hb-st{font-weight:700; color:var(--ink)}
+  .hbchip.hb-live .hb-dot{background:var(--sage); opacity:1}
+  .hbchip.hb-delayed .hb-dot{background:#D6A24E; opacity:1}
+  .hbchip.hb-ondemand .hb-dot{background:#6FA3C9; opacity:1}
+  @media (max-width:560px){ .hbstrip .hb-title{display:none} .hbchip{padding:3px 7px; font-size:10px} }
+
   .bottom-row{display:flex; justify-content:space-between; align-items:flex-end; gap:14px}
   .counter{pointer-events:none}
   .counter .lbl{font-size:11px; letter-spacing:.22em; color:var(--muted); text-transform:uppercase}
@@ -187,6 +200,15 @@
     </div>
 
     <div class="bottom">
+      <div class="hbstrip" id="hbStrip" title="자동화 실가동 상태 — 자동화로그 실측(공개 열람) 기준">
+        <span class="hb-title">실가동</span>
+        <span class="hbchip" id="hbc-sweep"><span class="hb-dot"></span><span class="hb-nm">정합성스윕</span><span class="hb-st">…</span></span>
+        <span class="hbchip" id="hbc-onbowatch"><span class="hb-dot"></span><span class="hb-nm">온보딩워치</span><span class="hb-st">…</span></span>
+        <span class="hbchip" id="hbc-effreport"><span class="hb-dot"></span><span class="hb-nm">효율리포트</span><span class="hb-st">…</span></span>
+        <span class="hbchip" id="hbc-resume"><span class="hb-dot"></span><span class="hb-nm">이력서루틴</span><span class="hb-st">…</span></span>
+        <span class="hbchip" id="hbc-briefing"><span class="hb-dot"></span><span class="hb-nm">아침브리핑</span><span class="hb-st">…</span></span>
+        <span class="hbchip" id="hbc-cmd"><span class="hb-dot"></span><span class="hb-nm">CMD큐</span><span class="hb-st">…</span></span>
+      </div>
       <div class="bottom-row">
         <div class="counter">
           <div class="lbl">오늘 처리</div>
@@ -1946,6 +1968,120 @@
   })();
 
   resize(); updateClock(); start();
+})();
+</script>
+
+<!-- ═══════════ 정직 배지(실가동 상태) — 자동화로그 실측 ═══════════
+     위 메인 스크립트의 db:"autolog"(SESSION_PW 게이트, CMD 잠금 해제 전엔 401)와 별개로,
+     structure.html과 동일한 공개 액션 autolog-list(비밀번호 불필요)를 써서 게이트 상태와
+     무관하게 항상 배지가 뜨게 한다. 기존 자동화로그 25초 폴링과 같은 주기로 갱신(편승).
+     매칭 규칙은 2026-07-09 라이브 자동화로그 617건 실측으로 확정(structure.html과 동일 규칙). -->
+<script>
+(function(){
+  "use strict";
+  var EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+  var POLL_MS = 25000; // office.html의 기존 자동화로그 폴링 주기와 동일
+
+  function parseKST(s){
+    var m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(:\d{2})?/.exec(String(s || ""));
+    if(!m) return NaN;
+    return new Date(m[1] + "T" + m[2] + (m[3] || ":00") + "+09:00").getTime();
+  }
+  function fmtLast(s){
+    var m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}:\d{2})/.exec(String(s || ""));
+    return m ? (m[2] + "-" + m[3] + " " + m[4]) : "";
+  }
+
+  var ITEMS = [
+    { id: "sweep", kind: "daily", hours: 25,
+      match: function(a, w, d){
+        return (/루프/.test(a) && /A-?6/.test(a)) ||
+               /정합성\s*스윕|일일\s*정합성/.test(w) ||
+               /JOB_DEADLINE_STATE|PHOTO_MISSING_ACTIVE|PHOTO_OFFBYONE/.test(w + d) ||
+               (/�/.test(a) && /A-6$/.test(a));
+      } },
+    { id: "onbowatch", kind: "weekly", days: 8,
+      match: function(a, w, d){
+        return (/루프/.test(a) && /A-?3/.test(a) && /감시|워치/.test(w)) ||
+               /온보딩\s*주간\s*감시|온보딩\s*워치/.test(w) ||
+               (/�/.test(a) && /A-3$/.test(a));
+      } },
+    { id: "effreport", kind: "weekly", days: 8,
+      match: function(a, w, d){
+        return (/루프/.test(a) && /A-?7/.test(a)) ||
+               /주간\s*효율\s*리포트/.test(w) ||
+               (/�/.test(a) && /A-7$/.test(a));
+      } },
+    { id: "resume", kind: "daily", hours: 30,
+      match: function(a, w, d){
+        return a === "클라우드 루틴(이력서)" || /아침\s*이력서\s*자동\s*처리/.test(w);
+      } },
+    { id: "briefing", kind: "daily", hours: 25,
+      match: function(a, w, d){
+        return a === "리마인드 루틴" && /아침\s*(브리핑|리마인드)\s*발송/.test(w);
+      } },
+    { id: "cmd", kind: "ondemand",
+      match: function(a, w, d){
+        return /CMD|명령큐/.test(a + w);
+      } }
+  ];
+
+  function computeStatus(item, rows){
+    for(var i = 0; i < rows.length; i++){
+      var r = rows[i];
+      var a = String(r["주체"] || ""), w = String(r["작업"] || ""), d = String(r["상세"] || "");
+      if(item.match(a, w, d)){
+        var ts = r["일시"];
+        if(item.kind === "ondemand") return { state: "ondemand", last: ts };
+        var thresholdH = item.kind === "weekly" ? item.days * 24 : item.hours;
+        var hoursSince = (Date.now() - parseKST(ts)) / 3600000;
+        return { state: (hoursSince <= thresholdH ? "live" : "delayed"), last: ts };
+      }
+    }
+    return item.kind === "ondemand" ? { state: "ondemand", last: null } : { state: "none" };
+  }
+
+  function renderChip(item, status){
+    var chip = document.getElementById("hbc-" + item.id);
+    if(!chip) return;
+    var dot = chip.querySelector(".hb-dot");
+    var st = chip.querySelector(".hb-st");
+    chip.classList.remove("hb-live", "hb-delayed", "hb-none", "hb-ondemand");
+    if(status.state === "none"){
+      chip.classList.add("hb-none");
+      if(st) st.textContent = "기록없음";
+      chip.title = "매칭되는 자동화로그 기록이 없습니다";
+    } else if(status.state === "ondemand"){
+      chip.classList.add("hb-ondemand");
+      if(st) st.textContent = "온디맨드";
+      chip.title = status.last ? ("마지막 회수 " + fmtLast(status.last)) : "온디맨드(회수 기록 없음)";
+    } else if(status.state === "live"){
+      chip.classList.add("hb-live");
+      if(st) st.textContent = "LIVE";
+      chip.title = "최근 실행 " + fmtLast(status.last);
+    } else {
+      chip.classList.add("hb-delayed");
+      if(st) st.textContent = "지연";
+      chip.title = "최근 실행 " + fmtLast(status.last) + " (지연)";
+    }
+  }
+
+  async function pollHonestyBadges(){
+    try{
+      var res = await fetch(EXEC_URL, { method: "POST", body: JSON.stringify({ action: "autolog-list", limit: 600, offset: 0 }) });
+      var j = await res.json();
+      if(!j || !j.ok || !Array.isArray(j.results)) return;
+      var rows = j.results;
+      ITEMS.forEach(function(item){ renderChip(item, computeStatus(item, rows)); });
+    }catch(e){ /* 다음 폴링에서 재시도 — 조용히 무시 */ }
+  }
+
+  function boot(){ pollHonestyBadges(); setInterval(pollHonestyBadges, POLL_MS); }
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 })();
 </script>
 

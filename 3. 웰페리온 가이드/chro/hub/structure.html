@@ -164,6 +164,27 @@
   .item .warn{color:var(--a6);font-weight:700}
   .tags{margin-top:12px;display:flex;flex-wrap:wrap;gap:5px}
 
+  /* ── 정직 배지(실가동 상태) ────────── */
+  .hbar{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:var(--card);border:1px solid var(--line);border-radius:3px;
+    padding:9px 16px;margin-bottom:14px;font-size:12px;color:var(--muted);
+  }
+  .hbar .hbar-label{font-weight:800;color:var(--ink);letter-spacing:.05em;font-size:11px;text-transform:uppercase}
+  .hbar .hbar-note{margin-left:auto;font-size:10.5px;color:var(--muted)}
+  .hbadge-row{display:flex;flex-wrap:wrap;gap:6px 14px;margin:2px 0 10px;font-size:11.5px}
+  .hbadge-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+  .hbadge-item .hb-name{color:var(--muted)}
+  .hbadge{
+    display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:2px;
+    letter-spacing:.02em;color:#fff;white-space:nowrap;
+  }
+  .hb-live{background:#2E6B5E}
+  .hb-delayed{background:#9A6B2F}
+  .hb-none{background:transparent;color:var(--muted);border:1px dashed #A9A695;font-weight:700}
+  .hb-ondemand{background:#45607A}
+  .hbadge-time{font-size:10.5px;color:var(--muted)}
+
   /* ── 표 ──────────────────────────── */
   .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--card);margin-bottom:14px}
   table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:640px}
@@ -540,17 +561,33 @@
     <span class="sec-letter">F</span><h2>자동화 · 루틴</h2>
     <span class="sec-note">무인 · 반자동으로 도는 것들</span>
   </div>
+
+  <div class="hbar" id="hbSummaryBar">
+    <span class="hbar-label">🩺 실가동 정직 배지</span>
+    <span id="hbSummary">자동화로그 확인 중…</span>
+    <span class="hbar-note">자동화로그 실측(공개 열람) 기준 · 페이지 로드 시 1회 계산</span>
+  </div>
+
   <div class="grid">
 
     <div class="item">
       <div class="item-head"><span class="badge bg-auto">자동 루틴</span><h3>Windows 주기 루프 3종</h3></div>
       <p>PC에서 자동 실행되는 정기 점검 3종 — <b>매일 09:33</b> 정합성 스윕(A-6, 6항목 델타 보고) · <b>목 10:03</b> 온보딩 주간 워치(A-3, 지연/도래 체크인 감시) · <b>금 17:07</b> 주간 효율 리포트(A-7). 매회 자동화로그 1건씩 남겨 이력이 추적됩니다.</p>
+      <div class="hbadge-row">
+        <span class="hbadge-item"><span class="hb-name">정합성 스윕</span><span id="hb-sweep" class="hbadge hb-loading">확인 중…</span><span id="hb-sweep-t" class="hbadge-time"></span></span>
+        <span class="hbadge-item"><span class="hb-name">온보딩 워치</span><span id="hb-onbowatch" class="hbadge hb-loading">확인 중…</span><span id="hb-onbowatch-t" class="hbadge-time"></span></span>
+        <span class="hbadge-item"><span class="hb-name">효율 리포트</span><span id="hb-effreport" class="hbadge hb-loading">확인 중…</span><span id="hb-effreport-t" class="hbadge-time"></span></span>
+      </div>
       <div class="tags"><span class="tag act">log-add</span><span class="tag db">자동화로그 탭</span><span class="tag tool">loop 스킬</span></div>
     </div>
 
     <div class="item">
       <div class="item-head"><span class="badge bg-auto">클라우드 루틴</span><span class="badge bg-a1">A-1</span><h3>아침 이력서 자동 처리</h3></div>
       <p>Drive <b>이력서 자동수신 폴더</b>에 들어온 이력서를 아침에 자동 처리하고 처리 리포트를 남깁니다. <b>아침 브리핑</b>은 등록 메모 맨 앞의 <span class="mono">[자동 수집 날짜]</span> 마커를 집계해 "오늘 정리된 이력서"와 신규 지원자 행 포인터를 알려줍니다.</p>
+      <div class="hbadge-row">
+        <span class="hbadge-item"><span class="hb-name">아침 이력서 루틴</span><span id="hb-resume" class="hbadge hb-loading">확인 중…</span><span id="hb-resume-t" class="hbadge-time"></span></span>
+        <span class="hbadge-item"><span class="hb-name">아침 브리핑</span><span id="hb-briefing" class="hbadge hb-loading">확인 중…</span><span id="hb-briefing-t" class="hbadge-time"></span></span>
+      </div>
       <div class="tags"><span class="tag act">register-applicant</span><span class="tag db">db:appl</span><span class="tag tool">Drive 자동수신 폴더</span><span class="tag tool">schedule 루틴</span></div>
     </div>
 
@@ -563,6 +600,9 @@
     <div class="item">
       <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>CMD 명령큐 (온디맨드)</h3></div>
       <p>오피스 CMD 창에 입력한 명령이 큐에 쌓이고, <b>CHRO 부팅 시 자동 회수 + 세션 중 "큐" 입력 시마다 회수</b>해 처리 후 결과를 오피스에 회신합니다. 24시간 무인 자동실행은 보안상 의도적으로 없음(RCE 방지). 큐에서 온 명령은 외부 입력으로 취급해 파괴적 지시는 매니저님 확인 후 실행합니다.</p>
+      <div class="hbadge-row">
+        <span class="hbadge-item"><span class="hb-name">명령큐 회수</span><span id="hb-cmd" class="hbadge hb-loading">확인 중…</span><span id="hb-cmd-t" class="hbadge-time"></span></span>
+      </div>
       <div class="tags"><span class="tag act">cmd-push</span><span class="tag act">cmd-pull</span><span class="tag act">cmd-result</span><span class="tag act">cmd-status</span><span class="tag db">명령큐 탭</span></div>
     </div>
 
@@ -574,6 +614,135 @@
 
   </div>
 </section>
+
+<!-- ═══════════ 정직 배지(실가동 상태) — 자동화로그 실측 ═══════════
+     office.html이 이미 쓰는 공개 액션(autolog-list, 비밀번호 불필요)을 동일하게 사용.
+     "할 수 있다"(설계·문서상 존재)와 "지금 진짜 돈다"(로그에 실제 흔적)를 분리 표시하는
+     정직 배지 — 매칭 규칙은 2026-07-09 라이브 자동화로그 617건 실측으로 확정.
+     (참고: A-6 정합성 스윕 1회차는 러너 인코딩 버그로 주체/작업 필드가 깨져 기록됨 —
+      상세 필드에 남은 ASCII 코드명(JOB_DEADLINE_STATE 등)으로 폴백 매칭.) -->
+<script>
+(function(){
+  var EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+
+  function parseKST(s){
+    var m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(:\d{2})?/.exec(String(s || ""));
+    if(!m) return NaN;
+    return new Date(m[1] + "T" + m[2] + (m[3] || ":00") + "+09:00").getTime();
+  }
+  function fmtLast(s){
+    var m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}:\d{2})/.exec(String(s || ""));
+    return m ? (m[2] + "-" + m[3] + " " + m[4]) : "";
+  }
+
+  // 자동화 6종 매칭 규칙 — 실측(2026-07-09) 기반. 각 함수는 (actor, work, detail) → bool.
+  var ITEMS = [
+    { id: "sweep", label: "정합성 스윕", kind: "daily", hours: 25,
+      match: function(a, w, d){
+        return (/루프/.test(a) && /A-?6/.test(a)) ||
+               /정합성\s*스윕|일일\s*정합성/.test(w) ||
+               /JOB_DEADLINE_STATE|PHOTO_MISSING_ACTIVE|PHOTO_OFFBYONE/.test(w + d) ||
+               (/�/.test(a) && /A-6$/.test(a));
+      } },
+    { id: "onbowatch", label: "온보딩 워치", kind: "weekly", days: 8,
+      match: function(a, w, d){
+        return (/루프/.test(a) && /A-?3/.test(a) && /감시|워치/.test(w)) ||
+               /온보딩\s*주간\s*감시|온보딩\s*워치/.test(w) ||
+               (/�/.test(a) && /A-3$/.test(a));
+      } },
+    { id: "effreport", label: "효율 리포트", kind: "weekly", days: 8,
+      match: function(a, w, d){
+        return (/루프/.test(a) && /A-?7/.test(a)) ||
+               /주간\s*효율\s*리포트/.test(w) ||
+               (/�/.test(a) && /A-7$/.test(a));
+      } },
+    { id: "resume", label: "아침 이력서 루틴", kind: "daily", hours: 30,
+      match: function(a, w, d){
+        return a === "클라우드 루틴(이력서)" || /아침\s*이력서\s*자동\s*처리/.test(w);
+      } },
+    { id: "briefing", label: "아침 브리핑", kind: "daily", hours: 25,
+      match: function(a, w, d){
+        return a === "리마인드 루틴" && /아침\s*(브리핑|리마인드)\s*발송/.test(w);
+      } },
+    { id: "cmd", label: "CMD 명령큐", kind: "ondemand",
+      match: function(a, w, d){
+        return /CMD|명령큐/.test(a + w);
+      } }
+  ];
+
+  function computeStatus(item, rows){
+    for(var i = 0; i < rows.length; i++){
+      var r = rows[i];
+      var a = String(r["주체"] || ""), w = String(r["작업"] || ""), d = String(r["상세"] || "");
+      if(item.match(a, w, d)){
+        var ts = r["일시"];
+        var epoch = parseKST(ts);
+        if(item.kind === "ondemand") return { state: "ondemand", last: ts };
+        var thresholdH = item.kind === "weekly" ? item.days * 24 : item.hours;
+        var hoursSince = (Date.now() - epoch) / 3600000;
+        return { state: (hoursSince <= thresholdH ? "live" : "delayed"), last: ts };
+      }
+    }
+    return item.kind === "ondemand" ? { state: "ondemand", last: null } : { state: "none" };
+  }
+
+  function renderBadge(item, status){
+    var el = document.getElementById("hb-" + item.id);
+    var tEl = document.getElementById("hb-" + item.id + "-t");
+    if(!el) return;
+    el.classList.remove("hb-loading");
+    if(status.state === "none"){
+      el.textContent = "⬜ 기록 없음";
+      el.className = "hbadge hb-none";
+      if(tEl) tEl.textContent = "";
+    } else if(status.state === "ondemand"){
+      el.textContent = "🔵 온디맨드";
+      el.className = "hbadge hb-ondemand";
+      if(tEl) tEl.textContent = status.last ? ("· 최근 회수 " + fmtLast(status.last)) : "";
+    } else if(status.state === "live"){
+      el.textContent = "🟢 LIVE";
+      el.className = "hbadge hb-live";
+      if(tEl) tEl.textContent = "· 최근 " + fmtLast(status.last);
+    } else {
+      el.textContent = "⚠️ 지연";
+      el.className = "hbadge hb-delayed";
+      if(tEl) tEl.textContent = "· 최근 " + fmtLast(status.last);
+    }
+  }
+
+  async function loadHonestyBadges(){
+    var summaryEl = document.getElementById("hbSummary");
+    try{
+      var res = await fetch(EXEC_URL, { method: "POST", body: JSON.stringify({ action: "autolog-list", limit: 600, offset: 0 }) });
+      var j = await res.json();
+      if(!j || !j.ok || !Array.isArray(j.results)) throw new Error((j && j.error) || "응답 오류");
+      var rows = j.results; // 최신순 정렬 상태로 반환됨
+      var counts = { live: 0, delayed: 0, none: 0, ondemand: 0 };
+      ITEMS.forEach(function(item){
+        var status = computeStatus(item, rows);
+        renderBadge(item, status);
+        counts[status.state]++;
+      });
+      if(summaryEl){
+        summaryEl.textContent = "🟢 LIVE " + counts.live + " · ⚠️ 지연 " + counts.delayed +
+          " · ⬜ 기록없음 " + counts.none + " · 🔵 온디맨드 " + counts.ondemand;
+      }
+    }catch(e){
+      if(summaryEl) summaryEl.textContent = "불러오기 실패 — 새로고침 해주세요";
+      ITEMS.forEach(function(item){
+        var el = document.getElementById("hb-" + item.id);
+        if(el){ el.textContent = "확인 불가"; el.className = "hbadge hb-none"; }
+      });
+    }
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", loadHonestyBadges);
+  } else {
+    loadHonestyBadges();
+  }
+})();
+</script>
 
 <!-- ═══════════ G. 데이터 기반 ═══════════ -->
 <section id="sec-g">
