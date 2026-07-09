@@ -1421,5 +1421,19 @@
     "artifact": "- ① daily_scheduler _build_nudge_body: '🔗 대시보드' 줄 제거(링크는 점검관리방 고정메시지로). 남/여 수치·action 유지\n- ④ Survey.js 신규 문의 알림 3곳: '시각:' 줄 제거. 컨택 '일시'(콘텐츠)·수동재발송은 유지\n- 배포 미실행(GM go): ①=daily_scheduler 재기동 / ④=clasp push Survey.js 재배포. ②(미체크 항목명)=today_live GAS 배선 필요·미구현 (CLI ad-hoc · 커밋 1abc9f09)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "1abc9f0981647183ed5708eaad07ea077d5bfa0d"
+  },
+  {
+    "task_id": "CMO-2026-07-09-ADHOC-b9d6063b",
+    "clevel": "cmo",
+    "title": "[시모] 당근 Google 로그인 자동화 — QR 아닌 Google→cao (GM 지적)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 821,
+    "artifact": "근본: 당근 'PC전용 계정' Google 버튼=<div id=GoogleLoginIconButton>(내부 GSI iframe)라\n기존 a/button/img 셀렉터 전부 미스→클릭 실패→'당근 계정으로 시작하기'(QR)만 뜸.\n+ 계정선택 폴백 wants()가 '당근 계정으로 시작'을 클릭대상에 포함(QR 유발)했음.\n수정: ①#GoogleLoginIconButton 최우선 셀렉터 ②wants()서 '당근 계정으로 시작' 제거.\n검증(setup 라이브): #GoogleLoginIconButton 클릭→팝업 accountchoos (CLI ad-hoc · 커밋 b9d6063b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b9d6063bf9a53213d69809443d1cd57d76455400"
   }
 ]
