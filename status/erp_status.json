@@ -1,8 +1,8 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-07-09T04:07:56Z",
-  "generated_at_kst": "2026-07-09 13:07",
-  "summary": "⚠️ 점검 필요: G1 큐 라이브",
+  "generated_at": "2026-07-09T04:38:00Z",
+  "generated_at_kst": "2026-07-09 13:38",
+  "summary": "✅ 전체 정상",
   "systems": [
     {
       "name": "일일 스케줄러",
@@ -13,7 +13,7 @@
     {
       "name": "텔레그램 봇",
       "state": "정상",
-      "detail": "1분 전 활동",
+      "detail": "9분 전 활동",
       "note": "보고·승인 중계"
     },
     {
@@ -30,13 +30,13 @@
   "bridges": [
     {
       "name": "G1 큐 라이브",
-      "state": "이상",
-      "detail": "건수 불일치 — 라이브 27건 ≠ 로컬 30건 (미푸시 1건 · 즉시 push 필요)"
+      "state": "정상",
+      "detail": "HTTP 200 · active 29건 라이브=로컬 일치"
     },
     {
       "name": "큐 미러 동기",
       "state": "정상",
-      "detail": "일치 · active 30건/132324B"
+      "detail": "일치 · active 29건/138116B"
     },
     {
       "name": "시트 GAS(todo_list)",
@@ -46,19 +46,19 @@
     {
       "name": "M5 검수큐 라이브",
       "state": "정상",
-      "detail": "HTTP 200 · 107건 파싱 OK"
+      "detail": "HTTP 200 · 108건 파싱 OK"
     },
     {
       "name": "미푸시 커밋",
       "state": "정상",
-      "detail": "1건 동기화 진행 중(62s, 자가복구 창 내) — 정상"
+      "detail": "없음 — 로컬=origin/master 동기화"
     }
   ],
   "automation_health": {
-    "summary": "자동화 21/23 정상 (91%)",
-    "total": 23,
-    "healthy": 21,
-    "rate": 91,
+    "summary": "자동화 22/24 정상 (92%)",
+    "total": 24,
+    "healthy": 22,
+    "rate": 92,
     "items": [
       {
         "name": "Wellperion-AI-Education-Weekly",
@@ -157,6 +157,13 @@
         "last_run": "2026-07-09 오전 9:30:01",
         "last_result": 0,
         "next_run": "2026-07-10 오전 9:30:00"
+      },
+      {
+        "name": "Wellperion-Module-Report-Weekly",
+        "state": "정상",
+        "last_run": "2026-07-09 오후 1:14:48",
+        "last_result": 0,
+        "next_run": "2026-07-13 오전 9:00:00"
       },
       {
         "name": "Wellperion-MonthlyCheckReport-0900-D1",
