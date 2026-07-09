@@ -19,9 +19,7 @@
     --a4:#6E4260;  /* 평가 — 플럼 */
     --a5:#45607A;  /* 배포 — 슬레이트 */
     --a6:#8A3B3B;  /* 감사 — 버건디 */
-    --a7:#5E6B34;  /* 효율 — 올리브 */
-    --a8:#2C5F6B;  /* 시스템지킴이 — 딥 틸 */
-    --a9:#A8573D;  /* 직원케어 — 테라코타 */
+    --a7:#5E6B34;  /* 시스템효율 — 올리브 */
     --chro:#1E2B26;
     --db-bg:#2A3A34;        /* DB 태그 — 다크 칩 */
   }
@@ -93,11 +91,11 @@
   .node-chro .rl b{color:var(--brass)}
   .vline{width:1px;height:26px;background:var(--brass);margin:0 auto}
   .agents{
-    display:grid;grid-template-columns:repeat(9,1fr);gap:10px;margin-top:0;
+    display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:0;
     position:relative;padding-top:26px;
   }
   .agents::before{ /* 수평 연결선 */
-    content:"";position:absolute;top:0;left:calc(50% / 9);right:calc(50% / 9);
+    content:"";position:absolute;top:0;left:calc(50% / 7);right:calc(50% / 7);
     height:1px;background:var(--brass);
   }
   .agents::after{ /* 중앙 수직선 */
@@ -116,10 +114,8 @@
   .agent-card .aduty{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
   .s-a1{background:var(--a1)} .s-a2{background:var(--a2)} .s-a3{background:var(--a3)}
   .s-a4{background:var(--a4)} .s-a5{background:var(--a5)} .s-a6{background:var(--a6)} .s-a7{background:var(--a7)}
-  .s-a8{background:var(--a8)} .s-a9{background:var(--a9)}
   .b-a1{border-top:3px solid var(--a1)} .b-a2{border-top:3px solid var(--a2)} .b-a3{border-top:3px solid var(--a3)}
   .b-a4{border-top:3px solid var(--a4)} .b-a5{border-top:3px solid var(--a5)} .b-a6{border-top:3px solid var(--a6)} .b-a7{border-top:3px solid var(--a7)}
-  .b-a8{border-top:3px solid var(--a8)} .b-a9{border-top:3px solid var(--a9)}
   .foundation{
     margin-top:24px;background:var(--brass-soft);border:1px solid var(--line);border-radius:3px;
     padding:12px 18px;text-align:center;font-size:12.5px;color:var(--ink);letter-spacing:.03em;
@@ -144,7 +140,6 @@
   .bg-a1{background:var(--a1)} .bg-a2{background:var(--a2)} .bg-a3{background:var(--a3)}
   .bg-a4{background:var(--a4)} .bg-a5{background:var(--a5)} .bg-a6{background:var(--a6)}
   .bg-a7{background:var(--a7)} .bg-chro{background:var(--chro)}
-  .bg-a8{background:var(--a8)} .bg-a9{background:var(--a9)}
   .bg-auto{background:#7A7A6E}
   .tag{
     display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:2px;
@@ -259,7 +254,7 @@
     <p class="header-sub">인사 운영 허브가 할 수 있는 일의 총람 — 각 기능을 어떤 에이전트가, 어떤 도구로, 어떤 데이터·액션을 거쳐 수행하는지 한 장에 담았습니다.</p>
     <div class="header-meta">
       <span class="pill">갱신일 <b>2026-07-09</b></span>
-      <span class="pill">전담 에이전트 <b>9종</b> (A-1 ~ A-9)</span>
+      <span class="pill">전담 에이전트 <b>7종</b> (A-1 ~ A-7)</span>
       <span class="pill">읽기 DB <b>7종</b> + 휴무·자동화로그 탭</span>
       <span class="pill">쓰기 액션 <b>30종</b></span>
     </div>
@@ -297,9 +292,9 @@
       </div>
       <div class="agent-card b-a3">
         <span class="seal s-a3">A-3</span>
-        <div class="anm">온보딩담당자</div>
+        <div class="anm">직원담당자</div>
         <div class="amodel">Sonnet</div>
-        <div class="aduty">입사 확정 · 12주 체크인 · 멘토 면담</div>
+        <div class="aduty">직원 여정 전체 — 입사확정 · 12주 온보딩 · 체크인 + 재직자 케어 · 마일스톤 · 퇴사 시그널</div>
       </div>
       <div class="agent-card b-a4">
         <span class="seal s-a4">A-4</span>
@@ -321,21 +316,9 @@
       </div>
       <div class="agent-card b-a7">
         <span class="seal s-a7">A-7</span>
-        <div class="anm">효율담당자</div>
+        <div class="anm">시스템효율담당</div>
         <div class="amodel">Opus</div>
-        <div class="aduty">흐름 최적화 · 회고 박제 · 효율 스윕</div>
-      </div>
-      <div class="agent-card b-a8">
-        <span class="seal s-a8">A-8</span>
-        <div class="anm">시스템지킴이</div>
-        <div class="amodel">Opus</div>
-        <div class="aduty">자동화 인프라 진단·수리 — 루프 러너·스케줄러·루틴·백엔드 상태, 정직 배지 지연 추적</div>
-      </div>
-      <div class="agent-card b-a9">
-        <span class="seal s-a9">A-9</span>
-        <div class="anm">직원케어담당자</div>
-        <div class="amodel">Sonnet</div>
-        <div class="aduty">재직자 케어 — 체크인·기념일·근속·휴무 케어, 퇴사 시그널 관찰(온보딩 이후)</div>
+        <div class="aduty">효율 최적화 · 회고 박제 · 자동화 인프라 진단·수리·정직 배지 추적(3모드)</div>
       </div>
     </div>
 
@@ -441,19 +424,19 @@
   <div class="grid">
 
     <div class="item">
-      <div class="item-head"><span class="badge bg-a3">A-3 온보딩담당자</span><h3>입사 확정</h3></div>
+      <div class="item-head"><span class="badge bg-a3">A-3 직원담당자</span><h3>입사 확정</h3></div>
       <p>"입사 확정" 지시 시 최종 합격 단계의 지원자에 한해 처리하며, <b>12주차 체크인 일정이 자동 생성</b>됩니다. 확정 후 온보딩 DB를 읽어 체크인이 실제 생성됐는지 검증하고 대상자 · 입사일 · 일정을 요약 보고합니다.</p>
       <div class="tags"><span class="tag act">hire-complete</span><span class="tag db">db:onbo</span></div>
     </div>
 
     <div class="item">
-      <div class="item-head"><span class="badge bg-a3">A-3 온보딩담당자</span><h3>온보딩 체크리스트 관리</h3></div>
+      <div class="item-head"><span class="badge bg-a3">A-3 직원담당자</span><h3>온보딩 체크리스트 관리</h3></div>
       <p>체크 항목 · 카테고리 · 담당자 · 완료 기한 · 완료 여부로 구성된 온보딩 항목을 추가 · 갱신 · 삭제합니다. 주차별(1~12주) 체크인과 멘토 면담 진행을 추적하고, 대상자별 진척은 '대상 신입 직원'+'완료 여부' 기준으로 1회 호출 집계합니다.</p>
       <div class="tags"><span class="tag act">add-onboarding</span><span class="tag act">update-onboarding</span><span class="tag act">delete-onboarding</span><span class="tag db">db:onbo</span></div>
     </div>
 
     <div class="item">
-      <div class="item-head"><span class="badge bg-a3">A-3 온보딩담당자</span><h3>신입 성찰 시스템</h3></div>
+      <div class="item-head"><span class="badge bg-a3">A-3 직원담당자</span><h3>신입 성찰 시스템</h3></div>
       <p>신입이 온보딩 기간 동안 스스로 기록하는 성찰 항목을 관리합니다. <b>24개 항목이 모두 완료되면 CHRO가 인사이트를 종합</b>해 적응 상태 · 강점 · 관찰 포인트를 보고합니다.</p>
       <div class="tags"><span class="tag act">onboarding-self</span><span class="tag db">db:onbo</span></div>
     </div>
@@ -518,18 +501,18 @@
 <section id="sec-d">
   <div class="sec-head">
     <span class="sec-letter">D</span><h2>효율화</h2>
-    <span class="sec-note">A-7 효율담당자 — 효율 &lt; 정확성 · 안전이 절대 전제</span>
+    <span class="sec-note">A-7 시스템효율담당 — 효율 &lt; 정확성 · 안전이 절대 전제</span>
   </div>
   <div class="grid">
 
     <div class="item">
-      <div class="item-head"><span class="badge bg-a7">A-7 효율담당자</span><h3>사전 최적화 (착수 전 설계)</h3></div>
+      <div class="item-head"><span class="badge bg-a7">A-7 시스템효율담당</span><h3>사전 최적화 (착수 전 설계)</h3></div>
       <p>다단계 작업 착수 전 계획을 받아 <b>중복 읽기 제거 · 불필요 단계 생략 · 병렬화 · 배치 묶기 · 캐시 활용</b>으로 재설계한 단계안을 돌려줍니다. 단, 안전장치(1.5초 간격 · 라운드트립 검증 · 감사 게이트 · 전형단계 보존)는 생략 대상이 아니며, 생략 제안 시 리스크를 함께 명시합니다.</p>
       <div class="tags"><span class="tag tool">7렌즈 체크리스트</span><span class="tag tool">함정노트 선확인</span></div>
     </div>
 
     <div class="item">
-      <div class="item-head"><span class="badge bg-a7">A-7 효율담당자</span><h3>회고 · 박제 (재발 방지)</h3></div>
+      <div class="item-head"><span class="badge bg-a7">A-7 시스템효율담당</span><h3>회고 · 박제 (재발 방지)</h3></div>
       <p>끝난 작업 흐름의 비효율을 짚어 <b>다음엔 반복되지 않도록 박제안</b>을 도출합니다 — 절차 실수는 함정노트, 작업원칙은 CLAUDE.md, 에이전트 역량은 해당 정의 파일에. 새 규칙을 더하면 낡은 규칙을 함께 정리하는 <b>net-zero 원칙</b>으로 문서 비대화를 막습니다.</p>
       <div class="tags"><span class="tag tool">함정노트 박제</span><span class="tag tool">CLAUDE.md 갱신</span></div>
     </div>
