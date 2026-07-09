@@ -1492,5 +1492,19 @@
     "artifact": "docs(coo): 5모듈 복제 절차 + 정직 꼬리표 일관성 테스트 (부품①~④ 마감) (CLI ad-hoc · 커밋 e85d9f37)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e85d9f37478c70d3d1139bf4d18f8a4851fbcd8c"
+  },
+  {
+    "task_id": "CPO-2026-07-09-ADHOC-f82363a7",
+    "clevel": "cpo",
+    "title": "[시포] CPO 자율화 두뇌 자동보고 라이브 발효 착수 — 게이트 ON·발신로그 배선·GM채널 proof",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 762,
+    "artifact": "- telegram_bot/.env CPO_REPORT_LIVE=1 (게이트 ON, .gitignore 대상이라 로컬 반영)\n- scripts/cpo_report.py: log_outbound 배선(daily_scheduler.py 패턴 재사용) — 발송 API 응답을\n  logs/telegram_sent-*.log에 기록해 '발송됨' 정직 판정 근거 확보\n- GM채널 월간 보고 실발송 proof 완료(ok=true, status/cpo_report_state.json 반영)\n- daily_scheduler.py(PID 9392,  (CLI ad-hoc · 커밋 f82363a7)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f82363a7f02ab28d46364fc986ed9d8a80a7a772"
   }
 ]
