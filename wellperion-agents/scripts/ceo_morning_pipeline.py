@@ -1092,6 +1092,19 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     except Exception:
         pass
 
+    # COO 모듈 자동보고 합류 (레지스트리 구동 — 점검현황 등 daily_join 모듈)
+    try:
+        import sys as _sys, os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "..", "scripts"))
+        from coo_report_line import build_coo_daily_lines
+        _coo_lines = build_coo_daily_lines()
+        if _coo_lines:
+            lines.append("")
+            lines.append("🏢 <b>운영 점검</b>")
+            lines.extend(_coo_lines)
+    except Exception as _e:
+        lines.append(f"🏢 운영 점검: (합류 실패 — {type(_e).__name__})")
+
     # ── 🔴 급한 입항 (마감 임박 — 큐 deadline 기반, 항상 표 바로 아래 고정) ──
     if urg:
         lines.append("🔴 급한 입항  (마감 임박)")
