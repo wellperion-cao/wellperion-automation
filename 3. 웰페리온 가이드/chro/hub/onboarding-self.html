@@ -97,7 +97,7 @@
   <div class="modal">
     <h3>🌱 나의 성찰 기록 입장</h3>
     <p class="sub" id="lg_sub">본인 확인 후 자신의 성찰만 열람·작성할 수 있습니다.</p>
-    <label>본인 연락처 뒤 4자리</label>
+    <label>본인 확인 번호 (4자리)</label>
     <input type="password" id="lg_pw" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="예: 0000">
     <div id="lg_err" style="display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:8px"></div>
     <div class="modal-actions">
@@ -222,13 +222,13 @@ async function submitLogin(){
   const pin = (document.getElementById("lg_pw").value||"").trim();
   const err = document.getElementById("lg_err"), btn = document.getElementById("lg_btn");
   err.style.display = "none";
-  if(!pin){ err.textContent = "연락처 뒤 4자리를 입력하세요"; err.style.display="block"; return; }
+  if(!pin){ err.textContent = "확인 번호 4자리를 입력하세요"; err.style.display="block"; return; }
   btn.disabled = true; btn.textContent = "확인 중…";
   try{
     const res = await verifyAndLoad(pin, name);
     if(!res.ok){
-      err.textContent = res.error==="pin_invalid" ? "본인 확인에 실패했습니다. 연락처 뒤 4자리를 확인하세요." :
-                         res.error==="no_phone" ? "연락처 정보가 없어 본인 확인이 불가합니다. 관리자에게 문의하세요." :
+      err.textContent = res.error==="pin_invalid" ? "본인 확인에 실패했습니다. 입력한 번호를 다시 확인하세요." :
+                         res.error==="no_phone" ? "본인 확인 정보가 등록되어 있지 않습니다. 관리자에게 문의하세요." :
                          res.error==="not_found" ? "해당 이름의 성찰 대상을 찾을 수 없습니다" :
                          "확인 실패 — 잠시 후 다시 시도하세요";
       err.style.display = "block";
