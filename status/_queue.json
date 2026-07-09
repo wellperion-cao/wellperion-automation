@@ -1506,5 +1506,19 @@
     "artifact": "- telegram_bot/.env CPO_REPORT_LIVE=1 (게이트 ON, .gitignore 대상이라 로컬 반영)\n- scripts/cpo_report.py: log_outbound 배선(daily_scheduler.py 패턴 재사용) — 발송 API 응답을\n  logs/telegram_sent-*.log에 기록해 '발송됨' 정직 판정 근거 확보\n- GM채널 월간 보고 실발송 proof 완료(ok=true, status/cpo_report_state.json 반영)\n- daily_scheduler.py(PID 9392,  (CLI ad-hoc · 커밋 f82363a7)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f82363a7f02ab28d46364fc986ed9d8a80a7a772"
+  },
+  {
+    "task_id": "CEO-2026-07-09-ADHOC-e896f42c",
+    "clevel": "ceo",
+    "title": "[웰리] 모듈 자동보고 리포터 엔진 — 공유 레지스트리 SSOT 소비(웰리 3-2 거버넌스 정합)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 763,
+    "artifact": "- module_reporter.py: load_registry 소비·notify_spec cadence 선택·bot_id 라이브게이트(null=스킵)·id규약 collector·슬롯 dedup·수집기 예외격리\n- collectors/cto_automation_health.py: erp_status.json 실측→표준 payload(정직 꼬리표)\n- notify/telegram_send.py: leaf 발송기(재시도·실패추적·fallback 이식·부작용0)\n- module_decisions_surface.py + module_dec (CLI ad-hoc · 커밋 e896f42c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e896f42cc5541c1d5e03be7c079f8ff2e2a05359"
   }
 ]
