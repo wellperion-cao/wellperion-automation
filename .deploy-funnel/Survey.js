@@ -1063,7 +1063,17 @@ function _svMaskPhone_(p) {
 // ═══════════════════════════════════════════
 var _MI_SS_ID = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
 var _MI_SHEET = '26년 신규문의';
+var _MI_GID_EN = 1887747109;   // 멤버십(영문) 응답탭 — 영어 문의가 별도 탭에 쌓여 CRM에서 누락되던 누수 수리(2026-07-09 시포·GM)
 function _miSheet_() { return SpreadsheetApp.openById(_MI_SS_ID).getSheetByName(_MI_SHEET); }
+function _miSheetEn_() { return _sheetByGid_(_MI_SS_ID, _MI_GID_EN); }
+// gid 명시(영문 탭 gid) 시 그 물리 시트로 라우팅. 없으면 rowIndex의 오프셋 여부(_ROW_OFFSET_EN_)로 자동 판별 —
+//   목록에서 병합된 영문 행을 다시 저장할 때 정확한 탭에 기록. 둘 다 없으면 하위호환(기존 한글 '26년 신규문의' 탭). 2026-07-09 시포·GM.
+function _miResolveSheet_(gid, rowIndex) {
+  var g = parseInt(gid || '', 10);
+  var isEn = (g === _MI_GID_EN) || (!g && parseInt(rowIndex || 0, 10) >= _ROW_OFFSET_EN_);
+  if (isEn) { var s = _miSheetEn_(); if (s) return s; }
+  return _miSheet_();
+}
 function _miHeaders_(sh) {
   var last = sh.getLastColumn();
   if (last < 1) return [];
@@ -1228,17 +1238,20 @@ function _resStringify_(arr) {
 }
 
 // 익명 행 배열 반환(이름·전화·메모 비움). 빈 행 스킵.
-function _miReadRows_() {
-  var sh = _miSheet_();
+// sh 생략 시 하위호환(기존 한글 '26년 신규문의' 탭). 명시 시 그 시트를 그대로 읽는다(영문 탭 병합용). 2026-07-09 시포·GM.
+function _miReadRows_(sh) {
+  if (sh === undefined) sh = _miSheet_();  // 인자 미전달(레거시 호출)만 기본 한글 탭 폴백 — 명시적 null(영문 탭 미발견)은 그대로 빈 배열 반환(중복 병합 방지)
   if (!sh) return [];
+  var gid = sh.getSheetId();
   var hdr = _miHeaders_(sh);
   var last = sh.getLastRow();
   var out = [];
   if (last < 2) return out;
   var data = sh.getRange(2, 1, last - 1, hdr.length).getValues();
-  var iName  = _miColIdx_(hdr, ['성함','이름']);  // '성함' 우선 — '이름'이 '접수 담당자 혹은 본인 이름' 칸을 먼저 잡던 버그 차단(2026-06-24)
-  var iPhone = _miColIdx_(hdr, ['연락처','전화','휴대폰']);
-  var iProg  = _miColIdx_(hdr, ['관심 있는 프로그램 종류','관심프로그램','프로그램']);
+  // ★영문 멤버십탭 헤더 별칭(2026-07-09 시포·GM, 영어 문의 누수 수리) — 실측(멤버십 영문 응답탭 gviz) 기준.
+  var iName  = _miColIdx_(hdr, ['성함','이름','Full Name']);  // '성함' 우선 — '이름'이 '접수 담당자 혹은 본인 이름' 칸을 먼저 잡던 버그 차단(2026-06-24)
+  var iPhone = _miColIdx_(hdr, ['연락처','전화','휴대폰','Mobile Phone Number']);
+  var iProg  = _miColIdx_(hdr, ['관심 있는 프로그램 종류','관심프로그램','프로그램','Programs of Interest']);
   var iStat  = _miColIdx_(hdr, ['진행현황','진행상황','진행상태','상태']);
   var iTs    = _miColIdx_(hdr, ['타임스탬프','접수일','날짜']);
   var iTour  = _miColIdx_(hdr, ['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담']);
@@ -1249,21 +1262,24 @@ function _miReadRows_() {
   var iVisited = _miColIdx_(hdr, ['방문완료일','방문완료','방문일자']);  // 방문 완료(진행상황과 독립 — 등록돼도 방문 기록 유지). 2026-06-29 시포
   var iOwner = _miColIdx_(hdr, ['담당','담당자']);
   var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
-  var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게']);
-  var iContent = _miColIdx_(hdr, ['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항','문의사항']);  // N열 자유서술 문의내용(#1). 2026-07-02 시포·GM
+  var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게','How Did You Hear About Us?']);
+  var iContent = _miColIdx_(hdr, ['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항','문의사항','Health & Wellness Goals']);  // N열 자유서술 문의내용(#1). 2026-07-02 시포·GM
   var iRes  = _miColIdx_(hdr, [INQ_RES_COL]);  // 예약목록(JSON) — 가변 예약. 없으면 체험1·2 흡수. 2026-07-03 시포·GM
   // 연락기록 3칸 — Contact1·Contact2·Contact3 헤더 우선, 못 찾으면 절대 컬럼 18/19/20(0-based 17/18/19) 폴백 (2026-06-26 시포)
   var iC1 = _miColIdx_(hdr, ['Contact1']); if (iC1 < 0) iC1 = 17;
   var iC2 = _miColIdx_(hdr, ['Contact2']); if (iC2 < 0) iC2 = 18;
   var iC3 = _miColIdx_(hdr, ['Contact3']); if (iC3 < 0) iC3 = 19;
   var iHist = _miColIdx_(hdr, [CONTACT_HIST_COL]);  // 연락이력(JSON) — 가변 컨택 이력. 2026-07-08 시포·GM(축2)
+  var iLang = _miColIdx_(hdr, ['Preferred Language','Language']);  // 응답자 기재 언어(영문 탭 실측 헤더) — 영어 문의 뱃지 표시용. 2026-07-09 시포·GM
+  // 영문 탭 행키 오프셋(_ROW_OFFSET_EN_) — 한글+영문 병합 시 rowIndex 충돌 방지(정의부 주석 참고). 2026-07-09 시포·GM.
+  var rowOffset = (gid === _MI_GID_EN) ? _ROW_OFFSET_EN_ : 0;
   for (var r = 0; r < data.length; r++) {
     var row = data[r];
     var hasName  = iName  >= 0 && row[iName];
     var hasPhone = iPhone >= 0 && row[iPhone];
     if (!hasName && !hasPhone) continue; // 완전 빈 행 스킵
     var _mo = {
-      rowIndex: r + 2,
+      rowIndex: r + 2 + rowOffset,
       name:     iName  >= 0 ? String(row[iName]  || '') : '',  // 2026-06-22 GM '전체 공개' — 실명 노출
       phone:    iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',    // 연락처 노출 + 표시 정규화(앞 0 복원·하이픈)
       program:  iProg  >= 0 ? String(row[iProg]  || '') : '',
@@ -1285,7 +1301,10 @@ function _miReadRows_() {
       owner:    iOwner >= 0 ? String(row[iOwner] || '') : '',
       contact1: (iC1 >= 0 && iC1 < row.length) ? _fmtContact_(row[iC1]) : '',
       contact2: (iC2 >= 0 && iC2 < row.length) ? _fmtContact_(row[iC2]) : '',
-      contact3: (iC3 >= 0 && iC3 < row.length) ? _fmtContact_(row[iC3]) : ''
+      contact3: (iC3 >= 0 && iC3 < row.length) ? _fmtContact_(row[iC3]) : '',
+      // 출처 물리 시트 gid + 기재 언어 — 영문 탭 병합 표시·저장 라우팅용(row.gid 그대로 되돌려 보내면 정확한 탭에 기록). 2026-07-09 시포·GM.
+      gid: gid,
+      lang: iLang >= 0 ? String(row[iLang] || '').trim() : ''
     };
     // 예약목록(가변): JSON 우선 → 없으면 체험1·2 흡수(하위호환·무손실). 2026-07-03 시포·GM
     var _resArr = _resParse_(iRes >= 0 ? row[iRes] : '');
@@ -1419,11 +1438,32 @@ function _regRemove_(phone) {
 var LESSON_SS_ID = '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw';
 var LESSON_GID = 111889422;            // 성인 강습 응답탭
 var LESSON_GID_YOUTH = 268994754;      // 유소년 강습 응답탭(WSC) — 성인/유소년 별도 탭 분리(2026-06-27 시포)
+// 영문 강습 응답탭 — 영어 문의가 한글 탭과 별도로 쌓여 CRM(문의 현황)에서 누락되던 누수 수리. 2026-07-09 시포·GM.
+var LESSON_GID_ADULT_EN = 311319200;   // 성인 강습(영문) 응답탭
+var LESSON_GID_YOUTH_EN = 931249179;   // 유소년 강습(영문) 응답탭(WSC)
+var _LESSON_KNOWN_GIDS_ = [LESSON_GID, LESSON_GID_YOUTH, LESSON_GID_ADULT_EN, LESSON_GID_YOUTH_EN];
+// ★행키 네임스페이스 오프셋(2026-07-09 시포·GM) — 한글+영문 탭을 한 목록에 병합하면 두 시트의 rowIndex(둘 다 2부터 시작)가
+//   그대로 충돌해 클라이언트 조회(dbRows.find 등)가 엉뚱한 행을 집어 잘못된 시트에 덮어쓸 위험(무결성 사고) → 영문 탭 행에만
+//   거대 오프셋을 더해 값 공간을 완전히 분리한다. 시트당 실사용 행이 100만에 도달할 일이 없어 충돌 불가.
+//   읽기(_lessonReadRows_/_miReadRows_)에서 부여 → 쓰기(update/delete)에서 body.rowIndex로 원복 후 실제 행 사용.
+var _ROW_OFFSET_EN_ = 1000000;
 // 대상(type) → gid 해석. body.type 미전송=성인(하위호환·강습문의.html).
+// body.gid 명시(알려진 4개 gid 중 하나) 시 최우선 사용. 없으면 body.rowIndex의 오프셋 여부로 한글/영문 자동 판별(2026-07-09).
 function _lessonGidOf_(body) {
+  var g = parseInt((body && body.gid) || '', 10);
+  if (g && _LESSON_KNOWN_GIDS_.indexOf(g) >= 0) return g;
   var t = String((body && body.type) || '');
-  if (t === '유소년강습' || t === '유소년' || t === 'youth') return LESSON_GID_YOUTH;
-  return LESSON_GID;
+  var youth = (t === '유소년강습' || t === '유소년' || t === 'youth');
+  var isEn = parseInt((body && body.rowIndex) || 0, 10) >= _ROW_OFFSET_EN_;
+  if (isEn) return youth ? LESSON_GID_YOUTH_EN : LESSON_GID_ADULT_EN;
+  return youth ? LESSON_GID_YOUTH : LESSON_GID;
+}
+// type(성인/유소년) → 대응하는 영문 gid. 매칭 없으면 null(무중단).
+function _lessonEnGidOf_(body) {
+  var t = String((body && body.type) || '');
+  if (t === '유소년강습' || t === '유소년' || t === 'youth') return LESSON_GID_YOUTH_EN;
+  if (!t || t === '성인강습' || t === '성인') return LESSON_GID_ADULT_EN;
+  return null;
 }
 // 관리 담당 컬럼명='관리담당'(★'담당'은 폼 원본 '접수담당자'와 부분일치 충돌 → 컬럼 미생성·원본 덮어쓰기 버그. 2026-06-26 시우).
 // '연락이력' — 강습 CONTACT(연락 이력, 축2/축4) 멤버십 미러. 상담메모 컬럼은 보존(비파괴)·연락이력이 신규 정본. 2026-07-08 시포·GM.
@@ -1476,14 +1516,16 @@ function _lessonReadRows_(gid) {
   var last = sh.getLastRow();
   if (last < 2) return [];
   var data = sh.getRange(2, 1, last - 1, hdr.length).getValues();
+  // ★영문 강습탭 헤더 별칭(2026-07-09 시포·GM, 영어 문의 누수 수리) — 실측(성인/유소년 영문 응답탭 gviz) 기준.
+  //   'Full Name'은 "Child's Full Name"(유소년)에도 부분일치로 걸림 · 'Mobile Phone Number'는 "Guardian's Mobile Phone Number"에도 걸림.
   var iTs    = _findCol_(hdr, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '날짜']);
-  var iName  = _findCol_(hdr, ['성함', '이름']);   // '성함' 우선 — '접수 담당자 혹은 본인 이름' 오매칭 차단
-  var iPhone = _findCol_(hdr, ['연락처', '전화', '휴대폰']);
-  var iAge   = _findCol_(hdr, ['나이', '연령', '자녀 나이', '자녀나이', '학년']);
-  var iSport = _findCol_(hdr, ['성인 강습 종목', 'WSC 강습 종목', 'WSC 강습 종류', '강습 종목', '종목', '과목']);
-  var iChan  = _findCol_(hdr, ['문의 경로', '경로', '채널', '알게']);
-  var iNote  = _findCol_(hdr, ['문의 사항', '문의사항', '문의 내용', '내용']);
-  var iWish  = _findCol_(hdr, ['희망하시는 레슨 시간', '희망 레슨', '희망시간', '레슨 시간']);
+  var iName  = _findCol_(hdr, ['성함', '이름', 'Full Name']);   // '성함' 우선 — '접수 담당자 혹은 본인 이름' 오매칭 차단
+  var iPhone = _findCol_(hdr, ['연락처', '전화', '휴대폰', 'Mobile Phone Number']);
+  var iAge   = _findCol_(hdr, ['나이', '연령', '자녀 나이', '자녀나이', '학년', 'Age']);
+  var iSport = _findCol_(hdr, ['성인 강습 종목', 'WSC 강습 종목', 'WSC 강습 종류', '강습 종목', '종목', '과목', 'Program of Interest']);
+  var iChan  = _findCol_(hdr, ['문의 경로', '경로', '채널', '알게', 'How Did You Hear About Us?']);
+  var iNote  = _findCol_(hdr, ['문의 사항', '문의사항', '문의 내용', '내용', 'Additional Requests or Comments']);
+  var iWish  = _findCol_(hdr, ['희망하시는 레슨 시간', '희망 레슨', '희망시간', '레슨 시간', 'Preferred Lesson Time']);
   var iStat  = _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '상태']);
   var iOwner = _findColExact_(hdr, ['관리담당']);  // ★정확일치 — 폼 원본 '접수담당자' 절대 안 건드림(관리 담당 별도 컬럼만)
   var iMemo  = _findCol_(hdr, ['상담메모', '메모', '비고']);
@@ -1491,6 +1533,9 @@ function _lessonReadRows_(gid) {
   var iVisit = _findCol_(hdr, ['방문상태', '방문']);
   var iHist  = _findColExact_(hdr, [CONTACT_HIST_COL]);  // 연락이력(JSON) — 강습 CONTACT. 2026-07-08 시포·GM(축2·축4)
   var iSportMgmt = _findColExact_(hdr, [LESSON_SPORT_MGMT_COL]);  // 종목별관리(JSON) — 축7. 2026-07-08 시포·GM
+  var iLang  = _findCol_(hdr, ['Language']);  // 응답자 기재 언어(영문 탭 실측 헤더) — 영어 문의 뱃지 표시용. 2026-07-09 시포·GM
+  // 영문 탭 행키 오프셋(_ROW_OFFSET_EN_) — 한글+영문 병합 시 rowIndex 충돌 방지(위 상수 주석 참고). 2026-07-09 시포·GM.
+  var rowOffset = (gid === LESSON_GID_ADULT_EN || gid === LESSON_GID_YOUTH_EN) ? _ROW_OFFSET_EN_ : 0;
   var out = [];
   for (var r = 0; r < data.length; r++) {
     var row = data[r];
@@ -1505,7 +1550,7 @@ function _lessonReadRows_(gid) {
     var _lHistArr = _resParse_(iHist >= 0 ? row[iHist] : '');
     if (!_lHistArr.length && _lMemo) _lHistArr.push({ date: '', time: '', note: _lMemo });
     out.push({
-      rowIndex: r + 2,
+      rowIndex: r + 2 + rowOffset,
       timestamp: _miToISO_(iTs >= 0 ? row[iTs] : ''),
       name:    iName  >= 0 ? String(row[iName]  || '') : '',
       phone:   iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',   // 표시 정규화(앞 0 복원·하이픈)
@@ -1523,10 +1568,26 @@ function _lessonReadRows_(gid) {
       visited: iVisit >= 0 ? String(row[iVisit] || '') : '',
       contacts: _lHistArr,
       // 종목별 독립 관리(축7) — 파싱맵(없으면 {}). 분리 로직은 프론트에서만(GM 결정) — 여기선 원맵만 반환.
-      bySport: _lessonSportMgmtParse_(iSportMgmt >= 0 ? row[iSportMgmt] : '')
+      bySport: _lessonSportMgmtParse_(iSportMgmt >= 0 ? row[iSportMgmt] : ''),
+      // 출처 물리 시트 gid + 기재 언어 — 영문 탭 병합 표시·저장 라우팅용(row.gid 그대로 되돌려 보내면 정확한 탭에 기록). 2026-07-09 시포·GM.
+      gid: gid,
+      lang: iLang >= 0 ? String(row[iLang] || '').trim() : ''
     });
   }
   return out;
+}
+
+// 강습 문의 목록(한글+영문 탭 병합) — CRM 읽기경로 전용. 마케팅 집계(FORM_SHEETS·funnel_conversion)는 별도 무손상.
+//   type(성인/유소년)에 해당하는 한글 탭 + 영문 탭을 함께 읽어 이어붙인다. 영문 탭 미존재/에러는 조용히 스킵(무중단).
+//   2026-07-09 시포·GM — 영어 문의 누수 수리.
+function _lessonReadRowsMerged_(body) {
+  var krGid = _lessonGidOf_(body);
+  var enGid = _lessonEnGidOf_(body);
+  var rows = _lessonReadRows_(krGid);
+  if (enGid && enGid !== krGid) {
+    try { rows = rows.concat(_lessonReadRows_(enGid)); } catch (e) {}
+  }
+  return rows;
 }
 
 // 강습 데이터 범위 필터 — 기본=올해(현재연도)만, scope=all이면 전체(시포·GM 2026-06-26).
@@ -2316,7 +2377,9 @@ function _processAction(body) {
       var miHit = _cacheGetJson_(miCache, miCacheKey);
       if (miHit) return _json(miHit);
     }
-    var miRows = _miReadRows_();
+    // 한글 '26년 신규문의' + 영문 멤버십 탭 병합 — 영어 문의 누수 수리(2026-07-09 시포·GM). 영문 탭 미존재/에러는 조용히 스킵(무중단).
+    var miRows = _miReadRows_(_miSheet_());
+    try { miRows = miRows.concat(_miReadRows_(_miSheetEn_())); } catch (eMiEn) {}
     var _miFull = true;  // 2026-06-25 GM '성함·연락처 다 공개' — 마스킹 해제(무인증 공개 주의·시토 인증게이트 전제)
     var miResult = { ok: true, count: miRows.length, data: miRows, anon: !_miFull };
     _cachePutJson_(miCache, miCacheKey, miResult, 60);
@@ -2379,7 +2442,9 @@ function _processAction(body) {
   // ─── 문의회원 페이지(CPO): 예약 달력 (익명·상담/체험 일정) ───
   if (action === 'member_calendar') {
     var mcMonth = String(body.month || '');  // 'YYYY-MM'
-    var mcRows = _miReadRows_();
+    // 한글+영문 탭 병합 — 영어 문의 누수 수리(2026-07-09 시포·GM). 영문 탭 미존재/에러는 조용히 스킵(무중단).
+    var mcRows = _miReadRows_(_miSheet_());
+    try { mcRows = mcRows.concat(_miReadRows_(_miSheetEn_())); } catch (eMcEn) {}
     var mcEvents = [];
     mcRows.forEach(function(row){
       function add(dateStr, kind, timeStr, slot, resIdx, noteStr) {
@@ -2390,7 +2455,7 @@ function _processAction(body) {
         // slot = 예약1→exp1(J/K)·예약2→exp2(L/M) 미러 슬롯, 3번째+는 r{i}. resIdx=예약 배열 인덱스(리스트 모달 편집 대상). 2026-07-03 시포·GM.
         // source='inquiry' — 문의(신규 예약) 이벤트. 유효회원 재등록상담(source='active')과 구분.
         // note=예약별 내용(칩/패널 표시), memo=행 누적 상담메모(폴백).
-        mcEvents.push({ date: dateStr, kind: kind, source: 'inquiry', time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', resIdx: (resIdx == null ? '' : resIdx), name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', note: noteStr || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '', visited: row.visited, visitDate: row.visitDate || '' });
+        mcEvents.push({ date: dateStr, kind: kind, source: 'inquiry', time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', resIdx: (resIdx == null ? '' : resIdx), name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', note: noteStr || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '', visited: row.visited, visitDate: row.visitDate || '', gid: row.gid });
       }
       // 예약 리스트(가변) — 각 예약이 독립 이벤트. 예약1·2는 exp1/exp2 미러 슬롯(하위 소비자 안전망). 라벨=예약. 2026-07-03 시포·GM.
       (row.reservations || []).forEach(function(res, ri){
@@ -2407,8 +2472,10 @@ function _processAction(body) {
   if (action === 'member_inquiry_update') {
     var muRow = parseInt(body.rowIndex, 10);
     if (!muRow || muRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
-    var muSh = _miSheet_();
+    var muSh = _miResolveSheet_(body.gid, body.rowIndex);  // gid 또는 rowIndex 오프셋으로 물리 시트 라우팅(2026-07-09 시포·GM, 영어 문의 누수 수리)
     if (!muSh) return _json({ ok: false, error: '시트 없음' });
+    var muRowRaw = muRow;  // 응답용 원본(오프셋 유지) — 프론트 로컬 매칭 정합. 2026-07-09 시포·GM.
+    if (muRow >= _ROW_OFFSET_EN_) muRow -= _ROW_OFFSET_EN_;  // 실제 물리 행으로 디코드(시트 쓰기는 여기부터 물리 행 사용).
     var muHdr = _miHeaders_(muSh);
     // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행의 현재 전화와 대조 — 삭제/시트편집 후 rowIndex 밀림으로 엉뚱한 회원 덮어쓰기 방지.
     //   keyPhone=편집 전(로드된) 전화. body.phone(새 값)과 별개. keyPhone 미전송이면 기존 동작 폴백(정상 편집 무중단).
@@ -2550,15 +2617,16 @@ function _processAction(body) {
     }
     // 조회 캐시 무효화(축1) — 다음 목록 조회부터 최신 반영. 2026-07-08 시토.
     try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
-    return _json({ ok: true, rowIndex: muRow, message: '수정되었습니다.' });
+    return _json({ ok: true, rowIndex: muRowRaw, message: '수정되었습니다.' });
   }
 
   // ─── 문의회원 페이지(CPO): 행 삭제 ───
   if (action === 'member_inquiry_delete') {
     var mdRow = parseInt(body.rowIndex, 10);
     if (!mdRow || mdRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
-    var mdSh = _miSheet_();
+    var mdSh = _miResolveSheet_(body.gid, body.rowIndex);  // gid 또는 rowIndex 오프셋으로 물리 시트 라우팅(2026-07-09 시포·GM, 영어 문의 누수 수리)
     if (!mdSh) return _json({ ok: false, error: '시트 없음' });
+    if (mdRow >= _ROW_OFFSET_EN_) mdRow -= _ROW_OFFSET_EN_;  // 실제 물리 행으로 디코드. 2026-07-09 시포·GM.
     if (mdRow > mdSh.getLastRow()) return _json({ ok: false, error: '행 범위 초과' });
     // ★행키 검증(fail-safe·keyPhone 동봉 권장): keyPhone 동봉 시 대상 행 전화가 비었거나(검증 불가) keyPhone과 다르면
     //   삭제를 거부한다(구버전은 전화 공백이면 통과시켜 rowIndex 밀림 시 오삭제 위험 — 2026-07-08 시토 안전수리).
@@ -2591,7 +2659,7 @@ function _processAction(body) {
       var liHit = _cacheGetJson_(liCache, liCacheKey);
       if (liHit) return _json(liHit);
     }
-    var liRows = _lessonScopeFilter_(_lessonReadRows_(_lessonGidOf_(body)), body);
+    var liRows = _lessonScopeFilter_(_lessonReadRowsMerged_(body), body);
     // 종목 표준 버킷 — 프론트 칩 그룹/필터용(원문 sport 필드는 표 표시용으로 유지). 2026-06-27 시포.
     liRows.forEach(function(r){ var b = _sportBuckets_(r.sport); r.bucket = (b && b.length) ? b[0] : '기타'; });
     var liResult = { ok: true, count: liRows.length, data: liRows };
@@ -2694,7 +2762,7 @@ function _processAction(body) {
 
   // ─── 강습문의 페이지(CPO): 통계 (총·이번달·종목 분포·유입경로 분포) ───
   if (action === 'lesson_stats') {
-    var lsRows = _lessonScopeFilter_(_lessonReadRows_(_lessonGidOf_(body)), body);
+    var lsRows = _lessonScopeFilter_(_lessonReadRowsMerged_(body), body);
     var lsTotal = lsRows.length;
     var lsMonth = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM');
     var lsThisMonth = 0;
@@ -2717,7 +2785,7 @@ function _processAction(body) {
   // ─── 강습문의 페이지(CPO): 예약 달력 (상담예약 일정) ───
   if (action === 'lesson_calendar') {
     var lcMonth = String(body.month || '');  // 'YYYY-MM'
-    var lcRows = _lessonScopeFilter_(_lessonReadRows_(_lessonGidOf_(body)), body);
+    var lcRows = _lessonScopeFilter_(_lessonReadRowsMerged_(body), body);
     var lcEvents = [];
     lcRows.forEach(function(row) {
       var d = row.consult;
@@ -2733,8 +2801,10 @@ function _processAction(body) {
   if (action === 'lesson_inquiry_update') {
     var luRow = parseInt(body.rowIndex, 10);
     if (!luRow || luRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
-    var luSh = _lessonSheet_(_lessonGidOf_(body));
+    var luSh = _lessonSheet_(_lessonGidOf_(body));  // body.rowIndex(원본·오프셋 유지) 기준 한글/영문 자동판별
     if (!luSh) return _json({ ok: false, error: '시트 없음' });
+    var luRowRaw = luRow;  // 응답용 원본(오프셋 유지) — 프론트 로컬 매칭 정합. 2026-07-09 시포·GM.
+    if (luRow >= _ROW_OFFSET_EN_) luRow -= _ROW_OFFSET_EN_;  // 실제 물리 행으로 디코드(시트 쓰기는 여기부터 물리 행 사용).
     var luHdr = _lessonEnsureCols_(luSh);
     // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백.
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
@@ -2854,7 +2924,7 @@ function _processAction(body) {
       _cacheInvalidateJson_(_luCache, 'licache|' + _luType + '|year');
       _cacheInvalidateJson_(_luCache, 'licache|' + _luType + '|all');
     } catch (e) {}
-    return _json({ ok: true, rowIndex: luRow, message: '수정되었습니다.' });
+    return _json({ ok: true, rowIndex: luRowRaw, message: '수정되었습니다.' });
   }
 
   // ─── 공간렌트·비즈니스 문의 페이지(CPO): 전체 목록 ───
