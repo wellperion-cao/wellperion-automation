@@ -787,26 +787,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .mdash-chip.green{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)}
 @media(max-width:520px){.mdash-metrics,.mdash-metrics.cols2{grid-template-columns:1fr}}
 
-/* ── 오늘 할 일 액션 패널(상담사용) — 배754, 2026-07-09 시포·GM ── */
-.tap-sec{border:1px solid var(--border-subtle);border-radius:10px;margin-bottom:8px;overflow:hidden}
-.tap-sec:last-child{margin-bottom:0}
-.tap-sec-head{width:100%;display:flex;align-items:center;gap:8px;padding:11px 14px;background:var(--paper-raised);border:none;cursor:pointer;font-family:inherit;text-align:left;color:var(--text)}
-.tap-sec-head:hover{background:rgba(183,159,138,0.1)}
-.tap-sec-label{font-size:13px;font-weight:700}
-.tap-caret{margin-left:auto;font-size:11px;color:var(--dim);transition:transform .15s;flex-shrink:0}
-.tap-sec-head.open .tap-caret{transform:rotate(180deg)}
-.tap-sec-body{display:none;padding:4px 6px 8px}
-.tap-sec-body.open{display:block}
-.tap-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12.5px}
-.tap-row:hover{background:var(--teal-bg)}
-.tap-row + .tap-row{border-top:1px solid var(--border-subtle)}
-.tap-row-name{font-weight:700;min-width:60px;flex-shrink:0}
-.tap-row-sub{color:var(--dim);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tap-row-time{margin-left:auto;flex-shrink:0;font-size:11px;font-weight:700;color:var(--teal);white-space:nowrap}
-.tap-row-more{padding:8px 10px;font-size:11.5px;color:var(--dim);text-align:center}
-.tap-empty{padding:10px;font-size:12px;color:var(--dim)}
-.tap-caveat{font-size:10px;color:var(--dim);padding:7px 10px 3px;line-height:1.55}
-
 /* ── 강습 sub-pane(문의/등록/회원) 토글 — 멤버십 dash-card 패턴 차용, 강습 전용 lessonSwitchCard ── */
 .lesson-dash{grid-template-columns:repeat(3,1fr)}
 @media(max-width:680px){.lesson-dash{grid-template-columns:1fr}}
@@ -1077,18 +1057,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
       </div>
     </a>
-  </div>
-
-  <!-- ══════════════════════════════ 오늘 할 일 액션 패널(상담사용) — 배754, 2026-07-09 시포·GM ══════════════════════════════
-       매일 열면 한눈에: ①오늘 신규문의 ②미컨택(연락이력 0건) ③오늘 상담·체험 예약 ④이탈위험 후보(추정). v1=멤버십(dbRows) 전용 —
-       분류기준은 scripts/cpo_report.py(uncontacted_candidates·todays_reservations·churn_risk_candidates)와 동일, 추가 GAS 호출 없음.
-       항목 클릭 → 기존 CONTACT 연락이력 모달(openContactModal)로 바로 진입(신규 백엔드 액션 0). -->
-  <div class="card" id="todayActionPanel" style="border-left:3px solid var(--teal)">
-    <div class="card-title">
-      <span class="icon">🧭</span><span>오늘 할 일</span>
-      <span id="tapScopeNote" style="margin-left:auto;font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap"></span>
-    </div>
-    <div id="tapBody"><div class="tap-empty">불러오는 중…</div></div>
   </div>
 
   <!-- 멤버십 현황 집중형 대시보드 = 버튼(📊 멤버십 현황) → 팝업(#mdashModalOverlay). 배3, 2026-07-07 시포·GM -->
@@ -3053,9 +3021,7 @@ function switchType(type) {
 /* ── 관리 그룹(family) — AI CPO 메뉴 3칸 분리(배6, 2026-07-02 시포·GM). 한 페이지 유지·접수 통합,
       메뉴가 ?manage=membership|lesson 로 그룹 진입. 멤버십 관리=멤버십·공간렌트·비즈니스 / 강습 관리=성인·유소년. ── */
 var TYPE_FAMILIES = { membership: ['membership','rent','biz'], lesson: ['lessonAdult','lessonYouth'] };
-var _curFamily = 'membership';   // 오늘 할 일 패널 스코프 추적(배754) — switchFamily가 갱신.
 function switchFamily(fam) {
-  _curFamily = (fam === 'lesson') ? 'lesson' : 'membership';
   var types = TYPE_FAMILIES[fam] || TYPE_FAMILIES.membership;
   // 그룹에 속한 유형 칩만 노출
   document.querySelectorAll('.type-chip[data-type]').forEach(function(c){
@@ -3071,7 +3037,6 @@ function switchFamily(fam) {
   var titleEl = document.getElementById('pageTitleTxt');   // 상단 H1도 그룹명으로(통합 회원 관리 → 멤버십/강습). 2026-07-02 시포·GM
   if (titleEl) titleEl.textContent = _famName;
   document.title = '웰페리온 ' + _famName.replace('회원관리', '회원 관리') + ' — AI CPO';   // 브라우저 탭 제목도 그룹명 동기화(배299, 2026-07-03 시포)
-  if (_tapReady) renderTodayActionPanel();   // 오늘 할 일 패널도 family 전환에 맞춰 스코프 갱신(배754)
   switchType(types[0]);   // 그룹 첫 유형으로 전환
 }
 
@@ -5176,7 +5141,6 @@ function loadDbData() {
       // 문의일(timestamp) 기준 최근이 상단 — 빈 날짜는 하단(2026-06-22 GM)
       dbRows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
       renderDbTable();
-      _tapReady = true; renderTodayActionPanel();   // 오늘 할 일 패널(배754) — dbRows 로드 완료 시 갱신
     })
     .catch(function(err){
       renderDbEmpty('데이터 로드 실패', err.message || 'GAS URL 또는 배포 상태를 확인하세요.');
@@ -5264,122 +5228,6 @@ function renderDbTable() {
   document.getElementById('dbCount').textContent = '총 ' + dbRows.length + '건 중 ' + filtered.length + '건 표시';
   _updateDbUnfilledBadge(filtered);
   _updateDbGraduatedInfo();
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   오늘 할 일 액션 패널(상담사용) — 배754. 스펙: .omc/specs/deep-interview-cpo-autonomy-brain.md
-   ①백엔드 AI 없이 ②모듈화 ③UX 극단순화의 첫 구체 조각 — 클릭만으로 회원 라이프사이클을 굴린다.
-   분류기준(①오늘 신규 ②미컨택 ③오늘 상담·체험 예약 ④이탈위험 추정)=scripts/cpo_report.py
-   (uncontacted_candidates·todays_reservations·churn_risk_candidates)와 완전히 동일 — 텔레그램 자동보고와
-   숫자가 어긋나지 않도록 로직을 프론트에도 1:1 이식. 추가 GAS 호출 0(이미 사전로드된 dbRows 재사용).
-   v1 범위=멤버십(dbRows)만 — 강습은 예약이 reservations 배열이 아니라 consult 단일필드라 구조가 달라
-   억지로 끼워맞추지 않음(정직·블라스트 반경 최소, 후속 확장 과제로 남김). 2026-07-09 시포·GM
-   ═══════════════════════════════════════════════════════════════════════ */
-var _tapReady = false;               // dbRows 최초 로드 완료 전엔 "불러오는 중" 유지(스코프 있는 0건과 구분)
-var _tapOpenKey = null;              // 현재 펼쳐진 섹션(재렌더 후에도 유지) — 극단순화: 최대 1개만 펼침
-var TAP_LOSS_STATUSES = ['LOSS', '환불', '양도LOSS'];       // cpo_report.py _LOSS_STATUSES 1:1
-var TAP_SUCCESS_STATUSES = ['SUC', '단기SUC'];               // cpo_report.py _SUCCESS_STATUSES 1:1
-function _tapIsActive(status) {
-  var s = String(status || '').trim();
-  return !!s && TAP_LOSS_STATUSES.indexOf(s) < 0 && TAP_SUCCESS_STATUSES.indexOf(s) < 0;
-}
-function _tapToday() { return _mdashYmd(new Date()); }   // 기존 헬퍼 재사용(§멤버십 대시보드와 동일 YMD 포맷)
-// 4분류 산출 — cpo_report.py build_daily_report()의 ①~④와 동일 조건. rows=dbRows(사전로드, 추가 호출 없음).
-function _tapClassify(rows, today) {
-  var todayNew = rows.filter(function(r){ return r.timestamp === today; });
-  var uncontacted = rows.filter(function(r){ return _tapIsActive(r.status) && !((r.contacts || []).length > 0); });
-  var todaysRes = [];
-  rows.forEach(function(r){
-    var hits = (r.reservations || []).filter(function(x){ return x.date === today; });
-    if (hits.length) todaysRes.push({ row: r, time: hits[0].time || '' });
-  });
-  todaysRes.sort(function(a, b){ return (a.time || '').localeCompare(b.time || ''); });
-  var cutoffDt = new Date(today + 'T00:00:00'); cutoffDt.setDate(cutoffDt.getDate() - 14);
-  var cutoffStr = _mdashYmd(cutoffDt);
-  var churn = rows.filter(function(r){
-    if (!_tapIsActive(r.status)) return false;
-    var ts = r.timestamp || '';
-    if (!ts || ts > cutoffStr) return false;   // 최초 문의일 기준 근사(연락메모 날짜 미반영) — cpo_report.py와 동일 정직 한계
-    var hasFuture = (r.reservations || []).some(function(x){ return (x.date || '') >= today; });
-    return !hasFuture;
-  });
-  return { todayNew: todayNew, uncontacted: uncontacted, todaysRes: todaysRes, churn: churn };
-}
-// rowIndex 클릭 → 문의DB 탭으로 이동 + 행 하이라이트 + 기존 CONTACT 연락이력 모달 오픈(신규 백엔드 액션 0, 통합검색 _unifiedSearchGoto와 동일 패턴 재사용)
-function _tapOpenRow(rowIndex) {
-  switchType('membership'); switchTab('db');   // v1=멤버십 데이터라 렌트/비즈·강습 탭에 있어도 멤버십 문의DB로 강제 진입
-  setTimeout(function(){
-    var live = dbRows.find(function(r){ return r.rowIndex === rowIndex; });
-    if (!live) { showToast('행을 찾을 수 없습니다(목록이 바뀌었을 수 있어요)', 'err'); return; }
-    var trEl = document.querySelector('#dbBody tr[data-row-index="' + CSS.escape(String(rowIndex)) + '"]');
-    if (trEl) {
-      trEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      var prevBg = trEl.style.backgroundColor;
-      trEl.style.transition = 'background-color .4s';
-      trEl.style.backgroundColor = 'var(--teal-bg)';
-      setTimeout(function(){ trEl.style.backgroundColor = prevBg; }, 1500);
-    }
-    openContactModal(live);
-  }, 260);
-}
-function _tapToggle(key) {
-  _tapOpenKey = (_tapOpenKey === key) ? null : key;
-  renderTodayActionPanel();
-}
-function _tapRowHtml(r, timeLabel) {
-  var sub = (r.channel || '채널미상');
-  if (r.phone) sub += ' · ' + r.phone;
-  return '<div class="tap-row" onclick="_tapOpenRow(' + r.rowIndex + ')">' +
-    '<span class="tap-row-name">' + esc(r.name || '(이름없음)') + '</span>' +
-    '<span class="tap-row-sub">' + esc(sub) + '</span>' +
-    (timeLabel ? '<span class="tap-row-time">' + esc(timeLabel) + '</span>' : '') +
-    '</div>';
-}
-function _tapSectionHtml(s) {
-  var n = s.items.length;
-  var open = _tapOpenKey === s.key;
-  var listHtml;
-  if (!n) {
-    listHtml = '<div class="tap-empty">' + esc(s.empty) + '</div>';
-  } else {
-    var shown = s.items.slice(0, 12);
-    listHtml = shown.map(function(it){
-      return s.key === 'res' ? _tapRowHtml(it.row, it.time || '시간미정') : _tapRowHtml(it);
-    }).join('');
-    if (n > shown.length) listHtml += '<div class="tap-row-more">…외 ' + (n - shown.length) + '건 (문의DB 탭·필터에서 전체 확인)</div>';
-  }
-  if (s.caveat) listHtml += '<div class="tap-caveat">' + esc(s.caveat) + '</div>';
-  return '<div class="tap-sec">' +
-    '<button type="button" class="tap-sec-head' + (open ? ' open' : '') + '" onclick="_tapToggle(\'' + s.key + '\')">' +
-      '<span class="tap-sec-label">' + s.icon + ' ' + esc(s.label) + '</span>' +
-      '<span class="mdash-chip ' + s.color + '"><b>' + n + '</b></span>' +
-      '<span class="tap-caret">▾</span>' +
-    '</button>' +
-    '<div class="tap-sec-body' + (open ? ' open' : '') + '">' + listHtml + '</div>' +
-  '</div>';
-}
-function renderTodayActionPanel() {
-  var body = document.getElementById('tapBody');
-  var scopeEl = document.getElementById('tapScopeNote');
-  if (!body) return;
-  if (!_tapReady) { body.innerHTML = '<div class="tap-empty">불러오는 중…</div>'; return; }
-  if (_curFamily === 'lesson') {
-    if (scopeEl) scopeEl.textContent = '강습 회원관리 화면';
-    body.innerHTML = '<div class="tap-empty">🚧 강습 오늘 할 일은 v1 범위 밖입니다 — 강습 예약은 상담 1건(consult)만 기록되어 멤버십과 구조가 달라 후속 확장 과제로 남깁니다. 강습 문의 처리는 위 성인·유소년 강습 탭에서 계속하세요.</div>';
-    return;
-  }
-  if (scopeEl) scopeEl.textContent = '멤버십 문의 ' + dbRows.length.toLocaleString() + '건 기준';
-  var today = _tapToday();
-  var cls = _tapClassify(dbRows, today);
-  var sections = [
-    { key: 'new',   icon: '🆕', label: '오늘 신규 문의',            color: 'teal',   items: cls.todayNew,    empty: '오늘 신규 문의 없음' },
-    { key: 'unc',   icon: '📵', label: '미컨택 문의(연락이력 0건)',   color: 'red',    items: cls.uncontacted, empty: '미컨택 없음 — 전원 컨택 완료' },
-    { key: 'res',   icon: '📅', label: '오늘 상담·체험 예약',         color: 'accent', items: cls.todaysRes,   empty: '오늘 예약 없음' },
-    { key: 'churn', icon: '⚠️', label: '이탈위험 후보(추정)',        color: 'yellow', items: cls.churn,       empty: '이탈위험 후보 없음',
-      caveat: '※ 추정치: 최초 문의일 기준 14일+ 무진전 근사 — 연락메모 속 날짜는 구조화 데이터가 아니라 미반영, 실제 마지막 컨택일 기준 실측 아님' }
-  ];
-  if (_tapOpenKey === null) _tapOpenKey = (cls.uncontacted.length || cls.todaysRes.length) ? 'unc' : null;   // 첫 렌더=처리할 게 있으면 미컨택 먼저 펼침(한눈에)
-  body.innerHTML = sections.map(_tapSectionHtml).join('');
 }
 
 function buildDbRow(row, isNew) {
@@ -5497,7 +5345,6 @@ function _saveCell(rowIndex, patch) {
   if (idx < 0) return;
   var keyPhone = dbRows[idx].phone || '';   // 편집 전(로드된) 전화 = 행키. body.phone(새 값)과 별개 — 전화 수정 시에도 안전.
   Object.assign(dbRows[idx], patch);
-  if (_tapReady) renderTodayActionPanel();   // 상태·CONTACT 저장 즉시 오늘 할 일 패널 재계산(배754) — 컨택 기록하면 바로 미컨택에서 빠짐
   var r = dbRows[idx];
   var payload = {
     action:   'member_inquiry_update',
