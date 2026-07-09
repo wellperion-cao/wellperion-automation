@@ -1039,6 +1039,20 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <button type="button" class="type-chip" data-type="biz" onclick="switchType('biz')">비즈니스</button>
   </div>
 
+  <!-- ══════════════════════════════ 오늘 할 일 액션 패널(상담사용) — 배754, 2026-07-09 시포·GM ══════════════════════════════
+       매일 열면 한눈에: ①오늘 신규문의 ②미컨택(연락이력 0건) ③오늘 상담·체험 예약 ④이탈위험 후보(추정). 멤버십+강습(성인·유소년) 통합.
+       분류기준은 scripts/cpo_report.py(uncontacted_candidates·todays_reservations·churn_risk_candidates)와 동일, 추가 GAS 호출 없음.
+       항목 클릭 → 기존 CONTACT 연락이력 모달(openContactModal)로 바로 진입(신규 백엔드 액션 0).
+       ★ type-chip-bar 밖(모든 type-pane의 형제)에 배치 — type-membership 안에 있으면 강습 탭에서 패널 자체가 안 보이는
+       버그가 있었음(배754 강습편입 검수 중 발견·수정, 2026-07-09). -->
+  <div class="card" id="todayActionPanel" style="border-left:3px solid var(--teal)">
+    <div class="card-title">
+      <span class="icon">🧭</span><span>오늘 할 일</span>
+      <span id="tapScopeNote" style="margin-left:auto;font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap"></span>
+    </div>
+    <div id="tapBody"><div class="tap-empty">불러오는 중…</div></div>
+  </div>
+
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
   <div id="type-membership" class="type-pane active">
 
@@ -1077,18 +1091,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
       </div>
     </a>
-  </div>
-
-  <!-- ══════════════════════════════ 오늘 할 일 액션 패널(상담사용) — 배754, 2026-07-09 시포·GM ══════════════════════════════
-       매일 열면 한눈에: ①오늘 신규문의 ②미컨택(연락이력 0건) ③오늘 상담·체험 예약 ④이탈위험 후보(추정). v1=멤버십(dbRows) 전용 —
-       분류기준은 scripts/cpo_report.py(uncontacted_candidates·todays_reservations·churn_risk_candidates)와 동일, 추가 GAS 호출 없음.
-       항목 클릭 → 기존 CONTACT 연락이력 모달(openContactModal)로 바로 진입(신규 백엔드 액션 0). -->
-  <div class="card" id="todayActionPanel" style="border-left:3px solid var(--teal)">
-    <div class="card-title">
-      <span class="icon">🧭</span><span>오늘 할 일</span>
-      <span id="tapScopeNote" style="margin-left:auto;font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap"></span>
-    </div>
-    <div id="tapBody"><div class="tap-empty">불러오는 중…</div></div>
   </div>
 
   <!-- 멤버십 현황 집중형 대시보드 = 버튼(📊 멤버십 현황) → 팝업(#mdashModalOverlay). 배3, 2026-07-07 시포·GM -->
