@@ -5322,14 +5322,32 @@ function _tapOpenRow(rowIndex) {
     openContactModal(live);
   }, 260);
 }
+// rowIndex 클릭(오늘 예약 섹션 전용) → 문의DB 탭 이동+하이라이트 + 예약 상세 모달(openInquiryResModal) 오픈.
+// GM 결정(2026-07-09): 오늘 예약 섹션만 CONTACT 대신 예약모달 — 오늘 올 손님 준비엔 일정 상세가 더 맞음. 다른 3섹션은 CONTACT 모달 유지.
+function _tapOpenReservation(rowIndex) {
+  switchType('membership'); switchTab('db');
+  setTimeout(function(){
+    var live = dbRows.find(function(r){ return r.rowIndex === rowIndex; });
+    if (!live) { showToast('행을 찾을 수 없습니다(목록이 바뀌었을 수 있어요)', 'err'); return; }
+    var trEl = document.querySelector('#dbBody tr[data-row-index="' + CSS.escape(String(rowIndex)) + '"]');
+    if (trEl) {
+      trEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      var prevBg = trEl.style.backgroundColor;
+      trEl.style.transition = 'background-color .4s';
+      trEl.style.backgroundColor = 'var(--teal-bg)';
+      setTimeout(function(){ trEl.style.backgroundColor = prevBg; }, 1500);
+    }
+    openInquiryResModal(live);   // _activateCellSchedule과 동일 패턴(row=live dbRows 항목, 인자 1개)
+  }, 260);
+}
 function _tapToggle(key) {
   _tapOpenKey = (_tapOpenKey === key) ? null : key;
   renderTodayActionPanel();
 }
-function _tapRowHtml(r, timeLabel) {
+function _tapRowHtml(r, timeLabel, handlerFn) {
   var sub = (r.channel || '채널미상');
   if (r.phone) sub += ' · ' + r.phone;
-  return '<div class="tap-row" onclick="_tapOpenRow(' + r.rowIndex + ')">' +
+  return '<div class="tap-row" onclick="' + (handlerFn || '_tapOpenRow') + '(' + r.rowIndex + ')">' +
     '<span class="tap-row-name">' + esc(r.name || '(이름없음)') + '</span>' +
     '<span class="tap-row-sub">' + esc(sub) + '</span>' +
     (timeLabel ? '<span class="tap-row-time">' + esc(timeLabel) + '</span>' : '') +
@@ -5344,7 +5362,7 @@ function _tapSectionHtml(s) {
   } else {
     var shown = s.items.slice(0, 12);
     listHtml = shown.map(function(it){
-      return s.key === 'res' ? _tapRowHtml(it.row, it.time || '시간미정') : _tapRowHtml(it);
+      return s.key === 'res' ? _tapRowHtml(it.row, it.time || '시간미정', '_tapOpenReservation') : _tapRowHtml(it);
     }).join('');
     if (n > shown.length) listHtml += '<div class="tap-row-more">…외 ' + (n - shown.length) + '건 (문의DB 탭·필터에서 전체 확인)</div>';
   }
