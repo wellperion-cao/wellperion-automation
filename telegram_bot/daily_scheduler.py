@@ -2086,8 +2086,7 @@ def _build_nudge_body(shift: str) -> str | None:
 
     return (
         f"⚠️ [{label}] 지원부 점검 미완 — "
-        f"남 {m_done}/{mT} · 여 {f_done}/{fT} (합 {done}/{total}). {action}.\n"
-        f"🔗 대시보드: {_SUPPORT_DASHBOARD_URL}"
+        f"남 {m_done}/{mT} · 여 {f_done}/{fT} (합 {done}/{total}). {action}."
     )
 
 

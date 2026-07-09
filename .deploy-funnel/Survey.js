@@ -748,8 +748,7 @@ function _notifyNewInquiries_() {
           + (prog ? '종목: ' + prog + '\n' : '')
           + '이름: ' + name + '\n'
           + '연락처: ' + phone + '\n'
-          + '유입채널: ' + chan + '\n'
-          + '시각: ' + tsStr
+          + '유입채널: ' + chan
           + (content ? '\n내용: ' + content : '');
         _notifyTelegram(msg, inquiryChatId);
       });
@@ -843,8 +842,7 @@ function onInquiryFormSubmit(e) {
         + (prog ? '종목: ' + prog + '\n' : '')
         + '이름: ' + name + '\n'
         + '연락처: ' + phone + '\n'
-        + '유입채널: ' + chan + '\n'
-        + '시각: ' + tsStr
+        + '유입채널: ' + chan
         + (content ? '\n내용: ' + content : '');
       _notifyTelegram(msg, inquiryChatId);
     });
@@ -2118,8 +2116,7 @@ function _processAction(body) {
             + (prog ? '종목: ' + prog + '\n' : '')
             + '이름: ' + name + '\n'
             + '연락처: ' + phone + '\n'
-            + '유입채널: ' + chan + '\n'
-            + '시각: ' + tsStr
+            + '유입채널: ' + chan
             + (content ? '\n내용: ' + content : '');
 
           return { row: rowNum, msg: msg, prog_col_found: pvIdxProg >= 0 };
