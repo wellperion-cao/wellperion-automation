@@ -198,6 +198,21 @@
       "차단조치": "A) bot.py run_polling을 감시 while 루프로 감싸 NetworkError/TimedOut/Bad Gateway 시 백오프 자동 재연결(정상종료·KeyboardInterrupt는 그대로 통과, close_loop 후 새 이벤트루프). B) bot.py 5분 하트비트 파일(bot_heartbeat.txt) + scripts/telegram_health_check.py가 20분 이상 미갱신 시 '폴링 정지 의심' 경보(하트비트 미도입=봇 미재기동 시 오탐 안 함). C) 폴링 생존 판별법 = getUpdates 409(비침습 금지·봇 슬롯 뺏김) 대신 하트비트 파일 신뢰. 메모리 reference_bot_polling_liveness_and_healthcheck 박제.",
       "상태": "OPEN(코드 검증 완료 · 라이브 발효=봇 재기동(퇴근 재부팅) 대기)",
       "검증증거": "bot.py 감시루프 harness 4시나리오 통과(크래시→재연결·정상종료·KeyboardInterrupt 통과·연속실패 후 재시도)·py_compile OK. 헬스체크 하트비트 시뮬(stale 30분→경보·fresh→무경보·missing→오탐가드)·py_compile OK. getUpdates 200(비폴링)/409(폴링) 판별로 사고 확진 + 재기동 후 복구확인. ★최종 라이브 검증=퇴근 재부팅 후 하트비트 갱신+헬스체크 OK+getUpdates 409(단일폴링) 실측 시 GUARDED 승격 예정. 커밋 866f11b6(폴링 supervisor)·6d17fea4(하트비트+헬스체크)."
+    },
+    {
+      "id": "INC-012",
+      "date": "2026-07-10",
+      "watch_globs": [
+        "wellperion-agents/scripts/ceo_morning_pipeline.py"
+      ],
+      "gate": "warn",
+      "요약": "매일 08시 통합 보고의 '오늘의 항로'가 활성 배 27척인데도 0건으로 나오던 문제. 보고 로직이 정본 머지를 안 쓰고 구글시트만 읽어 큐의 배를 빠뜨린 것 — 정본 머지를 재사용하게 고쳐 다시는 안 그럽니다.",
+      "증상": "08시 ceo_morning_pipeline이 G1 시트 API 성공 시 시트 데이터만 쓰고 status/_queue.json 활성 배(PENDING/IN_PROGRESS 27건)를 병합 안 함 → '오늘 항로 0건'(시트엔 GM 결재건만 존재, C-Level 자동등록 배는 큐에만). 매일 구조적 0건.",
+      "본질": "G1='큐+시트 머지' 정본 규칙(hangro_board.py·queue_integrity_check.py·CLAUDE.md §3-1)을 08시 보고만 어기고 독자 로직으로 큐를 누락. 정본을 두고 별도 로직이 규칙을 어김(INC-007 동류 — 큐 읽기 경로 정합 어긋남).",
+      "뿌리분류": "정합어긋남",
+      "차단조치": "stage1_collect_classify G1 성공 경로가 hangro_board.fetch_queue_items(정본 GAS+큐 머지)를 재사용하도록 배선(중복 로직 미신설)+queue_integrity_check._core_key로 시트 제목과 dedup. STANDBY 상태값 화이트리스트 등록(형식경고 해소). 커밋 51e1505b·6c316ab9.",
+      "상태": "GUARDED",
+      "검증증거": "dry-run 실측 '오늘 항로' 0→27건(hangro_board 활성수와 정확히 일치)·선장 결정 6건 이중계상 없음(dedup 확인)·형식경고 0건·STAGE1~4 정상 종료. 커밋·push 완료."
     }
   ]
 }
