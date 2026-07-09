@@ -383,6 +383,20 @@ details.footnote-toggle > .fn-body{
   border-left:3px solid var(--accent);border-radius:var(--radius-sm);
   font-size:12px;color:var(--dim);line-height:1.75;
 }
+
+/* ── 페이지 소개 캡슐 — 대시보드 전체 소개 1회 (카드별 캡션과 별개) ── */
+.intro-capsule{
+  background:var(--paper2);border:1px solid var(--border);
+  border-left:3px solid var(--accent);border-radius:var(--radius-md);
+  padding:14px 18px;margin-bottom:18px;
+  display:flex;flex-direction:column;gap:7px;
+}
+.intro-row{display:flex;gap:10px;align-items:baseline;font-size:12px;color:var(--dim);line-height:1.7}
+.intro-tag{
+  flex-shrink:0;width:46px;font-size:10px;font-weight:700;
+  color:var(--accent);letter-spacing:.04em;
+}
+.intro-row b{color:var(--text);font-weight:700}
 </style>
 <script src="../../_assets/gate.js" charset="utf-8"></script>
 </head>
@@ -397,6 +411,16 @@ details.footnote-toggle > .fn-body{
 </div>
 
 <div class="content">
+
+  <!-- ════════════════════════════════════════════
+       ★ 페이지 소개 캡슐 — 이 대시보드가 무엇/무슨 기능인지 한눈 요약 (실무진 눈높이)
+       카드별 캡션(배545/547 정직표기)과 별개 — 페이지 전체를 소개하는 상위 1개, 중복 아님
+       ════════════════════════════════════════════ -->
+  <div class="intro-capsule">
+    <div class="intro-row"><span class="intro-tag">무엇</span><span>우리 마케팅이 사람을 얼마나 데려오는지 <b>한눈에 보는 판</b>입니다.</span></div>
+    <div class="intro-row"><span class="intro-tag">기능</span><span>채널별로 <b>클릭(관심) → 문의(연락) → 전환(등록)</b>을 정직하게 보여줍니다 — 잰 것만 %로, 못 잰 건 숫자만 두고 "추적 밖"이라 표시합니다.</span></div>
+    <div class="intro-row"><span class="intro-tag">읽는 법</span><span>클릭=관심 신호 · 문의=실제 연락 · 전환=등록. 인스타는 클릭→문의 %가 실측이고, 네이버·당근·카카오는 플레이스·검색 등 추적 밖 유입이 섞여 전환율을 내지 않습니다.</span></div>
+  </div>
 
   <!-- 기간 세그먼트 토글 (클릭·문의·전환 3종에만 적용) -->
   <!-- 월 네비게이터 — 기본 선택(월) 위에 표시 -->
