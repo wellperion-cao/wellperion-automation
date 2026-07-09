@@ -373,6 +373,7 @@
   const INIT_BEH=['read','mouse','coffee','think','glance','type','stretch'];
   agents.forEach((a,i)=>{
     a.phase=i*0.9; a.status='idle'; a.task=''; a.tStart=0; a.tDur=0; a.tDone=0; a.color=AGENT_COLORS[a.id];
+    a.sticky=false; a.stickyStart=0;   // 지속 busy 상태(진행중 로그) — 폴링 주기와 무관하게 유지
     a.nod=0; a.nodAt=2+Math.random()*4; a._nodStart=0;
     a.beh=INIT_BEH[i%INIT_BEH.length]; a.behStart=0; a.behDur=2.5; a.behEnd=1.2+i*0.55+Math.random()*1.4;
     a.behPrev=null; a.behBlendStart=-99;
@@ -1382,11 +1383,14 @@
   let nextSpawnAt=1.0;
   const rand=(a,b)=>a+Math.random()*(b-a);
 
-  let realQueue=[];          // {agent,text,kind,isLead,count} — 오래된→최신 순 소진
+  let realQueue=[];          // {agent,text,kind,isLead,count,progress} — 오래된→최신 순 소진
   let autologMaxRow=0;
+  const STICKY_MAX_SEC=90*60;  // 안전장치 — sticky busy가 90분 넘게 해소 안 되면 자동 idle 복귀
   const actorToAgent=actor=>{ const m=String(actor||'').match(/A-?([1-7])/); return m? ('A-'+m[1]) : null; };
   const todayStr=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
-  function enqueueLog(rows,opts){ opts=opts||{}; rows.forEach(r=>{ const agent=actorToAgent(r['주체']); realQueue.push({ agent, text:String(r['작업']||'').slice(0,80), kind:String(r['결과']||'완료'), isLead:!agent, count:!!opts.count }); }); }
+  // busy(지속) 진입/유지 판정 — 결과 필드에 '진행' 포함 또는 작업 필드가 '착수'로 시작
+  const isProgressRow=r=>{ const result=String(r['결과']||''), work=String(r['작업']||'').trim(); return result.indexOf('진행')>=0 || work.indexOf('착수')===0; };
+  function enqueueLog(rows,opts){ opts=opts||{}; rows.forEach(r=>{ const agent=actorToAgent(r['주체']); realQueue.push({ agent, text:String(r['작업']||'').slice(0,80), kind:String(r['결과']||'완료'), isLead:!agent, count:!!opts.count, progress:isProgressRow(r) }); }); }
 
   async function initAutolog(){
     let rows=[];
@@ -1394,16 +1398,26 @@
     if(!rows.length){ return; }
     autologMaxRow = rows.reduce((m,r)=>Math.max(m,Number(r['_sheet_row'])||0),0);
     const td=todayStr();
-    const todays=rows.filter(r=>String(r['일시']).slice(0,10)===td);
+    const todays=rows.filter(r=>String(r['일시']).slice(0,10)===td);   // rows와 동일 순서(최신→과거) 유지
     todayCount=todays.length;
     todays.forEach(r=>{ const a=actorToAgent(r['주체']); if(a&&tally[a]!=null) tally[a]++; });
     const te=document.getElementById('today'); if(te) te.textContent=todayCount;
     agents.forEach(a=>{ const el=document.getElementById('cn-'+a.id); if(el) el.textContent=tally[a.id]; });
+    // 초기 로드 복원 — 오늘자 로그에서 에이전트별 '최신' 행이 진행중이면 즉시 busy로 시작(중간 진입 대응)
+    const seenAgent={};
+    todays.forEach(r=>{
+      const a=actorToAgent(r['주체']); if(!a||seenAgent[a]) return; seenAgent[a]=true;
+      if(!isProgressRow(r)) return;
+      const c=byId[a]; if(!c) return;
+      const nowT=termNow();
+      c.status='busy'; c.sticky=true; c.stickyStart=nowT; c.tStart=nowT; c.tDur=rand(2.2,4.0);
+      c.task=String(r['작업']||'').slice(0,80); c.exprEnd=0; c._count=false;
+    });
     // 피드: 최신 3건 실제 로그
     logFeed.length=0;
     rows.slice(0,3).forEach(r=>{ const a=actorToAgent(r['주체']); logFeed.push({ time:String(r['일시']).slice(11,16), id:(a||'팀장'), tag:(a&&byId[a]?byId[a].tag:''), text:String(r['작업']||'').slice(0,80), kind:String(r['결과']||''), color:(a&&byId[a]?byId[a].color:null) }); });
     renderFeed();
-    // 최근 12건 오래된→최신 재생(생동감) — 카운터는 실값이므로 count:false
+    // 최근 12건 오래된→최신 재생(생동감) — 카운터는 실값이므로 count:false (이미 busy 복원된 에이전트는 assignReal이 갱신만 함)
     enqueueLog(rows.slice(0,12).reverse(), {count:false});
     setInterval(pollAutolog, 25000);
   }
@@ -1416,6 +1430,20 @@
     enqueueLog(fresh.reverse(), {count:true});
   }
 
+  // 오늘 집계(today/tally) 반영 — 실제 신규 행(count:true) 소진 시점마다 즉시 1 증가
+  function bumpCount(c){
+    todayCount++; tally[c.id]++;
+    const _te=document.getElementById('today'); if(_te)_te.textContent=todayCount;
+    const _ce=document.getElementById('cn-'+c.id); if(_ce)_ce.textContent=tally[c.id];
+  }
+  // busy 애니메이션을 완료 상태로 마무리(체크마크 + 브리핑 라인) — 일반 완료·sticky 해소 공통 경로
+  function finishBusy(c, now){
+    c.status='done'; c.tDone=now; c.nod=1; c._nodStart=now; c.exprEnd=0;
+    if(c._count) bumpCount(c);
+    setTicker(c.id, c.tag, c.task, '완료');
+    flashChip(c.id);
+    c._count=false;
+  }
   function assignReal(now){
     if(!realQueue.length) return null;
     const ev=realQueue[0];
@@ -1428,11 +1456,33 @@
     }
     const c=byId[ev.agent];
     if(!c){ realQueue.shift(); return null; }
-    if(c.status!=='idle') return null;   // 해당 에이전트 바쁨 → 다음 스폰에서 재시도
+    if(c.status!=='idle'){
+      if(c.sticky && !ev.progress){          // 진행중이던 에이전트에게 해소(비-진행) 로그 도착 → 즉시 busy 종료
+        realQueue.shift();
+        c.sticky=false; c.task=ev.text; c._count=ev.count;
+        finishBusy(c, now);
+        lead.lookTarget=c; lead.lookUntil=now+1.4; lead.nod=1; lead._nodStart=now;
+        return c;
+      }
+      if(c.sticky && ev.progress){           // 계속 진행중 로그 → 표시만 갱신, busy 루프 유지(타이머는 안 건드림)
+        realQueue.shift();
+        c.task=ev.text;
+        if(ev.count) bumpCount(c);           // 진행 행 자체도 신규면 완료를 기다리지 않고 즉시 집계
+        setTicker(c.id, c.tag, ev.text, '진행');
+        return c;
+      }
+      return null;                            // 일반(단발) busy 중 → 다음 스폰에서 재시도(기존 동작)
+    }
     realQueue.shift();
-    c.status='busy'; c.task=ev.text; c.tStart=now; c.tDur=rand(2.2,4.0); c.exprEnd=0; c._count=ev.count;
+    c.status='busy'; c.task=ev.text; c.tStart=now; c.tDur=rand(2.2,4.0); c.exprEnd=0;
+    if(ev.progress){
+      c.sticky=true; c.stickyStart=now; c._count=false;
+      if(ev.count) bumpCount(c);             // 착수 행 자체도 신규면 완료를 기다리지 않고 즉시 집계
+    } else {
+      c.sticky=false; c._count=ev.count;     // 기존(단발) 경로 — 완료 시 finishBusy에서 집계(기존 동작 유지)
+    }
     lead.lookTarget=c; lead.lookUntil=now+1.4; lead.nod=1; lead._nodStart=now;
-    setTicker(c.id, c.tag, c.task, '배정');
+    setTicker(c.id, c.tag, c.task, ev.progress?'진행':'배정');
     return c;
   }
   function nextEvent(now){ ambientFeed(); assignReal(now); }
@@ -1441,12 +1491,15 @@
     if(t>=nextSpawnAt){ nextEvent(t); nextSpawnAt = t + rand(2.5,5.0); }
     for(const c of agents){
       if(c.status==='busy' && (t-c.tStart)>=c.tDur){
-        c.status='done'; c.tDone=t; c.nod=1; c._nodStart=t; c.exprEnd=0;
-        if(c._count){ todayCount++; tally[c.id]++; }
-        setTicker(c.id, c.tag, c.task, '완료');
-        flashChip(c.id);
-        if(c._count){ var _te=document.getElementById('today'); if(_te)_te.textContent=todayCount; }
-        if(c._count){ var _ce=document.getElementById('cn-'+c.id); if(_ce)_ce.textContent=tally[c.id]; } c._count=false;
+        if(c.sticky){
+          if((t-c.stickyStart) >= STICKY_MAX_SEC){        // 안전장치 — 완료 로그 유실 대비 자동 idle 복귀
+            c.sticky=false; c.status='idle'; c.task=''; c.nodAt=t+rand(2.5,6); c.exprEnd=0;
+          } else {
+            c.tStart=t; c.tDur=rand(2.2,4.0);              // 기존 작업 애니메이션 루프 재사용(계속 반복)
+          }
+        } else {
+          finishBusy(c, t);
+        }
       } else if(c.status==='done' && (t-c.tDone)>1.05){
         c.status='idle'; c.task=''; c.nodAt=t+rand(2.5,6); c.exprEnd=0;
       }
