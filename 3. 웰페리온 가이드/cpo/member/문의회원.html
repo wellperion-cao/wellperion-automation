@@ -1884,6 +1884,29 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </div>
 </div>
 
+<!-- ══ 종료사유 모달 — 종료회원 표 '종료사유' 칸 · 오늘 할 일 '종료사유 미기록' 항목 클릭 시. 정형 드롭다운+메모.
+     판정=현행 이탈 기준 그대로(새 판정 없음). 저장=member_active_update(fields:종료사유·종료사유메모). 2026-07-09 시포·GM ══ -->
+<div class="consult-overlay" id="churnOverlay" onclick="if(event.target===this)closeChurnModal()">
+  <div class="consult-modal" role="dialog" aria-modal="true">
+    <div class="consult-modal-head">
+      <span class="consult-modal-kind experience">종료</span>
+      <span class="consult-modal-title">종료사유</span>
+    </div>
+    <div class="consult-row"><span class="ck">회원</span><span class="cv" id="crMemberFixed">—</span></div>
+
+    <div class="consult-field-label">종료사유</div>
+    <select id="crReasonSel" onchange="_crUpdateNoteReq()" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit"></select>
+
+    <div class="consult-field-label">메모 <span id="crNoteReq" style="display:none;color:var(--red)">('기타' 선택 시 필수)</span></div>
+    <textarea class="consult-memo" id="crNoteInput" placeholder="상세 사유를 입력하세요."></textarea>
+
+    <div class="consult-actions">
+      <button class="consult-btn-cancel" onclick="closeChurnModal()">취소</button>
+      <button class="consult-btn-save" id="crSaveBtn" onclick="saveChurnModal()">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 가이드 문서 모달 (회원관리.html에서 이식 — 운영원칙·정기루틴·이탈대응·이탈현황) 2026-06-26 시포 통합 ══ -->
 <div class="gdoc-overlay" id="gdocOverlay" onclick="if(event.target===this)closeGdoc()">
   <div class="gdoc-modal" role="dialog" aria-modal="true">
@@ -4094,6 +4117,12 @@ function _activeFilter(query) {
       · 그 외 컬럼은 시트 원순서 유지(누락 없음). corp/ended 스코프는 제네릭(원순서). 2026-07-03 시포·GM */
 function _activeDisplayCols() {
   var cols = _activeHeaders.slice();
+  // 종료 스코프: '종료사유'(+메모) 원본 칸은 숨기고 전용 통합셀('__churn__')로 대체(정형 드롭다운+메모 모달). 2026-07-09 시포·GM
+  if (_activeScope === 'ended') {
+    var out = cols.filter(function(h){ return h !== CHURN_REASON_COL && h !== CHURN_REASON_NOTE_COL; });
+    out.push('__churn__');
+    return out;
+  }
   if (_activeScope !== 'valid') return cols;
   var reconRaw = [RECON_COLS.date, RECON_COLS.time, RECON_COLS.note];
   var hasRecon = (cols.indexOf(ACT_RES_KEY) >= 0) || reconRaw.some(function(h){ return cols.indexOf(h) >= 0; });
@@ -4137,6 +4166,7 @@ function _activeRender(rows, isFiltered) {
   if (!isFiltered) {
     var ths = displayCols.map(function(h){
       if (h === '__recon__') return '<th style="white-space:nowrap">재등록 상담</th>';   // 통합셀(정렬 대상 아님)
+      if (h === '__churn__') return '<th style="white-space:nowrap">종료사유</th>';       // 통합셀(정렬 대상 아님) 2026-07-09 시포·GM
       var leftAlign = (h === '수강반종목명') ? ';text-align:left' : '';
       var arrow = (_activeSort.col === h) ? (_activeSort.dir < 0 ? ' ▼' : ' ▲') : '';
       return '<th data-sortcol="' + esc(h) + '" title="클릭하여 정렬" style="white-space:nowrap;cursor:pointer;user-select:none' + leftAlign + '">' + esc(h) + arrow + '</th>';
@@ -4172,6 +4202,7 @@ function _activeRender(rows, isFiltered) {
     html += '<tr data-rowindex="' + esc(ri) + '">';
     displayCols.forEach(function(h){
       if (h === '__recon__') { html += _reconCellHtml(row); return; }
+      if (h === '__churn__') { html += _churnCellHtml(row); return; }
       var isPhone = (h === '휴대폰 번호');
       var leftStyle = (h === '수강반종목명') ? 'text-align:left;' : '';
       var editAttr = (!isPhone && _activeScope !== 'corp') ? ' data-col="' + esc(h) + '"' : '';
@@ -4393,9 +4424,9 @@ function _wireActiveDblclick(){
   // 재등록 상담 통합셀 = 단일 클릭 → 회원 고정 모달(인라인 편집 대상 아님). 2026-07-03 시포·GM
   tbody.addEventListener('click', function(e){
     var cell = e.target.closest ? e.target.closest('td.recon-cell') : null;
-    if (!cell) return;
-    var ri = parseInt(cell.getAttribute('data-recon'), 10);
-    if (ri) openReconForMember(ri);
+    if (cell) { var ri = parseInt(cell.getAttribute('data-recon'), 10); if (ri) openReconForMember(ri); return; }
+    var ccell = e.target.closest ? e.target.closest('td.churn-reason-cell') : null;
+    if (ccell) { var cri = parseInt(ccell.getAttribute('data-churn'), 10); if (cri) openChurnReasonModal(cri); }
   });
   tbody.addEventListener('dblclick', function(e){
     var td = e.target.closest('td');
@@ -4987,6 +5018,104 @@ function ensureActiveMembers(cb) {
     .catch(function(){ cb(); });
 }
 
+/* ─────────────────────────────────────────────
+   회원 종료사유 기록 — 종료회원 표 '종료사유' 칸(정형 드롭다운+메모) + 오늘 할 일 4번째 섹션 '종료사유 미기록'.
+   판정=현행 이탈 기준 그대로(scope=ended, Survey.js czIsLoss와 동일 서버 로직 — 새 판정 없음).
+   저장=member_active_update(fields:종료사유·종료사유메모) — GAS _auFindCol이 칸 없으면 자동 생성(GM 수작업 0).
+   GM 확정 사양(2026-07-09). 사유 옵션은 아래 배열 1곳만 수정하면 전체(표+모달+오늘할일) 반영. ───────────────────────────────────────────── */
+var CHURN_REASON_OPTIONS = ['만기', '개인사정', '이사/거리', '불만족', '가격부담', '타시설이동', '건강/부상', '기타'];
+var CHURN_REASON_COL = '종료사유';
+var CHURN_REASON_NOTE_COL = '종료사유메모';
+var _endedRowsBg = [];      // 오늘 할 일 '종료사유 미기록' 전용 백그라운드 사전fetch(scope=ended) — 신규 GAS 호출은 이 1회뿐
+var _endedBgLoaded = false;
+var _endedBgLoading = false;   // 동시 중복 fetch 가드(dbRows 로드완료·모달오픈 등 여러 지점에서 호출될 수 있음)
+var _churnModal = null;     // { rowIndex, keyPhone, name }
+
+// 종료회원 목록 백그라운드 사전fetch — 유효회원(_activeRows valid)과 별개로 오늘 할 일 4번째 섹션 계산용. 2026-07-09 시포·GM.
+function _ensureEndedMembersBg(cb) {
+  if (_endedBgLoaded) { cb && cb(); return; }
+  if (GAS_URL === GAS_PLACEHOLDER) { cb && cb(); return; }
+  if (_endedBgLoading) { return; }   // 이미 진행 중 — 완료 시 renderTodayActionPanel 재호출로 자연히 반영(콜백 중복 생략)
+  _endedBgLoading = true;
+  fetch(GAS_URL + '?action=member_active_list&scope=ended' + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d && d.ok) { _endedRowsBg = d.data || []; _endedBgLoaded = true; } })
+    .catch(function(){})
+    .then(function(){ _endedBgLoading = false; cb && cb(); });
+}
+// rowIndex로 대상 회원 조회 — 종료회원 표(현재 scope=ended로 열람 중이면 _activeRows) 우선, 없으면 백그라운드 캐시.
+function _churnFindMember(rowIndex) {
+  return (_activeScope === 'ended' && _activeRows || []).find(function(x){ return x.rowIndex == rowIndex; })
+      || (_endedRowsBg || []).find(function(x){ return x.rowIndex == rowIndex; })
+      || null;
+}
+// 종료사유 통합셀 — 값 있으면 사유(+메모 첫줄) 표시, 없으면 "＋ 사유 입력"(빨강 강조 — 미기록 눈에 띄게). 2026-07-09 시포·GM
+function _churnCellHtml(row) {
+  var reason = String(row[CHURN_REASON_COL] || '').trim();
+  var note = String(row[CHURN_REASON_NOTE_COL] || '').trim();
+  var ri = row.rowIndex != null ? esc(String(row.rowIndex)) : '';
+  if (reason) {
+    var label = reason + (note ? ' · ' + firstLine(note) : '');
+    return '<td class="churn-reason-cell" data-churn="' + ri + '" title="종료사유 수정" style="white-space:nowrap;cursor:pointer;color:var(--text);font-weight:600">' + esc(label) + '</td>';
+  }
+  return '<td class="churn-reason-cell churn-reason-empty" data-churn="' + ri + '" title="종료사유 입력" style="white-space:nowrap;cursor:pointer;color:var(--red);font-weight:600">＋ 사유 입력</td>';
+}
+// '기타' 선택 시 메모 필수 유도(빨강 안내 + 저장 가드).
+function _crUpdateNoteReq() {
+  var sel = document.getElementById('crReasonSel');
+  var req = document.getElementById('crNoteReq');
+  if (!sel || !req) return;
+  req.style.display = (sel.value === '기타') ? '' : 'none';
+}
+function openChurnReasonModal(rowIndex) {
+  var r = _churnFindMember(rowIndex);
+  if (!r) { showToast('회원 정보를 찾을 수 없습니다', 'err'); return; }
+  var name = String(r['회원명'] || '').trim();
+  var phone = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
+  _churnModal = { rowIndex: r.rowIndex, keyPhone: phone, name: name };
+  document.getElementById('crMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '');
+  var sel = document.getElementById('crReasonSel');
+  sel.innerHTML = '';
+  var blank = document.createElement('option'); blank.value = ''; blank.textContent = '— 선택 —'; sel.appendChild(blank);
+  CHURN_REASON_OPTIONS.forEach(function(opt){ var o = document.createElement('option'); o.value = opt; o.textContent = opt; sel.appendChild(o); });
+  sel.value = String(r[CHURN_REASON_COL] || '').trim();
+  document.getElementById('crNoteInput').value = String(r[CHURN_REASON_NOTE_COL] || '').trim();
+  _crUpdateNoteReq();
+  document.getElementById('churnOverlay').classList.add('open');
+}
+function closeChurnModal() {
+  document.getElementById('churnOverlay').classList.remove('open');
+  _churnModal = null;
+}
+// 저장 후 로컬 반영(양쪽 캐시 모두 패치) + 종료회원 표·오늘 할 일 패널 즉시 재렌더(폐루프 — 기록하면 바로 미기록에서 빠짐). 2026-07-09 시포·GM
+function _churnPatchLocal(rowIndex, reason, note) {
+  [(_activeScope === 'ended' ? _activeRows : null), _endedRowsBg].forEach(function(arr){
+    if (!arr) return;
+    var r = arr.find(function(x){ return x.rowIndex == rowIndex; });
+    if (r) { r[CHURN_REASON_COL] = reason; r[CHURN_REASON_NOTE_COL] = note; }
+  });
+  if (_activeScope === 'ended' && _activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
+  if (_tapReady) renderTodayActionPanel();   // '종료사유 미기록' 섹션·헤더 뱃지 즉시 재계산
+}
+function saveChurnModal() {
+  if (!_churnModal) return;
+  var reason = document.getElementById('crReasonSel').value.trim();
+  var note = document.getElementById('crNoteInput').value.trim();
+  if (reason === '기타' && !note) { showToast('기타 선택 시 메모를 입력해 주세요', 'err'); return; }
+  var rowIndex = _churnModal.rowIndex, keyPhone = _churnModal.keyPhone;
+  var fields = {}; fields[CHURN_REASON_COL] = reason; fields[CHURN_REASON_NOTE_COL] = note;
+  var saveBtn = document.getElementById('crSaveBtn'); saveBtn.disabled = true;
+  apiPost({ action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, fields: fields })
+    .then(function(data){
+      if (data && data.ok === false) throw new Error(data.error || '저장 실패');
+      showToast('종료사유 저장', 'ok');
+      _churnPatchLocal(rowIndex, reason, note);
+      closeChurnModal();
+    })
+    .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
+    .then(function(){ saveBtn.disabled = false; });
+}
+
 function _resFillTimeOptions(sel, cur) {
   sel.innerHTML = '';
   var blank = document.createElement('option'); blank.value = ''; blank.textContent = '시간 미정'; sel.appendChild(blank);
@@ -5564,9 +5693,11 @@ function _tapSectionHtml(s) {
   } else {
     var shown = s.items.slice(0, 12);
     listHtml = shown.map(function(it){
-      return s.key === 'res' ? _tapRowHtml(it.row, it.time || '시간미정', '_tapOpenReservation') : _tapRowHtml(it);
+      if (s.key === 'res') return _tapRowHtml(it.row, it.time || '시간미정', '_tapOpenReservation');
+      if (s.key === 'churn') return _tapRowHtmlChurn(it);
+      return _tapRowHtml(it);
     }).join('');
-    if (n > shown.length) listHtml += '<div class="tap-row-more">…외 ' + (n - shown.length) + '건 (문의DB 탭·필터에서 전체 확인)</div>';
+    if (n > shown.length) listHtml += '<div class="tap-row-more">…외 ' + (n - shown.length) + '건 (' + (s.key === 'churn' ? '멤버십 회원관리 탭·종료회원' : '문의DB 탭·필터') + '에서 전체 확인)</div>';
   }
   if (s.caveat) listHtml += '<div class="tap-caveat">' + esc(s.caveat) + '</div>';
   return '<div class="tap-sec">' +
@@ -5697,14 +5828,34 @@ function renderTodayActionPanel() {
   if (scopeEl) scopeEl.textContent = '멤버십 문의 ' + dbRows.length.toLocaleString() + '건 기준';
   var today = _tapToday();
   var cls = _tapClassify(dbRows, today);
+  var churnMissing = _tapClassifyChurn();
+  if (!_endedBgLoaded) _ensureEndedMembersBg(function(){ if (_tapReady) renderTodayActionPanel(); });   // 최초 1회 백그라운드 fetch — 도착하면 재렌더
   var sections = [
     { key: 'new', icon: '🆕', label: '오늘 신규 문의',          color: 'teal',   items: cls.todayNew,    empty: '오늘 신규 문의 없음' },
     { key: 'unc', icon: '📵', label: '미컨택 문의(연락이력 0건)', color: 'red',    items: cls.uncontacted, empty: '미컨택 없음 — 전원 컨택 완료' },
-    { key: 'res', icon: '📅', label: '오늘 상담·체험 예약',       color: 'accent', items: cls.todaysRes,   empty: '오늘 예약 없음' }
+    { key: 'res', icon: '📅', label: '오늘 상담·체험 예약',       color: 'accent', items: cls.todaysRes,   empty: '오늘 예약 없음' },
+    { key: 'churn', icon: '🚪', label: '종료사유 미기록',        color: 'red',    items: churnMissing,    empty: (_endedBgLoaded ? '종료사유 미기록 없음 — 전원 기록 완료' : '불러오는 중…') }
   ];
   if (_tapOpenKey === null) _tapOpenKey = (cls.uncontacted.length || cls.todaysRes.length) ? 'unc' : null;   // 첫 렌더=처리할 게 있으면 미컨택 먼저 펼침(한눈에)
   body.innerHTML = sections.map(_tapSectionHtml).join('');
-  _tapSetBadge(cls.todayNew.length + cls.uncontacted.length + cls.todaysRes.length);
+  _tapSetBadge(cls.todayNew.length + cls.uncontacted.length + cls.todaysRes.length + churnMissing.length);
+}
+// 종료사유 미기록 = scope=ended(현행 이탈 기준 그대로) AND 종료사유 빈칸. 배경fetch 미완료 시 빈 배열(로딩 문구는 empty에서 처리). 2026-07-09 시포·GM
+function _tapClassifyChurn() {
+  if (!_endedBgLoaded) return [];
+  return (_endedRowsBg || []).filter(function(r){ return !String(r[CHURN_REASON_COL] || '').trim(); });
+}
+function _tapRowHtmlChurn(r) {
+  var name = String(r['회원명'] || '').trim();
+  var phone = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
+  return '<div class="tap-row" onclick="_tapOpenChurnReason(' + r.rowIndex + ')">' +
+    '<span class="tap-row-name">' + esc(name || '(이름없음)') + '</span>' +
+    '<span class="tap-row-sub">' + esc(phone || '전화 미상') + '</span>' +
+    '</div>';
+}
+// 오늘 할 일 '종료사유 미기록' 항목 클릭 → 종료사유 모달 바로 오픈(모달 위 모달 — 오늘할일은 그대로 열어둠, 저장 시 폐루프로 자동 갱신).
+function _tapOpenChurnReason(rowIndex) {
+  openChurnReasonModal(rowIndex);
 }
 
 function buildDbRow(row, isNew) {

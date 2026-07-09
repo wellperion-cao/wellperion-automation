@@ -3308,7 +3308,8 @@ function _processAction(body) {
       var ix = -1;
       for (var a1 = 0; a1 < auHdr.length; a1++) { if (auHdr[a1].replace(/\s/g, '') === w) { ix = a1; break; } }
       if (ix < 0) { for (var a2 = 0; a2 < auHdr.length; a2++) { if (auHdr[a2] && auHdr[a2].replace(/\s/g, '').indexOf(w) >= 0) { ix = a2; break; } } }
-      if (ix < 0 && (w.indexOf('재등록상담') >= 0 || w.indexOf('재등록예약목록') >= 0)) ix = _miEnsureCol_(auSh, auHdr, String(colName).trim());
+      // '종료사유'(+'종료사유메모') 자동 신설 — 회원 종료사유 기록 기능(GM 확정), GAS가 칸 생성해 GM 수작업 0. 2026-07-09 시포·GM.
+      if (ix < 0 && (w.indexOf('재등록상담') >= 0 || w.indexOf('재등록예약목록') >= 0 || w.indexOf('종료사유') >= 0)) ix = _miEnsureCol_(auSh, auHdr, String(colName).trim());
       return ix;
     }
     // 셀 쓰기 — 재등록상담 칸(날짜·시간·내용)은 텍스트 서식(@) 강제 후 기록. '09:00'·'2026-07-15'가 시간/날짜 값으로
