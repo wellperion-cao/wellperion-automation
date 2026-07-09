@@ -11,7 +11,7 @@ def test_reversible_actions_go_auto():
     lanes = B.route_actions(actions)
     auto_names = {a["action"] for a in lanes["auto"]}
     assert {"aggregate", "report", "route"}.issubset(auto_names)
-    assert "flag" in auto_names or True  # flag는 이상 시에만
+    assert "flag" not in auto_names  # status_map anomaly=False → flag 액션 없어야 함
 
 
 def test_gated_actions_go_propose():

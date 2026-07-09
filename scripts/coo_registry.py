@@ -4,6 +4,7 @@
 이 모듈은 자기만의 등록부를 두지 않고 owner_role=='coo' 모듈만 골라 읽는다."""
 import json
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REGISTRY_PATH = Path(__file__).resolve().parent.parent / "status" / "module_registry.json"
@@ -68,9 +69,17 @@ def _http_get_json(url: str) -> dict:
         return json.loads(r.read().decode("utf-8"))
 
 
+def _kst_today() -> str:
+    return datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
+
+
 def _pick_today(resp: dict) -> dict:
-    """weekly 응답(data 배열) → 마지막(오늘) 행. today_live 응답 → 그대로."""
+    """weekly 응답(data 배열) → KST 오늘 날짜(row['date']==today) 매칭, 없으면 마지막 폴백. today_live 응답 → 그대로."""
     if isinstance(resp.get("data"), list) and resp["data"]:
+        today = _kst_today()
+        for row in resp["data"]:
+            if row.get("date") == today:
+                return row
         return resp["data"][-1]
     return resp
 

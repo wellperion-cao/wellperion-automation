@@ -71,3 +71,24 @@ def test_issue_text_helper_prefers_known_keys():
     assert R._issue_text("이미 문자열") == "이미 문자열"
     assert R._issue_text({"issue": "핵심 메시지", "by": "홍길동"}) == "핵심 메시지"
     assert R._issue_text({"foo": "", "bar": "값1", "baz": "값2"}) == "값1 값2"
+
+
+def test_pick_today_matches_kst_date_not_last_element():
+    today = R._kst_today()
+    resp = {"data": [
+        {"date": "2020-01-01", "total": 10, "done": 1, "pct": 10},
+        {"date": today, "total": 20, "done": 20, "pct": 100},
+        {"date": "2099-01-01", "total": 5, "done": 5, "pct": 100},
+    ]}
+    row = R._pick_today(resp)
+    assert row["date"] == today
+    assert row["total"] == 20
+
+
+def test_pick_today_falls_back_to_last_when_no_date_matches():
+    resp = {"data": [
+        {"date": "2020-01-01", "total": 10, "done": 1, "pct": 10},
+        {"date": "2020-01-02", "total": 20, "done": 20, "pct": 100},
+    ]}
+    row = R._pick_today(resp)
+    assert row["date"] == "2020-01-02"

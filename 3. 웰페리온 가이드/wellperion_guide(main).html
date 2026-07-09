@@ -6032,12 +6032,13 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   <article class="doc" id="O1">
     <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO 관할 · 부서별 운영 체계 · 지원부 우선 완성 → 확장</div></div>
     <section id="o1-module-hub" style="margin:18px 0;">
-      <h3 style="font-size:1.05rem;margin:0 0 10px;">🏢 운영 모듈 현황 <span style="font-size:.8rem;color:#888;font-weight:400;">— 레지스트리 구동</span></h3>
+      <h3 style="font-size:1.05rem;margin:0 0 10px;">🏢 운영 모듈 현황</h3>
       <div id="o1-module-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
         <div style="color:#999;">모듈 불러오는 중…</div>
       </div>
     </section>
     <script>
+    // 프론트 등록부 구동은 웰리 공유 렌더러+등록부 Pages 서빙 후속(front_card 스키마 예약).
     (function(){
       var CHECK_API = "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";
       var BASE = "https://wellperion-cao.github.io/wellperion-automation/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/";
@@ -6049,20 +6050,29 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           + '<div style="font-size:.72rem;color:#aaa;margin-top:6px;">'+tag+'</div></a>';
       }
       function pctOf(row){ if(!row) return null; if(row.pct!=null) return row.pct; return row.total? Math.round(row.done/row.total*100):null; }
+      function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+      // weekly(data 배열) → 오늘(KST) 날짜 행 매칭, 없으면 마지막 폴백. today_live(단일 객체) → 그대로. line 10507 pickToday 패턴 재사용.
+      function pickToday(resp){
+        if(resp && Array.isArray(resp.data) && resp.data.length){
+          var today = todayStr();
+          var row = resp.data.filter(function(x){return x.date===today;})[0];
+          return row || resp.data[resp.data.length-1];
+        }
+        return resp;
+      }
       function loadHub(){
         var el = document.getElementById('o1-module-cards'); if(!el) return;
-        fetch(CHECK_API+"?action=weekly&dept=facility&_pv="+Date.now(),{cache:'no-store'})
-          .then(function(r){return r.json();})
-          .then(function(d){
-            var row = (d.data&&d.data.length)? d.data[d.data.length-1] : d;
-            var pct = pctOf(row);
-            var anomaly = (pct==null || pct>100);
-            var badge = anomaly? '⚠' : '✅';
-            var metric = (pct==null?'—':pct+'%');
-            var href = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
-            el.innerHTML = card('점검 현황','부서별 점검 완료율·이상', metric, badge, href, '측정값(measured)');
-          })
-          .catch(function(){ el.innerHTML = '<div style="color:#c00;">점검 현황: (측정 실패 — 정직 표기)</div>'; });
+        var pv = Date.now();
+        var fP = fetch(CHECK_API+"?action=weekly&dept=facility&_pv="+pv,{cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
+        var sP = fetch(CHECK_API+"?action=today_live&dept=support&_pv="+pv,{cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
+        Promise.all([fP, sP]).then(function(res){
+          var fPct = pctOf(res[0]), sPct = pctOf(res[1]);
+          var anomaly = (fPct==null || fPct>100 || sPct==null || sPct>100);
+          var badge = anomaly? '⚠' : '✅';
+          var metric = '시설 '+(fPct==null?'—':fPct+'%')+' · 지원 '+(sPct==null?'—':sPct+'%');
+          var href = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
+          el.innerHTML = card('점검 현황','부서별 점검 완료율·이상', metric, badge, href, '측정값(measured)');
+        }).catch(function(){ el.innerHTML = '<div style="color:#c00;">점검 현황: (측정 실패 — 정직 표기)</div>'; });
       }
       setTimeout(loadHub, 600);
     })();
