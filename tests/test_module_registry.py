@@ -131,3 +131,58 @@ def test_registry_has_at_least_3_cto_modules():
     # 시토(CTO) 도메인 모듈 최소 3개 등록 확인
     cto_modules = mr.get_modules_by_role("cto")
     assert len(cto_modules) >= 3
+
+
+def _write_registry(tmp_path, modules):
+    import json
+
+    reg_file = tmp_path / "module_registry.json"
+    payload = {"_doc": "test", "modules": modules}
+    reg_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return reg_file
+
+
+def test_append_feedback_adds_entry_to_module_entries(tmp_path):
+    mod = copy.deepcopy(COMPLETE_MODULE)
+    reg_file = _write_registry(tmp_path, [mod])
+
+    ok = mr.append_feedback(
+        "cto-automation-health", "다음엔 알림 주기 줄이기", "시토", path=str(reg_file), at="2026-07-09"
+    )
+    assert ok is True
+
+    registry = mr.load_registry(str(reg_file))
+    updated = registry["modules"][0]
+    entries = updated["feedback"]["entries"]
+    assert len(entries) == 1
+    assert entries[0]["text"] == "다음엔 알림 주기 줄이기"
+    assert entries[0]["author"] == "시토"
+    assert entries[0]["at"] == "2026-07-09"
+
+
+def test_append_feedback_dedup_same_text_author(tmp_path):
+    mod = copy.deepcopy(COMPLETE_MODULE)
+    reg_file = _write_registry(tmp_path, [mod])
+
+    ok1 = mr.append_feedback(
+        "cto-automation-health", "중복 방지 테스트", "시토", path=str(reg_file), at="2026-07-09"
+    )
+    ok2 = mr.append_feedback(
+        "cto-automation-health", "중복 방지 테스트", "시토", path=str(reg_file), at="2026-07-10"
+    )
+    assert ok1 is True
+    assert ok2 is True
+
+    registry = mr.load_registry(str(reg_file))
+    entries = registry["modules"][0]["feedback"]["entries"]
+    assert len(entries) == 1
+
+
+def test_append_feedback_unknown_module_returns_false(tmp_path):
+    mod = copy.deepcopy(COMPLETE_MODULE)
+    reg_file = _write_registry(tmp_path, [mod])
+
+    ok = mr.append_feedback(
+        "no-such-module", "text", "author", path=str(reg_file), at="2026-07-09"
+    )
+    assert ok is False

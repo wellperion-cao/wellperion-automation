@@ -78,3 +78,39 @@ def get_modules_by_role(role, registry=None):
     reg = registry if registry is not None else load_registry()
     modules = reg.get("modules", [])
     return [m for m in modules if m.get("owner_role") == role]
+
+
+def append_feedback(module_id, text, author, path=None, at=None):
+    """
+    등록부에서 module_id를 찾아 그 모듈의 feedback.entries에
+    {"text":..., "author":..., "at": at(있으면)} 항목을 멱등 append하고 파일에 저장한다.
+
+    - 동일 text+author 조합이 이미 있으면 중복 append 없이 True 반환(성공, no-op).
+    - module_id가 등록부에 없으면 아무 것도 쓰지 않고 False 반환.
+    - at은 ISO 날짜문자열을 호출자가 인자로 넘긴다(결정성 확보 위해 내부에서 현재시각 생성 안 함).
+      at=None이면 entry에 "at" 키 자체를 생략한다.
+    """
+    target = path if path is not None else DEFAULT_REGISTRY_PATH
+    data = load_registry(target)
+    modules = data.get("modules", [])
+
+    mod = next((m for m in modules if m.get("id") == module_id), None)
+    if mod is None:
+        return False
+
+    feedback = mod.setdefault("feedback", {})
+    entries = feedback.setdefault("entries", [])
+
+    already_exists = any(
+        e.get("text") == text and e.get("author") == author for e in entries
+    )
+    if not already_exists:
+        entry = {"text": text, "author": author}
+        if at is not None:
+            entry["at"] = at
+        entries.append(entry)
+
+    with open(target, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    return True
