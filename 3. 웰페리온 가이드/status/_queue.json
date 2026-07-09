@@ -1285,5 +1285,32 @@
     "artifact": "- 시설·지원·주차(이정헌 소장 통합관리) → 부서 표 1행·카드 1장으로 렌더 그룹핑(DEPT_GROUPS). 데이터(monthly_ops_plan.json)는 부서별 그대로, 렌더만 병합.\n- 통합 카드: 헤더(이정헌 소장·통합관리) + 체계 3버튼(시설부/지원부/주차관리부 체계) + 3부서 소섹션(3컬럼 서브그리드로 세로 과확장 방지).\n- 체계 링크를 표 칸에서 카드 버튼으로 이전(표 체계 열 제거). 경영지원=인사허브(chro/hub/)+매출&지출 현황 버튼.\n- 부서 카드 5→3. 화면 auto-fill·A3 3열 인쇄  (CLI ad-hoc · 커밋 94329ea4)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "94329ea484f78ff611ed25d73a8c8c88c70215a1"
+  },
+  {
+    "task_id": "CMO-2026-07-09-AUTONOMY-BRAIN-CMO-REFERENCE",
+    "clevel": "cmo",
+    "title": "[시모] CMO 자율화 두뇌(레퍼런스) — M3→M1 병합 + 모듈별 텔레그램 일/주/월 자동보고 + 채널 자격증명 ERP 웹등록·자동로그인(보안 GM go)",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-09",
+    "ship_no": 747,
+    "note": "[2026-07-09 GM 직접지시·정정: 시토 아니라 시모것] Fable세션 원칙=결과물 아닌 뼈대(자율화 두뇌). 확산=GM이 전 C-Level에 동일 전달 완료 → 시모는 CMO 두뇌를 레퍼런스로 잘 셋업(검증 후 타 C-Level 복제 템플릿). 5기둥(본인 소유 백엔드+프론트 기준): ①백엔드=AI없이 실무진이 쓰게 구조·API·처리 단순화 ②UI/UX=프로세스 단계·시간 최소화(정말 신경) ③프론트=모듈화 가독(남들도 쉬움·모듈마다 고유기능 캡슐) ④모듈별 텔레그램 일/주/월 자동보고(봇 등록시 자동) ⑤채널 계정 웹등록→자동로그인(보안). GM 보안 결정=채널 ID/PW ERP 웹 등록 UI(암호화 저장)+자동로그인, 라이브발효=GM go+즉시 역롤백(TOKEN_ENFORCE류 기본OFF 배포). M3(채널·검수·발행)→M1(콘텐츠제작) 병합=단일흐름(GM 명시). 아키텍처 뼈대=docs/superpowers/specs/2026-07-09-clevel-autonomy-shared-platform-design.md. 재사용=telegram_bot/·daily_scheduler.py·clevel_post_action·gate.js. 배545 대시보드 정상화 미션의 연장(실무진 눈높이).",
+    "next": "1) M3→M1 병합(문서·나브 정합, 보안무관 즉시 착수). 2) M 모듈 report(period) 계약 구현→텔레그램 일/주/월 자동보고 라이브검증(봇 등록 레지스트리). 3) 채널 자격증명 ERP 웹등록 UI+암호화 저장(휴면 OFF 배포). 4) GM go→자동로그인 1채널 라이브+역롤백대기. 5) 검증된 CMO 두뇌를 헌장 박제→타 C-Level 복제.",
+    "depends_on": "",
+    "module": "M1"
+  },
+  {
+    "task_id": "CMO-2026-07-09-ADHOC-e5c6146a",
+    "clevel": "cmo",
+    "title": "[시모] CMO 자율화 두뇌(레퍼런스) 배747 등록 + 아카이브 분리 확정",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 748,
+    "artifact": "GM 직접지시(Fable세션=결과물 아닌 뼈대). GM 정정: 시토 아니라 시모 것 →\nCMO 두뇌를 레퍼런스로 셋업(M3→M1 병합·모듈 텔레그램 일/주/월 자동보고·채널\n자격증명 ERP 웹등록+자동로그인). 보안=암호화·라이브 GM go+역롤백.\n스펙=docs/superpowers/specs/2026-07-09-clevel-autonomy-shared-platform-design.md (CLI ad-hoc · 커밋 e5c6146a)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e5c6146a9532666ebc592749dbaa8404ad23cd6a"
   }
 ]
