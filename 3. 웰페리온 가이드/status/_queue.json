@@ -1761,5 +1761,17 @@
     "artifact": "'오늘 상담·체험 예약' 섹션 클릭 시 오늘 올 손님 준비에 맞게 CONTACT 연락이력 모달 대신\n예약 상세 모달(openInquiryResModal, 기존 _activateCellSchedule과 동일 호출 패턴 1:1 재사용)로\n열리도록 분기. 다른 3섹션(오늘 신규·미컨택·이탈위험)은 CONTACT 모달 그대로 유지.\n_tapRowHtml에 handlerFn 파라미터 추가해 섹션별 클릭 핸들러만 교체 — 블라스트 반경 최소. (CLI ad-hoc · 커밋 69c31b67)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "69c31b67280136101beaa38fb45bc4b8bfb8d428"
+  },
+  {
+    "task_id": "COO-2026-07-09-AUTONOMY-BRAIN",
+    "clevel": "coo",
+    "title": "[시우] COO 자율화 두뇌 — 레지스트리 구동 뼈대(점검현황·업무결재 2모듈 라이브)",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-09",
+    "note": "[2026-07-09 GM 지시·Fable 세션] '뼈대(자율화 두뇌)를 만들라'. deep-interview 스펙(.omc/specs/deep-interview-coo-autonomy-brain.md·모호도5%)→계획(docs/superpowers/plans/2026-07-09-coo-autonomy-brain-pilot.md)→구현. 웰리 단일 등록부 계약(CLAUDE.md §3-2·status/module_registry.json)에 정합. 5부품(레지스트리·O1카드·자동보고러너·부팅두뇌·가드레일). 파일럿 점검현황 end-to-end 라이브(O1카드 시설·지원 실측·08시보고 합류·이상알림 dry-run·부팅두뇌 게이트OFF). 독립검수 Important4 정직수정(카드 지원부합산·라벨 정직화·오늘날짜매칭·복제문서 스키마정합). 2번째 모듈 업무·결재 복제 → 소비자 fetcher맵 일반화(복제=등록부1줄+fetcher1개). 36테스트 통과. 별건: 시설부 거래업체 분류 이름변경 완료(커밋 e896f42c·라이브검증).",
+    "next": "🔗 남은 갈래: ①나머지 COO 모듈 복제(공지·월간운영·재등록; 리셉션은 CPO 경계 확인) ②이상 즉시알림 스케줄러 배선(라이브 실발송=GM go) ③O1 카드 진짜 등록부 구동(웰리 공유 렌더러+등록부 Pages 서빙 후속) ④08시 첫 실발송(점검·업무결재 2줄) 내일 아침 도착 확인",
+    "module": "O1",
+    "ship_no": 781
   }
 ]
