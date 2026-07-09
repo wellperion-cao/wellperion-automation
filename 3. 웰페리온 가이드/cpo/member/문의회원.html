@@ -1387,6 +1387,18 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <!-- 현황 요약 카드 (작업 3) -->
       <div id="activeSummary" class="card" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--teal)"></div>
 
+      <!-- ══ 이탈방지 액션 모듈 — 배754 후속(등록회원 이탈방지, '오늘 할 일'과 동일 철학). ①갱신임박(잔여일 0~30,
+           cpo_churn_stats·cpo_report.py와 동일 임계값이라 월간 롤업과 숫자 일치)·②저이용 후보(추정, 등록일 대비 이용일수 비율).
+           소스=_activeRows(scope=valid, 사전로드) — 신규 GAS 호출 0. 클릭 → 기존 재등록 상담 모달(openReconForMember) 재사용.
+           유효회원 스코프에서만 의미 있어 종료·법인 탭에서는 숨김. 2026-07-09 시포·GM -->
+      <div class="card" id="churnActionPanel" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--yellow)">
+        <div class="card-title" style="margin-bottom:10px;padding-bottom:10px">
+          <span class="icon">🛟</span><span>이탈방지 액션</span>
+          <span id="capScopeNote" style="margin-left:auto;font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap"></span>
+        </div>
+        <div id="capBody"><div class="tap-empty">불러오는 중…</div></div>
+      </div>
+
       <div class="active-toggle" style="display:flex;gap:6px;margin-bottom:12px">
         <button type="button" id="activeScopeValid" class="seg-btn" onclick="setActiveScope('valid', this)"
           style="padding:7px 16px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">유효회원</button>
@@ -3961,6 +3973,7 @@ function loadActiveMembers() {
       if (_activeScope === 'valid') _applyRemainSort();   // 기본=잔여일 임박순(작은 양수 먼저). 2026-07-03 시포·GM
       _activeRender(_activeRows);
       renderActiveSummary();
+      renderChurnActionPanel();   // 이탈방지 액션 모듈(배754 후속) — scope 전환마다 재계산
       _activeWireSearch();
       _wireActiveDblclick();
     })
@@ -4173,6 +4186,126 @@ function renderActiveSummary() {
       '</div>' +
     '</div>' +
     footnote;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   이탈방지 액션 모듈 — 배754 후속(등록회원 라이프사이클 뒷단). '오늘 할 일' 패널과 동일 철학:
+   상담사가 AI 없이 화면만으로 회원 이탈을 챙긴다. 소스=_activeRows(scope=valid, 사전로드) — 신규 GAS 0.
+   ①갱신임박=cpo_churn_stats(GAS)·cpo_report.py와 완전히 동일한 임계값(0<잔여일≤30)이라 월간 롤업과 숫자 일치
+   (실측 검증: 2026-07-09 라이브 대조 renewCount=56, 본 모듈 계산치도 56로 일치 확인).
+   ②저이용 후보=추정치 — '최근방문일'·방문빈도 원본 데이터가 시트에 없어(이용일수 누적치만 존재) 등록일 대비
+   이용일수 비율로 근사. 정직 배지 필수. 클릭 → 기존 재등록 상담 모달(openReconForMember) 재사용, 신규 모달 0.
+   2026-07-09 시포·GM
+   ═══════════════════════════════════════════════════════════════════════ */
+var CAP_RENEW_DAYS = 30;          // 갱신임박 임계값 — cpo_churn_stats·cpo_report.py와 동일(0<잔여일≤30)
+var CAP_LOWUSE_MIN_TENURE = 60;   // 저이용 판단에 필요한 최소 가입경과일(가입 직후 회원은 판단 보류)
+var CAP_LOWUSE_RATE = 0.15;       // 경과일 대비 이용일수 비율 임계값(추정) — 15% 미만=저이용 후보
+var _capOpenKey = null;
+// 헤더 배열에서 공백/줄바꿈 무시하고 포함 매칭 — 백엔드 _aaIdx·_czIdx와 동일 관례(시트 헤더가 '잔여일\n(일)'처럼 개행 포함)
+function _capCol(headers, want) {
+  var w = String(want).replace(/\s/g, '');
+  for (var i = 0; i < (headers || []).length; i++) {
+    if (String(headers[i] || '').replace(/\s/g, '').indexOf(w) >= 0) return headers[i];
+  }
+  return null;
+}
+function _capClassify(rows, headers) {
+  var remCol = _capCol(headers, '잔여일');
+  var useCol = _capCol(headers, '이용일수');
+  var regCol = _capCol(headers, '등록일자');
+  var today = _tapToday();   // 기존 헬퍼 재사용(YYYY-MM-DD) — 오늘 할 일 패널과 동일 날짜 산출
+  var renewSoon = [], lowUse = [];
+  rows.forEach(function(r){
+    if (remCol) {
+      var remN = parseFloat(String(r[remCol] || '').replace(/[^0-9.\-]/g, ''));
+      if (!isNaN(remN) && remN > 0 && remN <= CAP_RENEW_DAYS) renewSoon.push({ row: r, rem: remN });
+    }
+    if (useCol && regCol) {
+      var regRaw = String(r[regCol] || '').trim();
+      var useRaw = String(r[useCol] || '').trim();
+      if (regRaw && /^\d{4}-\d{2}-\d{2}/.test(regRaw) && useRaw !== '') {
+        var elapsed = Math.round((new Date(today) - new Date(regRaw.slice(0, 10))) / 86400000);
+        var useN = parseFloat(useRaw.replace(/[^0-9.\-]/g, ''));
+        if (elapsed >= CAP_LOWUSE_MIN_TENURE && !isNaN(useN)) {
+          var rate = elapsed > 0 ? (useN / elapsed) : 0;
+          if (rate < CAP_LOWUSE_RATE) lowUse.push({ row: r, rate: rate, elapsed: elapsed, use: useN });
+        }
+      }
+    }
+  });
+  renewSoon.sort(function(a, b){ return a.rem - b.rem; });
+  lowUse.sort(function(a, b){ return a.rate - b.rate; });
+  return { renewSoon: renewSoon, lowUse: lowUse, hasUsageData: !!(useCol && regCol) };
+}
+// rowIndex 클릭 → 회원현황 표 내 해당 행 하이라이트 + 기존 재등록 상담 모달(openReconForMember) 오픈.
+// 이미 회원현황(유효) 탭 안이라 탭 전환 불필요(오늘 할 일 패널의 _tapOpenRow보다 단순 — 같은 화면 안 이동만).
+function _capOpenMember(rowIndex) {
+  var trEl = document.querySelector('#activeBody tr[data-rowindex="' + CSS.escape(String(rowIndex)) + '"]');
+  if (trEl) {
+    trEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    var prevBg = trEl.style.backgroundColor;
+    trEl.style.transition = 'background-color .4s';
+    trEl.style.backgroundColor = 'var(--teal-bg)';
+    setTimeout(function(){ trEl.style.backgroundColor = prevBg; }, 1500);
+  }
+  openReconForMember(rowIndex);
+}
+function _capToggle(key) {
+  _capOpenKey = (_capOpenKey === key) ? null : key;
+  renderChurnActionPanel();
+}
+function _capRowHtml(item, kind) {
+  var r = item.row;
+  var name = r['회원명'] || '(이름없음)';
+  var phone = r['휴대폰 번호'] || r['휴대폰'] || '';
+  var badge = kind === 'renew' ? (item.rem + '일 남음') : (Math.round(item.rate * 100) + '% 이용');
+  return '<div class="tap-row" onclick="_capOpenMember(' + r.rowIndex + ')">' +
+    '<span class="tap-row-name">' + esc(name) + '</span>' +
+    '<span class="tap-row-sub">' + esc(phone) + '</span>' +
+    '<span class="tap-row-time">' + esc(badge) + '</span>' +
+    '</div>';
+}
+function _capSectionHtml(s) {
+  var n = s.items.length;
+  var open = _capOpenKey === s.key;
+  var listHtml;
+  if (!n) {
+    listHtml = '<div class="tap-empty">' + esc(s.empty) + '</div>';
+  } else {
+    var shown = s.items.slice(0, 12);
+    listHtml = shown.map(function(it){ return _capRowHtml(it, s.key); }).join('');
+    if (n > shown.length) listHtml += '<div class="tap-row-more">…외 ' + (n - shown.length) + '건 (회원현황 표에서 전체 확인)</div>';
+  }
+  if (s.caveat) listHtml += '<div class="tap-caveat">' + esc(s.caveat) + '</div>';
+  return '<div class="tap-sec">' +
+    '<button type="button" class="tap-sec-head' + (open ? ' open' : '') + '" onclick="_capToggle(\'' + s.key + '\')">' +
+      '<span class="tap-sec-label">' + s.icon + ' ' + esc(s.label) + '</span>' +
+      '<span class="mdash-chip ' + s.color + '"><b>' + n + '</b></span>' +
+      '<span class="tap-caret">▾</span>' +
+    '</button>' +
+    '<div class="tap-sec-body' + (open ? ' open' : '') + '">' + listHtml + '</div>' +
+  '</div>';
+}
+function renderChurnActionPanel() {
+  var panel = document.getElementById('churnActionPanel');
+  var body = document.getElementById('capBody');
+  var scopeEl = document.getElementById('capScopeNote');
+  if (!panel || !body) return;
+  if (_activeScope !== 'valid' || !_activeLoaded) { panel.style.display = 'none'; return; }   // 종료·법인 스코프는 개념상 의미 없음(정직 — 억지 표시 금지)
+  panel.style.display = '';
+  var rows = _activeRows || [];
+  if (scopeEl) scopeEl.textContent = '유효회원 ' + rows.length.toLocaleString() + '명 기준';
+  var cls = _capClassify(rows, _activeHeaders);
+  var sections = [
+    { key: 'renew', icon: '⏰', label: '갱신임박(30일 이내)', color: 'yellow', items: cls.renewSoon, empty: '갱신임박 회원 없음',
+      caveat: '※ 잔여일 실측(유효회원 시트, 0<잔여일≤30) — cpo_churn_stats 월간 롤업과 동일 기준' },
+    { key: 'lowuse', icon: '📉', label: '저이용 후보(추정)', color: 'accent', items: cls.lowUse, empty: '저이용 후보 없음',
+      caveat: cls.hasUsageData
+        ? '※ 추정치: 등록일 대비 누적 이용일수 비율 15% 미만(가입 60일↑ 경과 회원만·이용일수 미기재 회원은 판단 보류) — 최근방문일·방문빈도 원본 데이터가 없어 근사입니다, 실제 이용 패턴과 다를 수 있음'
+        : '※ 이용일수·등록일자 컬럼을 찾지 못해 산출 불가(시트 헤더 확인 필요) — 미측정' }
+  ];
+  if (_capOpenKey === null && cls.renewSoon.length) _capOpenKey = 'renew';   // 첫 렌더=처리할 게 있으면 갱신임박 먼저 펼침
+  body.innerHTML = sections.map(_capSectionHtml).join('');
 }
 
 /* ─── 멤버십 표 더블클릭 인라인 편집 위임 ─── */
