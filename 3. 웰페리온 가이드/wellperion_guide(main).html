@@ -561,46 +561,31 @@
         </div>
       </div>
 
-      <!-- 문의 카드 — 2단 퍼널(유입 CMO / 상담·등록 CPO). 2정의 다름 → 합산 표기 금지 (2026-07-09 GM: "CMO랑 CPO 같이") -->
+      <!-- 문의 카드 — 멤버십 문의 관리 / 강습 문의 관리 2종(AI CPO 시포 소관 실무 구조), 올해(2026) 기준.
+           구 "유입 문의(CMO)/상담·등록 전환(CPO)" 2단 표기 폐기 — 실측 결과 유입(구글폼 한+영, gid 1902010032+1887747109)이
+           멤버십 문의(CPO 관리 목록, gid 1902010032 동일 시트)와 정확히 같은 접수 건을 다른 이름으로 중복 표시하던 문제였음.
+           재편: 멤버십(한+영 폼 합산)·강습(성인+유소년 합산) 두 실무 카테고리로 정직하게 분해. 2026-07-09 GM 지시 -->
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">문의 현황</div><div style="font-size:10.5px;color:var(--dim);">Inquiry 퍼널 2단 · 정의 다른 두 소스 — 합산 아님</div></div></div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">문의 현황</div><div style="font-size:10.5px;color:var(--dim);">멤버십·강습 문의 관리 · AI CPO(시포) · 올해(2026) 누적</div></div></div>
 
-        <div style="font-size:10px;color:var(--dim);font-weight:700;margin-bottom:6px;">① 유입 문의 · AI CMO(시모)</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">이번달 신규</div>
-            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiInqMonth">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">올해 누적</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiInqTotal">—</span></div>
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">멤버십 문의 관리 · 올해 누적</div>
+            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiInqTotal">—</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">이번달</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiMiInqMonth">—</span></div>
           </div>
-          <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">오늘 신규</div>
-            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiInqDay">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">이번달</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiInqMonth2">—</span></div>
+          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">강습 문의 관리 · 올해 누적</div>
+            <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonInqTotal">—</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">성인/유소년</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonInqSplit">—</span></div>
           </div>
         </div>
+        <div style="font-size:9.5px;color:var(--dim);margin-top:8px;">※ 멤버십 문의=구글폼 접수 건수(한글+영문) · 강습 문의=성인+유소년 접수 건수 합산 — 상담·등록 진행상태는 각 관리 페이지에서 확인</div>
 
-        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">
-          <div style="font-size:10px;color:var(--dim);font-weight:700;margin-bottom:6px;">② 상담·등록 전환 · AI CPO(시포)</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-            <div style="background:var(--accent-bg);border-radius:10px;padding:9px 8px;text-align:center;">
-              <div style="font-size:9.5px;color:var(--dim);margin-bottom:3px;font-weight:600;">전환 문의</div>
-              <div style="font-size:17px;font-weight:800;color:var(--accent);line-height:1;" id="kpiCpoInqCum">—</div>
-            </div>
-            <div style="background:var(--accent-bg);border-radius:10px;padding:9px 8px;text-align:center;">
-              <div style="font-size:9.5px;color:var(--dim);margin-bottom:3px;font-weight:600;">전환 가입</div>
-              <div style="font-size:17px;font-weight:800;color:var(--accent);line-height:1;" id="kpiCpoRegCum">—</div>
-            </div>
-            <div style="background:var(--accent-bg);border-radius:10px;padding:9px 8px;text-align:center;">
-              <div style="font-size:9.5px;color:var(--dim);margin-bottom:3px;font-weight:600;">전환율</div>
-              <div style="font-size:17px;font-weight:800;color:var(--accent);line-height:1;" id="kpiCpoRate">—</div>
-            </div>
-          </div>
-          <div style="font-size:9.5px;color:var(--dim);margin-top:5px;">※ 누적(전화매칭 기준) · 위 유입 문의(구글폼)와 집계 정의가 달라 합산 불가</div>
-        </div>
-
-        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:8px;">
+        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M1]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">문의 현황 →</a>
-          <a href="cpo/member/문의회원.html?manage=membership" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">상담·등록 →</a>
+          <a href="cpo/member/문의회원.html?manage=membership" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">멤버십 관리 →</a>
+          <a href="cpo/member/문의회원.html?manage=lesson" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">강습 관리 →</a>
         </div>
       </div>
 
@@ -1014,10 +999,10 @@
       })
       .catch(function(){ /* "—" 유지 */ });
 
-    // 문의 — 총 신규문의/일일 신규문의 (2026-06-08 실연결)
+    // 멤버십 문의 관리 — 올해(2026) 누적 (2026-07-09 재편: 구 loadInqKpi 계승)
     // 소스: 한국어 문의폼(gid 1902010032) + 영문 문의폼(gid 1887747109) CSV 직접 읽기 (한+영 합산)
-    // 등록전환: 회원DB 매칭 필요 — 후속 과제 (시모/CMO). 현재 "—" 유지.
-    (function loadInqKpi(){
+    // gid 1902010032 = cpo/member/문의회원.html "멤버십 문의 관리" 목록과 100% 동일 시트(한글행 실측 일치 확인).
+    (function loadMiInqKpi(){
       var SS_ID  = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
       var GID_KO = '1902010032';
       var GID_EN = '1887747109';
@@ -1050,10 +1035,10 @@
         if (field || row.length) { row.push(field); rows.push(row); }
         return rows;
       }
-      // CSV rows → 타임스탬프 컬럼(tsCol) 기준 올해누적(total)/이번달(month)/오늘(day) 카운트. 헤더 행(0번) 제외.
+      // CSV rows → 타임스탬프 컬럼(tsCol) 기준 올해누적(total)/이번달(month) 카운트. 헤더 행(0번) 제외.
       function curYM(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2); }
       function countRows(rows, tsCol) {
-        var yStart = yearStart(), today = todayStr(), ym = curYM(), total = 0, month = 0, day = 0;
+        var yStart = yearStart(), ym = curYM(), total = 0, month = 0;
         for (var i = 1; i < rows.length; i++) {
           var r = rows[i];
           if (!r || r.length <= tsCol) continue;
@@ -1061,39 +1046,84 @@
           if (!ds) continue;
           if (ds >= yStart) total++;
           if (ds.slice(0,7) === ym) month++;
-          if (ds === today)  day++;
         }
-        return { total: total, month: month, day: day };
+        return { total: total, month: month };
       }
       var p1 = fetch(BASE + GID_KO + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
       var p2 = fetch(BASE + GID_EN + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
       Promise.all([p1, p2]).then(function(results){
         var ko = countRows(parseCSV(results[0]), 1); // 한국어: B열(인덱스1)
         var en = countRows(parseCSV(results[1]), 0); // 영문: A열(인덱스0)
-        set('kpiInqMonth', ko.month + en.month); // 이번달 신규
-        set('kpiInqMonth2', ko.month + en.month); // 박스2 서브: 이번달
-        set('kpiInqTotal', ko.total + en.total); // 올해 누적
-        set('kpiInqDay',   ko.day   + en.day);   // 오늘 신규
-        set('heroInqDay', ko.day + en.day);
-        // 등록전환: 회원DB 매칭 후속 연결 예정 — "—" 유지
+        set('kpiMiInqTotal', (ko.total + en.total).toLocaleString()); // 올해 누적
+        set('kpiMiInqMonth', ko.month + en.month); // 이번달
       }).catch(function(){ /* "—" 유지 */ });
     })();
 
-    // 상담·등록 전환 — status/kpi_values.json roles.cpo (2026-07-09 실연결)
-    // CMO 구글폼 접수수(위)와 정의가 다른 별도 소스 — 전화매칭 기준 누적. 합산 금지, 라벨로 분리 표시.
-    (function loadCpoConvKpi(){
-      var BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/kpi_values.json';
+    // 강습 문의 관리 — 성인+유소년 gviz 합산, 올해 기준 (2026-07-09 신규연결)
+    // 소스: 강습 스프레드시트(1b0XU1) 성인 gid 111889422 + 유소년 gid 268994754 — 응답시트 자체가 연도별 스코프.
+    // 참고: cpo/member/문의회원.html gvizFetchTable_/gvizLessonRows_/_gzLessonScopeFilter_ 패턴 이식(읽기전용, 필요한 count만).
+    (function loadLessonInqKpi(){
+      var SS_ID = '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw';
+      var GID_ADULT = 111889422;
+      var GID_YOUTH = 268994754;
       function set(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
-      fetch(BASE + '?t=' + Date.now(), { cache: 'no-store' })
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-          var cpo = (d && d.roles && d.roles.cpo) || null;
-          if(!cpo) return;
-          if(cpo['전환_문의수'] != null) set('kpiCpoInqCum', Number(cpo['전환_문의수']).toLocaleString());
-          if(cpo['전환_가입수'] != null) set('kpiCpoRegCum', Number(cpo['전환_가입수']).toLocaleString());
-          if(cpo['문의_가입_전환율'] != null) set('kpiCpoRate', Number(cpo['문의_가입_전환율']).toFixed(1) + '%');
-        })
-        .catch(function(){ /* "—" 유지 */ });
+      function gvizUrl(gid){ return 'https://docs.google.com/spreadsheets/d/' + SS_ID + '/gviz/tq?tqx=out:json&gid=' + gid + '&headers=1&_=' + Date.now(); }
+      function findCol(headers, keys) {
+        for (var i = 0; i < headers.length; i++) {
+          var h = String(headers[i] || '');
+          for (var k = 0; k < keys.length; k++) { if (h.indexOf(keys[k]) >= 0) return i; }
+        }
+        return -1;
+      }
+      function cellVal(cell, colType) {
+        if (!cell || cell.v === null || cell.v === undefined) return '';
+        if (colType === 'date' || colType === 'datetime') {
+          var m = String(cell.v).match(/Date\((\d+),(\d+),(\d+)/);
+          if (m) return new Date(+m[1], +m[2], +m[3]);
+          return cell.f || '';
+        }
+        return cell.v;
+      }
+      function fetchTable(gid) {
+        return fetch(gvizUrl(gid)).then(function(r){ return r.text(); }).then(function(text){
+          var m = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
+          if (!m) throw new Error('gviz 파싱 실패');
+          var json = JSON.parse(m[1]);
+          if (json.status !== 'ok') throw new Error('gviz status=' + json.status);
+          var cols = json.table.cols;
+          var headers = cols.map(function(c){ return String(c.label || '').trim(); });
+          var rows = (json.table.rows || []).map(function(row){
+            var c = row.c || [];
+            return cols.map(function(col, j){ return cellVal(c[j], col.type); });
+          });
+          return { headers: headers, rows: rows };
+        });
+      }
+      // 이름/전화 중 하나라도 있는 행만 카운트(빈 행 제외) — 타임스탬프 연도 식별 가능하면 올해만, 불명확하면 안전하게 포함.
+      function countThisYear(t) {
+        var iTs    = findCol(t.headers, ['타임스탬프', '접수일', '날짜']);
+        var iName  = findCol(t.headers, ['성함', '이름']);
+        var iPhone = findCol(t.headers, ['연락처', '전화', '휴대폰']);
+        var yr = String(new Date().getFullYear());
+        var n = 0;
+        for (var r = 0; r < t.rows.length; r++) {
+          var row = t.rows[r];
+          var hasName  = iName  >= 0 && row[iName];
+          var hasPhone = iPhone >= 0 && row[iPhone];
+          if (!hasName && !hasPhone) continue;
+          var ts = iTs >= 0 ? row[iTs] : '';
+          var y = (ts instanceof Date) ? String(ts.getFullYear()) : String(ts || '').slice(0, 4);
+          if (/^\d{4}$/.test(y) && y !== yr) continue;
+          n++;
+        }
+        return n;
+      }
+      Promise.all([fetchTable(GID_ADULT), fetchTable(GID_YOUTH)]).then(function(results){
+        var adult = countThisYear(results[0]);
+        var youth = countThisYear(results[1]);
+        set('kpiLessonInqTotal', (adult + youth).toLocaleString());
+        set('kpiLessonInqSplit', adult.toLocaleString() + ' / ' + youth.toLocaleString());
+      }).catch(function(){ /* "—" 유지 */ });
     })();
 
     // ── home_kpi: 매출·지출·이슈 연동 (2026-06-08) ─────────────────────────────
