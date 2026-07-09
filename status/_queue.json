@@ -1563,5 +1563,31 @@
     "artifact": "- 18시: 점검현황·성과·링크 제거 → 퇴근 인사+저녁루틴+명언(EVENING_QUOTES 정적10·날짜결정론). 헤더 '개인/퇴근·저녁'\n- 23시: 대시보드링크 제거 + 기준이탈 내용화(monthly outOfRange.list: 항목·값·기준 나열) + 시설/지원/주차/운영 통합. 시설부 monthly 실데이터로 '미가동'버그 교정\n- 06/12/21시 미변경. 발효=daily_scheduler 재기동(nudge ①②와 함께 적용) (CLI ad-hoc · 커밋 e973bdad)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e973bdad13443acff259c6bd46ea1d91c2787545"
+  },
+  {
+    "task_id": "CTO-2026-07-09-ADHOC-a0eafeb7",
+    "clevel": "cto",
+    "title": "[시토] 일일 점검 현황 카톡 공유 스크립트 — 개선지향(기준이탈·미체크·이슈)+수고감사, 시설+지원 방",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 833,
+    "artifact": "- kakao_daily_check_share.py: today_live(지원 미체크·이슈)+monthly(시설 기준이탈)+주차 → 개선지향 본문 → kakao_report_sender --only-room '웰페리온 운영+시설+지원'\n- --dry-run 지원·GAS 실패 graceful·값없으면 줄생략(정직). 23:00 예약작업이 호출\n- 예약작업 등록은 별도(검증된 0930 카톡작업 설정 미러) (CLI ad-hoc · 커밋 a0eafeb7)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a0eafeb700ae0ee2ff7fd46dcc679a46d1a5b0c0"
+  },
+  {
+    "task_id": "CMO-2026-07-09-NORTHSTAR-PRODUCTION-LOOP",
+    "clevel": "cmo",
+    "title": "[시모] M1 북극성 지향 제작 루프 재설계·구현 — producer가 북극성/전환을 보고 콘텐츠 각을 고르는 폐루프 (Fable 설계·검수)",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-09",
+    "ship_no": 834,
+    "note": "[2026-07-09 GM 지시] '북극성 지향 제작 루프부터 손봐라' → Fable로 설계·검수 다시 하고 제대로 구현. 설계 스펙=.omc/specs/2026-07-09-cmo-northstar-production-loop-design.md. 근본원인(Fable 실측)=①선정함수 입력에 목표·성과 없음 ②제작(개인namuk)과 평가(공식wellperion) 범주 불일치 ③공식 콘텐츠는 자동루프 대상조차 아님(후보풀 SSOT 부재) ④편별 채점재료 절반만 배선. v1=campaign_stats 소비+스코어카드+공식 후보풀 로드맵+producer 공식모드(플래그 OFF 기본)·반자동. 라이브 발효3건(공식cron·GAS배포·CMO_NORTHSTAR_STEER ON)=각 GM go+역롤백. 상위배: ship676(클릭→문의 전환)·743(⑤평가환류)·744(③전환원장) 수렴.",
+    "next": "",
+    "depends_on": ""
   }
 ]
