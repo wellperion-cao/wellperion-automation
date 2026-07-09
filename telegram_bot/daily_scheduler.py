@@ -2054,6 +2054,14 @@ VOC_EXEC_URL = (
 )
 
 
+def _merged_unchecked_names(live: dict, shift: str) -> list[str]:
+    """today_live 응답의 uncheckedByShift[shift] — m+f 미체크 항목명 병합.
+    필드 없음/빈값 → 빈 리스트(호출부가 안전하게 줄 생략). GM go 2026-07-09, 배선: 지원팀 일일점검.js handleTodayLive."""
+    bucket = (live.get("uncheckedByShift") or {}).get(shift) or {}
+    names = list(bucket.get("m") or []) + list(bucket.get("f") or [])
+    return [str(n).strip() for n in names if str(n or "").strip()]
+
+
 def _build_nudge_body(shift: str) -> str | None:
     """지원부 점검 회차(shift) 미완 시 독려 1줄 생성. shift ∈ {'pm','close'}.
 
@@ -2084,9 +2092,19 @@ def _build_nudge_body(shift: str) -> str | None:
     else:
         label, action = "마감조", "마감 점검 부탁드립니다"
 
+    # 미체크 항목명(GM go 2026-07-09) — uncheckedByShift 없거나 빈 값이면 조용히 줄 생략(안전, 지어내기 금지).
+    unchecked_names = _merged_unchecked_names(live, shift)
+    unchecked_line = ""
+    if unchecked_names:
+        shown = unchecked_names[:8]
+        extra = len(unchecked_names) - len(shown)
+        tail = f" 외 {extra}" if extra > 0 else ""
+        unchecked_line = f"\n미체크: {', '.join(shown)}{tail}"
+
     return (
         f"⚠️ [{label}] 지원부 점검 미완 — "
         f"남 {m_done}/{mT} · 여 {f_done}/{fT} (합 {done}/{total}). {action}."
+        f"{unchecked_line}"
     )
 
 

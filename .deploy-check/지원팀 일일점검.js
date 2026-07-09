@@ -3619,7 +3619,7 @@ function _buildTodayMaster(dept, dow, week) {
     var bucketList = Object.keys(buckets);
     if (!bucketList.length) return;       // 회차 미정 + df_ 아님 → 분모 제외(미분류)
 
-    master.byId[id] = { buckets: bucketList, glist: glist, gender: gender };
+    master.byId[id] = { buckets: bucketList, glist: glist, gender: gender, name: name };
     master.count++;
   });
 
@@ -3716,6 +3716,41 @@ function handleTodayLive(params) {
     });
   });
 
+  // ─── 미체크 항목명 수집(신규 응답필드 전용, 2026-07-09) — 위 done presence(:3692~3717)와 동일 판정
+  // 기준(glist·buckets·_roundBucket)을 독립 재계산해 항목명을 뽑는다. allIssues 집계(아래)와 같은 패턴으로
+  // ledger를 다시 읽되, doneByG/totalByG/pct/allIssues/byGender 등 기존 계산엔 전혀 관여하지 않는 순수 추가값.
+  // 회귀 0: 기존 필드 무변경, uncheckedByShift는 아래 return에만 새로 얹는다.
+  var uncheckedByShift = {};
+  ['m', 'f'].forEach(function (g) {
+    var ucLed = _getCheckLedger(dept, date, g);
+    var ucCr = (ucLed && ucLed.cr && typeof ucLed.cr === 'object') ? ucLed.cr : {};
+    var ucDoneKey = {};   // 이 성별에서 완료 처리된 '항목|시프트' (seenPair와 동일 키 형식)
+    Object.keys(ucCr).forEach(function (k) {
+      if (!ucCr[k]) return;
+      var us = String(k).indexOf('_');
+      if (us < 0) return;
+      var round = String(k).slice(0, us);
+      var id = String(k).slice(us + 1);
+      if (!id) return;
+      var info = master.byId[id];
+      if (!info) return;
+      if (info.glist.indexOf(g) < 0) return;
+      var b = _roundBucket(round);
+      if (info.buckets.indexOf(b) < 0) return;
+      ucDoneKey[id + '|' + b] = 1;
+    });
+    Object.keys(master.byId).forEach(function (id) {
+      var info = master.byId[id];
+      if (info.glist.indexOf(g) < 0) return;             // 이 성별 미적용 항목 — 제외
+      info.buckets.forEach(function (b) {
+        if (b === 'pm' && isWeekend) return;              // 주말 오후조 미운영(배173 정합) — 독려 대상 아님
+        if (ucDoneKey[id + '|' + b]) return;              // 완료됨 — 미체크 아님
+        if (!uncheckedByShift[b]) uncheckedByShift[b] = { m: [], f: [] };
+        uncheckedByShift[b][g].push(info.name || id);
+      });
+    });
+  });
+
   // ─── 분모(total): 위에서 빌드한 동일 master를 시프트 presence(시프트당 1회)로 계상(성별 분리) ───
   // _tlTotalByGFromMaster로 단일화(2026-07-04) — monthly_report의 스케줄기대치(_scheduleExpectedTotal)와
   // 완전히 같은 집계 함수를 공유해 두 소스가 절대 어긋나지 않게 한다(배14).
@@ -3786,7 +3821,8 @@ function handleTodayLive(params) {
     amTotal: sumTotal.am, pmTotal: (isWeekend ? 0 : sumTotal.pm), closeTotal: sumTotal.close, nightTotal: sumTotal.night,
     total: total, done: done, pct: pct,
     allIssues: allIssues,   // 2026-06-25 시우: led.cr 메타에서 이슈 집계 — 쓰기·읽기 단일 소스 정합
-    byGender: { m: genderSummary('m'), f: genderSummary('f'), all: genderSummary('all') }
+    byGender: { m: genderSummary('m'), f: genderSummary('f'), all: genderSummary('all') },
+    uncheckedByShift: uncheckedByShift   // 2026-07-09 GM go: 미체크 항목명 (성별×버킷) — 신규 추가 필드, 기존 필드 무변경
   });
 }
 
