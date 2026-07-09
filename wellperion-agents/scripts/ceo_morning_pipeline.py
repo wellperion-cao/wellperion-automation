@@ -596,10 +596,44 @@ def stage1_collect_classify() -> dict:
         # ── G1 SSOT 경로 ────────────────────────────────────────────────────
         print("[STAGE 1] 데이터 소스: G1 SSOT API")
         gm_decision = g1["gm_decision"]
+        today_tasks = list(g1["today_tasks"])
+
+        # ── _queue.json 활성 배 머지 (2026-07-10 시토 — INC 진단·수리) ──────
+        # 왜: G1 API 성공 시 today_tasks가 시트(GAS)만 반영해, _queue.json에만
+        # 있는 C-Level 자동등록 배(시트엔 존재 안 함)가 '오늘 항로'에서 매일
+        # 통째로 누락됐다(08:00 보고 '오늘 항로 0건' 버그). 정본 머지 로직은
+        # hangro_board.py(GAS+큐 머지, CLAUDE.md §3-1 SSOT)를 그대로 재사용
+        # — 새 병합 로직 중복 구현 금지. 중복키는 queue_integrity_check._core_key()
+        # 로 시트 항목과 대조해 이중계상을 막는다.
+        try:
+            from hangro_board import fetch_queue_items as _fetch_queue_items
+            from queue_integrity_check import _core_key as _ck
+            _sheet_keys = {
+                _ck(it.get("title", ""))
+                for it in (gm_decision + today_tasks
+                           + g1["done_today"] + g1["done_yesterday"])
+            }
+            for qit in _fetch_queue_items():
+                st = str(qit.get("status", "")).upper()
+                if st not in ("PENDING", "IN_PROGRESS"):
+                    continue
+                if _ck(qit.get("title", "")) in _sheet_keys:
+                    continue  # 시트에 이미 같은 배 존재 — 이중계상 방지
+                today_tasks.append({
+                    "title": qit.get("title", ""),
+                    "task_id": qit.get("id", ""),
+                    "owner": qit.get("owner", ""),
+                    "status": qit.get("status", ""),
+                    "start_date": "",
+                    "source": "queue",
+                })
+        except Exception as exc:
+            print(f"[WARN] _queue.json 항로 머지 실패: {exc} — 시트 데이터만 사용", file=sys.stderr)
+
         # today_tasks는 전부 AUTONOMOUS (결재 대기는 이미 gm_decision에 분리됨)
         autonomous: list[dict] = []
         deep_interview: list[dict] = []
-        for it in g1["today_tasks"]:
+        for it in today_tasks:
             # 보안 신호가 제목에 포함된 경우 GM_DECISION으로 상향
             disp, reason = classify_disposition({"title": it.get("title", ""), "note": ""})
             it["disposition"] = disp
