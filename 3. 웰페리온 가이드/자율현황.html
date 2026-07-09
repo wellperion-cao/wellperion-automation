@@ -1615,6 +1615,8 @@
       if(statusEl){ statusEl.textContent = '내용을 입력하세요.'; statusEl.style.color = '#c77'; }
       return;
     }
+    var key = prompt('GM 편집 저장 — 비밀번호를 입력하세요:');
+    if(key === null || key === '') return;
     btn.disabled = true;
     if(statusEl){ statusEl.textContent = '저장 중…'; statusEl.style.color = 'var(--dim)'; }
     gasReadText('status/module_registry.json', 'status/module_registry.json').then(function(raw){
@@ -1637,7 +1639,7 @@
       return fetch(GAS_URL, {
         method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'commit_file', path: 'status/module_registry.json', content: content,
-          message: '[자율현황] 환류: ' + moduleId + ' — ' + author, key: '' })
+          message: '[자율현황] 환류: ' + moduleId + ' — ' + author, key: key })
       });
     }).then(function(r){ return r.json(); }).then(function(res){
       if(res && res.ok){

@@ -1242,6 +1242,7 @@ function doPost(e) {
     if (body.action === 'save_insp_memo') return saveInspMemo(body);            // 회차 점검자 배정 메모(공유). 2026-06-16 시우.
     if (body.action === 'unlock_round')  return handleUnlockRound(body);       // 관리자 PIN 제출잠금 해제. 2026-06-17 시우.
     if (body.action === 'save_facility_measure') return saveFacilityMeasure(body);   // 시설 측정값 저장 → 시설_공용구역 행 기록(입력=완료). weekly&dept=facility 자동집계. 2026-06-17 시우.
+    if (body.action === 'save_facility_notes') return saveFacilityNotes(body);   // 금일 작업사항·지시사항만 스냅샷 갱신(측정 미영향·정오 이후 자동저장). GM 2026-07-09 시우.
     return jsonRes({ error: 'unknown action' });
   } catch (err) {
     return jsonRes({ error: err.message });
@@ -2942,6 +2943,36 @@ function saveFacilityMeasure(body) {
   } catch (e) {}
 
   return jsonRes({ ok: true, dept: 'facility', date: date, round: round, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0 });
+}
+
+// ─── 금일 작업사항·지시사항만 스냅샷 갱신 (POST {action:'save_facility_notes', date, round, inspector, work, order}) ───
+// 정오 이후 자동 저장용(GM 2026-07-09 시우). 시설_공용구역(측정) 절대 미변경 — 점검일지_facility의 작업사항(15열)/지시사항(16열)만 upsert.
+function saveFacilityNotes(body) {
+  var date = String(body.date || '').trim();
+  if (!date) return jsonRes({ ok: false, error: 'date 필수' });
+  var round = String(body.round || '').trim() || '1일';
+  var inspector = String(body.inspector || '박호균').trim() || '박호균';
+  var work = String(body.work || '').trim();
+  var order = String(body.order || '').trim();
+  var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+  var fsheet = _initFacilitySnapshot();
+  var fdata = fsheet.getDataRange().getValues();
+  var WORK_COL = 15, ORDER_COL = 16;   // 스냅샷 1-based: 작업사항=15, 지시사항=16 (FACILITY_SNAPSHOT_HEADERS)
+  for (var fr = fdata.length - 1; fr >= 1; fr--) {
+    var sameDate = (String(fdata[fr][1]) === date || formatDate(fdata[fr][1]) === date);
+    var sameRound = (String(fdata[fr][3]) === round);
+    if (sameDate && sameRound) {
+      fsheet.getRange(fr + 1, WORK_COL).setValue(work);
+      fsheet.getRange(fr + 1, ORDER_COL).setValue(order);
+      return jsonRes({ ok: true, updated: true, date: date });
+    }
+  }
+  // 해당 (날짜,회차) 스냅샷 행이 아직 없으면 최소 행 생성(측정 전이라도 작업사항 보존). 수치칸=''(home/월간이 0% 세션으로 오독하지 않게).
+  var snapRow = [now, date, 'facility', round, inspector, '', '', '', '', '', '', '', '', '', work, order];
+  fsheet.appendRow(snapRow);
+  var fLast = fsheet.getLastRow();
+  if (fLast > 2) fsheet.getRange(2, 1, fLast - 1, fsheet.getLastColumn()).sort({ column: 1, ascending: false });
+  return jsonRes({ ok: true, created: true, date: date });
 }
 
 var SHEET_ISSUE_FACILITY = '시설_이슈대장';

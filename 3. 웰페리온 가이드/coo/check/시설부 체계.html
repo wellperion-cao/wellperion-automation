@@ -750,8 +750,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 
 <div id="tab-fcheck" class="content hidden">
-  <h2 style="font-size:20px;margin-bottom:6px;">시설 일일점검 <span style="font-size:13px;color:var(--dim);font-weight:400;">(작업일지 · PDF 기준)</span></h2>
+  <h2 style="font-size:20px;margin-bottom:6px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">시설 일일점검 <span style="font-size:13px;color:var(--dim);font-weight:400;">(작업일지 · PDF 기준)</span><span id="fc-title-date" style="margin-left:auto;font-size:15px;color:var(--accent);font-weight:700;"></span></h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜를 고른 뒤 <b>⏱ 점검 시작</b> → 측정값 입력 → <b>⏱ 점검 종료</b> → <b>제출</b>하면 <b>1회차</b>로 기록됩니다. 제출하면 <b>측정 수치칸만 비워져</b> 바로 다음 회차를 이어서 점검할 수 있고, 위의 <b>회차 버튼(1회·2회…)</b>을 누르면 그 회차 기록을 <b>읽기전용</b>으로 볼 수 있습니다. <b>금일 작업사항·지시사항</b>은 하루 한 번만 적으면 회차가 넘어가도 유지됩니다.</p>
+  <!-- 금일 작업사항·지시사항·점검 요청사항(임시) — 점검 시작 위 · 하루 1번·회차 넘어가도 유지(리셋 안 됨). GM 2026-07-09 -->
+  <div id="fc-daybox" style="margin-bottom:14px;">
+    <div style="font-weight:700;font-size:14px;margin:0 0 4px;">금일 작업사항</div>
+    <textarea id="fc_work" rows="3" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:7px;font-size:13px;font-family:inherit;" placeholder="예) 헬스장 온도 점검 · 소방 작동점검 · 시설 정리"></textarea>
+    <div style="font-weight:700;font-size:14px;margin:12px 0 4px;">지시사항</div>
+    <textarea id="fc_order" rows="3" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:7px;font-size:13px;font-family:inherit;" placeholder="예) 통합관리실 CCTV 추가 · 비번 변경 등"></textarea>
+    <div style="font-weight:700;font-size:14px;margin:12px 0 4px;">점검 요청사항 <span style="font-size:11px;color:var(--dim);font-weight:400;">(임시 · 추후 삭제 예정)</span></div>
+    <textarea id="fc_req" rows="3" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:7px;font-size:13px;font-family:inherit;" placeholder="점검 관련 요청사항"></textarea>
+  </div>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
     <label style="font-size:13px;font-weight:700;">날짜 <input type="date" id="fcDate" onchange="fcLoad()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-family:inherit;"></label>
     <button type="button" id="fcTimerBtn" onclick="fcTimerToggle()" style="background:var(--accent-bg);border:1.5px solid var(--accent);color:var(--accent);padding:7px 14px;border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;">⏱ 점검 시작</button>
@@ -4137,7 +4146,7 @@ function vendorSubmitAddForm(){
   ];
   var ROUND_FIELD_IDS=[];   // 시간대별 항목의 모든 입력 필드 id (회차 전환 시 캡처·복원 대상)
   FC_ROUND_ITEMS.forEach(function(it){ it.fields.forEach(function(f){ ROUND_FIELD_IDS.push(f); }); });
-  var DAILY_FIELD_IDS=['fc_work','fc_order','fc_note'];   // 1일 공통 텍스트 + 아래 daily items
+  var DAILY_FIELD_IDS=['fc_work','fc_order','fc_req','fc_note'];   // 1일 공통 텍스트(작업사항·지시사항·점검요청사항·비고) + 아래 daily items
   FC_DAILY_ITEMS.forEach(function(it){ it.fields.forEach(function(f){ DAILY_FIELD_IDS.push(f); }); });
 
   // ─── 회차별 입력값 보존 store. rounds[label]={fieldId:val}, daily={fieldId:val}, inspector ───
@@ -4269,7 +4278,7 @@ function vendorSubmitAddForm(){
   };
   window.fcRender=function(){
     var el=document.getElementById('fc-body'); if(!el)return;
-    el.innerHTML='<div id="fc-rounds-bar"></div><div class="progress" id="fc-progress"></div>'+topBox()+saunaTbl()+poolTbl()+equipBox()+aiBox()+noteBox();
+    el.innerHTML='<div id="fc-rounds-bar"></div><div class="progress" id="fc-progress"></div>'+saunaTbl()+poolTbl()+equipBox()+aiBox()+noteBox();
     // 항목 칸 입력 시 캡처 후 진행바 갱신(회차 통합 — 단일 버킷)
     el.querySelectorAll('[id^=fc_]').forEach(function(n){ n.addEventListener('input',fcProgress); n.addEventListener('change',fcProgress); });
     fcProgress(); fcRenderRoundsBar();
@@ -4329,6 +4338,7 @@ function vendorSubmitAddForm(){
       daily:daily,
       work:(dmap['fc_work']||''),
       order:(dmap['fc_order']||''),
+      req:(dmap['fc_req']||''),
       note:(dmap['fc_note']||'')
     };
   }
@@ -4365,7 +4375,7 @@ function vendorSubmitAddForm(){
       if(!it||!it.measure)return;
       try{ var vals=JSON.parse(it.measure); Object.keys(vals).forEach(function(k){ m['fc_'+k]=vals[k]; }); }catch(e){}
     });
-    if(sub){ if(sub.work!==undefined)m['fc_work']=sub.work; if(sub.order!==undefined)m['fc_order']=sub.order; if(sub.note!==undefined)m['fc_note']=sub.note; }
+    if(sub){ if(sub.work!==undefined)m['fc_work']=sub.work; if(sub.order!==undefined)m['fc_order']=sub.order; if(sub.req!==undefined)m['fc_req']=sub.req; if(sub.note!==undefined)m['fc_note']=sub.note; }
     return m;
   }
   // fc_ 입력칸 전부 잠금/해제(읽기전용 조회용)
@@ -4413,6 +4423,17 @@ function vendorSubmitAddForm(){
       '<span style="font-size:13px;font-weight:800;color:var(--text);margin-right:3px;">📋 오늘 '+n+'회 점검</span>'+chips+curChip+
       (fcViewing!==null?'<span style="font-size:11px;color:var(--dim);flex-basis:100%;margin-top:2px;">🔒 지난 회차는 읽기전용 — 수정하려면 「현재 회차로 돌아가기」</span>':'')+'</div>';
   };
+  // ─── 금일 작업사항·지시사항 자동 저장(GM 2026-07-09) — 정오(12:00) 이후 입력 시 디바운스 후 점검일지 시트에 자동 저장. 측정 미영향·리셋 없음. ───
+  var _fcNotesTimer=null;
+  function fcAutoSaveNotes(){
+    if(fcViewing!==null) return;                 // 읽기전용 조회 중엔 저장 안 함
+    var date=val('fcDate'); if(!date) return;
+    if(!(nowHHMM() >= '12:00')) return;          // 정오 이전엔 자동 저장 안 함(수동 제출만)
+    fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'save_facility_notes',date:date,round:ROUND_DAILY,inspector:inspectorName(),work:val('fc_work'),order:val('fc_order')})}).catch(function(){});
+    var st=document.getElementById('fcStatus'); if(st) st.textContent='금일 작업사항 자동 저장됨 ('+nowHHMM()+')';
+  }
+  function fcNotesDebounced(){ if(_fcNotesTimer)clearTimeout(_fcNotesTimer); _fcNotesTimer=setTimeout(fcAutoSaveNotes,2500); }
   window.fcSave=function(){
     var date=val('fcDate'); if(!date){alert('날짜를 먼저 고르세요');return;}
     if(fcViewing!==null){ alert('지난 회차 조회(읽기전용) 중입니다.\n「현재 회차로 돌아가기」 후 제출하세요.'); return; }
@@ -4451,6 +4472,7 @@ function vendorSubmitAddForm(){
   };
   window.fcLoad=function(){
     var date=val('fcDate'); if(!date)return;
+    try{ var _td=document.getElementById('fc-title-date'); if(_td){ var _wd=['일','월','화','수','목','금','토'][new Date(date+'T00:00:00').getDay()]; _td.textContent='📅 '+date+' ('+_wd+')'; } }catch(e){}
     if(!document.querySelector('#fc-body [id^=fc_]')) fcRender();
     fcFillRounds();
     var st=document.getElementById('fcStatus'); if(st)st.textContent='불러오는 중...';
@@ -4468,6 +4490,8 @@ function vendorSubmitAddForm(){
       }).catch(function(){ if(st)st.textContent='불러오기 실패'; });
   };
   try{ var fd=document.getElementById('fcDate'); if(fd){ fd.value=new Date().toLocaleDateString('sv-SE'); fcRender(); fcLoad(); } }catch(e){}
+  // 금일 작업사항·지시사항·점검요청사항 입력 → 정오 이후 자동 저장(디바운스). 정적 박스라 1회 연결.
+  try{ ['fc_work','fc_order','fc_req'].forEach(function(id){ var n=document.getElementById(id); if(n) n.addEventListener('input',fcNotesDebounced); }); }catch(e){}
 })();
 </script>
 
