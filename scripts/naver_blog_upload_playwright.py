@@ -131,9 +131,13 @@ PUBLISH_TRIGGER_SELECTORS = [
     'button.publish_btn__m9KHH',
     'button:has-text("발행")',
 ]
+# ★ 최종 발행 확인 = 발행 레이어(패널) 안의 버튼만. 툴바 tpb.publish(패널 여는 버튼) 절대 금지
+#   — 이전 버그(2026-07-09 GM): confirm 첫 셀렉터가 tpb.publish라 패널만 다시 열고 게시 안 됨.
+#   패널 스코프(layer_btn_area / se-popup 등) 안에서 '발행' 텍스트 버튼을 찾는다(해시클래스 변동 방어).
 PUBLISH_CONFIRM_SELECTORS = [
-    'button[data-click-area="tpb.publish"]',
     'div.layer_btn_area button.confirm_btn__WEaBq',
+    'div.layer_btn_area button:has-text("발행")',
+    'div[class*="layer"] button[class*="confirm"]:has-text("발행")',
     'button.btn_check:has-text("발행")',
 ]
 
