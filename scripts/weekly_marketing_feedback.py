@@ -132,6 +132,16 @@ SECTION_4_HEADING = "## 4. 다음 편 제안"
 SECTION_3_PLACEHOLDER_MARKERS = ["▸ (시모 정성 판정"]
 SECTION_4_PLACEHOLDER_MARKERS = ["▸ (시모: 통한 패턴"]
 
+# ── §5 각(角) 스코어카드 (2026-07-09 가산 — 편별 채점 생산, 설계스펙 §3-2/§3-6) ──
+# §3/§4 와 달리 §5 는 항상 자동 데이터이므로 매번 재생성한다(보존 대상 아님).
+# §4 추출 시 stop heading 으로 사용해 §4 보존/치환이 §5 를 잘못 집어삼키지 않도록 한다.
+SECTION_5_HEADING = "## 5. 각(角) 스코어카드"
+
+# campaign_stats topChannel 중 편별 귀속 가능한 채널(§3-6 High-1: 블로그·카페 링크카드 경유만 귀속).
+_CAMPAIGN_ATTRIBUTED_CHANNELS = {"naver_blog", "naver_cafe"}
+# GAS campaign_stats 는 UTM 캠페인 슬러그가 비어있는 클릭을 이 키로 묶는다(Survey.js:2314) — 편이 아니므로 스코어카드 제외.
+_CAMPAIGN_UNATTRIBUTED_KEY = "직접·기타"
+
 # ── 텔레그램 주간 요약 발송 (문의알림방 · 2026-07-03 GM go 라이브) ─────
 ENV_PATH = _REPO_ROOT / "telegram_bot" / ".env"
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
@@ -305,6 +315,22 @@ def fetch_click_stats(date_from: str, date_to: str) -> dict | None:
         return data
     except Exception as e:
         print(f"[WARN] click_stats 수집 실패: {e}")
+        return None
+
+
+def fetch_campaign_stats(date_from: str, date_to: str) -> dict | None:
+    """campaign_stats — 편(캠페인 슬러그)별 클릭 집계(GAS Survey.js:2287, 이미 라이브 — 신규 배포 없음).
+    실패 시 None(→ 미측정 표기, 0 위장 금지). 응답 실측(2026-07-09):
+    {"ok":true,"total":N,"campaigns":[{"campaign":"260630_ep2","clicks":7,"topChannel":"naver_blog"}, ...],
+     "from":..., "to":...} — UTM 캠페인 미태깅 클릭은 campaign="직접·기타"로 묶여 돌아온다(편 아님)."""
+    try:
+        data = _http_get(f"{GAS_URL}?action=campaign_stats&from={date_from}&to={date_to}", timeout=40)
+        if not data.get("ok"):
+            print(f"[WARN] campaign_stats ok=false: {data}")
+            return None
+        return data
+    except Exception as e:
+        print(f"[WARN] campaign_stats 수집 실패: {e}")
         return None
 
 
@@ -484,8 +510,60 @@ def _fmt_conversion_breakdown(fc: dict | None) -> str:
     return "\n".join(lines)
 
 
+def _campaign_coverage_tag(top_channel: str) -> str:
+    """§3-6 정직표기: 블로그·카페 링크카드 경유(topChannel)만 편별 귀속. 그 외(IG·카카오·당근·직접 등)는 비귀속."""
+    if top_channel in _CAMPAIGN_ATTRIBUTED_CHANNELS:
+        return "측정(블로그·카페 귀속)"
+    return "편별 비귀속(IG·카카오·당근 등 — UTM 구조상 편 귀속 불가)"
+
+
+def _fmt_angle_scorecard(cps: dict | None) -> str:
+    """§5 각(角) 스코어카드 — 편(캠페인 슬러그)별 표.
+    정직 원칙(설계스펙 §3-6 High-1): campaign_stats 에 행이 없는 편(블로그·카페 미발행)은 `0`이 아니라
+    '미발행(측정 불가)' — 이 표에 아예 나타나지 않으므로 그 사실을 각주로 명기한다(0 위장 금지)."""
+    if cps is None:
+        return "_수집 실패 — 미측정(GAS 응답 없음)_"
+    rows = [r for r in (cps.get("campaigns") or []) if r.get("campaign") != _CAMPAIGN_UNATTRIBUTED_KEY]
+    if not rows:
+        return "_이번 주 편별(캠페인) 클릭 로그 0건 — 전 편 미발행(측정 불가) 또는 표본 없음_"
+
+    lines = ["| 캠페인 슬러그 | 각(ANGLE) | 클릭(측정) | 문의 | 커버리지 |", "|---|---|---|---|---|"]
+    for r in sorted(rows, key=lambda d: d.get("clicks", 0), reverse=True):
+        camp = str(r.get("campaign", "-")).replace("|", "\\|")
+        clicks = r.get("clicks", 0)
+        coverage = _campaign_coverage_tag(str(r.get("topChannel", "")))
+        lines.append(f"| {camp} | — (공식 후보풀 로드맵 미배선) | {clicks}회 | 미측정 | {coverage} |")
+    lines.append("")
+    lines.append(
+        "_※ 이 표는 GAS campaign_stats(블로그·카페 링크카드 클릭)에 잡힌 캠페인만 나타난다. "
+        "블로그·카페에 아직 발행되지 않은 편은 행 자체가 없다 — **`0`이 아니라 미발행(측정 불가)**이다. "
+        "IG·카카오·당근 경유 클릭은 UTM 구조상 편별 비귀속(2026-07-09 CTA 원칙). "
+        "각(ANGLE) 칼럼은 공식 후보풀 로드맵 신설(후속 작업) 전까지 항상 미배선._"
+    )
+    return "\n".join(lines)
+
+
+def _fmt_angle_scores_fence(cps: dict | None) -> str:
+    """angle-scores 펜스 — ig_series_producer.py 의 producer-season-config 와 같은
+    'KEY: 값' md 펜스를 기계가 직독하는 관례. 새 json/SSOT 파일을 만들지 않고 브리프 .md 안에만 둔다."""
+    lines = ["```angle-scores"]
+    rows = [r for r in ((cps or {}).get("campaigns") or []) if r.get("campaign") != _CAMPAIGN_UNATTRIBUTED_KEY]
+    if cps is None:
+        lines.append("# 미측정 — campaign_stats 수집 실패")
+    elif not rows:
+        lines.append("# 미측정 — 이번 주 편별 클릭 표본 없음(전 편 미발행 가능)")
+    else:
+        for r in rows:
+            camp = str(r.get("campaign", "-")).replace(" ", "_")
+            clicks = r.get("clicks", 0)
+            coverage = "partial" if str(r.get("topChannel", "")) in _CAMPAIGN_ATTRIBUTED_CHANNELS else "none"
+            lines.append(f"{camp}: clicks={clicks} inquiries=미측정 coverage={coverage}")
+    lines.append("```")
+    return "\n".join(lines)
+
+
 def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
-                 mr: dict | None, lr: dict | None,
+                 mr: dict | None, lr: dict | None, cps: dict | None,
                  date_from: str, date_to: str, generated_at: datetime.datetime) -> str:
     week_label = f"{date_from} ~ {date_to}"
 
@@ -567,6 +645,20 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
         "<!-- v2 훅: UTM 표본 축적 후 자동 가중 점수(전환×w1 + 클릭×w2 …) + Top/Bottom 자동 컷오프 도입. "
         "가중치·컷오프 로직은 지금(v1) 미구현 — 섹션3 은 시모 정성 판정으로 유지. -->"
     )
+    parts.append("")
+
+    # ── §5 각(角) 스코어카드 (설계스펙 §3-2/§3-6) ──────────────────────
+    # §3/§4 와 달리 항상 자동 데이터이므로 매번 재생성한다(apply_preserved_judgment 대상 아님).
+    parts.append(SECTION_5_HEADING)
+    parts.append("")
+    parts.append(
+        "_각(角) 편별 채점 — 클릭은 campaign_stats(블로그·카페 링크카드) 실측, 문의는 편별 집계 배선 전(§3-6 GAS "
+        "campaign_conversion 후속)이라 미측정. 커버리지 꼬리표로 귀속 범위를 정직 표기한다(가짜 수치 0 금지)._"
+    )
+    parts.append("")
+    parts.append(_fmt_angle_scorecard(cps))
+    parts.append("")
+    parts.append(_fmt_angle_scores_fence(cps))
     parts.append("")
 
     return "\n".join(parts)
@@ -689,14 +781,16 @@ def apply_preserved_judgment(fresh_md: str, out_path: Path) -> str:
         return fresh_md
 
     try:
+        # §4 tail 은 §5(각 스코어카드, 2026-07-09 가산·항상 자동 재생성) 헤딩 직전에서 끊는다 —
+        # 그래야 §4 보존/치환이 매번 새로 계산되는 §5 스코어카드를 잘못 집어삼키지 않는다.
         fresh_s3 = _extract_section(fresh_md, SECTION_3_HEADING, [SECTION_4_HEADING])
-        fresh_s4_tail = _extract_section(fresh_md, SECTION_4_HEADING, [])  # §4부터 EOF(참고 힌트·v2훅 포함)
+        fresh_s4_tail = _extract_section(fresh_md, SECTION_4_HEADING, [SECTION_5_HEADING])
         if fresh_s3 is None or fresh_s4_tail is None:
             print("[WARN] 신규 브리프에서 §3/§4 헤딩을 못 찾음(포맷 변경 의심) — 보존 병합 생략")
             return fresh_md
 
         exist_s3 = _extract_section(existing_md, SECTION_3_HEADING, [SECTION_4_HEADING])
-        exist_s4_tail = _extract_section(existing_md, SECTION_4_HEADING, [])
+        exist_s4_tail = _extract_section(existing_md, SECTION_4_HEADING, [SECTION_5_HEADING])
 
         merged = fresh_md
 
@@ -707,7 +801,8 @@ def apply_preserved_judgment(fresh_md: str, out_path: Path) -> str:
             print("[INFO] §3 기존 콘텐츠 없음/미채움 — placeholder 새로 생성")
 
         # §4 는 위 §3 치환으로 fresh_md 내용이 바뀌었을 수 있으니 merged 기준으로 재추출.
-        fresh_s4_tail_current = _extract_section(merged, SECTION_4_HEADING, [])
+        # (§5 직전에서 끊어야 §5 스코어카드가 §4 보존 치환에 함께 삭제되지 않는다.)
+        fresh_s4_tail_current = _extract_section(merged, SECTION_4_HEADING, [SECTION_5_HEADING])
         if _is_filled(exist_s4_tail, SECTION_4_PLACEHOLDER_MARKERS) and fresh_s4_tail_current is not None:
             merged = merged.replace(fresh_s4_tail_current, exist_s4_tail, 1)
             print("[INFO] §4(다음 편 제안) 기존 시모 제안 보존 — 재생성 스킵")
@@ -743,8 +838,9 @@ def run_weekly(dry_run: bool = False):
     fc = fetch_funnel_conversion(date_from, date_to)
     mr = fetch_member_registered(date_from, date_to)
     lr = fetch_lesson_registry(date_from, date_to)
+    cps = fetch_campaign_stats(date_from, date_to)
 
-    brief_md = build_brief(items, cs, fc, mr, lr, date_from, date_to, now)
+    brief_md = build_brief(items, cs, fc, mr, lr, cps, date_from, date_to, now)
 
     BRIEFS_DIR.mkdir(parents=True, exist_ok=True)
     out_path = BRIEFS_DIR / f"CMO-weekly-feedback-{now.strftime('%Y%m%d')}.md"
