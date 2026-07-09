@@ -52,6 +52,18 @@
       "ai_free_fallback": "GAS가 시트에서 자동 집계·12시 점검관리방 발송",
       "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
       "reversible": true
+    },
+    {
+      "_reporter_schema": "module_reporter.py 소비 스키마(자동보고 프레임워크). 위 3건은 자율현황 렌더/자율 스키마 — 리포터는 enabled+cadence+collector 필드를 가진 항목만 발송 대상으로 본다(그 외는 무시).",
+      "id": "automation_health",
+      "name": "자율현황 자동화 건강",
+      "owner": "cto",
+      "bot_room": "자동화현황방",
+      "cadence": ["weekly@mon@09:00"],
+      "collector": "collectors.automation_health",
+      "frontend_anchor": "자율현황.html#health",
+      "enabled": false,
+      "honesty_default": "측정"
     }
   ]
 }
