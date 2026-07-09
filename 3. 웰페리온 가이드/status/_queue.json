@@ -284,7 +284,7 @@
     "task_id": "NEXT-20260707-160103",
     "clevel": "cto",
     "title": "첫 무인 발송 내일 09:30 도착 확인. 보안 근본화=자체서버+법인폰 카톡(≈9월·배101)",
-    "status": "PENDING",
+    "status": "DONE",
     "depends_on": "",
     "from": "cto",
     "origin": "bridge",
@@ -297,7 +297,17 @@
       "clevel": "cto",
       "at": "2026-07-08 13:25:58"
     },
-    "depends_on_resolved": "CTO-2026-07-06-KAKAO-REPORT-SENDER"
+    "depends_on_resolved": "CTO-2026-07-06-KAKAO-REPORT-SENDER",
+    "verify": {
+      "type": "log_contains",
+      "path": "status/kakao_last_send.json",
+      "match": "3방 전송 완료",
+      "evidence_label": "카톡 무인발송 3방 전송 완료(2026-07-09 09:31)"
+    },
+    "terminal": true,
+    "artifact": "카톡 무인발송 3방 전송 완료(2026-07-09 09:31): status/kakao_last_send.json에서 매칭 (\"detail\": \"3방 전송 완료\",)",
+    "next": "🏁 입항 — 자동검증 완결",
+    "processed_at": "2026-07-09"
   },
   {
     "task_id": "NEXT-20260707-160113",
