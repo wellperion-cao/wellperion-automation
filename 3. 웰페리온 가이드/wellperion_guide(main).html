@@ -442,6 +442,7 @@
           <div>
             <div style="font-size:10.5px;font-weight:700;color:var(--dim);">월 매출<span id="salesMonthLabel"></span></div>
             <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
+            <div style="font-size:10.5px;color:var(--dim);">목표 <span id="heroSalesTarget" style="font-weight:700;">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">달성률 <span id="heroSalesRate" style="color:var(--grow);font-weight:700;">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">오늘 <span id="heroSalesDay" style="color:var(--grow);">—</span></div>
           </div>
@@ -494,6 +495,24 @@
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- 순수익 30% 목표 카드 (매출−지출, 프론트 계산 · 하드코딩 없이 home_kpi 소스 재사용 — 2026-07-09) -->
+    <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:14px;padding:15px 16px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:7px;color:var(--accent);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> 순수익 (매출−지출) · 목표 30%</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+        <div>
+          <div style="font-size:10.5px;font-weight:700;color:var(--dim);">이번달 순수익</div>
+          <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="npMonthProfit">—</span></div>
+          <div style="font-size:10.5px;color:var(--dim);">순수익률 <span id="npMonthRate" style="font-weight:700;">—</span> <span id="npMonthBadge" style="font-weight:700;"></span></div>
+        </div>
+        <div style="padding-left:10px;border-left:1px dashed var(--border);">
+          <div style="font-size:10.5px;font-weight:700;color:var(--dim);">연간 순수익</div>
+          <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="npYearProfit">—</span></div>
+          <div style="font-size:10.5px;color:var(--dim);">순수익률 <span id="npYearRate" style="font-weight:700;">—</span> <span id="npYearBadge" style="font-weight:700;"></span></div>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);font-size:10px;color:var(--dim);line-height:1.5;">※ 지출 = 인건비+구매성 기준(임대료·관리비 등 미포함 시 순수익률 과대 가능) · 매출·지출은 위 매출/지출 카드와 동일 소스(home_kpi) 실시간 계산 — 하드코딩 아님</div>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;container-type:inline-size;" class="ops-detail-grid">
@@ -1099,11 +1118,18 @@
       /* 소수1자리 % */
       function pct(v){ return (v == null || isNaN(v)) ? '—' : Number(v).toFixed(1) + '%'; }
 
-      fetch(BASE + '?action=home_kpi&_pv=' + Date.now(), { redirect:'follow' })
-        .then(function(r){ return r.json(); })
-        .then(function(d){
+      /* 월 목표(절대값) 정본 — status/sales_targets.json (GM 결재 2026-07-03, 매월 동일 고정).
+         home_kpi가 s.target 미제공(null) 시 이 값으로 목표·달성률 프론트 계산 fallback. */
+      var TARGETS_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/sales_targets.json';
+      Promise.all([
+        fetch(BASE + '?action=home_kpi&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }),
+        fetch(TARGETS_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
+      ])
+        .then(function(results){
+          var d = results[0], tgt = results[1];
           if(!d || !d.ok) return;
           var s = d.sales || {}, e = d.expense || {}, v = d.voc || {};
+          var monthlyTarget = (tgt && typeof tgt.monthly_target_total === 'number') ? tgt.monthly_target_total : null;
 
           /* 매출 — 월 매출/달성률 + 연간 매출/달성률 2구분 (2026-06-20 시뽀) */
           /* 라벨에 현재 월 표기 — 스테일 즉시 감지용 (2026-07-02 시토).
@@ -1113,6 +1139,13 @@
           set('salesMonthLabel', cmLabel);
           /* 연간 = AV3:AV14 중 값 있는 달 합(자동 누적). 라벨 N = 마지막으로 값 있는 달(lastFilledMonth). */
           set('salesYearLabel', (s.lastFilledMonth != null) ? (' (1~' + s.lastFilledMonth + '월 누적)') : ' (누적)');
+          /* 월 목표 슬롯 — 마감 여부와 무관하게 고정 정본 표시 */
+          if (monthlyTarget != null) {
+            set('heroSalesTarget', krAmt(monthlyTarget));
+            setTitle('heroSalesTarget', krExact(monthlyTarget) + ' · sales_targets.json 정본(GM 결재 2026-07-03, 매월 동일)');
+          } else {
+            set('heroSalesTarget', '—');
+          }
           if (s.hasCurMonth === false) {
             set('heroSalesMonth', '이번달 미마감');
             setTitle('heroSalesMonth', '분석시트 AV(이번달=' + (s.curMonth != null ? s.curMonth + '월' : '현재월') + ') 마감값이 아직 없습니다 — 스테일 방지로 이전달 값을 쓰지 않음');
@@ -1123,7 +1156,14 @@
             set('heroSalesMonth', smVal);
             setTitle('heroSalesMonth', krExact(s.month));
             set('heroSalesDay',   krAmt(s.today));
-            set('heroSalesRate',  (s.rate == null) ? '목표 미설정' : pct(s.rate));
+            if (s.rate != null) {
+              set('heroSalesRate', pct(s.rate));
+            } else if (monthlyTarget != null && typeof s.month === 'number' && monthlyTarget > 0) {
+              set('heroSalesRate', pct(s.month / monthlyTarget * 100));
+              setTitle('heroSalesRate', '프론트 계산: 월매출 ÷ 월목표(정본) — GAS 목표값 미제공 시 대체');
+            } else {
+              set('heroSalesRate', '목표 미설정');
+            }
           }
           /* 연간: 26년 매출 분석 시트 AV3:AV14 중 값 있는 달 합 = year(GAS 산출·자동 누적).
              연 목표 72억 = GM 결재 2026-06-20 확정(KPI_YEAR_TARGET 상수). yearRate = year/72억 소수1자리.
@@ -1203,6 +1243,43 @@
                 + '</tr>';
             }
             tbody.innerHTML = rows;
+          })();
+
+          /* 순수익 30% 목표 카드 — 매출·지출은 위에서 이미 로드한 s/e 그대로 재사용(하드코딩 없음).
+             순수익률 = (매출−지출)/매출×100. 목표 30% 고정 임계값(GM 지시)만 상수 — 금액 자체는 상수 아님. */
+          (function(){
+            var NP_TARGET = 30;
+            function calc(salesVal, expVal){
+              if (typeof salesVal !== 'number' || typeof expVal !== 'number' || !(salesVal > 0)) return null;
+              var profit = salesVal - expVal;
+              return { profit: profit, rate: profit / salesVal * 100 };
+            }
+            function paint(prefix, c){
+              var profEl = document.getElementById(prefix + 'Profit');
+              var rateEl = document.getElementById(prefix + 'Rate');
+              var badgeEl = document.getElementById(prefix + 'Badge');
+              if(!profEl || !rateEl) return;
+              if(!c){
+                profEl.textContent = '—';
+                rateEl.textContent = '—';
+                rateEl.style.color = '';
+                if(badgeEl) badgeEl.textContent = '';
+                return;
+              }
+              profEl.textContent = krAmt(c.profit);
+              profEl.title = krExact(c.profit);
+              rateEl.textContent = c.rate.toFixed(1) + '%';
+              var ok = c.rate >= NP_TARGET;
+              rateEl.style.color = ok ? 'var(--grow)' : 'var(--warm)';
+              if(badgeEl){
+                badgeEl.textContent = ok ? '달성 ✓' : '미달';
+                badgeEl.style.color = ok ? 'var(--grow)' : 'var(--warm)';
+              }
+            }
+            var mCalc = (s.hasCurMonth === false) ? null : calc(s.month, e.month);
+            var yCalc = calc(s.year, e.year);
+            paint('npMonth', mCalc);
+            paint('npYear', yCalc);
           })();
 
           /* 이슈(VOC) — 이슈 현황 카드는 종합접수처(reg_board) 카드로 흡수 (2026-06-17 GM). home_kpi의 voc는 미사용. */
