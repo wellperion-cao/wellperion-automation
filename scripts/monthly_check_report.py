@@ -87,6 +87,38 @@ def month_label(key: str) -> str:
         return key
 
 
+def prev_month_key_str(month_key: str) -> str:
+    """'2026-07' → '2026-06' (전월 대비 조회용 — month 문자열 기준)."""
+    try:
+        y, m = (int(x) for x in month_key.split("-"))
+    except Exception:
+        return month_key
+    if m == 1:
+        return f"{y - 1}-12"
+    return f"{y}-{m - 1:02d}"
+
+
+# ═══════════════════════════════════════════
+#  신호등 판정 (결정론 — avgPct 기준)
+# ═══════════════════════════════════════════
+def signal(avg_pct) -> tuple[str, str]:
+    """avgPct → (이모지, 판정어). >=90 양호 / 70~89 주의 / <70 위험 / None 미측정."""
+    if not isinstance(avg_pct, (int, float)):
+        return ("⚪", "미측정")
+    if avg_pct >= 90:
+        return ("🟢", "양호")
+    if avg_pct >= 70:
+        return ("🟡", "주의")
+    return ("🔴", "위험")
+
+
+def _fmt_num(n: float) -> str:
+    """정수면 '2', 소수면 '2.5' (%g 스타일 — 불필요한 .0 제거)."""
+    if float(n).is_integer():
+        return str(int(n))
+    return str(n)
+
+
 # ═══════════════════════════════════════════
 #  GAS 조회
 # ═══════════════════════════════════════════
@@ -123,33 +155,63 @@ def max_issue_day(daily_series: list) -> tuple[str, int] | None:
 # ═══════════════════════════════════════════
 #  카드 빌더
 # ═══════════════════════════════════════════
-def build_card(data: dict, month_key: str) -> str:
-    """3~5줄 요약 + 상세 링크. improvements·denomNote는 GAS 원문 그대로(가공·지어내기 금지)."""
+def build_card(data: dict, month_key: str, prev_data: dict | None = None) -> str:
+    """4줄 한눈 판정형 카드 + 상세 링크. improvements·denomNote는 GAS 원문 그대로(가공·지어내기 금지).
+    prev_data(전월 monthly_report 응답)가 있으면 전월 대비 화살표를 덧붙인다 — 없으면(조회 실패 포함) 화살표 생략(지어내기 금지)."""
     lbl = month_label(month_key)
     totals = data.get("monthTotals", {}) or {}
     avg_pct = totals.get("avgPct")
-    session_count = totals.get("sessionCount", 0)
-    active_days = totals.get("activeDays", 0)
     issue_count = totals.get("issueCount", 0)
 
     denom_note = str(data.get("denomNote", ""))
     pct_state = "확정" if "확정" in denom_note else "잠정"
     pct_s = f"{avg_pct}%" if isinstance(avg_pct, (int, float)) else "미측정"
+    prelim_tag = "(잠정)" if pct_state == "잠정" else ""
+
+    sig_emoji, sig_word = signal(avg_pct)
 
     top_day = max_issue_day(data.get("dailySeries") or [])
-    issue_line = f"이슈 총 {issue_count}건"
-    if top_day:
-        issue_line += f" · 최다 {top_day[0]}({top_day[1]}건)"
+    top_day_label = top_day[0] if top_day else None
 
     improvements = data.get("improvements") or []
     tip = improvements[0] if improvements else "특이사항 없음"
 
+    # 전월 대비 델타(전월 없으면/조회 실패면 화살표 생략 — graceful)
+    pct_delta_s = ""
+    issue_delta_s = ""
+    if prev_data:
+        prev_totals = prev_data.get("monthTotals", {}) or {}
+        prev_avg = prev_totals.get("avgPct")
+        prev_issue = prev_totals.get("issueCount")
+        if isinstance(avg_pct, (int, float)) and isinstance(prev_avg, (int, float)):
+            d = round(avg_pct - prev_avg, 1)
+            if d > 0:
+                pct_delta_s = f"▲{_fmt_num(d)}%p"
+            elif d < 0:
+                pct_delta_s = f"▼{_fmt_num(abs(d))}%p"
+            else:
+                pct_delta_s = "—"
+        if isinstance(issue_count, (int, float)) and isinstance(prev_issue, (int, float)):
+            di = issue_count - prev_issue
+            if di > 0:
+                issue_delta_s = f"▲{_fmt_num(di)}"
+            elif di < 0:
+                issue_delta_s = f"▼{_fmt_num(abs(di))}"
+            else:
+                issue_delta_s = "—"
+
+    comp_seg = f"완료율 {pct_s}{prelim_tag}"
+    if pct_delta_s:
+        comp_seg += f" {pct_delta_s}"
+    issue_seg = f"이슈 {issue_count}건"
+    if issue_delta_s:
+        issue_seg += f" {issue_delta_s}"
+
     lines = [
-        f"📊 <b>{lbl} 지원부 점검 월간 리포트</b>",
-        f"완료율({pct_state}) {pct_s} · 세션 {session_count} · 활성 {active_days}일",
-        issue_line,
-        f"개선시사: {tip}",
-        f"상세: {PAGE_URL}",
+        f"📊 <b>{lbl} 점검 월간 — {sig_emoji} {sig_word}</b>",
+        f"{comp_seg} · {issue_seg} · 최다 {top_day_label or '없음'}",
+        f"👉 {tip}",
+        f"자세히 ▸ {PAGE_URL}",
     ]
     return "\n".join(lines)
 
@@ -222,14 +284,18 @@ def run(send: bool = False, force: bool = False, month_override: str | None = No
         return ""
 
     month = month_override or prev_month_key(now)
-    print(f"[1/2] GAS monthly_report(dept=support, month={month}) 조회...")
+    print(f"[1/3] GAS monthly_report(dept=support, month={month}) 조회...")
     data = fetch_monthly_report(month)
     if data is None:
         print("[에러] 집계 조회 실패 — 카드 생성 중단(지어내기 금지)")
         log_event("fetch_failed", month=month)
         return ""
 
-    card = build_card(data, month)
+    prev_month = prev_month_key_str(month)
+    print(f"[2/3] GAS monthly_report(dept=support, month={prev_month}) 전월대비 조회...")
+    prev_data = fetch_monthly_report(prev_month)  # 실패/None이어도 graceful — 델타 생략, 본 리포트는 정상 진행
+
+    card = build_card(data, month, prev_data)
     print(f"\n{'='*60}")
     print(card.replace("<b>", "").replace("</b>", ""))
     print(f"{'='*60}\n")
@@ -237,7 +303,7 @@ def run(send: bool = False, force: bool = False, month_override: str | None = No
     if send:
         sent = send_card(card)
         log_event("monthly_check_report", month=month, sent=sent)
-        print(f"[2/2] 발송 완료 (텔레그램 {'발송' if sent else '미발송'}) — {now_str()}")
+        print(f"[3/3] 발송 완료 (텔레그램 {'발송' if sent else '미발송'}) — {now_str()}")
     else:
         print("  (드라이런 — 텔레그램 발송·로그는 --send. 1일 가드는 --send 시만 적용)")
     return card
