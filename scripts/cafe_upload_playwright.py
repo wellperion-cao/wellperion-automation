@@ -31,13 +31,15 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# UTM 딱지 헬퍼 — 본문 문의 CTA URL에 카페 출처 부착 (scripts/ 동일 디렉터리)
+# CTA·UTM 헬퍼 — CTA 단일화 설계의 단일 출처 (scripts/cta_utm.py 상단 설계 주석 참조)
 try:
-    from cta_utm import apply_cta_utm, append_cta_card, normalize_body, slugify_campaign
+    from cta_utm import (append_cta_card, normalize_body, slugify_campaign,
+                         build_inquiry_utm_url, strip_inquiry_cta_lines, CLEAN_CTA_TEXT)
 except ImportError:
     import sys as _sys, os as _os
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-    from cta_utm import apply_cta_utm, append_cta_card, normalize_body, slugify_campaign
+    from cta_utm import (append_cta_card, normalize_body, slugify_campaign,
+                         build_inquiry_utm_url, strip_inquiry_cta_lines, CLEAN_CTA_TEXT)
 
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
@@ -263,13 +265,14 @@ def build_post(args: argparse.Namespace) -> CafePost:
     title = (args.title or "").strip()
     body = load_body(Path(args.body_file) if args.body_file else None, args.body)
     body = _strip_leading_title(title, body)
-    # ① 소제목 구조 보장 ② 인라인 CTA 줄 제거 ③ 해시태그 정렬·치환 ④ 카페: 본문서 태그 제거+추출
+    # ① 소제목 구조 보장 ② 해시태그 정렬·치환 ③ 카페: 본문서 태그 제거+추출
     body, extracted_tags = normalize_body(body, for_cafe=True)
-    # 링크카드 UTM URL 생성 (campaign 없으면 body_file 경로에서 자동 슬러그)
+    # CTA 단일화(2026-07-09 GM 설계): 링크카드가 유일 CTA → 본문 '문의' 텍스트 줄 제거.
+    # 링크카드 삽입 실패 시 _insert_link_card 내부에서 CLEAN_CTA_TEXT 폴백 삽입(링크 소실 방지).
+    body, _ = strip_inquiry_cta_lines(body)
+    # 링크카드 href 전용 UTM URL (campaign 없으면 body_file 경로에서 자동 슬러그)
     _campaign = args.campaign or (slugify_campaign(args.body_file) if args.body_file else "")
-    import urllib.parse as _up
-    _lc_params = f"utm_source=naver_cafe&utm_medium=cafe" + (f"&utm_campaign={_up.quote(_campaign, safe='')}" if _campaign else "")
-    _link_card_url = f"http://wellperion.com/ko/inquiry/?{_lc_params}"
+    _link_card_url = build_inquiry_utm_url("naver_cafe", _campaign or None)
     image_dir = Path(args.image_dir) if args.image_dir else None
     if image_dir and not image_dir.is_absolute():
         image_dir = ROOT / image_dir
@@ -654,12 +657,14 @@ async def _enter_write_and_fill(page, post: CafePost) -> None:
     except Exception:
         pass
 
-    # 링크 카드 삽입 — UTM 추적형 URL로 문의 CTA를 og:image 썸네일 포함 링크 카드로 삽입.
-    # 실패해도 draft 진행.
-    await _insert_link_card(page, scope, url=post.link_card_url)
-
+    # ⚠ 순서 고정(2026-07-09 GM 설계 — 블로그와 동일 구조): 이미지를 링크카드보다 먼저
+    #   첨부해야 최종 구조가 본문→이미지→링크카드(맨 끝) 가 된다.
     if post.image_paths:
         await _attach_images(page, scope, post.image_paths)
+
+    # 링크 카드 삽입 — UTM은 href에만(원시 URL 텍스트는 내부에서 제거). 실패 시 내부에서
+    # 깨끗한 텍스트 CTA 폴백. 실패해도 draft 진행.
+    await _insert_link_card(page, scope, url=post.link_card_url)
 
     # ④ 카페 태그 입력칸에 해시태그 입력 (최대 10개)
     if post.tags:
@@ -972,6 +977,42 @@ async def _insert_stickers(page, scope, count: int, label: str = "") -> int:
     return inserted
 
 
+async def _remove_utm_residue_by_keyboard(page, scope, max_lines: int = 3) -> int:
+    """자동 타이핑된 원시 UTM URL 잔류 줄(utm_source= 포함 문단)을 키보드 편집으로 제거.
+    DOM evaluate 삭제는 에디터 모델에 반영되지 않아 발행 시 부활(2026-07-09 실측) —
+    클릭으로 caret 진입 → End·Shift+Home·Delete·Backspace 는 모델을 직접 갱신한다.
+    제거한 줄 수 반환."""
+    removed = 0
+    for _ in range(max_lines):
+        try:
+            loc = scope.locator('.se-text-paragraph:has-text("utm_source=")').last
+            if await loc.count() == 0:
+                break
+            # 트리플클릭 = 문단 전체 선택 (End/Shift+Home 은 SmartEditor 가 가로채
+            # 무효 — 363538 실측: 클릭 지점 문자 1개만 지워짐). 키보드/마우스 입력은
+            # 에디터 모델까지 갱신됨(같은 실측에서 1문자 삭제가 라이브에 반영됨).
+            await loc.click(click_count=3)
+            await page.wait_for_timeout(200)
+            await page.keyboard.press("Delete")  # 선택 문단 내용 삭제 — Backspace 금지
+            # (빈 문단은 무해. Backspace 는 인접 컴포넌트(링크카드·이미지)까지 지울 위험)
+            await page.wait_for_timeout(300)
+            removed += 1
+        except Exception as e:
+            print(f"[WARN] 원시 UTM 줄 키보드 제거 실패(중단): {e}")
+            break
+    # 제거 후 검증 — 모델 갱신 여부까지는 발행 후 라이브 검증이 최종 판정
+    try:
+        remain = await scope.evaluate(
+            "() => Array.from(document.querySelectorAll('.se-text-paragraph'))"
+            ".filter(p => (p.textContent||'').includes('utm_source=')).length"
+        )
+        if remain:
+            print(f"[WARN] 원시 UTM 줄 잔존 {remain}개 (키보드 제거 후에도) — 라이브 검증 필요")
+    except Exception:
+        pass
+    return removed
+
+
 async def _insert_link_card(page, scope, url: str = LINK_CARD_CTA_URL) -> bool:
     """본문 끝에 URL을 타이핑해 SmartEditor 자동 og 링크 카드를 삽입한다.
     메커니즘(PoC 실측 2026-06-24): 빈 줄에 URL 입력 → Enter → 에디터가 자동으로
@@ -999,43 +1040,31 @@ async def _insert_link_card(page, scope, url: str = LINK_CARD_CTA_URL) -> bool:
                     pass
             if detected:
                 break
+        # 원시 UTM URL 텍스트 잔류 제거 — 카드 성공/실패 무관하게 항상 실행 (원칙 ②:
+        # 원시 UTM URL은 어떤 경우에도 본문 텍스트로 노출 금지. F2 카페 363535 실측 사고 —
+        # 카드 미변환 시 원시 UTM URL이 그대로 본문 텍스트로 남았음).
+        # ⚠ 제거는 반드시 '키보드 편집'으로 — DOM evaluate 로 문단을 지우면 에디터 화면에선
+        #   사라져도 SmartEditor 내부 모델에는 남아, 발행 시 모델 재직렬화로 부활한다
+        #   (F2 카페 363537 실측 2026-07-09: removed=1 출력 후에도 라이브에 원시 UTM 노출).
+        #   매칭은 자동 타이핑 URL에만 있는 utm_source= 로 한정 — 텍스트 CTA 줄 보호.
+        removed = await _remove_utm_residue_by_keyboard(page, scope)
         if detected:
             thumb_cnt = await scope.evaluate(
                 "() => document.querySelectorAll('.se-oglink-thumbnail img, .se-module-oglink img').length"
             )
             print(f"[INFO] 링크 카드 삽입 성공 — og:image 썸네일: {'있음' if thumb_cnt > 0 else '로딩중/없음'} ({thumb_cnt}개)")
-            # 근본 수정(2026-06-25 버그B): oglink 카드 변환 후에도 URL 텍스트 문단이 잔류함.
-            url_domain = url.split("//")[-1].split("/")[0]
-            removed = await scope.evaluate(
-                """(domain) => {
-                    let removed = 0;
-                    const paras = document.querySelectorAll('p.se-text-paragraph, .se-text-paragraph');
-                    paras.forEach(p => {
-                        const txt = p.textContent || '';
-                        if (txt.includes(domain) && (txt.includes('http') || txt.includes('://') || txt.includes('inquiry'))) {
-                            let node = p;
-                            while (node && node.parentElement) {
-                                if (node.classList && node.classList.contains('se-component')) {
-                                    node.parentElement.removeChild(node);
-                                    removed++;
-                                    return;
-                                }
-                                node = node.parentElement;
-                            }
-                            p.parentElement && p.parentElement.removeChild(p);
-                            removed++;
-                        }
-                    });
-                    return removed;
-                }""",
-                url_domain
-            )
             if removed > 0:
                 print(f"[INFO] 링크 카드 URL 텍스트 잔류 제거 완료 ({removed}개 문단)")
             else:
                 print("[INFO] 링크 카드 URL 텍스트 잔류 없음 (정상)")
         else:
-            print("[WARN] 링크 카드 컴포넌트 미감지 (5초 대기 후) — 평문 URL로 폴백")
+            # 폴백(원칙 ③ 후반부): 카드 실패 → 원시 UTM URL 텍스트는 위에서 제거됐으므로
+            # 깨끗한 텍스트 CTA 1줄 삽입 — 문의 링크 통째 소실(F1 카페 사고) 방지.
+            print(f"[WARN] 링크 카드 컴포넌트 미감지 (5초 대기 후) — 원시 URL 제거({removed}개) 후 깨끗한 텍스트 CTA 폴백")
+            await _focus_body_end(page, scope)
+            await page.keyboard.press("Enter")
+            await page.keyboard.type(CLEAN_CTA_TEXT, delay=10)
+            print(f"[INFO] 텍스트 CTA 폴백 삽입: {CLEAN_CTA_TEXT!r}")
         return detected
     except Exception as e:
         print(f"[WARN] 링크 카드 삽입 실패(무시): {e}")
@@ -1293,9 +1322,14 @@ async def run_publish(args: argparse.Namespace) -> int:
         return 7
     await context.close()
     await p.stop()
-    telegram_report(f"동부이촌동 카페 발행 완료\n제목: {post.title}")
-    print("[INFO] === PUBLISH 완료 ===")
-    return 0
+    # 발행 성공 판정 = 게시물 상세 URL 실측 회수 시에만 (오탐 '발행완료' 방지 — 2026-07-09 GM 설계).
+    if published_url:
+        telegram_report(f"동부이촌동 카페 발행 완료\n제목: {post.title}\nURL: {published_url}")
+        print("[INFO] === PUBLISH 완료 (게시물 URL 확인) ===")
+        return 0
+    telegram_report(f"동부이촌동 카페 발행 미확인 — 게시물 URL 회수 실패, 수동 확인 필요\n제목: {post.title}")
+    print("[ERROR] === PUBLISH 미확인 — '발행완료' 판정 보류 (게시물 URL 미회수) ===")
+    return 8
 
 
 # -----------------------------------------------------------------

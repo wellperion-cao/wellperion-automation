@@ -45,6 +45,87 @@ CHANNEL_MEDIUM = {
 _INQ_RE = re.compile(r"((?:https?://)?wellperion\.com/ko/inquiry)/?(?![\w./?=#-])")
 
 
+# ─────────────────────────────────────────────────────────────
+# CTA 단일화 설계 (2026-07-09 GM 재정립) — 4채널 공통 규칙의 단일 출처
+#   ① 글당 CTA는 정확히 1개.
+#   ② 원시 UTM URL(?utm_source=…)은 절대 본문 텍스트로 노출 금지 — UTM은 링크카드 href에만.
+#   ③ 카드형 채널(블로그·카페): 링크카드가 유일 CTA → 발행 직전 본문 '문의' 줄 제거
+#      (strip_inquiry_cta_lines). 카드 삽입 실패 시 반드시 CLEAN_CTA_TEXT 1줄 폴백 삽입
+#      (F1 카페 '문의 링크 통째 소실' 재발 방지 — 링크는 어떤 경우에도 1개 남는다).
+#   ④ 텍스트 채널(카카오·당근): 깨끗한 '문의' 줄 1개만(ensure_single_clean_cta) —
+#      UTM 부착 금지(사람 눈에 보이는 텍스트가 곧 링크라 숨길 곳이 없음. 추적보다 깨끗함 우선).
+# ─────────────────────────────────────────────────────────────
+
+# 텍스트 CTA 표준 1줄 (UTM 없음 — 사람 눈에 깨끗한 도메인만)
+CLEAN_CTA_TEXT = "문의 : wellperion.com/ko/inquiry"
+
+
+def build_inquiry_utm_url(channel: str, campaign: str | None = None) -> str:
+    """링크카드 href 전용 UTM 추적 URL 생성 — 본문 텍스트로 삽입 금지(원칙 ②).
+    채널 매핑 없으면 UTM 없는 깨끗한 URL 반환."""
+    base = "http://wellperion.com/ko/inquiry/"
+    code = CHANNEL_UTM.get(channel)
+    if not code:
+        return base
+    params = f"utm_source={code}"
+    medium = CHANNEL_MEDIUM.get(channel)
+    if medium:
+        params += f"&utm_medium={medium}"
+    if campaign:
+        params += f"&utm_campaign={urllib.parse.quote(campaign, safe='')}"
+    return f"{base}?{params}"
+
+
+def _collapse_blank_lines(lines: list[str]) -> str:
+    """연속 빈 줄 1개로 압축 + 후행 공백 줄 제거."""
+    collapsed: list[str] = []
+    prev_blank = False
+    for ln in lines:
+        is_blank = not ln.strip()
+        if is_blank and prev_blank:
+            continue
+        collapsed.append(ln)
+        prev_blank = is_blank
+    while collapsed and not collapsed[-1].strip():
+        collapsed.pop()
+    return "\n".join(collapsed)
+
+
+def strip_inquiry_cta_lines(body: str) -> tuple[str, bool]:
+    """본문에서 문의 CTA 줄(wellperion.com/ko/inquiry 포함 줄) 전부 제거 (원칙 ③ 전반부).
+    카드형 채널(블로그·카페) 발행 직전 호출 — 링크카드가 유일 CTA가 되도록.
+    ⚠ 호출 측 의무: 링크카드 삽입 실패 시 CLEAN_CTA_TEXT 1줄을 반드시 폴백 삽입할 것.
+    반환: (제거된 본문, 제거 발생 여부)."""
+    if not body:
+        return body, False
+    lines = body.split("\n")
+    kept = [ln for ln in lines if "wellperion.com/ko/inquiry" not in ln]
+    if len(kept) == len(lines):
+        return body, False
+    return _collapse_blank_lines(kept), True
+
+
+def ensure_single_clean_cta(body: str) -> str:
+    """텍스트 채널(카카오·당근)용 (원칙 ④) — 문의 CTA를 깨끗한 1줄로 강제.
+    - 첫 CTA 줄을 CLEAN_CTA_TEXT 로 교체(UTM·장식 제거), 나머지 CTA 줄은 삭제(중복 제거).
+    - CTA 줄이 하나도 없으면 본문 끝에 1줄 추가(문의 링크 소실 방지)."""
+    if not body:
+        return body
+    lines = body.split("\n")
+    out: list[str] = []
+    placed = False
+    for ln in lines:
+        if "wellperion.com/ko/inquiry" in ln:
+            if not placed:
+                out.append(CLEAN_CTA_TEXT)
+                placed = True
+            continue  # 중복 CTA 줄 제거
+        out.append(ln)
+    if not placed:
+        out.extend(["", CLEAN_CTA_TEXT])
+    return _collapse_blank_lines(out)
+
+
 def slugify_campaign(path_or_name: str) -> str:
     """경로 또는 폴더명에서 campaign 슬러그 생성.
     - YYMMDD 숫자 + ASCII 영숫자 토큰만 추출해 '_'로 연결(한글 제거).

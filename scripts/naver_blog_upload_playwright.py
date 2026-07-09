@@ -33,13 +33,15 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# UTM 딱지 헬퍼 — 본문 문의 CTA URL에 채널 출처 부착 (scripts/ 동일 디렉터리)
+# CTA·UTM 헬퍼 — CTA 단일화 설계의 단일 출처 (scripts/cta_utm.py 상단 설계 주석 참조)
 try:
-    from cta_utm import apply_cta_utm, append_cta_card, normalize_body, slugify_campaign
+    from cta_utm import (append_cta_card, normalize_body, slugify_campaign,
+                         build_inquiry_utm_url, strip_inquiry_cta_lines, CLEAN_CTA_TEXT)
 except ImportError:
     import sys as _sys, os as _os
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-    from cta_utm import apply_cta_utm, append_cta_card, normalize_body, slugify_campaign
+    from cta_utm import (append_cta_card, normalize_body, slugify_campaign,
+                         build_inquiry_utm_url, strip_inquiry_cta_lines, CLEAN_CTA_TEXT)
 
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
@@ -270,13 +272,14 @@ def build_post(args: argparse.Namespace) -> BlogPost:
     title = (args.title or "").strip()
     body = load_body(Path(args.body_file) if args.body_file else None, args.body)
     body = _strip_leading_title(title, body)
-    # ① 소제목 구조 보장 ② 인라인 CTA 줄 제거 ③ 해시태그 정렬·치환
+    # ① 소제목 구조 보장 ② 해시태그 정렬·치환
     body, _tags = normalize_body(body, for_cafe=False)
-    # 링크카드 UTM URL 생성 (campaign 없으면 body_file 경로에서 자동 슬러그)
+    # CTA 단일화(2026-07-09 GM 설계): 링크카드가 유일 CTA → 본문 '문의' 텍스트 줄 제거.
+    # 링크카드 삽입 실패 시 _insert_link_card 내부에서 CLEAN_CTA_TEXT 폴백 삽입(링크 소실 방지).
+    body, _ = strip_inquiry_cta_lines(body)
+    # 링크카드 href 전용 UTM URL (campaign 없으면 body_file 경로에서 자동 슬러그)
     _campaign = args.campaign or (slugify_campaign(args.body_file) if args.body_file else "")
-    import urllib.parse as _up
-    _lc_params = f"utm_source=naver_blog&utm_medium=blog" + (f"&utm_campaign={_up.quote(_campaign, safe='')}" if _campaign else "")
-    _link_card_url = f"http://wellperion.com/ko/inquiry/?{_lc_params}"
+    _link_card_url = build_inquiry_utm_url("naver_blog", _campaign or None)
     image_dir = Path(args.image_dir) if args.image_dir else None
     if image_dir and not image_dir.is_absolute():
         image_dir = ROOT / image_dir
@@ -841,6 +844,40 @@ async def _place_caret_before_second_section(page, target) -> bool:
     return False
 
 
+async def _remove_utm_residue_by_keyboard(page, target, max_lines: int = 3) -> int:
+    """자동 타이핑된 원시 UTM URL 잔류 줄(utm_source= 포함 문단)을 키보드 편집으로 제거.
+    ⚠ DOM evaluate 삭제는 화면에서만 지워지고 SmartEditor 내부 모델에는 남아 발행 시
+    재직렬화로 부활한다(2026-07-09 실측: 카페 363537 + 블로그 F2 224341568675 라이브에
+    '잔류 제거 완료' 로그에도 원시 UTM 텍스트 노출). 트리플클릭(문단 전체 선택)+Delete 는
+    에디터 모델을 직접 갱신한다(End/Shift+Home 은 에디터가 가로채 무효 — 동일 실측).
+    제거한 줄 수 반환."""
+    removed = 0
+    for _ in range(max_lines):
+        try:
+            loc = target.locator('.se-text-paragraph:has-text("utm_source=")').last
+            if await loc.count() == 0:
+                break
+            await loc.click(click_count=3)
+            await page.wait_for_timeout(200)
+            await page.keyboard.press("Delete")  # 선택 문단 내용 삭제 — Backspace 금지
+            # (빈 문단은 무해. Backspace 는 인접 컴포넌트(링크카드·이미지)까지 지울 위험)
+            await page.wait_for_timeout(300)
+            removed += 1
+        except Exception as e:
+            print(f"[WARN] 원시 UTM 줄 키보드 제거 실패(중단): {e}")
+            break
+    try:
+        remain = await target.evaluate(
+            "() => Array.from(document.querySelectorAll('.se-text-paragraph'))"
+            ".filter(p => (p.textContent||'').includes('utm_source=')).length"
+        )
+        if remain:
+            print(f"[WARN] 원시 UTM 줄 잔존 {remain}개 (키보드 제거 후에도) — 라이브 검증 필요")
+    except Exception:
+        pass
+    return removed
+
+
 async def _insert_link_card(page, target, url: str = LINK_CARD_CTA_URL) -> bool:
     """본문 끝에 URL을 타이핑해 SmartEditor 자동 og 링크 카드를 삽입한다.
     메커니즘(PoC 실측 2026-06-24): 빈 줄에 URL 입력 → Enter → 에디터가 자동으로
@@ -873,50 +910,31 @@ async def _insert_link_card(page, target, url: str = LINK_CARD_CTA_URL) -> bool:
                     pass
             if detected:
                 break
+        # 원시 UTM URL 텍스트 잔류 제거 — 카드 성공/실패 무관하게 항상 실행 (원칙 ②:
+        # 원시 UTM URL은 어떤 경우에도 본문 텍스트로 노출 금지).
+        # ⚠ 제거는 반드시 '키보드 편집'으로(함수 주석의 2026-07-09 실측 참조). 매칭은
+        #   자동 타이핑 URL에만 있는 utm_source= 로 한정 — 텍스트 CTA 줄 보호 +
+        #   상위 se-component 통째 제거 금지(본문 전체 소실·removeChild 크래시 방지).
+        removed = await _remove_utm_residue_by_keyboard(page, target)
         if detected:
             # og:image 썸네일 포함 여부
             thumb_cnt = await target.evaluate(
                 "() => document.querySelectorAll('.se-oglink-thumbnail img, .se-module-oglink img').length"
             )
             print(f"[INFO] 링크 카드 삽입 성공 — og:image 썸네일: {'있음' if thumb_cnt > 0 else '로딩중/없음'} ({thumb_cnt}개)")
-            # 근본 수정(2026-06-25 버그B): oglink 카드 변환 후에도 URL 텍스트 문단이 잔류함.
-            # URL 입력 줄(se-text-paragraph 중 해당 URL 텍스트 포함 노드)을 찾아 삭제한다.
-            # ⚠ 회귀 root cause(2026-07-09): 도메인+inquiry만으로 매칭하면 2026-07-08부터
-            #   본문에 항상 남기기로 한 '문의 : wellperion.com/ko/inquiry' CTA 줄까지 걸려
-            #   같이 삭제됨. 그 문단은 본문 전체와 같은 se-component.se-text 안에 있어
-            #   상위 se-component 통째 제거 시 본문 전체가 사라지고(<img> 2→0), 이후 이미지
-            #   첨부 시 SmartEditor 내부 재렌더가 끊긴 DOM을 참조해 "removeChild: not a
-            #   child of this node" 로 크래시했다(F2 07-09 재현·실측). 따라서 ① 매칭을
-            #   자동 타이핑 URL에만 있는 utm_source= 존재로 한정하고 ② 상위 컴포넌트가
-            #   아닌 문단(p) 자체만 제거한다.
-            url_domain = url.split("//")[-1].split("/")[0]  # e.g. 'wellperion.com'
-            removed = await target.evaluate(
-                """(domain) => {
-                    let removed = 0;
-                    // 자동 타이핑된 링크카드 원본 URL 잔류 문단만 제거(utm_source= 로 한정 —
-                    // 본문에 항상 남기는 '문의 : ...' CTA 줄은 utm_source가 없어 매칭되지 않음).
-                    const paras = document.querySelectorAll('p.se-text-paragraph, .se-text-paragraph');
-                    paras.forEach(p => {
-                        const txt = p.textContent || '';
-                        if (txt.includes(domain) && txt.includes('utm_source=')) {
-                            // 문단 자체만 제거 — 상위 se-component 통째 제거 금지
-                            // (형제 문단까지 함께 사라지는 본문 전체 소실 방지).
-                            if (p.parentElement) {
-                                p.parentElement.removeChild(p);
-                                removed++;
-                            }
-                        }
-                    });
-                    return removed;
-                }""",
-                url_domain
-            )
             if removed > 0:
                 print(f"[INFO] 링크 카드 URL 텍스트 잔류 제거 완료 ({removed}개 문단)")
             else:
                 print("[INFO] 링크 카드 URL 텍스트 잔류 없음 (정상)")
         else:
-            print("[WARN] 링크 카드 컴포넌트 미감지 (5초 대기 후) — 평문 URL로 폴백")
+            # 폴백(원칙 ③ 후반부): 카드 실패 → 원시 UTM URL 텍스트는 위에서 제거됐으므로
+            # 깨끗한 텍스트 CTA 1줄 삽입 — 문의 링크 통째 소실(F1 카페 사고) 방지.
+            print(f"[WARN] 링크 카드 컴포넌트 미감지 (5초 대기 후) — 원시 URL 제거({removed}개) 후 깨끗한 텍스트 CTA 폴백")
+            await page.keyboard.press("Control+End")
+            await page.wait_for_timeout(200)
+            await page.keyboard.press("Enter")
+            await page.keyboard.type(CLEAN_CTA_TEXT, delay=10)
+            print(f"[INFO] 텍스트 CTA 폴백 삽입: {CLEAN_CTA_TEXT!r}")
         return detected
     except Exception as e:
         print(f"[WARN] 링크 카드 삽입 실패(무시): {e}")
@@ -1392,9 +1410,14 @@ async def run_publish(args: argparse.Namespace) -> int:
         return 7
     await context.close()
     await p.stop()
-    telegram_report(f"네이버 블로그 발행 완료\n제목: {post.title}")
-    print("[INFO] === PUBLISH 완료 ===")
-    return 0
+    # 발행 성공 판정 = 공개 글 URL 실측 회수 시에만 (오탐 '발행완료' 방지 — 2026-07-09 GM 설계).
+    if post_url:
+        telegram_report(f"네이버 블로그 발행 완료\n제목: {post.title}\nURL: {post_url}")
+        print("[INFO] === PUBLISH 완료 (공개 URL 확인) ===")
+        return 0
+    telegram_report(f"네이버 블로그 발행 미확인 — 공개 URL 회수 실패, 수동 확인 필요\n제목: {post.title}")
+    print("[ERROR] === PUBLISH 미확인 — '발행완료' 판정 보류 (공개 URL 미회수) ===")
+    return 8
 
 
 # -----------------------------------------------------------------

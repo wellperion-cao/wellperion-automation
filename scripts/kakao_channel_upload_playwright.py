@@ -38,11 +38,11 @@ from pathlib import Path
 
 # UTM 딱지 헬퍼 — 본문 문의 CTA URL에 채널 출처 부착 (scripts/ 동일 디렉터리)
 try:
-    from cta_utm import apply_cta_utm, append_cta_card, normalize_body
+    from cta_utm import append_cta_card, normalize_body, ensure_single_clean_cta
 except ImportError:
     import sys as _sys, os as _os
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-    from cta_utm import apply_cta_utm, append_cta_card, normalize_body
+    from cta_utm import append_cta_card, normalize_body, ensure_single_clean_cta
 
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
@@ -214,10 +214,10 @@ def build_post(args: argparse.Namespace) -> ChannelPost:
             title = parsed_title
         body = parsed_body
     # 소제목(▍·■) 다음 빈 줄 제거 등 본문 정규화 (2026-07-08 — 카카오 미적용 사각지대 봉합).
-    # 문의 CTA 줄은 유지(normalize ② 폐지) → 아래 apply_cta_utm이 그 URL에 utm 부착.
     body, _ = normalize_body(body, for_cafe=False)
-    # 문의 CTA URL에 카카오 채널 utm_source+medium+campaign 부착 (발행 직전 원본 미변경·중복 안전)
-    body = apply_cta_utm(body, "kakao", campaign=args.campaign)
+    # CTA 단일화(2026-07-09 GM 설계 · 원칙 ④): 텍스트 채널 — 원시 UTM URL 본문 노출 금지,
+    # 깨끗한 '문의' 줄 정확히 1개만(중복 제거). UTM 부착 폐지(텍스트=링크라 숨길 곳 없음).
+    body = ensure_single_clean_cta(body)
     images = collect_images(image_dir, args.image_glob)
     images = append_cta_card(images)  # 4채널 마지막 이미지로 문의 CTA 카드(IG 제외)
     return ChannelPost(title, body, images)
