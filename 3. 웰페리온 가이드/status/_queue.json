@@ -1899,5 +1899,33 @@
     "artifact": "switchFamily('lesson') 시 실제 강습 데이터로 4분류 동작. 멤버십과 데이터 구조가 달라\n억지 매핑 대신 구조에 맞게 적응:\n- ①오늘 신규·③오늘 상담예약=행(row) 단위(문의일·consult 모두 행 공통, 종목별 아님)\n- ②미컨택·④이탈위험=종목별 줄(line) 단위(ship738 종목별 독립관리라 종목마다 별도 판정)\n- 소스=_lessonState[adult|youth].rows(열람해 로드된 유형만, 추가 GAS 호출 없음 —\n  기존 _postInqLoadedRows_와 동일 원칙) · 클릭 → 기 (CLI ad-hoc · 커밋 05c0e055)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "05c0e05502167bac779489bec40c471ec94f0e33"
+  },
+  {
+    "task_id": "CMO-2026-07-09-ADHOC-24971d3e",
+    "clevel": "cmo",
+    "title": "[시모] M1 과밀 정리안 확정 — 목차+4그룹 접이식+요금표 CPO 이관 (GM 승인·실행은 동시편집 클리어 후)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 791,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01J1hCDUGn4J6MnqajvbwY32 (CLI ad-hoc · 커밋 24971d3e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "24971d3e33166f96dcf808766b66bfbaf4e3e9b5"
+  },
+  {
+    "task_id": "CPO-2026-07-09-ADHOC-fa87dafe",
+    "clevel": "cpo",
+    "title": "[시포] 오늘 할 일 패널이 type-membership 안에 갇혀 강습 탭에서 안 보이던 버그 수정(배754)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 792,
+    "artifact": "강습 라이프사이클 편입 라이브 검증 중 발견: #todayActionPanel이 <div id=\"type-membership\">\n내부에 중첩돼 있어 강습(성인/유소년) 탭이 활성일 땐 .type-pane{display:none}에 걸려\n패널 자체가 화면에서 사라졌음(JS 로직·데이터는 정상이었으나 렌더 결과가 안 보임 —\nPlaywright 방문성 체크로 발각). type-chip-bar 형제 위치로 옮겨 모든 type-pane(멤버십/\n성인강습/유소년강습/렌트/비즈니스) 공통으로 항상 보이게 수정. (CLI ad-hoc · 커밋 fa87dafe)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "fa87dafead4088a82dc173890b4404eaafdd2dfa"
   }
 ]
