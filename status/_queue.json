@@ -1407,5 +1407,19 @@
     "artifact": "- 직전 커밋 f168bcab이 동시세션 인덱스 경합으로 본 파일을 누락함(재발방지 확인 필요) → 재커밋으로 정정\n- 등록부단일SSOT·가역만자율·웰리위임검증만 3원리 카드 삽입 (CLI ad-hoc · 커밋 b415866b)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b415866b7ea65f6c7ab26829ab176b6fc5bce05e"
+  },
+  {
+    "task_id": "CEO-2026-07-09-ADHOC-1abc9f09",
+    "clevel": "ceo",
+    "title": "[웰리] 알림 문구 정리 ①④ — 점검 넛지 대시보드링크 제거 + 문의 알림 시각 제거",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 820,
+    "artifact": "- ① daily_scheduler _build_nudge_body: '🔗 대시보드' 줄 제거(링크는 점검관리방 고정메시지로). 남/여 수치·action 유지\n- ④ Survey.js 신규 문의 알림 3곳: '시각:' 줄 제거. 컨택 '일시'(콘텐츠)·수동재발송은 유지\n- 배포 미실행(GM go): ①=daily_scheduler 재기동 / ④=clasp push Survey.js 재배포. ②(미체크 항목명)=today_live GAS 배선 필요·미구현 (CLI ad-hoc · 커밋 1abc9f09)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "1abc9f0981647183ed5708eaad07ea077d5bfa0d"
   }
 ]

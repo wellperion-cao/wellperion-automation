@@ -265,17 +265,29 @@ GOOGLE_LOGIN_EMAIL = "cao@wellperion.com"
 
 # 당근 로그인 화면의 'Google 로그인' 진입 버튼 후보
 GOOGLE_LOGIN_BUTTON_SELECTORS = [
-    'img[alt*="Google"]',
-    'button:has-text("Google")',
-    'a:has-text("Google")',
-    '[aria-label*="Google"]',
-    'img[src*="google"]',
-    'button:has-text("구글")',
-    'a:has-text("구글")',
-    '[data-provider="google"]',
-    'button[class*="google" i]',
+    # ★ 2026-07-09 GM 실측: 당근 로그인 '또는 PC 전용 계정' Google 버튼은 <a>/<button>이 아니라
+    #    <div class="css-gw53lc egrz2us3"> + 내부 <span>"Google"</span>. a/button/img 셀렉터가 전부
+    #    안 맞아 클릭 실패→'당근 계정으로 시작하기'(QR)만 뜨던 것. div/텍스트 셀렉터를 최우선으로.
+    '#GoogleLoginIconButton',
+    '[id*="GoogleLogin"]',
+    'div[class*="egrz2us3"]:has-text("Google")',
+    'div:has(> span:text-is("Google"))',
+    'span:text-is("Google")',
+    'text="Google"',
+    'a:has-text("Google 로그인")',
+    'button:has-text("Google 로그인")',
+    '[role="button"]:has-text("Google 로그인")',
     'a[href*="accounts.google.com"]',
     'a[href*="oauth"][href*="google" i]',
+    'a:has-text("Google")',
+    'button:has-text("Google")',
+    'button:has-text("구글")',
+    'a:has-text("구글")',
+    '[aria-label*="Google"]',
+    '[data-provider="google"]',
+    'button[class*="google" i]',
+    'img[alt*="Google"]',
+    'img[src*="google"]',
 ]
 
 
@@ -349,9 +361,9 @@ async def _select_google_account(scopes) -> bool:
                     t.includes('경영지원') ||
                     /계정으로\s*계속/.test(t) ||
                     /^\s*계속\s*$/.test(t) ||
-                    t.includes('Continue') ||
-                    t.includes('당근 계정으로 시작') ||
-                    /당근\s*계정으로\s*시작/.test(t)
+                    t.includes('Continue')
+                    // ★ 2026-07-09 GM: '당근 계정으로 시작하기'는 QR 팝업 유발 → 절대 클릭 금지(제거).
+                    //    로그인은 반드시 'Google 로그인' 링크 경로로만.
                   );
                   const els = Array.from(document.querySelectorAll(
                     'button, a, [role=button], div[role=link], input[type=submit]'));
