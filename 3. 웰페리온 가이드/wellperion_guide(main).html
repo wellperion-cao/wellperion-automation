@@ -473,6 +473,7 @@
           <div>
             <div style="font-size:10.5px;font-weight:700;color:var(--dim);">월 지출</div>
             <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroExpMonth">—</span></div>
+            <div style="font-size:10.5px;color:var(--dim);">예산<span style="font-size:9px;color:var(--accent);font-weight:700;"> (순이익30%기준)</span> <span id="heroExpBudget" style="font-weight:700;">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">예산대비 <span id="heroExpRate" style="color:var(--warm);font-weight:700;">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">오늘 <span id="heroExpDay" style="color:var(--warm);">—</span></div>
           </div>
@@ -497,23 +498,7 @@
       </div>
     </div>
 
-    <!-- 순수익 30% 목표 카드 (매출−지출, 프론트 계산 · 하드코딩 없이 home_kpi 소스 재사용 — 2026-07-09) -->
-    <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:14px;padding:15px 16px;margin-bottom:14px;">
-      <div style="display:flex;align-items:center;gap:7px;color:var(--accent);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> 순수익 (매출−지출) · 목표 30%</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
-        <div>
-          <div style="font-size:10.5px;font-weight:700;color:var(--dim);">이번달 순수익</div>
-          <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="npMonthProfit">—</span></div>
-          <div style="font-size:10.5px;color:var(--dim);">순수익률 <span id="npMonthRate" style="font-weight:700;">—</span> <span id="npMonthBadge" style="font-weight:700;"></span></div>
-        </div>
-        <div style="padding-left:10px;border-left:1px dashed var(--border);">
-          <div style="font-size:10.5px;font-weight:700;color:var(--dim);">연간 순수익</div>
-          <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="npYearProfit">—</span></div>
-          <div style="font-size:10.5px;color:var(--dim);">순수익률 <span id="npYearRate" style="font-weight:700;">—</span> <span id="npYearBadge" style="font-weight:700;"></span></div>
-        </div>
-      </div>
-      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);font-size:10px;color:var(--dim);line-height:1.5;">※ 지출 = 인건비+구매성 기준(임대료·관리비 등 미포함 시 순수익률 과대 가능) · 매출·지출은 위 매출/지출 카드와 동일 소스(home_kpi) 실시간 계산 — 하드코딩 아님</div>
-    </div>
+    <div style="font-size:10px;color:var(--dim);line-height:1.5;margin:-8px 0 14px;">※ 지출 = 인건비+구매성 기준(임대료·관리비 등 미포함 시 실제 순이익률은 더 낮을 수 있음) · 예산=매출 월목표×70%(순이익 30% 목표 기준)</div>
 
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;container-type:inline-size;" class="ops-detail-grid">
 
@@ -1241,12 +1226,30 @@
             tbody.innerHTML = noteRow + rows;
           })();
 
-          /* 지출 — 정식 지출 ERP 시트 연동 (2026-06-10 시토·시뽀, GM 승인) · UI=매출 카드 벤치마킹 */
+          /* 지출 — 정식 지출 ERP 시트 연동 (2026-06-10 시토·시뽀, GM 승인) · UI=매출 카드 벤치마킹.
+             월 예산 = 매출 월목표(sales_targets.json 정본) × 0.70 = 순이익 30% 목표 기준 — 하드코딩 아님,
+             목표 바뀌면 자동 반영 (2026-07-09 GM 지시: 별도 순수익 카드 폐지 → 지출 카드에 흡수). */
           var emVal = krAmt(e.month);
           set('heroExpMonth', emVal);
           setTitle('heroExpMonth', krExact(e.month));
           set('heroExpDay',  krAmt(e.today));
-          set('heroExpRate',  (e.rate == null || e.budget == null) ? '예산 미설정' : pct(e.rate));
+          var monthlyBudget = (monthlyTarget != null) ? monthlyTarget * 0.7 : null;
+          if (monthlyBudget != null) {
+            set('heroExpBudget', krAmt(monthlyBudget));
+            setTitle('heroExpBudget', krExact(monthlyBudget) + ' · 순이익 30% 목표 기준(매출 월목표 × 70%) — sales_targets.json 정본 연동, 하드코딩 아님');
+          } else {
+            set('heroExpBudget', '—');
+          }
+          var heroExpRateEl = document.getElementById('heroExpRate');
+          if (monthlyBudget != null && typeof e.month === 'number') {
+            set('heroExpRate', pct(e.month / monthlyBudget * 100));
+            var withinBudget = e.month <= monthlyBudget;
+            if (heroExpRateEl) heroExpRateEl.style.color = withinBudget ? 'var(--grow)' : 'var(--warm)';
+            setTitle('heroExpRate', (withinBudget ? '예산 이내 — 순이익 30% 목표 확보 궤도' : '예산 초과 — 순이익 30% 목표 미달') + ' · 월지출 ÷ 예산(순이익30% 기준)');
+          } else {
+            set('heroExpRate', '예산 미설정');
+            if (heroExpRateEl) heroExpRateEl.style.color = '';
+          }
           set('heroExpYear',  krAmt(e.year));
 
           /* 지출 카테고리별 breakdown (매출 팀별과 동형) */
@@ -1273,43 +1276,6 @@
                 + '</tr>';
             }
             tbody.innerHTML = rows;
-          })();
-
-          /* 순수익 30% 목표 카드 — 매출·지출은 위에서 이미 로드한 s/e 그대로 재사용(하드코딩 없음).
-             순수익률 = (매출−지출)/매출×100. 목표 30% 고정 임계값(GM 지시)만 상수 — 금액 자체는 상수 아님. */
-          (function(){
-            var NP_TARGET = 30;
-            function calc(salesVal, expVal){
-              if (typeof salesVal !== 'number' || typeof expVal !== 'number' || !(salesVal > 0)) return null;
-              var profit = salesVal - expVal;
-              return { profit: profit, rate: profit / salesVal * 100 };
-            }
-            function paint(prefix, c){
-              var profEl = document.getElementById(prefix + 'Profit');
-              var rateEl = document.getElementById(prefix + 'Rate');
-              var badgeEl = document.getElementById(prefix + 'Badge');
-              if(!profEl || !rateEl) return;
-              if(!c){
-                profEl.textContent = '—';
-                rateEl.textContent = '—';
-                rateEl.style.color = '';
-                if(badgeEl) badgeEl.textContent = '';
-                return;
-              }
-              profEl.textContent = krAmt(c.profit);
-              profEl.title = krExact(c.profit);
-              rateEl.textContent = c.rate.toFixed(1) + '%';
-              var ok = c.rate >= NP_TARGET;
-              rateEl.style.color = ok ? 'var(--grow)' : 'var(--warm)';
-              if(badgeEl){
-                badgeEl.textContent = ok ? '달성 ✓' : '미달';
-                badgeEl.style.color = ok ? 'var(--grow)' : 'var(--warm)';
-              }
-            }
-            var mCalc = (s.hasCurMonth === false) ? null : calc(s.month, e.month);
-            var yCalc = calc(s.year, e.year);
-            paint('npMonth', mCalc);
-            paint('npYear', yCalc);
           })();
 
           /* 이슈(VOC) — 이슈 현황 카드는 종합접수처(reg_board) 카드로 흡수 (2026-06-17 GM). home_kpi의 voc는 미사용. */
