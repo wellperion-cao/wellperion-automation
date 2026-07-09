@@ -1258,5 +1258,19 @@
     "artifact": "_type_and_assemble: 본문→스티커→이미지→링크카드(Control+End로 최하단) 순서 교정.\n링크카드가 스티커 caret(첫섹션 다음)에 박혀 본문 중간에 뜨던 문제 해소.\n※ 발행 태그칸 자동입력+실발행은 후속(background agent 미완) (CLI ad-hoc · 커밋 1012efd3)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "1012efd38fe3bc987de8876675fec39c16428ad6"
+  },
+  {
+    "task_id": "CMO-2026-07-09-ADHOC-3f5a1304",
+    "clevel": "cmo",
+    "title": "[시모] 블로그 최종 발행버튼 버그 — confirm이 툴바 발행(패널 여는 버튼) 눌러 미게시 (GM 지적)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 810,
+    "artifact": "PUBLISH_CONFIRM_SELECTORS 첫 셀렉터가 tpb.publish(패널 여는 버튼)라 최종 확인이\n패널만 재오픈하고 실제 게시 안 됨(태그는 채워지나 미게시). 확인 셀렉터를 발행레이어\n(layer_btn_area) 안 '발행' 버튼으로 스코프·툴바 tpb.publish 제거. (CLI ad-hoc · 커밋 3f5a1304)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "3f5a1304d079921aab5b1d7dfec500725786c8ce"
   }
 ]
