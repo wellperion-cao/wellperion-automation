@@ -10455,6 +10455,74 @@ function crTab(btn, panelId) {
       return {total:total,done:done,undone:total-done,pct:pct,rounds:rounds};
     }
 
+    // 시설부 FACILITY_ITEMS(GAS .deploy-check/지원팀 일일점검.js ~2785-2814) cat A~F 최소 미러 — id→그룹만.
+    // id 목록 변경 시 양쪽(GAS·여기) 동시 수정 필수. GM지시 2026-07-09: 지원부처럼 6그룹 한눈에.
+    var FACILITY_GROUPS = [
+      {key:'A',label:'🧖 사우나',        ids:['fc_sauna_ontang','fc_sauna_yeoltang','fc_sauna_dry','fc_sauna_wet','fc_sauna_jjim']},
+      {key:'B',label:'🏊 수영장 수질',    ids:['fc_pool_ph','fc_pool_temp','fc_pool_cl']},
+      {key:'C',label:'🚿 온수탱크',       ids:['fc_tank_k2','fc_tank_k3','fc_tank_k4']},
+      {key:'D',label:'💨 공조기',         ids:['fc_ahu_AHU1','fc_ahu_AHU2','fc_ahu_AHU3','fc_ahu_AHU4']},
+      {key:'E',label:'⚙️ 기계실',         ids:['fc_eq_night','fc_eq_tank1','fc_eq_gas','fc_eq_hotw','fc_eq_pump','fc_eq_heat','fc_eq_final']},
+      {key:'F',label:'🛟 안전',           ids:['fc_ai_fire','fc_ai_elev','fc_ai_water','fc_ai_alarm']}
+    ];
+    // GAS FC_MEASURE_RANGES(~3301-3310) 미러 — 사우나·수영장만 기준 존재(온수탱크·공조기·기계실·안전은 서버도 기준 미설정 → 이상건수 판정 제외, 지어내기 금지).
+    var FACILITY_RANGES = {
+      sauna_ontang_a:{min:36,max:42}, sauna_ontang_b:{min:36,max:42},
+      sauna_yeoltang_a:{min:39,max:45}, sauna_yeoltang_b:{min:39,max:45},
+      sauna_dry_a:{min:75,max:81}, sauna_dry_b:{min:75,max:81},
+      sauna_wet_a:{min:45,max:51}, sauna_wet_b:{min:45,max:51},
+      sauna_jjim_a:{min:65,max:71}, sauna_jjim_b:{min:65,max:71},
+      pool_ph:{min:7.0,max:7.8}, pool_temp:{min:26,max:30}, pool_cl:{min:0.4,max:1.0}
+    };
+    // weekly&dept=facility 오늘 row(measure=[{itemId,name,measure(JSON문자열)},...] — 제출된 항목만 포함) → 6그룹별 {label,done,total,pct,issues}
+    function parseFacilityGroups(row){
+      var measure=(row&&row.measure)||[];
+      var byId={};
+      for(var i=0;i<measure.length;i++){ byId[measure[i].itemId]=measure[i].measure; }
+      return FACILITY_GROUPS.map(function(g){
+        var done=0, issues=0;
+        for(var j=0;j<g.ids.length;j++){
+          var mv=byId[g.ids[j]];
+          if(mv==null) continue;
+          done++;
+          var obj=null; try{ obj=JSON.parse(mv); }catch(e){}
+          if(obj&&typeof obj==='object'){
+            Object.keys(obj).forEach(function(k){
+              var cfg=FACILITY_RANGES[k];
+              if(!cfg) return;
+              var num=parseFloat(obj[k]);
+              if(isNaN(num)) return;
+              if(num<cfg.min||num>cfg.max) issues++;
+            });
+          }
+        }
+        var total=g.ids.length;
+        return {label:g.label,done:done,total:total,pct:total>0?Math.round(done/total*100):0,issues:issues};
+      });
+    }
+
+    // 시설부 전용 카드 — 6그룹(사우나/수영장/온수탱크/공조기/기계실/안전) 입력완료·입력률·이상건수 줄 표시(지원부 회차카드와 동일 패턴)
+    function buildFacilityGroupCard(icon, label, fKpi, row, href){
+      if(!fKpi) return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">'+label+' 점검 — 집계 중</div>';
+      var groups=parseFacilityGroups(row);
+      var topColor=fKpi.pct>=90?'#6abf7b':fKpi.pct>=60?'#e6c84e':'#ED5B3F';
+      var rowsHtml='';
+      for(var i=0;i<groups.length;i++){
+        var g=groups[i];
+        var c=g.pct>=90?'#6abf7b':g.pct>=60?'#e6c84e':'#ED5B3F';
+        rowsHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);">'
+          +'<span style="font-size:11px;color:var(--dim);">'+g.label+'</span>'
+          +'<span style="font-size:11.5px;font-weight:700;color:var(--text);">'+g.done+'/'+g.total+'</span>'
+          +'<span style="font-size:11px;font-weight:700;color:'+c+';min-width:36px;text-align:right;">'+g.pct+'%</span>'
+          +(g.issues>0?'<span style="font-size:10px;font-weight:700;color:#ED5B3F;margin-left:6px;">⚠️'+g.issues+'</span>':'')
+          +'</div>';
+      }
+      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">'+icon+' '+label+' 점검</div>'
+        +rowsHtml
+        +'</a>';
+    }
+
     // 지원부 전용 카드 — 회차별 3줄 표시
     function buildSupportRoundCard(icon, label, gKpi, href){
       if(!gKpi) return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">'+label+' 점검 — 집계 중</div>';
@@ -10497,8 +10565,8 @@ function crTab(btn, panelId) {
         if(_h&&_p.length)_h.textContent=Math.round(_p.reduce(function(a,b){return a+b;},0)/_p.length);
       })();
       var html='';
-      // 카드1: 시설부 — weekly 스냅샷(회차 구조 상이) → 기존 buildHomeKpiCard 유지
-      if(fKpi) html+=buildHomeKpiCard('🏭','시설부',fKpi,FACILITY_URL);
+      // 카드1: 시설부 — 6그룹(사우나/수영장/온수탱크/공조기/기계실/안전) 입력률 카드(GM지시 2026-07-09, 지원부처럼 한눈에)
+      if(fKpi) html+=buildFacilityGroupCard('🏭','시설부',fKpi,facilityData,FACILITY_URL);
       else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">시설부 점검 — 로드 실패</div>';
       // 카드2: 지원부(남) — 회차별 3줄
       if(sMKpi) html+=buildSupportRoundCard('🚹','지원부(남)',sMKpi,SUPPORT_URL);
