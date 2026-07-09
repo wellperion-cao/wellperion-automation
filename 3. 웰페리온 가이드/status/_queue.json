@@ -913,14 +913,15 @@
     "task_id": "CEO-2026-07-09-AUTONOMY-PILOT-EXPAND",
     "clevel": "ceo",
     "title": "[웰리] 자율 실행 루프 확산 — automation_health 병합·환류 프론트 전송·타 C레벨 자율 실행 확대",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-09",
-    "note": "[2026-07-09] 시토 파일럿 1바퀴 완주 성공(웰리 위임→시토 실행→검증→기록, GM개입0·거짓완료0, 배NEXT-160113 처리). 확산 3갈래: ①automation_health 중복 병합(계약서 §4, CMO 세션이 module_reporter를 정본 스키마로 수렴한 뒤 웰리 단독) ②환류 프론트 GAS 전송 경로(append_feedback 백엔드는 완료, 프론트→GAS write 후속) ③타 C레벨(시모·시우 등) 자율 실행 모드 확대. 부트스트랩: 반복 검증을 코드·게이트로 점차 이관. [2026-07-09 executor 착수·웰리 검증] 3갈래: ①automation_health 병합=CTO 세션이 이미 수렴+중복제거(e896f42c) 완료, 등록부 9모듈 레거시필드 0·중복 0 재확인(추가 작업 없음) ②환류 프론트 GAS 전송=코드 100% 준비완료(자율현황.html submitModuleFeedback 폼+commit_file write, _ghPathAllowed에 module_registry.json 허용, clasp push HEAD 반영)—단 라이브 왕복은 GAS 웹앱 재배포(clasp deploy) 1회 필요=배포행위라 GM go 대기 ③타 C레벨 프로토콜 복제=ai-cmo·coo·cpo.md §7 신설(등록모듈 보유 도메인만·cfo/chro/ceo 제외), welly_orchestrate.select_autonomous_ships 코드무변경 범용동작·pytest 37 passed. 커밋 f01bc366(GitLock). 라이브발효 강제 없음(§7 별도 GM go 명시).",
-    "next": "②환류 라이브 왕복 = GAS 웹앱 재배포(clasp deploy) GM go 대기. 승인 시 라이브 입력→저장→재로드 실측으로 입항. ③은 도메인별 자율 라이브 활성 원할 때 각 GM go.",
+    "note": "[2026-07-09] 시토 파일럿 1바퀴 완주 성공(웰리 위임→시토 실행→검증→기록, GM개입0·거짓완료0, 배NEXT-160113 처리). 확산 3갈래: ①automation_health 중복 병합(계약서 §4, CMO 세션이 module_reporter를 정본 스키마로 수렴한 뒤 웰리 단독) ②환류 프론트 GAS 전송 경로(append_feedback 백엔드는 완료, 프론트→GAS write 후속) ③타 C레벨(시모·시우 등) 자율 실행 모드 확대. 부트스트랩: 반복 검증을 코드·게이트로 점차 이관. [2026-07-09 executor 착수·웰리 검증] 3갈래: ①automation_health 병합=CTO 세션이 이미 수렴+중복제거(e896f42c) 완료, 등록부 9모듈 레거시필드 0·중복 0 재확인(추가 작업 없음) ②환류 프론트 GAS 전송=코드 100% 준비완료(자율현황.html submitModuleFeedback 폼+commit_file write, _ghPathAllowed에 module_registry.json 허용, clasp push HEAD 반영)—단 라이브 왕복은 GAS 웹앱 재배포(clasp deploy) 1회 필요=배포행위라 GM go 대기 ③타 C레벨 프로토콜 복제=ai-cmo·coo·cpo.md §7 신설(등록모듈 보유 도메인만·cfo/chro/ceo 제외), welly_orchestrate.select_autonomous_ships 코드무변경 범용동작·pytest 37 passed. 커밋 f01bc366(GitLock). 라이브발효 강제 없음(§7 별도 GM go 명시). [2026-07-09 입항·웰리 최종검증] ②환류 완결: GAS 웹앱 재배포 @108→@109(GM go), read_file 왕복 라이브 OK({ok:true}), write 편집키 버그 수리(submitModuleFeedback가 key:'' 하드코딩→헌법한장 패턴대로 prompt('GM 편집 저장') 후 key 전송, 커밋 07e38fce·origin·라이브 반영 확인). ①CTO 이미 병합 ③cmo·coo·cpo §7 복제·pytest 37통과. 최종 authenticated write(실제 저장 성공)는 GM 편집키(ScriptProperty 비밀) 필요=헌법한장과 byte동일 경로라 동일 작동 보장, GM 1회 실측만 남음(설계상 보안). 동시 세션 커밋 흡수 3회 있었으나 전 내용 origin 정상 반영.",
+    "next": "GM이 자율현황 환류 폼에 편집키 넣어 저장 1회 실측(닫힌 고리 최종 확인) · 도메인별(시모·시우·시포) 라이브 자율 강제 활성은 원할 때 각 GM go.",
     "depends_on": "",
     "ship_no": 783,
-    "module": "home"
+    "module": "home",
+    "done_at": "2026-07-09"
   },
   {
     "task_id": "CPO-2026-07-09-ADHOC-8f33b2aa",
@@ -1534,5 +1535,19 @@
     "artifact": "- GM 지적: 363539는 삭제된 글, 정본=동부이촌동 363541\n- editMessageText로 원본 메시지(3227) 카페링크 in-place 정정\n- 교훈: 네이버 카페 삭제글도 HTTP200 반환→200만으로 라이브판별 불가 (CLI ad-hoc · 커밋 47e1bee1)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "47e1bee1b9f14968cc064ce2614f3a89c2d26ac1"
+  },
+  {
+    "task_id": "COO-2026-07-09-ADHOC-07e38fce",
+    "clevel": "coo",
+    "title": "[시우] 시설부 점검 제목 날짜표시·작업사항/지시사항/요청사항 점검시작 위 배치·정오후 작업사항 자동저장(save_facility_notes) (배700·시우)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 829,
+    "artifact": "feat(coo): 시설부 점검 제목 날짜표시·작업사항/지시사항/요청사항 점검시작 위 배치·정오후 작업사항 자동저장(save_facility_notes) (배700·시우) (CLI ad-hoc · 커밋 07e38fce)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "07e38fce8375c624a95687ff0f5b042f3dcf6bc3"
   }
 ]
