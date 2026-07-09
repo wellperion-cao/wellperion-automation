@@ -597,13 +597,18 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
         await _insert_one_sticker_at_caret(page, target, "첫 섹션 다음")
         await _center_align_first_sticker(page, target)
 
-    # 링크 카드 삽입 — UTM 추적형 URL로 문의 CTA를 og:image 썸네일 포함 링크 카드로 삽입.
-    # URL 타이핑 → Enter → SmartEditor 자동 카드화. 실패해도 draft 진행.
-    await _insert_link_card(page, target, url=post.link_card_url)
-
     # 이미지 첨부 (슬라이드 모달 단계 포함). 본문 맨 아래에 삽입. 실패해도 draft 진행.
+    # ⚠ 순서 고정(2026-07-09 GM 지적): 이미지를 링크카드보다 먼저 첨부해야 최종 구조가
+    #   본문→이미지→링크카드(맨 끝) 가 된다. 역순이면 링크카드가 이미지보다 위(본문 중간)에
+    #   박혀 GM이 지적한 "링크카드가 너무 일찍" 버그가 재현된다.
     if post.image_paths:
         await _attach_images(page, target, post.image_paths)
+
+    # 링크 카드 삽입 — UTM 추적형 URL로 문의 CTA를 og:image 썸네일 포함 링크 카드로 삽입.
+    # URL 타이핑 → Enter → SmartEditor 자동 카드화. 실패해도 draft 진행.
+    # 반드시 이미지 첨부 다음에 호출 — 내부에서 Control+End 로 caret 을 문서 맨 끝(이미지 다음)으로
+    # 이동시킨 뒤 URL 을 타이핑하므로 이 순서에서만 링크카드가 최하단에 위치한다.
+    await _insert_link_card(page, target, url=post.link_card_url)
 
 
 async def _insert_stickers(page, target, count: int) -> int:
