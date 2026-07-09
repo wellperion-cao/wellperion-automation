@@ -872,28 +872,30 @@ async def _insert_link_card(page, target, url: str = LINK_CARD_CTA_URL) -> bool:
             print(f"[INFO] 링크 카드 삽입 성공 — og:image 썸네일: {'있음' if thumb_cnt > 0 else '로딩중/없음'} ({thumb_cnt}개)")
             # 근본 수정(2026-06-25 버그B): oglink 카드 변환 후에도 URL 텍스트 문단이 잔류함.
             # URL 입력 줄(se-text-paragraph 중 해당 URL 텍스트 포함 노드)을 찾아 삭제한다.
+            # ⚠ 회귀 root cause(2026-07-09): 도메인+inquiry만으로 매칭하면 2026-07-08부터
+            #   본문에 항상 남기기로 한 '문의 : wellperion.com/ko/inquiry' CTA 줄까지 걸려
+            #   같이 삭제됨. 그 문단은 본문 전체와 같은 se-component.se-text 안에 있어
+            #   상위 se-component 통째 제거 시 본문 전체가 사라지고(<img> 2→0), 이후 이미지
+            #   첨부 시 SmartEditor 내부 재렌더가 끊긴 DOM을 참조해 "removeChild: not a
+            #   child of this node" 로 크래시했다(F2 07-09 재현·실측). 따라서 ① 매칭을
+            #   자동 타이핑 URL에만 있는 utm_source= 존재로 한정하고 ② 상위 컴포넌트가
+            #   아닌 문단(p) 자체만 제거한다.
             url_domain = url.split("//")[-1].split("/")[0]  # e.g. 'wellperion.com'
             removed = await target.evaluate(
                 """(domain) => {
                     let removed = 0;
-                    // se-text-paragraph 중 URL 도메인 텍스트를 포함한 문단 제거
+                    // 자동 타이핑된 링크카드 원본 URL 잔류 문단만 제거(utm_source= 로 한정 —
+                    // 본문에 항상 남기는 '문의 : ...' CTA 줄은 utm_source가 없어 매칭되지 않음).
                     const paras = document.querySelectorAll('p.se-text-paragraph, .se-text-paragraph');
                     paras.forEach(p => {
                         const txt = p.textContent || '';
-                        if (txt.includes(domain) && (txt.includes('http') || txt.includes('://') || txt.includes('inquiry'))) {
-                            // 상위 se-component(텍스트 컴포넌트)까지 올라가 제거
-                            let node = p;
-                            while (node && node.parentElement) {
-                                if (node.classList && node.classList.contains('se-component')) {
-                                    node.parentElement.removeChild(node);
-                                    removed++;
-                                    return;
-                                }
-                                node = node.parentElement;
+                        if (txt.includes(domain) && txt.includes('utm_source=')) {
+                            // 문단 자체만 제거 — 상위 se-component 통째 제거 금지
+                            // (형제 문단까지 함께 사라지는 본문 전체 소실 방지).
+                            if (p.parentElement) {
+                                p.parentElement.removeChild(p);
+                                removed++;
                             }
-                            // se-component 못 찾으면 문단 자체 제거
-                            p.parentElement && p.parentElement.removeChild(p);
-                            removed++;
                         }
                     });
                     return removed;
