@@ -215,6 +215,15 @@
   .fx-seg>i{display:block; height:100%;}
   .fx-seg .s-mem{background:var(--gold);} .fx-seg .s-les{background:var(--accent-soft);} .fx-seg .s-etc{background:var(--green);}
   .fx-bar-leg .l-mem{color:var(--gold);} .fx-bar-leg .l-les{color:var(--accent-soft);} .fx-bar-leg .l-etc{color:var(--green);}
+  /* 📊 회원권·강습 목표 페이스 표(GM 지시 2026-07-09 — 현매출/목표/남은일수·매출/일목표) */
+  .fx-cat-wrap{margin-top:9px; overflow-x:auto;}
+  .fx-cat{width:100%; border-collapse:collapse; font-size:11px; line-height:1.35;}
+  .fx-cat thead th{text-align:right; color:var(--text-soft); font-weight:700; font-size:10px; padding:2px 7px 4px; white-space:nowrap;}
+  .fx-cat thead th:first-child{text-align:left;}
+  .fx-cat tbody th{text-align:left; font-weight:800; padding:5px 7px; border-top:1px solid var(--border); white-space:nowrap;}
+  .fx-cat tbody td{text-align:right; padding:5px 7px; border-top:1px solid var(--border); color:var(--text); white-space:nowrap;}
+  .fx-cat tbody th.l-mem{color:var(--gold);} .fx-cat tbody th.l-les{color:var(--accent-soft);}
+  .fx-cat .fc-daily{color:var(--text); font-weight:800;}
   .fx-proj{font-size:11px; line-height:1.3; color:var(--text-soft);} .fx-proj b{color:var(--gold); font-weight:800;}
   .fx-est{display:inline-block; font-size:9.5px; font-weight:700; color:var(--accent-soft); border:1px solid var(--border-strong); border-radius:6px; padding:0 5px; margin-left:2px; vertical-align:1px;}
   /* ── 부서별 분해 표 ── */
@@ -788,6 +797,8 @@
     .fx-seg{width:120px !important; height:7px !important; background:#ddd !important;}
     .fx-seg .s-mem{background:#b9985a !important;} .fx-seg .s-les{background:#7c6bd0 !important;} .fx-seg .s-etc{background:#3c7a4a !important;}
     .fx-bar-leg .l-mem{color:#8a6f3f !important;} .fx-bar-leg .l-les{color:#5a4bb0 !important;} .fx-bar-leg .l-etc{color:#2c6a3a !important;}
+    .fx-cat{font-size:8.5px !important;} .fx-cat th,.fx-cat td{color:#222 !important; border-color:#ccc !important; padding:3px 5px !important;}
+    .fx-cat tbody th.l-mem{color:#8a6f3f !important;} .fx-cat tbody th.l-les{color:#5a4bb0 !important;}
     .fx-est{font-size:8px !important; color:#5a4bb0 !important; border-color:#999 !important;}
     .fin-dept-wrap{margin-top:5px !important;} .fin-dept-h{margin:0 2px 3px !important;}
     .findept tbody td, .findept thead th{padding:3px 8px !important; font-size:13px !important; line-height:1.35 !important;}
@@ -1799,6 +1810,40 @@
         compHtml = '<div class="fx-bar"><span class="fx-bar-lab">구성</span><span class="fx-none">부서별 소스 로딩 중…</span></div>';
       }
 
+      // b-2. 회원권·강습 목표 페이스(GM 지시 2026-07-09) — 각 구분 현매출/목표/남은(일수·매출)/일목표. 목표 정본=sales_targets.json(회원권=membership, 강습=나머지 팀 합). mem/lessons=위 구성바 재사용(가짜값 없음).
+      var catBox = '';
+      if(mem != null && _salesTargets && _salesTargets.teams){
+        var memT = 0, lesT = 0;
+        _salesTargets.teams.forEach(function(t){ if(t.key === 'membership') memT += (t.target || 0); else lesT += (t.target || 0); });
+        var rdCat = Math.max(0, daysInMon - elapsed);
+        var catRow = function(nm, cur, tgt, cls){
+          var rem = tgt - cur, remCell, dailyCell;
+          if(isCurM){
+            if(rem > 0){
+              var dy = rdCat > 0 ? rem / rdCat : null;
+              remCell = '<b>' + rdCat + '일</b> · ' + fmtWon(rem);
+              dailyCell = (dy != null ? fmtWon(dy) : '—');
+            } else {
+              remCell = '<b>목표 달성</b> (+' + fmtWon(-rem) + ')';
+              dailyCell = '달성';
+            }
+          } else if(isPastM){
+            remCell = (rem <= 0 ? '<b>달성</b> (+' + fmtWon(-rem) + ')' : '<b>미달</b> (−' + fmtWon(rem) + ')') + ' <span class="fx-none">확정</span>';
+            dailyCell = '—';
+          } else { remCell = '<span class="fx-none">미도래</span>'; dailyCell = '—'; }
+          var pc = tgt ? Math.max(0, Math.round(cur / tgt * 100)) : null;
+          return '<tr><th class="' + cls + '">' + nm + '</th>' +
+            '<td>' + fmtWon(cur) + (pc != null ? ' <span class="fx-none">(' + pc + '%)</span>' : '') + '</td>' +
+            '<td>' + fmtWon(tgt) + '</td><td>' + remCell + '</td>' +
+            '<td class="fc-daily">' + dailyCell + '</td></tr>';
+        };
+        catBox = '<div class="fx-cat-wrap"><table class="fx-cat"><thead><tr>' +
+          '<th>구분</th><th>현 매출</th><th>목표</th><th>남은 (일수·매출)</th><th>일 목표</th></tr></thead><tbody>' +
+          catRow('회원권', mem, memT, 'l-mem') +
+          catRow('강습', lessons, lesT, 'l-les') +
+          '</tbody></table></div>';
+      }
+
       // c. 목표 페이스 — 진행중월=남은금액·남은일·일평균 필요액 / 완료월(과거)=달성·미달 확정 / 미도래=—.
       var remain = target - sales;
       var paceHtml;
@@ -1835,7 +1880,7 @@
 
       var extraBlock = '<div class="fin-hero-extra">' +
         '<div class="fx-row">' + momHtml + paceHtml + '</div>' +
-        compHtml + projHtml + '</div>';
+        compHtml + catBox + projHtml + '</div>';
 
       hero = '<div class="fin-hero">' +
         '<div class="fin-hero-top">' +
