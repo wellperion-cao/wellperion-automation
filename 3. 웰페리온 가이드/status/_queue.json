@@ -1700,5 +1700,19 @@
     "artifact": "auto(cmo): 검수 승인 건 발행 1건 / 수동대기 0건 (CLI ad-hoc · 커밋 746ec6ea)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "746ec6ea60e860d45cce0af9e553654df46176dc"
+  },
+  {
+    "task_id": "CEO-2026-07-10-ADHOC-6c316ab9",
+    "clevel": "ceo",
+    "title": "[웰리] STANDBY를 정당한 큐 상태값으로 화이트리스트 등록",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 843,
+    "artifact": "_KNOWN_STATUS에 STANDBY 누락 → 매일 08시 보고에 '형식오류 경고 1건'이\n불필요하게 떴다. STANDBY는 실제로 쓰이는 정박/대기 상태값(운영 4부서\n대기건 등)이고, hangro_board.fetch_queue_items()가 이미 이를 활성/완료\n어느 쪽으로도 오분류하지 않고 보드에서 제외 처리 중임을 확인 후 추가. (CLI ad-hoc · 커밋 6c316ab9)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6c316ab9c8fc2610c1e10444889b674fdefce5fa"
   }
 ]
