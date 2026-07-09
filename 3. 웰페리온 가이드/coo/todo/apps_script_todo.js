@@ -224,10 +224,11 @@ function _ghUrl(path) {
   return 'https://api.github.com/repos/' + repo + '/contents/' + apiPath;
 }
 function _ghPathAllowed(path) {
-  // 웰페리온 ERP coo 하위 .json + cmo 검수 큐 .json 만 허용
+  // 웰페리온 ERP coo 하위 .json + cmo 검수 큐 .json + 모듈 등록부 환류(status/module_registry.json 단일 경로) 만 허용
   var p = String(path);
   if (/^3\. 웰페리온 가이드\/coo\/.+\.json$/.test(p)) return true;
   if (/^3\. 웰페리온 가이드\/cmo\/review\/.+\.json$/.test(p)) return true;
+  if (p === 'status/module_registry.json') return true;  // 2026-07-09 자율현황 환류 칸(Task 7)
   return false;
 }
 function _githubReadFile(path) {
@@ -250,7 +251,7 @@ function _githubCommitFile(path, contentText, message, key) {
   if (!headers) return { ok: false, error: 'GITHUB_TOKEN 미설정 — Apps Script 속성에 추가 필요' };
   const editKey = _prop('EDIT_KEY');
   if (editKey && String(key) !== editKey) return { ok: false, error: '편집 키 불일치' };
-  if (!_ghPathAllowed(path)) return { ok: false, error: '허용되지 않은 경로(coo 하위 .json 만 가능)' };
+  if (!_ghPathAllowed(path)) return { ok: false, error: '허용되지 않은 경로(coo 하위 .json·module_registry.json 만 가능)' };
   const branch = _prop('GITHUB_BRANCH') || 'master';
   // 현재 sha 조회 (있으면 갱신, 없으면 신규 생성)
   let sha = null;

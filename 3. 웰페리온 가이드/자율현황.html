@@ -753,7 +753,7 @@
     <p class="sec-note" style="margin:0 0 10px;">위 표(📡 모듈 보고 현황)는 알림 배선 상태만 봅니다. 아래는 같은 등록부에서 <b>특징기능·자율수준·AI없이도 근거·정직 꼬리표·환류 접점</b>을 카드로 봅니다 — 신규 스키마(<code>owner_role</code> 보유)이면서 이 창(자율현황) 소속(<code>front_card.window</code>)만 표시. 레거시 <code>automation_health</code> 엔트리는 module_reporter.py 소관이라 여기서 건드리지 않습니다.</p>
     <div id="registry-card-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
     <div class="routines" id="registry-cards"></div>
-    <div class="sec-note" style="margin:8px 0 0;">자율수준: <b>자율ON</b>=사람 개입 없이 판단·실행 · <b>반자율</b>=일부 사람 확인 · <b>자동집계</b>=기계적 집계(판단 아님) · <b>부분</b>=일부만 자동 · <b>수동</b>=사람 작업. 💬 표시는 접점 자리만(실제 전송 경로는 후속 Task 7에서 연결).</div>
+    <div class="sec-note" style="margin:8px 0 0;">자율수준: <b>자율ON</b>=사람 개입 없이 판단·실행 · <b>반자율</b>=일부 사람 확인 · <b>자동집계</b>=기계적 집계(판단 아님) · <b>부분</b>=일부만 자동 · <b>수동</b>=사람 작업. 💬 환류 칸은 등록부(module_registry.json)에 GAS write로 직접 append(Task 7 연결 완료) — GAS 웹앱 재배포 전까지는 "허용되지 않은 경로" 응답(코드 준비완료·라이브 발효는 GM go).</div>
     <!-- ══ /등록부 모듈 카드 ══ -->
   </details>
 
@@ -1579,7 +1579,13 @@
         rows.push(['정직표기', esc(REG_HONESTY[m.honesty_default] || m.honesty_default)]);
       }
       if(m.feedback && m.feedback.enabled){
-        rows.push(['환류', '💬 이거 맞아요? <span class="rv-note">전송 경로는 준비 중(후속 연결)</span>']);
+        var mid = esc(m.id || '');
+        rows.push(['환류', '<div class="fb-box" data-mid="' + mid + '">' +
+          '<input type="text" class="fb-name" placeholder="이름" style="width:52px;font-size:11px;padding:2px 4px;">' +
+          '<input type="text" class="fb-text" placeholder="이거 맞아요? 의견" style="width:126px;font-size:11px;padding:2px 4px;">' +
+          '<button type="button" class="fb-btn" onclick="submitModuleFeedback(this)" style="font-size:11px;padding:2px 6px;">전송</button>' +
+          '<span class="fb-status" style="margin-left:4px;font-size:11px;color:var(--dim);"></span>' +
+          '</div>']);
       }
       var rowsHtml = rows.map(function(r){
         return '<div class="rrow"><span class="rk">' + esc(r[0]) + '</span><span class="rv">' + r[1] + '</span></div>';
@@ -1591,6 +1597,59 @@
         rowsHtml + '</div>';
     }).join('');
   }
+
+  // ═══════════ ② 돌아가는 자동화: 📋 등록부 모듈 카드 — 환류 전송 (Task 7 · 2026-07-09) ═══════════
+  // 기존 read_file(GAS→raw폴백)→수정→commit_file(GAS write) 패턴 재사용(헌법한장.html·월간운영계획.html·
+  // wellperion_guide(main).html GM개인루틴 트래커와 동일 왕복 방식). append_feedback(module_registry.py)과
+  // 동일 멱등 규칙(text+author 중복이면 미추가)을 클라이언트에서 재현. 서버 경로 허용은 GAS 재배포(GM go) 후 발효.
+  window.submitModuleFeedback = function(btn){
+    var box = btn.closest('.fb-box');
+    if(!box) return;
+    var moduleId = box.getAttribute('data-mid') || '';
+    var nameEl = box.querySelector('.fb-name');
+    var textEl = box.querySelector('.fb-text');
+    var statusEl = box.querySelector('.fb-status');
+    var author = (nameEl && nameEl.value ? nameEl.value : '').trim() || 'GM';
+    var text = (textEl && textEl.value ? textEl.value : '').trim();
+    if(!text){
+      if(statusEl){ statusEl.textContent = '내용을 입력하세요.'; statusEl.style.color = '#c77'; }
+      return;
+    }
+    btn.disabled = true;
+    if(statusEl){ statusEl.textContent = '저장 중…'; statusEl.style.color = 'var(--dim)'; }
+    gasReadText('status/module_registry.json', 'status/module_registry.json').then(function(raw){
+      var data = parseJson(raw);
+      if(!data || !Array.isArray(data.modules)) throw new Error('등록부 파싱 실패');
+      var mod = null;
+      for(var i = 0; i < data.modules.length; i++){
+        if(data.modules[i] && data.modules[i].id === moduleId){ mod = data.modules[i]; break; }
+      }
+      if(!mod) throw new Error('모듈을 찾을 수 없음: ' + moduleId);
+      if(!mod.feedback || typeof mod.feedback !== 'object'){ mod.feedback = { enabled: true, audience: 'gm+clevel', entries: [] }; }
+      if(!Array.isArray(mod.feedback.entries)){ mod.feedback.entries = []; }
+      var dup = mod.feedback.entries.some(function(e){ return e && e.text === text && e.author === author; });
+      if(!dup){
+        var d = new Date();
+        var at = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        mod.feedback.entries.push({ text: text, author: author, at: at });
+      }
+      var content = JSON.stringify(data, null, 2);
+      return fetch(GAS_URL, {
+        method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'commit_file', path: 'status/module_registry.json', content: content,
+          message: '[자율현황] 환류: ' + moduleId + ' — ' + author, key: '' })
+      });
+    }).then(function(r){ return r.json(); }).then(function(res){
+      if(res && res.ok){
+        if(statusEl){ statusEl.textContent = '저장됨 · 새로고침 후 반영'; statusEl.style.color = 'var(--accent-soft)'; }
+        if(textEl) textEl.value = '';
+      } else {
+        if(statusEl){ statusEl.textContent = '저장 실패: ' + ((res && res.error) || '알 수 없는 오류'); statusEl.style.color = '#c77'; }
+      }
+    }).catch(function(e){
+      if(statusEl){ statusEl.textContent = '오류: ' + (e && e.message ? e.message : String(e)); statusEl.style.color = '#c77'; }
+    }).finally(function(){ btn.disabled = false; });
+  };
 
   // ═══════════ ② 돌아가는 자동화: 상시가동 표 펼치기(구 T2 wpAutoToggle 이식) ═══════════
   window.wpAutoToggle = function(row){
