@@ -45,3 +45,37 @@ def get_module(reg: dict, mid: str):
 
 def iter_enabled(reg: dict) -> list:
     return [m for m in reg.get("modules", []) if m.get("enabled") is True]
+
+
+import urllib.request
+
+
+def _http_get_json(url: str) -> dict:
+    req = urllib.request.Request(url, headers={"Cache-Control": "no-store"})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def _pick_today(resp: dict) -> dict:
+    """weekly 응답(data 배열) → 마지막(오늘) 행. today_live 응답 → 그대로."""
+    if isinstance(resp.get("data"), list) and resp["data"]:
+        return resp["data"][-1]
+    return resp
+
+
+def fetch_check_status(module: dict, fetch_fn=_http_get_json) -> dict:
+    ds = module["data_source"]
+    endpoint = ds["endpoint"]
+    depts, reasons = {}, []
+    for dept, query in ds.get("queries", {}).items():
+        row = _pick_today(fetch_fn(f"{endpoint}?{query}&_pv=0"))
+        total = int(row.get("total") or 0)
+        done = int(row.get("done") or 0)
+        pct = row.get("pct")
+        pct = int(pct) if pct is not None else (round(done / total * 100) if total else None)
+        depts[dept] = {"pct": pct, "done": done, "total": total}
+        if pct is None or pct > 100:
+            reasons.append(f"{dept} 완료율 이상({pct}% — 100% 초과/미산출)")
+        for iss in (row.get("allIssues") or []):
+            reasons.append(f"{dept}: {iss}")
+    return {"depts": depts, "anomaly": bool(reasons), "reasons": reasons, "tag": "measured"}
