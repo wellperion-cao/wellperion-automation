@@ -8,7 +8,7 @@ test_module_reporter.py — 모듈 자동보고 리포터 pytest (공유 SSOT �
 import json
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import MagicMock
 
 _TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,7 +19,6 @@ if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
 import module_reporter as reporter  # noqa: E402
-import module_decisions_surface as decisions  # noqa: E402
 from collectors import base  # noqa: E402
 from collectors import cto_automation_health  # noqa: E402
 
@@ -94,8 +93,7 @@ def test_consumes_shared_registry_via_load_registry(tmp_path, monkeypatch):
     sender = MagicMock(return_value=True)
     out = reporter.run_report(
         "weekly", registry_path=reg, rooms_path=rooms,
-        log_path=str(tmp_path / "log.jsonl"), decisions_path=str(tmp_path / "d.json"),
-        sender=sender,
+        log_path=str(tmp_path / "log.jsonl"), sender=sender,
     )
     sent = [r for r in out["results"] if r["action"] == "sent"]
     assert len(sent) == 1 and sent[0]["module"] == "good"
@@ -113,8 +111,7 @@ def test_cadence_selection_by_notify_spec(tmp_path, monkeypatch):
     sender = MagicMock(return_value=True)
     out = reporter.run_report(
         "weekly", registry_path=reg, rooms_path=rooms,
-        log_path=str(tmp_path / "log.jsonl"), decisions_path=str(tmp_path / "d.json"),
-        sender=sender,
+        log_path=str(tmp_path / "log.jsonl"), sender=sender,
     )
     # weekly 로 선택된 모듈만 처리(1건). 나머지 cadence 는 결과에 없음.
     assert len(out["results"]) == 1
@@ -128,8 +125,7 @@ def test_non_telegram_channel_excluded(tmp_path, monkeypatch):
     sender = MagicMock(return_value=True)
     out = reporter.run_report(
         "weekly", registry_path=reg, rooms_path=rooms,
-        log_path=str(tmp_path / "log.jsonl"), decisions_path=str(tmp_path / "d.json"),
-        sender=sender,
+        log_path=str(tmp_path / "log.jsonl"), sender=sender,
     )
     sender.assert_not_called()
     assert out["results"] == []
@@ -143,8 +139,7 @@ def test_bot_id_null_skips_send(tmp_path, monkeypatch):
     sender = MagicMock(return_value=True)
     out = reporter.run_report(
         "weekly", registry_path=reg, rooms_path=rooms,
-        log_path=str(tmp_path / "log.jsonl"), decisions_path=str(tmp_path / "d.json"),
-        sender=sender,
+        log_path=str(tmp_path / "log.jsonl"), sender=sender,
     )
     sender.assert_not_called()
     assert any(r["action"] == "skip" and r.get("reason") == "bot_id_null"
@@ -159,8 +154,7 @@ def test_bot_id_int_is_chat_id(tmp_path, monkeypatch):
     sender = MagicMock(return_value=True)
     out = reporter.run_report(
         "weekly", registry_path=reg, rooms_path=rooms,
-        log_path=str(tmp_path / "log.jsonl"), decisions_path=str(tmp_path / "d.json"),
-        sender=sender,
+        log_path=str(tmp_path / "log.jsonl"), sender=sender,
     )
     sender.assert_called_once()
     assert sender.call_args[0][0] == 12345
@@ -175,8 +169,7 @@ def test_bot_id_str_resolved_via_rooms(tmp_path, monkeypatch):
     sender = MagicMock(return_value=True)
     out = reporter.run_report(
         "weekly", registry_path=reg, rooms_path=rooms,
-        log_path=str(tmp_path / "log.jsonl"), decisions_path=str(tmp_path / "d.json"),
-        sender=sender,
+        log_path=str(tmp_path / "log.jsonl"), sender=sender,
     )
     sender.assert_called_once()
     assert sender.call_args[0][0] == -5136037543
@@ -189,8 +182,7 @@ def test_bot_id_str_unresolved_room_skips(tmp_path, monkeypatch):
     sender = MagicMock(return_value=True)
     out = reporter.run_report(
         "weekly", registry_path=reg, rooms_path=rooms,
-        log_path=str(tmp_path / "log.jsonl"), decisions_path=str(tmp_path / "d.json"),
-        sender=sender,
+        log_path=str(tmp_path / "log.jsonl"), sender=sender,
     )
     sender.assert_not_called()
     assert any(r.get("reason") == "room_unresolved" for r in out["results"])
@@ -204,8 +196,7 @@ def test_dryrun_payload_no_network(tmp_path, monkeypatch):
     sender = MagicMock(return_value=True)
     out = reporter.run_report(
         "weekly", dry_run=True, registry_path=reg, rooms_path=rooms,
-        log_path=str(tmp_path / "log.jsonl"), decisions_path=str(tmp_path / "d.json"),
-        sender=sender,
+        log_path=str(tmp_path / "log.jsonl"), sender=sender,
     )
     dry = [r for r in out["results"] if r["action"] == "dry-run"]
     assert len(dry) == 1
@@ -228,14 +219,12 @@ def test_missing_collector_skips_not_error(tmp_path, monkeypatch):
     sender = MagicMock(return_value=True)
     out = reporter.run_report(
         "weekly", registry_path=reg, rooms_path=rooms,
-        log_path=str(tmp_path / "log.jsonl"), decisions_path=str(tmp_path / "d.json"),
-        sender=sender,
+        log_path=str(tmp_path / "log.jsonl"), sender=sender,
     )
     sender.assert_not_called()
     actions = {r["module"]: r for r in out["results"]}
     assert actions["missing"]["action"] == "skip"
     assert actions["missing"]["reason"] == "collector_missing"
-    assert out["pending_decisions"] == 0       # 오류 아님 → 결정 적재 없음
 
 
 # ── 멱등: 발송 1회 후 재실행 중복 0 (dedup 키=module|date|cadence) ────────────
@@ -244,17 +233,16 @@ def test_idempotent_cadence_dedup(tmp_path, monkeypatch):
     reg = _mk_registry(tmp_path, [_mod(id="good", weekly=True, bot_id=999)])
     rooms = _mk_rooms(tmp_path, {})
     log = str(tmp_path / "log.jsonl")
-    dec = str(tmp_path / "d.json")
     sender = MagicMock(return_value=True)
     now = datetime(2026, 7, 9, 9, 0, 0)
 
     out1 = reporter.run_report("weekly", registry_path=reg, rooms_path=rooms,
-                               log_path=log, decisions_path=dec, sender=sender, now=now)
+                               log_path=log, sender=sender, now=now)
     assert any(r["action"] == "sent" for r in out1["results"])
     assert sender.call_count == 1
 
     out2 = reporter.run_report("weekly", registry_path=reg, rooms_path=rooms,
-                               log_path=log, decisions_path=dec, sender=sender, now=now)
+                               log_path=log, sender=sender, now=now)
     assert sender.call_count == 1              # 재발송 없음
     assert any(r["action"] == "skip" and r.get("reason") == "dedup"
                for r in out2["results"])
@@ -270,13 +258,10 @@ def test_collector_exception_isolation(tmp_path, monkeypatch):
     rooms = _mk_rooms(tmp_path, {})
     sender = MagicMock(return_value=True)
     out = reporter.run_report("weekly", registry_path=reg, rooms_path=rooms,
-                              log_path=str(tmp_path / "log.jsonl"),
-                              decisions_path=str(tmp_path / "d.json"),
-                              decision_log_path=str(tmp_path / "dlog.jsonl"), sender=sender)
+                              log_path=str(tmp_path / "log.jsonl"), sender=sender)
     actions = {r["module"]: r["action"] for r in out["results"]}
     assert actions["bad"] == "error"           # 격리됨
     assert actions["good"] == "sent"           # 다른 모듈 정상 발송
-    assert out["pending_decisions"] >= 1       # 실패는 결정 후보로 적재
 
 
 # ── collector 표준 payload 규격 (cto_automation_health 함수흡수 보강경로) ─────
@@ -314,51 +299,11 @@ def test_base_validate_catches_violations():
     assert base.validate_payload(good) == []
 
 
-# ── 결정 큐 dedup · cap · 만료 (module_decisions_surface — 기존 유지) ────────
-def test_decision_dedup(tmp_path):
-    path = str(tmp_path / "d.json")
-    log = str(tmp_path / "dlog.jsonl")
-    cand = [{"type": "이상징후", "module": "m1", "summary": "s", "options": ["재시도"]}]
-    r1 = decisions.append_decisions(cand, path=path, log_path=log)
-    assert r1["registered"] == 1
-    r2 = decisions.append_decisions(cand, path=path, log_path=log)   # 동일 open 키
-    assert r2["registered"] == 0 and r2["skipped_dedup"] == 1
-
-
-def test_decision_cap(tmp_path):
-    path = str(tmp_path / "d.json")
-    log = str(tmp_path / "dlog.jsonl")
-    cand = [{"type": "이상징후", "module": f"m{i}", "summary": "s", "options": ["재시도"]}
-            for i in range(decisions.MAX_DECISIONS_PER_RUN + 3)]
-    r = decisions.append_decisions(cand, path=path, log_path=log)
-    assert r["registered"] == decisions.MAX_DECISIONS_PER_RUN
-    assert r["overflow"] == 3
-
-
-def test_decision_expiry(tmp_path):
-    path = str(tmp_path / "d.json")
-    log = str(tmp_path / "dlog.jsonl")
-    past = datetime.now() - timedelta(days=30)
-    decisions.append_decisions(
-        [{"type": "이상징후", "module": "m1", "summary": "s", "options": ["재시도"]}],
-        path=path, log_path=log, now=past, ttl_days=1,
-    )
-    pend = decisions.list_pending(path=path, log_path=log)
-    assert pend == []
-    r = decisions.append_decisions(
-        [{"type": "이상징후", "module": "m1", "summary": "s2", "options": ["재시도"]}],
-        path=path, log_path=log,
-    )
-    assert r["registered"] == 1
-
-
-# ── .bat 3종이 리포터를 각 cadence 로 호출하도록 배선 ────────────────────────
+# ── weekly .bat 이 리포터를 weekly cadence 로 호출하도록 배선 ─────────────────
 def test_bat_files_wire_reporter():
-    ops = os.path.join(_PROJECT_ROOT, "ops")
-    for cad in ("daily", "weekly", "monthly"):
-        p = os.path.join(ops, f"module_report_{cad}.bat")
-        assert os.path.exists(p), f"{p} 없음"
-        body = open(p, encoding="utf-8").read()
-        assert "module_reporter.py" in body
-        assert f"--cadence {cad}" in body
-        assert "PYTHONIOENCODING=utf-8" in body
+    p = os.path.join(_PROJECT_ROOT, "ops", "module_report_weekly.bat")
+    assert os.path.exists(p), f"{p} 없음"
+    body = open(p, encoding="utf-8").read()
+    assert "module_reporter.py" in body
+    assert "--cadence weekly" in body
+    assert "PYTHONIOENCODING=utf-8" in body

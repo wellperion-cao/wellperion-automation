@@ -542,9 +542,11 @@
         </div>
       </div>
 
-      <!-- 문의 카드 -->
+      <!-- 문의 카드 — 2단 퍼널(유입 CMO / 상담·등록 CPO). 2정의 다름 → 합산 표기 금지 (2026-07-09 GM: "CMO랑 CPO 같이") -->
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">문의 현황</div><div style="font-size:10.5px;color:var(--dim);">Inquiry · AI CMO(시모)</div></div></div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">문의 현황</div><div style="font-size:10.5px;color:var(--dim);">Inquiry 퍼널 2단 · 정의 다른 두 소스 — 합산 아님</div></div></div>
+
+        <div style="font-size:10px;color:var(--dim);font-weight:700;margin-bottom:6px;">① 유입 문의 · AI CMO(시모)</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">이번달 신규</div>
@@ -557,9 +559,29 @@
             <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">이번달</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiInqMonth2">—</span></div>
           </div>
         </div>
-        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+
+        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">
+          <div style="font-size:10px;color:var(--dim);font-weight:700;margin-bottom:6px;">② 상담·등록 전환 · AI CPO(시포)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <div style="background:var(--accent-bg);border-radius:10px;padding:9px 8px;text-align:center;">
+              <div style="font-size:9.5px;color:var(--dim);margin-bottom:3px;font-weight:600;">전환 문의</div>
+              <div style="font-size:17px;font-weight:800;color:var(--accent);line-height:1;" id="kpiCpoInqCum">—</div>
+            </div>
+            <div style="background:var(--accent-bg);border-radius:10px;padding:9px 8px;text-align:center;">
+              <div style="font-size:9.5px;color:var(--dim);margin-bottom:3px;font-weight:600;">전환 가입</div>
+              <div style="font-size:17px;font-weight:800;color:var(--accent);line-height:1;" id="kpiCpoRegCum">—</div>
+            </div>
+            <div style="background:var(--accent-bg);border-radius:10px;padding:9px 8px;text-align:center;">
+              <div style="font-size:9.5px;color:var(--dim);margin-bottom:3px;font-weight:600;">전환율</div>
+              <div style="font-size:17px;font-weight:800;color:var(--accent);line-height:1;" id="kpiCpoRate">—</div>
+            </div>
+          </div>
+          <div style="font-size:9.5px;color:var(--dim);margin-top:5px;">※ 누적(전화매칭 기준) · 위 유입 문의(구글폼)와 집계 정의가 달라 합산 불가</div>
+        </div>
+
+        <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:8px;">
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M1]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">문의 현황 →</a>
-          <span style="font-size:10px;color:var(--dim);">등록전환 — 준비 중</span>
+          <a href="cpo/member/문의회원.html?manage=membership" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">상담·등록 →</a>
         </div>
       </div>
 
@@ -584,6 +606,12 @@
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">완료</div>
             <div id="kpiVocDone" style="font-size:22px;font-weight:800;color:var(--grow,#6abf7b);line-height:1;">—</div>
             <div style="margin-top:4px;height:13px;"></div>
+          </div>
+        </div>
+        <div style="margin-top:8px;padding-top:9px;border-top:1px dashed var(--border);">
+          <div style="font-size:9.5px;color:var(--dim);font-weight:700;margin-bottom:6px;">유형별 건수</div>
+          <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;">
+            <div style="grid-column:1/-1;text-align:center;font-size:10px;color:var(--dim);padding:4px 0;">불러오는 중…</div>
           </div>
         </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
@@ -1032,6 +1060,23 @@
       }).catch(function(){ /* "—" 유지 */ });
     })();
 
+    // 상담·등록 전환 — status/kpi_values.json roles.cpo (2026-07-09 실연결)
+    // CMO 구글폼 접수수(위)와 정의가 다른 별도 소스 — 전화매칭 기준 누적. 합산 금지, 라벨로 분리 표시.
+    (function loadCpoConvKpi(){
+      var BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/kpi_values.json';
+      function set(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
+      fetch(BASE + '?t=' + Date.now(), { cache: 'no-store' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          var cpo = (d && d.roles && d.roles.cpo) || null;
+          if(!cpo) return;
+          if(cpo['전환_문의수'] != null) set('kpiCpoInqCum', Number(cpo['전환_문의수']).toLocaleString());
+          if(cpo['전환_가입수'] != null) set('kpiCpoRegCum', Number(cpo['전환_가입수']).toLocaleString());
+          if(cpo['문의_가입_전환율'] != null) set('kpiCpoRate', Number(cpo['문의_가입_전환율']).toFixed(1) + '%');
+        })
+        .catch(function(){ /* "—" 유지 */ });
+    })();
+
     // ── home_kpi: 매출·지출·이슈 연동 (2026-06-08) ─────────────────────────────
     (function loadHomeKpi(){
       var BASE = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
@@ -1171,6 +1216,15 @@
   (function loadVocKpi(){
     var VOC_GAS = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
     function setV(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
+    // 6유형 아이콘·짧은이름 — O4 보드 _REG_CAT_META와 동일 정의(스크립트 스코프 분리로 값만 동기화 유지)
+    var VOC_CAT_META = [
+      {cat:'분실물 접수',            icon:'📦', short:'분실'},
+      {cat:'시설물 고장 접수',        icon:'🔧', short:'고장'},
+      {cat:'청결 이슈 접수',          icon:'🧹', short:'청결'},
+      {cat:'컴플레인 접수',          icon:'📣', short:'컴플레인'},
+      {cat:'직원·강사 칭찬합니다',    icon:'⭐', short:'칭찬'},
+      {cat:'직원·강사 쓴소리합니다',  icon:'💬', short:'쓴소리'}
+    ];
     fetch(VOC_GAS + '?action=reg_board&_=' + Date.now(), { redirect: 'follow' })
       .then(function(r){ return r.json(); })
       .then(function(d){
@@ -1183,6 +1237,20 @@
         setV('kpiVocNew',  String(nNew));
         setV('kpiVocWip',  String(nWip));
         setV('kpiVocDone', String(nDone));
+        // 6유형별 건수(전체 상태 합산) — 동일 fetch 결과 재사용, 새 fetch 없음
+        var grid = document.getElementById('kpiVocCatGrid');
+        if(grid){
+          var html = '';
+          VOC_CAT_META.forEach(function(m){
+            var n = rows.filter(function(r){ return (r['카테고리'] || r['category']) === m.cat; }).length;
+            html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 3px;text-align:center;">'
+              + '<div style="font-size:13px;line-height:1;">' + m.icon + '</div>'
+              + '<div style="font-size:9px;color:var(--dim);margin-top:3px;white-space:nowrap;">' + m.short + '</div>'
+              + '<div style="font-size:14px;font-weight:800;color:var(--text);margin-top:1px;">' + n + '</div>'
+              + '</div>';
+          });
+          grid.innerHTML = html;
+        }
       })
       .catch(function(){ /* "—" 유지 */ });
   })();

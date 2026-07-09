@@ -22,7 +22,7 @@ notify_spec 기준으로 주기·채널을 필터하고, id 규약으로 수집�
   구현 없는 모듈은 '로그+스킵'(오류 아님 · 후속 구현 대기).
 멱등: dedup 키 = "{module_id}|{date}|{cadence}". notify_spec 은 슬롯시각 없이
   daily/weekly/monthly 불리언이라 cadence 버킷이 정확한 멱등 단위다.
-격리: 한 수집기 예외가 다른 모듈 발송을 막지 않음(실패는 로그+결정 적재).
+격리: 한 수집기 예외가 다른 모듈 발송을 막지 않음(실패는 로그만 남기고 넘어감).
 """
 from __future__ import annotations
 
@@ -43,7 +43,6 @@ from module_registry import load_registry  # noqa: E402
 _STATUS_DIR = os.path.join(_PROJECT_ROOT, "status")
 ROOMS_PATH = os.path.join(_STATUS_DIR, "telegram_rooms.json")
 REPORT_LOG_PATH = os.path.join(_STATUS_DIR, "module_report_log.jsonl")
-DECISIONS_PATH = os.path.join(_STATUS_DIR, "module_decisions.json")
 
 VALID_CADENCES = ("daily", "weekly", "monthly")
 
@@ -138,8 +137,7 @@ def _append_log(log_path, record):
 # ── 핵심 실행 ────────────────────────────────────────────────────────────────
 def run_report(cadence, *, dry_run=False, only_module=None,
                registry_path=None, rooms_path=ROOMS_PATH,
-               log_path=REPORT_LOG_PATH, decisions_path=DECISIONS_PATH,
-               decision_log_path=None, sender=None, now=None):
+               log_path=REPORT_LOG_PATH, sender=None, now=None):
     """
     cadence 버킷에서 notify_spec 로 선택된 모듈을 순회·수집·발송(dry_run 시 발송 0).
     registry_path=None → 공유 SSOT(load_registry 기본경로).
@@ -158,7 +156,6 @@ def run_report(cadence, *, dry_run=False, only_module=None,
         from notify.telegram_send import send as sender  # noqa: PLC0415
 
     results = []
-    decision_candidates = []
 
     for mod in modules:
         mid = mod.get("id")
@@ -182,7 +179,7 @@ def run_report(cadence, *, dry_run=False, only_module=None,
                             "reason": "collector_missing", "collector": cname})
             continue
 
-        # ── 수집(개별 try/except 격리) ──
+        # ── 수집(개별 try/except 격리) — 실패는 로그만 남기고 다음 모듈로 ──
         try:
             payload = collector_mod.collect(mod)
         except Exception as e:
@@ -191,11 +188,6 @@ def run_report(cadence, *, dry_run=False, only_module=None,
                 _append_log(log_path, {
                     "ts": now.isoformat(), "module": mid, "cadence": cadence,
                     "sent": False, "error": err, "dedup_key": None,
-                })
-                decision_candidates.append({
-                    "type": "이상징후", "module": mid,
-                    "summary": f"{mid} 수집 실패 — {err}",
-                    "options": ["재시도", "끄기", "조사"],
                 })
             results.append({"module": mid, "action": "error", "error": err})
             continue
@@ -237,36 +229,8 @@ def run_report(cadence, *, dry_run=False, only_module=None,
         })
         results.append({"module": mid, "action": "sent" if ok else "send_failed",
                         "dedup_key": key, "sent": ok})
-        if not ok:
-            decision_candidates.append({
-                "type": "이상징후", "module": mid,
-                "summary": f"{mid} 발송 실패 — 재시도/끄기/조사 택1",
-                "options": ["재시도", "끄기", "조사"],
-            })
 
-    # ── 결정 적재(dedup·cap·만료) ──
-    decision_summary = None
-    if decision_candidates:
-        try:
-            from module_decisions_surface import append_decisions, DECISION_LOG_PATH  # noqa: PLC0415
-            decision_summary = append_decisions(
-                decision_candidates, path=decisions_path,
-                log_path=decision_log_path or DECISION_LOG_PATH, now=now)
-        except Exception as e:
-            decision_summary = {"error": f"{type(e).__name__}: {e}"}
-
-    # ── 결정 대기 카운트 ──
-    try:
-        from module_decisions_surface import pending_count  # noqa: PLC0415
-        pending = pending_count(path=decisions_path)
-    except Exception:
-        pending = 0
-
-    return {
-        "cadence": cadence, "date": date_str, "dry_run": dry_run,
-        "results": results, "pending_decisions": pending,
-        "decision_summary": decision_summary,
-    }
+    return {"cadence": cadence, "date": date_str, "dry_run": dry_run, "results": results}
 
 
 def main(argv=None):
@@ -290,8 +254,6 @@ def main(argv=None):
             print(f"[{r['action']}] {r['module']} "
                   f"{r.get('reason', '') or r.get('dedup_key', '') or ''}".rstrip())
 
-    if out["pending_decisions"]:
-        print(f"\n⚠️ 결정 대기 {out['pending_decisions']}건 — CLI/모바일 카드에서 처리 필요")
     print(f"\n요약: cadence={out['cadence']} dry_run={out['dry_run']} "
           f"결과 {len(out['results'])}건")
     return 0
