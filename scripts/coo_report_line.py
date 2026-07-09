@@ -8,17 +8,18 @@ def build_coo_daily_lines(reg=None, fetch_fn=None) -> list:
     fetch = fetch_fn or R._http_get_json
     lines = []
     for m in R.iter_enabled(reg):
-        if not m["telegram"].get("daily_join"):
+        if not m["notify_spec"].get("daily"):
             continue
+        name = R.DISPLAY_NAME.get(m["id"], m["feature"])
         try:
             st = R.fetch_check_status(m, fetch_fn=fetch)
         except Exception:
-            lines.append(f"• {m['name']}: (측정 실패 — 정직 표기)")
+            lines.append(f"• {name}: (측정 실패 — 정직 표기)")
             continue
         parts = []
         for dept, d in st["depts"].items():
             label = {"facility": "시설", "support": "지원"}.get(dept, dept)
             parts.append(f"{label} {d['pct']}%")
         badge = "⚠" if st["anomaly"] else "✅"
-        lines.append(f"{badge} {m['name']}: " + " · ".join(parts))
+        lines.append(f"{badge} {name}: " + " · ".join(parts))
     return lines

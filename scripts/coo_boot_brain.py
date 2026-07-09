@@ -9,6 +9,10 @@ import sys
 sys.path.insert(0, sys_path)
 import reversibility  # route(gap)->'auto'|'propose'
 
+# 액션 분류는 소비자 상수(정본 스키마엔 autonomy=문자열·reversible=bool뿐 — 배열은 여기서 관리).
+COO_REVERSIBLE_ACTIONS = ["aggregate", "report", "flag", "route"]
+COO_GATED_ACTIONS = ["sheet_edit", "gas_deploy", "security"]
+
 
 def build_module_actions(reg=None, status_map=None) -> list:
     reg = reg or R.load_registry()
@@ -16,14 +20,13 @@ def build_module_actions(reg=None, status_map=None) -> list:
     actions = []
     for m in R.iter_enabled(reg):
         st = status_map.get(m["id"], {})
-        rev = m["autonomy"]["reversible"]
-        gated = m["autonomy"]["gated"]
-        for a in rev:
+        rev_ok = bool(m.get("reversible"))
+        for a in COO_REVERSIBLE_ACTIONS:
             if a == "flag" and not st.get("anomaly"):
                 continue  # 이상 없으면 플래그 액션 없음
             actions.append({"module": m["id"], "action": a, "kind": "reversible",
-                            "revert_ok": True, "external": False, "data_loss": False})
-        for a in gated:
+                            "revert_ok": rev_ok, "external": False, "data_loss": False})
+        for a in COO_GATED_ACTIONS:
             actions.append({"module": m["id"], "action": a, "kind": "gated",
                             "revert_ok": False, "external": True, "data_loss": False})
     return actions

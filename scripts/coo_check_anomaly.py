@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""COO 모듈 이상 즉시 텔레그램 알림 (레지스트리 anomaly_immediate 구동). 기본 dry-run."""
+"""COO 모듈 이상 즉시 텔레그램 알림 (enabled coo 모듈 중 gas 소스 대상). 기본 dry-run."""
 import argparse
 import coo_registry as R
 
@@ -10,7 +10,7 @@ def run_anomaly_check(reg=None, fetch_fn=None, notifier=None, dry_run=True) -> d
     alerts = []
     sent = 0
     for m in R.iter_enabled(reg):
-        if not m["telegram"].get("anomaly_immediate"):
+        if m["data_source"].get("kind") != "gas":
             continue
         try:
             st = R.fetch_check_status(m, fetch_fn=fetch)
@@ -18,7 +18,8 @@ def run_anomaly_check(reg=None, fetch_fn=None, notifier=None, dry_run=True) -> d
             continue
         if not st["anomaly"]:
             continue
-        msg = f"⚠ <b>{m['name']} 이상</b>\n" + "\n".join(f"• {r}" for r in st["reasons"])
+        name = R.DISPLAY_NAME.get(m["id"], m["feature"])
+        msg = f"⚠ <b>{name} 이상</b>\n" + "\n".join(f"• {r}" for r in st["reasons"])
         alerts.append(msg)
         if not dry_run and notifier is not None:
             notifier.send(msg)
