@@ -29,6 +29,12 @@ from pathlib import Path
 
 import requests
 
+try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향 (daily_scheduler.py 패턴 재사용)
+    from tg_outbound_log import log_outbound
+except Exception:
+    def log_outbound(*a, **k):
+        pass
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ENV_FILE = REPO_ROOT / "telegram_bot" / ".env"
 STATE_FILE = REPO_ROOT / "status" / "cpo_report_state.json"
@@ -327,8 +333,11 @@ def _send_telegram(chat_id: int, text: str) -> bool:
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     try:
         resp = requests.post(url, json={"chat_id": chat_id, "text": text}, timeout=15)
-        return resp.status_code == 200 and bool(resp.json().get("ok"))
+        ok = resp.status_code == 200 and bool(resp.json().get("ok"))
+        log_outbound(text, chat_id=chat_id, source="cpo_report._send_telegram", ok=ok, kind="sendMessage")
+        return ok
     except Exception:
+        log_outbound(text, chat_id=chat_id, source="cpo_report._send_telegram", ok=False, kind="sendMessage")
         return False
 
 
