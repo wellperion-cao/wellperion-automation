@@ -92,7 +92,7 @@ def load_queue_raw() -> list[dict]:
 
 # ── 검사 본체 ──────────────────────────────────────────────────────────────
 _KNOWN_STATUS = {
-    "PENDING", "IN_PROGRESS", "ON_HOLD", "DONE",
+    "PENDING", "IN_PROGRESS", "ON_HOLD", "DONE", "STANDBY",
     "완료", "진행중", "대기", "보류", "폐기",
 }
 
