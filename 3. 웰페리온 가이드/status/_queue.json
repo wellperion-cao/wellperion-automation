@@ -1,5 +1,18 @@
 [
   {
+    "task_id": "CPO-2026-07-09-CHURN-REASON",
+    "clevel": "cpo",
+    "title": "[시포] 회원 종료사유 기록 — 정형 드롭다운+메모, GAS 칸 자동생성, 오늘 할 일 4번째 섹션 폐루프",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-09",
+    "note": "[2026-07-09 GM 확정] 종료회원 표(scope=ended) '종료사유' 통합셀(select 8종+메모, '기타' 메모필수) 신설 — 클릭 시 모달(consult-overlay 패턴 재사용). 저장=member_active_update(fields:종료사유·종료사유메모), GAS _auFindCol 화이트리스트 확장으로 칸 자동생성(GM 수작업 0). 판정=현행 이탈 기준 그대로(czIsLoss, 새 판정 없음). 오늘 할 일 모달 4번째 섹션 '종료사유 미기록'=scope=ended 배경사전fetch(_endedRowsBg)+빈칸 필터, 클릭→모달 직행. 저장 성공 시 로컬 캐시 패치+즉시 재렌더로 폐루프(기록하면 사라짐·비우면 재등장) 코드 배선 완료. GAS 배포(clasp @149) 완료. 라이브 E2E(양방향 폐루프 실증) 진행 중.",
+    "next": "라이브 E2E(실회원 1명 기록→소멸→원복→재등장) 완료 후 DONE 전환",
+    "depends_on": "",
+    "module": "S3",
+    "ship_no": 817
+  },
+  {
     "task_id": "CTO-2026-07-09-PILOT-VERIFY-AUTOCLOSE",
     "clevel": "cto",
     "title": "[시토·파일럿] 자동화현황방 첫 주간보고 발송 확인 — 자동 검증-완결 핸들러 실증",
@@ -1366,5 +1379,19 @@
     "artifact": "feat(coo): 시설부 점검 회차 버튼·읽기전용 조회·수치 회차리셋·작업사항 유지 + 스냅샷 점검내용/작업사항/지시사항 저장 (배700·시우, 백엔드는 clasp 배포 GM go 대기) (CLI ad-hoc · 커밋 080fcb0d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "080fcb0d60501814d447daf595ac2680820a60d4"
+  },
+  {
+    "task_id": "CEO-2026-07-09-ADHOC-f168bcab",
+    "clevel": "ceo",
+    "title": "[웰리] 불변원리3 블록 삽입 (배782)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 818,
+    "artifact": "- 헌법한장.html에 등록부단일SSOT·가역만자율·웰리위임검증만 3원리 카드 삽입\n- 근거: docs/superpowers/plans/2026-07-09-clevel-autonomous-execution-loop.md Global Constraints\n- 기존 매트릭스·로더·네비 무변경, 이 블록만 최소삽입 (CLI ad-hoc · 커밋 f168bcab)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f168bcab811c6a6a3c675dc2b50b509b1c4230b8"
   }
 ]
