@@ -212,6 +212,23 @@
     .loop-arrow{display:none;}
   }
 
+  /* ── 🧩 8주체 모듈 자율수준 (module_registry.json 직독 · 2026-07-09) ── */
+  .mod-strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin:4px 0 14px;}
+  .mod-role{background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:9px 11px;}
+  .mod-role-h{font-size:13px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:5px;}
+  .mod-item{margin-bottom:7px; padding-bottom:7px; border-bottom:1px dashed var(--border);}
+  .mod-item:last-child{margin-bottom:0; padding-bottom:0; border-bottom:none;}
+  .mod-item .mod-feat{font-size:11.5px; color:var(--text-soft); line-height:1.4; margin:3px 0;}
+  .mod-item .mod-fallback{font-size:10px; color:var(--dim); line-height:1.4;}
+  .mod-empty{font-size:11px; color:var(--dim); font-style:italic;}
+  .mod-badge{display:inline-block; font-size:9.5px; font-weight:700; border-radius:20px; padding:1px 8px; margin-right:5px; white-space:nowrap;}
+  .mod-badge.auto{color:#8fd89e; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
+  .mod-badge.semi{color:#7ac4f0; background:rgba(122,196,240,0.14); border:1px solid rgba(122,196,240,0.35);}
+  .mod-badge.mech{color:var(--accent-soft); background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.32);}
+  .mod-badge.propose{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
+  .mod-badge.manual{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  .mod-rev{font-size:9.5px; color:var(--dim); margin-left:2px;}
+
   /* ── 공통 4섹션 카드 ── */
   .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:4px;}
   .ccard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:11px 13px;}
@@ -289,6 +306,17 @@
     .loop-step h4, .loop-step p{color:#111 !important;}
     .loop-step .lsnum{background:#666 !important; color:#fff !important;}
     .loop-feedback-note{color:#111 !important;}
+    /* 신규(2026-07-09): 8주체 모듈 자율수준 스트립 인쇄 라이트 강제 */
+    .mod-role{background:#fff !important; border-color:#999 !important;}
+    .mod-role-h{color:#111 !important;}
+    .mod-item{border-color:#ccc !important;}
+    .mod-feat, .mod-fallback, .mod-empty, .mod-rev{color:#111 !important;}
+    .mod-badge{border-width:1px !important;}
+    .mod-badge.auto{color:#1a6b34 !important; background:#e8f6ec !important; border-color:#7fbd91 !important;}
+    .mod-badge.semi{color:#1b4f72 !important; background:#e8f3fb !important; border-color:#8ec2e0 !important;}
+    .mod-badge.mech{color:#4a2a91 !important; background:#efe8fb !important; border-color:#b7a0e0 !important;}
+    .mod-badge.propose{color:#9c1c74 !important; background:#fbe6f3 !important; border-color:#e0a0c8 !important;}
+    .mod-badge.manual{color:#555 !important; background:#f0f0f0 !important; border-color:#bbb !important;}
   }
 </style>
 </head>
@@ -398,6 +426,13 @@
   </div>
   <div class="loop-feedback-note">↩︎ ⑤ 환류가 ①로 되먹여 닫힌 고리를 이룬다 — 매 사이클 "이 검증을 코드·게이트로 굳힐 수 있나?" 자문(부트스트랩 이관).</div>
 
+  <!-- ════ 🧩 8주체 모듈 자율수준 (module_registry.json 직독 · 등록부 SSOT · 2026-07-09) ════ -->
+  <h2 class="sec">🧩 8주체 모듈 자율수준</h2>
+  <div class="sec-note">정본: status/module_registry.json 직독(등록부 SSOT · 매트릭스와 중복 카드 없음)</div>
+  <div class="mod-strip" id="mod-strip">
+    <div class="matrix-status">모듈 등록부를 불러오는 중…</div>
+  </div>
+
   <!-- ════ B. 공통 헌법 4섹션 (S2 정본으로 링크만) ════ -->
   <h2 class="sec">📜 공통 헌법 4섹션</h2>
   <div class="cards" id="common-cards"><!-- JS가 라이브 URL로 채움 --></div>
@@ -473,6 +508,7 @@
   var _pendingByRole = null;  // status/northstar_pending.json → role.id별 후보 1개
   var _incidents = null;      // ssot/incidents.json → role.id별 {guarded, recent}
   var _reachData = null;      // status/northstar_reach.json → role.id별 {reach_pct|null, mode, basis, milestones_done?, milestones_total?}
+  var _moduleRegistry = null; // status/module_registry.json → {modules:[...]} (등록부 SSOT · 8주체 모듈 자율수준 스트립)
   var _editMode = false;
   // 뷰 상태(GM PC 세션 한정 · 정본 아님): 역할 필터 · 칸 숨김 · 폴침
   var _roleFilter = null;     // null=전체, 아니면 role.id
@@ -708,6 +744,43 @@
                   ' · ' + esc(String(r.요약 || '').slice(0, 44)) + (String(r.요약 || '').length > 44 ? '…' : '') + '</span>') : '';
     return '<div class="incd"><span class="incd-h">🛡️ 재발방지 GUARDED</span>' +
       '<div class="incd-meta">🛡️ 봉인 <b>' + c.guarded + '</b>건</div>' + rc + '</div>';
+  }
+
+  // 🧩 8주체 모듈 자율수준 스트립 — status/module_registry.json 직독(등록부 SSOT). 매트릭스와 중복 카드 없음(별도 섹션).
+  //   기존 _matrixData.roles(8주체 순서) 기준으로 owner_role 매칭 그룹핑. 등록부가 비었거나 modules=[]면 정직 안내.
+  var AUTONOMY_META = {
+    auto:    { label: '🟢 auto',    cls: 'auto' },
+    semi:    { label: '🔵 semi',    cls: 'semi' },
+    mech:    { label: '🟣 mech',    cls: 'mech' },
+    propose: { label: '🔖 propose', cls: 'propose' },
+    manual:  { label: '⚪ manual',  cls: 'manual' }
+  };
+  function autonomyBadge(level){
+    var meta = AUTONOMY_META[level] || AUTONOMY_META.manual;
+    return '<span class="mod-badge ' + meta.cls + '">' + meta.label + '</span>';
+  }
+  function renderModuleStrip(reg){
+    var el = document.getElementById('mod-strip');
+    if(!el) return;
+    var mods = (reg && Array.isArray(reg.modules)) ? reg.modules : [];
+    var roles = (_matrixData && _matrixData.roles) || [];
+    if(!mods.length){
+      el.innerHTML = '<div class="mod-empty">등록부 모듈 없음(수렴 대기) · 정본: status/module_registry.json</div>';
+      return;
+    }
+    el.innerHTML = roles.map(function(role){
+      var mine = mods.filter(function(m){ return m && m.owner_role === role.id; });
+      var body = mine.length
+        ? mine.map(function(m){
+            var rev = (m.reversible === false) ? '<span class="mod-rev">⚠️ 비가역</span>' : '<span class="mod-rev">✅ 가역</span>';
+            return '<div class="mod-item">' + autonomyBadge(m.autonomy) + rev +
+                   '<div class="mod-feat">' + esc(m.feature || m.id || '') + '</div>' +
+                   (m.ai_free_fallback ? '<div class="mod-fallback">🤖 ' + esc(m.ai_free_fallback) + '</div>' : '') +
+                 '</div>';
+          }).join('')
+        : '<div class="mod-empty">등록 모듈 없음(수렴 대기)</div>';
+      return '<div class="mod-role"><div class="mod-role-h">' + esc(role.icon || '') + ' ' + esc(role.name || role.id) + '</div>' + body + '</div>';
+    }).join('');
   }
 
   // 🏷️ 정직 상태 배지(3종 단일 판정 · A3 인쇄 카드용 · 2026-07-04) — 신규 fetch 없음, 기존 _reachData만 사용.
@@ -997,7 +1070,8 @@
     gasRead('status/northstar_pending.json', RAW_BASE + 'status/northstar_pending.json').catch(function(){ return null; }),
     gasRead('ssot/incidents.json',        RAW_BASE + 'ssot/incidents.json').catch(function(){ return null; }),
     gasRead('status/northstar_reach.json', RAW_BASE + 'status/northstar_reach.json').catch(function(){ return null; }),
-    gasRead('ssot/canon_values.json',      RAW_BASE + 'ssot/canon_values.json').catch(function(){ return null; })
+    gasRead('ssot/canon_values.json',      RAW_BASE + 'ssot/canon_values.json').catch(function(){ return null; }),
+    gasRead('status/module_registry.json', RAW_BASE + 'status/module_registry.json').catch(function(){ return null; })
   ])
     .then(function(arr){
       _matrixData = arr[0];
@@ -1008,10 +1082,12 @@
       _pendingByRole = computePending(arr[4]);
       _incidents = computeIncidents(arr[5]);
       _reachData = (arr[6] && arr[6].roles) || {};
+      _moduleRegistry = arr[8] || null;
       var canonMap = {};
       ((arr[7] && arr[7].values) || []).forEach(function(v){ if(v && v.key) canonMap[v.key] = v.value; });
       renderMatrix();
       renderVisionDynamic(canonMap);
+      renderModuleStrip(_moduleRegistry);
       renderEditBtn();
       initColResizers();
       buildControlBar();
