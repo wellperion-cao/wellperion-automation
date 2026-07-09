@@ -97,6 +97,36 @@
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
+    },
+    {
+      "id": "cpo-inquiry-daily-actions",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "문의 라이프사이클 일일 액션(미컨택·오늘 상담·이탈위험)",
+      "data_source": {"kind": "gas", "ref": "Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats"},
+      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "문의회원", "anchor": "cpoReportStatusLine"},
+      "autonomy": "mech",
+      "ai_free_fallback": "상담사가 문의회원 화면서 라이프사이클 CRUD·집계 자동",
+      "feedback": {"enabled": true, "audience": "clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "estimated"
+    },
+    {
+      "id": "cpo-member-rollup",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "회원 현황 롤업(신규문의·문의→가입 전환율·이탈·예약활성)",
+      "data_source": {"kind": "gas", "ref": "Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats"},
+      "notify_spec": {"daily": false, "weekly": true, "monthly": true, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "문의회원", "anchor": "cpoReportStatusLine"},
+      "autonomy": "mech",
+      "ai_free_fallback": "상담사가 문의회원 화면서 라이프사이클 CRUD·집계 자동",
+      "feedback": {"enabled": true, "audience": "clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "estimated"
     }
   ]
 }
