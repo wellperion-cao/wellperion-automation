@@ -2820,7 +2820,7 @@ var FACILITY_ITEMS = [
 // 시트명은 _snapshotTabName('facility') = '점검일지_facility' (지원부와 동일 명명 패밀리).
 // 지원부 점검일지_support·_initSnapshotSheet·handleSnapshotAppend는 일절 미접촉 — 본 함수·시트만 신설.
 // ════════════════════════════════════════════
-var FACILITY_SNAPSHOT_HEADERS = ['제출시각','날짜','부서','회차','점검자','총항목','입력완료','입력률(%)','이상건수','이상내용','점검시작','점검완료','소요(분)'];
+var FACILITY_SNAPSHOT_HEADERS = ['제출시각','날짜','부서','회차','점검자','총항목','입력완료','입력률(%)','이상건수','이상내용','점검시작','점검완료','소요(분)','점검내용','작업사항','지시사항'];
 
 function _initFacilitySnapshot() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -2915,8 +2915,20 @@ function saveFacilityMeasure(body) {
     });
     var abnormalCount = abnormalHits.length;
     var abnormalNote = abnormalHits.join(' / ');
+    // 점검 내용(항목별 측정값) — GM 2026-07-09: 이상내용만이 아니라 실제 점검 내용을 항목에 기록. 완료 항목의 name: 측정값 나열.
+    var contentParts = [];
+    rows.forEach(function (r) {
+      if (r[5] === '완료' && String(r[12]) !== '') {
+        var mv = String(r[12]);
+        try { var o = JSON.parse(mv); if (o && typeof o === 'object') { mv = Object.keys(o).map(function (k) { return o[k]; }).join('/'); } } catch (e) {}
+        contentParts.push(String(r[2]) + ': ' + mv);
+      }
+    });
+    var contentNote = contentParts.join(' / ');
+    var workNote = String(body.work || '').trim();     // 금일 작업사항
+    var orderNote = String(body.order || '').trim();    // 지시사항
     var fsheet = _initFacilitySnapshot();
-    var snapRow = [now, date, 'facility', round, inspector, totalCnt, doneCnt, inputRate, abnormalCount, abnormalNote, startHHMM, endHHMM, durMin];
+    var snapRow = [now, date, 'facility', round, inspector, totalCnt, doneCnt, inputRate, abnormalCount, abnormalNote, startHHMM, endHHMM, durMin, contentNote, workNote, orderNote];
     var fdata = fsheet.getDataRange().getValues();
     var fhit = 0;
     for (var fr = fdata.length - 1; fr >= 1; fr--) {

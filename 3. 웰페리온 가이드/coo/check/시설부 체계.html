@@ -751,7 +751,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-fcheck" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">시설 일일점검 <span style="font-size:13px;color:var(--dim);font-weight:400;">(작업일지 · PDF 기준)</span></h2>
-  <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜를 고른 뒤 <b>⏱ 점검 시작</b>을 누르고 측정·점검값을 입력한 다음 <b>⏱ 점검 종료</b>로 소요시간·점검시각을 기록합니다. 입력 후 <b>제출</b>하면 모든 기기에 반영됩니다. 한 번 제출하면 입력칸이 비워져 바로 다음 점검을 이어서 할 수 있습니다.</p>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜를 고른 뒤 <b>⏱ 점검 시작</b> → 측정값 입력 → <b>⏱ 점검 종료</b> → <b>제출</b>하면 <b>1회차</b>로 기록됩니다. 제출하면 <b>측정 수치칸만 비워져</b> 바로 다음 회차를 이어서 점검할 수 있고, 위의 <b>회차 버튼(1회·2회…)</b>을 누르면 그 회차 기록을 <b>읽기전용</b>으로 볼 수 있습니다. <b>금일 작업사항·지시사항</b>은 하루 한 번만 적으면 회차가 넘어가도 유지됩니다.</p>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
     <label style="font-size:13px;font-weight:700;">날짜 <input type="date" id="fcDate" onchange="fcLoad()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-family:inherit;"></label>
     <button type="button" id="fcTimerBtn" onclick="fcTimerToggle()" style="background:var(--accent-bg);border:1.5px solid var(--accent);color:var(--accent);padding:7px 14px;border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;">⏱ 점검 시작</button>
@@ -4209,6 +4209,7 @@ function vendorSubmitAddForm(){
   // 버튼 클릭 — 상태머신: idle→시작 기록 / running→종료 기록(소요 계산) / done→confirm 후 리셋.
   window.fcTimerToggle=function(){
     if(!curRound){ alert('날짜를 먼저 고르세요'); return; }
+    if(fcViewing!==null){ alert('지난 회차 조회 중입니다.\n「현재 회차로 돌아가기」 후 진행하세요.'); return; }
     if(!fcStore.roundStart)fcStore.roundStart={};
     if(!fcStore.roundTimes)fcStore.roundTimes={};
     if(!fcStore.roundDur)fcStore.roundDur={};
@@ -4268,10 +4269,10 @@ function vendorSubmitAddForm(){
   };
   window.fcRender=function(){
     var el=document.getElementById('fc-body'); if(!el)return;
-    el.innerHTML='<div class="progress" id="fc-progress"></div>'+topBox()+saunaTbl()+poolTbl()+equipBox()+aiBox()+noteBox();
+    el.innerHTML='<div id="fc-rounds-bar"></div><div class="progress" id="fc-progress"></div>'+topBox()+saunaTbl()+poolTbl()+equipBox()+aiBox()+noteBox();
     // 항목 칸 입력 시 캡처 후 진행바 갱신(회차 통합 — 단일 버킷)
     el.querySelectorAll('[id^=fc_]').forEach(function(n){ n.addEventListener('input',fcProgress); n.addEventListener('change',fcProgress); });
-    fcProgress();
+    fcProgress(); fcRenderRoundsBar();
   };
   // 점검자 select↔직접입력 토글
   window.fcInspectorToggle=function(){
@@ -4325,7 +4326,10 @@ function vendorSubmitAddForm(){
       startHHMM:startMs?startHHMM(startMs):'',
       endHHMM:endHHMM,
       items:items,
-      daily:daily
+      daily:daily,
+      work:(dmap['fc_work']||''),
+      order:(dmap['fc_order']||''),
+      note:(dmap['fc_note']||'')
     };
   }
   // 제출 후 현재 회차 입력·draft·타이머 리셋 — 값-only(DOM 재생성 금지, IME 안전).
@@ -4336,10 +4340,9 @@ function vendorSubmitAddForm(){
       if(fcStore.roundTimes)delete fcStore.roundTimes[curR];
       if(fcStore.roundDur)delete fcStore.roundDur[curR];
     }
-    fcStore.daily={};
+    // GM 2026-07-09: 회차 수치(사우나·수영장·탱크·공조기)만 리셋 → 다음 회차 새 기록. 금일 작업사항·지시사항·기계실·안전(daily)은 유지(하루 1번).
     ROUND_FIELD_IDS.forEach(function(f){ setVal(f,''); });
-    DAILY_FIELD_IDS.forEach(function(f){ setVal(f,''); });
-    fcRenderRoundTime(); fcProgress();
+    fcRenderRoundTime(); fcProgress(); fcRenderRoundsBar();
   }
   // 오늘 제출 이력 목록 렌더 — submissions 기준. 각 건: #seq · 제출시각 · 소요 N분 · inspector. (회차 토큰 제외)
   window.fcRenderHistory=function(){
@@ -4353,8 +4356,66 @@ function vendorSubmitAddForm(){
       return '<div style="padding:4px 0;border-top:1px solid var(--border);">#'+(s.seq||'')+' '+(s.at||'')+dur+' · '+(s.inspector||'')+'</div>';
     }).join('');
   };
+  // ─── 📋 회차 버튼 = 오늘 현황(GM 2026-07-09) — 제출(submissions)마다 1회·2회… 버튼. 클릭=그 회차 읽기전용 조회. 당일 기준. ───
+  var fcViewing=null;   // null=현재 회차 작성 중, 숫자(seq)=그 회차 읽기전용 조회 중
+  // submission → 필드값 맵 복원(item.measure = JSON {필드-'fc_'접두 제거 : 값})
+  function subToFieldMap(sub){
+    var m={};
+    [].concat((sub&&sub.items)||[], (sub&&sub.daily)||[]).forEach(function(it){
+      if(!it||!it.measure)return;
+      try{ var vals=JSON.parse(it.measure); Object.keys(vals).forEach(function(k){ m['fc_'+k]=vals[k]; }); }catch(e){}
+    });
+    if(sub){ if(sub.work!==undefined)m['fc_work']=sub.work; if(sub.order!==undefined)m['fc_order']=sub.order; if(sub.note!==undefined)m['fc_note']=sub.note; }
+    return m;
+  }
+  // fc_ 입력칸 전부 잠금/해제(읽기전용 조회용)
+  function fcLockInputs(lock){
+    var nodes=document.querySelectorAll('#fc-body [id^=fc_]');
+    Array.prototype.forEach.call(nodes,function(n){
+      if(n.tagName==='SELECT'){ n.disabled=lock; } else { n.readOnly=lock; }
+      n.style.opacity=lock?'0.7':'';
+    });
+  }
+  window.fcViewRound=function(seq){
+    var subs=fcStore.submissions||[]; var sub=null;
+    for(var i=0;i<subs.length;i++){ if(subs[i]&&subs[i].seq===seq){ sub=subs[i]; break; } }
+    if(!sub)return;
+    captureRound(); captureDaily();   // 현재(작성 중) 회차 입력 보존 후 조회 진입
+    fcViewing=seq;
+    var fm=subToFieldMap(sub);
+    ROUND_FIELD_IDS.concat(DAILY_FIELD_IDS).forEach(function(f){ setVal(f, fm[f]!==undefined?fm[f]:''); });
+    fcLockInputs(true); fcCheckAll(); fcRenderRoundsBar();
+    var st=document.getElementById('fcStatus'); if(st)st.textContent='🔒 '+seq+'회 조회 중(읽기전용)';
+    try{ var el=document.getElementById('fc-rounds-bar'); if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest'}); }catch(e){}
+  };
+  window.fcExitView=function(){
+    fcViewing=null; fcLockInputs(false);
+    paintDaily(); paintRound();   // 현재(작성 중) 회차 복원 — 라운드 버퍼+유지된 daily
+    fcCheckAll(); fcRenderRoundsBar(); fcProgress();
+    var st=document.getElementById('fcStatus'); if(st)st.textContent='';
+  };
+  window.fcRenderRoundsBar=function(){
+    var host=document.getElementById('fc-rounds-bar'); if(!host)return;
+    var subs=(fcStore.submissions||[]).slice().sort(function(a,b){ return (a.seq||0)-(b.seq||0); });
+    var n=subs.length;
+    var chips=subs.map(function(s){
+      var dur=(s.durMin!==null&&s.durMin!==undefined&&s.durMin!=='')?('·'+s.durMin+'분'):'';
+      var tm=s.endHHMM||(s.at?String(s.at).split(' ')[1]:'')||'';
+      var active=(fcViewing===s.seq);
+      return '<button type="button" onclick="fcViewRound('+s.seq+')" style="padding:5px 11px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;'+
+        (active?'background:var(--accent-bg);border:1.5px solid var(--accent);color:var(--accent);':'background:var(--bg);border:1px solid var(--border);color:var(--text);')+'">'+s.seq+'회 '+tm+dur+'</button>';
+    }).join('');
+    var curSeq=n+1;
+    var curChip=(fcViewing===null)
+      ? '<span style="padding:5px 11px;border-radius:16px;font-size:12px;font-weight:700;background:var(--yellow-bg);color:var(--yellow);border:1.5px solid var(--yellow);white-space:nowrap;">▶ '+curSeq+'회 작성 중</span>'
+      : '<button type="button" onclick="fcExitView()" style="padding:5px 11px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:1.5px solid var(--accent);white-space:nowrap;">↩ 현재 회차로 돌아가기</button>';
+    host.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:9px;margin-bottom:10px;">'+
+      '<span style="font-size:13px;font-weight:800;color:var(--text);margin-right:3px;">📋 오늘 '+n+'회 점검</span>'+chips+curChip+
+      (fcViewing!==null?'<span style="font-size:11px;color:var(--dim);flex-basis:100%;margin-top:2px;">🔒 지난 회차는 읽기전용 — 수정하려면 「현재 회차로 돌아가기」</span>':'')+'</div>';
+  };
   window.fcSave=function(){
     var date=val('fcDate'); if(!date){alert('날짜를 먼저 고르세요');return;}
+    if(fcViewing!==null){ alert('지난 회차 조회(읽기전용) 중입니다.\n「현재 회차로 돌아가기」 후 제출하세요.'); return; }
     /* 점검 시작·종료 선행 게이트(GM 2026-06-24 시우): ⏱점검 시작·종료를 모두 눌러야(타이머 done) 제출 가능.
        시작만/종료만(running·idle)은 차단. 회차 통합(2026-07-08)으로 하루 1개 타이머(ROUND_DAILY)와 1:1. */
     if(fcTimerState()!=='done'){ alert('제출 전에 먼저 해주세요:\n· ⏱ 점검 시작 → ⏱ 점검 종료'); return; }
@@ -4380,7 +4441,7 @@ function vendorSubmitAddForm(){
     var dmap=fcStore.daily||{};
     var items=FC_ROUND_ITEMS.map(function(it){ var m=measureFromMap(map,it); return {id:it.id,name:it.name,cat:it.cat,measure:m.measure,done:m.done}; })
       .concat(FC_DAILY_ITEMS.map(function(it){ var m=measureFromMap(dmap,it); return {id:it.id,name:it.name,cat:it.cat,measure:m.measure,done:m.done}; }));
-    posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'save_facility_measure',date:date,round:ROUND_DAILY,inspector:insp,items:items,durMin:sub.durMin,startHHMM:sub.startHHMM,endHHMM:sub.endHHMM})}).then(function(r){return r.json();}));
+    posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'save_facility_measure',date:date,round:ROUND_DAILY,inspector:insp,items:items,durMin:sub.durMin,startHHMM:sub.startHHMM,endHHMM:sub.endHHMM,work:sub.work,order:sub.order,note:sub.note})}).then(function(r){return r.json();}));
     Promise.all(posts).then(function(){
       // 제출 성공 → 현재 점검 입력 리셋(다음 점검 즉시 가능). 제출/저장 버튼은 잠그지 않음(반복 가능).
       fcResetAfterSubmit(curR);
@@ -4399,8 +4460,9 @@ function vendorSubmitAddForm(){
         // store 구조(신) 우선 — 회차별 복원. roundTimes(B안 자동시각)도 복원. 구 blob(vals 평면)도 graceful 무시(데이터 없음 취급).
         fcStore=(b.store&&typeof b.store==='object')?{rounds:b.store.rounds||{},daily:b.store.daily||{},inspector:b.inspector||b.store.inspector||'',roundTimes:b.store.roundTimes||{},roundStart:b.store.roundStart||{},roundDur:b.store.roundDur||{},submissions:(Array.isArray(b.store.submissions)?b.store.submissions:[])}:{rounds:{},daily:{},inspector:b.inspector||'',roundTimes:{},roundStart:{},roundDur:{},submissions:[]};
         setInspector(fcStore.inspector);
+        fcViewing=null;   // 날짜 로드 시 조회상태 해제
         fcFillRounds();   // 타이머 표시 갱신(curRound는 항상 ROUND_DAILY 고정 — 회차 통합 2026-07-08)
-        paintDaily(); paintRound(); fcProgress(); fcRenderRoundTime(); fcRenderHistory();
+        paintDaily(); paintRound(); fcProgress(); fcRenderRoundTime(); fcRenderHistory(); fcRenderRoundsBar();
         var n=Object.keys(fcStore.rounds).length+Object.keys(fcStore.daily).length;
         if(st)st.textContent=n?('불러옴 ('+date+')'):'기록 없음 ('+date+')';
       }).catch(function(){ if(st)st.textContent='불러오기 실패'; });
