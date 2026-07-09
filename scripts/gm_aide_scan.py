@@ -91,6 +91,12 @@ MAX_AUTO_ACTIONS_PER_RUN = 5   # 가역 자율실행 폭주 방지 cap
 # ★안전: 기존 GM_AIDE_AUTO_EXEC 와 절대 공유 금지 — 별도 env 별도 체크(라이브 발효=별도 GM go).
 RESUMABLE_APPLY_ENV = "AIDE_RESUMABLE_APPLY"
 
+# ── 자동 검증-완결 핸들러 게이트 (독립·기본 OFF · 자율 실행 루프 첫 닫힘) ──
+# ★재개가능 auto 레인 처리 뒤에서만 동작. OFF=드라이런(무엇을 닫을지 로그만·_queue 델타 0).
+#   ON(=AIDE_VERIFY_APPLY=1)+PASS 일 때만 라이브 완결. FAIL·불명은 절대 완결 안 함(거짓완료 0).
+#   ★안전: 기존 게이트들과 절대 공유 금지 — 별도 env 별도 체크(라이브 발효=별도 GM go).
+VERIFY_APPLY_ENV = "AIDE_VERIFY_APPLY"
+
 # ── 정비 액션 5종(2026-07-04 추가) 조건 임계값 — 전부 '실제 문제 있을 때만' 게이트 ──
 STALE_HOURS_ERP = 6   # erp_status.json generated_at 이 이만큼 지나면 재발행 대상
 STALE_HOURS_KPI = 6   # kpi_values.json generated_at 이 이만큼 지나면 재집계 대상
@@ -108,6 +114,7 @@ sys.path.insert(0, str(ROOT / "scripts" / "aide_detectors"))
 import stall_watch      # type: ignore  # noqa: E402
 import reversibility    # type: ignore  # noqa: E402
 import auto_actions     # type: ignore  # noqa: E402
+import verify_complete  # type: ignore  # noqa: E402
 
 
 def now_str() -> str:
@@ -947,6 +954,62 @@ def run_gap_detector(active: list, commit: bool, kpi: dict, ns_map: dict,
 
 
 # ═══════════════════════════════════════════
+#  자동 검증-완결 핸들러 (자율 실행 루프 첫 닫힘 · 게이트 AIDE_VERIFY_APPLY 기본 OFF)
+#  ★재개가능 auto 레인 뒤 · 명시적 verify 스펙 가진 배만 · PASS만 완결(거짓완료 0).
+#   OFF=드라이런(_queue 미변경·스캔로그 요약만) / ON+closed 시에만 _queue 저장 + 원장 기록.
+# ═══════════════════════════════════════════
+def verify_apply_enabled() -> bool:
+    """자동 검증-완결 라이브 여부. AIDE_VERIFY_APPLY=1 일 때만 ON(기본 OFF)."""
+    return os.environ.get(VERIFY_APPLY_ENV, "0").strip() == "1"
+
+
+def run_verify_complete(active: list) -> dict:
+    """재개가능 auto 레인 뒤 검증형 배 자동 완결. verify_complete.handle 순수결과를
+    받아 게이트 OFF=드라이런(변경 0)·ON=read-before-write 재로드 후 close 저장 + 원장 기록."""
+    gate_on = verify_apply_enabled()
+    switch = "🟢 라이브(ON)" if gate_on else "🌙 휴면(OFF·dry-run)"
+
+    # 드라이런 패스: 인메모리 active 로 '무엇을 닫을지' 파악(gate_on=False → 배 뮤테이션 0).
+    preview = verify_complete.handle(active, gate_on=False, today=today_str())
+    pc = preview["counts"]
+    print(f"\n[verify] 자동 검증-완결 핸들러 — {switch} · 검증대상 {pc['targets']}척 "
+          f"(완결가능 {pc['dryrun_would_close']} · surface {pc['surface']} · terminal skip {pc['skipped_terminal']})")
+    for r in preview["results"]:
+        print(f"  [{r['outcome']}] {r['task_id']} — {str(r.get('evidence') or '')[:80]}")
+
+    out = {
+        "verify_gate_on": gate_on,
+        "verify_targets": pc["targets"],
+        "verify_would_close": pc["dryrun_would_close"],
+        "verify_surface": pc["surface"],
+        "verify_skipped_terminal": pc["skipped_terminal"],
+        "verify_closed": 0,
+    }
+
+    if not gate_on:
+        # 게이트 OFF: 드라이런 — 배·_queue 미변경. 스캔로그에 요약만(델타 0 보장).
+        if pc["dryrun_would_close"]:
+            print(f"  (휴면 — {VERIFY_APPLY_ENV} OFF. 완결 0. 라이브 발효=GM go 후 ON)")
+        log_scan("verify_complete_dryrun", **out)
+        return out
+
+    # 게이트 ON: read-before-write 재로드 후 라이브 완결(gm_aide_scan 기존 저장 패턴 재사용).
+    fresh = read_json(QUEUE_ACTIVE, [])
+    live = verify_complete.handle(fresh, gate_on=True, today=today_str())
+    closed = live["counts"]["closed"]
+    if closed:
+        QUEUE_ACTIVE.write_text(json.dumps(fresh, ensure_ascii=False, indent=2), encoding="utf-8")
+        for r in live["results"]:
+            if r["outcome"] == "closed":
+                log_auto_exec("verify_complete", r["task_id"], "status:재개가능(검증대기)", r["evidence"],
+                              restore_hint="원복=git revert(상태·메타만 변경·외부·파괴·전송 0)")
+        print(f"\n  ✅ 자동 검증-완결 {closed}척 입항(_queue 저장 + 원장 auto_exec 기록).")
+    out["verify_closed"] = closed
+    log_scan("verify_complete", **out)
+    return out
+
+
+# ═══════════════════════════════════════════
 #  메인
 # ═══════════════════════════════════════════
 def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
@@ -1017,6 +1080,9 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
     # ── 자율 틈 감지기(배237(b) 반반) — 재개가능=auto(게이트 AIDE_RESUMABLE_APPLY 뒤)·정체=surface-only ──
     gap_result = run_gap_detector(active, commit, kpi, ns_map, profile_hints, archive)
 
+    # ── 자동 검증-완결 핸들러(재개가능 auto 레인 뒤 · 게이트 AIDE_VERIFY_APPLY 기본 OFF) ──
+    verify_result = run_verify_complete(active)
+
     result = {
         "captured": len(captures),
         "reversible": len(rev),
@@ -1028,6 +1094,7 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         "auto_actions": len(auto_actions),
         "auto_applied": auto_applied,
         **gap_result,
+        **verify_result,
     }
 
     if not commit:
