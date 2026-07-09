@@ -1324,5 +1324,19 @@
     "artifact": "- signal(avgPct): 🟢양호≥90 / 🟡주의70-89 / 🔴위험<70 / ⚪미측정\n- 전월 GAS 재조회로 완료율 %p·이슈 건수 델타(▲▼), 전월없음/미측정=화살표 생략(지어내기0)\n- 4줄 카드: 제목+판정 / 완료율+이슈+최다 / 개선시사 / 자세히. 세션·활성일 상세로. 발송·예약·URL 미변경 (CLI ad-hoc · 커밋 f09b9e9e)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f09b9e9e769519f2672091a727080b4d1969062e"
+  },
+  {
+    "task_id": "CPO-2026-07-09-ADHOC-f4f98e34",
+    "clevel": "cpo",
+    "title": "[시포] CPO 자동보고 안내를 임정은M 옆 가로 칸으로 이동(세로높이 증가 0, GM 지시)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-09",
+    "processed_at": "2026-07-09",
+    "ship_no": 814,
+    "artifact": "기존엔 헤더 .header-brand(flex-direction:column) 안에서 담당실무(임정은M) 줄 아래\n별도 행으로 세로 추가되던 구조 — GM이 세로칸 늘리는 걸 싫어해서 같은 줄(.sub) 안에\n가로로 병합. flex+ellipsis로 한 줄 강제(내용이 아무리 길어도 절대 줄바꿈 안 됨 —\n세로높이 불변 보장). 표시 텍스트는 가로 폭에 맞게 축약(예: \"🤖 자동보고 ⚪OFF 일✓ 주· 월✓\")\n하고 전체 상세(방·시각별 발신여부)는 title 툴팁으로 그대로 보존(정보손실 0).\n헤더가 멤버십/강습 공용이라 ?ma (CLI ad-hoc · 커밋 f4f98e34)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f4f98e3470e676b0847d661dd7a01cb5050b10ea"
   }
 ]
