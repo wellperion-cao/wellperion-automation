@@ -690,6 +690,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .reg-table td.left{text-align:left}
 .reg-table tr:last-child td{border-bottom:none}
 .reg-table tr:hover td{background:rgba(255,255,255,0.02)}
+/* ── 강습 문의 현황 표(성인/유소년) 열폭 고정 — 연락처 과다폭 방지·성함/연락처 통일·CONTACT에 남는 폭 몰아주기.
+   가로 폭만 조정(세로 높이·스크롤 불변). th에 width 지정 + 마지막 열(CONTACT)은 width 미지정 → 남는 폭 자동 흡수.
+   membership(#dbTable)은 이미 별도 table-layout:fixed 고정폭이라 미대상, 다른 .reg-table(등록현황·회원관리 등)도 범위 밖. 배754, 2026-07-09 시포·GM 피드백 ── */
+.lesson-inq-table{table-layout:fixed}
+.lesson-inq-cell-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lesson-inq-cell-phone{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lesson-inq-cell-sport{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .reg-new-badge{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:6px;background:var(--accent);color:#fff;margin-left:6px;vertical-align:middle}
 /* 영어로 접수된 문의 뱃지 — 영어 문의 누수 수리(한글+영문 탭 병합 표시). 2026-07-09 시포·GM. */
 .lang-badge-en{display:inline-block;font-size:9px;font-weight:800;padding:1px 6px;border-radius:6px;background:#2563eb;color:#fff;margin-left:6px;vertical-align:middle}
@@ -1475,16 +1482,16 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div id="lessonSportBar_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
 
       <div class="reg-table-wrap">
-        <table class="reg-table">
+        <table class="reg-table lesson-inq-table">
           <thead>
             <tr>
-              <th class="left" style="min-width:80px">문의일</th>
-              <th class="left" style="min-width:60px">성함</th>
-              <th style="min-width:100px">연락처</th>
-              <th style="min-width:70px">강습종목</th>
-              <th style="min-width:80px">진행상태</th>
-              <th style="min-width:70px">담당</th>
-              <th class="left" style="min-width:220px">CONTACT (연락 이력)</th>
+              <th class="left" style="width:88px">문의일</th>
+              <th class="left" style="width:80px">성함</th>
+              <th style="width:122px">연락처</th>
+              <th style="width:96px">강습종목</th>
+              <th style="width:92px">진행상태</th>
+              <th style="width:112px">담당</th>
+              <th class="left">CONTACT (연락 이력)</th>
             </tr>
           </thead>
           <tbody id="lessonBody_adult">
@@ -1590,16 +1597,16 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div id="lessonSportBar_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
 
       <div class="reg-table-wrap">
-        <table class="reg-table">
+        <table class="reg-table lesson-inq-table">
           <thead>
             <tr>
-              <th class="left" style="min-width:80px">문의일</th>
-              <th class="left" style="min-width:60px">성함</th>
-              <th style="min-width:100px">연락처</th>
-              <th style="min-width:70px">강습종목</th>
-              <th style="min-width:80px">진행상태</th>
-              <th style="min-width:70px">담당</th>
-              <th class="left" style="min-width:220px">CONTACT (연락 이력)</th>
+              <th class="left" style="width:88px">문의일</th>
+              <th class="left" style="width:80px">성함</th>
+              <th style="width:122px">연락처</th>
+              <th style="width:96px">강습종목</th>
+              <th style="width:92px">진행상태</th>
+              <th style="width:112px">담당</th>
+              <th class="left">CONTACT (연락 이력)</th>
             </tr>
           </thead>
           <tbody id="lessonBody_youth">
@@ -3413,12 +3420,12 @@ function lessonRender(t) {
     var r = ln.row, mgmt = _lessonSportMgmt(r, ln.sportKey), argSport = encodeURIComponent(ln.sportKey);
     html += '<tr data-row-index="' + r.rowIndex + '">' +
       '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(r.timestamp || '—') + '</td>' +
-      '<td class="left" style="font-weight:700">' + esc(r.name || '—') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
-      '<td style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
-      '<td style="font-size:12px">' + esc(ln.sportLabel) + '</td>' +
+      '<td class="left lesson-inq-cell-name" style="font-weight:700" title="' + esc(r.name || '') + '">' + esc(r.name || '—') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
+      '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
+      '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(ln.sportLabel) + '">' + esc(ln.sportLabel) + '</td>' +
       '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, ln.sportKey, mgmt.status) + '</td>' +
       '<td style="font-size:12px">' + _lessonOwnerSelectHtml(t, r.rowIndex, ln.sportKey, mgmt.owner) + '</td>' +
-      '<td class="left editable-cell" style="font-size:11px;color:var(--text);line-height:1.6;max-width:220px;white-space:pre-wrap;word-break:break-word" onclick="_lessonContactClick(\'' + t + '\',' + r.rowIndex + ',\'' + argSport + '\')">' + _lessonContactCellHtml(mgmt) + '</td>' +
+      '<td class="left editable-cell" style="font-size:11px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word" onclick="_lessonContactClick(\'' + t + '\',' + r.rowIndex + ',\'' + argSport + '\')">' + _lessonContactCellHtml(mgmt) + '</td>' +
     '</tr>';
   });
   tbody.innerHTML = html;
