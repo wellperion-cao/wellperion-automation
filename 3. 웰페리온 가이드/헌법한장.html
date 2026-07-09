@@ -322,6 +322,24 @@
     </div>
   </div>
 
+  <!-- ════ ⚖️ 불변원리 3 (자율화 전제 · Global Constraints 근거 · 2026-07-09) ════ -->
+  <h2 class="sec">⚖️ 불변원리 3 <span style="font-size:11px;font-weight:400;color:var(--dim);">자율화 루프가 지키는 전제</span></h2>
+  <div class="sec-note">근거: docs/superpowers/plans/2026-07-09-clevel-autonomous-execution-loop.md · Global Constraints</div>
+  <div class="cards" style="margin-bottom:14px;">
+    <div class="ccard">
+      <h3>① 등록부 단일 SSOT</h3>
+      <div class="desc">모든 화면·알림·자율 루프는 <code>status/module_registry.json</code> 한 곳을 읽는다. 데이터 출처(_queue.json·kpi.json·GAS 등)는 가리킬 뿐 복사 금지.</div>
+    </div>
+    <div class="ccard">
+      <h3>② 가역만 자율</h3>
+      <div class="desc">가역 작업만 AI가 자율 완료. 비가역(발행·배포·삭제·외부전송·결제·보안·전략·공식값)은 GM 결재.</div>
+    </div>
+    <div class="ccard">
+      <h3>③ 웰리는 위임·검증만</h3>
+      <div class="desc">AI CEO(웰리)는 직접 도메인 실행 금지. 큐 읽기·위임·검증·기록만; 실행은 담당 C레벨.</div>
+    </div>
+  </div>
+
   <!-- ════ A. 8주체 × 3칸 매트릭스 (편집형 · 2026-06-29 · 2026-07-07 북극성 지도 카드 합병) ════ -->
   <div id="matrix-section">
   <h2 class="sec">🧭 8주체 × 3칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
