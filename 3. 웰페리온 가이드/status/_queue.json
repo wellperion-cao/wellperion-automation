@@ -1381,5 +1381,18 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Jr543VejDvcb91F5sADoaX (CLI ad-hoc · 커밋 91ca469e)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "91ca469e545a04cd73a563e9c2957a0c5c907fc8"
+  },
+  {
+    "task_id": "CPO-2026-07-09-AUTONOMY-BRAIN",
+    "clevel": "cpo",
+    "title": "[시포] CPO 자율화 두뇌 첫 배 — 텔레그램 일/주/월 자동보고 뼈대",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-09",
+    "ship_no": 754,
+    "note": "스펙: .omc/specs/deep-interview-cpo-autonomy-brain.md (4라운드 확정). 첫 배=④ 텔레그램 일/주/월 자동보고 — 기존 인프라 재활용(daily_scheduler.py CronTrigger·telegram_bot/.env 3방 분리·Survey.js GAS member_inquiry_list/cpo_today_stats/cpo_churn_stats). 신규 구현: scripts/cpo_report.py(일/주/월 빌더+게이트+상태기록) · daily_scheduler.py에 cpo_report_daily(10:00 문의알림방)·cpo_report_weekly(월09:15 GM채널)·cpo_report_monthly(1일09:20 GM채널) 3종 CronTrigger 등록 · 문의회원.html에 CPO 자동보고 상태 확인 위젯(status/cpo_report_state.json 라이브 조회). 게이트=CPO_REPORT_LIVE(.env) 기본 OFF — 실발신 0건 확인, dry-run으로 3개 메시지 실데이터 렌더 검증 완료(status/briefs/CPO-autonomy-brain-preview-20260709.md). 정직 표기: 이탈위험·전환율 등 전부 근사/추정 꼬리표 부착.",
+    "next": "GM이 3개 메시지 실물(문의알림방/GM채널) 룩 확인 → 승인 시 telegram_bot/.env CPO_REPORT_LIVE=1 설정 + daily_scheduler.py 재기동으로 라이브 발효. 이후 ①②③(백엔드 자율설계·프론트 모듈화·UX 극단순화) 순차 착수.",
+    "depends_on": "",
+    "module": "cpo"
   }
 ]

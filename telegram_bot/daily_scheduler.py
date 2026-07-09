@@ -102,6 +102,15 @@ except Exception as _e_ship:
         owner_part = f" [{owner}]" if owner else ""
         return f"🚢 {title}{owner_part}"
 
+# CPO(시포) 자율화 두뇌 첫 배(④) — 일/주/월 자동보고 생성기 (scripts/cpo_report.py)
+# 게이트: CPO_REPORT_LIVE(.env) 미설정=OFF → cpo_report.run() 내부에서 렌더만·발신 안 함.
+try:
+    import cpo_report as _cpo_report
+    _CPO_REPORT_OK = True
+except Exception as _e_cpo:
+    _CPO_REPORT_OK = False
+    _cpo_report = None
+
 # ── v1.2 헬스체크 상수 ────────────────────────────────────────────────────────
 FAILURE_STATE_FILE = Path(__file__).parent / "telegram_failure.json"
 _ENV_MTIME: float = 0.0          # .env 마지막 수정 시각 추적용
@@ -2338,6 +2347,46 @@ def run_daily_digest() -> None:
             logger.error(f"{label} {room_name} 예외: {e}")
 
 
+# ── CPO(시포) 일/주/월 자동보고 (첫 배 ④, 2026-07-09) ─────────────────────────
+# 스펙: .omc/specs/deep-interview-cpo-autonomy-brain.md. 실제 발신 여부는
+# scripts/cpo_report.py 내부 CPO_REPORT_LIVE 게이트가 최종 결정(이중 안전장치) —
+# 여기서 dry_run=False 를 넘겨도 게이트 OFF면 렌더+상태기록만 하고 발신하지 않는다.
+def run_cpo_daily_report() -> None:
+    """실무진 문의방 — 오늘 처리할 것(신규문의·미컨택·오늘예약·이탈위험후보)."""
+    if not _CPO_REPORT_OK:
+        logger.error("[CPO보고:일] cpo_report 모듈 임포트 실패 — 스킵")
+        return
+    try:
+        _cpo_report.run("daily", dry_run=False)
+        logger.info(f"[CPO보고:일] 처리 완료 (live_gate={_cpo_report.report_live_enabled()})")
+    except Exception as e:
+        logger.error(f"[CPO보고:일] 예외: {e}")
+
+
+def run_cpo_weekly_report() -> None:
+    """GM 채널 — 주간 현황 롤업(신규문의·전환·채널유입·이탈위험)."""
+    if not _CPO_REPORT_OK:
+        logger.error("[CPO보고:주] cpo_report 모듈 임포트 실패 — 스킵")
+        return
+    try:
+        _cpo_report.run("weekly", dry_run=False)
+        logger.info(f"[CPO보고:주] 처리 완료 (live_gate={_cpo_report.report_live_enabled()})")
+    except Exception as e:
+        logger.error(f"[CPO보고:주] 예외: {e}")
+
+
+def run_cpo_monthly_report() -> None:
+    """GM 채널 — 월간 현황 롤업(전환율·신규등록·예약활성·이탈방지성과)."""
+    if not _CPO_REPORT_OK:
+        logger.error("[CPO보고:월] cpo_report 모듈 임포트 실패 — 스킵")
+        return
+    try:
+        _cpo_report.run("monthly", dry_run=False)
+        logger.info(f"[CPO보고:월] 처리 완료 (live_gate={_cpo_report.report_live_enabled()})")
+    except Exception as e:
+        logger.error(f"[CPO보고:월] 예외: {e}")
+
+
 def _build_07_combined_body() -> str:
     """07시 통합(GM 2026-06-29): 어제 항로 결산 + 직원 공유 카드를 한 메시지로(07:05 분리발송 폐지)."""
     main = _build_07_body()
@@ -2793,6 +2842,36 @@ def main():
             coalesce=True,
         )
         logger.info("daily_digest_2230 등록 완료 (22:30) — 하루 일과 정리 3방 발송")
+
+        # ── CPO(시포) 자율화 두뇌 첫 배 — 일/주/월 자동보고 (2026-07-09) ───────
+        #   일 10:00=실무진 문의방(오늘 처리할 것) · 주 월요 09:15=GM채널 · 월 1일 09:20=GM채널.
+        #   기존 06~23시 정규 슬롯·22:30 하루정리와 겹치지 않는 여유 시간대.
+        #   실발신은 scripts/cpo_report.py CPO_REPORT_LIVE 게이트(기본 OFF)가 최종 결정.
+        scheduler.add_job(
+            run_cpo_daily_report,
+            trigger=CronTrigger(hour=10, minute=0, timezone="Asia/Seoul"),
+            id="cpo_report_daily",
+            misfire_grace_time=600,
+            coalesce=True,
+        )
+        scheduler.add_job(
+            run_cpo_weekly_report,
+            trigger=CronTrigger(day_of_week="mon", hour=9, minute=15, timezone="Asia/Seoul"),
+            id="cpo_report_weekly",
+            misfire_grace_time=600,
+            coalesce=True,
+        )
+        scheduler.add_job(
+            run_cpo_monthly_report,
+            trigger=CronTrigger(day=1, hour=9, minute=20, timezone="Asia/Seoul"),
+            id="cpo_report_monthly",
+            misfire_grace_time=600,
+            coalesce=True,
+        )
+        logger.info(
+            "cpo_report 3종 등록 완료 (일 10:00·주 월09:15·월 1일09:20) — "
+            f"live_gate={_cpo_report.report_live_enabled() if _CPO_REPORT_OK else 'N/A(모듈 임포트 실패)'}"
+        )
 
     logger.info(f"스케줄러 기동 완료. PID={os.getpid()}")
     try:

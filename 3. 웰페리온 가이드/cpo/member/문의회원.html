@@ -986,6 +986,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="header-brand">
         <h1><span id="pageTitleTxt">멤버십 회원 관리</span> <span class="badge">AI CPO v2.0</span></h1>
         <div class="sub">멤버십·강습 통합 잠재고객 관리 — 담당 실무: 임정은M</div>
+        <!-- CPO 자율화 두뇌 첫 배(④) — 일/주/월 자동보고 상태 확인 지점(v1=표시전용). 스펙: .omc/specs/deep-interview-cpo-autonomy-brain.md -->
+        <div id="cpoReportStatusLine" style="font-size:11.5px;color:var(--dim);margin-top:4px">🤖 CPO 자동보고 상태 불러오는 중…</div>
       </div>
       <div class="header-actions">
         <a class="action-btn" href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">🔗 문의 페이지 →</a>
@@ -5888,6 +5890,38 @@ function esc(s) {
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;');
 }
+</script>
+
+<!-- CPO 자율화 두뇌 첫 배(④) — 일/주/월 자동보고 on/off·수신 방·마지막 발신 확인(v1=표시전용).
+     status/kakao_last_send.json 패턴(카톡전송관리.html)과 동일하게 raw.githubusercontent 공개 조회. -->
+<script>
+(function(){
+  var RAW_BASE_CPO = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+  var ROOM_LABEL = { daily: '문의알림방', weekly: 'GM채널', monthly: 'GM채널' };
+  var KIND_LABEL = { daily: '일', weekly: '주', monthly: '월' };
+
+  function loadCpoReportStatus(){
+    var el = document.getElementById('cpoReportStatusLine');
+    if(!el) return;
+    fetch(RAW_BASE_CPO + 'status/cpo_report_state.json?t=' + Date.now(), {cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('no file'); return r.json(); })
+      .then(function(j){
+        var gate = null;
+        var parts = ['daily','weekly','monthly'].map(function(kind){
+          var d = j[kind];
+          if(!d) return KIND_LABEL[kind] + ':기록없음';
+          if(gate === null) gate = !!d.live_gate;
+          return KIND_LABEL[kind] + ':' + (d.sent ? '발신' : '렌더만') + '(' + ROOM_LABEL[kind] + ' · ' + (d.at || '-') + ')';
+        });
+        var gateTxt = gate ? '🟢 라이브(실발신)' : '⚪ OFF(GM 룩 확인 후 발효 대기)';
+        el.textContent = '🤖 CPO 자동보고 [' + gateTxt + '] — ' + parts.join(' · ');
+      })
+      .catch(function(){
+        el.textContent = '🤖 CPO 자동보고: 아직 실행 기록이 없습니다(첫 실행 후 표시됩니다).';
+      });
+  }
+  loadCpoReportStatus();
+})();
 </script>
     <script src="/wellperion-automation/_assets/print_options.js"></script>
 </body>
