@@ -99,6 +99,21 @@
       "honesty_default": "measured"
     },
     {
+      "id": "coo-work-approval",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "업무·결재 현황 — 활성 업무·결재 대기·마감 초과",
+      "data_source": {"kind": "gas", "ref": "TODO_API action=todo_list (클라 산식)"},
+      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": "@namuki_report_bot"},
+      "front_card": {"window": "O1", "anchor": "o1-module-hub"},
+      "autonomy": "auto",
+      "ai_free_fallback": "GAS 시트가 업무·결재 원장을 상시 보유, 클라이언트가 실시간 집계",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
       "id": "cpo-inquiry-daily-actions",
       "owner_role": "cpo",
       "owner_nick": "시포",

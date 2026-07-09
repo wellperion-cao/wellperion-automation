@@ -10,16 +10,15 @@ def build_coo_daily_lines(reg=None, fetch_fn=None) -> list:
     for m in R.iter_enabled(reg):
         if not m["notify_spec"].get("daily"):
             continue
+        f = R.STATUS_FETCHERS.get(m["id"])
+        if f is None:
+            continue
         name = R.DISPLAY_NAME.get(m["id"], m["feature"])
         try:
-            st = R.fetch_check_status(m, fetch_fn=fetch)
+            st = f(fetch)
         except Exception:
             lines.append(f"• {name}: (측정 실패 — 정직 표기)")
             continue
-        parts = []
-        for dept, d in st["depts"].items():
-            label = {"facility": "시설", "support": "지원"}.get(dept, dept)
-            parts.append(f"{label} {d['pct']}%")
         badge = "⚠" if st["anomaly"] else "✅"
-        lines.append(f"{badge} {name}: " + " · ".join(parts))
+        lines.append(f"{badge} {name}: {st['display']}")
     return lines

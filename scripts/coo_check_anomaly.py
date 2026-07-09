@@ -12,8 +12,11 @@ def run_anomaly_check(reg=None, fetch_fn=None, notifier=None, dry_run=True) -> d
     for m in R.iter_enabled(reg):
         if m["data_source"].get("kind") != "gas":
             continue
+        f = R.STATUS_FETCHERS.get(m["id"])
+        if f is None:
+            continue
         try:
-            st = R.fetch_check_status(m, fetch_fn=fetch)
+            st = f(fetch)
         except Exception:
             continue
         if not st["anomaly"]:
