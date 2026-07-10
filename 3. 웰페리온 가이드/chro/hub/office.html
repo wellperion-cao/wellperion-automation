@@ -169,22 +169,8 @@
 </style>
 </head>
 <body>
-<div id="gate" style="display:none">
-  <div class="gate-card">
-    <div class="mark">WELLPERION</div>
-    <h2>CHRO 복셀 오피스</h2>
-    <p>사내 전용 페이지입니다. 접근 비밀번호를 입력하세요.</p>
-    <input type="password" id="gatePw" placeholder="접근 비밀번호" autocomplete="current-password">
-    <button id="gateBtn">입장</button>
-    <div class="gate-err" id="gateErr"></div>
-    <div class="gate-foot">대외비 — 인사 일정·지원자 정보 포함. 권한 없는 열람·외부 공유를 금합니다.</div>
-  </div>
-</div>
-
-
-
 <div class="wrap">
-  <canvas id="scene" tabindex="0" role="img" aria-label="웰페리온 CHRO 인사팀 AI 오피스 아이소메트릭 시연 — 팀장 Claude와 7개 에이전트가 넓은 회의 테이블에서 업무를 처리합니다. 상석 뒤 벽에는 급훈(매출·긍정·협동·사랑) 현판, 정면 벽에는 실제 채용·온보딩 일정이 반영된 오늘(7월 8일) 일정 게시판과 7월 인사 스케줄 월력, 창문과 벽시계가 걸려 있습니다. 처리 로그는 화면 하단의 '팀장 · Claude 브리핑' 패널에 실시간 피드로 표시되며, 팀장 캐릭터는 말풍선에 가려지지 않습니다."></canvas>
+  <canvas id="scene" tabindex="0" role="img" aria-label="웰페리온 CHRO 인사팀 AI 오피스 아이소메트릭 뷰 — 팀장 Claude와 7개 에이전트가 넓은 회의 테이블에서 업무를 처리합니다. 상석 뒤 벽에는 급훈(매출·긍정·협동·사랑) 현판, 정면 벽에는 일정 게시판과 인사 스케줄 월력, 창문과 벽시계가 걸려 있습니다. 처리 로그는 화면 하단의 '팀장 · Claude 브리핑' 패널에 실시간 자동화 로그 피드로 표시되며, 팀장 캐릭터는 말풍선에 가려지지 않습니다."></canvas>
 
   <div class="hud">
     <div class="topbar">
@@ -225,8 +211,8 @@
           <div class="term-head">
             <span class="term-dot"></span>
             <span class="term-title">CHRO 터미널</span>
-            <span class="term-badge" id="term-badge">잠금</span>
-            <button class="term-tgl" id="cmd-open" type="button" title="CMD 열기" style="margin-left:auto">🔒 CMD 열기</button>
+            <span class="term-badge" id="term-badge">조회 공개</span>
+            <button class="term-tgl" id="cmd-open" type="button" title="CMD 열기 — 명령 전송(비밀번호 필요, 조회는 이미 개방됨)" style="margin-left:auto">🔒 CMD 열기</button>
             <button class="term-tgl" id="term-tgl" type="button" aria-expanded="true" aria-controls="term-body" title="터미널 접기/펼치기">▾</button>
           </div>
           <div class="term-body" id="term-body">
@@ -242,7 +228,7 @@
     </div>
   </div>
 
-  <div class="foot">벽면 달력·오늘 일정 = 실데이터(면접·공고 마감·온보딩) · 데이터: 게이트 인증 후 실시간 로드 · 처리 로그 피드는 목업 시연(자동화 로그 연동 예정)</div>
+  <div class="foot">처리 로그 피드·오늘 카운터·에이전트 집계 = 실시간 자동화 로그 공개 연동(비밀번호 불필요) · 벽면 달력·일정판은 참고용 표시(별도 데이터 미연동)</div>
 </div>
 
 <script>
@@ -904,9 +890,9 @@
     ctx.textAlign='center'; ctx.textBaseline='middle';
   }
 
-  /* ===== 일정 실데이터 — 게이트 인증 후 /exec에서 실시간 로드 (소스에 PII 미포함) ===== */
+  /* ===== 일정판 — 참고용 표시(2026-07-10 개방 개편: 실지원자 일정 연동은 범위 밖, 로그 피드만 공개 실데이터) ===== */
   const REAL_SCHEDULE={
-    asOf:'인증 후 로드', monthLabel:'', firstDow:0, days:31, todayDate:0, todayLabel:'',
+    asOf:'참고용', monthLabel:'', firstDow:0, days:31, todayDate:0, todayLabel:'',
     marks:{}, today:[],
     legend:[ {k:'iv', label:'면접'}, {k:'dl', label:'공고 마감'}, {k:'ob', label:'온보딩'} ]
   };
@@ -1506,7 +1492,7 @@
 
   async function initAutolog(){
     let rows=[];
-    try{ const j=await api({db:'autolog',password:SESSION_PW}); rows=j.results||[]; }catch(e){}
+    try{ const j=await api({action:'office-autolog', limit:200}); rows=j.results||[]; }catch(e){}
     if(!rows.length){ return; }
     autologMaxRow = rows.reduce((m,r)=>Math.max(m,Number(r['_sheet_row'])||0),0);
     const td=todayStr();
@@ -1535,7 +1521,7 @@
   }
   async function pollAutolog(){
     let rows=[];
-    try{ const j=await api({db:'autolog',password:SESSION_PW}); rows=j.results||[]; }catch(e){ return; }
+    try{ const j=await api({action:'office-autolog', limit:200}); rows=j.results||[]; }catch(e){ return; }
     const fresh=rows.filter(r=>(Number(r['_sheet_row'])||0)>autologMaxRow);
     if(!fresh.length) return;
     autologMaxRow = rows.reduce((m,r)=>Math.max(m,Number(r['_sheet_row'])||0),autologMaxRow);
@@ -1817,7 +1803,7 @@
 
   const termCmds={
     help:function(){
-      tLine('CHRO 터미널 — CMD 열기 후: 실데이터 조회 + CHRO 세션 명령 전송','tl-h');
+      tLine('CHRO 터미널 — 조회는 자유 열람(실시간 로그·집계) · 명령 전송은 "CMD 열기"(비밀번호) 후','tl-h');
       tLine('데이터 기준: '+REAL_SCHEDULE.asOf,'tl-mut');
       tLine('  help · ? · 도움말     명령 목록');
       tLine('  일정 · 오늘 · today   오늘 일정 보드');
@@ -1903,7 +1889,9 @@
   };
 
   
-  /* ===== Pages판 전용: 백엔드 API + 실데이터 로더 + CHRO 세션 명령 전송(cmd-push/cmd-status @43) ===== */
+  /* ===== Pages판 전용: 백엔드 API + 실데이터 로더 + CHRO 세션 명령 전송
+     (조회=office-autolog 무비번 공개 통로 / 명령 전송=cmd-push·cmd-status, CMD_PASSWORD 유지 —
+     2026-07-10 A-6 병렬감사 NO-GO 반영: 무비번 명령 접수는 CHRO 실행큐 주입 위험이라 철회, 조회만 개방) ===== */
   const NOTION_FN='https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec';
   let SESSION_PW='';
   async function api(body){
@@ -1911,57 +1899,26 @@
     let d={}; try{ d=await r.json(); }catch(e){} d.__status=r.status; return d;
   }
   function fmtAsOf(d){ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
-  async function loadRealData(){
+  // 2026-07-10 개방 개편: 일정판(면접·마감·온보딩)은 지원자 실명·연락처를 포함해 이번 공개 범위 밖(그 외 전부 거부
+  // 원칙) — 달력 그리드(오늘 날짜 등 비-PII)만 세팅하고 이벤트 마킹은 채우지 않는다. 실데이터로 공개되는 것은
+  // 자동화 로그 피드·오늘 카운터·에이전트 집계뿐(initAutolog, office-autolog 액션).
+  function loadRealData(){
     const now=new Date(), y=now.getFullYear(), mo=now.getMonth();
-    const p=n=>String(n).padStart(2,'0');
     REAL_SCHEDULE.monthLabel=y+'년 '+(mo+1)+'월';
     REAL_SCHEDULE.firstDow=new Date(y,mo,1).getDay();
     REAL_SCHEDULE.days=new Date(y,mo+1,0).getDate();
     REAL_SCHEDULE.todayDate=now.getDate();
     REAL_SCHEDULE.todayLabel=(mo+1)+'/'+now.getDate()+' ('+'일월화수목금토'[now.getDay()]+')';
-    let appl=[],onbo=[],hire=[];
-    try{
-      const rs=await Promise.all([api({db:'appl',password:SESSION_PW}),api({db:'onbo',password:SESSION_PW}),api({db:'hire',password:SESSION_PW})]);
-      appl=rs[0].results||[]; onbo=rs[1].results||[]; hire=rs[2].results||[];
-    }catch(e){ tLine('실데이터 로드 실패 — 새로고침 해주세요','tl-err'); tScroll(); return; }
-    const ACTIVE=['서류 검토','1차 면접','2차 면접','최종 합격','보류'];
     TERM_IV.length=0; TERM_DL.length=0; TERM_OB.length=0;
     for(const k in REAL_SCHEDULE.marks) delete REAL_SCHEDULE.marks[k];
     REAL_SCHEDULE.today.length=0;
-    const md=d=>(d.getMonth()+1)+'/'+d.getDate();
-    const addMark=(d,k)=>{ if(d.getFullYear()===y&&d.getMonth()===mo){ const a=REAL_SCHEDULE.marks[d.getDate()]=REAL_SCHEDULE.marks[d.getDate()]||[]; if(a.indexOf(k)<0)a.push(k); } };
-    appl.forEach(r=>{
-      const st=r['전형 단계'], iv=r['면접 일정'];
-      if(!iv||ACTIVE.indexOf(st)<0) return;
-      const d=new Date(String(iv)); if(isNaN(d)) return;
-      if(d.getFullYear()!==y||d.getMonth()!==mo) return;
-      TERM_IV.push({day:d.getDate(), d:md(d), t:p(d.getHours())+':'+p(d.getMinutes()), s:(r['지원자명']||'')+' — '+(r['지원 포지션']||'')+' ('+st+')', done:d.getTime()<now.getTime()});
-      addMark(d,'iv');
-    });
-    hire.forEach(r=>{
-      if(r['채용 상태']!=='공고중') return;
-      const dl=r['공고 마감일']; if(!dl) return;
-      const d=new Date(String(dl).slice(0,10)+'T23:59'); if(isNaN(d)) return;
-      if(d.getFullYear()===y&&d.getMonth()===mo){ TERM_DL.push({day:d.getDate(), d:md(d), s:r['포지션명']||''}); addMark(d,'dl'); }
-    });
-    onbo.forEach(r=>{
-      if(String(r['완료 여부'])==='true') return;
-      const due=r['완료 기한']; if(!due) return;
-      const d=new Date(String(due).slice(0,10)+'T09:00'); if(isNaN(d)) return;
-      if(d.getFullYear()===y&&d.getMonth()===mo){ TERM_OB.push({day:d.getDate(), d:md(d), s:(r['대상 신입 직원']||'')+' '+(r['체크 항목']||''), flag:(d-now)<86400000*2}); addMark(d,'ob'); }
-    });
-    TERM_IV.sort((a,b)=>a.day-b.day); TERM_DL.sort((a,b)=>a.day-b.day); TERM_OB.sort((a,b)=>a.day-b.day);
-    TERM_IV.filter(it=>it.day===now.getDate()).forEach(it=>REAL_SCHEDULE.today.push({t:it.t,s:it.s,done:it.done,k:'iv'}));
-    TERM_OB.forEach(it=>{ const dd=it.day-now.getDate(); if(dd>=0&&dd<=1) REAL_SCHEDULE.today.push({t:dd===0?'D-DAY':'D-1',s:it.s+' ('+it.d+' 기한)',flag:true,k:'ob'}); });
-    TERM_DL.forEach(it=>{ const dd=it.day-now.getDate(); if(dd>=0&&dd<=7) REAL_SCHEDULE.today.push({t:'D-'+dd,s:it.s+' 공고 마감',flag:dd<=3,k:'dl'}); });
     rebuildTermDay();
-    REAL_SCHEDULE.asOf=fmtAsOf(now)+' (실시간)';
-    const f=document.querySelector('.foot'); if(f) f.textContent='데이터 기준: '+REAL_SCHEDULE.asOf+' · 처리 로그 피드는 목업 시연(자동화 로그 연동 예정)';
-    tLine('실데이터 로드 완료 — 면접 '+TERM_IV.length+'건 · 공고 마감 '+TERM_DL.length+'건 · 온보딩 '+TERM_OB.length+'건','tl-mut'); tScroll();
+    REAL_SCHEDULE.asOf='참고용(일정 데이터 미연동)';
+    tLine('오피스 개방 — 로그 피드·오늘 카운터·에이전트 집계가 실시간 자동화 로그(공개)로 연동됩니다','tl-h'); tScroll();
     initAutolog();
   }
-  async function termRemote(raw){ /* 실전송 비활성 — 안전상 조회 전용 터미널 */
-    if(!SESSION_PW){ tLine('게이트 인증 후 이용할 수 있어요','tl-err'); tScroll(); return; }
+  async function termRemote(raw){
+    if(!SESSION_PW){ tLine('명령 전송은 "CMD 열기"(비밀번호) 후 이용할 수 있어요 — 조회(help 등)는 이미 가능합니다','tl-mut'); tScroll(); return; }
     tLine('→ CHRO 세션으로 전송 중…','tl-mut'); tScroll();
     let res=null; try{ res=await api({action:'cmd-push',adminPassword:SESSION_PW,text:raw}); }catch(e){}
     if(!res||!res.ok){ tLine('전송 실패: '+((res&&(res.message||res.error))||'네트워크 오류'),'tl-err'); tScroll(); return; }
@@ -1984,11 +1941,11 @@
     },5000);
   }
 
-  /* ===== CMD 잠금/연결 상태 ===== */
+  /* ===== CMD 연결 상태 — 2026-07-10 개방 개편: 조회(로그 피드·오늘 카운터·에이전트 집계)는 비밀번호 없이
+     즉시 연동(office-autolog). CHRO 실행큐로의 "명령 전송"만은 기존 CMD_PASSWORD 게이트를 그대로 유지한다
+     (A-6 병렬감사 NO-GO — 무비번 명령 접수는 실행큐 주입 위험이라 철회, 관리자 액션 무손상 원칙 준수). ===== */
   let CMD_UNLOCKED=false, awaitingCmdPw=false, ambientOn=false;
-  // 페르소나 톤 반영 — 각자 시그니처 행동을 연상시키는 문구(실데이터 아님, 미연결 시 앰비언트 표시용)
   const AMBIENT=[{id:'A-1',t:'이력서 한 장씩 다시 확인'},{id:'A-6',t:'숫자 하나하나 대조 중'},{id:'A-2',t:'지원자와 일정 통화 조율'},{id:'A-3',t:'이번 주 체크인 리스트 확인'},{id:'A-5',t:'배포 막바지 점검'},{id:'A-4',t:'평가 기준 다시 짚어보기'},{id:'A-7',t:'흐름 막히는 지점 분석'},{id:'A-1',t:'서류 평가 재검토'},{id:'A-6',t:'감사 대기 건 점검'}];
-  function startAmbient(){ ambientOn=true; }
   function ambientFeed(){ if(!ambientOn||CMD_UNLOCKED||realQueue.length) return; const a=AMBIENT[(Math.random()*AMBIENT.length)|0]; realQueue.push({agent:a.id,text:a.t,kind:'진행',isLead:false,count:false}); }
   function promptCmdPw(){ if(CMD_UNLOCKED){ tLine('이미 연결됨','tl-mut'); tScroll(); return; } awaitingCmdPw=true; tIn.type='password'; tIn.placeholder='CMD 비밀번호'; tLine('CMD 비밀번호를 입력하고 Enter','tl-mut'); tScroll(); tIn.focus(); }
   async function cmdUnlock(pw,silent){
@@ -1998,12 +1955,9 @@
     if(!ok){ try{sessionStorage.removeItem('wp_cmd_pw');}catch(e){} if(!silent){ tLine('CMD 비밀번호가 올바르지 않습니다','tl-err'); tScroll(); } return false; }
     SESSION_PW=pw; CMD_UNLOCKED=true;
     try{sessionStorage.setItem('wp_cmd_pw',pw);}catch(e){}
-    const badge=document.getElementById('term-badge'); if(badge) badge.textContent='● 연결됨';
+    const badge=document.getElementById('term-badge'); if(badge) badge.textContent='● 명령 연결됨';
     const ob=document.getElementById('cmd-open'); if(ob) ob.style.display='none';
-    realQueue.length=0;
-    loadRealData();
-    tLine('CMD 잠금 해제 — 실데이터 연결됨. 이제 명령이 CHRO 세션으로 전달됩니다.','tl-h');
-    tLine('일정·면접·마감·온보딩·팀원·상태 조회 / 그 외 문장은 CHRO에게 전송','tl-mut'); tScroll();
+    tLine('CMD 잠금 해제 — 이제 명령이 CHRO 세션으로 전달됩니다(조회는 이미 연동돼 있었습니다)','tl-h'); tScroll();
     return true;
   }
   function termExec(raw){
@@ -2014,11 +1968,9 @@
     if(key==='cmd'||key==='열기'||key==='unlock'){ promptCmdPw(); tScroll(); return; }
     const cmd=TERM_ALIAS[key];
     if(cmd && termCmds[cmd]){
-      if(!CMD_UNLOCKED && cmd!=='help' && cmd!=='clear' && cmd!=='motto'){ tLine('실데이터 조회는 "CMD 열기"(비밀번호) 후 이용할 수 있어요','tl-mut'); tScroll(); return; }
       termCmds[cmd](parts.slice(1).join(' '));
     }
-    else if(CMD_UNLOCKED){ termRemote(raw); }
-    else tLine("'"+parts[0]+"' — help 또는 'CMD 열기'로 잠금 해제","tl-err");
+    else { termRemote(raw); }
     tScroll();
   }
 
@@ -2048,35 +2000,15 @@
     tTgl.setAttribute('aria-expanded',String(!closed));
     tTgl.textContent=closed?'▴':'▾';
   });
-  tLine('CHRO 터미널 — 자유 열람 중 · "CMD 열기"(비밀번호)로 실데이터·명령 연결 · help','tl-mut');
+  tLine('CHRO 터미널 — 조회는 자유 열람(실시간 로그·집계) · 명령 전송은 "CMD 열기"(비밀번호) · help','tl-mut');
   termGhostSync();
 
-  /* ===== 게이트 (허브 index.html 패턴 — 비번은 소스에 없음, 입력값을 백엔드 검증) ===== */
-  const gateEl=document.getElementById('gate');
-  function showGateEl(){ gateEl.style.display='flex'; }
-  function hideGateEl(){ gateEl.style.display='none'; }
-  async function attemptGate(pw){
-    const errEl=document.getElementById('gateErr'), btn=document.getElementById('gateBtn');
-    if(!pw||!String(pw).trim()){ try{sessionStorage.removeItem('wp_hr_pw');}catch(e){} if(errEl)errEl.textContent='비밀번호를 입력해 주세요.'; showGateEl(); return; }
-    if(btn){btn.disabled=true;btn.textContent='확인 중…';}
-    if(errEl)errEl.textContent='';
-    let data=null, netErr=false;
-    try{ data=await api({db:'hire',password:pw}); }catch(e){ netErr=true; }
-    if(netErr||!data){ if(btn){btn.disabled=false;btn.textContent='입장';} if(errEl)errEl.textContent='서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.'; showGateEl(); return; }
-    const bad=(data.__status===401)||(data.error&&/unauthorized|권한|비밀번호/i.test(String(data.error)))||!data.role;
-    if(bad){ try{sessionStorage.removeItem('wp_hr_pw');}catch(e){} if(btn){btn.disabled=false;btn.textContent='입장';} if(errEl)errEl.textContent='비밀번호가 올바르지 않습니다.'; showGateEl(); return; }
-    SESSION_PW=pw;
-    try{sessionStorage.setItem('wp_hr_pw',pw);}catch(e){}
-    hideGateEl();
-    loadRealData();
-  }
-  document.getElementById('gateBtn').addEventListener('click',function(){ attemptGate(document.getElementById('gatePw').value); });
-  document.getElementById('gatePw').addEventListener('keydown',function(e){ if(e.key==='Enter') attemptGate(document.getElementById('gatePw').value); });
+  /* ===== 부팅 — 2026-07-10 개방 개편: 조회(로그 피드·오늘 카운터·에이전트 집계)는 비밀번호 입장 단계 없이
+     즉시 연동. 명령 전송(CHRO 실행큐)만 기존 CMD 비밀번호 게이트 유지(A-6 안전판정 반영). ===== */
   const _cmdOpenBtn=document.getElementById('cmd-open');
   if(_cmdOpenBtn) _cmdOpenBtn.addEventListener('click',promptCmdPw);
-  (function gateBoot(){
-    hideGateEl();          /* 무비번 자유 열람 */
-    startAmbient();        /* 이름 없는 연출 모드 */
+  (function officeBoot(){
+    loadRealData();
     let sp=''; try{ sp=sessionStorage.getItem('wp_cmd_pw')||''; }catch(e){}
     if(sp) cmdUnlock(sp,true);
   })();
@@ -2086,10 +2018,10 @@
 </script>
 
 <!-- ═══════════ 정직 배지(실가동 상태) — 자동화로그 실측 ═══════════
-     위 메인 스크립트의 db:"autolog"(SESSION_PW 게이트, CMD 잠금 해제 전엔 401)와 별개로,
-     structure.html과 동일한 공개 액션 autolog-list(비밀번호 불필요)를 써서 게이트 상태와
-     무관하게 항상 배지가 뜨게 한다. 기존 자동화로그 25초 폴링과 같은 주기로 갱신(편승).
-     매칭 규칙은 2026-07-09 라이브 자동화로그 617건 실측으로 확정(structure.html과 동일 규칙). -->
+     위 메인 스크립트는 2026-07-10부터 "office-autolog"(비밀번호 불필요, 실명 무마스킹, 4필드)로 로그
+     피드를 연동한다. 이 배지 위젯은 그와 별개로 structure.html과 동일한 공개 액션 autolog-list
+     (비밀번호 불필요, work·detail 이니셜 마스킹)를 써서 항상 배지가 뜨게 한다. 기존 자동화로그 25초
+     폴링과 같은 주기로 갱신(편승). 매칭 규칙은 2026-07-09 라이브 자동화로그 617건 실측으로 확정. -->
 <script>
 (function(){
   "use strict";
