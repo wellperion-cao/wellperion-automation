@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-"""정기 안전·법정 점검 달력 — 로더·검증·업무결재 연동(예행).
-SSOT = status/compliance_calendar.json. 정본은 JSON, 이 모듈은 소비자.
-gate.auto_workapproval=False(기본)면 '무엇을 만들지'만 반환/로그하고 업무·결재를 건드리지 않는다."""
+"""전사 일정 SSOT — 로더·검증·업무결재 연동(예행).
+SSOT = status/schedule_ssot.json (반복 의무·이벤트, type으로 종류 구분·현재=정기점검).
+정본은 JSON, 이 모듈은 소비자. gate.auto_workapproval=False(기본)면 '무엇을 만들지'만
+반환/로그하고 업무·결재를 건드리지 않는다."""
 import json
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-CAL_PATH = Path(__file__).resolve().parent.parent / "status" / "compliance_calendar.json"
+CAL_PATH = Path(__file__).resolve().parent.parent / "status" / "schedule_ssot.json"
 
 REQUIRED_ITEM_KEYS = ["id", "name", "category", "dept", "cycle", "cycle_confirmed",
                        "legal_basis", "last_done", "next_due"]

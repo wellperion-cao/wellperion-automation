@@ -1,0 +1,307 @@
+{
+  "_doc": "전사 일정 SSOT — 날짜가 정해진 반복 의무·이벤트(정기점검·계약갱신·정기행사 등)의 단일 출처. 각 부서 체계 페이지·전체 마스터가 렌더. type으로 일정 종류 구분(현재=정기점검). 경계: G1 항로=수시 할일 / 회원 예약달력=투어·상담 / 이 파일=반복 일정. 기한 도래분만 업무·결재로 자동 배(gate.auto_workapproval·기본OFF). 실제 날짜는 지어내지 않는다(미확인=빈칸+cycle_confirmed=false).",
+  "정본": "status/schedule_ssot.json (전사 일정 SSOT · COO 시우 소유 · 2026-07-10 GM 승인)",
+  "updated_at": "2026-07-10",
+  "types": {
+    "정기점검": {
+      "label": "정기 안전·법정 점검",
+      "desc": "주기마다 돌아오는 의무 안전·법정 점검(소방·전기·승강기·소독·교육 등)"
+    }
+  },
+  "depts": [
+    "시설부",
+    "지원부",
+    "주차관리부",
+    "운영부",
+    "파트너팀"
+  ],
+  "categories": {
+    "fire": {
+      "label": "소방",
+      "color": "#E4573D"
+    },
+    "elec": {
+      "label": "전기",
+      "color": "#D98A2E"
+    },
+    "lift": {
+      "label": "승강기·에스컬레이터",
+      "color": "#3B82C4"
+    },
+    "hyg": {
+      "label": "소독·방제",
+      "color": "#3FA167"
+    },
+    "water": {
+      "label": "수질·저수조·정화조",
+      "color": "#6BA84F"
+    },
+    "edu": {
+      "label": "법정교육",
+      "color": "#8B6FD6"
+    },
+    "safe": {
+      "label": "안전점검",
+      "color": "#C56B9E"
+    },
+    "gas": {
+      "label": "가스",
+      "color": "#C77D3A"
+    }
+  },
+  "gate": {
+    "auto_workapproval": false,
+    "lead_days": 30,
+    "_note": "기본 OFF(예행). true 전까지 compliance_calendar.py는 '무엇을 만들지' 로그만 남기고 업무·결재 SSOT를 건드리지 않는다. 라이브 발효=GM go, 역롤백=이 값 false 한 줄."
+  },
+  "status_enum": [
+    "scheduled",
+    "due_soon",
+    "overdue",
+    "done",
+    "tbd"
+  ],
+  "honesty_note": "cycle_confirmed=true = 법정 주기 확인됨(근거 기재). next_due 빈칸 = 실제 검사일 미확인(GM·실무 입력 대기). 지어낸 날짜 없음.",
+  "items": [
+    {
+      "id": "fac-fire-func",
+      "type": "정기점검",
+      "name": "소방 작동점검",
+      "category": "fire",
+      "dept": "시설부",
+      "cycle": "연 1회",
+      "cycle_confirmed": true,
+      "period_months": 12,
+      "legal_basis": "화재예방법(작동점검) · 시설부 규정 확인",
+      "assignee": "시설부 소장(이정헌)·과장(박호균) 실무",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "기존 시설부 규정에 '연 1회' 명시. 실제 검사일 입력 필요."
+    },
+    {
+      "id": "fac-fire-full",
+      "type": "정기점검",
+      "name": "소방 종합점검",
+      "category": "fire",
+      "dept": "시설부",
+      "cycle": "연 1회(특정소방대상물)",
+      "cycle_confirmed": false,
+      "period_months": 12,
+      "legal_basis": "화재예방법(종합점검) — 대상물 해당 여부 확인",
+      "assignee": "시설부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "종합점검 대상 여부·주기 확인 필요."
+    },
+    {
+      "id": "fac-elec",
+      "type": "정기점검",
+      "name": "전기안전점검",
+      "category": "elec",
+      "dept": "시설부",
+      "cycle": "3년 1회",
+      "cycle_confirmed": true,
+      "period_months": 36,
+      "legal_basis": "전기안전관리법 · 시설부 규정 확인",
+      "assignee": "시설부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "기존 시설부 규정에 '3년 1회' 명시. 최근 점검일 입력 필요."
+    },
+    {
+      "id": "fac-lift-official",
+      "type": "정기점검",
+      "name": "승강기 정기검사",
+      "category": "lift",
+      "dept": "시설부",
+      "cycle": "연 1회",
+      "cycle_confirmed": false,
+      "period_months": 12,
+      "legal_basis": "승강기 안전관리법 — 건물 승강기 유무부터 확인",
+      "assignee": "시설부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "건물에 승강기 설치 여부 확인 후 활성화."
+    },
+    {
+      "id": "fac-lift-self",
+      "type": "정기점검",
+      "name": "승강기 자체점검",
+      "category": "lift",
+      "dept": "시설부",
+      "cycle": "월 1회",
+      "cycle_confirmed": false,
+      "period_months": 1,
+      "legal_basis": "승강기 안전관리법(자체점검)",
+      "assignee": "시설부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "승강기 유무 확인 후."
+    },
+    {
+      "id": "fac-escalator",
+      "type": "정기점검",
+      "name": "에스컬레이터 정기검사",
+      "category": "lift",
+      "dept": "시설부",
+      "cycle": "연 1회",
+      "cycle_confirmed": false,
+      "period_months": 12,
+      "legal_basis": "승강기 안전관리법(에스컬레이터 포함)",
+      "assignee": "시설부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "센터 내 에스컬레이터 존재(규정 언급). 검사 주체·주기 확인 필요."
+    },
+    {
+      "id": "ops-facility-safety",
+      "type": "정기점검",
+      "name": "체육시설 안전점검(구청)",
+      "category": "safe",
+      "dept": "운영부",
+      "cycle": "문체부 고시 등급판정",
+      "cycle_confirmed": false,
+      "period_months": null,
+      "legal_basis": "체육시설법 · 문체부 안전점검 지침(고시)",
+      "assignee": "운영부·시설부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "체육시설 안전점검 지침 링크 시설부 규정에 존재. 대상·주기 확인 필요."
+    },
+    {
+      "id": "sup-disinfect",
+      "type": "정기점검",
+      "name": "소독(방역)",
+      "category": "hyg",
+      "dept": "지원부",
+      "cycle": "월 1회",
+      "cycle_confirmed": false,
+      "period_months": 1,
+      "legal_basis": "감염병예방법(다중이용시설 소독 의무) — 대상·주기 확인",
+      "assignee": "지원부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "다중이용시설 소독 의무 해당 여부·주기 확인 필요."
+    },
+    {
+      "id": "sup-pest",
+      "type": "정기점검",
+      "name": "방제(해충)",
+      "category": "hyg",
+      "dept": "지원부",
+      "cycle": "분기 1회",
+      "cycle_confirmed": false,
+      "period_months": 3,
+      "legal_basis": "위생 관리(계약 방제)",
+      "assignee": "지원부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "방제 작업 주간 청소에 존재. 정기 계약 주기 확인 필요."
+    },
+    {
+      "id": "fac-watertank",
+      "type": "정기점검",
+      "name": "저수조 청소·수질검사",
+      "category": "water",
+      "dept": "시설부",
+      "cycle": "반기 1회",
+      "cycle_confirmed": false,
+      "period_months": 6,
+      "legal_basis": "수도법(저수조 청소·수질검사)",
+      "assignee": "시설부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "저수조 사용 여부·주기 확인 필요."
+    },
+    {
+      "id": "fac-septic",
+      "type": "정기점검",
+      "name": "정화조 청소",
+      "category": "water",
+      "dept": "시설부",
+      "cycle": "연 1회",
+      "cycle_confirmed": false,
+      "period_months": 12,
+      "legal_basis": "하수도법(정화조 내부청소)",
+      "assignee": "시설부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "정화조 해당 여부·주기 확인 필요."
+    },
+    {
+      "id": "sup-legal-edu",
+      "type": "정기점검",
+      "name": "법정 의무교육(4대)",
+      "category": "edu",
+      "dept": "지원부",
+      "cycle": "연 1회 · 전직원",
+      "cycle_confirmed": false,
+      "period_months": 12,
+      "legal_basis": "성희롱예방·산업안전보건·개인정보보호·장애인식개선 교육",
+      "assignee": "지원부(HR)",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "연 1회 실시 의무. 최근 이수일 입력 필요."
+    },
+    {
+      "id": "fac-fire-manager-edu",
+      "type": "정기점검",
+      "name": "소방안전관리자 실무교육",
+      "category": "edu",
+      "dept": "시설부",
+      "cycle": "2년 1회",
+      "cycle_confirmed": false,
+      "period_months": 24,
+      "legal_basis": "화재예방법(소방안전관리자 실무교육)",
+      "assignee": "시설부 소방안전관리자",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "선임자 실무교육 주기 확인 필요."
+    },
+    {
+      "id": "fac-gas",
+      "type": "정기점검",
+      "name": "가스 안전점검",
+      "category": "gas",
+      "dept": "시설부",
+      "cycle": "연 1회",
+      "cycle_confirmed": false,
+      "period_months": 12,
+      "legal_basis": "도시가스사업법/액화석유가스법(사용시설 점검)",
+      "assignee": "시설부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "가스 사용시설 여부·점검 주기 확인 필요."
+    },
+    {
+      "id": "park-safety-cctv",
+      "type": "정기점검",
+      "name": "주차 안전·CCTV 점검",
+      "category": "safe",
+      "dept": "주차관리부",
+      "cycle": "월 1회",
+      "cycle_confirmed": false,
+      "period_months": 1,
+      "legal_basis": "주차장 안전관리 · CCTV 관리(내규)",
+      "assignee": "주차관리부",
+      "last_done": "",
+      "next_due": "",
+      "evidence": "",
+      "note": "매뉴얼에 안전·소방·CCTV 점검 존재. 정기 주기 확정 필요."
+    }
+  ]
+}

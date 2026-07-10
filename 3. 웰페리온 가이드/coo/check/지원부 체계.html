@@ -876,9 +876,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-6h8v2H8v-2zm0-3h8v2H8v-2z"/></svg>
         시트
       </a>
-      <a class="sheet-link" href="정기점검_달력.html?dept=지원부" style="color:var(--accent);border-color:rgba(183,159,138,0.35);">
+      <a class="sheet-link" href="전사_일정.html?dept=지원부" style="color:var(--accent);border-color:rgba(183,159,138,0.35);">
         <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zM7 12h5v5H7z"/></svg>
-        정기점검 달력
+        전사 일정
       </a>
       <a class="sheet-link" href="../../wellperion_guide(main).html">
         <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -4561,9 +4561,9 @@ async function sendTelegramRound(date,round,submitter,gender){
     const ctx={...it,slot:slot.slot,shift:slot.shift};
     if(itemRounds(ctx).indexOf(round)<0)return;
     total++; if(isChecked(it.id,round,gender))done++;
-    {const _v=issFor(it.id,round,gender); if(_v)issues.push(`  - ${it.name}: ${_v}`);}
+    {const _v=issFor(it.id,round,gender); if(_v)issues.push(`  - ${escapeHTML(it.name)}: ${escapeHTML(_v)}`);}
   })));
-  if(round==='close1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){ total++; if(isChecked(it.id,round,gender))done++; {const _v=issFor(it.id,round,gender); if(_v)issues.push(`  - ${it.name}: ${_v}`);} } });
+  if(round==='close1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){ total++; if(isChecked(it.id,round,gender))done++; {const _v=issFor(it.id,round,gender); if(_v)issues.push(`  - ${escapeHTML(it.name)}: ${escapeHTML(_v)}`);} } });
   const pct=total?Math.round(done/total*100):0;
   const link=encodeURI('https://wellperion-cao.github.io/wellperion-automation/coo/check/지원부 체계.html')+'?date='+date+'&g='+gender;   // 공백·한글 인코딩 → 텔레그램 링크 안 짤림(GM 2026-06-15)
   /* 근무자·소요시간 노출(GM 2026-06-29 시토): 점검자 외 근무자(근무조 드롭다운)·소요시간(시작~종료 타이머)도 알림에 표기. appendRoundSnapshot과 동일 계산. */
@@ -4571,9 +4571,10 @@ async function sendTelegramRound(date,round,submitter,gender){
   const _t=timerKeys(date,gender,round);
   const _dur=_timerDuration(STATE[_t.sk],STATE[_t.ek]);
   const _durTxt=(_dur!=null)?_dur+'분':'미측정';
-  let msg=`[지원부 체계 점검 ${rdef.name} ${rdef.time} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${submitter}\n근무자: ${duty||'-'}\n소요시간: ${_durTxt}\n완료: ${done}/${total} (${pct}%)`;
+  let msg=`[지원부 체계 점검 ${rdef.name} ${rdef.time} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${escapeHTML(submitter)}\n근무자: ${escapeHTML(duty)||'-'}\n소요시간: ${_durTxt}\n완료: ${done}/${total} (${pct}%)`;
   if(issues.length)msg+=`\n\n이슈 ${issues.length}건:\n${issues.join('\n')}`;
-  msg+=`\n\n점검 페이지: ${link}`;
+  /* 점검 페이지 URL → 클릭 가능한 하이퍼링크 '링크'로 표기(GM 2026-07-10 시토). 서버 sendMessage parse_mode:'HTML'과 짝. */
+  msg+=`\n\n점검 페이지: <a href="${escapeHTML(link)}">링크</a>`;
   try{
     await fetch(API_URL,{method:'POST',redirect:'follow',
       headers:{'Content-Type':'text/plain'},

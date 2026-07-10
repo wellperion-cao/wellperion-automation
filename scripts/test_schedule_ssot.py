@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""compliance_calendar 계약 테스트 — 정직성(지어낸 날짜 0)·판정·게이트 OFF 고정."""
+"""schedule_ssot 계약 테스트 — 정직성(지어낸 날짜 0)·판정·게이트 OFF 고정."""
 from datetime import date
-import compliance_calendar as C
+import schedule_ssot as C
 
 
 def test_ssot_valid():

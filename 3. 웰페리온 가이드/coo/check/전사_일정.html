@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>정기 안전·법정 점검 달력</title>
+<title>전사 일정 — 정기 안전·법정 점검</title>
 <style>
 :root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--blue:#5b9fd5;--purple:#a78bda}
 *{box-sizing:border-box}
@@ -71,12 +71,12 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-
 <div class="wrap">
   <div class="header-top">
     <div>
-      <h1>정기 안전·법정 점검 달력<span class="scope" id="scopeLabel"></span></h1>
-      <p class="sub">소방·전기·승강기·소독·법정교육 등 <b>주기마다 돌아오는 의무 점검</b>을 한눈에. 기한 도래 시 업무·결재로 자동 합류(게이트).</p>
+      <h1>전사 일정<span class="scope" id="scopeLabel"></span></h1>
+      <p class="sub">날짜가 정해진 <b>반복 의무·일정</b>의 전사 단일 출처. 현재 담긴 것 = <b>정기 안전·법정 점검</b>(소방·전기·승강기·소독·법정교육 등). 기한 도래 시 업무·결재로 자동 합류(게이트).</p>
     </div>
     <div class="sheet-links">
       <a class="sheet-link" href="../../wellperion_guide(main).html">🏠 웰페리온 ERP</a>
-      <a class="sheet-link" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/status/compliance_calendar.json" target="_blank" rel="noopener">📄 정본(SSOT)</a>
+      <a class="sheet-link" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/status/schedule_ssot.json" target="_blank" rel="noopener">📄 정본(SSOT)</a>
     </div>
   </div>
 
@@ -99,11 +99,11 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-
   <div id="vYear" class="yearwrap" hidden></div>
   <div class="legend" id="legend"></div>
 
-  <footer id="foot">정본 = status/compliance_calendar.json · 렌더 = 이 페이지(전 부서 공유·<code>?dept=</code> 필터) · 연동 = 업무·결재 SSOT(게이트)</footer>
+  <footer id="foot">정본 = status/schedule_ssot.json (전사 일정 SSOT) · 렌더 = 이 페이지(전 부서 공유·<code>?dept=</code> 필터) · 연동 = 업무·결재 SSOT(게이트)</footer>
 </div>
 
 <script>
-var CAL_URL="https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/compliance_calendar.json?cb="+Date.now();
+var CAL_URL="https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/schedule_ssot.json?cb="+Date.now();
 var DATA=null, CATS={}, LEAD=30, cur="전체", view="list";
 
 function qDept(){try{var m=(location.search.match(/[?&]dept=([^&]+)/));return m?decodeURIComponent(m[1]):"전체";}catch(e){return "전체";}}
