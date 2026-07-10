@@ -355,11 +355,52 @@ def _click_search_icon(main_hwnd: int) -> None:
     pyautogui.click(right - 112, top + 57)
 
 
+def _current_main_tab(main_hwnd: int) -> str:
+    """메인창이 지금 어느 탭('친구'/'채팅'/'더보기')인지 UIA로 판별(픽셀·문구 의존 없음).
+
+    실측(2026-07-10): 이 앱 헤더 텍스트는 UIA Text 컨트롤로 노출되지 않지만(검색 아이콘과
+    동일한 커스텀 렌더링 문제), 탭별로 내부 뷰 컨트롤 이름(window_text)이 명확히 갈린다 —
+    채팅탭="ChatRoomListView_*"·친구탭="ContactListView_*"·더보기탭="MoreView_*" 접두사로
+    항상 등장(라이브 3탭 순환 실측 확인). 반환: "chat"/"friends"/"more"/"unknown"."""
+    try:
+        win = Desktop(backend="uia").window(handle=main_hwnd)
+        names = [d.window_text() for d in win.descendants() if d.window_text()]
+    except Exception:
+        return "unknown"
+    if any(n.startswith("ChatRoomListView") for n in names):
+        return "chat"
+    if any(n.startswith("ContactListView") for n in names):
+        return "friends"
+    if any(n.startswith("MoreView") for n in names):
+        return "more"
+    return "unknown"
+
+
+def _ensure_chat_tab(main_hwnd: int, max_presses: int = 3) -> bool:
+    """메인창을 '채팅' 탭으로 강제 전환(GM PC가 부팅 후 '친구' 탭으로 뜨는 문제 대응 — INC 진단).
+
+    실측(2026-07-10): '친구' 탭 상태에서 방을 검색하면 채팅방이 아닌 사람(친구)을 찾아
+    방을 못 여는 사례가 확인돼, 검색 전에 반드시 '채팅' 탭인지 확인 후 강제 전환한다.
+    Ctrl+Tab = 탭 간 순환 이동(친구→채팅→더보기→친구, 3탭 순환 — 라이브 실측 확인.
+    "채팅으로 바로 가기"가 아니라 "다음 탭"이라 이미 채팅탭이면 누르면 안 됨). 그래서 매번
+    현재 탭을 먼저 확인(_current_main_tab)하고 채팅이 아닐 때만 1탭씩 순환시키며, 최대
+    max_presses(=탭 개수)까지만 시도해 무한루프를 막는다. 메인창엔 Escape를 보내지 않는다
+    (실측: 메인창에서 Escape는 트레이로 숨어버림 — 별도 확인된 함정)."""
+    for _ in range(max_presses):
+        if _current_main_tab(main_hwnd) == "chat":
+            return True
+        pyautogui.hotkey("ctrl", "tab")
+        time.sleep(0.5)
+    return _current_main_tab(main_hwnd) == "chat"
+
+
 def open_room_via_search(main_hwnd: int, room_name: str, timeout: float = 10.0):
     """카톡 메인창 검색으로 room_name을 찾아 자동으로 열고 그 채팅방 창을 반환한다.
 
     (2026-07-06 GM PC 라이브 실측 검증 완료 — "김남욱" 방을 의도적으로 닫은 뒤
     이 경로로 자동 재오픈 성공 확인.) 절차:
+      0) '채팅' 탭이 아니면 강제 전환(_ensure_chat_tab, 2026-07-10 추가 — '친구' 탭에서
+         검색하면 방을 못 찾던 문제 대응).
       1) 검색 Edit이 이미 활성 상태가 아니면 우상단 돋보기 아이콘 클릭으로 활성화
          (_click_search_icon) → _find_visible_search_edit로 재탐색.
       2) Edit 클릭해 포커스 확보 → 기존 텍스트는 End/Shift+Home/Delete로만 제거
@@ -375,6 +416,9 @@ def open_room_via_search(main_hwnd: int, room_name: str, timeout: float = 10.0):
          창에는 절대 진행하지 않는다(엉뚱한 방이 열려도 타임아웃으로 안전 실패)."""
     main_win = Desktop(backend="win32").window(handle=main_hwnd)
     focus_window(main_win, "카카오톡(메인창)")
+
+    if not _ensure_chat_tab(main_hwnd):
+        log(f"[{room_name}] '채팅' 탭 전환 실패(순환 3회 시도) — 검색 계속 시도(폴백)")
 
     edit_hwnd = _find_visible_search_edit(main_hwnd)
     if edit_hwnd is None:
