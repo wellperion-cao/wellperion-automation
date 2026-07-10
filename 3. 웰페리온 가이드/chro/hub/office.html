@@ -1490,9 +1490,19 @@
   const STICKY_MAX_SEC=90*60;  // 안전장치 — sticky busy가 90분 넘게 해소 안 되면 자동 idle 복귀
   const actorToAgent=actor=>{ const m=String(actor||'').match(/A-?([1-7])/); return m? ('A-'+m[1]) : null; };
   const todayStr=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
+  // 화면 노출 = 이름·작업명·시각까지만(PII 한계, 2026-07-10 개방 개편). 로그 텍스트에 연락처·주민번호·생년월일류
+  // 패턴이 실려 있어도 표시 직전 마스킹 — 오피스는 상세(r['상세']) 필드를 애초에 읽지 않지만, 작업명 자체에
+  // 섞여 들어올 가능성에 대비한 방어적 스크럽.
+  function scrubPII(s){
+    s=String(s||'');
+    s=s.replace(/\d{6}\s*-\s*[1-4]\d{6}/g,'[주민번호 비공개]');
+    s=s.replace(/01[016789]\s*-?\s*\d{3,4}\s*-?\s*\d{4}/g,'[연락처 비공개]');
+    s=s.replace(/\b(19|20)\d{2}[-.\/]\s?(0[1-9]|1[0-2])[-.\/]\s?(0[1-9]|[12]\d|3[01])\b/g,'[생년월일 비공개]');
+    return s;
+  }
   // busy(지속) 진입/유지 판정 — 결과 필드에 '진행' 포함 또는 작업 필드가 '착수'로 시작
   const isProgressRow=r=>{ const result=String(r['결과']||''), work=String(r['작업']||'').trim(); return result.indexOf('진행')>=0 || work.indexOf('착수')===0; };
-  function enqueueLog(rows,opts){ opts=opts||{}; rows.forEach(r=>{ const agent=actorToAgent(r['주체']); realQueue.push({ agent, text:String(r['작업']||'').slice(0,80), kind:String(r['결과']||'완료'), isLead:!agent, count:!!opts.count, progress:isProgressRow(r) }); }); }
+  function enqueueLog(rows,opts){ opts=opts||{}; rows.forEach(r=>{ const agent=actorToAgent(r['주체']); realQueue.push({ agent, text:scrubPII(r['작업']).slice(0,80), kind:String(r['결과']||'완료'), isLead:!agent, count:!!opts.count, progress:isProgressRow(r) }); }); }
 
   async function initAutolog(){
     let rows=[];
@@ -1513,11 +1523,11 @@
       const c=byId[a]; if(!c) return;
       const nowT=termNow();
       c.status='busy'; c.sticky=true; c.stickyStart=nowT; c.tStart=nowT; c.tDur=rand(2.2,4.0);
-      c.task=String(r['작업']||'').slice(0,80); c.exprEnd=0; c._count=false;
+      c.task=scrubPII(r['작업']).slice(0,80); c.exprEnd=0; c._count=false;
     });
     // 피드: 최신 3건 실제 로그
     logFeed.length=0;
-    rows.slice(0,3).forEach(r=>{ const a=actorToAgent(r['주체']); logFeed.push({ time:String(r['일시']).slice(11,16), id:(a||'팀장'), tag:(a&&byId[a]?byId[a].tag:''), text:String(r['작업']||'').slice(0,80), kind:String(r['결과']||''), color:(a&&byId[a]?byId[a].color:null) }); });
+    rows.slice(0,3).forEach(r=>{ const a=actorToAgent(r['주체']); logFeed.push({ time:String(r['일시']).slice(11,16), id:(a||'팀장'), tag:(a&&byId[a]?byId[a].tag:''), text:scrubPII(r['작업']).slice(0,80), kind:String(r['결과']||''), color:(a&&byId[a]?byId[a].color:null) }); });
     renderFeed();
     // 최근 12건 오래된→최신 재생(생동감) — 카운터는 실값이므로 count:false (이미 busy 복원된 에이전트는 assignReal이 갱신만 함)
     enqueueLog(rows.slice(0,12).reverse(), {count:false});
@@ -1630,6 +1640,15 @@
   // the processing log now lives in the bottom '팀장 · Claude 브리핑' feed panel (#lf-lines)
   const escHtml=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
   const logFeed=[];                    // newest first, keep last 3
+  // 진행중 로그 배지 세분화 — 착수/지속 진행은 '진행', 텍스트에 N/M 카운트가 실려 있으면 'N/M 진행'으로 표기
+  // (완료는 그대로 '완료', 팀장 브리핑은 '브리핑' — 기존 busy 지속상태 로직·CSS 클래스는 손대지 않음).
+  function kindLabel(e){
+    if(e.kind==='진행'){
+      const m=String(e.text).match(/(\d{1,4})\s*[\/／]\s*(\d{1,4})/);
+      if(m) return m[1]+'/'+m[2]+' 진행';
+    }
+    return e.kind;
+  }
   function renderFeed(){
     const wrap=document.getElementById('lf-lines'); if(!wrap) return;
     wrap.innerHTML='';
@@ -1643,7 +1662,7 @@
       row.innerHTML = `<span class="t">${e.time}</span>`+
         `<span class="ag">${sw}${ag}</span>`+
         `<span class="msg">${escHtml(e.text)}</span>`+
-        `<span class="k ${kCls}">${escHtml(e.kind)}</span>`;
+        `<span class="k ${kCls}">${escHtml(kindLabel(e))}</span>`;
       wrap.appendChild(row);
     });
   }
