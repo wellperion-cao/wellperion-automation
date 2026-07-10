@@ -28,11 +28,21 @@
     }
   }
   *{box-sizing:border-box}
-  .wrap{position:relative; width:100%; height:100vh; min-height:520px; overflow:hidden; background:var(--bg); font-family:var(--ui); color:var(--ink)}
+  html,body{margin:0; height:100%}
+  .wrap{position:relative; width:100%; height:100vh; min-height:520px; overflow:hidden; background:var(--bg); font-family:var(--ui); color:var(--ink); display:flex; flex-direction:column}
+
+  /* ===== layout — 좌: 사무실 씬(stage) / 우: 세로 정보 컬럼(sidebar) — 2026-07-10 가시성 개편.
+     모바일(≤880px)은 stage 위 · sidebar 아래로 자연 세로 스택(아래 미디어쿼리). ===== */
+  .office-grid{display:flex; flex:1 1 auto; min-height:0; width:100%}
+  .stage{position:relative; flex:1 1 62%; min-width:0; min-height:0; overflow:hidden}
+  .stage-topbar{position:absolute; inset:0 0 auto 0; pointer-events:none; padding:clamp(12px,2.4vw,26px)}
+  .sidebar{flex:0 0 clamp(320px,29vw,404px); min-width:0; height:100%; min-height:0; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:12px; padding:clamp(12px,1.8vw,20px); background:var(--panel); border-left:1px solid var(--panel-brd); -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px); scrollbar-width:thin; scrollbar-color:rgba(201,169,106,.4) transparent}
+  .sidebar::-webkit-scrollbar{width:7px}
+  .sidebar::-webkit-scrollbar-thumb{background:rgba(201,169,106,.35); border-radius:4px}
+
   canvas#scene{position:absolute; inset:0; width:100%; height:100%; display:block; outline:none}
   canvas#scene:focus-visible{box-shadow:inset 0 0 0 2px var(--brass-strong)}
 
-  .hud{position:absolute; inset:0; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:clamp(12px,2.4vw,26px)}
   .topbar{display:flex; justify-content:space-between; align-items:flex-start; gap:12px}
   .brand{display:flex; flex-direction:column; line-height:1}
   .wordmark{font-family:var(--serif); font-weight:700; letter-spacing:.20em; font-size:clamp(17px,2.7vw,26px); color:var(--ink)}
@@ -47,8 +57,6 @@
   .tgl{pointer-events:auto; cursor:pointer; border:1px solid var(--panel-brd); background:var(--panel); color:var(--ink); width:34px; height:34px; border-radius:50%; font-size:16px; display:grid; place-items:center; -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px); transition:transform .2s, border-color .2s}
   .tgl:hover{transform:rotate(18deg); border-color:var(--brass)}
   .tgl:focus-visible{outline:2px solid var(--brass-strong); outline-offset:2px}
-
-  .bottom{display:flex; flex-direction:column; gap:12px}
 
   /* 정직 배지(실가동 상태) — 자동화 6종의 "할 수 있다"와 "지금 진짜 돈다"를 분리 표시 */
   .hbstrip{display:flex; flex-wrap:wrap; align-items:center; gap:6px; pointer-events:none}
@@ -93,8 +101,14 @@
   .lf-row.dim2{opacity:.34}
   @keyframes lfin{from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none}}
 
-  .foot{position:absolute; left:50%; transform:translateX(-50%); bottom:6px; font-size:10.5px; color:var(--muted); letter-spacing:.03em; pointer-events:none; text-align:center; width:100%; padding:0 10px}
+  .foot{position:relative; flex:none; font-size:10.5px; color:var(--muted); letter-spacing:.03em; pointer-events:none; text-align:center; width:100%; padding:4px 10px 6px}
 
+  @media (max-width:880px){
+    .office-grid{flex-direction:column}
+    .stage{flex:0 0 auto; height:44vh; min-height:280px}
+    .sidebar{flex:1 1 auto; width:100%; height:auto; max-height:none; overflow-y:visible; border-left:none; border-top:1px solid var(--panel-brd)}
+    .wrap{height:auto; min-height:100vh; overflow-y:visible}
+  }
   @media (max-width:560px){
     .tally{max-width:100%; justify-content:flex-start}
     .bottom-row{flex-direction:column; align-items:flex-start; gap:10px}
@@ -109,14 +123,11 @@
     .lf-row.newest{animation:none}
   }
 
-  /* ===== CHRO 터미널 — 조회 전용 인터랙티브 명령창 (백엔드 미연결 · 페이지 내 데이터만) =====
-     하단 HUD 도크: 데스크톱 = 브리핑 피드 좌 + 터미널 우, 모바일 = 세로 스택.
+  /* ===== CHRO 터미널 — 오른쪽 사이드바 도크(sidebar 4번째 블록, 세로 배치).
      스크린은 양 테마 모두 다크(책상 위 단말기 컨셉) — 패널 테두리·포인트만 페이지 토큰과 동조. */
-  .dockrow{display:flex; align-items:flex-end; gap:12px; width:100%}
-  .dockrow>.leadfeed{flex:1 1 auto; min-width:0; width:auto}
   .term{
     --t-ink:#E9E1CC; --t-mut:#9B9283; --t-brass:#E4C27C; --t-sage:#7FC8A0; --t-err:#E8746A;
-    pointer-events:auto; flex:0 0 clamp(300px,34vw,412px); min-width:0;
+    pointer-events:auto; flex:none; width:100%; min-width:0;
     display:flex; flex-direction:column;
     background:rgba(13,16,22,.92); border:1px solid var(--panel-brd); border-radius:14px; overflow:hidden;
     -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px);
@@ -148,13 +159,18 @@
   .term-in{flex:1 1 auto; min-width:0; background:transparent; border:none; outline:none; color:#F0E8D2; font:inherit; font-size:12.5px; caret-color:#E8C877; padding:0}
   .term-in::placeholder{color:rgba(155,146,131,.5)}
   @media (max-width:880px){
-    .dockrow{flex-direction:column; align-items:stretch}
-    .term{flex:1 1 auto; width:100%}
     .term-out{height:clamp(110px,24vh,170px)}
   }
   @media (prefers-reduced-motion: reduce){
     .term-ghost{animation:none}
   }
+
+  /* ===== 캐릭터 호버 툴팁 (2026-07-10) — 이름·역할, 커서 근접 위치 ===== */
+  .char-tip{position:absolute; display:none; pointer-events:none; z-index:5; max-width:220px;
+    background:rgba(13,16,22,.94); color:#F0E8D2; border:1px solid rgba(201,169,106,.5); border-radius:9px;
+    padding:7px 10px; font-size:12px; line-height:1.42; box-shadow:0 6px 18px rgba(0,0,0,.28)}
+  :root[data-theme="light"] .char-tip{background:rgba(255,252,245,.97); color:#2A2318; border-color:rgba(140,108,44,.5)}
+  .char-tip b{color:var(--brass-strong); font-size:12.5px}
 </style>
 <style>
 #gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:var(--bg,#0E1116)}
@@ -170,22 +186,40 @@
 </head>
 <body>
 <div class="wrap">
-  <canvas id="scene" tabindex="0" role="img" aria-label="웰페리온 CHRO 인사팀 AI 오피스 아이소메트릭 뷰 — 팀장 Claude와 7개 에이전트가 넓은 회의 테이블에서 업무를 처리합니다. 상석 뒤 벽에는 급훈(매출·긍정·협동·사랑) 현판, 정면 벽에는 일정 게시판과 인사 스케줄 월력, 창문과 벽시계가 걸려 있습니다. 처리 로그는 화면 하단의 '팀장 · Claude 브리핑' 패널에 실시간 자동화 로그 피드로 표시되며, 팀장 캐릭터는 말풍선에 가려지지 않습니다."></canvas>
+  <div class="office-grid">
+    <div class="stage">
+      <canvas id="scene" tabindex="0" role="img" aria-label="웰페리온 CHRO 인사팀 AI 오피스 아이소메트릭 뷰 — 팀장 Claude와 7개 에이전트가 넓은 회의 테이블에서 업무를 처리합니다. 상석 뒤 벽에는 급훈(매출·긍정·협동·사랑·인사가 만사다) 현판, 정면 벽에는 일정 게시판과 인사 스케줄 월력, 창문과 벽시계가 걸려 있습니다. 처리 로그는 오른쪽 '팀장 · Claude 브리핑' 패널에 실시간 자동화 로그 피드로 표시되며, 팀장 캐릭터는 말풍선에 가려지지 않습니다. 각 캐릭터에 마우스를 올리면 이름과 역할이 표시됩니다."></canvas>
+      <div class="char-tip" id="charTip"></div>
 
-  <div class="hud">
-    <div class="topbar">
-      <div class="brand">
-        <div class="wordmark">WELLPERION<span class="dot">.</span></div>
-        <div class="sub">CHRO AI 오피스 · 인사 운영 허브</div>
-      </div>
-      <div class="status">
-        <div class="live"><span class="bulb"></span>LIVE</div>
-        <div class="clock" id="clock">00:00:00</div>
-        <button class="tgl" id="tgl" aria-label="라이트/다크 테마 전환" title="테마 전환">◐</button>
+      <div class="stage-topbar">
+        <div class="topbar">
+          <div class="brand">
+            <div class="wordmark">WELLPERION<span class="dot">.</span></div>
+            <div class="sub">CHRO AI 오피스 · 인사 운영 허브</div>
+          </div>
+          <div class="status">
+            <div class="live"><span class="bulb"></span>LIVE</div>
+            <div class="clock" id="clock">00:00:00</div>
+            <button class="tgl" id="tgl" aria-label="라이트/다크 테마 전환" title="테마 전환">◐</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="bottom">
+    <aside class="sidebar">
+      <div class="leadfeed" id="leadfeed">
+        <div class="lf-head"><span class="lf-dot"></span>팀장 · Claude 브리핑</div>
+        <div class="lf-lines" id="lf-lines"></div>
+      </div>
+
+      <div class="bottom-row">
+        <div class="counter">
+          <div class="lbl">오늘 처리</div>
+          <div class="num"><span id="today">0</span><span class="today-unit">건</span></div>
+        </div>
+        <div class="tally" id="tally"></div>
+      </div>
+
       <div class="hbstrip" id="hbStrip" title="자동화 실가동 상태 — 자동화로그 실측(공개 열람) 기준">
         <span class="hb-title">실가동</span>
         <span class="hbchip" id="hbc-sweep"><span class="hb-dot"></span><span class="hb-nm">정합성스윕</span><span class="hb-st">…</span></span>
@@ -195,40 +229,27 @@
         <span class="hbchip" id="hbc-briefing"><span class="hb-dot"></span><span class="hb-nm">아침브리핑</span><span class="hb-st">…</span></span>
         <span class="hbchip" id="hbc-cmd"><span class="hb-dot"></span><span class="hb-nm">CMD큐</span><span class="hb-st">…</span></span>
       </div>
-      <div class="bottom-row">
-        <div class="counter">
-          <div class="lbl">오늘 처리</div>
-          <div class="num"><span id="today">0</span><span class="today-unit">건</span></div>
+
+      <div class="term" id="term">
+        <div class="term-head">
+          <span class="term-dot"></span>
+          <span class="term-title">CHRO 터미널</span>
+          <span class="term-badge" id="term-badge">조회·명령 접수 공개</span>
+          <button class="term-tgl" id="term-tgl" type="button" aria-expanded="true" aria-controls="term-body" title="터미널 접기/펼치기" style="margin-left:auto">▾</button>
         </div>
-        <div class="tally" id="tally"></div>
-      </div>
-      <div class="dockrow">
-        <div class="leadfeed" id="leadfeed">
-          <div class="lf-head"><span class="lf-dot"></span>팀장 · Claude 브리핑</div>
-          <div class="lf-lines" id="lf-lines"></div>
-        </div>
-        <div class="term" id="term">
-          <div class="term-head">
-            <span class="term-dot"></span>
-            <span class="term-title">CHRO 터미널</span>
-            <span class="term-badge" id="term-badge">조회 공개</span>
-            <button class="term-tgl" id="cmd-open" type="button" title="CMD 열기 — 명령 전송(비밀번호 필요, 조회는 이미 개방됨)" style="margin-left:auto">🔒 CMD 열기</button>
-            <button class="term-tgl" id="term-tgl" type="button" aria-expanded="true" aria-controls="term-body" title="터미널 접기/펼치기">▾</button>
-          </div>
-          <div class="term-body" id="term-body">
-            <div class="term-out" id="term-out" role="log" aria-live="polite" aria-label="터미널 출력"></div>
-            <div class="term-line" id="term-line">
-              <span class="term-ps">chro&gt;</span>
-              <span class="term-ghost" id="term-ghost" aria-hidden="true"></span>
-              <input class="term-in" id="term-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" aria-label="CHRO 터미널 명령 입력 — help 입력 시 명령 목록" placeholder="help">
-            </div>
+        <div class="term-body" id="term-body">
+          <div class="term-out" id="term-out" role="log" aria-live="polite" aria-label="터미널 출력"></div>
+          <div class="term-line" id="term-line">
+            <span class="term-ps">chro&gt;</span>
+            <span class="term-ghost" id="term-ghost" aria-hidden="true"></span>
+            <input class="term-in" id="term-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" aria-label="CHRO 터미널 명령 입력 — help 입력 시 명령 목록, 그 외 텍스트는 비밀번호 없이 CHRO 실행큐로 접수" placeholder="help">
           </div>
         </div>
       </div>
-    </div>
+    </aside>
   </div>
 
-  <div class="foot">처리 로그 피드·오늘 카운터·에이전트 집계 = 실시간 자동화 로그 공개 연동(비밀번호 불필요) · 벽면 달력·일정판은 참고용 표시(별도 데이터 미연동)</div>
+  <div class="foot">처리 로그 피드·오늘 카운터·에이전트 집계 = 실시간 자동화 로그 공개 연동(비밀번호 불필요) · CMD 명령 접수도 비밀번호 없이 가능(실행은 CHRO 세션 승인 후) · 벽면 달력·일정판은 참고용 표시(별도 데이터 미연동)</div>
 </div>
 
 <script>
@@ -246,9 +267,11 @@
   const WALL_H=3.6;                               // taller walls to carry 급훈 + 월력 + 오늘 일정 signage
 
   /* ---------- palettes ---------- */
+  // 2026-07-10: A-2·A-6이 둘 다 흐린 갈색 계열이라 한눈에 구분이 안 됨 — A-2는 따뜻한 앰버로,
+  // A-6은 와인빛 버건디로 벌려 파스텔 톤 안에서도 확실히 대비되게 조정(나머지 5색은 기존 유지).
   const AGENT_COLORS={
-    'A-1':'#5B7FB0', 'A-2':'#B0703E', 'A-3':'#4E9E7C', 'A-4':'#A6863E',
-    'A-5':'#7A6DB4', 'A-6':'#C0603E', 'A-7':'#3E9AA6'
+    'A-1':'#5B7FB0', 'A-2':'#C2823C', 'A-3':'#4E9E7C', 'A-4':'#A6863E',
+    'A-5':'#7A6DB4', 'A-6':'#9C4A5E', 'A-7':'#3E9AA6'
   };
   const PAL={
     dark:{
@@ -371,14 +394,15 @@
   //   A-3 직원담당: 여 · 포니테일 · 체크리스트 두드림(pat)   A-4 평가: 남 · 단정 가르마+안경 · 안경 고쳐쓰기(adjust)
   //   A-5 배포: 여 · 작업번 · 빠른 커밋 타이핑(commit)       A-6 감사: 남 · 짧은 웨이브 · 돋보기 점검(inspect)
   //   A-7 시스템효율: 여 · 롱웨이브 · 화이트보드 응시(point)
+  // hairColor — 캐릭터별 확실히 다른 헤어색(2026-07-10 추가). 미지정(팀장)은 테마 기본 P.hair 유지.
   const agents=[
-    {id:'A-1', tag:'이력서',    gx:2.2,  gy:2.4, face:'y+', gender:'f', hairStyle:'bob',      personaBeh:'sift'},
-    {id:'A-2', tag:'채용',      gx:4.7,  gy:2.4, face:'y+', gender:'m', hairStyle:'sweep',    personaBeh:'call'},
-    {id:'A-3', tag:'직원담당',   gx:7.2,  gy:2.4, face:'y+', gender:'f', hairStyle:'ponytail', personaBeh:'pat'},
-    {id:'A-4', tag:'평가',      gx:9.7,  gy:2.4, face:'y+', gender:'m', hairStyle:'part',     personaBeh:'adjust', accessory:'glasses'},
-    {id:'A-5', tag:'배포',      gx:3.45, gy:5.5, face:'y-', gender:'f', hairStyle:'bun',      personaBeh:'commit'},
-    {id:'A-6', tag:'감사',      gx:5.95, gy:5.5, face:'y-', gender:'m', hairStyle:'wave',     personaBeh:'inspect'},
-    {id:'A-7', tag:'시스템효율', gx:8.45, gy:5.5, face:'y-', gender:'f', hairStyle:'longwave', personaBeh:'point'}
+    {id:'A-1', tag:'이력서',    gx:2.2,  gy:2.4, face:'y+', gender:'f', hairStyle:'bob',      personaBeh:'sift',   hairColor:'#3E2A1E'},
+    {id:'A-2', tag:'채용',      gx:4.7,  gy:2.4, face:'y+', gender:'m', hairStyle:'sweep',    personaBeh:'call',   hairColor:'#221F1C', accessory:'headset'},
+    {id:'A-3', tag:'직원담당',   gx:7.2,  gy:2.4, face:'y+', gender:'f', hairStyle:'ponytail', personaBeh:'pat',    hairColor:'#7A4326'},
+    {id:'A-4', tag:'평가',      gx:9.7,  gy:2.4, face:'y+', gender:'m', hairStyle:'part',     personaBeh:'adjust', hairColor:'#5B5750', accessory:'glasses'},
+    {id:'A-5', tag:'배포',      gx:3.45, gy:5.5, face:'y-', gender:'f', hairStyle:'bun',      personaBeh:'commit', hairColor:'#8C5A2E'},
+    {id:'A-6', tag:'감사',      gx:5.95, gy:5.5, face:'y-', gender:'m', hairStyle:'wave',     personaBeh:'inspect',hairColor:'#26313D'},
+    {id:'A-7', tag:'시스템효율', gx:8.45, gy:5.5, face:'y-', gender:'f', hairStyle:'longwave', personaBeh:'point',  hairColor:'#B8862E'}
   ];
   // per-character personality — distinct idle facial-expression bias + a staggered starting behavior
   const EXPR_IDLE=[ ['calm','smile','ponder'], ['smile','grin','calm'], ['smile','content','wink'],
@@ -465,27 +489,28 @@
         yaw = m? Math.sin(t*0.6+ph)*0.60 : 0.45; break;
       case 'nod':                                           // gentle approving nod (lead)
         nodF = m? Math.max(0,Math.sin(t*3+ph))*0.16 : 0.08; break;
-      /* ---- persona signature idles (2026-07-10) ---- */
+      /* ---- persona signature idles (2026-07-10, amplitude boosted 2026-07-10 2차 — "미세 떨림 아님" 요구 반영) ---- */
       case 'sift':                                          // A-1 — quickly flips through resume sheets
-        A=armObj(0.20,0.30,0.40, 0.05+m*Math.sin(t*5+ph)*0.05);
-        B=armObj(0.20,0.30,0.40, 0.05+m*Math.sin(t*5+ph+Math.PI)*0.05);
-        nodF=0.16; prop='paper'; break;
-      case 'call':                                          // A-2 — phone raised to the ear
-        A=armObj(0.10,0.16,0.18, 0.46); nodF=0.05; tilt=0.06; prop='phone'; break;
-      case 'pat':                                           // A-3 — taps a checklist rhythmically
-        A=armObj(0.28,0.30,0.42, 0.03+(m? Math.max(0,Math.sin(t*4+ph)) : 0.5)*0.05);
-        nodF=0.06; prop='paper'; break;
+        A=armObj(0.20,0.30,0.40, 0.08+m*Math.sin(t*5+ph)*0.08);
+        B=armObj(0.20,0.30,0.40, 0.08+m*Math.sin(t*5+ph+Math.PI)*0.08);
+        nodF=0.22; prop='paper'; break;
+      case 'call':                                          // A-2 — headset mic hand adjusts near the ear (헤드셋은 상시 착용, 여기선 손짓만)
+        A=armObj(0.12,0.18,0.20, 0.50); nodF=0.08; tilt=0.10; break;
+      case 'pat':                                           // A-3 — taps a clipboard rhythmically
+        A=armObj(0.28,0.30,0.42, 0.03+(m? Math.max(0,Math.sin(t*4+ph)) : 0.5)*0.09);
+        nodF=0.10; prop='paper'; break;
       case 'adjust':                                        // A-4 — pushes glasses up the nose
-        A=armObj(0.08,0.14,0.16, (m? Math.max(0,Math.sin(t*2.2+ph)) : 0.7)*0.42);
-        nodF=0.04; break;
+        A=armObj(0.08,0.14,0.16, (m? Math.max(0,Math.sin(t*2.2+ph)) : 0.7)*0.52);
+        nodF=0.07; break;
       case 'commit':                                        // A-5 — brisk double-tap keystrokes
-        A=armObj(0.30,0.27,0.47, m*Math.sin(t*10+ph)*0.08);
-        B=armObj(0.30,0.27,0.47, m*Math.sin(t*10+ph+Math.PI)*0.08);
-        nodF=0.05; break;
-      case 'inspect':                                       // A-6 — holds a magnifier up, scanning
-        A=armObj(0.20,0.28,0.36, 0.40); nodF=0.10; prop='magnify'; break;
+        A=armObj(0.30,0.27,0.47, m*Math.sin(t*10+ph)*0.13);
+        B=armObj(0.30,0.27,0.47, m*Math.sin(t*10+ph+Math.PI)*0.13);
+        nodF=0.08; break;
+      case 'inspect':                                       // A-6 — holds a magnifier up, scanning side to side
+        A=armObj(0.20,0.28,0.36, 0.40); nodF=0.14; prop='magnify';
+        yaw=(m? Math.sin(t*1.4+ph)*0.18 : 0.12); break;
       case 'point':                                         // A-7 — gazes toward the whiteboard
-        A=armObj(0.30,0.30,0.50, 0.30); yaw=(m? Math.sin(t*0.5+ph)*0.10 : 0)-0.30; nodF=0.02; break;
+        A=armObj(0.30,0.30,0.50, 0.30); yaw=(m? Math.sin(t*0.5+ph)*0.16 : 0)-0.30; nodF=0.05; break;
       case 'rest': default: break;
     }
     return {A:A,B:B,nodF:nodF,tilt:tilt,yaw:yaw,prop:prop,propSide:propSide};
@@ -562,7 +587,7 @@
     const shirt = c.lead?P.lead:c.color;        // jacket / shirt
     const shirtHi = shadeHex(shirt,1.10);
     const tieCol = c.lead?P.leadTie:shadeHex(c.color,0.60);   // lead gold tie / agent uniform accent
-    const skin=P.skin, hair=P.hair;
+    const skin=P.skin, hair=c.hairColor||P.hair;   // 2026-07-10: 에이전트별 헤어색(팀장은 테마 기본 유지)
 
     shadowEllipse(cx,cy, 0.72*s);               // AO 바닥 타원 그림자
 
@@ -747,6 +772,33 @@
     limb(mx+0.17, my+0.06, 1.06, mx+0.17, my+0.06, 1.14, 0.05*TW, shadeHex(P.mug,0.9)); // handle
     drawSteam(mx+0.08, my+0.08, 1.1, t, (c.phase||0)*1.7);
   }
+  // 페르소나 전용 데스크 소품 — 클립보드(A-3)·노트북(A-5)·돋보기(A-6, 상시 거치)·차트카드(A-7). 2026-07-10 추가.
+  function drawPersonaProp(c){
+    const a=propAnchor(c);
+    if(c.id==='A-3'){                                    // 클립보드 — 브라스 클립 + 체크리스트 줄
+      const px=a.px+0.50, py=a.py-0.30;
+      box(px, py, 1.0, 0.045,0.28,0.34, '#E7DFCD', 1.15);
+      box(px+0.005, py+0.10, 1.30, 0.03,0.09,0.05, P.brass, 1.3);
+      box(px+0.01, py+0.05, 1.24, 0.02,0.20,0.012, shadeHex('#8C8478',0.9), 1.0);
+      box(px+0.01, py+0.11, 1.17, 0.02,0.16,0.012, shadeHex('#8C8478',0.9), 1.0);
+    } else if(c.id==='A-5'){                             // 노트북 — 얇은 키보드 데크 + 세운 화면
+      const px=a.px-0.60, py=a.py-0.30;
+      box(px, py, 1.0, 0.30,0.22,0.018, P.cabinet2, 1.1);
+      box(px, py, 1.02, 0.30,0.018,0.20, shadeHex(P.monOff,1.15), 0.98);
+    } else if(c.id==='A-6'){                             // 돋보기 — 데스크에 상시 거치(inspect 행동 중이 아닐 때도 보임)
+      const px=a.px-0.60, py=a.py-0.30;
+      const rp=project(px+0.09, py+0.09, 1.06);
+      ctx.save(); ctx.beginPath(); ctx.arc(rp.x,rp.y,0.075*TW,0,Math.PI*2);
+      ctx.lineWidth=Math.max(1.3,0.018*TW); ctx.strokeStyle=P.brass; ctx.stroke(); ctx.restore();
+      limb(px,py,1.02, px+0.16,py+0.16,0.98, 0.026*TW, P.brass, 1.0);
+    } else if(c.id==='A-7'){                             // 차트카드 — 작은 막대그래프 카드
+      const px=a.px+0.50, py=a.py-0.30;
+      box(px, py, 1.0, 0.24,0.03,0.26, '#FDFBF5', 1.14);
+      box(px+0.03, py+0.005, 1.03, 0.03,0.02,0.08, P.sage, 1.2);
+      box(px+0.09, py+0.005, 1.03, 0.03,0.02,0.13, P.brass, 1.2);
+      box(px+0.15, py+0.005, 1.03, 0.03,0.02,0.18, shadeHex('#7A6DB4',1.05), 1.2);
+    }
+  }
   // credenza + bookshelf (premium storage against a wall)
   function drawCredenza(gx,gy){
     shadowEllipse(gx+1.0,gy+0.35,1.6);
@@ -881,12 +933,20 @@
     ctx.lineWidth=Math.max(1,BW*0.006); ctx.strokeStyle=hexA(P.leadTie,0.85);
     roundRect(BW*0.045,BH*0.12,BW*0.91,BH*0.76,BH*0.10); ctx.stroke();
     // 급훈 title label removed by request — the four words now breathe across the full frame
-    let mf=BH*0.60;
+    // 2026-07-10: 매니저 지시로 같은 액자 안에 "인사가 만사다!" 두 번째 줄 추가(두 줄 배분으로 축소).
+    let mf=BH*0.42;
     const words='매출!  긍정!  협동!  사랑!';
     ctx.font=`800 ${mf}px Georgia,'Times New Roman',serif`;
     while(ctx.measureText(words).width>BW*0.86 && mf>8){ mf-=1; ctx.font=`800 ${mf}px Georgia,'Times New Roman',serif`; }
     ctx.fillStyle=lightT? '#241C0B' : '#F4E6C2';
-    ctx.fillText(words, BW/2, BH*0.52);
+    ctx.fillText(words, BW/2, BH*0.38);
+
+    let mf2=BH*0.32;
+    const words2='인사가 만사다!';
+    ctx.font=`800 ${mf2}px ${KFONT}`;
+    while(ctx.measureText(words2).width>BW*0.66 && mf2>7){ mf2-=1; ctx.font=`800 ${mf2}px ${KFONT}`; }
+    ctx.fillStyle=lightT? hexA('#5C3B14',0.92) : hexA(P.brass,0.96);
+    ctx.fillText(words2, BW/2, BH*0.70);
     ctx.textAlign='center'; ctx.textBaseline='middle';
   }
 
@@ -1208,6 +1268,7 @@
       const a=propAnchor(c); const pd=a.px+a.py;
       push(pd-0.03, 1, (function(c){return function(){ drawPlate(c); };})(c));
       push(pd-0.01, 1, (function(c){return function(){ drawDeskExtras(c,t); };})(c));
+      push(pd-0.005, 1, (function(c){return function(){ drawPersonaProp(c); };})(c));
       push(pd, 2, (function(c){return function(){ drawMonitor(c,t); };})(c));
       push(pd+0.02, 3, (function(c){return function(){ drawLamp(c); };})(c));
       push(c.gx+c.gy, 6, (function(c){return function(){ drawChar(c,t); };})(c));
@@ -1426,6 +1487,18 @@
       ctx.beginPath(); ctx.arc(cx0-dx, eyeY, es*0.62, 0, Math.PI*2); ctx.stroke();
       ctx.beginPath(); ctx.arc(cx0+dx, eyeY, es*0.62, 0, Math.PI*2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(cx0-dx+es*0.62, eyeY); ctx.lineTo(cx0+dx-es*0.62, eyeY); ctx.stroke();   // bridge
+    }
+    if(c.accessory==='headset'){                       // A-2 — 상시 착용 헤드셋(밴드 + 이어컵 + 마이크붐), 2026-07-10
+      const hcol=hexA('#2A2D33',0.94), micTip=lightT? '#4E9E77':'#7FC8A0';
+      ctx.strokeStyle=hcol; ctx.fillStyle=hcol;
+      ctx.lineWidth=Math.max(1,es*0.36);
+      ctx.beginPath(); ctx.arc(cx0, eyeY-es*1.55, es*1.62, 0.90*Math.PI, 2.10*Math.PI); ctx.stroke();       // headband arc
+      ctx.beginPath(); ctx.arc(cx0+dx*1.4, eyeY+es*0.15, es*0.44, 0, Math.PI*2); ctx.fill();                // ear cup
+      ctx.lineWidth=Math.max(1,es*0.22);
+      ctx.beginPath(); ctx.moveTo(cx0+dx*1.4, eyeY+es*0.46);
+      ctx.quadraticCurveTo(cx0+dx*1.15, eyeY+es*1.45, cx0+dx*0.32, my+es*0.34);
+      ctx.stroke();                                                                                          // mic boom
+      ctx.beginPath(); ctx.arc(cx0+dx*0.32, my+es*0.34, es*0.16, 0, Math.PI*2); ctx.fillStyle=micTip; ctx.fill(); // mic tip
     }
     ctx.restore();
   }
@@ -1803,7 +1876,7 @@
 
   const termCmds={
     help:function(){
-      tLine('CHRO 터미널 — 조회는 자유 열람(실시간 로그·집계) · 명령 전송은 "CMD 열기"(비밀번호) 후','tl-h');
+      tLine('CHRO 터미널 — 조회·명령 접수 모두 비밀번호 없이 바로 가능(실행은 CHRO 세션 승인 후)','tl-h');
       tLine('데이터 기준: '+REAL_SCHEDULE.asOf,'tl-mut');
       tLine('  help · ? · 도움말     명령 목록');
       tLine('  일정 · 오늘 · today   오늘 일정 보드');
@@ -1890,10 +1963,11 @@
 
   
   /* ===== Pages판 전용: 백엔드 API + 실데이터 로더 + CHRO 세션 명령 전송
-     (조회=office-autolog 무비번 공개 통로 / 명령 전송=cmd-push·cmd-status, CMD_PASSWORD 유지 —
-     2026-07-10 A-6 병렬감사 NO-GO 반영: 무비번 명령 접수는 CHRO 실행큐 주입 위험이라 철회, 조회만 개방) ===== */
+     (조회=office-autolog 무비번 공개 통로 / 명령 접수=office-cmd-push 무비번 공개 통로, 서버측 스팸가드 내장 —
+     2026-07-10 2차 개편: 매니저 결정으로 CMD 입력창 비밀번호 단계 완전 제거. 회수(cmd-pull)·결과기록(cmd-result)·
+     실행은 여전히 admin 비밀번호 + "오피스큐" 세션 승인 게이트 뒤에 있으므로 접수만 열려도 실행 안전판은 그대로.
+     기존 비번 경로(cmd-push+adminPassword)는 무변경 유지 — office.html만 새 공개 액션으로 갈아탐.) ===== */
   const NOTION_FN='https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec';
-  let SESSION_PW='';
   async function api(body){
     const r=await fetch(NOTION_FN,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
     let d={}; try{ d=await r.json(); }catch(e){} d.__status=r.status; return d;
@@ -1917,55 +1991,24 @@
     tLine('오피스 개방 — 로그 피드·오늘 카운터·에이전트 집계가 실시간 자동화 로그(공개)로 연동됩니다','tl-h'); tScroll();
     initAutolog();
   }
+  // 명령 접수 — 비밀번호 없이 즉시 office-cmd-push. 실행/응답은 세션 "오피스큐" 승인 절차(별도)이므로
+  // 여기서는 접수 확인(#id·대기 순번)만 표시하고 폴링·대기하지 않는다(이전 admin 세션 폴링 흐름 폐기).
   async function termRemote(raw){
-    if(!SESSION_PW){ tLine('명령 전송은 "CMD 열기"(비밀번호) 후 이용할 수 있어요 — 조회(help 등)는 이미 가능합니다','tl-mut'); tScroll(); return; }
-    tLine('→ CHRO 세션으로 전송 중…','tl-mut'); tScroll();
-    let res=null; try{ res=await api({action:'cmd-push',adminPassword:SESSION_PW,text:raw}); }catch(e){}
-    if(!res||!res.ok){ tLine('전송 실패: '+((res&&(res.message||res.error))||'네트워크 오류'),'tl-err'); tScroll(); return; }
-    const id=res.id;
-    tLine('→ 전송됨 (#'+id+') — CHRO 응답 대기…','tl-mut'); tScroll();
-    let waited=0, deliveredShown=false;
-    const iv=setInterval(async ()=>{
-      waited+=5;
-      let st=null; try{ st=await api({action:'cmd-status',adminPassword:SESSION_PW,id:id}); }catch(e){}
-      if(st&&st.ok){
-        if(st.status==='delivered'&&!deliveredShown){ deliveredShown=true; tLine('… CHRO가 수신했어요, 처리 중…','tl-mut'); tScroll(); }
-        if(st.status==='done'){
-          clearInterval(iv);
-          tLine('CHRO 응답 (#'+id+'):','tl-h');
-          String(st.result||'(빈 응답)').split('\n').forEach(l=>tLine('  '+l));
-          tScroll(); return;
-        }
-      }
-      if(waited>=300){ clearInterval(iv); tLine('응답 대기 시간 초과 — CHRO 세션이 꺼져 있을 수 있어요. 명령(#'+id+')은 큐에 저장됐고 다음 세션이 처리합니다.','tl-mut'); tScroll(); }
-    },5000);
+    tLine('→ 접수 중…','tl-mut'); tScroll();
+    let res=null; try{ res=await api({action:'office-cmd-push',text:raw}); }catch(e){}
+    if(!res||!res.ok){ tLine('접수 실패: '+((res&&(res.message||res.error))||'네트워크 오류'),'tl-err'); tScroll(); return; }
+    tLine('접수됨 (#'+res.id+', 대기 '+(res.position||1)+'번) — 처리는 CHRO 세션 승인("오피스큐") 후 진행됩니다','tl-h'); tScroll();
   }
 
-  /* ===== CMD 연결 상태 — 2026-07-10 개방 개편: 조회(로그 피드·오늘 카운터·에이전트 집계)는 비밀번호 없이
-     즉시 연동(office-autolog). CHRO 실행큐로의 "명령 전송"만은 기존 CMD_PASSWORD 게이트를 그대로 유지한다
-     (A-6 병렬감사 NO-GO — 무비번 명령 접수는 실행큐 주입 위험이라 철회, 관리자 액션 무손상 원칙 준수). ===== */
-  let CMD_UNLOCKED=false, awaitingCmdPw=false, ambientOn=false;
+  /* ===== 앰비언트 피드 — 실 로그가 없을 때 대기실 분위기용 표시 문구(백엔드 미연결, 페이지 내 데이터만) ===== */
+  let ambientOn=false;
   const AMBIENT=[{id:'A-1',t:'이력서 한 장씩 다시 확인'},{id:'A-6',t:'숫자 하나하나 대조 중'},{id:'A-2',t:'지원자와 일정 통화 조율'},{id:'A-3',t:'이번 주 체크인 리스트 확인'},{id:'A-5',t:'배포 막바지 점검'},{id:'A-4',t:'평가 기준 다시 짚어보기'},{id:'A-7',t:'흐름 막히는 지점 분석'},{id:'A-1',t:'서류 평가 재검토'},{id:'A-6',t:'감사 대기 건 점검'}];
-  function ambientFeed(){ if(!ambientOn||CMD_UNLOCKED||realQueue.length) return; const a=AMBIENT[(Math.random()*AMBIENT.length)|0]; realQueue.push({agent:a.id,text:a.t,kind:'진행',isLead:false,count:false}); }
-  function promptCmdPw(){ if(CMD_UNLOCKED){ tLine('이미 연결됨','tl-mut'); tScroll(); return; } awaitingCmdPw=true; tIn.type='password'; tIn.placeholder='CMD 비밀번호'; tLine('CMD 비밀번호를 입력하고 Enter','tl-mut'); tScroll(); tIn.focus(); }
-  async function cmdUnlock(pw,silent){
-    if(!pw||!String(pw).trim()){ if(!silent){ tLine('비밀번호를 입력해 주세요','tl-err'); tScroll(); } return false; }
-    let data=null; try{ data=await api({db:'autolog',password:pw}); }catch(e){}
-    const ok=data&&data.ok&&(data.role==='cmd'||data.role==='admin');
-    if(!ok){ try{sessionStorage.removeItem('wp_cmd_pw');}catch(e){} if(!silent){ tLine('CMD 비밀번호가 올바르지 않습니다','tl-err'); tScroll(); } return false; }
-    SESSION_PW=pw; CMD_UNLOCKED=true;
-    try{sessionStorage.setItem('wp_cmd_pw',pw);}catch(e){}
-    const badge=document.getElementById('term-badge'); if(badge) badge.textContent='● 명령 연결됨';
-    const ob=document.getElementById('cmd-open'); if(ob) ob.style.display='none';
-    tLine('CMD 잠금 해제 — 이제 명령이 CHRO 세션으로 전달됩니다(조회는 이미 연동돼 있었습니다)','tl-h'); tScroll();
-    return true;
-  }
+  function ambientFeed(){ if(!ambientOn||realQueue.length) return; const a=AMBIENT[(Math.random()*AMBIENT.length)|0]; realQueue.push({agent:a.id,text:a.t,kind:'진행',isLead:false,count:false}); }
   function termExec(raw){
-    if(awaitingCmdPw){ awaitingCmdPw=false; tIn.type='text'; tIn.placeholder='help'; cmdUnlock(raw,false); return; }
     tLine('chro> '+raw,'tl-cmd');
     const parts=raw.split(/\s+/);
     const key=(parts[0]||'').toLowerCase();
-    if(key==='cmd'||key==='열기'||key==='unlock'){ promptCmdPw(); tScroll(); return; }
+    if(key==='cmd'||key==='열기'||key==='unlock'){ tLine('CMD는 이미 열려 있어요 — 바로 명령을 입력해 보내면 접수됩니다','tl-mut'); tScroll(); return; }
     const cmd=TERM_ALIAS[key];
     if(cmd && termCmds[cmd]){
       termCmds[cmd](parts.slice(1).join(' '));
@@ -2000,17 +2043,43 @@
     tTgl.setAttribute('aria-expanded',String(!closed));
     tTgl.textContent=closed?'▴':'▾';
   });
-  tLine('CHRO 터미널 — 조회는 자유 열람(실시간 로그·집계) · 명령 전송은 "CMD 열기"(비밀번호) · help','tl-mut');
+  tLine('CHRO 터미널 — 조회·명령 접수 모두 비밀번호 없이 바로 가능 · help','tl-mut');
   termGhostSync();
 
-  /* ===== 부팅 — 2026-07-10 개방 개편: 조회(로그 피드·오늘 카운터·에이전트 집계)는 비밀번호 입장 단계 없이
-     즉시 연동. 명령 전송(CHRO 실행큐)만 기존 CMD 비밀번호 게이트 유지(A-6 안전판정 반영). ===== */
-  const _cmdOpenBtn=document.getElementById('cmd-open');
-  if(_cmdOpenBtn) _cmdOpenBtn.addEventListener('click',promptCmdPw);
+  /* ===== 캐릭터 호버 툴팁 — 이름·역할 (2026-07-10) ===== */
+  const charTip=document.getElementById('charTip');
+  let hoverChar=null;
+  canvas.addEventListener('mousemove',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    let found=null;
+    for(const c of chars){
+      const hs=toScreen(c.gx,c.gy,(c.lead?1.9:1.7));
+      const rad=Math.max(30,46*CAM.scale/1.6)*(c.lead?1.15:1);
+      const dx=mx-hs.x, dy=my-hs.y;
+      if(dx*dx+dy*dy<=rad*rad){ found=c; break; }
+    }
+    if(found!==hoverChar){
+      hoverChar=found;
+      if(found){
+        const role=TERM_ROLES[found.lead?'LEAD':found.id];
+        charTip.innerHTML='<b>'+(found.lead?'팀장 · Claude':found.id+' '+role.name)+'</b><br>'+escHtml(role.desc);
+        charTip.style.display='block';
+        canvas.style.cursor='pointer';
+      } else {
+        charTip.style.display='none';
+        canvas.style.cursor='';
+      }
+    }
+    if(found){ charTip.style.left=(mx+16)+'px'; charTip.style.top=(my+16)+'px'; }
+  });
+  canvas.addEventListener('mouseleave',function(){ hoverChar=null; charTip.style.display='none'; canvas.style.cursor=''; });
+
+  /* ===== 부팅 — 조회(로그 피드·오늘 카운터·에이전트 집계)·CMD 명령 접수 모두 비밀번호 입장 단계 없이 즉시 연동
+     (2026-07-10 2차 개편). 과거 세션이 남겼을 수 있는 CMD 비밀번호 잔여값은 정리만 하고 더는 쓰지 않는다. ===== */
+  try{ sessionStorage.removeItem('wp_cmd_pw'); }catch(e){}
   (function officeBoot(){
     loadRealData();
-    let sp=''; try{ sp=sessionStorage.getItem('wp_cmd_pw')||''; }catch(e){}
-    if(sp) cmdUnlock(sp,true);
   })();
 
   resize(); updateClock(); updateKST(); start();
