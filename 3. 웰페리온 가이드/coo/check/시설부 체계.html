@@ -2969,7 +2969,7 @@ const FAC_MANUAL_COLS = [
 ];
 const FAC_MANUAL_SEED = {
   equip:[
-    {id:'fm_sauna',title:'🧖 사우나',body:'[작동법] 오버풀 타이머 준수 · 배수: 냉탕 매일 / 온탕·열탕 격일 / 휴관일 전 전부(마개+스위치)\n[기준값] 온탕 39℃ · 열탕 42℃ · 건식 78℃ · 습식 48℃ · 찜질방 68℃\n[점검 주기] 온도 회차별 측정 → 시설점검 탭\n[비상] 온도 이상 시 차장 보고 · 설정 조정'},
+    {id:'fm_sauna',title:'🧖 사우나',body:'[작동법] 오버풀 타이머 준수 · 배수: 냉탕 매일 / 온탕·열탕 격일 / 휴관일 전 전부(마개+스위치)\n[기준값] 온탕 39℃ · 열탕 42℃ · 건식 81℃ · 습식 48℃ · 찜질방 68℃\n[점검 주기] 온도 회차별 측정 → 시설점검 탭\n[비상] 온도 이상 시 차장 보고 · 설정 조정'},
     {id:'fm_pool',title:'🏊 수영장 수질',body:'[작동법] 여과·약품(염소·pH 조정) 관리\n[기준값] pH 5.8~8.6 · 유리잔류염소 0.4~4.0mg/L · 탁도 1.5NTU 이하 (체육시설법 시행규칙)\n[점검 주기] 일일 측정·기록\n[비상] 기준 이탈 시 약품 조정·여과 재가동, 회복 전 이용 제한 검토'},
     {id:'fm_hotwater',title:'♨ 온수탱크·급탕',body:'[작동법] (현장 입력)\n[기준값] 온수탱크 2·3·4번 온도 관리\n[점검 주기] 회차 점검\n[비상] 온도 이상 시 차장 보고'},
     {id:'fm_ahu',title:'🌀 공조 AHU',body:'[작동법] AHU 1~4 가동/정지 관리\n[기준값] 가동상태 정상(ok)\n[점검 주기] 회차별 가동상태 점검\n[비상] AHU 정지 시 소장 보고·1차 조치'},
@@ -4023,13 +4023,13 @@ function vendorSubmitAddForm(){
     try{ return new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'}); }
     catch(e){ var d=new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
   }
-  // 사우나: 한 표 · 탕별 남/여 (찜질방만 A/B) — 작업일지 기준값(온탕39·열탕42·건식78·습식48·찜질방68)
-  const SAUNA=[['ontang','온탕 39℃',['남','여']],['yeoltang','열탕 42℃',['남','여']],['dry','건식 78℃',['남','여']],['wet','습식 48℃',['남','여']],['jjim','찜질방 68℃',['A','B']]];
+  // 사우나: 한 표 · 탕별 남/여 (찜질방만 A/B) — 작업일지 기준값(온탕39·열탕42·건식81·습식48·찜질방68)
+  const SAUNA=[['ontang','온탕 39℃',['남','여']],['yeoltang','열탕 42℃',['남','여']],['dry','건식 81℃',['남','여']],['wet','습식 48℃',['남','여']],['jjim','찜질방 68℃',['A','B']]];
   const POOL=[['ph','pH농도'],['temp','수온℃'],['cl','CL농도']];
   const TANK=[['k2','2번'],['k3','3번'],['k4','4번']];
   const AHU=['AHU1','AHU2','AHU3','AHU4'];
   // 기계실 가동: [id, 라벨, 표준시각, 단위] — 작업일지 우하단 박스
-  const EQUIP=[['eq_night','심야전기','05:00','A'],['eq_tank1','1번 탱크온도','05:00','℃'],['eq_gas','가스검침','05:00','㎥'],['eq_hotw','고온수기','05:00','ok/x'],['eq_pump','연동펌프','05:00','ok/x'],['eq_heat','축열조','14:00','']];
+  const EQUIP=[['eq_night','심야전기','05:00','A'],['eq_tank1','1번 탱크온도','05:00','℃'],['eq_gas','가스검침','05:00','㎥'],['eq_hotw','고온수기','05:00','ok/x'],['eq_pump','연동펌프','05:00','ok/x'],['eq_heat','축열조','14:00','ok/x']];
   // ─── 기준 이탈 경보 config (기준=작업일지 / 허용폭은 AI 기본값 — GM·박호균 조정) ───
   // num: 숫자 범위. 'hint'=칸 힌트/placeholder. 온수탱크 k2/k3/k4=기준 미설정(경보 안 함, GM 기준 확정 시 추가).
   // ok/x 셀렉트(공조기 AHU·안전): 값 'x' = 빨강 (FC_RANGES 없이 fcCheckField에서 일괄 처리).
@@ -4037,7 +4037,7 @@ function vendorSubmitAddForm(){
     // 사우나(℃): 작업일지 목표값 ± 3℃(AI기본값). a/b 두 칸 동일 기준.
     fc_sauna_ontang_a:{min:36,max:42,hint:'39±3℃'}, fc_sauna_ontang_b:{min:36,max:42,hint:'39±3℃'},
     fc_sauna_yeoltang_a:{min:39,max:45,hint:'42±3℃'}, fc_sauna_yeoltang_b:{min:39,max:45,hint:'42±3℃'},
-    fc_sauna_dry_a:{min:75,max:81,hint:'78±3℃'}, fc_sauna_dry_b:{min:75,max:81,hint:'78±3℃'},
+    fc_sauna_dry_a:{min:78,max:84,hint:'81±3℃'}, fc_sauna_dry_b:{min:78,max:84,hint:'81±3℃'},
     fc_sauna_wet_a:{min:45,max:51,hint:'48±3℃'}, fc_sauna_wet_b:{min:45,max:51,hint:'48±3℃'},
     fc_sauna_jjim_a:{min:65,max:71,hint:'68±3℃'}, fc_sauna_jjim_b:{min:65,max:71,hint:'68±3℃'},
     // 수영장(AI기본값·국내 수영장 기준): pH 7.0~7.8 / CL 0.4~1.0ppm / 수온 26~30℃
@@ -4066,7 +4066,7 @@ function vendorSubmitAddForm(){
     Object.keys(FC_RANGES).forEach(fcCheckField);
     AHU.forEach(function(a){ fcCheckField('fc_ahu_'+a); });
     AI_DRAFT.forEach(function(a){ fcCheckField(a[0]); });
-    ['fc_eq_hotw','fc_eq_pump'].forEach(fcCheckField);   // 기계실 ok/x 셀렉트는 아님(텍스트) — 값 'x'면 강조 안 함(SELECT만). 안전상 남겨도 무해.
+    ['fc_eq_hotw','fc_eq_pump','fc_eq_heat'].forEach(fcCheckField);   // 기계실 ok/x 셀렉트는 아님(텍스트) — 값 'x'면 강조 안 함(SELECT만). 안전상 남겨도 무해.
   }
   // imode='decimal' → 모바일 숫자 키패드. ph=placeholder(기준 힌트). class fc-num-cell=탭타깃 패딩.
   function inp(id,ph,imode){return '<input type="text" id="'+id+'"'+(imode?' inputmode="'+imode+'"':'')+' placeholder="'+(ph||'')+'" style="width:100%;box-sizing:border-box;min-height:34px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 6px;border-radius:5px;font-size:13px;font-family:inherit;">';}
@@ -4098,7 +4098,7 @@ function vendorSubmitAddForm(){
   // 기계실 가동값 (1일 1회 · 표준시각)
   function equipBox(){
     var h=sec('기계실 가동값 (1일 1회 · 표준시각)')+'<div style="display:flex;flex-wrap:wrap;gap:10px;">';
-    EQUIP.forEach(function(e){var isNum=(e[3]!=='ok/x'); h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:150px;">'+e[1]+' ('+e[2]+')'+(e[3]?' · '+e[3]:'')+inp('fc_'+e[0],e[3]&&e[3]!=='ok/x'?e[3]:'',isNum?'decimal':'')+'</label>';});
+    EQUIP.forEach(function(e){var isNum=(e[3]!=='ok/x'); var ctrl=(e[0]==='eq_heat')?'<select id="fc_'+e[0]+'" style="width:100%;box-sizing:border-box;min-height:34px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 6px;border-radius:5px;font-size:13px;font-family:inherit;"><option value=""></option><option value="ok">ok</option><option value="x">x</option></select>':inp('fc_'+e[0],e[3]&&e[3]!=='ok/x'?e[3]:'',isNum?'decimal':''); h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:150px;">'+e[1]+' ('+e[2]+')'+(e[3]?' · '+e[3]:'')+ctrl+'</label>';});
     h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:200px;">최종퇴실 (시각/성명)'+inp('fc_eq_final','시각 · 성명')+'</label></div>';
     return h;
   }
@@ -4116,7 +4116,7 @@ function vendorSubmitAddForm(){
   var FC_ROUND_ITEMS=[
     {id:'fc_sauna_ontang',name:'사우나 온탕 온도(남/여, 기준39℃)',cat:'A 사우나 측정',fields:['fc_sauna_ontang_a','fc_sauna_ontang_b']},
     {id:'fc_sauna_yeoltang',name:'사우나 열탕 온도(남/여, 기준42℃)',cat:'A 사우나 측정',fields:['fc_sauna_yeoltang_a','fc_sauna_yeoltang_b']},
-    {id:'fc_sauna_dry',name:'사우나 건식 온도(남/여, 기준78℃)',cat:'A 사우나 측정',fields:['fc_sauna_dry_a','fc_sauna_dry_b']},
+    {id:'fc_sauna_dry',name:'사우나 건식 온도(남/여, 기준81℃)',cat:'A 사우나 측정',fields:['fc_sauna_dry_a','fc_sauna_dry_b']},
     {id:'fc_sauna_wet',name:'사우나 습식 온도(남/여, 기준48℃)',cat:'A 사우나 측정',fields:['fc_sauna_wet_a','fc_sauna_wet_b']},
     {id:'fc_sauna_jjim',name:'찜질방 온도(A/B, 기준68℃)',cat:'A 사우나 측정',fields:['fc_sauna_jjim_a','fc_sauna_jjim_b']},
     {id:'fc_pool_ph',name:'수영장 pH농도',cat:'B 수영장 수질',fields:['fc_pool_ph']},
