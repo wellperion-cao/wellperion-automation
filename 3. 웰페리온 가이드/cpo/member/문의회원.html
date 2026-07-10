@@ -2088,6 +2088,27 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   <div data-gdoc="churnstat" data-title="LOSS 현황 추적 (실측)">
     <div style="font-size:12px;color:var(--dim)">불러오는 중… (유효회원 시트 잔여일·재등록분류 실측)</div>
   </div>
+  <div data-gdoc="salesedu" data-title="스포츠클럽 영업 · 회원관리 교육">
+    <div class="info-box accent" style="margin-bottom:12px">
+      영업 스크립트·회원 관리 노하우·상담 응대 멘트를 모으는 <strong>교육 자리</strong>입니다.
+      내용은 이후 채웁니다(현재 준비 중 — 억지 예시 없이 정직하게 비워둡니다).
+    </div>
+    <div style="font-size:13px;line-height:1.9;color:var(--dim)">
+      · 신규 상담 응대 스크립트 <span class="data-badge unmeasured">준비 중</span><br>
+      · 등록 전환·재등록 유도 멘트 <span class="data-badge unmeasured">준비 중</span><br>
+      · 회원 케어·이탈 방지 노하우 <span class="data-badge unmeasured">준비 중</span>
+    </div>
+  </div>
+</div>
+<!-- 가이드 & 교육 허브 (상단 버튼 팝업, 배754 2026-07-10). 흩어진 안내를 한 곳에서 여는 런처 — 콘텐츠는 기존 opener 재사용(중복 없음) -->
+<div class="hubx-overlay" id="guideHubOverlay" role="dialog" aria-modal="true" aria-labelledby="guideHubTitle">
+  <div class="hubx-sheet">
+    <div class="hubx-head">
+      <h3 id="guideHubTitle">📖 가이드 &amp; 교육 허브</h3>
+      <button class="hubx-x" onclick="closeGuideHub()" aria-label="닫기">✕</button>
+    </div>
+    <div class="hubx-grid" id="guideHubGrid"></div>
+  </div>
 </div>
 
 <!-- ══ 멤버십 현황 집중형 대시보드 모달 (버튼 📊 멤버십 문의 현황 → openMembershipDash). 4섹션 한 화면.
@@ -2594,6 +2615,34 @@ function closeGdoc() {
   document.getElementById('gdocOverlay').classList.remove('open');
 }
 
+/* ── 가이드 & 교육 허브 (배754, 2026-07-10) — family별 카드 세트를 그려 기존 opener를 호출하는 런처 ── */
+function openGuideHub() {
+  var lesson = (typeof _curFamily !== 'undefined' && _curFamily === 'lesson');
+  var cards = [
+    { ic: '📖', t: (lesson ? '강습 문의 처리 SOP' : '문의 처리 SOP'), d: '문의 접수 → 예약 → 등록 전환 절차·담당 R/R', fn: 'openGuidePopup()' },
+    { ic: '📋', t: '운영 원칙 · 정기 루틴', d: 'CPO 운영원칙·일/주/월 정기 루틴(정직 배지)', fn: "openGdoc('principle,routine')" },
+    { ic: '🎓', t: '스포츠클럽 영업 · 회원관리 교육', d: '영업 스크립트·회원관리 노하우 — 자리 준비, 이후 채움', fn: "openGdoc('salesedu')", slot: true }
+  ];
+  if (!lesson) {
+    cards.splice(2, 0, { ic: '🚪', t: '이탈 사유 분류 (교육용)', d: 'LOSS 신호 분류·대응 매트릭스(읽는 교육) — 라이브 이탈 현황은 📊현황', fn: "openGdoc('churnsummary,churn')" });
+  } else {
+    cards.push({ ic: '🚧', t: '강습 이탈관리', d: '출석·만료 데이터 없어 정의 보류 — 데이터 파이프(≈9월) 후 편입', fn: '', slot: true });
+  }
+  var grid = document.getElementById('guideHubGrid');
+  grid.innerHTML = cards.map(function(c){
+    var clickable = c.fn ? (' onclick="' + c.fn + '"') : '';
+    return '<button class="hubx-card' + (c.slot ? ' hc-slot' : '') + '"' + clickable + (c.fn ? '' : ' disabled style="cursor:default;opacity:.6"') + '>' +
+      '<span class="hc-ic">' + c.ic + '</span><span><h4>' + c.t + '</h4><p>' + c.d + '</p></span></button>';
+  }).join('');
+  document.getElementById('guideHubOverlay').classList.add('open');
+}
+function closeGuideHub() {
+  document.getElementById('guideHubOverlay').classList.remove('open');
+}
+document.getElementById('guideHubOverlay').addEventListener('click', function(e){
+  if (e.target.id === 'guideHubOverlay') closeGuideHub();
+});
+
 /* ── 이탈 관리(요약+매트릭스+현황 통합 모달) — 구 cpo-guide 카드 이전. 2026-07-07 시포·GM ── */
 function openChurnManage() {
   openGdoc('churnsummary,churn,churnstat');
@@ -2625,6 +2674,8 @@ document.addEventListener('keydown', function(e){
   if (ldash && ldash.classList.contains('open')) closeLessonDash();
   if (pdash && pdash.classList.contains('open')) closePostInquiryDash();
   if (tdash && tdash.classList.contains('open')) closeTodayActionModal();
+  var ghub = document.getElementById('guideHubOverlay');
+  if (ghub && ghub.classList.contains('open')) closeGuideHub();
 });
 // 우측 CPO 가이드 펼치기 — 기존 gdoc 템플릿 콘텐츠를 인라인으로 clone(중복 없음). 2026-06-29 시포
 function toggleGuideAcc(btn, id) {
