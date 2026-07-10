@@ -6278,7 +6278,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <section id="o1-module-hub" style="margin:18px 0;">
       <h3 style="font-size:1.05rem;margin:0 0 10px;">🏢 운영 모듈 현황</h3>
       <div id="o1-module-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
-        <div style="color:#999;">모듈 불러오는 중…</div>
+        <div style="color:var(--dim);">모듈 불러오는 중…</div>
       </div>
     </section>
     <script>
@@ -6287,11 +6287,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       var CHECK_API = "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";
       var BASE = "https://wellperion-cao.github.io/wellperion-automation/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/";
       function card(name, feature, metric, badge, href, tag){
-        return '<a href="'+href+'" style="display:block;text-decoration:none;color:inherit;border:1px solid #e5e5e5;border-radius:12px;padding:14px;background:#fff;">'
-          + '<div style="font-weight:700;margin-bottom:4px;">'+name+' '+badge+'</div>'
-          + '<div style="font-size:.82rem;color:#666;margin-bottom:8px;">'+feature+'</div>'
-          + '<div style="font-size:1.4rem;font-weight:800;">'+metric+'</div>'
-          + '<div style="font-size:.72rem;color:#aaa;margin-top:6px;">'+tag+'</div></a>';
+        return '<a href="'+href+'" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'
+          + '<div style="font-weight:700;margin-bottom:4px;color:var(--text);">'+name+' '+badge+'</div>'
+          + '<div style="font-size:.82rem;color:var(--dim);margin-bottom:8px;">'+feature+'</div>'
+          + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);">'+metric+'</div>'
+          + '<div style="font-size:.72rem;color:var(--dim);margin-top:6px;">'+tag+'</div></a>';
       }
       function pctOf(row){ if(!row) return null; if(row.pct!=null) return row.pct; return row.total? Math.round(row.done/row.total*100):null; }
       function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
@@ -6315,8 +6315,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           var badge = anomaly? '⚠' : '✅';
           var metric = '시설 '+(fPct==null?'—':fPct+'%')+' · 지원 '+(sPct==null?'—':sPct+'%');
           var href = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
-          el.innerHTML = card('점검 현황','부서별 점검 완료율·이상', metric, badge, href, '측정값(measured)');
-        }).catch(function(){ el.innerHTML = '<div style="color:#c00;">점검 현황: (측정 실패 — 정직 표기)</div>'; });
+          var schedHref = BASE + "coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html";
+          el.innerHTML = card('점검 현황','부서별 점검 완료율·이상', metric, badge, href, '측정값(measured)')
+            + card('전사 일정','정기 안전·법정 점검 등 반복 일정', '열기 →', '📅', schedHref, '전 부서 공유 · 검사일 입력 대기');
+        }).catch(function(){ el.innerHTML = '<div style="color:var(--red);">점검 현황: (측정 실패 — 정직 표기)</div>'; });
       }
       setTimeout(loadHub, 600);
     })();
