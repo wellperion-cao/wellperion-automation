@@ -1770,5 +1770,19 @@
     "artifact": "GM 지시로 3방(차의주 회장님·웰페리온 관리부·★ 운영부) 실발송 완료(채팅탭\n자동전환 수리 실검증 겸). 상태파일이 오늘 09:30 자동실패 기록에 멈춰있어\nproduction write_status()로 성공 상태 갱신. (CLI ad-hoc · 커밋 e14e0726)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e14e072649bcdb4c2d55034875a8fdd9e3081241"
+  },
+  {
+    "task_id": "CFO-2026-07-10-ADHOC-homekpi-yesterday",
+    "clevel": "cfo",
+    "title": "[시뽀] home 매출·지출 \"오늘\" 표시 원인 진단 — 수리는 클래스프 재인증 대기로 보류",
+    "status": "IN_PROGRESS",
+    "terminal": false,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 848,
+    "artifact": "GM 지시(home 매출 \"오늘 —\" → \"어제\" 기준 표시, 지출도 동일)로 실측 진단.\n원인 확정: home_kpi GAS _kpiSales()가 2026-07-02 AV열(월간 정본) 전환 후\nsales.today를 상수 null로 고정 반환(일 단위 소스 자체가 끊김) — 오늘 매출\n미집계가 아니라 애초에 배선이 없음. expense.today는 구매성(지출품의)만의\n당일 필터라 인건비 누락 부분치.\n\"어제\" 매출원 후보(보고 탭 · SHEET_ID 1ycSEBb...gid 2009735088, 9시\n텔레그램·PNG 일일보고와 동일 소스)로 7/9 누적 216,057,540원 확인했으나,\n현재 AV열 정본 7월 누적 214,866,890원과 약 119만원 불일치 발견(수영·스쿼시·\n체조·뮤지컬 팀별 세부 상이) — 두 매출 소스가 서로 다름. 여기에 GAS\nclasp 배포 인증까지 만료(invalid_grant/invalid_rapt, 브라우저 재로그인\n필요·CLI 자동화 불가)라 수정을 배포·라이브 대조할 방법이 없음.\n→ 잘못된 수치 노출 위험 회피 위해 프론트 미변경, 수리 보류.",
+    "next": "👉 GM 필요: ① clasp 구글 재인증(브라우저 1회 로그인) ② 매출 정본을 '보고' 탭·'26년 매출 분석' AV열 중 어느 쪽 단일화할지 결정 — 확정되면 즉시 배선·배포·라이브 검증 진행",
+    "next_clevel": "gm"
   }
 ]
