@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정기 안전·법정 점검 달력</title>
+<style>
+:root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--blue:#5b9fd5;--purple:#a78bda}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;font-variant-numeric:tabular-nums;overflow-x:hidden}
+.wrap{max-width:1080px;margin:0 auto;padding:22px 18px 64px}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+h1{font-size:22px;margin:0;font-weight:800;letter-spacing:-.01em}
+h1 .scope{font-size:14px;font-weight:600;color:var(--accent);margin-left:8px}
+.sub{color:var(--dim);font-size:13px;margin:6px 0 0}
+.sheet-links{display:flex;gap:8px;flex-wrap:wrap}
+.sheet-link{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--dim);background:var(--paper);border:1px solid var(--border);padding:7px 12px;border-radius:8px;text-decoration:none;cursor:pointer}
+.sheet-link:hover{color:var(--text);border-color:var(--accent)}
+.honesty{margin:16px 0 4px;display:flex;gap:9px;align-items:flex-start;background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--yellow);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--dim)}
+.honesty b{color:var(--text)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 16px}
+.chip{font:inherit;font-size:13px;font-weight:600;color:var(--dim);background:var(--paper);border:1px solid var(--border);padding:7px 14px;border-radius:999px;cursor:pointer}
+.chip:hover{color:var(--text);border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#221F20}
+.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+@media(max-width:600px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--paper);border:1px solid var(--border);border-radius:13px;padding:15px 17px}
+.tile .n{font-size:28px;font-weight:800;line-height:1}
+.tile .l{font-size:12.5px;color:var(--dim);margin-top:6px;font-weight:600}
+.tile .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+.tile.over .n{color:var(--red)}.tile.soon .n{color:var(--yellow)}.tile.ok .n{color:var(--green)}
+.bar{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:30px 0 14px}
+.bar h2{font-size:16px;margin:0;font-weight:750}
+.bar .vt{font-size:12.5px;color:var(--dim)}
+.toggle{display:inline-flex;background:var(--paper);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.toggle button{font:inherit;font-size:12.5px;font-weight:650;color:var(--dim);background:none;border:0;padding:6px 13px;border-radius:6px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--accent);color:#221F20}
+.toggle button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.list{display:flex;flex-direction:column;gap:9px}
+.row{display:grid;grid-template-columns:5px 1.7fr 0.9fr 1fr auto;gap:14px;align-items:center;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 15px}
+@media(max-width:720px){.row{grid-template-columns:5px 1fr auto;row-gap:6px}.row .rd,.row .rp{grid-column:2}}
+.catbar{width:5px;height:36px;border-radius:3px;align-self:center}
+.row .name{font-weight:700;font-size:14.5px}
+.row .name .tag{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;margin-left:6px;vertical-align:middle}
+.tag.real{color:var(--green);background:var(--green-bg)}.tag.tbd{color:var(--yellow);background:var(--yellow-bg)}
+.row .rsub{font-size:12px;color:var(--dim);margin-top:2px}
+.row .rdept{font-size:13px;color:var(--text);font-weight:650}
+.row .rd{font-size:12.5px;color:var(--dim)}.row .rd b{color:var(--text)}
+.pill{justify-self:end;font-size:12px;font-weight:750;padding:5px 11px;border-radius:999px;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
+.pill.over{background:var(--red-bg);color:var(--red)}.pill.soon{background:var(--yellow-bg);color:var(--yellow)}.pill.ok{background:var(--green-bg);color:var(--green)}.pill.tbd{background:var(--accent-bg);color:var(--dim)}
+.yearwrap{overflow-x:auto;border:1px solid var(--border);border-radius:13px;background:var(--paper)}
+table.year{border-collapse:collapse;width:100%;min-width:780px;font-size:12.5px}
+table.year th,table.year td{padding:9px 4px;text-align:center;border-bottom:1px solid var(--border)}
+table.year thead th{background:var(--paper);font-weight:650;color:var(--dim);font-size:11.5px;position:sticky;top:0}
+table.year th.item,table.year td.item{text-align:left;padding-left:15px;width:250px}
+table.year td.item{color:var(--text);font-weight:600}
+table.year td.item .s{color:var(--dim);font-size:11px;font-weight:500}
+.cdot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:middle}
+.mk{width:20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#221F20}
+.mk.tbd{background:transparent;color:var(--dim);border:1px dashed var(--border);font-weight:700}
+table.year tbody tr:hover td{background:rgba(255,255,255,0.02)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 15px;margin-top:13px;font-size:12px;color:var(--dim)}
+.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.loading{text-align:center;color:var(--dim);padding:40px;font-size:14px}
+footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--dim)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header-top">
+    <div>
+      <h1>정기 안전·법정 점검 달력<span class="scope" id="scopeLabel"></span></h1>
+      <p class="sub">소방·전기·승강기·소독·법정교육 등 <b>주기마다 돌아오는 의무 점검</b>을 한눈에. 기한 도래 시 업무·결재로 자동 합류(게이트).</p>
+    </div>
+    <div class="sheet-links">
+      <a class="sheet-link" href="../../wellperion_guide(main).html">🏠 웰페리온 ERP</a>
+      <a class="sheet-link" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/status/compliance_calendar.json" target="_blank" rel="noopener">📄 정본(SSOT)</a>
+    </div>
+  </div>
+
+  <div class="honesty">
+    <span>⚠️</span>
+    <div><b>실제 검사일은 입력 대기 상태입니다.</b> 소방 작동점검 <b>연 1회</b>·전기안전 <b>3년 1회</b>만 법정 주기가 확인됐고<span class="tag real" style="margin:0 2px">확인</span>, 나머지는 <b>주기·검사일 확인 필요</b><span class="tag tbd" style="margin:0 2px">확인 필요</span>. 지어낸 날짜는 없습니다 — 부서별 실제 날짜를 입력하면 이 달력이 살아납니다.</div>
+  </div>
+
+  <div class="chips" id="chips"></div>
+  <div class="tiles" id="tiles"></div>
+
+  <div class="bar">
+    <div style="display:flex;align-items:baseline;gap:10px"><h2 id="vTitle">임박 순</h2><span class="vt" id="vSub">기한 가까운 순서 — 당장 챙길 것부터</span></div>
+    <div class="toggle" role="group" aria-label="보기 전환">
+      <button id="bList" aria-pressed="true" onclick="setView('list')">임박 순</button>
+      <button id="bYear" aria-pressed="false" onclick="setView('year')">연간 달력</button>
+    </div>
+  </div>
+  <div id="vList" class="list"><div class="loading">불러오는 중…</div></div>
+  <div id="vYear" class="yearwrap" hidden></div>
+  <div class="legend" id="legend"></div>
+
+  <footer id="foot">정본 = status/compliance_calendar.json · 렌더 = 이 페이지(전 부서 공유·<code>?dept=</code> 필터) · 연동 = 업무·결재 SSOT(게이트)</footer>
+</div>
+
+<script>
+var CAL_URL="https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/compliance_calendar.json?cb="+Date.now();
+var DATA=null, CATS={}, LEAD=30, cur="전체", view="list";
+
+function qDept(){try{var m=(location.search.match(/[?&]dept=([^&]+)/));return m?decodeURIComponent(m[1]):"전체";}catch(e){return "전체";}}
+function kstToday(){var n=new Date();return new Date(n.getTime()+(n.getTimezoneOffset()+540)*60000);}
+function parseDue(s){if(!s)return null;s=(""+s).trim();var m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);var y=s.match(/^(\d{4})-(\d{2})$/);if(y)return new Date(+y[1],+y[2]-1,1);return null;}
+function statusOf(it){var d=parseDue(it.next_due);if(!d)return{k:"tbd",dd:null};var dd=Math.round((d-kstToday())/86400000);if(dd<0)return{k:"over",dd:dd};if(dd<=LEAD)return{k:"soon",dd:dd};return{k:"ok",dd:dd};}
+function ddText(s){if(s.dd===null)return"D-?";return s.dd<0?("D+"+Math.abs(s.dd)):("D-"+s.dd);}
+function items(){return DATA.items.filter(function(it){return cur==="전체"||it.dept===cur;});}
+
+function renderChips(){
+  var depts=["전체"].concat(DATA.depts||[]);var c=document.getElementById("chips");c.innerHTML="";
+  depts.forEach(function(d){var b=document.createElement("button");b.className="chip";b.textContent=d;b.setAttribute("aria-pressed",d===cur);b.onclick=function(){cur=d;syncScope();renderAll();};c.appendChild(b);});
+}
+function syncScope(){document.getElementById("scopeLabel").textContent=(cur==="전체"?"":" · "+cur);}
+function renderTiles(){
+  var f=items(),o=0,s=0,k=0,t=0;
+  f.forEach(function(it){var st=statusOf(it).k;if(st==="over")o++;else if(st==="soon")s++;else if(st==="ok")k++;else t++;});
+  document.getElementById("tiles").innerHTML=
+    tile("over","지남(기한 초과)",o,"--red")+tile("soon","임박 (D-30 이내)",s,"--yellow")+
+    tile("ok","여유",k,"--green")+tile("","날짜 미정 · 확인 필요",t,"--dim");
+}
+function tile(cls,l,n,v){return '<div class="tile '+cls+'"><div class="n">'+n+'</div><div class="l"><span class="dot" style="background:var('+v+')"></span>'+l+'</div></div>';}
+function renderList(){
+  var f=items().slice().sort(function(a,b){var da=statusOf(a).dd,db=statusOf(b).dd;da=(da===null?99999:da);db=(db===null?99999:db);return da-db;});
+  var el=document.getElementById("vList");el.innerHTML="";
+  if(!f.length){el.innerHTML='<div class="loading">이 부서의 정기점검 항목이 없습니다.</div>';return;}
+  f.forEach(function(it){
+    var st=statusOf(it),cat=CATS[it.category]||{label:it.category,color:"#888"};
+    var tag=it.cycle_confirmed?'<span class="tag real">확인</span>':(it.next_due?'':'<span class="tag tbd">확인 필요</span>');
+    var r=document.createElement("div");r.className="row";
+    r.innerHTML='<div class="catbar" style="background:'+cat.color+'"></div>'+
+      '<div><div class="name">'+it.name+tag+'</div><div class="rsub">'+cat.label+' · '+it.cycle+'</div></div>'+
+      '<div class="rdept">'+it.dept+'</div>'+
+      '<div class="rd">최근 <b>'+(it.last_done||"—")+'</b><br>다음 <b>'+(it.next_due||"확인 필요")+'</b></div>'+
+      '<div class="pill '+st.k+'"><span>'+({over:"지남",soon:"임박",ok:"여유",tbd:"미정"}[st.k])+'</span><span>'+ddText(st)+'</span></div>';
+    el.appendChild(r);
+  });
+}
+function renderYear(){
+  var f=items(),h='<table class="year"><thead><tr><th class="item">항목</th>';
+  for(var m=1;m<=12;m++)h+='<th>'+m+'월</th>';h+='</tr></thead><tbody>';
+  f.forEach(function(it){
+    var cat=CATS[it.category]||{color:"#888"};var due=parseDue(it.next_due);var dueM=due?due.getMonth()+1:null;
+    h+='<tr><td class="item"><span class="cdot" style="background:'+cat.color+'"></span>'+it.name+'<div class="s" style="margin-left:15px">'+it.dept+' · '+it.cycle+'</div></td>';
+    for(var m=1;m<=12;m++){
+      if(dueM===m)h+='<td><span class="mk" style="background:'+cat.color+'">✓</span></td>';
+      else if(!due&&m===1)h+='<td><span class="mk tbd">?</span></td>';
+      else h+='<td></td>';
+    }
+    h+='</tr>';
+  });
+  h+='</tbody></table>';document.getElementById("vYear").innerHTML=h;
+}
+function renderLegend(){var el=document.getElementById("legend"),h="";Object.keys(CATS).forEach(function(k){h+='<span><i style="background:'+CATS[k].color+'"></i>'+CATS[k].label+'</span>';});h+='<span><i style="background:var(--dim)"></i>? = 검사일 확인 필요</span>';el.innerHTML=h;}
+function setView(v){view=v;document.getElementById("vList").hidden=(v!=="list");document.getElementById("vYear").hidden=(v!=="year");document.getElementById("bList").setAttribute("aria-pressed",v==="list");document.getElementById("bYear").setAttribute("aria-pressed",v==="year");document.getElementById("vTitle").textContent=(v==="list"?"임박 순":"연간 달력");document.getElementById("vSub").textContent=(v==="list"?"기한 가까운 순서 — 당장 챙길 것부터":"어느 달에 무엇이 오는지 12개월 한눈");if(v==="year")renderYear();}
+window.setView=setView;
+function renderAll(){renderTiles();renderList();if(view==="year")renderYear();document.querySelectorAll("#chips .chip").forEach(function(b){b.setAttribute("aria-pressed",b.textContent===cur);});}
+
+fetch(CAL_URL,{cache:"no-store"}).then(function(r){return r.json();}).then(function(d){
+  DATA=d;CATS=d.categories||{};LEAD=(d.gate&&d.gate.lead_days)||30;
+  cur=qDept();if(cur!=="전체"&&(d.depts||[]).indexOf(cur)<0)cur="전체";
+  syncScope();renderChips();renderLegend();renderAll();
+}).catch(function(e){document.getElementById("vList").innerHTML='<div class="loading">달력을 불러오지 못했습니다 — 새로고침. ('+e+')</div>';});
+</script>
+</body>
+</html>
