@@ -641,10 +641,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
         웰페리온 ERP
       </a>
-      <a class="sheet-link" href="../../wellperion_guide(main).html#gcoo-check">
-        <svg viewBox="0 0 24 24"><path d="M4 10h3v7h10v-7h3L12 3 4 10z"/></svg>
-        운영 통합 체계
-      </a>
     </div>
   </div>
   <div class="sub" id="headerSub"></div>
@@ -657,6 +653,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <!-- 옛 점검(남)/(여) 탭 제거(2026-06-12). 신규 '시설점검'=날짜별 측정 작업일지(2026-06-16 GM·PDF 기반). -->
   <button class="tab" onclick="switchTab('fcheck')">시설점검</button>
+  <button class="tab" onclick="switchTab('admin')">📊 현황 대시보드</button>
   <button class="tab" onclick="switchTab('monthly')">📅 월간 시설부 계획·보고</button>
   <button class="tab" onclick="switchTab('vendor')">거래업체</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
@@ -781,6 +778,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--text);">오늘 제출 이력 <span id="fc-history-count">(0건)</span></summary>
     <div id="fc-history-list" style="margin-top:8px;font-size:12px;color:var(--dim);"></div>
   </details>
+</div>
+
+<!-- ══ 「현황 대시보드」 탭 — 시설부 일별/실시간 현황 (지원부 tab-admin 구조 실측 이식 + 시설점검(fcheck) 실데이터 FACILITY_CHECK_{date} 바인딩. 월간 탭(카테고리·회차·점검자 월간 집계)과 성격 분리 — 이 탭은 특정 1일 실시간 조회 전용. GM 승인 2026-07-10 시우) ══ -->
+<div id="tab-admin" class="content hidden">
+  <div class="date-bar">
+    <input type="date" id="facAdminDate">
+    <button class="btn" onclick="moveFacAdminDate(-1)">&lt;</button>
+    <button class="btn" onclick="setFacAdminToday()">오늘</button>
+    <button class="btn" onclick="moveFacAdminDate(1)">&gt;</button>
+  </div>
+  <div id="facAdminView"><div class="loading">불러오는 중...</div></div>
 </div>
 
 <!-- ══ 「📅 월간 시설부 계획·보고」 통합 탭 — monthly_ops_plan.json 핵심과제(주인공·상단) + 점검 monthly_report&dept=facility 라이브 대시보드 (배406 + 이달 부서 현황 통합 2026-07-07) ══
@@ -2082,8 +2090,10 @@ function switchTab(tab, opts){
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
   document.getElementById('tab-vendor').classList.toggle('hidden',tab!=='vendor');
   document.getElementById('tab-fcheck').classList.toggle('hidden',tab!=='fcheck');
+  document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
   document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
   if(tab==='fcheck'){ if(typeof fcLoad==='function') fcLoad(); }
+  if(tab==='admin'){ if(typeof renderFacAdmin==='function') renderFacAdmin(); }
   if(tab==='monthly'){ if(typeof fmEnsureMonthInput==='function') fmEnsureMonthInput(); if(typeof loadFacilityMonthlyReport==='function') loadFacilityMonthlyReport(); if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
   if(tab==='manual'){ if(typeof facLoadManualFromBackend==='function') facLoadManualFromBackend(); }
   if(tab==='guide'){ if(typeof facRenderGuideBoard==='function') facRenderGuideBoard(); }
@@ -4488,6 +4498,137 @@ function vendorSubmitAddForm(){
   try{ var fd=document.getElementById('fcDate'); if(fd){ fd.value=new Date().toLocaleDateString('sv-SE'); fcRender(); fcLoad(); } }catch(e){}
   // 금일 작업사항·지시사항·점검요청사항 입력 → 정오 이후 자동 저장(디바운스). 정적 박스라 1회 연결.
   try{ ['fc_work','fc_order','fc_req'].forEach(function(id){ var n=document.getElementById(id); if(n) n.addEventListener('input',fcNotesDebounced); }); }catch(e){}
+
+  /* ═══ 현황 대시보드(tab-admin) — 특정 1일 실시간 현황 (지원부 tab-admin 구조 이식, 시설부 실측정값 구조로 바인딩).
+     월간 탭(카테고리·회차·점검자 '월간' 집계)과 겹치지 않게 — 이 탭은 FACILITY_CHECK_{date} 보드를 그 날짜 하나만 읽어
+     회차별·점검자별 '오늘' 실황 + 기준이탈(FC_RANGES) 경보를 보여준다. GM 승인 2026-07-10 시우. ═══ */
+  // measure(JSON 문자열) 안 각 필드를 FC_RANGES(숫자 범위)·ok/x 셀렉트 기준으로 재판정 — DOM이 아닌 저장값 기준(다른 날짜 조회 가능).
+  function facAlertsInMeasure(measureJSON){
+    var out=[]; if(!measureJSON) return out;
+    var vals; try{ vals=JSON.parse(measureJSON); }catch(e){ return out; }
+    Object.keys(vals).forEach(function(k){
+      var fid='fc_'+k, v=vals[k], cfg=FC_RANGES[fid];
+      if(cfg){
+        var num=parseFloat(v);
+        if(v!=='' && !isNaN(num) && (num<cfg.min||num>cfg.max)) out.push({id:fid,v:v});
+      } else if(String(v||'').trim().toLowerCase()==='x'){
+        out.push({id:fid,v:v});
+      }
+    });
+    return out;
+  }
+  function facItemLabel(fid){
+    var all=FC_ROUND_ITEMS.concat(FC_DAILY_ITEMS);
+    for(var i=0;i<all.length;i++){ if(all[i].fields.indexOf(fid)>=0) return all[i].name; }
+    return fid;
+  }
+  window.setFacAdminToday=function(){ var e=document.getElementById('facAdminDate'); if(!e)return; e.value=fmtLocalDate(new Date()); renderFacAdmin(); };
+  window.moveFacAdminDate=function(n){ var e=document.getElementById('facAdminDate'); if(!e)return; var d=new Date(e.value+'T00:00:00'); d.setDate(d.getDate()+n); e.value=fmtLocalDate(d); renderFacAdmin(); };
+  window.renderFacAdmin=function(){
+    var dEl=document.getElementById('facAdminDate'); if(!dEl) return;
+    if(!dEl.value) dEl.value=fmtLocalDate(new Date());
+    var date=dEl.value;
+    var el=document.getElementById('facAdminView'); if(!el) return;
+    var info=getDayInfo(date);
+    var dn=['일','월','화','수','목','금','토'], dow=new Date(date+'T00:00:00').getDay();
+    el.innerHTML='<div class="loading">불러오는 중...</div>';
+    fetch(API_URL+'?action=board&key='+encodeURIComponent('FACILITY_CHECK_'+date),{redirect:'follow'})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        var b=(j&&j.board)||{};
+        var store=(b.store&&typeof b.store==='object')?b.store:{};
+        var subs=(Array.isArray(store.submissions)?store.submissions:[]).slice().sort(function(a,c){return (a.seq||0)-(c.seq||0);});
+        var total=FC_ROUND_ITEMS.length+FC_DAILY_ITEMS.length;
+
+        var html='';
+        html+='<div class="dash-section-title">'+date+' ('+dn[dow]+') <span class="day-type '+info.cls+'">'+info.label+'</span> 현황 요약</div>';
+
+        var allAlerts=0, lastDone=0;
+        subs.forEach(function(s){
+          var done=(s.items||[]).length+(s.daily||[]).length;
+          if(done>lastDone) lastDone=done;
+          (s.items||[]).concat(s.daily||[]).forEach(function(it){ allAlerts+=facAlertsInMeasure(it.measure).length; });
+        });
+        var lastPct=total?Math.round(lastDone/total*100):0;
+        html+='<div class="dash-stat-row">';
+        html+='<div class="dash-stat-card"><div class="num">'+subs.length+'</div><div class="label">오늘 점검 회차</div></div>';
+        html+='<div class="dash-stat-card"><div class="num">'+lastDone+'/'+total+'</div><div class="label">최근 회차 입력 항목</div></div>';
+        html+='<div class="dash-stat-card"><div class="num">'+lastPct+'%</div><div class="label">최근 회차 입력률</div></div>';
+        html+='<div class="dash-stat-card"><div class="num" style="color:'+(allAlerts>0?'var(--red)':'var(--green)')+'">'+allAlerts+'</div><div class="label">기준이탈 경보(오늘 누적)</div></div>';
+        html+='</div>';
+
+        if(!subs.length){
+          html+='<div class="admin-card"><div style="font-size:13px;color:var(--dim);">이 날짜에 제출된 점검 기록이 없습니다.</div></div>';
+          el.innerHTML=html;
+          return;
+        }
+
+        /* ━━━ 회차별 통계 ━━━ */
+        html+='<div class="dash-section-title">회차별 통계</div>';
+        html+='<table class="dash-table"><tr><th>회차</th><th>시작~종료</th><th>소요</th><th>점검자</th><th>입력 항목</th><th>경보</th><th style="min-width:80px">입력률</th></tr>';
+        subs.forEach(function(s){
+          var done=(s.items||[]).length+(s.daily||[]).length;
+          var pct=total?Math.round(done/total*100):0;
+          var al=0; (s.items||[]).concat(s.daily||[]).forEach(function(it){ al+=facAlertsInMeasure(it.measure).length; });
+          var timeRange=(s.startHHMM||'-')+' ~ '+(s.endHHMM||'-');
+          var dur=(s.durMin!==null&&s.durMin!==undefined&&s.durMin!=='')?(s.durMin+'분'):'-';
+          html+='<tr><td><strong>'+(s.seq||'')+'회</strong></td><td>'+timeRange+'</td><td>'+dur+'</td><td>'+escapeHTML(s.inspector||'-')+'</td><td>'+done+'/'+total+'</td>';
+          html+='<td>'+(al>0?'<span style="color:var(--red);font-weight:600">'+al+'건</span>':'0건')+'</td>';
+          html+='<td><div class="dash-bar-wrap"><div class="dash-bar '+(al>0?'red':'green')+'" style="width:'+pct+'%"></div></div> '+pct+'%</td></tr>';
+        });
+        html+='</table>';
+
+        /* ━━━ 점검자별 통계 ━━━ */
+        var bySub={};
+        subs.forEach(function(s){
+          var name=s.inspector||'-';
+          if(!bySub[name]) bySub[name]={rounds:0,done:0,alerts:0};
+          var done=(s.items||[]).length+(s.daily||[]).length;
+          var al=0; (s.items||[]).concat(s.daily||[]).forEach(function(it){ al+=facAlertsInMeasure(it.measure).length; });
+          bySub[name].rounds++; bySub[name].done+=done; bySub[name].alerts+=al;
+        });
+        html+='<div class="dash-section-title">점검자별 통계</div>';
+        html+='<table class="dash-table"><tr><th>점검자</th><th>회차 수</th><th>총 입력 항목</th><th>경보</th></tr>';
+        Object.keys(bySub).forEach(function(name){
+          var st=bySub[name];
+          html+='<tr><td><strong>'+escapeHTML(name)+'</strong></td><td>'+st.rounds+'</td><td>'+st.done+'</td><td>'+(st.alerts>0?'<span style="color:var(--red);font-weight:600">'+st.alerts+'건</span>':'0건')+'</td></tr>';
+        });
+        html+='</table>';
+
+        /* ━━━ 회차별 상세 (최신 회차 먼저) ━━━ */
+        html+='<div class="dash-section-title">회차별 상세</div>';
+        subs.slice().reverse().forEach(function(s){
+          var catCount={};
+          (s.items||[]).concat(s.daily||[]).forEach(function(it){
+            var cat=it.cat||'기타';
+            if(!catCount[cat]) catCount[cat]={done:0};
+            catCount[cat].done++;
+          });
+          html+='<div class="admin-card"><h3>'+(s.seq||'')+'회 · '+escapeHTML(s.inspector||'-')+' · '+escapeHTML(s.at||'')+'</h3>';
+          Object.keys(catCount).forEach(function(cat){
+            html+='<div class="admin-row"><span>'+escapeHTML(cat)+'</span><span>'+catCount[cat].done+'건</span></div>';
+          });
+          var alerts=[];
+          (s.items||[]).concat(s.daily||[]).forEach(function(it){ facAlertsInMeasure(it.measure).forEach(function(a){ alerts.push({name:it.name||facItemLabel(a.id),v:a.v}); }); });
+          if(alerts.length){
+            html+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(237,91,63,0.3)">';
+            html+='<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px;">기준이탈 경보</div>';
+            alerts.forEach(function(a){ html+='<div style="font-size:12px;color:var(--red)">· '+escapeHTML(a.name)+' = '+escapeHTML(String(a.v))+'</div>'; });
+            html+='</div>';
+          }
+          if(s.work||s.order||s.note){
+            html+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);line-height:1.6;">';
+            if(s.work) html+='<div><strong>작업사항</strong> '+escapeHTML(s.work)+'</div>';
+            if(s.order) html+='<div><strong>지시사항</strong> '+escapeHTML(s.order)+'</div>';
+            if(s.note) html+='<div><strong>비고</strong> '+escapeHTML(s.note)+'</div>';
+            html+='</div>';
+          }
+          html+='</div>';
+        });
+
+        el.innerHTML=html;
+      }).catch(function(){ el.innerHTML='<div class="admin-card">불러오기 실패(네트워크)</div>'; });
+  };
 })();
 </script>
 
