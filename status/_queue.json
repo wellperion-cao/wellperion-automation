@@ -1839,5 +1839,19 @@
     "artifact": "시설·지원·주차 체계 페이지: 별도 '현황 대시보드'(특정1일 실시간) 탭을\n월간 탭으로 일원화(월간엔 이미 이달 현황 통합됨). 월간 탭 개명·현황대시보드 자리로,\n헤더 바로가기 재연결, 지원부 보고용/공유용 버튼 삭제. GM 결정=제거·일원화.\ntab-admin content+switchTab 참조 제거(런타임 null 0), 렌더 함수는 복원대비 inert 보존. (CLI ad-hoc · 커밋 c4dbeb7c)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "c4dbeb7c38f1436967f8ce62c981df1952e7bbaa"
+  },
+  {
+    "task_id": "COO-2026-07-10-DEPT-DASHBOARD-MERGE",
+    "clevel": "coo",
+    "title": "[시우] 4부서 체계 현황대시보드+월간계획보고 통합 → '월간 OO 현황·계획·보고' 단일 버튼(시설·지원·주차)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "module": "O1",
+    "note": "[2026-07-10 GM 지시] 시설·지원·주차 체계 페이지에서 별도 '현황 대시보드'(특정1일 실시간) 탭을 월간 탭으로 일원화(월간엔 이미 이달 현황 통합). GM 결정=제거·일원화(특정1일 뷰 삭제). 월간 탭 개명(월간 OO 현황·계획·보고)·현황대시보드 자리 배치, 헤더 바로가기 재연결, 지원부 보고용/공유용 버튼 삭제. 주차부는 mplan이 이미 현황 포함→라벨만. tab-admin content+switchTab 참조 제거(런타임 null 0), adminDate 초기화 로드에러 수정, 렌더함수는 복원대비 inert 보존. [라이브 검증] 시크릿 헤드리스·캐시우회 3페이지 실측: 신규라벨 표시·현황대시보드버튼 0·보고공유 0·치명JS오류 0. 커밋 c4dbeb7c.",
+    "next": "🔗 입항 완료 — 라이브 검증 끝. 후속(선택): inert 보존한 renderAdmin/renderFacAdmin/copyReport/copyShare 정의는 GM이 특정1일 뷰 완전 폐기 확정 시 제거.",
+    "ship_no": 853
   }
 ]
