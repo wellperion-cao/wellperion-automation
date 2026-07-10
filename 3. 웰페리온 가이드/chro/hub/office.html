@@ -102,8 +102,9 @@
   .lf-row .k.k-done{color:var(--sage); background:rgba(127,200,160,.18)}
   .lf-row .k.k-brief{color:var(--muted); background:rgba(155,146,131,.16)}
   .lf-row.newest{animation:lfin .34s ease both}
-  .lf-row.dim{opacity:.70}
-  .lf-row.dim2{opacity:.50}
+  /* 2026-07-10 매니저 피드백: 아래로 갈수록 흐려져 절반 이하가 안 보임 — 전 행 완전 가독으로 통일(페이드 제거) */
+  .lf-row.dim{opacity:1}
+  .lf-row.dim2{opacity:1}
   @keyframes lfin{from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none}}
 
   .foot{position:relative; flex:none; font-size:10.5px; color:var(--muted); letter-spacing:.03em; pointer-events:none; text-align:center; width:100%; padding:4px 10px 6px}
@@ -280,6 +281,14 @@
   const AGENT_COLORS={
     'A-1':'#5B7FB0', 'A-2':'#C2823C', 'A-3':'#4E9E7C', 'A-4':'#A6863E',
     'A-5':'#7A6DB4', 'A-6':'#9C4A5E', 'A-7':'#3E9AA6'
+  };
+  // 유휴 페르소나 말풍선(2026-07-10 복구) — 실 자동화로그가 아닌 순수 캐릭터 연출이므로 브리핑 피드·집계에는
+  // 절대 반영하지 않는다(정직 배지 원칙 — 실가동과 무관한 문구를 "실적"처럼 보이게 하지 않기 위함).
+  // 각 캐릭터의 시그니처 동작(personaBeh)이 재생되는 동안에만 옅게 떠서, 그 제스처와 짝을 이루도록 표시.
+  const PERSONA_LINE={
+    'A-1':'이력서 한 장씩 다시 확인', 'A-2':'지원자와 일정 통화 조율',
+    'A-3':'이번 주 체크인 리스트 확인', 'A-4':'평가 기준 다시 짚어보기',
+    'A-5':'배포 막바지 점검', 'A-6':'숫자 하나하나 대조 중', 'A-7':'흐름 막히는 지점 분석'
   };
   const PAL={
     dark:{
@@ -579,6 +588,10 @@
     const m=MOTION;
     const s=c.lead?0.98:0.80;
     const cx=c.gx, cy=c.gy;
+    // 2026-07-10 매니저 피드백: face:'y-' 좌석(A-5 배포·A-6 감사·A-7 시스템효율)은 이 아이소메트릭 카메라
+    // 각도에서 뒤돌아 앉은 모습으로 보여야 함 — 앞머리·카라·타이·볼터치 등 "얼굴 쪽" 디테일은 생략하고
+    // 헤어캡+헤어스타일 소품(번/웨이브)만으로 뒤통수를 표현한다. drawFace()도 이 캐릭터는 건너뜀.
+    const isBack = c.face==='y-';
     const pose=poseFor(c,t,busy,m);             // varied behavior pose (arms / head / prop)
     let fv=faceVec(c.face);
     if(c.lead && c.lookTarget){                 // lead turns toward the agent she just assigned
@@ -620,10 +633,12 @@
     const shZ=waistZ+0.74*s;
     orb(cx, cy, shZ+breathe, 0.32*s, shirtHi, 0.52);                                     // shoulders (rounded dome)
 
-    /* ----- collar + tie / uniform accent (on the camera-facing chest) ----- */
-    orb(cx + fx*0.22*s, cy + fy*0.22*s, shZ-0.04+breathe, 0.11*s, c.lead? shadeHex(shirt,0.8):'#ECE4D2', 0.6); // collar
-    limb(cx + fx*0.28*s, cy + fy*0.28*s, shZ-0.06+breathe,
-         cx + fx*0.30*s, cy + fy*0.30*s, shZ-0.06-(c.lead?0.36:0.28)*s+breathe, 0.085*TW*s, tieCol, 1.15);      // tie / lanyard
+    /* ----- collar + tie / uniform accent (on the camera-facing chest) — 뒤돌아 앉은 캐릭터는 생략(등만 보임) ----- */
+    if(!isBack){
+      orb(cx + fx*0.22*s, cy + fy*0.22*s, shZ-0.04+breathe, 0.11*s, c.lead? shadeHex(shirt,0.8):'#ECE4D2', 0.6); // collar
+      limb(cx + fx*0.28*s, cy + fy*0.28*s, shZ-0.06+breathe,
+           cx + fx*0.30*s, cy + fy*0.30*s, shZ-0.06-(c.lead?0.36:0.28)*s+breathe, 0.085*TW*s, tieCol, 1.15);      // tie / lanyard
+    }
 
     /* ----- rounded arms (pose-driven: reach / lift / spread vary by behavior) ----- */
     let propHand=null;
@@ -660,9 +675,15 @@
     hg.addColorStop(0, fc(hair,1.35)); hg.addColorStop(1, fc(hair,0.85));
     ctx.beginPath(); ctx.ellipse(hp.x,hp.y,hrx*1.03,hry*1.0,0, Math.PI, 0, false);
     ctx.closePath(); ctx.fillStyle=hg; ctx.fill();
-    // bangs — soft fringe blob dipping onto the camera-facing forehead
-    ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.34, hp.y-hry*0.34, hrx*0.46, hry*0.30, fsx*0.3, 0, Math.PI*2);
-    ctx.fillStyle=fc(hair,1.08); ctx.fill();
+    // bangs — soft fringe blob dipping onto the camera-facing forehead (뒤돌아 앉은 캐릭터는 이마가 안 보이므로 생략)
+    if(!isBack){
+      ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.34, hp.y-hry*0.34, hrx*0.46, hry*0.30, fsx*0.3, 0, Math.PI*2);
+      ctx.fillStyle=fc(hair,1.08); ctx.fill();
+    } else {
+      // 뒤통수 볼륨 — 정수리~목선까지 이어지는 결 있는 헤어 매스(빈 뒤통수처럼 보이지 않도록)
+      ctx.beginPath(); ctx.ellipse(hp.x, hp.y+hry*0.05, hrx*0.86, hry*0.78, 0, 0, Math.PI*2);
+      ctx.fillStyle=fc(hair,0.90); ctx.fill();
+    }
     // side locks
     ctx.beginPath(); ctx.ellipse(hp.x-hrx*0.88, hp.y+hry*0.05, hrx*0.20, hry*0.34, 0, 0, Math.PI*2); ctx.fillStyle=fc(hair,0.92); ctx.fill();
     ctx.beginPath(); ctx.ellipse(hp.x+hrx*0.88, hp.y+hry*0.05, hrx*0.20, hry*0.34, 0, 0, Math.PI*2); ctx.fillStyle=fc(hair,0.78); ctx.fill();
@@ -671,11 +692,13 @@
       ctx.fillStyle=fc(hair,1.5); ctx.fill();
     }
     if(c.hairStyle) drawHairAccent(c.hairStyle, hp, hrx, hry, fsx, hair);                // persona hairstyle accent
-    // blush dots — 볼터치 (귀여움 포인트, 표정과 무관한 고정 디테일)
-    ctx.globalAlpha=0.30;
-    ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.52, hp.y+hry*0.28, hrx*0.14, hry*0.09, 0, 0, Math.PI*2);
-    ctx.fillStyle='#E08A6A'; ctx.fill();
-    ctx.globalAlpha=1;
+    // blush dots — 볼터치 (귀여움 포인트, 뒤돌아 앉은 캐릭터는 뺨이 안 보이므로 생략)
+    if(!isBack){
+      ctx.globalAlpha=0.30;
+      ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.52, hp.y+hry*0.28, hrx*0.14, hry*0.09, 0, 0, Math.PI*2);
+      ctx.fillStyle='#E08A6A'; ctx.fill();
+      ctx.globalAlpha=1;
+    }
 
     c._headZ = hz+0.58*s;
 
@@ -1377,12 +1400,18 @@
     // (#leadfeed, '팀장 · Claude 브리핑'), driven by setTicker → pushLog below.
 
     // ---- task bubbles for busy agents — overlap resolution keeps simultaneous ones readable ----
+    // + 유휴 페르소나 말풍선(2026-07-10 복구) — busy가 아니고, 그 캐릭터의 시그니처 동작이 재생 중일 때만
+    // 옅은 톤으로 짧게 뜬다(실 로그 아님 — task bubble과 스타일로 구분).
     const bubs=[];
     for(const c of chars){
       if(c.lead) continue;
       if(c.status==='busy'){
         const head=toScreen(c.gx,c.gy, c._headZ||2.9);
-        bubs.push({c, hx:head.x, hy:head.y-6, prog:(t-c.tStart)/c.tDur, task:c.task});
+        bubs.push({c, hx:head.x, hy:head.y-6, prog:(t-c.tStart)/c.tDur, task:c.task, persona:false});
+      } else if(c.status==='idle' && c.personaBeh && c.beh===c.personaBeh){
+        const line=PERSONA_LINE[c.id]; if(!line) continue;
+        const head=toScreen(c.gx,c.gy, c._headZ||2.9);
+        bubs.push({c, hx:head.x, hy:head.y-6, prog:0, task:line, persona:true});
       }
     }
     ctx.font=`600 12px ${KFONT}`;
@@ -1390,7 +1419,7 @@
       let s=b.task; while(ctx.measureText(s).width>186 && s.length>4){ s=s.slice(0,-2); }
       if(s!==b.task) s=s.slice(0,-1)+'…';
       b.s=s;
-      b.w=Math.max(92, ctx.measureText(s).width+24); b.h=40;
+      b.w=Math.max(92, ctx.measureText(s).width+24); b.h=b.persona?30:40;
       b.cx=Math.max(b.w/2+6, Math.min(W-b.w/2-6, b.hx));   // desired: centered over head, on-screen
       b.by=b.hy-16-b.h;                                     // desired: floating above head
     }
@@ -1433,6 +1462,7 @@
      scale. c.expr is chosen per-character by updateExpression(); falls back to a state default.
      v2: 열린 눈은 주기적 깜빡임(blink micro-animation) — 감은눈 계열 표정에는 미적용. */
   function drawFace(c,t){
+    if(c.face==='y-') return;   // 뒤돌아 앉은 좌석(A-5·A-6·A-7) — 표정·안경 등 얼굴 디테일 없음(뒤통수만)
     const f=c._face; if(!f) return;
     const es=Math.max(1.3, 2.0*CAM.scale/1.6)*f.s;
     const dx=es*1.55, cx0=f.x, lightT=currentTheme()==='light';
@@ -1512,27 +1542,31 @@
   }
   function drawBubble(b, lightT){
     const w=b.w, h=b.h, x=b.cx-w/2, y=b.by, prog=Math.max(0,Math.min(1,b.prog));
+    const persona=!!b.persona;                              // 유휴 페르소나 문구 — 실작업 말풍선과 스타일로 구분
     const ax=Math.max(x+12, Math.min(x+w-12, b.hx));       // tail root kept under the bubble
     // leader line to the owner's head so a nudged bubble still reads as theirs
     ctx.save();
-    ctx.strokeStyle=hexA(P.brass,0.55); ctx.lineWidth=1.4;
+    ctx.strokeStyle=hexA(P.brass, persona?0.32:0.55); ctx.lineWidth=1.4;
     ctx.beginPath(); ctx.moveTo(ax, y+h); ctx.lineTo(b.hx, b.hy); ctx.stroke();
-    ctx.fillStyle=hexA(P.brass,0.75); ctx.beginPath(); ctx.arc(b.hx,b.hy,2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=hexA(P.brass, persona?0.5:0.75); ctx.beginPath(); ctx.arc(b.hx,b.hy,2,0,Math.PI*2); ctx.fill();
     ctx.restore();
-    // bubble body
-    const bg=lightT?'rgba(255,252,245,.97)':'rgba(24,28,36,.96)';
+    // bubble body — persona는 은은한 반투명 톤(실 로그 말풍선과 시각적으로 다름을 분명히)
+    const bg=persona ? (lightT?'rgba(255,252,245,.82)':'rgba(24,28,36,.78)') : (lightT?'rgba(255,252,245,.97)':'rgba(24,28,36,.96)');
     ctx.save();
-    ctx.shadowColor='rgba(0,0,0,.24)'; ctx.shadowBlur=10; ctx.shadowOffsetY=3;
+    ctx.shadowColor='rgba(0,0,0,.24)'; ctx.shadowBlur=persona?6:10; ctx.shadowOffsetY=persona?2:3;
     roundRect(x,y,w,h,10); ctx.fillStyle=bg; ctx.fill(); ctx.shadowColor='transparent';
-    ctx.lineWidth=1; ctx.strokeStyle=hexA(P.brass,0.5); ctx.stroke();
+    ctx.lineWidth=1; ctx.strokeStyle=hexA(P.brass, persona?0.32:0.5); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(ax-6,y+h-1); ctx.lineTo(ax+6,y+h-1); ctx.lineTo(ax,y+h+7); ctx.closePath();
     ctx.fillStyle=bg; ctx.fill();
-    ctx.font=`600 12px ${KFONT}`;
-    ctx.fillStyle=lightT?'#2A2318':'#F3ECDD'; ctx.textAlign='left'; ctx.textBaseline='middle';
-    ctx.fillText(b.s, x+12, y+15);
-    const bx=x+12, bw=w-24, byy=y+27, bh=5;
-    roundRect(bx,byy,bw,bh,3); ctx.fillStyle=lightT?'rgba(140,108,44,.18)':'rgba(201,169,106,.18)'; ctx.fill();
-    roundRect(bx,byy,bw*prog,bh,3); ctx.fillStyle=P.brass; ctx.fill();
+    ctx.font= persona? `italic 500 11.5px ${KFONT}` : `600 12px ${KFONT}`;
+    ctx.fillStyle= persona ? (lightT?'#5A4E38':'#C9BEA6') : (lightT?'#2A2318':'#F3ECDD');
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText(b.s, x+12, persona? y+h/2+1 : y+15);
+    if(!persona){
+      const bx=x+12, bw=w-24, byy=y+27, bh=5;
+      roundRect(bx,byy,bw,bh,3); ctx.fillStyle=lightT?'rgba(140,108,44,.18)':'rgba(201,169,106,.18)'; ctx.fill();
+      roundRect(bx,byy,bw*prog,bh,3); ctx.fillStyle=P.brass; ctx.fill();
+    }
     ctx.restore();
     ctx.textAlign='center'; ctx.textBaseline='middle';
   }
