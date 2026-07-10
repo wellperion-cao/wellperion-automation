@@ -1756,5 +1756,19 @@
     "artifact": "GM 가설 실측 확인: PC 부팅 후 카톡이 '친구' 탭으로 뜨면 방 검색이 실패해\n09:30 자동 카톡 발송(3방)이 전부 BLOCKED(오늘 로그: 검색창 활성화 실패).\n좌표 하드코딩 대신 안전한 방법을 먼저 소진 — 카톡 PC 앱 Ctrl+Tab이 탭 순환\n(친구→채팅→더보기→친구, 3탭)임을 라이브 실측으로 확인, UIA 뷰 컨트롤명\n(ChatRoomListView_*/ContactListView_*/MoreView_*)으로 현재 탭을 픽셀 없이\n판별하는 _current_main_tab() + 채팅탭이 아닐 때만 순환시키는 (CLI ad-hoc · 커밋 760d969e)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "760d969e323a9d3cf86be544d431e04d7a8b1763"
+  },
+  {
+    "task_id": "CEO-2026-07-10-ADHOC-e14e0726",
+    "clevel": "ceo",
+    "title": "[웰리] 09:30 실패분 수동 재발송 성공 반영 — kakao_last_send.json",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 847,
+    "artifact": "GM 지시로 3방(차의주 회장님·웰페리온 관리부·★ 운영부) 실발송 완료(채팅탭\n자동전환 수리 실검증 겸). 상태파일이 오늘 09:30 자동실패 기록에 멈춰있어\nproduction write_status()로 성공 상태 갱신. (CLI ad-hoc · 커밋 e14e0726)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e14e072649bcdb4c2d55034875a8fdd9e3081241"
   }
 ]
