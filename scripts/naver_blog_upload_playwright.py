@@ -596,24 +596,23 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
     except Exception:
         pass
 
-    # ★2026-07-10 GM 지정 레이아웃(단순화·요새화): 본문은 온전한 한 덩어리로 두고,
-    #   맨 끝에만 [스티커 → 문의(링크카드) → 사진] 순서로 붙인다.
-    #   구방식(스티커를 본문 중간에·이미지를 본문 중간에 삽입)은 caret 인터셉트로 본문이
-    #   조각나는 근본원인이라 폐기. 각 삽입 전 _place_caret_at_body_end 로 확실히 끝으로 이동.
+    # ★2026-07-10 재수리(본문 조각남 근본차단): 본문 타이핑 직후에는 caret이 '자연히 진짜 끝'에
+    #   있다 → 이때 이미지를 **먼저** 붙이면 중간 caret 조작이 전혀 없어 본문이 절대 안 쪼개진다.
+    #   이어서 링크카드·스티커를 붙인다. (구방식=스티커/이미지를 본문 중간에 넣어 caret 인터셉트로
+    #   본문이 두 조각 나던 근본원인 폐기. 최종 순서는 draft 실측으로 검증 후 확정.)
     sticker_count = getattr(post, "sticker_count", STICKER_COUNT_DEFAULT)
-    # 1) 스티커 (본문 끝)
-    if sticker_count > 0:
-        await _place_caret_at_body_end(page, target)
-        await _insert_one_sticker_at_caret(page, target, "본문 끝")
-        await _center_align_first_sticker(page, target)
-
-    # 2) 문의 링크카드 (스티커 다음) — UTM 추적형 URL을 og:image 썸네일 링크카드로.
-    await _place_caret_at_body_end(page, target)
-    await _insert_link_card(page, target, url=post.link_card_url)
-
-    # 3) 사진 (맨 끝) — _attach_images 내부가 _place_caret_at_body_end 로 끝 이동 후 삽입.
+    # 1) 사진 — 본문 타이핑 직후 자연 끝 caret (가장 안정, 본문 분할 원천차단)
     if post.image_paths:
         await _attach_images(page, target, post.image_paths)
+
+    # 2) 문의 링크카드 (이미지 다음)
+    await _insert_link_card(page, target, url=post.link_card_url)
+
+    # 3) 스티커 (맨 끝)
+    if sticker_count > 0:
+        await _place_caret_at_body_end(page, target)
+        await _insert_one_sticker_at_caret(page, target, "맨 끝")
+        await _center_align_first_sticker(page, target)
 
 
 async def _insert_stickers(page, target, count: int) -> int:
@@ -850,19 +849,26 @@ async def _place_caret_at_body_end(page, target) -> None:
     ★2026-07-10 F3 실측: 스티커 삽입이 caret을 본문 중간(첫 섹션 뒤)에 남긴 뒤 Control+End 가
     SmartEditor에 가로채여 무효 → 이미지/링크카드가 본문 중간에 박혀 본문이 조각남. 마지막
     컴포넌트를 실제 클릭하면(스크롤+클릭) caret이 확실히 문서 끝으로 간다."""
+    # ★2026-07-10 v2: .se-component.last 클릭은 caret이 60% 지점(찜질방 첫줄 뒤)에 놓이는 실측 →
+    #   마지막 '.se-text-paragraph'(실제 텍스트 마지막 줄)의 **오른쪽 끝 좌표를 직접 클릭**해
+    #   caret을 그 줄 끝에 확실히 둔다. SmartEditor는 클릭 지점에 caret을 놓으므로 이게 가장 확실.
     try:
-        comps = target.locator('.se-component')
-        n = await comps.count()
+        paras = target.locator('.se-text-paragraph')
+        n = await paras.count()
         if n > 0:
-            last = comps.nth(n - 1)
+            last = paras.nth(n - 1)
             await last.scroll_into_view_if_needed()
-            await last.click()
+            box = await last.bounding_box()
+            if box:
+                await page.mouse.click(box["x"] + box["width"] - 2, box["y"] + box["height"] / 2)
+            else:
+                await last.click()
             await page.keyboard.press("End")
             await page.wait_for_timeout(250)
-            print(f"[INFO] 본문 마지막 컴포넌트({n}번째) 클릭 — caret 문서 끝 이동")
+            print(f"[INFO] 마지막 텍스트문단({n}번째) 오른쪽 끝 클릭 — caret 문서 끝")
             return
     except Exception as e:
-        print(f"[WARN] 본문 끝 caret 클릭 이동 실패({e}) → Ctrl+End 폴백")
+        print(f"[WARN] 본문 끝 caret 이동 실패({e}) → Ctrl+End 폴백")
     try:
         await page.keyboard.press("Control+End")
     except Exception:
