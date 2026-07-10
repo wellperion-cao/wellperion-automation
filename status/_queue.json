@@ -1775,15 +1775,14 @@
     "task_id": "CFO-2026-07-10-ADHOC-homekpi-yesterday",
     "clevel": "cfo",
     "title": "[시뽀] home 매출·지출 \"오늘\" 표시 원인 진단 — 수리는 클래스프 재인증 대기로 보류",
-    "status": "IN_PROGRESS",
-    "terminal": false,
+    "status": "DONE",
+    "terminal": true,
     "priority": "NORMAL",
     "enqueued_at": "2026-07-10",
     "processed_at": "2026-07-10",
     "ship_no": 848,
     "artifact": "GM 지시(home 매출 \"오늘 —\" → \"어제\" 기준 표시, 지출도 동일)로 실측 진단.\n원인 확정: home_kpi GAS _kpiSales()가 2026-07-02 AV열(월간 정본) 전환 후\nsales.today를 상수 null로 고정 반환(일 단위 소스 자체가 끊김) — 오늘 매출\n미집계가 아니라 애초에 배선이 없음. expense.today는 구매성(지출품의)만의\n당일 필터라 인건비 누락 부분치.\n\"어제\" 매출원 후보(보고 탭 · SHEET_ID 1ycSEBb...gid 2009735088, 9시\n텔레그램·PNG 일일보고와 동일 소스)로 7/9 누적 216,057,540원 확인했으나,\n현재 AV열 정본 7월 누적 214,866,890원과 약 119만원 불일치 발견(수영·스쿼시·\n체조·뮤지컬 팀별 세부 상이) — 두 매출 소스가 서로 다름. 여기에 GAS\nclasp 배포 인증까지 만료(invalid_grant/invalid_rapt, 브라우저 재로그인\n필요·CLI 자동화 불가)라 수정을 배포·라이브 대조할 방법이 없음.\n→ 잘못된 수치 노출 위험 회피 위해 프론트 미변경, 수리 보류.",
-    "next": "👉 GM 필요: ① clasp 구글 재인증(브라우저 1회 로그인) ② 매출 정본을 '보고' 탭·'26년 매출 분석' AV열 중 어느 쪽 단일화할지 결정 — 확정되면 즉시 배선·배포·라이브 검증 진행",
-    "next_clevel": "gm"
+    "next": "🏁 입항완료 — GM clasp 재인증 완료 후 배 851에서 실제 구현·배포·라이브검증 완료(주차비 가설은 실측상 기각, 실원인은 GXE·뮤지컬 카테고리 누락으로 확정)"
   },
   {
     "task_id": "CPO-2026-07-10-NORTHSTAR-849",
@@ -1826,5 +1825,19 @@
     "artifact": "- home_kpi GAS(_kpiSales/_kpiExpense)에 sales.yesterday/expense.yesterday 신규 추가(기존\n  today/month/year 필드 비파괴). 매출 어제값 = '보고' 탭(9시 텔레그램·PNG 일일보고와 동일\n  소스, SALES_DAILY_REPORT_SHEET_ID) 최근 2개 날짜블록 누적차 역산(GM 지시 (b)안) + 해당일\n  주차 매출(parking_revenue.json 신규 '일별' 배열) 합산 = 주차 통합. 지출 어제값은 구매성\n  (지출품의)만의 부분치 —  (CLI ad-hoc · 커밋 9e3d0fdd)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9e3d0fdd62d3af1bbabf39205f19cf006c4a89dd"
+  },
+  {
+    "task_id": "COO-2026-07-10-ADHOC-c4dbeb7c",
+    "clevel": "coo",
+    "title": "[시우] 4부서 체계 현황대시보드+월간계획보고 통합 → '월간 OO 현황·계획·보고' 단일 버튼",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 852,
+    "artifact": "시설·지원·주차 체계 페이지: 별도 '현황 대시보드'(특정1일 실시간) 탭을\n월간 탭으로 일원화(월간엔 이미 이달 현황 통합됨). 월간 탭 개명·현황대시보드 자리로,\n헤더 바로가기 재연결, 지원부 보고용/공유용 버튼 삭제. GM 결정=제거·일원화.\ntab-admin content+switchTab 참조 제거(런타임 null 0), 렌더 함수는 복원대비 inert 보존. (CLI ad-hoc · 커밋 c4dbeb7c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c4dbeb7c38f1436967f8ce62c981df1952e7bbaa"
   }
 ]
