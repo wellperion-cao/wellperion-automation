@@ -346,7 +346,7 @@ def show_status():
 # ═══════════════════════════════════════════
 #  전체 파이프라인 (수집 → 요약 → 발송)
 # ═══════════════════════════════════════════
-def run_full_pipeline():
+def run_full_pipeline(send: bool = True):
     print(f"[시작] AI 교육 자동 학습 파이프라인 ({now_str()})\n")
 
     print("=== 1/3: 수집 ===")
@@ -356,7 +356,11 @@ def run_full_pipeline():
     summary = generate_summary(collect_data)
 
     print("\n=== 3/3: 발송 ===")
-    send_summary(summary)
+    if send:
+        send_summary(summary)
+    else:
+        print("[INFO] --no-send — 개별 텔레그램 발송 생략 "
+              "(일요일 통합 카드 weekly_self_review.py 로 흡수)")
 
     print(f"\n[완료] 파이프라인 종료 ({now_str()})")
 
@@ -381,6 +385,9 @@ def main():
     parser.add_argument("--summary", action="store_true", help="수집 결과 요약 생성")
     parser.add_argument("--send", action="store_true", help="마지막 요약을 텔레그램 발송")
     parser.add_argument("--status", action="store_true", help="현황 조회")
+    parser.add_argument("--no-send", action="store_true", dest="no_send",
+                         help="전체 파이프라인 실행하되 개별 텔레그램 발송만 생략 "
+                              "(weekly_self_review.py 통합 카드용, 2026-07-10)")
 
     args = parser.parse_args()
 
@@ -393,7 +400,7 @@ def main():
     elif args.send:
         send_summary()
     else:
-        run_full_pipeline()
+        run_full_pipeline(send=not args.no_send)
 
 
 if __name__ == "__main__":

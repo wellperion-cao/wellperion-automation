@@ -54,6 +54,21 @@
       "reversible": true
     },
     {
+      "id": "cto-weekly-self-review",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "주간 AI 자기정리·학습 — 메모리+AI트렌드+C레벨컨텍스트 Before/After 카드, 자체발신(일요일 10:30, module_reporter 경유 아님 — 이중발송 방지)",
+      "data_source": {"kind": "json", "ref": "status/self_review_log.jsonl"},
+      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "autonomy": "propose",
+      "ai_free_fallback": "일 10:30 예약작업이 무인 가동 — 병합·갱신은 자율(스냅샷 가역), 삭제·실발송은 GM 승인 게이트 뒤",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
       "id": "cmo-content-pipeline",
       "owner_role": "cmo",
       "owner_nick": "시모",

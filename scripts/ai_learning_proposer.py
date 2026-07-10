@@ -268,7 +268,9 @@ def _build_llm_prompt(summary_text: str, max_proposals: int) -> str:
     "반영위치": "메모리 또는 프롬프트 또는 자동화코드 또는 보고체계 또는 운영프로세스 또는 스킬·플러그인 활용",
     "예상효과": "기대되는 구체적 효과",
     "위험": "도입 시 주의사항 또는 부작용 (없으면 '없음')",
-    "구현_초안": "바로 착수 가능한 실행 초안. ▸대상 파일/위치(예: scripts/xxx.py · S2 cto탭) ▸구체적 변경(핵심 코드·텍스트 스니펫 또는 정확한 수정점) ▸검증법(예: py_compile·라이브 확인). 모르면 '미상'이 아니라 합리적 초안을 제시."
+    "구현_초안": "바로 착수 가능한 실행 초안. ▸대상 파일/위치(예: scripts/xxx.py · S2 cto탭) ▸구체적 변경(핵심 코드·텍스트 스니펫 또는 정확한 수정점) ▸검증법(예: py_compile·라이브 확인). 모르면 '미상'이 아니라 합리적 초안을 제시.",
+    "현재는": "지금 우리 시스템이 이 일을 어떻게 하고 있는지 (Before, 1문장, 가능하면 수치)",
+    "바뀌면": "반영하면 무엇이 어떻게 달라지는지 (After, 1문장, 가능하면 수치)"
   }}
 ]
 
@@ -277,6 +279,7 @@ def _build_llm_prompt(summary_text: str, max_proposals: int) -> str:
 - 반영위치 는 반드시 메모리/프롬프트/자동화코드/보고체계/운영프로세스/스킬·플러그인 활용 중 하나
 - 중복 대상_clevel 최소화 (여러 C-Level 분산)
 - 구현_초안 은 '설명'이 아니라 담당 AI가 그대로 착수할 수 있는 구체 초안(파일·변경·검증)으로. 추상적 방향만 적지 말 것
+- "현재는"/"바뀌면" 은 Before→After 대비가 느껴지게 (추상 요약 금지, 가능하면 숫자·빈도 포함)
 - 순수 JSON 배열만 출력 (```json 코드블록도 없이)"""
 
 
@@ -399,6 +402,8 @@ def generate_proposals_fallback(summary: dict, max_proposals: int) -> list:
             "예상효과": "운영 효율 향상 및 최신 AI 기법·도구 반영",
             "위험": "기존 동작 회귀 가능성 — 반영 전 GM 승인 필수",
             "구현_초안": draft,
+            "현재는": f"{loc} 영역 — 현재 자동 개선 루프 미적용(규칙폴백 생성)",
+            "바뀌면": "담당 AI 검토·승인 후 반영 시 해당 영역 개선(규칙폴백은 대비 수치 미제공)",
         })
 
     return proposals[:max_proposals]
@@ -424,6 +429,8 @@ def assemble_cards(raw_proposals: list, summary: dict, brain: str) -> list:
             "예상효과": p.get("예상효과", ""),
             "위험": p.get("위험", "없음"),
             "구현_초안": p.get("구현_초안", ""),  # ② 실체화: 바로 착수 가능한 실행 초안
+            "현재는": p.get("현재는", ""),  # Before — weekly_self_review 카드 대비용(2026-07-10)
+            "바뀌면": p.get("바뀌면", ""),  # After
             "status": "제안",
             "효과": "미확인",
             "효과근거": "",
@@ -686,9 +693,9 @@ def cmd_mark_applied(card_id: str, dry_run: bool):
 # ═══════════════════════════════════════════
 #  메인 파이프라인 (제안 생성)
 # ═══════════════════════════════════════════
-def run(max_proposals: int = 3, dry_run: bool = False):
+def run(max_proposals: int = 3, dry_run: bool = False, send: bool = True):
     print(f"[시작] AI 학습 개선제안 생성기 ({now_str()})")
-    print(f"  dry-run={dry_run}  max={max_proposals}\n")
+    print(f"  dry-run={dry_run}  max={max_proposals}  send={send}\n")
 
     # 1. 요약 로드
     summary = load_summary()
@@ -776,14 +783,18 @@ def run(max_proposals: int = 3, dry_run: bool = False):
             lines.append(f"{i}. {clevel}: {what}")
         card_list = "\n".join(lines)
 
-        tg_msg = (
-            f"[시토] AI 자기학습 — 개선제안 {added_count}건 (검토 대기)\n"
-            f"{card_list}\n"
-            f"생성두뇌: {brain} · 학습기준: {summary.get('generated_at', '?')}\n"
-            f"👉 G1 'AI 자기학습 제안' 섹션에서 확인\n"
-            f"승인: python scripts/ai_learning_proposer.py --approve <id>"
-        )
-        send_telegram(tg_msg)
+        if send:
+            tg_msg = (
+                f"[시토] AI 자기학습 — 개선제안 {added_count}건 (검토 대기)\n"
+                f"{card_list}\n"
+                f"생성두뇌: {brain} · 학습기준: {summary.get('generated_at', '?')}\n"
+                f"👉 G1 'AI 자기학습 제안' 섹션에서 확인\n"
+                f"승인: python scripts/ai_learning_proposer.py --approve <id>"
+            )
+            send_telegram(tg_msg)
+        else:
+            print("[INFO] --no-send — 개별 텔레그램 발송 생략 "
+                  "(일요일 통합 카드 weekly_self_review.py 로 흡수)")
     else:
         print("[INFO] 신규 제안 없음 (중복) — 텔레그램 생략")
 
@@ -868,6 +879,9 @@ def main():
     # 제안 생성 옵션
     parser.add_argument("--dry-run", action="store_true", help="미리보기 (저장·발송 없음)")
     parser.add_argument("--max", type=int, default=3, metavar="N", help="제안 수 (기본 3)")
+    parser.add_argument("--no-send", action="store_true", dest="no_send",
+                         help="저장은 하되 개별 텔레그램 발송만 생략 "
+                              "(weekly_self_review.py 통합 카드용, 2026-07-10)")
 
     # ③ 상태관리 서브커맨드
     parser.add_argument("--list", action="store_true", help="카드 목록 보기")
@@ -921,7 +935,7 @@ def main():
         print("[ERROR] --max 는 1~10 사이")
         sys.exit(1)
 
-    run(max_proposals=args.max, dry_run=args.dry_run)
+    run(max_proposals=args.max, dry_run=args.dry_run, send=not args.no_send)
 
 
 if __name__ == "__main__":
