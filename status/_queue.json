@@ -1936,5 +1936,32 @@
     "artifact": "시설·지원·주차·운영 체계 헤더에 '정기점검 달력' 링크 → 정기점검_달력.html?dept={부서}\n자동필터. 전 부서가 같은 SSOT 달력 공유. (CLI ad-hoc · 커밋 96f1bcc6)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "96f1bcc602f7867ee58717a04d58e333748c3315"
+  },
+  {
+    "task_id": "CMO-2026-07-10-ADHOC-3074f1c5",
+    "clevel": "cmo",
+    "title": "[시모] F3 회복 인스타그램 재발행 완료 — @wellperion",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 860,
+    "artifact": "- IG: https://www.instagram.com/p/DamPUQ7Etwo/ (버튼 뷰포트 잘림 수리 후 재발행·ig_publish_verify 라이브 캡션 대조 일치 확정)\n- review_queue F3 IG 엔트리 발행완료 도장 + post_url 백필\n- 이로써 F3 5채널 중 4채널 발행완료(IG·카카오·블로그·카페), 당근만 BLOCKED(프로필 재로그인 대기) (CLI ad-hoc · 커밋 3074f1c5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "3074f1c5de381b434d57a10ee111d8855fcf26fb"
+  },
+  {
+    "task_id": "COO-2026-07-10-COMPLIANCE-CALENDAR",
+    "clevel": "coo",
+    "title": "[시우] 정기 안전·법정 점검 달력 — 별도 SSOT+전부서 공유+업무결재 자동연동(A안)",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-10",
+    "module": "O1",
+    "note": "[2026-07-10 GM 시안 승인·A안·전부서] 소방·전기·승강기·소독·법정교육 등 정기 의무점검을 한눈에. deep-interview 대신 시안 카드로 구조(A:별도SSOT+연동)·범위(전부서) 확정. [1단계 뼈대 라이브 완결] ①SSOT status/compliance_calendar.json(15항목·정직 tbd·지어낸 날짜 0·소방연1/전기3년1만 법정주기 확인표기) ②scripts/compliance_calendar.py(로더·검증·기한도래 선별·업무결재 예행연동 dry-run, 게이트 auto_workapproval=false 기본OFF)+테스트 5통과 ③정기점검_달력.html 마스터(전부서 공유·?dept 자동필터·임박순+연간뷰·ERP다크테마) ④시설·지원·주차·운영 4부서 헤더 링크→부서필터 달력. [라이브검증] 시크릿 헤드리스: 마스터 HTTP200·전체15/지원부3·JS오류0, 시설부 페이지→링크클릭→dept=시설부 필터(10항목) 통과. 커밋=SSOT+스크립트+페이지 / 4부서링크.",
+    "next": "👉 2단계=실제 날짜 입력(GM·실무): 부서별 실제 의무점검 목록 확정+최근검사일/다음예정일 입력(쉬운 입력칸 제공 예정)+승강기·에스컬레이터 설비 유무 확인. 3단계=업무결재 자동연동 발효(gate.auto_workapproval=true, GM go+역롤백 한줄). 입력양식 먼저 만들지 여부 GM 결정 대기.",
+    "depends_on": "",
+    "ship_no": 860
   }
 ]
