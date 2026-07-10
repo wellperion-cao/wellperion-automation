@@ -444,7 +444,7 @@
             <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">목표 <span id="heroSalesTarget" style="font-weight:700;">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">달성률 <span id="heroSalesRate" style="color:var(--grow);font-weight:700;">—</span></div>
-            <div style="font-size:10.5px;color:var(--dim);">오늘 <span id="heroSalesDay" style="color:var(--grow);">—</span></div>
+            <div style="font-size:10.5px;color:var(--dim);"><span id="heroSalesDayLabel">오늘</span> <span id="heroSalesDay" style="color:var(--grow);">—</span></div>
           </div>
           <div style="padding-left:10px;border-left:1px dashed var(--border);">
             <div style="font-size:10.5px;font-weight:700;color:var(--dim);">연간 매출<span id="salesYearLabel"></span></div>
@@ -475,7 +475,7 @@
             <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroExpMonth">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">예산<span style="font-size:9px;color:var(--accent);font-weight:700;"> (순이익30%기준)</span> <span id="heroExpBudget" style="font-weight:700;">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">예산대비 <span id="heroExpRate" style="color:var(--warm);font-weight:700;">—</span></div>
-            <div style="font-size:10.5px;color:var(--dim);">오늘 <span id="heroExpDay" style="color:var(--warm);">—</span></div>
+            <div style="font-size:10.5px;color:var(--dim);"><span id="heroExpDayLabel">오늘</span> <span id="heroExpDay" style="color:var(--warm);">—</span></div>
           </div>
           <div style="padding-left:10px;border-left:1px dashed var(--border);">
             <div style="font-size:10.5px;font-weight:700;color:var(--dim);">연간 지출</div>
@@ -1165,12 +1165,10 @@
             set('heroSalesMonth', '이번달 미마감');
             setTitle('heroSalesMonth', '분석시트 AV(이번달=' + (s.curMonth != null ? s.curMonth + '월' : '현재월') + ') 마감값이 아직 없습니다 — 스테일 방지로 이전달 값을 쓰지 않음');
             set('heroSalesRate', '—');
-            set('heroSalesDay', '—');
           } else {
             var smVal = krAmt(s.month);
             set('heroSalesMonth', smVal);
             setTitle('heroSalesMonth', krExact(s.month));
-            set('heroSalesDay',   krAmt(s.today));
             if (s.rate != null) {
               set('heroSalesRate', pct(s.rate));
             } else if (monthlyTarget != null && typeof s.month === 'number' && monthlyTarget > 0) {
@@ -1180,6 +1178,24 @@
               set('heroSalesRate', '목표 미설정');
             }
           }
+
+          /* 어제(최신 확정) 일일 매출 — 2026-07-10 GM 지시: '오늘'(AV열엔 일 단위 데이터가 없어
+             항상 미집계 대시)이 아니라 어제 확정치를 표기. s.yesterday = GAS _kpiSalesYesterday()
+             신규 필드('보고' 탭 최근 2개 날짜 블록 누적차 역산 + 해당일 주차 매출 합산 = 주차 통합).
+             GAS 미배포 상태(필드 없음)에선 자동으로 구 동작(대시)로 안전 폴백 — 프론트만 먼저 나가도 무해. */
+          if (s.yesterday && typeof s.yesterday.amount === 'number') {
+            var yd = s.yesterday;
+            var ydLabel = yd.date ? (Number(yd.date.slice(5, 7)) + '/' + Number(yd.date.slice(8, 10)) + ' 기준') : '어제';
+            set('heroSalesDayLabel', ydLabel);
+            set('heroSalesDay', krAmt(yd.amount));
+            setTitle('heroSalesDay', krExact(yd.amount)
+              + (typeof yd.parking === 'number' ? (' (주차 ' + krExact(yd.parking) + ' 포함)') : '')
+              + ' · ' + (yd.date || '') + ' 확정치(보고 탭 누적차 역산)');
+          } else {
+            set('heroSalesDayLabel', '오늘');
+            set('heroSalesDay', '—');
+          }
+
           /* 연간: 26년 매출 분석 시트 AV3:AV14 중 값 있는 달 합 = year(GAS 산출·자동 누적).
              연 목표 72억 = GM 결재 2026-06-20 확정(KPI_YEAR_TARGET 상수). yearRate = year/72억 소수1자리.
              분석시트 접근 실패·전부 0 시 year=null → '집계 보완 중' 안전 fallback. */
@@ -1232,7 +1248,19 @@
           var emVal = krAmt(e.month);
           set('heroExpMonth', emVal);
           setTitle('heroExpMonth', krExact(e.month));
-          set('heroExpDay',  krAmt(e.today));
+          /* 어제 지출 — 매출과 동일 원칙(2026-07-10 GM 지시). e.yesterday = GAS _kpiExpenseYesterday()
+             신규 필드. 인건비는 일 단위 데이터가 없어 구매성(지출품의)만 반영된 부분치 — 과장 없이 그대로 정직 표기.
+             GAS 미배포 상태(필드 없음)에선 자동으로 구 동작(오늘·대시)로 안전 폴백. */
+          if (e.yesterday && typeof e.yesterday.amount === 'number') {
+            var ed = e.yesterday;
+            var edLabel = ed.date ? (Number(ed.date.slice(5, 7)) + '/' + Number(ed.date.slice(8, 10)) + ' 기준') : '어제';
+            set('heroExpDayLabel', edLabel);
+            set('heroExpDay', krAmt(ed.amount));
+            setTitle('heroExpDay', krExact(ed.amount) + ' · ' + (ed.date || '') + ' 구매성(지출품의)만 — 인건비 일 단위 데이터 없음(부분치)');
+          } else {
+            set('heroExpDayLabel', '오늘');
+            set('heroExpDay', krAmt(e.today));
+          }
           var monthlyBudget = (monthlyTarget != null) ? monthlyTarget * 0.7 : null;
           if (monthlyBudget != null) {
             set('heroExpBudget', krAmt(monthlyBudget));

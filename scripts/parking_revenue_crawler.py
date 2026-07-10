@@ -136,6 +136,7 @@ def collect(month_str=None):
         "할인감면액": 0,        # dcAmt 합 = 회원 무료/감면(참고)
         "취소금액": 0,
         "수집일수": 0,
+        "일별": [],             # [{날짜:'YYYY-MM-DD', 매출금액, 결제건수}] — home_kpi 어제 일일 매출 배선용(2026-07-10 시뽀)
     }
     if not env["PARKING_LOGIN_ID"] or not env["PARKING_LOGIN_PW"]:
         out["메시지"] = "자격증명 없음(telegram_bot/.env PARKING_LOGIN_ID/PW 확인)"
@@ -155,6 +156,24 @@ def collect(month_str=None):
         out["할인감면액"] = sum(int(r.get("dcAmt") or 0) for r in rows)
         out["취소금액"] = sum(int(r.get("cancelPayAmt") or 0) for r in rows)
         out["수집일수"] = len(rows)
+        # 일별 breakdown — getParkCloseList 응답은 이미 1행=1일(stdDtStr) 이므로 그대로 노출.
+        # stdDtStr 실측(2026-07-10 시뽀): 이미 "2026-07-09" 형(YYYY-MM-DD). "20260709"(8자리) 형도 방어적으로 허용.
+        daily = []
+        for r in rows:
+            raw_d = str(r.get("stdDtStr") or "").strip()
+            if len(raw_d) == 10 and raw_d[4] == "-" and raw_d[7] == "-":
+                d_iso = raw_d
+            elif len(raw_d) == 8 and raw_d.isdigit():
+                d_iso = f"{raw_d[0:4]}-{raw_d[4:6]}-{raw_d[6:8]}"
+            else:
+                continue
+            daily.append({
+                "날짜": d_iso,
+                "매출금액": int(r.get("payAmt") or 0),
+                "결제건수": int(r.get("payCnt") or 0),
+            })
+        daily.sort(key=lambda x: x["날짜"])
+        out["일별"] = daily
         out["status"] = "정상"
         out["메시지"] = f"{label} 실결제 매출 {out['매출금액']:,}원 / {out['결제건수']:,}건"
     except Exception as e:

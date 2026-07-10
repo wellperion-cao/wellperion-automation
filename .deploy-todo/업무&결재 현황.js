@@ -676,7 +676,12 @@ function _uploadFile(base64, fileName, mimeType) {
 // ═══════════════════════════════════════════
 
 // 외부 시트 ID
-var KPI_SALES_SHEET_ID   = '1oG63rj17-RMk2cdiVbwp4TOp-yN73uc04jDV7RfN9BI';
+var KPI_SALES_SHEET_ID   = '1oG63rj17-RMk2cdiVbwp4TOp-yN73uc04jDV7RfN9BI'; // ⚠️ 미사용(2026-07-02 AV열 전환 후 죽은 참조) — 삭제는 별건, 무변경 유지.
+// '보고' 탭(일자별 스냅샷 원본) — 9시 텔레그램·PNG 일일보고(scripts/generate_sales_report_image.py)와
+// 동일 소스로 2026-07-10 시뽀 실측 확인(라이브 대조: 7/9 누적 216,057,540 그대로 일치).
+// KPI_SALES_SHEET_ID(위, 죽은 참조)와는 다른 시트 — '어제 일일 매출' 전용, 월/연 정본(AV열)은 무변경.
+var SALES_DAILY_REPORT_SHEET_ID = '1ycSEBbXjcU_suNu9B5HsEXQW0XosaW8fGtO0XfGprqc';
+var SALES_DAILY_REPORT_GID      = 2009735088;
 // 26년 매출 분석 시트 — 1~5월 월별 마감 총합(AV3:AV7) 출처 (2026-06-20 GM 제공, 시뽀 연동).
 // 탭명: '26년 매출 분석' (gid=195790960). AV열 3~7행 = 1월~5월 순서(GM 확인).
 var KPI_SALES_ANALYSIS_SHEET_ID = '1gCQNny8TDls5SjrtMkINu4HCltvFkoXmkTeXO_c3q58';
@@ -730,6 +735,13 @@ function _kpiParseDate(v) {
 
 function _kpiToday() {
   var n = new Date();
+  return { y: n.getFullYear(), m: n.getMonth() + 1, d: n.getDate() };
+}
+
+// 어제(KST) — 2026-07-10 GM 지시 '어제 기준' 표기용. setDate(-1)로 월/연 경계도 자동 처리.
+function _kpiYesterday() {
+  var n = new Date();
+  n.setDate(n.getDate() - 1);
   return { y: n.getFullYear(), m: n.getMonth() + 1, d: n.getDate() };
 }
 
@@ -926,6 +938,121 @@ function _kpiParkingRevenueRow() {
   } catch (e) { return null; }
 }
 
+// ── 어제(최신 확정) 일일 매출 — 2026-07-10 GM 지시 ──
+// AV열(월간 정본)은 일 단위 데이터가 없어 '오늘' 칸이 항상 null이었다. 대신 '보고' 탭
+// (SALES_DAILY_REPORT_SHEET_ID·9시 텔레그램/PNG 일일보고와 동일 소스, 2026-07-10 시뽀
+// 라이브 대조로 확인)의 날짜별 블록에서 최근 2일 누적차를 역산해 '어제 하루치'를 구하고,
+// 거기에 그날의 주차 매출을 더해 "주차 통합 어제 매출"을 만든다.
+// ⚠ 월/연 정본(AV열, KPI_SALES_ANALYSIS_SHEET_ID)은 무변경 — 이 값은 오직 '오늘' 칸을
+//   대체하는 보조 필드(sales.yesterday)로만 추가된다(기존 sales.month/year 로직 비파괴).
+// 실측 검증(2026-07-10, clasp 배포 불가로 로컬 계산 검산): 7/9 누적 216,057,540 − 7/8 누적
+// 201,991,486 = 14,066,054 → 7/9 블록 자체의 '금일 매출' 칸(14,066,054)과 정확히 일치.
+// 주차(parking_revenue.json 일별) 7/9 = 112,500 → 주차 통합 어제 매출 = 14,178,554.
+
+// 날짜 전체(y,m,d) 파싱 — _blockMonthOf와 동일 탐색범위, 연·일까지 캡처.
+// '보고' 탭 실측(2026-07-10 시뽀, PNG 육안): 블록 제목이 "26년 7월 9일 매출 및 운영사항 보고"
+// (점/슬래시 아닌 년·월·일 한글 표기) — 한글 패턴을 1순위로, 점/슬래시 패턴은 방어적 폴백으로 유지.
+function _kpiBlockDateOf(values, anchorR, anchorC) {
+  for (var rr = anchorR; rr >= 0 && rr > anchorR - 12; rr--) {
+    for (var cc = anchorC; cc < anchorC + 6 && cc < values[rr].length; cc++) {
+      var sv = String(values[rr][cc] || '').trim();
+      if (!sv) continue;
+      var mk = sv.match(/(\d{2,4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+      if (mk) { var ky = +mk[1]; if (ky < 100) ky += 2000; return { y: ky, m: +mk[2], d: +mk[3] }; }
+      var m4 = sv.match(/(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);
+      if (m4) return { y: +m4[1], m: +m4[2], d: +m4[3] };
+      var m2 = sv.match(/\b(\d{2})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);
+      if (m2) return { y: 2000 + (+m2[1]), m: +m2[2], d: +m2[3] };
+    }
+  }
+  return null;
+}
+
+function _kpiDateStr(dt) {
+  if (!dt) return null;
+  return dt.y + '-' + ('0' + dt.m).slice(-2) + '-' + ('0' + dt.d).slice(-2);
+}
+
+// '보고' 탭 전체를 스캔해 "총 매출 합계" 블록마다 {dateStr, today(금일), month(누적)}로 반환.
+// 같은 날짜에 블록이 여러 개면(재작성 등) 가장 오른쪽(최신 컬럼)만 채택. 날짜 오름차순 정렬.
+function _kpiSalesDailyBlocks(sheet) {
+  var lastRow = sheet.getLastRow(), lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 2) return [];
+  var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+  var anchors = [];
+  for (var r = 0; r < values.length; r++) {
+    for (var c = 0; c < values[r].length; c++) {
+      if (String(values[r][c] || '').indexOf('총 매출 합계') >= 0) anchors.push({ r: r, c: c });
+    }
+  }
+  var byDate = {};
+  for (var ai = 0; ai < anchors.length; ai++) {
+    var blk = _kpiReadBlock(values[anchors[ai].r], anchors[ai].c);
+    if (!blk || blk.month === null) continue;
+    var dt = _kpiBlockDateOf(values, anchors[ai].r, anchors[ai].c);
+    if (!dt) continue;
+    var ds = _kpiDateStr(dt);
+    if (!byDate[ds] || anchors[ai].c > byDate[ds].c) {
+      byDate[ds] = { c: anchors[ai].c, dateStr: ds, today: blk.today, month: blk.month };
+    }
+  }
+  var out = [];
+  for (var k in byDate) { if (byDate.hasOwnProperty(k)) out.push(byDate[k]); }
+  out.sort(function (a, b) { return a.dateStr < b.dateStr ? -1 : (a.dateStr > b.dateStr ? 1 : 0); });
+  return out;
+}
+
+// 특정 날짜(YYYY-MM-DD)의 주차 매출 — status/parking_revenue.json '일별' 배열 직독(raw GitHub).
+// 크롤러가 '이번달' 범위만 수집하므로 전월 마지막 날 등은 못 찾을 수 있음(null=정직, 0 위조 금지).
+function _kpiParkingDayAmount(dateStr) {
+  try {
+    var url = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/parking_revenue.json';
+    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+    if (resp.getResponseCode() !== 200) return null;
+    var j = JSON.parse(resp.getContentText());
+    var daily = (j && Array.isArray(j['일별'])) ? j['일별'] : [];
+    for (var i = 0; i < daily.length; i++) {
+      if (daily[i]['날짜'] === dateStr) return Number(daily[i]['매출금액']) || 0;
+    }
+    return null;
+  } catch (e) { return null; }
+}
+
+// sales.yesterday — {date, core, parking, amount, sheetToday, mismatch}. 실패는 null(정직, 프론트 자동 폴백).
+function _kpiSalesYesterday() {
+  try {
+    if (!SALES_DAILY_REPORT_SHEET_ID) return null;
+    var ss = SpreadsheetApp.openById(SALES_DAILY_REPORT_SHEET_ID);
+    var sheets = ss.getSheets();
+    var sh = null;
+    for (var i = 0; i < sheets.length; i++) {
+      if (sheets[i].getSheetId() === SALES_DAILY_REPORT_GID) { sh = sheets[i]; break; }
+    }
+    if (!sh) return null;
+    var blocks = _kpiSalesDailyBlocks(sh);
+    if (!blocks.length) return null;
+    var latest = blocks[blocks.length - 1];
+    var prev = blocks.length >= 2 ? blocks[blocks.length - 2] : null;
+    // 정본 산출법 = 누적차 역산(GM 지시 (b)안 — 사람 손입력 '금일' 칸에 기대지 않는 자기검증 방식).
+    // 직전 블록이 없으면 그 블록 자체의 '금일' 칸으로 폴백.
+    var core = (prev != null) ? (latest.month - prev.month) : latest.today;
+    if (core == null || isNaN(core)) return null;
+    var mismatch = (prev != null && latest.today != null && Math.abs(core - latest.today) > 1000);
+    var parking = _kpiParkingDayAmount(latest.dateStr);
+    var amount = core + (parking || 0);
+    return {
+      date: latest.dateStr,
+      core: core,
+      parking: parking,      // null=그날 주차 데이터 없음(정직) — amount엔 0으로만 처리, core는 원값 보존
+      amount: amount,
+      sheetToday: latest.today,  // 시트 자체 '금일' 칸(대조용, 정상이면 core와 일치)
+      mismatch: mismatch         // true면 누적차 vs 시트 금일칸이 어긋남(수기입력 오류 가능성) — 프론트 미사용, 로그용
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
 function _kpiSales() {
   try {
     var cm = _kpiToday().m; // 현재월(1~12)
@@ -1016,16 +1143,19 @@ function _kpiSales() {
       if (gi >= 0) bd.splice(gi + 1, 0, park); else bd.push(park);
     }
 
+    // '오늘' 칸 대체 — AV열에 일 단위 데이터가 없어 today는 계속 null 유지(비파괴),
+    // yesterday만 신규 추가(2026-07-10 GM 지시). 이 fetch 실패해도 위 month/year엔 무영향.
+    var yesterday = _kpiSalesYesterday();
     return { today: null, month: month, year: year,
              target: null, rate: null,
              yearTarget: yearTarget, yearRate: yearRate,
              curMonth: cm, hasCurMonth: hasCurMonth,
              lastFilledMonth: lastFilledMonth,
              breakdownMonth: breakdownMonth, breakdownFallback: breakdownFallback,
-             breakdown: bd };
+             breakdown: bd, yesterday: yesterday };
   } catch (err) {
     return { today: null, month: null, year: null, target: null, rate: null,
-             yearTarget: null, yearRate: null, error: String(err) };
+             yearTarget: null, yearRate: null, yesterday: null, error: String(err) };
   }
 }
 
@@ -1345,7 +1475,8 @@ function _expenseSetBudget(amount, key) {
 // 컬럼(1-base, procurement.js와 동일): 1날짜 3요청자 4소속 7가격 12진행상황. 헤더 2행·데이터 3행부터.
 function _kpiProcExpense() {
   var t = _kpiToday();
-  var result = { todayAmt: 0, monthAmt: 0, yearAmt: 0, deptMonth: {}, any: false };
+  var y = _kpiYesterday(); // 어제 — 월/연 경계 밖일 수 있어 t.y/t.m 게이트와 별도로 독립 매칭(2026-07-10 시뽀)
+  var result = { todayAmt: 0, yesterdayAmt: 0, monthAmt: 0, yearAmt: 0, deptMonth: {}, any: false };
   try {
     var sh = SpreadsheetApp.openById(KPI_EXPENSE_SHEET_ID).getSheetByName(KPI_EXPENSE_TAB);
     if (!sh) { result.error = 'proc_tab_not_found'; return result; }
@@ -1363,6 +1494,7 @@ function _kpiProcExpense() {
       var price = _kpiNum(row[6]);
       if (price === null) continue;
       result.any = true;
+      if (d.y === y.y && d.m === y.m && d.d === y.d) result.yesterdayAmt += price;
       if (d.y === t.y) {
         result.yearAmt += price;
         if (d.m === t.m) {
@@ -1420,12 +1552,20 @@ function _kpiExpense() {
   var proc  = _kpiProcExpense();
   var labor = _kpiLaborExpense();
   if (!proc.any && !labor.any) {
-    return { today: null, month: null, year: null, budget: null, rate: null, breakdown: [],
+    return { today: null, yesterday: null, month: null, year: null, budget: null, rate: null, breakdown: [],
              error: proc.error || labor.error || 'no_data' };
   }
   var month = (proc.monthAmt || 0) + (labor.monthAmt || 0);
   var year  = (proc.yearAmt  || 0) + (labor.yearAmt  || 0);
   var today = proc.todayAmt || 0;  // 인건비는 일단위 데이터 없음 — 구매성만(부분치·정직)
+  // 어제 지출 — 매출과 동일 원칙(2026-07-10 GM 지시). 인건비는 일 단위 데이터가 아예 없어
+  // 여기도 구매성(지출품의)만의 부분치 — today와 동일한 한계, 과장 없이 그대로 전달.
+  var yTod = _kpiYesterday();
+  var yesterday = {
+    date: yTod.y + '-' + ('0' + yTod.m).slice(-2) + '-' + ('0' + yTod.d).slice(-2),
+    amount: proc.yesterdayAmt || 0,
+    partial: true // 인건비 미포함(구매성만) — 프론트 title로 정직 표기
+  };
 
   // 부서별 breakdown = 인건비+구매성 부서 합(부서명 병합) — 재무허브 '부서별 총지출' 정의와 동형.
   var deptSet = {};
@@ -1443,7 +1583,7 @@ function _kpiExpense() {
   }
   breakdown.sort(function (a, b) { return b.month - a.month; });
 
-  return { today: today, month: month, year: year, budget: null, rate: null, breakdown: breakdown };
+  return { today: today, yesterday: yesterday, month: month, year: year, budget: null, rate: null, breakdown: breakdown };
 }
 
 // ── 이슈(VOC) ──
