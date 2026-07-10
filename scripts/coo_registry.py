@@ -22,7 +22,9 @@ CHECK_QUERIES = {"facility": "action=weekly&dept=facility", "support": "action=t
 TODO_API = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
 
 # 표시용 짧은 이름(정본 스키마엔 name 필드 없음 — feature로 갈음하되 카드용 축약은 소비자 상수).
-DISPLAY_NAME = {"coo-check-status": "점검 현황", "coo-work-approval": "업무·결재"}
+# 라벨 = 소스 구분 명시. "전사 업무·결재"=전사 업무·결재 SSOT 시트(todo_list, 모든 부서 실무 포함)
+# — 09시 보고의 "C-Level 업무"(status/_queue.json 큐)와 다른 모집단이라 GM 화면서 혼동 방지(2026-07-10 시우).
+DISPLAY_NAME = {"coo-check-status": "점검 현황", "coo-work-approval": "전사 업무·결재"}
 
 
 def load_registry(path=REGISTRY_PATH) -> dict:
