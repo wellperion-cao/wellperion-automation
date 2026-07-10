@@ -1853,5 +1853,19 @@
     "note": "[2026-07-10 GM 지시] 시설·지원·주차 체계 페이지에서 별도 '현황 대시보드'(특정1일 실시간) 탭을 월간 탭으로 일원화(월간엔 이미 이달 현황 통합). GM 결정=제거·일원화(특정1일 뷰 삭제). 월간 탭 개명(월간 OO 현황·계획·보고)·현황대시보드 자리 배치, 헤더 바로가기 재연결, 지원부 보고용/공유용 버튼 삭제. 주차부는 mplan이 이미 현황 포함→라벨만. tab-admin content+switchTab 참조 제거(런타임 null 0), adminDate 초기화 로드에러 수정, 렌더함수는 복원대비 inert 보존. [라이브 검증] 시크릿 헤드리스·캐시우회 3페이지 실측: 신규라벨 표시·현황대시보드버튼 0·보고공유 0·치명JS오류 0. 커밋 c4dbeb7c.",
     "next": "🔗 입항 완료 — 라이브 검증 끝. 후속(선택): inert 보존한 renderAdmin/renderFacAdmin/copyReport/copyShare 정의는 GM이 특정1일 뷰 완전 폐기 확정 시 제거.",
     "ship_no": 853
+  },
+  {
+    "task_id": "CMO-2026-07-10-ADHOC-af70bddf",
+    "clevel": "cmo",
+    "title": "[시모] F3 회복 5채널 발행 — 블로그·카페·카카오 발행완료 (당근·IG BLOCKED)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 854,
+    "artifact": "- 블로그: https://blog.naver.com/wellperion/224342363652 (RSS og:title 매칭 검증)\n- 카페: https://cafe.naver.com/ichon1dong/363555 (렌더 실측·삭제글 아님)\n- 카카오: 발행완료(성공 모달+소식 미리보기 대조), 공개 URL 미노출\n- 당근: BLOCKED(프로필 손상 크래시 exitCode=2147483651, GM --mode setup 필요)\n- IG: BLOCKED(업로드 편집→캡션 2차 다음 버튼 DOM 변경, 발행 전 중단·부분발행 없 (CLI ad-hoc · 커밋 af70bddf)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "af70bddfba4c21891dc0515a59cbd61a8e4eef32"
   }
 ]
