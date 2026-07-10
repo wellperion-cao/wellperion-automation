@@ -132,6 +132,18 @@
     .lf-row.newest{animation:none}
   }
 
+  /* ===== 금주 처리 통계 — sidebar 잔여 공간용 컴팩트 서브패널(2026-07-10, 매니저 지시: 브리핑창 빈 공간 정리 2차).
+     실데이터만: 공개 office-autolog 로그(이미 브리핑 피드가 쓰는 것과 동일 응답)를 에이전트별로 집계 — 목업 금지. */
+  .weekstat{width:100%; flex:none; background:var(--panel); border:1px solid var(--panel-brd); border-radius:14px; padding:9px 13px 10px; -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px)}
+  .weekstat .ws-head{display:flex; align-items:baseline; justify-content:space-between; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--brass); font-weight:700; margin-bottom:6px}
+  .weekstat .ws-range{font-size:9.5px; letter-spacing:.02em; color:var(--muted); text-transform:none; font-weight:600}
+  .ws-row{display:flex; align-items:center; gap:7px; font-size:11px; padding:2px 0}
+  .ws-row .sw{width:8px; height:8px; border-radius:3px; flex:none}
+  .ws-row .nm{color:var(--ink); font-weight:600; width:64px; flex:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .ws-row .bar{flex:1 1 auto; height:6px; border-radius:3px; background:rgba(155,146,131,.18); overflow:hidden; min-width:20px}
+  .ws-row .bar i{display:block; height:100%; border-radius:3px}
+  .ws-row .cnt{width:20px; flex:none; text-align:right; font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; font-weight:700; color:var(--ink)}
+
   /* ===== CHRO 터미널 — 오른쪽 사이드바 도크(sidebar 4번째 블록, 세로 배치).
      스크린은 양 테마 모두 다크(책상 위 단말기 컨셉) — 패널 테두리·포인트만 페이지 토큰과 동조. */
   .term{
@@ -239,6 +251,11 @@
         <span class="hbchip" id="hbc-cmd"><span class="hb-dot"></span><span class="hb-nm">CMD큐</span><span class="hb-st">…</span></span>
       </div>
 
+      <div class="weekstat" id="weekStat" title="금주(월요일~오늘) 자동화 처리 건수 — 자동화로그 실측(공개 열람) 기준, 최근 조회분 한도 내 집계">
+        <div class="ws-head"><span>금주 처리</span><span class="ws-range" id="wsRange">—</span></div>
+        <div class="ws-bars" id="wsBars"></div>
+      </div>
+
       <div class="term" id="term">
         <div class="term-head">
           <span class="term-dot"></span>
@@ -258,7 +275,7 @@
     </aside>
   </div>
 
-  <div class="foot">처리 로그 피드·오늘 카운터·에이전트 집계 = 실시간 자동화 로그 공개 연동(비밀번호 불필요) · CMD 명령 접수도 비밀번호 없이 가능(실행은 CHRO 세션 승인 후) · 벽면 달력·일정판은 참고용 표시(별도 데이터 미연동)</div>
+  <div class="foot">처리 로그 피드·오늘 카운터·에이전트 집계·금주 처리 통계 = 실시간 자동화 로그 공개 연동(비밀번호 불필요) · CMD 명령 접수도 비밀번호 없이 가능(실행은 CHRO 세션 승인 후) · 벽면 달력·일정판은 참고용 표시(별도 데이터 미연동)</div>
 </div>
 
 <script>
@@ -1357,10 +1374,20 @@
       }
     }
 
-    // nameplates — opaque billboard panels (bold, framed, shadowed) so every seat reads clearly
+    // nameplates — opaque billboard panels (bold, framed, shadowed) so every seat reads clearly.
+    // 2026-07-10 매니저 피드백: 이름표가 말풍선·다른 캐릭터 이름표와 겹쳐 가독성 저하 — 데스크 소품 공유 라인
+    // (propAnchor, 모니터·램프·명패 소품용)을 그대로 쓰지 않고 캐릭터 자신의 실제 좌석 좌표로 독립 앵커링
+    // (nameplateAnchor, 발밑 높이)해 다른 캐릭터 이름표와 원천적으로 겹치지 않게 하고, 그래도 남는 근접
+    // 케이스는 2차 상호 이격 패스로 좌우로 밀어내 자동 해소한다(레이아웃 변경에도 견고).
+    function nameplateAnchor(c){
+      if(c.lead) return {gx:c.gx-0.55, gy:c.gy+0.05, z:0.05};
+      const toward = c.face==='y+' ? 0.46 : -0.46;
+      return {gx:c.gx, gy:c.gy+toward, z:0.05};
+    }
+    const plates=[];
     for(const c of chars){
-      const a=propAnchor(c);
-      const anchor = a.dir==='lead' ? toScreen(a.px+0.12, a.py+0.30, 1.0) : toScreen(a.px, a.py+0.66, 1.0);
+      const na=nameplateAnchor(c);
+      const anchor = toScreen(na.gx, na.gy, na.z);
       const isLead=c.lead;
       const label = isLead ? '팀장 · Claude' : (c.id+'  '+c.tag);
       const fs = Math.max(isLead?12:11, Math.min(isLead?18:15, (isLead?12.5:10.5)*CAM.scale/1.6));
@@ -1369,7 +1396,26 @@
       const dot = isLead?0:fs*1.05;
       const padX=fs*0.62, padY=fs*0.42;
       const w=tw+padX*2+dot, h=fs+padY*2;
-      const px=anchor.x-w/2, py=anchor.y-h/2;
+      plates.push({c,isLead,label,fs,dot,padX,w,h,cx:anchor.x,cy:anchor.y});
+    }
+    // mutual separation pass — nudge any residual near-overlap sideways (≤8 items, cheap) so no two
+    // tags ever touch, then clamp on-screen.
+    plates.sort((a,b)=>a.cy-b.cy || a.cx-b.cx);
+    const PGAP=6;
+    for(let i=0;i<plates.length;i++){
+      for(let j=0;j<i;j++){
+        const pa=plates[i], pb=plates[j];
+        if(Math.abs(pa.cy-pb.cy) < (pa.h+pb.h)/2+PGAP && Math.abs(pa.cx-pb.cx) < (pa.w+pb.w)/2+PGAP){
+          const dir=(pa.cx>=pb.cx)?1:-1;
+          const need=(pa.w+pb.w)/2+PGAP-Math.abs(pa.cx-pb.cx);
+          pa.cx += dir*need;
+        }
+      }
+    }
+    for(const pl of plates){
+      pl.cx = Math.max(pl.w/2+4, Math.min(W-pl.w/2-4, pl.cx));
+      const {c,isLead,label,fs,dot,padX,w,h,cx,cy}=pl;
+      const px=cx-w/2, py=cy-h/2;
       ctx.save();
       ctx.shadowColor= isLead?'rgba(0,0,0,.42)':'rgba(0,0,0,.34)'; ctx.shadowBlur=7; ctx.shadowOffsetY=2.5;
       roundRect(px,py,w,h,h*0.30);
@@ -1382,12 +1428,12 @@
       ctx.textAlign='left'; ctx.textBaseline='middle';
       let tx=px+padX;
       if(!isLead){
-        ctx.beginPath(); ctx.arc(tx+fs*0.30, anchor.y, fs*0.30, 0, Math.PI*2);
+        ctx.beginPath(); ctx.arc(tx+fs*0.30, cy, fs*0.30, 0, Math.PI*2);
         ctx.fillStyle=c.color; ctx.fill();
         tx += dot;
       }
       ctx.fillStyle = isLead ? '#F3D98A' : (lightT? '#2A2318':'#F1E8D4');
-      ctx.fillText(label, tx, anchor.y+0.5);
+      ctx.fillText(label, tx, cy+0.5);
       ctx.restore();
     }
     ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -1428,7 +1474,9 @@
     bubs.sort((a,b)=> (a.hy-b.hy) || (a.hx-b.hx));
     const GAP=7;
     const hitTest=(b,a)=> Math.abs(b.cx-a.cx) < (b.w+a.w)/2+GAP && Math.abs((b.by+b.h/2)-(a.by+a.h/2)) < (b.h+a.h)/2+GAP;
-    const placed=[];
+    // seed with the (already finalized) nameplate boxes so a task/persona bubble that would land on top
+    // of any name tag gets pushed away by the same stack/shift logic (2026-07-10 겹침 수정 — 말풍선↔이름표).
+    const placed=plates.map(pl=>({cx:pl.cx, by:pl.cy-pl.h/2, w:pl.w, h:pl.h}));
     for(let i=0;i<bubs.length;i++){
       const b=bubs[i];
       for(let guard=0; guard<80; guard++){
@@ -1591,6 +1639,24 @@
   const STICKY_MAX_SEC=90*60;  // 안전장치 — sticky busy가 90분 넘게 해소 안 되면 자동 idle 복귀
   const actorToAgent=actor=>{ const m=String(actor||'').match(/A-?([1-7])/); return m? ('A-'+m[1]) : null; };
   const todayStr=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
+  const dateStr=d=>{ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
+  const weekStartStr=()=>{ const d=new Date(); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return dateStr(d); };
+  // 금주 처리 통계 — 조회된 rows(office-autolog, 브리핑 피드와 동일 실데이터) 중 이번 주(월~오늘) 분만 에이전트별 집계.
+  // 목업 금지 원칙 — 데이터가 없으면 0으로 정직하게 표시(가짜 수치 생성 안 함).
+  function renderWeekStats(rows){
+    const wrap=document.getElementById('wsBars'); if(!wrap) return;
+    const ws=weekStartStr();
+    const wt={}; agents.forEach(a=>wt[a.id]=0);
+    (rows||[]).forEach(r=>{ const d=String(r['일시']).slice(0,10); if(d<ws) return; const a=actorToAgent(r['주체']); if(a&&wt[a]!=null) wt[a]++; });
+    const max=Math.max(1, ...agents.map(a=>wt[a.id]||0));
+    wrap.innerHTML = agents.map(a=>{
+      const n=wt[a.id]||0, pct = n? Math.max(6, Math.round(n/max*100)) : 0;
+      return `<div class="ws-row"><span class="sw" style="background:${a.color}"></span><span class="nm">${escHtml(a.tag)}</span>`+
+        `<span class="bar"><i style="width:${pct}%;background:${a.color}"></i></span><span class="cnt">${n}</span></div>`;
+    }).join('');
+    const rangeEl=document.getElementById('wsRange');
+    if(rangeEl){ const t=todayStr(); rangeEl.textContent = ws.slice(5).replace('-','/')+' ~ '+t.slice(5).replace('-','/'); }
+  }
   // 화면 노출 = 이름·작업명·시각까지만(PII 한계, 2026-07-10 개방 개편). 로그 텍스트에 연락처·주민번호·생년월일류
   // 패턴이 실려 있어도 표시 직전 마스킹 — 오피스는 상세(r['상세']) 필드를 애초에 읽지 않지만, 작업명 자체에
   // 섞여 들어올 가능성에 대비한 방어적 스크럽.
@@ -1616,6 +1682,7 @@
     todays.forEach(r=>{ const a=actorToAgent(r['주체']); if(a&&tally[a]!=null) tally[a]++; });
     const te=document.getElementById('today'); if(te) te.textContent=todayCount;
     agents.forEach(a=>{ const el=document.getElementById('cn-'+a.id); if(el) el.textContent=tally[a.id]; });
+    renderWeekStats(rows);
     // 초기 로드 복원 — 오늘자 로그에서 에이전트별 '최신' 행이 진행중이면 즉시 busy로 시작(중간 진입 대응)
     const seenAgent={};
     todays.forEach(r=>{
@@ -1640,6 +1707,7 @@
     const fresh=rows.filter(r=>(Number(r['_sheet_row'])||0)>autologMaxRow);
     if(!fresh.length) return;
     autologMaxRow = rows.reduce((m,r)=>Math.max(m,Number(r['_sheet_row'])||0),autologMaxRow);
+    renderWeekStats(rows);
     enqueueLog(fresh.reverse(), {count:true});
   }
 
@@ -1740,7 +1808,8 @@
   /* ---------- HUD wiring ---------- */
   // the processing log now lives in the bottom '팀장 · Claude 브리핑' feed panel (#lf-lines)
   const escHtml=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
-  const LF_MAX=14;                     // 2026-07-10 레이아웃 개편: 표시 줄 수 3→14(leadfeed 면적 확대 + 내부 스크롤과 짝)
+  const LF_MAX=60;                     // 2026-07-10 레이아웃 개편: 표시 줄 수 3→14(leadfeed 면적 확대 + 내부 스크롤과 짝)
+                                        // → 14→60(2026-07-10 2차: 박스 높이를 항상 채우도록 과거 로그까지 확장, 내부 스크롤로 소화)
   const logFeed=[];                    // newest first, keep last LF_MAX
   // 진행중 로그 배지 세분화 — 착수/지속 진행은 '진행', 텍스트에 N/M 카운트가 실려 있으면 'N/M 진행'으로 표기
   // (완료는 그대로 '완료', 팀장 브리핑은 '브리핑' — 기존 busy 지속상태 로직·CSS 클래스는 손대지 않음).
