@@ -1963,5 +1963,19 @@
     "next": "👉 2단계=실제 날짜 입력(GM·실무): 부서별 실제 의무점검 목록 확정+최근검사일/다음예정일 입력(쉬운 입력칸 제공 예정)+승강기·에스컬레이터 설비 유무 확인. 3단계=업무결재 자동연동 발효(gate.auto_workapproval=true, GM go+역롤백 한줄). 입력양식 먼저 만들지 여부 GM 결정 대기.",
     "depends_on": "",
     "ship_no": 860
+  },
+  {
+    "task_id": "CTO-2026-07-10-ADHOC-718a0edd",
+    "clevel": "cto",
+    "title": "[시토] fix(queue-lock)[시토]: _queue.json 동시 read-modify-write 직렬화 — 승인 배 유실 근본수리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 861,
+    "artifact": "2026-07-10 사고: 6개 프로세스가 _queue.json에 락 없이 각자 read-modify-write →\n06:44 북극성 승인 배(ship 835) 후속 프로세스 덮어쓰기로 유실. msvcrt OS-관리\n바이트범위 락(scripts/queue_lock.py)으로 전 writer의 load→save 임계구역 직렬화.\n동시성 증명: 120건 동시 쓰기 전건 보존(유실 0), 락 없으면 118건 유실.\n킬스위치=env QUEUE_LOCK_DISABLED=1. 6 writer 배선(bot·ceo_watcher·auto_log_ (CLI ad-hoc · 커밋 718a0edd)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "718a0edddd4e1f1afbe586d371d8357b76e7e8f8"
   }
 ]
