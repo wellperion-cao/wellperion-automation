@@ -1742,5 +1742,19 @@
     "artifact": "- 5개 부서 체계 페이지(시설/운영/지원/주차관리/파트너팀) 헤더 .sheet-links에서\n  \"← 운영 통합 체계\" 버튼 제거(웰페리온 ERP 버튼은 유지). O1 섹션에서 여전히\n  링크되어 고아 페이지 없음.\n- 시설부 체계.html에 현황 대시보드 탭(tab-admin) 신설 — 지원부 tab-admin 구조를\n  실측 이식하되 시설부 실데이터(FACILITY_CHECK_{date} 보드, FC_ROUND_ITEMS/\n  FC_DAILY_ITEMS/FC_RANGES)로 바인딩. 월간 탭의 월간 집계(카테고리·회차·점검자) (CLI ad-hoc · 커밋 32fbb110)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "32fbb1107d9c9d1aae5a40c523d02582996c189e"
+  },
+  {
+    "task_id": "CEO-2026-07-10-ADHOC-760d969e",
+    "clevel": "ceo",
+    "title": "[웰리] 09:30 매출보고 카톡 3방 발송 실패 — 친구탭에서 검색해 방 못찾던 문제 수리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 846,
+    "artifact": "GM 가설 실측 확인: PC 부팅 후 카톡이 '친구' 탭으로 뜨면 방 검색이 실패해\n09:30 자동 카톡 발송(3방)이 전부 BLOCKED(오늘 로그: 검색창 활성화 실패).\n좌표 하드코딩 대신 안전한 방법을 먼저 소진 — 카톡 PC 앱 Ctrl+Tab이 탭 순환\n(친구→채팅→더보기→친구, 3탭)임을 라이브 실측으로 확인, UIA 뷰 컨트롤명\n(ChatRoomListView_*/ContactListView_*/MoreView_*)으로 현재 탭을 픽셀 없이\n판별하는 _current_main_tab() + 채팅탭이 아닐 때만 순환시키는 (CLI ad-hoc · 커밋 760d969e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "760d969e323a9d3cf86be544d431e04d7a8b1763"
   }
 ]
