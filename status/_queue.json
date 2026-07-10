@@ -1728,5 +1728,19 @@
     "artifact": "ceo_morning_pipeline이 G1 시트만 읽고 _queue.json 활성 배(27건)를 병합 안 해\n'오늘의 항로'가 매일 0건으로 발행되던 사고를 재발방지 대장에 기록. hangro_board\n정본 머지 재사용으로 차단(커밋 51e1505b·6c316ab9). INC-007 동류(큐 읽기 경로\n정합 어긋남). (CLI ad-hoc · 커밋 f91a0a8f)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f91a0a8ff14cded0cdf50ef699a1dd49bf65623b"
+  },
+  {
+    "task_id": "COO-2026-07-10-ADHOC-32fbb110",
+    "clevel": "coo",
+    "title": "[시우] 점검현황 단순화 마무리 — 헤더 링크 제거 + 시설부 현황 탭 신설",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 845,
+    "artifact": "- 5개 부서 체계 페이지(시설/운영/지원/주차관리/파트너팀) 헤더 .sheet-links에서\n  \"← 운영 통합 체계\" 버튼 제거(웰페리온 ERP 버튼은 유지). O1 섹션에서 여전히\n  링크되어 고아 페이지 없음.\n- 시설부 체계.html에 현황 대시보드 탭(tab-admin) 신설 — 지원부 tab-admin 구조를\n  실측 이식하되 시설부 실데이터(FACILITY_CHECK_{date} 보드, FC_ROUND_ITEMS/\n  FC_DAILY_ITEMS/FC_RANGES)로 바인딩. 월간 탭의 월간 집계(카테고리·회차·점검자) (CLI ad-hoc · 커밋 32fbb110)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "32fbb1107d9c9d1aae5a40c523d02582996c189e"
   }
 ]
