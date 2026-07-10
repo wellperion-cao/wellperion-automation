@@ -1131,27 +1131,44 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <button type="button" class="type-chip" data-type="biz" onclick="switchType('biz')">비즈니스</button>
   </div>
 
+  <!-- ══ 오늘 현황 요약(초보자) — 배754 2026-07-10. '오늘 처리할 것' 4지표, 클릭→처리 화면. 숫자는 기존 라이브값 재사용.
+       유형칩 바로 아래(type-pane 밖) 배치 — 멤버십·강습 공유, family 전환 시 renderSummaryHero()가 재계산.
+       (구현 노트: 계획서는 #cpoTodayStrip을 type-membership 내부에서 그대로 교체하도록 지시했으나, 실측 결과
+        해당 위치는 강습 family 전환 시 display:none 처리되어 강습에 노출 불가함을 확인 → Task 6 강습 패리티
+        요건 충족을 위해 유형칩 바로 아래 공유 위치로 이동. id·클래스명은 계획서 값 그대로 유지.) ══ -->
+  <div class="summary-hero" id="cpoTodayStrip">
+    <a class="sum-card sc-new" id="sumNewCard" href="javascript:void(0)" onclick="heroCardClick('new')">
+      <span class="sc-top">🆕 새 문의</span>
+      <span class="sc-num" id="sumNew">0</span>
+      <span class="sc-desc">금일 접수</span>
+      <span class="sc-go" id="sumNewGo">문의 DB로 →</span>
+    </a>
+    <a class="sum-card sc-book" id="sumBookCard" href="javascript:void(0)" onclick="heroCardClick('book')">
+      <span class="sc-top">📅 오늘 예약</span>
+      <span class="sc-num" id="sumBook">0</span>
+      <span class="sc-desc">상담·체험 방문</span>
+      <span class="sc-go" id="sumBookGo">예약 달력으로 →</span>
+    </a>
+    <a class="sum-card sc-risk" id="sumRiskCard" href="javascript:void(0)" onclick="heroCardClick('risk')">
+      <span class="sc-top">⚠️ 이탈 위험</span>
+      <span class="sc-num" id="sumRisk">0</span>
+      <span class="sc-desc" id="sumRiskDesc">갱신임박 등</span>
+      <span class="sc-go" id="sumRiskGo">이탈관리로 →</span>
+    </a>
+    <a class="sum-card sc-task" href="javascript:void(0)" onclick="heroCardClick('task')">
+      <span class="sc-top">🧭 오늘 할 일</span>
+      <span class="sc-num" id="sumTask">0</span>
+      <span class="sc-desc">신규·미컨택·예약</span>
+      <span class="sc-go">오늘 할 일로 →</span>
+    </a>
+  </div>
+
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
   <div id="type-membership" class="type-pane active">
 
-  <!-- ══ 통합 회원 현황판 — 카드 현황 + CPO 가이드(전체폭) · 2026-06-29 시포 ══ -->
-  <div class="dash-grid" id="cpoTodayStrip">
-    <!-- 카드1: 멤버십 문의 현황 (맨 왼쪽) -->
-    <a class="dash-card" data-kind="inq" data-tab="db" href="javascript:void(0)" onclick="switchTab('db')">
-      <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">멤버십 문의 현황</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dInqToday">0</b> 건</span></div>
-        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dInqMonth">0</b> 건</span></div>
-      </div>
-    </a>
-    <!-- 카드2: 예약 달력 (가운데) -->
-    <a class="dash-card active" data-kind="tour" data-tab="calendar" href="javascript:void(0)" onclick="switchTab('calendar')">
-      <div class="dash-head"><span class="dash-dot tour"></span><span class="dash-title">예약 달력</span><span class="dash-tag">상담·체험</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dTourToday">0</b> 건</span></div>
-        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dTourMon">0</b> 건</span></div>
-      </div>
-    </a>
+  <!-- ══ 등록·회원 탭 바로가기 — 구 4카드 중 신규문의·예약 2칸은 위 공유 히어로로 이전, 등록·회원 탭 진입 경로는
+       존치(회귀 방지, 배754 2026-07-10). id·onclick·표시값 100% 동일 보존 ══ -->
+  <div class="dash-grid" id="memberTabNav" style="grid-template-columns:repeat(2,1fr);max-width:640px">
     <!-- 카드3: 등록 현황 (등록 회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="reg" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered')">
       <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">신규 등록 현황</span></div>
@@ -1170,6 +1187,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       </div>
     </a>
   </div>
+  <!-- 참고(정직 기록, 배754): 구 카드1·2(멤버십 문의/예약)의 '월간' 보조수치(dInqMonth·dTourMon)는 위 공유
+       히어로가 '오늘' 지표에 집중하며 표면에서 제거 — 계획서 의도(Architecture 문단)에 따른 의도된 단순화.
+       월간 문의 총량은 📊 멤버십 문의 현황 팝업 "신규 문의(이번달)"에서 계속 확인 가능(회귀 아님).
+       월간 예약(dTourMon)은 표면 노출처가 없어졌음(정직 기록) — 데이터 자체는 캘린더 월간 스크롤로 직접 셀 수 있어
+       완전 손실은 아니나, 집계 숫자로는 현재 미노출. -->
 
   <!-- 멤버십 현황 집중형 대시보드 = 버튼(📊 멤버십 현황) → 팝업(#mdashModalOverlay). 배3, 2026-07-07 시포·GM -->
 
@@ -2653,6 +2675,72 @@ document.getElementById('guideHubOverlay').addEventListener('click', function(e)
   if (e.target.id === 'guideHubOverlay') closeGuideHub();
 });
 
+/* ── 오늘 현황 요약 히어로 카드 클릭 라우팅 (배754, 2026-07-10) — family에 따라 이동 대상이 달라 dispatcher로 분리.
+   강습(family=lesson)은 새문의/예약 데이터가 이미 현재 화면(강습 문의 카드)에 보이고 있어 별도 탭 이동이 없고,
+   이탈위험은 강습 데이터 자체가 없어(정직 공백) 무동작. 오늘 할 일만 멤버십·강습 공통으로 모달 오픈. ── */
+function heroCardClick(kind) {
+  if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') {
+    if (kind === 'task') openTodayActionModal();
+    return;
+  }
+  // 멤버십 family — 공간렌트·비즈니스 유형 화면에 있을 때 클릭해도 문의DB·달력은 type-membership 안에 있어
+  // 유형이 렌트/비즈면 안 보임(무반응처럼 보임) → 이동 전 유형부터 멤버십으로 되돌려 실제로 화면이 바뀌게 함.
+  if ((kind === 'new' || kind === 'book') && document.getElementById('type-membership') && !document.getElementById('type-membership').classList.contains('active')) {
+    switchType('membership');
+  }
+  if (kind === 'new')  { switchTab('db'); return; }
+  if (kind === 'book') { switchTab('calendar'); return; }
+  if (kind === 'risk') { openChurnManage(); return; }
+  if (kind === 'task') { openTodayActionModal(); return; }
+}
+
+/* 오늘 현황 요약 히어로 갱신 — 기존 라이브값 재사용(신규 fetch 없음). family(멤버십/강습)에 맞춰 지표·정직공백을 다시 그림.
+   배754, 2026-07-10. 호출 지점: loadCpoTodayStats·renderTopDash·renderTodayActionPanel·renderChurnActionPanel 말미 + switchFamily. */
+function renderSummaryHero() {
+  function setN(id, v) { var e = document.getElementById(id); if (e) e.textContent = (v == null ? '0' : v); }
+  function setDim(cardId, dim) { var c = document.getElementById(cardId); if (c) c.classList.toggle('sc-dim', !!dim); }
+  function nz(id){ var e = document.getElementById(id); return e ? (parseInt(e.textContent, 10) || 0) : 0; }
+  var tb = document.getElementById('tapBadge');
+  var taskN = tb ? (parseInt(tb.textContent, 10) || 0) : 0;
+
+  if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') {
+    var haveLesson = (typeof _tapLessonTypes === 'function') && _tapLessonTypes().length > 0;
+    var goN = document.getElementById('sumNewGo'), goB = document.getElementById('sumBookGo');
+    if (haveLesson) {
+      var clsL = _tapClassifyLesson(_tapToday());
+      setN('sumNew', clsL.todayNew.length);
+      setN('sumBook', clsL.todaysConsult.length);
+      setDim('sumNewCard', false); setDim('sumBookCard', false);
+      if (goN) goN.textContent = '강습 문의 화면에서 확인';
+      if (goB) goB.textContent = '강습 문의 화면에서 확인';
+    } else {
+      setN('sumNew', '—'); setN('sumBook', '—');
+      setDim('sumNewCard', true); setDim('sumBookCard', true);
+      if (goN) goN.textContent = '불러오는 중…';
+      if (goB) goB.textContent = '불러오는 중…';
+    }
+    setN('sumRisk', '—');
+    setDim('sumRiskCard', true);
+    var rd = document.getElementById('sumRiskDesc'); if (rd) rd.textContent = '데이터 준비 후';
+    var rg = document.getElementById('sumRiskGo');   if (rg) rg.textContent = '강습 이탈관리 준비 중';
+    setN('sumTask', taskN);
+    return;
+  }
+
+  // 멤버십 — dInqToday/dTourToday(기존 라이브 DOM)·이탈 신호 실측·tapBadge 재사용
+  var dInq = document.getElementById('dInqToday');   setN('sumNew',  dInq  ? dInq.textContent  : 0);
+  var dTour = document.getElementById('dTourToday'); setN('sumBook', dTour ? dTour.textContent : 0);
+  setDim('sumNewCard', false); setDim('sumBookCard', false); setDim('sumRiskCard', false);
+  var goN2 = document.getElementById('sumNewGo');   if (goN2) goN2.textContent = '문의 DB로 →';
+  var goB2 = document.getElementById('sumBookGo');  if (goB2) goB2.textContent = '예약 달력으로 →';
+  var rd2  = document.getElementById('sumRiskDesc'); if (rd2) rd2.textContent = '갱신임박 등';
+  var rg2  = document.getElementById('sumRiskGo');   if (rg2) rg2.textContent = '이탈관리로 →';
+  // 이탈 위험 = renderChurnActionPanel이 유효회원 사전로드 완료 후 산출하는 갱신임박+저이용 합계(_churnRiskEager, 배750 preload로 페이지 진입 즉시 계산됨).
+  // 아직 계산 전이면 이탈관리 모달의 갱신임박 배지(chSigD7/chSigD830, 모달 오픈 시에만 채워짐)로 폴백.
+  setN('sumRisk', (typeof window._churnRiskEager === 'number') ? window._churnRiskEager : (nz('chSigD7') + nz('chSigD830')));
+  setN('sumTask', taskN);
+}
+
 /* ── 이탈 관리(요약+매트릭스+현황 통합 모달) — 구 cpo-guide 카드 이전. 2026-07-07 시포·GM ── */
 function openChurnManage() {
   openGdoc('churnsummary,churn,churnstat');
@@ -3315,6 +3403,7 @@ function switchFamily(fam) {
   if (titleEl) titleEl.textContent = _famName;
   document.title = '웰페리온 ' + _famName.replace('회원관리', '회원 관리') + ' — AI CPO';   // 브라우저 탭 제목도 그룹명 동기화(배299, 2026-07-03 시포)
   renderTodayActionPanel();   // 오늘 할 일 패널도 family 전환에 맞춰 스코프 갱신(배754) — 멤버십/강습 각자 내부에서 준비상태 판단(강습이 dbRows 대기에 묶이지 않게, 배754 강습편입)
+  if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — family 전환 즉시 재계산(강습 패리티)
   switchType(types[0]);   // 그룹 첫 유형으로 전환
 }
 
@@ -4548,6 +4637,10 @@ function renderChurnActionPanel() {
   ];
   if (_capOpenKey === null && cls.renewSoon.length) _capOpenKey = 'renew';   // 첫 렌더=처리할 게 있으면 갱신임박 먼저 펼침
   body.innerHTML = sections.map(_capSectionHtml).join('');
+  // 오늘 현황 요약 히어로(배754)의 '이탈 위험' 카운트 소스 — 유효회원 사전로드(배299) 직후 항상 계산되는 갱신임박+저이용 합계.
+  // chSigD7/chSigD830(이탈관리 모달 오픈 시에만 채워짐)보다 먼저 준비되는 진짜 라이브값이라 우선 채택.
+  window._churnRiskEager = cls.renewSoon.length + cls.lowUse.length;
+  if (typeof renderSummaryHero === 'function') renderSummaryHero();
 }
 
 /* ─── 멤버십 표 더블클릭 인라인 편집 위임 ─── */
@@ -4686,6 +4779,7 @@ function loadCpoTodayStats() {
       _setTxt('dMemActive', (Number(d.memberActive) || 0) + (Number(d.memberCorp) || 0)); _setTxt('dMemCorp', d.memberCorp);
       _cpoStats = d; renderActiveSummary();   // 회원관리 탭 요약카드(유효·법인·종료·비율바·순증감)
       _setTxt('gToLoss', d.todayLoss); _setTxt('gMoLoss', d.monthLoss);   // CPO 가이드 이탈 현황(오늘/월)
+      if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — 새 문의 카운트 갱신
     })
     .catch(function(){});
 }
@@ -4921,6 +5015,7 @@ function renderTopDash() {
   });
   _setTxt('dTourToday', tToday);
   _setTxt('dTourMon', tMon);
+  if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — 오늘 예약 카운트 갱신
 }
 
 function openDayPanel(date) {
@@ -5956,6 +6051,7 @@ function renderTodayActionPanel() {
     if (_tapOpenKey === null && (clsL.uncontacted.length || clsL.todaysConsult.length)) _tapOpenKey = 'lunc';
     body.innerHTML = sectionsL.map(_tapSectionHtmlLesson).join('');
     _tapSetBadge(clsL.todayNew.length + clsL.uncontacted.length + clsL.todaysConsult.length);
+    if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — 강습 지표 갱신
     return;
   }
   if (!_tapReady) { body.innerHTML = '<div class="tap-empty">불러오는 중…</div>'; return; }
@@ -5973,6 +6069,7 @@ function renderTodayActionPanel() {
   if (_tapOpenKey === null) _tapOpenKey = (cls.uncontacted.length || cls.todaysRes.length) ? 'unc' : null;   // 첫 렌더=처리할 게 있으면 미컨택 먼저 펼침(한눈에)
   body.innerHTML = sections.map(_tapSectionHtml).join('');
   _tapSetBadge(cls.todayNew.length + cls.uncontacted.length + cls.todaysRes.length + churnMissing.length);
+  if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — 오늘 할 일 카운트 갱신
 }
 // 종료사유 미기록 = scope=ended(현행 이탈 기준 그대로) AND 종료사유 빈칸. 배경fetch 미완료 시 빈 배열(로딩 문구는 empty에서 처리). 2026-07-09 시포·GM
 function _tapClassifyChurn() {
