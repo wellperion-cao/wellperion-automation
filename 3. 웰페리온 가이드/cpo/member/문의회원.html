@@ -1109,6 +1109,16 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
 <div class="content">
 
+  <!-- ══════════════════════════════ 초보자 안내 배너 (배754, 2026-07-10) ══════════════════════════════ -->
+  <div class="beginner-banner" id="beginnerBanner">
+    <span class="bb-ic">🧭</span>
+    <span class="bb-txt">
+      <b>처음이세요?</b> 이 페이지는 회원을 <b>①문의 받고 → ②상담·등록하고 → ③관리·이탈 방지</b>하는 곳입니다.
+      아래 <b>오늘 현황</b> 4칸부터 보세요. 숫자를 누르면 처리 화면으로 바로 이동합니다.
+    </span>
+    <button class="bb-x" onclick="dismissBeginnerBanner()" title="닫기 (다시 안 봄)">✕</button>
+  </div>
+
   <!-- ══════════════════════════════ 관리 그룹 라벨 (AI CPO 메뉴 3칸 — 배6, 2026-07-02 시포·GM) ══════════════════════════════ -->
   <div id="manageFamilyLabel" style="font-size:16px;font-weight:800;margin-bottom:12px;color:var(--accent);letter-spacing:-0.01em">멤버십 회원관리</div>
 
@@ -6643,6 +6653,18 @@ function esc(s) {
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;');
 }
+
+/* ── 초보자 안내 배너 닫기 기억 (배754, 2026-07-10) ── */
+function dismissBeginnerBanner() {
+  var b = document.getElementById('beginnerBanner');
+  if (b) b.style.display = 'none';
+  try { localStorage.setItem('cpo_beginner_banner_hidden', '1'); } catch(e) {}
+}
+(function(){
+  try { if (localStorage.getItem('cpo_beginner_banner_hidden') === '1') {
+    var b = document.getElementById('beginnerBanner'); if (b) b.style.display = 'none';
+  } } catch(e) {}
+})();
 </script>
 
 <!-- CPO 자율화 두뇌 첫 배(④) — 일/주/월 자동보고 on/off·수신 방·마지막 발신 확인(v1=표시전용).
