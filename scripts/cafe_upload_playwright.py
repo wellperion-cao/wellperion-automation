@@ -1276,6 +1276,31 @@ async def run_publish(args: argparse.Namespace) -> int:
     page = await context.new_page()
     try:
         await _enter_write_and_fill(page, post)
+
+        # ── 등록 직전 무결성 가드 (F2 본문/이미지 소실 재발 방지) ──────────
+        # 본문 이미지 컴포넌트·본문 텍스트가 유지됐는지 최종 확인(에디터가 iframe일 수 있어
+        # 전 프레임 최댓값 사용). 이미지 0개 소실 또는 본문이 비면 등록하지 않고 ABORT.
+        img_js = "() => document.querySelectorAll('.se-component.se-image, .se-module-image').length"
+        txt_js = ("() => Array.from(document.querySelectorAll('.se-text-paragraph'))"
+                  ".map(p=>p.textContent||'').join('').trim().length")
+        max_img, max_txt = 0, 0
+        for fr in [page.main_frame, *page.frames]:
+            try:
+                max_img = max(max_img, await fr.evaluate(img_js))
+                max_txt = max(max_txt, await fr.evaluate(txt_js))
+            except Exception:
+                continue
+        print(f"[GUARD] 등록 직전 본문 이미지 컴포넌트={max_img} / 본문 텍스트 길이={max_txt}")
+        if max_img == 0 or max_txt == 0:
+            try:
+                await page.screenshot(path=str(EVIDENCE_DIR / "cafe_ABORT_integrity.png"))
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"등록 중단(무결성 가드) — 본문 이미지={max_img}, 텍스트 길이={max_txt}. "
+                "본문/이미지 소실 감지 → 등록하지 않고 초안 상태로 남김."
+            )
+
         # 등록 전 팝업킬러 정지 — 등록 확인 레이어를 killer가 삭제하는 사고 방지(실측 2026-06-30).
         await _stop_popup_killer(page)
         trig_loc, trig_sel = await _first_locator(page, PUBLISH_TRIGGER_SELECTORS)

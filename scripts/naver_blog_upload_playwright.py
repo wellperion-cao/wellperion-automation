@@ -1312,6 +1312,31 @@ async def run_publish(args: argparse.Namespace) -> int:
     page = await context.new_page()
     try:
         await _enter_write_and_fill(page, post, args.blog_id)
+
+        # ── 발행 직전 무결성 가드 (F2 본문/이미지 소실 재발 방지) ──────────
+        # 본문 <img> 개수·본문 텍스트가 유지됐는지 최종 확인. 이미지 0장 소실 또는
+        # 본문이 비면 발행하지 않고 ABORT — 편집(초안) 상태로 남긴다.
+        try:
+            body_img_count = await page.evaluate(
+                "(sel)=>document.querySelectorAll(sel).length", INSERTED_IMAGE_SELECTOR
+            )
+        except Exception:
+            body_img_count = -1
+        try:
+            body_text_len = await page.evaluate(
+                "()=>[...document.querySelectorAll('.se-text-paragraph')]"
+                ".map(p=>p.textContent||'').join('').trim().length"
+            )
+        except Exception:
+            body_text_len = -1
+        print(f"[GUARD] 발행 직전 본문 <img>={body_img_count} / 본문 텍스트 길이={body_text_len}")
+        if body_img_count == 0 or body_text_len == 0:
+            await page.screenshot(path=str(shot.with_suffix(".ABORT_integrity.png")))
+            raise RuntimeError(
+                f"발행 중단(무결성 가드) — 본문 img={body_img_count}, 텍스트 길이={body_text_len}. "
+                "본문/이미지 소실 감지 → 발행하지 않고 초안 상태로 남김 (임시저장 큐 비우고 재시도 필요)."
+            )
+
         trig_loc, trig_sel = await _first_locator(page, PUBLISH_TRIGGER_SELECTORS)
         if trig_loc is None:
             raise RuntimeError("발행 버튼 미발견")

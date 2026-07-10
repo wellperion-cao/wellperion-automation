@@ -1696,9 +1696,10 @@
     "location": "웰페리온 스포츠클럽",
     "collaborators": [],
     "mentions": [],
-    "status": "검수대기",
+    "status": "BLOCKED",
     "preview": "cmo/review/260707_공식_시설_F3_회복_preview_20260707195608.png",
-    "id": "CMO-2026-07-07-OFFICIAL-F3-회복"
+    "id": "CMO-2026-07-07-OFFICIAL-F3-회복",
+    "note": "[시모 2026-07-10 BLOCKED] @wellperion 공식 세션 유효(dryrun 로그인 통과)·이미지 5장 업로드·1차 '다음'(자르기→편집)까지 정상 진행되나, 2차 '다음'(편집→캡션) 버튼 클릭이 3회(신규+자동재시도x2·별도 프로세스 포함) 연속 실패 — 인스타 데스크톱 업로드 UI의 편집 화면 '다음' 셀렉터 DOM 변경 추정. 캡션·공유 단계 이전에서 중단되어 발행 안 됨(그리드 shortcode 기준선 0 유지·부분발행 없음). 증거 poc-evidence/instagram-publish-260707_공식_시설_F3_회복-postA-*.error_next_step2.png. 조치 필요: instagram_upload_playwright.py NEXT_BUTTON step2 셀렉터 점검(시토/CTO 자동화 도메인) 후 재발행. 참고: 발행 캡션 소스=폴더 큐레이션_추천.md(본문은 review_queue caption과 동일, 해시태그만 공식 앞3 지역복합 규칙 #한남동사우나·#한남동힐링·#한남동회복으로 큐 caption과 상이 — 큐레이션md가 현행 표준)."
   },
   {
     "id": "CMO-2026-07-07-OFFICIAL-F1-운동-BLOG",
@@ -1840,5 +1841,51 @@
     "preview": "cmo/review/260707_공식_시설_F2_편의시설_preview_20260707195605.png",
     "note": "[2026-07-09] --mode check·--mode publish 2회 모두 launch_persistent_context 단계에서 즉시 크래시(TargetClosedError, exitCode=2147483651) — F1 때와 동일한 프로필 손상 패턴. GM 프로필 재생성 + SSO 재로그인(--mode setup) 필요. body/이미지 파일은 준비 완료: output(당근)/danggn_copy.md. | [2026-07-09 발행완료] 당근 Google 로그인 자동화 수리(#GoogleLoginIconButton→cao·QR탈피) 후 실발행. postId 6a4f5da8.",
     "post_url": "https://www.daangn.com/kr/business-posts/6a4f5da8f195eb47aaacd244"
+  },
+  {
+    "id": "CMO-2026-07-07-OFFICIAL-F3-회복-BLOG",
+    "channel": "네이버 블로그",
+    "account": "wellperion",
+    "folder": "instagram/260707_공식_시설_F3_회복",
+    "title": "공식 #F3 — 회복 (사우나·건습식) — 네이버 블로그",
+    "status": "발행완료",
+    "preview": "cmo/review/260707_공식_시설_F3_회복_preview_20260707195608.png",
+    "published_at": "2026-07-10T12:14:51",
+    "post_url": "https://blog.naver.com/wellperion/224342363652",
+    "note": "[시모 자동발행 2026-07-10] 실발행 완료(campaign=official-f3-recovery). 발행 직전 무결성 가드 통과(본문 img=8·텍스트 498자·링크카드 썸네일 있음). 라이브 검증: rss.blog.naver.com/wellperion.xml에 logNo 224342363652 + og:title '운동 뒤의 시간도 웰페리온 — 한남동 스포츠클럽 사우나·회복 시설' 정확 매칭. 태그 없음(블로그 body에 해시태그 미포함)."
+  },
+  {
+    "id": "CMO-2026-07-07-OFFICIAL-F3-회복-CAFE",
+    "channel": "네이버 카페 (동부이촌동)",
+    "account": "wellperion",
+    "folder": "instagram/260707_공식_시설_F3_회복",
+    "title": "공식 #F3 — 회복 (사우나·건습식) — 네이버 카페(동부이촌동)",
+    "status": "발행완료",
+    "preview": "cmo/review/260707_공식_시설_F3_회복_preview_20260707195608.png",
+    "published_at": "2026-07-10T12:17:02",
+    "post_url": "https://cafe.naver.com/ichon1dong/363555",
+    "note": "[시모 자동발행 2026-07-10] 실발행 완료(menuid=659 웰페리온, campaign=official-f3-recovery). 등록 직전 무결성 가드 통과(본문 se-image 6개·텍스트 338자·링크카드 썸네일·카페태그 10개). 라이브 렌더 검증: articleid=363555 게시글 정상 렌더(제목·회복시설 본문·이미지 조회0 신규글) — 삭제글 아님(카페는 삭제글도 HTTP200이므로 렌더 실측). 증거 poc-evidence/cafe-ichon1dong-published-20260710_121702.png."
+  },
+  {
+    "id": "CMO-2026-07-07-OFFICIAL-F3-회복-KAKAO",
+    "channel": "카카오 채널",
+    "account": "wellperion",
+    "folder": "instagram/260707_공식_시설_F3_회복",
+    "title": "공식 #F3 — 회복 (사우나·건습식) — 카카오 채널",
+    "status": "발행완료",
+    "preview": "cmo/review/260707_공식_시설_F3_회복_preview_20260707195608.png",
+    "published_at": "2026-07-10T12:07:00",
+    "post_url": null,
+    "note": "[시모 자동발행 2026-07-10] 실발행 완료(--mode publish, campaign=official-f3-recovery) — 스크립트 로그 '=== PUBLISH 완료 (실 발행) ===' + 관리자 화면 '성공적으로 발행됐어요' 모달·소식 미리보기(2026.07.10 12:07·제목·회복시설 본문·이미지 2장·문의링크) 대조 확인. 공개 URL 미회수(카카오 관리자 공개 id 미노출·F1·F2와 동일). 증거 poc-evidence/kakao_publish_done.png."
+  },
+  {
+    "id": "CMO-2026-07-07-OFFICIAL-F3-회복-DANGGN",
+    "channel": "당근채널",
+    "account": "wellperion 비즈(cao)",
+    "folder": "instagram/260707_공식_시설_F3_회복",
+    "title": "공식 #F3 — 회복 (사우나·건습식) — 당근채널",
+    "status": "BLOCKED",
+    "preview": "cmo/review/260707_공식_시설_F3_회복_preview_20260707195608.png",
+    "note": "[시모 2026-07-10 BLOCKED] dryrun 통과(본문·이미지 OK)했으나 publish·check 모두 launch_persistent_context 단계에서 즉시 크래시(TargetClosedError, exitCode=2147483651=STATUS_BREAKPOINT) — F1·F2와 동일한 profiles/danggn 프로필 손상 패턴. 잠금파일 없음·재시도 동일. GM 조치 필요: scripts/danggn_upload_playwright.py --mode setup 으로 프로필 재생성 + 구글 SSO(cao) 재로그인 후 재발행. body/이미지 준비 완료: output(당근)/danggn_copy.md."
   }
 ]
