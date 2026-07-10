@@ -31,3 +31,14 @@ cd /d "%ROOT%"
 echo [start_ig_series_producer] %DATE% %TIME% launch >> "%LOGDIR%\ig_series_producer.log"
 "%PY%" -u "%SCRIPT%" >> "%LOGDIR%\ig_series_producer.log" 2>&1
 echo [start_ig_series_producer] %DATE% %TIME% exit=%ERRORLEVEL% >> "%LOGDIR%\ig_series_producer.log"
+
+REM ============================================================
+REM 실전사례(namuk case series) dispatcher — GM go 2026-07-10.
+REM No headless claude call (design doc: creation-code-free by
+REM construction). Reads inventory table only, renders/registers/
+REM sends review card. Coexists with producer above (separate
+REM inventory source, no interference either way).
+REM ============================================================
+echo [case_series_dispatch] %DATE% %TIME% launch >> "%LOGDIR%\case_series_dispatch.log"
+"%PY%" -u "%ROOT%\scripts\case_series_dispatch.py" >> "%LOGDIR%\case_series_dispatch.log" 2>&1
+echo [case_series_dispatch] %DATE% %TIME% exit=%ERRORLEVEL% >> "%LOGDIR%\case_series_dispatch.log"
