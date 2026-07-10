@@ -1960,6 +1960,11 @@ function handleNotify(body) {
 // ─── 회차 제출 텔레그램 보고(2026-06-15 GM·시우) — 프론트 submitRound에서만 호출. 서버는 단순 전송(자기증식 금지).
 // body: { action:'notify_round', dept, date, gender, round(am1|pm1|close1), issues(JSON 배열 or 문자열), pct, pageLink }
 // 토큰 SSOT = handleNotify와 동일(ScriptProperties BOT_TOKEN/CHAT_ID). 봇/Chat 없으면 미발송 보고.
+// Telegram parse_mode:'HTML' 삽입 전 이스케이프(사용자입력·URL 안전화). 2026-07-10 시토.
+function _htmlEscape(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function handleNotifyRound(body) {
   if (!BOT_TOKEN || !CHAT_ID) return jsonRes({ success: false, reason: 'no telegram config' });
   var roundLabel = _roundKeyLabel(body.round || '');
@@ -1977,7 +1982,8 @@ function handleNotifyRound(body) {
     issueText = s.length ? s : '없음';
   }
   var pct = (body.pct == null || body.pct === '') ? '' : String(body.pct);
-  // 프론트가 완성 메시지(message)를 보내면 그대로(plain). 없으면 서버 조립. URL의 &는 plain이라 안전(HTML 파싱 깨짐 없음).
+  // 프론트가 완성 메시지(message)를 보내면 그대로 사용 — 프론트가 이미 점검 페이지를 <a href>로 HTML 하이퍼링크화(2026-07-10 시토).
+  // 없으면 서버 조립(폴백) — parse_mode:'HTML' 적용이므로 사용자입력(issueText)·URL은 이스케이프 후 삽입.
   var msg;
   if (body.message) {
     msg = String(body.message);
@@ -1985,15 +1991,15 @@ function handleNotifyRound(body) {
     var lines = [
       '🧹 지원부 점검 — ' + roundLabel + ' 제출',
       '완료율 ' + pct + '%',
-      '이슈: ' + issueText
+      '이슈: ' + _htmlEscape(issueText)
     ];
-    if (body.pageLink) lines.push(String(body.pageLink));
+    if (body.pageLink) lines.push('점검 페이지: <a href="' + _htmlEscape(String(body.pageLink)) + '">링크</a>');
     msg = lines.join('\n');
   }
   try {
     UrlFetchApp.fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
       method: 'post', contentType: 'application/json',
-      payload: JSON.stringify({ chat_id: CHAT_ID, text: msg, disable_web_page_preview: true })
+      payload: JSON.stringify({ chat_id: CHAT_ID, text: msg, parse_mode: 'HTML', disable_web_page_preview: true })
     });
     return jsonRes({ success: true });
   } catch (err) {

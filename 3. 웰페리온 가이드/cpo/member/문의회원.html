@@ -1075,19 +1075,33 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         </div>
       </div>
       <div class="header-actions">
-        <a class="action-btn" href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">🔗 문의 페이지 →</a>
-        <a class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
-        <button class="action-btn" onclick="openGuidePopup()">📖 문의 가이드</button>
-        <button class="action-btn" onclick="openGdoc('principle,routine')">📋 운영 원칙·루틴</button>
-        <button class="action-btn" id="btnMembershipDash" onclick="openMembershipDash()">📊 멤버십 문의 현황</button>
-        <button class="action-btn" id="btnLessonDash" onclick="openLessonDash()" style="display:none">📊 강습 문의 현황</button>
-        <button class="action-btn" onclick="openPostInquiryDash()">📊 문의 이후 현황</button>
-        <button class="action-btn" onclick="openChurnManage()">🚪 이탈관리</button>
-        <!-- 오늘 할 일 액션 패널 — 배754, 모달화(2026-07-09 GM 결정: 본문 상단 상시노출→헤더 버튼+모달, 스크롤 불만 해소).
-             카운트 뱃지=미컨택+오늘신규+오늘상담 합계(이탈위험 제거) — 안 열어도 한눈에. renderTodayActionPanel이 매 갱신 시 갱신. -->
-        <button class="action-btn" id="btnTodayAction" onclick="openTodayActionModal()">🧭 오늘 할 일<span id="tapBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border);display:none">0</span></button>
-        <a class="action-btn" href="../../wellperion_guide(main).html">ERP 홈</a>
-        <button class="action-btn" onclick="window.print()">인쇄</button>
+        <div class="hz-zone z-status">
+          <div class="hz-zone-label">📊 현황 (라이브)</div>
+          <div class="hz-btns">
+            <button class="action-btn" id="btnMembershipDash" onclick="openMembershipDash()">멤버십 문의 현황</button>
+            <button class="action-btn" id="btnLessonDash" onclick="openLessonDash()" style="display:none">강습 문의 현황</button>
+            <button class="action-btn" onclick="openPostInquiryDash()">문의 이후 현황</button>
+            <button class="action-btn" onclick="openChurnManage()">🚪 이탈관리</button>
+            <!-- 오늘 할 일 액션 패널 — 배754, 모달화(2026-07-09 GM 결정: 본문 상단 상시노출→헤더 버튼+모달, 스크롤 불만 해소).
+                 카운트 뱃지=미컨택+오늘신규+오늘상담 합계(이탈위험 제거) — 안 열어도 한눈에. renderTodayActionPanel이 매 갱신 시 갱신. -->
+            <button class="action-btn" id="btnTodayAction" onclick="openTodayActionModal()">🧭 오늘 할 일<span id="tapBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border);display:none">0</span></button>
+          </div>
+        </div>
+        <div class="hz-zone z-guide">
+          <div class="hz-zone-label">📖 가이드·교육</div>
+          <div class="hz-btns">
+            <button class="action-btn is-guide" onclick="openGuideHub()">가이드 &amp; 교육 허브 ▾</button>
+          </div>
+        </div>
+        <div class="hz-zone z-tool">
+          <div class="hz-zone-label">🔧 도구</div>
+          <div class="hz-btns">
+            <a class="action-btn" href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">🔗 문의 페이지 →</a>
+            <a class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
+            <a class="action-btn" href="../../wellperion_guide(main).html">ERP 홈</a>
+            <button class="action-btn" onclick="window.print()">인쇄</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
