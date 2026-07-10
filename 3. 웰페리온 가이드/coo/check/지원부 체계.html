@@ -868,9 +868,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="header-top">
     <h1>지원부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.1 · 2026-06-11 (온도경고·반영완료·제출스냅샷)</span> <span id="dayType"></span></h1>
     <div class="sheet-links">
-      <a class="sheet-link" onclick="switchTab('admin')" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
+      <a class="sheet-link" onclick="switchTab('monthly')" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-        현황 대시보드
+        월간 현황·계획·보고
       </a>
       <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNdNGsXLYtzie3PopbwD7EJzJCku0" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-6h8v2H8v-2zm0-3h8v2H8v-2z"/></svg>
@@ -899,7 +899,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
-  <button class="tab" onclick="switchTab('monthly')">📅 월간 지원부 계획·보고</button>
+  <button class="tab" onclick="switchTab('monthly')">📅 월간 지원부 현황·계획·보고</button>
   <!-- 구 '📅 월간 보고 ▾' 드롭다운(2026-06 고정 A3 인쇄) 삭제 — 월간보고 탭 안 '🖨 A3 인쇄' 버튼(선택월 동적)과 중복. 2026-07-06 시우·GM -->
   <div style="display:flex;gap:4px;margin-left:auto;align-items:center;">
     <!-- 인쇄 버튼 통합 드롭다운 (월간 보고와 동일 패턴 · 버튼 난립 해소 2026-07-02 시우, GM) -->
@@ -922,8 +922,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button onclick="printCurrentTab();closeAllDropdowns()">현재 화면 그대로 인쇄</button>
       </div>
     </div>
-    <button class="util-btn report-btn" onclick="copyReport()">보고용</button>
-    <button class="util-btn share-btn" onclick="copyShare()">공유용</button>
   </div>
 </div>
 </div><!-- /sticky-top -->
@@ -1749,28 +1747,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
 </div>
 
-<div id="tab-admin" class="content hidden">
-  <div class="date-bar">
-    <input type="date" id="adminDate">
-    <button class="btn" onclick="moveAdminDate(-1)">&lt;</button>
-    <button class="btn" onclick="setAdminToday()">오늘</button>
-    <button class="btn" onclick="moveAdminDate(1)">&gt;</button>
-  </div>
-  <div id="adminView"></div>
-
-  <!-- ── 고도화: 주간 트렌드 ── -->
-  <div class="dash-section-title" style="margin-top:24px;">주간 트렌드 — 최근 7일 완료율</div>
-  <div id="weeklyView" style="padding:10px 0;">
-    <div style="text-align:center;padding:20px;color:var(--dim);font-size:13px;">불러오는 중...</div>
-  </div>
-
-  <!-- ── 고도화: 미결 이슈대장 ── -->
-  <div class="dash-section-title" style="margin-top:8px;">미결 이슈대장</div>
-  <div id="issuelogView" style="margin-bottom:4px;">
-    <div style="text-align:center;padding:20px;color:var(--dim);font-size:13px;">불러오는 중...</div>
-  </div>
-
-</div>
+<!-- 「현황 대시보드」(특정 1일 실시간·주간트렌드·미결이슈) 탭 제거 — 월간 지원부 현황·계획·보고로 일원화 (GM 2026-07-10 시우). renderAdmin/renderAdminExtra 정의는 복원 대비 inert 보존. -->
 
 <!-- ── 항목 관리 탭 (매뉴얼 탭으로 통합 이전 · 2026-05-29) ──
      폼/목록/유틸 UI는 매뉴얼 탭(tab-manual)으로 이동. 빈 패널 유지(switchTab 참조 보존). -->
@@ -5425,7 +5402,6 @@ function switchTab(tab, opts){
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
   document.getElementById('tab-check-m').classList.toggle('hidden',tab!=='check-m');
   document.getElementById('tab-check-f').classList.toggle('hidden',tab!=='check-f');
-  document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
   document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
   document.getElementById('tab-supply').classList.toggle('hidden',tab!=='supply');
   document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
@@ -5436,7 +5412,6 @@ function switchTab(tab, opts){
   document.getElementById('submitBarF').style.display=(tab==='check-f')?'flex':'none';
   if(tab==='check-m'){activeGenderTab='m';renderG('m')}
   if(tab==='check-f'){activeGenderTab='f';renderG('f')}
-  if(tab==='admin'){renderAdmin();renderAdminExtra();}
   if(tab==='manual'){renderBoard();renderManualItems();}
   if(tab==='monthly'){ if(typeof mrEnsureMonthInput==='function') mrEnsureMonthInput(); if(typeof loadMonthlyReport==='function') loadMonthlyReport(); if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
 }
@@ -6366,8 +6341,6 @@ const today=kstToday();   // KST 오늘(UTC toISOString는 자정~09시 어제�
 WORK_DATE=today;          // 단일 진실: 점검 남/여·업무보드 공통 날짜(상단 공통 요일바)
 document.getElementById('checkDateM').value=today;
 document.getElementById('checkDateF').value=today;
-document.getElementById('adminDate').value=today;
-document.getElementById('adminDate').addEventListener('change',renderAdmin);
 renderWorkdateBar();      // 공통 요일바 초기 표시
 
 // 점검자 입력칸 = 빈칸 시작(자동복원 없음). 담당자 드롭다운(명단·기억) 채우기.
