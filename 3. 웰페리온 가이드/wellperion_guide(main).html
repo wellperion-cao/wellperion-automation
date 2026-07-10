@@ -546,60 +546,72 @@
         </div>
       </div>
 
-      <!-- 문의 카드 — 멤버십 문의 관리 / 강습 문의 관리 2종(AI CPO 시포 소관 실무 구조), 올해(2026) 기준.
-           구 "유입 문의(CMO)/상담·등록 전환(CPO)" 2단 표기 폐기 — 실측 결과 유입(구글폼 한+영, gid 1902010032+1887747109)이
-           멤버십 문의(CPO 관리 목록, gid 1902010032 동일 시트)와 정확히 같은 접수 건을 다른 이름으로 중복 표시하던 문제였음.
-           재편: 멤버십(한+영 폼 합산)·강습(성인+유소년 합산) 두 실무 카테고리로 정직하게 분해. 2026-07-09 GM 지시 -->
+      <!-- 문의&등록 현황 카드 — 멤버십/강습 × 문의관리/등록 2×2(AI CPO 시포 소관 실무 구조), 올해(2026) 누적+이번달 병기.
+           구 "문의 현황"(멤버십 문의·강습 문의 2칸)에 등록(가입) 실적을 더해 4칸으로 확장 — 문의만 보이고 등록 성과가
+           안 보이던 문제 해소. 멤버십 등록=member_registered_list(유효회원 시트 등록일자) · 강습 등록=lesson_registry_list
+           (성인+유소년 등록원장 합산) — 둘 다 cpo/member/문의회원.html이 쓰는 동일 실측 소스. 종합접수처 카드와 칸 구조·
+           라벨 스타일(라벨 10px dim → 큰숫자 22px → "이번달 N" 서브로우) 통일. 2026-07-10 GM 지시 -->
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">문의 현황</div><div style="font-size:10.5px;color:var(--dim);">멤버십·강습 문의 관리 · AI CPO(시포) · 올해(2026) 누적</div></div></div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">문의&등록 현황</div><div style="font-size:10.5px;color:var(--dim);">멤버십·강습 문의·등록 관리 · AI CPO(시포) · 올해(2026) 누적 · 이번달</div></div></div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">멤버십 문의 관리 · 올해 누적</div>
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">멤버십 문의관리 · 올해 누적</div>
             <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiInqTotal">—</div>
             <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">이번달</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiMiInqMonth">—</span></div>
           </div>
+          <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">멤버십 등록 · 올해 누적</div>
+            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiRegTotal">—</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">이번달</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiMiRegMonth">—</span></div>
+          </div>
           <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">강습 문의 관리 · 올해 누적</div>
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">강습 문의관리 · 올해 누적</div>
             <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonInqTotal">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">성인/유소년</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonInqSplit">—</span></div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">이번달</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonInqMonth">—</span></div>
+          </div>
+          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
+            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">강습 등록 · 올해 누적</div>
+            <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonRegTotal">—</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">이번달</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonRegMonth">—</span></div>
           </div>
         </div>
-        <div style="font-size:9.5px;color:var(--dim);margin-top:8px;">※ 멤버십 문의=구글폼 접수 건수(한글+영문) · 강습 문의=성인+유소년 접수 건수 합산 — 상담·등록 진행상태는 각 관리 페이지에서 확인</div>
+        <div style="font-size:9.5px;color:var(--dim);margin-top:8px;">※ 멤버십 문의=구글폼 접수(한글+영문) · 멤버십 등록=유효회원 시트 등록일자(member_registered_list) · 강습 문의·등록=성인+유소년 합산(강습 등록은 등록원장 lesson_registry_list) · 큰 숫자에 성인/유소년 세부 마우스오버 표기</div>
 
         <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M1]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">문의 현황 →</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M1]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">문의&등록 현황 →</a>
           <a href="cpo/member/문의회원.html?manage=membership" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">멤버십 관리 →</a>
           <a href="cpo/member/문의회원.html?manage=lesson" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">강습 관리 →</a>
         </div>
       </div>
 
-      <!-- 종합 접수처 카드 — 6유형 종합 접수처. 공개 reg_board(마스킹·집계, 무키) 사용. 이슈 현황 카드 흡수 (2026-06-17 GM) -->
+      <!-- 종합 접수처 카드 — 6유형 종합 접수처. 공개 reg_board(마스킹·집계, 무키) 사용. 이슈 현황 카드 흡수 (2026-06-17 GM)
+           유형별 건수 그리드 6→3열로 확장(누적+이번달 접수/완료 3숫자 표기 공간 확보) · 문의&등록 카드와 칸 구조 통일. 2026-07-10 GM 지시 -->
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;">
           <span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;">🙋</span>
-          <div><div style="font-weight:800;font-size:14px;color:var(--text);">종합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 종합 접수처 · AI COO(시우)</div></div>
+          <div><div style="font-weight:800;font-size:14px;color:var(--text);">종합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 종합 접수처 · AI COO(시우) · 누적 · 이번달</div></div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
           <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:10px 12px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:90.25px;">
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">접수</div>
             <div id="kpiVocNew" style="font-size:22px;font-weight:800;color:var(--orange,#e6944e);line-height:1;">—</div>
-            <div style="margin-top:4px;height:13px;"></div>
+            <div style="margin-top:4px;height:13px;"><span style="font-size:9px;color:var(--dim);">이번달 신규 </span><span id="kpiVocNewMonth" style="font-size:13px;font-weight:700;color:var(--orange,#e6944e);">—</span></div>
           </div>
           <div style="background:var(--blue-bg,rgba(91,159,213,0.12));border-radius:10px;padding:10px 12px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:90.25px;">
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">처리중</div>
             <div id="kpiVocWip" style="font-size:22px;font-weight:800;color:var(--blue,#5b9fd5);line-height:1;">—</div>
-            <div style="margin-top:4px;height:13px;"></div>
+            <div style="margin-top:4px;height:13px;"><span style="font-size:9px;color:var(--dim);">현재 기준</span></div>
           </div>
           <div style="background:var(--grow-bg,rgba(106,191,123,0.12));border-radius:10px;padding:10px 12px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:90.25px;">
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">완료</div>
             <div id="kpiVocDone" style="font-size:22px;font-weight:800;color:var(--grow,#6abf7b);line-height:1;">—</div>
-            <div style="margin-top:4px;height:13px;"></div>
+            <div style="margin-top:4px;height:13px;"><span style="font-size:9px;color:var(--dim);">이번달 </span><span id="kpiVocDoneMonth" style="font-size:13px;font-weight:700;color:var(--grow,#6abf7b);" title="처리(완료) 일자 데이터 없음 — 이번달 접수 건 중 현재 완료 상태 근사치">—</span></div>
           </div>
         </div>
         <div style="margin-top:8px;padding-top:9px;border-top:1px dashed var(--border);">
-          <div style="font-size:9.5px;color:var(--dim);font-weight:700;margin-bottom:6px;">유형별 건수</div>
-          <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;">
+          <div style="font-size:9.5px;color:var(--dim);font-weight:700;margin-bottom:6px;">유형별 건수 · 누적 · 이번달 접수/완료</div>
+          <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
             <div style="grid-column:1/-1;text-align:center;font-size:10px;color:var(--dim);padding:4px 0;">불러오는 중…</div>
           </div>
         </div>
@@ -1085,12 +1097,14 @@
         });
       }
       // 이름/전화 중 하나라도 있는 행만 카운트(빈 행 제외) — 타임스탬프 연도 식별 가능하면 올해만, 불명확하면 안전하게 포함.
+      // 올해 누적(total) + 이번달(month) 동시 산출 — 2026-07-10 GM 지시(문의&등록 카드 누적+이번달 통일).
       function countThisYear(t) {
         var iTs    = findCol(t.headers, ['타임스탬프', '접수일', '날짜']);
         var iName  = findCol(t.headers, ['성함', '이름']);
         var iPhone = findCol(t.headers, ['연락처', '전화', '휴대폰']);
         var yr = String(new Date().getFullYear());
-        var n = 0;
+        var ym = yr + '-' + ('0' + (new Date().getMonth() + 1)).slice(-2);
+        var total = 0, month = 0;
         for (var r = 0; r < t.rows.length; r++) {
           var row = t.rows[r];
           var hasName  = iName  >= 0 && row[iName];
@@ -1099,16 +1113,61 @@
           var ts = iTs >= 0 ? row[iTs] : '';
           var y = (ts instanceof Date) ? String(ts.getFullYear()) : String(ts || '').slice(0, 4);
           if (/^\d{4}$/.test(y) && y !== yr) continue;
-          n++;
+          total++;
+          var rowYm = (ts instanceof Date) ? (ts.getFullYear() + '-' + ('0' + (ts.getMonth() + 1)).slice(-2)) : String(ts || '').slice(0, 7);
+          if (rowYm === ym) month++;
         }
-        return n;
+        return { total: total, month: month };
       }
       Promise.all([fetchTable(GID_ADULT), fetchTable(GID_YOUTH)]).then(function(results){
         var adult = countThisYear(results[0]);
         var youth = countThisYear(results[1]);
-        set('kpiLessonInqTotal', (adult + youth).toLocaleString());
-        set('kpiLessonInqSplit', adult.toLocaleString() + ' / ' + youth.toLocaleString());
+        set('kpiLessonInqTotal', (adult.total + youth.total).toLocaleString());
+        set('kpiLessonInqMonth', adult.month + youth.month);
+        var totalEl = document.getElementById('kpiLessonInqTotal');
+        if (totalEl) totalEl.title = '성인 ' + adult.total.toLocaleString() + ' · 유소년 ' + youth.total.toLocaleString() + ' (올해 누적)';
       }).catch(function(){ /* "—" 유지 */ });
+    })();
+
+    // 멤버십 등록 — 올해(2026) 누적 + 이번달 (member_registered_list, 유효회원 시트 등록일자, 멤버십 전용).
+    // 소스: cpo/member/문의회원.html 멤버십 대시보드가 쓰는 동일 GAS 액션(from/to 실측) — 새 GAS 없음. 2026-07-10 GM 지시.
+    (function loadMiRegKpi(){
+      var ym = new Date().getFullYear() + '-' + ('0' + (new Date().getMonth() + 1)).slice(-2);
+      fetch(SURVEY_URL + '?action=member_registered_list&from=' + yearStart() + '&to=' + todayStr() + '&_pv=' + Date.now(), { redirect:'follow' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d || !d.ok || !Array.isArray(d.data)) return; // "—" 유지
+          var total = (typeof d.count === 'number') ? d.count : d.data.length;
+          var month = d.data.filter(function(row){ return String(row.regDate || '').slice(0, 7) === ym; }).length;
+          set('kpiMiRegTotal', total.toLocaleString());
+          set('kpiMiRegMonth', month);
+        })
+        .catch(function(){ /* "—" 유지 */ });
+    })();
+
+    // 강습 등록 — 성인+유소년 lesson_registry_list 합산, 올해 누적 + 이번달 (강습 등록원장, from/to 실측).
+    // 소스: cpo/member/문의회원.html 강습 대시보드가 쓰는 동일 GAS 액션 — 새 GAS 없음. 2026-07-10 GM 지시.
+    (function loadLessonRegKpi(){
+      var ym = new Date().getFullYear() + '-' + ('0' + (new Date().getMonth() + 1)).slice(-2);
+      function fetchType(typeLabel){
+        return fetch(SURVEY_URL + '?action=lesson_registry_list&type=' + encodeURIComponent(typeLabel) + '&from=' + yearStart() + '&to=' + todayStr() + '&_pv=' + Date.now(), { redirect:'follow' })
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if (!d || !d.ok || !Array.isArray(d.data)) return { total: 0, month: 0, ok: false };
+            var total = (typeof d.count === 'number') ? d.count : d.data.length;
+            var month = d.data.filter(function(row){ return String(row['등록일'] || '').slice(0, 7) === ym; }).length;
+            return { total: total, month: month, ok: true };
+          })
+          .catch(function(){ return { total: 0, month: 0, ok: false }; });
+      }
+      Promise.all([fetchType('성인강습'), fetchType('유소년강습')]).then(function(results){
+        var adult = results[0], youth = results[1];
+        if (!adult.ok && !youth.ok) return; // 둘 다 실패 시 "—" 유지
+        set('kpiLessonRegTotal', (adult.total + youth.total).toLocaleString());
+        set('kpiLessonRegMonth', adult.month + youth.month);
+        var totalEl = document.getElementById('kpiLessonRegTotal');
+        if (totalEl) totalEl.title = '성인 ' + adult.total.toLocaleString() + ' · 유소년 ' + youth.total.toLocaleString() + ' (올해 누적)';
+      });
     })();
 
     // ── home_kpi: 매출·지출·이슈 연동 (2026-06-08) ─────────────────────────────
@@ -1317,6 +1376,10 @@
   (function loadVocKpi(){
     var VOC_GAS = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
     function setV(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
+    function curYM(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
+    // 접수일시 필드(reg_board 원본 영문키=createdAt) 기준 이번달 판정 — 완료(처리)일자 필드는 데이터원에 없어
+    // "이번달 완료"는 접수월=이번달 & 현재상태=완료 근사치(정직 표기, title 캐비엇 병기). 2026-07-10 GM 지시.
+    function isThisMonth(r){ return String(r['접수일시'] || r['createdAt'] || '').slice(0, 7) === curYM(); }
     // 6유형 아이콘·짧은이름 — O4 보드 _REG_CAT_META와 동일 정의(스크립트 스코프 분리로 값만 동기화 유지)
     var VOC_CAT_META = [
       {cat:'분실물 접수',            icon:'📦', short:'분실'},
@@ -1338,16 +1401,23 @@
         setV('kpiVocNew',  String(nNew));
         setV('kpiVocWip',  String(nWip));
         setV('kpiVocDone', String(nDone));
-        // 6유형별 건수(전체 상태 합산) — 동일 fetch 결과 재사용, 새 fetch 없음
+        // 이번달 신규 접수(전체 상태 무관, 접수일시 기준) · 이번달 완료(접수월=이번달 & 현재상태=완료, 근사) — 동일 fetch 재사용
+        var monthRows = rows.filter(isThisMonth);
+        setV('kpiVocNewMonth',  String(monthRows.length));
+        setV('kpiVocDoneMonth', String(monthRows.filter(function(r){ return (r['상태'] || r['status']) === '완료'; }).length));
+        // 6유형별 건수 — 누적 + 이번달 접수/완료(근사) 3숫자 · 동일 fetch 결과 재사용, 새 fetch 없음
         var grid = document.getElementById('kpiVocCatGrid');
         if(grid){
           var html = '';
           VOC_CAT_META.forEach(function(m){
-            var n = rows.filter(function(r){ return (r['카테고리'] || r['category']) === m.cat; }).length;
-            html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 3px;text-align:center;">'
-              + '<div style="font-size:13px;line-height:1;">' + m.icon + '</div>'
-              + '<div style="font-size:9px;color:var(--dim);margin-top:3px;white-space:nowrap;">' + m.short + '</div>'
-              + '<div style="font-size:14px;font-weight:800;color:var(--text);margin-top:1px;">' + n + '</div>'
+            var catRows = rows.filter(function(r){ return (r['카테고리'] || r['category']) === m.cat; });
+            var catMonthRows = catRows.filter(isThisMonth);
+            var mNew  = catMonthRows.length;
+            var mDone = catMonthRows.filter(function(r){ return (r['상태'] || r['status']) === '완료'; }).length;
+            html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 6px;text-align:center;">'
+              + '<div style="font-size:9px;color:var(--dim);margin-bottom:2px;font-weight:600;white-space:nowrap;">' + m.icon + ' ' + m.short + '</div>'
+              + '<div style="font-size:18px;font-weight:800;color:var(--text);line-height:1;">' + catRows.length + '</div>'
+              + '<div style="font-size:8.5px;color:var(--dim);margin-top:3px;white-space:nowrap;">이번달 <b style="color:var(--orange,#e6944e);">' + mNew + '</b> · 완료 <b style="color:var(--grow,#6abf7b);">' + mDone + '</b></div>'
               + '</div>';
           });
           grid.innerHTML = html;
