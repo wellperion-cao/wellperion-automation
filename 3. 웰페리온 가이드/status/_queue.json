@@ -1018,5 +1018,19 @@
     "artifact": "- _place_caret_at_body_end: .se-component.last(60% 지점 오배치) → 마지막 .se-text-paragraph 오른쪽 끝 좌표 클릭으로 caret을 본문 진짜 끝에 둠\n- 조립 순서: 본문 타이핑 직후 이미지 선삽입(자연 끝 caret) → 링크카드 → 스티커. 중간 삽입 폐기\n- draft 실측 검증: 본문 단일 컴포넌트로 처음~끝 온전(찜질방 두 줄 붙음), 이미지·링크·스티커 전부 본문 아래 (CLI ad-hoc · 커밋 28f7a39e)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "28f7a39e029d54a351be3db7349156d1ff5a0bb7"
+  },
+  {
+    "task_id": "CPO-2026-07-10-ADHOC-04897377",
+    "clevel": "cpo",
+    "title": "[시포] home 문의&등록/종합접수처 카드 개편 — 누적+이번달 통일",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 884,
+    "artifact": "- \"문의 현황\" → \"문의&등록 현황\"으로 개편, 2×2(멤버십/강습 × 문의관리/등록)\n  구조로 확장. 멤버십 등록=member_registered_list, 강습 등록=lesson_registry_list\n  (기존 cpo/member/문의회원.html이 쓰는 동일 GAS 액션, 새 GAS 없음) 실측 배선.\n  모든 셀 \"올해 누적 + 이번달\" 병기.\n- 종합접수처 카드 유형별 건수 그리드(6→3열)에 이번달 접수/완료(근사, 완료일자\n  필드 없어 접수월 기준) 추가. 상단 접수/완료 카드 빈 서브로우도 이번달 값으로 채 (CLI ad-hoc · 커밋 04897377)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "04897377813b521a8e2e7e1ebd05d3abb89ee2d9"
   }
 ]
