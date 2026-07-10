@@ -113,7 +113,7 @@ STICKER_TOOLBAR_BUTTON_SELECTORS = [
 # 카페:   button.se-sidebar-element-sticker-gif (class에 -gif 접미사 추가)
 # attribute substring selector로 양쪽 모두 커버.
 STICKER_ITEM_SELECTOR = 'button[class*="se-sidebar-element-sticker"]'
-STICKER_COUNT_DEFAULT = 3  # 본문에 삽입할 기본 스티커 개수 (GM 검수 시 교체 전제)
+STICKER_COUNT_DEFAULT = 1  # 본문 스티커 기본 1개 (2026-07-10 GM: 카페 스티커 중복 지적 → 블로그와 동일 1개)
 # 링크 카드(oglink) 삽입 — URL 붙여넣기 자동 카드화 (PoC 실측 2026-06-24)
 LINK_CARD_CTA_URL = "http://wellperion.com/ko/inquiry/"  # UTM 없는 깔끔한 URL — og:image 썸네일 우선
 LINK_CARD_RESULT_SELECTORS = [

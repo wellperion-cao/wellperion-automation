@@ -2033,5 +2033,32 @@
     "artifact": "- 블로그: GM 지정 레이아웃(본문 온전 → 끝에 스티커→문의→사진). 중간 삽입 폐기(조각남 근본원인)\n- 블로그: _place_caret_at_body_end 클릭 기반 caret(Ctrl+End 인터셉트 우회) + 스티커 위치함수 ■ 소제목 인식\n- IG: '다음'·'공유하기' 버튼 뷰포트밖 잘림 → scroll_into_view+JS click 폴백 (F3 @wellperion 재발행 성공)\n- review_queue: F3 5채널(IG·카카오·당근 발행완료 URL, 블로그=GM 수동수정 확정, 카페 발행) (CLI ad-hoc · 커밋 a12fab04)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a12fab04b1358ba17b0be2048ecdb593c6b96250"
+  },
+  {
+    "task_id": "CPO-2026-07-10-ADHOC-5489a375",
+    "clevel": "cpo",
+    "title": "[시포] 문의회원 초보자 재구성 CSS 골격 (배754)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-10",
+    "processed_at": "2026-07-10",
+    "ship_no": 866,
+    "artifact": "Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com> (CLI ad-hoc · 커밋 5489a375)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "5489a375cf503bbc4cb9979433445813ba135a59"
+  },
+  {
+    "task_id": "CMO-2026-07-10-PUBLISH-FORTRESS",
+    "clevel": "cmo",
+    "title": "[시모] 3채널(블로그·카페·당근) 발행 자동화 요새화 — 사전점검+무결성게이트+자가치유+구조표준화+당근쿠키인증",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-10",
+    "module": "M3",
+    "note": "[2026-07-10 GM 결정] 블로그·카페·당근 반복 발행실패(5회+) 근본해결=자동화 요새화. 5기둥: ①사전점검(세션·임시저장함0·프로필건강) ②조립 무결성 게이트(본문·이미지·태그·링크위치 검증 통과해야만 발행, 실패=초안+알림, 깨진글 절대발행금지·과대완료금지) ③자가치유(당근 프로필 자동재생성·stale초안정리·재시도) ④구조 표준화(블로그=본문온전→끝에 스티커→문의→사진, caret흔드는 중간삽입 폐기·카페 스티커 3→1) ⑤당근=쿠키인증(영속프로필 반복손상 종결). 1차 착수 커밋 a12fab04(블로그 레이아웃·클릭caret·■인식·IG버튼)+카페 스티커 기본1. 정본 메모리 project_naver_danggn_publish_fortress.",
+    "next": "①블로그 새 레이아웃 draft-검증(공개발행 없이 조립 실측) ②무결성 게이트 프레임 빌드 ③당근 쿠키인증 ④카페 요새화 e2e. 배826(5채널 자동발행 완결)의 근본화.",
+    "depends_on": "",
+    "ship_no": 866
   }
 ]
