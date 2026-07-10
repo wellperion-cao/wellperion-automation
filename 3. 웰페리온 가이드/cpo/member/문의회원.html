@@ -998,7 +998,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .sum-card.sc-book { --sc: var(--accent); }
 .sum-card.sc-risk { --sc: var(--red); }
 .sum-card.sc-task { --sc: #c9820a; }
-.sum-card.sc-dim { opacity: .6; cursor: default; }
+.sum-card.sc-dim { opacity: .6; cursor: default; pointer-events: none; }
 .sum-card.sc-dim:hover { transform: none; }
 
 /* 가이드·교육 허브 모달 (기존 .gdoc-overlay 패턴 준용, 독립 id) */
@@ -2727,9 +2727,9 @@ function renderSummaryHero() {
     return;
   }
 
-  // 멤버십 — dInqToday/dTourToday(기존 라이브 DOM)·이탈 신호 실측·tapBadge 재사용
-  var dInq = document.getElementById('dInqToday');   setN('sumNew',  dInq  ? dInq.textContent  : 0);
-  var dTour = document.getElementById('dTourToday'); setN('sumBook', dTour ? dTour.textContent : 0);
+  // 멤버십 — _cpoStats.todayInquiry(사전로드 통계)·_tourTodayEager(renderTopDash 실측)·이탈 신호 실측·tapBadge 재사용
+  setN('sumNew',  (typeof _cpoStats !== 'undefined' && _cpoStats && _cpoStats.todayInquiry != null) ? _cpoStats.todayInquiry : 0);
+  setN('sumBook', (window._tourTodayEager != null) ? window._tourTodayEager : 0);
   setDim('sumNewCard', false); setDim('sumBookCard', false); setDim('sumRiskCard', false);
   var goN2 = document.getElementById('sumNewGo');   if (goN2) goN2.textContent = '문의 DB로 →';
   var goB2 = document.getElementById('sumBookGo');  if (goB2) goB2.textContent = '예약 달력으로 →';
@@ -2774,6 +2774,8 @@ document.addEventListener('keydown', function(e){
   if (tdash && tdash.classList.contains('open')) closeTodayActionModal();
   var ghub = document.getElementById('guideHubOverlay');
   if (ghub && ghub.classList.contains('open')) closeGuideHub();
+  var gdoc = document.getElementById('gdocOverlay');
+  if (gdoc && gdoc.classList.contains('open')) closeGdoc();
 });
 // 우측 CPO 가이드 펼치기 — 기존 gdoc 템플릿 콘텐츠를 인라인으로 clone(중복 없음). 2026-06-29 시포
 function toggleGuideAcc(btn, id) {
@@ -4772,8 +4774,7 @@ function loadCpoTodayStats() {
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d || !d.ok) return;
-      // 카드2 멤버십 문의 / 카드3 등록 / 카드4 회원 현황
-      _setTxt('dInqToday', d.todayInquiry); _setTxt('dInqMonth', d.monthInquiry);
+      // 카드3 등록 / 카드4 회원 현황. 신규 문의(todayInquiry)는 표면 DOM 없음 — renderSummaryHero가 _cpoStats에서 직접 읽음(배754).
       _setTxt('dRegToday', d.todayReg);     _setTxt('dRegMonth', d.monthReg);
       // 유효=단기(memberActive, 유효회원시트 잔여일>0)+법인(memberCorp, 별도 법인현황시트) 합산 총원 — 두 소스는 disjoint(다른 시트)라 합산이 정직. 2026-07-07 시포·GM
       _setTxt('dMemActive', (Number(d.memberActive) || 0) + (Number(d.memberCorp) || 0)); _setTxt('dMemCorp', d.memberCorp);
@@ -5000,21 +5001,19 @@ function _setTxt(id, v) {
   var el = document.getElementById(id);
   if (el) el.textContent = (v === undefined || v === null || v === '') ? '0' : v;
 }
-// 카드1(예약 달력) — 금일·월간 예약 건수(상담·체험 전체). calEvents(표시 중인 달) 기준.
+// 카드1(예약 달력) — 금일 예약 건수(상담·체험 전체). calEvents(표시 중인 달) 기준. 월간 합계는 표면 노출처 없음(배754, 정직 기록).
 function renderTopDash() {
   var today = new Date();
   var todayStr = today.getFullYear() + '-' +
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
-  var tToday = 0, tMon = 0;
+  var tToday = 0;
   Object.keys(calEvents).forEach(function(date){
     (calEvents[date] || []).forEach(function(ev){
-      tMon++;
       if (ev.date === todayStr) tToday++;
     });
   });
-  _setTxt('dTourToday', tToday);
-  _setTxt('dTourMon', tMon);
+  window._tourTodayEager = tToday;   // 표면 DOM 없음(배754) — renderSummaryHero의 sumBook 라이브 소스
   if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — 오늘 예약 카운트 갱신
 }
 
