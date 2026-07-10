@@ -1954,12 +1954,12 @@
   {
     "task_id": "COO-2026-07-10-COMPLIANCE-CALENDAR",
     "clevel": "coo",
-    "title": "[시우] 정기 안전·법정 점검 달력 — 별도 SSOT+전부서 공유+업무결재 자동연동(A안)",
+    "title": "[시우] 전사 일정 SSOT — 반복 의무·일정 단일출처(현재=정기 안전·법정 점검)+전부서 공유+업무결재 자동연동(A안)",
     "status": "IN_PROGRESS",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-10",
     "module": "O1",
-    "note": "[2026-07-10 GM 시안 승인·A안·전부서] 소방·전기·승강기·소독·법정교육 등 정기 의무점검을 한눈에. deep-interview 대신 시안 카드로 구조(A:별도SSOT+연동)·범위(전부서) 확정. [1단계 뼈대 라이브 완결] ①SSOT status/compliance_calendar.json(15항목·정직 tbd·지어낸 날짜 0·소방연1/전기3년1만 법정주기 확인표기) ②scripts/compliance_calendar.py(로더·검증·기한도래 선별·업무결재 예행연동 dry-run, 게이트 auto_workapproval=false 기본OFF)+테스트 5통과 ③정기점검_달력.html 마스터(전부서 공유·?dept 자동필터·임박순+연간뷰·ERP다크테마) ④시설·지원·주차·운영 4부서 헤더 링크→부서필터 달력. [라이브검증] 시크릿 헤드리스: 마스터 HTTP200·전체15/지원부3·JS오류0, 시설부 페이지→링크클릭→dept=시설부 필터(10항목) 통과. 커밋=SSOT+스크립트+페이지 / 4부서링크.",
+    "note": "[2026-07-10 GM 시안 승인·A안·전부서] 소방·전기·승강기·소독·법정교육 등 정기 의무점검을 한눈에. deep-interview 대신 시안 카드로 구조(A:별도SSOT+연동)·범위(전부서) 확정. [1단계 뼈대 라이브 완결] ①SSOT status/compliance_calendar.json(15항목·정직 tbd·지어낸 날짜 0·소방연1/전기3년1만 법정주기 확인표기) ②scripts/compliance_calendar.py(로더·검증·기한도래 선별·업무결재 예행연동 dry-run, 게이트 auto_workapproval=false 기본OFF)+테스트 5통과 ③정기점검_달력.html 마스터(전부서 공유·?dept 자동필터·임박순+연간뷰·ERP다크테마) ④시설·지원·주차·운영 4부서 헤더 링크→부서필터 달력. [라이브검증] 시크릿 헤드리스: 마스터 HTTP200·전체15/지원부3·JS오류0, 시설부 페이지→링크클릭→dept=시설부 필터(10항목) 통과. 커밋=SSOT+스크립트+페이지 / 4부서링크. [2026-07-10 GM 개명] 좁은 점검달력→전사 일정 SSOT로 범용화: compliance_calendar→schedule_ssot.json(schedule.json 레거시 충돌회피), type 필드 추가(현재 type=정기점검), 페이지·탭·4부서 링크=전사 일정. 경계=반복일정(≠G1할일≠회원예약). 라이브 재검증 통과(전사_일정.html HTTP200·H1 전사일정·15항목, 지원부 링크클릭→필터 통과).",
     "next": "👉 2단계=실제 날짜 입력(GM·실무): 부서별 실제 의무점검 목록 확정+최근검사일/다음예정일 입력(쉬운 입력칸 제공 예정)+승강기·에스컬레이터 설비 유무 확인. 3단계=업무결재 자동연동 발효(gate.auto_workapproval=true, GM go+역롤백 한줄). 입력양식 먼저 만들지 여부 GM 결정 대기.",
     "depends_on": "",
     "ship_no": 860

@@ -967,6 +967,58 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   .funnel-bar-label.wide{flex:0 0 100%}
   .funnel-bar-nums{flex:0 0 100%;justify-content:flex-start;margin-top:2px}
 }
+/* ── 초보자 재구성(2026-07-10, 배754) ── */
+/* 헤더 3구역 그룹핑 */
+.header-actions { align-items: flex-start; }
+.hz-zone { display: flex; flex-direction: column; gap: 5px; padding-left: 10px; border-left: 3px solid var(--border); }
+.hz-zone + .hz-zone { margin-left: 6px; }
+.hz-zone.z-status { border-left-color: var(--teal); }
+.hz-zone.z-guide  { border-left-color: var(--accent); }
+.hz-zone-label { font-size: 10px; font-weight: 700; letter-spacing: .04em; color: var(--dim); }
+.hz-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.action-btn.is-guide { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+/* 초보자 안내 배너 */
+.beginner-banner { display: flex; align-items: flex-start; gap: 11px; background: var(--accent-bg); border: 1px solid var(--accent); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; }
+.beginner-banner .bb-ic { font-size: 19px; line-height: 1.2; }
+.beginner-banner .bb-txt { font-size: 13px; color: var(--text); line-height: 1.6; }
+.beginner-banner .bb-txt b { color: var(--accent); }
+.beginner-banner .bb-x { margin-left: auto; background: none; border: none; color: var(--dim); font-size: 15px; cursor: pointer; }
+
+/* 오늘 현황 요약 히어로 */
+.summary-hero { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.sum-card { position: relative; display: block; text-decoration: none; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 13px 14px; overflow: hidden; transition: .14s; }
+.sum-card:hover { transform: translateY(-2px); border-color: var(--sc, var(--accent)); }
+.sum-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--sc, var(--accent)); }
+.sum-card .sc-top { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--dim); }
+.sum-card .sc-num { font-size: 30px; font-weight: 800; margin: 5px 0 1px; line-height: 1; font-variant-numeric: tabular-nums; }
+.sum-card .sc-desc { font-size: 11px; color: var(--dim); }
+.sum-card .sc-go { font-size: 10.5px; font-weight: 600; color: var(--sc, var(--accent)); margin-top: 7px; }
+.sum-card.sc-new  { --sc: var(--teal); }
+.sum-card.sc-book { --sc: var(--accent); }
+.sum-card.sc-risk { --sc: var(--red); }
+.sum-card.sc-task { --sc: #c9820a; }
+.sum-card.sc-dim { opacity: .6; cursor: default; }
+.sum-card.sc-dim:hover { transform: none; }
+
+/* 가이드·교육 허브 모달 (기존 .gdoc-overlay 패턴 준용, 독립 id) */
+.hubx-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.5); display: none; align-items: flex-start; justify-content: center; padding: 7vh 16px 4vh; overflow-y: auto; }
+.hubx-overlay.open { display: flex; }
+.hubx-sheet { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; max-width: 680px; width: 100%; padding: 18px 18px 20px; }
+.hubx-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+.hubx-head h3 { margin: 0; font-size: 16px; font-weight: 800; }
+.hubx-x { background: none; border: 1px solid var(--border); color: var(--dim); width: 30px; height: 30px; border-radius: 8px; font-size: 15px; cursor: pointer; }
+.hubx-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.hubx-card { text-align: left; display: flex; gap: 11px; align-items: flex-start; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 13px; cursor: pointer; transition: .14s; }
+.hubx-card:hover { border-color: var(--accent); }
+.hubx-card .hc-ic { font-size: 20px; }
+.hubx-card h4 { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; color: var(--text); }
+.hubx-card p { margin: 0; font-size: 11.5px; color: var(--dim); line-height: 1.5; }
+.hubx-card.hc-slot { border-style: dashed; }
+@media (max-width: 760px) {
+  .summary-hero { grid-template-columns: repeat(2, 1fr); }
+  .hubx-grid { grid-template-columns: 1fr; }
+}
 </style>
 <script>
 /* 문의회원 전용 입장 게이트 — 서버검증형. 입장 비번 = 서버 ACCESS_TOKEN(소스에 없음).
