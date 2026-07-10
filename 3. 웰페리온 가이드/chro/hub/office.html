@@ -380,14 +380,19 @@
 
   /* ---------- characters ---------- */
   const lead={ id:'LEAD', name:'팀장 · Claude', gx:0.0, gy:4.0, face:'x+', lead:true, phase:0.0 };
+  // 페르소나 — 성별 믹스 · 헤어스타일(파스텔 팔레트 내 실루엣 차별화) · 유휴 시그니처 행동
+  //   A-1 이력서: 여 · 단발+헤어핀 · 서류 뒤적임(sift)      A-2 채용: 남 · 사이드스윕 · 전화 응대(call)
+  //   A-3 직원담당: 여 · 포니테일 · 체크리스트 두드림(pat)   A-4 평가: 남 · 단정 가르마+안경 · 안경 고쳐쓰기(adjust)
+  //   A-5 배포: 여 · 작업번 · 빠른 커밋 타이핑(commit)       A-6 감사: 남 · 짧은 웨이브 · 돋보기 점검(inspect)
+  //   A-7 시스템효율: 여 · 롱웨이브 · 화이트보드 응시(point)
   const agents=[
-    {id:'A-1', tag:'이력서',  gx:2.2, gy:2.4, face:'y+'},
-    {id:'A-2', tag:'채용',    gx:4.7, gy:2.4, face:'y+'},
-    {id:'A-3', tag:'직원담당',  gx:7.2, gy:2.4, face:'y+'},
-    {id:'A-4', tag:'평가',    gx:9.7, gy:2.4, face:'y+'},
-    {id:'A-5', tag:'배포',    gx:3.45, gy:5.5, face:'y-'},
-    {id:'A-6', tag:'감사',    gx:5.95, gy:5.5, face:'y-'},
-    {id:'A-7', tag:'시스템효율',    gx:8.45, gy:5.5, face:'y-'}
+    {id:'A-1', tag:'이력서',    gx:2.2,  gy:2.4, face:'y+', gender:'f', hairStyle:'bob',      personaBeh:'sift'},
+    {id:'A-2', tag:'채용',      gx:4.7,  gy:2.4, face:'y+', gender:'m', hairStyle:'sweep',    personaBeh:'call'},
+    {id:'A-3', tag:'직원담당',   gx:7.2,  gy:2.4, face:'y+', gender:'f', hairStyle:'ponytail', personaBeh:'pat'},
+    {id:'A-4', tag:'평가',      gx:9.7,  gy:2.4, face:'y+', gender:'m', hairStyle:'part',     personaBeh:'adjust', accessory:'glasses'},
+    {id:'A-5', tag:'배포',      gx:3.45, gy:5.5, face:'y-', gender:'f', hairStyle:'bun',      personaBeh:'commit'},
+    {id:'A-6', tag:'감사',      gx:5.95, gy:5.5, face:'y-', gender:'m', hairStyle:'wave',     personaBeh:'inspect'},
+    {id:'A-7', tag:'시스템효율', gx:8.45, gy:5.5, face:'y-', gender:'f', hairStyle:'longwave', personaBeh:'point'}
   ];
   // per-character personality — distinct idle facial-expression bias + a staggered starting behavior
   const EXPR_IDLE=[ ['calm','smile','ponder'], ['smile','grin','calm'], ['smile','content','wink'],
@@ -420,8 +425,12 @@
      pose is HELD (gesture envelope pinned to its peak) with no oscillation → a still, varied tableau. */
   const IDLE_BEHS=['rest','coffee','stretch','read','think','mouse','glance','swivel'];
   const LEAD_BEHS=['rest','think','glance','nod'];
+  // per-seat persona behavior pool — base repertoire + that character's signature gesture weighted 2x
+  // so it recurs often without crowding out the shared idle variety. Built once IDLE_BEHS exists.
+  agents.forEach(a=>{ a.behPool = a.personaBeh ? IDLE_BEHS.concat(a.personaBeh, a.personaBeh) : IDLE_BEHS; });
   const BEH_DUR={ rest:[2.5,4.5], type:[99,99], coffee:[2.2,3.0], stretch:[1.4,2.0],
-    read:[3.6,5.4], think:[2.6,4.2], mouse:[2.4,4.0], glance:[1.4,2.4], swivel:[2.2,3.4], nod:[1.6,2.6] };
+    read:[3.6,5.4], think:[2.6,4.2], mouse:[2.4,4.0], glance:[1.4,2.4], swivel:[2.2,3.4], nod:[1.6,2.6],
+    sift:[2.4,3.6], call:[2.6,3.8], pat:[2.0,3.0], adjust:[1.0,1.6], commit:[2.4,3.6], inspect:[2.6,3.8], point:[2.6,4.0] };
   function behDur(nb){ const r=BEH_DUR[nb]||[2.5,4]; return r[0]+Math.random()*(r[1]-r[0]); }
   function setBeh(c,beh,t){ c.behPrev=c.beh; c.behStart=t; c.behDur=behDur(beh); c.behEnd=t+c.behDur; c.behBlendStart=t; c.beh=beh; }
   function updateBehavior(c,t){
@@ -429,7 +438,7 @@
     if(c.beh==='type'){ setBeh(c,'rest',t); return; }                          // just finished → settle
     if(MOTION===0) return;                                                     // reduced motion → hold pose
     if(t>=c.behEnd){
-      const pool=c.lead?LEAD_BEHS:IDLE_BEHS;
+      const pool=c.lead?LEAD_BEHS:(c.behPool||IDLE_BEHS);
       let nb, guard=0; do{ nb=pool[(Math.random()*pool.length)|0]; guard++; }while(nb===c.beh && guard<4);
       setBeh(c,nb,t);
     }
@@ -470,6 +479,27 @@
         yaw = m? Math.sin(t*0.6+ph)*0.60 : 0.45; break;
       case 'nod':                                           // gentle approving nod (lead)
         nodF = m? Math.max(0,Math.sin(t*3+ph))*0.16 : 0.08; break;
+      /* ---- persona signature idles (2026-07-10) ---- */
+      case 'sift':                                          // A-1 — quickly flips through resume sheets
+        A=armObj(0.20,0.30,0.40, 0.05+m*Math.sin(t*5+ph)*0.05);
+        B=armObj(0.20,0.30,0.40, 0.05+m*Math.sin(t*5+ph+Math.PI)*0.05);
+        nodF=0.16; prop='paper'; break;
+      case 'call':                                          // A-2 — phone raised to the ear
+        A=armObj(0.10,0.16,0.18, 0.46); nodF=0.05; tilt=0.06; prop='phone'; break;
+      case 'pat':                                           // A-3 — taps a checklist rhythmically
+        A=armObj(0.28,0.30,0.42, 0.03+(m? Math.max(0,Math.sin(t*4+ph)) : 0.5)*0.05);
+        nodF=0.06; prop='paper'; break;
+      case 'adjust':                                        // A-4 — pushes glasses up the nose
+        A=armObj(0.08,0.14,0.16, (m? Math.max(0,Math.sin(t*2.2+ph)) : 0.7)*0.42);
+        nodF=0.04; break;
+      case 'commit':                                        // A-5 — brisk double-tap keystrokes
+        A=armObj(0.30,0.27,0.47, m*Math.sin(t*10+ph)*0.08);
+        B=armObj(0.30,0.27,0.47, m*Math.sin(t*10+ph+Math.PI)*0.08);
+        nodF=0.05; break;
+      case 'inspect':                                       // A-6 — holds a magnifier up, scanning
+        A=armObj(0.20,0.28,0.36, 0.40); nodF=0.10; prop='magnify'; break;
+      case 'point':                                         // A-7 — gazes toward the whiteboard
+        A=armObj(0.30,0.30,0.50, 0.30); yaw=(m? Math.sin(t*0.5+ph)*0.10 : 0)-0.30; nodF=0.02; break;
       case 'rest': default: break;
     }
     return {A:A,B:B,nodF:nodF,tilt:tilt,yaw:yaw,prop:prop,propSide:propSide};
@@ -485,6 +515,39 @@
         yaw:prev.yaw+(cur.yaw-prev.yaw)*k, prop:k>0.5?cur.prop:prev.prop, propSide:k>0.5?cur.propSide:prev.propSide };
     }
     return cur;
+  }
+
+  /* ---------- persona hairstyle accents (2026-07-10) — small silhouette add-ons layered on the
+     shared hair cap so each agent reads distinct at a glance while staying inside the same
+     rounded-figurine grammar (no new primitives, just orb/ellipse touches keyed by c.hairStyle). */
+  function drawHairAccent(style, hp, hrx, hry, fsx, hair){
+    switch(style){
+      case 'bob':                                          // A-1 — blunt bob + brass hairpin glint
+        ctx.beginPath(); ctx.ellipse(hp.x-fsx*hrx*0.10, hp.y-hry*0.20, hrx*0.11, hry*0.07, 0, 0, Math.PI*2);
+        ctx.fillStyle=fc(P.brass,1.15); ctx.fill(); break;
+      case 'sweep':                                        // A-2 — short side-swept fringe
+        ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.55, hp.y-hry*0.55, hrx*0.30, hry*0.14, fsx*0.4, 0, Math.PI*2);
+        ctx.fillStyle=fc(hair,1.28); ctx.fill(); break;
+      case 'ponytail':                                     // A-3 — high ponytail trailing behind
+        ctx.beginPath(); ctx.ellipse(hp.x-fsx*hrx*0.05, hp.y+hry*0.85, hrx*0.16, hry*0.42, 0, 0, Math.PI*2);
+        ctx.fillStyle=fc(hair,0.88); ctx.fill(); break;
+      case 'part':                                         // A-4 — neat, understated center part
+        ctx.beginPath(); ctx.ellipse(hp.x, hp.y-hry*0.60, hrx*0.05, hry*0.30, 0, 0, Math.PI*2);
+        ctx.fillStyle=fc(hair,0.70); ctx.fill(); break;
+      case 'bun':                                          // A-5 — quick work bun on top
+        ctx.beginPath(); ctx.ellipse(hp.x-fsx*hrx*0.08, hp.y-hry*0.92, hrx*0.30, hry*0.26, 0, 0, Math.PI*2);
+        ctx.fillStyle=fc(hair,1.05); ctx.fill(); break;
+      case 'wave':                                         // A-6 — short tousled waves
+        ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.40, hp.y-hry*0.70, hrx*0.22, hry*0.14, fsx*0.5, 0, Math.PI*2);
+        ctx.fillStyle=fc(hair,1.18); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(hp.x-fsx*hrx*0.30, hp.y-hry*0.62, hrx*0.18, hry*0.12, -fsx*0.4, 0, Math.PI*2);
+        ctx.fillStyle=fc(hair,0.95); ctx.fill(); break;
+      case 'longwave':                                     // A-7 — long wavy hair past the shoulders
+        ctx.beginPath(); ctx.ellipse(hp.x-hrx*0.95, hp.y+hry*0.55, hrx*0.20, hry*0.50, 0, 0, Math.PI*2);
+        ctx.fillStyle=fc(hair,0.86); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(hp.x+hrx*0.95, hp.y+hry*0.55, hrx*0.20, hry*0.50, 0, 0, Math.PI*2);
+        ctx.fillStyle=fc(hair,0.72); ctx.fill(); break;
+    }
   }
 
   /* ---------- one drawable per character (internal painter order, back → front) ----------
@@ -552,8 +615,9 @@
       const ez=shZ-0.42*s + ap.dz;
       const hxp=cx+px*armPx + fx*ap.hReach*s, hyp=cy+py*armPx + fy*ap.hReach*s;
       limb(sxo, syo, shZ-0.04+breathe, hxp, hyp, ez+0.07, 0.125*TW*s, shirt, 1.0);       // sleeve capsule
-      if(pose.prop==='coffee' && side===pose.propSide){ propHand={x:hxp,y:hyp,z:ez}; }   // draw hand+mug atop the face later
-      else { orb(hxp, hyp, ez+0.05, 0.085*s, skin); }                                    // hand
+      if((pose.prop==='coffee'||pose.prop==='phone'||pose.prop==='magnify') && side===pose.propSide){
+        propHand={x:hxp,y:hyp,z:ez,kind:pose.prop};                                      // draw hand+prop atop the face later
+      } else { orb(hxp, hyp, ez+0.05, 0.085*s, skin); }                                  // hand
     }
     // held sheet (reading) — upright in front of the chest, below the face
     if(pose.prop==='paper'){
@@ -587,6 +651,7 @@
       ctx.beginPath(); ctx.ellipse(hp.x-fsx*hrx*0.12, hp.y-hry*0.62, hrx*0.34, hry*0.10, -fsx*0.5, 0, Math.PI*2);
       ctx.fillStyle=fc(hair,1.5); ctx.fill();
     }
+    if(c.hairStyle) drawHairAccent(c.hairStyle, hp, hrx, hry, fsx, hair);                // persona hairstyle accent
     // blush dots — 볼터치 (귀여움 포인트, 표정과 무관한 고정 디테일)
     ctx.globalAlpha=0.30;
     ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.52, hp.y+hry*0.28, hrx*0.14, hry*0.09, 0, 0, Math.PI*2);
@@ -595,13 +660,22 @@
 
     c._headZ = hz+0.58*s;
 
-    // coffee: the raised hand + mug sit in FRONT of the face → drawn after the head
+    // raised hand + held prop (coffee / phone / magnifier) sit in FRONT of the face → drawn after the head
     if(propHand){
       orb(propHand.x, propHand.y, propHand.z+0.04, 0.085*s, skin);                       // hand
-      puck(propHand.x, propHand.y, propHand.z+0.06, 0.085*s, 0.16, P.mug);               // mug
-      const cs=project(propHand.x, propHand.y, propHand.z+0.22);
-      ctx.beginPath(); ctx.ellipse(cs.x,cs.y, 0.055*s*TW, 0.055*s*TH, 0,0,Math.PI*2);
-      ctx.fillStyle=fc(P.coffee,1.0); ctx.fill();                                        // coffee surface
+      if(propHand.kind==='coffee'){
+        puck(propHand.x, propHand.y, propHand.z+0.06, 0.085*s, 0.16, P.mug);             // mug
+        const cs=project(propHand.x, propHand.y, propHand.z+0.22);
+        ctx.beginPath(); ctx.ellipse(cs.x,cs.y, 0.055*s*TW, 0.055*s*TH, 0,0,Math.PI*2);
+        ctx.fillStyle=fc(P.coffee,1.0); ctx.fill();                                      // coffee surface
+      } else if(propHand.kind==='phone'){                                                // A-2 — phone to the ear
+        boxC(propHand.x, propHand.y, propHand.z+0.02, 0.09*s,0.03*s,0.16*s, shadeHex('#2A2D33',1.05), 1.08);
+      } else if(propHand.kind==='magnify'){                                              // A-6 — magnifier scan
+        const rp=project(propHand.x, propHand.y, propHand.z+0.20);
+        ctx.save(); ctx.beginPath(); ctx.arc(rp.x, rp.y, 0.09*s*TW, 0, Math.PI*2);
+        ctx.lineWidth=Math.max(1.5, 0.022*s*TW); ctx.strokeStyle=P.brass; ctx.stroke(); ctx.restore();
+        limb(propHand.x, propHand.y, propHand.z+0.02, propHand.x+0.06*s, propHand.y+0.06*s, propHand.z-0.10*s, 0.03*TW*s, P.brass, 1.0);
+      }
     }
 
     // anchor for the (billboard) facial expression, on the camera-facing front of the head
@@ -1027,7 +1101,7 @@
     ctx.fillStyle=shadeHex(P.winFrame,1.15); ctx.fillRect(-BW*0.04,BH*0.96,BW*1.08,BH*0.10);
   }
 
-  // 벽시계 — round wall clock on the front wall, right end (reads 07:08 for today)
+  // 벽시계 — round wall clock on the front wall, right end (실시간 KST — 시·분침이 현재 시각을 따라간다)
   function drawClockWall(t){
     wallBoard({plane:'y', coord:ROOM.y0+0.12, uStart:11.75, uEnd:13.05, zTop:3.42, zBot:2.12}, function(BW,BH){ drawClockBoard(BW,BH,t); });
   }
@@ -1042,8 +1116,8 @@
     for(let i=0;i<12;i++){ const a=i*Math.PI/6, r1=r*0.82, r2=r*0.94;
       ctx.lineWidth=(i%3===0)?Math.max(1.5,r*0.06):Math.max(1,r*0.03);
       ctx.beginPath(); ctx.moveTo(cxp+Math.cos(a)*r1,cyp+Math.sin(a)*r1); ctx.lineTo(cxp+Math.cos(a)*r2,cyp+Math.sin(a)*r2); ctx.stroke(); }
-    // hands → 07:08 (hour = -60°? compute): hour hand at 7h08m, minute at 8m
-    const hrA=(-90 + (7+8/60)*30)*Math.PI/180, mnA=(-90 + 8*6)*Math.PI/180;
+    // hands → 실제 현재 시각(KST, 1분 단위 갱신 — updateKST()가 채워주는 전역 KST_H/KST_M 사용)
+    const hrA=(-90 + (KST_H%12 + KST_M/60)*30)*Math.PI/180, mnA=(-90 + KST_M*6)*Math.PI/180;
     ctx.strokeStyle=lightT?'#33291B':'#EBE2CE'; ctx.lineCap='round';
     ctx.lineWidth=Math.max(2,r*0.09); ctx.beginPath(); ctx.moveTo(cxp,cyp); ctx.lineTo(cxp+Math.cos(hrA)*r*0.48,cyp+Math.sin(hrA)*r*0.48); ctx.stroke();
     ctx.lineWidth=Math.max(1.5,r*0.06); ctx.beginPath(); ctx.moveTo(cxp,cyp); ctx.lineTo(cxp+Math.cos(mnA)*r*0.72,cyp+Math.sin(mnA)*r*0.72); ctx.stroke();
@@ -1361,6 +1435,12 @@
         dotE(cx0-dx,eyeY,es*0.46); dotE(cx0+dx,eyeY,es*0.46);
         mLine(es*0.5); break;
     }
+    if(c.accessory==='glasses'){                        // A-4 — round brass-rim glasses, drawn over the eyes
+      ctx.lineWidth=Math.max(1,es*0.28); ctx.strokeStyle=hexA(P.brass,0.88);
+      ctx.beginPath(); ctx.arc(cx0-dx, eyeY, es*0.62, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx0+dx, eyeY, es*0.62, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx0-dx+es*0.62, eyeY); ctx.lineTo(cx0+dx-es*0.62, eyeY); ctx.stroke();   // bridge
+    }
     ctx.restore();
   }
   function drawBubble(b, lightT){
@@ -1584,6 +1664,20 @@
   // seed the feed with the lead's opening brief
   pushLog({ time:new Date().toTimeString().slice(0,8), id:'팀장', tag:'', text:'오늘 업무 시작 · 에이전트에게 작업을 배정합니다', kind:'브리핑', color:null });
   function updateClock(){ document.getElementById('clock').textContent=new Date().toTimeString().slice(0,8); }
+  // 벽시계(아날로그) 실시간화 — 우상단 디지털 시계는 브라우저 로컬시각 그대로 두고, 벽시계 시·분침은
+  // 명시적 Asia/Seoul(KST) 기준으로 계산해 조회 위치와 무관하게 매장 실제 시각을 가리키게 한다.
+  let KST_H=0, KST_M=0;
+  const KST_FMT = (function(){ try{ return new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',hour12:false,hour:'2-digit',minute:'2-digit'}); }catch(_){ return null; } })();
+  function updateKST(){
+    if(KST_FMT){
+      const parts=KST_FMT.formatToParts(new Date());
+      KST_H=parseInt(parts.find(p=>p.type==='hour').value,10)%24;
+      KST_M=parseInt(parts.find(p=>p.type==='minute').value,10);
+    } else {                                              // fallback: browser local time (already KST on this PC)
+      const d=new Date(); KST_H=d.getHours(); KST_M=d.getMinutes();
+    }
+  }
+  updateKST();
 
   /* ---------- reduced motion / visibility ---------- */
   const mqReduce=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -1638,7 +1732,7 @@
 
     drawOverlays(t,W,H);
 
-    if(t-lastClock>0.25){ updateClock(); lastClock=t; }
+    if(t-lastClock>0.25){ updateClock(); updateKST(); lastClock=t; }
     raf=requestAnimationFrame(frame);
   }
   function start(){ if(!raf) raf=requestAnimationFrame(frame); }
@@ -1873,7 +1967,8 @@
 
   /* ===== CMD 잠금/연결 상태 ===== */
   let CMD_UNLOCKED=false, awaitingCmdPw=false, ambientOn=false;
-  const AMBIENT=[{id:'A-1',t:'신규 이력서 검토'},{id:'A-6',t:'정합성 점검'},{id:'A-2',t:'면접 일정 확인'},{id:'A-3',t:'온보딩 진행 점검'},{id:'A-5',t:'배포 준비'},{id:'A-4',t:'평가 정리'},{id:'A-7',t:'작업 흐름 최적화'},{id:'A-1',t:'서류 평가'},{id:'A-6',t:'감사 대기 검토'}];
+  // 페르소나 톤 반영 — 각자 시그니처 행동을 연상시키는 문구(실데이터 아님, 미연결 시 앰비언트 표시용)
+  const AMBIENT=[{id:'A-1',t:'이력서 한 장씩 다시 확인'},{id:'A-6',t:'숫자 하나하나 대조 중'},{id:'A-2',t:'지원자와 일정 통화 조율'},{id:'A-3',t:'이번 주 체크인 리스트 확인'},{id:'A-5',t:'배포 막바지 점검'},{id:'A-4',t:'평가 기준 다시 짚어보기'},{id:'A-7',t:'흐름 막히는 지점 분석'},{id:'A-1',t:'서류 평가 재검토'},{id:'A-6',t:'감사 대기 건 점검'}];
   function startAmbient(){ ambientOn=true; }
   function ambientFeed(){ if(!ambientOn||CMD_UNLOCKED||realQueue.length) return; const a=AMBIENT[(Math.random()*AMBIENT.length)|0]; realQueue.push({agent:a.id,text:a.t,kind:'진행',isLead:false,count:false}); }
   function promptCmdPw(){ if(CMD_UNLOCKED){ tLine('이미 연결됨','tl-mut'); tScroll(); return; } awaitingCmdPw=true; tIn.type='password'; tIn.placeholder='CMD 비밀번호'; tLine('CMD 비밀번호를 입력하고 Enter','tl-mut'); tScroll(); tIn.focus(); }
@@ -1967,7 +2062,7 @@
     if(sp) cmdUnlock(sp,true);
   })();
 
-  resize(); updateClock(); start();
+  resize(); updateClock(); updateKST(); start();
 })();
 </script>
 
