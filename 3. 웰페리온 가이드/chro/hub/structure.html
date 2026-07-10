@@ -323,7 +323,7 @@
     </div>
 
     <div class="foundation">
-      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@45, /exec)<span class="sep">|</span><b>구글시트 9탭</b>(데이터 7 + 휴무 + 자동화로그)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
+      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@47, /exec)<span class="sep">|</span><b>구글시트 9탭</b>(데이터 7 + 휴무 + 자동화로그)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
     </div>
 
     <div class="legend">
@@ -593,13 +593,13 @@
 
     <div class="item">
       <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>HR office 실시간 대시보드</h3></div>
-      <p>office.html이 <b>자동화로그를 25초마다 폴링</b>해 CHRO 팀의 작업을 실시간 표시하고, 주체(actor)의 A-1~A-7 코드를 인식해 <b>캐릭터 애니메이션</b>으로 보여줍니다. ERP 구조도 하단 '자동화 로그'(관리자 인증)에서도 동일 이력 열람이 가능합니다.</p>
-      <div class="tags"><span class="tag db">자동화로그 탭</span><span class="tag tool">office.html</span><span class="tag tool">25초 폴링</span></div>
+      <p>office.html은 <b>비밀번호 입장 단계 없이</b> 로드 즉시 <code>office-autolog</code>(공개, 실명 무마스킹, 일시·주체·작업·결과 4필드 화이트리스트 — 상세 필드 제외)로 <b>로그 피드·오늘 카운터·에이전트별 집계</b>를 25초 폴링 연동합니다. 주체(actor)의 A-1~A-7 코드를 인식해 <b>캐릭터 애니메이션</b>으로도 보여줍니다. ERP 구조도 하단 '자동화 로그'(관리자 인증)에서도 동일 이력 열람이 가능합니다.</p>
+      <div class="tags"><span class="tag act">office-autolog</span><span class="tag db">자동화로그 탭</span><span class="tag tool">office.html</span><span class="tag tool">25초 폴링</span></div>
     </div>
 
     <div class="item">
       <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>CMD 명령큐 (온디맨드)</h3></div>
-      <p>오피스 CMD 창에 입력한 명령이 큐에 쌓이고, <b>CHRO 부팅 시 자동 회수 + 세션 중 "큐" 입력 시마다 회수</b>해 처리 후 결과를 오피스에 회신합니다. 24시간 무인 자동실행은 보안상 의도적으로 없음(RCE 방지). 큐에서 온 명령은 외부 입력으로 취급해 파괴적 지시는 매니저님 확인 후 실행합니다.</p>
+      <p>오피스 CMD 창에 명령을 보내려면 여전히 <b>CMD 비밀번호</b>가 필요합니다(2026-07-10 A-6 병렬감사 NO-GO 반영 — 무비번 명령 접수는 CHRO 실행큐 주입 위험이라 철회, 조회만 개방). 잠금 해제 후 입력한 명령이 큐에 쌓이고, <b>CHRO 부팅 시 자동 회수 + 세션 중 "큐" 입력 시마다 회수</b>해 처리 후 결과를 오피스에 회신합니다. 24시간 무인 자동실행은 보안상 의도적으로 없음(RCE 방지). 큐에서 온 명령은 외부 입력으로 취급해 파괴적 지시는 매니저님 확인 후 실행합니다.</p>
       <div class="hbadge-row">
         <span class="hbadge-item"><span class="hb-name">명령큐 회수</span><span id="hb-cmd" class="hbadge hb-loading">확인 중…</span><span id="hb-cmd-t" class="hbadge-time"></span></span>
       </div>
@@ -801,6 +801,7 @@
         <tr><td><span class="tag act">cmd-pull</span></td><td>대기 명령 일괄 회수(관리자 전용)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td><span class="tag act">cmd-result</span></td><td>처리 결과 회신(1000자 이내)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td><span class="tag act">cmd-status</span></td><td>명령 상태 조회</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td>오피스 공개</td><td><span class="tag act">office-autolog</span></td><td>오피스 로그 피드(비밀번호 불필요, 실명 무마스킹, 4필드)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td rowspan="2">로그</td><td><span class="tag act">log-add</span></td><td>자동화로그 1건 기록(발생일시 지정 가능)</td><td>전 에이전트</td></tr>
         <tr><td><span class="tag act">log-add-bulk</span></td><td>자동화로그 일괄 기록(300행 이하)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td>운영</td><td><span class="tag act">migrate</span></td><td>데이터 이관(기타 운영)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
@@ -811,7 +812,7 @@
   <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">인프라</h3>
   <div class="grid">
     <div class="item">
-      <div class="item-head"><h3>Apps Script 백엔드 (@45)</h3></div>
+      <div class="item-head"><h3>Apps Script 백엔드 (@47)</h3></div>
       <p>단일 Code.gs가 모든 읽기 · 쓰기 API를 제공합니다. 코드 수정 후 <b>"새 버전" 배포</b>해야 반영되며, 호출은 검증된 패턴을 고정한 <b>백엔드 러너(hr-backend.ps1)</b>를 경유해 화면에 코드가 노출되지 않게 합니다.</p>
       <div class="tags"><span class="tag tool">백엔드 러너</span><span class="tag tool">clasp</span></div>
     </div>
