@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+import html
 import json
 import logging
 import os
@@ -317,10 +318,10 @@ def escape_md_v2(text: str) -> str:
 
 
 # ── 텔레그램 메시지 송신 (v1.2: 응답 검증 + 지수 백오프 + 연속 실패 추적) ───
-def send_telegram(chat_id: int, text: str) -> bool:
+def send_telegram(chat_id: int, text: str, parse_mode: str = "MarkdownV2") -> bool:
     """HTTP POST. 재시도 3회 지수 백오프. ok:true 검증. 연속 실패 시 fallback."""
     url = f"{TELEGRAM_API}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": "MarkdownV2"}
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
     for attempt in range(1, 4):
         try:
             resp = requests.post(url, json=payload, timeout=15)
@@ -1605,10 +1606,13 @@ def _fetch_facility_today() -> dict | None:
     return None
 
 
-def _build_checklist_block(slot_label: str) -> str:
+def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
     """
-    12시/18시 공용 — 체크리스트 대시보드 박스표 블록 생성.
-    slot_label: "12:00" | "18:00"
+    12시/23시(폴백) 공용 — 체크리스트 대시보드 박스표 블록 생성.
+    slot_label: "12:00" | "23:00"
+    html_link: True면 parse_mode=HTML 메시지용 — 대시보드 줄을 <a> 앵커로 만들고
+               (dashboard_url을 제외한) 본문을 html.escape해 &/</> 파싱 오류를 방지한다.
+               False(기존 MarkdownV2 경로)는 동작 변경 없음.
     """
     now = datetime.now()
     today = now.strftime("%Y-%m-%d")
@@ -1653,23 +1657,34 @@ def _build_checklist_block(slot_label: str) -> str:
     ooc_cnt = (facility_today or {}).get("outOfRangeCount", 0)
     issue_block = f"\n\n[시설부 기준이탈] {ooc_cnt}건 — 대시보드 확인" if ooc_cnt else ""
 
-    return (
+    body_plain = (
         f"🛠 시설·지원 점검 현황 — {slot_label} ({day_kor})\n"
         f"   체크리스트 진행 상황\n"
         f"{table_str}"
-        f"{issue_block}\n"
-        f"🔗 대시보드: {dashboard_url}"
+        f"{issue_block}"
     )
+
+    if html_link:
+        # 동적 텍스트(라벨·숫자·이슈문구)에 &/</>가 섞여도 HTML 파싱이 깨지지 않도록 escape.
+        # 박스 그림문자(│─┌ 등)와 한글은 html.escape 영향 없음. <a> 앵커는 escape 후 그대로 추가.
+        body_safe = html.escape(body_plain, quote=False)
+        return f"{body_safe}\n🔗 대시보드: <a href=\"{dashboard_url}\">링크</a>"
+
+    return f"{body_plain}\n🔗 대시보드: {dashboard_url}"
 
 
 def _build_12_body() -> str:
-    """12시 — 시설·지원 체크리스트 대시보드 진행현황 박스표"""
-    checklist_block = _build_checklist_block("12:00")
+    """12시 — 시설·지원 체크리스트 대시보드 진행현황 박스표.
+    이 메시지는 parse_mode=HTML로 발송(run_report에서 slot=="12" 분기) — 대시보드 줄이
+    '🔗 대시보드: 링크' 클릭형 앵커로 나가게 하기 위함(원문 긴 URL 노출 방지, GM 2026-07-10).
+    _AUTO_FOOTER는 MarkdownV2 이탤릭 문법(_..._)이라 HTML 모드에선 그대로 나가버려
+    이 메시지 전용으로 <i> 태그 버전을 사용한다."""
+    checklist_block = _build_checklist_block("12:00", html_link=True)
 
     return (
         f"{_unified_header('12', '회사', '오전 점검 현황')}\n"
         f"{checklist_block}\n\n"
-        f"{_AUTO_FOOTER}"
+        f"<i>본 메시지는 자동 발송입니다.</i>"
     )
 
 
@@ -2483,7 +2498,11 @@ def run_report(slot: str, test_mode: bool = False) -> None:
             logger.info(f"{label} [무음] personal_0600 저신호 설정 — 06시 개인 슬롯 발송 스킵 (notify_prefs.py)")
             return
 
-    success = send_telegram(owner_id, body)
+    # 12시 메시지는 대시보드 링크를 클릭형 앵커로 내보내기 위해 HTML 모드로 발송 — 2026-07-10 GM.
+    # 다른 슬롯은 MarkdownV2 그대로(무영향).
+    parse_mode = "HTML" if slot == "12" else "MarkdownV2"
+
+    success = send_telegram(owner_id, body, parse_mode=parse_mode)
     if success:
         logger.info(f"{label} 텔레그램 발송 완료 owner_id={owner_id}")
     else:
@@ -2493,7 +2512,7 @@ def run_report(slot: str, test_mode: bool = False) -> None:
     # 12시 오전 점검 현황은 점검관리방에도 발송 (GM DM + 점검관리방) — 2026-07-08 GM
     if slot == "12" and not test_mode:
         try:
-            room_ok = send_telegram(CHECK_NUDGE_CHAT_ID, body)
+            room_ok = send_telegram(CHECK_NUDGE_CHAT_ID, body, parse_mode=parse_mode)
             if room_ok:
                 logger.info(f"{label} 점검관리방 추가 발송 완료 chat_id={CHECK_NUDGE_CHAT_ID}")
             else:

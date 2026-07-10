@@ -1850,11 +1850,10 @@
     "account": "wellperion",
     "folder": "instagram/260707_공식_시설_F3_회복",
     "title": "공식 #F3 — 회복 (사우나·건습식) — 네이버 블로그",
-    "status": "발행완료",
+    "status": "BLOCKED",
     "preview": "cmo/review/260707_공식_시설_F3_회복_preview_20260707195608.png",
-    "published_at": "2026-07-10T12:14:51",
-    "post_url": "https://blog.naver.com/wellperion/224342363652",
-    "note": "[시모 자동발행 2026-07-10] 실발행 완료(campaign=official-f3-recovery). 발행 직전 무결성 가드 통과(본문 img=8·텍스트 498자·링크카드 썸네일 있음). 라이브 검증: rss.blog.naver.com/wellperion.xml에 logNo 224342363652 + og:title '운동 뒤의 시간도 웰페리온 — 한남동 스포츠클럽 사우나·회복 시설' 정확 매칭. 태그 없음(블로그 body에 해시태그 미포함)."
+    "post_url": null,
+    "note": "[시모 2026-07-10 BLOCKED — 레이아웃 조각남] 1차 발행(224342363652)·caret 수리 후 2차 발행(224342388650) 모두 이미지·링크카드가 본문 중간에 삽입돼 본문이 두 조각으로 분할됨(라이브 컴포넌트 순서 실측: text→image(6)→oglink→text). caret가 본문 마지막 텍스트블록의 '끝'이 아니라 '중간'에 놓여 이미지 삽입이 텍스트블록을 쪼갬 → 근본수리 미완. 조각난 글 방치 금지 원칙에 따라 2차(388650) 삭제. 삭제 자동화의 확인루프가 홈 리다이렉트 후 피드 최상단(1차 363652)까지 함께 삭제하는 실수 발생 → 두 글 모두 현재 미게시(네이버 휴지통 30일 보관·복원 가능). 블로그 본문·이미지 소스 원본은 repo에 온전(instagram/260707_공식_시설_F3_회복/output(블로그)). 조치 필요: naver_blog_upload_playwright.py _place_caret_at_body_end가 본문 최종 텍스트블록 '끝'에 caret를 두도록 재수리(예: 마지막 컴포넌트 클릭 후 End/Ctrl+End 재적용, 또는 이미지·링크카드를 본문 조립 완료 후 문서 최하단 append) 후 새 글 발행. GM 원하면 휴지통에서 363652 복원 가능."
   },
   {
     "id": "CMO-2026-07-07-OFFICIAL-F3-회복-CAFE",
@@ -1886,8 +1885,10 @@
     "account": "wellperion 비즈(cao)",
     "folder": "instagram/260707_공식_시설_F3_회복",
     "title": "공식 #F3 — 회복 (사우나·건습식) — 당근채널",
-    "status": "BLOCKED",
+    "status": "발행완료",
     "preview": "cmo/review/260707_공식_시설_F3_회복_preview_20260707195608.png",
-    "note": "[시모 2026-07-10 BLOCKED] dryrun 통과(본문·이미지 OK)했으나 publish·check 모두 launch_persistent_context 단계에서 즉시 크래시(TargetClosedError, exitCode=2147483651=STATUS_BREAKPOINT) — F1·F2와 동일한 profiles/danggn 프로필 손상 패턴. 잠금파일 없음·재시도 동일. GM 조치 필요: scripts/danggn_upload_playwright.py --mode setup 으로 프로필 재생성 + 구글 SSO(cao) 재로그인 후 재발행. body/이미지 준비 완료: output(당근)/danggn_copy.md."
+    "note": "자동 재로그인(프로필 재생성 후)·본문193자·이미지6장·완료 클릭. 현행 깨끗한 링크(짧은링크 추적은 카카오와 함께 후속 rewire).",
+    "post_url": "https://www.daangn.com/kr/business-posts/6a506be83ca08600ee7ceea6",
+    "published_at": "2026-07-10T12:49:00"
   }
 ]
