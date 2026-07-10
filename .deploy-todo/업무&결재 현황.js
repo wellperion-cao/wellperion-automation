@@ -779,20 +779,26 @@ function _kpiReadBlock(row, labelCol) {
 var BREAKDOWN_LABELS = [
   '회원권 매출', '옵션 매출',
   '수영팀 매출', 'P.T팀 매출', '골프팀 매출',
-  '스쿼시팀 매출', '체조팀 매출', 'P.L팀 매출', 'GXE'
+  '스쿼시팀 매출', '체조팀 매출', 'P.L팀 매출', 'GXE', '뮤지컬팀 매출'
 ];
 // 표시 이름 정규화 (셀에 포함된 키 → 짧은 표시명)
 var BREAKDOWN_NAME_MAP = {
   '회원권 매출': '회원권', '옵션 매출': '옵션',
   '수영팀 매출': '수영팀', 'P.T팀 매출': 'PT팀', '골프팀 매출': '골프팀',
   '스쿼시팀 매출': '스쿼시팀', '체조팀 매출': '체조팀',
-  'P.L팀 매출': 'PL팀', 'GXE': 'GXE'
+  'P.L팀 매출': 'PL팀', 'GXE': 'GXE', '뮤지컬팀 매출': '뮤지컬'
 };
 
 // ── '26년 매출 분석' 시트 팀별 열 매핑 (1-base col) — 2026-07-02 시토 probe 실측 ──
 //   행 = 월+2 (row3=1월 … row14=12월). 각 팀 = 해당 블록의 '합계' 열(row2 라벨로 실측).
-//   총합(col48) = 회원권(col12=멤버십 합계, 옵션 포함) + 강습 팀 합계들 + 강습조정(col45+col46).
-//   ▶ 총액(AV=col48)과 동일 시트·동일 행 → breakdown 합이 총액과 정합.
+//   총합(col48) 실제 수식 = SUM(L, AU) (2026-07-10 시뽀 getFormula() 직접 확인) — 즉 회원권
+//   합계(L=col12) + 강습 재집계 합계(AU=col47, PT/필라테스/수영/스쿼시/골프/체조를 정회원·준회원·
+//   WSC 단위로 재합산+환불·위약금 조정한 값. col42~44 합이 col18+23+28+33+38+40 합과 정확히
+//   일치함을 실측 확인 — 이중집계 아님, 같은 데이터의 다른 재집계일 뿐).
+//   ⚠ 이 시트엔 GXE·뮤지컬 열 자체가 없음(1~48열 전부 확인, 두 카테고리 데이터가 없음) —
+//   "합계식에서 빠짐"이 아니라 애초에 이 시트가 추적하지 않는 카테고리. 시트 구조를 건드리지
+//   않고 '보고' 탭(SALES_DAILY_REPORT_SHEET_ID, 이미 sales.yesterday에 쓰는 소스)에서 GXE·
+//   뮤지컬 당월 누적을 읽어 GAS 응답 단계에서만 가산한다(2026-07-10 GM 결정, 시트 무변경).
 var SALES_TEAM_COLS = [
   { name: '회원권',   col: 12 }, // 멤버십 합계(매출) — 신규·재등록·양도·환불·옵션 포함
   { name: '수영',     col: 28 },
@@ -834,6 +840,9 @@ function _kpiParseSalesTab(sheet) {
       for (var cc = anchorC; cc < anchorC + 6 && cc < values[rr].length; cc++) {
         var sv = String(values[rr][cc] || '').trim();
         if (!sv) continue;
+        // "26년 7월 9일 매출 및 운영사항 보고" 형(실제 '보고' 탭 제목 실측, 2026-07-10 시뽀) — 1순위.
+        var mk = sv.match(/\d{2,4}\s*년\s*(\d{1,2})\s*월\s*\d{1,2}\s*일/);
+        if (mk) return +mk[1];
         // "2026. 6. 19" / "2026-6-19" 형
         var m4 = sv.match(/\d{4}\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*\d{1,2}/);
         if (m4) return +m4[1];
@@ -912,6 +921,36 @@ function _kpiParseSalesTab(sheet) {
     sheetMonths: sheetMonths,        // 시트에 존재하는 월 목록
     breakdown: breakdown
   };
+}
+
+// GXE·뮤지컬 당월 누적 — '26년 매출 분석'(AV열 정본) 시트엔 이 두 카테고리 열 자체가 없음
+// (2026-07-10 시뽀 getFormula/전체열 probe로 확인). 시트 구조는 건드리지 않고 '보고' 탭
+// (SALES_DAILY_REPORT_SHEET_ID, sales.yesterday와 동일 소스)의 당월 최신 블록에서 GXE·뮤지컬
+// 항목만 뽑아 sales.month에 가산(2026-07-10 GM 결정). 실패·당월 블록 없음·두 항목 다 없음 → null
+// (정직 — AV열 원값 그대로 유지, 0 위조 금지).
+function _kpiSalesExtraCategoriesMonth() {
+  try {
+    if (!SALES_DAILY_REPORT_SHEET_ID) return null;
+    var ss = SpreadsheetApp.openById(SALES_DAILY_REPORT_SHEET_ID);
+    var sheets = ss.getSheets();
+    var sh = null;
+    for (var i = 0; i < sheets.length; i++) {
+      if (sheets[i].getSheetId() === SALES_DAILY_REPORT_GID) { sh = sheets[i]; break; }
+    }
+    if (!sh) return null;
+    var parsed = _kpiParseSalesTab(sh);
+    if (!parsed || !parsed.hasCurMonth || !Array.isArray(parsed.breakdown)) return null;
+    var gxe = null, musical = null;
+    for (var b = 0; b < parsed.breakdown.length; b++) {
+      var item = parsed.breakdown[b];
+      if (item.name === 'GXE') gxe = item.month;
+      if (item.name === '뮤지컬') musical = item.month;
+    }
+    if (gxe == null && musical == null) return null;
+    return { gxe: gxe, musical: musical, total: (gxe || 0) + (musical || 0), curMonth: parsed.curMonth };
+  } catch (e) {
+    return null;
+  }
 }
 
 // 실측 구조(2026-06-08·재확인 2026-06-20): 매출 시트는 월별 탭이 아니라 단일 "보고" 탭 안에서
@@ -1135,6 +1174,18 @@ function _kpiSales() {
     } catch (bdErr) {
       // breakdown 실패는 무영향(fail-safe) — 매출 hero 값은 AV 기준 그대로.
     }
+
+    // GXE·뮤지컬 — AV열엔 이 두 카테고리 열이 아예 없어(2026-07-10 시뽀 probe 확인) 지금까지
+    // 월매출(hero)·breakdown 어디에도 없었다. '보고' 탭에서 당월 누적을 읽어 hero에 가산 +
+    // breakdown 행 추가(2026-07-10 GM 결정 — "월매출에 포함시켜라"). AV열 시트 자체는 무변경.
+    // hasCurMonth(AV 당월 마감 존재)일 때만 가산 — AV 미마감(null) 상태에 억지로 값 만들지 않음.
+    var extraCats = _kpiSalesExtraCategoriesMonth();
+    if (extraCats && hasCurMonth && month !== null) {
+      month += extraCats.total;
+      if (extraCats.gxe != null) bd.push({ name: 'GXE', today: null, month: extraCats.gxe, target: null, rate: null });
+      if (extraCats.musical != null) bd.push({ name: '뮤지컬', today: null, month: extraCats.musical, target: null, rate: null });
+    }
+
     // 주차 매출을 breakdown 'GXE' 행 바로 아래에 삽입(없으면 맨 끝). 시트 총합/hero 값은 불변.
     var park = _kpiParkingRevenueRow();
     if (park) {
@@ -1900,6 +1951,7 @@ function doGet(e) {
     if (action === 'sales_monthly') {
       return _kpiSalesMonthly();
     }
+
 
     // ─── 팀별 매출 실적(월별 "매출 보고" 원장 '31'탭 U:Y) — 2026-07-03 시토(배354), 2026-07-07 정정 ───
     // GET ?action=team_sales[&year=2026&month=6&fileId=...]. PII 없는 매출 범위만 읽기전용.
