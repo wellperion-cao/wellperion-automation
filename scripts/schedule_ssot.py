@@ -77,12 +77,19 @@ def status_of(it: dict, today: date = None, lead_days: int = 30) -> dict:
     return {"status": st, "dday": dd}
 
 
+def _applies(it: dict) -> bool:
+    """해당없음 항목은 달력·연동·집계에서 제외(설비 미보유 등)."""
+    return it.get("applies") != "해당없음"
+
+
 def due_items(cal: dict, today: date = None, lead_days: int = None) -> list:
-    """기한 도래(임박·초과) 항목만 — 업무·결재 연동 후보."""
+    """기한 도래(임박·초과) 항목만 — 업무·결재 연동 후보. 해당없음 제외."""
     today = today or _kst_today()
     lead = cal.get("gate", {}).get("lead_days", 30) if lead_days is None else lead_days
     out = []
     for it in cal.get("items", []):
+        if not _applies(it):
+            continue
         s = status_of(it, today, lead)
         if s["status"] in ("due_soon", "overdue"):
             out.append({**it, **s})
@@ -107,7 +114,8 @@ def plan_workapproval(cal: dict, today: date = None) -> dict:
 def summarize(cal: dict, dept: str = None, today: date = None) -> dict:
     today = today or _kst_today()
     lead = cal.get("gate", {}).get("lead_days", 30)
-    items = [it for it in cal.get("items", []) if not dept or dept == "전체" or it.get("dept") == dept]
+    items = [it for it in cal.get("items", [])
+             if (not dept or dept == "전체" or it.get("dept") == dept) and _applies(it)]
     c = {"overdue": 0, "due_soon": 0, "scheduled": 0, "tbd": 0, "total": len(items)}
     for it in items:
         c[status_of(it, today, lead)["status"]] += 1
