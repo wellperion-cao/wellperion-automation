@@ -133,9 +133,13 @@ CAPTION_SELECTORS = [
 
 # "다음" 버튼 셀렉터 후보 (사진 → 자르기 → 필터 → 캡션 단계 진행)
 NEXT_BUTTON_SELECTORS = [
-    'button:has-text("다음")',
-    'div[role="button"]:has-text("다음")',
+    'div[role="dialog"] div[role="button"]:text-is("다음")',
+    'div[role="dialog"] button:text-is("다음")',
+    'div[role="button"]:text-is("다음")',
+    'button:text-is("다음")',
     '[role="dialog"] button:has-text("다음")',
+    'div[role="button"]:has-text("다음")',
+    'button:has-text("다음")',
 ]
 
 # "공유하기"/"게시" 최종 발행 버튼 — 2026-05-29 실측: div[role=button] "공유하기" (우상단)
@@ -1099,23 +1103,39 @@ async def _publish_single_post(
     print(f"[INFO]   파일 업로드 시작 — 이미지 {image_count}장 + 영상 {video_count}개 (총 {len(spec.image_paths)})")
     await page.wait_for_timeout(3500)
 
-    # "다음" 2회 클릭 (자르기 → 필터 → 캡션) — 인스타 데스크탑 표준 흐름
+    # "다음" 2회 클릭 (자르기 → 편집 → 캡션) — 인스타 데스크탑 표준 흐름.
+    # ★2026-07-10 실측(F3): 2차 '편집' 화면은 우측 편집 패널로 모달이 넓어져 top-right
+    #   '다음' 버튼이 뷰포트 밖(오른쪽)으로 밀려 일반 click 이 타임아웃 → scrollIntoView +
+    #   JS click(위치 무관 발화) 폴백 + 재시도로 방어.
     for step in range(2):
         clicked = False
-        for sel in NEXT_BUTTON_SELECTORS:
-            try:
-                el = page.locator(sel).first
-                if await el.count() > 0:
-                    await el.click(timeout=5000)
+        for attempt in range(4):
+            for sel in NEXT_BUTTON_SELECTORS:
+                try:
+                    el = page.locator(sel).first
+                    if await el.count() == 0:
+                        continue
+                    try:
+                        await el.scroll_into_view_if_needed(timeout=2000)
+                    except Exception:
+                        pass
+                    try:
+                        await el.click(timeout=3000)
+                    except Exception:
+                        # 모달 우측 잘림 등으로 일반 click 실패 → JS click 폴백(뷰포트 밖도 발화)
+                        await el.evaluate("e => e.click()")
                     clicked = True
-                    print(f"[INFO]   다음 버튼 step{step + 1} 클릭: {sel!r}")
+                    print(f"[INFO]   다음 버튼 step{step + 1} 클릭: {sel!r} (attempt {attempt + 1})")
                     break
-            except Exception:
-                continue
+                except Exception:
+                    continue
+            if clicked:
+                break
+            await page.wait_for_timeout(1500)  # 편집 화면 로딩 지연 대비 재시도
         if not clicked:
             await page.screenshot(path=str(evidence_prefix.with_suffix(f".error_next_step{step + 1}.png")))
             raise RuntimeError(f"다음 버튼 step{step + 1} 클릭 실패")
-        await page.wait_for_timeout(1500)
+        await page.wait_for_timeout(1800)
 
     # 캡션 입력
     caption_box = None
@@ -1162,7 +1182,15 @@ async def _publish_single_post(
         try:
             el = page.locator(sel).first
             if await el.count() > 0:
-                await el.click(timeout=8000)
+                try:
+                    await el.scroll_into_view_if_needed(timeout=2000)
+                except Exception:
+                    pass
+                try:
+                    await el.click(timeout=8000)
+                except Exception:
+                    # 모달 우측 잘림 대비 JS click 폴백(2026-07-10 '다음'과 동일 방어)
+                    await el.evaluate("e => e.click()")
                 share_clicked = True
                 print(f"[INFO]   공유하기 클릭: {sel!r}")
                 break
