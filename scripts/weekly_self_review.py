@@ -88,6 +88,11 @@ MAX_MERGE_CLUSTERS_PER_RUN = 4
 MAX_UPDATE_FILES_PER_RUN = 3
 BODY_SIM_THRESHOLD = 0.35     # v1: 0.55(카테고리내) → v2: 0.35(frontmatter 제거 전문, 실측 역산)
 TOKEN_JACCARD_THRESHOLD = 0.4
+
+# ── 확장 삭제후보 스캔 (GM 지시 2026-07-10 "더 딥하게·낡은건 삭제") — 후보만 발굴, 실삭제는
+#    항상 --approve-delete 게이트 뒤(배237). 재현율 우선 규칙 프리필터 → 두뇌가 보수적 최종판정
+#    (애매하면 후보 제외 — 과삭제 금지를 프롬프트에 명시). 매주 카드 "🗑 삭제 후보" 섹션 원료.
+DELETE_SCAN_STALE_DAYS = 60
 S3_STALE_DAYS = 45
 
 CLEVEL_ROLES = ["ceo", "cfo", "chro", "cmo", "coo", "cpo", "cto"]
@@ -420,6 +425,25 @@ def _run_claude(prompt: str, label: str) -> str | None:
     return text
 
 
+def _extract_json_array(text: str) -> str | None:
+    """텍스트 안 어디든 있는 첫 균형잡힌 [...] 배열을 추출한다(실측: LLM이 순수 JSON만
+    달라는 지시를 무시하고 앞뒤에 설명·근거 산문을 붙이는 경우가 흔함 — 배열 시작 [ 을
+    찾아 괄호 깊이 카운팅으로 대응하는 ] 까지 잘라낸다). 못 찾으면 None."""
+    start = text.find("[")
+    if start < 0:
+        return None
+    depth = 0
+    for i in range(start, len(text)):
+        ch = text[i]
+        if ch == "[":
+            depth += 1
+        elif ch == "]":
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1]
+    return None
+
+
 def _parse_verdict(raw: str | None, ok_head: str) -> tuple[str, str]:
     """첫 줄=판정 헤더, 나머지=본문/사유. 형식 이탈·빈응답은 전부 HOLD(안전 보류)."""
     if not raw or not raw.strip():
@@ -541,6 +565,97 @@ def _collapse_duplicate_index_links(index_text: str) -> str:
     return "\n".join(out_lines)
 
 
+def _frontmatter_description(text: str) -> str | None:
+    m = _FRONTMATTER_RE.match(text)
+    if not m:
+        return None
+    dm = re.search(r"^description:\s*(.+)$", text[:m.end()], re.MULTILINE)
+    if not dm:
+        return None
+    return dm.group(1).strip().strip('"').strip("'")
+
+
+def _delete_scan_prefilter(files: list[Path], contents: dict, exclude: set[Path]) -> list[Path]:
+    """확장 삭제후보 재현율 프리필터 — 폐기어휘 언급 또는 60일+ 미수정. 이번 회차에 이미
+    병합·갱신·기존판정된 파일은 제외(중복 판정 방지)."""
+    now = datetime.now()
+    out = []
+    for f in files:
+        if f in exclude or not f.exists():
+            continue
+        body = _strip_frontmatter(contents.get(f, ""))
+        has_retired = any(term in body for term, _ in RETIRED_TOKENS)
+        try:
+            age = (now - datetime.fromtimestamp(f.stat().st_mtime)).days
+        except Exception:
+            age = 0
+        if has_retired or age >= DELETE_SCAN_STALE_DAYS:
+            out.append(f)
+    return out
+
+
+def _llm_delete_scan_judge(candidates: list[Path], contents: dict, orphan_names: set[str]) -> list[dict]:
+    """배치 1콜 — 후보들을 요약해 두뇌에 '진짜 지금 안 쓰는 낡음/폐기'만 보수적으로 골라달라
+    요청(GM 지시 2026-07-10). 애매·부분적·"언젠가 쓸 지식"은 프롬프트로 명시 배제.
+    반환: [{file, topic, reason, last_relevance}] — 실삭제 아님, 후보 제안만."""
+    if not candidates:
+        return []
+    digests = []
+    for f in candidates:
+        body = _strip_frontmatter(contents.get(f, ""))
+        desc = _frontmatter_description(contents.get(f, "")) or ""
+        orphan_tag = " [인덱스 미참조]" if f.name in orphan_names else ""
+        try:
+            age = (datetime.now() - datetime.fromtimestamp(f.stat().st_mtime)).days
+        except Exception:
+            age = 0
+        digests.append(
+            f"### {f.name} (마지막수정 {age}일 전){orphan_tag}\n설명: {desc}\n본문 발췌: {body[:400]}"
+        )
+    prompt = (
+        "아래는 웰페리온 AI 세션 학습 메모리 파일 후보 목록이다(운영 시스템 문서 아님 — Claude Code 가 "
+        "매 세션 참고하는 결정·피드백 카드). 각 파일이 '지금은 이용 안 하는 낡거나 폐기된 것'인지 매우 "
+        "보수적으로 판단하라. 후보로 골라도 되는 경우만:\n"
+        "- 파일 전체 주제가 이미 죽은 시스템·도구·프로세스(예: 폐기된 채널, 중단된 기능)만 다룸\n"
+        "- 현행과 완전 무관하게 새 규칙으로 전부 대체된 구버전 지식\n"
+        "- 다른 파일과 사실상 완전 중복(내용이 실질적으로 같음)\n"
+        "절대 후보로 고르면 안 되는 경우(과삭제 금지):\n"
+        "- 일부 문장만 낡았고 나머지는 아직 유효 (그건 갱신 대상이지 삭제 대상 아님)\n"
+        "- '언젠가 다시 필요할 수도 있는' 배경지식·교훈·인시던트 기록\n"
+        "- 판단이 조금이라도 애매한 것 — 애매하면 반드시 제외\n\n"
+        "정확히 JSON 배열만 응답(설명·코드블록 없이). 후보가 없으면 빈 배열 []:\n"
+        '[{"file":"파일명.md","topic":"한줄 주제","reason":"삭제 후보 사유(폐기근거) 한줄",'
+        '"last_relevance":"마지막으로 유효했던 시점·맥락 한줄"}]\n\n' + "\n\n".join(digests)
+    )
+    raw = _run_claude(prompt, label="weekly-self-review-delete-scan")
+    if not raw or not raw.strip():
+        return []
+    try:
+        arr = _extract_json_array(raw.strip())
+        if arr is None:
+            return []
+        data = json.loads(arr)
+        if not isinstance(data, list):
+            return []
+    except Exception:
+        return []
+    valid_names = {f.name for f in candidates}
+    out = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("file", "")).strip()
+        if name not in valid_names:
+            continue
+        out.append({
+            "file": name,
+            "topic": str(item.get("topic", ""))[:60],
+            "reason": str(item.get("reason", ""))[:120],
+            "last_relevance": str(item.get("last_relevance", ""))[:80],
+        })
+    return out
+
+
 def apply_memory_maintenance(scan: dict, dry_run: bool) -> dict:
     """병합·갱신·인덱스 정리(가역=자율, 두뇌 최종판정). 완전 삭제는 이 함수에서 절대 하지 않음."""
     result = {"merged": [], "updated": [], "delete_candidates": [], "held": [], "index_fixed": 0,
@@ -551,6 +666,7 @@ def apply_memory_maintenance(scan: dict, dry_run: bool) -> dict:
     contents = dict(scan["contents"])
     index_text = scan["index_text"]
     all_files = list(scan["files"])
+    touched_paths: set[Path] = set()  # 이번 회차에 이미 판정된 파일 — ④ 확장삭제스캔 중복판정 방지
 
     # ① 갱신/삭제제안 먼저 — S1/S2 파일단위 그룹핑, 상한 MAX_UPDATE_FILES_PER_RUN(오래된 파일 우선).
     #    ★순서 중요: 병합보다 먼저 실행해 낡은 값을 in-place 로 현행화한 뒤, 병합 단계가
@@ -571,12 +687,15 @@ def apply_memory_maintenance(scan: dict, dry_run: bool) -> dict:
         action, payload = _llm_update_judge(f, text, hits)
         count += 1
         handled.add(f)
+        touched_paths.add(f)
         if action == "UPDATE":
             f.write_text(payload.strip() + "\n", encoding="utf-8")
             contents[f] = payload.strip() + "\n"
             result["updated"].append({"file": f.name, "terms": [h[0] for h in hits]})
         elif action == "DELETE_CANDIDATE":
-            result["delete_candidates"].append({"file": f.name, "reason": payload})
+            result["delete_candidates"].append({
+                "file": f.name, "topic": hits[0][0] if hits else "", "reason": payload, "last_relevance": ""
+            })
         else:
             result["held"].append({"file": f.name, "reason": f"갱신보류: {payload}"})
 
@@ -587,12 +706,15 @@ def apply_memory_maintenance(scan: dict, dry_run: bool) -> dict:
             continue
         text = contents.get(f) or _safe_read(f)
         action, payload = _llm_s3_judge(f, text)
+        touched_paths.add(f)
         if action == "UPDATE":
             f.write_text(payload.strip() + "\n", encoding="utf-8")
             contents[f] = payload.strip() + "\n"
             result["updated"].append({"file": f.name, "terms": ["완료TODO"]})
         elif action == "DELETE_CANDIDATE":
-            result["delete_candidates"].append({"file": f.name, "reason": payload})
+            result["delete_candidates"].append({
+                "file": f.name, "topic": "완료TODO", "reason": payload, "last_relevance": ""
+            })
         else:
             result["held"].append({"file": f.name, "reason": f"S3보류: {payload}"})
 
@@ -606,10 +728,13 @@ def apply_memory_maintenance(scan: dict, dry_run: bool) -> dict:
         action, payload = _llm_merge_judge(cluster, contents, evidence)
         if action != "MERGE":
             result["held"].append({"file": cluster[0].name, "reason": f"병합보류: {payload}"})
+            touched_paths.update(cluster)
             continue
         keep, drop = cluster[0], cluster[1:]
         keep.write_text(payload.strip() + "\n", encoding="utf-8")
         contents[keep] = payload.strip() + "\n"
+        touched_paths.add(keep)
+        touched_paths.update(drop)
         for d in drop:
             try:
                 d.unlink()
@@ -624,6 +749,14 @@ def apply_memory_maintenance(scan: dict, dry_run: bool) -> dict:
         })
 
     index_text = _collapse_duplicate_index_links(index_text)
+
+    # ④ 확장 삭제후보 스캔(GM 지시 2026-07-10) — 병합·현행화 넘어 전체 낡음/폐기주제/고아 스윕.
+    #    이번 회차에 이미 판정된 파일은 제외(touched_paths). 실삭제 없음 — 후보만 delete_candidates 에 적재.
+    del_scan_pool = [f for f in all_files if f.exists()]
+    del_candidates_files = _delete_scan_prefilter(del_scan_pool, contents, touched_paths)
+    orphan_names = {f.name for f in scan["orphans"]}
+    for item in _llm_delete_scan_judge(del_candidates_files, contents, orphan_names):
+        result["delete_candidates"].append(item)
 
     # ③ 인덱스 정리 — 죽은 링크(참조는 있으나 파일 없음) 라인 제거
     fixed = 0
@@ -669,7 +802,10 @@ def append_delete_candidates(candidates: list[dict], dry_run: bool) -> tuple[int
     if dry_run:
         return len(names) + len(fresh), fresh
     for c in fresh:
-        existing.append({"file": c["file"], "reason": c["reason"], "flagged_at": today_str()})
+        existing.append({
+            "file": c["file"], "topic": c.get("topic", ""), "reason": c["reason"],
+            "last_relevance": c.get("last_relevance", ""), "flagged_at": today_str(),
+        })
         names.add(c["file"])
     if fresh:
         save_delete_queue(existing)
@@ -699,9 +835,13 @@ def cmd_list_delete_queue():
     if not q:
         print("[정보] 삭제 대기 없음")
         return
-    print(f"삭제 대기 {len(q)}건:")
+    print(f"삭제 후보 {len(q)}건:")
     for c in q:
-        print(f"  - {c['file']}  ({c['reason']}, 지정: {c['flagged_at']})")
+        topic = c.get("topic", "")
+        rel = c.get("last_relevance", "")
+        print(f"  - {c['file']}  [{topic}] {c['reason']}"
+              + (f" (마지막 관련성: {rel})" if rel else "")
+              + f"  (지정: {c['flagged_at']})")
     print("승인: python scripts/weekly_self_review.py --approve-delete <file>")
 
 
@@ -957,11 +1097,14 @@ def build_card(mem_before: dict, mem_after: dict, maint: dict,
             lines.append(f"→ 제안: {', '.join(sugg)}")
         lines.append("")
 
-    # 🔒 삭제 제안(비가역 — 게이트) — 신규분만 강조 노출
+    # 🗑 삭제 후보(비가역 — 게이트, GM 지시 2026-07-10) — 신규분만 강조 노출, 실삭제 없음(제안뿐)
     if new_delete_candidates:
-        lines.append(f"🔒 삭제 제안 {len(new_delete_candidates)}건 (비가역 → 승인 필요)")
-        for c in new_delete_candidates[:3]:
-            lines.append(f"· {_pretty_label(c['file'], labels)} — {c['reason'][:60]}")
+        lines.append(f"🗑 삭제 후보 {len(new_delete_candidates)}건 (비가역 → 승인 필요, 실삭제 없음)")
+        for c in new_delete_candidates[:5]:
+            topic = c.get("topic", "")
+            rel = c.get("last_relevance", "")
+            tail = f" (마지막 관련성: {rel})" if rel else ""
+            lines.append(f"· {_pretty_label(c['file'], labels)} [{topic}] — {c['reason'][:70]}{tail}")
         lines.append('→ 승인: "python scripts/weekly_self_review.py --approve-delete <file>"')
         lines.append("")
 
