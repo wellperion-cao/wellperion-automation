@@ -1474,7 +1474,9 @@
     bubs.sort((a,b)=> (a.hy-b.hy) || (a.hx-b.hx));
     const GAP=7;
     const hitTest=(b,a)=> Math.abs(b.cx-a.cx) < (b.w+a.w)/2+GAP && Math.abs((b.by+b.h/2)-(a.by+a.h/2)) < (b.h+a.h)/2+GAP;
-    const placed=[];
+    // seed with the (already finalized) nameplate boxes so a task/persona bubble that would land on top
+    // of any name tag gets pushed away by the same stack/shift logic (2026-07-10 겹침 수정 — 말풍선↔이름표).
+    const placed=plates.map(pl=>({cx:pl.cx, by:pl.cy-pl.h/2, w:pl.w, h:pl.h}));
     for(let i=0;i<bubs.length;i++){
       const b=bubs[i];
       for(let guard=0; guard<80; guard++){
