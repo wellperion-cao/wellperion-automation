@@ -31,6 +31,7 @@ import argparse
 import json
 import os
 import sys
+from contextlib import nullcontext
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -38,6 +39,12 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _STATUS_DIR = _REPO_ROOT / "status"
 _QUEUE_PATH = _STATUS_DIR / "_queue.json"
 _ARCHIVE_PATH = _STATUS_DIR / "_archive.json"
+
+sys.path.insert(0, str(_REPO_ROOT / "scripts"))
+try:  # 크로스프로세스 _queue.json 락 (P2, 2026-07-10) — 메인 저장소 scripts/ 는 다른 트리
+    import queue_lock
+except Exception:
+    queue_lock = None
 
 DEFAULT_RETAIN_DAYS = 2
 _DATE_FIELDS = ("processed_at", "completed_at", "updated_at", "enqueued_at")
@@ -89,42 +96,43 @@ def sweep_old_done(
     today = today or datetime.now(timezone.utc).astimezone().date()
     cutoff = today - timedelta(days=retain_days)
 
-    queue = _load_list(qpath)
-    keep: list = []
-    to_archive: list = []
+    with (queue_lock.queue_lock("archive", repo_root=str(_REPO_ROOT)) if queue_lock else nullcontext()):
+        queue = _load_list(qpath)
+        keep: list = []
+        to_archive: list = []
 
-    for item in queue:
-        if not isinstance(item, dict):
-            keep.append(item)
-            continue
-        status = str(item.get("status", "")).upper()
-        if status != "DONE":
-            keep.append(item)            # 열린 일은 무조건 잔류
-            continue
-        cdate = _completion_date(item)
-        # 완료일을 못 구하면(undated) 오래된 것으로 보고 보관. 구하면 cutoff 비교.
-        if cdate is None or cdate < cutoff:
-            item.setdefault("archived_at", today.isoformat())
-            to_archive.append(item)
-        else:
-            keep.append(item)            # 최근 완료(보고용)는 잔류
+        for item in queue:
+            if not isinstance(item, dict):
+                keep.append(item)
+                continue
+            status = str(item.get("status", "")).upper()
+            if status != "DONE":
+                keep.append(item)            # 열린 일은 무조건 잔류
+                continue
+            cdate = _completion_date(item)
+            # 완료일을 못 구하면(undated) 오래된 것으로 보고 보관. 구하면 cutoff 비교.
+            if cdate is None or cdate < cutoff:
+                item.setdefault("archived_at", today.isoformat())
+                to_archive.append(item)
+            else:
+                keep.append(item)            # 최근 완료(보고용)는 잔류
 
-    if not to_archive:
-        return (len(keep), 0)
+        if not to_archive:
+            return (len(keep), 0)
 
-    if dry_run:
-        ids = ", ".join(str(x.get("task_id")) for x in to_archive)
-        print(f"[DRY-RUN] 보관 예정 {len(to_archive)}건: {ids}")
-        return (len(keep), len(to_archive))
+        if dry_run:
+            ids = ", ".join(str(x.get("task_id")) for x in to_archive)
+            print(f"[DRY-RUN] 보관 예정 {len(to_archive)}건: {ids}")
+            return (len(keep), len(to_archive))
 
-    archive = _load_list(apath)
-    existing = {x.get("task_id") for x in archive if isinstance(x, dict)}
-    for x in to_archive:
-        if x.get("task_id") not in existing:   # 중복 보관 방지(멱등)
-            archive.append(x)
+        archive = _load_list(apath)
+        existing = {x.get("task_id") for x in archive if isinstance(x, dict)}
+        for x in to_archive:
+            if x.get("task_id") not in existing:   # 중복 보관 방지(멱등)
+                archive.append(x)
 
-    _atomic_write(apath, archive)
-    _atomic_write(qpath, keep)
+        _atomic_write(apath, archive)
+        _atomic_write(qpath, keep)
     print(f"[Archive] 끝난 일 {len(to_archive)}건 보관 → 큐 잔류 {len(keep)}건")
     return (len(keep), len(to_archive))
 

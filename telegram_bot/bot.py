@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import threading
 import time
+from contextlib import nullcontext
 from pathlib import Path
 
 import requests
@@ -60,6 +61,11 @@ try:  # 동시커밋 직렬화 lock (P3, 2026-06-16) — scripts/ 경로는 위 
     from git_lock import GitLock
 except Exception:
     GitLock = None
+
+try:  # 크로스프로세스 _queue.json 락 (P2, 2026-07-10) — scripts/ 경로는 위 블록에서 이미 삽입
+    import queue_lock
+except Exception:
+    queue_lock = None
 
 
 def _install_outbound_logging() -> None:
@@ -555,21 +561,22 @@ def _match_identifier(identifier: str, items: list[dict]) -> list[dict]:
 def _patch_approval(task_id: str, status_value: str, approval_result: str, comment: str) -> bool:
     """_queue.json 의 해당 task_id 항목에 결재 결과 반영 + _ceo_log 기록."""
     import datetime as _dt
-    items = _load_queue()
-    found = False
-    for x in items:
-        if str(x.get("task_id")) == task_id:
-            x["status"] = _QUEUE_STATUS_MAP.get(status_value, status_value)
-            x["approval"] = approval_result
-            x["approved_at"] = _dt.datetime.now().isoformat()
-            if comment:
-                x["approval_comment"] = comment[:2000]
-            found = True
-            break
-    if not found:
-        return False
-    if not _save_queue(items):
-        return False
+    with (queue_lock.queue_lock("bot:approval") if queue_lock else nullcontext()):
+        items = _load_queue()
+        found = False
+        for x in items:
+            if str(x.get("task_id")) == task_id:
+                x["status"] = _QUEUE_STATUS_MAP.get(status_value, status_value)
+                x["approval"] = approval_result
+                x["approved_at"] = _dt.datetime.now().isoformat()
+                if comment:
+                    x["approval_comment"] = comment[:2000]
+                found = True
+                break
+        if not found:
+            return False
+        if not _save_queue(items):
+            return False
     _ceo_log_append(
         "GM_APPROVAL",
         task_id=task_id,
@@ -688,33 +695,34 @@ def _ns_register_queue_bar(cand: dict) -> int | None:
     """승인된 후보를 _queue.json PENDING 배로 등록. read-before-write·ship_no=max+1.
     성공 시 ship_no 반환, 실패 None."""
     import datetime as _dt
-    items = _load_queue()
-    max_ship = max([int(x.get("ship_no") or 0) for x in items], default=0)
-    ship_no = max_ship + 1
-    role = (cand.get("role") or "ceo").lower()
-    today = _dt.date.today().isoformat()
-    title_raw = str(cand.get("title", "")).strip() or "(제목없음)"
-    note_parts = ["[웰리 북극성 추천 승인 2026-06-29]"]
-    if cand.get("path_map"):
-        note_parts.append(str(cand["path_map"]))
-    if cand.get("rationale"):
-        note_parts.append(f"근거: {cand['rationale']}")
-    bar = {
-        "task_id": f"{role.upper()}-{today}-NORTHSTAR-{ship_no}",
-        "clevel": role,
-        "title": f"[북극성추천] {title_raw}",
-        "status": "PENDING",
-        "priority": cand.get("difficulty", "⛴️여객선"),
-        "enqueued_at": today,
-        "ship_no": ship_no,
-        "note": " / ".join(note_parts),
-        "next": "",
-        "depends_on": "",
-    }
-    items.append(bar)
-    if not _save_queue(items):
-        return None
-    return ship_no
+    with (queue_lock.queue_lock("bot:northstar") if queue_lock else nullcontext()):
+        items = _load_queue()
+        max_ship = max([int(x.get("ship_no") or 0) for x in items], default=0)
+        ship_no = max_ship + 1
+        role = (cand.get("role") or "ceo").lower()
+        today = _dt.date.today().isoformat()
+        title_raw = str(cand.get("title", "")).strip() or "(제목없음)"
+        note_parts = ["[웰리 북극성 추천 승인 2026-06-29]"]
+        if cand.get("path_map"):
+            note_parts.append(str(cand["path_map"]))
+        if cand.get("rationale"):
+            note_parts.append(f"근거: {cand['rationale']}")
+        bar = {
+            "task_id": f"{role.upper()}-{today}-NORTHSTAR-{ship_no}",
+            "clevel": role,
+            "title": f"[북극성추천] {title_raw}",
+            "status": "PENDING",
+            "priority": cand.get("difficulty", "⛴️여객선"),
+            "enqueued_at": today,
+            "ship_no": ship_no,
+            "note": " / ".join(note_parts),
+            "next": "",
+            "depends_on": "",
+        }
+        items.append(bar)
+        if not _save_queue(items):
+            return None
+        return ship_no
 
 
 async def route_northstar(update: Update, text: str) -> bool:

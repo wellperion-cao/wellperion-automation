@@ -29,9 +29,15 @@ import json
 import os
 import subprocess
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+try:  # 크로스프로세스 _queue.json 락 (P2, 2026-07-10) — 같은 scripts/ 디렉토리(위에서 경로 삽입)
+    import queue_lock
+except Exception:
+    queue_lock = None
 
 QUEUE_REL = "status/_queue.json"
 ARCHIVE_REL = "status/_queue_archive.json"
@@ -352,25 +358,27 @@ def main() -> int:
             return 0  # 메타 취득 실패 → fail-open.
 
         queue_path = os.path.join(root, QUEUE_REL)
-        queue, crlf = _load_queue(queue_path)
-        if queue is None:
-            return 0  # 큐 못 읽음 → fail-open(손상 방지: 아무것도 안 함).
+        clevel = None
+        with (queue_lock.queue_lock("auto-log-adhoc", repo_root=root) if queue_lock else nullcontext()):
+            queue, crlf = _load_queue(queue_path)
+            if queue is None:
+                return 0  # 큐 못 읽음 → fail-open(손상 방지: 아무것도 안 함).
 
-        if _should_skip(meta, queue):
-            return 0
+            if _should_skip(meta, queue):
+                return 0
 
-        # ship_no = 활성 큐 + 아카이브 통틀어 max+1 (전역 유니크·재사용 방지).
-        archive_path = os.path.join(root, ARCHIVE_REL)
-        archive, _ = _load_queue(archive_path)
-        if archive is None:
-            archive = []
+            # ship_no = 활성 큐 + 아카이브 통틀어 max+1 (전역 유니크·재사용 방지).
+            archive_path = os.path.join(root, ARCHIVE_REL)
+            archive, _ = _load_queue(archive_path)
+            if archive is None:
+                archive = []
 
-        clevel = _attribute_clevel(root, meta["subject"], meta["body"])
-        item = _build_item(meta, clevel, _next_ship_no(queue, archive))
+            clevel = _attribute_clevel(root, meta["subject"], meta["body"])
+            item = _build_item(meta, clevel, _next_ship_no(queue, archive))
 
-        queue.append(item)
-        if not _write_queue(queue_path, queue, crlf):
-            return 0  # 쓰기 실패 → fail-open.
+            queue.append(item)
+            if not _write_queue(queue_path, queue, crlf):
+                return 0  # 쓰기 실패 → fail-open.
 
         _commit_queue(root, meta["short"], clevel)
         return 0

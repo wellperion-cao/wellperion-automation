@@ -7,6 +7,7 @@ import os
 import subprocess
 import time
 import logging
+from contextlib import nullcontext
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
@@ -17,6 +18,11 @@ try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무�
 except Exception:
     def log_outbound(*a, **k):
         pass
+
+try:  # 크로스프로세스 _queue.json 락 (P2, 2026-07-10) — 같은 scripts/ 디렉토리
+    import queue_lock
+except Exception:
+    queue_lock = None
 
 PROJECT_ROOT = Path(__file__).parent.parent
 load_dotenv(PROJECT_ROOT / 'telegram_bot' / '.env')
@@ -187,19 +193,20 @@ def main_loop():
     )
     while True:
         try:
-            queue = load_queue()
-            if queue:
-                logged = load_logged_ids()
-                update_ceo_meta(
-                    last_trigger_at=datetime.now().isoformat(),
-                    queue_unprocessed=len(queue)
-                )
-                task = queue[0]
-                processed = process_task(task, logged)
-                if processed:
-                    queue.pop(0)
-                    save_queue(queue)
-                    update_ceo_meta(queue_unprocessed=len(queue))
+            with (queue_lock.queue_lock("ceo-watcher", repo_root=str(PROJECT_ROOT)) if queue_lock else nullcontext()):
+                queue = load_queue()
+                if queue:
+                    logged = load_logged_ids()
+                    update_ceo_meta(
+                        last_trigger_at=datetime.now().isoformat(),
+                        queue_unprocessed=len(queue)
+                    )
+                    task = queue[0]
+                    processed = process_task(task, logged)
+                    if processed:
+                        queue.pop(0)
+                        save_queue(queue)
+                        update_ceo_meta(queue_unprocessed=len(queue))
         except Exception as e:
             logger.exception(f'루프 예외: {e}')
         time.sleep(POLL_INTERVAL)

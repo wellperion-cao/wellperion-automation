@@ -5,11 +5,18 @@ assign_ship_numbers.py
 """
 import sys, json, os
 from collections import defaultdict
+from contextlib import nullcontext
 
 sys.stdout.reconfigure(encoding='utf-8')
 
+try:  # 크로스프로세스 _queue.json 락 (P2, 2026-07-10) — 같은 scripts/ 디렉토리
+    import queue_lock
+except Exception:
+    queue_lock = None
+
 QUEUE_PATH = os.path.join(os.path.dirname(__file__), '..', 'status', '_queue.json')
 QUEUE_PATH = os.path.normpath(QUEUE_PATH)
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def load():
     with open(QUEUE_PATH, 'r', encoding='utf-8') as f:
@@ -20,36 +27,37 @@ def save(data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 def main():
-    tasks = load()
-
-    # 담당별 현재 max ship_no 계산
-    max_no = defaultdict(int)
-    for t in tasks:
-        if 'ship_no' in t and t['ship_no'] is not None:
-            cl = str(t.get('clevel', '')).lower()
-            try:
-                max_no[cl] = max(max_no[cl], int(t['ship_no']))
-            except (ValueError, TypeError):
-                pass
-
-    # 담당별 ship_no 없는 작업 수집 → enqueued_at(없으면 task_id) 오름차순 정렬 후 부여
-    pending = defaultdict(list)
-    for i, t in enumerate(tasks):
-        if 'ship_no' not in t or t['ship_no'] is None:
-            cl = str(t.get('clevel', '')).lower()
-            sort_key = str(t.get('enqueued_at') or t.get('task_id') or '')
-            pending[cl].append((sort_key, i))
-
     summary = {}
-    for cl, entries in pending.items():
-        entries.sort(key=lambda x: x[0])
-        next_no = max_no[cl] + 1
-        for _, idx in entries:
-            tasks[idx]['ship_no'] = next_no
-            next_no += 1
-        summary[cl] = len(entries)
+    max_no = defaultdict(int)
+    with (queue_lock.queue_lock("assign-ships", repo_root=REPO_ROOT) if queue_lock else nullcontext()):
+        tasks = load()
 
-    save(tasks)
+        # 담당별 현재 max ship_no 계산
+        for t in tasks:
+            if 'ship_no' in t and t['ship_no'] is not None:
+                cl = str(t.get('clevel', '')).lower()
+                try:
+                    max_no[cl] = max(max_no[cl], int(t['ship_no']))
+                except (ValueError, TypeError):
+                    pass
+
+        # 담당별 ship_no 없는 작업 수집 → enqueued_at(없으면 task_id) 오름차순 정렬 후 부여
+        pending = defaultdict(list)
+        for i, t in enumerate(tasks):
+            if 'ship_no' not in t or t['ship_no'] is None:
+                cl = str(t.get('clevel', '')).lower()
+                sort_key = str(t.get('enqueued_at') or t.get('task_id') or '')
+                pending[cl].append((sort_key, i))
+
+        for cl, entries in pending.items():
+            entries.sort(key=lambda x: x[0])
+            next_no = max_no[cl] + 1
+            for _, idx in entries:
+                tasks[idx]['ship_no'] = next_no
+                next_no += 1
+            summary[cl] = len(entries)
+
+        save(tasks)
 
     if summary:
         print('[assign_ship_numbers] 새로 부여:')

@@ -116,6 +116,12 @@ import reversibility    # type: ignore  # noqa: E402
 import auto_actions     # type: ignore  # noqa: E402
 import verify_complete  # type: ignore  # noqa: E402
 
+try:  # 크로스프로세스 _queue.json 락 (P2, 2026-07-10) — 같은 scripts/ 디렉토리
+    import queue_lock
+except Exception:
+    queue_lock = None
+from contextlib import nullcontext  # noqa: E402
+
 
 def now_str() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -790,24 +796,25 @@ def apply_auto_actions(actions: list, archive: list) -> int:
     applied = 0
     fresh_queue = None
     queue_dirty = False
-    for a in actions[:MAX_AUTO_ACTIONS_PER_RUN]:
-        atype = a.get("action_type")
-        try:
-            if atype == "next_augment":
-                if fresh_queue is None:
-                    fresh_queue = read_json(QUEUE_ACTIVE, [])
-                ok = _apply_next_augment(a, fresh_queue)
-                queue_dirty = queue_dirty or ok
-            else:
-                applier = _MAINTENANCE_APPLIERS.get(atype)
-                ok = applier(a) if applier else False
-        except Exception as e:
-            print(f"  [WARN] 자율실행 실패({atype}·{a.get('target_task_id', '')}): {e}")
-            ok = False
-        if ok:
-            applied += 1
-    if queue_dirty and fresh_queue is not None:
-        QUEUE_ACTIVE.write_text(json.dumps(fresh_queue, ensure_ascii=False, indent=2), encoding="utf-8")
+    with (queue_lock.queue_lock("gm-aide") if queue_lock else nullcontext()):
+        for a in actions[:MAX_AUTO_ACTIONS_PER_RUN]:
+            atype = a.get("action_type")
+            try:
+                if atype == "next_augment":
+                    if fresh_queue is None:
+                        fresh_queue = read_json(QUEUE_ACTIVE, [])
+                    ok = _apply_next_augment(a, fresh_queue)
+                    queue_dirty = queue_dirty or ok
+                else:
+                    applier = _MAINTENANCE_APPLIERS.get(atype)
+                    ok = applier(a) if applier else False
+            except Exception as e:
+                print(f"  [WARN] 자율실행 실패({atype}·{a.get('target_task_id', '')}): {e}")
+                ok = False
+            if ok:
+                applied += 1
+        if queue_dirty and fresh_queue is not None:
+            QUEUE_ACTIVE.write_text(json.dumps(fresh_queue, ensure_ascii=False, indent=2), encoding="utf-8")
     return applied
 
 
@@ -845,58 +852,60 @@ def _apply_gap_auto(resumable_gaps: list) -> int:
     ★정체(stalled)는 이 함수에 절대 도달 안 함(split_lanes 하드 분리) — 방어적으로 kind 확인.
     각 조치를 log_auto_exec → gm_observation_ledger auto_exec 채널로 사유+되돌리기근거 적재.
     캡 MAX_AUTO_ACTIONS_PER_RUN(기존 자율레인과 공유). 멱등."""
-    fresh = read_json(QUEUE_ACTIVE, [])
-    by_tid = {_ship_id(x): x for x in fresh}
-    by_sn = {x.get("ship_no"): x for x in fresh if isinstance(x.get("ship_no"), int)}
-    applied = 0
-    dirty = False
-    for g in resumable_gaps[:MAX_AUTO_ACTIONS_PER_RUN]:
-        if g.get("kind") != "resumable":
-            continue  # 방어 — 정체(stalled) surface-only 는 여기서 절대 write 안 함
-        ship = by_tid.get(g.get("task_id")) or by_sn.get(g.get("ship_no"))
-        if not ship:
-            continue
-        target = g.get("task_id") or str(g.get("ship_no") or "?")
-        did = False
-        if auto_actions.apply_tag(ship, "resumable"):
-            log_auto_exec("resumable_tag", target, "aide_flags:no-resumable", "aide_flags+=resumable",
-                          restore_hint=f"원복=ship['aide_flags']에서 'resumable' 제거 · 사유={g['reason']}")
-            did = True
-        if auto_actions.set_nudge(ship, g["clevel"]):
-            log_auto_exec("nudge", target, "aide_nudge:none", f"aide_nudge={g['clevel']}",
-                          restore_hint=f"원복=ship['aide_nudge'] 삭제 · 담당 {g['clevel']} 재촉(재개 가능)")
-            did = True
-        old_dep = ship.get("depends_on")
-        if auto_actions.resolve_structural_depends(ship):
-            log_auto_exec("depends_resolved", target, f"depends_on={old_dep!r}",
-                          "depends_on→depends_on_resolved 이전(원문 보존)",
-                          restore_hint="원복=depends_on_resolved 값을 depends_on 으로 되돌림")
-            did = True
-        if did:
-            applied += 1
-            dirty = True
-    if dirty:
-        QUEUE_ACTIVE.write_text(json.dumps(fresh, ensure_ascii=False, indent=2), encoding="utf-8")
+    with (queue_lock.queue_lock("gm-aide") if queue_lock else nullcontext()):
+        fresh = read_json(QUEUE_ACTIVE, [])
+        by_tid = {_ship_id(x): x for x in fresh}
+        by_sn = {x.get("ship_no"): x for x in fresh if isinstance(x.get("ship_no"), int)}
+        applied = 0
+        dirty = False
+        for g in resumable_gaps[:MAX_AUTO_ACTIONS_PER_RUN]:
+            if g.get("kind") != "resumable":
+                continue  # 방어 — 정체(stalled) surface-only 는 여기서 절대 write 안 함
+            ship = by_tid.get(g.get("task_id")) or by_sn.get(g.get("ship_no"))
+            if not ship:
+                continue
+            target = g.get("task_id") or str(g.get("ship_no") or "?")
+            did = False
+            if auto_actions.apply_tag(ship, "resumable"):
+                log_auto_exec("resumable_tag", target, "aide_flags:no-resumable", "aide_flags+=resumable",
+                              restore_hint=f"원복=ship['aide_flags']에서 'resumable' 제거 · 사유={g['reason']}")
+                did = True
+            if auto_actions.set_nudge(ship, g["clevel"]):
+                log_auto_exec("nudge", target, "aide_nudge:none", f"aide_nudge={g['clevel']}",
+                              restore_hint=f"원복=ship['aide_nudge'] 삭제 · 담당 {g['clevel']} 재촉(재개 가능)")
+                did = True
+            old_dep = ship.get("depends_on")
+            if auto_actions.resolve_structural_depends(ship):
+                log_auto_exec("depends_resolved", target, f"depends_on={old_dep!r}",
+                              "depends_on→depends_on_resolved 이전(원문 보존)",
+                              restore_hint="원복=depends_on_resolved 값을 depends_on 으로 되돌림")
+                did = True
+            if did:
+                applied += 1
+                dirty = True
+        if dirty:
+            QUEUE_ACTIVE.write_text(json.dumps(fresh, ensure_ascii=False, indent=2), encoding="utf-8")
     return applied
 
 
 def _register_gap_proposals(propose_gaps: list, kpi: dict, ns_map: dict,
                             profile_hints: list, archive: list) -> int:
     """propose 폴백 — 기존 make_proposal_ship 경로 재사용(새 제안타입 없음·dedup·캡 상속)."""
-    fresh = read_json(QUEUE_ACTIVE, [])
-    existing = existing_proposal_keys(fresh)
-    fresh_max = max_ship_no(fresh, archive)
-    added = 0
-    for g in propose_gaps[:MAX_PROPOSALS_PER_RUN]:
-        cap = _gap_to_capture(g)
-        if cap["dedup_key"] in existing:
-            continue
-        fresh_max += 1
-        fresh.append(make_proposal_ship(cap, fresh_max, kpi, ns_map, profile_hints))
-        existing.add(cap["dedup_key"])
-        added += 1
-    if added:
-        QUEUE_ACTIVE.write_text(json.dumps(fresh, ensure_ascii=False, indent=2), encoding="utf-8")
+    with (queue_lock.queue_lock("gm-aide") if queue_lock else nullcontext()):
+        fresh = read_json(QUEUE_ACTIVE, [])
+        existing = existing_proposal_keys(fresh)
+        fresh_max = max_ship_no(fresh, archive)
+        added = 0
+        for g in propose_gaps[:MAX_PROPOSALS_PER_RUN]:
+            cap = _gap_to_capture(g)
+            if cap["dedup_key"] in existing:
+                continue
+            fresh_max += 1
+            fresh.append(make_proposal_ship(cap, fresh_max, kpi, ns_map, profile_hints))
+            existing.add(cap["dedup_key"])
+            added += 1
+        if added:
+            QUEUE_ACTIVE.write_text(json.dumps(fresh, ensure_ascii=False, indent=2), encoding="utf-8")
     return added
 
 
