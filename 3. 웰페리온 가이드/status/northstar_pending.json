@@ -1,34 +1,31 @@
 {
-  "date": "2026-07-11",
-  "generated_at": "2026-07-11 06:30:53",
+  "date": "2026-07-12",
+  "generated_at": "2026-07-12 06:30:48",
   "generated_by": "ClaudeCLI",
-  "status": "approved",
+  "status": "proposed",
   "source": {
     "matrix_updated_at": "2026-07-08",
-    "kpi_generated_at": "2026-07-11T05:57:26+09:00"
+    "kpi_generated_at": "2026-07-12T05:57:28+09:00"
   },
   "candidates": [
     {
       "rank": 1,
-      "role": "coo",
-      "owner": "시우",
-      "title": "지원부 점검완료율 0.0%(78건 중 0) 근본원인 진단·배선 수리 — home KPI에 실완료율 반영",
-      "first_action": "지원부 체계.html의 완료율 분모(전체 78)·분자(완료 0) 소스를 today_live vs monthly GAS 시트에서 대조해 어디서 0으로 끊기는지 한 곳 특정",
-      "expected": "0.0%로 죽어있던 지원부 점검완료율이 실제 입력 반영값으로 복구 → home·운영 대시보드 KPI 정합, 무인 운영 신뢰지표 1개 살아남",
-      "path_map": "🌟 북극성: 무인 운영 시스템 완성 — 점검·결재·VOC·SOP 자동화\n📍 지금: 활성 5척 · 완료건 next 14건 · KPI 완결률=0.6154, 완료=8, 활성=5, 지원부_점검완료율=0.0, 지원부_완료=0, 지원부_전체=78, 4부서_점검완료율=None\n👉 오늘 한 수: 지원부 점검완료율 0.0%(78건 중 0) 근본원인 진단·배선 수리 — home KPI에 실완료율 반영 (신호②)",
-      "rationale": "신호②(KPI 미달) — 전 역할 통틀어 가장 극단적 수치인 지원부_점검완료율=0.0(78건 중 완료 0). COO 북극성 '점검 자동화'의 핵심 지표가 죽어있고, active #700(회차 통합·칸 숨김)은 레이아웃 정리라 이 0% 원인은 미착수. 다중소스 분모 불일치 기지의 함정과 정확히 일치",
-      "one_reason": "전 C-Level 데이터 중 가장 낮고 명백히 고장난 지표(0.0%)이자 COO 북극성 신뢰의 근간이며, 현재 어떤 active 배도 이 원인을 다루지 않아 즉효·비중복 최고가치",
+      "role": "ceo",
+      "owner": "웰리",
+      "title": "G1 '제작 루프 오케스트레이션' 배선 — 활성 배마다 현재 단계(stage) 표시·추적 + 완료 시 next 자동 촉발 연결",
+      "first_action": "status/_queue.json 활성 배 스키마에 'stage' 필드를 정의하고, 전 C-Level 활성 배(약 32척)에 현재 단계(기획/제작/검수/발행·정박 등)를 1차 태깅한 뒤 G1 항로 보드에 stage 뱃지로 노출",
+      "expected": "G1에서 32척 배의 현재 단계가 한눈에 보이고, post_action --next 훅과 연결해 '입항→다음 배 자동 생성(항로점)'이 작동 → 표류(🌀) 자동 감지·완결률 측정 정확화",
+      "path_map": "🌟 북극성: ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자\n📍 지금: 활성 1척 · 완료건 next 2건 · KPI 완결률=0.5, 완료=1, 활성=1\n👉 오늘 한 수: G1 '제작 루프 오케스트레이션' 배선 — 활성 배마다 현재 단계(stage) 표시·추적 + 완료 시 next 자동 촉발 연결 (신호①)",
+      "rationale": "신호① 북극성 갭 — 웰리 owns=G1, ideas='제작 루프 오케스트레이션(단계 표시·추적, 완료 시 다음 자동 촉발)'이 미착수(active #237은 GM 보좌 별건). CEO KPI '실행 완결률·G1 정합'에 직접 기여",
+      "one_reason": "전 C-Level 32척을 북극성으로 자동 브릿지하는 전사 레버리지 한 수 — 웰리 북극성에 직결되고 다른 역할의 절박 KPI(점검 0%·전환 None)는 이미 각자 active 배가 있어 중복",
       "difficulty": "⛴️여객선",
-      "signal": "신호②",
-      "northstar": "무인 운영 시스템 완성 — 점검·결재·VOC·SOP 자동화",
-      "progress": "활성 5척 · 완료건 next 14건 · KPI 완결률=0.6154, 완료=8, 활성=5, 지원부_점검완료율=0.0, 지원부_완료=0, 지원부_전체=78, 4부서_점검완료율=None",
-      "module": "기타",
-      "module_label": "기타(모듈 미지정)",
-      "page_url": "",
-      "serves": "자동 추론 규칙이 불명확 — 담당 C레벨/웰리 수동 지정 대기 → 🌟 무인 운영 시스템 완성 — 점검·결재·VOC·SOP 자동화",
-      "status": "approved",
-      "approved_at": "2026-07-11T06:33:02.405129",
-      "ship_no": 890
+      "signal": "신호①",
+      "northstar": "ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자",
+      "progress": "활성 1척 · 완료건 next 2건 · KPI 완결률=0.5, 완료=1, 활성=1",
+      "module": "home",
+      "module_label": "home",
+      "page_url": "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#home",
+      "serves": "home → 🌟 ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자"
     }
   ],
   "parallel_ships": [
