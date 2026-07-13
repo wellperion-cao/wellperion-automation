@@ -681,5 +681,19 @@
     "module": "O1",
     "note": "[2026-07-13 GM go A] 890 KPI 수리 후 남은 표면. daily_scheduler.py 알림 지원부 셀이 raw today_live라 휴관일 0/82(0%)·아침 저% 오해. 수리: _is_closed_day(2·4주 일요일+1/1)로 휴관일엔 '🚫 휴관일-점검없음' 블록·정상일엔 당월누적 완료율 병기(kpi_values.json 재사용). 코드·dry-run 검증 완료. 가역(코드추가만).",
     "next": "⚓ 라이브 발효=daily_scheduler 데몬 재기동 후(현재 PID 관리자권한이라 즉시 재기동 불가·Access Denied). 다음 휴관일 07-26·매일 12시 알림에서 실동작 확인. 재기동=다음 PC 재부팅 시 자동."
+  },
+  {
+    "task_id": "CTO-2026-07-13-ADHOC-01eae2ed",
+    "clevel": "cto",
+    "title": "[시토] 12시 점검현황 고도화 — 기준이탈 상세·부서별 링크·라벨 명료화",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 918,
+    "artifact": "GM 지적 3건 수리:\n- ⚠ 정체 노출: '1건'뿐 → '수영장 수온: 30.3 (기준 26~30)' 항목·값·기준 상세\n  (23시용 _build_facility_ooc_detail 재사용, monthly_report 1회 호출로 확보)\n- 링크 불일치: 시설부 이탈인데 지원부 링크 → 지원부·시설부 부서별 앵커(시설부 체계.html)\n- 단순화: 중복 부제·장식줄 제거, '지원부 완료율/시설부 입력률' 라벨 구분, 정상일 ✅ 명시\n23시 폴백 박스표 유지(MarkdownV2 안전). 라이브 렌더 실측 검증.\n(선행 미커밋분:  (CLI ad-hoc · 커밋 01eae2ed)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "01eae2ed65f5a3613dfe24790b65d27c8eb9d196"
   }
 ]
