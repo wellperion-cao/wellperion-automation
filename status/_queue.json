@@ -814,5 +814,19 @@
     "artifact": "RUNNER_LIVE 실행 직전 working_tree_guard()로 워킹트리를 점검한다. status/*.json·\n로그·heartbeat·cache 등 상시 자동생성 노이즈는 allowlist로 통과시키고, 그 밖의\n진짜 미커밋 작업(*.py·*.html·docs 등)이 남아있으면 즉시 skip한다 — 무인 세션이\n방치된 무관 작업(예: telegram_bot/daily_scheduler.py 리팩터)을 자기 커밋에\n쓸어담던 결함 대응. 오케스트레이션 프롬프트에도 git add -A/commit -a 금지를\n명시 강화하고, L (CLI ad-hoc · 커밋 09b2773f)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "09b2773f5e2c7809d993724a747f152c524c5040"
+  },
+  {
+    "task_id": "COO-2026-07-13-ADHOC-16d9265f",
+    "clevel": "coo",
+    "title": "[시우] 시설부 알림 회차=제출건수 교정 + 12시 점검관리방 전용(중복 제거)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 927,
+    "artifact": "- 회차: monthly sessionCount(라운드=1) → board submissions len(=페이지 'N회 완료' 일치)\n- _fetch_facility_work→_fetch_facility_board(작업사항+회차 1회 호출)\n- run_report: 12시 owner DM 중복 발송 제거 → 점검관리방 전용 발송 (CLI ad-hoc · 커밋 16d9265f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "16d9265fac07e88ed80c940d20209d00fffb6c60"
   }
 ]
