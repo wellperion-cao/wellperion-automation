@@ -695,5 +695,19 @@
     "artifact": "GM 지적 3건 수리:\n- ⚠ 정체 노출: '1건'뿐 → '수영장 수온: 30.3 (기준 26~30)' 항목·값·기준 상세\n  (23시용 _build_facility_ooc_detail 재사용, monthly_report 1회 호출로 확보)\n- 링크 불일치: 시설부 이탈인데 지원부 링크 → 지원부·시설부 부서별 앵커(시설부 체계.html)\n- 단순화: 중복 부제·장식줄 제거, '지원부 완료율/시설부 입력률' 라벨 구분, 정상일 ✅ 명시\n23시 폴백 박스표 유지(MarkdownV2 안전). 라이브 렌더 실측 검증.\n(선행 미커밋분:  (CLI ad-hoc · 커밋 01eae2ed)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "01eae2ed65f5a3613dfe24790b65d27c8eb9d196"
+  },
+  {
+    "task_id": "CEO-2026-07-13-ADHOC-abec8a43",
+    "clevel": "ceo",
+    "title": "[웰리] 예약 Claude 러너 MVP welly_auto_runner (배237 phase3, 기본 dry-run)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 919,
+    "artifact": "가역·저위험 배 1척 선별(welly_orchestrate 재사용+추가필터+쿨다운)→헤드리스 claude\n오케스트레이션 프롬프트 조립→게이트(RUNNER_LIVE, 기본 OFF)→재귀폭주 방지 가드.\n런처(vbs/bat)·Task Scheduler 등록안은 문서화만, 실제 등록·라이브 발효는 GM go 이후.\ndry-run 실측: CTO 큐에서 CTO-2026-07-02-SKILL-MASTERY-LEARNING 선택, claude 미호출·\n커밋0·_queue.json 무변경 확인(테스트 39건 통과). (CLI ad-hoc · 커밋 abec8a43)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "abec8a43068245bf671b9842637cf49a1266aa0c"
   }
 ]
