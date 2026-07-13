@@ -16,7 +16,7 @@
     C:\\Python314\\python.exe -u scripts\\ops_export_kakao.py
 
 주의: 라이브 카카오톡 PC 앱 UI 조작(클릭·키 입력)이다 — 실행 시 실제 창을 건드린다.
-      ★운영부 방이 카톡에서 미리 열려 있어야 한다(자동으로 열지 않음 — 오조작 방지).
+      ★운영부 방이 닫혀 있으면 카톡 검색으로 직접 연다(kakao_report_sender.open_or_find_room 재사용, GM 2026-07-13).
 """
 from __future__ import annotations
 
@@ -160,7 +160,20 @@ def run_export() -> "tuple[bool, str]":
             except Exception:
                 pass
     if not room:
-        return False, f"'{ROOM_NAME_CONTAINS}' 방 창이 카톡에서 열려 있지 않음(먼저 방을 열어두세요)"
+        # 방이 닫혀 있으면 시토가 카톡 검색으로 직접 연다 (GM 2026-07-13) — kakao_report_sender 검증 로직 재사용
+        log("[방] 창 없음 → 카톡 검색으로 자동 열기 시도")
+        try:
+            import kakao_report_sender as _krs
+            _krs.open_or_find_room("★ 운영부")
+            time.sleep(1.0)
+            for h, t, r in eva(win32gui):
+                if ROOM_NAME_CONTAINS in t:
+                    room = h
+                    break
+        except Exception as e:
+            log(f"[방] 자동 열기 실패: {e}")
+    if not room:
+        return False, f"'{ROOM_NAME_CONTAINS}' 방 창을 열지 못함(검색 자동열기도 실패 — 카톡 메인창 확인)"
     time.sleep(0.5)
     try:
         Desktop(backend="win32").window(handle=room).set_focus()
