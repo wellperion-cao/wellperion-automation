@@ -431,7 +431,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <label><input type="radio" name="fOwner" value="최준용M">최준용M</label>
         <label><input type="radio" name="fOwner" value="임정은M">임정은M</label>
         <label><input type="radio" name="fOwner" value="윤병현AM">윤병현AM</label>
-        <label><input type="radio" name="fOwner" value="이지영 사원">이지영 사원</label>
+        <label><input type="radio" name="fOwner" value="백승화 사원">백승화 사원</label>
         <label><input type="radio" name="fOwner" value="나우열M">나우열M</label>
         <label><input type="radio" name="fOwner" value="이정헌 소장">이정헌 소장</label>
       </div>
@@ -458,7 +458,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <label><input type="checkbox" value="최준용M">최준용M</label>
         <label><input type="checkbox" value="임정은M">임정은M</label>
         <label><input type="checkbox" value="윤병현AM">윤병현AM</label>
-        <label><input type="checkbox" value="이지영 사원">이지영 사원</label>
+        <label><input type="checkbox" value="백승화 사원">백승화 사원</label>
         <label><input type="checkbox" value="나우열M">나우열M</label>
         <label><input type="checkbox" value="이정헌 소장">이정헌 소장</label>
       </div>
@@ -588,7 +588,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    ═══════════════════════════════════════════ */
 const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
 
-const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'];
+const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장'];
 
 const CATEGORIES = [
   '[1] 매출 및 영업','[2] 인사','[3] 파트너팀','[4] 운영 정책',
@@ -662,7 +662,7 @@ const OWNER_COLORS = {
   '최준용M':     {bg:'var(--accent-bg)', color:'var(--accent)'},
   '임정은M':     {bg:'var(--red-bg)',    color:'var(--red)'},
   '윤병현AM':    {bg:'var(--yellow-bg)', color:'var(--yellow)'},
-  '이지영 사원': {bg:'var(--orange-bg)', color:'var(--orange)'}
+  '백승화 사원': {bg:'var(--orange-bg)', color:'var(--orange)'}
 };
 /* 카테고리 → 부서장 매핑 (결재선 1단계 자동 지정, 2026-06-10 GM 확정 9분류).
    인사·파트너팀=나우열M([2][3]) / 운영부=이경연 실장([4]) / 시설부=이정헌 소장([5]).
@@ -688,7 +688,7 @@ let ALL_TASKS = [];
    C레벨(AI)건·GM건·결재건은 G1(오늘 할일)에서만 본다.
    실무진 토큰이 하나라도 있으면 표시. 실무진이 전혀 없으면 숨김. */
 const STAFF_TOKENS = new Set([
-  '이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'
+  '이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장'
 ]);
 function hasNoStaff(t) {
   var owners = String((t && t.owner) || '').split(',').map(function(s){return s.trim();}).filter(Boolean);
