@@ -2817,8 +2817,9 @@ def main():
         id="queue_archive_sweep",
         misfire_grace_time=600,
         coalesce=True,
+        next_run_time=datetime.now(),
     )
-    logger.info("queue_archive_sweep 등록 완료 (6시간 주기) — _queue.json 비대화 방지")
+    logger.info("queue_archive_sweep 등록 완료 (6시간 주기, 부팅 즉시 1회) — _queue.json 비대화 방지")
 
     if args.test:
         logger.info("=== 테스트 모드 시작: 1시간 주기 ===")
