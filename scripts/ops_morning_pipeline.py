@@ -130,7 +130,7 @@ def build_keyboard() -> dict:
 
 
 def build_approval_text(message: str) -> str:
-    return "🌅 ★운영부 아침 요약 (GM 승인 대기)\n\n" + message
+    return "📋 ★운영부 전날 정리 — 방에 발송할까요? (GM 승인 대기)\n\n" + message
 
 
 def send_approval_request(message: str, dry_run: bool) -> bool:
