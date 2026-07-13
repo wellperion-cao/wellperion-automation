@@ -742,5 +742,19 @@
     "artifact": "866 요새화 안전망(사전점검+무결성게이트+쿠키인증 3채널 라이브) 완성 후\nGM 승인(2026-07-13)으로 활성. 2026-07-10 전채널 자동발행 표준의 레거시\ndraft-only 잔재 정합. (CLI ad-hoc · 커밋 cdd9f29c)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "cdd9f29c2ca63476dd02e118aff3187581831c44"
+  },
+  {
+    "task_id": "CPO-2026-07-13-ADHOC-5e583842",
+    "clevel": "cpo",
+    "title": "[시포] 문의회원 저장 phone-키 폴백 근본수리 + gviz 빠른읽기 재활성 (INC-013·GAS@153)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 922,
+    "artifact": "Survey.js: _findRowByPhone_ 신설, member_inquiry_update·lesson_inquiry_update guard가\nrowIndex/전화 불일치 시 keyPhone으로 올바른 물리 행 복구(정상 케이스 무변경·회귀0).\ngviz 어긋남(조화순 물리587→gviz172) 근본 무해화 → USE_GVIZ=true 재활성(빠른읽기 복원).\n라이브 실증: 버그 rowIndex172로 저장→행587 정확 기록·기존값 보존·복구. GAS@153 배포 완료. (CLI ad-hoc · 커밋 5e583842)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "5e5838428a995f963699aa57217ef9391b463eb0"
   }
 ]
