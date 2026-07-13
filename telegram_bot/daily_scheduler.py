@@ -2426,7 +2426,9 @@ def _build_digest_inquiry(today: str) -> str:
 def _build_digest_check(today: str) -> str:
     """점검관리방 — 종일 완료율 + 남/여 + 약점 + 차트. str 반환(전송 분리)."""
     weekday = _WEEKDAY_KOR[datetime.now().weekday()]
-    header = f"📋 [하루 일과 정리] {today}({weekday})\n🧹 오늘의 점검 현황"
+    md = datetime.now().strftime("%m-%d")
+    # 제목 = 'MM-DD(요일) 금일 점검 현황보고' (GM 2026-07-13: 12시 오전보고와 짝 · 저녁=금일 종합)
+    header = f"🌙 {md}({weekday}) 금일 점검 현황보고\n{_DIVIDER}"
     d = _fetch_support_today_live(today)
     if d is None:
         return f"{header}\n\n점검 데이터 조회 실패."
