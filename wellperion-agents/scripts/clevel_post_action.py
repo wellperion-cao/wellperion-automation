@@ -56,6 +56,15 @@ if str(_PACKAGE_ROOT) not in sys.path:
 # queue_archive(끝난 일 자동 정리) 등 동일 폴더 sibling 모듈 import 보장
 if str(_BASE) not in sys.path:
     sys.path.insert(0, str(_BASE))
+# scripts/notify_gm_progress.is_routine 재사용(루틴/자동 완료 스팸 필터 — 2026-07-13)
+_SCRIPTS_ROOT = _REPO_ROOT / "scripts"
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+try:
+    from notify_gm_progress import is_routine
+except Exception:
+    def is_routine(*_texts: str) -> bool:
+        return False
 
 # .env 로드(텔레그램 토큰/chat_id). 토큰 원문은 절대 stdout 출력하지 않는다.
 try:
@@ -467,20 +476,28 @@ def main() -> int:
         dry_run=args.dry_run,
     )
 
-    ok_telegram = send_telegram(
-        clevel=args.clevel,
-        task_id=args.task_id,
-        status=args.status,
-        summary=args.summary,
-        dry_run=args.dry_run,
-        bridge_label=bridge_label,
-        title=title,
-        version=args.version,
-        changelog=args.changelog,
-        artifact_url=args.artifact_url or "",
-        next_desc=args.next_desc or "",
-        terminal=args.terminal,
-    )
+    # ── 루틴/자동 완료 스팸 필터(2026-07-13, GM 지시) ───────────────────────
+    # task_id 또는 changelog 에 ADHOC·auto-log·chore·mirror 류 마커가 있는
+    # "완료" 는 실제 딜리버러블이 아닌 기계적 정리성 완료라 GM 채널 보고에서
+    # 제외한다(status 파일 기록·큐 브릿지는 그대로 유지 — 텔레그램만 스킵).
+    if is_done and is_routine(args.task_id, args.changelog):
+        print("[Telegram] 루틴/자동 완료 — GM 채널 보고 스킵(스팸 방지): " + args.task_id)
+        ok_telegram = True
+    else:
+        ok_telegram = send_telegram(
+            clevel=args.clevel,
+            task_id=args.task_id,
+            status=args.status,
+            summary=args.summary,
+            dry_run=args.dry_run,
+            bridge_label=bridge_label,
+            title=title,
+            version=args.version,
+            changelog=args.changelog,
+            artifact_url=args.artifact_url or "",
+            next_desc=args.next_desc or "",
+            terminal=args.terminal,
+        )
 
     if args.dry_run:
         print("=" * 60)
