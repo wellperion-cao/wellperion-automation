@@ -229,6 +229,69 @@
   .mod-badge.manual{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
   .mod-rev{font-size:9.5px; color:var(--dim); margin-left:2px;}
 
+  /* ── 🎯 단일 전환 퍼널 보드 (배 #897 · status/kpi_values.json cmo·cpo 직독 · GM 승인 시안 라이브 반영 · 2026-07-13) ── */
+  #funnel897{
+    --fn-violet:#a78bfa; --fn-violet-deep:#7c5cf0; --fn-violet-glow:rgba(139,108,246,.18);
+    --fn-emerald:#34d399; --fn-emerald-dim:rgba(52,211,153,.14);
+    --fn-amber:#d9a441; --fn-amber-dim:rgba(217,164,65,.13);
+    --fn-track:#262038;
+  }
+  .fn897-board{background:var(--paper); border:1px solid var(--border); border-radius:12px; padding:20px 20px 18px; margin:4px 0 14px;}
+  .fn897-grid{display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:center; gap:6px;}
+  .fn897-node{text-align:center; padding:6px 4px;}
+  .fn897-node .fn897-lab{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); font-weight:700; margin-bottom:6px;}
+  .fn897-node .fn897-big{font-size:clamp(24px,3.6vw,36px); font-weight:800; letter-spacing:-.02em; line-height:1; color:var(--text);}
+  .fn897-node .fn897-foot{font-size:11px; color:var(--dim); margin-top:6px;}
+  .fn897-node.inq .fn897-big{color:var(--fn-violet);}
+  .fn897-node.join .fn897-big{color:var(--fn-emerald);}
+  .fn897-seg{text-align:center; min-width:112px; padding:0 4px;}
+  .fn897-seg .fn897-arrow{font-size:18px; color:var(--dim); line-height:1;}
+  .fn897-seg .fn897-rate{display:inline-block; margin-top:4px; font-size:17px; font-weight:800; letter-spacing:-.01em;}
+  .fn897-seg .fn897-rate.v{color:var(--fn-violet);}
+  .fn897-seg .fn897-rate.e{color:var(--fn-emerald);}
+  .fn897-seg .fn897-cap{font-size:10.5px; color:var(--dim); margin-top:2px; line-height:1.3;}
+  .fn897-seg .fn897-connector{height:2px; background:linear-gradient(90deg,transparent,var(--border),transparent); margin:10px 0 2px;}
+  .fn897-scope{display:flex; gap:11px; align-items:flex-start; margin:14px 0 0; padding:12px 14px; background:var(--fn-amber-dim); border:1px solid rgba(217,164,65,.34); border-left:3px solid var(--fn-amber); border-radius:9px;}
+  .fn897-scope .fn897-ic{flex:none; font-size:14px; line-height:1.4;}
+  .fn897-scope p{margin:0; font-size:11.5px; color:#e7d6b4;}
+  .fn897-scope b{color:var(--fn-amber); font-weight:700;}
+  .fn897-cols{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;}
+  .fn897-card{background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:16px 16px 17px;}
+  .fn897-card h3{font-size:13px; margin:0; font-weight:800; letter-spacing:-.01em; display:flex; align-items:center; gap:7px;}
+  .fn897-dot{width:8px; height:8px; border-radius:50%; flex:none;}
+  .fn897-dot.v{background:var(--fn-violet); box-shadow:0 0 0 3px var(--fn-violet-glow);}
+  .fn897-dot.e{background:var(--fn-emerald); box-shadow:0 0 0 3px var(--fn-emerald-dim);}
+  .fn897-card .fn897-scopetag{font-size:10.5px; color:var(--dim); margin:5px 0 14px; font-weight:600;}
+  .fn897-chan{display:flex; flex-direction:column; gap:9px;}
+  .fn897-row{display:grid; grid-template-columns:82px 1fr auto; align-items:center; gap:10px;}
+  .fn897-row .fn897-name{font-size:11.5px; color:var(--text-soft); font-weight:600;}
+  .fn897-track{height:18px; background:var(--fn-track); border-radius:5px; overflow:hidden; position:relative;}
+  .fn897-fill{height:100%; border-radius:5px; width:100%;}
+  .fn897-fill.meas{background:linear-gradient(90deg,var(--fn-violet-deep),var(--fn-violet));}
+  .fn897-fill.untr{background:repeating-linear-gradient(45deg,#322a48,#322a48 6px,#2a2340 6px,#2a2340 12px);}
+  .fn897-row .fn897-val{font-size:11.5px; font-weight:700; text-align:right; min-width:88px;}
+  .fn897-chip{display:inline-block; font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:5px; letter-spacing:.02em; vertical-align:middle; margin-left:5px;}
+  .fn897-chip.ok{background:var(--fn-emerald-dim); color:var(--fn-emerald);}
+  .fn897-chip.no{background:rgba(140,139,131,.16); color:var(--dim);}
+  .fn897-valnum.ok{color:var(--fn-emerald);}
+  .fn897-valnum.no{color:var(--dim);}
+  .fn897-joins{display:grid; grid-template-columns:1fr 1fr; gap:11px;}
+  .fn897-stat{background:var(--paper); border:1px solid var(--border); border-radius:9px; padding:12px 13px 14px;}
+  .fn897-stat .fn897-k{font-size:10.5px; color:var(--dim); font-weight:700; letter-spacing:.03em;}
+  .fn897-stat .fn897-v{font-size:clamp(20px,3.2vw,27px); font-weight:800; margin-top:5px; line-height:1; color:var(--fn-emerald);}
+  .fn897-stat .fn897-d{font-size:10.5px; color:var(--text-soft); margin-top:6px;}
+  .fn897-stat.cum .fn897-v{color:var(--text);}
+  .fn897-foot-note{margin-top:16px; padding-top:12px; border-top:1px solid var(--border); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .fn897-foot-note span{font-size:10.5px; color:var(--dim);}
+  .fn897-foot-note b{color:var(--text-soft); font-weight:700;}
+  @media (max-width:640px){
+    .fn897-grid{grid-template-columns:1fr; gap:2px;}
+    .fn897-seg{transform:rotate(90deg); min-width:0; margin:2px 0;}
+    .fn897-seg .fn897-cap, .fn897-seg .fn897-connector{display:none;}
+    .fn897-cols, .fn897-joins{grid-template-columns:1fr;}
+    .fn897-row{grid-template-columns:70px 1fr auto;}
+  }
+
   /* ── 공통 4섹션 카드 ── */
   .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:4px;}
   .ccard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:11px 13px;}
@@ -317,6 +380,19 @@
     .mod-badge.mech{color:#4a2a91 !important; background:#efe8fb !important; border-color:#b7a0e0 !important;}
     .mod-badge.propose{color:#9c1c74 !important; background:#fbe6f3 !important; border-color:#e0a0c8 !important;}
     .mod-badge.manual{color:#555 !important; background:#f0f0f0 !important; border-color:#bbb !important;}
+    /* 신규(2026-07-13): 단일 전환 퍼널 보드 인쇄 라이트 강제 */
+    .fn897-board, .fn897-card, .fn897-stat{background:#fff !important; border-color:#999 !important;}
+    .fn897-node .fn897-big, .fn897-node .fn897-lab, .fn897-node .fn897-foot,
+    .fn897-seg .fn897-cap, .fn897-seg .fn897-rate.v, .fn897-seg .fn897-rate.e, .fn897-card h3{color:#111 !important;}
+    .fn897-scope{background:#faf3e2 !important; border-color:#caa84a !important;}
+    .fn897-scope p, .fn897-scope b{color:#111 !important;}
+    .fn897-row .fn897-name, .fn897-row .fn897-val, .fn897-valnum.ok, .fn897-valnum.no{color:#111 !important;}
+    .fn897-chip{border:1px solid #999 !important; background:#eee !important; color:#111 !important;}
+    .fn897-track{background:#eee !important;}
+    .fn897-fill.meas{background:#888 !important;}
+    .fn897-fill.untr{background:repeating-linear-gradient(45deg,#ddd,#ddd 6px,#eee 6px,#eee 12px) !important;}
+    .fn897-stat .fn897-v{color:#111 !important;}
+    .fn897-foot-note span, .fn897-foot-note b{color:#333 !important;}
   }
 </style>
 </head>
@@ -431,6 +507,15 @@
   <div class="sec-note">정본: status/module_registry.json 직독(등록부 SSOT · 매트릭스와 중복 카드 없음)</div>
   <div class="mod-strip" id="mod-strip">
     <div class="matrix-status">모듈 등록부를 불러오는 중…</div>
+  </div>
+
+  <!-- ════ 🎯 단일 전환 퍼널 보드 (배 #897 · GM 승인 시안 라이브 반영 · status/kpi_values.json cmo·cpo 직독 · 2026-07-13) ════ -->
+  <h2 class="sec">🎯 단일 전환 퍼널 <span style="font-size:11px;font-weight:400;color:var(--dim);">클릭 → 문의 → 가입 · 한 보드에서 본다</span></h2>
+  <div class="sec-note">정본: status/kpi_values.json (cmo·cpo 블록) 직독 · 시모 #676(클릭→문의)·시포 #849(문의→가입) 통합 · 배 #897</div>
+  <div id="funnel897">
+    <div class="fn897-board" id="fn897-board">
+      <div class="matrix-status">퍼널 데이터를 불러오는 중…</div>
+    </div>
   </div>
 
   <!-- ════ B. 공통 헌법 4섹션 (S2 정본으로 링크만) ════ -->
@@ -783,6 +868,86 @@
     }).join('');
   }
 
+  // 🎯 단일 전환 퍼널 보드 (배 #897 · 2026-07-13) — status/kpi_values.json cmo·cpo 블록 직독. 신규 fetch 없음(기존 _kpiValues 재사용).
+  //   두 마디(클릭→문의·문의→가입)를 하나의 연속 %로 곱하지 않는다(스코프 다름 · 약속 L05). null=정직 공백(—) — 억지 숫자 금지.
+  var CHAN_LABEL897 = { '직접/홈':'직접/홈', 'naver_blog':'네이버 블로그', 'instagram':'인스타그램', 'naver_cafe':'네이버 카페', 'danggn':'당근' };
+  function fmtPct897(v){
+    if(v == null || typeof v !== 'number' || isNaN(v)) return null;
+    var s = v.toFixed(1);
+    if(s.indexOf('.') >= 0) s = s.replace(/0$/, '').replace(/\.$/, '');
+    return s + '%';
+  }
+  function renderFunnel897(kpiRoles, genKst){
+    var el = document.getElementById('fn897-board');
+    if(!el) return;
+    var cmo = (kpiRoles && kpiRoles.cmo) || null;
+    var cpo = (kpiRoles && kpiRoles.cpo) || null;
+    if(!cmo && !cpo){
+      el.innerHTML = '<div class="matrix-status">퍼널 데이터 없음 · 정본: status/kpi_values.json</div>';
+      return;
+    }
+    var totalClicks = (cmo && typeof cmo['총_클릭수'] === 'number') ? cmo['총_클릭수'] : null;
+    var chanClicks = (cmo && cmo['채널별_클릭수']) || {};
+    var chanConv = (cmo && cmo['채널별_클릭문의전환']) || {};
+    var igConv = chanConv['인스타그램'] || null;
+    var igRate = (igConv && typeof igConv['클릭_문의_전환율'] === 'number') ? igConv['클릭_문의_전환율'] : null;
+
+    var inqCount = (cpo && typeof cpo['이번달_전환_문의수'] === 'number') ? cpo['이번달_전환_문의수'] : null;
+    var joinCount = (cpo && typeof cpo['이번달_전환_가입수'] === 'number') ? cpo['이번달_전환_가입수'] : null;
+    var monthRate = (cpo && typeof cpo['이번달_전환율'] === 'number') ? cpo['이번달_전환율'] : null;
+    var cumRate = (cpo && typeof cpo['문의_가입_전환율'] === 'number') ? cpo['문의_가입_전환율'] : null;
+    var cumInq = (cpo && typeof cpo['전환_문의수'] === 'number') ? cpo['전환_문의수'] : null;
+    var cumJoin = (cpo && typeof cpo['전환_가입수'] === 'number') ? cpo['전환_가입수'] : null;
+
+    var chanCount = Object.keys(chanClicks).length;
+    var igRateStr = fmtPct897(igRate) || '—';
+    var monthRateStr = fmtPct897(monthRate) || '—';
+    var cumRateStr = fmtPct897(cumRate) || '—';
+
+    var html = '';
+    html += '<div class="fn897-grid">';
+    html +=   '<div class="fn897-node click"><div class="fn897-lab">관심 · 클릭</div><div class="fn897-big">' + (totalClicks != null ? totalClicks : '—') + '</div><div class="fn897-foot">' + (chanCount || '?') + '개 채널 합산 · 이번 달 누적</div></div>';
+    html +=   '<div class="fn897-seg"><div class="fn897-connector"></div><div class="fn897-arrow">→</div><div class="fn897-rate v">' + igRateStr + '</div><div class="fn897-cap">클릭→문의<br>(인스타만 측정)</div></div>';
+    html +=   '<div class="fn897-node inq"><div class="fn897-lab">연락 · 문의</div><div class="fn897-big">' + (inqCount != null ? inqCount : '—') + '</div><div class="fn897-foot">회사 전체 · 이번 달</div></div>';
+    html +=   '<div class="fn897-seg"><div class="fn897-connector"></div><div class="fn897-arrow">→</div><div class="fn897-rate e">' + monthRateStr + '</div><div class="fn897-cap">문의→가입<br>(회사 전체)</div></div>';
+    html +=   '<div class="fn897-node join"><div class="fn897-lab">등록 · 가입</div><div class="fn897-big">' + (joinCount != null ? joinCount : '—') + '</div><div class="fn897-foot">이번 달' + (cumRate != null ? ' · 누적 ' + cumRateStr : '') + '</div></div>';
+    html += '</div>';
+
+    html += '<div class="fn897-scope"><span class="fn897-ic">⚖️</span><p>이 보드는 두 마디를 <b>하나의 연속 %로 곱하지 않습니다.</b> 왼쪽(클릭→문의)은 <b>채널별</b> 지표이고 인스타그램만 UTM 추적이 되며, 오른쪽(문의→가입)은 <b>회사 전체</b> 스코프(멤버십+강습+렌트+비즈)입니다. 스코프가 다른 값을 정직하게 나란히 둡니다 — 억지로 이어 붙이면 거짓 숫자가 됩니다.</p></div>';
+
+    html += '<div class="fn897-cols">';
+    html +=   '<div class="fn897-card"><h3><span class="fn897-dot v"></span> 관심 → 연락 · 채널별 클릭→문의</h3><div class="fn897-scopetag">시모 #676 · 채널별 스코프 · 측정가능 채널만 % 표기</div><div class="fn897-chan">';
+    var order897 = ['instagram','naver_blog','naver_cafe','danggn','직접/홈'].concat(Object.keys(chanClicks));
+    var seen897 = {};
+    order897.forEach(function(key){
+      if(seen897[key] || !(key in chanClicks)) return;
+      seen897[key] = true;
+      var label = CHAN_LABEL897[key] || key;
+      var clicks = chanClicks[key];
+      var isMeasurable = (key === 'instagram') && igRate != null;
+      if(isMeasurable){
+        html += '<div class="fn897-row"><span class="fn897-name">' + esc(label) + '</span><div class="fn897-track"><div class="fn897-fill meas"></div></div><span class="fn897-val"><span class="fn897-valnum ok">' + igRateStr + '</span><span class="fn897-chip ok">측정</span></span></div>';
+      } else {
+        var cval = (clicks != null ? clicks : '—') + '클릭';
+        html += '<div class="fn897-row"><span class="fn897-name">' + esc(label) + '</span><div class="fn897-track"><div class="fn897-fill untr"></div></div><span class="fn897-val"><span class="fn897-valnum no">' + esc(cval) + '</span><span class="fn897-chip no">추적밖</span></span></div>';
+      }
+    });
+    html +=   '</div></div>';
+
+    html +=   '<div class="fn897-card"><h3><span class="fn897-dot e"></span> 연락 → 등록 · 문의→가입</h3><div class="fn897-scopetag">시포 #849 · 회사 전체 스코프(멤버십+강습+렌트+비즈)</div><div class="fn897-joins">';
+    html +=     '<div class="fn897-stat"><div class="fn897-k">이번 달</div><div class="fn897-v">' + monthRateStr + '</div><div class="fn897-d">' + (inqCount != null ? '문의 ' + inqCount + '건' : '문의 집계중') + ' → ' + (joinCount != null ? '가입 ' + joinCount + '건' : '가입 집계중') + '</div></div>';
+    html +=     '<div class="fn897-stat cum"><div class="fn897-k">생애 누적</div><div class="fn897-v">' + cumRateStr + '</div><div class="fn897-d">' + (cumInq != null ? '문의 ' + cumInq.toLocaleString() + '건' : '집계중') + ' → ' + (cumJoin != null ? '가입 ' + cumJoin.toLocaleString() + '건' : '집계중') + '</div></div>';
+    html +=   '</div>';
+    if(monthRate != null && cumRate != null){
+      html += '<div class="fn897-scope" style="margin-top:12px"><span class="fn897-ic">💡</span><p>당월 ' + monthRateStr + (monthRate < cumRate ? '는 누적 ' + cumRateStr + '보다 낮습니다 — 이번 달 문의가 아직 상담·등록 여정 중이라 <b>진행 중 스냅샷</b>입니다(월말로 갈수록 상승).' : '은 누적 ' + cumRateStr + ' 대비 참고치입니다.') + ' 문의회원 페이지의 \'멤버십 단독\' 카드와는 <b>스코프가 다른 별개 지표</b>입니다.</p></div>';
+    }
+    html += '</div>';
+
+    html += '<div class="fn897-foot-note"><span><b>데이터 출처</b> · kpi_values.json (cmo·cpo 블록)' + (genKst ? ' · ' + esc(genKst) + ' 라이브' : '') + '</span><span><b>정직 원칙</b> · 약속 L05 (안 잰 건 지어내지 않기)</span></div>';
+
+    el.innerHTML = html;
+  }
+
   // 🏷️ 정직 상태 배지(3종 단일 판정 · A3 인쇄 카드용 · 2026-07-04) — 신규 fetch 없음, 기존 _reachData만 사용.
   //   ✅measured = reach 실측(mode=measured & reach_pct 숫자) · 🔖draft = 마일스톤/제안본(mode=milestone, role.draft 있으면 우선) ·
   //   🔧unmeasured = 그 외(reach null·미설정). 가짜 숫자 금지(약속 L05) — 판정 자체가 정직 표기 그대로.
@@ -1088,6 +1253,7 @@
       renderMatrix();
       renderVisionDynamic(canonMap);
       renderModuleStrip(_moduleRegistry);
+      renderFunnel897(_kpiValues, (arr[2] && arr[2].generated_at_kst) || null);
       renderEditBtn();
       initColResizers();
       buildControlBar();
