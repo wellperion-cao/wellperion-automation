@@ -1730,10 +1730,17 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
     if html_link:
         # 12시 — 점검 보고형: 시설부=이벤트 중심(회차·이상 유무·이상 내용·작업사항, GM 2026-07-13 % 제거),
         #   지원부=완료율. 시토 918 기준이탈 상세는 '이상 내용'으로 보존, 순수 입력률% 블록은 제거.
-        lines = [
-            f"🔧 시설부  {_facility_cell()}",
-            f"📋 지원부  {_support_cell()}",
-        ]
+        # 지원부 = 오전·저녁 회차 분리(12시엔 오전만 완료가 정상 · 저녁은 아직 0, GM 2026-07-13)
+        sl = support_live or {}
+        amT, amD = sl.get("amTotal", 0), sl.get("am", 0)
+        evT = sl.get("pmTotal", 0) + sl.get("closeTotal", 0) + sl.get("nightTotal", 0)
+        evD = sl.get("pm", 0) + sl.get("close", 0) + sl.get("night", 0)
+        lines = [f"🔧 시설부  {_facility_cell()}"]
+        if sl.get("total"):
+            lines.append(f"📋 지원부 오전  {amD}/{amT}" + (f" ({round(amD / amT * 100)}%)" if amT else ""))
+            lines.append(f"🌙 지원부 저녁  {evD}/{evT}" + (f" ({round(evD / evT * 100)}%)" if evT else " (예정)"))
+        else:
+            lines.append(f"📋 지원부  {_support_cell()}")
         if mrate:
             lines.append(mrate)
         status = "\n".join(lines)
@@ -1783,8 +1790,11 @@ def _build_12_body() -> str:
     이 메시지 전용으로 <i> 태그 버전을 사용한다."""
     checklist_block = _build_checklist_block("12:00", html_link=True)
 
+    # 제목 = 'MM-DD(요일) 오전 점검 현황보고' (GM 2026-07-13: '12시·회사' 표기 제거)
+    now = datetime.now()
+    hdr = f"🕛 {now.strftime('%m-%d')}({_WEEKDAY_KOR[now.weekday()]}) 오전 점검 현황보고\n{_DIVIDER}"
     return (
-        f"{_unified_header('12', '회사', '오전 점검 현황')}\n"
+        f"{hdr}\n"
         f"{checklist_block}\n\n"
         f"<i>본 메시지는 자동 발송입니다.</i>"
     )
