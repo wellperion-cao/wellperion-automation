@@ -71,6 +71,7 @@ except Exception:
 # -----------------------------------------------------------------
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 PERSISTENT_PROFILE_DIR = ROOT / "profiles" / "naver-blog"  # 실제 저장된 블로그 로그인 세션
+COOKIE_STATE_PATH = ROOT / "profiles" / "naver-blog_state.json"  # storage_state(쿠키·localStorage) — 프로필 손상 회피용
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 
 NAVER_LOGIN_URL = "https://nid.naver.com/nidlogin.login"
@@ -420,16 +421,54 @@ def _import_playwright():
         sys.exit(10)
 
 
-async def _launch_context(async_playwright):
+async def _launch_persistent_with_heal(p, *, headless, args=None, no_viewport=True):
+    """영속 프로필 launch_persistent_context — 손상(런치 실패) 시 프로필 백업 후 새 프로필로 1회 재시도(자가치유 §3)."""
+    kwargs = dict(user_data_dir=str(PERSISTENT_PROFILE_DIR), headless=headless, no_viewport=no_viewport)
+    if args:
+        kwargs["args"] = args
     PERSISTENT_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        return await p.chromium.launch_persistent_context(**kwargs)
+    except Exception as e:
+        # 손상 감지 → 프로필 백업 이동 후 새 프로필로 1회 재시도
+        print(f"[SELF-HEAL] 영속 프로필 런치 실패({type(e).__name__}) — 손상 의심, 프로필 백업 후 재시도.")
+        if PERSISTENT_PROFILE_DIR.exists():
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup = PERSISTENT_PROFILE_DIR.parent / f"{PERSISTENT_PROFILE_DIR.name}_corrupt_{stamp}"
+            try:
+                PERSISTENT_PROFILE_DIR.rename(backup)
+                print(f"[SELF-HEAL] 손상 프로필 백업 이동 → {backup.name}")
+            except Exception as re:
+                print(f"[SELF-HEAL] 백업 이동 실패({type(re).__name__}: {re}) — 재시도 불가.")
+                raise
+        PERSISTENT_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+        return await p.chromium.launch_persistent_context(**kwargs)
+
+
+async def _launch_context(async_playwright):
     p = await async_playwright().start()
-    context = await p.chromium.launch_persistent_context(
-        user_data_dir=str(PERSISTENT_PROFILE_DIR),
-        headless=False,
-        args=["--start-maximized"],
-        no_viewport=True,
-    )
+    if COOKIE_STATE_PATH.exists():
+        # 쿠키 인증 모드 — 영속 프로필 손상 회피(fresh context)
+        browser = await p.chromium.launch(headless=False, args=["--start-maximized"])
+        context = await browser.new_context(storage_state=str(COOKIE_STATE_PATH), no_viewport=True)
+        print(f"[INFO] 쿠키 인증 모드 — storage_state 주입 ({COOKIE_STATE_PATH.name})")
+        return p, context
+    # 폴백: 기존 영속 프로필 (state 미생성 시 — 무회귀)
+    context = await _launch_persistent_with_heal(p, headless=False, args=["--start-maximized"], no_viewport=True)
+    print("[INFO] 영속 프로필 모드 (쿠키 state 미생성 — migrate-cookies/setup으로 생성 권장)")
     return p, context
+
+
+async def _save_cookie_state(context) -> bool:
+    """현재 context의 storage_state(쿠키·localStorage)를 COOKIE_STATE_PATH에 저장. best-effort."""
+    try:
+        COOKIE_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        await context.storage_state(path=str(COOKIE_STATE_PATH))
+        print(f"[INFO] 쿠키 state 저장 완료 → {COOKIE_STATE_PATH.name} (다음 실행부터 쿠키 인증)")
+        return True
+    except Exception as e:
+        print(f"[WARN] 쿠키 state 저장 실패: {type(e).__name__}: {e}")
+        return False
 
 
 async def _install_popup_killer(page) -> None:
@@ -516,12 +555,51 @@ async def run_setup() -> int:
     if has_session:
         await asyncio.sleep(2)  # 쿠키가 디스크 프로필에 안착할 여유
         print("[INFO] 네이버 세션 쿠키 확인 — 저장 완료 (값 비공개: ****)")
+        await _save_cookie_state(context)
     else:
         print("[WARN] 5분 내 NID_AUT/NID_SES 쿠키 미감지 — 로그인 미완료. 다시 실행하세요.")
     await context.close()
     await p.stop()
     print("[INFO] === SETUP 완료 ===")
     return 0
+
+
+# -----------------------------------------------------------------
+# migrate-cookies — 기존 건강한 영속 프로필 → storage_state 1회 추출 (재로그인 불필요)
+# 반드시 영속 프로필로 직접 런치(_launch_context 미사용 — COOKIE_STATE_PATH 존재 여부 무관하게
+# launch_persistent_context 강제). headless=True로 창 없이 추출.
+# -----------------------------------------------------------------
+async def run_migrate_cookies(args: "argparse.Namespace | None" = None) -> int:
+    import asyncio
+    async_playwright = _import_playwright()
+    print("[INFO] === 네이버 블로그 쿠키 마이그레이션 (영속 프로필 → storage_state) ===")
+    if not PERSISTENT_PROFILE_DIR.exists():
+        print("[ERROR] 영속 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+
+    p = await async_playwright().start()
+    context = await _launch_persistent_with_heal(p, headless=True, args=["--start-maximized"], no_viewport=True)
+    try:
+        page = context.pages[0] if context.pages else await context.new_page()
+        write_url = BLOG_WRITE_URL_TEMPLATE.format(blog_id=DEFAULT_BLOG_ID)
+        print(f"[INFO] 세션 확인 접속: {write_url}")
+        await page.goto(write_url, wait_until="domcontentloaded", timeout=30_000)
+        await asyncio.sleep(3)
+        url = page.url
+        logged_in = not is_login_required(url)
+        print(f"[INFO] 최종 URL: {url}")
+        print(f"[INFO] 세션 유효: {logged_in}")
+
+        if not logged_in:
+            print("[ERROR] 프로필 세션 만료 — setup 재실행 필요.")
+            return 4
+
+        await _save_cookie_state(context)
+        print("[INFO] === 쿠키 마이그레이션 완료 — 다음 실행부터 쿠키 인증 모드 ===")
+        return 0
+    finally:
+        await context.close()
+        await p.stop()
 
 
 # -----------------------------------------------------------------
@@ -1522,13 +1600,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["setup", "dryrun", "draft", "publish"],
+        choices=["setup", "dryrun", "draft", "publish", "migrate-cookies"],
         default="dryrun",
         help=(
             "setup: GM 수동 로그인 세션 저장 / "
             "dryrun: 브라우저 없이 본문 조립·이미지·셀렉터·가드 점검 (기본) / "
             "draft: 임시저장까지 / "
-            "publish: 실 발행 (--i-am-sure 또는 WELLPERION_PUBLISH_GO=1 필요)"
+            "publish: 실 발행 (--i-am-sure 또는 WELLPERION_PUBLISH_GO=1 필요) / "
+            "migrate-cookies: 기존 영속 프로필 → storage_state 1회 추출(재로그인 불필요)"
         ),
     )
     parser.add_argument("--title", default=None, help="글 제목")
@@ -1564,6 +1643,8 @@ def main() -> int:
         return asyncio.run(run_draft(args))
     if args.mode == "publish":
         return asyncio.run(run_publish(args))
+    if args.mode == "migrate-cookies":
+        return asyncio.run(run_migrate_cookies(args))
     return 1
 
 
