@@ -1,0 +1,15 @@
+@echo off
+REM Wellperion Auto Runner (welly_auto_runner) - scheduled headless claude runner MVP.
+REM Called by launchers\welly_auto_runner_hidden.vbs (hidden window).
+REM bae237 phase3 (GM go 2026-07-13): selects 1 reversible/low-risk CTO ship from
+REM status\_queue.json and (when RUNNER_LIVE=1) hands it to a headless claude session.
+REM
+REM DEFAULT = DRY-RUN (RUNNER_LIVE unset). Ship selection + prompt preview + log only.
+REM No claude call, no commit, no _queue.json change while RUNNER_LIVE stays off.
+REM
+REM Rollback (1-stage): keep the line below commented out to stay dry-run.
+REM Live activation (GM go only): uncomment "set RUNNER_LIVE=1".
+cd /d C:\Users\jjky0\welperion-automation
+set PYTHONIOENCODING=utf-8
+REM set RUNNER_LIVE=1
+C:\Python314\python.exe -u scripts\welly_auto_runner.py --clevel cto >> logs\welly_auto_runner.log 2>&1

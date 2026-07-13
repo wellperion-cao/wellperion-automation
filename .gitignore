@@ -71,6 +71,9 @@ logs/telegram_sent-*.log
 !scripts/monthly_check_report.bat
 # 예외: 카톡 매출보고 9:30 무인 발송 런너 = SSOT 자산 (2026-07-07 AI CTO, 배488)
 !scripts/kakao_auto_daily_report.bat
+# 예외: 예약 Claude 러너 MVP 런처·등록기 = SSOT 자산 (2026-07-13 AI CTO, 배237 phase3, 기본 dry-run)
+!scripts/welly_auto_runner.bat
+!ops/register_welly_auto_runner.bat
 profiles/*
 # 예외: Bing 그림 생성 프로필 폴더 구조만 추적 (.gitkeep) — 세션 쿠키는 아래 규칙으로 계속 제외
 !profiles/bing/
