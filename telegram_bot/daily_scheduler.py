@@ -1710,20 +1710,37 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
     mrate = _support_monthly_rate()
 
     if html_link:
-        # 12시 — 고도화/단순화: 헤더가 이미 '오전 점검 현황'이라 부제·장식줄 제거.
-        #   지표 체계를 라벨로 구분(지원부=완료율 / 시설부=입력률). 기준이탈은 '무엇이 왜'까지 상세 노출.
+        # 12시 — 점검 보고형(GM 2026-07-13): 점검 횟수(오늘 회차) + 시설 체계별 입력률 + 기준이탈 상세.
+        #   헤더가 이미 '오전 점검 현황'이라 부제·장식줄 제거. 지원부=완료율 / 시설부=입력률 라벨 구분.
+        sess = (facility_today or {}).get("sessionCount", 0)
+        sess_txt = f"오늘 {sess}회차 · " if sess else ""
         lines = [
-            f"📋 지원부 완료  {_support_cell()}",
-            f"🔧 시설부 입력  {_facility_pct()}",
+            f"🔧 시설부  {sess_txt}입력 {_facility_pct()}",
+            f"📋 지원부  {_support_cell()}",
         ]
         if mrate:
             lines.append(mrate)
         status = "\n".join(lines)
+
+        # 시설 체계(구역)별 입력률 — byCategory 코드순, 3개씩 2줄 압축(저조 구역이 한눈에)
+        def _cat_short(c: dict) -> str:
+            toks = str(c.get("cat", "")).split()
+            lbl = " ".join(toks[:2]) if len(toks) >= 2 else (toks[0] if toks else "")
+            return lbl.split("(")[0].strip()
+        cats = sorted((monthly or {}).get("byCategory") or [], key=lambda c: str(c.get("cat", "")))
+        cat_block = ""
+        if cats:
+            cells = [f"{_cat_short(c)} {c.get('pct', 0)}%" for c in cats]
+            rows = [" · ".join(cells[i:i + 3]) for i in range(0, len(cells), 3)]
+            cat_block = "🏢 시설 체계별 입력률\n " + "\n ".join(rows)
+
         if ooc_cnt:
             issue = _build_facility_ooc_detail(monthly, today)  # "⚠️ 시설부 기준이탈 N건\n  · 항목: 값 (기준 lo~hi)"
         else:
             issue = "✅ 기준이탈 없음 — 시설 측정 전 항목 정상"
-        body_safe = html.escape(f"{status}\n\n{issue}", quote=False)
+
+        parts = [status] + ([cat_block] if cat_block else []) + [issue]
+        body_safe = html.escape("\n\n".join(parts), quote=False)
         link_line = (
             f'🔗 대시보드 — <a href="{support_dash}">지원부</a> · '
             f'<a href="{facility_dash}">시설부</a>'
