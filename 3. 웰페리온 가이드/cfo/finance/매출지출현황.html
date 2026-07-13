@@ -157,6 +157,12 @@ tr:nth-child(even) td{background:transparent}
 .req-flow .nm{font-weight:800;font-size:13.5px;color:#0F1E3D}
 .req-flow .ds{font-size:11px;color:#98A0B3;margin-top:2px}
 @media (max-width:760px){.req-flow{flex-wrap:wrap}.req-flow .st{flex:1 1 46%}}
+/* 정산탭 컴팩트 — 11컬럼 가로 스크롤 제거(2026-07-13). id+class로 theme2026 셀패딩 override */
+#reqTbl.set-compact{min-width:0}
+#reqTbl.set-compact th,#reqTbl.set-compact td{padding:8px 7px}
+#reqTbl.set-compact .req-item{min-width:0;max-width:230px}
+#reqTbl.set-compact .req-purpose{max-width:230px}
+#reqTbl.set-compact .thumb2{display:block;height:76px;max-width:108px;margin:2px 0} /* 영수증 2장 세로로 쌓아 폭↓(크기는 유지) */
 </style></head><body>
 
 <div id="gate"><div class="gate-card">
@@ -943,6 +949,7 @@ function renderReqTbl(){
   }
   var stc={"품의":"wait","검토":"rev","정산":"set","완료":"ok","승인":"wait","미승인":"no","캔슬":"no","반려":"no"};
   var tc=(reqFilter==="정산")?"thumb2":"thumb"; // 정산 탭에서 사진 2배
+  document.getElementById("reqTbl").className=(reqFilter==="정산")?"set-compact":""; // 정산탭만 컴팩트(가로 스크롤 제거)
   var h='<thead><tr><th style="text-align:center">#</th><th>제출일</th><th>구매날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var st=r.상태||"품의",act="";
