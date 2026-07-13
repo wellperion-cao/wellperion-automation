@@ -770,5 +770,19 @@
     "artifact": "예약 러너가 origin=bridge·NEXT-* task_id·priority 없음인 '다음 참고용'\n포인터 배를 구체 작업으로 오인해 뽑는 결함을 수리. select_one_low_risk_ship에\n_is_concrete_ship 게이트를 얹어 사람이 등록한 구체 가역 배만 자율 대상으로\n남긴다. 테스트 4건 추가(bridge/NEXT-/무우선순위 제외 + 정상 배 유지 확인,\n실관측 사례 NEXT-20260707-155721 동형 케이스 포함). (CLI ad-hoc · 커밋 8826ebdb)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8826ebdbb3b3bd7b400cc59e890869210259cb5f"
+  },
+  {
+    "task_id": "CTO-2026-07-13-ADHOC-bb8def6b",
+    "clevel": "cto",
+    "title": "[시토] ★운영부 아침요약 파이프라인 — 내보내기·오케스트레이터·텔레그램 승인 콜백",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 924,
+    "artifact": "- scripts/ops_export_kakao.py: 무인 대화 내보내기(동적rect 메뉴→Enter저장→아카이브 이동, 라이브 검증)\n- scripts/ops_morning_pipeline.py: 08시 오케스트레이터(내보내기→요약→GM 승인카드). 방 전송은 GM 버튼 게이트\n- telegram_bot/bot.py: opsdig: 콜백(발송/수정/보류) 추가 — 기존 핸들러 무손상(추가만). 봇 재기동 시 발효\n개인정보: 대화 원문·요약·대기파일 전부 gitignore 아카이브에만 (CLI ad-hoc · 커밋 bb8def6b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "bb8def6b14dcba41b7016d06e82554d562a5495c"
   }
 ]
