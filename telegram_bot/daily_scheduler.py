@@ -1707,17 +1707,7 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
         dn = support_live.get("done", 0)
         return f"{dn}/{t}({round(dn / t * 100)}%)"
 
-    def _facility_pct() -> str:
-        if facility_today is None:
-            return "-"
-        f_total = facility_today.get("total", 0)
-        if not f_total:
-            return "미가동"
-        f_done = facility_today.get("done", 0)
-        f_pct = facility_today.get("pct", round(f_done / f_total * 100))
-        return f"{f_done}/{f_total}({f_pct}%)"
-
-    def _facility_cell() -> str:  # 23시 폴백 박스표용 — 이벤트 중심(회차·이상 유무, GM 2026-07-13)
+    def _facility_cell() -> str:  # 12시·23시 공용 — 이벤트 중심(회차·이상 유무, GM 2026-07-13)
         if facility_today is None:
             return "-"
         f_total = facility_today.get("total", 0)
@@ -1731,36 +1721,27 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
     mrate = _support_monthly_rate()
 
     if html_link:
-        # 12시 — 점검 보고형(GM 2026-07-13): 점검 횟수(오늘 회차) + 시설 체계별 입력률 + 기준이탈 상세.
-        #   헤더가 이미 '오전 점검 현황'이라 부제·장식줄 제거. 지원부=완료율 / 시설부=입력률 라벨 구분.
-        sess = (facility_today or {}).get("sessionCount", 0)
-        sess_txt = f"오늘 {sess}회차 · " if sess else ""
+        # 12시 — 점검 보고형: 시설부=이벤트 중심(회차·이상 유무·이상 내용·작업사항, GM 2026-07-13 % 제거),
+        #   지원부=완료율. 시토 918 기준이탈 상세는 '이상 내용'으로 보존, 순수 입력률% 블록은 제거.
         lines = [
-            f"🔧 시설부  {sess_txt}입력 {_facility_pct()}",
+            f"🔧 시설부  {_facility_cell()}",
             f"📋 지원부  {_support_cell()}",
         ]
         if mrate:
             lines.append(mrate)
         status = "\n".join(lines)
 
-        # 시설 체계(구역)별 입력률 — byCategory 코드순, 3개씩 2줄 압축(저조 구역이 한눈에)
-        def _cat_short(c: dict) -> str:
-            toks = str(c.get("cat", "")).split()
-            lbl = " ".join(toks[:2]) if len(toks) >= 2 else (toks[0] if toks else "")
-            return lbl.split("(")[0].strip()
-        cats = sorted((monthly or {}).get("byCategory") or [], key=lambda c: str(c.get("cat", "")))
-        cat_block = ""
-        if cats:
-            cells = [f"{_cat_short(c)} {c.get('pct', 0)}%" for c in cats]
-            rows = [" · ".join(cells[i:i + 3]) for i in range(0, len(cells), 3)]
-            cat_block = "🏢 시설 체계별 입력률\n " + "\n ".join(rows)
-
+        # 이상 내용(기준이탈 상세) — 시토 918 유용분 보존(GM '어떤 문제였는지')
         if ooc_cnt:
             issue = _build_facility_ooc_detail(monthly, today)  # "⚠️ 시설부 기준이탈 N건\n  · 항목: 값 (기준 lo~hi)"
         else:
-            issue = "✅ 기준이탈 없음 — 시설 측정 전 항목 정상"
+            issue = "✅ 이상 없음 — 시설 측정 전 항목 정상"
 
-        parts = [status] + ([cat_block] if cat_block else []) + [issue]
+        # 작업사항 원문(이상 내용·해결) — GM 승인 포맷 A
+        fac_work = _fetch_facility_work(today) if facility_today is not None else None
+        work_block = f"─ 시설부 작업사항 ─\n{fac_work}" if fac_work else ""
+
+        parts = [status, issue] + ([work_block] if work_block else [])
         body_safe = html.escape("\n\n".join(parts), quote=False)
         link_line = (
             f'🔗 대시보드 — <a href="{support_dash}">지원부</a> · '
