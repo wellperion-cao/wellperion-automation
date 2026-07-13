@@ -60,6 +60,7 @@ except Exception:
 # -----------------------------------------------------------------
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 PERSISTENT_PROFILE_DIR = ROOT / "profiles" / "danggn"  # 당근 비즈 로그인 세션
+COOKIE_STATE_PATH = ROOT / "profiles" / "danggn_state.json"  # storage_state(쿠키·localStorage) — 프로필 손상 회피용
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 
 # 당근 비즈프로필 관리 홈 (GM 제공 2026-06-03). 미로그인 시 로그인 페이지로 이동한다.
@@ -488,15 +489,35 @@ def _import_playwright():
 
 
 async def _launch_context(async_playwright):
-    PERSISTENT_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
     p = await async_playwright().start()
+    if COOKIE_STATE_PATH.exists():
+        # 쿠키 인증 모드 — 영속 프로필 손상 회피(fresh context)
+        browser = await p.chromium.launch(headless=False, args=["--start-maximized"])
+        context = await browser.new_context(storage_state=str(COOKIE_STATE_PATH), no_viewport=True)
+        print(f"[INFO] 쿠키 인증 모드 — storage_state 주입 ({COOKIE_STATE_PATH.name})")
+        return p, context
+    # 폴백: 기존 영속 프로필 (state 미생성 시 — 무회귀)
+    PERSISTENT_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
     context = await p.chromium.launch_persistent_context(
         user_data_dir=str(PERSISTENT_PROFILE_DIR),
         headless=False,
         args=["--start-maximized"],
         no_viewport=True,
     )
+    print("[INFO] 영속 프로필 모드 (쿠키 state 미생성 — migrate-cookies/setup으로 생성 권장)")
     return p, context
+
+
+async def _save_cookie_state(context) -> bool:
+    """현재 context의 storage_state(쿠키·localStorage)를 COOKIE_STATE_PATH에 저장. best-effort."""
+    try:
+        COOKIE_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        await context.storage_state(path=str(COOKIE_STATE_PATH))
+        print(f"[INFO] 쿠키 state 저장 완료 → {COOKIE_STATE_PATH.name} (다음 실행부터 쿠키 인증)")
+        return True
+    except Exception as e:
+        print(f"[WARN] 쿠키 state 저장 실패: {type(e).__name__}: {e}")
+        return False
 
 
 # -----------------------------------------------------------------
@@ -616,6 +637,7 @@ async def run_setup(args: "argparse.Namespace | None" = None) -> int:
             _dump_cookie_names(await context.cookies())
         except Exception:
             pass
+        await _save_cookie_state(context)
 
         # --then-publish: 로그인 직후 발행(게시)까지 (GM go 가드 필요 — 공개 발행)
         then_publish = getattr(args, "then_publish", False)
@@ -684,6 +706,8 @@ async def run_check() -> int:
     print(f"[INFO] 인증 쿠키 후보 {len(auth_names)}종 / 로그인 유지: {logged_in}")
     print("[INFO] --- 보유 쿠키 진단 (이름·도메인만) ---")
     _dump_cookie_names(cookies)
+    if logged_in:
+        await _save_cookie_state(context)  # 헬스체크마다 쿠키 갱신 → 세션 연장
     await context.close()
     await p.stop()
     if logged_in:
@@ -691,6 +715,51 @@ async def run_check() -> int:
     else:
         print("[WARN] ❌ 세션 미유지 — 당근은 영속 세션 불가 → 수동(B안) 확정.")
     return 0 if logged_in else 2
+
+
+# -----------------------------------------------------------------
+# migrate-cookies — 기존 건강한 영속 프로필 → storage_state 1회 추출 (QR 재스캔 불필요)
+# 반드시 영속 프로필로 직접 런치(_launch_context 미사용 — COOKIE_STATE_PATH 존재 여부 무관하게
+# launch_persistent_context 강제). headless=True로 창 없이 추출.
+# -----------------------------------------------------------------
+async def run_migrate_cookies(args: "argparse.Namespace | None" = None) -> int:
+    import asyncio
+    async_playwright = _import_playwright()
+    print("[INFO] === 당근 비즈 쿠키 마이그레이션 (영속 프로필 → storage_state) ===")
+    if not PERSISTENT_PROFILE_DIR.exists():
+        print("[ERROR] 영속 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+
+    p = await async_playwright().start()
+    context = await p.chromium.launch_persistent_context(
+        user_data_dir=str(PERSISTENT_PROFILE_DIR),
+        headless=True,
+        no_viewport=True,
+    )
+    try:
+        page = context.pages[0] if context.pages else await context.new_page()
+        print(f"[INFO] 비즈 홈 접속: {DANGGN_BIZ_URL}")
+        await page.goto(DANGGN_BIZ_URL, wait_until="domcontentloaded", timeout=30_000)
+        await asyncio.sleep(3)
+        url = page.url
+        cookies = await context.cookies()
+        auth_names = _auth_cookies(cookies)
+        logged_in = is_session_landed(url) and bool(auth_names)
+        print(f"[INFO] 최종 URL: {url}")
+        print(f"[INFO] 인증 쿠키 후보 {len(auth_names)}종 / 세션 유효: {logged_in}")
+        print("[INFO] --- 보유 쿠키 진단 (이름·도메인만) ---")
+        _dump_cookie_names(cookies)
+
+        if not logged_in:
+            print("[ERROR] 프로필 세션 만료 — setup(QR) 필요.")
+            return 4
+
+        await _save_cookie_state(context)
+        print("[INFO] === 쿠키 마이그레이션 완료 — 다음 실행부터 쿠키 인증 모드 ===")
+        return 0
+    finally:
+        await context.close()
+        await p.stop()
 
 
 # -----------------------------------------------------------------
@@ -1547,14 +1616,15 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["setup", "check", "dryrun", "draft", "publish", "engagement"],
+        choices=["setup", "check", "dryrun", "draft", "publish", "engagement", "migrate-cookies"],
         default="dryrun",
         help=(
             "setup: GM 수동 로그인 세션 저장 / "
             "check: 저장 세션 유지 여부 검증(읽기 전용) / "
             "dryrun: 브라우저 없이 본문·이미지·경로·가드 점검 (기본) / "
             "draft: 글쓰기+이미지+임시저장 / "
-            "publish: 실 발행(다음→게시) (--i-am-sure 또는 WELLPERION_PUBLISH_GO=1 필요)"
+            "publish: 실 발행(다음→게시) (--i-am-sure 또는 WELLPERION_PUBLISH_GO=1 필요) / "
+            "migrate-cookies: 기존 영속 프로필 → storage_state 1회 추출(QR 재스캔 불필요)"
         ),
     )
     parser.add_argument("--content-dir", dest="content_dir", default=None,
@@ -1608,6 +1678,8 @@ def main() -> int:
         return asyncio.run(run_publish(args))
     if args.mode == "engagement":
         return asyncio.run(run_engagement(args))
+    if args.mode == "migrate-cookies":
+        return asyncio.run(run_migrate_cookies(args))
     return 1
 
 
