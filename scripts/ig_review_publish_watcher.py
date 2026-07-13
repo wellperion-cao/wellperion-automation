@@ -13,12 +13,14 @@
   반복:                         python scripts\\ig_review_publish_watcher.py --interval 300
   발행 없이 로직만(테스트):      python scripts\\ig_review_publish_watcher.py --once --dry-run
 
-채널 분기 정책:
-  블로그 → naver_blog_upload_playwright.py --mode draft (임시저장, exit 0 = 완료)
-  카페   → cafe_upload_playwright.py --mode draft (임시저장, exit 0 = 완료)
-  ※ GM 정책(2026-06-05): 승인=임시저장까지만, 최종 게시는 GM 수동(시모 임시저장→GM 게시).
-  카카오·당근 → 자동발행 안 함, 텔레그램 수동 업로드 알림 + status='수동발행대기'
-  나머지(인스타 등) → instagram_upload_playwright.py --mode publish (기존 경로 유지)
+채널 분기 정책(GM 승인 2026-07-13 — 전채널 자동 공개발행):
+  블로그 → naver_blog_upload_playwright.py --mode publish (공개발행, exit 0 = 완료)
+  카페   → cafe_upload_playwright.py --mode publish (공개발행, exit 0 = 완료)
+  당근   → danggn_upload_playwright.py --mode publish (공개발행, 세션 만료 시 수동 폴백)
+  카카오 → kakao_channel_upload_playwright.py --mode publish (공개발행)
+  나머지(인스타 등) → instagram_upload_playwright.py --mode publish
+  ※ 안전망: 각 발행 스크립트가 사전점검(§1)+무결성 게이트(§2)로 깨진 글은 발행 안 함(초안 유지).
+  ※ 구 정책(2026-06-05 블로그·카페 임시저장→GM 수동)은 요새화 안전망 라이브로 폐기.
 """
 from __future__ import annotations
 
@@ -48,7 +50,7 @@ QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.js
 PUBLISH_SCRIPT = ROOT / "scripts" / "instagram_upload_playwright.py"
 BLOG_SCRIPT = ROOT / "scripts" / "naver_blog_upload_playwright.py"   # 블로그 발행 스크립트
 CAFE_SCRIPT = ROOT / "scripts" / "cafe_upload_playwright.py"          # 카페 발행 스크립트
-DANGGN_SCRIPT = ROOT / "scripts" / "danggn_upload_playwright.py"      # 당근 반자동(자동입력+임시저장)
+DANGGN_SCRIPT = ROOT / "scripts" / "danggn_upload_playwright.py"      # 당근 자동 공개발행(자동입력+이미지+게시)
 KAKAO_SCRIPT = ROOT / "scripts" / "kakao_channel_upload_playwright.py"  # 카카오 채널(자동입력, publish 실구현)
 PY = ROOT / ".venv" / "Scripts" / "python.exe"
 NOTIFIED_FILE = ROOT / "scripts" / ".review_notified.json"  # 검수대기 알림 발송 이력
@@ -307,7 +309,7 @@ def publish_blog(it: dict) -> tuple[bool, str | None]:
     """
     cmd = [
         str(PY), str(BLOG_SCRIPT),
-        "--mode", "draft",
+        "--mode", "publish",
         "--title", it["title"],
         "--body-file", str(ROOT / it["body_file"]),
         "--image-dir", str(ROOT / it["image_dir"]),
@@ -336,7 +338,7 @@ def publish_cafe(it: dict) -> tuple[bool, str | None]:
     """
     cmd = [
         str(PY), str(CAFE_SCRIPT),
-        "--mode", "draft",
+        "--mode", "publish",
         "--title", it["title"],
         "--body-file", str(ROOT / it["body_file"]),
         "--image-dir", str(ROOT / it["image_dir"]),
@@ -436,34 +438,34 @@ def dispatch_publish(it: dict, events: list) -> None:
     ch = it.get("channel", "")
 
     if "블로그" in ch:
-        # 블로그 자동 임시저장 (GM 정책: 승인=임시저장, 최종 게시는 GM 수동)
+        # 블로그 자동 공개발행 (GM 승인 2026-07-13 — 전채널 자동발행 표준·요새화 안전망 라이브 후 활성)
         success, url = publish_blog(it)
         if success:
-            it["status"] = "임시저장"
+            it["status"] = "발행완료"
             if url:
                 it["post_url"] = url
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it.pop("note", None)
-            events.append(f"✅ {title} 블로그 임시저장 완료 — GM 최종 게시 대기")
+            events.append(f"✅ {title} 블로그 발행완료" + (f" — {url}" if url else " (URL 회수 불안정·본문 게시됨)"))
         else:
-            it["status"] = "임시저장실패"
-            it["note"] = "블로그 임시저장 스크립트 exit≠0"
-            events.append(f"⚠️ {title} 블로그 임시저장 실패 — exit code 비정상")
+            it["status"] = "발행실패"
+            it["note"] = "블로그 발행 스크립트 exit≠0(무결성 게이트 차단 가능 — 초안 유지)"
+            events.append(f"⚠️ {title} 블로그 발행 실패 — exit code 비정상")
 
     elif "카페" in ch:
-        # 카페 자동 임시저장 (GM 정책: 승인=임시저장, 최종 게시는 GM 수동)
+        # 카페 자동 공개발행 (GM 승인 2026-07-13 — 전채널 자동발행 표준·요새화 안전망 라이브 후 활성)
         success, url = publish_cafe(it)
         if success:
-            it["status"] = "임시저장"
+            it["status"] = "발행완료"
             if url:
                 it["post_url"] = url
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it.pop("note", None)
-            events.append(f"✅ {title} 카페 임시저장 완료 — GM 최종 게시 대기")
+            events.append(f"✅ {title} 카페 발행완료" + (f" — {url}" if url else " (URL 회수 불안정·본문 게시됨)"))
         else:
-            it["status"] = "임시저장실패"
-            it["note"] = "카페 임시저장 스크립트 exit≠0"
-            events.append(f"⚠️ {title} 카페 임시저장 실패 — exit code 비정상")
+            it["status"] = "발행실패"
+            it["note"] = "카페 발행 스크립트 exit≠0(무결성 게이트 차단 가능 — 초안 유지)"
+            events.append(f"⚠️ {title} 카페 발행 실패 — exit code 비정상")
 
     elif "당근" in ch:
         # 당근 실 발행 — 자동입력+이미지+게시(발레 2026-06-05 사진 7장 실증).
@@ -478,7 +480,7 @@ def dispatch_publish(it: dict, events: list) -> None:
             _notify_published(it.get("folder", ""))
         else:
             it["status"] = "수동발행대기"
-            it["note"] = f"당근 자동 임시저장 실패({reason}) — 수동 업로드 필요"
+            it["note"] = f"당근 자동 발행 실패({reason}) — 수동 업로드 필요"
             telegram(
                 f"📦 [당근채널] 승인됨 — 수동 업로드 필요({reason})\n"
                 f"폴더: {folder}\n본문: {it.get('body_file','(본문파일 미지정)')}"

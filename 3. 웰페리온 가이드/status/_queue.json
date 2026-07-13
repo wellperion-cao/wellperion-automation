@@ -322,12 +322,12 @@
     "task_id": "CMO-2026-07-09-5CH-AUTOPUBLISH",
     "clevel": "cmo",
     "title": "[시모] 5채널 자동발행 완결 — 공식 발행 시 IG·블로그·카페·카카오·당근 5채널 전부 자동발행+링크 회수까지 무인 완결",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-09",
     "ship_no": 826,
-    "note": "[2026-07-09 GM 지시] F2 발행 시 블로그·카페가 수동발행대기로 남아 GM이 직접 발행함. 내일부터는 무조건 시모가 5채널 자동발행까지 마무리(수동발행대기 0). 현재 IG·카카오·당근은 자동, 블로그·카페(네이버 SmartEditor)는 watcher 임시저장까지만 → 발행+URL회수 자동화 완결 필요.",
-    "next": "",
+    "note": "[2026-07-09 GM 지시] F2 발행 시 블로그·카페가 수동발행대기로 남아 GM이 직접 발행함. 내일부터는 무조건 시모가 5채널 자동발행까지 마무리(수동발행대기 0). 현재 IG·카카오·당근은 자동, 블로그·카페(네이버 SmartEditor)는 watcher 임시저장까지만 → 발행+URL회수 자동화 완결 필요. [2026-07-13 GM 승인·자동 공개발행 활성] 866 요새화 안전망(§1사전점검+§2무결성게이트+§5쿠키인증 3채널 라이브) 완성 후 활성. ig_review_publish_watcher.py의 블로그(publish_blog)·카페(publish_cafe) --mode draft→publish 전환, 성공 status 임시저장→발행완료, 실패=발행실패(게이트 차단 시 초안 유지), 모듈 docstring·stale 주석 정합. 가드(--i-am-sure)는 이미 통과 상태였음. 대기 콘텐츠 0건이라 즉시 발행 없음=다음 승인건부터 5채널 전부 공개발행. py_compile PASS. URL회수는 기존 best-effort(exit0=완료, 네이버 URL 회수 불안정 정책 유지).",
+    "next": "🔗 5채널 자동 공개발행 활성 완료. 첫 실발행(다음 승인 콘텐츠) 라이브 검증=시크릿크롬 실재확인+[PREFLIGHT]/[GUARD] 로그 확인(초반신뢰). 후속(선택): 블로그·카페 URL 회수 안정화(m.blog og:title/카페 articleId).",
     "depends_on": ""
   },
   {
