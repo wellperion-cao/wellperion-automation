@@ -968,5 +968,19 @@
     "artifact": "GM 지시: '등록부 모듈 카드' 밋밋한 이름·묻힘 → 시포·시모처럼 시토 전용 섹션.\n- 제목 '📋 등록부 모듈 카드' → '🛠️ 시토 (AI CTO) 자율 자동화'(h2.sec 격상)\n- 위치 이동: 돌아가는 자동화 details 밖으로 빼 📣 시모 섹션 바로 위칸\n렌더 JS·앵커 id(sec-registry-cards/registry-cards) 무변경(위치만 이동). (CLI ad-hoc · 커밋 543187dd)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "543187ddd34831edf482ec6722167c546b4caca7"
+  },
+  {
+    "task_id": "CTO-2026-07-13-ADHOC-2e0c07d9",
+    "clevel": "cto",
+    "title": "[시토] GM 채널 진행 보고 헬퍼(notify_gm_progress) + 루틴 완료 스팸 필터",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 938,
+    "artifact": "의미 있는 완료마다 GM 개인 채널(chat_id 8254867551)로 1줄 보고하는 경량 헬퍼를\n추가하고(dedup 60분·하루 cap 40·PROGRESS_REPORT_LIVE 킬스위치), 기존\nclevel_post_action.py 의 완료 보고에는 ADHOC·auto-log·chore·mirror 류 task_id/\nchangelog 마커가 있으면 GM 채널 텔레그램 발송만 스킵하는 루틴 필터를 배선해\n기계적 정리성 완료가 GM 채널을 스팸하지 않도록 함(status/큐 기록은 그대로 유지). (CLI ad-hoc · 커밋 2e0c07d9)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "2e0c07d913bf28c0e89a4629b9651ae5cce45dd2"
   }
 ]
