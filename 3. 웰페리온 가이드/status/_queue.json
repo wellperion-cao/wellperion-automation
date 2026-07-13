@@ -622,5 +622,19 @@
     "artifact": "- scripts/kakao_summary_card.py: 경보·4지표(매출·점검·전환·주차)·주차 일별그래프\n  HTML→크롬 스크린샷 요약카드. 소스=kpi_values.json·parking_revenue.json 직독,\n  숫자 전량 소스대조 일치. 발송 미통합(이미지 생성까지).\n- _queue #906: 카톡 고도화 배(A 요약카드 완료·검수 / B 운영부 대화 자동요약). (CLI ad-hoc · 커밋 19826f4c)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "19826f4c3f3062d192f95edd0ba9a7266f54aebb"
+  },
+  {
+    "task_id": "CMO-2026-07-13-ADHOC-92cd753a",
+    "clevel": "cmo",
+    "title": "[시모] 마케팅 대시보드를 단일 SSOT로 통합 — 정직 퍼널 히어로 이식, 헌법한장 중복 제거",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 908,
+    "artifact": "- 마케팅현황대시보드.html: 배#897 단일 전환 퍼널(클릭→문의→가입, 헌법한장 renderFunnel897\n  포팅)을 히어로로 삽입하고 status/kpi_values.json(cmo·cpo) 직독 배선. UTM 유입 출처 막대,\n  최대유입채널 헤드라인, 실험 결과 모달, version-badge, 죽은 KPI요약행/퍼널바/fc-* JS 제거.\n  _MEASURABLE_CHANNELS 하드코딩(당근 measurable 불일치)은 유일 소비처 삭제로 함께 정리 —\n  이제 퍼널 히어로가 kpi_values의 measurab (CLI ad-hoc · 커밋 92cd753a)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "92cd753af2d539f745846c269227d1e20c43c22b"
   }
 ]
