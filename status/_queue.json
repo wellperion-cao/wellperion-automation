@@ -636,5 +636,19 @@
     "artifact": "- 마케팅현황대시보드.html: 배#897 단일 전환 퍼널(클릭→문의→가입, 헌법한장 renderFunnel897\n  포팅)을 히어로로 삽입하고 status/kpi_values.json(cmo·cpo) 직독 배선. UTM 유입 출처 막대,\n  최대유입채널 헤드라인, 실험 결과 모달, version-badge, 죽은 KPI요약행/퍼널바/fc-* JS 제거.\n  _MEASURABLE_CHANNELS 하드코딩(당근 measurable 불일치)은 유일 소비처 삭제로 함께 정리 —\n  이제 퍼널 히어로가 kpi_values의 measurab (CLI ad-hoc · 커밋 92cd753a)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "92cd753af2d539f745846c269227d1e20c43c22b"
+  },
+  {
+    "task_id": "CPO-2026-07-13-ADHOC-15372ca4",
+    "clevel": "cpo",
+    "title": "[시포] 예약·편집 소실 수리 — gviz rowIndex 어긋남으로 저장 거부 → USE_GVIZ=false 롤백",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 909,
+    "artifact": "gviz가 615행 중 192행만 반환·rowIndex 압축(조화순 물리587→gviz172·임지현 396→85) →\n저장 시 잘못된 rowIndex 전송 → keyPhone 가드 row-key-mismatch 거부, no-cors라 화면엔 '저장'.\n새로고침 시 예약·편집 소실. 라이브 실증: rowIndex172+실전화→거부 / rowIndex587→ok·영속 확인.\n읽기를 GAS(정확 물리행)로 복귀. 멤버십·강습 편집 전체 영향 → 함께 해결. 성능 재최적화=후속 배. (CLI ad-hoc · 커밋 15372ca4)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "15372ca40dd366db5bd8fc84efb3e7ad2b7e34fe"
   }
 ]
