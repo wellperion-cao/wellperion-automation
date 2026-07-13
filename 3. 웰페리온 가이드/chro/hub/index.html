@@ -558,6 +558,12 @@ var TABS = [
   {id:"onbo",label:"온보딩"},{id:"eval",label:"평가·포상"},{id:"exit",label:"퇴사"},
   {id:"docs",label:"인사 서류함"},{id:"std",label:"운영 기준"}
 ];
+// 뷰어 모드(비관리자)에서 숨길 탭: 채용·온보딩·평가(포상 병합 탭 포함). 2026-07-13 매니저 지시.
+var HIDDEN_TABS_VIEWER = ["hire","onbo","eval"];
+function visibleTabs(){
+  if(SESSION_ROLE==="admin")return TABS;
+  return TABS.filter(function(t){return HIDDEN_TABS_VIEWER.indexOf(t.id)===-1;});
+}
 var DB={emp:[],hire:[],appl:[],onbo:[],eval:[],exit:[]};
 var ERR={},ERRMSG={},ROWCOUNT={},RAWSAMPLE={},STALE={};
 var charts={};
@@ -2522,7 +2528,9 @@ var RENDERED={};
 var RENDERERS={dash:renderDash,emp:renderEmp,hire:renderHire,onbo:renderOnbo,
   eval:renderEval,exit:renderExit,docs:renderDocs,std:renderStd};
 function showTab(id){
-  TABS.forEach(function(t){
+  // 뷰어 모드는 채용·온보딩·평가 탭에 딥링크/직접호출로도 도달 불가 — 대시보드로 폴백
+  if(SESSION_ROLE!=="admin" && HIDDEN_TABS_VIEWER.indexOf(id)!==-1){ id="dash"; }
+  visibleTabs().forEach(function(t){
     document.querySelector('.tab[data-tab="'+t.id+'"]').classList.toggle("active",t.id===id);
     document.querySelector('.panel[data-panel="'+t.id+'"]').classList.toggle("active",t.id===id);
   });
@@ -2536,10 +2544,10 @@ function showTab(id){
   try{ syncHirePolling(); }catch(e){}
 }
 function buildNav(){
-  document.getElementById("nav").innerHTML=TABS.map(function(t){
+  document.getElementById("nav").innerHTML=visibleTabs().map(function(t){
     return '<button class="tab" data-tab="'+t.id+'">'+esc(t.label)+'</button>';
   }).join("");
-  TABS.forEach(function(t){
+  visibleTabs().forEach(function(t){
     document.querySelector('.tab[data-tab="'+t.id+'"]').addEventListener("click",function(){showTab(t.id);});
   });
 }
