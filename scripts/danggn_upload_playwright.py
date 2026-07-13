@@ -48,6 +48,14 @@ except ImportError:
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
     from publish_integrity_gate import evaluate_integrity
 
+# 발행 사전점검(source-side pre-flight) — 발행 요새화 §1 (scripts/publish_preflight.py)
+try:
+    from publish_preflight import check_source_preflight
+except ImportError:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    from publish_preflight import check_source_preflight
+
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -1459,6 +1467,20 @@ async def run_publish(args: argparse.Namespace) -> int:
         if not post.body:
             print("[ERROR] 본문 없음 — 진행 불가.")
             return 4
+
+    # ── 발행 사전점검(source-side pre-flight) — 브라우저 실행 전 입력 온전성 검사 ──
+    preflight = check_source_preflight(
+        "당근",
+        body=post.body,
+        image_paths=post.image_paths,
+        require_images=True,
+    )
+    print(f"[PREFLIGHT] 사전점검 — {preflight.summary()}")
+    if not preflight.ok:
+        print("[ERROR] 사전점검 실패 — publish 차단(브라우저 미실행):")
+        for f in preflight.failures:
+            print(f"        · {f.name}: {f.detail}")
+        return 6
 
     async_playwright = _import_playwright()
     p, context = await _launch_context(async_playwright)

@@ -49,6 +49,14 @@ except ImportError:
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
     from publish_integrity_gate import evaluate_integrity
 
+# 발행 사전점검(source-side pre-flight) — 발행 요새화 §1 (scripts/publish_preflight.py)
+try:
+    from publish_preflight import check_source_preflight
+except ImportError:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    from publish_preflight import check_source_preflight
+
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -75,6 +83,8 @@ CAFE_WRITE_URL_TEMPLATE = (
 )
 
 LOGIN_REDIRECT_SIGNALS = ("nid.naver.com/nidlogin", "nid.naver.com/login")
+
+MAX_TAGS = 10  # 카페 태그 입력칸 최대 개수(실측) — 사전점검·_fill_tags 공유 상수
 
 # 게시판/말머리 2단 드롭다운 (실측 2026-06-03).
 # 글쓰기 폼 상단에 FormSelectButton 2개: [0]=게시판("게시판을 선택해 주세요."), [1]=말머리("말머리 선택").
@@ -683,7 +693,6 @@ async def _fill_tags(page, tags: list[str]) -> None:
     """카페 글쓰기 태그 입력칸에 해시태그를 최대 10개 입력한다.
     셀렉터 후보를 순서대로 시도. 찾으면 # 제거한 태그명을 Enter/쉼표로 구분 입력.
     셀렉터 미발견 시 DOM 후보를 출력하고 보류로 보고(억지 진행 금지)."""
-    MAX_TAGS = 10
     targets = tags[:MAX_TAGS]
     # 태그 입력칸 셀렉터 후보 — 실측(2026-06-25): className=tag_input, placeholder=태그를 입력해주세요 (최대 10개)
     TAG_INPUT_SELECTORS = [
@@ -1274,6 +1283,24 @@ async def run_publish(args: argparse.Namespace) -> int:
         print("[ERROR] 본문 검증 실패 — publish 차단:")
         for e in errs:
             print(f"        · {e}")
+        return 6
+
+    # ── 발행 사전점검(source-side pre-flight) — 브라우저 실행 전 입력 온전성 검사 ──
+    _, seg2 = _split_body_at_inquiry(post.body)
+    preflight = check_source_preflight(
+        "카페",
+        body=post.body,
+        image_paths=post.image_paths,
+        tags=post.tags,
+        max_tags=MAX_TAGS,
+        inquiry_marker_present=(seg2 is not None),
+        link_url=post.link_card_url,
+    )
+    print(f"[PREFLIGHT] 사전점검 — {preflight.summary()}")
+    if not preflight.ok:
+        print("[ERROR] 사전점검 실패 — publish 차단(브라우저 미실행):")
+        for f in preflight.failures:
+            print(f"        · {f.name}: {f.detail}")
         return 6
 
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)

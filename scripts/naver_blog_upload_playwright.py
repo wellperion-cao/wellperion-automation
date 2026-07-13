@@ -51,6 +51,14 @@ except ImportError:
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
     from publish_integrity_gate import evaluate_integrity
 
+# 발행 사전점검(source-side pre-flight) — 발행 요새화 §1 (scripts/publish_preflight.py)
+try:
+    from publish_preflight import check_source_preflight
+except ImportError:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    from publish_preflight import check_source_preflight
+
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -1340,6 +1348,21 @@ async def run_publish(args: argparse.Namespace) -> int:
         print("[ERROR] 본문 검증 실패 — publish 차단:")
         for e in errs:
             print(f"        · {e}")
+        return 6
+
+    # ── 발행 사전점검(source-side pre-flight) — 브라우저 실행 전 입력 온전성 검사 ──
+    preflight = check_source_preflight(
+        "블로그",
+        body=post.body,
+        image_paths=post.image_paths,
+        tags=post.tags,
+        link_url=post.link_card_url,
+    )
+    print(f"[PREFLIGHT] 사전점검 — {preflight.summary()}")
+    if not preflight.ok:
+        print("[ERROR] 사전점검 실패 — publish 차단(브라우저 미실행):")
+        for f in preflight.failures:
+            print(f"        · {f.name}: {f.detail}")
         return 6
 
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
