@@ -11,5 +11,5 @@ REM Rollback (1-stage): keep the line below commented out to stay dry-run.
 REM Live activation (GM go only): uncomment "set RUNNER_LIVE=1".
 cd /d C:\Users\jjky0\welperion-automation
 set PYTHONIOENCODING=utf-8
-REM set RUNNER_LIVE=1
+set RUNNER_LIVE=1
 C:\Python314\python.exe -u scripts\welly_auto_runner.py --clevel cto >> logs\welly_auto_runner.log 2>&1

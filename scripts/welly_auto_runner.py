@@ -73,6 +73,22 @@ MAX_SHIPS_PER_RUN = 1  # 선별기 구조가 항상 1척만 반환하므로 이 
 
 _PRIORITY_WEIGHT = {"⛵돛단배": 0, "⛴️여객선": 1, "🛳️크루즈": 2}
 
+# ── 모호성 에스컬레이션 (배xxx, 2026-07-13 GM go) ──
+# 정본: docs/superpowers/specs/2026-07-13-welly-runner-ambiguity-escalation-design.md
+AMBIGUOUS_CRUISE_PRIORITY = "🛳️크루즈"
+_VAGUE_MIN_NOTE_LEN = 8  # note가 이 길이 미만이면 산출물·절차 불명확으로 간주(v1 보수적 임계값)
+_MULTI_APPROACH_KEYWORDS = ("또는", "혹은", "여러 방법", "여러 방안", "선택지", "A안", "B안", "옵션")
+_SCOPE_DECISION_KEYWORDS = ("스코프", "결정 필요", "판단 필요", "범위 결정", "방향 결정")
+# 재개 헬퍼 마커: 웰리 세션이 GM 인터뷰 답변을 note에 기록할 때 남기는 표식.
+# is_ambiguous는 이 마커 + aide_interview_needed 해제를 함께 보면 원 휴리스틱을
+# 재적용하지 않고 통과시킨다("러너는 플래그·기록만 존중" — 무한 park 루프 방지).
+INTERVIEW_ANSWER_MARKER = "[GM 인터뷰 답변]"
+
+# ── 텔레그램 핑 2단 게이트(RUNNER_LIVE와 별도) — 기본 OFF ──
+PING_LIVE_ENV_VAR = "RUNNER_PING_LIVE"
+DEFAULT_PING_STATE_PATH = os.path.join(_PROJECT_ROOT, "status", "welly_auto_runner_ping_state.json")
+AMBIGUOUS_PING_DAILY_CAP = 2
+
 
 def _is_low_risk(ship: dict) -> bool:
     """welly_orchestrate._is_reversible보다 보수적인 저위험 판정(러너 전용 보강)."""
@@ -118,10 +134,162 @@ def select_one_low_risk_ship(clevel, queue, registry=None, cooldown_task_ids=Non
     candidates = [s for s in candidates if _is_low_risk(s)]
     candidates = [s for s in candidates if _is_concrete_ship(s)]
     candidates = [s for s in candidates if s.get("task_id") not in cooldown_task_ids]
+    # 이미 parked-interview 중인 배(aide_interview_needed=True)는 매 사이클 재선택해
+    # 다른 후보를 막지 않도록 제외한다 — GM 답변 기록 시 플래그 해제되면 자연히 재후보군 복귀.
+    candidates = [s for s in candidates if not s.get("aide_interview_needed")]
     if not candidates:
         return None
     candidates.sort(key=_priority_rank)
     return candidates[0]
+
+
+def is_ambiguous(ship: dict) -> dict:
+    """
+    배 실행 직전 모호성 판정(v1 보수적 — 의심되면 park).
+    아래 중 하나라도 해당하면 모호로 판정한다:
+      - note가 산출물·절차를 구체적으로 담기엔 너무 짧음(_VAGUE_MIN_NOTE_LEN 미만)
+      - 접근법이 여러 개임을 시사하는 키워드(_MULTI_APPROACH_KEYWORDS)
+      - 스코프·판단 결정이 필요함을 시사하는 키워드(_SCOPE_DECISION_KEYWORDS)
+      - 난이도 🛳️크루즈(무거움) — 안전 기본 park
+    재개 헬퍼: note에 INTERVIEW_ANSWER_MARKER가 있고 aide_interview_needed가 해제돼 있으면
+    (=웰리 세션이 GM 인터뷰 답변을 기록·해소함) 원 휴리스틱을 재적용하지 않고 통과시킨다.
+    반환: {"ambiguous": bool, "reasons": list[str]}
+    """
+    note = (ship.get("note") or "").strip()
+    if INTERVIEW_ANSWER_MARKER in note and not ship.get("aide_interview_needed"):
+        return {"ambiguous": False, "reasons": []}
+
+    title = (ship.get("title") or "").strip()
+    text = f"{title} {note}"
+    reasons = []
+
+    if len(note) < _VAGUE_MIN_NOTE_LEN:
+        reasons.append("산출물·절차가 note에 구체적으로 안 나옴(무엇을 만들지 불명확)")
+    if any(kw in text for kw in _MULTI_APPROACH_KEYWORDS):
+        reasons.append("접근법이 여러 개(어느 방향인지 결정 필요)")
+    if any(kw in text for kw in _SCOPE_DECISION_KEYWORDS):
+        reasons.append("스코프 결정·판단이 필요(러너가 대신 정하면 안 되는 것)")
+    if ship.get("priority") == AMBIGUOUS_CRUISE_PRIORITY:
+        reasons.append("난이도 🛳️크루즈(무거움) — 안전 기본 park")
+
+    return {"ambiguous": bool(reasons), "reasons": reasons}
+
+
+def park_ship_for_interview(queue_path: str, task_id: str, reasons: list[str]) -> bool:
+    """
+    _queue.json에서 task_id 배를 찾아 aide_interview_needed=True + aide_interview_reason
+    플래그를 부여한다(가역·note 무손상 — note는 건드리지 않음). 성공 시 True, 배 못 찾으면 False.
+    """
+    queue = _load_queue(queue_path)
+    found = False
+    for ship in queue:
+        if ship.get("task_id") == task_id:
+            ship["aide_interview_needed"] = True
+            ship["aide_interview_reason"] = "; ".join(reasons)
+            found = True
+            break
+    if not found:
+        return False
+    with open(queue_path, "w", encoding="utf-8") as f:
+        json.dump(queue, f, ensure_ascii=False, indent=2)
+    return True
+
+
+def parked_interview_worklist(queue: list) -> list:
+    """queue에서 aide_interview_needed=True인 배만 추려 반환(세션 픽업용, 읽기전용 · 큐 뮤테이션 0)."""
+    return [s for s in queue if s.get("aide_interview_needed")]
+
+
+def print_interview_worklist(queue_path: str | None = None) -> None:
+    """CLI 진입점(--interview-worklist) — parked-interview 배 목록을 마크다운 표로 stdout 출력.
+    run_once()와 독립 경로(선별·게이트·park 전부 미가동) · 큐 읽기전용."""
+    queue_path = queue_path or DEFAULT_QUEUE_PATH
+    queue = _load_queue(queue_path)
+    items = parked_interview_worklist(queue)
+    print(f"## 🧭 러너 모호 배(GM 인터뷰 대기) — {len(items)}척\n")
+    if not items:
+        print("(없음 — parked-interview 배 없음)")
+        return
+    print("| 배 | 담당 | 제목 | 모호 사유 |")
+    print("|---|---|---|---|")
+    for s in items:
+        print(
+            f"| `{s.get('task_id')}` | {s.get('clevel', '').upper()} | "
+            f"{s.get('title', '')} | {s.get('aide_interview_reason', '')} |"
+        )
+
+
+def _collect_parked_task_ids(queue_path: str) -> list[str]:
+    queue = _load_queue(queue_path)
+    return [s.get("task_id") for s in parked_interview_worklist(queue) if s.get("task_id")]
+
+
+def build_ambiguous_ping_text(parked_count: int) -> str:
+    return f"🧭 러너 모호 배 {parked_count}건 — 세션 열어 인터뷰 필요"
+
+
+def _load_ping_state(path: str) -> dict:
+    if not os.path.exists(path):
+        return {"pinged_task_ids": [], "sent_dates": {}}
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _save_ping_state(state: dict, path: str) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+
+
+def _ping_decision(parked_task_ids: list[str], state: dict, now: datetime | None = None,
+                    daily_cap: int = AMBIGUOUS_PING_DAILY_CAP) -> dict:
+    """PURE — dedup(신규 parked 배 있을 때만) + 하루 cap 판정. 반환: {should_send, new_task_ids, reason}."""
+    now = now or datetime.now(timezone.utc)
+    today = now.strftime("%Y-%m-%d")
+    pinged = set(state.get("pinged_task_ids", []))
+    new_ids = [t for t in parked_task_ids if t not in pinged]
+    if not new_ids:
+        return {"should_send": False, "new_task_ids": [], "reason": "dedup — 신규 parked 배 없음(이미 전부 핑 보냄)"}
+    sent_today = state.get("sent_dates", {}).get(today, 0)
+    if sent_today >= daily_cap:
+        return {
+            "should_send": False, "new_task_ids": new_ids,
+            "reason": f"하루 cap({daily_cap}회) 도달 — 오늘 추가 핑 보류",
+        }
+    return {"should_send": True, "new_task_ids": new_ids, "reason": f"신규 parked {len(new_ids)}건 — 핑 대상"}
+
+
+def maybe_send_ambiguous_ping(parked_task_ids: list[str], state_path: str | None = None,
+                               notifier=None, now: datetime | None = None,
+                               daily_cap: int = AMBIGUOUS_PING_DAILY_CAP) -> dict:
+    """
+    parked 배 목록을 보고 dedup+하루cap을 통과하면 notifier.send(text)로 핑을 보낸다.
+    notifier=None이면 실전송 없이 payload(text)만 반환한다(테스트·dry-run 안전장치 — 상태파일도
+    건드리지 않음). notifier가 주어지고 should_send가 True일 때만 상태(dedup·cap)를 저장한다.
+    반환: {"sent": bool, "text": str, "reason": str}
+    """
+    state_path = state_path or DEFAULT_PING_STATE_PATH
+    now = now or datetime.now(timezone.utc)
+    state = _load_ping_state(state_path)
+    decision = _ping_decision(parked_task_ids, state, now=now, daily_cap=daily_cap)
+    text = build_ambiguous_ping_text(len(parked_task_ids))
+
+    if not decision["should_send"]:
+        return {"sent": False, "text": text, "reason": decision["reason"]}
+    if notifier is None:
+        return {"sent": False, "text": text, "reason": "notifier 미주입 — payload 미리보기만(실전송 없음)"}
+
+    send_result = notifier.send(text)
+    today = now.strftime("%Y-%m-%d")
+    state["pinged_task_ids"] = sorted(set(state.get("pinged_task_ids", [])) | set(decision["new_task_ids"]))
+    state.setdefault("sent_dates", {})
+    state["sent_dates"][today] = state["sent_dates"].get(today, 0) + 1
+    _save_ping_state(state, state_path)
+    return {"sent": True, "text": text, "reason": decision["reason"], "api_result": send_result}
+
+
+def _ping_live() -> bool:
+    return os.environ.get(PING_LIVE_ENV_VAR, "0") == "1"
 
 
 def build_orchestration_prompt(ship: dict, clevel: str = "cto", nick: str = "시토") -> str:
@@ -353,18 +521,21 @@ def run_once(
     log_path: str | None = None,
     live: bool | None = None,
     claude_timeout: int = 1200,
+    ping_state_path: str | None = None,
 ) -> dict:
     """
     러너 1회 실행.
     live=None이면 env RUNNER_LIVE로 판단(기본 OFF=dry-run). 테스트에서는 live=False/True를
     명시해 env에 무관하게 강제할 수 있다.
 
-    반환 dict 키: mode("guard-blocked"|"dry-run"|"live"), ship(dict|None),
+    반환 dict 키: mode("guard-blocked"|"dry-run"|"live"|"parked"), ship(dict|None),
     prompt(str|None), executed(bool), commit(str|None), reason(str, 있을 때만).
+    mode=="parked"일 때만 ambiguous_reasons(list[str])·parked(bool)·ping(dict) 추가.
     """
     queue_path = queue_path or DEFAULT_QUEUE_PATH
     state_path = state_path or DEFAULT_STATE_PATH
     log_path = log_path or DEFAULT_LOG_PATH
+    ping_state_path = ping_state_path or DEFAULT_PING_STATE_PATH
     live = _is_live() if live is None else live
 
     # ── 재귀 폭주 방지 가드: 큐 로드 전에 최우선 차단 ──
@@ -409,6 +580,46 @@ def run_once(
         return result
 
     prompt = build_orchestration_prompt(ship, clevel=clevel, nick=nick)
+
+    # ── 모호성 판정: 실행(라이브)·미리보기(드라이런) 모두 이 게이트를 먼저 통과해야 한다 ──
+    ambiguity = is_ambiguous(ship)
+    if ambiguity["ambiguous"]:
+        reason = "모호 판정 — GM 인터뷰 필요: " + "; ".join(ambiguity["reasons"])
+        result = {
+            "mode": "parked", "ship": ship, "prompt": prompt, "executed": False, "commit": None,
+            "reason": reason, "ambiguous_reasons": ambiguity["reasons"], "live": live, "parked": False,
+        }
+        if not live:
+            # 드라이런: 큐 무변경(기존 dry-run 불변식 유지) — "이대로 LIVE면 park됨" 미리보기만.
+            _append_log(
+                {"event": "dry_run_would_park_ambiguous", "task_id": ship.get("task_id"),
+                 "reasons": ambiguity["reasons"]},
+                log_path,
+            )
+            return result
+
+        # 라이브: 실제 park(큐 플래그 기록) + parked 전체 목록 기준 텔레그램 핑(2단 게이트·dedup·cap).
+        parked_ok = park_ship_for_interview(queue_path, ship["task_id"], ambiguity["reasons"])
+        result["parked"] = parked_ok
+        parked_task_ids = _collect_parked_task_ids(queue_path)
+        notifier = None
+        if _ping_live():
+            _agents_dir = os.path.join(_PROJECT_ROOT, "wellperion-agents")
+            if _agents_dir not in sys.path:
+                sys.path.insert(0, _agents_dir)
+            try:
+                from telegram_notifier import TelegramNotifier  # noqa: E402  (지연 임포트 — RUNNER_PING_LIVE=1일 때만)
+                notifier = TelegramNotifier()
+            except Exception:  # noqa: BLE001
+                notifier = None
+        ping_result = maybe_send_ambiguous_ping(parked_task_ids, ping_state_path, notifier=notifier)
+        result["ping"] = ping_result
+        _append_log(
+            {"event": "parked_ambiguous", "task_id": ship.get("task_id"), "reasons": ambiguity["reasons"],
+             "parked": parked_ok, "ping_sent": ping_result["sent"], "ping_reason": ping_result["reason"]},
+            log_path,
+        )
+        return result
 
     if not live:
         result = {
@@ -493,7 +704,16 @@ def main() -> int:
         "--force-dry-run", action="store_true",
         help="RUNNER_LIVE=1이어도 이번 실행만 강제 dry-run(검증용 — env는 건드리지 않음)",
     )
+    parser.add_argument(
+        "--interview-worklist", action="store_true",
+        help="parked-interview 배(모호 판정으로 park된 배) 목록만 마크다운 표로 출력. "
+             "run_once()와 독립 경로 · 큐 읽기전용(웰리 부팅·수동 확인용)",
+    )
     args = parser.parse_args()
+
+    if args.interview_worklist:
+        print_interview_worklist()
+        return 0
 
     live = False if args.force_dry_run else None
     result = run_once(clevel=args.clevel, nick=args.nick, live=live)
@@ -509,6 +729,11 @@ def main() -> int:
         print("-" * 60)
         print("[LIVE 발효 시 띄울 프롬프트 미리보기]")
         print(result["prompt"])
+    if result["mode"] == "parked":
+        print(f"모호 사유: {'; '.join(result.get('ambiguous_reasons', []))}")
+        print(f"parked={result.get('parked')}")
+        if result.get("ping"):
+            print(f"핑: sent={result['ping']['sent']} — {result['ping']['reason']}")
     if result.get("commit"):
         print(f"커밋: {result['commit']} (역롤백: git revert {result['commit']})")
     print("=" * 60)

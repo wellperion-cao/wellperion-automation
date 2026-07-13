@@ -427,3 +427,253 @@ def test_prompt_contains_explicit_add_scope_prohibition():
     prompt = war.build_orchestration_prompt(ship, clevel="cto", nick="시토")
     assert "git add -A" in prompt
     assert "git commit -a" in prompt
+
+
+# ── is_ambiguous: 모호 판정(배xxx, 2026-07-13 설계) ──
+def test_is_ambiguous_false_for_concrete_reversible_ship():
+    result = war.is_ambiguous(_ship())
+    assert result["ambiguous"] is False
+    assert result["reasons"] == []
+
+
+def test_is_ambiguous_true_for_short_vague_note():
+    ship = _ship(note="점검")  # _VAGUE_MIN_NOTE_LEN(8) 미만
+    result = war.is_ambiguous(ship)
+    assert result["ambiguous"] is True
+    assert any("불명확" in r for r in result["reasons"])
+
+
+def test_is_ambiguous_true_for_multi_approach_keyword():
+    ship = _ship(note="A안 또는 B안 중 골라서 스크립트 patch")
+    result = war.is_ambiguous(ship)
+    assert result["ambiguous"] is True
+    assert any("접근법" in r for r in result["reasons"])
+
+
+def test_is_ambiguous_true_for_scope_decision_keyword():
+    ship = _ship(note="범위 결정 필요한 리팩터링 작업 진행")
+    result = war.is_ambiguous(ship)
+    assert result["ambiguous"] is True
+    assert any("스코프" in r for r in result["reasons"])
+
+
+def test_is_ambiguous_true_for_cruise_priority():
+    ship = _ship(priority="🛳️크루즈", note="충분히 구체적인 절차가 담긴 내부 점검 스크립트 patch")
+    result = war.is_ambiguous(ship)
+    assert result["ambiguous"] is True
+    assert any("크루즈" in r for r in result["reasons"])
+
+
+def test_is_ambiguous_resumes_after_gm_interview_answer_recorded():
+    # 짧은 note(모호 사유)였더라도, 웰리가 GM 답변을 마커로 기록 + 플래그 해제하면 통과해야 함.
+    ship = _ship(note="점검", aide_interview_needed=False)
+    ship["note"] = f"점검 {war.INTERVIEW_ANSWER_MARKER} 상세 절차는 X로 확정"
+    result = war.is_ambiguous(ship)
+    assert result["ambiguous"] is False
+
+
+def test_is_ambiguous_still_ambiguous_while_flag_still_set_despite_marker():
+    # 마커가 있어도 aide_interview_needed가 아직 True면(=미해소) 원 휴리스틱을 재적용해야 함.
+    ship = _ship(aide_interview_needed=True)
+    ship["note"] = f"{war.INTERVIEW_ANSWER_MARKER} A안 또는 B안 중 아직 미정"
+    result = war.is_ambiguous(ship)
+    assert result["ambiguous"] is True
+    assert any("접근법" in r for r in result["reasons"])
+
+
+# ── park_ship_for_interview ──
+def test_park_ship_for_interview_sets_flags_and_preserves_note(tmp_path):
+    queue = [_ship()]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    ok = war.park_ship_for_interview(str(queue_path), "CTO-2026-07-13-A", ["산출물 불명확"])
+    assert ok is True
+
+    saved = json.loads(queue_path.read_text(encoding="utf-8"))
+    assert saved[0]["aide_interview_needed"] is True
+    assert saved[0]["aide_interview_reason"] == "산출물 불명확"
+    assert saved[0]["note"] == BASE_SHIP["note"]  # note 무손상
+
+
+def test_park_ship_for_interview_returns_false_when_task_id_missing(tmp_path):
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps([_ship()], ensure_ascii=False), encoding="utf-8")
+    ok = war.park_ship_for_interview(str(queue_path), "NO-SUCH-ID", ["reason"])
+    assert ok is False
+
+
+# ── select_one_low_risk_ship: 이미 parked 중인 배는 재선택 제외 ──
+def test_select_excludes_already_parked_ship():
+    queue = [_ship(aide_interview_needed=True)]
+    result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY)
+    assert result is None
+
+
+def test_select_skips_parked_ship_and_picks_next_candidate():
+    parked = _ship(task_id="CTO-PARKED", aide_interview_needed=True, priority="⛵돛단배")
+    normal = _ship(task_id="CTO-NORMAL", priority="⛴️여객선")
+    result = war.select_one_low_risk_ship("cto", [parked, normal], registry=FAKE_REGISTRY)
+    assert result is not None
+    assert result["task_id"] == "CTO-NORMAL"
+
+
+# ── parked_interview_worklist / print_interview_worklist ──
+def test_parked_interview_worklist_filters_flagged_only():
+    queue = [_ship(task_id="A", aide_interview_needed=True), _ship(task_id="B")]
+    items = war.parked_interview_worklist(queue)
+    assert len(items) == 1
+    assert items[0]["task_id"] == "A"
+
+
+def test_print_interview_worklist_outputs_markdown_table(tmp_path, capsys):
+    queue = [_ship(task_id="A", aide_interview_needed=True, aide_interview_reason="사유X")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    war.print_interview_worklist(queue_path=str(queue_path))
+    out = capsys.readouterr().out
+    assert "1척" in out
+    assert "CTO-2026-07-13-A" not in out  # task_id는 A로 오버라이드됨
+    assert "`A`" in out
+    assert "사유X" in out
+
+
+def test_print_interview_worklist_empty_message(tmp_path, capsys):
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text("[]", encoding="utf-8")
+    war.print_interview_worklist(queue_path=str(queue_path))
+    out = capsys.readouterr().out
+    assert "없음" in out
+
+
+# ── 텔레그램 핑: dedup + 하루 cap (실전송 없음 — notifier=None/FakeNotifier만 사용) ──
+class _FakeNotifier:
+    def __init__(self):
+        self.sent = []
+
+    def send(self, text):
+        self.sent.append(text)
+        return {"ok": True, "result": {"message_id": 1}}
+
+
+def test_ping_decision_should_send_for_new_parked_ids():
+    state = {"pinged_task_ids": [], "sent_dates": {}}
+    decision = war._ping_decision(["CTO-A"], state)
+    assert decision["should_send"] is True
+    assert decision["new_task_ids"] == ["CTO-A"]
+
+
+def test_ping_decision_dedup_blocks_already_pinged():
+    state = {"pinged_task_ids": ["CTO-A"], "sent_dates": {}}
+    decision = war._ping_decision(["CTO-A"], state)
+    assert decision["should_send"] is False
+    assert "dedup" in decision["reason"]
+
+
+def test_ping_decision_daily_cap_blocks_after_limit():
+    from datetime import datetime, timezone
+
+    now = datetime(2026, 7, 13, 9, 0, tzinfo=timezone.utc)
+    state = {"pinged_task_ids": [], "sent_dates": {"2026-07-13": war.AMBIGUOUS_PING_DAILY_CAP}}
+    decision = war._ping_decision(["CTO-A"], state, now=now)
+    assert decision["should_send"] is False
+    assert "cap" in decision["reason"]
+
+
+def test_maybe_send_ambiguous_ping_with_none_notifier_previews_only_no_state_file(tmp_path):
+    state_path = tmp_path / "ping_state.json"
+    result = war.maybe_send_ambiguous_ping(["CTO-A"], state_path=str(state_path), notifier=None)
+    assert result["sent"] is False
+    assert "모호 배 1건" in result["text"]
+    assert not state_path.exists()  # 실전송 없음 — 상태파일도 생성 안 됨
+
+
+def test_maybe_send_ambiguous_ping_with_fake_notifier_sends_and_persists_state(tmp_path):
+    state_path = tmp_path / "ping_state.json"
+    notifier = _FakeNotifier()
+    result = war.maybe_send_ambiguous_ping(["CTO-A"], state_path=str(state_path), notifier=notifier)
+    assert result["sent"] is True
+    assert notifier.sent == [result["text"]]
+    assert state_path.exists()
+
+    saved = json.loads(state_path.read_text(encoding="utf-8"))
+    assert "CTO-A" in saved["pinged_task_ids"]
+
+
+def test_maybe_send_ambiguous_ping_dedups_across_calls(tmp_path):
+    state_path = tmp_path / "ping_state.json"
+    notifier = _FakeNotifier()
+    war.maybe_send_ambiguous_ping(["CTO-A"], state_path=str(state_path), notifier=notifier)
+    second = war.maybe_send_ambiguous_ping(["CTO-A"], state_path=str(state_path), notifier=notifier)
+    assert second["sent"] is False
+    assert len(notifier.sent) == 1  # 두 번째 호출은 dedup으로 실제 전송 안 됨
+
+
+# ── run_once: 모호 배는 parked 모드 — 실행 안 함, dry-run은 큐 무변경 ──
+def test_run_once_dry_run_ambiguous_ship_returns_parked_mode_without_queue_mutation(tmp_path, monkeypatch):
+    queue = [_ship(note="점검")]  # 짧은 note = 모호
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    def _boom(*a, **kw):
+        raise AssertionError("dry-run parked 시나리오인데 subprocess.run이 호출됨")
+
+    monkeypatch.setattr(war.subprocess, "run", _boom)
+
+    before = queue_path.read_text(encoding="utf-8")
+    result = war.run_once(
+        clevel="cto",
+        queue_path=str(queue_path),
+        registry_path=None,
+        state_path=str(tmp_path / "state.json"),
+        log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping_state.json"),
+        live=False,
+    )
+    after = queue_path.read_text(encoding="utf-8")
+
+    assert result["mode"] == "parked"
+    assert result["executed"] is False
+    assert result["parked"] is False  # dry-run은 실제 park(큐 변경) 안 함
+    assert before == after  # 큐 무변경 유지
+
+
+def test_run_once_live_ambiguous_ship_parks_flag_and_previews_ping_without_real_send(tmp_path, monkeypatch):
+    queue = [_ship(note="점검")]  # 짧은 note = 모호
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    monkeypatch.delenv(war.PING_LIVE_ENV_VAR, raising=False)  # 기본 OFF — 실전송 게이트 잠김 확인
+    monkeypatch.setattr(
+        war, "working_tree_guard",
+        lambda *a, **kw: {"blocked": False, "dirty_files": [], "real_work_files": [], "reason": "클린"},
+    )
+
+    def _boom(*a, **kw):
+        raise AssertionError("parked 시나리오인데 subprocess.run(claude 호출)이 실행됨")
+
+    monkeypatch.setattr(war.subprocess, "run", _boom)
+
+    result = war.run_once(
+        clevel="cto",
+        queue_path=str(queue_path),
+        registry_path=None,
+        state_path=str(tmp_path / "state.json"),
+        log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping_state.json"),
+        live=True,
+    )
+
+    assert result["mode"] == "parked"
+    assert result["executed"] is False
+    assert result["commit"] is None
+    assert result["parked"] is True
+
+    saved = json.loads(queue_path.read_text(encoding="utf-8"))
+    assert saved[0]["aide_interview_needed"] is True
+    assert saved[0]["aide_interview_reason"]
+
+    # RUNNER_PING_LIVE 기본 OFF이므로 notifier=None 경로 — 실전송 없음(payload만 결과에 남음)
+    assert result["ping"]["sent"] is False
+    assert "모호 배 1건" in result["ping"]["text"]
