@@ -210,8 +210,12 @@ def build_prompt(target_date: str, conversation: str, past_issues_digest: str) -
     try:
         _d = datetime.strptime(target_date, "%Y-%m-%d")
         disp = f"{_d.month}/{_d.day}(" + "월화수목금토일"[_d.weekday()] + ")"
+        # 대상일이 '진짜 어제'면 '어제 운영부 정리 · 날짜', 아니면(휴관 폴백 등) 날짜만 — 오해 방지
+        _yest = (datetime.now().date() - _d.date()).days == 1
+        header_label = f"어제 운영부 정리 · {disp}" if _yest else f"{disp} 운영부 정리"
     except Exception:
         disp = target_date
+        header_label = f"{target_date} 운영부 정리"
     return f"""당신은 웰페리온(프리미엄 스포츠클럽 멤버십 커뮤니티) AI COO '시우'입니다.
 ★운영부 카카오톡 방의 어제({target_date}) 하루 대화를 읽고, 오늘 아침 방에 바로 보낼 요약 메시지 1통을 작성합니다.
 
@@ -224,7 +228,7 @@ def build_prompt(target_date: str, conversation: str, past_issues_digest: str) -
 메시지는 '줄글'로 풀어쓰지 말고, 한눈에 들어오게 글머리(•)와 '이름별'로 딱딱 정리합니다.
 아래 구조를 그대로 따르세요(각 줄은 짧고 명확하게):
 
-🌅 {disp} 운영부 정리
+🌅 {header_label}
 
 👤 [이름]
  • 그 사람이 올리거나 처리한 일 (핵심만 한 줄씩, 여러 건이면 여러 줄)
