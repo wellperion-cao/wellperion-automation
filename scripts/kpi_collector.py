@@ -95,22 +95,60 @@ _HTTP_TIMEOUT = 20
 SALES_TARGETS_PATH = ROOT / "status" / "sales_targets.json"
 
 
-def _http_get_json(url: str) -> object:
+def _http_get_json(url: str, timeout: int = _HTTP_TIMEOUT) -> object:
     """GET → 파싱된 JSON 객체. 예외는 호출부에서 처리."""
     sep = "&" if "?" in url else "?"
     busted = f"{url}{sep}_cb={int(time.time())}"
     req = urllib.request.Request(
         busted, headers={"Cache-Control": "no-cache"}
     )
-    with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as r:
+    with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
+
+
+def _coo_check_rate_monthly(month_str: str) -> dict | None:
+    """
+    지원부 월간 점검완료율 조회(1개월). 실패/데이터없음=None.
+    소스: 점검 GAS monthly_report?dept=support&month=YYYY-MM (제출된 점검일지 스냅샷 집계).
+    """
+    try:
+        url = f"{_CHECK_GAS}?action=monthly_report&dept=support&month={month_str}"
+        data = _http_get_json(url)
+        if not isinstance(data, dict) or not data.get("ok"):
+            return None
+        totals = data.get("monthTotals")
+        if not isinstance(totals, dict):
+            return None
+        sum_total = totals.get("sumTotal")
+        sum_done  = totals.get("sumDone")
+        avg_pct   = totals.get("avgPct")
+        active_days = totals.get("activeDays")
+        if not isinstance(sum_total, (int, float)) or sum_total <= 0:
+            return None  # 해당 월 활성 데이터 없음(예: 월초)
+        rate = (
+            round(avg_pct / 100, 4)
+            if isinstance(avg_pct, (int, float)) and not isinstance(avg_pct, bool)
+            else (round(sum_done / sum_total, 4) if isinstance(sum_done, (int, float)) else None)
+        )
+        return {
+            "rate": rate, "done": sum_done, "total": sum_total,
+            "month": month_str, "active_days": active_days,
+        }
+    except Exception:
+        return None
 
 
 def _coo_check_rate() -> dict:
     """
-    지원부 일일 점검완료율 (오늘 기준).
-    소스: 점검 GAS today_live?dept=support&date=YYYY-MM-DD (분모 정합 통로 · 배239)
-    반환: {"지원부_점검완료율": 0~1 또는 null, "지원부_완료": int, "지원부_전체": int,
+    지원부 점검완료율 — home/북극성 대표값 = 월간(당월 누적) 실측.
+    ⚠️ 배890 근본수리(2026-07-13): 구 소스(today_live 당일 값)를 대표값으로 쓰면 매일 아침
+    스냅샷 시각(kpi_collector 07:50 실행)에 done=0/total>0 이라 "0.0%로 죽어보임"(측정 실패
+    아님·오전 미시작 아티팩트, 실측 근거: 라이브 today_live 확인·월간 데이터엔 매일 실적 존재).
+    → 대표값을 monthly_report(당월 누적, 월초라 데이터 없으면 전월 최종)으로 재배선.
+    당일 today_live 값은 "_당일라이브" 접미 필드로 참고 병기(대표값 아님).
+    반환: {"지원부_점검완료율": 0~1|null(대표=월간), "지원부_완료"/"지원부_전체": 월간 분자/분모,
+           "지원부_점검완료율_기준": "YYYY-MM(누적,N일활성)"|"YYYY-MM(전월 최종)"|null,
+           "지원부_점검완료율_당일라이브": 0~1|null(참고), "지원부_당일라이브_완료"/"_전체": int|null,
            "4부서_점검완료율": null, "_note": str}
     — 4부서 전체 완료율은 이 GAS로 측정 불가(지원부 데이터만 제공) → null 유지.
     """
@@ -118,27 +156,50 @@ def _coo_check_rate() -> dict:
         "지원부_점검완료율": None,
         "지원부_완료": None,
         "지원부_전체": None,
+        "지원부_점검완료율_기준": None,
+        "지원부_점검완료율_당일라이브": None,
+        "지원부_당일라이브_완료": None,
+        "지원부_당일라이브_전체": None,
         "4부서_점검완료율": None,
         "_note": "4부서전체=미측정(GAS가지원부한정)",
     }
+    now = datetime.now(KST)
+    cur_month = now.strftime("%Y-%m")
+
+    # 대표값: 당월 누적 월간 완료율. 당월 데이터 없으면(월초) 전월 최종으로 폴백.
+    monthly = _coo_check_rate_monthly(cur_month)
+    basis = f"{cur_month}(누적,{monthly['active_days']}일활성)" if monthly else None
+    if monthly is None:
+        prev_month = (now.replace(day=1) - timedelta(days=1)).strftime("%Y-%m")
+        monthly = _coo_check_rate_monthly(prev_month)
+        basis = f"{prev_month}(전월 최종)" if monthly else None
+
+    if monthly is not None:
+        result["지원부_점검완료율"]     = monthly["rate"]
+        result["지원부_완료"]           = monthly["done"]
+        result["지원부_전체"]           = monthly["total"]
+        result["지원부_점검완료율_기준"] = basis
+        result["_note"] = (
+            "4부서전체=미측정(GAS가지원부한정) · 대표값=월간 누적 실측(monthly_report, "
+            f"기준={basis}) · 당일 라이브는 _당일라이브 필드 참고(아침엔 0 정상·측정실패 아님)"
+        )
+    else:
+        result["_note"] = "monthly_report 당월·전월 모두 데이터없음/응답오류"
+
+    # 참고값: 오늘 today_live(진행중 당일 포함·분모정합 통로 · 배239). 실패해도 대표값엔 무영향.
     try:
-        today_str = datetime.now(KST).strftime("%Y-%m-%d")
-        # today_live = 분모 정합 통로(주말 오후조 제외·전체 스케줄 기대치 기준, 배239 라이브).
-        # 구 get_today_summary(스냅샷 rows 25/25=100% 버그) 폐기 — 소스별 분모 불일치 원인.
+        today_str = now.strftime("%Y-%m-%d")
         url = f"{_CHECK_GAS}?action=today_live&dept=support&date={today_str}"
         data = _http_get_json(url)
-        if not isinstance(data, dict) or not data.get("total"):
-            result["_note"] = "today_live 분모 0/응답없음(점검 미시작 또는 GAS 오류)"
-            return result
-        total = data.get("total")
-        done  = data.get("done") or 0
-        rate  = round(done / total, 4) if total > 0 else None
-        result["지원부_점검완료율"] = rate
-        result["지원부_완료"]       = done
-        result["지원부_전체"]       = total
-        result["_note"] = "4부서전체=미측정(GAS가지원부한정) · 지원부=today_live 분모정합 통로(진행중 당일 포함)"
-    except Exception as e:
-        result["_note"] = f"fetch 실패({type(e).__name__}): {str(e)[:80]}"
+        if isinstance(data, dict) and data.get("total"):
+            total = data.get("total")
+            done  = data.get("done") or 0
+            result["지원부_점검완료율_당일라이브"] = round(done / total, 4) if total > 0 else None
+            result["지원부_당일라이브_완료"]       = done
+            result["지원부_당일라이브_전체"]       = total
+    except Exception:
+        pass  # 참고값 실패는 대표값(월간)에 영향 없음(null 안전)
+
     return result
 
 
@@ -219,7 +280,10 @@ def _cpo_funnel_conversion() -> dict:
         month_from = today.strftime("%Y-%m-01")
         month_to = today.strftime("%Y-%m-%d")
         murl = f"{_CPO_GAS}?action=funnel_conversion&numerator=registered&from={month_from}&to={month_to}"
-        mdata = _http_get_json(murl)
+        # 정밀모드(fcPrecise) 캐시미스 시 GAS 서버측 연산(_syncLessonRegistry_ 등)이 실측 27~30초 소요
+        # (2026-07-13 시포 실측: 27.7초) — 전역 20초 타임아웃(_HTTP_TIMEOUT)로는 항상 클라이언트측
+        # 타임아웃 → null. 이 호출만 45초로 연장(캐시 히트 시 <2초라 상시 지연 아님).
+        mdata = _http_get_json(murl, timeout=45)
         if isinstance(mdata, dict) and mdata.get("ok") and isinstance(mdata.get("total"), dict):
             mtotal = mdata["total"]
             mrate = mtotal.get("rate")
@@ -506,7 +570,12 @@ def main() -> None:
     for role, v in data["roles"].items():
         extra = ""
         if role == "coo" and v.get("지원부_점검완료율") is not None:
-            extra = f"  지원부점검완료율={v['지원부_점검완료율']}({v['지원부_완료']}/{v['지원부_전체']})"
+            extra = (
+                f"  지원부점검완료율(월간대표)={v['지원부_점검완료율']}"
+                f"({v['지원부_완료']}/{v['지원부_전체']}, 기준={v.get('지원부_점검완료율_기준')})"
+                f"  당일라이브={v.get('지원부_점검완료율_당일라이브')}"
+                f"({v.get('지원부_당일라이브_완료')}/{v.get('지원부_당일라이브_전체')})"
+            )
         if role == "cpo" and v.get("월_LOSS율") is not None:
             extra = f"  월_LOSS율={v['월_LOSS율']}(역방향·낮을수록좋음, {v['월_LOSS건수']}건/{v['유효회원수']}명)"
         if role == "cpo" and v.get("문의_가입_전환율") is not None:
