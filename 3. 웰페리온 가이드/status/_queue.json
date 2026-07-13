@@ -669,5 +669,17 @@
     "artifact": "daily_scheduler.py queue_archive_sweep 잡이 next_run_time 미지정으로 스케줄러\n기동(PC재부팅) 후 첫 6시간(약 05:56→11:56) 동안 전일 DONE 배가 활성 큐에\n그대로 남아있던 원인. push_sweeper와 동일하게 next_run_time=datetime.now()\n추가해 부팅 즉시 1회 스윕 + 이후 6시간 주기 유지(가역·no-op 안전 확인). (CLI ad-hoc · 커밋 01e87463)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "01e87463f9c6c8f74531da8ff0023292fba5ea4d"
+  },
+  {
+    "task_id": "COO-2026-07-13-CHECK-ALERT-CLOSEDDAY",
+    "clevel": "coo",
+    "title": "[시우] 점검 알림 셀 정정 — 휴관일=「휴관」 표기 + 당월 누적 완료율 병기(아침·휴관 0% 오해 제거)",
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-13",
+    "ship_no": 917,
+    "module": "O1",
+    "note": "[2026-07-13 GM go A] 890 KPI 수리 후 남은 표면. daily_scheduler.py 알림 지원부 셀이 raw today_live라 휴관일 0/82(0%)·아침 저% 오해. 수리: _is_closed_day(2·4주 일요일+1/1)로 휴관일엔 '🚫 휴관일-점검없음' 블록·정상일엔 당월누적 완료율 병기(kpi_values.json 재사용). 코드·dry-run 검증 완료. 가역(코드추가만).",
+    "next": "⚓ 라이브 발효=daily_scheduler 데몬 재기동 후(현재 PID 관리자권한이라 즉시 재기동 불가·Access Denied). 다음 휴관일 07-26·매일 12시 알림에서 실동작 확인. 재기동=다음 PC 재부팅 시 자동."
   }
 ]

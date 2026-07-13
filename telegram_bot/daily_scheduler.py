@@ -1606,6 +1606,48 @@ def _fetch_facility_today() -> dict | None:
     return None
 
 
+def _is_closed_day(d=None) -> bool:
+    """휴관일 = 매월 2·4주 일요일 + 1/1 (프론트 getDayInfo와 동일 규칙)."""
+    import math
+    if d is None:
+        d = datetime.now()
+    wk = math.ceil(d.day / 7)
+    if d.weekday() == 6 and wk in (2, 4):  # 일요일(파이썬 Sun=6) & 2·4주
+        return True
+    if d.strftime("%m-%d") == "01-01":
+        return True
+    return False
+
+
+def _support_monthly_rate() -> str | None:
+    """published 당월 누적 지원부 완료율 병기 문자열. 없으면 None."""
+    try:
+        import json, os
+        p = os.path.join(os.path.dirname(__file__), "..", "status", "kpi_values.json")
+        with open(p, encoding="utf-8") as f:
+            kv = json.load(f)
+        # 중첩 dict 어디에 있든 재귀로 키 탐색
+        def find(o, key):
+            if isinstance(o, dict):
+                if key in o: return o[key]
+                for v in o.values():
+                    r = find(v, key)
+                    if r is not None: return r
+            elif isinstance(o, list):
+                for v in o:
+                    r = find(v, key)
+                    if r is not None: return r
+            return None
+        rate = find(kv, "지원부_점검완료율")
+        basis = find(kv, "지원부_점검완료율_기준") or ""
+        if isinstance(rate, (int, float)) and not isinstance(rate, bool):
+            b = f" ({basis.split('(')[0]})" if basis else ""
+            return f"📊 당월 누적 지원부 완료율: {round(rate*100)}%{b}"
+    except Exception:
+        pass
+    return None
+
+
 def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
     """
     12시/23시(폴백) 공용 — 체크리스트 대시보드 박스표 블록 생성.
@@ -1621,11 +1663,24 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
 
     dashboard_url = "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"
 
+    if _is_closed_day(now):
+        body = f"🛠 시설·지원 점검 현황 — {slot_label} ({day_kor})\n🚫 오늘은 휴관일 — 점검 없음"
+        if html_link:
+            return f"{html.escape(body, quote=False)}\n🔗 대시보드: <a href=\"{dashboard_url}\">링크</a>"
+        return f"{body}\n🔗 대시보드: {dashboard_url}"
+
     # 지원부·시설부 라이브 소스로 조회 — 옛 CHECKLIST_API_URL은 오늘 빈 응답(rows=0)이라 폐기(2026-07-08 GM):
     #   지원부=today_live&dept=support(실데이터·완료율) · 시설부=monthly_report 오늘행(입력률+이상). 두 지표 체계는 다름(억지 통일 안 함).
     #   주차관리부는 SSOT상 독립·점검 제외 부서(weekly가 구조상 전부 0) → 12시 표에서 제외.
     support_live = _fetch_support_today_live(today)
-    facility_today = _fetch_facility_today()
+    # 시설부=monthly_report 한 번 호출로 입력률 + 기준이탈 항목·값·기준까지 확보(12시 상세 노출).
+    monthly = _fetch_facility_monthly(today)
+    facility_today = _facility_today_row(monthly, today)
+
+    # 부서별 대시보드(GM 지적: '시설부 이탈'인데 링크는 지원부로 가던 불일치 → 부서별 앵커로 교정)
+    _CHECK_BASE = "https://wellperion-cao.github.io/wellperion-automation/coo/check/"
+    support_dash = _CHECK_BASE + "%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"   # 지원부 체계.html
+    facility_dash = _CHECK_BASE + "%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"  # 시설부 체계.html
 
     def _support_cell() -> str:
         if not support_live:
@@ -1636,8 +1691,7 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
         dn = support_live.get("done", 0)
         return f"{dn}/{t}({round(dn / t * 100)}%)"
 
-    def _facility_cell() -> str:
-        # 시설부 지표=입력률(입력/전체)+이상건수 — 지원부 완료율과 다른 체계(억지 통일 안 함).
+    def _facility_pct() -> str:
         if facility_today is None:
             return "-"
         f_total = facility_today.get("total", 0)
@@ -1645,32 +1699,52 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
             return "미가동"
         f_done = facility_today.get("done", 0)
         f_pct = facility_today.get("pct", round(f_done / f_total * 100))
-        ooc = facility_today.get("outOfRangeCount", 0)
-        return f"{f_done}/{f_total}({f_pct}%)" + (f" ⚠{ooc}" if ooc else "")
+        return f"{f_done}/{f_total}({f_pct}%)"
 
+    def _facility_cell() -> str:  # 23시 폴백 박스표용(⚠N 포함)
+        base = _facility_pct()
+        ooc = (facility_today or {}).get("outOfRangeCount", 0)
+        return base + (f" ⚠{ooc}" if ooc and base not in ("-", "미가동") else "")
+
+    ooc_cnt = (facility_today or {}).get("outOfRangeCount", 0)
+    mrate = _support_monthly_rate()
+
+    if html_link:
+        # 12시 — 고도화/단순화: 헤더가 이미 '오전 점검 현황'이라 부제·장식줄 제거.
+        #   지표 체계를 라벨로 구분(지원부=완료율 / 시설부=입력률). 기준이탈은 '무엇이 왜'까지 상세 노출.
+        lines = [
+            f"📋 지원부 완료  {_support_cell()}",
+            f"🔧 시설부 입력  {_facility_pct()}",
+        ]
+        if mrate:
+            lines.append(mrate)
+        status = "\n".join(lines)
+        if ooc_cnt:
+            issue = _build_facility_ooc_detail(monthly, today)  # "⚠️ 시설부 기준이탈 N건\n  · 항목: 값 (기준 lo~hi)"
+        else:
+            issue = "✅ 기준이탈 없음 — 시설 측정 전 항목 정상"
+        body_safe = html.escape(f"{status}\n\n{issue}", quote=False)
+        link_line = (
+            f'🔗 대시보드 — <a href="{support_dash}">지원부</a> · '
+            f'<a href="{facility_dash}">시설부</a>'
+        )
+        return f"{body_safe}\n{link_line}"
+
+    # 23시 폴백(MarkdownV2 안전) — 기존 박스표 형식 유지. 링크만 시설부(이탈 부서)로 교정.
     table_str = "\n".join(_count_table([
         ("지원부 체크", _support_cell()),
         ("시설부 체크", _facility_cell()),
     ]))
-
-    # 시설부 기준이탈(outOfRange) 있으면 이슈 한 줄(today_live엔 지원부 개별 이슈 없음)
-    ooc_cnt = (facility_today or {}).get("outOfRangeCount", 0)
     issue_block = f"\n\n[시설부 기준이탈] {ooc_cnt}건 — 대시보드 확인" if ooc_cnt else ""
-
+    mrate_block = f"\n{mrate}" if mrate else ""
     body_plain = (
         f"🛠 시설·지원 점검 현황 — {slot_label} ({day_kor})\n"
         f"   체크리스트 진행 상황\n"
         f"{table_str}"
+        f"{mrate_block}"
         f"{issue_block}"
     )
-
-    if html_link:
-        # 동적 텍스트(라벨·숫자·이슈문구)에 &/</>가 섞여도 HTML 파싱이 깨지지 않도록 escape.
-        # 박스 그림문자(│─┌ 등)와 한글은 html.escape 영향 없음. <a> 앵커는 escape 후 그대로 추가.
-        body_safe = html.escape(body_plain, quote=False)
-        return f"{body_safe}\n🔗 대시보드: <a href=\"{dashboard_url}\">링크</a>"
-
-    return f"{body_plain}\n🔗 대시보드: {dashboard_url}"
+    return f"{body_plain}\n🔗 대시보드: {facility_dash}"
 
 
 def _build_12_body() -> str:
