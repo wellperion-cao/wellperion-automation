@@ -755,7 +755,8 @@ function renderHero(f) {
     +   '<span style="font-size:13px;color:var(--dim)">/ ' + targetVal + '건 목표</span>'
     + '</div>'
     + '<div class="hero-bar-wrap"><div class="hero-bar-track"><div class="hero-bar-fill" style="width:' + pct + '%;background:' + barColor + '"></div></div><div class="hero-bar-pct" style="color:' + barColor + '">' + pct + '%</div></div>'
-    + (paceHtml ? '<div class="hero-pace">' + paceHtml + '</div>' : '');
+    + (paceHtml ? '<div class="hero-pace">' + paceHtml + '</div>' : '')
+    + '<div style="font-size:10px;color:var(--dim);margin-top:8px;padding-top:6px;border-top:1px dashed var(--border);line-height:1.5">※ 이 목표 건수는 멤버십·강습(성인·유소년)·기타 등 목표추적 대상만 집계 — 위 "연락·문의" 카드(회사 전체: 멤버십+강습+렌트+비즈)와 스코프가 달라 숫자가 다를 수 있습니다.</div>';
 }
 
 // ─── #3+#5 유입채널 현황 (inflow-channel-wrap) — 채널×유형 교차 병합 ─────
