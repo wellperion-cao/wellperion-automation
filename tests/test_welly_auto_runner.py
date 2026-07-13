@@ -80,6 +80,48 @@ def test_select_allows_plain_reversible_ship():
     assert result["task_id"] == "CTO-2026-07-13-A"
 
 
+# ── select_one_low_risk_ship: 구체 작업 배 필터(bridge 포인터 배 제외) ──
+def test_select_excludes_bridge_origin_ship():
+    queue = [_ship(origin="bridge")]
+    result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY)
+    assert result is None
+
+
+def test_select_excludes_next_prefixed_task_id():
+    queue = [_ship(task_id="NEXT-20260707-155721")]
+    result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY)
+    assert result is None
+
+
+def test_select_excludes_ship_without_priority():
+    queue = [_ship(priority=None)]
+    result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY)
+    assert result is None
+
+    queue_empty = [_ship(priority="")]
+    result_empty = war.select_one_low_risk_ship("cto", queue_empty, registry=FAKE_REGISTRY)
+    assert result_empty is None
+
+
+def test_select_bridge_ship_excluded_among_mixed_candidates():
+    # 실제 관측 사례(NEXT-20260707-155721)와 동형: origin=bridge + NEXT- task_id + priority 없음.
+    bridge_ship = {
+        "task_id": "NEXT-20260707-155721",
+        "clevel": "cto",
+        "title": "재설계=배420으로 이어짐. stage4 기여추적은 420에 통합 검토",
+        "status": "PENDING",
+        "depends_on": "",
+        "from": "cto",
+        "origin": "bridge",
+        "enqueued_at": "2026-07-07T06:57:21Z",
+        "ship_no": 597,
+    }
+    queue = [bridge_ship, _ship()]  # bridge 포인터 + 정상 구체 가역 배
+    result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY)
+    assert result is not None
+    assert result["task_id"] == "CTO-2026-07-13-A"
+
+
 # ── 쿨다운 배 제외 ──
 def test_select_excludes_cooldown_task_ids():
     queue = [_ship()]

@@ -7,8 +7,9 @@ welly_auto_runner.py — 예약 Claude 러너 MVP (배237 phase3, GM 승인 2026
 
 ★안전모델(기본 OFF)★
   1) 선별: welly_orchestrate.select_autonomous_ships(가역·담당 clevel·등록부 존재) +
-     저위험 추가 필터(EXTRA_LOW_RISK_EXCLUDE_KEYWORDS) + 쿨다운 배 제외.
-     난이도(priority) 오름차순 정렬 후 **1척만** 반환.
+     저위험 추가 필터(EXTRA_LOW_RISK_EXCLUDE_KEYWORDS) + 구체 작업 배 필터(_is_concrete_ship —
+     origin=="bridge"·task_id "NEXT-"접두·priority 없음인 자동생성 '다음 참고' 포인터 배 제외) +
+     쿨다운 배 제외. 난이도(priority) 오름차순 정렬 후 **1척만** 반환.
   2) 게이트: env RUNNER_LIVE(기본 미설정=OFF)="1"일 때만 실제 claude 호출.
      OFF면 dry-run — 배 선택 + 띄울 프롬프트 생성 + 로그만. claude 미호출·커밋 0·
      _queue.json 무변경.
@@ -78,6 +79,24 @@ def _is_low_risk(ship: dict) -> bool:
     return not any(keyword in text for keyword in EXTRA_LOW_RISK_EXCLUDE_KEYWORDS)
 
 
+def _is_concrete_ship(ship: dict) -> bool:
+    """
+    'bridge' 포인터 배(자동 생성 다음-참고용 배)를 제외하는 품질 게이트.
+    러너는 사람이 등록한 구체 작업 배만 자율 실행 대상으로 삼는다:
+      - origin == "bridge" 배 제외(자동 생성 포인터)
+      - task_id가 "NEXT-"로 시작하는 배 제외(bridge 포인터 관례)
+      - priority가 없거나 빈 배 제외(난이도 배 미표기 = 구체 등록이 아님)
+    """
+    if ship.get("origin") == "bridge":
+        return False
+    task_id = ship.get("task_id") or ""
+    if task_id.startswith("NEXT-"):
+        return False
+    if not (ship.get("priority") or "").strip():
+        return False
+    return True
+
+
 def _priority_rank(ship: dict) -> int:
     return _PRIORITY_WEIGHT.get(ship.get("priority"), 1)  # 미표기 배=중간 취급
 
@@ -91,6 +110,7 @@ def select_one_low_risk_ship(clevel, queue, registry=None, cooldown_task_ids=Non
     cooldown_task_ids = cooldown_task_ids or set()
     candidates = select_autonomous_ships(clevel, queue, registry=registry)
     candidates = [s for s in candidates if _is_low_risk(s)]
+    candidates = [s for s in candidates if _is_concrete_ship(s)]
     candidates = [s for s in candidates if s.get("task_id") not in cooldown_task_ids]
     if not candidates:
         return None
