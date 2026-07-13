@@ -800,5 +800,19 @@
     "artifact": "평가환류 루프(배401) 실행: 카페 39회 클릭 1위 신호 기반\n- instagram/260713_방학특강_후속_카페학부모/기획_초안.md\n  A안(현장·후기) 추천·B안(마감임박) 보류 제안. 카페(동부이촌동) 학부모 1인칭 톤.\n- instagram/260713_당근_성인회복_테스트/기획_초안.md\n  당근 클릭 2회 실패 원인=유소년 소재 → 성인·회복(A안 사우나) 각도 전환 테스트 설계. (CLI ad-hoc · 커밋 7685bae9)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "7685bae9be70c2f0db3ca6eee8956fb77fd064ee"
+  },
+  {
+    "task_id": "CEO-2026-07-13-ADHOC-09b2773f",
+    "clevel": "ceo",
+    "title": "[웰리] 예약 러너 클린트리 가드 — 무단 무관작업 커밋혼입 방지",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 926,
+    "artifact": "RUNNER_LIVE 실행 직전 working_tree_guard()로 워킹트리를 점검한다. status/*.json·\n로그·heartbeat·cache 등 상시 자동생성 노이즈는 allowlist로 통과시키고, 그 밖의\n진짜 미커밋 작업(*.py·*.html·docs 등)이 남아있으면 즉시 skip한다 — 무인 세션이\n방치된 무관 작업(예: telegram_bot/daily_scheduler.py 리팩터)을 자기 커밋에\n쓸어담던 결함 대응. 오케스트레이션 프롬프트에도 git add -A/commit -a 금지를\n명시 강화하고, L (CLI ad-hoc · 커밋 09b2773f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "09b2773f5e2c7809d993724a747f152c524c5040"
   }
 ]

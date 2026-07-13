@@ -1606,20 +1606,25 @@ def _fetch_facility_today() -> dict | None:
     return None
 
 
-def _fetch_facility_work(today: str) -> str | None:
-    """시설부 오늘 작업사항(fc_work) 원문. 없으면 None."""
+def _fetch_facility_board(today: str) -> dict:
+    """시설부 오늘 board 한 번 호출 — 작업사항(fc_work) 원문 + 제출 회차수(submissions len).
+    회차는 monthly의 sessionCount(라운드종류=1 고정)가 아니라 실제 제출 건수(페이지 'N회 완료'와 일치)."""
+    out = {"work": None, "sessions": 0}
     try:
-        resp = _gas_get(f"{SUPPORT_CHECK_API_URL}?action=board&key=FACILITY_CHECK_{today}", label="12시 시설부작업사항")
+        resp = _gas_get(f"{SUPPORT_CHECK_API_URL}?action=board&key=FACILITY_CHECK_{today}", label="12시 시설부board")
         if resp is None:
-            return None
-        b = resp.json().get("board", {})
-        w = (b.get("store", {}) or {}).get("daily", {}).get("fc_work")
+            return out
+        store = (resp.json().get("board", {}) or {}).get("store", {}) or {}
+        w = (store.get("daily", {}) or {}).get("fc_work")
         if isinstance(w, str) and w.strip():
             w = w.strip()
-            return w[:400] + "…" if len(w) > 400 else w
+            out["work"] = w[:400] + "…" if len(w) > 400 else w
+        subs = store.get("submissions")
+        if isinstance(subs, list):
+            out["sessions"] = len(subs)
     except Exception:
         pass
-    return None
+    return out
 
 
 def _is_closed_day(d=None) -> bool:
@@ -1692,6 +1697,8 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
     # 시설부=monthly_report 한 번 호출로 입력률 + 기준이탈 항목·값·기준까지 확보(12시 상세 노출).
     monthly = _fetch_facility_monthly(today)
     facility_today = _facility_today_row(monthly, today)
+    # board 한 번 호출로 작업사항 + 실제 제출 회차수 확보(회차=페이지 'N회 완료'와 일치)
+    fac_board = _fetch_facility_board(today) if facility_today is not None else {"work": None, "sessions": 0}
 
     # 부서별 대시보드(GM 지적: '시설부 이탈'인데 링크는 지원부로 가던 불일치 → 부서별 앵커로 교정)
     _CHECK_BASE = "https://wellperion-cao.github.io/wellperion-automation/coo/check/"
@@ -1713,7 +1720,7 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
         f_total = facility_today.get("total", 0)
         if not f_total:
             return "미가동"
-        sc = facility_today.get("sessionCount") or 0
+        sc = fac_board.get("sessions") or facility_today.get("sessionCount") or 0
         ooc = facility_today.get("outOfRangeCount", 0)
         return f"{sc}회·이상 {ooc}건" if ooc else f"{sc}회·이상 없음"
 
@@ -1738,7 +1745,7 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
             issue = "✅ 이상 없음 — 시설 측정 전 항목 정상"
 
         # 작업사항 원문(이상 내용·해결) — GM 승인 포맷 A
-        fac_work = _fetch_facility_work(today) if facility_today is not None else None
+        fac_work = fac_board.get("work")
         work_block = f"─ 시설부 작업사항 ─\n{fac_work}" if fac_work else ""
 
         parts = [status, issue] + ([work_block] if work_block else [])
@@ -1755,7 +1762,7 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
         ("지원부 체크", _support_cell()),
         ("시설부 점검", _facility_cell()),
     ]))
-    fac_work = _fetch_facility_work(today) if facility_today is not None else None
+    fac_work = fac_board.get("work")
     work_block = f"\n\n─ 시설부 작업사항 ─\n{fac_work}" if fac_work else ""
     mrate_block = f"\n{mrate}" if mrate else ""
     body_plain = (
@@ -2597,23 +2604,19 @@ def run_report(slot: str, test_mode: bool = False) -> None:
     # 다른 슬롯은 MarkdownV2 그대로(무영향).
     parse_mode = "HTML" if slot == "12" else "MarkdownV2"
 
+    # 12시 점검현황 = 점검관리방 전용(GM 2026-07-13) — 업무보고(owner DM) 중복 발송 제거.
+    #   test_mode는 GM DM(owner)로 미리보기만(방 오발송 방지).
+    if slot == "12" and not test_mode:
+        room_ok = send_telegram(CHECK_NUDGE_CHAT_ID, body, parse_mode=parse_mode)
+        logger.info(f"{label} 점검관리방 발송 {'완료' if room_ok else '실패'} chat_id={CHECK_NUDGE_CHAT_ID}")
+        return
+
     success = send_telegram(owner_id, body, parse_mode=parse_mode)
     if success:
         logger.info(f"{label} 텔레그램 발송 완료 owner_id={owner_id}")
     else:
         logger.error(f"{label} 텔레그램 발송 실패 — 재시도 소진")
         logger.critical(f"{label} CRITICAL: 텔레그램 도달 불가 — 수동 확인 필요")
-
-    # 12시 오전 점검 현황은 점검관리방에도 발송 (GM DM + 점검관리방) — 2026-07-08 GM
-    if slot == "12" and not test_mode:
-        try:
-            room_ok = send_telegram(CHECK_NUDGE_CHAT_ID, body, parse_mode=parse_mode)
-            if room_ok:
-                logger.info(f"{label} 점검관리방 추가 발송 완료 chat_id={CHECK_NUDGE_CHAT_ID}")
-            else:
-                logger.error(f"{label} 점검관리방 추가 발송 실패")
-        except Exception as e:
-            logger.error(f"{label} 점검관리방 추가 발송 예외: {e}")
 
 
 # ── 테스트 모드 슬롯 결정 ──────────────────────────────────────────────────────
