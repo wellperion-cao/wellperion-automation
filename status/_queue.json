@@ -655,5 +655,19 @@
     "artifact": "검증된 당근 패턴을 네이버 블로그·카페에 동형 포팅. 영속 프로필\nfragile 의존 완화 = 3채널 전부 동일 인증 아키텍처. (CLI ad-hoc · 커밋 21692a40)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "21692a40ba3405709d543c9e7676248c0988bbbc"
+  },
+  {
+    "task_id": "COO-2026-07-13-ADHOC-01e87463",
+    "clevel": "coo",
+    "title": "[시우] 큐 아카이브 스윕 부팅 즉시 1회 실행 추가 — 전일 DONE 잔존 갭 해소",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 916,
+    "artifact": "daily_scheduler.py queue_archive_sweep 잡이 next_run_time 미지정으로 스케줄러\n기동(PC재부팅) 후 첫 6시간(약 05:56→11:56) 동안 전일 DONE 배가 활성 큐에\n그대로 남아있던 원인. push_sweeper와 동일하게 next_run_time=datetime.now()\n추가해 부팅 즉시 1회 스윕 + 이후 6시간 주기 유지(가역·no-op 안전 확인). (CLI ad-hoc · 커밋 01e87463)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "01e87463f9c6c8f74531da8ff0023292fba5ea4d"
   }
 ]
