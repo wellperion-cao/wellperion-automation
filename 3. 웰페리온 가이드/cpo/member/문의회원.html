@@ -2228,7 +2228,7 @@ var ALLOW_ADD = true;     // 2026-06-23 GM: 전화·직접 문의 수기 추가 
    컬럼탐지·값 포맷은 .deploy-funnel/Survey.js(_miReadRows_/_lessonReadRows_ 및 호출 헬퍼) 1:1 이식.
    ★ 필드 추가/변경 시 Survey.js와 본 블록을 항상 함께 갱신할 것 — 안 그러면 gviz 전환 시 조용히 어긋남.
    ═══════════════════════════════════════════════════════════════════════ */
-var USE_GVIZ = false;  // ⚠️ 롤백(2026-07-13 시포) — gviz가 615행 중 192행만 반환·rowIndex 압축(예:조화순 물리587→gviz172) → 저장 rowIndex 어긋남·keyPhone 가드 거부(no-cors라 화면엔 "저장"), 예약·편집이 새로고침 시 소실. 라이브 실증 확정. GAS 읽기로 복귀=rowIndex 물리행 일치. 성능 재최적화(gviz 물리행 정합 or 백엔드 phone-키 저장)=후속 배. 재활성 금지(=true 하지 말 것) — 정합 수리 전까지
+var USE_GVIZ = true;   // ✅ 재활성(2026-07-13 시포) — gviz rowIndex 압축 어긋남(조화순 물리587→gviz172)은 백엔드 저장이 keyPhone으로 올바른 물리 행을 복구(Survey.js _findRowByPhone_, GAS@153)해 근본 무해화. 라이브 실증: 버그 rowIndex172로 저장→행587에 정확 기록. 빠른 읽기(~1초) 복원. 역롤백=false 1줄(단 백엔드 폴백 없으면 예약 소실 재발 주의). INC-013
 var GVIZ_MI_SS_ID = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';   // 멤버십(1-1 멤버십 문의 관리) 스프레드시트
 var GVIZ_MI_GID = 1902010032;                                        // '26년 신규문의' 응답탭
 var GVIZ_LESSON_SS_ID = '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw'; // 강습(3-1 강습·WSC 강습 문의 관리) 스프레드시트

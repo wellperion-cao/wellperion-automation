@@ -89,6 +89,20 @@ function _findColExact_(headers, keys) {
 // 전화번호 정규화(숫자만) — 행키(rowIndex) 검증용 안정키 비교에 사용. 2026-06-26 시우.
 function _normPhone_(v) { return String(v == null ? '' : v).replace(/[^0-9]/g, ''); }
 
+// keyPhone(정규화)로 시트에서 대상 물리 행 탐색 — rowIndex가 어긋났을 때(예: gviz 압축 인덱스·시트 편집 밀림)
+// 올바른 행을 복구해 저장이 엉뚱한 행으로 가지 않게 한다. phCol0=전화 컬럼(0-based). 반환=물리 행(1-based, ≥2) 또는 -1.
+// 첫 일치 반환(동일 전화 중복은 드묾·기존 rowIndex 검증과 동일 노출). 2026-07-13 시포(INC-013 근본수리).
+function _findRowByPhone_(sh, phCol0, keyPhoneNorm) {
+  if (!sh || phCol0 < 0 || !keyPhoneNorm) return -1;
+  var last = sh.getLastRow();
+  if (last < 2) return -1;
+  var col = sh.getRange(2, phCol0 + 1, last - 1, 1).getValues();
+  for (var i = 0; i < col.length; i++) {
+    if (_normPhone_(col[i][0]) === keyPhoneNorm) return i + 2;
+  }
+  return -1;
+}
+
 // ─── 유입채널 표준화 (시모·GM 2026-06-13 확정 — 마케팅용 10버킷) ───
 // 자유텍스트(과거 리셉션 + 구글폼 자유입력)로 300여 개 난립한 채널 원문을 표준 10종으로 정규화한다.
 // 비파괴: 시트 원본은 손대지 않고, 대시보드 집계(byChannel/byChannelMonth) '읽기 시점'에만 적용.
@@ -2485,8 +2499,12 @@ function _processAction(body) {
       if (_muPhCi >= 0) {
         var _muRowPh = _normPhone_(muSh.getRange(muRow, _muPhCi + 1).getValue());
         var _muKeyPh = _normPhone_(body.keyPhone);
-        if (_muRowPh && _muKeyPh && _muRowPh !== _muKeyPh) {
-          return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
+        if (_muKeyPh && _muRowPh !== _muKeyPh) {
+          // rowIndex가 대상과 어긋남(gviz 압축 인덱스·시트 편집 밀림·빈행) → keyPhone으로 올바른 물리 행 복구.
+          // 찾으면 그 행으로 재지정(저장 성공), 못 찾으면 거부(오수정 방지·기존 안전동작). 2026-07-13 시포(INC-013 근본수리).
+          var _muFound = _findRowByPhone_(muSh, _muPhCi, _muKeyPh);
+          if (_muFound >= 2) muRow = _muFound;
+          else return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 없음) — 목록을 새로고침 후 다시 시도하세요' });
         }
       }
     }
@@ -2813,8 +2831,11 @@ function _processAction(body) {
       if (_luPhCi >= 0) {
         var _luRowPh = _normPhone_(luSh.getRange(luRow, _luPhCi + 1).getValue());
         var _luKeyPh = _normPhone_(body.keyPhone);
-        if (_luRowPh && _luKeyPh && _luRowPh !== _luKeyPh) {
-          return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
+        if (_luKeyPh && _luRowPh !== _luKeyPh) {
+          // rowIndex 어긋남(gviz 압축 인덱스·시트 편집 밀림·빈행) → keyPhone으로 올바른 물리 행 복구. 2026-07-13 시포(INC-013).
+          var _luFound = _findRowByPhone_(luSh, _luPhCi, _luKeyPh);
+          if (_luFound >= 2) luRow = _luFound;
+          else return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 없음) — 목록을 새로고침 후 다시 시도하세요' });
         }
       }
     }
