@@ -40,6 +40,14 @@ except ImportError:
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
     from cta_utm import append_cta_card, ensure_single_clean_cta
 
+# 발행 무결성 게이트 — 3채널 공유 프레임 (scripts/publish_integrity_gate.py)
+try:
+    from publish_integrity_gate import evaluate_integrity
+except ImportError:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    from publish_integrity_gate import evaluate_integrity
+
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -860,7 +868,7 @@ async def _attach_images_via_file_chooser(page, image_paths: "list[Path]") -> bo
     return False
 
 
-async def _publish_via_next(page) -> int:
+async def _publish_via_next(page, expected_img: int = 0) -> int:
     """발행: '다음' → 설정/확인 화면 → '게시/등록/발행' 클릭. 화면 진단 포함(첫 구현 실측용).
     버튼 못 찾으면 발행 안 하고 7 반환(안전 — 공개 오발행 방지)."""
     import asyncio
@@ -872,6 +880,37 @@ async def _publish_via_next(page) -> int:
         print(f"[DIAG/{tag}] 보이는 버튼: " + " | ".join(repr(b) for b in btns))
 
     await _dump("작성후")
+
+    # ── 발행 직전 무결성 게이트 (F2 본문/이미지 소실 재발 방지 — 3채널 공유 프레임) ──
+    # 당근 비즈 에디터는 기존에 게이트가 없었음 — 기존 본문 타이핑에 쓰는 _BODY_SELECTORS 를
+    # 재사용해 best-effort 측정. 측정 실패 시 -1(→WARN·비차단)로 폴백.
+    body_loc_g, _body_sel_g = await _find_first(page, _BODY_SELECTORS)
+    try:
+        body_text_len = (
+            await body_loc_g.evaluate("el => (el.innerText || el.textContent || '').trim().length")
+            if body_loc_g is not None else -1
+        )
+    except Exception:
+        body_text_len = -1
+    try:
+        img_count = (
+            await body_loc_g.evaluate("el => el.querySelectorAll('img').length")
+            if body_loc_g is not None else -1
+        )
+    except Exception:
+        img_count = -1
+    verdict = evaluate_integrity(
+        "당근",
+        body_text_len=body_text_len,
+        img_count=img_count,
+        expected_img=expected_img,
+    )
+    print(f"[GUARD] 발행 직전 무결성 판정 — {verdict.summary()}")
+    if not verdict.ok:
+        print("[WARN] 무결성 가드 FAIL — 발행 중단(안전).")
+        await _screenshot(page, "danggn_publish_ABORT_integrity.png")
+        return 7
+
     next_loc, next_sel = await _find_first(page, [
         'button:has-text("다음")', '[role="button"]:has-text("다음")'])
     if not next_loc:
@@ -1031,7 +1070,7 @@ async def _run_draft_with_context(page, context, args: argparse.Namespace, publi
 
     # ④ 발행(publish=True) — '다음→게시' 흐름 / 아니면 임시저장
     if publish:
-        rc = await _publish_via_next(page)
+        rc = await _publish_via_next(page, expected_img=len(post.image_paths))
         if rc == 0:
             # 발행 성공 직후 page.url에서 daangn business-posts/{id} 캡처 (발행시점)
             # try/except 로 감싸 실패해도 발행 흐름 절대 막지 않음

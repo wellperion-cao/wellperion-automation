@@ -43,6 +43,14 @@ except ImportError:
     from cta_utm import (append_cta_card, normalize_body, slugify_campaign,
                          build_inquiry_utm_url, strip_inquiry_cta_lines, CLEAN_CTA_TEXT)
 
+# 발행 무결성 게이트 — 3채널 공유 프레임 (scripts/publish_integrity_gate.py)
+try:
+    from publish_integrity_gate import evaluate_integrity
+except ImportError:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    from publish_integrity_gate import evaluate_integrity
+
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -1359,11 +1367,18 @@ async def run_publish(args: argparse.Namespace) -> int:
             )
         except Exception:
             body_text_len = -1
-        print(f"[GUARD] 발행 직전 본문 <img>={body_img_count} / 본문 텍스트 길이={body_text_len}")
-        if body_img_count == 0 or body_text_len == 0:
+        verdict = evaluate_integrity(
+            "블로그",
+            body_text_len=body_text_len,
+            img_count=body_img_count,
+            expected_img=len(post.image_paths),
+            expected_tags=len(post.tags),
+        )
+        print(f"[GUARD] 발행 직전 무결성 판정 — {verdict.summary()}")
+        if not verdict.ok:
             await page.screenshot(path=str(shot.with_suffix(".ABORT_integrity.png")))
             raise RuntimeError(
-                f"발행 중단(무결성 가드) — 본문 img={body_img_count}, 텍스트 길이={body_text_len}. "
+                f"발행 중단(무결성 가드) — {verdict.summary()}. "
                 "본문/이미지 소실 감지 → 발행하지 않고 초안 상태로 남김 (임시저장 큐 비우고 재시도 필요)."
             )
 

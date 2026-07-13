@@ -41,6 +41,14 @@ except ImportError:
     from cta_utm import (append_cta_card, normalize_body, slugify_campaign,
                          build_inquiry_utm_url, strip_inquiry_cta_lines, CLEAN_CTA_TEXT)
 
+# 발행 무결성 게이트 — 3채널 공유 프레임 (scripts/publish_integrity_gate.py)
+try:
+    from publish_integrity_gate import evaluate_integrity
+except ImportError:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    from publish_integrity_gate import evaluate_integrity
+
 # Windows 콘솔(cp949)에서 한글·em-dash 출력 깨짐 방지 — UTF-8 강제
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -1290,14 +1298,21 @@ async def run_publish(args: argparse.Namespace) -> int:
                 max_txt = max(max_txt, await fr.evaluate(txt_js))
             except Exception:
                 continue
-        print(f"[GUARD] 등록 직전 본문 이미지 컴포넌트={max_img} / 본문 텍스트 길이={max_txt}")
-        if max_img == 0 or max_txt == 0:
+        verdict = evaluate_integrity(
+            "카페",
+            body_text_len=max_txt,
+            img_count=max_img,
+            expected_img=len(post.image_paths),
+            expected_tags=len(post.tags),
+        )
+        print(f"[GUARD] 등록 직전 무결성 판정 — {verdict.summary()}")
+        if not verdict.ok:
             try:
                 await page.screenshot(path=str(EVIDENCE_DIR / "cafe_ABORT_integrity.png"))
             except Exception:
                 pass
             raise RuntimeError(
-                f"등록 중단(무결성 가드) — 본문 이미지={max_img}, 텍스트 길이={max_txt}. "
+                f"등록 중단(무결성 가드) — {verdict.summary()}. "
                 "본문/이미지 소실 감지 → 등록하지 않고 초안 상태로 남김."
             )
 
