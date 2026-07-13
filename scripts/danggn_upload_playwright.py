@@ -30,6 +30,7 @@ import argparse
 import os
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 # UTM 딱지 헬퍼 — 본문 문의 CTA URL에 채널 출처 부착 (scripts/ 동일 디렉터리)
@@ -496,6 +497,30 @@ def _import_playwright():
         sys.exit(10)
 
 
+async def _launch_persistent_with_heal(p, *, headless, args=None, no_viewport=True):
+    """영속 프로필 launch_persistent_context — 손상(런치 실패) 시 프로필 백업 후 새 프로필로 1회 재시도(자가치유 §3)."""
+    kwargs = dict(user_data_dir=str(PERSISTENT_PROFILE_DIR), headless=headless, no_viewport=no_viewport)
+    if args:
+        kwargs["args"] = args
+    PERSISTENT_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        return await p.chromium.launch_persistent_context(**kwargs)
+    except Exception as e:
+        # 손상 감지 → 프로필 백업 이동 후 새 프로필로 1회 재시도
+        print(f"[SELF-HEAL] 영속 프로필 런치 실패({type(e).__name__}) — 손상 의심, 프로필 백업 후 재시도.")
+        if PERSISTENT_PROFILE_DIR.exists():
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup = PERSISTENT_PROFILE_DIR.parent / f"danggn_corrupt_{stamp}"
+            try:
+                PERSISTENT_PROFILE_DIR.rename(backup)
+                print(f"[SELF-HEAL] 손상 프로필 백업 이동 → {backup.name}")
+            except Exception as re:
+                print(f"[SELF-HEAL] 백업 이동 실패({type(re).__name__}: {re}) — 재시도 불가.")
+                raise
+        PERSISTENT_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+        return await p.chromium.launch_persistent_context(**kwargs)
+
+
 async def _launch_context(async_playwright):
     p = await async_playwright().start()
     if COOKIE_STATE_PATH.exists():
@@ -505,13 +530,7 @@ async def _launch_context(async_playwright):
         print(f"[INFO] 쿠키 인증 모드 — storage_state 주입 ({COOKIE_STATE_PATH.name})")
         return p, context
     # 폴백: 기존 영속 프로필 (state 미생성 시 — 무회귀)
-    PERSISTENT_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
-    context = await p.chromium.launch_persistent_context(
-        user_data_dir=str(PERSISTENT_PROFILE_DIR),
-        headless=False,
-        args=["--start-maximized"],
-        no_viewport=True,
-    )
+    context = await _launch_persistent_with_heal(p, headless=False, args=["--start-maximized"])
     print("[INFO] 영속 프로필 모드 (쿠키 state 미생성 — migrate-cookies/setup으로 생성 권장)")
     return p, context
 
@@ -739,11 +758,7 @@ async def run_migrate_cookies(args: "argparse.Namespace | None" = None) -> int:
         return 3
 
     p = await async_playwright().start()
-    context = await p.chromium.launch_persistent_context(
-        user_data_dir=str(PERSISTENT_PROFILE_DIR),
-        headless=True,
-        no_viewport=True,
-    )
+    context = await _launch_persistent_with_heal(p, headless=True)
     try:
         page = context.pages[0] if context.pages else await context.new_page()
         print(f"[INFO] 비즈 홈 접속: {DANGGN_BIZ_URL}")
