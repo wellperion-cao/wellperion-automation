@@ -2181,7 +2181,9 @@ function criteriaSection(){
     ["상호 평가","팀원 → 동료",[["근무태도",15],["업무수행능력",35],["협업능력",20],["의사소통능력",20],["가산점",10]]],
     ["리더십 평가","팀원 → 팀장",[["리더십·공정성",40],["소통·관리능력",20],["지원·성장관리",15],["조직문화 기여",15],["가산점",10]]]
   ];
-  var h='<div class="card"><h3>다면평가 구조 (4종)</h3>'+
+  var h=perfCriteriaCard();
+  h+='<div class="sec-title" style="margin-top:20px">참고 · 기존 다면평가/포상 체계 <span style="font-weight:500;color:var(--ink-faint)">(정기 성과평가제도로 전환 검토 대상)</span></div>';
+  h+='<div class="card"><h3>다면평가 구조 (4종)</h3>'+
     '<table><thead><tr><th>평가 종류</th><th>평가자 → 대상</th><th>등급 반영</th></tr></thead><tbody>'+
     multi.map(function(m){return '<tr><td class="t-name">'+esc(m[0])+'</td><td>'+esc(m[1])+
       '</td><td>'+esc(m[2])+'</td></tr>';}).join("")+'</tbody></table></div>';
@@ -2223,6 +2225,267 @@ function criteriaSection(){
     .map(function(r){return '<tr><td>'+badge(r[0])+'</td><td>'+esc(r[1])+'</td></tr>';}).join("")+
     '</tbody></table></div>';
   return h;
+}
+/* ============================================================================
+   정기 성과평가(2026 신설) — A-4 평가담당자 도구
+   3기둥(직무성과 KPI 50 · 공통역량 5축 BARS 35 · 태도·가치 15) 가중합 → 100점 → A~F 6등급.
+   직군 프로파일로 미세조정(태도 15 고정), 정직성 게이트(태도 블록 2점 상한), 5직군 KPI.
+   정본: drafts/평가제도/웰페리온_평가제도_설계서.md · 평가지_5직군.md.
+   저장: save-eval(백엔드가 종합·등급 결정적 재검산). 렌더: 팝업 평가지(openPerfEval).
+   ========================================================================== */
+var WP_PERF_EVAL = {
+  gradeCuts: [[90,"A"],[80,"B"],[70,"C"],[60,"D"],[50,"E"],[0,"F"]],
+  gradeDef: {A:"탁월",B:"우수",C:"기대충족(표준)",D:"일부 미흡",E:"미흡",F:"크게 미흡"},
+  axes: [
+    {k:"서비스마인드/회원경험", w:30, def:"프리미엄 품격 응대·요청을 넘어선 선제 경험으로 만족·재방문을 이끄는 태도", a5:"개개인 선호·이력 기억해 맞춤 경험 설계, 팀에 프리미엄 기준 전파", a3:"전 회원 밝고 정중, 매뉴얼 수준 일관 응대", a1:"인사·눈맞춤 누락, 불만 회피·전가"},
+    {k:"문제해결", w:20, def:"현장 돌발·안전의 원인 파악, 회원영향·안전 우선 신속 해결·재발방지", a5:"복합·비정형 문제 대안 설계, 반복문제 구조적 개선", a3:"현장 문제 매뉴얼·경험대로 해결, 권한 밖 적시 에스컬레이션", a1:"방치·매번 상급자 의존, 반복문제 방관"},
+    {k:"팀워크/협업", w:15, def:"교대·부서 경계를 넘어 공유·지원해 끊김 없는 서비스로 잇는 협력", a5:"협업방식 개선(공유 루틴·양식)·신입 성장 견인", a3:"인수인계·공유 성실, 동료 요청 시 협조", a1:"자기 일만·인계 소홀로 공백 전가, 갈등 방치"},
+    {k:"주도성/책임", w:15, def:"지시를 기다리지 않고 먼저 실행하며 담당 결과를 끝까지 책임", a5:"팀·시설 개선 주도해 실행, 자기 영역 넘어 조직성과 기여", a3:"담당 책임 완수·개선점 건의, 실수 인정·정정", a1:"시키는 것만 최소, 실수 은폐·남 탓"},
+    {k:"프로세스/정확성", w:20, def:"안전·위생·규정·표준절차 준수, 기록·정산 무오류로 운영 신뢰 유지", a5:"무결점 유지+절차·체크리스트 표준화 개선", a3:"표준절차·안전위생 일관 준수, 기록·정산 정확", a1:"절차 위반·기록/정산 오류 잦아 재작업·위험"}
+  ],
+  attitudes: [
+    {k:"정직·윤리(기록 정직성)", d:"체크리스트·기록·정산을 실제대로 정직하게. 허위 체크·사후 조작 없음"},
+    {k:"프리미엄 브랜드 가치 체화", d:"복장·언행·응대 품격이 프리미엄 브랜드에 부합"},
+    {k:"성실·근태 신뢰성", d:"교대·근태·인수인계를 신뢰할 수 있고 약속을 지킴"},
+    {k:"학습·성장 의지", d:"피드백을 방어 없이 수용·개선, 새 기준·도구 학습"},
+    {k:"조직 기여·주인의식", d:"자기 업무 너머 팀·시설·회원을 자기 일처럼"}
+  ],
+  families: {
+    "운영·리셉션": {profile:[50,35,15], kpis:[
+      {k:"회원 응대 만족도", w:30, mbo:"응대 만족도 ≥90점 · 응대 불만 반기 ≤3건", a5:"명시적 칭찬·지인 소개 수준 프리미엄 응대, 표준 전파", a3:"전 회원 밝고 정중, 매뉴얼 수준 일관 응대", a1:"응대 불만 반복·회피"},
+      {k:"예약·등록·정산 정확성", w:25, mbo:"정산 오류 0건 · 예약 착오 반기 ≤2건", a5:"무오류+정산·예약 프로세스 개선 제안", a3:"정확 처리, 착오 시 즉시 정정", a1:"정산 오류·환불 착오 반복"},
+      {k:"컴플레인 해소·재방문 유도", w:20, mbo:"1차 해소율 ≥80% · 미해소 이관 지연 0건", a5:"잠재불만 선제 차단, 불만회원을 충성회원으로", a3:"매뉴얼대로 해소, 권한 밖 적시 이관", a1:"컴플레인 방치·확대"},
+      {k:"회원 리텐션·재등록 기여", w:15, mbo:"만료 사전안내 이행률 ≥95%", a5:"담당 구간 재등록 선제 설계, 리텐션 상위", a3:"만료 안내·재등록 절차 정확 이행", a1:"안내 미이행으로 이탈 유발"},
+      {k:"근태·인수인계 신뢰성", w:10, mbo:"무단결근·인계 누락 0건", a5:"근태 완벽+공백 자발 보완", a3:"근무·교대·인계 성실 이행", a1:"무단결근·잦은 인계 누락"}
+    ]},
+    "강습·트레이닝": {profile:[55,30,15], kpis:[
+      {k:"세션 리텐션·재등록률", w:30, mbo:"재등록률 ≥목표선 · 조기 이탈 최소화", a5:"재등록 상위+이탈징후 회원 선제 케어로 되돌림", a3:"담당 회원 재등록·연장 표준 관리", a1:"이탈률 높고 케어 미흡"},
+      {k:"회원 수업 만족도·리뷰", w:25, mbo:"수업 만족도 ≥90점 · 부정 리뷰 반기 ≤2건", a5:"회원 감동·지인 소개·최상위 리뷰, 노하우 전파", a3:"만족도 표준 충족, 회원 요구 성실 반영", a1:"불만·부정 리뷰 반복"},
+      {k:"지도 전문성·안전관리", w:20, mbo:"수업 중 안전사고 0건 · 자격/보수교육 이수", a5:"맞춤 프로그램 설계, 안전 리스크 선제 차단·표준 제안", a3:"적정 프로그램·안전수칙 준수, 무사고", a1:"부상 유발·안전 소홀 또는 자격 미이수"},
+      {k:"클래스 충원율·신규 전환", w:15, mbo:"충원율 ≥목표선 · 체험 전환율 ≥목표선", a5:"대기 발생 수준 충원+체험 전환 최상위", a3:"충원·전환 표준 수준 유지", a1:"지속적 미달"},
+      {k:"프로그램 개선·팀 협업", w:10, mbo:"프로그램 개선 기여 · 스케줄 협조", a5:"신규 프로그램 주도·팀 도입, 동료 성장 견인", a3:"필요한 협업·스케줄 조정 성실", a1:"비협조로 운영 차질"}
+    ]},
+    "시설·주차": {profile:[50,35,15], kpis:[
+      {k:"안전·사고 예방(무사고)", w:30, mbo:"안전사고 0건 · 위험요인 선제 보고", a5:"무사고+잠재위험 선제 식별·차단·표준화", a3:"안전규정 준수·무사고(기본 충족)", a1:"안전사고 또는 위험 방치"},
+      {k:"청결·위생 점검 준수", w:25, mbo:"위생 통과율 ≥98% · 위생 컴플레인 ≤2건", a5:"지적 0건+사각지대 선제 관리·표준 갱신", a3:"청소·위생 주기 정확 이행, 통과 기준 충족", a1:"위생 컴플레인·지적 반복, 시정 지연"},
+      {k:"시설 점검·SOP 이행", w:20, mbo:"점검 완료율 100% · 기록 허위·누락 0건", a5:"절차 정확+매뉴얼 개정 제안, 기록 정직 완벽", a3:"절차·기록 의무 성실 준수, 감사 적합", a1:"절차 누락·허위 기록(정직성 결여)"},
+      {k:"주차·동선 응대(회원 편의)", w:15, mbo:"주차 관련 불만 ≤2건 · 혼잡시 동선 유지", a5:"혼잡에도 매끄러운 동선 설계, 차량 응대로 브랜드 각인", a3:"주차 안내·동선 정리 표준 이행", a1:"주차 불만 반복·응대 불량"},
+      {k:"근태·팀 지원", w:10, mbo:"무단결근·인계 누락 0건", a5:"근태 완벽+공백 자발 보완·신입 지원", a3:"근무·교대·인계 성실", a1:"무단결근·인계 누락"}
+    ]},
+    "지원·관리": {profile:[45,40,15], kpis:[
+      {k:"비품·자산·재고 관리", w:25, mbo:"결품 0건 · 발주 준수율 ≥95% · 실사 오차 ≤1%", a5:"결품·분실 0+소비 예측·선제 조정·원가 절감 주도", a3:"재고 기준·발주 주기 준수, 대장 정확", a1:"결품·분실·기록 오류 잦음"},
+      {k:"SOP·체크리스트·기록 정확성", w:25, mbo:"완료율 100% · SOP 적합률 ≥95% · 허위 0건", a5:"절차 정확+매뉴얼 개정 제안, 기록 정직 완벽", a3:"절차·기록 의무 성실 준수, 감사 적합", a1:"절차 누락·허위 기록"},
+      {k:"지원 업무 정확성·신속성(SLA)", w:25, mbo:"SLA 준수율 ≥95% · 긴급 10분 대응 ≥90%", a5:"요청 예측·선제 대응, 처리 표준화로 팀 속도↑", a3:"기한·기준 내 정확 처리, 인계·보고 누락 없음", a1:"지연·오류 잦아 불편 유발"},
+      {k:"청결·환경 관리", w:15, mbo:"위생 통과율 ≥98% · 환경 컴플레인 ≤2건", a5:"사각지대까지 선제 관리·표준 갱신", a3:"청소·위생 주기 정확 이행", a1:"컴플레인·지적 반복"},
+      {k:"보안·안전·근태", w:10, mbo:"보안·개인정보 사고 0건 · 무단결근 0건", a5:"무사고+잠재위험 선제 차단, 근태 완벽", a3:"규정 준수·사고 없음, 근태 성실", a1:"보안/개인정보 사고 또는 무단결근"}
+    ]},
+    "수행·의전": {profile:[50,35,15], kpis:[
+      {k:"안전운행·무사고", w:35, mbo:"무사고 운행 100% · 법규위반 0건", a5:"무사고+방어운전·위험 선제 회피로 리스크 원천 차단", a3:"교통법규·안전 준수, 무사고(기본 충족)", a1:"사고 또는 중대 법규위반"},
+      {k:"의전 품격·응대", w:25, mbo:"의전 컴플레인 0건 · 응대 품격 상시 유지", a5:"품격 있는 응대로 브랜드 각인, VIP 신뢰 획득", a3:"의전 표준·예절 준수, 사고 없음", a1:"의전 결례 발생"},
+      {k:"차량 관리·점검", w:15, mbo:"점검 이행률 100% · 차량 청결 상시", a5:"무결점 상태+정비 이슈 선제 발견·조치", a3:"점검·청소 주기 정확 이행", a1:"관리 소홀로 차량 이슈 유발"},
+      {k:"일정·시간 준수(정시 운행)", w:15, mbo:"정시 도착률 ≥98% · 무단 지연 0건", a5:"여유 동선 설계로 무지연+일정 변경 유연 대응", a3:"정시 도착·일정 준수 표준 유지", a1:"무단 지연 잦아 일정 차질"},
+      {k:"보안·개인정보·근태", w:10, mbo:"정보/자산 사고 0건 · 무단결근 0건", a5:"정보·자산 보안 완벽+대기 신뢰성 최상", a3:"보안 규정 준수·사고 없음, 근태 성실", a1:"정보/자산 사고 또는 무단결근"}
+    ]}
+  }
+};
+function wpDeptToFamily(dept, rank){
+  var d=String(dept||""), r=String(rank||"");
+  if(/수행|기사|의전/.test(r)||/수행|기사|의전/.test(d)) return "수행·의전";
+  if(/강습|트레이|PT|GX|골프|코치|강사/.test(d)) return "강습·트레이닝";
+  if(/시설|주차|발렛|파킹/.test(d)) return "시설·주차";
+  if(/운영|리셉|프론트/.test(d)) return "운영·리셉션";
+  if(/지원|관리|경영지원|총무|행정|청소|환경/.test(d)) return "지원·관리";
+  return "";
+}
+function perfCriteriaCard(){
+  return '<div class="card" style="border-color:#e6d3a2">'+
+    '<h3>정기 성과평가제도 (2026 신설 · 승인)</h3>'+
+    '<div class="muted" style="margin-top:-8px;margin-bottom:8px">균형형(육성+성과) · 반기 정기 2회 + 분기 1:1 · 연착륙(1년차 육성 → 2년차 보상 연계)</div>'+
+    '<table><thead><tr><th>평가 기둥</th><th>전사 가중</th><th>내용</th></tr></thead><tbody>'+
+    '<tr><td class="t-name">직무성과 KPI</td><td>50%</td><td>5직군별 KPI 달성도(합계 100%) · MBO 목표 대비 5점 BARS</td></tr>'+
+    '<tr><td class="t-name">공통역량 5축</td><td>35%</td><td>서비스마인드30·문제해결20·팀워크15·주도성15·프로세스20 (BARS)</td></tr>'+
+    '<tr><td class="t-name">태도·가치</td><td>15%</td><td>정직·브랜드·성실·성장·주인의식 (정직성 게이트: 위반 시 2점 상한)</td></tr>'+
+    '</tbody></table>'+
+    '<div class="kv2" style="margin-top:8px"><b>등급(A~F)</b><span>A 90~100 · B 80~89 · C 70~79 · D 60~69 · E 50~59 · F 0~49 (100점 단일 기준)</span></div>'+
+    '<div class="kv2"><b>직군 프로파일</b><span>강습 55/30/15 · 지원·관리 45/40/15 · 그 외 50/35/15 (태도 15 고정, 합 100)</span></div>'+
+    '<div class="kv2"><b>Calibration</b><span>분포는 참고선(강제배분 아님) — 행동근거 있으면 이탈 등급도 인정</span></div>'+
+    (SESSION_ROLE==="admin"?'<div style="margin-top:10px"><button class="btn-sm" onclick="perfEvalStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 정기 성과평가 평가지 작성</button></div>':'')+
+    '</div>';
+}
+function perfEvalStart(){ openPerfEval("",""); }
+function openPerfEval(target, family){
+  if(SESSION_ROLE!=="admin"){ alert("정기 성과평가 평가지는 관리자 모드에서 작성합니다."); return; }
+  var w=window.open("","_blank","width=1000,height=1200");
+  if(!w){ alert("팝업이 차단됐습니다. 브라우저에서 팝업을 허용해 주세요."); return; }
+  var emps=(DB.emp||[]).filter(function(e){return e["재직 상태"]!=="퇴사";}).map(function(e){return {nm:String(e["성명"]||e["이름"]||"").trim(), dept:String(e["부서"]||"").trim(), rank:String(e["직급"]||"").trim()};}).filter(function(e){return e.nm;});
+  var famKeys=[]; for(var fk in WP_PERF_EVAL.families){ if(WP_PERF_EVAL.families.hasOwnProperty(fk)) famKeys.push(fk); }
+  var today=new Date().toISOString().slice(0,10);
+  function famOpts(sel){ return '<option value="">— 직군 선택 —</option>'+famKeys.map(function(f){return '<option'+(f===sel?' selected':'')+'>'+esc(f)+'</option>';}).join(""); }
+  var empListOpts=emps.map(function(e){return '<option value="'+esc(e.nm)+'">'+esc(e.dept)+(e.rank?" · "+esc(e.rank):"")+'</option>';}).join("");
+  var cycleOpts=['반기(중간·7월)','반기(연말·12~1월)','분기 1:1 체크인','수습(3개월)'].map(function(c){return '<option>'+esc(c)+'</option>';}).join("");
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>웰페리온 정기 성과평가지</title><style>'+
+    '@page{size:A4;margin:12mm}*{box-sizing:border-box}'+
+    'body{font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;font-size:10.5pt;line-height:1.5;color:#1f1e1b;margin:0;padding:12mm 0;background:#f4f3ef}'+
+    '.page{max-width:194mm;margin:0 auto;background:#fff;padding:12mm;box-shadow:0 0 10px rgba(0,0,0,.08);border-radius:4px}'+
+    'h1{font-size:16pt;border-bottom:2px solid #a98a52;padding-bottom:6px;margin:0 0 4px}'+
+    '.sub{color:#6c6961;font-size:9.3pt;margin-bottom:12px}'+
+    'h2{font-size:11pt;color:#8a6f3f;border-left:3px solid #a98a52;padding-left:8px;margin:15px 0 6px}'+
+    'table{width:100%;border-collapse:collapse;margin:5px 0;font-size:9.2pt}'+
+    'th,td{border:1px solid #d8d4c8;padding:5px 7px;text-align:left;vertical-align:top}'+
+    'th{background:#f8f5ee;font-weight:600;color:#6c6961}'+
+    'select,input,textarea{font-family:inherit;font-size:9.2pt;border:1px solid #cfcabb;border-radius:4px;padding:3px 5px;width:100%;box-sizing:border-box}'+
+    'textarea{resize:vertical}'+
+    '.anchor{font-size:8.3pt;color:#8a877e;line-height:1.4;margin-top:2px}'+
+    '.wt{color:#a98a52;font-weight:700;white-space:nowrap;font-size:9.5pt}'+
+    '.calc{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}'+
+    '.cbox{flex:1;min-width:118px;border:1px solid #e4dfd2;border-radius:8px;padding:9px 11px;background:#faf9f6}'+
+    '.cbox .lab{font-size:8.6pt;color:#8a877e}.cbox .val{font-size:15pt;font-weight:700;color:#2a2823}'+
+    '.cbox .val small{font-size:8.5pt;color:#9a978e;font-weight:400}'+
+    '.tot{background:#f6efdd;border-color:#e6d3a2}'+
+    '.grade{display:inline-block;min-width:34px;text-align:center;padding:2px 12px;border-radius:5px;font-weight:800;color:#fff;font-size:15pt;background:#7c7a73}'+
+    '.warn{color:#b14238;font-size:9pt;font-weight:600;min-height:14px}'+
+    '.gate{background:#fbf1f0;border:1px solid #f0cfcb;border-radius:6px;padding:7px 10px;margin:6px 0;font-size:9pt}'+
+    '.btns{position:fixed;top:12px;right:12px;display:flex;gap:8px;z-index:10}'+
+    '.pb{background:#a98a52;color:#fff;border:none;padding:8px 15px;border-radius:6px;font-weight:600;cursor:pointer;font-size:10.5pt;box-shadow:0 2px 8px rgba(0,0,0,.15)}'+
+    '.pb.save{background:#3c7a4a}.pb:disabled{opacity:.55;cursor:default}'+
+    '@media print{body{background:#fff;padding:0}.page{box-shadow:none;border-radius:0;padding:0}.no-print{display:none!important}select,input,textarea{border:1px solid #e2ddce}}'+
+    '</style></head><body>'+
+    '<div class="btns no-print"><button class="pb" onclick="window.print()">🖨 인쇄/PDF</button><button class="pb save" id="pSave">💾 저장(save-eval)</button></div>'+
+    '<div class="page">'+
+    '<h1>웰페리온 정기 성과평가지</h1>'+
+    '<div class="sub">직무성과 KPI · 공통역량 5축 BARS · 태도·가치 가중합 → 100점 → A~F · 작성일 '+today+' · 1년차 육성(보상 미연계, 연착륙)</div>'+
+    '<h2>1. 대상 · 평가 개요</h2>'+
+    '<table><tr><th style="width:74px">대상자</th><td><input id="pTgt" list="pEmpList" value="'+esc(target||"")+'" placeholder="재직자 성명"><datalist id="pEmpList">'+empListOpts+'</datalist></td>'+
+    '<th style="width:74px">직군</th><td><select id="pFam">'+famOpts(family||"")+'</select></td></tr>'+
+    '<tr><th>평가자</th><td><input id="pEvr" placeholder="직속상급자 / 부서장"></td><th>평가 주기</th><td><select id="pCyc">'+cycleOpts+'</select></td></tr>'+
+    '<tr><th>기간 시작</th><td><input id="pS" type="date"></td><th>기간 종료</th><td><input id="pE" type="date"></td></tr></table>'+
+    '<div class="sub" id="pProf" style="margin:5px 0 0"></div>'+
+    '<h2>2. 직무성과 KPI <span class="wt" id="pKw"></span></h2>'+
+    '<table><thead><tr><th style="width:150px">KPI</th><th style="width:40px">가중</th><th>MBO 목표 / BARS 앵커(5·3·1)</th><th style="width:86px">점수</th><th style="width:148px">근거(관찰사실 1건+)</th></tr></thead><tbody id="pKpi"></tbody></table>'+
+    '<h2>3. 공통역량 5축 BARS <span class="wt" id="pCw"></span></h2>'+
+    '<table><thead><tr><th style="width:150px">역량 축</th><th style="width:40px">가중</th><th>정의 / 앵커(5·3·1)</th><th style="width:86px">점수</th><th style="width:148px">근거</th></tr></thead><tbody id="pAxis"></tbody></table>'+
+    '<div class="sub">척도: 5 탁월 · 4 우수 · 3 기대충족(표준) · 2 개선필요 · 1 미흡 — 3점=직무 표준 충족(무난 아님), 무결점=3점. 각 점수 관찰행동 근거 1건+.</div>'+
+    '<h2>4. 태도·가치 <span class="wt" id="pAw"></span></h2>'+
+    '<table><thead><tr><th style="width:180px">항목</th><th>관찰 초점</th><th style="width:86px">점수</th></tr></thead><tbody id="pAtt"></tbody></table>'+
+    '<div class="gate"><label><input type="checkbox" id="pHon" style="width:auto"> <b>정직성 게이트</b> — 기록 정직성 위반(허위 체크·사후 조작) 또는 안전·보안·개인정보 중대사고 확인 시 체크 → 태도·가치 블록 <b>최대 2점(=40/100) 상한</b> 자동 적용 + 별도 시정조치 연계</label></div>'+
+    '<h2>5. 자동 산출 (결정적 계산 · 저장 시 백엔드 재검산)</h2>'+
+    '<div class="calc">'+
+    '<div class="cbox"><div class="lab">직무성과 KPI</div><div class="val"><span id="oK">–</span><small>/100</small></div></div>'+
+    '<div class="cbox"><div class="lab">공통역량 5축</div><div class="val"><span id="oC">–</span><small>/100</small></div></div>'+
+    '<div class="cbox"><div class="lab">태도·가치</div><div class="val"><span id="oA">–</span><small>/100</small></div></div>'+
+    '<div class="cbox tot"><div class="lab">종합점수</div><div class="val"><span id="oT">–</span><small>/100</small></div></div>'+
+    '<div class="cbox tot"><div class="lab">등급</div><div class="val"><span class="grade" id="oG">–</span></div></div>'+
+    '</div><div id="pWarn" class="warn"></div>'+
+    '<h2>6. 피드백 · 성장계획(IDP)</h2>'+
+    '<table><tr><th style="width:118px">강점 1</th><td><input id="pStr"></td></tr>'+
+    '<tr><th>개발영역 1</th><td><input id="pDev"></td></tr>'+
+    '<tr><th>다음 반기 한 가지</th><td><input id="pNext"></td></tr>'+
+    '<tr><th>종합 의견</th><td><textarea id="pFb" rows="3"></textarea></td></tr></table>'+
+    '<div class="sub" style="margin-top:10px">자기평가 → 1차(직속상급자) → 2차(부서장/C-level) → Calibration → 피드백 면담 후 확정(save-eval). 등급은 새 행동근거로만 변경(이의제기 절차). 점수는 관찰 가능한 업무 행동으로만(신체·연령 표현 금지).</div>'+
+    '</div></body></html>';
+  w.document.write(html); w.document.close();
+  var D=w.document;
+  function opts(){ return '<option value="">–</option>'+[[5,"5 탁월"],[4,"4 우수"],[3,"3 기대충족"],[2,"2 개선필요"],[1,"1 미흡"]].map(function(o){return '<option value="'+o[0]+'">'+o[1]+'</option>';}).join(""); }
+  function renderKpi(fam){
+    var f=WP_PERF_EVAL.families[fam];
+    var tb=D.getElementById("pKpi");
+    if(!f){ tb.innerHTML='<tr><td colspan="5" style="color:#b14238">직군을 먼저 선택하세요.</td></tr>'; D.getElementById("pProf").textContent=""; D.getElementById("pKw").textContent=""; D.getElementById("pCw").textContent=""; D.getElementById("pAw").textContent=""; recompute(); return; }
+    tb.innerHTML=f.kpis.map(function(x){
+      return '<tr><td><b>'+esc(x.k)+'</b></td><td class="wt">'+x.w+'%</td>'+
+        '<td>'+esc(x.mbo)+'<div class="anchor">5: '+esc(x.a5)+'<br>3: '+esc(x.a3)+'<br>1: '+esc(x.a1)+'</div></td>'+
+        '<td><select class="pk" data-w="'+x.w+'">'+opts()+'</select></td>'+
+        '<td><textarea class="pke" rows="2"></textarea></td></tr>';
+    }).join("");
+    var p=f.profile;
+    D.getElementById("pProf").innerHTML='직군 프로파일 가중 — 직무성과 <b>'+p[0]+'%</b> · 공통역량 <b>'+p[1]+'%</b> · 태도·가치 <b>'+p[2]+'%</b> (합 100)';
+    D.getElementById("pKw").textContent="(가중 "+p[0]+"%)";
+    D.getElementById("pCw").textContent="(가중 "+p[1]+"%)";
+    D.getElementById("pAw").textContent="(가중 "+p[2]+"%)";
+    bindScores();
+    recompute();
+  }
+  function fillAxisAtt(){
+    D.getElementById("pAxis").innerHTML=WP_PERF_EVAL.axes.map(function(x){
+      return '<tr><td><b>'+esc(x.k)+'</b></td><td class="wt">'+x.w+'%</td>'+
+        '<td>'+esc(x.def)+'<div class="anchor">5: '+esc(x.a5)+'<br>3: '+esc(x.a3)+'<br>1: '+esc(x.a1)+'</div></td>'+
+        '<td><select class="pc" data-w="'+x.w+'">'+opts()+'</select></td>'+
+        '<td><textarea class="pce" rows="2"></textarea></td></tr>';
+    }).join("");
+    D.getElementById("pAtt").innerHTML=WP_PERF_EVAL.attitudes.map(function(x){
+      return '<tr><td><b>'+esc(x.k)+'</b></td><td>'+esc(x.d)+'</td>'+
+        '<td><select class="pa">'+opts()+'</select></td></tr>';
+    }).join("");
+  }
+  function readSel(cls){ var a=D.getElementsByClassName(cls), out=[]; for(var i=0;i<a.length;i++){ out.push({v:a[i].value, w:Number(a[i].getAttribute("data-w")||0)}); } return out; }
+  function weightedScore(arr){ var s=0, miss=0; for(var i=0;i<arr.length;i++){ if(arr[i].v===""){miss++;} else { s+=Number(arr[i].v)*arr[i].w/100; } } return {score:Math.round(s*20*10)/10, miss:miss}; }
+  function attScoreCalc(){ var a=D.getElementsByClassName("pa"), s=0, miss=0, n=a.length; for(var i=0;i<n;i++){ if(a[i].value===""){miss++;} else { s+=Number(a[i].value); } } var raw=n>0?Math.round(s/n*20*10)/10:0; var gated=raw; if(D.getElementById("pHon").checked && gated>40) gated=40; return {raw:raw, gated:gated, miss:miss}; }
+  function recompute(){
+    var fam=D.getElementById("pFam").value;
+    var f=WP_PERF_EVAL.families[fam];
+    var k=weightedScore(readSel("pk"));
+    var c=weightedScore(readSel("pc"));
+    var at=attScoreCalc();
+    D.getElementById("oK").textContent=k.miss?"–":k.score;
+    D.getElementById("oC").textContent=c.miss?"–":c.score;
+    D.getElementById("oA").textContent=at.miss?"–":at.gated;
+    var gEl=D.getElementById("oG"), tEl=D.getElementById("oT"), wEl=D.getElementById("pWarn");
+    var missTotal=k.miss+c.miss+at.miss;
+    if(!f||missTotal>0){ tEl.textContent="–"; gEl.textContent="–"; gEl.style.background="#7c7a73";
+      wEl.textContent=!f?"직군을 선택하세요.":("미입력 "+missTotal+"개 — 전 항목 입력 시 종합·등급이 산출됩니다."); return; }
+    var p=f.profile;
+    var total=Math.round((k.score*p[0]+c.score*p[1]+at.gated*p[2])/(p[0]+p[1]+p[2])*10)/10;
+    var g=""; for(var i=0;i<WP_PERF_EVAL.gradeCuts.length;i++){ if(total>=WP_PERF_EVAL.gradeCuts[i][0]){ g=WP_PERF_EVAL.gradeCuts[i][1]; break; } }
+    var gc={A:"#3c7a4a",B:"#2f6d9e",C:"#b07d24",D:"#c1702c",E:"#b14238",F:"#7c7a73"};
+    tEl.textContent=total; gEl.textContent=g; gEl.style.background=gc[g]||"#7c7a73";
+    wEl.textContent=(D.getElementById("pHon").checked?"⚠ 정직성 게이트 적용됨(태도 블록 2점 상한). ":"")+"등급 "+g+" — "+(WP_PERF_EVAL.gradeDef[g]||"");
+  }
+  function bindScores(){ var sels=D.querySelectorAll("select.pk, select.pc, select.pa"); for(var i=0;i<sels.length;i++){ sels[i].onchange=recompute; } }
+  fillAxisAtt();
+  var empMap={}; emps.forEach(function(e){ empMap[e.nm]=e; });
+  D.getElementById("pTgt").oninput=function(){ var e=empMap[this.value.trim()]; if(e && !D.getElementById("pFam").value){ var fam=wpDeptToFamily(e.dept,e.rank); if(fam){ D.getElementById("pFam").value=fam; renderKpi(fam); } } };
+  D.getElementById("pFam").onchange=function(){ renderKpi(this.value); };
+  D.getElementById("pHon").onchange=recompute;
+  renderKpi(family||"");
+  D.getElementById("pSave").onclick=function(){ perfEvalSubmit(D); };
+}
+function perfEvalSubmit(D){
+  var fam=D.getElementById("pFam").value;
+  var tgt=D.getElementById("pTgt").value.trim();
+  var f=WP_PERF_EVAL.families[fam];
+  if(!tgt){ alert("대상자를 입력하세요."); return; }
+  if(!f){ alert("직군을 선택하세요."); return; }
+  function allFilled(cls){ var a=D.getElementsByClassName(cls); if(!a.length) return false; for(var i=0;i<a.length;i++){ if(a[i].value==="") return false; } return true; }
+  if(!allFilled("pk")||!allFilled("pc")||!allFilled("pa")){ alert("모든 KPI·역량·태도 점수를 입력해야 저장됩니다(추측 금지 — 미입력 항목 지어내지 않음)."); return; }
+  function wscore(cls){ var a=D.getElementsByClassName(cls), s=0; for(var i=0;i<a.length;i++){ s+=Number(a[i].value)*Number(a[i].getAttribute("data-w")||0)/100; } return Math.round(s*20*10)/10; }
+  var pa=D.getElementsByClassName("pa"), asum=0; for(var i=0;i<pa.length;i++){ asum+=Number(pa[i].value); }
+  var attRaw=Math.round(asum/pa.length*20*10)/10;
+  var honesty=D.getElementById("pHon").checked;
+  var p=f.profile;
+  function evid(sels,eds,items){ var s=D.getElementsByClassName(sels), e=D.getElementsByClassName(eds), out=[]; for(var i=0;i<s.length;i++){ out.push(items[i].k+" "+s[i].value+"점"+(e[i]&&e[i].value.trim()?" — "+e[i].value.trim():"")); } return out.join("\n"); }
+  var kEvid=evid("pk","pke",f.kpis);
+  var cEvid=evid("pc","pce",WP_PERF_EVAL.axes);
+  var paScores=[]; for(var j=0;j<pa.length;j++){ paScores.push(WP_PERF_EVAL.attitudes[j].k+" "+pa[j].value+"점"); }
+  var breakdown="[직무성과 KPI]\n"+kEvid+"\n[공통역량 5축]\n"+cEvid+"\n[태도·가치]\n"+paScores.join(" · ");
+  var idp=[]; [["pStr","강점"],["pDev","개발영역"],["pNext","다음 반기 한 가지"]].forEach(function(x){ var v=D.getElementById(x[0]).value.trim(); if(v) idp.push(x[1]+": "+v); });
+  var fb=idp.join("\n"); var free=D.getElementById("pFb").value.trim(); if(free) fb=fb?(fb+"\n"+free):free;
+  var payload={ target:tgt, family:fam, evaluator:D.getElementById("pEvr").value.trim(),
+    cycle:D.getElementById("pCyc").value, evalType:"정기 성과평가",
+    startDate:D.getElementById("pS").value, endDate:D.getElementById("pE").value,
+    kpiScore:wscore("pk"), compScore:wscore("pc"), attScore:attRaw,
+    honestyViolation:honesty, wKpi:p[0], wComp:p[1], wAtt:p[2],
+    breakdown:breakdown, feedback:fb };
+  var btn=D.getElementById("pSave"); btn.disabled=true; btn.textContent="저장 중…";
+  wpSavePerfEval(payload).then(function(r){
+    if(r&&r.ok){ btn.textContent="✓ 저장됨 "+(r.grade||"")+(r.total!=null?" "+r.total+"점":""); alert("저장 완료: "+tgt+" · 등급 "+(r.grade||"?")+" · 종합 "+(r.total!=null?r.total:"?")+"점\n인사평가 탭에 반영됩니다."); }
+    else { btn.disabled=false; btn.textContent="💾 저장(save-eval)"; alert("저장 실패: "+((r&&r.error)||"알 수 없는 오류")); }
+  }).catch(function(e){ btn.disabled=false; btn.textContent="💾 저장(save-eval)"; alert("저장 오류: "+((e&&e.message)||e)); });
+}
+function wpSavePerfEval(p){
+  var body={action:"save-eval",adminPassword:SESSION_PW};
+  for(var k in p){ if(p.hasOwnProperty(k)) body[k]=p[k]; }
+  return fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)})
+    .then(function(x){return x.json();})
+    .then(function(r){ if(r&&r.ok&&typeof reloadData==="function"){ try{reloadData();}catch(e){} } return r; });
 }
 function renderEval(){
   var html='<div class="sec-title">인사평가 · 포상</div>';

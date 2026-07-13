@@ -450,7 +450,8 @@
     <div class="item">
       <div class="item-head"><span class="badge bg-a4">A-4 평가담당자</span><h3>인사평가 저장 · 평가지 렌더</h3></div>
       <p>웰페리온 공식 기준 — <b>A/B/C 3등급 · 부서별 정원 사전 배분 · 다면평가 4종</b> + 4대 인재상 5축(A~F)으로 평가를 저장합니다. 평가지(openPrintView)는 메모를 키-값/불릿으로 렌더하므로 표준 양식으로 정리하며, 등급 분포가 정원을 벗어나면 알립니다. 근거 없는 점수는 만들지 않고, 저장 확정 전 A-6 감사를 거칩니다.</p>
-      <div class="tags"><span class="tag act">save-eval</span><span class="tag db">db:eval</span><span class="tag tool">openPrintView</span></div>
+      <p style="margin-top:8px"><b>정기 성과평가(2026 신설)</b> — 3기둥(직무성과 KPI · 공통역량 5축 BARS · 태도·가치) 가중합 → 100점 → A~F 6등급, 5직군별 KPI·가중 프로파일, 정직성 게이트(허위 기록 시 태도 블록 상한). 평가지(<span class="tag tool">openPerfEval</span>)에서 입력하면 프론트가 실시간 미리보기를 산출하고, <b>백엔드(save-eval)가 종합점수 · 등급을 서버에서 결정적으로 재계산</b>해 저장 — 클라이언트 값 신뢰 대신 서버가 최종 검산합니다. 구 3등급 체계는 "전환 검토 대상"으로 병존(폐지 여부 매니저 결정 대기).</p>
+      <div class="tags"><span class="tag act">save-eval</span><span class="tag db">db:eval</span><span class="tag tool">openPrintView</span><span class="tag tool">openPerfEval</span></div>
     </div>
 
     <div class="item">
@@ -793,7 +794,7 @@
         <tr><td><span class="tag act">update-onboarding</span></td><td>온보딩 항목 갱신(완료 체크 등)</td><td><span class="badge bg-a3">A-3</span></td></tr>
         <tr><td><span class="tag act">delete-onboarding</span></td><td>온보딩 항목 삭제</td><td><span class="badge bg-a3">A-3</span></td></tr>
         <tr><td><span class="tag act">onboarding-self</span></td><td>신입 성찰 기록(24항목 완료 시 인사이트 종합)</td><td><span class="badge bg-a3">A-3</span></td></tr>
-        <tr><td>평가</td><td><span class="tag act">save-eval</span></td><td>인사평가 저장</td><td><span class="badge bg-a4">A-4</span></td></tr>
+        <tr><td>평가</td><td><span class="tag act">save-eval</span></td><td>인사평가 저장(정기 성과평가는 3기둥 점수 수신 시 서버가 종합 · 등급 결정적 재계산)</td><td><span class="badge bg-a4">A-4</span></td></tr>
         <tr><td>휴무</td><td><span class="tag act">set-leave-bulk</span></td><td>월 휴무 일괄 반영(병합 full-sync)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td rowspan="2">블랙리스트</td><td><span class="tag act">add-blacklist</span></td><td>차단 대상 등록(PII 최소화)</td><td><span class="badge bg-a1">A-1</span></td></tr>
         <tr><td><span class="tag act">remove-blacklist</span></td><td>차단 해제</td><td><span class="badge bg-a2">A-2</span></td></tr>
