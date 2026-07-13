@@ -1851,6 +1851,123 @@ async def cmd_kakao_send_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE
         await ctx.bot.send_message(chat_id=msg.chat_id, text=f"⚠️ 카톡 전송 실패: {tail}")
 
 
+# ─── ★운영부 아침 요약 승인 콜백 (opsdig:) — 2026-07-13 CTO ───
+# scripts/ops_morning_pipeline.py(매일 08:00)가 GM 개인 텔레그램으로 보낸 아침 요약
+# 승인요청 카드의 [✅ 방에 발송]/[✏️ 수정요청]/[⏸️ 보류] 버튼 처리.
+# ★게이트(절대 원칙): ★운영부 방 전송은 이 콜백(GM 버튼 승인)에서만 발생한다 —
+# 파이프라인 자신은 절대 방에 직접 쓰지 않는다.
+# 대기 상태 파일은 개인정보(대화 파생물)라 gitignore된 아카이브에만 존재
+# ("1. AI학습자료_아카이브/11_카카오톡/★운영부/_pending_digest.json") — status/ 등 추적경로 금지,
+# 따라서 pub:/ns: 콜백과 달리 git 커밋을 하지 않는다.
+_OPS_PENDING_DIGEST = WORKDIR / "1. AI학습자료_아카이브" / "11_카카오톡" / "★운영부" / "_pending_digest.json"
+_OPS_DIGEST_ROOM_NAME = "★ 운영부"
+
+
+def _ops_save_pending(pending: dict) -> None:
+    try:
+        _OPS_PENDING_DIGEST.write_text(
+            json.dumps(pending, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as exc:
+        log.error(f"[opsdig] 대기 파일 저장 실패: {exc}")
+
+
+async def cmd_opsdig_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """callback_data opsdig:send / opsdig:revise / opsdig:hold 처리.
+
+    발송 → _pending_digest.json 의 message를 kakao_report_sender.py --message --only-room
+           "★ 운영부" 로 실발송(send_message_to_room 경로, kakao_send 콜백과 동일한 서브프로세스
+           호출 패턴 재사용) → 성공 시 메시지 editText "✅ 방에 발송 완료"+status=sent.
+    수정요청 → "✏️ 수정: 원하는 방향을 회신주세요"+status=revise(회신 처리는 후속 범위).
+    보류 → editText "⏸️ 보류"+status=held.
+    """
+    q = update.callback_query
+    if not q or not q.data or not q.data.startswith("opsdig:"):
+        return
+    await q.answer()
+    action = q.data.split(":", 1)[1]
+
+    if not _OPS_PENDING_DIGEST.exists():
+        await ctx.bot.send_message(chat_id=q.message.chat_id, text="⚠️ 만료된 요약입니다(대기 파일 없음).")
+        return
+    try:
+        pending = json.loads(_OPS_PENDING_DIGEST.read_text(encoding="utf-8"))
+    except Exception as exc:
+        await ctx.bot.send_message(chat_id=q.message.chat_id, text=f"⚠️ 대기 파일 로드 실패: {exc}")
+        return
+
+    if pending.get("status") != "pending":
+        await q.answer(f"이미 처리됨(status={pending.get('status')})", show_alert=False)
+        return
+
+    if action == "hold":
+        pending["status"] = "held"
+        _ops_save_pending(pending)
+        try:
+            await q.edit_message_text(
+                text=(q.message.text or "") + "\n\n━━━━━━━━\n⏸️ 보류", reply_markup=None)
+        except Exception:
+            try:
+                await q.edit_message_reply_markup(reply_markup=None)
+            except Exception:
+                pass
+        return
+
+    if action == "revise":
+        pending["status"] = "revise"
+        _ops_save_pending(pending)
+        try:
+            await q.edit_message_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+        await ctx.bot.send_message(chat_id=q.message.chat_id, text="✏️ 수정: 원하는 방향을 회신주세요.")
+        return
+
+    if action != "send":
+        return
+
+    try:
+        await q.edit_message_reply_markup(reply_markup=None)  # 중복 탭 방지 — 버튼 즉시 제거
+    except Exception:
+        pass
+
+    message = pending.get("message", "")
+    if not message.strip():
+        await ctx.bot.send_message(chat_id=q.message.chat_id, text="⚠️ 발송 실패: 대기 메시지가 비어 있습니다.")
+        return
+
+    await ctx.bot.send_message(chat_id=q.message.chat_id, text="⏳ ★운영부 방 발송 처리 시작...")
+
+    out_text = ""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            str(_VENV_PY), "-u", str(_KAKAO_SENDER),
+            "--message", message, "--only-room", _OPS_DIGEST_ROOM_NAME,
+            cwd=str(WORKDIR),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            env=dict(os.environ, PYTHONIOENCODING="utf-8"),
+        )
+        out, _ = await proc.communicate()
+        out_text = (out or b"").decode("utf-8", errors="replace")
+        log.info(f"[opsdig] rc={proc.returncode} out_tail={out_text[-500:]}")
+    except Exception as exc:
+        await ctx.bot.send_message(chat_id=q.message.chat_id, text=f"⚠️ 방 발송 실행 오류: {exc}")
+        return
+
+    if proc.returncode == 0 and "DONE:" in out_text:
+        pending["status"] = "sent"
+        _ops_save_pending(pending)
+        try:
+            await q.edit_message_text(
+                text=(q.message.text or message) + "\n\n━━━━━━━━\n✅ 방에 발송 완료",
+                reply_markup=None)
+        except Exception:
+            await ctx.bot.send_message(chat_id=q.message.chat_id, text="✅ 방에 발송 완료")
+    else:
+        tail = out_text.strip().splitlines()[-1] if out_text.strip() else "알 수 없는 오류"
+        await ctx.bot.send_message(chat_id=q.message.chat_id, text=f"⚠️ 방 발송 실패: {tail}")
+
+
 # ── 중복 기동 방지 PID 락 (daily_scheduler.py와 동일 패턴, 2026-06-02) ──────────
 _PID_FILE = BASE / "bot.pid"
 
@@ -1952,6 +2069,9 @@ def main():
     # 카톡 매출보고 원클릭 3방 전송 콜백 (kakao_send) — 2026-07-06 CTO, 배488.
     # 코드만 등록 — 발효는 다음 봇 자동재기동 때(GM PC 재부팅 또는 아침 자동재기동).
     app.add_handler(CallbackQueryHandler(cmd_kakao_send_callback, pattern=r"^kakao_send$"))
+    # ★운영부 아침 요약 승인 콜백 (opsdig:) — 2026-07-13 CTO. ops_morning_pipeline.py가
+    # 보낸 GM 승인요청 카드의 [발송]/[수정요청]/[보류] 버튼 처리. 방 전송 게이트(신규 기능).
+    app.add_handler(CallbackQueryHandler(cmd_opsdig_callback, pattern=r"^opsdig:"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
 
