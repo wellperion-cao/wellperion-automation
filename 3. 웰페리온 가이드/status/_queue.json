@@ -650,5 +650,18 @@
     "artifact": "gviz가 615행 중 192행만 반환·rowIndex 압축(조화순 물리587→gviz172·임지현 396→85) →\n저장 시 잘못된 rowIndex 전송 → keyPhone 가드 row-key-mismatch 거부, no-cors라 화면엔 '저장'.\n새로고침 시 예약·편집 소실. 라이브 실증: rowIndex172+실전화→거부 / rowIndex587→ok·영속 확인.\n읽기를 GAS(정확 물리행)로 복귀. 멤버십·강습 편집 전체 영향 → 함께 해결. 성능 재최적화=후속 배. (CLI ad-hoc · 커밋 15372ca4)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "15372ca40dd366db5bd8fc84efb3e7ad2b7e34fe"
+  },
+  {
+    "task_id": "CPO-2026-07-13-INQUIRY-GVIZ-ROWINDEX-REFIX",
+    "clevel": "cpo",
+    "title": "[시포] 문의회원 읽기 성능 재최적화 — gviz rowIndex 물리행 정합 or 백엔드 phone-키 저장(+저장실패 표면화)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-13",
+    "note": "[2026-07-13 시포] INC-013 후속. 예약·편집 소실 버그를 USE_GVIZ=false(GAS 읽기 복귀)로 즉시 수리했으나 gviz(7~11배 빠름) 폐기로 문의목록 로딩 6~9초 회귀. 근본원인=gviz가 615행 중 192행만 반환·rowIndex 압축(물리행과 불일치) → 저장 rowIndex 어긋남·keyPhone 가드 거부. 재최적화 두 갈래: ①gviz 어댑터가 진짜 물리 rowIndex를 반환하도록(빈행 정합·gviz는 압축 특성상 어려움) ②백엔드 member_inquiry_update/lesson_inquiry_update를 rowIndex 대신 keyPhone(+gid) 행탐색으로 전환(rowIndex 드리프트에 근본 견고·GAS 재배포 필요). +공통 하드닝: apiPost no-cors 낙관반환을 실패 표면화로(저장 거부를 화면에 노출 — INC-013 본질②). 착수 전 GM 방향 결재(백엔드 재배포 동반 시).",
+    "next": "1) 방향 택(①gviz정합 vs ②백엔드 phone-키 저장) → 2) apiPost 실패표면화 설계 → 3) 구현·라이브 실증(rowIndex 물리행 일치+저장영속) → 4) USE_GVIZ 재활성 검토. 재활성은 정합 수리 확증 후에만.",
+    "depends_on": "",
+    "module": "cpo",
+    "ship_no": 910
   }
 ]

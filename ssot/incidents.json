@@ -213,6 +213,21 @@
       "차단조치": "stage1_collect_classify G1 성공 경로가 hangro_board.fetch_queue_items(정본 GAS+큐 머지)를 재사용하도록 배선(중복 로직 미신설)+queue_integrity_check._core_key로 시트 제목과 dedup. STANDBY 상태값 화이트리스트 등록(형식경고 해소). 커밋 51e1505b·6c316ab9.",
       "상태": "GUARDED",
       "검증증거": "dry-run 실측 '오늘 항로' 0→27건(hangro_board 활성수와 정확히 일치)·선장 결정 6건 이중계상 없음(dedup 확인)·형식경고 0건·STAGE1~4 정상 종료. 커밋·push 완료."
+    },
+    {
+      "id": "INC-013",
+      "date": "2026-07-13",
+      "watch_globs": [
+        "3. 웰페리온 가이드/cpo/member/문의회원.html"
+      ],
+      "gate": "warn",
+      "요약": "문의회원 예약·편집이 저장돼도 새로고침하면 사라지던 문제. 빠른 읽기(gviz)가 행 번호를 실제 시트와 다르게 매겨 저장이 엉뚱한 행으로 갔고, 저장 실패를 화면이 성공처럼 표시했다. 빠른 읽기를 끄고 정확한 읽기로 되돌려 막음.",
+      "증상": "USE_GVIZ=true(2026-07-08 성능개선)로 문의 목록을 gviz 직접읽기 → 같은 시트를 GAS는 615행, gviz는 192행만 반환·rowIndex 압축(조화순 물리587→gviz172·임지현 396→85). 저장(member_inquiry_update)이 압축 rowIndex를 전송 → 백엔드 keyPhone 가드가 row-key-mismatch로 거부. apiPost가 no-cors라 프론트가 거부를 못 읽고 저장 토스트만 표시 → 새로고침 시 예약·편집 소실. GM 실사용 중 발견(조화순·임지현).",
+      "본질": "이중. ① 빠른 읽기(gviz)와 쓰기(GAS 물리행)의 rowIndex 기준 불일치 — gviz가 빈행 압축해 물리행과 어긋남(정합어긋남). ② 저장 성공/실패를 얕은 신호(no-cors 낙관 반환)로 판단해 실제 백엔드 거부를 감춤(검증멈춤·INC-011 결).",
+      "뿌리분류": "정합어긋남",
+      "차단조치": "USE_GVIZ=false 롤백(읽기=GAS member_inquiry_list 정확 물리행 복귀·문서화된 1줄 역롤백). 코드 주석에 재활성 금지·근본원인 박제. 후속(별도 배 CPO-2026-07-13-INQUIRY-GVIZ-ROWINDEX-REFIX): gviz rowIndex 물리행 정합 또는 백엔드 phone-키 저장으로 성능 재최적화 + apiPost 저장실패 표면화(no-cors 낙관 제거해 실패를 화면에 노출).",
+      "상태": "GUARDED",
+      "검증증거": "라이브 실증: POST rowIndex=172(gviz값)+조화순 실전화 → ok:false error:row-key-mismatch(실패 메커니즘 재현·비파괴). POST rowIndex=587(GAS 물리행)+실전화 → ok:true → 재조회 예약 영속 확인 → 빈값 복구·재조회 [] 확인(순변화0). USE_GVIZ=false 커밋 15372ca4·origin 반영. 배포 GAS 무변경."
     }
   ]
 }
