@@ -711,5 +711,19 @@
     "artifact": "가역·저위험 배 1척 선별(welly_orchestrate 재사용+추가필터+쿨다운)→헤드리스 claude\n오케스트레이션 프롬프트 조립→게이트(RUNNER_LIVE, 기본 OFF)→재귀폭주 방지 가드.\n런처(vbs/bat)·Task Scheduler 등록안은 문서화만, 실제 등록·라이브 발효는 GM go 이후.\ndry-run 실측: CTO 큐에서 CTO-2026-07-02-SKILL-MASTERY-LEARNING 선택, claude 미호출·\n커밋0·_queue.json 무변경 확인(테스트 39건 통과). (CLI ad-hoc · 커밋 abec8a43)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "abec8a43068245bf671b9842637cf49a1266aa0c"
+  },
+  {
+    "task_id": "CTO-2026-07-13-ADHOC-b765f7e9",
+    "clevel": "cto",
+    "title": "[시토] 12시 점검현황 = 점검 보고형 재구성 (GM 2026-07-13)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 920,
+    "artifact": "GM 지시 '시설부 체계 점검현황·점검 횟수 중심으로 정리':\n- 점검 횟수 노출: '오늘 N회차'(dailySeries sessionCount)\n- 시설 체계별 입력률: byCategory 구역별(A사우나~F안전) 3개씩 2줄 — 저조 구역(E기계실·F안전) 한눈에\n- 기준이탈 상세 유지(항목·값·기준)\n라이브 렌더 실측 검증. 23시 폴백 무영향. (CLI ad-hoc · 커밋 b765f7e9)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b765f7e99555e0d7034a34bf8884eb46df590d3f"
   }
 ]
