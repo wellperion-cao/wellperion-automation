@@ -207,7 +207,12 @@ def save_ledger(ledger: list[dict]) -> None:
 #  5) 두뇌 — claude CLI (model_router 폴백 체인 재사용)
 # ═══════════════════════════════════════════
 def build_prompt(target_date: str, conversation: str, past_issues_digest: str) -> str:
-    return f"""당신은 웰페리온(하이엔드 스포츠클럽 멤버십 커뮤니티) AI COO '시우'입니다.
+    try:
+        _d = datetime.strptime(target_date, "%Y-%m-%d")
+        disp = f"{_d.month}/{_d.day}(" + "월화수목금토일"[_d.weekday()] + ")"
+    except Exception:
+        disp = target_date
+    return f"""당신은 웰페리온(프리미엄 스포츠클럽 멤버십 커뮤니티) AI COO '시우'입니다.
 ★운영부 카카오톡 방의 어제({target_date}) 하루 대화를 읽고, 오늘 아침 방에 바로 보낼 요약 메시지 1통을 작성합니다.
 
 [어제({target_date}) 대화 원문]
@@ -219,7 +224,7 @@ def build_prompt(target_date: str, conversation: str, past_issues_digest: str) -
 메시지는 '줄글'로 풀어쓰지 말고, 한눈에 들어오게 글머리(•)와 '이름별'로 딱딱 정리합니다.
 아래 구조를 그대로 따르세요(각 줄은 짧고 명확하게):
 
-🌅 어제({target_date}) 운영부 정리
+🌅 {disp} 운영부 정리
 
 👤 [이름]
  • 그 사람이 올리거나 처리한 일 (핵심만 한 줄씩, 여러 건이면 여러 줄)
@@ -231,7 +236,7 @@ def build_prompt(target_date: str, conversation: str, past_issues_digest: str) -
 🔁 반복 (해당할 때만 · 없으면 이 섹션 통째로 생략)
  • 원장 이력과 비교해 며칠째 반복되는 문제만. 확실치 않으면 넣지 말 것.
 
-💪 (격려 한 줄 — 감시가 아니라 함께 하루를 여는 따뜻한 톤)
+💪 (그날 대화 분위기·요일·특이사항을 반영한 '그날만의' 격려·응원 한 줄 — 매일 다르게, 판박이·복붙 금지. 감시 아닌 따뜻한 동료 톤)
 
 정직 규칙(중요):
 - 대화에 실제로 있는 내용만. 지어내거나 과장 금지. 애매하면 '~인 것 같아요' 정도로.
