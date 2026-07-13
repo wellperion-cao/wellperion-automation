@@ -678,13 +678,13 @@
   {
     "task_id": "COO-2026-07-13-CHECK-ALERT-CLOSEDDAY",
     "clevel": "coo",
-    "title": "[시우] 점검 알림 셀 정정 — 휴관일=「휴관」 표기 + 당월 누적 완료율 병기(아침·휴관 0% 오해 제거)",
+    "title": "[시우] 점검 알림 셀 정정 — 휴관일=「휴관」 표기 + 당월 누적 완료율 병기(아침·휴관 0% 오해 제거) + 시설부 이벤트중심(회차·이상·작업사항)",
     "status": "IN_PROGRESS",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-13",
     "ship_no": 917,
     "module": "O1",
-    "note": "[2026-07-13 GM go A] 890 KPI 수리 후 남은 표면. daily_scheduler.py 알림 지원부 셀이 raw today_live라 휴관일 0/82(0%)·아침 저% 오해. 수리: _is_closed_day(2·4주 일요일+1/1)로 휴관일엔 '🚫 휴관일-점검없음' 블록·정상일엔 당월누적 완료율 병기(kpi_values.json 재사용). 코드·dry-run 검증 완료. 가역(코드추가만).",
+    "note": "[2026-07-13 GM go A] 890 KPI 수리 후 남은 표면. daily_scheduler.py 알림 지원부 셀이 raw today_live라 휴관일 0/82(0%)·아침 저% 오해. 수리: _is_closed_day(2·4주 일요일+1/1)로 휴관일엔 '🚫 휴관일-점검없음' 블록·정상일엔 당월누적 완료율 병기(kpi_values.json 재사용). 코드·dry-run 검증 완료. 가역(코드추가만). [2026-07-13 GM go A] 시설부 셀 %→이벤트중심 재구성: '시설부 점검 N회·이상 N건' + 박스 아래 작업사항(fc_work) 원문 노출(GM 승인 포맷 A). _fetch_facility_work 신설. 지원부 완료율은 현행 유지.",
     "next": "⚓ 라이브 발효=daily_scheduler 데몬 재기동 후(현재 PID 관리자권한이라 즉시 재기동 불가·Access Denied). 다음 휴관일 07-26·매일 12시 알림에서 실동작 확인. 재기동=다음 PC 재부팅 시 자동."
   },
   {
@@ -756,5 +756,19 @@
     "artifact": "Survey.js: _findRowByPhone_ 신설, member_inquiry_update·lesson_inquiry_update guard가\nrowIndex/전화 불일치 시 keyPhone으로 올바른 물리 행 복구(정상 케이스 무변경·회귀0).\ngviz 어긋남(조화순 물리587→gviz172) 근본 무해화 → USE_GVIZ=true 재활성(빠른읽기 복원).\n라이브 실증: 버그 rowIndex172로 저장→행587 정확 기록·기존값 보존·복구. GAS@153 배포 완료. (CLI ad-hoc · 커밋 5e583842)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "5e5838428a995f963699aa57217ef9391b463eb0"
+  },
+  {
+    "task_id": "CEO-2026-07-13-ADHOC-8826ebdb",
+    "clevel": "ceo",
+    "title": "[웰리] bridge 포인터 배 자율 선별 제외 필터 추가",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 923,
+    "artifact": "예약 러너가 origin=bridge·NEXT-* task_id·priority 없음인 '다음 참고용'\n포인터 배를 구체 작업으로 오인해 뽑는 결함을 수리. select_one_low_risk_ship에\n_is_concrete_ship 게이트를 얹어 사람이 등록한 구체 가역 배만 자율 대상으로\n남긴다. 테스트 4건 추가(bridge/NEXT-/무우선순위 제외 + 정상 배 유지 확인,\n실관측 사례 NEXT-20260707-155721 동형 케이스 포함). (CLI ad-hoc · 커밋 8826ebdb)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8826ebdbb3b3bd7b400cc59e890869210259cb5f"
   }
 ]

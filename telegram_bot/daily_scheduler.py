@@ -1606,6 +1606,22 @@ def _fetch_facility_today() -> dict | None:
     return None
 
 
+def _fetch_facility_work(today: str) -> str | None:
+    """시설부 오늘 작업사항(fc_work) 원문. 없으면 None."""
+    try:
+        resp = _gas_get(f"{SUPPORT_CHECK_API_URL}?action=board&key=FACILITY_CHECK_{today}", label="12시 시설부작업사항")
+        if resp is None:
+            return None
+        b = resp.json().get("board", {})
+        w = (b.get("store", {}) or {}).get("daily", {}).get("fc_work")
+        if isinstance(w, str) and w.strip():
+            w = w.strip()
+            return w[:400] + "…" if len(w) > 400 else w
+    except Exception:
+        pass
+    return None
+
+
 def _is_closed_day(d=None) -> bool:
     """휴관일 = 매월 2·4주 일요일 + 1/1 (프론트 getDayInfo와 동일 규칙)."""
     import math
@@ -1701,10 +1717,15 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
         f_pct = facility_today.get("pct", round(f_done / f_total * 100))
         return f"{f_done}/{f_total}({f_pct}%)"
 
-    def _facility_cell() -> str:  # 23시 폴백 박스표용(⚠N 포함)
-        base = _facility_pct()
-        ooc = (facility_today or {}).get("outOfRangeCount", 0)
-        return base + (f" ⚠{ooc}" if ooc and base not in ("-", "미가동") else "")
+    def _facility_cell() -> str:  # 23시 폴백 박스표용 — 이벤트 중심(회차·이상 유무, GM 2026-07-13)
+        if facility_today is None:
+            return "-"
+        f_total = facility_today.get("total", 0)
+        if not f_total:
+            return "미가동"
+        sc = facility_today.get("sessionCount") or 0
+        ooc = facility_today.get("outOfRangeCount", 0)
+        return f"{sc}회·이상 {ooc}건" if ooc else f"{sc}회·이상 없음"
 
     ooc_cnt = (facility_today or {}).get("outOfRangeCount", 0)
     mrate = _support_monthly_rate()
@@ -1748,18 +1769,20 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
         return f"{body_safe}\n{link_line}"
 
     # 23시 폴백(MarkdownV2 안전) — 기존 박스표 형식 유지. 링크만 시설부(이탈 부서)로 교정.
+    #   시설부는 GM 지시(2026-07-13)로 %(입력률) 대신 회차·이상유무 중심 + 작업사항 원문 노출.
     table_str = "\n".join(_count_table([
         ("지원부 체크", _support_cell()),
-        ("시설부 체크", _facility_cell()),
+        ("시설부 점검", _facility_cell()),
     ]))
-    issue_block = f"\n\n[시설부 기준이탈] {ooc_cnt}건 — 대시보드 확인" if ooc_cnt else ""
+    fac_work = _fetch_facility_work(today) if facility_today is not None else None
+    work_block = f"\n\n─ 시설부 작업사항 ─\n{fac_work}" if fac_work else ""
     mrate_block = f"\n{mrate}" if mrate else ""
     body_plain = (
         f"🛠 시설·지원 점검 현황 — {slot_label} ({day_kor})\n"
         f"   체크리스트 진행 상황\n"
         f"{table_str}"
         f"{mrate_block}"
-        f"{issue_block}"
+        f"{work_block}"
     )
     return f"{body_plain}\n🔗 대시보드: {facility_dash}"
 
