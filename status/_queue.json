@@ -540,5 +540,19 @@
     "artifact": "승인 콜백이 _queue에 PENDING 배로 등록만 하고, 06:30 스캔의 기존 감지기\n(drift·long_pending·unapproved)가 이를 못 잡아 조용히 방치되던 빈틈을 막음.\ngm_aide_scan.py에 scan_northstar_unstarted(surface-only·큐 뮤테이션 0) +\n--northstar-worklist CLI + 웰리 부팅 픽업 포인터(ai-ceo.md). 테스트 10건.\n새 게이트·새 예약작업 0. 배 #237(GM보좌 자율화)·#897(단일 전환 퍼널). (CLI ad-hoc · 커밋 9910e089)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9910e089b2653ca295291b121fb98e6c2014bfa4"
+  },
+  {
+    "task_id": "CEO-2026-07-13-ADHOC-8f3fb3d9",
+    "clevel": "ceo",
+    "title": "[웰리] 죽어보이던 KPI 2종 근본수리 — 지원부 완료율·당월 전환율",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-13",
+    "processed_at": "2026-07-13",
+    "ship_no": 902,
+    "artifact": "#890 COO: 지원부_점검완료율을 today_live(오전 제로 아티팩트)→monthly_report(월간 누적)로\n소스 스왑. 0.0%→81%(북극성 도달 0→85%). 당일라이브는 참고값으로 정직 보존.\n#849 CPO: 당월 문의→가입 전환율 null 원인=fcPrecise 캐시미스 콜드패스 27~30초가\nkpi_collector 20초 타임아웃 초과. 해당 정밀조회만 45초로 연장(타 호출 10곳 20초 불변).\nnull→11.3%(문의80/가입9). 누적 39.5 유지. 둘 다 순수 파이썬·GAS 무변경·GM go 불요 (CLI ad-hoc · 커밋 8f3fb3d9)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8f3fb3d984b3ca393891b00f818705adc991d842"
   }
 ]
