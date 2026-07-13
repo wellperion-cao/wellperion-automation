@@ -20,6 +20,11 @@ welly_auto_runner.py — 예약 Claude 러너 MVP (배237 phase3, GM 승인 2026
      재선택 금지(status/welly_auto_runner_state.json) · claude 호출 타임아웃.
   5) 역롤백: LIVE 실행 전후 git HEAD 커밋 해시를 로그(status/welly_auto_runner_log.jsonl)에
      남긴다 — 문제 시 `git revert <commit>` 한 줄로 되돌릴 수 있다.
+  6) 클린트리 가드(working_tree_guard): LIVE 실행 직전 워킹트리를 점검한다. 이 리포는
+     자동화가 status/*.json·*.jsonl·로그·heartbeat·cache 등을 상시 건드려 항상 조금
+     지저분하다(정상 노이즈) — 이건 통과시키되, allowlist 밖 진짜 미커밋 작업(*.py·*.html
+     등 코드·docs·콘텐츠)이 남아 있으면 즉시 차단·skip한다. 무인 세션이 방치된 무관 작업을
+     자기 커밋에 쓸어담는 사고를 막는다(2026-07-13 관측 결함 대응).
 
 라이브 부작용 0 함수(순수) — select_one_low_risk_ship, build_orchestration_prompt.
 run_once만 게이트에 따라 실제 I/O(파일 읽기/쓰기·subprocess) 수행.
@@ -28,6 +33,7 @@ run_once만 게이트에 따라 실제 I/O(파일 읽기/쓰기·subprocess) 수
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import os
 import shutil
@@ -141,7 +147,10 @@ def build_orchestration_prompt(ship: dict, clevel: str = "cto", nick: str = "시
         "전략·공식값·라이브 GAS/시트 쓰기는 절대 실행하지 말고 즉시 중단·보고).\n"
         "2) 실행 결과를 검증한다(프론트 변경이면 시크릿 크롬 라이브 렌더로 실측, 스크립트면 "
         "실행 로그/테스트로 증명).\n"
-        "3) 변경한 파일만 명시 경로로 git add 후 커밋한다. 커밋 메시지 마지막 두 줄:\n"
+        "3) 반드시 네가 만든/바꾼 파일만 명시 경로로 git add 후 커밋한다. "
+        "git add -A · git add . · git commit -a는 절대 금지 — 워킹트리에 이미 있던 "
+        "무관한 미커밋 작업(다른 세션이 남긴 코드·콘텐츠)까지 네 커밋에 쓸어담는 사고를 "
+        "막기 위함이다. 커밋 메시지 마지막 두 줄:\n"
         "   Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\n"
         "   Claude-Session: https://claude.ai/code/session_01VXU2K3Rd1oemGiF6E2mE6L\n"
         "4) wellperion-agents/scripts/clevel_post_action.py로 status/_queue.json에 완료를 "
@@ -161,6 +170,99 @@ def _is_live() -> bool:
 
 def _guard_active() -> bool:
     return os.environ.get(GUARD_ENV_VAR, "0") == "1"
+
+
+# ── 클린트리 가드: 상시 자동생성 노이즈 allowlist ──
+# 근거(2026-07-13 실측 `git status --porcelain`): status/ 하위 json·jsonl·briefs·
+# morning_plans·_memory_snapshots, gm_profile.md, northstar_*, self_review_log*,
+# learning_*, telegram_bot의 heartbeat·cache, IG 리뷰 미리보기 png, logs/ 등은
+# 자동화가 상시 건드리는 정상 노이즈다. 이 목록 밖의 *.py·*.html·*.js·docs/*.md·
+# instagram/*.md 등은 사람이 방치한 진짜 미커밋 작업으로 간주해 가드를 발동시킨다.
+NOISE_PATH_PATTERNS = (
+    "status/*.json",
+    "status/*.jsonl",
+    "status/briefs/*",
+    "status/morning_plans/*",
+    "status/_memory_snapshots/*",
+    "status/gm_profile.md",
+    "status/northstar_*",
+    "status/self_review_log*",
+    "status/learning_*",
+    "*.log",
+    "logs",
+    "logs/*",
+    "*heartbeat*",
+    "*cache*",
+    "*.finance_cache*",
+    "*preview_*.png",
+    "3. 웰페리온 가이드/status/*",
+    "3. 웰페리온 가이드/cmo/review/*",
+)
+
+
+def _is_noise_path(path: str) -> bool:
+    """git status --porcelain 한 줄의 경로가 상시 자동생성 노이즈 allowlist에 걸리는지."""
+    norm = path.replace("\\", "/").strip().strip('"')
+    return any(fnmatch.fnmatch(norm, pattern) for pattern in NOISE_PATH_PATTERNS)
+
+
+def _parse_porcelain_paths(porcelain_stdout: str) -> list[str]:
+    paths = []
+    for line in porcelain_stdout.splitlines():
+        if not line.strip():
+            continue
+        # 포맷: "XY <path>" (rename 시 "XY <old> -> <new>")
+        entry = line[3:].strip() if len(line) > 3 else line.strip()
+        if " -> " in entry:
+            entry = entry.split(" -> ", 1)[1]
+        entry = entry.strip().strip('"')
+        if entry:
+            paths.append(entry)
+    return paths
+
+
+def working_tree_guard(repo_root: str | None = None) -> dict:
+    """
+    무인(RUNNER_LIVE) 실행 직전 워킹트리를 점검한다.
+    상시 자동생성 노이즈(NOISE_PATH_PATTERNS)는 통과시키고, allowlist 밖 진짜 미커밋
+    작업이 남아 있으면 차단한다(무인 세션이 방치된 무관 작업을 자기 커밋에 쓸어담는 사고 방지).
+
+    반환 dict 키: blocked(bool), dirty_files(list[str], 전체), real_work_files(list[str],
+    노이즈 제외 진짜 미커밋 작업), reason(str).
+    """
+    repo_root = repo_root or _PROJECT_ROOT
+    try:
+        out = subprocess.run(
+            # --untracked-files=all: 미추적 디렉토리를 하나로 뭉치지 않고 파일 단위로 펼쳐야
+            # allowlist(파일 패턴)가 정확히 매칭된다(디렉토리째 뭉치면 과탐/누락 둘 다 생김).
+            ["git", "status", "--porcelain", "--untracked-files=all"],
+            cwd=repo_root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=15,
+        )
+    except Exception as e:  # noqa: BLE001
+        return {
+            "blocked": True, "dirty_files": [], "real_work_files": [],
+            "reason": f"git status 실행 실패 — 안전 우선 차단: {type(e).__name__}: {e}",
+        }
+    if out.returncode != 0:
+        return {
+            "blocked": True, "dirty_files": [], "real_work_files": [],
+            "reason": f"git status 실패(rc={out.returncode}) — 안전 우선 차단: {out.stderr.strip()[:300]}",
+        }
+
+    dirty_files = _parse_porcelain_paths(out.stdout)
+    real_work_files = [p for p in dirty_files if not _is_noise_path(p)]
+    blocked = bool(real_work_files)
+    reason = (
+        f"워킹트리에 노이즈 allowlist 밖 미커밋 작업 {len(real_work_files)}건 — "
+        f"클린트리 가드 발동(skip): {', '.join(real_work_files[:10])}"
+        if blocked else
+        f"워킹트리 클린(노이즈 {len(dirty_files)}건 또는 완전 클린) — 가드 통과"
+    )
+    return {
+        "blocked": blocked, "dirty_files": dirty_files, "real_work_files": real_work_files,
+        "reason": reason,
+    }
 
 
 def _load_queue(path: str) -> list:
@@ -214,6 +316,26 @@ def _git_head(repo_root: str) -> str | None:
         return None
 
 
+def _commit_changed_files(repo_root: str, before: str | None, after: str | None) -> list[str]:
+    """
+    LIVE 실행 후 best-effort 커밋 범위 점검: before→after 커밋 사이 변경 파일 목록을 반환한다
+    (선언 범위 밖 파일 혼입 여부를 로그로 남겨 사후 감사 가능하게 함 — 완벽 판정 아닌 가시성).
+    """
+    if not before or not after or before == after:
+        return []
+    try:
+        out = subprocess.run(
+            ["git", "diff", "--name-only", before, after],
+            cwd=repo_root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=15,
+        )
+        if out.returncode != 0:
+            return []
+        return [line.strip() for line in out.stdout.splitlines() if line.strip()]
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def _append_log(entry: dict, path: str) -> None:
     entry = dict(entry)
     entry.setdefault("at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
@@ -254,6 +376,21 @@ def run_once(
         }
         _append_log({"event": "guard_blocked"}, log_path)
         return result
+
+    # ── 클린트리 가드: LIVE 실행 시에만, 선별·실행 전에 워킹트리 점검 ──
+    if live:
+        tree_guard = working_tree_guard()
+        if tree_guard["blocked"]:
+            result = {
+                "mode": "live", "ship": None, "prompt": None, "executed": False, "commit": None,
+                "reason": tree_guard["reason"],
+                "dirty_files": tree_guard["real_work_files"],
+            }
+            _append_log(
+                {"event": "working_tree_dirty", "real_work_files": tree_guard["real_work_files"]},
+                log_path,
+            )
+            return result
 
     queue = _load_queue(queue_path)
     registry = load_registry(registry_path)
@@ -321,6 +458,9 @@ def run_once(
 
     after_commit = _git_head(_PROJECT_ROOT)
     new_commit = after_commit if (after_commit and after_commit != before_commit) else None
+    # best-effort 사후 범위 점검(item 4): 세션 커밋이 실제로 건드린 파일 목록을 기록해
+    # 선언 범위 밖 파일 혼입 여부를 나중에 감사할 수 있게 남긴다(완전 자동 판정은 아님).
+    changed_files = _commit_changed_files(_PROJECT_ROOT, before_commit, new_commit)
 
     state["run_count"] = state.get("run_count", 0) + 1
     if not ok or not new_commit:
@@ -331,11 +471,12 @@ def run_once(
         "mode": "live", "ship": ship, "prompt": prompt, "executed": True,
         "success": ok and bool(new_commit), "commit": new_commit, "before_commit": before_commit,
         "stderr_tail": stderr_text[-500:] if stderr_text else "",
+        "changed_files": changed_files,
     }
     _append_log(
         {
             "event": "live_run", "task_id": ship.get("task_id"), "success": result["success"],
-            "commit": new_commit, "before_commit": before_commit,
+            "commit": new_commit, "before_commit": before_commit, "changed_files": changed_files,
         },
         log_path,
     )

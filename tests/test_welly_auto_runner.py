@@ -262,3 +262,168 @@ def test_mark_and_active_cooldown_roundtrip():
     later = datetime(2026, 7, 15, 0, 0, tzinfo=timezone.utc)
     active_later = war._active_cooldown_ids(state, now=later)
     assert "CTO-X" not in active_later
+
+
+# ── 클린트리 가드(working_tree_guard): 노이즈 vs 진짜 미커밋 작업 구분 ──
+def _init_git_repo(repo_dir):
+    import subprocess as sp
+
+    sp.run(["git", "init", "-q"], cwd=str(repo_dir), check=True)
+    sp.run(["git", "config", "user.email", "test@example.com"], cwd=str(repo_dir), check=True)
+    sp.run(["git", "config", "user.name", "Test"], cwd=str(repo_dir), check=True)
+
+
+def test_working_tree_guard_passes_when_clean(tmp_path):
+    _init_git_repo(tmp_path)
+    result = war.working_tree_guard(repo_root=str(tmp_path))
+    assert result["blocked"] is False
+    assert result["dirty_files"] == []
+    assert result["real_work_files"] == []
+
+
+def test_working_tree_guard_passes_when_only_noise_dirty(tmp_path):
+    _init_git_repo(tmp_path)
+    (tmp_path / "status").mkdir()
+    (tmp_path / "status" / "briefs").mkdir()
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "status" / "kpi_values.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "status" / "gm_profile.md").write_text("noise", encoding="utf-8")
+    (tmp_path / "status" / "briefs" / "CMO-daily-feedback-20260713.md").write_text("x", encoding="utf-8")
+    (tmp_path / "logs" / "run.log").write_text("x", encoding="utf-8")
+    (tmp_path / "telegram_bot_heartbeat.txt").write_text("x", encoding="utf-8")
+
+    result = war.working_tree_guard(repo_root=str(tmp_path))
+    assert result["blocked"] is False
+    assert result["real_work_files"] == []
+    assert len(result["dirty_files"]) == 5
+
+
+def test_working_tree_guard_blocks_on_real_work_file(tmp_path):
+    _init_git_repo(tmp_path)
+    (tmp_path / "status").mkdir()
+    (tmp_path / "status" / "kpi_values.json").write_text("{}", encoding="utf-8")  # 노이즈
+    scripts_dir = tmp_path / "scripts"
+    scripts_dir.mkdir()
+    (scripts_dir / "some_new_feature.py").write_text("print('hi')\n", encoding="utf-8")  # 진짜 작업
+
+    result = war.working_tree_guard(repo_root=str(tmp_path))
+    assert result["blocked"] is True
+    assert "scripts/some_new_feature.py" in result["real_work_files"]
+    assert "status/kpi_values.json" not in result["real_work_files"]
+
+
+@pytest.mark.parametrize(
+    "path,expected_noise",
+    [
+        ("status/_archive.json", True),
+        ("status/gm_aide_scan_log.jsonl", True),
+        ("status/briefs/CMO-daily-feedback-20260706.md", True),
+        ("status/morning_plans/2026-07-13.json", True),
+        ("status/_memory_snapshots/2026-07-12.zip", True),
+        ("status/northstar_card_sample.md", True),
+        ("status/self_review_log.jsonl", True),
+        ("status/learning_health.md", True),
+        ("telegram_bot/.finance_cache.txt", True),
+        ("telegram_bot/bot_heartbeat.txt", True),
+        ("3. 웰페리온 가이드/cmo/review/성찰틀_preview_20260712073003.png", True),
+        ("logs/foo.txt", True),
+        ("scripts/welly_auto_runner.py", False),
+        ("scripts/gm_aide_scan.bat", False),
+        ("docs/superpowers/specs/2026-07-09-module-registry-contract.md", False),
+        ("instagram/_실전사례_2주플랜.md", False),
+        ("ops/restart_telegram_bot_core.ps1", False),
+    ],
+)
+def test_is_noise_path_matches_real_observed_allowlist(path, expected_noise):
+    assert war._is_noise_path(path) is expected_noise
+
+
+# ── run_once: 클린트리 가드는 LIVE에서만 발동 ──
+def test_run_once_dry_run_does_not_check_working_tree(tmp_path, monkeypatch):
+    queue = [_ship()]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    def _boom(*a, **kw):
+        raise AssertionError("dry-run인데 working_tree_guard가 호출됨")
+
+    monkeypatch.setattr(war, "working_tree_guard", _boom)
+
+    result = war.run_once(
+        clevel="cto",
+        queue_path=str(queue_path),
+        registry_path=None,
+        state_path=str(tmp_path / "state.json"),
+        log_path=str(tmp_path / "log.jsonl"),
+        live=False,
+    )
+    assert result["mode"] == "dry-run"
+
+
+def test_run_once_live_blocked_by_working_tree_guard(tmp_path, monkeypatch):
+    queue = [_ship()]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    def _boom(*a, **kw):
+        raise AssertionError("워킹트리 가드 차단인데 subprocess.run이 호출됨(claude 호출 시도)")
+
+    monkeypatch.setattr(war.subprocess, "run", _boom)
+    monkeypatch.setattr(
+        war, "working_tree_guard",
+        lambda *a, **kw: {
+            "blocked": True, "dirty_files": ["scripts/foo.py"],
+            "real_work_files": ["scripts/foo.py"], "reason": "테스트 차단",
+        },
+    )
+
+    result = war.run_once(
+        clevel="cto",
+        queue_path=str(queue_path),
+        registry_path=None,
+        state_path=str(tmp_path / "state.json"),
+        log_path=str(tmp_path / "log.jsonl"),
+        live=True,
+    )
+    assert result["mode"] == "live"
+    assert result["executed"] is False
+    assert result["ship"] is None
+    assert result["commit"] is None
+    assert "scripts/foo.py" in result["dirty_files"]
+
+
+def test_run_once_live_passes_guard_then_proceeds_to_selection(tmp_path, monkeypatch):
+    # 비가역 배만 있어 후보 0건 — 워킹트리 가드는 통과했지만 claude는 호출되지 않아야 함
+    queue = [_ship(note="보안 설정 변경")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    monkeypatch.setattr(
+        war, "working_tree_guard",
+        lambda *a, **kw: {"blocked": False, "dirty_files": [], "real_work_files": [], "reason": "클린"},
+    )
+
+    def _boom(*a, **kw):
+        raise AssertionError("후보 0건인데 subprocess.run이 호출됨")
+
+    monkeypatch.setattr(war.subprocess, "run", _boom)
+
+    result = war.run_once(
+        clevel="cto",
+        queue_path=str(queue_path),
+        registry_path=None,
+        state_path=str(tmp_path / "state.json"),
+        log_path=str(tmp_path / "log.jsonl"),
+        live=True,
+    )
+    assert result["mode"] == "live"
+    assert result["ship"] is None
+    assert result["reason"] != "테스트 차단"
+
+
+# ── build_orchestration_prompt: git add 범위 명시 금지 문구 ──
+def test_prompt_contains_explicit_add_scope_prohibition():
+    ship = _ship()
+    prompt = war.build_orchestration_prompt(ship, clevel="cto", nick="시토")
+    assert "git add -A" in prompt
+    assert "git commit -a" in prompt
