@@ -2951,8 +2951,11 @@ function saveFacilityMeasure(body) {
   return jsonRes({ ok: true, dept: 'facility', date: date, round: round, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0 });
 }
 
-// ─── 금일 작업사항·지시사항만 스냅샷 갱신 (POST {action:'save_facility_notes', date, round, inspector, work, order}) ───
+// ─── 금일 작업사항·지시사항만 스냅샷 갱신 (POST {action:'save_facility_notes', date, round, inspector, work, order, oocAction}) ───
 // 정오 이후 자동 저장용(GM 2026-07-09 시우). 시설_공용구역(측정) 절대 미변경 — 점검일지_facility의 작업사항(15열)/지시사항(16열)만 upsert.
+// oocAction(기준이탈 조치/해결, GM 승인 2026-07-13 시우): 시트 영구컬럼 아직 없음(★후속=GM 승인 시 HEADERS 확장) —
+// 지금은 board(PropertiesService KV, key=FACILITY_CHECK_{date}) 스냅샷 store.daily.fc_ooc_action 에만 비파괴 병합.
+// 12시 알림(daily_scheduler.py _fetch_facility_board)이 이 board.store.daily.fc_ooc_action 을 읽어 [조치] 로 병기한다.
 function saveFacilityNotes(body) {
   var date = String(body.date || '').trim();
   if (!date) return jsonRes({ ok: false, error: 'date 필수' });
@@ -2960,6 +2963,19 @@ function saveFacilityNotes(body) {
   var inspector = String(body.inspector || '박호균').trim() || '박호균';
   var work = String(body.work || '').trim();
   var order = String(body.order || '').trim();
+  var oocAction = String(body.oocAction || '').trim();
+  if (oocAction) {
+    try {
+      var boardKey = BOARD_PROP_PREFIX + 'FACILITY_CHECK_' + date;
+      var boardProps = PropertiesService.getScriptProperties();
+      var rawBoard = boardProps.getProperty(boardKey);
+      var board = rawBoard ? (JSON.parse(rawBoard) || {}) : { date: date };
+      if (!board.store) board.store = {};
+      if (!board.store.daily) board.store.daily = {};
+      board.store.daily.fc_ooc_action = oocAction;
+      boardProps.setProperty(boardKey, JSON.stringify(board));
+    } catch (eBoard) {}
+  }
   var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
   var fsheet = _initFacilitySnapshot();
   var fdata = fsheet.getDataRange().getValues();

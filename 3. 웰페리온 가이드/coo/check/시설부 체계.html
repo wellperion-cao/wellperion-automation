@@ -752,6 +752,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-fcheck" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">시설 일일점검 <span style="font-size:13px;color:var(--dim);font-weight:400;">(작업일지 · PDF 기준)</span><span id="fc-title-date" style="margin-left:auto;font-size:15px;color:var(--accent);font-weight:700;"></span></h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜를 고른 뒤 <b>⏱ 점검 시작</b> → 측정값 입력 → <b>⏱ 점검 종료</b> → <b>제출</b>하면 <b>1회차</b>로 기록됩니다. 제출하면 <b>측정 수치칸만 비워져</b> 바로 다음 회차를 이어서 점검할 수 있고, 위의 <b>회차 버튼(1회·2회…)</b>을 누르면 그 회차 기록을 <b>읽기전용</b>으로 볼 수 있습니다. <b>금일 작업사항·지시사항</b>은 하루 한 번만 적으면 회차가 넘어가도 유지됩니다.</p>
+  <!-- 점검 가이드(접이식) — 짧은 안내, GM 승인 2026-07-13 시우 -->
+  <details style="margin-bottom:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
+    <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--accent);">📖 점검 가이드 (처음이면 열어보세요)</summary>
+    <ul style="margin:8px 0 2px;padding-left:18px;font-size:12.5px;color:var(--dim);line-height:1.7;">
+      <li>① 회차별 측정값 입력 → 제출</li>
+      <li>② 기준이탈(빨강)은 조치칸에 어떻게 처리했는지 기록</li>
+      <li>③ 작업사항 = 오늘 한 일</li>
+      <li>④ 지시사항 = 차장/소장 전달</li>
+      <li>⑤ 정오 이후 자동저장</li>
+    </ul>
+  </details>
   <!-- 금일 작업사항·지시사항·점검 요청사항(임시) — 점검 시작 위 · 하루 1번·회차 넘어가도 유지(리셋 안 됨). GM 2026-07-09 -->
   <div id="fc-daybox" style="margin-bottom:14px;">
     <div style="font-weight:700;font-size:14px;margin:0 0 4px;">금일 작업사항</div>
@@ -760,6 +771,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <textarea id="fc_order" rows="3" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:7px;font-size:13px;font-family:inherit;" placeholder="예) 통합관리실 CCTV 추가 · 비번 변경 등"></textarea>
     <div style="font-weight:700;font-size:14px;margin:12px 0 4px;">점검 요청사항 <span style="font-size:11px;color:var(--dim);font-weight:400;">(임시 · 추후 삭제 예정)</span></div>
     <textarea id="fc_req" rows="3" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:7px;font-size:13px;font-family:inherit;" placeholder="점검 관련 요청사항"></textarea>
+    <div style="font-weight:700;font-size:14px;margin:12px 0 4px;">⚠️ 기준이탈 조치/해결</div>
+    <textarea id="fc_ooc_action" rows="3" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:7px;font-size:13px;font-family:inherit;" placeholder="예) 수영장 수온 높음 → 약품 투입·재측정 / 사우나 온도 0.1℃ 초과 → 정상범위 판단"></textarea>
   </div>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
     <label style="font-size:13px;font-weight:700;">날짜 <input type="date" id="fcDate" onchange="fcLoad()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-family:inherit;"></label>
@@ -4145,7 +4158,7 @@ function vendorSubmitAddForm(){
   ];
   var ROUND_FIELD_IDS=[];   // 시간대별 항목의 모든 입력 필드 id (회차 전환 시 캡처·복원 대상)
   FC_ROUND_ITEMS.forEach(function(it){ it.fields.forEach(function(f){ ROUND_FIELD_IDS.push(f); }); });
-  var DAILY_FIELD_IDS=['fc_work','fc_order','fc_req','fc_note'];   // 1일 공통 텍스트(작업사항·지시사항·점검요청사항·비고) + 아래 daily items
+  var DAILY_FIELD_IDS=['fc_work','fc_order','fc_req','fc_note','fc_ooc_action'];   // 1일 공통 텍스트(작업사항·지시사항·점검요청사항·비고·기준이탈 조치) + 아래 daily items
   FC_DAILY_ITEMS.forEach(function(it){ it.fields.forEach(function(f){ DAILY_FIELD_IDS.push(f); }); });
 
   // ─── 회차별 입력값 보존 store. rounds[label]={fieldId:val}, daily={fieldId:val}, inspector ───
@@ -4338,7 +4351,8 @@ function vendorSubmitAddForm(){
       work:(dmap['fc_work']||''),
       order:(dmap['fc_order']||''),
       req:(dmap['fc_req']||''),
-      note:(dmap['fc_note']||'')
+      note:(dmap['fc_note']||''),
+      oocAction:(dmap['fc_ooc_action']||'')
     };
   }
   // 제출 후 현재 회차 입력·draft·타이머 리셋 — 값-only(DOM 재생성 금지, IME 안전).
@@ -4374,7 +4388,7 @@ function vendorSubmitAddForm(){
       if(!it||!it.measure)return;
       try{ var vals=JSON.parse(it.measure); Object.keys(vals).forEach(function(k){ m['fc_'+k]=vals[k]; }); }catch(e){}
     });
-    if(sub){ if(sub.work!==undefined)m['fc_work']=sub.work; if(sub.order!==undefined)m['fc_order']=sub.order; if(sub.req!==undefined)m['fc_req']=sub.req; if(sub.note!==undefined)m['fc_note']=sub.note; }
+    if(sub){ if(sub.work!==undefined)m['fc_work']=sub.work; if(sub.order!==undefined)m['fc_order']=sub.order; if(sub.req!==undefined)m['fc_req']=sub.req; if(sub.note!==undefined)m['fc_note']=sub.note; if(sub.oocAction!==undefined)m['fc_ooc_action']=sub.oocAction; }
     return m;
   }
   // fc_ 입력칸 전부 잠금/해제(읽기전용 조회용)
@@ -4429,7 +4443,7 @@ function vendorSubmitAddForm(){
     var date=val('fcDate'); if(!date) return;
     if(!(nowHHMM() >= '12:00')) return;          // 정오 이전엔 자동 저장 안 함(수동 제출만)
     fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'save_facility_notes',date:date,round:ROUND_DAILY,inspector:inspectorName(),work:val('fc_work'),order:val('fc_order')})}).catch(function(){});
+      body:JSON.stringify({action:'save_facility_notes',date:date,round:ROUND_DAILY,inspector:inspectorName(),work:val('fc_work'),order:val('fc_order'),oocAction:val('fc_ooc_action')})}).catch(function(){});
     var st=document.getElementById('fcStatus'); if(st) st.textContent='금일 작업사항 자동 저장됨 ('+nowHHMM()+')';
   }
   function fcNotesDebounced(){ if(_fcNotesTimer)clearTimeout(_fcNotesTimer); _fcNotesTimer=setTimeout(fcAutoSaveNotes,2500); }
@@ -4490,7 +4504,7 @@ function vendorSubmitAddForm(){
   };
   try{ var fd=document.getElementById('fcDate'); if(fd){ fd.value=new Date().toLocaleDateString('sv-SE'); fcRender(); fcLoad(); } }catch(e){}
   // 금일 작업사항·지시사항·점검요청사항 입력 → 정오 이후 자동 저장(디바운스). 정적 박스라 1회 연결.
-  try{ ['fc_work','fc_order','fc_req'].forEach(function(id){ var n=document.getElementById(id); if(n) n.addEventListener('input',fcNotesDebounced); }); }catch(e){}
+  try{ ['fc_work','fc_order','fc_req','fc_ooc_action'].forEach(function(id){ var n=document.getElementById(id); if(n) n.addEventListener('input',fcNotesDebounced); }); }catch(e){}
 
   /* ═══ 현황 대시보드(tab-admin) — 특정 1일 실시간 현황 (지원부 tab-admin 구조 이식, 시설부 실측정값 구조로 바인딩).
      월간 탭(카테고리·회차·점검자 '월간' 집계)과 겹치지 않게 — 이 탭은 FACILITY_CHECK_{date} 보드를 그 날짜 하나만 읽어

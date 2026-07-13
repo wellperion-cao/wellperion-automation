@@ -1607,18 +1607,24 @@ def _fetch_facility_today() -> dict | None:
 
 
 def _fetch_facility_board(today: str) -> dict:
-    """시설부 오늘 board 한 번 호출 — 작업사항(fc_work) 원문 + 제출 회차수(submissions len).
+    """시설부 오늘 board 한 번 호출 — 작업사항(fc_work) 원문 + 제출 회차수(submissions len)
+    + 기준이탈 조치/해결(fc_ooc_action, GM 승인 2026-07-13 시우).
     회차는 monthly의 sessionCount(라운드종류=1 고정)가 아니라 실제 제출 건수(페이지 'N회 완료'와 일치)."""
-    out = {"work": None, "sessions": 0}
+    out = {"work": None, "sessions": 0, "ooc_action": None}
     try:
         resp = _gas_get(f"{SUPPORT_CHECK_API_URL}?action=board&key=FACILITY_CHECK_{today}", label="12시 시설부board")
         if resp is None:
             return out
         store = (resp.json().get("board", {}) or {}).get("store", {}) or {}
-        w = (store.get("daily", {}) or {}).get("fc_work")
+        daily = store.get("daily", {}) or {}
+        w = daily.get("fc_work")
         if isinstance(w, str) and w.strip():
             w = w.strip()
             out["work"] = w[:400] + "…" if len(w) > 400 else w
+        oa = daily.get("fc_ooc_action")
+        if isinstance(oa, str) and oa.strip():
+            oa = oa.strip()
+            out["ooc_action"] = oa[:200] + "…" if len(oa) > 200 else oa
         subs = store.get("submissions")
         if isinstance(subs, list):
             out["sessions"] = len(subs)
@@ -1698,7 +1704,7 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
     monthly = _fetch_facility_monthly(today)
     facility_today = _facility_today_row(monthly, today)
     # board 한 번 호출로 작업사항 + 실제 제출 회차수 확보(회차=페이지 'N회 완료'와 일치)
-    fac_board = _fetch_facility_board(today) if facility_today is not None else {"work": None, "sessions": 0}
+    fac_board = _fetch_facility_board(today) if facility_today is not None else {"work": None, "sessions": 0, "ooc_action": None}
 
     # 부서별 대시보드(GM 지적: '시설부 이탈'인데 링크는 지원부로 가던 불일치 → 부서별 앵커로 교정)
     _CHECK_BASE = "https://wellperion-cao.github.io/wellperion-automation/coo/check/"
@@ -1748,6 +1754,9 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
         # 이상 내용(기준이탈 상세) — 시토 918 유용분 보존(GM '어떤 문제였는지')
         if ooc_cnt:
             issue = _build_facility_ooc_detail(monthly, today)  # "⚠️ 시설부 기준이탈 N건\n  · 항목: 값 (기준 lo~hi)"
+            ooc_action = fac_board.get("ooc_action")  # 실무진이 조치칸에 남긴 해결내용(GM 승인 2026-07-13 시우)
+            if ooc_action:
+                issue = f"{issue}\n  [조치] {ooc_action}"
         else:
             issue = "✅ 이상 없음 — 시설 측정 전 항목 정상"
 
