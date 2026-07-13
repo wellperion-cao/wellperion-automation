@@ -9,7 +9,14 @@ REM No claude call, no commit, no _queue.json change while RUNNER_LIVE stays off
 REM
 REM Rollback (1-stage): keep the line below commented out to stay dry-run.
 REM Live activation (GM go only): uncomment "set RUNNER_LIVE=1".
+REM
+REM Telegram ping gate (ambiguous-ship escalation, separate 2-stage gate from
+REM RUNNER_LIVE) - GM go 2026-07-13 ("notifications on"). Sends a low-frequency
+REM GM-channel ping only when the runner parks an ambiguous ship (dedup + daily
+REM cap enforced in welly_auto_runner.py). Rollback (1 line): comment out
+REM "set RUNNER_PING_LIVE=1" below to silence pings again.
 cd /d C:\Users\jjky0\welperion-automation
 set PYTHONIOENCODING=utf-8
 set RUNNER_LIVE=1
+set RUNNER_PING_LIVE=1
 C:\Python314\python.exe -u scripts\welly_auto_runner.py --clevel cto >> logs\welly_auto_runner.log 2>&1
