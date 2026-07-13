@@ -69,6 +69,36 @@
       "honesty_default": "measured"
     },
     {
+      "id": "cto-ops-morning-digest",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "★운영부 전날 정리 비서 — 매일 08시 방 대화 내보내기→AI 이름별 요약(어제요약·미해결·반복·격려)→GM 텔레그램 승인카드→[발송] 시에만 방 전송",
+      "data_source": {"kind": "json", "ref": "1. AI학습자료_아카이브/11_카카오톡/★운영부/ (gitignore·비추적: 대화 원문·요약·원장·대기)"},
+      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "autonomy": "semi",
+      "ai_free_fallback": "내보내기·GM 승인카드 발송·방 전송 파이프는 무인(예약 08시 Wellperion-Ops-Morning-Digest-0800). 요약 생성만 Claude 필수(대안: 사람이 대화 직접 열람). 방 전송은 GM 텔레그램 [발송] 버튼 게이트=오발송 0",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
+      "id": "cto-kakao-sales-report",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "카톡 매출·운영 보고 — 매일 09:30 시트 범위 이미지 자동생성→무인 카톡 3방(회장님·관리부·운영부)+휴관일 인지 안내. (아침 요약카드 고도화=경보·4지표·그래프, GM go 대기)",
+      "data_source": {"kind": "sheet", "ref": "매출보고 '보고' 탭 H2:S21 export + status/kpi_values.json·parking_revenue.json(요약카드)"},
+      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "kakao", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "autonomy": "auto",
+      "ai_free_fallback": "시트 export→이미지→카톡 PC앱 UI 자동전송, AI 세션 불요. 킬스위치 status/kakao_auto_send.json",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
       "id": "cmo-content-pipeline",
       "owner_role": "cmo",
       "owner_nick": "시모",
