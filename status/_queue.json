@@ -976,5 +976,19 @@
     "artifact": "미사용 아코디언(.accordion/.acc-*)·정책비교박스(.policy-compare/.pc-box*)·\n수기 인쇄 드롭다운(.tab-dropdown-menu/openTabDropdown/closeAllDropdowns)·\nbadge teal/yellow variant 삭제. grep 소비자 0 확인 후 제거(실사용 .tab-dropdown\n래퍼·print_options.js·.badge 기본은 보존). 테스트 탭은 시포 확인 대기로 미변경. (CLI ad-hoc · 커밋 2c2de304)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "2c2de3046f9ee3904d1f646b60ca321f84c9a70d"
+  },
+  {
+    "task_id": "COO-2026-07-14-ADHOC-0db9624d",
+    "clevel": "coo",
+    "title": "[시우] 전사 일정 거래업체 연동 (GM go) — 종목별 담당 업체·연락처 원클릭",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 990,
+    "artifact": "편집화면 '담당 거래업체' 드롭다운(vendor_list 25개·미지정 포함) → item.vendor_id 저장.\n리스트에 지정 항목은 '🏢 담당 [업체명] · 📞 [연락처]' tel: 링크(도래 시 원클릭 전화).\nvendor는 CHECK_API vendor_list 실시간 조회(연락처 스냅샷 저장 안함=번호변경 정합).\n자동 1:1매칭 불가(분류 뭉침)라 종목당 1회 지정 방식. loadVendors 성공→renderAll 재렌더.\n지어낸 업체·번호 0. 간소화·computeDue·GAS저장·필터·편집·seed 전부 보존·no (CLI ad-hoc · 커밋 0db9624d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "0db9624da33e6cc111cd007c042e97a0fea4ecdc"
   }
 ]
