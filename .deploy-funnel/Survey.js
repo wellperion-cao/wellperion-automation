@@ -783,6 +783,85 @@ function _notifyNewInquiries_() {
       Logger.log('[문의알림] ' + cfg.type + ' 오류: ' + e.message);
     }
   });
+
+  // 강습 팀시트 상태변경(컨택/등록) 알림도 같은 5분 주기로 — 멤버십과 달리 강습은 팀시트 직접 처리라 별도 폴러 필요(2026-07-14 GM go)
+  try { _notifyLessonStatusChanges_(); } catch (e) { Logger.log('[강습상태알림] ' + e.message); }
+}
+
+// ─── 강습 팀시트 상태변경 알림 폴러 (2026-07-14 시토·GM go) ───
+// 각 강습 팀시트(LESSON_TEAM_SHEETS)에서 상태가 '컨택'·'등록(SUC)'으로 바뀌면 문의알림방에 알림.
+// 멤버십(문의회원 페이지→GAS)은 상태변경이 GAS를 거쳐 알림이 발화하나, 강습은 팀장이 팀시트에서 직접
+// 처리해 감지 경로가 없었음 → 이 폴러가 팀시트를 읽어 컨택/등록 전환만 골라 알림.
+// 중복방지: ScriptProperties LESSON_NOTIFIED_<ssId>_<gid> 에 이미 알린 'rowKey|bucket' 집합 저장.
+// 최초 실행(마커 없음): 현 컨택/등록 상태를 baseline으로만 저장하고 알림 없음(기존분 폭주 방지).
+function _notifyLessonStatusChanges_() {
+  var props = PropertiesService.getScriptProperties();
+  var chatId = props.getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+  LESSON_TEAM_SHEETS.forEach(function(cfg) {
+    var propKey = 'LESSON_NOTIFIED_' + cfg.ssId + '_' + cfg.gid;
+    try {
+      var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+      if (!sh) return;
+      var last = sh.getLastRow(), lastCol = sh.getLastColumn();
+      if (last < 2 || lastCol < 1) return;
+      var data = sh.getRange(1, 1, last, lastCol).getValues();
+      var headers = data[0];
+      // 상태열 탐지 — _collectLessonRegistrations_와 동일 휴리스틱(고유값 2~30 + 코드형 상태값 최다 열)
+      var best = -1, bestCnt = 0;
+      for (var c = 0; c < lastCol; c++) {
+        var cnt = 0, distinct = {}, dn = 0;
+        for (var r = 1; r < data.length; r++) {
+          var cv = String(data[r][c] || '').trim();
+          if (!cv) continue;
+          if (!distinct[cv]) { distinct[cv] = 1; dn++; }
+          if (_isLessonStatusVal_(cv)) cnt++;
+        }
+        if (dn >= 2 && dn <= 30 && cnt > bestCnt) { bestCnt = cnt; best = c; }
+      }
+      if (best < 0) return;  // 상태열 미발견 — 알림 없음(날조 금지)
+      var idxName  = _findCol_(headers, ['성함', '이름', '성명', '수강생', '회원명']);
+      var idxOwner = _findCol_(headers, ['담당', '담당자', '팀장', '강사']);
+
+      var curKeys = [];
+      var events = [];
+      for (var r2 = 1; r2 < data.length; r2++) {
+        var sv = String(data[r2][best] || '').trim();
+        if (!sv) continue;
+        var bucket = null;
+        if (_isLessonReg_(sv)) bucket = 'SUC';
+        else if (/컨택|응대|연락|통화|문자|회신/.test(sv)) bucket = 'CONTACT';
+        if (!bucket) continue;
+        var nm = idxName >= 0 ? String(data[r2][idxName] || '').trim() : '';
+        var rowKey = nm || ('행' + (r2 + 1));
+        var mark = rowKey + '|' + bucket;
+        curKeys.push(mark);
+        events.push({ mark: mark, bucket: bucket, name: nm, owner: idxOwner >= 0 ? String(data[r2][idxOwner] || '').trim() : '' });
+      }
+
+      var storedStr = props.getProperty(propKey);
+      if (!storedStr) {
+        try { props.setProperty(propKey, JSON.stringify(curKeys)); } catch (e) {}
+        return;  // baseline만 저장, 알림 없음
+      }
+      var stored = {};
+      try { (JSON.parse(storedStr) || []).forEach(function(k) { stored[k] = 1; }); } catch (e) {}
+
+      events.forEach(function(ev) {
+        if (stored[ev.mark]) return;  // 이미 알린 전환
+        var chip = _teamChip(cfg.명);
+        var who = ev.name || '(이름미상)';
+        var owner = ev.owner ? (' · 담당 ' + ev.owner) : '';
+        if (ev.bucket === 'SUC') {
+          _notifyTelegram('✅ <b>[강습 등록]</b> ' + chip + cfg.명 + '\n· 수강생: ' + who + owner, chatId);
+        } else {
+          _notifyTelegram('📞 <b>[강습 컨택]</b> ' + chip + cfg.명 + '\n· 수강생: ' + who + owner, chatId);
+        }
+      });
+
+      try { props.setProperty(propKey, JSON.stringify(curKeys)); }
+      catch (e) { Logger.log('[강습상태알림] 마커 저장 실패(' + cfg.명 + '): ' + e.message); }
+    } catch (e) { Logger.log('[강습상태알림] ' + cfg.명 + ' 오류: ' + e.message); }
+  });
 }
 
 // '문의 알림' 방 5분 트리거 — 중복 설치 방지. GAS 에디터 또는 clasp push 후 1회 수동 실행.
