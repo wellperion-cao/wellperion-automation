@@ -469,5 +469,19 @@
     "artifact": "북극성 카드 '전환율 급락(39.9%→15.7%)'은 서로 다른 두 지표를 뺀 착시.\n39.9%=전체누적·전화매칭 vs 15.7%=이번달·등록월 정밀. 동일기준으로 재면\n7월=43.8%(전화매칭·baseline보다 높음)·정밀 6월8.8%→7월15.7%(상승)=이탈 아님. (CLI ad-hoc · 커밋 05d3932a)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "05d3932a596b26fe8b90c7facd4537bee103c94d"
+  },
+  {
+    "task_id": "CTO-2026-07-14-ADHOC-cca06ff7",
+    "clevel": "cto",
+    "title": "[시토] 발행 콘텐츠 신규 폴더가 자동커밋에서 빠지는 문제 근본수리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 944,
+    "artifact": "ig_review_publish_watcher.py 발행완료 커밋이 review_queue.json만 git add하고\n실제 발행 콘텐츠 폴더(instagram/** 신규 untracked 디렉토리)는 빠뜨려, 수일간\n미커밋 누적 → 무인 러너(welly_auto_runner.py) 클린트리 가드가 계속 skip 발동\n(2026-07-13~14 이틀 연속, F3 회복 콘텐츠 등 47건 방치). 승인 처리 대상(approved)의\nfolder/image_dir/body_file 경로를 커밋 시 함께 add하도록 스코프 추가(git a (CLI ad-hoc · 커밋 cca06ff7)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "cca06ff74161ea2897c125af2d0aef153b9621fe"
   }
 ]
