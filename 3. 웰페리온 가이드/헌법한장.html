@@ -55,6 +55,14 @@
   .dim-empty{list-style:none; color:var(--dim); margin-left:0;}
   /* 채널 로고(인라인 SVG · 하루 루틴 시각표 · JSON [텔레그램]/[카톡] 토큰 치환) */
   .chlogo{width:15px; height:15px; vertical-align:-3px; margin:0 2px 0 0; flex:none;}
+  /* 🗓️ 하루 루틴/스케줄 표 (dims[1] · 시간|내용 · scheduleTable 렌더) */
+  .rtbl{width:100%; border-collapse:collapse; margin-top:4px; font-size:12px;}
+  /* 부모 table.matrix td(명시도 0,1,2)가 white-space:pre-wrap·word-break:break-word를 걸어 시간이 세로 쪼개짐 → table.matrix 접두사로 명시도 올려 덮어씀 */
+  table.matrix .rtbl td{border:1px solid var(--border); padding:3px 7px; vertical-align:top; line-height:1.42; white-space:normal; word-break:keep-all; overflow-wrap:break-word;}
+  table.matrix .rtbl td.rtbl-t{white-space:nowrap; overflow-wrap:normal; color:var(--accent-soft); font-weight:700; font-variant-numeric:tabular-nums;}
+  table.matrix .rtbl td.rtbl-c{color:var(--text-soft);}
+  table.matrix .rtbl tr.rtbl-sec td{background:var(--surface); color:var(--dim); font-weight:800; font-size:10.5px; text-align:center; letter-spacing:0.04em;}
+  table.matrix .rtbl tr.rtbl-cap td{background:rgba(124,58,237,0.05); color:var(--dim); font-size:11px;}
   table.matrix th.grp-np{width:300px;}
   table.matrix th.grp-boot{width:300px;}
   .col-own{width:200px;}
@@ -306,6 +314,11 @@
     .mod-badge.manual{color:#555 !important; background:#f0f0f0 !important; border-color:#bbb !important;}
     .funnel-link-card{background:#fff !important; border-color:#999 !important;}
     .funnel-link-card p, .funnel-link-card a{color:#111 !important;}
+    /* 🗓️ 하루 루틴 표 인쇄 라이트 강제 */
+    .rtbl td{border-color:#999 !important; color:#111 !important; background:#fff !important;}
+    .rtbl-t{color:#333 !important;}
+    .rtbl-sec td{background:#ececec !important; color:#000 !important;}
+    .rtbl-cap td{background:#f4f4f4 !important; color:#333 !important;}
   }
 </style>
 </head>
@@ -566,6 +579,22 @@
   var KT_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="카카오톡"><title>카카오톡</title><rect width="24" height="24" rx="7" fill="#FEE500"/><path d="M12 6c-3.6 0-6.5 2.28-6.5 5.09 0 1.82 1.22 3.42 3.06 4.32-.13.47-.49 1.78-.56 2.06-.09.35.13.34.27.25.11-.07 1.75-1.19 2.46-1.68.41.06.83.09 1.27.09 3.6 0 6.5-2.28 6.5-5.09S15.6 6 12 6z" fill="#3C1E1E"/></svg>';
   function chanLogo(s){ return s.replace(/\[텔레그램\]/g, TG_LOGO).replace(/\[카톡\]/g, KT_LOGO); }
 
+  // 🗓️ 하루 루틴/스케줄 표 — dims[1]이 시간行(HH:MM)을 포함하면 [시간|내용] 표로 렌더.
+  //   ━ 소제목 ━ = 섹션行 · HH:MM 시작 = [시간|내용]行 · 그 외(제목·주석) = 캡션行. 시간行 없으면 null → 불릿 폴백.
+  function scheduleTable(raw){
+    var lines = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
+    var timeRe = /^(\d{1,2}:\d{2})\s+(.*)$/;
+    if(!lines.some(function(l){ return timeRe.test(l); })) return null;
+    var rows = lines.map(function(l){
+      var sec = l.match(/^━+\s*(.+?)\s*━+$/);
+      if(sec) return '<tr class="rtbl-sec"><td colspan="2">' + chanLogo(esc(sec[1])) + '</td></tr>';
+      var m = l.match(timeRe);
+      if(m) return '<tr><td class="rtbl-t">' + esc(m[1]) + '</td><td class="rtbl-c">' + chanLogo(esc(m[2])) + '</td></tr>';
+      return '<tr class="rtbl-cap"><td colspan="2">' + chanLogo(esc(l)) + '</td></tr>';
+    }).join('');
+    return '<table class="rtbl">' + rows + '</table>';
+  }
+
   var body = document.getElementById('matrix-body');
 
   // 라벨 블록: 작은 라벨(.dim-label) + 값.
@@ -580,6 +609,7 @@
              'oncompositionstart="window._compOn()" oncompositionend="window._compOff()" ' +
              'onblur="window._cellBlur(this)">' + esc(raw) + '</div>';
     }
+    if(di === 1){ var st = scheduleTable(raw); if(st) return lab + st; }
     var items = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
     var lis = items.length
       ? items.map(function(s){ return '<li>' + chanLogo(esc(s)) + '</li>'; }).join('')
