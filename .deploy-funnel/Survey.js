@@ -1594,7 +1594,14 @@ function _lessonSportMgmtStringify_(obj) {
   if (!obj || typeof obj !== 'object') return '';
   return Object.keys(obj).length ? JSON.stringify(obj) : '';
 }
-var _LESSON_MGMT_COLS = ['진행상태', '관리담당', '상담메모', '상담예약', '방문상태', CONTACT_HIST_COL, LESSON_SPORT_MGMT_COL];
+// GM이 4 메인시트(성인/유소년 × KR/EN)에 세팅한 flat 관리 컬럼(L~P). 유연매칭으로 이미 있으면 append 안 함(팬텀 컬럼 재생성 차단).
+// L=지정 강사(owner)·M=Contact(연락이력)·N=비고(memo)·O=진행 상황(status). 종목별관리(bySport) 모델은 flat 전환으로 폐기. 2026-07-14 시포·GM(배973).
+var _LESSON_MGMT_FIELDS = [
+  { keys: ['진행상태', '진행현황', '진행상황', '진행 상황', '상태'], canon: '진행 상황' },
+  { keys: ['관리담당', '지정 강사'],                                 canon: '지정 강사' },
+  { keys: ['상담메모', '메모', '비고'],                             canon: '비고' },
+  { keys: [CONTACT_HIST_COL, 'Contact'],                            canon: 'Contact' }
+];
 
 // gid 매칭 시트 핸들(탭명 변경에 강함).
 function _lessonSheet_(gid) {
@@ -1608,7 +1615,8 @@ function _lessonEnsureCols_(sh) {
   if (!sh) return [];
   var lastCol = sh.getLastColumn();
   var hdr = lastCol > 0 ? sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); }) : [];
-  var missing = _LESSON_MGMT_COLS.filter(function(c){ return _findColExact_(hdr, [c]) < 0; });  // 정확일치 — '관리담당'이 '접수담당자'에 흡수되지 않게
+  // 유연매칭(부분일치)으로 이미 존재하는 필드는 재생성 안 함 — GM의 L~P(지정 강사/Contact/비고/진행 상황)는 이름이 달라도 매칭됨.
+  var missing = _LESSON_MGMT_FIELDS.filter(function(f){ return _findCol_(hdr, f.keys) < 0; }).map(function(f){ return f.canon; });
   if (missing.length > 0) {
     sh.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]);
     lastCol += missing.length;
@@ -1634,12 +1642,12 @@ function _lessonReadRows_(gid) {
   var iChan  = _findCol_(hdr, ['문의 경로', '경로', '채널', '알게', 'How Did You Hear About Us?']);
   var iNote  = _findCol_(hdr, ['문의 사항', '문의사항', '문의 내용', '내용', 'Additional Requests or Comments']);
   var iWish  = _findCol_(hdr, ['희망하시는 레슨 시간', '희망 레슨', '희망시간', '레슨 시간', 'Preferred Lesson Time']);
-  var iStat  = _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '상태']);
-  var iOwner = _findColExact_(hdr, ['관리담당']);  // ★정확일치 — 폼 원본 '접수담당자' 절대 안 건드림(관리 담당 별도 컬럼만)
+  var iStat  = _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '진행 상황', '상태']);  // '진행 상황'(공백) = GM flat O컬럼
+  var iOwner = _findColExact_(hdr, ['관리담당', '지정 강사']);  // ★정확일치 — 폼 원본 '접수담당자' 안 건드림. '지정 강사'=GM flat L컬럼(owner)
   var iMemo  = _findCol_(hdr, ['상담메모', '메모', '비고']);
   var iCons  = _findCol_(hdr, ['상담예약', '상담 예약', '상담일정']);
   var iVisit = _findCol_(hdr, ['방문상태', '방문']);
-  var iHist  = _findColExact_(hdr, [CONTACT_HIST_COL]);  // 연락이력(JSON) — 강습 CONTACT. 2026-07-08 시포·GM(축2·축4)
+  var iHist  = _findCol_(hdr, [CONTACT_HIST_COL, 'Contact']);  // 연락이력(JSON) 우선 → GM flat M컬럼 'Contact'(줄바꿈 포함이라 부분일치). 2026-07-14 시포·GM(배973)
   var iSportMgmt = _findColExact_(hdr, [LESSON_SPORT_MGMT_COL]);  // 종목별관리(JSON) — 축7. 2026-07-08 시포·GM
   var iLang  = _findCol_(hdr, ['Language']);  // 응답자 기재 언어(영문 탭 실측 헤더) — 영어 문의 뱃지 표시용. 2026-07-09 시포·GM
   // 영문 탭 행키 오프셋(_ROW_OFFSET_EN_) — 한글+영문 병합 시 rowIndex 충돌 방지(위 상수 주석 참고). 2026-07-09 시포·GM.
@@ -1655,8 +1663,13 @@ function _lessonReadRows_(gid) {
     var _lMemo = iMemo >= 0 ? String(row[iMemo] || '') : '';
     // 연락이력(가변): JSON 우선 → 없고 기존 상담메모에 값 있으면 {date:'',time:'',note:상담메모}로 합성(비파괴·하위호환).
     //   상담메모 컬럼 자체는 절대 덮어쓰지 않음(읽기 시 합성만) — 연락이력이 있으면 그것을 우선 사용. 2026-07-08 시포·GM.
-    var _lHistArr = _resParse_(iHist >= 0 ? row[iHist] : '');
-    if (!_lHistArr.length && _lMemo) _lHistArr.push({ date: '', time: '', note: _lMemo });
+    var _lHistRaw = iHist >= 0 ? row[iHist] : '';
+    var _lHistArr = _resParse_(_lHistRaw);            // JSON이면 파싱(스태프가 페이지에서 편집한 이력)
+    if (!_lHistArr.length) {
+      var _lHistPlain = String(_lHistRaw || '').trim();
+      if (_lHistPlain) _lHistArr.push({ date: '', time: '', note: _lHistPlain });  // GM Contact 컬럼 plain text 보존(읽기에서 사라지지 않게)
+      else if (_lMemo) _lHistArr.push({ date: '', time: '', note: _lMemo });        // 레거시 상담메모 폴백
+    }
     out.push({
       rowIndex: r + 2 + rowOffset,
       timestamp: _miToISO_(iTs >= 0 ? row[iTs] : ''),
@@ -2978,10 +2991,10 @@ function _processAction(body) {
     } else {
       // ── 기존 row-level 경로(하위호환) — body.sport 미전송 시 그대로 유지. 2026-06-26~2026-07-08 시포·GM.
       // 등록 전환 감지: 상태 변경 '전' 값 캡처(신규→SUC 실제 전환 1회만 알림 — 멤버십 member_inquiry_update와 동일 패턴·중복발화 차단). 시토 2026-06-29 GM.
-      var _luStatusCi  = _findCol_(luHdr, ['진행상태', '진행현황', '진행상황', '상태']);
+      var _luStatusCi  = _findCol_(luHdr, ['진행상태', '진행현황', '진행상황', '진행 상황', '상태']);
       var _luOldStatus = (_luStatusCi >= 0) ? String(luSh.getRange(luRow, _luStatusCi + 1).getValue() || '').trim() : '';
-      _luSet(['진행상태', '진행현황', '진행상황', '상태'], body.status);
-      _luSet(['관리담당'], body.owner);  // ★관리 담당 컬럼만(폼 원본 '접수담당자' 절대 안 건드림)
+      _luSet(['진행상태', '진행현황', '진행상황', '진행 상황', '상태'], body.status);  // '진행 상황'=GM flat O컬럼
+      _luSet(['관리담당', '지정 강사'], body.owner);  // ★관리 담당 컬럼만. '지정 강사'=GM flat L컬럼(폼 원본 '접수담당자' 안 건드림)
       _luSet(['상담메모', '메모', '비고'], body.memo);
       _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
       _luSet(['방문상태', '방문'], body.visited);
@@ -2991,7 +3004,7 @@ function _processAction(body) {
       var _luHistNewArr = null;
       if (body.contacts !== undefined) {
         try {
-          var _luHistCi = _findColExact_(luHdr, [CONTACT_HIST_COL]);  // _lessonEnsureCols_가 이미 멱등 생성(위 luHdr 조회 시점)
+          var _luHistCi = _findCol_(luHdr, [CONTACT_HIST_COL, 'Contact']);  // 연락이력 우선 → GM flat M컬럼 'Contact'(부분일치). JSON으로 라운드트립 기록
           var _luPrevHistArr = (_luHistCi >= 0) ? _resParse_(luSh.getRange(luRow, _luHistCi + 1).getValue()) : [];
           _luHistPrevCount = _luPrevHistArr.length;
           _luHistNewArr = _resParse_(body.contacts);
@@ -3022,7 +3035,7 @@ function _processAction(body) {
       if (_luHistNewArr && _luHistPrevCount === 0 && _luHistNewArr.length >= 1) {
         try {
           var _luTypeLabel = (function(t){ t = String(t || ''); return (t === '유소년강습' || t === '유소년' || t === 'youth') ? '유소년 강습' : '성인 강습'; })(body.type);
-          var _luOwnerCi  = _findColExact_(luHdr, ['관리담당']);
+          var _luOwnerCi  = _findColExact_(luHdr, ['관리담당', '지정 강사']);  // 알림 담당 폴백 — flat L컬럼(지정 강사)에서 읽음(body.owner 미동봉 컨택저장 대응)
           var _luOwnerVal = String(body.owner || (_luOwnerCi >= 0 ? luSh.getRange(luRow, _luOwnerCi + 1).getValue() : '') || '').trim();
           var _luHistFirst = _luHistNewArr[0];
           var _luHistWhen = ((_luHistFirst.date || '') + ' ' + (_luHistFirst.time || '')).trim();

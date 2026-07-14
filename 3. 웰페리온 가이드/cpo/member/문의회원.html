@@ -2494,12 +2494,12 @@ function gvizLessonRows_(headers, rows, gid) {
   var iChan  = _gzFindCol_(headers, ['문의 경로', '경로', '채널', '알게', 'How Did You Hear About Us?']);
   var iNote  = _gzFindCol_(headers, ['문의 사항', '문의사항', '문의 내용', '내용', 'Additional Requests or Comments']);
   var iWish  = _gzFindCol_(headers, ['희망하시는 레슨 시간', '희망 레슨', '희망시간', '레슨 시간', 'Preferred Lesson Time']);
-  var iStat  = _gzFindCol_(headers, ['진행상태', '진행현황', '진행상황', '상태']);
-  var iOwner = _gzFindColExact_(headers, ['관리담당']);
+  var iStat  = _gzFindCol_(headers, ['진행상태', '진행현황', '진행상황', '진행 상황', '상태']);  // '진행 상황'(공백)=GM flat O컬럼
+  var iOwner = _gzFindColExact_(headers, ['관리담당', '지정 강사']);  // '지정 강사'=GM flat L컬럼(owner)
   var iMemo  = _gzFindCol_(headers, ['상담메모', '메모', '비고']);
   var iCons  = _gzFindCol_(headers, ['상담예약', '상담 예약', '상담일정']);
   var iVisit = _gzFindCol_(headers, ['방문상태', '방문']);
-  var iHist  = _gzFindColExact_(headers, [CONTACT_HIST_COL_GZ]);
+  var iHist  = _gzFindCol_(headers, [CONTACT_HIST_COL_GZ, 'Contact']);  // 연락이력 우선 → GM flat M컬럼 'Contact'(줄바꿈 포함이라 부분일치). 배973
   var iSportMgmt = _gzFindColExact_(headers, [LESSON_SPORT_MGMT_COL_GZ]);   // 종목별관리(JSON) — 축7. 2026-07-08 시포·GM
   var iLang  = _gzFindCol_(headers, ['Language']);
   var rowOffset = (gid === GVIZ_LESSON_GID_ADULT_EN || gid === GVIZ_LESSON_GID_YOUTH_EN) ? _ROW_OFFSET_EN_GZ_ : 0;  // 영문 탭 행키 오프셋 — Survey.js와 정합. 2026-07-09 시포·GM.
@@ -2512,8 +2512,13 @@ function gvizLessonRows_(headers, rows, gid) {
     var consVal = iCons >= 0 ? row[iCons] : '';
     var consTime = _gzTime_(consVal) || _gzTimeKR_(consVal);
     var _lMemo = iMemo >= 0 ? String(row[iMemo] || '') : '';
-    var _lHistArr = _gzResParse_(iHist >= 0 ? row[iHist] : '');
-    if (!_lHistArr.length && _lMemo) _lHistArr.push({ date: '', time: '', note: _lMemo });
+    var _lHistRaw = iHist >= 0 ? row[iHist] : '';
+    var _lHistArr = _gzResParse_(_lHistRaw);            // JSON이면 파싱(스태프 편집 이력)
+    if (!_lHistArr.length) {
+      var _lHistPlain = String(_lHistRaw || '').trim();
+      if (_lHistPlain) _lHistArr.push({ date: '', time: '', note: _lHistPlain });  // GM Contact 컬럼 plain text 보존
+      else if (_lMemo) _lHistArr.push({ date: '', time: '', note: _lMemo });        // 레거시 상담메모 폴백
+    }
     out.push({
       rowIndex: r + 2 + rowOffset,
       timestamp: _gzToISO_(iTs >= 0 ? row[iTs] : ''),
@@ -3748,29 +3753,18 @@ function _lessonFindRow(t, rowIndex) {
   for (var i = 0; i < st.rows.length; i++) { if (st.rows[i].rowIndex === rowIndex) return st.rows[i]; }
   return null;
 }
-// 종목별 mgmt 엔트리 — row.bySport[sportKey] 있으면 그대로, 없으면(아직 종목별 편집 전) 레거시 행단일 값 폴백(비파괴). 축7.
+// flat 관리 엔트리 — 행단일 status/owner/contacts(GM flat L~P 모델). bySport(종목별) 분기 폐기(다종목 행은 종목간 값 공유·GM 수용). 배973 시포·GM 2026-07-14.
+// sportKey 인자는 시그니처 유지(호출부 불변) — flat 전환 후 무시됨.
 function _lessonSportMgmt(row, sportKey) {
   if (!row) return { status: '', owner: '', contacts: [] };
-  var by = row.bySport || {};
-  if (sportKey && by[sportKey]) return by[sportKey];
   return { status: row.status || '', owner: row.owner || '', contacts: row.contacts || [] };
 }
-// 저장 성공 후 로컬 반영 — sportKey 있으면 bySport[sportKey], 없으면(무종목 행=백엔드 레거시 경로로 저장됨) 행단일 필드.
-// 백엔드 lesson_inquiry_update 라우팅(body.sport 유무)과 동일 분기. 축7.
+// 저장 성공 후 로컬 반영 — 항상 행단일 필드(flat 모델). 백엔드 lesson_inquiry_update가 body.sport='' → row-level(flat L~P) 경로로 저장. 배973 시포·GM 2026-07-14.
 function _lessonApplyLocalMgmt(row, sportKey, patch) {
   if (!row) return;
-  if (sportKey) {
-    row.bySport = row.bySport || {};
-    var entry = row.bySport[sportKey] || { status: '', owner: '', contacts: [] };
-    if (patch.status !== undefined) entry.status = patch.status;
-    if (patch.owner !== undefined) entry.owner = patch.owner;
-    if (patch.contacts !== undefined) entry.contacts = patch.contacts;
-    row.bySport[sportKey] = entry;
-  } else {
-    if (patch.status !== undefined) row.status = patch.status;
-    if (patch.owner !== undefined) row.owner = patch.owner;
-    if (patch.contacts !== undefined) row.contacts = patch.contacts;
-  }
+  if (patch.status !== undefined) row.status = patch.status;
+  if (patch.owner !== undefined) row.owner = patch.owner;
+  if (patch.contacts !== undefined) row.contacts = patch.contacts;
 }
 // 필터 반영 후 화면에 보이는 '종목별 줄' — 문의 1행에 종목이 여러 개면 종목마다 별도 줄로 분리(축7, GM 확정).
 // 종목 미기재 행은 sportKey=''(레거시 단일 경로)로 줄 1개 유지(데이터 손실 방지).
@@ -3891,7 +3885,7 @@ function lessonOwnerChange(sel, t, rowIndex, sportKeyEnc) {
   var mgmt = _lessonSportMgmt(row, sportKey);
   var prevVal = mgmt.owner || '';
   var newVal = sel.value;
-  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: sportKey, owner: newVal, gid: (row && row.gid) || undefined };
+  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: '', owner: newVal, gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
   apiPost(payload)
     .then(function(data){
       if (!data.ok) throw new Error(data.error || '저장 실패');
@@ -3943,7 +3937,7 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
   var mgmt = _lessonSportMgmt(row, sportKey);
   var newVal = sel.value;
   var prevVal = mgmt.status || '';
-  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: sportKey, status: newVal, gid: (row && row.gid) || undefined };
+  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: '', status: newVal, gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
   apiPost(payload)
     .then(function(data){
       if (!data.ok) throw new Error(data.error || '저장 실패');
@@ -5833,11 +5827,11 @@ function saveContactModal() {
   var saveBtn = document.getElementById('ctSaveBtn'); saveBtn.disabled = true;
   if (ctx.source === 'lesson') {
     var row = _lessonFindRow(ctx.t, rowIndex);
-    var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: ctx.sport || '', contacts: JSON.stringify(contacts), gid: (row && row.gid) || undefined };
+    var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: '', contacts: JSON.stringify(contacts), gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
     apiPost(payload)
       .then(function(data){
         if (!data.ok) throw new Error(data.error || '저장 실패');
-        _lessonApplyLocalMgmt(row, ctx.sport || '', { contacts: contacts });
+        _lessonApplyLocalMgmt(row, '', { contacts: contacts });
         closeContactModal();
         lessonRender(ctx.t);
         showToast('저장', 'ok');
