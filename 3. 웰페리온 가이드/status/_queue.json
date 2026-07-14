@@ -811,5 +811,16 @@
     "artifact": "GM 2026-07-14 레이아웃 지시: 개별 카톡 대화·오늘 챙길 것·업무를 상단, 문의·등록+예약을\n한 섹션으로 합쳐 중간, 종합접수는 그 바로 아래, 💪 항상 맨끝. 🏢 점검은 digest에서 제외\n(23시 밤 점검공유가 별도 담당) → build_check_block+시설헬퍼 3종+SUPPORT_CHECK_API_URL 죽은코드\nnet-zero 삭제. insert_check_block→_split_llm(헤더·본문·💪 분리)로 교체. 글자수 2084→1708. (CLI ad-hoc · 커밋 9d922c76)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9d922c7618fec42c795ebf7530d45c71cf2efd6e"
+  },
+  {
+    "task_id": "CTO-2026-07-14-WEEKLY-PAGE-HYGIENE",
+    "clevel": "cto",
+    "title": "[시토] 매주 일요일 페이지 위생 자동화 — 하위모델 감사→죽은코드 자동삭제+나머지 제안",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-14",
+    "note": "[2026-07-14 GM 지시] 오늘 수동으로 한 시우(COO) 14페이지 감사(하위모델→A죽은코드/B중복/C낡은안내/D장황 분류→GM승인→적용)를 매주 일요일 09:00 무인 파이프로 제품화. 대상=COO 14페이지(coo/check 7·coo/todo 2·coo/notice 1·메인가이드 O1~O4), config로 확장 가능(후속 전 C-Level). 적용방식: A(죽은코드)만 grep-0 하드게이트 통과 시 자동삭제·페이지별(파일별) 커밋 / B·C·D는 status/page_hygiene_proposal_{date}.md 제안만(자동적용 금지). 게이트 PAGE_HYGIENE_APPLY(기본 OFF)로 라이브 자동삭제 분리 — 첫 주는 OFF(dry)로 돌려 GM/웰리 기계신뢰 확인 후 GM go로 ON. 파싱 무결성 검사 실패 시 해당 후보 롤백·스킵. 모호(주석·조건부 참조 등)하면 자동삭제 금지·제안 강등. 예약: Task Scheduler Wellperion-Weekly-Page-Hygiene-Sun-0900(일요일 09:00)+hidden vbs. 텔레그램 요약 + module_registry cto-weekly-page-hygiene 등록.",
+    "module": "T2",
+    "ship_no": 979
   }
 ]
