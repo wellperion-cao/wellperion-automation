@@ -11,11 +11,8 @@
   --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
   --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);
   --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);
-  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);
   --f1:#5b9fd5;--f1-bg:rgba(91,159,213,0.13);
   --f3:#e6944e;--f3-bg:rgba(230,148,78,0.13);
-  --f4:#e6c84e;--f4-bg:rgba(230,200,78,0.13);
-  --f5:#6abf7b;--f5-bg:rgba(106,191,123,0.13);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh}
@@ -79,17 +76,6 @@ a{color:var(--accent);text-decoration:none}
 .rate-low{background:var(--red-bg);color:var(--red)}
 .rate-mid{background:var(--yellow-bg);color:var(--yellow)}
 
-/* 수기 입력 배지 */
-.manual-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(230,200,78,.25);margin-left:6px;vertical-align:middle;white-space:nowrap}
-
-/* 채널 바 차트 */
-.channel-bars{display:flex;flex-direction:column;gap:8px}
-.ch-row{display:flex;align-items:center;gap:10px;font-size:13px}
-.ch-name{width:110px;flex-shrink:0;color:var(--dim)}
-.ch-bar-wrap{flex:1;height:22px;background:var(--border);border-radius:4px;overflow:hidden}
-.ch-bar{height:100%;background:var(--f1-bg);border-right:2px solid var(--f1);border-radius:4px;transition:width .5s ease;min-width:4px}
-.ch-val{width:40px;text-align:right;font-weight:700;color:var(--accent)}
-
 /* 유형 바 차트 */
 .type-bars{display:flex;flex-direction:column;gap:8px}
 .tp-row{display:flex;align-items:center;gap:10px;font-size:13px}
@@ -103,10 +89,8 @@ a{color:var(--accent);text-decoration:none}
 .manual-row{display:grid;grid-template-columns:140px 1fr;gap:8px;align-items:center;border-bottom:1px solid var(--border);padding:10px 0;font-size:13px}
 .manual-row:first-child{padding-top:0}
 .manual-row:last-child{border-bottom:none;padding-bottom:0}
-.manual-lbl{color:var(--dim);font-size:12px;font-weight:600}
 .manual-input{background:transparent;border:none;border-bottom:1px dashed var(--border);color:var(--text);font-size:13px;font-family:inherit;width:100%;padding:2px 4px;outline:none}
 .manual-input:focus{border-bottom-color:var(--accent)}
-.manual-hint{font-size:10px;color:var(--dim);margin-top:3px}
 
 /* 코멘트·개선 액션 란 */
 .comment-box{background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -129,7 +113,6 @@ a{color:var(--accent);text-decoration:none}
     --green:#2e7d32;--green-bg:rgba(46,125,50,0.08);
     --red:#c62828;--red-bg:rgba(198,40,40,0.08);
     --yellow:#f57f17;--yellow-bg:rgba(245,127,23,0.08);
-    --blue:#1565c0;--blue-bg:rgba(21,101,192,0.08);
     --f1:#1565c0;--f1-bg:rgba(21,101,192,0.08);
     --f3:#e65100;--f3-bg:rgba(230,81,0,0.08);
   }
@@ -143,7 +126,7 @@ a{color:var(--accent);text-decoration:none}
   .manual-section{border:1px solid #ccc;border-radius:0}
   .comment-box{border:1px solid #ccc;border-radius:0}
   .comment-lbl{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .ch-bar,.tp-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tp-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .rate-chip{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .page-footer{border-top:1px solid #ccc}
 }
@@ -280,10 +263,8 @@ a{color:var(--accent);text-decoration:none}
 /* ── 상수 ── */
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec";
 // PII 게이트는 서버(TOKEN_ENFORCE)에서 유지 — 보고서는 집계만 공개, 원본은 보호된 시트에서 본다(GM 옵션A).
-// 클라이언트 열쇠 입력 UX 폐기: _wpUrl=passthrough, _wpGate=무동작(입력창 안 뜸).
-function _wpKey() { return ''; }
+// 클라이언트 열쇠 입력 UX 폐기: _wpUrl=passthrough.
 function _wpUrl(base) { return base; }
-function _wpGate(json){ return false; }
 
 /* ── 모듈 상태 (채널 퍼널·코멘트 공용) ── */
 let _pb = null;        // period_breakdown 선택 월

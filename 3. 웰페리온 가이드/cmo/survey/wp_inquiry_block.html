@@ -1,5 +1,5 @@
 <!-- 웰페리온 문의 블록 — 워드프레스 '문의' 페이지 본문 주입 소스 (SSOT)
-     4종 문의 폼(구글폼→구글시트, 작동 검증됨)을 버튼으로 노출.
+     6종 문의 폼(구글폼→구글시트, 작동 검증됨)을 버튼으로 노출.
      인라인 스타일만 사용(테마 CSS 충돌 회피). 외부 스크립트 의존 없음.
      수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
@@ -22,15 +22,7 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
     <p style="font-size:12px;color:#aaa;margin:0;">원하시는 항목을 선택해 주세요</p>
   </div>
 
-  <!-- ============================================================
-       ▼ 영상 자리 (틀) — 편집 완료 후 교체
-       교체 방법: 아래 [영상 placeholder] div 통째로 다음 중 하나로 바꾸면 됨
-         · 자체 영상: <video src="영상URL.mp4" controls playsinline poster="썸네일.jpg"
-                            style="width:100%;height:100%;object-fit:cover;"></video>
-         · 유튜브:   <iframe src="https://www.youtube.com/embed/영상ID" allowfullscreen
-                            style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe>
-       (래퍼 .wp-inq-video 의 padding-top:56.25% = 16:9 비율 자동 유지)
-       ============================================================ -->
+  <!-- 영상 자리 (래퍼 .wp-inq-video 의 padding-top:56.25% = 16:9 비율 유지) -->
   <div class="wp-inq-video" style="width:100%;max-width:640px;margin:0 auto 28px;">
     <div style="position:relative;width:100%;padding-top:56.25%;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#2b2b2b,#4a4a4a);box-shadow:0 4px 16px rgba(0,0,0,.12);">
       <iframe src="https://www.youtube.com/embed/qpPYA3bAO7M" title="웰페리온 소개 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe>
@@ -68,18 +60,7 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
       <div style="font-size:14px;color:#777;line-height:1.5;">여름방학 단기 집중 특강 프로그램</div>
     </a>
 
-    <!-- ============================================================
-         ▼ 신규 2종 (시모·GM 2026-06-12 승인) — 공간 렌트 · 비즈니스 파트너
-         ★ 현재 "준비중" 상태(disabled). GM이 구글폼 생성 후 활성화한다.
-         [활성화 방법] GM 액션 — 폼설계 명세: cmo/survey/문의_신규유형_폼설계_260612.md §5
-           1) 아래 <div> 를 <a> 로 바꾸고
-           2) href="#__SPACE_RENTAL_FORM__" / href="#__BUSINESS_PARTNER_FORM__" 의
-              placeholder 를 실제 구글폼 공개 URL 로 교체
-           3) target="_blank" rel="noopener" onclick="wpTrackClick('공간렌트문의')"
-              (또는 '비즈니스파트너문의') 추가 — 클릭추적 연결
-           4) "준비중" 배지 줄과 회색 처리(opacity·pointer-events) 제거
-         ※ placeholder 상태에서는 클릭해도 폼 이동 없음 → 깨진 링크 라이브 노출 방지(회귀 안전).
-         ============================================================ -->
+    <!-- 신규 2종 — 공간 렌트 · 비즈니스 파트너 -->
 
     <!-- 공간 렌트 문의 (SPACE RENTAL) -->
     <a href="https://docs.google.com/forms/d/e/1FAIpQLScS1Gb-iEPzCxb84VNTiz__QROx2RMW6SS6Oplfzr492vAiZQ/viewform" target="_blank" rel="noopener" onclick="wpPrefillForm(this,'공간렌트문의');wpTrackClick('공간렌트문의')"
