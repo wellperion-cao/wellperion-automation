@@ -1524,6 +1524,8 @@ function gasRead(path, rawUrl){
 }
 
 var CHAN_LABEL897 = { '직접/홈':'직접/홈', 'naver_blog':'네이버 블로그', 'instagram':'인스타그램', 'naver_cafe':'네이버 카페', 'danggn':'당근' };
+// key(chanClicks 슬러그) → chanConv(채널별_클릭문의전환) 정본 한글 키 매핑. measurable 플래그 조회 전용.
+var CHAN_CANON897 = { 'instagram':'인스타그램', 'naver_blog':'네이버', 'naver_cafe':'네이버', 'danggn':'당근마켓' };
 function fmtPct897(v){
   if(v == null || typeof v !== 'number' || isNaN(v)) return null;
   var s = v.toFixed(1);
@@ -1577,9 +1579,13 @@ function renderFunnel897(kpiRoles, genKst){
     seen897[key] = true;
     var label = CHAN_LABEL897[key] || key;
     var clicks = chanClicks[key];
-    var isMeasurable = (key === 'instagram') && igRate != null;
+    var canon897 = CHAN_CANON897[key];
+    var chanEntry897 = canon897 ? chanConv[canon897] : null;
+    var chanRate897 = (chanEntry897 && typeof chanEntry897['클릭_문의_전환율'] === 'number') ? chanEntry897['클릭_문의_전환율'] : null;
+    var chanRateStr897 = fmtPct897(chanRate897) || '—';
+    var isMeasurable = !!(chanEntry897 && chanEntry897.measurable) && chanRate897 != null;
     if(isMeasurable){
-      html += '<div class="fn897-row"><span class="fn897-name">' + esc(label) + '</span><div class="fn897-track"><div class="fn897-fill meas"></div></div><span class="fn897-val"><span class="fn897-valnum ok">' + igRateStr + '</span><span class="fn897-chip ok">측정</span></span></div>';
+      html += '<div class="fn897-row"><span class="fn897-name">' + esc(label) + '</span><div class="fn897-track"><div class="fn897-fill meas"></div></div><span class="fn897-val"><span class="fn897-valnum ok">' + chanRateStr897 + '</span><span class="fn897-chip ok">측정</span></span></div>';
     } else {
       var cval = (clicks != null ? clicks : '—') + '클릭';
       html += '<div class="fn897-row"><span class="fn897-name">' + esc(label) + '</span><div class="fn897-track"><div class="fn897-fill untr"></div></div><span class="fn897-val"><span class="fn897-valnum no">' + esc(cval) + '</span><span class="fn897-chip no">추적밖</span></span></div>';
