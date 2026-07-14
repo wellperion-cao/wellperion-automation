@@ -32,6 +32,8 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;font-size:14px;min-height:100vh}
+/* ── 배545 고도화① 숫자 자리맞춤(tabular-nums) — 전 대시보드 숫자 폭 고정(표 셀·KPI·히어로·IG·fn897 전부 커버, 순수 CSS·표시 전용) ── */
+body{font-variant-numeric:tabular-nums}
 a{color:var(--accent);text-decoration:none}
 a:hover{color:var(--text)}
 
@@ -157,6 +159,12 @@ a:hover{color:var(--text)}
   .period-bar{gap:4px}
   .period-btn{padding:4px 10px;font-size:11px}
   .month-nav-label{font-size:13px;min-width:90px}
+}
+/* ── 배545: 유입채널·채널전환 교차표 — 좁은 화면 가로 스크롤 방지(표시 전용, 값 변경 없음) ── */
+@media(max-width:430px){
+  .channel-table th{padding:8px 6px;font-size:9px}
+  .channel-table td{padding:7px 6px;font-size:11px}
+  .channel-table .channel-dot{width:6px;height:6px;margin-right:4px}
 }
 
 /* ── 히어로 블록 ── */
@@ -407,12 +415,16 @@ details.footnote-toggle > .fn-body{
   <!-- ════════════════════════════════════════════
        ★ 전환 속도 — 문의→등록 평균 소요일 (lead_time_stats · 기간연동)
        데이터소스: 신규문의 시트 문의일 ↔ '등록일(자동)' 차이. 표본 적으면(<5) 참고용 안내.
+       구 고아 카드(제목 없이 단독 배치) → 형제 섹션과 동일한 section-title 부여(배545, 표시 전용).
        ════════════════════════════════════════════ -->
-  <div class="kpi-row" style="margin-top:8px">
-    <div class="kpi-card" id="leadtime-card" style="flex:1">
-      <div class="num"><span id="leadtime-num" class="placeholder">—</span><span class="unit">일</span></div>
-      <div class="label">문의 → 등록 평균 전환 소요일</div>
-      <div class="sub" id="leadtime-sub">집계 불러오는 중…</div>
+  <div class="section">
+    <div class="section-title">전환 속도 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">문의 → 등록 평균 소요일 · 표본 적으면 참고용</span></div>
+    <div class="kpi-row" style="margin-top:0">
+      <div class="kpi-card" id="leadtime-card" style="flex:1">
+        <div class="num"><span id="leadtime-num" class="placeholder">—</span><span class="unit">일</span></div>
+        <div class="label">문의 → 등록 평균 전환 소요일</div>
+        <div class="sub" id="leadtime-sub">집계 불러오는 중…</div>
+      </div>
     </div>
   </div>
 
@@ -807,6 +819,31 @@ function renderInflowChannel() {
     .filter(function(ch) { return chMap[ch].total > 0; })
     .map(function(ch) { return { ch: ch, total: chMap[ch].total, byType: chMap[ch].byType }; });
 
+  // 배545: 유령열 병합(표시 전용) — 전체 대비 아주 작은 유형 열(예: 1/63 수준)은 표를 불필요하게
+  // 넓혀 390px에서 가로 스크롤을 유발. 총합 대비 2건 미만 또는 2% 미만인 유형만 '기타' 열로 접는다.
+  // 데이터 손실 없음 — 값은 '기타' 셀·합계 행에 그대로 합산되고, 채널별 total·grand합계는 변경되지 않는다.
+  var typeGrandTotals = {};
+  types.forEach(function(t) { typeGrandTotals[t.key] = 0; });
+  Object.keys(chMap).forEach(function(ch) {
+    types.forEach(function(t) { typeGrandTotals[t.key] += (chMap[ch].byType[t.key] || 0); });
+  });
+  var typeGrandSum = types.reduce(function(s, t) { return s + typeGrandTotals[t.key]; }, 0);
+  var TYPE_MERGE_MIN = 2;      // 절대 건수 임계값
+  var TYPE_MERGE_PCT = 0.02;   // 비중 임계값(전체 대비 2%)
+  var displayTypes = [], mergedTypeKeys = [];
+  types.forEach(function(t) {
+    var tot = typeGrandTotals[t.key] || 0;
+    var shouldMerge = tot < TYPE_MERGE_MIN || (typeGrandSum > 0 && tot / typeGrandSum < TYPE_MERGE_PCT);
+    if (shouldMerge) mergedTypeKeys.push(t.key); else displayTypes.push(t);
+  });
+  if (!displayTypes.length) { displayTypes = types; mergedTypeKeys = []; }  // 안전가드 — 전부 병합되는 극단값 방지
+  var showEtcTypeCol = mergedTypeKeys.length > 0;
+  function _etcTypeVal(byType) {
+    var s = 0;
+    mergedTypeKeys.forEach(function(k) { s += (byType[k] || 0); });
+    return s;
+  }
+
   // 출처미상률 배지(전체 문의 기준)
   var o = _tcData.overall || {};
   var unkRate = (o.unknownRate === null || o.unknownRate === undefined) ? null : o.unknownRate;
@@ -834,9 +871,10 @@ function renderInflowChannel() {
 
   var grand = rows.reduce(function(s, r) { return s + r.total; }, 0);
 
-  // 헤더: 채널 | [유형들] | 합계 | 비중
+  // 헤더: 채널 | [유형들] | (기타, 병합 있을 때만) | 합계 | 비중
   var thead = '<thead><tr><th>채널</th>';
-  types.forEach(function(t) { thead += '<th style="text-align:right">' + t.label + '</th>'; });
+  displayTypes.forEach(function(t) { thead += '<th style="text-align:right">' + t.label + '</th>'; });
+  if (showEtcTypeCol) thead += '<th style="text-align:right">기타</th>';
   thead += '<th style="text-align:right">합계</th><th style="text-align:right">비중</th></tr></thead>';
 
   var bodyHtml = '';
@@ -845,21 +883,26 @@ function renderInflowChannel() {
     var pct = grand > 0 ? Math.round(r.total / grand * 100) : 0;
     bodyHtml += '<tr>'
       + '<td style="min-width:100px;white-space:nowrap"><span class="channel-dot" style="background:' + colorVar + '"></span>' + r.ch + '</td>';
-    types.forEach(function(t) {
+    displayTypes.forEach(function(t) {
       var v = r.byType[t.key] || 0;
       bodyHtml += '<td style="text-align:right;' + (v === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + (v === 0 ? '0' : v.toLocaleString('ko-KR')) + '</td>';
     });
+    if (showEtcTypeCol) {
+      var ev = _etcTypeVal(r.byType);
+      bodyHtml += '<td style="text-align:right;' + (ev === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + (ev === 0 ? '0' : ev.toLocaleString('ko-KR')) + '</td>';
+    }
     bodyHtml += '<td style="text-align:right;font-weight:700">' + r.total.toLocaleString('ko-KR') + '</td>'
       + '<td style="text-align:right;color:var(--dim)">' + pct + '%</td>'
       + '</tr>';
   });
 
-  // 합계 행
+  // 합계 행 — displayTypes + 기타(병합분) 합이 grand와 항상 정합(데이터 손실 없음, 표시만 병합)
   var typeTotals = {};
-  types.forEach(function(t) { typeTotals[t.key] = 0; });
-  rows.forEach(function(r) { types.forEach(function(t) { typeTotals[t.key] += (r.byType[t.key] || 0); }); });
+  displayTypes.forEach(function(t) { typeTotals[t.key] = typeGrandTotals[t.key] || 0; });
+  var etcColTotal = mergedTypeKeys.reduce(function(s, k) { return s + (typeGrandTotals[k] || 0); }, 0);
   var footRow = '<tr style="border-top:2px solid var(--border)"><td style="font-weight:700;color:var(--dim)">합계</td>';
-  types.forEach(function(t) { footRow += '<td style="text-align:right;font-weight:700">' + typeTotals[t.key].toLocaleString('ko-KR') + '</td>'; });
+  displayTypes.forEach(function(t) { footRow += '<td style="text-align:right;font-weight:700">' + typeTotals[t.key].toLocaleString('ko-KR') + '</td>'; });
+  if (showEtcTypeCol) footRow += '<td style="text-align:right;font-weight:700">' + etcColTotal.toLocaleString('ko-KR') + '</td>';
   footRow += '<td style="text-align:right;font-weight:800;color:var(--accent)">' + grand.toLocaleString('ko-KR') + '</td>'
     + '<td style="text-align:right;color:var(--dim)">100%</td></tr>';
 
@@ -868,6 +911,7 @@ function renderInflowChannel() {
     + '<table class="channel-table">' + thead + '<tbody>' + bodyHtml + footRow + '</tbody></table>'
     + '<div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">'
     + '선택 기간(' + periodLabel + ') 문의를 <b>채널 × 유형</b>으로 교차 집계 · 셀 = 문의 건수 · 채널명은 접수 시 선택한 경로 기준 · 과거 \'온라인\' 뭉침분·미기재는 \'기타·미상\'.'
+    + (showEtcTypeCol ? ' \'기타\' 유형 열 = 전체 대비 2건 미만 또는 2% 미만인 유형(' + mergedTypeKeys.map(function(k){ var m=_TC_TYPES[k]; return m?m.label:k; }).join('·') + ')을 합친 것 — 손실 없이 표시만 병합.' : '')
     + '</div></div>';
 }
 
@@ -1454,13 +1498,15 @@ function renderIgReach(summary) {
     var exposureRatioStr = exposureRatioPct.toFixed(1).replace(/\.0$/, '') + '%';
     exposureRatioLine = '<div style="font-size:10px;color:var(--dim);margin-top:6px">참고 근사·층위상이: 링크클릭÷추적게시물도달합 = ' + exposureRatioStr + ' <span style="font-style:italic">(채널 합산 클릭 ÷ 게시물 합산 도달 — 진짜 CTR 아님, 참고용 근사치)</span></div>';
   }
+  // 배545: 상단 stat row에 이미 '계정 일 도달'을 표시하므로 이 3-stat row는 중복 없이
+  // 게시물 도달 합·링크클릭을 1차 지표로 앞세우고, 계정 도달은 작은 참고값으로만 병치(값 삭제 아님).
   var exposureReactionPanel =
     '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">'
     + '<div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">노출 ↔ 반응 · 정직 병치(억지 CTR 아님)</div>'
-    + '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">'
-    +   '<div><div style="font-size:20px;font-weight:800;color:var(--accent)">' + (latest ? Number(latest.reach).toLocaleString('ko-KR') : '—') + '</div><div style="font-size:10px;color:var(--dim);margin-top:2px">최근 계정 도달(일별 스냅샷)</div></div>'
+    + '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end">'
     +   '<div><div style="font-size:20px;font-weight:800;color:var(--f5)">' + (mediaReachSum != null ? mediaReachSum.toLocaleString('ko-KR') : '—') + '</div><div style="font-size:10px;color:var(--dim);margin-top:2px">추적 게시물 도달 합(상위 ' + mediaTop.length + '·고유 근사)</div></div>'
     +   '<div><div style="font-size:20px;font-weight:800;color:var(--fn-violet)">' + (linkClicksKpi != null ? linkClicksKpi.toLocaleString('ko-KR') : '—') + '</div><div style="font-size:10px;color:var(--dim);margin-top:2px">인스타 링크클릭(UTM · 이번 달 누적)</div></div>'
+    +   (latest ? '<div><div style="font-size:13px;font-weight:700;color:var(--dim)">' + Number(latest.reach).toLocaleString('ko-KR') + '</div><div style="font-size:9.5px;color:var(--dim);margin-top:2px">계정 일 도달(상단과 동일값 · 참고)</div></div>' : '')
     + '</div>'
     + exposureRatioLine
     + '<div style="font-size:10.5px;color:var(--dim);margin-top:8px;font-style:italic">도달=게시물 단위(per-post) · 링크클릭=채널 합산(channel-aggregate) — 층위가 달라 둘을 나눈 CTR%는 표기하지 않습니다.</div>'
