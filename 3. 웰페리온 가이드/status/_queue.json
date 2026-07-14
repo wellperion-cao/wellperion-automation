@@ -990,5 +990,19 @@
     "artifact": "편집화면 '담당 거래업체' 드롭다운(vendor_list 25개·미지정 포함) → item.vendor_id 저장.\n리스트에 지정 항목은 '🏢 담당 [업체명] · 📞 [연락처]' tel: 링크(도래 시 원클릭 전화).\nvendor는 CHECK_API vendor_list 실시간 조회(연락처 스냅샷 저장 안함=번호변경 정합).\n자동 1:1매칭 불가(분류 뭉침)라 종목당 1회 지정 방식. loadVendors 성공→renderAll 재렌더.\n지어낸 업체·번호 0. 간소화·computeDue·GAS저장·필터·편집·seed 전부 보존·no (CLI ad-hoc · 커밋 0db9624d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "0db9624da33e6cc111cd007c042e97a0fea4ecdc"
+  },
+  {
+    "task_id": "CEO-2026-07-14-ADHOC-969e558b",
+    "clevel": "ceo",
+    "title": "[웰리] 모듈 카드 pill을 담당 줄로 내려 제목 전체폭 확보 + 카드 최소폭 280px",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 991,
+    "artifact": "GM: 카드에 이모지+제목+자율ON pill이 한 줄이라 좁은 카드서 제목이 쪼그라듦. pill(자율수준)을\nrcard-top 제목 줄에서 빼 '담당·주기' 메타 줄(justify-between)로 이동 → 제목이 아이콘 옆\n전체폭 사용. 그리드 minmax 258→280px. 헤드리스 렌더로 레이아웃 개선 확인·JS문법 통과. (CLI ad-hoc · 커밋 969e558b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "969e558be9375d75de561b95173d2e9262e3114c"
   }
 ]
