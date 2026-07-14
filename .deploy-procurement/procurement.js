@@ -656,15 +656,25 @@ function suggestAdd(p){ // 자율 개선 제안 축적: 제안일|제목|내용|
   sh.appendRow([Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd"), String(p.제목||"").slice(0,200), String(p.내용||"").slice(0,5000), String(p.기대효과||"").slice(0,1000), "제안"]);
   return out({ ok:true, row: sh.getLastRow() });
 }
-function tgSend(p){ // 텔레그램 발송 — 키(TG_BOT_TOKEN/TG_CHAT_ID)는 Script Properties에만 보관, 미설정 시 조용히 skip
+var HR_EXEC = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec"; // 공용 ERP 백엔드(/exec) — tg-relay 위탁용(2026-07-14 매니저 승인)
+function tgSend(p){ // 텔레그램 발송 — ①자체 키(Script Properties) 있으면 직접 ②없으면 공용 ERP 백엔드 tg-relay 위탁(CHRO 리마인드와 동일 토큰 재사용·토큰 이동 없음) ③둘 다 없으면 skip
+  var text = String(p.text||"").slice(0,4000);
+  if (!text.trim()) return out({ ok:false, error:"no_text" });
   var props = PropertiesService.getScriptProperties();
   var tk = props.getProperty("TG_BOT_TOKEN"), chat = props.getProperty("TG_CHAT_ID");
-  if (!tk || !chat) return out({ ok:false, skipped:"no_tg_key" });
-  var res = UrlFetchApp.fetch("https://api.telegram.org/bot"+tk+"/sendMessage", {
-    method:"post", muteHttpExceptions:true, contentType:"application/json",
-    payload: JSON.stringify({ chat_id: chat, text: String(p.text||"").slice(0,4000) })
-  });
-  return out({ ok: res.getResponseCode()===200, code: res.getResponseCode() });
+  if (tk && chat){
+    var res = UrlFetchApp.fetch("https://api.telegram.org/bot"+tk+"/sendMessage", {
+      method:"post", muteHttpExceptions:true, contentType:"application/json",
+      payload: JSON.stringify({ chat_id: chat, text: text })
+    });
+    return out({ ok: res.getResponseCode()===200, code: res.getResponseCode(), via:"direct" });
+  }
+  try{
+    var r2 = UrlFetchApp.fetch(HR_EXEC, { method:"post", muteHttpExceptions:true, contentType:"application/json",
+      payload: JSON.stringify({ action:"tg-relay", password: PW, text: text }) }); // UrlFetchApp은 302 리디렉트 자동 추적
+    var j = {}; try{ j = JSON.parse(r2.getContentText()); }catch(ePr){}
+    return out({ ok: !!j.ok, code: j.code || r2.getResponseCode(), via:"relay", skipped: j.skipped });
+  }catch(eR){ return out({ ok:false, error:"relay_fail: "+String(eR) }); }
 }
 
 // 신규 액션: 검토결과 upsert (기존 add/list/status/photo/delete 무변경)
