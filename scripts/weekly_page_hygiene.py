@@ -196,7 +196,7 @@ def _claude_bin() -> str | None:
     return shutil.which("claude")
 
 
-def run_audit_claude(prompt: str, timeout: int = 240, model: str = "claude-sonnet-4-6") -> dict:
+def run_audit_claude(prompt: str, timeout: int = 420, model: str = "claude-sonnet-4-6") -> dict:
     """
     headless claude 감사 호출(welly_auto_runner의 LIVE 호출 패턴 재사용). 읽기전용 분석
     전용이라 --permission-mode plan(편집 불가)로 호출한다.
