@@ -60,8 +60,6 @@
   details#layer-automation summary::before{content:'▸'; display:inline-block; margin-right:8px; color:var(--dim); transition:transform .15s;}
   details#layer-automation[open] summary::before{transform:rotate(90deg);}
 
-  /* 🌟 북극성 추천 top3 임베드 스타일 제거(2026-07-04 GM): 추천=텔레그램 승인라인 전용 */
-
   /* ── 섹션1: 상시 자율 루틴 카드 ── */
   .routines{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:11px;}
   .rcard{position:relative; background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--rc,var(--accent)); border-radius:11px; padding:12px 14px 13px;}
@@ -82,7 +80,6 @@
   .rrow .rk{color:var(--dim); min-width:56px; flex-shrink:0;}
   .rrow .rv{color:var(--text-soft); flex:1;}
   .rrow .rv b{color:var(--text);}
-  .rrow .rv.warn{color:var(--gold);}
 
   /* ── 섹션2: 통합 피드 ── */
   .feed{border:1px solid var(--border); border-radius:12px; background:var(--paper); overflow:hidden;}
@@ -362,8 +359,6 @@
       </div>
     </div>
   </section>
-
-  <!-- 🌟 북극성 추천 top3 임베드 제거(2026-07-04 GM): 웰리 06:30 추천은 GM 텔레그램 승인라인 전용 → 본 페이지 미표시 -->
 
   <!-- ════ 정직 프레이밍 노트(배237) ════ -->
   <div class="honest-note">
