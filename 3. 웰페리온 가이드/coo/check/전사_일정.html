@@ -140,7 +140,7 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-
 
 <script>
 var CAL_URL="https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/schedule_ssot.json?cb="+Date.now();
-var SCHEDULE_GAS_URL="";   // 배포 후 /exec URL을 채우면 자동저장 활성화(빈 문자열=미배포 → github seed만 사용)
+var SCHEDULE_GAS_URL="https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec";   // GAS 자동저장 백엔드(GM 배포 2026-07-14). GAS=SSOT·github=seed 폴백. 재배포 시 URL 교체.
 var DATA=null, CATS={}, LEAD=30, cur="전체", view="list";
 
 function qDept(){try{var m=(location.search.match(/[?&]dept=([^&]+)/));return m?decodeURIComponent(m[1]):"전체";}catch(e){return "전체";}}
