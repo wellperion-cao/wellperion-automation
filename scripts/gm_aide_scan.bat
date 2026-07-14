@@ -16,4 +16,8 @@ REM (depends_on resolved by prior DONE ship -> tag + nudge + resolve_structural_
 REM STALL gap stays surface-only (NO auto write) - do NOT add any stall gate here.
 REM Rollback (1-stage): delete or comment out the single line below to return to resumable dry-run.
 set AIDE_RESUMABLE_APPLY=1
+REM Auto verify-complete handler live activation (GM go 2026-07-09): verify-spec ships auto-close on log evidence.
+REM Only ships carrying an explicit "verify" spec are affected (PASS-only close, false-completion 0).
+REM Rollback (1-stage): delete or comment out the single line below to return to verify dry-run.
+set AIDE_VERIFY_APPLY=1
 C:\Python314\python.exe -u scripts\gm_aide_scan.py --commit >> logs\gm_aide_scan.log 2>&1

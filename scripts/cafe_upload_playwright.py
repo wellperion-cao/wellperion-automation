@@ -262,24 +262,6 @@ def _strip_leading_title(title: str, body: str) -> str:
     return body
 
 
-def _split_body_at_inquiry(body: str) -> tuple[str, str | None]:
-    """본문을 '문의' 줄 기준으로 (앞부분[문의 줄 포함], 뒷부분) 으로 분리.
-    스티커#2 를 '문의' 줄 다음에 삽입하기 위함 (실측 2026-06-03 — SE ONE 컴포넌트 경계 삽입).
-    '문의' 줄이 없으면 (전체, None) 반환 → 스티커#2 는 본문 끝."""
-    if not body:
-        return body, None
-    lines = body.split("\n")
-    inquiry_idx = -1
-    for i, ln in enumerate(lines):
-        if "문의" in ln:
-            inquiry_idx = i  # 마지막 '문의' 줄 기준
-    if inquiry_idx < 0:
-        return body, None
-    seg1 = "\n".join(lines[: inquiry_idx + 1])
-    seg2 = "\n".join(lines[inquiry_idx + 1 :])
-    return seg1, seg2
-
-
 def build_post(args: argparse.Namespace) -> CafePost:
     title = (args.title or "").strip()
     body = load_body(Path(args.body_file) if args.body_file else None, args.body)
@@ -706,41 +688,20 @@ async def _enter_write_and_fill(page, post: CafePost) -> None:
     print(f"[INFO] 제목 입력 ({title_sel!r})")
     await page.wait_for_timeout(800)
 
-    # 본문 + 스티커 인터리브 입력.
-    # 핵심(실측 2026-06-03): SmartEditor ONE 은 연속 타이핑한 본문을 단일 se-component-text 로
-    # 묶고, 스티커는 컴포넌트 경계에만 삽입됨 → 입력 후 caret 이동으로는 '본문 맨 처음/문의 다음'
-    # 위치 지정 불가(스티커가 본문 블록 뒤에 뭉침). 따라서 본문을 세그먼트로 나눠 타이핑하며
-    # 사이사이에 스티커를 삽입한다: [스티커1] 본문(~문의 줄) [스티커2] 본문(문의 줄 이후).
+    # 본문 연속 타이핑 (★2026-07-14 구조표준화 — 배866 ④, 블로그와 동일 구조로 통일).
+    # 기존엔 스티커#1(본문 맨 처음)→본문세그1(~문의줄)→스티커#2(문의 줄 다음)→본문세그2 로
+    # 쪼개어 타이핑하며 caret 을 스티커 삽입 지점으로 흔들었다(SE ONE 컴포넌트 경계 삽입 필요
+    # 때문). 이 caret 흔들기 방식은 블로그에서 본문 조각남 사고(2026-07-10 F3 실측)의 원인으로
+    # 밝혀져 폐기됐다 — 이제 카페도 동일하게 본문을 한 번에 연속 타이핑해 caret 이 자연히 진짜
+    # 끝에 남게 하고, 이미지→링크카드→스티커(맨 끝 1개) 순으로 뒤에 이어붙인다(중간삽입 없음).
     body_loc, body_sel = await _first_locator(scope, BODY_SELECTORS)
     if body_loc is None:
         raise RuntimeError("본문 셀렉터 미발견 (SmartEditor 미로딩)")
     sticker_count = getattr(post, "sticker_count", STICKER_COUNT_DEFAULT)
-    seg1, seg2 = _split_body_at_inquiry(post.body)
-    has_inquiry = bool(seg2 is not None)
-
     await _focus_body_end(page, scope)
-    # 스티커#1 = 본문 맨 처음 (빈 본문에 먼저 삽입)
-    if sticker_count >= 1:
-        await _insert_stickers(page, scope, 1, label="#1 본문 맨 처음")
-        # ① 본문 맨 처음 스티커 가운데정렬 (삽입 직후 1회)
-        await _center_align_first_sticker(page, scope)
-    # 본문 세그먼트1 (문의 줄 포함) 타이핑
-    await _focus_body_end(page, scope)
-    await page.keyboard.type(seg1, delay=8)
+    await page.keyboard.type(post.body, delay=8)
     await page.wait_for_timeout(600)
-    # 스티커#2 = 문의 줄 다음 (현재 caret = seg1 끝 = 문의 줄 끝)
-    if sticker_count >= 2:
-        await _insert_stickers(page, scope, 1, label=("#2 문의 줄 다음" if has_inquiry else "#2 본문 끝(문의 미발견)"))
-    # 본문 세그먼트2 (문의 이후 = 해시태그 등) 타이핑
-    if seg2:
-        await _focus_body_end(page, scope)
-        await page.keyboard.type(seg2, delay=8)
-        await page.wait_for_timeout(600)
-    # 잔여 스티커(요청 3개 이상)는 본문 끝에 삽입
-    if sticker_count >= 3:
-        await _focus_body_end(page, scope)
-        await _insert_stickers(page, scope, sticker_count - 2, label="추가(본문 끝)")
-    print(f"[INFO] 본문 입력 ({body_sel!r}, {len(post.body)} chars) + 스티커 {sticker_count}개 인터리브")
+    print(f"[INFO] 본문 입력 ({body_sel!r}, {len(post.body)} chars) — 연속 타이핑(중간삽입 없음)")
 
     try:
         body_text = await scope.evaluate(
@@ -754,13 +715,19 @@ async def _enter_write_and_fill(page, post: CafePost) -> None:
         pass
 
     # ⚠ 순서 고정(2026-07-09 GM 설계 — 블로그와 동일 구조): 이미지를 링크카드보다 먼저
-    #   첨부해야 최종 구조가 본문→이미지→링크카드(맨 끝) 가 된다.
+    #   첨부해야 최종 구조가 본문→이미지→링크카드→스티커(맨 끝) 가 된다.
     if post.image_paths:
         await _attach_images(page, scope, post.image_paths)
 
     # 링크 카드 삽입 — UTM은 href에만(원시 URL 텍스트는 내부에서 제거). 실패 시 내부에서
     # 깨끗한 텍스트 CTA 폴백. 실패해도 draft 진행.
     await _insert_link_card(page, scope, url=post.link_card_url)
+
+    # 스티커 — 본문·이미지·링크카드를 모두 붙인 뒤 맨 끝에 삽입(블로그와 동일 구조, 배866 ④).
+    if sticker_count >= 1:
+        await _focus_body_end(page, scope)
+        await _insert_stickers(page, scope, sticker_count, label="맨 끝")
+        await _center_align_first_sticker(page, scope)
 
     # ④ 카페 태그 입력칸에 해시태그 입력 (최대 10개)
     if post.tags:
@@ -1364,14 +1331,16 @@ async def run_publish(args: argparse.Namespace) -> int:
         return 6
 
     # ── 발행 사전점검(source-side pre-flight) — 브라우저 실행 전 입력 온전성 검사 ──
-    _, seg2 = _split_body_at_inquiry(post.body)
+    # 문의줄 존재 여부만 확인(구조표준화 2026-07-14 이후 스티커 위치는 항상 본문 맨 끝
+    # 고정이라 세그먼트 분리 불필요 — _split_body_at_inquiry 폐기, 단순 포함 검사로 대체).
+    inquiry_marker_present = any("문의" in ln for ln in post.body.split("\n"))
     preflight = check_source_preflight(
         "카페",
         body=post.body,
         image_paths=post.image_paths,
         tags=post.tags,
         max_tags=MAX_TAGS,
-        inquiry_marker_present=(seg2 is not None),
+        inquiry_marker_present=inquiry_marker_present,
         link_url=post.link_card_url,
     )
     print(f"[PREFLIGHT] 사전점검 — {preflight.summary()}")

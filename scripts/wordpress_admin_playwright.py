@@ -1033,13 +1033,120 @@ async def run_publish_reception(post_id_arg: str, slug: str = "reception") -> in
     return 0 if published else 8
 
 
+MEDIA_NEW_URL = "http://wellperion.com/wp/wp-admin/media-new.php"
+MEDIA_LIBRARY_URL = "http://wellperion.com/wp/wp-admin/upload.php"
+
+
+async def run_media_check() -> int:
+    """읽기 전용 — media-new.php 에서 '최대 업로드 크기'만 확인. 변경 없음."""
+    async_playwright = _import_playwright()
+    print("[INFO] === 워드프레스 미디어 업로드 한도 확인 (읽기 전용) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(MEDIA_NEW_URL, wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2000)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+    text = await page.evaluate(
+        """() => { const body = document.body.innerText || '';
+            const m = body.match(/[Mm]aximum upload file size[^\\n]*|최대\\s*업로드\\s*(?:파일\\s*)?크기[^\\n]*/);
+            return m ? m[0].trim() : ''; }"""
+    )
+    await page.screenshot(path=str(INSPECT_DIR / "wp_media_check.png"))
+    print(f"[INFO] 최대 업로드 크기 문구: {text or '(미검출 — 스크린샷 확인 필요)'}")
+    await ctx.close()
+    await p.stop()
+    return 0
+
+
+async def run_media_upload(file_path_arg: str) -> int:
+    """media-new.php 로 파일 업로드. 완료 후 첨부 편집화면에서 File URL 확보."""
+    async_playwright = _import_playwright()
+    file_path = Path(file_path_arg)
+    print(f"[INFO] === 워드프레스 미디어 업로드: {file_path} ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    if not file_path.exists():
+        print(f"[ERROR] 업로드 파일 부재: {file_path}")
+        return 4
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(MEDIA_NEW_URL, wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2000)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    file_input = await page.query_selector("input[type=file]")
+    if not file_input:
+        print("[ERROR] 업로드 input[type=file] 미검출 — 스크린샷 확인 필요.")
+        await page.screenshot(path=str(INSPECT_DIR / "wp_media_upload_noinput.png"))
+        await ctx.close(); await p.stop(); return 5
+
+    print("[INFO] 파일 선택 → 업로드 시작 (대용량, 시간 소요될 수 있음)...")
+    await file_input.set_input_files(str(file_path))
+
+    # 업로드 완료 판정: media-new.php 결과 그리드에 "편집" 링크(post.php?...action=edit)가 뜨면 완료.
+    edit_href = None
+    waited, deadline = 0, 900  # 최대 15분 대기 (160MB 대용량)
+    while waited < deadline:
+        edit_href = await page.evaluate(
+            """() => { const a = document.querySelector('a[href*="post.php?post="][href*="action=edit"]');
+                return a ? a.href : null; }"""
+        )
+        has_error = await page.evaluate(
+            """() => !!document.querySelector('.upload-errors, .error, .media-item.error')"""
+        )
+        if has_error:
+            err_text = await page.evaluate(
+                "() => { const e=document.querySelector('.upload-errors, .error, .media-item.error'); return e? e.innerText.trim():''; }"
+            )
+            print(f"[ERROR] 업로드 오류 감지: {err_text}")
+            await page.screenshot(path=str(INSPECT_DIR / "wp_media_upload_error.png"))
+            await ctx.close(); await p.stop(); return 6
+        if edit_href:
+            break
+        await asyncio.sleep(3)
+        waited += 3
+    await page.screenshot(path=str(INSPECT_DIR / "wp_media_upload_result.png"))
+    if not edit_href:
+        print(f"[ERROR] {deadline}초 내 업로드 완료 미확인 — 스크린샷(wp_media_upload_result.png) 확인 필요.")
+        await ctx.close(); await p.stop(); return 7
+
+    import re as _re
+    m = _re.search(r"[?&]post=(\d+)", edit_href)
+    attach_id = m.group(1) if m else None
+    print(f"[INFO] 업로드 완료 — 첨부 ID: {attach_id or '(미검출)'}")
+
+    file_url = None
+    if attach_id:
+        await page.goto(f"http://wellperion.com/wp/wp-admin/post.php?post={attach_id}&action=edit",
+                         wait_until="domcontentloaded", timeout=40_000)
+        await page.wait_for_timeout(1500)
+        file_url = await page.evaluate(
+            """() => { const i=document.querySelector('#attachment_url'); return i? i.value : ''; }"""
+        )
+    print(f"[INFO] 첨부 파일 URL: {file_url or '(미검출 — 편집화면 확인 필요)'}")
+    await ctx.close()
+    await p.stop()
+    return 0 if file_url else 8
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href/wpml-create-en/draft-inquiry-en/publish-inquiry-en/draft-reception/publish-reception)")
+    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href/wpml-create-en/draft-inquiry-en/publish-inquiry-en/draft-reception/publish-reception/media-check/media-upload)")
     ap.add_argument("--mode", choices=[
         "setup", "check", "inspect",
         "draft-inquiry", "publish-inquiry", "add-menu", "swap-href",
         "wpml-create-en", "draft-inquiry-en", "publish-inquiry-en",
         "draft-reception", "publish-reception",
+        "media-check", "media-upload",
     ], default="setup")
     ap.add_argument("--find", dest="find", default=None, help="swap-href 찾을 문자열")
     ap.add_argument("--repl", dest="repl", default=None, help="swap-href 바꿀 문자열")
@@ -1047,6 +1154,7 @@ def main() -> int:
     ap.add_argument("--menu-id", dest="menu_id", default=KOREAN_MENU_ID, help="add-menu 대상 메뉴 ID(기본 59=한글메인)")
     ap.add_argument("--post-id", dest="post_id", default=None,
                     help="draft/publish 갱신 대상 페이지 ID")
+    ap.add_argument("--file", dest="file_path", default=None, help="media-upload 대상 파일 경로")
     args = ap.parse_args()
     if args.mode == "setup":
         return asyncio.run(run_setup())
@@ -1082,6 +1190,12 @@ def main() -> int:
         if not args.post_id:
             print("[ERROR] --post-id 필요"); return 1
         return asyncio.run(run_publish_reception(args.post_id, args.slug or "reception"))
+    if args.mode == "media-check":
+        return asyncio.run(run_media_check())
+    if args.mode == "media-upload":
+        if not args.file_path:
+            print("[ERROR] --file 필요"); return 1
+        return asyncio.run(run_media_upload(args.file_path))
     return asyncio.run(run_check())
 
 

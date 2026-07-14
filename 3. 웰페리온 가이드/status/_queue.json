@@ -402,5 +402,19 @@
     "artifact": "_http_get_json 백오프 재시도(2s·4s) 추가로 GAS 콜드스타트 간헐 타임아웃 방어.\n매출 _cfo_sales_month만 기본 20s로 방치돼(전환은 07-13 45s 상향) 아침 첫호출마다\n'측정 불가' → timeout=45s 상향. e2e 검증: 매출6.23억/전환15.7%/점검79%/주차120.3만 복구. (CLI ad-hoc · 커밋 4aafc409)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4aafc40954614861b2a8fd2bc70365478e7a02bc"
+  },
+  {
+    "task_id": "COO-2026-07-14-ADHOC-c280d451",
+    "clevel": "coo",
+    "title": "[시우] 전사 일정 SSOT 모듈을 단일 등록부에 등록 (§3-2 정합)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 941,
+    "artifact": "live COO 자동화(schedule_ssot.json+schedule_ssot.py+전사_일정.html)가\nmodule_registry.json에 누락 → coo-schedule-ssot 13필드 계약 등록.\ncoo_registry/schedule_ssot 검증 전부 통과(회귀0). (CLI ad-hoc · 커밋 c280d451)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c280d45195ce0f92425a1d4af59af1149894c92d"
   }
 ]
