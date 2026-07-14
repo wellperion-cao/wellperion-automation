@@ -1609,6 +1609,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <span id="lessonStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
       </div>
 
+      <input type="search" id="lessonSearch_adult" placeholder="🔍 성함 · 연락처로 빠르게 찾기" oninput="lessonSetQuery('adult', this.value)" autocomplete="off"
+        style="width:100%;box-sizing:border-box;padding:9px 13px;margin-bottom:10px;border-radius:8px;border:1px solid var(--accent-border);background:var(--card);color:var(--text);font-size:13.5px;font-family:inherit">
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
         <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('year', this, 'adult')"
           style="padding:7px 14px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">올해(2026)만</button>
@@ -1725,6 +1727,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       </div>
 
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <input type="search" id="lessonSearch_youth" placeholder="🔍 성함 · 연락처로 빠르게 찾기" oninput="lessonSetQuery('youth', this.value)" autocomplete="off"
+          style="flex:1 1 100%;box-sizing:border-box;padding:9px 13px;margin-bottom:2px;border-radius:8px;border:1px solid var(--accent-border);background:var(--card);color:var(--text);font-size:13.5px;font-family:inherit">
         <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('year', this, 'youth')"
           style="padding:7px 14px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">올해(2026)만</button>
         <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('all', this, 'youth')"
@@ -3735,6 +3739,7 @@ function lessonRenderChips(t) {
 
 function lessonFilterSport(btn, t) {
   _lessonState[t].sport = btn.getAttribute('data-sport') || '';
+  _lessonState[t].shown = LESSON_PAGE_SIZE;   // 종목 전환 시 페이지 리셋(배944 후속)
   lessonRenderChips(t);
   lessonRender(t);
 }
@@ -3815,8 +3820,15 @@ function _lessonApplyLocalMgmt(row, sportKey, patch) {
 function _lessonVisibleLines(t) {
   var st = _lessonState[t];
   var rows = _lessonVisibleRows(t);
+  var q = String(st.q || '').trim().toLowerCase();
+  var qd = q.replace(/[^0-9]/g, '');
   var lines = [];
   rows.forEach(function(r){
+    if (q) {   // 검색: 성함(부분) 또는 연락처(숫자) 매칭 — 팀 리더 빠른 찾기(배944 후속)
+      var nm = String(r.name || '').toLowerCase();
+      var ph = String(r.phone || '').replace(/[^0-9]/g, '');
+      if (nm.indexOf(q) < 0 && !(qd && ph.indexOf(qd) >= 0)) return;
+    }
     var sports = _lessonSportSplit(r.sport);
     if (!sports.length) sports = [''];
     sports.forEach(function(sportKey){
@@ -3827,13 +3839,18 @@ function _lessonVisibleLines(t) {
   return lines;
 }
 
+var LESSON_PAGE_SIZE = 50;   // 팀 리더 작업뷰: 전 행 렌더 금지(세로 폭증 방지)·검색/더보기로 접근. 배944 후속.
+function lessonShowMore(t) { _lessonState[t].shown = (_lessonState[t].shown || LESSON_PAGE_SIZE) + 100; lessonRender(t); }
+function lessonSetQuery(t, v) { _lessonState[t].q = v; _lessonState[t].shown = LESSON_PAGE_SIZE; lessonRender(t); }
 function lessonRender(t) {
   var tbody = document.getElementById('lessonBody_' + t);
   if (!tbody) return;
   var lines = _lessonVisibleLines(t);
   if (lines.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
+  var shown = _lessonState[t].shown || LESSON_PAGE_SIZE;
+  var view = lines.slice(0, shown);
   var html = '';
-  lines.forEach(function(ln){
+  view.forEach(function(ln){
     var r = ln.row, mgmt = _lessonSportMgmt(r, ln.sportKey), argSport = encodeURIComponent(ln.sportKey);
     html += '<tr data-row-index="' + r.rowIndex + '">' +
       '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(r.timestamp || '—') + '</td>' +
@@ -3845,7 +3862,14 @@ function lessonRender(t) {
       '<td class="left editable-cell" style="font-size:11px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word" onclick="_lessonContactClick(\'' + t + '\',' + r.rowIndex + ',\'' + argSport + '\')">' + _lessonContactCellHtml(mgmt) + '</td>' +
     '</tr>';
   });
+  if (lines.length > view.length) {
+    html += '<tr><td colspan="7" style="text-align:center;padding:12px">' +
+      '<button type="button" onclick="lessonShowMore(\'' + t + '\')" style="padding:8px 18px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer">＋ ' + (lines.length - view.length).toLocaleString() + '건 더보기</button>' +
+      '<div style="font-size:11px;color:var(--dim);margin-top:5px">표시 ' + view.length + ' / 전체 ' + lines.length.toLocaleString() + '건 · 위 🔍 검색으로 빠르게 찾으세요</div></td></tr>';
+  }
   tbody.innerHTML = html;
+  var _sl = document.getElementById('lessonStatLine_' + t);
+  if (_sl) _sl.textContent = '표시 ' + view.length + ' / ' + lines.length.toLocaleString() + '건';
 }
 
 // 종목 여러 개('/' 또는 ',' 구분) → 각 종목 한 줄씩. 단, 괄호 안 '/'·','는 종목 내부 옵션 나열
