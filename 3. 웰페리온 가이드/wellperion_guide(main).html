@@ -6285,7 +6285,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     // 프론트 등록부 구동은 웰리 공유 렌더러+등록부 Pages 서빙 후속(front_card 스키마 예약).
     (function(){
       var CHECK_API = "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";
-      var BASE = "https://wellperion-cao.github.io/wellperion-automation/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/";
+      // Pages는 '3. 웰페리온 가이드/' 접두어 없이 서빙(접두어=404 · 아래 부서별 체계 링크와 동일 베이스). 2026-07-14 시우 404 수정.
+      var BASE = "https://wellperion-cao.github.io/wellperion-automation/";
+      var CACHE_KEY = "o1_check_metric_v1";
       function card(name, feature, metric, badge, href, tag){
         return '<a href="'+href+'" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'
           + '<div style="font-weight:700;margin-bottom:4px;color:var(--text);">'+name+' '+badge+'</div>'
@@ -6304,8 +6306,18 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         }
         return resp;
       }
-      function loadHub(){
+      function render(metric, badge, tag){
         var el = document.getElementById('o1-module-cards'); if(!el) return;
+        var checkHref = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
+        var schedHref = BASE + "coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html";
+        el.innerHTML = card('점검 현황','부서별 점검 완료율·이상', metric, badge, checkHref, tag)
+          + card('전사 일정','정기 안전·법정 점검 등 반복 일정', '열기 →', '📅', schedHref, '전 부서 공유 · 검사일 입력 대기');
+      }
+      function loadHub(){
+        // 링크는 즉시 렌더(클릭 가능) · 지표는 직전 캐시 표시 후 백그라운드 갱신(stale-while-revalidate) — 느린 GAS 콜에 링크가 막히지 않게
+        var cached=null; try{ cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){}
+        if(cached) render(cached.metric, cached.badge, '측정값 · 갱신 중');
+        else render('불러오는 중…', '⏳', '측정값(measured)');
         var pv = Date.now();
         var fP = fetch(CHECK_API+"?action=weekly&dept=facility&_pv="+pv,{cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
         var sP = fetch(CHECK_API+"?action=today_live&dept=support&_pv="+pv,{cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
@@ -6314,13 +6326,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           var anomaly = (fPct==null || fPct>100 || sPct==null || sPct>100);
           var badge = anomaly? '⚠' : '✅';
           var metric = '시설 '+(fPct==null?'—':fPct+'%')+' · 지원 '+(sPct==null?'—':sPct+'%');
-          var href = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
-          var schedHref = BASE + "coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html";
-          el.innerHTML = card('점검 현황','부서별 점검 완료율·이상', metric, badge, href, '측정값(measured)')
-            + card('전사 일정','정기 안전·법정 점검 등 반복 일정', '열기 →', '📅', schedHref, '전 부서 공유 · 검사일 입력 대기');
-        }).catch(function(){ el.innerHTML = '<div style="color:var(--red);">점검 현황: (측정 실패 — 정직 표기)</div>'; });
+          render(metric, badge, '측정값(measured)');
+          try{ localStorage.setItem(CACHE_KEY, JSON.stringify({metric:metric,badge:badge})); }catch(e){}
+        }).catch(function(){ if(!cached){ var el=document.getElementById('o1-module-cards'); if(el) el.innerHTML='<div style="color:var(--red);">점검 현황: (측정 실패 — 정직 표기)</div>'; } });
       }
-      setTimeout(loadHub, 600);
+      loadHub();
     })();
     </script>
     <p class="lead">전 부서 공통 운영 체계입니다. 지원부를 먼저 완성하고, 운영부(리셉션)·시설부·주차관리부로 확장합니다.</p>
@@ -6371,23 +6381,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     </table>
     <div class="callout tip" style="margin-top:12px;"><strong>참고 템플릿:</strong> 지원부 체계의 4탭 구조를 복제해서 부서명·구역·절차만 교체하면 됩니다.</div>
 
-    <h3 style="margin-top:24px;"><span class="ico">📝</span>다음 구축 할일</h3>
-    <table>
-      <tr><th style="width:40px">#</th><th style="width:160px">부서</th><th>다음 단계</th><th style="width:80px">상태</th></tr>
-      <tr><td>1</td><td><strong>지원부</strong></td><td>가이드·매뉴얼·체크리스트 고도화 (현재 운영 중)</td><td><span class="badge green">운영중</span></td></tr>
-      <tr><td>2</td><td><strong>운영부(리셉션)</strong></td><td>지원부 체계 복제 → 규정·가이드·매뉴얼·체크리스트 제작</td><td><span class="badge gray">예정</span></td></tr>
-      <tr><td>3</td><td><strong>시설부</strong></td><td>지원부 체계 복제 → 시설 점검·장비 관리 중심</td><td><span class="badge gray">예정</span></td></tr>
-      <tr><td>4</td><td><strong>주차관리부</strong></td><td>지원부 체계 복제 → 입출차·정산·주차장 관리</td><td><span class="badge gray">예정</span></td></tr>
-    </table>
-
-    <h3 style="margin-top:24px;"><span class="ico">📈</span>고도화 정의 <span style="font-size:13px;color:var(--dim);font-weight:400;">— 관리자용 · 공통 (현장 규정 탭에서 이관)</span></h3>
-    <div class="callout" style="border-left:4px solid var(--accent);margin-bottom:12px;"><strong>고도화</strong> = 현재 규정·가이드·매뉴얼·체크리스트를 현장 데이터와 피드백 기반으로 지속 개선하는 것. 대규모 재설계 금지 — 보수적 증분 업데이트 원칙.</div>
-    <table>
-      <tr><th style="width:90px">구간</th><th>목표</th><th style="width:90px">시기</th></tr>
-      <tr><td><strong>단기</strong></td><td>인수인계 텔레그램 전환 / 응대 멘트 가이드 / 비품 기준 명문화</td><td>2026-07</td></tr>
-      <tr><td><strong>중기</strong></td><td>청소 전후 사진 자동 수집 / 비품 재고 자동화</td><td>2026-10</td></tr>
-      <tr><td><strong>장기</strong></td><td>데이터 기반 예방 정비 / 직원 퍼포먼스 대시보드</td><td>2027</td></tr>
-    </table>
   </article>
 
 
