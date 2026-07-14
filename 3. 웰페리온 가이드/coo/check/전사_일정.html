@@ -112,8 +112,9 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-
   </div>
 
   <div class="editbar" id="editBar">
-    <span class="info">각 항목의 <b>해당여부·검사일·주기</b>를 채우고 저장하세요. 저장 = JSON을 내려받거나 복사해 <b>시우에게 전달</b>하면 라이브 반영됩니다. (자체 자동저장은 후속)</span>
+    <span class="info">각 항목의 <b>해당여부·검사일·주기</b>를 채우고 저장하세요. <b>☁️ 서버에 자동저장</b>을 누르면 모두가 바로 최신본을 봅니다. (서버 미배포 시 JSON을 내려받거나 복사해 <b>시우에게 전달</b>)</span>
     <button class="ebtn ghost" onclick="addItem()">➕ 항목 추가</button>
+    <button class="ebtn primary" id="cloudSaveBtn" onclick="saveToServer()">☁️ 서버에 자동저장</button>
     <button class="ebtn primary" onclick="exportJSON()">💾 저장(내려받기)</button>
     <button class="ebtn ghost" onclick="copyJSON()">📋 복사</button>
   </div>
@@ -139,6 +140,7 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-
 
 <script>
 var CAL_URL="https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/schedule_ssot.json?cb="+Date.now();
+var SCHEDULE_GAS_URL="";   // 배포 후 /exec URL을 채우면 자동저장 활성화(빈 문자열=미배포 → github seed만 사용)
 var DATA=null, CATS={}, LEAD=30, cur="전체", view="list";
 
 function qDept(){try{var m=(location.search.match(/[?&]dept=([^&]+)/));return m?decodeURIComponent(m[1]):"전체";}catch(e){return "전체";}}
@@ -258,6 +260,26 @@ function copyJSON(){var t=exportStr();
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast("JSON 복사됨 — 시우에게 붙여넣기하세요.");},function(){fallbackCopy(t);});}else fallbackCopy(t);}
 window.copyJSON=copyJSON;
 function fallbackCopy(t){var ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("JSON 복사됨.");}catch(e){alert("복사 실패 — ‘저장(내려받기)’를 이용하세요.");}document.body.removeChild(ta);}
+function saveToServer(){
+  if(!SCHEDULE_GAS_URL){toast("서버 배포 후 사용 가능합니다.");return;}
+  fetch(SCHEDULE_GAS_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'save_schedule',data:DATA})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res&&res.ok){
+      try{localStorage.removeItem(DKEY);}catch(e){}
+      document.getElementById("draftBanner").style.display="none";
+      toast("서버에 자동저장 완료"+(res.count!=null?" ("+res.count+"건)":""));
+    }else{
+      toast("서버 저장 실패 — 내려받기로 백업하세요.");
+    }
+  }).catch(function(){toast("서버 저장 실패(네트워크) — 내려받기로 백업하세요.");});
+}
+window.saveToServer=saveToServer;
+function initCloudBtn(){
+  var b=document.getElementById("cloudSaveBtn");
+  if(b&&!SCHEDULE_GAS_URL){b.disabled=true;b.title="서버 배포 후 사용";b.style.opacity=".5";b.style.cursor="not-allowed";}
+}
 function saveDraft(){try{localStorage.setItem(DKEY,JSON.stringify(DATA.items));}catch(e){}}
 function loadDraftCheck(){try{if(localStorage.getItem(DKEY))document.getElementById("draftBanner").style.display="flex";}catch(e){}}
 function applyDraft(){try{var d=localStorage.getItem(DKEY);if(d)DATA.items=JSON.parse(d);}catch(e){}document.getElementById("draftBanner").style.display="none";if(!editMode)toggleEdit();else renderEdit();}
@@ -266,11 +288,30 @@ function discardDraft(){try{localStorage.removeItem(DKEY);}catch(e){}document.ge
 window.discardDraft=discardDraft;
 function toast(m){var t=document.getElementById("toast");t.textContent=m;t.style.opacity="1";setTimeout(function(){t.style.opacity="0";},2600);}
 
-fetch(CAL_URL,{cache:"no-store"}).then(function(r){return r.json();}).then(function(d){
+function initFromData(d){
   DATA=d;CATS=d.categories||{};LEAD=(d.gate&&d.gate.lead_days)||30;
   cur=qDept();if(cur!=="전체"&&(d.depts||[]).indexOf(cur)<0)cur="전체";
   syncScope();renderChips();renderLegend();renderAll();loadDraftCheck();
-}).catch(function(e){document.getElementById("vList").innerHTML='<div class="loading">달력을 불러오지 못했습니다 — 새로고침. ('+e+')</div>';});
+}
+function loadSeed(){
+  fetch(CAL_URL,{cache:"no-store"}).then(function(r){return r.json();}).then(initFromData)
+    .catch(function(e){document.getElementById("vList").innerHTML='<div class="loading">달력을 불러오지 못했습니다 — 새로고침. ('+e+')</div>';});
+}
+function boot(){
+  initCloudBtn();
+  if(SCHEDULE_GAS_URL){
+    fetch(SCHEDULE_GAS_URL+"?action=load_schedule&cb="+Date.now(),{method:"GET",redirect:"follow"})
+      .then(function(r){return r.json();})
+      .then(function(res){
+        if(res&&res.ok&&res.data&&Array.isArray(res.data.items)){initFromData(res.data);}
+        else{loadSeed();}
+      })
+      .catch(function(){loadSeed();});
+  }else{
+    loadSeed();
+  }
+}
+boot();
 </script>
 </body>
 </html>
