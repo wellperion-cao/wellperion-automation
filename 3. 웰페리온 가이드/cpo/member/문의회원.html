@@ -2821,9 +2821,11 @@ function renderStatusBoardPeriods() {
   if (cav) cav.textContent = '전환율=등록월 기준(이번달 신규가입/이번달 문의) · 지난달 델타=같은 일자까지 공정 비교 · 누적 퍼널=전체 기간. (누적 39.9%와 직접 비교 금지=서로 다른 기준)';
   var d = _sbData[_sbPeriod];
   if (!d) { _sbSet('sbInq', '…'); _sbSet('sbReg', '…'); _sbSet('sbRate', '…'); return; }
-  _sbSet('sbInq', d.inq != null ? d.inq.toLocaleString() : '–');
-  _sbSet('sbReg', d.reg != null ? d.reg.toLocaleString() : '–');
-  _sbSet('sbRate', d.rate != null ? d.rate + '%' : '–');
+  // 로딩(undefined)='…' vs 측정불가(null)='–' 구분 — 0은 실값 '0'.
+  function _sbF(v) { return v === undefined ? '…' : (v != null ? v.toLocaleString() : '–'); }
+  _sbSet('sbInq', _sbF(d.inq));
+  _sbSet('sbReg', _sbF(d.reg));
+  _sbSet('sbRate', d.reg === undefined ? '…' : (d.rate != null ? d.rate + '%' : '–'));
   var prev = _sbData._prevMonth || {};
   _sbDelta('sbInqD', d.inq, prev.inq, prev.inq != null, false);
   _sbDelta('sbRegD', d.reg, prev.reg, prev.regOk, false);
