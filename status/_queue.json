@@ -1473,5 +1473,19 @@
     "artifact": "GM이 진단 전제(시설부=1일 단일 회차)를 정정(이미 다회차·action=board\n소스 존재) → GAS 변경 없이 프론트만으로 즉시 구현 완료. 제안서를 정정\n경위+실제 구현·라이브 검증 결과로 갱신(정리=병합, 별도 신규 리포트 금지). (CLI ad-hoc · 커밋 54964167)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "5496416774053c6f9c995ec39a8767452e69b699"
+  },
+  {
+    "task_id": "COO-2026-07-14-ADHOC-ce96132f",
+    "clevel": "coo",
+    "title": "[시우] home 점검 3카드(시설부·지원부남·지원부여) 구조·세로사이즈 통일",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 1024,
+    "artifact": "GM 후속지시: 시설부 카드가 길어져 3카드 세로 불균형 → 구조 통일.\n- 지원부 이슈 데이터 실측: today_live 응답에 이미 allIssues(led.cr[k].iss\n  원문·담당자)가 반환되고 있었음(GAS 무변경, 신규 fetch도 불필요) — 시설부처럼\n  주(主) 표시로 승격.\n- parseSupportIssues() 신설 — allIssues를 성별로 필터링, 회차라벨 매핑.\n- buildSupportRoundCard() 재구성 — \"오늘 N/T 완료\"+\"⚠️ 이슈 N건/이슈 없음\"을\n  주(主)로, 기존 오전 (CLI ad-hoc · 커밋 ce96132f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "ce96132f5d2db9c595f4b7d253c0bd8949bc8008"
   }
 ]
