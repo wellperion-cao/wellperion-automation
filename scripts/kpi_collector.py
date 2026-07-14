@@ -312,6 +312,45 @@ def _cpo_funnel_conversion() -> dict:
                 result["이번달_전환_가입수"] = mconv
     except Exception:
         pass  # 이번달 실패해도 누적치는 이미 확보됨(부분 성공 허용)
+
+    # ── 비교가능 기준선 ① 이번달·전화매칭(누적과 동일기준) — 정밀모드 아님(빠름·null 안전) ──
+    try:
+        today = datetime.now(KST)
+        month_from = today.strftime("%Y-%m-01")
+        month_to = today.strftime("%Y-%m-%d")
+        purl = f"{_CPO_GAS}?action=funnel_conversion&from={month_from}&to={month_to}"
+        pdata = _http_get_json(purl)
+        if isinstance(pdata, dict) and pdata.get("ok") and isinstance(pdata.get("total"), dict):
+            prate = pdata["total"].get("rate")
+            if isinstance(prate, (int, float)) and not isinstance(prate, bool):
+                result["이번달_전환율_전화매칭"] = prate
+    except Exception:
+        pass
+
+    # ── 비교가능 기준선 ② 전월(완결)·등록월 정밀(이번달 정밀과 동일기준) — 완결월이라 서버캐시 정적 ──
+    try:
+        today = datetime.now(KST)
+        first_this = today.replace(day=1)
+        last_prev = first_this - timedelta(days=1)
+        prev_from = last_prev.strftime("%Y-%m-01")
+        prev_to = last_prev.strftime("%Y-%m-%d")   # 전월 말일
+        result["전월_라벨"] = last_prev.strftime("%Y-%m")
+        vurl = f"{_CPO_GAS}?action=funnel_conversion&numerator=registered&from={prev_from}&to={prev_to}"
+        vdata = _http_get_json(vurl, timeout=45)
+        if isinstance(vdata, dict) and vdata.get("ok") and isinstance(vdata.get("total"), dict):
+            vtotal = vdata["total"]
+            vrate = vtotal.get("rate")
+            if isinstance(vrate, (int, float)) and not isinstance(vrate, bool):
+                result["전월_전환율"] = vrate
+            vinq = vtotal.get("inquiries")
+            if isinstance(vinq, (int, float)) and not isinstance(vinq, bool):
+                result["전월_전환_문의수"] = vinq
+            vconv = vtotal.get("converted")
+            if isinstance(vconv, (int, float)) and not isinstance(vconv, bool):
+                result["전월_전환_가입수"] = vconv
+    except Exception:
+        pass
+
     return result
 
 
