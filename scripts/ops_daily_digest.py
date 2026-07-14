@@ -48,13 +48,6 @@ KPI_VALUES_PATH = ROOT / "status" / "kpi_values.json"
 
 RECENT_LEDGER_DAYS = 5  # 반복감지·미해결추적용으로 프롬프트에 주입할 과거 원장 기간
 
-# 시설·지원부 점검 GAS(telegram_bot/daily_scheduler.py SUPPORT_CHECK_API_URL과 동일 소스·기본값 —
-# import는 하지 않는다(봇 사이드이펙트 회피), env로 오버라이드 가능한 상수만 최소 복사).
-SUPPORT_CHECK_API_URL = os.environ.get(
-    "SUPPORT_CHECK_API_URL",
-    "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec",
-)
-
 # 문의·등록 GAS(.deploy-funnel/Survey.js 배포본) — kpi_collector.py _CPO_GAS·telegram_bot/daily_scheduler.py
 # FUNNEL_EXEC_URL과 동일 정본(inquiry_list=문의알림방 대시보드 소스). import는 하지 않는다(사이드이펙트 회피),
 # env로 오버라이드 가능한 상수만 최소 복사.
@@ -88,10 +81,8 @@ def now_str() -> str:
 
 
 # ═══════════════════════════════════════════
-#  0) 점검 사실블록 — 시설부·지원부 실측치(GAS·kpi_values.json)를 결정론적으로 생성.
-#     숫자는 절대 LLM에 맡기지 않는다. 조회 실패·데이터없음은 "측정 불가"로 정직 표기.
-#     telegram_bot/daily_scheduler.py의 _fetch_facility_today/_fetch_facility_board/_gas_get
-#     로직을 최소 복사(daily_scheduler는 import하지 않음 — 봇 사이드이펙트 회피).
+#  0) 공용 GAS 조회 래퍼(재시도) — 문의·VOC(종합접수)·예약·업무 블록 공용.
+#     숫자는 LLM에 맡기지 않고 결정론적 실측만. 실패=호출부에서 "측정 불가" 정직 표기.
 # ═══════════════════════════════════════════
 def _gas_get(url: str, params: dict | None = None, *, timeout: int = 40, attempts: int = 3, label: str = "GAS") -> object | None:
     """GAS(script.google.com) GET 재시도 래퍼. 성공(HTTP 200) 시 Response, 전량 실패 시 None."""
@@ -105,118 +96,19 @@ def _gas_get(url: str, params: dict | None = None, *, timeout: int = 40, attempt
     return None
 
 
-def _fetch_facility_day(target_date: str) -> dict | None:
-    """시설부 target_date 점검 현황 — monthly_report&dept=facility의 dailySeries에서
-    target_date 행 추출(daily_scheduler._fetch_facility_today는 '오늘' 고정이라 target_date로 일반화).
-    반환: {date,total,done,pct,sessionCount,outOfRangeCount,...} 또는 None(조회 실패)."""
-    resp = _gas_get(
-        f"{SUPPORT_CHECK_API_URL}?action=monthly_report&dept=facility&date={target_date}&_pv={int(time.time())}",
-        label="ops-digest 시설부",
-    )
-    if resp is None:
-        return None
-    try:
-        d = resp.json()
-        if d.get("ok"):
-            for row in d.get("dailySeries", []):
-                if row.get("date") == target_date:
-                    return row
-    except Exception:
-        pass
-    return None
-
-
-def _fetch_facility_board_work(target_date: str) -> dict:
-    """시설부 target_date board 조회 — 작업사항(fc_work 원문) + 실제 제출 회차수(submissions len)."""
-    out = {"work": None, "sessions": 0}
-    resp = _gas_get(f"{SUPPORT_CHECK_API_URL}?action=board&key=FACILITY_CHECK_{target_date}", label="ops-digest 시설부board")
-    if resp is None:
-        return out
-    try:
-        store = (resp.json().get("board", {}) or {}).get("store", {}) or {}
-        daily = store.get("daily", {}) or {}
-        w = daily.get("fc_work")
-        if isinstance(w, str) and w.strip():
-            w = w.strip()
-            for _ in range(3):  # 이중 인코딩(&amp;gt;) 대비 — 안정될 때까지 반복 복원
-                u = html.unescape(w)
-                if u == w:
-                    break
-                w = u
-            out["work"] = w[:300] + "…" if len(w) > 300 else w
-        subs = store.get("submissions")
-        if isinstance(subs, list):
-            out["sessions"] = len(subs)
-    except Exception:
-        pass
-    return out
-
-
-def _read_support_kpi() -> tuple[float | None, int | None, int | None]:
-    """status/kpi_values.json roles.coo에서 지원부_점검완료율(0~1)·완료·전체(당월 누적) 읽기.
-    실패·필드없음 시 (None,None,None) — 호출부에서 '측정 불가'로 정직 표기."""
-    try:
-        kv = json.loads(KPI_VALUES_PATH.read_text(encoding="utf-8"))
-        coo = kv.get("roles", {}).get("coo", {})
-        rate = coo.get("지원부_점검완료율")
-        done = coo.get("지원부_완료")
-        total = coo.get("지원부_전체")
-        if isinstance(rate, (int, float)) and not isinstance(rate, bool):
-            return float(rate), done, total
-    except Exception:
-        pass
-    return None, None, None
-
-
-def build_check_block(target_date: str) -> str:
-    """target_date(YYYY-MM-DD) 시설부·지원부 점검 사실블록(결정론적 실측 — LLM 미개입)."""
-    lines = ["🏢 점검"]
-
-    facility_row = _fetch_facility_day(target_date)
-    if facility_row is None:
-        lines.append(" • 시설부: 측정 불가")
-    else:
-        board = _fetch_facility_board_work(target_date)
-        sessions = board.get("sessions") or facility_row.get("sessionCount") or 0
-        ooc = facility_row.get("outOfRangeCount", 0)
-        lines.append(f" • 시설부: {sessions}회 · 이상 {ooc}건")
-        work = board.get("work")
-        if work:
-            items = [re.sub(r"^\s*[-·•*]\s*", "", ln).strip() for ln in work.splitlines()]
-            items = [it for it in items if it]
-            if items:
-                lines.append("   작업사항:")
-                lines.extend(f"   · {it}" for it in items)
-
-    rate, done, total = _read_support_kpi()
-    if rate is None:
-        lines.append(" • 지원부: 측정 불가")
-    else:
-        pct = round(rate * 100)
-        detail = f"({done}/{total}, 당월 누적)" if done is not None and total is not None else "(당월 누적)"
-        lines.append(f" • 지원부: 완료율 {pct}% {detail}")
-
-    return "\n".join(lines)
-
-
-def insert_check_block(message: str, check_block: str) -> str:
-    """LLM message의 🌅 헤더 줄 바로 다음에 check_block을 끼워넣는다.
-    헤더 줄을 못 찾으면 check_block을 맨 앞에 붙인다."""
+def _split_llm(message: str) -> "tuple[str, str, str]":
+    """LLM 메시지를 (🌅 헤더줄, 본문[💪 제외], 💪줄)로 분리 — 섹션 재배치·💪 맨끝 배치용."""
     lines = message.split("\n")
-    header_idx = None
-    for i, line in enumerate(lines):
-        if line.strip().startswith("🌅"):
-            header_idx = i
-            break
-    if header_idx is None:
-        return f"{check_block}\n\n{message}"
-
-    rest_lines = lines[header_idx + 1:]
-    while rest_lines and not rest_lines[0].strip():
-        rest_lines.pop(0)
-    rest = "\n".join(rest_lines)
-    header = lines[header_idx]
-    return f"{header}\n\n{check_block}\n\n{rest}"
+    hi = next((i for i, ln in enumerate(lines) if ln.strip().startswith("🌅")), None)
+    header = lines[hi] if hi is not None else ""
+    body_lines = lines[hi + 1:] if hi is not None else lines
+    wi = next((i for i, ln in enumerate(body_lines) if ln.strip().startswith("💪")), None)
+    if wi is not None:
+        warm = "\n".join(body_lines[wi:]).strip()
+        body = "\n".join(body_lines[:wi]).strip()
+    else:
+        warm, body = "", "\n".join(body_lines).strip()
+    return header, body, warm
 
 
 # ═══════════════════════════════════════════
@@ -744,14 +636,25 @@ def run(forced_date: str | None = None) -> int:
 
     print(f"[5/5] 생성 완료 (model={used_model})")
 
-    check_block = build_check_block(target_date)
     inquiry_block = build_inquiry_block(target_date)
-    reception_block = build_reception_block(target_date)
     today_str = datetime.now().strftime("%Y-%m-%d")
     reservation_block = build_reservation_block(today_str)
+    reception_block = build_reception_block(target_date)
     work_block = build_work_block(target_date)
-    ops_block = "\n\n".join([check_block, inquiry_block, reception_block, reservation_block, work_block])
-    final_message = insert_check_block(message, ops_block)
+
+    # 문의·등록 + 오늘 예약 = 한 섹션으로 합침(예약 헤더 떼고 문의 아래에)
+    mid_block = "📩 문의·등록 · 오늘 예약\n" + "\n".join(inquiry_block.split("\n")[1:]).rstrip()
+    _resv_body = "\n".join(reservation_block.split("\n")[1:]).rstrip()
+    if _resv_body:
+        mid_block += "\n" + _resv_body
+
+    # 섹션 재배치(GM 2026-07-14): 상단=개별 카톡 대화·오늘 챙길 것·업무 / 중간=문의·예약 /
+    # 그 바로 아래=종합접수 / 💪 항상 맨끝. 🏢 점검은 제외(23시 밤 점검공유가 별도 담당).
+    header, llm_body, warm = _split_llm(message)
+    parts = [header, llm_body, work_block, mid_block, reception_block]
+    final_message = "\n\n".join(p.strip() for p in parts if p and p.strip())
+    if warm:
+        final_message += "\n\n" + warm.strip()
 
     print("\n" + "=" * 60)
     print(f"[대상일] {target_date}  |  [사용모델] {used_model}  |  [원장반영] {'예' if json_ok else '아니오(파싱실패)'}")
