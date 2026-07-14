@@ -10838,7 +10838,7 @@ function crTab(btn, panelId) {
             if(num<cfg.min||num>cfg.max){
               var dk=(it.id||it.name)+'|'+k+'|'+num;
               if(seenNumeric[dk]) return; seenNumeric[dk]=1;
-              issues.push({type:'수치기준 초과',text:(it.name||it.id)+' '+num+'(기준 '+cfg.min+'~'+cfg.max+')'});
+              issues.push({type:'수치기준 초과',name:(it.name||it.id),text:(it.name||it.id)+' '+num+'(기준 '+cfg.min+'~'+cfg.max+')'});
             }
           });
         });
@@ -10856,7 +10856,60 @@ function crTab(btn, panelId) {
     }
 
     // 3카드(시설부·지원부남·지원부여) 세로 사이즈 통일 — GM 2026-07-14 후속지시. 구조(주=회차+이상, 부차=완료율 상세) 통일 + min-height 고정 병행.
-    var CHECK_CARD_MIN_H = '318px';
+    var CHECK_CARD_MIN_H = '354px';
+
+    // 빈도 최다 키 — 이상/이슈 목록에서 가장 많이 반복되는 항목·회차를 뽑는다(정직 표기 — 지어내기 없이 실값 집계만).
+    function topFreqKey(items, keyFn){
+      if(!items||!items.length) return '';
+      var freq={}, order=[];
+      items.forEach(function(x){ var k=keyFn(x); if(!k) return; if(!freq[k]){ freq[k]=0; order.push(k); } freq[k]++; });
+      if(!order.length) return '';
+      var best=order[0];
+      order.forEach(function(k){ if(freq[k]>freq[best]) best=k; });
+      return best;
+    }
+
+    // 회차 라벨 → 실무 행동 문구(없으면 범용 문구로 폴백)
+    var CHECK_ROUND_ACTION = {'오전조':'오전 점검 시작 필요','오후조':'오후 점검 독려','마감조':'마감 점검 독려'};
+
+    // "💡 본질에 대한 조언" — 항로 L16 개념을 점검 카드에 적용(GM 2026-07-14). 3카드 공통 룰 기반 함수 — 카드별 실값만 다르게 투입.
+    // rows: [{label|name, done, total, pct}] (그룹 또는 회차 — 필드명 무관하게 허용). issueCount/issueSummary: 이상·이슈 실값.
+    // 룰 우선순위(하드코딩 일반문구·지어내기 금지 — 전부 rows/issue 실값에서만 계산):
+    //   1) 미착수(done===0 && total>0) 행이 있으면 그 행(발생 순서상 첫 번째)을 지목
+    //   2) 저조(0<pct<50) 행이 있으면 그 행(최저 pct)을 지목
+    //   3) 이상·이슈 N건이 있으면 다발 지점(최다 빈도) 지목
+    //   4) 전부 완료·이상 0이면 "정상" 정직 표기
+    //   5) 그 외(진행 중이나 위 조건 미해당) 진행률 요약 폴백
+    function buildCheckAdvice(rows, issueCount, issueSummary){
+      rows=rows||[];
+      // 그룹 라벨 앞 아이콘(이모지) 제거 — 💡 조언 줄에 아이콘 중복 방지(순수 텍스트만).
+      function plainLbl(x){ return String((x.label||x.name||'')).replace(/^[^가-힣a-zA-Z0-9]+\s*/, ''); }
+      for(var i=0;i<rows.length;i++){
+        var r=rows[i];
+        var lbl=plainLbl(r);
+        if(r.total>0 && r.done===0){
+          var action=CHECK_ROUND_ACTION[lbl]||'오늘 마무리 필요';
+          return {text:lbl+' '+r.done+'/'+r.total+' 미착수 — '+action, color:'#ED5B3F'};
+        }
+      }
+      var low=null;
+      rows.forEach(function(r){ if(r.total>0 && r.pct<50 && (!low||r.pct<low.pct)) low=r; });
+      if(low){
+        var llbl=plainLbl(low);
+        return {text:llbl+' '+low.done+'/'+low.total+' 저조('+low.pct+'%) — 점검 진행 필요', color:'#e6c84e'};
+      }
+      if(issueCount>0){
+        return {text:'이상·이슈 '+issueCount+'건'+(issueSummary?('('+issueSummary+' 다발)'):'')+' — 원인 확인 우선', color:'#ED5B3F'};
+      }
+      var totalRows=rows.filter(function(r){ return r.total>0; });
+      var allFull=totalRows.length>0 && totalRows.every(function(r){ return r.done>=r.total; });
+      if(allFull) return {text:'오늘 점검 정상 · 이상 없음', color:'#6abf7b'};
+      var doneSum=0,totalSum=0; rows.forEach(function(r){ doneSum+=r.done||0; totalSum+=r.total||0; });
+      return {text:'오늘 '+doneSum+'/'+totalSum+' 진행 중', color:'var(--dim)'};
+    }
+    function renderCheckAdvice(advice){
+      return '<div style="margin-top:9px;padding-top:8px;border-top:1px dashed var(--border);font-size:10.5px;line-height:1.5;color:'+advice.color+';">💡 '+advice.text+'</div>';
+    }
 
     // 시설부 전용 카드 — 회차 진행+이상(수치+자유기록) 주(主), 그룹별 완료율은 부차(GM 2026-07-14 재구성).
     function buildFacilityGroupCard(icon, label, fKpi, row, href, boardInfo){
@@ -10888,11 +10941,14 @@ function crTab(btn, panelId) {
           +'<span style="font-size:10px;font-weight:700;color:'+c+';min-width:32px;text-align:right;">'+g.pct+'%</span>'
           +'</div>';
       }
-      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+      var advice=buildCheckAdvice(groups, issueCount, topFreqKey(bi.issues.filter(function(x){return x.type==='수치기준 초과';}), function(x){return x.name;}));
+      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:flex;flex-direction:column;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
         +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
         +primaryHtml
         +'<div style="font-size:9.5px;color:var(--dim);margin-bottom:4px;">그룹별 완료율(상세)</div>'
         +rowsHtml
+        +'<div style="flex:1;"></div>'
+        +renderCheckAdvice(advice)
         +'</a>';
     }
 
@@ -10936,11 +10992,14 @@ function crTab(btn, panelId) {
           +'</div>';
       }
       if(!rowsHtml) rowsHtml='<div style="font-size:11px;color:var(--dim);padding:4px 0;opacity:0.75;">회차 데이터 없음</div>';
-      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+      var advice=buildCheckAdvice(gKpi.rounds, issueCount, topFreqKey(issues, function(x){return x.type;}));
+      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:flex;flex-direction:column;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
         +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
         +primaryHtml
         +'<div style="font-size:9.5px;color:var(--dim);margin-bottom:4px;">회차별 완료율(상세)</div>'
         +rowsHtml
+        +'<div style="flex:1;"></div>'
+        +renderCheckAdvice(advice)
         +'</a>';
     }
 
