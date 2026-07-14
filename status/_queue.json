@@ -640,5 +640,19 @@
     "artifact": "GM이 카톡 방 이름을 변경해 kakao_daily_check_share.py TARGET_ROOM이 실제 창 제목과\n불일치 → 23:00 예약발송이 '방 못 찾음'으로 매일 실패(데이터·렌더는 정상). 실제 창\n제목 실측('★운영+시설+지원+주차') 반영. dry-run 방 발견·검증 통과. 오늘 밤부터 정상. (CLI ad-hoc · 커밋 12ee311f)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "12ee311fc5ec9dd885961080b86234a1cf9918a1"
+  },
+  {
+    "task_id": "COO-2026-07-14-ADHOC-a64bd826",
+    "clevel": "coo",
+    "title": "[시우] 부서별 표 부분지출·부분순액 정직 노출 (GM go — 지어낸 값 0)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 957,
+    "artifact": "전사에 정규직·임대료·타임 지출정본 부재 확인(CFO 페이지도 '정규직·임대료 미포함' 명시).\nGM 택=부분지출 정직 노출: 있는 진짜 데이터(강사·운영부 인건비+구매성)만\n'부분지출/부분순액'으로 명시(헤더·title에 '정규직·임대료·타임 제외'). 연 부분지출=1~선택월 누계.\n연 부분순액=기간정합 행만(강습 상반기 partial은 '—' 기간불일치 방지). placeholder '구조개선 중' 제거.\nnode --check PASS·함수 96 유지·신규 데이터 조회 0(기존 부서맵 재사용). (CLI ad-hoc · 커밋 a64bd826)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a64bd826978ccf7d149ddba3f240006c5b9c18b5"
   }
 ]

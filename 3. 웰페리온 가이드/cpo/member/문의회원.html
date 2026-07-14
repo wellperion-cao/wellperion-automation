@@ -1160,7 +1160,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </style>
   <div class="status-board" id="cpoStatusBoard">
     <div class="sb-head">
-      <span class="sb-title">📊 전환·회원 현황</span>
+      <span class="sb-title">📊 전환·회원 현황<span id="sbRefresh" style="font-size:11px;color:var(--dim);font-weight:400"></span></span>
       <div class="sb-tabs" id="sbTabs">
         <button type="button" class="sb-tab active" data-period="today" onclick="statusBoardTab('today')">오늘</button>
         <button type="button" class="sb-tab" data-period="month" onclick="statusBoardTab('month')">이번달</button>
@@ -2797,6 +2797,11 @@ var _sbData = { today: null, month: null, year: null, _prevMonth: null, funnel: 
 var _sbLesson = { adult: null, youth: null };   // 강습 타입별 기간지표(배944 후속)
 var _sbPeriod = 'today';
 function _sbSet(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+// stale-while-revalidate 캐시(배944 체감개선) — 직전 실측값 즉시표시 + 백그라운드 갱신.
+var _SB_CK = 'sb_membership_cache_v1';
+function _sbSetRefresh(on) { var e = document.getElementById('sbRefresh'); if (e) e.textContent = on ? ' · 갱신 중…' : ''; }
+function _sbCacheSave() { try { localStorage.setItem(_SB_CK, JSON.stringify({ today: _sbData.today, month: _sbData.month, year: _sbData.year, _prevMonth: _sbData._prevMonth, funnel: _sbData.funnel })); } catch (e) {} }
+function _sbCacheLoad() { try { var c = JSON.parse(localStorage.getItem(_SB_CK) || 'null'); if (c && c.month) { _sbData.today = c.today || {}; _sbData.month = c.month || {}; _sbData.year = c.year || {}; _sbData._prevMonth = c._prevMonth || {}; _sbData.funnel = c.funnel || null; return true; } } catch (e) {} return false; }
 // 강습 기간지표 로드 — 문의(lesson_stats: 이번달·올해, 오늘·지난달 미지원) + 가입(lesson_registry_list 3기간). 전환율/퍼널=정직공백.
 function _statusBoardLoadLesson(t) {
   var lt = (t === 'youth') ? 'youth' : 'adult';
@@ -2889,6 +2894,8 @@ function _statusBoardLoad() {
   var mPrefix = mStr.slice(0, 7), yPrefix = yStr.slice(0, 4);
   _sbData.today = _sbData.today || {}; _sbData.month = _sbData.month || {};
   _sbData.year = _sbData.year || {}; _sbData._prevMonth = _sbData._prevMonth || {};
+  // 캐시 즉시표시(stale-while-revalidate) — 직전 실측값 먼저 그리고 아래 라이브로 갱신.
+  if (_sbCacheLoad()) { _sbSetRefresh(true); renderStatusBoardPeriods(); if (_sbData.funnel) _sbRenderFunnel(_sbData.funnel); }
   // ── 문의 (dbRows 재사용, 멤버십 유형만) ──
   function computeInq() {
     var t = 0, m = 0, y = 0, l = 0;
@@ -2901,21 +2908,33 @@ function _statusBoardLoad() {
       if (d10 >= lStr && d10 <= lEndStr) l++;
     });
     _sbData.today.inq = t; _sbData.month.inq = m; _sbData.year.inq = y; _sbData._prevMonth.inq = l;
-    _sbRecompute(); renderStatusBoardPeriods();
+    _sbRecompute(); _sbSetRefresh(false); renderStatusBoardPeriods(); _sbCacheSave();
   }
   if (dbRows && dbRows.length) computeInq();
   else { var p = loadDbData(); if (p && p.then) p.then(computeInq).catch(computeInq); else computeInq(); }
-  // ── 가입 (member_registered_list, 기간별) ──
-  function regcb(key) { return function (dd) { _sbData[key] = _sbData[key] || {}; _sbData[key].reg = (dd && dd.count != null) ? dd.count : null; _sbData[key].regOk = !!dd; _sbRecompute(); renderStatusBoardPeriods(); }; }
-  _mdashFetchRegistered(todayStr, todayStr, regcb('today'));
-  _mdashFetchRegistered(mStr, todayStr, regcb('month'));
-  _mdashFetchRegistered(yStr, todayStr, regcb('year'));
-  _mdashFetchRegistered(lStr, lEndStr, regcb('_prevMonth'));
+  // ── 가입 (member_registered_list 1회 연간 fetch + 클라 버킷팅 = 4→1 fetch, 체감개선 배944) ──
+  _mdashFetchRegistered(yStr, todayStr, function (dd) {
+    var rows = (dd && dd.data) ? dd.data : null;
+    if (rows) {
+      var rt = 0, rm = 0, rl = 0;
+      rows.forEach(function (r) {
+        var rd = String(r.regDate || '');
+        if (rd === todayStr) rt++;
+        if (rd.indexOf(mPrefix) === 0) rm++;
+        if (rd >= lStr && rd <= lEndStr) rl++;
+      });
+      _sbData.today.reg = rt; _sbData.month.reg = rm; _sbData.year.reg = rows.length; _sbData._prevMonth.reg = rl;
+      _sbData.today.regOk = _sbData.month.regOk = _sbData.year.regOk = _sbData._prevMonth.regOk = true;
+    } else {
+      _sbData.year.reg = (dd && dd.count != null) ? dd.count : null; _sbData.year.regOk = !!dd;   // 폴백(구 응답=count만)
+    }
+    _sbRecompute(); _sbSetRefresh(false); renderStatusBoardPeriods(); _sbCacheSave();
+  });
   // ── 퍼널 (stage_funnel membership.total, 누적) ──
   if (typeof GAS_URL !== 'undefined' && GAS_URL !== GAS_PLACEHOLDER) {
     fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam())
       .then(function (r) { return r.json(); })
-      .then(function (d) { var mem = (d && d.membership) || (d && d.total ? { total: d.total } : {}); _sbData.funnel = mem.total || {}; _sbRenderFunnel(_sbData.funnel); })
+      .then(function (d) { var mem = (d && d.membership) || (d && d.total ? { total: d.total } : {}); _sbData.funnel = mem.total || {}; _sbRenderFunnel(_sbData.funnel); _sbCacheSave(); })
       .catch(function () { });
   }
 }
