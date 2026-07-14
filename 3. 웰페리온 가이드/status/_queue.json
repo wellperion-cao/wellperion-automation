@@ -1278,5 +1278,19 @@
     "artifact": "- 시토 발송 시각표: 시간 뒤 ✈️/🟡 이모지로 채널 색 구분(가독성) · 괄호 설명 제거\n- 시토 소유 관리(dims[6]): 텔레그램·카톡 알림 자율화(배선·발송·스케줄) 소유 명시\n  → 배선·발송=시토 / 알림 내용=각 소유자 원칙 병기 (CLI ad-hoc · 커밋 e7d96c76)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e7d96c76078f8150c3b35da20e0d1b2e4c5ed1ef"
+  },
+  {
+    "task_id": "CPO-2026-07-14-ADHOC-31b433cc",
+    "clevel": "cpo",
+    "title": "[시포] 강습 owner 키 순서 '지정 강사' 우선 + 옛 팬텀 관리컬럼 정리(배973)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 1011,
+    "artifact": "성인 메인시트에 GM L~P와 옛 관리컬럼(관리담당 등)이 공존해 _findColExact_ 키순서상\n팬텀 '관리담당'이 '지정 강사'보다 먼저 잡히던 owner 오라우팅 교정(read 2·gviz 1곳,\n'지정 강사' 우선). 빈 팬텀컬럼 7개(진행상태·관리담당·상담메모·상담예약·방문상태·연락이력·\n종목별관리)는 일회성 유지보수로 성인KR/EN에서 삭제 완료(데이터 0행·skipped 0). GAS @157 배포. (CLI ad-hoc · 커밋 31b433cc)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "31b433cc5e43fa31d6bb1cc7e6e172a62c189bd3"
   }
 ]
