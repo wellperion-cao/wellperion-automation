@@ -875,6 +875,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .cell-select.st-registered{color:var(--emerald);background:var(--emerald-bg);border-color:var(--emerald-border);font-weight:700;border-left:4px solid var(--emerald)}
 .cell-select.st-hold{color:var(--orange);background:var(--orange-bg);border-color:var(--orange-border);font-weight:700;border-left:3px solid var(--orange)}
 .cell-select.st-cancel{color:var(--red);background:var(--red-bg);border-color:var(--red-border);font-weight:600;border-left:3px solid var(--red);opacity:.72}
+.cell-select.st-wait{color:var(--accent);background:var(--accent-bg);border-color:var(--accent-border);font-weight:700;border-left:3px solid var(--accent)}
 .status-chip.status-chip-unfilled{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border)}
 .status-unfilled-tag{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-left:5px;white-space:nowrap;vertical-align:middle}
 .unfilled-summary-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-bottom:10px}
@@ -1537,6 +1538,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-head"><span class="dash-dot loss" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
         <div class="dash-metrics"><div class="dash-line"><span class="dash-k">무산</span><span class="dash-v"><b class="lead" id="lessonCardLoss_adult">–</b> 명</span></div></div>
       </a>
+      <a class="dash-card" data-kind="wait" data-lcard="wait" href="javascript:void(0)" onclick="lessonSwitchCard('adult','wait')">
+        <div class="dash-head"><span class="dash-dot wait" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">대기</span><span class="dash-v"><b class="lead" id="lessonCardWait_adult">–</b> 명</span></div></div>
+      </a>
     </div>
 
     <!-- sub-pane: 문의 현황 -->
@@ -1607,6 +1612,33 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     </div>
     </div>
 
+    <!-- sub-pane: 대기자 회원 관리 (진행상태=대기 문의 · 편집 가능) -->
+    <div id="lessonPane_adult_wait" class="lesson-subpane">
+    <div class="card">
+      <div class="card-title"><span class="icon">⏳</span>성인 강습 대기자 회원 관리
+        <span id="lessonWaitStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+        <button class="btn-refresh" onclick="lessonLoad('adult')" style="margin-left:auto">새로고침</button>
+      </div>
+      <div class="info-box" style="margin-bottom:12px;font-size:12.5px;color:var(--dim)">대기 상태 문의 — 자리·시기 대기 관리. 진행상태를 바꾸면 목록에서 이동합니다.</div>
+      <div class="reg-table-wrap">
+        <table class="reg-table lesson-inq-table">
+          <thead><tr>
+            <th class="left" style="width:88px">문의일</th>
+            <th class="left" style="width:100px">성함</th>
+            <th style="width:122px">연락처</th>
+            <th style="width:230px">강습종목</th>
+            <th style="width:92px">진행상태</th>
+            <th style="width:112px">담당</th>
+            <th class="left">CONTACT (연락 이력)</th>
+          </tr></thead>
+          <tbody id="lessonWaitBody_adult">
+            <tr><td colspan="7"><div class="empty-state"><div class="empty-state-title">문의 현황을 먼저 불러오세요</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>
+
     <!-- sub-pane: 강습 회원 관리 -->
     <div id="lessonPane_adult_mem" class="lesson-subpane">
       <div class="info-box accent" style="margin-bottom:14px">
@@ -1650,6 +1682,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <a class="dash-card" data-kind="loss" data-lcard="loss" href="javascript:void(0)" onclick="lessonSwitchCard('youth','loss')">
         <div class="dash-head"><span class="dash-dot loss" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
         <div class="dash-metrics"><div class="dash-line"><span class="dash-k">무산</span><span class="dash-v"><b class="lead" id="lessonCardLoss_youth">–</b> 명</span></div></div>
+      </a>
+      <a class="dash-card" data-kind="wait" data-lcard="wait" href="javascript:void(0)" onclick="lessonSwitchCard('youth','wait')">
+        <div class="dash-head"><span class="dash-dot wait" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">대기</span><span class="dash-v"><b class="lead" id="lessonCardWait_youth">–</b> 명</span></div></div>
       </a>
     </div>
 
@@ -1714,6 +1750,33 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <th class="left">CONTACT (연락 이력)</th>
           </tr></thead>
           <tbody id="lessonLossBody_youth">
+            <tr><td colspan="7"><div class="empty-state"><div class="empty-state-title">문의 현황을 먼저 불러오세요</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>
+
+    <!-- sub-pane: 대기자 회원 관리 (진행상태=대기 문의 · 편집 가능) -->
+    <div id="lessonPane_youth_wait" class="lesson-subpane">
+    <div class="card">
+      <div class="card-title"><span class="icon">⏳</span>유소년 강습 대기자 회원 관리
+        <span id="lessonWaitStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+        <button class="btn-refresh" onclick="lessonLoad('youth')" style="margin-left:auto">새로고침</button>
+      </div>
+      <div class="info-box" style="margin-bottom:12px;font-size:12.5px;color:var(--dim)">대기 상태 문의 — 자리·시기 대기 관리. 진행상태를 바꾸면 목록에서 이동합니다.</div>
+      <div class="reg-table-wrap">
+        <table class="reg-table lesson-inq-table">
+          <thead><tr>
+            <th class="left" style="width:88px">문의일</th>
+            <th class="left" style="width:100px">성함</th>
+            <th style="width:122px">연락처</th>
+            <th style="width:230px">강습종목</th>
+            <th style="width:92px">진행상태</th>
+            <th style="width:112px">담당</th>
+            <th class="left">CONTACT (연락 이력)</th>
+          </tr></thead>
+          <tbody id="lessonWaitBody_youth">
             <tr><td colspan="7"><div class="empty-state"><div class="empty-state-title">문의 현황을 먼저 불러오세요</div></div></td></tr>
           </tbody>
         </table>
@@ -3592,6 +3655,7 @@ function lessonSwitchCard(t, card) {
     c.classList.toggle('active', c.getAttribute('data-lcard') === card);
   });
   if (card === 'loss') { lessonLossRender(t); }                    // LOSS 회원 관리 — 문의 rows 중 status=LOSS 필터(별도 fetch 없음)
+  if (card === 'wait') { lessonWaitRender(t); }                    // 대기자 회원 관리 — status=대기 필터
   if (card === 'mem' && !st.memLoaded) { lessonRegLoad(t); }        // 강습 회원 관리(전체 roster)
 }
 
@@ -3770,7 +3834,8 @@ function _lessonVisibleLines(t) {
   var qd = q.replace(/[^0-9]/g, '');
   var lines = [];
   rows.forEach(function(r){
-    if (String(r.status || '').trim().toUpperCase() === 'LOSS') return;   // 문의 현황=활성만. LOSS는 'LOSS 회원 관리' 탭으로 분리(배973)
+    var _rs = String(r.status || '').trim();
+    if (_rs === 'LOSS' || _rs === '대기') return;   // 문의 현황=활성만. LOSS·대기는 각 전용 탭으로 분리(배973)
     if (q) {   // 검색: 성함(부분) 또는 연락처(숫자) 매칭 — 팀 리더 빠른 찾기(배944 후속)
       var nm = String(r.name || '').toLowerCase();
       var ph = String(r.phone || '').replace(/[^0-9]/g, '');
@@ -3794,7 +3859,7 @@ function _lessonRowHtml(t, r, sportKey, sportLabel) {
   var mgmt = _lessonSportMgmt(r, sportKey), argSport = encodeURIComponent(sportKey);
   return '<tr data-row-index="' + r.rowIndex + '">' +
     '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(r.timestamp || '—') + '</td>' +
-    '<td class="left lesson-inq-cell-name" style="font-weight:700" title="' + esc(r.name || '') + '">' + esc(r.name || '—') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
+    '<td class="left lesson-inq-cell-name" style="font-weight:700" title="' + esc(r.name || '') + '">' + esc(r.name || '—') + (t === 'youth' && String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
     '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
     '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(sportLabel) + '">' + esc(sportLabel) + '</td>' +
     '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, sportKey, mgmt.status) + '</td>' +
@@ -3802,13 +3867,13 @@ function _lessonRowHtml(t, r, sportKey, sportLabel) {
     '<td class="left editable-cell" style="font-size:11px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word" onclick="_lessonContactClick(\'' + t + '\',' + r.rowIndex + ',\'' + argSport + '\')">' + _lessonContactCellHtml(mgmt) + '</td>' +
   '</tr>';
 }
-// LOSS 회원 관리 — 로드된 문의 rows 중 진행상태=LOSS만 편집테이블로. 별도 fetch 없음. 배973 시포·GM 2026-07-14.
-function lessonLossRender(t) {
-  var tbody = document.getElementById('lessonLossBody_' + t); if (!tbody) return;
-  var rows = _lessonVisibleRows(t).filter(function(r){ return String(r.status || '').trim().toUpperCase() === 'LOSS'; });
-  var sl = document.getElementById('lessonLossStatLine_' + t);
+// 상태 버킷 목록(LOSS·대기 회원 관리 공용) — 로드된 문의 rows 중 진행상태=statusVal만 편집테이블로. 별도 fetch 없음. 배973 시포·GM 2026-07-14.
+function _lessonBucketRender(t, statusVal, tbodyId, statLineId, emptyTitle, emptyDesc) {
+  var tbody = document.getElementById(tbodyId); if (!tbody) return;
+  var rows = _lessonVisibleRows(t).filter(function(r){ return String(r.status || '').trim() === statusVal; });
+  var sl = document.getElementById(statLineId);
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-title">LOSS 회원 없음</div><div class="empty-state-desc">등록 무산(LOSS) 처리된 문의가 없습니다.</div></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-title">' + esc(emptyTitle) + '</div><div class="empty-state-desc">' + esc(emptyDesc) + '</div></div></td></tr>';
     if (sl) sl.textContent = '0명'; return;
   }
   var html = '';
@@ -3819,16 +3884,20 @@ function lessonLossRender(t) {
   tbody.innerHTML = html;
   if (sl) sl.textContent = rows.length + '명';
 }
-// LOSS 카드 카운트 갱신(로드·상태변경 시).
-function _lessonUpdateLossCount(t) {
+function lessonLossRender(t) { _lessonBucketRender(t, 'LOSS', 'lessonLossBody_' + t, 'lessonLossStatLine_' + t, 'LOSS 회원 없음', '등록 무산(LOSS) 처리된 문의가 없습니다.'); }
+function lessonWaitRender(t) { _lessonBucketRender(t, '대기', 'lessonWaitBody_' + t, 'lessonWaitStatLine_' + t, '대기자 없음', '대기 상태인 문의가 없습니다.'); }
+// LOSS·대기 카드 카운트 갱신(로드·상태변경 시).
+function _lessonUpdateBucketCounts(t) {
   var st = _lessonState[t]; var rows = (st && st.rows) ? st.rows : [];
-  var n = rows.filter(function(r){ return String(r.status || '').trim().toUpperCase() === 'LOSS'; }).length;
-  var el = document.getElementById('lessonCardLoss_' + t); if (el) el.textContent = n;
+  var loss = 0, wait = 0;
+  rows.forEach(function(r){ var s = String(r.status || '').trim(); if (s === 'LOSS') loss++; else if (s === '대기') wait++; });
+  var e1 = document.getElementById('lessonCardLoss_' + t); if (e1) e1.textContent = loss;
+  var e2 = document.getElementById('lessonCardWait_' + t); if (e2) e2.textContent = wait;
 }
 function lessonRender(t) {
   var tbody = document.getElementById('lessonBody_' + t);
   if (!tbody) return;
-  _lessonUpdateLossCount(t);
+  _lessonUpdateBucketCounts(t);
   var lines = _lessonVisibleLines(t);
   if (lines.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
   var shown = _lessonState[t].shown || LESSON_PAGE_SIZE;
@@ -3922,7 +3991,7 @@ function lessonOwnerChange(sel, t, rowIndex, sportKeyEnc) {
 
 /* ── 강습 문의 진행상태 — 종목별 독립(축7, GM 2026-07-08 확정). 옵션 4종 고정(컨택중/가망/SUC/LOSS).
       시트 기존값이 목록 밖이면 보존(데이터 손실 방지). ── */
-var LESSON_STATUS_OPTIONS = ['컨택중', '가망', 'SUC', 'LOSS'];
+var LESSON_STATUS_OPTIONS = ['컨택중', '가망', '대기', 'SUC', 'LOSS'];
 
 /* ── 미입력 판정(멤버십 전용 공유 함수) — 강습 진행상태 select는 미입력 강조 없이 상태색만 사용.
    판정: 값이 없거나(빈값) '미정'이면 미입력으로 간주(멤버십은 '미정' 옵션이 없어 빈값만 해당). ── */
@@ -3932,7 +4001,7 @@ function _isStatusUnfilled(val) {
 }
 
 // 진행상태→색 클래스 매핑(값 있으면 상태별 색, 없으면 무색). 축7 4종 매핑(컨택중/가망/SUC/LOSS), 2026-07-08 시포·GM
-var LESSON_STATUS_CLASS_MAP = { '컨택중': 'st-consult', '가망': 'st-hold', 'SUC': 'st-registered', 'LOSS': 'st-cancel' };
+var LESSON_STATUS_CLASS_MAP = { '컨택중': 'st-consult', '가망': 'st-hold', '대기': 'st-wait', 'SUC': 'st-registered', 'LOSS': 'st-cancel' };
 function _lessonStatusClass(val) {
   var v = String(val || '').trim();
   return LESSON_STATUS_CLASS_MAP[v] || '';
@@ -3964,15 +4033,16 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
     .then(function(data){
       if (!data.ok) throw new Error(data.error || '저장 실패');
       _lessonApplyLocalMgmt(row, sportKey, { status: newVal });
-      sel.classList.remove('st-consult', 'st-registered', 'st-hold', 'st-cancel');   // 기존 상태색 전부 제거 후 재설정
+      sel.classList.remove('st-consult', 'st-registered', 'st-hold', 'st-cancel', 'st-wait');   // 기존 상태색 전부 제거 후 재설정
       var stCls = _lessonStatusClass(newVal);
       if (stCls) sel.classList.add(stCls);
       showToast('저장', 'ok');
-      // 활성↔LOSS 경계를 넘으면 두 목록(문의 현황·LOSS 회원 관리) 재렌더로 행 이동 반영. 배973.
-      _lessonUpdateLossCount(t);
-      var _wasLoss = String(prevVal || '').trim().toUpperCase() === 'LOSS';
-      var _isLoss = String(newVal || '').trim().toUpperCase() === 'LOSS';
-      if (_wasLoss !== _isLoss) { lessonRender(t); lessonLossRender(t); }
+      // 활성↔버킷(LOSS·대기) 경계를 넘으면 문의 현황·LOSS·대기 목록 재렌더로 행 이동 반영. 배973.
+      _lessonUpdateBucketCounts(t);
+      var _BKT = { 'LOSS': 1, '대기': 1 };
+      var _wasB = !!_BKT[String(prevVal || '').trim()];
+      var _isB = !!_BKT[String(newVal || '').trim()];
+      if (_wasB || _isB) { lessonRender(t); lessonLossRender(t); lessonWaitRender(t); }
     })
     .catch(function(err){
       sel.value = prevVal;   // 실패 시 화면 원복(서버 미반영 상태와 정합)
