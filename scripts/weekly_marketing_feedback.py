@@ -543,6 +543,97 @@ def _fmt_angle_scorecard(cps: dict | None) -> str:
     return "\n".join(lines)
 
 
+# ── §4 자동 제안 초안 규칙 (2026-07-14 가산 — 배743 폐루프⑤ '평가 환류' 마지막 고리) ──────
+# 정성 우선 + 측정 보조(스펙 Constraints). 표본 임계 미달(문의<5건) 시 채널 랭킹은 클릭 단독
+# 조기 신호로 대체(v2 스펙 '점수 공식' 문의전환 sparse 규정과 동일 논리, v1은 정성 규칙만).
+# 성과 신호원 = ①funnel_conversion.byChannel(문의→전환, 배744 라이브 배선) ②click_stats.byUtmSource(클릭).
+# ig_engagement_ledger(배31 반응원장)는 개인 계정(namuk) 전용 — 스펙 Constraints("공식 계정 전용·
+# 개인 시리즈는 ship31 정성 소유·중복 금지")에 따라 본 공식 루프에는 의도적으로 섞지 않는다.
+_MIN_INQUIRY_SAMPLE = 5  # 채널 랭킹(전환 기준) 발동 표본 임계 — 스펙 정직 가드 "편당 문의<5→미측정"과 정합
+
+# funnel_conversion.byChannel 은 자기신고 유입경로 CANONICAL_CHANNELS 10버킷을 그대로 반환하는데
+# (.deploy-funnel/Survey.js:111-112), 그중 '소개·지인'·'기존·과거 회원'·'오프라인'·'기타·미상' 은
+# 콘텐츠를 발행할 채널이 아니다(다음 편을 "기존·과거 회원 채널"에 낼 수 없음) — 다음 편 채널 제안
+# 랭킹에서 제외한다(실제 콘텐츠 발행 채널만 후보로 남김).
+_NON_CONTENT_CHANNELS = {"소개·지인", "기존·과거 회원", "오프라인", "기타·미상"}
+
+
+def _rank_channels_by_conversion(fc: dict | None) -> list[dict]:
+    """funnel_conversion.byChannel 을 전환수 우선(전환 동률 시 문의수 보조) 내림차순 정렬.
+    실제 콘텐츠 발행 채널이 아닌 자기신고 버킷(_NON_CONTENT_CHANNELS)은 제외. 실패/빈값이면 []."""
+    if fc is None:
+        return []
+    by_ch = fc.get("byChannel") or []
+    rows = [
+        d for d in by_ch
+        if isinstance(d, dict) and d.get("channel") not in _NON_CONTENT_CHANNELS
+    ]
+    return sorted(rows, key=lambda d: (d.get("converted", 0), d.get("inquiries", 0)), reverse=True)
+
+
+def _rank_channels_by_click(cs: dict | None) -> list[tuple[str, int]]:
+    """click_stats.byUtmSource 클릭수 내림차순. 실패/빈값이면 []."""
+    if cs is None:
+        return []
+    by_src = cs.get("byUtmSource") or {}
+    return sorted(by_src.items(), key=lambda kv: kv[1], reverse=True)
+
+
+def _fmt_next_episode_suggestion(fc: dict | None, cs: dict | None, cps: dict | None) -> str:
+    """규칙(정성 우선 + 측정 보조, v1): 이번 주 총 문의가 _MIN_INQUIRY_SAMPLE 이상이면 전환 상위
+    채널을 1순위로 제안(측정 꼬리표). 표본 부족/미측정이면 UTM 클릭 상위 채널을 '조기 신호(전환
+    미측정)' 잠정 제안으로 대체. 둘 다 신호가 없으면 '자동 제안 불가'로 정직 표기(지어내지 않음).
+    항상 참고용 초안 — 최종 판정·G1 등록은 아래 시모 슬롯(§4 placeholder)의 몫(GM 게이트 유지).
+    v2(가중 점수 자동화) 발동 전 v1 정성 규칙 — .omc/specs/deep-interview-cmo-eval-feedback-loop.md
+    'v1→v2 발동 트리거' 참조."""
+    lines = ["**자동 제안 초안(규칙 기반 · 참고용 — 시모 최종 확정 필요)**", ""]
+
+    ranked_conv = _rank_channels_by_conversion(fc)
+    total_inq = sum(d.get("inquiries", 0) for d in ranked_conv)
+
+    if ranked_conv and total_inq >= _MIN_INQUIRY_SAMPLE:
+        top = ranked_conv[0]
+        ch = top.get("channel", "기타")
+        inq = top.get("inquiries", 0)
+        conv = top.get("converted", 0)
+        rate = top.get("rate")
+        rate_s = f"{rate}%" if rate is not None else "—"
+        lines.append(
+            f"- 성과 상위 채널(전환 기준 · **측정**): {ch} — 문의 {inq}건 → 전환 {conv}명(전환율 {rate_s})"
+        )
+        lines.append(f"- 다음 편 제안 방향: {ch} 채널 우선 노출·유사 소재/후킹 반복 검토")
+    else:
+        ranked_click = _rank_channels_by_click(cs)
+        if ranked_click:
+            top_ch, top_clicks = ranked_click[0]
+            label = UTM_LABELS.get(top_ch, top_ch)
+            lines.append(
+                f"- 성과 상위 채널(문의전환 표본 부족<{_MIN_INQUIRY_SAMPLE}건 → 클릭 단독 조기 신호 · "
+                f"**전환 미측정**): {label} — 클릭 {top_clicks}회"
+            )
+            lines.append(f"- 다음 편 제안 방향(잠정): {label} 채널 조기 관심 신호 — 전환 축적 후 재확인 필요")
+        else:
+            lines.append("- 성과 상위 채널: **미측정** — 이번 주 클릭·전환 신호 모두 없음(표본 없음)")
+            lines.append("- 다음 편 제안 방향: 자동 제안 불가 — 시모 정성 판정(§3)만으로 결정")
+
+    # 편(캠페인)별 참고 — 있으면만 덧붙임(정직: 없으면 생략, 0 위장 금지)
+    rows = [r for r in ((cps or {}).get("campaigns") or []) if r.get("campaign") != _CAMPAIGN_UNATTRIBUTED_KEY]
+    if rows:
+        top_camp = max(rows, key=lambda r: r.get("clicks", 0))
+        camp = str(top_camp.get("campaign", "-"))
+        coverage = _campaign_coverage_tag(str(top_camp.get("topChannel", "")))
+        lines.append(f"- 참고(편별 클릭 1위): {camp} — {coverage}")
+
+    lines.append("")
+    lines.append(
+        "_v1 정성 규칙(가중 점수화 아님) — 채널 랭킹만 자동, 소재·후킹 판단은 시모 몫. 개인 계정(namuk) "
+        "반응원장(ship31)은 목적·계정이 달라 본 공식 루프에 섞지 않음(스펙 Constraints). "
+        "v2 발동 조건 = 538 채널별 클릭→문의 전환 귀속 라이브 + 편별 문의 조인 4주 누적 "
+        "(.omc/specs/deep-interview-cmo-eval-feedback-loop.md)._"
+    )
+    return "\n".join(lines)
+
+
 def _fmt_angle_scores_fence(cps: dict | None) -> str:
     """angle-scores 펜스 — ig_series_producer.py 의 producer-season-config 와 같은
     'KEY: 값' md 펜스를 기계가 직독하는 관례. 새 json/SSOT 파일을 만들지 않고 브리프 .md 안에만 둔다."""
@@ -616,6 +707,8 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
     parts.append("")
 
     parts.append(SECTION_4_HEADING)
+    parts.append("")
+    parts.append(_fmt_next_episode_suggestion(fc, cs, cps))
     parts.append("")
     parts.append("▸ (시모: 통한 패턴 → 다음 편 후킹·소재·채널 제안 → G1 배 등록)")
     parts.append("")
