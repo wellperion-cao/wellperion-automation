@@ -1102,12 +1102,12 @@
   {
     "task_id": "CTO-2026-07-14-QUEUE-HYGIENE-ROOT",
     "clevel": "cto",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-14",
     "title": "[시토] 항로 위생 근본수리 — ①완료훅 서브작업 중복배 방지 ②완결·대기 IN_PROGRESS가 진행중에 잔류하는 반복버그 ③오늘 dupe병합",
-    "note": "[2026-07-14 GM 3연속 지적] ①한 기능이 서브작업마다 완료-배로 쪼개짐(979=982+998 이미 병합). ②진행중 13척 중 8척이 🔗완결인데 IN_PROGRESS라 진행중에 계속 잔류(완료된 게 항로에 남는 반복버그·906·826·866·106·545·747·754·970 등). ③오늘 20+척 중 sibling dupe(962↔906·944↔908 등) 다수. 활성큐 81척(DONE58). 아카이브 스윕은 가동 중(과거DONE 2척뿐).\n[2026-07-14 진행·시토] ①완료훅 중복배 억제: (a)clevel_post_action.py update_queue_with_bridge 에 --next-parent 추가—지정 시 새 배 대신 umbrella note 흡수. (b)auto_log_adhoc_to_queue.py 커밋 [umbrella:ID]/[parent:ID]/[배:ID] 마커 시 umbrella note 흡수. 둘 다 명시 마커일 때만(애매=현행 유지)·멱등·검증완료. ②항로 render 분류 수리: wellperion_guide(main).html gm1FetchSsot 큐머지에 gm1QDoneWaiting() 추가—완결(🔗/완결/마감) 또는 완료+대기신호 IN_PROGRESS를 \"대기\"(⚓ 예정 항구)로 내림(👉/🚀 시작=활성 유지). 대상 8척(106·545·747·754·826·866·906·970) 정확 매칭·993 오탐 0. 순수 렌더(데이터 status 무변경·가역). ③오늘 dupe: 962→906 흡수·제거(100% 동일 카톡카드). 나머지 재분류·ship_no충돌(973/990/993)은 status/queue_hygiene_proposal_20260714.md 로 GM/웰리 확인 대기. 아카이브: queue_archive_sweep.py(오늘기준)는 예약 미연결이나 wellperion-agents/queue_archive.sweep_old_done(2일)이 bridge 완료마다 가동+G1은 어제 DONE을 지난입항 토글로 내려 진행중 청결 유지→예약연결은 제안.",
-    "next": "👉 진단→기계수리(완료훅 부모배 업데이트·항로 render가 완결+대기 IN_PROGRESS를 ⚓대기중으로 분류)+오늘 dupe병합+상시소유vs완료-대기 재분류 제안(GM확인). ⚠️상시소유 배 임의종료 금지.",
+    "note": "[2026-07-14 GM 3연속 지적] ①한 기능이 서브작업마다 완료-배로 쪼개짐(979=982+998 이미 병합). ②진행중 13척 중 8척이 🔗완결인데 IN_PROGRESS라 진행중에 계속 잔류(완료된 게 항로에 남는 반복버그·906·826·866·106·545·747·754·970 등). ③오늘 20+척 중 sibling dupe(962↔906·944↔908 등) 다수. 활성큐 81척(DONE58). 아카이브 스윕은 가동 중(과거DONE 2척뿐).\n[2026-07-14 진행·시토] ①완료훅 중복배 억제: (a)clevel_post_action.py update_queue_with_bridge 에 --next-parent 추가—지정 시 새 배 대신 umbrella note 흡수. (b)auto_log_adhoc_to_queue.py 커밋 [umbrella:ID]/[parent:ID]/[배:ID] 마커 시 umbrella note 흡수. 둘 다 명시 마커일 때만(애매=현행 유지)·멱등·검증완료. ②항로 render 분류 수리: wellperion_guide(main).html gm1FetchSsot 큐머지에 gm1QDoneWaiting() 추가—완결(🔗/완결/마감) 또는 완료+대기신호 IN_PROGRESS를 \"대기\"(⚓ 예정 항구)로 내림(👉/🚀 시작=활성 유지). 대상 8척(106·545·747·754·826·866·906·970) 정확 매칭·993 오탐 0. 순수 렌더(데이터 status 무변경·가역). ③오늘 dupe: 962→906 흡수·제거(100% 동일 카톡카드). 나머지 재분류·ship_no충돌(973/990/993)은 status/queue_hygiene_proposal_20260714.md 로 GM/웰리 확인 대기. 아카이브: queue_archive_sweep.py(오늘기준)는 예약 미연결이나 wellperion-agents/queue_archive.sweep_old_done(2일)이 bridge 완료마다 가동+G1은 어제 DONE을 지난입항 토글로 내려 진행중 청결 유지→예약연결은 제안. [2026-07-14 GM 현행유지 결정] 제안 2건(①umbrella 하위 DONE 병합·②ship_no 중복) 모두 현행 유지 채택. 즉시적용분(완료훅 중복억제·항로render 완결대기 분류·962병합)은 라이브. 근본버그 3종 수리 완결.",
+    "next": "🔗 항로 위생 근본수리 완결. 후속(자동): 완료훅 마커([umbrella:ID])로 앞으로 하위작업 자동 수렴. 아카이브 스윕 예약연결은 원할 때.",
     "module": "home",
     "ship_no": 993
   },
