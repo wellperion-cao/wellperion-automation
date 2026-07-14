@@ -19,6 +19,7 @@ function doPost(e){
 function route(p){
   if (p.action === "lowprice_set") return lowpriceSet(p); // 검토결과 쓰기(별도 시트·adminPassword) — 기존 게이트 앞 분기
   if (p.action === "lowprice_del") return lowpriceDel(p); // 검토결과 행삭제(별도 시트·adminPassword) — 기존 게이트 앞 분기
+  if (p.action === "sales_dept_pub") return salesDeptPub(p); // 공개 강습 팀집계(무인증·운영부/PII 제외) — 공개 페이지(파트너팀 체계.html)용, 2026-07-14
   if (String(p.password) !== PW) return out({ ok:false, error:"unauthorized" });
   switch (p.action){
     case "diag_naver": return diagNaver(p); // 진단(2026-07-06 감사: 무인증→비번 게이트 뒤로 이동)
@@ -369,8 +370,18 @@ function parseSalesTab_(sht, dmap, unmapped){
 }
 
 /** 매출 종목별×월별 라이브 — 월 파일 자동탐색·말일(최신)탭 파싱·20분 캐시. 값 없는 월은 null(프론트가 기존값 유지 병합). */
-function salesDept(p){
-  var hit = swrGet_(p, "sales_dept_v1"); if (hit) return out(hit);
+function salesDept(p){ return out(salesDeptCompute_(p)); }
+/** 공개 강습 팀집계(무인증) — 강습부 대시보드(공개 페이지) 전용. salesDept 결과에서 운영부(회원권 개인매출 집계) 제외, 강습 종목만 반환.
+ *  PII 없음(팀 집계). 이 데이터는 강습부 매출 시트가 이미 CSV로 공개 중인 수준 → 노출 증가 없음. 캐시(sales_dept_v1) 공유. */
+function salesDeptPub(p){
+  var res = salesDeptCompute_(p);
+  if (!res || !res.dept) return out({ ok:false, error:"no_data" });
+  var pub = {};
+  for (var k in res.dept){ if (k === "운영부") continue; pub[k] = res.dept[k]; } // 회원권(운영부) 제외 → 강습 종목만
+  return out({ ok:true, dept:pub, monthsLoaded:res.monthsLoaded, src:res.src, at:res.at, stale:res.stale || false });
+}
+function salesDeptCompute_(p){
+  var hit = swrGet_(p, "sales_dept_v1"); if (hit) return hit;
   var now = new Date();
   var year = parseInt(Utilities.formatDate(now,"Asia/Seoul","yyyy"),10);
   var curMo = parseInt(Utilities.formatDate(now,"Asia/Seoul","M"),10);
@@ -399,7 +410,7 @@ function salesDept(p){
   }
   var res = { ok:true, dept:dept, monthsLoaded:monthsLoaded, src:src, unmapped:Object.keys(unmapped), at:Utilities.formatDate(now,"Asia/Seoul","yyyy-MM-dd HH:mm") };
   swrPut_("sales_dept_v1", res);
-  return out(res);
+  return res;
 }
 
 /** 운영부(회원권) 매출 정밀 — 월별 매출보고 「총 매출」 탭 '합계'행 서버 집계(★환불 차감 반영, 매니저 지시 2026-07-07).
