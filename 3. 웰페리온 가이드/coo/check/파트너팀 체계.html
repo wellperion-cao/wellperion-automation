@@ -566,7 +566,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       var teams=TEAMS.map(function(t){return {k:t,sum:MODEL.months.reduce(function(a,m){return a+(m.teams[t]||0);},0),target:TEAM_TARGET[t]*nMon};});teams.sort(function(a,b){return (b.sum/(b.target||1))-(a.sum/(a.target||1));});
       var maxT=Math.max.apply(null,teams.map(function(t){return Math.max(t.sum,t.target);}).concat([1]));
       var teamBars=teams.map(function(t){return tbar(t.k,t.sum,t.target,maxT,TEAM_COLOR[t.k]);}).join('');
-      var ins=MODEL.instr.slice().sort(function(a,b){return b.sum-a.sum;});
+      var ins=MODEL.instr.filter(function(p){return p.sum>0;}).sort(function(a,b){return b.sum-a.sum;}); // 매출 0 유령(시트 중복 기재 등) 제외
       var maxI=ins.length?ins[0].sum:1;
       var insBars=ins.length?ins.map(function(p,i){return ibar((i+1)+'. '+p.name,p.team,p.sum,maxI,won(p.sum));}).join(''):'<div style="color:var(--dim)">데이터 없음</div>';
       V.innerHTML='<div class="statgrid" style="margin-bottom:16px">'+cards+'</div>'+
