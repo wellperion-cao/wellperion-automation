@@ -265,6 +265,10 @@
   .fin-top-left #fin-board{display:flex; flex-direction:column; flex:1;}
   /* 상단정렬(flex-start) 컬럼 — 정합 스트레치로 생긴 빈 공간을 hero-top 아래 4요소로 충전(세로 확장 없음 · GM 지시 2026-07-08 2차) */
   .fin-top-left #fin-board .fin-hero{flex:1; margin-bottom:0; flex-direction:column; flex-wrap:nowrap; align-items:stretch; justify-content:flex-start; gap:0;}
+  /* 우측(연간 매출) 카드도 컬럼 높이를 채워 좌측 '선택월 목표대비'와 세로 정합(GM 지시 2026-07-14) — 고정높이 막대차트가 카드 하단에 grounded */
+  .fin-top-right{display:flex; flex-direction:column;}
+  .fin-top-right #sales-history-board{display:flex; flex-direction:column; flex:1;}
+  .fin-top-right #sales-history-board .fchart.hist{flex:1;}
   .fin-sub-h{font-size:12.5px; font-weight:700; color:var(--text-soft); margin:0 2px 8px;}
   .fin-sub-note{font-size:10.5px; font-weight:400; color:var(--dim);}
   .fin-dept-full{margin-top:6px;}
@@ -1956,7 +1960,7 @@
         //   불일치하는 옛 소스를 누계에 남겨두지 않는다. 단, team_sales_h1은 분기 단위(1~3월/4~6월) 응답이라
         //   분기 경계월(3·6월)만 정확 산출 가능 + 7월 이후는 상반기 정본 + 선택월 team_sales(ta) 합산.
         //   비경계월(1·2·4·5월)은 정확한 부분합을 낼 수 없어 지어내지 않고 cum=null(정직 표기).
-        var cum = null;
+        var cum = null, cumPartial = false;
         if(key === 'membership'){
           if(_cfoSalesDept && _cfoSalesDept['운영부']){
             var mArr = _cfoSalesDept['운영부']; cum = 0;
@@ -1968,18 +1972,22 @@
           var q2a = (q2c && q2c.actual != null) ? Number(q2c.actual) : null;
           if(mnum === 3 && q1a != null){ cum = q1a; }
           else if(mnum === 6 && q1a != null && q2a != null){ cum = q1a + q2a; }
-          else if(mnum > 6 && q1a != null && q2a != null && ta.live){ cum = q1a + q2a + (ta.sums[key] || 0); }
+          else if(mnum > 6 && q1a != null && q2a != null){
+            // 7월+ : 상반기 정본(q1+q2)에 선택월 실적(라이브 시)만 가산. 미도래 시 상반기까지 정직 표기(강습 연간 라인 공란 방지 · GM 2026-07-14).
+            cum = q1a + q2a + (ta.live ? (ta.sums[key] || 0) : 0);
+            cumPartial = !ta.live;
+          }
         }
-        return {name:tt.name, target:tgt, actual:act, exp:lab + pr, cum:cum};
+        return {name:tt.name, target:tgt, actual:act, exp:lab + pr, cum:cum, cumPartial:cumPartial};
       });
       if(ta.etc > 0){ rows.push({name:'기타(팀 미매칭 — 루프메소드·카드발급 등)', target:0, actual:ta.etc, exp:0, cum:null, isEtc:true}); }
       // 지출·순액 = 나우열M 구조개선 중(정직 placeholder 칼럼화 · GM 지시 2026-07-06 3차). 팀별 지출(인건비+구매성)은 CFO 페이지에 라이브 존재하나
       //   정규직·임대료 미포함 + 구조개선 중이라 순액이 부분값(오해 소지) → 지어내지 않고 '구조개선 중' 칼럼만 노출. 지출 구조 확정 후 라이브 전환.
       var NAUW_NOTE = '<span class="fin-none" title="운영 매출·지출 실무 · 구조개선 중">구조개선 중</span>';
-      var totT = 0, totA = 0, totCum = 0, haveCum = false;
+      var totT = 0, totA = 0, totCum = 0, haveCum = false, cumPartialAny = false;
       var body = rows.map(function(r){
         totT += r.target; totA += r.actual;
-        if(typeof r.cum === 'number'){ totCum += r.cum; haveCum = true; }
+        if(typeof r.cum === 'number'){ totCum += r.cum; haveCum = true; if(r.cumPartial) cumPartialAny = true; }
         var pct = r.target ? Math.round(r.actual / r.target * 100) : null;
         return '<tr' + (r.isEtc ? ' class="etc"' : '') + '><td>' + esc(r.name) + '</td>' +
           '<td class="num">' + (r.target ? fmtWon(r.target) : '—') + '</td>' +
@@ -1987,7 +1995,7 @@
           '<td class="num pctc">' + (pct != null ? pct + '%' : '—') + '</td>' +
           '<td class="num sub2">' + NAUW_NOTE + '</td>' +
           '<td class="num sub2">—</td>' +
-          '<td class="num grp-cum">' + (typeof r.cum === 'number' ? fmtWon(r.cum) : '—') + '</td>' +
+          '<td class="num grp-cum">' + (typeof r.cum === 'number' ? (fmtWon(r.cum) + (r.cumPartial ? ' <span class="fin-none" title="' + mnum + '월 실적 미도래 — 상반기(6월)까지 누계">(상반기까지)</span>' : '')) : '—') + '</td>' +
           '<td class="num sub2">' + NAUW_NOTE + '</td>' +
           '<td class="num sub2">—</td></tr>';
       }).join('');
@@ -1995,7 +2003,7 @@
       body += '<tr class="tot"><td>합계</td><td class="num">' + fmtWon(totT) + '</td><td class="num">' + fmtWon(totA) + '</td>' +
         '<td class="num pctc">' + (totPct != null ? totPct + '%' : '—') + '</td>' +
         '<td class="num sub2">' + NAUW_NOTE + '</td><td class="num sub2">—</td>' +
-        '<td class="num grp-cum">' + (haveCum ? fmtWon(totCum) : '—') + '</td>' +
+        '<td class="num grp-cum">' + (haveCum ? (fmtWon(totCum) + (cumPartialAny ? ' <span class="fin-none" title="강습 일부 ' + mnum + '월 실적 미도래 — 상반기까지 포함">(일부 상반기까지)</span>' : '')) : '—') + '</td>' +
         '<td class="num sub2">' + NAUW_NOTE + '</td><td class="num sub2">—</td></tr>';
       combinedTbl = '<div class="fin-dept-wrap"><div class="fin-dept-h">🏷️ 부서별 매출 · 지출 ' +
         '<span style="font-weight:400;color:var(--dim)">(' + mnum + '월 실적 | 연간 매출 · 지출·순액=집계 예정)</span>' +
