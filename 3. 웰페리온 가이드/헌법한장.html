@@ -38,7 +38,6 @@
   table.matrix thead th.grp-np{color:#f0c674;}
   table.matrix thead th.grp-boot{color:#7ac4f0;}
   table.matrix thead th.grp-guard{color:#6abf7b;}
-  table.matrix thead th.grp-collab{color:var(--accent-soft);}
   table.matrix th.role-col{width:95px; min-width:90px;}
   td.role-cell{background:var(--surface);}
   td.role-cell .ricon{font-size:16px;}
@@ -70,25 +69,18 @@
   .chan-item b{color:var(--text); margin-right:5px;}
   .matrix-status{padding:14px; font-size:12px; color:var(--dim);}
   /* ── 살아있는 지휘판: KPI 실측 막대 · 진행현황 · 오늘 추천 (2026-06-29) ── */
-  .kmeas{margin:4px 0 8px;}
-  .kmeas-h{display:block; font-size:9px; color:var(--dim); text-transform:none; letter-spacing:0; margin-bottom:2px;}
   .kbar{height:6px; border-radius:4px; background:var(--surface); border:1px solid var(--border); overflow:hidden; margin-bottom:2px;}
   .kbar>i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-soft)); border-radius:4px;}
   .kbar.alt>i{background:linear-gradient(90deg,#3f8f4f,#6abf7b);}
-  .kmeta{font-size:11px; color:var(--text-soft); margin-bottom:4px;}
-  .kmeta b{color:var(--text);}
   .pstat{font-size:12px; color:var(--text-soft); margin-bottom:8px;}
   .pstat b{color:var(--accent-soft);}
   .todaychip{display:inline-block; font-size:11.5px; color:#f0c674; background:rgba(240,198,116,0.10); border:1px solid rgba(240,198,116,0.35); border-radius:7px; padding:3px 9px; margin-bottom:4px; line-height:1.35; white-space:normal;}
   /* ── 🌟 북극성 도달율 (궁극 목표 · 전면 · 골드) vs 작업 처리율 (보조 · 강등) — 2026-06-30 ── */
-  .nsreach{margin:5px 0 9px; padding:6px 8px; border:1px solid rgba(240,198,116,0.30); border-left:3px solid #f0c674; border-radius:8px; background:rgba(240,198,116,0.06);}
-  .nsreach-h{display:block; font-size:10.5px; font-weight:800; color:#f0c674; letter-spacing:0.01em; text-transform:none; margin-bottom:4px;}
   .nsreach-note{font-size:9.5px; color:var(--dim); font-weight:400;}
   .kbar.gold{height:9px; border-color:rgba(240,198,116,0.45);}
   .kbar.gold>i{background:linear-gradient(90deg,#b8860b,#f0c674);}
   .nsreach-meta{font-size:13px; color:#f0c674; font-weight:700; margin-top:2px;}
   .nsreach-meta b{color:#ffd97a; font-size:14px;}
-  .nsreach-build{font-size:11.5px; color:var(--text-soft); font-weight:600;}
   /* 작업 처리율 — 보조 지표(활동량) · 강등(작게·dim·중립색) */
   .workrate{margin:2px 0 8px; opacity:0.8;}
   .workrate-h{display:block; font-size:9px; color:var(--dim); text-transform:none; letter-spacing:0; margin-bottom:2px;}
@@ -150,7 +142,6 @@
   /* ── 🗺️ 북극성 지도: 대표 KPI 1개 + 측정 tier + 현재값 + 목표 + 경로 한 줄 (정직·2026-07-02) ── */
   .nsmap{margin:5px 0 8px; padding:7px 9px; border:1px solid var(--border-strong); border-left:3px solid var(--accent-soft); border-radius:8px; background:var(--surface);}
   .nsmap-h{display:block; font-size:10px; font-weight:800; color:var(--accent-soft); letter-spacing:0.01em; margin-bottom:4px;}
-  .nsmap-prop{font-size:9px; color:#e0a; background:rgba(238,0,170,0.12); border-radius:3px; padding:1px 5px; font-weight:700; margin-left:5px;}
   .nsmap-row{font-size:12px; color:var(--text-soft); line-height:1.45; margin-bottom:2px;}
   .nsmap-row .nsmap-k{display:inline-block; min-width:58px; font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.02em;}
   .nsmap-row b{color:var(--text);}
@@ -167,10 +158,6 @@
 
   /* ── 🗺️🎛️ 북극성 지도 · 살아있는 지휘판 한눈에(요약 스트립 · 측정 개통분만) — 2026-07-03 ── */
   /* ── A3 인쇄 주인공 승격(2026-07-04): 카드 위계 강화(북극성 한줄 + 정직 배지 + 범례) ── */
-  .ns-overview{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin:4px 0 10px;}
-  .ns-role{background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:9px 11px;}
-  .ns-role-h{display:flex; align-items:center; flex-wrap:wrap; gap:5px; font-size:13px; margin-bottom:4px;}
-  .ns-role-title{font-size:10px; color:var(--dim); font-weight:400;}
   .ns-role-h .ns-badge{margin-left:auto;}
   .ns-line{font-size:11.5px; color:var(--text-soft); line-height:1.42; margin:0 0 6px; padding-bottom:6px; border-bottom:1px dashed var(--border);}
   /* 정직 상태 배지 3종 — 단일 판정(reachStatus): measured/draft/unmeasured */
@@ -178,13 +165,6 @@
   .ns-badge.measured{color:#8fd89e; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
   .ns-badge.draft{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
   .ns-badge.unmeasured{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
-  /* 범례 + 집계 한 줄 — ns-overview 위 · 실측 카운트(JS 산출, 하드코딩 금지) */
-  .ns-legend{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin:2px 0 8px; font-size:11.5px; color:var(--text-soft);}
-  .ns-legend-item{display:inline-flex; align-items:center; gap:4px;}
-  .ns-legend-item b{color:var(--text); font-size:12px;}
-  .ns-legend-note{color:var(--dim); font-size:11px;}
-  /* 매트릭스 칸1 중복 제거 후 안내(도달율 큰 블록은 요약 스트립 단일 표시처) */
-  .nsreach-mini{font-size:10.5px; color:var(--dim); margin:3px 0 6px; font-style:italic;}
 
   /* ── 🌟 북극성 목표 카드 (GM 승인 시안 반영 · 순수 신규 삽입 · 2026-07-09) ── */
   .ns-goal-card{display:flex; gap:12px; align-items:flex-start; margin:0 0 14px; padding:13px 16px; border:1px solid rgba(240,198,116,0.32); border-left:4px solid #f0c674; border-radius:11px; background:rgba(240,198,116,0.05);}
@@ -250,7 +230,6 @@
   .ccard a.lk{display:inline-block; font-size:11.5px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:3px 9px; margin:0 5px 5px 0;}
   .ccard a.lk:hover{background:var(--surface); border-color:var(--accent);}
 
-  .dedupe{margin-top:11px; font-size:11px; color:var(--dim); background:var(--surface); border:1px dashed var(--border-strong); border-radius:9px; padding:9px 13px;}
   footer.foot{margin-top:16px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
 
   @media print{
@@ -261,7 +240,7 @@
     h2.sec{margin:9px 0 2px; font-size:12px;}
     table.matrix{min-width:0; font-size:8px;}
     table.matrix th, table.matrix td{padding:3px 4px;}
-    .matrix-scroll, table.matrix tr, .ccard, .ns-role{break-inside:avoid;}
+    .matrix-scroll, table.matrix tr, .ccard{break-inside:avoid;}
     .cards{grid-template-columns:repeat(2,1fr); gap:6px;}
     header.page-head .back, .ccard a.lk, .ebtn{display:none;}
     .ccard a.lk{display:none;}
@@ -282,10 +261,9 @@
     /* 신규 지휘판 요소도 인쇄 시 라이트색·검정글자 강제 */
     .kbar{background:#eee !important; border-color:#999 !important;}
     .kbar>i, .kbar.alt>i, .kbar.gold>i, .kbar.neutral>i{background:#666 !important;}
-    .kmeas-h, .kmeta, .kmeta b, .pstat, .pstat b{color:#111 !important;}
+    .pstat, .pstat b{color:#111 !important;}
     .todaychip{color:#111 !important; background:#f8f2dc !important; border-color:#999 !important;}
-    .nsreach{background:#f8f2dc !important; border-color:#caa84a !important;}
-    .nsreach-h, .nsreach-meta, .nsreach-meta b, .nsreach-note, .nsreach-build, .workrate-h, .workrate-meta, .workrate-meta b{color:#111 !important;}
+    .nsreach-meta, .nsreach-meta b, .nsreach-note, .workrate-h, .workrate-meta, .workrate-meta b{color:#111 !important;}
     /* 신규(2026-07-02): 컨트롤바 숨김 · 첫칸고정/폴침 해제 · 재발방지 라이트 */
     .mx-controls{display:none !important;}
     table.matrix td.role-cell, table.matrix thead th.role-col{position:static !important;}
@@ -298,18 +276,12 @@
     .nsmap{background:#f6f6f6 !important; border-color:#999 !important;}
     .nsmap-h, .nsmap-row, .nsmap-row b, .nsmap-row .nsmap-k, .nsmap-path{color:#111 !important;}
     .nsax, .nsax b, .nsax .nsax-name, .nsax-goal, .nsax-note{color:#111 !important;}
-    /* 신규(2026-07-03): 지휘판 요약 스트립 라이트 강제 */
-    .ns-role{background:#fff !important; border-color:#999 !important;}
-    .ns-role-h, .ns-role-h b, .ns-role-title{color:#111 !important;}
-    /* 신규(2026-07-04): 범례·정직 배지·북극성 한줄·매트릭스 중복안내 라이트 강제(색은 유지·명도만 인쇄용) */
-    .ns-legend, .ns-legend-note{color:#111 !important;}
-    .ns-legend-item b{color:#000 !important;}
+    /* 신규(2026-07-04): 정직 배지·북극성 한줄 라이트 강제(색은 유지·명도만 인쇄용) */
     .ns-line{color:#222 !important; border-color:#ccc !important;}
     .ns-badge{border-width:1px !important;}
     .ns-badge.measured{color:#1a6b34 !important; background:#e8f6ec !important; border-color:#7fbd91 !important;}
     .ns-badge.draft{color:#9c1c74 !important; background:#fbe6f3 !important; border-color:#e0a0c8 !important;}
     .ns-badge.unmeasured{color:#555 !important; background:#f0f0f0 !important; border-color:#bbb !important;}
-    .nsreach-mini{color:#777 !important;}
     /* 신규(2026-07-09): 북극성 목표 카드 인쇄 라이트 강제 */
     .ns-goal-card{background:#f8f2dc !important; border-color:#caa84a !important;}
     .ns-goal-h, .ns-goal-txt, .ns-goal-txt b, .ns-goal-sub{color:#111 !important;}
@@ -824,14 +796,6 @@
     var meta = STATUS_META[status] || STATUS_META.unmeasured;
     return '<span class="ns-badge ' + meta.cls + '">' + meta.badge + '</span>';
   }
-  // 🌟 북극성 한 줄 — dims[0] 첫 줄만 압축(카드 스캔성). 원문은 매트릭스 편집칸(dimBlock)이 그대로 보유 · 여긴 표시만.
-  function nsOneLiner(role){
-    var raw = ((role.dims || [])[0] == null) ? '' : String(role.dims[0]);
-    var first = (raw.split(/\n+/)[0] || '').trim();
-    if(first.length > 58) first = first.slice(0, 57) + '…';
-    return first;
-  }
-
   function renderMatrix(){
     var roles = (_matrixData && _matrixData.roles) || [];
     if(!roles.length){
