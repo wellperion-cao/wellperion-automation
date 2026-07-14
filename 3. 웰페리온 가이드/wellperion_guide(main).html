@@ -379,8 +379,8 @@
     <a data-toggle="coo-nav2" data-has-sub="true"><span class="num">🏢</span><span class="label">AI COO 운영<span class="tag">최준용M · 윤병현AM</span></span></a>
     <div class="sub-nav" data-parent="coo-nav2">
       <a data-id="O1">🏢 운영 통합 체계</a>
+      <a data-id="O2">🙋 웰페리온 종합 접수처</a>
       <a data-id="O3">📊 재등록 대시보드</a>
-      <a data-id="O4">🙋 웰페리온 종합 접수처</a>
     </div>
 
     <a data-toggle="cpo-nav2" data-has-sub="true"><span class="num">🤝</span><span class="label">AI CPO 회원관리<span class="tag">임정은M</span></span></a>
@@ -621,7 +621,7 @@
           </div>
         </div>
         <div style="margin-top:auto;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
-          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O4]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">현황 보드 →</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O2]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">현황 보드 →</a>
           <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">📊 전용 현황 페이지</a>
           <a href="http://wellperion.com/ko/reception/" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">📲 회원 접수 폼</a>
         </div>
@@ -1388,7 +1388,7 @@
     // 접수일시 필드(reg_board 원본 영문키=createdAt) 기준 이번달 판정 — 완료(처리)일자 필드는 데이터원에 없어
     // "이번달 완료"는 접수월=이번달 & 현재상태=완료 근사치(정직 표기, title 캐비엇 병기). 2026-07-10 GM 지시.
     function isThisMonth(r){ return String(r['접수일시'] || r['createdAt'] || '').slice(0, 7) === curYM(); }
-    // 6유형 아이콘·짧은이름 — O4 보드 _REG_CAT_META와 동일 정의(스크립트 스코프 분리로 값만 동기화 유지)
+    // 6유형 아이콘·짧은이름 — O2 보드 _REG_CAT_META와 동일 정의(스크립트 스코프 분리로 값만 동기화 유지)
     var VOC_CAT_META = [
       {cat:'분실물 접수',            icon:'📦', short:'분실'},
       {cat:'시설물 고장 접수',        icon:'🔧', short:'고장'},
@@ -1435,7 +1435,7 @@
   })();
   </script>
 
-  <!-- ── O4 웰페리온 종합 접수처 보드 JS ── -->
+  <!-- ── O2 웰페리온 종합 접수처 보드 JS ── -->
   <script>
   (function(){
     var _REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
@@ -1862,22 +1862,22 @@ window._regAssign = function(id, category) {
       }
     };
 
-    // O4 activateDoc 훅
+    // O2 activateDoc 훅
     (function(){
       var orig = window.activateDoc;
       if(typeof orig === 'function'){
         window.activateDoc = function(id, tabName){
           orig(id, tabName);
-          if(id === 'O4') regBoardLoad();
+          if(id === 'O2') regBoardLoad();
         };
       }
-      // O4 메뉴 클릭 직접 감지
+      // O2 메뉴 클릭 직접 감지
       document.addEventListener('click', function(ev){
-        var a = ev.target.closest('[data-id="O4"]');
+        var a = ev.target.closest('[data-id="O2"]');
         if(a) setTimeout(regBoardLoad, 200);
       });
-      // #O4 해시 딥링크 초기 진입 시 로드
-      if((window.location.hash || '').replace(/^#/,'').split('/')[0] === 'O4'){
+      // #O2 해시 딥링크 초기 진입 시 로드
+      if((window.location.hash || '').replace(/^#/,'').split('/')[0] === 'O2'){
         setTimeout(regBoardLoad, 300);
       }
     })();
@@ -3763,7 +3763,7 @@ window._regAssign = function(id, category) {
   <!-- g14 콘텐츠 제작 워크플로 -->
   <article class="doc" id="M1">
     <div class="doc-header"><h2><span class="g-id">M1</span>콘텐츠 제작 프로세스</h2><div class="meta">CMO 운영 SSOT · 제작 프로세스 + 마케팅 자동화 + 문의 Survey</div></div>
-    <p class="lead">CMO가 IG·블로그·카페·카카오·당근 5채널에 배포할 콘텐츠를 제작·자동화·문의 수집·등록 전환까지 관리하는 통합 프로세스입니다. <span style="color:var(--dim);">퍼널·전환 현황과 문의 진입점은 → <a href="#" onclick="event.preventDefault();document.getElementById('cmopub-section').scrollIntoView({behavior:'smooth',block:'start'});" style="color:var(--accent);font-weight:600;text-decoration:none;">검수·발행 ▸ 발행 후 현황·전환</a>.</span></p>
+    <p class="lead">CMO가 IG·블로그·카페·카카오·당근 5채널에 배포할 콘텐츠를 제작·자동화·문의 수집·등록 전환까지 관리하는 통합 프로세스입니다. <span style="color:var(--dim);">퍼널·전환 현황은 → <a href="#" onclick="event.preventDefault();document.getElementById('cmopub-section').scrollIntoView({behavior:'smooth',block:'start'});" style="color:var(--accent);font-weight:600;text-decoration:none;">검수·발행 ▸ 발행 후 현황·전환</a>.</span></p>
     <!-- 모듈 소개 캡슐 (2026-07-09 M1 정리 ③ — 과밀 M1 진입 오리엔테이션) -->
     <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:14px 18px;margin:14px 0 6px;">
       <div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--accent);margin-bottom:8px;">이 모듈은</div>
@@ -4057,12 +4057,12 @@ window._regAssign = function(id, category) {
     <h3><span class="ico">🏛️</span>CMO 운영 6대 기둥</h3>
     <table>
       <tr><th>#</th><th>기둥</th><th>내용</th><th>상태</th><th>지금 가능?</th></tr>
-      <tr><td>1</td><td><strong>채널별 검수 프로세스</strong></td><td>초안 → 가공완료 → CEO 검수 게이트 → 발행. 채널별 톤·CTA 체크리스트</td><td>운영 중</td><td>✅ 지금 가능</td></tr>
+      <tr><td>1</td><td><strong>채널별 검수 프로세스</strong></td><td>아래 <strong>✅ 채널별 검수 프로세스</strong> 참조 (흐름·채널별 체크포인트)</td><td>운영 중</td><td>✅ 지금 가능</td></tr>
       <tr><td>2</td><td><strong>5채널 자동 업로드</strong></td><td>인스타그램 · 네이버 블로그 · 네이버 카페(동부이촌동) · 카카오채널 · 당근채널</td><td>구축 중</td><td>⚠️ 일부 가능<br><span style="font-size:11.5px;color:var(--dim);">IG 자동발행·블로그·카페 자동임시저장 가능 / 카카오·당근은 스크립트 직접 실행</span></td></tr>
       <tr><td>3</td><td><strong>문의 Survey + 누적 시트</strong></td><td>Survey 수집 → 누적 시트(유입채널·상태) 관리</td><td>고도화</td><td>✅ 지금 가능<br><span style="font-size:11.5px;color:var(--dim);">Survey 수집·시트 운영 중 / 대시보드 고도화 중</span></td></tr>
       <tr><td>4</td><td><strong>안내 가이드</strong></td><td>예약제 · Q&amp;A · 주차 · 이용 · 요금 표준 안내문</td><td>운영 중 (주차·요금 일부 GM/CPO 확인 필요)</td><td>✅ 지금 가능</td></tr>
       <tr><td>5</td><td><strong>문의·등록 현황 대시보드</strong></td><td>위 <strong>📡 채널·발행 현황</strong> 참조 (퍼널·전환 SSOT)</td><td>정보 페이지 운영 · 문의 집계 정비 중</td><td>⚠️ 일부 가능<br><span style="font-size:11.5px;color:var(--dim);">정보 페이지 운영 · 전환 집계 정비 중</span></td></tr>
-      <tr><td>6</td><td><strong>정기 보고</strong></td><td>매주 / 매월 채널 성과 · 문의 · 등록 전환 ROI</td><td>신설 예정</td><td>❌ 아직 안 됨<br><span style="font-size:11.5px;color:var(--dim);">임시: 주간 채널 수치 수동 캡처 후 CEO 보고</span></td></tr>
+      <tr><td>6</td><td><strong>정기 보고</strong></td><td>아래 <strong>🗓️ 정기 보고</strong> 참조</td><td>신설 예정</td><td>❌ 아직 안 됨<br><span style="font-size:11.5px;color:var(--dim);">임시: 주간 채널 수치 수동 캡처 후 CEO 보고</span></td></tr>
     </table>
 
     <h3><span class="ico">✅</span>채널별 검수 프로세스</h3>
@@ -4084,7 +4084,7 @@ window._regAssign = function(id, category) {
       <tr><td><strong>① 텔레그램 알림</strong></td><td>1줄 보고(한줄 제목/한줄 내용) + montage 미리보기 송부</td><td>토큰 stdout 노출 금지</td></tr>
       <tr><td><strong>② M3 검수 큐 자동 등록</strong></td><td><code>cmo/review/review_queue.json</code>에 항목 추가, <code>status="검수 대기"</code></td><td>review_set_status 호환 스키마 · M3 페이지 참조</td></tr>
     </table>
-    <div class="callout"><strong>기본 종료 = 텔레그램 알림 + M3 검수 대기 등록.</strong> 앞으로 GM이 "검수 큐에 올려라"라고 따로 지시하지 않아도, 제작 완료 시 ①+②가 기본이다. <strong>발행은 GM이 M3에서 [승인]을 누른 뒤에만</strong> 시모가 수행한다(비가역 게이트 유지).</div>
+    <div class="callout"><strong>기본 종료 = 텔레그램 알림 + M3 검수 대기 등록.</strong> 앞으로 GM이 "검수 큐에 올려라"라고 따로 지시하지 않아도, 제작 완료 시 ①+②가 기본이다. 발행 승인 게이트는 위 <strong>📸 인스타그램 발행 파이프라인</strong> 참조(비가역).</div>
 
     <h3><span class="ico">🗓️</span>정기 보고</h3>
     <ul>
@@ -7300,8 +7300,8 @@ function crTab(btn, panelId) {
     </div>
   </article>
 
-  <!-- ── O4 웰페리온 종합 접수처 ── -->
-  <article class="doc" id="O4">
+  <!-- ── O2 웰페리온 종합 접수처 ── -->
+  <article class="doc" id="O2">
     <div class="doc-header"><h2>웰페리온 종합 접수처</h2><div class="meta">COO 관할 · 6종 접수 통합 칸반 · GAS 실시간</div></div>
     <p class="lead">분실물·시설물 고장·청결 이슈·컴플레인·직원 칭찬·직원 쓴소리 6종 접수를 한 보드에서 확인합니다.</p>
 
@@ -7360,7 +7360,7 @@ function crTab(btn, panelId) {
     'gcoo-check':'O1','gcoo-reenroll':'O3','ghome':'M1','g14':'M1',
     'gcmo-print':'M1','gcmo-funnel':'M2','cmo-publish':'M1','g16':'T1','g19':'T2',
     'M3':'M1',  // 2026-07-09: M3(검수·발행) → M1로 병합 (죽은 링크 방지 안전망)
-    'g15':'T1','T3':'T1','gm1':'G1','O5':'O4'
+    'g15':'T1','T3':'T1','gm1':'G1','O5':'O2','O4':'O2'
   };
 
   // LEGACY 안전망 — 시모(CMO) M-문서 순차 리넘버(M2→M1·M4→M2·M5→M3, 2026-07-03) 이전
