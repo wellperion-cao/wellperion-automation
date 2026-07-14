@@ -174,17 +174,11 @@ body{
 .kpi-box:nth-child(2)::before{background:var(--purple)}
 .kpi-box:nth-child(3)::before{background:var(--green)}
 .kpi-box:nth-child(4)::before{background:var(--accent)}
-.kpi-label{
-  font-size:10px;color:var(--dim-mid);font-weight:700;
-  margin-bottom:8px;letter-spacing:0.06em;
-  text-transform:uppercase;
-}
 .kpi-value{font-size:30px;font-weight:800;line-height:1;letter-spacing:-0.02em}
 .kpi-value.teal{color:var(--teal)}
 .kpi-value.green{color:var(--green)}
 .kpi-value.accent{color:var(--accent)}
 .kpi-value.purple{color:var(--purple)}
-.kpi-note{font-size:10px;color:var(--dim);margin-top:6px;line-height:1.4}
 
 /* ═══════════════════════════════════════
    섹션 레이블
@@ -255,7 +249,6 @@ body{
 /* 클릭 가능 단계 — 커서 + 호버 */
 a.funnel-step{text-decoration:none;cursor:pointer}
 a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
-.funnel-arrow{display:none} /* 구분선 방식으로 교체 */
 
 /* ═══════════════════════════════════════
    캘린더
@@ -420,7 +413,6 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
   border-bottom:1px solid var(--border-subtle);
 }
 .db-count-bar strong{color:var(--text);font-size:14px;font-weight:800}
-.db-count-bar .db-count-label{font-size:11px;color:var(--dim)}
 
 /* ── 테이블 레이아웃 ── */
 .db-table-wrap{
@@ -496,7 +488,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .editable-cell:hover{background:rgba(255,255,255,0.03)}
 .editable-cell.cell-active{background:rgba(78,196,196,0.06);cursor:default}
 .editable-cell.cell-active::after{display:none}
-.cell-saving{opacity:0.6}
 
 /* ═══════════════════════════════════════
    상태 칩 — 더 뚜렷하게
@@ -534,12 +525,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
 /* ── PII 마스크 배지 ── */
 .pii-mask{font-size:11px;color:var(--dim);font-style:italic}
-.pii-reveal-btn{
-  font-size:11px;padding:2px 8px;border-radius:6px;
-  background:var(--accent-bg);color:var(--accent);
-  border:1px solid var(--accent-border);
-  cursor:pointer;font-family:inherit;margin-left:5px;
-}
 
 /* ═══════════════════════════════════════
    저장 상태 토스트
@@ -700,7 +685,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .reg-new-badge{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:6px;background:var(--accent);color:#fff;margin-left:6px;vertical-align:middle}
 /* 영어로 접수된 문의 뱃지 — 영어 문의 누수 수리(한글+영문 탭 병합 표시). 2026-07-09 시포·GM. */
 .lang-badge-en{display:inline-block;font-size:9px;font-weight:800;padding:1px 6px;border-radius:6px;background:#2563eb;color:#fff;margin-left:6px;vertical-align:middle}
-.month-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--teal)}
 
 /* ═══════════════════════════════════════
    멤버십 회원관리
@@ -744,7 +728,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .dash-dot.reg{background:var(--green)}
 .dash-dot.mem{background:var(--accent)}
 .dash-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dash-tag{font-size:10px;font-weight:600;color:var(--dim);margin-left:auto;flex-shrink:0}
 .dash-metrics{margin-top:13px;display:flex;flex-direction:column;gap:9px}
 .dash-line{display:flex;align-items:baseline;gap:9px}
 .dash-k{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.04em;min-width:30px;flex-shrink:0}
@@ -832,10 +815,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .type-chip.soon:hover{color:var(--dim);border-color:var(--border)}
 .type-pane{display:none}
 .type-pane.active{display:block}
-.prep-slot{text-align:center;padding:56px 24px;color:var(--dim)}
-.prep-slot .prep-icon{font-size:40px;margin-bottom:12px}
-.prep-slot .prep-title{font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px}
-.prep-slot .prep-desc{font-size:13px;line-height:1.7}
 
 /* ── 가이드 문서 모달(이탈 신호 대응 등) ── */
 .gdoc-overlay{display:none;position:fixed;inset:0;z-index:120;background:rgba(0,0,0,0.55);
@@ -864,15 +843,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .data-badge.manual{background:var(--yellow-bg);color:var(--yellow)}
 .data-badge.unmeasured{background:rgba(125,123,116,0.14);color:var(--dim)}
 .matrix-table tr.unmeasured-row td{opacity:0.6}
-/* CPO 가이드 펼치기 아코디언 — 2026-06-29 시포 */
-.guide-acc{display:flex;flex-direction:column;gap:4px}
-.guide-acc-btn{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:8px 11px;border-radius:7px;border:1px solid var(--border);background:var(--paper);color:var(--text);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
-.guide-acc-btn:hover{border-color:var(--accent-border);background:var(--accent-bg)}
-.guide-acc-btn.open{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
-.guide-acc-body{padding:8px 4px;font-size:12px;overflow-x:auto}
-.guide-acc-body table{font-size:11px}
 /* 가이드 문서 진입 버튼 묶음 — 모달 열기(openGdoc). 인쇄 등 action-btn과 톤 통일. 2026-07-03 시포·GM */
-.guide-btns{display:flex;flex-wrap:wrap;gap:8px}
 .guide-doc-btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--paper);color:var(--text);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
 .guide-doc-btn:hover{border-color:var(--accent-border);background:var(--accent-bg);color:var(--accent)}
 
@@ -898,7 +869,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .funnel-bar-ret.ok{color:var(--teal)}
 .funnel-bar-ret.warn{color:var(--yellow)}
 .funnel-bar-ret.drop{color:var(--red)}
-.funnel-bar-month{color:var(--dim-mid);font-size:10px;white-space:nowrap}
 
 /* ── 강습 진행상태 상태별 컬러(배4 후속, 에메랄드 기반 재정비) — 등록=에메랄드(주인공), 나머지는 약하게 구분. 2026-07-07 시포·GM ── */
 .cell-select.st-consult{color:var(--teal);background:var(--teal-bg);border-color:var(--teal-border);font-weight:700;border-left:3px solid var(--teal)}
@@ -1156,17 +1126,20 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   .sb-fstep b{color:#e8e2d8;font-size:14px;font-weight:800}
   .sb-farrow{color:var(--dim,#7d7b74);font-size:11px}
   .sb-caveat{font-size:10px;color:var(--dim,#7d7b74);line-height:1.4;margin-top:2px}
+  #sbCollapseBody.sb-collapsed{display:none}
   @media(max-width:640px){.sb-v{font-size:18px}.sb-fstep{min-width:34px}}
   </style>
   <div class="status-board" id="cpoStatusBoard">
     <div class="sb-head">
       <span class="sb-title">📊 전환·회원 현황<span id="sbRefresh" style="font-size:11px;color:var(--dim);font-weight:400"></span></span>
-      <div class="sb-tabs" id="sbTabs">
+      <button type="button" id="sbToggle" onclick="_sbToggleCollapse()" style="margin-left:auto;background:transparent;border:1px solid var(--accent-border,rgba(183,159,138,.3));color:var(--dim-mid,#9e9b93);border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:inherit">▾ 접기</button>
+    </div>
+    <div id="sbCollapseBody">
+      <div class="sb-tabs" id="sbTabs" style="margin-bottom:10px">
         <button type="button" class="sb-tab active" data-period="today" onclick="statusBoardTab('today')">오늘</button>
         <button type="button" class="sb-tab" data-period="month" onclick="statusBoardTab('month')">이번달</button>
         <button type="button" class="sb-tab" data-period="year" onclick="statusBoardTab('year')">올해</button>
       </div>
-    </div>
     <div class="sb-metrics" id="sbMetrics">
       <div class="sb-metric"><span class="sb-k">문의</span><span class="sb-v" id="sbInq">…</span><span class="sb-d flat" id="sbInqD"></span></div>
       <div class="sb-metric"><span class="sb-k">가입</span><span class="sb-v" id="sbReg">…</span><span class="sb-d flat" id="sbRegD"></span></div>
@@ -1174,6 +1147,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     </div>
     <div class="sb-funnel" id="sbFunnel"><span class="sb-caveat">퍼널 불러오는 중…</span></div>
     <div class="sb-caveat" id="sbCaveat">전환율=등록월 기준(이번달 신규가입/이번달 문의) · 지난달 델타=같은 일자까지 공정 비교 · 누적 퍼널=전체 기간.</div>
+    </div><!-- /sbCollapseBody -->
     <!-- 오늘 처리할 것(액션 행) — 기존 히어로 존치(회귀0) -->
   <div class="summary-hero" id="cpoTodayStrip">
     <a class="sum-card sc-new" id="sumNewCard" href="javascript:void(0)" onclick="heroCardClick('new')">
@@ -1289,11 +1263,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
   <!-- ══════════════════════════════ 2. 문의 DB (CRUD) ══════════════════════════════ -->
   <!--
-    ⚠️ 접근통제 필수 (거버넌스 주석)
-    문의 DB는 회원 개인정보(이름·전화번호)를 포함합니다.
-    이 기능은 GM go 신호 + 시토(AI CTO) 접근통제(PII 보호 틀) 구축 이후에만 라이브 발효합니다.
-    코드는 준비 완료 상태이나 무인증 공개 CRUD로 라이브 운영 금지.
-    GAS 자리표시자(https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec)가 교체되면 자동 활성화됩니다.
+    ⚠️ 접근통제 (거버넌스 주석)
+    문의 DB는 회원 개인정보(이름·전화번호)를 포함 — PII_GATE 잠금, 시토(AI CTO) 접근통제 + GM go 신호 전까지 데이터 0 반환.
   -->
   <div id="pane-db" class="pane">
 
@@ -1425,31 +1396,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         2. 상담 → 가입 권유 → 가입 시 진행상황 → <strong>가입</strong><br>
         3. 가입 확정 시 진행상황 → <strong>SUC</strong> → 상단 <strong style="color:var(--accent)">등록 현황 · 멤버십 회원 관리</strong> 탭에 자동 반영<br>
         4. LOSS 시 진행상황 → <strong>LOSS</strong> + 사유 기록
-      </div>
-    </div>
-
-    <div class="section-label" style="margin-top:20px">GAS 연동 안내 — 체험달력 배포 (GM 3단계)</div>
-
-    <div class="card" style="border-left:3px solid #4caf50">
-      <div class="card-title"><span class="icon">✅</span>체험달력 배포 3단계 (지금 바로 켤 수 있음)</div>
-      <div style="font-size:13px;line-height:2;color:var(--text)">
-        <strong>1단계 — GAS 코드 붙여넣기</strong><br>
-        &nbsp;&nbsp;Apps Script 편집기에서 <code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">Survey.js</code> 파일을 열고<br>
-        &nbsp;&nbsp;<code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">_processAction(body)</code> 함수의 기존 if 블록 아래에<br>
-        &nbsp;&nbsp;정본 <code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">.deploy-funnel/Survey.js</code> 전체를 붙여넣기<br><br>
-        <strong>2단계 — 새 버전 배포 (deploymentId 유지)</strong><br>
-        &nbsp;&nbsp;① 편집기 상단 <strong>배포 &gt; 배포 관리</strong> 클릭<br>
-        &nbsp;&nbsp;② 기존 배포 옆 연필(수정) 아이콘 클릭<br>
-        &nbsp;&nbsp;③ 버전: <strong>"새 버전"</strong> 선택 후 배포 — URL(/exec)은 그대로 유지됨<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;(clasp push만으로는 /exec 반영 안 됨 — 반드시 새 버전 배포)<br><br>
-        <strong>3단계 — URL 교체</strong><br>
-        &nbsp;&nbsp;배포된 웹앱 URL을 복사한 뒤<br>
-        &nbsp;&nbsp;<code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">문의회원.html</code> 파일 내 <code style="font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px">https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec</code> (7곳) 을 일괄 교체<br>
-        &nbsp;&nbsp;(텍스트 에디터 Ctrl+H 또는 VS Code 전체 교체 사용)
-      </div>
-      <div style="margin-top:10px;padding:8px 12px;background:rgba(76,175,80,0.08);border-radius:6px;font-size:12px;color:#4caf50;font-weight:600">
-        이 3단계로 켜지는 것: <strong>체험·상담 예약 달력 탭만</strong><br>
-        문의 DB 탭(이름·전화 CRUD)은 PII_GATE 잠금 상태 유지 — 시토 보안틀 + GM go 전까지 데이터 0 반환
       </div>
     </div>
 
@@ -1600,9 +1546,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
     <!-- sub-pane: 문의 현황 -->
     <div id="lessonPane_adult_inq" class="lesson-subpane active">
-    <div class="info-box accent" style="margin-bottom:14px">
-      <strong>성인 강습 문의 현황</strong> — 종목 버킷으로 필터해 보세요.
-    </div>
     <div class="card">
       <div class="card-title">
         <span class="icon">🏊</span>성인 강습 문의 목록
@@ -1717,9 +1660,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
     <!-- sub-pane: 문의 현황 -->
     <div id="lessonPane_youth_inq" class="lesson-subpane active">
-    <div class="info-box accent" style="margin-bottom:14px">
-      <strong>유소년 강습 문의 현황</strong> — 종목 버킷으로 필터해 보세요.
-    </div>
     <div class="card">
       <div class="card-title">
         <span class="icon">🤸</span>유소년 강습 문의 목록
@@ -2832,6 +2772,22 @@ function statusBoardTab(p) {
   for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', tabs[i].getAttribute('data-period') === p);
   renderStatusBoardPeriods();
 }
+// 현황보드 접기(배944 후속·GM) — 기본: 강습=접힘(목록 우선)·멤버십=펼침. 사용자 토글은 family별 localStorage 기억.
+function _sbToggleCollapse() {
+  var body = document.getElementById('sbCollapseBody'); if (!body) return;
+  var collapsed = body.classList.toggle('sb-collapsed');
+  var fam = (typeof _curFamily !== 'undefined') ? _curFamily : 'membership';
+  try { localStorage.setItem('sb_collapsed_' + fam, collapsed ? '1' : '0'); } catch (e) {}
+  var tg = document.getElementById('sbToggle'); if (tg) tg.textContent = collapsed ? '▸ 현황 펼치기' : '▾ 접기';
+}
+function _sbApplyCollapse() {
+  var body = document.getElementById('sbCollapseBody'); if (!body) return;
+  var fam = (typeof _curFamily !== 'undefined') ? _curFamily : 'membership';
+  var saved = null; try { saved = localStorage.getItem('sb_collapsed_' + fam); } catch (e) {}
+  var collapsed = (saved != null) ? (saved === '1') : (fam === 'lesson');
+  body.classList.toggle('sb-collapsed', collapsed);
+  var tg = document.getElementById('sbToggle'); if (tg) tg.textContent = collapsed ? '▸ 현황 펼치기' : '▾ 접기';
+}
 function _sbDelta(id, now, prev, prevOk, isRate) {
   var e = document.getElementById(id); if (!e) return;
   if (_sbPeriod !== 'month' || now == null || prev == null || !prevOk) { e.className = 'sb-d flat'; e.textContent = ''; return; }
@@ -2841,6 +2797,7 @@ function _sbDelta(id, now, prev, prevOk, isRate) {
   else { e.className = 'sb-d flat'; e.textContent = '지난달 ±0'; }
 }
 function renderStatusBoardPeriods() {
+  _sbApplyCollapse();
   var cav = document.getElementById('sbCaveat');
   var lesson = (typeof _curFamily !== 'undefined' && _curFamily === 'lesson');
   if (lesson) {
