@@ -460,25 +460,21 @@ details.footnote-toggle > .fn-body{
   </div>
 
   <!-- ════════════════════════════════════════════
-       ③ 유입채널 현황 — 항상 펼침, 기간 연동 (#3+#5 GM 지시)
-       채널 × 유형 교차표(셀=문의 건수) + 합계·비중 + 출처미상률 배지
-       구 '유형×채널 교차' 섹션을 이 표에 병합(2026-06-19 GM)
-       데이터소스: type_channel_breakdown(기간연동)
+       ③+★ 채널별 현황 — 유입채널(#3+#5) + 채널별 전환율(#744) 통합 섹션
+       (GM 2026-07-14: "유입채널이랑 채널별 전환 붙일순 없나?" — 둘 다 채널 기준이라 한 섹션에서 같이 읽도록 병합)
+       위: 채널 × 유형 교차표(셀=문의 건수) + 합계·비중 + 출처미상률 배지 — type_channel_breakdown(기간연동)
+       아래: 문의 → 등록(가입) 전환율 — funnel_conversion.byChannel(기간연동 아님 — 서버 convBasis 그대로 표기)
+       두 표 모두 GAS 표준 10버킷(_canonicalChannel_)으로 채널명이 이미 통일되어 있어 같은 채널명을 위아래로 나란히 읽을 수 있음.
+       390px 폭 제약(배545 기타-열 접기 회귀 방지) 상 단일 초광폭표 대신 표 2개를 한 섹션 안에 인접 배치(각자 반응형 유지, 값 손실 없음).
        ════════════════════════════════════════════ -->
   <div class="section">
-    <div class="section-title">유입채널 현황</div>
+    <div class="section-title">채널별 현황 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">문의 유입(채널×유형) + 전환율(문의→등록) · 같은 채널명으로 나란히</span></div>
+    <div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px">문의 유입 · 채널 × 유형</div>
     <div id="inflow-channel-wrap">
       <div class="flow-skeleton sk-pulse" style="height:120px;border-radius:var(--radius-md)"></div>
     </div>
-  </div>
-
-  <!-- ════════════════════════════════════════════
-       ★ 채널별 전환율 — 문의 → 등록(가입) (배744 · funnel_conversion.byChannel 노출)
-       데이터소스: funnel_conversion(byChannel, 기간연동 아님 — 서버 convBasis 그대로 표기)
-       주의: 위 소개캡슐의 "추적 밖"(클릭→문의 CTR)과는 다른 지표 — 이 표는 문의 접수 채널 기준 문의→등록만 다룸.
-       ════════════════════════════════════════════ -->
-  <div class="section">
-    <div class="section-title">채널별 전환율 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">문의 → 등록(가입) · 표본 적은 채널은 참고용</span></div>
+    <div style="height:16px"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px">전환율 · 문의 → 등록(가입) <span style="font-weight:400">· 표본 적은 채널은 참고용</span></div>
     <div id="channel-conversion-wrap">
       <div class="flow-skeleton sk-pulse" style="height:120px;border-radius:var(--radius-md)"></div>
     </div>
@@ -541,6 +537,8 @@ var _flow = null;     // 핵심 지표 전환 흐름의 현재 날짜뷰 정규�
 var _rangeFromTo = { from: '', to: '' };  // 현재 선택된 기간 (클릭 fetch에 붙임)
 var _campPeriodLabel = '이번 달';  // 콘텐츠별 문의 카드(#4) 헤더용 현재 기간 라벨 (_rangeFromTo와 동기)
 var _skipPeriodChildFetch = false;        // 초기 부팅 병렬화: _applyPeriodData 첫 month 호출 시 자식 fetch 중복 방지
+var _reviewQueueBySlug = null;   // review_queue.json에서 만든 콘텐츠 폴더 슬러그 → {title, url} 맵 (배545: 콘텐츠별 문의 유입 링크 제목화용)
+var _campaignStatsLastData = null;  // renderCampaignStats(d)의 마지막 원본 응답 — 리뷰큐가 늦게 도착해도 제목 채워 재렌더
 
 var _DOT_COLORS = ['--f1','--f2','--f3','--f4','--f5'];
 
@@ -1633,10 +1631,69 @@ var CAMPAIGN_LABELS = {
 function _campLabel(slug) {
   if (!slug || slug === '직접·기타') return '직접 · 기타';
   if (CAMPAIGN_LABELS[slug]) return CAMPAIGN_LABELS[slug];
-  // 폴백: 날짜 접두사(6자리 YYMMDD) → 'YY.MM.DD' 형식 + 나머지
-  var m = slug.match(/^(\d{2})(\d{2})(\d{2})_?(.*)/);
-  if (m) return m[1] + '.' + m[2] + '.' + m[3] + (m[4] ? ' · ' + m[4].replace(/_/g,' ') : '');
+  // 폴백: 날짜 접두사(6자리 YYMMDD) 제거 + 언더스코어→공백 (예: '260707_공식_시설_F3_회복' → '공식 시설 F3 회복')
+  var m = slug.match(/^\d{6}_?(.*)/);
+  if (m && m[1]) return m[1].replace(/_/g,' ');
   return slug.replace(/_/g,' ');
+}
+
+// review_queue.json(콘텐츠 발행 큐)에서 슬러그별 실제 제목·발행 URL 조회 — 있으면 그대로 쓰고, 없으면 null(지어내지 않음).
+function _campEntry(slug) {
+  if (!_reviewQueueBySlug) return null;
+  return _reviewQueueBySlug[slug] || null;
+}
+
+// scripts/cta_utm.py의 slugify_campaign()을 그대로 JS 포팅 — 콘텐츠 폴더명에서 실제 발행 시 UTM에
+// 박히는 슬러그를 재현(날짜YYMMDD + ASCII 영숫자 토큰만, 한글 제거 + epN 접미사). 예: 'instagram/260707_공식_시설_F2_편의시설'
+// → '260707_F2' (campaign_stats 실측값과 정확히 일치 — 2026-07-14 라이브 검증). 짐작 매칭이 아니라 같은 생성 규칙 역산이라 안전.
+function _slugifyCampaignJs(pathOrName) {
+  var parts = pathOrName.split(/[\/\\]/);
+  var epSuffix = '';
+  for (var i = parts.length - 1; i >= 0; i--) {
+    var mFull = parts[i].trim().match(/^ep([1-9])$/i);
+    if (mFull) { epSuffix = '_ep' + mFull[1]; break; }
+  }
+  if (!epSuffix) {
+    var m2 = pathOrName.match(/(?<![A-Za-z0-9])ep([1-9])(?![A-Za-z0-9])/i);
+    if (m2) epSuffix = '_ep' + m2[1];
+  }
+  var dateToken = '', namePart = '';
+  for (var j = 0; j < parts.length; j++) {
+    var dm = parts[j].match(/(?<!\d)(\d{6})(?!\d)/);
+    if (dm) { dateToken = dm[1]; namePart = parts[j]; break; }
+  }
+  var asciiTokens = [];
+  if (namePart) {
+    var found = namePart.match(/[A-Za-z][A-Za-z0-9]*/g) || [];
+    asciiTokens = found.filter(function(t) { return !/^ep[1-9]$/i.test(t); });
+  }
+  if (asciiTokens.length) return (dateToken ? dateToken + '_' : '') + asciiTokens.join('_') + epSuffix;
+  if (dateToken) return dateToken + epSuffix;
+  return '';
+}
+
+// GM 2026-07-14: "단순 게시물 보기로 링크 걸어버리면 좀 그렇네, 적어도 제목은 달아줘야지."
+// review_queue.json은 이미 다른 페이지(AI시리즈보드.html)에서도 클라이언트 fetch하는 공개 정적 파일 — 신규 위험 없음.
+function loadReviewQueueTitles() {
+  fetch('../review/review_queue.json', { redirect: 'follow' })
+    .then(function(r) { return r.json(); })
+    .then(function(items) {
+      if (!Array.isArray(items)) return;
+      var map = {};
+      items.forEach(function(it) {
+        if (!it || !it.folder || !it.title || !it.post_url) return;
+        var slug = _slugifyCampaignJs(it.folder);
+        if (!slug) return;  // 날짜·ASCII 토큰이 전혀 없는 폴더(예: 개인계정 한글전용명)는 UTM 슬러그를 만들 수 없어 제외
+        var isInstagram = /인스타그램|instagram/i.test(it.channel || '');
+        // 같은 슬러그로 여러 채널(블로그·카페·인스타)이 발행된 경우 인스타그램 항목을 우선(클릭 링크가 주로 인스타 게시물)
+        if (!map[slug] || (isInstagram && !map[slug]._ig)) {
+          map[slug] = { title: it.title, url: it.post_url, _ig: isInstagram };
+        }
+      });
+      _reviewQueueBySlug = map;
+      if (_campaignStatsLastData) renderCampaignStats(_campaignStatsLastData);  // 이미 렌더된 뒤 도착해도 제목만 다시 채움
+    })
+    .catch(function(e) { console.warn('[review_queue] 콘텐츠 제목 로드 실패:', e && e.message); });
 }
 
 function loadCampaignStats() {
@@ -1653,6 +1710,7 @@ function loadCampaignStats() {
 function renderCampaignStats(d) {
   var wrap = document.getElementById('campaign-stats-wrap');
   if (!wrap) return;
+  _campaignStatsLastData = d;  // review_queue 제목이 늦게 도착했을 때 재렌더용 캐시(배545)
 
   // 오류 또는 데이터 없음
   if (!d || !d.ok || !d.campaigns || d.campaigns.length === 0) {
@@ -1689,7 +1747,14 @@ function renderCampaignStats(d) {
   var maxClicks = content[0] ? content[0].clicks : 1;
 
   var rows = content.map(function(item, i) {
-    var label = _campLabel(item.campaign);
+    // 배545: GM "단순 게시물 보기로 링크 걸어버리면 좀 그렇네, 적어도 제목은 달아줘야지."
+    // review_queue.json에 실제 발행 제목·URL이 있으면 그걸로 진짜 게시물 링크를 걸고,
+    // 없으면 슬러그에서 안전하게 뽑은 읽을 수 있는 제목만 표시(지어낸 제목·가짜 링크 없음).
+    var entry = _campEntry(item.campaign);
+    var labelText = entry ? esc(entry.title) : esc(_campLabel(item.campaign));
+    var label = entry
+      ? '<a href="' + esc(entry.url) + '" target="_blank" rel="noopener" style="color:var(--text)">' + labelText + ' ↗</a>'
+      : labelText;
     var pct   = maxClicks > 0 ? Math.round((item.clicks / maxClicks) * 100) : 0;
     var rankColor = i === 0 ? 'var(--accent)' : i === 1 ? 'var(--blue)' : i === 2 ? 'var(--purple)' : 'var(--dim)';
     return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">'
@@ -1851,6 +1916,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadClickStats();              // ↑ #1 유형별 클릭수에 필요 — period 응답 대기 없이 병렬
   loadTypeChannel();             // ↑ #3 유입채널 현황(기간 연동) — period 응답 대기 없이 병렬
   loadCampaignStats();           // ↑ #4 콘텐츠별 문의 유입 — 기간 연동(_rangeFromTo=이번 달 선세팅됨, 2026-07-08 배선)
+  loadReviewQueueTitles();       // ↑ #4 콘텐츠별 문의 유입 링크 제목화(배545) — review_queue.json, 기간 무관 별도 fetch
   loadIgReach();                 // ↑ #4-3 인스타그램 노출(도달)(ig_reach_collector.py 자동수집, 배#546) — 기간 무관 정적 파일
   loadLeadTime();                // ↑ ★ 문의→등록 평균 전환 소요일(이번 달 범위) — 병렬 발사
   // 이후 기간/월 전환 등 사용자 인터랙션에서는 _applyPeriodData가 평소대로 자식 fetch 수행
