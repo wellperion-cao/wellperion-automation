@@ -393,11 +393,11 @@
     "task_id": "CTO-2026-07-14-NORTHSTAR-SIGNAL-GUARD",
     "clevel": "cto",
     "title": "[시토] 북극성 추천기 신호② 지표비교 가드 — 비교불가 지표 뺄셈 방지(전환율 착시 재발 차단)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-14",
-    "note": "[2026-07-14 시포→시토 핸드오프] 918 진단결과: 추천기 LLM이 kpi_values의 문의_가입_전환율(39.9·전화매칭·전체누적)과 이번달_전환율(15.7·등록월정밀)을 나란히 받아 '급락'으로 뺄셈=착시 카드 생성. 시포 1차처방=kpi_collector에 비교가능 기준선(이번달_전환율_전화매칭·전월_전환율) 추가·커밋 05d3932a(밑줄없는 신규필드라 프롬프트 노출=완화). 남은 가드: northstar_recommender.py _build_prompt() 178행 `if not k.startswith('_')`가 _전환_note(⚠️비교금지 경고)를 프롬프트서 누락 → 역할별 _*_note 가드를 'KPI 현재치' 블록에 포함하거나 지표쌍 비교규칙을 프롬프트에 명시. 가역·내부툴·GM go 불요.",
-    "next": "",
+    "note": "[2026-07-14 시포→시토 핸드오프] 918 진단결과: 추천기 LLM이 kpi_values의 문의_가입_전환율(39.9·전화매칭·전체누적)과 이번달_전환율(15.7·등록월정밀)을 나란히 받아 '급락'으로 뺄셈=착시 카드 생성. 시포 1차처방=kpi_collector에 비교가능 기준선(이번달_전환율_전화매칭·전월_전환율) 추가·커밋 05d3932a(밑줄없는 신규필드라 프롬프트 노출=완화). 남은 가드: northstar_recommender.py _build_prompt() 178행 `if not k.startswith('_')`가 _전환_note(⚠️비교금지 경고)를 프롬프트서 누락 → 역할별 _*_note 가드를 'KPI 현재치' 블록에 포함하거나 지표쌍 비교규칙을 프롬프트에 명시. 가역·내부툴·GM go 불요. [2026-07-14 시토 완결] scripts/northstar_recommender.py _build_prompt(): ①KPI 현재치 블록 아래 '⚠️ 지표비교 주의' 줄 신설 — kv의 모든 '_*_note'(예 _전환_note·_note)를 역할별로 자동 수집해 프롬프트에 노출(코드 일반화·향후 신규 note 필드도 자동 포함) ②[지표비교 가드] 규칙 문단 추가 — 산정기준 다른 지표 뺄셈 금지·노트 없어도 정의·기간 다르면 '비교불가'로 신호②에 쓰지 말 것 명시. 실측검증: collect_inputs()+_build_prompt() 직접호출로 cpo 블록에 ⚠️줄 렌더 확인, kpi_collector._cpo_funnel_conversion() 라이브 재호출로 05d3932a 신규필드(이번달_전환율_전화매칭·전월_전환율)+전체 비교금지 note가 프롬프트에 그대로 반영됨을 확인, `python scripts/northstar_recommender.py --stdout-only` e2e 드라이런 정상완주(ClaudeCLI 정상 생성·에러0).",
+    "next": "🏁 입항 완료 — 다음 불필요(가드 상시 적용). 확대 여지(비목표): _role_progress()의 KPI 요약도 동일 note 필터링을 쓰지만 GM 카드 표시용(post-hoc)이라 착시 유발 경로 아님 — 별도 트리거 없으면 미착수.",
     "depends_on": "",
     "ship_no": 907
   },
@@ -537,5 +537,19 @@
     "next": "페이지 앵커 실측(히어로·mdash·funnel·churn)→통합 보드 구현→시크릿 크롬 실측 PASS→커밋·푸시.",
     "depends_on": "",
     "ship_no": 944
+  },
+  {
+    "task_id": "CMO-2026-07-14-ADHOC-c0ba1950",
+    "clevel": "cmo",
+    "title": "[시모] 인스타 노출↔반응 정직 병치 패널(배545) — 도달·링크클릭 나란히, 억지 CTR 금지",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 948,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01AzqYy1nsf2sxeJY4f5KSFu (CLI ad-hoc · 커밋 c0ba1950)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c0ba19501dcd031fba400f6f7a98b9b11332fc4b"
   }
 ]

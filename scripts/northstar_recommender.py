@@ -176,18 +176,31 @@ def _build_prompt(inputs: dict) -> str:
     for r in inputs["roles"]:
         kv = r["kpi_values"]
         kv_str = ", ".join(f"{k}={v}" for k, v in kv.items() if not k.startswith("_")) or "(집계없음)"
+        # 지표비교 가드(시토 배907 · 2026-07-14): kv_str 은 "_"접두 필드를 제외하므로
+        # _전환_note 류(⚠️비교금지 경고)가 프롬프트에서 누락되어 LLM이 서로 다른 산정기준
+        # 지표를 뺄셈해 '급락/급등' 착시를 만들 수 있었다(918 진단). 역할별 "_*_note" 가드를
+        # 별도 줄로 노출해 두뇌가 동일기준 비교쌍만 쓰도록 함.
+        note_str = " / ".join(
+            v.strip() for k, v in kv.items()
+            if k.startswith("_") and k.endswith("_note") and isinstance(v, str) and v.strip()
+        )
         active = "; ".join(f"#{s['ship_no']} {s['title'][:40]}" for s in r["active_ships"]) or "(없음)"
         nexts = " / ".join(n[:70] for n in r["next_steps"][:3]) or "(없음)"
-        lines.append(
+        block = (
             f"\n■ [{r['id']}] {r['title']}({r['name']})\n"
             f"  · 북극성: {r['northstar'][:200]}\n"
             f"  · KPI 정의: {r['kpi_def'][:160]}\n"
             f"  · KPI 현재치: {kv_str}\n"
+        )
+        if note_str:
+            block += f"  · ⚠️ 지표비교 주의: {note_str}\n"
+        block += (
             f"  · 소유(owns): {', '.join(r['owns']) or '(없음)'}\n"
             f"  · 확장아이디어(ideas): {r['ideas'][:120] or '(없음)'}\n"
             f"  · 현재 진행중 배(active·중복금지): {active}\n"
             f"  · 완료건 다음 한 걸음(next): {nexts}"
         )
+        lines.append(block)
     roles_block = "\n".join(lines)
 
     role_list_str = "/".join(TARGET_ROLES)
@@ -206,6 +219,7 @@ def _build_prompt(inputs: dict) -> str:
 [추천 규칙]
 - 신호 3종 중 가장 적합한 근거로: ①북극성 갭(북극성 서술 대비 비어있는 다음 걸음·owns/ideas 참고) ②KPI 미달(KPI 현재치가 목표·정의 밑) ③다음 한 걸음(완료건 next 중 미착수).
 - 우선순위 가중: 북극성 직접기여 > KPI 미달 시급 > 브릿지 연속성.
+- [지표비교 가드] "KPI 현재치" 안에 이름이 비슷하거나 겹쳐 보이는 값이 여러 개 있어도, 산정기준(집계기간·매칭방식·분모)이 다르면 절대 단순 뺄셈으로 "급락/급등"을 판단하지 마라. "⚠️ 지표비교 주의" 줄이 있으면 그 지침의 동일기준 비교쌍끼리만 비교하라. 노트가 없어도 정의·기간이 다른 지표끼리는 "비교불가"로 간주하고 신호②(KPI 미달) 근거로 쓰지 말 것 — 착시로 인한 잘못된 추천을 금지한다.
 - 중복방지: 이미 active 인 배와 겹치는 추천 금지.
 - 대상 역할({role_list_str}) 전체에서 **가장 가치 높은 단 하나**만(웰리의 판단으로 결정).
 - **반드시 1순위 하나를 명확히 고르고** rank=1로 표시한 뒤, 왜 1순위인지 one_reason에 한 줄로 적는다.

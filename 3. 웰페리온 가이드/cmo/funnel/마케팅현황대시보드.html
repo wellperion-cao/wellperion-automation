@@ -393,6 +393,18 @@ details.footnote-toggle > .fn-body{
   </div>
 
   <!-- ════════════════════════════════════════════
+       ★ 채널별 전환율 — 문의 → 등록(가입) (배744 · funnel_conversion.byChannel 노출)
+       데이터소스: funnel_conversion(byChannel, 기간연동 아님 — 서버 convBasis 그대로 표기)
+       주의: 위 소개캡슐의 "추적 밖"(클릭→문의 CTR)과는 다른 지표 — 이 표는 문의 접수 채널 기준 문의→등록만 다룸.
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">채널별 전환율 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">문의 → 등록(가입) · 표본 적은 채널은 참고용</span></div>
+    <div id="channel-conversion-wrap">
+      <div class="flow-skeleton sk-pulse" style="height:120px;border-radius:var(--radius-md)"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
        ★ 전환 속도 — 문의→등록 평균 소요일 (lead_time_stats · 기간연동)
        데이터소스: 신규문의 시트 문의일 ↔ '등록일(자동)' 차이. 표본 적으면(<5) 참고용 안내.
        ════════════════════════════════════════════ -->
@@ -873,11 +885,66 @@ async function loadFunnelConversion() {
     // 모듈 변수 저장 후 유형별 전환표 렌더 (유입채널 현황은 loadTypeChannel이 담당)
     _fcData = data;
     renderConversionFlow();
+    renderChannelConversion();  // 채널별 전환율(문의→등록, 배744) — byChannel 그대로 노출
     if (_igReachSummary) renderIgReach(_igReachSummary);  // IG 노출 위젯의 참고 흐름(문의)도 최신화
 
   } catch (e) {
     console.warn('[funnel_conversion] 로드 실패:', e.message);
   }
+}
+
+// ─── 채널별 전환율(문의→등록) — funnel_conversion.byChannel 그대로 노출 (배744) ──────
+// 분자·분모 정본 = funnel_conversion 단일 엔드포인트(byChannel 합 = total과 항상 정합, stage_funnel류 분모폭증 없음).
+// 표본 5건 미만은 leadtime-stats와 동일 기준선(⚠ 표본 적음)으로 참고용 라벨만 붙이고 %는 숨기지 않음(날조 대신 투명 표기).
+// 클릭→문의 CTR("추적 밖" 표기, 소개캡슐)과는 완전히 다른 지표 — 절대 곱하거나 이어 붙이지 않는다.
+function renderChannelConversion() {
+  var el = document.getElementById('channel-conversion-wrap');
+  if (!el) return;
+  if (!_fcData || !Array.isArray(_fcData.byChannel)) {
+    el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px">집계 준비 중</div>';
+    return;
+  }
+
+  var rows = _fcData.byChannel.slice();
+  rows.sort(function(a, b) {
+    if ((a.channel === ETC_CHANNEL) !== (b.channel === ETC_CHANNEL)) return a.channel === ETC_CHANNEL ? 1 : -1;
+    return b.inquiries - a.inquiries;
+  });
+
+  if (!rows.length) {
+    el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px;font-style:italic">채널별 전환 집계 준비 중</div>';
+    return;
+  }
+
+  var thead = '<thead><tr><th>채널</th><th style="text-align:right">문의</th><th style="text-align:right">등록(전환)</th><th style="text-align:right">전환율</th></tr></thead>';
+  var bodyHtml = rows.map(function(r, i) {
+    var colorVar = 'var(' + _DOT_COLORS[i % _DOT_COLORS.length] + ')';
+    var lowN = r.inquiries > 0 && r.inquiries < 5;
+    var rateCell;
+    if (!r.inquiries) rateCell = '<span style="color:var(--dim)">—</span>';
+    else if (lowN) rateCell = '<span style="font-size:12px">' + r.rate + '%</span> <span style="color:var(--red);font-size:10px;white-space:nowrap">⚠표본부족</span>';
+    else rateCell = '<span style="font-weight:700">' + r.rate + '%</span>';
+    return '<tr>'
+      + '<td style="min-width:100px;white-space:nowrap"><span class="channel-dot" style="background:' + colorVar + '"></span>' + esc(r.channel) + '</td>'
+      + '<td style="text-align:right">' + Number(r.inquiries || 0).toLocaleString('ko-KR') + '</td>'
+      + '<td style="text-align:right;font-weight:600">' + Number(r.converted || 0).toLocaleString('ko-KR') + '</td>'
+      + '<td style="text-align:right">' + rateCell + '</td>'
+      + '</tr>';
+  }).join('');
+
+  var t = _fcData.total || {};
+  var footRow = '<tr style="border-top:2px solid var(--border)"><td style="font-weight:700;color:var(--dim)">합계</td>'
+    + '<td style="text-align:right;font-weight:700">' + Number(t.inquiries || 0).toLocaleString('ko-KR') + '</td>'
+    + '<td style="text-align:right;font-weight:700">' + Number(t.converted || 0).toLocaleString('ko-KR') + '</td>'
+    + '<td style="text-align:right;font-weight:800;color:var(--accent)">' + (t.rate || 0) + '%</td></tr>';
+
+  var basisNote = _fcData.convBasis ? esc(_fcData.convBasis) : '유효회원∪강습등록 전화매칭';
+
+  el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">'
+    + '<table class="channel-table">' + thead + '<tbody>' + bodyHtml + footRow + '</tbody></table>'
+    + '<div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">'
+    + '채널 = 문의 접수 시 선택한 경로 · 전환 판정 = ' + basisNote + ' · 표본 5건 미만은 ⚠표본부족(참고용, 날조 대신 투명 표기) · 위 소개캡슐의 클릭→문의 "추적 밖"(CTR)과는 별개 지표이니 서로 곱하지 마세요 · \'' + ETC_CHANNEL + '\'는 문의 시점 유입경로 미기록분이라 전환 귀속 신뢰도가 낮습니다.'
+    + '</div></div>';
 }
 
 // ─── 문의→등록 평균 전환 소요일 (lead_time_stats · 기간연동) ──────
