@@ -210,9 +210,7 @@
 
   <div class="done-banner" id="doneBanner">✓ 오늘 점검이 기록되었습니다. 수정 후 다시 전송하면 덮어쓰기 됩니다.</div>
 
-  <div class="setup-note" id="setupNote">
-    <b>최초 1회 설정 필요</b> — 제출 시 구글 시트에 자동 기록되게 하려면 Apps Script 주소(<code>ENDPOINT</code>) 연결이 필요합니다. 우측 상단 <b>기록 시트</b> 버튼으로 기록 시트는 바로 열 수 있습니다.
-  </div>
+
 </main>
 
 <div class="footbar">
@@ -395,8 +393,6 @@ function init(){
     else{toast("기록 시트 주소(SHEET_URL)를 먼저 설정해 주세요.",true);}
   });
   if(SHEET_URL){dbBtn.setAttribute("href",SHEET_URL);dbBtn.setAttribute("target","_blank");dbBtn.setAttribute("rel","noopener");}
-
-  if(ENDPOINT)document.getElementById("setupNote").style.display="none";
 }
 init();
 
