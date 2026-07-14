@@ -1751,6 +1751,19 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
             lines.append(mrate)
         status = "\n".join(lines)
 
+        # 지원부 오전 미이행 항목 노출 — 실무진이 '당일 점검 대상 아님' 판별해 매뉴얼 수정 요청용.
+        # (GM 2026-07-14: 이행률<100%는 대개 당일 비대상 항목이 분모에 남은 것 · 매뉴얼 정리 실무 진행 중 · 알림에서만 노출)
+        # 12시엔 오전 회차만 마감 대상(저녁 pm/close는 아직 예정이라 미이행이 정상 → 노출 제외).
+        ubs = sl.get("uncheckedByShift") or {}
+        am_un = ubs.get("am") or {}
+        am_items = sorted(set((am_un.get("m") or []) + (am_un.get("f") or [])))
+        unchecked_block = ""
+        if am_items:
+            shown = ", ".join(am_items[:12]) + (f" 외 {len(am_items) - 12}건" if len(am_items) > 12 else "")
+            unchecked_block = (
+                f"📌 지원부 오전 미이행 {len(am_items)}건 — 당일 점검 대상이 아니면 매뉴얼 수정 요청 주세요\n  · {shown}"
+            )
+
         # 이상 내용(기준이탈 상세) — 시토 918 유용분 보존(GM '어떤 문제였는지')
         if ooc_cnt:
             issue = _build_facility_ooc_detail(monthly, today)  # "⚠️ 시설부 기준이탈 N건\n  · 항목: 값 (기준 lo~hi)"
@@ -1764,7 +1777,7 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
         fac_work = fac_board.get("work")
         work_block = f"─ 시설부 작업사항 ─\n{fac_work}" if fac_work else ""
 
-        parts = [status, issue] + ([work_block] if work_block else [])
+        parts = [status] + ([unchecked_block] if unchecked_block else []) + [issue] + ([work_block] if work_block else [])
         body_safe = html.escape("\n\n".join(parts), quote=False)
         link_line = (
             f'🔗 대시보드 — <a href="{support_dash}">지원부</a> · '
