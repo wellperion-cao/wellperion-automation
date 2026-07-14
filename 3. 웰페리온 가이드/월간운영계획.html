@@ -1113,7 +1113,7 @@
   // ── 읽기: 정적 정본(plan)=raw-GitHub 먼저(캐시 허용·수 ms) → 실패 시에만 GAS read_file 폴백. ──
   //    (기존 GAS-먼저는 매번 느린 길을 먼저 태워 첫 렌더를 지연시켰음. raw는 커밋 즉시 반영 · 편집 저장은 in-memory 모델로 갱신하므로 raw-먼저로 안전 — 2026-07-04 성능개선)
   function readPlan(){
-    return fetch(RAW_BASE + PLAN_PATH, {cache:'default'})
+    return fetch(RAW_BASE + PLAN_PATH + '?cb=' + Date.now(), {cache:'no-store'})
       .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.json(); })
       .catch(function(){
         return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -1124,7 +1124,7 @@
   }
   // ── 팀별 월 목표매출 정본(고정) 읽기 — raw-먼저→GAS 폴백. ──
   function readSalesTargets(){
-    return fetch(RAW_BASE + TARGETS_PATH, {cache:'default'})
+    return fetch(RAW_BASE + TARGETS_PATH + '?cb=' + Date.now(), {cache:'no-store'})
       .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.json(); })
       .catch(function(){
         return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -1136,7 +1136,7 @@
   }
   // ── KPI 자동집계(kpi_values.json) 읽기 — 🔧 점검 현황용. raw-먼저→GAS 폴백. 실패=null ──
   function readKpiValues(){
-    return fetch(RAW_BASE + KPI_PATH, {cache:'default'})
+    return fetch(RAW_BASE + KPI_PATH + '?cb=' + Date.now(), {cache:'no-store'})
       .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.json(); })
       .catch(function(){
         return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
