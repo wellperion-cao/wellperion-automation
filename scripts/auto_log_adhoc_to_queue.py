@@ -27,10 +27,17 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from contextlib import nullcontext
 from pathlib import Path
+
+# ① 중복배 억제(2026-07-14 시토·배993): 커밋이 명시적으로 umbrella 배를 선언하면
+#   (제목/본문에 [umbrella:TASK_ID] · [parent:TASK_ID] · [배:TASK_ID]) 새 완료-배를
+#   만들지 않고 그 umbrella 배 note 에 한 줄 흡수한다(한 기능=한 배). 명시 마커일 때만
+#   억제 — 마커 없거나 umbrella 미발견이면 기존 동작(독립 ad-hoc 배 기록) 그대로 유지.
+_UMBRELLA_RE = re.compile(r"\[(?:umbrella|parent|배)\s*:\s*([A-Za-z0-9_\-]+)\]", re.IGNORECASE)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -184,6 +191,15 @@ def _attribute_clevel(root: str, subject: str, body: str) -> str:
             idx = pos + 1
     # ③ 기본 — 전사 소유자 ceo(웰리). 세션마커 폴백 폐지(멀티세션 오귀속 방지).
     return "ceo"
+
+
+def _find_umbrella(meta: dict):
+    """커밋 제목/본문에서 명시 umbrella 마커([umbrella:ID]/[parent:ID]/[배:ID])의
+    task_id 를 뽑는다. 없으면 None(→ 기존 동작: 독립 배 기록)."""
+    m = _UMBRELLA_RE.search(meta.get("subject") or "")
+    if not m:
+        m = _UMBRELLA_RE.search(meta.get("body") or "")
+    return m.group(1) if m else None
 
 
 def _should_skip(meta: dict, queue: list) -> bool:
@@ -366,6 +382,28 @@ def main() -> int:
 
             if _should_skip(meta, queue):
                 return 0
+
+            # ① umbrella 마커 흡수: 명시 parent 배가 큐에 있으면 새 배 대신 note 흡수.
+            um = _find_umbrella(meta)
+            if um is not None:
+                target = None
+                for it in queue:
+                    if isinstance(it, dict) and it.get("task_id") == um:
+                        target = it
+                        break
+                if target is not None:
+                    sha7 = meta["short"]
+                    prev = str(target.get("note") or "")
+                    if sha7 in prev:  # 멱등 — 이미 흡수됨.
+                        return 0
+                    clean = _strip_conventional_prefix(meta["subject"])
+                    line = f"- [{meta['date']}] {clean} (커밋 {sha7})"
+                    target["note"] = (prev + ("\n" if prev else "") + line).strip()
+                    if not _write_queue(queue_path, queue, crlf):
+                        return 0
+                    _commit_queue(root, sha7, str(target.get("clevel") or "cto"))
+                    return 0
+                # 마커는 있으나 umbrella 미발견 → 기존 동작(새 배)로 폴백.
 
             # ship_no = 활성 큐 + 아카이브 통틀어 max+1 (전역 유니크·재사용 방지).
             archive_path = os.path.join(root, ARCHIVE_REL)

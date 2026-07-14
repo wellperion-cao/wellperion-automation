@@ -8806,6 +8806,25 @@ function crTab(btn, panelId) {
         items.forEach(function(it){ if (it._sheetsId) sheetIds[it._sheetsId] = true; });
         var CLEVEL_LABEL = { ceo:'AI CEO', cmo:'AI CMO', cto:'AI CTO', coo:'AI COO', cfo:'AI CFO', cpo:'AI CPO', chro:'AI CHRO' };
         var CLEVEL_NICK  = { ceo:'웰리', cmo:'시모', cto:'시토', coo:'시우', cfo:'시뽀', cpo:'시포', chro:'시로', gm:'GM', gm1:'GM' };
+        // ── 완결·대기 IN_PROGRESS 재분류 (2026-07-14 시토·배993) ──────────────
+        //   일 끝났고 '나중 확인/외부 대기'만 남은 IN_PROGRESS 배가 '🚢 진행중'에
+        //   계속 잔류하던 반복버그 수리(GM 3연속 지적). 데이터모델 status 는
+        //   IN_PROGRESS 그대로 두고(웰리승인 불요) 렌더 분류만 '대기'(⚓ 예정 항구)로
+        //   내린다. 순수 가역 — 이 함수/분기만 되돌리면 원복.
+        //   판정: next(다음 한 줄)에 완결 마커(🔗·완결·마감) 또는 (완료 + 대기신호)면
+        //   '완결+대기'로 본다. 상시소유·차기실행(🚀·…실행) 배는 마커가 없어 진행중 유지.
+        function gm1QDoneWaiting(nextTxt){
+          var s = String(nextTxt || '').trim();
+          if (!s) return false;
+          // 👉/🚀 로 시작 = '다음에 이걸 실행' 활성 지시 → 파킹 아님(진행중 유지).
+          if (s.indexOf('👉') === 0 || s.indexOf('🚀') === 0) return false;
+          if (s.indexOf('🔗') >= 0 || s.indexOf('완결') >= 0 || s.indexOf('마감') >= 0) return true;
+          if (s.indexOf('완료') >= 0) {
+            var waits = ['다음 세션','GM go','데이터 대기','대기(','발효','재배포'];
+            for (var wi = 0; wi < waits.length; wi++) { if (s.indexOf(waits[wi]) >= 0) return true; }
+          }
+          return false;
+        }
         queue.forEach(function(q){
           var _qActive = (q.status === 'PENDING' || q.status === 'IN_PROGRESS');
           var _qHist = (q.status === 'DONE' || q.status === '완료' || q.status === '폐기');
@@ -8822,10 +8841,16 @@ function crTab(btn, panelId) {
           var _shipDisp = _nick + (q.ship_no != null ? ' ' + q.ship_no : '');
           var statusMap = { PENDING:'대기', IN_PROGRESS:'진행중', DONE:'완료', '완료':'완료', '폐기':'폐기' };
           var _qDone = (q.status === 'DONE' || q.status === '완료');
+          // 완결+대기 IN_PROGRESS 는 '대기'(⚓ 예정 항구)로 내려 진행중 잔류 방지 (배993)
+          var _effStatus = (q.status === '폐기')
+            ? '폐기'
+            : (q.status === 'IN_PROGRESS' && gm1QDoneWaiting(q.next))
+              ? '대기'
+              : (statusMap[q.status] || '진행중');
           items.push({
             id: qid,
             title: String(q.title || tid),
-            status: (q.status === '폐기') ? '폐기' : (statusMap[q.status] || '진행중'),
+            status: _effStatus,
             category: '업무',
             description: String(q.next || q.summary || ''),
             isToday: true,

@@ -184,6 +184,7 @@ def update_queue_with_bridge(
     terminal: bool,
     artifact_url: str | None,
     dry_run: bool,
+    next_parent: str | None = None,
 ) -> tuple[str, bool]:
     """
     일의 브릿지(Work Bridge): _queue.json(중앙 큐 = 단일 진실)에 완료 + '다음'을 구조로 기록.
@@ -193,6 +194,11 @@ def update_queue_with_bridge(
     - --next 가 있으면 '다음'을 PENDING 작업으로 큐에 append(depends_on=task_id, origin='bridge')
       → 다음 부팅이 자동으로 집을 수 있게(브릿지의 핵심: 완료가 '다음'을 낳는다).
     - --next 도 --terminal 도 없으면 next_missing=True 로 '끊김'을 가시화(차단하진 않음).
+
+    ① 중복배 억제(2026-07-14 시토·배993): --next-parent(umbrella task_id)가 주어지고
+       그 umbrella 배가 큐에 있으면, '다음'을 새 배로 append 하지 않고 umbrella 의
+       note 에 한 줄 흡수한다(한 기능=한 배 유지). 명시적 parent 필드일 때만 억제 —
+       미지정/미발견이면 기존 동작(새 배 append) 그대로(애매하면 현행 유지).
 
     반환: (label, changed) — label 은 텔레그램/로그 1줄, changed 는 큐 변경 여부.
     """
@@ -229,8 +235,22 @@ def update_queue_with_bridge(
                 t["next_missing"] = True
             break
 
+    # ① 명시적 parent 지정 시: 새 배 대신 umbrella note 에 흡수(중복배 억제).
+    umbrella = None
+    if next_desc and next_parent:
+        for t in queue:
+            if isinstance(t, dict) and t.get("task_id") == next_parent:
+                umbrella = t
+                break
+
     appended_id = None
-    if next_desc:
+    if next_desc and umbrella is not None:
+        prev_note = str(umbrella.get("note") or "")
+        line = "- [" + today + "] " + next_desc + " (배 " + str(task_id) + ")"
+        if line not in prev_note:  # 멱등
+            umbrella["note"] = (prev_note + ("\n" if prev_note else "") + line).strip()
+        label = "다음(umbrella " + str(next_parent) + " 흡수)→ " + next_desc
+    elif next_desc:
         nclevel = (next_clevel or clevel).lower()
         appended_id = "NEXT-" + local_now.strftime("%Y%m%d-%H%M%S")
         queue.append({
@@ -412,6 +432,10 @@ def parse_args() -> argparse.Namespace:
                    help='[완료 시 필수] 이 작업이 낳는 다음 한 줄(브릿지). 예: "M5 검수카드에 발행 결과 동기화"')
     p.add_argument("--next-clevel", dest="next_clevel", default=None,
                    help="다음 작업 담당 C-Level. 생략 시 --clevel 동일.")
+    p.add_argument("--next-parent", dest="next_parent", default=None,
+                   help="[선택] 이 완료가 기존 umbrella 배의 하위단계면 그 umbrella task_id 를 "
+                        "지정한다. 지정 시 '다음'을 새 배로 만들지 않고 umbrella note 에 흡수 "
+                        "(한 기능=한 배·중복배 억제, 배993). 미지정이면 기존대로 새 배 생성.")
     p.add_argument("--terminal", action="store_true",
                    help="[완료 시] 다음이 없고 여기서 종결됨을 명시(--next 대체). 빈칸 통과 금지용.")
     p.add_argument("--dry-run", action="store_true",
@@ -474,6 +498,7 @@ def main() -> int:
         terminal=args.terminal,
         artifact_url=args.artifact_url,
         dry_run=args.dry_run,
+        next_parent=args.next_parent,
     )
 
     # ── 루틴/자동 완료 스팸 필터(2026-07-13, GM 지시) ───────────────────────
