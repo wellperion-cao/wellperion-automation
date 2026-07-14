@@ -439,6 +439,7 @@ var MONTHLY_CONVERT_TARGET = null;   // GM 설정 — 월 신규 등록(전환) 
 var _fcData = null;   // funnel_conversion 응답 (byChannel 배열)
 var _csByUtmSource = null;  // click_stats.byUtmSource 최근 응답(채널 클릭→문의 퍼널 조합용)
 var _igReachSummary = null;  // ig_reach_summary.json 캐시 — _fcData/_csByUtmSource보다 먼저 도착할 수 있어 재렌더용 보관
+var _igLinkClicksKpi = null;  // kpi_values.json cmo['채널별_클릭수']['instagram'] — 노출↔반응 정직 병치 패널용(배#545), loadFunnel897에서 채움(신규 fetch 아님)
 var _pbData = null;   // period_breakdown 응답 (inquiries.byChannelMonth 객체)
 var _flow = null;     // 핵심 지표 전환 흐름의 현재 날짜뷰 정규화 데이터 {clicks,inq,conv,byType,mode,label}
 var _rangeFromTo = { from: '', to: '' };  // 현재 선택된 기간 (클릭 fetch에 붙임)
@@ -1375,6 +1376,29 @@ function renderIgReach(summary) {
       + '</tr>';
   }).join('');
 
+  // 노출↔반응 정직 병치 패널(배#545) — 도달(게시물 단위)과 링크클릭(채널 합산)은 층위가 달라 CTR%로 억지로 나누지 않고 나란히만 표시
+  var mediaReachSum = mediaTop.length
+    ? mediaTop.reduce(function(s, m) { return s + (typeof m.reach === 'number' ? m.reach : 0); }, 0)
+    : null;
+  var linkClicksKpi = (typeof _igLinkClicksKpi === 'number') ? _igLinkClicksKpi : null;
+  var exposureRatioLine = '';
+  if (linkClicksKpi != null && mediaReachSum) {
+    var exposureRatioPct = (linkClicksKpi / mediaReachSum * 100);
+    var exposureRatioStr = exposureRatioPct.toFixed(1).replace(/\.0$/, '') + '%';
+    exposureRatioLine = '<div style="font-size:10px;color:var(--dim);margin-top:6px">참고 근사·층위상이: 링크클릭÷추적게시물도달합 = ' + exposureRatioStr + ' <span style="font-style:italic">(채널 합산 클릭 ÷ 게시물 합산 도달 — 진짜 CTR 아님, 참고용 근사치)</span></div>';
+  }
+  var exposureReactionPanel =
+    '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">노출 ↔ 반응 · 정직 병치(억지 CTR 아님)</div>'
+    + '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">'
+    +   '<div><div style="font-size:20px;font-weight:800;color:var(--accent)">' + (latest ? Number(latest.reach).toLocaleString('ko-KR') : '—') + '</div><div style="font-size:10px;color:var(--dim);margin-top:2px">최근 계정 도달(일별 스냅샷)</div></div>'
+    +   '<div><div style="font-size:20px;font-weight:800;color:var(--f5)">' + (mediaReachSum != null ? mediaReachSum.toLocaleString('ko-KR') : '—') + '</div><div style="font-size:10px;color:var(--dim);margin-top:2px">추적 게시물 도달 합(상위 ' + mediaTop.length + '·고유 근사)</div></div>'
+    +   '<div><div style="font-size:20px;font-weight:800;color:var(--fn-violet)">' + (linkClicksKpi != null ? linkClicksKpi.toLocaleString('ko-KR') : '—') + '</div><div style="font-size:10px;color:var(--dim);margin-top:2px">인스타 링크클릭(UTM · 이번 달 누적)</div></div>'
+    + '</div>'
+    + exposureRatioLine
+    + '<div style="font-size:10.5px;color:var(--dim);margin-top:8px;font-style:italic">도달=게시물 단위(per-post) · 링크클릭=채널 합산(channel-aggregate) — 층위가 달라 둘을 나눈 CTR%는 표기하지 않습니다.</div>'
+    + '</div>';
+
   // 노출→클릭→문의 참고선 — 있는 수치만, 기간 다름을 명시(인과 대응 아님)
   var igClicks = (_csByUtmSource && _csByUtmSource.instagram) || 0;
   var igInquiry = null;
@@ -1403,6 +1427,7 @@ function renderIgReach(summary) {
         + '<th style="text-align:right;padding:4px 8px;font-size:9px;color:var(--dim)">게시물 도달</th><th style="text-align:right;padding:4px 8px;font-size:9px;color:var(--dim)">측정일</th>'
         + '</tr></thead><tbody>' + mediaRows + '</tbody></table>'
       : '')
+    + exposureReactionPanel
     + roiLine
     + '<div style="font-size:11px;color:var(--dim);margin-top:8px">측정 갱신: ' + (summary.updated_at || '—') + '</div>'
     + '<details class="footnote-toggle" style="margin-top:8px"><summary>정직 표기 — 도달 수치 읽는 법</summary>'
@@ -1543,6 +1568,10 @@ function renderFunnel897(kpiRoles, genKst){
   }
   var totalClicks = (cmo && typeof cmo['총_클릭수'] === 'number') ? cmo['총_클릭수'] : null;
   var chanClicks = (cmo && cmo['채널별_클릭수']) || {};
+
+  // 노출↔반응 정직 병치 패널(배#545)용 — 이미 이 fetch로 받은 값 재사용(신규 fetch 금지)
+  _igLinkClicksKpi = (typeof chanClicks['instagram'] === 'number') ? chanClicks['instagram'] : null;
+  if (_igReachSummary) renderIgReach(_igReachSummary);  // IG 노출 위젯의 링크클릭 숫자도 최신화
   var chanConv = (cmo && cmo['채널별_클릭문의전환']) || {};
   var igConv = chanConv['인스타그램'] || null;
   var igRate = (igConv && typeof igConv['클릭_문의_전환율'] === 'number') ? igConv['클릭_문의_전환율'] : null;
