@@ -1447,7 +1447,8 @@
     var _REG_COLS = [
       {status:'접수',  color:'#e6944e', bg:'rgba(230,148,78,0.12)'},
       {status:'처리중', color:'#5b9fd5', bg:'rgba(91,159,213,0.12)'},
-      {status:'완료',  color:'#6abf7b', bg:'rgba(106,191,123,0.12)'}
+      {status:'완료',  color:'#6abf7b', bg:'rgba(106,191,123,0.12)'},
+      {status:'보류',  color:'#8c8b83', bg:'rgba(140,139,131,0.12)'}
     ];
 var _regCurrentCat = '';
     var _regAllItems = [];  // 항상 전체(무필터) 캐시 — 건수요약·즉시필터용
@@ -1711,14 +1712,20 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
           extras += '<div style="font-size:11.5px;color:var(--dim);margin-bottom:2px;"><b>' + _regEsc(k) + ':</b> ' + _regEsc(it[k]) + '</div>';
         }
       });
+      var _rc = _regEsc(it['카테고리']||'');
+      var _bs = 'font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);cursor:pointer;font-family:inherit;';
+      var _hold = ' <button onclick="_regStatus(\'' + id + '\',\'' + _rc + '\',\'보류\')" style="' + _bs + 'color:var(--dim);">⏸ 보류</button>';
       var actions = '';
       if(col.status === '접수'){
-        actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'처리중\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">처리 시작 →</button>';
+        actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _rc + '\',\'처리중\')" style="' + _bs + 'color:var(--text);">처리 시작 →</button>' + _hold;
       } else if(col.status === '처리중'){
-        actions = '<button onclick="_regComplete(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">완료 ✓</button>'
-          + ' <button onclick="_regStatus(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'접수\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">← 되돌리기</button>';
+        actions = '<button onclick="_regComplete(\'' + id + '\',\'' + _rc + '\')" style="' + _bs + 'color:var(--text);">완료 ✓</button>'
+          + ' <button onclick="_regStatus(\'' + id + '\',\'' + _rc + '\',\'접수\')" style="' + _bs + 'color:var(--dim);">← 되돌리기</button>'
+          + _hold;
+      } else if(col.status === '완료'){
+        actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _rc + '\',\'처리중\')" style="' + _bs + 'color:var(--dim);">↩ 재개</button>';
       } else {
-        actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'처리중\')" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">↩ 재개</button>';
+        actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _rc + '\',\'접수\')" style="' + _bs + 'color:var(--dim);">↩ 재개</button>';
       }
       // 펼침 영역에 들어갈 상세 (이름·연락처·전체내용·사진·추가필드)
       var hasDetail = !!(name || contact || content || photo || extras);
