@@ -35,6 +35,28 @@
   --radius-chip:10px;
 }
 
+/* ═══════════════════════════════════════
+   라이트 테마 (우측 상단 ☀️/🌙 토글, GM 지시 2026-07-14)
+   :root(html)에 .theme-light 클래스를 얹어 CSS 변수만 교체 — 레이아웃·기능 무변경.
+   ═══════════════════════════════════════ */
+:root.theme-light{
+  --bg:#f5f3f0;
+  --paper:#ffffff;
+  --paper-raised:#fbf9f6;
+  --text:#221F20;
+  --dim:#8a8579;
+  --dim-mid:#6b665e;
+  --accent-bg:rgba(183,159,138,0.14);
+  --accent-border:rgba(183,159,138,0.35);
+  --border:#e2dcd2;
+  --border-subtle:rgba(226,220,210,0.7);
+  --shadow-card:0 2px 10px rgba(0,0,0,0.08);
+  --shadow-header:0 1px 0 var(--border),0 4px 14px rgba(0,0,0,0.06);
+}
+:root.theme-light .header{
+  background:linear-gradient(180deg,#fbfaf8 0%,#f5f3f0 100%);
+}
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
@@ -876,6 +898,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .cell-select.st-hold{color:var(--orange);background:var(--orange-bg);border-color:var(--orange-border);font-weight:700;border-left:3px solid var(--orange)}
 .cell-select.st-cancel{color:var(--red);background:var(--red-bg);border-color:var(--red-border);font-weight:600;border-left:3px solid var(--red);opacity:.72}
 .cell-select.st-wait{color:var(--accent);background:var(--accent-bg);border-color:var(--accent-border);font-weight:700;border-left:3px solid var(--accent)}
+/* 강습 문의 테이블 — 제목(헤더)값 가운데 정렬 통일 + 성함칸 폭 확대(나이 병기). 배973 시포·GM 2026-07-14 */
+.lesson-inq-table thead th{text-align:center !important}
+.lesson-inq-table th:nth-child(2),.lesson-inq-table td:nth-child(2){min-width:132px;width:132px}
 .status-chip.status-chip-unfilled{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border)}
 .status-unfilled-tag{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-left:5px;white-space:nowrap;vertical-align:middle}
 .unfilled-summary-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-bottom:10px}
@@ -947,6 +972,17 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .hz-zone.z-guide  { border-left-color: var(--accent); }
 .hz-zone-label { font-size: 10px; font-weight: 700; letter-spacing: .04em; color: var(--dim); }
 .hz-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.hz-zone.z-theme { border-left-color: var(--yellow); }
+.theme-toggle-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:600;
+  padding:5px 12px;border-radius:var(--radius-btn);
+  background:var(--yellow-bg);color:var(--yellow);
+  border:1px solid var(--yellow-border);
+  cursor:pointer;font-family:inherit;white-space:nowrap;
+  transition:background 0.15s,color 0.15s,border-color 0.15s;
+}
+.theme-toggle-btn:hover{filter:brightness(1.1)}
 .action-btn.is-guide { border-color: var(--accent); color: var(--accent); font-weight: 700; }
 
 /* 초보자 안내 배너 */
@@ -992,6 +1028,27 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 }
 </style>
 <script>
+/* 라이트/다크 테마 토글 — 우측 상단 ☀️/🌙 버튼 (GM 지시 2026-07-14). 순수 CSS 변수 스왑, 데이터·게이트 무관.
+   FOUC 방지 위해 <head>에서 즉시 :root(html)에 클래스 적용 (localStorage 키 wp_theme='light'|'dark'). */
+(function(){
+  "use strict";
+  var TKEY="wp_theme";
+  try{ if(localStorage.getItem(TKEY)==="light") document.documentElement.classList.add("theme-light"); }catch(e){}
+  window.wpToggleTheme=function(){
+    var root=document.documentElement;
+    var isLight=root.classList.toggle("theme-light");
+    try{ localStorage.setItem(TKEY, isLight?"light":"dark"); }catch(e){}
+    _wpSyncThemeBtn();
+  };
+  function _wpSyncThemeBtn(){
+    var btn=document.getElementById("themeToggleBtn");
+    if(!btn)return;
+    var isLight=document.documentElement.classList.contains("theme-light");
+    btn.textContent=isLight?"☀️ 라이트":"🌙 다크";
+    btn.title=isLight?"클릭하면 다크 모드로 전환":"클릭하면 라이트 모드로 전환";
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",_wpSyncThemeBtn); else _wpSyncThemeBtn();
+})();
 /* 문의회원(멤버십·강습 회원관리) 입장 게이트 — 로컬 커튼(_assets/gate.js와 동일 방식).
    입장 비번 = "1200" (파트너 팀 리더 공유용, 강습회원관리_가이드.html에 명시). 2026-07-14 GM 지시.
    ※ 이것은 "잠금"이 아니라 "커튼"(소스에 노출) — 서버 PII정책(TOKEN_ENFORCE/PII_MASK)과 무관·타 페이지 무영향.
@@ -1068,6 +1125,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <button class="action-btn" onclick="window.print()">인쇄</button>
           </div>
         </div>
+        <div class="hz-zone z-theme">
+          <div class="hz-zone-label">🎨 화면</div>
+          <div class="hz-btns">
+            <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="wpToggleTheme()">🌙 다크</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1114,12 +1177,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   .sb-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
   .sb-metric{background:rgba(0,0,0,.15);border-radius:8px;padding:8px 10px;text-align:center}
   .sb-k{display:block;font-size:11px;color:var(--dim,#7d7b74)}
-  .sb-v{display:block;font-size:22px;font-weight:800;color:#f0ece4;line-height:1.15}
+  .sb-v{display:block;font-size:22px;font-weight:800;color:var(--text);line-height:1.15}
   .sb-d{display:block;font-size:11px;min-height:14px}
   .sb-d.up{color:#7fc99a}.sb-d.down{color:#e28f8f}.sb-d.flat{color:var(--dim,#7d7b74)}
   .sb-funnel{display:flex;align-items:center;justify-content:space-between;gap:2px;background:rgba(0,0,0,.12);border-radius:8px;padding:8px 6px;margin-bottom:6px;flex-wrap:wrap}
   .sb-fstep{display:flex;flex-direction:column;align-items:center;min-width:40px;font-size:10px;color:var(--dim,#7d7b74)}
-  .sb-fstep b{color:#e8e2d8;font-size:14px;font-weight:800}
+  .sb-fstep b{color:var(--text);font-size:14px;font-weight:800}
   .sb-farrow{color:var(--dim,#7d7b74);font-size:11px}
   .sb-caveat{font-size:10px;color:var(--dim,#7d7b74);line-height:1.4;margin-top:2px}
   #sbCollapseBody.sb-collapsed{display:none}
