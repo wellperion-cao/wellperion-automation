@@ -650,5 +650,19 @@
     "artifact": "GM go 확정 + 정정(발송대상=★운영부 단독, 회장님·관리부 제외) 반영. 카드 생성\n(kakao_summary_card.py)+발송(kakao_report_sender.py)을 kakao_auto_daily_report.py와\n동일 킬스위치·경보 패턴으로 묶는 신규 오케스트레이터(kakao_summary_card_auto.py)를\n추가하고 Task Scheduler 'Wellperion-Kakao-Morning-Card-0730'(매일 07:30)로 등록했다.\n9:30 매출 3방 보고(kakao_rooms.json)는 완전 별 (CLI ad-hoc · 커밋 8d2d77ab)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8d2d77ab9edadf8c7ede2cfb5d50ad16c66133e5"
+  },
+  {
+    "task_id": "CEO-2026-07-14-ADHOC-37ae073d",
+    "clevel": "ceo",
+    "title": "[웰리] ★운영부 대화 무인 내보내기 — kakao_export_chat.py",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 963,
+    "artifact": "카톡 '대화 내보내기'(Ctrl+S) 완전 자동화. 창 겹침 극복: sender focus_window로 방 창\n전면화 후 room.type_keys('^s')를 창에 직접, '다른 이름으로 저장' #32770에 전체경로\nset_edit_text+저장, 덮어쓰기 확인(예)까지. e2e 실측 성공(1.43MB·07-13 포함). 산출물은\ngitignore 아카이브만. 아침 다이제스트 앞단계. (CLI ad-hoc · 커밋 37ae073d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "37ae073d43142f14fa555d87019200acae7dd5a6"
   }
 ]
