@@ -6310,8 +6310,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var el = document.getElementById('o1-module-cards'); if(!el) return;
         var checkHref = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
         var schedHref = BASE + "coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html";
+        var noticeHref = BASE + "coo/notice/notice_template.html";
         el.innerHTML = card('점검 현황','부서별 점검 완료율·이상', metric, badge, checkHref, tag)
-          + card('전사 일정','정기 안전·법정 점검 등 반복 일정', '열기 →', '📅', schedHref, '전 부서 공유 · 검사일 입력 대기');
+          + card('전사 일정','정기 안전·법정 점검 등 반복 일정', '열기 →', '📅', schedHref, '전 부서 공유 · 검사일 입력 대기')
+          + card('공지/안내문 생성','브랜드 기준 공지·안내문 · A3/A4 인쇄', '열기 →', '📢', noticeHref, '9개 사업부 컬러 · 8프리셋');
       }
       function loadHub(){
         // 링크는 즉시 렌더(클릭 가능) · 지표는 직전 캐시 표시 후 백그라운드 갱신(stale-while-revalidate) — 느린 GAS 콜에 링크가 막히지 않게
