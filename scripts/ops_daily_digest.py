@@ -286,12 +286,15 @@ def build_inquiry_block(target_date: str) -> str:
     return "\n".join(lines)
 
 
-def build_voc_block(target_date: str) -> str:
-    """target_date(YYYY-MM-DD) VOC·컴플레인 사실블록(VOC_EXEC_URL reg_list · 종합접수처 6종 통합).
-    createdAt="YYYY-MM-DD HH:MM:SS"(KST) 접두 매칭 — daily_scheduler._build_digest_reception 동일 패턴."""
-    lines = ["📣 VOC·컴플레인"]
+def build_reception_block(target_date: str) -> str:
+    """target_date(YYYY-MM-DD) 종합접수처 6종 통합 사실블록(VOC_EXEC_URL reg_list).
+    createdAt="YYYY-MM-DD HH:MM:SS"(KST) 접두 매칭 — daily_scheduler._build_digest_reception 동일 패턴.
+    status 실측 분포(2026-07-14, 34건): 완료16·접수13·처리중5 → resolved={"완료"}만, 나머지(접수·처리중 등)는
+    전부 미해결로 간주(daily_scheduler._build_digest_reception의 `!= "완료"` 판정과 동일 근거).
+    미해결은 경과일(오늘 - occurredAt(없으면 createdAt) 날짜) 큰 순으로 정렬해 방치 건을 위로 올려 매일 강조."""
+    lines = ["📣 종합접수 현황"]
 
-    resp = _gas_get(VOC_EXEC_URL, {"action": "reg_list"}, timeout=20, label="ops-digest VOC")
+    resp = _gas_get(VOC_EXEC_URL, {"action": "reg_list"}, timeout=20, label="ops-digest 종합접수")
     if resp is None:
         lines.append(f" • {_NO_SOURCE}")
         return "\n".join(lines)
@@ -305,11 +308,74 @@ def build_voc_block(target_date: str) -> str:
         lines.append(f" • {_NO_SOURCE}")
         return "\n".join(lines)
 
-    day_rows = [r for r in rows if str(r.get("createdAt", "")).startswith(target_date)]
-    complaint_day = sum(1 for r in day_rows if r.get("category") == "컴플레인 접수")
-    total_undone = sum(1 for r in rows if str(r.get("status", "")) != "완료")
-    lines.append(f" • 어제 접수: {len(day_rows)}건 (컴플레인 {complaint_day}건 포함)")
-    lines.append(f" • 미해결(전체 누적): {total_undone}건")
+    if not rows:
+        lines.append(f" • {_NO_SOURCE}")
+        return "\n".join(lines)
+
+    _RESOLVED_STATUSES = {"완료"}
+
+    def _short_cat(cat: str) -> str:
+        cat = (cat or "기타").strip()
+        return cat[:-3] if cat.endswith(" 접수") else cat
+
+    day_rows = [
+        r for r in rows
+        if str(r.get("createdAt", "")).startswith(target_date)
+        or str(r.get("occurredAt", "")).startswith(target_date)
+    ]
+    day_cat_count: dict[str, int] = {}
+    for r in day_rows:
+        c = _short_cat(r.get("category", ""))
+        day_cat_count[c] = day_cat_count.get(c, 0) + 1
+    cat_summary = ", ".join(f"{c} {n}" for c, n in sorted(day_cat_count.items(), key=lambda x: -x[1]))
+    lines.append(f" • 어제 접수: {len(day_rows)}건" + (f" ({cat_summary})" if cat_summary else ""))
+
+    today_dt = datetime.now()
+
+    def _elapsed_days(r: dict) -> int:
+        raw = str(r.get("occurredAt", "") or r.get("createdAt", ""))[:10]
+        try:
+            return (today_dt - datetime.strptime(raw, "%Y-%m-%d")).days
+        except Exception:
+            return 0
+
+    unresolved = [r for r in rows if str(r.get("status", "")) not in _RESOLVED_STATUSES]
+    if not unresolved:
+        lines.append(" • 미해결 없음 👍")
+        return "\n".join(lines)
+
+    # 2주 넘게 방치된 건은 자동으로 '대기·보류'로 내려 매일 푸시에서 제외(에너지 절약, GM 2026-07-14).
+    STALE_DAYS = 14
+    active = sorted((r for r in unresolved if _elapsed_days(r) < STALE_DAYS), key=_elapsed_days, reverse=True)
+    stale = sorted((r for r in unresolved if _elapsed_days(r) >= STALE_DAYS), key=_elapsed_days, reverse=True)
+
+    def _line(r: dict, cap: int, with_loc: bool = True) -> str:
+        cat = _short_cat(r.get("category", ""))
+        content = re.sub(r"\s+", " ", str(r.get("content", "") or "")).strip()
+        if len(content) > cap:
+            content = content[:cap] + "…"
+        loc = r.get("loc", "") or ""
+        tail = f" · {loc}" if (with_loc and loc) else ""
+        return f"   · [{cat}] {content}{tail} · {_elapsed_days(r)}일째"
+
+    # 🔴 계속 챙길 것 (2주 이내) — 활성 푸시
+    if active:
+        lines.append(f" • 🔴 계속 챙길 것 {len(active)}건 (2주 이내):")
+        for r in active[:5]:
+            lines.append(_line(r, 34))
+        if len(active) > 5:
+            lines.append(f"   · 외 {len(active) - 5}건")
+    else:
+        lines.append(" • 🔴 계속 챙길 것: 2주 이내 미해결 없음 👍")
+
+    # ⏸️ 대기·보류 (2주+) — 자동 이관, 매일 재촉 안 함
+    if stale:
+        lines.append(f" • ⏸️ 대기·보류 {len(stale)}건 (2주+ 자동 이관 · 별도 검토):")
+        for r in stale[:3]:
+            lines.append(_line(r, 22, with_loc=False))
+        if len(stale) > 3:
+            lines.append(f"   · 외 {len(stale) - 3}건")
+
     return "\n".join(lines)
 
 
@@ -389,6 +455,7 @@ def build_work_block(target_date: str) -> str:
     lines.append(f" • 어제 완료: {len(done_yesterday)}건" + (f" — {done_detail}" if done_detail else ""))
     active_detail = _title_summary(active)
     lines.append(f" • 진행/예정: {len(active)}건" + (f" — {active_detail}" if active_detail else ""))
+    lines.append(" 📌 업무 SSOT 기록은 인사평가에 반영됩니다 — 각자 오늘 진행/완료를 꼭 업데이트하세요.")
 
     return "\n".join(lines)
 
@@ -572,8 +639,8 @@ def build_prompt(target_date: str, conversation: str, past_issues_digest: str) -
 🌅 {header_label}
 
 👤 [이름]
- • 그 사람이 올리거나 처리한 일 (핵심만 한 줄씩, 여러 건이면 여러 줄)
-— 어제 대화에서 발언·보고·처리한 '사람마다' 이렇게 묶는다. 이름이 분명치 않은 방 공통 공지·일정은 맨 아래 '👥 공통'으로 묶는다.
+ • 그 사람의 핵심 업무·요청·미해결만 (사람마다 최대 2줄 · 지엽적 잡담·중복·군더더기 생략)
+— 어제 대화에서 발언·보고·처리한 '사람마다' 이렇게 묶는다. 이름이 분명치 않은 방 공통 공지·일정은 맨 아래 '👥 공통'으로 묶는다. ★전체가 너무 길지 않게 한눈에 스캔되도록 짧게 — 중요도 낮은 건 과감히 뺀다(단 ⚠️ 오늘 챙길 것·💪는 반드시 유지).
 
 ⚠️ 오늘 챙길 것
  • 안 끝난(미해결) 건을 담당자 이름 붙여 한 줄씩. 정말 없으면 '• 특이사항 없음'.
@@ -581,7 +648,7 @@ def build_prompt(target_date: str, conversation: str, past_issues_digest: str) -
 🔁 반복 (해당할 때만 · 없으면 이 섹션 통째로 생략)
  • 원장 이력과 비교해 며칠째 반복되는 문제만. 확실치 않으면 넣지 말 것.
 
-💪 (그날 대화 분위기·요일·특이사항을 반영한 '그날만의' 격려·응원 한 줄 — 매일 다르게, 판박이·복붙 금지. 감시 아닌 따뜻한 동료 톤)
+💪 (★반드시 포함 — 매일 빠뜨리지 말 것) 그날 대화 분위기·요일·특이사항을 반영한 '그날만의' 따뜻한 격려·응원 한 줄. 매일 다르게, 판박이·복붙 금지. 감시 아닌 따뜻한 동료 톤. 메시지가 아무리 짧아도 이 격려 한 줄은 항상 남긴다.
 
 정직 규칙(중요):
 - 대화에 실제로 있는 내용만. 지어내거나 과장 금지. 애매하면 '~인 것 같아요' 정도로.
@@ -679,11 +746,11 @@ def run(forced_date: str | None = None) -> int:
 
     check_block = build_check_block(target_date)
     inquiry_block = build_inquiry_block(target_date)
-    voc_block = build_voc_block(target_date)
+    reception_block = build_reception_block(target_date)
     today_str = datetime.now().strftime("%Y-%m-%d")
     reservation_block = build_reservation_block(today_str)
     work_block = build_work_block(target_date)
-    ops_block = "\n\n".join([check_block, inquiry_block, voc_block, reservation_block, work_block])
+    ops_block = "\n\n".join([check_block, inquiry_block, reception_block, reservation_block, work_block])
     final_message = insert_check_block(message, ops_block)
 
     print("\n" + "=" * 60)
