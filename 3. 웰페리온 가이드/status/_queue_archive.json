@@ -18674,5 +18674,79 @@
     "artifact": "- 모듈카드(cto-kakao-sales-report): 미라이브 '요약카드 고도화' 문구 제거(돌아가는 자동화=실제 도는 것만·정직)\n- 3방 설정 가이드: 방 열기(옛 1·3)는 시토 자동(검색 자동열기)으로 이관, GM은 ★별명(2)만 한 번 설정으로 정정\nGM 지적: 1·3=시토 자동, 2=GM 가이드. (CLI ad-hoc · 커밋 18831549)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "188315492daf628fc5d25cf4fa9ca598f56c69d4"
+  },
+  {
+    "task_id": "COO-2026-07-08-MONTHLY-OPS-PLAN-OWNERSHIP",
+    "clevel": "coo",
+    "title": "[시우] 월간운영계획 페이지 소유 — 오작동 수리(④)+디자인 고도화(③, 추천→GM OK 후)",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-08",
+    "ship_no": 685,
+    "note": "[2026-07-08 GM] 월간운영계획.html 시우 소유. ④오작동: 실측 콘솔0·매출/부서/로드맵/이월과제 정상, 깨진 숫자 없음. 유일 발견=🔧점검 카드 monthly_report GAS ~12초 콜드로드로 12초간 '불러오는 중'. ✅[2026-07-08 완료·라이브 c48cd1b6] GM go '체감 개선' — stale-while-revalidate(localStorage 직전 실측값 즉시표시+'갱신 중' 태그·백그라운드 갱신)+25초 타임아웃 방어. 라이브 2회-로드 검증: 1차 콜드=불러오는 중→94% / 2차 캐시=2초 즉시 94%+갱신중. 첫방문만 콜드(불가피·정직). ③디자인=GM '글로 추천만'. [2026-07-09 GM 3연속 지시·전부 라이브] ①선택월 매출에 회원권/강습 목표 페이스 표 추가(현매출/목표 2.5억·3.605억/남은일수·매출/일목표·정본 sales_targets.json). ②세로 슬림화: 전월대비·구성바·월말예상 제거→목표페이스를 목표대비% 블록으로 이동·표 가운데정렬. ③부서별 월 목표·진척=시설·지원·주차 분리 원상복구(부서별 내용 표는 통합 유지). 전부 시크릿 크롬 라이브 PASS. 커밋 13d7444c·b83d01a9·a173bc41·4c963d4f. [2026-07-09 GM 디자인 결정·모바일 탭] 시안 3안 제작(designer)→GM A안 채택: 정보 위계 강화(다크·violet·gold 톤 유지·카드 3단 위계 분리·골드=매출 전용·최상단 4지표 결론 스트립). 시안 정본 artifact=3274f696-7f8a-4778-b438-e073f5f4dc2b. [2026-07-14 시우 완료·자가검증 PASS] A안(정보 위계 강화) 리스킨 라이브 적용 — 커밋 097668e8(본체)+2a24fab4(라벨 정밀화, 동시커밋 병합). 골드=매출 전용으로 좁혀 이월 배지/링크 버튼은 violet·carry 톤 분리, 매출 히어로 카드 그림자+굵은 테두리 위계 분리, 최상단 4지표 요약 스트립(매출 페이스·핵심 과제 진척·지원부 이행률·로드맵 단계) 신규 — 기존 렌더 함수·정본 읽기 전용 재사용(신규 계산 없음). 데이터 함수·셀렉터·stale-while-revalidate 전부 무접촉 보존. 라이브 실측(2026-07-14): https://wellperion-cao.github.io/wellperion-automation/월간운영계획.html 200·콘솔에러0·[예시]잔존0·4지표 전부 실측 채움(매출페이스 53%·핵심과제 16/21건 진행중·지원부이행률 74%·로드맵 3/8단계). 역롤백: git revert 097668e8 2a24fab4(또는 4c963d4f로 checkout) — 파괴적 git 미사용.",
+    "next": "🔗 [2026-07-14 GM 최종 승인] A안(정보 위계 강화) 라이브 확정·입항. 후속(선택)=실무진 사용 피드백 순회 또는 다른 COO 페이지 동일 위계로 고도화.",
+    "module": "home"
+  },
+  {
+    "task_id": "CMO-2026-07-08-MARKETING-LOOP-CONVERSION-LEDGER",
+    "clevel": "cmo",
+    "title": "[시모] 마케팅 폐루프 ③ 등록·전환 — 전환 판정 원장 배선(등록 여부→전환율)",
+    "status": "DONE",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-08",
+    "note": "[2026-07-14 시모] 완료 — funnel_conversion(GAS)의 byChannel(채널별 문의·등록·전환율, 이미 라이브였던 등록매칭 스탬프↔문의 매칭 union 판정)을 M4 마케팅현황대시보드.html에 신규 '채널별 전환율' 섹션으로 노출. 표본 5건 미만 ⚠표본부족 라벨(날조 대신 투명 표기) · 서버 convBasis 그대로 각주 병기(기간뷰/누적 자동 전환) · 클릭→문의 CTR(추적 밖 표기)과 별개 지표임을 각주로 명시해 혼동 방지 · kpi_values/stage_funnel 등 별도 소스 신설 없이 기존 funnel_conversion 단일 엔드포인트만 사용(분모 정합, byChannel 합=total 항상 일치). 시크릿 크롬 실측: HTTP 200 · 콘솔 에러 0 · 이번달뷰 라이브값(문의90/전환39/43.3%, 네이버11.5%·기존과거회원92%·소개지인33.3%·오프라인33.3%·동부이촌동4건0%⚠·당근마켓1건100%⚠·기타미상42.9%) 합계 정합 확인. 커밋 c0ba1950 계열(자동큐watcher 스윕 bcb7726d에 편입, push 완료·라이브 반영).",
+    "next": "⑤ 평가환류(마케팅 폐루프 마지막 단계) — 채널별 전환율 추세로 콘텐츠/채널 예산 재배분 제안 다음 순번.",
+    "ship_no": 744,
+    "module": "M5"
+  },
+  {
+    "task_id": "CPO-2026-07-14-NORTHSTAR-918",
+    "clevel": "cpo",
+    "title": "[북극성추천] 이번달 전환율 급락(39.9%→15.7%) 원인 진단 — 89문의 중 75건이 어디서 이탈했는지 퍼널 단계별 추적",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-14",
+    "ship_no": 918,
+    "note": "[웰리 북극성 추천 승인 2026-06-29] / 🌟 북극성: 문의→체험→가입 전환 퍼널 가시화 · 회원 라이프사이클 관리\n📍 지금: 활성 1척 · 완료건 next 1건 · KPI 완결률=0.8333, 완료=5, 활성=1, 월_LOSS율=1.4%, 월_LOSS건수=15, 유효회원수=1032, 문의_가입_전환율=39.9, 전환_문의수=8720, 전환_가입수=3478, 이번달_전환율=15.7, 이번달_전환_문의수=89, 이번달_전환_가입수=14\n👉 오늘 한 수: 이번달 전환율 급락(39.9%→15.7%) 원인 진단 — 89문의 중 75건이 어디서 이탈했는지 퍼널 단계별 추적 (신호②) / 근거: 신호② KPI 미달 — 이번달_전환율 15.7%가 baseline 39.9% 대비 절반 이하로 급락(89문의→14가입), 북극성 KPI '문의 전환율' 직격. 활성 배 1개(#754 자동보고)로 여유 있어 신규 배 중복 없음\n[2026-07-14 시포 진단·완결] '급락'=착시(서로 다른 지표 뺄셈). 라이브 실측(GAS funnel_conversion): 39.9%=전체누적·전화매칭 vs 15.7%=이번달·등록월 정밀. 동일기준 재측정 → 7월 89문의: 전화매칭 43.8%(39/89·baseline보다↑)·등록월정밀 15.7%(14/89) / 6월(완결) 274문의: 전화매칭 27.7%(76/274)·등록월정밀 8.8%(24/274). 결론=진짜 이탈 아님(전화매칭기준 7월>baseline·정밀기준도 6월8.8%→7월15.7% 상승). 정밀분자가 낮은 구조요인: ①기존·과거회원 재문의(89중 25=28%·등록일 옛날→분자제외) ②강습원장 시드(06-27) 이전 등록자 2000-01-01 기준선 제외 ③이번달 문의의 익월 등록 미포착. 처방(가역·완결): kpi_collector _cpo_funnel_conversion에 비교가능 기준선 추가(이번달_전환율_전화매칭43.8·전월_전환율8.8·_전환_note 비교금지 가드) 커밋 05d3932a·라이브검증 PASS. 잔여 가드=시토 카드.",
+    "next": "🔗 진단·CPO 처방 완결(비교가능 기준선 라이브·커밋 05d3932a). 다음=시토 추천기 신호② 가드(신규 CTO 카드)로 착시 재발 원천차단.",
+    "depends_on": ""
+  },
+  {
+    "task_id": "CTO-2026-07-14-NORTHSTAR-SIGNAL-GUARD",
+    "clevel": "cto",
+    "title": "[시토] 북극성 추천기 신호② 지표비교 가드 — 비교불가 지표 뺄셈 방지(전환율 착시 재발 차단)",
+    "status": "DONE",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-14",
+    "note": "[2026-07-14 시포→시토 핸드오프] 918 진단결과: 추천기 LLM이 kpi_values의 문의_가입_전환율(39.9·전화매칭·전체누적)과 이번달_전환율(15.7·등록월정밀)을 나란히 받아 '급락'으로 뺄셈=착시 카드 생성. 시포 1차처방=kpi_collector에 비교가능 기준선(이번달_전환율_전화매칭·전월_전환율) 추가·커밋 05d3932a(밑줄없는 신규필드라 프롬프트 노출=완화). 남은 가드: northstar_recommender.py _build_prompt() 178행 `if not k.startswith('_')`가 _전환_note(⚠️비교금지 경고)를 프롬프트서 누락 → 역할별 _*_note 가드를 'KPI 현재치' 블록에 포함하거나 지표쌍 비교규칙을 프롬프트에 명시. 가역·내부툴·GM go 불요. [2026-07-14 시토 완결] scripts/northstar_recommender.py _build_prompt(): ①KPI 현재치 블록 아래 '⚠️ 지표비교 주의' 줄 신설 — kv의 모든 '_*_note'(예 _전환_note·_note)를 역할별로 자동 수집해 프롬프트에 노출(코드 일반화·향후 신규 note 필드도 자동 포함) ②[지표비교 가드] 규칙 문단 추가 — 산정기준 다른 지표 뺄셈 금지·노트 없어도 정의·기간 다르면 '비교불가'로 신호②에 쓰지 말 것 명시. 실측검증: collect_inputs()+_build_prompt() 직접호출로 cpo 블록에 ⚠️줄 렌더 확인, kpi_collector._cpo_funnel_conversion() 라이브 재호출로 05d3932a 신규필드(이번달_전환율_전화매칭·전월_전환율)+전체 비교금지 note가 프롬프트에 그대로 반영됨을 확인, `python scripts/northstar_recommender.py --stdout-only` e2e 드라이런 정상완주(ClaudeCLI 정상 생성·에러0).",
+    "next": "🏁 입항 완료 — 다음 불필요(가드 상시 적용). 확대 여지(비목표): _role_progress()의 KPI 요약도 동일 note 필터링을 쓰지만 GM 카드 표시용(post-hoc)이라 착시 유발 경로 아님 — 별도 트리거 없으면 미착수.",
+    "depends_on": "",
+    "ship_no": 907
+  },
+  {
+    "task_id": "CTO-2026-07-14-AUTOCOMMIT-UNTRACKED-CONTENT",
+    "clevel": "cto",
+    "title": "[시토] 자동커밋 untracked 신규폴더 누락 수리 — 발행콘텐츠 미커밋 누적→러너 클린트리 가드 방해 근본봉합",
+    "status": "DONE",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-14",
+    "note": "[2026-07-14 시토] 발행 완료된 콘텐츠가 신규 폴더(git untracked)로 생성되면 기존 자동 커밋 장치가 이를 못 잡고 지나쳐 수일간 미커밋으로 쌓이는 문제. 이렇게 쌓인 미커밋 실작업 파일이 무인 러너(scripts/welly_auto_runner.py) 클린트리 가드를 발동시켜 러너가 매일 자율 실행을 skip(2026-07-13~14 이틀 연속, F3 회복 콘텐츠 등 47건 방치가 원인). 오늘 GM 수동 커밋으로 해소했으나 재발 방지 위해 근본원인(자동 커밋이 untracked 신규 파일/폴더를 안 잡음) 수리 착수.",
+    "next": "🔗 발행 워처(ig_review_publish_watcher) 자동커밋이 신규 콘텐츠 폴더도 스테이징하도록 봉합 완료(cca06ff7). 후속(선택): 다른 발행경로(블로그·카페·당근 워처)도 동일 add-스코프 점검.",
+    "depends_on": "",
+    "module": "T2",
+    "ship_no": 908
+  },
+  {
+    "task_id": "CTO-2026-07-14-AUTOCOMMIT-ALL-PUBLISH-PATHS",
+    "clevel": "cto",
+    "title": "[시토] 전 발행경로 자동커밋 add-스코프 전수점검 — 블로그·카페·당근·카카오·IG개인 워처 콘텐츠 폴더 누락 봉합",
+    "status": "DONE",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-14",
+    "note": "[2026-07-14 시토] ig_review_publish_watcher.py add-스코프 결함(908) 후속 전수점검 완료. 자체 git add/commit/push 하는 스크립트 전부 나열해 판정: ① scripts/ig_review_publish_watcher.py — 결함(이미 908에서 수리, folder/image_dir/body_file 추가). ② telegram_bot/bot.py _git_seq_locked(pub: 승인/반려 콜백·Naver URL 기록) — 정상: 승인 시점엔 콘텐츠가 아직 없거나(발행엔진이 후속 커밋) 이미 발행완료로 콘텐츠가 이미 커밋된 뒤의 메타(post_url)만 기록이라 콘텐츠 add 불필요. ③ scripts/ig_publish_verify.py --commit — 정상: 검증 단계는 신규 콘텐츠를 만들지 않고 큐 status만 도장. ④ scripts/commit_ig_reach.py·commit_engagement.py — 정상: 지표 데이터 FILES 리스트만 add(콘텐츠 폴더 아님). ⑤ scripts/erp_status_publisher.py·queue_archive_sweep.py·auto_log_adhoc_to_queue.py — 정상: 각각 erp_status.json·큐 아카이브·_queue.json만 add(발행 콘텐츠 무관). ⑥ 채널 업로드 워커(cafe·danggn·kakao·naver_blog·instagram_upload_playwright.py) — 자체 git 커밋 없음(주석상 명시: '큐 파일 git commit은 하지 않음'), 커밋 책임은 ①의 워처가 짐. ⑦ 디스패처류(ig_publish_dispatcher.py·publish_4channel_dispatcher.py·case_series_dispatch.py·reconcile_published.py·publish_register.py) — git 연산 자체 없음(①/②가 최종 커밋). 결론: 동일 결함은 ①(908) 1건뿐, 나머지 6개 경로는 설계상 콘텐츠를 만들지 않는 단계라 정상. 추가 코드 수정 없음(무변경 확인만).",
+    "next": "",
+    "depends_on": "",
+    "module": "T2",
+    "ship_no": 945
   }
 ]

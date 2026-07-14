@@ -449,7 +449,7 @@ def build_page_html(kpi: dict, parking: dict, target_date: datetime) -> str:
         '<div class="mark">W</div>'
         '<div>'
         '<div class="t1">웰페리온 아침 요약</div>'
-        '<div class="t2">매일 09:30 자동 · 회장님 · 관리부 · 운영부</div>'
+        '<div class="t2">💬 매일 07:30 자동 · ★ 운영부</div>'
         '</div>'
         '</div>'
         '<div class="date">'

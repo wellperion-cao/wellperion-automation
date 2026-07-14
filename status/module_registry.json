@@ -99,6 +99,21 @@
       "honesty_default": "measured"
     },
     {
+      "id": "cto-kakao-morning-card",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "💬 카톡 아침 요약 카드 — 매일 07:30 카톡 ★운영부 1방에 경보·매출·점검·전환·주차 4지표+미니그래프 카드 자동 발송(라이브 SSOT 전용, 목업 금지).",
+      "data_source": {"kind": "json", "ref": "status/kpi_values.json + status/parking_revenue.json"},
+      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "kakao", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "autonomy": "auto",
+      "ai_free_fallback": "HTML→크롬 스크린샷→카톡 PC앱 UI 자동전송, AI 세션 불요. 킬스위치 status/kakao_summary_card_send.json",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
       "id": "cmo-content-pipeline",
       "owner_role": "cmo",
       "owner_nick": "시모",
