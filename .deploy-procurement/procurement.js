@@ -31,6 +31,9 @@ function route(p){
     case "setno":   return setNo(p);
     case "setdate": return setDate(p);
     case "colprobe": return colProbe(p); // 열 점검(읽기전용·값 비반환) — 신규 열 배정 전 검증용, 2026-07-14
+    case "brief_set": return briefSet(p);     // CFO 자율 루틴: 브리핑 기록(검토시트 'CFO브리핑' 탭, 2026-07-14 매니저 승인)
+    case "suggest_add": return suggestAdd(p); // CFO 자율 루틴: 개선 제안 축적(검토시트 '개선제안' 탭)
+    case "tg_send": return tgSend(p);         // CFO 자율 루틴: 텔레그램 발송(Script Properties TG_BOT_TOKEN/TG_CHAT_ID 있으면 — 키는 속성에만 보관, NAVER 패턴)
     case "proc_summary": return procSummary(p);
     case "sales_probe": return salesProbe(p);
     case "sales_dept": return salesDept(p);
@@ -633,6 +636,35 @@ function delRow(p){
   var row = parseInt(p.row,10); if(!row) return out({ ok:false, error:"no row" });
   sh().deleteRow(row); // 시트에서 행 완전 삭제
   return out({ ok:true });
+}
+
+/* ── CFO 자율 루틴 지원(2026-07-14 매니저 승인) — 검토시트에 브리핑·제안 기록 + 텔레그램 발송(키 있을 때만). 회계 시트 무변경. ── */
+function reviewTab_(name, headers){ // 검토시트(REVIEW_SHEET_ID)에 탭 확보 — 없으면 생성+헤더 1행
+  var ss = SpreadsheetApp.openById(REVIEW_SHEET_ID);
+  var sh = ss.getSheetByName(name);
+  if (!sh){ sh = ss.insertSheet(name); sh.appendRow(headers); }
+  return sh;
+}
+function briefSet(p){ // 아침 브리핑·감시 결과 1행 append: 일시|유형|내용
+  var sh = reviewTab_("CFO브리핑", ["일시","유형","내용"]);
+  sh.appendRow([Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm"), String(p.유형||"브리핑"), String(p.내용||"").slice(0, 45000)]);
+  return out({ ok:true, row: sh.getLastRow() });
+}
+function suggestAdd(p){ // 자율 개선 제안 축적: 제안일|제목|내용|기대효과|상태(제안)
+  if (!String(p.제목||"").trim()) return out({ ok:false, error:"no title" });
+  var sh = reviewTab_("개선제안", ["제안일","제목","내용","기대효과","상태"]);
+  sh.appendRow([Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd"), String(p.제목||"").slice(0,200), String(p.내용||"").slice(0,5000), String(p.기대효과||"").slice(0,1000), "제안"]);
+  return out({ ok:true, row: sh.getLastRow() });
+}
+function tgSend(p){ // 텔레그램 발송 — 키(TG_BOT_TOKEN/TG_CHAT_ID)는 Script Properties에만 보관, 미설정 시 조용히 skip
+  var props = PropertiesService.getScriptProperties();
+  var tk = props.getProperty("TG_BOT_TOKEN"), chat = props.getProperty("TG_CHAT_ID");
+  if (!tk || !chat) return out({ ok:false, skipped:"no_tg_key" });
+  var res = UrlFetchApp.fetch("https://api.telegram.org/bot"+tk+"/sendMessage", {
+    method:"post", muteHttpExceptions:true, contentType:"application/json",
+    payload: JSON.stringify({ chat_id: chat, text: String(p.text||"").slice(0,4000) })
+  });
+  return out({ ok: res.getResponseCode()===200, code: res.getResponseCode() });
 }
 
 // 신규 액션: 검토결과 upsert (기존 add/list/status/photo/delete 무변경)
