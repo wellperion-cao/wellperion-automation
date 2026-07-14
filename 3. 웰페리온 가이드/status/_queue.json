@@ -664,5 +664,18 @@
     "artifact": "카톡 '대화 내보내기'(Ctrl+S) 완전 자동화. 창 겹침 극복: sender focus_window로 방 창\n전면화 후 room.type_keys('^s')를 창에 직접, '다른 이름으로 저장' #32770에 전체경로\nset_edit_text+저장, 덮어쓰기 확인(예)까지. e2e 실측 성공(1.43MB·07-13 포함). 산출물은\ngitignore 아카이브만. 아침 다이제스트 앞단계. (CLI ad-hoc · 커밋 37ae073d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "37ae073d43142f14fa555d87019200acae7dd5a6"
+  },
+  {
+    "task_id": "CPO-2026-07-14-FUNNEL-STAGE-DIAGNOSIS",
+    "clevel": "cpo",
+    "title": "[시포] 이번달 문의 단계별 잔류·이탈 진단 (북극성 오늘 한 수 실질 산출)",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-14",
+    "module": "cpo",
+    "note": "[2026-07-14 시포 실측] 북극성 카드#1 first_action(89문의 단계 그루핑) 실행. ★2차 착시 규명: '89문의 중 75 이탈'에서 89=funnel_conversion(직원CRM+구글폼 raw응답 합산). 직원이 실제 추적하는 member_inquiry_list 이번달 멤버십 문의=21건. 상태분포: 컨택중11·SUC(가입)5·LOSS3·가망1·빈칸1. → 진짜 병목=컨택중 11건(52%, 진행중 정체)·진짜 문의이탈 3건(75 아님). 나머지 ~68=구글폼 raw응답(CRM 미편입) 또는 비멤버십. 별개: monthLossCount 15=기존회원 종료(cpo_churn_stats, 문의이탈과 다른 풀). 종료사유(배817)=기록칸만 존재·집계/조회 액션 부재→15 이탈 사유분류표 데이터경로 없음(정직). 액션근거=컨택중 11건 팔로업이 다음 레버.",
+    "next": "🔗 후속 후보: ①컨택중 정체(N일 무진척) 건을 '오늘 할 일' 액션허브에 팔로업 신호로 surface ②종료사유 집계 액션 신설(데이터 축적 후) ③구글폼 raw응답→CRM 편입 흐름 점검.",
+    "depends_on": "",
+    "ship_no": 953
   }
 ]
