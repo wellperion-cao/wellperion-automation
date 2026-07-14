@@ -53,7 +53,7 @@
   .dim-bul{list-style:none; margin:3px 0 0 0; padding:0;}
   .dim-bul li{font-size:12.5px; line-height:1.45; margin-bottom:3px;}
   .dim-empty{list-style:none; color:var(--dim); margin-left:0;}
-  /* 채널 로고(인라인 SVG · 일 흐름 시각표 · JSON [텔레그램]/[카톡] 토큰 치환) */
+  /* 채널 로고(인라인 SVG · 하루 루틴 시각표 · JSON [텔레그램]/[카톡] 토큰 치환) */
   .chlogo{width:15px; height:15px; vertical-align:-3px; margin:0 2px 0 0; flex:none;}
   table.matrix th.grp-np{width:300px;}
   table.matrix th.grp-boot{width:300px;}
@@ -817,8 +817,8 @@
       // 2026-07-07 GM승인: 🗺️북극성 지도 + 🌟북극성 도달율 두 블록을 northStarBlock() 하나로 병합(축 값 이중나열 제거).
       var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + northStarBlock(role) +
                kpiBlock(role) + workRateBlock(role) + progressBlock(role) + recommendBlock(role) + '</td>';
-      // 칸2 일하는 법 = 📚읽는 정본(2) + 🔧일 흐름(1)
-      var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🔧 일 흐름') + '</td>';
+      // 칸2 일하는 법 = 📚읽는 정본(2) + 🗓️하루 루틴(1)
+      var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🗓️ 하루 루틴') + '</td>';
       // 칸3 소유 관리 = role.owns 링크칩(+선택 desc 1줄) + role.channels(선택·발행채널) — 둘 다 없으면 기존과 동일 렌더(하위호환)
       var owns = (role.owns || []).map(function(o){
         var desc = o.desc ? '<div class="own-desc">' + esc(o.desc) + '</div>' : '';
