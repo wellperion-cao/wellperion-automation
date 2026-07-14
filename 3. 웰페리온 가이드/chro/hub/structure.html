@@ -253,10 +253,10 @@
     <h1>웰페리온 CHRO 기능 구조도</h1>
     <p class="header-sub">인사 운영 허브가 할 수 있는 일의 총람 — 각 기능을 어떤 에이전트가, 어떤 도구로, 어떤 데이터·액션을 거쳐 수행하는지 한 장에 담았습니다.</p>
     <div class="header-meta">
-      <span class="pill">갱신일 <b>2026-07-09</b></span>
+      <span class="pill">갱신일 <b>2026-07-14</b></span>
       <span class="pill">전담 에이전트 <b>7종</b> (A-1 ~ A-7)</span>
-      <span class="pill">읽기 DB <b>7종</b> + 휴무·자동화로그 탭</span>
-      <span class="pill">쓰기 액션 <b>31종</b></span>
+      <span class="pill">읽기 DB <b>7종</b> + 휴무·자동화로그·업무평가 탭</span>
+      <span class="pill">쓰기 액션 <b>35종</b></span>
     </div>
   </div>
 </header>
@@ -323,7 +323,7 @@
     </div>
 
     <div class="foundation">
-      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@49, /exec)<span class="sep">|</span><b>구글시트 9탭</b>(데이터 7 + 휴무 + 자동화로그)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
+      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@49, /exec)<span class="sep">|</span><b>구글시트 10탭</b>(데이터 7 + 휴무 + 자동화로그 + 업무평가)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
     </div>
 
     <div class="legend">
@@ -452,6 +452,12 @@
       <p>웰페리온 공식 기준 — <b>A/B/C 3등급 · 부서별 정원 사전 배분 · 다면평가 4종</b> + 4대 인재상 5축(A~F)으로 평가를 저장합니다. 평가지(openPrintView)는 메모를 키-값/불릿으로 렌더하므로 표준 양식으로 정리하며, 등급 분포가 정원을 벗어나면 알립니다. 근거 없는 점수는 만들지 않고, 저장 확정 전 A-6 감사를 거칩니다.</p>
       <p style="margin-top:8px"><b>정기 성과평가(2026 신설)</b> — 3기둥(직무성과 KPI · 공통역량 5축 BARS · 태도·가치) 가중합 → 100점 → A~F 6등급, 5직군별 KPI·가중 프로파일, 정직성 게이트(허위 기록 시 태도 블록 상한). 평가지(<span class="tag tool">openPerfEval</span>)에서 입력하면 프론트가 실시간 미리보기를 산출하고, <b>백엔드(save-eval)가 종합점수 · 등급을 서버에서 결정적으로 재계산</b>해 저장 — 클라이언트 값 신뢰 대신 서버가 최종 검산합니다. 구 3등급 체계는 "전환 검토 대상"으로 병존(폐지 여부 매니저 결정 대기).</p>
       <div class="tags"><span class="tag act">save-eval</span><span class="tag db">db:eval</span><span class="tag tool">openPrintView</span><span class="tag tool">openPerfEval</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a4">A-4 평가담당자</span><h3>관리자 업무평가 · 직무성과 자동산출 (2026-07 신설)</h3></div>
+      <p>COO 업무보드(읽기전용 소스)에서 대상자 업무를 불러와 관리자가 <b>완성도(%) · 성과점수(1~5)</b>를 입력하면, <b>직무성과 = 중요도가중 성취도 평균(0~100)</b>을 서버가 재계산해 저장합니다(클라이언트 값 불신 · 이중 결정화, 행 삽입 · 삭제 없이 대상자+기간 단위 in-place upsert). 담당자 정확일치 버킷 필터로 겸직 중복집계를 구조적으로 차단하고, 중요도 미책정 업무는 계산에서 제외 후 경고합니다. 정기평가지(<span class="tag tool">openPerfEval</span>) 대상자 선택 시 산출값을 참고창에 표시하고 KPI 항목에 프리필하며, 확정값이 산출값과 0.05 넘게 다르면 보정사유를 요구합니다. 관리자 인증 전용 — 공개 read 경로 없음(PII 아님).</p>
+      <div class="tags"><span class="tag act">save-work-eval</span><span class="tag act">get-work-eval</span><span class="tag db">업무평가 탭</span><span class="tag tool">openWorkEval</span></div>
     </div>
 
     <div class="item">
@@ -748,11 +754,11 @@
 <!-- ═══════════ G. 데이터 기반 ═══════════ -->
 <section id="sec-g">
   <div class="sec-head">
-    <span class="sec-letter">G</span><h2>데이터 기반 (구글시트 9탭 + 백엔드)</h2>
+    <span class="sec-letter">G</span><h2>데이터 기반 (구글시트 10탭 + 백엔드)</h2>
     <span class="sec-note">모든 기능이 딛고 서는 데이터 층</span>
   </div>
 
-  <h3 style="font-size:15px;font-weight:800;margin:4px 0 10px">읽기 DB — 7종 + 운영 탭 2종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(읽기 캐시 45~60초 · 쓰기 시 자동 무효화)</span></h3>
+  <h3 style="font-size:15px;font-weight:800;margin:4px 0 10px">읽기 DB — 7종 + 운영 탭 2종 + 관리자 전용 탭 1종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(읽기 캐시 45~60초 · 쓰기 시 자동 무효화)</span></h3>
   <div class="tbl-wrap">
     <table>
       <thead><tr><th>DB 코드</th><th>시트 탭</th><th>담긴 것</th><th>주 사용처</th></tr></thead>
@@ -766,11 +772,12 @@
         <tr><td><span class="tag db">db:blacklist</span></td><td>채용블랙리스트</td><td>차단 대상(PII 최소화: 생년 · 연락처 뒤4)</td><td>재지원 자동 경고</td></tr>
         <tr><td><span class="tag db">휴무 탭</span></td><td>휴무</td><td>월별 휴무(월 6회 + 법정공휴일)</td><td>휴무 관리</td></tr>
         <tr><td><span class="tag db">자동화로그 탭</span></td><td>자동화로그</td><td>주체 · 작업 · 상세 · 결과 · 일시</td><td>오피스 대시보드 · 이력 추적</td></tr>
+        <tr><td><span class="tag db">업무평가 탭</span></td><td>업무평가</td><td>대상자 · 평가기간별 직무성과 · 업무목록JSON(관리자 전용, 공개 read 없음)</td><td>관리자 업무평가 · 정기평가지 프리필</td></tr>
       </tbody>
     </table>
   </div>
 
-  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">쓰기 액션 전체 — 31종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증)</span></h3>
+  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">쓰기 액션 전체 — 35종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증)</span></h3>
   <div class="tbl-wrap">
     <table>
       <thead><tr><th>영역</th><th>액션</th><th>하는 일</th><th>주 담당</th></tr></thead>
@@ -795,6 +802,8 @@
         <tr><td><span class="tag act">delete-onboarding</span></td><td>온보딩 항목 삭제</td><td><span class="badge bg-a3">A-3</span></td></tr>
         <tr><td><span class="tag act">onboarding-self</span></td><td>신입 성찰 기록(24항목 완료 시 인사이트 종합)</td><td><span class="badge bg-a3">A-3</span></td></tr>
         <tr><td>평가</td><td><span class="tag act">save-eval</span></td><td>인사평가 저장(정기 성과평가는 3기둥 점수 수신 시 서버가 종합 · 등급 결정적 재계산)</td><td><span class="badge bg-a4">A-4</span></td></tr>
+        <tr><td rowspan="2">업무평가</td><td><span class="tag act">save-work-eval</span></td><td>대상자 · 기간별 완성도 · 성과점수 저장(서버가 직무성과 재계산 · in-place upsert)</td><td><span class="badge bg-a4">A-4</span></td></tr>
+        <tr><td><span class="tag act">get-work-eval</span></td><td>저장된 직무성과 조회(정기평가지 참고창 · 프리필 연동, 관리자 전용)</td><td><span class="badge bg-a4">A-4</span></td></tr>
         <tr><td>휴무</td><td><span class="tag act">set-leave-bulk</span></td><td>월 휴무 일괄 반영(병합 full-sync)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td rowspan="2">블랙리스트</td><td><span class="tag act">add-blacklist</span></td><td>차단 대상 등록(PII 최소화)</td><td><span class="badge bg-a1">A-1</span></td></tr>
         <tr><td><span class="tag act">remove-blacklist</span></td><td>차단 해제</td><td><span class="badge bg-a2">A-2</span></td></tr>
