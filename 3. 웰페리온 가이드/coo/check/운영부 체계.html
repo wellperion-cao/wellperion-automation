@@ -28,8 +28,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
 #tab-guide,#tab-manual,#tab-mplan{max-width:none;margin-left:0;margin-right:0}
-.date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
 /* ── 월 선택 바(월간운영계획.html 룩 통일 · 2026-07-07) ── */
 .month-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
 .month-bar label{font-size:12px;color:var(--dim)}
@@ -38,24 +36,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .submitter-bar{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
 .submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
 .submitter-bar select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600}
-.guide-cards{display:flex;gap:10px;margin-bottom:12px}
-.guide-card{flex:1;border-radius:10px;padding:12px 14px;border:1px solid}
-.guide-card.issue-guide{background:var(--red-bg);border-color:rgba(237,91,63,0.3)}
-.guide-card.tip-guide{background:var(--purple-bg);border-color:rgba(167,139,218,0.3)}
-.guide-card .guide-title{font-size:14px;font-weight:700;margin-bottom:4px}
-.guide-card.issue-guide .guide-title{color:var(--red)}
-.guide-card.tip-guide .guide-title{color:var(--purple)}
-.guide-card .guide-desc{font-size:12px;color:var(--dim);line-height:1.4}
-.shift-divider{background:var(--paper);border:1px solid var(--accent);border-radius:12px;padding:14px 18px;margin:20px 0 12px;position:relative}
-.shift-divider:first-of-type{margin-top:0}
-.shift-divider.night-shift{border-color:var(--orange)}
-.shift-label{font-size:15px;font-weight:700;color:var(--accent)}
-.shift-divider.night-shift .shift-label{color:var(--orange)}
-.shift-progress{margin-top:8px}
-.shift-progress .progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
-.shift-progress .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:6px}
-.shift-progress .progress-fill{height:100%;border-radius:4px;transition:width 0.3s}
-.shift-submitted{font-size:12px;color:var(--green);font-weight:600;margin-top:6px}
 .progress{background:var(--paper);border-radius:12px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--border)}
 .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
 .progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width 0.3s}
@@ -100,8 +80,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .group-submit-btn:hover{background:var(--accent);color:#fff}
 .group-submitted{font-size:12px;font-weight:700;color:var(--green)}
 .saving{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;display:none;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
-.admin-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
-.admin-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
 .admin-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid rgba(61,56,53,0.3)}
 .admin-row:last-child{border-bottom:none}
 .admin-row .admin-row-right{text-align:right;font-size:13px}
@@ -109,7 +87,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .status-dot.green{background:var(--green)}.status-dot.yellow{background:var(--yellow)}.status-dot.red{background:var(--red)}
 .tip-card{background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .tip-card h3{color:var(--purple);font-size:15px;font-weight:700;margin-bottom:10px}
-.closed-msg{text-align:center;padding:60px 20px;color:var(--dim);font-size:16px}
 .hidden{display:none}
 .loading{text-align:center;padding:40px;color:var(--dim)}
 /* Manual tab styles */
@@ -129,8 +106,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .manual-body .schedule-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
 .manual-body .schedule-table td,.manual-body .schedule-table th{padding:6px 10px;border:1px solid var(--border);text-align:left}
 .manual-body .schedule-table th{background:var(--accent-bg);color:var(--accent);font-weight:700}
-.day-focus-section{background:var(--paper);border:1px solid var(--blue);border-radius:12px;padding:14px 18px;margin:12px 0}
-.day-focus-section .day-focus-title{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:8px}
 /* ── 요일별 트렐로 칸반 보드 (매뉴얼 탭 주 콘텐츠 · 요일 다중선택) ── */
 .board-intro{font-size:12px;color:var(--dim);margin:2px 0 12px;line-height:1.5}
 /* 보드 풀폭 탈출(엣지투엣지): .content(720px·중앙) 제약을 벗어나 화면 좌측 끝~우측 끝까지 꽉 채움.
@@ -510,10 +485,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .item{border-bottom:1px solid #eee;padding:6px 12px;break-inside:avoid}
   .extra-input{display:none!important}
   .extra-input.show{display:block!important;border:1px solid #ccc}
-  .shift-divider{border:1px solid #ccc;margin:8px 0}
-  .guide-cards,.submitter-bar{display:none!important}
+  .submitter-bar{display:none!important}
   /* 대시보드 인쇄 */
-  .admin-card,.admin-shift-card{border:1px solid #ccc!important;break-inside:avoid;margin-bottom:8px}
+  .admin-shift-card{border:1px solid #ccc!important;break-inside:avoid;margin-bottom:8px}
   .dash-stat-card{border:1px solid #ccc!important;background:#f9f9f9!important;break-inside:avoid}
   .dash-stat-card .num{color:#333!important}
   .dash-table th,.dash-table td{border:1px solid #ccc!important;padding:4px 8px;font-size:10px}
@@ -570,7 +544,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="sticky-top">
 <div class="header">
   <div class="header-top">
-    <h1>운영부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.0 · 2026-06-08</span> <span id="dayType"></span></h1>
+    <h1>운영부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.0 · 2026-07-14</span> <span id="dayType"></span></h1>
     <div class="sheet-links">
       <a class="sheet-link" onclick="switchTab('admin')" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);" title="운영부 현황 대시보드">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -776,7 +750,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="manual-section">
     <div class="manual-header" onclick="togManual(this)"><h3>📅 요일별 업무 보드 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;">트렐로 칸반</span></h3><span class="arrow">&#9654;</span></div>
     <div class="manual-body">
-  <div class="board-intro">위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 🌅오전 응대 / 🌇오후 응대 / 📋상시·정기 카드가 세로로 있고, 카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억됩니다. 저장 시 시간 순으로 자동 정렬됩니다. 각 요일 컬럼의 시간대별 카드가 곧 <strong>그 요일의 리셉션 상세 절차</strong>입니다(오픈 점검·오전/오후 응대·종합접수·마감 등 시간대별 절차가 요일별로 녹아 있음).</div>
+  <ul class="board-intro">
+    <li>위 <strong>요일 버튼</strong>을 켜고 끄면(여러 개 동시 선택 가능) 켠 요일이 <strong>트렐로 컬럼</strong>으로 나란히 표시됩니다. 컬럼이 많으면 가로로 스크롤하세요. 각 컬럼 안에 🌅오전 응대 / 🌇오후 응대 / 📋상시·정기 카드가 세로로 있습니다.</li>
+    <li>카드의 <strong>편집</strong> 버튼을 누르면 <strong>표(시간 칸 | 내용 칸)를 바로 편집</strong>할 수 있고, <strong>＋ 행 추가</strong>/<strong>✕ 삭제</strong>로 항목을 늘리거나 지운 뒤 <strong>저장</strong>하면 모든 기기에 반영됩니다. 선택한 요일은 다음에 다시 와도 기억되며, 저장 시 시간 순으로 자동 정렬됩니다.</li>
+    <li>각 요일 컬럼의 시간대별 카드가 곧 <strong>그 요일의 리셉션 상세 절차</strong>입니다(오픈 점검·오전/오후 응대·종합접수·마감 등 시간대별 절차가 요일별로 녹아 있음).</li>
+  </ul>
 
   <!-- ── 공통 유의사항 (전 요일 공통 · 시간대별 절차 박제 흡수 시 보존, 2026-06-12 GM) ──
        기존 '시간대별 상세 절차(리셉션 매뉴얼)' 별도 칸의 공통 안전수칙. 시간대별 절차 본문은
@@ -2458,8 +2436,8 @@ const GUIDE_SEED = {
     {id:'gd_attitude', title:'응대 태도', body:'회원 첫 인사 → 눈 맞춤 + 미소 필수 / 먼저 인사 / 이름 알면 호칭 사용\n불편사항 접수 → 끝까지 경청 → 즉시 해결 가능 여부 판단 → 처리 결과 반드시 고지\n에티켓 위반 → 정중하되 단호하게 안내 / 반복 위반 시 팀장 보고\n긴급·안전 → 즉시 팀장·소장 보고 → 지시 후 조치 / 자의 판단 금지'},
     {id:'gd_dress', title:'복장·용모', body:'유니폼 → 웰페리온 지급 유니폼 착용 / 청결 유지\n명찰 → 항상 패용 / 좌측 가슴\n신발 → 미끄럼 방지 안전화 / 실외화 구역 내 착용 금지\n청소 구역 → 고무장갑·마스크 필수 / 환기 후 작업'},
     {id:'gd_zone', title:'구역별 관리 기준', body:'리셉션 카운터 → PC·전화·POS 정상 / 안내물·비품 충분 / 카운터 청결 유지\n대기·로비 공간 → 좌석 청결·정돈 / 음료·안내물 보충 / 방문객 안내 즉시\n입구·안내 표지 → 운영시간 표지 정상 / 현수막·안내판 위치·상태 / 오픈·마감 안내\n방문자·문의 일지 → 방문·투어·전화 문의 당일 기록 완료 / 종합접수 폼 접수 확인\n종합접수 전달 → 접수된 건은 당일 해당 부서 전달 / 처리 결과 회원 고지'},
-    {id:'gd_morning', title:'시간대별 절차 — 오전조 (오픈~인수인계)', body:'[오픈 점검]\n리셉션 조명·PC·전화·POS 전원 점검\n당일 예약·방문 일정 확인 (투어·상담 사전 확인)\n프론트 카운터·대기 공간 청결·비품(안내물·음료 등) 점검\n입구 안내 표지·현수막 위치 점검\n[회원 응대]\n입장 회원 확인·인사 (눈 맞춤+미소 필수)\n방문객·투어 문의 접수 → 안내 또는 담당자 연결\n전화 문의 응대 — 예약 일정 안내·기록\n[인수인계]\n당일 접수된 종합접수·건의 사항 기록 확인\n오전조 → 오후조: 미결 문의·이슈 공유'},
-    {id:'gd_afternoon', title:'시간대별 절차 — 오후조 (오후~마감)', body:'[오후 운영]\n퇴장 회원 인사·물품 분실 확인\n전화·방문 문의 응대 — 투어 예약 기록\n종합접수 건 폼 기록 완료 확인 + 해당 부서 전달\n[마감]\n방문자 일지·문의 일지 마감 기록\n리셉션 카운터 정리·비품 재고 확인\nPC·전화·조명 오프 / 잠금 확인 후 마감 보고'}
+    {id:'gd_morning', title:'시간대별 절차 — 오전조 (오픈~인수인계)', body:'상세 절차는 매뉴얼 탭 → 📅 요일별 업무 보드의 해당 요일 컬럼 🌅오전 응대 카드 참조(단일출처).'},
+    {id:'gd_afternoon', title:'시간대별 절차 — 오후조 (오후~마감)', body:'상세 절차는 매뉴얼 탭 → 📅 요일별 업무 보드의 해당 요일 컬럼 🌇오후 응대 카드 참조(단일출처).'}
   ]
 };
 

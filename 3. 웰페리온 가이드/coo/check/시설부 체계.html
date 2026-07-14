@@ -111,9 +111,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .saving{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;display:none;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
 .admin-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .admin-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
-.admin-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid rgba(61,56,53,0.3)}
-.admin-row:last-child{border-bottom:none}
-.admin-row .admin-row-right{text-align:right;font-size:13px}
 .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
 .status-dot.green{background:var(--green)}.status-dot.yellow{background:var(--yellow)}.status-dot.red{background:var(--red)}
 .tip-card{background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:12px;padding:16px 18px;margin-bottom:12px}
@@ -282,26 +279,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .board-scroll{scroll-snap-type:x mandatory}
   .dv-list{font-size:13.5px}
 }
-/* Admin shift card */
-.admin-shift-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
-.admin-shift-card h3{font-size:15px;font-weight:700;margin-bottom:6px}
-.admin-shift-card.am h3{color:var(--accent)}
-.admin-shift-card.pm h3{color:var(--green)}
-.admin-shift-card.night h3{color:var(--orange)}
-.admin-shift-card.am{border-color:rgba(183,159,138,0.4)}
-.admin-shift-card.pm{border-color:rgba(106,191,123,0.4)}
-.admin-shift-card.night{border-color:rgba(230,148,78,0.4)}
-.admin-shift-meta{font-size:12px;color:var(--dim);margin-bottom:8px}
-.admin-shift-meta .submitted-badge{color:var(--green);font-weight:600}
-.admin-shift-meta .not-submitted{color:var(--red);font-weight:600}
-.admin-progress-wrap{margin-bottom:10px}
-.admin-progress-wrap .progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
-.admin-progress-wrap .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:4px}
-.admin-progress-wrap .progress-fill{height:100%;border-radius:4px;transition:width 0.3s}
 /* Admin management styles */
-.admin-mgmt-divider{margin:32px 0 16px;padding-top:16px;border-top:2px solid var(--accent)}
-.admin-mgmt-divider h2{font-size:17px;font-weight:700;color:var(--accent);margin-bottom:4px}
-.admin-mgmt-divider .mgmt-sub{font-size:12px;color:var(--dim)}
 .admin-mgmt-form{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px}
 .admin-mgmt-form h3{font-size:15px;font-weight:700;margin-bottom:14px;color:var(--accent)}
 .mgmt-field{margin-bottom:12px}
@@ -320,30 +298,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .mgmt-btn.delete{background:var(--red-bg);color:var(--red);border-color:rgba(237,91,63,0.3)}
 .mgmt-btn.export{background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3)}
 .mgmt-btn.reset{background:var(--paper);color:var(--dim);border-color:var(--border)}
-.mgmt-item-list{background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
-.mgmt-item-list h3{font-size:15px;font-weight:700;padding:14px 18px;margin:0;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.mgmt-item-list h3 .mgmt-count{font-size:12px;color:var(--dim);font-weight:600}
-.mgmt-filter-bar{display:flex;gap:8px;padding:10px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.mgmt-filter-bar select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer}
-.mgmt-filter-bar input[type=text]{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;font-family:inherit;flex:1;min-width:100px}
-.mgmt-item{padding:12px 18px;border-bottom:1px solid rgba(61,56,53,0.3);transition:background 0.1s}
-.mgmt-item:last-child{border-bottom:none}
-.mgmt-item:hover{background:var(--accent-bg)}
-.mgmt-item-top{display:flex;align-items:flex-start;gap:10px}
-.mgmt-item-info{flex:1;min-width:0}
-.mgmt-item-name{font-size:14px;font-weight:700}
-.mgmt-item-meta{font-size:11px;color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
-.mgmt-item-meta .meta-tag{padding:1px 6px;border-radius:4px;font-weight:600}
-.mgmt-item-meta .meta-tag.slot{background:var(--accent-bg);color:var(--accent)}
-.mgmt-item-meta .meta-tag.day{background:var(--blue-bg);color:var(--blue)}
-.mgmt-item-meta .meta-tag.gender{background:var(--purple-bg);color:var(--purple)}
-.mgmt-item-detail{font-size:12px;color:var(--dim);margin-top:4px;white-space:pre-line;line-height:1.5}
-.mgmt-item-btns{display:flex;gap:6px;flex-shrink:0}
-.mgmt-item-btns .mgmt-btn{padding:6px 12px;font-size:12px;min-width:0}
-.mgmt-edit-inline{padding:12px 18px;border-bottom:1px solid rgba(61,56,53,0.3);background:rgba(183,159,138,0.06)}
-.mgmt-edit-inline .mgmt-field{margin-bottom:8px}
 .mgmt-empty{padding:24px 18px;text-align:center;color:var(--dim);font-size:13px}
-.mgmt-badge-custom{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;background:var(--yellow-bg);color:var(--yellow);margin-left:6px}
 /* ── Dashboard ── */
 .dash-stat-row{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 16px}
 .dash-stat-card{flex:1;min-width:80px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center}
@@ -363,12 +318,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .dash-bar.orange{background:var(--orange)}
 .dash-bar.purple{background:var(--purple)}
 .dash-section-title{font-size:15px;font-weight:700;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.dash-issue-card{background:var(--paper);border:1px solid rgba(237,91,63,0.3);border-radius:10px;padding:14px 16px;margin-bottom:8px}
-.dash-issue-item{padding:6px 0;border-bottom:1px solid rgba(61,56,53,0.3);font-size:13px}
-.dash-issue-item:last-child{border-bottom:none}
-.dash-issue-name{font-weight:600}
-.dash-issue-memo{color:var(--red);font-size:12px;margin-top:2px}
-.dash-issue-meta{color:var(--dim);font-size:11px}
 /* ── Header utility buttons ── */
 .header-util-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .util-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background 0.15s}
@@ -588,14 +537,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .shift-divider{border:1px solid #ccc;margin:8px 0}
   .guide-cards,.submitter-bar{display:none!important}
   /* 대시보드 인쇄 */
-  .admin-card,.admin-shift-card{border:1px solid #ccc!important;break-inside:avoid;margin-bottom:8px}
+  .admin-card{border:1px solid #ccc!important;break-inside:avoid;margin-bottom:8px}
   .dash-stat-card{border:1px solid #ccc!important;background:#f9f9f9!important;break-inside:avoid}
   .dash-stat-card .num{color:#333!important}
   .dash-table th,.dash-table td{border:1px solid #ccc!important;padding:4px 8px;font-size:10px}
   .dash-bar-wrap{background:#eee!important}
   .dash-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .dash-issue-card{border:1px solid #ccc!important;break-inside:avoid}
-  .admin-mgmt-divider,.admin-mgmt-form,.mgmt-item-list,.mgmt-btn{display:none!important}
+  .admin-mgmt-form,.mgmt-btn{display:none!important}
   [style*="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:60px"]{display:none!important}
   .progress-fill,.progress-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
@@ -612,14 +560,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    #policy-flow는 .board-scroll 그대로라 좁은 폭에선 가로 스크롤·스냅, 컬럼 침범 없음. */
 /* 고정 컬럼(근무휴게)도 JS 컬럼과 동일 폭. 모바일(≤560px)은 위 .board-col 86vw 규칙이 처리하므로 561px↑에서만 고정. */
 @media(min-width:561px){ #policy-flow > .board-col{flex:0 0 410px;min-width:410px;max-width:410px;} }
-/* 점검(남)/(여) 구역 카드 반응형 다열 그리드(GM 2026-06-13): 상위 탭 풀폭·좌측정렬(위 #tab-* 규칙)이라
-   그리드는 부모 폭을 채움 → 위 선택내용이 그리드 좌측과 정렬. .category(구역 카드)만 다열, 진행바·제출버튼
-   등 비-구역 요소는 전 열 span. 모바일(≤560px)은 단일 열. (#manual-items-sync는 본 페이지 미사용·무해) */
-@media(min-width:561px){
-  #manual-items-sync,#checklistM,#checklistF{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-items:start;}
-  #checklistM > *,#checklistF > *{grid-column:1/-1;}
-  #checklistM > .category,#checklistF > .category{grid-column:auto;margin-bottom:0!important;}
-}
 </style>
 </head>
 <body>
@@ -796,8 +736,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </details>
 </div>
 
-<!-- ══ 「현황 대시보드」 탭 — 시설부 일별/실시간 현황 (지원부 tab-admin 구조 실측 이식 + 시설점검(fcheck) 실데이터 FACILITY_CHECK_{date} 바인딩. 월간 탭(카테고리·회차·점검자 월간 집계)과 성격 분리 — 이 탭은 특정 1일 실시간 조회 전용. GM 승인 2026-07-10 시우) ══ -->
-<!-- 「현황 대시보드」(특정 1일 실시간) 탭 제거 — 월간 시설부 현황·계획·보고로 일원화 (GM 2026-07-10 시우). renderFacAdmin 정의는 복원 대비 inert 보존. -->
+<!-- 「현황 대시보드」(특정 1일 실시간) 탭 — 월간 시설부 현황·계획·보고로 일원화(2026-07-10 시우)되며 UI 제거, JS 정의(renderFacAdmin 등)도 죽은 코드 정리로 완전 삭제(GM 전체승인 2026-07-14). -->
 
 <!-- ══ 「📅 월간 시설부 계획·보고」 통합 탭 — monthly_ops_plan.json 핵심과제(주인공·상단) + 점검 monthly_report&dept=facility 라이브 대시보드 (배406 + 이달 부서 현황 통합 2026-07-07) ══
      지원부(배208) 탭 구조 벤치마킹 + 시설부 실측정값 구조(카테고리·회차·기준이탈)로 재설계.
@@ -1283,423 +1222,6 @@ const STAFF_CSV_URL = 'https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNd
 const DEPT = 'facility';
 function withDept(obj){ obj.dept = DEPT; return obj; }   // POST 본문에 dept 주입
 const DEPT_Q = '&dept=' + encodeURIComponent(DEPT);       // GET 쿼리에 dept 부착
-
-/* ── Track which gender tab is active ── */
-let activeGenderTab = 'm';
-
-/* ── A: Staff list (fallback + dynamic) ── */
-// 점검자 명단 (HTML 고정 · 시트 동적로드 비활성 GM 2026-05-29).
-// 여: 이경연 실장·이연희 반장·임정은M / 남: 최준용M·김남욱GM·윤병현AM (GM 2026-06-04 추가)
-
-const WEEKDAY=[
-  {slot:"오픈 05:30~08:00",shift:"am",groups:[
-    {title:"A 사우나 점검",items:[
-      {id:"a1",name:"A-1 사우나 탕",detail:"수위/온도 체크 | 탕 청결 및 오버풀 관리\n[온탕 평일] 6회: 06:00, 10:00, 11:00, 12:00, 15:00, 20:00\n[열탕 평일] 6회: 06:00, 10:30, 11:30, 12:30, 15:30, 20:40",gender:"all"},
-      {id:"a2",name:"A-2 건/습식 사우나",detail:"온도 체크 | 건식/습식 내부 청결\n비품: 모래시계 확인",gender:"all"},
-      {id:"a3",name:"A-3 사우나 내부",detail:"배수로/배수구 청소 | 바닥 미끄럼 | 타일/유리 물때 | 탈수기 밑 | 좌식 의자 | 거울\n비품: 바가지, 목욕의자, 거품바구니, 쓰레기통, 치약, 소금, 샴푸, 린스, 바디워시, 비누",gender:"all"}
-    ]},
-    {title:"B-6 데일리 락커",items:[
-      {id:"b6",name:"요일별 락커 청소",detail:"월 1~30 | 화 31~60 | 수 61~90 | 목 91~120 | 금 121~150 | 토 151~180\n데일리/개인 락커 키 위 먼지 청소",gender:"all"}
-    ]}
-  ]},
-  {slot:"오전 08:00~12:00",shift:"am",groups:[
-    {title:"B 락커룸",items:[
-      {id:"b1",name:"B-1 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기 | 청소 진행\n비품: 빗, 면봉, 휴지, 로션, 스킨",gender:"all"},
-      {id:"b2",name:"B-2 휴게실",detail:"TV 관리 | 소파 및 테이블 관리",gender:"all"},
-      {id:"b3_f",name:"B-3 찜질방 (여)",detail:"온도/청결 관리\n쑥 제거(휴관일 전) / 쑥 입고(휴관일 후)",gender:"f"},
-      {id:"b3_m",name:"B-3 수면실 (남)",detail:"청결 관리\n매트리스/바스타올 관리",gender:"m"},
-      {id:"b4",name:"B-4 마루바닥",detail:"바닥 미끄럼/청결 | 휴지통\n비품: 1회용 밀대 타올 (수시)",gender:"all"},
-      {id:"b5",name:"B-5 사우나 화장실",detail:"소변기/대변기/바닥/세면공간\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"}
-    ]},
-    {title:"C 세탁물 (오전)",items:[
-      {id:"c1a",name:"세탁물 입고 운반",detail:"입고된 세탁물을 세탁실로 운반",gender:"all"},
-      {id:"c1b",name:"운동복/양말 상태 + 배치",detail:"상태 체크 후 사이즈별 배치",gender:"all"},
-      {id:"c1c",name:"타올류 상태 + 배치",detail:"거품타올/타올/바스타올 상태 체크 후 배치",gender:"all"}
-    ]}
-  ]},
-  {slot:"오전 후반 10:00~12:00",shift:"am",groups:[
-    {title:"D 외부 (오전)",items:[
-      {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2 화장실 체크\n비품: 휴지통, 화장지, 핸드페이퍼, 손세정제",gender:"all"},
-      {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도(헬스장 입구 구석)",gender:"all"},
-      {id:"d3",name:"D-3 메인 계단",detail:"B1-B2 메인 계단 벽/바닥 청결 (남 주임 전담)",gender:"m"},
-      {id:"d4",name:"D-4 메인 복도 휴게공간",detail:"소파/바닥 청결 (여 주임 전담)",gender:"f"},
-      {id:"d5",name:"D-5 분리수거장",detail:"에스컬레이터 아래 분리수거 진행",gender:"all"}
-    ]},
-    {title:"E 외곽 청결",items:[
-      {id:"e1",name:"E-1 센터 복도 바닥",detail:"1F/B1/B2 에스컬레이터 공간 전체 복도",gender:"all"},
-      {id:"e2",name:"E-2 센터 거울/유리창",detail:"거울/유리창 물때 | 손톱깍이장 청소 (화요일 집중)",gender:"all"},
-      {id:"e3",name:"E-3 청소 비품 관리",detail:"비품 지정 위치 배치 | 깔끔하게 관리",gender:"all"},
-      {id:"e4",name:"E-4 헬스장",detail:"매일: 머신/런닝머신 땀 | 월수금: 런닝머신 바닥 | 화목: 스트레칭 공간 | 주말: 거울",gender:"all"},
-      {id:"e5",name:"E-5 골프장",detail:"매일: 복도 청소 | 월수금: 타석(스크린천) | 화목: 타석(기계) | 주말: 레슨룸",gender:"all"}
-    ]}
-  ]},
-  {slot:"인수인계 13:00~14:00",shift:"am",groups:[
-    {title:"교대 인수인계",items:[
-      {id:"hw1",name:"세탁물 출고 운반",detail:"세탁물 출고 운반 + 카카오톡 인수인계 보고",gender:"all"},
-      {id:"hw2",name:"인수인계 카톡 보고",detail:"오전조 → 오후조 인수사항 카카오톡 공유",gender:"all"}
-    ]}
-  ]},
-  {slot:"오후 14:00~18:00",shift:"pm",groups:[
-    {title:"A 사우나 재점검",items:[
-      {id:"a_pm",name:"A-1/A-2/A-3 오후 재점검",detail:"사우나 탕 수위/온도 | 건습식 온도 | 사우나 내부 바닥/배수\n팀장 15분 점검 (카톡 보고)",gender:"all"}
-    ]},
-    {title:"B 락커룸 재점검",items:[
-      {id:"b_pm",name:"B-2/B-3/B-4/B-5 오후 재점검",detail:"휴게실/찜질방(수면실)/마루바닥/사우나 화장실 오후 상태 확인",gender:"all"}
-    ]},
-    {title:"D 외부 (오후)",items:[
-      {id:"d6",name:"D-6 G.X룸",detail:"거울/바닥 청소 (남 주임 전담 / 화요일 집중)",gender:"m"},
-      {id:"d7",name:"D-7 센터 화분",detail:"물 공급 (여 주임 전담 / 금요일 집중)",gender:"f"},
-      {id:"d9",name:"D-9 수영장 계단",detail:"주 1회 청소",gender:"all"}
-    ]}
-  ]},
-  {slot:"저녁 19:00~22:00",shift:"pm",groups:[
-    {title:"저녁 점검",items:[
-      {id:"b_ev",name:"B 락커룸 저녁 재점검",detail:"B-2/B-3/B-4 상태 확인",gender:"all"},
-      {id:"d8",name:"D-8 키즈 샤워실",detail:"파우더룸 정리 20:30\n2주 1회 샤워실 청소 수 13:00 (남 주임 전담)",gender:"m"},
-      {id:"e6",name:"E-6 주차장",detail:"바닥 쓰레기 치우기 | 주차장 화장실 | 차단기 확인\n휴관일: 집중 청소",gender:"all"}
-    ]}
-  ]},
-  {slot:"마감 22:00~22:30",shift:"pm",groups:[
-    {title:"마감 점검",items:[
-      {id:"cls1",name:"세탁물 마감 출고",detail:"마감 세탁물 최종 출고 운반",gender:"all"},
-      {id:"cls2",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 공간 청결 상태 체크\n시설/운영부 마감자 카톡 보고\n미비 시 경고 / 경고 3회 경징계",gender:"all"},
-      {id:"cls3",name:"전 구역 마감 확인",detail:"전 구역 이상 유무 | 미수금 정산 | 다음날 일정 준비 완료 확인",gender:"all"}
-    ]}
-  ]},
-  {slot:"상시",shift:"all",groups:[
-    {title:"F 회원 응대",items:[
-      {id:"f1",name:"F-1 개인 락커 응대",detail:"첫 인사 눈맞춤+미소 | 불편사항 접수 | 에티켓 위반 정중+단호 안내",gender:"all"},
-      {id:"f2",name:"F-2 데일리 락커 응대",detail:"락커 사용법 안내 | 분실물 민원 즉시 확인+기록",gender:"all"},
-      {id:"f3",name:"F-3 사우나 내부 응대",detail:"청결 즉시 조치 (바닥 미끄럼, 이물질)",gender:"all"},
-      {id:"f4",name:"F-4 파우더 공간 응대",detail:"소모품 요청 즉시 보충 | 드라이기 등 관리",gender:"all"},
-      {id:"f5",name:"F-5 휴게공간 응대",detail:"소파/테이블 관리 | 혼잡/소음 민원 양해 요청",gender:"all"}
-    ]}
-  ]}
-];
-
-const WEEKEND=[
-  {slot:"오픈 07:30~08:00",shift:"am",groups:[
-    {title:"A 사우나 점검",items:[
-      {id:"a1",name:"A-1 사우나 탕",detail:"수위/온도 체크 | 탕 청결 | 오버풀 관리\n[온탕 주말] 3회: 10:00, 14:00, 18:00\n[열탕 주말] 3회: 10:30, 14:30, 18:30",gender:"all"},
-      {id:"a2",name:"A-2 건/습식 사우나",detail:"온도 체크 | 내부 청결",gender:"all"},
-      {id:"a3",name:"A-3 사우나 내부",detail:"배수로/배수구 | 바닥 | 타일/유리 | 탈수기 | 거울",gender:"all"}
-    ]},
-    {title:"B-6 데일리 락커",items:[
-      {id:"b6",name:"주말 락커 청소",detail:"토 151~180 / 데일리/개인 락커 키 위 먼지",gender:"all"}
-    ]}
-  ]},
-  {slot:"오전 08:00~12:00",shift:"am",groups:[
-    {title:"B 락커룸",items:[
-      {id:"b1",name:"B-1 파우더",detail:"선풍기 | 드라이기 | 휴지통 | 소독기 | 발건조기 | 청소 진행",gender:"all"},
-      {id:"b2",name:"B-2 휴게실",detail:"TV | 소파 | 테이블",gender:"all"},
-      {id:"b3_f",name:"B-3 찜질방 (여)",detail:"온도/청결 관리",gender:"f"},
-      {id:"b3_m",name:"B-3 수면실 (남)",detail:"청결 관리 | 매트리스/바스타올",gender:"m"},
-      {id:"b4",name:"B-4 마루바닥",detail:"미끄럼/청결 | 휴지통",gender:"all"},
-      {id:"b5",name:"B-5 사우나 화장실",detail:"소변기/대변기/바닥/세면공간",gender:"all"}
-    ]},
-    {title:"C 세탁물 (오전)",items:[
-      {id:"c1a",name:"세탁물 입고 + 상태 체크",detail:"운동복/양말 사이즈별 배치 | 타올류 배치",gender:"all"}
-    ]},
-    {title:"E 외곽 청결",items:[
-      {id:"e1",name:"E-1 센터 복도 바닥",detail:"1F/B1/B2",gender:"all"},
-      {id:"e3",name:"E-3 청소 비품 관리",detail:"지정 위치 배치",gender:"all"},
-      {id:"e4",name:"E-4 헬스장",detail:"거울 청소 (주말)",gender:"all"},
-      {id:"e5",name:"E-5 골프장",detail:"레슨룸 청소 (주말)",gender:"all"}
-    ]}
-  ]},
-  {slot:"인수인계 13:00~14:00",shift:"am",groups:[
-    {title:"교대 인수인계",items:[
-      {id:"hw1",name:"세탁물 출고 + 인수인계",detail:"카카오톡 보고 의무",gender:"all"}
-    ]}
-  ]},
-  {slot:"오후 14:00~17:00",shift:"pm",groups:[
-    {title:"A 사우나 재점검",items:[
-      {id:"a_pm",name:"A-1/A-2/A-3 오후 재점검",detail:"수위/온도 | 건습식 | 바닥/배수",gender:"all"}
-    ]},
-    {title:"D 외부",items:[
-      {id:"d1",name:"D-1 외부 화장실",detail:"골프장/B1/B2",gender:"all"},
-      {id:"d2",name:"D-2 복도 휴지통",detail:"운영사무실 앞 / B1 복도",gender:"all"},
-      {id:"d3",name:"D-3 메인 계단",detail:"B1-B2 벽/바닥 (남 주임 전담)",gender:"m"},
-      {id:"d4",name:"D-4 메인 복도 휴게공간",detail:"소파/바닥 (여 주임 전담)",gender:"f"},
-      {id:"d5",name:"D-5 분리수거장",detail:"에스컬레이터 아래",gender:"all"}
-    ]}
-  ]},
-  {slot:"저녁 17:00~20:00",shift:"pm",groups:[
-    {title:"저녁 점검",items:[
-      {id:"c_ev",name:"C 세탁물 마감",detail:"마감 세탁물 출고",gender:"all"},
-      {id:"b_ev",name:"B 락커룸 저녁 재점검",detail:"B-2/B-3/B-4/B-5 상태 확인",gender:"all"},
-      {id:"e6",name:"E-6 주차장",detail:"바닥 쓰레기 | 화장실 | 차단기",gender:"all"}
-    ]}
-  ]},
-  {slot:"마감 20:00",shift:"pm",groups:[
-    {title:"마감 점검",items:[
-      {id:"cls1",name:"세탁물 최종 출고",detail:"마감 세탁물 운반",gender:"all"},
-      {id:"cls2",name:"사우나/파우더 최종 체크",detail:"남/여 사우나 & 파우더 청결 최종 체크 (카톡 보고)",gender:"all"},
-      {id:"cls3",name:"마감 탕청소",detail:"별도 2인 1조 | 탕청소 업체 20:30 출근",gender:"all"}
-    ]}
-  ]},
-  {slot:"상시",shift:"all",groups:[
-    {title:"F 회원 응대",items:[
-      {id:"f1",name:"F-1 개인 락커 응대",detail:"첫 인사 눈맞춤+미소 | 불편사항 접수 | 에티켓 위반 정중+단호 안내",gender:"all"},
-      {id:"f2",name:"F-2 데일리 락커 응대",detail:"락커 사용법 안내 | 분실물 민원 즉시 확인+기록",gender:"all"},
-      {id:"f3",name:"F-3 사우나 내부 응대",detail:"청결 즉시 조치 (바닥 미끄럼, 이물질)",gender:"all"},
-      {id:"f4",name:"F-4 파우더 공간 응대",detail:"소모품 요청 즉시 보충 | 드라이기 등 관리",gender:"all"},
-      {id:"f5",name:"F-5 휴게공간 응대",detail:"소파/테이블 관리 | 혼잡/소음 민원 양해 요청",gender:"all"}
-    ]}
-  ]}
-];
-
-/* ── D: Night shift (탕청소 업체) ── */
-const NIGHT_WEEKDAY=[
-  {slot:"23:00~23:30",shift:"night",groups:[
-    {title:"초기 점검 및 준비",items:[
-      {id:"n_prep",name:"청소 도구 준비 및 초기 점검",detail:"청소 도구 상태 확인 | 세제/장비 준비 | 구역별 점검 시작",gender:"all"}
-    ]}
-  ]},
-  {slot:"23:30~00:30 남 사우나",shift:"night",groups:[
-    {title:"남 사우나 탕청소",items:[
-      {id:"n_m_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
-      {id:"n_m_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
-      {id:"n_m_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
-      {id:"n_m_roller",name:"돌돌이 (격주)",detail:"격주 돌돌이 작업 실시",gender:"all"}
-    ]}
-  ]},
-  {slot:"00:30~01:30",shift:"night",groups:[
-    {title:"요일별 집중 청소 (야간)",items:[
-      {id:"n_daily_focus",name:"요일별 집중 청소",detail:"해당 요일 집중 청소 항목 수행 (요일별 항목 참고)",gender:"all"}
-    ]}
-  ]},
-  {slot:"01:30~02:00",shift:"night",groups:[
-    {title:"휴게시간",items:[
-      {id:"n_break",name:"휴게시간",detail:"30분 휴식",gender:"all"}
-    ]}
-  ]},
-  {slot:"02:00~03:00 여 사우나",shift:"night",groups:[
-    {title:"여 사우나 탕청소",items:[
-      {id:"n_f_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
-      {id:"n_f_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
-      {id:"n_f_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
-      {id:"n_f_roller",name:"돌돌이 (격주)",detail:"격주 돌돌이 작업 실시",gender:"all"}
-    ]}
-  ]},
-  {slot:"03:00~04:00",shift:"night",groups:[
-    {title:"여 사우나 화장실 + 마감",items:[
-      {id:"n_f_toilet",name:"여 사우나 화장실 청소",detail:"소변기/대변기/바닥/세면공간 세척",gender:"all"},
-      {id:"n_daily_focus2",name:"요일별 청소 마무리",detail:"요일별 잔여 집중 청소 항목 마무리",gender:"all"},
-      {id:"n_final",name:"최종 마감 점검",detail:"전 구역 최종 확인 | 탕 배수 일지 작성",gender:"all"}
-    ]}
-  ]}
-];
-
-const NIGHT_WEEKEND=[
-  {slot:"20:30~21:00",shift:"night",groups:[
-    {title:"초기 점검 및 준비",items:[
-      {id:"n_prep",name:"청소 도구 준비 및 초기 점검",detail:"청소 도구 상태 확인 | 세제/장비 준비 | 구역별 점검 시작",gender:"all"}
-    ]}
-  ]},
-  {slot:"21:00~22:00 남 사우나",shift:"night",groups:[
-    {title:"남 사우나 탕청소",items:[
-      {id:"n_m_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
-      {id:"n_m_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
-      {id:"n_m_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
-      {id:"n_m_roller",name:"돌돌이 (격주)",detail:"격주 돌돌이 작업 실시",gender:"all"}
-    ]}
-  ]},
-  {slot:"22:00~23:00",shift:"night",groups:[
-    {title:"요일별 집중 청소 (야간)",items:[
-      {id:"n_daily_focus",name:"요일별 집중 청소",detail:"해당 요일 집중 청소 항목 수행 (요일별 항목 참고)",gender:"all"}
-    ]}
-  ]},
-  {slot:"23:00~23:30",shift:"night",groups:[
-    {title:"휴게시간",items:[
-      {id:"n_break",name:"휴게시간",detail:"30분 휴식",gender:"all"}
-    ]}
-  ]},
-  {slot:"23:30~00:30 여 사우나",shift:"night",groups:[
-    {title:"여 사우나 탕청소",items:[
-      {id:"n_f_tang",name:"냉탕/온탕/열탕 배수 + 탕 내부 청소",detail:"배수 후 탕 내부 벽면/바닥 세척 | 배수구 이물질 제거",gender:"all"},
-      {id:"n_f_shower",name:"샤워부스 청소",detail:"샤워부스 벽면/바닥/배수구 세척",gender:"all"},
-      {id:"n_f_floor",name:"바닥 + 배수구",detail:"전체 바닥 세척 | 배수구 이물질 제거 및 소독",gender:"all"},
-      {id:"n_f_roller",name:"돌돌이 (격주)",detail:"격주 돌돌이 작업 실시",gender:"all"}
-    ]}
-  ]},
-  {slot:"00:30~01:30",shift:"night",groups:[
-    {title:"여 화장실 + 마감",items:[
-      {id:"n_f_toilet",name:"여 사우나 화장실 청소",detail:"소변기/대변기/바닥/세면공간 세척",gender:"all"},
-      {id:"n_daily_focus2",name:"요일별 청소 마무리",detail:"요일별 잔여 집중 청소 항목 마무리",gender:"all"},
-      {id:"n_final",name:"최종 마감 점검",detail:"전 구역 최종 확인 | 탕 배수 일지 작성",gender:"all"}
-    ]}
-  ]}
-];
-
-/* ── E: Day-of-week focused cleaning ── */
-const DAY_FOCUS={
-  1:[ // 월
-    {id:"df_mon1",name:"화장실 전체 청소",detail:"남/여 화장실 전면 세척",gender:"all"},
-    {id:"df_mon2",name:"탈수기 물때/곰팡이",detail:"탈수기 내부 물때 및 곰팡이 제거",gender:"all"},
-    {id:"df_mon3",name:"B-1 파우더 집중",detail:"파우더 공간 집중 청소",gender:"all"},
-    {id:"df_mon4",name:"B-5 사우나 화장실 집중",detail:"사우나 화장실 집중 세척 (탕 배수: 마개+스위치 확인)",gender:"all"}
-  ],
-  2:[ // 화
-    {id:"df_tue1",name:"세면대 배수 파이프",detail:"세면대 배수 파이프 분해 청소",gender:"all"},
-    {id:"df_tue2",name:"배수구 악취 소독/머리카락",detail:"배수구 악취 소독 및 머리카락 제거",gender:"all"},
-    {id:"df_tue3",name:"탕 내 비품 점검",detail:"탕 내부 비품 상태 확인 및 교체",gender:"all"},
-    {id:"df_tue4",name:"E-2 거울/유리창 집중",detail:"센터 거울 및 유리창 집중 세척",gender:"all"},
-    {id:"df_tue5",name:"D-6 G.X룸 거울",detail:"G.X룸 거울 집중 세척",gender:"m"}
-  ],
-  3:[ // 수
-    {id:"df_wed1",name:"건/습식 사우나 바닥",detail:"고압세척 + 산성세제 집중 세척",gender:"all"},
-    {id:"df_wed2",name:"D-8 키즈샤워실 집중",detail:"키즈샤워실 집중 청소",gender:"m"}
-  ],
-  4:[ // 목
-    {id:"df_thu1",name:"화장실 전체 청소",detail:"남/여 화장실 전면 세척",gender:"all"},
-    {id:"df_thu2",name:"탈수기 물때/곰팡이",detail:"탈수기 내부 물때 및 곰팡이 제거",gender:"all"},
-    {id:"df_thu3",name:"B-1 파우더 집중",detail:"파우더 공간 집중 청소",gender:"all"},
-    {id:"df_thu4",name:"B-5 사우나 화장실 집중",detail:"사우나 화장실 집중 세척",gender:"all"}
-  ],
-  5:[ // 금
-    {id:"df_fri1",name:"세면대 배수 파이프",detail:"세면대 배수 파이프 분해 청소",gender:"all"},
-    {id:"df_fri2",name:"배수구 악취 소독/머리카락",detail:"배수구 악취 소독 및 머리카락 제거",gender:"all"},
-    {id:"df_fri3",name:"탕 내 비품 점검",detail:"탕 내부 비품 상태 확인 및 교체",gender:"all"},
-    {id:"df_fri4",name:"D-7 센터 화분 집중",detail:"화분 물 공급 및 주변 정리 집중",gender:"f"}
-  ],
-  6:[ // 토
-    {id:"df_sat1",name:"벽체 곰팡이/물때",detail:"벽체 곰팡이 및 물때 제거",gender:"all"},
-    {id:"df_sat2",name:"거울/유리창 물때",detail:"거울 및 유리창 물때 집중 제거",gender:"all"},
-    {id:"df_sat3",name:"천정 환기구 먼지",detail:"천정 환기구 먼지 제거",gender:"all"},
-    {id:"df_sat4",name:"방제",detail:"방제 작업 실시",gender:"all"}
-  ],
-  0:[ // 일
-    {id:"df_sun1",name:"탕청소 업체 휴무",detail:"탕청소 업체 휴무일",gender:"all"},
-    {id:"df_sun2",name:"E-6 주차장 집중",detail:"주차장 집중 청소",gender:"all"},
-    {id:"df_sun3",name:"개인락커 + 미비 부분",detail:"개인락커 점검 및 미비 사항 보완",gender:"all"}
-  ]
-};
-
-/* ── Helper functions ── */
-
-function getDayInfo(ds){
-  const d=new Date(ds+'T00:00:00'),dow=d.getDay(),wk=Math.ceil(d.getDate()/7);
-  if(dow===0&&(wk===2||wk===4))return{type:'closed',label:'휴관일',cls:'closed'};
-  if(ds.slice(5)==='01-01')return{type:'closed',label:'휴관일',cls:'closed'};
-  if(dow===0||dow===6)return{type:'weekend',label:'주말',cls:'weekend'};
-  return{type:'weekday',label:'평일',cls:'weekday'};
-}
-
-function getDayOfWeek(ds){return new Date(ds+'T00:00:00').getDay()}
-
-function getSched(ds){
-  const i=getDayInfo(ds);
-  if(i.type==='closed')return null;
-  return i.type==='weekend'?WEEKEND:WEEKDAY;
-}
-
-function getNightSched(ds){
-  const i=getDayInfo(ds);
-  if(i.type==='closed')return null;
-  return i.type==='weekend'?NIGHT_WEEKEND:NIGHT_WEEKDAY;
-}
-
-function getActiveSchedG(ds,g){
-  if(isNightShiftWorkerG(g)){
-    return getNightSched(ds);
-  }
-  return getSched(ds);
-}
-
-function getAllItems(sched){
-  const items=[];
-  if(!sched)return items;
-  sched.forEach(slot=>{slot.groups.forEach(g=>{g.items.forEach(it=>{items.push({...it,shift:slot.shift,slot:slot.slot,cat:g.title})})})});
-  return items;
-}
-
-let STATE={};
-const LK=d=>`wcheck3_${d}`;
-
-function loadLocal(d){try{return JSON.parse(localStorage.getItem(LK(d)))||{}}catch{return{}}}
-function saveLocal(d,o){localStorage.setItem(LK(d),JSON.stringify(o))}
-
-function saveState(d){
-  saveLocal(d,STATE);
-}
-
-function getDateG(g){
-  return new Date().toISOString().slice(0,10);
-}
-// v2.51 — 로컬(KST) 날짜 직렬화. toISOString()(UTC)은 9시간 차로 날짜가 어긋나 ±1일 이동이 깨짐.
-function fmtLocalDate(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
-function escapeAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-
-/* v2.50 — 매뉴얼 탭 현재 점검 항목 자동 동기화 */
-function renderManualItems(){
-  const el=document.getElementById('manual-items-sync');
-  if(!el)return;
-  // WEEKDAY를 기준으로 항목 수집 (평일 = 기본 표준 스케줄)
-  const sched=typeof WEEKDAY!=='undefined'?WEEKDAY:[];
-  // 카테고리별로 항목 모으기 (중복 id 제거)
-  const catMap={};
-  const catOrder=[];
-  const seen=new Set();
-  function pushItem(cat,it){
-    if(!catMap[cat]){catMap[cat]=[];catOrder.push(cat);}
-    if(!seen.has(it.id)){seen.add(it.id);catMap[cat].push(it);}
-  }
-  sched.forEach(slot=>{
-    slot.groups.forEach(grp=>{
-      grp.items.forEach(it=>pushItem(grp.title,it));
-    });
-  });
-  // GM이 추가한 항목(CUSTOM_ITEMS)도 함께 표시
-  if(typeof CUSTOM_ITEMS!=='undefined'){
-    CUSTOM_ITEMS.forEach(ci=>{
-      pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,_custom:(typeof isAddedItem==='function'?isAddedItem(ci.id):true)});
-    });
-  }
-  let html='';
-  catOrder.forEach(cat=>{
-    const items=catMap[cat];
-    html+=`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">`;
-    html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);">${cat}</div>`;
-    items.forEach(it=>{
-      const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
-      const hasDet=!!detHtml;
-      const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">남</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">여</span>':'';
-      const customLabel=it._custom?' <span style="font-size:10px;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:6px;">추가</span>':'';
-      const checked=!!STATE[it.id];
-      const checkMark=checked?' <span style="color:var(--green);font-weight:700;">&#10003;</span>':'';
-      const nameStyle=checked?'font-size:13px;font-weight:600;color:var(--dim);text-decoration:line-through;':'font-size:13px;font-weight:600;';
-      const arrow=hasDet?`<span class="m-arrow" style="font-size:11px;color:var(--dim);transition:transform .2s;">&#9654;</span>`:'';
-      const nameCursor=hasDet?'cursor:pointer;':'';
-      html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
-      html+=`<div style="display:flex;align-items:flex-start;gap:10px;">`;
-      html+=`<input type="checkbox" id="mcb_${it.id}" ${checked?'checked':''} onchange="onManualCk('${it.id}')" style="width:18px;height:18px;margin-top:1px;flex:0 0 auto;cursor:pointer;accent-color:var(--green);">`;
-      html+=`<div style="flex:1 1 auto;${nameCursor}" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${checkMark}</span>${arrow}</div>`;
-      if(hasDet)html+=`<div class="manual-item-detail" style="display:none;font-size:12px;color:var(--dim);margin-top:5px;line-height:1.5;">${detHtml}</div>`;
-      html+=`</div></div></div>`;
-    });
-    html+=`</div>`;
-  });
-  el.innerHTML=html||'<div style="color:var(--dim);font-size:13px;">항목 없음</div>';
-}
-
-/* 매뉴얼 탭 개별 항목 점검완료 체크 → STATE+saveState(로컬 저장) */
-function onManualCk(id){
-  const d=getDateG(activeGenderTab);
-  STATE[id]=document.getElementById('mcb_'+id).checked;
-  saveState(d);
-  renderManualItems();
-}
-
-/* 매뉴얼 탭 항목 상세 토글 (이름 영역 클릭, 체크박스는 제외) */
-function togManualItem(nameEl){
-  const det=nameEl.querySelector('.manual-item-detail');
-  if(!det)return;
-  const open=det.style.display!=='none';
-  det.style.display=open?'none':'block';
-  const arrow=nameEl.querySelector('.m-arrow');
-  if(arrow)arrow.style.transform=open?'rotate(0deg)':'rotate(90deg)';
-}
 
 function togManual(h){
   const body=h.nextElementSibling;
@@ -3197,164 +2719,11 @@ function requireEditAuth(){
   return true;
 }
 
-/* mgmtLoadItems → 시트 동기화된 CUSTOM_ITEMS 반환 (localStorage 폐기) */
-function mgmtLoadItems(){
-  return CUSTOM_ITEMS;
-}
-/* mgmtSaveItems → CUSTOM_ITEMS 갱신 + 시트 저장(saveItems) + 오프라인 캐시 */
-function mgmtSaveItems(items){
-  CUSTOM_ITEMS = items;
-  localStorage.setItem(ITEM_CACHE_KEY, JSON.stringify(items)); // 오프라인 폴백 캐시
-  if(!ONLINE) return;
-  const payload = items.map(itemToSheet);
-  const ind = document.getElementById('saveIndicator');
-  if(ind){ ind.style.display='block'; ind.textContent='항목 저장 중...'; }
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    // S4 갭②(2026-06-10 시토): dept 부착 — 백엔드 saveItems가 본 dept 행만 재기록(타 dept 보존).
-    body:JSON.stringify(withDept({action:'saveItems',items:payload}))
-  }).then(()=>{ if(ind){ind.textContent='항목 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);} })
-    .catch(()=>{ if(ind){ind.textContent='항목 저장 실패 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);} });
-}
-
-/* isAddedItem — 임의식별자(레거시 custom_/cx_) 판별. 정식 접두+번호(a1·c11 등)는 false → '추가' 라벨 미부착. */
-function isAddedItem(id){ return /^(custom_|cx_)/.test(String(id||'')); }
-
-function mgmtGenerateId(category){
-  // 기존 항목ID(a1·b3·c1a·d2·e1·hw1 …)와 동일 체계로 정식 id 부여(custom_/cx_ 임의식별자 폐지).
-  // 접두 도출 우선순위(추측 금지·실데이터 기준):
-  //   1) 같은 카테고리(그룹)에 이미 있는 항목 id 접두(최다) — 예 '교대 인수인계'=hw, 'C 세탁물'=c
-  //   2) 카테고리명 머리 영문자(A 사우나→a)  3) 폴백 'x'
-  // 정식 접두+번호라야 점검 화면에서 '추가' 라벨 없이 정상 항목으로 합류(isAddedItem=false 기준).
-  const cat=String(category||'').trim();
-  const all=[];           // 전체 id (번호 충돌 방지)
-  const sameCat=[];       // 같은 카테고리 항목 id (접두 도출)
-  function _collect(id,c){ id=String(id||''); if(!id)return; all.push(id); if(c&&String(c)===cat)sameCat.push(id); }
-  try{
-    [typeof WEEKDAY!=='undefined'?WEEKDAY:null, typeof WEEKEND!=='undefined'?WEEKEND:null,
-     typeof NIGHT_WEEKDAY!=='undefined'?NIGHT_WEEKDAY:null, typeof NIGHT_WEEKEND!=='undefined'?NIGHT_WEEKEND:null]
-      .forEach(function(sc){ if(Array.isArray(sc)) getAllItems(sc).forEach(function(it){ _collect(it&&it.id, it&&it.cat); }); });
-  }catch(e){}
-  (typeof CUSTOM_ITEMS!=='undefined'?CUSTOM_ITEMS:[]).forEach(function(it){ _collect(it&&it.id, it&&(it.category||it.cat)); });
-  let prefix='';
-  if(sameCat.length){
-    const cnt={};
-    sameCat.forEach(function(id){ const m=id.match(/^([a-z]+)/); if(m){ const p=m[1]; cnt[p]=(cnt[p]||0)+1; } });
-    let best=0; Object.keys(cnt).forEach(function(p){ if(cnt[p]>best){ best=cnt[p]; prefix=p; } });
-  }
-  if(!prefix){ const lead=cat.match(/[A-Za-z]/); prefix=lead?lead[0].toLowerCase():'x'; }
-  const re=new RegExp('^'+prefix+'(\\d+)$');
-  let max=0;
-  all.forEach(function(id){ const m=id.match(re); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; } });
-  let seq=max+1, id=prefix+seq;
-  while(all.indexOf(id)>=0){ seq++; id=prefix+seq; }
-  return id;
-}
-
-/* ── 점검 화면 카테고리별 빠른 항목 추가 (셋업 편집기 데이터계층 재사용) ──
-   카테고리 하단 "＋ 항목 추가" → 인라인 입력칸 1회 생성(한글 IME 조합 중 재렌더 금지) →
-   CUSTOM_ITEMS push → mgmtSaveItems(기존 saveItems POST) → renderG 재렌더.
-   slot/shift는 렌더 루프의 라이브 값을 그대로 전달(형식 보존), gender는 탭(m/f). */
-
 function escapeHTML(s){
   if(!s) return '';
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-/* ── 커스텀 항목을 기존 스케줄에 주입 ── */
-function mgmtGetCustomItemsForSchedule(schedType){
-  // schedType: 'weekday' or 'weekend'
-  // GM이 시트에 저장한 항목(CUSTOM_ITEMS)을 해당 스케줄에 주입.
-  const items = mgmtLoadItems();
-  return items.filter(item => {
-    /* shadow(기본 항목 편집분, id가 custom_ 아님)는 신규 주입 제외 — renderItem override 맵으로만 반영(중복 방지) */
-    if(isShadowItem(item)) return false;
-    if(!item.dayType || item.dayType === 'both') return true;
-    return item.dayType === schedType;
-  });
-}
-
-function mgmtBuildCustomSlots(customItems){
-  // 커스텀 아이템을 slot+shift+category 기준으로 그룹핑하여
-  // 기존 스케줄 포맷과 동일한 구조로 반환
-  const slotMap = {};
-  customItems.forEach(item => {
-    const key = item.slot + '|' + item.shift;
-    if(!slotMap[key]){
-      slotMap[key] = { slot: item.slot, shift: item.shift, groups: {} };
-    }
-    if(!slotMap[key].groups[item.category]){
-      slotMap[key].groups[item.category] = [];
-    }
-    slotMap[key].groups[item.category].push({
-      id: item.id,
-      name: item.name,
-      detail: item.detail || '',
-      gender: item.gender || 'all',
-      type: item.type || 'check',     // S4: 측정형 식별 전달
-      fields: item.fields || '',      // S4: measure 영문키 목록
-      _custom: true
-    });
-  });
-
-  // 배열로 변환
-  return Object.values(slotMap).map(slot => ({
-    slot: slot.slot,
-    shift: slot.shift,
-    groups: Object.entries(slot.groups).map(([title, items]) => ({
-      title: title,
-      items: items,
-      _custom: true
-    }))
-  }));
-}
-
-/* 커스텀 항목을 WEEKDAY/WEEKEND 배열에 병합 (원본 변경 없이 합친 새 배열 반환) */
-function mgmtMergeSchedule(baseSched, customSlots){
-  if(!customSlots || customSlots.length === 0) return baseSched;
-
-  // 깊은 복사
-  const merged = baseSched.map(slot => ({
-    slot: slot.slot,
-    shift: slot.shift,
-    groups: slot.groups.map(g => ({
-      title: g.title,
-      items: [...g.items]
-    }))
-  }));
-
-  customSlots.forEach(cs => {
-    // 같은 slot+shift 슬롯 찾기
-    let existSlot = merged.find(s => s.slot === cs.slot && s.shift === cs.shift);
-    if(!existSlot){
-      // 없으면 새 슬롯 추가
-      merged.push({
-        slot: cs.slot,
-        shift: cs.shift,
-        groups: cs.groups.map(g => ({ title: g.title, items: [...g.items], _custom: true }))
-      });
-    } else {
-      cs.groups.forEach(cg => {
-        // 같은 카테고리 찾기
-        let existGroup = existSlot.groups.find(g => g.title === cg.title);
-        if(existGroup){
-          // 기존 그룹에 항목 추가
-          cg.items.forEach(item => existGroup.items.push(item));
-        } else {
-          // 새 그룹 추가
-          existSlot.groups.push({ title: cg.title, items: [...cg.items], _custom: true });
-        }
-      });
-    }
-  });
-
-  return merged;
-}
-
-/* 현재 스케줄에 커스텀 항목 반영 (이 함수를 getSched/getNightSched 래핑에 사용) */
-
-/* 초기 렌더링 */
-renderManualItems();
 </script>
 <script>
 /* ── 거래업체 보드 = 별도 스크립트 블록 ── 경계 주석에 스크립트 태그 글자(닫기·열기)를 절대 넣지 말 것: 브라우저가 진짜 태그로 읽어 블록이 끊기고 페이지가 깨진다. GM 2026-06-16 시우. */
@@ -4506,136 +3875,6 @@ function vendorSubmitAddForm(){
   // 금일 작업사항·지시사항·점검요청사항 입력 → 정오 이후 자동 저장(디바운스). 정적 박스라 1회 연결.
   try{ ['fc_work','fc_order','fc_req','fc_ooc_action'].forEach(function(id){ var n=document.getElementById(id); if(n) n.addEventListener('input',fcNotesDebounced); }); }catch(e){}
 
-  /* ═══ 현황 대시보드(tab-admin) — 특정 1일 실시간 현황 (지원부 tab-admin 구조 이식, 시설부 실측정값 구조로 바인딩).
-     월간 탭(카테고리·회차·점검자 '월간' 집계)과 겹치지 않게 — 이 탭은 FACILITY_CHECK_{date} 보드를 그 날짜 하나만 읽어
-     회차별·점검자별 '오늘' 실황 + 기준이탈(FC_RANGES) 경보를 보여준다. GM 승인 2026-07-10 시우. ═══ */
-  // measure(JSON 문자열) 안 각 필드를 FC_RANGES(숫자 범위)·ok/x 셀렉트 기준으로 재판정 — DOM이 아닌 저장값 기준(다른 날짜 조회 가능).
-  function facAlertsInMeasure(measureJSON){
-    var out=[]; if(!measureJSON) return out;
-    var vals; try{ vals=JSON.parse(measureJSON); }catch(e){ return out; }
-    Object.keys(vals).forEach(function(k){
-      var fid='fc_'+k, v=vals[k], cfg=FC_RANGES[fid];
-      if(cfg){
-        var num=parseFloat(v);
-        if(v!=='' && !isNaN(num) && (num<cfg.min||num>cfg.max)) out.push({id:fid,v:v});
-      } else if(String(v||'').trim().toLowerCase()==='x'){
-        out.push({id:fid,v:v});
-      }
-    });
-    return out;
-  }
-  function facItemLabel(fid){
-    var all=FC_ROUND_ITEMS.concat(FC_DAILY_ITEMS);
-    for(var i=0;i<all.length;i++){ if(all[i].fields.indexOf(fid)>=0) return all[i].name; }
-    return fid;
-  }
-  window.setFacAdminToday=function(){ var e=document.getElementById('facAdminDate'); if(!e)return; e.value=fmtLocalDate(new Date()); renderFacAdmin(); };
-  window.moveFacAdminDate=function(n){ var e=document.getElementById('facAdminDate'); if(!e)return; var d=new Date(e.value+'T00:00:00'); d.setDate(d.getDate()+n); e.value=fmtLocalDate(d); renderFacAdmin(); };
-  window.renderFacAdmin=function(){
-    var dEl=document.getElementById('facAdminDate'); if(!dEl) return;
-    if(!dEl.value) dEl.value=fmtLocalDate(new Date());
-    var date=dEl.value;
-    var el=document.getElementById('facAdminView'); if(!el) return;
-    var info=getDayInfo(date);
-    var dn=['일','월','화','수','목','금','토'], dow=new Date(date+'T00:00:00').getDay();
-    el.innerHTML='<div class="loading">불러오는 중...</div>';
-    fetch(API_URL+'?action=board&key='+encodeURIComponent('FACILITY_CHECK_'+date),{redirect:'follow'})
-      .then(function(r){return r.json();})
-      .then(function(j){
-        var b=(j&&j.board)||{};
-        var store=(b.store&&typeof b.store==='object')?b.store:{};
-        var subs=(Array.isArray(store.submissions)?store.submissions:[]).slice().sort(function(a,c){return (a.seq||0)-(c.seq||0);});
-        var total=FC_ROUND_ITEMS.length+FC_DAILY_ITEMS.length;
-
-        var html='';
-        html+='<div class="dash-section-title">'+date+' ('+dn[dow]+') <span class="day-type '+info.cls+'">'+info.label+'</span> 현황 요약</div>';
-
-        var allAlerts=0, lastDone=0;
-        subs.forEach(function(s){
-          var done=(s.items||[]).length+(s.daily||[]).length;
-          if(done>lastDone) lastDone=done;
-          (s.items||[]).concat(s.daily||[]).forEach(function(it){ allAlerts+=facAlertsInMeasure(it.measure).length; });
-        });
-        var lastPct=total?Math.round(lastDone/total*100):0;
-        html+='<div class="dash-stat-row">';
-        html+='<div class="dash-stat-card"><div class="num">'+subs.length+'</div><div class="label">오늘 점검 회차</div></div>';
-        html+='<div class="dash-stat-card"><div class="num">'+lastDone+'/'+total+'</div><div class="label">최근 회차 입력 항목</div></div>';
-        html+='<div class="dash-stat-card"><div class="num">'+lastPct+'%</div><div class="label">최근 회차 입력률</div></div>';
-        html+='<div class="dash-stat-card"><div class="num" style="color:'+(allAlerts>0?'var(--red)':'var(--green)')+'">'+allAlerts+'</div><div class="label">기준이탈 경보(오늘 누적)</div></div>';
-        html+='</div>';
-
-        if(!subs.length){
-          html+='<div class="admin-card"><div style="font-size:13px;color:var(--dim);">이 날짜에 제출된 점검 기록이 없습니다.</div></div>';
-          el.innerHTML=html;
-          return;
-        }
-
-        /* ━━━ 회차별 통계 ━━━ */
-        html+='<div class="dash-section-title">회차별 통계</div>';
-        html+='<table class="dash-table"><tr><th>회차</th><th>시작~종료</th><th>소요</th><th>점검자</th><th>입력 항목</th><th>경보</th><th style="min-width:80px">입력률</th></tr>';
-        subs.forEach(function(s){
-          var done=(s.items||[]).length+(s.daily||[]).length;
-          var pct=total?Math.round(done/total*100):0;
-          var al=0; (s.items||[]).concat(s.daily||[]).forEach(function(it){ al+=facAlertsInMeasure(it.measure).length; });
-          var timeRange=(s.startHHMM||'-')+' ~ '+(s.endHHMM||'-');
-          var dur=(s.durMin!==null&&s.durMin!==undefined&&s.durMin!=='')?(s.durMin+'분'):'-';
-          html+='<tr><td><strong>'+(s.seq||'')+'회</strong></td><td>'+timeRange+'</td><td>'+dur+'</td><td>'+escapeHTML(s.inspector||'-')+'</td><td>'+done+'/'+total+'</td>';
-          html+='<td>'+(al>0?'<span style="color:var(--red);font-weight:600">'+al+'건</span>':'0건')+'</td>';
-          html+='<td><div class="dash-bar-wrap"><div class="dash-bar '+(al>0?'red':'green')+'" style="width:'+pct+'%"></div></div> '+pct+'%</td></tr>';
-        });
-        html+='</table>';
-
-        /* ━━━ 점검자별 통계 ━━━ */
-        var bySub={};
-        subs.forEach(function(s){
-          var name=s.inspector||'-';
-          if(!bySub[name]) bySub[name]={rounds:0,done:0,alerts:0};
-          var done=(s.items||[]).length+(s.daily||[]).length;
-          var al=0; (s.items||[]).concat(s.daily||[]).forEach(function(it){ al+=facAlertsInMeasure(it.measure).length; });
-          bySub[name].rounds++; bySub[name].done+=done; bySub[name].alerts+=al;
-        });
-        html+='<div class="dash-section-title">점검자별 통계</div>';
-        html+='<table class="dash-table"><tr><th>점검자</th><th>회차 수</th><th>총 입력 항목</th><th>경보</th></tr>';
-        Object.keys(bySub).forEach(function(name){
-          var st=bySub[name];
-          html+='<tr><td><strong>'+escapeHTML(name)+'</strong></td><td>'+st.rounds+'</td><td>'+st.done+'</td><td>'+(st.alerts>0?'<span style="color:var(--red);font-weight:600">'+st.alerts+'건</span>':'0건')+'</td></tr>';
-        });
-        html+='</table>';
-
-        /* ━━━ 회차별 상세 (최신 회차 먼저) ━━━ */
-        html+='<div class="dash-section-title">회차별 상세</div>';
-        subs.slice().reverse().forEach(function(s){
-          var catCount={};
-          (s.items||[]).concat(s.daily||[]).forEach(function(it){
-            var cat=it.cat||'기타';
-            if(!catCount[cat]) catCount[cat]={done:0};
-            catCount[cat].done++;
-          });
-          html+='<div class="admin-card"><h3>'+(s.seq||'')+'회 · '+escapeHTML(s.inspector||'-')+' · '+escapeHTML(s.at||'')+'</h3>';
-          Object.keys(catCount).forEach(function(cat){
-            html+='<div class="admin-row"><span>'+escapeHTML(cat)+'</span><span>'+catCount[cat].done+'건</span></div>';
-          });
-          var alerts=[];
-          (s.items||[]).concat(s.daily||[]).forEach(function(it){ facAlertsInMeasure(it.measure).forEach(function(a){ alerts.push({name:it.name||facItemLabel(a.id),v:a.v}); }); });
-          if(alerts.length){
-            html+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(237,91,63,0.3)">';
-            html+='<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px;">기준이탈 경보</div>';
-            alerts.forEach(function(a){ html+='<div style="font-size:12px;color:var(--red)">· '+escapeHTML(a.name)+' = '+escapeHTML(String(a.v))+'</div>'; });
-            html+='</div>';
-          }
-          if(s.work||s.order||s.note){
-            html+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);line-height:1.6;">';
-            if(s.work) html+='<div><strong>작업사항</strong> '+escapeHTML(s.work)+'</div>';
-            if(s.order) html+='<div><strong>지시사항</strong> '+escapeHTML(s.order)+'</div>';
-            if(s.note) html+='<div><strong>비고</strong> '+escapeHTML(s.note)+'</div>';
-            html+='</div>';
-          }
-          html+='</div>';
-        });
-
-        el.innerHTML=html;
-      }).catch(function(){ el.innerHTML='<div class="admin-card">불러오기 실패(네트워크)</div>'; });
-  };
 })();
 </script>
 

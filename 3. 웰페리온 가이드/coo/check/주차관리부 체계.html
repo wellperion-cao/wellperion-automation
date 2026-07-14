@@ -28,8 +28,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
 #tab-guide,#tab-policy,#tab-mplan{max-width:none;margin-left:0;margin-right:0}
-.date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
 /* ── 월 선택 바(월간운영계획.html 룩 통일 · 2026-07-07) ── */
 .month-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
 .month-bar label{font-size:12px;color:var(--dim)}
@@ -38,24 +36,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .submitter-bar{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
 .submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
 .submitter-bar select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600}
-.guide-cards{display:flex;gap:10px;margin-bottom:12px}
-.guide-card{flex:1;border-radius:10px;padding:12px 14px;border:1px solid}
-.guide-card.issue-guide{background:var(--red-bg);border-color:rgba(237,91,63,0.3)}
-.guide-card.tip-guide{background:var(--purple-bg);border-color:rgba(167,139,218,0.3)}
-.guide-card .guide-title{font-size:14px;font-weight:700;margin-bottom:4px}
-.guide-card.issue-guide .guide-title{color:var(--red)}
-.guide-card.tip-guide .guide-title{color:var(--purple)}
-.guide-card .guide-desc{font-size:12px;color:var(--dim);line-height:1.4}
-.shift-divider{background:var(--paper);border:1px solid var(--accent);border-radius:12px;padding:14px 18px;margin:20px 0 12px;position:relative}
-.shift-divider:first-of-type{margin-top:0}
-.shift-divider.night-shift{border-color:var(--orange)}
-.shift-label{font-size:15px;font-weight:700;color:var(--accent)}
-.shift-divider.night-shift .shift-label{color:var(--orange)}
-.shift-progress{margin-top:8px}
-.shift-progress .progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
-.shift-progress .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:6px}
-.shift-progress .progress-fill{height:100%;border-radius:4px;transition:width 0.3s}
-.shift-submitted{font-size:12px;color:var(--green);font-weight:600;margin-top:6px}
 .progress{background:var(--paper);border-radius:12px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--border)}
 .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
 .progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width 0.3s}
@@ -109,7 +89,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .status-dot.green{background:var(--green)}.status-dot.yellow{background:var(--yellow)}.status-dot.red{background:var(--red)}
 .tip-card{background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .tip-card h3{color:var(--purple);font-size:15px;font-weight:700;margin-bottom:10px}
-.closed-msg{text-align:center;padding:60px 20px;color:var(--dim);font-size:16px}
 .hidden{display:none}
 .loading{text-align:center;padding:40px;color:var(--dim)}
 /* Manual tab styles */
@@ -129,8 +108,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .manual-body .schedule-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
 .manual-body .schedule-table td,.manual-body .schedule-table th{padding:6px 10px;border:1px solid var(--border);text-align:left}
 .manual-body .schedule-table th{background:var(--accent-bg);color:var(--accent);font-weight:700}
-.day-focus-section{background:var(--paper);border:1px solid var(--blue);border-radius:12px;padding:14px 18px;margin:12px 0}
-.day-focus-section .day-focus-title{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:8px}
 /* ── 요일별 트렐로 칸반 보드 (매뉴얼 탭 주 콘텐츠 · 요일 다중선택) ── */
 .board-intro{font-size:12px;color:var(--dim);margin:2px 0 12px;line-height:1.5}
 /* 보드 풀폭 탈출(엣지투엣지): .content(720px·중앙) 제약을 벗어나 화면 좌측 끝~우측 끝까지 꽉 채움.
@@ -259,67 +236,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .board-scroll{scroll-snap-type:x mandatory}
   .dv-list{font-size:13.5px}
 }
-/* Admin shift card */
-.admin-shift-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
-.admin-shift-card h3{font-size:15px;font-weight:700;margin-bottom:6px}
-.admin-shift-card.am h3{color:var(--accent)}
-.admin-shift-card.pm h3{color:var(--green)}
-.admin-shift-card.night h3{color:var(--orange)}
-.admin-shift-card.am{border-color:rgba(183,159,138,0.4)}
-.admin-shift-card.pm{border-color:rgba(106,191,123,0.4)}
-.admin-shift-card.night{border-color:rgba(230,148,78,0.4)}
-.admin-shift-meta{font-size:12px;color:var(--dim);margin-bottom:8px}
-.admin-shift-meta .submitted-badge{color:var(--green);font-weight:600}
-.admin-shift-meta .not-submitted{color:var(--red);font-weight:600}
-.admin-progress-wrap{margin-bottom:10px}
-.admin-progress-wrap .progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
-.admin-progress-wrap .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:4px}
-.admin-progress-wrap .progress-fill{height:100%;border-radius:4px;transition:width 0.3s}
-/* Admin management styles */
-.admin-mgmt-divider{margin:32px 0 16px;padding-top:16px;border-top:2px solid var(--accent)}
-.admin-mgmt-divider h2{font-size:17px;font-weight:700;color:var(--accent);margin-bottom:4px}
-.admin-mgmt-divider .mgmt-sub{font-size:12px;color:var(--dim)}
-.admin-mgmt-form{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px}
-.admin-mgmt-form h3{font-size:15px;font-weight:700;margin-bottom:14px;color:var(--accent)}
-.mgmt-field{margin-bottom:12px}
-.mgmt-field label{display:block;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px}
-.mgmt-field select,.mgmt-field input[type=text],.mgmt-field textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;resize:vertical}
-.mgmt-field textarea{min-height:80px;line-height:1.6}
-.mgmt-field select{cursor:pointer}
-.mgmt-row{display:flex;gap:10px}
-.mgmt-row .mgmt-field{flex:1}
-.mgmt-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-.mgmt-btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid;transition:opacity 0.15s}
-.mgmt-btn:hover{opacity:0.85}
-.mgmt-btn.add{background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3)}
-.mgmt-btn.cancel{background:var(--paper);color:var(--dim);border-color:var(--border)}
-.mgmt-btn.save{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3)}
-.mgmt-btn.delete{background:var(--red-bg);color:var(--red);border-color:rgba(237,91,63,0.3)}
-.mgmt-btn.export{background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3)}
-.mgmt-btn.reset{background:var(--paper);color:var(--dim);border-color:var(--border)}
-.mgmt-item-list{background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
-.mgmt-item-list h3{font-size:15px;font-weight:700;padding:14px 18px;margin:0;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.mgmt-item-list h3 .mgmt-count{font-size:12px;color:var(--dim);font-weight:600}
-.mgmt-filter-bar{display:flex;gap:8px;padding:10px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.mgmt-filter-bar select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer}
-.mgmt-filter-bar input[type=text]{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;font-family:inherit;flex:1;min-width:100px}
-.mgmt-item{padding:12px 18px;border-bottom:1px solid rgba(61,56,53,0.3);transition:background 0.1s}
-.mgmt-item:last-child{border-bottom:none}
-.mgmt-item:hover{background:var(--accent-bg)}
-.mgmt-item-top{display:flex;align-items:flex-start;gap:10px}
-.mgmt-item-info{flex:1;min-width:0}
-.mgmt-item-name{font-size:14px;font-weight:700}
-.mgmt-item-meta{font-size:11px;color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
-.mgmt-item-meta .meta-tag{padding:1px 6px;border-radius:4px;font-weight:600}
-.mgmt-item-meta .meta-tag.slot{background:var(--accent-bg);color:var(--accent)}
-.mgmt-item-meta .meta-tag.day{background:var(--blue-bg);color:var(--blue)}
-.mgmt-item-meta .meta-tag.gender{background:var(--purple-bg);color:var(--purple)}
-.mgmt-item-detail{font-size:12px;color:var(--dim);margin-top:4px;white-space:pre-line;line-height:1.5}
-.mgmt-item-btns{display:flex;gap:6px;flex-shrink:0}
-.mgmt-item-btns .mgmt-btn{padding:6px 12px;font-size:12px;min-width:0}
-.mgmt-edit-inline{padding:12px 18px;border-bottom:1px solid rgba(61,56,53,0.3);background:rgba(183,159,138,0.06)}
-.mgmt-edit-inline .mgmt-field{margin-bottom:8px}
-.mgmt-empty{padding:24px 18px;text-align:center;color:var(--dim);font-size:13px}
 .mgmt-badge-custom{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;background:var(--yellow-bg);color:var(--yellow);margin-left:6px}
 /* ── 점검 화면 빠른 항목 추가 (quickadd) — 셋업 편집기 제거 후 유일 항목추가 경로 ── */
 .quickadd-bar{padding:8px 16px 12px;border-top:1px dashed var(--border)}
@@ -347,26 +263,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .dash-stat-card{flex:1;min-width:80px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center}
 .dash-stat-card .num{font-size:24px;font-weight:700;color:var(--accent)}
 .dash-stat-card .label{font-size:11px;color:var(--dim);margin-top:2px}
-.dash-table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 16px}
-.dash-table th,.dash-table td{padding:8px 10px;text-align:left;border:1px solid var(--border)}
-.dash-table th{background:var(--bg);font-weight:700;color:var(--accent);font-size:12px}
-.dash-table td{vertical-align:middle}
-.dash-bar-wrap{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;min-width:60px}
-.dash-bar{height:100%;border-radius:8px;transition:width 0.3s}
-.dash-bar.green{background:var(--green)}
-.dash-bar.blue{background:var(--blue)}
-.dash-bar.accent{background:var(--accent)}
-.dash-bar.red{background:var(--red)}
-.dash-bar.yellow{background:var(--yellow)}
-.dash-bar.orange{background:var(--orange)}
-.dash-bar.purple{background:var(--purple)}
 .dash-section-title{font-size:15px;font-weight:700;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.dash-issue-card{background:var(--paper);border:1px solid rgba(237,91,63,0.3);border-radius:10px;padding:14px 16px;margin-bottom:8px}
-.dash-issue-item{padding:6px 0;border-bottom:1px solid rgba(61,56,53,0.3);font-size:13px}
-.dash-issue-item:last-child{border-bottom:none}
-.dash-issue-name{font-weight:600}
-.dash-issue-memo{color:var(--red);font-size:12px;margin-top:2px}
-.dash-issue-meta{color:var(--dim);font-size:11px}
 /* ── Header utility buttons ── */
 .header-util-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .util-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background 0.15s}
@@ -406,25 +303,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .item{border-bottom:1px solid #eee;padding:6px 12px;break-inside:avoid}
   .extra-input{display:none!important}
   .extra-input.show{display:block!important;border:1px solid #ccc}
-  .shift-divider{border:1px solid #ccc;margin:8px 0}
-  .guide-cards,.submitter-bar{display:none!important}
+  .submitter-bar{display:none!important}
   /* 대시보드 인쇄 */
-  .admin-card,.admin-shift-card{border:1px solid #ccc!important;break-inside:avoid;margin-bottom:8px}
+  .admin-card{border:1px solid #ccc!important;break-inside:avoid;margin-bottom:8px}
   .dash-stat-card{border:1px solid #ccc!important;background:#f9f9f9!important;break-inside:avoid}
   .dash-stat-card .num{color:#333!important}
-  .dash-table th,.dash-table td{border:1px solid #ccc!important;padding:4px 8px;font-size:10px}
-  .dash-bar-wrap{background:#eee!important}
-  .dash-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .dash-issue-card{border:1px solid #ccc!important;break-inside:avoid}
-  .admin-mgmt-divider,.admin-mgmt-form,.mgmt-item-list,.mgmt-btn{display:none!important}
   [style*="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:60px"]{display:none!important}
   .progress-fill,.progress-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 @media(max-width:720px){
   .dash-stat-card{min-width:70px;padding:8px 6px}
   .dash-stat-card .num{font-size:18px}
-  .dash-table{font-size:11px}
-  .dash-table th,.dash-table td{padding:4px 6px}
 }
 /* 규정 탭 — 정기회의+근무휴게 같은 행: 좁은 화면에서 세로 전환 */
 @media(max-width:860px){
@@ -546,7 +435,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="sticky-top">
 <div class="header">
   <div class="header-top">
-    <h1>주차관리부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.0 · 2026-06-08</span> <span id="dayType"></span></h1>
+    <h1>주차관리부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.0 · 2026-07-14</span> <span id="dayType"></span></h1>
     <div class="sheet-links">
       <a class="sheet-link" href="전사_일정.html?dept=주차관리부" style="color:var(--accent);border-color:rgba(183,159,138,0.35);">
         <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zM7 12h5v5H7z"/></svg>
@@ -679,7 +568,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-valet" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">발렛 시스템 (직영)</h2>
-  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">직영 발렛 운영 체계 — <b>유료 5,000원(회원 포함)</b> · 차량 배상 보험 가입 · 셋업 진행 중(주차관리인 겸직 운영). 각 카드의 <b>편집</b> 버튼으로 수정·저장하면 모든 기기에 반영됩니다. <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);font-weight:700;font-size:11px;">[편집 가능 — GM 검토]</span></p>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">직영 발렛 운영 체계 — <b>유료 5,000원(회원 포함)</b> · 차량 배상 보험 가입 · 셋업 진행 중(주차관리인 겸직 운영). <span style="color:var(--dim);font-size:12px;">(카드 편집 방법은 규정 탭 안내 참조)</span></p>
   <div class="board-fullwidth">
     <div class="board-scroll"><div id="valet-board" style="display:contents"></div></div>
   </div>
@@ -736,7 +625,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <div id="tab-guide" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">가이드</h2>
-  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 카드에 에티켓·응대·복장·구역 관리·시간대 절차를 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--accent);">발렛 = 직영·유료(5,000원)·보험 운영 체계(셋업 진행, 주차관리인 겸직 운영).</span> <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);font-weight:700;font-size:11px;">[편집 가능 — GM 검토]</span></p>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 카드에 에티켓·응대·복장·구역 관리·시간대 절차를 정리했습니다. <span style="color:var(--accent);">발렛 = 직영·유료(5,000원)·보험 운영 체계(셋업 진행, 주차관리인 겸직 운영).</span></p>
   <!-- 가이드 트렐로 보드: renderGuideBoard()가 #guide-board(display:contents)에 .board-col 주입 -->
   <div class="board-fullwidth">
     <div class="board-scroll" id="guide-flow">
@@ -762,7 +651,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-manual" class="content hidden">
 
   <h2 style="font-size:20px;margin-bottom:6px;">매뉴얼</h2>
-  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">구역별 상세 절차와 요일별 집중 점검을 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="color:var(--accent);">발렛 = 직영·유료(5,000원)·보험 운영 체계(셋업 진행, 주차관리인 겸직 운영).</span> <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);font-weight:700;font-size:11px;">[편집 가능 — GM 검토]</span></p>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">구역별 상세 절차와 요일별 집중 점검을 카드로 정리했습니다. <span style="color:var(--dim);font-size:12px;">(발렛 안내는 가이드 탭 참조)</span></p>
   <!-- 매뉴얼 트렐로 보드: renderManualBoard()가 #manual-board(display:contents)에 구역별 .board-col 주입 -->
   <div class="board-fullwidth">
     <div class="board-scroll" id="manual-flow">
