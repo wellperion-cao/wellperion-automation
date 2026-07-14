@@ -788,5 +788,19 @@
     "artifact": "① 404: o1-module-hub BASE에 '3. 웰페리온 가이드/' 접두어가 붙어 점검현황·전사일정\n   링크가 404(Pages는 접두어 없이 서빙). 무접두어로 수정(부서별 체계 링크와 동일 베이스).\n② 느린로드: GAS 2콜 Promise.all 완료까지 카드(링크)조차 대기 → 링크 즉시 렌더 +\n   지표 stale-while-revalidate(localStorage 캐시·백그라운드 갱신).\n③ stale 삭제: '다음 구축 할일'(운영부·시설부·주차 '예정' 표기=이미 구축됨·거짓)\n   + '고도화 정의'(날 (CLI ad-hoc · 커밋 b02c477a)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b02c477a63cf4230aaa6125e64c5b5a8a3689341"
+  },
+  {
+    "task_id": "CPO-2026-07-14-ADHOC-79b5d280",
+    "clevel": "cpo",
+    "title": "[시포] 연락이력 날짜 100% 빈칸 근본수리 — 새 연락 기록 시 오늘 자동",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 972,
+    "artifact": "실측: 연락이력 718건 전부(100%) 날짜 빈칸 → 컨택 정체·마지막활동 추적 불능.\n_ctAddRow 신규행(＋추가·첫기록)만 오늘 기본값. 로드된 기존 행은 item(c) 전달로\n그대로(과거 백필/오염 0). 저장경로 무변경(INC-013 무관). 이후 컨택 정체 정확도 회복. (CLI ad-hoc · 커밋 79b5d280)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "79b5d2802012b0014d46cd21b0fb3f6759babb09"
   }
 ]
