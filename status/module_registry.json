@@ -159,6 +159,21 @@
       "honesty_default": "measured"
     },
     {
+      "id": "coo-schedule-ssot",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "전사 일정 SSOT — 반복 의무·법정 점검 단일출처(부서별 필터·기한 도래 선별·업무결재 예행연동)",
+      "data_source": {"kind": "json", "ref": "status/schedule_ssot.json"},
+      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "O1", "anchor": "전사_일정.html"},
+      "autonomy": "semi",
+      "ai_free_fallback": "schedule_ssot.json을 사람이 전사_일정.html 편집모드로 직접 관리, schedule_ssot.py가 기한 도래분 선별. AI 세션 불요",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "unmeasured"
+    },
+    {
       "id": "cpo-inquiry-daily-actions",
       "owner_role": "cpo",
       "owner_nick": "시포",
