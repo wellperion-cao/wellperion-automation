@@ -821,7 +821,8 @@
     "enqueued_at": "2026-07-14",
     "note": "[2026-07-14 GM 지시] 오늘 수동으로 한 시우(COO) 14페이지 감사(하위모델→A죽은코드/B중복/C낡은안내/D장황 분류→GM승인→적용)를 매주 일요일 09:00 무인 파이프로 제품화. 대상=COO 14페이지(coo/check 7·coo/todo 2·coo/notice 1·메인가이드 O1~O4), config로 확장 가능(후속 전 C-Level). 적용방식: A(죽은코드)만 grep-0 하드게이트 통과 시 자동삭제·페이지별(파일별) 커밋 / B·C·D는 status/page_hygiene_proposal_{date}.md 제안만(자동적용 금지). 게이트 PAGE_HYGIENE_APPLY(기본 OFF)로 라이브 자동삭제 분리 — 첫 주는 OFF(dry)로 돌려 GM/웰리 기계신뢰 확인 후 GM go로 ON. 파싱 무결성 검사 실패 시 해당 후보 롤백·스킵. 모호(주석·조건부 참조 등)하면 자동삭제 금지·제안 강등. 예약: Task Scheduler Wellperion-Weekly-Page-Hygiene-Sun-0900(일요일 09:00)+hidden vbs. 텔레그램 요약 + module_registry cto-weekly-page-hygiene 등록.",
     "module": "T2",
-    "ship_no": 979
+    "ship_no": 979,
+    "next": "파이프(scripts/weekly_page_hygiene.py)·pytest 28종(grep-0 게이트·snippet 고유성·파싱무결성·apply gate 기본OFF·force_dry_run 오버라이드·B/C/D 자동적용 금지·공유파일 순차처리 전부 통과)·launcher(scripts/weekly_page_hygiene.bat+launchers/weekly_page_hygiene_hidden.vbs)·예약등록 스크립트(ops/register_weekly_page_hygiene.bat, Wellperion-Weekly-Page-Hygiene-Sun-0900, 일요일 09:00, GM 수동 관리자 실행 대기)·module_registry cto-weekly-page-hygiene 등록까지 이번 세션에서 완료. COO 14페이지 config 실측(전 대상 파일 실존 확인)까지 검증됨. ★단, 실제 headless claude 감사 2페이지 스모크(--limit 2 --dry-run)는 실행 중 응답이 지연되어 결과 확인 전 종료 — force_dry_run 게이트상 파일 쓰기는 없었음(안전 확인됨)이나 실제 claude 감사 왕복 자체의 성공 여부는 미확인 — 다음 세션에서 스모크 재확인 필요. 다음 단계: 게이트 PAGE_HYGIENE_APPLY 기본 OFF 유지 — 첫 일요일(다음 일요일 09:00) dry 주 실행 결과를 GM/웰리가 검토한 뒤, GM go로 scripts/weekly_page_hygiene.bat의 PAGE_HYGIENE_APPLY=1 주석 해제(라이브 전환)."
   },
   {
     "task_id": "CEO-2026-07-14-ADHOC-e665bc1f",
