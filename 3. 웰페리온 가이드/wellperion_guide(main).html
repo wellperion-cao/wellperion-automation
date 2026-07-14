@@ -3762,6 +3762,52 @@ window._regAssign = function(id, category) {
       <div style="font-size:13px;color:var(--dim);line-height:1.65;">콘텐츠를 <b style="color:var(--text);">만들고(제작) → 검수·승인 → 5채널 발행 → 현황·전환</b>까지, CMO 마케팅을 한 곳에서 관리합니다. 담긴 것 = <b style="color:var(--text);">① 제작 프로세스</b> · <b style="color:var(--text);">② 검수·발행</b>(구 M3 통합) · <b style="color:var(--text);">③ 현황·전환</b>(구 M2 연결) · <b style="color:var(--text);">④ 채널 규칙·기타</b>. 아래로 내려가며 필요한 부분만 보세요.</div>
     </div>
 
+    <!-- 마케팅 현황 요약 카드 (2026-07-14 · O1 운영 모듈 현황 패턴 복제 · status/kpi_values.json 재사용) -->
+    <section id="m1-status-hub" style="margin:18px 0;">
+      <h3 style="font-size:1.05rem;margin:0 0 10px;">📊 마케팅 현황</h3>
+      <div id="m1-status-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;">
+        <div style="color:var(--dim);">모듈 불러오는 중…</div>
+      </div>
+    </section>
+    <script>
+    (function(){
+      var BASE = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/kpi_values.json";
+      var DASH_HREF = "cmo/funnel/마케팅현황대시보드.html";
+      var CACHE_KEY = "m1_kpi_strip_v1";
+      function card(label, value, tag){
+        return '<a href="'+DASH_HREF+'" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'
+          + '<div style="font-size:.82rem;color:var(--dim);margin-bottom:8px;">'+label+'</div>'
+          + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;">'+value+'</div>'
+          + '<div style="font-size:.72rem;color:var(--dim);margin-top:6px;">'+tag+'</div></a>';
+      }
+      function render(clicks, inq, join, rate, tag){
+        var el = document.getElementById('m1-status-cards'); if(!el) return;
+        el.innerHTML = card('클릭', clicks, tag)
+          + card('이번달 문의', inq, tag)
+          + card('이번달 가입', join, tag)
+          + card('이번달 전환율', rate, tag)
+          + '<a href="'+DASH_HREF+'" target="_blank" style="display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--accent);font-weight:700;font-size:.85rem;border:1px dashed var(--border);border-radius:12px;padding:14px;">전체 보기 →</a>';
+      }
+      function loadHub(){
+        // 링크는 즉시 렌더(클릭 가능) · 지표는 직전 캐시 표시 후 백그라운드 갱신(stale-while-revalidate) — O1 운영 모듈 현황과 동일 패턴
+        var cached=null; try{ cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){}
+        if(cached) render(cached.clicks, cached.inq, cached.join, cached.rate, '측정값 · 갱신 중');
+        else render('—','—','—','—','측정값(measured)');
+        fetch(BASE+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(data){
+          var cmo = (data && data.roles && data.roles.cmo) || {};
+          var cpo = (data && data.roles && data.roles.cpo) || {};
+          var clicks = (cmo['총_클릭수']!=null) ? cmo['총_클릭수'] : '—';
+          var inq = (cpo['이번달_전환_문의수']!=null) ? cpo['이번달_전환_문의수'] : '—';
+          var join = (cpo['이번달_전환_가입수']!=null) ? cpo['이번달_전환_가입수'] : '—';
+          var rate = (cpo['이번달_전환율']!=null) ? cpo['이번달_전환율']+'%' : '—';
+          render(clicks, inq, join, rate, '측정값(measured)');
+          try{ localStorage.setItem(CACHE_KEY, JSON.stringify({clicks:clicks,inq:inq,join:join,rate:rate})); }catch(e){}
+        }).catch(function(){ if(!cached){ var el=document.getElementById('m1-status-cards'); if(el) el.innerHTML='<div style="color:var(--red);">마케팅 현황: (측정 실패 — 정직 표기)</div>'; } });
+      }
+      loadHub();
+    })();
+    </script>
+
     <h3><span class="ico">🌟</span>북극성 지향 제작 루프 <span style="font-size:12px;color:var(--dim);font-weight:400;">(전 C-Level 공통 표준 · 정본 = 헌법 한 장 / 부트셋업)</span></h3>
     <p>모든 콘텐츠는 <strong>한 번에 끝내지 않고</strong> 북극성(노출 → 회원 전환 엔진)을 향해 이 루프를 돈다. 웰리가 각 콘텐츠 배의 단계를 추적하고, 완료 시 다음 단계를 자동 촉발한다.</p>
     <div class="callout" style="margin-bottom:14px;">🌟 북극성 → 기획·설계 → 초안 → ① 기능·UI/UX 디자인 → ② 고도화 → ③ 단순화 → ④ 실무 진행·피드백 → ⑤ 피드백 AI 검토 후 반영설계 &nbsp;↻&nbsp; ⑥ ①~⑤ 루프</div>
