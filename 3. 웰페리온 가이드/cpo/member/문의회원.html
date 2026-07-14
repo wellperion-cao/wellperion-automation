@@ -741,6 +741,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .dash-card[data-kind="inq"]::before{background:var(--teal)}
 .dash-card[data-kind="reg"]::before{background:var(--green)}
 .dash-card[data-kind="mem"]::before{background:var(--accent)}
+.dash-card[data-kind="loss"]::before{background:#c8756f}
+.dash-card[data-kind="wait"]::before{background:var(--accent)}
 .dash-card:hover{border-color:var(--accent-border);transform:translateY(-1px)}
 .dash-card.active{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal) inset}
 .dash-head{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700}
@@ -760,6 +762,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .dash-card[data-kind="inq"] .dash-v b.lead{color:var(--teal)}
 .dash-card[data-kind="reg"] .dash-v b.lead{color:var(--green)}
 .dash-card[data-kind="mem"] .dash-v b.lead{color:var(--accent)}
+.dash-card[data-kind="loss"] .dash-v b.lead{color:#c8756f}
+.dash-card[data-kind="wait"] .dash-v b.lead{color:var(--accent)}
 @media(max-width:900px){.dash-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr}}
 
@@ -1275,9 +1279,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   <div id="type-membership" class="type-pane active">
 
   <!-- ══ 등록·회원 탭 바로가기 — 구 4카드 중 신규문의·예약 2칸은 위 공유 히어로로 이전, 등록·회원 탭 진입 경로는
-       존치(회귀 방지, 배754 2026-07-10). id·onclick·표시값 100% 동일 보존 ══ -->
-  <div class="dash-grid" id="memberTabNav" style="grid-template-columns:repeat(2,1fr);max-width:640px">
-    <!-- 카드3: 등록 현황 (등록 회원 명단 — 내부 탭) -->
+       존치(회귀 방지, 배754 2026-07-10). id·onclick·표시값 100% 동일 보존.
+       카드3·4(LOSS·대기자)는 GM 신규 지시(CPO-2026-07-14-MEMBER-CARDS-FIX) — 강습 통합 4카드(lessonComboBoard)와
+       동일한 .dash-grid(731행, repeat(4,1fr)) 패턴 재사용, 기존 멤버십 데이터(cpo_today_stats)만 재활용(신규 fetch 없음).
+       대기자=멤버십 문의 진행상태에 '대기' 버킷이 존재하지 않아(STATUS_OPTIONS 참조, 강습 전용) 정직표기(미구현). ══ -->
+  <div class="dash-grid" id="memberTabNav">
+    <!-- 카드1: 등록 현황 (등록 회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="reg" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered')">
       <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">신규 등록 현황</span></div>
       <div class="dash-metrics">
@@ -1285,7 +1292,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dRegMonth">0</b> 명</span></div>
       </div>
     </a>
-    <!-- 카드4: 멤버십 회원 관리 (유효회원 명단 — 내부 탭) -->
+    <!-- 카드2: 멤버십 회원 관리 (유효회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="mem" data-tab="active" href="javascript:void(0)" onclick="switchTab('active')">
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 관리</span></div>
       <div class="dash-metrics">
@@ -1294,6 +1301,21 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
       </div>
     </a>
+    <!-- 카드3: LOSS 회원 관리 (이탈 — cpo_today_stats.todayLoss/monthLoss 재활용, 기존 gToLoss/gMoLoss와 동일 소스) -->
+    <a class="dash-card" data-kind="loss" href="javascript:void(0)" onclick="openChurnManage()">
+      <div class="dash-head"><span class="dash-dot" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dMemLossToday">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dMemLossMonth">0</b> 명</span></div>
+      </div>
+    </a>
+    <!-- 카드4: 대기자 회원 관리 (멤버십 문의에는 '대기' 진행상태 버킷이 없음 — 강습과 달리 데이터 미존재, 정직표기) -->
+    <div class="dash-card" data-kind="wait" style="cursor:default">
+      <div class="dash-head"><span class="dash-dot" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">대기</span><span class="dash-v"><b class="lead" id="dMemWait" style="font-size:15px;color:var(--dim)">미구현</b></span></div>
+      </div>
+    </div>
   </div>
   <!-- 참고(정직 기록, 배754): 구 카드1·2(멤버십 문의/예약)의 '월간' 보조수치(dInqMonth·dTourMon)는 위 공유
        히어로가 '오늘' 지표에 집중하며 표면에서 제거 — 계획서 의도(Architecture 문단)에 따른 의도된 단순화.
@@ -3857,8 +3879,18 @@ function lessonLoad(t) {
       lessonRenderChips(t);
       lessonRender(t);
       renderTodayActionPanel();   // 오늘 할 일 패널(배754) — 강습 유형 로드 완료 시 갱신(멤버십과 동일 패턴)
+      _lessonInqCardFallback(t);   // 안전 폴백(CPO-2026-07-14-MEMBER-CARDS-FIX) — lesson_stats가 아직/영영 못 채웠으면 방금 로드된 rows 건수로 보정
     })
     .catch(function(e){ _lessonEmpty(t, '데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
+}
+
+// 강습 문의 현황 카드 안전 폴백 — lessonLoad·lessonLoadStats 둘 중 어느 쪽이 늦게 끝나든, 카드가 여전히 "–"(미기록)면
+// 이미 로드된 rows 건수로 채워 영구 공백을 막는다(추가 fetch 없음). 정확도는 lesson_stats(d.total)가 더 높아 그쪽이
+// 도착하면 그대로 덮어씀 — 이 함수는 lesson_stats가 드롭·실패했을 때만 실질적으로 값을 남긴다. 2026-07-14 시포·GM.
+function _lessonInqCardFallback(t) {
+  var st = _lessonState[t];
+  var card = document.getElementById('lessonCardInq_' + t);
+  if (card && st && st.rowsLoaded && card.textContent === '–') card.textContent = st.rows.length;
 }
 
 function lessonLoadStats(t) {
@@ -3867,13 +3899,13 @@ function lessonLoadStats(t) {
   fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(st.type) + (st.scope === 'all' ? '&scope=all' : ''))
     .then(function(r){ return r.json(); })
     .then(function(d){
-      if (!d || !d.ok) return;
+      if (!d || !d.ok) { _lessonInqCardFallback(t); return; }   // 응답 실패/드롭 시에도 카드가 "–"로 고착되지 않게 폴백
       var el = document.getElementById('lessonStatLine_' + t);
       if (el) el.textContent = '총 ' + (d.total || 0) + '건 · 이번달 ' + (d.thisMonth || 0) + '건';
       var card = document.getElementById('lessonCardInq_' + t);   // 대시카드1(문의 현황) 숫자 배선. 2026-07-07 시포
       if (card) card.textContent = d.total || 0;
     })
-    .catch(function(){});
+    .catch(function(){ _lessonInqCardFallback(t); });
 }
 
 function _lessonChipHtml(t, val, label, n) {
@@ -5201,6 +5233,7 @@ function loadCpoTodayStats() {
       _setTxt('dMemActive', (Number(d.memberActive) || 0) + (Number(d.memberCorp) || 0)); _setTxt('dMemCorp', d.memberCorp);
       _cpoStats = d; renderActiveSummary();   // 회원관리 탭 요약카드(유효·법인·종료·비율바·순증감)
       _setTxt('gToLoss', d.todayLoss); _setTxt('gMoLoss', d.monthLoss);   // CPO 가이드 이탈 현황(오늘/월)
+      _setTxt('dMemLossToday', d.todayLoss); _setTxt('dMemLossMonth', d.monthLoss);   // 멤버십 4카드 LOSS 카드(CPO-2026-07-14-MEMBER-CARDS-FIX) — gToLoss/gMoLoss와 동일 소스 재사용
       if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — 새 문의 카운트 갱신
     })
     .catch(function(){});
