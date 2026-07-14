@@ -822,5 +822,19 @@
     "note": "[2026-07-14 GM 지시] 오늘 수동으로 한 시우(COO) 14페이지 감사(하위모델→A죽은코드/B중복/C낡은안내/D장황 분류→GM승인→적용)를 매주 일요일 09:00 무인 파이프로 제품화. 대상=COO 14페이지(coo/check 7·coo/todo 2·coo/notice 1·메인가이드 O1~O4), config로 확장 가능(후속 전 C-Level). 적용방식: A(죽은코드)만 grep-0 하드게이트 통과 시 자동삭제·페이지별(파일별) 커밋 / B·C·D는 status/page_hygiene_proposal_{date}.md 제안만(자동적용 금지). 게이트 PAGE_HYGIENE_APPLY(기본 OFF)로 라이브 자동삭제 분리 — 첫 주는 OFF(dry)로 돌려 GM/웰리 기계신뢰 확인 후 GM go로 ON. 파싱 무결성 검사 실패 시 해당 후보 롤백·스킵. 모호(주석·조건부 참조 등)하면 자동삭제 금지·제안 강등. 예약: Task Scheduler Wellperion-Weekly-Page-Hygiene-Sun-0900(일요일 09:00)+hidden vbs. 텔레그램 요약 + module_registry cto-weekly-page-hygiene 등록.",
     "module": "T2",
     "ship_no": 979
+  },
+  {
+    "task_id": "CEO-2026-07-14-ADHOC-e665bc1f",
+    "clevel": "ceo",
+    "title": "[웰리] 맥락 이모지로 가시성 강화 (카톡=순수텍스트라 이모지가 유일 시각도구)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 980,
+    "artifact": "종합접수 유형별 아이콘(🗣️컴플레인·🔑분실물·🔧시설고장·🧹청결·👏칭찬) + LLM 항목 글머리를\n내용 맞는 이모지로(종목🏊⛳🧘·장비💳📱🖨️🔑·상황💸🚫📅❓) 한 줄 1개·남발금지. 등록부 설명\n정합(점검 제외·새 순서). 카톡은 굵기·색 불가라 이모지 전략, 텔레그램은 서식 가능(참고). (CLI ad-hoc · 커밋 e665bc1f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e665bc1f7f78753fad7c0219c7cac3b9ca5e897e"
   }
 ]
