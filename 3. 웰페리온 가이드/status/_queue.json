@@ -327,8 +327,8 @@
     "enqueued_at": "2026-07-13",
     "ship_no": 917,
     "module": "O1",
-    "note": "[2026-07-13 GM go A] 890 KPI 수리 후 남은 표면. daily_scheduler.py 알림 지원부 셀이 raw today_live라 휴관일 0/82(0%)·아침 저% 오해. 수리: _is_closed_day(2·4주 일요일+1/1)로 휴관일엔 '🚫 휴관일-점검없음' 블록·정상일엔 당월누적 완료율 병기(kpi_values.json 재사용). 코드·dry-run 검증 완료. 가역(코드추가만). [2026-07-13 GM go A] 시설부 셀 %→이벤트중심 재구성: '시설부 점검 N회·이상 N건' + 박스 아래 작업사항(fc_work) 원문 노출(GM 승인 포맷 A). _fetch_facility_work 신설. 지원부 완료율은 현행 유지.",
-    "next": "⚓ 코드·검증 완결(커밋 418a7398 미이행노출 포함). 발효=WellperionDailyScheduler 데몬 재기동(다음 재부팅 자동 or 관리자 schtasks /End /TN WellperionDailyScheduler→/Run). 발효 후 12시 알림 live-verify 예정."
+    "note": "[2026-07-13 GM go A] 890 KPI 수리 후 남은 표면. daily_scheduler.py 알림 지원부 셀이 raw today_live라 휴관일 0/82(0%)·아침 저% 오해. 수리: _is_closed_day(2·4주 일요일+1/1)로 휴관일엔 '🚫 휴관일-점검없음' 블록·정상일엔 당월누적 완료율 병기(kpi_values.json 재사용). 코드·dry-run 검증 완료. 가역(코드추가만). [2026-07-13 GM go A] 시설부 셀 %→이벤트중심 재구성: '시설부 점검 N회·이상 N건' + 박스 아래 작업사항(fc_work) 원문 노출(GM 승인 포맷 A). _fetch_facility_work 신설. 지원부 완료율은 현행 유지. [2026-07-14 시토/시우 실측] 비관리자 세션 재기동 시도: Start-ScheduledTask는 무admin 성공(태스크 자체는 승격 위임)하나 기존 스케줄러(PID, HighestAvailable RunLevel로 이미 승격 기동됨) Stop-Process는 'Access is denied'로 실패 — PID락(daily_scheduler.py _check_pid_lock)이 살아있는 구프로세스를 감지해 신규 인스턴스가 자동 종료됨. 즉 재기동=관리자 권한 필수 확정(기존 프로세스 무중단 유지·알림 영향 없음). GM 실행 필요: ops/restart_daily_scheduler.bat (더블클릭 또는 ! \"C:/Users/jjky0/welperion-automation/ops/restart_daily_scheduler.bat\" -> UAC 예 클릭).",
+    "next": "⚓ GM 관리자권한 재기동 1회 필요 - ops/restart_daily_scheduler.bat 실행(UAC 승인) -> 발효 후 12시/15시 알림 live-verify"
   },
   {
     "task_id": "CEO-2026-07-14-ADHOC-4aafc409",
