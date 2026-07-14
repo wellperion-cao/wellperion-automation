@@ -145,6 +145,27 @@ def test_fetch_workapproval_no_anomaly_when_clean():
     assert st["reasons"] == []
 
 
-def test_status_fetchers_map_has_both_modules():
-    assert set(R.STATUS_FETCHERS.keys()) == {"coo-check-status", "coo-work-approval"}
+def test_status_fetchers_map_has_all_wired_modules():
+    assert set(R.STATUS_FETCHERS.keys()) == {"coo-check-status", "coo-work-approval", "coo-notice"}
     assert R.STATUS_FETCHERS["coo-work-approval"] is R.fetch_workapproval_status
+    assert R.STATUS_FETCHERS["coo-notice"] is R.fetch_notice_status
+
+
+def test_fetch_notice_status_counts_saved_and_active():
+    today = R._kst_today()
+    rows = [
+        {"id": "1", "startDate": "2026-01-01", "endDate": "2020-01-01"},  # 기간 만료
+        {"id": "2", "startDate": today, "endDate": today},                 # 기간중
+        {"id": "3", "startDate": "", "endDate": ""},                       # 상시(기간 미지정)
+    ]
+    st = R.fetch_notice_status(fetch_fn=lambda url: {"ok": True, "count": len(rows), "data": rows})
+    assert st["display"] == "저장 3건 · 기간중 1건"
+    assert st["anomaly"] is False
+    assert st["tag"] == "measured"
+    assert st["metrics"] == {"total": 3, "active": 1}
+
+
+def test_fetch_notice_status_empty_list_is_safe():
+    st = R.fetch_notice_status(fetch_fn=lambda url: {"ok": True, "data": []})
+    assert st["display"] == "저장 0건 · 기간중 0건"
+    assert st["anomaly"] is False

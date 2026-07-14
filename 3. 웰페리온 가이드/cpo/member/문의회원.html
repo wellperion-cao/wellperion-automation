@@ -1136,6 +1136,45 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
        (구현 노트: 계획서는 #cpoTodayStrip을 type-membership 내부에서 그대로 교체하도록 지시했으나, 실측 결과
         해당 위치는 강습 family 전환 시 display:none 처리되어 강습에 노출 불가함을 확인 → Task 6 강습 패리티
         요건 충족을 위해 유형칩 바로 아래 공유 위치로 이동. id·클래스명은 계획서 값 그대로 유지.) ══ -->
+  <!-- ══ 전환·회원 현황 보드 (일/월/연) — 배944 2026-07-14 시포·GM /deep-interview. 기간지표(문의·가입·전환율) 탭전환
+       + 누적 퍼널 + 아래 '오늘 처리'(기존 히어로 존치=회귀0). 정직: 전환율=등록월 기준(누적 39.9%와 뺄셈 금지). ══ -->
+  <style>
+  .status-board{border:1px solid var(--accent-border,rgba(183,159,138,.3));border-radius:12px;padding:14px 16px;margin:0 0 14px;background:var(--accent-bg,rgba(183,159,138,.06))}
+  .sb-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .sb-title{font-weight:700;font-size:14px;color:var(--accent-bright,#d9c4ad)}
+  .sb-tabs{display:inline-flex;gap:4px;background:rgba(0,0,0,.18);border-radius:8px;padding:3px}
+  .sb-tab{border:0;background:transparent;color:var(--dim-mid,#9e9b93);font-size:12px;padding:5px 12px;border-radius:6px;cursor:pointer}
+  .sb-tab.active{background:var(--accent,#B79F8A);color:#221F20;font-weight:700}
+  .sb-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .sb-metric{background:rgba(0,0,0,.15);border-radius:8px;padding:8px 10px;text-align:center}
+  .sb-k{display:block;font-size:11px;color:var(--dim,#7d7b74)}
+  .sb-v{display:block;font-size:22px;font-weight:800;color:#f0ece4;line-height:1.15}
+  .sb-d{display:block;font-size:11px;min-height:14px}
+  .sb-d.up{color:#7fc99a}.sb-d.down{color:#e28f8f}.sb-d.flat{color:var(--dim,#7d7b74)}
+  .sb-funnel{display:flex;align-items:center;justify-content:space-between;gap:2px;background:rgba(0,0,0,.12);border-radius:8px;padding:8px 6px;margin-bottom:6px;flex-wrap:wrap}
+  .sb-fstep{display:flex;flex-direction:column;align-items:center;min-width:40px;font-size:10px;color:var(--dim,#7d7b74)}
+  .sb-fstep b{color:#e8e2d8;font-size:14px;font-weight:800}
+  .sb-farrow{color:var(--dim,#7d7b74);font-size:11px}
+  .sb-caveat{font-size:10px;color:var(--dim,#7d7b74);line-height:1.4;margin-top:2px}
+  @media(max-width:640px){.sb-v{font-size:18px}.sb-fstep{min-width:34px}}
+  </style>
+  <div class="status-board" id="cpoStatusBoard">
+    <div class="sb-head">
+      <span class="sb-title">📊 전환·회원 현황</span>
+      <div class="sb-tabs" id="sbTabs">
+        <button type="button" class="sb-tab active" data-period="today" onclick="statusBoardTab('today')">오늘</button>
+        <button type="button" class="sb-tab" data-period="month" onclick="statusBoardTab('month')">이번달</button>
+        <button type="button" class="sb-tab" data-period="year" onclick="statusBoardTab('year')">올해</button>
+      </div>
+    </div>
+    <div class="sb-metrics" id="sbMetrics">
+      <div class="sb-metric"><span class="sb-k">문의</span><span class="sb-v" id="sbInq">…</span><span class="sb-d flat" id="sbInqD"></span></div>
+      <div class="sb-metric"><span class="sb-k">가입</span><span class="sb-v" id="sbReg">…</span><span class="sb-d flat" id="sbRegD"></span></div>
+      <div class="sb-metric"><span class="sb-k">전환율</span><span class="sb-v" id="sbRate">…</span><span class="sb-d flat" id="sbRateD"></span></div>
+    </div>
+    <div class="sb-funnel" id="sbFunnel"><span class="sb-caveat">퍼널 불러오는 중…</span></div>
+    <div class="sb-caveat" id="sbCaveat">전환율=등록월 기준(이번달 신규가입/이번달 문의) · 지난달 델타=같은 일자까지 공정 비교 · 누적 퍼널=전체 기간.</div>
+    <!-- 오늘 처리할 것(액션 행) — 기존 히어로 존치(회귀0) -->
   <div class="summary-hero" id="cpoTodayStrip">
     <a class="sum-card sc-new" id="sumNewCard" href="javascript:void(0)" onclick="heroCardClick('new')">
       <span class="sc-top">🆕 새 문의</span>
@@ -1162,6 +1201,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <span class="sc-go">오늘 할 일로 →</span>
     </a>
   </div>
+  </div><!-- /cpoStatusBoard -->
 
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
   <div id="type-membership" class="type-pane active">
@@ -2703,6 +2743,13 @@ function renderSummaryHero() {
   var tb = document.getElementById('tapBadge');
   var taskN = tb ? (parseInt(tb.textContent, 10) || 0) : 0;
 
+  // 현황 보드(배944) 동기 — 멤버십 기간데이터 최초 1회 로드, 이후·강습 전환은 재표시만(회귀0).
+  if (typeof _statusBoardLoad === 'function') {
+    var _sbIsMem = !(typeof _curFamily !== 'undefined' && _curFamily === 'lesson');
+    if (_sbIsMem && !_sbData.memLoaded) { _sbData.memLoaded = true; _statusBoardLoad(); }
+    else { renderStatusBoardPeriods(); }
+  }
+
   if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') {
     var haveLesson = (typeof _tapLessonTypes === 'function') && _tapLessonTypes().length > 0;
     var goN = document.getElementById('sumNewGo'), goB = document.getElementById('sumBookGo');
@@ -2739,6 +2786,107 @@ function renderSummaryHero() {
   // 아직 계산 전이면 이탈관리 모달의 갱신임박 배지(chSigD7/chSigD830, 모달 오픈 시에만 채워짐)로 폴백.
   setN('sumRisk', (typeof window._churnRiskEager === 'number') ? window._churnRiskEager : (nz('chSigD7') + nz('chSigD830')));
   setN('sumTask', taskN);
+}
+
+/* ══ 전환·회원 현황 보드 (일/월/연) — 배944 2026-07-14. loadMembershipDash 기간로직 재사용·상시 eager.
+   기간지표(문의·가입·전환율)만 탭전환, 이탈/할일 스냅샷은 아래 히어로에 존치. 강습=정직공백. ══ */
+var _sbData = { today: null, month: null, year: null, _prevMonth: null, funnel: null, memLoaded: false };
+var _sbPeriod = 'today';
+function _sbSet(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+function statusBoardTab(p) {
+  _sbPeriod = p;
+  var tabs = document.querySelectorAll('#sbTabs .sb-tab');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', tabs[i].getAttribute('data-period') === p);
+  renderStatusBoardPeriods();
+}
+function _sbDelta(id, now, prev, prevOk, isRate) {
+  var e = document.getElementById(id); if (!e) return;
+  if (_sbPeriod !== 'month' || now == null || prev == null || !prevOk) { e.className = 'sb-d flat'; e.textContent = ''; return; }
+  var diff = Math.round((now - prev) * 10) / 10, suf = isRate ? '%p' : '';
+  if (diff > 0) { e.className = 'sb-d up'; e.textContent = '지난달 ▲' + Math.abs(diff) + suf; }
+  else if (diff < 0) { e.className = 'sb-d down'; e.textContent = '지난달 ▼' + Math.abs(diff) + suf; }
+  else { e.className = 'sb-d flat'; e.textContent = '지난달 ±0'; }
+}
+function renderStatusBoardPeriods() {
+  var cav = document.getElementById('sbCaveat');
+  var lesson = (typeof _curFamily !== 'undefined' && _curFamily === 'lesson');
+  if (lesson) {
+    // 강습 = 전환율·퍼널·이탈 원본데이터 부재 → 정직 공백(문의·가입 기간지표 배선은 후속 증분).
+    _sbSet('sbInq', '준비 중'); _sbSet('sbReg', '준비 중'); _sbSet('sbRate', '데이터 없음');
+    ['sbInqD', 'sbRegD', 'sbRateD'].forEach(function (id) { var e = document.getElementById(id); if (e) { e.className = 'sb-d flat'; e.textContent = ''; } });
+    var fl = document.getElementById('sbFunnel'); if (fl) fl.innerHTML = '<span class="sb-caveat">강습 퍼널=데이터 없음(예약·방문·가입 구분 원장 부재)</span>';
+    if (cav) cav.textContent = '강습은 전환율·퍼널·이탈 원본데이터가 없어 정직 공백. 강습 기간지표(문의·가입)는 후속 배선 예정 · 데이터 파이프(≈9월) 후 편입.';
+    return;
+  }
+  if (cav) cav.textContent = '전환율=등록월 기준(이번달 신규가입/이번달 문의) · 지난달 델타=같은 일자까지 공정 비교 · 누적 퍼널=전체 기간. (누적 39.9%와 직접 비교 금지=서로 다른 기준)';
+  var d = _sbData[_sbPeriod];
+  if (!d) { _sbSet('sbInq', '…'); _sbSet('sbReg', '…'); _sbSet('sbRate', '…'); return; }
+  _sbSet('sbInq', d.inq != null ? d.inq.toLocaleString() : '–');
+  _sbSet('sbReg', d.reg != null ? d.reg.toLocaleString() : '–');
+  _sbSet('sbRate', d.rate != null ? d.rate + '%' : '–');
+  var prev = _sbData._prevMonth || {};
+  _sbDelta('sbInqD', d.inq, prev.inq, prev.inq != null, false);
+  _sbDelta('sbRegD', d.reg, prev.reg, prev.regOk, false);
+  _sbDelta('sbRateD', d.rate, prev.rate, prev.rate != null, true);
+}
+function _sbRecompute() {
+  ['today', 'month', 'year', '_prevMonth'].forEach(function (k) {
+    var d = _sbData[k]; if (!d) return;
+    d.rate = (d.inq != null && d.inq > 0 && d.reg != null) ? Math.round(d.reg / d.inq * 1000) / 10 : null;
+  });
+}
+function _sbRenderFunnel(tot) {
+  var el = document.getElementById('sbFunnel'); if (!el) return;
+  var steps = ['문의', '응대', '예약', '방문', '가입'];
+  var html = [];
+  steps.forEach(function (s, i) {
+    var v = (tot && tot[s] != null) ? tot[s].toLocaleString() : '–';
+    html.push('<span class="sb-fstep"><b>' + v + '</b>' + s + '</span>');
+    if (i < steps.length - 1) html.push('<span class="sb-farrow">→</span>');
+  });
+  el.innerHTML = html.join('');
+}
+function _statusBoardLoad() {
+  if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') { renderStatusBoardPeriods(); return; }
+  var now = new Date();
+  var mStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  var lStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  var _prevLen = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+  var lEnd = new Date(now.getFullYear(), now.getMonth() - 1, Math.min(now.getDate(), _prevLen));
+  var yStart = new Date(now.getFullYear(), 0, 1);
+  var todayStr = _mdashYmd(now), mStr = _mdashYmd(mStart), lStr = _mdashYmd(lStart), lEndStr = _mdashYmd(lEnd), yStr = _mdashYmd(yStart);
+  var mPrefix = mStr.slice(0, 7), yPrefix = yStr.slice(0, 4);
+  _sbData.today = _sbData.today || {}; _sbData.month = _sbData.month || {};
+  _sbData.year = _sbData.year || {}; _sbData._prevMonth = _sbData._prevMonth || {};
+  // ── 문의 (dbRows 재사용, 멤버십 유형만) ──
+  function computeInq() {
+    var t = 0, m = 0, y = 0, l = 0;
+    (dbRows || []).forEach(function (row) {
+      if (!_mdashInScope(row)) return;
+      var ts = String(row.timestamp || ''); var d10 = ts.slice(0, 10);
+      if (d10 === todayStr) t++;
+      if (ts.indexOf(mPrefix) === 0) m++;
+      if (ts.indexOf(yPrefix) === 0) y++;
+      if (d10 >= lStr && d10 <= lEndStr) l++;
+    });
+    _sbData.today.inq = t; _sbData.month.inq = m; _sbData.year.inq = y; _sbData._prevMonth.inq = l;
+    _sbRecompute(); renderStatusBoardPeriods();
+  }
+  if (dbRows && dbRows.length) computeInq();
+  else { var p = loadDbData(); if (p && p.then) p.then(computeInq).catch(computeInq); else computeInq(); }
+  // ── 가입 (member_registered_list, 기간별) ──
+  function regcb(key) { return function (dd) { _sbData[key] = _sbData[key] || {}; _sbData[key].reg = (dd && dd.count != null) ? dd.count : null; _sbData[key].regOk = !!dd; _sbRecompute(); renderStatusBoardPeriods(); }; }
+  _mdashFetchRegistered(todayStr, todayStr, regcb('today'));
+  _mdashFetchRegistered(mStr, todayStr, regcb('month'));
+  _mdashFetchRegistered(yStr, todayStr, regcb('year'));
+  _mdashFetchRegistered(lStr, lEndStr, regcb('_prevMonth'));
+  // ── 퍼널 (stage_funnel membership.total, 누적) ──
+  if (typeof GAS_URL !== 'undefined' && GAS_URL !== GAS_PLACEHOLDER) {
+    fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam())
+      .then(function (r) { return r.json(); })
+      .then(function (d) { var mem = (d && d.membership) || (d && d.total ? { total: d.total } : {}); _sbData.funnel = mem.total || {}; _sbRenderFunnel(_sbData.funnel); })
+      .catch(function () { });
+  }
 }
 
 /* ── 이탈 관리(요약+매트릭스+현황 통합 모달) — 구 cpo-guide 카드 이전. 2026-07-07 시포·GM ── */

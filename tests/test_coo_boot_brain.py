@@ -41,12 +41,12 @@ def test_anomaly_adds_flag_action():
     assert flags[0]["revert_ok"] is True  # 표시=가역
 
 
-def test_two_modules_double_the_action_count():
-    """iter_enabled가 2모듈(coo-check-status·coo-work-approval)을 반환하므로
-    가역+게이트 액션 세트가 모듈당 반복 생성됨을 확인."""
+def test_enabled_modules_each_get_six_actions():
+    """iter_enabled 모듈 수만큼 가역+게이트 액션 세트가 반복 생성됨을 확인
+    (모듈당 가역 3종[aggregate/report/route, anomaly=False라 flag 없음] + 게이트 3종 = 6개)."""
     reg = R.load_registry()
-    actions = B.build_module_actions(reg=reg, status_map=_NO_ANOMALY_MAP)
+    status_map = {m["id"]: {"anomaly": False} for m in R.iter_coo(reg)}
+    actions = B.build_module_actions(reg=reg, status_map=status_map)
     mod_ids = {a["module"] for a in actions}
-    assert mod_ids == {"coo-check-status", "coo-work-approval"}
-    # 모듈당 가역 3종(aggregate/report/route, anomaly=False라 flag 없음) + 게이트 3종 = 6개 → 2모듈 = 12개
-    assert len(actions) == 12
+    assert mod_ids == {m["id"] for m in R.iter_enabled(reg)}
+    assert len(actions) == len(mod_ids) * 6

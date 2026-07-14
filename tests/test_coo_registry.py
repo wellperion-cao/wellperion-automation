@@ -41,10 +41,11 @@ def test_pilot_check_status_enabled_and_wired():
     assert m["data_source"]["kind"] == "gas"
 
 
-def test_iter_enabled_returns_coo_check_status_and_workapproval():
+def test_iter_enabled_returns_all_enabled_coo_modules():
     reg = R.load_registry()
-    enabled = R.iter_enabled(reg)
-    assert [m["id"] for m in enabled] == ["coo-check-status", "coo-work-approval"]
+    enabled = {m["id"] for m in R.iter_enabled(reg)}
+    assert enabled == {"coo-check-status", "coo-work-approval", "coo-schedule-ssot",
+                        "coo-monthly-ops", "coo-notice"}
 
 
 def test_workapproval_module_enabled_and_wired():

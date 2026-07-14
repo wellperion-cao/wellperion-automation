@@ -24,7 +24,8 @@ TODO_API = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-
 # 표시용 짧은 이름(정본 스키마엔 name 필드 없음 — feature로 갈음하되 카드용 축약은 소비자 상수).
 # 라벨 = 소스 구분 명시. "전사 업무·결재"=전사 업무·결재 SSOT 시트(todo_list, 모든 부서 실무 포함)
 # — 09시 보고의 "C-Level 업무"(status/_queue.json 큐)와 다른 모집단이라 GM 화면서 혼동 방지(2026-07-10 시우).
-DISPLAY_NAME = {"coo-check-status": "점검 현황", "coo-work-approval": "전사 업무·결재"}
+DISPLAY_NAME = {"coo-check-status": "점검 현황", "coo-work-approval": "전사 업무·결재",
+                 "coo-notice": "공지·안내문"}
 
 
 def load_registry(path=REGISTRY_PATH) -> dict:
@@ -150,5 +151,17 @@ def fetch_workapproval_status(fetch_fn=_http_get_json) -> dict:
             "metrics": metrics}
 
 
+def fetch_notice_status(fetch_fn=_http_get_json) -> dict:
+    """공지 저장목록(TODO_API와 동일 공유 GAS의 notice_list 액션) — 공통 status 계약 반환.
+    이상 판정 없음(단순 재고 집계) — anomaly는 항상 False."""
+    rows = fetch_fn(f"{TODO_API}?action=notice_list").get("data", [])
+    today = _kst_today()
+    active = [r for r in rows if r.get("endDate") and r["endDate"] >= today]
+    display = f"저장 {len(rows)}건 · 기간중 {len(active)}건"
+    metrics = {"total": len(rows), "active": len(active)}
+    return {"display": display, "anomaly": False, "reasons": [], "tag": "measured", "metrics": metrics}
+
+
 # fetcher 맵 — 소비자(coo_report_line/coo_check_anomaly)가 모듈 id로 공통 status 계약을 얻는 단일 경로.
-STATUS_FETCHERS = {"coo-check-status": fetch_check_status, "coo-work-approval": fetch_workapproval_status}
+STATUS_FETCHERS = {"coo-check-status": fetch_check_status, "coo-work-approval": fetch_workapproval_status,
+                    "coo-notice": fetch_notice_status}
