@@ -32,7 +32,7 @@
 
   /* ── 매트릭스 ── */
   .matrix-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:11px; background:var(--paper);}
-  table.matrix{border-collapse:collapse; width:100%; min-width:895px; font-size:13px; table-layout:fixed;}
+  table.matrix{border-collapse:collapse; width:100%; min-width:995px; font-size:13px; table-layout:fixed;}
   table.matrix th, table.matrix td{border:1px solid var(--border); padding:7px 9px; text-align:left; vertical-align:top; line-height:1.42; white-space:pre-wrap; word-break:break-word;}
   table.matrix thead th{background:var(--surface); font-weight:700; font-size:12px; position:sticky; top:0; z-index:2;}
   table.matrix thead th.grp-np{color:#f0c674;}
@@ -60,11 +60,12 @@
   /* 부모 table.matrix td(명시도 0,1,2)가 white-space:pre-wrap·word-break:break-word를 걸어 시간이 세로 쪼개짐 → table.matrix 접두사로 명시도 올려 덮어씀 */
   table.matrix .rtbl td{border:1px solid var(--border); padding:3px 7px; vertical-align:top; line-height:1.42; white-space:normal; word-break:keep-all; overflow-wrap:break-word;}
   table.matrix .rtbl td.rtbl-t{white-space:nowrap; overflow-wrap:normal; color:var(--accent-soft); font-weight:700; font-variant-numeric:tabular-nums;}
+  .rtbl-dur{color:var(--dim); font-weight:400; font-size:10.5px;}
   table.matrix .rtbl td.rtbl-c{color:var(--text-soft);}
   table.matrix .rtbl tr.rtbl-sec td{background:var(--surface); color:var(--dim); font-weight:800; font-size:10.5px; text-align:center; letter-spacing:0.04em;}
   table.matrix .rtbl tr.rtbl-cap td{background:rgba(124,58,237,0.05); color:var(--dim); font-size:11px;}
   table.matrix th.grp-np{width:300px;}
-  table.matrix th.grp-boot{width:300px;}
+  table.matrix th.grp-boot{width:400px;}
   .col-own{width:200px;}
   .own-chip{display:inline-block; font-size:11px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:2px 8px; margin:0 4px 4px 0;}
   .own-chip:hover{background:var(--surface); border-color:var(--accent);}
@@ -583,13 +584,17 @@
   //   ━ 소제목 ━ = 섹션行 · HH:MM 시작 = [시간|내용]行 · 그 외(제목·주석) = 캡션行. 시간行 없으면 null → 불릿 폴백.
   function scheduleTable(raw){
     var lines = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
-    var timeRe = /^(\d{1,2}:\d{2})\s+(.*)$/;
+    // 시간칸 = 단일 시각(6:30) 또는 범위+소요(5:00~6:30 (1h 30m)). 소요 괄호는 숫자로 시작(내용 괄호와 구분).
+    var timeRe = /^(\d{1,2}:\d{2}(?:\s*~\s*\d{1,2}:\d{2})?(?:\s*\(\d[^)]*\))?)\s+(.*)$/;
     if(!lines.some(function(l){ return timeRe.test(l); })) return null;
     var rows = lines.map(function(l){
       var sec = l.match(/^━+\s*(.+?)\s*━+$/);
       if(sec) return '<tr class="rtbl-sec"><td colspan="2">' + chanLogo(esc(sec[1])) + '</td></tr>';
       var m = l.match(timeRe);
-      if(m) return '<tr><td class="rtbl-t">' + esc(m[1]) + '</td><td class="rtbl-c">' + chanLogo(esc(m[2])) + '</td></tr>';
+      if(m){
+        var tcell = esc(m[1]).replace(/(\([^)]*\))\s*$/, ' <span class="rtbl-dur">$1</span>');
+        return '<tr><td class="rtbl-t">' + tcell + '</td><td class="rtbl-c">' + chanLogo(esc(m[2])) + '</td></tr>';
+      }
       return '<tr class="rtbl-cap"><td colspan="2">' + chanLogo(esc(l)) + '</td></tr>';
     }).join('');
     return '<table class="rtbl">' + rows + '</table>';
