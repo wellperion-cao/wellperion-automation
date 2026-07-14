@@ -1160,6 +1160,41 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <button type="button" class="type-chip" data-type="biz" onclick="switchType('biz')">비즈니스</button>
   </div>
 
+  <!-- ══ 강습 통합 4카드(성인+유소년 한 줄 합산) — CPO-2026-07-14-LESSON-4CARD, GM 지시 2026-07-14.
+       기존 .dash-grid(731행, repeat(4,1fr)) 패턴 그대로 재사용. 신규 fetch·집계 로직 없음 — 이미 존재하는
+       lessonCardInq/Mem/Loss/Wait_{adult|youth} 값을 그대로 읽어 병기 표시만 함(표시 전용, MutationObserver로 동기).
+       강습 family에서만 노출(switchFamily가 display 토글). 대기자 카드=진행상태"대기" 버킷(배973 기존 로직) 그대로 표시. ══ -->
+  <div class="dash-grid" id="lessonComboBoard" style="display:none">
+    <a class="dash-card" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="_lessonComboClick('inq')">
+      <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">문의 현황</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboInqAdult">–</b> 건</span></div>
+        <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboInqYouth">–</b> 건</span></div>
+      </div>
+    </a>
+    <a class="dash-card" data-kind="mem" data-lcard="mem" href="javascript:void(0)" onclick="_lessonComboClick('mem')">
+      <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboMemAdult">–</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboMemYouth">–</b> 명</span></div>
+      </div>
+    </a>
+    <a class="dash-card" data-kind="loss" data-lcard="loss" href="javascript:void(0)" onclick="_lessonComboClick('loss')">
+      <div class="dash-head"><span class="dash-dot loss" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboLossAdult">–</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboLossYouth">–</b> 명</span></div>
+      </div>
+    </a>
+    <a class="dash-card" data-kind="wait" data-lcard="wait" href="javascript:void(0)" onclick="_lessonComboClick('wait')">
+      <div class="dash-head"><span class="dash-dot wait" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboWaitAdult">–</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboWaitYouth">–</b> 명</span></div>
+      </div>
+    </a>
+  </div>
+
   <!-- ══ 오늘 현황 요약(초보자) — 배754 2026-07-10. '오늘 처리할 것' 4지표, 클릭→처리 화면. 숫자는 기존 라이브값 재사용.
        유형칩 바로 아래(type-pane 밖) 배치 — 멤버십·강습 공유, family 전환 시 renderSummaryHero()가 재계산.
        (구현 노트: 계획서는 #cpoTodayStrip을 type-membership 내부에서 그대로 교체하도록 지시했으나, 실측 결과
@@ -1587,8 +1622,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
   <!-- ══════════════════════════════ 유형: 성인 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
   <div id="type-lessonAdult" class="type-pane">
-    <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리 (강습 전용 lessonSwitchCard) -->
-    <div class="dash-grid lesson-dash" style="margin-bottom:18px">
+    <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리 (강습 전용 lessonSwitchCard).
+         2026-07-14 CPO-2026-07-14-LESSON-4CARD: 화면 표시는 상단 공유 #lessonComboBoard(성인+유소년 한 줄)로 대체 →
+         이 블록은 숨김 처리(display:none). 단, 안의 id(lessonCardInq/Mem/Loss/Wait_adult)는 기존 데이터 배선(lessonLoadStats·
+         _lessonUpdateBucketCounts·lessonRegLoad)의 쓰기 대상이라 그대로 유지 — 삭제 금지(데이터 로직 무변경 원칙). -->
+    <div class="dash-grid lesson-dash" style="margin-bottom:18px;display:none">
       <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('adult','inq')">
         <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">문의 현황</span></div>
         <div class="dash-metrics"><div class="dash-line"><span class="dash-k">종목별</span><span class="dash-v"><b class="lead" id="lessonCardInq_adult">–</b> 건</span></div></div>
@@ -1732,8 +1770,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
   <!-- ══════════════════════════════ 유형: 유소년 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
   <div id="type-lessonYouth" class="type-pane">
-    <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리 -->
-    <div class="dash-grid lesson-dash" style="margin-bottom:18px">
+    <!-- 강습 대시카드 3종: 문의 현황 · 등록 현황 · 강습 회원 관리.
+         2026-07-14 CPO-2026-07-14-LESSON-4CARD: 상단 공유 #lessonComboBoard로 화면 대체 → 숨김(display:none).
+         id(lessonCardInq/Mem/Loss/Wait_youth)는 기존 데이터 배선 쓰기 대상이라 유지(데이터 로직 무변경). -->
+    <div class="dash-grid lesson-dash" style="margin-bottom:18px;display:none">
       <a class="dash-card active" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="lessonSwitchCard('youth','inq')">
         <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">문의 현황</span></div>
         <div class="dash-metrics"><div class="dash-line"><span class="dash-k">종목별</span><span class="dash-v"><b class="lead" id="lessonCardInq_youth">–</b> 건</span></div></div>
@@ -3692,6 +3732,15 @@ function switchFamily(fam) {
   document.title = '웰페리온 ' + _famName.replace('회원관리', '회원 관리') + ' — AI CPO';   // 브라우저 탭 제목도 그룹명 동기화(배299, 2026-07-03 시포)
   renderTodayActionPanel();   // 오늘 할 일 패널도 family 전환에 맞춰 스코프 갱신(배754) — 멤버십/강습 각자 내부에서 준비상태 판단(강습이 dbRows 대기에 묶이지 않게, 배754 강습편입)
   if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — family 전환 즉시 재계산(강습 패리티)
+  // 강습 통합 4카드(CPO-2026-07-14-LESSON-4CARD) — 성인+유소년 한 줄 표시는 강습 family에서만 노출.
+  // 둘 다 값을 채우기 위해 기존 lessonInit/lessonRegLoad를 성인·유소년 양쪽 다 선로드(신규 로직 아님, 기존 안전 함수 재사용 — 표시만).
+  var _comboEl = document.getElementById('lessonComboBoard');
+  if (_comboEl) _comboEl.style.display = (fam === 'lesson') ? '' : 'none';
+  if (fam === 'lesson') {
+    lessonInit('adult'); lessonInit('youth');
+    if (!_lessonState.adult.memLoaded) lessonRegLoad('adult');
+    if (!_lessonState.youth.memLoaded) lessonRegLoad('youth');
+  }
   switchType(types[0]);   // 그룹 첫 유형으로 전환
 }
 
@@ -3704,6 +3753,40 @@ var _lessonState = {
            card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regLoaded: false, memLoaded: false }
 };
 
+// 강습 통합 4카드(성인+유소년, CPO-2026-07-14-LESSON-4CARD) 값 미러 — 기존 lessonCardInq/Mem/Loss/Wait_{adult|youth}
+// 요소 텍스트를 MutationObserver로 지켜보다 그대로 복사만 함(신규 fetch·집계 없음, 표시 전용, 강습 데이터 로직 무변경).
+(function(){
+  var PAIRS = [
+    ['lessonCardInq_adult','lessonComboInqAdult'], ['lessonCardInq_youth','lessonComboInqYouth'],
+    ['lessonCardMem_adult','lessonComboMemAdult'], ['lessonCardMem_youth','lessonComboMemYouth'],
+    ['lessonCardLoss_adult','lessonComboLossAdult'], ['lessonCardLoss_youth','lessonComboLossYouth'],
+    ['lessonCardWait_adult','lessonComboWaitAdult'], ['lessonCardWait_youth','lessonComboWaitYouth']
+  ];
+  function syncOne(srcId, dstId){
+    var s = document.getElementById(srcId), d = document.getElementById(dstId);
+    if (s && d) d.textContent = s.textContent;
+  }
+  function syncAll(){ PAIRS.forEach(function(p){ syncOne(p[0], p[1]); }); }
+  function attach(){
+    if (typeof MutationObserver === 'undefined') return;
+    PAIRS.forEach(function(p){
+      var s = document.getElementById(p[0]);
+      if (s) new MutationObserver(syncAll).observe(s, { childList: true, characterData: true, subtree: true });
+    });
+    syncAll();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach); else attach();
+})();
+
+// 강습 통합 4카드 클릭 라우팅 — 현재 활성 강습 탭(성인/유소년)을 판별해 기존 lessonSwitchCard(t, card)를 그대로 호출.
+// 신규 데이터 로직 없음(표시·내비게이션 전용). CPO-2026-07-14-LESSON-4CARD.
+function _lessonComboClick(card) {
+  var youthChip = document.querySelector('.type-chip[data-type="lessonYouth"]');
+  var t = (youthChip && youthChip.classList.contains('active')) ? 'youth' : 'adult';
+  switchType(t === 'youth' ? 'lessonYouth' : 'lessonAdult');   // 현재 탭 유지/전환(이미 해당 탭이면 사실상 no-op)
+  lessonSwitchCard(t, card);   // switchType 내부가 카드를 'inq'로 되돌리므로, 실제 요청 카드로 다시 전환
+}
+
 /* 강습 대시카드 전환(문의/등록/회원) — 멤버십 switchTab 와 독립(id 충돌 회피). 2026-06-27 시포. */
 function lessonSwitchCard(t, card) {
   var st = _lessonState[t];
@@ -3715,6 +3798,10 @@ function lessonSwitchCard(t, card) {
   var sp = document.getElementById('lessonPane_' + t + '_' + card);
   if (sp) sp.classList.add('active');
   root.querySelectorAll('.dash-card[data-lcard]').forEach(function(c){
+    c.classList.toggle('active', c.getAttribute('data-lcard') === card);
+  });
+  var _combo = document.getElementById('lessonComboBoard');   // 통합 4카드도 active 표시 동기(CPO-2026-07-14-LESSON-4CARD)
+  if (_combo) _combo.querySelectorAll('.dash-card[data-lcard]').forEach(function(c){
     c.classList.toggle('active', c.getAttribute('data-lcard') === card);
   });
   if (card === 'loss') { lessonLossRender(t); }                    // LOSS 회원 관리 — 문의 rows 중 status=LOSS 필터(별도 fetch 없음)
