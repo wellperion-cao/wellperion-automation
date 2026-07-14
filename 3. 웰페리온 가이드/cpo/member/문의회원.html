@@ -2495,7 +2495,7 @@ function gvizLessonRows_(headers, rows, gid) {
   var iNote  = _gzFindCol_(headers, ['문의 사항', '문의사항', '문의 내용', '내용', 'Additional Requests or Comments']);
   var iWish  = _gzFindCol_(headers, ['희망하시는 레슨 시간', '희망 레슨', '희망시간', '레슨 시간', 'Preferred Lesson Time']);
   var iStat  = _gzFindCol_(headers, ['진행상태', '진행현황', '진행상황', '진행 상황', '상태']);  // '진행 상황'(공백)=GM flat O컬럼
-  var iOwner = _gzFindColExact_(headers, ['관리담당', '지정 강사']);  // '지정 강사'=GM flat L컬럼(owner)
+  var iOwner = _gzFindColExact_(headers, ['지정 강사', '관리담당']);  // '지정 강사'(GM flat L) 우선 — 옛 팬텀 '관리담당' 잔존 시에도 L이 이기게 순서 고정
   var iMemo  = _gzFindCol_(headers, ['상담메모', '메모', '비고']);
   var iCons  = _gzFindCol_(headers, ['상담예약', '상담 예약', '상담일정']);
   var iVisit = _gzFindCol_(headers, ['방문상태', '방문']);

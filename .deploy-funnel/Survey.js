@@ -1643,7 +1643,7 @@ function _lessonReadRows_(gid) {
   var iNote  = _findCol_(hdr, ['문의 사항', '문의사항', '문의 내용', '내용', 'Additional Requests or Comments']);
   var iWish  = _findCol_(hdr, ['희망하시는 레슨 시간', '희망 레슨', '희망시간', '레슨 시간', 'Preferred Lesson Time']);
   var iStat  = _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '진행 상황', '상태']);  // '진행 상황'(공백) = GM flat O컬럼
-  var iOwner = _findColExact_(hdr, ['관리담당', '지정 강사']);  // ★정확일치 — 폼 원본 '접수담당자' 안 건드림. '지정 강사'=GM flat L컬럼(owner)
+  var iOwner = _findColExact_(hdr, ['지정 강사', '관리담당']);  // ★정확일치 — '지정 강사'(GM flat L) 우선. 옛 팬텀 '관리담당' 잔존 시에도 L이 이기게 순서 고정. 폼 원본 '접수담당자' 안 건드림
   var iMemo  = _findCol_(hdr, ['상담메모', '메모', '비고']);
   var iCons  = _findCol_(hdr, ['상담예약', '상담 예약', '상담일정']);
   var iVisit = _findCol_(hdr, ['방문상태', '방문']);
@@ -3035,7 +3035,7 @@ function _processAction(body) {
       if (_luHistNewArr && _luHistPrevCount === 0 && _luHistNewArr.length >= 1) {
         try {
           var _luTypeLabel = (function(t){ t = String(t || ''); return (t === '유소년강습' || t === '유소년' || t === 'youth') ? '유소년 강습' : '성인 강습'; })(body.type);
-          var _luOwnerCi  = _findColExact_(luHdr, ['관리담당', '지정 강사']);  // 알림 담당 폴백 — flat L컬럼(지정 강사)에서 읽음(body.owner 미동봉 컨택저장 대응)
+          var _luOwnerCi  = _findColExact_(luHdr, ['지정 강사', '관리담당']);  // 알림 담당 폴백 — '지정 강사'(GM flat L) 우선(옛 팬텀 '관리담당' 잔존 대비 순서 고정)
           var _luOwnerVal = String(body.owner || (_luOwnerCi >= 0 ? luSh.getRange(luRow, _luOwnerCi + 1).getValue() : '') || '').trim();
           var _luHistFirst = _luHistNewArr[0];
           var _luHistWhen = ((_luHistFirst.date || '') + ' ' + (_luHistFirst.time || '')).trim();
