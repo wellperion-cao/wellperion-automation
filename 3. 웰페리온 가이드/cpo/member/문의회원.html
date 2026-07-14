@@ -991,13 +991,14 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 }
 </style>
 <script>
-/* 문의회원 전용 입장 게이트 — 서버검증형. 입장 비번 = 서버 ACCESS_TOKEN(소스에 없음).
-   맞으면 토큰 저장 → 데이터 전체(성함·전화) 표시 / 틀리면 입장 차단. 2026-06-25 시토·GM.
-   ※ 공용 커튼(_assets/gate.js)과 달리 로컬 비교 안 함 — 서버(pii_status?key=)가 판정. */
+/* 문의회원(멤버십·강습 회원관리) 입장 게이트 — 로컬 커튼(_assets/gate.js와 동일 방식).
+   입장 비번 = "1200" (파트너 팀 리더 공유용, 강습회원관리_가이드.html에 명시). 2026-07-14 GM 지시.
+   ※ 이것은 "잠금"이 아니라 "커튼"(소스에 노출) — 서버 PII정책(TOKEN_ENFORCE/PII_MASK)과 무관·타 페이지 무영향.
+      진짜 잠금은 JWT+자체서버(배21·101)로 교체 예정. 그러므로 이 비번을 서버·계정 비번과 같게 쓰지 말 것. */
 (function(){
   "use strict";
+  var GATE_PW="1200";
   var SKEY="mi_gate_ok";
-  var EXEC="https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec";
   try { if (sessionStorage.getItem(SKEY)==="1") return; } catch(e){}
   var root=document.documentElement;
   var st=document.createElement("style"); st.setAttribute("data-mi-gate","");
@@ -1012,14 +1013,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     var input=document.getElementById("miPw"), err=document.getElementById("miErr"), btn=document.getElementById("miBtn");
     function attempt(){
       var v=(input.value||"").trim(); if(!v){err.textContent="비밀번호를 입력해 주세요.";return;}
-      btn.disabled=true; err.textContent="확인 중…";
-      fetch(EXEC+"?action=pii_status&key="+encodeURIComponent(v))
-        .then(function(r){return r.json();})
-        .then(function(d){
-          if(d && (d.key_valid || d.masking_active===false)){ pass(v); }
-          else { err.textContent="비밀번호가 올바르지 않습니다."; btn.disabled=false; input.select(); }
-        })
-        .catch(function(){ err.textContent="확인 실패 — 다시 시도해 주세요."; btn.disabled=false; });
+      if(v!==GATE_PW){ err.textContent="비밀번호가 올바르지 않습니다."; input.select(); return; }
+      pass(v);
     }
     btn.addEventListener("click",attempt);
     input.addEventListener("keydown",function(e){if(e.key==="Enter")attempt();});

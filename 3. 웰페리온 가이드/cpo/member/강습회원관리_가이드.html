@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<title>강습 회원관리 사용 가이드 — 웰페리온</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#221F20; --paper:#2a2725; --paper2:#302c29;
+  --text:#f5f2ef; --dim:#9a978f; --faint:#6f6c65;
+  --accent:#B79F8A; --accent-bg:rgba(183,159,138,0.12); --accent-line:rgba(183,159,138,0.35);
+  --border:#3d3835; --border-soft:#332f2c;
+  --teal:#4ec4c4; --teal-bg:rgba(78,196,196,0.12);
+  --amber:#d9a441; --amber-bg:rgba(217,164,65,0.12);
+  --green:#6cbf76; --green-bg:rgba(108,191,118,0.13);
+  --red:#c8756f; --red-bg:rgba(200,117,111,0.12);
+  --maxw:1040px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg); color:var(--text); line-height:1.68; font-size:15.5px;
+  -webkit-font-smoothing:antialiased; padding:0 22px;
+}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:46px 0 80px}
+.eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(27px,4.4vw,40px);font-weight:800;line-height:1.15;letter-spacing:-.01em;margin:12px 0 0;text-wrap:balance}
+.lede{font-size:16.5px;color:var(--dim);margin-top:14px;max-width:64ch;line-height:1.7}
+.hero-card{margin-top:26px;background:linear-gradient(180deg,var(--accent-bg),transparent);
+  border:1px solid var(--accent-line);border-radius:14px;padding:20px 22px;display:flex;gap:16px;align-items:flex-start}
+.hero-card .k{font-size:26px;line-height:1;margin-top:2px}
+.hero-card b{color:var(--accent)}
+.hero-card .t{font-size:15px;color:var(--text);line-height:1.7}
+
+section{margin-top:44px}
+.snum{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;
+  background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:800;border:1px solid var(--accent-line)}
+h2{font-size:20px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:11px;margin-bottom:16px}
+h2 .snum{flex:0 0 auto}
+p.note{color:var(--dim);font-size:14.5px;margin:10px 0}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.beforeafter{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch}
+.ba-col{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 18px 16px}
+.ba-col.now{border-color:var(--accent-line);background:linear-gradient(180deg,var(--accent-bg),var(--paper))}
+.ba-tag{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.ba-col.now .ba-tag{color:var(--accent)}
+.ba-h{font-size:16px;font-weight:800;margin:8px 0 8px}
+.ba-list{list-style:none;display:flex;flex-direction:column;gap:7px}
+.ba-list li{font-size:14px;color:var(--dim);padding-left:18px;position:relative;line-height:1.55}
+.ba-list li::before{content:"–";position:absolute;left:2px;color:var(--faint)}
+.ba-col.now .ba-list li{color:var(--text)}
+.ba-col.now .ba-list li::before{content:"✓";color:var(--green);font-weight:800}
+.ba-arrow{align-self:center;font-size:22px;color:var(--accent)}
+
+.access{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:6px 20px}
+.access .row{display:flex;gap:16px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--border-soft)}
+.access .row:last-child{border-bottom:none}
+.access .lab{flex:0 0 96px;font-size:12.5px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+.access .val{font-size:14.5px;color:var(--text);line-height:1.6}
+.access .val a{color:var(--teal);text-decoration:none;word-break:break-all;border-bottom:1px solid rgba(78,196,196,.3)}
+.access .val code{background:var(--paper2);border:1px solid var(--border);border-radius:5px;padding:1px 7px;font-size:13px;color:var(--accent)}
+.access .val code.pw{font-size:17px;font-weight:800;letter-spacing:.14em;padding:3px 14px;color:var(--teal);background:var(--teal-bg);border-color:rgba(78,196,196,.4);font-variant-numeric:tabular-nums}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+table.cols{width:100%;border-collapse:collapse;min-width:640px;font-size:14px}
+table.cols th,table.cols td{text-align:left;padding:12px 15px;border-bottom:1px solid var(--border-soft);vertical-align:top}
+table.cols thead th{background:var(--paper2);font-size:12px;font-weight:800;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+table.cols tbody td:first-child{font-weight:700;color:var(--text);white-space:nowrap}
+table.cols td.d{color:var(--dim);line-height:1.55}
+table.cols .edit{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--teal);
+  background:var(--teal-bg);border:1px solid rgba(78,196,196,.3);border-radius:5px;padding:1px 7px;margin-left:2px;vertical-align:middle}
+
+.steps{display:flex;flex-direction:column;gap:12px}
+.step{display:flex;gap:16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:17px 19px}
+.step .n{flex:0 0 34px;height:34px;border-radius:9px;background:var(--accent);color:#241f1b;font-weight:800;font-size:16px;
+  display:flex;align-items:center;justify-content:center}
+.step .b h3{font-size:15.5px;font-weight:800;margin-bottom:4px}
+.step .b p{font-size:14px;color:var(--dim);line-height:1.6}
+.step .b .hint{color:var(--accent);font-weight:600}
+
+.status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.st{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 15px;border-top:3px solid var(--c)}
+.st .pill{display:inline-block;font-size:12px;font-weight:800;padding:3px 11px;border-radius:999px;color:var(--c);background:var(--cb);border:1px solid var(--c)}
+.st h3{font-size:14px;font-weight:800;margin:11px 0 5px}
+.st p{font-size:13px;color:var(--dim);line-height:1.55}
+.st.consult{--c:var(--teal);--cb:var(--teal-bg)}
+.st.hold{--c:var(--amber);--cb:var(--amber-bg)}
+.st.suc{--c:var(--green);--cb:var(--green-bg)}
+.st.loss{--c:var(--red);--cb:var(--red-bg)}
+
+.faq{display:flex;flex-direction:column;gap:2px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:6px 20px}
+.faq .q{padding:15px 0;border-bottom:1px solid var(--border-soft)}
+.faq .q:last-child{border-bottom:none}
+.faq .q b{display:block;font-size:14.5px;font-weight:800;margin-bottom:5px;color:var(--text)}
+.faq .q b::before{content:"Q. ";color:var(--accent)}
+.faq .q p{font-size:14px;color:var(--dim);line-height:1.6}
+.faq .q p::before{content:"A. ";color:var(--faint);font-weight:700}
+
+.callout{background:var(--accent-bg);border:1px solid var(--accent-line);border-left:3px solid var(--accent);
+  border-radius:10px;padding:15px 18px;font-size:14.5px;color:var(--text);line-height:1.65}
+.callout b{color:var(--accent)}
+
+footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--border);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12.5px;color:var(--faint)}
+.gobtn{display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:700;
+  padding:11px 20px;border-radius:10px;background:var(--teal-bg);color:var(--teal);
+  border:1px solid rgba(78,196,196,.35);text-decoration:none;margin-top:18px}
+.gobtn:hover{background:rgba(78,196,196,.18)}
+
+@media (max-width:720px){
+  .grid2,.status-grid{grid-template-columns:1fr}
+  .beforeafter{grid-template-columns:1fr}
+  .ba-arrow{transform:rotate(90deg);justify-self:center}
+  .access .row{flex-direction:column;gap:3px}
+}
+@media print{
+  :root{--bg:#fff;--paper:#fff;--paper2:#f4f1ec;--text:#1a1714;--dim:#4a463f;--faint:#6f6c65;
+    --border:#d8d2c8;--border-soft:#e6e0d6;--accent:#8a6f52;--teal:#2c8f8f;--green:#3d8a48;--amber:#a9781f;--red:#a24f49}
+  body{font-size:11.5pt;padding:0}
+  .wrap{padding:0}
+  .gobtn,.gobtn+*{display:none}
+  section{break-inside:avoid;margin-top:22px}
+  .step,.st,.ba-col,.access,.faq,.tablewrap{break-inside:avoid}
+  a{color:var(--teal)!important}
+}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">웰페리온 · 강습 운영 · 파트너 팀 리더용</div>
+    <h1>강습 회원관리 페이지 사용 가이드</h1>
+    <p class="lede">강습 문의 접수부터 상담·지정강사 배정·컨택 기록까지, <b>한 페이지에서</b> 관리합니다.
+      종목별로 흩어진 시트에 따로 적을 필요 없이, 여기에 기록하면 회사 메인 원장에 자동으로 모입니다.</p>
+
+    <div class="hero-card">
+      <div class="k">🎯</div>
+      <div class="t"><b>핵심 한 줄.</b> 지금부터 강습 문의 관리는 <b>이 페이지에서만</b> 기록하세요.
+        종목 시트(수영·PT·필라·골프·체조·스쿼시)에 각자 적던 방식은 종료됩니다 — 여기 기록이 곧 정본입니다.</div>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="snum">1</span> 무엇이 달라지나요</h2>
+    <div class="beforeafter">
+      <div class="ba-col">
+        <div class="ba-tag">이전</div>
+        <div class="ba-h">종목별 6개 시트에 각자 기록</div>
+        <ul class="ba-list">
+          <li>수영·PT·필라·골프·체조·스쿼시 시트가 따로</li>
+          <li>같은 회원 정보가 여러 곳에 흩어짐</li>
+          <li>어디에 적었는지 서로 알기 어려움</li>
+          <li>회사 원장과 팀 기록이 따로 놂</li>
+        </ul>
+      </div>
+      <div class="ba-arrow">→</div>
+      <div class="ba-col now">
+        <div class="ba-tag">지금부터</div>
+        <div class="ba-h">이 페이지 한 곳에서 기록</div>
+        <ul class="ba-list">
+          <li>성인·유소년 강습 문의가 한 화면에</li>
+          <li>기록 즉시 회사 메인 원장에 자동 통합</li>
+          <li>진행상태·지정강사·컨택 이력을 표준 관리</li>
+          <li>새로고침해도 유지되는 안전한 저장</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">기존에 시트에 쌓아둔 지정강사·컨택·진행상황 기록은 <b>회사 쪽에서 메인 원장으로 옮겨</b> 드립니다. 팀에서 다시 옮겨 적을 필요 없습니다.</p>
+  </section>
+
+  <section>
+    <h2><span class="snum">2</span> 접속 방법</h2>
+    <div class="access">
+      <div class="row"><div class="lab">페이지</div><div class="val">강습 회원관리 (문의 회원 페이지 · 강습 모드)</div></div>
+      <div class="row"><div class="lab">주소</div><div class="val"><a href="https://wellperion-cao.github.io/wellperion-automation/cpo/member/문의회원.html?manage=lesson">wellperion-cao.github.io/…/문의회원.html?manage=lesson</a></div></div>
+      <div class="row"><div class="lab">비밀번호</div><div class="val"><code class="pw">1200</code> — 페이지 접속 시 나오는 "접근 비밀번호" 칸에 입력하세요. (같은 탭에서는 한 번만 입력)</div></div>
+      <div class="row"><div class="lab">화면 전환</div><div class="val">상단에서 <code>성인강습</code> · <code>유소년강습</code> 탭을 선택하세요.</div></div>
+    </div>
+    <a class="gobtn" href="https://wellperion-cao.github.io/wellperion-automation/cpo/member/문의회원.html?manage=lesson" target="_blank" rel="noopener">강습 회원관리 페이지 열기 ↗</a>
+  </section>
+
+  <section>
+    <h2><span class="snum">3</span> 화면 한눈에 보기</h2>
+    <p class="note">문의 목록은 표로 보이며, <b>노란 배지 칸이 팀 리더가 직접 기록하는 칸</b>입니다. 위쪽 <b>🔍 검색</b>(성함·연락처)과 <b>종목 칩</b>으로 내 담당만 빠르게 추릴 수 있습니다.</p>
+    <div class="tablewrap">
+      <table class="cols">
+        <thead><tr><th>칸</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td>접수일</td><td class="d">문의가 들어온 날짜 (자동)</td></tr>
+          <tr><td>성함</td><td class="d">문의자 이름. 영어로 접수된 건은 <b>EN</b> 배지 표시 (자동)</td></tr>
+          <tr><td>연락처</td><td class="d">휴대폰 번호 (자동) — 회원 매칭의 기준</td></tr>
+          <tr><td>종목</td><td class="d">희망 강습 종목 (자동). 여러 종목이면 종목별로 줄이 나뉩니다</td></tr>
+          <tr><td>진행상태 <span class="edit">기록</span></td><td class="d">상담 단계 선택 — 컨택중 / 가망 / SUC / LOSS (아래 4단계 참고)</td></tr>
+          <tr><td>담당 <span class="edit">기록</span></td><td class="d">지정 강사(프로·코치) 선택 — 종목 명단에서 고릅니다</td></tr>
+          <tr><td>CONTACT <span class="edit">기록</span></td><td class="d">칸을 눌러 연락 이력(날짜·내용) 추가. 통화·문자한 내용을 남깁니다</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="snum">4</span> 이렇게 사용하세요 — 3단계</h2>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><div class="b">
+        <h3>내 담당 문의 찾기</h3>
+        <p><span class="hint">🔍 검색</span>에 성함이나 연락처를 입력하거나, <span class="hint">종목 칩</span>(예: 수영)을 눌러 내 종목 문의만 추립니다.</p>
+      </div></div>
+      <div class="step"><div class="n">2</div><div class="b">
+        <h3>진행상태와 지정강사 지정</h3>
+        <p><b>진행상태</b>를 상담 단계에 맞게 고르고, <b>담당</b>에서 배정할 <b>지정 강사</b>를 선택합니다. 고르는 즉시 저장됩니다.</p>
+      </div></div>
+      <div class="step"><div class="n">3</div><div class="b">
+        <h3>CONTACT 이력 남기기</h3>
+        <p>연락할 때마다 <b>CONTACT 칸</b>을 눌러 날짜와 내용을 기록합니다. (예: "9/10 문자 안내 완료") 언제 무엇을 했는지 팀이 함께 봅니다.</p>
+      </div></div>
+    </div>
+    <div class="callout" style="margin-top:16px">✅ <b>저장은 자동입니다.</b> 상태·담당을 고르거나 CONTACT를 저장하면 바로 반영되고, 새로고침해도 남습니다. 별도 "저장" 버튼을 누를 필요가 없습니다.</div>
+  </section>
+
+  <section>
+    <h2><span class="snum">5</span> 진행상태 4단계</h2>
+    <div class="status-grid">
+      <div class="st consult"><span class="pill">컨택중</span><h3>연락 진행 중</h3><p>문의에 응대하며 상담·안내를 진행하는 단계</p></div>
+      <div class="st hold"><span class="pill">가망</span><h3>등록 가망</h3><p>관심은 있으나 아직 결정 전 — 이어서 관리할 대상</p></div>
+      <div class="st suc"><span class="pill">SUC</span><h3>등록 성공</h3><p>강습 등록으로 전환 완료 (문의 알림방에 자동 통보)</p></div>
+      <div class="st loss"><span class="pill">LOSS</span><h3>등록 무산</h3><p>등록으로 이어지지 않음 — 사유는 CONTACT/비고에 기록</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="snum">6</span> 자주 묻는 질문</h2>
+    <div class="faq">
+      <div class="q"><b>이제 종목 시트에는 안 적어도 되나요?</b><p>네. 이 페이지가 정본입니다. 종목별 시트는 은퇴 예정이며, 기존 기록은 회사가 메인 원장으로 옮겨 드립니다.</p></div>
+      <div class="q"><b>같은 회원이 여러 종목을 문의했어요.</b><p>종목마다 줄이 나뉘어 보입니다. 각 줄에서 상태·담당을 지정하면 됩니다. (회원 식별 기준은 연락처입니다.)</p></div>
+      <div class="q"><b>실수로 잘못 골랐어요.</b><p>다시 선택하면 최신 값으로 덮어써집니다. CONTACT 이력은 항목을 추가/수정할 수 있습니다.</p></div>
+      <div class="q"><b>영어로 온 문의는 어디서 보나요?</b><p>같은 표에 <b>EN</b> 배지로 함께 표시됩니다. 별도 시트를 볼 필요 없습니다.</p></div>
+      <div class="q"><b>내 기록이 회사에도 바로 보이나요?</b><p>네. 저장 즉시 회사 메인 원장에 통합되어, 담당자·경영진이 같은 데이터를 봅니다.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <div>웰페리온 · 강습 회원관리 사용 가이드</div>
+    <div>문의: 강습 운영 담당자 · 본 페이지는 인쇄(A3)해도 그대로 읽힙니다</div>
+  </footer>
+
+</div>
+</body>
+</html>
