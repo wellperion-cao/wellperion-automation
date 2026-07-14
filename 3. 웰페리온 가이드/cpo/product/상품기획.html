@@ -46,8 +46,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .header h1{font-size:16px;font-weight:800;margin:0;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px;}
 .header .sub{font-size:11px;color:var(--dim-mid);line-height:1.5}
 .badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 9px;border-radius:var(--radius-chip);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);letter-spacing:0.02em;}
-.badge.teal{background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border);}
-.badge.yellow{background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow-border);}
 .header-actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
 .action-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--radius-btn);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);text-decoration:none;cursor:pointer;font-family:inherit;transition:background 0.15s,color 0.15s,border-color 0.15s;white-space:nowrap;}
 .action-btn:hover{background:rgba(183,159,138,0.2);color:var(--accent-bright);border-color:rgba(183,159,138,0.4)}
@@ -67,11 +65,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab-icon{font-size:14px;}
 /* ── 인쇄 드롭다운(지원부 체계 '인쇄 ▾' 패턴 이식). 기본=A3 세로(회사 인쇄 표준). 2026-07-03 시포·GM ── */
 .tab-dropdown{position:relative;flex-shrink:0;margin-left:auto;padding-right:24px;}
-.tab-dropdown-menu{display:none;position:fixed;background:var(--paper);border:1px solid var(--accent-border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:1000;min-width:150px;padding:4px 0;}
-.tab-dropdown-menu.open{display:block;}
-.tab-dropdown-menu button{display:block;width:100%;padding:9px 16px;font-size:13px;font-weight:600;color:var(--dim-mid);background:none;border:none;cursor:pointer;font-family:inherit;white-space:nowrap;text-align:left;border-radius:0;}
-.tab-dropdown-menu button:hover{background:var(--accent-bg);color:var(--accent-bright);}
-.tab-dropdown-menu button.default{color:var(--accent);}
 
 /* ─── 레이아웃 ─── */
 /* 좌측정렬 풀폭 표준(feedback_page_layout_left_full_width) — 전 탭 공통. 2026-07-04 executor */
@@ -205,33 +198,6 @@ tr:hover td{background:var(--accent-bg);}
 .tag-badge.review{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
 .tag-badge.confirmed{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
 
-/* ─── 아코디언 ─── */
-.accordion{border:1px solid var(--border);border-radius:var(--radius-card);overflow:hidden;margin-bottom:12px;}
-.acc-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--paper);cursor:pointer;user-select:none;transition:background 0.14s;gap:12px;}
-.acc-header:hover{background:var(--paper-raised);}
-.acc-header-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
-.acc-icon{font-size:16px;flex-shrink:0;}
-.acc-title{font-size:13.5px;font-weight:700;color:var(--text);}
-.acc-badges{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;}
-.acc-chevron{font-size:12px;color:var(--dim-mid);transition:transform 0.2s;flex-shrink:0;}
-.accordion.open .acc-chevron{transform:rotate(180deg);}
-.acc-body{display:none;padding:16px 18px;background:var(--paper-raised);border-top:1px solid var(--border);}
-.accordion.open .acc-body{display:block;}
-.acc-body p{font-size:13px;color:var(--dim-mid);line-height:1.7;margin-bottom:8px;}
-.acc-body p:last-child{margin-bottom:0;}
-.acc-body p strong{color:var(--text);}
-.acc-body ul{font-size:13px;color:var(--dim-mid);padding-left:18px;line-height:1.8;}
-.acc-body ul li strong{color:var(--text);}
-.acc-row{display:flex;flex-direction:column;gap:10px;}
-
-/* ─── 정책 비교 박스 ─── */
-.policy-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
-.pc-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
-.pc-box-label{font-size:10px;font-weight:700;letter-spacing:0.07em;margin-bottom:6px;}
-.pc-box.current .pc-box-label{color:var(--dim-mid);}
-.pc-box.next .pc-box-label{color:var(--accent);}
-.pc-box-content{font-size:12.5px;line-height:1.7;color:var(--dim-mid);}
-.pc-box-content strong{color:var(--text);}
 /* ── 요금 정책: 멤버십 탭과 동일한 낯익은 카드+표 구조 · 좌측정렬 · 폭 최대.
    2026-07-02 시포·GM 도입 당시 hack(width:100vw)이었으나, 2026-07-04 .content 자체를
    전 탭 공통 좌측정렬 풀폭으로 전환하며 불필요해져 제거(executor). ── */
@@ -336,7 +302,6 @@ tr:hover td{background:var(--accent-bg);}
 @media(max-width:720px){
   .tab-btn{padding:10px 12px;font-size:12px;}
   .grade-grid{grid-template-columns:1fr 1fr;}
-  .policy-compare{grid-template-columns:1fr;}
 }
 @media(max-width:480px){
   .content{padding:14px;}
@@ -784,25 +749,6 @@ function switchTab(id, btn) {
   if (id === 'policy') loadPolicyTable();
 }
 
-// ── 인쇄: 공용 위젯(_assets/print_options.js)이 용지·방향 선택 + @page 주입을 전담. 2026-07-07 시포·GM ──
-function openTabDropdown(btnEl, menuEl, e) {
-  e.stopPropagation();
-  var isOpen = menuEl.classList.contains('open');
-  closeAllDropdowns();
-  if (!isOpen) {
-    var rect = btnEl.getBoundingClientRect();
-    menuEl.style.top = (rect.bottom + 2) + 'px';
-    menuEl.style.right = (window.innerWidth - rect.right) + 'px';
-    menuEl.classList.add('open');
-  }
-}
-function closeAllDropdowns() {
-  document.querySelectorAll('.tab-dropdown-menu').forEach(function(m){ m.classList.remove('open'); });
-}
-document.addEventListener('click', function(){ closeAllDropdowns(); });
-window.addEventListener('scroll', function(){ closeAllDropdowns(); }, true);
-window.addEventListener('resize', function(){ closeAllDropdowns(); });
-
 // ── 요금 정책: 전체를 한눈에 편집 가능한 표로. 예약 레코드(id=POLICY-TABLE, '상품기획저장' 시트 재사용·새 배포 불필요). 2026-07-02 시포·GM ──
 var POLICY_TABLE_ID = 'POLICY-TABLE';
 var POLICY_TABLE_DEFAULT = [{"cat": "요금체계","item": "플래티넘","val": "3,000,000","note": "연간"},{"cat": "요금체계","item": "플래티넘+골프","val": "3,400,000","note": "연간"},{"cat": "요금체계","item": "노블레스","val": "3,600,000","note": "연간"},{"cat": "요금체계","item": "노블레스+골프","val": "4,000,000","note": "연간·최상위"},{"cat": "요금체계","item": "가족(2번째부터)","val": "각 2,700,000","note": "가족증명 필수·할인 아닌 정가"},{"cat": "요금체계","item": "법인 5인","val": "현행 13,500,000","note": "정가 전환·사업자등록·휴회불가·양도1회 5만"},{"cat": "요금체계","item": "법인 10인","val": "현행 25,500,000","note": "정가 전환·동일 조건"},{"cat": "요금체계","item": "인상 계획","val": "2년 주기(26.10 / 28.10)","note": "인상폭 상향"},{"cat": "신규·웰컴","item": "분기 기획","val": "1~3 / 4~6 / 7~9 / 10~12월 단위","note": "회장 보고 체계"},{"cat": "신규·웰컴","item": "웰컴패키지","val": "일일입장권 3매·손톱깍이 1·강습 3회(PT/필라/골프/스쿼시 택1)","note": "강습 3회 대신 생크몽드 100회 대체 가능·가격할인 아님"},{"cat": "신규·웰컴","item": "환불 공제금","val": "PT 326,700 · 필라테스 326,700 · 스쿼시 237,600 · 골프 195,000","note": "강습 진행 확인 시·일일입장권/손톱깍이 제외"},{"cat": "회원소개","item": "소개 혜택","val": "이용권 5매 + 선물 15만원 상당","note": "비가격 혜택·유지"},{"cat": "재등록","item": "가격 할인","val": "폐지(현행 5%)","note": "비가격 혜택으로 전환"},{"cat": "재등록","item": "바우처","val": "일일입장권 3매","note": "유지"},{"cat": "재등록","item": "90일 미만 이용","val": "2개월 연장 + 일일입장권 3매","note": "저이용 특별선택권"},{"cat": "재등록","item": "만기 후 1년내","val": "재등록 혜택 / 1년 경과=신규 혜택","note": ""},{"cat": "재등록","item": "풀데이 추가 기준","val": "240일","note": "사은품 별도 제공"},{"cat": "등급제(FAN)","item": "단계","val": "26년 4→3단계 축소","note": ""},{"cat": "등급제(FAN)","item": "FAN VIP","val": "누적 1,700만원↑","note": ""},{"cat": "등급제(FAN)","item": "VIP","val": "누적 1,200만원↑","note": ""},{"cat": "등급제(FAN)","item": "M","val": "누적 800만원↑","note": ""},{"cat": "등급제(FAN)","item": "FAN 혜택","val": "전용락커·주차연장·일일입장·카페 크레딧","note": "평가=이용금액·출석·에티켓·경영진 지정"},{"cat": "서비스","item": "입장","val": "1일 1회·풀데이 추가 480,000","note": "책임자 컨펌"},{"cat": "서비스","item": "휴회","val": "연 3회 / 총 60일","note": "특이사항 시 최대 90일"},{"cat": "서비스","item": "양도","val": "1회 한정·양도비 50,000","note": "직계/비가족·단기권 양도 가능"},{"cat": "서비스","item": "환불","val": "위약금 10%·24h내 무위약","note": "일일요금 플래티넘 14,000~노블+골프 17,000"},{"cat": "서비스","item": "일일입장권","val": "1회 55,000(입주민 47,000)·10회 500,000(입주민 420,000)","note": "유효 2개월"},{"cat": "입회나이","item": "17~69세","val": "가능","note": "일반 절차"},{"cat": "입회나이","item": "70~75세","val": "조건부","note": "건강검진+서약서"},{"cat": "입회나이","item": "76세 이상","val": "조건부","note": "건강검진+서약서+수영불가+컨시어지 동반"},{"cat": "입회나이","item": "기존회원 재등록","val": "무조건","note": "나이 제한 미적용·만료 1개월 초과시 시니어정책"},{"cat": "시설운영","item": "휴일","val": "신정·설·추석·둘째넷째 일요일","note": ""},{"cat": "시설운영","item": "주차","val": "기본 4시간 무료·발렛=FAN VIP","note": "1인 1차량 등록제"},{"cat": "시설운영","item": "비치타올","val": "클럽 내 제공","note": ""},{"cat": "시설운영","item": "여자 세신","val": "제공(사우나)","note": ""},{"cat": "시설운영","item": "세미나실","val": "대관 가능","note": ""},{"cat": "시설운영","item": "노블레스 수영복 거치대","val": "노블레스 전용","note": ""},{"cat": "시설운영","item": "강습 할인","val": "정회원 전용 요금","note": ""}];
@@ -873,11 +819,6 @@ function savePolicyTable(){
   fetch(TODO_API_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action:'product_plan_save', item:item}) })
     .then(function(){ _policyStatus('저장 완료 · 시트 반영됨'); })
     .catch(function(){ _policyStatus('저장 완료(응답 확인 불가) · 새로고침 시 반영'); });
-}
-
-// ── 아코디언 ─────────────────────────────────────────────────────────
-function toggleAcc(id) {
-  document.getElementById(id).classList.toggle('open');
 }
 
 // ── 인쇄 직전: 요금 정책 표의 <input> 값은 한 줄 밖 내용이 잘려 안 보이므로
