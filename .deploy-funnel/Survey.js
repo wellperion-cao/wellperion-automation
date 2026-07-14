@@ -653,7 +653,13 @@ function normalizePhone_(s) {
 
 // 팀/종목 컬러칩 — 문의알림방 메시지의 종목명 앞에 가이드라인 색 이모지 프리픽스(GM 확정 2026-07-10).
 // 미등록 종목은 ''(칩 없음) → 목록 밖 팀은 임의 색 지정 금지.
-function _teamChip(sport){ var m={'수영':'🟦','아쿠아로빅':'🟦','P.T':'🟥','필라테스':'🟧','P.L':'🟧','스쿼시':'🟩','골프':'🟩','체조':'🟦','체조&트램폴린':'🟦','멤버십':'🟨','뮤지컬':'⬛','루프메소드':'⬜'}; var k=(sport||'').trim(); return m[k]?m[k]+' ':''; }
+// 종목 기준 이모지(GM 2026-07-14) — 부분매칭이라 '성인 수영 (개인레슨)' 같은 자유라벨도 잡힘. 첫 매치 우선.
+function _teamChip(sport){
+  var k=(sport||'').trim(); if(!k) return '';
+  var rules=[['아쿠아','💦'],['수영','🏊'],['P.T','🏋️'],['PT','🏋️'],['필라','🧘'],['P.L','🧘'],['스쿼시','🎾'],['골프','⛳'],['트램폴린','🤸'],['체조','🤸'],['멤버십','🎫'],['뮤지컬','🎭'],['루프','🌀']];
+  for(var i=0;i<rules.length;i++){ if(k.indexOf(rules[i][0])>=0) return rules[i][1]+' '; }
+  return '';
+}
 
 function _notifyTelegram(text, chatIdOverride) {
   const token = _prop('BOT_TOKEN') || _prop('TELEGRAM_BOT_TOKEN');
