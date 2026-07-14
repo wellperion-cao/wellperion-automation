@@ -5,9 +5,10 @@ REM Task: Wellperion-Weekly-Page-Hygiene-Sun-0900 (WEEKLY, Sunday 09:00)
 REM
 REM What it does:
 REM   Launches launchers\weekly_page_hygiene_hidden.vbs (hidden window) which runs
-REM   scripts\weekly_page_hygiene.bat -> scripts\weekly_page_hygiene.py --clevel coo.
+REM   scripts\weekly_page_hygiene.bat -> scripts\weekly_page_hygiene.py --clevel all.
 REM   Default = PROPOSAL MODE (PAGE_HYGIENE_APPLY unset in the .bat). Registering this task
-REM   is safe on its own: every week it audits the 14 COO pages via headless claude, writes
+REM   is safe on its own: every week it audits all 47 ERP pages (COO/CPO/CMO/CTO/CFO/CHRO/
+REM   shared, config: scripts\weekly_page_hygiene.py PAGE_TARGETS) via headless claude, writes
 REM   status\page_hygiene_proposal_<date>.md, and sends a Telegram summary. Category A (dead
 REM   code) auto-delete stays OFF (preview-only) until PAGE_HYGIENE_APPLY=1 is uncommented in
 REM   scripts\weekly_page_hygiene.bat (separate GM go step, after reviewing several weeks of
@@ -53,6 +54,6 @@ echo Logs: %ROOT%\logs\weekly_page_hygiene.log
 echo Proposal files: %ROOT%\status\page_hygiene_proposal_YYYYMMDD.md
 echo Run log: %ROOT%\status\weekly_page_hygiene_log.jsonl
 echo To test manually (proposal-mode unless PAGE_HYGIENE_APPLY=1 is set in env):
-echo   "C:\Python314\python.exe" "%ROOT%\scripts\weekly_page_hygiene.py" --clevel coo --dry-run
+echo   "C:\Python314\python.exe" "%ROOT%\scripts\weekly_page_hygiene.py" --clevel all --dry-run
 echo To remove: schtasks /Delete /TN "%TASK_NAME%" /F
 pause

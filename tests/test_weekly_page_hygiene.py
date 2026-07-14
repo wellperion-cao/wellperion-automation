@@ -28,8 +28,27 @@ def test_load_targets_coo_returns_14_pages():
     assert len(targets) == 14
 
 
+@pytest.mark.parametrize("clevel,expected_count", [
+    ("coo", 14),
+    ("cpo", 3),
+    ("cmo", 7),
+    ("cto", 2),
+    ("cfo", 3),
+    ("chro", 12),
+    ("shared", 6),  # 공용 3 + 리다이렉트 스텁 3
+])
+def test_load_targets_per_clevel_counts(clevel, expected_count):
+    assert len(wph.load_targets(clevel)) == expected_count
+
+
+def test_load_targets_all_clevels_sum_to_47_total():
+    # 2026-07-14: 오늘 감사한 전사 47페이지 전량을 config가 커버.
+    assert len(wph.load_targets(None)) == 47
+
+
 def test_load_targets_all_paths_exist_on_disk():
-    for t in wph.load_targets("coo"):
+    # 전체 47페이지(신규 CPO/CMO/CTO/CFO/CHRO/shared 포함) 실존 확인.
+    for t in wph.load_targets(None):
         abs_path = os.path.join(_PROJECT_ROOT, t["path"])
         assert os.path.exists(abs_path), f"대상 파일 없음: {t['path']}"
 

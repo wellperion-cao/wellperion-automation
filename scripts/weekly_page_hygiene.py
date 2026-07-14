@@ -6,8 +6,9 @@ weekly_page_hygiene.py — 주간 페이지 위생 자동화 (배 CTO-2026-07-14
      매주 일요일 09:00 무인 파이프로 제품화한다.
 
 ★안전 모델★
-  1) 대상: PAGE_TARGETS(기본 COO 14개 — coo/check 7·coo/todo 2·coo/notice 1·메인가이드
-     O1~O4). config로 확장 가능(후속 전 C-Level, load_targets(clevel=None)로 전체 조회).
+  1) 대상: PAGE_TARGETS — 2026-07-14 GM 지시로 전 ERP 47페이지 커버로 확장(COO 14 +
+     CPO 3 + CMO 7 + CTO 2 + CFO 3 + CHRO 12 + shared 3 + 리다이렉트 스텁 3 = 47).
+     load_targets(clevel)로 C-Level별 서브셋, load_targets(None)으로 전체 조회.
   2) 감사: 페이지(또는 메인가이드 섹션)마다 headless claude(-p, --permission-mode plan —
      편집 불가·읽기전용 분석 전용)를 호출해 A/B/C/D 카테고리 구조화 후보를 JSON으로 받는다.
      감사 자체는 게이트와 무관하게 매번 실행된다(GM이 매주 결과를 받아보는 것이 핵심 가치).
@@ -50,10 +51,13 @@ _PROJECT_ROOT = os.path.dirname(_SCRIPTS_DIR)
 # ── 게이트 env ──
 APPLY_ENV_VAR = "PAGE_HYGIENE_APPLY"
 
-# ── 대상 페이지 config (기본 COO 14개 — 확장 가능, 후속 전 C-Level) ──
+# ── 대상 페이지 config (2026-07-14 GM 지시로 전 ERP 47페이지 커버로 확장) ──
 # 메인가이드 O1~O4는 한 물리 파일(wellperion_guide(main).html) 안의 4개 섹션이라, 같은
 # path를 가리키되 anchor로 섹션을 구분한다(오늘 GM 감사와 동일 단위 — 14페이지 카운트 일치).
+# clevel="shared"는 특정 C-Level 소유가 아닌 전사 공용 페이지(공용 3) 및 리다이렉트
+# 스텁(감사 가치 낮으나 무해 — GM 지시로 포함, 3)에 사용.
 PAGE_TARGETS: list[dict] = [
+    # ── COO 14 (기존) ──
     {"clevel": "coo", "label": "시설부 체계", "path": "3. 웰페리온 가이드/coo/check/시설부 체계.html"},
     {"clevel": "coo", "label": "지원부 체계", "path": "3. 웰페리온 가이드/coo/check/지원부 체계.html"},
     {"clevel": "coo", "label": "운영부 체계", "path": "3. 웰페리온 가이드/coo/check/운영부 체계.html"},
@@ -68,6 +72,47 @@ PAGE_TARGETS: list[dict] = [
     {"clevel": "coo", "label": "메인가이드 O2(공지)", "path": "3. 웰페리온 가이드/wellperion_guide(main).html", "anchor": "O2"},
     {"clevel": "coo", "label": "메인가이드 O3(재등록)", "path": "3. 웰페리온 가이드/wellperion_guide(main).html", "anchor": "O3"},
     {"clevel": "coo", "label": "메인가이드 O4", "path": "3. 웰페리온 가이드/wellperion_guide(main).html", "anchor": "O4"},
+    # ── CPO 3 (2026-07-14 추가) ──
+    {"clevel": "cpo", "label": "문의회원", "path": "3. 웰페리온 가이드/cpo/member/문의회원.html"},
+    {"clevel": "cpo", "label": "강습회원관리", "path": "3. 웰페리온 가이드/cpo/member/강습회원관리.html"},
+    {"clevel": "cpo", "label": "상품기획", "path": "3. 웰페리온 가이드/cpo/product/상품기획.html"},
+    # ── CMO 7 (2026-07-14 추가) ──
+    {"clevel": "cmo", "label": "마케팅현황대시보드", "path": "3. 웰페리온 가이드/cmo/funnel/마케팅현황대시보드.html"},
+    {"clevel": "cmo", "label": "문의흐름지도", "path": "3. 웰페리온 가이드/cmo/funnel/문의흐름지도.html"},
+    {"clevel": "cmo", "label": "월간마케팅보고서", "path": "3. 웰페리온 가이드/cmo/funnel/월간마케팅보고서.html"},
+    {"clevel": "cmo", "label": "홈페이지", "path": "3. 웰페리온 가이드/cmo/home/홈페이지.html"},
+    {"clevel": "cmo", "label": "AI시리즈보드", "path": "3. 웰페리온 가이드/cmo/series/AI시리즈보드.html"},
+    {"clevel": "cmo", "label": "wp_inquiry_block", "path": "3. 웰페리온 가이드/cmo/survey/wp_inquiry_block.html"},
+    {"clevel": "cmo", "label": "wp_inquiry_block_en", "path": "3. 웰페리온 가이드/cmo/survey/wp_inquiry_block_en.html"},
+    # ── CTO 2 (2026-07-14 추가) — 자율현황.html은 실제로 리포 루트에 위치(cto/automation/
+    # 하위 아님, 08-27 확인) ──
+    {"clevel": "cto", "label": "카톡전송관리", "path": "3. 웰페리온 가이드/cto/automation/카톡전송관리.html"},
+    {"clevel": "cto", "label": "자율현황", "path": "3. 웰페리온 가이드/자율현황.html"},
+    # ── CFO 3 (2026-07-14 추가) ──
+    {"clevel": "cfo", "label": "매출지출현황", "path": "3. 웰페리온 가이드/cfo/finance/매출지출현황.html"},
+    {"clevel": "cfo", "label": "매출현황", "path": "3. 웰페리온 가이드/cfo/finance/매출현황.html"},
+    {"clevel": "cfo", "label": "지출현황", "path": "3. 웰페리온 가이드/cfo/finance/지출현황.html"},
+    # ── CHRO 12 (2026-07-14 추가) — hub 6 + recruiting 6 ──
+    {"clevel": "chro", "label": "인사허브", "path": "3. 웰페리온 가이드/chro/hub/index.html"},
+    {"clevel": "chro", "label": "휴가", "path": "3. 웰페리온 가이드/chro/hub/leave.html"},
+    {"clevel": "chro", "label": "오피스", "path": "3. 웰페리온 가이드/chro/hub/office.html"},
+    {"clevel": "chro", "label": "온보딩", "path": "3. 웰페리온 가이드/chro/hub/onboarding.html"},
+    {"clevel": "chro", "label": "온보딩(셀프)", "path": "3. 웰페리온 가이드/chro/hub/onboarding-self.html"},
+    {"clevel": "chro", "label": "조직구조", "path": "3. 웰페리온 가이드/chro/hub/structure.html"},
+    {"clevel": "chro", "label": "채용허브", "path": "3. 웰페리온 가이드/chro/recruiting/index.html"},
+    {"clevel": "chro", "label": "채용-쇼퍼", "path": "3. 웰페리온 가이드/chro/recruiting/chauffeur.html"},
+    {"clevel": "chro", "label": "채용-골프프로", "path": "3. 웰페리온 가이드/chro/recruiting/golfpro.html"},
+    {"clevel": "chro", "label": "채용-운영", "path": "3. 웰페리온 가이드/chro/recruiting/operations.html"},
+    {"clevel": "chro", "label": "채용-주차", "path": "3. 웰페리온 가이드/chro/recruiting/parking.html"},
+    {"clevel": "chro", "label": "채용-사우나", "path": "3. 웰페리온 가이드/chro/recruiting/sauna.html"},
+    # ── shared 3 — 공용 (2026-07-14 추가) ──
+    {"clevel": "shared", "label": "헌법한장", "path": "3. 웰페리온 가이드/헌법한장.html"},
+    {"clevel": "shared", "label": "전사회의", "path": "3. 웰페리온 가이드/전사회의.html"},
+    {"clevel": "shared", "label": "웰페리온 대시보드(웹)", "path": "3. 웰페리온 가이드/wellperion_dashboard_web.html"},
+    # ── shared 3 — 리다이렉트 스텁(감사 가치 낮으나 GM 지시로 포함) ──
+    {"clevel": "shared", "label": "index(리다이렉트 스텁)", "path": "3. 웰페리온 가이드/index.html"},
+    {"clevel": "shared", "label": "항해지도(리다이렉트 스텁)", "path": "3. 웰페리온 가이드/항해지도.html"},
+    {"clevel": "shared", "label": "northstar_today(리다이렉트 스텁)", "path": "3. 웰페리온 가이드/northstar_today.html"},
 ]
 
 DEFAULT_LOG_PATH = os.path.join(_PROJECT_ROOT, "status", "weekly_page_hygiene_log.jsonl")
