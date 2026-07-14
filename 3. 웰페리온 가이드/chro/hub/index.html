@@ -869,6 +869,7 @@ function renderDash(){
   var srcDist={};appl.forEach(function(a){var s=a["지원 경로"];if(s){srcDist[s]=(srcDist[s]||0)+1;}});
 
   var html=diagCard();
+  html+=birthdayCard(emp);
 
   html+='<div class="sec-title">핵심 지표</div><div class="kpi-grid">';
   var __uniqActive=(function(){var s={};active.forEach(function(e){var n=(e["성명"]||e["이름"]||"").toString().trim();if(n)s[n]=1;});return Object.keys(s).length;})();
@@ -965,6 +966,37 @@ function renderDash(){
   drawDonut("cExit",Object.keys(exitTypes).length?exitTypes:{"퇴사 없음":1});
   drawDonut("cSource",Object.keys(srcDist).length?srcDist:{"데이터 없음":1});
   try{ window.__lastDashSig=dashSig(); }catch(e){}
+}
+/* 오늘 생일 위젯 — PII 정적 노출 금지: 백엔드가 내려주는 안전 파생 필드 bday("MM-DD", 연도·성별 없음)만 읽어
+   월/일을 비교·표시한다. 주민번호 원본 필드는 백엔드 @58 지혈로 응답에서 완전히 제거되어 더는 존재하지 않으므로
+   그 값을 정규식으로 탐지하던 구코드는 폐기(잔재 금지). 생년(나이)·원본 값은 절대 렌더링하지 않는다.
+   (2026-07-14 A-3, 재직자 케어 트랙 마일스톤 포착 — bday 배선으로 교체) */
+function birthdayCard(emp){
+  emp=emp||DB.emp||[];
+  var active=emp.filter(function(e){return e["재직 상태"]!=="퇴사";});
+  var today=new Date();
+  var tm=today.getMonth()+1, td=today.getDate();
+  var byName={};
+  active.forEach(function(e){
+    var nm=(e["성명"]||e["이름"]||"").toString().trim();
+    if(!nm)return;
+    if(byName[nm]&&byName[nm].mm)return; // 겸직 중복행은 최초 유효값만 채택
+    var v=String(e["bday"]||"").trim();
+    var m=/^(\d{2})-(\d{2})$/.exec(v);
+    var dept=(e["부서"]||"").toString().replace(/\n/g," ").trim();
+    if(!byName[nm]||m){
+      byName[nm]={dept:dept,mm:m?parseInt(m[1],10):null,dd:m?parseInt(m[2],10):null};
+    }
+  });
+  var hits=Object.keys(byName).filter(function(nm){return byName[nm].mm===tm&&byName[nm].dd===td;})
+    .map(function(nm){return {nm:nm,dept:byName[nm].dept,mm:byName[nm].mm,dd:byName[nm].dd};});
+  if(hits.length){
+    return '<div class="alert" style="background:linear-gradient(135deg,#fff8ec,#fdf3e0);border:1px solid var(--gold)">'+
+      '<b>🎂 오늘 생일</b><div>'+
+      hits.map(function(h){return '<b>'+esc(h.nm)+'</b>'+(h.dept?' · '+esc(h.dept):"")+' · '+h.mm+'월 '+h.dd+'일 — 생일을 진심으로 축하합니다 🎉';}).join('<br>')+
+      '</div></div>';
+  }
+  return '<div class="alert empty" style="opacity:.8"><b>🎂 오늘 생일</b><div>오늘 생일인 직원이 없습니다.</div></div>';
 }
 function kpi(label,val,note){
   return '<div class="kpi"><div class="label">'+esc(label)+'</div>'+
@@ -2303,6 +2335,9 @@ function perfCriteriaCard(){
     (SESSION_ROLE==="admin"?'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'+
       '<button class="btn-sm" onclick="workEvalStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 관리자 업무평가(직무성과 산출)</button>'+
       '<button class="btn-sm" onclick="perfEvalStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 정기 성과평가 평가지 작성</button>'+
+      '<button class="btn-sm" onclick="selfEvalStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 자기평가 작성(선제출·등급 미산출)</button>'+
+      '<button class="btn-sm" onclick="leaderEvalSubmitStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 리더십평가 제출(부서원·익명)</button>'+
+      '<button class="btn-sm" onclick="leaderReviewStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 리더십 집계·열람(관리자·k익명)</button>'+
       '</div>':'')+
     '</div>';
 }
@@ -2361,6 +2396,7 @@ function openPerfEval(target, family){
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="wt">KPI 확정값</span><input type="number" id="pJpFix" min="0" max="100" step="0.1" style="width:82px"><span>/100</span>'+
         '<span style="flex:1;min-width:170px">보정 사유(산출값과 다르게 확정 시 필수)<input id="pJpRsn" placeholder="시스템 미포착 기여 등"></span></div>'+
     '</div>'+
+    '<div id="pSelfBox" style="display:none;border:1px solid #cfe0ee;background:#f2f7fb;border-radius:8px;padding:8px 11px;margin:9px 0;font-size:9pt;color:#2f6d9e"></div>'+
     '<h2>2. 직무성과 KPI <span class="wt" id="pKw"></span></h2>'+
     '<table><thead><tr><th style="width:150px">KPI</th><th style="width:40px">가중</th><th>MBO 목표 / BARS 앵커(5·3·1)</th><th style="width:86px">점수</th><th style="width:148px">근거(관찰사실 1건+)</th></tr></thead><tbody id="pKpi"></tbody></table>'+
     '<h2>3. 공통역량 5축 BARS <span class="wt" id="pCw"></span></h2>'+
@@ -2447,6 +2483,29 @@ function openPerfEval(target, family){
       recompute();
     }).catch(function(){ recompute(); });
   }
+  // [웨이브2] 자기평가 병렬표시(갭) — 5축·태도 각 항목 옆에 '자기 N' 배지. 등급 미반영(참고).
+  function selfMap(arr){ var m={}; (arr||[]).forEach(function(o){ if(o&&o.k) m[o.k]=o.score; }); return m; }
+  function clearSelfBadges(){ var bs=D.getElementsByClassName("selfbadge"); while(bs.length){ bs[0].parentNode.removeChild(bs[0]); } }
+  function annotateSelf(cls, selfArr, refItems){
+    var m=selfMap(selfArr), a=D.getElementsByClassName(cls);
+    for(var i=0;i<a.length;i++){ var key=refItems[i]?refItems[i].k:""; var sv=(key in m)?m[key]:null;
+      var cell=a[i].parentNode, badge=D.createElement("div"); badge.className="selfbadge";
+      badge.style.cssText="font-size:8.2pt;color:#2f6d9e;font-weight:700;margin-top:3px";
+      badge.textContent="자기 "+(sv==null?"–":sv); cell.appendChild(badge); }
+  }
+  function loadSelfGap(nm){
+    nm=String(nm||"").trim(); var box=D.getElementById("pSelfBox"); clearSelfBadges();
+    if(!nm){ box.style.display="none"; return; }
+    fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"get-self-eval",adminPassword:SESSION_PW,target:nm})}).then(function(x){return x.json();}).then(function(r){
+      clearSelfBadges();
+      if(r&&r.ok&&r.found&&r.latest){ var L=r.latest;
+        annotateSelf("pc", L.axes, WP_PERF_EVAL.axes);
+        annotateSelf("pa", L.attitudes, WP_PERF_EVAL.attitudes);
+        box.style.display="block";
+        box.innerHTML="🔵 <b>자기평가 병렬표시(선제출)</b> — 기간 "+esc(String(L.period||""))+" · 저장 "+esc(String(L.savedAt||""))+". 각 항목의 <b>자기 N</b>과 평가 점수를 비교해 인식 차이(갭)를 확인하세요. <b>자기평가는 등급에 반영되지 않습니다</b>(참고용).";
+      } else { box.style.display="block"; box.innerHTML="이 대상자의 선제출 자기평가 없음 — 자기평가 화면에서 먼저 작성하면 각 항목 옆에 '자기 N'으로 병렬 표시됩니다."; }
+    }).catch(function(){ clearSelfBadges(); });
+  }
   function recompute(){
     var fam=D.getElementById("pFam").value;
     var f=WP_PERF_EVAL.families[fam];
@@ -2473,11 +2532,11 @@ function openPerfEval(target, family){
   D.getElementById("pTgt").oninput=function(){ var e=empMap[this.value.trim()]; if(e && !D.getElementById("pFam").value){ var fam=wpDeptToFamily(e.dept,e.rank); if(fam){ D.getElementById("pFam").value=fam; renderKpi(fam); } } };
   D.getElementById("pFam").onchange=function(){ renderKpi(this.value); };
   D.getElementById("pHon").onchange=recompute;
-  D.getElementById("pTgt").onchange=function(){ loadJobPerf(this.value.trim()); };
+  D.getElementById("pTgt").onchange=function(){ loadJobPerf(this.value.trim()); loadSelfGap(this.value.trim()); };
   D.getElementById("pJpUse").onchange=recompute;
   D.getElementById("pJpFix").oninput=recompute;
   renderKpi(family||"");
-  if(target) loadJobPerf(target);
+  if(target){ loadJobPerf(target); loadSelfGap(target); }
   D.getElementById("pSave").onclick=function(){ perfEvalSubmit(D); };
 }
 function perfEvalSubmit(D){
@@ -2691,6 +2750,232 @@ function openWorkEval(target, period){
   D.getElementById("wePeriod").onchange=function(){ var nm=D.getElementById("weTgt").value.trim(); if(nm) loadSaved(nm); };
   D.getElementById("weSave").onclick=save;
   loadCoo();
+}
+/* ============================================================================
+   자기평가·리더십평가(상향) — A-4 평가담당자 · 2026-07-14 웨이브2
+   확정스펙(매니저 확정): 자기평가=팀장평가와 동일 항목(공통역량 5축+태도 5항목)·5점 척도, 본인 선제출,
+     등급·총점 미산출·미반영(1년차 자기인식 갭·면담 참고). 팀장 평가지(openPerfEval)에 자기점수 병렬표시.
+   리더십평가=부서원→팀장 상향, 6항목 5점+개선서술, ⚠평가자 실명 미저장(비식별), 응답 3명 미만이면
+     요약 전면 비공개(k-익명). 원자료는 매니저(admin)만, 리더 공유용은 집계요약(k 통과 시)만. 등급·처우 미반영.
+   저장: 관리자 잠금탭(save-self-eval / leadership-submit) — db:eval 공개읽기 미노출. 팝업 DOM엔 스크립트 미주입
+     (오프너측 배선, 비번/코드 팝업 노출 방지). 리더십 제출은 제출자 본인인증(성명+연락처 뒤4자리·verifySelfPin_)
+     또는 admin — 신원은 저장하지 않음.
+   ========================================================================== */
+var WP_LEADERSHIP_ITEMS = [
+  {k:"방향 제시", d:"팀 목표·우선순위를 명확히 제시하고 이유를 설명한다"},
+  {k:"공정성", d:"업무 배분·평가·피드백을 편애 없이 일관되게 한다"},
+  {k:"코칭·성장지원", d:"구성원의 성장·역량 개발을 돕고 기회를 부여한다"},
+  {k:"소통", d:"의견을 경청하고 정보를 투명하게 공유한다"},
+  {k:"의사결정", d:"필요한 결정을 적시에 내리고 결과를 책임진다"},
+  {k:"구성원 존중", d:"인격을 존중하고 심리적 안전을 보장한다"}
+];
+function selfEvalStart(){ openSelfEval(""); }
+function openSelfEval(target){
+  if(SESSION_ROLE!=="admin"){ alert("자기평가는 관리자 화면(HR 스테이션)에서 본인이 작성합니다."); return; }
+  var w=window.open("","_blank","width=980,height=1200");
+  if(!w){ alert("팝업이 차단됐습니다. 브라우저에서 팝업을 허용해 주세요."); return; }
+  var emps=(DB.emp||[]).filter(function(e){return e["재직 상태"]!=="퇴사";}).map(function(e){return String(e["성명"]||e["이름"]||"").trim();}).filter(function(x){return x;});
+  var empListOpts=emps.map(function(nm){return '<option value="'+esc(nm)+'">';}).join("");
+  var now=new Date(); var defPer=(now.getFullYear()+"-"+(now.getMonth()<6?"H1":"H2"));
+  var cycleOpts=['반기(중간·7월)','반기(연말·12~1월)'].map(function(c){return '<option>'+esc(c)+'</option>';}).join("");
+  function sopts(){ return '<option value="">–</option>'+[[5,"5 매우 그렇다"],[4,"4 그렇다"],[3,"3 보통"],[2,"2 아니다"],[1,"1 매우 아니다"]].map(function(o){return '<option value="'+o[0]+'">'+o[1]+'</option>';}).join(""); }
+  var axisRows=WP_PERF_EVAL.axes.map(function(x){ return '<tr><td><b>'+esc(x.k)+'</b><div class="d">'+esc(x.def)+'</div></td><td style="text-align:center"><select class="sa" data-k="'+esc(x.k)+'">'+sopts()+'</select></td></tr>'; }).join("");
+  var attRows=WP_PERF_EVAL.attitudes.map(function(x){ return '<tr><td><b>'+esc(x.k)+'</b><div class="d">'+esc(x.d)+'</div></td><td style="text-align:center"><select class="st" data-k="'+esc(x.k)+'">'+sopts()+'</select></td></tr>'; }).join("");
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>웰페리온 자기평가(선제출)</title><style>'+
+    '*{box-sizing:border-box}body{font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;font-size:10.5pt;line-height:1.5;color:#1f1e1b;margin:0;padding:14px 0;background:#f4f3ef}'+
+    '.page{max-width:190mm;margin:0 auto;background:#fff;padding:16px 20px;box-shadow:0 0 10px rgba(0,0,0,.08);border-radius:4px}'+
+    'h1{font-size:15pt;border-bottom:2px solid #a98a52;padding-bottom:6px;margin:0 0 4px}'+
+    '.sub{color:#6c6961;font-size:9.3pt;margin-bottom:10px}'+
+    '.banner{background:#eef4ee;border:1px solid #cfe0cf;border-radius:6px;padding:8px 11px;margin:8px 0;font-size:9.2pt;color:#2f5d3a}'+
+    'h2{font-size:11pt;color:#8a6f3f;border-left:3px solid #a98a52;padding-left:8px;margin:14px 0 6px}'+
+    'table{width:100%;border-collapse:collapse;margin:5px 0;font-size:9.3pt}'+
+    'th,td{border:1px solid #d8d4c8;padding:5px 7px;text-align:left;vertical-align:middle}'+
+    'th{background:#f8f5ee;font-weight:600;color:#6c6961}'+
+    '.d{font-size:8.2pt;color:#8a877e;margin-top:2px}'+
+    'select,input,textarea{font-family:inherit;font-size:9.3pt;border:1px solid #cfcabb;border-radius:4px;padding:3px 5px;width:100%;box-sizing:border-box}textarea{resize:vertical}'+
+    '.btns{position:fixed;top:12px;right:12px;z-index:10}'+
+    '.pb{background:#3c7a4a;color:#fff;border:none;padding:8px 15px;border-radius:6px;font-weight:600;cursor:pointer;font-size:10.5pt;box-shadow:0 2px 8px rgba(0,0,0,.15)}.pb:disabled{opacity:.55;cursor:default}'+
+    '</style></head><body>'+
+    '<div class="btns"><button class="pb" id="seSave">💾 자기평가 저장(선제출)</button></div>'+
+    '<div class="page">'+
+    '<h1>웰페리온 자기평가 (선제출)</h1>'+
+    '<div class="sub">팀장 평가와 동일 항목(공통역량 5축 · 태도·가치 5항목)을 본인이 먼저 5점 척도로 작성합니다.</div>'+
+    '<div class="banner">⚠ 이 자기평가는 <b>등급·총점을 산출하지 않으며 인사평가 등급에 반영되지 않습니다</b>(1년차 자기인식·면담 참고용). 팀장 평가지에는 자기점수가 <b>병렬로만</b> 표시되어 인식 차이(갭)를 확인합니다.</div>'+
+    '<h2>1. 작성자 · 기간</h2>'+
+    '<table><tr><th style="width:80px">본인 성명</th><td><input id="seTgt" list="seEmpList" value="'+esc(target||"")+'" placeholder="본인 성명"><datalist id="seEmpList">'+empListOpts+'</datalist></td>'+
+    '<th style="width:80px">평가기간</th><td><input id="sePeriod" value="'+esc(defPer)+'" placeholder="예: 2026-H1"></td></tr>'+
+    '<tr><th>평가주기</th><td><select id="seCyc">'+cycleOpts+'</select></td><th></th><td></td></tr></table>'+
+    '<h2>2. 공통역량 5축 (자기평가 · 5점)</h2>'+
+    '<table><thead><tr><th>역량 축</th><th style="width:150px">자기점수</th></tr></thead><tbody>'+axisRows+'</tbody></table>'+
+    '<h2>3. 태도·가치 5항목 (자기평가 · 5점)</h2>'+
+    '<table><thead><tr><th>항목</th><th style="width:150px">자기점수</th></tr></thead><tbody>'+attRows+'</tbody></table>'+
+    '<h2>4. 자기서술 (자유 작성)</h2>'+
+    '<table><tr><th style="width:120px">직무성과 자기서술</th><td><textarea id="seJp" rows="3" placeholder="반기 주요 성과 3건 등"></textarea></td></tr>'+
+    '<tr><th>성장영역</th><td><textarea id="seGrow" rows="2"></textarea></td></tr>'+
+    '<tr><th>필요 지원</th><td><textarea id="seSup" rows="2"></textarea></td></tr>'+
+    '<tr><th>강점 1</th><td><input id="seStr"></td></tr>'+
+    '<tr><th>개발영역 1</th><td><input id="seDev"></td></tr></table>'+
+    '<div class="sub" style="margin-top:10px">저장 시 관리자 잠금영역(자기평가 탭)에만 기록되며, 공개 열람(뷰어)에는 노출되지 않습니다.</div>'+
+    '</div></body></html>';
+  w.document.write(html); w.document.close();
+  var D=w.document;
+  function collect(cls){ var a=D.getElementsByClassName(cls), out=[]; for(var i=0;i<a.length;i++){ out.push({k:a[i].getAttribute("data-k"), score:(a[i].value===""?null:Number(a[i].value))}); } return out; }
+  function save(){
+    var tgt=D.getElementById("seTgt").value.trim(), per=D.getElementById("sePeriod").value.trim();
+    if(!tgt){ alert("본인 성명을 입력하세요."); return; }
+    if(!per){ alert("평가기간을 입력하세요(예: 2026-H1)."); return; }
+    var payload={ action:"save-self-eval", adminPassword:SESSION_PW, target:tgt, period:per, cycle:D.getElementById("seCyc").value,
+      axes:collect("sa"), attitudes:collect("st"),
+      jobPerfSelf:D.getElementById("seJp").value.trim(), growthArea:D.getElementById("seGrow").value.trim(),
+      supportNeeded:D.getElementById("seSup").value.trim(), strength:D.getElementById("seStr").value.trim(), devArea:D.getElementById("seDev").value.trim() };
+    var btn=D.getElementById("seSave"); btn.disabled=true; btn.textContent="저장 중…";
+    fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).then(function(x){return x.json();}).then(function(r){
+      if(r&&r.ok){ btn.textContent="✓ 저장됨(선제출)"; alert("자기평가 저장 완료: "+tgt+" · "+per+"\n등급은 산출되지 않습니다(참고용). 팀장 평가 시 병렬 갭으로 표시됩니다."); }
+      else { btn.disabled=false; btn.textContent="💾 자기평가 저장(선제출)"; alert("저장 실패: "+((r&&r.error)||"알 수 없는 오류")); }
+    }).catch(function(e){ btn.disabled=false; btn.textContent="💾 자기평가 저장(선제출)"; alert("저장 오류: "+((e&&e.message)||e)); });
+  }
+  D.getElementById("seSave").onclick=save;
+}
+function leaderEvalSubmitStart(){ openLeaderEval(); }
+function openLeaderEval(){
+  var w=window.open("","_blank","width=880,height=1120");
+  if(!w){ alert("팝업이 차단됐습니다. 브라우저에서 팝업을 허용해 주세요."); return; }
+  var emps=(DB.emp||[]).filter(function(e){return e["재직 상태"]!=="퇴사";}).map(function(e){return String(e["성명"]||e["이름"]||"").trim();}).filter(function(x){return x;});
+  var empListOpts=emps.map(function(nm){return '<option value="'+esc(nm)+'">';}).join("");
+  var now=new Date(); var defPer=(now.getFullYear()+"-"+(now.getMonth()<6?"H1":"H2"));
+  function lopts(){ return '<option value="">–</option>'+[[5,"5 매우 그렇다"],[4,"4 그렇다"],[3,"3 보통"],[2,"2 아니다"],[1,"1 매우 아니다"]].map(function(o){return '<option value="'+o[0]+'">'+o[1]+'</option>';}).join(""); }
+  var itemRows=WP_LEADERSHIP_ITEMS.map(function(x){ return '<tr><td><b>'+esc(x.k)+'</b><div class="d">'+esc(x.d)+'</div></td><td style="text-align:center"><select class="le" data-k="'+esc(x.k)+'">'+lopts()+'</select></td></tr>'; }).join("");
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>웰페리온 리더십평가(익명 제출)</title><style>'+
+    '*{box-sizing:border-box}body{font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;font-size:10.5pt;line-height:1.5;color:#1f1e1b;margin:0;padding:14px 0;background:#f4f3ef}'+
+    '.page{max-width:180mm;margin:0 auto;background:#fff;padding:16px 20px;box-shadow:0 0 10px rgba(0,0,0,.08);border-radius:4px}'+
+    'h1{font-size:15pt;border-bottom:2px solid #a98a52;padding-bottom:6px;margin:0 0 4px}'+
+    '.sub{color:#6c6961;font-size:9.3pt;margin-bottom:10px}'+
+    '.warn{background:#fbf4ec;border:1px solid #e6d3a2;border-radius:6px;padding:9px 12px;margin:8px 0;font-size:9.2pt;color:#7a5b1f}'+
+    'h2{font-size:11pt;color:#8a6f3f;border-left:3px solid #a98a52;padding-left:8px;margin:14px 0 6px}'+
+    'table{width:100%;border-collapse:collapse;margin:5px 0;font-size:9.3pt}'+
+    'th,td{border:1px solid #d8d4c8;padding:5px 7px;text-align:left;vertical-align:middle}'+
+    'th{background:#f8f5ee;font-weight:600;color:#6c6961}'+
+    '.d{font-size:8.2pt;color:#8a877e;margin-top:2px}'+
+    'select,input,textarea{font-family:inherit;font-size:9.3pt;border:1px solid #cfcabb;border-radius:4px;padding:3px 5px;width:100%;box-sizing:border-box}textarea{resize:vertical}'+
+    '.btns{position:fixed;top:12px;right:12px;z-index:10}'+
+    '.pb{background:#3c7a4a;color:#fff;border:none;padding:8px 15px;border-radius:6px;font-weight:600;cursor:pointer;font-size:10.5pt;box-shadow:0 2px 8px rgba(0,0,0,.15)}.pb:disabled{opacity:.55;cursor:default}'+
+    '</style></head><body>'+
+    '<div class="btns"><button class="pb" id="leSubmit">📮 익명 제출</button></div>'+
+    '<div class="page">'+
+    '<h1>웰페리온 리더십평가 (부서원 → 팀장 · 익명)</h1>'+
+    '<div class="warn"><b>익명 제출 안내</b> — 평가자 정보는 <b>저장되지 않습니다</b>. 아래 본인 확인은 현직원 확인용일 뿐 신원은 기록되지 않습니다. ⚠ 소규모 팀은 완전 익명이 보장되지 않을 수 있습니다. 이 평가는 <b>리더 코칭·개발 참고용</b>이며 등급·처우에 반영되지 않고, 응답을 이유로 한 <b>불이익·보복은 금지</b>됩니다. 응답자가 3명 미만인 팀장은 결과가 전면 비공개됩니다.</div>'+
+    '<h2>1. 본인 확인 (신원 미저장)</h2>'+
+    '<table><tr><th style="width:110px">본인 성명</th><td><input id="leSubName" placeholder="제출자 본인 성명(확인용)"></td>'+
+    '<th style="width:120px">연락처 뒤 4자리</th><td><input id="lePin" placeholder="0000" maxlength="4"></td></tr></table>'+
+    '<h2>2. 대상 · 기간</h2>'+
+    '<table><tr><th style="width:110px">대상 팀장</th><td><input id="leTgt" list="leEmpList" placeholder="평가할 팀장 성명"><datalist id="leEmpList">'+empListOpts+'</datalist></td>'+
+    '<th style="width:80px">평가기간</th><td><input id="lePeriod" value="'+esc(defPer)+'" placeholder="예: 2026-H1"></td></tr></table>'+
+    '<h2>3. 리더십 항목 (6항목 · 5점)</h2>'+
+    '<table><thead><tr><th>항목</th><th style="width:150px">점수</th></tr></thead><tbody>'+itemRows+'</tbody></table>'+
+    '<h2>4. 개선 제안 (자유 · 선택)</h2>'+
+    '<textarea id="leImprove" rows="3" placeholder="팀장이 더 잘하면 좋겠는 점(구체적 상황·행동 중심 / 개인 식별 정보는 적지 마세요)"></textarea>'+
+    '<div class="sub" style="margin-top:10px">제출 후에는 수정할 수 없습니다. 개선 제안에 본인·동료를 특정할 수 있는 표현은 피해 주세요(익명성 보호).</div>'+
+    '</div></body></html>';
+  w.document.write(html); w.document.close();
+  var D=w.document;
+  function submit(){
+    var name=D.getElementById("leSubName").value.trim(), pin=D.getElementById("lePin").value.trim();
+    var tgt=D.getElementById("leTgt").value.trim(), per=D.getElementById("lePeriod").value.trim();
+    if(!name||!pin){ alert("본인 확인(성명·연락처 뒤 4자리)을 입력하세요. 신원은 저장되지 않습니다."); return; }
+    if(!tgt){ alert("대상 팀장을 입력하세요."); return; }
+    if(!per){ alert("평가기간을 입력하세요."); return; }
+    var items=[]; var le=D.getElementsByClassName("le"), any=false;
+    for(var i=0;i<le.length;i++){ var v=le[i].value; if(v!=="") any=true; items.push({k:le[i].getAttribute("data-k"), score:(v===""?null:Number(v))}); }
+    if(!any){ alert("최소 한 항목 이상 점수를 선택하세요."); return; }
+    var payload={ action:"leadership-submit", submitterName:name, pin:pin, target:tgt, period:per, items:items, improve:D.getElementById("leImprove").value.trim() };
+    var btn=D.getElementById("leSubmit"); btn.disabled=true; btn.textContent="제출 중…";
+    fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).then(function(x){return x.json();}).then(function(r){
+      if(r&&r.ok){ btn.textContent="✓ 제출 완료"; D.querySelector(".page").innerHTML='<h1>제출 완료</h1><div class="warn">익명 제출이 접수되었습니다. 감사합니다. 평가자 정보는 저장되지 않았습니다. 이 창을 닫으셔도 됩니다.</div>'; }
+      else { btn.disabled=false; btn.textContent="📮 익명 제출"; alert("제출 실패: "+((r&&r.message)||(r&&r.error)||"알 수 없는 오류")); }
+    }).catch(function(e){ btn.disabled=false; btn.textContent="📮 익명 제출"; alert("제출 오류: "+((e&&e.message)||e)); });
+  }
+  D.getElementById("leSubmit").onclick=submit;
+}
+function leaderReviewStart(){ openLeaderReview(); }
+function openLeaderReview(){
+  if(SESSION_ROLE!=="admin"){ alert("리더십평가 집계·열람은 관리자 전용입니다."); return; }
+  var w=window.open("","_blank","width=960,height=1150");
+  if(!w){ alert("팝업이 차단됐습니다. 브라우저에서 팝업을 허용해 주세요."); return; }
+  var now=new Date(); var defPer=(now.getFullYear()+"-"+(now.getMonth()<6?"H1":"H2"));
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>웰페리온 리더십평가 집계·열람(관리자)</title><style>'+
+    '*{box-sizing:border-box}body{font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;font-size:10.5pt;line-height:1.5;color:#1f1e1b;margin:0;padding:14px 0;background:#f4f3ef}'+
+    '.page{max-width:200mm;margin:0 auto;background:#fff;padding:16px 20px;box-shadow:0 0 10px rgba(0,0,0,.08);border-radius:4px}'+
+    'h1{font-size:15pt;border-bottom:2px solid #a98a52;padding-bottom:6px;margin:0 0 4px}'+
+    '.sub{color:#6c6961;font-size:9.3pt;margin-bottom:10px}'+
+    '.lock{background:#fbf1f0;border:1px solid #f0cfcb;border-radius:6px;padding:9px 12px;margin:8px 0;font-size:9.3pt;color:#b14238}'+
+    '.warn{background:#fbf4ec;border:1px solid #e6d3a2;border-radius:6px;padding:8px 11px;margin:8px 0;font-size:9pt;color:#7a5b1f}'+
+    'h2{font-size:11pt;color:#8a6f3f;border-left:3px solid #a98a52;padding-left:8px;margin:14px 0 6px}'+
+    'table{width:100%;border-collapse:collapse;margin:5px 0;font-size:9.3pt}'+
+    'th,td{border:1px solid #d8d4c8;padding:5px 7px;text-align:left;vertical-align:middle}'+
+    'th{background:#f8f5ee;font-weight:600;color:#6c6961}'+
+    'input{font-family:inherit;font-size:9.3pt;border:1px solid #cfcabb;border-radius:4px;padding:3px 5px}'+
+    '.b{display:inline-block;padding:2px 9px;border-radius:5px;font-weight:600;font-size:8.6pt;color:#fff}'+
+    '.b.ok{background:#3c7a4a}.b.lk{background:#b14238}'+
+    'button.act{background:#fff;border:1px solid #a98a52;color:#8a6f3f;border-radius:5px;padding:3px 9px;font-size:8.8pt;cursor:pointer;font-weight:600;margin-right:5px}'+
+    'button.go{background:#a98a52;color:#fff;border:none;border-radius:6px;padding:6px 13px;font-weight:600;cursor:pointer;font-size:9.5pt}'+
+    '.bar{height:8px;background:#eee;border-radius:4px;overflow:hidden;min-width:80px}.bar>span{display:block;height:100%;background:#a98a52}'+
+    '</style></head><body><div class="page">'+
+    '<h1>리더십평가 집계·열람 <span style="font-size:9pt;color:#b14238">· 관리자 잠금영역</span></h1>'+
+    '<div class="warn">⚠ <b>매니저(상위) 전용 화면</b>입니다. <b>원자료·개별 응답·개선서술은 해당 팀장 본인이나 비관리자에게 공유 금지</b>. 리더에게는 <b>집계 요약(응답 3명 이상)</b>만 전달하세요. 평가자 신원은 애초에 저장되지 않습니다.</div>'+
+    '<div style="display:flex;gap:8px;align-items:center;margin:8px 0"><span>평가기간</span><input id="lrPeriod" value="'+esc(defPer)+'" style="width:120px"><button class="go" id="lrLoad">개요 불러오기</button></div>'+
+    '<div id="lrIndex"></div><h2 id="lrDetailH" style="display:none">상세</h2><div id="lrDetail"></div>'+
+    '</div></body></html>';
+  w.document.write(html); w.document.close();
+  var D=w.document;
+  function esc2(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function loadIndex(){
+    var per=D.getElementById("lrPeriod").value.trim();
+    D.getElementById("lrIndex").innerHTML='불러오는 중…'; D.getElementById("lrDetail").innerHTML=''; D.getElementById("lrDetailH").style.display="none";
+    fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"get-leadership-eval",adminPassword:SESSION_PW,mode:"index",period:per})}).then(function(x){return x.json();}).then(function(r){
+      if(!r||!r.ok){ D.getElementById("lrIndex").innerHTML='<div class="lock">불러오기 실패: '+esc2((r&&r.error)||"오류")+'</div>'; return; }
+      var L=r.leaders||[];
+      if(!L.length){ D.getElementById("lrIndex").innerHTML='<div class="sub">해당 기간 제출된 리더십평가가 없습니다.</div>'; return; }
+      var rows=L.map(function(x){
+        var badge=x.locked?'<span class="b lk">비공개(응답<'+r.minK+')</span>':'<span class="b ok">공개가능('+x.n+'명)</span>';
+        var acts='<button class="act" data-t="'+esc2(x.target)+'" data-m="summary">집계 요약</button><button class="act" data-t="'+esc2(x.target)+'" data-m="raw">원자료(매니저)</button>';
+        return '<tr><td><b>'+esc2(x.target)+'</b></td><td style="text-align:center">'+x.n+'명</td><td>'+badge+'</td><td>'+acts+'</td></tr>';
+      }).join("");
+      D.getElementById("lrIndex").innerHTML='<table><thead><tr><th>대상 팀장</th><th style="width:60px">응답수</th><th style="width:150px">공개 상태</th><th style="width:240px">열람</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+        '<div class="sub">k-익명: 응답 '+r.minK+'명 미만 팀장은 집계 요약이 전면 비공개됩니다(원자료는 매니저만, 표본<'+r.minK+'는 리더 공유 금지).</div>';
+      var btns=D.getElementById("lrIndex").getElementsByClassName("act");
+      for(var i=0;i<btns.length;i++){ btns[i].onclick=function(){ loadDetail(this.getAttribute("data-t"), this.getAttribute("data-m")); }; }
+    }).catch(function(e){ D.getElementById("lrIndex").innerHTML='<div class="lock">오류: '+esc2((e&&e.message)||e)+'</div>'; });
+  }
+  function avgTable(av){
+    if(!av||!av.length) return '<div class="sub">항목 평균 없음.</div>';
+    return '<table><thead><tr><th>항목</th><th style="width:64px">평균</th><th style="width:120px"></th><th style="width:64px">응답</th></tr></thead><tbody>'+
+      av.map(function(a){ var pct=a.avg!=null?Math.round(a.avg/5*100):0; return '<tr><td>'+esc2(a.k)+'</td><td style="text-align:center;font-weight:700">'+(a.avg==null?"–":a.avg)+'</td><td><div class="bar"><span style="width:'+pct+'%"></span></div></td><td style="text-align:center">'+a.n+'</td></tr>'; }).join("")+'</tbody></table>';
+  }
+  function loadDetail(target, mode){
+    var per=D.getElementById("lrPeriod").value.trim();
+    D.getElementById("lrDetailH").style.display="block";
+    D.getElementById("lrDetail").innerHTML='불러오는 중…';
+    fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"get-leadership-eval",adminPassword:SESSION_PW,mode:mode,target:target,period:per})}).then(function(x){return x.json();}).then(function(r){
+      if(!r||!r.ok){ D.getElementById("lrDetail").innerHTML='<div class="lock">불러오기 실패: '+esc2((r&&r.error)||"오류")+'</div>'; return; }
+      var head='<div class="sub"><b>'+esc2(target)+'</b> · '+esc2(per)+' · '+(mode==="raw"?"원자료(매니저 전용)":"집계 요약(리더 공유용)")+'</div>';
+      if(mode==="summary"){
+        if(r.locked){ D.getElementById("lrDetail").innerHTML=head+'<div class="lock">🔒 '+esc2(r.message||("응답 "+r.minK+"명 미만 — 전면 비공개"))+'</div>'; return; }
+        D.getElementById("lrDetail").innerHTML=head+'<div class="sub">응답 '+r.n+'명 · 항목 평균(5점 만점)</div>'+avgTable(r.averages)+'<div class="sub">이 집계 요약만 리더에게 공유 가능합니다(개별 응답·서술 공유 금지).</div>';
+        return;
+      }
+      // raw
+      var resp=(r.responses||[]).map(function(rp,idx){
+        var sc=(rp.items||[]).map(function(it){ return esc2(it.k)+" "+(it.score==null?"–":it.score); }).join(" · ");
+        var imp=rp.improve?('<div style="color:#6c6961;margin-top:2px">개선: '+esc2(rp.improve)+'</div>'):'';
+        return '<tr><td style="text-align:center">'+(idx+1)+'</td><td>'+sc+imp+'</td><td style="text-align:center;color:#9a978e;font-size:8.4pt">'+esc2(rp.savedAt)+'</td></tr>';
+      }).join("");
+      var lowW=r.lowSample?'<div class="lock">⚠ '+esc2(r.notice||("표본 "+r.minK+" 미만 — 리더 공유 금지"))+'</div>':'';
+      D.getElementById("lrDetail").innerHTML=head+lowW+'<div class="sub">응답 '+r.n+'명 · 항목 평균</div>'+avgTable(r.averages)+
+        '<h2>개별 응답 (매니저 전용 · 신원 미저장)</h2>'+(resp?('<table><thead><tr><th style="width:36px">#</th><th>항목별 점수 / 개선</th><th style="width:120px">제출시각</th></tr></thead><tbody>'+resp+'</tbody></table>'):'<div class="sub">개별 응답 없음.</div>');
+    }).catch(function(e){ D.getElementById("lrDetail").innerHTML='<div class="lock">오류: '+esc2((e&&e.message)||e)+'</div>'; });
+  }
+  D.getElementById("lrLoad").onclick=loadIndex;
+  loadIndex();
 }
 function renderEval(){
   var html='<div class="sec-title">인사평가 · 포상</div>';
