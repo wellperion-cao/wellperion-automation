@@ -7,11 +7,14 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📅%3C/text%3E%3C/svg%3E">
 <style>
   :root{
-    --bg:#221F20; --paper:#2a2725; --surface:#1a1817;
-    --text:#f5f2ef; --text-soft:#d4d0cc; --dim:#8c8b83;
-    --accent:#7C3AED; --accent-soft:#a875f5;
-    --border:#3d3835; --border-strong:#4d4845;
-    --gold:#f0c674; --green:#6abf7b; --blue:#7ac4f0; --rose:#e08a7a;
+    /* ── A안 · 정보 위계 강화(GM 채택 2026-07-09·시안 3274f696 · 배685) ── */
+    --bg:#1c1a1b; --paper:#252220; --surface:#181615; --hero:#2d2926;
+    --text:#f3efe9; --text-soft:#c9c4bc; --dim:#87837c;
+    --accent:#8b5cf6; --accent-soft:#b8a0fb;
+    --border:#3a3532; --border-strong:#4c4642;
+    --gold:#e8b84b; --green:#5fbf82; --blue:#6fb4e8; --rose:#dd7f6e;
+    --carry:#b98d52; /* 이월 배지 전용(골드=매출 전용으로 좁힘 · 골드와 구분되는 톤) */
+    --link:#b8a0fb; /* 링크 버튼 전용(골드→violet, 골드=매출 전용으로 좁힘) */
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:13px; -webkit-font-smoothing:antialiased; padding:18px 18px 32px;}
@@ -32,6 +35,15 @@
   .layers span.cur{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
   .layers .arw{color:var(--dim); font-size:11px;}
 
+  /* ── 📊 최상단 4지표 요약 스트립(A안 정보 위계 강화 · 실측만 · 배685 · 2026-07-14) ── */
+  .sumstrip{display:flex; flex-wrap:wrap; gap:0; margin:0 0 14px; border:1px solid var(--border); border-radius:11px; overflow:hidden; background:var(--surface);}
+  .ss-i{flex:1; min-width:150px; padding:9px 14px; border-right:1px solid var(--border);}
+  .ss-i:last-child{border-right:none;}
+  .ss-l{font-size:9.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em;}
+  .ss-v{font-size:15px; font-weight:800; margin-top:2px; font-variant-numeric:tabular-nums; color:var(--text);}
+  .ss-v.gold{color:var(--gold);}
+  @media (max-width:720px){ .ss-i{min-width:calc(50% - 1px);} }
+
   /* ── 🔥 임팩트 현황 4칸(최상단 · 계층 띠 바로 아래 · GM 지시 2026-07-03) ── */
   .impact-grid{display:flex; flex-wrap:wrap; gap:10px; margin:0 0 14px;}
   .impact-card{flex:1; min-width:170px; background:var(--paper); border:1px solid var(--border-strong); border-left:3px solid var(--border-strong); border-radius:13px; padding:12px 15px 13px; display:flex; flex-direction:column; gap:5px;}
@@ -39,9 +51,15 @@
   .impact-card.st-완료{border-left-color:var(--green);}
   .impact-card.st-진행{border-left-color:var(--blue);}
   .impact-card.st-계획, .impact-card.st-이월{border-left-color:var(--dim);}
-  .impact-label{font-size:10.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.04em; display:flex; justify-content:space-between; gap:6px; align-items:baseline;}
+  /* 리스크 카드(④ 종합 접수처 미해결) — gold는 매출 전용이므로 별도 rose 계열 사용(A안 · 정보 위계 강화 · GM 채택 2026-07-14) */
+  .impact-card.risk{border-left-color:var(--rose);}
+  .impact-card.risk .impact-val{color:var(--rose);}
+  .impact-card.risk.ok{border-left-color:var(--green);}
+  .impact-card.risk.ok .impact-val{color:var(--green);}
+  /* 3단 위계: ①캡션(작게·흐리게) → ②핵심수치(크고 진하게·최우선) → ③제목+보조설명(중간·차분) — A안 정보 위계 강화 */
+  .impact-label{font-size:10.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.04em; display:flex; justify-content:space-between; gap:6px; align-items:baseline; opacity:0.85;}
   .impact-label .irank{font-size:9.5px; color:var(--dim); opacity:0.8;}
-  .impact-val{font-size:26px; font-weight:800; letter-spacing:-0.02em; color:var(--text); line-height:1.1;}
+  .impact-val{font-size:29px; font-weight:800; letter-spacing:-0.02em; color:var(--text); line-height:1.1; margin:3px 0 1px;}
   .impact-card.fin .impact-val{color:var(--gold);}
   .impact-val .iunit{font-size:13px; font-weight:700; color:var(--dim); margin-left:2px;}
   .impact-title{font-size:12px; font-weight:700; color:var(--text-soft); line-height:1.35; min-height:1.35em;}
@@ -75,7 +93,7 @@
   .mstat.계획{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
   .mstat.진행{color:var(--blue); background:rgba(122,196,240,0.10); border:1px solid rgba(122,196,240,0.35);}
   .mstat.완료{color:var(--green); background:rgba(106,191,123,0.10); border:1px solid rgba(106,191,123,0.35);}
-  .mstat.이월{color:var(--gold); background:rgba(240,198,116,0.10); border:1px solid rgba(240,198,116,0.35);}
+  .mstat.이월{color:var(--carry); background:rgba(185,141,82,0.10); border:1px solid rgba(185,141,82,0.35);}
 
   h2.sec{font-size:15px; font-weight:700; margin:13px 0 7px; display:flex; align-items:center; gap:7px;}
   h2.sec .stag{font-size:11px; font-weight:400; color:var(--dim);}
@@ -87,7 +105,7 @@
   .prog .track.done>i{background:linear-gradient(90deg,#3f8f4f,var(--green));}
   .prog .track.prog>i{background:linear-gradient(90deg,var(--accent),var(--accent-soft));}
   .prog .track.plan>i{background:linear-gradient(90deg,#5a5550,#8c8b83);}
-  .prog .track.carry>i{background:linear-gradient(90deg,#b8860b,var(--gold));}
+  .prog .track.carry>i{background:linear-gradient(90deg,#8a6633,var(--carry));}
   .prog .pnum{font-size:13px; font-weight:800; color:var(--text); min-width:38px; text-align:right;}
   .prog .pin-num{width:58px; font-size:12px; color:var(--text); background:var(--surface); border:1px solid var(--accent); border-radius:6px; padding:3px 6px; text-align:right;}
   .prog.big .track{height:20px;}
@@ -113,14 +131,14 @@
   .chip{display:inline-block; font-size:11px; border-radius:6px; padding:2px 8px; white-space:nowrap;}
   .chip.own{color:var(--accent-soft); background:var(--surface); border:1px solid var(--border-strong);}
   .chip.dept{color:var(--dim); background:var(--surface); border:1px solid var(--border);}
-  .chip.ns{color:var(--gold); background:rgba(240,198,116,0.08); border:1px solid rgba(240,198,116,0.30); text-decoration:none;}
-  .chip.ns:hover{border-color:var(--gold);}
+  .chip.ns{color:var(--link); background:rgba(184,160,251,0.08); border:1px solid rgba(184,160,251,0.30); text-decoration:none;}
+  .chip.ns:hover{border-color:var(--link);}
 
   .obadge{display:inline-block; font-size:11px; font-weight:700; border-radius:20px; padding:2px 10px; white-space:nowrap;}
   .obadge.계획{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
   .obadge.진행{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.38);}
   .obadge.완료{color:var(--green); background:rgba(106,191,123,0.12); border:1px solid rgba(106,191,123,0.38);}
-  .obadge.이월{color:var(--gold); background:rgba(240,198,116,0.12); border:1px solid rgba(240,198,116,0.38);}
+  .obadge.이월{color:var(--carry); background:rgba(185,141,82,0.12); border:1px solid rgba(185,141,82,0.38);}
 
   /* ── metric 막대(목표치 셀 내) ── */
   .metric{margin-top:7px; padding:7px 9px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface);}
@@ -193,7 +211,8 @@
   /* ── 💰 매출 핵심 강조(최상단 hero) ── */
   .blk.fin-primary{border:1px solid rgba(240,198,116,0.34); background:rgba(240,198,116,0.045); border-radius:14px; padding:5px 14px 10px; margin-bottom:4px;}
   .blk.fin-primary h2.sec{margin-top:8px;}
-  .fin-hero{display:flex; flex-wrap:wrap; gap:10px 24px; align-items:center; padding:14px 16px; margin-bottom:10px; background:linear-gradient(120deg,rgba(240,198,116,0.12),rgba(124,58,237,0.07)); border:1px solid rgba(240,198,116,0.38); border-radius:12px;}
+  /* A안 히어로 티어: 골드=매출 전용 카드만 그림자+굵은 테두리로 분리(정보 위계 강화 · 배685) */
+  .fin-hero{display:flex; flex-wrap:wrap; gap:10px 24px; align-items:center; padding:14px 16px; margin-bottom:10px; background:var(--hero); border:1.5px solid rgba(232,184,75,0.42); box-shadow:0 2px 10px rgba(0,0,0,0.22); border-radius:13px;}
   .fin-hero-main{display:flex; flex-direction:column; gap:3px;}
   .fin-hero-label{font-size:11.5px; color:var(--dim);}
   .fin-hero-val{font-size:31px; font-weight:800; letter-spacing:-0.02em; color:var(--gold); line-height:1;}
@@ -275,7 +294,7 @@
   /* 🗂️ 부서별 내용 = 표(table.rpt 재사용) 전용 소형 배지·꼬리표(GM 지시 2026-07-07 3차: 카드 그리드 → 표 전환) */
   .dc-note-tag{font-size:9.5px; font-weight:600; color:var(--text-soft); background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:2px 7px; margin-left:6px;}
   .dc-goal{font-size:10.5px; color:var(--dim); margin-top:2px;}
-  .dc-link{font-size:9px; font-weight:700; color:var(--gold); background:rgba(240,198,116,0.08); border:1px solid rgba(240,198,116,0.30); border-radius:20px; padding:2px 10px; text-decoration:none; white-space:nowrap;}
+  .dc-link{font-size:9px; font-weight:700; color:var(--link); background:rgba(184,160,251,0.08); border:1px solid rgba(184,160,251,0.30); border-radius:20px; padding:2px 10px; text-decoration:none; white-space:nowrap;}
   .dc-nolink{font-size:9px; color:var(--dim);}
   .dc-dim{color:var(--dim); font-weight:600;}
   /* 📌 부서별 월 목표·진척 — 부서 표 아래 전용 프로미넌트 섹션(GM 지시 2026-07-07 5차: 중요하게 크게) */
@@ -297,14 +316,14 @@
   .dg-obj-bar{height:7px; border-radius:5px; background:var(--surface); border:1px solid var(--border); overflow:hidden;}
   .dg-obj-bar>i{display:block; height:100%; border-radius:5px; background:linear-gradient(90deg,var(--accent),var(--accent-soft));}
   .dg-obj.st-완료 .dg-obj-bar>i{background:linear-gradient(90deg,#3f8f4f,var(--green));}
-  .dg-obj.st-이월 .dg-obj-bar>i{background:linear-gradient(90deg,#b8860b,var(--gold));}
-  .dg-obj.st-완료 .dg-obj-p{color:var(--green);} .dg-obj.st-이월 .dg-obj-p{color:var(--gold);} .dg-obj.st-계획 .dg-obj-p{color:var(--dim);}
+  .dg-obj.st-이월 .dg-obj-bar>i{background:linear-gradient(90deg,#8a6633,var(--carry));}
+  .dg-obj.st-완료 .dg-obj-p{color:var(--green);} .dg-obj.st-이월 .dg-obj-p{color:var(--carry);} .dg-obj.st-계획 .dg-obj-p{color:var(--dim);}
   .dg-obj-goal{font-size:11px; color:var(--dim); line-height:1.45;}
   .dg-empty{font-size:11.5px; color:var(--dim); font-weight:600; padding:4px 0;}
   /* 🔗 카드 체계 버튼 그룹(GM 지시 2026-07-08: 체계 링크를 카드 안 한 줄 버튼으로 · 경영지원=인사허브+매출지출) */
   .dg-links{display:flex; flex-wrap:wrap; gap:6px; margin:-2px 0 1px;}
-  .dg-linkbtn{font-size:10px; font-weight:700; color:var(--gold); background:rgba(240,198,116,0.08); border:1px solid rgba(240,198,116,0.30); border-radius:20px; padding:3px 11px; text-decoration:none; white-space:nowrap;}
-  .dg-linkbtn:hover{border-color:var(--gold); background:rgba(240,198,116,0.14);}
+  .dg-linkbtn{font-size:10px; font-weight:700; color:var(--link); background:rgba(184,160,251,0.08); border:1px solid rgba(184,160,251,0.30); border-radius:20px; padding:3px 11px; text-decoration:none; white-space:nowrap;}
+  .dg-linkbtn:hover{border-color:var(--link); background:rgba(184,160,251,0.14);}
   /* 🗂️ 통합 카드(시설·지원·주차) 내부 3부서 소섹션 = 3컬럼 서브그리드(세로 과확장 방지·밀도 · GM 지시 2026-07-08) */
   .dg-subgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:9px 12px;}
   .dg-subgrp{display:flex; flex-direction:column; gap:7px; min-width:0;}
@@ -335,11 +354,11 @@
   .erp-note-edit:focus{border-color:var(--accent-soft); background:rgba(124,58,237,0.08);}
   .erp-legend{font-size:10.5px; color:var(--dim); margin-top:9px; display:flex; gap:14px; flex-wrap:wrap;}
   .erp-legend b{color:var(--gold); font-weight:700;}
-  .cfo-link{font-size:11px; font-weight:600; color:var(--gold); text-decoration:none; border:1px solid rgba(240,198,116,0.32); background:rgba(240,198,116,0.06); border-radius:7px; padding:3px 10px; white-space:nowrap; margin-left:auto;}
-  .cfo-link:hover{border-color:var(--gold); background:rgba(240,198,116,0.12);}
+  .cfo-link{font-size:11px; font-weight:600; color:var(--link); text-decoration:none; border:1px solid rgba(184,160,251,0.32); background:rgba(184,160,251,0.06); border-radius:7px; padding:3px 10px; white-space:nowrap; margin-left:auto;}
+  .cfo-link:hover{border-color:var(--link); background:rgba(184,160,251,0.12);}
   /* 📋 상반기 전사회의 자료 버튼(상단 컨트롤바 · 새 탭 · GM 지시 2026-07-06 4차) */
-  .allhands-link{font-size:12px; font-weight:700; color:#221F20; background:var(--gold); border:1px solid var(--gold); border-radius:8px; padding:4px 12px; text-decoration:none; white-space:nowrap; box-shadow:0 1px 4px rgba(240,198,116,0.3);}
-  .allhands-link:hover{background:#ffe1a3; border-color:#ffe1a3;}
+  .allhands-link{font-size:12px; font-weight:700; color:#1c1a1b; background:var(--link); border:1px solid var(--link); border-radius:8px; padding:4px 12px; text-decoration:none; white-space:nowrap; box-shadow:0 1px 4px rgba(184,160,251,0.3);}
+  .allhands-link:hover{background:#d3c2fd; border-color:#d3c2fd;}
   h2.sec.has-link{flex-wrap:wrap;}
 
   /* ── 🗺️ 전략 로드맵 6단계 진척(GM 지시 2026-07-03 · ERP 진척과 유사 타임라인) ── */
@@ -390,7 +409,7 @@
   .t3-card{flex:1; min-width:220px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:12px; padding:12px 14px 13px; display:flex; flex-direction:column; gap:8px;}
   .t3-card.st-완료{border-left-color:var(--green);}
   .t3-card.st-진행{border-left-color:var(--blue);}
-  .t3-card.st-이월{border-left-color:var(--gold);}
+  .t3-card.st-이월{border-left-color:var(--carry);}
   .t3-card.st-계획{border-left-color:var(--dim);}
   .t3-top{display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
   .t3-rank{font-size:11.5px; font-weight:800; color:#fff; background:var(--accent); border-radius:7px; padding:3px 9px; white-space:nowrap; letter-spacing:-0.01em;}
@@ -476,7 +495,7 @@
   .sm-dim{color:var(--dim); font-weight:400; font-size:11px;}
   .sm-t3-grid{display:flex; gap:9px;}
   .sm-t3{flex:1; min-width:0; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:9px 11px; display:flex; flex-direction:column; gap:5px;}
-  .sm-t3.st-완료{border-left-color:var(--green);} .sm-t3.st-이월{border-left-color:var(--gold);}
+  .sm-t3.st-완료{border-left-color:var(--green);} .sm-t3.st-이월{border-left-color:var(--carry);}
   .sm-t3-top{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
   .sm-t3-rank{font-size:11px; font-weight:800; color:var(--accent-soft);}
   .sm-t3-title{font-size:12.5px; font-weight:700; color:var(--text); line-height:1.3;}
@@ -500,7 +519,7 @@
   .mb-card{flex:1; min-width:186px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:11px; padding:11px 13px 12px; display:flex; flex-direction:column; gap:6px;}
   .mb-card.st-완료{border-left-color:var(--green);}
   .mb-card.st-진행{border-left-color:var(--blue);}
-  .mb-card.st-이월{border-left-color:var(--gold);}
+  .mb-card.st-이월{border-left-color:var(--carry);}
   .mb-card.st-계획, .mb-card.st-none{border-left-color:var(--dim);}
   .mb-top{display:flex; align-items:baseline; justify-content:space-between; gap:6px;}
   .mb-title{font-size:12px; font-weight:700; color:var(--text-soft); line-height:1.3;}
@@ -511,12 +530,12 @@
   .mb-bar{height:7px; border-radius:5px; background:var(--paper); border:1px solid var(--border); overflow:hidden;}
   .mb-bar>i{display:block; height:100%; border-radius:5px; background:linear-gradient(90deg,var(--accent),var(--accent-soft));}
   .mb-card.st-완료 .mb-bar>i{background:linear-gradient(90deg,#3f8f4f,var(--green));}
-  .mb-card.st-이월 .mb-bar>i{background:linear-gradient(90deg,#b8860b,var(--gold));}
+  .mb-card.st-이월 .mb-bar>i{background:linear-gradient(90deg,#8a6633,var(--carry));}
   .mb-meta{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
   .mb-badge{font-size:9.5px; font-weight:700; border-radius:20px; padding:1px 8px; white-space:nowrap;}
   .mb-badge.진행{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.38);}
   .mb-badge.완료{color:var(--green); background:rgba(106,191,123,0.12); border:1px solid rgba(106,191,123,0.38);}
-  .mb-badge.이월{color:var(--gold); background:rgba(240,198,116,0.12); border:1px solid rgba(240,198,116,0.38);}
+  .mb-badge.이월{color:var(--carry); background:rgba(185,141,82,0.12); border:1px solid rgba(185,141,82,0.38);}
   .mb-badge.계획{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
   .mb-card .sd{margin-top:0;}
 
@@ -525,7 +544,7 @@
   .obj-split-h .cnt{font-size:10.5px; font-weight:700; color:var(--dim);}
   .obj-split-h .tagn{font-size:10px; font-weight:700; border-radius:20px; padding:2px 9px;}
   .obj-split-h .tagn.new{color:var(--accent-soft); background:rgba(124,58,237,0.10); border:1px solid rgba(124,58,237,0.35);}
-  .obj-split-h .tagn.carry{color:var(--gold); background:rgba(240,198,116,0.10); border:1px solid rgba(240,198,116,0.35);}
+  .obj-split-h .tagn.carry{color:var(--carry); background:rgba(185,141,82,0.10); border:1px solid rgba(185,141,82,0.35);}
   .obj-empty{font-size:11.5px; color:var(--dim); padding:4px 2px 8px;}
 
   /* ── 📅 연간 A3 (전체 로드맵 · 이니셔티브 5행 × 12개월) ── */
@@ -551,13 +570,13 @@
   .an-mini>i{display:block; height:100%; background:var(--dim);}
   .an-cell.pt-진행 .an-mini>i{background:var(--blue);}
   .an-cell.pt-완료 .an-mini>i{background:var(--green);}
-  .an-cell.pt-이월 .an-mini>i, .an-cell.pt-target .an-mini>i{background:var(--gold);}
+  .an-cell.pt-이월 .an-mini>i{background:var(--carry);} .an-cell.pt-target .an-mini>i{background:var(--gold);}
   .an-tp{font-size:8px; color:#8a6f3f; font-weight:700;}
   .an-spanlab{font-size:8px; color:var(--dim);}
   .an-cell.span{background:repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(140,139,131,0.13) 4px, rgba(140,139,131,0.13) 8px);}
   .an-cell.pt-진행{background:rgba(122,196,240,0.16);}
   .an-cell.pt-완료{background:rgba(106,191,123,0.16);}
-  .an-cell.pt-이월{background:rgba(240,198,116,0.16);}
+  .an-cell.pt-이월{background:rgba(185,141,82,0.16);}
   .an-cell.pt-계획{background:rgba(140,139,131,0.10);}
   .an-cell.pt-target{background:rgba(240,198,116,0.13);}
   .an-cell.cur-col{box-shadow:inset 0 0 0 2px var(--accent);}
@@ -604,7 +623,7 @@
   .sa-meta{display:flex; align-items:center; gap:5px; flex-wrap:wrap;}
   .sa-dept{font-size:9.5px; font-weight:600; color:var(--text-soft); background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:2px 7px;}
   .sa-period{font-size:9.5px; font-weight:700; color:var(--accent-soft); white-space:nowrap;}
-  .sa-link{font-size:9px; font-weight:700; color:var(--gold); background:rgba(240,198,116,0.08); border:1px solid rgba(240,198,116,0.30); border-radius:20px; padding:1px 8px; white-space:nowrap;}
+  .sa-link{font-size:9px; font-weight:700; color:var(--link); background:rgba(184,160,251,0.08); border:1px solid rgba(184,160,251,0.30); border-radius:20px; padding:1px 8px; white-space:nowrap;}
   .sa-hls{list-style:none; display:flex; flex-direction:column; gap:3px;}
   .sa-hls li{font-size:10.5px; color:var(--text-soft); line-height:1.4; padding-left:11px; position:relative;}
   .sa-hls li:before{content:"▸"; position:absolute; left:0; color:var(--accent-soft); font-size:8px; top:2px;}
@@ -895,6 +914,14 @@
 
   <!-- 🎯 1장 요약 뷰 = 폐지(GM 지시 2026-07-06 2차) — 연간 A3 뷰가 월별 상세를 포함하도록 전환 -->
 
+  <!-- 📊 최상단 4지표 요약 스트립(A안 정보 위계 강화 · 스크롤 없이 결론 먼저 · 전부 실측 · renderSummaryStrip()가 채움 · 배685) -->
+  <div class="sumstrip" id="sumstrip">
+    <div class="ss-i"><div class="ss-l">매출 페이스</div><div class="ss-v gold" id="ss-fin">불러오는 중…</div></div>
+    <div class="ss-i"><div class="ss-l">핵심 과제 진척</div><div class="ss-v" id="ss-top3">불러오는 중…</div></div>
+    <div class="ss-i"><div class="ss-l">점검 이행률</div><div class="ss-v" id="ss-check">불러오는 중…</div></div>
+    <div class="ss-i"><div class="ss-l">로드맵 단계</div><div class="ss-v" id="ss-roadmap">불러오는 중…</div></div>
+  </div>
+
   <!-- 경영진 A3 결론 = 아래 report-grid (월별 뷰 = 이것만 / 연간 뷰 = annual-board + 이것) -->
   <!-- 인쇄 시 2단, 상단밴드·매출은 상단 전폭 -->
   <div class="report-grid">
@@ -1148,7 +1175,7 @@
     var cached = _cmLoad(monKey);
     // 캐시 있으면 즉시 '갱신 중'으로 값 노출(체감 0초) · 없으면 첫 방문만 '불러오는 중'.
     _checkMonthlyCache[monKey] = cached ? {status:'done', data:cached, stale:true} : {status:'loading'};
-    if(_sel === monKey && _checkReady && cached){ renderCheckStatus(); renderSummaryBoard(); }
+    if(_sel === monKey && _checkReady && cached){ renderCheckStatus(); renderSummaryBoard(); renderSummaryStrip(); }
     readCheckMonthly(monKey).then(function(d){
       if(d){
         _checkMonthlyCache[monKey] = {status:'done', data:d, stale:false};
@@ -1158,7 +1185,7 @@
       } else {
         _checkMonthlyCache[monKey] = {status:'done', data:null, stale:false}; // 캐시·응답 둘 다 없음=정직 '없음'
       }
-      if(_sel === monKey && _checkReady){ renderCheckStatus(); renderSummaryBoard(); }
+      if(_sel === monKey && _checkReady){ renderCheckStatus(); renderSummaryBoard(); renderSummaryStrip(); }
     });
   }
   // ── 종합접수처 VOC 접수 현황 — coo/reception/종합접수처_현황.html과 동일 GAS·액션(reg_board). 응답 필드(name/contact)는 서버가 이미 마스킹하지만
@@ -1247,7 +1274,7 @@
     var parts = String(monKey).split('-');
     readTeamSales(parts[0], Number(parts[1])).then(function(raw){
       _teamSalesCache[monKey] = {status:'done', raw:raw};
-      if(_sel === monKey){ renderFinance(); renderSummaryBoard(); }
+      if(_sel === monKey){ renderFinance(); renderSummaryBoard(); renderSummaryStrip(); }
     });
   }
   // ── 강습팀 상반기 1·2분기 실적 정본 — GAS action=team_sales_h1(월별 "매출 보고" 31시트 U:Y 직독 합산).
@@ -1742,7 +1769,7 @@
     // 소스 전무(둘 다 실패) → 가짜값 없이 실패 안내 + CFO 링크
     if(!_cfoSales && !_cfoExp){
       host.innerHTML = '<div class="board-status">AI CFO 매출현황 소스(gviz)에 연결하지 못했습니다. ' +
-        '매출·지출 정본은 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold)">AI CFO 매출현황</a>에서 확인하세요.</div>';
+        '매출·지출 정본은 <a href="cfo/finance/매출지출현황.html" style="color:var(--link)">AI CFO 매출현황</a>에서 확인하세요.</div>';
       return;
     }
 
@@ -1750,7 +1777,7 @@
     var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
     var fin = calcFinance(mnum);
     if(!fin){
-      host.innerHTML = '<div class="board-status">선택월을 확인할 수 없습니다. 매출·지출은 <a href="cfo/finance/매출지출현황.html" style="color:var(--gold)">AI CFO 매출현황</a> 참조.</div>';
+      host.innerHTML = '<div class="board-status">선택월을 확인할 수 없습니다. 매출·지출은 <a href="cfo/finance/매출지출현황.html" style="color:var(--link)">AI CFO 매출현황</a> 참조.</div>';
       return;
     }
     var idx = fin.idx, cfoS = fin.cfoS, sales = fin.sales;
@@ -1999,7 +2026,7 @@
     if(!_finReady){ host.innerHTML = '<div class="board-status">📈 매출 연간 히스토리 불러오는 중…</div>'; return; }
     if(!_cfoSales){
       host.innerHTML = '<div class="board-status">매출 연간 히스토리 소스(sales_monthly)에 연결하지 못했습니다. ' +
-        '<a href="cfo/finance/매출지출현황.html" style="color:var(--gold)">AI CFO 매출현황</a>에서 확인하세요.</div>';
+        '<a href="cfo/finance/매출지출현황.html" style="color:var(--link)">AI CFO 매출현황</a>에서 확인하세요.</div>';
       return;
     }
     // 히스토리 = 선택월(_sel) 기준(GM 지시 2026-07-06): 6월 선택 시 1~6월까지만 막대·누계·월평균·부족분.
@@ -2629,6 +2656,71 @@
     }
   }
 
+  // ── 📊 최상단 4지표 요약 스트립(A안 정보 위계 강화 · 배685) ──
+  // 신규 데이터 로직 없음 — 이미 각 렌더 함수가 채운 전역 상태(_cfoSales/_checkMonthlyCache/_data 등)를 읽기 전용으로 재사용만 함(가짜값 없음 · 실패 시 개별 칸만 '—').
+  function renderSummaryStrip(){
+    var host = document.getElementById('sumstrip');
+    if(!host) return;
+    var m = _data && _data.months && _data.months[_sel];
+    var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
+
+    // ① 매출 페이스 = 연 72억(KPI_YEAR_TARGET) 대비 선택월까지의 실측 누계%(renderSalesHistory의 yearPct와 동일 정본·계산 재사용 — salesTargetFor는 월목표라 여기 쓰면 안 됨)
+    var finEl = document.getElementById('ss-fin');
+    if(finEl){
+      try{
+        if(!_finReady){ finEl.textContent = '불러오는 중…'; }
+        else if(_cfoSales){
+          var upto = (mnum >= 1 && mnum <= 12) ? mnum : _cfoSales.length;
+          var known = _cfoSales.slice(0, upto).filter(function(v){ return typeof v === 'number'; });
+          if(known.length){
+            var cum = known.reduce(function(a, b){ return a + b; }, 0);
+            var pct = Math.max(0, Math.round(cum / KPI_YEAR_TARGET * 100));
+            finEl.textContent = pct + '% (연 72억 대비 누계)';
+          } else { finEl.textContent = '측정 전'; }
+        } else { finEl.textContent = '측정 전(가짜값 없음)'; }
+      }catch(e){ finEl.textContent = '—'; }
+    }
+
+    // ② 핵심 과제 진척 = 선택월 objectives 중 착수됨(진행·이월·완료, 계획 제외) 건수/전체(정본 그대로 카운트만 · 신규 계산 없음)
+    var t3El = document.getElementById('ss-top3');
+    if(t3El){
+      try{
+        var objs = (m && m.objectives) || [];
+        if(objs.length){
+          var active = objs.filter(function(o){ return o.status && o.status !== '계획'; }).length;
+          t3El.textContent = active + '/' + objs.length + '건 진행중';
+        } else { t3El.textContent = '—'; }
+      }catch(e){ t3El.textContent = '—'; }
+    }
+
+    // ③ 점검 이행률 = 지원부 월간 이행률(_checkMonthlyCache 재사용 · renderSummaryBoard의 ④와 동일 소스)
+    var chkEl = document.getElementById('ss-check');
+    if(chkEl){
+      try{
+        var cmEntry = _checkMonthlyCache[_sel];
+        var cmData = (cmEntry && cmEntry.status === 'done') ? cmEntry.data : null;
+        var mtSum = (cmData && cmData.monthTotals) ? cmData.monthTotals : null;
+        chkEl.textContent = mtSum ? (mtSum.avgPct + '%') : (_checkReady ? '측정 개통 전' : '불러오는 중…');
+      }catch(e){ chkEl.textContent = '—'; }
+    }
+
+    // ④ 로드맵 단계 = 전략 로드맵 정본(strategy_roadmap.items)의 현재 진행 단계/전체(roadmapStripHtml과 동일 정본 재사용)
+    var rmEl = document.getElementById('ss-roadmap');
+    if(rmEl){
+      try{
+        var rm = _data && _data.strategy_roadmap;
+        var items = (rm && rm.items) || [];
+        if(items.length){
+          var total = items.length;
+          var curIdx = -1;
+          for(var i = 0; i < items.length; i++){ if(items[i].status === '진행'){ curIdx = i; break; } }
+          if(curIdx < 0){ curIdx = items.filter(function(it){ return it.status === '완료'; }).length; }
+          rmEl.textContent = Math.min(curIdx + 1, total) + '/' + total + '단계';
+        } else { rmEl.textContent = '—'; }
+      }catch(e){ rmEl.textContent = '—'; }
+    }
+  }
+
   function render(){
     renderMonthHead();
     renderViewToggle();
@@ -2643,6 +2735,7 @@
     renderDeptTable();
     renderReport();
     renderSummaryBoard();
+    renderSummaryStrip();
     renderEditBtn();
     applyChair();
     var sel = document.getElementById('month-sel');
@@ -2770,7 +2863,7 @@
       r = r || {};
       _cfoSales = r.sales; _cfoExp = r.exp; _cfoSalesDept = r.salesDept; _cfoLaborDept = r.laborDept;
       _finReady = true;
-      if(_data){ renderReport(); renderFinance(); renderSalesHistory(); renderSummaryBoard(); }
+      if(_data){ renderReport(); renderFinance(); renderSalesHistory(); renderSummaryBoard(); renderSummaryStrip(); }
     });
 
     // 3) 구매성(proc) 라이브 — 전체지출 = 인건비 + 구매성. 도착 시 임팩트·요약·재무 갱신.
@@ -2807,7 +2900,7 @@
     // 7) 북극성 지도 — 과제·실무 도달율표 뱃지. 도착 시 갱신.
     withTimeout(readNsMap(), 8000, null).then(function(v){
       _nsMap = v;
-      if(_data){ renderTop3(); renderBoard(); renderDeptTable(); renderSummaryBoard(); }
+      if(_data){ renderTop3(); renderBoard(); renderDeptTable(); renderSummaryBoard(); renderSummaryStrip(); }
     });
   }
 
@@ -2823,7 +2916,7 @@
     ]).then(function(a){
       _kpiValues = a[0]; _vocBoard = a[1];
       _checkReady = true;
-      if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); }
+      if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); renderSummaryStrip(); }
     });
   }
 
