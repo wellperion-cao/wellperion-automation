@@ -761,5 +761,32 @@
     "artifact": "GM go 2026-07-14. _pending_digest.json→★운영부 방 발송(kakao_report_sender 재사용).\n킬스위치 status/ops_digest_send.json(enabled)로 역롤백·중복방지(sent 마킹·오늘생성분만).\n아침 파이프라인(ops_morning_digest.bat) 3단계=내보내기→생성→발송 완성. 고지문+오늘\n다이제스트(07-13 기반) 실발송 완료. (CLI ad-hoc · 커밋 57a70809)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "57a70809c6f0ba738f4d71db27478204bb164481"
+  },
+  {
+    "task_id": "CTO-2026-07-14-RUNNER-ALL-CLEVEL-AUTODRIVE",
+    "clevel": "cto",
+    "title": "[시토] 무인 러너 전 C-Level 자율구동 확장 — 배237 기계화(GM 반복승인 제거)",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-14",
+    "note": "[2026-07-14 GM 요구] 웰리가 매일 수동으로 하던 루프('항로에서 가역·비금지 배 선별→담당 C-Level 위임 구동→웰리 실측 검수→G1/큐 기록·커밋')를 welly_auto_runner가 전 C-Level에 대해 무인 자동 구동하도록 확장해, GM 매 배치 반복승인 부담을 없앤다. [2026-07-14 시토 증분1 완료] scripts/welly_auto_runner.py에 run_cycle() 추가 — 선별 범위를 CTO 1개→DEFAULT_CLEVELS 7종(cmo·coo·cto·cpo·ceo·cfo·chro) 순회로 확장. clevel별 CLEVEL_NICKS 자동 배선, 사이클 총 라이브 실행 상한 MAX_SHIPS_PER_CYCLE=3(폭주 방지, clevel별 1척은 기존 선별기 구조가 이미 보장). CLI `--clevel all` 추가. 기존 가드(재귀 방지·클린트리·쿨다운·is_ambiguous 모호성 park) 전부 무변경 재사용 — run_cycle은 run_once를 clevel별로 그대로 호출하는 얇은 순회 래퍼(신규 안전 로직 추가 없음). [GM 추가 못박기] 모호성 조금이라도 있으면 무조건 park(GM 인터뷰 대기) — 비협상 원칙. 코드 주석·설계노트에 명시 + 회귀 테스트 신규 4종(run_cycle 순회·상한·닉네임 배선·모호배 비협상 게이트) 포함 총 68개 pytest 전부 통과. `--clevel all --force-dry-run`으로 실제 status/_queue.json 대상 실측: CMO 명확 배 1척 선택·COO 모호 배 정확히 park(실행 0)·나머지 clevel 후보 0건 — 큐 무변경 확인. welly_auto_runner.bat은 이번 세션에서 `--clevel cto` 그대로 유지(전면 확산은 별도 GM go 존중 — 엔진만 준비, 예약 라이브 스코프 확장은 보류). 증분2(자동 검수·자동 기록 기계화)는 설계만 — docs/superpowers/specs/2026-07-14-welly-runner-all-clevel-autodrive-design.md.",
+    "next": "증분1 완료(run_cycle 구현·dry-run 실측·회귀테스트). 증분2(자동 검수 Playwright headless 렌더+정직꼬리표·자동 기록 사후감사)는 설계만 완료 — 다음 세션에서 GM go 받고 로드맵 1단계(세션 stdout 구조화 검증 결과 파싱)부터 착수. .bat `--clevel all` 전환(예약 라이브 스코프를 CTO 1개→7개로 확산)은 별도 GM go 필요.",
+    "depends_on": "",
+    "module": "T2",
+    "ship_no": 970
+  },
+  {
+    "task_id": "COO-2026-07-14-ADHOC-b02c477a",
+    "clevel": "coo",
+    "title": "[시우] O1 운영 모듈 허브 404 수정 + 느린로드 개선 + stale 하부칸 삭제",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 971,
+    "artifact": "① 404: o1-module-hub BASE에 '3. 웰페리온 가이드/' 접두어가 붙어 점검현황·전사일정\n   링크가 404(Pages는 접두어 없이 서빙). 무접두어로 수정(부서별 체계 링크와 동일 베이스).\n② 느린로드: GAS 2콜 Promise.all 완료까지 카드(링크)조차 대기 → 링크 즉시 렌더 +\n   지표 stale-while-revalidate(localStorage 캐시·백그라운드 갱신).\n③ stale 삭제: '다음 구축 할일'(운영부·시설부·주차 '예정' 표기=이미 구축됨·거짓)\n   + '고도화 정의'(날 (CLI ad-hoc · 커밋 b02c477a)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b02c477a63cf4230aaa6125e64c5b5a8a3689341"
   }
 ]
