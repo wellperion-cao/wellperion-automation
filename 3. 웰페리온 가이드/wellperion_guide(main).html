@@ -553,32 +553,37 @@
            [2026-07-14 GM 지시] ①큰숫자=이번달/작은 서브로우=누적으로 스왑(id는 kpi*Total/kpi*Month 그대로 보존, 표시
            위치만 교체) ②하단 안내문 제거(GM 미열람) ③강습 문의·등록 성인/유소년 이번달 값을 각각 노출(성인/유소년
            연산은 기존 JS에 이미 있었고 마우스오버로만 숨어있던 것을 표시로 승격 — 등록원장 GAS 로직은 무변경)
-           ④링크 행을 flex column+margin-top:auto로 카드 하단 고정, 종합접수처 카드 링크 행과 높이 정렬. -->
+           ④링크 행을 flex column+margin-top:auto로 카드 하단 고정, 종합접수처 카드 링크 행과 높이 정렬.
+           ⑤[2026-07-14 GM 지시 — 시각 균형] 4칸이 카드 상단에만 몰리고 하단(링크 행 전)에 약 70px 빈 공간이 생겨
+           종합접수처(9칸 꽉 참)와 나란히 두면 비어 보이던 문제 해소. 셀 padding 10px12px→14px14px·큰숫자 22px→27px·
+           라벨/서브텍스트 소폭↑·행별 min-height 명시(멤버십행126px·강습행149px, 종합접수처 min-height 패턴과 동일 기법)로
+           그리드 높이를 211.5px→약 282px까지 확장해 링크 행 앞 빈 공간을 없애고 두 카드 높이를 실제로 채움(라이브
+           측정 기반 계산치 — before.png/after.png 참조). 데이터 바인딩 id·링크·하단정렬 구조는 무변경. -->
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">문의&등록 현황</div><div style="font-size:10.5px;color:var(--dim);">멤버십·강습 문의·등록 관리 · AI CPO(시포) · 이번달 · 올해(2026) 누적</div></div></div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">멤버십 문의관리 · 이번달</div>
-            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiInqMonth">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">누적</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiMiInqTotal">—</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:var(--grow-bg);border-radius:10px;padding:14px 14px;min-height:126px;">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">멤버십 문의관리 · 이번달</div>
+            <div style="font-size:27px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiInqMonth">—</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--grow);" id="kpiMiInqTotal">—</span></div>
           </div>
-          <div style="background:var(--grow-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">멤버십 등록 · 이번달</div>
-            <div style="font-size:22px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiRegMonth">—</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;"><span style="font-size:10px;color:var(--dim);">누적</span><span style="font-size:13px;font-weight:700;color:var(--grow);" id="kpiMiRegTotal">—</span></div>
+          <div style="background:var(--grow-bg);border-radius:10px;padding:14px 14px;min-height:126px;">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">멤버십 등록 · 이번달</div>
+            <div style="font-size:27px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiRegMonth">—</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--grow);" id="kpiMiRegTotal">—</span></div>
           </div>
-          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">강습 문의관리 · 이번달</div>
-            <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonInqMonth">—</div>
-            <div style="display:flex;align-items:center;gap:5px;margin-top:4px;flex-wrap:wrap;"><span style="font-size:9.5px;color:var(--dim);">성인</span><span style="font-size:12px;font-weight:700;color:var(--accent);" id="kpiLessonInqAdultMonth">—</span><span style="font-size:9.5px;color:var(--dim);">· 유소년</span><span style="font-size:12px;font-weight:700;color:var(--accent);" id="kpiLessonInqYouthMonth">—</span></div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:2px;"><span style="font-size:10px;color:var(--dim);">누적</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonInqTotal">—</span></div>
+          <div style="background:var(--accent-bg);border-radius:10px;padding:14px 14px;min-height:149px;">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">강습 문의관리 · 이번달</div>
+            <div style="font-size:27px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonInqMonth">—</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;"><span style="font-size:10px;color:var(--dim);">성인</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonInqAdultMonth">—</span><span style="font-size:10px;color:var(--dim);">· 유소년</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonInqYouthMonth">—</span></div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:3px;"><span style="font-size:10.5px;color:var(--dim);">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--accent);" id="kpiLessonInqTotal">—</span></div>
           </div>
-          <div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">강습 등록 · 이번달</div>
-            <div style="font-size:22px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonRegMonth">—</div>
-            <div style="display:flex;align-items:center;gap:5px;margin-top:4px;flex-wrap:wrap;"><span style="font-size:9.5px;color:var(--dim);">성인</span><span style="font-size:12px;font-weight:700;color:var(--accent);" id="kpiLessonRegAdultMonth">—</span><span style="font-size:9.5px;color:var(--dim);">· 유소년</span><span style="font-size:12px;font-weight:700;color:var(--accent);" id="kpiLessonRegYouthMonth">—</span></div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:2px;"><span style="font-size:10px;color:var(--dim);">누적</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonRegTotal">—</span></div>
+          <div style="background:var(--accent-bg);border-radius:10px;padding:14px 14px;min-height:149px;">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">강습 등록 · 이번달</div>
+            <div style="font-size:27px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonRegMonth">—</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;"><span style="font-size:10px;color:var(--dim);">성인</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonRegAdultMonth">—</span><span style="font-size:10px;color:var(--dim);">· 유소년</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonRegYouthMonth">—</span></div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:3px;"><span style="font-size:10.5px;color:var(--dim);">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--accent);" id="kpiLessonRegTotal">—</span></div>
           </div>
         </div>
 
