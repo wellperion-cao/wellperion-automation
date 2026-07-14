@@ -53,6 +53,8 @@
   .dim-bul{list-style:none; margin:3px 0 0 0; padding:0;}
   .dim-bul li{font-size:12.5px; line-height:1.45; margin-bottom:3px;}
   .dim-empty{list-style:none; color:var(--dim); margin-left:0;}
+  /* 채널 로고(인라인 SVG · 일 흐름 시각표 · JSON [텔레그램]/[카톡] 토큰 치환) */
+  .chlogo{width:15px; height:15px; vertical-align:-3px; margin:0 2px 0 0; flex:none;}
   table.matrix th.grp-np{width:300px;}
   table.matrix th.grp-boot{width:300px;}
   .col-own{width:200px;}
@@ -559,6 +561,11 @@
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   };
 
+  // ── 채널 로고(인라인 SVG · 렌더 전용) — JSON엔 [텔레그램]/[카톡] 텍스트 토큰만(편집·S2 안전). esc() 후 치환. ──
+  var TG_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="텔레그램"><title>텔레그램</title><rect width="24" height="24" rx="7" fill="#229ED9"/><path transform="translate(3.2 3.6) scale(0.72)" d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.9-.75 1.12-1.52.7L11.6 16.8l-1.65 1.6c-.19.19-.35.29-.56.29z" fill="#fff"/></svg>';
+  var KT_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="카카오톡"><title>카카오톡</title><rect width="24" height="24" rx="7" fill="#FEE500"/><path d="M12 6c-3.6 0-6.5 2.28-6.5 5.09 0 1.82 1.22 3.42 3.06 4.32-.13.47-.49 1.78-.56 2.06-.09.35.13.34.27.25.11-.07 1.75-1.19 2.46-1.68.41.06.83.09 1.27.09 3.6 0 6.5-2.28 6.5-5.09S15.6 6 12 6z" fill="#3C1E1E"/></svg>';
+  function chanLogo(s){ return s.replace(/\[텔레그램\]/g, TG_LOGO).replace(/\[카톡\]/g, KT_LOGO); }
+
   var body = document.getElementById('matrix-body');
 
   // 라벨 블록: 작은 라벨(.dim-label) + 값.
@@ -575,7 +582,7 @@
     }
     var items = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
     var lis = items.length
-      ? items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
+      ? items.map(function(s){ return '<li>' + chanLogo(esc(s)) + '</li>'; }).join('')
       : '<li class="dim-empty">—</li>';
     return lab + '<ul class="dim-bul">' + lis + '</ul>';
   }
@@ -590,7 +597,7 @@
     }
     var items = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
     var lis = items.length
-      ? items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
+      ? items.map(function(s){ return '<li>' + chanLogo(esc(s)) + '</li>'; }).join('')
       : '<li class="dim-empty">—</li>';
     return lab + '<ul class="dim-bul">' + lis + '</ul>';
   }
@@ -609,7 +616,7 @@
     var raw = (d[3] == null ? '' : String(d[3]));
     var items = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
     var lis = items.length
-      ? items.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
+      ? items.map(function(s){ return '<li>' + chanLogo(esc(s)) + '</li>'; }).join('')
       : '<li class="dim-empty">—</li>';
     return lab + '<ul class="dim-bul">' + lis + '</ul>';
   }
