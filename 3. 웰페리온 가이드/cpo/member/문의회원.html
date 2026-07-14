@@ -2743,10 +2743,13 @@ function renderSummaryHero() {
   var tb = document.getElementById('tapBadge');
   var taskN = tb ? (parseInt(tb.textContent, 10) || 0) : 0;
 
-  // 현황 보드(배944) 동기 — 멤버십 기간데이터 최초 1회 로드, 이후·강습 전환은 재표시만(회귀0).
+  // 현황 보드(배944) 동기 — 멤버십·강습 각 최초 1회 로드, 이후 전환은 재표시만(회귀0).
   if (typeof _statusBoardLoad === 'function') {
-    var _sbIsMem = !(typeof _curFamily !== 'undefined' && _curFamily === 'lesson');
-    if (_sbIsMem && !_sbData.memLoaded) { _sbData.memLoaded = true; _statusBoardLoad(); }
+    if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') {
+      var _lt = (typeof _curLessonType === 'function') ? _curLessonType() : 'adult';
+      if (!_sbLesson[_lt] || !_sbLesson[_lt].loaded) { _statusBoardLoadLesson(_lt); }
+      else { renderStatusBoardPeriods(); }
+    } else if (!_sbData.memLoaded) { _sbData.memLoaded = true; _statusBoardLoad(); }
     else { renderStatusBoardPeriods(); }
   }
 
@@ -2791,8 +2794,29 @@ function renderSummaryHero() {
 /* ══ 전환·회원 현황 보드 (일/월/연) — 배944 2026-07-14. loadMembershipDash 기간로직 재사용·상시 eager.
    기간지표(문의·가입·전환율)만 탭전환, 이탈/할일 스냅샷은 아래 히어로에 존치. 강습=정직공백. ══ */
 var _sbData = { today: null, month: null, year: null, _prevMonth: null, funnel: null, memLoaded: false };
+var _sbLesson = { adult: null, youth: null };   // 강습 타입별 기간지표(배944 후속)
 var _sbPeriod = 'today';
 function _sbSet(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+// 강습 기간지표 로드 — 문의(lesson_stats: 이번달·올해, 오늘·지난달 미지원) + 가입(lesson_registry_list 3기간). 전환율/퍼널=정직공백.
+function _statusBoardLoadLesson(t) {
+  var lt = (t === 'youth') ? 'youth' : 'adult';
+  var korType = (lt === 'youth') ? '유소년강습' : '성인강습';
+  var L = _sbLesson[lt] = _sbLesson[lt] || {};
+  L.loaded = true; L.today = L.today || {}; L.month = L.month || {}; L.year = L.year || {};
+  L.today.inq = null;   // 강습 일별 문의 미지원
+  var now = new Date();
+  var todayStr = _mdashYmd(now), mStr = _mdashYmd(new Date(now.getFullYear(), now.getMonth(), 1)), yStr = _mdashYmd(new Date(now.getFullYear(), 0, 1));
+  if (typeof GAS_URL !== 'undefined' && GAS_URL !== GAS_PLACEHOLDER) {
+    fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(korType))
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d && d.ok) { L.month.inq = (d.thisMonth != null) ? d.thisMonth : null; L.year.inq = (d.total != null) ? d.total : null; } else { L.month.inq = null; L.year.inq = null; } renderStatusBoardPeriods(); })
+      .catch(function () { L.month.inq = null; L.year.inq = null; renderStatusBoardPeriods(); });
+  }
+  function regcb(k) { return function (d) { _sbLesson[lt][k].reg = (d && d.count != null) ? d.count : null; renderStatusBoardPeriods(); }; }
+  _lessonFetchRegistry(korType, todayStr, todayStr, regcb('today'));
+  _lessonFetchRegistry(korType, mStr, todayStr, regcb('month'));
+  _lessonFetchRegistry(korType, yStr, todayStr, regcb('year'));
+}
 function statusBoardTab(p) {
   _sbPeriod = p;
   var tabs = document.querySelectorAll('#sbTabs .sb-tab');
@@ -2811,11 +2835,16 @@ function renderStatusBoardPeriods() {
   var cav = document.getElementById('sbCaveat');
   var lesson = (typeof _curFamily !== 'undefined' && _curFamily === 'lesson');
   if (lesson) {
-    // 강습 = 전환율·퍼널·이탈 원본데이터 부재 → 정직 공백(문의·가입 기간지표 배선은 후속 증분).
-    _sbSet('sbInq', '준비 중'); _sbSet('sbReg', '준비 중'); _sbSet('sbRate', '데이터 없음');
+    // 강습 = 문의(lesson_stats 월·연)·가입(등록원장 3기간) 실값, 전환율·퍼널·이탈=원본 부재 정직공백.
+    var lt = (typeof _curLessonType === 'function') ? _curLessonType() : 'adult';
+    var Lp = ((_sbLesson[lt] || {})[_sbPeriod]) || {};
+    if (_sbPeriod === 'today') _sbSet('sbInq', '—');   // 강습 일별 문의 미지원(lesson_stats from/to 없음)
+    else _sbSet('sbInq', Lp.inq === undefined ? '…' : (Lp.inq != null ? Lp.inq.toLocaleString() : '–'));
+    _sbSet('sbReg', Lp.reg === undefined ? '…' : (Lp.reg != null ? Lp.reg.toLocaleString() : '–'));
+    _sbSet('sbRate', '데이터 없음');
     ['sbInqD', 'sbRegD', 'sbRateD'].forEach(function (id) { var e = document.getElementById(id); if (e) { e.className = 'sb-d flat'; e.textContent = ''; } });
     var fl = document.getElementById('sbFunnel'); if (fl) fl.innerHTML = '<span class="sb-caveat">강습 퍼널=데이터 없음(예약·방문·가입 구분 원장 부재)</span>';
-    if (cav) cav.textContent = '강습은 전환율·퍼널·이탈 원본데이터가 없어 정직 공백. 강습 기간지표(문의·가입)는 후속 배선 예정 · 데이터 파이프(≈9월) 후 편입.';
+    if (cav) cav.textContent = '강습: 문의=lesson_stats(이번달·올해, 오늘·지난달 미지원 "—") · 가입=강습 등록원장 실측 · 전환율/퍼널/이탈=원본 부재 정직공백. 데이터 파이프(≈9월) 후 편입.';
     return;
   }
   if (cav) cav.textContent = '전환율=등록월 기준(이번달 신규가입/이번달 문의) · 지난달 델타=같은 일자까지 공정 비교 · 누적 퍼널=전체 기간. (누적 39.9%와 직접 비교 금지=서로 다른 기준)';
@@ -3529,6 +3558,7 @@ function switchType(type) {
   });
   if (type === 'lessonAdult') { lessonSwitchCard('adult', 'inq'); lessonInit('adult'); }   // 기본=문의 현황 + 최초 1회 로드
   if (type === 'lessonYouth') { lessonSwitchCard('youth', 'inq'); lessonInit('youth'); }
+  if ((type === 'lessonAdult' || type === 'lessonYouth') && typeof renderSummaryHero === 'function') renderSummaryHero();   // 현황 보드(배944) 강습 타입별 재렌더
   if (type === 'rent') { rentbizInit('rent'); }
   if (type === 'biz')  { rentbizInit('biz'); }
 }
