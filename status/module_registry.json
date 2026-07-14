@@ -72,12 +72,12 @@
       "id": "cto-ops-morning-digest",
       "owner_role": "cto",
       "owner_nick": "시토",
-      "feature": "★운영부 아침 종합 운영 다이제스트 — 매일 07:30 방 대화 무인 내보내기(Ctrl+S 자동)→🏢점검 📩문의 📣종합접수 📅예약 🗂️업무 💬어제 방 정리 ⚠️오늘 챙길 것 종합 생성→[발송] 승인 시에만 ★운영부 방 전송",
+      "feature": "★운영부 아침 종합 운영 다이제스트 — 매일 07:30 방 대화 무인 내보내기(Ctrl+S 자동)→💬어제 방 정리 ⚠️오늘 챙길 것 🗂️업무(인사평가 푸시) 📩문의·예약 📣종합접수(미해결 2주 자동보류)+맥락 이모지 생성→[발송] 승인 시에만 ★운영부 방 전송(🏢점검은 23시 밤공유 담당)",
       "data_source": {"kind": "json", "ref": "1. AI학습자료_아카이브/11_카카오톡/★운영부/ (gitignore·비추적: 대화 원문·요약·원장·대기)"},
       "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
       "front_card": {"window": "자율현황", "anchor": "layer-automation"},
       "autonomy": "semi",
-      "ai_free_fallback": "내보내기(kakao_export_chat)·다이제스트 생성 파이프 무인(예약 07:30 Wellperion-Ops-Morning-Digest-0730). 점검·문의·VOC·예약·업무 숫자=결정론적 실측, 어제 방 대화 요약만 Claude. 방 전송은 GM 승인 게이트(라이브=GM go+구성원 고지)=오발송 0",
+      "ai_free_fallback": "내보내기(kakao_export_chat)·다이제스트 생성 파이프 무인(예약 07:30 Wellperion-Ops-Morning-Digest-0730). 문의·종합접수·예약·업무 숫자=결정론적 실측, 어제 방 대화 요약만 Claude. 방 전송은 GM 승인 게이트(라이브=GM go+구성원 고지)=오발송 0",
       "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
       "reversible": true,
       "enabled": true,
@@ -247,6 +247,21 @@
       "reversible": true,
       "enabled": true,
       "honesty_default": "estimated"
+    },
+    {
+      "id": "cto-weekly-page-hygiene",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "주간 페이지 위생 자동화 — 하위모델 전수감사→죽은코드(A) grep-0 게이트 통과 시 자동삭제·나머지(B/C/D)는 정리안 제안, 매주 일요일 09:00",
+      "data_source": {"kind": "json", "ref": "status/page_hygiene_proposal_{date}.md"},
+      "notify_spec": {"daily": false, "weekly": true, "monthly": false, "channel": "telegram", "bot_id": "@namuki_report_bot"},
+      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "autonomy": "semi",
+      "ai_free_fallback": "예약 Wellperion-Weekly-Page-Hygiene-Sun-0900이 무인 감사·제안서 생성·텔레그램 요약까지 수행. 카테고리 A 자동삭제만 게이트 PAGE_HYGIENE_APPLY(기본 OFF)+grep-0/snippet고유/파싱무결성 3중 게이트 뒤 — B/C/D는 항상 GM 승인 대기",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
     }
   ]
 }

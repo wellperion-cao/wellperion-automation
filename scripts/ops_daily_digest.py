@@ -241,14 +241,18 @@ def build_reception_block(target_date: str) -> str:
     active = sorted((r for r in unresolved if _elapsed_days(r) < STALE_DAYS), key=_elapsed_days, reverse=True)
     stale = sorted((r for r in unresolved if _elapsed_days(r) >= STALE_DAYS), key=_elapsed_days, reverse=True)
 
+    _ICON = {"컴플레인": "🗣️", "분실물": "🔑", "시설물 고장": "🔧",
+             "청결 이슈": "🧹", "직원·강사 칭찬합니다": "👏"}
+
     def _line(r: dict, cap: int, with_loc: bool = True) -> str:
         cat = _short_cat(r.get("category", ""))
+        ico = _ICON.get(cat, "•")  # 유형별 이모지로 한눈에 구분(가시성)
         content = re.sub(r"\s+", " ", str(r.get("content", "") or "")).strip()
         if len(content) > cap:
             content = content[:cap] + "…"
         loc = r.get("loc", "") or ""
         tail = f" · {loc}" if (with_loc and loc) else ""
-        return f"   · [{cat}] {content}{tail} · {_elapsed_days(r)}일째"
+        return f"   {ico} [{cat}] {content}{tail} · {_elapsed_days(r)}일째"
 
     # 🔴 계속 챙길 것 (2주 이내) — 활성 푸시
     if active:
@@ -526,6 +530,7 @@ def build_prompt(target_date: str, conversation: str, past_issues_digest: str) -
 {past_issues_digest}
 
 메시지는 '줄글'로 풀어쓰지 말고, 한눈에 들어오게 글머리(•)와 '이름별'로 딱딱 정리합니다.
+★가시성(중요): 각 항목 맨 앞 글머리(•)를 '내용에 맞는 이모지 1개'로 바꿔 한눈에 구분되게 한다 — 종목(수영🏊·골프⛳·필라테스🧘·스쿼시🎾·요가🧘·라인댄스💃), 장비·시설(키오스크💳·태블릿📱·복합기🖨️·라커🔑·사우나🧖·주차🅿️), 상황(환불💸·휴강🚫·미팅📅·문의❓·회원👤·청소🧹·고장🔧). 한 줄에 이모지 최대 1개, 어울리는 게 없으면 그냥 '•'(억지·남발 금지).
 아래 구조를 그대로 따르세요(각 줄은 짧고 명확하게):
 
 🌅 {header_label}
