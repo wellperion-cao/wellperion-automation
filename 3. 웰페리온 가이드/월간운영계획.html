@@ -2916,10 +2916,11 @@
       if(_data && _finReady) renderFinance();
     });
 
-    // 6-1) 강습팀 상반기 1·2분기 실적 정본(team_sales_h1) — 도착 시 H1 리뷰 표만 갱신.
+    // 6-1) 강습팀 상반기 1·2분기 실적 정본(team_sales_h1) — 도착 시 부서별 표 재렌더(강습 연간매출 cum 계산에 사용·2026-07-14 시우).
     // 타임아웃 30초(라이브검증: 6파일 순차 openById 실측 ~19.5초 확인·GAS측 CacheService 10분 캐시 병행 추가).
     withTimeout(readTeamSalesH1(2026), 30000, null).then(function(v){
       _h1Sales = v;
+      if(_data && _finReady) renderFinance();   // ★ 강습 연간매출(cum) 재계산·표시 — 도착 전 첫 렌더의 '—'가 그대로 박히던 버그 수정
     });
 
     // 7) 북극성 지도 — 과제·실무 도달율표 뱃지. 도착 시 갱신.
