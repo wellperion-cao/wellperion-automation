@@ -3845,51 +3845,302 @@ window._regAssign = function(id, category) {
     <p>올린 콘텐츠가 실제 문의·등록으로 이어지는지 추적합니다.</p>
 
     <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">📡</span>채널 현황</h3>
+    <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 10px;">채널별 발행 파이프라인·톤·규칙은 각 행의 <strong>▸ 상세</strong>를 펼쳐 확인합니다 (채널당 하나의 자리 — 중복 없음).</p>
     <table>
-      <tr><th>채널</th><th>URL / 계정</th><th>역할</th><th>상태</th></tr>
+      <tr><th>채널</th><th>URL / 계정</th><th>역할</th><th>상태</th><th style="width:90px">발행 규칙</th></tr>
       <tr>
         <td><strong>🌐 홈페이지</strong></td>
         <td><a href="https://wellperion-cao.github.io/wellperion-automation/cmo/home/%ED%99%88%ED%8E%98%EC%9D%B4%EC%A7%80.html" target="_blank" style="color:var(--accent);">원본 열기</a></td>
         <td>브랜드 랜딩 · 회사소개·프로그램·시설·멤버십·문의</td>
         <td><span class="badge green">운영중</span></td>
+        <td style="color:var(--dim);font-size:12px;text-align:center;">—</td>
       </tr>
       <tr>
         <td><strong>📸 인스타그램</strong></td>
         <td><a href="https://www.instagram.com/wellperion/" target="_blank" style="color:var(--accent);">@wellperion</a></td>
         <td>슬라이드 콘텐츠 · 브랜드 이미지 · 문의 전환</td>
         <td><span class="badge green">운영중</span></td>
+        <td><button type="button" id="ch-btn-ig-brand" onclick="chRowToggle('ig-brand')" aria-expanded="false" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;white-space:nowrap;">▸ 상세</button></td>
+      </tr>
+      <tr id="ch-detail-ig-brand" style="display:none;">
+        <td colspan="5" style="padding:0;">
+          <div style="padding:16px 22px 22px;">
+            <div style="background:var(--paper);border:1px solid var(--border);border-left:3px solid #7c3aed;border-radius:12px;padding:16px 20px;margin:0 0 20px;">
+              <h4 style="margin-top:0;"><span class="ico">📸</span>인스타그램 발행 파이프라인 <span style="font-size:13px;font-weight:400;color:var(--dim);">요약 · 사람용 정본 = <a href="자율현황.html#sec-m5-pipeline" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">자율현황.html ▸ M5 파이프라인</a></span></h4>
+              <div class="callout" style="margin-bottom:14px;"><strong>승인 ≠ 발행완료.</strong> 발행완료는 웰리가 실제 IG↔M3 대조 후에만.</div>
+              <table>
+                <tr><th style="width:48px">단계</th><th style="width:260px">동작</th><th style="width:100px">status</th><th>주체</th></tr>
+                <tr><td style="text-align:center;font-weight:700;">1</td><td>제작(07:30 producer / 수동) → 텔레그램 알림(미리보기) + [✅승인]/[❌반려] 카드</td><td><span style="color:var(--accent);font-weight:600;">검수대기</span></td><td>producer · 시모</td></tr>
+                <tr><td style="text-align:center;font-weight:700;">2</td><td>GM 텔레그램 [✅승인] 탭</td><td><span style="color:var(--accent);font-weight:600;">승인</span></td><td>GM</td></tr>
+                <tr><td style="text-align:center;font-weight:700;">3</td><td>시모 IG 자동발행 (Playwright, 계정별 프로필)</td><td><span style="color:#7c3aed;font-weight:600;">발행검증대기</span></td><td>시모(CMO)</td></tr>
+                <tr><td style="text-align:center;font-weight:700;">4</td><td>웰리가 실제 IG 게시물 ↔ M3 (캡션·슬라이드) 대조</td><td><span style="color:var(--green);font-weight:600;">일치→발행완료</span> / 불일치→재처리</td><td>웰리(CEO)</td></tr>
+              </table>
+              <ul style="font-size:13px;margin:12px 0 0;padding-left:18px;line-height:1.8;">
+                <li><strong>무폴링</strong>: 발행 트리거 = GM [✅승인] 탭만. 자동 재발행·스케줄 일괄발행 금지.</li>
+                <li><strong>안전</strong>: <code>발행검증대기</code>는 재처리 대상 아님(이중발행 차단). <code>발행완료</code>는 웰리 실측 후에만 (헌법 STEP 3.5).</li>
+                <li><strong>계정 파라미터화</strong>: 발행은 <code>--account &lt;계정&gt;</code> + <code>profiles/instagram/&lt;계정&gt;/</code> 세션으로 동작 → 계정 무관 확장 기반.</li>
+                <li><strong>구현 위치</strong>: <code>telegram_bot/bot.py</code>(pub 콜백) → <code>scripts/ig_review_publish_watcher.py</code>(발행검증대기 도장 분기) → M3 보드 <code>badgeOf</code>. 코드 정본 = <code>instagram/_AI시리즈_로드맵.md</code> §3.4 / <strong>사람용 파이프라인 정본 = <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 ▸ M3 인스타그램 발행 파이프라인</a></strong>.</li>
+              </ul>
+            </div>
+            <div class="card"><h4>📸 인스타그램 — @wellperion (브랜드)</h4>
+              <table>
+                <tr><th style="width:130px">항목</th><th>기준</th></tr>
+                <tr><td>이미지 규격</td><td>1080×1080 (피드) · 1080×1920 (스토리)</td></tr>
+                <tr><td>톤</td><td>DUOTONE(BLACK #221F20 + BEIGE #B79F8A) · 하이엔드 브랜드 톤</td></tr>
+                <tr><td>해시태그</td><td>#웰페리온 #한남동스포츠클럽 (브랜드·지역 중심)</td></tr>
+                <tr><td>글자수</td><td>캡션 핵심 메시지 + 문의Survey CTA. 개인 번호 금지</td></tr>
+                <tr><td>마지막 슬라이드</td><td>WELLPERION GUIDE 카드 자동 첨부</td></tr>
+              </table>
+            </div>
+            <div class="card" style="margin-top:12px;"><h4>사업부별 chip 색상</h4>
+              <table>
+                <tr><th>사업부</th><th>HEX</th></tr>
+                <tr><td>메인</td><td>#B79F8A</td></tr>
+                <tr><td>SPORTS CLUB</td><td>#3F71B0</td></tr>
+                <tr><td>W PT</td><td>#B54840</td></tr>
+                <tr><td>W PILATES</td><td>#C44558</td></tr>
+                <tr><td>W SWIMMING</td><td>#215768</td></tr>
+                <tr><td>W SQUASH</td><td>#77968E</td></tr>
+                <tr><td>W GOLF</td><td>#337342</td></tr>
+                <tr><td>W GYMNASTIC</td><td>#C2BAD6</td></tr>
+              </table>
+            </div>
+            <details class="card" style="margin-top:12px;">
+              <summary style="cursor:pointer;font-weight:700;font-size:15px;color:var(--text);">슬라이드 디자인 구조 — 공식 표준 (정본: 발레·스쿼시 완성본 기준) <span style="color:var(--dim);font-weight:400;font-size:12px;">▾ 펼쳐 보기</span></summary>
+              <div class="callout fix" style="margin-top:10px;margin-bottom:10px;"><strong>정본 경로:</strong> <code>instagram/260520_발레_런칭/output(인스타그램)/ig_01~07.jpg</code> &amp; <code>instagram/260426_WJO_스쿼시_대회/output(인스타그램)/</code> — 코드는 이 정본과 픽셀 단위 1:1 일치해야 함. 임의 디자인 금지.</div>
+              <table>
+                <tr><th style="width:160px">항목</th><th>기준값</th></tr>
+                <tr>
+                  <td>캔버스</td>
+                  <td>1080×1080 px (인스타 정방형 피드)</td>
+                </tr>
+                <tr>
+                  <td>표지(1p) 구조</td>
+                  <td>
+                    상단 65% 사진(y=0~700) — <strong>BLACK+BEIGE 듀오톤</strong> (#221F20 + #B79F8A)<br>
+                    분리선 y=701~702 — RGB(171,161,151) 전폭(x=50~1030)<br>
+                    하단 35% 순수 검정 정보영역(y=703~1080) — <strong>#221F20 fill, 그라디언트 없음</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td>표지 정보영역<br>텍스트 배치</td>
+                  <td>
+                    한글 부제목 y≈789 — Pretendard SemiBold 38px, <strong>베이지 #B79F8A</strong>, 중앙정렬<br>
+                    영문 대제목 y≈859 — Pretendard Bold 88px, <strong>흰색</strong>, 중앙정렬, UPPERCASE<br>
+                    베이지 얇은 선 y≈920 — 60px 중앙<br>
+                    날짜·장소 y≈962 — Pretendard Medium 26px, <strong>회색 RGB(170,160,152)</strong>, 중앙정렬
+                  </td>
+                </tr>
+                <tr>
+                  <td>공식 로고 PNG</td>
+                  <td>
+                    파일: <code>instagram/_assets/logo/wellperion_white_alpha.png</code><br>
+                    위치: 좌상단 x=40, y=36 / 너비=130px / <strong>반투명 박스 없이 직접 합성</strong><br>
+                    (텍스트 "W" 렌더링 절대 금지 — 공식 PNG만 사용)
+                  </td>
+                </tr>
+                <tr>
+                  <td>우상단 컬러칩</td>
+                  <td>
+                    베이지 둥근 사각 fill RGB(186,162,140) / 흰색 텍스트 "WELLPERION" Bold 28px<br>
+                    칩 크기: w=240, h=52 / 위치: 우측 여백 40px, y=38
+                  </td>
+                </tr>
+                <tr>
+                  <td>카운터<br>(스토리 슬라이드)</td>
+                  <td>
+                    형식: <code>02 / 06</code> (제로패딩) — <strong>배경 박스 없음, 텍스트만</strong><br>
+                    위치: 칩 아래 우측정렬 / Pretendard Medium 28px / 흰색<br>
+                    표지(1p)에는 카운터 없음
+                  </td>
+                </tr>
+                <tr>
+                  <td>스토리 슬라이드<br>레이아웃</td>
+                  <td>
+                    전체 사진 fill(center-crop) + 하단 그라디언트(y≈555~, #221F20)<br>
+                    메타라인(회색 26px) → 한글 대제목(흰색 Bold 64px) → 서브텍스트(베이지 30px) → 풋터(베이지 26px)<br>
+                    좌측 여백 x=40 기준
+                  </td>
+                </tr>
+                <tr>
+                  <td>폰트</td>
+                  <td>
+                    Pretendard Bold / SemiBold / Medium<br>
+                    경로: <code>brand/font/</code> 또는 <code>2. 브랜드_공식문서/font/</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>색상</td>
+                  <td>
+                    배경 검정: <strong>#221F20</strong> RGB(34,31,32)<br>
+                    베이지: <strong>#B79F8A</strong> RGB(183,159,138)<br>
+                    칩 배경: RGB(186,162,140) / 분리선: RGB(171,161,151)<br>
+                    텍스트 흰색: #FFFFFF / 날짜 회색: RGB(170,160,152)
+                  </td>
+                </tr>
+                <tr>
+                  <td>풋터 워드마크</td>
+                  <td>
+                    스토리: <code>WELLPERION  ·  [프로그램명]</code> 좌측 베이지 26px<br>
+                    y≈1026 (1080px 기준)
+                  </td>
+                </tr>
+                <tr>
+                  <td>영상 슬라이드</td>
+                  <td>마지막 슬라이드 = 원본 mp4 그대로 (합성 없음). gitignore 대상.</td>
+                </tr>
+                <tr>
+                  <td>합성 스크립트</td>
+                  <td>
+                    <code>scripts/compose_barre.py</code> — 바레 전용 (정본 엔진 · <code>to_duotone</code> SSOT)<br>
+                    <code>scripts/compose_ballet.py</code> — 발레 전용 (바레 import 체인 · 정본 = compose_barre import)<br>
+                    <code>scripts/slide_compositor.py</code> — 범용 (<code>compose_text_slide</code> 포함 · v1.1 로고 PNG 적용)<br>
+                    신규 콘텐츠는 완성본 픽셀 실측 기반 1:1 구현 필수
+                  </td>
+                </tr>
+              </table>
+            </details>
+          </div>
+        </td>
       </tr>
       <tr>
         <td><strong>📸 인스타그램 (AI 시리즈)</strong></td>
         <td><a href="https://www.instagram.com/namuk.wellperion/" target="_blank" style="color:var(--accent);">@namuk.wellperion</a></td>
         <td>AI 활용기를 스포츠클럽 멤버에게 알리는 채널 · 매일 1편 · 브랜드 신뢰·도달</td>
         <td><span class="badge green">운영중</span></td>
+        <td><button type="button" id="ch-btn-ig-namuk" onclick="chRowToggle('ig-namuk')" aria-expanded="false" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;white-space:nowrap;">▸ 상세</button></td>
+      </tr>
+      <tr id="ch-detail-ig-namuk" style="display:none;">
+        <td colspan="5" style="padding:0;">
+          <div style="padding:16px 22px 22px;">
+            <div class="callout" style="margin-bottom:14px;"><strong>발행 파이프라인</strong>은 @wellperion과 동일(제작→승인→발행→웰리 대조, 계정 파라미터화) — 단계 상세는 <a href="#" onclick="event.preventDefault();chOpenAndScroll('ig-brand');" style="color:var(--accent);font-weight:700;text-decoration:none;">위 인스타그램(@wellperion) 행 ▸ 발행 파이프라인</a> 참조.</div>
+            <div class="card"><h4>📸 인스타그램 — @namuk.wellperion (개인)</h4>
+              <div class="callout fix" style="margin-top:0;"><strong>개인 계정:</strong> 회사 가이드 카드·마케팅 톤 금지. 발행 전 미리보기로 GM 검수 게이트 필수. (GM go 후 발행)</div>
+              <table>
+                <tr><th style="width:130px">항목</th><th>기준</th></tr>
+                <tr><td>이미지 규격</td><td>1080×1080 (피드)</td></tr>
+                <tr><td>톤</td><td>개인 1인칭 진솔체 · 마케팅 톤 배제</td></tr>
+                <tr><td>해시태그</td><td>최소화 · 자연스러운 개인 기록 톤</td></tr>
+                <tr><td>검수</td><td>발행 전 montage 미리보기 → GM 검수 게이트 필수</td></tr>
+              </table>
+            </div>
+          </div>
+        </td>
       </tr>
       <tr>
         <td><strong>📝 네이버 블로그</strong></td>
         <td><a href="https://blog.naver.com/wellperion" target="_blank" style="color:var(--accent);">wellperion</a></td>
         <td>SEO 허브 · 검색 유입 · 상세 콘텐츠</td>
         <td><span class="badge green">운영중</span></td>
+        <td><button type="button" id="ch-btn-blog" onclick="chRowToggle('blog')" aria-expanded="false" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;white-space:nowrap;">▸ 상세</button></td>
+      </tr>
+      <tr id="ch-detail-blog" style="display:none;">
+        <td colspan="5" style="padding:0;">
+          <div style="padding:16px 22px 22px;">
+            <div class="card"><h4>📝 네이버 블로그 — blog.naver.com/wellperion</h4>
+              <table>
+                <tr><th style="width:130px">항목</th><th>기준</th></tr>
+                <tr><td>역할</td><td>SEO 허브 · "웰페리온"·"한남동 스포츠클럽" 검색 유입</td></tr>
+                <tr><td>톤</td><td>전문성+정보 · "~합니다" 형식체 · 하이엔드 격조</td></tr>
+                <tr><td>제목</td><td>SEO 키워드 포함</td></tr>
+                <tr><td>이미지</td><td>본문 교차 삽입 (SmartEditor 자동 첨부 upload_with_images.py)</td></tr>
+                <tr><td>페이스</td><td>주 1~2회 · 임시저장 큐 0건 확인 후 가동</td></tr>
+              </table>
+            </div>
+            <div class="callout" style="margin-top:10px;background:#1a2a1a;border-left:3px solid #059669;">
+              <strong>📌 자동 발행 규칙 (GM 확정 2026-06-03)</strong>
+              <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.9;">
+                <li><strong>이미지</strong> — 프로젝트 폴더의 <code>output(블로그)</code>에서 가져와 <strong>슬라이드로 본문 맨 아래</strong></li>
+                <li><strong>스티커 2개</strong> — 본문 맨 처음 1개 + "문의" 다음 줄 1개</li>
+                <li><strong>제목</strong> — 본문 첫 줄을 제목으로 (본문에 제목 반복 X)</li>
+                <li><strong>종착지</strong> — 임시저장까지. GM 검수 후 직접 등록</li>
+              </ul>
+            </div>
+          </div>
+        </td>
       </tr>
       <tr>
         <td><strong>☕ 네이버 카페</strong></td>
         <td><a href="https://cafe.naver.com/ichon1dong" target="_blank" style="color:var(--accent);">동부이촌동 커뮤니티</a></td>
         <td>지역 커뮤니티 노출 · 댓글 소통 · 10일 페이스</td>
         <td><span class="badge green">운영중</span></td>
+        <td><button type="button" id="ch-btn-cafe" onclick="chRowToggle('cafe')" aria-expanded="false" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;white-space:nowrap;">▸ 상세</button></td>
+      </tr>
+      <tr id="ch-detail-cafe" style="display:none;">
+        <td colspan="5" style="padding:0;">
+          <div style="padding:16px 22px 22px;">
+            <div class="card"><h4>☕ 네이버 카페 — 동부이촌동 커뮤니티</h4>
+              <div class="callout fix" style="margin-top:0;"><strong>톤 주의:</strong> "동네 잡담"·"이웃" 톤 금지. 사실·전문성·정중형 격조 톤만.</div>
+              <table>
+                <tr><th style="width:130px">항목</th><th>기준</th></tr>
+                <tr><td>역할</td><td>지역 커뮤니티 노출 · 인지도 제고</td></tr>
+                <tr><td>페이스</td><td>10일에 1건 (과다 게시 스팸 방지)</td></tr>
+                <tr><td>톤</td><td>사실 기반 · 정중·격조 · 영업 문구 자제</td></tr>
+                <tr><td>댓글</td><td>사실 기반 정중 응답</td></tr>
+              </table>
+            </div>
+            <div class="grid-2">
+              <div class="card grow"><h4>허용</h4><ul><li>사실 기반 정보</li><li>전문성 있는 건강·운동 정보</li><li>정중하고 격조 있는 문체</li></ul></div>
+              <div class="card warm"><h4>금지</h4><ul><li>"이웃 여러분~" 동네 톤</li><li>감성적·구어체</li><li>직접 영업 문구</li></ul></div>
+            </div>
+            <div class="callout" style="margin-top:10px;background:#1a2a1a;border-left:3px solid #059669;">
+              <strong>📌 자동 발행 규칙 (GM 확정 2026-06-03)</strong>
+              <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.9;">
+                <li><strong>게시판</strong> — "웰페리온 Spa&amp;Fitness" 선택 → 우측에서 <strong>"웰페리온"</strong>까지 선택</li>
+                <li><strong>이미지</strong> — 프로젝트 폴더의 <code>output(카페)</code>에서 가져와 <strong>슬라이드로 본문 맨 아래</strong></li>
+                <li><strong>스티커 2개</strong> — 본문 맨 처음(인사) + "문의" 다음 줄(화이팅)</li>
+                <li><strong>종착지</strong> — 임시저장까지. GM 검수 후 직접 등록</li>
+              </ul>
+            </div>
+          </div>
+        </td>
       </tr>
       <tr>
         <td><strong>💬 카카오채널</strong></td>
         <td><a href="https://pf.kakao.com/_cgxiKj" target="_blank" style="color:var(--accent);">웰페리온</a></td>
         <td>콘텐츠 발행(반자동) · 1:1 상담 · 알림</td>
         <td><span class="badge green">운영중</span></td>
+        <td><button type="button" id="ch-btn-kakao" onclick="chRowToggle('kakao')" aria-expanded="false" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;white-space:nowrap;">▸ 상세</button></td>
+      </tr>
+      <tr id="ch-detail-kakao" style="display:none;">
+        <td colspan="5" style="padding:0;">
+          <div style="padding:16px 22px 22px;">
+            <div class="card"><h4>💬 카카오채널 — 웰페리온 <span class="badge gray" style="margin-left:8px;">보류</span></h4>
+              <div class="callout fix" style="margin-top:0;"><strong>현재 보류.</strong> 자동화 미완료. 향후 1:1 상담·알림 발송 채널.</div>
+              <table>
+                <tr><th style="width:130px">항목</th><th>기준</th></tr>
+                <tr><td>응답 시간</td><td>운영시간 내 30분 이내 목표</td></tr>
+                <tr><td>문의 종류</td><td>멤버십·투어 예약·시설 문의</td></tr>
+                <tr><td>투어</td><td>예약 필수 · 워크인 불가 → 문의Survey 페이지</td></tr>
+              </table>
+            </div>
+          </div>
+        </td>
       </tr>
       <tr>
         <td><strong>🥕 당근</strong></td>
         <td><a href="https://www.daangn.com/kr/local-profile/%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8-%EC%8A%A4%ED%8F%AC%EC%B8%A0%ED%81%B4%EB%9F%BD-1hcc5rpzpx29/" target="_blank" style="color:var(--accent);">웰페리온 스포츠클럽</a></td>
         <td>콘텐츠 발행(반자동) · 지역 인지도 · 동네 노출</td>
         <td><span class="badge green">운영중</span></td>
+        <td style="color:var(--dim);font-size:12px;text-align:center;">—</td>
       </tr>
     </table>
+    <script>
+    function chRowToggle(id){
+      var row=document.getElementById('ch-detail-'+id), btn=document.getElementById('ch-btn-'+id);
+      if(!row) return;
+      var opening = (row.style.display==='none'||row.style.display==='');
+      row.style.display = opening ? 'table-row' : 'none';
+      if(btn){ btn.textContent = opening ? '▾ 접기' : '▸ 상세'; btn.setAttribute('aria-expanded', opening ? 'true' : 'false'); }
+    }
+    function chOpenAndScroll(id){
+      var row=document.getElementById('ch-detail-'+id), btn=document.getElementById('ch-btn-'+id);
+      if(!row) return;
+      row.style.display='table-row';
+      if(btn){ btn.textContent='▾ 접기'; btn.setAttribute('aria-expanded','true'); }
+      row.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+    </script>
 
     <h3><span class="ico">🔭</span>퍼널 한눈에</h3>
     <p>고객이 콘텐츠를 보고 문의하기까지의 흐름과, 그 데이터가 대시보드로 모이는 경로입니다.</p>
@@ -4026,28 +4277,7 @@ window._regAssign = function(id, category) {
     })();
     </script>
 
-<!-- ══ 📸 IG 발행 파이프라인 SSOT (2026-06-13) ══ -->
-    <!-- 사람용 정본(단계·가드 상세) = 자율현황.html ▸ M5 인스타그램 발행 파이프라인 -->
-    <div style="background:var(--paper);border:1px solid var(--border);border-left:3px solid #7c3aed;border-radius:12px;padding:16px 20px;margin:6px 0 20px;">
-      <h3 style="margin-top:0;"><span class="ico">📸</span>인스타그램 발행 파이프라인 <span style="font-size:13px;font-weight:400;color:var(--dim);">요약 · 사람용 정본 = <a href="자율현황.html#sec-m5-pipeline" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;">자율현황.html ▸ M5 파이프라인</a></span></h3>
-      <div class="callout" style="margin-bottom:14px;"><strong>승인 ≠ 발행완료.</strong> 발행완료는 웰리가 실제 IG↔M3 대조 후에만.</div>
-      <table>
-        <tr><th style="width:48px">단계</th><th style="width:260px">동작</th><th style="width:100px">status</th><th>주체</th></tr>
-        <tr><td style="text-align:center;font-weight:700;">1</td><td>제작(07:30 producer / 수동) → 텔레그램 알림(미리보기) + [✅승인]/[❌반려] 카드</td><td><span style="color:var(--accent);font-weight:600;">검수대기</span></td><td>producer · 시모</td></tr>
-        <tr><td style="text-align:center;font-weight:700;">2</td><td>GM 텔레그램 [✅승인] 탭</td><td><span style="color:var(--accent);font-weight:600;">승인</span></td><td>GM</td></tr>
-        <tr><td style="text-align:center;font-weight:700;">3</td><td>시모 IG 자동발행 (Playwright, 계정별 프로필)</td><td><span style="color:#7c3aed;font-weight:600;">발행검증대기</span></td><td>시모(CMO)</td></tr>
-        <tr><td style="text-align:center;font-weight:700;">4</td><td>웰리가 실제 IG 게시물 ↔ M3 (캡션·슬라이드) 대조</td><td><span style="color:var(--green);font-weight:600;">일치→발행완료</span> / 불일치→재처리</td><td>웰리(CEO)</td></tr>
-      </table>
-      <ul style="font-size:13px;margin:12px 0 0;padding-left:18px;line-height:1.8;">
-        <li><strong>무폴링</strong>: 발행 트리거 = GM [✅승인] 탭만. 자동 재발행·스케줄 일괄발행 금지.</li>
-        <li><strong>안전</strong>: <code>발행검증대기</code>는 재처리 대상 아님(이중발행 차단). <code>발행완료</code>는 웰리 실측 후에만 (헌법 STEP 3.5).</li>
-        <li><strong>계정 파라미터화</strong>: 발행은 <code>--account &lt;계정&gt;</code> + <code>profiles/instagram/&lt;계정&gt;/</code> 세션으로 동작 → 계정 무관 확장 기반.</li>
-        <li><strong>구현 위치</strong>: <code>telegram_bot/bot.py</code>(pub 콜백) → <code>scripts/ig_review_publish_watcher.py</code>(발행검증대기 도장 분기) → M3 보드 <code>badgeOf</code>. 코드 정본 = <code>instagram/_AI시리즈_로드맵.md</code> §3.4 / <strong>사람용 파이프라인 정본 = <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="color:var(--accent);font-weight:700;text-decoration:none;">T2 ▸ M3 인스타그램 발행 파이프라인</a></strong>.</li>
-      </ul>
-    </div>
-    <!-- ══ /IG 발행 파이프라인 SSOT ══ -->
-
-    <!-- △ /채널·발행 현황 -->
+    <!-- △ /채널·발행 현황 (IG 발행 파이프라인 SSOT = 위 채널 현황 표 ▸ 인스타그램(@wellperion) 행 토글로 이전 · 2026-07-14) -->
 
     <h3><span class="ico">🌟</span>북극성 지향 제작 루프 <span style="font-size:12px;color:var(--dim);font-weight:400;">(전 C-Level 공통 표준 · 정본 = 헌법 한 장 / 부트셋업)</span></h3>
     <p>모든 콘텐츠는 <strong>한 번에 끝내지 않고</strong> 북극성(노출 → 회원 전환 엔진)을 향해 이 루프를 돈다. 웰리가 각 콘텐츠 배의 단계를 추적하고, 완료 시 다음 단계를 자동 촉발한다.</p>
@@ -4096,7 +4326,7 @@ window._regAssign = function(id, category) {
       <tr><td><strong>① 텔레그램 알림</strong></td><td>1줄 보고(한줄 제목/한줄 내용) + montage 미리보기 송부</td><td>토큰 stdout 노출 금지</td></tr>
       <tr><td><strong>② M3 검수 큐 자동 등록</strong></td><td><code>cmo/review/review_queue.json</code>에 항목 추가, <code>status="검수 대기"</code></td><td>review_set_status 호환 스키마 · M3 페이지 참조</td></tr>
     </table>
-    <div class="callout"><strong>기본 종료 = 텔레그램 알림 + M3 검수 대기 등록.</strong> 앞으로 GM이 "검수 큐에 올려라"라고 따로 지시하지 않아도, 제작 완료 시 ①+②가 기본이다. 발행 승인 게이트는 위 <strong>📸 인스타그램 발행 파이프라인</strong> 참조(비가역).</div>
+    <div class="callout"><strong>기본 종료 = 텔레그램 알림 + M3 검수 대기 등록.</strong> 앞으로 GM이 "검수 큐에 올려라"라고 따로 지시하지 않아도, 제작 완료 시 ①+②가 기본이다. 발행 승인 게이트는 <a href="#" onclick="event.preventDefault();chOpenAndScroll('ig-brand');" style="color:var(--accent);font-weight:700;text-decoration:none;">위 채널 현황 ▸ 인스타그램(@wellperion) 행 ▸ 발행 파이프라인</a> 참조(비가역).</div>
 
     <h3><span class="ico">🗓️</span>정기 보고</h3>
     <ul>
@@ -4136,213 +4366,7 @@ window._regAssign = function(id, category) {
     <div class="callout tip"><strong>발행 원칙.</strong> 모든 채널은 M3 검수 큐 → GM [승인] 후에만 발행합니다. 우회·손편집 금지.</div>
 
     <div class="source">SSOT: instagram/_README.md 기반 · 2026-05-23 GM 결재</div>
-    <!-- (b) 공식 5채널 — 발행 규칙·특성 (기존 토글 내용 병합) -->
-    <!-- 채널별 구조 (5채널 탭) + 발행 규칙 -->
-    <h3><span class="ico">🌐</span>공식 5채널 — 발행 규칙·특성</h3>
-    <p style="font-size:13px;color:var(--dim);margin-bottom:14px;">각 채널의 톤·이미지 규격·해시태그·발행 규칙을 정리합니다.</p>
-    <div class="tabs" data-tabs="cmopub-ch">
-      <div class="tab-nav">
-        <button class="tab-btn active" data-tab="ig-brand">📸 인스타 @wellperion</button>
-        <button class="tab-btn" data-tab="ig-namuk">📸 인스타 @namuk.wellperion</button>
-        <button class="tab-btn" data-tab="blog">📝 네이버 블로그</button>
-        <button class="tab-btn" data-tab="cafe">☕ 네이버 카페</button>
-        <button class="tab-btn" data-tab="kakao">💬 카카오채널</button>
-      </div>
-
-      <div class="tab-panel active" data-panel="ig-brand">
-        <div class="card"><h4>📸 인스타그램 — @wellperion (브랜드)</h4>
-          <table>
-            <tr><th style="width:130px">항목</th><th>기준</th></tr>
-            <tr><td>이미지 규격</td><td>1080×1080 (피드) · 1080×1920 (스토리)</td></tr>
-            <tr><td>톤</td><td>DUOTONE(BLACK #221F20 + BEIGE #B79F8A) · 하이엔드 브랜드 톤</td></tr>
-            <tr><td>해시태그</td><td>#웰페리온 #한남동스포츠클럽 (브랜드·지역 중심)</td></tr>
-            <tr><td>글자수</td><td>캡션 핵심 메시지 + 문의Survey CTA. 개인 번호 금지</td></tr>
-            <tr><td>마지막 슬라이드</td><td>WELLPERION GUIDE 카드 자동 첨부</td></tr>
-          </table>
-        </div>
-        <div class="card" style="margin-top:12px;"><h4>사업부별 chip 색상</h4>
-          <table>
-            <tr><th>사업부</th><th>HEX</th></tr>
-            <tr><td>메인</td><td>#B79F8A</td></tr>
-            <tr><td>SPORTS CLUB</td><td>#3F71B0</td></tr>
-            <tr><td>W PT</td><td>#B54840</td></tr>
-            <tr><td>W PILATES</td><td>#C44558</td></tr>
-            <tr><td>W SWIMMING</td><td>#215768</td></tr>
-            <tr><td>W SQUASH</td><td>#77968E</td></tr>
-            <tr><td>W GOLF</td><td>#337342</td></tr>
-            <tr><td>W GYMNASTIC</td><td>#C2BAD6</td></tr>
-          </table>
-        </div>
-        <details class="card" style="margin-top:12px;">
-          <summary style="cursor:pointer;font-weight:700;font-size:15px;color:var(--text);">슬라이드 디자인 구조 — 공식 표준 (정본: 발레·스쿼시 완성본 기준) <span style="color:var(--dim);font-weight:400;font-size:12px;">▾ 펼쳐 보기</span></summary>
-          <div class="callout fix" style="margin-top:10px;margin-bottom:10px;"><strong>정본 경로:</strong> <code>instagram/260520_발레_런칭/output(인스타그램)/ig_01~07.jpg</code> &amp; <code>instagram/260426_WJO_스쿼시_대회/output(인스타그램)/</code> — 코드는 이 정본과 픽셀 단위 1:1 일치해야 함. 임의 디자인 금지.</div>
-          <table>
-            <tr><th style="width:160px">항목</th><th>기준값</th></tr>
-            <tr>
-              <td>캔버스</td>
-              <td>1080×1080 px (인스타 정방형 피드)</td>
-            </tr>
-            <tr>
-              <td>표지(1p) 구조</td>
-              <td>
-                상단 65% 사진(y=0~700) — <strong>BLACK+BEIGE 듀오톤</strong> (#221F20 + #B79F8A)<br>
-                분리선 y=701~702 — RGB(171,161,151) 전폭(x=50~1030)<br>
-                하단 35% 순수 검정 정보영역(y=703~1080) — <strong>#221F20 fill, 그라디언트 없음</strong>
-              </td>
-            </tr>
-            <tr>
-              <td>표지 정보영역<br>텍스트 배치</td>
-              <td>
-                한글 부제목 y≈789 — Pretendard SemiBold 38px, <strong>베이지 #B79F8A</strong>, 중앙정렬<br>
-                영문 대제목 y≈859 — Pretendard Bold 88px, <strong>흰색</strong>, 중앙정렬, UPPERCASE<br>
-                베이지 얇은 선 y≈920 — 60px 중앙<br>
-                날짜·장소 y≈962 — Pretendard Medium 26px, <strong>회색 RGB(170,160,152)</strong>, 중앙정렬
-              </td>
-            </tr>
-            <tr>
-              <td>공식 로고 PNG</td>
-              <td>
-                파일: <code>instagram/_assets/logo/wellperion_white_alpha.png</code><br>
-                위치: 좌상단 x=40, y=36 / 너비=130px / <strong>반투명 박스 없이 직접 합성</strong><br>
-                (텍스트 "W" 렌더링 절대 금지 — 공식 PNG만 사용)
-              </td>
-            </tr>
-            <tr>
-              <td>우상단 컬러칩</td>
-              <td>
-                베이지 둥근 사각 fill RGB(186,162,140) / 흰색 텍스트 "WELLPERION" Bold 28px<br>
-                칩 크기: w=240, h=52 / 위치: 우측 여백 40px, y=38
-              </td>
-            </tr>
-            <tr>
-              <td>카운터<br>(스토리 슬라이드)</td>
-              <td>
-                형식: <code>02 / 06</code> (제로패딩) — <strong>배경 박스 없음, 텍스트만</strong><br>
-                위치: 칩 아래 우측정렬 / Pretendard Medium 28px / 흰색<br>
-                표지(1p)에는 카운터 없음
-              </td>
-            </tr>
-            <tr>
-              <td>스토리 슬라이드<br>레이아웃</td>
-              <td>
-                전체 사진 fill(center-crop) + 하단 그라디언트(y≈555~, #221F20)<br>
-                메타라인(회색 26px) → 한글 대제목(흰색 Bold 64px) → 서브텍스트(베이지 30px) → 풋터(베이지 26px)<br>
-                좌측 여백 x=40 기준
-              </td>
-            </tr>
-            <tr>
-              <td>폰트</td>
-              <td>
-                Pretendard Bold / SemiBold / Medium<br>
-                경로: <code>brand/font/</code> 또는 <code>2. 브랜드_공식문서/font/</code>
-              </td>
-            </tr>
-            <tr>
-              <td>색상</td>
-              <td>
-                배경 검정: <strong>#221F20</strong> RGB(34,31,32)<br>
-                베이지: <strong>#B79F8A</strong> RGB(183,159,138)<br>
-                칩 배경: RGB(186,162,140) / 분리선: RGB(171,161,151)<br>
-                텍스트 흰색: #FFFFFF / 날짜 회색: RGB(170,160,152)
-              </td>
-            </tr>
-            <tr>
-              <td>풋터 워드마크</td>
-              <td>
-                스토리: <code>WELLPERION  ·  [프로그램명]</code> 좌측 베이지 26px<br>
-                y≈1026 (1080px 기준)
-              </td>
-            </tr>
-            <tr>
-              <td>영상 슬라이드</td>
-              <td>마지막 슬라이드 = 원본 mp4 그대로 (합성 없음). gitignore 대상.</td>
-            </tr>
-            <tr>
-              <td>합성 스크립트</td>
-              <td>
-                <code>scripts/compose_barre.py</code> — 바레 전용 (정본 엔진 · <code>to_duotone</code> SSOT)<br>
-                <code>scripts/compose_ballet.py</code> — 발레 전용 (바레 import 체인 · 정본 = compose_barre import)<br>
-                <code>scripts/slide_compositor.py</code> — 범용 (<code>compose_text_slide</code> 포함 · v1.1 로고 PNG 적용)<br>
-                신규 콘텐츠는 완성본 픽셀 실측 기반 1:1 구현 필수
-              </td>
-            </tr>
-          </table>
-        </details>
-      </div>
-
-      <div class="tab-panel" data-panel="ig-namuk">
-        <div class="card"><h4>📸 인스타그램 — @namuk.wellperion (개인)</h4>
-          <div class="callout fix" style="margin-top:0;"><strong>개인 계정:</strong> 회사 가이드 카드·마케팅 톤 금지. 발행 전 미리보기로 GM 검수 게이트 필수. (GM go 후 발행)</div>
-          <table>
-            <tr><th style="width:130px">항목</th><th>기준</th></tr>
-            <tr><td>이미지 규격</td><td>1080×1080 (피드)</td></tr>
-            <tr><td>톤</td><td>개인 1인칭 진솔체 · 마케팅 톤 배제</td></tr>
-            <tr><td>해시태그</td><td>최소화 · 자연스러운 개인 기록 톤</td></tr>
-            <tr><td>검수</td><td>발행 전 montage 미리보기 → GM 검수 게이트 필수</td></tr>
-          </table>
-        </div>
-      </div>
-
-      <div class="tab-panel" data-panel="blog">
-        <div class="card"><h4>📝 네이버 블로그 — blog.naver.com/wellperion</h4>
-          <table>
-            <tr><th style="width:130px">항목</th><th>기준</th></tr>
-            <tr><td>역할</td><td>SEO 허브 · "웰페리온"·"한남동 스포츠클럽" 검색 유입</td></tr>
-            <tr><td>톤</td><td>전문성+정보 · "~합니다" 형식체 · 하이엔드 격조</td></tr>
-            <tr><td>제목</td><td>SEO 키워드 포함</td></tr>
-            <tr><td>이미지</td><td>본문 교차 삽입 (SmartEditor 자동 첨부 upload_with_images.py)</td></tr>
-            <tr><td>페이스</td><td>주 1~2회 · 임시저장 큐 0건 확인 후 가동</td></tr>
-          </table>
-        </div>
-        <div class="callout" style="margin-top:10px;background:#1a2a1a;border-left:3px solid #059669;">
-          <strong>📌 자동 발행 규칙 (GM 확정 2026-06-03)</strong>
-          <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.9;">
-            <li><strong>이미지</strong> — 프로젝트 폴더의 <code>output(블로그)</code>에서 가져와 <strong>슬라이드로 본문 맨 아래</strong></li>
-            <li><strong>스티커 2개</strong> — 본문 맨 처음 1개 + "문의" 다음 줄 1개</li>
-            <li><strong>제목</strong> — 본문 첫 줄을 제목으로 (본문에 제목 반복 X)</li>
-            <li><strong>종착지</strong> — 임시저장까지. GM 검수 후 직접 등록</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="tab-panel" data-panel="cafe">
-        <div class="card"><h4>☕ 네이버 카페 — 동부이촌동 커뮤니티</h4>
-          <div class="callout fix" style="margin-top:0;"><strong>톤 주의:</strong> "동네 잡담"·"이웃" 톤 금지. 사실·전문성·정중형 격조 톤만.</div>
-          <table>
-            <tr><th style="width:130px">항목</th><th>기준</th></tr>
-            <tr><td>역할</td><td>지역 커뮤니티 노출 · 인지도 제고</td></tr>
-            <tr><td>페이스</td><td>10일에 1건 (과다 게시 스팸 방지)</td></tr>
-            <tr><td>톤</td><td>사실 기반 · 정중·격조 · 영업 문구 자제</td></tr>
-            <tr><td>댓글</td><td>사실 기반 정중 응답</td></tr>
-          </table>
-        </div>
-        <div class="grid-2">
-          <div class="card grow"><h4>허용</h4><ul><li>사실 기반 정보</li><li>전문성 있는 건강·운동 정보</li><li>정중하고 격조 있는 문체</li></ul></div>
-          <div class="card warm"><h4>금지</h4><ul><li>"이웃 여러분~" 동네 톤</li><li>감성적·구어체</li><li>직접 영업 문구</li></ul></div>
-        </div>
-        <div class="callout" style="margin-top:10px;background:#1a2a1a;border-left:3px solid #059669;">
-          <strong>📌 자동 발행 규칙 (GM 확정 2026-06-03)</strong>
-          <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.9;">
-            <li><strong>게시판</strong> — "웰페리온 Spa&amp;Fitness" 선택 → 우측에서 <strong>"웰페리온"</strong>까지 선택</li>
-            <li><strong>이미지</strong> — 프로젝트 폴더의 <code>output(카페)</code>에서 가져와 <strong>슬라이드로 본문 맨 아래</strong></li>
-            <li><strong>스티커 2개</strong> — 본문 맨 처음(인사) + "문의" 다음 줄(화이팅)</li>
-            <li><strong>종착지</strong> — 임시저장까지. GM 검수 후 직접 등록</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="tab-panel" data-panel="kakao">
-        <div class="card"><h4>💬 카카오채널 — 웰페리온 <span class="badge gray" style="margin-left:8px;">보류</span></h4>
-          <div class="callout fix" style="margin-top:0;"><strong>현재 보류.</strong> 자동화 미완료. 향후 1:1 상담·알림 발송 채널.</div>
-          <table>
-            <tr><th style="width:130px">항목</th><th>기준</th></tr>
-            <tr><td>응답 시간</td><td>운영시간 내 30분 이내 목표</td></tr>
-            <tr><td>문의 종류</td><td>멤버십·투어 예약·시설 문의</td></tr>
-            <tr><td>투어</td><td>예약 필수 · 워크인 불가 → 문의Survey 페이지</td></tr>
-          </table>
-        </div>
-      </div>
-    </div>
+    <!-- (b) 공식 5채널 — 발행 규칙·특성: 위 📡 채널 현황 표의 각 채널 행 토글(▸ 상세)로 이전 · 중복 제거 · 2026-07-14 -->
     <!-- (c) 운영 한눈에 (M3 5단계 흐름 + 연결 자산 · 중복 문단은 본문 SSOT 포인터로 교체) -->
     <div class="callout"><strong>🚀 M3 운영 한눈에</strong><br><br><strong>핵심 흐름:</strong> ① 채널 선택 → ② 제목 입력 → ③ <strong>슬라이드+캡션 자동 생성</strong> → ④ 미리보기 검수 → ⑤ <strong>승인 시 업로드</strong>. 인스타그램은 2개 계정(브랜드 @wellperion · 개인 @namuk.wellperion) 계정별 발행.<br><br><strong>🏁 '제작 완료' 표준 종료 절차</strong> → <a href="#" onclick="event.preventDefault();document.getElementById('m1-completion-ssot').scrollIntoView({behavior:'smooth',block:'start'});" style="color:var(--accent);font-weight:600;text-decoration:none;">본문 ▸ 콘텐츠 '제작 완료' 표준 종료 절차</a> 참조 (SSOT).<br><br><strong>연결 자산:</strong> 슬라이드 합성 <code>scripts/slide_compositor.py</code> · 발행기 <code>scripts/instagram_upload_playwright.py</code> · 검수 큐 <code>cmo/review/review_queue.json</code> · 승인 중계 <code>review_set_status</code> (Apps Script).</div>
     <!-- 관리 기준 (흡수) -->
@@ -10800,24 +10824,87 @@ function crTab(btn, panelId) {
       });
     }
 
-    // 시설부 전용 카드 — 6그룹(사우나/수영장/온수탱크/공조기/기계실/안전) 입력완료·입력률·이상건수 줄 표시(지원부 회차카드와 동일 패턴)
-    function buildFacilityGroupCard(icon, label, fKpi, row, href){
+    // 시설부 오늘 회차·이상 — 보드 blob(action=board&key=FACILITY_CHECK_<date>, 시설부 체계.html fcSave가 제출마다 누적) 기반.
+    // GM 정정(2026-07-14): 시설부=이미 다회차(⏱시작→종료→제출 반복, 회차라벨은 통합돼 '1일'이지만 하루 여러 번 제출).
+    // submissions.length = 오늘 제출완료 건수(시설부 체계.html 📋회차바 "오늘 N회 점검"과 동일 소스·동일 수치).
+    // store.rounds = 아직 미제출인 현재 작성중 값(실측정 draft) — 키가 있으면 실제로 입력 중(추정 아님, 실값).
+    function parseFacilityBoard(board){
+      var store=(board&&board.store)||null;
+      var subs=(store&&Array.isArray(store.submissions))?store.submissions:[];
+      var roundCount=subs.length;
+      var draftHasData=false;
+      if(store&&store.rounds&&typeof store.rounds==='object'){
+        Object.keys(store.rounds).forEach(function(rk){
+          var rv=store.rounds[rk];
+          if(rv&&typeof rv==='object'&&Object.keys(rv).length>0) draftHasData=true;
+        });
+      }
+      var issues=[];
+      var seenNumeric={};
+      subs.forEach(function(sub){
+        [].concat(sub.items||[],sub.daily||[]).forEach(function(it){
+          if(!it||!it.measure) return;
+          var obj=null; try{ obj=JSON.parse(it.measure); }catch(e){}
+          if(!obj||typeof obj!=='object') return;
+          Object.keys(obj).forEach(function(k){
+            var cfg=FACILITY_RANGES[k];
+            if(!cfg) return;
+            var num=parseFloat(obj[k]);
+            if(isNaN(num)) return;
+            if(num<cfg.min||num>cfg.max){
+              var dk=(it.id||it.name)+'|'+k+'|'+num;
+              if(seenNumeric[dk]) return; seenNumeric[dk]=1;
+              issues.push({type:'수치기준 초과',text:(it.name||it.id)+' '+num+'(기준 '+cfg.min+'~'+cfg.max+')'});
+            }
+          });
+        });
+      });
+      // 자유기록 텍스트 이상(GM 2026-07-14: 작업사항+기준이탈 조치 전부 포함) — 두 필드는 하루 유지값(제출마다 반복 저장)이라
+      // 최신 제출 1건만 채택(같은 텍스트 N번 중복 나열 방지). 실제 입력된 원문 그대로 노출(정직 표기 — 요약·가공 없음).
+      var last=subs[subs.length-1];
+      if(last){
+        var work=String(last.work||'').trim();
+        var ooc=String(last.oocAction||'').trim();
+        if(work) issues.push({type:'작업사항',text:work});
+        if(ooc) issues.push({type:'기준이탈 조치',text:ooc});
+      }
+      return {roundCount:roundCount, draftHasData:draftHasData, issues:issues};
+    }
+
+    // 시설부 전용 카드 — 회차 진행+이상(수치+자유기록) 주(主), 그룹별 완료율은 부차(GM 2026-07-14 재구성).
+    function buildFacilityGroupCard(icon, label, fKpi, row, href, boardInfo){
       if(!fKpi) return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">'+label+' 점검 — 집계 중</div>';
       var groups=parseFacilityGroups(row);
-      var topColor=fKpi.pct>=90?'#6abf7b':fKpi.pct>=60?'#e6c84e':'#ED5B3F';
+      var bi=boardInfo||{roundCount:0,draftHasData:false,issues:[]};
+      var issueCount=bi.issues.length;
+      var topColor=issueCount>0?'#ED5B3F':(fKpi.pct>=90?'#6abf7b':fKpi.pct>=60?'#e6c84e':'#ED5B3F');
+      var nextChip=bi.draftHasData?(' · <span style="color:var(--yellow,#e6c84e);">'+(bi.roundCount+1)+'회 작성중</span>'):'';
+      var issueLine=issueCount>0
+        ? '<span style="color:#ED5B3F;font-weight:700;">⚠️ 이상 '+issueCount+'건</span>'
+        : '<span style="color:#6abf7b;font-weight:700;">이상 없음</span>';
+      var issueTitle='';
+      if(issueCount>0){
+        issueTitle=bi.issues.map(function(x){return '['+x.type+'] '+x.text;}).join(' / ').replace(/"/g,'&quot;');
+      }
+      var primaryHtml='<div'+(issueTitle?' title="'+issueTitle+'"':'')+'>'
+        +'<div style="font-size:15px;font-weight:800;color:var(--text);">오늘 '+bi.roundCount+'회 점검'+nextChip+'</div>'
+        +'<div style="font-size:12px;margin-top:4px;">'+issueLine+'</div>'
+        +'</div>'
+        +'<div style="height:1px;background:var(--border);margin:9px 0;"></div>';
       var rowsHtml='';
       for(var i=0;i<groups.length;i++){
         var g=groups[i];
         var c=g.pct>=90?'#6abf7b':g.pct>=60?'#e6c84e':'#ED5B3F';
-        rowsHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);">'
-          +'<span style="font-size:11px;color:var(--dim);">'+g.label+'</span>'
-          +'<span style="font-size:11.5px;font-weight:700;color:var(--text);">'+g.done+'/'+g.total+'</span>'
-          +'<span style="font-size:11px;font-weight:700;color:'+c+';min-width:36px;text-align:right;">'+g.pct+'%</span>'
-          +(g.issues>0?'<span style="font-size:10px;font-weight:700;color:#ED5B3F;margin-left:6px;">⚠️'+g.issues+'</span>':'')
+        rowsHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);opacity:0.75;">'
+          +'<span style="font-size:10.5px;color:var(--dim);">'+g.label+'</span>'
+          +'<span style="font-size:10.5px;font-weight:700;color:var(--text);">'+g.done+'/'+g.total+'</span>'
+          +'<span style="font-size:10px;font-weight:700;color:'+c+';min-width:32px;text-align:right;">'+g.pct+'%</span>'
           +'</div>';
       }
       return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
-        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">'+icon+' '+label+' 점검</div>'
+        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
+        +primaryHtml
+        +'<div style="font-size:9.5px;color:var(--dim);margin-bottom:4px;">그룹별 완료율(상세)</div>'
         +rowsHtml
         +'</a>';
     }
@@ -10845,10 +10932,11 @@ function crTab(btn, panelId) {
         +'</a>';
     }
 
-    function renderHomeKpi(facilityData, supportData){
+    function renderHomeKpi(facilityData, supportData, facilityBoard){
       var el=document.getElementById('home-check-kpi');
       if(!el)return;
       var fKpi=parseKpi(facilityData);
+      var fBoard=parseFacilityBoard(facilityBoard);
       // 지원부 남/여 분리 — byGender 필드 우선 (회차별 rows 포함)
       var raw=(supportData&&supportData.byGender)?supportData:null;
       var sMKpi=raw?parseGenderKpi(raw.byGender,'m'):null;
@@ -10865,7 +10953,7 @@ function crTab(btn, panelId) {
       })();
       var html='';
       // 카드1: 시설부 — 6그룹(사우나/수영장/온수탱크/공조기/기계실/안전) 입력률 카드(GM지시 2026-07-09, 지원부처럼 한눈에)
-      if(fKpi) html+=buildFacilityGroupCard('🏭','시설부',fKpi,facilityData,FACILITY_URL);
+      if(fKpi) html+=buildFacilityGroupCard('🏭','시설부',fKpi,facilityData,FACILITY_URL,fBoard);
       else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">시설부 점검 — 로드 실패</div>';
       // 카드2: 지원부(남) — 회차별 3줄
       if(sMKpi) html+=buildSupportRoundCard('🚹','지원부(남)',sMKpi,SUPPORT_URL);
@@ -10895,7 +10983,10 @@ function crTab(btn, panelId) {
       // facility=weekly(스냅샷·무회귀 유지) / support=today_live(서버 실시간 단일값 — 대시보드와 동일). 2026-06-16 시우.
       var fP=fetch(CHECK_API+'?action=weekly&dept=facility&_pv='+pv,{redirect:'follow',cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
       var sP=fetch(CHECK_API+'?action=today_live&dept=support&date='+encodeURIComponent(today)+'&_pv='+pv,{redirect:'follow',cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
-      Promise.all([fP,sP]).then(function(res){onSuccess(res[0],res[1]);});
+      // facility board blob(action=board&key=FACILITY_CHECK_<date>) — 시설부 체계.html이 제출마다 누적하는 회차 원본(submissions[])·현재 작성중 draft(rounds).
+      // GAS 수정 없이 기존 action=board 그대로 재사용(가산만, weekly 집계 무변경 — 완료율/지원부 회귀 0). GM go 2026-07-14 시우.
+      var bP=fetch(CHECK_API+'?action=board&key='+encodeURIComponent('FACILITY_CHECK_'+today)+'&_pv='+pv,{redirect:'follow',cache:'no-store'}).then(function(r){return r.json();}).then(function(res){ return (res&&res.ok!==false)?res.board:null; }).catch(function(){return null;});
+      Promise.all([fP,sP,bP]).then(function(res){onSuccess(res[0],res[1],res[2]);});
     }
 
     function loadHomeKpi(){
