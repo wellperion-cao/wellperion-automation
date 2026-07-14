@@ -540,6 +540,7 @@
   </div>
 </div>
 
+<script src="ob_guide_data.js"></script>
 <script>
 "use strict";
 /* ============ config ============ */
@@ -2025,20 +2026,7 @@ function obReflectView(name){
   document.getElementById("obReflectModal").style.display="flex";
 }
 function obReflectPrint(){ window.print(); }
-var OB_GUIDE={
-"1주차 체크인":{focus:"입사 첫 주 안착 · 환영",q:["필요한 계정·장비·자리는 다 받았나?","첫 주 가장 막힌 점은?","물어볼 사람(멘토)이 정해졌나?"]},
-"2주차 체크인":{focus:"기본 업무·동선 인지",q:["주요 반복 업무를 파악했나?","예약/회원/결제 시스템은 익숙해지나?","근무 일과·동선이 익숙한가?"]},
-"3주차 체크인":{focus:"초기 독립 시도",q:["혼자 해본 업무는?","아직 헷갈리는 부분은?","회원 응대 톤은 편한가?"]},
-"4주차 체크인":{focus:"기본기 · 기대 정합 (1개월)",q:["혼자 되는 업무 / 아직 어려운 업무는?","입사 전 기대와 실제가 맞나?","더 배우고 싶은 것은?"]},
-"5주차 체크인":{focus:"숙련 진행",q:["업무 속도·정확도가 나아지나?","반복해서 실수하는 부분은?","팀과의 협업은 어떤가?"]},
-"6주차 체크인":{focus:"돌발 대응 · 업무량",q:["예상 못한 상황을 어떻게 처리했나?","업무량은 적정한가?","스트레스·과부하 신호는 없나?"]},
-"7주차 체크인":{focus:"자기주도 시작",q:["스스로 챙기는 업무가 늘었나?","개선하면 좋겠다 싶은 점은?","동료와의 관계는?"]},
-"8주차 체크인":{focus:"기여 · 팀 융화 (2개월)",q:["최근 잘 해낸 일·기여는?","팀에 소속감을 느끼나?","막히면 누구에게 도움을 청하나?"]},
-"9주차 체크인":{focus:"안정화",q:["전반적으로 안정됐나?","강점을 발휘하는 영역은?","여전히 어려운 영역은?"]},
-"10주차 체크인":{focus:"정착 · 만족도",q:["직무 만족도는 어떤가?","장기근속 의향이 있나?","회사가 더 지원할 부분은?"]},
-"11주차 체크인":{focus:"수습평가 준비",q:["수습 마무리 전 보완할 점은?","정규 전환 후 맡고 싶은 역할은?","남은 우려사항은?"]},
-"12주차 수습평가":{focus:"수습 종합평가 · 정규 전환 판정",q:["12주 종합 — 가장 큰 성장 / 가장 어려웠던 점은?","정규 전환 적합성은?","향후 3·6개월 목표는?"],verdict:true}
-};
+/* OB_GUIDE는 ob_guide_data.js(SSOT, 상단 <script src>)에서 로드됨 — onboarding.html과 공유 */
 function obCheckEvents(){var out=[];(DB.onbo||[]).forEach(function(r){var c=r["카테고리"];if(c!=="격주 체크리스트"&&c!=="월간 체크인"&&c!=="주간 체크인")return;var s=String(r["완료 기한"]||"").slice(0,10);if(!/^\d{4}-\d{2}-\d{2}/.test(s))return;var dt=new Date(s);out.push({date:s,y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate(),t:dt.getTime(),name:r["대상 신입 직원"],label:r["체크 항목"],done:isYes(r["완료 여부"]),row:r["_sheet_row"]});});return out;}
 function obCalNav(delta){var ym=window.__obYM||{};var m=ym.m+delta,y=ym.y;if(m<0){m=11;y--;}if(m>11){m=0;y++;}window.__obYM={y:y,m:m};renderOnbo();}
 function renderObCalCard(){
