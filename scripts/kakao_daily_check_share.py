@@ -33,8 +33,10 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import os
 import subprocess
 import sys
+import time
 import urllib.parse
 import urllib.request
 from datetime import datetime
@@ -243,8 +245,31 @@ def build_body(now: datetime | None = None) -> tuple[str, dict]:
 # ══════════════════════════════════════════════════════════════════════════
 #  발송(kakao_report_sender.py 텍스트 전송 재사용)
 # ══════════════════════════════════════════════════════════════════════════
+# 카톡 실행파일(무인 발송 신뢰성 — env로 오버라이드 가능)
+KAKAO_EXE = os.environ.get(
+    "KAKAOTALK_EXE", r"C:\Program Files (x86)\Kakao\KakaoTalk\KakaoTalk.exe"
+)
+
+
+def ensure_kakao_foreground(wait: float = 6.0) -> None:
+    """무인 발송 전 카톡 메인창 띄우기 — 2026-07-13 밤 실패 원인(앱이 트레이로 내려가
+    'kakao 메인창 못 찾음') 방지. KakaoTalk은 단일 인스턴스라 exe를 다시 실행하면 이미
+    떠 있는 인스턴스의 메인창이 앞으로 나온다. 실패해도 발송은 계속(비치명)."""
+    try:
+        if not os.path.exists(KAKAO_EXE):
+            log(f"[kakao] 실행파일 없음({KAKAO_EXE}) — 자동 띄우기 생략(설치경로 확인 필요)")
+            return
+        subprocess.Popen([KAKAO_EXE], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        log(f"[kakao] 메인창 자동 띄우기 시도(무인 신뢰성) — {wait:.0f}s 대기")
+        time.sleep(wait)
+    except Exception as e:
+        log(f"[kakao] 자동 띄우기 실패(무시하고 발송 시도): {type(e).__name__}: {e}")
+
+
 def send_via_kakao(body: str, dry_run: bool) -> int:
     """kakao_report_sender.py --message ... --only-room TARGET_ROOM 호출(단일 방 고정)."""
+    if not dry_run:
+        ensure_kakao_foreground()  # 무인 발송 신뢰성 — 발송 직전 카톡 메인창 확보
     cmd = [
         sys.executable, str(SENDER),
         "--message", body,
