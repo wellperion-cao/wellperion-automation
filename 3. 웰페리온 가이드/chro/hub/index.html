@@ -544,6 +544,11 @@
 "use strict";
 /* ============ config ============ */
 var NOTION_FN = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+// [추가 2026-07-14 A-4] COO 업무보드(업무 현황 SSOT) 읽기 전용 소스 — 무인증 GET(todo_list). HR과 별개 백엔드.
+//   직무성과 산출을 위해 담당자별 업무·중요도(난이도)만 읽어옴. 이 화면에서 COO 보드에 쓰지 않음(읽기전용).
+var COO_TODO_FN = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec";
+// 업무 중요도(난이도) 가중치 — SSOT 대시보드와 동일(하1·중5·상10). 미책정=0(계산 제외·경고).
+var WP_DIFF_WEIGHT = { "하": 1, "중": 5, "상": 10 };
 var PLACEHOLDER_PHOTO = "https://wellperion-cao.github.io/wellperion-automation/chro/hub/photos/placeholder-person.jpg"; // 지원자 무사진 표준(2026-07-10 매니저 확정): 빈 값·로딩 실패 시 이 실루엣으로 폴백
 var SESSION_PW = "";
 var SESSION_ROLE = "viewer";
@@ -2306,7 +2311,11 @@ function perfCriteriaCard(){
     '<div class="kv2" style="margin-top:8px"><b>등급(A~F)</b><span>A 90~100 · B 80~89 · C 70~79 · D 60~69 · E 50~59 · F 0~49 (100점 단일 기준)</span></div>'+
     '<div class="kv2"><b>직군 프로파일</b><span>강습 55/30/15 · 지원·관리 45/40/15 · 그 외 50/35/15 (태도 15 고정, 합 100)</span></div>'+
     '<div class="kv2"><b>Calibration</b><span>분포는 참고선(강제배분 아님) — 행동근거 있으면 이탈 등급도 인정</span></div>'+
-    (SESSION_ROLE==="admin"?'<div style="margin-top:10px"><button class="btn-sm" onclick="perfEvalStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 정기 성과평가 평가지 작성</button></div>':'')+
+    '<div class="kv2"><b>직무성과(50%) 산출</b><span>업무카드 보유자(리더급)는 관리자 업무평가 화면에서 완성도(%)·성과점수(1~5)를 입력 → 직무성과 0~100 자동 산출(중요도가중). 현장직은 아래 평가지의 직군 KPI 수기 채점.</span></div>'+
+    (SESSION_ROLE==="admin"?'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn-sm" onclick="workEvalStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 관리자 업무평가(직무성과 산출)</button>'+
+      '<button class="btn-sm" onclick="perfEvalStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 정기 성과평가 평가지 작성</button>'+
+      '</div>':'')+
     '</div>';
 }
 function perfEvalStart(){ openPerfEval("",""); }
@@ -2357,6 +2366,13 @@ function openPerfEval(target, family){
     '<tr><th>평가자</th><td><input id="pEvr" placeholder="직속상급자 / 부서장"></td><th>평가 주기</th><td><select id="pCyc">'+cycleOpts+'</select></td></tr>'+
     '<tr><th>기간 시작</th><td><input id="pS" type="date"></td><th>기간 종료</th><td><input id="pE" type="date"></td></tr></table>'+
     '<div class="sub" id="pProf" style="margin:5px 0 0"></div>'+
+    '<div id="pJpBox" style="display:none;border:1px solid #e6d3a2;background:#f9f5ea;border-radius:8px;padding:9px 11px;margin:9px 0">'+
+      '<div style="font-weight:700;color:#8a6f3f">직무성과 참고창 — 관리자 업무평가 연동 (Track A)</div>'+
+      '<div id="pJpInfo" class="sub" style="margin:4px 0"></div>'+
+      '<label style="display:block;margin:4px 0"><input type="checkbox" id="pJpUse" style="width:auto"> <b>이 산출값을 직무성과(KPI 50%)로 사용</b> — 해제 시 아래 직군 KPI 수기 채점(Track B)</label>'+
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="wt">KPI 확정값</span><input type="number" id="pJpFix" min="0" max="100" step="0.1" style="width:82px"><span>/100</span>'+
+        '<span style="flex:1;min-width:170px">보정 사유(산출값과 다르게 확정 시 필수)<input id="pJpRsn" placeholder="시스템 미포착 기여 등"></span></div>'+
+    '</div>'+
     '<h2>2. 직무성과 KPI <span class="wt" id="pKw"></span></h2>'+
     '<table><thead><tr><th style="width:150px">KPI</th><th style="width:40px">가중</th><th>MBO 목표 / BARS 앵커(5·3·1)</th><th style="width:86px">점수</th><th style="width:148px">근거(관찰사실 1건+)</th></tr></thead><tbody id="pKpi"></tbody></table>'+
     '<h2>3. 공통역량 5축 BARS <span class="wt" id="pCw"></span></h2>'+
@@ -2416,10 +2432,37 @@ function openPerfEval(target, family){
   function readSel(cls){ var a=D.getElementsByClassName(cls), out=[]; for(var i=0;i<a.length;i++){ out.push({v:a[i].value, w:Number(a[i].getAttribute("data-w")||0)}); } return out; }
   function weightedScore(arr){ var s=0, miss=0; for(var i=0;i<arr.length;i++){ if(arr[i].v===""){miss++;} else { s+=Number(arr[i].v)*arr[i].w/100; } } return {score:Math.round(s*20*10)/10, miss:miss}; }
   function attScoreCalc(){ var a=D.getElementsByClassName("pa"), s=0, miss=0, n=a.length; for(var i=0;i<n;i++){ if(a[i].value===""){miss++;} else { s+=Number(a[i].value); } } var raw=n>0?Math.round(s/n*20*10)/10:0; var gated=raw; if(D.getElementById("pHon").checked && gated>40) gated=40; return {raw:raw, gated:gated, miss:miss}; }
+  function kpiResult(){
+    var u=D.getElementById("pJpUse");
+    if(u && u.checked){
+      var v=parseFloat(D.getElementById("pJpFix").value);
+      if(isNaN(v)||v<0||v>100) return {score:0, miss:1};
+      return {score:Math.round(v*10)/10, miss:0};
+    }
+    return weightedScore(readSel("pk"));
+  }
+  function loadJobPerf(nm){
+    nm=String(nm||"").trim();
+    var box=D.getElementById("pJpBox"), info=D.getElementById("pJpInfo"), use=D.getElementById("pJpUse"), fix=D.getElementById("pJpFix");
+    if(!nm){ box.style.display="none"; use.checked=false; fix.value=""; fix.removeAttribute("data-ref"); recompute(); return; }
+    fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"get-work-eval",adminPassword:SESSION_PW,target:nm})}).then(function(x){return x.json();}).then(function(r){
+      if(r&&r.ok&&r.found&&r.latest&&r.latest.jobPerf!=null){
+        var L=r.latest;
+        box.style.display="block";
+        info.innerHTML="산출 직무성과 <b>"+L.jobPerf+"점</b> · 커버리지 "+esc(String(L.coverage||""))+" · 미책정 "+esc(String(L.unrated||0))+"건 · 기간 "+esc(String(L.period||""))+" · 저장 "+esc(String(L.savedAt||""))+(String(L.dualFlag)==="Y"?" · <span style=\"color:#b14238\">⚠겸직 플래그(중복집계 확인)</span>":"")+((Number(L.unrated)||0)>0?" — <span style=\"color:#b14238\">미책정 업무 있어 신뢰도 주의·수기 보정 고려</span>":"");
+        fix.value=L.jobPerf; fix.setAttribute("data-ref", L.jobPerf); use.checked=true;
+      } else {
+        box.style.display="block";
+        info.innerHTML="이 대상자의 업무평가 산출값 없음 — 업무카드 없는 현장직이면 아래 직군 KPI 수기 채점(Track B). 관리자 업무평가 화면에서 먼저 산출·저장하면 여기 프리필됩니다.";
+        use.checked=false; fix.value=""; fix.removeAttribute("data-ref");
+      }
+      recompute();
+    }).catch(function(){ recompute(); });
+  }
   function recompute(){
     var fam=D.getElementById("pFam").value;
     var f=WP_PERF_EVAL.families[fam];
-    var k=weightedScore(readSel("pk"));
+    var k=kpiResult();
     var c=weightedScore(readSel("pc"));
     var at=attScoreCalc();
     D.getElementById("oK").textContent=k.miss?"–":k.score;
@@ -2442,7 +2485,11 @@ function openPerfEval(target, family){
   D.getElementById("pTgt").oninput=function(){ var e=empMap[this.value.trim()]; if(e && !D.getElementById("pFam").value){ var fam=wpDeptToFamily(e.dept,e.rank); if(fam){ D.getElementById("pFam").value=fam; renderKpi(fam); } } };
   D.getElementById("pFam").onchange=function(){ renderKpi(this.value); };
   D.getElementById("pHon").onchange=recompute;
+  D.getElementById("pTgt").onchange=function(){ loadJobPerf(this.value.trim()); };
+  D.getElementById("pJpUse").onchange=recompute;
+  D.getElementById("pJpFix").oninput=recompute;
   renderKpi(family||"");
+  if(target) loadJobPerf(target);
   D.getElementById("pSave").onclick=function(){ perfEvalSubmit(D); };
 }
 function perfEvalSubmit(D){
@@ -2452,23 +2499,38 @@ function perfEvalSubmit(D){
   if(!tgt){ alert("대상자를 입력하세요."); return; }
   if(!f){ alert("직군을 선택하세요."); return; }
   function allFilled(cls){ var a=D.getElementsByClassName(cls); if(!a.length) return false; for(var i=0;i<a.length;i++){ if(a[i].value==="") return false; } return true; }
-  if(!allFilled("pk")||!allFilled("pc")||!allFilled("pa")){ alert("모든 KPI·역량·태도 점수를 입력해야 저장됩니다(추측 금지 — 미입력 항목 지어내지 않음)."); return; }
   function wscore(cls){ var a=D.getElementsByClassName(cls), s=0; for(var i=0;i<a.length;i++){ s+=Number(a[i].value)*Number(a[i].getAttribute("data-w")||0)/100; } return Math.round(s*20*10)/10; }
+  // 직무성과(KPI 50%) = Track A(업무평가 산출·확정값) 또는 Track B(직군 KPI 수기 가중)
+  var useJp=D.getElementById("pJpUse")&&D.getElementById("pJpUse").checked;
+  var kpiScore, kSection;
+  if(useJp){
+    var jpv=parseFloat(D.getElementById("pJpFix").value);
+    if(isNaN(jpv)||jpv<0||jpv>100){ alert("직무성과 확정값(0~100)을 입력하세요."); return; }
+    var jpref=parseFloat(D.getElementById("pJpFix").getAttribute("data-ref"));
+    var jprsn=D.getElementById("pJpRsn").value.trim();
+    if(!isNaN(jpref)&&Math.abs(jpv-jpref)>0.05&&!jprsn){ alert("산출값("+jpref+"점)과 다르게 확정하려면 보정 사유가 필요합니다(추측 금지)."); return; }
+    if(!allFilled("pc")||!allFilled("pa")){ alert("공통역량·태도 점수를 모두 입력해야 저장됩니다(추측 금지)."); return; }
+    kpiScore=Math.round(jpv*10)/10;
+    kSection="[직무성과] 업무평가 Track A · 산출값 "+(isNaN(jpref)?"–":jpref)+"점 → 확정 "+kpiScore+"점"+(jprsn?" (보정: "+jprsn+")":"");
+  } else {
+    if(!allFilled("pk")||!allFilled("pc")||!allFilled("pa")){ alert("모든 KPI·역량·태도 점수를 입력해야 저장됩니다(추측 금지 — 미입력 항목 지어내지 않음)."); return; }
+    kpiScore=wscore("pk");
+    kSection="[직무성과] 직군 KPI 수기 Track B\n"+evid("pk","pke",f.kpis);
+  }
   var pa=D.getElementsByClassName("pa"), asum=0; for(var i=0;i<pa.length;i++){ asum+=Number(pa[i].value); }
   var attRaw=Math.round(asum/pa.length*20*10)/10;
   var honesty=D.getElementById("pHon").checked;
   var p=f.profile;
   function evid(sels,eds,items){ var s=D.getElementsByClassName(sels), e=D.getElementsByClassName(eds), out=[]; for(var i=0;i<s.length;i++){ out.push(items[i].k+" "+s[i].value+"점"+(e[i]&&e[i].value.trim()?" — "+e[i].value.trim():"")); } return out.join("\n"); }
-  var kEvid=evid("pk","pke",f.kpis);
   var cEvid=evid("pc","pce",WP_PERF_EVAL.axes);
   var paScores=[]; for(var j=0;j<pa.length;j++){ paScores.push(WP_PERF_EVAL.attitudes[j].k+" "+pa[j].value+"점"); }
-  var breakdown="[직무성과 KPI]\n"+kEvid+"\n[공통역량 5축]\n"+cEvid+"\n[태도·가치]\n"+paScores.join(" · ");
+  var breakdown=kSection+"\n[공통역량 5축]\n"+cEvid+"\n[태도·가치]\n"+paScores.join(" · ");
   var idp=[]; [["pStr","강점"],["pDev","개발영역"],["pNext","다음 반기 한 가지"]].forEach(function(x){ var v=D.getElementById(x[0]).value.trim(); if(v) idp.push(x[1]+": "+v); });
   var fb=idp.join("\n"); var free=D.getElementById("pFb").value.trim(); if(free) fb=fb?(fb+"\n"+free):free;
   var payload={ target:tgt, family:fam, evaluator:D.getElementById("pEvr").value.trim(),
     cycle:D.getElementById("pCyc").value, evalType:"정기 성과평가",
     startDate:D.getElementById("pS").value, endDate:D.getElementById("pE").value,
-    kpiScore:wscore("pk"), compScore:wscore("pc"), attScore:attRaw,
+    kpiScore:kpiScore, compScore:wscore("pc"), attScore:attRaw,
     honestyViolation:honesty, wKpi:p[0], wComp:p[1], wAtt:p[2],
     breakdown:breakdown, feedback:fb };
   var btn=D.getElementById("pSave"); btn.disabled=true; btn.textContent="저장 중…";
@@ -2483,6 +2545,164 @@ function wpSavePerfEval(p){
   return fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)})
     .then(function(x){return x.json();})
     .then(function(r){ if(r&&r.ok&&typeof reloadData==="function"){ try{reloadData();}catch(e){} } return r; });
+}
+/* ============================================================================
+   관리자 업무평가(직무성과 50% 산출) — A-4 평가담당자 · 2026-07-14 웨이브1
+   대상자 선택 → COO 업무보드(읽기전용·무인증) 로드 → 업무별 완성도(%)·성과점수(1~5) 입력 →
+   직무성과 0~100 실시간 자동 산출(중요도가중 성취도 평균) → HR 관리자 영역(save-work-eval, admin) 저장.
+   성과점수 1~5(×20 환산)·결합=곱셈(완성도%×성과환산)·미완성 자동감점. 완료판정=관리자가 채점한 업무.
+   중요도 미책정=계산 제외+'책정 필요' 경고. 겸직=단일 담당자버킷 저장(중복집계 방지)+불명확시 플래그.
+   팝업 DOM엔 스크립트 미주입(오프너측 배선 — 비번/코드 팝업 노출 방지). 서버가 산출 재계산(이중 결정화).
+   ========================================================================== */
+function workEvalStart(){ openWorkEval("",""); }
+function openWorkEval(target, period){
+  if(SESSION_ROLE!=="admin"){ alert("관리자 업무평가는 관리자 모드에서 작성합니다."); return; }
+  var w=window.open("","_blank","width=1060,height=1200");
+  if(!w){ alert("팝업이 차단됐습니다. 브라우저에서 팝업을 허용해 주세요."); return; }
+  var emps=(DB.emp||[]).filter(function(e){return e["재직 상태"]!=="퇴사";}).map(function(e){return {nm:String(e["성명"]||e["이름"]||"").trim()};}).filter(function(e){return e.nm;});
+  var empListOpts=emps.map(function(e){return '<option value="'+esc(e.nm)+'">';}).join("");
+  var now=new Date(); var defPer=period||(now.getFullYear()+"-"+(now.getMonth()<6?"H1":"H2"));
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>웰페리온 관리자 업무평가(직무성과 산출)</title><style>'+
+    '*{box-sizing:border-box}body{font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;font-size:10.5pt;line-height:1.5;color:#1f1e1b;margin:0;padding:14px 0;background:#f4f3ef}'+
+    '.page{max-width:200mm;margin:0 auto;background:#fff;padding:16px 20px;box-shadow:0 0 10px rgba(0,0,0,.08);border-radius:4px}'+
+    'h1{font-size:15pt;border-bottom:2px solid #a98a52;padding-bottom:6px;margin:0 0 4px}'+
+    '.sub{color:#6c6961;font-size:9.3pt;margin-bottom:10px}'+
+    'h2{font-size:11pt;color:#8a6f3f;border-left:3px solid #a98a52;padding-left:8px;margin:14px 0 6px}'+
+    'table{width:100%;border-collapse:collapse;margin:5px 0;font-size:9.3pt}'+
+    'th,td{border:1px solid #d8d4c8;padding:5px 7px;text-align:left;vertical-align:middle}'+
+    'th{background:#f8f5ee;font-weight:600;color:#6c6961}'+
+    'select,input{font-family:inherit;font-size:9.3pt;border:1px solid #cfcabb;border-radius:4px;padding:3px 5px;box-sizing:border-box}'+
+    '.note{font-size:8.8pt;color:#8a877e;margin:3px 0}'+
+    '.calc{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}'+
+    '.cbox{flex:1;min-width:110px;border:1px solid #e4dfd2;border-radius:8px;padding:9px 11px;background:#faf9f6}'+
+    '.cbox .lab{font-size:8.6pt;color:#8a877e}.cbox .val{font-size:15pt;font-weight:700;color:#2a2823}'+
+    '.tot{background:#f6efdd;border-color:#e6d3a2}'+
+    '.warn{color:#b14238;font-size:9pt;font-weight:600;min-height:14px;margin:4px 0}'+
+    '.btns{position:fixed;top:12px;right:12px;z-index:10}'+
+    '.pb{background:#3c7a4a;color:#fff;border:none;padding:8px 15px;border-radius:6px;font-weight:600;cursor:pointer;font-size:10.5pt;box-shadow:0 2px 8px rgba(0,0,0,.15)}.pb:disabled{opacity:.55;cursor:default}'+
+    '</style></head><body>'+
+    '<div class="btns"><button class="pb" id="weSave">💾 업무평가 저장</button></div>'+
+    '<div class="page">'+
+    '<h1>관리자 업무평가 — 직무성과(50%) 산출</h1>'+
+    '<div class="sub">COO 업무보드는 읽기전용 소스(무변경). 완성도·성과점수는 HR 관리자 영역에 저장. 성과점수 1~5(×20) · 완성도%×성과 곱셈 · 직무성과=중요도가중 성취도 평균(0~100).</div>'+
+    '<h2>1. 대상 · 기간</h2>'+
+    '<table><tr><th style="width:80px">대상자</th><td><input id="weTgt" list="weEmpList" value="'+esc(target||"")+'" placeholder="재직자 성명" style="width:100%"><datalist id="weEmpList">'+empListOpts+'</datalist></td>'+
+    '<th style="width:80px">평가기간</th><td><input id="wePeriod" value="'+esc(defPer)+'" placeholder="예: 2026-H1" style="width:100%"></td></tr>'+
+    '<tr><th>평가자</th><td><input id="weEvr" placeholder="직속상급자 / 부서장" style="width:100%"></td>'+
+    '<th>COO 담당자</th><td><select id="weOwner" style="width:100%"><option value="">— 로드 중 —</option></select></td></tr></table>'+
+    '<div class="note" id="weDualNote"></div>'+
+    '<div class="note"><label><input type="checkbox" id="weDual" style="width:auto"> <b>겸직 플래그</b> — 이 대상자가 여러 담당자 버킷과 얽혀 중복집계 우려가 있으면 체크(불명확 시 저장 기록에 경고 표기)</label></div>'+
+    '<div class="note" id="weStatus">COO 업무보드 로드 대기…</div>'+
+    '<div class="note" id="weSavedNote"></div>'+
+    '<h2>2. 업무별 완성도 · 성과점수</h2>'+
+    '<div class="note">완성도 0~100% · 성과점수 1~5(1 기대미달 · 3 기대충족 · 5 탁월). 성취도 = 완성도% × (성과×20). 중요도 미책정 업무는 계산에서 제외됩니다(COO에서 난이도 책정 필요).</div>'+
+    '<table><thead><tr><th>업무명 / 카테고리</th><th style="width:64px">상태</th><th style="width:78px">중요도(가중)</th><th style="width:96px">완성도</th><th style="width:70px">성과(1~5)</th><th style="width:56px">성취도</th></tr></thead><tbody id="weTasks"><tr><td colspan="6" style="color:#8a877e">대상자를 선택하면 업무가 로드됩니다.</td></tr></tbody></table>'+
+    '<h2>3. 직무성과 자동 산출 (저장 시 서버 재검산)</h2>'+
+    '<div class="calc">'+
+    '<div class="cbox tot"><div class="lab">직무성과</div><div class="val"><span id="weJp">–</span></div></div>'+
+    '<div class="cbox"><div class="lab">중요도 합(Σw)</div><div class="val"><span id="weWsum">0</span></div></div>'+
+    '<div class="cbox"><div class="lab">커버리지(채점/전체)</div><div class="val"><span id="weCov">0/0</span></div></div>'+
+    '<div class="cbox"><div class="lab">미책정</div><div class="val"><span id="weUnr">0</span></div></div>'+
+    '</div><div class="warn" id="weWarn"></div>'+
+    '<div class="note">저장하면 정기 성과평가 평가지에서 이 직무성과가 참고창으로 뜨고 직무성과(KPI 50%) 필드에 자동 프리필됩니다(평가자 확인·보정).</div>'+
+    '</div></body></html>';
+  w.document.write(html); w.document.close();
+  var D=w.document;
+  var ALLTASKS=[], CURTASKS=[], SAVED={}, curOwner="";
+  function distinctOwners(){ var s={},out=[]; ALLTASKS.forEach(function(t){ var o=String(t["담당자"]||"").trim(); if(o&&!s[o]){s[o]=1;out.push(o);} }); return out.sort(); }
+  function buildOwnerList(){ var owners=distinctOwners(); D.getElementById("weOwner").innerHTML='<option value="">— COO 담당자 선택 —</option>'+owners.map(function(o){return '<option>'+esc(o)+'</option>';}).join(""); }
+  function matchOwners(nm){ nm=String(nm||"").trim(); if(!nm) return []; return distinctOwners().filter(function(o){ return o.indexOf(nm)>=0 || nm.indexOf(o)>=0; }); }
+  function loadCoo(){
+    D.getElementById("weStatus").textContent="COO 업무보드 로드 중…";
+    fetch(COO_TODO_FN+"?action=todo_list",{redirect:"follow"}).then(function(x){return x.json();}).then(function(r){
+      if(r&&r.ok&&r.data){ ALLTASKS=r.data; buildOwnerList(); D.getElementById("weStatus").textContent="COO 업무 "+r.data.length+"건 로드됨(읽기전용)"; var t0=D.getElementById("weTgt").value.trim(); if(t0) selTarget(t0); }
+      else { D.getElementById("weStatus").textContent="COO 로드 실패: "+((r&&r.error)||"응답 없음")+" — 담당자 목록 없음(현장직·수기 진행)"; }
+    }).catch(function(e){ D.getElementById("weStatus").textContent="COO 로드 오류: "+((e&&e.message)||e)+" — 현장직·수기 진행"; });
+  }
+  function loadOwnerTasks(owner){ curOwner=owner; CURTASKS=ALLTASKS.filter(function(t){ return String(t["담당자"]||"").trim()===owner; }); renderTasks(); }
+  function pickOwner(m){ var solo=m.filter(function(o){return o.indexOf(",")<0;}); return solo.length?solo[0]:m[0]; }  // 단일 담당자 버킷 우선(공동 카드 중복집계 회피)
+  function selTarget(nm){
+    var m=matchOwners(nm);
+    var pick=m.length?pickOwner(m):"";
+    if(m.length>1){ D.getElementById("weDual").checked=true; D.getElementById("weDualNote").textContent="⚠ '"+nm+"'가 COO 담당자 여러 버킷("+m.join(" / ")+")과 매칭 — 중복집계 주의. 단일 담당자 버킷('"+pick+"')을 기본 선택. 필요 시 변경 후 저장(겸직 플래그 자동 체크)."; }
+    else if(m.length===1){ D.getElementById("weDualNote").textContent="매칭 COO 담당자: "+pick; }
+    else { D.getElementById("weDualNote").textContent="매칭되는 COO 담당자 없음 — 업무카드 없는 현장직일 수 있음(정기 평가지의 직군 KPI 수기 채점)."; }
+    if(pick){ D.getElementById("weOwner").value=pick; loadOwnerTasks(pick); }
+    else { D.getElementById("weOwner").value=""; CURTASKS=[]; renderTasks(); }
+    loadSaved(nm);
+  }
+  function loadSaved(nm){
+    var per=D.getElementById("wePeriod").value.trim();
+    fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"get-work-eval",adminPassword:SESSION_PW,target:nm,period:per})}).then(function(x){return x.json();}).then(function(r){
+      SAVED={};
+      if(r&&r.ok&&r.found&&r.latest&&r.latest.tasks){ r.latest.tasks.forEach(function(t){ if(t.id) SAVED[String(t.id)]={completeness:t.completeness,quality:t.quality}; }); D.getElementById("weSavedNote").textContent="이전 저장분 불러옴("+(r.latest.savedAt||"")+") · 직무성과 "+(r.latest.jobPerf==null?"–":r.latest.jobPerf)+"점 — 값 수정 후 재저장 시 갱신됩니다."; }
+      else D.getElementById("weSavedNote").textContent="이 대상자·기간 저장분 없음(신규 작성).";
+      renderTasks();
+    }).catch(function(){ renderTasks(); });
+  }
+  function renderTasks(){
+    var tb=D.getElementById("weTasks");
+    if(!CURTASKS.length){ tb.innerHTML='<tr><td colspan="6" style="color:#8a877e">담당자를 선택하면 업무가 로드됩니다(업무카드 없는 현장직은 정기 평가지의 직군 KPI 수기 채점).</td></tr>'; recompute(); return; }
+    tb.innerHTML=CURTASKS.map(function(t,i){
+      var id=String(t["id"]||("row"+i)), diff=String(t["난이도"]||"").trim(), wt=WP_DIFF_WEIGHT[diff]||0, sv=SAVED[id]||{};
+      var badge=diff?('<span style="color:#a98a52;font-weight:700">'+esc(diff)+' ('+wt+')</span>'):'<span style="color:#b14238;font-weight:700">미책정 ⚠</span>';
+      var compVal=(sv.completeness!=null&&sv.completeness!=="")?sv.completeness:"";
+      var qOpts='<option value="">–</option>'+[1,2,3,4,5].map(function(n){return '<option value="'+n+'"'+(String(sv.quality)===String(n)?' selected':'')+'>'+n+'</option>';}).join("");
+      return '<tr data-id="'+esc(id)+'" data-diff="'+esc(diff)+'">'+
+        '<td>'+esc(String(t["업무명"]||""))+'<div style="font-size:8pt;color:#9a978e">'+esc(String(t["카테고리"]||""))+'</div></td>'+
+        '<td style="text-align:center">'+esc(String(t["상태"]||""))+'</td>'+
+        '<td style="text-align:center">'+badge+'</td>'+
+        '<td style="text-align:center"><input type="number" class="wecomp" min="0" max="100" step="5" value="'+compVal+'" style="width:64px">%</td>'+
+        '<td style="text-align:center"><select class="weq" style="width:54px">'+qOpts+'</select></td>'+
+        '<td class="weach" style="text-align:center;font-weight:700">–</td></tr>';
+    }).join("");
+    var cs=D.querySelectorAll(".wecomp, .weq"); for(var i=0;i<cs.length;i++){ cs[i].oninput=recompute; cs[i].onchange=recompute; }
+    recompute();
+  }
+  function readRows(){
+    var rows=D.getElementById("weTasks").getElementsByTagName("tr"), out=[];
+    for(var i=0;i<rows.length;i++){ var tr=rows[i]; if(!tr.getAttribute("data-id")) continue;
+      var comp=tr.getElementsByClassName("wecomp")[0], q=tr.getElementsByClassName("weq")[0];
+      if(!comp||!q) continue;
+      out.push({ id:tr.getAttribute("data-id"), diff:tr.getAttribute("data-diff"),
+        completeness:(comp.value===""?"":Number(comp.value)), quality:(q.value===""?"":Number(q.value)), _tr:tr });
+    }
+    return out;
+  }
+  function recompute(){
+    var list=readRows(), num=0,den=0,scored=0,unrated=0,total=list.length;
+    list.forEach(function(t){
+      var comp=t.completeness, q=t.quality, wt=WP_DIFF_WEIGHT[t.diff]||0;
+      var has=(comp!==""&&comp>=0&&comp<=100&&q!==""&&q>=1&&q<=5), ach=null;
+      if(has){ scored++; ach=Math.round((comp/100)*(q*20)*10)/10; if(wt>0){num+=wt*ach;den+=wt;}else{unrated++;} }
+      var cell=t._tr.getElementsByClassName("weach")[0]; if(cell) cell.textContent=(ach==null?"–":ach);
+    });
+    var jp=den>0?Math.round(num/den*10)/10:null;
+    D.getElementById("weJp").textContent=(jp==null?"–":jp);
+    D.getElementById("weWsum").textContent=den;
+    D.getElementById("weCov").textContent=scored+"/"+total;
+    D.getElementById("weUnr").textContent=unrated;
+    D.getElementById("weWarn").textContent=(unrated>0?("⚠ 채점됐으나 중요도 미책정 "+unrated+"건 — COO 업무보드에서 난이도 책정 후 반영 필요(현재 계산 제외). "):"")+(jp==null&&total>0?"채점된 업무 없음 — 직무성과 산출 불가(0으로 지어내지 않음).":"");
+  }
+  function save(){
+    var nm=D.getElementById("weTgt").value.trim(), per=D.getElementById("wePeriod").value.trim();
+    if(!nm){ alert("대상자를 입력하세요."); return; }
+    if(!per){ alert("평가기간을 입력하세요(예: 2026-H1)."); return; }
+    var byId={}; CURTASKS.forEach(function(t,i){ byId[String(t["id"]||("row"+i))]=t; });
+    var list=readRows().map(function(t){ var src=byId[t.id]||{};
+      return { id:t.id, title:String(src["업무명"]||""), owner:curOwner, category:String(src["카테고리"]||""), status:String(src["상태"]||""), diff:t.diff, completeness:t.completeness, quality:t.quality }; });
+    var payload={ action:"save-work-eval", adminPassword:SESSION_PW, target:nm, period:per, evaluator:D.getElementById("weEvr").value.trim(), dualFlag:(D.getElementById("weDual").checked?"Y":""), tasks:list };
+    var btn=D.getElementById("weSave"); btn.disabled=true; btn.textContent="저장 중…";
+    fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).then(function(x){return x.json();}).then(function(r){
+      if(r&&r.ok){ btn.textContent="✓ 저장됨 · 직무성과 "+(r.jobPerf==null?"–":r.jobPerf); alert("업무평가 저장 완료\n대상자: "+nm+" · 기간: "+per+"\n직무성과: "+(r.jobPerf==null?"산출불가":r.jobPerf+"점")+" · 커버리지 "+r.coverage+" · 미책정 "+r.unrated+"건"+(r.dualFlag==="Y"?"\n⚠ 겸직 플래그 저장(중복집계 확인)":"")+"\n\n정기 성과평가 평가지에서 참고창·KPI 프리필로 뜹니다."); }
+      else { btn.disabled=false; btn.textContent="💾 업무평가 저장"; alert("저장 실패: "+((r&&r.error)||"알 수 없는 오류")); }
+    }).catch(function(e){ btn.disabled=false; btn.textContent="💾 업무평가 저장"; alert("저장 오류: "+((e&&e.message)||e)); });
+  }
+  D.getElementById("weTgt").oninput=function(){ selTarget(this.value.trim()); };
+  D.getElementById("weOwner").onchange=function(){ if(this.value){ D.getElementById("weOwner").value; loadOwnerTasks(this.value); } };
+  D.getElementById("wePeriod").onchange=function(){ var nm=D.getElementById("weTgt").value.trim(); if(nm) loadSaved(nm); };
+  D.getElementById("weSave").onclick=save;
+  loadCoo();
 }
 function renderEval(){
   var html='<div class="sec-title">인사평가 · 포상</div>';
