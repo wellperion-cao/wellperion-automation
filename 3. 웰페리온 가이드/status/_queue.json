@@ -677,5 +677,19 @@
     "next": "🔗 후속 후보: ①컨택중 정체(N일 무진척) 건을 '오늘 할 일' 액션허브에 팔로업 신호로 surface ②종료사유 집계 액션 신설(데이터 축적 후) ③구글폼 raw응답→CRM 편입 흐름 점검.",
     "depends_on": "",
     "ship_no": 953
+  },
+  {
+    "task_id": "COO-2026-07-14-ADHOC-18f27a05",
+    "clevel": "coo",
+    "title": "[시우] #860 전사 일정 SSOT 자동저장 백엔드 (코드-ready · 배포=GM go)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 964,
+    "artifact": "실무진 편집화면 직접입력→서버 자동저장 목표. schedule_ssot_gas.gs 신규\n(load_schedule/save_schedule·ScriptProperties·LockService·items 가드·직전 1개 백업).\n전사_일정.html: ☁️서버 자동저장 버튼+saveToServer()+boot(GAS 우선·github seed 폴백).\n기존 로드·내려받기·draft 전부 보존·회귀0. 지어낸 검사일 0. node --check PASS 양쪽.\nSCHEDULE_GAS_URL=\"\" 미배포 유지 — GM 배포 후 /exec (CLI ad-hoc · 커밋 18f27a05)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "18f27a05cd65d1b0e441dff4e8d06361b9fdb872"
   }
 ]
