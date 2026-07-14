@@ -1796,7 +1796,6 @@ function _processAction(body) {
   const action = body.action || '';
   // nocache=1 → 캐시 읽기 우회(강제 재계산·재캐싱). 워머 트리거가 캐시를 미리 데우는 용도(2026-06-19 시토).
   var _nc = (body.nocache === '1');
-
   // ─── 접근 게이트 확인 ───
   if (!_checkSurveyAccess_(action, body.key)) {
     return _json({ ok: false, error: 'unauthorized' });
