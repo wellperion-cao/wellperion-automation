@@ -1,0 +1,290 @@
+/* 웰페리온 HTML/CSS 슬라이드 엔진 — 공통 스타일 (compose_html.py 전용)
+   색·폰트 값 SSOT = scripts/brand_constants.py — 여기 값은 렌더 시 CSS 변수로 주입됨. */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: var(--W);
+  height: var(--H);
+  overflow: hidden;
+  background: var(--black);
+}
+
+body {
+  font-family: 'Pretendard', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+}
+
+.canvas {
+  position: relative;
+  width: var(--W);
+  height: var(--H);
+  overflow: hidden;
+}
+
+/* ── 사진·그라디언트 ─────────────────────────────── */
+.photo {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.photo.dim { filter: brightness(0.9); }
+
+.grad { position: absolute; inset: 0; background: var(--gradient); }
+
+/* ── 상단 바: 로고 + 칩 + 카운터 ─────────────────── */
+.logo-img {
+  position: absolute; left: 40px; top: 36px;
+  width: 130px; height: auto;
+}
+.logo-sym {
+  position: absolute; left: 44px; top: 28px;
+  font-weight: 700; font-size: 58px; letter-spacing: 0.02em;
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(34, 31, 32, 0.35);
+}
+
+.chip {
+  position: absolute; right: 40px; top: 38px;
+  height: 52px; min-width: 240px; padding: 0 34px;
+  border-radius: 26px;
+  background: var(--chip);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 25px; letter-spacing: 0.12em;
+  color: #FFFFFF;
+}
+
+.counter {
+  position: absolute; right: 40px; top: 102px;
+  font-weight: 500; font-size: 27px; letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: #FFFFFF;
+  text-shadow: 0 0 6px rgba(34, 31, 32, 0.9), 0 1px 2px rgba(34, 31, 32, 0.9);
+}
+
+/* ── 하단 텍스트 스택 (hero·feature 공용, bottom-anchor → 1080/1350 겸용) ── */
+.stack {
+  position: absolute; left: 40px; right: 40px; bottom: 46px;
+  display: flex; flex-direction: column; align-items: flex-start;
+}
+
+.overline {
+  width: 44px; height: 3px;
+  background: var(--accent);
+  margin-bottom: 24px;
+}
+
+.meta {
+  font-weight: 500; font-size: 24px; letter-spacing: 0.04em;
+  color: var(--gray);
+  margin-bottom: 14px;
+}
+
+.title {
+  font-weight: 700;
+  font-size: var(--title-size, 64px);
+  line-height: 1.14;
+  letter-spacing: -0.025em;
+  color: #FFFFFF;
+  white-space: pre-line;
+  text-wrap: balance;
+  max-width: 20ch;
+}
+
+.sub {
+  margin-top: 20px;
+  font-weight: 600; font-size: 30px; letter-spacing: 0.01em;
+  color: var(--accent);
+}
+
+.footer {
+  margin-top: 36px;
+  font-weight: 500; font-size: 21px;
+  letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--accent); opacity: 0.92;
+}
+
+/* ── 표지 (cover) — 듀오톤 사진 상단 65% + 검정 정보영역 35% ── */
+.cover-photo {
+  position: absolute; left: 0; top: 0; right: 0;
+  height: var(--cover-photo-h);
+  overflow: hidden;
+}
+.cover-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+.cover-sep {
+  position: absolute; left: 50px; right: 50px;
+  top: var(--cover-photo-h);
+  height: 2px; background: var(--sep);
+}
+
+.cover-info {
+  position: absolute; left: 0; right: 0;
+  top: var(--cover-photo-h); bottom: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  padding-bottom: 12px;
+}
+
+.cover-kor {
+  font-weight: 600; font-size: 38px; letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.cover-eng {
+  margin-top: 18px;
+  font-weight: 700; font-size: 90px; letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  line-height: 1.0;
+}
+
+.cover-rule {
+  margin-top: 34px;
+  width: 60px; height: 2px; background: var(--accent);
+}
+
+.cover-date {
+  margin-top: 26px;
+  font-weight: 500; font-size: 26px; letter-spacing: 0.08em;
+  color: var(--gray);
+}
+
+/* ── 마무리/가이드 카드 (guide) — 순수 다크 카드 ── */
+.guide { background: var(--black); }
+
+.guide-inner {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  padding: 0 96px;
+}
+
+.guide-logo { width: 230px; height: auto; }
+.guide-sym {
+  font-weight: 700; font-size: 96px; letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.guide-rule {
+  margin-top: 48px;
+  width: 60px; height: 2px; background: var(--accent);
+}
+
+.guide-head {
+  margin-top: 46px;
+  font-weight: 600; font-size: 46px; line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: #FFFFFF;
+  white-space: pre-line;
+  text-wrap: balance;
+}
+
+.guide-body {
+  margin-top: 30px;
+  font-weight: 500; font-size: 28px; line-height: 1.7;
+  letter-spacing: 0.005em;
+  color: var(--gray);
+  white-space: pre-line;
+}
+
+.guide-cta {
+  margin-top: 54px;
+  font-weight: 600; font-size: 30px; letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.guide-foot {
+  position: absolute; left: 0; right: 0; bottom: 52px;
+  text-align: center;
+  font-weight: 500; font-size: 21px;
+  letter-spacing: 0.30em; text-transform: uppercase;
+  color: var(--accent); opacity: 0.75;
+}
+
+/* ── 종이 카드 (paper) — 레퍼런스 스타일: 종이질감 + 상단 대여백 + 손그림 마커 원.
+   검증 파일럿("종이 위의 루틴")의 CSS를 그대로 이관. .canvas.paper 스코프라
+   기존 cover/hero/feature/guide 렌더에는 영향 없음.
+   팔레트·마커 색 토큰(--paper-*, --marker*)은 compose_html.py 가 주입. ── */
+.canvas.paper {
+  background: radial-gradient(130% 95% at 32% 14%,
+    var(--paper-light) 0%, var(--paper-base) 52%, var(--paper-edge) 100%);
+}
+
+/* 종이 질감 3겹: 큰 얼룩(soft-light) + 미세 그레인(overlay) + 가장자리 비네트 */
+.paper-mottle {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='540' height='540'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='3' seed='7' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>");
+  background-size: 540px;
+  opacity: 0.16; mix-blend-mode: soft-light;
+}
+.paper-grain {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 240px;
+  opacity: 0.36; mix-blend-mode: overlay;
+}
+.paper-vig {
+  position: absolute; inset: 0;
+  box-shadow: inset 0 0 170px rgba(64, 56, 46, 0.13);
+}
+
+/* 계정 로고 — 좌상단, 조용하게 (종이 위 잉크 톤) */
+.paper-sym {
+  position: absolute; left: 104px; top: 64px;
+  font-weight: 700; font-size: 46px; letter-spacing: 0.02em;
+}
+.paper-logo-img {
+  position: absolute; left: 104px; top: 78px;
+  width: 148px; height: auto;
+  filter: brightness(0);        /* 베이지 알파 로고 → 잉크 실루엣 */
+  opacity: 0.78;
+}
+
+/* 텍스트 블록 — 상단 40%± 빈 종이(레퍼런스 핵심 여백) · 좌정렬 */
+.paper-stage {
+  position: absolute; left: 104px; right: 96px;
+  top: var(--paper-top, 40%);
+}
+.paper-tl {
+  font-weight: 700;
+  font-size: var(--paper-title-size, 62px);
+  line-height: 1.52; letter-spacing: -0.8px;
+  color: var(--paper-ink);
+}
+.paper-bl {
+  font-weight: 500; font-size: 37px;
+  line-height: 1.72; letter-spacing: -0.2px;
+  color: var(--paper-ink); opacity: 0.90;
+}
+.paper-tl + .paper-bl { margin-top: 34px; }
+
+/* 손그림 마커 원 (크기·오프셋·기울기는 compose_html._marker_wrap 인라인 지정) */
+.mk { position: relative; display: inline-block; }
+.mkc { position: absolute; overflow: visible; pointer-events: none; }
+
+/* 속삭임 브랜딩 — 텍스트 블록 바로 아래, 작게·묵음 */
+.paper-whisper {
+  margin-top: 64px;
+  font-weight: 500; font-size: 22.5px; letter-spacing: 0.4px;
+  color: var(--paper-muted);
+}
+
+/* 하단 — 조용한 CTA(중앙) + 카운터(우하) */
+.paper-bottom {
+  position: absolute; left: 0; right: 0; bottom: 58px;
+  text-align: center;
+}
+.paper-cta {
+  font-weight: 500; font-size: 23px; letter-spacing: 0.6px;
+  line-height: 1.7; color: var(--paper-muted);
+}
+.paper-counter {
+  position: absolute; right: 64px; bottom: 58px;
+  font-weight: 500; font-size: 20px; letter-spacing: 1px;
+  color: var(--paper-muted);
+}
