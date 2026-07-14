@@ -328,7 +328,7 @@ var GDR_KEYWORDS=["GDR","골프존","gdr"]; // 라인아이템(물품명) 화이
 
 var LABOR=[],OPER=[],INSTRUCTORS=[],laborMonth=[],procMonth=[],salesMonth=[],totalCost=[],LIVE=false,SALES_LIVE=false;
 var SALES_G=0,COST_G=0,LABOR_G=0,OPER_G=0,PROC_G=0,MEMBER_G=0,DATA_LAST=6,selTeam=null,period=-1,_charts={};
-var SALES_TRUTH=null,SALES_TRUTH_LAST=0,SALES_TRUTH_LIVE=false,SALES_TRUTH_SRC="",SALES_ETC=[],ETC_G=0,SALES_LAST=6; // 매출 정본 = 보고서 31탭 Y70:80(1순위)·분석시트(폴백)·기타보정
+var SALES_TRUTH=null,SALES_TRUTH_LAST=0,SALES_TRUTH_LIVE=false,SALES_TRUTH_SRC="",SALES_LAST=6; // 매출 정본 = 보고서 31탭 Y70:80(1순위)·분석시트(폴백)·기타보정
 var PROC_DEPT=FB_PROC,PROC_LIVE=false; // 구매성 부서별×월별 — 라이브(loadProc) 성공 시 교체, 실패 시 FB_PROC
 var OPS_SALES=null,OPS_SALES_LIVE=false,OPS_REFUND=null,OPS_SRC=""; // 운영부 매출 정본 = 매출보고 총매출탭(환불반영, sales_ops) · GM시트는 폴백. OPS_REFUND=월별 환불(음수)
 var SALES_DEPT_LIVE=false; // 종목별 매출 라이브(매출보고 서버집계 sales_dept) 성공 여부 — 성공 시 매출마스터 대체
@@ -508,16 +508,15 @@ function aggregate(){
   /* 총매출 = 정본(「26년 매출 분석」) 우선. 없으면(폴백) 종목합. 기타 = 정본 − 종목합(주차·기타수입 등, 종목마스터 미포함분) */
   if(SALES_TRUTH_LIVE&&SALES_TRUTH){
     salesMonth=MONTHS.map(function(_,i){return SALES_TRUTH[i]!==null?SALES_TRUTH[i]:deptMonth[i];});
-    SALES_ETC=MONTHS.map(function(_,i){return (SALES_TRUTH[i]!==null?SALES_TRUTH[i]:deptMonth[i])-deptMonth[i];});
     SALES_LAST=SALES_TRUTH_LAST||DATA_LAST;
   }else{
-    salesMonth=deptMonth;SALES_ETC=MONTHS.map(function(){return 0;});SALES_LAST=DATA_LAST;
+    salesMonth=deptMonth;SALES_LAST=DATA_LAST;
   }
   timeMonth=MONTHS.map(function(_,i){return (TIME_SWIM[i]||0)+(TIME_OTHER[i]||0);}); // 타임(시급) 인건비
   totalCost=MONTHS.map(function(_,i){return laborMonth[i]+(OPER[i]||0)+procMonth[i]+timeMonth[i];});
   LABOR.forEach(function(o){o.t=sum(o.d.slice(0,DATA_LAST));});
   LABOR_G=sum(laborMonth.slice(0,DATA_LAST));OPER_G=sum(OPER.slice(0,DATA_LAST));PROC_G=sum(procMonth.slice(0,DATA_LAST));TIME_G=sum(timeMonth.slice(0,DATA_LAST));
-  MEMBER_G=sum(SALES_MEMBER.slice(0,DATA_LAST));SALES_G=sum(salesMonth.slice(0,SALES_LAST));ETC_G=sum(SALES_ETC.slice(0,SALES_LAST));COST_G=LABOR_G+OPER_G+PROC_G+TIME_G;
+  MEMBER_G=sum(SALES_MEMBER.slice(0,DATA_LAST));SALES_G=sum(salesMonth.slice(0,SALES_LAST));COST_G=LABOR_G+OPER_G+PROC_G+TIME_G;
 }
 
 var TABS=[{id:"dash",label:"대시보드"},{id:"sales",label:"매출현황"},{id:"expense",label:"지출현황"},{id:"budget",label:"📊 예산·이상지출"}]; // 구매요청은 직원용(?req=1)으로 분리
@@ -603,8 +602,6 @@ function renderMix(){var gradesum=Object.keys(SALES_DEPT).reduce(function(s,d){r
     options:{maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:11}}},tooltip:{callbacks:{label:function(c){return c.label+": "+eok(c.raw)+" ("+(SALES_G?(c.raw/SALES_G*100).toFixed(1):0)+"%)";}}}}}});
 }
 function cell(v,fut){if(fut)return '<td class="fut">예정</td>';if(v===0)return '<td style="color:#cdd5e6">–</td>';if(v<0)return '<td class="neg">'+won(v)+'</td>';return '<td>'+won(v)+'</td>';}
-
-/* 종목별 기여이익 섹션 — 매니저 지시로 대시보드에서 제거(2026-07-07). 복원 필요 시 백업 매출지출현황.html.bak_contrib_20260707 참조. */
 
 function renderSales(){
   newChart("chartSalesTrend",{type:"bar",data:{labels:MONTHS,datasets:[{label:"매출",data:salesMonth.map(function(v,i){return i<SALES_LAST?v:null;}),backgroundColor:"#a98a52",borderRadius:4}]},

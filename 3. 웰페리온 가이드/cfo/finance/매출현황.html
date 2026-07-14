@@ -14,12 +14,6 @@
   --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);
   --purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);
   --orange:#e6944e;--orange-bg:rgba(230,148,78,0.12);
-  --primary: var(--accent);
-  --success: var(--green);
-  --warning: var(--orange);
-  --danger: var(--red);
-  --muted: var(--dim);
-  --card-bg: var(--paper);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -154,23 +148,6 @@ a { color: var(--accent); text-decoration: none; }
   height: 100%; background: var(--accent); border-radius: 3px;
 }
 
-/* ── 미수금 목록 ── */
-.receivable-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 0; border-bottom: 1px solid var(--border);
-}
-.receivable-item:last-child { border-bottom: none; }
-.receivable-name { font-size: 14px; font-weight: 500; }
-.receivable-meta { font-size: 12px; color: var(--dim); margin-top: 2px; }
-.receivable-amount { font-size: 15px; font-weight: 700; color: var(--warning); }
-.badge {
-  display: inline-block; padding: 2px 8px; border-radius: 10px;
-  font-size: 11px; font-weight: 600; white-space: nowrap;
-}
-.badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
-.badge-red    { background: var(--red-bg);    color: var(--red); }
-.badge-blue   { background: var(--blue-bg);   color: var(--blue); }
-.badge-green  { background: var(--green-bg);  color: var(--green); }
 
 /* ── placeholder 스타일 ── */
 .placeholder {
