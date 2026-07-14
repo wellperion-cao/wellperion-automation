@@ -40,6 +40,9 @@ h1 .scope{font-size:14px;font-weight:600;color:var(--accent);margin-left:8px}
 .row .rsub{font-size:12px;color:var(--dim);margin-top:2px}
 .row .rdept{font-size:13px;color:var(--text);font-weight:650}
 .row .rd{font-size:12.5px;color:var(--dim)}.row .rd b{color:var(--text)}
+.row .rvendor{font-size:12px;color:var(--accent);margin-top:3px}
+.row .rvendor a{color:inherit;text-decoration:none}
+.row .rvendor a:hover{text-decoration:underline}
 .pill{justify-self:end;font-size:12px;font-weight:750;padding:5px 11px;border-radius:999px;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
 .pill.over{background:var(--red-bg);color:var(--red)}.pill.soon{background:var(--yellow-bg);color:var(--yellow)}.pill.ok{background:var(--green-bg);color:var(--green)}.pill.tbd{background:var(--accent-bg);color:var(--dim)}
 .loading{text-align:center;color:var(--dim);padding:40px;font-size:14px}
@@ -115,7 +118,8 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-
 <script>
 var CAL_URL="https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/schedule_ssot.json?cb="+Date.now();
 var SCHEDULE_GAS_URL="https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec";   // GAS 자동저장 백엔드(GM 배포 2026-07-14). GAS=SSOT·github=seed 폴백. 재배포 시 URL 교체.
-var DATA=null, CATS={}, LEAD=30, cur="전체";
+var CHECK_API_URL="https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";   // 거래업체 목록(vendor_list) 전용 GAS — SCHEDULE_GAS_URL과 별개.
+var DATA=null, CATS={}, LEAD=30, cur="전체", VENDORS=[];
 
 function qDept(){try{var m=(location.search.match(/[?&]dept=([^&]+)/));return m?decodeURIComponent(m[1]):"전체";}catch(e){return "전체";}}
 function kstToday(){var n=new Date();return new Date(n.getTime()+(n.getTimezoneOffset()+540)*60000);}
@@ -133,6 +137,16 @@ function statusOf(it){var c=computeDue(it);var d=c.date;if(!d)return{k:"tbd",dd:
 function ddText(s){if(s.dd===null)return"D-?";return s.dd<0?("D+"+Math.abs(s.dd)):("D-"+s.dd);}
 function items(){return DATA.items.filter(function(it){return (cur==="전체"||it.dept===cur)&&it.applies!=="해당없음";});}
 function editItems(){return DATA.items.filter(function(it){return cur==="전체"||it.dept===cur;});}
+
+/* ── 거래업체 연동 ── */
+function vendorById(id){if(!id)return null;for(var i=0;i<VENDORS.length;i++){if(VENDORS[i].id===id)return VENDORS[i];}return null;}
+function vendorSorted(){return VENDORS.slice().sort(function(a,b){var la=a.label||"",lb=b.label||"";if(la!==lb)return la<lb?-1:1;return (a.name||"").localeCompare(b.name||"");});}
+function loadVendors(){
+  fetch(CHECK_API_URL+"?action=vendor_list&cb="+Date.now(),{method:"GET",redirect:"follow",cache:"no-store"})
+    .then(function(r){return r.json();})
+    .then(function(res){if(res&&res.ok&&Array.isArray(res.vendors)){VENDORS=res.vendors;if(DATA)renderAll();}})
+    .catch(function(){/* 조용히 무시 — 거래업체 미표시(기존 기능 무영향) */});
+}
 
 function renderChips(){
   var depts=["전체"].concat(DATA.depts||[]);var c=document.getElementById("chips");c.innerHTML="";
@@ -154,9 +168,11 @@ function renderList(){
     var comp=computeDue(it),st=statusOf(it),cat=CATS[it.category]||{label:it.category,color:"#888"};
     var dueTxt=comp.date?fmtDate(comp.date):"확인 필요";
     var dueBadge=(comp.date&&comp.auto)?'<span class="tag auto">예상(자동)</span>':"";
+    var vend=vendorById(it.vendor_id);
+    var vTxt=vend?('<div class="rvendor">🏢 담당: '+esc(vend.name)+' · <a href="tel:'+esc((""+(vend.contact||"")).replace(/[^0-9+]/g,""))+'">📞 '+esc(vend.contact||"")+'</a></div>'):"";
     var r=document.createElement("div");r.className="row";
     r.innerHTML='<div class="catbar" style="background:'+cat.color+'"></div>'+
-      '<div><div class="name">'+it.name+'</div><div class="rsub">'+cat.label+' · '+it.cycle+'</div></div>'+
+      '<div><div class="name">'+it.name+'</div><div class="rsub">'+cat.label+' · '+it.cycle+'</div>'+vTxt+'</div>'+
       '<div class="rdept">'+it.dept+'</div>'+
       '<div class="rd">다음 <b>'+dueTxt+'</b>'+dueBadge+'<br><span style="opacity:.7">최근 '+(it.last_done||"—")+'</span></div>'+
       '<div class="pill '+st.k+'"><span>'+({over:"지남",soon:"임박",ok:"여유",tbd:"미정"}[st.k])+'</span><span>'+ddText(st)+'</span></div>';
@@ -210,6 +226,7 @@ function renderEdit(){
         efNextDue(idx,it)+
         efIn(idx,"legal_basis","법적 근거",it.legal_basis,"")+
         efIn(idx,"evidence","증빙(링크)",it.evidence,"성적서·필증 URL")+
+        efSel(idx,"vendor_id","담당 거래업체",[""].concat(vendorSorted().map(function(v){return v.id;})),it.vendor_id||"",function(id){if(!id)return "미지정";var v=vendorById(id);return v?(v.name+" ("+v.label+")"):"(알 수 없음)";})+
       '</div>';
     ve.appendChild(card);
   });
@@ -220,7 +237,7 @@ function renderEdit(){
   ve.querySelectorAll(".edel").forEach(function(b){b.addEventListener("click",function(){var i=+b.getAttribute("data-i");if(confirm("이 항목을 삭제할까요?\n"+(DATA.items[i].name||"(이름 없음)"))){DATA.items.splice(i,1);saveDraft();renderEdit();}});});
 }
 function addItem(){
-  DATA.items.push({id:"new-"+(DATA.items.length+1)+"-"+(cur!=="전체"?cur:"x"),type:"정기점검",name:"",category:Object.keys(CATS)[0],dept:(cur!=="전체"?cur:DATA.depts[0]),cycle:"",cycle_confirmed:false,period_months:null,legal_basis:"",assignee:"",last_done:"",next_due:"",evidence:"",applies:"미확인",note:""});
+  DATA.items.push({id:"new-"+(DATA.items.length+1)+"-"+(cur!=="전체"?cur:"x"),type:"정기점검",name:"",category:Object.keys(CATS)[0],dept:(cur!=="전체"?cur:DATA.depts[0]),cycle:"",cycle_confirmed:false,period_months:null,legal_basis:"",assignee:"",last_done:"",next_due:"",evidence:"",applies:"미확인",note:"",vendor_id:""});
   saveDraft();renderEdit();var ve=document.getElementById("vEdit");if(ve.lastChild)ve.lastChild.scrollIntoView({behavior:"smooth",block:"center"});
 }
 window.addItem=addItem;
@@ -275,6 +292,7 @@ function loadSeed(){
 }
 function boot(){
   initCloudBtn();
+  loadVendors();
   if(SCHEDULE_GAS_URL){
     fetch(SCHEDULE_GAS_URL+"?action=load_schedule&cb="+Date.now(),{method:"GET",redirect:"follow"})
       .then(function(r){return r.json();})
