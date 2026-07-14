@@ -1529,5 +1529,19 @@
     "artifact": ".wrap 중앙정렬 1080 → 좌측정렬 풀폭(max-width:none·margin:0·padding 26).\n.cal-cell min-height 64→96px(세로 확대). 모바일 축소 규칙 유지. (CLI ad-hoc · 커밋 513c9bbe)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "513c9bbeb96f0687558a3675c2a387b9a23330fe"
+  },
+  {
+    "task_id": "COO-2026-07-14-ADHOC-26ae44d1",
+    "clevel": "coo",
+    "title": "[시우] home 점검 3카드 하단에 \"본질에 대한 조언\" 룰 기반 한 줄 추가",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 1028,
+    "artifact": "GM 후속지시: 3카드 하단이 비어 보임 → 항로 L16 '본질에 대한 핵심조언'\n개념을 점검 카드에 적용. 룰 기반(하드코딩 일반문구·지어내기 금지, 전부\n실값에서 계산):\n1) 미착수(done===0) 그룹/회차가 있으면 그것부터 지목(회차별 행동문구:\n   오전/오후/마감조 각각 다른 독려 문구, 그 외는 \"오늘 마무리 필요\")\n2) 저조(<50%) 그룹/회차 지목\n3) 이상·이슈 있으면 다발 지점(최다 빈도 항목/회차) 지목\n4) 전부 정상+이상 0이면 \"오늘 점검 정상 · 이상 없음\"\n5) 그 외 진행률 요약 폴백\nbuil (CLI ad-hoc · 커밋 26ae44d1)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "26ae44d1422791df364fdbce60dc5abcf2cbc255"
   }
 ]
