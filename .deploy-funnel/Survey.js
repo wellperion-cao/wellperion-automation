@@ -864,6 +864,13 @@ function _notifyLessonStatusChanges_() {
   });
 }
 
+// 강습 상태변경 폴러 수동 실행·검증용(밑줄 없는 공개 함수 — 에디터 Run 드롭다운에 표시된다).
+// 첫 실행은 baseline만 저장(알림 없음)이 정상. 실제 알림은 5분 트리거(_notifyNewInquiries_)가 자동 처리.
+function testLessonStatusCheck() {
+  _notifyLessonStatusChanges_();
+  Logger.log('강습 상태변경 폴러 1회 실행 완료 — 첫 실행이면 baseline 저장(알림 없음). 이후 실제 컨택/등록 전환 시 알림.');
+}
+
 // '문의 알림' 방 5분 트리거 — 중복 설치 방지. GAS 에디터 또는 clasp push 후 1회 수동 실행.
 function installInquiryNotifyTrigger() {
   var triggers = ScriptApp.getProjectTriggers();
