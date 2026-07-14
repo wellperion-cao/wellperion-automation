@@ -25,13 +25,17 @@ GM 승인용 아침 메시지 1통을 생성한다. 메시지 4요소:
 from __future__ import annotations
 
 import argparse
+import html
 import io
 import json
 import os
 import re
 import sys
-from datetime import datetime, timedelta
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+import requests
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
@@ -39,8 +43,39 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 ROOT = Path(__file__).resolve().parent.parent
 KAKAO_ROOM_DIR = ROOT / "1. AI학습자료_아카이브" / "11_카카오톡" / "★운영부"
 LEDGER_PATH = KAKAO_ROOM_DIR / "_digest_ledger.json"
+PENDING_DIGEST_PATH = KAKAO_ROOM_DIR / "_pending_digest.json"
+KPI_VALUES_PATH = ROOT / "status" / "kpi_values.json"
 
 RECENT_LEDGER_DAYS = 5  # 반복감지·미해결추적용으로 프롬프트에 주입할 과거 원장 기간
+
+# 시설·지원부 점검 GAS(telegram_bot/daily_scheduler.py SUPPORT_CHECK_API_URL과 동일 소스·기본값 —
+# import는 하지 않는다(봇 사이드이펙트 회피), env로 오버라이드 가능한 상수만 최소 복사).
+SUPPORT_CHECK_API_URL = os.environ.get(
+    "SUPPORT_CHECK_API_URL",
+    "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec",
+)
+
+# 문의·등록 GAS(.deploy-funnel/Survey.js 배포본) — kpi_collector.py _CPO_GAS·telegram_bot/daily_scheduler.py
+# FUNNEL_EXEC_URL과 동일 정본(inquiry_list=문의알림방 대시보드 소스). import는 하지 않는다(사이드이펙트 회피),
+# env로 오버라이드 가능한 상수만 최소 복사.
+FUNNEL_EXEC_URL = os.environ.get(
+    "FUNNEL_EXEC_URL",
+    "https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec",
+)
+# VOC·종합접수처 GAS(.deploy-voc/VOC_배포.js) — telegram_bot/daily_scheduler.py VOC_EXEC_URL과 동일 정본
+# (reg_list=6종 접수 카테고리: 분실물/시설물고장/청결/칭찬/쓴소리/컴플레인 통합).
+VOC_EXEC_URL = os.environ.get(
+    "VOC_EXEC_URL",
+    "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec",
+)
+# 실무진 업무현황(G1 항로 SSOT·S3) GAS — telegram_bot/daily_scheduler.py SSOT_API_URL(action=todo_list)과
+# 동일 정본. import는 하지 않는다(봇 사이드이펙트 회피), env로 오버라이드 가능한 상수만 최소 복사.
+SSOT_API_URL = os.environ.get(
+    "SSOT_API_URL",
+    "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec",
+)
+# telegram_bot/daily_scheduler.py _TODO_DONE_STATUSES와 동일(todo_list '상태' 완료 판정 기준).
+_TODO_DONE_STATUSES = {"완료", "폐기", "DONE", "완료됨"}
 
 MONTH_DIR_RE = re.compile(r"^\d{4}-\d{2}$")
 DATE_SEP_RE = re.compile(r"^-{3,}.*?(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일.*-{3,}\s*$")
@@ -50,6 +85,312 @@ SYSTEM_LINE_RE = re.compile(r".*(들어왔습니다|나갔습니다|저장한 �
 
 def now_str() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+# ═══════════════════════════════════════════
+#  0) 점검 사실블록 — 시설부·지원부 실측치(GAS·kpi_values.json)를 결정론적으로 생성.
+#     숫자는 절대 LLM에 맡기지 않는다. 조회 실패·데이터없음은 "측정 불가"로 정직 표기.
+#     telegram_bot/daily_scheduler.py의 _fetch_facility_today/_fetch_facility_board/_gas_get
+#     로직을 최소 복사(daily_scheduler는 import하지 않음 — 봇 사이드이펙트 회피).
+# ═══════════════════════════════════════════
+def _gas_get(url: str, params: dict | None = None, *, timeout: int = 40, attempts: int = 3, label: str = "GAS") -> object | None:
+    """GAS(script.google.com) GET 재시도 래퍼. 성공(HTTP 200) 시 Response, 전량 실패 시 None."""
+    for attempt in range(1, attempts + 1):
+        try:
+            resp = requests.get(url, params=params, timeout=timeout)
+            if resp.status_code == 200:
+                return resp
+        except Exception:
+            pass
+    return None
+
+
+def _fetch_facility_day(target_date: str) -> dict | None:
+    """시설부 target_date 점검 현황 — monthly_report&dept=facility의 dailySeries에서
+    target_date 행 추출(daily_scheduler._fetch_facility_today는 '오늘' 고정이라 target_date로 일반화).
+    반환: {date,total,done,pct,sessionCount,outOfRangeCount,...} 또는 None(조회 실패)."""
+    resp = _gas_get(
+        f"{SUPPORT_CHECK_API_URL}?action=monthly_report&dept=facility&date={target_date}&_pv={int(time.time())}",
+        label="ops-digest 시설부",
+    )
+    if resp is None:
+        return None
+    try:
+        d = resp.json()
+        if d.get("ok"):
+            for row in d.get("dailySeries", []):
+                if row.get("date") == target_date:
+                    return row
+    except Exception:
+        pass
+    return None
+
+
+def _fetch_facility_board_work(target_date: str) -> dict:
+    """시설부 target_date board 조회 — 작업사항(fc_work 원문) + 실제 제출 회차수(submissions len)."""
+    out = {"work": None, "sessions": 0}
+    resp = _gas_get(f"{SUPPORT_CHECK_API_URL}?action=board&key=FACILITY_CHECK_{target_date}", label="ops-digest 시설부board")
+    if resp is None:
+        return out
+    try:
+        store = (resp.json().get("board", {}) or {}).get("store", {}) or {}
+        daily = store.get("daily", {}) or {}
+        w = daily.get("fc_work")
+        if isinstance(w, str) and w.strip():
+            w = w.strip()
+            for _ in range(3):  # 이중 인코딩(&amp;gt;) 대비 — 안정될 때까지 반복 복원
+                u = html.unescape(w)
+                if u == w:
+                    break
+                w = u
+            out["work"] = w[:300] + "…" if len(w) > 300 else w
+        subs = store.get("submissions")
+        if isinstance(subs, list):
+            out["sessions"] = len(subs)
+    except Exception:
+        pass
+    return out
+
+
+def _read_support_kpi() -> tuple[float | None, int | None, int | None]:
+    """status/kpi_values.json roles.coo에서 지원부_점검완료율(0~1)·완료·전체(당월 누적) 읽기.
+    실패·필드없음 시 (None,None,None) — 호출부에서 '측정 불가'로 정직 표기."""
+    try:
+        kv = json.loads(KPI_VALUES_PATH.read_text(encoding="utf-8"))
+        coo = kv.get("roles", {}).get("coo", {})
+        rate = coo.get("지원부_점검완료율")
+        done = coo.get("지원부_완료")
+        total = coo.get("지원부_전체")
+        if isinstance(rate, (int, float)) and not isinstance(rate, bool):
+            return float(rate), done, total
+    except Exception:
+        pass
+    return None, None, None
+
+
+def build_check_block(target_date: str) -> str:
+    """target_date(YYYY-MM-DD) 시설부·지원부 점검 사실블록(결정론적 실측 — LLM 미개입)."""
+    lines = ["🏢 점검"]
+
+    facility_row = _fetch_facility_day(target_date)
+    if facility_row is None:
+        lines.append(" • 시설부: 측정 불가")
+    else:
+        board = _fetch_facility_board_work(target_date)
+        sessions = board.get("sessions") or facility_row.get("sessionCount") or 0
+        ooc = facility_row.get("outOfRangeCount", 0)
+        lines.append(f" • 시설부: {sessions}회 · 이상 {ooc}건")
+        work = board.get("work")
+        if work:
+            items = [re.sub(r"^\s*[-·•*]\s*", "", ln).strip() for ln in work.splitlines()]
+            items = [it for it in items if it]
+            if items:
+                lines.append("   작업사항:")
+                lines.extend(f"   · {it}" for it in items)
+
+    rate, done, total = _read_support_kpi()
+    if rate is None:
+        lines.append(" • 지원부: 측정 불가")
+    else:
+        pct = round(rate * 100)
+        detail = f"({done}/{total}, 당월 누적)" if done is not None and total is not None else "(당월 누적)"
+        lines.append(f" • 지원부: 완료율 {pct}% {detail}")
+
+    return "\n".join(lines)
+
+
+def insert_check_block(message: str, check_block: str) -> str:
+    """LLM message의 🌅 헤더 줄 바로 다음에 check_block을 끼워넣는다.
+    헤더 줄을 못 찾으면 check_block을 맨 앞에 붙인다."""
+    lines = message.split("\n")
+    header_idx = None
+    for i, line in enumerate(lines):
+        if line.strip().startswith("🌅"):
+            header_idx = i
+            break
+    if header_idx is None:
+        return f"{check_block}\n\n{message}"
+
+    rest_lines = lines[header_idx + 1:]
+    while rest_lines and not rest_lines[0].strip():
+        rest_lines.pop(0)
+    rest = "\n".join(rest_lines)
+    header = lines[header_idx]
+    return f"{header}\n\n{check_block}\n\n{rest}"
+
+
+# ═══════════════════════════════════════════
+#  0-b) 운영 현황 종합화 신규 4섹션(2026-07-14 GM 지시) — 점검 블록과 동일 원칙: 결정론적 실측,
+#       숫자는 절대 추측 생성 금지. 소스 부재·date-scope 불명·응답 실패는 전부
+#       "측정 불가 · 소스 배선 후속"으로 정직 표기. insert 지점만 확장(기존 로직 무접촉).
+# ═══════════════════════════════════════════
+_NO_SOURCE = "측정 불가 · 소스 배선 후속"
+
+
+def _utc_iso_to_kst_date(iso_str: str) -> str:
+    """UTC ISO 8601 문자열(Z suffix) → KST YYYY-MM-DD.
+    telegram_bot/daily_scheduler.py _utc_iso_to_kst_date와 동일 로직 최소 복사(import 회피)."""
+    try:
+        s = str(iso_str).rstrip("Z").replace("T", " ")
+        dt_utc = datetime.fromisoformat(s).replace(tzinfo=timezone.utc)
+        return (dt_utc + timedelta(hours=9)).strftime("%Y-%m-%d")
+    except Exception:
+        return ""
+
+
+def build_inquiry_block(target_date: str) -> str:
+    """target_date(YYYY-MM-DD) 신규 문의(inquiry_list · 시각 KST 매칭) + 등록(member_registered_list ·
+    회원 DB 등록일자 실측) 사실블록. 두 액션 모두 FUNNEL_EXEC_URL(문의알림방 대시보드와 동일 정본)."""
+    lines = ["📩 문의·상담·등록"]
+
+    resp = _gas_get(FUNNEL_EXEC_URL, {"action": "inquiry_list"}, timeout=40, label="ops-digest 문의")
+    if resp is None:
+        lines.append(f" • 신규 문의: {_NO_SOURCE}")
+    else:
+        try:
+            data = resp.json()
+            rows = data.get("data", []) if data.get("ok") else None
+            if rows is None:
+                lines.append(f" • 신규 문의: {_NO_SOURCE}")
+            else:
+                day_rows = [r for r in rows if _utc_iso_to_kst_date(r.get("시각", "")) == target_date]
+                if not day_rows:
+                    lines.append(" • 신규 문의: 0건")
+                else:
+                    type_count: dict[str, int] = {}
+                    for r in day_rows:
+                        t = r.get("문의유형", "기타") or "기타"
+                        type_count[t] = type_count.get(t, 0) + 1
+                    detail = " · ".join(f"{t} {c}건" for t, c in sorted(type_count.items(), key=lambda x: -x[1]))
+                    lines.append(f" • 신규 문의: {len(day_rows)}건 ({detail})")
+        except Exception:
+            lines.append(f" • 신규 문의: {_NO_SOURCE}")
+
+    resp2 = _gas_get(
+        FUNNEL_EXEC_URL,
+        {"action": "member_registered_list", "from": target_date, "to": target_date},
+        timeout=40, label="ops-digest 등록",
+    )
+    if resp2 is None:
+        lines.append(f" • 등록: {_NO_SOURCE}")
+    else:
+        try:
+            data2 = resp2.json()
+            if not data2.get("ok"):
+                lines.append(f" • 등록: {_NO_SOURCE}")
+            else:
+                lines.append(f" • 등록: {data2.get('count', 0)}건 (회원 DB 등록일자 실측)")
+        except Exception:
+            lines.append(f" • 등록: {_NO_SOURCE}")
+
+    return "\n".join(lines)
+
+
+def build_voc_block(target_date: str) -> str:
+    """target_date(YYYY-MM-DD) VOC·컴플레인 사실블록(VOC_EXEC_URL reg_list · 종합접수처 6종 통합).
+    createdAt="YYYY-MM-DD HH:MM:SS"(KST) 접두 매칭 — daily_scheduler._build_digest_reception 동일 패턴."""
+    lines = ["📣 VOC·컴플레인"]
+
+    resp = _gas_get(VOC_EXEC_URL, {"action": "reg_list"}, timeout=20, label="ops-digest VOC")
+    if resp is None:
+        lines.append(f" • {_NO_SOURCE}")
+        return "\n".join(lines)
+    try:
+        data = resp.json()
+        if not data.get("ok"):
+            lines.append(f" • {_NO_SOURCE}")
+            return "\n".join(lines)
+        rows = data.get("data", [])
+    except Exception:
+        lines.append(f" • {_NO_SOURCE}")
+        return "\n".join(lines)
+
+    day_rows = [r for r in rows if str(r.get("createdAt", "")).startswith(target_date)]
+    complaint_day = sum(1 for r in day_rows if r.get("category") == "컴플레인 접수")
+    total_undone = sum(1 for r in rows if str(r.get("status", "")) != "완료")
+    lines.append(f" • 어제 접수: {len(day_rows)}건 (컴플레인 {complaint_day}건 포함)")
+    lines.append(f" • 미해결(전체 누적): {total_undone}건")
+    return "\n".join(lines)
+
+
+def build_reservation_block(today_date: str) -> str:
+    """today_date(YYYY-MM-DD, 오늘) 투어·체험 예약(member_inquiry_list reservations[].date 매칭) 리마인드.
+    강습 예약은 별도 리스트 GAS 미발견 — 정직하게 측정 불가 표기(날조 금지)."""
+    lines = ["📅 오늘 예약·일정"]
+
+    resp = _gas_get(FUNNEL_EXEC_URL, {"action": "member_inquiry_list"}, timeout=40, label="ops-digest 예약")
+    if resp is None:
+        lines.append(f" • 투어·체험 예약: {_NO_SOURCE}")
+    else:
+        try:
+            data = resp.json()
+            rows = data.get("data", []) if data.get("ok") else None
+            if rows is None:
+                lines.append(f" • 투어·체험 예약: {_NO_SOURCE}")
+            else:
+                today_events: list[tuple[str, str]] = []
+                for r in rows:
+                    name = r.get("name", "") or ""
+                    for res in (r.get("reservations") or []):
+                        if res.get("date") == today_date:
+                            today_events.append((res.get("time") or "", name))
+                if not today_events:
+                    lines.append(" • 투어·체험 예약: 오늘 예약 없음")
+                else:
+                    today_events.sort(key=lambda x: x[0])
+                    shown = today_events[:10]
+                    detail = ", ".join(f"{t or '시간미정'} {n}" for t, n in shown)
+                    over = len(today_events) - len(shown)
+                    if over > 0:
+                        detail += f" 외 {over}건"
+                    lines.append(f" • 투어·체험 예약: {len(today_events)}건 ({detail})")
+        except Exception:
+            lines.append(f" • 투어·체험 예약: {_NO_SOURCE}")
+
+    return "\n".join(lines)
+
+
+def build_work_block(target_date: str) -> str:
+    """target_date(YYYY-MM-DD) 실무진 업무현황(G1 항로 SSOT) 사실블록.
+    소스: SSOT_API_URL?action=todo_list(telegram_bot/daily_scheduler.py와 동일 정본 GAS).
+    어제 완료(상태∈_TODO_DONE_STATUSES · 수정일=target_date) + 진행/예정(그 외 상태) 각 최대 5개 제목."""
+    lines = ["🗂️ 업무 (실무진 업무현황)"]
+
+    resp = _gas_get(SSOT_API_URL, params={"action": "todo_list"}, timeout=40, label="ops-digest 업무현황")
+    if resp is None:
+        lines.append(f" • {_NO_SOURCE}")
+        return "\n".join(lines)
+    try:
+        data = resp.json()
+        if not data.get("ok"):
+            lines.append(f" • {_NO_SOURCE}")
+            return "\n".join(lines)
+        items = data.get("data", [])
+    except Exception:
+        lines.append(f" • {_NO_SOURCE}")
+        return "\n".join(lines)
+
+    done_yesterday = [
+        x for x in items
+        if str(x.get("상태", "")) in _TODO_DONE_STATUSES
+        and str(x.get("수정일", "") or "").startswith(target_date)
+    ]
+    active = [x for x in items if str(x.get("상태", "")) not in _TODO_DONE_STATUSES]
+
+    def _title_summary(rows: list, n: int = 5) -> str:
+        titles = [str(r.get("업무명", "")).strip() for r in rows if str(r.get("업무명", "")).strip()]
+        shown = titles[:n]
+        text = ", ".join(shown)
+        if len(titles) > n:
+            text += f" 외 {len(titles) - n}건"
+        return text
+
+    done_detail = _title_summary(done_yesterday)
+    lines.append(f" • 어제 완료: {len(done_yesterday)}건" + (f" — {done_detail}" if done_detail else ""))
+    active_detail = _title_summary(active)
+    lines.append(f" • 진행/예정: {len(active)}건" + (f" — {active_detail}" if active_detail else ""))
+
+    return "\n".join(lines)
 
 
 # ═══════════════════════════════════════════
@@ -335,11 +676,32 @@ def run(forced_date: str | None = None) -> int:
         print(f"  → 원장 갱신: {LEDGER_PATH.relative_to(ROOT)} (이슈 {len(issues)}건, 날짜 {target_date})")
 
     print(f"[5/5] 생성 완료 (model={used_model})")
+
+    check_block = build_check_block(target_date)
+    inquiry_block = build_inquiry_block(target_date)
+    voc_block = build_voc_block(target_date)
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    reservation_block = build_reservation_block(today_str)
+    work_block = build_work_block(target_date)
+    ops_block = "\n\n".join([check_block, inquiry_block, voc_block, reservation_block, work_block])
+    final_message = insert_check_block(message, ops_block)
+
     print("\n" + "=" * 60)
     print(f"[대상일] {target_date}  |  [사용모델] {used_model}  |  [원장반영] {'예' if json_ok else '아니오(파싱실패)'}")
     print("=" * 60)
-    print(message)
+    print(final_message)
     print("=" * 60)
+
+    PENDING_DIGEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    PENDING_DIGEST_PATH.write_text(
+        json.dumps(
+            {"date": target_date, "generated_at": now_str(), "message": final_message, "sent": False},
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    print(f"  → 발송 대기 저장: {PENDING_DIGEST_PATH.relative_to(ROOT)} (발송은 범위 밖 — 게이트 대기)")
     return 0
 
 
