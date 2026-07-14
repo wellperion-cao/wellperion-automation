@@ -10871,6 +10871,9 @@ function crTab(btn, panelId) {
       return {roundCount:roundCount, draftHasData:draftHasData, issues:issues};
     }
 
+    // 3카드(시설부·지원부남·지원부여) 세로 사이즈 통일 — GM 2026-07-14 후속지시. 구조(주=회차+이상, 부차=완료율 상세) 통일 + min-height 고정 병행.
+    var CHECK_CARD_MIN_H = '318px';
+
     // 시설부 전용 카드 — 회차 진행+이상(수치+자유기록) 주(主), 그룹별 완료율은 부차(GM 2026-07-14 재구성).
     function buildFacilityGroupCard(icon, label, fKpi, row, href, boardInfo){
       if(!fKpi) return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">'+label+' 점검 — 집계 중</div>';
@@ -10901,7 +10904,7 @@ function crTab(btn, panelId) {
           +'<span style="font-size:10px;font-weight:700;color:'+c+';min-width:32px;text-align:right;">'+g.pct+'%</span>'
           +'</div>';
       }
-      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
         +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
         +primaryHtml
         +'<div style="font-size:9.5px;color:var(--dim);margin-bottom:4px;">그룹별 완료율(상세)</div>'
@@ -10909,25 +10912,50 @@ function crTab(btn, panelId) {
         +'</a>';
     }
 
-    // 지원부 전용 카드 — 회차별 3줄 표시
-    function buildSupportRoundCard(icon, label, gKpi, href){
-      if(!gKpi) return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">'+label+' 점검 — 집계 중</div>';
-      // 최고 회차 완료율로 카드 상단 색상 결정 (전체 총계 숨김 — 회차 3줄이 진실)
-      var topColor = gKpi.pct>=90?'#6abf7b':gKpi.pct>=60?'#e6c84e':'#ED5B3F';
+    // 지원부 이슈 파싱 — today_live 응답의 allIssues(led.cr[k].iss 원문, 이미 반환되던 필드·GAS 무변경) 성별 필터.
+    // GM 2026-07-14 후속지시: 지원부도 이슈 데이터 실측 결과 존재 확인 → 시설부처럼 주(主) 표시로 승격.
+    function parseSupportIssues(allIssues, gender){
+      var list=(Array.isArray(allIssues)?allIssues:[]).filter(function(x){ return x&&x.gender===gender&&String(x.issue||'').trim(); });
+      var ROUND_LABEL={am1:'오전조',pm1:'오후조',close1:'마감조',night1:'탕청소'};
+      return list.map(function(x){
+        return {type:(ROUND_LABEL[x.roundKey]||x.roundKey||'이슈'), text:String(x.issue||'').trim()+(x.by?(' — '+x.by):'')};
+      });
+    }
+
+    // 지원부 전용 카드 — 이슈 현황 주(主), 회차별(오전조/오후조/마감조) 완료율은 부차(GM 2026-07-14 재구성 — 시설부와 구조 통일).
+    function buildSupportRoundCard(icon, label, gKpi, href, issues){
+      if(!gKpi) return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">'+label+' 점검 — 집계 중</div>';
+      issues=issues||[];
+      var issueCount=issues.length;
+      var topColor = issueCount>0?'#ED5B3F':(gKpi.pct>=90?'#6abf7b':gKpi.pct>=60?'#e6c84e':'#ED5B3F');
+      var issueLine = issueCount>0
+        ? '<span style="color:#ED5B3F;font-weight:700;">⚠️ 이슈 '+issueCount+'건</span>'
+        : '<span style="color:#6abf7b;font-weight:700;">이슈 없음</span>';
+      var issueTitle='';
+      if(issueCount>0){
+        issueTitle=issues.map(function(x){return '['+x.type+'] '+x.text;}).join(' / ').replace(/"/g,'&quot;');
+      }
+      var primaryHtml='<div'+(issueTitle?' title="'+issueTitle+'"':'')+'>'
+        +'<div style="font-size:15px;font-weight:800;color:var(--text);">오늘 '+gKpi.done+'/'+gKpi.total+' 완료</div>'
+        +'<div style="font-size:12px;margin-top:4px;">'+issueLine+'</div>'
+        +'</div>'
+        +'<div style="height:1px;background:var(--border);margin:9px 0;"></div>';
       var rowsHtml='';
       for(var i=0;i<gKpi.rounds.length;i++){
         var r=gKpi.rounds[i];
         var c=r.pct>=90?'#6abf7b':r.pct>=60?'#e6c84e':'#ED5B3F';
         var pctStr=r.total>0?(r.pct+'%'):'-';
-        rowsHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);">'
-          +'<span style="font-size:11px;color:var(--dim);">'+r.name+'</span>'
-          +'<span style="font-size:11.5px;font-weight:700;color:var(--text);">'+r.done+'/'+r.total+'</span>'
-          +'<span style="font-size:11px;font-weight:700;color:'+c+';min-width:36px;text-align:right;">'+pctStr+'</span>'
+        rowsHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);opacity:0.75;">'
+          +'<span style="font-size:10.5px;color:var(--dim);">'+r.name+'</span>'
+          +'<span style="font-size:10.5px;font-weight:700;color:var(--text);">'+r.done+'/'+r.total+'</span>'
+          +'<span style="font-size:10px;font-weight:700;color:'+c+';min-width:32px;text-align:right;">'+pctStr+'</span>'
           +'</div>';
       }
-      if(!rowsHtml) rowsHtml='<div style="font-size:11px;color:var(--dim);padding:4px 0;">회차 데이터 없음</div>';
-      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
-        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">'+icon+' '+label+' 점검</div>'
+      if(!rowsHtml) rowsHtml='<div style="font-size:11px;color:var(--dim);padding:4px 0;opacity:0.75;">회차 데이터 없음</div>';
+      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
+        +primaryHtml
+        +'<div style="font-size:9.5px;color:var(--dim);margin-bottom:4px;">회차별 완료율(상세)</div>'
         +rowsHtml
         +'</a>';
     }
@@ -10942,6 +10970,9 @@ function crTab(btn, panelId) {
       var sMKpi=raw?parseGenderKpi(raw.byGender,'m'):null;
       var sFKpi=raw?parseGenderKpi(raw.byGender,'f'):null;
       var sKpiAll=parseKpi(supportData); // 폴백용 (byGender 없을 때)
+      // 지원부 이슈(성별 필터) — today_live.allIssues는 이미 sP 응답에 있던 필드(GAS 무변경). GM 2026-07-14.
+      var sMIssues=parseSupportIssues(supportData&&supportData.allIssues, 'm');
+      var sFIssues=parseSupportIssues(supportData&&supportData.allIssues, 'f');
       // heroCheckPct: 시설 + 지원남 + 지원여 3값 평균
       (function(){
         var _p=[];
@@ -10954,14 +10985,14 @@ function crTab(btn, panelId) {
       var html='';
       // 카드1: 시설부 — 6그룹(사우나/수영장/온수탱크/공조기/기계실/안전) 입력률 카드(GM지시 2026-07-09, 지원부처럼 한눈에)
       if(fKpi) html+=buildFacilityGroupCard('🏭','시설부',fKpi,facilityData,FACILITY_URL,fBoard);
-      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">시설부 점검 — 로드 실패</div>';
+      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">시설부 점검 — 로드 실패</div>';
       // 카드2: 지원부(남) — 회차별 3줄
-      if(sMKpi) html+=buildSupportRoundCard('🚹','지원부(남)',sMKpi,SUPPORT_URL);
+      if(sMKpi) html+=buildSupportRoundCard('🚹','지원부(남)',sMKpi,SUPPORT_URL,sMIssues);
       else if(sKpiAll) html+=buildHomeKpiCard('🚹','지원부(남)',sKpiAll,SUPPORT_URL);
-      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">지원부(남) 점검 — 로드 실패</div>';
-      // 카드3: 지원부(여) — 회차별 3줄
-      if(sFKpi) html+=buildSupportRoundCard('🚺','지원부(여)',sFKpi,SUPPORT_URL);
-      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">지원부(여) 점검 — 집계 중</div>';
+      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">지원부(남) 점검 — 로드 실패</div>';
+      // 카드3: 지원부(여) — 이슈 현황 주(主) + 회차별 완료율 부차
+      if(sFKpi) html+=buildSupportRoundCard('🚺','지원부(여)',sFKpi,SUPPORT_URL,sFIssues);
+      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">지원부(여) 점검 — 집계 중</div>';
       // 주차관리부: 점검 없음 — 카드 제외(의도적). 부서 바로가기는 홈 하단 링크 버튼에 유지.
       el.innerHTML=html;
     }
