@@ -147,11 +147,16 @@ a:hover{color:var(--text)}
   border-top:1px solid var(--border);margin-top:24px;
 }
 
-@media print{
-  .header{position:static}
-  body{background:#fff;color:#222}
-  .kpi-card,.channel-table{border:1px solid #ccc}
+/* ── 배545 후속: A3 한 장 인쇄 — 화면 표시는 그대로, 인쇄 시에만 라이트 테마+압축 그리드 적용(표시전용, 값 변경 없음) ── */
+.print-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:20px;
+  border:1px solid rgba(196,168,130,.4);
+  background:var(--accent-bg);color:var(--accent);
+  font-size:12px;font-weight:700;cursor:pointer;
+  transition:background .15s;
 }
+.print-btn:hover{background:var(--accent-hi)}
 @media(max-width:640px){
   .content{padding:16px 16px 60px}
   .kpi-card .num{font-size:20px}
@@ -274,8 +279,84 @@ details.footnote-toggle > .fn-body{
   .fn897-cols, .fn897-joins{grid-template-columns:1fr;}
   .fn897-row{grid-template-columns:70px 1fr auto;}
 }
+
+/* ── 배545 후속: A3 한 장 인쇄 오버라이드 — 스타일시트 맨 끝에 위치(캐스케이드상 항상 우선) · 화면 표시는 무영향, 인쇄시에만 라이트테마+압축그리드 적용(표시전용, 값 변경 없음) ── */
 @media print{
-  .fn897-board{border:1px solid #ccc}
+  .print-btn,.period-btn,.custom-range,.month-nav{display:none !important}
+  @page{ size:A3 landscape; margin:7mm; }
+  :root{
+    --bg:#ffffff; --paper:#ffffff; --paper2:#f4f2ee; --text:#1a1816; --dim:#5a5850;
+    --accent:#8a6d3f; --accent-bg:#f4ede2; --accent-hi:#ecdfc9; --border:#c9c4bc;
+    --green:#2f7a3d; --green-bg:#eaf5ec;
+    --red:#b23223; --red-bg:#fbeae7;
+    --yellow:#8a7115; --yellow-bg:#faf3d9;
+    --blue:#2f5f85; --blue-bg:#e7f0f7;
+    --orange:#8a5620; --orange-bg:#faeee0;
+    --purple:#5b4a8a; --purple-bg:#efeaf8;
+    --f1:#2f5f85; --f1-bg:#e7f0f7;
+    --f2:#5b4a8a; --f2-bg:#efeaf8;
+    --f3:#8a5620; --f3-bg:#faeee0;
+    --f4:#8a7115; --f4-bg:#faf3d9;
+    --f5:#2f7a3d; --f5-bg:#eaf5ec;
+    --fn-violet:#5b4a8a; --fn-violet-deep:#4a3d70; --fn-violet-glow:rgba(91,74,138,.18);
+    --fn-emerald:#1f6b4d; --fn-emerald-dim:#e3f2ea;
+    --fn-amber:#8a6416; --fn-amber-dim:#faf1de;
+    --fn-track:#e4e1da;
+  }
+  *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important}
+  html,body{background:#fff !important;color:#1a1816 !important;font-size:7.5px;line-height:1.2}
+  .header{position:static;box-shadow:none;padding:0 0 4px}
+  .header h1{font-size:13px}
+  .header-meta{color:#5a5850;font-size:8px}
+  .content{max-width:100%;padding:0;column-count:3;column-gap:8px}
+  .intro-capsule{display:none !important}
+  .section{margin-bottom:5px;break-inside:avoid;display:inline-block;width:100%}
+  .section-title{font-size:6.5px;margin-bottom:4px}
+  .fn897-board{padding:7px 8px 7px;box-shadow:none;margin:0 0 5px}
+  .fn897-grid{gap:1px}
+  .fn897-node{padding:3px 2px}
+  .fn897-node .fn897-lab{font-size:6.5px;margin-bottom:3px}
+  .fn897-node .fn897-big{font-size:14px}
+  .fn897-node .fn897-foot,.fn897-seg .fn897-cap{font-size:6.5px}
+  .fn897-seg{min-width:70px}
+  .fn897-seg .fn897-arrow{font-size:12px}
+  .fn897-seg .fn897-rate{font-size:10px;margin-top:2px}
+  .fn897-seg .fn897-connector{margin:6px 0 2px}
+  .fn897-cols{gap:6px;margin-top:6px}
+  .fn897-joins{gap:6px}
+  .fn897-card{padding:6px 7px 7px}
+  .fn897-card h3{font-size:9.5px}
+  .fn897-card .fn897-scopetag{font-size:6.5px;margin:3px 0 6px}
+  .fn897-chan{gap:4px}
+  .fn897-row{gap:6px}
+  .fn897-row .fn897-name,.fn897-row .fn897-val{font-size:7.5px}
+  .fn897-track{height:11px}
+  .fn897-chip{font-size:6.5px;padding:1px 4px}
+  .fn897-stat{padding:6px 7px 7px}
+  .fn897-stat .fn897-k{font-size:6.5px}
+  .fn897-stat .fn897-v{font-size:14px;margin-top:2px}
+  .fn897-stat .fn897-d{font-size:6.5px;margin-top:3px}
+  .fn897-scope{margin:6px 0 0;padding:6px 7px;gap:6px}
+  .fn897-scope .fn897-ic{font-size:10px}
+  .fn897-scope p{color:#1a1816 !important;font-size:6.5px}
+  .fn897-scope b{color:#1a1816 !important}
+  .fn897-foot-note{margin-top:6px;padding-top:5px;gap:3px 10px}
+  .fn897-foot-note span{font-size:6.5px}
+  .kpi-card,.channel-table{border:1px solid #c9c4bc;box-shadow:none}
+  .kpi-card{padding:5px 4px}
+  .kpi-card .num{font-size:14px}
+  .kpi-card .label,.kpi-card .sub,.kpi-card .unit{font-size:6.5px}
+  .channel-table th,.channel-table td{padding:3px 4px;font-size:6.5px}
+  .goal-chip{padding:3px 6px;margin:1px 0 4px;font-size:6.5px;gap:5px}
+  .goal-chip .gc-num{font-size:9px}
+  .goal-chip .gc-label{font-size:6px}
+  .goal-chip .gc-pace,.goal-chip .gc-scope{font-size:6px}
+  details.footnote-toggle{margin-top:4px}
+  details.footnote-toggle > .fn-body{display:block !important;font-size:6.5px;padding:4px 6px;margin-top:4px;line-height:1.4}
+  details.footnote-toggle > summary{font-size:6.5px;padding:1px 0}
+  details.footnote-toggle > summary::before{content:''}
+  .page-footer{display:none}
+  .flow-skeleton,.sk-pulse{display:none}
 }
 </style>
 <script src="../../_assets/gate.js" charset="utf-8"></script>
@@ -286,7 +367,10 @@ details.footnote-toggle > .fn-body{
   <div class="header-left">
     <h1>마케팅 현황 대시보드</h1>
   </div>
-  <span class="header-meta">AI CMO · 실무진: 김남욱 GM</span>
+  <div style="display:flex;align-items:center;gap:12px">
+    <button class="print-btn" onclick="window.print()">🖨 A3 인쇄</button>
+    <span class="header-meta">AI CMO · 실무진: 김남욱 GM</span>
+  </div>
 </div>
 
 <div class="content">
@@ -1696,10 +1780,10 @@ function renderFunnel897(kpiRoles, genKst){
   html +=   '<div class="fn897-seg"><div class="fn897-connector"></div><div class="fn897-arrow">→</div><div class="fn897-rate v">' + igRateStr + '</div><div class="fn897-cap">클릭→문의<br>(인스타만 측정)</div></div>';
   html +=   '<div class="fn897-node inq"><div class="fn897-lab">연락 · 문의</div><div class="fn897-big">' + (inqCount != null ? inqCount : '—') + '</div><div class="fn897-foot">회사 전체 · 이번 달</div></div>';
   html +=   '<div class="fn897-seg"><div class="fn897-connector"></div><div class="fn897-arrow">→</div><div class="fn897-rate e">' + monthRateStr + '</div><div class="fn897-cap">문의→가입<br>(회사 전체)</div></div>';
-  html +=   '<div class="fn897-node join"><div class="fn897-lab">등록 · 가입</div><div class="fn897-big">' + (joinCount != null ? joinCount : '—') + '</div><div class="fn897-foot">이번 달' + (cumRate != null ? ' · 누적 ' + cumRateStr : '') + '</div></div>';
+  html +=   '<div class="fn897-node join"><div class="fn897-lab">등록 · 가입</div><div class="fn897-big">' + (joinCount != null ? joinCount : '—') + '</div><div class="fn897-foot">이번 달' + (cumRate != null ? ' · 전체 누적 ' + cumRateStr + '(기준 다름)' : '') + '</div></div>';
   html += '</div>';
 
-  html += '<div class="fn897-scope"><span class="fn897-ic">⚖️</span><p>이 보드는 두 마디를 <b>하나의 연속 %로 곱하지 않습니다.</b> 왼쪽(클릭→문의)은 <b>채널별</b> 지표이고 인스타그램만 UTM 추적이 되며, 오른쪽(문의→가입)은 <b>회사 전체</b> 스코프(멤버십+강습+렌트+비즈)입니다. 스코프가 다른 값을 정직하게 나란히 둡니다 — 억지로 이어 붙이면 거짓 숫자가 됩니다.</p></div>';
+  html += '<div class="fn897-scope"><span class="fn897-ic">⚖️</span><p>이 보드는 두 마디를 <b>하나의 연속 %로 곱하지 않습니다.</b> 왼쪽(클릭→문의)은 <b>채널별</b> 지표이고 인스타그램만 UTM 추적이 되며, 오른쪽(문의→가입)은 <b>멤버십·성인강습·유소년강습</b> 합산 스코프입니다(렌트·비즈는 매칭 안 됨). 스코프가 다른 값을 정직하게 나란히 둡니다 — 억지로 이어 붙이면 거짓 숫자가 됩니다.</p></div>';
 
   html += '<div class="fn897-cols">';
   html +=   '<div class="fn897-card"><h3><span class="fn897-dot v"></span> 관심 → 연락 · 채널별 클릭→문의</h3><div class="fn897-scopetag">시모 #676 · 채널별 스코프 · 측정가능 채널만 % 표기</div><div class="fn897-chan">';
@@ -1724,12 +1808,12 @@ function renderFunnel897(kpiRoles, genKst){
   });
   html +=   '</div></div>';
 
-  html +=   '<div class="fn897-card"><h3><span class="fn897-dot e"></span> 연락 → 등록 · 문의→가입</h3><div class="fn897-scopetag">시포 #849 · 회사 전체 스코프(멤버십+강습+렌트+비즈)</div><div class="fn897-joins">';
-  html +=     '<div class="fn897-stat"><div class="fn897-k">이번 달</div><div class="fn897-v">' + monthRateStr + '</div><div class="fn897-d">' + (inqCount != null ? '문의 ' + inqCount + '건' : '문의 집계중') + ' → ' + (joinCount != null ? '가입 ' + joinCount + '건' : '가입 집계중') + '</div></div>';
-  html +=     '<div class="fn897-stat cum"><div class="fn897-k">생애 누적</div><div class="fn897-v">' + cumRateStr + '</div><div class="fn897-d">' + (cumInq != null ? '문의 ' + cumInq.toLocaleString() + '건' : '집계중') + ' → ' + (cumJoin != null ? '가입 ' + cumJoin.toLocaleString() + '건' : '집계중') + '</div></div>';
+  html +=   '<div class="fn897-card"><h3><span class="fn897-dot e"></span> 연락 → 등록 · 문의→가입</h3><div class="fn897-scopetag">시포 #849 · 멤버십·성인강습·유소년강습 합산 (렌트·비즈는 매칭 안 됨)</div><div class="fn897-joins">';
+  html +=     '<div class="fn897-stat"><div class="fn897-k">이번 달</div><div class="fn897-v">' + monthRateStr + '</div><div class="fn897-d">' + (inqCount != null ? '문의 ' + inqCount + '건' : '문의 집계중') + ' → ' + (joinCount != null ? '가입 ' + joinCount + '건' : '가입 집계중') + '</div><div class="fn897-d" style="opacity:.7;margin-top:3px">등록월 기준 · 정밀</div></div>';
+  html +=     '<div class="fn897-stat cum"><div class="fn897-k">전체 누적</div><div class="fn897-v">' + cumRateStr + '</div><div class="fn897-d">' + (cumInq != null ? '문의 ' + cumInq.toLocaleString() + '건' : '집계중') + ' → ' + (cumJoin != null ? '가입 ' + cumJoin.toLocaleString() + '건' : '집계중') + '</div><div class="fn897-d" style="opacity:.7;margin-top:3px">여태까지 전부 · 전화번호 매칭 · 등록일 무관</div></div>';
   html +=   '</div>';
   if(monthRate != null && cumRate != null){
-    html += '<div class="fn897-scope" style="margin-top:12px"><span class="fn897-ic">💡</span><p>당월 ' + monthRateStr + (monthRate < cumRate ? '는 누적 ' + cumRateStr + '보다 낮습니다 — 이번 달 문의가 아직 상담·등록 여정 중이라 <b>진행 중 스냅샷</b>입니다(월말로 갈수록 상승).' : '은 누적 ' + cumRateStr + ' 대비 참고치입니다.') + ' 문의회원 페이지의 \'멤버십 단독\' 카드와는 <b>스코프가 다른 별개 지표</b>입니다.</p></div>';
+    html += '<div class="fn897-scope" style="margin-top:12px"><span class="fn897-ic">💡</span><p>이번 달 ' + monthRateStr + '(등록월 기준)와 전체 누적 ' + cumRateStr + '(여태까지 전부 · 전화번호 매칭)은 <b>계산 기준이 달라 서로 빼서 비교하면 안 됩니다.</b>' + (monthRate < cumRate ? ' 이번 달 문의는 아직 상담·등록 여정 중이라 <b>진행 중 스냅샷</b>일 뿐입니다(월말로 갈수록 상승).' : '') + ' 문의회원 페이지의 \'멤버십 단독\' 카드와도 <b>스코프가 다른 별개 지표</b>입니다.</p></div>';
   }
   html += '</div>';
 
