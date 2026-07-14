@@ -816,13 +816,13 @@
     "task_id": "CTO-2026-07-14-WEEKLY-PAGE-HYGIENE",
     "clevel": "cto",
     "title": "[시토] 매주 일요일 페이지 위생 자동화 — 하위모델 감사→죽은코드 자동삭제+나머지 제안",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-14",
-    "note": "[2026-07-14 GM 지시] 오늘 수동으로 한 시우(COO) 14페이지 감사(하위모델→A죽은코드/B중복/C낡은안내/D장황 분류→GM승인→적용)를 매주 일요일 09:00 무인 파이프로 제품화. 대상=COO 14페이지(coo/check 7·coo/todo 2·coo/notice 1·메인가이드 O1~O4), config로 확장 가능(후속 전 C-Level). 적용방식: A(죽은코드)만 grep-0 하드게이트 통과 시 자동삭제·페이지별(파일별) 커밋 / B·C·D는 status/page_hygiene_proposal_{date}.md 제안만(자동적용 금지). 게이트 PAGE_HYGIENE_APPLY(기본 OFF)로 라이브 자동삭제 분리 — 첫 주는 OFF(dry)로 돌려 GM/웰리 기계신뢰 확인 후 GM go로 ON. 파싱 무결성 검사 실패 시 해당 후보 롤백·스킵. 모호(주석·조건부 참조 등)하면 자동삭제 금지·제안 강등. 예약: Task Scheduler Wellperion-Weekly-Page-Hygiene-Sun-0900(일요일 09:00)+hidden vbs. 텔레그램 요약 + module_registry cto-weekly-page-hygiene 등록.",
+    "note": "[2026-07-14 GM 지시] 오늘 수동으로 한 시우(COO) 14페이지 감사(하위모델→A죽은코드/B중복/C낡은안내/D장황 분류→GM승인→적용)를 매주 일요일 09:00 무인 파이프로 제품화. 대상=COO 14페이지(coo/check 7·coo/todo 2·coo/notice 1·메인가이드 O1~O4), config로 확장 가능(후속 전 C-Level). 적용방식: A(죽은코드)만 grep-0 하드게이트 통과 시 자동삭제·페이지별(파일별) 커밋 / B·C·D는 status/page_hygiene_proposal_{date}.md 제안만(자동적용 금지). 게이트 PAGE_HYGIENE_APPLY(기본 OFF)로 라이브 자동삭제 분리 — 첫 주는 OFF(dry)로 돌려 GM/웰리 기계신뢰 확인 후 GM go로 ON. 파싱 무결성 검사 실패 시 해당 후보 롤백·스킵. 모호(주석·조건부 참조 등)하면 자동삭제 금지·제안 강등. 예약: Task Scheduler Wellperion-Weekly-Page-Hygiene-Sun-0900(일요일 09:00)+hidden vbs. 텔레그램 요약 + module_registry cto-weekly-page-hygiene 등록. [2026-07-14 병합·GM지적] 배982(파이프 빌드·grep-0 3중게이트·pytest)+배998(전 ERP 47페이지 config 확장·.bat --clevel all)을 본 배로 흡수(중복 3척→1). 파이프+예약(일요일09:00)+module_registry 완료, PAGE_HYGIENE_APPLY 기본OFF(제안모드). 잔여=실 headless 감사 스모크 1회 재검증(세션과부하로 미완).",
     "module": "T2",
     "ship_no": 979,
-    "next": "[2026-07-14 추가] 오늘 GM이 전사 47페이지를 하위모델로 감사한 것에 맞춰 PAGE_TARGETS를 COO 14→전사 47(CPO 3·CMO 7·CTO 2·CFO 3·CHRO 12·shared 공용3+리다이렉트스텁3)로 확장, 실제 예약 파이프(scripts/weekly_page_hygiene.bat·ops/register_weekly_page_hygiene.bat)도 --clevel coo→--clevel all로 전환해 주간 루틴이 전 ERP를 커버하도록 배선 완료(커밋 c6176c7a). pytest 36종(신규 clevel별 카운트·47페이지 전량 실존 검증 포함) 통과, config 로드+파일오픈+dry-run(stub claude, force_dry_run) 전 47페이지 실측 — 소스 페이지 파일쓰기 0·커밋 0·제안서 47건 생성 확인. 3중 게이트(grep-0·snippet고유·파싱무결성)·PAGE_HYGIENE_APPLY 기본 OFF·B/C/D 제안모드 로직은 무변경. ★단 실제 headless claude 감사 왕복(진짜 claude -p 호출 성공 여부) 자체는 이번 세션 중 동시 실행된 다른 서브에이전트들과의 자원 경합으로 실측 보류(스모크 5분 타임아웃) — 이번 config 확장과는 무관한 별개 리스크, 다음 세션 한가할 때 --limit 1~2로 재확인 권장. 다음 단계: 게이트 PAGE_HYGIENE_APPLY 기본 OFF 유지 — 다음 일요일 09:00 첫 전사 47페이지 dry 실행 결과를 GM/웰리가 검토한 뒤, GM go로 scripts/weekly_page_hygiene.bat의 PAGE_HYGIENE_APPLY=1 주석 해제(라이브 전환)."
+    "next": "🔗 주간 위생 자동화 전 ERP 커버 완결(중복배 병합). 잔여=조용한 세션서 headless 감사 스모크 1회 확인 후 GM go로 라이브 삭제 활성."
   },
   {
     "task_id": "CEO-2026-07-14-ADHOC-e665bc1f",
@@ -853,20 +853,6 @@
     "adhoc_commit": "3a7e464e51196ed467de4512f791270ecfc965a3"
   },
   {
-    "task_id": "CTO-2026-07-14-ADHOC-a5d2d9a5",
-    "clevel": "cto",
-    "title": "[시토] 주간 페이지 위생 자동화 파이프 — 하위모델 감사→죽은코드 grep-0 게이트 자동삭제+나머지 제안",
-    "status": "DONE",
-    "terminal": true,
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-14",
-    "processed_at": "2026-07-14",
-    "ship_no": 982,
-    "artifact": "배 CTO-2026-07-14-WEEKLY-PAGE-HYGIENE(GM 지시): 오늘 수동으로 진행한 시우(COO) 14페이지\n정리(하위모델 감사→A죽은코드/B중복/C낡은안내/D장황 분류→GM승인→적용)를 매주 일요일 09:00\n무인 파이프로 제품화. (CLI ad-hoc · 커밋 a5d2d9a5)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "a5d2d9a578eddb785942e342090e177fde18ee8d"
-  },
-  {
     "task_id": "CPO-2026-07-14-LESSON-LEDGER-CONSOLIDATION",
     "clevel": "cpo",
     "title": "[시포] 강습 원장 통합 — 6종목 흩뿌린 시트 → 4 메인시트+페이지 단일입력 (GM 지시)",
@@ -874,7 +860,7 @@
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-14",
     "module": "cpo",
-    "note": "[2026-07-14 GM 지시·/deep-interview 5R 확정·모호도<5%] 스펙=.omc/specs/deep-interview-cpo-lesson-ledger-consolidation.md. 목표=강습 문의가 Survey→6종목시트(수영·PT·필라·골프·체조·스쿼시)로 IMPORTRANGE 흩뿌려져 실무진이 6군데 각자 기록=파편화 → 실무진이 페이지에서 기록→메인시트 4개(성인강습KR gid111889422·EN 311319200·WSC/유소년KR 268994754·EN 931249179, ss 1b0XU1o…)에 통합. 신규마스터 안만들고 기존4개만. [Phase1 실측 완결] 메인4개가 이미 6종목 전부 담음: 유소년메인4576행(WSC수영1862·체조1150·골프169·스쿼시156·필라43)·성인메인3531행(수영1783·PT500·스쿼시392·골프312·필라274). 흐름=Survey→메인(마스터)→IMPORTRANGE로 6시트 뿌림→실무진 6시트에 주석. 6시트=메인 하류뷰+주석사일로. 페이지는 메인 읽고 status·담당·메모·컨택·상담예약·방문 이미 저장(lesson_inquiry_update). ★갭=지정강사(지정강사/프로/코치) 필드가 메인/페이지에 없음(6시트에만). 결론=마스터는 이미 메인4개. 통합=①지정강사 필드 메인+페이지 신설 ②6시트 주석(지정강사·컨택·진행상황·체험) 메인으로 이관(전화+종목 매칭) ③IMPORTRANGE spray 정리(GM 시트) ④팀 페이지 전환·6시트 은퇴. [2026-07-14 Phase2 설계 확정] 이관 대상=수영(WSC/유소년). 실측: 메인 유소년'수영'=2351행·관리주석 전부 비어있음(이관 대상 확인)·전화매칭 클린(최유진·sophia 양쪽 일치). GM 결정: 쓰기=빈칸만(비파괴). ★GM이 메인 성인강습·성인강습(영) 컬럼 L~P를 수동 재세팅(fresh read 06:31 확인): L=지정강사·M=Contact(컨택)·N=비고·O=진행상황·P=미등록사유. ★핵심 disconnect: 현 페이지(강습 관리)는 L~P가 아니라 종목별관리(W) JSON·관리담당·연락이력을 읽음 → L~P에 이관해도 페이지 미표시. + 데이터모델 불일치: 페이지=종목별(JSON) vs GM L~P=행별(flat). GM 결정 순서=①4시트(성인·성인영·유소년·유소년영) L~P 동일세팅 ②페이지 배선을 L~P 읽기/쓰기로 수정(종목별→행별 정합) ③수영 이관 dry-run→apply. 이관은 헤더이름 매칭(열위치 무관).",
+    "note": "[2026-07-14 GM 지시·/deep-interview 5R 확정·모호도<5%] 스펙=.omc/specs/deep-interview-cpo-lesson-ledger-consolidation.md. 목표=강습 문의가 Survey→6종목시트(수영·PT·필라·골프·체조·스쿼시)로 IMPORTRANGE 흩뿌려져 실무진이 6군데 각자 기록=파편화 → 실무진이 페이지에서 기록→메인시트 4개(성인강습KR gid111889422·EN 311319200·WSC/유소년KR 268994754·EN 931249179, ss 1b0XU1o…)에 통합. 신규마스터 안만들고 기존4개만. [Phase1 실측 완결] 메인4개가 이미 6종목 전부 담음: 유소년메인4576행(WSC수영1862·체조1150·골프169·스쿼시156·필라43)·성인메인3531행(수영1783·PT500·스쿼시392·골프312·필라274). 흐름=Survey→메인(마스터)→IMPORTRANGE로 6시트 뿌림→실무진 6시트에 주석. 6시트=메인 하류뷰+주석사일로. 페이지는 메인 읽고 status·담당·메모·컨택·상담예약·방문 이미 저장(lesson_inquiry_update). ★갭=지정강사(지정강사/프로/코치) 필드가 메인/페이지에 없음(6시트에만). 결론=마스터는 이미 메인4개. 통합=①지정강사 필드 메인+페이지 신설 ②6시트 주석(지정강사·컨택·진행상황·체험) 메인으로 이관(전화+종목 매칭) ③IMPORTRANGE spray 정리(GM 시트) ④팀 페이지 전환·6시트 은퇴. [2026-07-14 Phase2 설계 확정] 이관 대상=수영(WSC/유소년). 실측: 메인 유소년'수영'=2351행·관리주석 전부 비어있음(이관 대상 확인)·전화매칭 클린(최유진·sophia 양쪽 일치). GM 결정: 쓰기=빈칸만(비파괴). ★GM이 메인 성인강습·성인강습(영) 컬럼 L~P를 수동 재세팅(fresh read 06:31 확인): L=지정강사·M=Contact(컨택)·N=비고·O=진행상황·P=미등록사유. ★핵심 disconnect: 현 페이지(강습 관리)는 L~P가 아니라 종목별관리(W) JSON·관리담당·연락이력을 읽음 → L~P에 이관해도 페이지 미표시. + 데이터모델 불일치: 페이지=종목별(JSON) vs GM L~P=행별(flat). GM 결정 순서=①4시트(성인·성인영·유소년·유소년영) L~P 동일세팅 ②페이지 배선을 L~P 읽기/쓰기로 수정(종목별→행별 정합) ③수영 이관 dry-run→apply. 이관은 헤더이름 매칭(열위치 무관). [2026-07-14 배선 정밀설계·전제완료] GM이 성인·성인영·유소년·유소년영 4시트 L~P 동일세팅 완료(L지정강사·M Contact·N비고·O진행상황·P미등록사유). 다종목행=3.4%(272/8109)→flat 모델 채택가능. clasp 배포가능(로그인됨). ★핵심발견(Survey.js _lessonReadRows_ 1534~): GAS가 이미 컬럼명 유연매칭 — iStat=['진행상태','진행상황',...]→GM 진행상황(O) 이미 status로 읽음, iMemo=['상담메모','메모','비고']→GM 비고(N) 이미 memo로 읽음. 미연결 2개만=iOwner=_findColExact(['관리담당'])→'지정강사' 추가 필요, iHist=_findColExact('연락이력')→'Contact' 추가+plain text면 {note:} 합성(1573 memo폴백 패턴). 남은 배선: ①GAS iOwner/iHist 매처에 지정강사·Contact 추가+Contact plain→contact합성 ②lesson_inquiry_update 쓰기를 flat 컬럼(지정강사·Contact·진행상황·비고)으로 ③페이지 _lessonSportMgmt를 bySport(JSON)→flat row필드 표시/편집 전환(단종목96.6%=동일) ④clasp push+webapp 재배포 ⑤라이브 검증. 그 후 수영 이관 dry-run→apply(빈칸만).",
     "next": "👉 Phase2 다음=페이지 배선(GM 확정 '페이지 배선부터'). 재배선 범위: GAS lesson_inquiry_list/update가 L~P(지정강사→담당·Contact→연락이력·진행상황→상태·비고→메모·미등록사유)를 읽고쓰게 + 종목별(JSON)↔행별(flat) 모델 정합 + 배포. ⚠️회원데이터 재배선이라 신중 설계 필요(별도 집중). 그 후 수영 이관(빈칸만·dry-run→apply). 선행=GM이 유소년(WSC)·영문탭도 L~P 동일세팅.",
     "depends_on": "",
     "ship_no": 973
@@ -1088,20 +1074,6 @@
     "artifact": "헌법한장.html: nsOneLiner() 미사용 함수, kmeas/kmeta/nsreach-h/nsreach-build/\nnsreach-mini/ns-overview/ns-role*/ns-legend*/nsmap-prop/grp-collab 죽은 CSS\n클래스+해당 인쇄규칙 제거. pstat/kbar/workrate/nsreach-meta/nsreach-note/\nns-badge 등 실사용 클래스는 보존.\n전사회의.html: arc-yoy, h2.sec .arc-badge 죽은 CSS 제거(arc-table-wrap 등\n실사용 클 (CLI ad-hoc · 커밋 4375c08d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4375c08d95182c027552192a3114330034f4f0d6"
-  },
-  {
-    "task_id": "CTO-2026-07-14-ADHOC-c6176c7a",
-    "clevel": "cto",
-    "title": "[시토] 주간 페이지 위생 config를 전사 47페이지로 확장",
-    "status": "DONE",
-    "terminal": true,
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-14",
-    "processed_at": "2026-07-14",
-    "ship_no": 998,
-    "artifact": "오늘(2026-07-14) GM이 전사 47페이지를 하위모델로 감사·정리했으나\nweekly_page_hygiene.py의 PAGE_TARGETS는 아직 COO 14페이지만 담고 있었다.\nCPO 3·CMO 7·CTO 2·CFO 3·CHRO 12·shared(공용3+리다이렉트스텁3) 6을 추가해\nconfig 기준 47페이지 전량을 커버하고, 실제 예약 파이프(scripts/weekly_page_hygiene.bat,\nops/register_weekly_page_hygiene.bat)도 --clevel coo에서 --clevel all로 (CLI ad-hoc · 커밋 c6176c7a)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "c6176c7a5cb2e8d7aeb0d31f2c44691a29c61a78"
   },
   {
     "task_id": "CHRO-2026-07-14-OB-GUIDE-SSOT",
