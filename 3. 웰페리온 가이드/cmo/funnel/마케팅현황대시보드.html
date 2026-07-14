@@ -167,26 +167,24 @@ a:hover{color:var(--text)}
   .channel-table .channel-dot{width:6px;height:6px;margin-right:4px}
 }
 
-/* ── 히어로 블록 ── */
-.hero-block{
-  background:var(--paper);border:1px solid var(--border);
-  border-radius:var(--radius-lg);padding:24px 28px 20px;
-  margin-bottom:24px;box-shadow:var(--shadow);
-  border-top:3px solid var(--f2);
+/* ── 배545 후속: 문의목표 인라인 칩(구 히어로 블록 강등) — 단일 대표숫자(fn897 연락·문의)와 경쟁하지 않도록 축소 ── */
+.goal-chip{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-size:12px;color:var(--dim);
+  background:var(--paper2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:7px 12px;margin:2px 0 12px;
 }
-.hero-label{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.10em;margin-bottom:14px}
-.hero-num{font-size:48px;font-weight:800;color:var(--f2);line-height:1;letter-spacing:-.03em}
-.hero-bar-wrap{margin-bottom:10px}
-.hero-bar-track{background:var(--border);border-radius:99px;height:10px;overflow:hidden}
-.hero-bar-fill{height:100%;border-radius:99px;background:var(--f2);transition:width .55s ease}
-.hero-bar-pct{font-size:12px;font-weight:700;color:var(--f2);margin-top:5px}
-.hero-pace{font-size:12px;color:var(--dim);margin-top:10px;line-height:1.65}
+.goal-chip .gc-label{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.goal-chip .gc-num{font-size:15px;font-weight:800;color:var(--f2);letter-spacing:-.01em}
+.goal-chip .gc-bar-track{display:inline-block;vertical-align:middle;width:64px;height:6px;background:var(--border);border-radius:99px;overflow:hidden}
+.goal-chip .gc-bar-fill{display:block;height:100%;border-radius:99px;background:var(--f2)}
+.goal-chip .gc-pct{font-weight:800}
+.goal-chip .gc-pace{width:100%;font-size:11px;color:var(--dim);margin-top:1px;line-height:1.5}
+.goal-chip .gc-scope{width:100%;font-size:10px;color:var(--dim);margin-top:2px;padding-top:5px;border-top:1px dashed var(--border);line-height:1.5}
+.goal-chip-skeleton{width:220px;height:14px;border-radius:4px}
 /* 스켈레톤 펄스 */
 @keyframes skPulse{0%,100%{opacity:.35}50%{opacity:.7}}
 .sk-pulse{background:var(--border);border-radius:6px;animation:skPulse 1.4s ease-in-out infinite}
-.hero-skeleton .hero-num{display:block;width:120px;height:52px;border-radius:8px}
-.hero-skeleton .hero-bar-track{background:var(--border)}
-.hero-skeleton .hero-pace-sk{width:260px;height:14px;border-radius:4px;margin-top:10px}
 .flow-skeleton{height:120px;border-radius:var(--radius-md);margin-bottom:8px}
 
 /* ── ⓘ 접기 (긴 각주) ── */
@@ -357,30 +355,20 @@ details.footnote-toggle > .fn-body{
   </div>
 
   <!-- ════════════════════════════════════════════
-       ★ 이번 달 문의 목표 페이스 (구 히어로 블록 축소)
-       구 '등록 현황'(우측 컬럼)은 바로 아래 #1 유형별 표의 등록 칼럼과 완전 중복(동일 기간·동일 값)이라 삭제.
-       구 '문의 현황'(좌측)의 목표·페이스만 남기고 카드 하나로 축소 — 원본 데이터소스는 그대로: _flow / MONTHLY_INQUIRY_TARGET.
-       월간 뷰(month/monthPast)에서만 의미 있는 지표라 그 외 기간에는 자동 숨김(renderHero 참고).
-       ════════════════════════════════════════════ -->
-  <div class="hero-block" id="hero-block" style="padding:16px 20px 14px;margin-bottom:20px">
-    <div id="hero-inner" class="hero-skeleton">
-      <!-- renderHero() 호출 시 아래 스켈레톤 → 실데이터로 교체됨 -->
-      <div class="hero-label">이번 달 문의 목표</div>
-      <div style="display:flex;align-items:baseline;gap:10px;margin:4px 0 10px">
-        <div class="hero-num sk-pulse" style="width:90px;height:40px;border-radius:8px"></div>
-      </div>
-      <div class="hero-bar-wrap">
-        <div class="hero-bar-track"><div class="hero-bar-fill" style="width:0%"></div></div>
-      </div>
-      <div class="sk-pulse hero-pace-sk"></div>
-    </div>
-  </div>
-
-  <!-- ════════════════════════════════════════════
        ② 유형별 문의·등록 현황 — 항상 펼침, 즉시 로드
        conversion-flow-wrap 은 내부 renderConversionFlow() id 유지(JS 의존)
+       구 '이번 달 문의 목표' 히어로 카드(48px 대표숫자)를 위 fn897 퍼널의 '연락·문의'와
+       대표숫자가 경쟁하지 않도록 인라인 칩으로 강등해 이 섹션 제목 바로 아래로 이동(2026-07-14 GM 승인).
+       renderHero()가 이 칩을 채움(id 유지 — hero-block/hero-inner, JS 의존) · 원본 데이터소스 동일: _flow / MONTHLY_INQUIRY_TARGET.
+       월간 뷰(month/monthPast)에서만 의미 있는 지표라 그 외 기간에는 자동 숨김(renderHero 참고).
        ════════════════════════════════════════════ -->
   <div class="section">
+    <div class="section-title">유형별 문의·등록 현황</div>
+    <div id="hero-block">
+      <div id="hero-inner" class="sk-pulse goal-chip-skeleton">
+        <!-- renderHero() 호출 시 스켈레톤 → 실데이터 칩(.goal-chip)으로 교체됨 -->
+      </div>
+    </div>
     <!-- renderConversionFlow()가 이 div를 채움 (id 변경 금지) -->
     <div id="conversion-flow-wrap" style="margin-bottom:6px">
       <div class="flow-skeleton sk-pulse" style="height:120px;border-radius:var(--radius-md)"></div>
@@ -772,16 +760,17 @@ function renderHero(f) {
     paceHtml = '최종 달성 · <b>' + inq + '건</b> / 목표 ' + targetVal + '건';
   }
 
-  el.className = '';  // 스켈레톤 클래스 해제
+  // 배545 후속(GM 승인 2026-07-14): 큰 히어로 카드 → 인라인 진행 칩으로 강등.
+  // 대표숫자는 위 fn897 퍼널의 '연락·문의'(회사 전체) 단일 — 이 칩은 목표추적 대상(스코프 다름)만 보조 표시.
+  el.className = 'goal-chip';  // 스켈레톤 클래스 해제, .goal-chip 레이아웃 적용
   el.innerHTML =
-    '<div class="hero-label">' + periodLabel + ' 문의 목표</div>'
-    + '<div style="display:flex;align-items:baseline;gap:10px;margin:4px 0 10px">'
-    +   '<span class="hero-num" style="font-size:32px;color:' + barColor + '">' + inq.toLocaleString('ko-KR') + '</span>'
-    +   '<span style="font-size:13px;color:var(--dim)">/ ' + targetVal + '건 목표</span>'
-    + '</div>'
-    + '<div class="hero-bar-wrap"><div class="hero-bar-track"><div class="hero-bar-fill" style="width:' + pct + '%;background:' + barColor + '"></div></div><div class="hero-bar-pct" style="color:' + barColor + '">' + pct + '%</div></div>'
-    + (paceHtml ? '<div class="hero-pace">' + paceHtml + '</div>' : '')
-    + '<div style="font-size:10px;color:var(--dim);margin-top:8px;padding-top:6px;border-top:1px dashed var(--border);line-height:1.5">※ 이 목표 건수는 멤버십·강습(성인·유소년)·기타 등 목표추적 대상만 집계 — 위 "연락·문의" 카드(회사 전체: 멤버십+강습+렌트+비즈)와 스코프가 달라 숫자가 다를 수 있습니다.</div>';
+    '<span class="gc-label">' + periodLabel + ' 문의목표</span>'
+    + '<span class="gc-num" style="color:' + barColor + '">' + inq.toLocaleString('ko-KR') + '</span>'
+    + '<span style="color:var(--dim)">/ ' + targetVal + '건</span>'
+    + '<span class="gc-bar-track"><span class="gc-bar-fill" style="width:' + pct + '%;background:' + barColor + '"></span></span>'
+    + '<span class="gc-pct" style="color:' + barColor + '">' + pct + '%</span>'
+    + (paceHtml ? '<span class="gc-pace">' + paceHtml + '</span>' : '')
+    + '<span class="gc-scope">※ 이 목표 건수는 멤버십·강습(성인·유소년)·기타 등 목표추적 대상만 집계 — 위 퍼널의 "연락·문의"(회사 전체: 멤버십+강습+렌트+비즈)와 스코프가 달라 숫자가 다를 수 있습니다.</span>';
 }
 
 // ─── #3+#5 유입채널 현황 (inflow-channel-wrap) — 채널×유형 교차 병합 ─────
