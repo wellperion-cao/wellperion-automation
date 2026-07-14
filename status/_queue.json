@@ -654,5 +654,19 @@
     "artifact": "전사에 정규직·임대료·타임 지출정본 부재 확인(CFO 페이지도 '정규직·임대료 미포함' 명시).\nGM 택=부분지출 정직 노출: 있는 진짜 데이터(강사·운영부 인건비+구매성)만\n'부분지출/부분순액'으로 명시(헤더·title에 '정규직·임대료·타임 제외'). 연 부분지출=1~선택월 누계.\n연 부분순액=기간정합 행만(강습 상반기 partial은 '—' 기간불일치 방지). placeholder '구조개선 중' 제거.\nnode --check PASS·함수 96 유지·신규 데이터 조회 0(기존 부서맵 재사용). (CLI ad-hoc · 커밋 a64bd826)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a64bd826978ccf7d149ddba3f240006c5b9c18b5"
+  },
+  {
+    "task_id": "CEO-2026-07-14-ADHOC-b1dd7f5d",
+    "clevel": "ceo",
+    "title": "[웰리] 밤 점검공유 무인 신뢰성 — 발송 직전 카톡 메인창 자동 띄우기",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 958,
+    "artifact": "2026-07-13 밤 실패 원인=앱이 트레이로 내려가 sender가 카톡 메인창 못 찾음.\nsend_via_kakao 실발송 직전 ensure_kakao_foreground()로 KakaoTalk.exe 재실행(단일\n인스턴스→메인창 전면화)+대기. 실패해도 발송 계속(비치명). 단독 검증: 호출 후 메인창 발견. (CLI ad-hoc · 커밋 b1dd7f5d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b1dd7f5d70febb56e5556bcd38cd76a27c1e9de1"
   }
 ]
