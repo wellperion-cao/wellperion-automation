@@ -496,5 +496,19 @@
     "artifact": "ig_review_publish_watcher.py 발행완료 커밋이 review_queue.json만 git add하고\n실제 발행 콘텐츠 폴더(instagram/** 신규 untracked 디렉토리)는 빠뜨려, 수일간\n미커밋 누적 → 무인 러너(welly_auto_runner.py) 클린트리 가드가 계속 skip 발동\n(2026-07-13~14 이틀 연속, F3 회복 콘텐츠 등 47건 방치). 승인 처리 대상(approved)의\nfolder/image_dir/body_file 경로를 커밋 시 함께 add하도록 스코프 추가(git a (CLI ad-hoc · 커밋 cca06ff7)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "cca06ff74161ea2897c125af2d0aef153b9621fe"
+  },
+  {
+    "task_id": "CMO-2026-07-14-ADHOC-b8f0228c",
+    "clevel": "cmo",
+    "title": "[시모] 마케팅현황 fn897 위젯 측정가능 판정 JSON 계약화(배545)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 946,
+    "artifact": "- isMeasurable을 하드코딩 key==='instagram' → chanConv[canon].measurable 플래그 기반으로\n- 표시 %를 채널 자기 클릭_문의_전환율로 바인딩(항상 인스타 % 표시하던 잠복결함 수리)\n- 오늘 화면 변화 0(현재 인스타만 measurable), 미래 채널 측정가능 시 자동 정합 (CLI ad-hoc · 커밋 b8f0228c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b8f0228c6c36debe29640df6a3f48d110919dcc1"
   }
 ]
