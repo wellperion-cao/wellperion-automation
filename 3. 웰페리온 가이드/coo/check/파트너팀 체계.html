@@ -571,7 +571,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       var insBars=ins.length?ins.map(function(p,i){return ibar((i+1)+'. '+p.name,p.team,p.sum,maxI,won(p.sum));}).join(''):'<div style="color:var(--dim)">데이터 없음</div>';
       V.innerHTML='<div class="statgrid" style="margin-bottom:16px">'+cards+'</div>'+
         '<div class="grid2" style="margin-bottom:16px">'+panel('월별 추이',monthly)+panel('부서별 누적 / 목표',teamBars)+'</div>'+
-        panel('강사별 누적 랭킹 (6개월)',insBars);
+        panel('강사별 누적 랭킹 ('+nMon+'개월)',insBars);
     } else {
       var idx=parseInt(CUR,10)-1;var md=MODEL.months[idx];
       if(!md||md.total<=0){V.innerHTML=panel(CUR+'월',' <div style="color:var(--dim)">데이터 없음</div>');return;}
@@ -606,6 +606,26 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     }).catch(function(){done();});
   }
 
+  // 강사별도 재무 배관(공개·6팀·진행월)으로 병합 — 강습부 시트에 강사별 미입력인 진행월(예: 7월) 채움. 이름 정규화 매칭(공백·'프로' 제거)으로 과거월과 동일 강사 합산.
+  function nkey(s){return (''+(s==null?'':s)).replace(/\s+/g,'').replace(/프로$/,'');}
+  function mergeLiveInstr(force,done){
+    if(!MODEL||!MODEL.instr){done();return;}
+    fetch(PUB_API+'?action=sales_instr_pub'+(force?'&nocache=1':'')).then(function(r){return r.json();}).then(function(j){
+      if(!j||!j.ok||!j.instr||!j.month){done();return;}
+      var mi=j.month-1;
+      var REV={'수영':'수영','P.T':'P.T','필라테스':'P.L','골프':'골프','스쿼시':'스쿼시','체조&트램':'체조'};
+      for(var k=0;k<j.instr.length;k++){
+        var r=j.instr[k];var team=REV[r.team];if(!team)continue;
+        var found=null,rk=nkey(r.name);
+        for(var x=0;x<MODEL.instr.length;x++){if(nkey(MODEL.instr[x].name)===rk){found=MODEL.instr[x];break;}}
+        if(found){while(found.monthly.length<12)found.monthly.push(0);found.monthly[mi]=num(r.val);}
+        else{var mm=[];for(var z=0;z<12;z++)mm.push(0);mm[mi]=num(r.val);MODEL.instr.push({name:r.name,team:team,monthly:mm,sum:0});}
+      }
+      for(var x2=0;x2<MODEL.instr.length;x2++){var s=0;for(var z2=0;z2<12;z2++)s+=(MODEL.instr[x2].monthly[z2]||0);MODEL.instr[x2].sum=s;}
+      done();
+    }).catch(function(){done();});
+  }
+
   window.loadSales=function(force){
     var up=document.getElementById('salesUpdated');up.textContent='불러오는 중…';
     var err=document.getElementById('salesError');err.style.display='none';
@@ -624,7 +644,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       renderPeriod();
       var baseUp='업데이트: '+new Date().toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
       up.textContent=baseUp;
-      mergeLiveMonths(force,function(){renderPeriod();up.textContent=baseUp+(MODEL.liveMonths&&MODEL.liveMonths.length?(' · '+MODEL.liveMonths.join('·')+'월 재무 라이브'):'');});
+      mergeLiveMonths(force,function(){mergeLiveInstr(force,function(){renderPeriod();up.textContent=baseUp+(MODEL.liveMonths&&MODEL.liveMonths.length?(' · '+MODEL.liveMonths.join('·')+'월 재무 라이브'):'');});});
     }).catch(function(e){up.textContent='불러오기 실패';err.style.display='block';err.textContent='⚠ 매출 시트를 불러오지 못했습니다: '+e.message;});
   };
 
