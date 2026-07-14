@@ -865,5 +865,18 @@
     "artifact": "배 CTO-2026-07-14-WEEKLY-PAGE-HYGIENE(GM 지시): 오늘 수동으로 진행한 시우(COO) 14페이지\n정리(하위모델 감사→A죽은코드/B중복/C낡은안내/D장황 분류→GM승인→적용)를 매주 일요일 09:00\n무인 파이프로 제품화. (CLI ad-hoc · 커밋 a5d2d9a5)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a5d2d9a578eddb785942e342090e177fde18ee8d"
+  },
+  {
+    "task_id": "CPO-2026-07-14-LESSON-LEDGER-CONSOLIDATION",
+    "clevel": "cpo",
+    "title": "[시포] 강습 원장 통합 — 6종목 흩뿌린 시트 → 4 메인시트+페이지 단일입력 (GM 지시)",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-14",
+    "module": "cpo",
+    "note": "[2026-07-14 GM 지시·/deep-interview 5R 확정·모호도<5%] 스펙=.omc/specs/deep-interview-cpo-lesson-ledger-consolidation.md. 목표=강습 문의가 Survey→6종목시트(수영·PT·필라·골프·체조·스쿼시)로 IMPORTRANGE 흩뿌려져 실무진이 6군데 각자 기록=파편화 → 실무진이 페이지에서 기록→메인시트 4개(성인강습KR gid111889422·EN 311319200·WSC/유소년KR 268994754·EN 931249179, ss 1b0XU1o…)에 통합. 신규마스터 안만들고 기존4개만. [Phase1 실측 완결] 메인4개가 이미 6종목 전부 담음: 유소년메인4576행(WSC수영1862·체조1150·골프169·스쿼시156·필라43)·성인메인3531행(수영1783·PT500·스쿼시392·골프312·필라274). 흐름=Survey→메인(마스터)→IMPORTRANGE로 6시트 뿌림→실무진 6시트에 주석. 6시트=메인 하류뷰+주석사일로. 페이지는 메인 읽고 status·담당·메모·컨택·상담예약·방문 이미 저장(lesson_inquiry_update). ★갭=지정강사(지정강사/프로/코치) 필드가 메인/페이지에 없음(6시트에만). 결론=마스터는 이미 메인4개. 통합=①지정강사 필드 메인+페이지 신설 ②6시트 주석(지정강사·컨택·진행상황·체험) 메인으로 이관(전화+종목 매칭) ③IMPORTRANGE spray 정리(GM 시트) ④팀 페이지 전환·6시트 은퇴.",
+    "next": "👉 Phase 2 착수 여부 GM 결재: ①지정강사 필드 신설(페이지+GAS lesson, 가역) ②6시트 주석 이관 매칭 파일럿(수영). Phase 3(IMPORTRANGE spray 정리)=GM 스프레드시트 작업 동반. 라이브 발효=GM go.",
+    "depends_on": "",
+    "ship_no": 973
   }
 ]
