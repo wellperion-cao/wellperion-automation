@@ -95,15 +95,24 @@ _HTTP_TIMEOUT = 20
 SALES_TARGETS_PATH = ROOT / "status" / "sales_targets.json"
 
 
-def _http_get_json(url: str, timeout: int = _HTTP_TIMEOUT) -> object:
-    """GET → 파싱된 JSON 객체. 예외는 호출부에서 처리."""
+def _http_get_json(url: str, timeout: int = _HTTP_TIMEOUT, retries: int = 2) -> object:
+    """GET → 파싱된 JSON 객체. GAS 콜드스타트(아침 첫 호출)로 인한 일시 타임아웃·네트워크
+    실패는 백오프(2s·4s) 재시도. 마지막 예외는 호출부에서 처리."""
     sep = "&" if "?" in url else "?"
-    busted = f"{url}{sep}_cb={int(time.time())}"
-    req = urllib.request.Request(
-        busted, headers={"Cache-Control": "no-cache"}
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8"))
+    last_exc: Exception | None = None
+    for attempt in range(retries + 1):
+        busted = f"{url}{sep}_cb={int(time.time())}-{attempt}"
+        req = urllib.request.Request(
+            busted, headers={"Cache-Control": "no-cache"}
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read().decode("utf-8"))
+        except Exception as e:
+            last_exc = e
+            if attempt < retries:
+                time.sleep(2 * (attempt + 1))
+    raise last_exc
 
 
 def _coo_check_rate_monthly(month_str: str) -> dict | None:
@@ -470,7 +479,7 @@ def _cfo_sales_month() -> dict:
         "_sales_note": "측정 개통 전",
     }
     try:
-        data = _http_get_json(f"{_CFO_GAS}?action=sales_monthly")
+        data = _http_get_json(f"{_CFO_GAS}?action=sales_monthly", timeout=45)
         if not isinstance(data, dict) or not data.get("ok"):
             result["_sales_note"] = "GAS 응답 오류(ok=false 또는 형식 불일치)"
             return result
