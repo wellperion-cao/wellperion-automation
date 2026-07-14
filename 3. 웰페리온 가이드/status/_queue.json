@@ -1591,5 +1591,19 @@
     "artifact": "?manage=lesson 뷰 상단에 기존 .dash-grid(repeat(4,1fr)) 패턴을 재사용한\n공유 4카드(#lessonComboBoard: 문의 현황/강습 회원관리/LOSS 회원관리/\n대기자 회원관리)를 추가. 각 카드에 성인·유소년 수를 병기 표시. (CLI ad-hoc · 커밋 622d8379)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "622d8379fb6840416fec66ef81da99e27157990e"
+  },
+  {
+    "task_id": "CPO-2026-07-14-ADHOC-da607740",
+    "clevel": "cpo",
+    "title": "[시포] 강습 성인 문의현황 카드 안전폴백 + 멤버십 4카드 추가 (CPO-2026-07-14-MEMBER-CARDS-FIX)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-14",
+    "processed_at": "2026-07-14",
+    "ship_no": 1036,
+    "artifact": "작업1 — 강습 회원관리 뷰 \"문의 현황·성인\" 카드 안전 폴백 추가. 라이브 재현 테스트(Playwright, GAS 직결)에서는\n성인(491~492건)·유소년(667건) 모두 정상 배선되어 현재 코드에서 재현되지 않았으나, lessonLoadStats가 실패/드롭돼도\n카드가 \"–\"로 영구 고착되지 않도록 _lessonInqCardFallback()을 추가(lessonLoad 완료 시점·lessonLoadStats 실패 시점\n양쪽에서 이미 로드된 rows 건수로 보정, 신규 fetch 없음·GAS 무변경). (CLI ad-hoc · 커밋 da607740)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "da607740f4d1c0615793c1c1f1eb98907a57c7e4"
   }
 ]
