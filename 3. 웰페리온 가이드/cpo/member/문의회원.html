@@ -5777,7 +5777,9 @@ function _ctSort(list) {
 }
 // 연락 1행 DOM 추가(IME 안전: 기존 행 재생성 없음). item={date,time,note}
 function _ctAddRow(item) {
-  item = item || { date: '', time: '', note: '' };
+  // 새 연락(＋추가 버튼=인자없음)=오늘 날짜 기본값. 로드된 기존 행은 item(c)을 넘겨 받으므로 그대로(과거 오염 0).
+  // 연락이력 날짜 100% 빈칸 데이터품질 갭 근본수리 — 컨택 정체·팔로업 정확도 회복. 2026-07-14 시포.
+  item = item || { date: (typeof _tapToday === 'function' ? _tapToday() : ''), time: '', note: '' };
   var list = document.getElementById('ctList');
   var el = document.createElement('div');
   el.className = 'res-item';
@@ -5834,7 +5836,7 @@ function openContactModal(row, ctx) {
   var list = document.getElementById('ctList'); list.innerHTML = '';
   var contacts = _ctSort(_rowContacts(row));
   if (contacts.length) contacts.slice().reverse().forEach(function(c){ _ctAddRow(c); });   // 표시=최신 우선
-  else _ctAddRow({ date: '', time: '', note: '' });
+  else _ctAddRow({ date: (typeof _tapToday === 'function' ? _tapToday() : ''), time: '', note: '' });   // 첫 연락 기록=오늘 기본
   document.getElementById('contactOverlay').classList.add('open');
 }
 function closeContactModal() {

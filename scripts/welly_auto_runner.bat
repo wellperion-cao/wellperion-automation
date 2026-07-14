@@ -15,6 +15,18 @@ REM RUNNER_LIVE) - GM go 2026-07-13 ("notifications on"). Sends a low-frequency
 REM GM-channel ping only when the runner parks an ambiguous ship (dedup + daily
 REM cap enforced in welly_auto_runner.py). Rollback (1 line): comment out
 REM "set RUNNER_PING_LIVE=1" below to silence pings again.
+REM
+REM bae237 phase4 (2026-07-14 GM ask): welly_auto_runner.py now supports
+REM "--clevel all" to round-robin all 7 C-Level roles (cmo/coo/cto/cpo/ceo/cfo/
+REM chro) in one cycle, capped per cycle (MAX_SHIPS_PER_CYCLE), with every
+REM existing safety gate (reversible-only, low-risk, clean-tree, recursion
+REM guard, cooldown, and the non-negotiable ambiguity park) applied per clevel
+REM unchanged. This line still targets "--clevel cto" only - widening the
+REM scheduled 07:30 live run from 1 domain to 7 is a separate scope expansion
+REM that needs its own explicit GM go (design note:
+REM docs/superpowers/specs/2026-07-14-welly-runner-all-clevel-autodrive-design.md).
+REM Forward/rollback are both a 1-line flip: change "cto" to "all" below (or
+REM back) whenever that go is given.
 cd /d C:\Users\jjky0\welperion-automation
 set PYTHONIOENCODING=utf-8
 set RUNNER_LIVE=1

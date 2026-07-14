@@ -71,6 +71,28 @@ EXTRA_LOW_RISK_EXCLUDE_KEYWORDS = (
 COOLDOWN_HOURS = 24
 MAX_SHIPS_PER_RUN = 1  # 선별기 구조가 항상 1척만 반환하므로 이 상수는 문서화 목적
 
+# ── 전 C-Level 순회(배237 phase4, 2026-07-14 GM 요구) ──
+# 정본: docs/superpowers/specs/2026-07-14-welly-runner-all-clevel-autodrive-design.md
+# GM칸(제작 루프)·웰리칸(오케스트레이션)에 이은 매 회차 GM 재승인 부담을 없애기 위해,
+# 러너의 선별 대상을 CTO 1개→7 C-Level 전체로 넓힌다. run_once() 자체의 안전 로직은
+# 손대지 않는다(재귀 방지·클린트리·모호성 park·쿨다운·1clevel당 1척 전부 그대로) —
+# run_cycle()은 그 위에 clevel 순회 + 사이클 총 상한만 얹는 얇은 래퍼.
+DEFAULT_CLEVELS = ("cmo", "coo", "cto", "cpo", "ceo", "cfo", "chro")
+CLEVEL_NICKS = {
+    "ceo": "웰리",
+    "cfo": "시뽀",
+    "chro": "시로",
+    "cmo": "시모",
+    "coo": "시우",
+    "cpo": "시포",
+    "cto": "시토",
+}
+# 사이클(1회 run_cycle 호출)당 실제 라이브 성공 실행 총 상한. clevel별 1척은 이미
+# select_one_low_risk_ship 구조가 보장하므로, 이 상수는 "여러 clevel에 후보가 동시에
+# 몰릴 때" 한 사이클에서 너무 많은 척이 한꺼번에 라이브로 나가는 것만 추가로 막는다
+# (전면 확산 전 GM go 존중 — 보수적 기본값).
+MAX_SHIPS_PER_CYCLE = 3
+
 _PRIORITY_WEIGHT = {"⛵돛단배": 0, "⛴️여객선": 1, "🛳️크루즈": 2}
 
 # ── 모호성 에스컬레이션 (배xxx, 2026-07-13 GM go) ──
@@ -146,7 +168,12 @@ def select_one_low_risk_ship(clevel, queue, registry=None, cooldown_task_ids=Non
 def is_ambiguous(ship: dict) -> dict:
     """
     배 실행 직전 모호성 판정(v1 보수적 — 의심되면 park).
-    아래 중 하나라도 해당하면 모호로 판정한다:
+
+    ★비협상 원칙(GM 2026-07-14, 배237 phase4 확장 지시 — 못박기)★
+    모호성이 조금이라도 있으면 무조건 park(GM 인터뷰 대기)한다. 러너는 절대 "임의
+    판단·추측으로 진행"하지 않는다 — clevel이 cto든 전체(run_cycle의 7종)든 예외
+    없이 이 게이트를 거친다(run_cycle()도 run_once()를 그대로 호출하므로 clevel별
+    우회 경로가 없음). 아래 중 하나라도 해당하면 모호로 판정한다:
       - note가 산출물·절차를 구체적으로 담기엔 너무 짧음(_VAGUE_MIN_NOTE_LEN 미만)
       - 접근법이 여러 개임을 시사하는 키워드(_MULTI_APPROACH_KEYWORDS)
       - 스코프·판단 결정이 필요함을 시사하는 키워드(_SCOPE_DECISION_KEYWORDS)
@@ -694,12 +721,95 @@ def run_once(
     return result
 
 
+def run_cycle(
+    clevels: tuple[str, ...] | None = None,
+    nicks: dict | None = None,
+    queue_path: str | None = None,
+    registry_path: str | None = None,
+    state_path: str | None = None,
+    log_path: str | None = None,
+    live: bool | None = None,
+    claude_timeout: int = 1200,
+    ping_state_path: str | None = None,
+    max_total_ships: int = MAX_SHIPS_PER_CYCLE,
+) -> dict:
+    """
+    전 C-Level 순회(배237 phase4) — clevels(기본 DEFAULT_CLEVELS 7종) 각각에 대해
+    run_once()를 순서대로 1회씩 호출한다. clevel마다 최대 1척(선별기 구조 보장)이고,
+    사이클 전체 라이브 성공 실행이 max_total_ships에 도달하면 남은 clevel은
+    "cycle-cap-skipped"로 건너뛴다(신규 안전 로직 추가 없음 — run_once의 기존 가드를
+    그대로 clevel별로 재사용하는 얇은 순회 래퍼).
+
+    ★비협상 원칙(GM 2026-07-14)★ 이 함수는 clevel별 우회 경로를 만들지 않는다 — 각
+    clevel 호출이 그대로 run_once()의 is_ambiguous() 게이트를 통과해야 하므로, 배
+    note·요구가 조금이라도 불명확하면 해당 clevel은 "parked"만 반환하고 절대 실행되지
+    않는다(추측 진행 금지). 전 C-Level 확장은 실행 대상 clevel 수만 넓힐 뿐, 안전
+    게이트는 clevel마다 100% 동일하게 적용된다.
+
+    큐·상태·로그·핑 경로는 모든 clevel 호출에 동일하게 공유한다(task_id가 clevel
+    접두사로 이미 구분되므로 쿨다운·로그 충돌 없음).
+
+    반환: {"results": {clevel: run_once 반환 dict}, "executed_count": int,
+           "cycle_order": list[str]}
+    """
+    clevels = clevels or DEFAULT_CLEVELS
+    nicks = nicks or CLEVEL_NICKS
+    results: dict = {}
+    executed_count = 0
+
+    for clevel in clevels:
+        if executed_count >= max_total_ships:
+            results[clevel] = {
+                "mode": "cycle-cap-skipped", "ship": None, "prompt": None,
+                "executed": False, "commit": None,
+                "reason": f"사이클 총 상한({max_total_ships}척) 도달 — 이번 사이클 스킵",
+            }
+            continue
+
+        nick = nicks.get(clevel, clevel.upper())
+        result = run_once(
+            clevel=clevel, nick=nick, queue_path=queue_path, registry_path=registry_path,
+            state_path=state_path, log_path=log_path, live=live, claude_timeout=claude_timeout,
+            ping_state_path=ping_state_path,
+        )
+        results[clevel] = result
+        if result.get("executed") and result.get("success"):
+            executed_count += 1
+
+    return {"results": results, "executed_count": executed_count, "cycle_order": list(clevels)}
+
+
+def _print_run_once_result(result: dict, label: str | None = None) -> None:
+    """main()의 단일-clevel/사이클 출력 공통 헬퍼(로직 변경 없이 중복 제거용)."""
+    prefix = f"[{label}] " if label else ""
+    print(f"{prefix}mode={result['mode']} executed={result['executed']}")
+    if result.get("reason"):
+        print(f"{prefix}사유: {result['reason']}")
+    ship = result.get("ship")
+    if ship:
+        print(f"{prefix}선택 배: {ship.get('task_id')} | {ship.get('priority')} | {ship.get('title')}")
+    if result["mode"] == "dry-run" and result.get("prompt"):
+        print("-" * 60)
+        print(f"{prefix}[LIVE 발효 시 띄울 프롬프트 미리보기]")
+        print(result["prompt"])
+    if result["mode"] == "parked":
+        print(f"{prefix}모호 사유: {'; '.join(result.get('ambiguous_reasons', []))}")
+        print(f"{prefix}parked={result.get('parked')}")
+        if result.get("ping"):
+            print(f"{prefix}핑: sent={result['ping']['sent']} — {result['ping']['reason']}")
+    if result.get("commit"):
+        print(f"{prefix}커밋: {result['commit']} (역롤백: git revert {result['commit']})")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="예약 Claude 러너 MVP — 가역·저위험 배 1척 자율 실행(게이트: env RUNNER_LIVE)"
     )
-    parser.add_argument("--clevel", default="cto", help="대상 C-Level role(기본 cto)")
-    parser.add_argument("--nick", default="시토", help="대상 C-Level 닉네임(기본 시토)")
+    parser.add_argument(
+        "--clevel", default="cto",
+        help="대상 C-Level role(기본 cto). 'all'이면 전 C-Level(DEFAULT_CLEVELS 7종) 순회(배237 phase4)",
+    )
+    parser.add_argument("--nick", default="시토", help="대상 C-Level 닉네임(기본 시토, --clevel all에서는 무시)")
     parser.add_argument(
         "--force-dry-run", action="store_true",
         help="RUNNER_LIVE=1이어도 이번 실행만 강제 dry-run(검증용 — env는 건드리지 않음)",
@@ -716,26 +826,22 @@ def main() -> int:
         return 0
 
     live = False if args.force_dry_run else None
+
+    if args.clevel == "all":
+        cycle = run_cycle(live=live)
+        print("=" * 60)
+        print(f"[welly_auto_runner] --clevel all — 사이클 실행 {cycle['executed_count']}척"
+              f"(순회 순서: {', '.join(cycle['cycle_order'])})")
+        for clevel in cycle["cycle_order"]:
+            print("-" * 60)
+            _print_run_once_result(cycle["results"][clevel], label=clevel.upper())
+        print("=" * 60)
+        return 0
+
     result = run_once(clevel=args.clevel, nick=args.nick, live=live)
 
     print("=" * 60)
-    print(f"[welly_auto_runner] mode={result['mode']} executed={result['executed']}")
-    if result.get("reason"):
-        print(f"사유: {result['reason']}")
-    ship = result.get("ship")
-    if ship:
-        print(f"선택 배: {ship.get('task_id')} | {ship.get('priority')} | {ship.get('title')}")
-    if result["mode"] == "dry-run" and result.get("prompt"):
-        print("-" * 60)
-        print("[LIVE 발효 시 띄울 프롬프트 미리보기]")
-        print(result["prompt"])
-    if result["mode"] == "parked":
-        print(f"모호 사유: {'; '.join(result.get('ambiguous_reasons', []))}")
-        print(f"parked={result.get('parked')}")
-        if result.get("ping"):
-            print(f"핑: sent={result['ping']['sent']} — {result['ping']['reason']}")
-    if result.get("commit"):
-        print(f"커밋: {result['commit']} (역롤백: git revert {result['commit']})")
+    _print_run_once_result(result, label="welly_auto_runner")
     print("=" * 60)
     return 0
 

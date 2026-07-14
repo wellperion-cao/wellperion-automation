@@ -639,6 +639,139 @@ def test_run_once_dry_run_ambiguous_ship_returns_parked_mode_without_queue_mutat
     assert before == after  # 큐 무변경 유지
 
 
+# ── run_cycle: 전 C-Level 순회(배237 phase4) ──
+def test_run_cycle_visits_all_default_clevels_in_order(tmp_path, monkeypatch):
+    queue = [_ship()]  # cto 배 1척만 존재 — 나머지 clevel은 후보 0건이어야 함
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    def _boom(*a, **kw):
+        raise AssertionError("dry-run 사이클인데 subprocess.run이 호출됨")
+
+    monkeypatch.setattr(war.subprocess, "run", _boom)
+
+    cycle = war.run_cycle(
+        queue_path=str(queue_path),
+        registry_path=None,
+        state_path=str(tmp_path / "state.json"),
+        log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping_state.json"),
+        live=False,
+    )
+
+    assert cycle["cycle_order"] == list(war.DEFAULT_CLEVELS)
+    assert set(cycle["results"].keys()) == set(war.DEFAULT_CLEVELS)
+    assert cycle["results"]["cto"]["ship"]["task_id"] == "CTO-2026-07-13-A"
+    for clevel in war.DEFAULT_CLEVELS:
+        if clevel != "cto":
+            assert cycle["results"][clevel]["ship"] is None
+    assert cycle["executed_count"] == 0  # dry-run은 executed=False뿐이므로 카운트 0
+
+
+def test_run_cycle_respects_custom_clevels_subset(tmp_path):
+    queue = [_ship(clevel="cmo", task_id="CMO-X")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    cycle = war.run_cycle(
+        clevels=("cmo", "cto"), queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping_state.json"), live=False,
+    )
+    assert cycle["cycle_order"] == ["cmo", "cto"]
+    assert set(cycle["results"].keys()) == {"cmo", "cto"}
+
+
+def test_run_cycle_stops_at_total_cap_marks_remaining_clevels_skipped(tmp_path, monkeypatch):
+    queue = [_ship()]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    calls = []
+
+    def _fake_run_once(clevel, **kwargs):
+        calls.append(clevel)
+        return {
+            "mode": "live", "ship": {"task_id": f"{clevel.upper()}-X"}, "prompt": "p",
+            "executed": True, "success": True, "commit": "deadbeef",
+        }
+
+    monkeypatch.setattr(war, "run_once", _fake_run_once)
+
+    cycle = war.run_cycle(
+        clevels=("cmo", "coo", "cto", "cpo"),
+        queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping_state.json"),
+        live=True, max_total_ships=2,
+    )
+
+    assert calls == ["cmo", "coo"]  # 상한 도달 후 run_once 호출 자체가 안 됨
+    assert cycle["executed_count"] == 2
+    assert cycle["results"]["cto"]["mode"] == "cycle-cap-skipped"
+    assert cycle["results"]["cpo"]["mode"] == "cycle-cap-skipped"
+    assert cycle["results"]["cto"]["executed"] is False
+
+
+# ── run_cycle: 모호배 비협상 원칙(GM 2026-07-14 못박기) — 절대 추측 진행 금지 ──
+def test_run_cycle_never_executes_ambiguous_ship_across_any_clevel(tmp_path, monkeypatch):
+    # cmo·cto 둘 다 모호 배(짧은 note)만 존재 — 어느 clevel도 실행되면 안 되고 전부 park.
+    queue = [
+        _ship(clevel="cmo", task_id="CMO-VAGUE", note="점검"),
+        _ship(clevel="cto", task_id="CTO-VAGUE", note="점검"),
+    ]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    def _boom(*a, **kw):
+        raise AssertionError("모호 배인데 subprocess.run(claude 호출)이 실행됨 — 비협상 원칙 위반")
+
+    monkeypatch.setattr(war.subprocess, "run", _boom)
+    monkeypatch.setattr(
+        war, "working_tree_guard",
+        lambda *a, **kw: {"blocked": False, "dirty_files": [], "real_work_files": [], "reason": "클린"},
+    )
+
+    cycle = war.run_cycle(
+        clevels=("cmo", "cto"),
+        queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping_state.json"),
+        live=True,  # 라이브여도 모호 배는 실행 대신 park만 되어야 함
+    )
+
+    assert cycle["executed_count"] == 0
+    for clevel in ("cmo", "cto"):
+        result = cycle["results"][clevel]
+        assert result["mode"] == "parked"
+        assert result["executed"] is False
+        assert result["parked"] is True  # 라이브 park는 실제 큐 플래그까지 기록됨
+
+    saved = json.loads(queue_path.read_text(encoding="utf-8"))
+    for ship in saved:
+        assert ship["aide_interview_needed"] is True  # 두 배 다 인터뷰 대기로 park, 실행 흔적 0
+
+
+def test_run_cycle_passes_correct_nick_per_clevel(tmp_path, monkeypatch):
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text("[]", encoding="utf-8")
+    seen_nicks = {}
+
+    def _fake_run_once(clevel, nick, **kwargs):
+        seen_nicks[clevel] = nick
+        return {"mode": "dry-run", "ship": None, "prompt": None, "executed": False, "commit": None}
+
+    monkeypatch.setattr(war, "run_once", _fake_run_once)
+
+    war.run_cycle(
+        queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping_state.json"), live=False,
+    )
+
+    assert seen_nicks == war.CLEVEL_NICKS
+
+
 def test_run_once_live_ambiguous_ship_parks_flag_and_previews_ping_without_real_send(tmp_path, monkeypatch):
     queue = [_ship(note="점검")]  # 짧은 note = 모호
     queue_path = tmp_path / "_queue.json"
