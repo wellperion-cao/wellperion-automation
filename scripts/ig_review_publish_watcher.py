@@ -648,8 +648,23 @@ def _run_once_inner(dry_run: bool) -> int:
     manual = [e for e in events if e.startswith("📦")]
     if not dry_run and events:
         save_queue(items)
+        # 콘텐츠 폴더 동반 add (2026-07-14 시토 · CTO-2026-07-14-AUTOCOMMIT-UNTRACKED-CONTENT) —
+        # 기존엔 QUEUE(review_queue.json) 만 add 해서 status는 커밋되는데 발행된 실제 콘텐츠 폴더
+        # (instagram/**, 신규 untracked 디렉토리 포함)는 빠짐 → 수일간 미커밋 누적 → 무인 러너
+        # 클린트리 가드 발동(skip) 원인이 됨. approved 처리 대상의 folder/image_dir/body_file
+        # 경로를 콘텐츠 루트로 스코프해 함께 add(git add -A 아님 — 무관 WIP 혼입 방지).
+        content_paths: set[str] = set()
+        for it in approved:
+            for key in ("folder", "image_dir", "body_file"):
+                v = it.get(key)
+                if v:
+                    content_paths.add(str(v))
         with GitLock(holder="ig_review_publish:commit", repo_root=str(ROOT)):
             git("add", str(QUEUE))
+            for rel in sorted(content_paths):
+                target = ROOT / rel
+                if target.exists():
+                    git("add", str(target))
             git("commit", "-m", f"auto(cmo): 검수 승인 건 발행 {len(published)}건 / 수동대기 {len(manual)}건")
             git("pull", "--rebase", "--autostash", "origin", "master")
             git("push", "origin", "master")

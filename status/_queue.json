@@ -402,6 +402,19 @@
     "ship_no": 907
   },
   {
+    "task_id": "CTO-2026-07-14-AUTOCOMMIT-UNTRACKED-CONTENT",
+    "clevel": "cto",
+    "title": "[시토] 자동커밋 untracked 신규폴더 누락 수리 — 발행콘텐츠 미커밋 누적→러너 클린트리 가드 방해 근본봉합",
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-14",
+    "note": "[2026-07-14 시토] 발행 완료된 콘텐츠가 신규 폴더(git untracked)로 생성되면 기존 자동 커밋 장치가 이를 못 잡고 지나쳐 수일간 미커밋으로 쌓이는 문제. 이렇게 쌓인 미커밋 실작업 파일이 무인 러너(scripts/welly_auto_runner.py) 클린트리 가드를 발동시켜 러너가 매일 자율 실행을 skip(2026-07-13~14 이틀 연속, F3 회복 콘텐츠 등 47건 방치가 원인). 오늘 GM 수동 커밋으로 해소했으나 재발 방지 위해 근본원인(자동 커밋이 untracked 신규 파일/폴더를 안 잡음) 수리 착수.",
+    "next": "",
+    "depends_on": "",
+    "module": "T2",
+    "ship_no": 908
+  },
+  {
     "task_id": "CEO-2026-07-14-ADHOC-4aafc409",
     "clevel": "ceo",
     "title": "[웰리] 아침 카드 매출 타일 콜드스타트 타임아웃 수리 — fetch 재시도+매출 45s 상향",
