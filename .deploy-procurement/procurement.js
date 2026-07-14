@@ -1,6 +1,7 @@
 /** 웰페리온 지출품의 백엔드 — 시트 '지출품의' 탭 읽기/쓰기 (품의·검토·집행·정산·영수증)
  * 시트: 1. 웰페리온 지출 관리 및 현황
  * 컬럼(1-base): 1날짜 2타임 3요청자 4소속 5물품 6링크 7가격 8목적 9승인자 10비고 11이미지 12진행상황 13승인날짜 14배송 15지출증빙 16항목1 17항목2
+ *   확장열: 25번호(#) 26구매날짜 27배송비(참고 — 가격=총액에 이미 포함) 28결제수단(카드/현금) — 2026-07-14 배송비·결제 신설
  */
 var SHEET_ID = "1umSF9rf3K0TuAvR5l0F_gvXHxcOLVKKvkSUfTtbRhdc";
 var TAB = "지출품의";
@@ -29,6 +30,7 @@ function route(p){
     case "status":  return setStatus(p);
     case "setno":   return setNo(p);
     case "setdate": return setDate(p);
+    case "colprobe": return colProbe(p); // 열 점검(읽기전용·값 비반환) — 신규 열 배정 전 검증용, 2026-07-14
     case "proc_summary": return procSummary(p);
     case "sales_probe": return salesProbe(p);
     case "sales_dept": return salesDept(p);
@@ -86,8 +88,9 @@ function putPhoto(s, row, p){ // 원본→드라이브(백업), 썸네일 base64
   var blob = Utilities.newBlob(Utilities.base64Decode(p.fileData), p.mimeType||"image/jpeg", p.fileName||("photo_"+row));
   var f = DriveApp.getFolderById(RECEIPT_FOLDER).createFile(blob);
   try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch(e){}
-  var thumb = p.thumb || p.fileData; // 썸네일 base64(없으면 원본)
-  var mime = p.thumbMime || p.mimeType || "image/jpeg";
+  var thumb = String(p.thumb || p.fileData || "").replace(/[^A-Za-z0-9+/=]/g,""); // base64 문자만 허용
+  var mimeOk = function(m){ return /^image\/[A-Za-z0-9.+-]{1,30}$/.test(String(m||"")); }; // mime 화이트리스트 — 속성 이스케이프 주입 차단(검증 발견 수정 2026-07-14)
+  var mime = mimeOk(p.thumbMime) ? p.thumbMime : (mimeOk(p.mimeType) ? p.mimeType : "image/jpeg");
   s.getRange(row, 11).setValue("data:"+mime+";base64,"+thumb); // data URI
   return f.getUrl();
 }
@@ -107,6 +110,8 @@ function listItems(p){
   var lc = s.getLastColumn();
   var nos = lc >= 25 ? s.getRange(FIRST_ROW, 25, lr - FIRST_ROW + 1, 1).getValues() : null; // 번호열(25)
   var pds = lc >= 26 ? s.getRange(FIRST_ROW, 26, lr - FIRST_ROW + 1, 1).getValues() : null; // 구매날짜열(26, 2026-07-08 신설)
+  var shp = lc >= 27 ? s.getRange(FIRST_ROW, 27, lr - FIRST_ROW + 1, 1).getValues() : null; // 배송비열(27, 2026-07-14 신설 — 가격=총액에 포함된 참고값)
+  var pys = lc >= 28 ? s.getRange(FIRST_ROW, 28, lr - FIRST_ROW + 1, 1).getValues() : null; // 결제수단열(28, 카드/현금 — 빈값=카드 취급)
   var fromN = p.from ? dateNum(p.from) : 0, toN = p.to ? dateNum(p.to) : 0;
   var data = [];
   for (var i=0;i<v.length;i++){
@@ -124,7 +129,9 @@ function listItems(p){
       가격: r[6], 목적: r[7], 승인자: r[8], 이미지: noimg ? "" : extractImage(r[10], fm[i][0]), 상태: st,
       승인날짜: fmtDate(r[12]), 지출증빙: noimg ? "" : driveThumb(String(r[14]||"")), 항목1: r[15], 항목2: r[16],
       번호: nos ? nos[i][0] : "",
-      구매날짜: pds ? fmtDate(pds[i][0]) : ""
+      구매날짜: pds ? fmtDate(pds[i][0]) : "",
+      배송비: shp ? shp[i][0] : "",
+      결제: pys ? String(pys[i][0]||"") : ""
     });
   }
   return out({ ok:true, count:data.length, mode:mode, data:data });
@@ -149,17 +156,25 @@ function addItem(p){
   var no = mx + 1;
   s.getRange(row, 25).setValue(no);
   if (p.구매날짜) s.getRange(row, 26).setValue(p.구매날짜); // 구매(예정)날짜 — 새 행 26열에만 기록(기존·회계열 무관, 2026-07-08)
+  var shipAmt = Math.round(parseFloat(String(p.배송비==null?"":p.배송비).replace(/[^0-9.\-]/g,"")) || 0); // 소수점 반올림·음수는 아래 >0 가드로 차단(검증 발견 수정 2026-07-14)
+  if (shipAmt > 0){ var r27 = s.getRange(row, 27); r27.setNumberFormat("#,##0"); r27.setValue(shipAmt); } // 배송비(참고) — 가격(7열)=총액에 이미 포함, 회계 집계 무변경. 숫자서식 강제(미지정 시 시트가 날짜로 오인한 실측 버그, 2026-07-14)
+  var payKind = String(p.결제||"").trim();
+  if (payKind === "현금" || payKind === "카드") s.getRange(row, 28).setValue(payKind); // 결제수단 — 빈값=카드 취급
   if (locked) { try { lock.releaseLock(); } catch(eL2){} }
   if (p.fileData) putPhoto(s, row, p); // 품의 첨부사진 → 이미지 열(=IMAGE 썸네일)
   var instant = null;
-  try { instant = instantLowprice_(row, p.물품||"", p.가격||"", no); } catch(e){ console.error("[instant]", String(e)); instant = { ok:false, error:String(e) }; } // 제출즉시 최저가(실패해도 품의는 성공)
+  // 시세 비교 기준 = 총액 − 배송비(물품가) — 총액(배송비 포함)을 네이버 물품단가와 그대로 대조하면 배송비만큼 '비쌈' 오탐(검증 발견 수정 2026-07-14)
+  var priceNum = parseInt(String(p.가격==null?"":p.가격).replace(/[^0-9]/g,""), 10) || 0;
+  var cmpPrice = (shipAmt > 0 && priceNum > shipAmt) ? String(priceNum - shipAmt) : (p.가격||"");
+  var shipNote = (shipAmt > 0 && priceNum > shipAmt) ? " · 품의가=배송비 제외 물품가 기준" : "";
+  try { instant = instantLowprice_(row, p.물품||"", cmpPrice, no, shipNote); } catch(e){ console.error("[instant]", String(e)); instant = { ok:false, error:String(e) }; } // 제출즉시 최저가(실패해도 품의는 성공)
   return out({ ok:true, no:no, instant:instant });
 }
 
 /** 제출 즉시 최저가 조사 — 네이버 쇼핑 검색(가격 낮은순 1건) → 검토시트 upsert.
  *  키(Script Properties NAVER_CLIENT_ID/SECRET) 없으면 안전하게 skip. 단순검색이라 신뢰도 '하(참고)' → 9시 cron 에이전트가 보완(2단 구조).
  */
-function instantLowprice_(row, 물품, 가격, no){
+function instantLowprice_(row, 물품, 가격, no, note){
   var props = PropertiesService.getScriptProperties();
   var cid = props.getProperty("NAVER_CLIENT_ID"), csec = props.getProperty("NAVER_CLIENT_SECRET");
   if (!cid || !csec) return { ok:false, skipped:"no_api_key" }; // 키 미설정 → 조사 생략(기존 동작 유지)
@@ -203,7 +218,7 @@ function instantLowprice_(row, 물품, 가격, no){
   } else if (!price) {
     대비 = "가격 입력 요망";
   }
-  var 비고 = "자동·네이버쇼핑 제출즉시(참고시세) · 9시 보완예정" + (matched ? "" : " · ⚠관련성낮음(모델명 보완요)") + (mall ? " · "+mall : "");
+  var 비고 = "자동·네이버쇼핑 제출즉시(참고시세) · 9시 보완예정" + (matched ? "" : " · ⚠관련성낮음(모델명 보완요)") + (mall ? " · "+mall : "") + (note || "");
   // B품의물품 C동일제품 D최저가 E판매처링크 F품의가 G품의가대비 H신뢰도 I검토일 J비고
   reviewUpsert_(row, [물품||"", name, low||"", link, price||"", 대비, "하", 검토일, 비고], no);
   return { ok:true, found:1, matched:matched, low:low, name:name };
@@ -258,6 +273,23 @@ function setNo(p){
   if (String(cur).replace(/[^0-9]/g,'') && !p.force) return out({ ok:false, error:"already_set", cur:cur });
   s.getRange(row, 25).setValue(no);
   return out({ ok:true, row:row, no:no });
+}
+
+// 열 점검(읽기전용) — 신규 열 배정 전 안전검증: 마지막열·헤더(2행)·지정범위의 비어있지 않은 셀 '개수'만 반환(셀 값 비반환·PII 없음). 2026-07-14 배송비/결제 열 신설 검증용.
+function colProbe(p){
+  var s = sh(); var lr = s.getLastRow(), lc = s.getLastColumn();
+  var head = s.getRange(2, 1, 1, Math.min(lc, 40)).getDisplayValues()[0];
+  var from = parseInt(p.colFrom,10) || 18, to = parseInt(p.colTo,10) || Math.min(lc, 30);
+  var counts = {};
+  if (lr >= FIRST_ROW && to >= from && from <= lc){
+    var v = s.getRange(FIRST_ROW, from, lr - FIRST_ROW + 1, Math.min(to, lc) - from + 1).getValues();
+    for (var c = from; c <= Math.min(to, lc); c++){
+      var n = 0;
+      for (var i = 0; i < v.length; i++){ if (String(v[i][c-from]) !== "") n++; }
+      counts[c] = n;
+    }
+  }
+  return out({ ok:true, lastRow:lr, lastCol:lc, header2:head, nonEmpty:counts });
 }
 
 // 날짜(1열) 설정 — 서베이 등으로 날짜 없이 들어온 건 보정용. password 게이트(switch 진입 전 검증).
