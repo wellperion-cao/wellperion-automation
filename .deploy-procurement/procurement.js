@@ -20,6 +20,7 @@ function route(p){
   if (p.action === "lowprice_set") return lowpriceSet(p); // 검토결과 쓰기(별도 시트·adminPassword) — 기존 게이트 앞 분기
   if (p.action === "lowprice_del") return lowpriceDel(p); // 검토결과 행삭제(별도 시트·adminPassword) — 기존 게이트 앞 분기
   if (p.action === "sales_dept_pub") return salesDeptPub(p); // 공개 강습 팀집계(무인증·운영부/PII 제외) — 공개 페이지(파트너팀 체계.html)용, 2026-07-14
+  if (p.action === "sales_instr_pub") return salesInstrPub(p); // 공개 강사별(무인증·6팀·진행월) — 파트너팀 페이지 강사별 실시간(매니저 승인 2026-07-14, 강습부 시트로 이미 공개중), 노출증가0
   if (String(p.password) !== PW) return out({ ok:false, error:"unauthorized" });
   switch (p.action){
     case "diag_naver": return diagNaver(p); // 진단(2026-07-06 감사: 무인증→비번 게이트 뒤로 이동)
@@ -379,6 +380,53 @@ function salesDeptPub(p){
   var pub = {};
   for (var k in res.dept){ if (k === "운영부") continue; pub[k] = res.dept[k]; } // 회원권(운영부) 제외 → 강습 종목만
   return out({ ok:true, dept:pub, monthsLoaded:res.monthsLoaded, src:res.src, at:res.at, stale:res.stale || false });
+}
+/** 공개 강사별 매출(무인증) — 파트너팀 페이지 강사별 실시간. 진행월(최신 데이터 탭) O8:T80에서 6팀 강사별 실적만 반환.
+ *  매니저 승인(2026-07-14): 이 공개페이지는 강습부 시트로 6월까지 강사별을 이미 공개 중 → 노출 증가 없음.
+ *  최소노출: 6팀 종목 실제 강사만(프로그램 라벨 아쿠아/뮤지컬/GXE 등 제외·미매핑 제외·매출>0). 진행월 1탭만 파싱(경량). SWR 캐시(20분+6시간). */
+function salesInstrPub(p){
+  var hit = swrGet_(p, "sales_instr_v1"); if (hit) return out(hit);
+  var now = new Date();
+  var year = parseInt(Utilities.formatDate(now,"Asia/Seoul","yyyy"),10);
+  var curMo = parseInt(Utilities.formatDate(now,"Asia/Seoul","M"),10);
+  var curDay = parseInt(Utilities.formatDate(now,"Asia/Seoul","d"),10);
+  var files = salesFiles_();
+  var dmap = laborDeptMap_();
+  var SIX = { "수영":1, "P.T":1, "필라테스":1, "골프":1, "스쿼시":1, "체조&트램":1 };
+  var month = 0, instr = [];
+  if (files[curMo]){
+    var ss = SpreadsheetApp.openById(files[curMo]);
+    var startDay = Math.min(curDay, daysInMonth_(year, curMo));
+    for (var d=startDay; d>=1; d--){
+      var sht = ss.getSheetByName(String(d));
+      if (!sht) continue;
+      var rows = parseInstrList_(sht, dmap, SIX);
+      if (rows && rows.length){ instr = rows; month = curMo; break; }
+    }
+  }
+  var res = { ok:true, month:month, instr:instr, at:Utilities.formatDate(now,"Asia/Seoul","yyyy-MM-dd HH:mm") };
+  swrPut_("sales_instr_v1", res);
+  return out(res);
+}
+/** O8:T80 강사별 리스트 [{name,team,val}] — 6팀 종목 실제 강사만(프로그램 라벨·미매핑·0/음수 제외). */
+function parseInstrList_(sht, dmap, six){
+  var g = sht.getRange(8, 15, 73, 6).getValues(); // O8:T80
+  var section = "member", res = [];
+  for (var i=0;i<g.length;i++){
+    var label = String(g[i][0]||"").trim();
+    var t = g[i][5]; t = (typeof t === "number") ? t : parseInt(String(t).replace(/[^0-9\-]/g,""),10);
+    if (isNaN(t)) t = 0;
+    if (label.indexOf("강습 매출")>=0){ section = "lesson"; continue; }
+    if (label.indexOf("분류1")>=0){ section = "option"; continue; }
+    if (!label) continue;
+    if (section === "lesson"){
+      if (label === "담당" || label === "정회원") continue;
+      if (SALES_ALIAS[label]) continue; // 프로그램 라벨(아쿠아/뮤지컬/GXE 등)은 개인 강사 아님 → 제외
+      var team = dmap[nameKey_(label)];
+      if (team && six[team] && t > 0){ res.push({ name:label, team:team, val:t }); }
+    }
+  }
+  return res;
 }
 function salesDeptCompute_(p){
   var hit = swrGet_(p, "sales_dept_v1"); if (hit) return hit;
