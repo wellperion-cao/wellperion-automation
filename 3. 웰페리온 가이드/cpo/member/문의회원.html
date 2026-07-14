@@ -6061,7 +6061,28 @@ function _tapClassify(rows, today) {
     if (hits.length) todaysRes.push({ row: r, time: hits[0].time || '' });
   });
   todaysRes.sort(function(a, b){ return (a.time || '').localeCompare(b.time || ''); });
-  return { todayNew: todayNew, uncontacted: uncontacted, todaysRes: todaysRes };
+  return { todayNew: todayNew, uncontacted: uncontacted, todaysRes: todaysRes, stalled: _tapClassifyStalled(rows, today) };
+}
+// 컨택 정체(팔로업 필요) = 활성 상태 + 연락이력≥1(미컨택과 구분) + 예정 예약 없음 + 마지막 활동 N일+ 경과.
+// 배944 진단(이번달 병목=컨택중 정체)을 실무 액션으로 surface. 마지막활동=문의일·채워진 연락일 중 최근(연락일 빈칸 데이터품질 대비). 2026-07-14 시포.
+var TAP_STALL_DAYS = 5;
+function _tapDaysAgo(ymd) {
+  var s = String(ymd || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  var d = new Date(s + 'T00:00:00'); if (isNaN(d.getTime())) return null;
+  return Math.round((new Date(_tapToday() + 'T00:00:00') - d) / 86400000);
+}
+function _tapClassifyStalled(rows, today) {
+  return rows.filter(function(r){
+    if (!_tapIsActive(r.status)) return false;                        // SUC/LOSS 제외
+    if (!((r.contacts || []).length > 0)) return false;                // 미컨택은 별도 섹션
+    if ((r.reservations || []).some(function(x){ var da = _tapDaysAgo(x.date); return da != null && da <= 0; })) return false;  // 예정 예약=다음 걸음 있음
+    var acts = [];
+    var td = _tapDaysAgo(r.timestamp); if (td != null) acts.push(td);
+    (r.contacts || []).forEach(function(c){ var cd = _tapDaysAgo(c && c.date); if (cd != null) acts.push(cd); });
+    if (!acts.length) return false;                                    // 날짜 전무=판정불가(오탐 방지)
+    return Math.min.apply(null, acts) >= TAP_STALL_DAYS;               // 가장 최근 활동이 N일+ 전
+  });
 }
 // rowIndex 클릭 → 문의DB 탭으로 이동 + 행 하이라이트 + 기존 CONTACT 연락이력 모달 오픈(신규 백엔드 액션 0, 통합검색 _unifiedSearchGoto와 동일 패턴 재사용)
 function _tapOpenRow(rowIndex) {
@@ -6262,11 +6283,12 @@ function renderTodayActionPanel() {
     { key: 'new', icon: '🆕', label: '오늘 신규 문의',          color: 'teal',   items: cls.todayNew,    empty: '오늘 신규 문의 없음' },
     { key: 'unc', icon: '📵', label: '미컨택 문의(연락이력 0건)', color: 'red',    items: cls.uncontacted, empty: '미컨택 없음 — 전원 컨택 완료' },
     { key: 'res', icon: '📅', label: '오늘 상담·체험 예약',       color: 'accent', items: cls.todaysRes,   empty: '오늘 예약 없음' },
+    { key: 'stall', icon: '⏳', label: '컨택 정체(' + TAP_STALL_DAYS + '일+ 무진척)', color: 'red', items: cls.stalled, empty: '컨택 정체 없음 — 진행 건 원활', caveat: '상태 활성·연락이력 있음·예정 예약 없음·마지막 활동 ' + TAP_STALL_DAYS + '일+ 경과. 다음 걸음(상담·체험 예약)을 잡아 팔로업하세요.' },
     { key: 'churn', icon: '🚪', label: '종료사유 미기록',        color: 'red',    items: churnMissing,    empty: (_endedBgLoaded ? '종료사유 미기록 없음 — 전원 기록 완료' : '불러오는 중…') }
   ];
-  if (_tapOpenKey === null) _tapOpenKey = (cls.uncontacted.length || cls.todaysRes.length) ? 'unc' : null;   // 첫 렌더=처리할 게 있으면 미컨택 먼저 펼침(한눈에)
+  if (_tapOpenKey === null) _tapOpenKey = (cls.uncontacted.length || cls.stalled.length || cls.todaysRes.length) ? (cls.uncontacted.length ? 'unc' : 'stall') : null;   // 첫 렌더=처리할 게 있으면 펼침
   body.innerHTML = sections.map(_tapSectionHtml).join('');
-  _tapSetBadge(cls.todayNew.length + cls.uncontacted.length + cls.todaysRes.length + churnMissing.length);
+  _tapSetBadge(cls.todayNew.length + cls.uncontacted.length + cls.todaysRes.length + cls.stalled.length + churnMissing.length);
   if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — 오늘 할 일 카운트 갱신
 }
 // 종료사유 미기록 = scope=ended(현행 이탈 기준 그대로) AND 종료사유 빈칸. 배경fetch 미완료 시 빈 배열(로딩 문구는 empty에서 처리). 2026-07-09 시포·GM
