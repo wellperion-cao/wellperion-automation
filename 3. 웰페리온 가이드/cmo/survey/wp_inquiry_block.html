@@ -42,21 +42,21 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
 
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSd1EGHsPtVjqEK_Y_8rPQWnRj7cpvxOLpO9OuXdTjsaZogT_Q/viewform" target="_blank" rel="noopener" onclick="wpPrefillForm(this,'멤버십문의')"
+    <a href="http://wellperion.com/ko/inquiry-form/?type=membership" rel="noopener" onclick="wpToSurvey(this)"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">MEMBERSHIP</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">멤버십 문의 →</div>
       <div style="font-size:14px;color:#777;line-height:1.5;">스포츠클럽 멤버십 가입·시설 투어 상담</div>
     </a>
 
-    <a href="https://forms.gle/ad6xrR9ECRRDnzmE9" target="_blank" rel="noopener" onclick="wpPrefillForm(this,'성인강습문의')"
+    <a href="http://wellperion.com/ko/inquiry-form/?type=adult" rel="noopener" onclick="wpToSurvey(this)"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">ADULT LESSON</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">성인 강습 문의 →</div>
       <div style="font-size:14px;color:#777;line-height:1.5;">성인 강습 프로그램/수영·P.T·필라테스·골프·스쿼시·발레·바레</div>
     </a>
 
-    <a href="https://forms.gle/RaFbZLxypNMMV9f17" target="_blank" rel="noopener" onclick="wpPrefillForm(this,'유소년강습문의')"
+    <a href="http://wellperion.com/ko/inquiry-form/?type=youth" rel="noopener" onclick="wpToSurvey(this)"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">YOUTH LESSON</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">유소년 강습 문의 →</div>
@@ -203,6 +203,18 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
       var v=src ? (cmp ? src+'|'+cmp : src) : cmp;         // source 우선(있으면 항상 선두) + campaign 병기, source 없으면 campaign만(구형 호환)
       if(!v) return;                                      // 값 없으면 원래 링크 유지
       a.href=m.base+'?usp=pp_url&entry.'+m.entry+'='+encodeURIComponent(v);
+    }catch(e){}
+  };
+
+  // ── 자체 Survey(WP /ko/inquiry-form/) 이동 시 현재 페이지 UTM 승계 → 폼이 채널귀속 유지 ──
+  //   멤버십·성인강습·유소년강습 버튼(2026-07-15 GM: 구글폼→자체 Survey WP 페이지)이 이 함수를 호출.
+  //   현재 inquiry 페이지 URL의 utm_source/medium/campaign 을 survey 페이지 링크에 이어붙임.
+  window.wpToSurvey=function(a){
+    try{
+      var u=new URLSearchParams(location.search);
+      var url=new URL(a.href, location.href);
+      ['utm_source','utm_medium','utm_campaign'].forEach(function(k){ var val=u.get(k); if(val) url.searchParams.set(k,val); });
+      a.href=url.href;
     }catch(e){}
   };
 })();

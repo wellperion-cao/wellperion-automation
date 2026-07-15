@@ -1325,15 +1325,186 @@ async def run_media_upload(file_path_arg: str) -> int:
     return 0 if file_url else 8
 
 
+# ═══════════════════════════════════════════════════════════════════
+# 2026-07-15 시토 — 자체 Survey · 습득분실물(보기/접수) WP 자체 호스팅 신규 3페이지
+#   GM 확정: 문의 자체 Survey·습득분실물 갤러리/등록을 wellperion.com WP 페이지로 호스팅
+#   (github.io 아님). 방식 = reception/inquiry 와 100% 동일(Classic 편집기 Text탭 + [vc_raw_html]
+#   직접 주입). 주입 소스(self-contained·SSOT, CSS 래퍼 스코프로 테마 오염 차단):
+#     · 자체 Survey     → cmo/survey/wp_inquiry_form.html             (slug: inquiry-form         → /ko/inquiry-form/)
+#     · 습득분실물 보기  → coo/reception/wp_lost_found_gallery_block.html (slug: lost-found        → /ko/lost-found/)
+#     · 습득분실물 접수  → coo/reception/wp_lost_found_register_block.html(slug: lost-found-register → /ko/lost-found-register/)
+#   ★ 신규 생성(post_id 미지정=post-new.php)은 GM 세션 필요(--mode setup 선행).
+#     발행(공개) 전 draft 초안 미리보기(비공개)로 실측 권장 — 초안은 고객 미노출·삭제로 즉시 롤백.
+SURVEY_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cmo" / "survey" / "wp_inquiry_form.html"
+LF_GALLERY_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_lost_found_gallery_block.html"
+LF_REGISTER_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_lost_found_register_block.html"
+
+# key: (block_file, 신규생성 시 기본 제목, 발행 시 기본 slug)
+_NEW_PAGE_SPECS = {
+    "survey":      (SURVEY_BLOCK_FILE,      "문의하기",         "inquiry-form"),
+    "lf-gallery":  (LF_GALLERY_BLOCK_FILE,  "습득 분실물 현황", "lost-found"),
+    "lf-register": (LF_REGISTER_BLOCK_FILE, "습득물 등록",      "lost-found-register"),
+}
+
+
+async def run_draft_page(spec_key: str, post_id_arg: "str | None" = None) -> int:
+    """자체 Survey / 습득분실물 갤러리·등록 페이지를 비공개 초안으로 생성/갱신 (발행 안 함).
+    reception 패턴과 동일: Classic 편집기 Text탭에 [vc_raw_html]로 self-contained 블록 주입.
+    post_id 미지정=신규 생성(post-new.php), 지정=기존 페이지 갱신(발행 상태면 발행 유지)."""
+    block_file, title, _slug = _NEW_PAGE_SPECS[spec_key]
+    async_playwright = _import_playwright()
+    print(f"[INFO] === WP 페이지({spec_key}) — 비공개 초안 생성/갱신 (발행 안 함) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    if not block_file.exists():
+        print(f"[ERROR] 주입 블록 HTML 부재: {block_file}")
+        return 4
+    raw_html = block_file.read_text(encoding="utf-8")
+    html = _wrap_vc_raw_html(raw_html)
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    target = (f"http://wellperion.com/wp/wp-admin/post.php?post={post_id_arg}&action=edit&lang=ko"
+              if post_id_arg else NEW_PAGE_URL)
+    print(f"[INFO] 대상: {'갱신 post='+post_id_arg if post_id_arg else '신규 페이지'}")
+    await page.goto(target, wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    probe = await page.evaluate(
+        """() => ({
+            title_classic: !!document.querySelector('#title'),
+            content_textarea: !!document.querySelector('#content'),
+            text_tab: !!document.querySelector('#content-html'),
+            save_draft_btn: !!document.querySelector('#save-post'),
+        })"""
+    )
+    print(f"[INFO] 편집기 감지: {probe}")
+    await page.screenshot(path=str(INSPECT_DIR / f"wp_{spec_key}_editor.png"))
+    if not probe.get("title_classic") or not probe.get("content_textarea"):
+        print(f"[ERROR] Classic 편집기 미검출 — 스크린샷: wp_{spec_key}_editor.png")
+        await ctx.close(); await p.stop(); return 5
+
+    cur_title = await page.evaluate("() => (document.querySelector('#title')||{}).value || ''")
+    if not cur_title.strip():
+        await page.fill("#title", title)
+        await page.wait_for_timeout(500)
+
+    if probe.get("text_tab"):
+        await page.click("#content-html")
+        await page.wait_for_timeout(800)
+    await page.evaluate(
+        """(html) => { const ta = document.querySelector('#content');
+            ta.value = html; ta.dispatchEvent(new Event('input', {bubbles:true}));
+            ta.dispatchEvent(new Event('change', {bubbles:true})); }""",
+        html,
+    )
+    await page.wait_for_timeout(500)
+    injected = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
+    ok_inject = "vc_raw_html" in injected and len(injected) > 100
+    print(f"[INFO] 본문 주입 검증: {ok_inject} (길이 {len(injected)})")
+    if not ok_inject:
+        print("[ERROR] 본문 주입 실패 — 저장 중단.")
+        await ctx.close(); await p.stop(); return 6
+
+    pre_status = await page.evaluate(
+        "() => (document.querySelector('#post-status-display')||{}).innerText || ''"
+    )
+    is_published = ("공개" in pre_status) or ("발행" in pre_status) or ("published" in pre_status.lower())
+    if is_published:
+        print(f"[INFO] 이미 발행됨('{pre_status}') → 업데이트로 저장(발행 유지)")
+        await page.click("#publish")
+    else:
+        await page.click("#save-post")
+    try:
+        await page.wait_for_url("**/post.php?post=*", timeout=30_000)
+    except Exception:
+        await page.wait_for_timeout(4000)
+    await page.wait_for_timeout(1500)
+    cur = page.url
+    import re as _re
+    m = _re.search(r"[?&]post=(\d+)", cur)
+    post_id = m.group(1) if m else None
+    status = await page.evaluate(
+        "() => (document.querySelector('#post-status-display')||{}).innerText || ''"
+    )
+    await page.screenshot(path=str(INSPECT_DIR / f"wp_{spec_key}_draft_saved.png"))
+    print(f"[INFO] 저장 후 URL: {cur}")
+    print(f"[INFO] 글 상태: {status or '(미검출)'}  /  page_id: {post_id or '(미검출)'}")
+    if post_id:
+        preview = f"http://wellperion.com/wp/?page_id={post_id}&preview=true"
+        edit = f"http://wellperion.com/wp/wp-admin/post.php?post={post_id}&action=edit"
+        print("[INFO] === GM 검수 링크 ===")
+        print(f"        미리보기: {preview}")
+        print(f"        편집화면: {edit}")
+        print(f"[INFO] 발행 명령: python scripts\\wordpress_admin_playwright.py --mode publish-page --page {spec_key} --post-id {post_id}")
+    print("[INFO] (※ 초안 상태 — 외부에 공개되지 않음. 발행은 GM 확인 후 별도 진행)")
+    await ctx.close(); await p.stop()
+    print(f"[INFO] === {spec_key} 초안 생성 완료 (발행 안 함) ===")
+    return 0 if post_id else 7
+
+
+async def run_publish_page(spec_key: str, post_id_arg: str, slug: "str | None" = None) -> int:
+    """자체 Survey / 습득분실물 초안을 slug 설정 후 공개 발행. (되돌리기: 편집화면서 임시글 전환 가능)"""
+    slug = slug or _NEW_PAGE_SPECS[spec_key][2]
+    async_playwright = _import_playwright()
+    print(f"[INFO] === WP 페이지({spec_key}) 발행 (post={post_id_arg}, slug={slug}) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(f"http://wellperion.com/wp/wp-admin/post.php?post={post_id_arg}&action=edit&lang=ko",
+                    wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+    try:
+        if await page.query_selector("#edit-slug-buttons button.edit-slug"):
+            await page.click("#edit-slug-buttons button.edit-slug")
+            await page.wait_for_timeout(600)
+            await page.fill("#new-post-slug", slug)
+            await page.click("#edit-slug-buttons button.save")
+            await page.wait_for_timeout(1200)
+            print(f"[INFO] 슬러그 설정: {slug}")
+    except Exception as e:
+        print(f"[WARN] 슬러그 설정 경고(무시): {e}")
+    await page.click("#publish")
+    try:
+        await page.wait_for_url("**/post.php?post=*", timeout=30_000)
+    except Exception:
+        await page.wait_for_timeout(4000)
+    await page.wait_for_timeout(1500)
+    status = await page.evaluate("() => (document.querySelector('#post-status-display')||{}).innerText || ''")
+    permalink = await page.evaluate(
+        "() => { const a=document.querySelector('#sample-permalink a, #sample-permalink'); return a? (a.href||a.innerText):''; }"
+    )
+    await page.screenshot(path=str(INSPECT_DIR / f"wp_{spec_key}_published.png"))
+    print(f"[INFO] 글 상태: {status or '(미검출)'}")
+    print(f"[INFO] 공개 URL: {permalink or '(미검출)'}")
+    await ctx.close(); await p.stop()
+    published = "공개" in status or "published" in status.lower() or "발행" in status
+    print(f"[INFO] === 발행 {'완료' if published else '확인 필요'} ===")
+    return 0 if published else 8
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href/wpml-create-en/draft-inquiry-en/publish-inquiry-en/draft-reception/publish-reception/media-check/media-upload)")
+    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href/wpml-create-en/draft-inquiry-en/publish-inquiry-en/draft-reception/publish-reception/draft-page/publish-page/media-check/media-upload)")
     ap.add_argument("--mode", choices=[
         "setup", "check", "inspect",
         "draft-inquiry", "publish-inquiry", "add-menu", "swap-href",
         "wpml-create-en", "draft-inquiry-en", "publish-inquiry-en",
         "draft-reception", "publish-reception", "swap-reception-text",
+        "draft-page", "publish-page",
         "media-check", "media-upload",
     ], default="setup")
+    ap.add_argument("--page", dest="page", default=None,
+                    choices=["survey", "lf-gallery", "lf-register"],
+                    help="draft-page/publish-page 대상: survey(자체Survey)/lf-gallery(습득분실물 보기)/lf-register(습득분실물 접수)")
     ap.add_argument("--dry-run", dest="dry_run", action="store_true",
                     help="swap-reception-text: 저장 없이 카운트·무결성만 검증")
     ap.add_argument("--find", dest="find", default=None, help="swap-href 찾을 문자열")
@@ -1383,6 +1554,14 @@ def main() -> int:
             print("[ERROR] swap-reception-text는 --find --repl 필요"); return 1
         return asyncio.run(run_swap_reception_text(
             args.find, args.repl, args.post_id or RECEPTION_POST_ID, args.dry_run))
+    if args.mode == "draft-page":
+        if not args.page:
+            print("[ERROR] draft-page는 --page {survey|lf-gallery|lf-register} 필요"); return 1
+        return asyncio.run(run_draft_page(args.page, args.post_id))
+    if args.mode == "publish-page":
+        if not args.page or not args.post_id:
+            print("[ERROR] publish-page는 --page {survey|lf-gallery|lf-register} 와 --post-id 필요"); return 1
+        return asyncio.run(run_publish_page(args.page, args.post_id, args.slug))
     if args.mode == "media-check":
         return asyncio.run(run_media_check())
     if args.mode == "media-upload":

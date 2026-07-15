@@ -454,5 +454,19 @@
   // ── 재방문/로드 시 대기큐 잔존분 자동 재전송(창을 닫았어도 다음 방문에 전송) ──
   window.addEventListener('online', function(){ scheduleFlush(300); });
   if (qRead().length) scheduleFlush(800);
+
+  // ── 유형 딥링크(?type=) 프리선택 — 문의 페이지(8394) 버튼에서 유형별로 진입 시 해당 폼 자동 표시 ──
+  //   허용값: membership|adult|youth (한글 별칭 병행). 미지정·미매칭 = 기존처럼 유형 선택 대기.
+  (function(){
+    try {
+      var t = (qp('type') || '').toLowerCase();
+      var alias = { membership:'membership', '멤버십':'membership',
+                    adult:'adult', '성인':'adult', '성인강습':'adult',
+                    youth:'youth', '유소년':'youth', '유소년강습':'youth' };
+      var cat = alias[t]; if (!cat) return;
+      var btn = document.querySelector('.wlp-inq .type-btn[data-cat="' + cat + '"]');
+      if (btn) { btn.classList.add('active'); selectedCat = cat; buildForm(cat); }
+    } catch (e) {}
+  })();
 })();
 </script>

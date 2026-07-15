@@ -115,6 +115,16 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
 .wlp-recept .lf-link .lf-txt span{font-size:12px;color:#888;line-height:1.4}
 .wlp-recept .lf-link .lf-arrow{font-size:20px;color:var(--accent);flex-shrink:0;line-height:1}
 
+/* ── 습득 분실물 2버튼(접수·보기) — 각각 wellperion.com WP 자체 페이지로 연결 ── */
+.wlp-recept .lf-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+@media (max-width:460px){.wlp-recept .lf-btns{grid-template-columns:1fr}}
+.wlp-recept .lf-btn{display:flex;align-items:center;gap:10px;padding:14px 15px;background:var(--accent-bg);border:1.5px solid rgba(176,141,87,0.28);border-radius:14px;transition:border-color .15s,box-shadow .15s}
+.wlp-recept .lf-btn:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(176,141,87,.15)}
+.wlp-recept .lf-btn .lf-ico{font-size:20px;line-height:1;flex-shrink:0}
+.wlp-recept .lf-btn .lf-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.wlp-recept .lf-btn .lf-txt b{font-size:13.5px;font-weight:700;color:var(--accent);letter-spacing:-.2px}
+.wlp-recept .lf-btn .lf-txt span{font-size:11.5px;color:#888;line-height:1.35}
+
 /* ── Card ── */
 .wlp-recept .card{
   background:var(--paper);
@@ -326,12 +336,17 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
       <div class="loc-chip" id="locChip" style="display:none"></div>
     </div>
 
-    <!-- ── 습득 분실물 현황 보기 (공개 갤러리 링크) ── -->
-    <a class="lf-link" href="https://wellperion-cao.github.io/wellperion-automation/coo/reception/lost_found_gallery.html" target="_blank" rel="noopener">
-      <span class="lf-ico">🔍</span>
-      <span class="lf-txt"><b>습득 분실물 현황 보기</b><span>클럽에서 보관 중인 습득물을 확인하세요</span></span>
-      <span class="lf-arrow">&rsaquo;</span>
-    </a>
+    <!-- ── 습득 분실물 — 접수(직원·gate 커튼) / 보기(공개 갤러리) : 각각 wellperion.com WP 자체 페이지 ── -->
+    <div class="lf-btns">
+      <a class="lf-btn" href="http://wellperion.com/ko/lost-found-register/" rel="noopener">
+        <span class="lf-ico">🧳</span>
+        <span class="lf-txt"><b>습득 분실물 접수</b><span>직원용 · 주운 물건 등록</span></span>
+      </a>
+      <a class="lf-btn" href="http://wellperion.com/ko/lost-found/" rel="noopener">
+        <span class="lf-ico">🔍</span>
+        <span class="lf-txt"><b>습득 분실물 보기</b><span>보관 중인 습득물 확인</span></span>
+      </a>
+    </div>
 
     <!-- ── Form card ── -->
     <div class="card">
