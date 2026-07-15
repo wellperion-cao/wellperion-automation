@@ -648,29 +648,6 @@
     <div class="sec-note" style="margin:6px 0 4px;">🖥️🤖 패널=<code>erp_status.json</code> 실측 · 아래 표=스케줄러 구성 설명.</div>
     <div class="sec-note" style="margin:2px 0 10px;">📤 카톡 매출보고 3방 관리 = <a href="cto/automation/카톡전송관리.html" style="color:var(--accent-soft);">카톡 전송 관리 →</a></div>
 
-    <!-- ════ 🔔 전체 알림 스케줄 한눈 보드 (읽기전용 가시화 · 발송 로직·시점 무변경 · 2026-07-15 시토) ════ -->
-    <section id="alert-schedule-board" style="margin:4px 0 22px;">
-      <h3 style="margin-top:4px;">🔔 전체 알림 스케줄 한눈 보드 <span style="font-size:12px;font-weight:400;color:var(--dim);">(무엇이 · 언제 · 누구에게 · 잘 가고 있나 — 읽기전용)</span></h3>
-      <p class="sec-note" style="margin:0 0 8px;">읽기전용 — 발송 시각·대상 무변경. 건강: 🟢 정상 · 🔴 실패/지연 · ⚪ 측정불가.</p>
-      <div id="alert-board-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
-      <div class="tbl-wrap" id="alert-board-wrap">
-        <table>
-          <thead><tr>
-            <th style="width:206px">무엇 (알림)</th>
-            <th style="width:158px">언제 (주기·시각)</th>
-            <th>어디로 (채널·수신)</th>
-            <th style="width:132px">마지막 발송</th>
-            <th style="width:118px">건강</th>
-          </tr></thead>
-          <tbody id="alert-board-tbody">
-            <tr><td colspan="5" style="color:var(--dim);">알림 스케줄을 불러오는 중…</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="sec-note" style="margin:8px 0 0;">소스: <code>kakao_last_send.json</code>·<code>erp_status.json</code>·<code>daily_scheduler.py</code>·<code>module_registry.json</code>. 발송 로그 없는 항목은 <b>⚪ 측정불가</b>.</div>
-    </section>
-    <!-- ════ /🔔 전체 알림 스케줄 한눈 보드 ════ -->
-
     <!-- ══ 🖥️ 시스템 현황 (status/erp_status.json native 렌더 · 구 T2 이식) ══ -->
     <div id="erp-sysstatus" class="autopanel">
       <h2 class="sec" style="margin-top:0;">🖥️ 시스템 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">(지금 잘 돌고 있나 — 서버가 자동 발행)</span></h2>
@@ -764,19 +741,20 @@
     <!-- ════ /📄 정적 설계표 3종 접힘 ════ -->
 
     <!-- ══ 📡 모듈 보고 현황 (status/module_registry.json 실값 렌더 · additive · 2026-07-09) ══ -->
-    <h3 id="sec-module-registry" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📡 모듈 보고 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">— 자동화 보고 기준 표</span></h3>
-    <p class="sec-note" style="margin:0 0 6px;">모듈이 봇ID·주기 등록 시 자동 보고. 아래=등록 현황.</p>
-    <p class="sec-note" style="margin:0 0 10px;">🟢 <b>발효</b> = 방 배정돼 실제 보고 발송 · ⚪ <b>미발효</b> = 방 미배정(휴면)</p>
+    <h3 id="sec-module-registry" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📡 모듈 보고 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">— 자동화 보고 기준 표 (알림 스케줄 통합: 마지막 발송·건강)</span></h3>
+    <p class="sec-note" style="margin:0 0 6px;">모듈이 봇ID·주기 등록 시 자동 보고. 아래=등록 현황 + 마지막 발송·건강 실측.</p>
+    <p class="sec-note" style="margin:0 0 10px;">🟢 <b>발효·정상</b> = 방 배정돼 실제 보고 발송·최근 정상 · 🔴 <b>발효·실패/지연</b> = 발효인데 실행 실패 · ⚪ <b>미발효(휴면)</b> = 방 미배정 · ⚪ <b>측정불가/예정</b> = 발송 로그 없음(억지 초록 금지)</p>
     <div class="tbl-wrap" id="module-registry-wrap">
       <table>
         <thead>
-          <tr><th style="width:220px">모듈</th><th style="width:80px">담당</th><th style="width:90px">주기</th><th style="width:190px">채널·봇</th><th style="width:110px">상태</th></tr>
+          <tr><th style="width:210px">모듈</th><th style="width:74px">담당</th><th style="width:84px">주기</th><th style="width:178px">채널·봇</th><th style="width:124px">마지막 발송</th><th style="width:138px">상태·건강</th></tr>
         </thead>
         <tbody id="module-registry-tbody">
-          <tr><td colspan="5" style="color:var(--dim);">불러오는 중…</td></tr>
+          <tr><td colspan="6" style="color:var(--dim);">불러오는 중…</td></tr>
         </tbody>
       </table>
     </div>
+    <div class="sec-note" style="margin:8px 0 0;">소스: <code>module_registry.json</code>(등록·주기·채널) · <code>erp_status.json</code> automation_health(마지막 실행·건강) · <code>kakao_last_send.json</code>(카톡 3방 발송). 발송 로그 없는 항목은 <b>⚪ 측정불가/예정</b>.</div>
     <!-- ══ /모듈 보고 현황 ══ -->
   </details>
 
@@ -1486,18 +1464,47 @@
   var TG_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="텔레그램"><title>텔레그램</title><rect width="24" height="24" rx="7" fill="#229ED9"/><path transform="translate(3.2 3.6) scale(0.72)" d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.9-.75 1.12-1.52.7L11.6 16.8l-1.65 1.6c-.19.19-.35.29-.56.29z" fill="#fff"/></svg>';
   var KT_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="카카오톡"><title>카카오톡</title><rect width="24" height="24" rx="7" fill="#FEE500"/><path d="M12 6c-3.6 0-6.5 2.28-6.5 5.09 0 1.82 1.22 3.42 3.06 4.32-.13.47-.49 1.78-.56 2.06-.09.35.13.34.27.25.11-.07 1.75-1.19 2.46-1.68.41.06.83.09 1.27.09 3.6 0 6.5-2.28 6.5-5.09S15.6 6 12 6z" fill="#3C1E1E"/></svg>';
   var CYCLE_LABEL = { daily:'매일', weekly:'주간', monthly:'월간' };
-  function renderModuleRegistry(reg){
+  // "2026-07-15 오전 9:30:01"(Task Scheduler 한글) → "07/15 09:30". 1999(첫 실행 전 placeholder)=없음.
+  // (구 🔔 알림 보드에서 이식 — 병합 표의 마지막 실행 시각 포맷에 재사용 · 2026-07-15)
+  function fmtKAmPm(s){
+    s = String(s || '');
+    var d = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if(!d || d[1] === '1999') return '—';
+    var ap = s.match(/(오전|오후)\s*(\d{1,2}):(\d{2})/);
+    var hh = '--', mm = '--';
+    if(ap){ var h = +ap[2]; if(ap[1] === '오후' && h !== 12) h += 12; if(ap[1] === '오전' && h === 12) h = 0; hh = String(h).padStart(2, '0'); mm = ap[3]; }
+    else { var t = s.match(/(\d{1,2}):(\d{2})/); if(t){ hh = String(+t[1]).padStart(2, '0'); mm = t[2]; } }
+    return d[2] + '/' + d[3] + ' ' + hh + ':' + mm;
+  }
+  // 모듈 → automation_health 예약작업 매칭(마지막 발송·건강 실측 소스). 전용 잡이 있으면 그것, 없으면 cadence→공용 모듈리포터 잡, 그래도 없으면 측정불가.
+  var MOD_AH = {
+    'cto-kakao-sales-report':   { kakao:true, ah:'Wellperion-Kakao-Sales-Report-0930' },
+    'cto-kakao-check-share':    { ah:'Wellperion-Kakao-CheckStatus-Share-2300' },
+    'cto-ops-morning-digest':   { ah:'Wellperion-Ops-Morning-Digest-0730' },
+    'cto-aide-gap-detector':    { ah:'Wellperion-GM-Aide-Scan-0630' },
+    'cmo-case-series-dispatch': { ah:'Wellperion-IG-Series-Produce-0730' },
+    'cto-weekly-self-review':   { ah:'Wellperion-Weekly-Self-Review-Sunday' },
+    'cto-weekly-page-hygiene':  { ah:'Wellperion-Weekly-Page-Hygiene-Sun-0900' }
+  };
+  // cadence → 공용 모듈 리포터 예약작업(자동화현황방 발송). 발효 모듈의 마지막 발송·건강 실측 소스.
+  var CADENCE_AH = { daily:'Wellperion-Module-Report-Daily', weekly:'Wellperion-Module-Report-Weekly', monthly:'Wellperion-Module-Report-Monthly' };
+  function renderModuleRegistry(reg, erp, kakaoLast){
     var tbody = document.getElementById('module-registry-tbody');
     if(!tbody) return;
     var mods = (reg && Array.isArray(reg.modules)) ? reg.modules : null;
     if(!mods){
-      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
       return;
     }
     if(!mods.length){
-      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--dim);">등록된 모듈이 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">등록된 모듈이 없습니다.</td></tr>';
       return;
     }
+    // erp automation_health 이름→항목 룩업(마지막 실행·상태)
+    var ahMap = {};
+    var ahItems = (erp && erp.automation_health && Array.isArray(erp.automation_health.items)) ? erp.automation_health.items : [];
+    ahItems.forEach(function(it){ if(it && it.name) ahMap[it.name] = it; });
+    var okN = 0, badN = 0, naN = 0, idleN = 0;
     var rows = mods.map(function(m){
       m = m || {};
       var name  = esc(m.name || m.feature || m.id || '—');
@@ -1506,25 +1513,56 @@
       var cycles = [];
       if(ns){ ['daily','weekly','monthly'].forEach(function(k){ if(ns[k]) cycles.push(CYCLE_LABEL[k]); }); }
       var cycleTxt = cycles.length ? cycles.join(', ') : '—';
-      var channelCell, statusCell;
+
+      // 발효(active) 판정: 텔레그램+봇ID / 카톡 / 전용 예약작업 보유 중 하나
+      var ovr = MOD_AH[m.id] || null;
+      var active = !!(ns && ((ns.channel === 'telegram' && ns.bot_id) || ns.channel === 'kakao' || ovr));
+
+      // 채널·봇 셀
       var chLogo = (ns && ns.channel === 'telegram') ? TG_LOGO : ((ns && ns.channel === 'kakao') ? KT_LOGO : '');
+      var channelCell;
       if(!ns || !ns.channel){
         channelCell = '—';
-        statusCell = '<span class="statchip static">준비중</span>';
       } else if(ns.channel === 'kakao'){
-        channelCell = chLogo + '<span class="chroom">' + esc(ns.bot_id || '카톡 방') + '</span>';
-        statusCell = '<span class="statchip static">준비중</span>';
-      } else if(ns.channel !== 'telegram'){
-        channelCell = esc(ns.channel);
-        statusCell = '<span class="statchip static">준비중</span>';
-      } else if(ns.bot_id){
-        channelCell = chLogo + '<span class="chroom">' + esc(ns.bot_id) + '</span>';
-        statusCell = '<span class="statchip ok">🟢 발효</span>';
+        channelCell = chLogo + '<span class="chroom">' + esc(ns.bot_id || '카톡 3방') + '</span>';
+      } else if(ns.channel === 'telegram'){
+        var room = ns.bot_id ? esc(ns.bot_id) : (active ? '자체발신' : '미발효');
+        channelCell = chLogo + '<span class="chroom' + (active ? '' : ' idle-room') + '">' + room + '</span>';
       } else {
-        channelCell = chLogo + '<span class="chroom idle-room">미발효</span>';
-        statusCell = '<span class="statchip idle">⚪ 미발효</span>';
+        channelCell = esc(ns.channel);
       }
-      return '<tr><td><strong>' + name + '</strong></td><td>' + owner + '</td><td>' + cycleTxt + '</td><td>' + channelCell + '</td><td>' + statusCell + '</td></tr>';
+
+      // 마지막 발송 시각 소스 = 전용 잡 > cadence 공용 리포터 잡
+      var ahName = ovr && ovr.ah ? ovr.ah : (active ? (ns && ns.daily ? CADENCE_AH.daily : (ns && ns.weekly ? CADENCE_AH.weekly : (ns && ns.monthly ? CADENCE_AH.monthly : null))) : null);
+      var ah = ahName ? ahMap[ahName] : null;
+
+      var lastCell, statusCell;
+      if(!active){
+        lastCell = '<span style="color:var(--dim)">—</span>';
+        statusCell = '<span class="statchip idle">⚪ 미발효</span>'; idleN++;
+      } else if(ovr && ovr.kakao && kakaoLast && kakaoLast.at){
+        // 카톡 3방 발송 = kakao_last_send.json 실측 우선
+        var okSend = kakaoLast.ok !== false;
+        lastCell = '<span style="font-variant-numeric:tabular-nums;">' + esc(fmtWhen(kakaoLast.at)) + (okSend ? ' <span style="color:var(--green)">✓</span>' : ' <span style="color:#ff8a80">⚠</span>') + '</span>';
+        if(ah && ah.state === '실패'){ statusCell = '<span class="statchip bad">🔴 발효·실패</span>'; badN++; }
+        else if(okSend){ statusCell = '<span class="statchip ok">🟢 발효·정상</span>'; okN++; }
+        else { statusCell = '<span class="statchip bad">🔴 발효·실패</span>'; badN++; }
+      } else if(!ah){
+        lastCell = '<span style="color:var(--dim)">측정불가</span>';
+        statusCell = '<span class="statchip idle">⚪ 발효·측정불가</span>'; naN++;
+      } else if(ah.state && ah.state.indexOf('실패') === 0){
+        lastCell = '<span style="font-variant-numeric:tabular-nums;">' + esc(fmtKAmPm(ah.last_run)) + '</span>';
+        statusCell = '<span class="statchip bad">🔴 발효·실패</span>'; badN++;
+      } else if(ah.state && ah.state.indexOf('정상') === 0){
+        lastCell = '<span style="font-variant-numeric:tabular-nums;">' + esc(fmtKAmPm(ah.last_run)) + '</span>';
+        statusCell = '<span class="statchip ok">🟢 발효·정상</span>'; okN++;
+      } else {
+        // 대기(첫 실행 전) 등 — 억지 초록 금지
+        lastCell = '<span style="color:var(--dim);font-variant-numeric:tabular-nums;">예정 ' + esc(fmtKAmPm(ah.next_run)) + '</span>';
+        statusCell = '<span class="statchip idle">⚪ 발효·예정</span>'; naN++;
+      }
+
+      return '<tr><td><strong>' + name + '</strong></td><td>' + owner + '</td><td>' + cycleTxt + '</td><td>' + channelCell + '</td><td>' + lastCell + '</td><td>' + statusCell + '</td></tr>';
     }).join('');
     tbody.innerHTML = rows;
   }
@@ -1599,105 +1637,6 @@
     }
   };
 
-  // ═══════════ 🔔 전체 알림 스케줄 한눈 보드 (읽기전용 · 발송 로직 무변경 · 2026-07-15 시토) ═══════════
-  // 데이터 소스: erp_status.automation_health(예약작업 결과)·erp_status.systems(스케줄러 하트비트)·kakao_last_send.json.
-  // 정직 원칙: 발송 로그가 없는 알림은 억지 초록 금지 → ⚪ 측정불가. (telegram_sent 로그는 .gitignore라 라이브 fetch 불가 → 스케줄러 하트비트로 대체)
-  // "2026-07-15 오전 9:30:01"(Task Scheduler 한글) → "07-15 09:30". 1999(첫 실행 전 placeholder)=없음.
-  function fmtKAmPm(s){
-    s = String(s || '');
-    var d = s.match(/(\d{4})-(\d{2})-(\d{2})/);
-    if(!d || d[1] === '1999') return '—';
-    var ap = s.match(/(오전|오후)\s*(\d{1,2}):(\d{2})/);
-    var hh = '--', mm = '--';
-    if(ap){ var h = +ap[2]; if(ap[1] === '오후' && h !== 12) h += 12; if(ap[1] === '오전' && h === 12) h = 0; hh = String(h).padStart(2, '0'); mm = ap[3]; }
-    else { var t = s.match(/(\d{1,2}):(\d{2})/); if(t){ hh = String(+t[1]).padStart(2, '0'); mm = t[2]; } }
-    return d[2] + '/' + d[3] + ' ' + hh + ':' + mm;
-  }
-  function alertChip(kind, txt){
-    // kind: ok(🟢)·bad(🔴)·na(⚪)
-    var cls = kind === 'ok' ? 'ok' : (kind === 'bad' ? 'bad' : 'idle');
-    var ico = kind === 'ok' ? '🟢' : (kind === 'bad' ? '🔴' : '⚪');
-    return '<span class="statchip ' + cls + '" style="font-size:11px;">' + ico + ' ' + esc(txt) + '</span>';
-  }
-  // 스케줄 정의(주기·채널·수신) = daily_scheduler 크론 + 카톡 예약작업 + module_registry notify_spec 대조.
-  // 발송 로직 아님 — 표시용 라벨. src=마지막발송·건강 산출 방식.
-  var ALERT_ROWS = [
-    { ch:'kakao', what:'카톡 매출·운영 보고', when:'매일 09:30', where:'카톡 3방 — 차의주 회장님 · 웰페리온 관리부 · ★운영부', src:'kakao_last', ah:'Wellperion-Kakao-Sales-Report-0930' },
-    { ch:'kakao', what:'🌙 밤 점검 마감 공유', when:'매일 23:00', where:'카톡 ‘운영+시설+지원+주차’ 방', src:'ah', ah:'Wellperion-Kakao-CheckStatus-Share-2300' },
-    { ch:'kakao', what:'★운영부 아침 종합 다이제스트', when:'매일 07:30', where:'카톡 ★운영부', src:'ah', ah:'Wellperion-Ops-Morning-Digest-0730', note:'생성=무인 · 방 발송은 GM 승인 게이트 뒤' },
-    { ch:'tg', what:'🧭 오늘의 항로 (08시 통합보고)', when:'매일 08:00', where:'텔레그램 GM 업무보고방(@namuki_report_bot)', src:'ah', ah:'Wellperion-CEO-Morning-Brief-0800-Live' },
-    { ch:'tg', what:'정각 통합보고 (9슬롯)', when:'매일 06·07·09·12·15·18·21·22·23시', where:'텔레그램 GM 업무보고방', src:'schedsys' },
-    { ch:'tg', what:'하루 일과 정리 다이제스트', when:'매일 22:30', where:'텔레그램 문의·점검·종합접수 3방', src:'sched', note:'스케줄러 발사 · 방별 last-send 로그 미집계' },
-    { ch:'tg', what:'문의 5종 신규 알림', when:'신규 시 5분 폴링', where:'텔레그램 문의알림방(-5516675010)', src:'none', note:'GAS 트리거 — 발송 시각 로그 미수집' },
-    { ch:'tg', what:'점검 미완 독려', when:'매일 17:00·22:00 (미완 시)', where:'텔레그램 점검관리방(-5136037543)', src:'sched', note:'미완일 때만 조건부 발송' },
-    { ch:'tg', what:'텔레그램 알림 자가 점검', when:'매일 13:00', where:'텔레그램 GM방 (이상 시만 경보 · 정상=조용)', src:'ah', ah:'Wellperion-Telegram-HealthCheck-1300' },
-    { ch:'tg', what:'모듈 자동보고 (주간 요약)', when:'매주 일요일', where:'텔레그램 @namuki_report_bot', src:'ah', ah:'Wellperion-Module-Report-Weekly' }
-  ];
-  function renderAlertBoard(erp, kakaoLast){
-    var tbody = document.getElementById('alert-board-tbody');
-    var sm = document.getElementById('alert-board-summary');
-    if(!tbody) return;
-
-    // erp automation_health 이름→항목 룩업 + systems(스케줄러 하트비트) 룩업
-    var ahMap = {}, sysMap = {};
-    var ahItems = (erp && erp.automation_health && Array.isArray(erp.automation_health.items)) ? erp.automation_health.items : [];
-    ahItems.forEach(function(it){ if(it && it.name) ahMap[it.name] = it; });
-    ((erp && Array.isArray(erp.systems)) ? erp.systems : []).forEach(function(s){ if(s && s.name) sysMap[s.name] = s; });
-    var schedSys = sysMap['일일 스케줄러'] || null;
-    var schedAlive = schedSys && schedSys.state === '정상';
-
-    var okN = 0, badN = 0, naN = 0;
-    var rowsHtml = ALERT_ROWS.map(function(r){
-      var chIco = r.ch === 'kakao' ? '💬' : '✈️';
-      var lastTxt = '—', health;
-
-      if(r.src === 'kakao_last'){
-        var it = r.ah ? ahMap[r.ah] : null;
-        var sent = kakaoLast && kakaoLast.at ? fmtWhen(kakaoLast.at) : (it ? fmtKAmPm(it.last_run) : '—');
-        var okSend = kakaoLast && kakaoLast.ok !== false;
-        lastTxt = sent + (kakaoLast ? (okSend ? ' <span style="color:var(--green)">✓</span>' : ' <span style="color:#ff8a80">⚠</span>') : '');
-        if(it && it.state === '실패'){ health = alertChip('bad', '실패'); badN++; }
-        else if(okSend && sent !== '—'){ health = alertChip('ok', '최근 정상 · 3방'); okN++; }
-        else { health = alertChip('na', '측정불가'); naN++; }
-      } else if(r.src === 'ah'){
-        var a = r.ah ? ahMap[r.ah] : null;
-        if(!a){ lastTxt = '—'; health = alertChip('na', '측정불가'); naN++; }
-        else if(a.state === '정상'){ lastTxt = fmtKAmPm(a.last_run); health = alertChip('ok', '최근 정상'); okN++; }
-        else if(a.state === '실패'){ lastTxt = fmtKAmPm(a.last_run); health = alertChip('bad', '실패 · 코드 ' + esc(String(a.last_result))); badN++; }
-        else { lastTxt = '예정 ' + fmtKAmPm(a.next_run); health = alertChip('na', a.state === '대기' ? '예정(첫 실행 전)' : esc(a.state || '측정불가')); naN++; }
-      } else if(r.src === 'schedsys'){
-        // 정각 통합보고 = 일일 스케줄러가 발사. 발송 로그(.gitignore)는 라이브 fetch 불가 → 스케줄러 하트비트로 건강 판정.
-        if(!schedSys){ lastTxt = '<span style="color:var(--dim)">측정불가</span>'; health = alertChip('na', '측정불가'); naN++; }
-        else if(schedSys.state === '정상'){ lastTxt = esc(schedSys.detail || '가동 중'); health = alertChip('ok', '스케줄러 정상 발사'); okN++; }
-        else if(schedSys.state === '이상'){ lastTxt = esc(schedSys.detail || ''); health = alertChip('bad', '스케줄러 이상'); badN++; }
-        else { lastTxt = esc(schedSys.detail || ''); health = alertChip('na', esc(schedSys.state || '측정불가')); naN++; }
-      } else if(r.src === 'sched'){
-        lastTxt = '<span style="color:var(--dim)">로그 미집계</span>';
-        health = alertChip('na', schedAlive ? '스케줄러 정상(발송 미측정)' : '측정불가');
-        naN++;
-      } else { // none
-        lastTxt = '<span style="color:var(--dim)">측정불가</span>';
-        health = alertChip('na', '측정불가');
-        naN++;
-      }
-
-      var noteHtml = r.note ? '<span style="display:block;color:var(--dim);font-size:11px;margin-top:2px;">' + esc(r.note) + '</span>' : '';
-      return '<tr>' +
-        '<td><strong>' + esc(r.what) + '</strong>' + noteHtml + '</td>' +
-        '<td>' + esc(r.when) + '</td>' +
-        '<td><span style="color:var(--accent-soft);font-weight:600;font-size:11px;">' + chIco + '</span> ' + esc(r.where) + '</td>' +
-        '<td style="font-variant-numeric:tabular-nums;">' + lastTxt + '</td>' +
-        '<td>' + health + '</td>' +
-        '</tr>';
-    }).join('');
-    tbody.innerHTML = rowsHtml;
-    if(sm){
-      sm.innerHTML = '총 <b>' + ALERT_ROWS.length + '</b>개 알림 · 🟢 정상 <b>' + okN + '</b>' +
-        (badN ? ' · 🔴 이상 <b>' + badN + '</b>' : '') +
-        ' · ⚪ 측정불가 <b>' + naN + '</b> <span style="color:var(--dim);">— 카톡·텔레그램 자동 발송(현행 유지, 이 보드는 가시화만)</span>';
-    }
-  }
-
   // ═══════════ 로드 ═══════════
   Promise.all([
     gasReadText('status/gm_aide_scan_log.jsonl',      'status/gm_aide_scan_log.jsonl').catch(function(){ return ''; }),
@@ -1749,17 +1688,13 @@
     try{ renderErpStatus(erpStatus); }catch(e){ document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">시스템 현황 표시 오류.</span>'; }
     try{ renderAutomationHealth(erpStatus); }catch(e){ document.getElementById('erp-ah-headline').innerHTML = '<span style="color:var(--dim);">건강 점수판 표시 오류.</span>'; }
     var moduleRegistry = parseJson(a[12]);
-    try{ renderModuleRegistry(moduleRegistry); }catch(e){
+    try{ renderModuleRegistry(moduleRegistry, erpStatus, parseJson(a[13])); }catch(e){
       var mrt = document.getElementById('module-registry-tbody');
-      if(mrt) mrt.innerHTML = '<tr><td colspan="5" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
+      if(mrt) mrt.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
     }
     try{ renderRegistryCards(moduleRegistry); }catch(e){
       var rcEl = document.getElementById('registry-cards');
       if(rcEl) rcEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부 모듈 카드 표시 오류.</div>';
-    }
-    try{ renderAlertBoard(erpStatus, parseJson(a[13])); }catch(e){
-      var abt = document.getElementById('alert-board-tbody');
-      if(abt) abt.innerHTML = '<tr><td colspan="5" style="color:var(--dim);">알림 스케줄 보드 표시 오류.</td></tr>';
     }
     var fl = document.getElementById('foot-loaded');
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
@@ -1774,9 +1709,7 @@
     document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">현황을 아직 불러오지 못했습니다.</span>';
     document.getElementById('erp-ah-headline').innerHTML = '<span style="color:var(--dim);">집계 중 (데이터 로드 전)</span>';
     var mrt = document.getElementById('module-registry-tbody');
-    if(mrt) mrt.innerHTML = '<tr><td colspan="5" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
-    var abt = document.getElementById('alert-board-tbody');
-    if(abt) abt.innerHTML = '<tr><td colspan="5" style="color:var(--dim);">알림 스케줄 보드를 불러오지 못했습니다.</td></tr>';
+    if(mrt) mrt.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
   });
 })();
 </script>
