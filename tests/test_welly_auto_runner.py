@@ -1185,6 +1185,7 @@ def test_fold_render_ok_keeps_passed_and_adds_confirm_tag():
 
 
 def test_fold_render_mismatch_downgrades_to_ambiguous_park():
+    # 하드 신호(status!=200 또는 셀렉터 누락)로만 불일치 park. 여기선 status=500이 하드 신호.
     v0 = _passed_verdict()
     render_result = {"ok": False, "error": None, "http_status": 500,
                      "console_errors": ["boom", "bang"], "selectors_found": {"#x": False},
@@ -1193,7 +1194,21 @@ def test_fold_render_mismatch_downgrades_to_ambiguous_park():
     assert v["passed"] is False  # ★비협상★ 불일치는 자동 완료 신뢰 금지
     assert v["ambiguous"] is True
     assert "500" in v["honesty_tag"]
-    assert "2건" in v["honesty_tag"]  # 콘솔에러 2건
+    assert "2건" in v["reason"]  # 콘솔에러 개수는 reason에 참고로만(honesty_tag 아님)
+
+
+def test_fold_console_errors_alone_do_not_park():
+    # ★핵심 오탐 방지★ 200·셀렉터 통과인데 콘솔에러만 있는 양성 페이지(CORS 등)는
+    # render_verify_url이 ok=True로 판정하므로 fold는 통과 유지 — 절대 park하지 않는다.
+    v0 = _passed_verdict()
+    render_result = {"ok": True, "error": None, "http_status": 200,
+                     "console_errors": ["CORS", "CORS", "CORS", "CORS", "CORS"],
+                     "selectors_found": {"#main": True}, "screenshot": "s.png"}
+    v = war.fold_render_into_verdict(v0, _frontend_parsed(), render_result, render_enabled=True)
+    assert v["passed"] is True  # 콘솔에러만으로는 완료를 뒤집지 않음
+    assert v["ambiguous"] is False
+    assert "재확인 통과" in v["honesty_tag"]
+    assert "5건(참고" in v["honesty_tag"]  # 콘솔에러는 참고 정보로 병기
 
 
 # ── render_verify_url: 지연 import·예외격리 구조(실제 브라우저·네트워크 실호출 금지) ──

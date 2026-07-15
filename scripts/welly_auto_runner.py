@@ -463,7 +463,11 @@ def render_verify_url(url, required_selectors=None, evidence_dir=None, timeout_m
     URL 슬러그 파일명으로 저장.
 
     반환: {ok, http_status, console_errors, selectors_found, screenshot, error}.
-      ok = (http_status==200) and (console_errors 없음) and (모든 required_selectors 발견).
+      ok = (http_status==200) and (모든 required_selectors 발견).
+      ★콘솔에러는 참고 정보로만 수집한다(park 트리거 아님).★ 양성 라이브 페이지도 CORS·
+      서드파티·analytics 등으로 흔히 콘솔 error를 뱉어(실측: 문의 페이지 200인데 CORS 5건),
+      이를 하드 실패로 잡으면 정상 완료된 프론트 배가 무더기로 오탐 park된다. 하드 신호=
+      HTTP status(페이지가 안 떴나)·셀렉터(기대 콘텐츠가 렌더됐나)만 park를 좌우한다.
 
     ★어떤 예외도 밖으로 던지지 않는다★ — 렌더 인프라 실패(브라우저 미기동·타임아웃·네트워크)는
     error 필드에 사유를 담아 반환한다(그때 나머지는 None/빈값). 이 "인프라 실패"(error 있음)와
@@ -517,7 +521,8 @@ def render_verify_url(url, required_selectors=None, evidence_dir=None, timeout_m
         return {**base_fail, "error": f"렌더 실패: {type(e).__name__}: {e}"}
 
     all_selectors_ok = all(selectors_found.get(s) for s in required_selectors)
-    ok = (http_status == 200) and (not console_errors) and all_selectors_ok
+    # 콘솔에러는 park 트리거 아님(양성 페이지 CORS 등 노이즈 오탐 방지) — 하드 신호만 ok 좌우.
+    ok = (http_status == 200) and all_selectors_ok
     return {
         "ok": ok, "http_status": http_status, "console_errors": console_errors,
         "selectors_found": selectors_found, "screenshot": screenshot_path, "error": None,
@@ -559,23 +564,26 @@ def fold_render_into_verdict(verdict: dict, verify_parsed: dict, render_result: 
             " · 독립 렌더 미수행(렌더 인프라 실패, 세션 자기보고만)"
         return v
 
+    n_console = len(render_result.get("console_errors") or [])
     if render_result.get("ok"):
-        v["honesty_tag"] = (v.get("honesty_tag") or "") + \
-            " · 러너 독립 렌더 재확인 통과(200·콘솔0·셀렉터)"
+        tag = " · 러너 독립 렌더 재확인 통과(200·셀렉터 존재)"
+        if n_console:
+            tag += f" · 콘솔에러 {n_console}건(참고·차단 아님)"
+        v["honesty_tag"] = (v.get("honesty_tag") or "") + tag
         return v
 
-    # 렌더는 됐으나 조건 미달(error None + ok False) = 세션 주장과 불일치 → 강등·park.
-    n_console = len(render_result.get("console_errors") or [])
+    # 렌더는 됐으나 하드 조건 미달(error None + ok False) = 세션 주장과 불일치 → 강등·park.
+    # ★콘솔에러는 park 트리거 아님★ — 하드 신호(status!=200 또는 셀렉터 누락)만 불일치로 본다.
     status = render_result.get("http_status")
     v["passed"] = False
     v["ambiguous"] = True
     v["honesty_tag"] = (
-        f"세션은 성공 보고했으나 러너 독립 렌더 불일치(status={status}·콘솔에러 {n_console}건) — "
-        "완료 신뢰 금지·park"
+        f"세션은 성공 보고했으나 러너 독립 렌더 불일치(status={status}·셀렉터 "
+        f"{render_result.get('selectors_found')}) — 완료 신뢰 금지·park"
     )
     v["reason"] = (
-        f"러너 독립 렌더 재확인 불일치(status={status}·콘솔에러 {n_console}건·셀렉터 "
-        f"{render_result.get('selectors_found')}) — 세션 성공 주장과 어긋나 자동 완료 신뢰 금지, park"
+        f"러너 독립 렌더 재확인 불일치(status={status}·셀렉터 {render_result.get('selectors_found')}"
+        f"·콘솔에러 {n_console}건[참고]) — 세션 성공 주장과 어긋나 자동 완료 신뢰 금지, park"
     )
     return v
 
