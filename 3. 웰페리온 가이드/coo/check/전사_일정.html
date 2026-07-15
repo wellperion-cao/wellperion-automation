@@ -100,6 +100,10 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#111;color:#fff;padding:11px 18px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:50;box-shadow:0 6px 24px rgba(0,0,0,.4)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .tag.rep{color:var(--purple);background:rgba(167,139,218,0.14)}
+.hlink-add{color:#221F20;background:var(--accent);border-color:var(--accent);font-weight:700}
+.hlink-add:hover{opacity:.9;color:#221F20;border-color:var(--accent)}
+.row.editable{cursor:pointer}
+.row.editable:hover{border-color:var(--accent)}
 /* ── 부서 탭 임베드 모드(?embed=1) — 군더더기 숨김, 부서 고정 ── */
 body.embed nav[aria-label="운영 흐름"],body.embed .honesty,body.embed footer,body.embed #chips,body.embed .sub{display:none!important}
 body.embed .wrap{padding:12px 14px 24px}
@@ -127,6 +131,7 @@ body.embed .calwrap{margin-top:8px}
       <p class="sub">날짜가 정해진 <b>전사 일정</b>의 단일 출처 — <b>정기 안전·법정 점검</b> + 부서 <b>주요 이벤트</b>(행사·납품·교육 등). 반복(매주·격주·매월·매년)은 규칙 한 줄로 고정하면 달력에 계속 표시. 부서 체계 페이지 <b>🗓️ 일정 탭</b>에서 직접 작성 → 여기로 모임.</p>
     </div>
     <div class="sheet-links">
+      <a class="sheet-link hlink-add" id="addBtn" role="button" tabindex="0" onclick="startAddEvent()">➕ 일정 추가</a>
       <a class="sheet-link hlink-edit" id="editBtn" role="button" tabindex="0" onclick="toggleEdit()">✏️ 편집</a>
       <a class="sheet-link" href="../../wellperion_guide(main).html">🏠 웰페리온 ERP</a>
     </div>
@@ -289,7 +294,10 @@ function renderList(){
     var vTxt=vend?('<div class="rvendor">🏢 담당: '+esc(vend.name)+' · <a href="tel:'+esc((""+(vend.contact||"")).replace(/[^0-9+]/g,""))+'">📞 '+esc(vend.contact||"")+'</a></div>'):"";
     var subTxt=isEvent?(cat.label+(repTxt?" · "+repTxt+" 반복":" · 1회")):(cat.label+' · '+it.cycle);
     var tailTxt=isEvent?(it.note?esc(it.note):(it.assignee?esc(it.assignee):"—")):('최근 '+(it.last_done||"—"));
-    var r=document.createElement("div");r.className="row";
+    var r=document.createElement("div");r.className="row editable";
+    r.setAttribute("data-eid",it.id);
+    r.setAttribute("title","클릭하면 편집");
+    (function(_id){ r.onclick=function(){ editItemById(_id); }; })(it.id);
     if(comp.date)r.setAttribute("data-due",fmtDate(comp.date));
     r.innerHTML='<div class="catbar" style="background:'+cat.color+'"></div>'+
       '<div><div class="name">'+esc(it.name)+'</div><div class="rsub">'+subTxt+'</div>'+vTxt+'</div>'+
@@ -364,7 +372,33 @@ function highlightDate(key){
 }
 window.highlightDate=highlightDate;
 
-function renderAll(){renderTiles();renderList();renderCalendar();if(editMode)renderEdit();document.querySelectorAll("#chips .chip").forEach(function(b){b.setAttribute("aria-pressed",b.textContent===cur);});}
+function renderAll(){renderTiles();renderList();renderCalendar();if(editMode)renderEdit();document.querySelectorAll("#chips .chip").forEach(function(b){b.setAttribute("aria-pressed",b.textContent===cur);});fitFrame();}
+
+// 부서 탭 임베드 시: iframe 높이를 내용에 맞춰 자체 조정 → 안쪽 스크롤 제거(페이지 하나로 스크롤). 동일 출처라 frameElement 접근 가능.
+function fitFrame(){
+  if(!EMBED)return;
+  try{
+    if(window.frameElement){
+      var h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight)+4;
+      window.frameElement.style.height=h+"px";
+    }
+  }catch(e){}
+}
+// '➕ 일정 추가' — 편집 모드 진입 + 새 이벤트 카드 즉시 추가(맨 위로 스크롤·포커스).
+function startAddEvent(){
+  if(!editMode)toggleEdit();
+  addEvent();
+}
+window.startAddEvent=startAddEvent;
+// 목록 항목 클릭 → 편집 모드 진입 + 해당 카드로 스크롤·포커스.
+function editItemById(id){
+  if(!editMode)toggleEdit();
+  setTimeout(function(){
+    var card=document.querySelector('#vEdit .ecard[data-eid="'+(""+id).replace(/"/g,'')+'"]');
+    if(card){card.scrollIntoView({behavior:"smooth",block:"center"});var inp=card.querySelector('input,select');if(inp)try{inp.focus();}catch(e){}}
+  },30);
+}
+window.editItemById=editItemById;
 
 /* ── 편집 모드 ── */
 var editMode=false, DKEY="wp_schedule_draft_v1";
@@ -396,6 +430,7 @@ function toggleEdit(){
   document.getElementById("vEdit").hidden=!editMode;
   document.getElementById("editBtn").textContent=editMode?"✖ 편집 닫기":"✏️ 편집";
   if(editMode){renderEdit();} else {renderAll();}
+  fitFrame();
 }
 window.toggleEdit=toggleEdit;
 function renderEdit(){
@@ -405,6 +440,7 @@ function renderEdit(){
   f.forEach(function(it){
     var idx=DATA.items.indexOf(it);
     var card=document.createElement("div");card.className="ecard"+(it.applies==="해당없음"?" na":"");
+    card.setAttribute("data-eid",it.id);
     if(it.type==="이벤트"){
       card.innerHTML=
         '<div class="ecard-top"><span class="tag rep" style="margin:0 4px 0 0">이벤트</span><input class="ename" data-i="'+idx+'" data-f="name" value="'+esc(it.name)+'" placeholder="일정 제목 (예) 정기교육"><button class="edel" data-i="'+idx+'">🗑 삭제</button></div>'+
@@ -439,6 +475,7 @@ function renderEdit(){
     el.addEventListener("change",h);
   });
   ve.querySelectorAll(".edel").forEach(function(b){b.addEventListener("click",function(){var i=+b.getAttribute("data-i");if(confirm("이 항목을 삭제할까요?\n"+(DATA.items[i].name||"(이름 없음)"))){DATA.items.splice(i,1);saveDraft();renderEdit();}});});
+  fitFrame();
 }
 function addItem(){
   DATA.items.push({id:"new-"+(DATA.items.length+1)+"-"+(cur!=="전체"?cur:"x"),type:"정기점검",name:"",category:Object.keys(CATS)[0],dept:(cur!=="전체"?cur:DATA.depts[0]),cycle:"",cycle_confirmed:false,period_months:null,legal_basis:"",assignee:"",last_done:"",next_due:"",evidence:"",applies:"미확인",note:"",vendor_id:""});
