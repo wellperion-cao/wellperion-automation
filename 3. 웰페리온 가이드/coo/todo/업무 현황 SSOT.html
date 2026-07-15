@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260605-15';
+window.__PV='20260715-1';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -32,6 +32,10 @@ window.__PV='20260605-15';
 <meta property="og:site_name" content="웰페리온">
 <meta name="twitter:card" content="summary">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<!-- 문서 편집기(SunEditor) — 기획안·결과보고 서식 작성용 (2026-07-15 나우열M·COO) -->
+<link href="https://cdn.jsdelivr.net/npm/suneditor@2.47.5/dist/css/suneditor.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.5/dist/suneditor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.5/src/lang/ko.js"></script>
 <style>
 :root{--bg:#1a1815;--paper:#221F1B;--text:#E8E2D8;--dim:#8C7E6D;--dim-soft:#564a3d;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3D3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.14);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.14);--yellow:#E0B341;--yellow-bg:rgba(224,179,65,0.14);--blue:#5B9FD5;--blue-bg:rgba(91,159,213,0.14);--purple:#A78BDA;--purple-bg:rgba(167,139,218,0.14);--orange:#E6944E;--orange-bg:rgba(230,148,78,0.14)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -132,6 +136,20 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .appr-op-who{font-size:11px;font-weight:700;color:var(--purple)}
 .appr-op-time{font-size:10px;color:var(--dim);margin-left:5px}
 .appr-op-text{font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin-top:2px}
+
+/* ── 문서 서식(기획안·결과보고) 렌더 — HTML 문서는 흰 종이 위에 표시 (2026-07-15) ── */
+.doc-render{background:#fff;color:#111;border-radius:8px;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6}
+.doc-render table{border-collapse:collapse;width:100%;margin:6px 0}
+.doc-render td,.doc-render th{border:1px solid #d0cbc4;padding:5px 8px;vertical-align:top}
+.doc-render h1{font-size:22px;margin:10px 0 4px}
+.doc-render h2{font-size:15px;margin:14px 0 6px}
+.doc-render h3{font-size:14px;margin:10px 0 4px}
+.doc-render p{margin:4px 0}
+.doc-render img{max-width:100%;height:auto}
+.doc-render ul,.doc-render ol{padding-left:22px;margin:4px 0}
+.tpl-btn{font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;cursor:pointer;font-family:inherit;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:inherit}
+.tpl-btn:hover{background:rgba(255,255,255,0.18)}
+.se-wrap{background:#fff;border-radius:8px}
 
 /* ── Task Card ── */
 .task-card{padding:14px 16px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;transition:background 0.1s}
@@ -292,6 +310,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   #resultReportPrint{display:none}
   [data-print-mode="result"] #resultReportPrint{display:block!important}
   /* 결과보고서 인쇄 스타일 */
+  /* 문서 서식(HTML) 섹션 — 배경색·표 디자인 그대로 인쇄 (2026-07-15) */
+  .rr-doc,.rr-doc *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rr-doc table{border-collapse:collapse;width:100%}
+  .rr-doc td,.rr-doc th{border:1px solid #bbb;padding:4px 6px;vertical-align:top}
+  .rr-doc img{max-width:100%;height:auto}
   .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:11px;line-height:1.6;padding:0}
   .rr-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #111}
   .rr-wordmark{font-size:15px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111}
@@ -479,9 +502,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div class="field" id="fPlanField" style="background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(91,159,213,0.35);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;margin-bottom:8px;">
         <span>📋 내용 <span style="font-size:11px;color:var(--dim);font-weight:400;">(목적·범위·해결 전략·실행 계획)</span></span>
-        <span id="fPlanLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
+        <span style="display:flex;gap:6px;align-items:center;">
+          <button type="button" class="tpl-btn" style="color:var(--blue);border-color:rgba(91,159,213,0.4);" onclick="insertDocTemplate('plan')">📄 기획안 서식 넣기</button>
+          <span id="fPlanLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
+        </span>
       </label>
-      <textarea id="fPlan" placeholder="4섹션 내용 (간단한 업무는 비워둬도 OK)&#10;목적 — &#10;범위 — &#10;해결 전략 — &#10;실행 계획 —" style="min-height:350px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea>
+      <div class="se-wrap"><textarea id="fPlan" placeholder="4섹션 내용 (간단한 업무는 비워둬도 OK)&#10;목적 — &#10;범위 — &#10;해결 전략 — &#10;실행 계획 —" style="min-height:350px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea></div>
     </div>
     <div class="field" id="fMeetingField" style="display:none;background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(91,159,213,0.35);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;margin-bottom:8px;">
@@ -533,9 +559,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div class="field" id="fResultField" style="background:var(--purple-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(167,139,218,0.35);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--purple);font-weight:700;margin-bottom:8px;">
         <span>🎯 결과보고 <span style="font-size:11px;color:var(--dim);font-weight:400;">(최종 결과·산출물·교훈)</span></span>
-        <span id="fResultLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
+        <span style="display:flex;gap:6px;align-items:center;">
+          <button type="button" class="tpl-btn" style="color:var(--purple);border-color:rgba(167,139,218,0.4);" onclick="insertDocTemplate('result')">🎯 결과보고 서식 넣기</button>
+          <span id="fResultLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
+        </span>
       </label>
-      <textarea id="fResult" placeholder="진척 마무리 후 최종 결과·산출물·달성도·교훈을 정리하세요.&#10;예시:&#10;🎯 결과 — &#10;📦 산출물 — &#10;💡 교훈 —" style="min-height:140px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea>
+      <div class="se-wrap"><textarea id="fResult" placeholder="진척 마무리 후 최종 결과·산출물·달성도·교훈을 정리하세요.&#10;예시:&#10;🎯 결과 — &#10;📦 산출물 — &#10;💡 교훈 —" style="min-height:140px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea></div>
     </div>
     <div class="field">
       <label>외부 링크 (옵션)</label>
@@ -845,10 +874,13 @@ function matchesSearch(t) {
 
 /* ─── 공유 링크 / 딥링크 (2026-06-01 GM) ─── */
 let _deepLinkId = null;
+let _deepLinkEditId = null;  // ?edit=ID — 편집 모달 바로 열기 (결재 SSOT GM 본문수정 연동 · 2026-07-15)
 let _initApplied = false;
 function applyUrlParams() {
   try {
     const p = new URL(location.href).searchParams;
+    const editP = p.get('edit');
+    if (editP) { _deepLinkEditId = editP; activeOwnerFilter = '전체'; activeCatFilter = '전체'; searchQuery = ''; return; }
     const item = p.get('item');
     if (item) { _deepLinkId = item; activeOwnerFilter = '전체'; activeCatFilter = '전체'; searchQuery = ''; return; }
     if (p.get('owner')) activeOwnerFilter = p.get('owner');
@@ -909,6 +941,13 @@ function copyItemLink(id) {
   copyTextRobust(text, '🔗 업무 제목 + 링크가 복사됐어요 — 붙여넣기로 공유하세요');
 }
 function handleDeepLink() {
+  // ?edit=ID — 해당 업무 편집 모달 바로 열기 (결재 SSOT에서 서식 문서 수정 진입용)
+  if (_deepLinkEditId) {
+    const eid = _deepLinkEditId; _deepLinkEditId = null;
+    try { const _u = new URL(location.href); _u.searchParams.delete('edit'); history.replaceState(null, '', _u.pathname + (_u.search || '')); } catch (e) {}
+    setTimeout(function(){ openEditModal(eid); }, 300);
+    return;
+  }
   if (!_deepLinkId) return;
   const id = _deepLinkId; _deepLinkId = null;
   try { const _u = new URL(location.href); _u.searchParams.delete('item'); history.replaceState(null, '', _u.pathname + (_u.search || '')); } catch (e) {}
@@ -1556,13 +1595,13 @@ function renderTaskCard(t, idx) {
   if (parsed.plan) {
     html += '<div style="margin-top:10px;padding:10px 12px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;">';
     html += '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px;">📋 내용</div>';
-    html += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.5;">' + esc(parsed.plan) + '</div></div>';
+    html += docBodyHtml(parsed.plan) + '</div>';
   }
 
   if (parsed.result) {
     html += '<div style="margin-top:10px;padding:10px 12px;background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:8px;">';
     html += '<div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:4px;">🎯 결과보고</div>';
-    html += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.5;">' + esc(parsed.result) + '</div></div>';
+    html += docBodyHtml(parsed.result) + '</div>';
   }
 
   if (parsed.budget) {
@@ -1667,12 +1706,12 @@ function renderDoneCard(t) {
     html += '<div class="detail-toggle" onclick="toggleDetail(this)" style="font-size:11px;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);"><span class="arrow">&#9654;</span> ' + lbl + '</div>';
     html += '<div class="detail-body" style="margin-top:8px;">';
     if (p.body) html += '<div style="font-size:13px;white-space:pre-wrap;line-height:1.55;color:var(--text);">' + esc(p.body) + '</div>';
-    if (p.plan) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;"><div style="color:var(--blue);font-size:12px;font-weight:700;margin-bottom:3px;">📋 내용</div><div style="font-size:13px;white-space:pre-wrap;line-height:1.55;">' + esc(p.plan) + '</div></div>';
+    if (p.plan) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;"><div style="color:var(--blue);font-size:12px;font-weight:700;margin-bottom:3px;">📋 내용</div>' + docBodyHtml(p.plan) + '</div>';
     if (p.logs && p.logs.length) {
       html += '<div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--accent);">📅 진척 로그</div>';
       p.logs.forEach(l => { html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin:6px 0;"><span style="font-size:12px;font-weight:700;color:var(--accent);min-width:88px;flex-shrink:0;">' + esc(l.date) + '</span><span style="flex:1;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;">' + esc(l.text) + '</span></div>'; });
     }
-    if (p.result) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:8px;"><div style="color:var(--purple);font-size:12px;font-weight:700;margin-bottom:3px;">🎯 결과보고</div><div style="font-size:13px;white-space:pre-wrap;line-height:1.55;">' + esc(p.result) + '</div></div>';
+    if (p.result) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:8px;"><div style="color:var(--purple);font-size:12px;font-weight:700;margin-bottom:3px;">🎯 결과보고</div>' + docBodyHtml(p.result) + '</div>';
     html += '</div>';
   }
   html += '</div>';
@@ -2012,11 +2051,13 @@ function applyLifecycleLocks(task) {
   };
   setLock('fContent', locks.body);
   setLock('fPlan',    locks.plan,   'fPlanLockBadge');
+  setDocLock('plan',  locks.plan);   // 문서 편집기 잠금 동기화 (2026-07-15)
   _planLocked = locks.plan;
   if (typeof isMeetingCat === 'function' && isMeetingCat()) renderMeetingNotes();
   setLock('progressLogInput', locks.progress);
   setLock('progressLogDate',  locks.progress);
   setLock('fResult',  locks.result, 'fResultLockBadge');
+  setDocLock('result', locks.result);
   setLock('fBudgetCategory', locks.budget);
   setLock('fBudgetAmount',   locks.budget);
   // approvalReq 체크박스 잠금은 별도 처리
@@ -2066,6 +2107,207 @@ function updateBudgetRoute() {
 }
 
 /* ═══════════════════════════════════════════
+   문서 편집기 (기획안·결과보고) — SunEditor 통합 (2026-07-15 나우열M·COO)
+   - 기존 fPlan/fResult 텍스트영역을 리치 편집기로 승격 (CDN 실패 시 텍스트영역 폴백)
+   - 서식 템플릿 버튼: 웰페리온 결재 문서 디자인 (결재란·섹션바·표)
+   - 이미지: 기존 GAS todo_upload 재활용 → Drive 저장 + 링크 삽입 (base64 시트 저장 금지)
+   - 저장 데이터: HTML 문자열 (기존 마커 구조 그대로) / 레거시 줄글은 열 때 자동 변환
+   ═══════════════════════════════════════════ */
+var _planEd = null, _resultEd = null;
+function isDocHtml(s) { return /^\s*</.test(String(s || '')); }
+/* 시트에서 온 HTML 표시 전 최소 무해화 — script·이벤트핸들러·js URL 제거 */
+function sanitizeDoc(html) {
+  return String(html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<script[^>]*>/gi, '')
+    .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+    .replace(/(href|src)\s*=\s*(["']?)\s*javascript:[^"'\s>]*\2/gi, '$1="#"');
+}
+/* 카드·토글 표시용: HTML 문서 → 흰 종이 렌더 / 레거시 줄글 → 기존 pre-wrap */
+function docBodyHtml(s) {
+  if (isDocHtml(s)) return '<div class="doc-render sun-editor-editable">' + sanitizeDoc(s) + '</div>';
+  return '<div style="font-size:13px;white-space:pre-wrap;line-height:1.5;">' + esc(s) + '</div>';
+}
+/* 레거시 줄글 → 편집기용 HTML (이미 HTML이면 그대로) */
+function toEditorHtml(text) {
+  const s = String(text || '');
+  if (!s.trim()) return '';
+  if (isDocHtml(s)) return s;
+  return s.split('\n').map(function(l){ return '<p>' + (l.trim() ? esc(l) : '<br>') + '</p>'; }).join('');
+}
+/* 편집기 내용이 실질적으로 비었는지 (빈 <p><br></p> 등) */
+function docContentEmpty(html) {
+  const s = String(html || '');
+  if (!s.trim()) return true;
+  if (/<(img|table|iframe|video)/i.test(s)) return false;
+  const txt = s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+  return !txt;
+}
+/* Drive 파일 URL → <img> 표시용 URL */
+function driveImgUrl(url) {
+  const m = String(url || '').match(/[-\w]{25,}/);
+  return m ? 'https://lh3.googleusercontent.com/d/' + m[0] : url;
+}
+/* 이미지 업로드 — 기존 GAS todo_upload(id 없이) 재활용: Drive 저장 후 링크 삽입 */
+function _seImageUploadBefore(files, info, core, uploadHandler) {
+  (async function () {
+    try {
+      const out = [];
+      for (const file of files) {
+        if (file.size > 5 * 1024 * 1024) { throw new Error(file.name + ' — 이미지가 5MB를 초과합니다.'); }
+        const base64 = await new Promise(function (resolve, reject) {
+          const rd = new FileReader();
+          rd.onload = function(){ resolve(String(rd.result).split(',')[1]); };
+          rd.onerror = function(){ reject(new Error('파일 읽기 실패')); };
+          rd.readAsDataURL(file);
+        });
+        showToast('🖼 이미지 업로드 중...');
+        const res = await apiCall({ action: 'todo_upload', fileName: file.name, mimeType: file.type, base64: base64 });
+        if (!res.ok || !res.url) throw new Error(res.error || '이미지 업로드 실패');
+        out.push({ url: driveImgUrl(res.url), name: file.name, size: file.size });
+      }
+      uploadHandler({ result: out });
+      showToast('🖼 이미지 업로드 완료');
+    } catch (e) {
+      uploadHandler(String(e.message || e));
+      showToast('이미지 업로드 실패: ' + e.message, true);
+    }
+  })();
+  return undefined; // uploadHandler 수동 호출 대기
+}
+function _createDocEditor(targetId, minH) {
+  return SUNEDITOR.create(targetId, {
+    lang: (typeof SUNEDITOR_LANG !== 'undefined' ? SUNEDITOR_LANG['ko'] : undefined),
+    width: '100%',
+    minHeight: minH,
+    defaultStyle: 'font-family:"Pretendard","Malgun Gothic",sans-serif;font-size:14px;line-height:1.7;',
+    attributesWhitelist: { all: 'style' },  // 서식 색상·테두리 유지 (필터 제거 방지)
+    buttonList: [
+      ['undo','redo'],
+      ['formatBlock'],
+      ['bold','underline','strike','fontColor','hiliteColor'],
+      ['align','list'],
+      ['table','image','link'],
+      ['removeFormat'],
+      ['fullScreen']
+    ],
+    formats: ['p','h1','h2','h3','blockquote'],
+    imageUploadSizeLimit: 5242880,
+    onImageUploadBefore: _seImageUploadBefore
+  });
+}
+/* 모달 열 때 1회 생성 — CDN 로드 실패 시 조용히 텍스트영역 유지 */
+function ensureDocEditors() {
+  if (typeof SUNEDITOR === 'undefined') return false;
+  try {
+    if (!_planEd)   _planEd   = _createDocEditor('fPlan', '360px');
+    if (!_resultEd) _resultEd = _createDocEditor('fResult', '260px');
+    return true;
+  } catch (e) { return false; }
+}
+function setDocValue(which, text) {
+  const ed = which === 'plan' ? _planEd : _resultEd;
+  const ta = document.getElementById(which === 'plan' ? 'fPlan' : 'fResult');
+  if (ed) { ed.setContents(toEditorHtml(text)); }
+  else if (ta) { ta.value = text || ''; }
+}
+function getDocValue(which) {
+  const ed = which === 'plan' ? _planEd : _resultEd;
+  if (ed) {
+    const html = ed.getContents(true);
+    return docContentEmpty(html) ? '' : html;
+  }
+  const ta = document.getElementById(which === 'plan' ? 'fPlan' : 'fResult');
+  return ta ? ta.value : '';
+}
+function setDocLock(which, locked) {
+  const ed = which === 'plan' ? _planEd : _resultEd;
+  if (ed && typeof ed.readOnly === 'function') { try { ed.readOnly(!!locked); } catch (e) {} }
+}
+/* ── 웰페리온 결재 문서 서식 템플릿 ── */
+function _docBrandHeader() {
+  return '<p style="margin:0;font-size:11px;color:#B79F8A"><strong>WELLPERION</strong> <span style="color:#aaa;margin-left:10px">주식회사 웰페리온 · 하이엔드 프라이빗 스포츠클럽</span></p>'
+    + '<table style="width:320px;margin-left:auto"><tbody>'
+    + '<tr><td rowspan="2" style="width:36px;text-align:center;vertical-align:middle;background-color:#1a1815;color:#B79F8A"><strong>결재</strong></td>'
+    + '<td style="text-align:center;width:90px;background-color:#f5f2ee;font-size:12px"><strong>담당</strong></td><td style="text-align:center;width:90px;background-color:#f5f2ee;font-size:12px"><strong>GM</strong></td><td style="text-align:center;width:90px;background-color:#f5f2ee;font-size:12px"><strong>대표님</strong></td></tr>'
+    + '<tr><td style="height:58px"><br></td><td><br></td><td><br></td></tr>'
+    + '</tbody></table>';
+}
+function _docTitleBlock(txt) {
+  return '<h1 style="text-align:center;font-size:30px;margin:18px 0 4px;color:#1a1815;border-bottom:3px double #1a1815;padding-bottom:14px">' + txt + '</h1>'
+    + '<p style="text-align:center;margin:0 0 14px;color:#B79F8A;font-size:12px">◆</p>';
+}
+function _docSection(txt) {
+  return '<h2 style="background-color:#f5f2ee;border-left:6px solid #B79F8A;padding:8px 14px;font-size:16px;margin-top:30px;color:#1a1815">' + txt + '</h2>';
+}
+function _docTh(txt, w) {
+  return '<td style="' + (w ? 'width:' + w + ';' : '') + 'text-align:center;background-color:#1a1815;color:#fff;font-size:13px;padding:6px"><strong>' + txt + '</strong></td>';
+}
+function _docInfoRow(label, val) {
+  return '<tr><td style="width:110px;background-color:#f5f2ee;text-align:center"><strong>' + label + '</strong></td><td style="padding-left:10px">' + (val || '<br>') + '</td></tr>';
+}
+var _DOC_PLACEHOLDER = '<p style="color:#999">내용을 입력하세요.</p>';
+var _DOC_FOOT = '<p style="text-align:center;color:#aaa;font-size:10px;border-top:1px solid #ddd;padding-top:10px;margin-top:46px">WELLPERION · 서울특별시 용산구 서빙고로 413 · 본 문서는 웰페리온 내부 결재용입니다</p>';
+function buildDocTemplate(mode) {
+  const title = esc((document.getElementById('fTitle').value || '').trim() || '(업무명)');
+  const owner = esc(getCheckboxValues('fOwnerGroup') || getUser() || '');
+  const today = todayDateStr();
+  const sd = document.getElementById('fStartDate').value, ed = document.getElementById('fEndDate').value;
+  const period = esc(sd ? (sd + (ed ? ' ~ ' + ed : ' ~')) : '');
+  if (mode === 'plan') {
+    return _docBrandHeader() + _docTitleBlock('기 획 안')
+      + '<table><tbody>'
+      + _docInfoRow('업무명', title) + _docInfoRow('작성자', owner) + _docInfoRow('작성일', today) + _docInfoRow('기간', period)
+      + '</tbody></table>'
+      + _docSection('1. 목적') + _DOC_PLACEHOLDER
+      + _docSection('2. 범위') + _DOC_PLACEHOLDER
+      + _docSection('3. 해결 전략') + _DOC_PLACEHOLDER
+      + _docSection('4. 실행 계획 (일정·마일스톤)')
+      + '<table><tbody><tr>' + _docTh('일정','120px') + _docTh('내용') + _docTh('담당','110px') + '</tr>'
+      + '<tr><td style="text-align:center"><br></td><td><br></td><td><br></td></tr>'
+      + '<tr><td style="text-align:center"><br></td><td><br></td><td><br></td></tr>'
+      + '<tr><td style="text-align:center"><br></td><td><br></td><td><br></td></tr></tbody></table>'
+      + _docSection('5. 예산')
+      + '<table><tbody><tr>' + _docTh('항목','160px') + _docTh('금액') + _docTh('비고') + '</tr>'
+      + '<tr><td><br></td><td style="text-align:right"><br></td><td><br></td></tr>'
+      + '<tr><td style="text-align:center;background-color:#f5f2ee"><strong>합계</strong></td><td style="text-align:right;background-color:#f5f2ee"><strong>0 원</strong></td><td style="background-color:#f5f2ee"><br></td></tr></tbody></table>'
+      + '<p style="color:#B79F8A;font-size:12px">※ 예산 결재 라인은 아래 💰 예산 항목과 연동됩니다.</p>'
+      + _DOC_FOOT;
+  }
+  return _docBrandHeader() + _docTitleBlock('결 과 보 고')
+    + '<table><tbody>'
+    + _docInfoRow('업무명', title) + _docInfoRow('작성자', owner) + _docInfoRow('보고일', today) + _docInfoRow('수행 기간', period)
+    + '</tbody></table>'
+    + '<table style="margin-top:18px"><tbody><tr>'
+    + '<td style="width:110px;background-color:#1a1815;color:#B79F8A;text-align:center;vertical-align:middle"><strong>핵심 요약</strong></td>'
+    + '<td style="background-color:#f5f2ee;padding:12px 14px;color:#555">결과를 한두 문장으로 요약해 주세요 — GM·대표님이 가장 먼저 읽는 칸입니다.</td>'
+    + '</tr></tbody></table>'
+    + _docSection('1. 개요') + _DOC_PLACEHOLDER
+    + _docSection('2. 진행 경과')
+    + '<table><tbody><tr>' + _docTh('날짜','130px') + _docTh('내용') + '</tr>'
+    + '<tr><td style="text-align:center"><br></td><td><br></td></tr>'
+    + '<tr><td style="text-align:center"><br></td><td><br></td></tr></tbody></table>'
+    + _docSection('3. 결과·성과')
+    + '<table><tbody><tr>' + _docTh('지표') + _docTh('목표','120px') + _docTh('실적','120px') + _docTh('달성률','100px') + '</tr>'
+    + '<tr><td><br></td><td style="text-align:center"><br></td><td style="text-align:center"><br></td><td style="text-align:center"><br></td></tr></tbody></table>'
+    + '<p style="color:#999;background-color:#fbfaf8;border:1px dashed #B79F8A;padding:14px;text-align:center">📷 성과 사진·캡처는 이 자리에 붙여넣기(Ctrl+V) 하세요.</p>'
+    + _docSection('4. 교훈 및 후속 계획') + _DOC_PLACEHOLDER
+    + _DOC_FOOT;
+}
+function insertDocTemplate(mode) {
+  if (mode === 'plan' && isMeetingCat()) { alert('회의 카테고리는 참석자별 회의 칸을 사용합니다.'); return; }
+  const locked = mode === 'plan' ? _planLocked : false;
+  if (locked) { alert('잠금 상태에서는 서식을 넣을 수 없습니다.'); return; }
+  if (!ensureDocEditors()) { alert('문서 편집기를 불러오지 못했습니다. (네트워크 확인)'); return; }
+  const cur = getDocValue(mode);
+  if (cur && !confirm('현재 작성 내용을 지우고 ' + (mode === 'plan' ? '기획안' : '결과보고') + ' 서식으로 새로 시작할까요?')) return;
+  const ed = mode === 'plan' ? _planEd : _resultEd;
+  ed.setContents(buildDocTemplate(mode));
+}
+
+/* ═══════════════════════════════════════════
    Modal — Add / Edit
    ═══════════════════════════════════════════ */
 function openAddModal() {
@@ -2092,8 +2334,9 @@ function openAddModal() {
   renderProgressList();
   document.getElementById('fBudgetCategory').value = '';
   document.getElementById('fBudgetAmount').value = '';
-  document.getElementById('fPlan').value = '';
-  document.getElementById('fResult').value = '';
+  ensureDocEditors();
+  setDocValue('plan', '');
+  setDocValue('result', '');
   updateBudgetRoute();
   applyLifecycleLocks(null);  // 신규 = free stage
   // 이전에 열었던 회의 업무의 잔여 칸/순서/캐시 제거 → 업무 간 내용 교차오염(동기화) 방지
@@ -2253,8 +2496,9 @@ function openEditModal(id) {
       _rejBox.textContent = '';
     }
   }
-  document.getElementById('fPlan').value = parsed.plan || PLAN_TEMPLATE;
-  document.getElementById('fResult').value = parsed.result || '';
+  ensureDocEditors();
+  setDocValue('plan', parsed.plan || (isDocHtml(parsed.plan) ? '' : PLAN_TEMPLATE));
+  setDocValue('result', parsed.result || '');
   modalLogsCache = parsed.logs.slice();
   document.getElementById('progressLogDate').value = todayDateStr();
   document.getElementById('progressLogInput').value = '';
@@ -2468,9 +2712,9 @@ async function saveTask() {
   const budgetCat = document.getElementById('fBudgetCategory').value;
   const budgetAmt = Number(document.getElementById('fBudgetAmount').value) || 0;
   const budget = (budgetCat && budgetAmt > 0) ? { category: budgetCat, amount: budgetAmt } : null;
-  // 기획·결과보고 (선택 항목)
-  const planText = isMeetingCat() ? _composeMeetingPlan() : document.getElementById('fPlan').value;
-  const resultText = document.getElementById('fResult').value;
+  // 기획·결과보고 (선택 항목) — 문서 편집기 값 사용 (레거시 텍스트영역 폴백)
+  const planText = isMeetingCat() ? _composeMeetingPlan() : getDocValue('plan');
+  const resultText = getDocValue('result');
   const collabRaw = getCheckboxValues('fCollabGroup');
   const collabArr = collabRaw ? collabRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
   const composedContent = composeContent(
@@ -2481,6 +2725,11 @@ async function saveTask() {
     resultText,
     collabArr
   );
+  // 시트 셀 글자수 한계(5만자) 보호 — 초과분은 저장 자체를 막아 데이터 절단 사고 방지 (2026-07-15)
+  if (composedContent.length > 45000) {
+    alert('내용이 너무 깁니다 (' + composedContent.length.toLocaleString() + '자 / 한도 45,000자).\n\n이미지 수를 줄이거나 본문을 나눠 주세요. 저장이 취소되었습니다.');
+    return;
+  }
 
   const params = {
     action: editId ? 'todo_update' : 'todo_add',
@@ -3057,8 +3306,9 @@ function printResultReport(taskId, override) {
 
   /* ── 결과보고 ── */
   var resultHtml = parsed.result
-    ? '<div class="rr-section-title">결과보고</div>'
-      + '<div class="rr-result-box">' + esc(parsed.result) + '</div>'
+    ? (isDocHtml(parsed.result)
+        ? '<div class="rr-section-title">결과보고</div><div class="rr-doc">' + sanitizeDoc(parsed.result) + '</div>'
+        : '<div class="rr-section-title">결과보고</div><div class="rr-result-box">' + esc(parsed.result) + '</div>')
     : '';
 
   /* ── 진척 로그 (날짜 오름차순) ── */
@@ -3096,6 +3346,10 @@ function printResultReport(taskId, override) {
         planHtml = '<div class="rr-section-title">회의 내용</div>'
           + '<div class="rr-section-body">' + esc(parsed.plan) + '</div>';
       }
+    } else if (isDocHtml(parsed.plan)) {
+      /* 문서 서식(기획안 HTML): 디자인 그대로 인쇄 (2026-07-15) */
+      planHtml = '<div class="rr-section-title">기획안</div>'
+        + '<div class="rr-doc">' + sanitizeDoc(parsed.plan) + '</div>';
     } else {
       /* 일반 항목: 기존대로 '계획' 출력 */
       planHtml = '<div class="rr-section-title">계획</div>'
