@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-10';
+window.__PV='20260715-11';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -389,7 +389,6 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
     <div class="doc-viewer-bar">
       <span class="doc-viewer-title" id="docViewerTitle"></span>
       <span style="display:flex;gap:8px;flex-shrink:0;">
-        <a id="docViewerPrintLink" class="doc-viewer-btn" href="#" target="_blank" rel="noopener" style="text-decoration:none;">🖨 인쇄 / PDF</a>
         <button class="doc-viewer-btn ghost" onclick="closeDocViewer()">✕ 닫기</button>
       </span>
     </div>
@@ -1286,9 +1285,7 @@ function openDocViewer(id, which) {
   const html = which === 'result' ? parsed.result : parsed.plan;
   if (!html) return;
   _docViewerTaskId = id;
-  // 인쇄 = 검증된 업무 SSOT 뷰어로 연결 (일반 링크 — 팝업차단·인쇄모드와 무관 · 2026-07-15 나우열M 최종)
-  const _pl = document.getElementById('docViewerPrintLink');
-  if (_pl) _pl.href = encodeURI('업무 현황 SSOT.html') + '?doc=' + encodeURIComponent(id) + '&which=' + (which === 'result' ? 'result' : 'plan');
+  // 뷰어 = 열람 전용, 인쇄는 카드의 [🖨 업무보고서 인쇄] 하나로 일원화 (2026-07-15 나우열M 확정)
   document.getElementById('docViewerTitle').textContent = (which === 'result' ? '🎯 결과보고' : '📄 기획안') + ' — ' + (t.title || t['업무명'] || '');
   document.getElementById('docViewerPaper').innerHTML = isDocHtml(html)
     ? sanitizeDoc(html)
@@ -1301,24 +1298,7 @@ function closeDocViewer() {
   document.body.style.overflow = '';
   _docViewerTaskId = null;
 }
-/* 뷰어 인쇄 — 이 페이지에서 수개월째 검증된 '결재 카드 인쇄' 인프라(모드 cards + approvalPrintArea)에
-   문서만 실어 출력 (2026-07-15 나우열M · 최종). 리셋도 printApprovalCard와 동일한 afterprint+2초 폴백. */
-function printDocViewer() {
-  const paper = document.getElementById('docViewerPaper');
-  if (!document.getElementById('docViewerOverlay').classList.contains('show') || !paper) return;
-  const pa = document.getElementById('approvalPrintArea');
-  if (!pa) return;
-  pa.innerHTML = '<div class="rr-page" style="font-size:13px;line-height:1.7;">' + paper.innerHTML + '</div>';
-  document.body.setAttribute('data-print-mode', 'cards');
-  function _reset() {
-    document.body.removeAttribute('data-print-mode');
-    pa.innerHTML = '';
-    window.removeEventListener('afterprint', _reset);
-  }
-  window.addEventListener('afterprint', _reset);
-  window.print();
-  setTimeout(_reset, 2000);
-}
+/* (2026-07-15 나우열M 확정) 뷰어는 열람 전용 — 인쇄는 카드의 [🖨 업무보고서 인쇄](printApprovalCard) 하나로 일원화. */
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && document.getElementById('docViewerOverlay').classList.contains('show')) closeDocViewer();
 });
@@ -1536,7 +1516,7 @@ function renderApprovalCard(t, idx) {
   // 셋째 줄: 결재 대기 배지
   h += '<div class="approval-badge-line"><span class="' + chipCls + '">' + esc(chipText) + '</span>' +
     // GM 서명 대기 단계 — 🖨 업무보고서 인쇄(GM 검토·결재용, 단건 인쇄 재사용). 2026-06-16 GM
-    ((!isDone && !isRejected) ? '<button onclick="event.stopPropagation();printApprovalCard(\'' + escAttr(t.id) + '\')" title="업무보고서 인쇄 (GM 검토·결재용)" style="margin-left:6px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);padding:2px 8px;border-radius:7px;font-size:10px;cursor:pointer;font-family:inherit;">🖨 업무보고서 인쇄</button>' : '') +
+    ((!isDone && !isRejected) ? '<button onclick="event.stopPropagation();printApprovalCard(\'' + escAttr(t.id) + '\')" title="업무보고서 인쇄 (GM 검토·결재용) — 기획안·결과보고 포함" style="margin-left:6px;display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.35);padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">🖨 업무보고서 인쇄</button>' : '') +
     '<button onclick="event.stopPropagation();resetTask(\'' + escAttr(t.id) + '\')" title="결재요청 전으로 리셋 (GM 전용) — 업무현황에서 수정 가능" style="margin-left:6px;background:transparent;color:var(--dim);border:1px solid var(--border);padding:2px 8px;border-radius:7px;font-size:10px;cursor:pointer;font-family:inherit;">↩ 리셋</button>' +
     // [GM 인라인 편집] GM 담당 건만 — 이 페이지에서 본문(기획·진척 내용) 직접 수정 (2026-06-23 시우)
     (isGmOwned(t) ? '<button onclick="event.stopPropagation();openGmEdit(\'' + escAttr(t.id) + '\')" title="GM 담당 결재건 본문(기획·진척 내용) 직접 수정" style="margin-left:6px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);padding:2px 8px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">✏ 본문 수정</button>' : '') +
