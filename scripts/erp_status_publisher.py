@@ -43,6 +43,14 @@ WATCH_TASKS = {
     "\\Welperion\\Auto-Shutdown-2330": "PC 자동 종료",
 }
 
+# 알려진 양성(benign) 스케줄러 결과코드 — '정상인데 실패로 보이는 착오'만 정직 재분류한다.
+# 정직 원칙: 진짜 실패는 그대로 '실패'로 둔다. 아래는 (1) 업데이트 결과가 이중경로로 검증되고
+# (Start-AI CEO.bat 이 claude_update.log 로 매일 실수행) (2) bat 이 설계상 fail-soft(항상 exit 0)인
+# 자동-업데이트 작업이, 프로세스 종료코드와 무관한 '스케줄러-레벨 거절/종료'(0x800710E0=operator
+# refused)를 last_result 로 흘리는 경우에 한정. 이 작업이 다른 코드로 실패하면 여전히 '실패'로 뜬다.
+BENIGN_SKIP_TASKS = ("wellperion-morning-update",)
+BENIGN_SKIP_CODES = {0x800710E0}  # The operator or administrator has refused the request
+
 
 def _now_kst():
     return datetime.now(KST)
@@ -121,6 +129,24 @@ def collect_bridges():
     ]
 
 
+def _live_task_names():
+    """현재 Task Scheduler 에 '실존'하는 작업 leaf 이름 집합(소문자).
+    권위 있는 현행 목록 = Get-ScheduledTask(모던 CIM API). 삭제됐지만 legacy schtasks 뷰에
+    남는 손상/고아(orphaned) 등록 = 유령. 유령은 이 집합에 없으므로 걷어낼 수 있다.
+    조회 실패 시 None → 호출부는 필터를 적용하지 않는다(안전: 멀쩡한 작업 오삭제 방지).
+    """
+    try:
+        r = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command",
+             "Get-ScheduledTask | Select-Object -ExpandProperty TaskName"],
+            capture_output=True, text=True, timeout=30,
+        )
+        names = {ln.strip().lower() for ln in (r.stdout or "").splitlines() if ln.strip()}
+        return names or None
+    except Exception:
+        return None
+
+
 def collect_automation_health():
     """Task Scheduler Wellperion 작업 → 자동화 건강 집계.
     결과코드 0 = 정상, 0 아님 = 실패, 한 번도 안 돎(1999년 기본값) = 미실행.
@@ -192,6 +218,10 @@ def collect_automation_health():
                         state = "대기" if has_real_next_run else "미실행"
                     elif code == 0:
                         state = "정상"
+                    elif (any(t in name.lower() for t in BENIGN_SKIP_TASKS)
+                          and (code & 0xFFFFFFFF) in BENIGN_SKIP_CODES):
+                        # 정상인데 스케줄러가 비0으로 흘리는 알려진 양성 코드 → 정직 재분류
+                        state = "정상(건너뜀)"
                     else:
                         state = "실패"
                 except ValueError:
@@ -206,8 +236,15 @@ def collect_automation_health():
                 "next_run": next_run,
             })
 
+        # 유령 배제: 삭제됐지만 legacy schtasks 뷰에 남은 손상/고아 등록을 걷어낸다.
+        # 라이브 존재하는 작업만 발행(권위 목록=Get-ScheduledTask). 조회 실패 시 필터 미적용(안전).
+        live = _live_task_names()
+        if live is not None:
+            items = [it for it in items
+                     if it["name"].split("\\")[-1].lower() in live]
+
         total = len(items)
-        healthy = sum(1 for i in items if i["state"] in ("정상", "대기"))
+        healthy = sum(1 for i in items if i["state"] in ("정상", "대기", "정상(건너뜀)"))
         rate = round(healthy / total * 100) if total > 0 else 0
         summary = f"자동화 {healthy}/{total} 정상 ({rate}%)"
 
