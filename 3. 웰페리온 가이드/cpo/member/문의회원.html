@@ -1091,7 +1091,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   var st=document.createElement("style"); st.setAttribute("data-mi-gate","");
   st.textContent="body{visibility:hidden!important}#miGate{visibility:visible!important}#miGate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#262524,#1a1918);padding:20px;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}#miGate .gc{background:#2f2d2b;border:1px solid #45423f;border-radius:14px;padding:34px 28px;max-width:344px;width:100%;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.45)}#miGate .mk{font-size:11px;letter-spacing:.28em;color:#c9a24b;font-weight:700}#miGate h2{margin:10px 0 4px;font-size:18px;color:#f3efe9}#miGate p{margin:0;font-size:12px;color:#a8a39c}#miGate input{width:100%;box-sizing:border-box;text-align:center;padding:11px;margin-top:16px;border:1px solid #45423f;border-radius:8px;background:#1f1d1c;color:#f3efe9;font:13px inherit;outline:none}#miGate input:focus{border-color:#c9a24b}#miGate button{width:100%;margin-top:10px;padding:11px;border:0;border-radius:8px;cursor:pointer;background:#c9a24b;color:#1a1918;font:600 13px inherit}#miGate button:disabled{opacity:.6;cursor:default}#miGate .er{color:#e06a5a;font-size:12px;margin-top:10px;min-height:16px}";
   root.appendChild(st);
-  function pass(pw){ try{ if(pw!=null) localStorage.setItem("wp_access_token",pw); sessionStorage.setItem(SKEY,"1"); }catch(e){} location.reload(); }
+  function pass(pw){ try{ if(pw!=null) localStorage.setItem("wp_access_token",pw); sessionStorage.setItem(SKEY,"1"); var _m=new URLSearchParams(location.search).get('manage'); if(_m) sessionStorage.setItem('mi_manage_pending',_m); }catch(e){} location.reload(); }
   function build(){
     if(document.getElementById("miGate"))return;
     var ov=document.createElement("div"); ov.id="miGate";
@@ -5260,7 +5260,7 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false }
   // 멤버십 현황 대시보드 = 📊 버튼 → 팝업(openMembershipDash) lazy load. 전환율·퍼널·LOSS신호도 각 팝업 오픈 시 lazy fetch(배3, 2026-07-07 시포·GM).
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
   // 메뉴 그룹 진입(?manage=membership|lesson) — 배6. 기본=멤버십 관리. 2026-07-02 시포·GM.
-  try { var _mp = new URLSearchParams(location.search).get('manage'); switchFamily(_mp === 'lesson' ? 'lesson' : 'membership'); }
+  try { var _mp = new URLSearchParams(location.search).get('manage'); if(!_mp){ _mp = sessionStorage.getItem('mi_manage_pending'); } sessionStorage.removeItem('mi_manage_pending'); switchFamily(_mp === 'lesson' ? 'lesson' : 'membership'); }
   catch(e){ switchFamily('membership'); }
 })();
 
