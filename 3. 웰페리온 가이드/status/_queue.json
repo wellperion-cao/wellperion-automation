@@ -812,5 +812,19 @@
     "depends_on": "",
     "ship_no": 1069,
     "module": "T2"
+  },
+  {
+    "task_id": "CMO-2026-07-15-ADHOC-9980a054",
+    "clevel": "cmo",
+    "title": "[시모] 당근 무결성 게이트 이미지 카운트 위치 교정(썸네일 줄 기준) — F2 오탐 해소·L1 수영 당근 재발행",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1070,
+    "artifact": "당근 비즈 '소식 작성'은 SNS형 에디터라 이미지가 본문(contenteditable) 안이 아니라 상단\n썸네일 줄('N/10' 카운터)에 붙는다. 기존 게이트는 본문 내부 <img> 개수를 세어 항상 0으로\n측정 → \"이미지 전체 소실\"로 오판(BLOCK exit=7)했음. 카운터 텍스트 파싱(폴백: 썸네일 줄\n<img> 개수)으로 측정 위치를 교정. 6장(5슬라이드+표준 CTA카드, append_cta_card 기존 설계)\n확인 후 실 재발행 성공 — postId 6a56f6bbfdb9c12e29b2676a. (CLI ad-hoc · 커밋 9980a054)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "9980a054cb0f38db833f82c075ba64a77d9233a5"
   }
 ]
