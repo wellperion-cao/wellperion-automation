@@ -1858,5 +1858,19 @@
     "artifact": "본 세션(L시리즈 preview 수리) 작업 중 동일 SSOT 파일(wellperion_guide(main).html)에 다른 프로세스가 동시 반영한 변경분(배237·GM 2026-07-15) — IN_PROGRESS 배를 오늘의 항로에서 제외하고 자율현황.html로 안내하는 렌더 로직. 유실 방지를 위해 별도 커밋으로 캡처(L시리즈 수리 커밋과 무관·분리). (CLI ad-hoc · 커밋 88ba61b4)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "88ba61b4bb10f4faa12e1a6dcd765ad59dbda713"
+  },
+  {
+    "task_id": "CEO-2026-07-15-ADHOC-fa7cbd12",
+    "clevel": "ceo",
+    "title": "[웰리] 건강판 정직화 — 삭제된 유령 예약작업 배제 + Morning-Update 양성 스킵 정직 분류",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1053,
+    "artifact": "문제1(유령): 삭제됐지만 legacy schtasks 뷰에 남는 손상/고아 등록(PC-Boot-Greeting,\n0x80070002·next_run N/A)이 계속 '실패'로 발행됨. Get-ScheduledTask(모던 CIM API=권위\n현행 목록)로 라이브 존재 작업만 발행하도록 교차필터(_live_task_names). 조회 실패 시\n필터 미적용(fail-safe·멀쩡한 작업 오삭제 방지). (CLI ad-hoc · 커밋 fa7cbd12)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "fa7cbd122c6087b04ec1117d3715e19d462dc448"
   }
 ]
