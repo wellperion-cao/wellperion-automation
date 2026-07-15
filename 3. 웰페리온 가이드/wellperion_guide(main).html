@@ -3775,49 +3775,12 @@ window._regAssign = function(id, category) {
   <!-- g14 콘텐츠 제작 워크플로 -->
   <article class="doc" id="M1">
     <div class="doc-header"><h2><span class="g-id">M1</span>콘텐츠 제작 프로세스</h2><div class="meta">CMO 운영 SSOT · 제작 프로세스 + 마케팅 자동화 + 문의 Survey</div></div>
-    <p class="lead">CMO가 IG·블로그·카페·카카오·당근 5채널에 배포할 콘텐츠를 제작·자동화·문의 수집·등록 전환까지 관리하는 통합 프로세스입니다.</p>
-    <!-- 모듈 소개 캡슐 (2026-07-09 M1 정리 ③ — 과밀 M1 진입 오리엔테이션) -->
-    <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:14px 18px;margin:14px 0 6px;">
-      <div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--accent);margin-bottom:8px;">이 모듈은</div>
-      <div style="font-size:13px;color:var(--dim);line-height:1.65;">콘텐츠를 <b style="color:var(--text);">만들고(제작) → 검수·승인 → 5채널 발행 → 현황·전환</b>까지, CMO 마케팅을 한 곳에서 관리합니다. 담긴 것 = <b style="color:var(--text);">① 제작 프로세스</b> · <b style="color:var(--text);">② 검수·발행</b>(구 M3 통합) · <b style="color:var(--text);">③ 현황·전환</b>(구 M2 연결) · <b style="color:var(--text);">④ 채널 규칙·기타</b>. 아래로 내려가며 필요한 부분만 보세요.</div>
+    <!-- 모듈 소개 — 간결 모듈 라인 (2026-07-15 GM: CMO 2대 기능 · 목차 제거) -->
+    <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:15px 18px;margin:14px 0 16px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--accent);margin-bottom:9px;">이 모듈은 · CMO 콘텐츠 운영</div>
+      <div style="font-size:14px;color:var(--text);line-height:1.7;font-weight:600;">① IG·콘텐츠 제작 → 검수·승인 &nbsp;·&nbsp; ② 5채널 자동 업로드(발행)</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.6;margin-top:7px;">IG·블로그·카페·카카오·당근 배포 콘텐츠를 제작부터 발행·현황까지 한 곳에서 관리합니다. 아래로 내려가며 필요한 부분만 보세요.</div>
     </div>
-
-    <!-- 상단 목차(TOC) — 2026-07-15 배747 M1 과밀해소 · GM 결정=순서유지+상단 목차만(DOM 재배치 없음). 현행 16섹션 앵커 점프. -->
-    <nav id="m1-toc" aria-label="M1 목차" style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:14px 18px;margin:6px 0 16px;">
-      <div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--accent);margin-bottom:10px;">목차 · 눌러서 이동</div>
-      <div style="display:flex;flex-wrap:wrap;gap:7px;">
-        <a href="#m1-status-hub" onclick="return m1Jump(event,'m1-status-hub')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📊 마케팅 현황</a>
-        <a href="#m1-inquiry-entry" onclick="return m1Jump(event,'m1-inquiry-entry')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🔗 문의 진입점</a>
-        <a href="#m1-channels" onclick="return m1Jump(event,'m1-channels')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📡 채널 현황</a>
-        <a href="#m1-review" onclick="return m1Jump(event,'m1-review')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📨 콘텐츠 검수 대기</a>
-        <a href="#m1-loop" onclick="return m1Jump(event,'m1-loop')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🌟 북극성 제작 루프</a>
-        <a href="#m1-pillars" onclick="return m1Jump(event,'m1-pillars')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🏛️ CMO 운영 6대 기둥</a>
-        <a href="#m1-review-process" onclick="return m1Jump(event,'m1-review-process')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">✅ 채널별 검수 프로세스</a>
-        <a href="#m1-completion-ssot" onclick="return m1Jump(event,'m1-completion-ssot')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🏁 제작 완료 종료 절차</a>
-        <a href="#m1-reporting" onclick="return m1Jump(event,'m1-reporting')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🗓️ 정기 보고</a>
-        <a href="#m1-homepage" onclick="return m1Jump(event,'m1-homepage')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📐 홈페이지 구성</a>
-        <a href="#m1-publish-scripts" onclick="return m1Jump(event,'m1-publish-scripts')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🚀 5채널 발행 방식</a>
-        <a href="#m1-folder-naming" onclick="return m1Jump(event,'m1-folder-naming')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📁 표준 폴더 명명</a>
-        <a href="#m1-folder-structure" onclick="return m1Jump(event,'m1-folder-structure')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🗂️ 콘텐츠 폴더 구조</a>
-        <a href="#m1-output-split" onclick="return m1Jump(event,'m1-output-split')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📤 output 5채널 분리</a>
-        <a href="#m1-notation" onclick="return m1Jump(event,'m1-notation')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📋 표기 규칙</a>
-        <a href="#m1-guide" onclick="return m1Jump(event,'m1-guide')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📑 안내 가이드</a>
-      </div>
-    </nav>
-    <script>
-    // M1 목차 점프 — 대상이 접힌 <details> 안이면 조상 details를 모두 펼친 뒤 스크롤(재배치 없음)
-    function m1Jump(ev, id){
-      if(ev) ev.preventDefault();
-      var el=document.getElementById(id); if(!el) return false;
-      var p=el.parentNode;
-      while(p && p.nodeType===1){
-        if(p.tagName && p.tagName.toLowerCase()==='details') p.open=true;
-        p=p.parentNode;
-      }
-      el.scrollIntoView({behavior:'smooth', block:'start'});
-      return false;
-    }
-    </script>
 
     <!-- 마케팅 현황 요약 카드 (2026-07-14 · O1 운영 모듈 현황 패턴 복제 · status/kpi_values.json 재사용) -->
     <section id="m1-status-hub" style="margin:18px 0;">
@@ -3837,10 +3800,9 @@ window._regAssign = function(id, category) {
           + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;">'+value+'</div>'
           + '<div style="font-size:.72rem;color:var(--dim);margin-top:6px;">'+tag+'</div></a>';
       }
-      function render(clicks, inq, join, rate, tag){
+      function render(inq, join, rate, tag){
         var el = document.getElementById('m1-status-cards'); if(!el) return;
-        el.innerHTML = card('클릭', clicks, tag)
-          + card('이번달 문의', inq, tag)
+        el.innerHTML = card('이번달 문의', inq, tag)
           + card('이번달 가입', join, tag)
           + card('이번달 전환율', rate, tag)
           + '<a href="'+DASH_HREF+'" target="_blank" style="display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--accent);font-weight:700;font-size:.85rem;border:1px dashed var(--border);border-radius:12px;padding:14px;">전체 보기 →</a>';
@@ -3848,17 +3810,15 @@ window._regAssign = function(id, category) {
       function loadHub(){
         // 링크는 즉시 렌더(클릭 가능) · 지표는 직전 캐시 표시 후 백그라운드 갱신(stale-while-revalidate) — O1 운영 모듈 현황과 동일 패턴
         var cached=null; try{ cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){}
-        if(cached) render(cached.clicks, cached.inq, cached.join, cached.rate, '측정값 · 갱신 중');
-        else render('—','—','—','—','측정값(measured)');
+        if(cached) render(cached.inq, cached.join, cached.rate, '측정값 · 갱신 중');
+        else render('—','—','—','측정값(measured)');
         fetch(BASE+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(data){
-          var cmo = (data && data.roles && data.roles.cmo) || {};
           var cpo = (data && data.roles && data.roles.cpo) || {};
-          var clicks = (cmo['총_클릭수']!=null) ? cmo['총_클릭수'] : '—';
           var inq = (cpo['이번달_전환_문의수']!=null) ? cpo['이번달_전환_문의수'] : '—';
           var join = (cpo['이번달_전환_가입수']!=null) ? cpo['이번달_전환_가입수'] : '—';
           var rate = (cpo['이번달_전환율']!=null) ? cpo['이번달_전환율']+'%' : '—';
-          render(clicks, inq, join, rate, '측정값(measured)');
-          try{ localStorage.setItem(CACHE_KEY, JSON.stringify({clicks:clicks,inq:inq,join:join,rate:rate})); }catch(e){}
+          render(inq, join, rate, '측정값(measured)');
+          try{ localStorage.setItem(CACHE_KEY, JSON.stringify({inq:inq,join:join,rate:rate})); }catch(e){}
         }).catch(function(){ if(!cached){ var el=document.getElementById('m1-status-cards'); if(el) el.innerHTML='<div style="color:var(--red);">마케팅 현황: (측정 실패 — 정직 표기)</div>'; } });
       }
       loadHub();
