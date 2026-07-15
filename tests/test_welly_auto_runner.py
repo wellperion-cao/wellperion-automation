@@ -810,3 +810,272 @@ def test_run_once_live_ambiguous_ship_parks_flag_and_previews_ping_without_real_
     # RUNNER_PING_LIVE 기본 OFF이므로 notifier=None 경로 — 실전송 없음(payload만 결과에 남음)
     assert result["ping"]["sent"] is False
     assert "모호 배 1건" in result["ping"]["text"]
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 증분2 — 자동 검수(세션 stdout 구조화 검증 결과 파싱) + 사후감사
+# 정본: docs/superpowers/specs/2026-07-14-welly-runner-all-clevel-autodrive-design.md §A/B
+# ══════════════════════════════════════════════════════════════════════
+
+# ── parse_verification_result ──
+def test_parse_verify_none_or_empty_returns_not_found():
+    for stdout in (None, "", "아무 마커 없는 일반 로그\n둘째 줄"):
+        parsed = war.parse_verification_result(stdout)
+        assert parsed["found"] is False
+        assert parsed["verified"] is None
+
+
+def test_parse_verify_valid_script_line():
+    stdout = (
+        "세션 로그...\n"
+        'WELLY_VERIFY: {"verified": true, "kind": "script", "evidence": "pytest 12 passed", "subjective_uncertain": false}\n'
+        "커밋 완료"
+    )
+    parsed = war.parse_verification_result(stdout)
+    assert parsed["found"] is True
+    assert parsed["verified"] is True
+    assert parsed["kind"] == "script"
+    assert parsed["evidence"] == "pytest 12 passed"
+    assert parsed["parse_error"] is None
+
+
+def test_parse_verify_last_marker_line_wins():
+    stdout = (
+        'WELLY_VERIFY: {"verified": false, "kind": "script", "evidence": "초안"}\n'
+        'WELLY_VERIFY: {"verified": true, "kind": "script", "evidence": "최종"}\n'
+    )
+    parsed = war.parse_verification_result(stdout)
+    assert parsed["verified"] is True
+    assert parsed["evidence"] == "최종"
+
+
+def test_parse_verify_malformed_json_sets_parse_error():
+    stdout = "WELLY_VERIFY: {이건 JSON 아님}\n"
+    parsed = war.parse_verification_result(stdout)
+    assert parsed["found"] is True
+    assert parsed["parse_error"] is not None
+    assert parsed["verified"] is None
+
+
+def test_parse_verify_non_object_json_flags_error():
+    stdout = 'WELLY_VERIFY: [1, 2, 3]\n'
+    parsed = war.parse_verification_result(stdout)
+    assert parsed["found"] is True
+    assert parsed["parse_error"] is not None
+
+
+def test_parse_verify_non_bool_verified_is_none():
+    stdout = 'WELLY_VERIFY: {"verified": "yes", "kind": "script"}\n'
+    parsed = war.parse_verification_result(stdout)
+    assert parsed["found"] is True
+    assert parsed["verified"] is None  # 비불리언 → 불명(애매 처리 대상)
+
+
+# ── build_auto_review_verdict ──
+def test_verdict_no_commit_not_passed_not_ambiguous():
+    parsed = war.parse_verification_result('WELLY_VERIFY: {"verified": true, "kind": "script"}')
+    verdict = war.build_auto_review_verdict(parsed, committed=False)
+    assert verdict["passed"] is False
+    assert verdict["ambiguous"] is False
+
+
+def test_verdict_script_pass():
+    parsed = war.parse_verification_result(
+        'WELLY_VERIFY: {"verified": true, "kind": "script", "evidence": "테스트 통과"}'
+    )
+    verdict = war.build_auto_review_verdict(parsed, committed=True)
+    assert verdict["passed"] is True
+    assert verdict["ambiguous"] is False
+    assert war.SCRIPT_HONESTY_TAG == verdict["honesty_tag"]
+
+
+def test_verdict_frontend_gets_honesty_tag_about_unverified_design():
+    parsed = war.parse_verification_result(
+        'WELLY_VERIFY: {"verified": true, "kind": "frontend", "evidence": "렌더 200 콘솔0"}'
+    )
+    verdict = war.build_auto_review_verdict(parsed, committed=True)
+    assert verdict["passed"] is True
+    assert "미검수" in verdict["honesty_tag"]  # 디자인 적합성 미검수 정직 꼬리표
+
+
+def test_verdict_ambiguous_when_no_verify_line_despite_commit():
+    parsed = war.parse_verification_result("커밋은 했지만 검증 줄이 없음")
+    verdict = war.build_auto_review_verdict(parsed, committed=True)
+    assert verdict["ambiguous"] is True
+    assert verdict["passed"] is False
+
+
+def test_verdict_ambiguous_on_parse_error():
+    parsed = war.parse_verification_result("WELLY_VERIFY: {깨진 json}")
+    verdict = war.build_auto_review_verdict(parsed, committed=True)
+    assert verdict["ambiguous"] is True
+
+
+def test_verdict_clear_fail_when_verified_false():
+    parsed = war.parse_verification_result(
+        'WELLY_VERIFY: {"verified": false, "kind": "script", "evidence": "테스트 3개 실패"}'
+    )
+    verdict = war.build_auto_review_verdict(parsed, committed=True)
+    assert verdict["passed"] is False
+    assert verdict["ambiguous"] is False  # 명확한 실패는 애매 아님(쿨다운, park 아님)
+
+
+def test_verdict_subjective_uncertain_appends_note():
+    parsed = war.parse_verification_result(
+        'WELLY_VERIFY: {"verified": true, "kind": "frontend", "subjective_uncertain": true}'
+    )
+    verdict = war.build_auto_review_verdict(parsed, committed=True)
+    assert "주관" in verdict["honesty_tag"]
+
+
+# ── audit_completion_in_queue ──
+def test_audit_reflected_when_ship_absent(tmp_path):
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps([_ship(task_id="OTHER")], ensure_ascii=False), encoding="utf-8")
+    audit = war.audit_completion_in_queue(str(queue_path), "CTO-DONE")
+    assert audit["reflected"] is True  # 큐에서 사라짐 = 아카이브(완료)
+
+
+def test_audit_reflected_when_status_done(tmp_path):
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(
+        json.dumps([_ship(task_id="CTO-D", status="DONE")], ensure_ascii=False), encoding="utf-8"
+    )
+    audit = war.audit_completion_in_queue(str(queue_path), "CTO-D")
+    assert audit["reflected"] is True
+
+
+def test_audit_not_reflected_when_still_active(tmp_path):
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(
+        json.dumps([_ship(task_id="CTO-P", status="PENDING")], ensure_ascii=False), encoding="utf-8"
+    )
+    audit = war.audit_completion_in_queue(str(queue_path), "CTO-P")
+    assert audit["reflected"] is False  # 선언≠반영 불일치
+
+
+# ── build_orchestration_prompt: 검증 결과 마커 지시 포함 ──
+def test_prompt_instructs_structured_verify_line():
+    prompt = war.build_orchestration_prompt(_ship(), clevel="cto", nick="시토")
+    assert war.VERIFY_MARKER in prompt
+    assert "verified" in prompt
+    assert "subjective_uncertain" in prompt
+    # 예시 JSON은 단일 중괄호여야 한다(f-string 이스케이프 사고 방지 — {{ 누출 금지).
+    assert "{{" not in prompt
+    # 마커 예시 줄이 러너 파서로 실제 파싱 가능해야 한다(형식 계약 자기검증).
+    marker_line = next(ln for ln in prompt.splitlines() if war.VERIFY_MARKER in ln and '"verified"' in ln)
+    payload = marker_line.split(war.VERIFY_MARKER, 1)[1].strip()
+    parsed = json.loads(payload)  # 파싱 실패 시 테스트 실패
+    assert "verified" in parsed and "kind" in parsed
+
+
+# ── run_once LIVE 통합: 자동 검수 게이트 ──
+def _fake_proc(returncode=0, stdout="", stderr=""):
+    class _P:
+        pass
+
+    p = _P()
+    p.returncode = returncode
+    p.stdout = stdout
+    p.stderr = stderr
+    return p
+
+
+def _wire_live_success_env(monkeypatch, stdout, before="a" * 40, after="b" * 40,
+                           records_done_to=None, done_task_id=None):
+    """LIVE 경로가 실제 claude 호출까지 도달하도록 주변 I/O를 가짜로 고정.
+    records_done_to(+done_task_id) 지정 시, 가짜 세션이 clevel_post_action으로 완료를 기록한 것을
+    모사해 큐 ship status를 DONE으로 바꾼다(사후감사 reflected=True 재현)."""
+    monkeypatch.setattr(
+        war, "working_tree_guard",
+        lambda *a, **kw: {"blocked": False, "dirty_files": [], "real_work_files": [], "reason": "클린"},
+    )
+    monkeypatch.setattr(war.shutil, "which", lambda name: r"C:\fake\claude.exe")
+    heads = iter([before, after])
+    monkeypatch.setattr(war, "_git_head", lambda root: next(heads))
+    monkeypatch.setattr(war, "_commit_changed_files", lambda root, b, a: ["scripts/x.py"])
+
+    def _fake_run(*a, **kw):
+        if records_done_to and done_task_id:
+            q = json.loads(records_done_to.read_text(encoding="utf-8"))
+            for s in q:
+                if s.get("task_id") == done_task_id:
+                    s["status"] = "DONE"
+            records_done_to.write_text(json.dumps(q, ensure_ascii=False), encoding="utf-8")
+        return _fake_proc(0, stdout)
+
+    monkeypatch.setattr(war.subprocess, "run", _fake_run)
+
+
+def test_run_once_live_success_when_verify_passed(tmp_path, monkeypatch):
+    queue = [_ship(note="충분히 구체적인 내부 점검 스크립트 patch 절차")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    stdout = 'WELLY_VERIFY: {"verified": true, "kind": "script", "evidence": "pytest 3 passed"}\n'
+    _wire_live_success_env(
+        monkeypatch, stdout, records_done_to=queue_path, done_task_id="CTO-2026-07-13-A"
+    )
+
+    result = war.run_once(
+        clevel="cto", queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping.json"), live=True,
+    )
+    assert result["mode"] == "live"
+    assert result["executed"] is True
+    assert result["success"] is True
+    assert result["post_audit"]["reflected"] is True
+    assert result["auto_review"]["passed"] is True
+    assert result["auto_review"]["ambiguous"] is False
+    assert result["review_parked"] is False
+    # 쿨다운 미기록(성공)
+    state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    assert state.get("cooldown", {}) == {}
+
+
+def test_run_once_live_ambiguous_review_parks_and_blocks_success(tmp_path, monkeypatch):
+    # 커밋은 났지만 세션이 WELLY_VERIFY 줄을 안 남김 → 검수 애매 → success False + park + 쿨다운.
+    queue = [_ship(note="충분히 구체적인 내부 점검 스크립트 patch 절차")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    stdout = "커밋했지만 검증 결과 줄을 남기지 않은 세션 로그\n"
+    _wire_live_success_env(monkeypatch, stdout)
+
+    result = war.run_once(
+        clevel="cto", queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping.json"), live=True,
+    )
+    assert result["executed"] is True
+    assert result["success"] is False  # 검수 애매 → 완료 신뢰 안 함
+    assert result["auto_review"]["ambiguous"] is True
+    assert result["review_parked"] is True  # 사람 확인 대기로 park됨
+
+    saved = json.loads(queue_path.read_text(encoding="utf-8"))
+    assert saved[0]["aide_interview_needed"] is True
+    state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    assert "CTO-2026-07-13-A" in state.get("cooldown", {})  # 재검토 쿨다운
+
+
+def test_run_once_live_verify_false_cooldowns_without_park(tmp_path, monkeypatch):
+    queue = [_ship(note="충분히 구체적인 내부 점검 스크립트 patch 절차")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    stdout = 'WELLY_VERIFY: {"verified": false, "kind": "script", "evidence": "테스트 2개 실패"}\n'
+    _wire_live_success_env(monkeypatch, stdout)
+
+    result = war.run_once(
+        clevel="cto", queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping.json"), live=True,
+    )
+    assert result["success"] is False
+    assert result["auto_review"]["ambiguous"] is False  # 명확한 실패
+    assert result["review_parked"] is False  # 명확한 실패는 park 아님
+    saved = json.loads(queue_path.read_text(encoding="utf-8"))
+    assert saved[0].get("aide_interview_needed") is None  # park 안 됨(큐 무변경)
+    state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    assert "CTO-2026-07-13-A" in state.get("cooldown", {})

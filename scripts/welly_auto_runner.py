@@ -319,6 +319,122 @@ def _ping_live() -> bool:
     return os.environ.get(PING_LIVE_ENV_VAR, "0") == "1"
 
 
+# ── 증분2: 자동 검수 — 세션 stdout 구조화 검증 결과 파싱(로드맵 1단계) ──
+# 정본: docs/superpowers/specs/2026-07-14-welly-runner-all-clevel-autodrive-design.md (증분2 §A).
+# 위임 세션이 검증을 마친 뒤 stdout에 VERIFY_MARKER로 시작하는 JSON 한 줄을 남기면
+# (build_orchestration_prompt가 지시), 러너가 그 줄을 파싱해 자동 검수 판정에 반영한다.
+# 마커 줄이 없거나 파싱 불가면 "검수 결과 애매"로 보고 park한다 —
+# ★비협상 park 원칙★: 검수 결과가 애매하면 완료를 신뢰(자동 기록)하지 않고 사람 확인 대기.
+VERIFY_MARKER = "WELLY_VERIFY:"
+# 스크립트/백엔드류: 로그·테스트·exit code로 완전 자동 검수 가능(정직 꼬리표).
+SCRIPT_HONESTY_TAG = "자동 검수 통과 — 실행 로그/테스트로 증명(스크립트류 완전 자동 검수)"
+# 프론트/페이지류: 렌더 실측(200·콘솔0·셀렉터)까지만 자동, 디자인·톤 적합성은 자동 불가.
+FRONTEND_HONESTY_TAG = (
+    "자동 렌더 확인(200·콘솔0·셀렉터 존재) — 디자인·카피 톤 적합성은 미검수(사람 확인 필요)"
+)
+_FRONTEND_KINDS = ("frontend", "front", "page", "ui")
+
+
+def parse_verification_result(stdout: str | None) -> dict:
+    """
+    PURE — 위임 세션 stdout에서 VERIFY_MARKER로 시작하는 마지막 JSON 한 줄을 파싱한다.
+    반환 dict 키: found(bool), verified(bool|None), kind(str|None), evidence(str),
+    subjective_uncertain(bool), raw(str), parse_error(str|None).
+    마커 미검출 → found=False. 마커는 있으나 JSON 파싱 실패/객체 아님/verified 비불리언 →
+    found=True + parse_error 또는 verified=None(둘 다 verdict에서 '애매'로 취급).
+    여러 줄이면 마지막 마커 줄을 채택(세션이 재출력했을 때 최종본 우선).
+    """
+    base = {
+        "found": False, "verified": None, "kind": None, "evidence": "",
+        "subjective_uncertain": False, "raw": "", "parse_error": None,
+    }
+    if not stdout:
+        return base
+    marker_payload = None
+    for line in stdout.splitlines():
+        idx = line.find(VERIFY_MARKER)
+        if idx != -1:
+            marker_payload = line[idx + len(VERIFY_MARKER):].strip()  # 마지막 것이 이김
+    if marker_payload is None:
+        return base
+    base["found"] = True
+    base["raw"] = marker_payload
+    try:
+        data = json.loads(marker_payload)
+    except (ValueError, TypeError) as e:
+        base["parse_error"] = f"{type(e).__name__}: {e}"
+        return base
+    if not isinstance(data, dict):
+        base["parse_error"] = "JSON이 객체(dict)가 아님"
+        return base
+    v = data.get("verified")
+    base["verified"] = v if isinstance(v, bool) else None
+    base["kind"] = data.get("kind")
+    base["evidence"] = str(data.get("evidence", ""))
+    base["subjective_uncertain"] = bool(data.get("subjective_uncertain", False))
+    return base
+
+
+def build_auto_review_verdict(parsed: dict, committed: bool) -> dict:
+    """
+    PURE — 파싱된 검증 결과 + 커밋 발생 여부로 자동 검수 판정을 만든다.
+    반환: {passed(bool), ambiguous(bool), honesty_tag(str), reason(str)}.
+      - passed=True  : 신뢰 가능한 자동 검수 통과(완료 신뢰 OK).
+      - ambiguous=True: 검증 결과 미출력/파싱불가/verified 불명 → 완료 신뢰 금지 → park.
+      - passed=False·ambiguous=False: 명확한 실패(검증 false) 또는 커밋 없음 → 쿨다운(park 아님).
+    ★비협상 원칙★: 'ambiguous'는 절대 자동 기록으로 신뢰하지 않는다.
+    """
+    if not committed:
+        return {
+            "passed": False, "ambiguous": False, "honesty_tag": "",
+            "reason": "커밋 없음 — 산출물 미생성(자동 검수 대상 아님)",
+        }
+    if not parsed.get("found") or parsed.get("parse_error") or parsed.get("verified") is None:
+        return {
+            "passed": False, "ambiguous": True,
+            "honesty_tag": "검증 결과 미출력·파싱 불가 — 자동 검수 불가",
+            "reason": "세션이 구조화 검증 결과(WELLY_VERIFY JSON)를 남기지 않음 → 검수 애매 → park",
+        }
+    if parsed["verified"] is False:
+        return {
+            "passed": False, "ambiguous": False,
+            "honesty_tag": "자동 검수 실패 — 세션이 검증 실패 보고",
+            "reason": f"검증 실패: {parsed.get('evidence', '')[:200]}",
+        }
+    kind = (parsed.get("kind") or "").strip().lower()
+    tag = FRONTEND_HONESTY_TAG if kind in _FRONTEND_KINDS else SCRIPT_HONESTY_TAG
+    if parsed.get("subjective_uncertain"):
+        tag += " · 주관 판단 여지 표기됨(사람 확인)"
+    return {
+        "passed": True, "ambiguous": False, "honesty_tag": tag,
+        "reason": f"자동 검수 통과: {parsed.get('evidence', '')[:200]}",
+    }
+
+
+def audit_completion_in_queue(queue_path: str, task_id: str) -> dict:
+    """
+    사후 감사(로드맵 3단계 · thin) — 세션이 선언한 완료가 실제 큐에 반영됐는지 가볍게 대조한다.
+    러너는 직접 기록하지 않는다(세션이 clevel_post_action.py로 기록) — 여기선 반영 여부만 확인.
+    반환: {reflected(bool|None), status(str|None), reason(str)}.
+      - ship이 큐에서 사라짐 → reflected=True(아카이브=완료 처리로 간주).
+      - status가 DONE/완료 계열 → reflected=True.
+      - PENDING/IN_PROGRESS로 잔존 → reflected=False(선언≠반영 불일치 → 경고 대상).
+    """
+    try:
+        queue = _load_queue(queue_path)
+    except Exception as e:  # noqa: BLE001
+        return {"reflected": None, "status": None, "reason": f"큐 로드 실패: {type(e).__name__}"}
+    for ship in queue:
+        if ship.get("task_id") == task_id:
+            status = (ship.get("status") or "").strip().upper()
+            done = status in ("DONE", "완료", "COMPLETE", "COMPLETED")
+            return {
+                "reflected": done, "status": ship.get("status"),
+                "reason": "완료로 반영됨" if done else "큐에 활성 상태로 잔존 — 선언≠반영 불일치",
+            }
+    return {"reflected": True, "status": None, "reason": "큐에서 제거됨(아카이브=완료 처리로 간주)"}
+
+
 def build_orchestration_prompt(ship: dict, clevel: str = "cto", nick: str = "시토") -> str:
     """
     선택된 배 1척을 실행할 headless 세션에 줄 '웰리 오케스트레이션' 프롬프트를 조립한다.
@@ -341,7 +457,16 @@ def build_orchestration_prompt(ship: dict, clevel: str = "cto", nick: str = "시
         "1) 이 배를 도메인 방식으로 실행한다(가역 작업만 — 발행·배포·삭제·외부전송·결제·보안·"
         "전략·공식값·라이브 GAS/시트 쓰기는 절대 실행하지 말고 즉시 중단·보고).\n"
         "2) 실행 결과를 검증한다(프론트 변경이면 시크릿 크롬 라이브 렌더로 실측, 스크립트면 "
-        "실행 로그/테스트로 증명).\n"
+        "실행 로그/테스트로 증명). 검증을 마친 뒤 반드시 stdout에 아래 형식의 구조화 검증 결과를 "
+        "정확히 한 줄로 남겨라 — 러너가 이 줄을 파싱해 자동 검수한다(줄이 없거나 증거 없으면 "
+        "완료로 신뢰되지 않고 park된다):\n"
+        f"   {VERIFY_MARKER} "
+        '{"verified": true, "kind": "script|frontend", '
+        '"evidence": "<파일·로그·스크린샷 경로/요약>", "subjective_uncertain": false}\n'
+        "   - verified: 검증 성공 여부(불리언). 증거 없이 true 금지.\n"
+        "   - kind: 스크립트/백엔드=script, 프론트/페이지=frontend.\n"
+        "   - frontend는 렌더 실측(200·콘솔0·셀렉터)까지만 자동 검수 대상이며, 디자인·톤 적합성은 "
+        "subjective_uncertain=true로 표기해 사람 확인 몫으로 남긴다.\n"
         "3) 반드시 네가 만든/바꾼 파일만 명시 경로로 git add 후 커밋한다. "
         "git add -A · git add . · git commit -a는 절대 금지 — 워킹트리에 이미 있던 "
         "무관한 미커밋 작업(다른 세션이 남긴 코드·콘텐츠)까지 네 커밋에 쓸어담는 사고를 "
@@ -680,12 +805,14 @@ def run_once(
         "--allowedTools", "Read Write Edit Bash(git *) Bash(python*)",
         "--output-format", "text",
     ]
+    stdout_text = ""
     try:
         proc = subprocess.run(
             cmd, input=prompt, cwd=_PROJECT_ROOT, capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=claude_timeout, env=child_env,
         )
         stderr_text = (proc.stderr or "").strip()
+        stdout_text = proc.stdout or ""
         ok = proc.returncode == 0
     except subprocess.TimeoutExpired:
         ok = False
@@ -700,21 +827,52 @@ def run_once(
     # 선언 범위 밖 파일 혼입 여부를 나중에 감사할 수 있게 남긴다(완전 자동 판정은 아님).
     changed_files = _commit_changed_files(_PROJECT_ROOT, before_commit, new_commit)
 
+    # ── 증분2: 자동 검수(세션 stdout 구조화 검증 결과 파싱) → 완료 신뢰 판정 ──
+    execution_ok = ok and bool(new_commit)
+    verify_parsed = parse_verification_result(stdout_text)
+    verdict = build_auto_review_verdict(verify_parsed, committed=bool(new_commit))
+    # success는 이제 '실행+커밋'뿐 아니라 '자동 검수 통과'까지 요구한다(검수 게이트).
+    success = execution_ok and verdict["passed"]
+
+    post_audit = None
+    review_parked = False
     state["run_count"] = state.get("run_count", 0) + 1
-    if not ok or not new_commit:
+    if not execution_ok:
+        # 실행/커밋 자체 실패 — 기존 경로(쿨다운). 검수 이전 문제.
         _mark_cooldown(state, ship["task_id"], reason=(stderr_text or "커밋 생성 안 됨")[:200])
+    else:
+        # 실행·커밋됨 → 사후감사(로드맵3)로 선언 완료가 큐에 반영됐는지 대조.
+        post_audit = audit_completion_in_queue(queue_path, ship["task_id"])
+        if verdict["ambiguous"]:
+            # ★비협상 park★: 검수 결과 애매 → 자동 기록(완료 신뢰) 금지 · 사람 확인 대기(park).
+            _mark_cooldown(state, ship["task_id"], reason="자동 검수 애매 — 재검토 대기")
+            review_parked = park_ship_for_interview(
+                queue_path, ship["task_id"],
+                ["자동 검수 결과 애매(WELLY_VERIFY 미출력/파싱불가) — 사후 확인 필요"],
+            )
+        elif not verdict["passed"]:
+            # 명확한 검증 실패 → 쿨다운(park 아님 · 애매하지 않음).
+            _mark_cooldown(state, ship["task_id"], reason=("자동 검수 실패: " + verdict["reason"])[:200])
+        elif post_audit.get("reflected") is False:
+            # 검수는 통과했으나 선언 완료가 큐에 반영 안 됨(선언≠반영 불일치) → 경고+쿨다운.
+            _mark_cooldown(state, ship["task_id"], reason="사후감사 불일치 — 선언 완료가 큐 미반영")
     _save_state(state, state_path)
 
     result = {
         "mode": "live", "ship": ship, "prompt": prompt, "executed": True,
-        "success": ok and bool(new_commit), "commit": new_commit, "before_commit": before_commit,
+        "success": success, "commit": new_commit, "before_commit": before_commit,
         "stderr_tail": stderr_text[-500:] if stderr_text else "",
         "changed_files": changed_files,
+        "auto_review": verdict, "verify_parsed": verify_parsed,
+        "post_audit": post_audit, "review_parked": review_parked,
     }
     _append_log(
         {
-            "event": "live_run", "task_id": ship.get("task_id"), "success": result["success"],
+            "event": "live_run", "task_id": ship.get("task_id"), "success": success,
             "commit": new_commit, "before_commit": before_commit, "changed_files": changed_files,
+            "review_passed": verdict["passed"], "review_ambiguous": verdict["ambiguous"],
+            "review_parked": review_parked,
+            "post_audit_reflected": (post_audit or {}).get("reflected"),
         },
         log_path,
     )
@@ -797,6 +955,13 @@ def _print_run_once_result(result: dict, label: str | None = None) -> None:
         print(f"{prefix}parked={result.get('parked')}")
         if result.get("ping"):
             print(f"{prefix}핑: sent={result['ping']['sent']} — {result['ping']['reason']}")
+    if result.get("auto_review"):
+        rv = result["auto_review"]
+        state = "통과" if rv.get("passed") else ("애매→park" if rv.get("ambiguous") else "실패")
+        print(f"{prefix}자동 검수: {state} — {rv.get('honesty_tag') or rv.get('reason')}")
+        if result.get("post_audit"):
+            print(f"{prefix}사후감사: reflected={result['post_audit'].get('reflected')} "
+                  f"({result['post_audit'].get('reason')})")
     if result.get("commit"):
         print(f"{prefix}커밋: {result['commit']} (역롤백: git revert {result['commit']})")
 
