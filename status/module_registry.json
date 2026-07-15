@@ -159,6 +159,21 @@
       "honesty_default": "measured"
     },
     {
+      "id": "cmo-publish-digest",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "발행완료 → 콘텐츠 1건 통합요약 자동발신 (문의·컨택·등록 알림방) — 채널별 조각 대신 한 장, 5채널 링크 묶음",
+      "data_source": {"kind": "json", "ref": "scripts/publish_digest.py + scripts/.publish_digest_sent.json (ig_review_publish_watcher.py:738 배선)"},
+      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": "문의·컨택·등록 알림"},
+      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "autonomy": "auto",
+      "ai_free_fallback": "발행 감시기(--once) 런 종료 시 자동 호출 — 토큰 .env 직접 로드·멱등 원장(.publish_digest_sent.json)으로 1콘텐츠 1회 보장, 토큰 없으면 [ERROR] 로그(조용한 실패 없음). AI 세션 불요",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
       "id": "coo-check-status",
       "owner_role": "coo",
       "owner_nick": "시우",
