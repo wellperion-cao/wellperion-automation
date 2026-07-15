@@ -1061,5 +1061,19 @@
     "artifact": "- 백엔드(Survey.js): 공개액션 intake_submit 1개. 멤버십→'26년 신규문의'(member_inquiry_list 자동정합),\n  강습→신규 '강습 신규문의' 스태프탭(lesson 목록 병합·오프셋 2000000 행키). 유실0=멱등 submissionId dedup+\n  저장실패 재시도가능응답. 스팸방어=토큰·허니팟·타이밍·레이트리밋·서버재검증. WEB_INTAKE_TAG 이중계상 방지.\n- 프론트(wp_inquiry_form.html): reception 패턴 자체폼(멤버십·성인·유소년). redirect  (CLI ad-hoc · 커밋 46af9cc2)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "46af9cc2bd316e5dbd71ce4399b7d082040e5cbe"
+  },
+  {
+    "task_id": "COO-2026-07-15-ADHOC-0a864339",
+    "clevel": "coo",
+    "title": "[시우] G1 항로 담당 칸 = 닉네임+ship_no (약속 L16·시우 COO)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1088,
+    "artifact": "GM 지적①: G1 오늘의 항로 보드에 각 배 담당이 [닉네임]만 뜨고 식별번호 누락.\n약속 L16 표준(담당=닉네임+ship_no·배마다 고정)대로 두 렌더 경로 모두 수정:\n  - hangro_board.py: fetch_queue_items에 ship_no 보존 + _owner_label 헬퍼로\n    담당 칸을 '시포 1037'식 표기(3섹터 표·표류 행 공통). GAS 시트항목은 ship_no\n    없어 닉네임만(폴백).\n  - ceo_morning_pipeline.py(08:00 보고): 큐머지 item에 ship_no (CLI ad-hoc · 커밋 0a864339)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "0a8643393275be74afb41ff138e0c9cbd8a9ccde"
   }
 ]
