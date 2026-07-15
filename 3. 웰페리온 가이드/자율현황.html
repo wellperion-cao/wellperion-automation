@@ -284,7 +284,7 @@
 
   <header class="page-head">
     <h1>자율 작업 현황</h1>
-    <span class="sub"><b>시토(AI CTO) · T2 자동화</b>의 자율 축 — 웰리·C-Level이 스스로 돌린 일(로그 실재분만·정직).<br><b>두 축:</b> 🖥️ 시스템 현황 = <b>잘 도나</b> / 🤖 이 보드 = <b>무엇을 자율로 했나</b>.</span>
+    <span class="sub"><b>시토 · T2 자동화</b> — 웰리·C-Level이 스스로 돌린 일(로그 실재분만).</span>
     <a class="back" href="wellperion_guide(main).html#T2">← T2 업무자동화SSOT</a>
     <a class="back" href="헌법한장.html">🏛️ 헌법 한 장</a>
   </header>
@@ -309,7 +309,7 @@
     <span class="ab-ico">🌊</span>
     <div>
       <div class="ab-h">자동화 → 자율화</div>
-      <div class="ab-txt"><b>자동화</b>는 정해진 시각에 스크립트가 돈다. <b>자율화</b>는 AI가 스스로 포착·판단·처리하고 사람은 방향·결재만 한다. 이 페이지는 그 자율 활동의 <b>라이브 상태·처리 이력·성과</b>를 모은 곳입니다.</div>
+      <div class="ab-txt"><b>자동화</b>=정시 스크립트 · <b>자율화</b>=AI가 포착·판단·처리, 사람은 방향·결재.</div>
     </div>
   </div>
 
@@ -317,15 +317,15 @@
   <h2 class="layer-h2">① 자율로 한 일</h2>
 
   <!-- ════ 🚢 진행·상시 미션 (status/_queue.json status==IN_PROGRESS · 항로에서 이관 2026-07-15 · 배237) ════ -->
-  <h2 class="sec" id="sec-active-missions" style="margin-top:2px;">🚢 진행·상시 미션 <span style="font-size:11px;font-weight:400;color:var(--dim);">(각 AI가 지금 굴리는 지속 시스템 — 여기서 관리)</span></h2>
-  <div class="sec-note">🧭 오늘의 항로에서 이관된 <b>진행중(IN_PROGRESS)</b> 배 — 상시 성격의 지속 시스템입니다. <code>status/_queue.json</code>의 <code>status</code> 필드로 자동 판정(라이브 큐가 바뀌면 자동 정합).</div>
+  <h2 class="sec" id="sec-active-missions" style="margin-top:2px;">🚢 진행·상시 미션 <span style="font-size:11px;font-weight:400;color:var(--dim);">(지금 굴리는 지속 시스템)</span></h2>
+  <div class="sec-note"><code>status/_queue.json</code> IN_PROGRESS 자동 판정.</div>
   <div class="routines" id="active-missions">
     <div class="feed-status" style="grid-column:1/-1;">진행·상시 미션을 불러오는 중…</div>
   </div>
 
   <!-- ════ ⚙️ 자동화→자율화 4층 구조 (헌법한장.html 병합 · 2026-07-03 · 개요를 라이브 데이터보다 앞으로 재배치 · 배339) ════ -->
   <h2 class="sec" style="margin-top:2px;">🏛️ 자율화를 떠받치는 4대 축</h2>
-  <div class="sec-note">순서가 아니라 <b>나란히 함께 작동하는 4개 축(기둥)</b>입니다 — 코드·훅으로 박제된 자동화 위에서 AI가 판단·완결합니다. 축①은 바로 아래 제작 루프로 상세 전개, 축②~④는 각 라이브 섹션과 연결(중복 신설 없음).</div>
+  <div class="sec-note">나란히 작동하는 4개 축 — 코드·훅 자동화 위에서 AI가 판단·완결.</div>
   <div class="autoflow">
     <div class="autolayer" style="border-left-color:#7ac4f0;">
       <span class="al-n">축 ① · 제작 루프</span><span class="al-h">🎨 GM 주도</span>
@@ -338,12 +338,12 @@
     </div>
     <div class="autolayer" style="border-left-color:#f0c674;">
       <span class="al-n">축 ③ · GM 보좌 자율화</span><span class="al-h">🤝 웰리</span>
-      <span class="al-d" title="GM 성향·습관 학습→관찰·포착·선제. 가역=자율 실행/비가역=제안. 금지5종만 게이트. 스펙=.omc/specs/deep-interview-gm-aide-autonomy.md">GM 성향 학습→선제 포착·실행(가역=자율 실행 / 비가역=제안, 금지5종만 게이트)</span>
+      <span class="al-d">GM 성향 학습→선제 포착·실행(가역=자율 / 비가역=제안, 금지5종만 게이트)</span>
       <a class="al-link" href="#sec-routines">↓ 상시 자율 체계 카드</a>
     </div>
     <div class="autolayer" style="border-left-color:#6abf7b;">
       <span class="al-n">축 ④ · 차등 점검</span><span class="al-h">🔍 규모 게이트</span>
-      <span class="al-d" title="정본 status/audit_registry.json + scripts/audit_scope.py(대장·git 대조 자동 산출)">안정 페이지 제외·신규/변경분만 점검(전수→변경분만으로 좁힘)</span>
+      <span class="al-d">안정 페이지 제외·신규/변경분만 점검</span>
       <a class="al-link" href="#sec-routines">↓ 바뀐 페이지만 점검 카드</a>
     </div>
   </div>
@@ -351,8 +351,8 @@
   <!-- ════ 🌟 북극성 지향 제작 루프 프레임 ════ -->
   <section class="loop-frame" id="loop-frame">
     <div class="loop-head">
-      <span class="lh-t">🌟 북극성 지향 제작 루프 <span style="font-size:10px;font-weight:700;color:var(--accent-soft);">(4대 축 중 축① 제작 루프 상세)</span></span>
-      <span class="lh-s">모든 자율 작업은 <b>북극성을 향해</b> 이 루프를 돈다 — 웰리가 각 작업의 단계를 추적하고 완료 시 다음 단계를 자동 촉발한다.</span>
+      <span class="lh-t">🌟 북극성 지향 제작 루프 <span style="font-size:10px;font-weight:700;color:var(--accent-soft);">(축①)</span></span>
+      <span class="lh-s">완료 시 다음 단계를 자동 촉발.</span>
     </div>
     <div class="loop-flow">
       <div class="loop-group lg-goal">
@@ -393,13 +393,12 @@
   <!-- ════ 정직 프레이밍 노트(배237) ════ -->
   <div class="honest-note">
     <span class="hn-ico">ℹ️</span>
-    <div class="hn-txt">지금 자율은 주로 <b>포착·제안·감시</b> 단계입니다. 가역 작업만 자율 실행하고, 비가역은 GM 승인 후 실행합니다. 완료 배에 '다음'이 항상 채워져 표류가 없어 자율실행(phase2)은 대기 상태(정상)입니다.</div>
+    <div class="hn-txt">현 단계 = <b>포착·제안·감시</b> · 가역만 자율 실행, 비가역은 GM 승인.</div>
   </div>
 
 
   <!-- ════ 섹션 1 · 이 루프를 돌리는 자율 기계(라이브) ════ -->
-  <h2 class="sec" id="sec-routines">🔴 상시 자율 체계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프를 굴리는 라이브 엔진 · 4대 축 중 축②③④ 실체)</span></h2>
-  <div class="sec-note">각 자율 루틴의 주기·마지막 실행·최근 결과·ON/OFF. 실행 로그의 최신 항목에서 도출합니다.</div>
+  <h2 class="sec" id="sec-routines">🔴 상시 자율 체계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(라이브 엔진 · 축②③④)</span></h2>
   <div class="routines" id="routines">
     <div class="feed-status" style="grid-column:1/-1;">상시 체계 상태를 불러오는 중…</div>
   </div>
@@ -408,25 +407,20 @@
   <details class="coo-details" style="margin-top:12px;">
     <summary>📌 매출보고 카톡 3방 설정 — GM은 ★별명만 한 번, 방 열기·발송은 시토 자동</summary>
     <div style="font-size:12.5px;line-height:1.7;padding:6px 2px;">
-      <p style="margin:4px 0 8px;">매일 09:30 자동발송이 <b>카톡 방을 '창 제목'으로 찾아</b> 전송합니다. GM님은 아래 <b>★ 별명</b>만 한 번 설정해두시면 됩니다 — <b>방 열기·발송은 시토가 자동으로</b> 합니다.</p>
-      <p style="margin:8px 0 4px;"><b>✍️ GM 한 번만 — ★ 별명 설정</b></p>
+      <p style="margin:4px 0 8px;">09:30 자동발송이 <b>카톡 방을 '창 제목'으로</b> 찾습니다. GM은 <b>★ 별명</b>만 한 번 설정 — 방 열기·발송은 시토 자동.</p>
+      <p style="margin:8px 0 4px;"><b>✍️ GM 한 번만</b></p>
       <ul style="margin:0 0 8px;padding-left:20px;">
-        <li>카카오톡에서 각 방 → 이름(프로필) → <b>편집 ✎</b> → <b>별명</b>을 <code>★회장님</code>·<code>★관리부</code>·<code>★운영부</code>처럼 <b>★로 시작</b>하게 저장(별명은 나만 보이고 상대는 모릅니다). ★를 붙이면 다른 창과 안 헷갈리고 정확히 찾습니다.</li>
+        <li>각 방 이름 편집 → 별명을 <code>★회장님</code>·<code>★관리부</code>·<code>★운영부</code>처럼 <b>★로 시작</b>하게 저장(나만 보임).</li>
       </ul>
-      <p style="margin:8px 0 4px;"><b>🛠️ 시토 자동 (GM 안 하셔도 됩니다)</b></p>
-      <ul style="margin:0 0 8px;padding-left:20px;">
-        <li>발송 시각에 방이 닫혀 있어도 <b>시토가 카톡 검색으로 자동으로 엽니다</b> — GM이 미리 열어두지 않아도 됩니다.</li>
-        <li>3방에 매출 이미지+캡션 무인 전송 · 휴관일 자동 인지·안내.</li>
-      </ul>
-      <p style="margin:4px 0;color:var(--dim);">※ 방 이름을 바꾸면 발송 대상 목록(<code>scripts/kakao_rooms.json</code>)도 같은 이름으로 맞춰야 합니다 — 바꾸시면 시토에게 말씀하시면 즉시 반영합니다. 현재 등록: <b>차의주 회장님 · 웰페리온 관리부 · ★ 운영부</b>.</p>
+      <p style="margin:4px 0;color:var(--dim);">※ 방 이름 변경 시 <code>scripts/kakao_rooms.json</code>도 맞춤(시토에게 말하면 즉시 반영). 현재: 차의주 회장님 · 웰페리온 관리부 · ★ 운영부.</p>
     </div>
   </details>
 
   <!-- ════ 🛠️ 시토 (AI CTO) 자율 자동화 (status/module_registry.json 신규 스키마 · owner_role 있는 이 창 소속만 · additive · 계약 2026-07-09 · 2026-07-13 전용 섹션 격상) ════ -->
   <section>
     <h2 class="sec" id="sec-registry-cards">🛠️ 시토 (AI CTO) 자율 자동화 <span style="font-size:11px;font-weight:400;color:var(--dim);">(등록부 모듈 카드 · 특징기능·자율수준·정직 꼬리표)</span></h2>
-    <div class="sec-note">AI CTO(시토)가 상시 돌리는 자동화 모듈들 — <b>특징기능·자율수준·AI없이도 근거·정직 꼬리표·환류 접점</b>을 카드로 봅니다. 신규 등록부 스키마(<code>owner_role</code> 보유)이면서 이 창(자율현황) 소속(<code>front_card.window</code>)만 표시. 레거시 <code>automation_health</code> 엔트리는 module_reporter.py 소관이라 여기서 건드리지 않습니다. 배선 상태(주기·채널·봇) 표는 하단 '② 돌아가는 자동화 ▸ 📡 모듈 보고 현황' 참조.</div>
-    <div class="sec-note" style="margin:8px 0 4px;"><b>📱 카톡 자동화 3종 한눈</b> — 하루를 여닫는 무인 카톡 자동화(아래 카드는 각 모듈 상세)</div>
+    <div class="sec-note">시토가 상시 돌리는 자동화 모듈 — 특징기능·자율수준·정직 꼬리표. 배선 표는 하단 '📡 모듈 보고 현황'.</div>
+    <div class="sec-note" style="margin:8px 0 4px;"><b>📱 카톡 자동화 3종 한눈</b> — 하루를 여닫는 무인 카톡</div>
     <div style="overflow-x:auto; margin:2px 0 12px;">
     <table style="border-collapse:collapse; width:100%; min-width:520px; font-size:12.5px; background:var(--surface,#fff);">
       <thead><tr style="background:var(--paper,#f4f4f6);">
@@ -459,13 +453,13 @@
     </div>
     <div id="registry-card-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
     <div class="routines" id="registry-cards"></div>
-    <div class="sec-note" style="margin:8px 0 0;">자율수준: <b>자율ON</b>=사람 개입 없이 판단·실행 · <b>반자율</b>=일부 사람 확인 · <b>자동집계</b>=기계적 집계(판단 아님) · <b>부분</b>=일부만 자동 · <b>수동</b>=사람 작업. 💬 환류 칸은 등록부(module_registry.json)에 GAS write로 직접 append(Task 7 연결 완료) — GAS 웹앱 재배포 전까지는 "허용되지 않은 경로" 응답(코드 준비완료·라이브 발효는 GM go).</div>
+    <div class="sec-note" style="margin:8px 0 0;">자율수준: <b>자율ON</b>=무개입 판단·실행 · <b>반자율</b>=일부 확인 · <b>자동집계</b>=기계 집계 · <b>부분</b>=일부 자동 · <b>수동</b>=사람.</div>
   </section>
 
   <!-- ════ 📣 마케팅 자율 → AI CMO(시모) 이관 (2026-07-15) — 자율현황=시토 시스템/자율 체계만. 마케팅은 시모 도메인에 몰기. ════ -->
   <div class="honest-note" style="border-left-color:var(--pink);">
     <span class="hn-ico">📣</span>
-    <div class="hn-txt">마케팅 자율(콘텐츠 제작·발행·측정)은 <b>AI CMO(시모)</b>에서 관리합니다 —
+    <div class="hn-txt">마케팅 자율 = <b>AI CMO(시모)</b> 관리 —
       <a href="cmo/funnel/마케팅현황대시보드.html" style="color:var(--accent-soft);font-weight:700;">마케팅 현황 대시보드</a> ·
       <a href="cmo/series/AI시리즈보드.html" style="color:var(--accent-soft);font-weight:700;">콘텐츠·AI시리즈 보드</a> ·
       <a href="cmo/funnel/문의흐름지도.html" style="color:var(--accent-soft);font-weight:700;">문의 흐름 지도</a>.</div>
@@ -474,7 +468,7 @@
   <!-- ════ 🔧 시우(AI COO) 자율 운영 (점검 운영 루프 5단계 자율 축 · today_live·daily_scheduler 실데이터) ════ -->
   <section>
     <h2 class="sec">🔧 시우 (AI COO) 자율 운영 <span style="font-size:11px;font-weight:400;color:var(--dim);">(점검 운영 루프 5단계 자율 축)</span></h2>
-    <div class="sec-note">지원부·시설부·주차 일일 점검을 굴리는 운영 루프. 각 단계=실제 라이브 엔진. 완료율·이슈 수치는 점검 GAS(today_live·monthly_report) 실데이터에서만 산출(가짜 수치 금지).</div>
+    <div class="sec-note">지원부·시설부·주차 일일 점검 루프 — 수치는 점검 GAS 실데이터만.</div>
     <div class="cmo-loop coo-loop">
       <span class="cmo-loop-lbl">점검 운영 루프</span>
       <div class="cmo-step live"><span>① 점검 실행</span><span class="cs-s">라이브</span></div>
@@ -496,7 +490,7 @@
       <div class="stats" id="coo-live-metrics">
         <div class="feed-status" style="grid-column:1/-1;">점검 실측 지표를 불러오는 중…</div>
       </div>
-      <div class="sec-note" style="margin:6px 0 0;">지원부=<code>today_live</code>·<code>monthly_report&dept=support</code> 라이브 실측(남/여 분리). 완료율(%) <b>점등 완료</b> — 분모 정합(주말 오후조 제외·today_live↔monthly 분모 통일) 라이브 발효. 분모=전체 스케줄 기대치(진행중 당일 포함). 시설부=GAS <code>dept=facility</code> 배포 완료 — 입력률·기준이탈 구조라 완료율 아님, 집계는 시설부 체계 월간보고 탭. 주차=점검 체계 독립 운영(규정·가이드만) → '체계 외'. 가짜 수치 금지(약속 L05).</div>
+      <div class="sec-note" style="margin:6px 0 0;">지원부=<code>today_live</code>·<code>monthly_report&dept=support</code> 실측(남/여). 시설부=입력률 구조(완료율 아님). 주차=체계 외.</div>
     </div>
 
     <div class="routines" id="coo-routines-static">
@@ -534,7 +528,7 @@
 
     <!-- ════ 2층 · 실무진 점검 업무·역할(접기 · SUPPORT_STAFF 조편성·monthly_ops_plan practitioner_goals 실측 기반) ════ -->
     <details class="coo-details">
-      <summary>👥 실무진 점검 업무·역할 — 부서별 누가·무엇을·언제 (핵심: 지원부 남/여 2교대·시설부 오전 10시 · 펼치기)</summary>
+      <summary>👥 실무진 점검 업무·역할 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 부서별 누가·언제 (펼치기)</span></summary>
       <div class="coo-tbl-wrap">
         <table>
           <tr><th style="width:88px">부서</th><th style="width:190px">점검 주체</th><th>항목/구역</th><th style="width:150px">주기</th></tr>
@@ -544,7 +538,7 @@
           <tr><td>주차</td><td>주차관리부(양상규 고문)</td><td colspan="2"><span style="color:var(--dim);">점검 체계 미포함 — 독립 운영(규정·가이드·매뉴얼만, 점검 재추가 금지)</span></td></tr>
         </table>
       </div>
-      <div class="sec-note" style="margin:8px 0 0;">출처: <code>지원부 체계.html</code> 조편성 구조(오전조·마감조 규정 표) · <code>status/monthly_ops_plan.json</code> 2026-07 practitioner_goals(lee-jh, 2026-07-04 갱신). 지원부 개인 명단은 시트가 정본(수시 변경) — 실시간 명단은 지원부 체계 페이지 참조.</div>
+      <div class="sec-note" style="margin:8px 0 0;">출처: <code>지원부 체계.html</code> · <code>monthly_ops_plan.json</code>. 개인 명단은 지원부 체계 페이지.</div>
     </details>
 
     <!-- ════ 3층 · 개선 액션·SOP 연결(접기 · 루프 ⑤ 개선 환류의 실체) ════ -->
@@ -561,14 +555,14 @@
         <span class="coo-flow-step">monthly_report improvements 개선시사 생성</span><span class="coo-flow-arrow">→</span>
         <span class="coo-flow-step">다음달 practitioner_goals·objectives 반영<span class="coo-tag wait">대기</span></span>
       </div>
-      <div class="sec-note" style="margin:8px 0 0;">①~④=현재 라이브(점검 이슈=점검 내 완결 원칙, GM 확정). 월간→다음달 반영 고리는 아직 사람 판단 개입(월간운영계획 수기 갱신) — 완료율 측정 정밀도 확정 후 자동 폐루프 예정(위 루프 카드 ⑤와 동일 상태·가짜로 '완료' 표시 안 함).</div>
+      <div class="sec-note" style="margin:8px 0 0;">①~④=라이브 · 월간→다음달 반영은 아직 수기(⑤ 대기).</div>
     </details>
   </section>
 
   <!-- ════ 👥 시포(AI CPO) 자율 회원관리 (회원 라이프사이클 루프 5단계 자율 축 · cpo_churn_stats·문의 시트 실데이터) ════ -->
   <section>
     <h2 class="sec">👥 시포 (AI CPO) 자율 회원관리 <span style="font-size:11px;font-weight:400;color:var(--dim);">(회원 라이프사이클 루프 5단계 자율 축)</span></h2>
-    <div class="sec-note">문의 접수부터 이탈·갱신까지 회원 라이프사이클을 굴리는 루프. 각 단계=실제 라이브 엔진. 수치는 <code>cpo_churn_stats</code>·문의 시트 실데이터만(가짜 금지).</div>
+    <div class="sec-note">문의→이탈·갱신 회원 라이프사이클 루프 — 수치는 <code>cpo_churn_stats</code>·문의 시트 실데이터만.</div>
     <div class="cpo-live-strip" id="cpo-live-strip">
       <div class="cls-item"><span class="cls-lbl">유효회원</span><b id="cpoStatActive">–</b>명</div>
       <div class="cls-item"><span class="cls-lbl">당월 LOSS</span><b id="cpoStatMonthLoss">–</b></div>
@@ -626,7 +620,7 @@
 
   <!-- ════ 섹션 2 · 루프가 만든 성과 ════ -->
   <h2 class="sec">📊 성과 요약 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프가 만든 결과)</span></h2>
-  <div class="sec-note">측정 가능한 값만 숫자로. 측정 인프라가 없는 값은 “미측정”으로 정직하게 표기(가짜 수치 금지).</div>
+  <div class="sec-note">측정 가능한 값만 숫자 · 나머지는 “미측정”.</div>
   <div class="stats" id="stats">
     <div class="feed-status" style="grid-column:1/-1;">성과 지표를 계산하는 중…</div>
   </div>
@@ -634,7 +628,7 @@
   <!-- ════ 섹션 3 · 루프가 돈 흔적 (기본 접힘 · 2026-07-15) ════ -->
   <details class="hist-fold">
     <summary>📁 최근 자율 처리 이력 (펼치기) <span class="hist-sub">— 루프가 돈 흔적</span></summary>
-    <div class="sec-note" style="margin-top:6px;">진짜 자율 판단·실행만(포착·추천·자기학습·자율관찰)을 시간 역순으로 통합. 루틴 입항완료는 제외(완료 배는 G1·아카이브에서).</div>
+    <div class="sec-note" style="margin-top:6px;">자율 판단·실행만 시간 역순 · 루틴 완료는 제외(G1).</div>
     <div class="feed" id="feed">
       <div class="feed-status">처리 이력을 불러오는 중…</div>
     </div>
@@ -644,13 +638,13 @@
 
   <details id="layer-automation" open>
     <summary><h2 class="layer-h2">② 돌아가는 자동화</h2></summary>
-    <div class="sec-note" style="margin:6px 0 4px;">아래 🖥️🤖 두 패널은 <code>status/erp_status.json</code> 실측 렌더, 그 아래 표들은 Windows 스케줄러 구성 설명 문서. 무엇이 언제 자동으로 도는지 모은 SSOT.</div>
-    <div class="sec-note" style="margin:2px 0 10px;">📤 <strong>카톡 매출보고 3방 전송</strong> 대상 방 관리(추가·삭제)·가이드 = <a href="cto/automation/카톡전송관리.html" style="color:var(--accent-soft);">카톡 전송 관리 페이지 →</a></div>
+    <div class="sec-note" style="margin:6px 0 4px;">🖥️🤖 패널=<code>erp_status.json</code> 실측 · 아래 표=스케줄러 구성 설명.</div>
+    <div class="sec-note" style="margin:2px 0 10px;">📤 카톡 매출보고 3방 관리 = <a href="cto/automation/카톡전송관리.html" style="color:var(--accent-soft);">카톡 전송 관리 →</a></div>
 
     <!-- ════ 🔔 전체 알림 스케줄 한눈 보드 (읽기전용 가시화 · 발송 로직·시점 무변경 · 2026-07-15 시토) ════ -->
     <section id="alert-schedule-board" style="margin:4px 0 22px;">
       <h3 style="margin-top:4px;">🔔 전체 알림 스케줄 한눈 보드 <span style="font-size:12px;font-weight:400;color:var(--dim);">(무엇이 · 언제 · 누구에게 · 잘 가고 있나 — 읽기전용)</span></h3>
-      <p class="sec-note" style="margin:0 0 8px;">매일 나가는 카톡·텔레그램 알림을 한 곳에 모아 <b>무엇이 언제 누구에게 가는지 · 마지막 발송 · 건강</b>을 한눈에 봅니다. 이 보드는 <b>보여주기만</b> 하며 발송 시각·대상·로직은 전혀 건드리지 않습니다(현행 그대로). 건강: 🟢 최근 정상 · 🔴 실패/지연 · ⚪ 측정불가(발송 로그 없음 — 억지 초록 금지).</p>
+      <p class="sec-note" style="margin:0 0 8px;">읽기전용 — 발송 시각·대상 무변경. 건강: 🟢 정상 · 🔴 실패/지연 · ⚪ 측정불가.</p>
       <div id="alert-board-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
       <div class="tbl-wrap" id="alert-board-wrap">
         <table>
@@ -666,7 +660,7 @@
           </tbody>
         </table>
       </div>
-      <div class="sec-note" style="margin:8px 0 0;">소스: 카톡 매출보고=<code>status/kakao_last_send.json</code> · 예약작업 결과·스케줄러 하트비트=<code>status/erp_status.json</code>(automation_health·systems) · 주기·채널=<code>daily_scheduler.py</code> 크론 + <code>status/module_registry.json</code> notify_spec + 카톡 예약작업. 텔레그램 발송 로그(<code>logs/telegram_sent-*.log</code>)는 비추적(.gitignore)이라 라이브 fetch 불가 → 정각 통합보고는 <b>스케줄러 하트비트</b>로 건강 판정. GAS 트리거(문의 5분 폴링 등)는 발송 시각 로그를 남기지 않아 <b>⚪ 측정불가</b>로 정직 표기.</div>
+      <div class="sec-note" style="margin:8px 0 0;">소스: <code>kakao_last_send.json</code>·<code>erp_status.json</code>·<code>daily_scheduler.py</code>·<code>module_registry.json</code>. 발송 로그 없는 항목은 <b>⚪ 측정불가</b>.</div>
     </section>
     <!-- ════ /🔔 전체 알림 스케줄 한눈 보드 ════ -->
 
@@ -694,14 +688,13 @@
     <summary>📄 설계 참고 — 무엇이 어떻게 돌도록 설계됐나(정적) <span class="fold-sub">— 상시가동·매일 10슬롯 타임라인·매주. 실측은 위 🤖 건강 점수판·📡 모듈 보고 현황</span></summary>
 
     <div class="callout" style="margin-top:12px;">
-      <strong>📄 여기서부터는 구성 설명(정적)</strong> — 아래 표들은 "무엇이 이렇게 돌도록 설계되어 있나"를 정리한 <b>설계 문서</b>이며 실시간 측정치가 아닙니다. 표 안의 <b>🟢는 "설계상 상시가동(구성)"</b>이라는 뜻이지 지금 이 순간 실제로 돌고 있다는 실측 표시가 아닙니다. <b>지금 실제로 잘 돌고 있는지</b>는 위 🤖 자동화 건강 점수판(Task Scheduler 실행결과 실측)이 판정합니다.
+      <strong>📄 설계 문서(정적)</strong> — 🟢=설계상 상시가동, 실측 아님. 실제 가동은 위 🤖 건강 점수판.
     </div>
 
     <!-- ② 지금 돌고 있는 자동화 -->
-    <h3>🟢 지금 돌고 있는 자동화 <span class="statchip static" title="설계 문서 — 실시간 측정이 아님. 실제 가동 여부는 위 🤖 건강 점수판 참조">📄 설명(정적)</span> <span style="font-size:12px;color:var(--accent-soft);font-weight:600;">(가동 현황 — 무엇이 도는가)</span></h3>
-    <p class="sec-note" style="margin:4px 0 0;">※ 재기동 방법 상세 = <strong>아래 📨 10슬롯 표의 🔄 재기동 안내</strong> / 점검 원칙(왜·언제) = <strong>S2 CTO탭</strong>. 본 표는 가동 현황만. <strong>🟢 표시 = 설계상 상시가동(구성)</strong> — 실제 가동 실측은 위 🤖 건강 점수판.</p>
+    <h3>🟢 지금 돌고 있는 자동화 <span class="statchip static">📄 설명(정적)</span></h3>
 
-    <h4>상시 가동 <span class="statchip static" title="설계 문서 — 실측 아님">📄 설명</span></h4>
+    <h4>상시 가동 <span class="statchip static">📄 설명</span></h4>
     <div class="tbl-wrap"><table>
       <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>텔레그램 봇</td><td>인프라</td><td>상시</td><td style="color:var(--accent-soft);font-size:12px;">펼치기 ▾</td></tr>
@@ -710,15 +703,15 @@
       <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> daily_scheduler.py — 정각 보고 발사(10슬롯). 슬롯 정본 = 바로 아래 텔레그램 10슬롯 표.</td></tr>
     </table></div>
 
-    <h4>매일 <span class="statchip static" title="설계 문서 — 실측 아님">📄 설명</span> <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 타임라인 (10슬롯+)</span></h4>
-    <p class="sec-note" style="margin:2px 0 8px;">Windows 스케줄러가 매일 자동 실행하는 예약작업을 <strong>위→아래 = 이른 시각→늦은 시각</strong> 순으로 정리. 텔레그램 정각 보고는 <code>daily_scheduler.py</code> 1개가 10번 발사 → <strong>바로 아래 10슬롯 표</strong>.</p>
+    <h4>매일 <span class="statchip static">📄 설명</span> <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 (10슬롯+)</span></h4>
+    <p class="sec-note" style="margin:2px 0 8px;">예약작업 시각순(이른→늦은). 텔레그램 정각 보고=<code>daily_scheduler.py</code> 10슬롯.</p>
     <div class="tbl-wrap"><table>
       <tr><th style="width:90px">시각</th><th style="width:230px">자동화</th><th style="width:72px">담당</th><th>무엇을 하나</th></tr>
       <tr><td>🟢 <strong>05:50</strong></td><td>PC 자동 ON</td><td>CTO</td><td>BIOS RTC로 자동 부팅 → 부팅 후 봇·스케줄러 자동기동(ONLOGON)</td></tr>
       <tr><td>🟢 <strong>부팅 시</strong></td><td>OMC 자동 업데이트</td><td>CTO</td><td>PC 부팅·CEO(웰리) 배치 시작 시 OMC(플러그인) 1회 자동 업데이트. 실행 중 Claude는 못 바꿔 <strong>창 0개일 때만</strong>(logs\claude_update.log). 검은 창은 숨김 런처(vbs)로 제거. <span style="color:var(--dim);">모델은 세션 선택이라 업데이트 대상 아님.</span></td></tr>
       <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢 <strong>06~23시</strong></td><td>텔레그램 정각 통합보고 <span style="color:var(--accent-soft);font-size:12px;">(10슬롯)</span></td><td>인프라</td><td><code>daily_scheduler.py</code>가 정각마다 @namuki_report_bot로 자동 발송 <span style="color:var(--accent-soft);font-size:12px;">— 펼쳐서 10슬롯 보기 ▾</span></td></tr>
       <tr class="auto-detail" style="display:none;"><td colspan="4" style="background:var(--paper);padding:12px 14px;">
-        <p class="sec-note" style="margin:0 0 6px;">📨 GM이 매일 받는 통합보고 10슬롯 — <code>daily_scheduler.py</code> 정본. ※ 08:00 오늘의 항로는 <code>ceo_morning_pipeline.py</code>(별도) 담당이라 미포함.</p>
+        <p class="sec-note" style="margin:0 0 6px;">📨 통합보고 10슬롯 — <code>daily_scheduler.py</code>. 08:00 항로는 별도(<code>ceo_morning_pipeline.py</code>).</p>
         <div class="tbl-wrap" style="margin:0;"><table>
       <tr><th style="width:90px">시각</th><th style="width:70px">구분</th><th style="width:180px">슬롯명</th><th>내용</th></tr>
       <tr><td><strong>06:00</strong></td><td>개인</td><td>① 아침 루틴+명언</td><td>기상 인사 · <code>quotes.json</code> 06시대 명언 · 운동 5종 체크리스트</td></tr>
@@ -739,18 +732,18 @@
       <tr><td>🟢 <strong>00:30</strong></td><td>PC 자동 종료</td><td>CTO</td><td>Auto-Shutdown-2330 (<code>shutdown.exe /s /f /t 0</code>) — PC 종료. 22:30 조기종료 사고 후 <strong>00:30로 단일화</strong>(2026-06-16). 자정 전 23:00 마감점검까지 발송 후 종료. <strong>종료 인사는 22:00 취침 슬롯에 통합.</strong></td></tr>
     </table></div>
 
-    <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent-soft);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). 수동 재기동: <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code>. <span style="color:var(--dim);">점검 원칙(왜·언제) = S2 CTO탭.</span></div>
+    <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 소스</strong> — 할일=<code>todo_list</code> · 명언=<code>quotes.json</code> · 진행=<code>status/*.json</code>·git.<br><strong>🔄 재기동</strong> — <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code></div>
 
     <!-- ══ 📣 마케팅 발행 파이프라인 → AI CMO(시모) 이관 (2026-07-15 · 구 M5 파이프라인 삭제) ══ -->
     <div class="callout" style="border-left-color:var(--pink);background:rgba(232,138,192,0.07);margin-top:20px;">
-      📣 <strong>마케팅 자율(콘텐츠 제작·발행·측정)은 AI CMO(시모)에서 관리</strong>합니다 — 자율현황(시토)에서는 시스템/자율 체계만 다룹니다.
+      📣 <strong>마케팅 자율 = AI CMO(시모) 관리</strong> —
       <a href="cmo/funnel/마케팅현황대시보드.html" style="color:var(--accent-soft);font-weight:700;">마케팅 현황 대시보드</a> ·
       <a href="cmo/series/AI시리즈보드.html" style="color:var(--accent-soft);font-weight:700;">콘텐츠·AI시리즈 보드</a> ·
       <a href="cmo/funnel/문의흐름지도.html" style="color:var(--accent-soft);font-weight:700;">문의 흐름 지도</a>.
     </div>
 
     <!-- ══ 매주 (7 C-Level 컨텍스트 정비 · AI 교육자료 자동 정리) — T2 원본에서 이식 2026-07-03 ══ -->
-    <h4 id="sec-weekly">매주 <span class="statchip static" title="설계 문서 — 실측 아님">📄 설명</span></h4>
+    <h4 id="sec-weekly">매주 <span class="statchip static">📄 설명</span></h4>
     <div class="tbl-wrap"><table>
       <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
       <tr><td>🟢</td><td>7 C-Level 컨텍스트 정비</td><td>7 C-Level</td><td>일 09:00</td><td style="font-size:12px;">범위·R/R 정본 = <strong>S2 ▸ 운영 프롬프트 ▸ ① 컨텍스트 정비</strong> <span style="color:var(--dim);">/ 실행 STEP1~5 = T1</span></td></tr>
@@ -759,13 +752,13 @@
     </table></div>
     <!-- ══ /매주 ══ -->
 
-    <div class="sec-note" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">📄 위 표들의 구성 근거: Windows Task Scheduler 등록내용 + Python 코드 확인(2026-06-03 S3 산출 자동화 이관·정합 · T2 원본에서 이식 2026-07-03). <b>지금 실제로 정상 가동 중인지 실측</b>은 이 층 맨 위 🤖 자동화 건강 점수판 참조.</div>
+    <div class="sec-note" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">📄 근거: Task Scheduler + Python 코드. 실측 가동은 위 🤖 건강 점수판.</div>
     </details>
     <!-- ════ /📄 정적 설계표 3종 접힘 ════ -->
 
     <!-- ══ 📡 모듈 보고 현황 (status/module_registry.json 실값 렌더 · additive · 2026-07-09) ══ -->
     <h3 id="sec-module-registry" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📡 모듈 보고 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">— 자동화 보고 기준 표</span></h3>
-    <p class="sec-note" style="margin:0 0 6px;">각 모듈이 봇ID(방)·주기를 등록하면 자동으로 일/주/월 텔레그램·카톡 보고가 나갑니다. 아래는 등록 현황.</p>
+    <p class="sec-note" style="margin:0 0 6px;">모듈이 봇ID·주기 등록 시 자동 보고. 아래=등록 현황.</p>
     <p class="sec-note" style="margin:0 0 10px;">🟢 <b>발효</b> = 방 배정돼 실제 보고 발송 · ⚪ <b>미발효</b> = 방 미배정(휴면)</p>
     <div class="tbl-wrap" id="module-registry-wrap">
       <table>
@@ -781,8 +774,7 @@
   </details>
 
   <footer class="foot">
-    데이터 정본 = <code>status/</code> 하위 로그 직독 (GAS <b>read_file</b> → raw GitHub 폴백 · no-store).
-    표시 원칙: 로그에 있는 것만 · 미측정은 미표기 · 파싱 실패 시 “없음/불러오는 중” 안전표기(약속 L05 정직).
+    정본 = <code>status/</code> 로그 직독 · 로그에 있는 것만 · 미측정은 미표기.
     <span id="foot-loaded"></span>
   </footer>
 
