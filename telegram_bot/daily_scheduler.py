@@ -103,6 +103,19 @@ except Exception as _e_ship:
         owner_part = f" [{owner}]" if owner else ""
         return f"🚢 {title}{owner_part}"
 
+# 점검 미완료 반복 감지기 (scripts/check_incomplete_detector.py) — GM 2026-07-15.
+#   import 실패해도 발신 무영향(무동작 폴백 — 원장 적재·제안 생략).
+try:
+    import os as _os3, sys as _sys3
+    _scr3 = _os3.path.abspath(_os3.path.join(_os3.path.dirname(_os3.path.abspath(__file__)), "..", "scripts"))
+    if _scr3 not in _sys3.path:
+        _sys3.path.insert(0, _scr3)
+    import check_incomplete_detector as _cid
+    _CID_OK = True
+except Exception:
+    _CID_OK = False
+    _cid = None  # type: ignore[assignment]
+
 # ── v1.2 헬스체크 상수 ────────────────────────────────────────────────────────
 FAILURE_STATE_FILE = Path(__file__).parent / "telegram_failure.json"
 _ENV_MTIME: float = 0.0          # .env 마지막 수정 시각 추적용
@@ -117,6 +130,8 @@ LOG_FILE = BASE / "scheduler.log"
 REPO_ROOT = BASE.parent
 STATUS_DIR = REPO_ROOT / "status"
 QUOTES_FILE = STATUS_DIR / "quotes.json"
+# 점검 미완료 누적 원장 (지원부 v1) — 하루 마감(23시) 최종 미완료 적재·반복 감지 소스. GM 2026-07-15.
+CHECK_INCOMPLETE_LEDGER = STATUS_DIR / "check_incomplete_ledger.json"
 QUEUE_FILE = STATUS_DIR / "_queue.json"
 # 진행현황 집계 대상 C-Level status 파일
 _CLEVEL_FILES = ["ceo", "cfo", "chro", "cmo", "coo", "cpo", "cto"]
@@ -1675,26 +1690,37 @@ def _support_monthly_rate() -> str | None:
     return None
 
 
-def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
+def _build_checklist_block(slot_label: str, html_link: bool = False, now: datetime | None = None) -> str:
     """
     12시/23시(폴백) 공용 — 체크리스트 대시보드 박스표 블록 생성.
     slot_label: "12:00" | "23:00"
     html_link: True면 parse_mode=HTML 메시지용 — 대시보드 줄을 <a> 앵커로 만들고
                (dashboard_url을 제외한) 본문을 html.escape해 &/</> 파싱 오류를 방지한다.
                False(기존 MarkdownV2 경로)는 동작 변경 없음.
+    now: 검증용 날짜 주입(기본 datetime.now()). 링크 주1회(월요일) 정책·오늘자 조회에 사용.
+
+    대시보드 링크 정책(GM 2026-07-15): 의미 낮은 매일 링크 폐지 → 주1회(월요일)만 노출.
+    그 자리에 반복 미완료 제안(있을 때만) 삽입. 제안은 지원부 원장 기반 과거 패턴이라 12·23시 양쪽 OK.
     """
-    now = datetime.now()
+    now = now or datetime.now()
     today = now.strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
     day_kor = ["월", "화", "수", "목", "금", "토", "일"][now.weekday()]
+    is_monday = now.weekday() == 0  # 링크 주1회 노출 요일
+
+    # 반복 미완료 제안 라인(콜드스타트·0건이면 [] → 줄 생략, 정직) — 12·23시 공용.
+    suggest_lines = _cid.suggestion_lines_for_today(CHECK_INCOMPLETE_LEDGER, today) if _CID_OK else []
 
     dashboard_url = "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"
 
     if _is_closed_day(now):
         body = f"🛠 시설·지원 점검 현황 — {slot_label} ({day_kor})\n🚫 오늘은 휴관일 — 점검 없음"
         if html_link:
-            return f"{html.escape(body, quote=False)}\n🔗 대시보드: <a href=\"{dashboard_url}\">링크</a>"
-        return f"{body}\n🔗 대시보드: {dashboard_url}"
+            out = html.escape(body, quote=False)
+            if is_monday:
+                out += f"\n🔗 대시보드: <a href=\"{dashboard_url}\">링크</a>"
+            return out
+        return body + (f"\n🔗 대시보드: {dashboard_url}" if is_monday else "")
 
     # 지원부·시설부 라이브 소스로 조회 — 옛 CHECKLIST_API_URL은 오늘 빈 응답(rows=0)이라 폐기(2026-07-08 GM):
     #   지원부=today_live&dept=support(실데이터·완료율) · 시설부=monthly_report 오늘행(입력률+이상). 두 지표 체계는 다름(억지 통일 안 함).
@@ -1777,13 +1803,24 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
         fac_work = fac_board.get("work")
         work_block = f"─ 시설부 작업사항 ─\n{fac_work}" if fac_work else ""
 
-        parts = [status] + ([unchecked_block] if unchecked_block else []) + [issue] + ([work_block] if work_block else [])
-        body_safe = html.escape("\n\n".join(parts), quote=False)
-        link_line = (
-            f'🔗 대시보드 — <a href="{support_dash}">지원부</a> · '
-            f'<a href="{facility_dash}">시설부</a>'
+        # 반복 미완료 제안(있을 때만) — 매일 무의미 링크 대체(GM 2026-07-15).
+        suggest_block = "\n".join(suggest_lines) if suggest_lines else ""
+        parts = (
+            [status]
+            + ([unchecked_block] if unchecked_block else [])
+            + [issue]
+            + ([work_block] if work_block else [])
+            + ([suggest_block] if suggest_block else [])
         )
-        return f"{body_safe}\n{link_line}"
+        body_safe = html.escape("\n\n".join(parts), quote=False)
+        # 대시보드 링크는 주1회(월요일)만.
+        if is_monday:
+            link_line = (
+                f'🔗 대시보드 — <a href="{support_dash}">지원부</a> · '
+                f'<a href="{facility_dash}">시설부</a>'
+            )
+            return f"{body_safe}\n{link_line}"
+        return body_safe
 
     # 23시 폴백(MarkdownV2 안전) — 기존 박스표 형식 유지. 링크만 시설부(이탈 부서)로 교정.
     #   시설부는 GM 지시(2026-07-13)로 %(입력률) 대신 회차·이상유무 중심 + 작업사항 원문 노출.
@@ -1794,14 +1831,17 @@ def _build_checklist_block(slot_label: str, html_link: bool = False) -> str:
     fac_work = fac_board.get("work")
     work_block = f"\n\n─ 시설부 작업사항 ─\n{fac_work}" if fac_work else ""
     mrate_block = f"\n{mrate}" if mrate else ""
+    suggest_block = ("\n\n" + "\n".join(suggest_lines)) if suggest_lines else ""
     body_plain = (
         f"🛠 시설·지원 점검 현황 — {slot_label} ({day_kor})\n"
         f"   체크리스트 진행 상황\n"
         f"{table_str}"
         f"{mrate_block}"
         f"{work_block}"
+        f"{suggest_block}"
     )
-    return f"{body_plain}\n🔗 대시보드: {facility_dash}"
+    # 대시보드 링크는 주1회(월요일)만.
+    return body_plain + (f"\n🔗 대시보드: {facility_dash}" if is_monday else "")
 
 
 def _build_12_body() -> str:
@@ -2211,6 +2251,13 @@ def _build_23_body() -> str:
     today = datetime.now().strftime("%Y-%m-%d")
     live = _fetch_support_today_live(today)
 
+    # 하루 마감(23시) 최종 미완료 원장 적재 — 라이브 실값만·같은 날 멱등(GM 2026-07-15).
+    #   23시 블록 경로에서만 적재(12시엔 오전만 끝나 미완료가 정상). live None이면 데이터 없어 스킵(정직).
+    if _CID_OK and live is not None:
+        _cid.append_daily_from_live(
+            CHECK_INCOMPLETE_LEDGER, today, live.get("uncheckedByShift") or {}
+        )
+
     if live is None:
         # 폴백 — 기존 12/18 공용 블록 재사용
         checklist_block = _build_checklist_block("23:00")
@@ -2230,12 +2277,17 @@ def _build_23_body() -> str:
     ooc_detail = _build_facility_ooc_detail(facility_monthly, today)
     ooc_block = f"\n\n{ooc_detail}" if ooc_detail else ""
 
+    # 반복 미완료 제안(있을 때만) — 원장 기반 과거 패턴(방금 오늘분 적재 포함). 콜드스타트·0건이면 생략(정직).
+    suggest_lines = _cid.suggestion_lines_for_today(CHECK_INCOMPLETE_LEDGER, today) if _CID_OK else []
+    suggest_block = ("\n\n" + "\n".join(suggest_lines)) if suggest_lines else ""
+
     return (
         f"{_unified_header('23', '회사', '마감 점검')}\n"
         f"{chart}\n"
         f"{weakspot}\n\n"
         f"{dept_lines}"
-        f"{ooc_block}\n\n"
+        f"{ooc_block}"
+        f"{suggest_block}\n\n"
         f"{_AUTO_FOOTER}"
     )
 
