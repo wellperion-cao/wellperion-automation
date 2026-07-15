@@ -1081,6 +1081,7 @@ function verifyInquiryNotify() {
 //   ④ ScriptProperties TOKEN_ENFORCE = 1 설정 후 웹앱 새 버전 재배포 → 게이트 발효
 var _SURVEY_PUBLIC_ACTIONS = {
   submit_inquiry: true,  // 방문자 문의 제출 — 토큰 면제
+  intake_submit:  true,  // 유입 자체 Survey 폼 제출(배1037 갈래B) — 토큰(INTAKE_SUBMIT_TOKEN)·허니팟·타이밍·레이트리밋으로 별도 방어. 2026-07-15 시포
   track_click:    true,  // 클릭 추적 — 토큰 면제
   ping_inquiry_notify: true,  // [진단용] BOT_TOKEN 확인 + 문의 알림 방 테스트 발송 (시모 2026-06-24)
   // 마케팅 집계(PII 미노출) 면제 — 2026-06-17 CMO, 시토 게이트 공유
@@ -1559,10 +1560,14 @@ var _ROW_OFFSET_EN_ = 1000000;
 // body.gid 명시(알려진 4개 gid 중 하나) 시 최우선 사용. 없으면 body.rowIndex의 오프셋 여부로 한글/영문 자동 판별(2026-07-09).
 function _lessonGidOf_(body) {
   var g = parseInt((body && body.gid) || '', 10);
+  var ig = _lessonIntakeGid_();                                   // 강습 신규문의 스태프탭(자체폼 유입, 배1037 갈래B) — 동적 gid
+  if (g && ig && g === ig) return ig;                             // body.gid 로 명시된 강습 신규문의 탭
   if (g && _LESSON_KNOWN_GIDS_.indexOf(g) >= 0) return g;
+  var ri = parseInt((body && body.rowIndex) || 0, 10);
+  if (ig && ri >= _ROW_OFFSET_INTAKE_) return ig;                 // 강습 신규문의 오프셋(EN보다 큼 → 먼저 판정)
   var t = String((body && body.type) || '');
   var youth = (t === '유소년강습' || t === '유소년' || t === 'youth');
-  var isEn = parseInt((body && body.rowIndex) || 0, 10) >= _ROW_OFFSET_EN_;
+  var isEn = ri >= _ROW_OFFSET_EN_;
   if (isEn) return youth ? LESSON_GID_YOUTH_EN : LESSON_GID_ADULT_EN;
   return youth ? LESSON_GID_YOUTH : LESSON_GID;
 }
@@ -1708,7 +1713,94 @@ function _lessonReadRowsMerged_(body) {
   if (enGid && enGid !== krGid) {
     try { rows = rows.concat(_lessonReadRows_(enGid)); } catch (e) {}
   }
+  // 강습 신규문의 스태프탭(자체폼 유입, 배1037 갈래B) 병합 — 관리페이지가 자동으로 표시(읽기 자동정합). 미존재/에러는 조용히 스킵.
+  try { rows = rows.concat(_lessonIntakeReadRows_(body)); } catch (e) {}
   return rows;
+}
+
+// ═══════════════════════════════════════════
+//  갈래 B — 유입 자체 Survey 폼 백엔드 (배1037 · 시포 2026-07-15)
+//  공개 액션 intake_submit 1개. 멤버십→'26년 신규문의' 탭(_miSheet_·member_inquiry_list 자동정합),
+//  강습→신규 '강습 신규문의' 스태프탭(구글폼 응답탭 직접쓰기 회피·구조리셋 방지).
+//  수집 유실 0: (프론트) redirect follow+r.json → res.ok만 성공 · 멱등 submissionId · localStorage 대기큐 · 지수백오프.
+//              (백엔드) submissionId Cache dedup · 저장 실패는 재시도가능 응답(noRetry 미설정)으로 대기큐 재전송 유도.
+//  스팸방어(구글폼 캡차 상실 보상): 토큰 · 허니팟 · 타이밍 게이트 · 레이트리밋 · 서버측 재검증.
+// ═══════════════════════════════════════════
+var INTAKE_SUBMIT_TOKEN = 'wlp_intake_9f4c1b7e2a63';   // ScriptProperties INTAKE_SUBMIT_TOKEN 있으면 우선(없으면 이 기본값). 프론트 숨김토큰과 일치해야 함.
+var LESSON_INTAKE_SHEET_NAME = '강습 신규문의';
+var _ROW_OFFSET_INTAKE_ = 2000000;   // 강습 신규문의 탭 행키 네임스페이스(KR=0·EN=1000000과 분리 → 병합 rowIndex 충돌·오수정 방지)
+var LESSON_INTAKE_HEADERS = ['타임스탬프','유형','성함','연락처','자녀 나이','강습 종목','희망 레슨 시간','문의 경로','문의 사항','개인정보 수집·이용 동의','접수ID','진행 상황','지정 강사','Contact','비고'];
+
+function _intakeToken_() { return _accessProp_('INTAKE_SUBMIT_TOKEN') || INTAKE_SUBMIT_TOKEN; }
+
+// 강습 신규문의 스태프탭 핸들(옵션 생성). LESSON_SS_ID(1b0XU1o) 하위 신규 탭 — 기존 응답탭·팀시트 IMPORTRANGE 정렬 불변(새 탭 추가는 무영향).
+function _lessonIntakeSheet_(createIfMissing) {
+  var ss = SpreadsheetApp.openById(LESSON_SS_ID);
+  var sh = ss.getSheetByName(LESSON_INTAKE_SHEET_NAME);
+  if (!sh && createIfMissing) {
+    sh = ss.insertSheet(LESSON_INTAKE_SHEET_NAME);
+    sh.getRange(1, 1, 1, LESSON_INTAKE_HEADERS.length).setValues([LESSON_INTAKE_HEADERS]);
+    sh.setFrozenRows(1);
+    try { sh.getRange(1, 1, 1, LESSON_INTAKE_HEADERS.length).setFontWeight('bold'); } catch (e) {}
+  }
+  return sh || null;
+}
+var _lessonIntakeGidCache_ = null;
+function _lessonIntakeGid_() {
+  if (_lessonIntakeGidCache_ !== null) return _lessonIntakeGidCache_;
+  var sh = _lessonIntakeSheet_(false);
+  _lessonIntakeGidCache_ = sh ? sh.getSheetId() : null;
+  return _lessonIntakeGidCache_;
+}
+
+// 강습 신규문의 탭 → 문의행 배열(강습 목록 병합용). body.type(성인강습/유소년강습)로 '유형' 필터. _ROW_OFFSET_INTAKE_ 부여.
+// _lessonReadRows_ 와 동일한 행 스키마를 반환(프론트·lesson_inquiry_update 라운드트립 정합).
+function _lessonIntakeReadRows_(body) {
+  var sh = _lessonIntakeSheet_(false);
+  if (!sh) return [];
+  var gid = sh.getSheetId();
+  var last = sh.getLastRow();
+  var lastCol = sh.getLastColumn();
+  if (last < 2 || lastCol < 1) return [];
+  var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+  var data = sh.getRange(2, 1, last - 1, lastCol).getValues();
+  var iTs = _findCol_(hdr, ['타임스탬프']), iType = _findCol_(hdr, ['유형']),
+      iName = _findCol_(hdr, ['성함', '이름']), iPhone = _findCol_(hdr, ['연락처', '전화', '휴대폰']),
+      iAge = _findCol_(hdr, ['자녀 나이', '나이', '연령']), iSport = _findCol_(hdr, ['강습 종목', '종목']),
+      iWish = _findCol_(hdr, ['희망 레슨 시간', '희망시간']), iChan = _findCol_(hdr, ['문의 경로', '경로', '채널']),
+      iNote = _findCol_(hdr, ['문의 사항', '문의내용', '내용']),
+      iStat = _findCol_(hdr, ['진행 상황', '진행상태', '상태']), iOwner = _findColExact_(hdr, ['지정 강사', '관리담당']),
+      iHist = _findCol_(hdr, [CONTACT_HIST_COL, 'Contact']), iMemo = _findCol_(hdr, ['비고', '메모', '상담메모']);
+  var want = String((body && body.type) || '');
+  var out = [];
+  for (var r = 0; r < data.length; r++) {
+    var row = data[r];
+    var hasName = iName >= 0 && row[iName], hasPhone = iPhone >= 0 && row[iPhone];
+    if (!hasName && !hasPhone) continue;
+    var rowType = iType >= 0 ? String(row[iType] || '').trim() : '';
+    if (want && rowType && rowType !== want) continue;   // 유형 불일치 제외(값 없으면 포함 — 누락 방지)
+    var histRaw = iHist >= 0 ? row[iHist] : '';
+    var histArr = _resParse_(histRaw);
+    if (!histArr.length) { var p = String(histRaw || '').trim(); if (p) histArr.push({ date: '', time: '', note: p }); }
+    out.push({
+      rowIndex: r + 2 + _ROW_OFFSET_INTAKE_,
+      timestamp: _miToISO_(iTs >= 0 ? row[iTs] : ''),
+      name:    iName  >= 0 ? String(row[iName]  || '') : '',
+      phone:   iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',
+      age:     iAge   >= 0 ? String(row[iAge]   || '') : '',
+      sport:   iSport >= 0 ? String(row[iSport] || '') : '',
+      channel: iChan  >= 0 ? String(row[iChan]  || '') : '',
+      note:    iNote  >= 0 ? String(row[iNote]  || '') : '',
+      wishTime:iWish  >= 0 ? String(row[iWish]  || '') : '',
+      status:  iStat  >= 0 ? String(row[iStat]  || '') : '',
+      owner:   iOwner >= 0 ? String(row[iOwner] || '') : '',
+      memo:    iMemo  >= 0 ? String(row[iMemo]  || '') : '',
+      consult: '', consultTime: '', consultTmin: null, visited: '',
+      contacts: histArr, bySport: {},
+      gid: gid, lang: '', intake: true
+    });
+  }
+  return out;
 }
 
 // 강습 데이터 범위 필터 — 기본=올해(현재연도)만, scope=all이면 전체(시포·GM 2026-06-26).
@@ -2361,6 +2453,117 @@ function _processAction(body) {
     return _json({ ok: true, id: id, message: '문의가 접수되었습니다.' });
   }
 
+  // ─── 유입 자체 Survey 폼 제출 (배1037 갈래B · 시포 2026-07-15) ───
+  //   멤버십→'26년 신규문의'(_miSheet_·member_inquiry_list 자동정합) / 강습→신규 '강습 신규문의' 스태프탭(lesson_inquiry_list 병합 자동정합).
+  //   수집 유실 0: 멱등 submissionId(Cache dedup) + 서버 재검증. 저장 실패는 재시도가능(noRetry 미설정) 응답 → 프론트 대기큐 재전송.
+  //   스팸방어(구글폼 캡차 상실 보상): 토큰 · 허니팟 · 타이밍 게이트 · 레이트리밋. WEB_INTAKE_TAG로 마케팅 집계 이중계상 방지.
+  if (action === 'intake_submit') {
+    // 1) 토큰(위조방지)
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    // 2) 허니팟 — 봇이 채운 hp 값 있으면 조용히 성공가장(무기록·프론트 재시도 안 유발)
+    if (String(body.hp || '').trim() !== '') return _json({ ok: true, id: 'HP', dedup: true });
+    // 3) 타이밍 게이트 — 폼 표시~제출 최소 경과(프론트 계산 fillMs). 너무 빠르면 봇 → 조용히 성공가장
+    var _fillMs = parseInt(body.fillMs || '0', 10);
+    if (_fillMs > 0 && _fillMs < 1500) return _json({ ok: true, id: 'FAST', dedup: true });
+    // 4) 멱등 — submissionId 최근 처리 마커 있으면 기존 결과 반환(재시도로 인한 중복행 방지)
+    var _iCache = CacheService.getScriptCache();
+    var _sid = String(body.submissionId || '').slice(0, 64);
+    if (_sid) {
+      var _prev = _iCache.get('intake_sid_' + _sid);
+      if (_prev) return _json({ ok: true, id: _prev, submissionId: _sid, dedup: true });
+    }
+    // 5) 서버측 재검증(프론트 우회 방어)
+    var _iName = String(body.name || '').trim();
+    var _iPhone = String(body.phone || '').trim();
+    var _iPhoneDigits = _iPhone.replace(/[^0-9]/g, '');
+    var _iConsent = (body.consent === true || body.consent === '예' || String(body.consent) === 'true' || String(body.consent) === '1' || String(body.consent) === '동의');
+    var _iCat = String(body.category || '').trim();   // 'membership' | 'adult' | 'youth'
+    if (!_iName) return _json({ ok: false, error: '이름을 입력해 주세요.', noRetry: true });
+    if (_iPhoneDigits.length < 9 || _iPhoneDigits.length > 11) return _json({ ok: false, error: '연락처를 정확히 입력해 주세요.', noRetry: true });
+    if (!_iConsent) return _json({ ok: false, error: '개인정보 수집·이용 동의가 필요합니다.', noRetry: true });
+    if (_iCat !== 'membership' && _iCat !== 'adult' && _iCat !== 'youth') return _json({ ok: false, error: '문의 유형이 올바르지 않습니다.', noRetry: true });
+    // 6) 레이트리밋 — 동일 전화 단시간 과다 제출 차단(정상 사용자 무영향: 60초 내 6회 초과 시만)
+    if (_iPhoneDigits) {
+      var _rlKey = 'intake_rl_' + _iPhoneDigits;
+      var _rlN = parseInt(_iCache.get(_rlKey) || '0', 10) + 1;
+      _iCache.put(_rlKey, String(_rlN), 60);
+      if (_rlN > 6) return _json({ ok: false, error: '잠시 후 다시 시도해 주세요.', noRetry: true });
+    }
+    var _iId = _genId('WEB-');
+    var _iChannel = String(body.channel || '').trim();
+    var _iProgram = String(body.program || '').trim();
+    var _iMessage = String(body.message || '').trim();
+    var _iWish = String(body.wishTime || '').trim();
+    var _iAge = String(body.age || '').trim();
+    var _iUtmSource = String(body.utmSource || '').trim();
+    var _iUtmMedium = String(body.utmMedium || '').trim();
+
+    try {
+      if (_iCat === 'membership') {
+        // 멤버십 → '26년 신규문의'(_miSheet_) append. member_inquiry_list가 이미 이 탭 read → 관리페이지 자동정합(읽기 무변경).
+        var _imSh = _miSheet_();
+        if (!_imSh) return _json({ ok: false, error: '멤버십 시트 없음' });   // 재시도 가능(noRetry 미설정)
+        var _imHdr = _miHeaders_(_imSh);
+        var _imRow = new Array(_imHdr.length).fill('');
+        function _imSet(names, val) { if (val === undefined || val === null || val === '') return; var ci = _miColIdx_(_imHdr, names); if (ci >= 0) _imRow[ci] = val; }
+        _imSet(['타임스탬프', '접수일', '날짜'], Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'));
+        _imSet(['성함', '이름'], _iName);
+        _imSet(['연락처', '전화', '휴대폰'], _fmtPhone_(_iPhone));
+        _imSet(['관심 있는 프로그램 종류', '관심 있는 프로그램 종목', '관심프로그램', '프로그램', '종목'], _iProgram);
+        _imSet(['진행현황', '진행상황', '진행상태', '상태'], '신규');
+        _imSet(['문의채널', '유입채널', '채널', '경로'], _iChannel || _canonicalChannel_(_iUtmSource));
+        _imSet(['접수 담당자', '담당'], '웹 자동접수');
+        _imSet(['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담'], body.exp1Date);
+        _imSet(['기타 웰페리온에 대한 문의 사항', '기타 웰페리온', '자유롭게 적어', '문의 사항', '내용'], _iMessage);
+        _imSet(['비고', '메모', '담당자메모'], WEB_INTAKE_TAG + ' 자체폼 유입 (utm:' + (_iUtmSource || '-') + '/' + (_iUtmMedium || '-') + ', ' + _iId + ')');
+        _imSh.appendRow(_imRow);
+        try { _cacheInvalidateJson_(_iCache, 'micache'); } catch (e) {}
+      } else {
+        // 강습(성인/유소년) → '강습 신규문의' 스태프탭 append(없으면 생성). lesson_inquiry_list 병합 소스 포함 → 관리페이지 자동정합.
+        var _isYouth = (_iCat === 'youth');
+        var _iType = _isYouth ? '유소년강습' : '성인강습';
+        var _ilSh = _lessonIntakeSheet_(true);
+        if (!_ilSh) return _json({ ok: false, error: '강습 신규문의 시트 생성 실패' });   // 재시도 가능
+        var _ilHdr = _ilSh.getRange(1, 1, 1, _ilSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+        var _ilRow = new Array(_ilHdr.length).fill('');
+        function _ilSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_ilHdr, [name]); if (ci >= 0) _ilRow[ci] = val; }
+        _ilSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'));
+        _ilSet('유형', _iType);
+        _ilSet('성함', _iName);
+        _ilSet('연락처', _fmtPhone_(_iPhone));
+        _ilSet('자녀 나이', _iAge);
+        _ilSet('강습 종목', _iProgram);
+        _ilSet('희망 레슨 시간', _iWish);
+        _ilSet('문의 경로', _iChannel || _canonicalChannel_(_iUtmSource));
+        _ilSet('문의 사항', _iMessage);
+        _ilSet('개인정보 수집·이용 동의', '동의');
+        _ilSet('접수ID', _iId);
+        _ilSet('진행 상황', '신규');
+        _ilSet('비고', WEB_INTAKE_TAG + ' 자체폼 유입 (utm:' + (_iUtmSource || '-') + '/' + (_iUtmMedium || '-') + ')');
+        _ilSh.appendRow(_ilRow);
+        _lessonIntakeGidCache_ = _ilSh.getSheetId();
+        try {
+          _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|year');
+          _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|all');
+        } catch (e) {}
+      }
+    } catch (eIntake) {
+      // 저장 실패 = 재시도 가능(noRetry 미설정) → 프론트 대기큐가 재전송. 조용한 유실 0.
+      return _json({ ok: false, error: '서버 저장 오류: ' + eIntake.message });
+    }
+
+    // 멱등 마커(성공) — 6시간 보관. 같은 submissionId 재전송 시 중복행 방지.
+    if (_sid) { try { _iCache.put('intake_sid_' + _sid, _iId, 21600); } catch (e) {} }
+    // 알림 — '문의 알림' 방(멤버십 add·구글폼과 동일 톤). 실패해도 접수 자체는 성공 유지(fail-soft).
+    try {
+      var _iChat = _prop('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+      var _iCatLabel = (_iCat === 'membership') ? '멤버십' : ((_iCat === 'youth') ? '유소년 강습' : '성인 강습');
+      _notifyTelegram('🔔 <b>[웹 문의 접수]</b> (자체폼)\n유형: ' + _iCatLabel + '\n이름: ' + _iName + '\n연락처: ' + _fmtPhone_(_iPhone)
+        + (_iProgram ? ('\n관심: ' + _iProgram) : '') + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
+    } catch (e) {}
+    return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
+  }
+
   // ─── 클릭 통계 ───
   if (action === 'click_stats') {
     var csFrom = body.from || '';   // YYYY-MM-DD (optional) — 기간 필터
@@ -2927,7 +3130,8 @@ function _processAction(body) {
     var luSh = _lessonSheet_(_lessonGidOf_(body));  // body.rowIndex(원본·오프셋 유지) 기준 한글/영문 자동판별
     if (!luSh) return _json({ ok: false, error: '시트 없음' });
     var luRowRaw = luRow;  // 응답용 원본(오프셋 유지) — 프론트 로컬 매칭 정합. 2026-07-09 시포·GM.
-    if (luRow >= _ROW_OFFSET_EN_) luRow -= _ROW_OFFSET_EN_;  // 실제 물리 행으로 디코드(시트 쓰기는 여기부터 물리 행 사용).
+    if (luRow >= _ROW_OFFSET_INTAKE_) luRow -= _ROW_OFFSET_INTAKE_;   // 강습 신규문의(자체폼 유입, 배1037) 오프셋 우선 디코드(EN보다 큼)
+    else if (luRow >= _ROW_OFFSET_EN_) luRow -= _ROW_OFFSET_EN_;      // 영문 탭 오프셋 디코드. 실제 물리 행으로 환원(시트 쓰기는 여기부터 물리 행 사용).
     var luHdr = _lessonEnsureCols_(luSh);
     // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백.
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
