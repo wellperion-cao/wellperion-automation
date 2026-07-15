@@ -8,9 +8,12 @@ GM 지시(2026-07-09, 오늘 23시 발효). 하루 점검 현황을 실데이터
 데이터 소스(점검 GAS · CHECK_API · 실측·지어내기 0):
   - 지원부: ?action=today_live&dept=support
       → done/total/pct · uncheckedByShift(미체크 회차×성별 항목명) · allIssues(이슈)
-  - 시설부: ?action=monthly_report&dept=facility&month=YYYY-MM
-      → dailySeries에서 오늘 날짜 항목(total/done/pct/sessionCount) + outOfRange.list(기준이탈)
-      (today_live는 support 전용 — facility는 monthly_report에서 '오늘' 행을 뽑는다)
+  - 시설부 회수·시각: ?action=board&key=FACILITY_CHECK_YYYY-MM-DD
+      → board.store.submissions(리스트) = 실제 제출 회수(페이지 'N회 완료'와 일치·오늘 키라 stale 아님).
+      각 submission의 seq·startHHMM·endHHMM·inspector로 회수·시각·점검자를 표출한다.
+      (monthly의 sessionCount는 '라운드종류=1 고정'이라 항상 1 → 회수로 쓰지 않는다, GM 2026-07-15)
+  - 시설부 기준이탈: ?action=monthly_report&dept=facility&month=YYYY-MM
+      → outOfRange.list에서 오늘 날짜 항목(name/value/min/max)만 필터.
       작업사항/지시사항: facility today_live 응답에 있으면 포함, 없으면 정직히 생략.
   - 주차: weekly/monthly 데이터 있으면 포함, 없으면 '자체점검 준비 중' 정직 표기.
   값이 없으면 그 줄을 생략(지어내기 금지).
@@ -65,9 +68,10 @@ _DOW_KO = ["월", "화", "수", "목", "금", "토", "일"]
 _SHIFT_KO = {"am": "오전", "pm": "오후", "close": "마감", "night": "야간"}
 _GENDER_KO = {"m": "남", "f": "여"}
 
-MAX_OUT_OF_RANGE = 6   # 기준이탈 표시 최대 줄
-MAX_UNCHECKED = 6      # 미체크 항목 표시 최대 개수
-MAX_ISSUES = 3         # 이슈 표시 최대 개수
+MAX_OUT_OF_RANGE = 6      # 기준이탈 표시 최대 줄
+MAX_UNCHECKED = 6         # 미체크 항목 표시 최대 개수
+MAX_ISSUES = 3            # 이슈 표시 최대 개수
+MAX_FACILITY_DETAIL = 4   # 시설부 회차별 시각을 한 줄씩 상세 표시할 최대 회수(초과 시 콤팩트 나열)
 
 
 def log(msg: str) -> None:
@@ -102,36 +106,74 @@ def fetch_gas(params: dict, timeout: float = 20.0) -> dict | None:
 # ══════════════════════════════════════════════════════════════════════════
 #  섹션 빌더 — 각 부서 데이터 dict → 카톡 본문 라인 리스트(값 없으면 빈 리스트)
 # ══════════════════════════════════════════════════════════════════════════
-def build_facility_lines(today: str) -> tuple[list[str], dict]:
-    """시설부: monthly_report에서 '오늘' 행 + 기준이탈. today_live로 작업/지시 있으면 덧붙임."""
-    month = today[:7]
-    data = fetch_gas({"action": "monthly_report", "dept": "facility", "month": month})
-    filled = {"facility_status": False, "facility_outofrange": 0, "facility_worknote": False}
-    if data is None:
-        return (["🏗 시설부: 데이터 조회 실패(정직 표기)"], filled)
+def _fetch_facility_board(today: str) -> dict:
+    """시설부 오늘 board 한 번 호출 → 실제 제출 회수·각 회차 시각·점검자.
+    daily_scheduler.py::_fetch_facility_board와 동일 패턴(?action=board&key=FACILITY_CHECK_{today}).
+    회수 = len(board.store.submissions) — monthly sessionCount(라운드종류=1 고정, 항상 1)가 아닌
+    실제 제출 건수(페이지 'N회 완료'와 일치·오늘 키라 stale 없음, GM 2026-07-15).
+    반환: {"sessions": int, "submissions": list}."""
+    out = {"sessions": 0, "submissions": []}
+    data = fetch_gas({"action": "board", "key": f"FACILITY_CHECK_{today}"})
+    if not isinstance(data, dict):
+        return out
+    store = ((data.get("board") or {}).get("store") or {})
+    subs = store.get("submissions")
+    if isinstance(subs, list):
+        out["submissions"] = subs
+        out["sessions"] = len(subs)
+    return out
 
-    # 오늘 날짜 행 추출
-    row = None
-    for d in data.get("dailySeries") or []:
-        if str(d.get("date")) == today:
-            row = d
-            break
+
+def build_facility_lines(today: str) -> tuple[list[str], dict]:
+    """시설부: board에서 실제 회수·회차별 시각(정직 소스) + monthly outOfRange로 기준이탈.
+    GM 2026-07-13 결정(이벤트 중심 — 회수·이상 유무 중심, % 부차) + GM 2026-07-15 회수·시각 정직화.
+    today_live로 작업/지시 있으면 덧붙임."""
+    filled = {"facility_status": False, "facility_outofrange": 0, "facility_worknote": False}
+
+    # 회수·시각·점검자 = board 실데이터(정본)
+    board = _fetch_facility_board(today)
+    sessions = board["sessions"]
+
+    # 기준이탈(오늘분만) = monthly_report outOfRange.list(항목·값·기준). 회수 소스와 분리.
+    month = today[:7]
+    monthly = fetch_gas({"action": "monthly_report", "dept": "facility", "month": month})
+    today_oor = []
+    if isinstance(monthly, dict):
+        oor = ((monthly.get("outOfRange") or {}).get("list")) or []
+        today_oor = [x for x in oor if str(x.get("date")) == today]
+    filled["facility_outofrange"] = len(today_oor)
 
     lines: list[str] = []
-    if row and isinstance(row.get("total"), (int, float)) and row.get("total"):
+    if sessions:
         filled["facility_status"] = True
-        head = f"🏗 시설부 {row.get('done', 0)}/{row.get('total')}({row.get('pct', 0)}%)"
-        sc = row.get("sessionCount")
-        if isinstance(sc, (int, float)) and sc:
-            head += f" · 오늘 {int(sc)}회 점검"
+        ooc_n = len(today_oor)
+        head = f"🏗 시설부 {sessions}회 점검"
+        head += f" · 이상 {ooc_n}건" if ooc_n else " · 이상 없음"
         lines.append(head)
+
+        # 회차별 시각·점검자 — seq 순. 회수 많으면(초과 시) 시각만 콤팩트 나열(모바일 가독성).
+        subs = sorted(board["submissions"], key=lambda s: (s.get("seq") or 0))
+        if sessions <= MAX_FACILITY_DETAIL:
+            for i, s in enumerate(subs, 1):
+                seq = s.get("seq") or i
+                st = str(s.get("startHHMM") or "").strip()
+                en = str(s.get("endHHMM") or "").strip()
+                insp = str(s.get("inspector") or "").strip()
+                span = f"{st}~{en}" if st and en else (st or en or "시각미상")
+                insp_s = f" ({insp})" if insp else ""
+                lines.append(f"  · {seq}회 {span}{insp_s}")
+        else:
+            times = [str(s.get("startHHMM") or "").strip() for s in subs
+                     if str(s.get("startHHMM") or "").strip()]
+            insps = list(dict.fromkeys(
+                str(s.get("inspector") or "").strip() for s in subs
+                if str(s.get("inspector") or "").strip()))
+            insp_s = f" · {', '.join(insps)}" if insps else ""
+            lines.append("  · 점검 시각: " + "·".join(times) + insp_s)
     else:
         lines.append("🏗 시설부: 오늘 점검 입력 없음")
 
-    # 기준이탈(오늘분만) — 개선 필요, 앞쪽 배치
-    oor = ((data.get("outOfRange") or {}).get("list")) or []
-    today_oor = [x for x in oor if str(x.get("date")) == today]
-    filled["facility_outofrange"] = len(today_oor)
+    # 기준이탈 상세(오늘분만) — 개선 필요
     if today_oor:
         lines.append(f"⚠ 기준이탈 {len(today_oor)}건 (개선 필요)")
         for x in today_oor[:MAX_OUT_OF_RANGE]:
