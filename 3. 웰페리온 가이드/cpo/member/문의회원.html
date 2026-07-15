@@ -2144,6 +2144,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <span class="consult-modal-title" id="ctTitle">연락 이력</span>
     </div>
 
+    <!-- 컨택 알림 안내 — 진행상태만 '컨택중'으로 바꿔도 알림이 가는 줄 오해하는 실무진 대비. GM 결정: 푸시 현행유지(연락이력 0→1건 기록 시 발동)+가이드만 명시. 2026-07-15 시포·GM -->
+    <div class="info-box" style="margin-bottom:14px;font-size:11.5px;color:var(--dim);padding:9px 12px">💡 팀 컨택 알림은 <strong style="color:var(--text)">이 연락 이력을 저장</strong>할 때 발송됩니다 — 진행상태만 '컨택중'으로 바꾸는 것만으로는 알림이 가지 않으니, 실제 컨택 후 여기에 기록해주세요.</div>
+
     <!-- 연락 이력 리스트(가변) — 날짜+시간+상담내용. ＋연락 추가/삭제. IME 안전(입력 중 재렌더 없음). -->
     <div class="consult-field-label">연락 이력</div>
     <div id="ctList" style="display:flex;flex-direction:column;gap:10px"></div>
