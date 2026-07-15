@@ -79,9 +79,9 @@ h1 .scope{font-size:14px;font-weight:600;color:var(--accent);margin-left:8px}
 .pill.over{background:var(--red-bg);color:var(--red)}.pill.soon{background:var(--yellow-bg);color:var(--yellow)}.pill.ok{background:var(--green-bg);color:var(--green)}.pill.tbd{background:var(--accent-bg);color:var(--dim)}
 .loading{text-align:center;color:var(--dim);padding:40px;font-size:14px}
 footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--dim)}
-.hlink-edit{color:var(--accent);border-color:rgba(183,159,138,0.4)}
-.editbar{display:none;gap:8px;flex-wrap:wrap;margin:18px 0 14px;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:12px;align-items:center}
-.editbar .info{font-size:12.5px;color:var(--dim);flex:1;min-width:200px}
+.inline-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.ecard.inlineedit{margin:2px 0 12px;border-color:var(--accent)}
+.row.editing-row{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .ebtn{font:inherit;font-size:13px;font-weight:700;padding:8px 14px;border-radius:9px;cursor:pointer;border:1px solid}
 .ebtn.primary{background:var(--accent);color:#221F20;border-color:var(--accent)}
 .ebtn.ghost{background:none;color:var(--text);border-color:var(--border)}
@@ -132,7 +132,6 @@ body.embed .calwrap{margin-top:8px}
     </div>
     <div class="sheet-links">
       <a class="sheet-link hlink-add" id="addBtn" role="button" tabindex="0" onclick="startAddEvent()">➕ 일정 추가</a>
-      <a class="sheet-link hlink-edit" id="editBtn" role="button" tabindex="0" onclick="toggleEdit()">✏️ 편집</a>
       <a class="sheet-link" href="../../wellperion_guide(main).html">🏠 웰페리온 ERP</a>
     </div>
   </div>
@@ -148,14 +147,6 @@ body.embed .calwrap{margin-top:8px}
     <button class="ebtn ghost" onclick="discardDraft()">버리기</button>
   </div>
 
-  <div class="editbar" id="editBar">
-    <span class="info">종목당 <b>최근 검사일 1개</b>만 입력하면 다음 예정일이 자동계산됩니다(주기 기준). <b>☁️ 서버에 자동저장</b>을 누르면 모두가 바로 최신본을 봅니다. (서버 저장 실패 시 백업용으로 JSON을 내려받거나 복사해 <b>시우에게 전달</b>)</span>
-    <button class="ebtn primary" onclick="addEvent()">➕ 이벤트</button>
-    <button class="ebtn ghost" onclick="addItem()">➕ 정기점검</button>
-    <button class="ebtn primary" id="cloudSaveBtn" onclick="saveToServer()">☁️ 서버에 자동저장</button>
-    <button class="ebtn primary" onclick="exportJSON()">💾 저장(내려받기)</button>
-    <button class="ebtn ghost" onclick="copyJSON()">📋 복사</button>
-  </div>
 
   <div class="chips" id="chips"></div>
   <div class="summary" id="summary"></div>
@@ -180,7 +171,6 @@ body.embed .calwrap{margin-top:8px}
     <div style="display:flex;align-items:baseline;gap:10px"><h2>임박 순</h2><span class="vt">기한 가까운 순서 — 당장 챙길 것부터</span></div>
   </div>
   <div id="vList" class="list"><div class="loading">불러오는 중…</div></div>
-  <div id="vEdit" hidden></div>
   <div class="toast" id="toast"></div>
 
   <footer id="foot">정본 = 서버(자동저장) · 전 부서 공유(<code>?dept=</code> 필터) · 편집→☁️ 자동저장으로 모두에게 즉시 반영 · 업무·결재 연동(게이트)</footer>
@@ -256,7 +246,6 @@ function computeDue(it){
 function statusOf(it){var c=nextOccurrence(it);var d=c.date;if(!d)return{k:"tbd",dd:null,auto:false};var dd=Math.round((d-kstToday())/86400000);if(dd<0)return{k:"over",dd:dd,auto:c.auto};if(dd<=LEAD)return{k:"soon",dd:dd,auto:c.auto};return{k:"ok",dd:dd,auto:c.auto};}
 function ddText(s){if(s.dd===null)return"D-?";return s.dd<0?("D+"+Math.abs(s.dd)):("D-"+s.dd);}
 function items(){return DATA.items.filter(function(it){return (cur==="전체"||it.dept===cur)&&it.applies!=="해당없음";});}
-function editItems(){return DATA.items.filter(function(it){return cur==="전체"||it.dept===cur;});}
 
 /* ── 거래업체 연동 ── */
 function vendorById(id){if(!id)return null;for(var i=0;i<VENDORS.length;i++){if(VENDORS[i].id===id)return VENDORS[i];}return null;}
@@ -294,17 +283,28 @@ function renderList(){
     var vTxt=vend?('<div class="rvendor">🏢 담당: '+esc(vend.name)+' · <a href="tel:'+esc((""+(vend.contact||"")).replace(/[^0-9+]/g,""))+'">📞 '+esc(vend.contact||"")+'</a></div>'):"";
     var subTxt=isEvent?(cat.label+(repTxt?" · "+repTxt+" 반복":" · 1회")):(cat.label+' · '+it.cycle);
     var tailTxt=isEvent?(it.note?esc(it.note):(it.assignee?esc(it.assignee):"—")):('최근 '+(it.last_done||"—"));
-    var r=document.createElement("div");r.className="row editable";
+    var editing=(it.id===inlineEditId);
+    var r=document.createElement("div");r.className="row editable"+(editing?" editing-row":"");
     r.setAttribute("data-eid",it.id);
     r.setAttribute("title","클릭하면 편집");
-    (function(_id){ r.onclick=function(){ editItemById(_id); }; })(it.id);
+    (function(_id){ r.onclick=function(){ if(inlineEditId===_id)return; openInline(_id); }; })(it.id);
     if(comp.date)r.setAttribute("data-due",fmtDate(comp.date));
     r.innerHTML='<div class="catbar" style="background:'+cat.color+'"></div>'+
-      '<div><div class="name">'+esc(it.name)+'</div><div class="rsub">'+subTxt+'</div>'+vTxt+'</div>'+
+      '<div><div class="name">'+(esc(it.name)||'<span style="color:var(--dim)">(제목 없음 — 클릭해 입력)</span>')+'</div><div class="rsub">'+subTxt+'</div>'+vTxt+'</div>'+
       '<div class="rdept">'+esc(it.dept)+'</div>'+
       '<div class="rd">'+(isEvent?"":"다음 ")+'<b>'+dueTxt+'</b>'+dueBadge+'<br><span style="opacity:.7">'+tailTxt+'</span></div>'+
       '<div class="pill '+st.k+'"><span>'+({over:"지남",soon:"임박",ok:"여유",tbd:"미정"}[st.k])+'</span><span>'+ddText(st)+'</span></div>';
     el.appendChild(r);
+    if(editing){
+      var idx=DATA.items.indexOf(it);
+      var holder=document.createElement("div");holder.innerHTML=inlinePanelHtml(it,idx);
+      var panel=holder.firstChild;el.appendChild(panel);
+      (function(_it){
+        panel.querySelector('[data-act="save"]').onclick=function(){saveInline(_it.id);};
+        panel.querySelector('[data-act="cancel"]').onclick=function(){cancelInline();};
+        panel.querySelector('[data-act="del"]').onclick=function(){deleteInline(_it.id);};
+      })(it);
+    }
   });
 }
 
@@ -372,7 +372,7 @@ function highlightDate(key){
 }
 window.highlightDate=highlightDate;
 
-function renderAll(){renderTiles();renderList();renderCalendar();if(editMode)renderEdit();document.querySelectorAll("#chips .chip").forEach(function(b){b.setAttribute("aria-pressed",b.textContent===cur);});fitFrame();}
+function renderAll(){renderTiles();renderList();renderCalendar();document.querySelectorAll("#chips .chip").forEach(function(b){b.setAttribute("aria-pressed",b.textContent===cur);});fitFrame();}
 
 // 부서 탭 임베드 시: iframe 높이를 내용에 맞춰 자체 조정 → 안쪽 스크롤 제거(페이지 하나로 스크롤). 동일 출처라 frameElement 접근 가능.
 function fitFrame(){
@@ -384,24 +384,74 @@ function fitFrame(){
     }
   }catch(e){}
 }
-// '➕ 일정 추가' — 편집 모드 진입 + 새 이벤트 카드 즉시 추가(맨 위로 스크롤·포커스).
+/* ── 인라인 항목 편집 (항목 하나씩 · GM 2026-07-15) ── */
+var inlineEditId=null;
+// '➕ 일정 추가' — 새 이벤트 만들고 그 항목 인라인 편집 즉시 열기.
 function startAddEvent(){
-  if(!editMode)toggleEdit();
-  addEvent();
+  var id="evt-"+Date.now();
+  DATA.items.push({id:id,type:"이벤트",name:"",category:"event",dept:(cur!=="전체"?cur:DATA.depts[0]),cycle:"",cycle_confirmed:false,period_months:null,legal_basis:"",assignee:"",last_done:"",next_due:"",evidence:"",applies:"있음",note:"",vendor_id:"",repeat:""});
+  saveDraft(); openInline(id);
 }
 window.startAddEvent=startAddEvent;
-// 목록 항목 클릭 → 편집 모드 진입 + 해당 카드로 스크롤·포커스.
-function editItemById(id){
-  if(!editMode)toggleEdit();
-  setTimeout(function(){
-    var card=document.querySelector('#vEdit .ecard[data-eid="'+(""+id).replace(/"/g,'')+'"]');
-    if(card){card.scrollIntoView({behavior:"smooth",block:"center"});var inp=card.querySelector('input,select');if(inp)try{inp.focus();}catch(e){}}
-  },30);
+// 항목 하나 인라인 편집 패널 HTML (이벤트/점검별 필드 + 저장·취소·삭제)
+function inlinePanelHtml(it,idx){
+  var body;
+  if(it.type==="이벤트"){
+    body='<div class="egrid">'+
+      efIn(idx,"name","제목",it.name,"예) 정기교육")+
+      efIn(idx,"next_due","날짜 (YYYY-MM-DD)",it.next_due,"예) 2026-08-01")+
+      efRepeat(idx,it)+
+      efSel(idx,"category","분류",EVENT_CATS,EVENT_CATS.indexOf(it.category)>=0?it.category:"general",function(k){return (CATS[k]||{label:k}).label;})+
+      efSel(idx,"dept","담당 부서",DATA.depts,it.dept)+
+      efIn(idx,"assignee","담당자",it.assignee,"이름/팀")+
+      efIn(idx,"note","메모",it.note,"준비물·비고")+
+    '</div>';
+  }else{
+    body='<div class="egrid">'+
+      efIn(idx,"name","이름",it.name,"점검·일정 이름")+
+      efSel(idx,"applies","해당여부",["미확인","있음","해당없음"],it.applies||"미확인")+
+      efSel(idx,"dept","담당 부서",DATA.depts,it.dept)+
+      efSel(idx,"category","분류",Object.keys(CATS),it.category,function(k){return CATS[k].label;})+
+      efIn(idx,"cycle","주기(설명)",it.cycle,"예) 연 1회")+
+      efIn(idx,"last_done","최근 검사일",it.last_done,"YYYY-MM-DD")+
+      efIn(idx,"period_months","주기(개월)",it.period_months,"예) 12")+
+      efNextDue(idx,it)+
+      efIn(idx,"legal_basis","법적 근거",it.legal_basis,"")+
+      efIn(idx,"evidence","증빙(링크)",it.evidence,"성적서·필증 URL")+
+      efSel(idx,"vendor_id","담당 거래업체",[""].concat(vendorSorted().map(function(v){return v.id;})),it.vendor_id||"",function(id){if(!id)return "미지정";var v=vendorById(id);return v?(v.name+" ("+v.label+")"):"(알 수 없음)";})+
+    '</div>';
+  }
+  return '<div class="ecard inlineedit" data-eid="'+esc(it.id)+'">'+body+
+    '<div class="inline-actions">'+
+      '<button class="ebtn primary" data-act="save">💾 저장</button>'+
+      '<button class="ebtn ghost" data-act="cancel">✖ 취소</button>'+
+      '<button class="edel" data-act="del">🗑 삭제</button>'+
+    '</div></div>';
 }
-window.editItemById=editItemById;
+function openInline(id){
+  inlineEditId=id; renderList(); fitFrame();
+  setTimeout(function(){var p=document.querySelector('#vList .inlineedit[data-eid="'+(""+id).replace(/"/g,'')+'"]');if(p){p.scrollIntoView({behavior:"smooth",block:"center"});var inp=p.querySelector('input,select');if(inp)try{inp.focus();}catch(e){}}},40);
+}
+window.openInline=openInline;
+function _inlineItem(){return DATA.items.filter(function(x){return x.id===inlineEditId;})[0];}
+function saveInline(id){
+  var p=document.querySelector('#vList .inlineedit[data-eid="'+(""+id).replace(/"/g,'')+'"]');
+  if(p)p.querySelectorAll('[data-f]').forEach(function(el){var i=+el.getAttribute('data-i'),fld=el.getAttribute('data-f');if(DATA.items[i])DATA.items[i][fld]=el.value;});
+  saveDraft(); inlineEditId=null; renderAll(); saveToServer();
+}
+function cancelInline(){
+  var it=_inlineItem();
+  if(it&&it.type==="이벤트"&&!String(it.name||"").trim()&&!String(it.next_due||"").trim()){var idx=DATA.items.indexOf(it);if(idx>=0)DATA.items.splice(idx,1);saveDraft();}
+  inlineEditId=null; renderAll();
+}
+function deleteInline(id){
+  var it=DATA.items.filter(function(x){return x.id===id;})[0];
+  if(it&&!confirm("이 항목을 삭제할까요?\n"+(it.name||"(이름 없음)")))return;
+  var idx=DATA.items.indexOf(it);if(idx>=0)DATA.items.splice(idx,1);
+  saveDraft(); inlineEditId=null; renderAll(); saveToServer();
+}
 
-/* ── 편집 모드 ── */
-var editMode=false, DKEY="wp_schedule_draft_v1";
+var DKEY="wp_schedule_draft_v1";
 function esc(s){return (s==null?"":(""+s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function efIn(i,f,label,val,ph){return '<div class="efield"><label>'+label+'</label><input data-i="'+i+'" data-f="'+f+'" value="'+esc(val)+'" placeholder="'+esc(ph||"")+'"></div>';}
 function efSel(i,f,label,opts,val,labelFn){var o=opts.map(function(k){return '<option value="'+esc(k)+'"'+(k===val?" selected":"")+'>'+esc(labelFn?labelFn(k):k)+'</option>';}).join("");return '<div class="efield"><label>'+label+'</label><select data-i="'+i+'" data-f="'+f+'">'+o+'</select></div>';}
@@ -421,84 +471,8 @@ function efRepeat(idx,it){
   var o=opts.map(function(p){return '<option value="'+p[0]+'"'+(p[0]===cur?" selected":"")+'>'+p[1]+'</option>';}).join("");
   return '<div class="efield"><label>반복 (규칙 1줄 → 달력 자동 반복)</label><select data-i="'+idx+'" data-f="repeat">'+o+'</select></div>';
 }
-function toggleEdit(){
-  editMode=!editMode;
-  document.body.classList.toggle("editing",editMode);
-  ["chips","summary","calWrap","vList"].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=editMode?"none":"";});
-  var barEl=document.querySelector(".bar");if(barEl)barEl.style.display=editMode?"none":"";
-  document.getElementById("editBar").style.display=editMode?"flex":"none";
-  document.getElementById("vEdit").hidden=!editMode;
-  document.getElementById("editBtn").textContent=editMode?"✖ 편집 닫기":"✏️ 편집";
-  if(editMode){renderEdit();} else {renderAll();}
-  fitFrame();
-}
-window.toggleEdit=toggleEdit;
-function renderEdit(){
-  var ve=document.getElementById("vEdit");ve.innerHTML="";
-  var f=editItems();
-  if(!f.length){ve.innerHTML='<div class="loading">이 부서의 항목이 없습니다. ‘➕ 항목 추가’로 만드세요.</div>';return;}
-  f.forEach(function(it){
-    var idx=DATA.items.indexOf(it);
-    var card=document.createElement("div");card.className="ecard"+(it.applies==="해당없음"?" na":"");
-    card.setAttribute("data-eid",it.id);
-    if(it.type==="이벤트"){
-      card.innerHTML=
-        '<div class="ecard-top"><span class="tag rep" style="margin:0 4px 0 0">이벤트</span><input class="ename" data-i="'+idx+'" data-f="name" value="'+esc(it.name)+'" placeholder="일정 제목 (예) 정기교육"><button class="edel" data-i="'+idx+'">🗑 삭제</button></div>'+
-        '<div class="egrid">'+
-          efIn(idx,"next_due","날짜 (YYYY-MM-DD)",it.next_due,"예) 2026-08-01")+
-          efRepeat(idx,it)+
-          efSel(idx,"category","분류",EVENT_CATS,EVENT_CATS.indexOf(it.category)>=0?it.category:"general",function(k){return (CATS[k]||{label:k}).label;})+
-          efSel(idx,"dept","담당 부서",DATA.depts,it.dept)+
-          efIn(idx,"assignee","담당자",it.assignee,"이름/팀")+
-          efIn(idx,"note","메모",it.note,"준비물·비고")+
-        '</div>';
-    }else{
-      card.innerHTML=
-        '<div class="ecard-top"><input class="ename" data-i="'+idx+'" data-f="name" value="'+esc(it.name)+'" placeholder="점검·일정 이름"><button class="edel" data-i="'+idx+'">🗑 삭제</button></div>'+
-        '<div class="egrid">'+
-          efSel(idx,"applies","해당여부",["미확인","있음","해당없음"],it.applies||"미확인")+
-          efSel(idx,"dept","담당 부서",DATA.depts,it.dept)+
-          efSel(idx,"category","분류",Object.keys(CATS),it.category,function(k){return CATS[k].label;})+
-          efIn(idx,"cycle","주기(설명)",it.cycle,"예) 연 1회")+
-          efIn(idx,"last_done","최근 검사일 (우선 입력)",it.last_done,"YYYY-MM-DD")+
-          efIn(idx,"period_months","주기(개월)",it.period_months,"예) 12")+
-          efNextDue(idx,it)+
-          efIn(idx,"legal_basis","법적 근거",it.legal_basis,"")+
-          efIn(idx,"evidence","증빙(링크)",it.evidence,"성적서·필증 URL")+
-          efSel(idx,"vendor_id","담당 거래업체",[""].concat(vendorSorted().map(function(v){return v.id;})),it.vendor_id||"",function(id){if(!id)return "미지정";var v=vendorById(id);return v?(v.name+" ("+v.label+")"):"(알 수 없음)";})+
-        '</div>';
-    }
-    ve.appendChild(card);
-  });
-  ve.querySelectorAll("input,select").forEach(function(el){
-    var h=function(){var i=+el.getAttribute("data-i"),fld=el.getAttribute("data-f");DATA.items[i][fld]=el.value;saveDraft();renderEdit();};
-    el.addEventListener("change",h);
-  });
-  ve.querySelectorAll(".edel").forEach(function(b){b.addEventListener("click",function(){var i=+b.getAttribute("data-i");if(confirm("이 항목을 삭제할까요?\n"+(DATA.items[i].name||"(이름 없음)"))){DATA.items.splice(i,1);saveDraft();renderEdit();}});});
-  fitFrame();
-}
-function addItem(){
-  DATA.items.push({id:"new-"+(DATA.items.length+1)+"-"+(cur!=="전체"?cur:"x"),type:"정기점검",name:"",category:Object.keys(CATS)[0],dept:(cur!=="전체"?cur:DATA.depts[0]),cycle:"",cycle_confirmed:false,period_months:null,legal_basis:"",assignee:"",last_done:"",next_due:"",evidence:"",applies:"미확인",note:"",vendor_id:""});
-  saveDraft();renderEdit();var ve=document.getElementById("vEdit");if(ve.lastChild)ve.lastChild.scrollIntoView({behavior:"smooth",block:"center"});
-}
-window.addItem=addItem;
-function addEvent(){
-  DATA.items.push({id:"evt-"+Date.now(),type:"이벤트",name:"",category:"event",dept:(cur!=="전체"?cur:DATA.depts[0]),cycle:"",cycle_confirmed:false,period_months:null,legal_basis:"",assignee:"",last_done:"",next_due:"",evidence:"",applies:"있음",note:"",vendor_id:"",repeat:""});
-  saveDraft();renderEdit();var ve=document.getElementById("vEdit");if(ve.lastChild)ve.lastChild.scrollIntoView({behavior:"smooth",block:"center"});
-}
-window.addEvent=addEvent;
-function exportStr(){return JSON.stringify(DATA,null,2);}
-function exportJSON(){
-  var blob=new Blob([exportStr()],{type:"application/json"});var a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);a.download="schedule_ssot.json";document.body.appendChild(a);a.click();document.body.removeChild(a);
-  setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
-  toast("내려받았습니다 — 시우에게 전달하면 라이브 반영됩니다.");
-}
-window.exportJSON=exportJSON;
-function copyJSON(){var t=exportStr();
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast("JSON 복사됨 — 시우에게 붙여넣기하세요.");},function(){fallbackCopy(t);});}else fallbackCopy(t);}
-window.copyJSON=copyJSON;
-function fallbackCopy(t){var ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("JSON 복사됨.");}catch(e){alert("복사 실패 — ‘저장(내려받기)’를 이용하세요.");}document.body.removeChild(ta);}
+/* 구 편집 모드(toggleEdit·renderEdit·addItem·addEvent·JSON 내보내기)는
+   항목별 인라인 편집(위 inlinePanelHtml/saveInline)으로 대체·제거. GM 2026-07-15. */
 function saveToServer(){
   if(!SCHEDULE_GAS_URL){toast("서버 배포 후 사용 가능합니다.");return;}
   fetch(SCHEDULE_GAS_URL,{method:'POST',redirect:'follow',
@@ -515,13 +489,9 @@ function saveToServer(){
   }).catch(function(){toast("서버 저장 실패(네트워크) — 내려받기로 백업하세요.");});
 }
 window.saveToServer=saveToServer;
-function initCloudBtn(){
-  var b=document.getElementById("cloudSaveBtn");
-  if(b&&!SCHEDULE_GAS_URL){b.disabled=true;b.title="서버 배포 후 사용";b.style.opacity=".5";b.style.cursor="not-allowed";}
-}
 function saveDraft(){try{localStorage.setItem(DKEY,JSON.stringify(DATA.items));}catch(e){}}
 function loadDraftCheck(){try{if(localStorage.getItem(DKEY))document.getElementById("draftBanner").style.display="flex";}catch(e){}}
-function applyDraft(){try{var d=localStorage.getItem(DKEY);if(d)DATA.items=JSON.parse(d);}catch(e){}document.getElementById("draftBanner").style.display="none";if(!editMode)toggleEdit();else renderEdit();}
+function applyDraft(){try{var d=localStorage.getItem(DKEY);if(d)DATA.items=JSON.parse(d);}catch(e){}document.getElementById("draftBanner").style.display="none";renderAll();}
 window.applyDraft=applyDraft;
 function discardDraft(){try{localStorage.removeItem(DKEY);}catch(e){}document.getElementById("draftBanner").style.display="none";toast("편집본을 버렸습니다.");}
 window.discardDraft=discardDraft;
@@ -538,7 +508,6 @@ function loadSeed(){
 }
 function boot(){
   if(EMBED)document.body.classList.add("embed");
-  initCloudBtn();
   loadVendors();
   if(SCHEDULE_GAS_URL){
     fetch(SCHEDULE_GAS_URL+"?action=load_schedule&cb="+Date.now(),{method:"GET",redirect:"follow"})

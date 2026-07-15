@@ -960,6 +960,44 @@ async def _attach_images_via_file_chooser(page, image_paths: "list[Path]") -> bo
     return False
 
 
+async def _measure_danggn_thumbnail_img_count(page) -> int:
+    """당근 '소식 작성' 상단 썸네일 줄(카메라 옆 'N/10' 카운터) 기준 첨부 이미지 수 측정.
+    당근 비즈 '소식 작성'은 SNS 형식이라 이미지가 본문(contenteditable) 안이 아니라 이
+    카운터 줄에 붙는다(2026-07-15 실측 danggn_publish_ABORT_integrity.png — 본문 img=0인데
+    썸네일은 정상 6장). 측정 불가 시 -1(→WARN·비차단 폴백, evaluate_integrity 계약 유지)."""
+    import re as _re
+
+    # 1) 'N/10' 카운터 텍스트 파싱 (이미지 첨부 버튼 자체가 첨부 후 'N/10'으로 갱신됨)
+    try:
+        counter_loc = page.locator(
+            'button:has-text("/10"), label:has-text("/10"), [role="button"]:has-text("/10")'
+        ).first
+        if await counter_loc.count() > 0:
+            txt = (await counter_loc.evaluate("el => el.innerText || ''")).strip()
+            m = _re.search(r"(\d+)\s*/\s*10", txt)
+            if m:
+                return int(m.group(1))
+    except Exception:
+        pass
+
+    # 2) 폴백: 카운터 버튼과 같은 줄(부모 컨테이너)에 있는 첨부 썸네일 <img> 개수
+    try:
+        thumb_count = await page.evaluate(r"""() => {
+            const counterEl = Array.from(document.querySelectorAll('button,label,[role="button"]'))
+                .find(el => /\d+\s*\/\s*10/.test((el.innerText||'').trim()) && el.offsetParent !== null);
+            if (!counterEl) return -1;
+            const row = counterEl.parentElement;
+            if (!row) return -1;
+            return row.querySelectorAll('img').length;
+        }""")
+        if isinstance(thumb_count, int) and thumb_count >= 0:
+            return thumb_count
+    except Exception:
+        pass
+
+    return -1
+
+
 async def _publish_via_next(page, expected_img: int = 0) -> int:
     """발행: '다음' → 설정/확인 화면 → '게시/등록/발행' 클릭. 화면 진단 포함(첫 구현 실측용).
     버튼 못 찾으면 발행 안 하고 7 반환(안전 — 공개 오발행 방지)."""
@@ -974,8 +1012,8 @@ async def _publish_via_next(page, expected_img: int = 0) -> int:
     await _dump("작성후")
 
     # ── 발행 직전 무결성 게이트 (F2 본문/이미지 소실 재발 방지 — 3채널 공유 프레임) ──
-    # 당근 비즈 에디터는 기존에 게이트가 없었음 — 기존 본문 타이핑에 쓰는 _BODY_SELECTORS 를
-    # 재사용해 best-effort 측정. 측정 실패 시 -1(→WARN·비차단)로 폴백.
+    # 당근 비즈 에디터는 기존에 게이트가 없었음. 본문 길이는 기존 본문 타이핑에 쓰는
+    # _BODY_SELECTORS 를 재사용해 best-effort 측정. 측정 실패 시 -1(→WARN·비차단)로 폴백.
     body_loc_g, _body_sel_g = await _find_first(page, _BODY_SELECTORS)
     try:
         body_text_len = (
@@ -984,13 +1022,9 @@ async def _publish_via_next(page, expected_img: int = 0) -> int:
         )
     except Exception:
         body_text_len = -1
-    try:
-        img_count = (
-            await body_loc_g.evaluate("el => el.querySelectorAll('img').length")
-            if body_loc_g is not None else -1
-        )
-    except Exception:
-        img_count = -1
+    # 이미지 카운트는 본문(body_loc_g) 내부가 아니라 상단 썸네일 줄 기준으로 측정한다
+    # (본문 querySelectorAll('img')는 당근 SNS형 에디터에서 항상 0 — 오탐 원인이었음).
+    img_count = await _measure_danggn_thumbnail_img_count(page)
     verdict = evaluate_integrity(
         "당근",
         body_text_len=body_text_len,
