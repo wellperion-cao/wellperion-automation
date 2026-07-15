@@ -1965,5 +1965,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01M1ddyTuBeyR4S4D8SKT2mS (CLI ad-hoc · 커밋 4f0801bd)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4f0801bdf5051569f8090158be437f910fb24870"
+  },
+  {
+    "task_id": "CPO-2026-07-15-ADHOC-862fb8c2",
+    "clevel": "cpo",
+    "title": "[시포] 멤버십 종료회원 LOSS 정보보존 이동+종료일 내림차순 정렬 (GM 지시)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1151,
+    "artifact": "- LOSS 회원관리 모달(openChurnManage)에 \"종료회원 목록 보기\" 바로가기 버튼 추가\n  -> 클릭 시 scope=ended(종료회원)로 전환+스크롤(기존 activeScopeEnded 토글 재사용,\n  신규 fetch 없음). 정보(이름·연락처·종목별 담당 등)는 유효회원과 동일 필드 그대로 표시.\n- 종료회원 기본 정렬 = 종료일 내림차순(최근 종료 상단·오래된 건 하단) 신설(_applyEndedSort).\n  LOSS일자(실제 이탈확정일) 우선, 없으면 종료일자(계약만료일) 폴백. 표시(클라이언트) 전용\n   (CLI ad-hoc · 커밋 862fb8c2)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "862fb8c284488ff190c7185340b0f09fb29f15e0"
   }
 ]
