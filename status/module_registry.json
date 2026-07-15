@@ -292,6 +292,21 @@
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
+    },
+    {
+      "id": "ceo-gm-aide",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "GM 보좌 자율화 두뇌 — GM 성향·놓친 것 학습·선제 포착(재개가능 배 자율태그·정체 surface·프로필 일일갱신)",
+      "data_source": {"kind": "json", "ref": "status/gm_aide_scan_log.jsonl + status/gm_profile.md"},
+      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "autonomy": "auto",
+      "ai_free_fallback": "06:30 예약 gm_aide_scan.bat 무인 가동 — 프로필 갱신+포착+3게이트(GM_AIDE_AUTO_EXEC·AIDE_RESUMABLE_APPLY·AIDE_VERIFY_APPLY)",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
     }
   ]
 }
