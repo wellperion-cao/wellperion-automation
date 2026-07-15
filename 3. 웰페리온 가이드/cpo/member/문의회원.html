@@ -1705,7 +1705,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <th class="left" style="width:88px">문의일</th>
             <th class="left" style="width:100px">성함</th>
             <th style="width:122px">연락처</th>
-            <th style="width:230px">강습종목</th>
+            <th id="lessonWaitSportTh_adult" style="width:230px;cursor:pointer;user-select:none" title="클릭하여 종목별 정렬" onclick="_lessonWaitSortToggle('adult')">강습종목</th>
             <th style="width:92px">진행상태</th>
             <th style="width:112px">담당</th>
             <th class="left">CONTACT (연락 이력)</th>
@@ -1852,7 +1852,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <th class="left" style="width:88px">문의일</th>
             <th class="left" style="width:100px">성함</th>
             <th style="width:122px">연락처</th>
-            <th style="width:230px">강습종목</th>
+            <th id="lessonWaitSportTh_youth" style="width:230px;cursor:pointer;user-select:none" title="클릭하여 종목별 정렬" onclick="_lessonWaitSortToggle('youth')">강습종목</th>
             <th style="width:92px">진행상태</th>
             <th style="width:112px">담당</th>
             <th class="left">CONTACT (연락 이력)</th>
@@ -3877,7 +3877,8 @@ function _lessonRowHtml(t, r, sportKey, sportLabel) {
   '</tr>';
 }
 // 상태 버킷 목록(LOSS·대기 회원 관리 공용) — 로드된 문의 rows 중 진행상태=statusVal만 편집테이블로. 별도 fetch 없음. 배973 시포·GM 2026-07-14.
-function _lessonBucketRender(t, statusVal, tbodyId, statLineId, emptyTitle, emptyDesc) {
+// sortState({active,dir}) 있으면 종목(sportLabel) 기준 정렬 — 대기자 목록 전용(GM 지시, 2026-07-15 시포). LOSS는 미전달=기존 순서 그대로(회귀 없음).
+function _lessonBucketRender(t, statusVal, tbodyId, statLineId, emptyTitle, emptyDesc, sortState) {
   var tbody = document.getElementById(tbodyId); if (!tbody) return;
   var rows = _lessonVisibleRows(t).filter(function(r){ return String(r.status || '').trim() === statusVal; });
   var sl = document.getElementById(statLineId);
@@ -3885,16 +3886,34 @@ function _lessonBucketRender(t, statusVal, tbodyId, statLineId, emptyTitle, empt
     tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-title">' + esc(emptyTitle) + '</div><div class="empty-state-desc">' + esc(emptyDesc) + '</div></div></td></tr>';
     if (sl) sl.textContent = '0명'; return;
   }
-  var html = '';
+  var lines = [];
   rows.forEach(function(r){
     var sports = _lessonSportSplit(r.sport); if (!sports.length) sports = [''];
-    sports.forEach(function(sportKey){ html += _lessonRowHtml(t, r, sportKey, sportKey || '—'); });
+    sports.forEach(function(sportKey){ lines.push({ row: r, sportKey: sportKey, sportLabel: sportKey || '—' }); });
   });
+  if (sortState && sortState.active) {
+    lines.sort(function(a, b){ return sortState.dir * a.sportLabel.localeCompare(b.sportLabel, 'ko'); });
+  }
+  var html = '';
+  lines.forEach(function(ln){ html += _lessonRowHtml(t, ln.row, ln.sportKey, ln.sportLabel); });
   tbody.innerHTML = html;
   if (sl) sl.textContent = rows.length + '명';
 }
 function lessonLossRender(t) { _lessonBucketRender(t, 'LOSS', 'lessonLossBody_' + t, 'lessonLossStatLine_' + t, 'LOSS 회원 없음', '등록 무산(LOSS) 처리된 문의가 없습니다.'); }
-function lessonWaitRender(t) { _lessonBucketRender(t, '대기', 'lessonWaitBody_' + t, 'lessonWaitStatLine_' + t, '대기자 없음', '대기 상태인 문의가 없습니다.'); }
+
+// 대기자 목록 종목별 소트 — 헤더 클릭 토글(오름↔내림 ▲▼). 표시(클라이언트) 정렬만·데이터 무변경. GM 지시, 2026-07-15 시포·GM.
+var _lessonWaitSort = { adult: { active: false, dir: 1 }, youth: { active: false, dir: 1 } };
+function lessonWaitRender(t) {
+  _lessonBucketRender(t, '대기', 'lessonWaitBody_' + t, 'lessonWaitStatLine_' + t, '대기자 없음', '대기 상태인 문의가 없습니다.', _lessonWaitSort[t]);
+  var th = document.getElementById('lessonWaitSportTh_' + t);
+  if (th) th.textContent = '강습종목' + (_lessonWaitSort[t].active ? (_lessonWaitSort[t].dir < 0 ? ' ▼' : ' ▲') : '');
+}
+function _lessonWaitSortToggle(t) {
+  var s = _lessonWaitSort[t]; if (!s) return;
+  s.dir = s.active ? -s.dir : 1;
+  s.active = true;
+  lessonWaitRender(t);
+}
 // LOSS·대기 카드 카운트 갱신(로드·상태변경 시).
 function _lessonUpdateBucketCounts(t) {
   var st = _lessonState[t]; var rows = (st && st.rows) ? st.rows : [];
