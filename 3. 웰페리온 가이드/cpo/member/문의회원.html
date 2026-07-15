@@ -1300,6 +1300,21 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </div>
   </div><!-- /cpoStatusBoard -->
 
+  <!-- ══ 이탈방지 액션 모듈 — 배754 후속(등록회원 이탈방지, '오늘 할 일'과 동일 철학). ①갱신임박(잔여일 0~30,
+       cpo_churn_stats·cpo_report.py와 동일 임계값이라 월간 롤업과 숫자 일치)·②저이용 후보(추정, 등록일 대비 이용일수 비율).
+       소스=_activeRows(scope=valid, 사전로드) — 신규 GAS 호출 0. 클릭 → 기존 재등록 상담 모달(openReconForMember) 재사용.
+       유효회원 스코프에서만 의미 있어 종료·법인 탭에서는 숨김. 2026-07-09 시포·GM.
+       2026-07-15 GM 지시: 상단 이탈위험 히어로 카드(#sumRiskCard) 라인 근방으로 승격 이동(기존 pane-active 깊은 위치→여기,
+       id·렌더 로직 100% 동일 — 위치만 이동). cpoStatusBoard와 마찬가지로 멤버십·강습 family 공유 위치이므로
+       renderChurnActionPanel()에서 강습(family=lesson) 스코프는 명시적으로 숨김(강습 회귀 방지). -->
+  <div class="card" id="churnActionPanel" style="display:none;padding:14px 18px;margin:0 0 14px;border-left:3px solid var(--yellow)">
+    <div class="card-title" style="margin-bottom:10px;padding-bottom:10px">
+      <span class="icon">🛟</span><span>이탈방지 액션</span>
+      <span id="capScopeNote" style="margin-left:auto;font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap"></span>
+    </div>
+    <div id="capBody"><div class="tap-empty">불러오는 중…</div></div>
+  </div>
+
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
   <div id="type-membership" class="type-pane active">
 
@@ -1616,17 +1631,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <!-- 현황 요약 카드 (작업 3) -->
       <div id="activeSummary" class="card" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--teal)"></div>
 
-      <!-- ══ 이탈방지 액션 모듈 — 배754 후속(등록회원 이탈방지, '오늘 할 일'과 동일 철학). ①갱신임박(잔여일 0~30,
-           cpo_churn_stats·cpo_report.py와 동일 임계값이라 월간 롤업과 숫자 일치)·②저이용 후보(추정, 등록일 대비 이용일수 비율).
-           소스=_activeRows(scope=valid, 사전로드) — 신규 GAS 호출 0. 클릭 → 기존 재등록 상담 모달(openReconForMember) 재사용.
-           유효회원 스코프에서만 의미 있어 종료·법인 탭에서는 숨김. 2026-07-09 시포·GM -->
-      <div class="card" id="churnActionPanel" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--yellow)">
-        <div class="card-title" style="margin-bottom:10px;padding-bottom:10px">
-          <span class="icon">🛟</span><span>이탈방지 액션</span>
-          <span id="capScopeNote" style="margin-left:auto;font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap"></span>
-        </div>
-        <div id="capBody"><div class="tap-empty">불러오는 중…</div></div>
-      </div>
+      <!-- 이탈방지 액션 모듈 = 2026-07-15 GM 지시로 상단 이탈위험 히어로 라인 근방(#churnActionPanel, cpoStatusBoard 바로 아래)으로 승격 이동. 여기 없음(중복 아님). -->
 
       <div class="active-toggle" style="display:flex;gap:6px;margin-bottom:12px">
         <button type="button" id="activeScopeValid" class="seg-btn" onclick="setActiveScope('valid', this)"
@@ -3783,6 +3788,7 @@ function switchFamily(fam) {
   document.title = '웰페리온 ' + _famName.replace('회원관리', '회원 관리') + ' — AI CPO';   // 브라우저 탭 제목도 그룹명 동기화(배299, 2026-07-03 시포)
   renderTodayActionPanel();   // 오늘 할 일 패널도 family 전환에 맞춰 스코프 갱신(배754) — 멤버십/강습 각자 내부에서 준비상태 판단(강습이 dbRows 대기에 묶이지 않게, 배754 강습편입)
   if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — family 전환 즉시 재계산(강습 패리티)
+  if (typeof renderChurnActionPanel === 'function') renderChurnActionPanel();   // 이탈방지 액션(2026-07-15 상단 승격) — cpoStatusBoard 공유 위치라 family 전환마다 재판정(강습=숨김)
   // 강습 통합 4카드(CPO-2026-07-14-LESSON-4CARD) — 성인+유소년 한 줄 표시는 강습 family에서만 노출.
   // 둘 다 값을 채우기 위해 기존 lessonInit/lessonRegLoad를 성인·유소년 양쪽 다 선로드(신규 로직 아님, 기존 안전 함수 재사용 — 표시만).
   var _comboEl = document.getElementById('lessonComboBoard');
@@ -5111,6 +5117,7 @@ function renderChurnActionPanel() {
   var body = document.getElementById('capBody');
   var scopeEl = document.getElementById('capScopeNote');
   if (!panel || !body) return;
+  if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') { panel.style.display = 'none'; return; }   // 강습 family는 이탈방지 데이터 자체가 없음(정직 공백) — cpoStatusBoard와 공유 위치라 명시적으로 숨김. 2026-07-15
   if (_activeScope !== 'valid' || !_activeLoaded) { panel.style.display = 'none'; return; }   // 종료·법인 스코프는 개념상 의미 없음(정직 — 억지 표시 금지)
   panel.style.display = '';
   var rows = _activeRows || [];
