@@ -27,7 +27,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
-#tab-guide,#tab-policy,#tab-mplan,#tab-schedule{max-width:none;margin-left:0;margin-right:0}
+#tab-guide,#tab-policy,#tab-mplan,#tab-schedule,#tab-vendorboard{max-width:none;margin-left:0;margin-right:0}
 /* ── 월 선택 바(월간운영계획.html 룩 통일 · 2026-07-07) ── */
 .month-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
 .month-bar label{font-size:12px;color:var(--dim)}
@@ -458,6 +458,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('valet')">발렛 시스템</button>
   <button class="tab" onclick="switchTab('mplan')">📅 월간 주차관리부 현황·계획·보고</button>
   <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
+  <button class="tab" onclick="switchTab('vendorboard')">🏢 거래업체</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <!-- 인쇄 버튼 통합 드롭다운 (지원부·운영부·시설부 체계 동일 패턴 · 버튼 난립 해소) -->
     <div class="tab-dropdown" id="printDropdown">
@@ -718,6 +719,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <iframe id="scheduleFrame" data-src="전사_일정.html?dept=주차관리부&embed=1" title="주차관리부 일정" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
 </div>
 
+<!-- ══ 「🏢 거래업체」 탭 — 전사_거래업체(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. (배1074 시우 2026-07-15) ══ -->
+<div id="tab-vendorboard" class="content hidden">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
+    <span>🏢 <b style="color:var(--text)">주차관리부 거래업체</b> — 우리 부서 거래처. <b>＋업체 등록</b>·카드 <b>편집</b>으로 관리하고, 부서 체크박스로 <b>여러 부서 공유</b> 지정. 저장하면 <b>전사 거래업체</b>에 바로 모입니다.</span>
+    <a href="전사_거래업체.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 거래업체 전체 보기 ↗</a>
+  </div>
+  <iframe id="vendorboardFrame" data-src="전사_거래업체.html?dept=주차관리부&embed=1" title="주차관리부 거래업체" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
+</div>
+
 <!-- 점검(지상)·점검(지하)·현황 대시보드 탭 전면 제거 (GM 2026-06-12). 점검은 지원부 점검 시스템과 충돌·동기화 문제로 제거.
      2026-06-23: 규정·가이드·매뉴얼 3보드 전체 카드 편집형 전환 (운영부 카드 시스템 이식 · saveBoard GAS 공유 저장 · requireEditAuth 1234). -->
 
@@ -771,11 +781,12 @@ function switchTab(tab){
     var oc=t.getAttribute('onclick')||'';
     t.classList.toggle('active', oc.indexOf("'"+tab+"'")>=0);
   });
-  ['policy','guide','manual','valet','mplan','schedule'].forEach(function(id){
+  ['policy','guide','manual','valet','mplan','schedule','vendorboard'].forEach(function(id){
     var el=document.getElementById('tab-'+id);
     if(el) el.classList.toggle('hidden', id!==tab);
   });
   if(tab==='schedule'){ var _f=document.getElementById('scheduleFrame'); if(_f && !_f.src && _f.getAttribute('data-src')) _f.src=_f.getAttribute('data-src'); }
+  if(tab==='vendorboard'){ var _vf=document.getElementById('vendorboardFrame'); if(_vf && !_vf.src && _vf.getAttribute('data-src')) _vf.src=_vf.getAttribute('data-src'); }
   if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); if(typeof loadParkingRevenue==='function') loadParkingRevenue(); }
 }
 /* ── 인쇄 통합 드롭다운 헬퍼 (지원부·운영부·시설부 체계와 동일 패턴) ── */
