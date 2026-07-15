@@ -1,7 +1,7 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-07-15T01:26:38Z",
-  "generated_at_kst": "2026-07-15 10:26",
+  "generated_at": "2026-07-15T01:56:34Z",
+  "generated_at_kst": "2026-07-15 10:56",
   "summary": "⚠️ 점검 필요: 큐 미러 동기",
   "systems": [
     {
@@ -13,7 +13,7 @@
     {
       "name": "텔레그램 봇",
       "state": "정상",
-      "detail": "15분 전 활동",
+      "detail": "45분 전 활동",
       "note": "보고·승인 중계"
     },
     {
@@ -31,12 +31,12 @@
     {
       "name": "G1 큐 라이브",
       "state": "정상",
-      "detail": "CDN 캐시 지연 — 라이브 17건 ≠ 로컬 18건 (미푸시 0 · Pages 반영 대기 중, 정상)"
+      "detail": "HTTP 200 · active 18건 라이브=로컬 일치"
     },
     {
       "name": "큐 미러 동기",
       "state": "이상",
-      "detail": "미러 드리프트 — 로컬 active 18건/171920B ≠ 미러 17건/171505B"
+      "detail": "미러 드리프트 — 로컬 active 18건/177953B ≠ 미러 18건/177391B"
     },
     {
       "name": "시트 GAS(todo_list)",
@@ -55,10 +55,10 @@
     }
   ],
   "automation_health": {
-    "summary": "자동화 29/31 정상 (94%)",
+    "summary": "자동화 30/31 정상 (97%)",
     "total": 31,
-    "healthy": 29,
-    "rate": 94,
+    "healthy": 30,
+    "rate": 97,
     "items": [
       {
         "name": "Wellperion-AI-Education-Weekly",
@@ -209,7 +209,7 @@
       },
       {
         "name": "Wellperion-Morning-Update",
-        "state": "실패",
+        "state": "정상(건너뜀)",
         "last_run": "2026-07-15 오전 6:00:42",
         "last_result": -2147020576,
         "next_run": "2026-07-16 오전 5:40:00"
