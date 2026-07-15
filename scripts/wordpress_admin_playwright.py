@@ -756,6 +756,109 @@ async def run_add_menu(post_id_arg: str, menu_id: str = KOREAN_MENU_ID) -> int:
     return 0
 
 
+async def run_remove_menu(object_ids: "list[str]", menu_id: str = KOREAN_MENU_ID,
+                          disable_auto_add: bool = True) -> int:
+    """전역 상단 메뉴(기본 id=59 한글메인)에서 지정 페이지(object-id)에 연결된 메뉴 항목을 제거.
+    습득분실물/자체Survey 페이지가 테마 '자동 페이지 메뉴 추가'로 전역 nav에 편입된 것을 근본 정리.
+    가드: object-id 로 정확 매칭된 항목만 제거 · 제거 수 == 매칭 수 검증 · 스크린샷 · 저장 전후 카운트 대조.
+    disable_auto_add: '새 최상위 페이지 자동 추가' 체크박스가 켜져 있으면 끔(재발 방지 근본).
+    되돌리기: Appearance→Menus 에서 다시 Add 하면 복원(가역)."""
+    async_playwright = _import_playwright()
+    print(f"[INFO] === 전역 메뉴에서 페이지 항목 제거 (menu={menu_id}, object_ids={object_ids}) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(f"http://wellperion.com/wp/wp-admin/nav-menus.php?action=edit&menu={menu_id}&lang=ko",
+                    wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    menu_name = await page.evaluate("() => (document.querySelector('#menu-name')||{}).value || ''")
+    before = await page.evaluate("() => document.querySelectorAll('#menu-to-edit li.menu-item').length")
+    print(f"[INFO] 편집 중 메뉴: '{menu_name}' / 현재 항목 {before}개")
+    await page.screenshot(path=str(INSPECT_DIR / "wp_menu_remove_before.png"))
+    if "한국" not in menu_name and "Top" not in menu_name:
+        print(f"[WARN] 한글 메인 메뉴가 아닐 수 있음('{menu_name}') — 계속 진행하되 결과 확인 필요.")
+
+    # object-id 로 매칭되는 메뉴 항목의 '제거(item-delete)' 링크를 클릭 (매칭 수 반환)
+    matched = await page.evaluate(
+        """(ids) => {
+            const want = ids.map(String);
+            let hits = [];
+            document.querySelectorAll('#menu-to-edit li.menu-item').forEach(li => {
+                const oid = li.querySelector('input.menu-item-data-object-id');
+                if (oid && want.includes(String(oid.value))) {
+                    const title = (li.querySelector('.menu-item-title')||{}).textContent || '';
+                    const del = li.querySelector('a.item-delete');
+                    hits.push({oid: oid.value, title: title.trim(), hasDelete: !!del});
+                }
+            });
+            return hits;
+        }""",
+        object_ids,
+    )
+    print(f"[INFO] object-id 매칭 항목 {len(matched)}개: {matched}")
+    if len(matched) == 0:
+        print("[INFO] 매칭 항목 0 — 이미 제거됐거나 이 메뉴엔 없음. 저장 없이 종료(무손상).")
+        await ctx.close(); await p.stop(); return 0
+
+    # 실제 제거: 각 매칭 항목의 a.item-delete 클릭 (WP는 클릭 시 DOM에서 li 제거, 저장 시 확정)
+    removed = await page.evaluate(
+        """async (ids) => {
+            const want = ids.map(String);
+            let n = 0;
+            const lis = Array.from(document.querySelectorAll('#menu-to-edit li.menu-item'));
+            for (const li of lis) {
+                const oid = li.querySelector('input.menu-item-data-object-id');
+                if (oid && want.includes(String(oid.value))) {
+                    const del = li.querySelector('a.item-delete');
+                    if (del) { del.click(); n++; await new Promise(r=>setTimeout(r,400)); }
+                }
+            }
+            return n;
+        }""",
+        object_ids,
+    )
+    await page.wait_for_timeout(1200)
+    mid = await page.evaluate("() => document.querySelectorAll('#menu-to-edit li.menu-item').length")
+    print(f"[INFO] 제거 클릭 {removed}건 → DOM 항목 {before}→{mid}")
+    if mid != before - len(matched):
+        await page.screenshot(path=str(INSPECT_DIR / "wp_menu_remove_mismatch.png"))
+        print(f"[ABORT] 제거 후 카운트 불일치(기대 {before-len(matched)}, 실제 {mid}) — 저장 안 함(무손상).")
+        await ctx.close(); await p.stop(); return 40
+
+    # 재발 방지: '새 최상위 페이지 자동 추가' 체크 해제 (근본 원인)
+    auto_state = "n/a"
+    if disable_auto_add:
+        auto_state = await page.evaluate(
+            """() => { const c=document.querySelector('#auto-add-pages');
+                if(!c) return 'no-checkbox';
+                if(c.checked){ c.checked=false; c.dispatchEvent(new Event('change',{bubbles:true})); return 'unchecked'; }
+                return 'already-off'; }"""
+        )
+        print(f"[INFO] '새 페이지 자동 메뉴 추가' 체크박스: {auto_state}")
+
+    # 메뉴 저장
+    save_btn = await page.query_selector("#save_menu_footer, #save_menu_header")
+    if not save_btn:
+        print("[ABORT] 저장 버튼 미검출 — 저장 안 함.")
+        await ctx.close(); await p.stop(); return 41
+    await save_btn.click()
+    await page.wait_for_timeout(3500)
+    after = await page.evaluate("() => document.querySelectorAll('#menu-to-edit li.menu-item').length")
+    await page.screenshot(path=str(INSPECT_DIR / "wp_menu_remove_after.png"))
+    print(f"[INFO] 저장 후 항목 {after}개 (제거 전 {before}, 매칭 {len(matched)})")
+    ok = after == before - len(matched)
+    print(f"[INFO] === 메뉴 항목 제거 {'완료' if ok else '확인 필요'} (auto-add: {auto_state}) ===")
+    await ctx.close(); await p.stop()
+    return 0 if ok else 42
+
+
 async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
     """외과적 치환: 지정 페이지 post_content에서 find→repl 단일 치환(count==1 가드).
     Classic 편집기 Text탭(#content)만 사용. 원본을 타임스탬프 백업 후, 정확히 1건일 때만 저장.
@@ -1496,7 +1599,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href/wpml-create-en/draft-inquiry-en/publish-inquiry-en/draft-reception/publish-reception/draft-page/publish-page/media-check/media-upload)")
     ap.add_argument("--mode", choices=[
         "setup", "check", "inspect",
-        "draft-inquiry", "publish-inquiry", "add-menu", "swap-href",
+        "draft-inquiry", "publish-inquiry", "add-menu", "remove-menu", "swap-href",
         "wpml-create-en", "draft-inquiry-en", "publish-inquiry-en",
         "draft-reception", "publish-reception", "swap-reception-text",
         "draft-page", "publish-page",
@@ -1510,7 +1613,11 @@ def main() -> int:
     ap.add_argument("--find", dest="find", default=None, help="swap-href 찾을 문자열")
     ap.add_argument("--repl", dest="repl", default=None, help="swap-href 바꿀 문자열")
     ap.add_argument("--slug", dest="slug", default=None, help="publish-* 슬러그 (미지정 시: inquiry 모드=inquiry, reception 모드=reception)")
-    ap.add_argument("--menu-id", dest="menu_id", default=KOREAN_MENU_ID, help="add-menu 대상 메뉴 ID(기본 59=한글메인)")
+    ap.add_argument("--menu-id", dest="menu_id", default=KOREAN_MENU_ID, help="add-menu/remove-menu 대상 메뉴 ID(기본 59=한글메인)")
+    ap.add_argument("--object-ids", dest="object_ids", default=None,
+                    help="remove-menu: 제거할 페이지 object-id 콤마목록(예: 8460,8462,8464)")
+    ap.add_argument("--keep-auto-add", dest="keep_auto_add", action="store_true",
+                    help="remove-menu: '새 페이지 자동 추가' 체크박스를 건드리지 않음(기본은 끔)")
     ap.add_argument("--post-id", dest="post_id", default=None,
                     help="draft/publish 갱신 대상 페이지 ID")
     ap.add_argument("--file", dest="file_path", default=None, help="media-upload 대상 파일 경로")
@@ -1529,6 +1636,11 @@ def main() -> int:
         if not args.post_id:
             print("[ERROR] --post-id 필요"); return 1
         return asyncio.run(run_add_menu(args.post_id, args.menu_id))
+    if args.mode == "remove-menu":
+        if not args.object_ids:
+            print("[ERROR] remove-menu는 --object-ids 8460,8462,8464 필요"); return 1
+        ids = [s.strip() for s in args.object_ids.split(",") if s.strip()]
+        return asyncio.run(run_remove_menu(ids, args.menu_id, disable_auto_add=not args.keep_auto_add))
     if args.mode == "swap-href":
         if not args.post_id or not args.find or not args.repl:
             print("[ERROR] swap-href는 --post-id --find --repl 모두 필요"); return 1
