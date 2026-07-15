@@ -300,6 +300,8 @@ def fetch_queue_items() -> list[dict]:
             "_raw_summary": str(q.get("note") or q.get("summary") or "").strip(),
             # 보드 소속(GM 2026-07-15): '자율현황'=자율화되어 스스로 도는 미션 → 항로 제외·자율현황行
             "board":    str(q.get("board") or "").strip(),
+            # 담당 식별번호(약속 L16: 담당=닉네임+ship_no·배마다 고정). _queue 배만 보유.
+            "ship_no":  q.get("ship_no", ""),
             "source":   "queue",
         })
     return items
@@ -430,6 +432,13 @@ def _nick(owner: str) -> str:
     return owner[:4] if owner else "?"
 
 
+def _owner_label(it: dict) -> str:
+    """담당 칸 = 닉네임+ship_no (약속 L16·배마다 고정 식별번호). ship_no 없으면(GAS 시트항목 등) 닉네임만."""
+    nick = _nick(str(it.get("owner", "")))
+    sn = str(it.get("ship_no") or "").strip()
+    return f"{nick} {sn}" if sn else nick
+
+
 def _md_table(rows: list[tuple[str, str, str, str, str]]) -> str:
     """마크다운 5칸 표: 배 | 담당 | 진행명 | 간단설명 | 본질에 대한 핵심조언"""
     if not rows:
@@ -445,7 +454,7 @@ def _item_to_row(it: dict, ship_col_extra: str = "") -> tuple[str, str, str, str
     ship_col_extra: 꼬리표 (예: '보류', '🔗', '🌀') — 배 칸 아이콘 뒤에 붙음."""
     ship  = it["_ship"]
     icon  = ship["icon"]
-    nick  = _nick(str(it.get("owner", "")))
+    nick  = _owner_label(it)
     title = str(it.get("title", ""))
     badges = ("🔴" if ship.get("urgent") else "") + ("🌟" if ship.get("northstar") else "")
     due   = it.get("end_date", "")
@@ -573,7 +582,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
             advice_col = f"{advice} — 👉 다음 뭐 할지 정하세요" if advice else "👉 다음 뭐 할지 정하세요"
             ship  = it["_ship"]
             icon  = ship["icon"]
-            nick  = _nick(str(it.get("owner", "")))
+            nick  = _owner_label(it)
             title = str(it.get("title", ""))
             badges = ("🔴" if ship.get("urgent") else "") + ("🌟" if ship.get("northstar") else "")
             title_col = f"{title}{badges}".strip()

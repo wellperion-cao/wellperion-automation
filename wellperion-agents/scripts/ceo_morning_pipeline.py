@@ -627,6 +627,8 @@ def stage1_collect_classify() -> dict:
                     "owner": qit.get("owner", ""),
                     "status": qit.get("status", ""),
                     "start_date": "",
+                    # 담당 식별번호(약속 L16: 담당=닉네임+ship_no) — _queue 배만 보유
+                    "ship_no": qit.get("ship_no", ""),
                     "source": "queue",
                 })
         except Exception as exc:
@@ -1180,6 +1182,10 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
             ship = s["_ship"]
             cl = s.get("assigned_clevel", "")
             who = CLEVEL_NICK.get(cl, cl) if cl else ""
+            # 약속 L16: 담당=닉네임+ship_no(_queue 배만 보유·배마다 고정). ship_no 없으면 닉네임만.
+            _sn = str(s.get("ship_no") or "").strip()
+            if who and _sn:
+                who = f"{who} {_sn}"
             who_s = f" [{who}]" if who else ""
             flags = ("🔴" if ship["urgent"] else "") + ("🌟" if ship["northstar"] else "")
             title = plainify(summarize_title(s.get("title", "")))
