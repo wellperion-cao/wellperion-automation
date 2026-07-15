@@ -8540,6 +8540,7 @@ function crTab(btn, panelId) {
     /* ── SSOT 자동 합류 (in-memory · localStorage 저장 금지 · 2026-05-29 seed#10) ── */
     var gm1SsotItems = [];   // SSOT(구글시트)에서 읽어온 GM 본인·결재 차례 항목 (항상 최신)
     var gm1InProgressCount = 0;   // 🚢 진행·상시 미션(_queue IN_PROGRESS) 개수 — 항로 제외·자율현황 위임 안내용 (2026-07-15 배237)
+    var gm1ParkedCount = 0;       // ⚓ 정박·대기(_queue surface==autonomy) 개수 — 항로 대기 섹터 제외·자율현황 위임 안내용 (2026-07-15 배237)
     var gm1CatFilter = { '업무':true, '결재':true, '기획':true, '개인':true };  // 분류 필터 체크 상태
     // 업무SSOT 이식 — 정렬·검색 상태 (2026-06-01) · 담당자 필터/정렬 UI 死코드 제거(2026-06-02 GM 단독 페이지)
     var gm1SortBy      = '최신순';  // '최신순' | '카테고리' | '시작일순'
@@ -8881,7 +8882,11 @@ function crTab(btn, panelId) {
         //   PENDING(⚓ 대기)·DONE(🏁 입항)·시트(todo_list) 항목은 무손상. 순수 가역 — 이 분기만 되돌리면 원복.
         //   (구 gm1QDoneWaiting '완결+대기' 재분류는 IN_PROGRESS 전량 제외로 흡수·제거)
         gm1InProgressCount = 0;
+        gm1ParkedCount = 0;
         queue.forEach(function(q){
+          // ── ⚓ 정박·대기(surface==='autonomy') 항로 제외 → 자율현황.html#sec-parked-missions 위임 (2026-07-15 GM·배237) ──
+          //   명시 플래그로만 판정(status 무관). surface 우선 — IN_PROGRESS·DONE이어도 정박 패널로 일원화(양 페이지 배치 일치·중복 방지).
+          if (q.surface === 'autonomy') { gm1ParkedCount++; return; }
           if (q.status === 'IN_PROGRESS') { gm1InProgressCount++; return; }  // 진행·상시 미션 → 자율현황 위임
           var _qActive = (q.status === 'PENDING');
           var _qHist = (q.status === 'DONE' || q.status === '완료' || q.status === '폐기');
@@ -9448,9 +9453,15 @@ function crTab(btn, panelId) {
           '</div>' + descHtml + '</div>';
       }
       function _gm1WaitSectionHtml(list){
-        if (!list.length) return '';
+        if (!list.length && !gm1ParkedCount) return '';
         var s = '<div style="margin-top:16px;padding-top:10px;border-top:1px solid var(--border);">';
         s += '<div style="font-size:12.5px;font-weight:700;color:#8ca6d6;margin-bottom:6px;"><span style="margin-right:4px;">⚓</span>예정 항구 — 대기 ' + list.length + '건</div>';
+        // ── ⚓ 정박·대기 포인터 — surface==='autonomy' 배는 자율현황 위임(항로 대기 섹터 제외·카운트만) (2026-07-15 GM·배237) ──
+        if (gm1ParkedCount) {
+          s += '<a href="자율현황.html#sec-parked-missions" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:9px 12px;border:1px solid rgba(140,166,214,0.35);border-radius:8px;background:rgba(140,166,214,0.07);text-decoration:none;flex-wrap:wrap;">' +
+            '<span style="flex:1;font-size:12.5px;font-weight:700;color:#8ca6d6;">⚓ 정박·대기 ' + gm1ParkedCount + '건 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 조건·시각 트리거 대기 배는 항로 대신 자율현황에서 관리</span></span>' +
+            '<span style="font-size:12px;color:#8ca6d6;font-weight:600;">자율현황에서 관리 →</span></a>';
+        }
         list.forEach(function(t){ s += _gm1WaitLineHtml(t); });
         s += '</div>';
         return s;

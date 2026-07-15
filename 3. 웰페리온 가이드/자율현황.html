@@ -323,6 +323,13 @@
     <div class="feed-status" style="grid-column:1/-1;">진행·상시 미션을 불러오는 중…</div>
   </div>
 
+  <!-- ════ ⚓ 정박·대기 (status/_queue.json surface==autonomy · 조건/시각 트리거 대기 · 항로에서 이관 2026-07-15 · 배237) ════ -->
+  <h2 class="sec" id="sec-parked-missions" style="margin-top:2px;">⚓ 정박·대기 <span style="font-size:11px;font-weight:400;color:var(--dim);">(조건·시각 되면 자율현황에서 깨어남)</span></h2>
+  <div class="sec-note"><code>status/_queue.json</code> <code>surface="autonomy"</code> 자동 판정 — 시각·조건 트리거 대기 배(항로 대기 섹터에서 이관).</div>
+  <div class="routines" id="parked-missions">
+    <div class="feed-status" style="grid-column:1/-1;">정박·대기 배를 불러오는 중…</div>
+  </div>
+
   <!-- ════ ⚙️ 자동화→자율화 4층 구조 (헌법한장.html 병합 · 2026-07-03 · 개요를 라이브 데이터보다 앞으로 재배치 · 배339) ════ -->
   <h2 class="sec" style="margin-top:2px;">🏛️ 자율화를 떠받치는 4대 축</h2>
   <div class="sec-note">나란히 작동하는 4개 축 — 코드·훅 자동화 위에서 AI가 판단·완결.</div>
@@ -842,7 +849,8 @@
   function renderActiveMissions(queue){
     var el = document.getElementById('active-missions');
     if(!el) return;
-    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.status === 'IN_PROGRESS'; }) : [];
+    // surface==='autonomy'(정박·대기 이관 배)는 아래 정박 패널 전용 → 진행중이어도 여기 중복 표시 안 함 (2026-07-15 배237)
+    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.status === 'IN_PROGRESS' && s.surface !== 'autonomy'; }) : [];
     if(!list.length){
       el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">진행·상시 미션 없음 — 지금 굴러가는 진행중(IN_PROGRESS) 배가 없습니다.</div>';
       return;
@@ -864,6 +872,37 @@
           '</div>' +
         '</div>' +
         (sum ? '<div class="rrow" style="border-top:none;"><span class="rv">' + esc(sum) + '</span></div>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  // ═══════════ ⚓ 정박·대기 (status/_queue.json surface==autonomy · 조건/시각 트리거 대기 · 항로 이관 2026-07-15 · 배237) ═══════════
+  //   명시 플래그(surface==='autonomy')로만 판정 — 퍼지 규칙 없음. status 무관(PENDING·STANDBY·IN_PROGRESS·DONE 모두 흡수).
+  function renderParkedMissions(queue){
+    var el = document.getElementById('parked-missions');
+    if(!el) return;
+    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.surface === 'autonomy'; }) : [];
+    if(!list.length){
+      el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">정박·대기 배 없음 — 조건/시각 트리거 대기 배가 없습니다.</div>';
+      return;
+    }
+    list.sort(function(a, b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); });
+    el.innerHTML = list.map(function(s){
+      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
+      var owner = esc(nick + (s.ship_no != null ? ' ' + s.ship_no : ''));
+      var cond = missionSummary(s.next || s.depends_on);   // 재개 조건 = next 우선, 없으면 depends_on 요약
+      return '<div class="rcard" style="--rc:#8ca6d6;">' +
+        '<div class="rcard-top">' +
+          '<span class="rcard-ico">' + missionBoat(s.priority) + '</span>' +
+          '<div class="rcard-tt">' +
+            '<div class="rcard-nm">' + esc(missionCleanTitle(s.title)) + '</div>' +
+            '<div class="rcard-meta">' +
+              '<span class="rcard-cy">담당 <b style="color:var(--text-soft);">' + owner + '</b></span>' +
+              '<span class="pill idle">⚓ 정박</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        (cond ? '<div class="rrow"><span class="rk">재개 조건</span><span class="rv">' + esc(cond) + '</span></div>' : '') +
       '</div>';
     }).join('');
   }
@@ -1690,9 +1729,14 @@
     var erpStatus = parseJson(a[8]);
     var feedItems = [];
     try{ feedItems = buildFeed(d); }catch(e){ feedItems = []; }
-    try{ renderActiveMissions(parseJson(a[14])); }catch(e){
+    var _queueArr = parseJson(a[14]);
+    try{ renderActiveMissions(_queueArr); }catch(e){
       var amEl = document.getElementById('active-missions');
       if(amEl) amEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">진행·상시 미션 표시 오류.</div>';
+    }
+    try{ renderParkedMissions(_queueArr); }catch(e){
+      var pmEl = document.getElementById('parked-missions');
+      if(pmEl) pmEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">정박·대기 표시 오류.</div>';
     }
     try{ renderHero(d); }catch(e){ document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">히어로 요약 표시 오류.</div>'; }
     try{ renderRoutines(d); }catch(e){ document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">상시 체계 표시 오류 — 로그 파싱 실패.</div>'; }
