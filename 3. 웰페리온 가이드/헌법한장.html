@@ -203,7 +203,7 @@
     .loop-arrow{display:none;}
   }
 
-  /* ── 🧩 8주체 모듈 자율수준 (module_registry.json 직독 · 2026-07-09) ── */
+  /* ── 🧩 7주체 모듈 자율수준 (module_registry.json 직독 · 2026-07-09) ── */
   .mod-strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin:4px 0 14px;}
   .mod-role{background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:9px 11px;}
   .mod-role-h{font-size:13px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:5px;}
@@ -302,7 +302,7 @@
     .loop-step h4, .loop-step p{color:#111 !important;}
     .loop-step .lsnum{background:#666 !important; color:#fff !important;}
     .loop-feedback-note{color:#111 !important;}
-    /* 신규(2026-07-09): 8주체 모듈 자율수준 스트립 인쇄 라이트 강제 */
+    /* 신규(2026-07-09): 7주체 모듈 자율수준 스트립 인쇄 라이트 강제 */
     .mod-role{background:#fff !important; border-color:#999 !important;}
     .mod-role-h{color:#111 !important;}
     .mod-item{border-color:#ccc !important;}
@@ -391,9 +391,9 @@
     </div>
   </div>
 
-  <!-- ════ A. 8주체 × 3칸 매트릭스 (편집형 · 2026-06-29 · 2026-07-07 북극성 지도 카드 합병) ════ -->
+  <!-- ════ A. 7주체 × 3칸 매트릭스 (편집형 · 2026-06-29 · 2026-07-07 북극성 지도 카드 합병) ════ -->
   <div id="matrix-section">
-  <h2 class="sec">🧭 8주체 × 3칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
+  <h2 class="sec">🧭 7주체 × 3칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
   <div class="sec-note" title="재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독.">북극성 도달율·핵심 3칸 요약 (상세 4차원은 S2 본인탭)</div>
   <div class="mx-controls" id="mx-controls"><!-- JS: 역할·칸 필터 + 폴침 --></div>
   <div class="matrix-scroll">
@@ -429,8 +429,8 @@
   </div>
   <div class="loop-feedback-note">↩︎ ⑤ 환류가 ①로 되먹여 닫힌 고리를 이룬다 — 매 사이클 "이 검증을 코드·게이트로 굳힐 수 있나?" 자문(부트스트랩 이관).</div>
 
-  <!-- ════ 🧩 8주체 모듈 자율수준 (module_registry.json 직독 · 등록부 SSOT · 2026-07-09) ════ -->
-  <h2 class="sec">🧩 8주체 모듈 자율수준</h2>
+  <!-- ════ 🧩 7주체 모듈 자율수준 (module_registry.json 직독 · 등록부 SSOT · 2026-07-09) ════ -->
+  <h2 class="sec">🧩 7주체 모듈 자율수준</h2>
   <div class="sec-note">정본: status/module_registry.json 직독(등록부 SSOT · 매트릭스와 중복 카드 없음)</div>
   <div class="mod-strip" id="mod-strip">
     <div class="matrix-status">모듈 등록부를 불러오는 중…</div>
@@ -518,7 +518,7 @@
   var _pendingByRole = null;  // status/northstar_pending.json → role.id별 후보 1개
   var _incidents = null;      // ssot/incidents.json → role.id별 {guarded, recent}
   var _reachData = null;      // status/northstar_reach.json → role.id별 {reach_pct|null, mode, basis, milestones_done?, milestones_total?}
-  var _moduleRegistry = null; // status/module_registry.json → {modules:[...]} (등록부 SSOT · 8주체 모듈 자율수준 스트립)
+  var _moduleRegistry = null; // status/module_registry.json → {modules:[...]} (등록부 SSOT · 7주체 모듈 자율수준 스트립)
   var _editMode = false;
   // 뷰 상태(GM PC 세션 한정 · 정본 아님): 역할 필터 · 칸 숨김 · 폴침
   var _roleFilter = null;     // null=전체, 아니면 role.id
@@ -782,8 +782,8 @@
       '<div class="incd-meta">🛡️ 봉인 <b>' + c.guarded + '</b>건</div>' + rc + '</div>';
   }
 
-  // 🧩 8주체 모듈 자율수준 스트립 — status/module_registry.json 직독(등록부 SSOT). 매트릭스와 중복 카드 없음(별도 섹션).
-  //   기존 _matrixData.roles(8주체 순서) 기준으로 owner_role 매칭 그룹핑. 등록부가 비었거나 modules=[]면 정직 안내.
+  // 🧩 7주체 모듈 자율수준 스트립 — status/module_registry.json 직독(등록부 SSOT). 매트릭스와 중복 카드 없음(별도 섹션).
+  //   기존 _matrixData.roles(7주체 순서) 기준으로 owner_role 매칭 그룹핑. 등록부가 비었거나 modules=[]면 정직 안내.
   var AUTONOMY_META = {
     auto:    { label: '🟢 auto',    cls: 'auto' },
     semi:    { label: '🔵 semi',    cls: 'semi' },
