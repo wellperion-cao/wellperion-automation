@@ -28,6 +28,7 @@
   --orange:#e6944e;--orange-bg:rgba(230,148,78,0.10);--orange-border:rgba(230,148,78,0.28);
   --teal:#4ec4c4;--teal-bright:#6dd4d4;--teal-bg:rgba(78,196,196,0.10);--teal-border:rgba(78,196,196,0.28);
   --emerald:#63BBA0;--emerald-bg:rgba(99,187,160,.12);--emerald-border:rgba(99,187,160,.30);
+  --indigo:#6f7fe0;--indigo-bg:rgba(111,127,224,0.14);--indigo-border:rgba(111,127,224,0.32);
   --shadow-card:0 2px 12px rgba(0,0,0,0.35);
   --shadow-header:0 1px 0 var(--border),0 4px 16px rgba(0,0,0,0.4);
   --radius-card:14px;
@@ -97,7 +98,7 @@ body{
 .action-btn{
   display:inline-flex;align-items:center;gap:5px;
   font-size:11px;font-weight:600;
-  padding:5px 12px;border-radius:var(--radius-btn);
+  height:30px;padding:0 12px;border-radius:var(--radius-btn);
   background:var(--accent-bg);color:var(--accent);
   border:1px solid var(--accent-border);
   text-decoration:none;cursor:pointer;
@@ -521,7 +522,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   white-space:nowrap;letter-spacing:0.02em;
 }
 .status-chip.new{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
-.status-chip.contact{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border)}
+.status-chip.contact{background:var(--indigo-bg);color:var(--indigo);border:1px solid var(--indigo-border)}
 .status-chip.reserved{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
 .status-chip.visited{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
 .status-chip.joined{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
@@ -928,7 +929,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .funnel-bar-ret.drop{color:var(--red)}
 
 /* ── 강습 진행상태 상태별 컬러(배4 후속, 에메랄드 기반 재정비) — 등록=에메랄드(주인공), 나머지는 약하게 구분. 2026-07-07 시포·GM ── */
-.cell-select.st-consult{color:var(--teal);background:var(--teal-bg);border-color:var(--teal-border);font-weight:700;border-left:3px solid var(--teal)}
+.cell-select.st-consult{color:var(--indigo);background:var(--indigo-bg);border-color:var(--indigo-border);font-weight:700;border-left:3px solid var(--indigo)}
 .cell-select.st-registered{color:var(--emerald);background:var(--emerald-bg);border-color:var(--emerald-border);font-weight:700;border-left:4px solid var(--emerald)}
 .cell-select.st-hold{color:var(--orange);background:var(--orange-bg);border-color:var(--orange-border);font-weight:700;border-left:3px solid var(--orange)}
 .cell-select.st-cancel{color:var(--red);background:var(--red-bg);border-color:var(--red-border);font-weight:600;border-left:3px solid var(--red);opacity:.72}
@@ -1032,8 +1033,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .sum-card .sc-go { font-size: 10.5px; font-weight: 600; color: var(--sc, var(--accent)); margin-top: 7px; }
 .sum-card.sc-new  { --sc: var(--teal); }
 .sum-card.sc-book { --sc: var(--accent); }
-.sum-card.sc-dim { opacity: .6; cursor: default; pointer-events: none; }
-.sum-card.sc-dim:hover { transform: none; }
+.sc-dim { opacity: .6; cursor: default; pointer-events: none; }
+.sc-dim:hover { transform: none; }
 
 /* 가이드·교육 허브 모달 (기존 .gdoc-overlay 패턴 준용, 독립 id) */
 .hubx-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.5); display: none; align-items: flex-start; justify-content: center; padding: 7vh 16px 4vh; overflow-y: auto; }
@@ -1174,24 +1175,29 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </div>
 
   <!-- ══ 강습 현황카드 5종(성인+유소년 한 줄 합산) — 2026-07-15 GM 지시(전환보드 삭제→현황카드 일원화)로 재구성.
-       카드1(새 문의)=히어로 소스(_tapClassifyLesson todayNew, 신규 fetch 없음) 이관. 카드2(신규 등록 현황)=기존 유틸
-       _lessonFetchRegistry(action=lesson_registry_list) 재사용 신설. 카드3~5(회원·대기자·LOSS)=기존 lessonCardMem/
-       Wait/Loss_{adult|youth} 값을 그대로 읽어 병기 표시(표시 전용, MutationObserver로 동기, CPO-2026-07-14-LESSON-4CARD
-       원 로직 무변경). 강습 family에서만 노출(switchFamily가 display 토글). 대기자=진행상태"대기" 버킷(배973) 그대로. ══ -->
+       카드1(새 문의)=히어로 소스(_tapClassifyLesson todayNew, 신규 fetch 없음) 이관, 2026-07-15 GM 재지시로 다른 카드와
+       같은 dash-card 형식(색상=위쪽 dot·값=성인/유소년 분리)으로 통일 — todayNew 배열의 t(adult|youth)로 필터만 추가,
+       신규 fetch·집계 로직 없음. 카드2(신규 등록 현황)=기존 유틸 _lessonFetchRegistry(action=lesson_registry_list)
+       재사용 신설. 카드3~5(회원·대기자·LOSS)=기존 lessonCardMem/Wait/Loss_{adult|youth} 값을 그대로 읽어 병기 표시
+       (표시 전용, MutationObserver로 동기, CPO-2026-07-14-LESSON-4CARD 원 로직 무변경). 강습 family에서만 노출
+       (switchFamily가 display 토글). 대기자=진행상태"대기" 버킷(배973) 그대로. ══ -->
   <div class="dash-grid" id="lessonComboBoard" style="display:none">
-    <a class="sum-card sc-new" id="sumNewCardLesson" href="javascript:void(0)" onclick="heroCardClick('new')">
-      <span class="sc-top">🆕 새 문의</span>
-      <span class="sc-num" id="sumNewLesson">0</span>
-      <span class="sc-desc">금일 접수(성인+유소년)</span>
-      <span class="sc-go">강습 문의 화면에서 확인</span>
+    <a class="dash-card" data-kind="inq" id="sumNewCardLesson" href="javascript:void(0)" onclick="heroCardClick('new')">
+      <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">🆕 새 문의</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b class="lead" id="sumNewLessonAdult">–</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="sumNewLessonYouth">–</b> 명</span></div>
+      </div>
     </a>
-    <div class="dash-card" data-kind="reg" style="cursor:default">
+    <!-- 신규 등록 현황 = 등록 전용 목록이 따로 없음(강습은 회원원장=SUC로 등록완료가 즉시 편입) — 클릭 시 가장 가까운
+         기존 목적지인 "강습 회원 관리"(mem)로 라우팅. 2026-07-15 GM 지시(카드 클릭 라우팅 배선) — 신규 화면 없음. -->
+    <a class="dash-card" data-kind="reg" href="javascript:void(0)" onclick="_lessonComboClick('mem')">
       <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">신규 등록 현황</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboRegAdult">–</b> 명</span></div>
         <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboRegYouth">–</b> 명</span></div>
       </div>
-    </div>
+    </a>
     <a class="dash-card" data-kind="mem" data-lcard="mem" href="javascript:void(0)" onclick="_lessonComboClick('mem')">
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
       <div class="dash-metrics">
@@ -2828,7 +2834,7 @@ function heroCardClick(kind) {
 /* 현황카드(새 문의·오늘 예약) 갱신 — 기존 라이브값 재사용(신규 fetch 없음). family(멤버십/강습)에 맞춰 각자 카드로 다시 그림.
    배754, 2026-07-10 — 2026-07-15 GM 지시(전환보드 삭제→현황카드 일원화)로 이탈위험·오늘할일 계산 net-zero,
    전환·회원 현황 보드(#cpoStatusBoard) 부트스트랩 호출도 보드 자체 삭제로 함께 제거. 강습은 전용 카드
-   (sumNewCardLesson/sumNewLesson)로 분리 — 멤버십 카드(sumNewCard/sumNew)는 #memberTabNav 안에 상시 존재.
+   (sumNewCardLesson/sumNewLessonAdult/sumNewLessonYouth)로 분리 — 멤버십 카드(sumNewCard/sumNew)는 #memberTabNav 안에 상시 존재.
    호출 지점: loadCpoTodayStats·renderTopDash·renderTodayActionPanel·renderChurnActionPanel 말미 + switchFamily. */
 function renderSummaryHero() {
   function setN(id, v) { var e = document.getElementById(id); if (e) e.textContent = (v == null ? '0' : v); }
@@ -2838,10 +2844,14 @@ function renderSummaryHero() {
     var haveLesson = (typeof _tapLessonTypes === 'function') && _tapLessonTypes().length > 0;
     if (haveLesson) {
       var clsL = _tapClassifyLesson(_tapToday());
-      setN('sumNewLesson', clsL.todayNew.length);
+      // 성인/유소년 분리 = 2026-07-15 GM 재지시(새 문의 카드 스타일 통일). todayNew 항목의 t 필드로만 필터 —
+      // _tapClassifyLesson 자체는 무변경(신규 fetch·집계 없음).
+      setN('sumNewLessonAdult', clsL.todayNew.filter(function(x){ return x.t === 'adult'; }).length);
+      setN('sumNewLessonYouth', clsL.todayNew.filter(function(x){ return x.t === 'youth'; }).length);
       setDim('sumNewCardLesson', false);
     } else {
-      setN('sumNewLesson', '—');
+      setN('sumNewLessonAdult', '—');
+      setN('sumNewLessonYouth', '—');
       setDim('sumNewCardLesson', true);
     }
     return;
