@@ -2220,6 +2220,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         </div>
       </div>
     </div>
+    <div style="margin-top:10px">
+      <button type="button" class="btn-refresh" onclick="closeGdoc(); jumpToEndedMembers()">📋 종료회원 목록 보기 (정보 보존 · 종료일 최근순)</button>
+    </div>
   </div>
   <!-- 이탈방지 액션(⏰갱신임박·📉저이용) — 배754 후속(등록회원 이탈방지). 소스=_activeRows(scope=valid, 사전로드) — 신규 GAS 호출 0.
        클릭 → 기존 재등록 상담 모달(openReconForMember) 재사용. 2026-07-09 시포·GM.
@@ -2773,15 +2776,21 @@ function openGdoc(id) {
     if (!tpl) return;
     var t = tpl.getAttribute('data-title') || '가이드';
     titles.push(t);
-    if (ids.length > 1) bodyHtml += '<div style="font-size:14px;font-weight:800;color:var(--accent);margin:' + (bodyHtml ? '22px' : '0') + ' 0 10px">' + esc(t) + '</div>';
-    bodyHtml += tpl.innerHTML;
+    var sectionHtml = '';
+    if (ids.length > 1) sectionHtml += '<div style="font-size:14px;font-weight:800;color:var(--accent);margin:0 0 10px">' + esc(t) + '</div>';
+    sectionHtml += tpl.innerHTML;
+    // 섹션별 래퍼(data-gdoc-id) — 여러 id를 이어붙일 때(예: openChurnManage 4종) 특정 섹션(churnstat 등)만 비동기
+    // 갱신하려면 이 래퍼로 스코프해야 함. 래퍼 없이 body 전체를 innerHTML로 덮으면 다른 섹션(churnsummary·churnaction·
+    // churn)이 통째로 사라지는 버그가 있었음(loadChurnStats가 body 전체를 받던 구조) — 여기서 근본 수정. 2026-07-15 시포·GM
+    bodyHtml += '<div data-gdoc-id="' + esc(one) + '"' + (bodyHtml ? ' style="margin-top:22px"' : '') + '>' + sectionHtml + '</div>';
   });
   if (!bodyHtml) return;
   document.getElementById('gdocTitle').textContent = titles.join(' · ');
   var body = document.getElementById('gdocBody');
   body.innerHTML = bodyHtml;
   // 실측 주입(아코디언과 동일) — LOSS 현황=KPI 라이브 / LOSS 매트릭스=2행 라이브 숫자. 2026-07-03 시포·GM
-  if (ids.indexOf('churnstat') >= 0) loadChurnStats(body);
+  // 각각 자기 섹션 래퍼(data-gdoc-id)만 갱신 — 형제 섹션(예: 종료회원 목록 바로가기 버튼) 보존.
+  if (ids.indexOf('churnstat') >= 0) loadChurnStats(body.querySelector('[data-gdoc-id="churnstat"]') || body);
   if (ids.indexOf('churn') >= 0)     renderChurnMatrixLive(body);
   document.getElementById('gdocOverlay').classList.add('open');
 }
@@ -4517,7 +4526,7 @@ var _activeLoaded  = false;
 var _activeComposing = false;
 var _activeScope   = 'valid';   // 'valid'(잔여일>0 유효회원) | 'ended'(종료·이탈)
 var _activeReqSeq  = 0;         // 토글 빠르게 누를 때 느린 이전 응답이 최신을 덮지 않게(경쟁 가드)
-var _activeSort    = { col: null, dir: -1 };  // 헤더 클릭 정렬(제목 클릭 = 정렬, 기본 종료일 내림차순은 서버에서)
+var _activeSort    = { col: null, dir: -1 };  // 헤더 클릭 정렬(제목 클릭 = 정렬). 기본 정렬(잔여일 임박순=valid·종료일 내림차순=ended)은 클라이언트에서 적용(_applyRemainSort·_applyEndedSort). 2026-07-15 GM 지시
 function _activeSortBy(col) {
   if (_activeSort.col === col) _activeSort.dir = -_activeSort.dir;
   else { _activeSort.col = col; _activeSort.dir = -1; }
@@ -4548,6 +4557,26 @@ function _applyRemainSort() {
   _activeSort = { col: null, dir: -1 };   // 헤더 정렬 화살표 초기화(기본정렬은 화살표 없음)
 }
 
+// 종료회원 기본 정렬 = 종료일 내림차순(최근 종료=상단, 오래될수록=하단). GM 지시(2026-07-15).
+// 날짜 우선순위: LOSS일자(실제 이탈확정일 — 당월 LOSS 집계와 동일 기준) 있으면 그것, 없으면 종료일자(계약 만료일) 폴백.
+// 표시(클라이언트) 전용 정렬 — 데이터·GAS 무변경. _capCol(공백/개행 무시 매칭) 재사용.
+function _endedDateKey(v) {
+  var s = String(v == null ? '' : v).trim();
+  var t = s ? Date.parse(s.slice(0, 10)) : NaN;
+  return isNaN(t) ? -1 : t;   // 미상(빈칸·파싱불가) → 맨 뒤(가장 오래된 것보다도 아래)
+}
+function _applyEndedSort() {
+  var lossCol = _capCol(_activeHeaders, 'LOSS일자');
+  var endCol  = _capCol(_activeHeaders, '종료일자');
+  if (!lossCol && !endCol) return;   // 두 칸 다 없으면 원순서 유지
+  _activeRows.sort(function(a, b){
+    var av = (lossCol && a[lossCol]) ? a[lossCol] : (endCol ? a[endCol] : '');
+    var bv = (lossCol && b[lossCol]) ? b[lossCol] : (endCol ? b[endCol] : '');
+    return _endedDateKey(bv) - _endedDateKey(av);   // 내림차순(최근 종료 먼저)
+  });
+  _activeSort = { col: null, dir: -1 };   // 헤더 정렬 화살표 초기화(기본정렬은 화살표 없음)
+}
+
 // 회원관리 표 재등록 통합셀 클릭 → 해당 회원 고정으로 예약 리스트 모달 열기. 2026-07-03 시포·GM
 function openReconForMember(rowIndex) {
   var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
@@ -4556,6 +4585,15 @@ function openReconForMember(rowIndex) {
   var phone   = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
   var program = String(r['회원\n구분'] || r['회원구분'] || '').trim();
   _openResModal({ source: 'active', rowIndex: r.rowIndex, keyPhone: phone, name: name, phone: phone, program: program, reservations: _rowReservations(r, 'active') });
+}
+
+// LOSS 회원관리(이탈 요약 모달, openChurnManage) → 종료회원 목록 바로가기. 정보 보존된 종료회원 표(scope=ended, 종료일 내림차순)로
+// 이동 — activeScopeEnded 토글 클릭과 동일 동작 재사용(신규 fetch 로직 없음) + 스크롤. GM 지시(2026-07-15).
+function jumpToEndedMembers() {
+  var btn = document.getElementById('activeScopeEnded');
+  if (btn) setActiveScope('ended', btn);
+  var wrap = document.getElementById('activeTable');
+  if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // 유효/종료 전환 토글 — 시각 갱신 후 해당 scope 재조회
@@ -4584,7 +4622,8 @@ function loadActiveMembers() {
       _activeHeaders = data.headers || [];
       _activeRows    = data.data    || [];
       _activeLoaded  = true;
-      if (_activeScope === 'valid') _applyRemainSort();   // 기본=잔여일 임박순(작은 양수 먼저). 2026-07-03 시포·GM
+      if (_activeScope === 'valid') _applyRemainSort();        // 기본=잔여일 임박순(작은 양수 먼저). 2026-07-03 시포·GM
+      else if (_activeScope === 'ended') _applyEndedSort();    // 기본=종료일 내림차순(최근 종료 상단). 2026-07-15 GM 지시
       _activeRender(_activeRows);
       renderActiveSummary();
       renderChurnActionPanel();   // 이탈방지 액션 모듈(배754 후속) — scope 전환마다 재계산
