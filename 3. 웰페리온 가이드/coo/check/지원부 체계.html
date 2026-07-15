@@ -34,7 +34,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab-dropdown-menu button.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
 /* 가이드 탭 본문 풀폭 (S2 · 운영부 정합 · GM 2026-06-11) */
-#tab-policy,#tab-guide,#tab-chem,#tab-manual,#tab-check-m,#tab-check-f,#tab-supply,#tab-monthly,#tab-schedule{max-width:none;margin-left:0;margin-right:0}
+#tab-policy,#tab-guide,#tab-chem,#tab-manual,#tab-check-m,#tab-check-f,#tab-supply,#tab-monthly,#tab-schedule,#tab-vendorboard{max-width:none;margin-left:0;margin-right:0}
 /* 약품 가이드 탭 — 스코프된 스타일(cg-) · 출처 standalone html 톤을 다크 페이지에 정리 (시우·GM 2026-06-13) */
 #tab-chem .cg-wrap{max-width:none;margin:0}
 #tab-chem h2{font-size:20px;margin-bottom:6px}
@@ -905,6 +905,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
   <button class="tab" onclick="switchTab('monthly')">📅 월간 지원부 현황·계획·보고</button>
   <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
+  <button class="tab" onclick="switchTab('vendorboard')">🏢 거래업체</button>
   <!-- 구 '📅 월간 보고 ▾' 드롭다운(2026-06 고정 A3 인쇄) 삭제 — 월간보고 탭 안 '🖨 A3 인쇄' 버튼(선택월 동적)과 중복. 2026-07-06 시우·GM -->
   <div style="display:flex;gap:4px;margin-left:auto;align-items:center;">
     <!-- 인쇄 버튼 통합 드롭다운 (월간 보고와 동일 패턴 · 버튼 난립 해소 2026-07-02 시우, GM) -->
@@ -1736,6 +1737,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <a href="전사_일정.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 일정 전체 보기 ↗</a>
   </div>
   <iframe id="scheduleFrame" data-src="전사_일정.html?dept=지원부&embed=1" title="지원부 일정" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
+</div>
+
+<!-- ══ 「🏢 거래업체」 탭 — 전사_거래업체(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. (배1074 시우 2026-07-15) ══ -->
+<div id="tab-vendorboard" class="content hidden">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
+    <span>🏢 <b style="color:var(--text)">지원부 거래업체</b> — 우리 부서 거래처. <b>＋업체 등록</b>·카드 <b>편집</b>으로 관리하고, 부서 체크박스로 <b>여러 부서 공유</b> 지정. 저장하면 <b>전사 거래업체</b>에 바로 모입니다.</span>
+    <a href="전사_거래업체.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 거래업체 전체 보기 ↗</a>
+  </div>
+  <iframe id="vendorboardFrame" data-src="전사_거래업체.html?dept=지원부&embed=1" title="지원부 거래업체" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
 </div>
 
 <!-- ══ 「📅 월간 지원부 계획·보고」 통합 탭 — monthly_ops_plan.json 핵심과제(주인공·상단) + 점검 monthly_report 라이브 대시보드 (배208 2단계 Phase B + 이달 부서 현황 통합 2026-07-07) ══ -->
@@ -5393,6 +5403,8 @@ function switchTab(tab, opts){
   document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
   var _sch=document.getElementById('tab-schedule'); if(_sch) _sch.classList.toggle('hidden',tab!=='schedule');
   if(tab==='schedule'){ var _f=document.getElementById('scheduleFrame'); if(_f && !_f.src && _f.getAttribute('data-src')) _f.src=_f.getAttribute('data-src'); }
+  var _vb=document.getElementById('tab-vendorboard'); if(_vb) _vb.classList.toggle('hidden',tab!=='vendorboard');
+  if(tab==='vendorboard'){ var _vf=document.getElementById('vendorboardFrame'); if(_vf && !_vf.src && _vf.getAttribute('data-src')) _vf.src=_vf.getAttribute('data-src'); }
   if(tab==='supply'){ if(typeof loadSupplyFromBackend==='function') loadSupplyFromBackend(); }
   if(tab==='guide'){ if(typeof loadCsFromBackend==='function') loadCsFromBackend(); }
   // Show correct submit bar
