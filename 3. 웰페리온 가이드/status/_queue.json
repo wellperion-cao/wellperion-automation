@@ -1699,14 +1699,16 @@
     "task_id": "COO-2026-07-15-DEPT-SCHEDULE-TAB",
     "clevel": "coo",
     "title": "[시우] 부서 일정 탭 → 전사 일정 합류(반복 일정 포함) — 부서 체계 페이지 일정 탭 신설·전사_일정 재활용",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-15",
     "ship_no": 1042,
     "module": "O1",
     "note": "[2026-07-15 GM 승인] GM 아이디어=각 부서 체계 페이지에 일정 탭 → 전사 일정 한눈. 핵심발견=전사_일정.html+GAS(schedule_ssot) 인프라 이미 라이브(정기점검만 담김). 방향(GM 결정): 주요 이벤트 중심 + 탭 안 바로 편집 + iframe 심기(코드1벌·저장1곳). 확장=이벤트 type + 반복(매주/격주/매월/매년) 규칙 1줄 저장·달력 전개. 스펙=docs/superpowers/specs/2026-07-15-부서일정탭-전사일정-design.md. Phase1=전사_일정 embed/event/repeat+지원부 시범, Phase2=4부서 확산. 가역·COO자율.",
-    "next": "Phase1 지원부 시범 라이브 검증 후 Phase2 4부서 확산·GM 1줄 보고.",
-    "depends_on": ""
+    "next": "🔗 전 5부서 일정 탭 라이브 완결. 후속(선택)=반복 예외일·알림연동",
+    "depends_on": "",
+    "processed_at": "2026-07-15",
+    "terminal": true
   },
   {
     "task_id": "COO-2026-07-15-ADHOC-c0235c29",
@@ -1970,5 +1972,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01M1ddyTuBeyR4S4D8SKT2mS (CLI ad-hoc · 커밋 5cd4632d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "5cd4632d79d93805f34c179c18aa842c575c0c3d"
+  },
+  {
+    "task_id": "COO-2026-07-15-RECEPTION-SHEET-SORT-DESC",
+    "clevel": "coo",
+    "title": "[시우] 종합접수처 시트 최신순 정렬 — 접수일시 desc 자동정렬",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1061,
+    "module": "O2",
+    "note": "GM 지시: 종합접수처(17ly 시트) 접수일시 최신이 상단에. VOC_배포.js reg_submit에 append후 _regSortSheetDesc(접수일시 desc·행단위sort로 상태색정합) 추가 + 기존데이터 _regSortAllDesc 1회. clasp push+웹앱 @45 재배포(URL유지)+reg_sort 실행 sorted:6 확인. .deploy-voc는 gitignore(clasp정본).",
+    "next": "🔗 완결. 후속(선택)=TOKEN_ENFORCE 발효 시 reg_sort 게이트 확인"
   }
 ]

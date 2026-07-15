@@ -1033,6 +1033,192 @@ async def run_publish_reception(post_id_arg: str, slug: str = "reception") -> in
     return 0 if published else 8
 
 
+RECEPTION_POST_ID = "8434"  # 종합접수처 라이브 페이지 고정 ID (/ko/reception/)
+
+
+def _decode_vc_raw_html(b64: str) -> str:
+    """[vc_raw_html] payload 디코드: base64_decode → rawurldecode (인코딩의 정확한 역순)."""
+    import base64
+    import urllib.parse
+    dec = base64.b64decode(b64.strip().encode("ascii")).decode("ascii")
+    return urllib.parse.unquote(dec)
+
+
+async def run_swap_reception_text(find: str, repl: str,
+                                  post_id_arg: str = RECEPTION_POST_ID,
+                                  dry_run: bool = False) -> int:
+    """종합접수처 페이지 본문의 [vc_raw_html] base64 블록을 '디코드'해 find→repl **단일 문자열만** 교체.
+    폼 동작·다른 마크업 무손상: 디코드된 HTML에서 find 가 정확히 1건일 때만 교체하고 재인코드해 되쓴다.
+    - #content 는 base64 blob 이라 plain swap 불가 → 반드시 디코드 경로 사용.
+    - 원본 #content 를 타임스탬프 백업. count!=1 이면 저장 없이 중단(라이브 무손상).
+    - dry_run=True: 디코드·카운트만 보고하고 저장하지 않음(사전 검증용)."""
+    import base64
+    import urllib.parse
+    import datetime
+    import re as _re
+    async_playwright = _import_playwright()
+    print(f"[INFO] === 종합접수처 라벨 문자열 외과적 교체 (post={post_id_arg}, dry_run={dry_run}) ===")
+    print(f"[INFO] find: {find}")
+    print(f"[INFO] repl: {repl}")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(f"http://wellperion.com/wp/wp-admin/post.php?post={post_id_arg}&action=edit&lang=ko",
+                    wait_until="domcontentloaded", timeout=40_000)
+    await page.wait_for_timeout(2500)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    probe = await page.evaluate(
+        "() => ({classic: !!document.querySelector('#content'), text_tab: !!document.querySelector('#content-html')})"
+    )
+    if not probe.get("classic"):
+        print("[ERROR] Classic 편집기 #content 미검출 — 중단(저장 안 함).")
+        await ctx.close(); await p.stop(); return 5
+    # Text(HTML) 탭으로 전환 — WP 네이티브 switchEditors API 우선(액셔너빌리티 회피)
+    switched = await page.evaluate(
+        """() => { try {
+            if (window.switchEditors && switchEditors.go) { switchEditors.go('content','html'); return 'api'; }
+            const b=document.querySelector('#content-html'); if(b){ b.click(); return 'click'; }
+            return 'none';
+        } catch(e){ return 'err:'+e.message; } }"""
+    )
+    await page.wait_for_timeout(800)
+    print(f"[INFO] Text탭 전환 방식: {switched}")
+    if switched in ("none", "") or str(switched).startswith("err:"):
+        try:
+            await page.click("#content-html", force=True, timeout=8000)
+            await page.wait_for_timeout(800)
+        except Exception as e:
+            print(f"[WARN] Text탭 클릭 폴백 경고: {e}")
+
+    raw = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
+    if not raw or len(raw) < 200:
+        print(f"[ERROR] post_content 비정상(길이 {len(raw)}) — 중단(저장 안 함).")
+        await ctx.close(); await p.stop(); return 6
+
+    # 원본 백업 (필수 안전장치)
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = INSPECT_DIR / f"reception_page{post_id_arg}_content_backup_{ts}.txt"
+    backup_path.write_text(raw, encoding="utf-8")
+    print(f"[INFO] 원본 백업: {backup_path} (길이 {len(raw)})")
+
+    # [vc_raw_html] 블록 전수 탐색 — 디코드해 find 총 출현 1건인 블록을 특정
+    blocks = list(_re.finditer(r"\[vc_raw_html\](.*?)\[/vc_raw_html\]", raw, _re.S))
+    print(f"[INFO] [vc_raw_html] 블록 수: {len(blocks)}")
+    if not blocks:
+        print("[ABORT] [vc_raw_html] 블록 미검출 — 예상 구조 아님. 저장 안 함(라이브 무손상).")
+        await ctx.close(); await p.stop(); return 30
+
+    target_idx, decoded_target, total_find = None, None, 0
+    for i, b in enumerate(blocks):
+        try:
+            dec = _decode_vc_raw_html(b.group(1))
+        except Exception as e:
+            print(f"[WARN] 블록 {i} 디코드 실패(무시): {e}")
+            continue
+        c = dec.count(find)
+        total_find += c
+        if c > 0:
+            target_idx, decoded_target = i, dec
+    print(f"[INFO] find 총 출현(디코드 기준): {total_find}건")
+    if total_find != 1:
+        print(f"[ABORT] find 출현 != 1 ({total_find}건) — 오인/중복/이미교체 방지 위해 저장 안 함. 라이브 무손상.")
+        # 참고: 이미 repl 이 라이브에 있으면(선반영) total_find==0 으로 여기서 안전 종료됨.
+        await page.screenshot(path=str(INSPECT_DIR / f"wp_recept_swap_abort_{ts}.png"))
+        await ctx.close(); await p.stop(); return 31
+
+    repl_before = decoded_target.count(repl)
+    decoded_new = decoded_target.replace(find, repl)
+    # 디코드 레벨 무결성 가드: 정확히 1건만 바뀌고 그 외 완전 동일해야 함
+    if decoded_new == decoded_target:
+        print("[ABORT] 치환 후 변화 없음 — 저장 안 함.")
+        await ctx.close(); await p.stop(); return 32
+    if decoded_new.count(find) != 0 or decoded_new.count(repl) != repl_before + 1:
+        print(f"[ABORT] 디코드 무결성 실패(find잔존 {decoded_new.count(find)}, repl {decoded_new.count(repl)}/기대 {repl_before+1}) — 저장 안 함.")
+        await ctx.close(); await p.stop(); return 33
+    if decoded_new.replace(repl, find, 1) != decoded_target:
+        print("[ABORT] 역치환 대조 불일치 — find/repl 외 변경 위험. 저장 안 함.")
+        await ctx.close(); await p.stop(); return 34
+
+    # 재인코드(원 인코더와 동일 스킴: rawurlencode → base64) 후 해당 블록 payload만 교체
+    new_b64 = base64.b64encode(urllib.parse.quote(decoded_new, safe="").encode("ascii")).decode("ascii")
+    # 재인코드 라운드트립 검증 — 새 base64 디코드가 정확히 decoded_new 여야 함
+    if _decode_vc_raw_html(new_b64) != decoded_new:
+        print("[ABORT] 재인코드 라운드트립 실패 — 저장 안 함.")
+        await ctx.close(); await p.stop(); return 35
+    tb = blocks[target_idx]
+    new_raw = raw[:tb.start(1)] + new_b64 + raw[tb.end(1):]
+    # raw 레벨: 대상 블록 payload 외 나머지 텍스트 완전 동일 보장
+    if raw[:tb.start(1)] != new_raw[:tb.start(1)] or raw[tb.end(1):] != new_raw[len(new_raw)-(len(raw)-tb.end(1)):]:
+        print("[ABORT] raw 블록 외 영역 불일치 — 저장 안 함.")
+        await ctx.close(); await p.stop(); return 36
+    print(f"[INFO] 디코드 무결성 통과 · 블록[{target_idx}] payload만 교체 예정 (raw 길이 {len(raw)}→{len(new_raw)})")
+
+    if dry_run:
+        print("[INFO] === DRY-RUN — 저장하지 않음. 카운트·무결성만 검증 완료 ===")
+        print(f"[INFO] 디코드 발췌(교체 지점): ...{decoded_new[max(0,decoded_new.find(repl)-30):decoded_new.find(repl)+len(repl)+30]}...")
+        await ctx.close(); await p.stop(); return 0
+
+    # TinyMCE 인스턴스 detach 후 textarea 를 단일 진실원으로 되쓰기
+    detached = await page.evaluate(
+        """() => { try {
+            if (window.tinymce && tinymce.get('content')) { tinymce.get('content').remove(); return 'removed'; }
+            return 'no-tinymce';
+        } catch(e){ return 'err:'+e.message; } }"""
+    )
+    await page.wait_for_timeout(400)
+    print(f"[INFO] TinyMCE detach: {detached}")
+    await page.evaluate(
+        """(html) => { const ta = document.querySelector('#content');
+            ta.value = html; ta.dispatchEvent(new Event('input', {bubbles:true}));
+            ta.dispatchEvent(new Event('change', {bubbles:true})); }""",
+        new_raw,
+    )
+    await page.wait_for_timeout(500)
+    verify = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
+    if verify != new_raw:
+        print("[ABORT] textarea 반영 검증 실패(값 불일치) — 저장 안 함.")
+        await ctx.close(); await p.stop(); return 37
+    print("[INFO] textarea 반영 확인 (new_raw 일치)")
+
+    pre_status = await page.evaluate(
+        "() => (document.querySelector('#post-status-display')||{}).innerText || ''"
+    )
+    print(f"[INFO] 저장 전 상태: {pre_status or '(미검출)'}")
+    await page.click("#publish")
+    try:
+        await page.wait_for_url("**/post.php?post=*", timeout=30_000)
+    except Exception:
+        await page.wait_for_timeout(4000)
+    await page.wait_for_timeout(1500)
+    status = await page.evaluate(
+        "() => (document.querySelector('#post-status-display')||{}).innerText || ''"
+    )
+    # 저장 후 재검증 — 디코드 기준 find=0, repl=baseline+1
+    saved_raw = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
+    saved_ok = False
+    try:
+        sblocks = list(_re.finditer(r"\[vc_raw_html\](.*?)\[/vc_raw_html\]", saved_raw, _re.S))
+        s_find = s_repl = 0
+        for b in sblocks:
+            d = _decode_vc_raw_html(b.group(1))
+            s_find += d.count(find); s_repl += d.count(repl)
+        saved_ok = (s_find == 0 and s_repl == repl_before + 1)
+        print(f"[INFO] 저장 후 디코드 재검증: find {s_find}건 / repl {s_repl}건(기대 {repl_before+1})")
+    except Exception as e:
+        print(f"[WARN] 저장 후 재검증 경고: {e}")
+    await page.screenshot(path=str(INSPECT_DIR / f"wp_recept_swap_saved_{ts}.png"))
+    print(f"[INFO] 저장 후 상태: {status or '(미검출)'}")
+    await ctx.close(); await p.stop()
+    print(f"[INFO] === 종합접수처 문자열 교체 {'완료' if saved_ok else '확인 필요'} === (백업: {backup_path})")
+    return 0 if saved_ok else 38
+
+
 MEDIA_NEW_URL = "http://wellperion.com/wp/wp-admin/media-new.php"
 MEDIA_LIBRARY_URL = "http://wellperion.com/wp/wp-admin/upload.php"
 
@@ -1145,9 +1331,11 @@ def main() -> int:
         "setup", "check", "inspect",
         "draft-inquiry", "publish-inquiry", "add-menu", "swap-href",
         "wpml-create-en", "draft-inquiry-en", "publish-inquiry-en",
-        "draft-reception", "publish-reception",
+        "draft-reception", "publish-reception", "swap-reception-text",
         "media-check", "media-upload",
     ], default="setup")
+    ap.add_argument("--dry-run", dest="dry_run", action="store_true",
+                    help="swap-reception-text: 저장 없이 카운트·무결성만 검증")
     ap.add_argument("--find", dest="find", default=None, help="swap-href 찾을 문자열")
     ap.add_argument("--repl", dest="repl", default=None, help="swap-href 바꿀 문자열")
     ap.add_argument("--slug", dest="slug", default=None, help="publish-* 슬러그 (미지정 시: inquiry 모드=inquiry, reception 모드=reception)")
@@ -1190,6 +1378,11 @@ def main() -> int:
         if not args.post_id:
             print("[ERROR] --post-id 필요"); return 1
         return asyncio.run(run_publish_reception(args.post_id, args.slug or "reception"))
+    if args.mode == "swap-reception-text":
+        if not args.find or not args.repl:
+            print("[ERROR] swap-reception-text는 --find --repl 필요"); return 1
+        return asyncio.run(run_swap_reception_text(
+            args.find, args.repl, args.post_id or RECEPTION_POST_ID, args.dry_run))
     if args.mode == "media-check":
         return asyncio.run(run_media_check())
     if args.mode == "media-upload":
