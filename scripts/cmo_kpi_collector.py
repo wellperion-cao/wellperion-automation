@@ -5,7 +5,7 @@
   1. 3. 웰페리온 가이드/cmo/review/review_queue.json  — 검수 큐 (발행상태·채널별)
   2. instagram/{YYMMDD_*}/                           — 콘텐츠 폴더 발행 이력 스캔
   3. status/cmo.json                                 — CMO 에이전트 완료 태스크 이력
-  4. status/kpi_manual.json                          — litt.ly 클릭수 등 수동 입력
+  4. status/kpi_manual.json                          — 네이버 블로그/카페 조회수·IG 도달·노출 등 수동 입력
 
 출력:
   status/cmo_kpi.json         — 채널별 발행수·검수대기·승인·수동 KPI·집계일시
@@ -235,11 +235,7 @@ def load_cmo_status() -> dict:
 # ──────────────────────────────────────────────
 
 _MANUAL_TEMPLATE: dict = {
-    "_desc": "litt.ly 클릭수 등 수동 입력 KPI. 값 갱신 후 cmo_kpi_collector.py 재실행.",
-    "litt_ly_clicks": {
-        "_desc": "litt.ly/wellperion 월별 클릭수 (수동 입력)",
-        "2026-05": 0,
-    },
+    "_desc": "네이버 블로그/카페 조회수·IG 도달·노출 등 수동 입력 KPI. 값 갱신 후 cmo_kpi_collector.py 재실행.",
     "naver_blog_views": {
         "_desc": "네이버 블로그 월별 조회수 (수동 입력 — v2에서 API 자동화 예정 🔒)",
         "2026-05": 0,
@@ -318,7 +314,7 @@ def build_kpi_output(
 
     # 수동 KPI 정리
     manual_kpi: dict[str, dict] = {}
-    for key in ("litt_ly_clicks", "naver_blog_views", "naver_cafe_views",
+    for key in ("naver_blog_views", "naver_cafe_views",
                 "ig_reach", "ig_impressions"):
         manual_kpi[key] = _strip_desc(manual.get(key, {}))
 
@@ -376,7 +372,6 @@ def _trend_bars(trend: dict[str, int]) -> str:
 
 def _manual_table(manual_kpi: dict) -> str:
     _labels = {
-        "litt_ly_clicks":   "litt.ly 클릭수",
         "naver_blog_views": "네이버 블로그 조회수",
         "naver_cafe_views": "네이버 카페 조회수",
         "ig_reach":         "IG 도달수 🔒",
@@ -605,7 +600,6 @@ def print_summary(output: dict) -> None:
     print()
     manual = output.get("manual_kpi", {})
     _lbl = {
-        "litt_ly_clicks":   "litt.ly 클릭수",
         "naver_blog_views": "네이버 블로그 조회수",
         "naver_cafe_views": "네이버 카페 조회수",
         "ig_reach":         "IG 도달수",

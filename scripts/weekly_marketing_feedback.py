@@ -13,7 +13,7 @@ v1 = **정성 우선 + 측정 보조**. 자동 가중 점수는 UTM 데이터가
 데이터 소스 (기존 파이프 재사용 — 신규 배관 없음):
   - 공식 발행 콘텐츠: 3. 웰페리온 가이드/cmo/review/review_queue.json
       (account=="wellperion" AND status=="발행완료" AND published_at 최근 7일)
-  - 측정 보조 신호: 문의Survey GAS(funnel) — click_stats(byUtmSource) · funnel_conversion(byChannel)
+  - 측정 보조 신호: 문의Survey GAS(funnel) — funnel_conversion(byChannel)
   - 신규 등록 상세(2026-07-06 가산): 동일 GAS — member_registered_list(멤버십, 등록일 기간필터)
       · lesson_registry_list(강습 종목별, 등록일 기간필터). 발레·바레(루프메소드)·뮤지컬은 팀시트 없음
       (외부관리) → 항상 "미집계" 정직 표기. 강습 원장은 2026-06-27 시드 이전 등록자 누락(신규만 집계).
@@ -25,7 +25,7 @@ v1 = **정성 우선 + 측정 보조**. 자동 가중 점수는 UTM 데이터가
   4) 다음 편 제안 — 시모가 채우는 빈 슬롯(자동 G1 등록 금지, 제안 shape 힌트만 출력)
 
 일일 모드(2026-07-06 가산, --mode daily): status/briefs/CMO-daily-feedback-<YYYYMMDD>.md —
-  오늘(KST) 하루로 좁힌 가벼운 카드: ①오늘 발행 ②오늘 UTM 클릭 ③오늘 문의→전환 ④오늘 신규 등록 상세.
+  오늘(KST) 하루로 좁힌 가벼운 카드: ①오늘 발행 ②오늘 문의→전환 ③오늘 신규 등록 상세.
   Top/Bottom·다음 편 제안 섹션은 daily 에선 제외(그건 weekly 정성 판정 전용으로 유지).
   --dry-run: 브리프는 그대로 생성·저장하되 텔레그램 실제 발송만 생략(카드 텍스트는 stdout 출력).
 
@@ -105,16 +105,6 @@ GAS_URL = (
 OFFICIAL_ACCOUNT = "wellperion"  # 공식 계정 리터럴 — 정확 일치만 포함(namuk.wellperion 등 개인 계정 자동 배제).
 PUBLISHED_STATUS = "발행완료"
 
-# click_stats byUtmSource 코드 → 표기 라벨 (scripts/cta_utm.py CHANNEL_UTM 과 정합).
-UTM_LABELS = {
-    "직접/홈": "직접/홈 유입",
-    "naver_blog": "네이버 블로그",
-    "naver_cafe": "네이버 카페",
-    "danggn": "당근마켓",
-    "kakao": "카카오",
-    "instagram": "인스타그램",
-}
-
 # 강습 종목 중 팀시트가 없어(외부관리) lesson_registry_list 원장에 절대 잡히지 않는 종목.
 # .deploy-funnel/Survey.js LESSON_DISPLAY: 루프메소드(발레·바레)=sheet:null·external.
 # 뮤지컬은 LESSON_DISPLAY 자체에 항목 없음(팀시트 매핑 없음) — 둘 다 0 위장 대신 "미집계" 고정 표기.
@@ -131,16 +121,7 @@ SECTION_4_HEADING = "## 4. 다음 편 제안"
 # "미채움"으로 오판해 재생성해버린다. 그래서 실제 placeholder 문구(▸ (...))만 마커로 쓴다.
 SECTION_3_PLACEHOLDER_MARKERS = ["▸ (시모 정성 판정"]
 SECTION_4_PLACEHOLDER_MARKERS = ["▸ (시모: 통한 패턴"]
-
-# ── §5 각(角) 스코어카드 (2026-07-09 가산 — 편별 채점 생산, 설계스펙 §3-2/§3-6) ──
-# §3/§4 와 달리 §5 는 항상 자동 데이터이므로 매번 재생성한다(보존 대상 아님).
-# §4 추출 시 stop heading 으로 사용해 §4 보존/치환이 §5 를 잘못 집어삼키지 않도록 한다.
-SECTION_5_HEADING = "## 5. 각(角) 스코어카드"
-
-# campaign_stats topChannel 중 편별 귀속 가능한 채널(§3-6 High-1: 블로그·카페 링크카드 경유만 귀속).
-_CAMPAIGN_ATTRIBUTED_CHANNELS = {"naver_blog", "naver_cafe"}
-# GAS campaign_stats 는 UTM 캠페인 슬러그가 비어있는 클릭을 이 키로 묶는다(Survey.js:2314) — 편이 아니므로 스코어카드 제외.
-_CAMPAIGN_UNATTRIBUTED_KEY = "직접·기타"
+# §4 가 마지막 섹션(2026-07-15 §5 각 스코어카드=클릭 기반 제거·GM 결정) — 추출 시 EOF 까지.
 
 # ── 텔레그램 주간 요약 발송 (문의알림방 · 2026-07-03 GM go 라이브) ─────
 ENV_PATH = _REPO_ROOT / "telegram_bot" / ".env"
@@ -175,25 +156,12 @@ def _load_env_value(key: str) -> str:
     return ""
 
 
-def build_telegram_summary(items: list[dict], cs: dict | None, fc: dict | None,
+def build_telegram_summary(items: list[dict], fc: dict | None,
                             mr: dict | None, lr: dict | None,
                             date_from: str, date_to: str, out_path: Path) -> str:
     """5~8줄 요약. 측정 실패는 '미측정', 정성 슬롯은 '시모 정리 대기'로 정직 표기(지어내지 않음)."""
     lines = [f"주간 마케팅 정리 — {date_from} ~ {date_to}", ""]
     lines.append(f"· 이번 주 공식(@wellperion) 발행: {len(items)}건")
-
-    if cs is None:
-        lines.append("· UTM 클릭(채널별): 미측정(수집 실패)")
-    else:
-        by_src = cs.get("byUtmSource") or {}
-        if not by_src:
-            lines.append("· UTM 클릭(채널별): 0건(표본 없음)")
-        else:
-            rows = sorted(by_src.items(), key=lambda kv: kv[1], reverse=True)
-            lines.append(
-                "· UTM 클릭(채널별): "
-                + " · ".join(f"{UTM_LABELS.get(k, k)} {v}회" for k, v in rows)
-            )
 
     if fc is None:
         lines.append("· 문의 전환: 미측정(수집 실패)")
@@ -305,35 +273,6 @@ def load_official_recent(days: int = 7, now: datetime.datetime | None = None) ->
 
 
 # ── ② 측정 보조 신호 (funnel GAS 재사용, 신규 배관 없음) ───────────
-def fetch_click_stats(date_from: str, date_to: str) -> dict | None:
-    """click_stats — 채널별 UTM 클릭. 실패 시 None(→ 미측정 표기, 0 위장 금지)."""
-    try:
-        data = _http_get(f"{GAS_URL}?action=click_stats&from={date_from}&to={date_to}", timeout=40)
-        if not data.get("ok"):
-            print(f"[WARN] click_stats ok=false: {data}")
-            return None
-        return data
-    except Exception as e:
-        print(f"[WARN] click_stats 수집 실패: {e}")
-        return None
-
-
-def fetch_campaign_stats(date_from: str, date_to: str) -> dict | None:
-    """campaign_stats — 편(캠페인 슬러그)별 클릭 집계(GAS Survey.js:2287, 이미 라이브 — 신규 배포 없음).
-    실패 시 None(→ 미측정 표기, 0 위장 금지). 응답 실측(2026-07-09):
-    {"ok":true,"total":N,"campaigns":[{"campaign":"260630_ep2","clicks":7,"topChannel":"naver_blog"}, ...],
-     "from":..., "to":...} — UTM 캠페인 미태깅 클릭은 campaign="직접·기타"로 묶여 돌아온다(편 아님)."""
-    try:
-        data = _http_get(f"{GAS_URL}?action=campaign_stats&from={date_from}&to={date_to}", timeout=40)
-        if not data.get("ok"):
-            print(f"[WARN] campaign_stats ok=false: {data}")
-            return None
-        return data
-    except Exception as e:
-        print(f"[WARN] campaign_stats 수집 실패: {e}")
-        return None
-
-
 def fetch_funnel_conversion(date_from: str, date_to: str) -> dict | None:
     """funnel_conversion — 채널별 문의·전환(자기신고 유입경로 ↔ 회원부 전화 매칭).
     2026-07-03 UTM→문의 하드 귀속 배선 라이브 — 그 이전 문의는 과거 소급 없이 자기신고 채널로만 집계됨.
@@ -478,20 +417,6 @@ def _fmt_content_table(items: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _fmt_click_breakdown(cs: dict | None) -> str:
-    if cs is None:
-        return "_수집 실패 — 미측정(GAS 응답 없음)_"
-    by_src = cs.get("byUtmSource") or {}
-    if not by_src:
-        return "_이번 주 클릭 로그 0건 — 미측정(표본 없음)_"
-    rows = sorted(by_src.items(), key=lambda kv: kv[1], reverse=True)
-    lines = ["| 채널(UTM) | 클릭 |", "|---|---|"]
-    for k, v in rows:
-        label = UTM_LABELS.get(k, k)
-        lines.append(f"| {label} | {v}회 |")
-    return "\n".join(lines)
-
-
 def _fmt_conversion_breakdown(fc: dict | None) -> str:
     if fc is None:
         return "_수집 실패 — 미측정(GAS 응답 없음)_"
@@ -510,43 +435,10 @@ def _fmt_conversion_breakdown(fc: dict | None) -> str:
     return "\n".join(lines)
 
 
-def _campaign_coverage_tag(top_channel: str) -> str:
-    """§3-6 정직표기: 블로그·카페 링크카드 경유(topChannel)만 편별 귀속. 그 외(IG·카카오·당근·직접 등)는 비귀속."""
-    if top_channel in _CAMPAIGN_ATTRIBUTED_CHANNELS:
-        return "측정(블로그·카페 귀속)"
-    return "편별 비귀속(IG·카카오·당근 등 — UTM 구조상 편 귀속 불가)"
-
-
-def _fmt_angle_scorecard(cps: dict | None) -> str:
-    """§5 각(角) 스코어카드 — 편(캠페인 슬러그)별 표.
-    정직 원칙(설계스펙 §3-6 High-1): campaign_stats 에 행이 없는 편(블로그·카페 미발행)은 `0`이 아니라
-    '미발행(측정 불가)' — 이 표에 아예 나타나지 않으므로 그 사실을 각주로 명기한다(0 위장 금지)."""
-    if cps is None:
-        return "_수집 실패 — 미측정(GAS 응답 없음)_"
-    rows = [r for r in (cps.get("campaigns") or []) if r.get("campaign") != _CAMPAIGN_UNATTRIBUTED_KEY]
-    if not rows:
-        return "_이번 주 편별(캠페인) 클릭 로그 0건 — 전 편 미발행(측정 불가) 또는 표본 없음_"
-
-    lines = ["| 캠페인 슬러그 | 각(ANGLE) | 클릭(측정) | 문의 | 커버리지 |", "|---|---|---|---|---|"]
-    for r in sorted(rows, key=lambda d: d.get("clicks", 0), reverse=True):
-        camp = str(r.get("campaign", "-")).replace("|", "\\|")
-        clicks = r.get("clicks", 0)
-        coverage = _campaign_coverage_tag(str(r.get("topChannel", "")))
-        lines.append(f"| {camp} | — (공식 후보풀 로드맵 미배선) | {clicks}회 | 미측정 | {coverage} |")
-    lines.append("")
-    lines.append(
-        "_※ 이 표는 GAS campaign_stats(블로그·카페 링크카드 클릭)에 잡힌 캠페인만 나타난다. "
-        "블로그·카페에 아직 발행되지 않은 편은 행 자체가 없다 — **`0`이 아니라 미발행(측정 불가)**이다. "
-        "IG·카카오·당근 경유 클릭은 UTM 구조상 편별 비귀속(2026-07-09 CTA 원칙). "
-        "각(ANGLE) 칼럼은 공식 후보풀 로드맵 신설(후속 작업) 전까지 항상 미배선._"
-    )
-    return "\n".join(lines)
-
-
 # ── §4 자동 제안 초안 규칙 (2026-07-14 가산 — 배743 폐루프⑤ '평가 환류' 마지막 고리) ──────
-# 정성 우선 + 측정 보조(스펙 Constraints). 표본 임계 미달(문의<5건) 시 채널 랭킹은 클릭 단독
-# 조기 신호로 대체(v2 스펙 '점수 공식' 문의전환 sparse 규정과 동일 논리, v1은 정성 규칙만).
-# 성과 신호원 = ①funnel_conversion.byChannel(문의→전환, 배744 라이브 배선) ②click_stats.byUtmSource(클릭).
+# 정성 우선 + 측정 보조(스펙 Constraints). 표본 임계 미달(문의<5건)이면 자동 제안 불가로 정직 표기
+# (클릭 기반 조기신호 폴백은 2026-07-15 클릭 지수 제거·GM 결정으로 삭제 — 억지 대체 금지).
+# 성과 신호원 = funnel_conversion.byChannel(문의→전환, 배744 라이브 배선).
 # ig_engagement_ledger(배31 반응원장)는 개인 계정(namuk) 전용 — 스펙 Constraints("공식 계정 전용·
 # 개인 시리즈는 ship31 정성 소유·중복 금지")에 따라 본 공식 루프에는 의도적으로 섞지 않는다.
 _MIN_INQUIRY_SAMPLE = 5  # 채널 랭킹(전환 기준) 발동 표본 임계 — 스펙 정직 가드 "편당 문의<5→미측정"과 정합
@@ -571,18 +463,10 @@ def _rank_channels_by_conversion(fc: dict | None) -> list[dict]:
     return sorted(rows, key=lambda d: (d.get("converted", 0), d.get("inquiries", 0)), reverse=True)
 
 
-def _rank_channels_by_click(cs: dict | None) -> list[tuple[str, int]]:
-    """click_stats.byUtmSource 클릭수 내림차순. 실패/빈값이면 []."""
-    if cs is None:
-        return []
-    by_src = cs.get("byUtmSource") or {}
-    return sorted(by_src.items(), key=lambda kv: kv[1], reverse=True)
-
-
-def _fmt_next_episode_suggestion(fc: dict | None, cs: dict | None, cps: dict | None) -> str:
+def _fmt_next_episode_suggestion(fc: dict | None) -> str:
     """규칙(정성 우선 + 측정 보조, v1): 이번 주 총 문의가 _MIN_INQUIRY_SAMPLE 이상이면 전환 상위
-    채널을 1순위로 제안(측정 꼬리표). 표본 부족/미측정이면 UTM 클릭 상위 채널을 '조기 신호(전환
-    미측정)' 잠정 제안으로 대체. 둘 다 신호가 없으면 '자동 제안 불가'로 정직 표기(지어내지 않음).
+    채널을 1순위로 제안(측정 꼬리표). 표본 부족/미측정이면 '자동 제안 불가'로 정직 표기(지어내지
+    않음 — 2026-07-15 클릭 기반 조기신호 폴백 삭제·GM 결정, 억지 대체 금지).
     항상 참고용 초안 — 최종 판정·G1 등록은 아래 시모 슬롯(§4 placeholder)의 몫(GM 게이트 유지).
     v2(가중 점수 자동화) 발동 전 v1 정성 규칙 — .omc/specs/deep-interview-cmo-eval-feedback-loop.md
     'v1→v2 발동 트리거' 참조."""
@@ -603,58 +487,19 @@ def _fmt_next_episode_suggestion(fc: dict | None, cs: dict | None, cps: dict | N
         )
         lines.append(f"- 다음 편 제안 방향: {ch} 채널 우선 노출·유사 소재/후킹 반복 검토")
     else:
-        ranked_click = _rank_channels_by_click(cs)
-        if ranked_click:
-            top_ch, top_clicks = ranked_click[0]
-            label = UTM_LABELS.get(top_ch, top_ch)
-            lines.append(
-                f"- 성과 상위 채널(문의전환 표본 부족<{_MIN_INQUIRY_SAMPLE}건 → 클릭 단독 조기 신호 · "
-                f"**전환 미측정**): {label} — 클릭 {top_clicks}회"
-            )
-            lines.append(f"- 다음 편 제안 방향(잠정): {label} 채널 조기 관심 신호 — 전환 축적 후 재확인 필요")
-        else:
-            lines.append("- 성과 상위 채널: **미측정** — 이번 주 클릭·전환 신호 모두 없음(표본 없음)")
-            lines.append("- 다음 편 제안 방향: 자동 제안 불가 — 시모 정성 판정(§3)만으로 결정")
-
-    # 편(캠페인)별 참고 — 있으면만 덧붙임(정직: 없으면 생략, 0 위장 금지)
-    rows = [r for r in ((cps or {}).get("campaigns") or []) if r.get("campaign") != _CAMPAIGN_UNATTRIBUTED_KEY]
-    if rows:
-        top_camp = max(rows, key=lambda r: r.get("clicks", 0))
-        camp = str(top_camp.get("campaign", "-"))
-        coverage = _campaign_coverage_tag(str(top_camp.get("topChannel", "")))
-        lines.append(f"- 참고(편별 클릭 1위): {camp} — {coverage}")
+        lines.append(f"- 성과 상위 채널: **미측정** — 문의전환 표본 부족(<{_MIN_INQUIRY_SAMPLE}건) 또는 신호 없음")
+        lines.append("- 다음 편 제안 방향: 자동 제안 불가 — 시모 정성 판정(§3)만으로 결정")
 
     lines.append("")
     lines.append(
         "_v1 정성 규칙(가중 점수화 아님) — 채널 랭킹만 자동, 소재·후킹 판단은 시모 몫. 개인 계정(namuk) "
-        "반응원장(ship31)은 목적·계정이 달라 본 공식 루프에 섞지 않음(스펙 Constraints). "
-        "v2 발동 조건 = 538 채널별 클릭→문의 전환 귀속 라이브 + 편별 문의 조인 4주 누적 "
-        "(.omc/specs/deep-interview-cmo-eval-feedback-loop.md)._"
+        "반응원장(ship31)은 목적·계정이 달라 본 공식 루프에 섞지 않음(스펙 Constraints)._"
     )
     return "\n".join(lines)
 
 
-def _fmt_angle_scores_fence(cps: dict | None) -> str:
-    """angle-scores 펜스 — ig_series_producer.py 의 producer-season-config 와 같은
-    'KEY: 값' md 펜스를 기계가 직독하는 관례. 새 json/SSOT 파일을 만들지 않고 브리프 .md 안에만 둔다."""
-    lines = ["```angle-scores"]
-    rows = [r for r in ((cps or {}).get("campaigns") or []) if r.get("campaign") != _CAMPAIGN_UNATTRIBUTED_KEY]
-    if cps is None:
-        lines.append("# 미측정 — campaign_stats 수집 실패")
-    elif not rows:
-        lines.append("# 미측정 — 이번 주 편별 클릭 표본 없음(전 편 미발행 가능)")
-    else:
-        for r in rows:
-            camp = str(r.get("campaign", "-")).replace(" ", "_")
-            clicks = r.get("clicks", 0)
-            coverage = "partial" if str(r.get("topChannel", "")) in _CAMPAIGN_ATTRIBUTED_CHANNELS else "none"
-            lines.append(f"{camp}: clicks={clicks} inquiries=미측정 coverage={coverage}")
-    lines.append("```")
-    return "\n".join(lines)
-
-
-def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
-                 mr: dict | None, lr: dict | None, cps: dict | None,
+def build_brief(items: list[dict], fc: dict | None,
+                 mr: dict | None, lr: dict | None,
                  date_from: str, date_to: str, generated_at: datetime.datetime) -> str:
     week_label = f"{date_from} ~ {date_to}"
 
@@ -662,8 +507,7 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
     parts.append(f"# 주간 마케팅 정리 보고 — {generated_at.strftime('%Y-%m-%d')}")
     parts.append("")
     parts.append(
-        "> **v1 = 정성 우선 + 측정 보조.** 측정 안 되는 값은 `미측정`으로 정직 표기(가짜 수치 0). "
-        "자동 가중 점수는 UTM 데이터 축적 후(v2) 도입."
+        "> **v1 = 정성 우선 + 측정 보조.** 측정 안 되는 값은 `미측정`으로 정직 표기(가짜 수치 0)."
     )
     parts.append("")
     parts.append(f"집계 대상 주간: {week_label} · 범위: 공식 @wellperion 전용(개인 시리즈 namuk 제외 — ship31 별도 소유)")
@@ -678,17 +522,12 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
     parts.append("")
     parts.append("| 신호 | 꼬리표 | 설명 |")
     parts.append("|---|---|---|")
-    parts.append("| UTM 클릭(채널별) | **측정** | 문의 CTA 클릭 로그 실집계(최근 7일) |")
     parts.append(
-        "| 문의 전환(클릭↔문의 조인) | **부분** | 2026-07-03 UTM→문의 하드 귀속 개통분부터 정확 — "
+        "| 문의 전환(자기신고 유입경로) | **부분** | 2026-07-03 UTM→문의 하드 귀속 개통분부터 정확 — "
         "과거 문의는 소급 없이 자기신고 채널로만 집계(조인 아님) |"
     )
     parts.append("| 저장·좋아요 | **미측정** | 플랫폼 비공개(IG/네이버 API 미제공) — 수집 경로 없음 |")
-    parts.append("| 카카오 | **연동 미비** | 발행 URL·클릭 추적 없음(카카오 채널 관리자 공개 id 미노출) |")
-    parts.append("")
-    parts.append("**UTM 클릭 상세(최근 7일, 측정)**")
-    parts.append("")
-    parts.append(_fmt_click_breakdown(cs))
+    parts.append("| 카카오 | **연동 미비** | 발행 URL 추적 없음(카카오 채널 관리자 공개 id 미노출) |")
     parts.append("")
     parts.append("**문의 전환 상세(부분 — 위 설명 참조)**")
     parts.append("")
@@ -708,7 +547,7 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
 
     parts.append(SECTION_4_HEADING)
     parts.append("")
-    parts.append(_fmt_next_episode_suggestion(fc, cs, cps))
+    parts.append(_fmt_next_episode_suggestion(fc))
     parts.append("")
     parts.append("▸ (시모: 통한 패턴 → 다음 편 후킹·소재·채널 제안 → G1 배 등록)")
     parts.append("")
@@ -729,36 +568,11 @@ def build_brief(items: list[dict], cs: dict | None, fc: dict | None,
     )
     parts.append("")
 
-    # ── v2 훅 ────────────────────────────────────────────────────
-    # UTM 데이터가 충분히 쌓이면(표본 확보 후) 아래 지점에 자동 가중 점수를 도입한다.
-    #   가중 점수 = 전환×w1 + 클릭×w2 + (...)   ← 가중치는 데이터 축적 후 별도 설계(지금 미정)
-    #   Top/Bottom 컷오프 = 가중 점수 상하위 N개 자동 산출(현재는 섹션3 시모 정성 판정으로 대체)
-    # v1은 표본이 얇아(sparse) 자동 점수를 내면 과적합·오판 위험(스펙 Assumptions 참조) → 의도적 스텁.
-    parts.append(
-        "<!-- v2 훅: UTM 표본 축적 후 자동 가중 점수(전환×w1 + 클릭×w2 …) + Top/Bottom 자동 컷오프 도입. "
-        "가중치·컷오프 로직은 지금(v1) 미구현 — 섹션3 은 시모 정성 판정으로 유지. -->"
-    )
-    parts.append("")
-
-    # ── §5 각(角) 스코어카드 (설계스펙 §3-2/§3-6) ──────────────────────
-    # §3/§4 와 달리 항상 자동 데이터이므로 매번 재생성한다(apply_preserved_judgment 대상 아님).
-    parts.append(SECTION_5_HEADING)
-    parts.append("")
-    parts.append(
-        "_각(角) 편별 채점 — 클릭은 campaign_stats(블로그·카페 링크카드) 실측, 문의는 편별 집계 배선 전(§3-6 GAS "
-        "campaign_conversion 후속)이라 미측정. 커버리지 꼬리표로 귀속 범위를 정직 표기한다(가짜 수치 0 금지)._"
-    )
-    parts.append("")
-    parts.append(_fmt_angle_scorecard(cps))
-    parts.append("")
-    parts.append(_fmt_angle_scores_fence(cps))
-    parts.append("")
-
     return "\n".join(parts)
 
 
 # ── daily 모드 (2026-07-06 가산) — 오늘(KST) 하루 스냅샷, Top/Bottom·다음편 제외 ──
-def build_daily_brief(items: list[dict], cs: dict | None, fc: dict | None,
+def build_daily_brief(items: list[dict], fc: dict | None,
                        mr: dict | None, lr: dict | None,
                        date_str: str, generated_at: datetime.datetime) -> str:
     """daily 브리프 — weekly 의 §1/§2 형태를 그대로 재사용하되 기간을 오늘 하루로 좁히고,
@@ -779,17 +593,12 @@ def build_daily_brief(items: list[dict], cs: dict | None, fc: dict | None,
     parts.append(_fmt_content_table(items))
     parts.append("")
 
-    parts.append("## 2. 오늘 UTM 클릭(채널별)")
-    parts.append("")
-    parts.append(_fmt_click_breakdown(cs))
-    parts.append("")
-
-    parts.append("## 3. 오늘 문의 → 전환(채널별)")
+    parts.append("## 2. 오늘 문의 → 전환(채널별)")
     parts.append("")
     parts.append(_fmt_conversion_breakdown(fc))
     parts.append("")
 
-    parts.append("## 4. 오늘 신규 등록 상세(멤버십/강습종목)")
+    parts.append("## 3. 오늘 신규 등록 상세(멤버십/강습종목)")
     parts.append("")
     parts.append(_fmt_registration_detail_md(mr, lr, date_str, date_str))
     parts.append("")
@@ -797,36 +606,26 @@ def build_daily_brief(items: list[dict], cs: dict | None, fc: dict | None,
     return "\n".join(parts)
 
 
-def build_daily_telegram_summary(items: list[dict], cs: dict | None, fc: dict | None,
+def build_daily_telegram_summary(items: list[dict], fc: dict | None,
                                   mr: dict | None, lr: dict | None,
                                   date_str: str, out_path: Path) -> str:
-    """daily 텔레그램 카드 — ①발행 ②클릭 ③전환 ④등록상세 4줄+각주. send_telegram_summary() 재사용(발송 로직 신규 없음)."""
+    """daily 텔레그램 카드 — ①발행 ②전환 ③등록상세 3줄+각주. send_telegram_summary() 재사용(발송 로직 신규 없음)."""
     lines = [f"오늘 마케팅 정리 — {date_str}", ""]
     lines.append(f"· ① 오늘 공식(@wellperion) 발행: {len(items)}건")
 
-    if cs is None:
-        lines.append("· ② UTM 클릭(채널별): 미측정(수집 실패)")
-    else:
-        by_src = cs.get("byUtmSource") or {}
-        if not by_src:
-            lines.append("· ② UTM 클릭(채널별): 0건(표본 없음)")
-        else:
-            rows = sorted(by_src.items(), key=lambda kv: kv[1], reverse=True)
-            lines.append("· ② UTM 클릭(채널별): " + " · ".join(f"{UTM_LABELS.get(k, k)} {v}회" for k, v in rows))
-
     if fc is None:
-        lines.append("· ③ 문의 전환: 미측정(수집 실패)")
+        lines.append("· ② 문의 전환: 미측정(수집 실패)")
     else:
         by_ch = fc.get("byChannel") or []
         if not by_ch:
-            lines.append("· ③ 문의 전환: 0건(표본 없음)")
+            lines.append("· ② 문의 전환: 0건(표본 없음)")
         else:
             total_inq = sum(d.get("inquiries", 0) for d in by_ch)
             total_conv = sum(d.get("converted", 0) for d in by_ch)
-            lines.append(f"· ③ 문의 전환: {total_inq}건 문의 → {total_conv}명 전환(채널 {len(by_ch)}개, 부분측정)")
+            lines.append(f"· ② 문의 전환: {total_inq}건 문의 → {total_conv}명 전환(채널 {len(by_ch)}개, 부분측정)")
 
     reg_lines = _registration_oneliner(mr, lr).split("\n")
-    lines.append("· ④ " + reg_lines[0].lstrip("· "))
+    lines.append("· ③ " + reg_lines[0].lstrip("· "))
     lines.append(reg_lines[1])
     lines.append("")
     lines.append(f"상세=일일 마케팅 정리 보고 ({out_path.name})")
@@ -927,13 +726,11 @@ def run_weekly(dry_run: bool = False):
     items = load_official_recent(days=7, now=now)
     print(f"[INFO] 공식(@wellperion) 발행완료 콘텐츠 {len(items)}건 (최근 7일)")
 
-    cs = fetch_click_stats(date_from, date_to)
     fc = fetch_funnel_conversion(date_from, date_to)
     mr = fetch_member_registered(date_from, date_to)
     lr = fetch_lesson_registry(date_from, date_to)
-    cps = fetch_campaign_stats(date_from, date_to)
 
-    brief_md = build_brief(items, cs, fc, mr, lr, cps, date_from, date_to, now)
+    brief_md = build_brief(items, fc, mr, lr, date_from, date_to, now)
 
     BRIEFS_DIR.mkdir(parents=True, exist_ok=True)
     out_path = BRIEFS_DIR / f"CMO-weekly-feedback-{now.strftime('%Y%m%d')}.md"
@@ -949,7 +746,7 @@ def run_weekly(dry_run: bool = False):
     print("─" * 60)
 
     # 텔레그램 주간 요약 발송(문의알림방, best-effort) — 실패해도 위 브리프 저장은 이미 끝난 상태.
-    summary_text = build_telegram_summary(items, cs, fc, mr, lr, date_from, date_to, out_path)
+    summary_text = build_telegram_summary(items, fc, mr, lr, date_from, date_to, out_path)
     if dry_run:
         print("[INFO] --dry-run: 텔레그램 실제 발송 생략 — 카드 텍스트만 stdout 출력")
         print("─" * 60)
@@ -971,12 +768,11 @@ def run_daily(dry_run: bool = False):
     items = [it for it in recent if (it.get("published_at") or "")[:10] == date_str]
     print(f"[INFO] 공식(@wellperion) 발행완료 콘텐츠 {len(items)}건 (오늘)")
 
-    cs = fetch_click_stats(date_str, date_str)
     fc = fetch_funnel_conversion(date_str, date_str)
     mr = fetch_member_registered(date_str, date_str)
     lr = fetch_lesson_registry(date_str, date_str)
 
-    brief_md = build_daily_brief(items, cs, fc, mr, lr, date_str, now)
+    brief_md = build_daily_brief(items, fc, mr, lr, date_str, now)
 
     BRIEFS_DIR.mkdir(parents=True, exist_ok=True)
     out_path = BRIEFS_DIR / f"CMO-daily-feedback-{now.strftime('%Y%m%d')}.md"
@@ -987,7 +783,7 @@ def run_daily(dry_run: bool = False):
     print(brief_md)
     print("─" * 60)
 
-    summary_text = build_daily_telegram_summary(items, cs, fc, mr, lr, date_str, out_path)
+    summary_text = build_daily_telegram_summary(items, fc, mr, lr, date_str, out_path)
     if dry_run:
         print("[INFO] --dry-run: 텔레그램 실제 발송 생략 — 카드 텍스트만 stdout 출력")
         print("─" * 60)

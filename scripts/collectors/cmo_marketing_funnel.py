@@ -7,11 +7,10 @@ cmo_marketing_funnel.py — 모듈 cmo-marketing-funnel 수집기(공유 SSOT �
 
 1차 소스 = 모듈의 **선언된 data_source(status/kpi_values.json)** 직독.
   kpi_values.json 은 kpi_collector.py 가 일 2회 자동 집계하는 roles.cmo 블록
-  (채널별_클릭수·총_클릭수·채널별_클릭문의전환)을 담는다 → 실측치는 '측정',
-  measurable=false 채널(네이버/당근/카카오 — 추적밖유입우세)은 있는 그대로
-  노출하고 전체 꼬리표는 '부분'(일부 채널 미측정) — 거짓 %로 채우지 않는다.
+  (채널별_문의전환)을 담는다 → funnel_conversion(byChannel) 실측치를 채널별로
+  노출한다(2026-07-15 클릭 지수 제거·GM 결정 — 클릭 관련 필드는 더 이상 수집하지 않음).
 
-정직 꼬리표: 실측+일부 미측정 혼재 = 부분 / roles.cmo 없음 = 미측정.
+정직 꼬리표: 채널별 문의·전환율 실측 = 측정 / roles.cmo 또는 채널별_문의전환 없음 = 미측정.
 """
 from __future__ import annotations
 
@@ -49,7 +48,7 @@ def _resolve_ref(module):
 
 
 def collect(module=None) -> dict:
-    """표준 payload 반환. roles.cmo 실측치 그대로(미측정 채널은 '추적밖유입우세' 명시)."""
+    """표준 payload 반환. roles.cmo 채널별_문의전환 실측치 그대로(funnel_conversion byChannel)."""
     data = _load_json(_resolve_ref(module))
     cmo = (data or {}).get("roles", {}).get("cmo") if isinstance(data, dict) else None
     if not isinstance(cmo, dict):
@@ -61,40 +60,35 @@ def collect(module=None) -> dict:
             link=_LINK,
         )
 
-    total_clicks = cmo.get("총_클릭수")
-    by_channel_clicks = cmo.get("채널별_클릭수") or {}
-    by_channel_conv = cmo.get("채널별_클릭문의전환") or {}
+    by_channel_conv = cmo.get("채널별_문의전환") or {}
+    if not by_channel_conv:
+        return make_payload(
+            title="마케팅 퍼널·채널 성과",
+            summary_line="roles.cmo.채널별_문의전환 없음",
+            metrics=[],
+            honesty_tag="미측정",
+            link=_LINK,
+        )
 
-    metrics = [{"label": "총 클릭수", "value": total_clicks if total_clicks is not None else "미측정"}]
-    for ch, v in by_channel_clicks.items():
-        metrics.append({"label": f"클릭·{ch}", "value": v})
-
-    measured_bits = []
-    unmeasured_bits = []
+    metrics = []
+    summary_bits = []
     for ch, conv in by_channel_conv.items():
         if not isinstance(conv, dict):
             continue
-        if conv.get("measurable"):
-            rate = conv.get("클릭_문의_전환율")
-            metrics.append({"label": f"클릭→문의 전환율·{ch}", "value": f"{rate}%"})
-            measured_bits.append(f"{ch} {rate}%")
-        else:
-            상태 = conv.get("상태") or "추적밖유입우세"
-            metrics.append({"label": f"클릭→문의 전환율·{ch}", "value": f"{상태}(측정불가)"})
-            unmeasured_bits.append(f"{ch}={상태}")
+        inq = conv.get("문의")
+        rate = conv.get("문의_가입_전환율")
+        rate_s = f"{rate}%" if rate is not None else "미측정"
+        metrics.append({"label": f"문의·{ch}", "value": inq if inq is not None else "미측정"})
+        metrics.append({"label": f"문의→가입 전환율·{ch}", "value": rate_s})
+        summary_bits.append(f"{ch} 문의{inq if inq is not None else '미측정'}·전환{rate_s}")
 
-    summary_parts = [f"총 클릭 {total_clicks if total_clicks is not None else '미측정'}"]
-    if measured_bits:
-        summary_parts.append("클릭→문의 전환 " + ", ".join(measured_bits) + "(실측)")
-    if unmeasured_bits:
-        summary_parts.append(", ".join(unmeasured_bits) + " — 노출 미측정")
-    summary = " · ".join(summary_parts)
+    summary = "채널별 문의→가입: " + ", ".join(summary_bits) if summary_bits else "미측정"
 
     return make_payload(
         title="마케팅 퍼널·채널 성과",
         summary_line=summary,
         metrics=metrics,
-        honesty_tag="부분",
+        honesty_tag="측정",
         link=_LINK,
     )
 
