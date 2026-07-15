@@ -1075,5 +1075,19 @@
     "artifact": "GM 지적①: G1 오늘의 항로 보드에 각 배 담당이 [닉네임]만 뜨고 식별번호 누락.\n약속 L16 표준(담당=닉네임+ship_no·배마다 고정)대로 두 렌더 경로 모두 수정:\n  - hangro_board.py: fetch_queue_items에 ship_no 보존 + _owner_label 헬퍼로\n    담당 칸을 '시포 1037'식 표기(3섹터 표·표류 행 공통). GAS 시트항목은 ship_no\n    없어 닉네임만(폴백).\n  - ceo_morning_pipeline.py(08:00 보고): 큐머지 item에 ship_no (CLI ad-hoc · 커밋 0a864339)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "0a8643393275be74afb41ff138e0c9cbd8a9ccde"
+  },
+  {
+    "task_id": "CPO-2026-07-15-ADHOC-038a9223",
+    "clevel": "cpo",
+    "title": "[시포] 강습 회원관리 카톡 진입 스텁 lesson.html — 인앱브라우저 쿼리드롭 우회",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1089,
+    "artifact": "카카오톡이 ?manage=lesson 쿼리를 떨어뜨려 멤버십으로 열리는 문제 → 쿼리·한글 없는\nASCII 스텁이 브라우저 내부에서 문의회원.html?manage=lesson 로 이동(전송단계 무손실). (CLI ad-hoc · 커밋 038a9223)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "038a92230777610de5d96e6db5c91ce16b95ff48"
   }
 ]
