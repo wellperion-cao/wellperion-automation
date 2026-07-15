@@ -231,7 +231,7 @@ a{color:var(--accent);text-decoration:none}
   <!-- ⑥ 코멘트 / 개선 액션 -->
   <div class="section">
     <div class="section-title"><span class="section-num">⑥</span> 코멘트 &amp; 개선 액션 <span style="font-size:10px;color:var(--accent);font-weight:700">자동 도출</span></div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:10px;font-style:italic">※ 아래 성과·병목·액션은 집계로 자동 생성된 <b>초안</b>입니다 — 전환 수치가 추정이라 방향 참고용. 실제 개선은 퍼널(클릭→문의→전환) 근거로 GM 메모에 보완하세요.</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px;font-style:italic">※ 아래 성과·병목·액션은 집계로 자동 생성된 <b>초안</b>입니다 — 전환 수치가 추정이라 방향 참고용. 실제 개선은 퍼널(발행→문의→전환) 근거로 GM 메모에 보완하세요.</div>
     <div class="comment-box">
       <div class="comment-row">
         <div class="comment-lbl">이달 성과</div>
@@ -358,7 +358,6 @@ async function loadPeriodBreakdown() {
     if (!c) throw new Error("GAS custom 응답 없음");
     mapped = {
       ok: true,
-      clicks: { month: c.clicks },
       inquiries: { month: c.inquiries, byChannelMonth: c.byChannel, byTypeMonth: c.byType },
       conversion: { month: c.conversion },
     };
@@ -392,14 +391,12 @@ async function loadFunnelConversion() {
 
 /* ── KPI 집계 표 렌더 ── */
 function renderKpiTable(pb) {
-  const clicks    = pb?.clicks?.month    ?? null;
   const inquiries = pb?.inquiries?.month ?? null;
   const convInq   = pb?.conversion?.month?.inquiries ?? null;
   const convDone  = pb?.conversion?.month?.converted ?? null;
   const convRate  = pb?.conversion?.month?.rate      ?? null;
 
   const rows = [
-    { label: "문의 페이지 클릭",  val: clicks,    unit: "회",  src: "클릭로그 시트 (GAS)" },
     { label: "문의 접수",         val: inquiries, unit: "건",  src: "문의접수 + 구글폼 합산 (GAS)" },
     { label: "회원 전환",         val: convDone,  unit: "명",  src: "전화 매칭 기준 (GAS funnel_conversion)" },
     { label: "전환율",            val: convRate,  unit: null,  src: "전환 / 문의 × 100", isRate: true,
@@ -465,7 +462,7 @@ function maybeRenderChannelFunnel() {
       + '<td>' + rateCell + '</td></tr>';
   });
   html += '</tbody></table>'
-    + '<div style="margin-top:8px;font-size:11px;color:var(--dim)">문의=접수 시 선택한 유입경로 · 지난달=같은 기준 1일~말일 · 전환율=문의→회원(전화매칭 누적 추정) · 클릭은 UTM 태그분만 부분집계라 채널 퍼널엔 미포함</div>';
+    + '<div style="margin-top:8px;font-size:11px;color:var(--dim)">문의=접수 시 선택한 유입경로 · 지난달=같은 기준 1일~말일 · 전환율=문의→회원(전화매칭 누적 추정)</div>';
   el.innerHTML = html;
 }
 
@@ -495,7 +492,6 @@ function renderSummary(pb) {
   const inq       = pb?.inquiries?.month ?? null;
   const conv      = pb?.conversion?.month?.converted ?? null;
   const rate      = pb?.conversion?.month?.rate ?? null;
-  const clicks    = pb?.clicks?.month ?? null;
   const monthStr  = document.getElementById("coverPeriod").textContent;
 
   if (!pb) {
@@ -504,7 +500,6 @@ function renderSummary(pb) {
   }
 
   const parts = [];
-  if (clicks    != null) parts.push(`문의 페이지 클릭 <strong>${fmtNum(clicks)}회</strong>`);
   if (inq       != null) parts.push(`문의 접수 <strong>${fmtNum(inq)}건</strong>`);
   if (conv      != null) parts.push(`회원 전환 <strong>${fmtNum(conv)}명</strong>`);
   if (rate      != null) {
