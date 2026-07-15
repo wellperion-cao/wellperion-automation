@@ -139,7 +139,14 @@ function _sportBuckets_(raw) {
   hit(/스쿼시/, '스쿼시');
   hit(/골프/, '골프');
   hit(/아쿠아/, '아쿠아로빅');
-  hit(/바레|발레/, '루프메소드');  // 발레·바레 = 외부 파트너 유료 프로그램(루프메소드)로 통합 집계. 2026-07-03 시포·GM
+  // 발레·바레 분리(시토·GM 2026-07-15): 과거 합쳐진 옵션('웰니스 프로그램(바레, 발레)')은 legacy '루프메소드'로 잔류,
+  //   신규 단독 '발레'/'바레'는 각각 분리 집계(다중체크면 각 +1). 종목명 표준=순수 '발레'/'바레'.
+  if (/웰니스\s*프로그램|바레\s*[,·]\s*발레|발레\s*[,·]\s*바레/.test(s)) {
+    out.push('루프메소드');       // legacy 합산 문자열(발레·바레 둘 다 포함) → 잔류 버킷
+  } else {
+    hit(/발레/, '발레');
+    hit(/바레/, '바레');
+  }
   hit(/뮤지컬/, '뮤지컬');
   hit(/체조/, '체조');
   if (out.length === 0 && s.trim()) out.push('기타');
@@ -428,8 +435,10 @@ var LESSON_DISPLAY = {
     { 명: 'P.T',    sheet: 'P.T 성인' },
     { 명: '필라테스', sheet: '필라테스 성인' },
     { 명: '아쿠아로빅', sheet: '아쿠아로빅' },   // 누락 배선(팀시트 존재하나 display 누락) 2026-07-03
-    // 발레·바레 → 루프메소드 한 줄 통합. 외부 파트너 유료 프로그램, 회원 명단 시트 없음(외부관리) → sheet:null·external
-    { 명: '루프메소드(발레·바레)', sheet: null, external: true, note: '외부 파트너 유료 프로그램 · 회원 명단 외부관리(등록 명단 미표시)' }
+    // 발레·바레 분리(시토·GM 2026-07-15): 순수 종목명·external 해제 → 다른 종목처럼 등록집계 대상.
+    //   팀시트 없음(sheet:null) → 등록수는 등록원장(강습 등록현황) SUC 카운트 기반(_ledgerRosterByType_). roster 없으면 0에서 누적.
+    { 명: '발레', sheet: null, ledger: true },
+    { 명: '바레', sheet: null, ledger: true }
   ],
   '유소년강습': [
     { 명: '수영',          sheet: '수영 유소년' },
@@ -460,6 +469,29 @@ function _lessonRegSheet_() {
     sh.getRange(1, 1, 1, _LESSON_REG_HEADER.length).setFontWeight('bold');
   }
   return sh;
+}
+
+// 팀시트 없는 종목(LESSON_DISPLAY ledger:true — 발레·바레)의 등록 명단·집계 = 등록원장(강습 등록현황) SUC 행.
+//   팀시트 roster가 없어 _collectLessonRoster_/_collectLessonRegByName_로는 집계 불가 → 원장 직접 카운트.
+//   반환: { '발레': [{name,phone,status}], '바레': [...] } (유형 일치 + _isLessonReg_ 상태 행만). 원장 비면 {} → 프론트 0.
+//   집계는 이 명단 length. 시토·GM 2026-07-15(external 해제 배선).
+function _ledgerRosterByType_(type) {
+  var out = {};
+  try {
+    var sh = _lessonRegSheet_();
+    var last = sh.getLastRow();
+    if (last < 2) return out;
+    var rows = sh.getRange(2, 1, last - 1, _LESSON_REG_HEADER.length).getValues();
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i][0] || '').trim() !== type) continue;   // 유형 열(0)
+      if (!_isLessonReg_(rows[i][4])) continue;                 // 상태 열(4) = 등록성공(SUC/등록)만
+      var sp = String(rows[i][1] || '').trim();                 // 종목 열(1)
+      if (!sp) continue;
+      if (!out[sp]) out[sp] = [];
+      out[sp].push({ name: String(rows[i][2] || ''), phone: _fmtPhone_(rows[i][3]), status: String(rows[i][4] || '').trim() });
+    }
+  } catch (e) { /* 원장 접근 실패 → {} (0 표기, 날조 금지) */ }
+  return out;
 }
 
 // 팀시트(LESSON_TEAM_SHEETS)에서 현재 등록(SUC) 회원 명단 수집 — lesson_registered_roster 동일 로직.
@@ -668,7 +700,7 @@ function normalizePhone_(s) {
 // 종목 기준 이모지(GM 2026-07-14) — 부분매칭이라 '성인 수영 (개인레슨)' 같은 자유라벨도 잡힘. 첫 매치 우선.
 function _teamChip(sport){
   var k=(sport||'').trim(); if(!k) return '';
-  var rules=[['아쿠아','💦'],['수영','🏊'],['P.T','🏋️'],['PT','🏋️'],['필라','🧘'],['P.L','🧘'],['스쿼시','🎾'],['골프','⛳'],['트램폴린','🤸'],['체조','🤸'],['멤버십','🎫'],['뮤지컬','🎭'],['루프','🌀']];
+  var rules=[['아쿠아','💦'],['수영','🏊'],['P.T','🏋️'],['PT','🏋️'],['필라','🧘'],['P.L','🧘'],['스쿼시','🎾'],['골프','⛳'],['트램폴린','🤸'],['체조','🤸'],['멤버십','🎫'],['뮤지컬','🎭'],['발레','🩰'],['바레','🩰'],['루프','🌀']];
   for(var i=0;i<rules.length;i++){ if(k.indexOf(rules[i][0])>=0) return rules[i][1]+' '; }
   return '';
 }
@@ -2901,10 +2933,20 @@ function _processAction(body) {
     LESSON_TEAM_SHEETS.forEach(function(c){ lrrCfgByName[c.명] = c; });
     var lrrBySport = [];
     var lrrRoster = [];
+    var lrrLedger = null;  // 발레·바레 등 팀시트 없는 종목: 등록원장 기반. 지연 로드.
     lrrDisplay.forEach(function(item){
       var rec = { 명: item.명, registered: null, sheetFound: false, external: !!item.external, note: item.note || '' };
       var cfg = item.sheet ? lrrCfgByName[item.sheet] : null;
-      if (!cfg) { lrrBySport.push(rec); return; }  // sheet:null(외부관리/미연결) → registered=null 유지
+      if (!cfg) {
+        // 발레·바레(ledger:true, external 해제): 등록원장(강습 등록현황) SUC 명단으로 집계·표시.
+        if (item.ledger) {
+          if (lrrLedger === null) lrrLedger = _ledgerRosterByType_(lrrType);
+          var lgList = lrrLedger[item.명] || [];
+          rec.registered = lgList.length;  // 원장 기반(0도 실측·roster 없으면 0에서 누적)
+          lgList.forEach(function(m){ lrrRoster.push({ sport: item.명, name: m.name, phone: m.phone, status: m.status }); });
+        }
+        lrrBySport.push(rec); return;  // 그 외 sheet:null(미연결) → registered=null 유지
+      }
       try {
         var sh = _sheetByGid_(cfg.ssId, cfg.gid);
         if (!sh) { lrrBySport.push(rec); return; }
@@ -4514,6 +4556,7 @@ function _processAction(body) {
     }
 
     Object.keys(LESSON_DISPLAY).forEach(function(grp) {
+      var ledgerRoster = null;  // 팀시트 없는 종목(발레·바레): 등록원장 기반. 지연 로드(있을 때만 1회).
       data[grp] = LESSON_DISPLAY[grp].map(function(item) {
         var reg = null, inq = null, src = null, sheetUrl = null;
         if (item.sheet) {
@@ -4523,6 +4566,11 @@ function _processAction(body) {
           if (rec)  { reg = rec.registered; src = rec.statusHeader; }  // null이면 그대로(데이터 미연결)
           if (recI) { inq = recI.inquiries; }
           sheetUrl = _lessonSheetUrl(item.sheet);
+        } else if (item.ledger) {
+          // 발레·바레(external 해제): 등록원장(강습 등록현황) SUC 카운트로 집계. roster 없으면 0(정직·날조 아님).
+          if (ledgerRoster === null) ledgerRoster = _ledgerRosterByType_(grp);
+          reg = (ledgerRoster[item.명] || []).length;
+          src = '등록원장(강습 등록현황)';
         }
         return { 명: item.명, registered: reg, inquiries: inq, sheet: item.sheet || null, sheetUrl: sheetUrl, statusSource: src, external: !!item.external, note: item.note || '' };
       });
@@ -4544,7 +4592,7 @@ function _processAction(body) {
     var unmatched = [];
     Object.keys(LESSON_DISPLAY).forEach(function(grp) {
       LESSON_DISPLAY[grp].forEach(function(item) {
-        if (!item.sheet) unmatched.push({ 유형: grp, 명: item.명, external: !!item.external, reason: item.note || '등록·문의 데이터 출처 없음' });
+        if (!item.sheet && !item.ledger) unmatched.push({ 유형: grp, 명: item.명, external: !!item.external, reason: item.note || '등록·문의 데이터 출처 없음' });
       });
     });
 
@@ -4552,7 +4600,7 @@ function _processAction(body) {
       ok: true,
       generatedAt: _now(),
       range: { from: lbFrom, to: lbTo },
-      basis: '종목별 문의 = 팀시트 행을 타임스탬프 기준 기간 집계 · 등록 = 팀시트 상태열 수강등록(SUC/등록) 누적 · 외부프로그램(루프메소드)=null(외부관리·명단 미표시)',
+      basis: '종목별 문의 = 팀시트 행을 타임스탬프 기준 기간 집계 · 등록 = 팀시트 상태열 수강등록(SUC/등록) 누적 · 팀시트 없는 종목(발레·바레)=등록원장(강습 등록현황) SUC 카운트 기반',
       data: data,
       others: others,
       unmatched: unmatched
@@ -4618,7 +4666,10 @@ function _processAction(body) {
       if (/P\.?T|피티|퍼스널/i.test(s)) return 'P.T' + suffix;
       if (/스쿼시/.test(s))          return '스쿼시' + suffix;
       if (/골프/.test(s))            return '골프' + suffix;
-      if (/바레|발레/.test(s))        return '루프메소드(발레·바레)';  // external(null 시트)
+      // 발레·바레 분리(시토·GM 2026-07-15): 과거 합쳐진 옵션은 legacy 합산, 신규 단독은 각각. 표준=순수 '발레'/'바레'.
+      if (/웰니스\s*프로그램|바레\s*[,·]\s*발레|발레\s*[,·]\s*바레/.test(s)) return '루프메소드(발레·바레)';  // legacy(팀시트 없음)
+      if (/발레/.test(s))            return '발레';
+      if (/바레/.test(s))            return '바레';
       return null;  // 미매칭(뮤지컬·기타 등) → OLD 팀시트에 대응 명 없음
     }
     var KST = 'Asia/Seoul';
