@@ -1646,5 +1646,19 @@
     "artifact": "GM 결정: 컨택 텔레그램 푸시는 현행유지(연락이력 0->1건 기록 시에만 발동)하되,\n진행상태 드롭다운만 '컨택중'으로 바꿔도 알림이 간다는 실무진 오해를 막기 위해\nCONTACT 모달(성인/유소년 강습 공유 컴포넌트)에 안내 문구 1회 추가. (CLI ad-hoc · 커밋 bddcac35)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "bddcac35ae7f7676662c01b663f76953ad74b479"
+  },
+  {
+    "task_id": "CTO-2026-07-15-ADHOC-f54bcb66",
+    "clevel": "cto",
+    "title": "[시토] welly 러너 증분2 로드맵1 — 세션 stdout 구조화 검증 파싱·자동 검수·사후감사 @970",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1040,
+    "artifact": "증분2 로드맵 1단계 구현(엔진+로컬검증만, .bat 라이브 스코프는 --clevel cto 유지·전면확산 GM go 대기):\n- parse_verification_result: 세션 stdout의 WELLY_VERIFY JSON 한 줄 파싱(마지막 줄 우선·파싱실패=애매)\n- build_auto_review_verdict: script=완전자동/frontend=렌더실측+정직꼬리표(디자인 미검수)/애매→park/실패→쿨다운\n- audit_completion_in_queue: 사후감사(로드맵3)—선언 완료가 큐에 반영됐는지 대조\n-  (CLI ad-hoc · 커밋 f54bcb66)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f54bcb661a13bae0c1af7f5f3507fc4d37aec56e"
   }
 ]
