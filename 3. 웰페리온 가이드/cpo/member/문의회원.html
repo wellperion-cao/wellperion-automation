@@ -3788,19 +3788,24 @@ function switchFamily(fam) {
   var titleEl = document.getElementById('pageTitleTxt');   // 상단 H1도 그룹명으로(통합 회원 관리 → 멤버십/강습). 2026-07-02 시포·GM
   if (titleEl) titleEl.textContent = _famName;
   document.title = '웰페리온 ' + _famName.replace('회원관리', '회원 관리') + ' — AI CPO';   // 브라우저 탭 제목도 그룹명 동기화(배299, 2026-07-03 시포)
-  renderTodayActionPanel();   // 오늘 할 일 패널도 family 전환에 맞춰 스코프 갱신(배754) — 멤버십/강습 각자 내부에서 준비상태 판단(강습이 dbRows 대기에 묶이지 않게, 배754 강습편입)
-  if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — family 전환 즉시 재계산(강습 패리티)
-  if (typeof renderChurnActionPanel === 'function') renderChurnActionPanel();   // 이탈방지 액션(2026-07-15 이탈관리 모달로 이관) — _churnRiskEager(히어로)는 family 전환마다 재판정 필요(강습=공백)
-  // 강습 통합 4카드(CPO-2026-07-14-LESSON-4CARD) — 성인+유소년 한 줄 표시는 강습 family에서만 노출.
-  // 둘 다 값을 채우기 위해 기존 lessonInit/lessonRegLoad를 성인·유소년 양쪽 다 선로드(신규 로직 아님, 기존 안전 함수 재사용 — 표시만).
-  var _comboEl = document.getElementById('lessonComboBoard');
-  if (_comboEl) _comboEl.style.display = (fam === 'lesson') ? '' : 'none';
-  if (fam === 'lesson') {
-    lessonInit('adult'); lessonInit('youth');
-    if (!_lessonState.adult.memLoaded) lessonRegLoad('adult');
-    if (!_lessonState.youth.memLoaded) lessonRegLoad('youth');
-  }
-  switchType(types[0]);   // 그룹 첫 유형으로 전환
+  // ★render/load 서브호출 방어 감싸기(2026-07-15 시토)★: init 시점(강습 데이터 미준비)에 아래 중
+  //   하나가 throw하면 switchFamily 자체가 던져, 호출부(init try)의 catch가 switchFamily('membership')로
+  //   되돌리던 버그(카톡 비밀번호 후 강습→멤버십으로 새던 근본원인). family/label/chip 전환은 위에서
+  //   이미 확정됐으므로 아래 렌더·로드는 best-effort로만 — 실패해도 family는 유지된다.
+  try {
+    renderTodayActionPanel();   // 오늘 할 일 패널도 family 전환에 맞춰 스코프 갱신(배754)
+    if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754)
+    if (typeof renderChurnActionPanel === 'function') renderChurnActionPanel();   // 이탈방지 액션(2026-07-15)
+    // 강습 통합 4카드(CPO-2026-07-14-LESSON-4CARD) — 성인+유소년 한 줄, 강습 family에서만 노출.
+    var _comboEl = document.getElementById('lessonComboBoard');
+    if (_comboEl) _comboEl.style.display = (fam === 'lesson') ? '' : 'none';
+    if (fam === 'lesson') {
+      lessonInit('adult'); lessonInit('youth');
+      if (!_lessonState.adult.memLoaded) lessonRegLoad('adult');
+      if (!_lessonState.youth.memLoaded) lessonRegLoad('youth');
+    }
+  } catch(_sfErr){ /* best-effort — family 전환은 이미 확정, 렌더 실패해도 안 되돌림 */ }
+  try { switchType(types[0]); } catch(e){}   // 그룹 첫 유형으로 전환(방어)
 }
 
 /* ── 강습 문의 목록(inline) — 성인/유소년 독립 상태. lesson_inquiry_list·lesson_stats 재사용 ── */
