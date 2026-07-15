@@ -4203,7 +4203,8 @@ window._regAssign = function(id, category) {
           c.style.cssText='border:1px solid rgba(183,159,138,0.2);border-radius:12px;padding:14px;background:var(--paper);margin-bottom:10px;';
           var h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;"><strong style="font-size:13.5px;">'+esc(it.title)+'</strong>'+badgeOf(e)+'</div>';
           if(it.channel)h+='<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">채널: '+esc(it.channel)+'</div>';
-          if(it.preview)h+='<img src="'+esc(it.preview)+'" alt="미리보기" style="width:100%;border-radius:8px;border:1px solid rgba(183,159,138,0.15);margin-bottom:8px;" loading="lazy">';
+          var itPrev=it.preview||(it.slides&&it.slides[0]);
+          if(itPrev)h+='<img src="'+esc(itPrev)+'" alt="미리보기" style="width:100%;border-radius:8px;border:1px solid rgba(183,159,138,0.15);margin-bottom:8px;" loading="lazy">';
           if(it.caption)h+='<details style="margin-bottom:8px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--dim);">캡션 보기</summary><div style="font-size:12.5px;color:var(--text-soft);white-space:pre-wrap;line-height:1.7;padding-top:6px;">'+esc(it.caption)+'</div></details>';
           if(it.body)h+='<details style="margin-bottom:8px;" open><summary style="cursor:pointer;font-size:12.5px;color:var(--dim);">본문 보기</summary><div style="font-size:12.5px;color:var(--text-soft);white-space:pre-wrap;line-height:1.7;padding-top:6px;">'+esc(it.body)+'</div></details>';
           h+='<div style="display:flex;gap:8px;margin-top:4px;"><button data-act="approve" data-id="'+esc(it.id)+'" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px;font-weight:700;cursor:pointer;font-family:inherit;">승인</button><button data-act="reject" data-id="'+esc(it.id)+'" style="flex:1;background:none;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:9px;cursor:pointer;font-family:inherit;">반려</button></div>';
@@ -4220,7 +4221,8 @@ window._regAssign = function(id, category) {
             var pd=pubDate(it);
             inner+='<div style="font-size:11px;color:var(--dim);margin-top:3px;">📅 발행일 '+(pd?esc(pd):'미상')+'</div>';
             if(it.post_url)inner+='<div style="margin-top:4px;"><a href="'+esc(it.post_url)+'" target="_blank" style="color:var(--accent);font-size:12px;">게시물 보기 ↗</a></div>';
-            inner+='<details style="margin-top:4px;"><summary style="cursor:pointer;font-size:11.5px;color:var(--dim);">캡션·미리보기 보기</summary>'+(it.preview?'<img src="'+esc(it.preview)+'" style="width:100%;border-radius:6px;margin-top:6px;" loading="lazy">':'')+(it.caption?'<div style="font-size:12px;color:var(--text-soft);white-space:pre-wrap;line-height:1.6;padding-top:6px;">'+esc(it.caption)+'</div>':'')+'</details></div>';
+            var itPrev2=it.preview||(it.slides&&it.slides[0]);
+            inner+='<details style="margin-top:4px;"><summary style="cursor:pointer;font-size:11.5px;color:var(--dim);">캡션·미리보기 보기</summary>'+(itPrev2?'<img src="'+esc(itPrev2)+'" style="width:100%;border-radius:6px;margin-top:6px;" loading="lazy">':'')+(it.caption?'<div style="font-size:12px;color:var(--text-soft);white-space:pre-wrap;line-height:1.6;padding-top:6px;">'+esc(it.caption)+'</div>':'')+'</details></div>';
           });
           inner+='</div>';
           det.innerHTML=inner;list.appendChild(det);
@@ -8500,6 +8502,7 @@ function crTab(btn, panelId) {
 
     /* ── SSOT 자동 합류 (in-memory · localStorage 저장 금지 · 2026-05-29 seed#10) ── */
     var gm1SsotItems = [];   // SSOT(구글시트)에서 읽어온 GM 본인·결재 차례 항목 (항상 최신)
+    var gm1InProgressCount = 0;   // 🚢 진행·상시 미션(_queue IN_PROGRESS) 개수 — 항로 제외·자율현황 위임 안내용 (2026-07-15 배237)
     var gm1CatFilter = { '업무':true, '결재':true, '기획':true, '개인':true };  // 분류 필터 체크 상태
     // 업무SSOT 이식 — 정렬·검색 상태 (2026-06-01) · 담당자 필터/정렬 UI 死코드 제거(2026-06-02 GM 단독 페이지)
     var gm1SortBy      = '최신순';  // '최신순' | '카테고리' | '시작일순'
@@ -8835,29 +8838,17 @@ function crTab(btn, panelId) {
         items.forEach(function(it){ if (it._sheetsId) sheetIds[it._sheetsId] = true; });
         var CLEVEL_LABEL = { ceo:'AI CEO', cmo:'AI CMO', cto:'AI CTO', coo:'AI COO', cfo:'AI CFO', cpo:'AI CPO', chro:'AI CHRO' };
         var CLEVEL_NICK  = { ceo:'웰리', cmo:'시모', cto:'시토', coo:'시우', cfo:'시뽀', cpo:'시포', chro:'시로', gm:'GM', gm1:'GM' };
-        // ── 완결·대기 IN_PROGRESS 재분류 (2026-07-14 시토·배993) ──────────────
-        //   일 끝났고 '나중 확인/외부 대기'만 남은 IN_PROGRESS 배가 '🚢 진행중'에
-        //   계속 잔류하던 반복버그 수리(GM 3연속 지적). 데이터모델 status 는
-        //   IN_PROGRESS 그대로 두고(웰리승인 불요) 렌더 분류만 '대기'(⚓ 예정 항구)로
-        //   내린다. 순수 가역 — 이 함수/분기만 되돌리면 원복.
-        //   판정: next(다음 한 줄)에 완결 마커(🔗·완결·마감) 또는 (완료 + 대기신호)면
-        //   '완결+대기'로 본다. 상시소유·차기실행(🚀·…실행) 배는 마커가 없어 진행중 유지.
-        function gm1QDoneWaiting(nextTxt){
-          var s = String(nextTxt || '').trim();
-          if (!s) return false;
-          // 👉/🚀 로 시작 = '다음에 이걸 실행' 활성 지시 → 파킹 아님(진행중 유지).
-          if (s.indexOf('👉') === 0 || s.indexOf('🚀') === 0) return false;
-          if (s.indexOf('🔗') >= 0 || s.indexOf('완결') >= 0 || s.indexOf('마감') >= 0) return true;
-          if (s.indexOf('완료') >= 0) {
-            var waits = ['다음 세션','GM go','데이터 대기','대기(','발효','재배포'];
-            for (var wi = 0; wi < waits.length; wi++) { if (s.indexOf(waits[wi]) >= 0) return true; }
-          }
-          return false;
-        }
+        // ── 🚢 진행·상시 미션(IN_PROGRESS) 항로 제외 → 자율현황.html 위임 (2026-07-15 GM·배237) ──
+        //   status 필드로만 판정(하드코딩 배 목록 없음·라이브 큐 자동 정합). IN_PROGRESS 배는 항로 3섹터
+        //   어디에도 그리지 않고 개수만 세어 '🚢 진행중' 섹터 자리에 자율현황 안내 한 줄로 대체한다.
+        //   PENDING(⚓ 대기)·DONE(🏁 입항)·시트(todo_list) 항목은 무손상. 순수 가역 — 이 분기만 되돌리면 원복.
+        //   (구 gm1QDoneWaiting '완결+대기' 재분류는 IN_PROGRESS 전량 제외로 흡수·제거)
+        gm1InProgressCount = 0;
         queue.forEach(function(q){
-          var _qActive = (q.status === 'PENDING' || q.status === 'IN_PROGRESS');
+          if (q.status === 'IN_PROGRESS') { gm1InProgressCount++; return; }  // 진행·상시 미션 → 자율현황 위임
+          var _qActive = (q.status === 'PENDING');
           var _qHist = (q.status === 'DONE' || q.status === '완료' || q.status === '폐기');
-          if (!_qActive && !_qHist) return;  // 진행/대기=기본뷰 · 완료/폐기=이력(검색용)
+          if (!_qActive && !_qHist) return;  // 대기=기본뷰 · 완료/폐기=이력(검색용)
           var tid = String(q.task_id || '');
           if (!tid) return;
           if (sheetIds[tid]) return;  // 시트에 이미 있으면 스킵
@@ -8870,12 +8861,8 @@ function crTab(btn, panelId) {
           var _shipDisp = _nick + (q.ship_no != null ? ' ' + q.ship_no : '');
           var statusMap = { PENDING:'대기', IN_PROGRESS:'진행중', DONE:'완료', '완료':'완료', '폐기':'폐기' };
           var _qDone = (q.status === 'DONE' || q.status === '완료');
-          // 완결+대기 IN_PROGRESS 는 '대기'(⚓ 예정 항구)로 내려 진행중 잔류 방지 (배993)
-          var _effStatus = (q.status === '폐기')
-            ? '폐기'
-            : (q.status === 'IN_PROGRESS' && gm1QDoneWaiting(q.next))
-              ? '대기'
-              : (statusMap[q.status] || '진행중');
+          // IN_PROGRESS 는 위에서 전량 제외(자율현황 위임) → 여기는 PENDING(대기)·DONE(완료)·폐기만 도달.
+          var _effStatus = statusMap[q.status] || '진행중';
           items.push({
             id: qid,
             title: String(q.title || tid),
@@ -8885,6 +8872,7 @@ function crTab(btn, panelId) {
             isToday: true,
             ssotAuto: true,
             queueSource: true,   // _queue 기원 마킹 (편집 차단용)
+            board: String(q.board || ''),   // '자율현황'=자율화 미션 → 항로 제외·자율현황行 (GM 2026-07-15)
             owner: _shipDisp,
             _doneDate: _qDone ? String(q.processed_at || '').slice(0,10) : '',  // AI배 완료일(processed_at)
             _holdDate: '',  // AI배는 보류 상태 없음(statusMap에 보류 미포함) — 폴백만 유지 (GM 2026-06-12)
@@ -9169,6 +9157,11 @@ function crTab(btn, panelId) {
       }
       merged.sort(gm1SortCmp);
 
+      // ── 🤖 자율화 미션(board='자율현황')은 항로에서 제외 → 자율현황 보드行 (GM 2026-07-15) ──
+      //   자율화되어 스스로 도는 미션은 오늘의 항로가 아니라 자율현황에서 관리. 순수 렌더 필터(가역).
+      var gm1AutonomyN = merged.filter(function(t){ return t.board === '자율현황'; }).length;
+      if (gm1AutonomyN) merged = merged.filter(function(t){ return t.board !== '자율현황'; });
+
       // 완료여도 결재 미완(결재요청 있고 결재완료·반려 아님)이면 진행으로 유지 (2026-06-03 GM · 업무현황 일관)
       function _gm1ApprPending(t){ var rq=String(t.apprReq||t.approval||'').trim(), a=String(t.apprStatus||'').trim(); return rq && a !== '결재완료' && !/반려/.test(a); }
       var apprWait = merged.filter(function(t){ return t.status === '완료' && _gm1ApprPending(t); });
@@ -9245,6 +9238,14 @@ function crTab(btn, panelId) {
         html += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(232,163,61,0.35);border-radius:10px;background:rgba(232,163,61,0.06);text-decoration:none;flex-wrap:wrap;">';
         html += '<span style="flex:1;font-size:13.5px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">' + _apprParts.join('') + '</span>';
         html += '<span style="font-size:12px;color:#e8a33d;font-weight:600;">결재 현황 SSOT →</span>';
+        html += '</a>';
+      }
+
+      // ── 🤖 자율화 미션 포인터 — 항로 제외분을 자율현황으로 안내 (GM 2026-07-15) ──
+      if (gm1AutonomyN) {
+        html += '<a href="자율현황.html" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(167,139,218,0.35);border-radius:10px;background:rgba(167,139,218,0.07);text-decoration:none;flex-wrap:wrap;">';
+        html += '<span style="flex:1;font-size:13.5px;font-weight:700;color:#a78bda;">🤖 자율화 미션 ' + gm1AutonomyN + '건 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 스스로 도는 미션은 항로 대신 여기서</span></span>';
+        html += '<span style="font-size:12px;color:#a78bda;font-weight:600;">자율 작업 현황 →</span>';
         html += '</a>';
       }
 
