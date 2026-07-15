@@ -559,9 +559,11 @@
            종합접수처(9칸 꽉 참)와 나란히 두면 비어 보이던 문제 해소. 셀 padding 10px12px→14px14px·큰숫자 22px→27px·
            라벨/서브텍스트 소폭↑·행별 min-height 명시(멤버십행126px·강습행149px, 종합접수처 min-height 패턴과 동일 기법)로
            그리드 높이를 211.5px→약 282px까지 확장해 링크 행 앞 빈 공간을 없애고 두 카드 높이를 실제로 채움(라이브
-           측정 기반 계산치 — before.png/after.png 참조). 데이터 바인딩 id·링크·하단정렬 구조는 무변경. -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:14px;color:var(--text);">문의&등록 현황</div><div style="font-size:10.5px;color:var(--dim);">멤버십·강습 문의·등록 관리 · AI CPO(시포) · 이번달 · 올해(2026) 누적</div></div></div>
+           측정 기반 계산치 — before.png/after.png 참조). 데이터 바인딩 id·링크·하단정렬 구조는 무변경.
+           [2026-07-15 시토(CTO)] 콜아웃(외곽 카드 프레임) 제거 — 일일점검 현황처럼 이중 박스 없이 내부 타일이 직접 노출.
+           border/background/radius/padding 제거, flex-column(하단 링크 정렬)·내부 타일·min-height·id·링크 무변경. 헤더=피어 섹션 스케일(30px chip/17px). -->
+      <div style="display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:17px;letter-spacing:-0.01em;color:var(--text);">문의&등록 현황</div><div style="font-size:10.5px;color:var(--dim);">멤버십·강습 문의·등록 관리 · AI CPO(시포) · 이번달 · 올해(2026) 누적</div></div></div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div style="background:var(--grow-bg);border-radius:10px;padding:14px 14px;min-height:126px;">
@@ -597,11 +599,12 @@
 
       <!-- 종합 접수처 카드 — 6유형 종합 접수처. 공개 reg_board(마스킹·집계, 무키) 사용. 이슈 현황 카드 흡수 (2026-06-17 GM)
            유형별 건수 그리드 6→3열로 확장(누적+이번달 접수/완료 3숫자 표기 공간 확보) · 문의&등록 카드와 칸 구조 통일. 2026-07-10 GM 지시.
-           [2026-07-14 GM 지시] 링크 행 flex column+margin-top:auto로 하단 고정(문의&등록 카드 링크 행과 높이 정렬). -->
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;">
-          <span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;">🙋</span>
-          <div><div style="font-weight:800;font-size:14px;color:var(--text);">종합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 종합 접수처 · AI COO(시우) · 누적 · 이번달</div></div>
+           [2026-07-14 GM 지시] 링크 행 flex column+margin-top:auto로 하단 고정(문의&등록 카드 링크 행과 높이 정렬).
+           [2026-07-15 시토(CTO)] 콜아웃(외곽 카드 프레임) 제거 — 일일점검 현황처럼 내부 타일 직접 노출(이중 박스 제거). border/bg/radius/padding 제거·내부 타일/링크/id 무변경. 헤더=피어 섹션 스케일(30px chip/17px). -->
+      <div style="display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
+          <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">🙋</span>
+          <div><div style="font-weight:800;font-size:17px;letter-spacing:-0.01em;color:var(--text);">종합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 종합 접수처 · AI COO(시우) · 누적 · 이번달</div></div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
           <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:10px 12px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:90.25px;">
