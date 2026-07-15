@@ -298,6 +298,8 @@ def fetch_queue_items() -> list[dict]:
             "핵심조언": str(q.get("핵심조언") or "").strip(),
             # 정제 원본 보존 — _derive_desc/_derive_advice가 파생 시 사용
             "_raw_summary": str(q.get("note") or q.get("summary") or "").strip(),
+            # 보드 소속(GM 2026-07-15): '자율현황'=자율화되어 스스로 도는 미션 → 항로 제외·자율현황行
+            "board":    str(q.get("board") or "").strip(),
             "source":   "queue",
         })
     return items
@@ -327,6 +329,7 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         "appr_inflight": [],  # ⏳ 결재 진행 중 (타 결재자 대기)
         "done":    [],   # 🏁 완료 (입항·도착)
         "drift":   [],   # 🌀 표류 (완료인데 '다음' 없는 건 — "👉 다음 정하기" 촉구 동반)
+        "autonomy": [],  # 🤖 자율화 미션 (board='자율현황') — 항로 제외, 자율현황 보드行 (GM 2026-07-15)
     }
     # ── 후속 브릿지 인덱스 (표류 판정 보조) ──
     #   브릿지 메커니즘(project_bridge_mechanized): 완료 시 post_action --next/--terminal로
@@ -353,6 +356,11 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
             if _tkey in seen_titles:
                 continue
             seen_titles.add(_tkey)
+
+        # 자율화 미션(board='자율현황')은 항로 전 섹터에서 제외 → 자율현황 보드로 (GM 2026-07-15)
+        if str(item.get("board", "")) == "자율현황":
+            sections["autonomy"].append(item)
+            continue
 
         st = item["status"]
         done = st in STATUS_DONE
@@ -500,6 +508,8 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
         _cnt_rows.append(("⏳ 결재 진행 중 (타 결재자)", str(n_inflight)))
     if n_drift:
         _cnt_rows.append(("🌀 표류 (다음 미정)",          str(n_drift)))
+    if secs["autonomy"]:
+        _cnt_rows.append(("🤖 자율화 미션 (자율현황行)", str(len(secs["autonomy"]))))
     _cnt_rows.append(("진행 합계",                    str(n_total)))
     summary_table = _box_table(_cnt_rows)
 
@@ -530,6 +540,11 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
         lines.append(_md_table([_item_to_row(it) for it in inprog]))
     else:
         lines.append("_(없음)_\n")
+
+    # ── 🤖 자율화 미션 포인터 (항로 제외, 자율현황行) ──
+    if secs["autonomy"]:
+        lines.append(f"🤖 자율화 미션 {len(secs['autonomy'])}건 — 항로 제외, 자율현황 보드에서 관리")
+        lines.append("    https://wellperion-cao.github.io/wellperion-automation/%EC%9E%90%EC%9C%A8%ED%98%84%ED%99%A9.html")
 
     # ── ⚓ 대기중 섹터 ──
     lines.append("### ⚓ 대기중")

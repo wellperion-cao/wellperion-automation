@@ -617,6 +617,8 @@ def stage1_collect_classify() -> dict:
                 st = str(qit.get("status", "")).upper()
                 if st not in ("PENDING", "IN_PROGRESS"):
                     continue
+                if str(qit.get("board", "")) == "자율현황":
+                    continue  # 자율화 미션 — 항로 제외, 자율현황行 (GM 2026-07-15)
                 if _ck(qit.get("title", "")) in _sheet_keys:
                     continue  # 시트에 이미 같은 배 존재 — 이중계상 방지
                 today_tasks.append({
@@ -629,6 +631,16 @@ def stage1_collect_classify() -> dict:
                 })
         except Exception as exc:
             print(f"[WARN] _queue.json 항로 머지 실패: {exc} — 시트 데이터만 사용", file=sys.stderr)
+
+        # 자율화 미션(board='자율현황')이 시트 경로로 새어 들어오면 항로에서 제거(방어) — 자율현황行 (GM 2026-07-15)
+        try:
+            from hangro_board import fetch_queue_items as _fqi_b
+            from queue_integrity_check import _core_key as _ck_b
+            _board_keys = {_ck_b(x.get("title", "")) for x in _fqi_b() if str(x.get("board", "")) == "자율현황"}
+            if _board_keys:
+                today_tasks = [t for t in today_tasks if _ck_b(t.get("title", "")) not in _board_keys]
+        except Exception:
+            pass
 
         # today_tasks는 전부 AUTONOMOUS (결재 대기는 이미 gm_decision에 분리됨)
         autonomous: list[dict] = []
@@ -667,6 +679,8 @@ def stage1_collect_classify() -> dict:
         st = (q.get("status") or "").upper()
         if st in DONE_STATUSES:
             continue
+        if str(q.get("board", "")) == "자율현황":
+            continue  # 자율화 미션 — 항로 제외, 자율현황行 (GM 2026-07-15)
         raw.append({
             "task_id": q.get("task_id", ""),
             "clevel": (q.get("clevel") or "").upper(),
