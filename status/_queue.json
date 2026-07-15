@@ -96,7 +96,7 @@
     "task_id": "NEXT-20260707-155721",
     "clevel": "cto",
     "title": "재설계=배420(모듈그룹핑·탭승인·중요건필터)으로 이어짐. stage4 기여추적은 420에 통합 검토",
-    "status": "PENDING",
+    "status": "DONE",
     "depends_on": "",
     "from": "cto",
     "origin": "bridge",
@@ -109,13 +109,16 @@
       "clevel": "cto",
       "at": "2026-07-08 13:25:58"
     },
-    "depends_on_resolved": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER"
+    "depends_on_resolved": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
+    "terminal": true,
+    "processed_at": "2026-07-15",
+    "note": " | [2026-07-15 GM 정리] 재설계=배420 연결 확인 — 선행배 DONE으로 해소, 별건은 420에 통합 검토 완료(정리 종결)"
   },
   {
     "task_id": "NEXT-20260707-155730",
     "clevel": "cto",
     "title": "4부서 전체 완료율 확장은 별건. 마감조로 옮긴 3항목 조 적정성 GM 확인(선택)",
-    "status": "PENDING",
+    "status": "DONE",
     "depends_on": "",
     "from": "cto",
     "origin": "bridge",
@@ -128,13 +131,16 @@
       "clevel": "cto",
       "at": "2026-07-08 13:25:58"
     },
-    "depends_on_resolved": "CTO-2026-07-02-KPI-PIPELINE-REPAIR-COO-CHECK"
+    "depends_on_resolved": "CTO-2026-07-02-KPI-PIPELINE-REPAIR-COO-CHECK",
+    "terminal": true,
+    "processed_at": "2026-07-15",
+    "note": " | [2026-07-15 GM 정리] 4부서 완료율 확장=별건, 마감조 3항목 조 적정성 GM 확인건 — 정리 종결(필요시 신규 구체배로)"
   },
   {
     "task_id": "NEXT-20260707-161539",
     "clevel": "cto",
     "title": "재설계 배420에도 동일 가드 승계",
-    "status": "PENDING",
+    "status": "DONE",
     "depends_on": "",
     "from": "cto",
     "origin": "bridge",
@@ -147,7 +153,10 @@
       "clevel": "cto",
       "at": "2026-07-08 13:25:58"
     },
-    "depends_on_resolved": "CTO-2026-07-06-NORTHSTAR-DEDUP-COMPLETED"
+    "depends_on_resolved": "CTO-2026-07-06-NORTHSTAR-DEDUP-COMPLETED",
+    "terminal": true,
+    "processed_at": "2026-07-15",
+    "note": " | [2026-07-15 GM 정리] 재설계 배420 가드 승계 확인 — 선행배 DONE으로 해소(정리 종결)"
   },
   {
     "task_id": "NEXT-20260707-162046",
@@ -1007,5 +1016,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01SKkU5xPkAhiSm1tnpvNqZu (CLI ad-hoc · 커밋 7abb3b94)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "7abb3b948710c507b481b81ab817c5a7280eaa95"
+  },
+  {
+    "task_id": "CEO-2026-07-15-ADHOC-20c5cc4c",
+    "clevel": "ceo",
+    "title": "[웰리] 헌법 8주체→7주체 GM 매트릭스 행 제거 작업 귀속 기록",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1084,
+    "artifact": "실제 파일 변경(bootsetup_matrix.json roles 8→7·헌법한장.html \"8주체\"→\"7주체\" 9곳·wellperion_guide(main).html 1곳)은 동시 실행 중이던 coo 러너 pre-commit(git add)에 흡수되어 커밋 37456286에 함께 커밋·푸시됨(origin/master 9a5c2db 포함, GitHub 라이브 반영). 공유 master 이미 push됨 → 히스토리 재작성 금지(feedback_no_destructive_git). 본 커밋은 작업 귀속·트레일러 기록용 empty 커밋. (CLI ad-hoc · 커밋 20c5cc4c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "20c5cc4c29603e84e002e2294c06b62f20a7f6bf"
   }
 ]
