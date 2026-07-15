@@ -409,13 +409,20 @@
   /* ── 🗂️ 부서별 업무 현황 요약 (이달 objectives 부서별/담당별 집계 · 순수 추가 섹션) ── */
   .blk.dept-work-wrap{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:5px 14px 10px; margin-bottom:4px;}
   .blk.dept-work-wrap h2.sec{margin-top:8px;}
-  .dws-sub-h{font-size:12.5px; font-weight:700; color:var(--text-soft); margin:6px 2px 8px;}
-  .dws-chips{display:flex; flex-wrap:wrap; gap:8px;}
-  .dws-chip{font-size:12px; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:5px 12px; white-space:nowrap;}
-  .dws-chip b{color:var(--text); font-weight:800; margin-left:3px;}
-  .dws-chip-sub{font-size:10.5px; color:var(--dim); margin-left:5px;}
-  table.rpt.dws-tbl{min-width:0;}
-  .dws-tbl td.dws-num{font-weight:800; color:var(--text); font-variant-numeric:tabular-nums;}
+  /* 🗂️ 운영 현황 요약 — 컴팩트 3카드(점검·접수처·업무 · 총/진행/완료). GM 지시 2026-07-15: 긴 부서별 표·담당별 칩 폐기(배1091) */
+  .ows-grid{display:flex; flex-wrap:wrap; gap:10px;}
+  .ows-card{flex:1; min-width:200px; background:var(--paper); border:1px solid var(--border-strong); border-radius:11px; padding:11px 14px 12px; display:flex; flex-direction:column; gap:8px;}
+  .ows-h{font-size:12.5px; font-weight:800; color:var(--text-soft);}
+  .ows-stats{display:flex; gap:8px;}
+  .ows-stat{flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px; background:var(--surface); border:1px solid var(--border-strong); border-radius:9px;}
+  .ows-stat .ows-n{font-size:21px; font-weight:800; letter-spacing:-0.02em; color:var(--text); font-variant-numeric:tabular-nums; line-height:1;}
+  .ows-stat .ows-l{font-size:10.5px; font-weight:700; color:var(--dim);}
+  .ows-stat.prog{border-color:rgba(122,196,240,0.45);} .ows-stat.prog .ows-n{color:var(--blue);}
+  .ows-stat.done{border-color:rgba(106,191,123,0.45);} .ows-stat.done .ows-n{color:var(--green);}
+  .ows-stats.pending{min-height:42px; align-items:center; justify-content:center;}
+  .ows-pend{font-size:13px; font-weight:700; color:var(--text-soft);}
+  .ows-sub{font-size:10.5px; color:var(--dim); line-height:1.5;}
+  @media (max-width:640px){ .ows-card{min-width:100%;} }
 
   /* ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · 중요도 자동 선정 · GM 확정 2026-07-04) ── */
   .blk.top3-wrap{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:5px 14px 10px; margin-bottom:4px;}
@@ -986,8 +993,8 @@
 
     <!-- 🗂️ 부서별 업무 현황 요약 (이달 objectives 부서별/담당별 집계 · 순수 추가 섹션 · GM 지시) -->
     <section class="blk dept-work-wrap" id="dept-work-wrap" data-blkid="deptwork">
-      <h2 class="sec">🗂️ 부서별 업무 현황 요약 <span class="stag">이달 과제 부서별 완료·진행 + 담당별 건수</span></h2>
-      <div id="dept-work-summary"><div class="board-status">부서별 업무 현황을 집계하는 중…</div></div>
+      <h2 class="sec">🗂️ 운영 현황 요약 <span class="stag">점검·접수처·업무 · 총/진행/완료</span></h2>
+      <div id="dept-work-summary"><div class="board-status">운영 현황을 집계하는 중…</div></div>
     </section>
 
     <!-- 📋 이달 핵심 과제 상세 (신규/이월 상세표 + 콤팩트 요약 · 舊 sum-hero — 상단 top3 아래 상세) -->
@@ -1198,7 +1205,7 @@
     var cached = _cmLoad(monKey);
     // 캐시 있으면 즉시 '갱신 중'으로 값 노출(체감 0초) · 없으면 첫 방문만 '불러오는 중'.
     _checkMonthlyCache[monKey] = cached ? {status:'done', data:cached, stale:true} : {status:'loading'};
-    if(_sel === monKey && _checkReady && cached){ renderCheckStatus(); renderSummaryBoard(); renderSummaryStrip(); }
+    if(_sel === monKey && _checkReady && cached){ renderCheckStatus(); renderSummaryBoard(); renderSummaryStrip(); renderDeptWorkSummary(); }
     readCheckMonthly(monKey).then(function(d){
       if(d){
         _checkMonthlyCache[monKey] = {status:'done', data:d, stale:false};
@@ -1208,7 +1215,7 @@
       } else {
         _checkMonthlyCache[monKey] = {status:'done', data:null, stale:false}; // 캐시·응답 둘 다 없음=정직 '없음'
       }
-      if(_sel === monKey && _checkReady){ renderCheckStatus(); renderSummaryBoard(); renderSummaryStrip(); }
+      if(_sel === monKey && _checkReady){ renderCheckStatus(); renderSummaryBoard(); renderSummaryStrip(); renderDeptWorkSummary(); }
     });
   }
   // ── 종합접수처 VOC 접수 현황 — coo/reception/종합접수처_현황.html과 동일 GAS·액션(reg_board). 응답 필드(name/contact)는 서버가 이미 마스킹하지만
@@ -1562,57 +1569,69 @@
   // ── 🗂️ 부서별 업무 현황 요약 (이달 objectives 부서별/담당별 집계 · 순수 추가 · 새 소스 없음 · GM 지시) ──
   //   부서별: dept로 그룹 → 완료/진행/계획·이월/합계. 담당별: owner를 owner_nick 닉네임화 → 건수(완료·진행 내역).
   //   정직: objectives 없으면 '이달 업무 없음'. 지어내기 없음(기존 필드만 사용).
+  // ── 🗂️ 운영 현황 요약(컴팩트 3카드) — 점검 현황·종합 접수처·업무 SSOT 각 [총합/진행/완료].
+  //    GM 지시 2026-07-15(배1091): 긴 부서별 표·담당별 칩 폐기 → 한눈 카드. 소스는 기존 fetch 재사용(새 GAS·지어내기 금지). 값 불가=정직 '측정 대기'. ──
   function renderDeptWorkSummary(monKey){
     var host = document.getElementById('dept-work-summary');
     if(!host) return;
     var mk = monKey || _sel;
+    // 작은 stat 카드 1장(총합/진행/완료). d 없으면 '측정 대기' 정직 표기(0 지어내기 금지).
+    function statCard(icon, title, d, sub){
+      var body;
+      if(d){
+        body =
+          '<div class="ows-stats">' +
+            '<div class="ows-stat"><b class="ows-n">' + d.total + '</b><span class="ows-l">총합</span></div>' +
+            '<div class="ows-stat prog"><b class="ows-n">' + d.prog + '</b><span class="ows-l">진행</span></div>' +
+            '<div class="ows-stat done"><b class="ows-n">' + d.done + '</b><span class="ows-l">완료</span></div>' +
+          '</div>';
+      } else {
+        body = '<div class="ows-stats pending"><span class="ows-pend">측정 대기</span></div>';
+      }
+      return '<div class="ows-card"><div class="ows-h">' + icon + ' ' + esc(title) + '</div>' + body +
+        '<div class="ows-sub">' + esc(sub) + '</div></div>';
+    }
+    // ① 점검 현황 — 지원부 월간 점검 byZone(남/여) 항목 실측 합(sumTotal/sumDone). 완료=sumDone·진행=총-완료. 시설부(입력률)는 건수 불가라 제외(정직). 데이터 없음=측정 대기.
+    var cmEntry = _checkMonthlyCache[mk];
+    var cmData = (cmEntry && cmEntry.status === 'done') ? cmEntry.data : null;
+    var cmLoading = (cmEntry && cmEntry.status === 'loading');
+    var chk = null;
+    if(cmData && Array.isArray(cmData.byZone)){
+      var ct = 0, cd = 0, chas = false;
+      cmData.byZone.forEach(function(z){
+        if(typeof z.sumTotal === 'number' && typeof z.sumDone === 'number' && z.sumTotal){ ct += z.sumTotal; cd += z.sumDone; chas = true; }
+      });
+      if(chas) chk = {total:ct, done:cd, prog:Math.max(0, ct - cd)};
+    }
+    var chkSub = chk ? '지원부 점검 항목 실측 · 그 달 기준' : (cmLoading ? '월간 점검 불러오는 중' : '월간 점검 데이터 없음(가짜값 없음)');
+    // ② 종합 접수처 — VOC reg_board(실시간). 완료=상태 '완료' · 진행=그 외(접수·처리중). PII 미사용(상태 집계만).
+    var voc = null;
+    if(Array.isArray(_vocBoard)){
+      var vt = _vocBoard.length, vdone = 0;
+      _vocBoard.forEach(function(r){ if(String(r.status || '접수') === '완료') vdone++; });
+      voc = {total:vt, done:vdone, prog:Math.max(0, vt - vdone)};
+    }
+    var vocSub = voc ? '실시간 접수 · 진행=접수+처리중' : (_checkReady ? 'VOC 접수 조회 실패(가짜값 없음)' : 'VOC 접수 불러오는 중');
+    // ③ 업무 SSOT — 선택월 objectives 집계. 완료=status '완료' · 진행='진행'+'이월'.
     var m = _data && _data.months && _data.months[mk];
     var objs = (m && m.objectives) || [];
-    if(!objs.length){ host.innerHTML = '<div class="board-status">이달 업무 없음</div>'; return; }
-    // ① 부서별 집계
-    var deptMap = {}, deptOrder = [];
-    objs.forEach(function(o){
-      var d = (o.dept || '미지정');
-      if(!deptMap[d]){ deptMap[d] = {done:0, prog:0, plan:0, total:0}; deptOrder.push(d); }
-      var st = o.status || '';
-      if(st === '완료') deptMap[d].done++;
-      else if(st === '진행') deptMap[d].prog++;
-      else deptMap[d].plan++; // 계획·이월(및 기타)
-      deptMap[d].total++;
-    });
-    var deptRows = deptOrder.map(function(d){
-      var c = deptMap[d];
-      return '<tr>' +
-        '<td class="r-title">' + esc(d) + '</td>' +
-        '<td><span class="obadge 완료">' + c.done + '</span></td>' +
-        '<td><span class="obadge 진행">' + c.prog + '</span></td>' +
-        '<td><span class="obadge 계획">' + c.plan + '</span></td>' +
-        '<td class="dws-num">' + c.total + '</td>' +
-      '</tr>';
-    }).join('');
-    var deptTable = '<div class="rpt-wrap"><table class="rpt dws-tbl"><thead><tr>' +
-      '<th>부서</th><th>완료</th><th>진행</th><th>계획·이월</th><th>합계</th>' +
-      '</tr></thead><tbody>' + deptRows + '</tbody></table></div>';
-    // ② 담당별 집계 (owner → owner_nick 닉네임)
-    var ownMap = {}, ownOrder = [];
-    objs.forEach(function(o){
-      var role = o.owner || '미지정';
-      if(!ownMap[role]){ ownMap[role] = {done:0, prog:0, total:0}; ownOrder.push(role); }
-      var st = o.status || '';
-      if(st === '완료') ownMap[role].done++;
-      else if(st === '진행') ownMap[role].prog++;
-      ownMap[role].total++;
-    });
-    var ownNick = function(role){ return (_data && _data.owner_nick && _data.owner_nick[role]) || role || '미지정'; };
-    var ownChips = ownOrder.sort(function(a, b){ return ownMap[b].total - ownMap[a].total; }).map(function(role){
-      var c = ownMap[role];
-      return '<span class="dws-chip">' + esc(ownNick(role)) + '<b>' + c.total + '건</b>' +
-        '<span class="dws-chip-sub">(완료' + c.done + '·진행' + c.prog + ')</span></span>';
-    }).join('');
-    host.innerHTML =
-      '<div class="dws-sub-h">🏢 부서별 완료·진행 건수</div>' + deptTable +
-      '<div class="dws-sub-h" style="margin-top:12px;">👤 담당별 건수</div>' +
-      '<div class="dws-chips">' + ownChips + '</div>';
+    var obj = null;
+    if(objs.length){
+      var odone = 0, oprog = 0;
+      objs.forEach(function(o){
+        var st = o.status || '';
+        if(st === '완료') odone++;
+        else if(st === '진행' || st === '이월') oprog++;
+      });
+      obj = {total:objs.length, done:odone, prog:oprog};
+    }
+    var objSub = obj ? '이달 과제 · 진행=진행+이월' : '이달 등록된 과제 없음';
+    host.innerHTML = '<div class="ows-grid">' +
+      statCard('🔧', '점검 현황', chk, chkSub) +
+      statCard('📮', '종합 접수처', voc, vocSub) +
+      statCard('🗂️', '업무 SSOT', obj, objSub) +
+    '</div>';
+    fetchCheckMonthlyFor(mk); // 선택월 점검 월간 kick-off(캐시/트리거됨=no-op) — 도착 시 갱신 핸들러가 재렌더
   }
 
   // ── 월 헤더 (테마 문구는 핵심과제 표와 중복 → 렌더 제거, GM 지시 2026-07-04. 데이터 m.theme/report.theme는 정본 보존) ──
@@ -3005,7 +3024,7 @@
     ]).then(function(a){
       _kpiValues = a[0]; _vocBoard = a[1];
       _checkReady = true;
-      if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); renderSummaryStrip(); }
+      if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); renderSummaryStrip(); renderDeptWorkSummary(); }
     });
   }
 
