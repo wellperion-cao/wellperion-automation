@@ -41,6 +41,16 @@ _OUTPUT_SUFFIX_RE = re.compile(r"/output\([^)]*\)\s*$")
 _BRACKET_LABEL_RE = re.compile(r"\s*\[[^\]]*\]\s*")
 _ID_CHANNEL_SUFFIX_RE = re.compile(r"-[A-Z]{3,}$")
 
+# 채널 → (표시순서, 이모지 라벨) — 부분일치. 매핑에 없으면 🔗 {원채널명} (순서는 맨 뒤).
+_CHANNEL_LABEL_ORDER: list[tuple[re.Pattern, str]] = [
+    (re.compile("인스타"), "📷 인스타그램"),
+    (re.compile("블로그"), "📝 네이버 블로그"),
+    (re.compile("카페"), "☕ 네이버 카페"),
+    (re.compile("카카오"), "💬 카카오채널"),
+    (re.compile("당근"), "🥕 당근"),
+]
+_DEFAULT_DIGEST_INTRO = "여러 채널에 새 소식을 올렸어요."
+
 
 # ---------------------------------------------------------------------------
 # .env 로더 (python-dotenv 불필요, KEY=VALUE / # 주석) — os.environ 우선.
@@ -96,16 +106,57 @@ def _representative_title(group: list[dict]) -> str:
     return _BRACKET_LABEL_RE.sub(" ", chosen).strip()
 
 
+def _channel_label(channel: str) -> tuple[int, str]:
+    """채널 문자열 → (표시순서, 이모지 라벨). 매핑에 없으면 (맨뒤순서, '🔗 {원채널명}')."""
+    for order, (pattern, label) in enumerate(_CHANNEL_LABEL_ORDER):
+        if pattern.search(channel):
+            return order, label
+    return len(_CHANNEL_LABEL_ORDER), f"🔗 {channel}"
+
+
+def _digest_title(group: list[dict]) -> str:
+    """리치 포맷 제목 — group 항목 중 digest_title 있으면 그것, 없으면 기존 대표 title 폴백."""
+    for it in group:
+        t = (it.get("digest_title") or "").strip()
+        if t:
+            return t
+    return _representative_title(group)
+
+
+def _digest_intro(group: list[dict]) -> str:
+    """리치 포맷 설명 한 줄 — group 항목 중 digest_intro 있으면 그것, 없으면 일반 폴백 문구."""
+    for it in group:
+        intro = (it.get("digest_intro") or "").strip()
+        if intro:
+            return intro
+    return _DEFAULT_DIGEST_INTRO
+
+
 def build_digest(group: list[dict]) -> str:
-    """콘텐츠 1건 통합요약 메시지 — 헤더 + 채널별 '• {channel}: {post_url}' 불릿(url 있는 것만)."""
-    title = _representative_title(group)
-    lines = [f"📢 발행완료 — {title}", ""]
+    """콘텐츠 1건 통합요약 메시지 — 📢헤더 · 설명 · 채널이모지 링크(고정순서) · 응원 CTA."""
+    title = _digest_title(group)
+    intro = _digest_intro(group)
+    lines = [
+        f"📢 웰페리온 공식 · {title} 발행 완료 — 응원 부탁드려요!",
+        "",
+        intro,
+        "아래 링크에서 ❤️ 좋아요 · 💬 댓글 남겨주시면 큰 힘이 됩니다 🙏",
+        "",
+    ]
+    entries: list[tuple[int, str, str]] = []
     for it in group:
         url = (it.get("post_url") or "").strip()
         if not url:
             continue
         ch = it.get("channel") or "채널 미지정"
-        lines.append(f"• {ch}: {url}")
+        order, label = _channel_label(ch)
+        entries.append((order, label, url))
+    entries.sort(key=lambda e: e[0])
+    for _, label, url in entries:
+        lines.append(label)
+        lines.append(url)
+    lines.append("")
+    lines.append("좋아요·댓글로 응원 부탁드립니다 🙏")
     return "\n".join(lines)
 
 

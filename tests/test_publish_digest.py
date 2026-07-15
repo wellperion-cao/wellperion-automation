@@ -29,6 +29,8 @@ def _l1_swim_items() -> list[dict]:
         {
             "id": "CMO-2026-07-14-LSERIES-L1-SWIM",
             "title": "L시리즈 성인강습 1/6 — 수영(디지털 디톡스)",
+            "digest_title": "성인 수영 강습(디지털 디톡스)",
+            "digest_intro": "하루 30분, 휴대폰이 멈추는 시간. 한남동에서 성인도 0에서 천천히 시작하는 수영 강습을 소개했습니다.",
             "folder": "instagram/260715_L1_수영",
             "channel": "인스타그램 (wellperion 공식)",
             "status": "발행완료",
@@ -96,9 +98,21 @@ def test_group_published_merges_5_channels_into_1_content():
     urls = [it["post_url"] for it in items]
     for url in urls:
         assert url in msg, f"메시지에 채널 링크 누락: {url}"
-    # 채널 5종 모두 불릿으로 포함
-    for ch in ["인스타그램", "네이버 블로그", "네이버 카페", "카카오 채널", "당근채널"]:
-        assert ch in msg, f"메시지에 채널명 누락: {ch}"
+
+    # 리치 포맷 헤더 — 📢 웰페리온 공식 · {digest_title} 발행 완료 — 응원 부탁드려요!
+    assert msg.startswith("📢 웰페리온 공식 · 성인 수영 강습(디지털 디톡스) 발행 완료 — 응원 부탁드려요!")
+    # digest_intro 반영
+    assert "하루 30분, 휴대폰이 멈추는 시간. 한남동에서 성인도 0에서 천천히 시작하는 수영 강습을 소개했습니다." in msg
+    # 좋아요·댓글 유도 문구
+    assert "아래 링크에서 ❤️ 좋아요 · 💬 댓글 남겨주시면 큰 힘이 됩니다 🙏" in msg
+    assert msg.rstrip().endswith("좋아요·댓글로 응원 부탁드립니다 🙏")
+
+    # 채널 5종 모두 이모지 라벨로 포함 + 고정 순서(인스타→블로그→카페→카카오→당근)
+    labels = ["📷 인스타그램", "📝 네이버 블로그", "☕ 네이버 카페", "💬 카카오채널", "🥕 당근"]
+    for label in labels:
+        assert label in msg, f"메시지에 채널 이모지 라벨 누락: {label}"
+    positions = [msg.index(label) for label in labels]
+    assert positions == sorted(positions), "채널 순서가 인스타→블로그→카페→카카오→당근 고정 순서를 위반함"
 
 
 # ---------------------------------------------------------------------------
