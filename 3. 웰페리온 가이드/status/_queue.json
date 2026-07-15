@@ -826,5 +826,19 @@
     "artifact": "당근 비즈 '소식 작성'은 SNS형 에디터라 이미지가 본문(contenteditable) 안이 아니라 상단\n썸네일 줄('N/10' 카운터)에 붙는다. 기존 게이트는 본문 내부 <img> 개수를 세어 항상 0으로\n측정 → \"이미지 전체 소실\"로 오판(BLOCK exit=7)했음. 카운터 텍스트 파싱(폴백: 썸네일 줄\n<img> 개수)으로 측정 위치를 교정. 6장(5슬라이드+표준 CTA카드, append_cta_card 기존 설계)\n확인 후 실 재발행 성공 — postId 6a56f6bbfdb9c12e29b2676a. (CLI ad-hoc · 커밋 9980a054)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9980a054cb0f38db833f82c075ba64a77d9233a5"
+  },
+  {
+    "task_id": "CEO-2026-07-15-ADHOC-bf2b88f9",
+    "clevel": "ceo",
+    "title": "[웰리] 안내·설명 텍스트 대폭 감량 — 스캔형으로 (GM 피드백)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1071,
+    "artifact": "sec-note 문단·callout·honest-note·title 툴팁을 한 줄 이하로 축약.\n정직 구분 태그(📄 설명·라이브/부분/대기·🟢발효/⚪미발효·⚪측정불가)는\n짧은 뱃지로 유지. 섹션 제목·데이터·표·카드·렌더 JS·배선 무변경.\n본문 텍스트 약 7.5K자 감량(139,957→132,475). 콘솔에러 0·회귀 0(Playwright). (CLI ad-hoc · 커밋 bf2b88f9)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "bf2b88f91ff5cea1d937be456bf89e7e0ddb30ce"
   }
 ]
