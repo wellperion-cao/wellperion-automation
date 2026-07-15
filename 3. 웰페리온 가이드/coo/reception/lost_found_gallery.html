@@ -21,7 +21,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%}
 a{color:var(--accent);text-decoration:none}
-.wrap{max-width:1080px;margin:0 auto;padding:34px 18px 70px}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 16px 44px}
 
 .brand{text-align:center;margin-bottom:8px}
 .brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
@@ -51,6 +51,15 @@ a{color:var(--accent);text-decoration:none}
 .gcard .claim:hover{opacity:.9}
 .state-msg{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--dim);font-size:14.5px}
 .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
+
+/* ── 스켈레톤 (즉시 렌더·지연 로드 대기 · CLS 0) ── */
+.gcard.skel{pointer-events:none}
+.skel-ph,.skel-line,.skel-btn{background:linear-gradient(90deg,#efeae2 25%,#f7f4ee 37%,#efeae2 63%);background-size:400% 100%;animation:wlpShim 1.4s ease infinite}
+.skel-line{height:12px;border-radius:6px;margin-bottom:9px}
+.skel-line.w40{width:40%}.skel-line.w60{width:60%}.skel-line.w80{width:80%}
+.skel-btn{margin-top:auto;height:42px;border-radius:11px}
+@keyframes wlpShim{0%{background-position:100% 0}100%{background-position:0 0}}
+@media (prefers-reduced-motion:reduce){.skel-ph,.skel-line,.skel-btn{animation:none}}
 
 /* ── 보관·폐기 안내 박스 (항상 표시) ── */
 .lf-policy{background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:15px 17px 16px;margin:0 0 20px}
@@ -159,6 +168,8 @@ a{color:var(--accent);text-decoration:none}
   var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
   var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
   var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
+  var CACHE_KEY = 'wlp_lf_gallery_v1';
+  var CACHE_TTL = 90000; // 90초 짧은 TTL — 수령완료 등 목록 변화 시 무효화
 
   function $(id){ return document.getElementById(id); }
   function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -170,24 +181,36 @@ a{color:var(--accent);text-decoration:none}
 
   var _loading=false, _cur=null;
 
-  function load(){
+  function _readCache(){ try{ var o=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); return (o&&Array.isArray(o.data))?o:null; }catch(e){ return null; } }
+  function _writeCache(rows){ try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:rows})); }catch(e){} }
+  function _clearCache(){ try{ localStorage.removeItem(CACHE_KEY); }catch(e){} }
+  function _skeleton(n){ var one='<div class="gcard skel" aria-hidden="true"><div class="ph skel-ph"></div><div class="body"><div class="skel-line w40"></div><div class="skel-line w80"></div><div class="skel-line w60"></div><div class="skel-btn"></div></div></div>'; var s=''; for(var i=0;i<(n||6);i++){ s+=one; } return s; }
+  function _renderRows(rows){ var grid=$('grid'); $('cnt').textContent=String(rows.length); if(!rows.length){ grid.innerHTML='<div class="state-msg">현재 게시중인 습득물이 없습니다.</div>'; return; } grid.innerHTML=rows.map(_gcard).join(''); }
+
+  function load(opts){
+    opts=opts||{};
+    var grid=$('grid');
+    // 캐시 우선(stale-while-revalidate): 재방문·수령후 재조회 즉시 표시
+    if(!opts.force){
+      var c=_readCache();
+      if(c){ _renderRows(c.data); if(Date.now()-c.ts < CACHE_TTL){ return; } }
+    }
     if(_loading) return; _loading=true;
-    var grid=$('grid'); grid.innerHTML='<div class="state-msg">불러오는 중…</div>';
+    if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML=_skeleton(6); }
     fetch(VOC_API+'?action=lf_gallery&_='+Date.now(),{redirect:'follow',cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(d){ _loading=false;
-        if(!d||!d.ok){ grid.innerHTML='<div class="state-msg">현황을 불러오지 못했습니다 — '+_esc(d&&d.error||'')+'</div>'; $('cnt').textContent='0'; return; }
+        if(!d||!d.ok){ if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">현황을 불러오지 못했습니다 — '+_esc(d&&d.error||'')+'</div>'; $('cnt').textContent='0'; } return; }
         var rows=Array.isArray(d.data)?d.data:[];
-        $('cnt').textContent=String(rows.length);
-        if(!rows.length){ grid.innerHTML='<div class="state-msg">현재 게시중인 습득물이 없습니다.</div>'; return; }
-        grid.innerHTML=rows.map(_gcard).join('');
+        _writeCache(rows);
+        _renderRows(rows);
       })
-      .catch(function(){ _loading=false; grid.innerHTML='<div class="state-msg">네트워크 오류 — 새로고침 해주세요.</div>'; });
+      .catch(function(){ _loading=false; if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">네트워크 오류 — 새로고침 해주세요.</div>'; } });
   }
 
   function _gcard(r){
     var when=String(r.foundWhen||r.createdAt||'').replace('T',' ');
-    var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,400))+'" alt="습득물 사진" loading="lazy">'):'<div class="ph"></div>';
+    var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,400))+'" alt="습득물 사진" loading="lazy" decoding="async">'):'<div class="ph"></div>';
     return '<div class="gcard">'+ph+
       '<div class="body"><div class="gid">'+_esc(r.foundId||'')+'</div>'+
       '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
@@ -247,14 +270,23 @@ a{color:var(--accent);text-decoration:none}
       .then(function(r){ return r.json(); })
       .then(function(d){
         btn.disabled=false; btn.textContent='수령 완료';
-        if(d&&d.ok){ toast(_cur.id+' 수령완료 처리됨'); closeModal(); load(); }
+        if(d&&d.ok){ toast(_cur.id+' 수령완료 처리됨'); _clearCache(); closeModal(); load({force:true}); }
         else { toast((d&&d.error)||'수령 처리 실패',true); }
       })
       .catch(function(){ btn.disabled=false; btn.textContent='수령 완료'; toast('네트워크 오류 — 다시 시도해 주세요',true); });
   });
 
-  $('refreshBtn').addEventListener('click',load);
-  load();
+  $('refreshBtn').addEventListener('click',function(){ load({force:true}); });
+
+  // 헤더 로고 → 홈 대신 종합접수처(/ko/reception/)로 (WP Salient #logo; 스탠드얼론엔 없음 → 무해)
+  function _relinkLogo(){ try{ var lg=document.getElementById('logo'); if(lg){ var a=(lg.tagName==='A')?lg:(lg.querySelector('a')||lg); if(a&&a.setAttribute){ a.setAttribute('href','/ko/reception/'); } } }catch(e){} }
+  _relinkLogo(); document.addEventListener('DOMContentLoaded',_relinkLogo); setTimeout(_relinkLogo,600); setTimeout(_relinkLogo,1600);
+
+  // A1: 헤더·안내·레이아웃은 정적 즉시 렌더 → 그리드는 스켈레톤 → idle/지연 후 fetch(LCP를 GAS 콜드스타트와 분리)
+  $('grid').innerHTML=_skeleton(6);
+  var _kick=function(){ load(); };
+  if('requestIdleCallback' in window){ requestIdleCallback(_kick,{timeout:1200}); }
+  else { setTimeout(_kick,60); }
 })();
 </script>
 </body>
