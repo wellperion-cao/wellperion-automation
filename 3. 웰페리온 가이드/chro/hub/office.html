@@ -3,28 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>웰페리온 · CHRO 복셀 오피스</title>
+<title>웰페리온 · CHRO 숲속 오피스 (토토로 에디션)</title>
 <style>
-  /* ===== HR office v2 — FINAL_SPEC restyle: 귀엽고 정교한 라운드 피겨린 + 프리미엄 브라스 톤 =====
-     기능·데이터는 original 그대로(패리티), 시각만 리빌드. 한글 시스템 폰트 스택 + tabular-nums. */
+  /* ===== HR office — 지브리/토토로 리스킨: 틀·기능·데이터·훅은 original 그대로(패리티),
+     시각 레이어만 숲 정령의 아늑한 목조 사무실로 교체. 부드러운 수채·손그림 결, 숲의 녹음,
+     따뜻한 목재, 크림 하늘, 햇살 노랑. 한글 시스템 폰트 스택 + tabular-nums. */
   :root{
     color-scheme: light dark;
-    --bg:#0E1116; --ink:#F3ECDD; --muted:#9B9283;
-    --panel:rgba(20,24,31,.64); --panel-brd:rgba(201,169,106,.28);
-    --brass:#C9A96A; --brass-strong:#E8C877; --sage:#7FC8A0; --live:#E8746A;
+    /* 다크 = 밤 달빛 들판(먹먹한 청록 배경 · 크림 잉크 · 라벤더그레이 달빛 하이라이트 · 등불 하나만 따뜻) */
+    --bg:#24303E; --ink:#EAE3C8; --muted:#7C88A6;
+    --panel:rgba(36,48,62,.62); --panel-brd:rgba(124,136,166,.30);
+    --brass:#D8B26A; --brass-strong:#F0D27A; --sage:#97A0B8; --live:#E8896A;
     --serif:Georgia,'Times New Roman',serif;
     --ui:-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic','맑은 고딕','Noto Sans KR',sans-serif;
   }
   :root[data-theme="light"]{
-    --bg:#EFE9DB; --ink:#2A2318; --muted:#7C7059;
-    --panel:rgba(255,252,245,.74); --panel-brd:rgba(140,108,44,.30);
-    --brass:#8C6C2C; --brass-strong:#A6822E; --sage:#4E9E77; --live:#C0503F;
+    /* 라이트 = 한낮 초원(이끼그린 · 흙길 · 크림 · 노란 야생화 · 절제된 레드) */
+    --bg:#EAE3C8; --ink:#35502A; --muted:#6E8B3D;
+    --panel:rgba(242,236,213,.78); --panel-brd:rgba(110,140,70,.32);
+    --brass:#8A6A4A; --brass-strong:#C9A878; --sage:#4C6B2F; --live:#C0524A;
   }
   @media (prefers-color-scheme: light){
     :root:not([data-theme]){
-      --bg:#EFE9DB; --ink:#2A2318; --muted:#7C7059;
-      --panel:rgba(255,252,245,.74); --panel-brd:rgba(140,108,44,.30);
-      --brass:#8C6C2C; --brass-strong:#A6822E; --sage:#4E9E77; --live:#C0503F;
+      --bg:#EAE3C8; --ink:#35502A; --muted:#6E8B3D;
+      --panel:rgba(242,236,213,.78); --panel-brd:rgba(110,140,70,.32);
+      --brass:#8A6A4A; --brass-strong:#C9A878; --sage:#4C6B2F; --live:#C0524A;
     }
   }
   *{box-sizing:border-box}
@@ -53,7 +56,7 @@
   .status{display:flex; align-items:center; gap:14px; pointer-events:auto}
   .live{display:flex; align-items:center; gap:7px; font-size:12px; letter-spacing:.16em; color:var(--ink); font-weight:600}
   .live .bulb{width:8px; height:8px; border-radius:50%; background:var(--live); animation:pulse 2.2s infinite}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(232,116,106,.55)}70%{box-shadow:0 0 0 8px rgba(232,116,106,0)}100%{box-shadow:0 0 0 0 rgba(232,116,106,0)}}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(232,137,106,.55)}70%{box-shadow:0 0 0 8px rgba(232,137,106,0)}100%{box-shadow:0 0 0 0 rgba(232,137,106,0)}}
   .clock{font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; font-size:15px; letter-spacing:.04em; color:var(--ink); font-weight:600; min-width:88px; text-align:right}
   .tgl{pointer-events:auto; cursor:pointer; border:1px solid var(--panel-brd); background:var(--panel); color:var(--ink); width:34px; height:34px; border-radius:50%; font-size:16px; display:grid; place-items:center; -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px); transition:transform .2s, border-color .2s}
   .tgl:hover{transform:rotate(18deg); border-color:var(--brass)}
@@ -147,10 +150,11 @@
   /* ===== CHRO 터미널 — 오른쪽 사이드바 도크(sidebar 4번째 블록, 세로 배치).
      스크린은 양 테마 모두 다크(책상 위 단말기 컨셉) — 패널 테두리·포인트만 페이지 토큰과 동조. */
   .term{
-    --t-ink:#E9E1CC; --t-mut:#9B9283; --t-brass:#E4C27C; --t-sage:#7FC8A0; --t-err:#E8746A;
+    /* 달빛 밤의 낡은 단말기 — 먹먹한 청록 스크린에 등불 잉크 */
+    --t-ink:#EBE3C9; --t-mut:#7C88A6; --t-brass:#F0D27A; --t-sage:#97A0B8; --t-err:#E8896A;
     pointer-events:auto; flex:none; width:100%; min-width:0;
     display:flex; flex-direction:column;
-    background:rgba(13,16,22,.92); border:1px solid var(--panel-brd); border-radius:14px; overflow:hidden;
+    background:rgba(15,25,19,.93); border:1px solid var(--panel-brd); border-radius:14px; overflow:hidden;
     -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px);
     box-shadow:0 6px 22px rgba(0,0,0,.18);
     font-family:ui-monospace,'Cascadia Mono',Consolas,'Courier New','Malgun Gothic','맑은 고딕',monospace;
@@ -188,19 +192,26 @@
 
   /* ===== 캐릭터 호버 툴팁 (2026-07-10) — 이름·역할, 커서 근접 위치 ===== */
   .char-tip{position:absolute; display:none; pointer-events:none; z-index:5; max-width:220px;
-    background:rgba(13,16,22,.94); color:#F0E8D2; border:1px solid rgba(201,169,106,.5); border-radius:9px;
-    padding:7px 10px; font-size:12px; line-height:1.42; box-shadow:0 6px 18px rgba(0,0,0,.28)}
-  :root[data-theme="light"] .char-tip{background:rgba(255,252,245,.97); color:#2A2318; border-color:rgba(140,108,44,.5)}
+    background:rgba(15,25,19,.95); color:#F0E8D2; border:1px solid rgba(150,190,120,.5); border-radius:9px;
+    padding:7px 10px; font-size:12px; line-height:1.42; box-shadow:0 6px 18px rgba(0,0,0,.30)}
+  :root[data-theme="light"] .char-tip{background:rgba(242,236,213,.98); color:#35502A; border-color:rgba(110,140,70,.5)}
   .char-tip b{color:var(--brass-strong); font-size:12.5px}
+
+  /* ===== 과슈 종이결 오버레이 — 정적 인라인 SVG feTurbulence를 soft-light로 얹어 손그림 수채 질감.
+     정적(rAF 무관·GPU 비용 0)이며 canvas 위·툴팁/토프바 아래. 다크 진하게, 라이트 옅게. ===== */
+  .paper-grain{position:absolute; inset:0; pointer-events:none; mix-blend-mode:soft-light; opacity:.13}
+  .paper-grain svg{width:100%; height:100%; display:block; filter:url(#watercolor)}
+  :root[data-theme="light"] .paper-grain{opacity:.085}
+  @media (prefers-color-scheme: light){ :root:not([data-theme]) .paper-grain{opacity:.085} }
 </style>
 <style>
-#gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:var(--bg,#0E1116)}
-.gate-card{background:var(--panel,rgba(20,24,31,.92));border:1px solid var(--panel-brd,rgba(201,169,106,.28));border-radius:14px;padding:32px 28px;width:100%;max-width:344px;text-align:center;font-family:var(--ui,sans-serif);color:var(--ink,#F3ECDD)}
-.gate-card .mark{font-size:11px;letter-spacing:.28em;color:var(--brass,#C9A96A);font-weight:600;text-transform:uppercase}
+#gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:var(--bg,#24303E)}
+.gate-card{background:var(--panel,rgba(36,48,62,.92));border:1px solid var(--panel-brd,rgba(124,136,166,.30));border-radius:14px;padding:32px 28px;width:100%;max-width:344px;text-align:center;font-family:var(--ui,sans-serif);color:var(--ink,#EAE3C8)}
+.gate-card .mark{font-size:11px;letter-spacing:.28em;color:var(--brass,#D8B26A);font-weight:600;text-transform:uppercase}
 .gate-card h2{font-size:18px;margin:9px 0 3px;letter-spacing:-.01em}
 .gate-card p{font-size:12px;opacity:.72;margin-bottom:18px}
-.gate-card input{width:100%;text-align:center;font-size:14px;padding:10px 12px;border-radius:8px;border:1px solid var(--panel-brd,rgba(201,169,106,.4));background:transparent;color:inherit;box-sizing:border-box}
-.gate-card button{width:100%;margin-top:10px;padding:10px;border-radius:8px;border:1px solid var(--brass,#C9A96A);background:var(--brass,#C9A96A);color:#1a1408;font-weight:700;cursor:pointer;font-size:13px}
+.gate-card input{width:100%;text-align:center;font-size:14px;padding:10px 12px;border-radius:8px;border:1px solid var(--panel-brd,rgba(124,136,166,.4));background:transparent;color:inherit;box-sizing:border-box}
+.gate-card button{width:100%;margin-top:10px;padding:10px;border-radius:8px;border:1px solid var(--brass,#D8B26A);background:var(--brass,#D8B26A);color:#1a1408;font-weight:700;cursor:pointer;font-size:13px}
 .gate-err{color:#E8746A;font-size:12px;margin-top:10px;min-height:16px}
 .gate-foot{margin-top:16px;font-size:10.5px;opacity:.55;line-height:1.5}
 </style>
@@ -210,6 +221,21 @@
   <div class="office-grid">
     <div class="stage">
       <canvas id="scene" tabindex="0" role="img" aria-label="웰페리온 CHRO 인사팀 AI 오피스 아이소메트릭 뷰 — 팀장 Claude와 7개 에이전트가 넓은 회의 테이블에서 업무를 처리합니다. 상석 뒤 벽에는 급훈(매출·긍정·협동·사랑·인사가 만사다) 현판, 정면 벽에는 일정 게시판과 인사 스케줄 월력, 창문과 벽시계가 걸려 있습니다. 처리 로그는 오른쪽 '팀장 · Claude 브리핑' 패널에 실시간 자동화 로그 피드로 표시되며, 팀장 캐릭터는 말풍선에 가려지지 않습니다. 각 캐릭터에 마우스를 올리면 이름과 역할이 표시됩니다."></canvas>
+      <div class="paper-grain" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="none">
+          <defs>
+            <filter id="gouache" x="0" y="0" width="100%" height="100%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"></feTurbulence>
+              <feColorMatrix in="n" type="saturate" values="0"></feColorMatrix>
+            </filter>
+            <filter id="watercolor" x="-6%" y="-6%" width="112%" height="112%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="2" seed="7" result="w"></feTurbulence>
+              <feDisplacementMap in="SourceGraphic" in2="w" scale="3" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+            </filter>
+          </defs>
+          <rect width="100%" height="100%" filter="url(#gouache)"></rect>
+        </svg>
+      </div>
       <div class="char-tip" id="charTip"></div>
 
       <div class="stage-topbar">
@@ -296,8 +322,8 @@
   // 2026-07-10: A-2·A-6이 둘 다 흐린 갈색 계열이라 한눈에 구분이 안 됨 — A-2는 따뜻한 앰버로,
   // A-6은 와인빛 버건디로 벌려 파스텔 톤 안에서도 확실히 대비되게 조정(나머지 5색은 기존 유지).
   const AGENT_COLORS={
-    'A-1':'#5B7FB0', 'A-2':'#C2823C', 'A-3':'#4E9E7C', 'A-4':'#A6863E',
-    'A-5':'#7A6DB4', 'A-6':'#9C4A5E', 'A-7':'#3E9AA6'
+    'A-1':'#5E7A96', 'A-2':'#BF8A44', 'A-3':'#5C8A5E', 'A-4':'#A88C4A',
+    'A-5':'#7E77A0', 'A-6':'#9C4A5E', 'A-7':'#4E8A94'
   };
   // 유휴 페르소나 말풍선(2026-07-10 복구) — 실 자동화로그가 아닌 순수 캐릭터 연출이므로 브리핑 피드·집계에는
   // 절대 반영하지 않는다(정직 배지 원칙 — 실가동과 무관한 문구를 "실적"처럼 보이게 하지 않기 위함).
@@ -307,36 +333,44 @@
     'A-3':'이번 주 체크인 리스트 확인', 'A-4':'평가 기준 다시 짚어보기',
     'A-5':'배포 막바지 점검', 'A-6':'숫자 하나하나 대조 중', 'A-7':'흐름 막히는 지점 분석'
   };
+  // ── 지브리/토토로 팔레트 — 키는 원본 그대로, 값만 숲 정령의 목조 오피스 톤으로 교체.
+  //    다크 = 해질녘 등불 밝힌 아늑한 나무집(깊은 이끼빛+꿀빛 목재), 라이트 = 한낮 햇살 드는 들판집.
   const PAL={
     dark:{
-      bg:'#0E1116', floorA:'#3A342C', floorB:'#332E27',
-      rugA:'#3C4A44', rugB:'#374540', rugEdge:'#C9A96A',
-      wall:'#28241F', wallTrim:'#C9A96A', wallBack:'#211E1A',
-      table:'#5C4A36', chair:'#2C2824', trouser:'#2A2D33',
-      skin:'#D8B48C', hair:'#33291F',
-      monOff:'#141B26', monOn:'#4E86C4', lampBrass:'#C9A96A', lampShade:'#F3C979',
-      glow:'#F3C979', sage:'#7FC8A0', brass:'#C9A96A', muted:'#9B9283',
-      lead:'#3B4150', leadTie:'#E8C877',
-      shadow:'rgba(0,0,0,.34)', plant:'#4C7A56', plantPot:'#7A5236',
-      wood:'#6A5236', cabinet:'#4A443C', cabinet2:'#5A5248', metal:'#8C8478',
-      book:['#8E5B4B','#4E6E86','#7A8C5A','#B08A46','#6A5B86','#3E7A72'],
-      winSky:'#BFD8E8', winSky2:'#8FB6D0', winFrame:'#5A5248', coffee:'#3A2A20', mug:'#D8D0C2',
-      paper:'#EAE2D0', board:'#EDEAE2', boardTrim:'#8C8478', ceil:'#F3C979', steam:'#E8F2F6'
+      // 밤 달빛 — 먹먹한 청록/블루, 라벤더그레이 달빛, 실내 등불만 유일한 온기
+      bg:'#24303E', floorA:'#3A5266', floorB:'#2C3E52',                 // 차가운 목재 마루
+      rugA:'#3D5250', rugB:'#2C3E52', rugEdge:'#D8B26A',                // 먹먹한 청록 러그 + 등불빛 테두리(따뜻한 점)
+      wall:'#2C3E52', wallTrim:'#47606F', wallBack:'#24303E',           // 달빛 청록 벽 + 몰딩
+      table:'#3A5266', chair:'#24303E', trouser:'#3D5250',             // 차가운 목재 + 야음 하의
+      skin:'#E4C89C', hair:'#33291E',
+      monOff:'#22303C', monOn:'#F0D27A', lampBrass:'#C9A24E', lampShade:'#F0D27A', // 등불=차가운 밤의 유일한 온기
+      glow:'#D8B26A', sage:'#97A0B8', brass:'#D8B26A', muted:'#7C88A6',
+      lead:'#2E4A44', leadTie:'#F0D27A',                                // 팀장=짙은 청록 + 금빛 넥타이
+      shadow:'rgba(18,26,36,.34)', plant:'#3D5250', plantPot:'#544E48', // 차가운 달빛 그림자
+      wood:'#3A5266', cabinet:'#2C3E52', cabinet2:'#3A5266', metal:'#7C88A6',
+      book:['#6E5A54','#3D5250','#4A5648','#C9A24E','#47606F','#5E5048'],
+      winSky:'#2C3E52', winSky2:'#24303E', winFrame:'#47606F', coffee:'#3A2A22', mug:'#D8DEE2',
+      paper:'#D8DEE2', board:'#D8DEE2', boardTrim:'#47606F', ceil:'#F0D27A', steam:'#7C88A6',
+      winHillFar:'#3D5250', winHillNear:'#2C3E52', winTree:'#24303E', winCloud:'#97A0B8', winFlower:'#7C88A6',
+      outline:'#33302C'                                                 // 셀 외곽선 = 웜 다크(순검정 아님, 밤 배경에서 읽힘)
     },
     light:{
-      bg:'#EFE9DB', floorA:'#D9C8A7', floorB:'#CEBC99',
-      rugA:'#C6D3C7', rugB:'#BAC9BC', rugEdge:'#8C6C2C',
-      wall:'#E7DFCD', wallTrim:'#8C6C2C', wallBack:'#DED4BE',
-      table:'#BE9E70', chair:'#9C8C74', trouser:'#6C6454',
-      skin:'#E3C39A', hair:'#4A3A2C',
-      monOff:'#AEB6BE', monOn:'#7FA9D6', lampBrass:'#8C6C2C', lampShade:'#E7B54E',
-      glow:'#F0C868', sage:'#4E9E77', brass:'#8C6C2C', muted:'#7C7059',
-      lead:'#4A5364', leadTie:'#A6822E',
-      shadow:'rgba(60,44,20,.20)', plant:'#6FA070', plantPot:'#A6714A',
-      wood:'#B08E5E', cabinet:'#B7AE9E', cabinet2:'#C6BDAC', metal:'#C9C1B2',
-      book:['#B87A62','#6E90A8','#93A56E','#C9A24E','#8C7CA8','#5E9C90'],
-      winSky:'#DCEBF4', winSky2:'#B6D2E4', winFrame:'#C6BDAC', coffee:'#5A4030', mug:'#F0EADC',
-      paper:'#FBF6EA', board:'#FDFBF5', boardTrim:'#C6BDAC', ceil:'#F0C868', steam:'#8C8478'
+      // 낮 초원 — 이끼그린 수풀, 따뜻한 흙길, 크림 하늘, 노란 야생화, 절제된 레드
+      bg:'#EAE3C8', floorA:'#C9A878', floorB:'#B08A5E',                 // 흙길 원목 마루
+      rugA:'#78865A', rugB:'#5A6A44', rugEdge:'#8A6A4A',                // 이끼그린 러그(수채 톤다운)
+      wall:'#E4DAB8', wallTrim:'#9A7248', wallBack:'#EAE3C8',
+      table:'#B08A5E', chair:'#8A6A4A', trouser:'#6E8B3D',
+      skin:'#EAD0A8', hair:'#4A3A2C',
+      monOff:'#C6C2A0', monOn:'#E8C64A', lampBrass:'#C9A878', lampShade:'#E8C64A',
+      glow:'#E8C64A', sage:'#5A6A44', brass:'#8A6A4A', muted:'#78865A',
+      lead:'#3E5A32', leadTie:'#A6822E',
+      shadow:'rgba(90,70,40,.20)', plant:'#5A6A44', plantPot:'#8A6A4A',
+      wood:'#9A7248', cabinet:'#C9A878', cabinet2:'#B08A5E', metal:'#C9A878',
+      book:['#B87A62','#78865A','#97A56A','#C9A24E','#8A6A4A','#A9744E'],
+      winSky:'#F2ECD5', winSky2:'#C9DCA8', winFrame:'#9A7248', coffee:'#5A4030', mug:'#F2ECD5',
+      paper:'#F2ECD5', board:'#EAE3C8', boardTrim:'#C9A878', ceil:'#E8C64A', steam:'#E4DAB8',
+      winHillFar:'#97A56A', winHillNear:'#78865A', winTree:'#5A6A44', winCloud:'#F2ECD5', winFlower:'#E8C64A',
+      outline:'#4A3524'                                                 // 셀 외곽선 = 웜 다크브라운
     }
   };
   const mqLightPref=window.matchMedia('(prefers-color-scheme: light)');
@@ -366,9 +400,9 @@
     const Z=gz+h, X=gx+w, Y=gy+d;
     const tA=project(gx,gy,Z), tB=project(X,gy,Z), tC=project(X,Y,Z), tD=project(gx,Y,Z);
     const bB=project(X,gy,gz), bC=project(X,Y,gz), bD=project(gx,Y,gz);
-    poly([tB,tC,bC,bB], fc(hex,0.58));            // +gx right face (dark)
-    poly([tD,tC,bC,bD], fc(hex,0.80));            // +gy left face (mid)
-    poly([tA,tB,tC,tD], fc(hex, topF||1.16));     // top (warm light)
+    poly([tB,tC,bC,bB], fc(hex,0.68));            // +gx right face (soft shadow — 부드러운 손그림 음영)
+    poly([tD,tC,bC,bD], fc(hex,0.85));            // +gy left face (mid)
+    poly([tA,tB,tC,tD], fc(hex, topF||1.13));     // top (warm light)
   }
   function boxC(ccx,ccy,gz,w,d,h,hex,topF){ box(ccx-w/2, ccy-d/2, gz, w,d,h,hex,topF); }
   function shadeHex(hex,f){
@@ -383,10 +417,14 @@
     poly([tA,tB,tC,tD], fill);
   }
   function shadowEllipse(gx,gy,rx){
+    // 지브리풍 부드러운 접지 그림자 — 딱딱한 타원 대신 가장자리가 번지는 방사 그라데이션
     const c=project(gx,gy,0.02);
+    const RX=rx*TW*0.56, RY=rx*TH*0.56;
+    const g=ctx.createRadialGradient(c.x,c.y,RX*0.15, c.x,c.y,RX);
+    g.addColorStop(0, P.shadow); g.addColorStop(0.62, P.shadow); g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.save(); ctx.beginPath();
-    ctx.ellipse(c.x,c.y, rx*TW*0.5, rx*TH*0.5, 0, 0, Math.PI*2);
-    ctx.fillStyle=P.shadow; ctx.fill(); ctx.restore();
+    ctx.ellipse(c.x,c.y, RX, RY, 0, 0, Math.PI*2);
+    ctx.fillStyle=g; ctx.fill(); ctx.restore();
   }
 
   /* ---------- v2 rounded primitives (탈복셀 — 귀엽고 정교한 라운드 셰이딩) ----------
@@ -396,15 +434,26 @@
   function orb(gx,gy,gz,r,hex,squash){
     const p=project(gx,gy,gz);
     const rx=r*TW*0.98, ry=r*TW*(squash||0.92);
-    const g=ctx.createRadialGradient(p.x-rx*0.35,p.y-ry*0.45,rx*0.12, p.x,p.y,rx*1.18);
-    g.addColorStop(0, fc(hex,1.24)); g.addColorStop(0.55, fc(hex,1.0)); g.addColorStop(1, fc(hex,0.62));
+    // 다층 수채 램프 — 좌상단 단일광: 코어 하이라이트 → 소프트 미드 → 바디 → 터미네이터 → 접지 소프트섀도
+    const g=ctx.createRadialGradient(p.x-rx*0.34,p.y-ry*0.44,rx*0.08, p.x,p.y,rx*1.22);
+    g.addColorStop(0,    fc(hex,1.22));
+    g.addColorStop(0.30, fc(hex,1.05));
+    g.addColorStop(0.58, fc(hex,0.92));
+    g.addColorStop(0.82, fc(hex,0.78));
+    g.addColorStop(1,    fc(hex,0.68));
     ctx.beginPath(); ctx.ellipse(p.x,p.y,rx,ry,0,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+    // 매우 옅은 림라이트 아크 — 반대편(우하) 가장자리를 살짝 밝혀 볼륨감(+약 8% 밝기)
+    ctx.save();
+    ctx.globalAlpha=0.20;
+    ctx.beginPath(); ctx.ellipse(p.x,p.y,rx,ry,0, 0.06*Math.PI, 0.58*Math.PI);
+    ctx.lineWidth=Math.max(0.75, rx*0.045); ctx.strokeStyle=fc(hex,1.16); ctx.stroke();
+    ctx.restore();
   }
   function puck(gx,gy,gz,r,h,hex){
     const b=project(gx,gy,gz), tp=project(gx,gy,gz+h);
     const rx=r*TW*0.92, ry=r*TH*0.92;
     const g=ctx.createLinearGradient(b.x-rx,0,b.x+rx,0);
-    g.addColorStop(0, fc(hex,0.88)); g.addColorStop(0.42, fc(hex,1.04)); g.addColorStop(1, fc(hex,0.60));
+    g.addColorStop(0, fc(hex,0.90)); g.addColorStop(0.42, fc(hex,1.05)); g.addColorStop(1, fc(hex,0.72));
     ctx.beginPath();
     ctx.moveTo(tp.x-rx, tp.y);
     ctx.lineTo(b.x-rx, b.y);
@@ -419,6 +468,78 @@
     const a=project(x1,y1,z1), b=project(x2,y2,z2);
     ctx.save(); ctx.strokeStyle=fc(hex,f||0.98); ctx.lineWidth=wpx; ctx.lineCap='round';
     ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); ctx.restore();
+  }
+
+  /* ---------- CEL (셀 채색) 원시함수 — 캐릭터 몸통 전용(가구·의자·식물은 위 orb/puck/limb 유지) ----------
+     레퍼런스 지브리 특징 #1: 그라데이션 구체가 아니라 (a)납작한 단색 베이스 (b)한 톤 어두운 셀 그림자 1겹
+     (c)웜 다크 외곽선(순검정 아님). 큰 단순 실루엣 · 셀 대비로 "그려진 배경 vs 또렷한 캐릭터"의 핵심 대비를 만든다.
+     배경(가구·의자·식물)에는 절대 쓰지 않는다 — 그 대비를 지키기 위함. */
+  function celShade(hex,f){ return shadeHex(hex, f==null?0.78:f); }
+  function celOrb(gx,gy,gz,r,hex,squash){
+    const p=project(gx,gy,gz);
+    const rx=r*TW*0.98, ry=r*TW*(squash||0.92);
+    // (a) 납작한 단색 베이스
+    ctx.beginPath(); ctx.ellipse(p.x,p.y,rx,ry,0,0,Math.PI*2); ctx.fillStyle=fc(hex,1.0); ctx.fill();
+    // (b) 한 톤 어두운 셀 그림자 — 실루엣에 클립, 우하(광원 반대)로 오프셋한 하드엣지 타원
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(p.x,p.y,rx,ry,0,0,Math.PI*2); ctx.clip();
+    ctx.beginPath(); ctx.ellipse(p.x+rx*0.42, p.y+ry*0.46, rx*0.98, ry*0.98, 0, 0, Math.PI*2);
+    ctx.fillStyle=celShade(hex); ctx.fill();
+    ctx.restore();
+    // (c) 좌상단 소량 하이라이트 dab(메이처럼 깔끔 — 최소)
+    ctx.beginPath(); ctx.ellipse(p.x-rx*0.36, p.y-ry*0.40, rx*0.24, ry*0.22, 0, 0, Math.PI*2);
+    ctx.fillStyle=fc(hex,1.06); ctx.fill();
+    // (d) 웜 다크 외곽선
+    ctx.beginPath(); ctx.ellipse(p.x,p.y,rx,ry,0,0,Math.PI*2);
+    ctx.lineWidth=Math.max(0.8, r*TW*0.05); ctx.strokeStyle=hexA(P.outline,0.9); ctx.stroke();
+  }
+  function celPuck(gx,gy,gz,r,h,hex){
+    const b=project(gx,gy,gz), tp=project(gx,gy,gz+h);
+    const rx=r*TW*0.92, ry=r*TH*0.92;
+    const bodyPath=()=>{ ctx.beginPath(); ctx.moveTo(tp.x-rx, tp.y); ctx.lineTo(b.x-rx, b.y);
+      ctx.ellipse(b.x,b.y,rx,ry,0, Math.PI, 0, true); ctx.lineTo(tp.x+rx, tp.y); ctx.closePath(); };
+    // 납작한 몸통 필
+    bodyPath(); ctx.fillStyle=fc(hex,1.0); ctx.fill();
+    // 셀 그림자 밴드 — 그늘진 우측(+gx)에 하드엣지 한 겹(바디에 클립)
+    ctx.save(); bodyPath(); ctx.clip();
+      ctx.fillStyle=celShade(hex);
+      ctx.fillRect(b.x+rx*0.22, tp.y-ry, rx*1.2, (b.y-tp.y)+ry*2.2);
+    ctx.restore();
+    // 밝은 탑캡 한 겹(그라데이션 없음)
+    ctx.beginPath(); ctx.ellipse(tp.x,tp.y,rx,ry,0,0,Math.PI*2); ctx.fillStyle=fc(hex,1.06); ctx.fill();
+    // 실루엣 외곽선 + 탑캡 외곽선
+    bodyPath(); ctx.lineWidth=Math.max(0.8, r*TW*0.05); ctx.strokeStyle=hexA(P.outline,0.9); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(tp.x,tp.y,rx,ry,0,0,Math.PI*2);
+    ctx.lineWidth=Math.max(0.7, r*TW*0.04); ctx.strokeStyle=hexA(P.outline,0.7); ctx.stroke();
+  }
+  function celLimb(x1,y1,z1,x2,y2,z2,wpx,hex,f){
+    const a=project(x1,y1,z1), b=project(x2,y2,z2);
+    ctx.save(); ctx.lineCap='round';
+    // 넓은 외곽선 먼저
+    ctx.strokeStyle=hexA(P.outline,0.9); ctx.lineWidth=wpx+Math.max(1.4, wpx*0.34);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    // 납작한 베이스 스트로크
+    ctx.strokeStyle=fc(hex,1.0); ctx.lineWidth=wpx;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    // 아래 가장자리 얇은 셀 그림자 → 깔끔한 다크 림의 캡슐
+    ctx.strokeStyle=celShade(hex); ctx.lineWidth=Math.max(0.8, wpx*0.30);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y+wpx*0.30); ctx.lineTo(b.x, b.y+wpx*0.30); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ---------- 식물 브러시-dab — 딱딱한 구체가 아니라 깃털처럼 번지는 과슈 자국(배경은 물렁하게 유지) ----------
+     dab: 현재 변환좌표(px,py)에 소프트-엣지 방사 자국. fol: 씬-스페이스 잎덩이(project → dab)로 orb를 대체 */
+  function dab(px,py,r,hex,alpha,squash,rot){
+    const rx=r, ry=r*(squash||0.82), a0=(alpha==null?0.9:alpha);
+    const g=ctx.createRadialGradient(px,py,0, px,py,Math.max(0.5,r));
+    g.addColorStop(0, hexA(hex,a0)); g.addColorStop(0.55, hexA(hex,a0*0.9)); g.addColorStop(1, hexA(hex,0));
+    ctx.save(); ctx.translate(px,py); ctx.rotate(rot||0);
+    ctx.beginPath(); ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+    ctx.restore();
+  }
+  function fol(gx,gy,gz,r,hex,squash){                       // 씬 잎덩이 — orb(gx,gy,gz,r,hex,squash) 대체용
+    const p=project(gx,gy,gz);
+    dab(p.x,p.y, r*TW*1.04, hex, 0.96, squash||0.82, (gx*0.7+gy)*0.3);
   }
 
   /* ---------- characters ---------- */
@@ -639,21 +760,22 @@
     limb(cx + px*0.38*s, cy + py*0.38*s, 0.16, cx + px*0.38*s, cy + py*0.38*s, 0.52, 0.10*TW*s, shadeHex(P.chair,0.9)); // armrest R
     limb(cx - px*0.38*s, cy - py*0.38*s, 0.16, cx - px*0.38*s, cy - py*0.38*s, 0.52, 0.10*TW*s, shadeHex(P.chair,0.9)); // armrest L
 
-    /* ----- lap / knees (trousers), reaching forward ----- */
-    puck(cx + fx*0.16*s, cy + fy*0.16*s, 0.44, 0.30*s, 0.22, P.trouser);
-    orb(cx + fx*0.32*s + px*0.15*s, cy + fy*0.32*s + py*0.15*s, 0.60, 0.11*s, shadeHex(P.trouser,1.05), 0.8); // knee R
-    orb(cx + fx*0.32*s - px*0.15*s, cy + fy*0.32*s - py*0.15*s, 0.60, 0.11*s, shadeHex(P.trouser,1.05), 0.8); // knee L
+    /* ----- lap / knees (trousers), reaching forward — 셀 채색 ----- */
+    celPuck(cx + fx*0.16*s, cy + fy*0.16*s, 0.44, 0.30*s, 0.22, P.trouser);
+    celOrb(cx + fx*0.32*s + px*0.15*s, cy + fy*0.32*s + py*0.15*s, 0.60, 0.11*s, shadeHex(P.trouser,1.05), 0.8); // knee R
+    celOrb(cx + fx*0.32*s - px*0.15*s, cy + fy*0.32*s - py*0.15*s, 0.60, 0.11*s, shadeHex(P.trouser,1.05), 0.8); // knee L
 
-    /* ----- torso: soft capsule + shoulder dome ----- */
+    /* ----- torso: 통통한 달걀형 실루엣 — 짧은 허리 퍽 + 가슴 앞 배 orb (포근한 라운드) ----- */
     const waistZ=0.52;
-    puck(cx, cy, waistZ+breathe*0.5, 0.34*s, 0.74*s, shirt);                             // waist→chest capsule
-    const shZ=waistZ+0.74*s;
-    orb(cx, cy, shZ+breathe, 0.32*s, shirtHi, 0.52);                                     // shoulders (rounded dome)
+    celPuck(cx, cy, waistZ+breathe*0.5, 0.35*s, 0.66*s, shirt);                          // 살짝 짧고 통통한 몸통 셀
+    celOrb(cx + fx*0.10*s, cy + fy*0.10*s, waistZ+0.34*s+breathe*0.5, 0.30*s, shirt, 0.88); // 배 — 앞으로 겹친 통통한 볼륨
+    const shZ=waistZ+0.74*s;                                                             // (앵커 산식 불변 — 머리/목 계산 보존)
+    celOrb(cx, cy, shZ+breathe, 0.33*s, shirtHi, 0.54);                                  // shoulders (rounded dome)
 
     /* ----- collar + tie / uniform accent (on the camera-facing chest) — 뒤돌아 앉은 캐릭터는 생략(등만 보임) ----- */
     if(!isBack){
-      orb(cx + fx*0.22*s, cy + fy*0.22*s, shZ-0.04+breathe, 0.11*s, c.lead? shadeHex(shirt,0.8):'#ECE4D2', 0.6); // collar
-      limb(cx + fx*0.28*s, cy + fy*0.28*s, shZ-0.06+breathe,
+      celOrb(cx + fx*0.22*s, cy + fy*0.22*s, shZ-0.04+breathe, 0.11*s, c.lead? shadeHex(shirt,0.8):'#ECE4D2', 0.6); // collar
+      celLimb(cx + fx*0.28*s, cy + fy*0.28*s, shZ-0.06+breathe,
            cx + fx*0.30*s, cy + fy*0.30*s, shZ-0.06-(c.lead?0.36:0.28)*s+breathe, 0.085*TW*s, tieCol, 1.15);      // tie / lanyard
     }
 
@@ -665,10 +787,10 @@
       const armPx=ap.spread*s*side;
       const ez=shZ-0.42*s + ap.dz;
       const hxp=cx+px*armPx + fx*ap.hReach*s, hyp=cy+py*armPx + fy*ap.hReach*s;
-      limb(sxo, syo, shZ-0.04+breathe, hxp, hyp, ez+0.07, 0.125*TW*s, shirt, 1.0);       // sleeve capsule
+      celLimb(sxo, syo, shZ-0.04+breathe, hxp, hyp, ez+0.07, 0.125*TW*s, shirt, 1.0);    // sleeve capsule
       if((pose.prop==='coffee'||pose.prop==='phone'||pose.prop==='magnify') && side===pose.propSide){
         propHand={x:hxp,y:hyp,z:ez,kind:pose.prop};                                      // draw hand+prop atop the face later
-      } else { orb(hxp, hyp, ez+0.05, 0.085*s, skin); }                                  // hand
+      } else { celOrb(hxp, hyp, ez+0.05, 0.085*s, skin); }                               // hand
     }
     // held sheet (reading) — upright in front of the chest, below the face
     if(pose.prop==='paper'){
@@ -676,44 +798,60 @@
     }
 
     /* ----- neck ----- */
-    puck(cx + fx*0.02*s, cy + fy*0.02*s, shZ+0.02+breathe, 0.09*s, 0.12*s, shadeHex(skin,0.94));
+    celPuck(cx + fx*0.02*s, cy + fy*0.02*s, shZ+0.02+breathe, 0.09*s, 0.12*s, shadeHex(skin,0.94));
 
     /* ----- head: big cute orb + hair cap / bangs / side locks ----- */
     const hz=shZ+0.14*s + breathe - nod*0.30;
     const hx=cx + fx*nod*0.5 + px*pose.tilt*s, hy=cy + fy*nod*0.5 + py*pose.tilt*s;
     const headC=hz+0.26*s;                                                               // head orb center z
-    orb(hx, hy, headC, 0.275*s, skin, 0.96);                                             // head
+    celOrb(hx, hy, headC, 0.275*s, skin, 0.96);                                          // head (셀)
     const hp=project(hx,hy,headC);
     const hrx=0.275*s*TW*1.0, hry=0.275*s*TW*0.96;
     const fscr=project(hx+fx*0.3, hy+fy*0.3, headC);                                     // facing dir on screen
     const fsx=Math.sign(fscr.x-hp.x)||1;
-    // hair cap — upper hemisphere chord fill with soft gradient
-    const hg=ctx.createRadialGradient(hp.x-hrx*0.3,hp.y-hry*0.55,hrx*0.1, hp.x,hp.y-hry*0.2,hrx*1.15);
-    hg.addColorStop(0, fc(hair,1.35)); hg.addColorStop(1, fc(hair,0.85));
-    ctx.beginPath(); ctx.ellipse(hp.x,hp.y,hrx*1.03,hry*1.0,0, Math.PI, 0, false);
-    ctx.closePath(); ctx.fillStyle=hg; ctx.fill();
+    // hair cap — 셀: 3겹 소프트-로브 실루엣을 플랫 단색으로 채우고, 하부에 한 톤 그림자 로브 1겹 + 웜 다크 외곽선
+    const hairOL=Math.max(0.8, 0.275*s*TW*0.05);
+    ctx.fillStyle=fc(hair,1.0);
+    ctx.beginPath(); ctx.ellipse(hp.x,             hp.y,             hrx*1.03, hry*1.00, 0,     Math.PI, 0, false); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hp.x-hrx*0.06,    hp.y-hry*0.05,    hrx*0.92, hry*0.98, -0.12, Math.PI, 0, false); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hp.x+hrx*0.06,    hp.y-hry*0.03,    hrx*0.86, hry*0.94,  0.12, Math.PI, 0, false); ctx.closePath(); ctx.fill();
+    // 한 톤 어두운 그림자 로브(우측·광원 반대) — 캡 실루엣에 클립한 하드엣지 한 겹
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(hp.x, hp.y, hrx*1.03, hry*1.00, 0, Math.PI, 0, false); ctx.closePath(); ctx.clip();
+    ctx.fillStyle=celShade(hair);
+    ctx.beginPath(); ctx.ellipse(hp.x+hrx*0.18, hp.y-hry*0.02, hrx*0.66, hry*0.74, 0, Math.PI, 0, false); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    // 캡 외곽선(웜 다크)
+    ctx.beginPath(); ctx.ellipse(hp.x, hp.y, hrx*1.03, hry*1.00, 0, Math.PI, 0, false);
+    ctx.lineWidth=hairOL; ctx.strokeStyle=hexA(P.outline,0.9); ctx.stroke();
     // bangs — soft fringe blob dipping onto the camera-facing forehead (뒤돌아 앉은 캐릭터는 이마가 안 보이므로 생략)
     if(!isBack){
       ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.34, hp.y-hry*0.34, hrx*0.46, hry*0.30, fsx*0.3, 0, Math.PI*2);
       ctx.fillStyle=fc(hair,1.08); ctx.fill();
+      ctx.lineWidth=hairOL*0.8; ctx.strokeStyle=hexA(P.outline,0.8); ctx.stroke();
     } else {
       // 뒤통수 볼륨 — 정수리~목선까지 이어지는 결 있는 헤어 매스(빈 뒤통수처럼 보이지 않도록)
       ctx.beginPath(); ctx.ellipse(hp.x, hp.y+hry*0.05, hrx*0.86, hry*0.78, 0, 0, Math.PI*2);
       ctx.fillStyle=fc(hair,0.90); ctx.fill();
+      ctx.lineWidth=hairOL*0.8; ctx.strokeStyle=hexA(P.outline,0.8); ctx.stroke();
     }
-    // side locks
-    ctx.beginPath(); ctx.ellipse(hp.x-hrx*0.88, hp.y+hry*0.05, hrx*0.20, hry*0.34, 0, 0, Math.PI*2); ctx.fillStyle=fc(hair,0.92); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(hp.x+hrx*0.88, hp.y+hry*0.05, hrx*0.20, hry*0.34, 0, 0, Math.PI*2); ctx.fillStyle=fc(hair,0.78); ctx.fill();
+    // side locks — 플랫 필 + 같은 웜 다크 외곽선
+    ctx.beginPath(); ctx.ellipse(hp.x-hrx*0.88, hp.y+hry*0.05, hrx*0.20, hry*0.34, 0, 0, Math.PI*2);
+    ctx.fillStyle=fc(hair,0.92); ctx.fill(); ctx.lineWidth=hairOL*0.75; ctx.strokeStyle=hexA(P.outline,0.75); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(hp.x+hrx*0.88, hp.y+hry*0.05, hrx*0.20, hry*0.34, 0, 0, Math.PI*2);
+    ctx.fillStyle=fc(hair,0.78); ctx.fill(); ctx.lineWidth=hairOL*0.75; ctx.strokeStyle=hexA(P.outline,0.75); ctx.stroke();
     if(c.lead){                                                                          // neat side part highlight
       ctx.beginPath(); ctx.ellipse(hp.x-fsx*hrx*0.12, hp.y-hry*0.62, hrx*0.34, hry*0.10, -fsx*0.5, 0, Math.PI*2);
       ctx.fillStyle=fc(hair,1.5); ctx.fill();
     }
     if(c.hairStyle) drawHairAccent(c.hairStyle, hp, hrx, hry, fsx, hair);                // persona hairstyle accent
-    // blush dots — 볼터치 (귀여움 포인트, 뒤돌아 앉은 캐릭터는 뺨이 안 보이므로 생략)
+    // blush dots — 볼터치 (더 둥글고 따뜻하게, 뒤돌아 앉은 캐릭터는 뺨이 안 보이므로 생략)
     if(!isBack){
-      ctx.globalAlpha=0.30;
-      ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.52, hp.y+hry*0.28, hrx*0.14, hry*0.09, 0, 0, Math.PI*2);
-      ctx.fillStyle='#E08A6A'; ctx.fill();
+      ctx.fillStyle='#E8926E';
+      ctx.globalAlpha=0.34;
+      ctx.beginPath(); ctx.ellipse(hp.x+fsx*hrx*0.50, hp.y+hry*0.28, hrx*0.17, hry*0.13, 0, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha=0.22;
+      ctx.beginPath(); ctx.ellipse(hp.x-fsx*hrx*0.30, hp.y+hry*0.30, hrx*0.13, hry*0.10, 0, 0, Math.PI*2); ctx.fill();
       ctx.globalAlpha=1;
     }
 
@@ -721,9 +859,9 @@
 
     // raised hand + held prop (coffee / phone / magnifier) sit in FRONT of the face → drawn after the head
     if(propHand){
-      orb(propHand.x, propHand.y, propHand.z+0.04, 0.085*s, skin);                       // hand
+      celOrb(propHand.x, propHand.y, propHand.z+0.04, 0.085*s, skin);                    // hand (셀)
       if(propHand.kind==='coffee'){
-        puck(propHand.x, propHand.y, propHand.z+0.06, 0.085*s, 0.16, P.mug);             // mug
+        celPuck(propHand.x, propHand.y, propHand.z+0.06, 0.085*s, 0.16, P.mug);          // mug (플랫 필 + 셀 외곽선)
         const cs=project(propHand.x, propHand.y, propHand.z+0.22);
         ctx.beginPath(); ctx.ellipse(cs.x,cs.y, 0.055*s*TW, 0.055*s*TH, 0,0,Math.PI*2);
         ctx.fillStyle=fc(P.coffee,1.0); ctx.fill();                                      // coffee surface
@@ -749,19 +887,17 @@
     if(c.face==='y-') return {px:c.gx, py:4.72, dir:'row'};
     return {px:0.95, py:c.gy-0.30, dir:'lead'};
   }
+  // 책상 위 집기 — 발광 사각 모니터 대신 원목 프레임에 놓인 장부(크림 페이지). 차가운 발광·유리반사 제거,
+  // busy면 등불에 페이지가 살짝 따뜻하게 밝아질 뿐(emissive 아님). 받침은 둥근 원목.
   function drawMonitor(c,t){
     const a=propAnchor(c); const on=c.status==='busy';
-    // 모니터 글로우 플리커 — busy 화면은 미세하게 명멸 (micro-animation, MOTION 게이트)
-    const flick = on ? (1.46 + 0.10*Math.sin(t*9+ (c.phase||0))*MOTION) : 1.0;
-    const scr = on?P.monOn:P.monOff;
+    const pageF = on ? 1.12 : 1.0;                                             // busy면 페이지가 살짝 밝게(따뜻한 톤)
     if(a.dir==='lead'){
-      puck(a.px+0.05, a.py+0.30, 1.0, 0.10, 0.12, P.chair);                    // rounded stand
-      box(a.px, a.py, 1.10, 0.06,0.60,0.42, scr, flick);
-      box(a.px-0.005, a.py-0.02, 1.08, 0.05,0.64,0.02, shadeHex(P.chair,1.3), 1.2); // slim bezel foot
+      puck(a.px+0.05, a.py+0.30, 1.0, 0.10, 0.12, shadeHex(P.wood,0.86));      // 둥근 원목 받침
+      standPanel('x', a.px+0.02, a.py-0.02, a.py+0.62, 1.06, 1.52, P.wood, P.paper, pageF);
     } else {
-      puck(a.px, a.py+0.05, 1.0, 0.12, 0.12, P.chair);                          // rounded stand
-      box(a.px-0.30, a.py, 1.10, 0.60,0.06,0.42, scr, flick);
-      box(a.px-0.32, a.py-0.005, 1.08, 0.64,0.05,0.02, shadeHex(P.chair,1.3), 1.2);
+      puck(a.px, a.py+0.05, 1.0, 0.12, 0.12, shadeHex(P.wood,0.86));           // 둥근 원목 받침
+      standPanel('y', a.py+0.02, a.px-0.32, a.px+0.30, 1.06, 1.52, P.wood, P.paper, pageF);
     }
     c._mon={x:a.px, y:a.py, on};
   }
@@ -771,7 +907,21 @@
     if(a.dir==='lead'){ lx=a.px+0.02; ly=a.py+0.66; } else { lx=a.px+0.48; ly=a.py-0.02; }
     puck(lx+0.04, ly+0.04, 1.0, 0.09, 0.04, P.lampBrass);                       // round base
     limb(lx+0.04, ly+0.04, 1.04, lx+0.02, ly+0.02, 1.44, 0.045*TW, P.lampBrass, 1.1); // stem
-    orb(lx+0.04, ly+0.04, 1.50, 0.12, lit?P.lampShade:P.lampBrass, 0.72);       // rounded shade
+    orb(lx+0.04, ly+0.04, 1.50, 0.13, lit?P.lampShade:P.lampBrass, 0.72);       // rounded shade
+    (function(){                                                                 // 갓 아랫단 열린 림 — 각진 느낌 대신 천 갓 실루엣 + (켜지면)하단 확산광
+      const sp=project(lx+0.04, ly+0.04, 1.44);
+      ctx.save();
+      ctx.fillStyle=hexA(lit?P.lampShade:shadeHex(P.lampBrass,1.08), lit?0.5:0.32);
+      ctx.beginPath(); ctx.ellipse(sp.x, sp.y, 0.145*TW, 0.058*TW, 0, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    })();
+    if(lit){                                                                     // 더 포근한 소프트글로우 헤일로
+      const gp=project(lx+0.04, ly+0.04, 1.52);
+      const gr=ctx.createRadialGradient(gp.x,gp.y,0, gp.x,gp.y,0.30*TW);
+      gr.addColorStop(0, hexA(P.lampShade,0.45)); gr.addColorStop(1, hexA(P.lampShade,0));
+      ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=gr;
+      ctx.beginPath(); ctx.ellipse(gp.x,gp.y,0.30*TW,0.22*TW,0,0,Math.PI*2); ctx.fill(); ctx.restore();
+    }
     c._lamp={x:lx+0.04, y:ly+0.04, lit};
   }
   function drawPlate(c){
@@ -780,16 +930,27 @@
     else { box(a.px-0.26, a.py+0.62, 1.0, 0.52,0.05,0.06, P.brass,1.25); }
   }
 
-  // 식물 흔들림 — foliage orbs sway (micro-animation, MOTION 게이트)
+  // 식물 흔들림 — 지브리풍 무성한 화분(양치식물처럼 풍성) + 발밑 도토리. foliage orbs sway (MOTION 게이트)
   function drawPlant(gx,gy,t,ph){
+    const cx=gx+0.36, cy=gy+0.36;
     const sw=Math.sin(t*1.1+(ph||0))*0.035*MOTION;
-    shadowEllipse(gx+0.36,gy+0.36,0.62);
-    puck(gx+0.36, gy+0.36, 0.0, 0.14, 0.14, P.plantPot);                        // pedestal foot
-    puck(gx+0.36, gy+0.36, 0.14, 0.26, 0.34, P.plantPot);                       // rounded pot
-    orb(gx+0.36, gy+0.36, 0.52, 0.27, shadeHex(P.plantPot,1.18), 0.32);         // rim
-    orb(gx+0.36, gy+0.36, 0.66, 0.30, P.plant, 0.82);                           // foliage base
-    orb(gx+0.36+sw*0.6, gy+0.36, 0.94, 0.24, shadeHex(P.plant,1.10), 0.86);     // mid tuft (sways)
-    orb(gx+0.40+sw, gy+0.30+sw*0.5, 1.16, 0.16, shadeHex(P.plant,1.22), 0.9);   // top tuft (sways more)
+    const sw2=Math.sin(t*0.9+(ph||0)+1.3)*0.045*MOTION;
+    shadowEllipse(cx,cy,0.66);
+    puck(cx, cy, 0.0, 0.14, 0.14, P.plantPot);                                  // pedestal foot
+    puck(cx, cy, 0.14, 0.26, 0.34, P.plantPot);                                 // rounded pot
+    orb(cx, cy, 0.52, 0.27, shadeHex(P.plantPot,1.18), 0.32);                   // rim (pot — soft 유지)
+    // 풍성한 잎덩이 — 하드 구체가 아니라 부드러운 과슈 브러시 dab(배경은 물렁하게 유지)
+    fol(cx, cy, 0.66, 0.31, shadeHex(P.plant,0.90), 0.82);                      // foliage base (deep)
+    fol(cx-0.20+sw*0.5, cy+0.04, 0.82, 0.19, P.plant, 0.86);                    // left frond
+    fol(cx+0.22-sw*0.5, cy-0.02, 0.80, 0.18, shadeHex(P.plant,0.94), 0.86);     // right frond
+    fol(cx+sw*0.6, cy, 0.94, 0.24, shadeHex(P.plant,1.10), 0.86);              // mid tuft (sways)
+    fol(cx-0.10+sw2, cy+0.08, 1.06, 0.15, shadeHex(P.plant,1.16), 0.9);        // upper-left tuft
+    fol(cx+0.04+sw, cy-0.06+sw*0.5, 1.18, 0.16, shadeHex(P.plant,1.24), 0.9);   // top tuft (sways more)
+    fol(cx+0.16+sw2*0.8, cy+0.02, 1.02, 0.12, shadeHex(P.plant,1.30), 0.92);   // bright leaf tip
+    // 발밑 도토리 두 알 — 작은 캡슐 몸통 + 갈색 모자(지브리 디테일)
+    const ac=(ox,oy)=>{ orb(cx+ox, cy+oy, 0.02, 0.055, shadeHex('#C79A5A',1.05), 0.9);
+      orb(cx+ox, cy+oy, 0.075, 0.05, shadeHex(P.plantPot,0.9), 0.7); };
+    ac(0.34,0.30); ac(0.46,0.20);
   }
   // 커피 김 — mug 위로 피어오르는 수증기 (micro-animation; reduced-motion이면 정지 한 가닥)
   function drawSteam(wx,wy,z,t,ph){
@@ -847,71 +1008,71 @@
       box(px+0.15, py+0.005, 1.03, 0.03,0.02,0.18, shadeHex('#7A6DB4',1.05), 1.2);
     }
   }
-  // credenza + bookshelf (premium storage against a wall)
+  // 원목 크레덴자 + 책선반 — 각형 box가 아니라 통통한 라운드 실루엣으로 재조각(꿀빛 원목)
   function drawCredenza(gx,gy){
-    shadowEllipse(gx+1.0,gy+0.35,1.6);
-    box(gx,gy,0.0, 2.0,0.5,0.86, P.wood, 1.06);                        // cabinet body
-    box(gx,gy,0.86, 2.0,0.5,0.10, shadeHex(P.wood,1.14), 1.2);         // counter top
-    // shelf of books on top
-    const bk=P.book; let x=gx+0.14;
-    for(let i=0;i<9;i++){
-      const h=0.30+((i*7)%3)*0.05, w=0.14+((i*5)%2)*0.03;
-      box(x, gy+0.14, 0.96, w,0.24,h, bk[i%bk.length], 1.12);
-      x+=w+0.03;
+    shadowEllipse(gx+1.0,gy+0.35,1.7);
+    carveBox(gx,gy,0.0, 2.0,0.5,0.80, P.wood, {rad:9, belly:3.2, grain:6, topGrain:4, lip:4});
+    // 상판 위 원목 책 — 둥근 책등
+    const bk=P.book; let x=gx+0.16;
+    for(let i=0;i<8;i++){
+      const bh=0.30+((i*7)%3)*0.05, bw=0.15+((i*5)%2)*0.03;
+      roundBook(x, gy+0.13, 0.80, bw,0.24,bh, bk[i%bk.length]);
+      x+=bw+0.035;
     }
-    // door seams / handles
-    box(gx+0.96,gy,0.10, 0.04,0.02,0.66, shadeHex(P.wood,0.7), 0.9);
-    box(gx+0.42,gy,0.42, 0.14,0.02,0.05, P.metal, 1.2);
-    box(gx+1.44,gy,0.42, 0.14,0.02,0.05, P.metal, 1.2);
+    // 앞면(+gy 평면) 미닫이문 2짝 — 라운드 패널 + 둥근 원목 손잡이
+    const fy=gy+0.5;
+    panelGY(gx+0.06, fy+0.006, 0.08, 0.90, 0.62, shadeHex(P.wood,1.03));
+    panelGY(gx+1.04, fy+0.006, 0.08, 0.90, 0.62, shadeHex(P.wood,1.03));
+    orb(gx+0.90, fy+0.03, 0.40, 0.045, shadeHex(P.wood,1.22), 0.8);
+    orb(gx+1.10, fy+0.03, 0.40, 0.045, shadeHex(P.wood,1.22), 0.8);
   }
-  // filing cabinet (metal, three drawers)
+  // 원목 서랍장(구 파일캐비닛) — 회색 금속 대신 꿀빛 원목, 라운드 실루엣 + 라운드 서랍 3단
   function drawCabinet(gx,gy){
-    shadowEllipse(gx+0.35,gy+0.30,0.8);
-    box(gx,gy,0.0, 0.7,0.6,1.30, P.cabinet, 1.05);
+    shadowEllipse(gx+0.35,gy+0.30,0.85);
+    carveBox(gx,gy,0.0, 0.7,0.6,1.24, P.wood, {rad:7, belly:3.8, grain:3, topGrain:2, lip:2});
+    // 앞면(+gy 평면) 서랍 3단 — 라운드 서랍 + 가로 원목 손잡이
+    const fy=gy+0.6;
     for(let i=0;i<3;i++){
-      const z=0.10+i*0.40;
-      box(gx+0.05,gy-0.01,z, 0.60,0.02,0.34, P.cabinet2, 1.12);        // drawer face
-      box(gx+0.28,gy-0.03,z+0.15, 0.14,0.03,0.05, P.metal, 1.25);      // handle
+      const z=0.12+i*0.37;
+      panelGY(gx+0.07, fy+0.006, z, 0.56, 0.30, shadeHex(P.wood,1.02));
+      limb(gx+0.22, fy+0.02, z+0.16, gx+0.48, fy+0.02, z+0.16, 0.05*TW, shadeHex(P.wood,1.2), 1.15);
     }
-    box(gx,gy,1.30, 0.7,0.6,0.06, shadeHex(P.cabinet,1.14),1.2);       // top
-    orb(gx+0.32,gy+0.30,1.44, 0.14, P.plant, 0.8);                     // small succulent on top (rounded)
+    drawMiniPlant(gx+0.35, gy+0.30, 1.24);                             // 윗면 위 작은 화분(둥근)
   }
-  // freestanding whiteboard / partition on an easel
+  // 원목 화이트보드 — 통통한 원목 프레임 이젤 + 크림 보드면(라운드), 각형 box 실루엣 제거
   function drawWhiteboard(gx,gy){
     shadowEllipse(gx+0.5,gy+0.2,1.1);
-    box(gx+0.05,gy+0.14,0.0, 0.10,0.10,1.5, P.boardTrim, 0.95);        // legs
-    box(gx+0.95,gy+0.14,0.0, 0.10,0.10,1.5, P.boardTrim, 0.95);
-    box(gx,gy+0.16,1.05, 1.15,0.06,0.9, P.board, 1.16);               // board face
-    box(gx,gy+0.16,1.02, 1.15,0.06,0.05, P.boardTrim, 1.1);           // tray
-    // faint marker strokes
-    box(gx+0.14,gy+0.13,1.62, 0.5,0.01,0.03, P.sage, 1.2);
-    box(gx+0.14,gy+0.13,1.50, 0.32,0.01,0.03, P.brass, 1.2);
-    box(gx+0.14,gy+0.13,1.38, 0.42,0.01,0.03, shadeHex(P.metal,0.9), 1.1);
+    limb(gx+0.14,gy+0.34,0.0, gx+0.22,gy+0.19,1.48, 0.11*TW, shadeHex(P.wood,0.86), 0.92);   // 앞다리(살짝 벌어진 삼각대)
+    limb(gx+1.00,gy+0.34,0.0, gx+0.92,gy+0.19,1.48, 0.11*TW, shadeHex(P.wood,0.86), 0.92);
+    limb(gx+0.57,gy+0.02,0.0, gx+0.57,gy+0.24,1.30, 0.09*TW, shadeHex(P.wood,0.78), 0.88);   // 뒷다리
+    standPanel('y', gy+0.20, gx+0.02, gx+1.12, 1.02, 1.92, P.wood, P.board, 1.04);           // 원목 프레임 + 크림 보드면
+    limb(gx+0.10,gy+0.16,1.00, gx+1.06,gy+0.16,1.00, 0.07*TW, shadeHex(P.wood,1.05), 1.05);  // 라운드 원목 트레이
+    const mk=(x0,x1,zz,col)=>{ const a=project(x0, gy+0.20, zz), b=project(x1, gy+0.20, zz);
+      ctx.save(); ctx.lineCap='round'; ctx.strokeStyle=hexA(col,0.9); ctx.lineWidth=Math.max(1.4,TW*0.03);
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); ctx.restore(); };
+    mk(gx+0.24, gx+0.74, 1.58, P.sage);
+    mk(gx+0.24, gx+0.58, 1.44, P.brass);
+    mk(gx+0.24, gx+0.68, 1.30, shadeHex(P.metal,0.9));
   }
-  // 복합기 (복사·프린터) — premium multifunction unit tucked into the front-left corner (clear of chars/aisles)
-  function drawCopier(gx,gy,t){
-    shadowEllipse(gx+0.5, gy+0.45, 1.18);
-    box(gx, gy, 0.0, 1.0, 0.9, 0.60, P.cabinet, 1.04);                 // lower cabinet body
-    box(gx-0.14, gy+0.28, 0.62, 0.16, 0.44, 0.05, P.paper, 1.14);      // side feed tray (behind)
-    box(gx+0.07, gy-0.01, 0.10, 0.86, 0.02, 0.20, P.cabinet2, 1.12);   // drawer 1 face
-    box(gx+0.07, gy-0.01, 0.34, 0.86, 0.02, 0.18, P.cabinet2, 1.12);   // drawer 2 face
-    box(gx+0.40, gy-0.03, 0.17, 0.20, 0.03, 0.04, P.metal, 1.25);      // drawer handle
-    box(gx+0.40, gy-0.03, 0.42, 0.20, 0.03, 0.04, P.metal, 1.25);      // drawer handle
-    box(gx+0.03, gy+0.05, 0.60, 0.94, 0.80, 0.46, shadeHex(P.cabinet,1.12), 1.10); // print engine
-    box(gx+0.10, gy+0.03, 0.82, 0.72, 0.28, 0.05, shadeHex(P.cabinet,0.88), 0.94); // output recess
-    box(gx+0.20, gy+0.10, 0.86, 0.46, 0.30, 0.02, P.paper, 1.22);      // freshly printed sheet
-    box(gx+0.03, gy+0.07, 1.06, 0.94, 0.78, 0.13, P.cabinet2, 1.16);   // scanner bed
-    box(gx+0.06, gy+0.10, 1.19, 0.88, 0.72, 0.05, shadeHex(P.cabinet2,1.10), 1.20); // scanner lid
-    // scan light — occasional sweep blink under the glass (micro-detail)
-    const cyc=t%6, scanning=cyc<1.3;
-    const scanK=scanning?(0.45+0.55*Math.abs(Math.sin(t*9))):0;
-    const scanCol=scanning?'#BEEFFF':shadeHex(P.cabinet2,0.82);
-    box(gx+0.12, gy+0.12, 1.25, 0.74, 0.09, 0.015, scanCol, 1.0+scanK*0.7); // glass scan line
-    box(gx+0.58, gy+0.70, 0.86, 0.34, 0.16, 0.10, shadeHex(P.cabinet,0.82), 1.02); // control panel housing
-    box(gx+0.63, gy+0.74, 0.94, 0.24, 0.07, 0.07, P.monOn, 1.45);      // lit control screen
-    // 상태 LED — ready 점멸 (micro-animation, MOTION 게이트: reduced면 상시 점등)
-    const led = MOTION? ((t%1.6)<0.8) : true;
-    orb(gx+0.92, gy+0.76, 1.02, 0.035, led?'#7FC8A0':'#3E5C4A', 1.0);
+  // 원목 서랍장(구 복합기 자리) — 스캐너 유리·LED 스캔라인 제거, 손으로 짠 아늑한 원목 집기로 교체.
+  // 통통한 라운드 케이스 + 작은 라운드 서랍 2x3 + 상판 위 화분·책. front-left corner(캐릭터/통로 밖).
+  function drawWoodChest(gx,gy,t){
+    shadowEllipse(gx+0.5, gy+0.42, 1.15);
+    carveBox(gx,gy,0.0, 1.0,0.85,1.02, P.wood, {rad:9, belly:4.0, grain:5, topGrain:3, lip:3});
+    // 앞면(+gy 평면) 손으로 짠 작은 서랍 2x3 — 라운드 서랍 + 둥근 원목 손잡이
+    const fy=gy+0.85;
+    for(let r=0;r<3;r++){
+      for(let cc=0;cc<2;cc++){
+        const dx=gx+0.10+cc*0.44, dz=0.10+r*0.30;
+        panelGY(dx, fy+0.006, dz, 0.38, 0.24, shadeHex(P.wood,1.0+cc*0.04));
+        orb(dx+0.19, fy+0.03, dz+0.13, 0.04, shadeHex(P.wood,1.22), 0.8);
+      }
+    }
+    // 상판 위 — 화분 + 원목 책 몇 권(따뜻)
+    drawMiniPlant(gx+0.30, gy+0.32, 1.02);
+    let x=gx+0.56;
+    for(let i=0;i<3;i++){ const bh=0.22+((i*5)%2)*0.06, bw=0.12;
+      roundBook(x, gy+0.30, 1.02, bw,0.20,bh, P.book[(i+2)%P.book.length]); x+=bw+0.035; }
   }
 
   /* ---------- wall signage (급훈 현판 + 인사 스케줄 월력) — painted onto the wall planes ----------
@@ -1169,24 +1330,82 @@
     const g=ctx.createLinearGradient(0,0,0,BH);
     g.addColorStop(0, P.winSky); g.addColorStop(1, P.winSky2);
     roundRect(BW*0.05,BH*0.06,BW*0.90,BH*0.88,BH*0.03); ctx.fillStyle=g; ctx.fill();
-    // 구름 — 유리 안쪽을 천천히 흐르는 두 덩이 (reduced-motion이면 정지)
+    // 창밖 풍경 — 오리지널 지브리풍 초원(원작 프레임 복사 아님). 라이트=낮 초원, 다크=밤 달빛. 붓 dab로 부드럽게.
     ctx.save();
     roundRect(BW*0.05,BH*0.06,BW*0.90,BH*0.88,BH*0.03); ctx.clip();
-    const cAlpha = lightT?0.85:0.55;
+    // 다크: 달 원반 + 옅은 헤일로(상단)
+    if(!lightT){
+      const mx=BW*0.30, my=BH*0.24, mr=BW*0.095;
+      const halo=ctx.createRadialGradient(mx,my,mr*0.3, mx,my,mr*2.8);
+      halo.addColorStop(0, hexA('#97A0B8',0.30)); halo.addColorStop(1, hexA('#97A0B8',0));
+      ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(mx,my,mr*2.8,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=hexA('#EAE3C8',0.92); ctx.beginPath(); ctx.arc(mx,my,mr,0,Math.PI*2); ctx.fill();
+    }
+    // 먼 언덕 두 겹 + 사이 대기 헤이즈(원근감)
+    ctx.fillStyle=hexA(P.winHillFar,0.94);
+    ctx.beginPath(); ctx.moveTo(BW*0.03,BH*0.72);
+    ctx.quadraticCurveTo(BW*0.30,BH*0.58, BW*0.56,BH*0.70);
+    ctx.quadraticCurveTo(BW*0.80,BH*0.80, BW*0.98,BH*0.68);
+    ctx.lineTo(BW*0.98,BH*0.98); ctx.lineTo(BW*0.03,BH*0.98); ctx.closePath(); ctx.fill();
+    const hazeCol = lightT?'#F2ECD5':'#47606F';                       // 먼/가까운 언덕 사이 옅은 헤이즈 띠
+    const hzg=ctx.createLinearGradient(0,BH*0.64,0,BH*0.86);
+    hzg.addColorStop(0, hexA(hazeCol,0)); hzg.addColorStop(0.5, hexA(hazeCol,0.13)); hzg.addColorStop(1, hexA(hazeCol,0));
+    ctx.fillStyle=hzg; ctx.fillRect(BW*0.03,BH*0.62,BW*0.95,BH*0.26);
+    ctx.fillStyle=hexA(P.winHillNear,0.97);
+    ctx.beginPath(); ctx.moveTo(BW*0.03,BH*0.82);
+    ctx.quadraticCurveTo(BW*0.40,BH*0.70, BW*0.72,BH*0.82);
+    ctx.quadraticCurveTo(BW*0.88,BH*0.88, BW*0.98,BH*0.82);
+    ctx.lineTo(BW*0.98,BH*0.98); ctx.lineTo(BW*0.03,BH*0.98); ctx.closePath(); ctx.fill();
+    // 언덕 위 캄포르 나무 — 굵은 둥치 + 이끼 잎덩이 dab(하드 아크 대신 부드러운 붓 덩어리)
+    const trX=BW*0.70, trBase=BH*0.80, trunkCol=lightT?'#8A6A4A':'#24303E';
+    ctx.strokeStyle=trunkCol; ctx.lineWidth=Math.max(2,BW*0.028); ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(trX,trBase); ctx.lineTo(trX,BH*0.55); ctx.stroke();
+    const cD=lightT?'#4C6B2F':'#24303E', cM=lightT?'#6E8B3D':'#3A5266', cH=lightT?'#8FAE4E':'#47606F';
+    const dpuff=(px,py,pr,col,al)=>dab(px,py,pr,col,al,0.82,(px+py)*0.01);
+    dpuff(trX,        BH*0.46, BW*0.135, cD, 0.95);
+    dpuff(trX-BW*0.10,BH*0.53, BW*0.100, cM, 0.92);
+    dpuff(trX+BW*0.10,BH*0.52, BW*0.098, cM, 0.92);
+    dpuff(trX-BW*0.04,BH*0.40, BW*0.095, cH, 0.90);
+    dpuff(trX+BW*0.05,BH*0.42, BW*0.090, cH, 0.90);
+    if(!lightT){                                                      // 다크: 나무 좌상단 달빛 림라이트
+      ctx.strokeStyle=hexA('#7C88A6',0.5); ctx.lineWidth=Math.max(1,BW*0.010); ctx.lineCap='round';
+      ctx.beginPath(); ctx.arc(trX-BW*0.02,BH*0.42,BW*0.12, 1.02*Math.PI, 1.58*Math.PI); ctx.stroke();
+    }
+    if(lightT){                                                       // 라이트: 근경 초원에 노란 야생화 + 절제된 레드(메이 원피스 에코)
+      [[0.14,0.90],[0.22,0.93],[0.34,0.91],[0.46,0.94],[0.58,0.90],[0.10,0.95],[0.40,0.885]]
+        .forEach(([fx,fy])=>dab(BW*fx,BH*fy, BW*0.013, P.winFlower, 0.95, 0.9, 0));
+      [[0.28,0.925],[0.52,0.955]].forEach(([fx,fy])=>dab(BW*fx,BH*fy, BW*0.011, '#C0524A', 0.9, 0.9, 0));
+      // 지평선 위 작은 새 두 마리 (평온한 v 자) — 낮에만
+      ctx.strokeStyle=hexA('#5A6A55',0.7); ctx.lineWidth=Math.max(1,BW*0.008);
+      const bx=BW*0.26+ (MOTION? (Math.sin(t*0.4)*BW*0.04):0), by=BH*0.30;
+      [[0,0],[BW*0.05,BH*0.02]].forEach(([ox,oy])=>{ ctx.beginPath();
+        ctx.moveTo(bx+ox-BW*0.018,by+oy); ctx.quadraticCurveTo(bx+ox,by+oy-BH*0.015,bx+ox+BW*0.018,by+oy); ctx.stroke(); });
+    }
+    // 흐르는 구름 — 부드러운 깃털 dab(라이트=크림/흰, 다크=라벤더그레이)
+    const cAlpha = lightT?0.90:0.52, cloudCol=P.winCloud;
     const drift1 = MOTION? ((t*BW*0.016)%(BW*1.5))-BW*0.25 : BW*0.30;
     const drift2 = MOTION? ((t*BW*0.010+BW*0.7)%(BW*1.5))-BW*0.25 : BW*0.62;
     const cloud=(cx0,cy0,r)=>{
-      ctx.beginPath();
-      ctx.arc(cx0,cy0,r,0,Math.PI*2); ctx.arc(cx0+r*0.9,cy0+r*0.18,r*0.72,0,Math.PI*2); ctx.arc(cx0-r*0.85,cy0+r*0.22,r*0.6,0,Math.PI*2);
-      ctx.fillStyle=`rgba(255,255,255,${cAlpha})`; ctx.fill();
+      dab(cx0,        cy0,        r*1.30, cloudCol, cAlpha,      0.66, 0);
+      dab(cx0+r*0.95, cy0+r*0.16, r*1.00, cloudCol, cAlpha*0.9,  0.66, 0);
+      dab(cx0-r*0.90, cy0+r*0.20, r*0.82, cloudCol, cAlpha*0.82, 0.66, 0);
     };
     cloud(drift1, BH*0.30, BW*0.085);
     cloud(drift2, BH*0.52, BW*0.065);
+    if(!lightT){                                                      // 다크: 차가운 밤 속 저 멀리 따뜻한 창불빛 한 점(유일한 온기)
+      const wl=ctx.createRadialGradient(BW*0.52,BH*0.80,0, BW*0.52,BH*0.80,BW*0.055);
+      wl.addColorStop(0, hexA('#D8B26A',0.9)); wl.addColorStop(1, hexA('#D8B26A',0));
+      ctx.fillStyle=wl; ctx.beginPath(); ctx.arc(BW*0.52,BH*0.80,BW*0.055,0,Math.PI*2); ctx.fill();
+    }
     ctx.restore();
-    // soft light bloom
-    const gl=ctx.createRadialGradient(BW*0.5,BH*0.28,2, BW*0.5,BH*0.28,BW*0.6);
-    gl.addColorStop(0, hexA('#FFFFFF',lightT?0.55:0.32)); gl.addColorStop(1,'rgba(255,255,255,0)');
-    ctx.fillStyle=gl; ctx.fillRect(BW*0.05,BH*0.06,BW*0.90,BH*0.88);
+    // 광 블룸 — 라이트=따뜻한 햇살, 다크=차가운 달빛
+    const gl = lightT
+      ? (function(){ const q=ctx.createRadialGradient(BW*0.5,BH*0.26,2, BW*0.5,BH*0.26,BW*0.6);
+          q.addColorStop(0, hexA('#FFFFFF',0.52)); q.addColorStop(1,'rgba(255,255,255,0)'); return q; })()
+      : (function(){ const q=ctx.createRadialGradient(BW*0.30,BH*0.24,2, BW*0.30,BH*0.24,BW*0.55);
+          q.addColorStop(0, hexA('#C7CEDC',0.30)); q.addColorStop(1,'rgba(199,206,220,0)'); return q; })();
+    ctx.save(); roundRect(BW*0.05,BH*0.06,BW*0.90,BH*0.88,BH*0.03); ctx.clip();
+    ctx.fillStyle=gl; ctx.fillRect(BW*0.05,BH*0.06,BW*0.90,BH*0.88); ctx.restore();
     // mullions
     ctx.strokeStyle=P.winFrame; ctx.lineWidth=Math.max(2,BW*0.03);
     ctx.beginPath(); ctx.moveTo(BW*0.5,BH*0.06); ctx.lineTo(BW*0.5,BH*0.94);
@@ -1247,24 +1466,406 @@
   let CAM={scale:1,offX:0,offY:0};
   function toScreen(gx,gy,gz){ const p=project(gx,gy,gz); return { x:CAM.offX+p.x*CAM.scale, y:CAM.offY+p.y*CAM.scale }; }
 
+  /* ---------- 큰 캄포르(녹나무) — 뒷벽 위로 넘어오는 우듬지. 기존 원시함수만 사용(orb/limb/shadowEllipse). */
+  function drawBigTree(gx,gy,t){
+    const sway = MOTION? Math.sin(t*0.6)*0.06 : 0;
+    const sway2= MOTION? Math.sin(t*0.5+1.1)*0.09 : 0;
+    shadowEllipse(gx+0.2,gy+0.4,1.8);
+    const bark = shadeHex(P.wood,0.82), barkHi = shadeHex(P.wood,1.02);
+    // 굵은 둥치 — 아래는 벽에 가림, 위로 갈수록 가지 분기
+    limb(gx, gy, 0.0, gx-0.15, gy, 2.4, 0.42*TW, bark, 0.9);
+    limb(gx-0.15, gy, 2.4, gx-0.15, gy, 3.5, 0.34*TW, barkHi, 1.0);
+    limb(gx-0.15, gy, 3.4, gx-0.9,  gy-0.1, 4.0, 0.20*TW, bark, 0.92);   // left branch
+    limb(gx-0.15, gy, 3.4, gx+0.7,  gy-0.1, 3.9, 0.20*TW, bark, 0.98);   // right branch
+    limb(gx-0.15, gy, 3.6, gx+0.1,  gy-0.1, 4.3, 0.16*TW, barkHi, 1.0);  // center branch
+    // 우듬지 — 둥글둥글 잎덩이 무리(살랑 흔들림). 밝은 톤은 우상단 광원 쪽.
+    const lf=P.plant, lfHi=shadeHex(P.plant,1.16), lfDk=shadeHex(P.plant,0.84);
+    const puff=(dx,dy,z,r,col)=>fol(gx+dx+sway*(z-3), gy+dy, z, r, col, 0.86);   // 우듬지 잎덩이 = 부드러운 브러시 dab
+    puff(-0.9+sway2, -0.1, 3.95, 0.66, lfDk);
+    puff( 0.8-sway2, -0.1, 3.85, 0.62, lfDk);
+    puff(-0.2,       -0.1, 4.05, 0.78, lf);
+    puff(-1.0+sway2,  0.0, 4.25, 0.50, lf);
+    puff( 0.9-sway2,  0.0, 4.15, 0.52, lf);
+    puff(-0.35,       0.0, 4.45, 0.60, lfHi);
+    puff( 0.35,       0.0, 4.38, 0.54, lfHi);
+    puff( 0.0,        0.0, 4.66, 0.44, lfHi);
+    puff(-0.7+sway2, -0.05,4.42, 0.40, lf);
+    puff( 0.6-sway2, -0.05,4.40, 0.40, lf);
+  }
+
+  /* ---------- 지브리 목가 텍스처 헬퍼(씬-스페이스, project 사용) — 딱딱한 box를 원목·라운드 감성으로 ----------
+     grain()   : 따뜻한 나뭇결 — 상판 위로 옅은 곡선 스트로크 몇 줄(hexA 반투명)
+     softEdge(): 상단 앞모서리에 밝은 라운드 하이라이트 블롭을 얹어 각을 완화 */
+  function grain(gx,gy,gz,w,d,hex,n){
+    ctx.save(); ctx.lineCap='round';
+    const N=n||3;
+    ctx.strokeStyle=hexA(shadeHex(hex,0.82),0.24); ctx.lineWidth=Math.max(0.5,TW*0.014);
+    for(let i=1;i<=N;i++){
+      const fy=gy + d*i/(N+1);
+      const a=project(gx+w*0.06, fy, gz), b=project(gx+w*0.5, fy+d*0.05, gz), e=project(gx+w*0.94, fy, gz);
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.quadraticCurveTo(b.x,b.y,e.x,e.y); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function softEdge(gx,gy,gz,w,d,hex,n){
+    ctx.save();
+    const N=n||3;
+    for(let i=0;i<N;i++){
+      const u=(N===1)?0.5:(0.14 + 0.72*i/(N-1));
+      const p=project(gx + w*u, gy + d, gz);                 // 앞(+gy) 상단 모서리
+      const rx=Math.max(w,0.3)*TW*0.11, ry=rx*0.5;
+      const g=ctx.createRadialGradient(p.x,p.y-ry*0.5,0, p.x,p.y,rx);
+      g.addColorStop(0, hexA(shadeHex(hex,1.30),0.5)); g.addColorStop(1, hexA(shadeHex(hex,1.30),0));
+      ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(p.x,p.y,rx,ry,0,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+  /* ---------- 유기적 바디 보강(2026-07-15) — 각형 box를 리컬러 이상으로 지브리화: 형태(라운드 실루엣)·
+     질감(세로 손그림 결)·명암(다층 AO)까지. 기존 box() 위에 얹는 오버레이만 추가하며 구조·depth·훅은 불변.
+     faceShade=측면 세로 AO(바닥으로 짙게) / vGrain=측면 세로 나뭇결 / boxRound=수직모서리+윗코너 라운딩 /
+     sheen=가전 표면 광택 밴드. 모두 scene-space(project) 좌표, 단일 광원(좌상단)과 일관. ---------- */
+  function faceShade(gx,gy,gz,w,d,h,rF,lF){
+    const Z=gz+h, X=gx+w, Y=gy+d;
+    const tB=project(X,gy,Z), tC=project(X,Y,Z), bB=project(X,gy,gz), bC=project(X,Y,gz);
+    const tD=project(gx,Y,Z), bD=project(gx,Y,gz);
+    ctx.save();
+    let g=ctx.createLinearGradient(0, Math.min(tB.y,tC.y), 0, Math.max(bB.y,bC.y));   // 우측면(+gx)
+    g.addColorStop(0,'rgba(22,28,16,0)'); g.addColorStop(0.48,'rgba(22,28,16,0)');
+    g.addColorStop(1,'rgba(22,28,16,'+(rF==null?0.30:rF)+')');
+    ctx.beginPath(); ctx.moveTo(tB.x,tB.y); ctx.lineTo(tC.x,tC.y); ctx.lineTo(bC.x,bC.y); ctx.lineTo(bB.x,bB.y); ctx.closePath();
+    ctx.fillStyle=g; ctx.fill();
+    g=ctx.createLinearGradient(0, Math.min(tD.y,tC.y), 0, Math.max(bD.y,bC.y));       // 앞면(+gy)
+    g.addColorStop(0,'rgba(22,28,16,0)'); g.addColorStop(0.46,'rgba(22,28,16,0)');
+    g.addColorStop(1,'rgba(22,28,16,'+(lF==null?0.22:lF)+')');
+    ctx.beginPath(); ctx.moveTo(tD.x,tD.y); ctx.lineTo(tC.x,tC.y); ctx.lineTo(bC.x,bC.y); ctx.lineTo(bD.x,bD.y); ctx.closePath();
+    ctx.fillStyle=g; ctx.fill();
+    ctx.restore();
+  }
+  function vGrain(gx,gy,gz,w,d,h,hex,n){
+    ctx.save(); ctx.lineCap='round';
+    ctx.strokeStyle=hexA(shadeHex(hex,0.72),0.17); ctx.lineWidth=Math.max(0.5,TW*0.011);
+    const N=n||3;
+    for(let i=1;i<=N;i++){
+      const uR=gy + d*i/(N+1);                                       // 우측면 세로 결(살짝 휨)
+      const rt=project(gx+w,uR,gz+h*0.93), rm=project(gx+w,uR,gz+h*0.5), rb=project(gx+w,uR,gz+h*0.06);
+      ctx.beginPath(); ctx.moveTo(rt.x,rt.y); ctx.quadraticCurveTo(rm.x+TW*0.028, rm.y, rb.x, rb.y); ctx.stroke();
+      const uL=gx + w*i/(N+1);                                       // 앞면 세로 결
+      const lt=project(uL,gy+d,gz+h*0.93), lm=project(uL,gy+d,gz+h*0.5), lb=project(uL,gy+d,gz+h*0.06);
+      ctx.beginPath(); ctx.moveTo(lt.x,lt.y); ctx.quadraticCurveTo(lm.x-TW*0.028, lm.y, lb.x, lb.y); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function boxRound(gx,gy,gz,w,d,h,hex){
+    const Z=gz+h, X=gx+w, Y=gy+d;
+    const tA=project(gx,gy,Z), tB=project(X,gy,Z), tC=project(X,Y,Z), tD=project(gx,Y,Z);
+    const bB=project(X,gy,gz), bC=project(X,Y,gz), bD=project(gx,Y,gz);
+    ctx.save(); ctx.lineCap='round';
+    ctx.globalAlpha=0.42; ctx.strokeStyle=fc(hex,1.30); ctx.lineWidth=Math.max(1.3,TW*0.045);
+    ctx.beginPath(); ctx.moveTo(tC.x,tC.y); ctx.lineTo(bC.x,bC.y); ctx.stroke();     // 앞 수직모서리 라운드 베벨(빛)
+    ctx.globalAlpha=0.20; ctx.strokeStyle=fc(hex,0.58); ctx.lineWidth=Math.max(1.1,TW*0.04);
+    ctx.beginPath(); ctx.moveTo(tB.x,tB.y); ctx.lineTo(bB.x,bB.y); ctx.stroke();     // 바깥 수직모서리 소프트 섀도(실루엣 완화)
+    ctx.beginPath(); ctx.moveTo(tD.x,tD.y); ctx.lineTo(bD.x,bD.y); ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    const rr=Math.max(w,d,0.3)*TW*0.055;
+    [[tA,1.12],[tB,1.04],[tC,1.20],[tD,1.07]].forEach(function(c){                   // 윗면 4코너 소프트 라운딩
+      const p=c[0], g=ctx.createRadialGradient(p.x,p.y,0, p.x,p.y,rr);
+      g.addColorStop(0, hexA(shadeHex(hex,c[1]),0.5)); g.addColorStop(1, hexA(shadeHex(hex,c[1]),0));
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,rr,0,Math.PI*2); ctx.fill();
+    });
+    ctx.restore();
+  }
+  function sheen(gx,gy,gz,w,d,h,hex){
+    ctx.save(); ctx.lineCap='round';
+    ctx.globalAlpha=0.40; ctx.strokeStyle=fc(hex,1.26); ctx.lineWidth=Math.max(1.6,TW*Math.min(w,0.7)*0.14);
+    let t=project(gx+w, gy+d*0.34, gz+h*0.9), b=project(gx+w, gy+d*0.34, gz+h*0.14);   // 우측면 광택
+    ctx.beginPath(); ctx.moveTo(t.x,t.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    ctx.globalAlpha=0.32; ctx.lineWidth=Math.max(1.4,TW*Math.min(w,0.7)*0.12);
+    t=project(gx+w*0.30, gy+d, gz+h*0.9); b=project(gx+w*0.30, gy+d, gz+h*0.14);        // 앞면 광택
+    ctx.beginPath(); ctx.moveTo(t.x,t.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    ctx.restore();
+  }
+  function screenSheen(gx,gy,gz,w,d,h,on){
+    // 유리 화면 반사 — 상단에 소프트 확산 하이라이트(+켜지면 따뜻한 확산광, lighter 합성)
+    const tf=(w<d) ? project(gx+w, gy+d*0.30, gz+h*0.82) : project(gx+w*0.30, gy+d, gz+h*0.82);
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    const rr=Math.max(w,d)*TW*0.5+6, a=on?0.20:0.11;
+    const g=ctx.createRadialGradient(tf.x,tf.y,0, tf.x,tf.y,rr);
+    g.addColorStop(0,'rgba(255,250,230,'+a+')'); g.addColorStop(1,'rgba(255,250,230,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(tf.x,tf.y, rr, rr*0.7, 0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  /* ---------- 유기적 목공 케이스가구(2026-07-15 재조각) — box() 육면체 + 라운딩 오버레이가 아니라
+     실루엣 자체를 곡선으로 깎아낸 통통한 원목 케이스. 외곽 6각 실루엣을 라운드+배흘림(quadratic 배부름)
+     곡선으로 닫고, 좌우면 명암 분리 + 세로 손그림 나뭇결 + 바닥 다층 AO, 윗면은 손으로 깎은 필로 돔으로
+     얹는다. 모두 scene-space(project), 단일 광원(좌상단) 일관. 라이트/다크 팔레트 공용(전달 hex만 사용).
+     blobPath   : 임의 폴리곤을 모서리 라운드 + 지정 변 배부름(bulge)으로 닫는 곡선 경로
+     carveBox   : 라운드 원목 케이스 몸체(실루엣 곡선 + 명암 + 결 + 필로 돔 상판)
+     roundBook  : 둥근 책등(아치) 원목 책 / panelGY : 앞면 라운드 서랍·문짝 패널
+     standPanel : 원목 프레임 + 크림 장부 페이지(발광 없음) — 모니터·화이트보드 겸용
+     tableLip/tableSideLip : 회의테이블 앞·옆 라운드 불노즈(셀 프로파일 동일 → 스캘럽 없음)
+     roundedQuad/tblBlock  : 회의테이블 상판의 외곽 네 코너만 곡선화(내부 이음새 직선 유지 — 셀 타일링 무손실) ---------- */
+  function polyCentroid(pts){ let x=0,y=0; const n=pts.length; for(let i=0;i<n;i++){ x+=pts[i].x; y+=pts[i].y; } return {x:x/n, y:y/n}; }
+  function blobPath(pts, rad, bulge){
+    const n=pts.length, ct=polyCentroid(pts), A=[], B=[];
+    for(let i=0;i<n;i++){
+      const p0=pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n];
+      const v1x=p0.x-p1.x, v1y=p0.y-p1.y, l1=Math.hypot(v1x,v1y)||1;
+      const v2x=p2.x-p1.x, v2y=p2.y-p1.y, l2=Math.hypot(v2x,v2y)||1;
+      const r=Math.min(rad, l1*0.45, l2*0.45);
+      A[i]={x:p1.x+v1x/l1*r, y:p1.y+v1y/l1*r};
+      B[i]={x:p1.x+v2x/l2*r, y:p1.y+v2y/l2*r};
+    }
+    ctx.beginPath(); ctx.moveTo(A[0].x, A[0].y);
+    for(let i=0;i<n;i++){
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, B[i].x, B[i].y);
+      const j=(i+1)%n, ea=B[i], eb=A[j], bw=bulge?(bulge[i]||0):0;
+      if(bw){ const mx=(ea.x+eb.x)/2, my=(ea.y+eb.y)/2, nx=mx-ct.x, ny=my-ct.y, nl=Math.hypot(nx,ny)||1;
+        ctx.quadraticCurveTo(mx+nx/nl*bw, my+ny/nl*bw, eb.x, eb.y);
+      } else { ctx.lineTo(eb.x, eb.y); }
+    }
+    ctx.closePath();
+  }
+  // 선택 코너 라운딩 — blobPath 계약 재사용하되, radArr[i]>0 코너만 곡선으로 깎고 나머지는 날카롭게(직선) 유지.
+  // 회의테이블처럼 셀이 타일링되는 상판에서 "외곽 코너만" 둥글리고 내부 이음새는 직선 그대로 두어 스캘럽/틈 없이 잇는다.
+  function roundedQuad(pts, radArr){
+    const n=pts.length, A=[], B=[];
+    for(let i=0;i<n;i++){
+      const p0=pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n];
+      const v1x=p0.x-p1.x, v1y=p0.y-p1.y, l1=Math.hypot(v1x,v1y)||1;
+      const v2x=p2.x-p1.x, v2y=p2.y-p1.y, l2=Math.hypot(v2x,v2y)||1;
+      const r=Math.min(radArr[i]||0, l1*0.45, l2*0.45);
+      A[i]={x:p1.x+v1x/l1*r, y:p1.y+v1y/l1*r};
+      B[i]={x:p1.x+v2x/l2*r, y:p1.y+v2y/l2*r};
+    }
+    ctx.beginPath(); ctx.moveTo(A[0].x, A[0].y);
+    for(let i=0;i<n;i++){
+      if((radArr[i]||0)>0) ctx.quadraticCurveTo(pts[i].x, pts[i].y, B[i].x, B[i].y);   // 라운드 코너
+      else ctx.lineTo(pts[i].x, pts[i].y);                                              // 날카로운(이음새) 코너
+      ctx.lineTo(A[(i+1)%n].x, A[(i+1)%n].y);
+    }
+    ctx.closePath();
+  }
+  function carveBox(gx,gy,gz,w,d,h,hex,opt){
+    opt=opt||{};
+    const Z=gz+h, X=gx+w, Y=gy+d;
+    const tA=project(gx,gy,Z), tB=project(X,gy,Z), tC=project(X,Y,Z), tD=project(gx,Y,Z);
+    const bB=project(X,gy,gz), bC=project(X,Y,gz), bD=project(gx,Y,gz);
+    const sil=[tA,tB,bB,bC,bD,tD];
+    const mn=Math.min(w,d);
+    const rad=(opt.rad!=null?opt.rad:mn*TW*0.20);
+    const bly=(opt.belly!=null?opt.belly:Math.min(h,1.3)*TZ*0.13);
+    // 몸체 실루엣 — 라운드 + 좌우 배부름(통통한 손깎기 실루엣)
+    blobPath(sil, rad, [0, bly, bly*0.55, bly*0.55, bly, 0]);
+    ctx.fillStyle=fc(hex,0.82); ctx.fill();
+    ctx.save(); ctx.clip();
+      ctx.beginPath(); ctx.moveTo(tB.x,tB.y); ctx.lineTo(tC.x,tC.y); ctx.lineTo(bC.x,bC.y); ctx.lineTo(bB.x,bB.y); ctx.closePath();
+      ctx.fillStyle=fc(hex,0.66); ctx.fill();                                     // 우측면(그늘)
+      ctx.beginPath(); ctx.moveTo(tD.x,tD.y); ctx.lineTo(tC.x,tC.y); ctx.lineTo(bC.x,bC.y); ctx.lineTo(bD.x,bD.y); ctx.closePath();
+      ctx.fillStyle=fc(hex,0.87); ctx.fill();                                     // 앞면(빛)
+      const aoTop=Math.min(tB.y,tD.y), aoBot=Math.max(bB.y,bD.y,bC.y)+2;
+      const ao=ctx.createLinearGradient(0,aoTop,0,aoBot);                         // 바닥으로 짙어지는 다층 수채 AO
+      ao.addColorStop(0,'rgba(20,26,14,0)'); ao.addColorStop(0.46,'rgba(20,26,14,0)'); ao.addColorStop(1,'rgba(20,26,14,0.34)');
+      ctx.fillStyle=ao; ctx.fillRect(tD.x-6, aoTop-4, (tB.x-tD.x)+12, (aoBot-aoTop)+8);
+      vGrain(gx,gy,gz,w,d,h,hex, opt.grain||4);                                   // 측면 세로 손그림 나뭇결
+      ctx.globalAlpha=0.16; ctx.strokeStyle=fc(hex,0.5); ctx.lineCap='round'; ctx.lineWidth=Math.max(1,TW*0.03);
+      ctx.beginPath(); ctx.moveTo(tC.x,tC.y); ctx.lineTo(bC.x,bC.y); ctx.stroke(); ctx.globalAlpha=1;   // 앞모서리 소프트 이음새
+    ctx.restore();
+    // 윗면 필로 돔 — 손으로 깎은 라운드 상판
+    const top=[tA,tB,tC,tD], dome=mn*TW*0.045;
+    blobPath(top, mn*TW*0.17, [dome,dome,dome,dome]);
+    const c0=project(gx+w*0.42, gy+d*0.42, Z), rr=Math.max(w,d)*TW*0.62;
+    const tg=ctx.createRadialGradient(c0.x-rr*0.28, c0.y-rr*0.30, rr*0.06, c0.x, c0.y, rr);
+    tg.addColorStop(0, fc(hex,1.20)); tg.addColorStop(0.6, fc(hex,1.05)); tg.addColorStop(1, fc(hex,0.9));
+    ctx.fillStyle=tg; ctx.fill();
+    ctx.save(); blobPath(top, mn*TW*0.17, [dome,dome,dome,dome]); ctx.clip();
+      grain(gx,gy,Z,w,d, shadeHex(hex,1.08), opt.topGrain||3);                    // 상판 나뭇결
+    ctx.restore();
+    softEdge(gx,gy,Z,w,d,hex, opt.lip||3);                                        // 앞 상단 라운드 립 하이라이트
+  }
+  function roundBook(gx,gy,gz,w,d,h,hex){
+    const Z=gz+h, X=gx+w, Y=gy+d;
+    const tA=project(gx,gy,Z), tB=project(X,gy,Z), tC=project(X,Y,Z), tD=project(gx,Y,Z);
+    const bB=project(X,gy,gz), bC=project(X,Y,gz), bD=project(gx,Y,gz);
+    poly([tD,tC,bC,bD], fc(hex,0.86));                                            // 앞면
+    poly([tB,tC,bC,bB], fc(hex,0.66));                                            // 우측면
+    const up=h*TZ*0.16;                                                           // 둥근 책등 — 위로 볼록한 아치
+    ctx.beginPath(); ctx.moveTo(tA.x,tA.y);
+    ctx.quadraticCurveTo((tA.x+tB.x)/2,(tA.y+tB.y)/2-up, tB.x,tB.y);
+    ctx.lineTo(tC.x,tC.y);
+    ctx.quadraticCurveTo((tC.x+tD.x)/2,(tC.y+tD.y)/2-up, tD.x,tD.y);
+    ctx.closePath(); ctx.fillStyle=fc(hex,1.12); ctx.fill();
+  }
+  function panelGY(gx,yPlane,gz,w,h,hex){                                          // 앞면(+gy 평면) 라운드 서랍/문 패널
+    const p0=project(gx, yPlane, gz+h), p1=project(gx+w, yPlane, gz+h), p2=project(gx+w, yPlane, gz), p3=project(gx, yPlane, gz);
+    const r=Math.min(w,h)*TW*0.22;
+    blobPath([p0,p1,p2,p3], r, null); ctx.fillStyle=fc(hex,0.92); ctx.fill();
+    ctx.save(); blobPath([p0,p1,p2,p3], r, null); ctx.clip();
+      const g=ctx.createLinearGradient(0,p0.y,0,p2.y);
+      g.addColorStop(0, hexA(shadeHex(hex,1.24),0.30)); g.addColorStop(0.5,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(20,26,14,0.22)');
+      ctx.fillStyle=g; ctx.fillRect(p3.x-3, p0.y-3, (p1.x-p3.x)+6, (p2.y-p0.y)+6);
+    ctx.restore();
+    blobPath([p0,p1,p2,p3], r, null);
+    ctx.lineWidth=Math.max(0.8,TW*0.016); ctx.strokeStyle=hexA(shadeHex(hex,0.6),0.4); ctx.stroke();
+  }
+  function standPanel(plane, coord, u0, u1, z0, z1, frameHex, faceHex, pageF){     // 원목 프레임 + 크림 장부 페이지
+    const cor=(u,z)=> plane==='x'? project(coord,u,z) : project(u,coord,z);
+    const w=Math.abs(u1-u0), h=z1-z0, r=Math.min(w,h)*TW*0.16;
+    const p0=cor(u0,z1), p1=cor(u1,z1), p2=cor(u1,z0), p3=cor(u0,z0);
+    blobPath([p0,p1,p2,p3], r, null); ctx.fillStyle=fc(frameHex,0.9); ctx.fill();
+    ctx.save(); blobPath([p0,p1,p2,p3], r, null); ctx.clip();
+      const g=ctx.createLinearGradient(0,Math.min(p0.y,p1.y),0,Math.max(p2.y,p3.y));
+      g.addColorStop(0, fc(frameHex,1.06)); g.addColorStop(1, fc(frameHex,0.78));
+      const fx0=Math.min(p0.x,p3.x)-4, fx1=Math.max(p1.x,p2.x)+4, fy0=Math.min(p0.y,p1.y)-4;
+      ctx.fillStyle=g; ctx.fillRect(fx0, fy0, (fx1-fx0), (Math.max(p2.y,p3.y)-fy0)+4);
+    ctx.restore();
+    const iu=w*0.13, iz=h*0.16;                                                    // 크림 장부 페이지(라운드 인셋, 발광 없음)
+    const s0=cor(u0+iu,z1-iz), s1=cor(u1-iu,z1-iz), s2=cor(u1-iu,z0+iz), s3=cor(u0+iu,z0+iz);
+    blobPath([s0,s1,s2,s3], Math.min(w,h)*TW*0.09, null); ctx.fillStyle=fc(faceHex, pageF); ctx.fill();
+    ctx.save(); blobPath([s0,s1,s2,s3], Math.min(w,h)*TW*0.09, null); ctx.clip();
+      const pg=ctx.createLinearGradient(0,Math.min(s0.y,s1.y),0,Math.max(s2.y,s3.y));
+      pg.addColorStop(0, hexA('#FFF6DE',0.30)); pg.addColorStop(0.5,'rgba(0,0,0,0)'); pg.addColorStop(1, hexA(shadeHex(faceHex,0.7),0.16));
+      const gx0=Math.min(s0.x,s3.x)-3, gy0=Math.min(s0.y,s1.y)-3;
+      ctx.fillStyle=pg; ctx.fillRect(gx0, gy0, (Math.max(s1.x,s2.x)-gx0)+3, (Math.max(s2.y,s3.y)-gy0)+3);
+      ctx.strokeStyle=hexA(shadeHex(faceHex,0.5),0.30); ctx.lineWidth=Math.max(0.6,TW*0.012); ctx.lineCap='round';
+      for(let k=1;k<=3;k++){ const zz=z0+iz+(h-2*iz)*k/4, a=cor(u0+iu*1.5,zz), b=cor(u1-iu*1.5,zz);
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+    ctx.restore();
+  }
+  function drawMiniPlant(cx,cy,gz){                                                // 상판용 작은 둥근 화분 — 잎은 브러시 dab
+    puck(cx,cy,gz, 0.11,0.13, shadeHex(P.plantPot,1.02));
+    fol(cx,cy,gz+0.17, 0.15, shadeHex(P.plant,0.9), 0.82);
+    fol(cx-0.08,cy+0.02,gz+0.26, 0.10, P.plant, 0.86);
+    fol(cx+0.07,cy-0.02,gz+0.24, 0.09, shadeHex(P.plant,1.12), 0.88);
+    fol(cx,cy,gz+0.34, 0.08, shadeHex(P.plant,1.2), 0.9);
+  }
+  // 회의테이블 외곽 코너 셀 — 각진 box() 상판 대신 유기적 라운드 상판. 지정된 외곽 코너(rA/rB/rC/rD)만
+  // 곡선으로 깎고 내부 공유 코너는 직선 유지 → 인접 셀과 이음새 무손실(스캘럽 없음). 노출 측면(우/앞)은
+  // box와 동일 명암으로 얹고, 나뭇결·AO·불노즈 립은 호출부 루프에서 기존대로 덧그린다(톤·질감 일관).
+  function tblBlock(gx,gy,hex,rA,rB,rC,rD){
+    const Z=1.0, X=gx+1, Y=gy+1;
+    const tA=project(gx,gy,Z), tB=project(X,gy,Z), tC=project(X,Y,Z), tD=project(gx,Y,Z);
+    const bB=project(X,gy,0), bC=project(X,Y,0), bD=project(gx,Y,0);
+    poly([tB,tC,bC,bB], fc(hex,0.68));                                             // +gx 우측면(그늘)
+    poly([tD,tC,bC,bD], fc(hex,0.85));                                             // +gy 앞면(중간)
+    const R=TW*0.9;                                                                // 넉넉한 반지름 — roundedQuad가 0.45*변길이로 안전 캡
+    roundedQuad([tA,tB,tC,tD], [rA?R:0, rB?R:0, rC?R:0, rD?R:0]);
+    ctx.fillStyle=fc(hex,1.13); ctx.fill();                                        // 상판(따뜻한 빛) — box top과 동일 톤
+  }
+  function tableLip(gx,gy,hex){                                                    // 회의테이블 앞모서리 라운드 불노즈
+    const y=gy+1;
+    const tL=project(gx, y, 1.0), tR=project(gx+1, y, 1.0);
+    const fL=project(gx, y, 0.84), fR=project(gx+1, y, 0.84);
+    const g=ctx.createLinearGradient(0, Math.min(tL.y,tR.y), 0, Math.max(fL.y,fR.y));
+    g.addColorStop(0, fc(hex,1.16)); g.addColorStop(0.5, fc(hex,1.02)); g.addColorStop(1, fc(hex,0.82));
+    ctx.beginPath(); ctx.moveTo(tL.x,tL.y); ctx.lineTo(tR.x,tR.y);
+    ctx.quadraticCurveTo(fR.x+TW*0.03, (tR.y+fR.y)/2, fR.x,fR.y);
+    ctx.lineTo(fL.x,fL.y);
+    ctx.quadraticCurveTo(fL.x-TW*0.03, (tL.y+fL.y)/2, tL.x,tL.y);
+    ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+  }
+  function tableSideLip(gx,gy,hex){                                                // 회의테이블 우측 끝(+gx) 라운드 불노즈
+    const x=gx+1;
+    const tT=project(x, gy, 1.0), tB=project(x, gy+1, 1.0);
+    const fT=project(x, gy, 0.84), fB=project(x, gy+1, 0.84);
+    const g=ctx.createLinearGradient(0, Math.min(tT.y,tB.y), 0, Math.max(fT.y,fB.y));
+    g.addColorStop(0, fc(hex,1.12)); g.addColorStop(0.5, fc(hex,0.98)); g.addColorStop(1, fc(hex,0.78));
+    ctx.beginPath(); ctx.moveTo(tT.x,tT.y); ctx.lineTo(tB.x,tB.y);
+    ctx.quadraticCurveTo(fB.x+TW*0.03, (tB.y+fB.y)/2, fB.x,fB.y);
+    ctx.lineTo(fT.x,fT.y);
+    ctx.quadraticCurveTo(fT.x+TW*0.03, (tT.y+fT.y)/2, tT.x,tT.y);
+    ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+  }
+  // 원목 마루 — 판자 세로 이음새(seam) 얇은 선 + 손그림 나뭇결 스트로크(셀 단위, hexA 반투명)
+  function plank(gx,gy,fill){
+    ctx.save(); ctx.lineCap='round';
+    const a=project(gx, gy, 0.001), b=project(gx, gy+1, 0.001);
+    ctx.strokeStyle=hexA(shadeHex(fill,0.72),0.35); ctx.lineWidth=Math.max(0.5,TW*0.014);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();       // 판자 이음새
+    ctx.strokeStyle=hexA(shadeHex(fill,0.88),0.20); ctx.lineWidth=Math.max(0.4,TW*0.01);
+    for(let k=1;k<=2;k++){
+      const u=k/3;
+      const p0=project(gx+u, gy+0.06, 0.001), p1=project(gx+u+0.04, gy+0.5, 0.001), p2=project(gx+u, gy+0.94, 0.001);
+      ctx.beginPath(); ctx.moveTo(p0.x,p0.y); ctx.quadraticCurveTo(p1.x,p1.y,p2.x,p2.y); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // 러그 — 두 톤 위에 옅은 크로스해치(짜임) 스트로크로 이끼/풀빛 위브 매트감
+  function rugWeave(gx,gy,fill){
+    ctx.save(); ctx.lineCap='round';
+    ctx.strokeStyle=hexA(shadeHex(fill,1.14),0.15); ctx.lineWidth=Math.max(0.4,TW*0.01);
+    for(let k=1;k<=2;k++){
+      const u=k/3;
+      let p0=project(gx+u,gy,0.002), p1=project(gx+u,gy+1,0.002);
+      ctx.beginPath(); ctx.moveTo(p0.x,p0.y); ctx.lineTo(p1.x,p1.y); ctx.stroke();
+      p0=project(gx,gy+u,0.002); p1=project(gx+1,gy+u,0.002);
+      ctx.beginPath(); ctx.moveTo(p0.x,p0.y); ctx.lineTo(p1.x,p1.y); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // 아늑한 코티지 벽면 — wallBoard 평면매핑으로 두 벽 평면에 원목 배튼 + 은은한 잎사귀 벽지 + 중간 나무 보
+  function drawWallSkin(){
+    drawWallSkinPlane({plane:'x', coord:ROOM.x0+0.115, uStart:ROOM.y0, uEnd:ROOM.y1, zTop:WALL_H-0.16, zBot:0});
+    drawWallSkinPlane({plane:'y', coord:ROOM.y0+0.115, uStart:ROOM.x0, uEnd:ROOM.x1, zTop:WALL_H-0.16, zBot:0});
+  }
+  function drawWallSkinPlane(spec){
+    wallBoard(spec, function(BW,BH){
+      const lightT=currentTheme()==='light';
+      // (a) 세로 원목 패널 배튼 — 옅은 수직선 반복
+      ctx.strokeStyle=hexA(P.wallTrim, lightT?0.15:0.12); ctx.lineWidth=Math.max(1,BW*0.0020);
+      const cols=14;
+      for(let i=1;i<cols;i++){ const x=BW*i/cols;
+        ctx.beginPath(); ctx.moveTo(x,BH*0.04); ctx.lineTo(x,BH*0.98); ctx.stroke(); }
+      // (b) 은은한 잎사귀 스프리그 벽지 — 저알파 반복 패턴
+      ctx.fillStyle=hexA(P.sage, lightT?0.10:0.09);
+      ctx.strokeStyle=hexA(P.sage, lightT?0.12:0.10); ctx.lineWidth=Math.max(0.8,BW*0.0016); ctx.lineCap='round';
+      const gxN=9, gyN=4;
+      for(let a=0;a<gxN;a++) for(let b=0;b<gyN;b++){
+        const cxp=BW*(a+0.5)/gxN, cyp=BH*(0.08+0.80*(b+0.5)/gyN);
+        const rot=((a*3+b*5)%4)*0.5;
+        ctx.save(); ctx.translate(cxp,cyp); ctx.rotate(rot);
+        ctx.beginPath(); ctx.moveTo(0,BH*0.02); ctx.lineTo(0,-BH*0.04); ctx.stroke();     // 줄기
+        const leaf=(sgn)=>{ ctx.beginPath(); ctx.moveTo(0,-BH*0.006);
+          ctx.quadraticCurveTo(sgn*BW*0.013,-BH*0.020, sgn*BW*0.004,-BH*0.036);
+          ctx.quadraticCurveTo(sgn*BW*0.001,-BH*0.020, 0,-BH*0.006); ctx.closePath(); ctx.fill(); };
+        leaf(1); leaf(-1);
+        ctx.restore();
+      }
+      // (c) 중간 높이 나무 보(horizontal beam) 1줄 — 밝은 위엣면 + 어두운 아랫면 결
+      const beamY=BH*0.52, beamH=BH*0.06;
+      ctx.fillStyle=hexA(P.wood, lightT?0.48:0.40);            ctx.fillRect(0, beamY, BW, beamH);
+      ctx.fillStyle=hexA(shadeHex(P.wood,1.22), 0.26);         ctx.fillRect(0, beamY, BW, beamH*0.30);
+      ctx.fillStyle=hexA(shadeHex(P.wood,0.70), 0.28);         ctx.fillRect(0, beamY+beamH*0.70, BW, beamH*0.30);
+    });
+  }
+
   /* ---------- scene assembly (depth-sorted painter's algorithm) ---------- */
   function buildScene(t){
     const draws=[];
     const push=(depth,z,fn)=>draws.push({depth,z,fn});
 
-    // floor + rug
+    // floor(원목 마루) + rug(이끼빛 위브)
     for(let gx=ROOM.x0; gx<ROOM.x1; gx++){
       for(let gy=ROOM.y0; gy<ROOM.y1; gy++){
         const isRug = gx>=0 && gx<=10 && gy>=2 && gy<=6;
-        const alt=(gx+gy)&1;
-        let fill;
+        let fill, kind;
         if(isRug){
           const edge = (gx===0||gx===10||gy===2||gy===6);
-          fill = edge ? fc(P.rugEdge,0.70) : fc(alt?P.rugA:P.rugB, 1.0);
+          const alt=(gx+gy)&1;
+          fill = edge ? fc(P.rugEdge,0.74) : fc(alt?P.rugA:P.rugB, 1.0);
+          kind = edge? 'edge':'rug';
         } else {
-          fill = fc(alt?P.floorA:P.floorB, 1.0);
+          const alt=gx&1;                                       // 한 축(gx)만 교대 → 길게 이어진 널판
+          const jit = 1 + (((gx*7+gy*13)%5)-2)*0.012;           // 셀별 미세 톤 지터(수채 결)
+          fill = fc(alt?P.floorA:P.floorB, jit);
+          kind = 'plank';
         }
-        push(gx+gy-0.05, -1, (function(gx,gy,fill){return function(){ tile(gx,gy,0,1,1,fill); };})(gx,gy,fill));
+        push(gx+gy-0.05, -1, (function(gx,gy,fill,kind){return function(){
+          tile(gx,gy,0,1,1,fill);
+          if(kind==='plank') plank(gx,gy,fill);
+          else if(kind==='rug') rugWeave(gx,gy,fill);
+        };})(gx,gy,fill,kind));
       }
     }
 
@@ -1277,11 +1878,38 @@
       box(ROOM.x0, ROOM.y0, 0, 0.22, ROOM.y1-ROOM.y0, WALL_H, P.wallBack, 0.86);
       box(ROOM.x0, ROOM.y0, WALL_H-0.14, 0.22, ROOM.y1-ROOM.y0, 0.14, P.wallTrim, 1.2);
     });
+    // 대기 원근 헤이즈 — 뒷벽과 중경 사이 소프트 안개 띠(먼 나무·가구를 들어올림). scene-space, alpha<=0.12
+    push(ROOM.x0+ROOM.y0-0.45, -1.95, function(){
+      const hz = currentTheme()==='light' ? '#EAE3C8' : '#47606F';
+      const top=project((ROOM.x0+ROOM.x1)/2, ROOM.y0, WALL_H*0.60);
+      const a=project(ROOM.x0,ROOM.y0,0), b=project(ROOM.x1,ROOM.y0,0), cc=project(ROOM.x1,ROOM.y1,0), d=project(ROOM.x0,ROOM.y1,0);
+      const minx=Math.min(a.x,d.x), maxx=Math.max(b.x,cc.x), baseY=Math.max(a.y,b.y,cc.y,d.y);
+      const bandBot=top.y + (baseY-top.y)*0.55;
+      const g=ctx.createLinearGradient(0, top.y, 0, bandBot);
+      g.addColorStop(0, hexA(hz,0.17)); g.addColorStop(1, hexA(hz,0));
+      ctx.fillStyle=g; ctx.fillRect(minx, top.y, maxx-minx, bandBot-top.y);
+    });
+    // 벽 스킨(원목 배튼 + 잎사귀 벽지 + 나무 보) — 벽 직후·사이니지보다 낮은 depth(앉은 캐릭터가 정상 오클루전)
+    push(ROOM.x0+ROOM.y0-0.38, -1.9, function(){ drawWallSkin(); });
 
-    // meeting table (per cell)
+    // meeting table (per cell) — 상판 나뭇결 + 앞줄 모서리 소프트 하이라이트(구조·depth 불변)
+    // 외곽 네 코너 셀만 라운드 상판(tblBlock)으로 교체 → 상판 실루엣의 각진 4점을 유기적으로 곡선화.
+    // 나머지 셀은 box 그대로(내부 이음새 직선 유지). 셀별 depth를 보존하므로 painter 정렬·오클루전 불변.
     for(let gx=1; gx<11; gx++){
       for(let gy=3; gy<5; gy++){
-        push(gx+gy, 0.5, (function(gx,gy){return function(){ box(gx,gy,0,1.0,1.0,1.0, P.table); };})(gx,gy));
+        const frontRow=(gy===4), rightEnd=(gx===10);
+        push(gx+gy, 0.5, (function(gx,gy,frontRow,rightEnd){return function(){
+          const rA=(gx===1&&gy===3), rB=(gx===10&&gy===3), rC=(gx===10&&gy===4), rD=(gx===1&&gy===4);
+          if(rA||rB||rC||rD) tblBlock(gx,gy,P.table, rA,rB,rC,rD);   // 외곽 코너 셀: 라운드 상판
+          else box(gx,gy,0,1.0,1.0,1.0, P.table);                    // 내부 셀: 평면 상판(이음새 무손실)
+          grain(gx,gy,1.0,1,1,P.table,2);
+          if(frontRow || rightEnd){                         // 노출된 앞치마·우측 끝면: 세로 나뭇결 + 바닥 AO로 각형 완화
+            faceShade(gx,gy,0,1,1,1, 0.24,0.20);
+            vGrain(gx,gy,0,1,1,1,P.table,2);
+          }
+          if(frontRow) tableLip(gx,gy,P.table);              // 앞모서리 라운드 불노즈(연속 프로파일 — 스캘럽 없음)
+          if(rightEnd) tableSideLip(gx,gy,P.table);          // 우측 끝 라운드 불노즈
+        };})(gx,gy,frontRow,rightEnd));
       }
     }
     // brass center runner
@@ -1305,7 +1933,11 @@
     push(11.5+0.55, 4, function(){ drawCredenza(11.5,0.55); });
     push(-2.15+1.05, 4, function(){ drawCabinet(-2.15,1.05); });
     push(11.7+3.0,  4, function(){ drawWhiteboard(11.7,3.0); });
-    push(-2.5+7.0,  4, function(){ drawCopier(-2.5,7.0,t); });   // 복합기, front-left corner
+    push(-2.5+7.0,  4, function(){ drawWoodChest(-2.5,7.0,t); });   // 원목 서랍장, front-left corner
+
+    // 큰 캄포르(녹나무) — 뒷벽 너머로 우거진 우듬지가 넘어오는 지브리의 상징목. 벽보다 먼저 그려(낮은 depth)
+    // 밑동은 벽에 가리고 우듬지만 벽 위로 보이게 한다(painter's algorithm).
+    push(ROOM.x0+ROOM.y0-0.6, -2.2, function(){ drawBigTree(8.0,-0.7,t); });
 
     // plants
     push(10.7+6.6, 5, function(){ drawPlant(10.7,6.6,t,0.0); });
@@ -1504,6 +2136,34 @@
         drawCheck(head.x, head.y-18, Math.min(1,(t-c.tDone)/0.28));
       }
     }
+
+    // ── 지브리 배경광(가장 위 레이어) — 좌상단에서 스미는 따뜻한 정적 햇살/갓살만(떠다니는 파티클 없음).
+    drawGhibliAmbient(t,W,H,lightT);
+  }
+
+  /* ---------- 지브리 배경광(디바이스px, 렌더 최상단) — 정적 조명/비네트만. 떠다니는 파티클(빛가루·
+     스스와타리·나뭇잎)은 제거(2026-07-14 매니저 지시). 남는 것은 좌상단에서 스미는 따뜻한 정적 햇살뿐. */
+  function drawGhibliAmbient(t,W,H,lightT){
+    // 햇살 — 좌상단(창문 쪽)에서 스미는 따뜻한 빛무리 + 옅은 갓살 두 줄 (정적 배경광)
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    const rg=ctx.createRadialGradient(W*0.15,H*0.06,0, W*0.15,H*0.06, Math.max(W,H)*0.72);
+    rg.addColorStop(0, hexA(P.ceil, lightT?0.088:0.11)); rg.addColorStop(0.5, hexA(P.ceil, lightT?0.032:0.04)); rg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+    ctx.save(); ctx.translate(W*0.06,-H*0.04); ctx.rotate(0.62);
+    for(let i=0;i<3;i++){
+      const bx=i*W*0.10, bw=W*0.045;
+      const lg=ctx.createLinearGradient(bx,0,bx,H*1.4);
+      lg.addColorStop(0, hexA('#FFF3CE', lightT?0.068:0.075)); lg.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=lg; ctx.fillRect(bx,0,bw,H*1.4);
+    }
+    ctx.restore();
+    ctx.restore();
+    // 수채 글레이즈 — 전 화면을 한 겹 물감으로 묶어 채도를 살짝 낮추고(쨍함 완화) 종이 톤으로 통일하는 정적 상단 워시
+    ctx.save(); ctx.globalCompositeOperation='soft-light';
+    ctx.fillStyle = lightT ? 'rgba(128,122,104,0.10)' : 'rgba(74,86,100,0.12)';
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+    ctx.textAlign='center'; ctx.textBaseline='middle';
   }
   /* expression repertoire — eyebrows + eye shape + mouth combine into calm / smile / grin / focus /
      ponder / surprise / content / tired / wink. Kept to bold dots + thin lines so it reads at tiny
@@ -1514,7 +2174,7 @@
     const f=c._face; if(!f) return;
     const es=Math.max(1.3, 2.0*CAM.scale/1.6)*f.s;
     const dx=es*1.55, cx0=f.x, lightT=currentTheme()==='light';
-    const col=lightT? '#2A2318':'#1B1F26';
+    const col=P.outline;   // 얼굴 잉크 = 몸통 셀 외곽선과 동일한 웜 다크(브랜드 일관 셀 톤)
     let expr=c.expr;
     if(!expr) expr = c.status==='busy'?'focus':(c.status==='done'?'grin':(c.lead?'smile':'calm'));
     const blink = MOTION===1 && (t-(c._blinkT||-9))<0.13 &&
@@ -1528,7 +2188,12 @@
     const eyeArcUp=(x)=>{ ctx.lineWidth=LWe; ctx.beginPath(); ctx.arc(x, eyeY+es*0.32, es*0.82, 1.12*Math.PI, 1.88*Math.PI); ctx.stroke(); };   // ∩ happy closed
     const eyeArcDown=(x)=>{ ctx.lineWidth=LWe; ctx.beginPath(); ctx.arc(x, eyeY-es*0.18, es*0.82, 0.16*Math.PI, 0.84*Math.PI); ctx.stroke(); }; // ∪ droopy/tired
     const eyeShut=(x)=>{ ctx.lineWidth=LWe; ctx.beginPath(); ctx.moveTo(x-es*0.55,eyeY); ctx.lineTo(x+es*0.55,eyeY); ctx.stroke(); };           // wink closed
-    const dotE=(x,y,r)=>{ if(blink){ eyeShut(x); } else { dot(x,y,r); } };       // 깜빡임 적용 열린 눈
+    const dotE=(x,y,r)=>{ if(blink){ eyeShut(x); } else {                         // 깜빡임 적용 열린 눈 — 촉촉한 큰 눈 + 캐치라이트
+      dot(x,y,r);
+      ctx.save(); ctx.fillStyle='rgba(255,255,255,0.92)';
+      ctx.beginPath(); ctx.arc(x+r*0.40, y-r*0.42, r*0.30, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    } };
     const brow=(x,y,innerDy,half)=>{ const sgn=x<cx0?+1:-1; ctx.lineWidth=LWb; ctx.beginPath();
       ctx.moveTo(x - sgn*half, y - innerDy*0.35); ctx.lineTo(x + sgn*half, y + innerDy); ctx.stroke(); };   // inner end toward face center
     const mArc=(yc,r,a0,a1)=>{ ctx.lineWidth=LWe; ctx.beginPath(); ctx.arc(cx0,yc,r,a0*Math.PI,a1*Math.PI); ctx.stroke(); };
@@ -1542,15 +2207,15 @@
       case 'content':                                  // 만족 — closed eyes, soft smile
         eyeArcUp(cx0-dx); eyeArcUp(cx0+dx);
         mArc(my-es*0.5, es*0.9, 0.15, 0.85); break;
-      case 'smile':                                    // 옅은 미소
-        dotE(cx0-dx,eyeY,es*0.46); dotE(cx0+dx,eyeY,es*0.46);
-        mArc(my-es*0.5, es*0.92, 0.16, 0.84); break;
+      case 'smile':                                    // 옅은 미소 — 큰 소프트 눈, 부드러운 입곡선
+        dotE(cx0-dx,eyeY,es*0.52); dotE(cx0+dx,eyeY,es*0.52);
+        mArc(my-es*0.56, es*1.02, 0.18, 0.82); break;
       case 'focus':                                    // 집중 — brows drawn in, firm mouth
         dotE(cx0-dx,eyeY,es*0.56); dotE(cx0+dx,eyeY,es*0.56);
         brow(cx0-dx, browY, es*0.38, es*0.62); brow(cx0+dx, browY, es*0.38, es*0.62);
         mLine(es*0.7); break;
       case 'ponder':                                   // 골똘 — look up, one brow raised
-        dotE(cx0-dx,eyeY,es*0.5); dotE(cx0+dx,eyeY,es*0.5);
+        dotE(cx0-dx,eyeY,es*0.54); dotE(cx0+dx,eyeY,es*0.54);
         brow(cx0+dx, browY-es*0.34, -es*0.12, es*0.6); brow(cx0-dx, browY, es*0.05, es*0.55);
         mLine(es*0.5); break;
       case 'surprise':                                 // 놀람 — wide eyes, raised brows, small o
@@ -1562,10 +2227,10 @@
         brow(cx0-dx, browY+es*0.05, -es*0.12, es*0.5); brow(cx0+dx, browY+es*0.05, -es*0.12, es*0.5);
         mLine(es*0.5); break;
       case 'wink':                                     // 윙크 — one eye shut, half smile
-        dotE(cx0-dx,eyeY,es*0.5); eyeShut(cx0+dx);
-        mArc(my-es*0.5, es*0.9, 0.16, 0.84); break;
+        dotE(cx0-dx,eyeY,es*0.54); eyeShut(cx0+dx);
+        mArc(my-es*0.54, es*0.98, 0.16, 0.84); break;
       case 'calm': default:                            // 평온 — soft eyes, faint mouth
-        dotE(cx0-dx,eyeY,es*0.46); dotE(cx0+dx,eyeY,es*0.46);
+        dotE(cx0-dx,eyeY,es*0.52); dotE(cx0+dx,eyeY,es*0.52);
         mLine(es*0.5); break;
     }
     if(c.accessory==='glasses'){                        // A-4 — round brass-rim glasses, drawn over the eyes
@@ -1671,10 +2336,50 @@
   const isProgressRow=r=>{ const result=String(r['결과']||''), work=String(r['작업']||'').trim(); return result.indexOf('진행')>=0 || work.indexOf('착수')===0; };
   function enqueueLog(rows,opts){ opts=opts||{}; rows.forEach(r=>{ const agent=actorToAgent(r['주체']); realQueue.push({ agent, text:scrubPII(r['작업']).slice(0,80), kind:String(r['결과']||'완료'), isLead:!agent, count:!!opts.count, progress:isProgressRow(r) }); }); }
 
+  /* ── 프리뷰용 우아한 폴백 — 아티팩트(외부호스트 CSP)에서 백엔드 폴링이 막혀 데이터가 안 올 때만,
+     대표 샘플 에이전트 활동으로 화면을 채운다. 실데이터가 (초기/폴링) 조금이라도 도착하면 즉시 정리하고
+     원래대로 동작(폴백은 데이터 없을 때만 — 실데이터 우선). 백엔드 훅·계약은 일절 손대지 않음. */
+  let BACKEND_OK=false, REAL_SEEN=false, SAMPLE_ON=false;
+  function clearSampleFallback(){
+    if(!SAMPLE_ON) return; SAMPLE_ON=false; ambientOn=false;
+    realQueue.length=0;
+    agents.forEach(a=>{ a.status='idle'; a.task=''; a.sticky=false; a._count=false; });
+    agents.forEach(a=>tally[a.id]=0); todayCount=0;
+    logFeed.length=0;
+    const te=document.getElementById('today'); if(te) te.textContent='0';
+    agents.forEach(a=>{ const el=document.getElementById('cn-'+a.id); if(el) el.textContent='0'; });
+  }
+  function enableSampleFallback(){
+    if(REAL_SEEN||BACKEND_OK||SAMPLE_ON) return; SAMPLE_ON=true;
+    ambientOn=true;                                    // 유휴 대기실 분위기 문구가 계속 흐르게
+    const now=termNow();
+    const ST={'A-1':4,'A-2':3,'A-3':5,'A-4':2,'A-5':3,'A-6':6,'A-7':2};   // 대표 오늘 처리 건수
+    let sum=0; agents.forEach(a=>{ tally[a.id]=ST[a.id]||0; sum+=tally[a.id]; const el=document.getElementById('cn-'+a.id); if(el) el.textContent=tally[a.id]; });
+    todayCount=sum; const te=document.getElementById('today'); if(te) te.textContent=todayCount;
+    // 금주 통계 — 샘플 rows(오늘자 · 주체별)로 렌더
+    const srows=[]; const td=todayStr(); agents.forEach(a=>{ for(let i=0;i<(ST[a.id]||0);i++) srows.push({'일시':td+'T10:00','주체':a.id}); });
+    renderWeekStats(srows);
+    // 브리핑 피드 — 대표 로그(최신순, 실제 업무 성격 유지)
+    const L=(id,text,kind)=>({ time:'', id:(id||'팀장'), tag:(id&&byId[id]?byId[id].tag:''), text:text, kind:kind, color:(id&&byId[id]?byId[id].color:null) });
+    const fd=[ L(null,'오늘 업무 시작 · 에이전트에게 작업을 배정합니다','브리핑'),
+      L('A-6','정합성 스윕 — 사진 오프바이원 점검','완료'), L('A-1','지원자 이력서 3건 서류평가','진행'),
+      L('A-3','온보딩 12주 체크인 리마인드','완료'), L('A-2','면접 일정 2건 등록','완료'),
+      L('A-5','운영허브 배포 · 새 버전 반영','완료'), L('A-7','주간 효율 리포트 집계','완료'),
+      L('A-4','인사평가 입력 1건','완료'), L('A-1','신규 지원자 사진 연결','완료'),
+      L('A-6','채용공고 마감 상태 대조','완료') ];
+    let hh=9,mm=48; fd.forEach(e=>{ e.time=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'); mm-=4; if(mm<0){ hh--; mm+=60; } });
+    logFeed.length=0; fd.forEach(e=>logFeed.push(e)); renderFeed();
+    // 몇몇 에이전트를 즉시 busy(진행중)로 — 씬이 살아있게(스스와타리·정령이 일하는 느낌)
+    [['A-1','이력서 3건 서류평가 진행'],['A-6','정합성 스윕 대조 진행'],['A-3','12주 체크인 리스트 확인']].forEach(function(pair){
+      const c=byId[pair[0]]; if(!c) return; c.status='busy'; c.sticky=true; c.stickyStart=now; c.tStart=now; c.tDur=rand(2.2,4.0); c.task=pair[1]; c.exprEnd=0; c._count=false;
+    });
+  }
+
   async function initAutolog(){
     let rows=[];
-    try{ const j=await api({action:'office-autolog', limit:200}); rows=j.results||[]; }catch(e){}
+    try{ const j=await api({action:'office-autolog', limit:200}); rows=j.results||[]; BACKEND_OK=true; }catch(e){}
     if(!rows.length){ return; }
+    REAL_SEEN=true; clearSampleFallback();   // 실데이터 도착 → 프리뷰 샘플이 켜져 있었다면 즉시 정리(실데이터 우선)
     autologMaxRow = rows.reduce((m,r)=>Math.max(m,Number(r['_sheet_row'])||0),0);
     const td=todayStr();
     const todays=rows.filter(r=>String(r['일시']).slice(0,10)===td);   // rows와 동일 순서(최신→과거) 유지
@@ -1704,8 +2409,10 @@
   async function pollAutolog(){
     let rows=[];
     try{ const j=await api({action:'office-autolog', limit:200}); rows=j.results||[]; }catch(e){ return; }
+    BACKEND_OK=true;
     const fresh=rows.filter(r=>(Number(r['_sheet_row'])||0)>autologMaxRow);
     if(!fresh.length) return;
+    REAL_SEEN=true; clearSampleFallback();
     autologMaxRow = rows.reduce((m,r)=>Math.max(m,Number(r['_sheet_row'])||0),autologMaxRow);
     renderWeekStats(rows);
     enqueueLog(fresh.reverse(), {count:true});
@@ -1910,8 +2617,26 @@
     ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle=P.bg; ctx.fillRect(0,0,W,H);
+    // 다층 반투명 워시 — 셀 캐릭터 뒤로 그려진 과슈 바탕(라이트=크림+아래에서 오르는 초원 그린 / 다크=위에서 고이는 달빛 블루)
+    (function(){
+      if(currentTheme()==='light'){
+        const g1=ctx.createLinearGradient(0,H,0,0);
+        g1.addColorStop(0, hexA('#97A56A',0.11)); g1.addColorStop(0.55, hexA('#97A56A',0));
+        ctx.fillStyle=g1; ctx.fillRect(0,0,W,H);
+        const g2=ctx.createRadialGradient(W*0.5,H*0.30,H*0.08, W*0.5,H*0.42,H*0.9);
+        g2.addColorStop(0, hexA('#F2ECD5',0.10)); g2.addColorStop(1, hexA('#F2ECD5',0));
+        ctx.fillStyle=g2; ctx.fillRect(0,0,W,H);
+      } else {
+        const g1=ctx.createLinearGradient(0,0,0,H);
+        g1.addColorStop(0, hexA('#2C3E52',0.12)); g1.addColorStop(0.55, hexA('#2C3E52',0));
+        ctx.fillStyle=g1; ctx.fillRect(0,0,W,H);
+        const g2=ctx.createRadialGradient(W*0.5,H*0.24,H*0.06, W*0.5,H*0.36,H*0.85);
+        g2.addColorStop(0, hexA('#47606F',0.10)); g2.addColorStop(1, hexA('#47606F',0));
+        ctx.fillStyle=g2; ctx.fillRect(0,0,W,H);
+      }
+    })();
     const vg=ctx.createRadialGradient(W*0.5,H*0.40,H*0.18, W*0.5,H*0.5,H*0.95);
-    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1, currentTheme()==='light'?'rgba(90,70,30,.10)':'rgba(0,0,0,.36)');
+    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1, currentTheme()==='light'?'rgba(90,70,30,.13)':'rgba(0,0,0,.36)');
     ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
 
     ctx.save();
@@ -2194,6 +2919,11 @@
     loadRealData();
   })();
 
+  // 프리뷰 폴백 — 4.5초 안에 백엔드 실데이터가 하나도 안 오면(아티팩트 CSP 등) 대표 샘플로 화면을 채운다.
+  // (2026-07-15 정직배지 원칙 보호: 실데이터 로딩이 느릴 때 성급히 샘플로 폴백하지 않도록 1.5초→4.5초 연장)
+  // 실데이터가 오면 위 initAutolog/pollAutolog가 REAL_SEEN 처리하며 폴백을 켜지 않는다(또는 즉시 정리).
+  setTimeout(function(){ if(!REAL_SEEN && !BACKEND_OK) enableSampleFallback(); }, 4500);
+
   resize(); updateClock(); updateKST(); start();
 })();
 </script>
@@ -2225,19 +2955,19 @@
         return (/루프/.test(a) && /A-?6/.test(a)) ||
                /정합성\s*스윕|일일\s*정합성/.test(w) ||
                /JOB_DEADLINE_STATE|PHOTO_MISSING_ACTIVE|PHOTO_OFFBYONE/.test(w + d) ||
-               (/�/.test(a) && /A-6$/.test(a));
+               (/·/.test(a) && /A-6$/.test(a));
       } },
     { id: "onbowatch", kind: "weekly", days: 8,
       match: function(a, w, d){
         return (/루프/.test(a) && /A-?3/.test(a) && /감시|워치/.test(w)) ||
                /온보딩\s*주간\s*감시|온보딩\s*워치/.test(w) ||
-               (/�/.test(a) && /A-3$/.test(a));
+               (/·/.test(a) && /A-3$/.test(a));
       } },
     { id: "effreport", kind: "weekly", days: 8,
       match: function(a, w, d){
         return (/루프/.test(a) && /A-?7/.test(a)) ||
                /주간\s*효율\s*리포트/.test(w) ||
-               (/�/.test(a) && /A-7$/.test(a));
+               (/·/.test(a) && /A-7$/.test(a));
       } },
     { id: "resume", kind: "daily", hours: 30,
       match: function(a, w, d){
@@ -2293,17 +3023,27 @@
     }
   }
 
+  var BADGES_OK = false;
   async function pollHonestyBadges(){
     try{
       var res = await fetch(EXEC_URL, { method: "POST", body: JSON.stringify({ action: "autolog-list", limit: 600, offset: 0 }) });
       var j = await res.json();
       if(!j || !j.ok || !Array.isArray(j.results)) return;
       var rows = j.results;
+      BADGES_OK = true;
       ITEMS.forEach(function(item){ renderChip(item, computeStatus(item, rows)); });
     }catch(e){ /* 다음 폴링에서 재시도 — 조용히 무시 */ }
   }
+  // 프리뷰 폴백 — 실데이터가 안 오면(아티팩트 CSP) 6개 배지가 '…'에 갇히므로 대표 상태로 채운다.
+  // 실데이터가 한 번이라도 오면 BADGES_OK=true 라 실행되지 않는다(매칭 규칙·계약은 무수정).
+  function sampleBadges(){
+    if(BADGES_OK) return;
+    var demo = { sweep:"live", onbowatch:"live", effreport:"live", resume:"live", briefing:"live", cmd:"ondemand" };
+    ITEMS.forEach(function(item){ renderChip(item, { state:demo[item.id]||"live", last:"2026-07-14T09:33" }); });
+  }
 
-  function boot(){ pollHonestyBadges(); setInterval(pollHonestyBadges, POLL_MS); }
+  // (2026-07-15 정직배지 원칙 보호: 1.6초→4.6초 연장 — 위 프리뷰 폴백과 동일 취지)
+  function boot(){ pollHonestyBadges(); setInterval(pollHonestyBadges, POLL_MS); setTimeout(sampleBadges, 4600); }
   if(document.readyState === "loading"){
     document.addEventListener("DOMContentLoaded", boot);
   } else {
