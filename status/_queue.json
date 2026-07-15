@@ -10,7 +10,8 @@
     "next": "⚓ 정박(대기) — 재개 조건=자체 서버 가용(≈2026-09). 그 전까지 현황파악만 가능, 리셋·셋업 출항 보류.",
     "depends_on": "브로제이 이전 100% 완료·검증 (대양CIS=회원PII 유일본 가능) + GM 물리작업 동반",
     "ship_no": 101,
-    "module": "T1"
+    "module": "T1",
+    "surface": "autonomy"
   },
   {
     "task_id": "CTO-2026-06-18-PII-PROTECTION-REDESIGN",
@@ -23,7 +24,8 @@
     "next": "정박(보류) — 재개 조건=자체 윈도우 서버 도입. 서버 생기면: ① JWT 발급·검증·만료·회수를 서버가 담당 ② 로그인 수단·출입 대상·잠금 범위는 서버 도입 시점에 재확정(현 cao 구글 SSO 재사용 유력) ③ 접근 로그(누가·언제 PII 열람) 적재. 자체 문의DB(ship_no 18)와 묶어 동시 설계·착수.",
     "depends_on": "자체 윈도우 서버 도입 (JWT 발급·세션·접근로그 호스팅) — 방향(JWT 세션)은 확정됨",
     "ship_no": 21,
-    "module": "T1"
+    "module": "T1",
+    "surface": "autonomy"
   },
   {
     "task_id": "CMO-2026-06-19-AI-SERIES-REACTION-OWNERSHIP",
@@ -48,7 +50,8 @@
     "enqueued_at": "2026-06-20",
     "note": "[2026-06-20 GM 확정] 4개 부서 체계 페이지 틀(레이아웃·탭·링크)은 완성. 이제 내부 콘텐츠(부서별 보드·매뉴얼·항목·SOP) 채우기·꾸미기·정렬·고도화 = 시우(COO) 상시 소유. 웰리=디스패치·검증·완료도장만. 페이지↔시트 동기·정렬 등 기본 정합도 시우 기본 책임. 자율 발의·착수(승인게이트 유지). 메모리 feedback_coo_owns_ops_4dept_interior.\n[2026-06-24 GM] 상시 자율 '보강·꾸미기' 폐지 → 지시형 강등. 구체 빈칸·지시 있을 때만.\n[2026-07-04 GM] 대기 항로에서 제외(STANDBY) — 상시 자율 배 아님·실무 피드백/구체 지시가 있을 때만 진행하는 조건부 건. 소유(시우=운영 4부서 내부, R/R·메모리 feedback_coo_owns_ops_4dept_interior)는 유지. 트리거(구체 빈칸/지시) 시 신규 구체 배로 착수.",
     "next": "STANDBY — 항로 미표시. 재개 트리거=GM/웰리 구체 지시 또는 실무 피드백. 그때 신규 구체 배 생성.",
-    "ship_no": 64
+    "ship_no": 64,
+    "surface": "autonomy"
   },
   {
     "id": "CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK",
@@ -167,18 +170,26 @@
     "from": "cto",
     "origin": "bridge",
     "enqueued_at": "2026-07-07T07:20:46Z",
-    "ship_no": 607
+    "ship_no": 607,
+    "note": "[2026-07-15 시우 항로 하이진] 유지+플래그: 의존배(CTO-2026-07-03-MONTHLY-REPORT-TELEGRAM) DONE이나 8/1 첫 월간발송 도착 확인은 미도래 미래 이벤트(오늘 07-15)라 진짜 살아있는 검증 대기 배→PENDING 유지. 재개=2026-08-01 첫 발송 시 도착·시우 콘텐츠 검수.",
+    "aide_flags": [
+      "hygiene_kept"
+    ],
+    "surface": "autonomy"
   },
   {
     "task_id": "NEXT-20260707-171909",
     "clevel": "cto",
     "title": "내일 06:30 첫 재설계 카드 도달+인라인 승인 실동작 확인(봇 재기동 후)",
-    "status": "PENDING",
+    "status": "DONE",
     "depends_on": "CTO-2026-07-04-NORTHSTAR-REDESIGN",
     "from": "cto",
     "origin": "bridge",
     "enqueued_at": "2026-07-07T08:19:09Z",
-    "ship_no": 624
+    "ship_no": 624,
+    "processed_at": "2026-07-15",
+    "note": "[2026-07-15 시우 항로 하이진] 참조 재설계배(CTO-2026-07-04-NORTHSTAR-REDESIGN) DONE(아카이브). 첫 재설계 카드 도달+인라인 승인 실동작 확인=northstar_log.jsonl 실증(07-13 ceo·07-14 cpo·07-15 coo proposed sent=true→approved 다건)으로 카드발송·인라인승인 1주+ 라이브 정상=검증 이벤트 충족→DONE.",
+    "surface": "autonomy"
   },
   {
     "task_id": "CMO-2026-07-09-AUTONOMY-BRAIN-CMO-REFERENCE",
@@ -206,7 +217,8 @@
     "next": "⚓ 첫 배(자동보고 뼈대)+상담사 액션허브 본체 완결. 남은 4건 전부 외부 트리거 대기(시포 지금 할 일 없음): ①강습 이탈방지=강습 원장 데이터 파이프(만료일·잔여회차) 선행 ②저이용 방문데이터=브로제이 출입로그 접근·9월 자체서버 ③통합 발신 ON=웰리 전사 텔레그램 롤아웃 ④강습 전용 게이트=GM 나중에. 재개=해당 트리거 발생 시.",
     "depends_on": "",
     "module": "cpo",
-    "board": "자율현황"
+    "board": "자율현황",
+    "surface": "autonomy"
   },
   {
     "task_id": "CMO-2026-07-09-5CH-AUTOPUBLISH",
@@ -300,11 +312,11 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-07-14",
     "processed_at": "2026-07-15",
-    "ship_no": 973,
+    "ship_no": 1085,
     "artifact": "GM 요청: O2 공지/안내문 도구를 O1 허브에 카드로 노출. render()에 3번째 카드\n(coo/notice/notice_template.html·무접두어 200) 추가. O2 섹션은 유지(중복 정리는 별도 GM 결정). (CLI ad-hoc · 커밋 05444f5f)",
     "next": "🔗 강습 원장통합 본체 완결·입항. 잔여는 전부 선택 후속(별건): ①저장 _findCol→_findColExact 키통일 ②Survey.js 미커밋 이관헬퍼(_lessonSportMigrate2026_ 등) 정리 ③타 5종목(PT·필라·골프·체조·스쿼시) 동일이관은 필요시 ④IMPORTRANGE spray 정리·6시트 은퇴=GM 시트작업. 필요 시 개별 배로.",
     "adhoc_commit": "05444f5fb7442053f47acb169f7f3477a0a93b55",
-    "note": "\n[2026-07-15 입항·검수완료] GM 검수지시로 실측: 강습 원장 통합 GM 지시 본체 완결 확인. 마지막 🔴버그(저장 flat↔읽기 옛컬럼 불일치=새로고침 사라짐)도 해소 실측 — 강습 gviz 읽기 3항목 전부 flat 참조(문의회원.html iStat=진행 상황·iOwner=지정 강사·iHist=Contact). 옛 컬럼(담당/담당자) 참조는 멤버십 비강습 경로만. 6종목 파편화→메인4시트 flat(L~P) 단일입력+수영이관 apply(멱등완결)+가이드(비번1200) 전부 라이브. 입항 처리."
+    "note": "[2026-07-15 입항·검수완료] GM 검수지시로 실측: 강습 원장 통합 GM 지시 본체 완결 확인. 마지막 🔴버그(저장 flat↔읽기 옛컬럼 불일치=새로고침 사라짐)도 해소 실측 — 강습 gviz 읽기 3항목 전부 flat 참조(문의회원.html iStat=진행 상황·iOwner=지정 강사·iHist=Contact). 옛 컬럼(담당/담당자) 참조는 멤버십 비강습 경로만. 6종목 파편화→메인4시트 flat(L~P) 단일입력+수영이관 apply(멱등완결)+가이드(비번1200) 전부 라이브. 입항 처리.\n[2026-07-15 시우 항로 하이진] ship_no 973→1085 renumber(충돌 해소): 973은 정본 CPO-2026-07-14-LESSON-LEDGER-CONSOLIDATION에 귀속 유지, 본 DONE 배를 신규 고유번호로 이동. task_id 보존·삭제 없음."
   },
   {
     "task_id": "CPO-2026-07-14-LESSON-LEDGER-CONSOLIDATION",
@@ -354,14 +366,15 @@
     "task_id": "CPO-2026-07-15-SELF-SURVEY-BUFFERED-WRITE",
     "clevel": "cpo",
     "title": "[시포] 문의 저장 구조 재설계 — 자체 폼→페이지 즉시저장(버퍼)→구글시트 비동기 동기화 (속도감·GM 제안)",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-15",
-    "note": "[2026-07-15 GM 제안] 현재=구글 설문→구글시트 직접 저장, 페이지는 시트를 매번 왕복(GAS/gviz) 읽기·쓰기 → 느림. GM 제안 구조=①자체 survey 폼 제작(구글폼 대체) ②입력이 페이지에 먼저 저장(즉시 반영) ③페이지 저장분이 뒤에서 구글시트로 동기화 → 실무진 체감 속도감 확보. [웰리 방향판단] 방향 OK — 원리=낙관적 UI + 비동기 write-back. ★착수 게이트(스펙에서 못 박을 것): '페이지 저장소'는 SSOT가 아니라 버퍼(캐시)여야 함 — 브라우저를 진짜 원본으로 삼으면 실무진 다중 사용자·다중 기기 값이 갈라짐. 서버 전(9월)까지는 시트가 원본 유지, 페이지=즉시반영+백그라운드 시트 write-back(큐잉·재시도). ★INC-013 교훈: no-cors 낙관 반환이 저장 실패를 감추면 안 됨 → 비동기 동기화는 실패를 화면에 표면화+재시도(조용한 유실 금지). 2단계: 1단계=지금 가능(서버 불요, 낙관 UI+비동기 동기화로 속도감) / 2단계=완전 자체 DB SSOT·시트 탈피는 9월 자체서버에서 완성=배18(자체 문의DB)·배101(자체서버)·배973(강습 원장 통합)과 수렴. 담당=시포(문의·회원 도메인 주도), 인프라(2단계 자체DB)=시토 협업. 강습 문의관리 검수(오늘)의 속도감 실측 원인이 1단계 설계 근거.\n[2026-07-15 갈래A 구현 완료·웰리 검수 PASS] 문의회원.html 편집 버퍼화 라이브 실증 완결. S0 스파이크=text/plain+redirect:follow POST가 GAS {ok,error} 판독 가능 확인→D1 판독경로 채택(폴백 불요). 구현(문의회원.html 단일): D1 apiPost no-cors 제거·판독화(INC-013 근본 해소·백엔드 무변경) / D2 WriteBuffer 인메모리 낙관+localStorage 영속큐(cpo_iq_writeq_v1·keyPhone·gid 동봉) / D3 즉시 로컬반영→백그라운드 flush→성공 배지해제·실패 지수백오프(max5)→park+수동재시도·헤더 큐카운트칩 / D4 목록 stale-while-revalidate+큐 오버레이 / D5 5개 저장경로 전부 버퍼경유(확산=실증후 별건). 라이브검증(실배포 URL+실GAS) 4기준 PASS: 저장 즉시반영 4ms·목록 캐시 즉시·연속입력 비차단·실패주입→배지+재시도→새로고침 큐생존→복귀 자동flush→시트영속. 라운드트립 표식값 저장→영속→원복 확인(실회원 손상0·INC-013 무재현). ★커밋 traceability 흠집(정직): 완성 직후 백그라운드 자동 커밋터가 작업트리를 선점 커밋(c2a0f6c3)→메시지가 무관('회원관리 4카드 위치 스왑')·타 변경과 번들. 단 HEAD==검증된 작업트리(git diff HEAD 빈결과·WriteBuffer 전 마커 존재)라 코드는 검증본과 동일. INC-009/008 원칙상 푸시된 history rewrite 안 함→본 note append로 근거 박제(웰리 결정=비파괴 안전경로). 잔여: ①확산(VOC·종합접수처 공통모듈 추출) ②park실패 텔레그램 확장(후속).",
+    "note": "[2026-07-15 GM 제안] 현재=구글 설문→구글시트 직접 저장, 페이지는 시트를 매번 왕복(GAS/gviz) 읽기·쓰기 → 느림. GM 제안 구조=①자체 survey 폼 제작(구글폼 대체) ②입력이 페이지에 먼저 저장(즉시 반영) ③페이지 저장분이 뒤에서 구글시트로 동기화 → 실무진 체감 속도감 확보. [웰리 방향판단] 방향 OK — 원리=낙관적 UI + 비동기 write-back. ★착수 게이트(스펙에서 못 박을 것): '페이지 저장소'는 SSOT가 아니라 버퍼(캐시)여야 함 — 브라우저를 진짜 원본으로 삼으면 실무진 다중 사용자·다중 기기 값이 갈라짐. 서버 전(9월)까지는 시트가 원본 유지, 페이지=즉시반영+백그라운드 시트 write-back(큐잉·재시도). ★INC-013 교훈: no-cors 낙관 반환이 저장 실패를 감추면 안 됨 → 비동기 동기화는 실패를 화면에 표면화+재시도(조용한 유실 금지). 2단계: 1단계=지금 가능(서버 불요, 낙관 UI+비동기 동기화로 속도감) / 2단계=완전 자체 DB SSOT·시트 탈피는 9월 자체서버에서 완성=배18(자체 문의DB)·배101(자체서버)·배973(강습 원장 통합)과 수렴. 담당=시포(문의·회원 도메인 주도), 인프라(2단계 자체DB)=시토 협업. 강습 문의관리 검수(오늘)의 속도감 실측 원인이 1단계 설계 근거.\n[2026-07-15 갈래A 구현 완료·웰리 검수 PASS] 문의회원.html 편집 버퍼화 라이브 실증 완결. S0 스파이크=text/plain+redirect:follow POST가 GAS {ok,error} 판독 가능 확인→D1 판독경로 채택(폴백 불요). 구현(문의회원.html 단일): D1 apiPost no-cors 제거·판독화(INC-013 근본 해소·백엔드 무변경) / D2 WriteBuffer 인메모리 낙관+localStorage 영속큐(cpo_iq_writeq_v1·keyPhone·gid 동봉) / D3 즉시 로컬반영→백그라운드 flush→성공 배지해제·실패 지수백오프(max5)→park+수동재시도·헤더 큐카운트칩 / D4 목록 stale-while-revalidate+큐 오버레이 / D5 5개 저장경로 전부 버퍼경유(확산=실증후 별건). 라이브검증(실배포 URL+실GAS) 4기준 PASS: 저장 즉시반영 4ms·목록 캐시 즉시·연속입력 비차단·실패주입→배지+재시도→새로고침 큐생존→복귀 자동flush→시트영속. 라운드트립 표식값 저장→영속→원복 확인(실회원 손상0·INC-013 무재현). ★커밋 traceability 흠집(정직): 완성 직후 백그라운드 자동 커밋터가 작업트리를 선점 커밋(c2a0f6c3)→메시지가 무관('회원관리 4카드 위치 스왑')·타 변경과 번들. 단 HEAD==검증된 작업트리(git diff HEAD 빈결과·WriteBuffer 전 마커 존재)라 코드는 검증본과 동일. INC-009/008 원칙상 푸시된 history rewrite 안 함→본 note append로 근거 박제(웰리 결정=비파괴 안전경로). 잔여: ①확산(VOC·종합접수처 공통모듈 추출) ②park실패 텔레그램 확장(후속).\n[2026-07-15 시우 항로 하이진] PENDING→IN_PROGRESS: 갈래A(편집 버퍼화·낙관UI·비동기 write-back) 라이브 실증·웰리 검수 PASS 완료, 갈래B(①확산 VOC·종합접수처 공통모듈 추출 ②park실패 텔레그램 확장) 진행중→활성.",
     "next": "착수 전 스펙 확정 필요(deep-interview) — 핵심 결정=①'페이지 저장=버퍼 vs SSOT'(웰리 권고=버퍼) ②자체 survey 폼 범위(구글폼 완전대체 vs 페이지 입력만) ③수집 유실 0 보장·비동기 실패 표면화 설계. 1단계(속도감)는 서버 없이 착수 가능, 2단계(시트 탈피)는 자체서버 ≈2026-09 전제.",
     "depends_on": "2단계(완전 자체 DB·시트 탈피)=자체 윈도우 서버 도입 ≈2026-09 (배101·배18). 1단계(낙관 UI·비동기 동기화)=전제 없음·즉시 착수 가능.",
     "ship_no": 1037,
-    "module": "cpo"
+    "module": "cpo",
+    "surface": "autonomy"
   },
   {
     "task_id": "CPO-2026-07-15-ADHOC-050feb21",
@@ -499,10 +512,11 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-07-15",
     "processed_at": "2026-07-15",
-    "ship_no": 1047,
+    "ship_no": 1086,
     "artifact": "826(5채널 자동발행)=코드·가드 완결 종료(GM 결정, 첫 실발행 대기 없이). 545(대시보드 정상화 상시 미션)·838(실전사례 시리즈)=항로 상주 부적합→종료, 러닝 자동화는 등록부로 이관. 838 디스패처를 cmo-case-series-dispatch 자율현황 모듈로 신규 등록. (CLI ad-hoc · 커밋 62cd2acd)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "62cd2acdcd6489a73982ad25d2ce0ac1d55b1e73"
+    "adhoc_commit": "62cd2acdcd6489a73982ad25d2ce0ac1d55b1e73",
+    "note": "[2026-07-15 시우 항로 하이진] ship_no 1047→1086 renumber(충돌 해소): 1047은 정본 CEO-2026-07-15-HANGRO-STANDING-TO-AUTONOMY에 귀속 유지, 본 DONE 배를 신규 고유번호로 이동. task_id 보존·삭제 없음."
   },
   {
     "task_id": "CPO-2026-07-15-ADHOC-c2a0f6c3",
@@ -820,7 +834,8 @@
     "next": "omc-plan 합의 플랜 완료→GM 승인→MVP 구현(등록페이지·갤러리·서명수령). 이미지 저장 파이프는 빌드에서 기존 접수 사진 경로 실측 확정. 라이브발효=GM go.",
     "depends_on": "",
     "ship_no": 1069,
-    "module": "T2"
+    "module": "T2",
+    "surface": "autonomy"
   },
   {
     "task_id": "CMO-2026-07-15-ADHOC-9980a054",
@@ -882,14 +897,16 @@
     "task_id": "COO-2026-07-15-VENDOR-COMPANYWIDE-BOARD",
     "clevel": "coo",
     "title": "[시우] 거래업체 전사 보드 — 부서별 필터·복수 소속(전사_일정 패턴)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-15",
     "ship_no": 1074,
     "module": "O1",
     "note": "GM 아이디어=거래업체도 전사 일정처럼 부서별 자기것만. 결정: 기존 시설부 rich UI 재활용·전 필드 공유·한 업체 여러 부서(복수). PhaseA=vendor GAS 부서(복수)칸 추가·배포@160·depts 폴백 라이브 검증 완료. PhaseA2=전사_거래업체.html 추출빌드(executor). PhaseB=5부서 🏢거래업체 탭 임베드. 스펙=docs/superpowers/specs/2026-07-15-거래업체-전사보드-design.md",
-    "next": "보드 빌드 완료→시설부 시범 탭→라이브 검증→4부서 확산",
-    "depends_on": ""
+    "next": "🔗 거래업체 전사 보드+5부서 탭 라이브 완결. 후속(선택)=업체별 부서 재지정(체크박스)·시설부 구 vendor UI 프룬",
+    "depends_on": "",
+    "terminal": true,
+    "processed_at": "2026-07-15"
   },
   {
     "task_id": "CEO-2026-07-15-ADHOC-78a5243e",
