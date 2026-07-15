@@ -791,6 +791,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .dash-card[data-kind="wait"] .dash-v b.lead{color:var(--accent)}
 @media(max-width:900px){.dash-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr}}
+/* 현황카드 일원화(한 줄) — 2026-07-15 GM 지시. 전환보드 삭제 후 멤버십 6카드·강습 5카드를 각각 한 줄로. */
+#memberTabNav{grid-template-columns:repeat(6,1fr)}
+#lessonComboBoard{grid-template-columns:repeat(5,1fr)}
+@media(max-width:1100px){#memberTabNav,#lessonComboBoard{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){#memberTabNav,#lessonComboBoard{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){#memberTabNav,#lessonComboBoard{grid-template-columns:1fr}}
 
 /* ═══════════════════════════════════════
    멤버십 현황 집중형 대시보드 모달 — 배3, 2026-07-07 시포·GM
@@ -1014,15 +1020,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .theme-toggle-btn:hover{filter:brightness(1.1)}
 .action-btn.is-guide { border-color: var(--accent); color: var(--accent); font-weight: 700; }
 
-/* 초보자 안내 배너 */
-.beginner-banner { display: flex; align-items: flex-start; gap: 11px; background: var(--accent-bg); border: 1px solid var(--accent); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; }
-.beginner-banner .bb-ic { font-size: 19px; line-height: 1.2; }
-.beginner-banner .bb-txt { font-size: 13px; color: var(--text); line-height: 1.6; }
-.beginner-banner .bb-txt b { color: var(--accent); }
-.beginner-banner .bb-x { margin-left: auto; background: none; border: none; color: var(--dim); font-size: 15px; cursor: pointer; }
-
-/* 오늘 현황 요약 히어로 */
-.summary-hero { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+/* 오늘 현황 요약 카드(새 문의·오늘 예약) — 배754 신설, 2026-07-15 GM 지시로 전환보드 삭제→현황카드 일원화되며
+   #cpoTodayStrip/.summary-hero 래퍼는 폐기되고 카드 자체(.sum-card)만 #memberTabNav·#lessonComboBoard grid 안으로 이관.
+   이탈위험(.sc-risk)·오늘할일(.sc-task) 카드는 상단 헤더(🚪 이탈관리·🧭 오늘 할 일 버튼)와 중복이라 삭제. */
 .sum-card { position: relative; display: block; text-decoration: none; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 13px 14px; overflow: hidden; transition: .14s; }
 .sum-card:hover { transform: translateY(-2px); border-color: var(--sc, var(--accent)); }
 .sum-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--sc, var(--accent)); }
@@ -1032,8 +1032,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .sum-card .sc-go { font-size: 10.5px; font-weight: 600; color: var(--sc, var(--accent)); margin-top: 7px; }
 .sum-card.sc-new  { --sc: var(--teal); }
 .sum-card.sc-book { --sc: var(--accent); }
-.sum-card.sc-risk { --sc: var(--red); }
-.sum-card.sc-task { --sc: #c9820a; }
 .sum-card.sc-dim { opacity: .6; cursor: default; pointer-events: none; }
 .sum-card.sc-dim:hover { transform: none; }
 
@@ -1052,7 +1050,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .hubx-card p { margin: 0; font-size: 11.5px; color: var(--dim); line-height: 1.5; }
 .hubx-card.hc-slot { border-style: dashed; }
 @media (max-width: 760px) {
-  .summary-hero { grid-template-columns: repeat(2, 1fr); }
   .hubx-grid { grid-template-columns: 1fr; }
 }
 </style>
@@ -1167,19 +1164,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
 <div class="content">
 
-  <!-- ══════════════════════════════ 초보자 안내 배너 (배754, 2026-07-10) ══════════════════════════════ -->
-  <div class="beginner-banner" id="beginnerBanner">
-    <span class="bb-ic">🧭</span>
-    <span class="bb-txt">
-      <b>처음이세요?</b> 이 페이지는 회원을 <b>①문의 받고 → ②상담·등록하고 → ③관리·이탈 방지</b>하는 곳입니다.
-      아래 <b>오늘 현황</b> 4칸부터 보세요. 숫자를 누르면 처리 화면으로 바로 이동합니다.
-    </span>
-    <button class="bb-x" onclick="dismissBeginnerBanner()" title="닫기 (다시 안 봄)">✕</button>
-  </div>
-
-  <!-- ══════════════════════════════ 관리 그룹 라벨 (AI CPO 메뉴 3칸 — 배6, 2026-07-02 시포·GM) ══════════════════════════════ -->
-  <div id="manageFamilyLabel" style="font-size:16px;font-weight:800;margin-bottom:12px;color:var(--accent);letter-spacing:-0.01em">멤버십 회원관리</div>
-
   <!-- ══════════════════════════════ 문의 유형 칩 바 (그룹 내 유형 — 2026-06-26 시포) ══════════════════════════════ -->
   <div class="type-chip-bar" id="typeChipBar">
     <button type="button" class="type-chip active" data-type="membership" onclick="switchType('membership')">멤버십</button>
@@ -1189,18 +1173,25 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <button type="button" class="type-chip" data-type="biz" onclick="switchType('biz')">비즈니스</button>
   </div>
 
-  <!-- ══ 강습 통합 4카드(성인+유소년 한 줄 합산) — CPO-2026-07-14-LESSON-4CARD, GM 지시 2026-07-14.
-       기존 .dash-grid(731행, repeat(4,1fr)) 패턴 그대로 재사용. 신규 fetch·집계 로직 없음 — 이미 존재하는
-       lessonCardInq/Mem/Loss/Wait_{adult|youth} 값을 그대로 읽어 병기 표시만 함(표시 전용, MutationObserver로 동기).
-       강습 family에서만 노출(switchFamily가 display 토글). 대기자 카드=진행상태"대기" 버킷(배973 기존 로직) 그대로 표시. ══ -->
+  <!-- ══ 강습 현황카드 5종(성인+유소년 한 줄 합산) — 2026-07-15 GM 지시(전환보드 삭제→현황카드 일원화)로 재구성.
+       카드1(새 문의)=히어로 소스(_tapClassifyLesson todayNew, 신규 fetch 없음) 이관. 카드2(신규 등록 현황)=기존 유틸
+       _lessonFetchRegistry(action=lesson_registry_list) 재사용 신설. 카드3~5(회원·대기자·LOSS)=기존 lessonCardMem/
+       Wait/Loss_{adult|youth} 값을 그대로 읽어 병기 표시(표시 전용, MutationObserver로 동기, CPO-2026-07-14-LESSON-4CARD
+       원 로직 무변경). 강습 family에서만 노출(switchFamily가 display 토글). 대기자=진행상태"대기" 버킷(배973) 그대로. ══ -->
   <div class="dash-grid" id="lessonComboBoard" style="display:none">
-    <a class="dash-card" data-kind="inq" data-lcard="inq" href="javascript:void(0)" onclick="_lessonComboClick('inq')">
-      <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">문의 현황</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboInqAdult">–</b> 건</span></div>
-        <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboInqYouth">–</b> 건</span></div>
-      </div>
+    <a class="sum-card sc-new" id="sumNewCardLesson" href="javascript:void(0)" onclick="heroCardClick('new')">
+      <span class="sc-top">🆕 새 문의</span>
+      <span class="sc-num" id="sumNewLesson">0</span>
+      <span class="sc-desc">금일 접수(성인+유소년)</span>
+      <span class="sc-go">강습 문의 화면에서 확인</span>
     </a>
+    <div class="dash-card" data-kind="reg" style="cursor:default">
+      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">신규 등록 현황</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboRegAdult">–</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboRegYouth">–</b> 명</span></div>
+      </div>
+    </div>
     <a class="dash-card" data-kind="mem" data-lcard="mem" href="javascript:void(0)" onclick="_lessonComboClick('mem')">
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
       <div class="dash-metrics">
@@ -1224,95 +1215,35 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     </a>
   </div>
 
-  <!-- ══ 오늘 현황 요약(초보자) — 배754 2026-07-10. '오늘 처리할 것' 4지표, 클릭→처리 화면. 숫자는 기존 라이브값 재사용.
-       유형칩 바로 아래(type-pane 밖) 배치 — 멤버십·강습 공유, family 전환 시 renderSummaryHero()가 재계산.
-       (구현 노트: 계획서는 #cpoTodayStrip을 type-membership 내부에서 그대로 교체하도록 지시했으나, 실측 결과
-        해당 위치는 강습 family 전환 시 display:none 처리되어 강습에 노출 불가함을 확인 → Task 6 강습 패리티
-        요건 충족을 위해 유형칩 바로 아래 공유 위치로 이동. id·클래스명은 계획서 값 그대로 유지.) ══ -->
-  <!-- ══ 전환·회원 현황 보드 (일/월/연) — 배944 2026-07-14 시포·GM /deep-interview. 기간지표(문의·가입·전환율) 탭전환
-       + 누적 퍼널 + 아래 '오늘 처리'(기존 히어로 존치=회귀0). 정직: 전환율=등록월 기준(누적 39.9%와 뺄셈 금지). ══ -->
-  <style>
-  .status-board{border:1px solid var(--accent-border,rgba(183,159,138,.3));border-radius:12px;padding:14px 16px;margin:0 0 14px;background:var(--accent-bg,rgba(183,159,138,.06))}
-  .sb-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-  .sb-title{font-weight:700;font-size:14px;color:var(--accent-bright,#d9c4ad)}
-  .sb-tabs{display:inline-flex;gap:4px;background:rgba(0,0,0,.18);border-radius:8px;padding:3px}
-  .sb-tab{border:0;background:transparent;color:var(--dim-mid,#9e9b93);font-size:12px;padding:5px 12px;border-radius:6px;cursor:pointer}
-  .sb-tab.active{background:var(--accent,#B79F8A);color:#221F20;font-weight:700}
-  .sb-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
-  .sb-metric{background:rgba(0,0,0,.15);border-radius:8px;padding:8px 10px;text-align:center}
-  .sb-k{display:block;font-size:11px;color:var(--dim,#7d7b74)}
-  .sb-v{display:block;font-size:22px;font-weight:800;color:var(--text);line-height:1.15}
-  .sb-d{display:block;font-size:11px;min-height:14px}
-  .sb-d.up{color:#7fc99a}.sb-d.down{color:#e28f8f}.sb-d.flat{color:var(--dim,#7d7b74)}
-  .sb-funnel{display:flex;align-items:center;justify-content:space-between;gap:2px;background:rgba(0,0,0,.12);border-radius:8px;padding:8px 6px;margin-bottom:6px;flex-wrap:wrap}
-  .sb-fstep{display:flex;flex-direction:column;align-items:center;min-width:40px;font-size:10px;color:var(--dim,#7d7b74)}
-  .sb-fstep b{color:var(--text);font-size:14px;font-weight:800}
-  .sb-farrow{color:var(--dim,#7d7b74);font-size:11px}
-  .sb-caveat{font-size:10px;color:var(--dim,#7d7b74);line-height:1.4;margin-top:2px}
-  #sbCollapseBody.sb-collapsed{display:none}
-  @media(max-width:640px){.sb-v{font-size:18px}.sb-fstep{min-width:34px}}
-  </style>
-  <div class="status-board" id="cpoStatusBoard">
-    <div class="sb-head">
-      <span class="sb-title">📊 전환·회원 현황<span id="sbRefresh" style="font-size:11px;color:var(--dim);font-weight:400"></span></span>
-      <button type="button" id="sbToggle" onclick="_sbToggleCollapse()" style="margin-left:auto;background:transparent;border:1px solid var(--accent-border,rgba(183,159,138,.3));color:var(--dim-mid,#9e9b93);border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:inherit">▾ 접기</button>
-    </div>
-    <div id="sbCollapseBody">
-      <div class="sb-tabs" id="sbTabs" style="margin-bottom:10px">
-        <button type="button" class="sb-tab active" data-period="today" onclick="statusBoardTab('today')">오늘</button>
-        <button type="button" class="sb-tab" data-period="month" onclick="statusBoardTab('month')">이번달</button>
-        <button type="button" class="sb-tab" data-period="year" onclick="statusBoardTab('year')">올해</button>
-      </div>
-    <div class="sb-metrics" id="sbMetrics">
-      <div class="sb-metric"><span class="sb-k">문의</span><span class="sb-v" id="sbInq">…</span><span class="sb-d flat" id="sbInqD"></span></div>
-      <div class="sb-metric"><span class="sb-k">가입</span><span class="sb-v" id="sbReg">…</span><span class="sb-d flat" id="sbRegD"></span></div>
-      <div class="sb-metric"><span class="sb-k">전환율</span><span class="sb-v" id="sbRate">…</span><span class="sb-d flat" id="sbRateD"></span></div>
-    </div>
-    <div class="sb-funnel" id="sbFunnel"><span class="sb-caveat">퍼널 불러오는 중…</span></div>
-    <div class="sb-caveat" id="sbCaveat">전환율=등록월 기준(이번달 신규가입/이번달 문의) · 지난달 델타=같은 일자까지 공정 비교 · 누적 퍼널=전체 기간.</div>
-    </div><!-- /sbCollapseBody -->
-    <!-- 오늘 처리할 것(액션 행) — 기존 히어로 존치(회귀0) -->
-  <div class="summary-hero" id="cpoTodayStrip">
+  <!-- 이탈방지 액션 모듈(⏰갱신임박·📉저이용) = 2026-07-15 GM 재지시로 상단 단독 패널 제거 → 이탈관리 모달(openChurnManage,
+       data-gdoc="churnaction")과 오늘 할 일(tapBody 'renew'·'lowuse' 섹션)로 이관·병합. 여기 없음(중복 아님).
+       전환·회원 현황 보드(#cpoStatusBoard, 배944)는 2026-07-15 GM 지시로 통째 삭제 — "현황 눌러보면 다 중복이라
+       의미없음". 새 문의·오늘 예약 카드는 아래 #memberTabNav(멤버십)·위 #lessonComboBoard(강습)로 편입·보존. -->
+
+  <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
+  <div id="type-membership" class="type-pane active">
+
+  <!-- ══ 현황카드 6종(한 줄) — 2026-07-15 GM 지시(전환보드 삭제→현황카드 일원화). 카드1·2(새 문의·오늘 예약)는
+       구 #cpoTodayStrip 히어로 카드(sumNewCard·sumBookCard) 그대로 이관 — id·onclick·표시값·클릭동작 100% 동일 보존,
+       "오늘 예약"은 GM 지시로 형태 변경 없음. 카드3~6(등록·회원·대기자·LOSS)은 구 4카드(CPO-2026-07-14-MEMBER-CARDS-FIX)
+       변경 없이 그대로 유지, 기존 멤버십 데이터(cpo_today_stats)만 재활용(신규 fetch 없음).
+       대기자=멤버십 문의 진행상태에 '대기' 버킷이 존재하지 않아(STATUS_OPTIONS 참조, 강습 전용) 정직표기(미구현). ══ -->
+  <div class="dash-grid" id="memberTabNav">
+    <!-- 카드1: 새 문의 (구 히어로 sumNewCard 이관) -->
     <a class="sum-card sc-new" id="sumNewCard" href="javascript:void(0)" onclick="heroCardClick('new')">
       <span class="sc-top">🆕 새 문의</span>
       <span class="sc-num" id="sumNew">0</span>
       <span class="sc-desc">금일 접수</span>
       <span class="sc-go" id="sumNewGo">문의 DB로 →</span>
     </a>
+    <!-- 카드2: 오늘 예약 (구 히어로 sumBookCard 이관 — 형태·클릭동작 그대로) -->
     <a class="sum-card sc-book" id="sumBookCard" href="javascript:void(0)" onclick="heroCardClick('book')">
       <span class="sc-top">📅 오늘 예약</span>
       <span class="sc-num" id="sumBook">0</span>
       <span class="sc-desc">상담·체험 방문</span>
       <span class="sc-go" id="sumBookGo">예약 달력으로 →</span>
     </a>
-    <a class="sum-card sc-risk" id="sumRiskCard" href="javascript:void(0)" onclick="heroCardClick('risk')">
-      <span class="sc-top">⚠️ 이탈 위험</span>
-      <span class="sc-num" id="sumRisk">0</span>
-      <span class="sc-desc" id="sumRiskDesc">갱신임박 등</span>
-      <span class="sc-go" id="sumRiskGo">이탈관리로 →</span>
-    </a>
-    <a class="sum-card sc-task" href="javascript:void(0)" onclick="heroCardClick('task')">
-      <span class="sc-top">🧭 오늘 할 일</span>
-      <span class="sc-num" id="sumTask">0</span>
-      <span class="sc-desc">신규·미컨택·예약</span>
-      <span class="sc-go">오늘 할 일로 →</span>
-    </a>
-  </div>
-  </div><!-- /cpoStatusBoard -->
-
-  <!-- 이탈방지 액션 모듈(⏰갱신임박·📉저이용) = 2026-07-15 GM 재지시로 상단 단독 패널 제거 → 이탈관리 모달(openChurnManage,
-       data-gdoc="churnaction")과 오늘 할 일(tapBody 'renew'·'lowuse' 섹션)로 이관·병합. 여기 없음(중복 아님). -->
-
-  <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
-  <div id="type-membership" class="type-pane active">
-
-  <!-- ══ 등록·회원 탭 바로가기 — 구 4카드 중 신규문의·예약 2칸은 위 공유 히어로로 이전, 등록·회원 탭 진입 경로는
-       존치(회귀 방지, 배754 2026-07-10). id·onclick·표시값 100% 동일 보존.
-       카드3·4(LOSS·대기자)는 GM 신규 지시(CPO-2026-07-14-MEMBER-CARDS-FIX) — 강습 통합 4카드(lessonComboBoard)와
-       동일한 .dash-grid(731행, repeat(4,1fr)) 패턴 재사용, 기존 멤버십 데이터(cpo_today_stats)만 재활용(신규 fetch 없음).
-       대기자=멤버십 문의 진행상태에 '대기' 버킷이 존재하지 않아(STATUS_OPTIONS 참조, 강습 전용) 정직표기(미구현). ══ -->
-  <div class="dash-grid" id="memberTabNav">
-    <!-- 카드1: 등록 현황 (등록 회원 명단 — 내부 탭) -->
+    <!-- 카드3: 등록 현황 (등록 회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="reg" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered')">
       <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">신규 등록 현황</span></div>
       <div class="dash-metrics">
@@ -1320,7 +1251,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dRegMonth">0</b> 명</span></div>
       </div>
     </a>
-    <!-- 카드2: 멤버십 회원 관리 (유효회원 명단 — 내부 탭) -->
+    <!-- 카드4: 멤버십 회원 관리 (유효회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="mem" data-tab="active" href="javascript:void(0)" onclick="switchTab('active')">
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 관리</span></div>
       <div class="dash-metrics">
@@ -1329,14 +1260,14 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
       </div>
     </a>
-    <!-- 카드3: 대기자 회원 관리 (멤버십 문의에는 '대기' 진행상태 버킷이 없음 — 강습과 달리 데이터 미존재, 정직표기) -->
+    <!-- 카드5: 대기자 회원 관리 (멤버십 문의에는 '대기' 진행상태 버킷이 없음 — 강습과 달리 데이터 미존재, 정직표기) -->
     <div class="dash-card" data-kind="wait" style="cursor:default">
       <div class="dash-head"><span class="dash-dot" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">대기</span><span class="dash-v"><b class="lead" id="dMemWait" style="font-size:15px;color:var(--dim)">미구현</b></span></div>
       </div>
     </div>
-    <!-- 카드4: LOSS 회원 관리 (이탈 — cpo_today_stats.todayLoss/monthLoss 재활용, 기존 gToLoss/gMoLoss와 동일 소스) -->
+    <!-- 카드6: LOSS 회원 관리 (이탈 — cpo_today_stats.todayLoss/monthLoss 재활용, 기존 gToLoss/gMoLoss와 동일 소스) -->
     <a class="dash-card" data-kind="loss" href="javascript:void(0)" onclick="openChurnManage()">
       <div class="dash-head"><span class="dash-dot" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
       <div class="dash-metrics">
@@ -1345,8 +1276,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       </div>
     </a>
   </div>
-  <!-- 참고(정직 기록, 배754): 구 카드1·2(멤버십 문의/예약)의 '월간' 보조수치(dInqMonth·dTourMon)는 위 공유
-       히어로가 '오늘' 지표에 집중하며 표면에서 제거 — 계획서 의도(Architecture 문단)에 따른 의도된 단순화.
+  <!-- 참고(정직 기록, 배754): 구 카드1·2(멤버십 문의/예약)의 '월간' 보조수치(dInqMonth·dTourMon)는 위 히어로가
+       '오늘' 지표에 집중하며 표면에서 제거 — 계획서 의도(Architecture 문단)에 따른 의도된 단순화.
        월간 문의 총량은 📊 멤버십 문의 현황 팝업 "신규 문의(이번달)"에서 계속 확인 가능(회귀 아님).
        월간 예약(dTourMon)은 표면 노출처가 없어졌음(정직 기록) — 데이터 자체는 캘린더 월간 스크롤로 직접 셀 수 있어
        완전 손실은 아니나, 집계 숫자로는 현재 미노출. -->
@@ -2880,14 +2811,11 @@ document.getElementById('guideHubOverlay').addEventListener('click', function(e)
   if (e.target.id === 'guideHubOverlay') closeGuideHub();
 });
 
-/* ── 오늘 현황 요약 히어로 카드 클릭 라우팅 (배754, 2026-07-10) — family에 따라 이동 대상이 달라 dispatcher로 분리.
-   강습(family=lesson)은 새문의/예약 데이터가 이미 현재 화면(강습 문의 카드)에 보이고 있어 별도 탭 이동이 없고,
-   이탈위험은 강습 데이터 자체가 없어(정직 공백) 무동작. 오늘 할 일만 멤버십·강습 공통으로 모달 오픈. ── */
+/* ── 현황카드(새 문의·오늘 예약) 클릭 라우팅 (배754, 2026-07-10 — 2026-07-15 GM 지시로 이탈위험·오늘할일 카드
+   삭제되며 'risk'·'task' 분기도 net-zero) — family에 따라 이동 대상이 달라 dispatcher로 분리.
+   강습(family=lesson)은 새문의 데이터가 이미 현재 화면(강습 문의 카드)에 보이고 있어 별도 탭 이동 없음(무동작). ── */
 function heroCardClick(kind) {
-  if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') {
-    if (kind === 'task') openTodayActionModal();
-    return;
-  }
+  if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') { return; }
   // 멤버십 family — 공간렌트·비즈니스 유형 화면에 있을 때 클릭해도 문의DB·달력은 type-membership 안에 있어
   // 유형이 렌트/비즈면 안 보임(무반응처럼 보임) → 이동 전 유형부터 멤버십으로 되돌려 실제로 화면이 바뀌게 함.
   if ((kind === 'new' || kind === 'book') && document.getElementById('type-membership') && !document.getElementById('type-membership').classList.contains('active')) {
@@ -2895,230 +2823,34 @@ function heroCardClick(kind) {
   }
   if (kind === 'new')  { switchTab('db'); return; }
   if (kind === 'book') { switchTab('calendar'); return; }
-  if (kind === 'risk') { openChurnManage(); return; }
-  if (kind === 'task') { openTodayActionModal(); return; }
 }
 
-/* 오늘 현황 요약 히어로 갱신 — 기존 라이브값 재사용(신규 fetch 없음). family(멤버십/강습)에 맞춰 지표·정직공백을 다시 그림.
-   배754, 2026-07-10. 호출 지점: loadCpoTodayStats·renderTopDash·renderTodayActionPanel·renderChurnActionPanel 말미 + switchFamily. */
+/* 현황카드(새 문의·오늘 예약) 갱신 — 기존 라이브값 재사용(신규 fetch 없음). family(멤버십/강습)에 맞춰 각자 카드로 다시 그림.
+   배754, 2026-07-10 — 2026-07-15 GM 지시(전환보드 삭제→현황카드 일원화)로 이탈위험·오늘할일 계산 net-zero,
+   전환·회원 현황 보드(#cpoStatusBoard) 부트스트랩 호출도 보드 자체 삭제로 함께 제거. 강습은 전용 카드
+   (sumNewCardLesson/sumNewLesson)로 분리 — 멤버십 카드(sumNewCard/sumNew)는 #memberTabNav 안에 상시 존재.
+   호출 지점: loadCpoTodayStats·renderTopDash·renderTodayActionPanel·renderChurnActionPanel 말미 + switchFamily. */
 function renderSummaryHero() {
   function setN(id, v) { var e = document.getElementById(id); if (e) e.textContent = (v == null ? '0' : v); }
   function setDim(cardId, dim) { var c = document.getElementById(cardId); if (c) c.classList.toggle('sc-dim', !!dim); }
-  function nz(id){ var e = document.getElementById(id); return e ? (parseInt(e.textContent, 10) || 0) : 0; }
-  var tb = document.getElementById('tapBadge');
-  var taskN = tb ? (parseInt(tb.textContent, 10) || 0) : 0;
-
-  // 현황 보드(배944) 동기 — 멤버십·강습 각 최초 1회 로드, 이후 전환은 재표시만(회귀0).
-  if (typeof _statusBoardLoad === 'function') {
-    if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') {
-      var _lt = (typeof _curLessonType === 'function') ? _curLessonType() : 'adult';
-      if (!_sbLesson[_lt] || !_sbLesson[_lt].loaded) { _statusBoardLoadLesson(_lt); }
-      else { renderStatusBoardPeriods(); }
-    } else if (!_sbData.memLoaded) { _sbData.memLoaded = true; _statusBoardLoad(); }
-    else { renderStatusBoardPeriods(); }
-  }
 
   if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') {
     var haveLesson = (typeof _tapLessonTypes === 'function') && _tapLessonTypes().length > 0;
-    var goN = document.getElementById('sumNewGo'), goB = document.getElementById('sumBookGo');
     if (haveLesson) {
       var clsL = _tapClassifyLesson(_tapToday());
-      setN('sumNew', clsL.todayNew.length);
-      setN('sumBook', clsL.todaysConsult.length);
-      setDim('sumNewCard', false); setDim('sumBookCard', false);
-      if (goN) goN.textContent = '강습 문의 화면에서 확인';
-      if (goB) goB.textContent = '강습 문의 화면에서 확인';
+      setN('sumNewLesson', clsL.todayNew.length);
+      setDim('sumNewCardLesson', false);
     } else {
-      setN('sumNew', '—'); setN('sumBook', '—');
-      setDim('sumNewCard', true); setDim('sumBookCard', true);
-      if (goN) goN.textContent = '불러오는 중…';
-      if (goB) goB.textContent = '불러오는 중…';
+      setN('sumNewLesson', '—');
+      setDim('sumNewCardLesson', true);
     }
-    setN('sumRisk', '—');
-    setDim('sumRiskCard', true);
-    var rd = document.getElementById('sumRiskDesc'); if (rd) rd.textContent = '데이터 준비 후';
-    var rg = document.getElementById('sumRiskGo');   if (rg) rg.textContent = '강습 이탈관리 준비 중';
-    setN('sumTask', taskN);
     return;
   }
 
-  // 멤버십 — _cpoStats.todayInquiry(사전로드 통계)·_tourTodayEager(renderTopDash 실측)·이탈 신호 실측·tapBadge 재사용
+  // 멤버십 — _cpoStats.todayInquiry(사전로드 통계)·_tourTodayEager(renderTopDash 실측) 재사용.
   setN('sumNew',  (typeof _cpoStats !== 'undefined' && _cpoStats && _cpoStats.todayInquiry != null) ? _cpoStats.todayInquiry : 0);
   setN('sumBook', (window._tourTodayEager != null) ? window._tourTodayEager : 0);
-  setDim('sumNewCard', false); setDim('sumBookCard', false); setDim('sumRiskCard', false);
-  var goN2 = document.getElementById('sumNewGo');   if (goN2) goN2.textContent = '문의 DB로 →';
-  var goB2 = document.getElementById('sumBookGo');  if (goB2) goB2.textContent = '예약 달력으로 →';
-  var rd2  = document.getElementById('sumRiskDesc'); if (rd2) rd2.textContent = '갱신임박 등';
-  var rg2  = document.getElementById('sumRiskGo');   if (rg2) rg2.textContent = '이탈관리로 →';
-  // 이탈 위험 = renderChurnActionPanel이 유효회원 사전로드 완료 후 산출하는 갱신임박+저이용 합계(_churnRiskEager, 배750 preload로 페이지 진입 즉시 계산됨).
-  // 아직 계산 전이면 이탈관리 모달의 갱신임박 배지(chSigD7/chSigD830, 모달 오픈 시에만 채워짐)로 폴백.
-  setN('sumRisk', (typeof window._churnRiskEager === 'number') ? window._churnRiskEager : (nz('chSigD7') + nz('chSigD830')));
-  setN('sumTask', taskN);
-}
-
-/* ══ 전환·회원 현황 보드 (일/월/연) — 배944 2026-07-14. loadMembershipDash 기간로직 재사용·상시 eager.
-   기간지표(문의·가입·전환율)만 탭전환, 이탈/할일 스냅샷은 아래 히어로에 존치. 강습=정직공백. ══ */
-var _sbData = { today: null, month: null, year: null, _prevMonth: null, funnel: null, memLoaded: false };
-var _sbLesson = { adult: null, youth: null };   // 강습 타입별 기간지표(배944 후속)
-var _sbPeriod = 'today';
-function _sbSet(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
-// stale-while-revalidate 캐시(배944 체감개선) — 직전 실측값 즉시표시 + 백그라운드 갱신.
-var _SB_CK = 'sb_membership_cache_v1';
-function _sbSetRefresh(on) { var e = document.getElementById('sbRefresh'); if (e) e.textContent = on ? ' · 갱신 중…' : ''; }
-function _sbCacheSave() { try { localStorage.setItem(_SB_CK, JSON.stringify({ today: _sbData.today, month: _sbData.month, year: _sbData.year, _prevMonth: _sbData._prevMonth, funnel: _sbData.funnel })); } catch (e) {} }
-function _sbCacheLoad() { try { var c = JSON.parse(localStorage.getItem(_SB_CK) || 'null'); if (c && c.month) { _sbData.today = c.today || {}; _sbData.month = c.month || {}; _sbData.year = c.year || {}; _sbData._prevMonth = c._prevMonth || {}; _sbData.funnel = c.funnel || null; return true; } } catch (e) {} return false; }
-// 강습 기간지표 로드 — 문의(lesson_stats: 이번달·올해, 오늘·지난달 미지원) + 가입(lesson_registry_list 3기간). 전환율/퍼널=정직공백.
-function _statusBoardLoadLesson(t) {
-  var lt = (t === 'youth') ? 'youth' : 'adult';
-  var korType = (lt === 'youth') ? '유소년강습' : '성인강습';
-  var L = _sbLesson[lt] = _sbLesson[lt] || {};
-  L.loaded = true; L.today = L.today || {}; L.month = L.month || {}; L.year = L.year || {};
-  L.today.inq = null;   // 강습 일별 문의 미지원
-  var now = new Date();
-  var todayStr = _mdashYmd(now), mStr = _mdashYmd(new Date(now.getFullYear(), now.getMonth(), 1)), yStr = _mdashYmd(new Date(now.getFullYear(), 0, 1));
-  if (typeof GAS_URL !== 'undefined' && GAS_URL !== GAS_PLACEHOLDER) {
-    fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(korType))
-      .then(function (r) { return r.json(); })
-      .then(function (d) { if (d && d.ok) { L.month.inq = (d.thisMonth != null) ? d.thisMonth : null; L.year.inq = (d.total != null) ? d.total : null; } else { L.month.inq = null; L.year.inq = null; } renderStatusBoardPeriods(); })
-      .catch(function () { L.month.inq = null; L.year.inq = null; renderStatusBoardPeriods(); });
-  }
-  function regcb(k) { return function (d) { _sbLesson[lt][k].reg = (d && d.count != null) ? d.count : null; renderStatusBoardPeriods(); }; }
-  _lessonFetchRegistry(korType, todayStr, todayStr, regcb('today'));
-  _lessonFetchRegistry(korType, mStr, todayStr, regcb('month'));
-  _lessonFetchRegistry(korType, yStr, todayStr, regcb('year'));
-}
-function statusBoardTab(p) {
-  _sbPeriod = p;
-  var tabs = document.querySelectorAll('#sbTabs .sb-tab');
-  for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', tabs[i].getAttribute('data-period') === p);
-  renderStatusBoardPeriods();
-}
-// 현황보드 접기(배944 후속·GM) — 기본: 강습=접힘(목록 우선)·멤버십=펼침. 사용자 토글은 family별 localStorage 기억.
-function _sbToggleCollapse() {
-  var body = document.getElementById('sbCollapseBody'); if (!body) return;
-  var collapsed = body.classList.toggle('sb-collapsed');
-  var fam = (typeof _curFamily !== 'undefined') ? _curFamily : 'membership';
-  try { localStorage.setItem('sb_collapsed_' + fam, collapsed ? '1' : '0'); } catch (e) {}
-  var tg = document.getElementById('sbToggle'); if (tg) tg.textContent = collapsed ? '▸ 현황 펼치기' : '▾ 접기';
-}
-function _sbApplyCollapse() {
-  var body = document.getElementById('sbCollapseBody'); if (!body) return;
-  var fam = (typeof _curFamily !== 'undefined') ? _curFamily : 'membership';
-  var saved = null; try { saved = localStorage.getItem('sb_collapsed_' + fam); } catch (e) {}
-  var collapsed = (saved != null) ? (saved === '1') : (fam === 'lesson');
-  body.classList.toggle('sb-collapsed', collapsed);
-  var tg = document.getElementById('sbToggle'); if (tg) tg.textContent = collapsed ? '▸ 현황 펼치기' : '▾ 접기';
-}
-function _sbDelta(id, now, prev, prevOk, isRate) {
-  var e = document.getElementById(id); if (!e) return;
-  if (_sbPeriod !== 'month' || now == null || prev == null || !prevOk) { e.className = 'sb-d flat'; e.textContent = ''; return; }
-  var diff = Math.round((now - prev) * 10) / 10, suf = isRate ? '%p' : '';
-  if (diff > 0) { e.className = 'sb-d up'; e.textContent = '지난달 ▲' + Math.abs(diff) + suf; }
-  else if (diff < 0) { e.className = 'sb-d down'; e.textContent = '지난달 ▼' + Math.abs(diff) + suf; }
-  else { e.className = 'sb-d flat'; e.textContent = '지난달 ±0'; }
-}
-function renderStatusBoardPeriods() {
-  _sbApplyCollapse();
-  var cav = document.getElementById('sbCaveat');
-  var lesson = (typeof _curFamily !== 'undefined' && _curFamily === 'lesson');
-  if (lesson) {
-    // 강습 = 문의(lesson_stats 월·연)·가입(등록원장 3기간) 실값, 전환율·퍼널·이탈=원본 부재 정직공백.
-    var lt = (typeof _curLessonType === 'function') ? _curLessonType() : 'adult';
-    var Lp = ((_sbLesson[lt] || {})[_sbPeriod]) || {};
-    if (_sbPeriod === 'today') _sbSet('sbInq', '—');   // 강습 일별 문의 미지원(lesson_stats from/to 없음)
-    else _sbSet('sbInq', Lp.inq === undefined ? '…' : (Lp.inq != null ? Lp.inq.toLocaleString() : '–'));
-    _sbSet('sbReg', Lp.reg === undefined ? '…' : (Lp.reg != null ? Lp.reg.toLocaleString() : '–'));
-    _sbSet('sbRate', '데이터 없음');
-    ['sbInqD', 'sbRegD', 'sbRateD'].forEach(function (id) { var e = document.getElementById(id); if (e) { e.className = 'sb-d flat'; e.textContent = ''; } });
-    var fl = document.getElementById('sbFunnel'); if (fl) fl.innerHTML = '<span class="sb-caveat">강습 퍼널=데이터 없음(예약·방문·가입 구분 원장 부재)</span>';
-    if (cav) cav.textContent = '강습: 문의=lesson_stats(이번달·올해, 오늘·지난달 미지원 "—") · 가입=강습 등록원장 실측 · 전환율/퍼널/이탈=원본 부재 정직공백. 데이터 파이프(≈9월) 후 편입.';
-    return;
-  }
-  if (cav) cav.textContent = '전환율=등록월 기준(이번달 신규가입/이번달 문의) · 지난달 델타=같은 일자까지 공정 비교 · 누적 퍼널=전체 기간. (누적 39.9%와 직접 비교 금지=서로 다른 기준)';
-  var d = _sbData[_sbPeriod];
-  if (!d) { _sbSet('sbInq', '…'); _sbSet('sbReg', '…'); _sbSet('sbRate', '…'); return; }
-  // 로딩(undefined)='…' vs 측정불가(null)='–' 구분 — 0은 실값 '0'.
-  function _sbF(v) { return v === undefined ? '…' : (v != null ? v.toLocaleString() : '–'); }
-  _sbSet('sbInq', _sbF(d.inq));
-  _sbSet('sbReg', _sbF(d.reg));
-  _sbSet('sbRate', d.reg === undefined ? '…' : (d.rate != null ? d.rate + '%' : '–'));
-  var prev = _sbData._prevMonth || {};
-  _sbDelta('sbInqD', d.inq, prev.inq, prev.inq != null, false);
-  _sbDelta('sbRegD', d.reg, prev.reg, prev.regOk, false);
-  _sbDelta('sbRateD', d.rate, prev.rate, prev.rate != null, true);
-}
-function _sbRecompute() {
-  ['today', 'month', 'year', '_prevMonth'].forEach(function (k) {
-    var d = _sbData[k]; if (!d) return;
-    d.rate = (d.inq != null && d.inq > 0 && d.reg != null) ? Math.round(d.reg / d.inq * 1000) / 10 : null;
-  });
-}
-function _sbRenderFunnel(tot) {
-  var el = document.getElementById('sbFunnel'); if (!el) return;
-  var steps = ['문의', '응대', '예약', '방문', '가입'];
-  var html = [];
-  steps.forEach(function (s, i) {
-    var v = (tot && tot[s] != null) ? tot[s].toLocaleString() : '–';
-    html.push('<span class="sb-fstep"><b>' + v + '</b>' + s + '</span>');
-    if (i < steps.length - 1) html.push('<span class="sb-farrow">→</span>');
-  });
-  el.innerHTML = html.join('');
-}
-function _statusBoardLoad() {
-  if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') { renderStatusBoardPeriods(); return; }
-  var now = new Date();
-  var mStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  var lStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  var _prevLen = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
-  var lEnd = new Date(now.getFullYear(), now.getMonth() - 1, Math.min(now.getDate(), _prevLen));
-  var yStart = new Date(now.getFullYear(), 0, 1);
-  var todayStr = _mdashYmd(now), mStr = _mdashYmd(mStart), lStr = _mdashYmd(lStart), lEndStr = _mdashYmd(lEnd), yStr = _mdashYmd(yStart);
-  var mPrefix = mStr.slice(0, 7), yPrefix = yStr.slice(0, 4);
-  _sbData.today = _sbData.today || {}; _sbData.month = _sbData.month || {};
-  _sbData.year = _sbData.year || {}; _sbData._prevMonth = _sbData._prevMonth || {};
-  // 캐시 즉시표시(stale-while-revalidate) — 직전 실측값 먼저 그리고 아래 라이브로 갱신.
-  if (_sbCacheLoad()) { _sbSetRefresh(true); renderStatusBoardPeriods(); if (_sbData.funnel) _sbRenderFunnel(_sbData.funnel); }
-  // ── 문의 (dbRows 재사용, 멤버십 유형만) ──
-  function computeInq() {
-    var t = 0, m = 0, y = 0, l = 0;
-    (dbRows || []).forEach(function (row) {
-      if (!_mdashInScope(row)) return;
-      var ts = String(row.timestamp || ''); var d10 = ts.slice(0, 10);
-      if (d10 === todayStr) t++;
-      if (ts.indexOf(mPrefix) === 0) m++;
-      if (ts.indexOf(yPrefix) === 0) y++;
-      if (d10 >= lStr && d10 <= lEndStr) l++;
-    });
-    _sbData.today.inq = t; _sbData.month.inq = m; _sbData.year.inq = y; _sbData._prevMonth.inq = l;
-    _sbRecompute(); _sbSetRefresh(false); renderStatusBoardPeriods(); _sbCacheSave();
-  }
-  if (dbRows && dbRows.length) computeInq();
-  else { var p = loadDbData(); if (p && p.then) p.then(computeInq).catch(computeInq); else computeInq(); }
-  // ── 가입 (member_registered_list 1회 연간 fetch + 클라 버킷팅 = 4→1 fetch, 체감개선 배944) ──
-  _mdashFetchRegistered(yStr, todayStr, function (dd) {
-    var rows = (dd && dd.data) ? dd.data : null;
-    if (rows) {
-      var rt = 0, rm = 0, rl = 0;
-      rows.forEach(function (r) {
-        var rd = String(r.regDate || '');
-        if (rd === todayStr) rt++;
-        if (rd.indexOf(mPrefix) === 0) rm++;
-        if (rd >= lStr && rd <= lEndStr) rl++;
-      });
-      _sbData.today.reg = rt; _sbData.month.reg = rm; _sbData.year.reg = rows.length; _sbData._prevMonth.reg = rl;
-      _sbData.today.regOk = _sbData.month.regOk = _sbData.year.regOk = _sbData._prevMonth.regOk = true;
-    } else {
-      _sbData.year.reg = (dd && dd.count != null) ? dd.count : null; _sbData.year.regOk = !!dd;   // 폴백(구 응답=count만)
-    }
-    _sbRecompute(); _sbSetRefresh(false); renderStatusBoardPeriods(); _sbCacheSave();
-  });
-  // ── 퍼널 (stage_funnel membership.total, 누적) ──
-  if (typeof GAS_URL !== 'undefined' && GAS_URL !== GAS_PLACEHOLDER) {
-    fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam())
-      .then(function (r) { return r.json(); })
-      .then(function (d) { var mem = (d && d.membership) || (d && d.total ? { total: d.total } : {}); _sbData.funnel = mem.total || {}; _sbRenderFunnel(_sbData.funnel); _sbCacheSave(); })
-      .catch(function () { });
-  }
+  setDim('sumNewCard', false); setDim('sumBookCard', false);
 }
 
 /* ── 이탈 관리(요약+매트릭스+현황+이탈방지 액션 통합 모달) — 구 cpo-guide 카드 이전. 2026-07-07 시포·GM ──
@@ -3441,6 +3173,20 @@ function _lessonFetchRegistry(lsType, from, to, cb){
     .then(function(r){ return r.json(); })
     .then(function(d){ cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
+}
+
+// 강습 현황카드 "신규 등록 현황"(성인+유소년, 금일) — 위 _lessonFetchRegistry(기존 유틸, loadLessonDash·구 전환보드에서도
+// 재사용 중) 그대로 호출만 추가. 신규 GAS 액션 없음. family당 1회만(guarded) — switchFamily가 lesson 진입 시 양쪽 타입 호출.
+// 2026-07-15 GM 지시(전환보드 삭제→현황카드 일원화)로 신설.
+function _lessonComboRegLoad(t) {
+  var st = _lessonState[t];
+  if (!st || st.comboRegLoaded) return;
+  st.comboRegLoaded = true;
+  var today = _mdashYmd(new Date());
+  _lessonFetchRegistry(st.type, today, today, function (d) {
+    var el = document.getElementById(t === 'youth' ? 'lessonComboRegYouth' : 'lessonComboRegAdult');
+    if (el) el.textContent = (d && d.count != null) ? d.count : '–';
+  });
 }
 function loadLessonDash(t){
   var st = _lessonState[t];
@@ -3783,8 +3529,7 @@ function switchFamily(fam) {
   var _btnMem = document.getElementById('btnMembershipDash'), _btnLes = document.getElementById('btnLessonDash');
   if (_btnMem) _btnMem.style.display = (fam === 'lesson') ? 'none' : '';
   if (_btnLes) _btnLes.style.display = (fam === 'lesson') ? '' : 'none';
-  var famEl = document.getElementById('manageFamilyLabel');
-  if (famEl) famEl.textContent = _famName;
+  // 본문 중복 제목(#manageFamilyLabel)은 2026-07-15 GM 지시로 삭제 — 상단 H1(pageTitleTxt)이 이미 그룹명을 표시.
   var titleEl = document.getElementById('pageTitleTxt');   // 상단 H1도 그룹명으로(통합 회원 관리 → 멤버십/강습). 2026-07-02 시포·GM
   if (titleEl) titleEl.textContent = _famName;
   document.title = '웰페리온 ' + _famName.replace('회원관리', '회원 관리') + ' — AI CPO';   // 브라우저 탭 제목도 그룹명 동기화(배299, 2026-07-03 시포)
@@ -3803,6 +3548,7 @@ function switchFamily(fam) {
       lessonInit('adult'); lessonInit('youth');
       if (!_lessonState.adult.memLoaded) lessonRegLoad('adult');
       if (!_lessonState.youth.memLoaded) lessonRegLoad('youth');
+      _lessonComboRegLoad('adult'); _lessonComboRegLoad('youth');   // 신규 등록 현황 카드(2026-07-15 현황카드 일원화)
     }
   } catch(_sfErr){ /* best-effort — family 전환은 이미 확정, 렌더 실패해도 안 되돌림 */ }
   try { switchType(types[0]); } catch(e){}   // 그룹 첫 유형으로 전환(방어)
@@ -3812,16 +3558,17 @@ function switchFamily(fam) {
 // target='adult'(성인강습) | 'youth'(유소년강습). DOM id 접미사 + GAS type 파라미터로 분기.
 var _lessonState = {
   adult: { rows: [], scope: 'year', sport: '', loaded: false, type: '성인강습',
-           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regLoaded: false, memLoaded: false },
+           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regLoaded: false, memLoaded: false, comboRegLoaded: false },
   youth: { rows: [], scope: 'year', sport: '', loaded: false, type: '유소년강습',
-           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regLoaded: false, memLoaded: false }
+           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regLoaded: false, memLoaded: false, comboRegLoaded: false }
 };
 
-// 강습 통합 4카드(성인+유소년, CPO-2026-07-14-LESSON-4CARD) 값 미러 — 기존 lessonCardInq/Mem/Loss/Wait_{adult|youth}
-// 요소 텍스트를 MutationObserver로 지켜보다 그대로 복사만 함(신규 fetch·집계 없음, 표시 전용, 강습 데이터 로직 무변경).
+// 강습 현황카드(성인+유소년, CPO-2026-07-14-LESSON-4CARD → 2026-07-15 GM 지시로 5카드 재구성) 값 미러 — 기존
+// lessonCardMem/Wait/Loss_{adult|youth} 요소 텍스트를 MutationObserver로 지켜보다 그대로 복사만 함(신규 fetch·집계
+// 없음, 표시 전용, 강습 데이터 로직 무변경). 문의 현황(lessonCardInq_*) 미러는 "새 문의" 카드(히어로 소스로 대체)로
+// 교체되며 삭제 — 소스 요소(lessonCardInq_adult/youth) 자체는 lessonLoadStats 쓰기 대상이라 그대로 유지.
 (function(){
   var PAIRS = [
-    ['lessonCardInq_adult','lessonComboInqAdult'], ['lessonCardInq_youth','lessonComboInqYouth'],
     ['lessonCardMem_adult','lessonComboMemAdult'], ['lessonCardMem_youth','lessonComboMemYouth'],
     ['lessonCardWait_adult','lessonComboWaitAdult'], ['lessonCardWait_youth','lessonComboWaitYouth'],
     ['lessonCardLoss_adult','lessonComboLossAdult'], ['lessonCardLoss_youth','lessonComboLossYouth']
@@ -5125,7 +4872,7 @@ function renderChurnActionPanel() {
   // 패널(#churnActionPanel) 폐지 후 모달 안으로 이관 — id·계산 로직 100% 동일, 표시 위치만 변경.
   var body = document.getElementById('capBody');
   var scopeEl = document.getElementById('capScopeNote');
-  if (!body) return;   // 모달을 아직 한 번도 안 열었으면 gdoc-tpl 원본 노드(숨김)뿐 — 계산은 그대로 진행해 _churnRiskEager는 채운다
+  if (!body) return;   // 모달을 아직 한 번도 안 열었으면 gdoc-tpl 원본 노드(숨김)뿐
   if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') { body.innerHTML = '<div class="tap-empty">강습은 이탈방지 데이터가 없습니다(정직 공백).</div>'; if (scopeEl) scopeEl.textContent = ''; return; }   // 강습 family는 이탈방지 데이터 자체가 없음(정직 공백)
   if (_activeScope !== 'valid' || !_activeLoaded) { body.innerHTML = '<div class="tap-empty">유효회원 목록 로드 후 표시됩니다.</div>'; if (scopeEl) scopeEl.textContent = ''; return; }   // 종료·법인 스코프는 개념상 의미 없음(정직 — 억지 표시 금지)
   var rows = _activeRows || [];
@@ -5141,10 +4888,6 @@ function renderChurnActionPanel() {
   ];
   if (_capOpenKey === null && cls.renewSoon.length) _capOpenKey = 'renew';   // 첫 렌더=처리할 게 있으면 갱신임박 먼저 펼침
   body.innerHTML = sections.map(_capSectionHtml).join('');
-  // 오늘 현황 요약 히어로(배754)의 '이탈 위험' 카운트 소스 — 유효회원 사전로드(배299) 직후 항상 계산되는 갱신임박+저이용 합계.
-  // chSigD7/chSigD830(이탈관리 모달 오픈 시에만 채워짐)보다 먼저 준비되는 진짜 라이브값이라 우선 채택.
-  window._churnRiskEager = cls.renewSoon.length + cls.lowUse.length;
-  if (typeof renderSummaryHero === 'function') renderSummaryHero();
 }
 
 /* ─── 멤버십 표 더블클릭 인라인 편집 위임 ─── */
@@ -6222,7 +5965,7 @@ var STATUS_CLASS   = {
   '응대':'contact','가입':'joined','이탈':'lost','보류':'hold','키오스크 완':'joined'
 };
 
-// ── 멤버십 문의목록 캐시(배1037 D4 · stale-while-revalidate). _sbCache* 선례와 동일 패턴. ──
+// ── 멤버십 문의목록 캐시(배1037 D4 · stale-while-revalidate). ──
 var _DB_CACHE_KEY = 'cpo_iq_db_cache_v1';
 var _DB_CACHE_TTL = 5 * 60 * 1000;
 function _dbCacheSave(rows) { try { localStorage.setItem(_DB_CACHE_KEY, JSON.stringify({ v: 1, ts: Date.now(), rows: rows })); } catch (e) {} }
@@ -7498,17 +7241,8 @@ function esc(s) {
     .replace(/"/g,'&quot;');
 }
 
-/* ── 초보자 안내 배너 닫기 기억 (배754, 2026-07-10) ── */
-function dismissBeginnerBanner() {
-  var b = document.getElementById('beginnerBanner');
-  if (b) b.style.display = 'none';
-  try { localStorage.setItem('cpo_beginner_banner_hidden', '1'); } catch(e) {}
-}
-(function(){
-  try { if (localStorage.getItem('cpo_beginner_banner_hidden') === '1') {
-    var b = document.getElementById('beginnerBanner'); if (b) b.style.display = 'none';
-  } } catch(e) {}
-})();
+/* 초보자 안내 배너(#beginnerBanner)·닫기 기억(dismissBeginnerBanner) = 2026-07-15 GM 지시로 배너 자체 삭제되며
+   net-zero. localStorage 키 cpo_beginner_banner_hidden은 과거 값이 남아있어도 아무 코드가 읽지 않아 무해. */
 </script>
 
 <!-- CPO 자율화 두뇌 첫 배(④) — 일/주/월 자동보고 on/off·수신 방·마지막 발신 확인(v1=표시전용).

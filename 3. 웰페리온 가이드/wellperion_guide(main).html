@@ -503,7 +503,7 @@
 
       <!-- 업무&결재 현황 (통합 카드) — 업무 블록 + 결재 블록 한 제목 아래. 이번달(생성일 기준) 집계 (2026-06-17 GM) -->
       <div style="grid-column:1/-1;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span><div><div style="display:flex;align-items:center;gap:7px;"><div style="font-weight:800;font-size:14px;color:var(--text);">업무&amp;결재 현황</div><div style="font-size:10.5px;color:var(--dim);font-weight:600;" id="kpiWaPeriodLabel">이번달 기준</div></div><div style="font-size:10.5px;color:var(--dim);">큰 숫자=이번달 · 작은 회색 "전체 N"=누적 전체 · Work &amp; Approval · AI COO(시우)</div></div></div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px;"><span style="width:28px;height:28px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span><div><div style="display:flex;align-items:center;gap:7px;"><div style="font-weight:800;font-size:14px;color:var(--text);">업무&amp;결재 현황</div><div style="font-size:10.5px;color:var(--dim);font-weight:600;" id="kpiWaPeriodLabel">이번달 기준</div></div><div style="font-size:10.5px;color:var(--dim);">큰 숫자=이번달 · 작은 회색 "전체 N"=누적 전체 · Work &amp; Approval · AI COO(시우)</div></div><div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);white-space:nowrap;">📋 업무 SSOT →</a><a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--warm-bg,rgba(230,180,90,0.14));color:var(--warm);border-radius:20px;text-decoration:none;border:1px solid var(--border);white-space:nowrap;">✍️ 결재 SSOT →</a></div></div>
         <!-- 기간 라벨: 이번달(생성일 기준) — 현재 월 자동(로컬 KST). 일/주/월 셀렉터는 home에 두지 않음(드릴다운은 SSOT 페이지 소관) -->
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="wa-block-grid">
@@ -588,7 +588,7 @@
         </div>
 
         <div style="margin-top:auto;padding-top:10px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M1]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">문의&등록 현황 →</a>
+          <a href="cmo/funnel/마케팅현황대시보드.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">문의&등록 현황 →</a>
           <a href="cpo/member/문의회원.html?manage=membership" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">멤버십 관리 →</a>
           <a href="cpo/member/문의회원.html?manage=lesson" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">강습 관리 →</a>
         </div>
@@ -6412,7 +6412,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <p class="lead">전 부서 공통 운영 체계입니다.</p>
 
     <a href="월간운영계획.html" style="display:flex;align-items:center;gap:14px;margin:14px 0 18px;padding:16px 20px;background:linear-gradient(135deg,#14352a,#1a1a2a);border:1px solid #2fa37a;border-radius:14px;text-decoration:none;color:#fff;">
-      <span style="font-size:28px;flex-shrink:0;">📊</span>
+      <span style="font-size:28px;flex-shrink:0;">🗓️</span>
       <span style="flex:1;">
         <span style="display:block;font-size:16px;font-weight:800;">월간 운영 계획·보고 — 이 달 목표·결과</span>
         <span style="display:block;font-size:12.5px;color:#a8e0c9;margin-top:3px;line-height:1.5;">매출·채용·부서·ERP 등 그 달 운영 목표를 한 곳에. 매출 목표 실측 자동 대비 · 월초 계획/월말 보고 카드 자동.</span>
@@ -10733,7 +10733,7 @@ function crTab(btn, panelId) {
     function buildHomeKpiCard(icon, label, kpi, href){
       var pctColor = kpi.pct>=90?'#6abf7b':kpi.pct>=60?'#e6c84e':'#ED5B3F';
       var undoneColor = kpi.undone>0?'#ED5B3F':'#6abf7b';
-      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+pctColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:block;transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+      return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+pctColor+';border-radius:12px;padding:14px 16px;display:block;box-sizing:border-box;">'
         +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+label+' 점검</div>'
         +'<div style="font-size:24px;font-weight:800;color:'+pctColor+';line-height:1;">'+kpi.pct+'<span style="font-size:13px;font-weight:600;">%</span></div>'
         +'<div style="font-size:10.5px;color:var(--dim);margin:2px 0 8px;">완료율</div>'+'<div style="height:7px;border-radius:99px;background:var(--gray-bg);overflow:hidden;"><i style="display:block;height:100%;border-radius:99px;width:'+kpi.pct+'%;background:'+pctColor+';"></i></div>'
@@ -10742,7 +10742,7 @@ function crTab(btn, panelId) {
         +'<span style="color:#6abf7b;font-weight:600;">완료 '+kpi.done+'</span>'
         +'<span style="color:'+undoneColor+';font-weight:600;">미완료 '+kpi.undone+'</span>'
         +'</div>'
-        +'</a>';
+        +'</div>';
     }
 
     // byGender({m,f}) → {total,done,undone,pct,rounds:[{name,done,total,pct},...]} — GAS today_live 내 byGender 활용
@@ -10946,14 +10946,14 @@ function crTab(btn, panelId) {
           +'</div>';
       }
       var advice=buildCheckAdvice(groups, issueCount, topFreqKey(bi.issues.filter(function(x){return x.type==='수치기준 초과';}), function(x){return x.name;}));
-      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:flex;flex-direction:column;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+      return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">'
         +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
         +primaryHtml
         +'<div style="font-size:9.5px;color:var(--dim);margin-bottom:4px;">그룹별 완료율(상세)</div>'
         +rowsHtml
         +'<div style="flex:1;"></div>'
         +renderCheckAdvice(advice)
-        +'</a>';
+        +'</div>';
     }
 
     // 지원부 이슈 파싱 — today_live 응답의 allIssues(led.cr[k].iss 원문, 이미 반환되던 필드·GAS 무변경) 성별 필터.
@@ -10997,14 +10997,14 @@ function crTab(btn, panelId) {
       }
       if(!rowsHtml) rowsHtml='<div style="font-size:11px;color:var(--dim);padding:4px 0;opacity:0.75;">회차 데이터 없음</div>';
       var advice=buildCheckAdvice(gKpi.rounds, issueCount, topFreqKey(issues, function(x){return x.type;}));
-      return '<a href="'+href+'" target="_blank" style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;text-decoration:none;display:flex;flex-direction:column;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+      return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">'
         +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
         +primaryHtml
         +'<div style="font-size:9.5px;color:var(--dim);margin-bottom:4px;">회차별 완료율(상세)</div>'
         +rowsHtml
         +'<div style="flex:1;"></div>'
         +renderCheckAdvice(advice)
-        +'</a>';
+        +'</div>';
     }
 
     function renderHomeKpi(facilityData, supportData, facilityBoard){
