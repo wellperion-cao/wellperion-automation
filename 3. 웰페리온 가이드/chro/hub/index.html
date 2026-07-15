@@ -676,13 +676,26 @@ function fmtRRNDate(b,g){
   return (c+yy)+"-"+p(mm)+"-"+p(dd);
 }
 // 임직원 표시 셀: "1959-07-21 · 만 66세" (값 없으면 —, 날짜 깨지면 원본 6자리)
+// [수정 2026-07-15 A-5 — admin PII 표시 회귀 수정] 백엔드가 2026-07-14부터 원문 주민번호 패턴을
+// 응답 어디에도 내려주지 않아(role 무관 지혈, 정책 유지) 아래 empRRN() 원문 스캔은 이제 항상
+// 실패한다. 대신 백엔드가 role==="admin"에 한해 안전 파생해 주는 e["생년월일"](YYYY-MM-DD)·
+// e["나이"](정수) 필드를 우선 사용한다. empRRN()/rrnAge()/fmtRRNDate()는 하위호환 폴백으로 남겨두되
+// (다른 곳에서 참조 안 함, 무해) 실제로는 새 필드가 없을 때만 동작한다.
 function empBirthCell(e){
+  if(e && e["생년월일"]){
+    var disp=esc(e["생년월일"]);
+    var a=e["나이"];
+    a=(typeof a==="number")?a:(a!==undefined&&a!==null&&a!==""?parseInt(a,10):null);
+    if(a==null||isNaN(a)) return disp;
+    var tag=(a>=62)?' <span style="color:var(--gold-deep);font-weight:700">(촉탁)</span>':'';
+    return disp+' <span class="t-sub">· 만 '+a+'세</span>'+tag;
+  }
   var r=empRRN(e); if(!r) return "—";
-  var a=rrnAge(r.b,r.g);
-  var disp=fmtRRNDate(r.b,r.g)||esc(r.b);   // 생년월일 날짜 형식화(실패 시 원본 6자리 폴백)
-  if(a==null) return disp;
-  var tag=(a>=62)?' <span style="color:var(--gold-deep);font-weight:700">(촉탁)</span>':'';
-  return disp+' <span class="t-sub">· 만 '+a+'세</span>'+tag;
+  var a2=rrnAge(r.b,r.g);
+  var disp2=fmtRRNDate(r.b,r.g)||esc(r.b);   // 생년월일 날짜 형식화(실패 시 원본 6자리 폴백)
+  if(a2==null) return disp2;
+  var tag2=(a2>=62)?' <span style="color:var(--gold-deep);font-weight:700">(촉탁)</span>':'';
+  return disp2+' <span class="t-sub">· 만 '+a2+'세</span>'+tag2;
 }
 // 채용 채널 값을 개별 채널 토큰 배열로 (콤마/슬래시/、 구분)
 function chTokens(v){
