@@ -1079,3 +1079,234 @@ def test_run_once_live_verify_false_cooldowns_without_park(tmp_path, monkeypatch
     assert saved[0].get("aide_interview_needed") is None  # park 안 됨(큐 무변경)
     state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
     assert "CTO-2026-07-13-A" in state.get("cooldown", {})
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 증분2 로드맵2 — 러너 독립 렌더 실측(render_verify_url + fold_render_into_verdict)
+# 게이트 RUNNER_RENDER_VERIFY 기본 OFF · 불일치=ambiguous→park(비협상)
+# ══════════════════════════════════════════════════════════════════════
+
+# ── parse_verification_result: url 필드 ──
+def test_parse_verify_parses_url_when_present():
+    stdout = (
+        'WELLY_VERIFY: {"verified": true, "kind": "frontend", '
+        '"evidence": "렌더 200", "url": "http://wellperion.com/ko/inquiry/"}\n'
+    )
+    parsed = war.parse_verification_result(stdout)
+    assert parsed["url"] == "http://wellperion.com/ko/inquiry/"
+
+
+def test_parse_verify_url_defaults_empty_when_absent():
+    stdout = 'WELLY_VERIFY: {"verified": true, "kind": "script", "evidence": "pytest ok"}\n'
+    parsed = war.parse_verification_result(stdout)
+    assert parsed["url"] == ""
+
+
+# ── build_orchestration_prompt: url 지시 포함 ──
+def test_prompt_instructs_url_for_frontend():
+    prompt = war.build_orchestration_prompt(_ship(), clevel="cto", nick="시토")
+    assert '"url"' in prompt
+    # 마커 예시 줄이 여전히 러너 파서로 파싱 가능해야 한다(url 필드 추가 후에도 형식 계약 유지).
+    marker_line = next(ln for ln in prompt.splitlines() if war.VERIFY_MARKER in ln and '"verified"' in ln)
+    payload = marker_line.split(war.VERIFY_MARKER, 1)[1].strip()
+    parsed = json.loads(payload)
+    assert "url" in parsed
+    assert "{{" not in prompt
+
+
+# ── _render_verify_enabled: 게이트 기본 OFF ──
+def test_render_verify_enabled_defaults_off(monkeypatch):
+    monkeypatch.delenv(war.RENDER_VERIFY_ENV_VAR, raising=False)
+    assert war._render_verify_enabled() is False
+
+
+def test_render_verify_enabled_on_when_env_1(monkeypatch):
+    monkeypatch.setenv(war.RENDER_VERIFY_ENV_VAR, "1")
+    assert war._render_verify_enabled() is True
+
+
+# ── fold_render_into_verdict: 전 분기(PURE — 가짜 render_result 주입) ──
+def _passed_verdict():
+    return {"passed": True, "ambiguous": False, "honesty_tag": "기본태그", "reason": "통과"}
+
+
+def _frontend_parsed(url="http://wellperion.com/ko/inquiry/"):
+    return {"kind": "frontend", "url": url}
+
+
+def test_fold_disabled_returns_verdict_unchanged():
+    v0 = _passed_verdict()
+    v = war.fold_render_into_verdict(v0, _frontend_parsed(), {"ok": True}, render_enabled=False)
+    assert v == v0
+
+
+def test_fold_not_passed_verdict_unchanged():
+    v0 = {"passed": False, "ambiguous": True, "honesty_tag": "애매", "reason": "r"}
+    v = war.fold_render_into_verdict(v0, _frontend_parsed(), {"ok": True}, render_enabled=True)
+    assert v == v0
+
+
+def test_fold_non_frontend_kind_appends_skip_tag_and_keeps_passed():
+    v0 = _passed_verdict()
+    v = war.fold_render_into_verdict(
+        v0, {"kind": "script", "url": ""}, None, render_enabled=True
+    )
+    assert v["passed"] is True
+    assert "독립 렌더 미수행(비프론트/URL없음)" in v["honesty_tag"]
+
+
+def test_fold_frontend_but_empty_url_appends_skip_tag():
+    v0 = _passed_verdict()
+    v = war.fold_render_into_verdict(
+        v0, {"kind": "frontend", "url": ""}, None, render_enabled=True
+    )
+    assert v["passed"] is True
+    assert "독립 렌더 미수행(비프론트/URL없음)" in v["honesty_tag"]
+
+
+def test_fold_infra_failure_keeps_passed_with_honesty_tag():
+    v0 = _passed_verdict()
+    render_result = {"ok": False, "error": "렌더 실패: TimeoutError", "http_status": None,
+                     "console_errors": [], "selectors_found": {}, "screenshot": None}
+    v = war.fold_render_into_verdict(v0, _frontend_parsed(), render_result, render_enabled=True)
+    assert v["passed"] is True  # 인프라 실패는 완료를 뒤집지 않음(park 아님)
+    assert v["ambiguous"] is False
+    assert "렌더 인프라 실패" in v["honesty_tag"]
+
+
+def test_fold_render_ok_keeps_passed_and_adds_confirm_tag():
+    v0 = _passed_verdict()
+    render_result = {"ok": True, "error": None, "http_status": 200,
+                     "console_errors": [], "selectors_found": {}, "screenshot": "s.png"}
+    v = war.fold_render_into_verdict(v0, _frontend_parsed(), render_result, render_enabled=True)
+    assert v["passed"] is True
+    assert v["ambiguous"] is False
+    assert "러너 독립 렌더 재확인 통과" in v["honesty_tag"]
+
+
+def test_fold_render_mismatch_downgrades_to_ambiguous_park():
+    v0 = _passed_verdict()
+    render_result = {"ok": False, "error": None, "http_status": 500,
+                     "console_errors": ["boom", "bang"], "selectors_found": {"#x": False},
+                     "screenshot": "s.png"}
+    v = war.fold_render_into_verdict(v0, _frontend_parsed(), render_result, render_enabled=True)
+    assert v["passed"] is False  # ★비협상★ 불일치는 자동 완료 신뢰 금지
+    assert v["ambiguous"] is True
+    assert "500" in v["honesty_tag"]
+    assert "2건" in v["honesty_tag"]  # 콘솔에러 2건
+
+
+# ── render_verify_url: 지연 import·예외격리 구조(실제 브라우저·네트워크 실호출 금지) ──
+def test_render_verify_url_empty_url_returns_error_without_import():
+    result = war.render_verify_url("")
+    assert result["ok"] is False
+    assert result["error"] is not None
+    assert result["http_status"] is None
+
+
+def test_render_verify_url_import_failure_isolated_as_error(monkeypatch):
+    # playwright import를 실패하도록 __import__를 가짜 주입 → 예외 대신 error 필드로 반환돼야 함.
+    import builtins
+
+    real_import = builtins.__import__
+
+    def _fake_import(name, *args, **kwargs):
+        if name.startswith("playwright"):
+            raise ImportError("가짜 playwright 미설치")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", _fake_import)
+    result = war.render_verify_url("http://example.com/")
+    assert result["ok"] is False
+    assert "playwright import 실패" in result["error"]
+
+
+# ── run_once: 게이트 OFF(기본)면 render_verify_url 절대 미호출 ──
+def test_run_once_render_gate_off_never_calls_render_verify(tmp_path, monkeypatch):
+    monkeypatch.delenv(war.RENDER_VERIFY_ENV_VAR, raising=False)  # 게이트 OFF
+    queue = [_ship(note="충분히 구체적인 내부 점검 스크립트 patch 절차")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    stdout = ('WELLY_VERIFY: {"verified": true, "kind": "frontend", '
+              '"evidence": "렌더 200", "url": "http://wellperion.com/ko/inquiry/"}\n')
+    _wire_live_success_env(monkeypatch, stdout, records_done_to=queue_path,
+                           done_task_id="CTO-2026-07-13-A")
+
+    def _boom_render(*a, **kw):
+        raise AssertionError("게이트 OFF인데 render_verify_url이 호출됨")
+
+    monkeypatch.setattr(war, "render_verify_url", _boom_render)
+
+    result = war.run_once(
+        clevel="cto", queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping.json"), live=True,
+    )
+    # 게이트 OFF → 기존 동작 불변: frontend 검수 통과 그대로 success True.
+    assert result["success"] is True
+    assert result["render_verify"] is None
+    assert result["auto_review"]["passed"] is True
+
+
+# ── run_once: 게이트 ON + frontend + url → render 호출, 불일치면 park ──
+def test_run_once_render_gate_on_mismatch_parks(tmp_path, monkeypatch):
+    monkeypatch.setenv(war.RENDER_VERIFY_ENV_VAR, "1")  # 게이트 ON
+    queue = [_ship(note="충분히 구체적인 프론트 페이지 렌더 검수 절차")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    stdout = ('WELLY_VERIFY: {"verified": true, "kind": "frontend", '
+              '"evidence": "세션은 렌더 200 주장", "url": "http://wellperion.com/ko/inquiry/"}\n')
+    _wire_live_success_env(monkeypatch, stdout)
+
+    calls = {}
+
+    def _fake_render(url, *a, **kw):
+        calls["url"] = url
+        return {"ok": False, "error": None, "http_status": 500,
+                "console_errors": ["boom"], "selectors_found": {}, "screenshot": "s.png"}
+
+    monkeypatch.setattr(war, "render_verify_url", _fake_render)
+
+    result = war.run_once(
+        clevel="cto", queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping.json"), live=True,
+    )
+    assert calls["url"] == "http://wellperion.com/ko/inquiry/"  # 러너가 세션 URL로 독립 렌더 시도
+    assert result["success"] is False  # ★비협상★ 불일치 → 완료 신뢰 안 함
+    assert result["auto_review"]["ambiguous"] is True
+    assert result["review_parked"] is True  # 사람 확인 대기로 park
+    assert result["render_verify"]["http_status"] == 500
+
+    saved = json.loads(queue_path.read_text(encoding="utf-8"))
+    assert saved[0]["aide_interview_needed"] is True
+
+
+def test_run_once_render_gate_on_ok_keeps_success(tmp_path, monkeypatch):
+    monkeypatch.setenv(war.RENDER_VERIFY_ENV_VAR, "1")  # 게이트 ON
+    queue = [_ship(note="충분히 구체적인 프론트 페이지 렌더 검수 절차")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    stdout = ('WELLY_VERIFY: {"verified": true, "kind": "frontend", '
+              '"evidence": "렌더 200", "url": "http://wellperion.com/ko/inquiry/"}\n')
+    _wire_live_success_env(monkeypatch, stdout, records_done_to=queue_path,
+                           done_task_id="CTO-2026-07-13-A")
+
+    monkeypatch.setattr(
+        war, "render_verify_url",
+        lambda url, *a, **kw: {"ok": True, "error": None, "http_status": 200,
+                               "console_errors": [], "selectors_found": {}, "screenshot": "s.png"},
+    )
+
+    result = war.run_once(
+        clevel="cto", queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping.json"), live=True,
+    )
+    assert result["success"] is True
+    assert result["review_parked"] is False
+    assert "러너 독립 렌더 재확인 통과" in result["auto_review"]["honesty_tag"]
+    assert result["render_verify"]["ok"] is True

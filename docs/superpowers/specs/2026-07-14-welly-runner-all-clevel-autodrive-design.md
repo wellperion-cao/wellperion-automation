@@ -2,7 +2,7 @@
 
 - 작성: 2026-07-14 (시토, GM 요구 배237 phase4 — CTO-2026-07-14-RUNNER-ALL-CLEVEL-AUTODRIVE)
 - 전제: `scripts/welly_auto_runner.py` phase3(가역·저위험·클린트리·재귀방지·모호성 park·역롤백) 이미 라이브(CTO 1개 clevel, RUNNER_LIVE=1).
-- 이 문서 범위: **증분2(설계만) — 자동 검수·자동 기록.** 증분1(전 C-Level 순회 엔진)은 코드로 이미 구현·dry-run 검증 완료(`run_cycle()`, 아래 "구현 완료" 절 참조). 증분2는 구현 보류 — 다음 세션 착수용 설계 노트.
+- 이 문서 범위: **증분2 — 자동 검수·자동 기록(구현 완료).** 증분1(전 C-Level 순회 엔진)은 코드로 이미 구현·dry-run 검증 완료(`run_cycle()`, 아래 "구현 완료" 절 참조). 증분2 로드맵1·3(스크립트 자동 검수·사후감사)은 구현 완료(커밋 f54bcb66), 로드맵2(러너 독립 렌더 실측)도 이번 세션 구현 완료 — 아래 "증분2 — 구현 상태" 절 참조.
 
 ## ★비협상 원칙(GM 2026-07-14 추가 못박기)★
 **모호성이 조금이라도 있으면 무조건 deep-interview 방식(parked-interview 경로)으로 게이트한다 — 절대 모호한 채 자율 구동하지 않는다.** 배 note·요구가 불명확하면(2026-07-13 설계의 `is_ambiguous()` 휴리스틱: note 8자 미만·복수 접근법 키워드·스코프결정 키워드·🛳️크루즈 난이도 중 하나라도 해당) 러너는 자율 구동 대상에서 제외하고 GM 인터뷰 대기(park)로 넘긴다 — **임의 판단·추측 진행 금지.**
@@ -16,7 +16,19 @@
 - CLI: `--clevel all`로 전 clevel 사이클 실행(단일 clevel 경로와 완전 별도 분기 — 기존 `--clevel cto` 등 단일 호출 회귀 0).
 - **`welly_auto_runner.bat`는 이번 세션에서 `--clevel cto` 그대로 유지.** "전면 확산 전 GM go 존중" 원칙 — 엔진은 준비됐지만 예약(07:30 매일) 라이브 스코프를 CTO 1개→7개로 넓히는 것 자체가 별도 승인 대상이라 판단(기존 RUNNER_LIVE=1은 "CTO 1척 자동구동"에 대한 GM go였지 "7개 도메인 동시 자동구동"에 대한 go가 아님). 역롤백/전진 모두 1줄(`.bat`의 `--clevel cto` → `--clevel all`).
 
-## 증분2 — 설계만 (구현 보류)
+## 증분2 — 구현 상태 (2026-07-15 갱신)
+
+- **로드맵1(스크립트류 자동 검수) — 구현 완료(커밋 f54bcb66).** `parse_verification_result()`(세션 stdout의 `WELLY_VERIFY:` JSON 한 줄 파싱)·`build_auto_review_verdict()`(passed/ambiguous/실패 판정)·`run_once()` 배선(`success = execution_ok and verdict["passed"]`).
+- **로드맵3(사후감사) — 구현 완료(커밋 f54bcb66).** `audit_completion_in_queue()`로 세션 선언 완료가 실제 큐에 반영됐는지 대조.
+- **로드맵2(러너 독립 렌더 실측) — 이번 세션 구현 완료.** 러너가 프론트 배의 라이브 URL을 세션 자기보고와 독립적으로 headless 재렌더해 200·콘솔0·셀렉터를 재확인하고 판정에 접어 넣는다.
+  - `WELLY_VERIFY` 계약에 `"url"` 필드 추가(frontend가 검증한 라이브 URL). `parse_verification_result()`가 파싱(`build_orchestration_prompt`가 frontend에 url 포함을 지시).
+  - `render_verify_url(url, required_selectors, evidence_dir, timeout_ms)`: playwright 지연 import(단위테스트는 브라우저 없이 통과) · headless chromium 렌더 · main response HTTP status + 콘솔 error만 수집 + 셀렉터 존재 확인 + 스크린샷(URL 슬러그 파일명) 저장. **어떤 예외도 던지지 않고** 인프라 실패는 `error` 필드로 반환(렌더 성공했지만 조건 미달=`error` None + `ok` False와 구분).
+  - `fold_render_into_verdict(verdict, verify_parsed, render_result, render_enabled)`(PURE): 인프라 실패=passed 유지+정직 태그(park 아님) · 렌더 통과=passed 유지+재확인 태그 · **불일치(세션 성공 주장 vs 렌더 실패)=passed False·ambiguous True로 강등→park(비협상)**.
+  - **게이트 `RUNNER_RENDER_VERIFY` 기본 OFF.** `_render_verify_enabled()`가 `=="1"`일 때만 True. `run_once()`는 `live and _render_verify_enabled() and verdict["passed"]`일 때만 `render_verify_url` 호출 → `fold_render_into_verdict`로 verdict 갱신. **게이트 OFF(기본)면 render_verify_url 절대 미호출 — 기존 88테스트·현행 라이브 동작 100% 불변.** 게이트 활성은 시토가 실측 후 수동으로 켠다(`.bat` 미변경).
+  - 검증 CLI: `--render-verify-url <URL>`(run_once 미가동, 단독 렌더 결과만 출력 — 수동 실측용).
+  - 회귀 테스트: `test_run_once_render_gate_off_never_calls_render_verify`(게이트 OFF 시 미호출·기존 동작 불변)·`test_run_once_render_gate_on_mismatch_parks`(불일치→park)·`fold_render_into_verdict` 전 분기·`parse_verification_result` url 파싱.
+
+## 증분2 — 설계 배경 (원본 로드맵)
 
 ### 문제
 현재 완료 루프는 사람(웰리)이 수동으로 담당: 배 실행 → **실측 검수**(시크릿 크롬 라이브 렌더 등) → **G1/큐 기록**(`clevel_post_action.py --status 완료`). run_cycle()로 실행까지는 무인화됐지만, 이 뒤 두 단계가 여전히 사람 개입 지점 — "GM 반복승인 제거"를 완결하려면 이 둘도 기계화 검토가 필요하다.

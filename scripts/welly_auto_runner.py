@@ -334,19 +334,29 @@ FRONTEND_HONESTY_TAG = (
 )
 _FRONTEND_KINDS = ("frontend", "front", "page", "ui")
 
+# ── 증분2 로드맵2: 러너 독립 렌더 실측 ──
+# 정본: docs/superpowers/specs/2026-07-14-welly-runner-all-clevel-autodrive-design.md (증분2 로드맵2).
+# frontend 배는 세션 자기보고(WELLY_VERIFY)만 믿지 않고, 러너가 라이브 URL을 직접
+# headless 렌더해 200·콘솔0·셀렉터를 재확인한다. 세션 주장과 실제 렌더가 어긋나면
+# 완료를 신뢰하지 않고 ambiguous→park(사람 확인)로 강등한다.
+# ★게이트 기본 OFF★ — RUNNER_RENDER_VERIFY=1일 때만 render_verify_url이 호출된다.
+RENDER_VERIFY_ENV_VAR = "RUNNER_RENDER_VERIFY"
+DEFAULT_EVIDENCE_DIR = os.path.join(_SCRIPTS_DIR, "poc-evidence")
+
 
 def parse_verification_result(stdout: str | None) -> dict:
     """
     PURE — 위임 세션 stdout에서 VERIFY_MARKER로 시작하는 마지막 JSON 한 줄을 파싱한다.
     반환 dict 키: found(bool), verified(bool|None), kind(str|None), evidence(str),
-    subjective_uncertain(bool), raw(str), parse_error(str|None).
+    subjective_uncertain(bool), url(str), raw(str), parse_error(str|None).
+    url = frontend일 때 세션이 검증한 라이브 URL(없으면 "") — 러너 독립 렌더(로드맵2) 대상.
     마커 미검출 → found=False. 마커는 있으나 JSON 파싱 실패/객체 아님/verified 비불리언 →
     found=True + parse_error 또는 verified=None(둘 다 verdict에서 '애매'로 취급).
     여러 줄이면 마지막 마커 줄을 채택(세션이 재출력했을 때 최종본 우선).
     """
     base = {
         "found": False, "verified": None, "kind": None, "evidence": "",
-        "subjective_uncertain": False, "raw": "", "parse_error": None,
+        "subjective_uncertain": False, "url": "", "raw": "", "parse_error": None,
     }
     if not stdout:
         return base
@@ -372,6 +382,7 @@ def parse_verification_result(stdout: str | None) -> dict:
     base["kind"] = data.get("kind")
     base["evidence"] = str(data.get("evidence", ""))
     base["subjective_uncertain"] = bool(data.get("subjective_uncertain", False))
+    base["url"] = str(data.get("url", "") or "")
     return base
 
 
@@ -435,6 +446,140 @@ def audit_completion_in_queue(queue_path: str, task_id: str) -> dict:
     return {"reflected": True, "status": None, "reason": "큐에서 제거됨(아카이브=완료 처리로 간주)"}
 
 
+def _url_slug(url: str) -> str:
+    """URL을 스크린샷 파일명용 안전 슬러그로 변환(index/타임스탬프 대신 URL 기반)."""
+    slug = "".join(c if c.isalnum() else "_" for c in (url or "render"))
+    slug = slug.strip("_") or "render"
+    return slug[:120]
+
+
+def render_verify_url(url, required_selectors=None, evidence_dir=None, timeout_ms=20000) -> dict:
+    """
+    ★로드맵2 핵심★ — 러너가 프론트 배의 라이브 URL을 세션과 독립적으로 headless 렌더해
+    실측 재확인한다(playwright는 함수 내부 지연 import — 단위테스트는 브라우저 없이 돈다).
+
+    headless chromium으로 url 렌더 → main response HTTP status 취득 + 콘솔 error(type=="error")만
+    수집 + required_selectors 각 존재 여부 확인 + 스크린샷을 evidence_dir(기본 poc-evidence)에
+    URL 슬러그 파일명으로 저장.
+
+    반환: {ok, http_status, console_errors, selectors_found, screenshot, error}.
+      ok = (http_status==200) and (console_errors 없음) and (모든 required_selectors 발견).
+
+    ★어떤 예외도 밖으로 던지지 않는다★ — 렌더 인프라 실패(브라우저 미기동·타임아웃·네트워크)는
+    error 필드에 사유를 담아 반환한다(그때 나머지는 None/빈값). 이 "인프라 실패"(error 있음)와
+    "렌더는 됐으나 200 아님/콘솔에러/셀렉터 없음"(error None + ok False)은 fold에서 다르게 취급된다.
+    """
+    required_selectors = list(required_selectors or [])
+    evidence_dir = evidence_dir or DEFAULT_EVIDENCE_DIR
+    base_fail = {
+        "ok": False, "http_status": None, "console_errors": [],
+        "selectors_found": {}, "screenshot": None, "error": None,
+    }
+    if not url:
+        return {**base_fail, "error": "url 비어있음 — 렌더 대상 없음"}
+    try:
+        from playwright.sync_api import sync_playwright  # noqa: E402  (지연 import — 브라우저 없이 단위테스트 가능)
+    except Exception as e:  # noqa: BLE001
+        return {**base_fail, "error": f"playwright import 실패: {type(e).__name__}: {e}"}
+
+    console_errors: list[str] = []
+    http_status = None
+    selectors_found: dict = {}
+    screenshot_path = None
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            try:
+                ctx = browser.new_context(
+                    viewport={"width": 1280, "height": 900}, ignore_https_errors=True,
+                )
+                page = ctx.new_page()
+                page.on(
+                    "console",
+                    lambda msg: console_errors.append(msg.text) if msg.type == "error" else None,
+                )
+                response = page.goto(url, wait_until="networkidle", timeout=timeout_ms)
+                http_status = response.status if response is not None else None
+                for sel in required_selectors:
+                    try:
+                        selectors_found[sel] = page.query_selector(sel) is not None
+                    except Exception:  # noqa: BLE001
+                        selectors_found[sel] = False
+                try:
+                    os.makedirs(evidence_dir, exist_ok=True)
+                    screenshot_path = os.path.join(evidence_dir, f"render_verify_{_url_slug(url)}.png")
+                    page.screenshot(path=screenshot_path)
+                except Exception:  # noqa: BLE001
+                    screenshot_path = None
+            finally:
+                browser.close()
+    except Exception as e:  # noqa: BLE001  — 렌더 인프라 실패는 예외로 던지지 않고 error로 반환
+        return {**base_fail, "error": f"렌더 실패: {type(e).__name__}: {e}"}
+
+    all_selectors_ok = all(selectors_found.get(s) for s in required_selectors)
+    ok = (http_status == 200) and (not console_errors) and all_selectors_ok
+    return {
+        "ok": ok, "http_status": http_status, "console_errors": console_errors,
+        "selectors_found": selectors_found, "screenshot": screenshot_path, "error": None,
+    }
+
+
+def fold_render_into_verdict(verdict: dict, verify_parsed: dict, render_result: dict | None,
+                             render_enabled: bool) -> dict:
+    """
+    PURE(playwright 호출 없음 — render_result를 인자로 받음) — 러너 독립 렌더 결과를 자동 검수
+    verdict에 접어 넣는다. 원 verdict를 복사해 갱신 후 반환(원본 불변).
+
+    ★비협상 원칙★ 세션이 성공 보고했는데 러너 독립 렌더가 실패(불일치)하면 절대 자동 완료로
+    신뢰하지 않고 ambiguous→park로 강등한다.
+
+    분기:
+      - render_enabled False → verdict 그대로(변경 0).
+      - verdict가 애초에 passed 아님 → 그대로(렌더 검수 대상 아님).
+      - kind가 frontend 계열 아님 또는 url 없음 → 그대로 + honesty_tag에 미수행 사유 표기.
+      - render_result 인프라 실패(error 있음) → passed 유지 + honesty_tag에 인프라 실패 표기(park 아님).
+      - render_result.ok True → passed 유지 + honesty_tag에 러너 독립 렌더 재확인 통과 표기.
+      - render_result.ok False & error None(불일치) → passed=False·ambiguous=True로 강등(park), reason 갱신.
+    """
+    v = dict(verdict)
+    if not render_enabled:
+        return v
+    if not v.get("passed"):
+        return v
+
+    kind = (verify_parsed.get("kind") or "").strip().lower()
+    url = (verify_parsed.get("url") or "").strip()
+    if kind not in _FRONTEND_KINDS or not url:
+        v["honesty_tag"] = (v.get("honesty_tag") or "") + " · 독립 렌더 미수행(비프론트/URL없음)"
+        return v
+
+    render_result = render_result or {}
+    if render_result.get("error"):
+        v["honesty_tag"] = (v.get("honesty_tag") or "") + \
+            " · 독립 렌더 미수행(렌더 인프라 실패, 세션 자기보고만)"
+        return v
+
+    if render_result.get("ok"):
+        v["honesty_tag"] = (v.get("honesty_tag") or "") + \
+            " · 러너 독립 렌더 재확인 통과(200·콘솔0·셀렉터)"
+        return v
+
+    # 렌더는 됐으나 조건 미달(error None + ok False) = 세션 주장과 불일치 → 강등·park.
+    n_console = len(render_result.get("console_errors") or [])
+    status = render_result.get("http_status")
+    v["passed"] = False
+    v["ambiguous"] = True
+    v["honesty_tag"] = (
+        f"세션은 성공 보고했으나 러너 독립 렌더 불일치(status={status}·콘솔에러 {n_console}건) — "
+        "완료 신뢰 금지·park"
+    )
+    v["reason"] = (
+        f"러너 독립 렌더 재확인 불일치(status={status}·콘솔에러 {n_console}건·셀렉터 "
+        f"{render_result.get('selectors_found')}) — 세션 성공 주장과 어긋나 자동 완료 신뢰 금지, park"
+    )
+    return v
+
+
 def build_orchestration_prompt(ship: dict, clevel: str = "cto", nick: str = "시토") -> str:
     """
     선택된 배 1척을 실행할 headless 세션에 줄 '웰리 오케스트레이션' 프롬프트를 조립한다.
@@ -462,9 +607,13 @@ def build_orchestration_prompt(ship: dict, clevel: str = "cto", nick: str = "시
         "완료로 신뢰되지 않고 park된다):\n"
         f"   {VERIFY_MARKER} "
         '{"verified": true, "kind": "script|frontend", '
-        '"evidence": "<파일·로그·스크린샷 경로/요약>", "subjective_uncertain": false}\n'
+        '"evidence": "<파일·로그·스크린샷 경로/요약>", "url": "<검증한 라이브 URL>", '
+        '"subjective_uncertain": false}\n'
         "   - verified: 검증 성공 여부(불리언). 증거 없이 true 금지.\n"
         "   - kind: 스크립트/백엔드=script, 프론트/페이지=frontend.\n"
+        "   - url: frontend면 네가 검증한 라이브 URL을 반드시 담아라(러너가 이 URL을 독립적으로 "
+        "재렌더해 200·콘솔0·셀렉터를 재확인한다 — 네 주장과 어긋나면 완료가 park된다). "
+        "스크립트류는 url 불필요(빈 문자열 또는 생략).\n"
         "   - frontend는 렌더 실측(200·콘솔0·셀렉터)까지만 자동 검수 대상이며, 디자인·톤 적합성은 "
         "subjective_uncertain=true로 표기해 사람 확인 몫으로 남긴다.\n"
         "3) 반드시 네가 만든/바꾼 파일만 명시 경로로 git add 후 커밋한다. "
@@ -490,6 +639,11 @@ def _is_live() -> bool:
 
 def _guard_active() -> bool:
     return os.environ.get(GUARD_ENV_VAR, "0") == "1"
+
+
+def _render_verify_enabled() -> bool:
+    """로드맵2 러너 독립 렌더 게이트 — 기본 OFF, RUNNER_RENDER_VERIFY=1일 때만 True."""
+    return os.environ.get(RENDER_VERIFY_ENV_VAR, "0") == "1"
 
 
 # ── 클린트리 가드: 상시 자동생성 노이즈 allowlist ──
@@ -831,6 +985,16 @@ def run_once(
     execution_ok = ok and bool(new_commit)
     verify_parsed = parse_verification_result(stdout_text)
     verdict = build_auto_review_verdict(verify_parsed, committed=bool(new_commit))
+
+    # ── 로드맵2: 러너 독립 렌더 실측(게이트 RUNNER_RENDER_VERIFY, 기본 OFF) ──
+    # frontend 배이고 검수 통과 상태일 때만, 러너가 라이브 URL을 세션과 독립적으로 재렌더해
+    # 200·콘솔0·셀렉터를 재확인한다. 세션 주장과 어긋나면 fold가 verdict를 ambiguous→park로 강등.
+    # ★게이트 OFF(기본)면 render_verify_url은 절대 호출되지 않는다 — 기존 동작 100% 불변.★
+    render_result = None
+    if live and _render_verify_enabled() and verdict["passed"]:
+        render_result = render_verify_url(verify_parsed.get("url", ""))
+        verdict = fold_render_into_verdict(verdict, verify_parsed, render_result, render_enabled=True)
+
     # success는 이제 '실행+커밋'뿐 아니라 '자동 검수 통과'까지 요구한다(검수 게이트).
     success = execution_ok and verdict["passed"]
 
@@ -858,6 +1022,16 @@ def run_once(
             _mark_cooldown(state, ship["task_id"], reason="사후감사 불일치 — 선언 완료가 큐 미반영")
     _save_state(state, state_path)
 
+    render_summary = None
+    if render_result is not None:
+        render_summary = {
+            "ok": render_result.get("ok"),
+            "http_status": render_result.get("http_status"),
+            "console_errors": len(render_result.get("console_errors") or []),
+            "screenshot": render_result.get("screenshot"),
+            "error": render_result.get("error"),
+        }
+
     result = {
         "mode": "live", "ship": ship, "prompt": prompt, "executed": True,
         "success": success, "commit": new_commit, "before_commit": before_commit,
@@ -865,6 +1039,7 @@ def run_once(
         "changed_files": changed_files,
         "auto_review": verdict, "verify_parsed": verify_parsed,
         "post_audit": post_audit, "review_parked": review_parked,
+        "render_verify": render_summary,
     }
     _append_log(
         {
@@ -873,6 +1048,7 @@ def run_once(
             "review_passed": verdict["passed"], "review_ambiguous": verdict["ambiguous"],
             "review_parked": review_parked,
             "post_audit_reflected": (post_audit or {}).get("reflected"),
+            "render_verify": render_summary,
         },
         log_path,
     )
@@ -962,6 +1138,11 @@ def _print_run_once_result(result: dict, label: str | None = None) -> None:
         if result.get("post_audit"):
             print(f"{prefix}사후감사: reflected={result['post_audit'].get('reflected')} "
                   f"({result['post_audit'].get('reason')})")
+    if result.get("render_verify"):
+        rr = result["render_verify"]
+        print(f"{prefix}러너 독립 렌더: ok={rr.get('ok')} status={rr.get('http_status')} "
+              f"콘솔에러={rr.get('console_errors')} screenshot={rr.get('screenshot')} "
+              f"error={rr.get('error')}")
     if result.get("commit"):
         print(f"{prefix}커밋: {result['commit']} (역롤백: git revert {result['commit']})")
 
@@ -984,10 +1165,28 @@ def main() -> int:
         help="parked-interview 배(모호 판정으로 park된 배) 목록만 마크다운 표로 출력. "
              "run_once()와 독립 경로 · 큐 읽기전용(웰리 부팅·수동 확인용)",
     )
+    parser.add_argument(
+        "--render-verify-url", default=None,
+        help="주어진 URL을 render_verify_url로 단독 헤드리스 렌더해 결과만 출력(run_once 미가동). "
+             "실제 ERP 페이지 수동 실측용.",
+    )
     args = parser.parse_args()
 
     if args.interview_worklist:
         print_interview_worklist()
+        return 0
+
+    if args.render_verify_url:
+        rr = render_verify_url(args.render_verify_url)
+        print("=" * 60)
+        print(f"[render_verify_url] {args.render_verify_url}")
+        print(f"  ok            : {rr['ok']}")
+        print(f"  http_status   : {rr['http_status']}")
+        print(f"  console_errors: {len(rr['console_errors'])}건 {rr['console_errors'][:5]}")
+        print(f"  selectors     : {rr['selectors_found']}")
+        print(f"  screenshot    : {rr['screenshot']}")
+        print(f"  error         : {rr['error']}")
+        print("=" * 60)
         return 0
 
     live = False if args.force_dry_run else None
