@@ -1387,5 +1387,19 @@
     "artifact": "WP 라이브 발효 선행검증(시크릿 실측)서 발견: 습득물 등록(/ko/lost-found-register/)에\n인라인된 gate.js 주석의 사용예시 리터럴 </script> 가 WP 렌더 시 <script> 태그를\n조기 종료 → gate IIFE 고아화 → 본문 가림 스타일 미적용 + \"Invalid or unexpected token\"\nJS 에러. 고객/직원 노출 페이지 결함이라 발효 전 즉시 수리(net-zero). (CLI ad-hoc · 커밋 61af2bb0)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "61af2bb07a18ef729b430186a7870e54625d4299"
+  },
+  {
+    "task_id": "COO-2026-07-15-ADHOC-e92da0a0",
+    "clevel": "coo",
+    "title": "[시우] 종합접수처 전역 nav 3링크 제거 + 이메일 블록 중복 제거",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1111,
+    "artifact": "- 발행한 3페이지(inquiry-form 8460·lost-found 8462·lost-found-register 8464)가\n  테마 '새 페이지 자동 메뉴 추가'로 전역 메뉴(59 한국어 메인)에 편입돼\n  home·inquiry·reception 등 전 페이지 상단에 site-wide 노출된 문제.\n  → wordpress_admin_playwright.py에 remove-menu 모드 신설(object-id 정확매칭·\n    카운트 가드·스크린샷·저장). 3항목 제거 + auto-add 체크박스 OFF(재발방지).\n- re (CLI ad-hoc · 커밋 e92da0a0)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e92da0a0220085354c034c8aa8d08269900c5170"
   }
 ]
