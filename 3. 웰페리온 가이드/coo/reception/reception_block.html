@@ -100,6 +100,21 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
   border-radius:20px;font-size:13px;font-weight:600
 }
 
+/* ── 습득 분실물 현황 보기 링크(공개 갤러리) ── */
+.wlp-recept .lf-link{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;margin-bottom:14px;
+  background:var(--accent-bg);
+  border:1.5px solid rgba(176,141,87,0.28);
+  border-radius:14px;transition:border-color .15s,box-shadow .15s
+}
+.wlp-recept .lf-link:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(176,141,87,.15)}
+.wlp-recept .lf-link .lf-ico{font-size:22px;line-height:1;flex-shrink:0}
+.wlp-recept .lf-link .lf-txt{flex:1;display:flex;flex-direction:column;gap:2px}
+.wlp-recept .lf-link .lf-txt b{font-size:14.5px;font-weight:700;color:var(--accent);letter-spacing:-.2px}
+.wlp-recept .lf-link .lf-txt span{font-size:12px;color:#888;line-height:1.4}
+.wlp-recept .lf-link .lf-arrow{font-size:20px;color:var(--accent);flex-shrink:0;line-height:1}
+
 /* ── Card ── */
 .wlp-recept .card{
   background:var(--paper);
@@ -310,6 +325,13 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
       <p class="brand-desc">불편하신 사항이나 건의사항을 알려주세요.<br>담당 부서가 신속히 확인·처리합니다.</p>
       <div class="loc-chip" id="locChip" style="display:none"></div>
     </div>
+
+    <!-- ── 습득 분실물 현황 보기 (공개 갤러리 링크) ── -->
+    <a class="lf-link" href="https://wellperion-cao.github.io/wellperion-automation/coo/reception/lost_found_gallery.html" target="_blank" rel="noopener">
+      <span class="lf-ico">🔍</span>
+      <span class="lf-txt"><b>습득 분실물 현황 보기</b><span>클럽에서 보관 중인 습득물을 확인하세요</span></span>
+      <span class="lf-arrow">&rsaquo;</span>
+    </a>
 
     <!-- ── Form card ── -->
     <div class="card">
