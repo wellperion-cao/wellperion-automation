@@ -1800,5 +1800,19 @@
     "note": "[2026-07-15 GM 지시·시포(754 세션) 조사 후 웰리 위임] GM: 항로 중 진행/상시 건은 자율현황에 넘겨. GM 선택=웰리 일괄 위임(G1은 웰리 직접소유·타 C-Level 배는 각 담당이라 시포 직접변경=침범). 실측(Explore): 넘기기=①큐 status→STANDBY(wellperion_guide(main).html:8860이 STANDBY를 항로에서 자동 제외, ship64가 쓰는 관례)+②module_registry front_card.window=자율현황으로 표시. 둘 다 코드0·JSON만. 자율현황.html은 라이브 _queue.json 안읽고 module_registry.json(돌아가는 자동화)·로그/_queue_archive(자율로 한 일)만 읽음. STANDBY 강등 대상(전부 IN_PROGRESS): cto906·cto970·ceo237·cmo106·cmo747. 경계=cmo834(설계/빌드, 웰리 판단). 이미 STANDBY(불필요): cpo754·coo64. 등록부 상태: cto906·970=이미 window=자율현황 twin(=진짜 이중표현·STANDBY만으로 완결) / cmo106·747=twin window가 M1·M2라 자율현황창 미표시(window 조정은 시모 판단) / ceo237=twin 없음→자율현황 카드 신설 필요. 부활방지: 각 배 STANDBY시 next에 STANDBY—항로 미표시·재개 트리거 자연어+note에 GM 지시 이관 명시. cpo754 자율보고 모듈은 bot_id=null 미발효라 지금 자율현황 표시=부정직→웰리 통합 롤아웃 발효시 함께.",
     "next": "👉 웰리: 5배(cto906·970·ceo237·cmo106·747) status→STANDBY+next 자연어, ceo237 자율현황 카드 신설, cmo twin window는 시모와 정합. 웰리 G1 직접소유 권한 일괄. cmo834는 웰리 판단.",
     "ship_no": 1047
+  },
+  {
+    "task_id": "CTO-2026-07-15-ADHOC-9cd0d7c8",
+    "clevel": "cto",
+    "title": "[시토] 자율현황 전체 알림 스케줄 한눈 보드 — 무엇·언제·누구·건강 라이브 가시화",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1049,
+    "artifact": "GM deep-interview 확정: 알림 흐름 현행 유지(무변경), 목표='무엇이 언제 누구에게 가는지·잘 가고 있나' 한눈 확인으로 초반 불안 해소.\n- 읽기전용 보드 1개 추가(② 돌아가는 자동화 상단). 발송 로직·시점·크론·notify_spec 무접촉.\n- 10개 알림 행(카톡3·텔레그램7): kakao_last_send.json + erp_status.json(automation_health·systems 하트비트) 라이브 배선.\n- 건강 정직표기: 🟢 최근 정상 / 🔴 실패 / ⚪ 측정불가(GAS 트리거·조건부 발송· (CLI ad-hoc · 커밋 9cd0d7c8)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "9cd0d7c828448e53bdcedb9bf211b4046e7830ba"
   }
 ]
