@@ -3785,7 +3785,7 @@ window._regAssign = function(id, category) {
     <!-- 마케팅 현황 요약 카드 (2026-07-14 · O1 운영 모듈 현황 패턴 복제 · status/kpi_values.json 재사용) -->
     <section id="m1-status-hub" style="margin:18px 0;">
       <h3 style="font-size:1.05rem;margin:0 0 10px;">📊 마케팅 현황</h3>
-      <div id="m1-status-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;">
+      <div id="m1-status-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;">
         <div style="color:var(--dim);">모듈 불러오는 중…</div>
       </div>
     </section>
@@ -3795,17 +3795,17 @@ window._regAssign = function(id, category) {
       var DASH_HREF = "cmo/funnel/마케팅현황대시보드.html";
       var CACHE_KEY = "m1_kpi_strip_v1";
       function card(label, value, tag){
-        return '<a href="'+DASH_HREF+'" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'
-          + '<div style="font-size:.82rem;color:var(--dim);margin-bottom:8px;">'+label+'</div>'
-          + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;">'+value+'</div>'
-          + '<div style="font-size:.72rem;color:var(--dim);margin-top:6px;">'+tag+'</div></a>';
+        return '<a href="'+DASH_HREF+'" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:14px;padding:22px 20px;background:var(--paper);">'
+          + '<div style="font-size:.92rem;color:var(--dim);margin-bottom:11px;">'+label+'</div>'
+          + '<div style="font-size:2rem;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;">'+value+'</div>'
+          + '<div style="font-size:.78rem;color:var(--dim);margin-top:8px;">'+tag+'</div></a>';
       }
       function render(inq, join, rate, tag){
         var el = document.getElementById('m1-status-cards'); if(!el) return;
         el.innerHTML = card('이번달 문의', inq, tag)
           + card('이번달 가입', join, tag)
           + card('이번달 전환율', rate, tag)
-          + '<a href="'+DASH_HREF+'" target="_blank" style="display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--accent);font-weight:700;font-size:.85rem;border:1px dashed var(--border);border-radius:12px;padding:14px;">전체 보기 →</a>';
+          + '<a href="'+DASH_HREF+'" target="_blank" style="display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--accent);font-weight:700;font-size:.95rem;border:1px dashed var(--border);border-radius:14px;padding:22px 20px;">전체 보기 →</a>';
       }
       function loadHub(){
         // 링크는 즉시 렌더(클릭 가능) · 지표는 직전 캐시 표시 후 백그라운드 갱신(stale-while-revalidate) — O1 운영 모듈 현황과 동일 패턴
