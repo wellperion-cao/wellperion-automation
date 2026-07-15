@@ -1942,5 +1942,19 @@
     "artifact": "GM 승인(진행) → @wellperion 인스타 발행(토스트 확인) → ig_publish_verify 실게시물\n캡션 대조 일치 → 발행완료 도장·post_url 백필(https://www.instagram.com/p/Day7fIBEphf/).\nL03/L04 실게시물 확인 후 완료. (CLI ad-hoc · 커밋 7b1afce2)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "7b1afce284a7e402264563e6d46a4e706b4eef50"
+  },
+  {
+    "task_id": "CEO-2026-07-15-ADHOC-3deb0e02",
+    "clevel": "ceo",
+    "title": "[웰리] 시설부 일일점검 회수·시각 정직화(board 실데이터) — 23시 카톡",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1059,
+    "artifact": "- monthly sessionCount(라운드종류=1 고정, 항상 1) 대신 board.store.submissions\n  실제 제출 건수를 회수로 사용(_fetch_facility_board 헬퍼 추가·daily_scheduler 동일 패턴).\n- 회차별 시각·점검자 표출(seq 순, ≤4회 상세 / 초과 시 콤팩트 나열).\n- stale monthly 20/26(77%) 제거 → 이벤트 중심(회수·이상, GM 2026-07-13) 재구성.\n- 기준이탈은 monthly outOfRange 유지, 이상 건수를 헤더에 병기(회수와  (CLI ad-hoc · 커밋 3deb0e02)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "3deb0e0288e5c0ab128206886c736990fc9b2cdf"
   }
 ]
