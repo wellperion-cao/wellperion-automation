@@ -303,6 +303,32 @@
   .ob-del{margin-left:auto;background:none;border:none;color:var(--ink-faint);font-size:11px;
     font-weight:600;cursor:pointer;padding:3px 8px;border-radius:7px;font-family:inherit;transition:color .12s,background .12s}
   .ob-del:hover{color:var(--red);background:var(--red-bg)}
+
+  /* ============ 평가·포상 탭 — 평가 실시 콘솔 (2026-07-14, 가시성·위계 정리) ============ */
+  .ev-console{background:linear-gradient(180deg,#fffdf7,var(--surface));
+    border:1px solid #e6d3a2;border-radius:14px;padding:18px 20px 16px;
+    box-shadow:0 1px 2px rgba(31,30,27,.04),0 5px 16px rgba(138,111,63,.07)}
+  .ev-console-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .ev-console-hd .ev-pill{flex:0 0 auto;font-size:10px;font-weight:700;letter-spacing:.02em;
+    color:var(--gold-deep);background:#f6efdd;border:1px solid #e6d3a2;border-radius:20px;padding:3px 10px}
+  .ev-console-hd .ev-note{flex:1;min-width:180px;font-size:12px;color:var(--ink-soft);line-height:1.45}
+  .ev-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(236px,1fr));gap:13px}
+  .ev-groups>*{min-width:0}
+  .ev-group{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:13px 13px 6px}
+  .ev-group-hd{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;
+    letter-spacing:.05em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:11px}
+  .ev-group-hd .ev-gm{flex:0 0 auto;width:6px;height:6px;border-radius:2px;
+    background:linear-gradient(180deg,var(--gold),var(--gold-deep))}
+  .ev-tool{display:block;width:100%;text-align:left;background:var(--surface);
+    border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:8px;
+    cursor:pointer;font-family:inherit;transition:border-color .12s,box-shadow .12s,transform .12s}
+  .ev-tool:hover{border-color:var(--gold);box-shadow:0 4px 12px rgba(138,111,63,.11);transform:translateY(-1px)}
+  .ev-tool:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .ev-tool .ev-tt{font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.3}
+  .ev-tool .ev-td{font-size:11px;color:var(--ink-soft);margin-top:3px;line-height:1.45}
+  .ev-tool.primary{border-color:var(--gold);background:linear-gradient(180deg,#fffaef,var(--surface))}
+  .ev-tool.primary .ev-tt{color:var(--gold-deep)}
+  @media(max-width:680px){.ev-groups{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1471,10 +1497,18 @@ function buildHrCard(a){
   var applyD=(typeof fmtD==="function"&&typeof dval==="function")?fmtD(dval(a,"지원일")):(a["지원일"]||"");
   var gc={A:"#3c7a4a",B:"#2f6d9e",C:"#b07d24",D:"#c1702c",E:"#b14238",F:"#7c7a73"};
   var gcol=gc[String(a["면접 평점"]||"").charAt(0)]||"#7c7a73";
+  // [추가 2026-07-15 A-5] 인사카드 주소 옆 웰페리온까지 직선거리(km) — 카드가 열릴 때(팝업 문서 내) 비동기 조회.
+  //   주소 "미기재"거나 없으면 요소·스크립트 자체를 생성하지 않음(호출 실패 시도 동일 — 표시만 비어 있음, 카드 렌더는 막지 않음).
+  var geoSpan="", geoScript="";
+  if(addr && addr!=="미기재"){
+    geoSpan="<span id='geoDist' style='color:#8a6f3f;font-size:8pt;margin-left:6px'></span>";
+    var __geoPayload=JSON.stringify({action:"geo-distance",password:SESSION_PW,address:addr});
+    geoScript="<script>(function(){try{fetch("+JSON.stringify(NOTION_FN)+",{method:'POST',body:"+JSON.stringify(__geoPayload)+"}).then(function(x){return x.json();}).then(function(r){if(r&&r.ok&&typeof r.km==='number'){var el=document.getElementById('geoDist');if(el)el.textContent=' · 직선 약 '+r.km+'km';}}).catch(function(){});}catch(e){}})();<\/script>";
+  }
   var CSS="@page{size:A4;margin:11mm}*{box-sizing:border-box}body{font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;font-size:9pt;line-height:1.45;color:#1f1e1b;margin:0;padding:10mm 0;background:#f4f3ef}.page{width:190mm;max-width:100%;margin:0 auto;background:#fff;padding:11mm 12mm;box-shadow:0 0 10px rgba(0,0,0,.08);border-radius:4px;page-break-inside:avoid}@media print{body{background:#fff;padding:0}.page{box-shadow:none;border-radius:0;padding:0;width:auto}.no-print{display:none!important}}h1{font-size:15pt;border-bottom:2px solid #a98a52;padding-bottom:5px;margin:0 0 4px}.subtitle{color:#6c6961;font-size:9.5pt;margin-bottom:10px}h2{font-size:10.5pt;color:#8a6f3f;border-left:3px solid #a98a52;padding-left:8px;margin:13px 0 6px}h2:first-of-type{margin-top:4px}.idrow{display:flex;gap:14px;align-items:flex-start;margin:6px 0 4px}.photo{width:30mm;height:38mm;object-fit:cover;border:1px solid #d8d4c8;border-radius:6px;flex:0 0 auto;background:#eee}table{width:100%;border-collapse:collapse;margin:0;font-size:9pt}th,td{border:1px solid #d8d4c8;padding:4px 8px;text-align:left;vertical-align:top}th{background:#f8f5ee;font-weight:600;width:62px;white-space:nowrap;color:#6c6961}.grade{display:inline-block;padding:3px 14px;border-radius:4px;font-weight:700;color:#fff;font-size:12pt}.memo{font-size:9pt;line-height:1.5;padding:11px 13px;background:#faf9f6;border-radius:4px;border:1px solid #efece4}.rs-h{font-weight:700;color:#8a6f3f;font-size:9.5pt;margin:9px 0 3px;padding-bottom:2px;border-bottom:1px solid #e7ddc8}.rs-h:first-child{margin-top:0}.rs-p{margin:3px 0;font-size:8.8pt;color:#1f1e1b;line-height:1.45}.rs-li{margin:2px 0 2px 13px;text-indent:-9px;font-size:8.8pt;color:#3a3833;line-height:1.45}.rs-row{display:flex;gap:8px;margin:3px 0;font-size:8.8pt}.rs-k{flex:0 0 88px;font-weight:700;color:#6c6961}.rs-v{flex:1}.foot{margin-top:14px;padding-top:7px;border-top:1px solid #efece4;font-size:8pt;color:#9a978e;display:flex;justify-content:space-between}.print-btn{position:fixed;top:14px;right:14px;background:#a98a52;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:600;cursor:pointer;font-size:11pt}";
-  var rows="<tr><th>성명</th><td>"+esc(a["지원자명"]||"")+"</td><th>생년월일</th><td>"+esc(birth)+"</td></tr><tr><th>지원 포지션</th><td colspan='3'>"+esc(a["지원 포지션"]||"")+"</td></tr><tr><th>연락처</th><td>"+esc(a["연락처"]||"")+"</td><th>이메일</th><td>"+esc(a["이메일"]||"")+"</td></tr><tr><th>주소</th><td colspan='3'>"+esc(addr)+"</td></tr><tr><th>학력</th><td>"+esc(edu)+"</td><th>총 경력</th><td>"+esc(careerTot)+"</td></tr><tr><th>지원일</th><td>"+esc(applyD)+"</td><th>전형 단계</th><td>"+esc(a["전형 단계"]||"")+"</td></tr><tr><th>면접 일정</th><td>"+esc(iv)+"</td><th>담당 면접관</th><td>"+esc(a["담당 면접관"]||"—")+"</td></tr>";
+  var rows="<tr><th>성명</th><td>"+esc(a["지원자명"]||"")+"</td><th>생년월일</th><td>"+esc(birth)+"</td></tr><tr><th>지원 포지션</th><td colspan='3'>"+esc(a["지원 포지션"]||"")+"</td></tr><tr><th>연락처</th><td>"+esc(a["연락처"]||"")+"</td><th>이메일</th><td>"+esc(a["이메일"]||"")+"</td></tr><tr><th>주소</th><td colspan='3'>"+esc(addr)+geoSpan+"</td></tr><tr><th>학력</th><td>"+esc(edu)+"</td><th>총 경력</th><td>"+esc(careerTot)+"</td></tr><tr><th>지원일</th><td>"+esc(applyD)+"</td><th>전형 단계</th><td>"+esc(a["전형 단계"]||"")+"</td></tr><tr><th>면접 일정</th><td>"+esc(iv)+"</td><th>담당 면접관</th><td>"+esc(a["담당 면접관"]||"—")+"</td></tr>";
   var d=new Date().toISOString().slice(0,10);
-  return "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+esc(a["지원자명"]||"")+" — 인사카드</title><style>"+CSS+"</style></head><body><button class='print-btn no-print' onclick='window.print()'>🖨 인쇄 / PDF 저장</button><div class='page'><h1>웰페리온 채용 인사카드</h1><div class='subtitle'>"+esc(a["지원 포지션"]||"")+" · 작성일 "+d+"</div><h2>1. 지원자 정보</h2><div class='idrow'>"+"<img src='"+(photo||PLACEHOLDER_PHOTO)+"' alt='지원자 사진' class='photo' onerror=\"this.onerror=null;this.src='"+PLACEHOLDER_PHOTO+"'\"/>"+"<table>"+rows+"</table></div><h2>2. 이력서 요약 (잡코리아·자기소개서 기반)</h2><div class='memo'>"+fmtMemoG(memo)+"</div><h2>3. AI 서류 평가 — 종합 등급</h2><p style='font-size:11pt;margin:7px 0'>종합 등급: <span class='grade' style='background:"+gcol+"'>"+esc(a["면접 평점"]||"미평가")+"</span> &nbsp;&nbsp; <span style='color:#6c6961;font-size:9pt'>(인재상별 평가 근거·강점·확인사항은 위 '이력 요약'에 포함)</span></p>"+buildOnboJourneySection_(a["지원자명"]||"")+"<div class='foot'><span>평가일자: "+d+" · AI CHRO 자동 생성</span></div></div></body></html>";
+  return "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+esc(a["지원자명"]||"")+" — 인사카드</title><style>"+CSS+"</style></head><body><button class='print-btn no-print' onclick='window.print()'>🖨 인쇄 / PDF 저장</button><div class='page'><h1>웰페리온 채용 인사카드</h1><div class='subtitle'>"+esc(a["지원 포지션"]||"")+" · 작성일 "+d+"</div><h2>1. 지원자 정보</h2><div class='idrow'>"+"<img src='"+(photo||PLACEHOLDER_PHOTO)+"' alt='지원자 사진' class='photo' onerror=\"this.onerror=null;this.src='"+PLACEHOLDER_PHOTO+"'\"/>"+"<table>"+rows+"</table></div><h2>2. 이력서 요약 (잡코리아·자기소개서 기반)</h2><div class='memo'>"+fmtMemoG(memo)+"</div><h2>3. AI 서류 평가 — 종합 등급</h2><p style='font-size:11pt;margin:7px 0'>종합 등급: <span class='grade' style='background:"+gcol+"'>"+esc(a["면접 평점"]||"미평가")+"</span> &nbsp;&nbsp; <span style='color:#6c6961;font-size:9pt'>(인재상별 평가 근거·강점·확인사항은 위 '이력 요약'에 포함)</span></p>"+buildOnboJourneySection_(a["지원자명"]||"")+"<div class='foot'><span>평가일자: "+d+" · AI CHRO 자동 생성</span></div></div>"+geoScript+"</body></html>";
 }
 function openPrintView(pageId, noQ){
   var a=(DB.appl||[]).find(function(x){return normId(x.url)===pageId;});
@@ -2333,13 +2367,7 @@ function perfCriteriaCard(){
     '<div class="kv2"><b>Calibration</b><span>분포는 참고선(강제배분 아님) — 행동근거 있으면 이탈 등급도 인정</span></div>'+
     '<div class="kv2"><b>직무성과 KPI(50%)</b><span>전 직군 평가자 주관 채점(직군별 KPI 수기·BARS). 자동 대체(프리필) 없음.</span></div>'+
     '<div class="kv2"><b>운영부 가산점(≤+10)</b><span>운영부(업무카드 보유자)는 관리자 업무평가 화면에서 완성도(%)·성과점수(1~5) 입력 → 중요도가중 성취도 → 가산점 자동 산출. 최종점수=기본 100점+가산점, 등급 재산정(상향 가능). 비운영부는 가산점 0.</span></div>'+
-    (SESSION_ROLE==="admin"?'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'+
-      '<button class="btn-sm" onclick="workEvalStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 관리자 업무평가(운영부 가산점 산출)</button>'+
-      '<button class="btn-sm" onclick="perfEvalStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 정기 성과평가 평가지 작성</button>'+
-      '<button class="btn-sm" onclick="selfEvalStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 자기평가 작성(선제출·등급 미산출)</button>'+
-      '<button class="btn-sm" onclick="leaderEvalSubmitStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 리더십평가 제출(부서원·익명)</button>'+
-      '<button class="btn-sm" onclick="leaderReviewStart()" style="color:var(--gold-deep);border-color:var(--gold);font-weight:700">＋ 리더십 집계·열람(관리자·k익명)</button>'+
-      '</div>':'')+
+    (SESSION_ROLE==="admin"?'<div class="muted" style="margin-top:11px;padding-top:11px;border-top:1px solid var(--line-soft)">평가지 작성·제출·집계는 상단 <b style="color:var(--gold-deep)">평가 실시</b> 콘솔에서 진행합니다.</div>':'')+
     '</div>';
 }
 function perfEvalStart(){ openPerfEval("",""); }
@@ -2978,6 +3006,30 @@ function openLeaderReview(){
   D.getElementById("lrLoad").onclick=loadIndex;
   loadIndex();
 }
+function evalConsole(){
+  if(SESSION_ROLE!=="admin") return "";
+  function tool(fn,cls,t,d){
+    return '<button type="button" class="ev-tool'+(cls?(" "+cls):"")+'" onclick="'+fn+'">'+
+      '<div class="ev-tt">'+t+'</div><div class="ev-td">'+d+'</div></button>';
+  }
+  return '<div class="ev-console">'+
+    '<div class="ev-console-hd"><span class="ev-pill">관리자 전용</span>'+
+      '<span class="ev-note">평가지를 열어 작성·제출·집계합니다. 저장 결과는 아래 <b>평가 기록</b>에 반영됩니다.</span></div>'+
+    '<div class="ev-groups">'+
+      '<div class="ev-group"><div class="ev-group-hd"><span class="ev-gm"></span>평가 실시</div>'+
+        tool("perfEvalStart()","primary","정기 성과평가 평가지","3기둥 100점 → A~F 등급 산출 · 저장 시 인사평가 반영")+
+        tool("selfEvalStart()","","자기평가 (선제출)","본인 작성 · 등급 미산출, 팀장 평가에 갭 병렬표시")+
+      '</div>'+
+      '<div class="ev-group"><div class="ev-group-hd"><span class="ev-gm"></span>관리자 도구</div>'+
+        tool("workEvalStart()","","관리자 업무평가","운영부 완성도·성과 → 가산점(≤+10) 자동 산출")+
+      '</div>'+
+      '<div class="ev-group"><div class="ev-group-hd"><span class="ev-gm"></span>리더십평가 · 상향</div>'+
+        tool("leaderEvalSubmitStart()","","리더십평가 제출","부서원 → 팀장 · 익명 6항목 제출")+
+        tool("leaderReviewStart()","","리더십 집계·열람","관리자 전용 · k-익명 요약(응답 3명 이상)")+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
 function renderEval(){
   var html='<div class="sec-title">인사평가 · 포상</div>';
   if(ERR.eval){setPanel("eval",html+errCard("인사평가 DB","eval"));return;}
@@ -2989,7 +3041,8 @@ function renderEval(){
     kpi("평가 기록",ev.length+'<small> 건</small>',"정규직 평가 대상")+
     kpi("포상 대상",rewarded+'<small> 건</small>',"")+'</div>';
   if(excludedN){html+='<div class="muted" style="margin-bottom:10px">파트너 전환 등으로 제외된 '+excludedN+'건은 표시에서 숨겼습니다.</div>';}
-  html+='<div class="sec-title">평가 방식 · 기준</div>'+criteriaSection();
+  if(SESSION_ROLE==="admin"){ html+='<div class="sec-title">평가 실시</div>'+evalConsole(); }
+  html+='<div class="sec-title">평가 제도 · 기준</div>'+criteriaSection();
   html+='<div class="sec-title">평가 기록</div>';
   if(!ev.length){
     setPanel("eval",html+'<div class="card">'+emptyState("표시할 인사평가 기록이 없습니다.","◇")+'</div>');return;

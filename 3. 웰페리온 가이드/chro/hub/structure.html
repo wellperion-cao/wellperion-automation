@@ -367,7 +367,8 @@
     <div class="item">
       <div class="item-head"><span class="badge bg-a1">A-1 이력서담당자</span><h3>지원자 등록</h3></div>
       <p>평가를 마친 지원자를 백엔드에 등록합니다. <b>필수 필드 계약</b>: 이름 · 포지션 · 연결공고 · 단계("서류 검토") · 지원경로 · 지원일 · 연락처 · 이메일 · 메모 + <b>종합등급(grade)까지 전부 포함</b>(누락 시 ERP에 "미평가"로 표시). 지원경로는 출처가 명확할 때만 기입, 불명이면 "미기재". 등록 후 필드 단위 라운드트립 대조로 검증합니다.</p>
-      <div class="tags"><span class="tag act">register-applicant</span><span class="tag db">db:appl</span><span class="tag tool">1.5초 간격</span></div>
+      <p style="margin-top:8px">(2026-07-15 신설) 인사카드 팝업에서 지원자 주소 옆에 <b>웰페리온(서빙고로 413)까지 직선거리(km)</b>를 표시합니다 — 카드가 열릴 때 <span class="tag act">geo-distance</span> 액션을 비동기 호출해 지오코딩 + 하버사인 계산(기준점 좌표는 Script Properties에 1회 고정, 주소별 결과는 해시 캐시). 주소 미기재 · 조회 실패 시 표시를 생략합니다(비파괴, 좌표는 응답에 미포함).</p>
+      <div class="tags"><span class="tag act">register-applicant</span><span class="tag act">geo-distance</span><span class="tag db">db:appl</span><span class="tag tool">1.5초 간격</span></div>
     </div>
 
     <div class="item">
