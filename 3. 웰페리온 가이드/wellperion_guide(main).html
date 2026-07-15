@@ -701,7 +701,7 @@
 
       <!-- 5. 마케팅 -->
       <div class="erp-mod" style="--mc:#ED5B3F;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">📣</span><div><div style="font-weight:800;font-size:15.5px;">마케팅 <span style="font-size:11px;color:var(--dim);font-weight:600;">Marketing</span></div><div style="font-size:11px;color:var(--dim);">실무 책임 · 김남욱 GM</div><div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">🤖 AI CMO (시모)</div></div></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">📣</span><div><div style="font-weight:800;font-size:15.5px;">마케팅 <span style="font-size:11px;color:var(--dim);font-weight:600;">Marketing</span></div><div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">🤖 AI CMO (시모)</div></div></div>
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">콘텐츠 제작</a>
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=M1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">채널·검수·발행</a>
@@ -721,7 +721,7 @@
 
       <!-- 7. 기술·자동화 -->
       <div class="erp-mod" style="--mc:#9c8ec4;background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--mc);border-radius:14px;padding:18px 18px 16px;transition:transform .14s,box-shadow .14s,border-color .14s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 22px rgba(0,0,0,0.18)';this.style.borderColor='var(--mc)';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--border)';this.style.borderTopColor='var(--mc)';">
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">🛠️</span><div><div style="font-weight:800;font-size:15.5px;">기술·자동화 <span style="font-size:11px;color:var(--dim);font-weight:600;">IT</span></div><div style="font-size:11px;color:var(--dim);">실무 책임 · 김남욱 GM</div><div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">🤖 AI CTO (시토)</div></div></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">🛠️</span><div><div style="font-weight:800;font-size:15.5px;">기술·자동화 <span style="font-size:11px;color:var(--dim);font-weight:600;">IT</span></div><div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">🤖 AI CTO (시토)</div></div></div>
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">기술 인프라</a>
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=T2]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">자율 작업 현황</a>
@@ -3782,6 +3782,43 @@ window._regAssign = function(id, category) {
       <div style="font-size:13px;color:var(--dim);line-height:1.65;">콘텐츠를 <b style="color:var(--text);">만들고(제작) → 검수·승인 → 5채널 발행 → 현황·전환</b>까지, CMO 마케팅을 한 곳에서 관리합니다. 담긴 것 = <b style="color:var(--text);">① 제작 프로세스</b> · <b style="color:var(--text);">② 검수·발행</b>(구 M3 통합) · <b style="color:var(--text);">③ 현황·전환</b>(구 M2 연결) · <b style="color:var(--text);">④ 채널 규칙·기타</b>. 아래로 내려가며 필요한 부분만 보세요.</div>
     </div>
 
+    <!-- 상단 목차(TOC) — 2026-07-15 배747 M1 과밀해소 · GM 결정=순서유지+상단 목차만(DOM 재배치 없음). 현행 16섹션 앵커 점프. -->
+    <nav id="m1-toc" aria-label="M1 목차" style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:14px 18px;margin:6px 0 16px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--accent);margin-bottom:10px;">목차 · 눌러서 이동</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;">
+        <a href="#m1-status-hub" onclick="return m1Jump(event,'m1-status-hub')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📊 마케팅 현황</a>
+        <a href="#m1-inquiry-entry" onclick="return m1Jump(event,'m1-inquiry-entry')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🔗 문의 진입점</a>
+        <a href="#m1-channels" onclick="return m1Jump(event,'m1-channels')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📡 채널 현황</a>
+        <a href="#m1-review" onclick="return m1Jump(event,'m1-review')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📨 콘텐츠 검수 대기</a>
+        <a href="#m1-loop" onclick="return m1Jump(event,'m1-loop')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🌟 북극성 제작 루프</a>
+        <a href="#m1-pillars" onclick="return m1Jump(event,'m1-pillars')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🏛️ CMO 운영 6대 기둥</a>
+        <a href="#m1-review-process" onclick="return m1Jump(event,'m1-review-process')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">✅ 채널별 검수 프로세스</a>
+        <a href="#m1-completion-ssot" onclick="return m1Jump(event,'m1-completion-ssot')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🏁 제작 완료 종료 절차</a>
+        <a href="#m1-reporting" onclick="return m1Jump(event,'m1-reporting')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🗓️ 정기 보고</a>
+        <a href="#m1-homepage" onclick="return m1Jump(event,'m1-homepage')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📐 홈페이지 구성</a>
+        <a href="#m1-publish-scripts" onclick="return m1Jump(event,'m1-publish-scripts')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🚀 5채널 발행 방식</a>
+        <a href="#m1-folder-naming" onclick="return m1Jump(event,'m1-folder-naming')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📁 표준 폴더 명명</a>
+        <a href="#m1-folder-structure" onclick="return m1Jump(event,'m1-folder-structure')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">🗂️ 콘텐츠 폴더 구조</a>
+        <a href="#m1-output-split" onclick="return m1Jump(event,'m1-output-split')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📤 output 5채널 분리</a>
+        <a href="#m1-notation" onclick="return m1Jump(event,'m1-notation')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📋 표기 규칙</a>
+        <a href="#m1-guide" onclick="return m1Jump(event,'m1-guide')" style="display:inline-flex;align-items:center;text-decoration:none;font-size:12px;line-height:1.3;color:var(--text);border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--paper);white-space:nowrap;">📑 안내 가이드</a>
+      </div>
+    </nav>
+    <script>
+    // M1 목차 점프 — 대상이 접힌 <details> 안이면 조상 details를 모두 펼친 뒤 스크롤(재배치 없음)
+    function m1Jump(ev, id){
+      if(ev) ev.preventDefault();
+      var el=document.getElementById(id); if(!el) return false;
+      var p=el.parentNode;
+      while(p && p.nodeType===1){
+        if(p.tagName && p.tagName.toLowerCase()==='details') p.open=true;
+        p=p.parentNode;
+      }
+      el.scrollIntoView({behavior:'smooth', block:'start'});
+      return false;
+    }
+    </script>
+
     <!-- 마케팅 현황 요약 카드 (2026-07-14 · O1 운영 모듈 현황 패턴 복제 · status/kpi_values.json 재사용) -->
     <section id="m1-status-hub" style="margin:18px 0;">
       <h3 style="font-size:1.05rem;margin:0 0 10px;">📊 마케팅 현황</h3>
@@ -3840,7 +3877,7 @@ window._regAssign = function(id, category) {
     <!-- ▽ 📡 채널 현황·검수 (2026-07-14 M1 재정리: 구 M3 통합 영역에서 상단으로 이동 · 중복 그룹헤딩·발행후현황 라벨 제거 — 상단 라이브 현황 스트립이 대체) -->
     <p class="lead" style="margin-top:32px;border-top:2px solid var(--accent);padding-top:24px;">콘텐츠 제작부터 검수, 자동 업로드까지 한 곳에서 관리하는 전용 흐름입니다. 채널별 특성을 미리 학습해 기록하고, 제목만 입력하면 슬라이드와 캡션이 생성되며, 검수 후 승인 시 자동 발행됩니다. <span style="color:var(--dim);">(1단계는 골격·흐름 UI. 실제 자동 생성·업로드 풀가동은 다음 단계.)</span></p>
 
-    <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">📡</span>채널 현황</h3>
+    <h3 id="m1-channels" style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">📡</span>채널 현황</h3>
     <p style="font-size:12.5px;color:var(--dim);margin:-6px 0 10px;">채널별 발행 파이프라인·톤·규칙은 각 행의 <strong>▸ 상세</strong>를 펼쳐 확인합니다 (채널당 하나의 자리 — 중복 없음).</p>
     <table>
       <tr><th>채널</th><th>URL / 계정</th><th>역할</th><th>상태</th><th style="width:90px">발행 규칙</th></tr>
@@ -4139,7 +4176,7 @@ window._regAssign = function(id, category) {
     </script>
 
     <!-- ⑤ 검수 큐 (G1에서 이관) — 계정 2칸 분리 (2026-06-04 GM) · 퍼널 한눈에 정적표 제거(2026-07-14 · 상단 라이브 마케팅 현황 스트립이 실측치로 대체) -->
-    <h3><span class="ico">📨</span>콘텐츠 검수 대기 <span id="cmopub-review-count" style="font-size:12px;color:var(--dim);font-weight:400;"></span></h3>
+    <h3 id="m1-review"><span class="ico">📨</span>콘텐츠 검수 대기 <span id="cmopub-review-count" style="font-size:12px;color:var(--dim);font-weight:400;"></span></h3>
     <p style="font-size:13px;color:var(--dim);margin-bottom:12px;">생성된 콘텐츠를 검수하고 승인/반려합니다. 승인 결정은 GitHub 검수 큐에 기록됩니다. <span style="color:var(--dim-soft);">(G1 김남욱 페이지에서 이 페이지로 이관)</span></p>
 
     <!-- 계정 2칸 탭 (2026-06-04 GM: 개인/웰페리온 분리 → 2026-06-12 좌=웰페리온/우=AI 재배치) -->
@@ -4265,7 +4302,7 @@ window._regAssign = function(id, category) {
 
     <!-- △ /채널 현황·검수 (IG 발행 파이프라인 SSOT = 위 채널 현황 표 ▸ 인스타그램(@wellperion) 행 토글로 이전 · 2026-07-14) -->
 
-    <h3><span class="ico">🌟</span>북극성 지향 제작 루프 <span style="font-size:12px;color:var(--dim);font-weight:400;">(전 C-Level 공통 표준 · 정본 = 헌법 한 장 / 부트셋업)</span></h3>
+    <h3 id="m1-loop"><span class="ico">🌟</span>북극성 지향 제작 루프 <span style="font-size:12px;color:var(--dim);font-weight:400;">(전 C-Level 공통 표준 · 정본 = 헌법 한 장 / 부트셋업)</span></h3>
     <p>모든 콘텐츠는 <strong>한 번에 끝내지 않고</strong> 북극성(노출 → 회원 전환 엔진)을 향해 이 루프를 돈다. 웰리가 각 콘텐츠 배의 단계를 추적하고, 완료 시 다음 단계를 자동 촉발한다.</p>
     <div class="callout" style="margin-bottom:14px;">🌟 북극성 → 기획·설계 → 초안 → ① 기능·UI/UX 디자인 → ② 고도화 → ③ 단순화 → ④ 실무 진행·피드백 → ⑤ 피드백 AI 검토 후 반영설계 &nbsp;↻&nbsp; ⑥ ①~⑤ 루프</div>
     <table>
@@ -4282,7 +4319,7 @@ window._regAssign = function(id, category) {
     </table>
     <div class="callout tip"><strong>품질의 핵심 = ② 고도화·③ 단순화·⑤ AI 검토를 각각 별도 패스로.</strong> 한 번에 끝내는 '원샷' 금지. 현재 병목 = ⑤·⑥(발행 후 반응 → 다음 기획 자동 반영 고리) — 시모 품질의 다음 한 걸음.</div>
 
-    <h3><span class="ico">🏛️</span>CMO 운영 6대 기둥</h3>
+    <h3 id="m1-pillars"><span class="ico">🏛️</span>CMO 운영 6대 기둥</h3>
     <table>
       <tr><th>#</th><th>기둥</th><th>내용</th><th>상태</th><th>지금 가능?</th></tr>
       <tr><td>1</td><td><strong>채널별 검수 프로세스</strong></td><td>아래 <strong>✅ 채널별 검수 프로세스</strong> 참조 (흐름·채널별 체크포인트)</td><td>운영 중</td><td>✅ 지금 가능</td></tr>
@@ -4293,7 +4330,7 @@ window._regAssign = function(id, category) {
       <tr><td>6</td><td><strong>정기 보고</strong></td><td>아래 <strong>🗓️ 정기 보고</strong> 참조</td><td>신설 예정</td><td>❌ 아직 안 됨<br><span style="font-size:11.5px;color:var(--dim);">임시: 주간 채널 수치 수동 캡처 후 CEO 보고</span></td></tr>
     </table>
 
-    <h3><span class="ico">✅</span>채널별 검수 프로세스</h3>
+    <h3 id="m1-review-process"><span class="ico">✅</span>채널별 검수 프로세스</h3>
     <p>공통 흐름: <strong>기획·초안(CMO) → 가공완료 → CEO 검수 게이트(브랜드·톤·사실) → 발행 → 후처리 검증</strong>. 반려 시 CMO 재가공 후 '가공완료' 복귀.</p>
     <table>
       <tr><th>채널</th><th>검수 포인트</th></tr>
@@ -4314,7 +4351,7 @@ window._regAssign = function(id, category) {
     </table>
     <div class="callout"><strong>기본 종료 = 텔레그램 알림 + M3 검수 대기 등록.</strong> 앞으로 GM이 "검수 큐에 올려라"라고 따로 지시하지 않아도, 제작 완료 시 ①+②가 기본이다. 발행 승인 게이트는 <a href="#" onclick="event.preventDefault();chOpenAndScroll('ig-brand');" style="color:var(--accent);font-weight:700;text-decoration:none;">위 채널 현황 ▸ 인스타그램(@wellperion) 행 ▸ 발행 파이프라인</a> 참조(비가역).</div>
 
-    <h3><span class="ico">🗓️</span>정기 보고</h3>
+    <h3 id="m1-reporting"><span class="ico">🗓️</span>정기 보고</h3>
     <ul>
       <li><strong>매주</strong> — 채널별 발행·문의·상담 건수, 주간 콘텐츠 캘린더</li>
       <li><strong>매월</strong> — 채널 성과·문의→등록 전환·마케팅 ROI, CEO 보고</li>
@@ -4325,7 +4362,7 @@ window._regAssign = function(id, category) {
     <details class="toggle">
       <summary style="font-weight:700;">▸ 홈페이지 구성</summary>
       <div class="toggle-body">
-    <h3><span class="ico">📐</span>홈페이지 구성</h3>
+    <h3 id="m1-homepage"><span class="ico">📐</span>홈페이지 구성</h3>
     <table>
       <tr><th>섹션</th><th>내용</th></tr>
       <tr><td><strong>Hero</strong></td><td>"A Day, Well Completed. 하루의 완성, 웰페리온" 메인 슬로건 + CTA</td></tr>
@@ -4340,7 +4377,7 @@ window._regAssign = function(id, category) {
       <summary style="font-weight:700;">▸ 발행 규칙·자동화 상세</summary>
       <div class="toggle-body">
     <!-- (a) 5채널 발행 방식 — 스크립트 레퍼런스 -->
-    <h3><span class="ico">🚀</span>5채널 발행 방식 — 스크립트 레퍼런스</h3>
+    <h3 id="m1-publish-scripts"><span class="ico">🚀</span>5채널 발행 방식 — 스크립트 레퍼런스</h3>
     <table>
       <tr><th>채널</th><th>발행 방식</th><th>스크립트 / 명령</th><th>비고</th></tr>
       <tr><td>인스타그램</td><td>✅ 자동 발행</td><td><code>scripts/instagram_upload_playwright.py</code></td><td>M3 [승인] 후 봇이 자동 실행</td></tr>
@@ -4363,10 +4400,10 @@ window._regAssign = function(id, category) {
     <details class="toggle">
       <summary style="font-weight:700;">▸ 폴더·표기 규칙</summary>
       <div class="toggle-body">
-    <h3><span class="ico">📁</span>표준 폴더 명명</h3>
+    <h3 id="m1-folder-naming"><span class="ico">📁</span>표준 폴더 명명</h3>
     <pre>instagram/{YYMMDD_콘텐츠명}/</pre>
 
-    <h3><span class="ico">🗂️</span>콘텐츠 폴더 구조</h3>
+    <h3 id="m1-folder-structure"><span class="ico">🗂️</span>콘텐츠 폴더 구조</h3>
     <table>
       <tr><th>폴더/파일</th><th>용도</th></tr>
       <tr><td><code>Image/원본</code></td><td>원본 사진·이미지</td></tr>
@@ -4376,7 +4413,7 @@ window._regAssign = function(id, category) {
       <tr><td><code>output</code></td><td>5채널 분리 발행물 (아래 참조)</td></tr>
     </table>
 
-    <h3><span class="ico">📤</span>output 5채널 분리</h3>
+    <h3 id="m1-output-split"><span class="ico">📤</span>output 5채널 분리</h3>
     <table>
       <tr><th>채널</th><th>내용</th></tr>
       <tr><td><code>output/instagram</code></td><td>IG 슬라이드 (1:1 · 가이드 카드)</td></tr>
@@ -4386,7 +4423,7 @@ window._regAssign = function(id, category) {
       <tr><td><code>output/danggn</code></td><td>당근 채널 (동네생활·이웃 톤)</td></tr>
     </table>
 
-    <h3><span class="ico">📋</span>표기 규칙</h3>
+    <h3 id="m1-notation"><span class="ico">📋</span>표기 규칙</h3>
     <ul>
       <li><strong>1p 메인 슬라이드는 영구 템플릿</strong> — 65/35 분할·W로고·사업부 컬러칩·영문대제목·한글부제목·일자장소·풋터</li>
       <li><strong>IG 스쿼시 콘텐츠</strong> — collaborator 3개 강제 태깅 (@wellperion, @wellperion_squash, @glass_court)</li>
@@ -4404,7 +4441,7 @@ window._regAssign = function(id, category) {
       </div>
     </details>
 
-    <h3><span class="ico">📑</span>안내 가이드 (예약·이용)</h3>
+    <h3 id="m1-guide"><span class="ico">📑</span>안내 가이드 (예약·이용)</h3>
     <p>회원·문의자용 표준 안내문. <strong>예약제</strong>(투어·상담 사전 예약 필수) · <strong>Q&amp;A</strong> · <strong>주차</strong> · <strong>이용</strong> · <strong>요금</strong>.</p>
     <!-- ① 예약 -->
     <details open>
