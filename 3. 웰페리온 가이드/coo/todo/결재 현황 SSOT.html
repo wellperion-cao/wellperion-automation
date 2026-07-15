@@ -11,15 +11,20 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-4';
+window.__PV='20260715-6';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
     var u=new URL(location.href);
-    if(u.searchParams.has('pv')) return;
+    /* (2026-07-15 나우열M) 기존 has('pv') 무조건 스킵 → 방문기록의 ?pv=옛버전 주소로 들어오면
+       캐시된 옛 페이지에서 영원히 탈출 못 하는 구멍. 항상 최신 검사하되, 같은 주소로의
+       재이동만 차단해 무한 새로고침(2026-06-04 CDN 불일치 루프)을 방지한다. */
     fetch(location.pathname,{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){
       var m=t.match(/window\.__PV='([^']+)'/);
-      if(m&&m[1]&&m[1]!==window.__PV){ u.searchParams.set('pv',m[1]); location.replace(u.toString()); }
+      if(!m||!m[1]||m[1]===window.__PV) return;
+      u.searchParams.set('pv',m[1]);
+      var target=u.toString();
+      if(target!==location.href) location.replace(target);
     }).catch(function(){});
   }catch(e){}
 })();
@@ -1292,33 +1297,38 @@ function closeDocViewer() {
   document.body.style.overflow = '';
   _docViewerTaskId = null;
 }
-/* 뷰어 인쇄 — 결재 페이지의 카드 인쇄 모드와 간섭하지 않도록 인쇄 전용 창에서 문서만 출력
-   (인쇄모드 방식이 결재보고서 체계와 얽혀 '페이지 안 페이지·여러 장' 증상 → 전용 창으로 교체 · 2026-07-15 나우열M) */
+/* 뷰어 인쇄 — 숨김 프레임에 문서만 담아 인쇄 (팝업 차단·페이지 인쇄모드와 완전 무관 · 2026-07-15 나우열M)
+   기존 새 창(window.open) 방식이 팝업 차단 환경에서 무력화 → iframe 방식으로 교체. */
 function printDocViewer() {
   const paper = document.getElementById('docViewerPaper');
   if (!document.getElementById('docViewerOverlay').classList.contains('show') || !paper) return;
-  const w = window.open('', '_blank', 'width=900,height=1000');
-  if (!w) { alert('팝업이 차단되어 있습니다. 주소창의 팝업 허용 후 다시 시도해 주세요.'); return; }
+  const old = document.getElementById('docPrintFrame');
+  if (old) old.remove();
+  const f = document.createElement('iframe');
+  f.id = 'docPrintFrame';
+  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+  document.body.appendChild(f);
   const docTitle = (document.getElementById('docViewerTitle').textContent || '문서').replace(/</g, '&lt;');
-  w.document.write('<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>' + docTitle + '</title>'
+  const d = f.contentDocument || f.contentWindow.document;
+  d.open();
+  d.write('<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>' + docTitle + '</title>'
     + '<style>@page{margin:12mm;size:A4}'
     + 'body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#111;font-size:14px;line-height:1.7;margin:0}'
     + 'table{border-collapse:collapse;width:100%;margin:6px 0}td,th{border:1px solid #bbb;padding:5px 8px;vertical-align:top}'
     + 'img{max-width:100%;height:auto}p{margin:4px 0}h1{margin:10px 0 4px}h2{margin:14px 0 6px}'
     + '*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
     + '</style></head><body>' + paper.innerHTML + '</body></html>');
-  w.document.close();
-  w.focus();
+  d.close();
   setTimeout(function () {
-    try {
-      w.addEventListener('afterprint', function () { try { w.close(); } catch (e) {} });
-      w.print();
-    } catch (e) {}
+    try { f.contentWindow.focus(); f.contentWindow.print(); }
+    catch (e) { alert('인쇄 실행 실패: ' + e.message); }
   }, 350);
 }
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && document.getElementById('docViewerOverlay').classList.contains('show')) closeDocViewer();
 });
+/* 화면에 빌드 버전 표시 — 어떤 버전이 로딩됐는지 즉시 확인용 (2026-07-15 나우열M) */
+try { var _vs = document.getElementById('headerSub') || document.querySelector('.header .sub'); if (_vs) _vs.textContent += ' · 빌드 ' + window.__PV; } catch (e) {}
 /* 인쇄용 본문 추출 — 문서 자체 머리부 제거로 보고서 틀과 이중 방지 (업무 SSOT와 동일) */
 function docPrintBody(html) {
   try {

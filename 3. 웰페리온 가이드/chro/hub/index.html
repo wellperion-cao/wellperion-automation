@@ -1524,6 +1524,14 @@ function openPrintView(pageId, noQ){
   var __pi=String(memo||"").replace(/\[자동 수집[^\]]*\]/g,"");
   var birth=""; var __bm=__pi.match(/(\d{4})\s*년\s*생/) || __pi.match(/생년\s*[:：]\s*(\d{4})\s*년/); if(__bm){ birth=__bm[1]+"년생"; } else { var __bm3=__pi.match(/생년월일[:：]\s*([0-9.\-\/]{6,10})/); if(__bm3){ birth=__bm3[1]; } else { var __bm4=__pi.match(/(\d{4}-\d{2}-\d{2})/); if(__bm4) birth=__bm4[1]; } } if(birth){ var __by=parseInt((String(birth).match(/\d{4}/)||[0])[0],10); var __yMax=new Date().getFullYear()-14; if(!(__by>=1935&&__by<=__yMax)){ birth=""; } } if(!birth) birth="미기재"; if(birth!=="미기재"){ var __agem=__pi.match(/생년\s*[:：]\s*\d{4}\s*년\s*\(?\s*만\s*(\d{1,3})\s*세/)||__pi.match(/\d{4}\s*년\s*생\s*\(?\s*만\s*(\d{1,3})\s*세/); var __ageV=__agem?__agem[1]:String(new Date().getFullYear()-parseInt((String(birth).match(/\d{4}/)||[0])[0],10)); if(__ageV&&__ageV!=="NaN"&&__ageV!=="0") birth=birth+" (만 "+__ageV+"세)"; }
   var addr=""; var __am=__pi.match(/주소[:：]\s*([^\n·|]+)/); if(__am){ addr=__am[1].trim(); } else { var __am2=__pi.match(/((?:서울|경기|인천|부산|대구|광주|대전|울산|세종|강원|충북|충남|전북|전남|경북|경남|제주)(?:특별시|광역시|특별자치시|도)?\s[^·|■\n()]{2,30})/); if(__am2) addr=__am2[1].trim(); } if(!addr) addr="미기재";
+  // [추가 2026-07-15 A-5] 면접 평가지 팝업(📄 평가지 출력 — 전체 지원자 도달 경로)도 인사카드와 동일하게 주소 옆 거리 표시.
+  //   (기존 인사카드/buildHrCard에만 붙였던 훅이 "최종 합격자" 전용 버튼에서만 열려 대부분 지원자에게 도달 불가했던 문제 정정)
+  var geoSpan="", geoScript="";
+  if(addr && addr!=="미기재"){
+    geoSpan="<span id='geoDist2' style='color:#8a6f3f;font-size:8pt;margin-left:6px'></span>";
+    var __geoPayload2=JSON.stringify({action:"geo-distance",password:SESSION_PW,address:addr});
+    geoScript="<script>(function(){try{fetch("+JSON.stringify(NOTION_FN)+",{method:'POST',body:"+JSON.stringify(__geoPayload2)+"}).then(function(x){return x.json();}).then(function(r){if(r&&r.ok&&typeof r.km==='number'){var el=document.getElementById('geoDist2');if(el)el.textContent=' · 직선 약 '+r.km+'km';}}).catch(function(){});}catch(e){}})();<\/script>";
+  }
   var edu=((__pi.match(/학력\s*[:：]?\s*([^·|\n■]+)/)||[])[1]||"미기재").trim();
   var careerTot=((__pi.match(/(?:총\s*)?경력(?!사항)\s*[:：]?\s*([^·|\n■]+)/)||[])[1]||"미기재").trim();
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8">'+
@@ -1556,7 +1564,7 @@ function openPrintView(pageId, noQ){
       '<div class="subtitle">'+esc(a["지원 포지션"]||"")+' · 작성일 '+new Date().toISOString().slice(0,10)+'</div>'+
       '<h2>1. 지원자 정보</h2>'+"<div style='text-align:center;margin:6px 0 12px'><img src='"+(a['사진']||PLACEHOLDER_PHOTO)+"' alt='지원자 사진' style='width:120px;height:150px;object-fit:cover;border:1px solid #d8d4c8;border-radius:6px' onerror=\"this.onerror=null;this.src='"+PLACEHOLDER_PHOTO+"'\"/></div>"+
       '<table>'+
-        '<tr><th>성명</th><td>'+esc(a["지원자명"]||"")+'</td><th>지원 포지션</th><td>'+esc(a["지원 포지션"]||"")+'</td></tr>'+'<tr><th>생년월일</th><td>'+esc(birth||"—")+'</td><th>주소</th><td>'+esc(addr||"—")+'</td></tr>'+'<tr><th>학력</th><td>'+esc(edu||"—")+'</td><th>총 경력</th><td>'+esc(careerTot||"—")+'</td></tr>'+
+        '<tr><th>성명</th><td>'+esc(a["지원자명"]||"")+'</td><th>지원 포지션</th><td>'+esc(a["지원 포지션"]||"")+'</td></tr>'+'<tr><th>생년월일</th><td>'+esc(birth||"—")+'</td><th>주소</th><td>'+esc(addr||"—")+geoSpan+'</td></tr>'+'<tr><th>학력</th><td>'+esc(edu||"—")+'</td><th>총 경력</th><td>'+esc(careerTot||"—")+'</td></tr>'+
         '<tr><th>연락처</th><td>'+esc(a["연락처"]||"")+'</td><th>이메일</th><td>'+esc(a["이메일"]||"")+'</td></tr>'+
         '<tr><th>지원일</th><td>'+fmtD(dval(a,"지원일"))+'</td><th>전형 단계</th><td>'+esc(a["전형 단계"]||"")+'</td></tr>'+
         (dval(a,"면접 일정")?'<tr><th>면접 일정</th><td>'+fmtDT(dval(a,"면접 일정"))+'</td><th>담당 면접관</th><td>'+esc(a["담당 면접관"]||"")+'</td></tr>':"")+
@@ -1572,7 +1580,7 @@ function openPrintView(pageId, noQ){
         '<span>평가일자: '+new Date().toISOString().slice(0,10)+' · AI CHRO 자동 생성</span>'+
         (noQ?"":'<span>면접관 서명: ______________________</span>')+
       '</div>'+
-    '</div></body></html>';
+    '</div>'+geoScript+'</body></html>';
   w.document.write(html);
   w.document.close();
 }
