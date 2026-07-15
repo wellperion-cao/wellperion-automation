@@ -21,14 +21,23 @@ REM "--clevel all" to round-robin all 7 C-Level roles (cmo/coo/cto/cpo/ceo/cfo/
 REM chro) in one cycle, capped per cycle (MAX_SHIPS_PER_CYCLE), with every
 REM existing safety gate (reversible-only, low-risk, clean-tree, recursion
 REM guard, cooldown, and the non-negotiable ambiguity park) applied per clevel
-REM unchanged. This line still targets "--clevel cto" only - widening the
-REM scheduled 07:30 live run from 1 domain to 7 is a separate scope expansion
-REM that needs its own explicit GM go (design note:
-REM docs/superpowers/specs/2026-07-14-welly-runner-all-clevel-autodrive-design.md).
-REM Forward/rollback are both a 1-line flip: change "cto" to "all" below (or
-REM back) whenever that go is given.
+REM unchanged.
+REM
+REM bae237 phase4 SCOPE EXPANSION LIVE (2026-07-15 GM go "2개 다 병렬로 진행"):
+REM this line now targets "--clevel all" - the scheduled 07:30 run round-robins
+REM all 7 C-Level domains (each still gated by MAX_SHIPS_PER_CYCLE=3 and every
+REM safety gate above). Rollback (1-line): change "all" back to "cto".
+REM
+REM RUNNER_RENDER_VERIFY (increment 2 roadmap 2): when =1, the runner
+REM independently re-renders a frontend ship's live URL (headless Playwright:
+REM HTTP 200 + console-error 0 + selector) after the delegated session's
+REM self-report, folding the result into the auto-review verdict (a render
+REM mismatch -> ambiguous -> park). Default behavior (unset) = trust the
+REM session's WELLY_VERIFY report only. Rollback (1-line): comment out the
+REM "set RUNNER_RENDER_VERIFY=1" line below.
 cd /d C:\Users\jjky0\welperion-automation
 set PYTHONIOENCODING=utf-8
 set RUNNER_LIVE=1
 set RUNNER_PING_LIVE=1
-C:\Python314\python.exe -u scripts\welly_auto_runner.py --clevel cto >> logs\welly_auto_runner.log 2>&1
+REM set RUNNER_RENDER_VERIFY=1
+C:\Python314\python.exe -u scripts\welly_auto_runner.py --clevel all >> logs\welly_auto_runner.log 2>&1
