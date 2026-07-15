@@ -43,21 +43,21 @@ body.page-id-8408 #header-outer #logo { margin-top: 32px !important; }
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
 
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSfOFxaqO5zSmoYa9TkfBlkDPbGjaTXm3duh7w5NwuBMhlJb6A/viewform" target="_blank" rel="noopener" onclick="wpTrackClick('membership-inquiry-en')"
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSfOFxaqO5zSmoYa9TkfBlkDPbGjaTXm3duh7w5NwuBMhlJb6A/viewform" target="_blank" rel="noopener"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">MEMBERSHIP</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">Membership Inquiry &rarr;</div>
       <div style="font-size:14px;color:#777;line-height:1.5;">Sports club membership &amp; facility tour consultation</div>
     </a>
 
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdirIB05ecVGkqJCIfJaw5yn7nIwVQe8ZeKbzQzKqKg83AUNw/viewform" target="_blank" rel="noopener" onclick="wpTrackClick('adult-lesson-inquiry-en')"
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdirIB05ecVGkqJCIfJaw5yn7nIwVQe8ZeKbzQzKqKg83AUNw/viewform" target="_blank" rel="noopener"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">ADULT LESSON</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">Adult Lesson Inquiry &rarr;</div>
       <div style="font-size:14px;color:#777;line-height:1.5;">Squash, Pilates &amp; other adult lesson programs</div>
     </a>
 
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLScqZum8zrhqKC0m2S0IKElYez-aJuPMQHM-JKF867UADF9X3A/viewform" target="_blank" rel="noopener" onclick="wpTrackClick('youth-lesson-inquiry-en')"
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLScqZum8zrhqKC0m2S0IKElYez-aJuPMQHM-JKF867UADF9X3A/viewform" target="_blank" rel="noopener"
        style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
       <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">YOUTH LESSON</div>
       <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">Youth Lesson Inquiry &rarr;</div>
@@ -70,22 +70,3 @@ body.page-id-8408 #header-outer #logo { margin-top: 32px !important; }
     All visits and phone inquiries are handled by appointment only. Walk-ins are not available.
   </p>
 </div>
-
-<!-- Click tracking — 4 button onclick → Apps Script track_click (click log sheet). Used by marketing dashboard click_stats aggregation. -->
-<script>
-(function(){
-  var T='https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
-  function qp(k){ try{ return (new URLSearchParams(location.search).get(k)||'').slice(0,40); }catch(e){ return ''; } }
-  window.wpTrackClick=function(name){
-    try{
-      var d=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?'mobile':'desktop';
-      var src=qp('utm_source')||'homepage';        // 인바운드 출처(채널 링크가 부착) — 없으면 직접/홈 유입 (KO 패리티)
-      var med=qp('utm_medium')||'inquiry_page';
-      var q='action=track_click&linkName='+encodeURIComponent(name)
-           +'&linkUrl='+encodeURIComponent('wp-inquiry-en')
-           +'&utmSource='+encodeURIComponent(src)+'&utmMedium='+encodeURIComponent(med)+'&device='+d;
-      fetch(T+'?'+q,{mode:'no-cors'}).catch(function(){});
-    }catch(e){}
-  };
-})();
-</script>

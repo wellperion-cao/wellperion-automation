@@ -1,10 +1,9 @@
 // 웰페리온 랜딩 페이지 추적 Apps Script v1.0
-// 리틀리(litt.ly) 대체 — 클릭·문의 추적 → 시트 누적
-// 시트 2개: 클릭로그 | 문의접수
+// 리틀리(litt.ly) 대체 — 문의 추적 → 시트 누적
+// 시트: 문의접수 (클릭 지수는 2026-07 GM 결정으로 전면 삭제)
 
 // ─── 상수 ───
 const LANDING_SPREADSHEET_ID = '1g9Ohmd8C_WxyvWt9EX58oEFZLiOAJ_EG7t7XteJFuGE';
-const CLICK_SHEET = '클릭로그';
 const INQUIRY_SHEET = '문의접수';
 
 // 회원부 시트 (유효회원 탭)
@@ -13,7 +12,6 @@ const MEMBER_SHEET = '유효회원';
 const MEMBER_PHONE_COL = '휴대폰 번호';   // 회원부 전화번호 헤더
 const MEMBER_DATE_COL  = '등록 일자';      // 회원부 등록일 헤더
 
-const CLICK_HEADERS = ['id', '시각', '링크명', '링크URL', 'UTM소스', 'UTM미디엄', '리퍼러', '디바이스', 'UTM캠페인'];
 const INQUIRY_HEADERS = ['id', '시각', '이름', '연락처', '문의유형', '내용', '유입채널', 'UTM소스', 'UTM미디엄', '상태', '메모'];
 
 const INQUIRY_TYPES = ['투어 예약', '프로그램 문의', '멤버십 상담', '시설 안내', '기타'];
@@ -211,9 +209,9 @@ function _parseAnyDate_(v) {
 }
 
 // 타임스탬프(Date | 'yyyy-MM-dd HH:mm:ss' 문자열 | 'YYYY. M. D' 한글) → Date(KST 고정).
-// ★ 단일 정규화 SSOT — 클릭(_now() 문자열)·문의(_parseAnyDate_) 모두 이 함수로 통일해
-//   날짜 파싱 불일치(클릭<문의 누락 버그, 2026-06-18 INC) 방지. period_breakdown._toDate_ 와 동일 로직.
-//   클릭 시각은 'yyyy-MM-dd HH:mm:ss'(공백 구분·오프셋 없음)으로 저장됨 → 반드시 'T'+'+09:00'로 ISO화.
+// ★ 단일 정규화 SSOT — _now() 문자열·_parseAnyDate_ 결과 모두 이 함수로 통일해
+//   날짜 파싱 불일치(2026-06-18 INC) 방지. period_breakdown._toDate_ 와 동일 로직.
+//   _now() 시각은 'yyyy-MM-dd HH:mm:ss'(공백 구분·오프셋 없음)으로 저장됨 → 반드시 'T'+'+09:00'로 ISO화.
 function _normTs_(ts) {
   var v = _parseAnyDate_(ts);          // 한글 'YYYY. M. D' 먼저 흡수
   if (v instanceof Date) return v;
@@ -571,7 +569,6 @@ function _getSheet(name, headers) {
 }
 
 function initSheets() {
-  _getSheet(CLICK_SHEET, CLICK_HEADERS);
   _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
   return 'OK';
 }
@@ -1082,16 +1079,13 @@ function verifyInquiryNotify() {
 var _SURVEY_PUBLIC_ACTIONS = {
   submit_inquiry: true,  // 방문자 문의 제출 — 토큰 면제
   intake_submit:  true,  // 유입 자체 Survey 폼 제출(배1037 갈래B) — 토큰(INTAKE_SUBMIT_TOKEN)·허니팟·타이밍·레이트리밋으로 별도 방어. 2026-07-15 시포
-  track_click:    true,  // 클릭 추적 — 토큰 면제
   ping_inquiry_notify: true,  // [진단용] BOT_TOKEN 확인 + 문의 알림 방 테스트 발송 (시모 2026-06-24)
   // 마케팅 집계(PII 미노출) 면제 — 2026-06-17 CMO, 시토 게이트 공유
-  // 아래 5개 액션은 집계 숫자만 반환 · 이름·전화 등 원시 개인정보 미노출 → 면제 안전.
+  // 아래 액션들은 집계 숫자만 반환 · 이름·전화 등 원시 개인정보 미노출 → 면제 안전.
   // inquiry_list 등 원시 행/PII 반환 액션은 절대 면제 금지(게이트 유지).
   period_breakdown:       true,
   funnel_conversion:      true,
   type_channel_breakdown: true,
-  click_stats:            true,
-  campaign_stats:         true,  // 콘텐츠별 클릭 집계(PII 미노출) — 면제 안전
   lead_time_stats:        true,  // 문의→등록 평균 전환 소요일(집계 숫자만·PII 미노출) — 면제 안전 (2026-06-23 CMO)
   today_live:             true,
   lesson_breakdown:       true,  // 종목별 등록수만 반환(PII 미노출) — 면제 안전
@@ -1894,31 +1888,6 @@ function _processAction(body) {
     return _json({ ok: false, error: 'unauthorized' });
   }
 
-  // ─── 클릭 추적 ───
-  if (action === 'track_click') {
-    const sh = _getSheet(CLICK_SHEET, CLICK_HEADERS);
-    // 기존 시트에 UTM캠페인 헤더가 없을 경우 9번째 셀 1회 보정
-    if (!sh.getRange(1, 9).getValue()) {
-      sh.getRange(1, 9).setValue('UTM캠페인')
-        .setFontWeight('bold')
-        .setBackground('#2a2725')
-        .setFontColor('#B79F8A');
-    }
-    const row = [
-      _genId('CLK-'),
-      _now(),
-      body.linkName || '',
-      body.linkUrl || '',
-      body.utmSource || '',
-      body.utmMedium || '',
-      body.referrer || '',
-      body.device || '',
-      body.utmCampaign || ''
-    ];
-    sh.getRange(sh.getLastRow() + 1, 1, 1, row.length).setValues([row]);
-    return _json({ ok: true });
-  }
-
   // ─── [진단] BOT_TOKEN 확인 + 문의 알림 방 테스트 발송 (시모 2026-06-24, 일회용) ───
   if (action === 'ping_inquiry_notify') {
     var diagToken = _prop('BOT_TOKEN') || _prop('TELEGRAM_BOT_TOKEN');
@@ -2563,101 +2532,6 @@ function _processAction(body) {
         + (_iProgram ? ('\n관심: ' + _iProgram) : '') + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
     } catch (e) {}
     return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
-  }
-
-  // ─── 클릭 통계 ───
-  if (action === 'click_stats') {
-    var csFrom = body.from || '';   // YYYY-MM-DD (optional) — 기간 필터
-    var csTo   = body.to   || '';
-    // 캐시 조회 (cs_v3 — from/to 기간 필터 버전, 범위별 키)
-    var csCache = CacheService.getScriptCache();
-    var csCacheKey = 'cs_v3_' + csFrom + '_' + csTo;
-    var csHit = csCache.get(csCacheKey);
-    if (csHit && !_nc) return _json(JSON.parse(csHit));
-
-    const sh = _getSheet(CLICK_SHEET, CLICK_HEADERS);
-    const last = sh.getLastRow();
-    if (last < 2) return _json({ ok: true, total: 0, byLink: {}, byLinkUrl: {}, byUtmSource: {}, from: csFrom, to: csTo });
-
-    var data = sh.getRange(2, 1, last - 1, CLICK_HEADERS.length).getValues();
-    // 기간 필터 (from/to 둘 다 있을 때만 · 시각=인덱스 1). 없으면 누적.
-    if (csFrom && csTo) {
-      var csF = new Date(csFrom + 'T00:00:00+09:00').getTime();
-      var csT = new Date(csTo + 'T23:59:59+09:00').getTime();
-      data = data.filter(function(row) {
-        var t = row[1] ? _normTs_(row[1]).getTime() : NaN;  // 문의 집계와 동일 정규화(공백→T·KST) — 클릭 누락 버그 수정
-        return !isNaN(t) && t >= csF && t <= csT;
-      });
-    }
-    const byLink = {};
-    const byLinkUrl = {};  // 링크명 → 가장 최근 링크URL (대시보드 '↗ 보기' 링크 + litt.ly 등 출처 확인용)
-    const byUtmSource = {};  // UTM 소스별 클릭 건수 집계
-    data.forEach(function(row) {
-      var name = row[2] || '기타';
-      byLink[name] = (byLink[name] || 0) + 1;
-      if (row[3]) byLinkUrl[name] = row[3];
-
-      // UTM 소스 집계 (인덱스 4): 'homepage' 또는 빈값 → '직접/홈', 그 외는 원문 그대로
-      var utmRaw = String(row[4] || '').trim();
-      var utmKey = (!utmRaw || utmRaw === 'homepage') ? '직접/홈' : utmRaw;
-      byUtmSource[utmKey] = (byUtmSource[utmKey] || 0) + 1;
-    });
-
-    var csResult = { ok: true, total: data.length, byLink: byLink, byLinkUrl: byLinkUrl, byUtmSource: byUtmSource, from: csFrom, to: csTo };
-    try { csCache.put(csCacheKey, JSON.stringify(csResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
-    return _json(csResult);
-  }
-
-  // ─── 콘텐츠별 클릭 집계 (campaign_stats) ───
-  // UTM캠페인(슬러그)별 클릭 수·최다 채널 집계. 빈 캠페인은 '직접/기타'로 분류.
-  if (action === 'campaign_stats') {
-    var campFrom = body.from || '';
-    var campTo   = body.to   || '';
-    var campCache = CacheService.getScriptCache();
-    var campKey = 'camp_v1_' + campFrom + '_' + campTo;
-    var campHit = campCache.get(campKey);
-    if (campHit && !_nc) return _json(JSON.parse(campHit));
-
-    var campSh = _getSheet(CLICK_SHEET, CLICK_HEADERS);
-    var campLast = campSh.getLastRow();
-    if (campLast < 2) return _json({ ok: true, total: 0, campaigns: [], from: campFrom, to: campTo });
-
-    var campData = campSh.getRange(2, 1, campLast - 1, CLICK_HEADERS.length).getValues();
-    // 기간 필터 (click_stats 와 동일 패턴)
-    if (campFrom && campTo) {
-      var campF = new Date(campFrom + 'T00:00:00+09:00').getTime();
-      var campT = new Date(campTo   + 'T23:59:59+09:00').getTime();
-      campData = campData.filter(function(row) {
-        var t = row[1] ? _normTs_(row[1]).getTime() : NaN;
-        return !isNaN(t) && t >= campF && t <= campT;
-      });
-    }
-
-    // UTM캠페인(인덱스 8) · UTM소스(인덱스 4) 집계
-    var campMap = {};  // { campaignKey: { clicks, channels: { src: n } } }
-    campData.forEach(function(row) {
-      var raw = String(row[8] || '').trim();
-      var key = raw || '직접·기타';
-      if (!campMap[key]) campMap[key] = { clicks: 0, channels: {} };
-      campMap[key].clicks++;
-      var src = String(row[4] || '').trim() || '직접/홈';
-      campMap[key].channels[src] = (campMap[key].channels[src] || 0) + 1;
-    });
-
-    // 최다 채널 산출 + 클릭 내림차순 정렬
-    var campArr = Object.keys(campMap).map(function(slug) {
-      var d = campMap[slug];
-      var topCh = '', topN = 0;
-      Object.keys(d.channels).forEach(function(ch) {
-        if (d.channels[ch] > topN) { topN = d.channels[ch]; topCh = ch; }
-      });
-      return { campaign: slug, clicks: d.clicks, topChannel: topCh };
-    });
-    campArr.sort(function(a, b) { return b.clicks - a.clicks; });
-
-    var campResult = { ok: true, total: campData.length, campaigns: campArr, from: campFrom, to: campTo };
-    try { campCache.put(campKey, JSON.stringify(campResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
-    return _json(campResult);
   }
 
   // ─── 문의 목록 ───
@@ -3834,7 +3708,7 @@ function _processAction(body) {
     var fcT = fcPeriod ? new Date(fcTo   + 'T23:59:59+09:00').getTime() : 0;
     function _fcInPeriod(ts) {
       if (!fcPeriod) return true;
-      var t = ts ? _normTs_(ts).getTime() : NaN;   // 단일 정규화 SSOT(클릭/문의 통일)
+      var t = ts ? _normTs_(ts).getTime() : NaN;   // 단일 정규화 SSOT
       return !isNaN(t) && t >= fcF && t <= fcT;
     }
     // ─── 정밀 분자 opt-in(2026-07-04 시포) — numerator==='registered'(또는 precise==='1')일 때만 등록일 기간필터를 분자에 적용.
@@ -4082,7 +3956,7 @@ function _processAction(body) {
     var tcT = tcPeriod ? new Date(tcTo + 'T23:59:59+09:00').getTime() : 0;
     function _tcInPeriod(row) {
       if (!tcPeriod) return true;
-      var t = row.시각 ? _normTs_(row.시각).getTime() : NaN;  // 단일 정규화 SSOT — 클릭/문의 파싱 통일(공백→T·KST)
+      var t = row.시각 ? _normTs_(row.시각).getTime() : NaN;  // 단일 정규화 SSOT(공백→T·KST)
       return !isNaN(t) && t >= tcF && t <= tcT;
     }
 
@@ -4204,7 +4078,7 @@ function _processAction(body) {
     function _countByPeriod_(timestamps, ps) {
       var day = 0, week = 0, month = 0;
       timestamps.forEach(function(ts) {
-        var d = _normTs_(ts);  // 단일 정규화 SSOT(click_stats 와 동일 파싱)
+        var d = _normTs_(ts);  // 단일 정규화 SSOT
         if (isNaN(d.getTime())) return;
         if (d >= ps.monthStart) month++;
         if (d >= ps.weekStart)  week++;
@@ -4217,17 +4091,6 @@ function _processAction(body) {
     function _toDate_(ts) { return _normTs_(ts); }
 
     var ps = _periodStarts_();
-
-    // ── clicks 집계 ──
-    var clickSh   = _getSheet(CLICK_SHEET, CLICK_HEADERS);
-    var clickLast = clickSh.getLastRow();
-    var clickTs   = [];
-    var clickRows = []; // 전체 raw rows — custom range용
-    if (clickLast >= 2) {
-      var clickData = clickSh.getRange(2, 1, clickLast - 1, CLICK_HEADERS.length).getValues();
-      clickData.forEach(function(r) { if (r[1]) { clickTs.push(r[1]); clickRows.push(r); } }); // 인덱스 1 = 시각
-    }
-    var clickCounts = _countByPeriod_(clickTs, ps);
 
     // ── inquiries 집계 — _collectFormInquiries_ 한 번만 호출 ──
     var formInquiries = _collectFormInquiries_(); // 【중복 제거】 단일 호출 후 재사용
@@ -4310,13 +4173,6 @@ function _processAction(body) {
       var cFrom = new Date(from + 'T00:00:00+09:00');
       var cTo   = new Date(to   + 'T23:59:59+09:00');
 
-      // custom clicks
-      var cClicks = 0;
-      clickRows.forEach(function(r) {
-        var d = _toDate_(r[1]);
-        if (!isNaN(d.getTime()) && d >= cFrom && d <= cTo) cClicks++;
-      });
-
       // custom inquiries + byChannel + byType + conversion
       var cInqTotal = 0;
       var cByChannel = {};
@@ -4336,7 +4192,6 @@ function _processAction(body) {
       customObj = {
         from: from,
         to:   to,
-        clicks:    cClicks,
         inquiries: cInqTotal,
         byChannel: cByChannel,
         byType:    cByType,
@@ -4427,7 +4282,6 @@ function _processAction(body) {
         monthStart: ps.monthStr,
         yearStart:  yearStr
       },
-      clicks:    { day: clickCounts.day, week: clickCounts.week, month: clickCounts.month },
       inquiries: {
         day:            inqCounts.day,
         week:           inqCounts.week,
@@ -4554,12 +4408,12 @@ function _processAction(body) {
     var wtThisWeekStart = new Date(wtWeekStr + 'T00:00:00+09:00');
 
     // 8개 구간: 7주 전 월요일 ~ 이번 주 일요일
-    var wtBuckets = [];  // [{start: Date, end: Date, weekStart: 'YYYY-MM-DD', inquiries: 0, clicks: 0}]
+    var wtBuckets = [];  // [{start: Date, end: Date, weekStart: 'YYYY-MM-DD', inquiries: 0}]
     for (var wi = 7; wi >= 0; wi--) {
       var bucketStart = new Date(wtThisWeekStart.getTime() - wi * 7 * 86400000);
       var bucketEnd   = new Date(bucketStart.getTime()     + 7 * 86400000);
       var bucketStr   = Utilities.formatDate(bucketStart, 'Asia/Seoul', 'yyyy-MM-dd');
-      wtBuckets.push({ start: bucketStart, end: bucketEnd, weekStart: bucketStr, inquiries: 0, clicks: 0 });
+      wtBuckets.push({ start: bucketStart, end: bucketEnd, weekStart: bucketStr, inquiries: 0 });
     }
 
     // 타임스탬프(Date|string) → Date 변환 (period_breakdown 의 _toDate_ 와 동일 로직)
@@ -4568,24 +4422,6 @@ function _processAction(body) {
       var s = String(ts || '').trim();
       if (!s) return new Date(NaN);
       return new Date(s.replace(' ', 'T') + '+09:00');
-    }
-
-    // ── 클릭 타임스탬프 집계 ──
-    var wtClickSh   = _getSheet(CLICK_SHEET, CLICK_HEADERS);
-    var wtClickLast = wtClickSh.getLastRow();
-    if (wtClickLast >= 2) {
-      var wtClickData = wtClickSh.getRange(2, 1, wtClickLast - 1, CLICK_HEADERS.length).getValues();
-      wtClickData.forEach(function(r) {
-        if (!r[1]) return;
-        var d = _wtToDate_(r[1]);
-        if (isNaN(d.getTime())) return;
-        for (var bi = 0; bi < wtBuckets.length; bi++) {
-          if (d >= wtBuckets[bi].start && d < wtBuckets[bi].end) {
-            wtBuckets[bi].clicks++;
-            break;
-          }
-        }
-      });
     }
 
     // ── 문의 타임스탬프 집계 — 문의접수 시트 + 구글폼 합산 ──
@@ -4621,7 +4457,7 @@ function _processAction(body) {
 
     // ── 응답 조립 (오래된→최신 순, start/end Date 는 제거) ──
     var wtWeeks = wtBuckets.map(function(b) {
-      return { weekStart: b.weekStart, inquiries: b.inquiries, clicks: b.clicks };
+      return { weekStart: b.weekStart, inquiries: b.inquiries };
     });
 
     var wtResult = { ok: true, weeks: wtWeeks, generatedAt: _now() };
@@ -5173,7 +5009,6 @@ function warmDashboardCache() {
   var qs = [
     'action=funnel_conversion',                 // fc_v1 (범위 무관)
     'action=type_channel_breakdown' + range,    // tc — 가장 무거움
-    'action=click_stats' + range,
     'action=period_breakdown' + range
   ];
   qs.forEach(function(q) {
