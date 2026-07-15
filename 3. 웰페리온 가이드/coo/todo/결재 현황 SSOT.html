@@ -11,15 +11,20 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-5';
+window.__PV='20260715-6';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
     var u=new URL(location.href);
-    if(u.searchParams.has('pv')) return;
+    /* (2026-07-15 나우열M) 기존 has('pv') 무조건 스킵 → 방문기록의 ?pv=옛버전 주소로 들어오면
+       캐시된 옛 페이지에서 영원히 탈출 못 하는 구멍. 항상 최신 검사하되, 같은 주소로의
+       재이동만 차단해 무한 새로고침(2026-06-04 CDN 불일치 루프)을 방지한다. */
     fetch(location.pathname,{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){
       var m=t.match(/window\.__PV='([^']+)'/);
-      if(m&&m[1]&&m[1]!==window.__PV){ u.searchParams.set('pv',m[1]); location.replace(u.toString()); }
+      if(!m||!m[1]||m[1]===window.__PV) return;
+      u.searchParams.set('pv',m[1]);
+      var target=u.toString();
+      if(target!==location.href) location.replace(target);
     }).catch(function(){});
   }catch(e){}
 })();
@@ -1322,6 +1327,8 @@ function printDocViewer() {
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && document.getElementById('docViewerOverlay').classList.contains('show')) closeDocViewer();
 });
+/* 화면에 빌드 버전 표시 — 어떤 버전이 로딩됐는지 즉시 확인용 (2026-07-15 나우열M) */
+try { var _vs = document.getElementById('headerSub') || document.querySelector('.header .sub'); if (_vs) _vs.textContent += ' · 빌드 ' + window.__PV; } catch (e) {}
 /* 인쇄용 본문 추출 — 문서 자체 머리부 제거로 보고서 틀과 이중 방지 (업무 SSOT와 동일) */
 function docPrintBody(html) {
   try {
