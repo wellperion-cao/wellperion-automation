@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-2';
+window.__PV='20260715-3';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -2229,12 +2229,8 @@ function setDocLock(which, locked) {
 }
 /* ── 웰페리온 결재 문서 서식 템플릿 ── */
 function _docBrandHeader() {
-  return '<p style="margin:0;font-size:11px;color:#B79F8A"><strong>WELLPERION</strong> <span style="color:#aaa;margin-left:10px">주식회사 웰페리온 · 하이엔드 프라이빗 스포츠클럽</span></p>'
-    + '<table style="width:320px;margin-left:auto"><tbody>'
-    + '<tr><td rowspan="2" style="width:36px;text-align:center;vertical-align:middle;background-color:#1a1815;color:#B79F8A"><strong>결재</strong></td>'
-    + '<td style="text-align:center;width:90px;background-color:#f5f2ee;font-size:12px"><strong>담당</strong></td><td style="text-align:center;width:90px;background-color:#f5f2ee;font-size:12px"><strong>GM</strong></td><td style="text-align:center;width:90px;background-color:#f5f2ee;font-size:12px"><strong>대표님</strong></td></tr>'
-    + '<tr><td style="height:58px"><br></td><td><br></td><td><br></td></tr>'
-    + '</tbody></table>';
+  // 결재란 삭제 (2026-07-15 나우열M 지시) — 결재란은 인쇄/결재 화면에서 자동 부착됨
+  return '<p style="margin:0 0 10px;font-size:11px;color:#B79F8A"><strong>WELLPERION</strong> <span style="color:#aaa;margin-left:10px">주식회사 웰페리온 · 하이엔드 프라이빗 스포츠클럽</span></p>';
 }
 function _docTitleBlock(txt) {
   return '<h1 style="text-align:center;font-size:30px;margin:18px 0 4px;color:#1a1815;border-bottom:3px double #1a1815;padding-bottom:14px">' + txt + '</h1>'
@@ -2331,7 +2327,19 @@ function selectDocForm(mode, silent) {
     if (b) b.classList.toggle('doc-active', p[1] === mode);
   });
   if (silent) return;
-  if (mode === 'plain') return;                         // 일반양식 = 빈 흰 종이 그대로
+  if (mode === 'plain') {
+    // 일반양식 = 빈 흰 문서. 기획안 서식이 남아있으면 지울지 확인 (2026-07-15 나우열M 지시)
+    const curPlan = getDocValue('plan');
+    if (curPlan && isDocHtml(curPlan)) {
+      if (_planLocked) return;
+      if (confirm('기획안 서식 내용을 지우고 일반양식(빈 문서)으로 시작할까요?')) {
+        if (_planEd) _planEd.setContents('');
+      } else {
+        selectDocForm('plan', true);   // 유지 선택 → 기획안 탭 표시로 되돌림
+      }
+    }
+    return;
+  }
   if (mode === 'plan' && isMeetingCat()) return;        // 회의는 참석자별 칸 사용
   const locked = (mode === 'plan') ? _planLocked : _resultLocked;
   if (locked) return;                                   // 잠금 시 열람만
@@ -2343,6 +2351,32 @@ function selectDocForm(mode, silent) {
     ed.setContents(buildDocTemplate(mode));
   }
 }
+
+/* ── 서식 안 업무명·작성자 ↔ 상단 입력값 실시간 동기화 (2026-07-15 나우열M 지시) ──
+   서식 표에서 '업무명'/'작성자' 라벨 칸 옆 값을 갱신 — 라벨 텍스트 매칭이라 서식 수정에도 안전. */
+function _syncDocEditorInfo(ed) {
+  if (!ed || !ed.core) return;
+  try {
+    const wy = ed.core.context.element.wysiwyg;
+    if (!wy) return;
+    const title = (document.getElementById('fTitle').value || '').trim() || '(업무명)';
+    const owner = getCheckboxValues('fOwnerGroup') || getUser() || '';
+    wy.querySelectorAll('td').forEach(function (td) {
+      const lbl = (td.textContent || '').trim();
+      const nx = td.nextElementSibling;
+      if (!nx) return;
+      if (lbl === '업무명') nx.textContent = title;
+      else if (lbl === '작성자') nx.textContent = owner;
+    });
+  } catch (e) {}
+}
+function syncDocInfoFields() { _syncDocEditorInfo(_planEd); _syncDocEditorInfo(_resultEd); }
+(function () {
+  const t = document.getElementById('fTitle');
+  if (t) t.addEventListener('input', syncDocInfoFields);
+  const og = document.getElementById('fOwnerGroup');
+  if (og) og.addEventListener('change', syncDocInfoFields);
+})();
 
 /* ═══════════════════════════════════════════
    Modal — Add / Edit
@@ -2544,6 +2578,7 @@ function openEditModal(id) {
   setDocValue('result', parsed.result || '');
   // 기본 탭: 결과보고 있으면 결과보고, 서식 기획안이면 기획안, 그 외 일반양식
   selectDocForm(parsed.result ? 'result' : (isDocHtml(parsed.plan) ? 'plan' : 'plain'), true);
+  syncDocInfoFields();   // 저장된 서식의 업무명·작성자를 현재 값과 동기화
   modalLogsCache = parsed.logs.slice();
   document.getElementById('progressLogDate').value = todayDateStr();
   document.getElementById('progressLogInput').value = '';
