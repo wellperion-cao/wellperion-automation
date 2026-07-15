@@ -295,6 +295,13 @@
   <div id="layer-autonomy">
   <h2 class="layer-h2">① 자율로 한 일</h2>
 
+  <!-- ════ 🚢 진행·상시 미션 (status/_queue.json status==IN_PROGRESS · 항로에서 이관 2026-07-15 · 배237) ════ -->
+  <h2 class="sec" id="sec-active-missions" style="margin-top:2px;">🚢 진행·상시 미션 <span style="font-size:11px;font-weight:400;color:var(--dim);">(각 AI가 지금 굴리는 지속 시스템 — 여기서 관리)</span></h2>
+  <div class="sec-note">🧭 오늘의 항로에서 이관된 <b>진행중(IN_PROGRESS)</b> 배 — 상시 성격의 지속 시스템입니다. <code>status/_queue.json</code>의 <code>status</code> 필드로 자동 판정(라이브 큐가 바뀌면 자동 정합).</div>
+  <div class="routines" id="active-missions">
+    <div class="feed-status" style="grid-column:1/-1;">진행·상시 미션을 불러오는 중…</div>
+  </div>
+
   <!-- ════ ⚙️ 자동화→자율화 4층 구조 (헌법한장.html 병합 · 2026-07-03 · 개요를 라이브 데이터보다 앞으로 재배치 · 배339) ════ -->
   <h2 class="sec" style="margin-top:2px;">🏛️ 자율화를 떠받치는 4대 축</h2>
   <div class="sec-note">순서가 아니라 <b>나란히 함께 작동하는 4개 축(기둥)</b>입니다 — 코드·훅으로 박제된 자동화 위에서 AI가 판단·완결합니다. 축①은 바로 아래 제작 루프로 상세 전개, 축②~④는 각 라이브 섹션과 연결(중복 신설 없음).</div>
@@ -849,6 +856,52 @@
   function localTodayMs(){ var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
 
   // 🌟 북극성 추천 top3 임베드 제거(2026-07-04 GM): 추천은 GM 텔레그램 승인라인 전용 → 페이지 렌더 삭제(renderNsEmbed·NS_ROLE 제거)
+
+  // ═══════════ 🚢 진행·상시 미션 (status/_queue.json status==IN_PROGRESS · 항로 이관 2026-07-15 · 배237) ═══════════
+  // 하드코딩 배 목록 금지 — status 필드로만 판정(라이브 큐가 바뀌어도 자동 정합). 담당=닉네임 매핑.
+  var MISSION_NICK = { ceo:'웰리', cfo:'시뽀', chro:'시로', cmo:'시모', coo:'시우', cpo:'시포', cto:'시토' };
+  function missionBoat(pri){
+    var p = String(pri || '');
+    if(p.indexOf('🛳️') >= 0 || /크루즈/.test(p)) return '🛳️';
+    if(p.indexOf('⛴️') >= 0 || /여객선/.test(p)) return '⛴️';
+    if(p.indexOf('⛵') >= 0 || /돛단배/.test(p)) return '⛵';
+    if(/^HIGH$/i.test(p)) return '⛴️';
+    return '⛵';
+  }
+  function missionSummary(txt){
+    var t = String(txt || '').replace(/\s+/g, ' ').trim();
+    if(!t) return '';
+    return t.length > 170 ? t.slice(0, 170) + '…' : t;
+  }
+  function missionCleanTitle(t){ return String(t || '').replace(/^\[[^\]]+\]\s*/, ''); }
+  function renderActiveMissions(queue){
+    var el = document.getElementById('active-missions');
+    if(!el) return;
+    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.status === 'IN_PROGRESS'; }) : [];
+    if(!list.length){
+      el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">진행·상시 미션 없음 — 지금 굴러가는 진행중(IN_PROGRESS) 배가 없습니다.</div>';
+      return;
+    }
+    list.sort(function(a, b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); });
+    el.innerHTML = list.map(function(s){
+      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
+      var owner = esc(nick + (s.ship_no != null ? ' ' + s.ship_no : ''));
+      var sum = missionSummary(s.next || s.note);
+      return '<div class="rcard" style="--rc:var(--accent-soft);">' +
+        '<div class="rcard-top">' +
+          '<span class="rcard-ico">' + missionBoat(s.priority) + '</span>' +
+          '<div class="rcard-tt">' +
+            '<div class="rcard-nm">' + esc(missionCleanTitle(s.title)) + '</div>' +
+            '<div class="rcard-meta">' +
+              '<span class="rcard-cy">담당 <b style="color:var(--text-soft);">' + owner + '</b></span>' +
+              '<span class="pill on">진행중</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        (sum ? '<div class="rrow" style="border-top:none;"><span class="rv">' + esc(sum) + '</span></div>' : '') +
+      '</div>';
+    }).join('');
+  }
 
   // ═══════════ 🤖 히어로: 결과물 중심 한 줄 요약(배237) ═══════════
   function renderHero(d){
@@ -1723,7 +1776,8 @@
     cooFetchMonthlyReport(),
     cpoFetchChurnStats(),
     gasReadText('status/module_registry.json',        'status/module_registry.json').catch(function(){ return ''; }),
-    gasReadText('status/kakao_last_send.json',         'status/kakao_last_send.json').catch(function(){ return ''; })
+    gasReadText('status/kakao_last_send.json',         'status/kakao_last_send.json').catch(function(){ return ''; }),
+    gasReadText('status/_queue.json',                  'status/_queue.json').catch(function(){ return ''; })
   ]).then(function(a){
     var learnRaw = parseJson(a[3]);
     var archRaw  = parseJson(a[4]);
@@ -1739,6 +1793,10 @@
     var erpStatus = parseJson(a[8]);
     var feedItems = [];
     try{ feedItems = buildFeed(d); }catch(e){ feedItems = []; }
+    try{ renderActiveMissions(parseJson(a[14])); }catch(e){
+      var amEl = document.getElementById('active-missions');
+      if(amEl) amEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">진행·상시 미션 표시 오류.</div>';
+    }
     try{ renderHero(d); }catch(e){ document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">히어로 요약 표시 오류.</div>'; }
     try{ renderRoutines(d); }catch(e){ document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">상시 체계 표시 오류 — 로그 파싱 실패.</div>'; }
     try{ renderCmoMarketing(cmoQueue); }catch(e){
@@ -1769,6 +1827,8 @@
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
   }).catch(function(){
     document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
+    var amEl0 = document.getElementById('active-missions');
+    if(amEl0) amEl0.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">진행·상시 미션을 불러오지 못했습니다.</div>';
     document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다. 잠시 후 새로고침 해주세요.</div>';
     document.getElementById('cmo-routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('coo-live-metrics').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
