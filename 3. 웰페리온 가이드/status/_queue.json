@@ -1177,5 +1177,19 @@
     "artifact": "L&F MVP 라이브 발효 — 종합접수처(8434)에 공개 갤러리 링크 1개 노출.\n백엔드 lf_* 배포@46(URL보존)·reg_sort 회귀0·E2E 실측 통과. (CLI ad-hoc · 커밋 3ab63a92)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "3ab63a92d04eaaf74f548c72fbe590463c93da6a"
+  },
+  {
+    "task_id": "CPO-2026-07-15-ADHOC-012c2eb3",
+    "clevel": "cpo",
+    "title": "[시포] 배973 6팀시트 은퇴 안전게이트 lesson_rewire_audit — 재배선 보류(OLD≠NEW 실측)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1096,
+    "artifact": "익명 임시배포 E2E로 OLD(6팀시트) vs NEW(메인4시트 flat O) IDENTICAL 대조 실측:\n불일치(성인 812→794·유소년 926→908·연KPI −29~53%·컨택 −20~30%·종목 Σ|Δ|146).\n원인=팀시트 진행상황(팀장 로컬입력)과 메인 O(페이지입력)가 독립 발산 →\n메인 O는 아직 등록상태 SSOT 아님. 5소비자 재배선/은퇴는 back-fill로\nOLD≡NEW 될 때까지 보류(억지 통과 금지). 읽기전용·PII 미노출 액션만 추가(화면 변화 0).\n프로덕션 clasp 배포 안 함(GM go 대기) (CLI ad-hoc · 커밋 012c2eb3)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "012c2eb32c2e3a107547cb29ff313f891a3929c4"
   }
 ]
