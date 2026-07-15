@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-7';
+window.__PV='20260715-8';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -925,12 +925,15 @@ function matchesSearch(t) {
 /* ─── 공유 링크 / 딥링크 (2026-06-01 GM) ─── */
 let _deepLinkId = null;
 let _deepLinkEditId = null;  // ?edit=ID — 편집 모달 바로 열기 (결재 SSOT GM 본문수정 연동 · 2026-07-15)
+let _deepLinkDocId = null, _deepLinkDocWhich = 'plan';  // ?doc=ID — A4 문서 뷰어 바로 열기
 let _initApplied = false;
 function applyUrlParams() {
   try {
     const p = new URL(location.href).searchParams;
     const editP = p.get('edit');
     if (editP) { _deepLinkEditId = editP; activeOwnerFilter = '전체'; activeCatFilter = '전체'; searchQuery = ''; return; }
+    const docP = p.get('doc');   // ?doc=ID&which=plan|result — A4 문서 뷰어 바로 열기 (결재 SSOT 인쇄 연결 · 2026-07-15)
+    if (docP) { _deepLinkDocId = docP; _deepLinkDocWhich = (p.get('which') === 'result' ? 'result' : 'plan'); activeOwnerFilter = '전체'; activeCatFilter = '전체'; searchQuery = ''; return; }
     const item = p.get('item');
     if (item) { _deepLinkId = item; activeOwnerFilter = '전체'; activeCatFilter = '전체'; searchQuery = ''; return; }
     if (p.get('owner')) activeOwnerFilter = p.get('owner');
@@ -991,6 +994,13 @@ function copyItemLink(id) {
   copyTextRobust(text, '🔗 업무 제목 + 링크가 복사됐어요 — 붙여넣기로 공유하세요');
 }
 function handleDeepLink() {
+  // ?doc=ID — A4 문서 뷰어 바로 열기 (결재 SSOT의 문서 열람·인쇄를 검증된 이 페이지로 연결)
+  if (_deepLinkDocId) {
+    const did = _deepLinkDocId, dw = _deepLinkDocWhich; _deepLinkDocId = null;
+    try { const _u = new URL(location.href); _u.searchParams.delete('doc'); _u.searchParams.delete('which'); history.replaceState(null, '', _u.pathname + (_u.search || '')); } catch (e) {}
+    setTimeout(function(){ openDocViewer(did, dw); }, 400);
+    return;
+  }
   // ?edit=ID — 해당 업무 편집 모달 바로 열기 (결재 SSOT에서 서식 문서 수정 진입용)
   if (_deepLinkEditId) {
     const eid = _deepLinkEditId; _deepLinkEditId = null;

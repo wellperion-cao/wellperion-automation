@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-8';
+window.__PV='20260715-10';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -389,7 +389,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
     <div class="doc-viewer-bar">
       <span class="doc-viewer-title" id="docViewerTitle"></span>
       <span style="display:flex;gap:8px;flex-shrink:0;">
-        <button class="doc-viewer-btn" onclick="printDocViewer()">🖨 인쇄 / PDF</button>
+        <a id="docViewerPrintLink" class="doc-viewer-btn" href="#" target="_blank" rel="noopener" style="text-decoration:none;">🖨 인쇄 / PDF</a>
         <button class="doc-viewer-btn ghost" onclick="closeDocViewer()">✕ 닫기</button>
       </span>
     </div>
@@ -1286,6 +1286,9 @@ function openDocViewer(id, which) {
   const html = which === 'result' ? parsed.result : parsed.plan;
   if (!html) return;
   _docViewerTaskId = id;
+  // 인쇄 = 검증된 업무 SSOT 뷰어로 연결 (일반 링크 — 팝업차단·인쇄모드와 무관 · 2026-07-15 나우열M 최종)
+  const _pl = document.getElementById('docViewerPrintLink');
+  if (_pl) _pl.href = encodeURI('업무 현황 SSOT.html') + '?doc=' + encodeURIComponent(id) + '&which=' + (which === 'result' ? 'result' : 'plan');
   document.getElementById('docViewerTitle').textContent = (which === 'result' ? '🎯 결과보고' : '📄 기획안') + ' — ' + (t.title || t['업무명'] || '');
   document.getElementById('docViewerPaper').innerHTML = isDocHtml(html)
     ? sanitizeDoc(html)
@@ -2146,6 +2149,8 @@ function escAttr(s) {
 }
 </script>
 
-    <script src="/wellperion-automation/_assets/print_options.js"></script>
+    <!-- print_options.js 제거 (2026-07-15 나우열M): 공용 인쇄옵션 부품이 문서 A4 뷰어의 인쇄 버튼을
+         첫 인쇄 트리거로 오인·바꿔치기해 전체 페이지(15장) 인쇄로 빠지던 실원인.
+         재도입 시 findTrigger가 뷰어 버튼(#docViewerPrintLink)을 제외하도록 수정 후 넣을 것. -->
 </body>
 </html>
