@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-1';
+window.__PV='20260715-2';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -149,6 +149,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .doc-render ul,.doc-render ol{padding-left:22px;margin:4px 0}
 .tpl-btn{font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;cursor:pointer;font-family:inherit;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:inherit}
 .tpl-btn:hover{background:rgba(255,255,255,0.18)}
+.tpl-btn.doc-active{background:rgba(255,255,255,0.22);box-shadow:0 0 0 2px var(--paper),0 0 0 3px currentColor}
 .se-wrap{background:#fff;border-radius:8px}
 
 /* ── Task Card ── */
@@ -499,15 +500,45 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <label>업무 본문 <span style="font-size:11px;color:var(--dim);font-weight:400;">(한 줄 요약 — 자세한 건 아래 내용 섹션)</span></label>
       <textarea id="fContent" placeholder="이 업무의 한 줄 요약" style="min-height:240px;"></textarea>
     </div>
-    <div class="field" id="fPlanField" style="background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(91,159,213,0.35);">
-      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;margin-bottom:8px;">
-        <span>📋 내용 <span style="font-size:11px;color:var(--dim);font-weight:400;">(목적·범위·해결 전략·실행 계획)</span></span>
+    <div class="field" id="fDocField" style="background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(91,159,213,0.35);">
+      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+        <span>📝 문서 <span style="font-size:11px;color:var(--dim);font-weight:400;">(양식 선택 → 작성 · 예산 포함)</span></span>
         <span style="display:flex;gap:6px;align-items:center;">
-          <button type="button" class="tpl-btn" style="color:var(--blue);border-color:rgba(91,159,213,0.4);" onclick="insertDocTemplate('plan')">📄 기획안 서식 넣기</button>
           <span id="fPlanLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
+          <span id="fResultLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;display:none;"></span>
         </span>
       </label>
-      <div class="se-wrap"><textarea id="fPlan" placeholder="4섹션 내용 (간단한 업무는 비워둬도 OK)&#10;목적 — &#10;범위 — &#10;해결 전략 — &#10;실행 계획 —" style="min-height:350px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea></div>
+      <div id="docEditorArea">
+        <div id="docFormTabs" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+          <button type="button" class="tpl-btn" id="docTabPlain" onclick="selectDocForm('plain')" style="padding:7px 14px;font-size:12px;">⬜ 일반양식</button>
+          <button type="button" class="tpl-btn" id="docTabPlan" onclick="selectDocForm('plan')" style="padding:7px 14px;font-size:12px;color:var(--blue);border-color:rgba(91,159,213,0.4);">📄 기획안</button>
+          <button type="button" class="tpl-btn" id="docTabResult" onclick="selectDocForm('result')" style="padding:7px 14px;font-size:12px;color:var(--purple);border-color:rgba(167,139,218,0.4);">🎯 결과보고</button>
+          <span style="font-size:11px;color:var(--dim);align-self:center;">같은 탭을 한 번 더 누르면 서식을 새로 깔 수 있어요</span>
+        </div>
+        <div class="se-wrap" id="docPlanWrap"><textarea id="fPlan" placeholder="일반양식 — 자유롭게 작성 (기획안 탭을 누르면 서식이 깔립니다)" style="min-height:350px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea></div>
+        <div class="se-wrap" id="docResultWrap" style="display:none;"><textarea id="fResult" placeholder="결과보고 — 최종 결과·산출물·달성도·교훈" style="min-height:260px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea></div>
+      </div>
+      <div style="margin-top:12px;background:var(--green-bg);padding:12px 14px;border-radius:8px;border:1px solid rgba(106,191,123,0.3);">
+        <label style="display:flex;align-items:center;justify-content:space-between;color:var(--green);font-weight:700;">
+          <span>💰 예산 <span style="font-size:11px;color:var(--dim);font-weight:400;">(결제 권한 기준 v2.0 자동 라우팅)</span></span>
+        </label>
+        <div style="display:flex;gap:6px;align-items:stretch;margin-top:8px;">
+          <select id="fBudgetCategory" onchange="updateBudgetRoute()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:13px;font-family:inherit;flex:1;">
+            <option value="">예산 항목 (선택)</option>
+            <option value="일상 운영비">① 일상 운영비 (사무·소모품·식음료·회식)</option>
+            <option value="소액 유지보수">② 소액 유지보수 (기계·누수·전기 수리)</option>
+            <option value="마케팅">③ 마케팅 (광고·DM·콘텐츠·외부 행사)</option>
+            <option value="비상 지출">④ 비상 지출 (안전사고·긴급 대응)</option>
+            <option value="계약·정기 약정">⑤ 계약·정기 약정 (렌탈·제휴·공사)</option>
+            <option value="IT·소프트웨어">⑥ IT·소프트웨어 (구독·클라우드)</option>
+            <option value="급여·인건비·외주·교육">⑦ 급여·인건비·외주·교육</option>
+            <option value="장비 구매·교체">⑧ 장비 구매·교체</option>
+            <option value="시설물 리뉴얼(공간 디자인)">⑨ 시설물 리뉴얼(공간 디자인)</option>
+          </select>
+          <input type="number" id="fBudgetAmount" placeholder="금액 (원)" min="0" step="1000" oninput="updateBudgetRoute()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:13px;font-family:inherit;width:140px;flex-shrink:0;">
+        </div>
+        <div id="budgetRouteHint" style="font-size:12px;color:var(--dim);margin-top:6px;line-height:1.5;"></div>
+      </div>
     </div>
     <div class="field" id="fMeetingField" style="display:none;background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(91,159,213,0.35);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;margin-bottom:8px;">
@@ -515,27 +546,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <span id="fMeetingLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
       </label>
       <div id="fMeetingNotes"></div>
-    </div>
-    <div class="field" style="background:var(--green-bg);padding:12px 14px;border-radius:8px;border:1px solid rgba(106,191,123,0.3);">
-      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--green);font-weight:700;">
-        <span>💰 예산 <span style="font-size:11px;color:var(--dim);font-weight:400;">(결제 권한 기준 v2.0 자동 라우팅)</span></span>
-      </label>
-      <div style="display:flex;gap:6px;align-items:stretch;margin-top:8px;">
-        <select id="fBudgetCategory" onchange="updateBudgetRoute()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:13px;font-family:inherit;flex:1;">
-          <option value="">예산 항목 (선택)</option>
-          <option value="일상 운영비">① 일상 운영비 (사무·소모품·식음료·회식)</option>
-          <option value="소액 유지보수">② 소액 유지보수 (기계·누수·전기 수리)</option>
-          <option value="마케팅">③ 마케팅 (광고·DM·콘텐츠·외부 행사)</option>
-          <option value="비상 지출">④ 비상 지출 (안전사고·긴급 대응)</option>
-          <option value="계약·정기 약정">⑤ 계약·정기 약정 (렌탈·제휴·공사)</option>
-          <option value="IT·소프트웨어">⑥ IT·소프트웨어 (구독·클라우드)</option>
-          <option value="급여·인건비·외주·교육">⑦ 급여·인건비·외주·교육</option>
-          <option value="장비 구매·교체">⑧ 장비 구매·교체</option>
-          <option value="시설물 리뉴얼(공간 디자인)">⑨ 시설물 리뉴얼(공간 디자인)</option>
-        </select>
-        <input type="number" id="fBudgetAmount" placeholder="금액 (원)" min="0" step="1000" oninput="updateBudgetRoute()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:13px;font-family:inherit;width:140px;flex-shrink:0;">
-      </div>
-      <div id="budgetRouteHint" style="font-size:12px;color:var(--dim);margin-top:6px;line-height:1.5;"></div>
     </div>
     <div class="field" style="background:var(--accent-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(183,159,138,0.35);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--accent);font-weight:700;margin-bottom:8px;">
@@ -555,16 +565,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         </div>
       </div>
       <div style="font-size:11px;color:var(--dim);margin-top:6px;">💡 저장 시 미합류 내용도 자동 합류 · 추가된 항목은 위 목록에 누적</div>
-    </div>
-    <div class="field" id="fResultField" style="background:var(--purple-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(167,139,218,0.35);">
-      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--purple);font-weight:700;margin-bottom:8px;">
-        <span>🎯 결과보고 <span style="font-size:11px;color:var(--dim);font-weight:400;">(최종 결과·산출물·교훈)</span></span>
-        <span style="display:flex;gap:6px;align-items:center;">
-          <button type="button" class="tpl-btn" style="color:var(--purple);border-color:rgba(167,139,218,0.4);" onclick="insertDocTemplate('result')">🎯 결과보고 서식 넣기</button>
-          <span id="fResultLockBadge" style="font-size:11px;color:var(--dim);font-weight:500;"></span>
-        </span>
-      </label>
-      <div class="se-wrap"><textarea id="fResult" placeholder="진척 마무리 후 최종 결과·산출물·달성도·교훈을 정리하세요.&#10;예시:&#10;🎯 결과 — &#10;📦 산출물 — &#10;💡 교훈 —" style="min-height:140px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea></div>
     </div>
     <div class="field">
       <label>외부 링크 (옵션)</label>
@@ -2058,6 +2058,7 @@ function applyLifecycleLocks(task) {
   setLock('progressLogDate',  locks.progress);
   setLock('fResult',  locks.result, 'fResultLockBadge');
   setDocLock('result', locks.result);
+  _resultLocked = locks.result;
   setLock('fBudgetCategory', locks.budget);
   setLock('fBudgetAmount',   locks.budget);
   // approvalReq 체크박스 잠금은 별도 처리
@@ -2298,13 +2299,49 @@ function buildDocTemplate(mode) {
 }
 function insertDocTemplate(mode) {
   if (mode === 'plan' && isMeetingCat()) { alert('회의 카테고리는 참석자별 회의 칸을 사용합니다.'); return; }
-  const locked = mode === 'plan' ? _planLocked : false;
+  const locked = mode === 'plan' ? _planLocked : _resultLocked;
   if (locked) { alert('잠금 상태에서는 서식을 넣을 수 없습니다.'); return; }
   if (!ensureDocEditors()) { alert('문서 편집기를 불러오지 못했습니다. (네트워크 확인)'); return; }
   const cur = getDocValue(mode);
   if (cur && !confirm('현재 작성 내용을 지우고 ' + (mode === 'plan' ? '기획안' : '결과보고') + ' 서식으로 새로 시작할까요?')) return;
   const ed = mode === 'plan' ? _planEd : _resultEd;
   ed.setContents(buildDocTemplate(mode));
+}
+
+/* ── 📝 문서 통합 칸: 양식 탭 (일반양식/기획안/결과보고) — 2026-07-15 나우열M 지시 ──
+   plain·plan = PLAN 슬롯(내용) 공유 / result = RESULT 슬롯. 데이터 마커 구조 불변.
+   첫 클릭 = 전환(열람), 빈 슬롯이면 서식 자동 삽입, 같은 탭 재클릭 = 서식 재삽입(확인). */
+var _docTab = 'plain';
+var _resultLocked = false;
+function selectDocForm(mode, silent) {
+  ensureDocEditors();
+  const wasActive = (_docTab === mode);
+  _docTab = mode;
+  const isResult = (mode === 'result');
+  const pw = document.getElementById('docPlanWrap');
+  const rw = document.getElementById('docResultWrap');
+  if (pw) pw.style.display = isResult ? 'none' : '';
+  if (rw) rw.style.display = isResult ? '' : 'none';
+  const pb = document.getElementById('fPlanLockBadge');
+  const rb = document.getElementById('fResultLockBadge');
+  if (pb) pb.style.display = isResult ? 'none' : '';
+  if (rb) rb.style.display = isResult ? '' : 'none';
+  [['docTabPlain','plain'],['docTabPlan','plan'],['docTabResult','result']].forEach(function(p){
+    const b = document.getElementById(p[0]);
+    if (b) b.classList.toggle('doc-active', p[1] === mode);
+  });
+  if (silent) return;
+  if (mode === 'plain') return;                         // 일반양식 = 빈 흰 종이 그대로
+  if (mode === 'plan' && isMeetingCat()) return;        // 회의는 참석자별 칸 사용
+  const locked = (mode === 'plan') ? _planLocked : _resultLocked;
+  if (locked) return;                                   // 잠금 시 열람만
+  const ed = (mode === 'plan') ? _planEd : _resultEd;
+  if (!ed) return;
+  const cur = getDocValue(mode);
+  if (!cur) { ed.setContents(buildDocTemplate(mode)); return; }
+  if (wasActive && confirm('현재 ' + (mode === 'plan' ? '기획안' : '결과보고') + ' 내용을 지우고 서식으로 새로 시작할까요?')) {
+    ed.setContents(buildDocTemplate(mode));
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -2337,6 +2374,7 @@ function openAddModal() {
   ensureDocEditors();
   setDocValue('plan', '');
   setDocValue('result', '');
+  selectDocForm('plain', true);
   updateBudgetRoute();
   applyLifecycleLocks(null);  // 신규 = free stage
   // 이전에 열었던 회의 업무의 잔여 칸/순서/캐시 제거 → 업무 간 내용 교차오염(동기화) 방지
@@ -2429,10 +2467,15 @@ function renderMeetingNotes() {
 }
 function syncMeetingMode() {
   const meeting = isMeetingCat();
-  const pf = document.getElementById('fPlanField');
   const mf = document.getElementById('fMeetingField');
-  if (pf) pf.style.display = meeting ? 'none' : '';
   if (mf) mf.style.display = meeting ? '' : 'none';
+  // 회의 = 참석자별 칸 사용 → 문서 탭에서 일반양식·기획안 숨기고 결과보고 슬롯만 유지 (2026-07-15 통합칸)
+  const tp = document.getElementById('docTabPlain');
+  const tl = document.getElementById('docTabPlan');
+  if (tp) tp.style.display = meeting ? 'none' : '';
+  if (tl) tl.style.display = meeting ? 'none' : '';
+  if (meeting && _docTab !== 'result') selectDocForm('result', true);
+  if (!meeting && _docTab === 'result' && !getDocValue('result')) selectDocForm('plain', true);
   const badge = document.getElementById('fMeetingLockBadge');
   if (badge) badge.textContent = _planLocked ? '🔒 잠금' : '✏️ 편집 가능';
   if (meeting) renderMeetingNotes();
@@ -2497,8 +2540,10 @@ function openEditModal(id) {
     }
   }
   ensureDocEditors();
-  setDocValue('plan', parsed.plan || (isDocHtml(parsed.plan) ? '' : PLAN_TEMPLATE));
+  setDocValue('plan', parsed.plan || '');
   setDocValue('result', parsed.result || '');
+  // 기본 탭: 결과보고 있으면 결과보고, 서식 기획안이면 기획안, 그 외 일반양식
+  selectDocForm(parsed.result ? 'result' : (isDocHtml(parsed.plan) ? 'plan' : 'plain'), true);
   modalLogsCache = parsed.logs.slice();
   document.getElementById('progressLogDate').value = todayDateStr();
   document.getElementById('progressLogInput').value = '';
