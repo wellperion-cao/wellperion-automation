@@ -2819,9 +2819,15 @@ document.getElementById('guideHubOverlay').addEventListener('click', function(e)
 
 /* ── 현황카드(새 문의·오늘 예약) 클릭 라우팅 (배754, 2026-07-10 — 2026-07-15 GM 지시로 이탈위험·오늘할일 카드
    삭제되며 'risk'·'task' 분기도 net-zero) — family에 따라 이동 대상이 달라 dispatcher로 분리.
-   강습(family=lesson)은 새문의 데이터가 이미 현재 화면(강습 문의 카드)에 보이고 있어 별도 탭 이동 없음(무동작). ── */
+   강습(family=lesson) "새 문의" 카드는 2026-07-15 GM 재지시로 다른 4카드(신규등록/회원/대기자/LOSS)와 같은
+   클릭형 dash-card로 통일됐음 — 무동작 가드는 그 이전 버전(비클릭형) 기준이라 이제 오래됨(GM 버그신고,
+   2026-07-15 시포·GM). 기존 라우팅 유틸(_lessonComboClick, 형제 카드 전부가 쓰는 함수) 그대로 재사용해
+   문의현황(inq) 탭으로 이동. ── */
 function heroCardClick(kind) {
-  if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') { return; }
+  if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') {
+    if (kind === 'new') _lessonComboClick('inq');
+    return;
+  }
   // 멤버십 family — 공간렌트·비즈니스 유형 화면에 있을 때 클릭해도 문의DB·달력은 type-membership 안에 있어
   // 유형이 렌트/비즈면 안 보임(무반응처럼 보임) → 이동 전 유형부터 멤버십으로 되돌려 실제로 화면이 바뀌게 함.
   if ((kind === 'new' || kind === 'book') && document.getElementById('type-membership') && !document.getElementById('type-membership').classList.contains('active')) {
