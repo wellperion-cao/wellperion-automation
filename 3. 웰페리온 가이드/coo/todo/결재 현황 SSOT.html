@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-6';
+window.__PV='20260715-7';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -1297,32 +1297,18 @@ function closeDocViewer() {
   document.body.style.overflow = '';
   _docViewerTaskId = null;
 }
-/* 뷰어 인쇄 — 숨김 프레임에 문서만 담아 인쇄 (팝업 차단·페이지 인쇄모드와 완전 무관 · 2026-07-15 나우열M)
-   기존 새 창(window.open) 방식이 팝업 차단 환경에서 무력화 → iframe 방식으로 교체. */
+/* 뷰어 인쇄 — 업무 SSOT에서 정상 확인된 인쇄모드('doc') 방식 그대로 (2026-07-15 나우열M)
+   ※ 이전 '여러 장·이중 A4' 증상의 실원인은 구버전 고착(PV 가드 구멍)이었음 — 가드 수정 후 동일 방식 복원.
+   숨김 iframe 방식은 크기 0 프레임이 렌더링되지 않아 부모 화면이 인쇄되는 크롬 함정이 있어 폐기. */
 function printDocViewer() {
-  const paper = document.getElementById('docViewerPaper');
-  if (!document.getElementById('docViewerOverlay').classList.contains('show') || !paper) return;
-  const old = document.getElementById('docPrintFrame');
-  if (old) old.remove();
-  const f = document.createElement('iframe');
-  f.id = 'docPrintFrame';
-  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
-  document.body.appendChild(f);
-  const docTitle = (document.getElementById('docViewerTitle').textContent || '문서').replace(/</g, '&lt;');
-  const d = f.contentDocument || f.contentWindow.document;
-  d.open();
-  d.write('<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>' + docTitle + '</title>'
-    + '<style>@page{margin:12mm;size:A4}'
-    + 'body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#111;font-size:14px;line-height:1.7;margin:0}'
-    + 'table{border-collapse:collapse;width:100%;margin:6px 0}td,th{border:1px solid #bbb;padding:5px 8px;vertical-align:top}'
-    + 'img{max-width:100%;height:auto}p{margin:4px 0}h1{margin:10px 0 4px}h2{margin:14px 0 6px}'
-    + '*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    + '</style></head><body>' + paper.innerHTML + '</body></html>');
-  d.close();
-  setTimeout(function () {
-    try { f.contentWindow.focus(); f.contentWindow.print(); }
-    catch (e) { alert('인쇄 실행 실패: ' + e.message); }
-  }, 350);
+  if (!document.getElementById('docViewerOverlay').classList.contains('show')) return;
+  var pa = document.getElementById('approvalPrintArea');
+  if (pa) pa.innerHTML = '';   // 이전 카드 인쇄 잔여물 제거 (이중 출력 원천 차단)
+  var f = document.getElementById('docPrintFrame');
+  if (f) f.remove();           // 구버전 프레임 잔여물 제거
+  document.body.dataset.printMode = 'doc';
+  window.print();
+  delete document.body.dataset.printMode;
 }
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && document.getElementById('docViewerOverlay').classList.contains('show')) closeDocViewer();
