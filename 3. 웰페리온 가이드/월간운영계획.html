@@ -406,6 +406,17 @@
   /* ── 0순위 배지(💰 매출 섹션 헤더 · 월별 상단 재구성 · GM 확정 2026-07-04) ── */
   .rank0-badge{display:inline-block; font-size:11px; font-weight:800; color:#221F20; background:var(--gold); border-radius:7px; padding:2px 9px; margin-right:6px; letter-spacing:-0.01em; vertical-align:middle;}
 
+  /* ── 🗂️ 부서별 업무 현황 요약 (이달 objectives 부서별/담당별 집계 · 순수 추가 섹션) ── */
+  .blk.dept-work-wrap{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:5px 14px 10px; margin-bottom:4px;}
+  .blk.dept-work-wrap h2.sec{margin-top:8px;}
+  .dws-sub-h{font-size:12.5px; font-weight:700; color:var(--text-soft); margin:6px 2px 8px;}
+  .dws-chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .dws-chip{font-size:12px; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:5px 12px; white-space:nowrap;}
+  .dws-chip b{color:var(--text); font-weight:800; margin-left:3px;}
+  .dws-chip-sub{font-size:10.5px; color:var(--dim); margin-left:5px;}
+  table.rpt.dws-tbl{min-width:0;}
+  .dws-tbl td.dws-num{font-weight:800; color:var(--text); font-variant-numeric:tabular-nums;}
+
   /* ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · 중요도 자동 선정 · GM 확정 2026-07-04) ── */
   .blk.top3-wrap{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:5px 14px 10px; margin-bottom:4px;}
   .blk.top3-wrap h2.sec{margin-top:8px;}
@@ -971,6 +982,12 @@
     <section class="blk top3-wrap" id="top3-wrap" data-blkid="top3">
       <h2 class="sec">🎯 이달 핵심 과제 top3 <span class="stag">매출 제외 · 중요도순 1·2·3</span></h2>
       <div id="top3-board"><div class="board-status">핵심 과제 top3를 선정하는 중…</div></div>
+    </section>
+
+    <!-- 🗂️ 부서별 업무 현황 요약 (이달 objectives 부서별/담당별 집계 · 순수 추가 섹션 · GM 지시) -->
+    <section class="blk dept-work-wrap" id="dept-work-wrap" data-blkid="deptwork">
+      <h2 class="sec">🗂️ 부서별 업무 현황 요약 <span class="stag">이달 과제 부서별 완료·진행 + 담당별 건수</span></h2>
+      <div id="dept-work-summary"><div class="board-status">부서별 업무 현황을 집계하는 중…</div></div>
     </section>
 
     <!-- 📋 이달 핵심 과제 상세 (신규/이월 상세표 + 콤팩트 요약 · 舊 sum-hero — 상단 top3 아래 상세) -->
@@ -1540,6 +1557,62 @@
     }).join('');
     // t3-legend(산식 부연) 제거(GM 지시 2026-07-06 가독성 정리) — 요지는 헤더 stag('매출 제외 · 중요도순 1·2·3')로 충분.
     host.innerHTML = '<div class="t3-grid">' + cards + '</div>';
+  }
+
+  // ── 🗂️ 부서별 업무 현황 요약 (이달 objectives 부서별/담당별 집계 · 순수 추가 · 새 소스 없음 · GM 지시) ──
+  //   부서별: dept로 그룹 → 완료/진행/계획·이월/합계. 담당별: owner를 owner_nick 닉네임화 → 건수(완료·진행 내역).
+  //   정직: objectives 없으면 '이달 업무 없음'. 지어내기 없음(기존 필드만 사용).
+  function renderDeptWorkSummary(monKey){
+    var host = document.getElementById('dept-work-summary');
+    if(!host) return;
+    var mk = monKey || _sel;
+    var m = _data && _data.months && _data.months[mk];
+    var objs = (m && m.objectives) || [];
+    if(!objs.length){ host.innerHTML = '<div class="board-status">이달 업무 없음</div>'; return; }
+    // ① 부서별 집계
+    var deptMap = {}, deptOrder = [];
+    objs.forEach(function(o){
+      var d = (o.dept || '미지정');
+      if(!deptMap[d]){ deptMap[d] = {done:0, prog:0, plan:0, total:0}; deptOrder.push(d); }
+      var st = o.status || '';
+      if(st === '완료') deptMap[d].done++;
+      else if(st === '진행') deptMap[d].prog++;
+      else deptMap[d].plan++; // 계획·이월(및 기타)
+      deptMap[d].total++;
+    });
+    var deptRows = deptOrder.map(function(d){
+      var c = deptMap[d];
+      return '<tr>' +
+        '<td class="r-title">' + esc(d) + '</td>' +
+        '<td><span class="obadge 완료">' + c.done + '</span></td>' +
+        '<td><span class="obadge 진행">' + c.prog + '</span></td>' +
+        '<td><span class="obadge 계획">' + c.plan + '</span></td>' +
+        '<td class="dws-num">' + c.total + '</td>' +
+      '</tr>';
+    }).join('');
+    var deptTable = '<div class="rpt-wrap"><table class="rpt dws-tbl"><thead><tr>' +
+      '<th>부서</th><th>완료</th><th>진행</th><th>계획·이월</th><th>합계</th>' +
+      '</tr></thead><tbody>' + deptRows + '</tbody></table></div>';
+    // ② 담당별 집계 (owner → owner_nick 닉네임)
+    var ownMap = {}, ownOrder = [];
+    objs.forEach(function(o){
+      var role = o.owner || '미지정';
+      if(!ownMap[role]){ ownMap[role] = {done:0, prog:0, total:0}; ownOrder.push(role); }
+      var st = o.status || '';
+      if(st === '완료') ownMap[role].done++;
+      else if(st === '진행') ownMap[role].prog++;
+      ownMap[role].total++;
+    });
+    var ownNick = function(role){ return (_data && _data.owner_nick && _data.owner_nick[role]) || role || '미지정'; };
+    var ownChips = ownOrder.sort(function(a, b){ return ownMap[b].total - ownMap[a].total; }).map(function(role){
+      var c = ownMap[role];
+      return '<span class="dws-chip">' + esc(ownNick(role)) + '<b>' + c.total + '건</b>' +
+        '<span class="dws-chip-sub">(완료' + c.done + '·진행' + c.prog + ')</span></span>';
+    }).join('');
+    host.innerHTML =
+      '<div class="dws-sub-h">🏢 부서별 완료·진행 건수</div>' + deptTable +
+      '<div class="dws-sub-h" style="margin-top:12px;">👤 담당별 건수</div>' +
+      '<div class="dws-chips">' + ownChips + '</div>';
   }
 
   // ── 월 헤더 (테마 문구는 핵심과제 표와 중복 → 렌더 제거, GM 지시 2026-07-04. 데이터 m.theme/report.theme는 정본 보존) ──
@@ -2740,6 +2813,7 @@
     renderViewToggle();
     applyView();
     renderTop3();
+    renderDeptWorkSummary(_sel);
     renderAnnual();
     renderRoadmap();
     renderFinance();
