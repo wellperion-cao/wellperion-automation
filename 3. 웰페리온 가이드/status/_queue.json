@@ -1058,14 +1058,16 @@
   {
     "task_id": "CPO-2026-07-14-PRODUCT-TEST-TAB",
     "clevel": "cpo",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-14",
     "title": "[시포] 상품기획 \"테스트 탭\" 처리 — 빈 스캐폴딩(작업공간?) 확인 후 삭제 or 채우기",
-    "note": "[2026-07-14 웰리] 상품기획.html 감사서 발견: \"🧪 테스트\" 탭(372·716-723)이 \"여기에 실험/검토 채워넣기\" 플레이스홀더뿐인 빈 스캐폴딩으로 GM 대면 페이지에 정식 탭 노출 중. 시포가 실제 작업공간으로 쓰는지 확인 후: 쓰면 실용도로 채우기, 안 쓰면 삭제. 페이지 정리 전체승인서 안전상 이 건만 제외했음.",
-    "next": "👉 시포: 테스트 탭 용도 확인 → 삭제 or 실콘텐츠로 채우기",
+    "note": "[2026-07-14 웰리] 상품기획.html 감사서 발견: \"🧪 테스트\" 탭(372·716-723)이 \"여기에 실험/검토 채워넣기\" 플레이스홀더뿐인 빈 스캐폴딩으로 GM 대면 페이지에 정식 탭 노출 중. 시포가 실제 작업공간으로 쓰는지 확인 후: 쓰면 실용도로 채우기, 안 쓰면 삭제. 페이지 정리 전체승인서 안전상 이 건만 제외했음. [2026-07-15 입항] GM 승인 삭제. 빈 placeholder(실작업공간 미사용 확인)라 삭제 확정. 상품기획.html 테스트 탭 버튼(switchTab test)+콘텐츠 패널(#tab-test) 완전 제거·죽은참조 0(switchTab test분기·기본탭배열 없음, grep 0매치). 라이브검증 PASS(5탭 멤버십/성인/유소년/요금정책/기획작업대 정상전환·#tab-test DOM 0·콘솔0·레이아웃 회귀0). 커밋 5cd4632d(상품기획.html만 원자적).",
+    "next": "🔗 상품기획 테스트 탭 삭제 완결·입항. 시포 다음=멤버십/강습 페이지 정리(다른 세션 문의회원.html 완료 후 착수·스펙노트 누적중).",
     "module": "P",
-    "ship_no": 990
+    "ship_no": 990,
+    "terminal": true,
+    "processed_at": "2026-07-15"
   },
   {
     "task_id": "CEO-2026-07-14-ADHOC-7eba68fb",
@@ -1986,5 +1988,19 @@
     "module": "O2",
     "note": "GM 지시: 종합접수처(17ly 시트) 접수일시 최신이 상단에. VOC_배포.js reg_submit에 append후 _regSortSheetDesc(접수일시 desc·행단위sort로 상태색정합) 추가 + 기존데이터 _regSortAllDesc 1회. clasp push+웹앱 @45 재배포(URL유지)+reg_sort 실행 sorted:6 확인. .deploy-voc는 gitignore(clasp정본).",
     "next": "🔗 완결. 후속(선택)=TOKEN_ENFORCE 발효 시 reg_sort 게이트 확인"
+  },
+  {
+    "task_id": "CTO-2026-07-15-ADHOC-8792c3c0",
+    "clevel": "cto",
+    "title": "[시토] WP 종합접수처 라벨 문자열 외과교체 모드(swap-reception-text) — vc_raw_html 디코드 경로",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1062,
+    "artifact": "- [vc_raw_html] base64 블록을 디코드해 find→repl 단일 문자열만 교체(plain swap 불가 해결)\n- count==1 가드·역치환 대조·재인코드 라운드트립·원본 백업·--dry-run 사전검증\n- 발행 상태 유지(#publish). 분실물 사진 업로드 안내 문구 라이브 반영(post=8434) (CLI ad-hoc · 커밋 8792c3c0)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8792c3c0235e1d4f41825b53f8bbf310660cdfd8"
   }
 ]
