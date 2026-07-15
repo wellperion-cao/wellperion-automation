@@ -1042,7 +1042,10 @@ var LF_HEADERS = [
   { key: 'handoverLoc', label: '수령장소'       },
   { key: 'signUrl',     label: '서명URL'        },
   { key: 'signPurgeAt', label: '서명파기예정일' },
-  { key: 'staff',       label: '등록/처리직원'  }
+  { key: 'staff',       label: '등록/처리직원'  },
+  // ★ 신규(2026-07-15 시토): 수령 시 '주는 담당자' 기록. 물리 컬럼 정합 위해 반드시 맨 끝에 추가
+  //   (_lfHandover 는 _lfIdx_ 기반 positional write → 중간 삽입 시 기존 행 오정렬).
+  { key: 'handoverStaff', label: '수령담당자'   }
 ];
 var LF_STATUS = { POSTED: '게시중', HANDED: '수령완료', VOID: '철회' };
 var LF_PHOTO_FOLDER_NAME = 'LF_Photos';       // 공개 VIEW (갤러리용)
@@ -1067,7 +1070,16 @@ function _lfGetSheet_() {
   var headers = LF_HEADERS.map(function (h) { return h.label; });
   var sh = ss.getSheetByName(LF_SHEET);
   if (sh) {
-    if (sh.getLastRow() < 1) sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+    if (sh.getLastRow() < 1) { sh.getRange(1, 1, 1, headers.length).setValues([headers]); return sh; }
+    // 자가치유: 신규 헤더(수령담당자 등) 누락 시 빈 헤더칸만 보강 (기존 라벨 무클로버·맨끝 append).
+    var lastCol = Math.max(sh.getLastColumn(), 1);
+    var width = Math.max(lastCol, headers.length);
+    var cur = sh.getRange(1, 1, 1, width).getValues()[0];
+    var need = false;
+    for (var i = 0; i < headers.length; i++) {
+      if (String(cur[i] || '') === '') { cur[i] = headers[i]; need = true; }
+    }
+    if (need) sh.getRange(1, 1, 1, cur.length).setValues([cur]);
     return sh;
   }
   sh = ss.insertSheet(LF_SHEET);
@@ -1191,6 +1203,7 @@ function _lfHandover(body) {
   if (!id) return _vJson({ ok: false, error: '습득ID 필수' });
   var receiver    = String(body.receiver || '').trim();
   var handoverLoc = String(body.handoverLoc || '').trim();
+  var handoverStaff = String(body.handoverStaff || '').trim();
   var sign = body.signature || body.sign || '';
   if (!receiver) return _vJson({ ok: false, error: '수령자 성함은 필수입니다.' });
   if (!sign)     return _vJson({ ok: false, error: '수령 확인 서명은 필수입니다.' });
@@ -1215,17 +1228,19 @@ function _lfHandover(body) {
   var purge = new Date(); purge.setMonth(purge.getMonth() + 6);
   var purgeStr = Utilities.formatDate(purge, 'Asia/Seoul', 'yyyy-MM-dd');
 
-  existing[_lfIdx_('status')]      = LF_STATUS.HANDED;
-  existing[_lfIdx_('receiver')]    = receiver;
-  existing[_lfIdx_('handedAt')]    = now;
-  existing[_lfIdx_('handoverLoc')] = handoverLoc;
-  existing[_lfIdx_('signUrl')]     = signUrl;
-  existing[_lfIdx_('signPurgeAt')] = purgeStr;
+  existing[_lfIdx_('status')]        = LF_STATUS.HANDED;
+  existing[_lfIdx_('receiver')]      = receiver;
+  existing[_lfIdx_('handedAt')]      = now;
+  existing[_lfIdx_('handoverLoc')]   = handoverLoc;
+  existing[_lfIdx_('handoverStaff')] = handoverStaff;
+  existing[_lfIdx_('signUrl')]       = signUrl;
+  existing[_lfIdx_('signPurgeAt')]   = purgeStr;
   sh.getRange(rowNum, 1, 1, LF_HEADERS.length).setValues([existing]);
 
   _vNotifyTelegram(
     '✅ <b>[습득물 수령완료]</b> ' + id + '\n' +
     '수령자: ' + receiver + '\n' +
+    '담당자: ' + (handoverStaff || '-') + '\n' +
     '수령장소: ' + (handoverLoc || '-') + '\n' +
     '🕒 ' + now
   );
