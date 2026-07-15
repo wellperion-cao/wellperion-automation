@@ -1576,5 +1576,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01SKkU5xPkAhiSm1tnpvNqZu (CLI ad-hoc · 커밋 247513db)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "247513db07dee054dc04a8c974df15cd9de9ed92"
+  },
+  {
+    "task_id": "CTO-2026-07-15-ADHOC-cdac7251",
+    "clevel": "cto",
+    "title": "[시토] 🔔 알림 스케줄 보드 → 📡 모듈 보고 현황에 병합(중복 제거·시토)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1124,
+    "artifact": "기준=모듈 보고 현황 표. 알림 보드 고유가치 2가지 흡수:\n- 마지막 발송 열 신설(erp_status automation_health + kakao_last_send 모듈별 매칭)\n- 건강 신호를 상태 열에 통합: 🟢 발효·정상 / 🔴 발효·실패 / ⚪ 미발효·측정불가·예정(억지 초록 금지)\n🔔 알림 스케줄 보드 섹션(HTML)·렌더 JS(alertChip·ALERT_ROWS·renderAlertBoard)·죽은 참조 제거.\n콘솔에러 0·타 섹션 회귀 0(Playwright 실측). 채널 SVG 로고·발효/미발효 범례 유지. (CLI ad-hoc · 커밋 cdac7251)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "cdac7251284d01b09ac7364c2e5f7f28abd08258"
   }
 ]
