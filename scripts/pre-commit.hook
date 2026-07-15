@@ -121,4 +121,12 @@ if [ -f "$CHATID_DRIFT_GUARD" ] && [ -n "$PYBIN" ]; then
   PYTHONUTF8=1 "$PYBIN" "$CHATID_DRIFT_GUARD" || true
 fi
 
+# ── ④ 종합접수처 리포↔WP 드리프트 가드 (재발방지 · 2026-07-15 시토) ─────────
+# staged 에 reception_block.html 포함 시 WP 라이브(page 8434) 반영 리마인드 출력.
+# 항상 exit 0(fail-open). warn-only — 커밋 절대 막지 않음.
+RECEPTION_DRIFT_GUARD="$REPO_ROOT/scripts/check_reception_wp_drift.py"
+if [ -f "$RECEPTION_DRIFT_GUARD" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$RECEPTION_DRIFT_GUARD" || true
+fi
+
 exit 0
