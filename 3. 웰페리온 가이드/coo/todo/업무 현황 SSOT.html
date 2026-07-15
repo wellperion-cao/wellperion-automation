@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-3';
+window.__PV='20260715-4';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -1585,7 +1585,7 @@ function renderTaskCard(t, idx) {
   // 토글 영역: 내용 + 진척 로그 + 링크 + 첨부
   html += '<div class="task-detail" style="display:none;padding:10px 0 0 18px;border-top:1px dashed var(--border);margin-top:8px;">';
 
-  const parsed = parseContent(t.content);
+  const parsed = hideUnfilledDocs(parseContent(t.content), t.title);
   if (parsed.body) {
     html += '<div class="task-content" style="white-space:pre-wrap;line-height:1.55;">' + esc(parsed.body) + '</div>';
   } else if (!parsed.logs.length && !parsed.budget && !parsed.plan && !parsed.result) {
@@ -1673,7 +1673,7 @@ async function deleteTaskWithAuth(id, title) {
 }
 
 function renderDoneCard(t) {
-  const p = parseContent(t.content || '');
+  const p = hideUnfilledDocs(parseContent(t.content || ''), t.title);
   let html = '<div class="done-card" data-id="' + escAttr(t.id) + '">';
   html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">';
   html += '<div style="flex:1;min-width:0;">';
@@ -2130,6 +2130,43 @@ function sanitizeDoc(html) {
 function docBodyHtml(s) {
   if (isDocHtml(s)) return '<div class="doc-render sun-editor-editable">' + sanitizeDoc(s) + '</div>';
   return '<div style="font-size:13px;white-space:pre-wrap;line-height:1.5;">' + esc(s) + '</div>';
+}
+/* ── 미작성 서식 판별 — 서식만 깔고 내용을 안 쓴 문서는 '없는 것'으로 취급 (2026-07-15 나우열M 지시) ──
+   HTML→텍스트 줄 단위로 분해해 서식 고정 문구·자동 기입값(업무명·담당자·날짜)만 남으면 미작성. */
+function isUnfilledTemplate(html, taskTitle) {
+  if (!isDocHtml(html)) return false;
+  if (/<img/i.test(html)) return false;   // 이미지가 있으면 작성으로 간주
+  const NAMES = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장','김남욱GM','GM'];
+  const S = ['WELLPERION','주식회사 웰페리온 · 하이엔드 프라이빗 스포츠클럽','기 획 안','결 과 보 고','◆',
+    '업무명','작성자','작성일','보고일','기간','수행 기간','핵심 요약',
+    '결과를 한두 문장으로 요약해 주세요 — GM·대표님이 가장 먼저 읽는 칸입니다.','내용을 입력하세요.',
+    '일정','내용','담당','항목','금액','비고','합계','0 원','날짜','지표','목표','실적','달성률',
+    '결재','대표님','7월 3주','7월 4주','8월',
+    '1. 목적','2. 범위','3. 해결 전략','4. 실행 계획 (일정·마일스톤)','5. 예산',
+    '1. 개요','2. 진행 경과','3. 결과·성과','4. 교훈 및 후속 계획',
+    '※ 예산 결재 라인은 아래 💰 예산 항목과 연동됩니다.','※ 예산 결재 라인은 업무 카드의 💰 예산 항목과 연동됩니다.',
+    '📷 성과 사진·캡처는 이 자리에 붙여넣기(Ctrl+V) 하세요.','📷 성과 사진·캡처는 이 자리에 Ctrl+V로 붙여넣으세요.',
+    'WELLPERION · 서울특별시 용산구 서빙고로 413 · 본 문서는 웰페리온 내부 결재용입니다','(업무명)'];
+  const tt = String(taskTitle || '').trim();
+  const lines = String(html).replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trim();
+    if (!l) continue;
+    if (S.indexOf(l) >= 0) continue;
+    if (tt && l === tt) continue;
+    if (/^\d{4}-\d{2}-\d{2}(\s*~\s*(\d{4}-\d{2}-\d{2})?)?$/.test(l)) continue;
+    let rest = l;
+    NAMES.forEach(function (n) { rest = rest.split(n).join(''); });
+    if (!rest.replace(/[,·\s]/g, '')) continue;   // 담당자 이름 조합뿐
+    return false;   // 사용자 작성 내용 발견
+  }
+  return true;
+}
+/* 표시용 정규화 — 미작성 서식 plan/result 를 빈값 처리 (카드·완료로그·인쇄 공용) */
+function hideUnfilledDocs(parsed, taskTitle) {
+  if (parsed && isUnfilledTemplate(parsed.plan, taskTitle)) parsed.plan = '';
+  if (parsed && isUnfilledTemplate(parsed.result, taskTitle)) parsed.result = '';
+  return parsed;
 }
 /* 레거시 줄글 → 편집기용 HTML (이미 HTML이면 그대로) */
 function toEditorHtml(text) {
@@ -2793,8 +2830,11 @@ async function saveTask() {
   const budgetAmt = Number(document.getElementById('fBudgetAmount').value) || 0;
   const budget = (budgetCat && budgetAmt > 0) ? { category: budgetCat, amount: budgetAmt } : null;
   // 기획·결과보고 (선택 항목) — 문서 편집기 값 사용 (레거시 텍스트영역 폴백)
-  const planText = isMeetingCat() ? _composeMeetingPlan() : getDocValue('plan');
-  const resultText = getDocValue('result');
+  // 서식만 깔고 내용을 안 쓴 문서는 저장에서 제외 → 카드·인쇄에 빈 서식이 안 나오게 (2026-07-15)
+  const planText0 = isMeetingCat() ? _composeMeetingPlan() : getDocValue('plan');
+  const planText = isUnfilledTemplate(planText0, title) ? '' : planText0;
+  const resultText0 = getDocValue('result');
+  const resultText = isUnfilledTemplate(resultText0, title) ? '' : resultText0;
   const collabRaw = getCheckboxValues('fCollabGroup');
   const collabArr = collabRaw ? collabRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
   const composedContent = composeContent(
@@ -3330,7 +3370,7 @@ function printResultReport(taskId, override) {
   // 모달에서 인쇄 시: 아직 저장 안 한 현재 화면 값(결재요청·담당)을 반영해 결재칸 누락 방지 (2026-06-18 GM)
   if (override) { t = Object.assign({}, t, override); }
 
-  var parsed = parseContent(t.content);
+  var parsed = hideUnfilledDocs(parseContent(t.content), t.title);
   // 담당자 복수선택 → ' · ' 구분 정리 (2026-05-30 GM 결정: 전원 표시 + 구분자)
   var ownerStr = String(t.owner || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean).join(' · ');
 

@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-1';
+window.__PV='20260715-2';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -744,7 +744,7 @@ function buildApprovalPrint(list) {
   var today = todayDateStr();
 
   return list.map(function(t) {
-    var parsed = parseContent(t.content || '');
+    var parsed = hideUnfilledDocs(parseContent(t.content || ''), t.title || t['업무명']);
     var route = buildEffectiveRoute(t, parsed.budget);
     var signMap = { '부서장': t.deptSign, 'GM': t.gmSign };
     var pending = route.filter(function(r){ return !String(signMap[r] || '').trim(); });
@@ -1220,6 +1220,41 @@ function docBodyHtml(s) {
   if (isDocHtml(s)) return '<div class="doc-render sun-editor-editable">' + sanitizeDoc(s) + '</div>';
   return '<div style="font-size:13px;white-space:pre-wrap;line-height:1.55;">' + esc(s) + '</div>';
 }
+/* 미작성 서식 판별 + 표시 정규화 — 업무 SSOT와 동일 규약 (2026-07-15 나우열M 지시) */
+function isUnfilledTemplate(html, taskTitle) {
+  if (!isDocHtml(html)) return false;
+  if (/<img/i.test(html)) return false;
+  const NAMES = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장','김남욱GM','GM'];
+  const S = ['WELLPERION','주식회사 웰페리온 · 하이엔드 프라이빗 스포츠클럽','기 획 안','결 과 보 고','◆',
+    '업무명','작성자','작성일','보고일','기간','수행 기간','핵심 요약',
+    '결과를 한두 문장으로 요약해 주세요 — GM·대표님이 가장 먼저 읽는 칸입니다.','내용을 입력하세요.',
+    '일정','내용','담당','항목','금액','비고','합계','0 원','날짜','지표','목표','실적','달성률',
+    '결재','대표님','7월 3주','7월 4주','8월',
+    '1. 목적','2. 범위','3. 해결 전략','4. 실행 계획 (일정·마일스톤)','5. 예산',
+    '1. 개요','2. 진행 경과','3. 결과·성과','4. 교훈 및 후속 계획',
+    '※ 예산 결재 라인은 아래 💰 예산 항목과 연동됩니다.','※ 예산 결재 라인은 업무 카드의 💰 예산 항목과 연동됩니다.',
+    '📷 성과 사진·캡처는 이 자리에 붙여넣기(Ctrl+V) 하세요.','📷 성과 사진·캡처는 이 자리에 Ctrl+V로 붙여넣으세요.',
+    'WELLPERION · 서울특별시 용산구 서빙고로 413 · 본 문서는 웰페리온 내부 결재용입니다','(업무명)'];
+  const tt = String(taskTitle || '').trim();
+  const lines = String(html).replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trim();
+    if (!l) continue;
+    if (S.indexOf(l) >= 0) continue;
+    if (tt && l === tt) continue;
+    if (/^\d{4}-\d{2}-\d{2}(\s*~\s*(\d{4}-\d{2}-\d{2})?)?$/.test(l)) continue;
+    let rest = l;
+    NAMES.forEach(function (n) { rest = rest.split(n).join(''); });
+    if (!rest.replace(/[,·\s]/g, '')) continue;
+    return false;
+  }
+  return true;
+}
+function hideUnfilledDocs(parsed, taskTitle) {
+  if (parsed && isUnfilledTemplate(parsed.plan, taskTitle)) parsed.plan = '';
+  if (parsed && isUnfilledTemplate(parsed.result, taskTitle)) parsed.result = '';
+  return parsed;
+}
 
 function isGmOwned(t) {
   return String((t && (t.owner || t['담당자'])) || '').split(',').map(function(s){ return s.trim(); }).indexOf('김남욱GM') >= 0;
@@ -1328,7 +1363,7 @@ async function saveGmEdit(taskId, content, btn) {
 function renderApprovalCard(t, idx) {
   const isRejected = /반려/.test(t.approvalStatus);
   const isDone = t.approvalStatus === '결재완료';
-  const parsed = parseContent(t.content);
+  const parsed = hideUnfilledDocs(parseContent(t.content), t.title || t['업무명']);
   const route = buildEffectiveRoute(t, parsed.budget);
   const nxt = (!isDone && !isRejected) ? nextApprover(t, route) : null;
 
