@@ -1300,20 +1300,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </div>
   </div><!-- /cpoStatusBoard -->
 
-  <!-- ══ 이탈방지 액션 모듈 — 배754 후속(등록회원 이탈방지, '오늘 할 일'과 동일 철학). ①갱신임박(잔여일 0~30,
-       cpo_churn_stats·cpo_report.py와 동일 임계값이라 월간 롤업과 숫자 일치)·②저이용 후보(추정, 등록일 대비 이용일수 비율).
-       소스=_activeRows(scope=valid, 사전로드) — 신규 GAS 호출 0. 클릭 → 기존 재등록 상담 모달(openReconForMember) 재사용.
-       유효회원 스코프에서만 의미 있어 종료·법인 탭에서는 숨김. 2026-07-09 시포·GM.
-       2026-07-15 GM 지시: 상단 이탈위험 히어로 카드(#sumRiskCard) 라인 근방으로 승격 이동(기존 pane-active 깊은 위치→여기,
-       id·렌더 로직 100% 동일 — 위치만 이동). cpoStatusBoard와 마찬가지로 멤버십·강습 family 공유 위치이므로
-       renderChurnActionPanel()에서 강습(family=lesson) 스코프는 명시적으로 숨김(강습 회귀 방지). -->
-  <div class="card" id="churnActionPanel" style="display:none;padding:14px 18px;margin:0 0 14px;border-left:3px solid var(--yellow)">
-    <div class="card-title" style="margin-bottom:10px;padding-bottom:10px">
-      <span class="icon">🛟</span><span>이탈방지 액션</span>
-      <span id="capScopeNote" style="margin-left:auto;font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap"></span>
-    </div>
-    <div id="capBody"><div class="tap-empty">불러오는 중…</div></div>
-  </div>
+  <!-- 이탈방지 액션 모듈(⏰갱신임박·📉저이용) = 2026-07-15 GM 재지시로 상단 단독 패널 제거 → 이탈관리 모달(openChurnManage,
+       data-gdoc="churnaction")과 오늘 할 일(tapBody 'renew'·'lowuse' 섹션)로 이관·병합. 여기 없음(중복 아님). -->
 
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
   <div id="type-membership" class="type-pane active">
@@ -1631,7 +1619,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <!-- 현황 요약 카드 (작업 3) -->
       <div id="activeSummary" class="card" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--teal)"></div>
 
-      <!-- 이탈방지 액션 모듈 = 2026-07-15 GM 지시로 상단 이탈위험 히어로 라인 근방(#churnActionPanel, cpoStatusBoard 바로 아래)으로 승격 이동. 여기 없음(중복 아님). -->
+      <!-- 이탈방지 액션 모듈(⏰갱신임박·📉저이용) = 2026-07-15 GM 재지시로 상단 단독 패널 폐지 → 이탈관리 모달(openChurnManage)·
+           오늘 할 일(tapBody)로 이관·병합. 여기 없음(중복 아님). -->
 
       <div class="active-toggle" style="display:flex;gap:6px;margin-bottom:12px">
         <button type="button" id="activeScopeValid" class="seg-btn" onclick="setActiveScope('valid', this)"
@@ -2294,6 +2283,16 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         </div>
       </div>
     </div>
+  </div>
+  <!-- 이탈방지 액션(⏰갱신임박·📉저이용) — 배754 후속(등록회원 이탈방지). 소스=_activeRows(scope=valid, 사전로드) — 신규 GAS 호출 0.
+       클릭 → 기존 재등록 상담 모달(openReconForMember) 재사용. 2026-07-09 시포·GM.
+       2026-07-15 GM 재지시: 상단 단독 패널(#churnActionPanel) 폐지 → 이 모달(openChurnManage) 안으로 이관(id·렌더 로직 100% 동일,
+       위치만 이동·중복 없음). openChurnManage()가 openGdoc 호출 직후 renderChurnActionPanel()을 재호출해 이 섹션(#capBody)을 채운다. -->
+  <div data-gdoc="churnaction" data-title="🛟 이탈방지 액션 (갱신임박·저이용)">
+    <div style="display:flex;justify-content:flex-end;margin:-4px 0 8px">
+      <span id="capScopeNote" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap"></span>
+    </div>
+    <div id="capBody"><div class="tap-empty">불러오는 중…</div></div>
   </div>
   <div data-gdoc="churn" data-title="LOSS 신호 × 대응 매트릭스">
     <div class="info-box purple" style="margin-bottom:14px">
@@ -3122,10 +3121,13 @@ function _statusBoardLoad() {
   }
 }
 
-/* ── 이탈 관리(요약+매트릭스+현황 통합 모달) — 구 cpo-guide 카드 이전. 2026-07-07 시포·GM ── */
+/* ── 이탈 관리(요약+매트릭스+현황+이탈방지 액션 통합 모달) — 구 cpo-guide 카드 이전. 2026-07-07 시포·GM ──
+   churnaction(⏰갱신임박·📉저이용) 합류 = 2026-07-15 GM 지시(상단 단독 패널 폐지→모달 이관). openGdoc이 템플릿을
+   clone한 직후 renderChurnActionPanel()을 재호출해 #capBody를 최신 상태로 채운다(신규 fetch 없음, _activeRows 재사용). */
 function openChurnManage() {
-  openGdoc('churnsummary,churn,churnstat');
+  openGdoc('churnsummary,churnaction,churn,churnstat');
   loadChurnTopBadges();  // 상단 LOSS 신호 3배지(chSig*) — 구 init 전용 → 모달 오픈 시 갱신
+  renderChurnActionPanel();
 }
 
 // 멤버십 팝업(②)이 먼저 fetch해둔 stage_funnel 응답 캐시 — 재열람 시 재사용(중복 fetch 회피). 배3, 2026-07-07 시포·GM
@@ -3788,7 +3790,7 @@ function switchFamily(fam) {
   document.title = '웰페리온 ' + _famName.replace('회원관리', '회원 관리') + ' — AI CPO';   // 브라우저 탭 제목도 그룹명 동기화(배299, 2026-07-03 시포)
   renderTodayActionPanel();   // 오늘 할 일 패널도 family 전환에 맞춰 스코프 갱신(배754) — 멤버십/강습 각자 내부에서 준비상태 판단(강습이 dbRows 대기에 묶이지 않게, 배754 강습편입)
   if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — family 전환 즉시 재계산(강습 패리티)
-  if (typeof renderChurnActionPanel === 'function') renderChurnActionPanel();   // 이탈방지 액션(2026-07-15 상단 승격) — cpoStatusBoard 공유 위치라 family 전환마다 재판정(강습=숨김)
+  if (typeof renderChurnActionPanel === 'function') renderChurnActionPanel();   // 이탈방지 액션(2026-07-15 이탈관리 모달로 이관) — _churnRiskEager(히어로)는 family 전환마다 재판정 필요(강습=공백)
   // 강습 통합 4카드(CPO-2026-07-14-LESSON-4CARD) — 성인+유소년 한 줄 표시는 강습 family에서만 노출.
   // 둘 다 값을 채우기 위해 기존 lessonInit/lessonRegLoad를 성인·유소년 양쪽 다 선로드(신규 로직 아님, 기존 안전 함수 재사용 — 표시만).
   var _comboEl = document.getElementById('lessonComboBoard');
@@ -4792,6 +4794,7 @@ function loadActiveMembers() {
       _activeRender(_activeRows);
       renderActiveSummary();
       renderChurnActionPanel();   // 이탈방지 액션 모듈(배754 후속) — scope 전환마다 재계산
+      if (typeof _tapReady !== 'undefined' && _tapReady) renderTodayActionPanel();   // 오늘 할 일의 갱신임박·저이용 섹션도 _activeRows 도착 시 동기 재계산(2026-07-15 병합)
       _activeWireSearch();
       _wireActiveDblclick();
     })
@@ -5113,13 +5116,13 @@ function _capSectionHtml(s) {
   '</div>';
 }
 function renderChurnActionPanel() {
-  var panel = document.getElementById('churnActionPanel');
+  // #capBody = 이탈관리 모달(openChurnManage, data-gdoc="churnaction") 내부 컨테이너. 2026-07-15 GM 지시로 상단 단독
+  // 패널(#churnActionPanel) 폐지 후 모달 안으로 이관 — id·계산 로직 100% 동일, 표시 위치만 변경.
   var body = document.getElementById('capBody');
   var scopeEl = document.getElementById('capScopeNote');
-  if (!panel || !body) return;
-  if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') { panel.style.display = 'none'; return; }   // 강습 family는 이탈방지 데이터 자체가 없음(정직 공백) — cpoStatusBoard와 공유 위치라 명시적으로 숨김. 2026-07-15
-  if (_activeScope !== 'valid' || !_activeLoaded) { panel.style.display = 'none'; return; }   // 종료·법인 스코프는 개념상 의미 없음(정직 — 억지 표시 금지)
-  panel.style.display = '';
+  if (!body) return;   // 모달을 아직 한 번도 안 열었으면 gdoc-tpl 원본 노드(숨김)뿐 — 계산은 그대로 진행해 _churnRiskEager는 채운다
+  if (typeof _curFamily !== 'undefined' && _curFamily === 'lesson') { body.innerHTML = '<div class="tap-empty">강습은 이탈방지 데이터가 없습니다(정직 공백).</div>'; if (scopeEl) scopeEl.textContent = ''; return; }   // 강습 family는 이탈방지 데이터 자체가 없음(정직 공백)
+  if (_activeScope !== 'valid' || !_activeLoaded) { body.innerHTML = '<div class="tap-empty">유효회원 목록 로드 후 표시됩니다.</div>'; if (scopeEl) scopeEl.textContent = ''; return; }   // 종료·법인 스코프는 개념상 의미 없음(정직 — 억지 표시 금지)
   var rows = _activeRows || [];
   if (scopeEl) scopeEl.textContent = '유효회원 ' + rows.length.toLocaleString() + '명 기준';
   var cls = _capClassify(rows, _activeHeaders);
@@ -6463,9 +6466,10 @@ function _tapSectionHtml(s) {
     listHtml = shown.map(function(it){
       if (s.key === 'res') return _tapRowHtml(it.row, it.time || '시간미정', '_tapOpenReservation');
       if (s.key === 'churn') return _tapRowHtmlChurn(it);
+      if (s.key === 'renew' || s.key === 'lowuse') return _capRowHtml(it, s.key);   // 이탈방지 액션(갱신임박·저이용) — 이탈관리 모달과 동일 렌더 재사용. 2026-07-15
       return _tapRowHtml(it);
     }).join('');
-    if (n > shown.length) listHtml += '<div class="tap-row-more">…외 ' + (n - shown.length) + '건 (' + (s.key === 'churn' ? '멤버십 회원관리 탭·종료회원' : '문의DB 탭·필터') + '에서 전체 확인)</div>';
+    if (n > shown.length) listHtml += '<div class="tap-row-more">…외 ' + (n - shown.length) + '건 (' + (s.key === 'churn' ? '멤버십 회원관리 탭·종료회원' : (s.key === 'renew' || s.key === 'lowuse') ? '이탈관리 모달·회원현황 탭' : '문의DB 탭·필터') + '에서 전체 확인)</div>';
   }
   if (s.caveat) listHtml += '<div class="tap-caveat">' + esc(s.caveat) + '</div>';
   return '<div class="tap-sec">' +
@@ -6598,17 +6602,24 @@ function renderTodayActionPanel() {
   var today = _tapToday();
   var cls = _tapClassify(dbRows, today);
   var churnMissing = _tapClassifyChurn();
+  // 이탈방지 액션(⏰갱신임박·📉저이용) — 이탈관리 모달(#capBody)과 동일 소스·계산(_activeRows 사전로드, 신규 fetch 0) 재사용.
+  // 2026-07-15 GM 지시로 오늘 할 일에도 병합(상단 단독 패널은 폐지). 유효회원 스코프에서만 의미 있음(정직 — 종료·법인 스코프는 미로드로 취급).
+  var capCls = (_activeLoaded && _activeScope === 'valid') ? _capClassify(_activeRows || [], _activeHeaders) : { renewSoon: [], lowUse: [] };
   if (!_endedBgLoaded) _ensureEndedMembersBg(function(){ if (_tapReady) renderTodayActionPanel(); });   // 최초 1회 백그라운드 fetch — 도착하면 재렌더
   var sections = [
     { key: 'new', icon: '🆕', label: '오늘 신규 문의',          color: 'teal',   items: cls.todayNew,    empty: '오늘 신규 문의 없음' },
     { key: 'unc', icon: '📵', label: '미컨택 문의(연락이력 0건)', color: 'red',    items: cls.uncontacted, empty: '미컨택 없음 — 전원 컨택 완료' },
     { key: 'res', icon: '📅', label: '오늘 상담·체험 예약',       color: 'accent', items: cls.todaysRes,   empty: '오늘 예약 없음' },
     { key: 'stall', icon: '⏳', label: '컨택 정체(' + TAP_STALL_DAYS + '~' + TAP_STALL_MAX + '일 무진척)', color: 'red', items: cls.stalled, empty: '컨택 정체 없음 — 진행 건 원활', caveat: '활성 상태·연락이력 있음·예정 예약 없음·마지막 활동 ' + TAP_STALL_DAYS + '~' + TAP_STALL_MAX + '일. 아직 살릴 수 있는 리드 — 다음 걸음(상담·체험 예약)을 잡아 팔로업하세요(' + TAP_STALL_MAX + '일 초과=콜드리드 별개).' },
+    { key: 'renew', icon: '⏰', label: '갱신임박(30일 이내)',     color: 'yellow', items: capCls.renewSoon, empty: (_activeLoaded ? '갱신임박 회원 없음' : '불러오는 중…'),
+      caveat: '※ 잔여일 실측(유효회원 시트, 0<잔여일≤30) — 이탈관리 모달과 동일 기준. 클릭 → 재등록 상담' },
+    { key: 'lowuse', icon: '📉', label: '저이용 후보(추정)',      color: 'accent', items: capCls.lowUse,   empty: (_activeLoaded ? '저이용 후보 없음' : '불러오는 중…'),
+      caveat: capCls.hasUsageData === false ? '※ 이용일수·등록일자 컬럼을 찾지 못해 산출 불가(시트 헤더 확인 필요) — 미측정' : undefined },
     { key: 'churn', icon: '🚪', label: '종료사유 미기록',        color: 'red',    items: churnMissing,    empty: (_endedBgLoaded ? '종료사유 미기록 없음 — 전원 기록 완료' : '불러오는 중…') }
   ];
   if (_tapOpenKey === null) _tapOpenKey = (cls.uncontacted.length || cls.stalled.length || cls.todaysRes.length) ? (cls.uncontacted.length ? 'unc' : 'stall') : null;   // 첫 렌더=처리할 게 있으면 펼침
   body.innerHTML = sections.map(_tapSectionHtml).join('');
-  _tapSetBadge(cls.todayNew.length + cls.uncontacted.length + cls.todaysRes.length + cls.stalled.length + churnMissing.length);
+  _tapSetBadge(cls.todayNew.length + cls.uncontacted.length + cls.todaysRes.length + cls.stalled.length + capCls.renewSoon.length + capCls.lowUse.length + churnMissing.length);
   if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — 오늘 할 일 카운트 갱신
 }
 // 종료사유 미기록 = scope=ended(현행 이탈 기준 그대로) AND 종료사유 빈칸. 배경fetch 미완료 시 빈 배열(로딩 문구는 empty에서 처리). 2026-07-09 시포·GM
