@@ -1130,7 +1130,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   reset_inquiry_markers:      true,  // 마커 교정(발송0): 각 시트 실데이터 마지막 행으로 덮어씀 (2026-06-25)
   count_missed_inquiries:     true,  // 읽기전용: 특정 시각 이후 신규 실데이터 행 건수 집계 (2026-06-25)
   read_rows_by_rownum:        true,  // 읽기전용: 지정 시트·행번호의 알림 필드 원문 반환 (2026-06-25)
-  preview_notify_msg:         true   // 읽기전용: 지정 행의 알림 메시지 텍스트 미리보기(발송 0) (2026-06-25)
+  preview_notify_msg:         true,  // 읽기전용: 지정 행의 알림 메시지 텍스트 미리보기(발송 0) (2026-06-25)
+  lesson_rewire_audit:        true   // [진단·읽기전용] 6팀시트 은퇴 안전게이트 — OLD(6팀시트) vs NEW(메인4시트 flat O) IDENTICAL 대조(카운트만·PII 미노출). 배973 시포. 2026-07-15 실측: 불일치(성인 812→794·유소년 926→908 등, 상세=재배선핸드오프). 은퇴 전 이 액션이 OLD≡NEW 반환할 때까지 반복 검증.
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -4699,6 +4700,177 @@ function _processAction(body) {
     };
     try { lbCache.put(lbKey, JSON.stringify(lbResult), 1800); } catch (e) { /* 캐시 실패 무시 */ }
     return _json(lbResult);
+  }
+
+  // ─── [진단·읽기전용] 6팀시트 은퇴 안전게이트 — 재배선 전/후 IDENTICAL 대조 (배973 시포) ───
+  //   OLD(6팀시트 기반) vs NEW(메인4시트 flat O컬럼 기반)를 동일 로직으로 산출해 나란히 반환.
+  //   카운트만 반환(이름·전화 미노출). 시트 무변경(_lessonEnsureCols_ 미호출·순수 read).
+  //   ★2026-07-15 실측 결론: OLD≠NEW(대량·양방향 불일치). 원인=팀시트 '진행 상황'(팀장 로컬 입력)과
+  //     메인 O(페이지 입력)가 독립 유지되어 발산 — 메인 O는 등록상태 SSOT가 아직 아님.
+  //     ∴ 6팀시트 은퇴/소비자 재배선은 이 액션이 OLD≡NEW 반환할 때까지 보류(억지 통과 금지).
+  //     재검증: clasp push → clasp create-deployment → 새 /exec?action=lesson_rewire_audit 호출.
+  if (action === 'lesson_rewire_audit') {
+    var AUD_MAIN = [
+      { gid: 111889422, type: '성인강습',   lang: 'KR' },
+      { gid: 268994754, type: '유소년강습', lang: 'KR' },
+      { gid: 311319200, type: '성인강습',   lang: 'EN' },
+      { gid: 931249179, type: '유소년강습', lang: 'EN' }
+    ];
+    // 메인 flat 행 순수 리더(무변경) — 진행상황(O)·종목·경로·타임스탬프·성함/연락처 존재여부만.
+    function _audReadMain_(gid) {
+      var sh = _sheetByGid_(LESSON_SS_ID, gid);
+      if (!sh) return null;
+      var last = sh.getLastRow(), lastCol = sh.getLastColumn();
+      if (last < 2 || lastCol < 1) return { sh: sh, hdr: [], rows: [], idx: {} };
+      var data = sh.getRange(1, 1, last, lastCol).getValues();
+      var hdr = data[0];
+      var idx = {
+        status: _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '진행 상황', '상태']),
+        sport:  _findCol_(hdr, ['성인 강습 종목', 'WSC 강습 종목', 'WSC 강습 종류', '강습 종목', '종목', '과목', 'Program of Interest']),
+        chan:   _findCol_(hdr, ['문의 경로', '경로', '채널', '알게', 'How Did You Hear About Us?']),
+        name:   _findCol_(hdr, ['성함', '이름', 'Full Name']),
+        phone:  _findCol_(hdr, ['연락처', '전화', '휴대폰', 'Mobile Phone Number']),
+        ts:     _findCol_(hdr, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '날짜'])
+      };
+      var rows = [];
+      for (var r = 1; r < data.length; r++) {
+        var row = data[r];
+        var hasName  = idx.name  >= 0 && row[idx.name];
+        var hasPhone = idx.phone >= 0 && row[idx.phone];
+        if (!hasName && !hasPhone) continue;  // 완전 빈 행 스킵(=_lessonReadRows_ 동일)
+        rows.push({
+          status: idx.status >= 0 ? String(row[idx.status] || '') : '',
+          sport:  idx.sport  >= 0 ? String(row[idx.sport]  || '') : '',
+          chan:   idx.chan   >= 0 ? String(row[idx.chan]   || '') : '',
+          ts:     idx.ts     >= 0 ? row[idx.ts] : ''
+        });
+      }
+      return { sh: sh, hdr: hdr.map(function(h){ return String(h||''); }), rows: rows, idx: idx };
+    }
+    // 메인 종목라벨 → 팀시트 '명' 버킷(유형별). 우선순위: 아쿠아·모자수영·체조 먼저(수영 오귀속 차단).
+    function _audNameBucket_(type, sportRaw) {
+      var s = String(sportRaw || '');
+      if (/아쿠아/.test(s)) return type === '성인강습' ? '아쿠아로빅' : null;
+      if (/모자|엄마|보호자\s*동반|자녀\s*동반/.test(s)) return type === '유소년강습' ? '모자수영' : null;
+      if (/체조|트램폴린/.test(s)) return type === '유소년강습' ? '유소년체조' : null;
+      var suffix = type === '성인강습' ? ' 성인' : ' 유소년';
+      if (/수영/.test(s))            return '수영' + suffix;
+      if (/필라테스|필라/.test(s))    return '필라테스' + suffix;
+      if (/P\.?T|피티|퍼스널/i.test(s)) return 'P.T' + suffix;
+      if (/스쿼시/.test(s))          return '스쿼시' + suffix;
+      if (/골프/.test(s))            return '골프' + suffix;
+      if (/바레|발레/.test(s))        return '루프메소드(발레·바레)';  // external(null 시트)
+      return null;  // 미매칭(뮤지컬·기타 등) → OLD 팀시트에 대응 명 없음
+    }
+    var KST = 'Asia/Seoul';
+    var nowD = new Date();
+    var todayStr = Utilities.formatDate(nowD, KST, 'yyyy-MM-dd');
+    var dayStart   = new Date(todayStr + 'T00:00:00+09:00');
+    var weekStart  = new Date(new Date(nowD.getTime() - 6 * 86400000).toISOString().slice(0,10) + 'T00:00:00+09:00');
+    var monthStart = new Date(Utilities.formatDate(nowD, KST, 'yyyy-MM') + '-01T00:00:00+09:00');
+    var yearStart  = new Date(Utilities.formatDate(nowD, KST, 'yyyy') + '-01-01T00:00:00+09:00');
+    function _audDate_(v) { var d = _parseAnyDate_(v); if (d instanceof Date) return d; var s = String(d||'').trim(); return s ? new Date(s.replace(' ','T') + '+09:00') : new Date(NaN); }
+
+    // ── NEW: 메인4시트 flat 집계 ──
+    var NEW_regByType = {}, NEW_regByName = {}, NEW_inqByName = {}, NEW_kpi = {}, NEW_alertCand = {};
+    var mainDump = [];
+    AUD_MAIN.forEach(function(cfg) {
+      var m = _audReadMain_(cfg.gid);
+      var tp = cfg.type;
+      if (!NEW_regByType[tp]) NEW_regByType[tp] = { registered: 0, channels: {} };
+      if (!NEW_kpi[tp]) NEW_kpi[tp] = { day:0, week:0, month:0, year:0 };
+      if (!NEW_alertCand[tp]) NEW_alertCand[tp] = { SUC: 0, CONTACT: 0 };
+      var dumpRec = { gid: cfg.gid, type: tp, lang: cfg.lang, sheetFound: !!(m && m.sh), rows: m ? m.rows.length : 0,
+                      statusCol: m ? (m.idx.status >= 0 ? m.hdr[m.idx.status] : '(미발견)') : '(시트없음)',
+                      sportCol:  m ? (m.idx.sport  >= 0 ? m.hdr[m.idx.sport]  : '(미발견)') : '(시트없음)',
+                      sports: {}, regTotal: 0 };
+      if (!m) { mainDump.push(dumpRec); return; }
+      m.rows.forEach(function(row) {
+        var isReg = _isLessonReg_(row.status);
+        var lab = row.sport || '(빈종목)';
+        if (!dumpRec.sports[lab]) dumpRec.sports[lab] = { total: 0, reg: 0 };
+        dumpRec.sports[lab].total++; if (isReg) dumpRec.sports[lab].reg++;
+        // regByType(type-level) + channels
+        if (isReg) {
+          NEW_regByType[tp].registered++; dumpRec.regTotal++;
+          var ch = _canonicalChannel_(row.chan);
+          if (!NEW_regByType[tp].channels[ch]) NEW_regByType[tp].channels[ch] = { registered: 0 };
+          NEW_regByType[tp].channels[ch].registered++;
+        }
+        // per-명 등록/문의
+        var nm = _audNameBucket_(tp, row.sport);
+        if (nm) {
+          if (!NEW_regByName[nm]) NEW_regByName[nm] = { registered: 0 };
+          if (!NEW_inqByName[nm]) NEW_inqByName[nm] = { inquiries: 0 };
+          NEW_inqByName[nm].inquiries++;              // OLD _collectLessonInqByName_ = 전체 행(상태무관)
+          if (isReg) NEW_regByName[nm].registered++;
+        }
+        // KPI 기간별(SUC by timestamp)
+        if (isReg) {
+          var d = _audDate_(row.ts);
+          if (!isNaN(d.getTime())) {
+            if (d >= dayStart)   NEW_kpi[tp].day++;
+            if (d >= weekStart)  NEW_kpi[tp].week++;
+            if (d >= monthStart) NEW_kpi[tp].month++;
+            if (d >= yearStart)  NEW_kpi[tp].year++;
+          }
+        }
+        // 상태알림 후보(SUC/CONTACT)
+        if (isReg) NEW_alertCand[tp].SUC++;
+        else if (/컨택|응대|연락|통화|문자|회신/.test(row.status)) NEW_alertCand[tp].CONTACT++;
+      });
+      mainDump.push(dumpRec);
+    });
+
+    // ── OLD: 6팀시트 집계(기존 정본 함수 재사용) ──
+    var OLD_regByType = _collectLessonRegistrations_();   // {type:{registered, channels}}
+    var OLD_debug = _LESSON_DEBUG.slice();                 // 팀시트별 statusHeader·registered·rows·표본
+    var OLD_regByName = _collectLessonRegByName_();        // {명:{registered, statusHeader, rows, sheetFound}}
+    var OLD_inqByName = _collectLessonInqByName_('', '');  // {명:{inquiries, sheetFound}}
+    // OLD KPI 기간별 + 상태알림 후보(팀시트 상태열 재탐지)
+    var OLD_kpi = { '성인강습': { day:0,week:0,month:0,year:0 }, '유소년강습': { day:0,week:0,month:0,year:0 } };
+    var OLD_alertCand = { '성인강습': { SUC:0, CONTACT:0 }, '유소년강습': { SUC:0, CONTACT:0 } };
+    LESSON_TEAM_SHEETS.forEach(function(tcfg) {
+      try {
+        var sh = _sheetByGid_(tcfg.ssId, tcfg.gid); if (!sh) return;
+        var last = sh.getLastRow(), lastCol = sh.getLastColumn(); if (last < 2 || lastCol < 1) return;
+        var data = sh.getRange(1, 1, last, lastCol).getValues();
+        var best = -1, bestCnt = 0;
+        for (var c = 0; c < lastCol; c++) {
+          var cnt = 0, dn = 0, distinct = {};
+          for (var r = 1; r < data.length; r++) {
+            var cv = String(data[r][c] || '').trim(); if (!cv) continue;
+            if (!distinct[cv]) { distinct[cv] = 1; dn++; }
+            if (_isLessonStatusVal_(cv)) cnt++;
+          }
+          if (dn >= 2 && dn <= 30 && cnt > bestCnt) { bestCnt = cnt; best = c; }
+        }
+        if (best < 0) return;
+        var idxDate = _findCol_(data[0], ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
+        if (idxDate < 0) idxDate = 0;
+        for (var r2 = 1; r2 < data.length; r2++) {
+          var sv = data[r2][best];
+          if (_isLessonReg_(sv)) {
+            OLD_alertCand[tcfg.유형].SUC++;
+            var d = _audDate_(data[r2][idxDate]);
+            if (!isNaN(d.getTime())) {
+              if (d >= dayStart)   OLD_kpi[tcfg.유형].day++;
+              if (d >= weekStart)  OLD_kpi[tcfg.유형].week++;
+              if (d >= monthStart) OLD_kpi[tcfg.유형].month++;
+              if (d >= yearStart)  OLD_kpi[tcfg.유형].year++;
+            }
+          } else if (/컨택|응대|연락|통화|문자|회신/.test(String(sv || ''))) {
+            OLD_alertCand[tcfg.유형].CONTACT++;
+          }
+        }
+      } catch (e) {}
+    });
+
+    return _json({
+      ok: true, generatedAt: _now(), note: '카운트만·PII 미노출. OLD=6팀시트 / NEW=메인4시트 flat.',
+      OLD: { regByType: OLD_regByType, regByName: OLD_regByName, inqByName: OLD_inqByName, kpiPeriod: OLD_kpi, alertCand: OLD_alertCand, teamDebug: OLD_debug },
+      NEW: { regByType: NEW_regByType, regByName: NEW_regByName, inqByName: NEW_inqByName, kpiPeriod: NEW_kpi, alertCand: NEW_alertCand, mainDump: mainDump }
+    });
   }
 
   // ─── 등록 자동매칭 온디맨드 실행 ───
