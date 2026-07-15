@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-5';
+window.__PV='20260715-6';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -324,6 +324,21 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   [data-print-mode="result"] .content{display:none!important}
   [data-print-mode="result"] .dashboard-overlay{display:none!important}
   [data-print-mode="result"] .sticky-top{display:none!important}
+  /* ── 문서 A4 뷰어 그대로 인쇄 — 보고서 틀 없이 보는 화면 단독 출력 (2026-07-15 나우열M) ── */
+  [data-print-mode="doc"] .header{display:none!important}
+  [data-print-mode="doc"] .sticky-top{display:none!important}
+  [data-print-mode="doc"] .content{display:none!important}
+  [data-print-mode="doc"] .add-bar{display:none!important}
+  [data-print-mode="doc"] .dashboard-overlay{display:none!important}
+  [data-print-mode="doc"] #resultReportPrint{display:none!important}
+  [data-print-mode="doc"] #docViewerOverlay{display:block!important;position:static!important;background:#fff!important;padding:0!important;overflow:visible!important}
+  [data-print-mode="doc"] .doc-viewer-bar{display:none!important}
+  [data-print-mode="doc"] .doc-viewer-frame{max-width:none!important}
+  [data-print-mode="doc"] .doc-viewer-paper{box-shadow:none!important;border-radius:0!important;width:100%!important;padding:0!important;min-height:0!important}
+  [data-print-mode="doc"] .doc-viewer-paper,[data-print-mode="doc"] .doc-viewer-paper *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  [data-print-mode="doc"] .doc-viewer-paper table{border-collapse:collapse;width:100%}
+  [data-print-mode="doc"] .doc-viewer-paper td,[data-print-mode="doc"] .doc-viewer-paper th{border:1px solid #bbb;padding:4px 6px;vertical-align:top}
+  [data-print-mode="doc"] .doc-viewer-paper img{max-width:100%;height:auto}
   #resultReportPrint{display:none}
   [data-print-mode="result"] #resultReportPrint{display:block!important}
   /* 결과보고서 인쇄 스타일 */
@@ -2191,7 +2206,13 @@ function closeDocViewer() {
   document.body.style.overflow = '';
   _docViewerTaskId = null;
 }
-function printDocViewer() { if (_docViewerTaskId) printResultReport(_docViewerTaskId); }
+/* 뷰어 인쇄 = 보고 있는 A4 문서를 그대로 출력 (보고서 틀 미사용 — 2026-07-15 나우열M 지시) */
+function printDocViewer() {
+  if (!document.getElementById('docViewerOverlay').classList.contains('show')) return;
+  document.body.dataset.printMode = 'doc';
+  window.print();
+  delete document.body.dataset.printMode;
+}
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && document.getElementById('docViewerOverlay').classList.contains('show')) closeDocViewer();
 });
@@ -2225,6 +2246,29 @@ function isUnfilledTemplate(html, taskTitle) {
     return false;   // 사용자 작성 내용 발견
   }
   return true;
+}
+/* 인쇄용 본문 추출 — 문서의 자체 머리부(브랜드·대제목·◆·정보표·결재란·푸터)를 제거해
+   기존 보고서 출력 틀과 이중(A4 안 A4)으로 겹치지 않게 함 (2026-07-15 나우열M 지시) */
+function docPrintBody(html) {
+  try {
+    const box = document.createElement('div');
+    box.innerHTML = sanitizeDoc(html);
+    box.querySelectorAll('h1').forEach(function (h) { h.remove(); });
+    box.querySelectorAll('p').forEach(function (p) {
+      const t = (p.textContent || '').trim();
+      if (t === '◆' || t.indexOf('WELLPERION') >= 0) p.remove();
+    });
+    const tables = Array.prototype.slice.call(box.querySelectorAll('table'));
+    for (let i = 0; i < tables.length; i++) {
+      const txt = (tables[i].textContent || '').replace(/\s+/g, '');
+      if (txt.indexOf('업무명') >= 0 && txt.indexOf('작성자') >= 0) { tables[i].remove(); break; }
+    }
+    for (let j = 0; j < tables.length; j++) {
+      const tx = (tables[j].textContent || '').replace(/\s+/g, '');
+      if (tx.indexOf('결재') >= 0 && tx.indexOf('대표님') >= 0 && tx.length < 30) { tables[j].remove(); break; }
+    }
+    return box.innerHTML;
+  } catch (e) { return sanitizeDoc(html); }
 }
 /* 표시용 정규화 — 미작성 서식 plan/result 를 빈값 처리 (카드·완료로그·인쇄 공용) */
 function hideUnfilledDocs(parsed, taskTitle) {
@@ -3491,7 +3535,7 @@ function printResultReport(taskId, override) {
   /* ── 결과보고 ── */
   var resultHtml = parsed.result
     ? (isDocHtml(parsed.result)
-        ? '<div class="rr-section-title">결과보고</div><div class="rr-doc">' + sanitizeDoc(parsed.result) + '</div>'
+        ? '<div class="rr-section-title">결과보고</div><div class="rr-doc">' + docPrintBody(parsed.result) + '</div>'
         : '<div class="rr-section-title">결과보고</div><div class="rr-result-box">' + esc(parsed.result) + '</div>')
     : '';
 
@@ -3531,9 +3575,9 @@ function printResultReport(taskId, override) {
           + '<div class="rr-section-body">' + esc(parsed.plan) + '</div>';
       }
     } else if (isDocHtml(parsed.plan)) {
-      /* 문서 서식(기획안 HTML): 디자인 그대로 인쇄 (2026-07-15) */
+      /* 문서 서식(기획안 HTML): 보고서 틀과 중복되는 머리부 제거 후 본문만 (2026-07-15) */
       planHtml = '<div class="rr-section-title">기획안</div>'
-        + '<div class="rr-doc">' + sanitizeDoc(parsed.plan) + '</div>';
+        + '<div class="rr-doc">' + docPrintBody(parsed.plan) + '</div>';
     } else {
       /* 일반 항목: 기존대로 '계획' 출력 */
       planHtml = '<div class="rr-section-title">계획</div>'
