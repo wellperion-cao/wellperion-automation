@@ -422,6 +422,12 @@
   .ows-stats.pending{min-height:42px; align-items:center; justify-content:center;}
   .ows-pend{font-size:13px; font-weight:700; color:var(--text-soft);}
   .ows-sub{font-size:10.5px; color:var(--dim); line-height:1.5;}
+  /* home식 세분 표기(배1091) — 점검 월/오늘 mini · 접수처 선택월 접수/완료 row */
+  .ows-stat .ows-mini{font-size:9.5px; font-weight:800; color:var(--dim); margin-top:1px; font-variant-numeric:tabular-nums;}
+  .ows-stat .ows-mini.done{color:var(--green);}
+  .ows-monthline{display:flex; gap:12px; flex-wrap:wrap; font-size:10.5px; font-weight:800; padding:5px 8px; background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; font-variant-numeric:tabular-nums;}
+  .ows-monthline .lbl{color:var(--dim); font-weight:700;}
+  .ows-monthline .mn-new{color:var(--blue);} .ows-monthline .mn-done{color:var(--green);}
   @media (max-width:640px){ .ows-card{min-width:100%;} }
 
   /* ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · 중요도 자동 선정 · GM 확정 2026-07-04) ── */
@@ -1101,6 +1107,7 @@
   var _teamSalesCache = {};  // 'YYYY-M' → {status:'loading'|'done', raw:team_sales 응답} — 선택월별 라이브 팀 매출 실적 캐시
   var _h1Sales = null;       // GAS action=team_sales_h1 응답({ok,q1:{key:{actual,avg}},q2:{...}}) — 강습팀 1·2분기 표 정본(매출마스터 완전 대체·2026-07-07)
   var _checkMonthlyCache = {}; // 'YYYY-MM' → {status:'loading'|'done', data:monthly_report 응답} — 선택월별 지원부 점검 월간 집계 캐시(CHECK_GAS action=monthly_report)
+  var _checkDailyCache = null; // {status:'loading'|'done', data:{total,done}|null} — 오늘 지원부 일 단위 점검(CHECK_GAS action=today_live, home #home-check-kpi와 동일 소스) 캐시. 🔧 점검 현황 카드 월/오늘 병기용(배1091).
   var _nsMap = null;      // role.id → 북극성 문구(bootsetup_matrix.json dims[0] 첫 줄) — 목표→북극성 뱃지용
   var _editMode = false;
   var _view = 'month';    // 'month'=월별 상세(기존 · 기본) | 'summary'=🎯 1장 요약(경영진 결론 A3 한 장) | 'annual'=연간 A3(로드맵 한 장)
@@ -1216,6 +1223,30 @@
         _checkMonthlyCache[monKey] = {status:'done', data:null, stale:false}; // 캐시·응답 둘 다 없음=정직 '없음'
       }
       if(_sel === monKey && _checkReady){ renderCheckStatus(); renderSummaryBoard(); renderSummaryStrip(); renderDeptWorkSummary(); }
+    });
+  }
+  // ── 오늘 일 단위 점검 — home #home-check-kpi와 동일 소스(CHECK_GAS action=today_live&dept=support). 서버 실시간 오늘 항목×회차 total/done.
+  //    월(monthly_report byZone)과 동일 지원부 스코프로 맞춰 월/오늘 비교 가능(시설부 월간은 입력률이라 건수 합산 제외·정직). 실패=null ──
+  function _todayStr(){ var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function readCheckDaily(){
+    var today = _todayStr();
+    return fetch(CHECK_GAS + '?action=today_live&dept=support&date=' + encodeURIComponent(today) + '&_cb=' + Date.now(), {redirect:'follow', cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d && d.ok !== false && typeof d.total === 'number'){
+          return {total:d.total, done:(typeof d.done === 'number' ? d.done : 0)};
+        }
+        return null;
+      })
+      .catch(function(){ return null; });
+  }
+  // 오늘 점검을 1회만 조회·캐시(오늘치는 월과 달리 단일). 도착 시 점검준비 상태면 요약 재렌더.
+  function fetchCheckDaily(){
+    if(_checkDailyCache) return; // 이미 트리거/완료 = no-op
+    _checkDailyCache = {status:'loading'};
+    readCheckDaily().then(function(d){
+      _checkDailyCache = {status:'done', data:d}; // d=null이면 정직 '오늘 점검 데이터 대기'
+      if(_checkReady) renderDeptWorkSummary();
     });
   }
   // ── 종합접수처 VOC 접수 현황 — coo/reception/종합접수처_현황.html과 동일 GAS·액션(reg_board). 응답 필드(name/contact)는 서버가 이미 마스킹하지만
@@ -1575,43 +1606,74 @@
     var host = document.getElementById('dept-work-summary');
     if(!host) return;
     var mk = monKey || _sel;
-    // 작은 stat 카드 1장(총합/진행/완료). d 없으면 '측정 대기' 정직 표기(0 지어내기 금지).
-    function statCard(icon, title, d, sub){
+    function fmtN(n){ return (typeof n === 'number') ? n.toLocaleString('ko-KR') : n; }
+    // 작은 stat 카드(총합/진행/완료 · [총/진행/완료]). d 없으면 '측정 대기' 정직 표기(0 지어내기 금지).
+    // monthLine=옵션: 카드 하단 home식 '선택월 접수/완료' 미니 row(HTML 문자열). null이면 미표시.
+    function statCard(icon, title, d, sub, monthLine){
       var body;
       if(d){
         body =
           '<div class="ows-stats">' +
-            '<div class="ows-stat"><b class="ows-n">' + d.total + '</b><span class="ows-l">총합</span></div>' +
-            '<div class="ows-stat prog"><b class="ows-n">' + d.prog + '</b><span class="ows-l">진행</span></div>' +
-            '<div class="ows-stat done"><b class="ows-n">' + d.done + '</b><span class="ows-l">완료</span></div>' +
+            '<div class="ows-stat"><b class="ows-n">' + fmtN(d.total) + '</b><span class="ows-l">총합</span></div>' +
+            '<div class="ows-stat prog"><b class="ows-n">' + fmtN(d.prog) + '</b><span class="ows-l">진행</span></div>' +
+            '<div class="ows-stat done"><b class="ows-n">' + fmtN(d.done) + '</b><span class="ows-l">완료</span></div>' +
           '</div>';
       } else {
         body = '<div class="ows-stats pending"><span class="ows-pend">측정 대기</span></div>';
       }
       return '<div class="ows-card"><div class="ows-h">' + icon + ' ' + esc(title) + '</div>' + body +
+        (monthLine || '') +
         '<div class="ows-sub">' + esc(sub) + '</div></div>';
     }
-    // ① 점검 현황 — 지원부 월간 점검 byZone(남/여) 항목 실측 합(sumTotal/sumDone). 완료=sumDone·진행=총-완료. 시설부(입력률)는 건수 불가라 제외(정직). 데이터 없음=측정 대기.
+    // 점검 전용 카드 — home식 월/오늘 2 그룹(각 큰 총합 + 완료 소형 라벨). 둘 다 없으면 '측정 대기'.
+    function checkCard(mon, day, sub){
+      function grp(label, g, wait){
+        if(g) return '<div class="ows-stat"><b class="ows-n">' + fmtN(g.total) + '</b><span class="ows-l">' + label + ' 항목·회차</span><span class="ows-mini done">완료 ' + fmtN(g.done) + '</span></div>';
+        return '<div class="ows-stat"><b class="ows-n">–</b><span class="ows-l">' + label + ' 항목·회차</span><span class="ows-mini">' + wait + '</span></div>';
+      }
+      var body = (mon || day)
+        ? '<div class="ows-stats">' + grp('월', mon, '월 데이터 대기') + grp('오늘', day, '오늘 점검 데이터 대기') + '</div>'
+        : '<div class="ows-stats pending"><span class="ows-pend">측정 대기</span></div>';
+      return '<div class="ows-card"><div class="ows-h">🔧 점검 현황</div>' + body +
+        '<div class="ows-sub">' + esc(sub) + '</div></div>';
+    }
+    // ① 점검 현황 — 월=지원부 월간 byZone(남/여) 항목 실측 합(sumTotal/sumDone) · 오늘=today_live 실측(_checkDailyCache). 시설부(입력률)는 건수 불가라 제외(정직). 데이터 없음=측정 대기.
     var cmEntry = _checkMonthlyCache[mk];
     var cmData = (cmEntry && cmEntry.status === 'done') ? cmEntry.data : null;
     var cmLoading = (cmEntry && cmEntry.status === 'loading');
-    var chk = null;
+    var chkMon = null;
     if(cmData && Array.isArray(cmData.byZone)){
       var ct = 0, cd = 0, chas = false;
       cmData.byZone.forEach(function(z){
         if(typeof z.sumTotal === 'number' && typeof z.sumDone === 'number' && z.sumTotal){ ct += z.sumTotal; cd += z.sumDone; chas = true; }
       });
-      if(chas) chk = {total:ct, done:cd, prog:Math.max(0, ct - cd)};
+      if(chas) chkMon = {total:ct, done:cd};
     }
-    var chkSub = chk ? '지원부 점검 항목 실측 · 그 달 기준' : (cmLoading ? '월간 점검 불러오는 중' : '월간 점검 데이터 없음(가짜값 없음)');
-    // ② 종합 접수처 — VOC reg_board(실시간). 완료=상태 '완료' · 진행=그 외(접수·처리중). PII 미사용(상태 집계만).
-    var voc = null;
+    // 오늘 실측 — _checkDailyCache는 오늘치 단일(선택월 무관). 항상 오늘 스냅샷(정직: 과거 월 선택 시에도 '오늘' 라벨).
+    var cdEntry = _checkDailyCache;
+    var chkDay = (cdEntry && cdEntry.status === 'done' && cdEntry.data) ? cdEntry.data : null;
+    var cdLoading = (cdEntry && cdEntry.status === 'loading') || !cdEntry;
+    var chkSub;
+    if(chkMon || chkDay){ chkSub = '지원부 점검 항목×회차 실측 · 월=선택월·오늘=실시간'; }
+    else if(cmLoading || cdLoading){ chkSub = '점검 데이터 불러오는 중'; }
+    else { chkSub = '점검 데이터 없음(가짜값 없음)'; }
+    // ② 종합 접수처 — VOC reg_board(실시간). 누적: 완료=상태 '완료'·진행=그 외. 선택월(mk): 접수일(createdAt) 기준 월 접수/완료(근사). PII 미사용(상태·일자 집계만).
+    var voc = null, vocMonth = null;
     if(Array.isArray(_vocBoard)){
-      var vt = _vocBoard.length, vdone = 0;
-      _vocBoard.forEach(function(r){ if(String(r.status || '접수') === '완료') vdone++; });
+      var vt = _vocBoard.length, vdone = 0, mNew = 0, mDone = 0;
+      _vocBoard.forEach(function(r){
+        var st = String(r.status || r['상태'] || '접수');
+        if(st === '완료') vdone++;
+        var created = String(r.createdAt || r['접수일시'] || '');
+        if(created.slice(0, 7) === mk){ mNew++; if(st === '완료') mDone++; }
+      });
       voc = {total:vt, done:vdone, prog:Math.max(0, vt - vdone)};
+      vocMonth = {mNew:mNew, mDone:mDone};
     }
-    var vocSub = voc ? '실시간 접수 · 진행=접수+처리중' : (_checkReady ? 'VOC 접수 조회 실패(가짜값 없음)' : 'VOC 접수 불러오는 중');
+    var vocSub = voc ? '누적 실시간 접수 · 진행=접수+처리중 · 월=선택월 접수(근사)' : (_checkReady ? 'VOC 접수 조회 실패(가짜값 없음)' : 'VOC 접수 불러오는 중');
+    var vocMonthLine = vocMonth
+      ? '<div class="ows-monthline"><span class="lbl">선택월</span><span class="mn-new">접수 ' + fmtN(vocMonth.mNew) + '</span><span class="mn-done">완료 ' + fmtN(vocMonth.mDone) + '</span></div>'
+      : '';
     // ③ 업무 SSOT — 선택월 objectives 집계. 완료=status '완료' · 진행='진행'+'이월'.
     var m = _data && _data.months && _data.months[mk];
     var objs = (m && m.objectives) || [];
@@ -1627,11 +1689,12 @@
     }
     var objSub = obj ? '이달 과제 · 진행=진행+이월' : '이달 등록된 과제 없음';
     host.innerHTML = '<div class="ows-grid">' +
-      statCard('🔧', '점검 현황', chk, chkSub) +
-      statCard('📮', '종합 접수처', voc, vocSub) +
+      checkCard(chkMon, chkDay, chkSub) +
+      statCard('📮', '종합 접수처', voc, vocSub, vocMonthLine) +
       statCard('🗂️', '업무 SSOT', obj, objSub) +
     '</div>';
     fetchCheckMonthlyFor(mk); // 선택월 점검 월간 kick-off(캐시/트리거됨=no-op) — 도착 시 갱신 핸들러가 재렌더
+    fetchCheckDaily();        // 오늘 점검 kick-off(1회·트리거됨=no-op) — 도착 시 재렌더
   }
 
   // ── 월 헤더 (테마 문구는 핵심과제 표와 중복 → 렌더 제거, GM 지시 2026-07-04. 데이터 m.theme/report.theme는 정본 보존) ──
