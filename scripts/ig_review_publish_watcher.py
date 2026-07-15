@@ -61,6 +61,27 @@ CARD_MSGID_STORE = ROOT / "scripts" / ".review_card_msgids.json"  # send_review_
 APPROVED_STATES = {"승인", "승인발행대기", "approved"}
 POST_URL_RE = re.compile(r"post\s+[A-C]:\s*(https?://\S+)", re.IGNORECASE)
 
+# 블로그·카페 공개 제목 가드 — GM 발견(2026-07-15): title='...[네이버 블로그]' 같은
+# 내부 추적 라벨이 그대로 공개 게시글 제목으로 발행됨. 대괄호 채널 태그를 담은 제목은
+# 절대 공개발행하지 않는다(post_title 필드로 내부라벨과 공개제목을 분리).
+INTERNAL_LABEL_TITLE_RE = re.compile(
+    r"\[\s*(네이버\s*)?(블로그|카페|카카오\s*채널?|당근|채널명?)\s*\]", re.IGNORECASE
+)
+
+
+def resolve_public_title(it: dict) -> tuple[str | None, str | None]:
+    """블로그·카페 공개 발행에 실제로 쓰일 제목을 결정 + 내부 라벨 가드.
+
+    post_title(공개 제목 전용 필드)이 있으면 우선 사용, 없으면 title로 폴백.
+    반환: (공개제목, 차단사유). 차단사유가 not None이면 발행을 스킵해야 한다.
+    """
+    public_title = (it.get("post_title") or it.get("title") or "").strip()
+    if not public_title:
+        return None, "공개 제목 없음(title·post_title 모두 비어있음)"
+    if INTERNAL_LABEL_TITLE_RE.search(public_title):
+        return None, f"내부 라벨 패턴 포함 제목 — 공개발행 차단: {public_title!r}"
+    return public_title, None
+
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
 # 웰리 검증 큐 채널: 성공 요약·IG 발행검증 알림 수신처.
@@ -302,15 +323,16 @@ def publish_item(it: dict) -> tuple[str | None, int]:
     return url, proc.returncode
 
 
-def publish_blog(it: dict) -> tuple[bool, str | None]:
+def publish_blog(it: dict, public_title: str) -> tuple[bool, str | None]:
     """블로그 발행 서브프로세스 실행.
     exit code 0 이면 발행완료로 간주 (네이버 URL 회수 불안정 — feedback_blog_cafe_drafts_terminal).
+    public_title: resolve_public_title()로 가드 통과한 공개 게시글 제목(내부 라벨 아님).
     반환: (성공여부, url|None)
     """
     cmd = [
         str(PY), str(BLOG_SCRIPT),
         "--mode", "publish",
-        "--title", it["title"],
+        "--title", public_title,
         "--body-file", str(ROOT / it["body_file"]),
         "--image-dir", str(ROOT / it["image_dir"]),
         "--sticker-count", "0",  # 하이엔드 브랜드 — GIF 스티커 자동삽입 금지(본문 깨짐 방지, GM 2026-06-05)
@@ -331,15 +353,16 @@ def publish_blog(it: dict) -> tuple[bool, str | None]:
     return success, url
 
 
-def publish_cafe(it: dict) -> tuple[bool, str | None]:
+def publish_cafe(it: dict, public_title: str) -> tuple[bool, str | None]:
     """카페 발행 서브프로세스 실행.
     exit code 0 이면 발행완료로 간주 (URL 회수 불안정 동일 정책).
+    public_title: resolve_public_title()로 가드 통과한 공개 게시글 제목(내부 라벨 아님).
     반환: (성공여부, url|None)
     """
     cmd = [
         str(PY), str(CAFE_SCRIPT),
         "--mode", "publish",
-        "--title", it["title"],
+        "--title", public_title,
         "--body-file", str(ROOT / it["body_file"]),
         "--image-dir", str(ROOT / it["image_dir"]),
         "--sticker-count", "0",  # 하이엔드 브랜드 — GIF 스티커 자동삽입 금지(본문 깨짐 방지, GM 2026-06-05)
@@ -439,33 +462,49 @@ def dispatch_publish(it: dict, events: list) -> None:
 
     if "블로그" in ch:
         # 블로그 자동 공개발행 (GM 승인 2026-07-13 — 전채널 자동발행 표준·요새화 안전망 라이브 후 활성)
-        success, url = publish_blog(it)
-        if success:
-            it["status"] = "발행완료"
-            if url:
-                it["post_url"] = url
-            it["published_at"] = datetime.now().isoformat(timespec="seconds")
-            it.pop("note", None)
-            events.append(f"✅ {title} 블로그 발행완료" + (f" — {url}" if url else " (URL 회수 불안정·본문 게시됨)"))
+        # 공개 제목 가드: 내부 라벨(예 '...[네이버 블로그]')이 그대로 나가는 걸 발행 직전 차단.
+        public_title, block_reason = resolve_public_title(it)
+        if block_reason:
+            it["status"] = "발행보류(제목확인)"
+            it["note"] = block_reason
+            telegram(f"🚫 [블로그] 공개 제목 가드 차단 — {title}\n사유: {block_reason}")
+            events.append(f"🚫 {title} 블로그 발행 보류(제목확인) — {block_reason}")
         else:
-            it["status"] = "발행실패"
-            it["note"] = "블로그 발행 스크립트 exit≠0(무결성 게이트 차단 가능 — 초안 유지)"
-            events.append(f"⚠️ {title} 블로그 발행 실패 — exit code 비정상")
+            success, url = publish_blog(it, public_title)
+            if success:
+                it["status"] = "발행완료"
+                if url:
+                    it["post_url"] = url
+                it["published_at"] = datetime.now().isoformat(timespec="seconds")
+                it.pop("note", None)
+                events.append(f"✅ {title} 블로그 발행완료" + (f" — {url}" if url else " (URL 회수 불안정·본문 게시됨)"))
+            else:
+                it["status"] = "발행실패"
+                it["note"] = "블로그 발행 스크립트 exit≠0(무결성 게이트 차단 가능 — 초안 유지)"
+                events.append(f"⚠️ {title} 블로그 발행 실패 — exit code 비정상")
 
     elif "카페" in ch:
         # 카페 자동 공개발행 (GM 승인 2026-07-13 — 전채널 자동발행 표준·요새화 안전망 라이브 후 활성)
-        success, url = publish_cafe(it)
-        if success:
-            it["status"] = "발행완료"
-            if url:
-                it["post_url"] = url
-            it["published_at"] = datetime.now().isoformat(timespec="seconds")
-            it.pop("note", None)
-            events.append(f"✅ {title} 카페 발행완료" + (f" — {url}" if url else " (URL 회수 불안정·본문 게시됨)"))
+        # 공개 제목 가드: 내부 라벨(예 '...[네이버 카페]')이 그대로 나가는 걸 발행 직전 차단.
+        public_title, block_reason = resolve_public_title(it)
+        if block_reason:
+            it["status"] = "발행보류(제목확인)"
+            it["note"] = block_reason
+            telegram(f"🚫 [카페] 공개 제목 가드 차단 — {title}\n사유: {block_reason}")
+            events.append(f"🚫 {title} 카페 발행 보류(제목확인) — {block_reason}")
         else:
-            it["status"] = "발행실패"
-            it["note"] = "카페 발행 스크립트 exit≠0(무결성 게이트 차단 가능 — 초안 유지)"
-            events.append(f"⚠️ {title} 카페 발행 실패 — exit code 비정상")
+            success, url = publish_cafe(it, public_title)
+            if success:
+                it["status"] = "발행완료"
+                if url:
+                    it["post_url"] = url
+                it["published_at"] = datetime.now().isoformat(timespec="seconds")
+                it.pop("note", None)
+                events.append(f"✅ {title} 카페 발행완료" + (f" — {url}" if url else " (URL 회수 불안정·본문 게시됨)"))
+            else:
+                it["status"] = "발행실패"
+                it["note"] = "카페 발행 스크립트 exit≠0(무결성 게이트 차단 가능 — 초안 유지)"
+                events.append(f"⚠️ {title} 카페 발행 실패 — exit code 비정상")
 
     elif "당근" in ch:
         # 당근 실 발행 — 자동입력+이미지+게시(발레 2026-06-05 사진 7장 실증).
