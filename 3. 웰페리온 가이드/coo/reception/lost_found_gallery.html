@@ -52,6 +52,15 @@ a{color:var(--accent);text-decoration:none}
 .state-msg{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--dim);font-size:14.5px}
 .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
 
+/* ── 보관·폐기 안내 박스 (항상 표시) ── */
+.lf-policy{background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:15px 17px 16px;margin:0 0 20px}
+.lf-policy-h{font-size:14.5px;font-weight:800;color:var(--text);margin-bottom:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lf-policy-h .badge{font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:20px;padding:3px 10px;letter-spacing:.3px}
+.lf-policy ul{list-style:none}
+.lf-policy li{position:relative;padding-left:15px;font-size:13px;color:#5c564d;line-height:1.75}
+.lf-policy li::before{content:"·";position:absolute;left:3px;color:var(--accent);font-weight:800}
+.lf-policy li b{color:var(--text);font-weight:700}
+
 /* ── 수령 서명 모달 ── */
 .modal-back{position:fixed;inset:0;background:rgba(20,18,16,0.55);z-index:9998;display:none;align-items:center;justify-content:center;padding:16px}
 .modal-back.show{display:flex}
@@ -92,6 +101,16 @@ a{color:var(--accent);text-decoration:none}
     <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
   </div>
 
+  <div class="lf-policy">
+    <div class="lf-policy-h">📋 습득 분실물 보관·폐기 안내 <span class="badge">회원·직원 필독</span></div>
+    <ul>
+      <li>보관 기간: 습득일로부터 <b>1개월(30일)</b> 보관 후 폐기합니다. 기간 내 미수령 시 처리됩니다.</li>
+      <li>귀중품(현금·지갑·귀금속·전자기기 등)은 <b>경찰서(유실물센터)에 인계</b>합니다.</li>
+      <li>그 외 물품은 1개월 경과 후 <b>자체 폐기</b>합니다.</li>
+      <li>수령: 본인 확인 후 현장(리셉션·수영장·사우나 등)에서 서명하고 수령해 주세요.</li>
+    </ul>
+  </div>
+
   <div class="topbar">
     <span class="count-pill">게시중 <span class="n" id="cnt">0</span>건</span>
     <button class="refresh" id="refreshBtn" type="button">↻ 새로고침</button>
@@ -108,6 +127,10 @@ a{color:var(--accent);text-decoration:none}
     <h2>습득물 수령 확인</h2>
     <div class="msub">현장 직원이 회원 본인확인 후 서명을 받아주세요.</div>
     <div class="mitem" id="mItem"></div>
+    <div class="mfield">
+      <label for="m_pw">실무진 확인 비밀번호</label>
+      <input type="password" id="m_pw" placeholder="실무진 전용 비밀번호" autocomplete="off" inputmode="numeric">
+    </div>
     <div class="mfield">
       <label for="m_receiver">수령자 성함</label>
       <input type="text" id="m_receiver" placeholder="수령하시는 분 성함" autocomplete="off">
@@ -182,7 +205,7 @@ a{color:var(--accent);text-decoration:none}
   function openModal(){
     var img=_cur.photo?('<img src="'+_esc(_thumb(_cur.photo,120))+'" alt="">'):'';
     $('mItem').innerHTML=img+'<div><div class="mt">'+_esc(_cur.desc||'(설명 없음)')+'</div><div class="mm">'+_esc(_cur.id)+' · 📍 '+_esc(_cur.loc||'-')+'</div></div>';
-    $('m_receiver').value=''; if(_cur.loc){ $('m_loc').value=_cur.loc; }
+    $('m_pw').value=''; $('m_receiver').value=''; if(_cur.loc){ $('m_loc').value=_cur.loc; }
     clearPad();
     $('modalBack').classList.add('show');
     setTimeout(resizePad,30);
@@ -213,6 +236,7 @@ a{color:var(--accent);text-decoration:none}
   // ── 수령 확정 (lf_handover) ──
   $('mConfirm').addEventListener('click',function(){
     if(!_cur){ return; }
+    if($('m_pw').value.trim()!=='62611200'){ toast('비밀번호가 올바르지 않습니다',true); $('m_pw').focus(); return; }
     var receiver=$('m_receiver').value.trim();
     if(!receiver){ toast('수령자 성함을 입력해 주세요',true); return; }
     if(!hasInk){ toast('수령 확인 서명을 받아주세요',true); return; }
