@@ -1133,8 +1133,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   count_missed_inquiries:     true,  // 읽기전용: 특정 시각 이후 신규 실데이터 행 건수 집계 (2026-06-25)
   read_rows_by_rownum:        true,  // 읽기전용: 지정 시트·행번호의 알림 필드 원문 반환 (2026-06-25)
   preview_notify_msg:         true,  // 읽기전용: 지정 행의 알림 메시지 텍스트 미리보기(발송 0) (2026-06-25)
-  lesson_rewire_audit:        true,  // [진단·읽기전용] 6팀시트 은퇴 안전게이트 — OLD(6팀시트) vs NEW(메인4시트 flat O) IDENTICAL 대조(카운트만·PII 미노출). 배973 시포. 2026-07-15 실측: 불일치(성인 812→794·유소년 926→908 등, 상세=재배선핸드오프). 은퇴 전 이 액션이 OLD≡NEW 반환할 때까지 반복 검증.
-  lesson_ledger_backfill_apply: true // [★일회성·GM go 승인] 강습 원장 백필 apply — 팀시트 관리값→메인4시트 flat 빈칸만. 검증후 제거 예정(배973). 2026-07-15 시포.
+  lesson_rewire_audit:        true   // [진단·읽기전용] 6팀시트 은퇴 안전게이트 — OLD(6팀시트) vs NEW(메인4시트 flat O) IDENTICAL 대조(카운트만·PII 미노출). 배973 시포. 2026-07-15 실측: 불일치(성인 812→794·유소년 926→908 등, 상세=재배선핸드오프). 은퇴 전 이 액션이 OLD≡NEW 반환할 때까지 반복 검증.
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -4716,55 +4715,6 @@ function _processAction(body) {
       OLD: { regByType: OLD_regByType, regByName: OLD_regByName, inqByName: OLD_inqByName, kpiPeriod: OLD_kpi, alertCand: OLD_alertCand, teamDebug: OLD_debug },
       NEW: { regByType: NEW_regByType, regByName: NEW_regByName, inqByName: NEW_inqByName, kpiPeriod: NEW_kpi, alertCand: NEW_alertCand, mainDump: mainDump }
     });
-  }
-
-  // ═══ ★일회성 유지보수(배973 GM go 승인) — 강습 원장 백필 apply ═══
-  //   팀시트(OLD) 관리값(지정 강사/Contact/비고/진행 상황) → 메인4시트 flat(L~O) 빈칸만 채움.
-  //   write 목록은 오프라인(Python, 정규화전화+유형+종목버킷 매칭·플레이스홀더 제외·최신값 채택)에서 계산해 body.writes로 전달.
-  //   서버는 마지막 방어선만 담당: ①물리행 범위(2~lastRow) 검증 ②쓰기 시점 재확인 blank-only(레이스 방지)
-  //   ③owner 플레이스홀더('담당자 X'류) 재검증 ④행 삭제·정렬·appendRow 금지(setValue 단일 셀만).
-  //   검증 후 이 액션·함수 전체 제거하고 클린 재배포한다(handoff: CPO-배973-6팀시트은퇴-재배선-핸드오프-20260715.md).
-  if (action === 'lesson_ledger_backfill_apply') {
-    var LBA_PLACEHOLDER_RE = /^담당자\s*[0-9A-Za-z가-힣]*$/;
-    var lbaDry = !(body.apply === '1' || body.apply === true || body.apply === 'true');
-    var lbaWrites = Array.isArray(body.writes) ? body.writes : [];
-    var lbaSheetCache = {};
-    function _lbaSheet(gid) {
-      if (lbaSheetCache[gid] !== undefined) return lbaSheetCache[gid];
-      var sh = _sheetByGid_(LESSON_SS_ID, gid);
-      var hdr = sh ? _lessonEnsureCols_(sh) : [];
-      var cols = {
-        owner:  sh ? _findColExact_(hdr, ['지정 강사', '관리담당']) : -1,
-        contact:sh ? _findCol_(hdr, [CONTACT_HIST_COL, 'Contact']) : -1,
-        memo:   sh ? _findCol_(hdr, ['상담메모', '메모', '비고']) : -1,
-        status: sh ? _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '진행 상황', '상태']) : -1
-      };
-      var rec = { sh: sh, cols: cols, lastRow: sh ? sh.getLastRow() : 0 };
-      lbaSheetCache[gid] = rec;
-      return rec;
-    }
-    var lbaResult = { applied: 0, skippedBlankGone: 0, skippedConflict: 0, skippedPlaceholder: 0, skippedNoCol: 0, skippedRange: 0, errors: [] };
-    lbaWrites.forEach(function(w) {
-      try {
-        var gid = parseInt(w.gid, 10);
-        var row = parseInt(w.physRow, 10);
-        var field = String(w.field || '');
-        var value = w.value;
-        if (field === 'owner' && LBA_PLACEHOLDER_RE.test(String(value || '').trim())) { lbaResult.skippedPlaceholder++; return; }
-        var rec = _lbaSheet(gid);
-        if (!rec.sh) { lbaResult.errors.push({ gid: gid, row: row, field: field, error: '시트 미발견' }); return; }
-        if (!(row >= 2 && row <= rec.lastRow)) { lbaResult.skippedRange++; return; }  // 헤더행·범위밖 절대 금지
-        var col = rec.cols[field];
-        if (col == null || col < 0) { lbaResult.skippedNoCol++; return; }
-        var cell = rec.sh.getRange(row, col + 1);
-        var cur = cell.getValue();
-        var curBlank = (field === 'contact') ? !String(cur || '').trim() : !String(cur || '').trim();
-        if (!curBlank) { lbaResult.skippedConflict++; return; }  // 쓰기 시점 재확인 — 그 사이 채워졌으면 절대 안 덮음
-        if (!lbaDry) cell.setValue(value);
-        lbaResult.applied++;
-      } catch (e) { lbaResult.errors.push({ gid: w.gid, row: w.physRow, field: w.field, error: String(e) }); }
-    });
-    return _json({ ok: true, dryRun: lbaDry, batch: body.batch || '', requested: lbaWrites.length, result: lbaResult });
   }
 
   // ─── 등록 자동매칭 온디맨드 실행 ───
