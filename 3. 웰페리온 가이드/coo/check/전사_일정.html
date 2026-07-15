@@ -185,7 +185,21 @@ var CAL_Y=null, CAL_M=null;
 var EMBED=/[?&]embed=1/.test(location.search);
 var REPEAT_LABEL={weekly:"매주",biweekly:"격주",monthly:"매월",yearly:"매년"};
 function repeatLabel(r){return REPEAT_LABEL[(""+(r||"")).toLowerCase()]||"";}
-var EVENT_CATS=["event","delivery","edu","general"];
+// 이벤트 분류·부서 기본값(코드 정의 — GAS에 없어도 항상 노출·병합). GM 2026-07-15.
+var CATEGORY_DEFAULTS={
+  event:{label:"행사·모임",color:"#A78BDA"},
+  meeting:{label:"회의·미팅",color:"#6BA84F"},
+  gov:{label:"관공서·공문",color:"#5b9fd5"},
+  safety:{label:"안전·점검",color:"#C56B9E"},
+  contract:{label:"계약·협약",color:"#C77D3A"},
+  delivery:{label:"납품·배송",color:"#3B82C4"},
+  visit:{label:"방문·외부",color:"#3FA167"},
+  facility:{label:"시설·공사",color:"#D98A2E"},
+  edu:{label:"교육",color:"#8B6FD6"},
+  general:{label:"일반·기타",color:"#B79F8A"}
+};
+var EVENT_CATS=["event","meeting","gov","safety","contract","delivery","visit","facility","edu","general"];
+var DEPT_DEFAULTS=["경영지원부","경영부","관리부","운영부","시설부","지원부","주차관리부","파트너팀"];
 // 반복 규칙(1줄 저장)을 특정 달의 실제 발생일들로 전개. repeat 없으면 단일 날짜(점검 포함).
 function occurrencesInMonth(it,y,m){
   var c=computeDue(it),d0=c.date,res=[];if(!d0)return res;
@@ -233,7 +247,7 @@ function nextOccurrence(it){
 
 function qDept(){try{var m=(location.search.match(/[?&]dept=([^&]+)/));return m?decodeURIComponent(m[1]):"전체";}catch(e){return "전체";}}
 function kstToday(){var n=new Date();return new Date(n.getTime()+(n.getTimezoneOffset()+540)*60000);}
-function parseDue(s){if(!s)return null;s=(""+s).trim();var m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);var y=s.match(/^(\d{4})-(\d{2})$/);if(y)return new Date(+y[1],+y[2]-1,1);return null;}
+function parseDue(s){if(!s)return null;s=(""+s).trim();var m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);var y=s.match(/^(\d{4})-(\d{2})$/);if(y)return new Date(+y[1],+y[2]-1,1);return null;}
 function addMonths(d,m){return new Date(d.getFullYear(),d.getMonth()+ +m,d.getDate());}
 function fmtDate(d){function p(n){return (""+n).length<2?"0"+n:(""+n);}return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());}
 function computeDue(it){
@@ -277,7 +291,7 @@ function renderList(){
     var comp=nextOccurrence(it),st=statusOf(it),cat=CATS[it.category]||{label:it.category,color:"#888"};
     var isEvent=(it.type==="이벤트");
     var repTxt=repeatLabel(it.repeat);
-    var dueTxt=comp.date?fmtDate(comp.date):"확인 필요";
+    var dueTxt=comp.date?fmtDate(comp.date):(isEvent?"날짜 미정":"확인 필요");
     var dueBadge=(comp.date&&comp.auto)?'<span class="tag auto">예상(자동)</span>':(repTxt?'<span class="tag rep">'+repTxt+'</span>':"");
     var vend=isEvent?null:vendorById(it.vendor_id);
     var vTxt=vend?('<div class="rvendor">🏢 담당: '+esc(vend.name)+' · <a href="tel:'+esc((""+(vend.contact||"")).replace(/[^0-9+]/g,""))+'">📞 '+esc(vend.contact||"")+'</a></div>'):"";
@@ -399,7 +413,7 @@ function inlinePanelHtml(it,idx){
   if(it.type==="이벤트"){
     body='<div class="egrid">'+
       efIn(idx,"name","제목",it.name,"예) 정기교육")+
-      efIn(idx,"next_due","날짜 (YYYY-MM-DD)",it.next_due,"예) 2026-08-01")+
+      efDate(idx,"next_due","날짜 (달력에 표시됨)",it.next_due)+
       efRepeat(idx,it)+
       efSel(idx,"category","분류",EVENT_CATS,EVENT_CATS.indexOf(it.category)>=0?it.category:"general",function(k){return (CATS[k]||{label:k}).label;})+
       efSel(idx,"dept","담당 부서",DATA.depts,it.dept)+
@@ -454,6 +468,7 @@ function deleteInline(id){
 var DKEY="wp_schedule_draft_v1";
 function esc(s){return (s==null?"":(""+s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function efIn(i,f,label,val,ph){return '<div class="efield"><label>'+label+'</label><input data-i="'+i+'" data-f="'+f+'" value="'+esc(val)+'" placeholder="'+esc(ph||"")+'"></div>';}
+function efDate(i,f,label,val){var v=String(val==null?"":val).replace(/^(\d{4}-\d{2}-\d{2}).*/,"$1");return '<div class="efield"><label>'+label+'</label><input type="date" data-i="'+i+'" data-f="'+f+'" value="'+esc(v)+'"></div>';}
 function efSel(i,f,label,opts,val,labelFn){var o=opts.map(function(k){return '<option value="'+esc(k)+'"'+(k===val?" selected":"")+'>'+esc(labelFn?labelFn(k):k)+'</option>';}).join("");return '<div class="efield"><label>'+label+'</label><select data-i="'+i+'" data-f="'+f+'">'+o+'</select></div>';}
 function efNextDue(idx,it){
   var preview="";
@@ -498,8 +513,16 @@ window.discardDraft=discardDraft;
 function toast(m){var t=document.getElementById("toast");t.textContent=m;t.style.opacity="1";setTimeout(function(){t.style.opacity="0";},2600);}
 
 function initFromData(d){
-  DATA=d;CATS=d.categories||{};LEAD=(d.gate&&d.gate.lead_days)||30;
-  cur=qDept();if(cur!=="전체"&&(d.depts||[]).indexOf(cur)<0)cur="전체";
+  DATA=d;
+  // 분류·부서 기본값 병합 — GAS에 없던 신규도 항상 노출(GM 2026-07-15)
+  DATA.categories=DATA.categories||{};
+  for(var _ck in CATEGORY_DEFAULTS){if(!DATA.categories[_ck])DATA.categories[_ck]=CATEGORY_DEFAULTS[_ck];}
+  DATA.depts=DATA.depts||[];
+  DEPT_DEFAULTS.forEach(function(_dp){if(DATA.depts.indexOf(_dp)<0)DATA.depts.push(_dp);});
+  // 날짜 정규화 — '2026-07-30(목)' 등 접미사 제거 → YYYY-MM-DD (달력 반영·저장 시 영구 정리)
+  (DATA.items||[]).forEach(function(_it){if(_it.next_due)_it.next_due=String(_it.next_due).replace(/^(\d{4}-\d{2}-\d{2}).*/,"$1");});
+  CATS=DATA.categories;LEAD=(d.gate&&d.gate.lead_days)||30;
+  cur=qDept();if(cur!=="전체"&&(DATA.depts||[]).indexOf(cur)<0)cur="전체";
   syncScope();renderChips();renderAll();loadDraftCheck();
 }
 function loadSeed(){
