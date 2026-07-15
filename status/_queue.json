@@ -1738,5 +1738,19 @@
     "artifact": "GM 검수지시로 CPO 활성 5척 실측 검증. IN_PROGRESS 2척이 실제 완료 상태로 오분류였음:\n- 973 강습 원장 통합: 본체 완결·gviz 읽기 flat 정합까지 실측 확인 → DONE\n- 1034 강습 4카드 한 줄: 라이브 Playwright PASS(4카드 실값·탭전환·콘솔0·클릭) → DONE\n- 754 자율화 두뇌: 첫배 완결·남은 4건 전부 외부트리거 대기 → STANDBY 정직화\n진짜 미완은 990(상품기획 테스트탭·GM 결정 대기) 1척뿐. (CLI ad-hoc · 커밋 45cc3b17)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "45cc3b17141309c2a8544dbfb7b954172b229e52"
+  },
+  {
+    "task_id": "CEO-2026-07-15-ADHOC-6479fad0",
+    "clevel": "ceo",
+    "title": "[웰리] 렌더검수 콘솔에러 오탐 방지 — park는 하드신호(200·셀렉터)만, 콘솔에러는 참고정보",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1046,
+    "artifact": "실측: 양성 문의페이지 200인데 CORS 콘솔 5건 → 기존 ok=False로 정상완료 배 무더기 오탐 park.\n콘솔에러를 ok/park 판정에서 제외(참고 병기). 테스트 106통과(+콘솔단독 비park 증명). (CLI ad-hoc · 커밋 6479fad0)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6479fad01c8d580c824b7578598c085af44868e3"
   }
 ]
