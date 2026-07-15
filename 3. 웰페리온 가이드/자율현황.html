@@ -251,6 +251,27 @@
   #layer-automation .callout.fix{border-left-color:var(--gold); background:rgba(240,198,116,0.08);}
   #layer-automation .callout strong{color:var(--text);}
 
+  /* ── 채널 인라인 SVG 로고 (일 흐름 시각표에서 이식 · 2026-07-15) + 방 이름 라벨 ── */
+  .chlogo{width:15px; height:15px; vertical-align:-3px; margin:0 3px 0 0; flex:none;}
+  .chroom{font-size:11.5px; color:var(--text-soft);}
+  .chroom.idle-room{color:var(--dim);}
+
+  /* ── 🕘 최근 자율 처리 이력 접기(기본 접힘 · 2026-07-15) ── */
+  details.hist-fold{margin:16px 0 6px;}
+  details.hist-fold > summary{cursor:pointer; list-style:none; font-size:15px; font-weight:700; color:var(--text); padding:6px 0; display:flex; align-items:baseline; gap:7px;}
+  details.hist-fold > summary::-webkit-details-marker{display:none;}
+  details.hist-fold > summary::before{content:'▸'; color:var(--dim); font-weight:400;}
+  details.hist-fold[open] > summary::before{content:'▾';}
+  details.hist-fold > summary .hist-sub{font-size:11px; font-weight:400; color:var(--dim);}
+
+  /* ── 📄 층② 정적 설계표 묶음 접기(기본 접힘 · 2026-07-15) — 2-ID로 부모 #layer-automation 화살표 규칙 무력화 ── */
+  #layer-automation details#static-fold-details{margin:20px 0 0;}
+  #layer-automation details#static-fold-details > summary{cursor:pointer; list-style:none; font-size:14.5px; font-weight:800; color:var(--text); padding:8px 0; display:flex; align-items:baseline; gap:8px;}
+  #layer-automation details#static-fold-details > summary::-webkit-details-marker{display:none;}
+  #layer-automation details#static-fold-details > summary::before{content:'▸'; color:var(--dim); font-weight:400; transform:none;}
+  #layer-automation details#static-fold-details[open] > summary::before{content:'▾'; transform:none;}
+  #layer-automation details#static-fold-details > summary .fold-sub{font-size:11.5px; font-weight:400; color:var(--dim);}
+
   @media (max-width:560px){
     body{padding:14px 12px 36px; font-size:12.5px;}
     header.page-head h1{font-size:19px;}
@@ -441,28 +462,14 @@
     <div class="sec-note" style="margin:8px 0 0;">자율수준: <b>자율ON</b>=사람 개입 없이 판단·실행 · <b>반자율</b>=일부 사람 확인 · <b>자동집계</b>=기계적 집계(판단 아님) · <b>부분</b>=일부만 자동 · <b>수동</b>=사람 작업. 💬 환류 칸은 등록부(module_registry.json)에 GAS write로 직접 append(Task 7 연결 완료) — GAS 웹앱 재배포 전까지는 "허용되지 않은 경로" 응답(코드 준비완료·라이브 발효는 GM go).</div>
   </section>
 
-  <!-- ════ 📣 시모(AI CMO) 자율 마케팅 (제작→발행→측정 자율 축 · review_queue 실데이터) ════ -->
-  <section>
-    <h2 class="sec">📣 시모 (AI CMO) 자율 마케팅 <span style="font-size:11px;font-weight:400;color:var(--dim);">(마케팅 루프 5단계 자율 축)</span></h2>
-    <div class="sec-note">아래 카드는 위 마케팅 루프 각 단계를 굴리는 실제 엔진(배지=담당 단계). 발행 수치는 <code>cmo/review/review_queue.json</code> 실데이터에서만 산출(가짜 수치 금지).</div>
-    <div class="cmo-loop">
-      <span class="cmo-loop-lbl">마케팅 루프</span>
-      <div class="cmo-step live"><span>① 콘텐츠 제작</span><span class="cs-s">라이브</span></div>
-      <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step live"><span>② 문의 유입</span><span class="cs-s">라이브</span></div>
-      <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step partial"><span>③ 등록·전환</span><span class="cs-s">부분</span></div>
-      <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step partial"><span>④ 측정·대시보드</span><span class="cs-s">부분</span></div>
-      <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step wait"><span>⑤ 평가 환류</span><span class="cs-s">대기</span></div>
-      <span class="cmo-loop-arrow back pending" title="⑤ 평가환류 연결 시 닫힘(현재 미연결)">↻ 다음 기획 (대기)</span>
-    </div>
-    <div class="cmo-loop-status">현재 열린 루프 — ⑤ 평가환류·③ 전환원장을 <b>배로 진행 등록</b>(GM 승인 2026-07-08 · 배743·744, 시모). ⑤ 연결 시 폐루프 완성.</div>
-    <div class="routines" id="cmo-routines">
-      <div class="feed-status" style="grid-column:1/-1;">시모 자율 마케팅 현황을 불러오는 중…</div>
-    </div>
-  </section>
+  <!-- ════ 📣 마케팅 자율 → AI CMO(시모) 이관 (2026-07-15) — 자율현황=시토 시스템/자율 체계만. 마케팅은 시모 도메인에 몰기. ════ -->
+  <div class="honest-note" style="border-left-color:var(--pink);">
+    <span class="hn-ico">📣</span>
+    <div class="hn-txt">마케팅 자율(콘텐츠 제작·발행·측정)은 <b>AI CMO(시모)</b>에서 관리합니다 —
+      <a href="cmo/funnel/마케팅현황대시보드.html" style="color:var(--accent-soft);font-weight:700;">마케팅 현황 대시보드</a> ·
+      <a href="cmo/series/AI시리즈보드.html" style="color:var(--accent-soft);font-weight:700;">콘텐츠·AI시리즈 보드</a> ·
+      <a href="cmo/funnel/문의흐름지도.html" style="color:var(--accent-soft);font-weight:700;">문의 흐름 지도</a>.</div>
+  </div>
 
   <!-- ════ 🔧 시우(AI COO) 자율 운영 (점검 운영 루프 5단계 자율 축 · today_live·daily_scheduler 실데이터) ════ -->
   <section>
@@ -624,12 +631,14 @@
     <div class="feed-status" style="grid-column:1/-1;">성과 지표를 계산하는 중…</div>
   </div>
 
-  <!-- ════ 섹션 3 · 루프가 돈 흔적 ════ -->
-  <h2 class="sec">🕘 최근 자율 처리 이력 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프가 돈 흔적)</span></h2>
-  <div class="sec-note">진짜 자율 판단·실행만(포착·추천·자기학습·자율관찰)을 시간 역순으로 통합. 루틴 입항완료는 제외(완료 배는 G1·아카이브에서).</div>
-  <div class="feed" id="feed">
-    <div class="feed-status">처리 이력을 불러오는 중…</div>
-  </div>
+  <!-- ════ 섹션 3 · 루프가 돈 흔적 (기본 접힘 · 2026-07-15) ════ -->
+  <details class="hist-fold">
+    <summary>📁 최근 자율 처리 이력 (펼치기) <span class="hist-sub">— 루프가 돈 흔적</span></summary>
+    <div class="sec-note" style="margin-top:6px;">진짜 자율 판단·실행만(포착·추천·자기학습·자율관찰)을 시간 역순으로 통합. 루틴 입항완료는 제외(완료 배는 G1·아카이브에서).</div>
+    <div class="feed" id="feed">
+      <div class="feed-status">처리 이력을 불러오는 중…</div>
+    </div>
+  </details>
 
   </div><!-- /#layer-autonomy -->
 
@@ -680,7 +689,11 @@
     </div>
     <!-- ══ /자동화 건강 점수판 ══ -->
 
-    <div class="callout" style="margin-top:18px;">
+    <!-- ════ 📄 정적 설계표 3종(상시가동·매일 10슬롯·매주) 묶어 기본 접힘 — 건강판·모듈표와 중복이라 축소 (2026-07-15) ════ -->
+    <details id="static-fold-details">
+    <summary>📄 설계 참고 — 무엇이 어떻게 돌도록 설계됐나(정적) <span class="fold-sub">— 상시가동·매일 10슬롯 타임라인·매주. 실측은 위 🤖 건강 점수판·📡 모듈 보고 현황</span></summary>
+
+    <div class="callout" style="margin-top:12px;">
       <strong>📄 여기서부터는 구성 설명(정적)</strong> — 아래 표들은 "무엇이 이렇게 돌도록 설계되어 있나"를 정리한 <b>설계 문서</b>이며 실시간 측정치가 아닙니다. 표 안의 <b>🟢는 "설계상 상시가동(구성)"</b>이라는 뜻이지 지금 이 순간 실제로 돌고 있다는 실측 표시가 아닙니다. <b>지금 실제로 잘 돌고 있는지</b>는 위 🤖 자동화 건강 점수판(Task Scheduler 실행결과 실측)이 판정합니다.
     </div>
 
@@ -728,56 +741,13 @@
 
     <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 데이터 소스</strong> — GM 할일=업무현황 시트 <code>todo_list</code>(자동, GM 관리 불필요) · 명언=<code>status/quotes.json</code> · 진행=<code>status/*.json</code>·git. <strong style="color:var(--accent-soft);">노션 의존 0.</strong><br><strong>🔄 재기동</strong> — 봇·스케줄러 재시작 또는 PC 부팅(ONLOGON 예약작업). 수동 재기동: <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code>. <span style="color:var(--dim);">점검 원칙(왜·언제) = S2 CTO탭.</span></div>
 
-    <!-- ══ 📸 M5 인스타그램 발행 파이프라인 — T2 사람용 정본 (구 T2 이식) ══ -->
-    <h3 id="sec-m5-pipeline" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📸 M5 인스타그램 발행 파이프라인 <span class="statchip static" title="설계 문서 — 실측 아님">📄 설명</span> <span style="font-size:12px;font-weight:400;color:var(--dim);">— 사람용 정본 · 현행 단계·가드만</span></h3>
-    <p class="sec-note" style="margin:0 0 12px;">코드·구현 상세 = <code>instagram/_AI시리즈_로드맵.md</code> §3.4 / M5 대화형 보드 = <a href="wellperion_guide(main).html#M5" style="color:var(--accent-soft);font-weight:700;text-decoration:none;">M5 콘텐츠 검수·자동업로드</a>. 본 섹션은 흐름·가드만.</p>
-
-    <div class="tbl-wrap"><table>
-      <tr><th style="width:40px">단계</th><th style="width:200px">동작</th><th style="width:110px">status값</th><th style="width:130px">담당 스크립트·소유</th><th>가드</th></tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">1</td>
-        <td><strong>제작</strong> — 07:30 <code>ig_series_producer.py</code> 자동 실행 (로드맵 §5 기획 최소번호 기준)</td>
-        <td><span style="color:var(--accent-soft);font-weight:600;">검수 대기</span></td>
-        <td>CMO (시모) · <code>ig_series_producer.py</code></td>
-        <td><code>큐레이션_추천.md</code> 자동생성 필수 · 소진 시 제작 중지 · 콘텐츠 폴더 즉시 git 커밋</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">2</td>
-        <td><strong>M5 검수큐 등록</strong> — <code>cmo/review/review_queue.json</code>에 항목 추가 + <strong>텔레그램 검수카드 1회 발송</strong> ([✅승인]/[❌반려])</td>
-        <td><span style="color:var(--accent-soft);font-weight:600;">검수 대기</span></td>
-        <td>CMO (시모) · <code>review_queue.json</code></td>
-        <td>검수카드 콘텐츠당 1회만 — 재발송 금지.<br>review_queue.json git push 필수 — post-commit 훅 자동 push(M5 배포본 stale 차단)</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">3</td>
-        <td><strong>GM 승인</strong> — 텔레그램 [✅승인] 탭 (무폴링 · 텔레그램이 유일 승인경로)</td>
-        <td><span style="color:var(--accent-soft);font-weight:600;">승인</span></td>
-        <td>GM</td>
-        <td>승인 전 발행 절대 금지(비가역 게이트) · [❌반려] 시 CMO 재제작 후 검수 대기 복귀</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">4</td>
-        <td><strong>발행</strong> — 4채널 M5 단일경유 · IG는 Playwright headful (<code>instagram_upload_playwright.py</code>)</td>
-        <td><span style="color:var(--accent-soft);font-weight:600;">발행검증대기</span></td>
-        <td>CMO (시모) · <code>instagram_upload_playwright.py</code> · <code>bot.py</code> pub 콜백</td>
-        <td><code>발행검증대기</code>는 재처리 대상 아님(이중발행 차단).<br>자동 재발행·일괄발행 금지.<br>.publish.lock 직렬화</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">5</td>
-        <td><strong>웰리 대조</strong> — 실제 IG 게시물 ↔ M5 (캡션·슬라이드) 실대조</td>
-        <td><span style="color:var(--accent-soft);font-weight:600;">대조 중</span></td>
-        <td>웰리 (AI CEO) · <code>ig_review_publish_watcher.py</code></td>
-        <td>① 프로필 그리드 실등장(신규 shortcode) ② M5 배포본 노출 ③ 텔레그램 실수신 — 3종 동시 확인</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:700;">6</td>
-        <td><strong>발행완료 도장</strong> — 실게시 확인 후에만 (약속 L04)</td>
-        <td><span style="color:var(--green);font-weight:600;">발행완료</span></td>
-        <td>웰리 (AI CEO)</td>
-        <td>승인 ≠ 발행완료 (약속 L04).<br>불일치 시 재처리(발행완료 자동 전환 금지).<br>부팅 가드: <code>welly_boot_guard.py</code> — 미푸시 커밋 즉시 push · 검수대기·발행검증대기 부팅 시 우선 확인</td>
-      </tr>
-    </table></div>
-    <!-- ══ /M5 인스타그램 발행 파이프라인 ══ -->
+    <!-- ══ 📣 마케팅 발행 파이프라인 → AI CMO(시모) 이관 (2026-07-15 · 구 M5 파이프라인 삭제) ══ -->
+    <div class="callout" style="border-left-color:var(--pink);background:rgba(232,138,192,0.07);margin-top:20px;">
+      📣 <strong>마케팅 자율(콘텐츠 제작·발행·측정)은 AI CMO(시모)에서 관리</strong>합니다 — 자율현황(시토)에서는 시스템/자율 체계만 다룹니다.
+      <a href="cmo/funnel/마케팅현황대시보드.html" style="color:var(--accent-soft);font-weight:700;">마케팅 현황 대시보드</a> ·
+      <a href="cmo/series/AI시리즈보드.html" style="color:var(--accent-soft);font-weight:700;">콘텐츠·AI시리즈 보드</a> ·
+      <a href="cmo/funnel/문의흐름지도.html" style="color:var(--accent-soft);font-weight:700;">문의 흐름 지도</a>.
+    </div>
 
     <!-- ══ 매주 (7 C-Level 컨텍스트 정비 · AI 교육자료 자동 정리) — T2 원본에서 이식 2026-07-03 ══ -->
     <h4 id="sec-weekly">매주 <span class="statchip static" title="설계 문서 — 실측 아님">📄 설명</span></h4>
@@ -790,10 +760,13 @@
     <!-- ══ /매주 ══ -->
 
     <div class="sec-note" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">📄 위 표들의 구성 근거: Windows Task Scheduler 등록내용 + Python 코드 확인(2026-06-03 S3 산출 자동화 이관·정합 · T2 원본에서 이식 2026-07-03). <b>지금 실제로 정상 가동 중인지 실측</b>은 이 층 맨 위 🤖 자동화 건강 점수판 참조.</div>
+    </details>
+    <!-- ════ /📄 정적 설계표 3종 접힘 ════ -->
 
     <!-- ══ 📡 모듈 보고 현황 (status/module_registry.json 실값 렌더 · additive · 2026-07-09) ══ -->
-    <h3 id="sec-module-registry" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📡 모듈 보고 현황</h3>
-    <p class="sec-note" style="margin:0 0 10px;">각 모듈이 봇ID·주기를 등록하면 자동으로 일/주/월 텔레그램 보고가 나갑니다. 아래는 등록 현황.</p>
+    <h3 id="sec-module-registry" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📡 모듈 보고 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">— 자동화 보고 기준 표</span></h3>
+    <p class="sec-note" style="margin:0 0 6px;">각 모듈이 봇ID(방)·주기를 등록하면 자동으로 일/주/월 텔레그램·카톡 보고가 나갑니다. 아래는 등록 현황.</p>
+    <p class="sec-note" style="margin:0 0 10px;">🟢 <b>발효</b> = 방 배정돼 실제 보고 발송 · ⚪ <b>미발효</b> = 방 미배정(휴면)</p>
     <div class="tbl-wrap" id="module-registry-wrap">
       <table>
         <thead>
@@ -1081,81 +1054,8 @@
     }).join('');
   }
 
-  // ═══════════ 📣 시모(CMO) 자율 마케팅 (review_queue 실데이터) ═══════════
-  function cmoChannelBucket(ch){
-    ch = String(ch || '');
-    if(ch.indexOf('인스타그램') === 0) return 'IG';
-    if(ch === '네이버 블로그') return '블로그';
-    if(ch.indexOf('네이버 카페') === 0) return '카페';
-    if(ch === '카카오 채널') return '카카오';
-    if(ch === '당근채널') return '당근';
-    return '기타';
-  }
-  function renderCmoMarketing(queue){
-    var routEl = document.getElementById('cmo-routines');
-    if(!Array.isArray(queue) || !queue.length){
-      routEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">발행 큐 데이터 없음.</div>';
-      return;
-    }
-    var published = queue.filter(function(q){ return q.status === '발행완료'; });
-    var pending   = queue.filter(function(q){ return q.status === '검수대기'; });
-    var byCh = {}; published.forEach(function(q){ var b = cmoChannelBucket(q.channel); byCh[b] = (byCh[b]||0) + 1; });
-
-    var cards = [];
-    // 1) AI 개인시리즈 자동제작 — 루프 ① 콘텐츠 제작
-    cards.push({ ico:'🎨', nm:'AI 개인시리즈 자동제작', cy:'매일 07:30 · ig_series_producer 다음 편 자동 선정·제작', rc:'var(--blue)',
-      stage:['①','live'], pill:['on','상시'], rows:[
-        ['흐름', '다음 편 자동 선정 → 카드 주입 → M3 검수큐']
-      ]});
-    // 2) 콘텐츠 자동발행 파이프라인 — 루프 ①→② 제작·발행
-    cards.push({ ico:'📤', nm:'콘텐츠 자동발행 파이프라인', cy:'제작→M3 검수큐→GM 승인→5채널 자동발행', rc:'var(--pink)',
-      stage:['①②','live'], pill:['on','상시'], rows:[
-        ['발행완료', '<b>' + published.length + '</b>건'],
-        ['채널', 'IG ' + (byCh['IG']||0) + '·블로그 ' + (byCh['블로그']||0) + '·카페 ' + (byCh['카페']||0) + '·카카오 ' + (byCh['카카오']||0) + '·당근 ' + (byCh['당근']||0) +
-          '<span class="rv-note">카카오=연동 미비(공개URL·추적 없음)</span>'],
-        ['검수대기', '<b>' + pending.length + '</b>건'],
-        ['경로', 'IG=봇 자동 · 그외 4채널=스크립트 자동']
-      ]});
-    // 3) 문의 측정·전환 집계 — 루프 ④ 측정
-    cards.push({ ico:'📊', nm:'문의 측정·전환 집계', cy:'UTM 클릭↔문의 조인 · M2 채널별 전환', rc:'var(--gold)',
-      stage:['④','live'], pill:['na','2026-07-03 개통'], rows:[
-        ['배선', '클릭↔문의 조인 라이브(하드 UTM 우선)'],
-        ['축적', '채널별 전환율 축적 시작 · 새 태깅 문의부터<span class="rv-note">과거 소급X·정직</span>'],
-        ['링크', '<a href="cmo/funnel/마케팅현황대시보드.html" style="color:var(--accent-soft)">마케팅 현황 대시보드</a>']
-      ]});
-    // 4) 월간 마케팅 보고서 — 루프 ④ 측정 (Task Scheduler · scripts/monthly_marketing_report.py)
-    cards.push({ ico:'📅', nm:'월간 마케팅 보고서', cy:'월 1회 · 자동 집계·발송', rc:'var(--accent-soft)',
-      stage:['④','live'], pill:['on','월 1회 자동'], rows:[
-        ['집계', '채널·유형별 문의 · 회원 전환율(GAS period_breakdown·funnel_conversion)'],
-        ['발송', '텔레그램 자동 · 매월 1일 09:00'],
-        ['상세', '<a href="cmo/funnel/월간마케팅보고서.html" style="color:var(--accent-soft)">월간 마케팅 보고서</a> (월 선택 가능)']
-      ]});
-    // 5) 콘텐츠 반응 읽기 — 루프 ④ 측정·반응
-    cards.push({ ico:'📈', nm:'콘텐츠 반응 읽기', cy:'채널 반응 주기 수집', rc:'var(--green)',
-      stage:['④','live'], pill:['na','부분 측정'], rows:[
-        ['당근', '조회·관심=자동수집'],
-        ['IG', '저장·좋아요=플랫폼 비공개<span class="rv-note">미수집·정직</span>'],
-        ['추적', '팔로워·댓글=하이브리드 추적']
-      ]});
-    // 6) 평가 환류 — 루프 ⑤ (폐루프, 아직 미가동, 정직 표기)
-    cards.push({ ico:'🔄', nm:'평가 환류 (폐루프 ⑤)', cy:'통한 콘텐츠 Top/Bottom → 다음 기획 반영', rc:'var(--gold)',
-      stage:['⑤','wait'], pill:['idle','대기'], rows:[
-        ['현재', 'UTM 클릭 데이터 축적 대기 중<span class="rv-note">새 태깅 문의부터</span>'],
-        ['지표설계', '저장+댓글+클릭 가중 사전설계(수집 미완료)'],
-        ['열리면', '주간 통한 콘텐츠 → 다음 편 후킹·방향 자동 반영(폐루프 닫힘)']
-      ]});
-
-    routEl.innerHTML = cards.map(function(c){
-      var rows = c.rows.map(function(r){
-        return '<div class="rrow"><span class="rk">' + esc(r[0]) + '</span><span class="rv">' + r[1] + '</span></div>';
-      }).join('');
-      return '<div class="rcard" style="--rc:' + c.rc + '">' +
-        '<div class="rcard-top"><span class="cmo-stage ' + c.stage[1] + '">' + c.stage[0] + '</span><span class="rcard-ico">' + c.ico + '</span>' +
-          '<span class="rcard-tt"><span class="rcard-nm">' + esc(c.nm) + '</span><span class="rcard-cy">' + esc(c.cy) + '</span></span>' +
-          '<span class="pill ' + c.pill[0] + '">' + esc(c.pill[1]) + '</span></div>' +
-        rows + '</div>';
-    }).join('');
-  }
+  // ═══════════ 📣 시모(CMO) 자율 마케팅 → AI CMO 페이지로 이관(2026-07-15) · 렌더 삭제 ═══════════
+  // 마케팅 카드·발행 큐 렌더는 CMO 도메인 페이지(마케팅현황대시보드·AI시리즈보드·문의흐름지도)로 이관. 자율현황=시토 시스템/자율 체계만.
 
   // ═══════════ 🔧 시우(COO) 실무 3층 v2 — 1층: 운영 실측 지표(today_live/monthly_report&dept=support 라이브) ═══════════
   // COO_API_URL = 지원부 체계.html(coo/check/지원부 체계.html)과 동일 GAS 웹앱 — 신규 배포 없음, 기존 today_live·monthly_report 액션만 재사용.
@@ -1551,6 +1451,9 @@
   }
 
   // ═══════════ ② 돌아가는 자동화: 📡 모듈 보고 현황 (status/module_registry.json 실값 렌더 · 2026-07-09) ═══════════
+  // 채널 인라인 SVG 브랜드 로고 — wellperion_guide '일 흐름 시각표'(commit d138a013)에서 이식(16px급, TG 파랑·KT 노랑).
+  var TG_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="텔레그램"><title>텔레그램</title><rect width="24" height="24" rx="7" fill="#229ED9"/><path transform="translate(3.2 3.6) scale(0.72)" d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.9-.75 1.12-1.52.7L11.6 16.8l-1.65 1.6c-.19.19-.35.29-.56.29z" fill="#fff"/></svg>';
+  var KT_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="카카오톡"><title>카카오톡</title><rect width="24" height="24" rx="7" fill="#FEE500"/><path d="M12 6c-3.6 0-6.5 2.28-6.5 5.09 0 1.82 1.22 3.42 3.06 4.32-.13.47-.49 1.78-.56 2.06-.09.35.13.34.27.25.11-.07 1.75-1.19 2.46-1.68.41.06.83.09 1.27.09 3.6 0 6.5-2.28 6.5-5.09S15.6 6 12 6z" fill="#3C1E1E"/></svg>';
   var CYCLE_LABEL = { daily:'매일', weekly:'주간', monthly:'월간' };
   function renderModuleRegistry(reg){
     var tbody = document.getElementById('module-registry-tbody');
@@ -1573,17 +1476,21 @@
       if(ns){ ['daily','weekly','monthly'].forEach(function(k){ if(ns[k]) cycles.push(CYCLE_LABEL[k]); }); }
       var cycleTxt = cycles.length ? cycles.join(', ') : '—';
       var channelCell, statusCell;
+      var chLogo = (ns && ns.channel === 'telegram') ? TG_LOGO : ((ns && ns.channel === 'kakao') ? KT_LOGO : '');
       if(!ns || !ns.channel){
         channelCell = '—';
+        statusCell = '<span class="statchip static">준비중</span>';
+      } else if(ns.channel === 'kakao'){
+        channelCell = chLogo + '<span class="chroom">' + esc(ns.bot_id || '카톡 방') + '</span>';
         statusCell = '<span class="statchip static">준비중</span>';
       } else if(ns.channel !== 'telegram'){
         channelCell = esc(ns.channel);
         statusCell = '<span class="statchip static">준비중</span>';
       } else if(ns.bot_id){
-        channelCell = esc(ns.channel) + ' · ' + esc(ns.bot_id);
+        channelCell = chLogo + '<span class="chroom">' + esc(ns.bot_id) + '</span>';
         statusCell = '<span class="statchip ok">🟢 발효</span>';
       } else {
-        channelCell = esc(ns.channel) + ' · <span class="statchip idle" style="font-size:10px;">미발효</span>';
+        channelCell = chLogo + '<span class="chroom idle-room">미발효</span>';
         statusCell = '<span class="statchip idle">⚪ 미발효</span>';
       }
       return '<tr><td><strong>' + name + '</strong></td><td>' + owner + '</td><td>' + cycleTxt + '</td><td>' + channelCell + '</td><td>' + statusCell + '</td></tr>';
@@ -1769,8 +1676,7 @@
     gasReadText('status/_queue_archive.json',         'status/_queue_archive.json').catch(function(){ return ''; }),
     Promise.resolve(''),  // a[5] 자리 유지(인덱스 정렬) — 구 northstar_pending 임베드 제거(2026-07-04 GM), fetch 불필요
     gasReadText('status/audit_registry.json',         'status/audit_registry.json').catch(function(){ return ''; }),
-    gasReadText('3. 웰페리온 가이드/cmo/review/review_queue.json',
-                '3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/cmo/review/review_queue.json').catch(function(){ return ''; }),
+    Promise.resolve(''),  // a[7] 자리 유지 — 구 CMO review_queue fetch 제거(마케팅 CMO 이관 2026-07-15)
     gasReadText('status/erp_status.json',             'status/erp_status.json').catch(function(){ return ''; }),
     cooFetchTodayLive(),
     cooFetchMonthlyReport(),
@@ -1789,7 +1695,6 @@
       archive:  Array.isArray(archRaw) ? archRaw : (archRaw && Array.isArray(archRaw.items) ? archRaw.items : []),
       auditReg: parseJson(a[6]) || { pages: [] }
     };
-    var cmoQueue = parseJson(a[7]) || [];
     var erpStatus = parseJson(a[8]);
     var feedItems = [];
     try{ feedItems = buildFeed(d); }catch(e){ feedItems = []; }
@@ -1799,9 +1704,6 @@
     }
     try{ renderHero(d); }catch(e){ document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">히어로 요약 표시 오류.</div>'; }
     try{ renderRoutines(d); }catch(e){ document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">상시 체계 표시 오류 — 로그 파싱 실패.</div>'; }
-    try{ renderCmoMarketing(cmoQueue); }catch(e){
-      document.getElementById('cmo-routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">시모 자율 마케팅 표시 오류.</div>';
-    }
     try{ renderCooLiveMetrics(a[9], a[10]); }catch(e){
       document.getElementById('coo-live-metrics').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">운영 실측 지표 표시 오류.</div>';
     }
@@ -1830,7 +1732,6 @@
     var amEl0 = document.getElementById('active-missions');
     if(amEl0) amEl0.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">진행·상시 미션을 불러오지 못했습니다.</div>';
     document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다. 잠시 후 새로고침 해주세요.</div>';
-    document.getElementById('cmo-routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('coo-live-metrics').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('feed').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
