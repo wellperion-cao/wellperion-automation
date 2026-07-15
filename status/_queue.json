@@ -1089,5 +1089,19 @@
     "artifact": "카카오톡이 ?manage=lesson 쿼리를 떨어뜨려 멤버십으로 열리는 문제 → 쿼리·한글 없는\nASCII 스텁이 브라우저 내부에서 문의회원.html?manage=lesson 로 이동(전송단계 무손실). (CLI ad-hoc · 커밋 038a9223)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "038a92230777610de5d96e6db5c91ce16b95ff48"
+  },
+  {
+    "task_id": "CPO-2026-07-15-ADHOC-6ef8d767",
+    "clevel": "cpo",
+    "title": "[시포] 이탈방지 액션 별도패널 제거→이탈관리 모달+오늘할일로 병합 (GM 지시·멤버십 전용)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1090,
+    "artifact": "상단 #churnActionPanel(⏰갱신임박·📉저이용, 519ef0ca 배치) 제거. 동일 계산 로직(_capClassify,\n_activeRows 사전로드 재사용·신규 GAS 0)을 ①이탈관리 모달(openChurnManage, data-gdoc=\"churnaction\"\n신설 — openGdoc 직후 renderChurnActionPanel() 재호출로 #capBody 채움) ②오늘 할 일(tapBody, 'renew'·\n'lowuse' 섹션 신설 — _capRowHtml 재사용, 클릭 시 재등록 상담 모달)로 이관·병합해 상 (CLI ad-hoc · 커밋 6ef8d767)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6ef8d767e3a12443392b03fa5ec59aef3485ac91"
   }
 ]
