@@ -1521,5 +1521,19 @@
     "artifact": "- A1: 헤더·보관폐기 안내·레이아웃 즉시 렌더 → 그리드 스켈레톤 → requestIdleCallback 후 lf_gallery fetch\n- A1: localStorage 90s TTL SWR 캐시(재방문·수령후 즉시), 수령완료 시 캐시 무효화+강제 갱신\n- A2: Drive 썸네일 loading=lazy + decoding=async, aspect-ratio 4/3 유지(CLS 0)\n- GM 추가: 헤더 로고 → 홈 대신 종합접수처(/ko/reception/) 재링크\n- GM 추가: WP 배경 full-bleed 페이퍼톤  (CLI ad-hoc · 커밋 25b2fc64)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "25b2fc6450e2185f96f694efa885af53ba0059bb"
+  },
+  {
+    "task_id": "CPO-2026-07-15-ADHOC-4fd86a55",
+    "clevel": "cpo",
+    "title": "[시포] 강습 원장 백필 준비 — 일회성 apply 액션 추가(배973·GM go 승인)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1120,
+    "artifact": "팀시트(6종목) 관리값(지정 강사/Contact/비고/진행 상황) → 메인4시트 flat(L~O)\n빈칸만 채우는 lesson_ledger_backfill_apply 액션 추가. 안전장치: ①매칭키=정규화\n전화+유형+종목버킷(오귀속 방지) ②'담당자 X'류 플레이스홀더 오너 제외\n③빈칸만 setValue(충돌 절대 안 덮음) ④물리행 범위(2~lastRow) 검증(행삭제·정렬·\nappendRow 금지) ⑤팀시트 이력 2개+는 타임스탬프 최신값 채택. write 목록은\n오프라인(Python, fresh 팀시트+메인 재산출)에서 계산해  (CLI ad-hoc · 커밋 4fd86a55)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4fd86a556153f34c4568bdb8082a3958e303922c"
   }
 ]

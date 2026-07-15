@@ -341,7 +341,7 @@ function populateOneDropdown(selId,gender){
    ※ 규정 근무조 변경 시 본 배열도 함께 갱신(단일 출처는 규정 표, 여기는 미러). */
 const DUTY_ROSTER={
   f:[{shift:'오전',name:'우춘화 주임'},{shift:'중간',name:'이연희 반장'},{shift:'마감',name:'김미영 주임'},{shift:'마감',name:'이경미 주임'}],
-  m:[{shift:'오전',name:'천진석 주임'},{shift:'중간',name:'김유정 주임'},{shift:'마감',name:'박남일 주임'}]
+  m:[{shift:'오전',name:'천진석 주임'},{shift:'중간',name:'김유정 주임'},{shift:'마감',name:'박남일 반장'}]
 };
 /* 담당자(날짜 우측) = 규정 근무조 드롭다운, 선택값 localStorage 기억. GM 2026-06-12.
    submit 게이트와 무관(점검자 입력만 제출 활성). 선택값=담당자명 → 제출 시 시트 담당자 칸에 기록. */
