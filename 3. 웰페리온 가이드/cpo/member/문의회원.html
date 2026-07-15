@@ -5252,6 +5252,11 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false }
   var now = new Date();
   calYear = now.getFullYear();
   calMonth = now.getMonth() + 1;
+  // 메뉴 그룹 진입(?manage=membership|lesson) — ★데이터 로드보다 먼저 실행★: 아래 로드 중 하나가
+  //   throw해도 family는 먼저 확정된다(리로드+토큰 상태에서 로드가 IIFE를 중단시켜 멤버십으로 새던 버그 방어).
+  //   카톡 게이트 리로드 쿼리유실 대비 sessionStorage(mi_manage_pending) 복원 포함. 배6/2026-07-15 시토.
+  try { var _mp = new URLSearchParams(location.search).get('manage'); if(!_mp){ _mp = sessionStorage.getItem('mi_manage_pending'); } sessionStorage.removeItem('mi_manage_pending'); switchFamily(_mp === 'lesson' ? 'lesson' : 'membership'); }
+  catch(e){ switchFamily('membership'); }
   renderCalendarShell();
   loadCalendarData();  // 기본 활성 탭=예약 달력 (2026-06-24 GM 변경)
   loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
@@ -5259,9 +5264,6 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false }
   _tabLoaded.db = true; loadDbData();  // 문의 DB 사전로드 — 통합검색·이번달 문의 집계 데이터 채움(배3, 2026-07-07 시포·GM)
   // 멤버십 현황 대시보드 = 📊 버튼 → 팝업(openMembershipDash) lazy load. 전환율·퍼널·LOSS신호도 각 팝업 오픈 시 lazy fetch(배3, 2026-07-07 시포·GM).
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
-  // 메뉴 그룹 진입(?manage=membership|lesson) — 배6. 기본=멤버십 관리. 2026-07-02 시포·GM.
-  try { var _mp = new URLSearchParams(location.search).get('manage'); if(!_mp){ _mp = sessionStorage.getItem('mi_manage_pending'); } sessionStorage.removeItem('mi_manage_pending'); switchFamily(_mp === 'lesson' ? 'lesson' : 'membership'); }
-  catch(e){ switchFamily('membership'); }
 })();
 
 // CPO 오늘 현황 — 오늘/이번달 문의·등록 건수(PII 미노출 집계)
