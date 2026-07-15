@@ -564,6 +564,31 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .save-toast.err{background:rgba(40,26,22,0.95);color:var(--red);border:1px solid var(--red-border)}
 .save-toast.show{opacity:1;transform:translateY(0)}
 
+/* ── 동기화 배지(배1037 · 버퍼 write-back 표면화, INC-013) — 헤더 큐카운트 + 실패 상세.
+     낙관 저장은 즉시 화면반영되고, 시트 동기화 상태(진행/실패/재시도)를 이 칩으로 표면화한다. ── */
+.sync-chip{
+  position:fixed;bottom:28px;left:28px;z-index:9998;
+  display:none;align-items:center;gap:8px;
+  padding:9px 14px;border-radius:var(--radius-card);
+  font-size:12.5px;font-weight:700;
+  box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  max-width:340px;
+}
+.sync-chip.show{display:flex}
+.sync-chip.pending{background:rgba(38,34,22,0.96);color:#e6c14b;border:1px solid rgba(230,193,75,0.45)}
+.sync-chip.failed{background:rgba(40,26,22,0.96);color:var(--red);border:1px solid var(--red-border)}
+.sync-chip .sc-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:currentColor}
+.sync-chip.pending .sc-dot{animation:scPulse 1s ease-in-out infinite}
+@keyframes scPulse{0%,100%{opacity:0.35}50%{opacity:1}}
+.sync-chip .sc-retry{
+  margin-left:4px;padding:3px 9px;border-radius:8px;cursor:pointer;
+  font-size:11.5px;font-weight:700;border:1px solid currentColor;
+  background:transparent;color:inherit;
+}
+.sync-chip .sc-retry:hover{background:rgba(255,255,255,0.08)}
+.sync-chip .sc-detail{font-weight:500;opacity:0.85;font-size:11px}
+@media print{.sync-chip{display:none!important}}
+
 /* ═══════════════════════════════════════
    상담 모달 (달력 일정 클릭 → 방문완료·상담메모)
    ═══════════════════════════════════════ */
@@ -1183,18 +1208,18 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboMemYouth">–</b> 명</span></div>
       </div>
     </a>
-    <a class="dash-card" data-kind="loss" data-lcard="loss" href="javascript:void(0)" onclick="_lessonComboClick('loss')">
-      <div class="dash-head"><span class="dash-dot loss" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboLossAdult">–</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboLossYouth">–</b> 명</span></div>
-      </div>
-    </a>
     <a class="dash-card" data-kind="wait" data-lcard="wait" href="javascript:void(0)" onclick="_lessonComboClick('wait')">
       <div class="dash-head"><span class="dash-dot wait" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboWaitAdult">–</b> 명</span></div>
         <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboWaitYouth">–</b> 명</span></div>
+      </div>
+    </a>
+    <a class="dash-card" data-kind="loss" data-lcard="loss" href="javascript:void(0)" onclick="_lessonComboClick('loss')">
+      <div class="dash-head"><span class="dash-dot loss" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboLossAdult">–</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboLossYouth">–</b> 명</span></div>
       </div>
     </a>
   </div>
@@ -1301,7 +1326,14 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
       </div>
     </a>
-    <!-- 카드3: LOSS 회원 관리 (이탈 — cpo_today_stats.todayLoss/monthLoss 재활용, 기존 gToLoss/gMoLoss와 동일 소스) -->
+    <!-- 카드3: 대기자 회원 관리 (멤버십 문의에는 '대기' 진행상태 버킷이 없음 — 강습과 달리 데이터 미존재, 정직표기) -->
+    <div class="dash-card" data-kind="wait" style="cursor:default">
+      <div class="dash-head"><span class="dash-dot" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">대기</span><span class="dash-v"><b class="lead" id="dMemWait" style="font-size:15px;color:var(--dim)">미구현</b></span></div>
+      </div>
+    </div>
+    <!-- 카드4: LOSS 회원 관리 (이탈 — cpo_today_stats.todayLoss/monthLoss 재활용, 기존 gToLoss/gMoLoss와 동일 소스) -->
     <a class="dash-card" data-kind="loss" href="javascript:void(0)" onclick="openChurnManage()">
       <div class="dash-head"><span class="dash-dot" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
       <div class="dash-metrics">
@@ -1309,13 +1341,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dMemLossMonth">0</b> 명</span></div>
       </div>
     </a>
-    <!-- 카드4: 대기자 회원 관리 (멤버십 문의에는 '대기' 진행상태 버킷이 없음 — 강습과 달리 데이터 미존재, 정직표기) -->
-    <div class="dash-card" data-kind="wait" style="cursor:default">
-      <div class="dash-head"><span class="dash-dot" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">대기</span><span class="dash-v"><b class="lead" id="dMemWait" style="font-size:15px;color:var(--dim)">미구현</b></span></div>
-      </div>
-    </div>
   </div>
   <!-- 참고(정직 기록, 배754): 구 카드1·2(멤버십 문의/예약)의 '월간' 보조수치(dInqMonth·dTourMon)는 위 공유
        히어로가 '오늘' 지표에 집중하며 표면에서 제거 — 계획서 의도(Architecture 문단)에 따른 의도된 단순화.
@@ -1657,13 +1682,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
         <div class="dash-metrics"><div class="dash-line"><span class="dash-k">수강</span><span class="dash-v"><b class="lead" id="lessonCardMem_adult">–</b> 명</span></div></div>
       </a>
-      <a class="dash-card" data-kind="loss" data-lcard="loss" href="javascript:void(0)" onclick="lessonSwitchCard('adult','loss')">
-        <div class="dash-head"><span class="dash-dot loss" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
-        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">무산</span><span class="dash-v"><b class="lead" id="lessonCardLoss_adult">–</b> 명</span></div></div>
-      </a>
       <a class="dash-card" data-kind="wait" data-lcard="wait" href="javascript:void(0)" onclick="lessonSwitchCard('adult','wait')">
         <div class="dash-head"><span class="dash-dot wait" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
         <div class="dash-metrics"><div class="dash-line"><span class="dash-k">대기</span><span class="dash-v"><b class="lead" id="lessonCardWait_adult">–</b> 명</span></div></div>
+      </a>
+      <a class="dash-card" data-kind="loss" data-lcard="loss" href="javascript:void(0)" onclick="lessonSwitchCard('adult','loss')">
+        <div class="dash-head"><span class="dash-dot loss" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">무산</span><span class="dash-v"><b class="lead" id="lessonCardLoss_adult">–</b> 명</span></div></div>
       </a>
     </div>
 
@@ -1804,13 +1829,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
         <div class="dash-metrics"><div class="dash-line"><span class="dash-k">수강</span><span class="dash-v"><b class="lead" id="lessonCardMem_youth">–</b> 명</span></div></div>
       </a>
-      <a class="dash-card" data-kind="loss" data-lcard="loss" href="javascript:void(0)" onclick="lessonSwitchCard('youth','loss')">
-        <div class="dash-head"><span class="dash-dot loss" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
-        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">무산</span><span class="dash-v"><b class="lead" id="lessonCardLoss_youth">–</b> 명</span></div></div>
-      </a>
       <a class="dash-card" data-kind="wait" data-lcard="wait" href="javascript:void(0)" onclick="lessonSwitchCard('youth','wait')">
         <div class="dash-head"><span class="dash-dot wait" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
         <div class="dash-metrics"><div class="dash-line"><span class="dash-k">대기</span><span class="dash-v"><b class="lead" id="lessonCardWait_youth">–</b> 명</span></div></div>
+      </a>
+      <a class="dash-card" data-kind="loss" data-lcard="loss" href="javascript:void(0)" onclick="lessonSwitchCard('youth','loss')">
+        <div class="dash-head"><span class="dash-dot loss" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
+        <div class="dash-metrics"><div class="dash-line"><span class="dash-k">무산</span><span class="dash-v"><b class="lead" id="lessonCardLoss_youth">–</b> 명</span></div></div>
       </a>
     </div>
 
@@ -2051,6 +2076,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
 <!-- 저장 토스트 -->
 <div class="save-toast" id="saveToast"></div>
+<div class="sync-chip" id="syncChip"><span class="sc-dot"></span><span id="syncChipMsg"></span></div>
 
 <!-- 상담 모달 (달력 일정 클릭 → 방문완료 도장 + 상담 내용 메모 → 문의 현황 자동 반영) -->
 <div class="consult-overlay" id="consultOverlay" onclick="if(event.target===this)closeConsultModal()">
@@ -3784,8 +3810,8 @@ var _lessonState = {
   var PAIRS = [
     ['lessonCardInq_adult','lessonComboInqAdult'], ['lessonCardInq_youth','lessonComboInqYouth'],
     ['lessonCardMem_adult','lessonComboMemAdult'], ['lessonCardMem_youth','lessonComboMemYouth'],
-    ['lessonCardLoss_adult','lessonComboLossAdult'], ['lessonCardLoss_youth','lessonComboLossYouth'],
-    ['lessonCardWait_adult','lessonComboWaitAdult'], ['lessonCardWait_youth','lessonComboWaitYouth']
+    ['lessonCardWait_adult','lessonComboWaitAdult'], ['lessonCardWait_youth','lessonComboWaitYouth'],
+    ['lessonCardLoss_adult','lessonComboLossAdult'], ['lessonCardLoss_youth','lessonComboLossYouth']
   ];
   function syncOne(srcId, dstId){
     var s = document.getElementById(srcId), d = document.getElementById(dstId);
@@ -3862,12 +3888,31 @@ function _lessonEmpty(t, title, desc) {
     '<div class="empty-state-desc">' + esc(desc) + '</div></div></td></tr>';
 }
 
+// ── 강습 문의목록 캐시(배1037 D4 · type+scope별 stale-while-revalidate). ──
+function _lessonCacheSave(k, rows) { try { localStorage.setItem(k, JSON.stringify({ v: 1, ts: Date.now(), rows: rows })); } catch (e) {} }
+function _lessonCacheLoad(k) {
+  try {
+    var c = JSON.parse(localStorage.getItem(k) || 'null');
+    if (c && c.v === 1 && Array.isArray(c.rows) && (Date.now() - (c.ts || 0)) < 5 * 60 * 1000) return c.rows;
+  } catch (e) {}
+  return null;
+}
+
 function lessonLoad(t) {
   var st = _lessonState[t];
   if (!USE_GVIZ && GAS_URL === GAS_PLACEHOLDER) { _lessonEmpty(t, '미연동', 'GAS URL이 교체되면 자동으로 강습 문의가 표시됩니다.'); return; }
+  var _lsCacheKey = 'cpo_iq_lesson_cache_v1_' + st.type + '_' + st.scope;
   var b = document.getElementById('lessonBody_' + t);
-  if (b) b.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div>' +
-    '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
+  // 배1037 D4: 캐시 즉시 렌더(AC2) + 미동기 큐 오버레이 → 백그라운드 재조회 갱신.
+  var _lsCached = _lessonCacheLoad(_lsCacheKey);
+  if (_lsCached && _lsCached.length) {
+    st.rows = WriteBuffer.applyOverlay(_lsCached.slice(), 'lesson');
+    st.rowsLoaded = true;
+    lessonRenderChips(t); lessonRender(t); renderTodayActionPanel(); _lessonInqCardFallback(t);
+  } else if (b) {
+    b.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div>' +
+      '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
+  }
   // 하이브리드(2026-07-08): USE_GVIZ && scope!=='all' → gviz 직접읽기(year 기본뷰만·GAS와 동일 shape).
   // scope==='all'(강습 전체보기)은 시트 필터/숨김행으로 gviz 누락 위험 → USE_GVIZ여도 항상 GAS 유지.
   var _lessonPromise = (USE_GVIZ && st.scope !== 'all')
@@ -3876,7 +3921,9 @@ function lessonLoad(t) {
   _lessonPromise
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
-      st.rows = d.data || [];
+      var _lsFresh = d.data || [];
+      _lessonCacheSave(_lsCacheKey, _lsFresh);   // 서버 진실 캐시(오버레이 전·D4)
+      st.rows = WriteBuffer.applyOverlay(_lsFresh.slice(), 'lesson');   // 미동기 낙관값 재적용(R2)
       st.rowsLoaded = true;   // st.loaded(lessonInit 진입가드, fetch 시작 시점에 이미 true)와 별개 —
                                // '오늘 할 일' 패널 강습 분기는 실제 데이터 도착 시점을 알아야 해서 신규 플래그(배754 강습편입)
       lessonRenderChips(t);
@@ -4158,20 +4205,11 @@ function lessonOwnerChange(sel, t, rowIndex, sportKeyEnc) {
   var sportKey = decodeURIComponent(sportKeyEnc || '');
   var st = _lessonState[t];
   var row = _lessonFindRow(t, rowIndex);
-  var mgmt = _lessonSportMgmt(row, sportKey);
-  var prevVal = mgmt.owner || '';
   var newVal = sel.value;
   var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: '', owner: newVal, gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
-  apiPost(payload)
-    .then(function(data){
-      if (!data.ok) throw new Error(data.error || '저장 실패');
-      _lessonApplyLocalMgmt(row, sportKey, { owner: newVal });
-      showToast('저장', 'ok');
-    })
-    .catch(function(err){
-      sel.value = prevVal || LESSON_UNASSIGNED_OPTION;
-      showToast('저장 실패: ' + (err.message || ''), 'err');
-    });
+  // 배1037: 낙관 즉시 반영(원복 없음) → 버퍼 enqueue(백그라운드 flush·실패 표면화).
+  _lessonApplyLocalMgmt(row, sportKey, { owner: newVal });
+  WriteBuffer.enqueue(payload, { scope: 'lesson', phoneKey: (row && row.phone) || '', fieldset: 'owner', label: '담당', who: (row && row.name) || '', overlay: { owner: newVal } });
 }
 
 /* ── 강습 문의 진행상태 — 종목별 독립(축7, GM 2026-07-08 확정). 옵션 4종 고정(컨택중/가망/SUC/LOSS).
@@ -4214,25 +4252,18 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
   var newVal = sel.value;
   var prevVal = mgmt.status || '';
   var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: '', status: newVal, gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
-  apiPost(payload)
-    .then(function(data){
-      if (!data.ok) throw new Error(data.error || '저장 실패');
-      _lessonApplyLocalMgmt(row, sportKey, { status: newVal });
-      sel.classList.remove('st-consult', 'st-registered', 'st-hold', 'st-cancel', 'st-wait');   // 기존 상태색 전부 제거 후 재설정
-      var stCls = _lessonStatusClass(newVal);
-      if (stCls) sel.classList.add(stCls);
-      showToast('저장', 'ok');
-      // 활성↔버킷(LOSS·대기) 경계를 넘으면 문의 현황·LOSS·대기 목록 재렌더로 행 이동 반영. 배973.
-      _lessonUpdateBucketCounts(t);
-      var _BKT = { 'LOSS': 1, '대기': 1 };
-      var _wasB = !!_BKT[String(prevVal || '').trim()];
-      var _isB = !!_BKT[String(newVal || '').trim()];
-      if (_wasB || _isB) { lessonRender(t); lessonLossRender(t); lessonWaitRender(t); }
-    })
-    .catch(function(err){
-      sel.value = prevVal;   // 실패 시 화면 원복(서버 미반영 상태와 정합)
-      showToast('저장 실패: ' + err.message, 'err');
-    });
+  // 배1037: 낙관 즉시 반영(원복 없음) → 버퍼 enqueue. 상태색·버킷 재렌더는 로컬반영 기준 즉시 수행.
+  _lessonApplyLocalMgmt(row, sportKey, { status: newVal });
+  sel.classList.remove('st-consult', 'st-registered', 'st-hold', 'st-cancel', 'st-wait');   // 기존 상태색 전부 제거 후 재설정
+  var stCls = _lessonStatusClass(newVal);
+  if (stCls) sel.classList.add(stCls);
+  WriteBuffer.enqueue(payload, { scope: 'lesson', phoneKey: (row && row.phone) || '', fieldset: 'status', label: '상태', who: (row && row.name) || '', overlay: { status: newVal } });
+  // 활성↔버킷(LOSS·대기) 경계를 넘으면 문의 현황·LOSS·대기 목록 재렌더로 행 이동 반영. 배973.
+  _lessonUpdateBucketCounts(t);
+  var _BKT = { 'LOSS': 1, '대기': 1 };
+  var _wasB = !!_BKT[String(prevVal || '').trim()];
+  var _isB = !!_BKT[String(newVal || '').trim()];
+  if (_wasB || _isB) { lessonRender(t); lessonLossRender(t); lessonWaitRender(t); }
 }
 
 /* ─────────────────────────────────────────────
@@ -5980,33 +6011,35 @@ function saveReconModal() {
   }
   var saveBtn = document.getElementById('rcSaveBtn'); saveBtn.disabled = true;
   var src = _resModal.source, firstDate = reservations.length ? reservations[0].date : '';
-  apiPost(payload)
-    .then(function(data){
-      if (data && data.ok === false) throw new Error(data.error || '저장 실패');
-      showToast('예약 저장', 'ok');
-      if (src === 'inquiry') {
-        var dr = dbRows.find(function(r){ return r.rowIndex === rowIndex; });
-        if (dr) {
-          dr.reservations = reservations.slice();
-          dr.exp1 = reservations[0] ? reservations[0].date : ''; dr.exp1Time = reservations[0] ? reservations[0].time : '';
-          dr.exp2 = reservations[1] ? reservations[1].date : ''; dr.exp2Time = reservations[1] ? reservations[1].time : '';
-        }
-        _syncCalendarForRow('inquiry', rowIndex, reservations, { name: name, phone: phone, program: program, dr: dr });
-        if (_tabLoaded.db) renderDbTable();
-      } else {
-        var ar = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
-        if (ar) { ar[ACT_RES_KEY] = jsonStr; ar[RECON_COLS.date] = reservations[0] ? reservations[0].date : ''; ar[RECON_COLS.time] = reservations[0] ? reservations[0].time : ''; ar[RECON_COLS.note] = reservations[0] ? reservations[0].note : ''; }
-        _syncCalendarForRow('active', rowIndex, reservations, { name: name, phone: phone, program: program });
-        if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
-      }
-      closeReconModal();
-      renderCalendarShell();
-      renderCalendarChips();
-      renderTopDash();
-      if (firstDate) openDayPanel(firstDate);
-    })
-    .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
-    .then(function(){ saveBtn.disabled = false; });
+  // 배1037: 예약 저장도 낙관 즉시 반영 → 버퍼 enqueue. 기존 성공-브랜치 로컬반영을 동기 실행하고, 시트 쓰기는 백그라운드.
+  var _resOverlay = null;
+  if (src === 'inquiry') {
+    var dr = dbRows.find(function(r){ return r.rowIndex === rowIndex; });
+    if (dr) {
+      dr.reservations = reservations.slice();
+      dr.exp1 = reservations[0] ? reservations[0].date : ''; dr.exp1Time = reservations[0] ? reservations[0].time : '';
+      dr.exp2 = reservations[1] ? reservations[1].date : ''; dr.exp2Time = reservations[1] ? reservations[1].time : '';
+    }
+    _resOverlay = {
+      reservations: reservations.slice(),
+      exp1: reservations[0] ? reservations[0].date : '', exp1Time: reservations[0] ? reservations[0].time : '',
+      exp2: reservations[1] ? reservations[1].date : '', exp2Time: reservations[1] ? reservations[1].time : ''
+    };
+    _syncCalendarForRow('inquiry', rowIndex, reservations, { name: name, phone: phone, program: program, dr: dr });
+    if (_tabLoaded.db) renderDbTable();
+  } else {
+    var ar = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
+    if (ar) { ar[ACT_RES_KEY] = jsonStr; ar[RECON_COLS.date] = reservations[0] ? reservations[0].date : ''; ar[RECON_COLS.time] = reservations[0] ? reservations[0].time : ''; ar[RECON_COLS.note] = reservations[0] ? reservations[0].note : ''; }
+    _syncCalendarForRow('active', rowIndex, reservations, { name: name, phone: phone, program: program });
+    if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
+  }
+  closeReconModal();
+  renderCalendarShell();
+  renderCalendarChips();
+  renderTopDash();
+  if (firstDate) openDayPanel(firstDate);
+  WriteBuffer.enqueue(payload, { scope: (src === 'inquiry' ? 'member' : 'active'), phoneKey: keyPhone, fieldset: 'reservations', label: '예약', who: name || '', overlay: _resOverlay });
+  saveBtn.disabled = false;
 }
 
 /* ═══ CONTACT(연락 이력) 모달 — 예약 모달과 골격 공유(별개 리스트). 축3, 2026-07-08 시포·GM ═══
@@ -6111,18 +6144,12 @@ function saveContactModal() {
   if (ctx.source === 'lesson') {
     var row = _lessonFindRow(ctx.t, rowIndex);
     var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: '', contacts: JSON.stringify(contacts), gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
-    apiPost(payload)
-      .then(function(data){
-        if (!data.ok) throw new Error(data.error || '저장 실패');
-        _lessonApplyLocalMgmt(row, '', { contacts: contacts });
-        closeContactModal();
-        lessonRender(ctx.t);
-        showToast('저장', 'ok');
-      })
-      .catch(function(err){
-        showToast('저장 실패: ' + (err.message || ''), 'err');
-      })
-      .then(function(){ saveBtn.disabled = false; });
+    // 배1037: 낙관 즉시 반영 + 버퍼 enqueue(fieldset='contacts' → 상태·담당과 독립 큐).
+    _lessonApplyLocalMgmt(row, '', { contacts: contacts });
+    closeContactModal();
+    lessonRender(ctx.t);
+    WriteBuffer.enqueue(payload, { scope: 'lesson', phoneKey: (row && row.phone) || '', fieldset: 'contacts', label: '연락이력', who: (row && row.name) || '', overlay: { contacts: contacts } });
+    saveBtn.disabled = false;
   } else {
     _saveCell(rowIndex, { contacts: contacts });   // _saveCell이 로컬반영+디바운스 저장(member_inquiry_update) 처리
     closeContactModal();
@@ -6178,12 +6205,34 @@ var STATUS_CLASS   = {
   '응대':'contact','가입':'joined','이탈':'lost','보류':'hold','키오스크 완':'joined'
 };
 
+// ── 멤버십 문의목록 캐시(배1037 D4 · stale-while-revalidate). _sbCache* 선례와 동일 패턴. ──
+var _DB_CACHE_KEY = 'cpo_iq_db_cache_v1';
+var _DB_CACHE_TTL = 5 * 60 * 1000;
+function _dbCacheSave(rows) { try { localStorage.setItem(_DB_CACHE_KEY, JSON.stringify({ v: 1, ts: Date.now(), rows: rows })); } catch (e) {} }
+function _dbCacheLoad() {
+  try {
+    var c = JSON.parse(localStorage.getItem(_DB_CACHE_KEY) || 'null');
+    if (c && c.v === 1 && Array.isArray(c.rows) && (Date.now() - (c.ts || 0)) < _DB_CACHE_TTL) return c.rows;
+  } catch (e) {}
+  return null;
+}
+
 function loadDbData() {
   if (!USE_GVIZ && GAS_URL === GAS_PLACEHOLDER) {
     renderDbEmpty('GAS 미연동 상태', 'GM이 GAS를 배포하고 URL을 교체하면 문의 DB가 활성화됩니다.');
     return;
   }
-  document.getElementById('dbCount').textContent = '불러오는 중…';
+  // 배1037 D4: 캐시 즉시 렌더(왕복 제거·AC2) + 미동기 큐 오버레이 → 백그라운드 재조회로 갱신.
+  var _cached = _dbCacheLoad();
+  if (_cached && _cached.length) {
+    dbRows = WriteBuffer.applyOverlay(_cached.slice(), 'member');
+    dbRows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
+    renderDbTable();
+    _tapReady = true; renderTodayActionPanel();
+    document.getElementById('dbCount').textContent = dbRows.length + '건 · 갱신 중…';
+  } else {
+    document.getElementById('dbCount').textContent = '불러오는 중…';
+  }
   // 하이브리드(2026-07-08): 멤버십은 scope 개념 없음 → USE_GVIZ=true면 항상 gviz 직접읽기(GAS와 동일 shape).
   var _dbPromise = USE_GVIZ
     ? gvizLoadMemberInquiry_()
@@ -6198,7 +6247,9 @@ function loadDbData() {
         }
         return;
       }
-      dbRows = data.data || [];
+      var _fresh = data.data || [];
+      _dbCacheSave(_fresh);   // 서버 진실 캐시(오버레이 전) — 다음 진입 즉시 렌더용(D4)
+      dbRows = WriteBuffer.applyOverlay(_fresh.slice(), 'member');   // 미동기 낙관값 재적용(재조회가 덮어쓰지 않게·R2)
       // 문의일(timestamp) 기준 최근이 상단 — 빈 날짜는 하단(2026-06-22 GM)
       dbRows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
       renderDbTable();
@@ -6706,17 +6757,18 @@ function _saveCell(rowIndex, patch) {
     contacts: r.contacts !== undefined ? JSON.stringify(r.contacts) : ''      // CONTACT(연락 이력) 배열 — 축2/3, 2026-07-08 시포·GM
     // 일정(예약)은 예약 리스트 모달에서 body.reservations로 저장 — 인라인 셀 편집에서 제외(스테일 방지). 2026-07-03 시포·GM.
   };
-  if (dbSaveTimer) clearTimeout(dbSaveTimer);
-  dbSaveTimer = setTimeout(function(){
-    apiPost(payload)
-      .then(function(data){
-        if (!data.ok) throw new Error(data.error || '저장 실패');
-        showToast('저장', 'ok');
-      })
-      .catch(function(err){
-        showToast('저장 실패: ' + err.message, 'err');
-      });
-  }, 600);
+  // 배1037: 낙관 로컬반영은 위에서 이미 완료 → 버퍼에 enqueue(영속·백그라운드 flush·실패 표면화).
+  // fieldset='row'(멤버십 인라인 전 필드 스냅샷) → 같은 행 재편집은 coalesce, 예약(reservations)은 별도 fieldset로 독립.
+  WriteBuffer.enqueue(payload, {
+    scope: 'member', phoneKey: keyPhone, fieldset: 'row',
+    label: '저장', who: (r.name || ''),
+    overlay: {
+      name: r.name, phone: r.phone, program: r.program, status: r.status,
+      channel: r.channel, owner: r.owner, memo: r.memo,
+      contact1: r.contact1, contact2: r.contact2, contact3: r.contact3,
+      inquiryContent: r.inquiryContent, contacts: r.contacts
+    }
+  });
 }
 
 /* ─── 텍스트 셀 (이름·연락처) 활성화 ─── */
@@ -7193,21 +7245,209 @@ function _unifiedSearchGoto(r) {
 /* ─────────────────────────────────────────────
    GAS 통신 헬퍼
 ───────────────────────────────────────────── */
+// ★INC-013 근본수리(배1037 D1) — no-cors 낙관 제거. text/plain 단순요청(preflight 회피) + redirect:'follow'로
+//   GAS 302를 브라우저가 자동 추종 → 응답 JSON {ok,error} 실판독. 백엔드 거부(row-key-mismatch 등)를 프론트가 실제로 읽는다.
+//   S0 라이브 스파이크(2026-07-15 시크릿/headless)로 판독 가능 확정(type:'cors', body 판독됨). '조용한 낙관' 폐기.
 function apiPost(payload) {
   if (GAS_URL === GAS_PLACEHOLDER) {
     return Promise.reject(new Error('GAS 미연동 — URL 교체 후 사용 가능'));
   }
   return fetch(GAS_URL, {
     method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload)
   }).then(function(r){
-    // no-cors 모드는 응답 body를 읽을 수 없음 — 성공으로 낙관 처리
-    // GAS CORS 허용 설정 후에는 일반 fetch로 교체 가능
-    return { ok: true };
+    return r.text().then(function(txt){
+      var data;
+      try { data = JSON.parse(txt); }
+      catch (e) { data = { ok: false, error: '응답 파싱 실패' }; }   // 판독 불가 = 성공 단정 금지(INC-013)
+      return data;   // 실제 {ok,error}
+    });
   });
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   WriteBuffer — 문의 편집 저장 버퍼(배1037 갈래A · 낙관적 UI + 비동기 시트 동기화)
+   설계: .omc/plans/2026-07-15-inquiry-buffered-write-plan.md (D1~D5). 교훈: INC-013.
+   - 편집 → 즉시 로컬반영(호출부) → enqueue(영속 큐) → 백그라운드 flush(판독 apiPost).
+   - 성공(ok:true)=큐 제거+칩 갱신 / 실패=지수백오프 재시도(상한 후 park+수동재시도).
+   - localStorage 영속(cpo_iq_writeq_v1) → 새로고침/크래시에도 미동기분 유실 0.
+   - 큐 오버레이(applyOverlay): 목록 재조회가 미동기 낙관값을 덮어쓰지 않게 재적용.
+   ═══════════════════════════════════════════════════════════════════ */
+var WriteBuffer = (function(){
+  var QKEY = 'cpo_iq_writeq_v1';
+  var MAX_ATTEMPTS = 5;
+  var BACKOFF = [1000, 2000, 4000, 8000, 16000];   // 지수 백오프(ms) · 상한 5회
+  var queue = [];            // [{ id, key, payload, label, who, scope, phoneKey, overlay, attempts, nextTry, parked, rev, inflight }]
+  var flushTimer = null;
+  var running = false;
+
+  function _load() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(QKEY) || '[]');
+      if (Array.isArray(raw)) queue = raw.map(function(it){ it.inflight = false; it.nextTry = it.nextTry || 0; return it; });
+    } catch (e) { queue = []; }
+  }
+  function _save() { try { localStorage.setItem(QKEY, JSON.stringify(queue)); } catch (e) {} }
+  function _now() { return Date.now(); }
+
+  function activeCount() { return queue.filter(function(it){ return !it.parked; }).length; }
+  function failedItems() { return queue.filter(function(it){ return it.parked; }); }
+
+  function renderChip() {
+    var chip = document.getElementById('syncChip');
+    var msg = document.getElementById('syncChipMsg');
+    if (!chip || !msg) return;
+    var failed = failedItems();
+    var pending = queue.filter(function(it){ return !it.parked; });
+    if (failed.length > 0) {
+      chip.className = 'sync-chip failed show';
+      var names = failed.map(function(it){ return (it.who || '') + (it.label ? '·' + it.label : ''); }).filter(Boolean).slice(0, 4).join(', ');
+      msg.innerHTML = '동기화 실패 ' + failed.length + '건' +
+        '<button class="sc-retry" onclick="WriteBuffer.forceRetry()">재시도</button>' +
+        (names ? '<span class="sc-detail"> — ' + esc(names) + '</span>' : '');
+      chip.title = '시트 동기화 실패(재시도 상한 초과). 재시도를 누르거나 목록 새로고침 후 다시 시도하세요. 미동기분은 새로고침해도 보존됩니다.';
+    } else if (pending.length > 0) {
+      chip.className = 'sync-chip pending show';
+      msg.textContent = '저장 동기화 ' + pending.length + '건…';
+      chip.title = '';
+    } else {
+      chip.className = 'sync-chip';
+      msg.textContent = '';
+      chip.title = '';
+    }
+  }
+
+  function enqueue(payload, opts) {
+    opts = opts || {};
+    var key = opts.key || (payload.action + '|' + (payload.keyPhone || payload.rowIndex) + '|' + (opts.scope || '') + '|' + (opts.fieldset || ''));
+    var existing = null;
+    for (var i = 0; i < queue.length; i++) { if (queue[i].key === key) { existing = queue[i]; break; } }
+    if (existing) {
+      // coalesce — 같은 필드범위 재편집: 최신값 승. 재시도 리셋(새 편집이므로).
+      existing.payload = payload;
+      existing.label = opts.label || existing.label;
+      existing.who = opts.who || existing.who;
+      existing.scope = opts.scope || existing.scope;
+      existing.phoneKey = (opts.phoneKey !== undefined) ? opts.phoneKey : existing.phoneKey;
+      existing.overlay = opts.overlay || existing.overlay;
+      existing.attempts = 0;
+      existing.parked = false;
+      existing.nextTry = 0;
+      existing.rev = (existing.rev || 0) + 1;
+    } else {
+      queue.push({
+        id: 'w' + _now() + '_' + Math.random().toString(36).slice(2, 7),
+        key: key, payload: payload,
+        label: opts.label || '', who: opts.who || '',
+        scope: opts.scope || '', phoneKey: (opts.phoneKey !== undefined ? opts.phoneKey : (payload.keyPhone || '')),
+        overlay: opts.overlay || null,
+        attempts: 0, nextTry: 0, parked: false, rev: 1, inflight: false
+      });
+    }
+    _save();
+    renderChip();
+    scheduleFlush(0);
+  }
+
+  function scheduleFlush(delay) {
+    if (flushTimer) clearTimeout(flushTimer);
+    flushTimer = setTimeout(flush, delay || 0);
+  }
+
+  function flush() {
+    if (running) return;
+    if (GAS_URL === GAS_PLACEHOLDER) return;
+    var now = _now();
+    var item = null;
+    for (var i = 0; i < queue.length; i++) {
+      var it = queue[i];
+      if (it.parked || it.inflight) continue;
+      if (it.nextTry <= now) { item = it; break; }
+    }
+    if (!item) { scheduleNext(); return; }
+    running = true;
+    item.inflight = true;
+    var sentRev = item.rev;
+    apiPost(item.payload)
+      .then(function(data){
+        item.inflight = false; running = false;
+        if (data && data.ok) {
+          // 성공 — 단, 전송 후 재편집(coalesce)로 rev가 바뀌었으면 최신 payload 재전송(유실 방지).
+          if (item.rev !== sentRev) { item.nextTry = 0; }
+          else { _remove(item.id); showToast('저장', 'ok'); }
+        } else {
+          _fail(item);
+        }
+        _save(); renderChip(); scheduleNext();
+      })
+      .catch(function(){
+        item.inflight = false; running = false;
+        _fail(item);
+        _save(); renderChip(); scheduleNext();
+      });
+  }
+
+  function _fail(item) {
+    item.attempts = (item.attempts || 0) + 1;
+    if (item.attempts >= MAX_ATTEMPTS) {
+      item.parked = true;   // 상한 초과 → park(무한루프 방지). 수동 재시도/새로고침 자동 flush로 복구.
+    } else {
+      item.nextTry = _now() + (BACKOFF[Math.min(item.attempts - 1, BACKOFF.length - 1)]);
+    }
+  }
+
+  function _remove(id) {
+    for (var i = 0; i < queue.length; i++) { if (queue[i].id === id) { queue.splice(i, 1); return; } }
+  }
+
+  function scheduleNext() {
+    var actives = queue.filter(function(it){ return !it.parked && !it.inflight; });
+    if (!actives.length) { renderChip(); return; }
+    var soonest = Math.min.apply(null, actives.map(function(it){ return it.nextTry || 0; }));
+    var delay = Math.max(0, soonest - _now());
+    scheduleFlush(delay);
+  }
+
+  function forceRetry() {
+    queue.forEach(function(it){ it.parked = false; it.attempts = 0; it.nextTry = 0; it.inflight = false; });
+    _save(); renderChip(); scheduleFlush(0);
+  }
+
+  // 목록 재조회 병합 시 미동기 낙관값 재적용(D4 오버레이) — scope('member'|'lesson') + phoneKey 매칭.
+  function applyOverlay(rows, scope) {
+    if (!Array.isArray(rows)) return rows;
+    queue.forEach(function(it){
+      if (it.scope !== scope || !it.overlay) return;
+      var ph = String(it.phoneKey || '').replace(/[^0-9]/g, '');
+      if (!ph) return;
+      for (var i = 0; i < rows.length; i++) {
+        if (String(rows[i].phone || '').replace(/[^0-9]/g, '') === ph) {
+          for (var k in it.overlay) { if (it.overlay.hasOwnProperty(k)) rows[i][k] = it.overlay[k]; }
+          break;
+        }
+      }
+    });
+    return rows;
+  }
+
+  function hasPending(scope, phoneKey) {
+    var ph = String(phoneKey || '').replace(/[^0-9]/g, '');
+    return queue.some(function(it){ return it.scope === scope && String(it.phoneKey || '').replace(/[^0-9]/g, '') === ph; });
+  }
+
+  // 부팅: 영속 큐 복원 + 백그라운드 flush(미동기분 자동 재전송). 첫 렌더 전 로드로 새로고침 유실 0.
+  _load();
+  renderChip();
+  setTimeout(function(){ scheduleFlush(300); }, 0);
+
+  return {
+    enqueue: enqueue, flush: flush, forceRetry: forceRetry,
+    applyOverlay: applyOverlay, hasPending: hasPending,
+    activeCount: activeCount, _queue: function(){ return queue; }
+  };
+})();
 
 /* ─────────────────────────────────────────────
    토스트 알림
