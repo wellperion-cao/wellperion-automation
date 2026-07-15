@@ -1694,33 +1694,26 @@ def _build_checklist_block(slot_label: str, html_link: bool = False, now: dateti
     """
     12시/23시(폴백) 공용 — 체크리스트 대시보드 박스표 블록 생성.
     slot_label: "12:00" | "23:00"
-    html_link: True면 parse_mode=HTML 메시지용 — 대시보드 줄을 <a> 앵커로 만들고
-               (dashboard_url을 제외한) 본문을 html.escape해 &/</> 파싱 오류를 방지한다.
+    html_link: True면 parse_mode=HTML 메시지용 — 본문을 html.escape해 &/</> 파싱 오류를 방지한다.
                False(기존 MarkdownV2 경로)는 동작 변경 없음.
-    now: 검증용 날짜 주입(기본 datetime.now()). 링크 주1회(월요일) 정책·오늘자 조회에 사용.
+    now: 검증용 날짜 주입(기본 datetime.now()). 오늘자 조회·휴관일 판정에 사용.
 
-    대시보드 링크 정책(GM 2026-07-15): 의미 낮은 매일 링크 폐지 → 주1회(월요일)만 노출.
-    그 자리에 반복 미완료 제안(있을 때만) 삽입. 제안은 지원부 원장 기반 과거 패턴이라 12·23시 양쪽 OK.
+    대시보드 링크 정책(GM 2026-07-15): 의미 낮은 '🔗 대시보드: 링크' 전면 삭제(텔레그램 점검 알림 미노출).
+    그 자리에 반복 미완료 제안(있을 때만·지원부 원장 기반 과거 패턴)만 12·23시 공용 삽입.
     """
     now = now or datetime.now()
     today = now.strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
     day_kor = ["월", "화", "수", "목", "금", "토", "일"][now.weekday()]
-    is_monday = now.weekday() == 0  # 링크 주1회 노출 요일
 
     # 반복 미완료 제안 라인(콜드스타트·0건이면 [] → 줄 생략, 정직) — 12·23시 공용.
     suggest_lines = _cid.suggestion_lines_for_today(CHECK_INCOMPLETE_LEDGER, today) if _CID_OK else []
 
-    dashboard_url = "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"
-
     if _is_closed_day(now):
         body = f"🛠 시설·지원 점검 현황 — {slot_label} ({day_kor})\n🚫 오늘은 휴관일 — 점검 없음"
         if html_link:
-            out = html.escape(body, quote=False)
-            if is_monday:
-                out += f"\n🔗 대시보드: <a href=\"{dashboard_url}\">링크</a>"
-            return out
-        return body + (f"\n🔗 대시보드: {dashboard_url}" if is_monday else "")
+            return html.escape(body, quote=False)
+        return body
 
     # 지원부·시설부 라이브 소스로 조회 — 옛 CHECKLIST_API_URL은 오늘 빈 응답(rows=0)이라 폐기(2026-07-08 GM):
     #   지원부=today_live&dept=support(실데이터·완료율) · 시설부=monthly_report 오늘행(입력률+이상). 두 지표 체계는 다름(억지 통일 안 함).
@@ -1731,11 +1724,6 @@ def _build_checklist_block(slot_label: str, html_link: bool = False, now: dateti
     facility_today = _facility_today_row(monthly, today)
     # board 한 번 호출로 작업사항 + 실제 제출 회차수 확보(회차=페이지 'N회 완료'와 일치)
     fac_board = _fetch_facility_board(today) if facility_today is not None else {"work": None, "sessions": 0, "ooc_action": None}
-
-    # 부서별 대시보드(GM 지적: '시설부 이탈'인데 링크는 지원부로 가던 불일치 → 부서별 앵커로 교정)
-    _CHECK_BASE = "https://wellperion-cao.github.io/wellperion-automation/coo/check/"
-    support_dash = _CHECK_BASE + "%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"   # 지원부 체계.html
-    facility_dash = _CHECK_BASE + "%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"  # 시설부 체계.html
 
     def _support_cell() -> str:
         if not support_live:
@@ -1813,13 +1801,6 @@ def _build_checklist_block(slot_label: str, html_link: bool = False, now: dateti
             + ([suggest_block] if suggest_block else [])
         )
         body_safe = html.escape("\n\n".join(parts), quote=False)
-        # 대시보드 링크는 주1회(월요일)만.
-        if is_monday:
-            link_line = (
-                f'🔗 대시보드 — <a href="{support_dash}">지원부</a> · '
-                f'<a href="{facility_dash}">시설부</a>'
-            )
-            return f"{body_safe}\n{link_line}"
         return body_safe
 
     # 23시 폴백(MarkdownV2 안전) — 기존 박스표 형식 유지. 링크만 시설부(이탈 부서)로 교정.
@@ -1840,14 +1821,12 @@ def _build_checklist_block(slot_label: str, html_link: bool = False, now: dateti
         f"{work_block}"
         f"{suggest_block}"
     )
-    # 대시보드 링크는 주1회(월요일)만.
-    return body_plain + (f"\n🔗 대시보드: {facility_dash}" if is_monday else "")
+    return body_plain
 
 
 def _build_12_body() -> str:
-    """12시 — 시설·지원 체크리스트 대시보드 진행현황 박스표.
-    이 메시지는 parse_mode=HTML로 발송(run_report에서 slot=="12" 분기) — 대시보드 줄이
-    '🔗 대시보드: 링크' 클릭형 앵커로 나가게 하기 위함(원문 긴 URL 노출 방지, GM 2026-07-10).
+    """12시 — 시설·지원 체크리스트 진행현황 박스표.
+    이 메시지는 parse_mode=HTML로 발송(run_report에서 slot=="12" 분기).
     _AUTO_FOOTER는 MarkdownV2 이탤릭 문법(_..._)이라 HTML 모드에선 그대로 나가버려
     이 메시지 전용으로 <i> 태그 버전을 사용한다."""
     checklist_block = _build_checklist_block("12:00", html_link=True)
