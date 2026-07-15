@@ -27,7 +27,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
-#tab-policy,#tab-guide,#tab-manual,#tab-fcheck,#tab-vendor,#tab-monthly,#tab-schedule{max-width:none;margin-left:0;margin-right:0}/* 전체 탭 풀폭 좌측정렬 (GM 2026-06-23, 계획·보고 탭 추가 2026-07-07) */
+#tab-policy,#tab-guide,#tab-manual,#tab-fcheck,#tab-vendor,#tab-monthly,#tab-schedule,#tab-vendorboard{max-width:none;margin-left:0;margin-right:0}/* 전체 탭 풀폭 좌측정렬 (GM 2026-06-23, 계획·보고 탭 추가 2026-07-07) */
 #tab-vendor.content{text-align:left}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
@@ -598,8 +598,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <!-- 옛 점검(남)/(여) 탭 제거(2026-06-12). 신규 '시설점검'=날짜별 측정 작업일지(2026-06-16 GM·PDF 기반). -->
   <button class="tab" onclick="switchTab('fcheck')">시설점검</button>
   <button class="tab" onclick="switchTab('monthly')">📅 월간 시설부 현황·계획·보고</button>
-  <button class="tab" onclick="switchTab('vendor')">거래업체</button>
   <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
+  <button class="tab" onclick="switchTab('vendorboard')">🏢 거래업체</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <!-- 인쇄 버튼 통합 드롭다운 (지원부·운영부 체계 동일 패턴 · 버튼 난립 해소) -->
     <div class="tab-dropdown" id="printDropdown">
@@ -904,6 +904,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <a href="전사_일정.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 일정 전체 보기 ↗</a>
   </div>
   <iframe id="scheduleFrame" data-src="전사_일정.html?dept=시설부&embed=1" title="시설부 일정" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
+</div>
+
+<!-- ══ 「🏢 거래업체」 탭 — 전사_거래업체(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. (배1074 시우 2026-07-15) ══ -->
+<div id="tab-vendorboard" class="content hidden">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
+    <span>🏢 <b style="color:var(--text)">시설부 거래업체</b> — 우리 부서 거래처. <b>＋업체 등록</b>·카드 <b>편집</b>으로 관리하고, 부서 체크박스로 <b>여러 부서 공유</b> 지정. 저장하면 <b>전사 거래업체</b>에 바로 모입니다.</span>
+    <a href="전사_거래업체.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 거래업체 전체 보기 ↗</a>
+  </div>
+  <iframe id="vendorboardFrame" data-src="전사_거래업체.html?dept=시설부&embed=1" title="시설부 거래업체" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
 </div>
 
 <div id="tab-policy" class="content">
@@ -1633,6 +1642,8 @@ function switchTab(tab, opts){
   document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
   var _sch=document.getElementById('tab-schedule'); if(_sch) _sch.classList.toggle('hidden',tab!=='schedule');
   if(tab==='schedule'){ var _f=document.getElementById('scheduleFrame'); if(_f && !_f.src && _f.getAttribute('data-src')) _f.src=_f.getAttribute('data-src'); }
+  var _vb=document.getElementById('tab-vendorboard'); if(_vb) _vb.classList.toggle('hidden',tab!=='vendorboard');
+  if(tab==='vendorboard'){ var _vf=document.getElementById('vendorboardFrame'); if(_vf && !_vf.src && _vf.getAttribute('data-src')) _vf.src=_vf.getAttribute('data-src'); }
   if(tab==='fcheck'){ if(typeof fcLoad==='function') fcLoad(); }
   if(tab==='monthly'){ if(typeof fmEnsureMonthInput==='function') fmEnsureMonthInput(); if(typeof loadFacilityMonthlyReport==='function') loadFacilityMonthlyReport(); if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
   if(tab==='manual'){ if(typeof facLoadManualFromBackend==='function') facLoadManualFromBackend(); }

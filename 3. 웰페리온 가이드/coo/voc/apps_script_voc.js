@@ -704,6 +704,10 @@ function _regSubmit(body) {
   sh.getRange(newRow, 1, 1, row.length).setValues([row]);
   _regApplyStatusColor(sh, newRow, '접수', headers);
 
+  // 최신 접수가 시트 상단에 오도록 접수일시(createdAt) 내림차순 정렬 (헤더 1행 고정) — GM 2026-07-15.
+  //   행 전체(색상 포함)가 함께 이동하므로 상태색·사진URL 등 정합 유지. reg_update/delete 는 ID 스캔이라 행위치 무관.
+  try { _regSortSheetDesc(sh, headers); } catch (e) {}
+
   // 텔레그램 알림 (익명 접수 시 이름 표기) — 사진 있으면 sendPhoto 로 실제 첨부
   _vNotifyTelegram(
     '📋 <b>[종합 접수처]</b> ' + cat.label + '\n' +
@@ -717,6 +721,37 @@ function _regSubmit(body) {
 
   try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
   return _vJson({ ok: true, id: id, dept: cat.dept });
+}
+
+// ─── 접수일시(createdAt) 내림차순 정렬 — 최신이 상단 (헤더 1행 고정) ───
+//   createdAt = 'yyyy-MM-dd HH:mm:ss'(제로패딩) 문자열이라 문자열 desc = 시간 desc.
+//   행 단위 sort 라 상태색 배경·모든 셀이 함께 이동(정합 유지). GM 2026-07-15 시우.
+function _regSortSheetDesc(sh, headers) {
+  var ci = 0;
+  for (var i = 0; i < headers.length; i++) {
+    if (headers[i].key === 'createdAt') { ci = i + 1; break; }
+  }
+  if (!ci) return;
+  var lastRow = sh.getLastRow();
+  var lastCol = sh.getLastColumn();
+  if (lastRow > 2) {
+    sh.getRange(2, 1, lastRow - 1, lastCol).sort({ column: ci, ascending: false });
+  }
+}
+
+// ─── 전 카테고리 시트를 접수일시 내림차순으로 1회 정렬 (기존 데이터 정리용) ───
+//   Apps Script 에디터에서 이 함수를 한 번 실행하면 모든 접수 시트가 최신-상단으로 정렬된다.
+//   이후에는 reg_submit 이 접수 때마다 자동 정렬해 유지. 멱등(다시 실행해도 순서 동일).
+function _regSortAllDesc() {
+  var n = 0;
+  REG_CATEGORIES.forEach(function (cat) {
+    try {
+      var sh = _regGetSheet(cat.key);
+      _regSortSheetDesc(sh, _regHeadersFor(cat.key));
+      n++;
+    } catch (e) {}
+  });
+  return n;
 }
 
 // ─── reg_list — 종합 접수처 목록 조회 (GATED) ───
@@ -1367,6 +1402,7 @@ function _vProcess(action, body, params) {
   if (action === 'reg_update') return _regUpdate(body);
   if (action === 'reg_delete') return _regDelete(body);   // 접수ID로 행 정밀 삭제(배포검증 더미 청소용·GATED). 2026-06-20 시우.
   if (action === 'reg_renumber') return _regRenumber(body); // 전체 통합 순번 VOC-1.. 재부여(일회성·멱등·GATED). 2026-06-30 시토.
+  if (action === 'reg_sort') return _vJson({ ok: true, sorted: _regSortAllDesc() }); // 전 접수시트 접수일시 desc 정렬(멱등·GATED). 이후 reg_submit이 자동 유지. 2026-07-15 시우.
 
   // ── 습득 분실물(Lost & Found) 액션 (시토 배1069 · 2026-07-15) ──
   if (action === 'lf_submit')   return _lfSubmit(body);            // 직원 등록(게이트+제출토큰)
