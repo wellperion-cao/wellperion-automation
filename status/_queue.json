@@ -29,11 +29,13 @@
     "task_id": "CMO-2026-06-19-AI-SERIES-REACTION-OWNERSHIP",
     "clevel": "cmo",
     "title": "[시모] AI 개인시리즈 반응 읽기 소유 — 발행 후 댓글·저장·팔로우 반응 읽고 다음 편 방향 반영",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
+    "terminal": true,
+    "processed_at": "2026-07-15",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-19",
     "note": "[2026-06-19 GM 지시] AI 시리즈(@namuk.wellperion) 반응 모니터링을 시모가 소유한다. 개인시리즈 목표=도달·브랜드(바이럴 CTA 저장·댓글·팔로우)라 반응이 곧 이 채널의 의미있는 신호(전환 퍼널 SSOT와 별개, 여기선 vanity 아님). 한계: 개인 IG 반응 자동 스크래핑은 신뢰도 낮아 보류 이력 있음(메모리 project_channel_engagement_tracking_ceiling) → 자동 수치판 만들지 말 것. 시모가 발행된 각 편의 반응(댓글 내용·저장·팔로우 변화·도달)을 주기적으로 읽어 '무엇이 통했나'를 정성으로 정리. 첫 대상=CS 3편(#19~#21, GM 승인·발행 후). #13 '반응 기반 방향' 실천. | [2026-06-24] 봇 자동수집 PoC 성공(조건부): 팔로워·댓글 자동수집 가능(세션 재활용), 좋아요=IG 소수 숨김·저장=IG 비공개라 수집 불가. scripts/ig_engagement_poc.py. 운용방침=하이브리드(자동=팔로워·댓글 주간추적 / 수동보완=저장·좋아요 GM 인사이트). [2026-07-04 정리] 반응읽기 원장(status/ig_engagement_ledger.json) 구축·편별매칭·매일09:30 자동수집·매일 자동커밋까지 완결(핀버그 수정 포함). 이 데이터가 평가환류 루프(배106)로 흘러감 — 31=데이터소스, 106=환류 자동화.",
-    "next": "CS 3편 발행되면 시모가 편별 반응 읽기 → '통한 포인트/안 통한 포인트' 1줄 정리 → 다음 챕터(마케팅·점검) 후킹·방향에 반영 + GM 간단 보고.",
+    "next": "🏁 입항완료(2026-07-15 검수) — 반응읽기 인프라(원장 status/ig_engagement_ledger.json·PoC·매일09:30 자동수집 예약작업) 완결. 남은 '편별 정성 읽기'는 상시 CMO R/R 루틴(자동화 대상 아님)이라 별도 배 불요. 발행분 반응은 배106(평가환류)이 데이터로 흡수.",
     "ship_no": 31,
     "module": "M2"
   },
@@ -248,12 +250,14 @@
     "task_id": "CMO-2026-07-10-PUBLISH-FORTRESS",
     "clevel": "cmo",
     "title": "[시모] 3채널(블로그·카페·당근) 발행 자동화 요새화 — 사전점검+무결성게이트+자가치유+구조표준화+당근쿠키인증",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
+    "terminal": true,
+    "processed_at": "2026-07-15",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-10",
     "module": "M3",
     "note": "[2026-07-10 GM 결정] 블로그·카페·당근 반복 발행실패(5회+) 근본해결=자동화 요새화. 5기둥: ①사전점검(세션·임시저장함0·프로필건강) ②조립 무결성 게이트(본문·이미지·태그·링크위치 검증 통과해야만 발행, 실패=초안+알림, 깨진글 절대발행금지·과대완료금지) ③자가치유(당근 프로필 자동재생성·stale초안정리·재시도) ④구조 표준화(블로그=본문온전→끝에 스티커→문의→사진, caret흔드는 중간삽입 폐기·카페 스티커 3→1) ⑤당근=쿠키인증(영속프로필 반복손상 종결). 1차 착수 커밋 a12fab04(블로그 레이아웃·클릭caret·■인식·IG버튼)+카페 스티커 기본1. 정본 메모리 project_naver_danggn_publish_fortress. [2026-07-13 ② 무결성 게이트 프레임 라이브·검수완료] 3채널 공유 판정모듈 scripts/publish_integrity_gate.py 신설(순수함수·브라우저무관·evaluate_integrity)+단위테스트 tests/test_publish_integrity_gate.py 11통과. 배선: 블로그·카페 발행직전 기존 0-체크를 게이트로 교체(차단조건=본문0·이미지0 유지 + '이미지 누락 N/M' FAIL 추가·태그/링크=WARN 비차단), 당근 _publish_via_next에 게이트 신설(기존 전무→본문0 차단·DOM 측정불가 시 -1 fail-open 비차단). 라이브 발행 무변경(기존 GM go 가드 publish_guard_ok 유지)·회귀0. 시모 검수패스: 3배선 diff·Post속성·import 실측 확인. [2026-07-14 ④카페 구조표준화 라이브·검수완료] 실측: 카페 발행 조립부가 블로그 표준과 불일치였음 — 카페만 스티커#1(본문맨앞)+_split_body_at_inquiry로 본문 쪼개 스티커#2 인터리브 삽입=블로그가 폐기한 caret 중간삽입 패턴 잔존(스티커 개수 아닌 위치·방식이 진짜 갭). cafe_upload_playwright.py _enter_write_and_fill 교체: 본문 연속타이핑→이미지→링크카드(문의)→스티커1개(맨끝·가운데정렬)로 블로그와 동일순서. 죽은 _split_body_at_inquiry 삭제(net-zero)·inquiry_marker_present는 단순 '문의' 포함검사로 대체(함수삭제 NameError 방지). 검증: py_compile OK·무결성게이트/사전점검 테스트 22통과·카페·블로그 dryrun 회귀0. 실발행·게이트플립 없음(가역).",
-    "next": "🔗 3채널(당근·블로그·카페) 발행 구조 전부 블로그 표준(본문온전→이미지→링크카드→스티커1)으로 통일. 라이브 REVERIFY는 다음 실발행 콘텐츠 때 [PREFLIGHT]/[GUARD] 로그+시크릿크롬 실측으로 자동 확인(별도 GM 세션 불요). 남은(선택): 블로그·카페 URL 회수 안정화.",
+    "next": "🏁 입항완료(2026-07-15 검수) — 5기둥(사전점검·무결성게이트·자가치유·구조표준화·당근쿠키인증) 전부 코드 반영+테스트 11통과 완결. 라이브 REVERIFY는 다음 실발행 시 [PREFLIGHT]/[GUARD] 로그로 자동 확인(상시 자동화·별도 배 불요). 블로그·카페 첫 실발행 검증은 배826에서 추적.",
     "depends_on": "",
     "ship_no": 866
   },
@@ -1674,5 +1678,18 @@
     "artifact": "auto(cto): scheduled IG reach collect (ledger+summary, 배588) (CLI ad-hoc · 커밋 f2112af0)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f2112af0395f1c9678096d9803492d4d6ac8e1a6"
+  },
+  {
+    "task_id": "COO-2026-07-15-DEPT-SCHEDULE-TAB",
+    "clevel": "coo",
+    "title": "[시우] 부서 일정 탭 → 전사 일정 합류(반복 일정 포함) — 부서 체계 페이지 일정 탭 신설·전사_일정 재활용",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-15",
+    "ship_no": 1042,
+    "module": "O1",
+    "note": "[2026-07-15 GM 승인] GM 아이디어=각 부서 체계 페이지에 일정 탭 → 전사 일정 한눈. 핵심발견=전사_일정.html+GAS(schedule_ssot) 인프라 이미 라이브(정기점검만 담김). 방향(GM 결정): 주요 이벤트 중심 + 탭 안 바로 편집 + iframe 심기(코드1벌·저장1곳). 확장=이벤트 type + 반복(매주/격주/매월/매년) 규칙 1줄 저장·달력 전개. 스펙=docs/superpowers/specs/2026-07-15-부서일정탭-전사일정-design.md. Phase1=전사_일정 embed/event/repeat+지원부 시범, Phase2=4부서 확산. 가역·COO자율.",
+    "next": "Phase1 지원부 시범 라이브 검증 후 Phase2 4부서 확산·GM 1줄 보고.",
+    "depends_on": ""
   }
 ]
