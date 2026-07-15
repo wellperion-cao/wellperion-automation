@@ -8831,7 +8831,7 @@ function crTab(btn, panelId) {
           });
         }
 
-        // ── ② _queue.json AI 진행배 머지 (PENDING·IN_PROGRESS만 · 완료 제외) ──
+        // ── ② _queue.json AI 배 머지 (PENDING 대기배만 · IN_PROGRESS=자율현황 위임·완료 제외) ──
         //   todo_list 제거 후에도 G1 항로에 AI 배가 살아있도록 (2026-06-07 GM 1단계 이관 대응)
         //   시트에 동일 task_id가 이미 있으면 중복 제외 (ssot- prefix가 다르므로 _sheetsId 비교)
         var sheetIds = {};
@@ -8872,7 +8872,6 @@ function crTab(btn, panelId) {
             isToday: true,
             ssotAuto: true,
             queueSource: true,   // _queue 기원 마킹 (편집 차단용)
-            board: String(q.board || ''),   // '자율현황'=자율화 미션 → 항로 제외·자율현황行 (GM 2026-07-15)
             owner: _shipDisp,
             _doneDate: _qDone ? String(q.processed_at || '').slice(0,10) : '',  // AI배 완료일(processed_at)
             _holdDate: '',  // AI배는 보류 상태 없음(statusMap에 보류 미포함) — 폴백만 유지 (GM 2026-06-12)
@@ -9157,11 +9156,6 @@ function crTab(btn, panelId) {
       }
       merged.sort(gm1SortCmp);
 
-      // ── 🤖 자율화 미션(board='자율현황')은 항로에서 제외 → 자율현황 보드行 (GM 2026-07-15) ──
-      //   자율화되어 스스로 도는 미션은 오늘의 항로가 아니라 자율현황에서 관리. 순수 렌더 필터(가역).
-      var gm1AutonomyN = merged.filter(function(t){ return t.board === '자율현황'; }).length;
-      if (gm1AutonomyN) merged = merged.filter(function(t){ return t.board !== '자율현황'; });
-
       // 완료여도 결재 미완(결재요청 있고 결재완료·반려 아님)이면 진행으로 유지 (2026-06-03 GM · 업무현황 일관)
       function _gm1ApprPending(t){ var rq=String(t.apprReq||t.approval||'').trim(), a=String(t.apprStatus||'').trim(); return rq && a !== '결재완료' && !/반려/.test(a); }
       var apprWait = merged.filter(function(t){ return t.status === '완료' && _gm1ApprPending(t); });
@@ -9241,11 +9235,12 @@ function crTab(btn, panelId) {
         html += '</a>';
       }
 
-      // ── 🤖 자율화 미션 포인터 — 항로 제외분을 자율현황으로 안내 (GM 2026-07-15) ──
-      if (gm1AutonomyN) {
-        html += '<a href="자율현황.html" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(167,139,218,0.35);border-radius:10px;background:rgba(167,139,218,0.07);text-decoration:none;flex-wrap:wrap;">';
-        html += '<span style="flex:1;font-size:13.5px;font-weight:700;color:#a78bda;">🤖 자율화 미션 ' + gm1AutonomyN + '건 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 스스로 도는 미션은 항로 대신 여기서</span></span>';
-        html += '<span style="font-size:12px;color:#a78bda;font-weight:600;">자율 작업 현황 →</span>';
+      // ── 🚢 진행·상시 미션 포인터 — _queue IN_PROGRESS는 항로 제외, 자율현황에서 관리 (GM 2026-07-15·배237) ──
+      //   status==IN_PROGRESS 개수(gm1InProgressCount)를 안내 한 줄로 대체(하드코딩 목록 없음·라이브 자동 정합).
+      if (gm1InProgressCount) {
+        html += '<a href="자율현황.html#sec-active-missions" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(167,139,218,0.35);border-radius:10px;background:rgba(167,139,218,0.07);text-decoration:none;flex-wrap:wrap;">';
+        html += '<span style="flex:1;font-size:13.5px;font-weight:700;color:#a78bda;">🚢 진행·상시 미션 ' + gm1InProgressCount + '건 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 각 AI가 지금 굴리는 지속 시스템은 항로 대신 자율현황에서 관리</span></span>';
+        html += '<span style="font-size:12px;color:#a78bda;font-weight:600;">자율현황에서 관리 →</span>';
         html += '</a>';
       }
 
