@@ -449,6 +449,8 @@ var LESSON_DISPLAY = {
 //   시드: 원장 빈 상태 최초 동기화 = 그 배치 전체를 등록일='2000-01-01'(기준선)로 적재 → 금일 제외.
 var _LESSON_REG_SHEET  = '강습 등록현황';
 var _LESSON_REG_HEADER = ['유형', '종목', '이름', '전화', '상태', '등록일', '키'];
+// 대량 신규 가드 임계 — 하루 정상 신규 등록은 ≤ 십수 건. 초과분은 이관/일괄로 간주(아래 _syncLessonRegistry_).
+var _LESSON_BULK_NEW_GUARD = 30;
 function _lessonRegSheet_() {
   var ss = SpreadsheetApp.openById(_MI_SS_ID);
   var sh = ss.getSheetByName(_LESSON_REG_SHEET);
@@ -525,6 +527,7 @@ function _syncLessonRegistry_() {
       if (k) keyIdx[k] = i;
     }
     var dirty = false;
+    var newIdx = [];   // 이번 sync에서 새로 추가된 행 인덱스 — 대량 신규(이관) 감지용
     ['성인강습', '유소년강습'].forEach(function(type){
       _collectLessonRoster_(type).forEach(function(m){
         var np = _normPhone_(m.phone);
@@ -537,11 +540,23 @@ function _syncLessonRegistry_() {
           }
         } else {
           rows.push([type, m.sport, m.name, m.phone, m.status, (seed ? '2000-01-01' : today), key]);
+          newIdx.push(rows.length - 1);
           keyIdx[key] = rows.length - 1;
           dirty = true;
         }
       });
     });
+    // ─── 대량 신규 가드(2026-07-15 시포 · KPI 오염 재발방지, 배973 사고 근본수리) ───
+    //   sync-on-load 는 '금일 증분 등록'을 잡는 용도(정상 신규 ≤ 십수 건). 팀시트 이관·일괄 연결로
+    //   한 번에 다수 신규 키가 유입되면 그것은 '금일 등록'이 아니라 과거 등록자의 뒤늦은 편입 →
+    //   today 도장 시 '이번달 강습 등록' KPI 대량 오염. 임계 초과 시 이관 간주 → 등록일=기준선
+    //   (2000-01-01, 금월 집계 제외)으로 적재 + 경보. (seed 최초 동기화는 이미 기준선이라 무관.)
+    if (!seed && newIdx.length > _LESSON_BULK_NEW_GUARD) {
+      newIdx.forEach(function(ix){ rows[ix][5] = '2000-01-01'; });
+      try {
+        _notifyTelegram('⚠️ <b>강습원장 대량 신규 감지</b> — ' + newIdx.length + '건(임계 ' + _LESSON_BULK_NEW_GUARD + ' 초과) → 이관 간주, 등록일=기준선(2000-01-01) 적재(이번달 KPI 오염 방지). 실제 당일 신규라면 개별 확인 요망.');
+      } catch (eBulk) {}
+    }
     if (dirty && rows.length) {
       sh.getRange(2, 1, rows.length, _LESSON_REG_HEADER.length).setValues(rows);
     }

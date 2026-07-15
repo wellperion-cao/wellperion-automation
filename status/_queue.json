@@ -1786,5 +1786,19 @@
     "artifact": "- 🏭 모듈 제품화 지도: module_registry.json 직독 — 주체별 모듈·feature·\n  'AI 없이 도는 법'(ai_free_fallback)·성숙도. 최종 = AI 없이 모듈만으로\n  타사도 자기 북극성 도달. 현재 19모듈/4주체(ceo·cfo·chro 모듈 0=공백 노출)\n- 🌟 회사 비전 배너 + 북극성 목표 카드 병합(같은 미션 2회 중복 제거)\n  · #vision-scale·#vision-ceo-ns JS 훅 유지 · 죽은 .ns-goal-* CSS 정리\n- 로컬 Playwright: 배너1개·제품화  (CLI ad-hoc · 커밋 bf0c4859)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "bf0c485956cce368c5a1cab7867afe816d5fc36e"
+  },
+  {
+    "task_id": "CPO-2026-07-15-ADHOC-8c771fc9",
+    "clevel": "cpo",
+    "title": "[시포] 강습 문의현황 무한 \"불러오는 중\" 근본수리 — WriteBuffer TDZ 순서버그",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1138,
+    "artifact": "증상: ?manage=lesson 진입 시 문의 현황 탭이 몇 분째 \"불러오는 중…\"에 고정.\n근본원인: lessonLoad()/loadDbData()의 캐시-히트 렌더 경로(배1037 D4, 10:09)가\nWriteBuffer.applyOverlay를 동기 호출하는데, WriteBuffer는 스크립트 하단(7046행)\n에서 정의되는 반면 이 경로는 부트스트랩 init() IIFE(4999행, switchFamily→\nlessonInit→lessonLoad)가 페이지 로드 시점에 먼저 동기 실행 — WriteBuffer가\n아직 un (CLI ad-hoc · 커밋 8c771fc9)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8c771fc90dc6c0ded386c42becef9476eeefd724"
   }
 ]
