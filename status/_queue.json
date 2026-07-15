@@ -1886,5 +1886,19 @@
     "artifact": "항로(G1)에서 이관된 진행중(status==IN_PROGRESS) 배를 자율현황 층①\n상단에 카드로 렌더. status/_queue.json fetch(기존 gasReadText 헬퍼·a[14])\n후 status 필드로만 판정(하드코딩 배 목록 없음·라이브 큐 자동 정합).\n담당=닉네임+ship_no·난이도(🛳️/⛴️/⛵)·note/next 요약. 큐 비면 '진행·상시\n미션 없음'. 기존 섹션(routines·module_registry·hero·coo/cpo) 회귀 0. (CLI ad-hoc · 커밋 b5b86ff3)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b5b86ff38f8006715f91e34cabefb00ee972b8c6"
+  },
+  {
+    "task_id": "COO-2026-07-15-ADHOC-b6d072ce",
+    "clevel": "coo",
+    "title": "[시우] 항로 상시건 자율현황 이관 — board 제외 백엔드 + 인수인계 (배237 위임)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1055,
+    "artifact": "GM 결정=시토(배237) 소유·시우 조각 넘김. 시우 검증분 이관:\n- hangro_board.py: board=='자율현황' 배를 항로 전 섹터서 제외→autonomy 버킷+포인터(8:00·텔레그램·CLI 공용 엔진). 실측 PASS(자율화 4배 제외·누수0)\n- ceo_morning_pipeline.py: 8:00 수집 3경로에 board 제외 필터. 실측 PASS(라이브 잔존0)\n- 인수인계 브리프: 메커니즘·소비처 현황·시토 마무리분(웹G1 재적용·renderActiveMissions를 board 필터로·GM기준=상시만)· (CLI ad-hoc · 커밋 b6d072ce)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b6d072cedee36cf68bfa0cf2b610a196eb3ca198"
   }
 ]
