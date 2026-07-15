@@ -574,6 +574,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <button class="tab" onclick="switchTab('admin')">현황</button>
   <button class="tab" onclick="switchTab('mplan')">📅 월간 운영부 계획·보고</button>
+  <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <!-- 인쇄 버튼 통합 드롭다운 (지원부 체계 동일 패턴 · 버튼 난립 해소) -->
     <div class="tab-dropdown" id="printDropdown">
@@ -1153,6 +1154,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div style="font-size:13px;color:var(--text);margin-top:10px;" id="mpOwnerLine"></div>
   </div>
+</div>
+
+<!-- ══ 「🗓️ 일정」 탭 — 전사_일정(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. 편집·저장 시 전사 일정에 즉시 합류. (배1042 시우 2026-07-15) ══ -->
+<div id="tab-schedule" class="content hidden">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
+    <span>🗓️ <b style="color:var(--text)">운영부 일정</b> — 행사·납품·교육 등 주요 일정과 정기점검. <b>✏️ 편집</b>으로 추가하고 <b>반복(매주·매월·매년)</b>을 정하면 달력에 계속 뜹니다. 저장하면 <b>전사 일정</b>에 바로 모입니다.</span>
+    <a href="전사_일정.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 일정 전체 보기 ↗</a>
+  </div>
+  <iframe id="scheduleFrame" data-src="전사_일정.html?dept=운영부&embed=1" title="운영부 일정" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
 </div>
 
   <script>
@@ -1777,6 +1787,8 @@ function switchTab(tab, opts){
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
   document.getElementById('tab-admin').classList.toggle('hidden',tab!=='admin');
   document.getElementById('tab-mplan').classList.toggle('hidden',tab!=='mplan');
+  var _sch=document.getElementById('tab-schedule'); if(_sch) _sch.classList.toggle('hidden',tab!=='schedule');
+  if(tab==='schedule'){ var _f=document.getElementById('scheduleFrame'); if(_f && !_f.src && _f.getAttribute('data-src')) _f.src=_f.getAttribute('data-src'); }
   if(tab==='manual'){renderBoard();renderManualItems();}
   if(tab==='admin'){renderAdmin();}
   if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }

@@ -457,6 +457,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('manual')">매뉴얼</button>
   <button class="tab" onclick="switchTab('valet')">발렛 시스템</button>
   <button class="tab" onclick="switchTab('mplan')">📅 월간 주차관리부 현황·계획·보고</button>
+  <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <!-- 인쇄 버튼 통합 드롭다운 (지원부·운영부·시설부 체계 동일 패턴 · 버튼 난립 해소) -->
     <div class="tab-dropdown" id="printDropdown">
@@ -708,6 +709,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
 </div>
 
+<!-- ══ 「🗓️ 일정」 탭 — 전사_일정(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. 편집·저장 시 전사 일정에 즉시 합류. (배1042 시우 2026-07-15) ══ -->
+<div id="tab-schedule" class="content hidden">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
+    <span>🗓️ <b style="color:var(--text)">주차관리부 일정</b> — 행사·납품·교육 등 주요 일정과 정기점검. <b>✏️ 편집</b>으로 추가하고 <b>반복(매주·매월·매년)</b>을 정하면 달력에 계속 뜹니다. 저장하면 <b>전사 일정</b>에 바로 모입니다.</span>
+    <a href="전사_일정.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 일정 전체 보기 ↗</a>
+  </div>
+  <iframe id="scheduleFrame" data-src="전사_일정.html?dept=주차관리부&embed=1" title="주차관리부 일정" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
+</div>
+
 <!-- 점검(지상)·점검(지하)·현황 대시보드 탭 전면 제거 (GM 2026-06-12). 점검은 지원부 점검 시스템과 충돌·동기화 문제로 제거.
      2026-06-23: 규정·가이드·매뉴얼 3보드 전체 카드 편집형 전환 (운영부 카드 시스템 이식 · saveBoard GAS 공유 저장 · requireEditAuth 1234). -->
 
@@ -761,10 +771,11 @@ function switchTab(tab){
     var oc=t.getAttribute('onclick')||'';
     t.classList.toggle('active', oc.indexOf("'"+tab+"'")>=0);
   });
-  ['policy','guide','manual','valet','mplan'].forEach(function(id){
+  ['policy','guide','manual','valet','mplan','schedule'].forEach(function(id){
     var el=document.getElementById('tab-'+id);
     if(el) el.classList.toggle('hidden', id!==tab);
   });
+  if(tab==='schedule'){ var _f=document.getElementById('scheduleFrame'); if(_f && !_f.src && _f.getAttribute('data-src')) _f.src=_f.getAttribute('data-src'); }
   if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); if(typeof loadParkingRevenue==='function') loadParkingRevenue(); }
 }
 /* ── 인쇄 통합 드롭다운 헬퍼 (지원부·운영부·시설부 체계와 동일 패턴) ── */

@@ -495,6 +495,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="tab active" id="tab-btn-ptpolicy" onclick="switchTab('ptpolicy')">📋 파트너팀 규정</button><button class="tab" id="tab-btn-ptguide" onclick="switchTab('ptguide')">📖 파트너팀 가이드</button><button class="tab" id="tab-btn-sales" onclick="switchTab('sales')">📈 매출현황</button>
     <button class="tab" id="tab-btn-check" onclick="switchTab('check')">✅ 점검항목</button>
     <button class="tab" id="tab-btn-work" onclick="switchTab('work')">🗂️ 업무현황</button>
+    <button class="tab" id="tab-btn-schedule" onclick="switchTab('schedule')">🗓️ 일정</button>
     <span style="flex:1"></span>
     <button class="util-btn print-btn" onclick="window.print()">🖨 인쇄</button>
   </div>
@@ -516,6 +517,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 14px"><h2 style="margin:0">🗂️ 업무현황</h2><span style="color:var(--dim);font-size:12px">업무 SSOT · [3] 파트너팀</span><span style="flex:1"></span><span id="workUpdated" style="color:var(--dim);font-size:12px"></span><a class="util-btn" href="../../wellperion_guide(main).html#gcoo-todo">🗂 업무 SSOT →</a></div>
   <div id="workStats" class="statgrid" style="margin-bottom:18px"></div>
   <div id="workBoard"></div>
+</div>
+<!-- ══ 「🗓️ 일정」 탭 — 전사_일정(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. 편집·저장 시 전사 일정에 즉시 합류. (배1042 시우 2026-07-15) ══ -->
+<div id="tab-schedule" class="content hidden">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
+    <span>🗓️ <b style="color:var(--text)">파트너팀 일정</b> — 행사·납품·교육 등 주요 일정과 정기점검. <b>✏️ 편집</b>으로 추가하고 <b>반복(매주·매월·매년)</b>을 정하면 달력에 계속 뜹니다. 저장하면 <b>전사 일정</b>에 바로 모입니다.</span>
+    <a href="전사_일정.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 일정 전체 보기 ↗</a>
+  </div>
+  <iframe id="scheduleFrame" data-src="전사_일정.html?dept=파트너팀&embed=1" title="파트너팀 일정" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
 </div>
 <script>(function PAGE(){
   var SALES_ID='1nL1-Co-4VyNH_jPk0EVtKhxsWbKwTJ6E3tX91YH_qBo', SALES_GID='218650435';
@@ -548,7 +557,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   function card(label,val,sub,color){return '<div class="dash-stat-card" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 14px"><div style="color:var(--dim);font-size:12px">'+esc(label)+'</div><div style="font-size:20px;font-weight:700;color:'+(color||'var(--text)')+';margin-top:3px">'+esc(val)+'</div>'+(sub?'<div style="color:var(--dim);font-size:11px;margin-top:2px">'+esc(sub)+'</div>':'')+'</div>';}
   function panel(title,inner){return '<div class="panel"><div class="sectit">'+title+'</div>'+inner+'</div>';}
 
-  window.switchTab=function(id){['ptpolicy','ptguide','sales','check','work'].forEach(function(t){var c=document.getElementById('tab-'+t);var b=document.getElementById('tab-btn-'+t);if(c)c.classList.toggle('hidden',t!==id);if(b)b.classList.toggle('active',t===id);});};
+  window.switchTab=function(id){['ptpolicy','ptguide','sales','check','work','schedule'].forEach(function(t){var c=document.getElementById('tab-'+t);var b=document.getElementById('tab-btn-'+t);if(c)c.classList.toggle('hidden',t!==id);if(b)b.classList.toggle('active',t===id);});if(id==='schedule'){var _f=document.getElementById('scheduleFrame');if(_f&&!_f.src&&_f.getAttribute('data-src'))_f.src=_f.getAttribute('data-src');}};
 
   var MODEL=null, CUR='전체';
   window.selectPeriod=function(p){CUR=p;[].forEach.call(document.querySelectorAll('#salesSeg button'),function(b){b.classList.toggle('on',b.getAttribute('data-p')===p);});renderPeriod();};
