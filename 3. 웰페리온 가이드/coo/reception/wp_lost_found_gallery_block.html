@@ -53,9 +53,11 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 /* 헤더 로고 ↔ 본문(브랜드텍스트 "WELLPERION"·"습득 분실물") 겹침 해소 (2026-07-15 시토·GM 지시):
    데스크톱에서 Salient 헤더 로고가 position:absolute 로 본문 상단 위에 겹침 → 본문 상단 여백 확보로
    로고 아래로 이격(겹침 0). ★반드시 위 .wlp-lfg .wrap 기본 padding 규칙보다 뒤에 둬야 같은 특이도에서
-   소스순서로 이김. 모바일(≤1000px)은 로고와 충분히 이격돼 무영향. (register 블록과 동일 방식) */
+   소스순서로 이김. 모바일(≤1000px)은 로고와 충분히 이격돼 무영향. (register 블록과 동일 방식)
+   ★실측(1280/1440/1920 동일): 로고 bottom=130, .wrap top=29 → eyebrow.top=29+padTop.
+   90px면 eyebrow.top=119<130 로 11px 겹침 → 130px 로 상향(eyebrow.top=159, 갭≈29px·겹침0). */
 @media (min-width:1001px){
-  .wlp-lfg .wrap{padding-top:90px}
+  .wlp-lfg .wrap{padding-top:130px}
 }
 
 .wlp-lfg .brand{text-align:center;margin-bottom:8px}
