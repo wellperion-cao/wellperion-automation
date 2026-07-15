@@ -1800,5 +1800,19 @@
     "artifact": "증상: ?manage=lesson 진입 시 문의 현황 탭이 몇 분째 \"불러오는 중…\"에 고정.\n근본원인: lessonLoad()/loadDbData()의 캐시-히트 렌더 경로(배1037 D4, 10:09)가\nWriteBuffer.applyOverlay를 동기 호출하는데, WriteBuffer는 스크립트 하단(7046행)\n에서 정의되는 반면 이 경로는 부트스트랩 init() IIFE(4999행, switchFamily→\nlessonInit→lessonLoad)가 페이지 로드 시점에 먼저 동기 실행 — WriteBuffer가\n아직 un (CLI ad-hoc · 커밋 8c771fc9)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8c771fc90dc6c0ded386c42becef9476eeefd724"
+  },
+  {
+    "task_id": "CPO-2026-07-15-ADHOC-d0bb5a78",
+    "clevel": "cpo",
+    "title": "[시포] 강습 등록 KPI 오염 근본수리 — 이관일 도장 교정 + 대량신규 가드(배973)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1139,
+    "artifact": "문제: 팀시트 이관(수영+5종목)으로 07-04(51)·07-14(934) 강습 등록원장에 대량\n신규 키 유입 → _syncLessonRegistry_ 가 today 도장 → '이번달 강습 등록' KPI\n1,008(성인430+유소년578)로 부풀려짐(실제 7월 신규 아님). (CLI ad-hoc · 커밋 d0bb5a78)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d0bb5a78c34579965cea74f1e1545de853384b32"
   }
 ]
