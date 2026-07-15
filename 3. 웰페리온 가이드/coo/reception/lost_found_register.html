@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 습득물 등록 (직원 전용)</title>
+<!--
+  습득 분실물 — 직원 전용 등록·관리 페이지 (시토 배1069 · 2026-07-15)
+  · gate.js 커튼(사내 전용) 뒤. 백엔드 = VOC/reception GAS lf_* 액션(전용 시트 「습득물」).
+  · 등록 탭: 사진(자동압축→Drive)·습득일시·습득장소·설명·처리직원 → lf_submit.
+  · 관리 탭: lf_list(게시중) 목록 + 오등록 철회(lf_void). 수령(서명)은 공개 갤러리 카드 '수령' 버튼.
+  · 프론트 신규(직원 화면), 백엔드 재사용(_lfUpload_/_lfSubmit/_lfList/_lfVoid).
+-->
+<style>
+:root{
+  --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
+  --accent:#b08d57;--accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;
+  --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);--red:#c0392b;--red-bg:rgba(192,57,43,0.09);
+  --blue:#2471a3;--orange:#d68910;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%;
+}
+a{color:var(--accent);text-decoration:none}
+.wrap{max-width:640px;margin:0 auto;padding:34px 18px 70px}
+
+.brand{text-align:center;margin-bottom:20px}
+.brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
+.brand h1{font-size:clamp(20px,5vw,26px);font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.brand p{font-size:13.5px;color:#777}
+
+/* PII 안내 배너 */
+.pii{
+  display:flex;gap:10px;align-items:flex-start;
+  background:var(--red-bg);border:1px solid rgba(192,57,43,0.28);
+  border-radius:12px;padding:13px 15px;margin-bottom:18px;font-size:13px;line-height:1.6;color:#7a2f26
+}
+.pii .ic{font-size:18px;line-height:1.3}
+.pii b{color:var(--red)}
+
+/* 탭 */
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{
+  flex:1;padding:11px;border:1.5px solid var(--border);border-radius:12px;background:var(--paper);
+  color:var(--text);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;text-align:center
+}
+.tab.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+
+.card{background:var(--paper);border:1px solid var(--border);border-radius:18px;padding:20px 18px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.field{margin-bottom:15px}
+.field:last-child{margin-bottom:0}
+label.fl{display:block;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;letter-spacing:.3px;text-transform:uppercase}
+label.fl .opt{font-size:12px;font-weight:500;color:var(--dim);margin-left:4px;text-transform:none}
+input[type=text],input[type=datetime-local],textarea,select{
+  width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);
+  padding:13px 14px;border-radius:12px;font-size:15px;font-family:inherit;line-height:1.5;-webkit-appearance:none;appearance:none
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
+textarea{min-height:90px;resize:vertical}
+input[type=datetime-local]{color-scheme:light}
+select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23888' d='M1 1l5 5 5-5'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
+
+.photo-zone{border:1.5px dashed var(--border);border-radius:12px;padding:22px;text-align:center;cursor:pointer;background:var(--bg);display:block}
+.photo-zone:hover{border-color:var(--accent)}
+.photo-zone .ph-icon{font-size:28px;margin-bottom:6px}
+.photo-zone .ph-text{font-size:13.5px;color:var(--dim)}
+.photo-zone input[type=file]{display:none}
+.preview{margin-top:12px;display:none}
+.preview img{width:100%;max-height:280px;object-fit:cover;border-radius:12px;border:1px solid var(--border)}
+.preview .rm{display:inline-block;margin-top:8px;font-size:13px;color:var(--red);cursor:pointer;font-weight:600}
+
+.submit{width:100%;padding:16px;background:var(--accent);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px;letter-spacing:.3px}
+.submit:hover{opacity:.9}
+.submit:disabled{opacity:.45;cursor:not-allowed}
+
+.toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.15);max-width:90%;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}
+
+.note{font-size:12.5px;color:var(--dim);text-align:center;margin-top:14px;line-height:1.7}
+
+/* 관리(목록) */
+.mgmt-item{display:flex;gap:12px;align-items:center;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px}
+.mgmt-item img{width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--border);flex-shrink:0;background:var(--bg)}
+.mgmt-body{flex:1;min-width:0}
+.mgmt-body .mid{font-size:11px;color:var(--dim)}
+.mgmt-body .mdesc{font-size:14px;font-weight:600;margin:2px 0;word-break:break-word}
+.mgmt-body .mmeta{font-size:12px;color:var(--dim)}
+.void-btn{padding:8px 12px;border:1.5px solid rgba(192,57,43,0.4);border-radius:10px;background:var(--red-bg);color:var(--red);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0}
+.mini-btn{padding:8px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0}
+.state-msg{padding:26px 4px;text-align:center;color:var(--dim);font-size:13.5px}
+.hidden{display:none!important}
+</style>
+<!-- 🔒 사내 전용 커튼 — 습득물 등록·관리(직원용). 열람 갤러리는 별도 무인증 페이지. -->
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="wrap">
+
+  <div class="brand">
+    <p class="brand-eyebrow">Wellperion · Staff</p>
+    <h1>🧳 습득물 등록</h1>
+    <p>직원 전용 · 주운 물건을 등록하면 회원 열람 갤러리에 게시됩니다.</p>
+  </div>
+
+  <div class="pii">
+    <span class="ic">🔏</span>
+    <span><b>개인정보 최소 촬영</b> — 물건 위주로 촬영해 주세요. 지갑 속 내용물·신분증·카드 등
+    <b>개인을 식별할 수 있는 정보는 가리고</b> 촬영합니다. (공개 갤러리에 사진이 그대로 노출됩니다.)</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tabReg" type="button">＋ 습득물 등록</button>
+    <button class="tab" id="tabMgmt" type="button">🗂 등록 관리 · 철회</button>
+  </div>
+
+  <!-- ── 등록 탭 ── -->
+  <div id="regPane">
+    <div class="card">
+      <div class="field">
+        <label class="fl">습득물 사진</label>
+        <label class="photo-zone" for="f_photo">
+          <div class="ph-icon">📷</div>
+          <div class="ph-text">물건 사진을 촬영·첨부하세요 (자동 압축)</div>
+          <input type="file" id="f_photo" accept="image/*" capture="environment">
+        </label>
+        <div class="preview" id="f_preview">
+          <img id="f_previewImg" alt="첨부 사진 미리보기">
+          <div><span class="rm" id="f_removePhoto">✕ 사진 삭제</span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="fl" for="f_foundWhen">습득 일시</label>
+        <input type="datetime-local" id="f_foundWhen">
+      </div>
+      <div class="field">
+        <label class="fl" for="f_foundLoc">습득 장소</label>
+        <select id="f_foundLoc"></select>
+      </div>
+      <div class="field">
+        <label class="fl" for="f_itemDesc">습득물 설명 <span class="opt">(브랜드·색상·특징)</span></label>
+        <textarea id="f_itemDesc" placeholder="예: 검정 가죽 지갑, 흰색 에어팟 케이스 …"></textarea>
+      </div>
+      <div class="field">
+        <label class="fl" for="f_staff">등록 직원 <span class="opt">(선택)</span></label>
+        <input type="text" id="f_staff" placeholder="예: 리셉션 김OO" autocomplete="off">
+      </div>
+    </div>
+    <button class="submit" id="submitBtn" type="button">습득물 등록하기</button>
+    <p class="note">등록 즉시 회원 열람 갤러리(게시중)에 노출됩니다.<br>물건을 찾아가면 갤러리에서 현장 서명 후 자동으로 내려갑니다.</p>
+  </div>
+
+  <!-- ── 관리 탭 ── -->
+  <div id="mgmtPane" class="hidden">
+    <div class="card" style="padding:14px 14px 6px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.3px">게시중 습득물 (오등록 철회)</span>
+        <button class="mini-btn" id="reloadMgmt" type="button">↻ 새로고침</button>
+      </div>
+      <div id="mgmtList"><div class="state-msg">불러오는 중…</div></div>
+    </div>
+    <p class="note">'철회'는 잘못 올린 게시중 습득물을 갤러리에서 내립니다.<br>수령(서명) 처리는 회원 열람 갤러리의 '수령' 버튼에서 진행합니다.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+  var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+  var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
+
+  var photoData='', photoMime='image/jpeg', photoName='';
+  function $(id){ return document.getElementById(id); }
+  function toast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(function(){ t.className='toast'+(isErr?' err':''); },2600); }
+
+  // 습득장소 옵션
+  (function(){ var s=$('f_foundLoc'); var o0=document.createElement('option'); o0.value=''; o0.textContent='장소를 선택하세요'; s.appendChild(o0);
+    LOCATIONS.forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; s.appendChild(o); }); })();
+
+  // 습득일시 기본값 = 현재 (로컬)
+  (function(){ var d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); $('f_foundWhen').value=d.toISOString().slice(0,16); })();
+
+  // ── 사진 자동압축 (canvas 리사이즈 → JPEG) — 매출지출현황.html 선례 ──
+  function compressImage(file, cb){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var MAX=1600, w=img.width, h=img.height;
+        if(w>MAX||h>MAX){ if(w>=h){ h=Math.round(h*MAX/w); w=MAX; } else { w=Math.round(w*MAX/h); h=MAX; } }
+        var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        try{ cb(cv.toDataURL('image/jpeg',0.8),'image/jpeg'); }
+        catch(err){ cb(e.target.result, file.type||'image/jpeg'); } // 압축 실패 시 원본
+      };
+      img.onerror=function(){ cb(e.target.result, file.type||'image/jpeg'); };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  $('f_photo').addEventListener('change',function(ev){
+    var f=ev.target.files&&ev.target.files[0]; if(!f) return;
+    if(f.size>12*1024*1024){ toast('사진이 너무 큽니다 (12MB 이하)',true); this.value=''; return; }
+    photoMime=f.type||'image/jpeg'; photoName=(f.name||'lf_photo.jpg').replace(/\.[^.]+$/,'')+'.jpg';
+    compressImage(f,function(dataUrl){ photoData=dataUrl; photoMime='image/jpeg';
+      $('f_previewImg').src=dataUrl; $('f_preview').style.display='block'; });
+  });
+  $('f_removePhoto').addEventListener('click',function(){ photoData=''; photoName=''; $('f_photo').value=''; $('f_preview').style.display='none'; });
+
+  // ── 등록 제출 ──
+  $('submitBtn').addEventListener('click',function(){
+    if(!photoData){ toast('습득물 사진을 첨부해 주세요',true); return; }
+    var foundLoc=$('f_foundLoc').value.trim(), itemDesc=$('f_itemDesc').value.trim();
+    if(!foundLoc && !itemDesc){ toast('습득장소 또는 설명을 입력해 주세요',true); return; }
+    var btn=this; btn.disabled=true; btn.textContent='등록 중…';
+    var payload={ action:'lf_submit', t:VOC_SUBMIT_TOKEN,
+      foundWhen:$('f_foundWhen').value.trim(), foundLoc:foundLoc, itemDesc:itemDesc,
+      staff:$('f_staff').value.trim(), photo:photoData, fileName:photoName, mimeType:photoMime };
+    fetch(VOC_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res&&res.ok){ toast('등록 완료 — '+res.id); resetForm(); }
+        else { toast((res&&res.error)||'등록 실패',true); btn.disabled=false; btn.textContent='습득물 등록하기'; }
+      })
+      .catch(function(){ toast('네트워크 오류 — 다시 시도해 주세요',true); btn.disabled=false; btn.textContent='습득물 등록하기'; });
+  });
+  function resetForm(){
+    photoData=''; photoName=''; $('f_photo').value=''; $('f_preview').style.display='none';
+    $('f_itemDesc').value=''; $('f_staff').value='';
+    var btn=$('submitBtn'); btn.disabled=false; btn.textContent='습득물 등록하기';
+  }
+
+  // ── 탭 전환 ──
+  function showTab(which){
+    var reg=which==='reg';
+    $('tabReg').classList.toggle('active',reg); $('tabMgmt').classList.toggle('active',!reg);
+    $('regPane').classList.toggle('hidden',!reg); $('mgmtPane').classList.toggle('hidden',reg);
+    if(!reg) loadMgmt();
+  }
+  $('tabReg').addEventListener('click',function(){ showTab('reg'); });
+  $('tabMgmt').addEventListener('click',function(){ showTab('mgmt'); });
+  $('reloadMgmt').addEventListener('click',loadMgmt);
+
+  function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  // ── 관리 목록 (lf_list, 게시중만) ──
+  var _mgmtLoading=false;
+  function loadMgmt(){
+    if(_mgmtLoading) return; _mgmtLoading=true;
+    var box=$('mgmtList'); box.innerHTML='<div class="state-msg">불러오는 중…</div>';
+    fetch(VOC_API+'?action=lf_list&status='+encodeURIComponent('게시중')+'&_='+Date.now(),{redirect:'follow',cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ _mgmtLoading=false;
+        if(!d||!d.ok){ box.innerHTML='<div class="state-msg">목록을 불러오지 못했습니다 — '+_esc(d&&d.error||'')+'</div>'; return; }
+        var rows=(d.data||[]).filter(function(r){ return String(r.status||'')==='게시중'; });
+        if(!rows.length){ box.innerHTML='<div class="state-msg">게시중 습득물이 없습니다.</div>'; return; }
+        box.innerHTML=rows.map(function(r){
+          var img=r.photoUrl?('<img src="'+_esc(_thumb(r.photoUrl))+'" alt="">'):'<img alt="">';
+          return '<div class="mgmt-item">'+img+
+            '<div class="mgmt-body"><div class="mid">'+_esc(r.foundId||'')+'</div>'+
+            '<div class="mdesc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
+            '<div class="mmeta">📍 '+_esc(r.foundLoc||'-')+' · 🕒 '+_esc((r.foundWhen||r.createdAt||'').replace('T',' '))+'</div></div>'+
+            '<button class="void-btn" data-void="'+_esc(r.foundId||'')+'" type="button">철회</button></div>';
+        }).join('');
+      })
+      .catch(function(){ _mgmtLoading=false; box.innerHTML='<div class="state-msg">네트워크 오류 — 새로고침 해주세요.</div>'; });
+  }
+  function _thumb(url){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w200'):url; }
+
+  $('mgmtList').addEventListener('click',function(ev){
+    var b=ev.target.closest('[data-void]'); if(!b) return;
+    var id=b.getAttribute('data-void');
+    if(!confirm('['+id+'] 습득물을 철회(갤러리에서 내림)할까요?')) return;
+    b.disabled=true; b.textContent='철회 중…';
+    fetch(VOC_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'lf_void',t:VOC_SUBMIT_TOKEN,id:id})})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if(d&&d.ok){ toast(id+' 철회 완료'); loadMgmt(); } else { toast((d&&d.error)||'철회 실패',true); b.disabled=false; b.textContent='철회'; } })
+      .catch(function(){ toast('네트워크 오류',true); b.disabled=false; b.textContent='철회'; });
+  });
+})();
+</script>
+</body>
+</html>

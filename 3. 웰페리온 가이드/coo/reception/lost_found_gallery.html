@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 습득 분실물 현황</title>
+<!--
+  습득 분실물 — 무인증 공개 열람 갤러리 (시토 배1069 · 2026-07-15)
+  · 백엔드 lf_gallery(공개): 게시중만·민감필드(수령자/서명 등) 미반환. 사진은 공개 노출.
+  · 카드 '수령' 버튼 → 현장 직원 본인확인 → 디지털 서명패드(canvas→PNG) → lf_handover → 자동 수령완료(갤러리서 제거).
+  · 프론트 신규(회원·직원 현장 화면), 백엔드 재사용(_lfGallery/_lfHandover).
+  · ★ 종합접수처 '습득 분실물 현황 보기' 탭 링크는 GM go 대기(미링크 = 고객 미노출).
+-->
+<style>
+:root{
+  --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
+  --accent:#b08d57;--accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;
+  --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);--red:#c0392b;--red-bg:rgba(192,57,43,0.09);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:34px 18px 70px}
+
+.brand{text-align:center;margin-bottom:8px}
+.brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
+.brand h1{font-size:clamp(22px,5.5vw,30px);font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.brand p{font-size:13.5px;color:#777}
+.gold-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:16px auto 22px;max-width:320px}
+.gd-line{flex:1;height:1px}
+.gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
+.gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
+.gd-diamond{color:var(--accent);font-size:10px;line-height:1}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.count-pill{font-size:13px;font-weight:700;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:20px;padding:7px 15px}
+.count-pill .n{color:var(--accent);font-weight:800}
+.refresh{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--paper);color:var(--text);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
+.refresh:hover{border-color:var(--accent);color:var(--accent)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.gcard{background:var(--paper);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.04);display:flex;flex-direction:column}
+.gcard .ph{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--bg);border-bottom:1px solid var(--border);display:block}
+.gcard .body{padding:13px 14px 14px;display:flex;flex-direction:column;flex:1}
+.gcard .gid{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.3px}
+.gcard .desc{font-size:14.5px;font-weight:600;margin:4px 0 7px;word-break:break-word;line-height:1.45}
+.gcard .meta{font-size:12.5px;color:var(--dim);line-height:1.7;margin-bottom:12px}
+.gcard .meta .loc{color:var(--accent);font-weight:600}
+.gcard .claim{margin-top:auto;width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
+.gcard .claim:hover{opacity:.9}
+.state-msg{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--dim);font-size:14.5px}
+.info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
+
+/* ── 수령 서명 모달 ── */
+.modal-back{position:fixed;inset:0;background:rgba(20,18,16,0.55);z-index:9998;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-back.show{display:flex}
+.modal{background:var(--paper);border-radius:18px;max-width:440px;width:100%;max-height:92vh;overflow-y:auto;padding:22px 20px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.modal h2{font-size:18px;font-weight:800;margin-bottom:4px}
+.modal .msub{font-size:12.5px;color:var(--dim);margin-bottom:16px}
+.modal .mitem{display:flex;gap:11px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:16px}
+.modal .mitem img{width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0}
+.modal .mitem .mt{font-size:13.5px;font-weight:600;word-break:break-word}
+.modal .mitem .mm{font-size:11.5px;color:var(--dim)}
+.mfield{margin-bottom:13px}
+.mfield label{display:block;font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:6px;letter-spacing:.3px}
+.mfield input,.mfield select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:12px 13px;border-radius:11px;font-size:15px;font-family:inherit;-webkit-appearance:none;appearance:none}
+.mfield input:focus,.mfield select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
+.sign-wrap{border:1.5px solid var(--border);border-radius:12px;background:#fff;position:relative;overflow:hidden}
+.sign-wrap canvas{display:block;width:100%;height:170px;touch-action:none;cursor:crosshair}
+.sign-hint{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);text-align:center;color:#c8c2b8;font-size:13px;pointer-events:none}
+.sign-clear{margin-top:7px;font-size:12.5px;color:var(--red);cursor:pointer;font-weight:600;display:inline-block}
+.mbtns{display:flex;gap:10px;margin-top:18px}
+.mbtns button{flex:1;padding:14px;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:none}
+.mbtns .cancel{background:var(--bg);border:1.5px solid var(--border);color:var(--text)}
+.mbtns .confirm{background:var(--green);color:#fff}
+.mbtns .confirm:disabled{opacity:.45;cursor:not-allowed}
+
+.toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.15);max-width:90%;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="wrap">
+
+  <div class="brand">
+    <p class="brand-eyebrow">Wellperion</p>
+    <h1>습득 분실물 현황</h1>
+    <p>클럽에서 습득된 물건입니다. 본인 물건을 발견하시면 현장 직원에게 문의해 주세요.</p>
+    <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
+  </div>
+
+  <div class="topbar">
+    <span class="count-pill">게시중 <span class="n" id="cnt">0</span>건</span>
+    <button class="refresh" id="refreshBtn" type="button">↻ 새로고침</button>
+  </div>
+
+  <div class="grid" id="grid"><div class="state-msg">불러오는 중…</div></div>
+
+  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>하루의 완성, 웰페리온</p>
+</div>
+
+<!-- 수령 서명 모달 -->
+<div class="modal-back" id="modalBack">
+  <div class="modal">
+    <h2>습득물 수령 확인</h2>
+    <div class="msub">현장 직원이 회원 본인확인 후 서명을 받아주세요.</div>
+    <div class="mitem" id="mItem"></div>
+    <div class="mfield">
+      <label for="m_receiver">수령자 성함</label>
+      <input type="text" id="m_receiver" placeholder="수령하시는 분 성함" autocomplete="off">
+    </div>
+    <div class="mfield">
+      <label for="m_loc">수령 장소</label>
+      <select id="m_loc"></select>
+    </div>
+    <div class="mfield">
+      <label>수령 확인 서명</label>
+      <div class="sign-wrap">
+        <canvas id="signPad"></canvas>
+        <div class="sign-hint" id="signHint">여기에 서명해 주세요</div>
+      </div>
+      <span class="sign-clear" id="signClear">✕ 다시 서명</span>
+    </div>
+    <div class="mbtns">
+      <button class="cancel" id="mCancel" type="button">취소</button>
+      <button class="confirm" id="mConfirm" type="button">수령 완료</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+  var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+  var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
+
+  function $(id){ return document.getElementById(id); }
+  function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function toast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(function(){ t.className='toast'+(isErr?' err':''); },2600); }
+  function _thumb(url,sz){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w'+(sz||400)):url; }
+
+  // 수령장소 옵션
+  (function(){ var s=$('m_loc'); LOCATIONS.forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; s.appendChild(o); }); })();
+
+  var _loading=false, _cur=null;
+
+  function load(){
+    if(_loading) return; _loading=true;
+    var grid=$('grid'); grid.innerHTML='<div class="state-msg">불러오는 중…</div>';
+    fetch(VOC_API+'?action=lf_gallery&_='+Date.now(),{redirect:'follow',cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ _loading=false;
+        if(!d||!d.ok){ grid.innerHTML='<div class="state-msg">현황을 불러오지 못했습니다 — '+_esc(d&&d.error||'')+'</div>'; $('cnt').textContent='0'; return; }
+        var rows=Array.isArray(d.data)?d.data:[];
+        $('cnt').textContent=String(rows.length);
+        if(!rows.length){ grid.innerHTML='<div class="state-msg">현재 게시중인 습득물이 없습니다.</div>'; return; }
+        grid.innerHTML=rows.map(_gcard).join('');
+      })
+      .catch(function(){ _loading=false; grid.innerHTML='<div class="state-msg">네트워크 오류 — 새로고침 해주세요.</div>'; });
+  }
+
+  function _gcard(r){
+    var when=String(r.foundWhen||r.createdAt||'').replace('T',' ');
+    var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,400))+'" alt="습득물 사진" loading="lazy">'):'<div class="ph"></div>';
+    return '<div class="gcard">'+ph+
+      '<div class="body"><div class="gid">'+_esc(r.foundId||'')+'</div>'+
+      '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
+      '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>🕒 '+_esc(when||'-')+'</div>'+
+      '<button class="claim" type="button" data-claim="'+_esc(r.foundId||'')+'" data-desc="'+_esc(r.itemDesc||'')+'" data-loc="'+_esc(r.foundLoc||'')+'" data-photo="'+_esc(r.photoUrl||'')+'">수령</button>'+
+      '</div></div>';
+  }
+
+  // ── 수령 모달 ──
+  $('grid').addEventListener('click',function(ev){
+    var b=ev.target.closest('[data-claim]'); if(!b) return;
+    _cur={ id:b.getAttribute('data-claim'), desc:b.getAttribute('data-desc'), loc:b.getAttribute('data-loc'), photo:b.getAttribute('data-photo') };
+    openModal();
+  });
+  function openModal(){
+    var img=_cur.photo?('<img src="'+_esc(_thumb(_cur.photo,120))+'" alt="">'):'';
+    $('mItem').innerHTML=img+'<div><div class="mt">'+_esc(_cur.desc||'(설명 없음)')+'</div><div class="mm">'+_esc(_cur.id)+' · 📍 '+_esc(_cur.loc||'-')+'</div></div>';
+    $('m_receiver').value=''; if(_cur.loc){ $('m_loc').value=_cur.loc; }
+    clearPad();
+    $('modalBack').classList.add('show');
+    setTimeout(resizePad,30);
+  }
+  function closeModal(){ $('modalBack').classList.remove('show'); _cur=null; }
+  $('mCancel').addEventListener('click',closeModal);
+  $('modalBack').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+
+  // ── 서명패드 (canvas + pointer → toDataURL PNG) ──
+  var cv=$('signPad'), ctx=cv.getContext('2d'), drawing=false, hasInk=false, lastX=0, lastY=0;
+  function resizePad(){
+    var rect=cv.getBoundingClientRect(); if(!rect.width) return;
+    var dpr=window.devicePixelRatio||1;
+    cv.width=Math.round(rect.width*dpr); cv.height=Math.round(rect.height*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#1a1a1a';
+  }
+  window.addEventListener('resize',function(){ if($('modalBack').classList.contains('show')){ var d=hasInk?cv.toDataURL():null; resizePad(); } });
+  function _pt(e){ var r=cv.getBoundingClientRect(); var p=(e.touches&&e.touches[0])||e; return { x:p.clientX-r.left, y:p.clientY-r.top }; }
+  function start(e){ e.preventDefault(); drawing=true; var p=_pt(e); lastX=p.x; lastY=p.y; if(!hasInk){ hasInk=true; $('signHint').style.display='none'; } }
+  function move(e){ if(!drawing) return; e.preventDefault(); var p=_pt(e); ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke(); lastX=p.x; lastY=p.y; }
+  function end(){ drawing=false; }
+  cv.addEventListener('pointerdown',start); cv.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',end);
+  function clearPad(){ hasInk=false; ctx&&ctx.clearRect(0,0,cv.width,cv.height); $('signHint').style.display='block'; }
+  $('signClear').addEventListener('click',clearPad);
+
+  // ── 수령 확정 (lf_handover) ──
+  $('mConfirm').addEventListener('click',function(){
+    if(!_cur){ return; }
+    var receiver=$('m_receiver').value.trim();
+    if(!receiver){ toast('수령자 성함을 입력해 주세요',true); return; }
+    if(!hasInk){ toast('수령 확인 서명을 받아주세요',true); return; }
+    var sign=cv.toDataURL('image/png');
+    var btn=this; btn.disabled=true; btn.textContent='처리 중…';
+    var payload={ action:'lf_handover', t:VOC_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, signature:sign };
+    fetch(VOC_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        btn.disabled=false; btn.textContent='수령 완료';
+        if(d&&d.ok){ toast(_cur.id+' 수령완료 처리됨'); closeModal(); load(); }
+        else { toast((d&&d.error)||'수령 처리 실패',true); }
+      })
+      .catch(function(){ btn.disabled=false; btn.textContent='수령 완료'; toast('네트워크 오류 — 다시 시도해 주세요',true); });
+  });
+
+  $('refreshBtn').addEventListener('click',load);
+  load();
+})();
+</script>
+</body>
+</html>

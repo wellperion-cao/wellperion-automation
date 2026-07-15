@@ -44,6 +44,7 @@ except Exception:
 # 하드 임포트(실패 시 시끄럽게): 락 없이 무방비 커밋되면 동시성 손상 방지 목적이 무력화됨.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from git_lock import GitLock
+from publish_digest import send_publish_digest  # 발행완료→문의방 통합요약 자동발신(2026-07-15)
 
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
@@ -170,6 +171,20 @@ def _notify_published(folder: str) -> None:
         )
     except Exception as exc:
         _safe_print(f"[WARN] 링크 모음 알림 서브프로세스 실행 실패(발행 흐름 무영향): {exc}")
+
+
+def _dispatch_publish_digest(approved: list[dict]) -> int:
+    """이번 사이클에 '발행완료'로 전환된 항목만 모아 통합요약 1장 자동발신
+    (scripts/publish_digest.py → 문의·컨택·등록 알림방). GM 루틴: '콘텐츠 1건 = 통합요약 한 장'
+    (기존 per-channel _notify_published 와 별개). 실패해도 발행 파이프라인(커밋·푸시)엔 영향 없음."""
+    newly_published = [it for it in approved if it.get("status") == "발행완료"]
+    if not newly_published:
+        return 0
+    try:
+        return send_publish_digest(newly_published)
+    except Exception as exc:
+        _safe_print(f"[WARN] 발행완료 통합요약 발신 실패(발행 흐름 무영향): {exc}")
+        return 0
 
 
 def load_notified() -> set:
@@ -718,6 +733,9 @@ def _run_once_inner(dry_run: bool) -> int:
         summary_text = "📲 멀티채널 발행 결과\n" + "\n".join(events)
         # 성공/실패 모두 GM 채널로 1건 발송
         telegram(summary_text)
+
+        # 발행완료 → 콘텐츠 1건 통합요약 자동발신(문의·컨택·등록 알림방, GM 루틴 박제 2026-07-15)
+        _dispatch_publish_digest(approved)
 
         # IG 발행검증대기 — 텔레그램 발송 없음(GM 노이즈 0). 로그만.
         if verify_events:

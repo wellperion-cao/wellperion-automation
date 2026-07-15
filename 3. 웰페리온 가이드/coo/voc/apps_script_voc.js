@@ -986,6 +986,267 @@ function _regRenameLocHeader() {
 }
 
 // ═══════════════════════════════════════════
+//  습득 분실물(Lost & Found) — lf_* 액션 패밀리 (시토 배1069 · 2026-07-15)
+//  REG_CATEGORIES 와 완전 독립. 전용 시트 「습득물」 1장 + LF-n 별도 순번.
+//  기존 헬퍼 재사용: _vGetSpreadsheet · _vNextSeqId 패턴 · _regReadAll · _vFindRow · _vNotifyTelegram · _vExtractFileId_.
+//  ★ 공개 갤러리(lf_gallery)는 사진을 '공개'로 반환한다(reg_board 의 photoUrl='비공개' 마스킹과 정반대).
+//    민감필드(수령자·수령시각·서명URL·등록직원)는 공개 응답에서 제외 — 코드 경계로 공개 vs GATED 분리.
+// ═══════════════════════════════════════════
+var LF_SHEET = '습득물';
+// 영문키 : 한글헤더 (헤더-라벨 매핑 → 컬럼 물리삭제/순서변경 안전, _regReadAll 재사용)
+var LF_HEADERS = [
+  { key: 'foundId',     label: '습득ID'         },
+  { key: 'createdAt',   label: '등록일시'       },
+  { key: 'foundWhen',   label: '습득일시'       },
+  { key: 'foundLoc',    label: '습득장소'       },
+  { key: 'itemDesc',    label: '습득물설명'     },
+  { key: 'photoUrl',    label: '사진URL'        },
+  { key: 'status',      label: '상태'           },
+  { key: 'receiver',    label: '수령자'         },
+  { key: 'handedAt',    label: '수령시각'       },
+  { key: 'handoverLoc', label: '수령장소'       },
+  { key: 'signUrl',     label: '서명URL'        },
+  { key: 'signPurgeAt', label: '서명파기예정일' },
+  { key: 'staff',       label: '등록/처리직원'  }
+];
+var LF_STATUS = { POSTED: '게시중', HANDED: '수령완료', VOID: '철회' };
+var LF_PHOTO_FOLDER_NAME = 'LF_Photos';       // 공개 VIEW (갤러리용)
+var LF_SIGN_FOLDER_NAME  = 'LF_Signatures';   // 비공개 (수령 서명 = 분쟁 증거)
+
+// LF-n 전용 단조증가 순번 (VOC_SEQ 와 별개 번호공간) — LockService 로 동시 등록 충돌 방지
+function _lfNextSeqId_() {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(5000); } catch (e) {}
+  var props = PropertiesService.getScriptProperties();
+  var cur = parseInt(props.getProperty('LF_SEQ') || '0', 10);
+  if (isNaN(cur)) cur = 0;
+  var next = cur + 1;
+  props.setProperty('LF_SEQ', String(next));
+  try { lock.releaseLock(); } catch (e) {}
+  return 'LF-' + next;
+}
+
+// 습득물 시트 확보 (없으면 헤더와 함께 자동 생성)
+function _lfGetSheet_() {
+  var ss = _vGetSpreadsheet();
+  var headers = LF_HEADERS.map(function (h) { return h.label; });
+  var sh = ss.getSheetByName(LF_SHEET);
+  if (sh) {
+    if (sh.getLastRow() < 1) sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+    return sh;
+  }
+  sh = ss.insertSheet(LF_SHEET);
+  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#B79F8A').setFontColor('#ffffff');
+  sh.setFrozenRows(1);
+  return sh;
+}
+
+// LF 전용 Drive 폴더 확보 (사진=공개 / 서명=비공개) — _vGetPhotoFolder 패턴
+function _lfGetFolder_(propKey, folderName) {
+  var folderId = _vprop(propKey);
+  var folder = null;
+  if (folderId) { try { folder = DriveApp.getFolderById(folderId); } catch (e) { folder = null; } }
+  if (!folder) {
+    var existing = DriveApp.getRootFolder().getFoldersByName(folderName);
+    folder = existing.hasNext() ? existing.next() : DriveApp.getRootFolder().createFolder(folderName);
+    PropertiesService.getScriptProperties().setProperty(propKey, folder.getId());
+  }
+  return folder;
+}
+
+// Base64 업로드 (사진=ANYONE_WITH_LINK VIEW / 서명=비공개 유지) — _vUploadPhoto 파이프 재사용
+function _lfUpload_(base64, fileName, mimeType, isSignature) {
+  if (!base64) return '';
+  var b64 = String(base64);
+  var comma = b64.indexOf(',');
+  if (b64.slice(0, 5) === 'data:' && comma >= 0) b64 = b64.slice(comma + 1);
+  var folder = isSignature
+    ? _lfGetFolder_('LF_SIGN_FOLDER',  LF_SIGN_FOLDER_NAME)
+    : _lfGetFolder_('LF_PHOTO_FOLDER', LF_PHOTO_FOLDER_NAME);
+  var blob = Utilities.newBlob(
+    Utilities.base64Decode(b64),
+    mimeType || (isSignature ? 'image/png' : 'image/jpeg'),
+    fileName || ('lf_' + (isSignature ? 'sign_' : 'photo_') + _vNow().replace(/[: ]/g, '_'))
+  );
+  var file = folder.createFile(blob);
+  if (!isSignature) file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  // 서명: setSharing 미호출 → 스크립트 소유자 외 비공개 유지 (분쟁 증거·PII 최소).
+  return file.getUrl();
+}
+
+function _lfIdx_(key) {
+  for (var i = 0; i < LF_HEADERS.length; i++) { if (LF_HEADERS[i].key === key) return i; }
+  return -1;
+}
+
+// ─── lf_submit — 직원 습득물 등록 (게이트 뒤 · 제출토큰) ───
+function _lfSubmit(body) {
+  var foundWhen = String(body.foundWhen || '').trim();
+  var foundLoc  = String(body.foundLoc  || body.loc || '').trim();
+  var itemDesc  = String(body.itemDesc  || body.content || '').trim();
+  var staff     = String(body.staff     || '').trim();
+  var photo    = body.photo || body.file || body.base64 || '';
+  var fileName = body.fileName || '';
+  var mimeType = body.mimeType || 'image/jpeg';
+
+  if (!photo) return _vJson({ ok: false, error: '습득물 사진은 필수입니다. (갤러리 노출용)' });
+  if (!foundLoc && !itemDesc) return _vJson({ ok: false, error: '습득장소 또는 설명 중 하나는 입력해 주세요.' });
+
+  var photoUrl = '';
+  try { photoUrl = _lfUpload_(photo, fileName, mimeType, false); }
+  catch (e) { return _vJson({ ok: false, error: '사진 저장 실패: ' + e.message }); }
+
+  var sh = _lfGetSheet_();
+  var id = _lfNextSeqId_();
+  var now = _vNow();
+  var row = new Array(LF_HEADERS.length).fill('');
+  var _set = function (key, val) { var i = _lfIdx_(key); if (i >= 0) row[i] = val; };
+  _set('foundId', id); _set('createdAt', now); _set('foundWhen', foundWhen);
+  _set('foundLoc', foundLoc); _set('itemDesc', itemDesc); _set('photoUrl', photoUrl);
+  _set('status', LF_STATUS.POSTED); _set('staff', staff);
+  var newRow = sh.getLastRow() + 1;
+  sh.getRange(newRow, 1, 1, row.length).setValues([row]);
+
+  _vNotifyTelegram(
+    '🧳 <b>[습득물 등록]</b> ' + id + '\n' +
+    '습득장소: ' + (foundLoc || '-') + '\n' +
+    '설명: ' + (itemDesc ? itemDesc.slice(0, 100) : '-') + '\n' +
+    (staff ? '등록: ' + staff + '\n' : '') +
+    '🕒 ' + now,
+    photoUrl
+  );
+  return _vJson({ ok: true, id: id, photoUrl: photoUrl });
+}
+
+// ─── lf_gallery — 무인증 공개 갤러리 (게시중만 · 민감필드 미반환) ───
+function _lfGallery() {
+  var sh = _lfGetSheet_();
+  var rows = _regReadAll(sh, LF_HEADERS);
+  var out = [];
+  rows.forEach(function (r) {
+    if (String(r.status || '') !== LF_STATUS.POSTED) return;
+    // ★ 공개 응답 = 사진·습득정보만. 수령자/수령시각/서명URL/등록직원 등 민감필드 제외.
+    out.push({
+      foundId:   r.foundId   || '',
+      foundWhen: r.foundWhen || '',
+      foundLoc:  r.foundLoc  || '',
+      itemDesc:  r.itemDesc  || '',
+      photoUrl:  r.photoUrl  || '',
+      createdAt: r.createdAt || ''
+    });
+  });
+  out.sort(function (a, b) { return String(b.createdAt || '') > String(a.createdAt || '') ? 1 : -1; });
+  return _vJson({ ok: true, count: out.length, data: out });
+}
+
+// ─── lf_list — 직원용 전체 목록 (GATED · 전 필드) ───
+function _lfList(params) {
+  var sh = _lfGetSheet_();
+  var rows = _regReadAll(sh, LF_HEADERS);
+  var status = String((params && params.status) || '').trim();
+  if (status) rows = rows.filter(function (r) { return String(r.status || '') === status; });
+  rows.sort(function (a, b) { return String(b.createdAt || '') > String(a.createdAt || '') ? 1 : -1; });
+  return _vJson({ ok: true, count: rows.length, data: rows });
+}
+
+// ─── lf_handover — 현장 디지털 서명 수령 → 자동 수령완료 (멱등·중복거부) ───
+function _lfHandover(body) {
+  var id = String(body.id || body.foundId || '').trim();
+  if (!id) return _vJson({ ok: false, error: '습득ID 필수' });
+  var receiver    = String(body.receiver || '').trim();
+  var handoverLoc = String(body.handoverLoc || '').trim();
+  var sign = body.signature || body.sign || '';
+  if (!receiver) return _vJson({ ok: false, error: '수령자 성함은 필수입니다.' });
+  if (!sign)     return _vJson({ ok: false, error: '수령 확인 서명은 필수입니다.' });
+
+  var sh = _lfGetSheet_();
+  var rowNum = _vFindRow(sh, id);
+  if (rowNum < 0) return _vJson({ ok: false, error: '해당 습득ID를 찾을 수 없습니다: ' + id });
+
+  var existing = sh.getRange(rowNum, 1, 1, LF_HEADERS.length).getValues()[0];
+  var curStatus = String(existing[_lfIdx_('status')] || '');
+  if (curStatus !== LF_STATUS.POSTED) {
+    // 멱등·중복 수령 방지 — 이미 수령완료/철회면 거부
+    return _vJson({ ok: false, error: '이미 처리된 습득물입니다 (현재 상태: ' + curStatus + ').', code: 'ALREADY_HANDLED' });
+  }
+
+  var signUrl = '';
+  try { signUrl = _lfUpload_(sign, 'lf_sign_' + id + '.png', 'image/png', true); }
+  catch (e) { return _vJson({ ok: false, error: '서명 저장 실패: ' + e.message }); }
+
+  var now = _vNow();
+  // 서명 파기 예정일 = 수령 6개월 후 (개인정보 최소보관 · lf_purge_signatures 가 이후 실제 파기)
+  var purge = new Date(); purge.setMonth(purge.getMonth() + 6);
+  var purgeStr = Utilities.formatDate(purge, 'Asia/Seoul', 'yyyy-MM-dd');
+
+  existing[_lfIdx_('status')]      = LF_STATUS.HANDED;
+  existing[_lfIdx_('receiver')]    = receiver;
+  existing[_lfIdx_('handedAt')]    = now;
+  existing[_lfIdx_('handoverLoc')] = handoverLoc;
+  existing[_lfIdx_('signUrl')]     = signUrl;
+  existing[_lfIdx_('signPurgeAt')] = purgeStr;
+  sh.getRange(rowNum, 1, 1, LF_HEADERS.length).setValues([existing]);
+
+  _vNotifyTelegram(
+    '✅ <b>[습득물 수령완료]</b> ' + id + '\n' +
+    '수령자: ' + receiver + '\n' +
+    '수령장소: ' + (handoverLoc || '-') + '\n' +
+    '🕒 ' + now
+  );
+  return _vJson({ ok: true, id: id, status: LF_STATUS.HANDED, signPurgeAt: purgeStr });
+}
+
+// ─── lf_void — 오등록 철회 (게시중→철회) · 수령완료건은 철회 불가 ───
+function _lfVoid(body) {
+  var id = String(body.id || body.foundId || '').trim();
+  if (!id) return _vJson({ ok: false, error: '습득ID 필수' });
+  var sh = _lfGetSheet_();
+  var rowNum = _vFindRow(sh, id);
+  if (rowNum < 0) return _vJson({ ok: false, error: '해당 습득ID를 찾을 수 없습니다: ' + id });
+  var existing = sh.getRange(rowNum, 1, 1, LF_HEADERS.length).getValues()[0];
+  var curStatus = String(existing[_lfIdx_('status')] || '');
+  if (curStatus === LF_STATUS.HANDED) {
+    return _vJson({ ok: false, error: '이미 수령완료된 습득물은 철회할 수 없습니다.', code: 'ALREADY_HANDED' });
+  }
+  existing[_lfIdx_('status')] = LF_STATUS.VOID;
+  sh.getRange(rowNum, 1, 1, LF_HEADERS.length).setValues([existing]);
+  return _vJson({ ok: true, id: id, status: LF_STATUS.VOID });
+}
+
+// ─── lf_delete — 습득ID로 행 정밀 삭제 (GATED·내부, 배포검증 더미 청소용) ───
+function _lfDelete(body) {
+  var id = String((body && (body.id || body.foundId)) || '').trim();
+  if (!id) return _vJson({ ok: false, error: 'id 필수' });
+  var sh = _lfGetSheet_();
+  var rowNum = _vFindRow(sh, id);
+  if (rowNum < 0) return _vJson({ ok: false, error: '해당 습득ID를 찾을 수 없습니다: ' + id });
+  sh.deleteRow(rowNum);
+  return _vJson({ ok: true, id: id, deleted: 1 });
+}
+
+// ─── lf_purge_signatures — 파기예정일 경과 서명 파일 파기 (GATED·스케줄) ───
+// signPurgeAt <= 오늘 인 행의 서명 Drive 파일을 휴지통 이동 + 시트 서명URL='(파기됨)'. 멱등.
+function _lfPurgeSignatures() {
+  var sh = _lfGetSheet_();
+  var rows = _regReadAll(sh, LF_HEADERS);
+  var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+  var purged = 0;
+  for (var r = 0; r < rows.length; r++) {
+    var row = rows[r];
+    var purgeAt = String(row.signPurgeAt || '');
+    var signUrl = String(row.signUrl || '');
+    if (!signUrl || signUrl === '(파기됨)' || !purgeAt) continue;
+    if (purgeAt > today) continue; // 아직 파기일 이전
+    try { var fid = _vExtractFileId_(signUrl); if (fid) DriveApp.getFileById(fid).setTrashed(true); } catch (e) {}
+    var rowNum = _vFindRow(sh, row.foundId);
+    if (rowNum > 0) sh.getRange(rowNum, _lfIdx_('signUrl') + 1).setValue('(파기됨)');
+    purged++;
+  }
+  return _vJson({ ok: true, purged: purged });
+}
+
+// ═══════════════════════════════════════════
 //  접근 게이트 (PII 보호 — TOKEN_ENFORCE 스위치)
 // ═══════════════════════════════════════════
 // ★ 불변식: TOKEN_ENFORCE 가 '1' 이 아니면(기본값) 모든 액션 통과 → 코드 배포만으로는 라이브 영향 0.
@@ -1000,8 +1261,11 @@ var _VOC_PUBLIC_ACTIONS = {
   reg_submit:  true,  // 종합 접수처 제출 — 토큰 면제
   reg_board:   true,  // 마스킹 공개 보드 — 이름·연락처 가려서 반환, 토큰 면제
   reg_update:  true,  // 상태·담당·메모 갱신 — PII 미포함, 토큰 면제
+  lf_submit:   true,  // 습득물 등록 — 제출토큰(_vSubmitGateOk_)으로 별도 보호, 접근키 면제
+  lf_gallery:  true,  // 습득물 공개 갤러리 — 민감필드 미반환(게시중만), 토큰 면제
   diag:        true   // read-only 진단 — 비밀값 절대 미노출, 불리언만 반환
   // ⚠️ reg_list 는 전체 PII(이름·연락처 원문) 포함 — 절대 public 금지, GATED 유지.
+  // ⚠️ lf_list/lf_handover/lf_void/lf_delete/lf_purge_signatures 는 public 아님(GATED) — 쓰기는 제출토큰 게이트.
   // voc_list / voc_update 도 게이트 적용.
 };
 function _vAccessProp_(k) {
@@ -1025,7 +1289,8 @@ function _vDiag() {
     hasToken:         !!_vprop('TELEGRAM_BOT_TOKEN'),
     hasChatId:        !!_vprop('TELEGRAM_CHAT_ID'),
     hasSpreadsheetId: !!_vprop('SPREADSHEET_ID'),
-    seq:              parseInt(_vprop('VOC_SEQ') || '0', 10)
+    seq:              parseInt(_vprop('VOC_SEQ') || '0', 10),
+    lfSeq:            parseInt(_vprop('LF_SEQ') || '0', 10)
   });
 }
 
@@ -1037,12 +1302,20 @@ function _vProcess(action, body, params) {
     return _vJson({ ok: false, error: 'unauthorized' });
   }
 
-  // ─── 접수 위조 방지(시토 2026-06-29 GM): 제출 액션은 숨김토큰 + 속도제한 ───
-  if (action === 'reg_submit' || action === 'voc_submit') {
+  // ─── 접수 위조 방지(시토 2026-06-29 GM): 제출·쓰기 액션은 숨김토큰 + 속도제한 ───
+  //   lf_submit/lf_handover/lf_void(습득물 쓰기)도 동일 게이트 — 무단 등록·수령 위조 차단.
+  if (action === 'reg_submit' || action === 'voc_submit' ||
+      action === 'lf_submit'  || action === 'lf_handover' || action === 'lf_void') {
     if (!_vSubmitGateOk_(body)) {
       return _vJson({ ok: false, error: '접수 권한 확인에 실패했습니다. 페이지를 새로고침 후 다시 시도해 주세요.', code: 'BAD_TOKEN' });
     }
-    var _fp = _vFp_(String((body && (body.category || body.type)) || '') + '|' + String((body && body.contact) || '') + '|' + String((body && body.content) || ''));
+    var _fp = _vFp_([
+      (body && (body.category || body.type)) || '',
+      (body && body.contact) || '',
+      (body && body.content) || '',
+      (body && (body.foundLoc || body.itemDesc)) || '',   // lf_submit 지문
+      (body && (body.id || body.receiver)) || ''           // lf_handover/void 지문
+    ].map(function (x) { return String(x || ''); }).join('|'));
     if (!_vRateLimitOk_(_fp)) {
       return _vJson({ ok: false, error: '요청이 많아 잠시 후 다시 시도해 주세요. (중복·과다 접수 방지)', code: 'RATE_LIMIT' });
     }
@@ -1095,6 +1368,15 @@ function _vProcess(action, body, params) {
   if (action === 'reg_delete') return _regDelete(body);   // 접수ID로 행 정밀 삭제(배포검증 더미 청소용·GATED). 2026-06-20 시우.
   if (action === 'reg_renumber') return _regRenumber(body); // 전체 통합 순번 VOC-1.. 재부여(일회성·멱등·GATED). 2026-06-30 시토.
 
+  // ── 습득 분실물(Lost & Found) 액션 (시토 배1069 · 2026-07-15) ──
+  if (action === 'lf_submit')   return _lfSubmit(body);            // 직원 등록(게이트+제출토큰)
+  if (action === 'lf_gallery')  return _lfGallery();               // 무인증 공개 갤러리(게시중·민감필드 미반환)
+  if (action === 'lf_list')     return _lfList(params || body);    // 직원용 전체목록(GATED)
+  if (action === 'lf_handover') return _lfHandover(body);          // 현장 서명 수령→수령완료(멱등)
+  if (action === 'lf_void')     return _lfVoid(body);              // 오등록 철회(게시중→철회)
+  if (action === 'lf_delete')   return _lfDelete(body);            // 더미 청소용 행삭제(GATED)
+  if (action === 'lf_purge_signatures') return _lfPurgeSignatures(); // 6개월 경과 서명 파기(GATED·스케줄)
+
   // ── 레거시 VOC 액션 (하위호환) ──
   if (action === 'voc_submit') return _vSubmit(body);
   if (action === 'voc_update') {
@@ -1132,7 +1414,8 @@ function doGet(e) {
     var action = (e && e.parameter && e.parameter.action) || '';
     // POST redirect 우회: voc_ write action 이 GET 으로 와도 본문 병합 후 처리
     if (action === 'voc_submit' || action === 'voc_update' ||
-        action === 'reg_submit' || action === 'reg_update') {
+        action === 'reg_submit' || action === 'reg_update' ||
+        action === 'lf_submit'  || action === 'lf_handover' || action === 'lf_void') {
       var body = {};
       Object.keys(e.parameter).forEach(function (k) { body[k] = e.parameter[k]; });
       if (e.postData && e.postData.contents) {

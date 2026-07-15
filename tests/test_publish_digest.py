@@ -1,0 +1,233 @@
+"""
+test_publish_digest.py — 발행완료→문의방 통합요약 자동발신 pytest.
+검증 대상: scripts/publish_digest.py (+ ig_review_publish_watcher.py 배선)
+
+★ 실제 텔레그램 전송은 절대 하지 않는다 — 전송 함수(_send)는 항상 monkeypatch로
+  가로채거나, dry_run=True 로만 호출한다.
+"""
+
+import json
+import os
+import sys
+import tempfile
+from pathlib import Path
+
+_TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_TESTS_DIR)
+_SCRIPTS_DIR = os.path.join(_PROJECT_ROOT, "scripts")
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+
+import publish_digest as pd  # noqa: E402
+
+
+# ---------------------------------------------------------------------------
+# 실제 L1 수영 5항목 (review_queue.json 실데이터 축약) — IG 루트 + output(채널) 4종
+# ---------------------------------------------------------------------------
+def _l1_swim_items() -> list[dict]:
+    return [
+        {
+            "id": "CMO-2026-07-14-LSERIES-L1-SWIM",
+            "title": "L시리즈 성인강습 1/6 — 수영(디지털 디톡스)",
+            "folder": "instagram/260715_L1_수영",
+            "channel": "인스타그램 (wellperion 공식)",
+            "status": "발행완료",
+            "post_url": "https://www.instagram.com/p/Day7fIBEphf/",
+            "published_at": "2026-07-15T10:53:13",
+        },
+        {
+            "id": "CMO-2026-07-15-LSERIES-L1-SWIM-BLOG",
+            "title": "하루 30분, 휴대폰이 멈추는 시간 — 한남동 성인 수영",
+            "folder": "instagram/260715_L1_수영/output(블로그)",
+            "channel": "네이버 블로그",
+            "status": "발행완료",
+            "post_url": "https://blog.naver.com/PostView.naver?blogId=wellperion&logNo=224347229166",
+            "published_at": "2026-07-15T11:36:45",
+        },
+        {
+            "id": "CMO-2026-07-15-LSERIES-L1-SWIM-CAFE",
+            "title": "한남동에서 30분, 수영으로 디지털 디톡스",
+            "folder": "instagram/260715_L1_수영/output(카페)",
+            "channel": "네이버 카페 (동부이촌동)",
+            "status": "발행완료",
+            "post_url": "https://cafe.naver.com/ichon1dong?iframe_url_utf8=x",
+            "published_at": "2026-07-15T11:37:26",
+        },
+        {
+            "id": "CMO-2026-07-15-LSERIES-L1-SWIM-KAKAO",
+            "title": "한남동 성인 수영 — 디지털 디톡스 (카카오 채널)",
+            "folder": "instagram/260715_L1_수영/output(카카오 채널)",
+            "channel": "카카오 채널",
+            "status": "발행완료",
+            "post_url": "https://business.kakao.com/_cgxiKj/posts/113972104",
+            "published_at": "2026-07-15T11:38:02",
+        },
+        {
+            "id": "CMO-2026-07-15-LSERIES-L1-SWIM-DANGGN",
+            "title": "한남동 성인 수영 강습 — 0에서 천천히 시작해요 (당근)",
+            "folder": "instagram/260715_L1_수영/output(당근)",
+            "channel": "당근채널",
+            "status": "발행완료",
+            "post_url": "https://www.daangn.com/kr/business-posts/6a56f6bbfdb9c12e29b2676a",
+            "published_at": None,
+        },
+    ]
+
+
+def _tmp_ledger_path() -> Path:
+    fd, path = tempfile.mkstemp(prefix="publish_digest_sent_", suffix=".json")
+    os.close(fd)
+    os.remove(path)  # 시작은 파일 없음(첫 발신) 상태로
+    return Path(path)
+
+
+# ---------------------------------------------------------------------------
+# ① 그룹핑 — 5항목 → 1그룹, 메시지에 5개 채널 링크 전부 포함
+# ---------------------------------------------------------------------------
+def test_group_published_merges_5_channels_into_1_content():
+    items = _l1_swim_items()
+    groups = pd.group_published(items)
+    assert len(groups) == 1, f"1콘텐츠로 묶여야 함, 실제 그룹키: {list(groups.keys())}"
+    key, group = next(iter(groups.items()))
+    assert key == "instagram/260715_L1_수영"
+    assert len(group) == 5
+
+    msg = pd.build_digest(group)
+    urls = [it["post_url"] for it in items]
+    for url in urls:
+        assert url in msg, f"메시지에 채널 링크 누락: {url}"
+    # 채널 5종 모두 불릿으로 포함
+    for ch in ["인스타그램", "네이버 블로그", "네이버 카페", "카카오 채널", "당근채널"]:
+        assert ch in msg, f"메시지에 채널명 누락: {ch}"
+
+
+# ---------------------------------------------------------------------------
+# ② 대상방 — chat_id == TELEGRAM_INQUIRY_CHAT_ID (GM채널 아님)
+# ---------------------------------------------------------------------------
+def test_sends_to_inquiry_chat_id_not_gm_channel(monkeypatch):
+    captured = {}
+
+    def fake_send(token, chat_id, text):
+        captured["token"] = token
+        captured["chat_id"] = chat_id
+        captured["text"] = text
+        return True
+
+    monkeypatch.setattr(pd, "_send", fake_send)
+    ledger_path = _tmp_ledger_path()
+    try:
+        expected_chat_id = pd._load_env_val(pd.TELEGRAM_INQUIRY_CHAT_ID_ENV_KEY)
+        gm_chat_id = pd._load_env_val("TELEGRAM_CHAT_ID")
+        assert expected_chat_id, "테스트 전제: TELEGRAM_INQUIRY_CHAT_ID가 .env에 설정돼 있어야 함"
+
+        sent = pd.send_publish_digest(_l1_swim_items(), dry_run=False, ledger_path=ledger_path)
+
+        assert sent == 1
+        assert captured["chat_id"] == expected_chat_id
+        assert captured["chat_id"] != gm_chat_id or not gm_chat_id, "GM 채널로 가면 안 됨"
+    finally:
+        if ledger_path.exists():
+            ledger_path.unlink()
+
+
+# ---------------------------------------------------------------------------
+# ③ 조용한 실패 금지 — 토큰 없으면 [ERROR] + 전송 시도 안 함
+# ---------------------------------------------------------------------------
+def test_missing_token_logs_error_and_does_not_send(monkeypatch, capsys):
+    def fake_send(*a, **k):
+        raise AssertionError("토큰 미설정인데 전송을 시도함 — 조용한 실패 금지 위반")
+
+    monkeypatch.setattr(pd, "_send", fake_send)
+    monkeypatch.setattr(pd, "_load_env_val", lambda key: "")  # 토큰·챗ID 전부 미설정 시뮬레이션
+
+    ledger_path = _tmp_ledger_path()
+    try:
+        sent = pd.send_publish_digest(_l1_swim_items(), dry_run=False, ledger_path=ledger_path)
+        assert sent == 0
+        err = capsys.readouterr().err
+        assert "[ERROR]" in err
+    finally:
+        if ledger_path.exists():
+            ledger_path.unlink()
+
+
+# ---------------------------------------------------------------------------
+# ④ 멱등 — 같은 콘텐츠 2회 호출 시 2번째는 전송 0건
+# ---------------------------------------------------------------------------
+def test_idempotent_second_call_sends_zero(monkeypatch):
+    calls = []
+
+    def fake_send(token, chat_id, text):
+        calls.append(text)
+        return True
+
+    monkeypatch.setattr(pd, "_send", fake_send)
+    ledger_path = _tmp_ledger_path()
+    try:
+        first = pd.send_publish_digest(_l1_swim_items(), dry_run=False, ledger_path=ledger_path)
+        second = pd.send_publish_digest(_l1_swim_items(), dry_run=False, ledger_path=ledger_path)
+
+        assert first == 1
+        assert second == 0, "동일 콘텐츠 재발신 — 멱등 위반"
+        assert len(calls) == 1, "실제 발신 호출은 1회만 있어야 함"
+        # 원장에 그룹키 기록됐는지 확인
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        assert "instagram/260715_L1_수영" in ledger
+    finally:
+        if ledger_path.exists():
+            ledger_path.unlink()
+
+
+# ---------------------------------------------------------------------------
+# ⑤ 배선 발동 — 감시기(run) 이번 사이클 '발행완료' 전환 항목으로 digest 실제 호출
+# ---------------------------------------------------------------------------
+def test_watcher_dispatch_calls_digest_only_for_newly_published(monkeypatch):
+    """실브라우저·git·네트워크 없이: ig_review_publish_watcher._dispatch_publish_digest 가
+    approved 리스트 중 '발행완료'로 전환된 것만 send_publish_digest 로 넘기는지 검증.
+    이 함수는 _run_once_inner() 가 실제 호출하는 그 함수(같은 코드 경로) — 발동지점 실증."""
+    import ig_review_publish_watcher as watcher
+
+    captured = {}
+
+    def fake_send_publish_digest(items, dry_run=False, ledger_path=None):
+        captured["items"] = items
+        return len(items)
+
+    monkeypatch.setattr(watcher, "send_publish_digest", fake_send_publish_digest)
+
+    approved = [
+        {"id": "A-1", "status": "발행완료", "folder": "instagram/x", "channel": "인스타그램",
+         "post_url": "https://example.com/a"},
+        {"id": "A-2", "status": "발행실패", "folder": "instagram/y", "channel": "블로그"},
+        {"id": "A-3", "status": "수동발행대기", "folder": "instagram/z", "channel": "카카오"},
+    ]
+
+    sent = watcher._dispatch_publish_digest(approved)
+
+    assert sent == 1, "발행완료 1건만 digest로 전달돼야 함"
+    assert len(captured["items"]) == 1
+    assert captured["items"][0]["id"] == "A-1"
+
+    # run 함수 소스에 실제 호출부가 존재함을 실행경로로도 재확인(정적 우회 방지)
+    import inspect
+    src = inspect.getsource(watcher._run_once_inner)
+    assert "_dispatch_publish_digest(approved)" in src
+
+
+def test_watcher_dispatch_no_newly_published_skips_digest(monkeypatch):
+    """발행완료 전환 항목이 하나도 없으면 send_publish_digest 자체를 호출하지 않는다."""
+    import ig_review_publish_watcher as watcher
+
+    called = {"n": 0}
+
+    def fake_send_publish_digest(items, dry_run=False, ledger_path=None):
+        called["n"] += 1
+        return 0
+
+    monkeypatch.setattr(watcher, "send_publish_digest", fake_send_publish_digest)
+
+    approved = [{"id": "B-1", "status": "발행실패", "folder": "instagram/y"}]
+    sent = watcher._dispatch_publish_digest(approved)
+
+    assert sent == 0
+    assert called["n"] == 0
