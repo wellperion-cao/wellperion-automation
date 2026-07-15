@@ -6349,6 +6349,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   <!-- ── COO 체크리스트 소개 ── -->
   <article class="doc" id="O1">
     <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO(운영부) 관할 · 운영부 운영 체계 본진 + 타 부서 체계 링크</div></div>
+    <!-- 모듈 소개 — 간결 모듈 라인 (2026-07-15 GM: CMO M1 패턴 · 운영 통합 소개) -->
+    <div style="background:var(--card,var(--paper));border:1px solid var(--line,var(--border));border-left:3px solid var(--accent);border-radius:12px;padding:15px 18px;margin:14px 0 16px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--accent);margin-bottom:9px;">이 모듈은 · COO 운영 통합</div>
+      <div style="font-size:14px;color:var(--text);line-height:1.7;font-weight:600;">① 운영부 운영 체계(규정·가이드·매뉴얼·현황) &nbsp;·&nbsp; ② 월간 운영 계획·보고 &nbsp;·&nbsp; ③ 전사 일정·공지·거래업체</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.6;margin-top:7px;">리셉션·프론트 운영 기준부터 이 달 목표·부서 현황까지 한 곳에서 봅니다. 아래로 내려가며 필요한 부분만 보세요.</div>
+    </div>
     <section id="o1-module-hub" style="margin:18px 0;">
       <h3 style="font-size:1.05rem;margin:0 0 10px;">🏢 운영 모듈 현황</h3>
       <div id="o1-module-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
@@ -6409,16 +6415,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       loadHub();
     })();
     </script>
-    <p class="lead">운영부(리셉션·프론트) 운영 체계입니다 — 규정·가이드·매뉴얼·현황을 여기서 관리합니다.</p>
-
-    <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:14px;margin:14px 0 18px;padding:16px 20px;background:linear-gradient(135deg,#1a2a3a,#1a1a2a);border:1px solid #5b9fd5;border-radius:14px;text-decoration:none;color:#fff;">
-      <span style="font-size:28px;flex-shrink:0;">🛎️</span>
-      <span style="flex:1;">
-        <span style="display:block;font-size:16px;font-weight:800;">운영부 운영 체계 — 규정·가이드·매뉴얼·현황</span>
-        <span style="display:block;font-size:12.5px;color:#a9c9e6;margin-top:3px;line-height:1.5;">리셉션 근무·휴게·정기회의 규정 + 가이드·매뉴얼 + 이달 현황·일정·거래업체. 운영부 실무 기준을 한 곳에.</span>
-      </span>
-      <span style="font-size:13px;font-weight:800;color:#fff;background:#5b9fd5;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
-    </a>
+    <!-- 운영부 운영 체계 — O1 본문으로 인라인 임베드(2026-07-15 GM '링크 말고 O1에 녹여'). 원본=coo/check/운영부 체계.html(GAS 편집·저장 그대로), ?embed=1로 헤더 숨김. 코드 복사 대신 임베드 = DRY·중복0·역롤백 쉬움. -->
+    <section style="margin:18px 0;">
+      <h3 style="font-size:1.05rem;margin:0 0 10px;">🛎️ 운영부 운영 체계 <span style="font-size:12px;font-weight:500;color:var(--dim);">규정·가이드·매뉴얼·현황 — 여기서 바로 편집·저장</span></h3>
+      <iframe src="coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html?embed=1" title="운영부 운영 체계" loading="lazy" style="width:100%;height:85vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block;"></iframe>
+    </section>
 
     <a href="월간운영계획.html" style="display:flex;align-items:center;gap:14px;margin:14px 0 18px;padding:16px 20px;background:linear-gradient(135deg,#14352a,#1a1a2a);border:1px solid #2fa37a;border-radius:14px;text-decoration:none;color:#fff;">
       <span style="font-size:28px;flex-shrink:0;">📊</span>
