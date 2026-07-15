@@ -144,6 +144,21 @@
       "honesty_default": "measured"
     },
     {
+      "id": "cmo-case-series-dispatch",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "개인계정 실전사례 시리즈 자동 디스패치 — 평일 07:30 재고(06~09) 순차 선정·검수카드 발송, GM 텔레그램 승인 후 자동 발행",
+      "data_source": {"kind": "json", "ref": "instagram/_실전사례_2주플랜.md + 3. 웰페리온 가이드/cmo/review/review_queue.json (case_series_dispatch.py)"},
+      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "autonomy": "semi",
+      "ai_free_fallback": "예약작업이 평일 07:30 무인 가동 — 재고 대본(instagram/namuk.wellperion/ 06~09 슬라이드+caption) 순차 선정·검수카드 발송은 자동, 실발행은 GM 텔레그램 [✅승인] 게이트 뒤. 재고 소진 시 발송 대상 0으로 자연 종료",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
       "id": "coo-check-status",
       "owner_role": "coo",
       "owner_nick": "시우",
