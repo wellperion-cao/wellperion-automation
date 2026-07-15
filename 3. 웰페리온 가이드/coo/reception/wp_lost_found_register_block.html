@@ -35,11 +35,17 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
   --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);--red:#c0392b;--red-bg:rgba(192,57,43,0.09);
   --blue:#2471a3;--orange:#d68910;
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-  background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%;
+  /* ② 이중 배경 제거 (2026-07-15 시토·GM 지시): 래퍼가 아이보리(--bg #faf9f7)를 깔면
+     테마 .container-wrap 회색(#f6f6f6) 위에 얹혀 '아이보리+회색' 이중색·경계로 보임 →
+     reception_block(.wlp-recept)와 동일하게 배경 투명화해 페이지 배경 1겹만 노출(경계 0).
+     (--bg 토큰은 입력칸·photo-zone 배경용으로 그대로 유지) */
+  background:transparent;color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%;
 }
 .wlp-lfr *{margin:0;padding:0;box-sizing:border-box}
 .wlp-lfr a{color:var(--accent);text-decoration:none}
-.wlp-lfr .wrap{max-width:640px;margin:0 auto;padding:34px 18px 70px}
+/* ② 짜투리 여백 축소로 스크롤 단축 (2026-07-15 시토·GM 지시): 상 34→20 · 하 70→40.
+   데스크톱 상단은 아래 로고 겹침수리 override(90px)가 유지 — 겹침 0 보존. */
+.wlp-lfr .wrap{max-width:640px;margin:0 auto;padding:20px 18px 40px}
 /* ② 'WELLPERION STAFF' ↔ 헤더 로고 겹침 해소 (2026-07-15 시토·GM 지시): 데스크톱에서 헤더 로고가
    position:absolute 로 본문 상단(≈y60–130) 위에 겹쳐 brand-eyebrow(≈y103–125)와 충돌 →
    본문 상단 여백 확보로 로고 아래로 이격(겹침 0). ★반드시 위 .wrap 기본 padding 규칙보다 뒤에 둬야
@@ -124,7 +130,13 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
 .wlp-lfr .state-msg{padding:26px 4px;text-align:center;color:var(--dim);font-size:13.5px}
 .wlp-lfr .hidden{display:none!important}
 </style>
-<script>try{document.body.classList.add('wlp-lfr-page');}catch(e){}</script>
+<script>try{document.body.classList.add('wlp-lfr-page');}catch(e){}
+/* ① 헤더 로고 링크: 홈(/ko/) → 종합접수처(/ko/reception/) (2026-07-15 시토·GM 지시).
+   로고는 WP 테마(Salient) 요소라 블록에서 JS로 href만 재지정 — 누르면 홈이 아니라 부모(종합접수처)로 복귀. */
+(function(){var R='http://wellperion.com/ko/reception/';
+ function relink(){try{['#header-outer #logo','#logo','a.logo','.logo>a','#logo a'].forEach(function(s){
+   document.querySelectorAll(s).forEach(function(el){if(el&&el.tagName==='A'){el.href=R;}});});}catch(e){}}
+ relink();document.addEventListener('DOMContentLoaded',relink);window.addEventListener('load',relink);})();</script>
 
 <div class="wlp-lfr">
 <div class="toast" id="toast"></div>
