@@ -1867,5 +1867,33 @@
     "artifact": "- print_options.js 인클루드 제거 — '인쇄' 프로즈(헌법 히어로 '인쇄 친화')를\n  잡아 인쇄버튼으로 덮던 오작동 해소 → 헌법 진입 배너 정상 복원(유령버튼 제거)\n- 고아 <article id=dashboard>(전부 '연동 예정' 플레이스홀더·nav 미연결) 폐기\n  + 전용 JS(kpiToggle·renderMetrics·renderTodayStats)·CSS(.kpi-*) 호출부까지 정리\n- 죽은 .print-btn CSS(사용처 0) + '준비 중' 유령 배지 제거\n- 보호앵커(S1~T2·data-pan (CLI ad-hoc · 커밋 1e3c60fe)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "1e3c60fe55b626c93d9c93be76cf04533f15bdee"
+  },
+  {
+    "task_id": "CTO-2026-07-15-ADHOC-966ab3f7",
+    "clevel": "cto",
+    "title": "[시토] 업무결재·문의등록·종합접수처 콜아웃 프레임 제거→일일점검처럼 섹션헤더+풀폭 통일 (시토 CTO)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1144,
+    "artifact": "- 3개 카드 외곽 콜아웃(border/bg/radius/padding) 제거, 내부 타일 직접 노출(이중 박스 제거)\n- 헤더를 운영현황상세/일일점검과 동일한 피어 섹션 스케일(30px chip·17px title)로 통일\n- 업무/결재 SSOT pill 색을 월간운영계획보고 링크와 동일한 초록 그라디언트로 통일(이모지·링크·id 무변경)\n- 업무/결재 마이크로 라벨 9px→10.5/9.5px로 운영현황상세 스케일에 맞춤(숫자 16px 유지)\n- 모바일(≤600px) ops-detail-grid·wa-block-grid 1열 붕괴 (CLI ad-hoc · 커밋 966ab3f7)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "966ab3f78cbee2cf7357cc30a05bfb6a1d68918c"
+  },
+  {
+    "task_id": "CPO-2026-07-15-ADHOC-881aac52",
+    "clevel": "cpo",
+    "title": "[시포] 회원관리 페이지 작업현황 로그 — /rc 이어받기용 (2026-07-15)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-15",
+    "processed_at": "2026-07-15",
+    "ship_no": 1145,
+    "artifact": "완료(백필·문의현황버그·이탈방지병합 등)·진행중 A1 6건통합·대기큐(대기자소트·담당자현황·종료회원LOSS·발레바레분리)·미해결(카드인원불일치) 정리. (CLI ad-hoc · 커밋 881aac52)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "881aac52b69ad5005184f79c88a06ba055d0e4b3"
   }
 ]
