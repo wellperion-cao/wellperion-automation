@@ -188,51 +188,6 @@
   .ns-goal-chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:999px; padding:4px 11px;}
   .ns-goal-chip em{font-style:normal; color:var(--dim); font-weight:400;}
 
-  /* ── 🔁 자율화 루프 5단계 + 환류 (닫힌 고리 · 2026-07-09) ── */
-  .loop-strip{display:flex; flex-wrap:wrap; align-items:stretch; gap:8px; margin:4px 0 8px;}
-  .loop-step{flex:1 1 150px; background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
-  .loop-step .lsnum{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--accent); color:#fff; font-size:11px; font-weight:800; margin-bottom:5px;}
-  .loop-step.feedback{border-color:rgba(240,198,116,0.4);}
-  .loop-step.feedback .lsnum{background:#f0c674; color:#221F20;}
-  .loop-step h4{font-size:12.5px; font-weight:700; margin-bottom:3px;}
-  .loop-step p{font-size:11px; color:var(--dim); line-height:1.4;}
-  .loop-arrow{display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:16px; flex:0 0 20px;}
-  .loop-feedback-note{margin:0 0 14px; font-size:11px; color:#f0c674; line-height:1.5;}
-  @media (max-width:640px){
-    .loop-strip{flex-direction:column;}
-    .loop-arrow{display:none;}
-  }
-
-  /* ── 🧩 7주체 모듈 자율수준 (module_registry.json 직독 · 2026-07-09) ── */
-  .mod-strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin:4px 0 14px;}
-  .mod-role{background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:9px 11px;}
-  .mod-role-h{font-size:13px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:5px;}
-  .mod-item{margin-bottom:7px; padding-bottom:7px; border-bottom:1px dashed var(--border);}
-  .mod-item:last-child{margin-bottom:0; padding-bottom:0; border-bottom:none;}
-  .mod-item .mod-feat{font-size:11.5px; color:var(--text-soft); line-height:1.4; margin:3px 0;}
-  .mod-item .mod-fallback{font-size:10px; color:var(--dim); line-height:1.4;}
-  .mod-empty{font-size:11px; color:var(--dim); font-style:italic;}
-  .mod-badge{display:inline-block; font-size:9.5px; font-weight:700; border-radius:20px; padding:1px 8px; margin-right:5px; white-space:nowrap;}
-  .mod-badge.auto{color:#8fd89e; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
-  .mod-badge.semi{color:#7ac4f0; background:rgba(122,196,240,0.14); border:1px solid rgba(122,196,240,0.35);}
-  .mod-badge.mech{color:var(--accent-soft); background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.32);}
-  .mod-badge.propose{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
-  .mod-badge.manual{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
-  .mod-rev{font-size:9.5px; color:var(--dim); margin-left:2px;}
-
-  /* ── 🎯 단일 전환 퍼널 링크 카드 (배 #897 · 보드 실체는 마케팅현황대시보드.html로 이관 · 2026-07-13 GM 지시, 중복 제거) ── */
-  .funnel-link-card{
-    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
-    background:var(--paper); border:1px solid var(--border); border-radius:12px;
-    padding:14px 18px; margin:4px 0 14px;
-  }
-  .funnel-link-card p{margin:0; font-size:12px; color:var(--dim); line-height:1.5; max-width:60ch;}
-  .funnel-link-card a{
-    flex:none; font-size:13px; font-weight:700; color:var(--accent-soft); text-decoration:none;
-    border:1px solid var(--border-strong); border-radius:8px; padding:8px 16px; white-space:nowrap;
-  }
-  .funnel-link-card a:hover{background:var(--surface); border-color:var(--accent);}
-
   /* ── 공통 4섹션 카드 ── */
   .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:4px;}
   .ccard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:11px 13px;}
@@ -297,24 +252,6 @@
     .ns-goal-card{background:#f8f2dc !important; border-color:#caa84a !important;}
     .ns-goal-h, .ns-goal-txt, .ns-goal-txt b, .ns-goal-sub{color:#111 !important;}
     .ns-goal-chip{color:#111 !important; border-color:#666 !important; background:#fff !important;}
-    /* 신규(2026-07-09): 자율화 루프 5단계 카드 인쇄 라이트 강제 */
-    .loop-step{background:#fff !important; border-color:#999 !important;}
-    .loop-step h4, .loop-step p{color:#111 !important;}
-    .loop-step .lsnum{background:#666 !important; color:#fff !important;}
-    .loop-feedback-note{color:#111 !important;}
-    /* 신규(2026-07-09): 7주체 모듈 자율수준 스트립 인쇄 라이트 강제 */
-    .mod-role{background:#fff !important; border-color:#999 !important;}
-    .mod-role-h{color:#111 !important;}
-    .mod-item{border-color:#ccc !important;}
-    .mod-feat, .mod-fallback, .mod-empty, .mod-rev{color:#111 !important;}
-    .mod-badge{border-width:1px !important;}
-    .mod-badge.auto{color:#1a6b34 !important; background:#e8f6ec !important; border-color:#7fbd91 !important;}
-    .mod-badge.semi{color:#1b4f72 !important; background:#e8f3fb !important; border-color:#8ec2e0 !important;}
-    .mod-badge.mech{color:#4a2a91 !important; background:#efe8fb !important; border-color:#b7a0e0 !important;}
-    .mod-badge.propose{color:#9c1c74 !important; background:#fbe6f3 !important; border-color:#e0a0c8 !important;}
-    .mod-badge.manual{color:#555 !important; background:#f0f0f0 !important; border-color:#bbb !important;}
-    .funnel-link-card{background:#fff !important; border-color:#999 !important;}
-    .funnel-link-card p, .funnel-link-card a{color:#111 !important;}
     /* 🗓️ 하루 루틴 표 인쇄 라이트 강제 */
     .rtbl td{border-color:#999 !important; color:#111 !important; background:#fff !important;}
     .rtbl-t{color:#333 !important;}
@@ -375,24 +312,6 @@
     </div>
   </div>
 
-  <!-- ════ ⚖️ 불변원리 3 (자율화 전제 · Global Constraints 근거 · 2026-07-09) ════ -->
-  <h2 class="sec">⚖️ 불변원리 3 <span style="font-size:11px;font-weight:400;color:var(--dim);">자율화 루프가 지키는 전제</span></h2>
-  <div class="sec-note">근거: docs/superpowers/plans/2026-07-09-clevel-autonomous-execution-loop.md · Global Constraints</div>
-  <div class="cards" style="margin-bottom:14px;">
-    <div class="ccard">
-      <h3>① 등록부 단일 SSOT</h3>
-      <div class="desc">모든 화면·알림·자율 루프는 <code>status/module_registry.json</code> 한 곳을 읽는다. 데이터 출처(_queue.json·kpi.json·GAS 등)는 가리킬 뿐 복사 금지.</div>
-    </div>
-    <div class="ccard">
-      <h3>② 가역만 자율</h3>
-      <div class="desc">가역 작업만 AI가 자율 완료. 비가역(발행·배포·삭제·외부전송·결제·보안·전략·공식값)은 GM 결재.</div>
-    </div>
-    <div class="ccard">
-      <h3>③ 웰리는 위임·검증만</h3>
-      <div class="desc">AI CEO(웰리)는 직접 도메인 실행 금지. 큐 읽기·위임·검증·기록만; 실행은 담당 C레벨.</div>
-    </div>
-  </div>
-
   <!-- ════ A. 7주체 × 3칸 매트릭스 (편집형 · 2026-06-29 · 2026-07-07 북극성 지도 카드 합병) ════ -->
   <div id="matrix-section">
   <h2 class="sec">🧭 7주체 × 3칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
@@ -414,36 +333,6 @@
     </table>
   </div>
   </div><!-- /matrix-section -->
-
-  <!-- ════ 🔁 자율화 루프 5단계 + 환류 (닫힌 고리 · 2026-07-09) ════ -->
-  <h2 class="sec">🔁 자율화 루프 5단계 <span style="font-size:11px;font-weight:400;color:var(--dim);">닫힌 고리(환류 → 다음 루프 입력)</span></h2>
-  <div class="sec-note">근거: docs/superpowers/plans/2026-07-09-clevel-autonomous-execution-loop.md · Goal</div>
-  <div class="loop-strip">
-    <div class="loop-step"><span class="lsnum">1</span><h4>모듈 등록부</h4><p>status/module_registry.json — 화면·알림·자율 루프의 단일 출처</p></div>
-    <div class="loop-arrow">→</div>
-    <div class="loop-step"><span class="lsnum">2</span><h4>프론트 카드</h4><p>헌법한장·자율현황 창이 등록부를 읽어 렌더(하드코딩 금지)</p></div>
-    <div class="loop-arrow">→</div>
-    <div class="loop-step"><span class="lsnum">3</span><h4>웰리 오케스트레이션</h4><p>가역 배 선별 → 담당 C레벨에 위임 → 실행(웰리 직접 실행 금지)</p></div>
-    <div class="loop-arrow">→</div>
-    <div class="loop-step"><span class="lsnum">4</span><h4>검증</h4><p>시크릿 크롬 라이브 실측 일치 확인(거짓 완료 0)</p></div>
-    <div class="loop-arrow">→</div>
-    <div class="loop-step feedback"><span class="lsnum">5</span><h4>환류</h4><p>결과·피드백을 다음 루프 입력으로 등록부에 되먹임</p></div>
-  </div>
-  <div class="loop-feedback-note">↩︎ ⑤ 환류가 ①로 되먹여 닫힌 고리를 이룬다 — 매 사이클 "이 검증을 코드·게이트로 굳힐 수 있나?" 자문(부트스트랩 이관).</div>
-
-  <!-- ════ 🧩 7주체 모듈 자율수준 (module_registry.json 직독 · 등록부 SSOT · 2026-07-09) ════ -->
-  <h2 class="sec">🧩 7주체 모듈 자율수준</h2>
-  <div class="sec-note">정본: status/module_registry.json 직독(등록부 SSOT · 매트릭스와 중복 카드 없음)</div>
-  <div class="mod-strip" id="mod-strip">
-    <div class="matrix-status">모듈 등록부를 불러오는 중…</div>
-  </div>
-
-  <!-- ════ 🎯 단일 전환 퍼널 — 마케팅 현황 대시보드로 통합(배 #897 · 중복 제거 · 2026-07-13 GM 지시) ════ -->
-  <h2 class="sec">🎯 단일 전환 퍼널 <span style="font-size:11px;font-weight:400;color:var(--dim);">클릭 → 문의 → 가입 · 한 보드에서 본다</span></h2>
-  <div class="funnel-link-card">
-    <p>보드 실체는 마케팅 현황 대시보드로 통합됐습니다(단일 SSOT) — 정본: status/kpi_values.json(cmo·cpo 블록) 직독 · 시모 #676·시포 #849.</p>
-    <a href="cmo/funnel/마케팅현황대시보드.html">🎯 마케팅 현황 전체 보기 →</a>
-  </div>
 
   <!-- ════ B. 공통 헌법 4섹션 (S2 정본으로 링크만) ════ -->
   <h2 class="sec">📜 공통 헌법 4섹션</h2>
@@ -493,6 +382,16 @@
         ['🚫 입력 금지 5종', 'con-input5'],
         ['🎚️ 토큰 라우팅', 'con-token']
       ]
+    },
+    {
+      h:'⚖️ 자율화 전제 3',
+      // 구 독립 '불변원리 3' 섹션 흡수(2026-07-15) — 위 4섹션을 자율 루프에 적용한 파생 3원칙. 별도 헌법 조항 아님(중복 제거).
+      d:'위 4섹션을 자율 루프에 적용한 3원칙 — ① 등록부 단일 SSOT(모든 화면·알림·루프는 module_registry.json 한 곳·복사 금지) · ② 가역만 자율(비가역=발행·배포·삭제·외부전송·결제·보안·전략·공식값은 GM 결재) · ③ 웰리는 위임·검증만(직접 도메인 실행 금지).',
+      links:[
+        ['① SSOT → 절대기준', 'con-absolute'],
+        ['② 가역 → GM 결재 5종', 'con-gm5'],
+        ['③ 위임 → 통합원칙', 'con-unified']
+      ]
     }
   ];
   var cc = document.getElementById('common-cards');
@@ -520,7 +419,6 @@
   var _pendingByRole = null;  // status/northstar_pending.json → role.id별 후보 1개
   var _incidents = null;      // ssot/incidents.json → role.id별 {guarded, recent}
   var _reachData = null;      // status/northstar_reach.json → role.id별 {reach_pct|null, mode, basis, milestones_done?, milestones_total?}
-  var _moduleRegistry = null; // status/module_registry.json → {modules:[...]} (등록부 SSOT · 7주체 모듈 자율수준 스트립)
   var _editMode = false;
   // 뷰 상태(GM PC 세션 한정 · 정본 아님): 역할 필터 · 칸 숨김 · 폴침
   var _roleFilter = null;     // null=전체, 아니면 role.id
@@ -782,43 +680,6 @@
                   ' · ' + esc(String(r.요약 || '').slice(0, 44)) + (String(r.요약 || '').length > 44 ? '…' : '') + '</span>') : '';
     return '<div class="incd"><span class="incd-h">🛡️ 재발방지 GUARDED</span>' +
       '<div class="incd-meta">🛡️ 봉인 <b>' + c.guarded + '</b>건</div>' + rc + '</div>';
-  }
-
-  // 🧩 7주체 모듈 자율수준 스트립 — status/module_registry.json 직독(등록부 SSOT). 매트릭스와 중복 카드 없음(별도 섹션).
-  //   기존 _matrixData.roles(7주체 순서) 기준으로 owner_role 매칭 그룹핑. 등록부가 비었거나 modules=[]면 정직 안내.
-  var AUTONOMY_META = {
-    auto:    { label: '🟢 auto',    cls: 'auto' },
-    semi:    { label: '🔵 semi',    cls: 'semi' },
-    mech:    { label: '🟣 mech',    cls: 'mech' },
-    propose: { label: '🔖 propose', cls: 'propose' },
-    manual:  { label: '⚪ manual',  cls: 'manual' }
-  };
-  function autonomyBadge(level){
-    var meta = AUTONOMY_META[level] || AUTONOMY_META.manual;
-    return '<span class="mod-badge ' + meta.cls + '">' + meta.label + '</span>';
-  }
-  function renderModuleStrip(reg){
-    var el = document.getElementById('mod-strip');
-    if(!el) return;
-    var mods = (reg && Array.isArray(reg.modules)) ? reg.modules : [];
-    var roles = (_matrixData && _matrixData.roles) || [];
-    if(!mods.length){
-      el.innerHTML = '<div class="mod-empty">등록부 모듈 없음(수렴 대기) · 정본: status/module_registry.json</div>';
-      return;
-    }
-    el.innerHTML = roles.map(function(role){
-      var mine = mods.filter(function(m){ return m && m.owner_role === role.id; });
-      var body = mine.length
-        ? mine.map(function(m){
-            var rev = (m.reversible === false) ? '<span class="mod-rev">⚠️ 비가역</span>' : '<span class="mod-rev">✅ 가역</span>';
-            return '<div class="mod-item">' + autonomyBadge(m.autonomy) + rev +
-                   '<div class="mod-feat">' + esc(m.feature || m.id || '') + '</div>' +
-                   (m.ai_free_fallback ? '<div class="mod-fallback">🤖 ' + esc(m.ai_free_fallback) + '</div>' : '') +
-                 '</div>';
-          }).join('')
-        : '<div class="mod-empty">등록 모듈 없음(수렴 대기)</div>';
-      return '<div class="mod-role"><div class="mod-role-h">' + esc(role.icon || '') + ' ' + esc(role.name || role.id) + '</div>' + body + '</div>';
-    }).join('');
   }
 
   // 🏷️ 정직 상태 배지(3종 단일 판정 · A3 인쇄 카드용 · 2026-07-04) — 신규 fetch 없음, 기존 _reachData만 사용.
@@ -1100,8 +961,7 @@
     gasRead('status/northstar_pending.json', RAW_BASE + 'status/northstar_pending.json').catch(function(){ return null; }),
     gasRead('ssot/incidents.json',        RAW_BASE + 'ssot/incidents.json').catch(function(){ return null; }),
     gasRead('status/northstar_reach.json', RAW_BASE + 'status/northstar_reach.json').catch(function(){ return null; }),
-    gasRead('ssot/canon_values.json',      RAW_BASE + 'ssot/canon_values.json').catch(function(){ return null; }),
-    gasRead('status/module_registry.json', RAW_BASE + 'status/module_registry.json').catch(function(){ return null; })
+    gasRead('ssot/canon_values.json',      RAW_BASE + 'ssot/canon_values.json').catch(function(){ return null; })
   ])
     .then(function(arr){
       _matrixData = arr[0];
@@ -1112,12 +972,10 @@
       _pendingByRole = computePending(arr[4]);
       _incidents = computeIncidents(arr[5]);
       _reachData = (arr[6] && arr[6].roles) || {};
-      _moduleRegistry = arr[8] || null;
       var canonMap = {};
       ((arr[7] && arr[7].values) || []).forEach(function(v){ if(v && v.key) canonMap[v.key] = v.value; });
       renderMatrix();
       renderVisionDynamic(canonMap);
-      renderModuleStrip(_moduleRegistry);
       renderEditBtn();
       initColResizers();
       buildControlBar();

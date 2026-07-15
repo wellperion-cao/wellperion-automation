@@ -277,6 +277,18 @@
     header.page-head h1{font-size:19px;}
     .routines{grid-template-columns:1fr;}
   }
+
+  /* ── 🔁 자율화 루프 5단계 (헌법한장에서 이관 · 2026-07-15) ── */
+  .loop-strip{display:flex; flex-wrap:wrap; align-items:stretch; gap:8px; margin:4px 0 8px;}
+  .loop-step{flex:1 1 150px; background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
+  .loop-step .lsnum{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--accent); color:#fff; font-size:11px; font-weight:800; margin-bottom:5px;}
+  .loop-step.feedback{border-color:rgba(240,198,116,0.4);}
+  .loop-step.feedback .lsnum{background:#f0c674; color:#221F20;}
+  .loop-step h4{font-size:12.5px; font-weight:700; margin-bottom:3px;}
+  .loop-step p{font-size:11px; color:var(--dim); line-height:1.4;}
+  .loop-arrow{display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:16px; flex:0 0 20px;}
+  .loop-feedback-note{margin:0 0 14px; font-size:11px; color:#f0c674; line-height:1.5;}
+  @media (max-width:640px){ .loop-strip{flex-direction:column;} .loop-arrow{display:none;} }
 </style>
 </head>
 <body>
@@ -674,6 +686,22 @@
     <div class="callout" style="margin-top:12px;">
       <strong>📄 설계 문서(정적)</strong> — 🟢=설계상 상시가동, 실측 아님. 실제 가동은 위 🤖 건강 점수판.
     </div>
+
+    <!-- ════ 🔁 자율화 루프 5단계 + 환류 (헌법한장에서 이관 · 닫힌 고리 · 2026-07-15) ════ -->
+    <h3 style="margin-top:20px;">🔁 자율화 루프 5단계 <span style="font-size:12px;font-weight:400;color:var(--dim);">닫힌 고리(환류 → 다음 루프 입력)</span></h3>
+    <p class="sec-note" style="margin:2px 0 8px;">근거: docs/superpowers/plans/2026-07-09-clevel-autonomous-execution-loop.md · 불변 전제는 <a href="헌법한장.html" style="color:var(--accent-soft);">🌟 헌법 › 공통 헌법</a> 참조</p>
+    <div class="loop-strip">
+      <div class="loop-step"><span class="lsnum">1</span><h4>모듈 등록부</h4><p>status/module_registry.json — 화면·알림·자율 루프의 단일 출처</p></div>
+      <div class="loop-arrow">→</div>
+      <div class="loop-step"><span class="lsnum">2</span><h4>프론트 카드</h4><p>헌법한장·자율현황 창이 등록부를 읽어 렌더(하드코딩 금지)</p></div>
+      <div class="loop-arrow">→</div>
+      <div class="loop-step"><span class="lsnum">3</span><h4>웰리 오케스트레이션</h4><p>가역 배 선별 → 담당 C레벨에 위임 → 실행(웰리 직접 실행 금지)</p></div>
+      <div class="loop-arrow">→</div>
+      <div class="loop-step"><span class="lsnum">4</span><h4>검증</h4><p>시크릿 크롬 라이브 실측 일치 확인(거짓 완료 0)</p></div>
+      <div class="loop-arrow">→</div>
+      <div class="loop-step feedback"><span class="lsnum">5</span><h4>환류</h4><p>결과·피드백을 다음 루프 입력으로 등록부에 되먹임</p></div>
+    </div>
+    <div class="loop-feedback-note">↩︎ ⑤ 환류가 ①로 되먹여 닫힌 고리를 이룬다 — 매 사이클 "이 검증을 코드·게이트로 굳힐 수 있나?" 자문(부트스트랩 이관).</div>
 
     <!-- ② 지금 돌고 있는 자동화 -->
     <h3>🟢 지금 돌고 있는 자동화 <span class="statchip static">📄 설명(정적)</span></h3>
