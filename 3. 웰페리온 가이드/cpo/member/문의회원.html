@@ -3666,7 +3666,14 @@ function lessonLoad(t) {
   // 배1037 D4: 캐시 즉시 렌더(AC2) + 미동기 큐 오버레이 → 백그라운드 재조회 갱신.
   var _lsCached = _lessonCacheLoad(_lsCacheKey);
   if (_lsCached && _lsCached.length) {
-    st.rows = WriteBuffer.applyOverlay(_lsCached.slice(), 'lesson');
+    // ★TDZ 방어(2026-07-15 시포 근본수리 · INC-강습문의 무한로딩): WriteBuffer는 스크립트 하단(7046행)에서
+    //   정의되나, 이 캐시-히트 경로는 부트스트랩 init() IIFE(4999행)가 페이지 로드 시점에 동기 호출한다
+    //   (switchFamily→lessonInit→lessonLoad). WriteBuffer 정의 이전이라 undefined인 채로 .applyOverlay
+    //   호출 시 TypeError 발생 → switchFamily의 방어 try/catch(aa3065d1)가 무음 흡수 → st.loaded=true만
+    //   남고 재조회 fetch가 영영 발사되지 않아 "불러오는 중…"에 무기한 고정(재조회 재시도 없음). 방금 성공
+    //   로드가 캐시(5분 TTL)에 남아있는 한 재발 확정(게이트 비번 입력 직후 reload가 전형 트리거). 존재가드로
+    //   즉시무해화 — WriteBuffer 미정의 시 오버레이 생략하고 원본 캐시로 렌더(다음 배경 재조회에서 오버레이 정상 재적용).
+    st.rows = (typeof WriteBuffer !== 'undefined') ? WriteBuffer.applyOverlay(_lsCached.slice(), 'lesson') : _lsCached.slice();
     st.rowsLoaded = true;
     lessonRenderChips(t); lessonRender(t); renderTodayActionPanel(); _lessonInqCardFallback(t);
   } else if (b) {
@@ -5985,7 +5992,8 @@ function loadDbData() {
   // 배1037 D4: 캐시 즉시 렌더(왕복 제거·AC2) + 미동기 큐 오버레이 → 백그라운드 재조회로 갱신.
   var _cached = _dbCacheLoad();
   if (_cached && _cached.length) {
-    dbRows = WriteBuffer.applyOverlay(_cached.slice(), 'member');
+    // ★TDZ 방어(2026-07-15 시포) — lessonLoad와 동일 근본원인(WriteBuffer 정의 전 부트스트랩 동기호출). 상세=lessonLoad 주석.
+    dbRows = (typeof WriteBuffer !== 'undefined') ? WriteBuffer.applyOverlay(_cached.slice(), 'member') : _cached.slice();
     dbRows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
     renderDbTable();
     _tapReady = true; renderTodayActionPanel();
