@@ -188,10 +188,27 @@ def _save_ledger(ledger_path: Path, ledger: dict) -> None:
 # ---------------------------------------------------------------------------
 # 텔레그램 전송
 # ---------------------------------------------------------------------------
-def _send(token: str, chat_id: str, text: str) -> bool:
-    data = urllib.parse.urlencode({
-        "chat_id": chat_id, "text": text, "disable_web_page_preview": "true",
-    }).encode("utf-8")
+def _instagram_preview_url(group: list[dict]) -> str:
+    """그룹 항목 중 channel에 '인스타' 포함 + post_url 있는 첫 항목의 post_url.
+    없으면 빈 문자열(미리보기 카드 생략)."""
+    for it in group:
+        channel = it.get("channel") or ""
+        url = (it.get("post_url") or "").strip()
+        if "인스타" in channel and url:
+            return url
+    return ""
+
+
+def _send(token: str, chat_id: str, text: str, preview_url: str = "") -> bool:
+    payload: dict[str, str] = {"chat_id": chat_id, "text": text}
+    if preview_url:
+        # 인스타그램 게시물 미리보기 카드를 본문 위 큰 이미지로 항상 ON (GM 요구·인스턴트 뷰)
+        payload["link_preview_options"] = json.dumps({
+            "url": preview_url,
+            "prefer_large_media": True,
+            "show_above_text": True,
+        })
+    data = urllib.parse.urlencode(payload).encode("utf-8")
     req = urllib.request.Request(
         f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
     with urllib.request.urlopen(req, timeout=10) as resp:
@@ -233,13 +250,16 @@ def send_publish_digest(
         if ledger.get(key) == h:
             continue  # 이미 같은 내용으로 발신됨 — 재스팸 방지
         msg = build_digest(group)
+        preview_url = _instagram_preview_url(group)
         if dry_run:
             print("[DRY-RUN] → 문의·컨택·등록 알림방 대상 (실전송 없음)")
             print(msg)
+            if preview_url:
+                print(f"[DRY-RUN] link_preview_options.url = {preview_url}")
             print("-" * 40)
             sent += 1
             continue  # dry-run 은 멱등 이력을 남기지 않는다(실제 발신 아님)
-        ok = _send(token, chat_id, msg)
+        ok = _send(token, chat_id, msg, preview_url=preview_url)
         if ok:
             ledger[key] = h
             dirty = True

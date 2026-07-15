@@ -121,10 +121,11 @@ def test_group_published_merges_5_channels_into_1_content():
 def test_sends_to_inquiry_chat_id_not_gm_channel(monkeypatch):
     captured = {}
 
-    def fake_send(token, chat_id, text):
+    def fake_send(token, chat_id, text, preview_url=""):
         captured["token"] = token
         captured["chat_id"] = chat_id
         captured["text"] = text
+        captured["preview_url"] = preview_url
         return True
 
     monkeypatch.setattr(pd, "_send", fake_send)
@@ -139,9 +140,78 @@ def test_sends_to_inquiry_chat_id_not_gm_channel(monkeypatch):
         assert sent == 1
         assert captured["chat_id"] == expected_chat_id
         assert captured["chat_id"] != gm_chat_id or not gm_chat_id, "GM 채널로 가면 안 됨"
+        # 인스타그램 미리보기 카드 URL이 그룹의 인스타 post_url로 전달됐는지
+        assert captured["preview_url"] == "https://www.instagram.com/p/Day7fIBEphf/"
     finally:
         if ledger_path.exists():
             ledger_path.unlink()
+
+
+# ---------------------------------------------------------------------------
+# ②-1 인스타그램 미리보기 카드 — _send payload에 link_preview_options 실제 실림
+# ---------------------------------------------------------------------------
+def test_send_payload_includes_instagram_link_preview_options(monkeypatch):
+    """_send()가 sendMessage 요청 바디에 link_preview_options(JSON)를 실어
+    인스타 게시물이 본문 위 큰 이미지 카드로 뜨게 하는지 (urlopen 자체를 가로채 검증)."""
+    import urllib.parse as _urlparse
+
+    captured_data = {}
+
+    class _FakeResp:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def fake_urlopen(req, timeout=10):
+        captured_data["body"] = _urlparse.parse_qs(req.data.decode("utf-8"))
+        return _FakeResp()
+
+    monkeypatch.setattr(pd.urllib.request, "urlopen", fake_urlopen)
+
+    ok = pd._send(
+        "FAKE_TOKEN", "12345", "본문 텍스트",
+        preview_url="https://www.instagram.com/p/Day7fIBEphf/",
+    )
+
+    assert ok is True
+    assert "link_preview_options" in captured_data["body"], "link_preview_options가 payload에 없음"
+    opts = json.loads(captured_data["body"]["link_preview_options"][0])
+    assert opts["url"] == "https://www.instagram.com/p/Day7fIBEphf/"
+    assert opts["prefer_large_media"] is True
+    assert opts["show_above_text"] is True
+    # 기존 disable_web_page_preview(미리보기 끄는 옵션)는 더 이상 실리지 않아야 함
+    assert "disable_web_page_preview" not in captured_data["body"]
+
+
+def test_send_payload_omits_link_preview_options_without_instagram_url(monkeypatch):
+    """인스타 URL이 없으면 link_preview_options를 생략하고 정상 발송(에러 없이)."""
+    import urllib.parse as _urlparse
+
+    captured_data = {}
+
+    class _FakeResp:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def fake_urlopen(req, timeout=10):
+        captured_data["body"] = _urlparse.parse_qs(req.data.decode("utf-8"))
+        return _FakeResp()
+
+    monkeypatch.setattr(pd.urllib.request, "urlopen", fake_urlopen)
+
+    ok = pd._send("FAKE_TOKEN", "12345", "본문 텍스트")
+
+    assert ok is True
+    assert "link_preview_options" not in captured_data["body"]
 
 
 # ---------------------------------------------------------------------------
@@ -171,7 +241,7 @@ def test_missing_token_logs_error_and_does_not_send(monkeypatch, capsys):
 def test_idempotent_second_call_sends_zero(monkeypatch):
     calls = []
 
-    def fake_send(token, chat_id, text):
+    def fake_send(token, chat_id, text, preview_url=""):
         calls.append(text)
         return True
 
