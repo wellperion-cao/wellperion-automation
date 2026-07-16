@@ -1438,5 +1438,19 @@
     "artifact": "fix(check): 거짓 '점검 미완' 독려 방지 — today_live 원장 글리치(제출됐는데 done=0) 시 영속시트 크로스체크로 침묵 (GM '점검했는데?'·시토) (CLI ad-hoc · 커밋 a2cae2f5)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a2cae2f59a75655470691031440cd52584395ea3"
+  },
+  {
+    "task_id": "COO-2026-07-16-ADHOC-52e18613",
+    "clevel": "coo",
+    "title": "[시우] reg_board 직원(pv) 전용 캐시 분리 — 사진 도입 속도 회귀 수정 (시우 1163)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-16",
+    "processed_at": "2026-07-16",
+    "ship_no": 1238,
+    "artifact": "- pv(사진 노출) 호출이 캐시 우회로 매번 ~4.4s → 별도 키 reg_board_staff_v1\n  로 캐시(45s)해 ~1.7s 회복(공개 캐시 히트와 동급)\n- 공개/직원 캐시 완전 분리 = 사진노출본이 공개 마스킹 캐시에 안 섞임\n- 쓰기 무효화 6곳을 _regBoardCacheClear_() 헬퍼로 통일(두 키 동시 remove)\n- 검증: 직원 사진 원본·이름 마스킹 유지 / 공개 '비공개' 유지 / 1.7~1.9s. GAS @49 (CLI ad-hoc · 커밋 52e18613)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "52e186136d0473cc5950275c7a97e470f04c42c1"
   }
 ]
