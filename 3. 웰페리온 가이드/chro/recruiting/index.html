@@ -111,6 +111,9 @@
   .dept.open .btn:hover{filter:brightness(1.06)}
   .dept.soon .btn{background:var(--cream); color:var(--soft); cursor:not-allowed; border:1px solid var(--line)}
   .dept.soon{opacity:.78}
+  .dept.closed .tag{background:var(--cream); color:var(--soft)}
+  .dept.closed .btn{background:var(--cream); color:var(--soft); cursor:not-allowed; border:1px solid var(--line)}
+  .dept.closed{opacity:.78}
 
   /* 마무리 CTA */
   .cta{max-width:980px; margin:46px auto 64px; padding:0 32px}
@@ -214,10 +217,10 @@
         <a class="btn" href="sauna.html" target="_blank" rel="noopener">남자사우나 주임 채용 ↗</a>
       </div>
 
-      <div class="dept open">
-        <div class="row"><h3>관리부</h3><span class="tag">● 채용중</span></div>
+      <div class="dept closed">
+        <div class="row"><h3>관리부</h3><span class="tag">마감</span></div>
         <p class="desc">회계·예산·총무 및 사내이사 의전·수행을 담당하는 조직입니다.</p>
-        <a class="btn" href="chauffeur.html" target="_blank" rel="noopener">사내이사 수행기사 채용 ↗</a>
+        <button class="btn" disabled>마감되었습니다</button>
       </div>
 
       <div class="dept open">
@@ -226,10 +229,10 @@
         <a class="btn" href="golfpro.html" target="_blank" rel="noopener">오전 골프 프로 채용 ↗</a>
       </div>
 
-      <div class="dept open">
-        <div class="row"><h3>시설부</h3><span class="tag">● 채용중</span></div>
+      <div class="dept closed">
+        <div class="row"><h3>시설부</h3><span class="tag">마감</span></div>
         <p class="desc">안전하고 쾌적한 시설 환경을 유지·관리하여 모두의 일상을 받칩니다.</p>
-        <a class="btn" href="parking.html" target="_blank" rel="noopener">주차관리자·발렛파킹 채용 ↗</a>
+        <button class="btn" disabled>마감되었습니다</button>
       </div>
 
     </div>

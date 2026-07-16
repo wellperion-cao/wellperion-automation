@@ -3540,15 +3540,48 @@ async function submitResign(){
       btn.disabled=false;btn.textContent="퇴사 처리 실행";return;
     }
     var parts=["• 임직원 명부: 퇴사 반영"];
-    parts.push(data.exitRecord?"• 퇴사 처리 DB: 레코드 생성":"• 퇴사 처리 DB: 실패 — "+(data.exitRecordMsg||""));
-    if(data.sheet&&data.sheet.attempted){
-      parts.push(data.sheet.ok?"• 매출보고서 시트: 현재근무자→퇴사자 이동 완료"
-                              :"• 매출보고서 시트: 실패 — "+(data.sheet.msg||""));
+    var exitOk=!!data.exitRecord;
+    parts.push(exitOk?"• 퇴사 처리 DB: 레코드 생성":"• 퇴사 처리 DB: 실패 — "+(data.exitRecordMsg||"원인 미상"));
+    var sheetAttempted=!!(data.sheet&&data.sheet.attempted);
+    var sheetOk=!sheetAttempted||!!data.sheet.ok;
+    if(sheetAttempted){
+      parts.push(sheetOk?"• 매출보고서 시트: 현재근무자→퇴사자 이동 완료"
+                        :"• 매출보고서 시트: 실패 — "+(data.sheet.msg||""));
     }else{
       parts.push("• 매출보고서 시트: 미연동 (시트는 수동 처리 필요)");
     }
+    // 서브스텝 AND 게이팅 — 퇴사 처리 DB·(시도된 경우)시트가 모두 성공해야만 "완료" 후보. 하나라도 실패면 초록 완료 표시 금지.
+    if(!exitOk||!sheetOk){
+      msg.className="modal-msg err";
+      msg.innerHTML="✗ "+esc(resignTarget.name)+" 퇴사 처리 — 일부 단계 실패(시스템 미반영)<br>"+parts.map(esc).join("<br>")+"<br>실패한 항목은 매니저 직접 확인이 필요합니다.";
+      btn.disabled=false;btn.textContent="퇴사 처리 실행";
+      return;
+    }
+    // 완료 표시 전 read 재독으로 실반영 확인(emp 재직상태·exit 레코드 연결) — 백엔드가 ok를 반환해도 시트 동기화 지연/실패가 있을 수 있음
+    msg.textContent="반영 확인 중…";
+    var verified=false,verifyErr="";
+    try{
+      var freshEmpRaw=await queryDB("emp");
+      var freshExitRaw=await queryDB("exit");
+      var freshEmp=extractResults(freshEmpRaw);
+      var freshExit=extractResults(freshExitRaw);
+      var empRow=freshEmp.find(function(e){return normId(e.url)===pageId;});
+      var empReflect=!empRow||empRow["재직 상태"]==="퇴사";
+      var exitReflect=freshExit.some(function(e){
+        return parseArr(e["연결 임직원"]).some(function(u){return normId(u)===pageId;});
+      });
+      verified=empReflect&&exitReflect;
+      if(verified){DB.emp=freshEmp;DB.exit=freshExit;saveCache("emp",freshEmp);saveCache("exit",freshExit);}
+      else verifyErr="시트에 반영된 상태를 아직 확인하지 못했습니다(동기화 지연 가능 — 잠시 후 ↻새로고침으로 재확인 요망).";
+    }catch(e){verifyErr="반영 확인 중 오류: "+((e&&e.message)||e);}
+    if(!verified){
+      msg.className="modal-msg err";
+      msg.innerHTML="⚠ "+esc(resignTarget.name)+" 퇴사 처리 요청은 전송됐으나 반영 확인 실패<br>"+parts.map(esc).join("<br>")+"<br>"+esc(verifyErr);
+      btn.disabled=true;btn.textContent="확인 필요 — 새로고침 후 재확인";
+      return;
+    }
     msg.className="modal-msg ok";
-    msg.innerHTML="✓ "+esc(data.name||resignTarget.name)+" 퇴사 처리 완료<br>"+parts.map(esc).join("<br>");
+    msg.innerHTML="✓ "+esc(data.name||resignTarget.name)+" 퇴사 처리 완료(반영 확인됨)<br>"+parts.map(esc).join("<br>");
     btn.textContent="완료";
     setTimeout(function(){closeResignModal();reloadData();},2600);
   }catch(e){
