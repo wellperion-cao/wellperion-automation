@@ -579,5 +579,19 @@
     "artifact": "M1 웹 승인(편집키 수정 후 정상)→발행엔진→공식 IG 발행 확인. 확인필요→발행완료 승격. (CLI ad-hoc · 커밋 b135ae6c)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b135ae6c391abb4f589e1319c1685bce4b60f094"
+  },
+  {
+    "task_id": "COO-2026-07-16-ADHOC-70199f89",
+    "clevel": "coo",
+    "title": "[시우] 현황 UX — 검색칸 + 완료 컬럼 접기 + 컬럼 내부 스크롤 (시우 1163)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-16",
+    "processed_at": "2026-07-16",
+    "ship_no": 1178,
+    "artifact": "- 🔍 검색칸: 이름·연락처·내용·장소·번호·담당 실시간 필터(전 컬럼)\n- ✅ 완료 컬럼 기본 접기(카운트+펼치기) → 누적 완료로 길어지던 스크롤 해소\n  · 검색 중엔 완료 자동 노출(결과 안 놓치게)\n- 컬럼 내부 스크롤(max-height 72vh)로 페이지 세로 폭주 방지\n- net-zero 버그수정: _render마다 board 리스너 중복부착 → 1회 위임(_wireBoard)\n  (검색 재렌더 시 상태변경 중복발송 위험 제거)\n- 라이브검증: 완료 26건 접힘/펼침, 검색 보온병3·여자사우나12, 콘솔0 (CLI ad-hoc · 커밋 70199f89)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "70199f89e94f6dca9ba0754110ec4f155e625610"
   }
 ]
