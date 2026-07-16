@@ -33,9 +33,11 @@
      ENG버튼)를 page-id-8394 한정으로 display:none — 로고 찝힘·겹침·위치어긋남 문제의 근원 자체를 제거.
      헤더가 사라지며 로고도 함께 사라지므로 히어로에 브랜드 표시를 되살림 — eyebrow "WELLPERION" 복원
      (이제 헤더 로고가 없어 중복 아님). 홈 이동은 하단 소셜바 '홈페이지' 아이콘이 대체.
-     히어로 배경을 흰색→연한 브랜드 베이지(#f5f0ea)로 전환, container-wrap의 예약 여백(데스크톱69px/
-     모바일118px, 실측)만큼 .hero-band에 음수 margin-top을 줘 베이지가 페이지 최상단(0px)까지 이어지게
-     함(다른 페이지 영향 0 — page-id-8394 스코프). 본문 카드(.type-card 등)는 흰색 유지해 대비.
+     히어로 배경을 흰색→연한 브랜드 베이지(#f5f0ea)로 전환. ★함정: 헤더를 display:none하면 테마 JS가
+     헤더 실측높이(0)에 맞춰 container-wrap의 상단 오프셋도 0으로 재계산(기존 29px데스크톱/78px모바일→
+     0으로 축소, 실측 확인) — 남는 예약 여백은 container-wrap 자체 padding-top 40px 뿐(양 브레이크포인트
+     동일). .hero-band에 margin-top:-40px(단일값, 미디어쿼리 불필요)를 줘 베이지가 페이지 최상단(0px)
+     까지 이어지게 함(다른 페이지 영향 0 — page-id-8394 스코프). 본문 카드(.type-card 등)는 흰색 유지해 대비.
      "1,000명 정원제" 안내를 하단→히어로 안(슬로건 바로 아래)으로 이관(중복 생성 아님 — 기존 하단
      .capacity 블록 삭제 후 이동). 수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
@@ -55,9 +57,9 @@ body.page-id-8394 #header-outer { display: none !important; }
 .wlp-inq a{text-decoration:none;color:inherit}
 
 /* ===== HERO — 밝은 브랜드 베이지(2026-07-16 GM 방향전환②: 헤더 숨김 + 배경 베이지 + 정원제 상단 이관) ===== */
-.wlp-inq .hero-band{background:#f5f0ea;margin-top:-69px;padding:64px 20px 30px}
+.wlp-inq .hero-band{background:#f5f0ea;margin-top:-40px;padding:64px 20px 30px}
 @media (max-width:1000px){
-  .wlp-inq .hero-band{margin-top:-118px;padding-top:56px}
+  .wlp-inq .hero-band{padding-top:56px}
 }
 .wlp-inq .hero-inner{max-width:520px;margin:0 auto;text-align:center}
 .wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin:0 0 14px}
