@@ -2302,6 +2302,26 @@ def _merged_unchecked_names(live: dict, shift: str) -> list[str]:
     return [str(n).strip() for n in names if str(n or "").strip()]
 
 
+def _support_sheet_activity_today(today: str) -> tuple[int, int]:
+    """영속 시트(monthly_report·dailySeries) 기준 '오늘' 실완료 수·제출 세션 수. (sumDone, sessionCount).
+    today_live(ScriptProperties 원장)가 실제 제출과 어긋나 0으로 비는 글리치를 판별하는 크로스체크용.
+    조회 실패=(0,0)(가드 미발동=기존 동작 유지). 2026-07-16 시토(잘못된 미완 독려 방지)."""
+    try:
+        resp = requests.get(
+            f"{SUPPORT_CHECK_API_URL}?action=monthly_report&dept=support&date={today}&_pv={int(time.time())}",
+            timeout=20, allow_redirects=True,
+        )
+        if resp.status_code == 200:
+            d = resp.json()
+            if d.get("ok"):
+                for row in (d.get("dailySeries") or []):
+                    if isinstance(row, dict) and str(row.get("date")) == today:
+                        return int(row.get("sumDone") or 0), int(row.get("sessionCount") or 0)
+    except Exception as e:
+        logger.warning(f"독려 글리치판별 monthly 조회 실패: {e}")
+    return 0, 0
+
+
 def _build_nudge_body(shift: str) -> str | None:
     """지원부 점검 회차(shift) 미완 시 독려 1줄 생성. shift ∈ {'pm','close'}.
 
@@ -2320,6 +2340,19 @@ def _build_nudge_body(shift: str) -> str | None:
     done = live.get(shift, 0)
     if total == 0 or done >= total:
         return None  # 완료/분모없음 → 침묵
+
+    # [2026-07-16 시토] today_live 글리치 가드 — today_live(ScriptProperties 원장)가 실제 제출과 어긋나 done=0으로
+    #   비는 사례 확인(영속 시트엔 실데이터 존재: 예 55/108·제출3). 이때 "미완 0/N" 독려는 거짓 → '점검 했는데?' 혼란.
+    #   회차 done==0인데 영속 시트(monthly)에 오늘 실완료·제출이 있으면 today_live 글리치로 보고 침묵(잘못된 독려 방지).
+    #   근본(today_live 원장 정합)은 시우 점검 GAS 영역 — 별도. 여기선 거짓 독려만 안전 차단.
+    if done == 0:
+        _sheet_done, _sheet_sessions = _support_sheet_activity_today(today)
+        if _sheet_done > 0 or _sheet_sessions > 0:
+            logger.info(
+                f"[독려:{shift}] today_live done=0 이나 영속시트 활동(완료 {_sheet_done}·제출 {_sheet_sessions}회) "
+                f"→ today_live 글리치 판단, 거짓 미완 독려 침묵"
+            )
+            return None
 
     g = live.get("byGender", {})
     m = g.get("m", {})
