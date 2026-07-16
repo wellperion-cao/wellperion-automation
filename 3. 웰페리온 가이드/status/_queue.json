@@ -1048,5 +1048,18 @@
     "artifact": "feat(cmo): 텔레그램 전역 발송 페이서 코어 — pace()+send() 프로세스간 429 근본차단 (배1198) (CLI ad-hoc · 커밋 12ec96a0)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "12ec96a0f5e458dff01b82e5f589994f80e9e21f"
+  },
+  {
+    "task_id": "CMO-2026-07-16-TELEGRAM-GLOBAL-PACING",
+    "clevel": "cmo",
+    "title": "[시모] 텔레그램 전역 발송 페이싱 — 429 플러드 근본차단(프로세스간 초당1건)",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-16",
+    "ship_no": 1211,
+    "module": "M3",
+    "note": "[2026-07-16 GM 지시·시모] 다이제스트가 07-15 셋업 후 한번도 도착못한 근본원인=여러 루틴이 한 봇토큰 버스트발송→429(연장페널티). 시모 전역 페이싱: tg_outbound_log.py pace()(파일락+마지막발송시각 프로세스간 최소간격)+send()(페이싱+429자가재시도+로깅) 코어 구현·검증PASS. publish_digest 페이싱 물림.",
+    "next": "발행런 버스트 발송원(ig_review_publish_watcher·send_review_card·publish_4channel·daily_scheduler) pace() 배선 후 실발행 e2e 429무발생 검증.",
+    "depends_on": ""
   }
 ]
