@@ -184,13 +184,14 @@
     "task_id": "NEXT-20260715-102240",
     "clevel": "cto",
     "title": "각 알림 방별 last-send 로그 집계 배선(하루정리 22:30·점검독려·문의 5분폴링 ⚪→🟢 승격) — 발송 로직 무변경 전제 검토",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "depends_on": "cto-alert-schedule-board",
     "from": "cto",
     "origin": "bridge",
     "enqueued_at": "2026-07-15T01:22:40Z",
     "ship_no": 1050,
-    "note": "[2026-07-16 시토 검토결과] 3건 발송기 실체 규명: 모두 예약작업 아님(daily_scheduler 상주루프 내부 함수 2건 + GAS 트리거 1건)→automation_health 부재라 ⚪. 성격: ①하루정리 22:30(3방 오케스트레이터)=무조건 매일발송 ②점검독려(run_nudge)=미완시에만·하루1회(state.json nudge_sent 마커) ③문의 5분폴링(GAS _notifyNewInquiries_)=신규시에만. 핵심: ②③은 조건부 발송이라 미발송=정상(점검완료/신규없음)→last-send 신선도로 🟢판정은 오측정(보드 억지초록금지 위반). ①만 last-send 유효하나 현재 logger만 남기고 읽을 아티팩트 없음. 결론: 순수 배선만으로 3건 🟢 승격 불가. GM 표기방식 결정 대기(A 생존표기/B 마커계측/C 현행유지)."
+    "note": "[2026-07-16 시토] GM 'A.생존 표기' 채택→구현. 자율현황 ②자동화에 조건부·상주 알림 미니표 신설(3건). 발송기 무변경·프론트만. 생존판정: 스케줄러 상주(하루정리·독려)=automation_health WellperionDailyScheduler / GAS(문의폴링)=Telegram-HealthCheck-1300. 조건부(독려·문의폴링)는 '안 보냄=정상' 명시. 억지초록 아님(🟢=엔진 생존·발송시각 아님 라벨명시). merge(45de51f0)로 누락됐던 3건 정직 복원.",
+    "updated_at": "2026-07-16T09:20:00Z"
   },
   {
     "task_id": "NEXT-20260715-153553",
