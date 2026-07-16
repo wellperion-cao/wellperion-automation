@@ -249,6 +249,74 @@ def _send(token: str, chat_id: str, text: str, preview_url: str = "") -> bool:
     return False
 
 
+def _first_slide_image(group: list[dict]) -> str:
+    """콘텐츠의 인스타그램 메인 1장(첫 슬라이드) 로컬 경로 — 없으면 ''.
+    IG URL link_preview는 텔레그램이 못 가져와(IG 차단) 429 → 실제 이미지 파일로 '1장 뷰' 구현."""
+    for it in group:
+        folder = (it.get("folder") or "").strip()
+        if not folder:
+            continue
+        base = re.sub(r"/output\([^)]*\)$", "", folder)
+        for sub in ("output(인스타그램)", "output(instagram)"):
+            d = ROOT / base / sub
+            try:
+                if d.is_dir():
+                    imgs = sorted(d.glob("post_*.jpg")) or sorted(d.glob("*.jpg"))
+                    if imgs:
+                        return str(imgs[0])
+            except Exception:
+                continue
+    return ""
+
+
+def _send_photo(token: str, chat_id: str, photo_path: str, caption: str) -> bool:
+    """인스타그램 메인 1장을 sendPhoto로 첨부 + 캡션(디제스트 본문). 페이싱 + 429 자가재시도.
+    GM 원안='메인 1장 뷰' — IG URL 프리뷰가 아니라 실제 이미지 업로드라 IG 차단과 무관하게 항상 뜬다."""
+    try:
+        with open(photo_path, "rb") as f:
+            photo_bytes = f.read()
+    except Exception:
+        return False
+    boundary = "----wpdigest" + os.urandom(8).hex()
+    fname = os.path.basename(photo_path) or "photo.jpg"
+
+    def _field(name: str, value: str) -> bytes:
+        return (f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n'
+                f'{value}\r\n').encode("utf-8")
+
+    body = (
+        _field("chat_id", str(chat_id))
+        + _field("caption", caption)
+        + (f'--{boundary}\r\nContent-Disposition: form-data; name="photo"; '
+           f'filename="{fname}"\r\nContent-Type: image/jpeg\r\n\r\n').encode("utf-8")
+        + photo_bytes + b"\r\n"
+        + f"--{boundary}--\r\n".encode("utf-8")
+    )
+    url = f"https://api.telegram.org/bot{token}/sendPhoto"
+    for attempt in range(6):
+        _tg_pace()
+        try:
+            req = urllib.request.Request(url, data=body, method="POST")
+            req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                return resp.status == 200
+        except urllib.error.HTTPError as ex:
+            if ex.code == 429 and attempt < 5:
+                ra = 3
+                try:
+                    ra = int(json.loads(ex.read().decode()).get("parameters", {}).get("retry_after", 3))
+                except Exception:
+                    pass
+                time.sleep(min(ra + 2 * (attempt + 1), 60))
+                continue
+            print(f"[digest] sendPhoto 실패 HTTP {ex.code}: {ex.reason}", file=sys.stderr)
+            return False
+        except Exception as ex:
+            print(f"[digest] sendPhoto 오류: {ex}", file=sys.stderr)
+            return False
+    return False
+
+
 def send_publish_digest(
     items: list[dict],
     dry_run: bool = False,
@@ -293,7 +361,13 @@ def send_publish_digest(
             print("-" * 40)
             sent += 1
             continue  # dry-run 은 멱등 이력을 남기지 않는다(실제 발신 아님)
-        ok = _send(token, chat_id, msg, preview_url=preview_url)
+        # GM 원안 '인스타 메인 1장 뷰' — 첫 슬라이드 이미지가 있으면 sendPhoto(캡션=디제스트),
+        # 없거나 캡션이 sendPhoto 한도(1024자) 초과면 텍스트 발송으로 폴백.
+        img = _first_slide_image(group)
+        if img and len(msg) <= 1024:
+            ok = _send_photo(token, chat_id, img, msg)
+        else:
+            ok = _send(token, chat_id, msg)
         if ok:
             ledger[key] = h
             dirty = True
