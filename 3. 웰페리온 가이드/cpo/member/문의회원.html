@@ -2446,24 +2446,34 @@ function _gzUrl_(ssId, gid) {
   // 캐시버스터(&_=Date.now()) — 저장 직후 새로고침 시 gviz 캐시로 옛 값이 보이는 것 방지. 2026-07-08 시포·GM.
   return 'https://docs.google.com/spreadsheets/d/' + ssId + '/gviz/tq?tqx=out:json&gid=' + gid + '&headers=1&_=' + Date.now();
 }
+// gviz 응답 텍스트 → 헤더 배열(trim) + 2D 값 배열 공통 파서(gid 조회·sheet명 조회 양쪽 재사용). 2026-07-16 시포·GM.
+function _gzParseGvizText_(text) {
+  var m = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
+  if (!m) throw new Error('gviz 응답 파싱 실패');
+  var json = JSON.parse(m[1]);
+  if (json.status !== 'ok') throw new Error('gviz status=' + json.status);
+  var cols = json.table.cols;
+  var headers = cols.map(function(c) { return String(c.label || '').trim(); });
+  var rows = (json.table.rows || []).map(function(row) {
+    var c = row.c || [];
+    return cols.map(function(col, j) { return _gzCellVal_(c[j], col.type); });
+  });
+  return { headers: headers, rows: rows };
+}
 // gviz JSON 언랩 → 헤더 배열(trim) + 2D 값 배열(GAS sh.getRange().getValues()와 동일 shape·datetime은 실제 Date 객체로 복원).
 function gvizFetchTable_(ssId, gid) {
   return fetch(_gzUrl_(ssId, gid)).then(function(r) {
     if (!r.ok) throw new Error('gviz HTTP ' + r.status);
     return r.text();
-  }).then(function(text) {
-    var m = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
-    if (!m) throw new Error('gviz 응답 파싱 실패');
-    var json = JSON.parse(m[1]);
-    if (json.status !== 'ok') throw new Error('gviz status=' + json.status);
-    var cols = json.table.cols;
-    var headers = cols.map(function(c) { return String(c.label || '').trim(); });
-    var rows = (json.table.rows || []).map(function(row) {
-      var c = row.c || [];
-      return cols.map(function(col, j) { return _gzCellVal_(c[j], col.type); });
-    });
-    return { headers: headers, rows: rows };
-  });
+  }).then(_gzParseGvizText_);
+}
+// gid 대신 탭명(sheet=)으로 조회 — 강습 메인SS 종목별 팀시트(수영·골프·스쿼시 등, gid 미상)용. 2026-07-16 시포·GM.
+function _gzFetchTableBySheetName_(ssId, sheetName) {
+  var url = 'https://docs.google.com/spreadsheets/d/' + ssId + '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent(sheetName) + '&headers=1&_=' + Date.now();
+  return fetch(url).then(function(r) {
+    if (!r.ok) throw new Error('gviz HTTP ' + r.status);
+    return r.text();
+  }).then(_gzParseGvizText_);
 }
 function _gzCellVal_(cell, colType) {
   if (!cell || cell.v === null || cell.v === undefined) return '';
@@ -3959,11 +3969,75 @@ function _lessonFindRow(t, rowIndex) {
   for (var i = 0; i < st.rows.length; i++) { if (st.rows[i].rowIndex === rowIndex) return st.rows[i]; }
   return null;
 }
-// flat 관리 엔트리 — 행단일 status/owner/contacts(GM flat L~P 모델). bySport(종목별) 분기 폐기(다종목 행은 종목간 값 공유·GM 수용). 배973 시포·GM 2026-07-14.
-// sportKey 인자는 시그니처 유지(호출부 불변) — flat 전환 후 무시됨.
+// ── 종목별 담당 정본 조회(오염 수리, 2026-07-16 시포·GM) ──────────────────────────────────────
+// 배경: 배973 flat 전환으로 복합 종목 행의 모든 줄이 row.owner(행 전체 공유값)를 그대로 보여
+// "다른 팀 담당이 복붙된 것처럼" 보이는 오염이 발생(GM 지적). 종목별 정확한 담당의 정본은 메인SS
+// (1b0XU1o…)의 종목별 팀시트(IMPORTRANGE 뷰) — 예: '수영'·'골프'·'스쿼시' 각 탭이 자기 팀 담당 컬럼
+// ('지정 강사'/'지정 P.T'/'지정 프로'/'지정 코치')을 독립 관리. gviz sheet= 실측(2026-07-16)으로 확정한
+// 실재 탭만 매핑 — '필라테스'·'WSC 필라테스'·'WSC 아쿠아'는 스키마가 달라(팀시트 패턴 불일치) 제외,
+// 매칭 실패 시 항상 flat row.owner로 폴백(데이터 손실 0·비파괴 — 저장 경로 무변경, 표시만 교정).
+var _lessonSportTabResolved_ = {};   // tabName -> { 전화digits: 담당 } (해석 완료된 것만 채움)
+var _lessonSportTabInflight_ = {};   // tabName -> true(중복 fetch 방지)
+function _lessonRowIsYouth_(row) {
+  return !!(row && (row.gid === GVIZ_LESSON_GID_YOUTH || row.gid === GVIZ_LESSON_GID_YOUTH_EN));
+}
+// 종목 세그먼트(원문) + 성인/유소년 → 메인SS 팀시트 탭명. 없으면 null(flat 폴백 유지). 2026-07-16 시포·GM.
+function _lessonSportTabName_(sportKey, isYouth) {
+  var s = String(sportKey || '');
+  if (/모자수영/.test(s)) return 'WSC 모자수영';                 // 유소년 전용(성인 탭 없음, 실측 확인)
+  if (/아쿠아/.test(s)) return '아쿠아';                          // WSC 변형 미확인(스키마 불일치) — 성인 탭만 신뢰
+  if (/수영/.test(s)) return isYouth ? 'WSC 수영' : '수영';
+  if (/P\.?T/i.test(s)) return isYouth ? 'WSC P.T' : 'P.T';
+  if (/골프/.test(s)) return isYouth ? 'WSC 골프' : '골프';
+  if (/스쿼시/.test(s)) return isYouth ? 'WSC 스쿼시' : '스쿼시';
+  if (/체조|트램폴린/.test(s)) return 'WSC 체조';                 // 유소년 전용(성인 탭 없음, 실측 확인)
+  return null;                                                    // 필라테스·뮤지컬팀·루프 매소드 등 = 신뢰 탭 없음
+}
+// 팀시트 fetch+파싱(전화digits→담당 맵) — 세션 1회·캐시. 실패해도 조용히 빈맵(폴백 유지, 렌더 블로킹 없음).
+function _lessonEnsureSportTabLoaded_(tabName) {
+  if (_lessonSportTabResolved_[tabName] || _lessonSportTabInflight_[tabName]) return;
+  _lessonSportTabInflight_[tabName] = true;
+  _gzFetchTableBySheetName_(GVIZ_LESSON_SS_ID, tabName).then(function(t) {
+    var iPhone = _gzFindCol_(t.headers, ['휴대폰', '연락처', '전화']);
+    var iOwner = -1;
+    for (var i = 0; i < t.headers.length; i++) { if (String(t.headers[i] || '').indexOf('지정') === 0) { iOwner = i; break; } }
+    var map = {};
+    if (iPhone >= 0 && iOwner >= 0) {
+      t.rows.forEach(function(row) {
+        var digits = String(row[iPhone] || '').replace(/\D/g, '');
+        var owner = String(row[iOwner] || '').trim();
+        if (digits && owner) map[digits] = owner;   // 동일 전화 중복행 = 시트상 마지막 값
+      });
+    }
+    _lessonSportTabResolved_[tabName] = map;
+  }).catch(function() {
+    _lessonSportTabResolved_[tabName] = {};   // 실패 = 빈맵(폴백 유지). 새로고침 시 재시도.
+  }).then(function() {
+    delete _lessonSportTabInflight_[tabName];
+    // stale-while-revalidate: 도착 후 현재 로드된 강습 목록 재렌더(담당만 정확값으로 교체, 검색/필터 상태 보존)
+    ['adult', 'youth'].forEach(function(tt) {
+      var st = _lessonState[tt];
+      if (st && st.rowsLoaded) { lessonRenderChips(tt); lessonRender(tt); lessonLossRender(tt); lessonWaitRender(tt); }
+    });
+  });
+}
+// flat 관리 엔트리 — status/contacts는 행단일(GM flat 모델, 배973) 그대로. owner만 종목탭 정본으로 교정(위 설명).
+// sportKey 인자는 시그니처 유지(호출부 불변).
 function _lessonSportMgmt(row, sportKey) {
   if (!row) return { status: '', owner: '', contacts: [] };
-  return { status: row.status || '', owner: row.owner || '', contacts: row.contacts || [] };
+  var owner = row.owner || '';
+  var tabName = _lessonSportTabName_(sportKey, _lessonRowIsYouth_(row));
+  if (tabName) {
+    var map = _lessonSportTabResolved_[tabName];
+    if (map) {
+      var digits = String(row.phone || '').replace(/\D/g, '');
+      var hit = digits && map[digits];
+      if (hit) owner = hit;   // 종목탭 정본 매칭 성공 시에만 교체 — 미스매치는 flat 폴백 그대로
+    } else {
+      _lessonEnsureSportTabLoaded_(tabName);   // 미로딩 — 백그라운드 시작, 이번 렌더는 flat 표시(블로킹 없음)
+    }
+  }
+  return { status: row.status || '', owner: owner, contacts: row.contacts || [] };
 }
 // 저장 성공 후 로컬 반영 — 항상 행단일 필드(flat 모델). 백엔드 lesson_inquiry_update가 body.sport='' → row-level(flat L~P) 경로로 저장. 배973 시포·GM 2026-07-14.
 function _lessonApplyLocalMgmt(row, sportKey, patch) {
