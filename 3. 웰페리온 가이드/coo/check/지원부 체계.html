@@ -4564,8 +4564,7 @@ async function sendTelegramRound(date,round,submitter,gender){
   const _durTxt=(_dur!=null)?_dur+'분':'미측정';
   let msg=`[지원부 체계 점검 ${rdef.name} ${rdef.time} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${escapeHTML(submitter)}\n근무자: ${escapeHTML(duty)||'-'}\n소요시간: ${_durTxt}\n완료: ${done}/${total} (${pct}%)`;
   if(issues.length)msg+=`\n\n이슈 ${issues.length}건:\n${issues.join('\n')}`;
-  /* 점검 페이지 URL → 클릭 가능한 하이퍼링크 '링크'로 표기(GM 2026-07-10 시토). 서버 sendMessage parse_mode:'HTML'과 짝. */
-  msg+=`\n\n점검 페이지: <a href="${escapeHTML(link)}">링크</a>`;
+  /* 점검관리 방 알림의 '점검 페이지: 링크' 라인 제거 — GM 2026-07-16(미노출 요청). link 변수는 아래 pageLink 하위호환용으로만 유지. */
   try{
     await fetch(API_URL,{method:'POST',redirect:'follow',
       headers:{'Content-Type':'text/plain'},

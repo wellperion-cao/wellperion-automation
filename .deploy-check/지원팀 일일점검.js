@@ -1993,7 +1993,7 @@ function handleNotifyRound(body) {
       '완료율 ' + pct + '%',
       '이슈: ' + _htmlEscape(issueText)
     ];
-    if (body.pageLink) lines.push('점검 페이지: <a href="' + _htmlEscape(String(body.pageLink)) + '">링크</a>');
+    // '점검 페이지: 링크' 라인 제거 — GM 2026-07-16(점검관리 방 미노출). (프론트 message 경로가 정본, 이 폴백도 정합 유지)
     msg = lines.join('\n');
   }
   try {
