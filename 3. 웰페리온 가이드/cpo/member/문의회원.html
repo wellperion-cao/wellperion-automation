@@ -1182,16 +1182,16 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
        (표시 전용, MutationObserver로 동기, CPO-2026-07-14-LESSON-4CARD 원 로직 무변경). 강습 family에서만 노출
        (switchFamily가 display 토글). 대기자=진행상태"대기" 버킷(배973) 그대로. ══ -->
   <div class="dash-grid" id="lessonComboBoard" style="display:none">
-    <a class="dash-card" data-kind="inq" id="sumNewCardLesson" href="javascript:void(0)" onclick="heroCardClick('new')">
+    <a class="dash-card" data-kind="inq" data-lcard="inq" id="sumNewCardLesson" href="javascript:void(0)" onclick="heroCardClick('new')">
       <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">🆕 새 문의</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b class="lead" id="sumNewLessonAdult">–</b> 명</span></div>
         <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="sumNewLessonYouth">–</b> 명</span></div>
       </div>
     </a>
-    <!-- 신규 등록 현황 = 등록 전용 목록이 따로 없음(강습은 회원원장=SUC로 등록완료가 즉시 편입) — 클릭 시 가장 가까운
-         기존 목적지인 "강습 회원 관리"(mem)로 라우팅. 2026-07-15 GM 지시(카드 클릭 라우팅 배선) — 신규 화면 없음. -->
-    <a class="dash-card" data-kind="reg" href="javascript:void(0)" onclick="_lessonComboClick('mem')">
+    <!-- 신규 등록 현황 = 강습 등록 원장(lesson_registry_list) 일/월/연 전용 뷰(lessonPane_{t}_reg)로 라우팅 — 전체명단(mem)과
+         분리. 2026-07-16 버그수리(전체명단 mem과 혼동+하이라이트 오배선 해소). -->
+    <a class="dash-card" data-kind="reg" data-lcard="reg" href="javascript:void(0)" onclick="_lessonComboClick('reg')">
       <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">신규 등록 현황</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboRegAdult">–</b> 명</span></div>
@@ -1745,6 +1745,28 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         </div>
       </div>
     </div>
+
+    <!-- sub-pane: 신규 등록 현황(일/월/연) — 2026-07-16 버그수리. 기존 lessonRegistryLoad/_lessonRegistryRender/
+         _lessonRegistryChips/_lessonFetchRegistry 재사용(신규 GAS 없음). -->
+    <div id="lessonPane_adult_reg" class="lesson-subpane">
+      <div class="info-box accent" style="margin-bottom:14px"><strong>성인 강습 등록 현황</strong> — 등록원장 기준 신규 등록 명단(등록일 범위별).</div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🆕</span>강습 등록 현황
+          <span id="lessonRegStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+          <button class="btn-refresh" onclick="lessonRegSetRange('adult', _lessonState['adult'].regRange||'day')" style="margin-left:auto">새로고침</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button type="button" id="lessonRegBtnDay_adult"   class="btn-query lreg-range" data-range="day"   onclick="lessonRegSetRange('adult','day')"   style="padding:6px 14px;font-size:12px">일</button>
+          <button type="button" id="lessonRegBtnMonth_adult" class="btn-query lreg-range" data-range="month" onclick="lessonRegSetRange('adult','month')" style="padding:6px 14px;font-size:12px">월</button>
+          <button type="button" id="lessonRegBtnYear_adult"  class="btn-query lreg-range" data-range="year"  onclick="lessonRegSetRange('adult','year')"  style="padding:6px 14px;font-size:12px">연</button>
+        </div>
+        <div id="lessonRegChips_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="reg-table-wrap"><table class="reg-table">
+          <thead><tr><th style="min-width:90px">등록일</th><th style="min-width:90px">종목</th><th class="left" style="min-width:70px">이름</th><th style="min-width:120px">연락처</th><th style="min-width:80px">상태</th></tr></thead>
+          <tbody id="lessonRegBody_adult"><tr><td colspan="5"><div class="empty-state"><div class="empty-state-title">범위를 선택하세요</div></div></td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
   </div>
 
   <!-- ══════════════════════════════ 유형: 유소년 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
@@ -1891,6 +1913,28 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- sub-pane: 신규 등록 현황(일/월/연) — 2026-07-16 버그수리. 기존 lessonRegistryLoad/_lessonRegistryRender/
+         _lessonRegistryChips/_lessonFetchRegistry 재사용(신규 GAS 없음). -->
+    <div id="lessonPane_youth_reg" class="lesson-subpane">
+      <div class="info-box accent" style="margin-bottom:14px"><strong>유소년 강습 등록 현황</strong> — 등록원장 기준 신규 등록 명단(등록일 범위별).</div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🆕</span>강습 등록 현황
+          <span id="lessonRegStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
+          <button class="btn-refresh" onclick="lessonRegSetRange('youth', _lessonState['youth'].regRange||'day')" style="margin-left:auto">새로고침</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button type="button" id="lessonRegBtnDay_youth"   class="btn-query lreg-range" data-range="day"   onclick="lessonRegSetRange('youth','day')"   style="padding:6px 14px;font-size:12px">일</button>
+          <button type="button" id="lessonRegBtnMonth_youth" class="btn-query lreg-range" data-range="month" onclick="lessonRegSetRange('youth','month')" style="padding:6px 14px;font-size:12px">월</button>
+          <button type="button" id="lessonRegBtnYear_youth"  class="btn-query lreg-range" data-range="year"  onclick="lessonRegSetRange('youth','year')"  style="padding:6px 14px;font-size:12px">연</button>
+        </div>
+        <div id="lessonRegChips_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="reg-table-wrap"><table class="reg-table">
+          <thead><tr><th style="min-width:90px">등록일</th><th style="min-width:90px">종목</th><th class="left" style="min-width:70px">이름</th><th style="min-width:120px">연락처</th><th style="min-width:80px">상태</th></tr></thead>
+          <tbody id="lessonRegBody_youth"><tr><td colspan="5"><div class="empty-state"><div class="empty-state-title">범위를 선택하세요</div></div></td></tr></tbody>
+        </table></div>
       </div>
     </div>
   </div>
@@ -3623,6 +3667,9 @@ function _lessonComboClick(card) {
   var t = (youthChip && youthChip.classList.contains('active')) ? 'youth' : 'adult';
   switchType(t === 'youth' ? 'lessonYouth' : 'lessonAdult');   // 현재 탭 유지/전환(이미 해당 탭이면 사실상 no-op)
   lessonSwitchCard(t, card);   // switchType 내부가 카드를 'inq'로 되돌리므로, 실제 요청 카드로 다시 전환
+  // 클릭 피드백(스크롤 이동) — "새 문의"처럼 기본 활성 페인이라 변화가 안 보이는 카드도 눈에 띄게. 2026-07-16 버그수리.
+  var _p = document.getElementById(_lessonPaneId(t));
+  if (_p && _p.scrollIntoView) _p.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* 강습 대시카드 전환(문의/등록/회원) — 멤버십 switchTab 와 독립(id 충돌 회피). 2026-06-27 시포. */
@@ -3645,6 +3692,7 @@ function lessonSwitchCard(t, card) {
   if (card === 'loss') { lessonLossRender(t); }                    // LOSS 회원 관리 — 문의 rows 중 status=LOSS 필터(별도 fetch 없음)
   if (card === 'wait') { lessonWaitRender(t); }                    // 대기자 회원 관리 — status=대기 필터
   if (card === 'mem' && !st.memLoaded) { lessonRegLoad(t); }        // 강습 회원 관리(전체 roster)
+  if (card === 'reg') { lessonRegSetRange(t, st.regRange || 'day'); }  // 신규 등록 현황(일/월/연) — 2026-07-16 버그수리
 }
 
 function lessonInit(t) {
@@ -4179,7 +4227,7 @@ function lessonRegistryLoad(t) {
 }
 
 function _lessonRegRow(title, desc) {
-  return '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
+  return '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
     '<div class="empty-state-title">' + esc(title) + '</div>' +
     '<div class="empty-state-desc">' + esc(desc) + '</div></div></td></tr>';
 }
@@ -4215,10 +4263,11 @@ function _lessonRegistryRender(t) {
   var st = _lessonState[t];
   var rows = st.registry || [];
   if (st.regSport) rows = rows.filter(function(r){ return String(r.종목 || '기타').trim() === st.regSport; });
-  if (!rows.length) { tbody.innerHTML = _lessonRegRow('오늘 등록 없음', '오늘 새로 등록된 회원이 없습니다.'); return; }
+  if (!rows.length) { tbody.innerHTML = _lessonRegRow('등록 없음', '선택한 기간에 등록한 회원이 없습니다.'); return; }
   var html = '';
   rows.forEach(function(r){
     html += '<tr>' +
+      '<td style="font-size:12px;color:var(--dim)">' + esc(r.등록일 || r.타임스탬프 || '—') + '</td>' +
       '<td style="font-size:12px">' + esc(r.종목 || '—') + '</td>' +
       '<td class="left" style="font-weight:700">' + esc(r.이름 || '—') + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(r.전화 || '—') + '</td>' +
@@ -4226,6 +4275,49 @@ function _lessonRegistryRender(t) {
     '</tr>';
   });
   tbody.innerHTML = html;
+}
+
+// 신규 등록 현황(일/월/연) — 카드2 전용 뷰. 기존 _lessonFetchRegistry(action=lesson_registry_list, from/to 지원)만
+// 재사용, 신규 GAS 액션 없음. 2026-07-16 버그수리(전체명단 mem과 분리).
+function lessonRegSetRange(t, mode) {
+  var st = _lessonState[t];
+  if (!st) return;
+  if (mode !== 'month' && mode !== 'year') mode = 'day';
+  st.regRange = mode;
+  st.regLoaded = true;
+  var now = new Date();
+  var from, to;
+  if (mode === 'month') {
+    from = _mdashYmd(new Date(now.getFullYear(), now.getMonth(), 1));
+    to = _mdashYmd(now);
+  } else if (mode === 'year') {
+    from = _mdashYmd(new Date(now.getFullYear(), 0, 1));
+    to = _mdashYmd(now);
+  } else {
+    from = to = _mdashYmd(now);
+  }
+  var TEAL_BG = 'var(--teal-bg)', TEAL_C = 'var(--teal)', TEAL_BD = 'var(--teal-border)';
+  var ACC_BG = 'var(--accent-bg)', ACC_C = 'var(--accent)', ACC_BD = 'var(--accent-border)';
+  document.querySelectorAll('#lessonPane_' + t + '_reg .lreg-range').forEach(function(b){
+    var active = (b.getAttribute('data-range') === mode);
+    b.style.background = active ? TEAL_BG : ACC_BG;
+    b.style.color = active ? TEAL_C : ACC_C;
+    b.style.borderColor = active ? TEAL_BD : ACC_BD;
+  });
+  var b = document.getElementById('lessonRegBody_' + t);
+  if (b) b.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="loading-spinner"></div>' +
+    '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
+  var reqId = (st._regReqId || 0) + 1;   // 범위 빠른전환 시 느린 응답이 최신 선택을 덮어쓰는 경합 방지(stale-response guard)
+  st._regReqId = reqId;
+  _lessonFetchRegistry(st.type, from, to, function (d) {
+    if (st._regReqId !== reqId) return;   // 그 사이 다른 범위가 선택됨 — 이 응답은 폐기
+    st.registry = (d && d.data) || [];
+    _lessonRegistryChips(t);
+    _lessonRegistryRender(t);
+    var rs = document.getElementById('lessonRegStatLine_' + t);
+    if (rs) rs.textContent = ({ day: '오늘', month: '이번달', year: '올해' }[mode] || '') +
+      ' 등록 ' + ((d && d.count) != null ? d.count : st.registry.length) + '명';
+  });
 }
 
 // 종목 버킷 필터칩(roster.sport=표준 종목명) — reg·mem 공용(kind로 필터 상태·컨테이너 분기).
