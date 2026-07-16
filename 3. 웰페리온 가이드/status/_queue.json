@@ -408,5 +408,19 @@
     "artifact": "- 6종 칸반 위 별도 습득물 섹션 추가 (GM 선택 A안)\n- lf_list(전 상태) 소비: 게시중=사진 썸네일 카드, 게시중/수령완료 카운트\n- 상태체계(게시중/수령완료/철회)가 칸반(접수/처리중/완료)과 달라 안 섞음\n- 읽기 전용 반영 — 수령·철회는 기존 등록·관리/갤러리 페이지 유지(링크만)\n- 미래 JWT 대비 wp_access_token key 방어적 동봉\n- 라이브검증: 게시중 1건(LF-5) 카드·썸네일 렌더, 칸반 회귀0, 콘솔0 (CLI ad-hoc · 커밋 beaff691)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "beaff691444f50e5c6a07ca2b062ffc30cfe6841"
+  },
+  {
+    "task_id": "CTO-2026-07-16-ADHOC-bf75538b",
+    "clevel": "cto",
+    "title": "[시토] 자율현황 조건부·상주 알림 생존 표기 미니표 (배1050·GM 'A')",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-16",
+    "processed_at": "2026-07-16",
+    "ship_no": 1166,
+    "artifact": "- 문제: 하루정리22:30·문의5분폴링·점검독려 3건은 daily_scheduler 상주루프/GAS\n  트리거라 예약작업 automation_health가 없어 last-send로는 ⚪, merge(45de51f0)로 누락\n- 핵심: 독려·문의폴링은 조건부(미완/신규 시만) 발송 → 미발송=정상.\n  last-send 신선도 판정은 오측정 → 발사 엔진 '생존'만 정직 표기(GM 'A.생존 표기')\n- 구현: 📡 모듈 보고 현황 뒤 🔔조건부·상주 알림 미니표(읽기전용). 발송기 무변경.\n  생존원=WellperionDailySch (CLI ad-hoc · 커밋 bf75538b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "bf75538b12fddbbc06529b7cbc9f332adf933d36"
   }
 ]
