@@ -1070,72 +1070,25 @@
       }).catch(function(){ /* "—" 유지 */ });
     })();
 
-    // 강습 문의 관리 — 성인+유소년 gviz 합산, 올해 기준 (2026-07-09 신규연결)
-    // 소스: 강습 스프레드시트(1b0XU1) 성인 gid 111889422 + 유소년 gid 268994754 — 응답시트 자체가 연도별 스코프.
-    // 참고: cpo/member/문의회원.html gvizFetchTable_/gvizLessonRows_/_gzLessonScopeFilter_ 패턴 이식(읽기전용, 필요한 count만).
+    // 강습 문의 관리 — 성인+유소년 GAS lesson_stats 합산, 올해 기준 (2026-07-16 gviz 숨김행 감사 후 GAS 전환)
+    // ★2026-07-16 실측 대조: gviz(성인 gid 111889422 + 유소년 gid 268994754) 합계 1,149건 vs
+    //   GAS lesson_inquiry_list/lesson_stats(scope=year 기본) 합계 1,161건 — 12건(성인4+유소년8) 누락 확인.
+    //   문의회원.html 목록에서 이미 발생했던 것과 동일 원인(시트 필터/숨김행이 gviz tq에 반영)의 소규모 재현.
+    //   소스: cpo/member/문의회원.html §1 KPI가 쓰는 동일 GAS 액션(lesson_stats, type=성인강습/유소년강습,
+    //   scope 미지정=연도 스코프)으로 통일 — gviz 어댑터 전량 제거(사문화 대비 원본은 git 이력으로 롤백 가능).
     (function loadLessonInqKpi(){
-      var SS_ID = '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw';
-      var GID_ADULT = 111889422;
-      var GID_YOUTH = 268994754;
+      var SURVEY_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
       function set(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
-      function gvizUrl(gid){ return 'https://docs.google.com/spreadsheets/d/' + SS_ID + '/gviz/tq?tqx=out:json&gid=' + gid + '&headers=1&_=' + Date.now(); }
-      function findCol(headers, keys) {
-        for (var i = 0; i < headers.length; i++) {
-          var h = String(headers[i] || '');
-          for (var k = 0; k < keys.length; k++) { if (h.indexOf(keys[k]) >= 0) return i; }
-        }
-        return -1;
-      }
-      function cellVal(cell, colType) {
-        if (!cell || cell.v === null || cell.v === undefined) return '';
-        if (colType === 'date' || colType === 'datetime') {
-          var m = String(cell.v).match(/Date\((\d+),(\d+),(\d+)/);
-          if (m) return new Date(+m[1], +m[2], +m[3]);
-          return cell.f || '';
-        }
-        return cell.v;
-      }
-      function fetchTable(gid) {
-        return fetch(gvizUrl(gid)).then(function(r){ return r.text(); }).then(function(text){
-          var m = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
-          if (!m) throw new Error('gviz 파싱 실패');
-          var json = JSON.parse(m[1]);
-          if (json.status !== 'ok') throw new Error('gviz status=' + json.status);
-          var cols = json.table.cols;
-          var headers = cols.map(function(c){ return String(c.label || '').trim(); });
-          var rows = (json.table.rows || []).map(function(row){
-            var c = row.c || [];
-            return cols.map(function(col, j){ return cellVal(c[j], col.type); });
+      function fetchStats(type) {
+        return fetch(SURVEY_URL + '?action=lesson_stats&type=' + encodeURIComponent(type) + '&_pv=' + Date.now(), { redirect:'follow' })
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if (!d || !d.ok) throw new Error('lesson_stats 실패');
+            return { total: d.total || 0, month: d.thisMonth || 0 };
           });
-          return { headers: headers, rows: rows };
-        });
       }
-      // 이름/전화 중 하나라도 있는 행만 카운트(빈 행 제외) — 타임스탬프 연도 식별 가능하면 올해만, 불명확하면 안전하게 포함.
-      // 올해 누적(total) + 이번달(month) 동시 산출 — 2026-07-10 GM 지시(문의&등록 카드 누적+이번달 통일).
-      function countThisYear(t) {
-        var iTs    = findCol(t.headers, ['타임스탬프', '접수일', '날짜']);
-        var iName  = findCol(t.headers, ['성함', '이름']);
-        var iPhone = findCol(t.headers, ['연락처', '전화', '휴대폰']);
-        var yr = String(new Date().getFullYear());
-        var ym = yr + '-' + ('0' + (new Date().getMonth() + 1)).slice(-2);
-        var total = 0, month = 0;
-        for (var r = 0; r < t.rows.length; r++) {
-          var row = t.rows[r];
-          var hasName  = iName  >= 0 && row[iName];
-          var hasPhone = iPhone >= 0 && row[iPhone];
-          if (!hasName && !hasPhone) continue;
-          var ts = iTs >= 0 ? row[iTs] : '';
-          var y = (ts instanceof Date) ? String(ts.getFullYear()) : String(ts || '').slice(0, 4);
-          if (/^\d{4}$/.test(y) && y !== yr) continue;
-          total++;
-          var rowYm = (ts instanceof Date) ? (ts.getFullYear() + '-' + ('0' + (ts.getMonth() + 1)).slice(-2)) : String(ts || '').slice(0, 7);
-          if (rowYm === ym) month++;
-        }
-        return { total: total, month: month };
-      }
-      Promise.all([fetchTable(GID_ADULT), fetchTable(GID_YOUTH)]).then(function(results){
-        var adult = countThisYear(results[0]);
-        var youth = countThisYear(results[1]);
+      Promise.all([fetchStats('성인강습'), fetchStats('유소년강습')]).then(function(results){
+        var adult = results[0], youth = results[1];
         set('kpiLessonInqTotal', (adult.total + youth.total).toLocaleString());
         set('kpiLessonInqMonth', adult.month + youth.month);
         set('kpiLessonInqAdultMonth', adult.month);

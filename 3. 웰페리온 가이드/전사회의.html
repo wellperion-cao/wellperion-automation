@@ -325,8 +325,13 @@
   var TARGETS_PATH = 'status/sales_targets.json';
   var SALES_SHEET = '18VRvDEYQ7LfaPaHmXROBpIVmYtjqZGrYie75JZnRKDA';
   var SALES_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + SALES_SHEET + '/gviz/tq?tqx=out:json';
+  // ★2026-07-16 gviz 숨김행 감사(확인만): 이 시트는 CFO 매출지출현황.html SALES_GVIZ와 동일(2026-07-16 실측 대조 —
+  //   gviz vs export CSV 행수·부서수·금액 완전 일치, 누락 없음). 여기선 운영부(멤버십) 베이스맵으로만 쓰이고
+  //   강습팀 매출은 이미 GAS team_sales_h1(위 L11 주석)로 완전 대체됨 — 안전 확인, 변경 불필요.
   var OPS_SHEET = '1gCQNny8TDls5SjrtMkINu4HCltvFkoXmkTeXO_c3q58';
   var OPS_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + OPS_SHEET + '/gviz/tq?tqx=out:json&gid=195790960';
+  // ★확인만: OPS_GVIZ(GM 개인시트)는 export?format=csv가 로그인 리다이렉트로 막혀 CSV 대조 불가(gviz 공개읽기만 허용).
+  //   숨김행 유무 독립검증 불가 — 무근거 변경 금지 원칙에 따라 기존 "정본(이미 정확)" 상태 유지, 코드 변경 없음.
 
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmtWon(n){

@@ -1048,6 +1048,10 @@
   // 지출 인건비 = 인건비 시트(부서·강사×월) 전 행 합(강사 인건비 + 운영부 인건비). CFO 페이지 GVIZ와 동일 소스.
   var LABOR_SHEET = '1uAmZXX0GbiDImORxEwnDFm4_C-r0W43s-_tV_cPq9lE';
   var LABOR_GVIZ  = 'https://docs.google.com/spreadsheets/d/' + LABOR_SHEET + '/gviz/tq?tqx=out:json';
+  // ★2026-07-16 gviz 숨김행 감사(확인만): SALES_GVIZ/LABOR_GVIZ 모두 CFO 매출지출현황.html과 동일 시트 —
+  //   2026-07-16 실측 대조(gviz vs export CSV) 행수·부서수 완전 일치, 누락 없음(안전 확인). 이 페이지는 이미
+  //   두 값 모두 GAS(sales_dept/proc_summary) 정본을 우선하고 gviz는 폴백 베이스로만 쓰는 구조(위 L1042·L1049
+  //   주석)라 gviz 숨김행 위험 자체가 낮게 설계돼 있었음 — 변경 불필요.
   // 구매성(PROC) = CFO 매출현황 페이지와 동일 GAS(action=proc_summary) 실시간 직접 조회로 교체(2026-07-03).
   // ⚠️ 진단(2026-07-03): 기존엔 아래 스냅샷을 하드코딩 상수로 고정해뒀었는데, 라이브 proc_summary와 대조하니 4월·6월 값이 그새 갱신돼 있었고
   //   (예: 운영부 6월 스냅샷 -39,060원 vs 라이브 1,659,740원 · 시설 6월 스냅샷 11,081,390원 vs 라이브 14,870,390원 · "기타" 부서는 스냅샷에 아예 없음)

@@ -341,11 +341,18 @@ var GATE_PW="wellperion!@1202";
 var PROC_API="https://script.google.com/macros/s/AKfycbxUAQ3DefJt13z5Bsz5KlGw6BwS2lDeLgHDMeTHjifLYGuk1lNyEpARYQ20XcjJXNj5/exec";
 var SHEET_ID="1uAmZXX0GbiDImORxEwnDFm4_C-r0W43s-_tV_cPq9lE";
 var GVIZ="https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:json";
+/* ★2026-07-16 gviz 숨김행 감사(문의회원 426건 누락 후속) — 인건비 GVIZ 실측 대조 완료.
+   gviz(위 URL) vs export CSV(필터뷰 무시 전량) 대조: 행수 46=46(동일), 부서 9=9(동일) — 숨김행 누락 없음(안전 확인).
+   금액 12개월 합계는 gviz 1,313,081,779 vs CSV 1,315,481,780(차이 2,400,001·0.18%)이나 전액 미도래 미래월(8~12월)
+   플레이스홀더 셀(-50,000~-100,000) 차이 + 반올림 1원 오차 — 화면은 DATA_LAST=min(현재월,12)로 미도래월을 렌더/합산에서
+   제외(L555)하므로 실사용 KPI에 영향 없음. 안전 확인 — 변경 불필요(무근거 변경 금지). */
 var MONTHS=["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
 var DEPTS_ORDER=["골프","P.T","수영","스쿼시","체조&트램","필라테스","루프매소드","뮤지컬"];
 var PAL=["#22324a","#a98a52","#3c7a4a","#2f6d9e","#b07d24","#6a5891","#b14238","#5b9fd5","#8a6f3f","#4f9e6a","#c2705f","#7e9bbf"];
 var SALES_SHEET="18VRvDEYQ7LfaPaHmXROBpIVmYtjqZGrYie75JZnRKDA";
 var SALES_GVIZ="https://docs.google.com/spreadsheets/d/"+SALES_SHEET+"/gviz/tq?tqx=out:json";
+/* ★2026-07-16 실측 대조: gviz vs export CSV 행수 10=10(동일)·부서 10=10(동일)·12개월 합계 3,378,443,801=3,378,443,801
+   (완전 일치, 차이 0) — 숨김행 누락 없음. 안전 확인 — 변경 불필요. */
 /* 매출 총액 정본 — 「26년 매출 분석」 시트(월별 마감 총매출). 매출현황 페이지와 동일 소스. 총매출·월별 KPI는 이 정본에 동기화, 종목별 분해만 매출마스터(SALES_DEPT) 사용. 차액(정본−종목합)=기타·주차 등 보정. */
 var SALES_TRUTH_API="https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec";
 var OPS_SHEET="1gCQNny8TDls5SjrtMkINu4HCltvFkoXmkTeXO_c3q58"; // GM시트 「2026년도 매출」
