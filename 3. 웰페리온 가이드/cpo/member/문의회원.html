@@ -4044,6 +4044,12 @@ function _lessonOwnerOptionsFor(sportKey) {
   list.push(LESSON_UNASSIGNED_OPTION);
   return list;
 }
+// 이 종목 정규 강사 집합(오염 판별용) = _lessonRosterFor(탭 valid 우선·폴백 하드코딩 명단)을 set으로. 2026-07-16 GM
+function _lessonValidOwners(sportKey, isYouth) {
+  var s = {};
+  _lessonRosterFor(sportKey, isYouth).forEach(function(n) { s[n] = 1; });
+  return s;
+}
 
 // rowIndex로 원본 문의 행 찾기(강습 상태/담당/CONTACT 저장 공용). 축7.
 function _lessonFindRow(t, rowIndex) {
@@ -4115,22 +4121,24 @@ function _lessonEnsureSportTabLoaded_(tabName) {
 function _lessonSportMgmt(row, sportKey) {
   if (!row) return { status: '', owner: '', contacts: [] };
   var owner = row.owner || '';
-  var tabName = _lessonSportTabName_(sportKey, _lessonRowIsYouth_(row));
+  var isYouth = _lessonRowIsYouth_(row);
+  var tabName = _lessonSportTabName_(sportKey, isYouth);
   if (tabName) {
     var res = _lessonSportTabResolved_[tabName];
     if (res && res.valid) {
       var digits = String(row.phone || '').replace(/\D/g, '');
       var nm = String(row.name || '').trim();
       var hit = (digits && res.byPhone[digits]) || (nm && res.byName[nm]) || '';
-      if (hit) {
-        owner = hit;                                 // 종목탭 정본(전화 우선·유니크 이름 보조) 매칭 성공
-      } else if (owner && !res.valid[owner]) {
-        owner = '';                                  // ★타팀 담당(이 종목 강사 아님)=오염 → 미배정(GM 정리기준 2026-07-16)
-      }
+      if (hit) owner = hit;                          // 종목탭 정본(전화 우선·유니크 이름 보조) 매칭 성공
     } else {
       _lessonEnsureSportTabLoaded_(tabName);         // 미로딩 — 백그라운드 시작, 이번 렌더는 flat(블로킹 없음)
     }
   }
+  // ★타팀 오염 제거 — 이 종목 정규 강사(탭 valid 또는 하드코딩 명단)에 없는 담당=미배정.
+  //   탭이 오염/부재한 종목(필라테스·뮤지컬 등)도 하드코딩 명단 기준으로 커버. 2026-07-16 GM
+  var _valid = _lessonValidOwners(sportKey, isYouth), _hasV = false;
+  for (var _vk in _valid) { _hasV = true; break; }
+  if (owner && _hasV && !_valid[owner]) owner = '';
   return { status: row.status || '', owner: owner, contacts: row.contacts || [] };
 }
 // 저장 성공 후 로컬 반영 — 항상 행단일 필드(flat 모델). 백엔드 lesson_inquiry_update가 body.sport='' → row-level(flat L~P) 경로로 저장. 배973 시포·GM 2026-07-14.
