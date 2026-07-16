@@ -539,6 +539,7 @@ async def run_publish(args: argparse.Namespace) -> int:
     page = context.pages[0] if context.pages else await context.new_page()
     rc = 0
     try:
+        _baseline_ids = await _kakao_list_post_ids(page)  # ★ 발행 전 기준선(새 글 URL 판별용)
         await _fill_editor(page, post)
         checked = await _select_status(page, want_draft=False)
         if not checked:
@@ -548,49 +549,36 @@ async def run_publish(args: argparse.Namespace) -> int:
             print("[INFO] 발행시간 = 지금(발행) 선택 확인")
             EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
             await page.screenshot(path=str(EVIDENCE_DIR / "kakao_publish_filled.png"))
-            await page.locator(SEL_SUBMIT).first.click(timeout=10_000)
-            await asyncio.sleep(5)
-            await page.screenshot(path=str(EVIDENCE_DIR / "kakao_publish_done.png"))
-            print("[INFO] === PUBLISH 완료 (실 발행) ===")
-            # 발행 직후 공개 URL 캡처 시도 (pf.kakao.com/_cgxiKj/{id})
-            # 카카오 관리자는 공개 id를 항상 노출하지 않으므로 best-effort.
-            # try/except 로 감싸 실패해도 발행 흐름 절대 막지 않음
+            _submit_ok = True
             try:
-                _kakao_url = None
-                _cur_url = page.url
-                # ① 현재 URL에서 직접 패턴 탐색
-                _km = re.search(
-                    r"https?://pf\.kakao\.com/[A-Za-z0-9_]+/\w+", _cur_url
-                )
-                if _km:
-                    _kakao_url = _km.group(0)
-                # ② DOM 내 pf.kakao.com 링크 탐색 (성공 화면·목록 최상단 등)
-                if not _kakao_url:
-                    _dom_links = await page.evaluate(
-                        "() => Array.from(document.querySelectorAll('a[href*=\"pf.kakao.com\"]'))"
-                        ".map(a => a.href).filter(Boolean)"
-                    )
-                    if _dom_links:
-                        _kakao_url = _dom_links[0]
-                        print(f"[INFO] 카카오 DOM에서 공개 URL 발견: {_kakao_url}")
-                if _kakao_url:
-                    _folder = (getattr(args, "content_dir", None) or "").strip()
-                    if _folder:
-                        try:
-                            from review_queue_util import update_review_post_url as _upd_rq
-                        except ImportError:
-                            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-                            from review_queue_util import update_review_post_url as _upd_rq
-                        _upd_rq(_folder, "카카오 채널", _kakao_url)
-                    else:
-                        print("[WARN] --content-dir 미지정 — review_queue 갱신 생략")
+                await page.locator(SEL_SUBMIT).first.click(timeout=10_000)
+                await asyncio.sleep(5)
+                await page.screenshot(path=str(EVIDENCE_DIR / "kakao_publish_done.png"))
+            except Exception as _se:
+                _submit_ok = False
+                print(f"[WARN] 등록 버튼 클릭 실패({_se}) — 게시 여부는 소식 목록 재확인으로 판정")
+            # ★ GM 2026-07-16: "빼지말고 몇번 시도해서 링크 나오게" — 소식 목록 재시도로 새 글 URL 회수.
+            #   등록 버튼 오탐(disabled 등)으로 클릭이 실패해도 실제 게시됐으면 목록에 새 글이 뜬다.
+            _kakao_url = await _kakao_capture_new_post_url(page, _baseline_ids, retries=6)
+            if _kakao_url:
+                print(f"[INFO] === PUBLISH 완료 · 새 글 URL 회수: {_kakao_url} ===")
+                _folder = (getattr(args, "content_dir", None) or "").strip()
+                if _folder:
+                    try:
+                        from review_queue_util import update_review_post_url as _upd_rq
+                    except ImportError:
+                        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                        from review_queue_util import update_review_post_url as _upd_rq
+                    _upd_rq(_folder, "카카오 채널", _kakao_url)
                 else:
-                    print(
-                        f"[INFO] 카카오 공개 URL 미캡처 (현재: {_cur_url[:80]})"
-                        " — 발행 완료, URL 수동 회수 필요"
-                    )
-            except Exception as _cap_e:
-                print(f"[WARN] 카카오 URL 캡처 실패 (발행 흐름 영향 없음): {_cap_e}")
+                    print("[WARN] --content-dir 미지정 — review_queue 갱신 생략")
+                rc = 0  # URL 확보 = 발행 성공 확정
+            elif _submit_ok:
+                print("[INFO] === PUBLISH 완료(등록 성공)이나 새 글 URL 미회수 — 목록 지연 가능, 발행완료 유지 ===")
+                rc = 0
+            else:
+                print("[ERROR] 등록 실패 + 소식 목록에 새 글 미확인 — 발행 실패 판정")
+                rc = 5
     except Exception as e:
         print(f"[ERROR] publish 실패: {e}")
         rc = 5
@@ -598,6 +586,40 @@ async def run_publish(args: argparse.Namespace) -> int:
         await context.close()
         await p.stop()
     return rc
+
+
+# -----------------------------------------------------------------
+# 발행 후 새 글 URL 회수 (GM 2026-07-16: "빼지말고 몇번 시도해서 링크 나오게")
+# 카카오 등록 버튼 오탐(disabled 등)으로 성공감지가 흔들려도, 소식 목록을 재시도로
+# 재조회해 기준선에 없던 새 글의 URL을 기어이 잡아 review_queue에 링크가 뜨게 한다.
+# -----------------------------------------------------------------
+async def _kakao_list_post_ids(page) -> set:
+    """소식 목록에서 게시물 id 집합 회수 (best-effort — 실패해도 빈 집합)."""
+    try:
+        await page.goto(KAKAO_POSTS_URL, wait_until="domcontentloaded", timeout=30_000)
+        await page.wait_for_timeout(2500)
+        hrefs = await page.eval_on_selector_all(
+            "a[href*='/posts/']", "els => els.map(e => e.getAttribute('href'))")
+        ids = set()
+        for h in hrefs or []:
+            m = re.search(r"/posts/(\d+)", h or "")
+            if m:
+                ids.add(m.group(1))
+        return ids
+    except Exception:
+        return set()
+
+
+async def _kakao_capture_new_post_url(page, baseline_ids: set, retries: int = 6):
+    """발행 후 소식 목록을 재시도로 재조회 → 기준선에 없던 새 글 URL 회수(가장 큰 id=최신)."""
+    for _ in range(retries):
+        await page.wait_for_timeout(2500)
+        ids = await _kakao_list_post_ids(page)
+        new = [pid for pid in ids if pid not in baseline_ids]
+        if new:
+            newest = max(new, key=lambda s: int(s) if s.isdigit() else 0)
+            return f"https://business.kakao.com/{KAKAO_CHANNEL_ID}/posts/{newest}"
+    return None
 
 
 # -----------------------------------------------------------------
