@@ -1,6 +1,9 @@
-<!-- 웰페리온 문의 블록 — 워드프레스 '문의' 페이지 본문 주입 소스 (SSOT)
-     6종 문의 폼(구글폼→구글시트, 작동 검증됨)을 버튼으로 노출.
-     인라인 스타일만 사용(테마 CSS 충돌 회피). 외부 스크립트 의존 없음.
+<!-- 웰페리온 문의 블록 — 워드프레스 '문의' 페이지(8394) 본문 주입 소스 (SSOT)
+     2026-07-16 B안 프리미엄 리스킨 + 6버튼 전부 자체 Survey 폼(wp_inquiry_form.html) 연결 완료(GM 발효 승인).
+     ★ 구글폼(forms.gle·docs.google.com/forms) 완전 탈피 — 6종 전부 /ko/inquiry-form/?type=… 로 귀속.
+     디자인: wp_inquiry_form.html 과 동일한 B안 토큰(팔레트 4색 BLACK #221F20·WHITE·BEIGE #B79F8A·CORAL #ED5B3F,
+     Pretendard, 다크 풀블리드 히어로 + 화이트 에디토리얼 본문, 샤프 모서리, 선(line) SVG 아이콘 재사용).
+     CSS 스코프 .wlp-inq 래퍼(Salient/WPBakery 테마 오염 차단). 외부 스크립트 의존 없음(폰트 CDN 1개 제외).
      수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
 /* 문의 페이지(8394) 한정 — 헤더 로고 상단 잘림 해소 */
@@ -9,206 +12,208 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
   body.page-id-8394 #header-outer #logo { margin-top: 22px !important; }
 }
 </style>
-<div style="max-width:760px;margin:0 auto;padding:70px 16px 80px;font-family:'Noto Sans KR',-apple-system,'Malgun Gothic',sans-serif;">
-  <div style="text-align:center;margin:8px 0 32px;">
-    <p style="font-size:12px;font-weight:700;letter-spacing:3px;color:#b08d57;text-transform:uppercase;margin:0 0 14px;">Wellperion</p>
-    <h2 style="font-size:clamp(28px,6vw,44px);font-weight:800;letter-spacing:-1px;color:#1a1a1a;margin:0 0 8px;line-height:1.1;">A Day, Well Completed.</h2>
-    <p style="font-size:clamp(15px,3vw,19px);font-weight:500;color:#555;letter-spacing:-.3px;margin:0 0 20px;">하루의 완성, 웰페리온</p>
-    <p style="font-size:15px;line-height:1.85;color:#666;margin:0 0 18px;max-width:480px;margin-left:auto;margin-right:auto;">
-      단순한 운동 시설이 아닙니다.<br>
-      하루 루틴의 일부로, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간.
-    </p>
-    <p style="font-size:13px;color:#b08d57;font-weight:600;letter-spacing:.3px;margin:0 0 6px;">상담 및 투어는 사전 예약제로 운영됩니다.</p>
-    <p style="font-size:12px;color:#aaa;margin:0;">원하시는 항목을 선택해 주세요</p>
-  </div>
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-  <!-- 영상 자리 (래퍼 .wp-inq-video 의 padding-top:56.25% = 16:9 비율 유지) -->
-  <div class="wp-inq-video" style="width:100%;max-width:640px;margin:0 auto 28px;">
-    <div style="position:relative;width:100%;padding-top:56.25%;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#2b2b2b,#4a4a4a);box-shadow:0 4px 16px rgba(0,0,0,.12);">
-      <iframe src="https://www.youtube.com/embed/qpPYA3bAO7M" title="웰페리온 소개 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe>
+.wlp-inq{
+  --bg:#ffffff;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;--dim:#8a7f72;
+  background:transparent;color:var(--ink);line-height:1.6;font-size:16px;
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  -webkit-text-size-adjust:100%;box-sizing:border-box;
+}
+.wlp-inq *{box-sizing:border-box}
+.wlp-inq a{text-decoration:none;color:inherit}
+
+/* ===== HERO — 다크 풀블리드 ===== */
+.wlp-inq .hero-band{background:var(--ink);padding:60px 20px 46px}
+.wlp-inq .hero-inner{max-width:520px;margin:0 auto;text-align:center}
+.wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.32em;color:var(--beige);text-transform:uppercase;margin:0 0 16px}
+.wlp-inq .slogan-en{font-size:14px;font-style:italic;color:#fff;opacity:.92;letter-spacing:.01em;margin:0 0 5px}
+.wlp-inq .slogan-kr{font-size:12px;color:#fff;opacity:.55;letter-spacing:.03em;margin:0 0 22px}
+.wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 22px}
+.wlp-inq .hero-inner h1{font-size:clamp(26px,7vw,36px);font-weight:800;letter-spacing:-.02em;color:#fff;margin:0 0 14px}
+.wlp-inq .hero-desc{font-size:14px;color:#fff;opacity:.7;line-height:1.9;max-width:380px;margin:0 auto}
+
+/* ===== BODY WRAP — 화이트 에디토리얼 ===== */
+.wlp-inq .wrap{max-width:720px;margin:0 auto;padding:34px 18px 72px}
+
+/* 사전예약제 안내 */
+.wlp-inq .reserve-note{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 32px;font-size:12.5px;font-weight:700;color:var(--coral);letter-spacing:.02em;text-align:center}
+.wlp-inq .reserve-note .dot{width:5px;height:5px;background:var(--coral);flex-shrink:0}
+
+/* 영상 */
+.wlp-inq .video-frame{max-width:640px;margin:0 auto 44px;position:relative;width:100%;padding-top:56.25%;background:var(--ink);border:1px solid var(--line)}
+.wlp-inq .video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+/* 섹션 라벨 */
+.wlp-inq .sec-label{display:flex;align-items:center;justify-content:center;gap:14px;margin:0 0 26px}
+.wlp-inq .sec-label .ln{flex:1;max-width:56px;height:1px;background:var(--line)}
+.wlp-inq .sec-label .tx{font-size:12.5px;color:var(--dim);font-weight:600;white-space:nowrap}
+
+/* 6 유형 카드 */
+.wlp-inq .type-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin:0 0 50px}
+.wlp-inq .type-card{display:flex;flex-direction:column;align-items:flex-start;border:1px solid var(--line);background:#fff;padding:26px 24px;transition:border-color .18s,transform .18s}
+.wlp-inq .type-card:hover{border-color:var(--ink);transform:translateY(-2px)}
+.wlp-inq .type-card .cat-icon{color:var(--ink);margin-bottom:16px;transition:color .18s}
+.wlp-inq .type-card .cat-icon svg{width:26px;height:26px;display:block}
+.wlp-inq .type-card:hover .cat-icon{color:var(--coral)}
+.wlp-inq .type-card .tc-en{font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--beige);text-transform:uppercase;margin:0 0 8px}
+.wlp-inq .type-card .tc-kr{display:flex;align-items:center;width:100%;gap:8px;font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin:0 0 9px}
+.wlp-inq .type-card .tc-kr .arrow{margin-left:auto;font-size:15px;color:var(--beige);transition:transform .18s,color .18s}
+.wlp-inq .type-card:hover .tc-kr .arrow{color:var(--coral);transform:translateX(3px)}
+.wlp-inq .type-card .tc-desc{font-size:13px;color:var(--dim);line-height:1.65}
+
+/* 소셜/링크 아이콘 바 */
+.wlp-inq .social-bar{display:flex;justify-content:center;gap:26px;flex-wrap:wrap;margin:0 0 48px}
+.wlp-inq .social-icon{display:flex;flex-direction:column;align-items:center;gap:9px;transition:transform .18s,opacity .18s}
+.wlp-inq .social-icon:hover{transform:translateY(-3px)}
+.wlp-inq .social-btn{display:flex;align-items:center;justify-content:center;width:48px;height:48px;transition:opacity .18s}
+.wlp-inq .social-icon:hover .social-btn{opacity:.85}
+.wlp-inq .social-label{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dim)}
+
+/* 정원제 안내 */
+.wlp-inq .capacity{border-top:1px solid var(--line);padding-top:34px;text-align:center}
+.wlp-inq .capacity .divider-coral{margin-bottom:20px}
+.wlp-inq .capacity p{font-size:clamp(15px,3.2vw,18px);font-weight:700;color:var(--ink);line-height:1.75;margin:0}
+.wlp-inq .capacity p b{color:var(--coral);font-weight:800}
+
+@media (max-width:520px){
+  .wlp-inq .type-grid{grid-template-columns:1fr}
+}
+</style>
+
+<div class="wlp-inq">
+
+  <div class="hero-band">
+    <div class="hero-inner">
+      <p class="eyebrow">Wellperion</p>
+      <p class="slogan-en">A Day, Well Completed.</p>
+      <p class="slogan-kr">하루의 완성, 웰페리온</p>
+      <div class="divider-coral"></div>
+      <h1>문의하기</h1>
+      <p class="hero-desc">단순한 운동 시설이 아닙니다. 하루 루틴의 일부로, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간입니다.</p>
     </div>
   </div>
-  <!-- ▲ 영상 자리 끝 -->
 
-  <!-- 아래 = 기존 6종 구글폼 버튼: 병렬 유지(롤백 안전 · GM 결정 2026-07-15). 삭제 금지. -->
-  <div style="text-align:center;margin:44px 0 18px;">
-    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin:0 auto 14px;max-width:340px;">
-      <span style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#d9c4a3);"></span>
-      <span style="color:#b08d57;font-size:10px;line-height:1;">&#9670;</span>
-      <span style="flex:1;height:1px;background:linear-gradient(90deg,#d9c4a3,transparent);"></span>
+  <div class="wrap">
+
+    <p class="reserve-note"><span class="dot"></span>상담 및 투어는 사전 예약제로 운영됩니다</p>
+
+    <!-- 영상 자리 -->
+    <div class="video-frame">
+      <iframe src="https://www.youtube.com/embed/qpPYA3bAO7M" title="웰페리온 소개 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
-    <p style="font-size:14px;color:#777;line-height:1.6;margin:0;">또는, 아래 항목별 문의 폼으로도 접수하실 수 있습니다.</p>
-  </div>
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
+    <div class="sec-label"><span class="ln"></span><span class="tx">원하시는 항목을 선택해 주세요</span><span class="ln"></span></div>
 
-    <a href="http://wellperion.com/ko/inquiry-form/?type=membership" rel="noopener" onclick="wpToSurvey(this)"
-       style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
-      <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">MEMBERSHIP</div>
-      <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">멤버십 문의 →</div>
-      <div style="font-size:14px;color:#777;line-height:1.5;">스포츠클럽 멤버십 가입·시설 투어 상담</div>
-    </a>
+    <!-- 6종 문의 유형 — 전부 자체 Survey 폼(/ko/inquiry-form/?type=…) 연결. 구글폼 링크 없음. -->
+    <div class="type-grid">
 
-    <a href="http://wellperion.com/ko/inquiry-form/?type=adult" rel="noopener" onclick="wpToSurvey(this)"
-       style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
-      <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">ADULT LESSON</div>
-      <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">성인 강습 문의 →</div>
-      <div style="font-size:14px;color:#777;line-height:1.5;">성인 강습 프로그램/수영·P.T·필라테스·골프·스쿼시·발레·바레</div>
-    </a>
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=membership" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 12 3l9 6"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="5" y1="9" x2="5" y2="19"/><line x1="9" y1="9" x2="9" y2="19"/><line x1="15" y1="9" x2="15" y2="19"/><line x1="19" y1="9" x2="19" y2="19"/><line x1="3" y1="19" x2="21" y2="19"/><line x1="3" y1="21.5" x2="21" y2="21.5"/></svg></span>
+        <span class="tc-en">Membership</span>
+        <span class="tc-kr">멤버십 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">스포츠클럽 멤버십 가입 · 시설 투어 상담</span>
+      </a>
 
-    <a href="http://wellperion.com/ko/inquiry-form/?type=youth" rel="noopener" onclick="wpToSurvey(this)"
-       style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
-      <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">YOUTH LESSON</div>
-      <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">유소년 강습 문의 →</div>
-      <div style="font-size:14px;color:#777;line-height:1.5;">유소년 강습 프로그램/수영·체조·골프·스쿼시·뮤지컬</div>
-    </a>
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=adult" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0"/><path d="M2 15c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0" opacity=".55"/></svg></span>
+        <span class="tc-en">Adult Lesson</span>
+        <span class="tc-kr">성인 강습 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">수영 · P.T · 필라테스 · 골프 · 스쿼시 · 발레 · 바레</span>
+      </a>
 
-    <a href="https://forms.gle/UEMcgWwsZVeTwVBg9" target="_blank" rel="noopener"
-       style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
-      <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">SUMMER SPECIAL</div>
-      <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">여름방학 특강 문의 →</div>
-      <div style="font-size:14px;color:#777;line-height:1.5;">여름방학 단기 집중 특강 프로그램</div>
-    </a>
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=youth" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.4 5.1 5.6.6-4.2 3.8 1.2 5.5L12 15.8l-5 2.7 1.2-5.5-4.2-3.8 5.6-.6z"/></svg></span>
+        <span class="tc-en">Youth Lesson</span>
+        <span class="tc-kr">유소년 강습 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">수영 · 체조 · 골프 · 스쿼시 · 뮤지컬</span>
+      </a>
 
-    <!-- 신규 2종 — 공간 렌트 · 비즈니스 파트너 -->
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=summer" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="4.2" y1="4.2" x2="6" y2="6"/><line x1="18" y1="18" x2="19.8" y2="19.8"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="4.2" y1="19.8" x2="6" y2="18"/><line x1="18" y1="6" x2="19.8" y2="4.2"/></svg></span>
+        <span class="tc-en">Summer Special</span>
+        <span class="tc-kr">여름방학 특강 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">여름방학 단기 집중 특강 프로그램</span>
+      </a>
 
-    <!-- 공간 렌트 문의 (SPACE RENTAL) -->
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLScS1Gb-iEPzCxb84VNTiz__QROx2RMW6SS6Oplfzr492vAiZQ/viewform" target="_blank" rel="noopener" onclick="wpPrefillForm(this,'공간렌트문의')"
-       style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
-      <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">SPACE RENTAL</div>
-      <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">공간 렌트 문의 →</div>
-      <div style="font-size:14px;color:#777;line-height:1.5;">행사·촬영·세미나 등 공간 대관 · 맞춤 견적 안내</div>
-    </a>
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=rental" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16"/><line x1="12" y1="4" x2="12" y2="13"/><line x1="3" y1="13" x2="21" y2="13"/><line x1="12" y1="13" x2="12" y2="20"/></svg></span>
+        <span class="tc-en">Space Rental</span>
+        <span class="tc-kr">공간 렌트 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">행사 · 촬영 · 세미나 등 공간 대관 · 맞춤 견적 안내</span>
+      </a>
 
-    <!-- 비즈니스 파트너 문의 (BUSINESS PARTNERSHIP) -->
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSfITRMdRqlgS3iLsiM_S05d1E0C7m8aSuXBZ-5XD-p6SecEAw/viewform" target="_blank" rel="noopener" onclick="wpPrefillForm(this,'비즈니스파트너문의')"
-       style="display:block;text-decoration:none;border:1px solid #e2e2e2;border-radius:14px;padding:22px 24px;background:#fff;transition:all .18s;box-shadow:0 1px 2px rgba(0,0,0,.03);">
-      <div style="font-size:13px;font-weight:600;color:#b08d57;letter-spacing:.5px;margin-bottom:6px;">BUSINESS PARTNERSHIP</div>
-      <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">비즈니스 파트너 문의 →</div>
-      <div style="font-size:14px;color:#777;line-height:1.5;">제휴·입점·콜라보·B2B 복지 등 사업 협업 제안</div>
-    </a>
-    <!-- ▲ 신규 2종 끝 -->
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=business" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 7.8 6.6c.7-.6 1.7-.6 2.4 0l1.9 1.6"/><path d="M21 10.5 16.2 6.6c-.7-.6-1.7-.6-2.4 0l-.9.75"/><path d="M6.8 11l4.2 3.6a1.65 1.65 0 0 0 2.2-2.45L9.8 8.9"/><path d="M10 12.3l2.5 2.2a1.65 1.65 0 0 0 2.2-2.45l-.9-.85"/><path d="M13.2 12.3l1.9 1.6a1.65 1.65 0 0 0 2.2-2.45"/><line x1="3" y1="10.5" x2="3" y2="16.5"/><line x1="21" y1="10.5" x2="21" y2="16.5"/></svg></span>
+        <span class="tc-en">Business Partnership</span>
+        <span class="tc-kr">비즈니스 파트너 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">제휴 · 입점 · 콜라보 · B2B 복지 등 사업 협업 제안</span>
+      </a>
 
-  </div>
-
-  <!-- ============================================================
-       ▼ 소셜/링크 아이콘 바 (2026-06-24 시모 추가 / 브랜드컬러+네이버블로그정확화 개선)
-       4개 채널: 홈페이지·인스타그램·네이버블로그·네이버지도
-       인라인 SVG, 인라인 스타일만(외부 의존 없음)
-       ============================================================ -->
-  <style>
-  .wp-social-icon { display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;transition:transform .18s,opacity .18s; }
-  .wp-social-icon:hover { transform:scale(1.1); }
-  .wp-social-icon:hover .wp-social-btn { box-shadow:0 6px 18px rgba(0,0,0,.22) !important; }
-  .wp-social-btn { display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;transition:box-shadow .18s; }
-  .wp-social-label { font-size:11px;font-weight:600;letter-spacing:.3px; }
-  </style>
-  <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin:32px 0 8px;">
-
-    <!-- 홈페이지 — 웰페리온 브랜드 다크(#221F20) -->
-    <a href="http://wellperion.com/ko/" target="_blank" rel="noopener"
-       class="wp-social-icon" style="color:#221F20;">
-      <span class="wp-social-btn" style="background:#221F20;box-shadow:0 2px 8px rgba(34,31,32,.25);">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="홈페이지">
-          <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" fill="#fff" fill-opacity=".15" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/>
-          <path d="M9 22V12h6v10" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
-      <span class="wp-social-label" style="color:#221F20;">홈페이지</span>
-    </a>
-
-    <!-- 인스타그램 — 공식 그라데이션 -->
-    <a href="https://www.instagram.com/wellperion/" target="_blank" rel="noopener"
-       class="wp-social-icon" style="color:#d62976;">
-      <span class="wp-social-btn" style="background:linear-gradient(135deg,#feda75 0%,#fa7e1e 25%,#d62976 55%,#962fbf 80%,#4f5bd5 100%);box-shadow:0 2px 8px rgba(214,41,118,.3);">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="인스타그램">
-          <rect x="2" y="2" width="20" height="20" rx="5.5" stroke="#fff" stroke-width="1.8"/>
-          <circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/>
-          <circle cx="17.5" cy="6.5" r="1.1" fill="#fff"/>
-        </svg>
-      </span>
-      <span class="wp-social-label" style="color:#d62976;">인스타그램</span>
-    </a>
-
-    <!-- 네이버 블로그 — 네이버 그린(#03C75A) + 'blog' 텍스트 로고(공식 마크) -->
-    <a href="https://blog.naver.com/wellperion" target="_blank" rel="noopener"
-       class="wp-social-icon" style="color:#03C75A;">
-      <span class="wp-social-btn" style="background:#03C75A;box-shadow:0 2px 8px rgba(3,199,90,.3);">
-        <!-- 네이버 블로그 공식 마크: 둥근 사각형 배경(배경색과 동일 처리) + 흰색 소문자 'blog' -->
-        <svg width="36" height="30" viewBox="0 0 36 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="네이버 블로그">
-          <text x="18" y="21" text-anchor="middle" dominant-baseline="auto" font-family="Arial,Helvetica,sans-serif" font-size="18" font-weight="700" fill="#fff" letter-spacing="0">blog</text>
-        </svg>
-      </span>
-      <span class="wp-social-label" style="color:#03C75A;">네이버블로그</span>
-    </a>
-
-    <!-- 네이버 지도 — 짙은 그린(#00963C) + 위치 핀(블로그와 시각 구별) -->
-    <a href="https://map.naver.com/p/search/%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8/place/1048457693" target="_blank" rel="noopener"
-       class="wp-social-icon" style="color:#00963C;">
-      <span class="wp-social-btn" style="background:#00963C;box-shadow:0 2px 8px rgba(0,150,60,.3);">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="네이버 지도">
-          <!-- 위치 핀 몸체 -->
-          <path d="M12 2C8.686 2 6 4.686 6 8c0 4.5 6 12 6 12s6-7.5 6-12c0-3.314-2.686-6-6-6z" fill="#fff" fill-opacity=".25" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
-          <!-- 핀 내부 원 -->
-          <circle cx="12" cy="8" r="2.5" fill="#fff"/>
-        </svg>
-      </span>
-      <span class="wp-social-label" style="color:#00963C;">네이버지도</span>
-    </a>
-
-  </div>
-  <!-- ▲ 소셜/링크 아이콘 바 끝 -->
-
-  <!-- 정원제 문구 — 골드 구분선 + 미니멀 강조 (2026-06-25 시모, GM 선택) -->
-  <div style="text-align:center;margin:40px 0 0;">
-    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin:0 auto 18px;max-width:320px;">
-      <span style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#d9c4a3);"></span>
-      <span style="color:#b08d57;font-size:10px;line-height:1;">&#9670;</span>
-      <span style="flex:1;height:1px;background:linear-gradient(90deg,#d9c4a3,transparent);"></span>
     </div>
-    <p style="font-size:clamp(16px,3.4vw,19px);font-weight:700;color:#1a1a1a;letter-spacing:-.3px;line-height:1.6;margin:0;">
-      웰페리온은 <span style="color:#b08d57;">1,000명 정원제</span>(멤버십)로<br>쾌적한 공간을 제공합니다.
-    </p>
+
+    <!-- 소셜/링크 아이콘 바 — 4개 채널: 홈페이지·인스타그램·네이버블로그·네이버지도 (인라인 SVG, 외부 의존 없음) -->
+    <div class="social-bar">
+
+      <a href="http://wellperion.com/ko/" target="_blank" rel="noopener" class="social-icon">
+        <span class="social-btn" style="background:#221F20;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="홈페이지">
+            <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" fill="#fff" fill-opacity=".15" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/>
+            <path d="M9 22V12h6v10" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="social-label">홈페이지</span>
+      </a>
+
+      <a href="https://www.instagram.com/wellperion/" target="_blank" rel="noopener" class="social-icon">
+        <span class="social-btn" style="background:linear-gradient(135deg,#feda75 0%,#fa7e1e 25%,#d62976 55%,#962fbf 80%,#4f5bd5 100%);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="인스타그램">
+            <rect x="2" y="2" width="20" height="20" rx="5.5" stroke="#fff" stroke-width="1.8"/>
+            <circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/>
+            <circle cx="17.5" cy="6.5" r="1.1" fill="#fff"/>
+          </svg>
+        </span>
+        <span class="social-label">인스타그램</span>
+      </a>
+
+      <a href="https://blog.naver.com/wellperion" target="_blank" rel="noopener" class="social-icon">
+        <span class="social-btn" style="background:#03C75A;">
+          <svg width="34" height="28" viewBox="0 0 36 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="네이버 블로그">
+            <text x="18" y="21" text-anchor="middle" dominant-baseline="auto" font-family="Arial,Helvetica,sans-serif" font-size="18" font-weight="700" fill="#fff" letter-spacing="0">blog</text>
+          </svg>
+        </span>
+        <span class="social-label">네이버블로그</span>
+      </a>
+
+      <a href="https://map.naver.com/p/search/%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8/place/1048457693" target="_blank" rel="noopener" class="social-icon">
+        <span class="social-btn" style="background:#00963C;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="네이버 지도">
+            <path d="M12 2C8.686 2 6 4.686 6 8c0 4.5 6 12 6 12s6-7.5 6-12c0-3.314-2.686-6-6-6z" fill="#fff" fill-opacity=".25" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+            <circle cx="12" cy="8" r="2.5" fill="#fff"/>
+          </svg>
+        </span>
+        <span class="social-label">네이버지도</span>
+      </a>
+
+    </div>
+
+    <!-- 정원제 문구 -->
+    <div class="capacity">
+      <div class="divider-coral"></div>
+      <p>웰페리온은 <b>1,000명 정원제</b>(멤버십)로<br>쾌적한 공간을 제공합니다.</p>
+    </div>
+
   </div>
 </div>
 
 <!-- UTM 귀속 프리필 — 채널 콘텐츠 링크가 ?utm_source=instagram|naver_blog|naver_cafe|kakao|danggn 부착 시
-     그 출처를 문의 구글폼 '유입경로(자동)' 칸에 프리필(백엔드 _collectFormInquiries_ 가 채널 귀속). 클릭 로그 자체는 2026-07 GM 결정으로 삭제. -->
+     그 출처를 자체 Survey 폼(/ko/inquiry-form/) 이동 시 그대로 승계해 폼의 utmSource 로 전달(채널 귀속 유지). -->
 <script>
 (function(){
-  function qp(k){ try{ return (new URLSearchParams(location.search).get(k)||'').slice(0,40); }catch(e){ return ''; } }
-
-  // ── 폼 UTM 귀속 프리필 (2026-06-23 ship113 — 6폼 일반화 / 2026-07-07 ship300 Phase2 — source-우선 수정) ──
-  //   방문자 현재 URL의 utm_source(채널 귀속 신호, 최우선) + utm_campaign(콘텐츠 단위, 있으면 '|'로 병기)
-  //   값을 해당 구글폼 '유입경로(자동)' 칸에 프리필. 백엔드 _collectFormInquiries_(Survey.js)가
-  //   이 값을 split('|')[0]로 파싱해 채널 귀속 — source 없이 campaign만 넣으면(구 로직) 캠페인 슬러그가
-  //   _canonicalChannel_에 매칭 안 돼 '기타·미상'으로 빠져 콘텐츠링크 문의가 채널귀속 안 되는 함정 수정.
-  //   버튼명 → { base: 프리필 view URL, entry: '유입경로(자동)' entry ID } 매핑(add_utm_field 회수값).
-  //   entry ID 회수 못 한 폼(성인·유소년·여름특강 = cao 편집권한 없음)은 매핑서 제외 → 원래 링크 유지.
-  var WP_PREFILL_MAP={
-    // 2026-06-30 cao 편집권한 확인됨 → 성인·유소년·멤버십 신폼 entry 회수·배선(add_utm_field). 6폼 전부 UTM 귀속.
-    '멤버십문의':       { base:'https://docs.google.com/forms/d/e/1FAIpQLSd1EGHsPtVjqEK_Y_8rPQWnRj7cpvxOLpO9OuXdTjsaZogT_Q/viewform', entry:'2135419713' },
-    '성인강습문의':     { base:'https://docs.google.com/forms/d/e/1FAIpQLSdS4iTbRB0Obkzo4TeJPzfdZn0mvJw9hLmJKMso8XFiXOcuzQ/viewform', entry:'1133812410' },
-    '유소년강습문의':   { base:'https://docs.google.com/forms/d/e/1FAIpQLSfigBMJaRfN76cORR1BRIRAysL0_o6AVrIIKCWzEwOqbw_Leg/viewform', entry:'764678574'  },
-    '공간렌트문의':     { base:'https://docs.google.com/forms/d/e/1FAIpQLScS1Gb-iEPzCxb84VNTiz__QROx2RMW6SS6Oplfzr492vAiZQ/viewform', entry:'285015675'  },
-    '비즈니스파트너문의':{ base:'https://docs.google.com/forms/d/e/1FAIpQLSfITRMdRqlgS3iLsiM_S05d1E0C7m8aSuXBZ-5XD-p6SecEAw/viewform', entry:'1850207696' }
-  };
-  // 범용 프리필 — 버튼명으로 매핑 조회 후 utm 값을 해당 폼 entry에 프리필. 값/매핑 없으면 원래 href 유지.
-  window.wpPrefillForm=function(a,name){
-    try{
-      var m=WP_PREFILL_MAP[name];
-      if(!m) return;                                     // 매핑 없는 폼 = 원래 링크
-      var src=qp('utm_source')||'';                       // 채널 귀속 신호(naver_blog 등) — 백엔드 캐논화 매칭 대상
-      var cmp=qp('utm_campaign')||'';                      // 콘텐츠 단위 귀속(예: 260620_KPGA_ep1)
-      var v=src ? (cmp ? src+'|'+cmp : src) : cmp;         // source 우선(있으면 항상 선두) + campaign 병기, source 없으면 campaign만(구형 호환)
-      if(!v) return;                                      // 값 없으면 원래 링크 유지
-      a.href=m.base+'?usp=pp_url&entry.'+m.entry+'='+encodeURIComponent(v);
-    }catch(e){}
-  };
-
   // ── 자체 Survey(WP /ko/inquiry-form/) 이동 시 현재 페이지 UTM 승계 → 폼이 채널귀속 유지 ──
-  //   멤버십·성인강습·유소년강습 버튼(2026-07-15 GM: 구글폼→자체 Survey WP 페이지)이 이 함수를 호출.
-  //   현재 inquiry 페이지 URL의 utm_source/medium/campaign 을 survey 페이지 링크에 이어붙임.
+  //   6버튼(멤버십·성인강습·유소년강습·여름특강·공간렌트·비즈니스) 전부 이 함수를 호출(2026-07-16 구글폼 완전 탈피).
+  //   현재 inquiry 페이지 URL의 utm_source/medium/campaign 을 survey 페이지 링크에 이어붙인다.
   window.wpToSurvey=function(a){
     try{
       var u=new URLSearchParams(location.search);

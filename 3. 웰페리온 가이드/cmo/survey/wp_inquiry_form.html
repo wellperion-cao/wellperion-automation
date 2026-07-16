@@ -42,14 +42,11 @@
 .wlp-inq label.fl{display:block;font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:12px;letter-spacing:.04em;text-transform:uppercase}
 .wlp-inq label.fl .opt{font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;text-transform:none;letter-spacing:0}
 
-/* ===== 유형 선택(6버튼) ===== */
-.wlp-inq .types{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.wlp-inq .type-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:74px;padding:14px 6px 12px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:12px;font-weight:700;cursor:pointer;transition:border-color .18s,background .18s,color .18s;text-align:center;line-height:1.35}
-.wlp-inq .type-btn .cat-icon{margin-bottom:7px;line-height:1;display:block}
-.wlp-inq .type-btn .cat-icon svg{width:22px;height:22px;display:block;margin:0 auto}
-.wlp-inq .type-btn .cat-label{font-size:11.5px;font-weight:700;display:block}
-.wlp-inq .type-btn:hover{border-color:var(--ink)}
-.wlp-inq .type-btn.active{border-color:var(--coral);background:rgba(237,91,63,.06);color:var(--coral)}
+/* ===== 폴백(?type= 없음/미매칭 — 허브 안내) ===== */
+.wlp-inq .fallback-card{text-align:center}
+.wlp-inq .fallback-msg{font-size:14px;color:var(--ink);line-height:1.7;margin-bottom:18px}
+.wlp-inq .fallback-btn{display:inline-block;padding:13px 26px;background:var(--ink);color:#fff;font-size:13.5px;font-weight:700;letter-spacing:.02em;transition:opacity .18s}
+.wlp-inq .fallback-btn:hover{opacity:.85}
 
 /* ===== 가이드 카드(약간의 소개) ===== */
 .wlp-inq .guide-card{background:#faf8f5}
@@ -129,28 +126,21 @@
     </div>
 
     <div class="wrap">
-      <div class="card">
-        <label class="fl">문의 유형을 선택해 주세요</label>
-        <div class="types" id="typeGroup">
-          <button type="button" class="type-btn" data-cat="membership"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 12 3l9 6"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="5" y1="9" x2="5" y2="19"/><line x1="9" y1="9" x2="9" y2="19"/><line x1="15" y1="9" x2="15" y2="19"/><line x1="19" y1="9" x2="19" y2="19"/><line x1="3" y1="19" x2="21" y2="19"/><line x1="3" y1="21.5" x2="21" y2="21.5"/></svg></span><span class="cat-label">멤버십 문의</span></button>
-          <button type="button" class="type-btn" data-cat="adult"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0"/><path d="M2 15c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0" opacity=".55"/></svg></span><span class="cat-label">성인 강습</span></button>
-          <button type="button" class="type-btn" data-cat="youth"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.4 5.1 5.6.6-4.2 3.8 1.2 5.5L12 15.8l-5 2.7 1.2-5.5-4.2-3.8 5.6-.6z"/></svg></span><span class="cat-label">유소년 강습</span></button>
-          <button type="button" class="type-btn" data-cat="summer"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="4.2" y1="4.2" x2="6" y2="6"/><line x1="18" y1="18" x2="19.8" y2="19.8"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="4.2" y1="19.8" x2="6" y2="18"/><line x1="18" y1="6" x2="19.8" y2="4.2"/></svg></span><span class="cat-label">여름 특강</span></button>
-          <button type="button" class="type-btn" data-cat="rental"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16"/><line x1="12" y1="4" x2="12" y2="13"/><line x1="3" y1="13" x2="21" y2="13"/><line x1="12" y1="13" x2="12" y2="20"/></svg></span><span class="cat-label">공간 렌트</span></button>
-          <button type="button" class="type-btn" data-cat="business"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 7.8 6.6c.7-.6 1.7-.6 2.4 0l1.9 1.6"/><path d="M21 10.5 16.2 6.6c-.7-.6-1.7-.6-2.4 0l-.9.75"/><path d="M6.8 11l4.2 3.6a1.65 1.65 0 0 0 2.2-2.45L9.8 8.9"/><path d="M10 12.3l2.5 2.2a1.65 1.65 0 0 0 2.2-2.45l-.9-.85"/><path d="M13.2 12.3l1.9 1.6a1.65 1.65 0 0 0 2.2-2.45"/><line x1="3" y1="10.5" x2="3" y2="16.5"/><line x1="21" y1="10.5" x2="21" y2="16.5"/></svg></span><span class="cat-label">비즈니스</span></button>
-        </div>
-      </div>
-
       <div class="card guide-card" id="guideBox" style="display:none"></div>
 
-      <div class="card">
+      <div class="card" id="formCard">
         <div id="formFields"></div>
-        <div class="hint-empty" id="emptyHint">위에서 문의 유형을 먼저 선택해 주세요.</div>
+        <div class="hint-empty" id="emptyHint" style="display:none">위에서 문의 유형을 먼저 선택해 주세요.</div>
       </div>
 
       <button class="submit" id="submitBtn">문의 접수하기</button>
       <div class="retry-banner" id="retryBanner"></div>
-      <p class="note">남겨주신 연락처로 담당자가 안내드립니다.<br>하루의 완성, 웰페리온</p>
+      <p class="note" id="noteText">남겨주신 연락처로 담당자가 안내드립니다.<br>하루의 완성, 웰페리온</p>
+
+      <div class="card fallback-card" id="fallbackBox" style="display:none">
+        <p class="fallback-msg">문의 유형을 문의 페이지에서 선택해 주세요.</p>
+        <a class="fallback-btn" href="http://wellperion.com/ko/inquiry/">문의 페이지로 이동</a>
+      </div>
     </div>
   </div>
 
@@ -526,13 +516,19 @@
     window.scrollTo(0,0);
   }
 
-  // ── 유형 선택 ──
-  $('typeGroup').addEventListener('click', function(ev){
-    var btn = ev.target.closest('.type-btn'); if (!btn) return;
-    var cat = btn.getAttribute('data-cat'); if (cat === selectedCat) return;
-    Array.prototype.forEach.call(this.querySelectorAll('.type-btn'), function(b){ b.classList.remove('active'); });
-    btn.classList.add('active'); selectedCat = cat; clearBanner(); buildForm(cat);
-  });
+  // ── 폴백(?type= 없음/미매칭 — 허브에서 유형을 먼저 고르도록 안내) ──
+  //   유형 선택 UI는 허브(/ko/inquiry/)에만 존재 → 이 폼은 항상 ?type= 로만 진입.
+  function showFallback(){
+    selectedCat = '';
+    $('guideBox').style.display='none';
+    $('formCard').style.display='none';
+    $('submitBtn').style.display='none';
+    clearBanner();
+    $('noteText').style.display='none';
+    $('fallbackBox').style.display='block';
+    $('heroTitle').textContent = '문의하기';
+    setHeroSub('');
+  }
 
   // ── 제출 ──
   $('submitBtn').addEventListener('click', function(){
@@ -569,13 +565,11 @@
     send(item);
   });
 
-  // ── 새 문의 ──
+  // ── 새 문의(같은 유형으로 다시 접수 — 유형 재선택 UI가 없으므로 진입 시 ?type= 유지) ──
   $('againBtn').addEventListener('click', function(){
-    selectedCat=''; activeSid='';
-    Array.prototype.forEach.call(document.querySelectorAll('.type-btn'), function(b){ b.classList.remove('active'); });
-    $('formFields').innerHTML=''; $('emptyHint').style.display='block';
-    renderGuide(null); $('heroTitle').textContent='문의하기'; setHeroSub('');
+    activeSid='';
     resetSubmitBtn(); clearBanner();
+    if (selectedCat) { buildForm(selectedCat); } else { showFallback(); }
     $('doneWrap').style.display='none'; $('formWrap').style.display='block';
     window.scrollTo(0,0);
   });
@@ -584,8 +578,9 @@
   window.addEventListener('online', function(){ scheduleFlush(300); });
   if (qRead().length) scheduleFlush(800);
 
-  // ── 유형 딥링크(?type=) 프리선택 — 문의 페이지(8394) 버튼에서 유형별로 진입 시 해당 폼 자동 표시 ──
-  //   허용값: membership|adult|youth|summer|rental|business (한글 별칭 병행). 미지정·미매칭 = 기존처럼 유형 선택 대기.
+  // ── 유형 딥링크(?type=) — 유일한 유형 결정 경로. 유형 선택은 허브(/ko/inquiry/)에서 이미 끝났으므로
+  //   이 폼은 로드 시 ?type= 을 즉시 해석해 해당 유형의 히어로·가이드·폼을 바로 그린다(폼 내 재선택 UI 없음).
+  //   허용값: membership|adult|youth|summer|rental|business (한글 별칭 병행). 미지정·미매칭 = 폴백(허브로 안내).
   (function(){
     try {
       var t = (qp('type') || '').toLowerCase();
@@ -595,10 +590,9 @@
                     summer:'summer', '여름':'summer', '여름특강':'summer',
                     rental:'rental', '렌트':'rental', '대관':'rental', '공간렌트':'rental',
                     business:'business', '비즈니스':'business', '제휴':'business' };
-      var cat = alias[t]; if (!cat) return;
-      var btn = document.querySelector('.wlp-inq .type-btn[data-cat="' + cat + '"]');
-      if (btn) { btn.classList.add('active'); selectedCat = cat; buildForm(cat); }
-    } catch (e) {}
+      var cat = alias[t];
+      if (cat) { selectedCat = cat; buildForm(cat); } else { showFallback(); }
+    } catch (e) { showFallback(); }
   })();
 })();
 </script>
