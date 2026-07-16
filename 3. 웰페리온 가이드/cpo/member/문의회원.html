@@ -1244,8 +1244,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       </div>
     </a>
     <!-- 카드2: 오늘 예약 (구 히어로 sumBookCard → 2026-07-16 GM 지시로 dash-card 통일, id sumBook 유지) -->
-    <a class="dash-card" data-kind="book" href="javascript:void(0)" onclick="heroCardClick('book')">
-      <div class="dash-head"><span class="dash-dot" style="background:var(--teal)"></span><span class="dash-title">📅 오늘 예약</span></div>
+    <a class="dash-card" data-kind="tour" href="javascript:void(0)" onclick="heroCardClick('book')">
+      <div class="dash-head"><span class="dash-dot tour"></span><span class="dash-title">📅 오늘 예약</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="sumBook">0</b> 명</span></div>
         <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="sumBookMonth">0</b> 명</span></div>
@@ -3686,9 +3686,7 @@ function _lessonComboClick(card) {
   var t = (youthChip && youthChip.classList.contains('active')) ? 'youth' : 'adult';
   switchType(t === 'youth' ? 'lessonYouth' : 'lessonAdult');   // 현재 탭 유지/전환(이미 해당 탭이면 사실상 no-op)
   lessonSwitchCard(t, card);   // switchType 내부가 카드를 'inq'로 되돌리므로, 실제 요청 카드로 다시 전환
-  // 클릭 피드백(스크롤 이동) — "새 문의"처럼 기본 활성 페인이라 변화가 안 보이는 카드도 눈에 띄게. 2026-07-16 버그수리.
-  var _p = document.getElementById(_lessonPaneId(t));
-  if (_p && _p.scrollIntoView) _p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // (자동 스크롤 제거 — GM 지시 2026-07-16: 강습 콤보카드 클릭 시 아래로 자동 내려가는 동작 삭제. 자기카드 하이라이트만 유지.)
 }
 
 /* 강습 대시카드 전환(문의/등록/회원) — 멤버십 switchTab 와 독립(id 충돌 회피). 2026-06-27 시포. */
