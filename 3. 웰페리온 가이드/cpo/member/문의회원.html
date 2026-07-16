@@ -6476,11 +6476,15 @@ function loadDbData() {
       document.getElementById('dbCount').textContent = dbRows.length + '건 · ' + _snapAgoLabel_(bucket.ts) + ' 기준 · 갱신 중…';
     });
   }
-  // 하이브리드(2026-07-08): 멤버십은 scope 개념 없음 → USE_GVIZ=true면 항상 gviz 직접읽기(GAS와 동일 shape).
-  // ★캐시·스냅샷 렌더와 무관하게 항상 발사(유실 0 게이트 ① — 새 문의를 놓치지 않는 유일한 진실 경로).
-  var _dbPromise = USE_GVIZ
-    ? gvizLoadMemberInquiry_()
-    : fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam()).then(function(r){ return r.json(); });
+  // [2026-07-16 시토] ★멤버십도 항상 GAS로 읽는다(gviz 우회 제거) — 강습 intake 수리(d2e855d8, 같은 날)와 동일 원인군.
+  //   근본원인 실측: gviz KR탭(26년 신규문의, gid 1902010032)이 지금 195건만 반환하는데 GAS member_inquiry_list는
+  //   같은 탭 동일 연도 기준 621건(2026-07-16 15시경, 3회 재확인 안정) — 426건(69%) 차이. GAS(sh.getRange().getValues())는
+  //   시트 물리 데이터를 그대로 읽는 반면 gviz(tq)는 시트에 걸린 필터/숨김행 상태를 반영해 그만큼 누락한다 — 이 파일이
+  //   이미 강습 scope=all에 대해 문서화해둔 바로 그 위험("시트 필터/숨김행으로 gviz 누락 위험", L3792 인근)이 멤버십
+  //   탭에도 실제로 발생 중이었던 것. USE_GVIZ=true(2026-07-13) 이후 CS 상담사 화면에서 실제 문의 426건이 계속
+  //   보이지 않고 있었을 가능성 — ★유실 0 최우선 원칙에 따라 즉시 보수적 소스(GAS)로 전환. GM 보고 필수.
+  //   역롤백: 이 3줄을 `var _dbPromise = USE_GVIZ ? gvizLoadMemberInquiry_() : fetch(...)` 삼항으로 되돌리면 됨.
+  var _dbPromise = fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam()).then(function(r){ return r.json(); });
   return _dbPromise
     .then(function(data){
       if (!data.ok) {
