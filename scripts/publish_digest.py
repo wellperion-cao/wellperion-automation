@@ -209,13 +209,13 @@ def _instagram_preview_url(group: list[dict]) -> str:
 
 def _send(token: str, chat_id: str, text: str, preview_url: str = "") -> bool:
     payload: dict[str, str] = {"chat_id": chat_id, "text": text}
-    if preview_url:
-        # 인스타그램 게시물 미리보기 카드를 본문 위 큰 이미지로 항상 ON (GM 요구·인스턴트 뷰)
-        payload["link_preview_options"] = json.dumps({
-            "url": preview_url,
-            "prefer_large_media": True,
-            "show_above_text": True,
-        })
+    # ★ 근본원인 (2026-07-16 진단): 인스타그램 게시물 URL의 link_preview는 텔레그램이 IG로부터
+    #   미리보기 이미지를 못 가져와(IG가 봇 프리뷰 페처 차단) sendMessage 자체가 429로 실패한다.
+    #   → 디제스트가 07-15 셋업 후 한 번도 도착 못한 진짜 원인. 미리보기를 끄면 즉시 200 성공(실측).
+    #   따라서 IG URL 대용량 미리보기는 비활성으로 안정 배달을 보장한다.
+    #   시각 카드가 필요하면 IG URL 프리뷰가 아니라 sendPhoto로 실제 슬라이드 이미지를 첨부(후속 옵션).
+    _ = preview_url  # 시그니처 호환(미사용) — IG URL 프리뷰는 429 유발이라 사용 안 함
+    payload["link_preview_options"] = json.dumps({"is_disabled": True})
     data = urllib.parse.urlencode(payload).encode("utf-8")
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     # 429(레이트리밋) 자가재시도 — retry_after 존중 + 백오프. 텔레그램 그룹 초당/분당 한계로
