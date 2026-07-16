@@ -1181,8 +1181,33 @@ async function closeJob(row,name){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"update-hire",adminPassword:SESSION_PW,sheetRow:row,status:"마감"})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"실패");
+    // [추가 2026-07-16 A-5 P2·G4] 진행중 지원자 명단 안내(자동쓰기 0, 당락 자동변경 배제) — reloadData 전에 표시.
+    if(r.pendingApplicants&&r.pendingApplicants.length>0){ showPendingApplicantsModal(name,r.pendingApplicants); }
     reloadData();
   }catch(e){ alert("마감 실패: "+(e.message||e)); }
+}
+// [추가 2026-07-16 A-5 P2·G4] 마감 시 진행중 지원자 명단 오버레이 — 이름 클릭 시 기존 전역 위임 클릭
+//   핸들러(1772 부근, data-applname+data-stagechg 감지)가 openApplicantInfo 단계변경 모달을 그대로 연다.
+function showPendingApplicantsModal(jobName,list){
+  try{
+    var ov=document.createElement("div");
+    ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center";
+    var box=document.createElement("div");
+    box.style.cssText="background:var(--surface,#fff);border-radius:12px;padding:20px 22px;max-width:420px;width:90%;box-shadow:0 8px 30px rgba(0,0,0,.25)";
+    box.innerHTML="<div style='font-weight:700;font-size:14px;margin-bottom:10px'>⚠ 『"+esc(jobName||"")+"』 마감 — 진행중 지원자 "+list.length+"명</div>"+
+      "<div style='font-size:12.5px;color:var(--ink-soft);margin-bottom:12px'>당락 자동변경 없음 — 아래 이름을 눌러 개별 단계를 처리해 주세요.</div>"+
+      "<div style='display:flex;flex-direction:column;gap:6px'>"+
+      list.map(function(a){return '<button type="button" class="btn-sm" data-applname="'+esc(a.name||"")+'" data-stagechg="'+esc(a.name||"")+'" data-stagepid="'+esc(a.row?String(a.row):"")+'" style="text-align:left">'+esc(a.name||"")+' · '+esc(a.stage||"")+'</button>';}).join("")+
+      "</div><div style='margin-top:14px;text-align:right'><button type='button' class='btn-sm' id='__pendingApplClose'>닫기</button></div>";
+    ov.appendChild(box);
+    document.body.appendChild(ov);
+    function closeOv(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.addEventListener("click",function(e){ if(e.target===ov) closeOv(); });
+    box.querySelector("#__pendingApplClose").addEventListener("click",closeOv);
+    box.querySelectorAll("[data-stagechg]").forEach(function(btn){ btn.addEventListener("click",function(){ setTimeout(closeOv,50); }); });
+  }catch(e){
+    alert("진행중 지원자 "+list.length+"명: "+list.map(function(a){return (a.name||"")+"("+(a.stage||"")+")";}).join(", "));
+  }
 }
 function jobItem(h){
   var isAdmin=SESSION_ROLE==="admin";
@@ -1696,7 +1721,7 @@ function renderHire(){
     html+=all.map(function(a,idx){
       var linked=applLinkedName(a);
       return '<div class="appl-tr" data-applpgrow="'+idx+'"'+(idx<8?'':' style="display:none"')+'>'+
-        '<div class="t-name">'+blBadge(a)+esc(txt(a["지원자명"]))+'</div>'+
+        '<div class="t-name" data-applname="'+esc(a["지원자명"]||"")+'" data-applicant="'+esc(normId(a.url))+'" data-apppid="'+((((a["원본 Notion URL"]||"")+"").match(/[0-9a-f]{32}/i)||[""])[0].toLowerCase())+'" title="클릭: 인사카드" style="cursor:pointer">'+blBadge(a)+esc(txt(a["지원자명"]))+'</div>'+
         '<div>'+esc(txt(a["지원 포지션"]))+'</div>'+
         '<div>'+(a["지원 경로"]?badge(a["지원 경로"]):'<span class="muted">—</span>')+'</div>'+
         '<div>'+(a["전형 단계"]?badge(a["전형 단계"]):'<span class="muted">—</span>')+'</div>'+
@@ -2629,7 +2654,7 @@ function perfEvalSubmit(D){
     breakdown:breakdown, feedback:fb };
   var btn=D.getElementById("pSave"); btn.disabled=true; btn.textContent="저장 중…";
   wpSavePerfEval(payload).then(function(r){
-    if(r&&r.ok){ var fs=(r.finalScore!=null&&r.finalScore!=="")?r.finalScore:r.total; var hasB=(r.bonus!=null&&r.bonus!==""&&Number(r.bonus)>0); btn.textContent="✓ 저장됨 "+(r.grade||"")+(fs!=null?" "+fs+"점":""); alert("저장 완료: "+tgt+" · 등급 "+(r.grade||"?")+"\n기본 "+(r.total!=null?r.total:"?")+"점"+(hasB?(" + 가산점 "+r.bonus+"점 = 최종 "+fs+"점"):"")+"\n인사평가 탭에 반영됩니다."); }
+    if(r&&r.ok){ var fs=(r.finalScore!=null&&r.finalScore!=="")?r.finalScore:r.total; var hasB=(r.bonus!=null&&r.bonus!==""&&Number(r.bonus)>0); btn.textContent="✓ 저장됨 "+(r.grade||"")+(fs!=null?" "+fs+"점":""); /* [추가 2026-07-16 A-5 P4·G9] 저장은 성공(거부 아님) — 재직검증 경고만 병기 */ alert("저장 완료: "+tgt+" · 등급 "+(r.grade||"?")+"\n기본 "+(r.total!=null?r.total:"?")+"점"+(hasB?(" + 가산점 "+r.bonus+"점 = 최종 "+fs+"점"):"")+"\n인사평가 탭에 반영됩니다."+(r.warning?("\n\n⚠ "+r.warning):"")); }
     else { btn.disabled=false; btn.textContent="💾 저장(save-eval)"; alert("저장 실패: "+((r&&r.error)||"알 수 없는 오류")); }
   }).catch(function(e){ btn.disabled=false; btn.textContent="💾 저장(save-eval)"; alert("저장 오류: "+((e&&e.message)||e)); });
 }
@@ -3816,6 +3841,13 @@ async function submitHireComplete(){
     msg.className="modal-msg ok";
     msg.innerHTML="✓ "+esc(hcTarget.name)+" 입사 확정 완료<br>"+parts.map(esc).join("<br>");
     btn.textContent="완료";
+    // [추가 2026-07-16 A-5 P2·G3] 충원 제안 — 자동쓰기 0. 매니저 confirm 승인 시에만 closeJob 호출(update-hire 경로).
+    var __posting=data.posting;
+    if(__posting&&__posting.matched&&__posting.suggestClose===true){
+      if(confirm("『"+__posting.jobName+"』 모집 "+__posting.openings+"명 전원 충원("+__posting.filled+"명) — 지금 마감할까요?")){
+        closeJob(__posting.jobRow,__posting.jobName);
+      }
+    }
     setTimeout(function(){closeHireCompleteModal();reloadData();},2800);
   }catch(e){
     msg.className="modal-msg err";msg.textContent="서버 오류: "+((e&&e.message)||e);
