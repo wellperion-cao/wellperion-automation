@@ -621,5 +621,19 @@
     "artifact": "- 채널 본문 3종(_blog_body/_cafe_body/danggn_copy) + IG 6장 공유 복사\n- review_queue에 L2-PT-BLOG/CAFE/DANGGN 검수대기 등록(승인→자동발행) (CLI ad-hoc · 커밋 656b4d2b)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "656b4d2b7fd71a389153217c00dbca5445331fff"
+  },
+  {
+    "task_id": "CPO-2026-07-16-ADHOC-b188bc70",
+    "clevel": "cpo",
+    "title": "[시포] 멤버십 문의현황 대시보드 채널·문의 과소집계 수리 — 전체 문의 소스로 교정",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-16",
+    "processed_at": "2026-07-16",
+    "ship_no": 1181,
+    "artifact": "버그(USE_GVIZ=true 07-13 전환 후): 대시보드가 활성전용 gviz dbRows(197건)를 분석에 재사용\n→ SUC/단기SUC/LOSS 누락으로 ①올해 문의 196(실621)·전환율 94.9%(실30%) 부풀림\n   ③채널 효율 가입 전 채널 0명(0%) — 조인 대상 SUC가 dbRows에 없어서.\n수리: 대시보드 §1 문의수·§3 채널을 전체 member_inquiry_list(GAS·모든 status)로 계산(_mdashLoadInqAnalytics).\n목록 UI(gviz 활성만)는 무변경. 라이브검증: 올해문 (CLI ad-hoc · 커밋 b188bc70)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b188bc700fdf1c2a657f800609f197b439d6346d"
   }
 ]
