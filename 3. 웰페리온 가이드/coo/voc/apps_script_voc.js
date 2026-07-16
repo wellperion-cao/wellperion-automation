@@ -249,7 +249,10 @@ function _regGetSheet(catKey) {
 // ─── 마스킹 헬퍼 — PII 제거 후 공개 보드용 복제본 반환 ───
 // 이름: 첫 글자 + ** (1글자이면 그대로+*). 빈값이면 그대로.
 // 연락처: 숫자만 추출해 끝 4자리 유지, 앞 마스킹 → 010-****-NNNN 형태. 4자리 미만이면 ****.
-function _regMask(row) {
+// 직원 현황 보드 사진 노출 키(커튼 수준·공개값 — gate.js와 동일 모델). 현황(gate.js 뒤)만 pv=<이 값>으로 사진 썸네일 노출. 공개 reg_board는 계속 '비공개'.
+var REG_STAFF_PHOTO_KEY = 'wlp_reg_pv_2026';
+
+function _regMask(row, staffPhoto) {
   var out = {};
   Object.keys(row).forEach(function (k) { out[k] = row[k]; });
 
@@ -280,8 +283,9 @@ function _regMask(row) {
   }
 
   // 사진 비공개 — 공개(마스킹) 보드에 원본 Drive 링크 미노출 (PII).
+  //   단, 직원 현황(gate.js 뒤)이 pv 키로 호출하면 원본 유지 → 현황 카드 썸네일용.
   //   실무 처리용 reg_list(GATED·내부)는 photoUrl 원본 유지.
-  if (out.photoUrl) out.photoUrl = '비공개';
+  if (out.photoUrl && !staffPhoto) out.photoUrl = '비공개';
 
   return out;
 }
@@ -1127,7 +1131,7 @@ function _lfIdx_(key) {
   return -1;
 }
 
-// ─── lf_submit — 직원 습득물 등록 (게이트 뒤 · 제출토큰) ───
+// ─── lf_submit — 직원 습득물 접수 (게이트 뒤 · 제출토큰) ───
 function _lfSubmit(body) {
   var foundWhen = String(body.foundWhen || '').trim();
   var foundLoc  = String(body.foundLoc  || body.loc || '').trim();
@@ -1156,7 +1160,7 @@ function _lfSubmit(body) {
   sh.getRange(newRow, 1, 1, row.length).setValues([row]);
 
   _vNotifyTelegram(
-    '🧳 <b>[습득물 등록]</b> ' + id + '\n' +
+    '🧳 <b>[습득물 접수]</b> ' + id + '\n' +
     '습득장소: ' + (foundLoc || '-') + '\n' +
     '설명: ' + (itemDesc ? itemDesc.slice(0, 100) : '-') + '\n' +
     (staff ? '등록: ' + staff + '\n' : '') +
@@ -1311,7 +1315,7 @@ var _VOC_PUBLIC_ACTIONS = {
   reg_submit:  true,  // 종합 접수처 제출 — 토큰 면제
   reg_board:   true,  // 마스킹 공개 보드 — 이름·연락처 가려서 반환, 토큰 면제
   reg_update:  true,  // 상태·담당·메모 갱신 — PII 미포함, 토큰 면제
-  lf_submit:   true,  // 습득물 등록 — 제출토큰(_vSubmitGateOk_)으로 별도 보호, 접근키 면제
+  lf_submit:   true,  // 습득물 접수 — 제출토큰(_vSubmitGateOk_)으로 별도 보호, 접근키 면제
   lf_gallery:  true,  // 습득물 공개 갤러리 — 민감필드 미반환(게시중만), 토큰 면제
   diag:        true   // read-only 진단 — 비밀값 절대 미노출, 불리언만 반환
   // ⚠️ reg_list 는 전체 PII(이름·연락처 원문) 포함 — 절대 public 금지, GATED 유지.
@@ -1399,17 +1403,20 @@ function _vProcess(action, body, params) {
     // 마스킹 공개 보드 — _regList 결과에 _regMask 적용 후 카드별 SLA(처리기한) 계산
     // 필터 없는 호출(페이지 실사용 경로)만 45초 서버 캐시 — 재조회·다수 열람 즉답. 쓰기(reg_submit/update/delete/renumber) 시 즉시 무효화.
     var _rbSrc = params || body || {};
+    // 직원 현황(gate.js 뒤) = pv 키 통과 시 사진 원본 유지(썸네일용). 공개 호출은 계속 '비공개'.
+    var _rbStaffPhoto = String(_rbSrc.pv || '') === REG_STAFF_PHOTO_KEY;
     var _rbNoFilter = !_rbSrc.category && !_rbSrc.dept;
-    if (_rbNoFilter) {
+    // 공개(마스킹) 결과만 캐시 — 직원 사진노출본은 캐시에 섞이지 않게 우회.
+    if (_rbNoFilter && !_rbStaffPhoto) {
       try {
         var _rbHit = CacheService.getScriptCache().get('reg_board_v1');
         if (_rbHit) return _vJson(JSON.parse(_rbHit));
       } catch (e) {}
     }
     var boardResult = JSON.parse(_regList(params || body).getContent());
-    var masked = (boardResult.data || []).map(_regMask).map(_regComputeSla);
+    var masked = (boardResult.data || []).map(function (r) { return _regMask(r, _rbStaffPhoto); }).map(_regComputeSla);
     var _rbOut = { ok: true, count: masked.length, data: masked };
-    if (_rbNoFilter) {
+    if (_rbNoFilter && !_rbStaffPhoto) {
       try { CacheService.getScriptCache().put('reg_board_v1', JSON.stringify(_rbOut), 45); } catch (e) {}
     }
     return _vJson(_rbOut);

@@ -175,6 +175,8 @@ a { color:var(--accent); text-decoration:none; }
    렌더 로직 = 운영부 체계.html _deptRegRender 이식·통합
    ═══════════════════════════════════════════ */
 var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+/* 직원 현황(gate.js 뒤) 사진 노출 키 — 이 값이면 reg_board가 사진 원본 반환(썸네일용). 공개는 계속 '비공개'. */
+var REG_PV = 'wlp_reg_pv_2026';
 
 var STATUS_LIST  = ['접수','처리중','완료'];
 var STATUS_COLOR = {'접수':'var(--yellow)','처리중':'var(--blue)','완료':'var(--green)'};
@@ -228,7 +230,7 @@ function regLoad(){
   _loading = true;
   var board = document.getElementById('board');
   board.innerHTML = '<div class="state-msg">불러오는 중…</div>';
-  var url = REG_API + '?action=reg_board&_=' + Date.now();
+  var url = REG_API + '?action=reg_board&pv=' + encodeURIComponent(REG_PV) + '&_=' + Date.now();
   fetch(url, {redirect:'follow', cache:'no-store'})
     .then(function(r){ return r.json(); })
     .then(function(d){
@@ -388,6 +390,8 @@ function _card(r){
   h += '</div>';
 
   if(r.createdAt) h += '<div class="card-loc" style="margin-bottom:6px;">🕒 ' + _esc(String(r.createdAt)) + '</div>';
+  /* 사진 있는 접수 = 축소 썸네일(직원 pv 게이트로 받은 원본). '비공개'(공개 마스킹값)면 미표시 */
+  if(r.photoUrl && r.photoUrl!=='비공개') h += '<img class="lf-thumb" src="' + _esc(_lfThumb(r.photoUrl)) + '" alt="접수 사진" loading="lazy" decoding="async">';
   if(r.name||r.contact) h += '<div class="card-name">' + _esc(String(r.name||'')) + '<span class="contact">' + _esc(String(r.contact||'')) + '</span></div>';
   if(r.content) h += '<div class="card-content">' + _esc(String(r.content)) + '</div>';
   if(r.loc) h += '<div class="card-loc">위치: ' + _esc(String(r.loc)) + '</div>';

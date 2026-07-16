@@ -4,9 +4,11 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>웰페리온 습득물 등록 (직원 전용)</title>
+<title>웰페리온 습득물 접수 (직원 전용)</title>
 <!--
-  습득 분실물 — 직원 전용 등록·관리 페이지 (시토 배1069 · 2026-07-15)
+  습득 분실물 — 직원 전용 접수·관리 페이지 (시토 배1069 · 2026-07-15)
+  · 2026-07-16 디자인 재정렬: 회원 접수 폼(reception_block.html)과 동일 브랜드 헤더 골격 도입
+    (eyebrow·h1·골드 디바이더) + 직원 전용 배지 + 차콜 그라디언트 제출버튼으로 시각 구분. JS·id 불변.
   · gate.js 커튼(사내 전용) 뒤. 백엔드 = VOC/reception GAS lf_* 액션(전용 시트 「습득물」).
   · 등록 탭: 사진(자동압축→Drive)·습득일시·습득장소·설명·처리직원 → lf_submit.
   · 관리 탭: lf_list(게시중) 목록 + 오등록 철회(lf_void). 수령(서명)은 공개 갤러리 카드 '수령' 버튼.
@@ -18,6 +20,8 @@
   --accent:#b08d57;--accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;
   --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);--red:#c0392b;--red-bg:rgba(192,57,43,0.09);
   --blue:#2471a3;--orange:#d68910;
+  /* 직원 전용 차콜 톤 — 회원 접수 폼(골드 accent)과 시각 구분용, 제출버튼·배지 전용 */
+  --charcoal:#3b3a44;--charcoal-2:#2c2b34;--charcoal-bg:rgba(59,58,68,0.08);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{
@@ -28,10 +32,23 @@ a{color:var(--accent);text-decoration:none}
 /* 짜투리 여백 축소로 스크롤 단축 (WP 블록과 정합·2026-07-15 시토). 상 34→20 · 하 70→40. */
 .wrap{max-width:640px;margin:0 auto;padding:20px 18px 40px}
 
-.brand{text-align:center;margin-bottom:20px}
-.brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
-.brand h1{font-size:clamp(20px,5vw,26px);font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.brand{text-align:center;margin-bottom:22px}
+.brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:10px}
+.brand h1{font-size:clamp(20px,5vw,26px);font-weight:800;letter-spacing:-.5px;margin-bottom:0}
 .brand p{font-size:13.5px;color:#777}
+/* ── 골드 디바이더 (회원 접수 폼 reception_block.html 과 동일 브랜드 골격) ── */
+.gold-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:14px auto 16px;max-width:260px}
+.gd-line{flex:1;height:1px}
+.gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
+.gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
+.gd-diamond{color:var(--accent);font-size:9px;line-height:1}
+/* ── 직원 전용 배지 — 차콜 톤(회원 폼엔 없는 직원 구분 표식) ── */
+.staff-badge{
+  display:inline-flex;align-items:center;gap:6px;margin-top:14px;
+  padding:6px 16px;background:var(--charcoal-bg);color:var(--charcoal);
+  border:1px solid rgba(59,58,68,0.22);border-radius:20px;
+  font-size:12.5px;font-weight:700;letter-spacing:.2px
+}
 
 /* PII 안내 배너 */
 .pii{
@@ -82,9 +99,17 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 .preview img{width:100%;max-height:280px;object-fit:cover;border-radius:12px;border:1px solid var(--border)}
 .preview .rm{display:inline-block;margin-top:8px;font-size:13px;color:var(--red);cursor:pointer;font-weight:600}
 
-.submit{width:100%;padding:16px;background:var(--accent);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px;letter-spacing:.3px}
-.submit:hover{opacity:.9}
+/* 직원용 제출버튼 — 회원 접수 폼(골드)과 달리 차콜 그라디언트로 '직원 전용' 시각 구분 */
+.submit-wrap{position:relative;margin-top:4px}
+.submit{width:100%;padding:17px;background:linear-gradient(135deg,var(--charcoal),var(--charcoal-2));color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:0;letter-spacing:.3px;box-shadow:0 4px 14px rgba(44,43,52,.25);transition:opacity .18s,transform .12s}
+.submit:hover{opacity:.92}
+.submit:active{transform:scale(.99)}
 .submit:disabled{opacity:.45;cursor:not-allowed}
+.submit-tag{
+  position:absolute;top:-9px;right:14px;
+  background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.3px;
+  padding:3px 10px;border-radius:20px;box-shadow:0 2px 6px rgba(0,0,0,.15);pointer-events:none
+}
 
 .toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.15);max-width:90%;text-align:center}
 .toast.show{transform:translateX(-50%) translateY(0)}
@@ -104,7 +129,7 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 .state-msg{padding:26px 4px;text-align:center;color:var(--dim);font-size:13.5px}
 .hidden{display:none!important}
 </style>
-<!-- 🔒 사내 전용 커튼 — 습득물 등록·관리(직원용). 열람 갤러리는 별도 무인증 페이지. -->
+<!-- 🔒 사내 전용 커튼 — 습득물 접수·관리(직원용). 열람 갤러리는 별도 무인증 페이지. -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
 </head>
 <body>
@@ -113,8 +138,14 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 
   <div class="brand">
     <p class="brand-eyebrow">Wellperion · Staff</p>
-    <h1>🧳 습득물 등록</h1>
-    <p>직원 전용 · 주운 물건을 등록하면 회원 열람 갤러리에 게시됩니다.</p>
+    <h1>🧳 습득물 접수</h1>
+    <div class="gold-divider">
+      <span class="gd-line left"></span>
+      <span class="gd-diamond">&#9670;</span>
+      <span class="gd-line right"></span>
+    </div>
+    <p>직원 전용 · 주운 물건을 접수하면 회원 열람 갤러리에 게시됩니다.</p>
+    <div class="staff-badge">🔒 직원 전용 · 주운 물건 접수</div>
   </div>
 
   <div class="lf-policy">
@@ -134,7 +165,7 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
   </div>
 
   <div class="tabs">
-    <button class="tab active" id="tabReg" type="button">＋ 습득물 등록</button>
+    <button class="tab active" id="tabReg" type="button">＋ 습득물 접수</button>
     <button class="tab" id="tabMgmt" type="button">🗂 등록 관리 · 철회</button>
   </div>
 
@@ -170,7 +201,10 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
         <input type="text" id="f_staff" placeholder="예: 리셉션 김OO" autocomplete="off">
       </div>
     </div>
-    <button class="submit" id="submitBtn" type="button">습득물 등록하기</button>
+    <div class="submit-wrap">
+      <button class="submit" id="submitBtn" type="button">🧳 습득물 접수하기</button>
+      <span class="submit-tag">직원용</span>
+    </div>
     <p class="note">등록 즉시 회원 열람 갤러리(게시중)에 노출됩니다.<br>물건을 찾아가면 갤러리에서 현장 서명 후 자동으로 내려갑니다.</p>
   </div>
 
@@ -244,14 +278,14 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
       .then(function(r){ return r.json(); })
       .then(function(res){
         if(res&&res.ok){ toast('등록 완료 — '+res.id); resetForm(); }
-        else { toast((res&&res.error)||'등록 실패',true); btn.disabled=false; btn.textContent='습득물 등록하기'; }
+        else { toast((res&&res.error)||'등록 실패',true); btn.disabled=false; btn.textContent='🧳 습득물 접수하기'; }
       })
-      .catch(function(){ toast('네트워크 오류 — 다시 시도해 주세요',true); btn.disabled=false; btn.textContent='습득물 등록하기'; });
+      .catch(function(){ toast('네트워크 오류 — 다시 시도해 주세요',true); btn.disabled=false; btn.textContent='🧳 습득물 접수하기'; });
   });
   function resetForm(){
     photoData=''; photoName=''; $('f_photo').value=''; $('f_preview').style.display='none';
     $('f_itemDesc').value=''; $('f_staff').value='';
-    var btn=$('submitBtn'); btn.disabled=false; btn.textContent='습득물 등록하기';
+    var btn=$('submitBtn'); btn.disabled=false; btn.textContent='🧳 습득물 접수하기';
   }
 
   // ── 탭 전환 ──
