@@ -3092,34 +3092,45 @@ function loadMembershipDash(){
       _mdashMetric('가입', regM, regL, regY, false, !!res.reg.l) +
       _mdashMetric('전환율(가입/문의)', rateM, rateL, rateY, true, rateL != null);
   }
-  // dbRows(문의 DB 탭이 이미 로드) 재사용 — 비어있으면(초기 레이스) loadDbData()로 1회만 자체 로드.
-  function _ensureDbRows(cb){
-    if (dbRows && dbRows.length) { cb(); return; }
-    var p = loadDbData();
-    if (p && p.then) p.then(cb).catch(cb); else cb();
+  // 대시보드 분석 전용 — 전체 문의(모든 status) GAS 직독으로 계산. ★버그수리(2026-07-16 시포):
+  // USE_GVIZ=true 전환(07-13) 후 gviz dbRows는 '진행중만'(활성) 배열이라 SUC·단기SUC·LOSS가 빠져
+  // §1 올해 문의(196↔실621)·§3 채널 가입(전 채널 0%↔실 소개49%·기존34%…)이 과소집계됐다.
+  // 목록 UI(gviz)는 활성만 보여도 맞지만, 대시보드(누적 분석)는 전체 문의를 써야 정확 → 소스 분리.
+  function _mdashLoadInqAnalytics(){
+    function _compute(allInq){
+      var mCount = 0, lCount = 0, yCount = 0;
+      var chMap = {};   // §3 채널별 { inq, joined } — 전체 문의(누적) 기준
+      var joinSet = { 'SUC':1, '단기SUC':1, '결제완납':1 };
+      (allInq || []).forEach(function(row){
+        if (!_mdashInScope(row)) return;
+        var ts = String(row.timestamp || '');
+        var d10 = ts.slice(0, 10);
+        if (ts.indexOf(mStr.slice(0,7)) === 0) mCount++;
+        if (d10 >= lStr && d10 <= lEndStr) lCount++;
+        if (ts.indexOf(yStr.slice(0,4)) === 0) yCount++;
+        var ch = row.channel ? String(row.channel).trim() : '';
+        if (!ch) ch = '기타·미상';
+        if (!chMap[ch]) chMap[ch] = { inq: 0, joined: 0 };
+        chMap[ch].inq++;
+        if (joinSet[row.status]) chMap[ch].joined++;
+      });
+      res.inq = { m: mCount, l: lCount, y: yCount };
+      res.inqDone = true;
+      _renderMdashChannelFromMap(chMap);
+      _perfReady();
+    }
+    if (GAS_URL === GAS_PLACEHOLDER) { _compute(dbRows || []); return; }   // 백엔드 미연동 폴백(값 과소 가능)
+    fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam())
+      .then(function(r){ return r.json(); })
+      .then(function(d){ _compute((d && d.data) || []); })
+      .catch(function(){
+        res.inq = { m: null, l: null, y: null }; res.inqDone = true;   // 실패=측정불가(전환율도 '–'), 채널 실패표기
+        var el = document.getElementById('mdashSecChannel');
+        if (el) el.innerHTML = '<div style="color:var(--dim);font-size:11px">채널 데이터 불러오기 실패</div>';
+        _perfReady();
+      });
   }
-  _ensureDbRows(function(){
-    var mCount = 0, lCount = 0, yCount = 0;
-    var chMap = {};   // §3 채널별 { inq, joined } — 멤버십 dbRows 전체(누적) 기준
-    var joinSet = { 'SUC':1, '단기SUC':1, '결제완납':1 };
-    dbRows.forEach(function(row){
-      if (!_mdashInScope(row)) return;
-      var ts = String(row.timestamp || '');
-      var d10 = ts.slice(0, 10);
-      if (ts.indexOf(mStr.slice(0,7)) === 0) mCount++;
-      if (d10 >= lStr && d10 <= lEndStr) lCount++;
-      if (ts.indexOf(yStr.slice(0,4)) === 0) yCount++;
-      var ch = row.channel ? String(row.channel).trim() : '';
-      if (!ch) ch = '기타·미상';
-      if (!chMap[ch]) chMap[ch] = { inq: 0, joined: 0 };
-      chMap[ch].inq++;
-      if (joinSet[row.status]) chMap[ch].joined++;
-    });
-    res.inq = { m: mCount, l: lCount, y: yCount };
-    res.inqDone = true;
-    _renderMdashChannelFromMap(chMap);
-    _perfReady();
-  });
+  _mdashLoadInqAnalytics();
   _mdashFetchRegistered(mStr, nowStr, function(d){ res.reg.m = d; _perfReady(); });
   _mdashFetchRegistered(lStr, lEndStr, function(d){ res.reg.l = d; _perfReady(); });
   _mdashFetchRegistered(yStr, nowStr, function(d){ res.reg.y = d; _perfReady(); });
