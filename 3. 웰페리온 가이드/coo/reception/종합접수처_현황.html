@@ -99,6 +99,27 @@ a { color:var(--accent); text-decoration:none; }
   cursor:pointer; font-family:inherit;
 }
 .state-msg { padding:24px 4px; text-align:center; color:var(--dim); font-size:13px; }
+
+/* ── 🧳 습득물 섹션 (별도 · 6종 칸반과 상태체계 다름 → 안 섞고 나란히) ── */
+.lf-section { margin-bottom:14px; }
+.lf-head { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.lf-title { font-size:15px; font-weight:800; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.lf-counts { font-size:12.5px; font-weight:700; color:var(--dim); display:inline-flex; align-items:center; gap:6px; }
+.lf-counts .on { color:var(--orange); }
+.lf-counts .done { color:var(--green); }
+.lf-links { display:flex; gap:6px; flex-wrap:wrap; }
+.lf-links a, .lf-links button { padding:5px 11px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); cursor:pointer; font-size:12px; font-weight:600; font-family:inherit; text-decoration:none; }
+.lf-links a:hover, .lf-links button:hover { background:var(--accent-bg); color:var(--accent); border-color:rgba(183,159,138,0.3); }
+.lf-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+.lf-item { background:var(--paper); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.lf-item .lf-ph { width:100%; aspect-ratio:4/3; object-fit:cover; background:var(--bg); border-bottom:1px solid var(--border); display:block; }
+.lf-item .lf-b { padding:9px 10px 10px; }
+.lf-item .lf-id { font-size:10px; color:var(--dim); font-weight:700; }
+.lf-item .lf-desc { font-size:12.5px; font-weight:600; margin:2px 0 5px; word-break:break-word; line-height:1.4; }
+.lf-item .lf-meta { font-size:11px; color:var(--dim); line-height:1.6; }
+.lf-item .lf-meta .lf-loc { color:var(--accent); font-weight:600; }
+.lf-empty { grid-column:1/-1; padding:18px 4px; text-align:center; color:var(--dim); font-size:12.5px; }
+.lf-divider { border-top:1px solid var(--border); margin:2px 0 16px; }
 </style>
 <!-- 🔒 사내 전용 커튼(GM 승인 2026-07-07) — 접수 회원 성함·연락처·내용(실명 포함) 대외 공개 차단. 인증 후 열람. (진짜 잠금=JWT ≈2026-09) -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
@@ -109,17 +130,31 @@ a { color:var(--accent); text-decoration:none; }
   <div class="header">
     <div>
       <h1>🙋 웰페리온 종합접수처 현황</h1>
-      <div class="header-meta">COO 관할 · 6종 접수 통합 칸반 · GAS 실시간 (단일 SSOT)</div>
+      <div class="header-meta">COO 관할 · 6종 접수 칸반 + 🧳 습득물 · GAS 실시간 (단일 SSOT)</div>
     </div>
     <div class="header-btns">
       <a href="http://wellperion.com/ko/reception/" target="_blank">📲 회원 접수 폼</a>
       <a href="/wellperion-automation/wellperion_guide(main).html#O2">🏠 ERP 허브</a>
-      <button onclick="regLoad()">↻ 새로고침</button>
+      <button onclick="regLoad();lfLoad()">↻ 새로고침</button>
     </div>
   </div>
 </div>
 
 <div class="content">
+  <!-- 🧳 습득물 (별도 섹션 · 상태체계 다름 → 6종 칸반과 안 섞고 나란히) -->
+  <section class="lf-section" id="lfSection">
+    <div class="lf-head">
+      <div class="lf-title">🧳 습득물 <span class="lf-counts" id="lfCounts"></span></div>
+      <div class="lf-links">
+        <a href="lost_found_register.html" target="_blank">＋ 등록·관리</a>
+        <a href="lost_found_gallery.html" target="_blank">🖼 공개 갤러리</a>
+        <button type="button" onclick="lfLoad()">↻</button>
+      </div>
+    </div>
+    <div class="lf-grid" id="lfGrid"><div class="lf-empty">불러오는 중…</div></div>
+  </section>
+  <div class="lf-divider"></div>
+
   <!-- 상태 요약 -->
   <div class="summary-row" id="statusSummary"></div>
 
@@ -399,7 +434,58 @@ function _update(id, cat, payload, btn){
   });
 }
 
+/* ═══════════════════════════════════════════
+   🧳 습득물 (lf_list · 읽기 전용 반영)
+   같은 VOC GAS. 게시중=사진 카드, 수령완료=카운트.
+   상태체계(게시중/수령완료/철회)가 6종 칸반과 달라 별도 섹션.
+   수령·철회 액션은 등록·관리/갤러리 페이지 소유 — 여기선 표시만.
+   ═══════════════════════════════════════════ */
+var LF_POSTED = '게시중', LF_HANDED = '수령완료';
+var _lfLoading = false;
+function _lfThumb(url){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w300'):url; }
+function lfLoad(){
+  if(_lfLoading) return;
+  _lfLoading = true;
+  var grid = document.getElementById('lfGrid');
+  grid.innerHTML = '<div class="lf-empty">불러오는 중…</div>';
+  var key=''; try{ key = localStorage.getItem('wp_access_token')||''; }catch(e){}
+  var url = REG_API + '?action=lf_list&_=' + Date.now() + (key ? ('&key=' + encodeURIComponent(key)) : '');
+  fetch(url, {redirect:'follow', cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      _lfLoading = false;
+      if(!d || !d.ok){
+        grid.innerHTML = '<div class="lf-empty">습득물을 불러오지 못했습니다 — ' + _esc(d && d.error || '') + '</div>';
+        document.getElementById('lfCounts').innerHTML = '';
+        return;
+      }
+      _lfRender(Array.isArray(d.data) ? d.data : []);
+    })
+    .catch(function(){
+      _lfLoading = false;
+      grid.innerHTML = '<div class="lf-empty">네트워크 오류 — ↻ 눌러 다시 시도해 주세요.</div>';
+    });
+}
+function _lfRender(rows){
+  var posted = rows.filter(function(r){ return String(r.status||'')===LF_POSTED; });
+  var handed = rows.filter(function(r){ return String(r.status||'')===LF_HANDED; }).length;
+  document.getElementById('lfCounts').innerHTML =
+    '<span class="on">게시중 ' + posted.length + '</span><span>·</span><span class="done">수령완료 ' + handed + '</span>';
+  var grid = document.getElementById('lfGrid');
+  if(!posted.length){ grid.innerHTML = '<div class="lf-empty">게시중 습득물이 없습니다.</div>'; return; }
+  grid.innerHTML = posted.map(function(r){
+    var when = String(r.foundWhen||r.createdAt||'').replace('T',' ');
+    var ph = r.photoUrl ? ('<img class="lf-ph" src="' + _esc(_lfThumb(r.photoUrl)) + '" alt="습득물" loading="lazy" decoding="async">') : '<div class="lf-ph"></div>';
+    return '<div class="lf-item">' + ph +
+      '<div class="lf-b"><div class="lf-id">' + _esc(r.foundId||'') + '</div>' +
+      '<div class="lf-desc">' + _esc(r.itemDesc||'(설명 없음)') + '</div>' +
+      '<div class="lf-meta"><span class="lf-loc">📍 ' + _esc(r.foundLoc||'-') + '</span><br>🕒 ' + _esc(when||'-') + '</div>' +
+      '</div></div>';
+  }).join('');
+}
+
 regLoad();
+lfLoad();
 </script>
 </body>
 </html>
