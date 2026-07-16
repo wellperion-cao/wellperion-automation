@@ -4009,7 +4009,7 @@ var LESSON_INSTRUCTOR_ROSTER = {
   "수영": ["박민서", "송민근", "강대경", "천주희", "구성우", "박주혜", "김성은", "강승구", "김형기", "아쿠아"],
   "체조&트램폴린": ["이형주", "배자경", "김영운"],
   "뮤지컬팀": ["편한별"],
-  "루프 매소드": ["루프 매소드"]
+  "웰니스": ["루프메소드"]
 };
 var LESSON_UNASSIGNED_OPTION = '담당자 X';   // 명단 없음/미배정 공통 옵션(전 종목)
 
@@ -4023,7 +4023,7 @@ function _lessonRosterKeyOf(sportKey) {
   if (/스쿼시/.test(s)) return '스쿼시';
   if (/체조|트램폴린|WSC/i.test(s)) return '체조&트램폴린';
   if (/뮤지컬/.test(s)) return '뮤지컬팀';
-  if (/루프/.test(s)) return '루프 매소드';
+  if (/웰니스|wellness|루프/i.test(s)) return '웰니스';   // 웰니스 프로그램=루프메소드 단일 공급자(2026-07-16 GM)
   return null;
 }
 // 종목별 강사 명단 = 종목탭 정본(지정강사 valid) 우선, 미로딩/탭없음이면 하드코딩 명단 폴백. 2026-07-16 GM
@@ -4136,9 +4136,9 @@ function _lessonSportMgmt(row, sportKey) {
   }
   // ★타팀 오염 제거 — 이 종목 정규 강사(탭 valid 또는 하드코딩 명단)에 없는 담당=미배정.
   //   탭이 오염/부재한 종목(필라테스·뮤지컬 등)도 하드코딩 명단 기준으로 커버. 2026-07-16 GM
-  var _valid = _lessonValidOwners(sportKey, isYouth), _hasV = false;
-  for (var _vk in _valid) { _hasV = true; break; }
-  if (owner && _hasV && !_valid[owner]) owner = '';
+  var _valid = _lessonValidOwners(sportKey, isYouth), _vk = Object.keys(_valid);
+  // 정규 강사 아님 → 미배정(담당자 X). 단, 단일 공급자 종목(웰니스=루프메소드·뮤지컬=편한별)은 그 공급자로 기본 배정. 2026-07-16 GM
+  if (owner && _vk.length && !_valid[owner]) owner = (_vk.length === 1) ? _vk[0] : '';
   return { status: row.status || '', owner: owner, contacts: row.contacts || [] };
 }
 // 저장 성공 후 로컬 반영 — 항상 행단일 필드(flat 모델). 백엔드 lesson_inquiry_update가 body.sport='' → row-level(flat L~P) 경로로 저장. 배973 시포·GM 2026-07-14.
