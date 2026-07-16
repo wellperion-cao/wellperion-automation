@@ -349,5 +349,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_017kZWNEWMmngsMbtSoRSai9 (CLI ad-hoc · 커밋 5cb86035)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "5cb86035a248ec9d4c29a58838e71ed96ad53e9d"
+  },
+  {
+    "task_id": "CTO-2026-07-16-ADHOC-6fa70869",
+    "clevel": "cto",
+    "title": "[시토] WP 폰트 CORS 근본교정 — @font-face 옛호스트(cafe24)→동일오리진 /font/ (배1111)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-16",
+    "processed_at": "2026-07-16",
+    "ship_no": 1162,
+    "artifact": "- 문제: 추가CSS @font-face 가 wellperion.cafe24.com/font/ 참조(CORS 헤더 없음)\n  → 크로스오리진 폰트 브라우저 차단, FuturaPT/HudsonNYSerif 사이트전역 미로드\n- 해법: 동일 폰트가 wellperion.com/font/ 에 이미 존재 → url만 /font/ 로 8건 치환\n  (재업로드 불요·CORS 소멸). FuturaPT svg 접두사 누락 1건 net-zero 동반 교정\n- 도구: swap-additional-css 모드 신설 — wp.customize JS API (CLI ad-hoc · 커밋 6fa70869)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6fa70869f899837066122cc3d6dc4cdbcdc3b86a"
   }
 ]
