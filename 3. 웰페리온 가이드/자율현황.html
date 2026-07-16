@@ -784,6 +784,23 @@
     </div>
     <div class="sec-note" style="margin:8px 0 0;">소스: <code>module_registry.json</code>(등록·주기·채널) · <code>erp_status.json</code> automation_health(마지막 실행·건강) · <code>kakao_last_send.json</code>(카톡 3방 발송). 발송 로그 없는 항목은 <b>⚪ 측정불가/예정</b>.</div>
     <!-- ══ /모듈 보고 현황 ══ -->
+
+    <!-- ══ 🔔 조건부·상주 알림 (모듈 외 · 생존 표기) ══ -->
+    <h3 id="sec-sched-alerts" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">🔔 조건부·상주 알림 <span style="font-size:12px;font-weight:400;color:var(--dim);">— 모듈 등록부 밖 알림 (스케줄러 상주루프·GAS 트리거)</span></h3>
+    <p class="sec-note" style="margin:0 0 6px;">모듈 봇ID로 안 잡히는 알림(하루정리·문의폴링·점검독려). <b>발송 로직은 전혀 안 건드리며</b> 살아있는지(생존)만 표시합니다.</p>
+    <p class="sec-note" style="margin:0 0 10px;">🟢 <b>상주 정상</b> = 발사 엔진(스케줄러·트리거)이 살아있음 <span style="color:var(--dim);">(발송 시각은 미집계 — 실제 발송은 아래 '발송 조건' 충족 시에만)</span> · 🔴 = 엔진 정지 · ⚪ = 생존 신호 없음. <b>조건부 알림은 '안 보냄'이 정상</b>(점검 완료·신규 없음).</p>
+    <div class="tbl-wrap" id="sched-alerts-wrap">
+      <table>
+        <thead>
+          <tr><th style="width:210px">알림</th><th style="width:130px">언제</th><th style="width:200px">어디로</th><th style="width:120px">발송 조건</th><th style="width:150px">상태(생존)</th></tr>
+        </thead>
+        <tbody id="sched-alerts-tbody">
+          <tr><td colspan="5" style="color:var(--dim);">불러오는 중…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="sec-note" style="margin:8px 0 0;">생존 판정원: 스케줄러 상주 알림=<code>erp_status.json</code> automation_health <code>WellperionDailyScheduler</code> · GAS 트리거=<code>Wellperion-Telegram-HealthCheck-1300</code>. 방별 발송 시각 로그는 <code>logs/telegram_sent-*.log</code>(비추적)라 라이브 fetch 불가 → 생존만 표기(억지 초록 금지·발송 무변경).</div>
+    <!-- ══ /조건부·상주 알림 ══ -->
   </details>
 
   <footer class="foot">
@@ -1595,6 +1612,40 @@
     tbody.innerHTML = rows;
   }
 
+  // ═══════════ 🔔 조건부·상주 알림 (모듈 등록부 밖 · 생존 표기) — 2026-07-16 GM 'A. 생존 표기' 채택 ═══════════
+  // 발송 로직 무변경. 이 3건은 daily_scheduler 상주루프/ GAS 트리거라 automation_health 예약작업이 없어 last-send로는 ⚪ 밖에 안 됨.
+  // 그런데 ②③은 '조건부 발송'(미완/신규 시만)이라 미발송=정상 → last-send 신선도 판정은 오측정. 발사 엔진 '생존'만 정직 표기(🟢=엔진 살아있음, 발송 시각 아님).
+  var SCHED_ALERTS = [
+    { icon:'🌙', what:'하루 일과 정리 다이제스트', when:'매일 22:30', where:'텔레그램 문의·점검·종합접수 3방', live:'sched', cond:'무조건 매일', note:'발송=매일 · 방별 발송 시각은 미집계(생존만)' },
+    { icon:'🔔', what:'문의 5종 신규 알림', when:'신규 시 5분 폴링', where:'텔레그램 문의알림방', live:'gas', cond:'신규 문의 시만', note:'GAS 트리거 — 안 보냄=신규 없음(정상)' },
+    { icon:'⚠️', what:'점검 미완 독려', when:'매일 17:00·22:00(미완 시)', where:'텔레그램 점검관리방', live:'sched', cond:'점검 미완 시만', note:'완료 시 침묵이 정상(안 보냄=건강)' }
+  ];
+  function renderSchedAlerts(erp){
+    var tb = document.getElementById('sched-alerts-tbody');
+    if(!tb) return;
+    var ahMap = {};
+    var items = (erp && erp.automation_health && Array.isArray(erp.automation_health.items)) ? erp.automation_health.items : [];
+    items.forEach(function(it){ if(it && it.name) ahMap[it.name] = it; });
+    function alive(name){ var a = ahMap[name]; return !!(a && String(a.state || '').indexOf('정상') === 0); }
+    var schedAlive = alive('WellperionDailyScheduler');
+    var gasProxyAlive = alive('Wellperion-Telegram-HealthCheck-1300');
+    var rows = SCHED_ALERTS.map(function(s){
+      var chip, healthTxt;
+      if(s.live === 'sched'){
+        if(schedAlive){ chip = 'ok'; healthTxt = '🟢 상주 정상'; }
+        else { chip = 'bad'; healthTxt = '🔴 스케줄러 정지'; }
+      } else { // gas
+        if(gasProxyAlive){ chip = 'ok'; healthTxt = '🟢 트리거 상주'; }
+        else { chip = 'idle'; healthTxt = '⚪ 측정불가'; }
+      }
+      return '<tr><td>' + esc(s.icon) + ' <strong>' + esc(s.what) + '</strong></td><td>' + esc(s.when) +
+             '</td><td>' + esc(s.where) + '</td><td>' + esc(s.cond) +
+             '</td><td><span class="statchip ' + chip + '">' + healthTxt + '</span>' +
+             '<div style="font-size:11px;color:var(--dim);margin-top:3px;">' + esc(s.note) + '</div></td></tr>';
+    }).join('');
+    tb.innerHTML = rows;
+  }
+
   // ═══════════ ② 돌아가는 자동화: 📋 등록부 모듈 카드 (status/module_registry.json 신규 스키마 · 2026-07-09) ═══════════
   // 소비자는 자기 필드만 읽는다(계약 §2 관대 원칙) — feature·autonomy·ai_free_fallback·honesty_default·feedback만.
   // 필터: owner_role 있는 신규 스키마만(레거시 automation_health류 배제) + front_card.window==='자율현황'(이 창 소속만 — M1/M2/O1/문의회원 소속은 각자 창에서 렌더).
@@ -1719,6 +1770,10 @@
     try{ renderModuleRegistry(moduleRegistry, erpStatus, parseJson(a[13])); }catch(e){
       var mrt = document.getElementById('module-registry-tbody');
       if(mrt) mrt.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
+    }
+    try{ renderSchedAlerts(erpStatus); }catch(e){
+      var sat = document.getElementById('sched-alerts-tbody');
+      if(sat) sat.innerHTML = '<tr><td colspan="5" style="color:var(--dim);">조건부·상주 알림 표시 오류.</td></tr>';
     }
     try{ renderRegistryCards(moduleRegistry); }catch(e){
       var rcEl = document.getElementById('registry-cards');
