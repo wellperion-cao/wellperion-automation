@@ -1235,19 +1235,21 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
        변경 없이 그대로 유지, 기존 멤버십 데이터(cpo_today_stats)만 재활용(신규 fetch 없음).
        대기자=멤버십 문의 진행상태에 '대기' 버킷이 존재하지 않아(STATUS_OPTIONS 참조, 강습 전용) 정직표기(미구현). ══ -->
   <div class="dash-grid" id="memberTabNav">
-    <!-- 카드1: 새 문의 (구 히어로 sumNewCard 이관) -->
-    <a class="sum-card sc-new" id="sumNewCard" href="javascript:void(0)" onclick="heroCardClick('new')">
-      <span class="sc-top">🆕 새 문의</span>
-      <span class="sc-num" id="sumNew">0</span>
-      <span class="sc-desc">금일 접수</span>
-      <span class="sc-go" id="sumNewGo">문의 DB로 →</span>
+    <!-- 카드1: 새 문의 (구 히어로 sumNewCard → 2026-07-16 GM 지시로 카드3과 동일한 dash-card 금일/월간 형식 통일. id sumNew 유지=데이터배선 보존) -->
+    <a class="dash-card" data-kind="inq" href="javascript:void(0)" onclick="heroCardClick('new')">
+      <div class="dash-head"><span class="dash-dot inq"></span><span class="dash-title">🆕 새 문의</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="sumNew">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="sumNewMonth">0</b> 명</span></div>
+      </div>
     </a>
-    <!-- 카드2: 오늘 예약 (구 히어로 sumBookCard 이관 — 형태·클릭동작 그대로) -->
-    <a class="sum-card sc-book" id="sumBookCard" href="javascript:void(0)" onclick="heroCardClick('book')">
-      <span class="sc-top">📅 오늘 예약</span>
-      <span class="sc-num" id="sumBook">0</span>
-      <span class="sc-desc">상담·체험 방문</span>
-      <span class="sc-go" id="sumBookGo">예약 달력으로 →</span>
+    <!-- 카드2: 오늘 예약 (구 히어로 sumBookCard → 2026-07-16 GM 지시로 dash-card 통일, id sumBook 유지) -->
+    <a class="dash-card" data-kind="book" href="javascript:void(0)" onclick="heroCardClick('book')">
+      <div class="dash-head"><span class="dash-dot" style="background:var(--teal)"></span><span class="dash-title">📅 오늘 예약</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="sumBook">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="sumBookMonth">0</b> 명</span></div>
+      </div>
     </a>
     <!-- 카드3: 등록 현황 (등록 회원 명단 — 내부 탭) -->
     <a class="dash-card" data-kind="reg" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered')">
@@ -1266,13 +1268,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
       </div>
     </a>
-    <!-- 카드5: 대기자 회원 관리 (멤버십 문의에는 '대기' 진행상태 버킷이 없음 — 강습과 달리 데이터 미존재, 정직표기) -->
-    <div class="dash-card" data-kind="wait" style="cursor:default">
+    <!-- 카드5: 대기자 회원 관리 (2026-07-16 GM 지시 — 유효회원 시작일자 > 오늘 인 회원을 대기자로 분리·클릭형 전환) -->
+    <a class="dash-card" data-kind="wait" href="javascript:void(0)" onclick="showWaitMembers()">
       <div class="dash-head"><span class="dash-dot" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">대기</span><span class="dash-v"><b class="lead" id="dMemWait" style="font-size:15px;color:var(--dim)">미구현</b></span></div>
+        <div class="dash-line"><span class="dash-k">시작 전</span><span class="dash-v"><b class="lead" id="dMemWait">0</b> 명</span></div>
       </div>
-    </div>
+    </a>
     <!-- 카드6: LOSS 회원 관리 (이탈 — cpo_today_stats.todayLoss/monthLoss 재활용, 기존 gToLoss/gMoLoss와 동일 소스) -->
     <a class="dash-card" data-kind="loss" href="javascript:void(0)" onclick="openChurnManage()">
       <div class="dash-head"><span class="dash-dot" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
@@ -1574,6 +1576,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
           autocomplete="off">
         <button class="btn-refresh" onclick="loadActiveMembers()">새로고침</button>
       </div>
+
+      <!-- 대기자(미래시작) 보기 안내 배너 — 대기자 카드 클릭 시에만 노출(2026-07-16 GM 지시). -->
+      <div id="activeStartBanner" style="display:none;margin-bottom:10px;padding:8px 12px;border-radius:8px;background:var(--accent-bg);border:1px solid var(--accent-border);font-size:12.5px;color:var(--text)"></div>
 
       <div class="active-count" id="activeCount"></div>
 
@@ -2921,6 +2926,9 @@ function renderSummaryHero() {
   // 멤버십 — _cpoStats.todayInquiry(사전로드 통계)·_tourTodayEager(renderTopDash 실측) 재사용.
   setN('sumNew',  (typeof _cpoStats !== 'undefined' && _cpoStats && _cpoStats.todayInquiry != null) ? _cpoStats.todayInquiry : 0);
   setN('sumBook', (window._tourTodayEager != null) ? window._tourTodayEager : 0);
+  // 월간 보조수치(2026-07-16 GM 지시 — 카드1·2 dash-card 통일에 맞춰 월간 라인 추가). 신규 fetch 없음(기존 값 재사용).
+  setN('sumNewMonth',  (typeof _cpoStats !== 'undefined' && _cpoStats && _cpoStats.monthInquiry != null) ? _cpoStats.monthInquiry : 0);
+  setN('sumBookMonth', (window._tourMonthEager != null) ? window._tourMonthEager : 0);
   setDim('sumNewCard', false); setDim('sumBookCard', false);
 }
 
@@ -4680,6 +4688,31 @@ var _activeLoaded  = false;
 var _activeComposing = false;
 var _activeScope   = 'valid';   // 'valid'(잔여일>0 유효회원) | 'ended'(종료·이탈)
 var _activeReqSeq  = 0;         // 토글 빠르게 누를 때 느린 이전 응답이 최신을 덮지 않게(경쟁 가드)
+var _activeStartFilter = 'started';   // 대기자 버킷(2026-07-16 GM 지시) — 'started'(시작일 도래분만·기본) | 'waiting'(미래시작만) | 'all'(전체)
+
+// 대기자 버킷 헬퍼 — _activeRows(유효회원)의 '시작\n일자' 컬럼으로 미래시작 회원 판별. 신규 GAS 액션 없음(기존 member_active_list 데이터 재사용).
+function _memStartKey(row) {
+  return Object.keys(row || {}).find(function(k){ return k.replace(/\s/g, '').indexOf('시작일자') >= 0; });
+}
+function _isFutureStart(row) {
+  var key = _memStartKey(row);
+  if (!key) return false;
+  var v = String(row[key] || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}/.test(v)) return false;   // 값 없거나 형식 아니면 시작된 것으로 간주
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  return v.slice(0, 10) > todayStr;
+}
+function _waitMembers() {
+  return (_activeRows || []).filter(_isFutureStart);
+}
+// 검색·정렬과 AND 결합되는 대기자 필터 — loadActiveMembers·_activeFilter 공용.
+function _activeStartFilterApply(rows) {
+  if (_activeScope !== 'valid') return rows;   // 대기자 개념은 유효회원 스코프 한정
+  if (_activeStartFilter === 'waiting') return rows.filter(_isFutureStart);
+  if (_activeStartFilter === 'all') return rows;
+  return rows.filter(function(row){ return !_isFutureStart(row); });   // 기본 'started'
+}
 var _activeSort    = { col: null, dir: -1 };  // 헤더 클릭 정렬(제목 클릭 = 정렬). 기본 정렬(잔여일 임박순=valid·종료일 내림차순=ended)은 클라이언트에서 적용(_applyRemainSort·_applyEndedSort). 2026-07-15 GM 지시
 function _activeSortBy(col) {
   if (_activeSort.col === col) _activeSort.dir = -_activeSort.dir;
@@ -4778,7 +4811,7 @@ function loadActiveMembers() {
       _activeLoaded  = true;
       if (_activeScope === 'valid') _applyRemainSort();        // 기본=잔여일 임박순(작은 양수 먼저). 2026-07-03 시포·GM
       else if (_activeScope === 'ended') _applyEndedSort();    // 기본=종료일 내림차순(최근 종료 상단). 2026-07-15 GM 지시
-      _activeRender(_activeRows);
+      _activeRender(_activeStartFilterApply(_activeRows));   // 대기자(미래시작) 기본 제외(2026-07-16 GM 지시)
       renderActiveSummary();
       renderChurnActionPanel();   // 이탈방지 액션 모듈(배754 후속) — scope 전환마다 재계산
       if (typeof _tapReady !== 'undefined' && _tapReady) renderTodayActionPanel();   // 오늘 할 일의 갱신임박·저이용 섹션도 _activeRows 도착 시 동기 재계산(2026-07-15 병합)
@@ -4789,6 +4822,35 @@ function loadActiveMembers() {
       if (_seq !== _activeReqSeq) return;
       _activeRenderState('error', err.message || 'GAS URL 또는 배포 상태를 확인하세요.');
     });
+}
+
+// 대기자(미래시작) 카드 클릭 → 멤버십 회원 관리 탭으로 전환·대기자만 표시(2026-07-16 GM 지시). 신규 fetch 없음(_activeRows 재사용).
+function showWaitMembers() {
+  _activeStartFilter = 'waiting';
+  switchTab('active');
+  var si = document.getElementById('activeSearch'); if (si) si.value = '';
+  if (_activeScope !== 'valid') {
+    setActiveScope('valid', document.getElementById('activeScopeValid'));   // 재조회 후 대기자 필터가 반영된 채로 자동 재렌더
+  } else {
+    _activeRender(_activeStartFilterApply(_activeRows));
+  }
+}
+// 대기자 보기에서 "전체 보기로 →" 클릭 시 기본(시작 도래분만) 복귀.
+function _activeBackToStarted() {
+  _activeStartFilter = 'started';
+  var si = document.getElementById('activeSearch');
+  _activeFilter(si ? si.value : '');
+}
+// 대기자 보기 중 안내 배너 — 유효회원 스코프에서만 노출.
+function _renderActiveStartBanner() {
+  var b = document.getElementById('activeStartBanner');
+  if (!b) return;
+  if (_activeScope === 'valid' && _activeStartFilter === 'waiting') {
+    b.style.display = '';
+    b.innerHTML = '🕐 대기자(시작 전) 회원만 표시 중 · <a href="javascript:void(0)" onclick="_activeBackToStarted()" style="color:var(--accent);font-weight:700;text-decoration:none">전체 보기로 →</a>';
+  } else {
+    b.style.display = 'none';
+  }
 }
 
 function _activeWireSearch() {
@@ -4807,11 +4869,12 @@ function _activeWireSearch() {
 
 function _activeFilter(query) {
   var q = query.trim().toLowerCase();
+  var base = _activeStartFilterApply(_activeRows);   // 대기자 필터와 AND 결합(2026-07-16 GM 지시)
   if (!q) {
-    _activeRender(_activeRows);
+    _activeRender(base);
     return;
   }
-  var filtered = _activeRows.filter(function(row){
+  var filtered = base.filter(function(row){
     return _activeHeaders.some(function(h){
       return String(row[h] || '').toLowerCase().indexOf(q) !== -1;
     });
@@ -4870,6 +4933,7 @@ function _activeRender(rows, isFiltered) {
   var tbody = document.getElementById('activeBody');
   var count = document.getElementById('activeCount');
   var displayCols = _activeDisplayCols();
+  _renderActiveStartBanner();   // 대기자 보기 중이면 되돌림 안내 노출(2026-07-16 GM 지시)
 
   if (!isFiltered) {
     var ths = displayCols.map(function(h){
@@ -4949,6 +5013,16 @@ function renderActiveSummary() {
   var el = document.getElementById('activeSummary');
   if (!el) return;
   var rows = _activeRows || [];
+  // 대기자(미래시작) 카운트 + 카드4(dMemActive) 시작된 수만 표기(2026-07-16 GM 지시). 유효회원 스코프·_activeRows 로드 시에만 반영,
+  // 미로드 시엔 loadCpoTodayStats가 세팅한 원값(memberActive+corp) 유지.
+  if (_activeScope === 'valid') {
+    var _waitCnt = _waitMembers().length;
+    _setTxt('dMemWait', _waitCnt);
+    if (_cpoStats && rows.length) {
+      var _started = (Number(_cpoStats.memberActive) || 0) + (Number(_cpoStats.memberCorp) || 0) - _waitCnt;
+      _setTxt('dMemActive', _started < 0 ? 0 : _started);
+    }
+  }
   var _cross = _composeHtml();
   if (rows.length === 0 && !_cross) { el.style.display = 'none'; return; }
   el.style.display = '';
@@ -5490,13 +5564,16 @@ function renderTopDash() {
   var todayStr = today.getFullYear() + '-' +
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
-  var tToday = 0;
+  var todayMonthStr = todayStr.slice(0, 7);   // YYYY-MM
+  var tToday = 0, tMonth = 0;
   Object.keys(calEvents).forEach(function(date){
     (calEvents[date] || []).forEach(function(ev){
       if (ev.date === todayStr) tToday++;
+      if (typeof ev.date === 'string' && ev.date.slice(0, 7) === todayMonthStr) tMonth++;   // 2026-07-16 GM 지시 — 카드2 월간 라인
     });
   });
   window._tourTodayEager = tToday;   // 표면 DOM 없음(배754) — renderSummaryHero의 sumBook 라이브 소스
+  window._tourMonthEager = tMonth;   // 2026-07-16 GM 지시 — renderSummaryHero의 sumBookMonth 소스
   if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — 오늘 예약 카운트 갱신
 }
 
