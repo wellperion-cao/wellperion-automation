@@ -228,7 +228,8 @@ body.page-id-8460 #header-outer { display: none !important; }
   var CHANNELS = ['네이버 검색·플레이스','네이버 블로그','인스타그램','당근마켓','동부이촌동 커뮤니티','카카오톡','소개·지인','기존·과거 회원','오프라인(간판·방문)','기타'];
 
   // ── 유형별 폼 정의 ──
-  // type: text|tel|date|textarea|select|multi|consent
+  // type: text|tel|date|textarea|select|multi|radio|consent
+  // ★radio=단일선택(1개만, 강습종목류) vs multi=복수선택(체크박스, 멤버십등급·대관공간류) — 혼동 금지(2026-07-16 GM 지시)
   var FORMS = {
     membership: {
       purpose: '멤버십 가입·시설 투어 상담 응대',
@@ -246,7 +247,7 @@ body.page-id-8460 #header-outer { display: none !important; }
       fields: [
         { key:'name',    label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
-        { key:'program', label:'강습 종목', type:'multi', opts:['수영','P.T','필라테스','골프','스쿼시','아쿠아로빅','발레·바레(루프메소드)','기타'] },
+        { key:'program', label:'강습 종목', type:'radio', opts:['수영','P.T','필라테스','골프','스쿼시','아쿠아로빅','발레·바레(루프메소드)','기타'] },
         { key:'wishTime',label:'희망 레슨 시간', type:'text', opt:true, ph:'예: 평일 오전 / 주말 오후' },
         { key:'channel', label:'문의 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'문의하실 내용을 자유롭게 적어주세요.' }
@@ -258,7 +259,7 @@ body.page-id-8460 #header-outer { display: none !important; }
         { key:'name',    label:'성함(보호자)', type:'text', ph:'보호자 성함을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
         { key:'age',     label:'자녀 나이', type:'text', opt:true, ph:'예: 8세 / 초2' },
-        { key:'program', label:'강습 종목', type:'multi', opts:['수영','골프','스쿼시','체조&트램폴린','P.T','필라테스','모자수영','뮤지컬','기타'] },
+        { key:'program', label:'강습 종목', type:'radio', opts:['수영','골프','스쿼시','체조&트램폴린','P.T','필라테스','모자수영','뮤지컬','기타'] },
         { key:'wishTime',label:'희망 레슨 시간', type:'text', opt:true, ph:'예: 평일 하원 후 / 주말 오전' },
         { key:'channel', label:'문의 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'문의하실 내용을 자유롭게 적어주세요.' }
@@ -270,7 +271,7 @@ body.page-id-8460 #header-outer { display: none !important; }
         { key:'name',    label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
         { key:'target',  label:'대상',    type:'select', ph:'선택해 주세요', opts:['성인','유소년'] },
-        { key:'program', label:'집중 종목', type:'multi', opts:['수영','체조','스쿼시','골프','유소년 성장PT'] },
+        { key:'program', label:'집중 종목', type:'radio', opts:['수영','체조','스쿼시','골프','유소년 성장PT'] },
         { key:'wishMonth', label:'희망 월', type:'select', ph:'선택해 주세요', opts:['7월','8월','미정'] },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'궁금하신 점을 자유롭게 적어주세요.' }
       ]
@@ -428,6 +429,23 @@ body.page-id-8460 #header-outer { display: none !important; }
           grid.appendChild(l);
         });
         field.appendChild(grid);
+      } else if (f.type === 'radio') {
+        // 단일 선택(1개만) — 한 문의당 종목 1개, 여러 종목 관심이면 별도 신청(2026-07-16 GM 지시)
+        var rgrid = document.createElement('div'); rgrid.className='multi'; rgrid.id='f_'+f.key;
+        var rName = 'f_'+f.key+'_radio';
+        (f.opts||[]).forEach(function(o){
+          var l=document.createElement('label');
+          var rb=document.createElement('input'); rb.type='radio'; rb.name=rName; rb.value=o;
+          rb.addEventListener('change', function(){
+            Array.prototype.forEach.call(rgrid.querySelectorAll('label'), function(lbl){
+              var inp = lbl.querySelector('input[type=radio]');
+              lbl.className = inp.checked ? 'on' : '';
+            });
+          });
+          l.appendChild(rb); var sp=document.createElement('span'); sp.textContent=o; l.appendChild(sp);
+          rgrid.appendChild(l);
+        });
+        field.appendChild(rgrid);
       }
       box.appendChild(field);
     });
@@ -458,6 +476,10 @@ body.page-id-8460 #header-outer { display: none !important; }
         var grid = $('f_'+f.key);
         if (grid) Array.prototype.forEach.call(grid.querySelectorAll('input[type=checkbox]'), function(cb){ if (cb.checked) picks.push(cb.value); });
         out[f.key] = picks.join(', ');
+      } else if (f.type === 'radio') {
+        var rgrid = $('f_'+f.key);
+        var checked = rgrid ? rgrid.querySelector('input[type=radio]:checked') : null;
+        out[f.key] = checked ? checked.value : '';
       } else {
         var el = $('f_'+f.key);
         out[f.key] = el ? (el.value||'').trim() : '';
