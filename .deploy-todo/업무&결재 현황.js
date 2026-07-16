@@ -485,8 +485,10 @@ function _githubReadFile(path) {
 function _githubCommitFile(path, contentText, message, key) {
   const headers = _ghHeaders();
   if (!headers) return { ok: false, error: 'GITHUB_TOKEN 미설정 — Apps Script 속성에 추가 필요' };
-  const editKey = _prop('EDIT_KEY');
-  if (editKey && String(key) !== editKey) return { ok: false, error: '편집 키 불일치' };
+  // [배1170 2026-07-16] EDIT_KEY 게이트 해제 — 허브 페이지 open-write 모델(빈 키)과 정합화.
+  // ScriptProperty EDIT_KEY 설정이 M1 승인·SSOT 쓰기를 '편집 키 불일치'로 막던 버그 수정.
+  // 쓰기 경로는 아래 _ghPathAllowed로 이미 제한(cmo/review·coo·module_registry). 근본 인증=9월 자체서버 JWT.
+  // (기존: const editKey=_prop('EDIT_KEY'); if(editKey&&String(key)!==editKey) return 편집키불일치)
   if (!_ghPathAllowed(path)) return { ok: false, error: '허용되지 않은 경로(coo 하위 .json·module_registry.json 만 가능)' };
   const branch = _prop('GITHUB_BRANCH') || 'master';
   // 현재 sha 조회 (있으면 갱신, 없으면 신규 생성)
@@ -546,8 +548,9 @@ function _reviewSetStatus(id, status, key) {
   if (!id) return { ok: false, error: 'id 필수' };
   var allowed = { '승인': true, '반려': true };
   if (!allowed[status]) return { ok: false, error: 'status 는 승인|반려 만 허용' };
-  var editKey = _prop('EDIT_KEY');
-  if (editKey && String(key) !== editKey) return { ok: false, error: '편집 키 불일치' };
+  // [배1170 2026-07-16] EDIT_KEY 게이트 해제 — M1 승인 릴레이(빈 키)를 막던 버그.
+  // 발행 실제 게이트=bot M1_AUTO_PUBLISH(기본 OFF)+9월 자체서버 JWT. _githubCommitFile 동일 처리.
+  // (기존: var editKey=_prop('EDIT_KEY'); if(editKey&&String(key)!==editKey) return 편집키불일치)
   var path = '3. 웰페리온 가이드/cmo/review/review_queue.json';
   var rf = _githubReadFile(path);
   if (!rf.ok) return { ok: false, error: '큐 읽기 실패: ' + (rf.error || '') };
