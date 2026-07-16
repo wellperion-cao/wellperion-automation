@@ -3789,11 +3789,13 @@ function lessonLoad(t) {
     b.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div>' +
       '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
   }
-  // 하이브리드(2026-07-08): USE_GVIZ && scope!=='all' → gviz 직접읽기(year 기본뷰만·GAS와 동일 shape).
-  // scope==='all'(강습 전체보기)은 시트 필터/숨김행으로 gviz 누락 위험 → USE_GVIZ여도 항상 GAS 유지.
-  var _lessonPromise = (USE_GVIZ && st.scope !== 'all')
-    ? gvizLoadLessonInquiry_(st.type, st.scope === 'all')
-    : fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); });
+  // [2026-07-16 시토] 강습 문의는 항상 GAS로 읽는다(gviz 우회 제거).
+  //   근본원인: 자체폼(WP 자체호스팅) 강습 intake는 별도 탭 '강습 신규문의'(gid 2012342185)에 저장되는데,
+  //   gviz 어댑터(gvizLoadLessonInquiry_)는 구글폼 응답탭(GVIZ_LESSON_GID_ADULT 111889422/유소년)만 읽어
+  //   intake 행을 통째로 누락 → 텔레그램 알림은 갔는데 강습 문의 현황엔 안 보이는 실고객 유실 버그(임하윤 010-7331-3903 등).
+  //   GAS lesson_inquiry_list 는 _lessonReadRowsMerged_ 로 '강습 신규문의' intake 탭을 병합(소스오브트루스) → GAS로 읽으면 intake 포함.
+  //   (멤버십 member_inquiry_list gviz 경로는 무변경 — 그쪽은 intake 별도탭 이슈 없음). 역롤백=이 블록을 구 하이브리드 삼항으로 복원.
+  var _lessonPromise = fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); });
   _lessonPromise
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
