@@ -45,7 +45,12 @@
      재발하지 않음(heroTop:0 유지, 실측 재확인). 히어로 텍스트를 다크 배경용으로 반전 — eyebrow=베이지,
      슬로건 영문=흰색, 국문 부제·소개문=연회색(rgba(255,255,255,.7) 계열), "1,000명 정원제" 문장=흰색
      본문+숫자만 코럴 강조, 코럴 디바이더 유지. 본문 카드(.type-card 등)는 흰색 그대로(다크 히어로+흰
-     본문 대비). 수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
+     본문 대비).
+     2026-07-16 GM 피드백(폭 축소): 다크 히어로가 좌우 풀블리드라 과하게 넓다는 지적 — .hero-band에
+     max-width:720px(.wrap과 동일 폭, 통일감) + margin:auto로 가운데 정렬해 데스크톱에서 다크 박스가
+     본문 콘텐츠 폭 안에 카드처럼 앉게 함(좌우 여백 생김). 모바일은 뷰포트가 720px보다 좁아 자동으로
+     꽉 차 보임(별도 미디어쿼리 불필요). margin-top:-40px(상단 확장)는 auto 정렬과 함께 유지.
+     수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
 /* 문의 페이지(8394) 한정 — WP 테마 헤더 전체 숨김(로고·메뉴·ENG버튼). 다른 페이지 영향 0(page-id 스코프). */
 body.page-id-8394 #header-outer { display: none !important; }
@@ -63,7 +68,7 @@ body.page-id-8394 #header-outer { display: none !important; }
 .wlp-inq a{text-decoration:none;color:inherit}
 
 /* ===== HERO — 다크(2026-07-16 GM 색상 재변경: 베이지→다크 #221F20, 헤더 숨김 상태라 로고 겹침 없음) ===== */
-.wlp-inq .hero-band{background:var(--ink);margin-top:-40px;padding:64px 20px 30px}
+.wlp-inq .hero-band{background:var(--ink);max-width:720px;margin:-40px auto 0;padding:64px 20px 30px}
 @media (max-width:1000px){
   .wlp-inq .hero-band{padding-top:56px}
 }

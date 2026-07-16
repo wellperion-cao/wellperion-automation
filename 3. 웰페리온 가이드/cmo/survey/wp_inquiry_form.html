@@ -43,6 +43,8 @@
      payload program 키·콤마조인 저장 방식은 기존 multi 필드와 동일(백엔드 무변경).
      2026-07-16 GM 피드백(시설 태그 정정, 실제 시설명): GUIDES.membership.tags "라운지·커뮤니티"→
      "CUPS 라운지", "생크몽드 스파" 뒤에 "부티부 헤어메이크업" 추가.
+     2026-07-16 GM 피드백(폭 축소, 허브와 동일): 다크 히어로 좌우 풀블리드 지적 — .hero-band에
+     max-width:540px(.wrap과 동일 폭) + margin:auto로 가운데 정렬. margin-top:-40px는 유지.
      수정 시 이 파일을 고치고 WP post 8460(draft-page --page survey) 재주입. -->
 <style>
 /* 문의 Survey 폼 페이지(8460) 한정 — WP 테마 헤더 전체 숨김. 다른 페이지 영향 0(page-id 스코프). */
@@ -63,7 +65,7 @@ body.page-id-8460 #header-outer { display: none !important; }
 .wlp-inq a{text-decoration:none;color:inherit}
 
 /* ===== HERO — 다크(2026-07-16 GM 색상 재변경: 베이지→다크 #221F20, 헤더 숨김 상태라 로고 겹침 없음) ===== */
-.wlp-inq .hero-band{background:var(--ink);margin-top:-40px;padding:64px 20px 28px}
+.wlp-inq .hero-band{background:var(--ink);max-width:540px;margin:-40px auto 0;padding:64px 20px 28px}
 @media (max-width:1000px){
   .wlp-inq .hero-band{padding-top:56px}
 }
