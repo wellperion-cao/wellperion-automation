@@ -3550,6 +3550,18 @@ async function submitResign(){
     }else{
       parts.push("• 매출보고서 시트: 미연동 (시트는 수동 처리 필요)");
     }
+    // [P1 2026-07-16] 이탈 파생정리 결과줄(표시만 — 아래 AND 게이팅에는 관여하지 않음)
+    var dep=data.dependents;
+    if(dep){
+      if(dep.skipped){
+        parts.push("• 파생정리: 스킵("+dep.skipped+")");
+      }else{
+        var onboD=(dep.onboarding&&dep.onboarding.deleted)||0;
+        var onboP=(dep.onboarding&&dep.onboarding.preserved)||0;
+        var evalD=(dep.eval&&dep.eval.deleted)||0;
+        parts.push("• 파생정리: 온보딩 "+onboD+"건 정리/"+onboP+"건 보존 · 평가 placeholder "+evalD+"건 정리");
+      }
+    }
     // 서브스텝 AND 게이팅 — 퇴사 처리 DB·(시도된 경우)시트가 모두 성공해야만 "완료" 후보. 하나라도 실패면 초록 완료 표시 금지.
     if(!exitOk||!sheetOk){
       msg.className="modal-msg err";
