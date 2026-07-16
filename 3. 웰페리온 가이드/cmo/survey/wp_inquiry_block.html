@@ -4,12 +4,18 @@
      디자인: wp_inquiry_form.html 과 동일한 B안 토큰(팔레트 4색 BLACK #221F20·WHITE·BEIGE #B79F8A·CORAL #ED5B3F,
      Pretendard, 다크 풀블리드 히어로 + 화이트 에디토리얼 본문, 샤프 모서리, 선(line) SVG 아이콘 재사용).
      CSS 스코프 .wlp-inq 래퍼(Salient/WPBakery 테마 오염 차단). 외부 스크립트 의존 없음(폰트 CDN 1개 제외).
+     2026-07-16 GM 피드백: 헤더 로고(검정)가 폭>1000px에서 margin-top 32px 때문에 다크 히어로 상단
+     61px 안으로 흘러들어가 히어로 eyebrow "WELLPERION"과 겹치고 검정이라 안 보이던 문제 수정 —
+     eyebrow 삭제 + 헤더 로고를 그 구간(폭>1000px)만 베이지(#B79F8A 근사, invert/sepia/hue-rotate
+     필터로 실측 산출)로 전환해 다크 배경 위에서 브랜드 배지처럼 보이게 함. 히어로 padding도 컴팩트화.
      수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
-/* 문의 페이지(8394) 한정 — 헤더 로고 상단 잘림 해소 */
+/* 문의 페이지(8394) 한정 — 헤더 로고 상단 잘림 해소 + 폭>1000px 다크 히어로 겹침 구간 베이지 전환 */
 body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
+body.page-id-8394 #header-outer #logo img { filter: invert(65%) sepia(40%) saturate(200%) hue-rotate(345deg) brightness(95%) contrast(80%); }
 @media (max-width: 1000px) {
   body.page-id-8394 #header-outer #logo { margin-top: 22px !important; }
+  body.page-id-8394 #header-outer #logo img { filter: none; }
 }
 </style>
 <style>
@@ -25,14 +31,13 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
 .wlp-inq a{text-decoration:none;color:inherit}
 
 /* ===== HERO — 다크 풀블리드 ===== */
-.wlp-inq .hero-band{background:var(--ink);padding:60px 20px 46px}
+.wlp-inq .hero-band{background:var(--ink);padding:60px 20px 32px}
 .wlp-inq .hero-inner{max-width:520px;margin:0 auto;text-align:center}
-.wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.32em;color:var(--beige);text-transform:uppercase;margin:0 0 16px}
 .wlp-inq .slogan-en{font-size:14px;font-style:italic;color:#fff;opacity:.92;letter-spacing:.01em;margin:0 0 5px}
-.wlp-inq .slogan-kr{font-size:12px;color:#fff;opacity:.55;letter-spacing:.03em;margin:0 0 22px}
-.wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 22px}
-.wlp-inq .hero-inner h1{font-size:clamp(26px,7vw,36px);font-weight:800;letter-spacing:-.02em;color:#fff;margin:0 0 14px}
-.wlp-inq .hero-desc{font-size:14px;color:#fff;opacity:.7;line-height:1.9;max-width:380px;margin:0 auto}
+.wlp-inq .slogan-kr{font-size:12px;color:#fff;opacity:.55;letter-spacing:.03em;margin:0 0 18px}
+.wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 18px}
+.wlp-inq .hero-inner h1{font-size:clamp(26px,7vw,36px);font-weight:800;letter-spacing:-.02em;color:#fff;margin:0 0 12px}
+.wlp-inq .hero-desc{font-size:14px;color:#fff;opacity:.7;line-height:1.8;max-width:380px;margin:0 auto}
 
 /* ===== BODY WRAP — 화이트 에디토리얼 ===== */
 .wlp-inq .wrap{max-width:720px;margin:0 auto;padding:34px 18px 72px}
@@ -86,7 +91,6 @@ body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
 
   <div class="hero-band">
     <div class="hero-inner">
-      <p class="eyebrow">Wellperion</p>
       <p class="slogan-en">A Day, Well Completed.</p>
       <p class="slogan-kr">하루의 완성, 웰페리온</p>
       <div class="divider-coral"></div>
