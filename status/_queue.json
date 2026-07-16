@@ -652,5 +652,19 @@
     "ship_no": 1160,
     "note": "[2026-07-16 GM 지시] 멤버십/강습 문의현황 2개 대시보드 버그 검수·보완. 검수(라이브 실측): 강습 문의현황=버그 없음(lesson_stats 백엔드 집계 사용·전환율 정직 생략·등록24/25 실측 일치). 멤버십 문의현황=버그 발견·수리: USE_GVIZ=true(07-13 속도전환) 후 대시보드 분석이 활성전용 gviz dbRows(197)를 재사용→SUC/단기SUC/LOSS 누락으로 ①올해 문의 196(실621)·전환율 94.9%(실30%) 부풀림 ③채널 효율 가입 전채널 0명(0%). 수리=대시보드 §1문의수·§3채널을 전체 member_inquiry_list(GAS·모든 status)로 계산(_mdashLoadInqAnalytics 신설·목록 UI 무변경). 커밋 b188bc70→워처병합 8588fb43. 라이브 실측 PASS: 올해문의621·전환30%·채널 소개49.1%/기존33.8%/오프25%/네이버5.9% 실수치·회귀0·콘솔=기존 print_options 404뿐.",
     "next": "🏁 입항완료 — 다음 불필요(정직 KPI 교정 완료). 관찰: §2 파이프라인(stage_funnel 623) vs §1/§3(621) 2건차·§1가입(registered 186) vs 채널가입합(inquiry SUC 182) 4건차=소스 상이 정상범위."
+  },
+  {
+    "task_id": "CTO-2026-07-16-ADHOC-f1bb3435",
+    "clevel": "cto",
+    "title": "[시토] 문의허브 헤더 다크 배경 상단 확장 — 로고 온전히 다크 안에(GM 피드백)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-16",
+    "processed_at": "2026-07-16",
+    "ship_no": 1182,
+    "artifact": "fix(cto): 문의허브 헤더 다크 배경 상단 확장 — 로고 온전히 다크 안에(GM 피드백) (CLI ad-hoc · 커밋 f1bb3435)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f1bb3435019cbe7033fd74408714ce1e349bc681"
   }
 ]
