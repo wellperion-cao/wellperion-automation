@@ -30,6 +30,12 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+
+try:  # 전역 발송 페이싱(프로세스 간 429 방지) — best-effort
+    from tg_outbound_log import pace as _tg_pace
+except Exception:
+    def _tg_pace(*_a, **_k):
+        return None
 from pathlib import Path
 
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
@@ -219,6 +225,7 @@ def _send(token: str, chat_id: str, text: str, preview_url: str = "") -> bool:
     for attempt in range(max_attempts):
         req = urllib.request.Request(url, data=data, method="POST")
         try:
+            _tg_pace()  # 발송 직전 전역 페이싱(초당 1건 미만·프로세스 간)
             with urllib.request.urlopen(req, timeout=15) as resp:
                 return resp.status == 200
         except urllib.error.HTTPError as ex:
