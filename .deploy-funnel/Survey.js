@@ -1803,6 +1803,39 @@ function _lessonIntakeGid_() {
   return _lessonIntakeGidCache_;
 }
 
+// ─── 신규 3종(여름특강·공간렌트·비즈니스) 저장처 — 6종 문의폼 확장(2026-07-16 시토) ───
+//   summer → '강습 신규문의' 탭 재사용(집중강습 계열, 유형칼럼에 '여름특강(성인/유소년)'으로 구분 — 기존 성인/유소년 로직 무변경).
+//   rental·business → _MI_SS_ID(멤버십 스프레드시트, '26년 신규문의'와 동일 SS — 구글폼 시절부터 이 SS로 통합 관례) 하위 신규 탭.
+//   패턴은 _lessonIntakeSheet_ 그대로 복제(없으면 생성 + 헤더행 + 굵게 + 고정행1).
+var RENTAL_INTAKE_SHEET_NAME = '공간렌트 문의';
+var RENTAL_INTAKE_HEADERS = ['타임스탬프','성함','연락처','대관 공간','용도','희망일','예상 인원','문의 사항','개인정보 수집·이용 동의','접수ID','진행 상황','비고'];
+function _rentalIntakeSheet_(createIfMissing) {
+  var ss = SpreadsheetApp.openById(_MI_SS_ID);
+  var sh = ss.getSheetByName(RENTAL_INTAKE_SHEET_NAME);
+  if (!sh && createIfMissing) {
+    sh = ss.insertSheet(RENTAL_INTAKE_SHEET_NAME);
+    sh.getRange(1, 1, 1, RENTAL_INTAKE_HEADERS.length).setValues([RENTAL_INTAKE_HEADERS]);
+    sh.setFrozenRows(1);
+    try { sh.getRange(1, 1, 1, RENTAL_INTAKE_HEADERS.length).setFontWeight('bold'); } catch (e) {}
+  }
+  return sh || null;
+}
+
+var BUSINESS_INTAKE_SHEET_NAME = '비즈니스 문의';
+// ⚠️ business는 프론트에 name 키가 없음(company·contactName만) → '성함' 칼럼 = company + ' / ' + contactName 로 합성 저장(다른 문의 탭과 스키마 정합 유지).
+var BUSINESS_INTAKE_HEADERS = ['타임스탬프','성함','회사명','담당자','연락처','제휴 유형','소개자료 링크','제안 내용','개인정보 수집·이용 동의','접수ID','진행 상황','비고'];
+function _businessIntakeSheet_(createIfMissing) {
+  var ss = SpreadsheetApp.openById(_MI_SS_ID);
+  var sh = ss.getSheetByName(BUSINESS_INTAKE_SHEET_NAME);
+  if (!sh && createIfMissing) {
+    sh = ss.insertSheet(BUSINESS_INTAKE_SHEET_NAME);
+    sh.getRange(1, 1, 1, BUSINESS_INTAKE_HEADERS.length).setValues([BUSINESS_INTAKE_HEADERS]);
+    sh.setFrozenRows(1);
+    try { sh.getRange(1, 1, 1, BUSINESS_INTAKE_HEADERS.length).setFontWeight('bold'); } catch (e) {}
+  }
+  return sh || null;
+}
+
 // 강습 신규문의 탭 → 문의행 배열(강습 목록 병합용). body.type(성인강습/유소년강습)로 '유형' 필터. _ROW_OFFSET_INTAKE_ 부여.
 // _lessonReadRows_ 와 동일한 행 스키마를 반환(프론트·lesson_inquiry_update 라운드트립 정합).
 function _lessonIntakeReadRows_(body) {
@@ -2502,11 +2535,17 @@ function _processAction(body) {
     var _iPhone = String(body.phone || '').trim();
     var _iPhoneDigits = _iPhone.replace(/[^0-9]/g, '');
     var _iConsent = (body.consent === true || body.consent === '예' || String(body.consent) === 'true' || String(body.consent) === '1' || String(body.consent) === '동의');
-    var _iCat = String(body.category || '').trim();   // 'membership' | 'adult' | 'youth'
-    if (!_iName) return _json({ ok: false, error: '이름을 입력해 주세요.', noRetry: true });
+    var _iCat = String(body.category || '').trim();   // 'membership' | 'adult' | 'youth' | 'summer' | 'rental' | 'business'(신규 3종 2026-07-16 시토)
+    var _iCompany = String(body.company || '').trim();        // business 전용(name 키 없음)
+    var _iContactName = String(body.contactName || '').trim(); // business 전용(name 키 없음)
+    if (_iCat !== 'membership' && _iCat !== 'adult' && _iCat !== 'youth' && _iCat !== 'summer' && _iCat !== 'rental' && _iCat !== 'business') return _json({ ok: false, error: '문의 유형이 올바르지 않습니다.', noRetry: true });
+    if (_iCat === 'business') {
+      if (!_iCompany || !_iContactName) return _json({ ok: false, error: '회사명과 담당자를 입력해 주세요.', noRetry: true });
+    } else if (!_iName) {
+      return _json({ ok: false, error: '이름을 입력해 주세요.', noRetry: true });
+    }
     if (_iPhoneDigits.length < 9 || _iPhoneDigits.length > 11) return _json({ ok: false, error: '연락처를 정확히 입력해 주세요.', noRetry: true });
     if (!_iConsent) return _json({ ok: false, error: '개인정보 수집·이용 동의가 필요합니다.', noRetry: true });
-    if (_iCat !== 'membership' && _iCat !== 'adult' && _iCat !== 'youth') return _json({ ok: false, error: '문의 유형이 올바르지 않습니다.', noRetry: true });
     // 6) 레이트리밋 — 동일 전화 단시간 과다 제출 차단(정상 사용자 무영향: 60초 내 6회 초과 시만)
     if (_iPhoneDigits) {
       var _rlKey = 'intake_rl_' + _iPhoneDigits;
@@ -2522,6 +2561,16 @@ function _processAction(body) {
     var _iAge = String(body.age || '').trim();
     var _iUtmSource = String(body.utmSource || '').trim();
     var _iUtmMedium = String(body.utmMedium || '').trim();
+    // 신규 3종 전용 필드(2026-07-16 시토) — wp_inquiry_form.html payload 계약과 1:1
+    var _iTarget = String(body.target || '').trim();           // summer: 성인/유소년
+    var _iWishMonth = String(body.wishMonth || '').trim();     // summer: 희망 월
+    var _iSpace = String(body.space || '').trim();              // rental: 대관 공간(多)
+    var _iPurpose = String(body.purpose || '').trim();          // rental: 용도
+    var _iWishDate = String(body.wishDate || '').trim();        // rental: 희망일
+    var _iHeadcount = String(body.headcount || '').trim();      // rental: 예상 인원
+    var _iPartnerType = String(body.partnerType || '').trim();  // business: 제휴 유형
+    var _iDocLink = String(body.docLink || '').trim();          // business: 소개자료 링크
+    var _iProposal = String(body.proposal || '').trim();        // business: 제안 내용
 
     try {
       if (_iCat === 'membership') {
@@ -2543,7 +2592,7 @@ function _processAction(body) {
         _imSet(['비고', '메모', '담당자메모'], WEB_INTAKE_TAG + ' 자체폼 유입 (utm:' + (_iUtmSource || '-') + '/' + (_iUtmMedium || '-') + ', ' + _iId + ')');
         _imSh.appendRow(_imRow);
         try { _cacheInvalidateJson_(_iCache, 'micache'); } catch (e) {}
-      } else {
+      } else if (_iCat === 'adult' || _iCat === 'youth') {
         // 강습(성인/유소년) → '강습 신규문의' 스태프탭 append(없으면 생성). lesson_inquiry_list 병합 소스 포함 → 관리페이지 자동정합.
         var _isYouth = (_iCat === 'youth');
         var _iType = _isYouth ? '유소년강습' : '성인강습';
@@ -2571,6 +2620,69 @@ function _processAction(body) {
           _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|year');
           _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|all');
         } catch (e) {}
+      } else if (_iCat === 'summer') {
+        // 여름특강 → '강습 신규문의' 탭 재사용(집중강습 계열 권고안 채택, 2026-07-16 시토). 기존 성인/유소년 유형값과 구분되는
+        // '여름특강(성인)'/'여름특강(유소년)'을 '유형'에 적재 → lesson_inquiry_list 필터(성인강습/유소년강습)에는 안 잡히고
+        // 시트에는 유실 0으로 쌓인다(원장 raw 조회로 확인 가능). 대시보드 합류는 범위 밖(설계 §8 리스크1).
+        var _smType = '여름특강(' + (_iTarget === '유소년' ? '유소년' : '성인') + ')';
+        var _smSh = _lessonIntakeSheet_(true);
+        if (!_smSh) return _json({ ok: false, error: '강습 신규문의 시트 생성 실패' });
+        var _smHdr = _smSh.getRange(1, 1, 1, _smSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+        var _smRow = new Array(_smHdr.length).fill('');
+        function _smSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_smHdr, [name]); if (ci >= 0) _smRow[ci] = val; }
+        _smSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'));
+        _smSet('유형', _smType);
+        _smSet('성함', _iName);
+        _smSet('연락처', _fmtPhone_(_iPhone));
+        _smSet('강습 종목', _iProgram);
+        _smSet('희망 레슨 시간', _iWishMonth);
+        _smSet('문의 사항', _iMessage);
+        _smSet('개인정보 수집·이용 동의', '동의');
+        _smSet('접수ID', _iId);
+        _smSet('진행 상황', '신규');
+        _smSet('비고', WEB_INTAKE_TAG + ' 자체폼 유입 (utm:' + (_iUtmSource || '-') + '/' + (_iUtmMedium || '-') + ')');
+        _smSh.appendRow(_smRow);
+        _lessonIntakeGidCache_ = _smSh.getSheetId();
+      } else if (_iCat === 'rental') {
+        // 공간렌트 → '공간렌트 문의' 신규 탭(_MI_SS_ID 하위, 2026-07-16 시토)
+        var _rtSh = _rentalIntakeSheet_(true);
+        if (!_rtSh) return _json({ ok: false, error: '공간렌트 문의 시트 생성 실패' });
+        var _rtHdr = _rtSh.getRange(1, 1, 1, _rtSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+        var _rtRow = new Array(_rtHdr.length).fill('');
+        function _rtSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_rtHdr, [name]); if (ci >= 0) _rtRow[ci] = val; }
+        _rtSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'));
+        _rtSet('성함', _iName);
+        _rtSet('연락처', _fmtPhone_(_iPhone));
+        _rtSet('대관 공간', _iSpace);
+        _rtSet('용도', _iPurpose);
+        _rtSet('희망일', _iWishDate);
+        _rtSet('예상 인원', _iHeadcount);
+        _rtSet('문의 사항', _iMessage);
+        _rtSet('개인정보 수집·이용 동의', '동의');
+        _rtSet('접수ID', _iId);
+        _rtSet('진행 상황', '신규');
+        _rtSet('비고', WEB_INTAKE_TAG + ' 자체폼 유입 (utm:' + (_iUtmSource || '-') + '/' + (_iUtmMedium || '-') + ')');
+        _rtSh.appendRow(_rtRow);
+      } else {
+        // 비즈니스(_iCat === 'business') → '비즈니스 문의' 신규 탭(_MI_SS_ID 하위, 2026-07-16 시토)
+        var _bzSh = _businessIntakeSheet_(true);
+        if (!_bzSh) return _json({ ok: false, error: '비즈니스 문의 시트 생성 실패' });
+        var _bzHdr = _bzSh.getRange(1, 1, 1, _bzSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+        var _bzRow = new Array(_bzHdr.length).fill('');
+        function _bzSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_bzHdr, [name]); if (ci >= 0) _bzRow[ci] = val; }
+        _bzSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'));
+        _bzSet('성함', _iCompany + ' / ' + _iContactName);
+        _bzSet('회사명', _iCompany);
+        _bzSet('담당자', _iContactName);
+        _bzSet('연락처', _fmtPhone_(_iPhone));
+        _bzSet('제휴 유형', _iPartnerType);
+        _bzSet('소개자료 링크', _iDocLink);
+        _bzSet('제안 내용', _iProposal);
+        _bzSet('개인정보 수집·이용 동의', '동의');
+        _bzSet('접수ID', _iId);
+        _bzSet('진행 상황', '신규');
+        _bzSet('비고', WEB_INTAKE_TAG + ' 자체폼 유입 (utm:' + (_iUtmSource || '-') + '/' + (_iUtmMedium || '-') + ')');
+        _bzSh.appendRow(_bzRow);
       }
     } catch (eIntake) {
       // 저장 실패 = 재시도 가능(noRetry 미설정) → 프론트 대기큐가 재전송. 조용한 유실 0.
@@ -2580,11 +2692,18 @@ function _processAction(body) {
     // 멱등 마커(성공) — 6시간 보관. 같은 submissionId 재전송 시 중복행 방지.
     if (_sid) { try { _iCache.put('intake_sid_' + _sid, _iId, 21600); } catch (e) {} }
     // 알림 — '문의 알림' 방(멤버십 add·구글폼과 동일 톤). 실패해도 접수 자체는 성공 유지(fail-soft).
+    // 신규 3종(여름특강·공간렌트·비즈니스)도 category 라벨·표시명·부가정보만 분기해 동일 _notifyTelegram 재사용(2026-07-16 시토).
     try {
       var _iChat = _prop('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-      var _iCatLabel = (_iCat === 'membership') ? '멤버십' : ((_iCat === 'youth') ? '유소년 강습' : '성인 강습');
-      _notifyTelegram('🔔 <b>[웹 문의 접수]</b> (자체폼)\n유형: ' + _iCatLabel + '\n이름: ' + _iName + '\n연락처: ' + _fmtPhone_(_iPhone)
-        + (_iProgram ? ('\n관심: ' + _iProgram) : '') + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
+      var _iCatLabelMap = { membership: '멤버십', adult: '성인 강습', youth: '유소년 강습', summer: '여름 특강', rental: '공간 렌트', business: '비즈니스 제휴' };
+      var _iCatLabel = _iCatLabelMap[_iCat] || _iCat;
+      var _iDisplayName = (_iCat === 'business') ? (_iCompany + ' / ' + _iContactName) : _iName;
+      var _iExtra = '';
+      if (_iCat === 'summer') _iExtra = (_iTarget ? ('\n대상: ' + _iTarget) : '') + (_iWishMonth ? ('\n희망월: ' + _iWishMonth) : '');
+      if (_iCat === 'rental') _iExtra = (_iSpace ? ('\n공간: ' + _iSpace) : '') + (_iPurpose ? ('\n용도: ' + _iPurpose) : '');
+      if (_iCat === 'business') _iExtra = (_iPartnerType ? ('\n제휴유형: ' + _iPartnerType) : '');
+      _notifyTelegram('🔔 <b>[웹 문의 접수]</b> (자체폼)\n유형: ' + _iCatLabel + '\n이름: ' + _iDisplayName + '\n연락처: ' + _fmtPhone_(_iPhone)
+        + (_iProgram ? ('\n관심: ' + _iProgram) : '') + _iExtra + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
     } catch (e) {}
     return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
   }

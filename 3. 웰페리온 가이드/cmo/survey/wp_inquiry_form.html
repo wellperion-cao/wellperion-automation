@@ -1,137 +1,161 @@
-<!-- 웰페리온 문의 자체 Survey 폼 — 배1037 갈래B (시포 2026-07-15)
+<!-- 웰페리온 문의 자체 Survey 폼 — 배1037 갈래B (시포 2026-07-15) · 2026-07-16 프리미엄 B안 리스킨 + 6종 확장(GM 확정 디자인)
      wellperion.com/ko/inquiry 의 구글폼(Google Forms)을 대체할 자체제작 문의 폼.
      ★ 현재 상태: GitHub Pages 배포 전용(미임베드) — WordPress 문의 페이지(8394)에는 아직 심지 않음(고객 미노출).
         WP 임베드/구글폼 교체 발효 = GM go 대기(비가역 유입경로). 기존 wp_inquiry_block.html(구글폼 버전) = 즉시 롤백 자산으로 보존.
      ★ 구조: reception_block.html 패턴 이식(자체 HTML 폼 → GAS intake_submit → 구글시트). 단일 정본·self-contained.
-        멤버십 → '26년 신규문의' 탭 / 강습 → '강습 신규문의' 스태프탭 (Survey.js intake_submit 라우팅).
+        멤버십 → '26년 신규문의' 탭 / 강습 → '강습 신규문의' 스태프탭 (Survey.js intake_submit 라우팅). 신규 3종(여름특강·공간렌트·비즈니스) 저장 라우팅은 백엔드 GAS 후속 배선 필요.
      ★ 수집 유실 0: no-cors 금지 → redirect follow + r.json() 판독(res.ok만 성공) · 멱등 submissionId ·
         localStorage 대기큐(이탈/새로고침 생존·자동 재전송) · 지수백오프 · 최종실패 시 폼값 보존 + 전화/이메일 안내.
      ★ 스팸방어(구글폼 캡차 상실 보상): 허니팟(hp) + 타이밍 게이트(fillMs) + 숨김토큰(t) + 서버측 재검증/레이트리밋.
      ★ CSS 스코프: 전 규칙 .wlp-inq 래퍼 하위 → Salient/WPBakery 테마 오염 차단.
-     ★ 테스트: URL 에 ?gas=head 부착 시 GAS @HEAD 배포로 전송(E2E 검증용). 미부착=운영 /exec. -->
+     ★ 테스트: URL 에 ?gas=head 부착 시 GAS @HEAD 배포로 전송(E2E 검증용). 미부착=운영 /exec.
+     ★ 디자인: B안 · 브랜드 정론(GM 확정 2026-07-16). 팔레트 4색만: BLACK #221F20 · WHITE #FFFFFF · BEIGE #B79F8A · CORAL #ED5B3F(포인트 절제).
+        다크 풀블리드 히어로 + 화이트 에디토리얼 본문(샤프 모서리·언더라인 인풋). 코럴은 CTA버튼·히어로룰·선택강조 3용도로만 제한. -->
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
 .wlp-inq{
-  --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#999;--accent:#b08d57;
-  --accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;--green:#2e7d5b;--red:#c0392b;
-  background:transparent;color:var(--text);line-height:1.6;font-size:16px;
+  --bg:#ffffff;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;
+  --dim:#8a7f72;--green:#2e7d5b;--red:#c0392b;
+  background:transparent;color:var(--ink);line-height:1.6;font-size:16px;
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   -webkit-text-size-adjust:100%;box-sizing:border-box;
 }
 .wlp-inq *{box-sizing:border-box;margin:0;padding:0}
 .wlp-inq button{font-family:inherit;-webkit-appearance:none;appearance:none;cursor:pointer}
-.wlp-inq a{text-decoration:none}
-.wlp-inq .wrap{max-width:540px;margin:0 auto;padding:70px 16px 80px}
+.wlp-inq a{text-decoration:none;color:inherit}
 
-.wlp-inq .brand{text-align:center;margin-bottom:28px}
-.wlp-inq .brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:12px}
-.wlp-inq .brand-slogan{font-size:clamp(26px,6.5vw,40px);font-weight:800;letter-spacing:-1px;color:var(--text);line-height:1.1;margin-bottom:6px}
-.wlp-inq .brand-sub{font-size:clamp(14px,3.2vw,18px);font-weight:500;color:#666;letter-spacing:-.2px}
-.wlp-inq .gold-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:18px auto;max-width:300px}
-.wlp-inq .gd-line{flex:1;height:1px}
-.wlp-inq .gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
-.wlp-inq .gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
-.wlp-inq .gd-diamond{color:var(--accent);font-size:10px;line-height:1}
-.wlp-inq .brand h1{font-size:clamp(18px,4vw,22px);font-weight:700;color:var(--text);margin-bottom:8px;letter-spacing:-.4px}
-.wlp-inq .brand-desc{font-size:13.5px;color:#777;line-height:1.7}
-.wlp-inq .brand-note{font-size:12.5px;color:var(--accent);font-weight:600;letter-spacing:.3px;margin-top:10px}
+/* ===== HERO — 다크 풀블리드 ===== */
+.wlp-inq .hero-band{background:var(--ink);padding:56px 20px 40px}
+.wlp-inq .hero-inner{max-width:480px;margin:0 auto;text-align:center}
+.wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.32em;color:var(--beige);text-transform:uppercase;margin-bottom:16px}
+.wlp-inq .slogan-en{font-size:14px;font-style:italic;color:#fff;opacity:.92;letter-spacing:.01em;margin-bottom:5px}
+.wlp-inq .slogan-kr{font-size:12px;color:#fff;opacity:.55;letter-spacing:.03em;margin-bottom:22px}
+.wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 22px}
+.wlp-inq .hero-inner h1{font-size:clamp(24px,7vw,32px);font-weight:800;letter-spacing:-.02em;color:#fff;margin-bottom:12px}
+.wlp-inq .hero-desc{font-size:13.5px;color:#fff;opacity:.68;line-height:1.75;max-width:340px;margin:0 auto}
 
-.wlp-inq .card{background:var(--paper);border:1px solid var(--border);border-radius:18px;padding:20px 18px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
-.wlp-inq .field{margin-bottom:14px}
+/* ===== BODY WRAP — 화이트 에디토리얼 ===== */
+.wlp-inq .wrap{max-width:540px;margin:0 auto;padding:28px 18px 70px}
+
+.wlp-inq .card{background:var(--paper);border:1px solid var(--line);padding:22px 20px;margin-bottom:14px}
+.wlp-inq label.fl{display:block;font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:12px;letter-spacing:.04em;text-transform:uppercase}
+.wlp-inq label.fl .opt{font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;text-transform:none;letter-spacing:0}
+
+/* ===== 유형 선택(6버튼) ===== */
+.wlp-inq .types{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wlp-inq .type-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:74px;padding:14px 6px 12px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:12px;font-weight:700;cursor:pointer;transition:border-color .18s,background .18s,color .18s;text-align:center;line-height:1.35}
+.wlp-inq .type-btn .cat-icon{margin-bottom:7px;line-height:1;display:block}
+.wlp-inq .type-btn .cat-icon svg{width:22px;height:22px;display:block;margin:0 auto}
+.wlp-inq .type-btn .cat-label{font-size:11.5px;font-weight:700;display:block}
+.wlp-inq .type-btn:hover{border-color:var(--ink)}
+.wlp-inq .type-btn.active{border-color:var(--coral);background:rgba(237,91,63,.06);color:var(--coral)}
+
+/* ===== 가이드 카드(약간의 소개) ===== */
+.wlp-inq .guide-card{background:#faf8f5}
+.wlp-inq .g-lead{font-size:13.5px;line-height:1.75;color:var(--ink)}
+.wlp-inq .g-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.wlp-inq .g-badge{font-size:11.5px;font-weight:600;padding:8px 12px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.wlp-inq .g-badge b{color:var(--coral);font-weight:800}
+.wlp-inq .g-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.wlp-inq .g-tag{font-size:11px;font-weight:600;padding:6px 10px;background:rgba(183,159,138,.15);color:var(--ink)}
+.wlp-inq .g-note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+
+/* ===== 인풋(언더라인 · 샤프 모서리) ===== */
+.wlp-inq .field{margin-bottom:20px}
 .wlp-inq .field:last-child{margin-bottom:0}
-.wlp-inq label.fl{display:block;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;letter-spacing:.3px;text-transform:uppercase}
-.wlp-inq label.fl .opt{font-size:12px;font-weight:500;color:var(--dim);margin-left:4px;text-transform:none}
-
-.wlp-inq .types{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.wlp-inq .type-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70px;padding:14px 8px 12px;border:1.5px solid var(--border);border-radius:14px;background:var(--paper);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;text-align:center;line-height:1.4;box-shadow:0 1px 2px rgba(0,0,0,.03)}
-.wlp-inq .type-btn .cat-icon{font-size:22px;margin-bottom:6px;line-height:1;display:block}
-.wlp-inq .type-btn .cat-label{font-size:12.5px;font-weight:700;color:inherit;line-height:1.35;display:block}
-.wlp-inq .type-btn:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(176,141,87,.15)}
-.wlp-inq .type-btn.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent);box-shadow:0 2px 10px rgba(176,141,87,.18)}
-
 .wlp-inq input[type=text],.wlp-inq input[type=tel],.wlp-inq input[type=date],.wlp-inq textarea,.wlp-inq select{
-  width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:13px 14px;border-radius:12px;font-size:15px;font-family:inherit;line-height:1.5;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none;height:auto;min-height:0;margin:0}
-.wlp-inq input:focus,.wlp-inq textarea:focus,.wlp-inq select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
-.wlp-inq input::placeholder,.wlp-inq textarea::placeholder{color:#c0b9b0}
+  width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--ink);color:var(--ink);padding:11px 2px;border-radius:0;font-size:15px;font-family:inherit;line-height:1.5;transition:border-color .15s;-webkit-appearance:none;appearance:none;margin:0}
+.wlp-inq input:focus,.wlp-inq textarea:focus,.wlp-inq select:focus{outline:none;border-color:var(--ink);border-bottom-width:2px}
+.wlp-inq input::placeholder,.wlp-inq textarea::placeholder{color:#b8afa5}
 .wlp-inq input[type=date]{color-scheme:light}
-.wlp-inq textarea{min-height:110px;resize:vertical}
-.wlp-inq select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23888' d='M1 1l5 5 5-5'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
+.wlp-inq textarea{min-height:96px;resize:vertical}
+.wlp-inq select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'><path fill='%23221F20' d='M1 1l4 4 4-4'/></svg>");background-repeat:no-repeat;background-position:right 4px center;padding-right:18px}
 
-.wlp-inq .multi{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.wlp-inq .multi label{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);font-size:13.5px;cursor:pointer;transition:border-color .15s,background .15s}
-.wlp-inq .multi label.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent);font-weight:600}
-.wlp-inq .multi input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.wlp-inq .multi{display:flex;flex-wrap:wrap;gap:8px}
+.wlp-inq .multi label{position:relative;display:inline-flex;align-items:center;padding:9px 14px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.wlp-inq .multi label input{position:absolute;opacity:0;width:1px;height:1px}
+.wlp-inq .multi label:focus-within{outline:1.5px solid var(--ink);outline-offset:2px}
+.wlp-inq .multi label.on{border-color:var(--coral);background:var(--coral);color:#fff}
 
-.wlp-inq .consent-box{border:1.5px solid var(--border);border-radius:12px;background:var(--bg);padding:12px 14px;max-height:150px;overflow-y:auto;font-size:12.5px;color:#666;line-height:1.7;white-space:pre-wrap;margin-bottom:10px}
-.wlp-inq .chk-row{display:flex;align-items:center;gap:10px;padding:4px 0}
-.wlp-inq .chk-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
-.wlp-inq .chk-row span{font-size:14px;color:var(--text);font-weight:600}
+.wlp-inq .consent-box{border:1px solid var(--line);background:#faf8f5;padding:14px;max-height:140px;overflow-y:auto;font-size:12px;color:#6b6259;line-height:1.7;white-space:pre-wrap;margin-bottom:12px}
+.wlp-inq .chk-row{display:flex;align-items:center;gap:10px;padding:2px 0}
+.wlp-inq .chk-row input[type=checkbox]{width:19px;height:19px;accent-color:var(--ink);cursor:pointer;flex-shrink:0}
+.wlp-inq .chk-row span{font-size:13.5px;color:var(--ink);font-weight:600}
 
 /* 허니팟 — 화면 밖(봇만 채움) */
 .wlp-inq .hp-field{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0}
 
-.wlp-inq .submit{width:100%;padding:17px;background:var(--accent);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:4px;transition:opacity .18s,transform .12s;letter-spacing:.3px;line-height:1.2}
+.wlp-inq .submit{width:100%;padding:17px;background:var(--coral);color:#fff;border:none;border-radius:0;font-size:15.5px;font-weight:700;cursor:pointer;margin-top:6px;transition:opacity .18s,transform .12s;letter-spacing:.02em;line-height:1.2}
 .wlp-inq .submit:hover{opacity:.9}
 .wlp-inq .submit:active{transform:scale(.99)}
-.wlp-inq .submit:disabled{opacity:.45;cursor:not-allowed}
-.wlp-inq .note{font-size:12.5px;color:var(--dim);text-align:center;margin-top:14px;line-height:1.75}
-.wlp-inq .hint-empty{font-size:13.5px;color:var(--dim);text-align:center;padding:10px 0 2px}
+.wlp-inq .submit:disabled{opacity:.4;cursor:not-allowed}
+.wlp-inq .note{font-size:12px;color:var(--dim);text-align:center;margin-top:16px;line-height:1.75}
+.wlp-inq .hint-empty{font-size:13px;color:var(--dim);text-align:center;padding:8px 0 2px}
 
-.wlp-inq .toast{position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.15);max-width:90%;text-align:center}
+.wlp-inq .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--ink);color:#fff;padding:12px 22px;font-size:13.5px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.18);max-width:90%;text-align:center}
 .wlp-inq .toast.show{transform:translateX(-50%) translateY(0)}
 .wlp-inq .toast.err{background:var(--red)}
 
 /* 재전송 대기/실패 배너 */
-.wlp-inq .retry-banner{display:none;margin:12px 0 0;padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.6;text-align:center}
-.wlp-inq .retry-banner.pending{display:block;background:rgba(214,137,16,.10);border:1.5px solid #d68910;color:#a5670a}
-.wlp-inq .retry-banner.failed{display:block;background:rgba(192,57,43,.08);border:1.5px solid var(--red);color:var(--red)}
-.wlp-inq .retry-banner a{color:var(--accent);font-weight:700}
-.wlp-inq .retry-banner .again2{display:inline-block;margin-top:8px;padding:9px 18px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700}
+.wlp-inq .retry-banner{display:none;margin:12px 0 0;padding:12px 14px;font-size:12.5px;line-height:1.6;text-align:center;border:1px solid var(--line)}
+.wlp-inq .retry-banner.pending{display:block;background:#faf4e8;border-color:#d68910;color:#8a5c0a}
+.wlp-inq .retry-banner.failed{display:block;background:#fbeceb;border-color:var(--red);color:var(--red)}
+.wlp-inq .retry-banner a{color:var(--ink);font-weight:700;text-decoration:underline}
+.wlp-inq .retry-banner .again2{display:inline-block;margin-top:8px;padding:9px 18px;background:var(--ink);color:#fff;border:none;border-radius:0;font-size:12.5px;font-weight:700}
 
-.wlp-inq .done{display:none;text-align:center;padding:50px 20px}
-.wlp-inq .done .dot{font-size:52px;margin-bottom:16px}
-.wlp-inq .done h2{font-size:22px;font-weight:800;margin-bottom:10px;color:var(--text)}
-.wlp-inq .done p{font-size:14.5px;color:#777;line-height:1.75;margin-bottom:8px}
-.wlp-inq .done .rcpt{font-size:12.5px;color:var(--accent);font-weight:700;margin-bottom:24px;letter-spacing:.3px}
-.wlp-inq .done .again{padding:13px 28px;background:var(--accent-bg);color:var(--accent);border:1.5px solid var(--accent);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:background .18s}
-.wlp-inq .done .again:hover{background:rgba(176,141,87,.18)}
+.wlp-inq .done{display:none;text-align:center;padding:60px 20px 40px}
+.wlp-inq .done .dot{width:52px;height:52px;line-height:49px;margin:0 auto 20px;border:1.5px solid var(--ink);color:var(--ink);font-size:22px;font-weight:700}
+.wlp-inq .done h2{font-size:20px;font-weight:800;margin-bottom:10px;color:var(--ink)}
+.wlp-inq .done p{font-size:14px;color:var(--dim);line-height:1.75;margin-bottom:10px}
+.wlp-inq .done .rcpt{font-size:12px;color:var(--ink);font-weight:700;margin-bottom:26px;letter-spacing:.02em}
+.wlp-inq .done .again{padding:13px 28px;background:#fff;color:var(--ink);border:1.5px solid var(--ink);border-radius:0;font-size:13.5px;font-weight:700;cursor:pointer;transition:background .18s}
+.wlp-inq .done .again:hover{background:#f5f2ee}
 </style>
 
 <div class="wlp-inq">
   <div class="toast" id="toast"></div>
-  <div class="wrap" id="formWrap">
 
-    <div class="brand">
-      <p class="brand-eyebrow">Wellperion</p>
-      <h2 class="brand-slogan">A Day, Well Completed.</h2>
-      <p class="brand-sub">하루의 완성, 웰페리온</p>
-      <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
-      <h1>문의하기</h1>
-      <p class="brand-desc">멤버십 가입·시설 투어·강습 상담을 도와드립니다.<br>아래 정보를 남겨주시면 담당자가 빠르게 연락드립니다.</p>
-      <p class="brand-note">상담 및 투어는 사전 예약제로 운영됩니다.</p>
+  <div id="formWrap">
+    <div class="hero-band">
+      <div class="hero-inner">
+        <p class="eyebrow">Wellperion</p>
+        <p class="slogan-en">A Day, Well Completed.</p>
+        <p class="slogan-kr">하루의 완성, 웰페리온</p>
+        <div class="divider-coral"></div>
+        <h1 id="heroTitle">문의하기</h1>
+        <p class="hero-desc"><span id="heroSubLine1">멤버십 가입·시설 투어·강습 상담을 도와드립니다.</span><br>아래 정보를 남겨주시면 담당자가 빠르게 연락드립니다.</p>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="field">
+    <div class="wrap">
+      <div class="card">
         <label class="fl">문의 유형을 선택해 주세요</label>
         <div class="types" id="typeGroup">
-          <button type="button" class="type-btn" data-cat="membership"><span class="cat-icon">🏛️</span><span class="cat-label">멤버십 문의</span></button>
-          <button type="button" class="type-btn" data-cat="adult"><span class="cat-icon">🏊</span><span class="cat-label">성인 강습</span></button>
-          <button type="button" class="type-btn" data-cat="youth"><span class="cat-icon">🤸</span><span class="cat-label">유소년 강습</span></button>
+          <button type="button" class="type-btn" data-cat="membership"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 12 3l9 6"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="5" y1="9" x2="5" y2="19"/><line x1="9" y1="9" x2="9" y2="19"/><line x1="15" y1="9" x2="15" y2="19"/><line x1="19" y1="9" x2="19" y2="19"/><line x1="3" y1="19" x2="21" y2="19"/><line x1="3" y1="21.5" x2="21" y2="21.5"/></svg></span><span class="cat-label">멤버십 문의</span></button>
+          <button type="button" class="type-btn" data-cat="adult"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0"/><path d="M2 15c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0" opacity=".55"/></svg></span><span class="cat-label">성인 강습</span></button>
+          <button type="button" class="type-btn" data-cat="youth"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.4 5.1 5.6.6-4.2 3.8 1.2 5.5L12 15.8l-5 2.7 1.2-5.5-4.2-3.8 5.6-.6z"/></svg></span><span class="cat-label">유소년 강습</span></button>
+          <button type="button" class="type-btn" data-cat="summer"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="4.2" y1="4.2" x2="6" y2="6"/><line x1="18" y1="18" x2="19.8" y2="19.8"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="4.2" y1="19.8" x2="6" y2="18"/><line x1="18" y1="6" x2="19.8" y2="4.2"/></svg></span><span class="cat-label">여름 특강</span></button>
+          <button type="button" class="type-btn" data-cat="rental"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16"/><line x1="12" y1="4" x2="12" y2="13"/><line x1="3" y1="13" x2="21" y2="13"/><line x1="12" y1="13" x2="12" y2="20"/></svg></span><span class="cat-label">공간 렌트</span></button>
+          <button type="button" class="type-btn" data-cat="business"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 7.8 6.6c.7-.6 1.7-.6 2.4 0l1.9 1.6"/><path d="M21 10.5 16.2 6.6c-.7-.6-1.7-.6-2.4 0l-.9.75"/><path d="M6.8 11l4.2 3.6a1.65 1.65 0 0 0 2.2-2.45L9.8 8.9"/><path d="M10 12.3l2.5 2.2a1.65 1.65 0 0 0 2.2-2.45l-.9-.85"/><path d="M13.2 12.3l1.9 1.6a1.65 1.65 0 0 0 2.2-2.45"/><line x1="3" y1="10.5" x2="3" y2="16.5"/><line x1="21" y1="10.5" x2="21" y2="16.5"/></svg></span><span class="cat-label">비즈니스</span></button>
         </div>
       </div>
-      <div id="formFields"></div>
-      <div class="hint-empty" id="emptyHint">위에서 문의 유형을 먼저 선택해 주세요.</div>
-    </div>
 
-    <button class="submit" id="submitBtn">문의 접수하기</button>
-    <div class="retry-banner" id="retryBanner"></div>
-    <p class="note">남겨주신 연락처로 담당자가 안내드립니다.<br>하루의 완성, 웰페리온</p>
+      <div class="card guide-card" id="guideBox" style="display:none"></div>
+
+      <div class="card">
+        <div id="formFields"></div>
+        <div class="hint-empty" id="emptyHint">위에서 문의 유형을 먼저 선택해 주세요.</div>
+      </div>
+
+      <button class="submit" id="submitBtn">문의 접수하기</button>
+      <div class="retry-banner" id="retryBanner"></div>
+      <p class="note">남겨주신 연락처로 담당자가 안내드립니다.<br>하루의 완성, 웰페리온</p>
+    </div>
   </div>
 
   <div class="wrap done" id="doneWrap">
-    <div class="dot">✅</div>
+    <div class="dot">✓</div>
     <h2>문의가 접수되었습니다</h2>
     <p>소중한 문의 감사합니다.<br>담당자가 빠르게 확인 후 연락드리겠습니다.</p>
     <div class="rcpt" id="rcptNo"></div>
@@ -155,7 +179,7 @@
   function pipa(purpose){
     return '개인정보 보호법에 따라 주식회사 웰페리온은 아래와 같이 개인정보를 수집·이용합니다.\n\n'
       + '수집 목적: ' + purpose + '\n'
-      + '수집 항목: 성함, 연락처, 문의 내용\n'
+      + '수집 항목: 성함(또는 담당자), 연락처, 문의 내용\n'
       + '보유 기간: 수집일로부터 1년 또는 목적 달성 시까지(둘 중 빠른 시점)\n'
       + '제3자 제공: 별도 동의 없이 제공하지 않음(법령상 요구 시 예외)\n\n'
       + '동의를 거부하실 수 있으나, 거부 시 문의 응대가 제한될 수 있습니다.';
@@ -200,8 +224,89 @@
         { key:'channel', label:'문의 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'문의하실 내용을 자유롭게 적어주세요.' }
       ]
+    },
+    summer: {
+      purpose: '여름 특강 문의 응대 및 상담 안내',
+      fields: [
+        { key:'name',    label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
+        { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
+        { key:'target',  label:'대상',    type:'select', ph:'선택해 주세요', opts:['성인','유소년'] },
+        { key:'program', label:'집중 종목', type:'multi', opts:['수영','체조','스쿼시','골프','유소년 성장PT'] },
+        { key:'wishMonth', label:'희망 월', type:'select', ph:'선택해 주세요', opts:['7월','8월','미정'] },
+        { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'궁금하신 점을 자유롭게 적어주세요.' }
+      ]
+    },
+    rental: {
+      purpose: '공간 대관 문의 응대 및 견적 안내',
+      fields: [
+        { key:'name',    label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
+        { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
+        { key:'space',   label:'대관 공간', type:'multi', opts:['수영장','스튜디오','라운지','골프존','스쿼시코트','사우나','전체'] },
+        { key:'purpose', label:'용도', type:'select', ph:'선택해 주세요', opts:['행사','촬영','세미나','워크숍','모임'] },
+        { key:'wishDate',label:'희망일', type:'date', opt:true },
+        { key:'headcount',label:'예상 인원', type:'text', opt:true, ph:'예: 30명' },
+        { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'행사 세부 내용을 자유롭게 적어주세요.' }
+      ]
+    },
+    business: {
+      purpose: '비즈니스 제휴 문의 응대 및 검토',
+      fields: [
+        { key:'company',     label:'회사명',  type:'text', ph:'회사명을 입력해 주세요', req:true },
+        { key:'contactName', label:'담당자',  type:'text', ph:'담당자 성함', req:true },
+        { key:'phone',       label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
+        { key:'partnerType', label:'제휴 유형', type:'select', ph:'선택해 주세요', opts:['콜라보레이션','입점','B2B 복지','콘텐츠 협업','상품 공급','투자 제휴'] },
+        { key:'docLink',     label:'소개자료 링크', type:'text', opt:true, ph:'https://…' },
+        { key:'proposal',    label:'제안 내용', type:'textarea', ph:'제휴 제안 내용을 자유롭게 적어주세요.' }
+      ]
     }
   };
+
+  // ── 유형별 가이드(약간의 소개) — 폼 렌더 직전 상단에 표시 ──
+  var GUIDES = {
+    membership: {
+      lead:'단순한 운동 시설이 아닙니다. 하루 루틴의 일부로, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간입니다.',
+      badges:['<b>1,000명</b> 정원제','연회비제 · 보증금 없음','한남동 <b>3,000평</b> 단일 시설'],
+      tags:['수영','스쿼시','골프','필라테스·PT','사우나·리커버리','라운지·커뮤니티','생크몽드 스파'],
+      note:'상담 및 투어는 사전 예약제로 운영됩니다.'
+    },
+    adult: {
+      lead:'수영·P.T·필라테스·골프·스쿼시·아쿠아로빅·발레·바레까지, 한남동에서 전문 강습을 받으실 수 있습니다.',
+      tags:['수영','P.T','필라테스','골프','스쿼시','아쿠아로빅','발레·바레','기타'],
+      note:'개인·그룹 레슨을 병행하며, 사전 상담 후 배정됩니다.'
+    },
+    youth: {
+      lead:'자녀의 첫 배움을 위한 전문 강습입니다. 수영·골프·스쿼시부터 체조·모자수영·뮤지컬까지 준비되어 있습니다.',
+      tags:['수영','골프','스쿼시','체조&트램폴린','P.T','필라테스','모자수영','뮤지컬'],
+      note:'Brad Little Star Academy 뮤지컬 클래스 등 국내에서 흔치 않은 프로그램도 만나보실 수 있습니다.'
+    },
+    summer: {
+      lead:'여름 한정 집중 강습입니다. 수영·체조·스쿼시·골프·유소년 성장PT — 성인과 유소년 모두 참여하실 수 있습니다.',
+      badges:['7월 · 8월 진행','정원 한정','사전 예약제'],
+      note:'시즌 특성상 정원이 조기 마감될 수 있습니다.'
+    },
+    rental: {
+      lead:'수영장부터 스튜디오·라운지·골프존까지, 다양한 공간을 대관해 드립니다. 행사·촬영·세미나·워크숍·모임에 맞춰 준비합니다.',
+      note:'요금은 규모·기간·구성에 따라 맞춤 견적으로 안내드립니다.'
+    },
+    business: {
+      lead:'웰페리온과 함께 성장할 파트너를 찾습니다. 콜라보레이션부터 입점·B2B 복지·콘텐츠 협업까지 다양한 제휴를 환영합니다.',
+      note:'담당 부서 검토 후 회신드립니다.'
+    }
+  };
+
+  var CAT_TITLES = { membership:'멤버십 문의', adult:'성인 강습 문의', youth:'유소년 강습 문의', summer:'여름 특강 문의', rental:'공간 렌트 문의', business:'비즈니스 제휴 문의' };
+
+  // ── 히어로 서브카피(1번째 줄) 유형별 매핑 — 2번째 줄("아래 정보를…")은 공통 고정 ──
+  var HERO_SUB_DEFAULT = '멤버십 가입·시설 투어·강습 상담을 도와드립니다.';
+  var HERO_SUB = {
+    membership: '멤버십 가입·시설 투어 상담을 도와드립니다.',
+    adult: '성인 강습 프로그램을 안내해 드립니다.',
+    youth: '유소년 강습 프로그램을 안내해 드립니다.',
+    summer: '여름방학 단기 집중 특강을 안내해 드립니다.',
+    rental: '행사·촬영·모임을 위한 공간 대관을 안내해 드립니다.',
+    business: '제휴·입점·B2B 등 사업 협업 제안을 받습니다.'
+  };
+  function setHeroSub(cat){ $('heroSubLine1').textContent = HERO_SUB[cat] || HERO_SUB_DEFAULT; }
 
   var selectedCat = '';
   var formShownAt = 0;   // 유형 선택(폼 표시) 시각 — 타이밍 게이트용
@@ -228,12 +333,32 @@
   var UTM_SOURCE = qp('utm_source') || '';
   var UTM_MEDIUM = qp('utm_medium') || '';
 
+  // ── 가이드 렌더(약간의 소개) ──
+  function renderGuide(cat){
+    var box = $('guideBox');
+    var g = GUIDES[cat];
+    if (!g) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    var html = '<p class="g-lead">' + g.lead + '</p>';
+    if (g.badges && g.badges.length) {
+      html += '<div class="g-badges">' + g.badges.map(function(b){ return '<span class="g-badge">'+b+'</span>'; }).join('') + '</div>';
+    }
+    if (g.tags && g.tags.length) {
+      html += '<div class="g-tags">' + g.tags.map(function(t){ return '<span class="g-tag">'+t+'</span>'; }).join('') + '</div>';
+    }
+    if (g.note) { html += '<p class="g-note">' + g.note + '</p>'; }
+    box.innerHTML = html;
+    box.style.display = 'block';
+  }
+
   // ── 폼 렌더 ──
   function buildForm(cat){
     var box = $('formFields'); box.innerHTML = '';
     var def = FORMS[cat];
-    if (!def) { $('emptyHint').style.display = 'block'; return; }
+    if (!def) { $('emptyHint').style.display = 'block'; renderGuide(null); $('heroTitle').textContent = '문의하기'; setHeroSub(''); return; }
     $('emptyHint').style.display = 'none';
+    $('heroTitle').textContent = CAT_TITLES[cat] || '문의하기';
+    setHeroSub(cat);
+    renderGuide(cat);
 
     def.fields.forEach(function(f){
       var field = document.createElement('div'); field.className = 'field';
@@ -430,6 +555,9 @@
       category:vals.category, name:vals.name, phone:vals.phone,
       program:vals.program||'', channel:vals.channel||'', message:vals.message||'',
       wishTime:vals.wishTime||'', age:vals.age||'', exp1Date:vals.exp1Date||'',
+      target:vals.target||'', wishMonth:vals.wishMonth||'',
+      space:vals.space||'', purpose:vals.purpose||'', wishDate:vals.wishDate||'', headcount:vals.headcount||'',
+      company:vals.company||'', contactName:vals.contactName||'', partnerType:vals.partnerType||'', docLink:vals.docLink||'', proposal:vals.proposal||'',
       consent:true, hp:vals.hp||'', fillMs:(formShownAt? (Date.now()-formShownAt) : 0),
       utmSource:UTM_SOURCE, utmMedium:UTM_MEDIUM
     };
@@ -446,6 +574,7 @@
     selectedCat=''; activeSid='';
     Array.prototype.forEach.call(document.querySelectorAll('.type-btn'), function(b){ b.classList.remove('active'); });
     $('formFields').innerHTML=''; $('emptyHint').style.display='block';
+    renderGuide(null); $('heroTitle').textContent='문의하기'; setHeroSub('');
     resetSubmitBtn(); clearBanner();
     $('doneWrap').style.display='none'; $('formWrap').style.display='block';
     window.scrollTo(0,0);
@@ -456,13 +585,16 @@
   if (qRead().length) scheduleFlush(800);
 
   // ── 유형 딥링크(?type=) 프리선택 — 문의 페이지(8394) 버튼에서 유형별로 진입 시 해당 폼 자동 표시 ──
-  //   허용값: membership|adult|youth (한글 별칭 병행). 미지정·미매칭 = 기존처럼 유형 선택 대기.
+  //   허용값: membership|adult|youth|summer|rental|business (한글 별칭 병행). 미지정·미매칭 = 기존처럼 유형 선택 대기.
   (function(){
     try {
       var t = (qp('type') || '').toLowerCase();
       var alias = { membership:'membership', '멤버십':'membership',
                     adult:'adult', '성인':'adult', '성인강습':'adult',
-                    youth:'youth', '유소년':'youth', '유소년강습':'youth' };
+                    youth:'youth', '유소년':'youth', '유소년강습':'youth',
+                    summer:'summer', '여름':'summer', '여름특강':'summer',
+                    rental:'rental', '렌트':'rental', '대관':'rental', '공간렌트':'rental',
+                    business:'business', '비즈니스':'business', '제휴':'business' };
       var cat = alias[t]; if (!cat) return;
       var btn = document.querySelector('.wlp-inq .type-btn[data-cat="' + cat + '"]');
       if (btn) { btn.classList.add('active'); selectedCat = cat; buildForm(cat); }
