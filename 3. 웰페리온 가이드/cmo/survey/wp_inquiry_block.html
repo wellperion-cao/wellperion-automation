@@ -50,6 +50,13 @@
      max-width:720px(.wrap과 동일 폭, 통일감) + margin:auto로 가운데 정렬해 데스크톱에서 다크 박스가
      본문 콘텐츠 폭 안에 카드처럼 앉게 함(좌우 여백 생김). 모바일은 뷰포트가 720px보다 좁아 자동으로
      꽉 차 보임(별도 미디어쿼리 불필요). margin-top:-40px(상단 확장)는 auto 정렬과 함께 유지.
+     2026-07-16 GM 최종확정(시안F 밝은 베이지 우아, 전체 통일): "상단만 색 넣으면 위아래 따로 논다"
+     피드백 반영 — 다크(#221F20) 히어로 폐기, .wlp-inq 전체(히어로+본문 배경)를 동일한 연한 베이지
+     #f5f0ea(--bg 변수)로 통일해 하나의 연속된 면처럼 보이게 함(부분 색 아님). 텍스트: 헤드라인=검정
+     (--ink), 부제·소개문=새 --muted #6b6258, eyebrow·디바이더·"1,000명 정원제"강조·예약안내=베이지
+     (--beige, 코럴 대신 — "코럴 최소" 방침, 제출버튼·체크박스 선택 등 기능적 CTA색만 코럴 유지).
+     본문 카드(.type-card 등)는 흰색+기존 베이지톤 보더 그대로(대비 유지). 문구 정정: "그날의"→
+     "그 날의"(띄어쓰기), "1,000명 정원제(멤버십)로"→"1,000명 정원제(멤버십) 운영으로".
      수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
 /* 문의 페이지(8394) 한정 — WP 테마 헤더 전체 숨김(로고·메뉴·ENG버튼). 다른 페이지 영향 0(page-id 스코프). */
@@ -59,34 +66,34 @@ body.page-id-8394 #header-outer { display: none !important; }
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
 .wlp-inq{
-  --bg:#ffffff;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;--dim:#8a7f72;
-  background:transparent;color:var(--ink);line-height:1.6;font-size:16px;
+  --bg:#f5f0ea;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;--dim:#8a7f72;--muted:#6b6258;
+  background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   -webkit-text-size-adjust:100%;box-sizing:border-box;
 }
 .wlp-inq *{box-sizing:border-box}
 .wlp-inq a{text-decoration:none;color:inherit}
 
-/* ===== HERO — 다크(2026-07-16 GM 색상 재변경: 베이지→다크 #221F20, 헤더 숨김 상태라 로고 겹침 없음) ===== */
-.wlp-inq .hero-band{background:var(--ink);max-width:720px;margin:-40px auto 0;padding:64px 20px 30px}
+/* ===== HERO — 밝은 베이지 우아(시안F, 2026-07-16 GM 최종확정: 히어로·본문 전체 동일 베이지로 통일) ===== */
+.wlp-inq .hero-band{background:var(--bg);max-width:720px;margin:-40px auto 0;padding:64px 20px 30px}
 @media (max-width:1000px){
   .wlp-inq .hero-band{padding-top:56px}
 }
 .wlp-inq .hero-inner{max-width:520px;margin:0 auto;text-align:center}
 .wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin:0 0 14px}
-.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:#fff;margin:0 0 6px}
-.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:rgba(255,255,255,.7);letter-spacing:.02em;margin:0 0 18px}
-.wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 18px}
-.wlp-inq .hero-desc{font-size:13.5px;color:rgba(255,255,255,.7);line-height:1.8;max-width:380px;margin:0 auto;word-break:keep-all}
-.wlp-inq .hero-capacity{font-size:14px;font-weight:700;color:#fff;line-height:1.7;max-width:380px;margin:20px auto 0}
-.wlp-inq .hero-capacity b{color:var(--coral);font-weight:800}
+.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin:0 0 6px}
+.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--muted);letter-spacing:.02em;margin:0 0 18px}
+.wlp-inq .divider-coral{width:36px;height:2px;background:var(--beige);margin:0 auto 18px}
+.wlp-inq .hero-desc{font-size:13.5px;color:var(--muted);line-height:1.8;max-width:380px;margin:0 auto;word-break:keep-all}
+.wlp-inq .hero-capacity{font-size:14px;font-weight:700;color:var(--ink);line-height:1.7;max-width:380px;margin:20px auto 0}
+.wlp-inq .hero-capacity b{color:var(--beige);font-weight:800}
 
-/* ===== BODY WRAP — 화이트 에디토리얼 ===== */
+/* ===== BODY WRAP — 같은 베이지 배경 + 흰 카드 대비 ===== */
 .wlp-inq .wrap{max-width:720px;margin:0 auto;padding:34px 18px 72px}
 
 /* 사전예약제 안내 */
-.wlp-inq .reserve-note{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 32px;font-size:12.5px;font-weight:700;color:var(--coral);letter-spacing:.02em;text-align:center}
-.wlp-inq .reserve-note .dot{width:5px;height:5px;background:var(--coral);flex-shrink:0}
+.wlp-inq .reserve-note{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 32px;font-size:12.5px;font-weight:700;color:var(--beige);letter-spacing:.02em;text-align:center}
+.wlp-inq .reserve-note .dot{width:5px;height:5px;background:var(--beige);flex-shrink:0}
 
 /* 영상 */
 .wlp-inq .video-frame{max-width:640px;margin:0 auto 44px;position:relative;width:100%;padding-top:56.25%;background:var(--ink);border:1px solid var(--line)}
@@ -131,8 +138,8 @@ body.page-id-8394 #header-outer { display: none !important; }
       <p class="slogan-en">A Day, Well Completed.</p>
       <p class="slogan-kr">하루의 완성, 웰페리온</p>
       <div class="divider-coral"></div>
-      <p class="hero-desc">단순한 운동 시설이 아닙니다.<br>하루 루틴의 일부로, 건강의 기준을 세우고<br>그날의 완성도를 채워주는 공간입니다.</p>
-      <p class="hero-capacity">웰페리온은 <b>1,000명 정원제</b>(멤버십)로<br>쾌적한 공간을 제공합니다.</p>
+      <p class="hero-desc">단순한 운동 시설이 아닙니다.<br>하루 루틴의 일부로, 건강의 기준을 세우고<br>그 날의 완성도를 채워주는 공간입니다.</p>
+      <p class="hero-capacity">웰페리온은 <b>1,000명 정원제</b>(멤버십) 운영으로<br>쾌적한 공간을 제공합니다.</p>
     </div>
   </div>
 

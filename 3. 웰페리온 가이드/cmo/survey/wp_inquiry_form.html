@@ -45,6 +45,11 @@
      "CUPS 라운지", "생크몽드 스파" 뒤에 "부티부 헤어메이크업" 추가.
      2026-07-16 GM 피드백(폭 축소, 허브와 동일): 다크 히어로 좌우 풀블리드 지적 — .hero-band에
      max-width:540px(.wrap과 동일 폭) + margin:auto로 가운데 정렬. margin-top:-40px는 유지.
+     2026-07-16 GM 최종확정(시안F 밝은 베이지 우아, 전체 통일, 허브와 동일): 다크(#221F20) 히어로 폐기,
+     .wlp-inq 전체(히어로+본문)를 동일 베이지 #f5f0ea(--bg)로 통일. 텍스트: 헤드라인=검정, 부제·소개문=
+     새 --muted #6b6258, eyebrow·디바이더·hero-note·g-badge 강조=베이지(--beige, 코럴 대신). 가이드
+     카드(.guide-card)도 흰색(#faf8f5→var(--paper))으로 통일해 다른 본문 카드와 동일 대비. 기능적 CTA
+     (제출버튼·체크박스 선택 상태)는 코럴 유지.
      수정 시 이 파일을 고치고 WP post 8460(draft-page --page survey) 재주입. -->
 <style>
 /* 문의 Survey 폼 페이지(8460) 한정 — WP 테마 헤더 전체 숨김. 다른 페이지 영향 0(page-id 스코프). */
@@ -54,9 +59,9 @@ body.page-id-8460 #header-outer { display: none !important; }
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
 .wlp-inq{
-  --bg:#ffffff;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;
-  --dim:#8a7f72;--green:#2e7d5b;--red:#c0392b;
-  background:transparent;color:var(--ink);line-height:1.6;font-size:16px;
+  --bg:#f5f0ea;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;
+  --dim:#8a7f72;--muted:#6b6258;--green:#2e7d5b;--red:#c0392b;
+  background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   -webkit-text-size-adjust:100%;box-sizing:border-box;
 }
@@ -64,19 +69,19 @@ body.page-id-8460 #header-outer { display: none !important; }
 .wlp-inq button{font-family:inherit;-webkit-appearance:none;appearance:none;cursor:pointer}
 .wlp-inq a{text-decoration:none;color:inherit}
 
-/* ===== HERO — 다크(2026-07-16 GM 색상 재변경: 베이지→다크 #221F20, 헤더 숨김 상태라 로고 겹침 없음) ===== */
-.wlp-inq .hero-band{background:var(--ink);max-width:540px;margin:-40px auto 0;padding:64px 20px 28px}
+/* ===== HERO — 밝은 베이지 우아(시안F, 2026-07-16 GM 최종확정: 히어로·본문 전체 동일 베이지로 통일) ===== */
+.wlp-inq .hero-band{background:var(--bg);max-width:540px;margin:-40px auto 0;padding:64px 20px 28px}
 @media (max-width:1000px){
   .wlp-inq .hero-band{padding-top:56px}
 }
 .wlp-inq .hero-inner{max-width:480px;margin:0 auto;text-align:center}
 .wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin-bottom:14px}
-.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:#fff;margin-bottom:6px}
-.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:rgba(255,255,255,.7);letter-spacing:.02em;margin-bottom:18px}
-.wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 18px}
+.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-bottom:6px}
+.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--muted);letter-spacing:.02em;margin-bottom:18px}
+.wlp-inq .divider-coral{width:36px;height:2px;background:var(--beige);margin:0 auto 18px}
 .wlp-inq .hero-inner h1{display:none}
-.wlp-inq .hero-desc{font-size:13.5px;color:rgba(255,255,255,.7);line-height:1.75;max-width:340px;margin:0 auto;word-break:keep-all}
-.wlp-inq .hero-note{font-size:12px;font-weight:700;color:var(--coral);letter-spacing:.02em;margin-top:12px}
+.wlp-inq .hero-desc{font-size:13.5px;color:var(--muted);line-height:1.75;max-width:340px;margin:0 auto;word-break:keep-all}
+.wlp-inq .hero-note{font-size:12px;font-weight:700;color:var(--beige);letter-spacing:.02em;margin-top:12px}
 
 /* ===== BODY WRAP — 화이트 에디토리얼 ===== */
 .wlp-inq .wrap{max-width:540px;margin:0 auto;padding:28px 18px 70px}
@@ -92,11 +97,11 @@ body.page-id-8460 #header-outer { display: none !important; }
 .wlp-inq .fallback-btn:hover{opacity:.85}
 
 /* ===== 가이드 카드(약간의 소개) ===== */
-.wlp-inq .guide-card{background:#faf8f5}
+.wlp-inq .guide-card{background:var(--paper)}
 .wlp-inq .g-lead{font-size:13.5px;line-height:1.75;color:var(--ink)}
 .wlp-inq .g-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .wlp-inq .g-badge{font-size:11.5px;font-weight:600;padding:8px 12px;border:1px solid var(--line);background:#fff;color:var(--ink)}
-.wlp-inq .g-badge b{color:var(--coral);font-weight:800}
+.wlp-inq .g-badge b{color:var(--beige);font-weight:800}
 .wlp-inq .g-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
 .wlp-inq .g-tag{font-size:11px;font-weight:600;padding:6px 10px;background:rgba(183,159,138,.15);color:var(--ink)}
 .wlp-inq .g-note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
