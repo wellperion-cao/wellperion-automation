@@ -19,19 +19,15 @@
      60px→110px(+40 원복 보정 + 여유 10px)로 늘려 배경 박스는 그대로 상단 확장 유지하되 콘텐츠 시작
      위치는 로고 하단보다 확실히 아래(실측 gap 양수 확보)로 재조정. 동시에 히어로 소개문 줄바꿈 개선 — "세우고"의 '고'만 다음 줄로 넘어가던
      어색한 끊김을 의미 단위 수동 <br> 3줄 분리 + word-break:keep-all(한글 어절 단위 줄바꿈)로 해소.
+     2026-07-16 GM 방향전환(다크 히어로 폐기·근본 해결): WP 테마 헤더(로고·메뉴·ENG버튼, 전 페이지 공통)와
+     다크 히어로 밴드가 계속 충돌(로고 안보임·겹침·위치어긋남)해 위 ①②③ 다크 관련 수정 전부 원복 —
+     #header-outer 다크 배경·헤더 로고 베이지 filter·margin-top push·container.main-content의
+     margin-top:-40px 전부 제거(밝은 기본 WP 헤더 복귀, 충돌 원천 차단). 히어로 자체도 다크(#221F20)→
+     밝은 배경으로 교체하고 "문의하기" 큰 제목 삭제(6버튼이 이미 각자 'OO 문의' 라벨이라 중복).
+     문구·글자 크기는 B안 리스킨 이전 원본 wp_inquiry_form.html(커밋 46af9cc2, 밝은 배경·심플 버전)의
+     사이즈 위계(큰 영문 슬로건→작은 국문 부제→코럴 디바이더→작은 소개문)를 참고하되 컬러는 브랜드
+     정본색(BLACK #221F20·BEIGE #B79F8A·CORAL #ED5B3F)만 사용. 카드형(네모) 6버튼 레이아웃은 그대로 유지.
      수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
-<style>
-/* 문의 페이지(8394) 한정 — 헤더 로고 상단 잘림 해소 + 폭>1000px 다크 히어로 겹침 구간 베이지 전환 */
-body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
-body.page-id-8394 #header-outer #logo img { filter: invert(65%) sepia(40%) saturate(200%) hue-rotate(345deg) brightness(95%) contrast(80%); }
-@media (max-width: 1000px) {
-  body.page-id-8394 #header-outer #logo { margin-top: 22px !important; }
-  body.page-id-8394 #header-outer #logo img { filter: none; }
-}
-/* 문의 페이지(8394) 한정 — 다크 배경을 페이지 최상단(헤더 영역)까지 확장, 로고 위 흰/회색 바 제거 */
-body.page-id-8394 #header-outer { background: #221F20 !important; }
-body.page-id-8394 .container-wrap .container.main-content { margin-top: -40px !important; }
-</style>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
@@ -44,14 +40,14 @@ body.page-id-8394 .container-wrap .container.main-content { margin-top: -40px !i
 .wlp-inq *{box-sizing:border-box}
 .wlp-inq a{text-decoration:none;color:inherit}
 
-/* ===== HERO — 다크 풀블리드 ===== */
-.wlp-inq .hero-band{background:var(--ink);padding:110px 20px 32px}
+/* ===== HERO — 밝은 심플(2026-07-16 GM 방향전환: 다크 풀블리드 폐기) ===== */
+.wlp-inq .hero-band{background:transparent;padding:40px 20px 6px}
 .wlp-inq .hero-inner{max-width:520px;margin:0 auto;text-align:center}
-.wlp-inq .slogan-en{font-size:14px;font-style:italic;color:#fff;opacity:.92;letter-spacing:.01em;margin:0 0 5px}
-.wlp-inq .slogan-kr{font-size:12px;color:#fff;opacity:.55;letter-spacing:.03em;margin:0 0 18px}
+.wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin:0 0 14px}
+.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin:0 0 6px}
+.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--dim);letter-spacing:.02em;margin:0 0 18px}
 .wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 18px}
-.wlp-inq .hero-inner h1{font-size:clamp(26px,7vw,36px);font-weight:800;letter-spacing:-.02em;color:#fff;margin:0 0 12px}
-.wlp-inq .hero-desc{font-size:14px;color:#fff;opacity:.7;line-height:1.8;max-width:380px;margin:0 auto;word-break:keep-all}
+.wlp-inq .hero-desc{font-size:13.5px;color:var(--dim);line-height:1.8;max-width:380px;margin:0 auto;word-break:keep-all}
 
 /* ===== BODY WRAP — 화이트 에디토리얼 ===== */
 .wlp-inq .wrap{max-width:720px;margin:0 auto;padding:34px 18px 72px}
@@ -105,10 +101,10 @@ body.page-id-8394 .container-wrap .container.main-content { margin-top: -40px !i
 
   <div class="hero-band">
     <div class="hero-inner">
+      <p class="eyebrow">Wellperion</p>
       <p class="slogan-en">A Day, Well Completed.</p>
       <p class="slogan-kr">하루의 완성, 웰페리온</p>
       <div class="divider-coral"></div>
-      <h1>문의하기</h1>
       <p class="hero-desc">단순한 운동 시설이 아닙니다.<br>하루 루틴의 일부로, 건강의 기준을 세우고<br>그날의 완성도를 채워주는 공간입니다.</p>
     </div>
   </div>
