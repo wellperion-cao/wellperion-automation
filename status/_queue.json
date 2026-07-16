@@ -182,32 +182,6 @@
     "artifact": "https://wellperion-cao.github.io/wellperion-automation/자율현황.html"
   },
   {
-    "task_id": "NEXT-20260715-102240",
-    "clevel": "cto",
-    "title": "각 알림 방별 last-send 로그 집계 배선(하루정리 22:30·점검독려·문의 5분폴링 ⚪→🟢 승격) — 발송 로직 무변경 전제 검토",
-    "status": "DONE",
-    "depends_on": "cto-alert-schedule-board",
-    "from": "cto",
-    "origin": "bridge",
-    "enqueued_at": "2026-07-15T01:22:40Z",
-    "ship_no": 1050,
-    "note": "[2026-07-16 시토] GM 'A.생존 표기' 채택→구현. 자율현황 ②자동화에 조건부·상주 알림 미니표 신설(3건). 발송기 무변경·프론트만. 생존판정: 스케줄러 상주(하루정리·독려)=automation_health WellperionDailyScheduler / GAS(문의폴링)=Telegram-HealthCheck-1300. 조건부(독려·문의폴링)는 '안 보냄=정상' 명시. 억지초록 아님(🟢=엔진 생존·발송시각 아님 라벨명시). merge(45de51f0)로 누락됐던 3건 정직 복원.",
-    "updated_at": "2026-07-16T09:20:00Z"
-  },
-  {
-    "task_id": "NEXT-20260715-153553",
-    "clevel": "cto",
-    "title": "테마 푸터 위젯 '현대하이페리온'→'웰페리온' 수정 + FuturaPT 폰트 CORS(cafe24) 사이트전역 정리",
-    "status": "DONE",
-    "depends_on": "CTO-recept-audit-20260715",
-    "from": "cto",
-    "origin": "bridge",
-    "enqueued_at": "2026-07-15T06:35:53Z",
-    "ship_no": 1111,
-    "note": "[2026-07-16 시토] ①금지어: 라이브 전페이지 현대하이페리온 0건(어제 푸터위젯 교정으로 선해소·손댈대상 없음) ②폰트 CORS: 추가CSS @font-face 옛호스트 wellperion.cafe24.com/font(CORS헤더 없음→차단)→동일오리진 /font/ 로 8건 치환(Futura 5·Hudson 3). 커스터마이저 저장·라이브 재검증 cafe24 0건·폰트 200 동일오리진 로드. swap-additional-css 가드모드 신설(백업+무결성+저장후 라이브재검증).",
-    "updated_at": "2026-07-16T09:07:00Z"
-  },
-  {
     "task_id": "CHRO-2026-08-01-PARK-NAMIL-PROMOTION",
     "clevel": "chro",
     "title": "[시로] 박남일 8/1 진급 반영 + 급여 조정(+15만원)",
@@ -469,18 +443,6 @@
     "artifact": "auto(cto): scheduled IG reach collect (ledger+summary, 배588) (CLI ad-hoc · 커밋 9c835e4d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9c835e4d32efa34b7ab4835e90ee8d340e5b0278"
-  },
-  {
-    "task_id": "CMO-2026-07-16-APPROVAL-UNIFY-M1-TELEGRAM",
-    "clevel": "cmo",
-    "title": "[시모] M1 웹 승인 ↔ 텔레그램 승인 통일 — 봇 발행 트리거 수렴(게이트 OFF)",
-    "status": "DONE",
-    "priority": "⛴️여객선",
-    "enqueued_at": "2026-07-16",
-    "note": "[2026-07-16 시모] 콘텐츠 검수 두 승인 경로(M1 웹·텔레그램 카드)가 서로 다른 동작이던 문제 통일 — M1 웹 [승인]은 GAS _reviewSetStatus()가 review_queue.json status=승인 커밋만 하고 발행 트리거가 없어 조용히 멈춰있었음(텔레그램 카드 경로만 subprocess로 발행엔진 --once 기동, 정상 작동 중이라 그 경로는 무변경 보존). GM 확정 방식=봇 발행 재사용: M1 승인 커밋 직후 GAS _signalM1Publish()가 텔레그램 봇에 '/m1pub <id>' 신호 발송 → bot.py cmd_m1_publish()가 GM 챗 검증→직렬화 git pull(GitLock 동일 임계구역, 동시커밋 손상 방지)→큐 재로드→status 확인 후 _launch_publish_engine()(구 cmd_publish_callback subprocess 블록 추출·공용화) 호출로 텔레그램 카드 승인과 동일 발행 경로 수렴. 라이브 발효는 게이트로 차단: .env M1_AUTO_PUBLISH=0(기본) — OFF 동안 신호는 수신·안내만 하고 발행 엔진 호출 안 함(라이브 영향 0). GAS 변경은 재배포(새 /exec 버전) 전까지도 미발효(이중 안전). pytest 5종(GM아님무시·id없음·미승인보류·게이트OFF차단·게이트ON+승인발행) 전부 통과, py_compile 통과. 스펙: docs/superpowers/specs/2026-07-16-m1-telegram-approval-unify-design.md | [2026-07-16 발효 완료] 편집키 버그 수정(EDIT_KEY 게이트 2곳 해제)+GAS 재배포(@115)+봇 재시작(PID 27476·M1_AUTO_PUBLISH=1). M1 [승인]→GAS status=승인+/m1pub 신호→봇 발행엔진(텔레그램 카드와 동일). L2 PT M1 승인 실측 발행완료(instagram.com/p/Da1hAZ-EinK). 완전 무인 e2e(M1클릭→자동발행)는 다음 검수 승인 시 자연 검증.",
-    "next": "다음 검수 건 M1 [승인] 시 무인 자동발행 자연 검증(수동 브리지 불요).",
-    "ship_no": 1170,
-    "module": "M1"
   },
   {
     "task_id": "COO-2026-07-16-ADHOC-8821afde",
