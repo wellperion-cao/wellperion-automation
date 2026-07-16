@@ -637,6 +637,15 @@
     </div>
   </section>
 
+  <!-- ════ 🧑‍🤝‍🧑 시로(AI CHRO) 자율 인사 (상시 루프 3종 + Gmail 트리거 · 등록부 chro-* 실값 렌더 · 2026-07-16 매니저 지시) ════ -->
+  <section>
+    <h2 class="sec" id="sec-chro-autonomy">🧑‍🤝‍🧑 시로 (AI CHRO) 자율 인사 <span style="font-size:11px;font-weight:400;color:var(--dim);">(정합성 스윕·온보딩 워치·효율 리포트·공고명 자동취득)</span></h2>
+    <div class="sec-note">인사 데이터 정합성·온보딩 진척·채용 파이프라인을 무인 감시 — 카드는 등록부(<code>chro-*</code>) 실값 렌더. 배선 표는 하단 '📡 모듈 보고 현황'.</div>
+    <div id="registry-card-summary-chro" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
+    <div class="routines" id="registry-cards-chro"></div>
+    <div class="sec-note" style="margin:8px 0 0;">게이트: 오피스 명령큐=온디맨드(무인 자동실행 금지) · 비가역 쓰기·발송=매니저/GM 승인 · PII 마스킹 유지 · 고위험 4종=A-6 사전 감사.</div>
+  </section>
+
   <!-- ════ 섹션 2 · 루프가 만든 성과 ════ -->
   <h2 class="sec">📊 성과 요약 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프가 만든 결과)</span></h2>
   <div class="sec-note">측정 가능한 값만 숫자 · 나머지는 “미측정”.</div>
@@ -1666,44 +1675,50 @@
     if(ns.monthly) parts.push('매월');
     return parts.join('·');
   }
+  function regCardHtml(m){
+    var au  = REG_AUTONOMY[m.autonomy] || { label: esc(m.autonomy || '미표기'), pill:'idle' };
+    var ico = REG_ICO[m.owner_role] || '📦';
+    var cad = registryCadenceTxt(m.notify_spec);
+    var cy  = esc(m.owner_nick || m.owner_role || '') + (cad ? (' · ' + cad) : '');
+    var rows = [];
+    rows.push(['AI 없이도', esc(m.ai_free_fallback || '미표기')]);
+    if(m.honesty_default){
+      rows.push(['정직표기', esc(REG_HONESTY[m.honesty_default] || m.honesty_default)]);
+    }
+    var rowsHtml = rows.map(function(r){
+      return '<div class="rrow"><span class="rk">' + esc(r[0]) + '</span><span class="rv">' + r[1] + '</span></div>';
+    }).join('');
+    return '<div class="rcard">' +
+      '<div class="rcard-top"><span class="rcard-ico">' + ico + '</span>' +
+        '<span class="rcard-tt"><span class="rcard-nm">' + esc(m.feature || m.id || '') + '</span>' +
+          '<span class="rcard-meta"><span class="rcard-cy">' + cy + '</span><span class="pill ' + au.pill + '">' + esc(au.label) + '</span></span>' +
+        '</span></div>' +
+      rowsHtml + '</div>';
+  }
   function renderRegistryCards(reg){
     var sm = document.getElementById('registry-card-summary');
     var el = document.getElementById('registry-cards');
+    var smChro = document.getElementById('registry-card-summary-chro');
+    var elChro = document.getElementById('registry-cards-chro');
     if(!el) return;
     var mods = (reg && Array.isArray(reg.modules)) ? reg.modules : null;
     if(!mods){
       if(sm) sm.textContent = '등록부를 불러오지 못했습니다.';
       el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부를 불러오지 못했습니다.</div>';
+      if(smChro) smChro.textContent = '등록부를 불러오지 못했습니다.';
+      if(elChro) elChro.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부를 불러오지 못했습니다.</div>';
       return;
     }
     var mine = mods.filter(function(m){
       return m && m.owner_role && m.front_card && m.front_card.window === '자율현황';
     });
-    if(sm) sm.textContent = '이 창 소속 등록 모듈 ' + mine.length + '건 (전체 등록부 ' + mods.length + '건 중 · owner_role 보유 신규 스키마만)';
-    if(!mine.length){
-      el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부에 이 창(자율현황) 소속 모듈이 아직 없습니다.</div>';
-      return;
-    }
-    el.innerHTML = mine.map(function(m){
-      var au  = REG_AUTONOMY[m.autonomy] || { label: esc(m.autonomy || '미표기'), pill:'idle' };
-      var ico = REG_ICO[m.owner_role] || '📦';
-      var cad = registryCadenceTxt(m.notify_spec);
-      var cy  = esc(m.owner_nick || m.owner_role || '') + (cad ? (' · ' + cad) : '');
-      var rows = [];
-      rows.push(['AI 없이도', esc(m.ai_free_fallback || '미표기')]);
-      if(m.honesty_default){
-        rows.push(['정직표기', esc(REG_HONESTY[m.honesty_default] || m.honesty_default)]);
-      }
-      var rowsHtml = rows.map(function(r){
-        return '<div class="rrow"><span class="rk">' + esc(r[0]) + '</span><span class="rv">' + r[1] + '</span></div>';
-      }).join('');
-      return '<div class="rcard">' +
-        '<div class="rcard-top"><span class="rcard-ico">' + ico + '</span>' +
-          '<span class="rcard-tt"><span class="rcard-nm">' + esc(m.feature || m.id || '') + '</span>' +
-            '<span class="rcard-meta"><span class="rcard-cy">' + cy + '</span><span class="pill ' + au.pill + '">' + esc(au.label) + '</span></span>' +
-          '</span></div>' +
-        rowsHtml + '</div>';
-    }).join('');
+    // 시로(chro) 모듈은 전용 섹션(sec-chro-autonomy)에 분리 렌더(2026-07-16 매니저 지시) — 나머지는 기존 시토 블록 유지.
+    var chroMods = mine.filter(function(m){ return m.owner_role === 'chro'; });
+    var restMods = mine.filter(function(m){ return m.owner_role !== 'chro'; });
+    if(sm) sm.textContent = '이 창 소속 등록 모듈 ' + restMods.length + '건 (전체 등록부 ' + mods.length + '건 중 · owner_role 보유 신규 스키마만 · 시로 모듈은 전용 섹션)';
+    el.innerHTML = restMods.length ? restMods.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 이 창(자율현황) 소속 모듈이 아직 없습니다.</div>';
+    if(smChro) smChro.textContent = '등록부 시로(chro) 모듈 ' + chroMods.length + '건 — 상시 루프 3종(Windows 스케줄러) + GAS 트리거';
+    if(elChro) elChro.innerHTML = chroMods.length ? chroMods.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 시로(chro) 모듈이 아직 없습니다.</div>';
   }
 
   // ═══════════ ② 돌아가는 자동화: 상시가동 표 펼치기(구 T2 wpAutoToggle 이식) ═══════════
