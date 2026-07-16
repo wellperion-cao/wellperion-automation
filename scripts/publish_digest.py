@@ -26,6 +26,8 @@ import json
 import os
 import re
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -209,10 +211,35 @@ def _send(token: str, chat_id: str, text: str, preview_url: str = "") -> bool:
             "show_above_text": True,
         })
     data = urllib.parse.urlencode(payload).encode("utf-8")
-    req = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return resp.status == 200
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    # 429(레이트리밋) 자가재시도 — retry_after 존중 + 백오프. 텔레그램 그룹 초당/분당 한계로
+    # 발행 run-end 텔레그램 버스트 직후 429가 잦아 디제스트가 조용히 유실되던 문제 근본 차단
+    # (2026-07-16 진단: 이력 파일 부재=한 번도 성공 못함, 재시도 0이 원인).
+    max_attempts = 6
+    for attempt in range(max_attempts):
+        req = urllib.request.Request(url, data=data, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return resp.status == 200
+        except urllib.error.HTTPError as ex:
+            if ex.code == 429 and attempt < max_attempts - 1:
+                retry_after = 3
+                try:
+                    body = json.loads(ex.read().decode())
+                    retry_after = int(body.get("parameters", {}).get("retry_after", 3))
+                except Exception:
+                    pass
+                wait = min(retry_after + 2 * (attempt + 1), 60)  # 초당 한계 흡수 버퍼
+                print(f"[digest] 429 레이트리밋 — {wait}s 대기 후 재시도 "
+                      f"({attempt + 1}/{max_attempts})", file=sys.stderr)
+                time.sleep(wait)
+                continue
+            print(f"[digest] 전송 실패 HTTP {ex.code}: {ex.reason}", file=sys.stderr)
+            return False
+        except Exception as ex:  # 네트워크·타임아웃 등
+            print(f"[digest] 전송 오류: {ex}", file=sys.stderr)
+            return False
+    return False
 
 
 def send_publish_digest(
