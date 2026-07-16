@@ -171,6 +171,10 @@ TOKEN = ENV.get("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
     raise RuntimeError(".env 에 TELEGRAM_BOT_TOKEN 미정의")
 
+# M1 웹 승인 → 발행 라이브 게이트 (2026-07-16 CMO, 배1170) — 기본 OFF.
+# GM go 후 .env M1_AUTO_PUBLISH=1 + 봇 재시작으로 발효. cmd_m1_publish() 가 참조.
+M1_AUTO_PUBLISH = ENV.get("M1_AUTO_PUBLISH", "0") == "1"
+
 # ── 결재 키워드 → (상태값, 승인결과값) ────────────────────────────────────────
 _APPROVAL_KEYWORD_MAP = {
     "승인":      ("승인완료", "승인"),
@@ -1596,6 +1600,36 @@ async def _handle_naver_url_record(
     return True
 
 
+async def _launch_publish_engine(item_ids: list, *, source: str = "tg") -> None:
+    """검수 승인 항목의 발행 엔진(ig_review_publish_watcher.py --once) 비차단 기동.
+
+    cmd_publish_callback(텔레그램 카드 승인)·cmd_m1_publish(M1 웹 승인 신호) 공용 경로
+    — 2026-07-16 두 승인 경로를 '같은 동작(승인→발행)'으로 통일(CMO 배1170).
+    source: 로그 헤더에 남기는 트리거 출처("tg"=텔레그램 카드, "m1-web"=M1 웹 승인).
+    구 cmd_publish_callback 인라인 subprocess 블록을 추출 — 외부 동작(로그 위치·
+    subprocess 인자·환경변수)은 그대로 보존.
+    """
+    _pub_log = WORKDIR / "logs" / "ig_publish_engine.log"
+    try:
+        _pub_log.parent.mkdir(parents=True, exist_ok=True)
+        _pub_out = open(_pub_log, "a", encoding="utf-8", buffering=1)
+        _pub_out.write(
+            f"\n===== {time.strftime('%Y-%m-%d %H:%M:%S')} "
+            f"publish --once ids={item_ids} src={source} =====\n"
+        )
+        _pub_out.flush()
+    except Exception:
+        _pub_out = asyncio.subprocess.DEVNULL  # 로그 열기 실패 시 안전 폴백
+    await asyncio.create_subprocess_exec(
+        str(_VENV_PY), "-u", str(_PUBLISH_ENGINE), "--once",
+        cwd=str(WORKDIR),
+        stdout=_pub_out,
+        stderr=asyncio.subprocess.STDOUT,
+        env=dict(os.environ, PYTHONIOENCODING="utf-8",
+                 TELEGRAM_BOT_TOKEN=(TOKEN or "")),
+    )
+
+
 async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """콘텐츠 검수 카드 [✅승인]/[❌반려] 클릭 처리.
 
@@ -1703,25 +1737,9 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             # 발행엔진 출력을 로그로 남긴다(구 DEVNULL → 진단 사각 제거).
             # 2026-07-08 재발방지: DEVNULL 로 버려 EP01 발행실패의 진짜 사유
             # ('post 섹션 없음')가 '게시 URL 미회수'로 둔갑, 원인추적이 오래 걸린 사고.
-            _pub_log = WORKDIR / "logs" / "ig_publish_engine.log"
-            try:
-                _pub_log.parent.mkdir(parents=True, exist_ok=True)
-                _pub_out = open(_pub_log, "a", encoding="utf-8", buffering=1)
-                _pub_out.write(
-                    f"\n===== {time.strftime('%Y-%m-%d %H:%M:%S')} "
-                    f"publish --once ids={item_ids} =====\n"
-                )
-                _pub_out.flush()
-            except Exception:
-                _pub_out = asyncio.subprocess.DEVNULL  # 로그 열기 실패 시 안전 폴백
-            await asyncio.create_subprocess_exec(
-                str(_VENV_PY), "-u", str(_PUBLISH_ENGINE), "--once",
-                cwd=str(WORKDIR),
-                stdout=_pub_out,
-                stderr=asyncio.subprocess.STDOUT,
-                env=dict(os.environ, PYTHONIOENCODING="utf-8",
-                         TELEGRAM_BOT_TOKEN=(TOKEN or "")),
-            )
+            # 2026-07-16: subprocess 기동 로직은 _launch_publish_engine()으로 추출
+            # (cmd_m1_publish 와 공용) — 이 콜백의 외부 동작은 무변경.
+            await _launch_publish_engine(item_ids, source="tg")
             try:
                 skip_pending_ping = muted("pending_ping")
             except Exception:
@@ -1733,6 +1751,98 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         except Exception as exc:
             await ctx.bot.send_message(chat_id=q.message.chat_id,
                 text=f"⚠️ 발행 엔진 기동 실패: {exc}\n수동 발행 필요: {title_label}")
+
+
+# ─── M1 웹 승인 ↔ 텔레그램 승인 통일 (/m1pub) — 2026-07-16 CMO, 배1170 ───────────
+# GM 확정 방식='봇 발행 재사용': M1(웹 검수 SSOT, wellperion_guide(main).html)에서
+# [승인] 클릭 → GAS _reviewSetStatus() 가 review_queue.json status='승인' 커밋 후
+# _signalM1Publish() 로 이 봇에 "/m1pub <id>" 신호 발송 → 여기서 텔레그램 카드
+# 승인(cmd_publish_callback)과 동일한 _launch_publish_engine() 을 호출한다.
+# 라이브 발효 게이트: M1_AUTO_PUBLISH env(.env, 기본 0=OFF). OFF 동안은 신호 수신만
+# 하고 발행하지 않는다(GM go 후 1로 전환 + 봇 재시작 = 라이브 발효).
+_GM_CHAT_ID = 8254867551  # GM 텔레그램 챗 id (ssot/canon_values.json telegram_chat_id 정본과 동일)
+
+
+def _git_pull_locked() -> None:
+    """GAS가 GitHub에 직접 커밋한 review_queue.json status='승인'을 로컬로 당긴다.
+    _git_seq_locked 와 동일 GitLock 임계구역(파괴적 옵션 없음) — 동시 커밋으로 인한
+    레포 손상 방지(reference_guidehub_concurrent_commit_corruption 교훈). 동기·블로킹
+    이므로 asyncio.to_thread 로 호출."""
+    def _g(*args):
+        try:
+            subprocess.run(
+                ["git", "-C", str(WORKDIR), *args],
+                capture_output=True, text=True,
+                encoding="utf-8", errors="replace",
+            )
+        except Exception as exc:
+            log.error(f"[m1pub] git {args[:1]} 실패: {exc}")
+
+    def _seq():
+        _g("pull", "--rebase", "--autostash", "origin", "master")
+
+    try:
+        if GitLock is not None:
+            with GitLock(holder="bot:m1pub", repo_root=str(WORKDIR)):
+                _seq()
+        else:  # 모듈 임포트 실패 시 폴백 — 무락 순차(최소한 봇은 죽지 않음)
+            log.warning("[m1pub] GitLock 미가용 — 무락 순차 pull 폴백")
+            _seq()
+    except Exception as exc:  # 락 타임아웃 등 — 무방비 진행 금지
+        log.error(f"[m1pub] git lock/pull 실패: {exc}")
+
+
+async def cmd_m1_publish(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """M1 웹 검수 SSOT [승인] 신호 수신 — ``/m1pub <검수id>``.
+
+    GAS _signalM1Publish() 가 status='승인' 커밋 직후 이 명령을 GM 챗으로 보낸다.
+    ①GM 챗 아니면 무시 ②id 없음=사용법 안내 ③pull 후 status≠승인=보류 안내
+    ④게이트(M1_AUTO_PUBLISH) OFF=안내만·발행 안 함 ⑤ON+승인=발행 엔진 기동.
+    """
+    try:
+        if not update.effective_chat or update.effective_chat.id != _GM_CHAT_ID:
+            return  # GM 챗 아니면 조용히 무시(보안)
+
+        args = ctx.args or []
+        if not args:
+            await update.message.reply_text("사용법: /m1pub <검수id>")
+            return
+        item_id = args[0].strip()
+
+        # GAS가 GitHub에 커밋한 최신 status를 로컬로 반영 (동시커밋 위험 방지 — 직렬화 pull)
+        await asyncio.to_thread(_git_pull_locked)
+
+        try:
+            items = json.loads(REVIEW_QUEUE.read_text(encoding="utf-8"))
+        except Exception as exc:
+            await update.message.reply_text(f"⚠️ 검수 큐 로드 실패: {exc}\n🆔 {item_id}")
+            return
+
+        target = next((it for it in items if it.get("id") == item_id), None)
+        if target is None:
+            await update.message.reply_text(f"⚠️ 검수 큐에서 항목을 찾지 못함: {item_id}")
+            return
+
+        status = target.get("status", "")
+        title = target.get("title", item_id)
+        if status != "승인":
+            await update.message.reply_text(
+                f"⏸️ {title} — status='{status}'(승인 아님) → 발행 보류 🆔 {item_id}")
+            return
+
+        if not M1_AUTO_PUBLISH:
+            await update.message.reply_text(
+                f"🔒 M1 승인 신호 수신 — {title} · 게이트 OFF라 발행 보류"
+                f"(라이브=.env M1_AUTO_PUBLISH=1+봇 재시작)")
+            return
+
+        await _launch_publish_engine([item_id], source="m1-web")
+        await update.message.reply_text(f"⏳ <b>{title}</b> 발행 처리 시작", parse_mode="HTML")
+    except Exception as exc:
+        try:
+            await ctx.bot.send_message(chat_id=_GM_CHAT_ID, text=f"⚠️ /m1pub 처리 실패: {exc}")
+        except Exception:
+            log.error(f"[m1pub] 예외+안내 발송도 실패: {exc}")
 
 
 # ─── 카톡 매출보고 원클릭 3방 전송 콜백 (kakao_send) — 2026-07-06 CTO, 배488(확장) ───
@@ -2063,6 +2173,9 @@ def main():
     # app.add_handler(CallbackQueryHandler(cmd_approval_callback, pattern=r"^sign:"))
     # 콘텐츠 검수 발행 콜백 (pub:) — IG 폴링 감시기 폐기 대체 (2026-06-03). 결재(sign:)와 별개.
     app.add_handler(CallbackQueryHandler(cmd_publish_callback, pattern=r"^pub:"))
+    # M1 웹 승인 신호 (/m1pub) — GAS _signalM1Publish() 가 보냄. 텔레그램 카드 승인과
+    # 동일 발행 트리거로 수렴(2026-07-16 CMO, 배1170). 게이트=M1_AUTO_PUBLISH(기본 OFF).
+    app.add_handler(CommandHandler("m1pub", cmd_m1_publish))
     # 북극성 추천 카드 탭 인라인버튼 콜백 (ns:) — 텍스트 [승인N] 폐기 대체 (2026-07-04 CTO·배420).
     # 코드만 등록 — 발효는 다음 봇 자동재기동 때(GM go). route_northstar 텍스트 경로와 병존.
     app.add_handler(CallbackQueryHandler(cmd_northstar_callback, pattern=r"^ns:"))

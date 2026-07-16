@@ -2,6 +2,8 @@
 // apps_script_v3.js(체크리스트)와 완전 독립 — 의존성 없음
 // 시트: TODO | 헤더 14열
 // CRUD + 파일 업로드(Base64→Drive) + 텔레그램 알림(선택)
+// ⚠️ 2026-07-16 M1 승인→텔레그램 발행신호(_signalM1Publish) 추가 — 이 파일 변경은
+//    반드시 GAS 재배포(새 /exec 버전)해야 발효된다(clasp push 만으론 웹앱 반영 안 됨).
 
 // ─── 상수 ───
 // 시트명 fallback (GM이 수동 변경 시 자동 매칭 · 2026-05-28)
@@ -509,9 +511,37 @@ function _githubCommitFile(path, contentText, message, key) {
   return { ok: false, error: 'GitHub ' + code + ': ' + putR.getContentText().slice(0, 160) };
 }
 
+// ─── M1 웹 승인 → 텔레그램 발행 트리거 신호 (2026-07-16 CMO, 배1170) ───────────
+// GM 확정 방식='봇 발행 재사용': M1 웹 [승인] 클릭으로 review_queue.json 커밋 직후,
+// 텔레그램 봇에 "/m1pub <id>" 명령을 보내 텔레그램 카드 승인과 동일한 발행 트리거
+// (bot.py _launch_publish_engine)를 태운다. 신호 실패해도 승인 자체(커밋)는 이미
+// 성공 — 이 함수는 비치명(muteHttpExceptions + try/catch, 예외를 절대 전파 안 함).
+// 토큰 ScriptProperty 키='TELEGRAM_BOT_TOKEN' — .deploy-check/지원팀 일일점검.js 와
+// 동일 키 재사용(레포 내 다른 GAS 텔레그램 발송 스크립트 grep 확인).
+// 대상 챗 = GM 개인 챗 고정(8254867551, bot.py _GM_CHAT_ID·ssot/canon_values.json
+// telegram_chat_id 정본과 동일값) — 지원팀 일일점검.js CHAT_ID 도 ScriptProperty UI
+// 50개+ 잠김으로 코드 고정하는 동일 패턴을 준용.
+// ⚠️ 이 함수를 포함한 본 파일 변경은 GAS 재배포(새 /exec 버전)해야 발효된다.
+function _signalM1Publish(id) {
+  try {
+    var token = _prop('TELEGRAM_BOT_TOKEN');
+    if (!token) return; // 미설정 — 신호 no-op(승인 자체는 이미 성공한 상태)
+    var chatId = '8254867551';
+    UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({ chat_id: chatId, text: '/m1pub ' + String(id) }),
+      muteHttpExceptions: true
+    });
+  } catch (e) {
+    // 신호 실패는 비치명 — 승인(커밋)은 이미 완료된 상태이므로 조용히 무시.
+  }
+}
+
 // ═══ 인스타 검수 큐 status 중계 (검수카드 [승인]/[반려] → GitHub 기록) — 2026-05-30 ═══
 // review_queue.json 에서 해당 id 의 status 를 승인|반려 로 갱신 후 GitHub commit.
 // 토큰은 기존 GITHUB_TOKEN 재사용(서버측 ScriptProperties). 경로는 cmo/review/*.json 만 허용.
+// ⚠️ 이 함수 변경도 GAS 재배포(새 /exec 버전)해야 발효(_signalM1Publish 호출 포함).
 function _reviewSetStatus(id, status, key) {
   if (!id) return { ok: false, error: 'id 필수' };
   var allowed = { '승인': true, '반려': true };
@@ -533,6 +563,8 @@ function _reviewSetStatus(id, status, key) {
   var msg = 'review: ' + id + ' status ' + (prev || '?') + '→' + status + ' (검수카드 중계)';
   var cr = _githubCommitFile(path, body, msg, key);
   if (!cr.ok) return { ok: false, error: '커밋 실패: ' + (cr.error || '') };
+  // 커밋 성공 + '승인'일 때만 텔레그램 봇에 발행 신호(반려는 신호 안 보냄).
+  if (status === '승인') _signalM1Publish(id);
   return { ok: true, id: id, status: status, prev: prev, commit: cr.commit || null };
 }
 
