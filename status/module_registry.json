@@ -352,6 +352,66 @@
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
+    },
+    {
+      "id": "chro-daily-integrity-sweep",
+      "owner_role": "chro",
+      "owner_nick": "시로",
+      "feature": "일일 정합성 스윕 — HR 허브·라이브 데이터 11항목 자동 점검(사진404·공고·KPI·배지·평점·PII·주경로 하트비트·폴더미등록·나이 교차검증·가산점 클램프) + 이력서 주경로 자가치유",
+      "data_source": {"kind": "json", "ref": "wellperion-hr/drafts/loops/ 스윕 결과(델타 보고)"},
+      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": null, "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "sec-chro-autonomy"},
+      "autonomy": "auto",
+      "ai_free_fallback": "Windows 예약작업 CHRO_DailyIntegritySweep(매일 09:33)이 사람 세션 없이 가동 — 이상은 델타 보고, 쓰기는 이력서 등록 주경로 1개만(3게이트 격리·가역)",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
+      "id": "chro-onboarding-weekly-watch",
+      "owner_role": "chro",
+      "owner_nick": "시로",
+      "feature": "온보딩 위클리 워치 — 진행중 온보딩 30-60-90 진척·주간 체크인 지연 관찰·보고(A-3)",
+      "data_source": {"kind": "gas", "ref": "HR 백엔드 db:onbo"},
+      "notify_spec": {"daily": false, "weekly": true, "monthly": false, "channel": null, "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "sec-chro-autonomy"},
+      "autonomy": "propose",
+      "ai_free_fallback": "Windows 예약작업 OnboardingWeeklyWatch(매주 목 10:03) 무인 가동 — 관찰·보고만(쓰기 없음), 조치는 매니저 지시 후",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
+      "id": "chro-weekly-efficiency-report",
+      "owner_role": "chro",
+      "owner_nick": "시로",
+      "feature": "주간 효율 리포트 — 위임률·홉 낭비·반복작업 회고(A-7) ⚠️ 7/10부터 러너 크래시 수리 대기(스윕 하드닝 패턴 재적용 예정)",
+      "data_source": {"kind": "json", "ref": "wellperion-hr/drafts/loops/ 주간 리포트"},
+      "notify_spec": {"daily": false, "weekly": true, "monthly": false, "channel": null, "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "sec-chro-autonomy"},
+      "autonomy": "propose",
+      "ai_free_fallback": "Windows 예약작업 WeeklyEfficiencyReport(매주 금 17:07) 무인 가동 설계 — 현재 러너 크래시로 미완주, 수리 전까지 미가동 정직 표기",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": false,
+      "honesty_default": "measured"
+    },
+    {
+      "id": "chro-gmail-job-title-fetch",
+      "owner_role": "chro",
+      "owner_nick": "시로",
+      "feature": "Gmail 공고명 자동취득 — 잡코리아 지원안내 메일에서 공고명 자동 수집→지원자-공고 배정 근거 적재(7/16 가동)",
+      "data_source": {"kind": "gas", "ref": "cao GAS 웰페리온_잡코리아_공고명취득(30분 트리거)→공고명 manifest"},
+      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": null, "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "sec-chro-autonomy"},
+      "autonomy": "mech",
+      "ai_free_fallback": "구글 Apps Script 30분 트리거가 무인 수집(결정적 파싱·PII 미저장) — 보정 2건(공고명 잘림·다중지원 1키) 패치 대기",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
     }
   ]
 }
