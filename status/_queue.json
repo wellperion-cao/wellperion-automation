@@ -950,5 +950,18 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_013Vdzae867Z2kmyCTkhtobg (CLI ad-hoc · 커밋 a616e8a8)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a616e8a86ab65e549b3db27be245efb131ec11be"
+  },
+  {
+    "task_id": "CPO-2026-07-16-LESSON-SPORT-OWNER-FROM-TAB",
+    "clevel": "cpo",
+    "module": "cpo",
+    "title": "[시포] 강습 문의 복합종목 담당 오염 수리 — 종목별 지정강사 자동반영(배973 flat 되돌림) (GM 지시)",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-16",
+    "ship_no": 1162,
+    "note": "[2026-07-16 GM] 강습 문의 현황 최대 문제=복합 종목 행이 모든 종목 줄에 동일 담당(다른 팀 담당 복붙처럼) 표시. 지금 수동 교정중·양 많음. 진단(agent2): _lessonSportMgmt(row,sportKey)가 sportKey 무시·flat row.owner 반환(배973 2026-07-14 GM확정 flat 모델). 정본 소재 정정(GM): 비공개 팀시트 아니라 메인SS(1b0XU1o) 종목별 탭(수영/WSC수영/WSC모자수영/아쿠아/P.T/WSC P.T…, WSC=유소년·접두없음=성인)이 정본이며 gviz 공개접근 가능→프론트 구현 가능(GAS 재배포 불필요). 각 탭에 지정강사(P.T=지정 P.T)+성함+휴대폰. 수정=종목별 탭에서 전화매칭 지정강사 조회해 종목줄 담당 덮어쓰기·비파괴 폴백(못찾으면 flat). 저장경로 무변경(표시만). 구현 executor 착수(af01…). 검증=복합종목 행 담당 종목별 상이 실사례+회귀0.",
+    "next": "executor 구현→시포 라이브 독립검증(복합종목 실사례 종목별 담당 상이·폴백·회귀0)→커밋·푸시·Pages검증",
+    "depends_on": ""
   }
 ]

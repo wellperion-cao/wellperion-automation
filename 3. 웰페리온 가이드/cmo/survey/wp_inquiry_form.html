@@ -61,6 +61,21 @@
      사전 예약제로 운영됩니다.")가 히어로 hero-note와 완전 동일 텍스트라 삭제(히어로 것만 남김, renderGuide
      의 if(g.note) 가드가 있어 필드 삭제만으로 안전 — 다른 유형(adult/youth/summer/rental/business)의
      note는 서로 다른 고유 정보라 유지).
+     2026-07-16 GM 정정 4건: ①FORMS.membership.program도 multi→radio(중복선택 방지, 단일선택으로 정정 —
+     방금 체크박스로 했던 것 취소). ②GUIDES.youth의 "Brad Little Star Academy" 특정 브랜드명 의존 문구
+     삭제 → 일반 문구로 교체. ③FORMS.youth.program "뮤지컬"→"영어 뮤지컬". ④FORMS.youth.program 옵션에
+     WSC 접두(WSC수영·WSC골프·WSC스쿼시·WSC체조&트램폴린·WSC P.T·WSC필라테스) — 모자수영·영어 뮤지컬·
+     기타는 예외(접두 없음, GM 명시). GUIDES.youth.tags도 동일 표기로 정합.
+     2026-07-16 GM 추가: FORMS.summer.fields에서 target(대상: 성인/유소년) 필드 삭제(대상 무관한 특강).
+     payload의 target:vals.target||'' 라인은 이제 항상 빈 문자열이라 안전(제거하지 않고 유지 — 백엔드가
+     구조를 기대할 수 있어 무변경).
+     2026-07-16 GM 지시: 제출 완료 화면(#doneWrap)을 종합접수처(coo/reception/reception_block.html)의
+     하단 구조와 통일 — 첫 문구만 문의 맥락으로 교체("문의 접수 감사합니다. 처리 결과는 입력하신
+     연락처로 안내드립니다."), 그 아래 "하루의 완성, 웰페리온"(.done-brand) + 다이아몬드 디바이더
+     (.footer-divider·.gd-line·.gd-diamond, reception과 동일 마크업) + "웰페리온 소식을 구경해보세요"
+     (.social-section) + 소셜 링크 4종(reception_block.html L398-401과 동일 URL·이모지·라벨, 그대로 복사)
+     추가. 컬러는 reception의 --accent 대신 이 폼의 --beige/--muted/--line/--paper 사용(톤 유지). 기존
+     접수번호(#rcptNo)·"새 문의 접수하기" 버튼은 상단 유지, 신규 브랜드+디바이더+소셜은 그 아래 배치.
      수정 시 이 파일을 고치고 WP post 8460(draft-page --page survey) 재주입. -->
 <style>
 /* 문의 Survey 폼 페이지(8460) 한정 — WP 테마 헤더 전체 숨김. 다른 페이지 영향 0(page-id 스코프). */
@@ -168,6 +183,18 @@ body.page-id-8460 #header-outer { display: none !important; }
 .wlp-inq .done .rcpt{font-size:12px;color:var(--ink);font-weight:700;margin-bottom:26px;letter-spacing:.02em}
 .wlp-inq .done .again{padding:13px 28px;background:#fff;color:var(--ink);border:1.5px solid var(--ink);border-radius:0;font-size:13.5px;font-weight:700;cursor:pointer;transition:background .18s}
 .wlp-inq .done .again:hover{background:#f5f2ee}
+/* 완료화면 하단 — 종합접수처(reception_block.html) 동일 구조: 브랜드라인 + 다이아몬드 디바이더 + 소셜(2026-07-16 GM 지시) */
+.wlp-inq .done .done-brand{font-size:13px;color:var(--muted);margin-top:28px;margin-bottom:0;letter-spacing:.02em}
+.wlp-inq .done .footer-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:16px auto 20px;max-width:220px}
+.wlp-inq .done .gd-line{flex:1;height:1px}
+.wlp-inq .done .gd-line.left{background:linear-gradient(90deg,transparent,var(--beige))}
+.wlp-inq .done .gd-line.right{background:linear-gradient(90deg,var(--beige),transparent)}
+.wlp-inq .done .gd-diamond{color:var(--beige);font-size:10px;line-height:1}
+.wlp-inq .done .social-section{text-align:center}
+.wlp-inq .done .social-title{font-size:13px;color:var(--muted);margin-bottom:12px;letter-spacing:-.1px}
+.wlp-inq .done .social-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.wlp-inq .done .social-chip{display:inline-flex;align-items:center;gap:5px;padding:9px 15px;background:var(--paper);border:1px solid var(--line);border-radius:20px;color:var(--dim);font-size:13px;font-weight:600;font-family:inherit;text-decoration:none;transition:border-color .15s,color .15s}
+.wlp-inq .done .social-chip:hover{border-color:var(--beige);color:var(--beige)}
 </style>
 
 <div class="wlp-inq">
@@ -208,9 +235,25 @@ body.page-id-8460 #header-outer { display: none !important; }
   <div class="wrap done" id="doneWrap">
     <div class="dot">✓</div>
     <h2>문의가 접수되었습니다</h2>
-    <p>소중한 문의 감사합니다.<br>담당자가 빠르게 확인 후 연락드리겠습니다.</p>
+    <p>문의 접수 감사합니다.<br>처리 결과는 입력하신 연락처로 안내드립니다.</p>
     <div class="rcpt" id="rcptNo"></div>
     <button class="again" id="againBtn">새 문의 접수하기</button>
+
+    <p class="done-brand">하루의 완성, 웰페리온</p>
+    <div class="footer-divider">
+      <span class="gd-line left"></span>
+      <span class="gd-diamond">&#9670;</span>
+      <span class="gd-line right"></span>
+    </div>
+    <div class="social-section">
+      <p class="social-title">웰페리온 소식을 구경해보세요</p>
+      <div class="social-links">
+        <a class="social-chip" href="http://wellperion.com/" target="_blank" rel="noopener">🌐 홈페이지</a>
+        <a class="social-chip" href="https://www.instagram.com/wellperion/" target="_blank" rel="noopener">📷 인스타그램</a>
+        <a class="social-chip" href="https://blog.naver.com/wellperion" target="_blank" rel="noopener">📝 네이버블로그</a>
+        <a class="social-chip" href="https://map.naver.com/p/search/웰페리온/place/1048457693" target="_blank" rel="noopener">📍 네이버지도</a>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -248,7 +291,7 @@ body.page-id-8460 #header-outer { display: none !important; }
       fields: [
         { key:'name',    label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
-        { key:'program', label:'관심 멤버십', type:'multi', opt:true, opts:['플래티넘 (Gym + G.X + Sauna)','플래티넘+골프 (Gym + Golf + G.X + Sauna)','노블레스 (Gym + G.X + Swimming + Sauna)','노블레스+골프 (Gym + Golf + G.X + Swimming + Sauna)'] },
+        { key:'program', label:'관심 멤버십', type:'radio', opt:true, hint:'1개만 선택해 주세요', opts:['플래티넘 (Gym + G.X + Sauna)','플래티넘+골프 (Gym + Golf + G.X + Sauna)','노블레스 (Gym + G.X + Swimming + Sauna)','노블레스+골프 (Gym + Golf + G.X + Swimming + Sauna)'] },
         { key:'channel', label:'알게 된 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
         { key:'exp1Date',label:'시설 투어·상담 희망일', type:'date', opt:true },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'궁금하신 점을 자유롭게 적어주세요.' }
@@ -271,7 +314,7 @@ body.page-id-8460 #header-outer { display: none !important; }
         { key:'name',    label:'성함(보호자)', type:'text', ph:'보호자 성함을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
         { key:'age',     label:'자녀 나이', type:'text', opt:true, ph:'예: 8세 / 초2' },
-        { key:'program', label:'강습 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['수영','골프','스쿼시','체조&트램폴린','P.T','필라테스','모자수영','뮤지컬','기타'] },
+        { key:'program', label:'강습 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['WSC수영','WSC골프','WSC스쿼시','WSC체조&트램폴린','WSC P.T','WSC필라테스','모자수영','영어 뮤지컬','기타'] },
         { key:'wishTime',label:'희망 레슨 시간', type:'text', opt:true, ph:'예: 평일 하원 후 / 주말 오전' },
         { key:'channel', label:'문의 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'문의하실 내용을 자유롭게 적어주세요.' }
@@ -282,7 +325,6 @@ body.page-id-8460 #header-outer { display: none !important; }
       fields: [
         { key:'name',    label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
-        { key:'target',  label:'대상',    type:'select', ph:'선택해 주세요', opts:['성인','유소년'] },
         { key:'program', label:'집중 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['수영','체조','스쿼시','골프','유소년 성장PT'] },
         { key:'wishMonth', label:'희망 월', type:'select', ph:'선택해 주세요', opts:['7월','8월','미정'] },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'궁금하신 점을 자유롭게 적어주세요.' }
@@ -326,9 +368,9 @@ body.page-id-8460 #header-outer { display: none !important; }
       note:'개인·그룹 레슨을 병행하며, 사전 상담 후 배정됩니다.'
     },
     youth: {
-      lead:'자녀의 첫 배움을 위한 전문 강습입니다. 수영·골프·스쿼시부터 체조·모자수영·뮤지컬까지 준비되어 있습니다.',
-      tags:['수영','골프','스쿼시','체조&트램폴린','P.T','필라테스','모자수영','뮤지컬'],
-      note:'Brad Little Star Academy 뮤지컬 클래스 등 국내에서 흔치 않은 프로그램도 만나보실 수 있습니다.'
+      lead:'자녀의 첫 배움을 위한 전문 강습입니다. 수영·골프·스쿼시부터 체조·모자수영·영어 뮤지컬까지 준비되어 있습니다.',
+      tags:['WSC수영','WSC골프','WSC스쿼시','WSC체조&트램폴린','WSC P.T','WSC필라테스','모자수영','영어 뮤지컬'],
+      note:'국내에서 흔치 않은 다양한 전문 프로그램도 만나보실 수 있습니다.'
     },
     summer: {
       lead:'여름 한정 집중 강습입니다. 수영·체조·스쿼시·골프·유소년 성장PT — 성인과 유소년 모두 참여하실 수 있습니다.',
