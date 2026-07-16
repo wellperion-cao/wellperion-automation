@@ -723,7 +723,7 @@ function _regSubmit(body) {
     photoUrl
   );
 
-  try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
+  _regBoardCacheClear_();
   return _vJson({ ok: true, id: id, dept: cat.dept });
 }
 
@@ -794,6 +794,11 @@ function _regList(params) {
 }
 
 // ─── reg_update — 종합 접수처 갱신 (GATED) ───
+// reg_board 공개·직원(사진) 두 캐시 동시 무효화 — 쓰기 액션(submit/update/delete/renumber 등)마다 호출.
+function _regBoardCacheClear_() {
+  try { var c = CacheService.getScriptCache(); c.remove('reg_board_v1'); c.remove('reg_board_staff_v1'); } catch (e) {}
+}
+
 function _regUpdate(body) {
   var id = String(body.id || body['접수ID'] || '').trim();
   if (!id) return _vJson({ ok: false, error: 'id 필수' });
@@ -845,7 +850,7 @@ function _regUpdate(body) {
 
     var statusIdx = _idx('status');
     var assigneeIdx = _idx('assignee');
-    try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
+    _regBoardCacheClear_();
     return _vJson({
       ok: true, id: id,
       status:   statusIdx  >= 0 ? existing[statusIdx]  : '',
@@ -873,7 +878,7 @@ function _regDelete(body) {
     var rowNum = _vFindRow(sh, id);
     if (rowNum < 0) continue;
     sh.deleteRow(rowNum);
-    try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
+    _regBoardCacheClear_();
     return _vJson({ ok: true, id: id, category: cat.label, deleted: 1, message: '접수건이 삭제되었습니다.' });
   }
   return _vJson({ ok: false, error: '해당 접수ID를 찾을 수 없습니다: ' + id });
@@ -936,7 +941,7 @@ function _regRenumber(body) {
   });
   PropertiesService.getScriptProperties().setProperty('VOC_SEQ', String(n));
 
-  try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
+  _regBoardCacheClear_();
   return _vJson({ ok: true, renumbered: n, message: '전체 접수 ' + n + '건을 VOC-1..VOC-' + n + '로 재부여했습니다.' });
 }
 
@@ -997,7 +1002,7 @@ function _regCleanColumns() {
     });
   });
 
-  try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
+  _regBoardCacheClear_();
   return _vJson({ ok: true, result: result, message: '시트 컬럼 정리 완료' });
 }
 
@@ -1020,7 +1025,7 @@ function _regRenameLocHeader() {
     }
     result.push({ sheet: cat.sheet, renamed: renamedFrom.length, from: renamedFrom });
   });
-  try { CacheService.getScriptCache().remove('reg_board_v1'); } catch (e) {}
+  _regBoardCacheClear_();
   return _vJson({ ok: true, result: result, message: 'loc 헤더 → 장소 통일 완료' });
 }
 
@@ -1406,18 +1411,19 @@ function _vProcess(action, body, params) {
     // 직원 현황(gate.js 뒤) = pv 키 통과 시 사진 원본 유지(썸네일용). 공개 호출은 계속 '비공개'.
     var _rbStaffPhoto = String(_rbSrc.pv || '') === REG_STAFF_PHOTO_KEY;
     var _rbNoFilter = !_rbSrc.category && !_rbSrc.dept;
-    // 공개(마스킹) 결과만 캐시 — 직원 사진노출본은 캐시에 섞이지 않게 우회.
-    if (_rbNoFilter && !_rbStaffPhoto) {
+    // 공개/직원(사진) 결과를 각각 별도 키로 캐시 — 사진노출본이 공개 캐시에 섞이지 않게 분리(속도 유지).
+    var _rbCacheKey = _rbStaffPhoto ? 'reg_board_staff_v1' : 'reg_board_v1';
+    if (_rbNoFilter) {
       try {
-        var _rbHit = CacheService.getScriptCache().get('reg_board_v1');
+        var _rbHit = CacheService.getScriptCache().get(_rbCacheKey);
         if (_rbHit) return _vJson(JSON.parse(_rbHit));
       } catch (e) {}
     }
     var boardResult = JSON.parse(_regList(params || body).getContent());
     var masked = (boardResult.data || []).map(function (r) { return _regMask(r, _rbStaffPhoto); }).map(_regComputeSla);
     var _rbOut = { ok: true, count: masked.length, data: masked };
-    if (_rbNoFilter && !_rbStaffPhoto) {
-      try { CacheService.getScriptCache().put('reg_board_v1', JSON.stringify(_rbOut), 45); } catch (e) {}
+    if (_rbNoFilter) {
+      try { CacheService.getScriptCache().put(_rbCacheKey, JSON.stringify(_rbOut), 45); } catch (e) {}
     }
     return _vJson(_rbOut);
   }
