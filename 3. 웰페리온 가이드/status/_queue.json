@@ -865,5 +865,19 @@
     "ship_no": 1161,
     "note": "[2026-07-16 GM 지시 4건] ①②새문의·오늘예약 카드 안내문/링크(금일접수·문의DB로·상담체험·예약달력으로) 삭제 ③두 카드를 신규등록현황처럼 금일/월간 형식 통일(새문의 월간=cpo_today_stats.monthInquiry·예약 월간=calEvents 이번달 계산) ④대기자 회원관리=유효회원 시트 시작일자>오늘 회원 분리(카드5 클릭형·목록 필터·되돌림 배너), 시작일 도래시 매 로드 자동 편입, 멤버십 회원관리(dMemActive)=대기자 제외 시작분만. 데이터 실측: 유효회원 시트에 시작일자 컬럼 실재(미래시작 회원 27명·문진영 7/17 등)→신규 GAS 0. 라이브 실측 PASS(새문의월간24·예약월간27·대기27·dMemActive1011=1038-27·대기목록 전원 시작일 오늘이후·되돌림·회귀0·콘솔=기존 print_options 404뿐). 커밋 7ac9fbac.",
     "next": "🏁 입항완료. 관찰: 대기자=재등록 미래시작 회원 중심(시작일자 1행 기준). 현재 진행중 term과 미래 term 구분이 더 필요하면 후속(현 시트 구조=회원당 최신 term 1행)."
+  },
+  {
+    "task_id": "CPO-2026-07-16-ADHOC-d53ef4a5",
+    "clevel": "cpo",
+    "title": "[시포] 강습 콤보카드 클릭 자동스크롤 제거 + 오늘예약 카드 색(book→tour purple) (GM 지시)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-16",
+    "processed_at": "2026-07-16",
+    "ship_no": 1199,
+    "artifact": "- 강습 _lessonComboClick scrollIntoView 삭제(GM: 자동 아래 스크롤 불필요, 자기카드 하이라이트만 유지)\n- 오늘 예약 카드 data-kind book→tour: 상단 액센트띠·dot·숫자 purple 복원(book용 CSS 없어 상단 무색='머리 벗겨진' 현상) (CLI ad-hoc · 커밋 d53ef4a5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d53ef4a5f5b0c865d7bf2eeebee40d00effed41d"
   }
 ]
