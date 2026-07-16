@@ -492,5 +492,19 @@
     "artifact": "- 카테고리 라벨 '습득물'→'습득물 등록' (CAT_META·lfLoad·카드 뱃지 일치)\n- 위치=분실물 접수 바로 우측(2번째 칩) — 습득/분실 짝 인접 배치(GM 요청)\n- 라이브검증: 칩 순서 분실물→습득물 등록(2)→시설물…, 접수컬럼 사진카드, 콘솔0 (CLI ad-hoc · 커밋 8821afde)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8821afde229b9127ede5cf637bc7c3f2e80a7c75"
+  },
+  {
+    "task_id": "CEO-2026-07-16-INQUIRY-PREMIUM-6TYPE",
+    "clevel": "ceo",
+    "title": "[웰리] 문의 폼 프리미엄 전환 — 6종 유형별 전용 페이지(가이드+폼)·구글폼 완전교체",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-16",
+    "ship_no": 1172,
+    "module": "home",
+    "note": "[2026-07-16 GM 지시] 구글 Survey→자체 프리미엄 폼 완전전환. 6종 유형별 전용화면(멤버십·성인·유소년·여름특강·공간렌트·비즈니스), 각 가이드+폼. B안 브랜드정본색(BLACK/WHITE/BEIGE/코럴) GM 시안 확정. 모바일 간단명료. 스펙=docs/superpowers/specs/2026-07-16-문의폼-프리미엄-6종-design.md. 배1037(자체survey버퍼) 앞단 확장. 협업=시포(문의도메인)·시토(WP배포·신규3종 백엔드 라우팅). 발효(구글폼 완전교체)=GM go(비가역 유입경로), 롤백=wp_inquiry_block.html 구글폼버전 보존.",
+    "next": "스펙 GM 리뷰 → 구현(wp_inquiry_form.html B안 리스킨+6종 FORMS/GUIDES+3종 저장라우팅, 허브 리스킨) → GitHub Pages 검증 → WP 발효(GM go) → 시크릿 라이브 6종 E2E",
+    "depends_on": "",
+    "board": "문의"
   }
 ]
