@@ -46,9 +46,9 @@
     "status": "STANDBY",
     "priority": "NORMAL",
     "enqueued_at": "2026-06-23",
-    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정. | [2026-07-03 v1 프레임 빌드] deep-interview 확정(모호도14%·스펙 .omc/specs/deep-interview-cmo-eval-feedback-loop.md). weekly_marketing_feedback.py = 주간 브리프(공식 전용·정성 우선+측정 보조·정직 꼬리표) 생성. 자동 가중=v2(데이터 축적 후). 주간 cron=후속. [2026-07-04 병합·항로정리] 배390(마케팅 루프 ⑤→①되먹임 v1 배관) 흡수 — 같은 마케팅 폐루프 단일화. + 반응읽기 원장(status/ig_engagement_ledger.json·배31, 매일09:30 자동수집·매일커밋) 연결됨. 이제 이 배 = 반응(원장)→주간 평가브리프→다음기획 되먹임의 단일 소유.\n[2026-07-16 웰리 배1047 이관] GM 지시로 STANDBY 강등·항로 미표시. 자율현황 표시 완성=시모가 twin front_card.window(M2→자율현황) 조정 대기(과도기).",
+    "note": "UTM 태깅 선행 필요. | [2026-06-24] 보류 유지: UTM 클릭 데이터 초기라 축적 후 착수. 좋은콘텐츠 지표 정의=저장+댓글+클릭 가중으로 사전설계 예정. | [2026-07-03 v1 프레임 빌드] deep-interview 확정(모호도14%·스펙 .omc/specs/deep-interview-cmo-eval-feedback-loop.md). weekly_marketing_feedback.py = 주간 브리프(공식 전용·정성 우선+측정 보조·정직 꼬리표) 생성. 자동 가중=v2(데이터 축적 후). 주간 cron=후속. [2026-07-04 병합·항로정리] 배390(마케팅 루프 ⑤→①되먹임 v1 배관) 흡수 — 같은 마케팅 폐루프 단일화. + 반응읽기 원장(status/ig_engagement_ledger.json·배31, 매일09:30 자동수집·매일커밋) 연결됨. 이제 이 배 = 반응(원장)→주간 평가브리프→다음기획 되먹임의 단일 소유.\n[2026-07-16 웰리 배1047 이관] GM 지시로 STANDBY 강등·항로 미표시. 자율현황 표시 완성=시모가 twin front_card.window(M2→자율현황) 조정 대기(과도기). | [2026-07-16 ship1155] 자율현황 표시 완성 — 길B(전용 카드 신설): module_registry에 cmo-eval-feedback-loop 신규 등록(window=자율현황·기존 cmo-marketing-funnel twin은 그대로 M2 유지, 회귀 없음).",
     "ship_no": 106,
-    "next": "⚓ STANDBY — 항로 미표시. 재개 트리거=538 라이브 개통+편별 문의조인 4주 데이터 축적(v2 점수기준 발동). 자율현황 twin window(M2)→자율현황 조정은 시모 후속배(아래 C).",
+    "next": "⚓ STANDBY — 항로 미표시. 재개 트리거=538 라이브 개통+편별 문의조인 4주 데이터 축적(v2 점수기준 발동). 자율현황 표시=완료(ship1155·cmo-eval-feedback-loop).",
     "task_id": "CMO-2026-06-23-FUNNEL-EVAL-FEEDBACK",
     "module": "M2"
   },
@@ -90,8 +90,8 @@
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-09",
     "ship_no": 747,
-    "note": "[2026-07-09 GM 직접지시·정정: 시토 아니라 시모것] Fable세션 원칙=결과물 아닌 뼈대(자율화 두뇌). 확산=GM이 전 C-Level에 동일 전달 완료 → 시모는 CMO 두뇌를 레퍼런스로 잘 셋업(검증 후 타 C-Level 복제 템플릿). 5기둥(본인 소유 백엔드+프론트 기준): ①백엔드=AI없이 실무진이 쓰게 구조·API·처리 단순화 ②UI/UX=프로세스 단계·시간 최소화(정말 신경) ③프론트=모듈화 가독(남들도 쉬움·모듈마다 고유기능 캡슐) ④모듈별 텔레그램 일/주/월 자동보고(봇 등록시 자동) ⑤채널 계정 웹등록→자동로그인(보안). GM 보안 결정=채널 ID/PW ERP 웹 등록 UI(암호화 저장)+자동로그인, 라이브발효=GM go+즉시 역롤백(TOKEN_ENFORCE류 기본OFF 배포). M3(채널·검수·발행)→M1(콘텐츠제작) 병합=단일흐름(GM 명시). 아키텍처 뼈대=docs/superpowers/specs/2026-07-09-clevel-autonomy-shared-platform-design.md. 재사용=telegram_bot/·daily_scheduler.py·clevel_post_action·gate.js. 배545 대시보드 정상화 미션의 연장(실무진 눈높이). | [2026-07-09 진척] MVP 1단계 M3→M1 병합 라이브 검증 PASS(시크릿크롬·M3소멸·죽은링크0·콘솔0). 2단계 CMO 2모듈(cmo-content-pipeline·cmo-marketing-funnel) 공유 등록부(§3-2 계약) 비파괴 연결+collector 2종+dry-run 실payload 검증(전체107·검수대기2·발행완료104 / 총클릭679·인스타12.1%실측·나머지 측정불가). bot_id=null 휴면(발송0). GM 결정: 텔레그램 발효는 웰리 전사 통합정책 대기(각자 막 발송=혼란 방지).\n[2026-07-16 웰리 배1047 이관] GM 지시로 STANDBY 강등·항로 미표시. 자율현황 표시 완성=시모가 twin front_card.window(M1→자율현황) 조정 대기(과도기).",
-    "next": "⚓ STANDBY — 항로 미표시. 재개 트리거=웰리 전사 텔레그램 통합정책(방 배정·bot_id 세팅) 발효. 자율현황 twin window(M1)→자율현황 조정은 시모 후속배(아래 C).",
+    "note": "[2026-07-09 GM 직접지시·정정: 시토 아니라 시모것] Fable세션 원칙=결과물 아닌 뼈대(자율화 두뇌). 확산=GM이 전 C-Level에 동일 전달 완료 → 시모는 CMO 두뇌를 레퍼런스로 잘 셋업(검증 후 타 C-Level 복제 템플릿). 5기둥(본인 소유 백엔드+프론트 기준): ①백엔드=AI없이 실무진이 쓰게 구조·API·처리 단순화 ②UI/UX=프로세스 단계·시간 최소화(정말 신경) ③프론트=모듈화 가독(남들도 쉬움·모듈마다 고유기능 캡슐) ④모듈별 텔레그램 일/주/월 자동보고(봇 등록시 자동) ⑤채널 계정 웹등록→자동로그인(보안). GM 보안 결정=채널 ID/PW ERP 웹 등록 UI(암호화 저장)+자동로그인, 라이브발효=GM go+즉시 역롤백(TOKEN_ENFORCE류 기본OFF 배포). M3(채널·검수·발행)→M1(콘텐츠제작) 병합=단일흐름(GM 명시). 아키텍처 뼈대=docs/superpowers/specs/2026-07-09-clevel-autonomy-shared-platform-design.md. 재사용=telegram_bot/·daily_scheduler.py·clevel_post_action·gate.js. 배545 대시보드 정상화 미션의 연장(실무진 눈높이). | [2026-07-09 진척] MVP 1단계 M3→M1 병합 라이브 검증 PASS(시크릿크롬·M3소멸·죽은링크0·콘솔0). 2단계 CMO 2모듈(cmo-content-pipeline·cmo-marketing-funnel) 공유 등록부(§3-2 계약) 비파괴 연결+collector 2종+dry-run 실payload 검증(전체107·검수대기2·발행완료104 / 총클릭679·인스타12.1%실측·나머지 측정불가). bot_id=null 휴면(발송0). GM 결정: 텔레그램 발효는 웰리 전사 통합정책 대기(각자 막 발송=혼란 방지).\n[2026-07-16 웰리 배1047 이관] GM 지시로 STANDBY 강등·항로 미표시. 자율현황 표시 완성=시모가 twin front_card.window(M1→자율현황) 조정 대기(과도기). | [2026-07-16 ship1155] 자율현황 표시 완성 — 길B(전용 카드 신설): module_registry에 cmo-autonomy-brain 신규 등록(window=자율현황·기존 cmo-content-pipeline twin은 그대로 M1 유지, 회귀 없음).",
+    "next": "⚓ STANDBY — 항로 미표시. 재개 트리거=웰리 전사 텔레그램 통합정책(방 배정·bot_id 세팅) 발효. 자율현황 표시=완료(ship1155·cmo-autonomy-brain).",
     "depends_on": "",
     "module": "M1",
     "board": "자율현황"
@@ -184,12 +184,13 @@
     "task_id": "NEXT-20260715-102240",
     "clevel": "cto",
     "title": "각 알림 방별 last-send 로그 집계 배선(하루정리 22:30·점검독려·문의 5분폴링 ⚪→🟢 승격) — 발송 로직 무변경 전제 검토",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "depends_on": "cto-alert-schedule-board",
     "from": "cto",
     "origin": "bridge",
     "enqueued_at": "2026-07-15T01:22:40Z",
-    "ship_no": 1050
+    "ship_no": 1050,
+    "note": "[2026-07-16] 출항. 알림 방별 last-send 로그 배선 검토 착수."
   },
   {
     "task_id": "NEXT-20260715-153553",
@@ -363,5 +364,17 @@
     "artifact": "- 문제: 추가CSS @font-face 가 wellperion.cafe24.com/font/ 참조(CORS 헤더 없음)\n  → 크로스오리진 폰트 브라우저 차단, FuturaPT/HudsonNYSerif 사이트전역 미로드\n- 해법: 동일 폰트가 wellperion.com/font/ 에 이미 존재 → url만 /font/ 로 8건 치환\n  (재업로드 불요·CORS 소멸). FuturaPT svg 접두사 누락 1건 net-zero 동반 교정\n- 도구: swap-additional-css 모드 신설 — wp.customize JS API (CLI ad-hoc · 커밋 6fa70869)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "6fa70869f899837066122cc3d6dc4cdbcdc3b86a"
+  },
+  {
+    "task_id": "COO-2026-07-16-RECEPTION-LOSTFOUND-REFLECT",
+    "clevel": "coo",
+    "title": "[시우] 종합접수처 현황에 습득물 반영 — 별도 습득물 섹션(게시중 사진·게시중/수령 카운트, 6종 칸반과 안 섞음)",
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-16",
+    "ship_no": 1163,
+    "note": "[2026-07-16 GM 지시] 종합접수처 현황(coo/reception/종합접수처_현황.html)에 습득물도 반영. GM 선택=별도 습득물 섹션(6종 칸반 위에 게시중 사진 썸네일+게시중/수령완료 카운트). 습득물은 상태체계(게시중/수령완료/철회)가 6종 칸반(접수/처리중/완료)과 달라 안 섞고 나란히. 데이터=같은 VOC GAS lf_list(전 상태·전 필드, TOKEN_ENFORCE OFF로 현재 GET 통과, 미래 JWT 대비 wp_access_token key 방어적 동봉). 읽기 전용 반영 — 수령(서명)·철회 액션은 기존 lost_found_register.html(등록·관리)·lost_found_gallery.html(공개) 유지, 현황엔 두 페이지 링크만.",
+    "next": "",
+    "surface": "autonomy"
   }
 ]

@@ -174,6 +174,36 @@
       "honesty_default": "measured"
     },
     {
+      "id": "cmo-eval-feedback-loop",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "⑤ 평가 환류 자동화 — 반응 원장(배31·매일 09:30 자동수집)→주간 콘텐츠 Top/Bottom 시그널→다음 기획 반영",
+      "data_source": {"kind": "json", "ref": "status/ig_engagement_ledger.json + scripts/weekly_marketing_feedback.py"},
+      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "autonomy": "propose",
+      "ai_free_fallback": "반응 원장 매일 자동수집(09:30)→주간 평가브리프 생성, 실측 데이터 축적 후 v2 자동채점",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
+      "id": "cmo-autonomy-brain",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "CMO 자율화 두뇌(레퍼런스) — M3→M1 병합·모듈별 자동보고 뼈대(채널 자격증명 웹등록·자동로그인 로드맵, 타 C-Level 복제 템플릿)",
+      "data_source": {"kind": "doc", "ref": "docs/superpowers/specs/2026-07-09-clevel-autonomy-shared-platform-design.md"},
+      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "autonomy": "semi",
+      "ai_free_fallback": "채널·검수·발행·제작 단일흐름 라이브 가동 중(M1), 모듈별 자동보고는 등록부 배선까지 완료·발효는 웰리 전사 텔레그램 통합정책(방 배정·bot_id) 대기",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
       "id": "coo-check-status",
       "owner_role": "coo",
       "owner_nick": "시우",
