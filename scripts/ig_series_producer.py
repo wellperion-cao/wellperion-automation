@@ -68,10 +68,12 @@ PY = ROOT / ".venv" / "Scripts" / "python.exe"
 ENV_PATH = ROOT / "telegram_bot" / ".env"
 
 try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
@@ -133,6 +135,7 @@ def telegram(message: str) -> None:
         req = urllib.request.Request(
             f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST"
         )
+        pace()
         with urllib.request.urlopen(req, timeout=10) as resp:
             print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'}")
             log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="ig_series_producer.telegram", ok=(resp.status == 200), kind="sendMessage")

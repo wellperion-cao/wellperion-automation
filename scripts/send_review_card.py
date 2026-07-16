@@ -25,10 +25,12 @@ import urllib.parse
 import urllib.request
 
 try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
@@ -191,6 +193,7 @@ def _send_text_card(token: str, caption: str, keyboard: dict, item_id: str) -> i
     req = urllib.request.Request(
         f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
     try:
+        pace()
         with urllib.request.urlopen(req, timeout=10) as resp:
             mid = _extract_msg_id(resp)
             print(f"[INFO] 카드(텍스트 폴백) 발송 {'성공' if mid else '실패'}: {item_id}")
@@ -220,6 +223,7 @@ def _send_photo_card(token: str, caption: str, keyboard: dict,
         f"https://api.telegram.org/bot{token}/sendPhoto", data=body, method="POST")
     req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
     try:
+        pace()
         with urllib.request.urlopen(req, timeout=20) as resp:
             mid = _extract_msg_id(resp)
             print(f"[INFO] 검수카드(이미지) 발송 {'성공' if mid else '실패'}: {item_id}")

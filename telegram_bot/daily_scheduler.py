@@ -74,10 +74,12 @@ try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무�
     _scr = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "scripts"))
     if _scr not in _sys.path:
         _sys.path.insert(0, _scr)
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 try:  # 저신호 무음 플래그(best-effort) — 임포트 실패해도 발신 무영향(False 폴백)
     from notify_prefs import muted
@@ -339,6 +341,7 @@ def send_telegram(chat_id: int, text: str, parse_mode: str = "MarkdownV2") -> bo
     payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
     for attempt in range(1, 4):
         try:
+            pace()
             resp = requests.post(url, json=payload, timeout=15)
             if resp.status_code == 200:
                 resp_json = resp.json()
@@ -353,6 +356,7 @@ def send_telegram(chat_id: int, text: str, parse_mode: str = "MarkdownV2") -> bo
                 # MarkdownV2 파싱 오류 → 즉시 평문 fallback (같은 attempt 내 1회)
                 plain_payload = {"chat_id": chat_id, "text": text}
                 try:
+                    pace()
                     plain_resp = requests.post(url, json=plain_payload, timeout=15)
                     if plain_resp.status_code == 200 and plain_resp.json().get("ok"):
                         logger.warning("MarkdownV2 escape 실패 → 평문 fallback 성공")

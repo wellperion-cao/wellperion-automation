@@ -27,10 +27,12 @@ try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무�
     _scr = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'scripts'))
     if _scr not in sys.path:
         sys.path.insert(0, _scr)
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 try:  # 저신호 무음 플래그(best-effort) — 임포트 실패해도 발신 무영향(False 폴백)
     from notify_prefs import muted
@@ -156,6 +158,7 @@ def send_telegram(msg: str) -> bool:
     if not TELEGRAM_TOKEN or not OWNER_ID:
         return False
     try:
+        pace()
         resp = requests.post(
             f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage',
             json={'chat_id': OWNER_ID, 'text': msg},

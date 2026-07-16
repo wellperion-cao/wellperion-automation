@@ -131,10 +131,12 @@ TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 WEEKLY_SUMMARY_CHAT_ID = "-5516675010"  # 문의알림방(시모 담당) — 메모리 project_telegram_3room_split
 
 try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 
 def _load_env_value(key: str) -> str:
@@ -201,6 +203,7 @@ def send_telegram_summary(text: str) -> bool:
         req = urllib.request.Request(
             f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST"
         )
+        pace()
         with urllib.request.urlopen(req, timeout=10) as resp:
             ok = resp.status == 200
             print(f"[INFO] 텔레그램 주간 요약 {'발송 성공' if ok else '발송 실패'} (문의알림방)")

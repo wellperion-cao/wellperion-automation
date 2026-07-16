@@ -195,10 +195,12 @@ POST_INTERVAL_SECONDS_MAX = 3.0
 
 # 텔레그램 봇 토큰 환경변수 키 (메모리 feedback_telegram_token_env_key)
 try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
@@ -499,6 +501,7 @@ def telegram_report(message: str) -> None:
             "disable_web_page_preview": "true",
         }).encode("utf-8")
         req = urllib.request.Request(url, data=data, method="POST")
+        pace()
         with urllib.request.urlopen(req, timeout=10) as resp:
             ok = resp.status == 200
         log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="instagram_upload_playwright.telegram_report", ok=ok, kind="sendMessage")

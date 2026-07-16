@@ -14,10 +14,12 @@ from dotenv import load_dotenv
 import requests
 
 try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 try:  # 크로스프로세스 _queue.json 락 (P2, 2026-07-10) — 같은 scripts/ 디렉토리
     import queue_lock
@@ -119,6 +121,7 @@ def notify_telegram(text: str) -> bool:
         logger.warning('TELEGRAM_BOT_TOKEN 미설정')
         return False
     try:
+        pace()
         r = requests.post(
             f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage',
             json={'chat_id': CHAT_ID, 'text': text},

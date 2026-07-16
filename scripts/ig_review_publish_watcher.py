@@ -35,10 +35,12 @@ from datetime import datetime
 from pathlib import Path
 
 try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 # 동시커밋 직렬화 lock (P2, 2026-06-15) — git_lock.py는 같은 scripts/ 폴더.
 # 하드 임포트(실패 시 시끄럽게): 락 없이 무방비 커밋되면 동시성 손상 방지 목적이 무력화됨.
@@ -147,6 +149,7 @@ def telegram(message: str, chat_id: str | None = None) -> None:
         }).encode("utf-8")
         req = urllib.request.Request(
             f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
+        pace()
         with urllib.request.urlopen(req, timeout=10) as resp:
             _safe_print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'} chat_id={target_chat_id}")
             log_outbound(message, chat_id=target_chat_id, source="ig_review_publish_watcher.telegram", ok=(resp.status == 200), kind="sendMessage")

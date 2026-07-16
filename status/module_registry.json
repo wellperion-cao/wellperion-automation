@@ -337,6 +337,21 @@
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
+    },
+    {
+      "id": "cto-inquiry-read-snapshot",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "문의회원 읽기 서버 스냅샷 — 3분 주기로 멤버십·강습(연간뷰) 문의 목록을 GAS에서 조회해 status/inquiry_snapshot_*.json에 무인 발행, 페이지 첫 진입 0초 렌더용 가속층(진실=여전히 배경 gviz/GAS 재검증, 스냅샷은 콜드 화면 전용)",
+      "data_source": {"kind": "gas", "ref": "member_inquiry_list / lesson_inquiry_list(scope=year)"},
+      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": null, "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "autonomy": "mech",
+      "ai_free_fallback": "예약 Wellperion-CPO-Inquiry-Snapshot-3min(3분 간격) 무인 가동 — 읽기 전용, 실패해도 페이지 실시간 재검증 경로 무영향(fail-soft, 직전 값 carry-forward)",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
     }
   ]
 }

@@ -32,10 +32,12 @@ from datetime import datetime
 from pathlib import Path
 
 try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 try:  # 저신호 무음 플래그(best-effort) — 임포트 실패해도 발신 무영향(False 폴백)
     _tgb = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'telegram_bot'))
@@ -141,6 +143,7 @@ def _telegram_send_photo(photo_path: Path, caption: str) -> None:
             method="POST",
             headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
         )
+        pace()
         with urllib.request.urlopen(req, timeout=20) as resp:
             ok = resp.status == 200
         log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="publish_register._telegram_send_photo", ok=ok, kind="sendPhoto")
@@ -167,6 +170,7 @@ def _telegram_send_message(text: str) -> None:
         req = urllib.request.Request(
             f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST"
         )
+        pace()
         with urllib.request.urlopen(req, timeout=10) as resp:
             ok = resp.status == 200
         log_outbound(text, chat_id=TELEGRAM_CHAT_ID, source="publish_register._telegram_send_message", ok=ok, kind="sendMessage")

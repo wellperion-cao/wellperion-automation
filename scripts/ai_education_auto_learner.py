@@ -26,10 +26,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
@@ -300,6 +302,7 @@ def send_summary(summary_data: dict = None) -> bool:
         method="POST",
     )
     try:
+        pace()
         with urllib.request.urlopen(req, timeout=15) as resp:
             ok = json.loads(resp.read().decode()).get("ok", False)
             log_outbound(text, chat_id=chat_id, source="ai_education_auto_learner.send_telegram", ok=ok, kind="sendMessage")

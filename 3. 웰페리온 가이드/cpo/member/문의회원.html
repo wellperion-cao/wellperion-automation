@@ -2404,6 +2404,43 @@ var GAS_PLACEHOLDER = '__PASTE_GAS_EXEC_URL__';
 // ── PII 토큰 ── 입장 비번(= 서버 ACCESS_TOKEN, 소스에 없음)을 입장 게이트가 저장 → 데이터 호출에 부착.
 // 맞는 비번이면 서버가 성함·전화 전체 반환, 틀리면 입장 차단(게이트). 별도 '전체보기' 버튼 폐지(2026-06-25 GM).
 function _wpKeyParam(){ try { var t = (localStorage.getItem('wp_access_token')||'').trim(); return t ? '&key=' + encodeURIComponent(t) : ''; } catch(e){ return ''; } }
+/* ── 서버 스냅샷 가속층(배·2026-07-16 시토) ── 첫 진입·새 기기에서 localStorage 캐시가 없을 때
+   "불러오는 중…" 대신 서버가 3분 주기로 미리 덤프해둔 목록을 즉시 렌더(0초 체감). ★진실은 여전히
+   아래 gviz/GAS 배경 재검증 — 이 스냅샷은 콜드 첫 화면만 담당하고, 재검증은 조건 없이 항상 발사된다
+   (유실 0 게이트 ①). 스냅샷 fetch 자체가 실패해도 조용히 폴백(캐시 없으면 기존 스피너) — 사용자
+   토스트 없음, console.warn만(비필수 가속층 실패는 소음 아님). 설계:
+   docs/superpowers/specs/2026-07-16-문의읽기-서버스냅샷-design.md · job: scripts/cpo_inquiry_snapshot.py */
+var _SNAP_RAW_BASE_ = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/';
+var _snapMemberPromise_ = null, _snapLessonPromise_ = null;
+function _snapFetchJson_(url) {
+  return fetch(url + '?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ if (!r.ok) throw new Error('snapshot HTTP ' + r.status); return r.json(); })
+    .catch(function(e){ console.warn('[snapshot] fetch 실패(가속층만 영향, 폴백 정상)', e); return null; });
+}
+function _snapMemberGet_() {
+  if (!_snapMemberPromise_) _snapMemberPromise_ = _snapFetchJson_(_SNAP_RAW_BASE_ + 'inquiry_snapshot_member.json');
+  return _snapMemberPromise_;
+}
+function _snapLessonGet_() {
+  if (!_snapLessonPromise_) _snapLessonPromise_ = _snapFetchJson_(_SNAP_RAW_BASE_ + 'inquiry_snapshot_lesson.json');
+  return _snapLessonPromise_;
+}
+// 스냅샷이 너무 오래됐으면(job이 오래 죽어있었을 가능성) 콜드 첫 화면용으로도 부적절 — 없는 것으로 취급.
+var _SNAP_MAX_AGE_MS_ = 24 * 60 * 60 * 1000; // 24시간
+function _snapFresh_(bucket) {
+  return !!(bucket && bucket.ok !== false && Array.isArray(bucket.rows) && bucket.rows.length &&
+            bucket.ts && (Date.now() - bucket.ts) < _SNAP_MAX_AGE_MS_);
+}
+// "N분 전 기준" 신선도 라벨(유실 0 게이트 ② — 사용자가 지금 보는 데이터가 언제 기준인지 항상 알 수 있게).
+function _snapAgoLabel_(ts) {
+  if (!ts) return '';
+  var mins = Math.max(0, Math.round((Date.now() - ts) / 60000));
+  if (mins < 1) return '방금';
+  if (mins < 60) return mins + '분 전';
+  var hrs = Math.round(mins / 60);
+  return hrs + '시간 전';
+}
+
 /* ── 수정 모드(2026-06-22 GM '그냥 열기') — 진행상태·메모·일정·담당만 수정. 이름·전화는 익명 유지·수정불가 ── */
 var READ_ONLY = false;
 var ALLOW_DELETE = false;  // 2026-06-23 GM: 삭제 제거 — 삭제는 시트에서 수동으로만
@@ -3762,9 +3799,15 @@ function _lessonCacheSave(k, rows) { try { localStorage.setItem(k, JSON.stringif
 function _lessonCacheLoad(k) {
   try {
     var c = JSON.parse(localStorage.getItem(k) || 'null');
-    if (c && c.v === 1 && Array.isArray(c.rows) && (Date.now() - (c.ts || 0)) < 5 * 60 * 1000) return c.rows;
+    if (c && c.v === 1 && Array.isArray(c.rows) && (Date.now() - (c.ts || 0)) < 5 * 60 * 1000) return { rows: c.rows, ts: c.ts };
   } catch (e) {}
   return null;
+}
+// type→snapshot 키 매핑('성인강습'/'유소년강습' → adult/youth) — status/inquiry_snapshot_lesson.json 버킷명과 정합.
+function _lessonSnapKey_(type) { return (type === '유소년강습' || type === '유소년' || type === 'youth') ? 'youth' : 'adult'; }
+function _lessonFreshLabel_(t, n, ts) {
+  var el = document.getElementById('lessonStatLine_' + t);
+  if (el) el.textContent = n + '건 · ' + _snapAgoLabel_(ts) + ' 기준 · 갱신 중…';   // lessonLoadStats 도착 시 자연 교체(경합 무해)
 }
 
 function lessonLoad(t) {
@@ -3772,9 +3815,10 @@ function lessonLoad(t) {
   if (!USE_GVIZ && GAS_URL === GAS_PLACEHOLDER) { _lessonEmpty(t, '미연동', 'GAS URL이 교체되면 자동으로 강습 문의가 표시됩니다.'); return; }
   var _lsCacheKey = 'cpo_iq_lesson_cache_v1_' + st.type + '_' + st.scope;
   var b = document.getElementById('lessonBody_' + t);
+  var _lsRealLoaded = false;   // 실 GAS 데이터 도착 여부 — 늦게 온 스냅샷이 덮어쓰지 않게(유실 0 레이스 가드)
   // 배1037 D4: 캐시 즉시 렌더(AC2) + 미동기 큐 오버레이 → 백그라운드 재조회 갱신.
   var _lsCached = _lessonCacheLoad(_lsCacheKey);
-  if (_lsCached && _lsCached.length) {
+  if (_lsCached && _lsCached.rows.length) {
     // ★TDZ 방어(2026-07-15 시포 근본수리 · INC-강습문의 무한로딩): WriteBuffer는 스크립트 하단(7046행)에서
     //   정의되나, 이 캐시-히트 경로는 부트스트랩 init() IIFE(4999행)가 페이지 로드 시점에 동기 호출한다
     //   (switchFamily→lessonInit→lessonLoad). WriteBuffer 정의 이전이라 undefined인 채로 .applyOverlay
@@ -3782,12 +3826,27 @@ function lessonLoad(t) {
     //   남고 재조회 fetch가 영영 발사되지 않아 "불러오는 중…"에 무기한 고정(재조회 재시도 없음). 방금 성공
     //   로드가 캐시(5분 TTL)에 남아있는 한 재발 확정(게이트 비번 입력 직후 reload가 전형 트리거). 존재가드로
     //   즉시무해화 — WriteBuffer 미정의 시 오버레이 생략하고 원본 캐시로 렌더(다음 배경 재조회에서 오버레이 정상 재적용).
-    st.rows = (typeof WriteBuffer !== 'undefined') ? WriteBuffer.applyOverlay(_lsCached.slice(), 'lesson') : _lsCached.slice();
+    st.rows = (typeof WriteBuffer !== 'undefined') ? WriteBuffer.applyOverlay(_lsCached.rows.slice(), 'lesson') : _lsCached.rows.slice();
     st.rowsLoaded = true;
     lessonRenderChips(t); lessonRender(t); renderTodayActionPanel(); _lessonInqCardFallback(t);
+    _lessonFreshLabel_(t, st.rows.length, _lsCached.ts);
   } else if (b) {
     b.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="loading-spinner"></div>' +
       '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
+    // 서버 스냅샷 가속(배·2026-07-16) — 캐시 없는 첫 진입 전용, scope='year'만(전체보기는 데이터가 커
+    //   스냅샷 대상에서 제외 — 설계문서 참고, 기존처럼 GAS 라이브 유지). 배경 재검증(_lessonPromise, 아래)은
+    //   이 경로와 무관하게 이미 병행 진행 중 — 조건부 아님(유실 0 게이트 ①).
+    if (st.scope !== 'all') {
+      _snapLessonGet_().then(function(snap){
+        if (_lsRealLoaded || !snap) return;
+        var bucket = snap[_lessonSnapKey_(st.type)] && snap[_lessonSnapKey_(st.type)].year;
+        if (!_snapFresh_(bucket)) return;
+        st.rows = (typeof WriteBuffer !== 'undefined') ? WriteBuffer.applyOverlay(bucket.rows.slice(), 'lesson') : bucket.rows.slice();
+        st.rowsLoaded = true;
+        lessonRenderChips(t); lessonRender(t); renderTodayActionPanel(); _lessonInqCardFallback(t);
+        _lessonFreshLabel_(t, st.rows.length, bucket.ts);
+      });
+    }
   }
   // [2026-07-16 시토] 강습 문의는 항상 GAS로 읽는다(gviz 우회 제거).
   //   근본원인: 자체폼(WP 자체호스팅) 강습 intake는 별도 탭 '강습 신규문의'(gid 2012342185)에 저장되는데,
@@ -3800,6 +3859,7 @@ function lessonLoad(t) {
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
       var _lsFresh = d.data || [];
+      _lsRealLoaded = true;   // 이 시점부터 스냅샷 렌더는 무효(레이스 가드)
       _lessonCacheSave(_lsCacheKey, _lsFresh);   // 서버 진실 캐시(오버레이 전·D4)
       st.rows = WriteBuffer.applyOverlay(_lsFresh.slice(), 'lesson');   // 미동기 낙관값 재적용(R2)
       st.rowsLoaded = true;   // st.loaded(lessonInit 진입가드, fetch 시작 시점에 이미 true)와 별개 —
@@ -3809,7 +3869,7 @@ function lessonLoad(t) {
       renderTodayActionPanel();   // 오늘 할 일 패널(배754) — 강습 유형 로드 완료 시 갱신(멤버십과 동일 패턴)
       _lessonInqCardFallback(t);   // 안전 폴백(CPO-2026-07-14-MEMBER-CARDS-FIX) — lesson_stats가 아직/영영 못 채웠으면 방금 로드된 rows 건수로 보정
     })
-    .catch(function(e){ _lessonEmpty(t, '데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
+    .catch(function(e){ if (!st.rows.length) _lessonEmpty(t, '데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
 }
 
 // 강습 문의 현황 카드 안전 폴백 — lessonLoad·lessonLoadStats 둘 중 어느 쪽이 늦게 끝나든, 카드가 여전히 "–"(미기록)면
@@ -4001,17 +4061,23 @@ function _lessonEnsureSportTabLoaded_(tabName) {
   _lessonSportTabInflight_[tabName] = true;
   _gzFetchTableBySheetName_(GVIZ_LESSON_SS_ID, tabName).then(function(t) {
     var iPhone = _gzFindCol_(t.headers, ['휴대폰', '연락처', '전화']);
+    var iName  = _gzFindCol_(t.headers, ['성함', '이름', 'Name']);
     var iOwner = -1;
     for (var i = 0; i < t.headers.length; i++) { if (String(t.headers[i] || '').indexOf('지정') === 0) { iOwner = i; break; } }
-    var map = {};
-    if (iPhone >= 0 && iOwner >= 0) {
+    // byPhone(전화→강사)·byName(유니크 이름→강사)·valid(이 종목 팀 정규 강사 집합). 2026-07-16 GM 정리기준 보강.
+    var byPhone = {}, byName = {}, nameCnt = {}, valid = {};
+    var _INVALID_OWN = { '담당자 X': 1, '담당 X': 1, '미배정': 1, '-': 1, 'X': 1 };
+    if (iOwner >= 0) {
       t.rows.forEach(function(row) {
-        var digits = String(row[iPhone] || '').replace(/\D/g, '');
         var owner = String(row[iOwner] || '').trim();
-        if (digits && owner) map[digits] = owner;   // 동일 전화 중복행 = 시트상 마지막 값
+        if (!owner || _INVALID_OWN[owner]) return;
+        valid[owner] = 1;                                          // 이 종목 정규 강사(집합)
+        if (iPhone >= 0) { var digits = String(row[iPhone] || '').replace(/\D/g, ''); if (digits) byPhone[digits] = owner; }
+        if (iName  >= 0) { var nm = String(row[iName] || '').trim(); if (nm) { nameCnt[nm] = (nameCnt[nm] || 0) + 1; byName[nm] = owner; } }
       });
     }
-    _lessonSportTabResolved_[tabName] = map;
+    Object.keys(nameCnt).forEach(function(nm) { if (nameCnt[nm] > 1) delete byName[nm]; });   // 동명이인 = 신뢰불가 제외
+    _lessonSportTabResolved_[tabName] = { byPhone: byPhone, byName: byName, valid: valid };
   }).catch(function() {
     _lessonSportTabResolved_[tabName] = {};   // 실패 = 빈맵(폴백 유지). 새로고침 시 재시도.
   }).then(function() {
@@ -4030,13 +4096,18 @@ function _lessonSportMgmt(row, sportKey) {
   var owner = row.owner || '';
   var tabName = _lessonSportTabName_(sportKey, _lessonRowIsYouth_(row));
   if (tabName) {
-    var map = _lessonSportTabResolved_[tabName];
-    if (map) {
+    var res = _lessonSportTabResolved_[tabName];
+    if (res && res.valid) {
       var digits = String(row.phone || '').replace(/\D/g, '');
-      var hit = digits && map[digits];
-      if (hit) owner = hit;   // 종목탭 정본 매칭 성공 시에만 교체 — 미스매치는 flat 폴백 그대로
+      var nm = String(row.name || '').trim();
+      var hit = (digits && res.byPhone[digits]) || (nm && res.byName[nm]) || '';
+      if (hit) {
+        owner = hit;                                 // 종목탭 정본(전화 우선·유니크 이름 보조) 매칭 성공
+      } else if (owner && !res.valid[owner]) {
+        owner = '';                                  // ★타팀 담당(이 종목 강사 아님)=오염 → 미배정(GM 정리기준 2026-07-16)
+      }
     } else {
-      _lessonEnsureSportTabLoaded_(tabName);   // 미로딩 — 백그라운드 시작, 이번 렌더는 flat 표시(블로킹 없음)
+      _lessonEnsureSportTabLoaded_(tabName);         // 미로딩 — 백그라운드 시작, 이번 렌더는 flat(블로킹 없음)
     }
   }
   return { status: row.status || '', owner: owner, contacts: row.contacts || [] };
@@ -6370,7 +6441,7 @@ function _dbCacheSave(rows) { try { localStorage.setItem(_DB_CACHE_KEY, JSON.str
 function _dbCacheLoad() {
   try {
     var c = JSON.parse(localStorage.getItem(_DB_CACHE_KEY) || 'null');
-    if (c && c.v === 1 && Array.isArray(c.rows) && (Date.now() - (c.ts || 0)) < _DB_CACHE_TTL) return c.rows;
+    if (c && c.v === 1 && Array.isArray(c.rows) && (Date.now() - (c.ts || 0)) < _DB_CACHE_TTL) return { rows: c.rows, ts: c.ts };
   } catch (e) {}
   return null;
 }
@@ -6380,19 +6451,33 @@ function loadDbData() {
     renderDbEmpty('GAS 미연동 상태', 'GM이 GAS를 배포하고 URL을 교체하면 문의 DB가 활성화됩니다.');
     return;
   }
+  var _dbRealLoaded = false;   // 실 gviz/GAS 데이터 도착 여부 — 늦게 온 스냅샷이 이걸 덮어쓰지 않게(유실 0 레이스 가드)
   // 배1037 D4: 캐시 즉시 렌더(왕복 제거·AC2) + 미동기 큐 오버레이 → 백그라운드 재조회로 갱신.
   var _cached = _dbCacheLoad();
-  if (_cached && _cached.length) {
+  if (_cached && _cached.rows.length) {
     // ★TDZ 방어(2026-07-15 시포) — lessonLoad와 동일 근본원인(WriteBuffer 정의 전 부트스트랩 동기호출). 상세=lessonLoad 주석.
-    dbRows = (typeof WriteBuffer !== 'undefined') ? WriteBuffer.applyOverlay(_cached.slice(), 'member') : _cached.slice();
+    dbRows = (typeof WriteBuffer !== 'undefined') ? WriteBuffer.applyOverlay(_cached.rows.slice(), 'member') : _cached.rows.slice();
     dbRows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
     renderDbTable();
     _tapReady = true; renderTodayActionPanel();
-    document.getElementById('dbCount').textContent = dbRows.length + '건 · 갱신 중…';
+    document.getElementById('dbCount').textContent = dbRows.length + '건 · ' + _snapAgoLabel_(_cached.ts) + ' 기준 · 갱신 중…';
   } else {
     document.getElementById('dbCount').textContent = '불러오는 중…';
+    // 서버 스냅샷 가속(배·2026-07-16) — 캐시 없는 첫 진입·새 기기 전용. 배경 재검증(_dbPromise, 아래)은
+    // 이 경로와 무관하게 이미 병행 진행 중 — 조건부 아님(유실 0 게이트 ①).
+    _snapMemberGet_().then(function(snap){
+      if (_dbRealLoaded) return;   // 실 데이터가 이미 이겼으면 스냅샷은 폐기(레이스 가드)
+      var bucket = snap && snap.member ? snap.member : snap;   // 파일 자체가 이미 member 버킷 shape
+      if (!_snapFresh_(bucket)) return;
+      dbRows = (typeof WriteBuffer !== 'undefined') ? WriteBuffer.applyOverlay(bucket.rows.slice(), 'member') : bucket.rows.slice();
+      dbRows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
+      renderDbTable();
+      _tapReady = true; renderTodayActionPanel();
+      document.getElementById('dbCount').textContent = dbRows.length + '건 · ' + _snapAgoLabel_(bucket.ts) + ' 기준 · 갱신 중…';
+    });
   }
   // 하이브리드(2026-07-08): 멤버십은 scope 개념 없음 → USE_GVIZ=true면 항상 gviz 직접읽기(GAS와 동일 shape).
+  // ★캐시·스냅샷 렌더와 무관하게 항상 발사(유실 0 게이트 ① — 새 문의를 놓치지 않는 유일한 진실 경로).
   var _dbPromise = USE_GVIZ
     ? gvizLoadMemberInquiry_()
     : fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam()).then(function(r){ return r.json(); });
@@ -6407,6 +6492,7 @@ function loadDbData() {
         return;
       }
       var _fresh = data.data || [];
+      _dbRealLoaded = true;   // 이 시점부터 스냅샷 렌더는 무효(레이스 가드)
       _dbCacheSave(_fresh);   // 서버 진실 캐시(오버레이 전) — 다음 진입 즉시 렌더용(D4)
       dbRows = WriteBuffer.applyOverlay(_fresh.slice(), 'member');   // 미동기 낙관값 재적용(재조회가 덮어쓰지 않게·R2)
       // 문의일(timestamp) 기준 최근이 상단 — 빈 날짜는 하단(2026-06-22 GM)
@@ -6415,7 +6501,7 @@ function loadDbData() {
       _tapReady = true; renderTodayActionPanel();   // 오늘 할 일 패널(배754) — dbRows 로드 완료 시 갱신
     })
     .catch(function(err){
-      renderDbEmpty('데이터 로드 실패', err.message || 'GAS URL 또는 배포 상태를 확인하세요.');
+      if (!dbRows.length) renderDbEmpty('데이터 로드 실패', err.message || 'GAS URL 또는 배포 상태를 확인하세요.');
     });
 }
 

@@ -14,10 +14,12 @@ try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무�
     _scr = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts"))
     if _scr not in _sys.path:
         _sys.path.insert(0, _scr)
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 
 class TelegramNotifier:
@@ -38,6 +40,7 @@ class TelegramNotifier:
         if reply_markup:
             payload["reply_markup"] = reply_markup
         try:
+            pace()
             resp = httpx.post(f"{self.base_url}/sendMessage", json=payload, timeout=10)
             _r = resp.json()
             log_outbound(message, chat_id=self.chat_id, source="telegram_notifier.send", ok=bool(_r.get("ok")), kind="sendMessage")
@@ -73,6 +76,7 @@ class TelegramNotifier:
             data["caption"] = caption
             data["parse_mode"] = "HTML"
         try:
+            pace()
             with open(image_path, "rb") as f:
                 resp = httpx.post(
                     f"{self.base_url}/sendPhoto",
@@ -98,6 +102,7 @@ class TelegramNotifier:
             data["caption"] = caption
             data["parse_mode"] = "HTML"
         try:
+            pace()
             with open(file_path, "rb") as f:
                 resp = httpx.post(
                     f"{self.base_url}/sendDocument",

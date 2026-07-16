@@ -44,10 +44,12 @@ except Exception:
     pass
 
 try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound
+    from tg_outbound_log import log_outbound, pace
 except Exception:
     def log_outbound(*a, **k):
         pass
+    def pace(*a, **k):
+        return None
 
 # ─────────────────────────────────────────────
 # 경로 상수
@@ -144,6 +146,7 @@ def _send_telegram(text: str) -> None:
     url = f"https://api.telegram.org/bot{tok}/sendMessage"
     data = urllib.parse.urlencode({"chat_id": TELEGRAM_CHAT_ID, "text": text}).encode()
     try:
+        pace()
         urllib.request.urlopen(url, data=data, timeout=10)
         log_outbound(text, chat_id=TELEGRAM_CHAT_ID, source="publish_4channel_dispatcher._send_telegram", ok=True, kind="sendMessage")
         print("[텔레그램] 보고 완료")
