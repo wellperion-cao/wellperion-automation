@@ -4026,18 +4026,35 @@ function _lessonRosterKeyOf(sportKey) {
   if (/웰니스|wellness|루프/i.test(s)) return '웰니스';   // 웰니스 프로그램=루프메소드 단일 공급자(2026-07-16 GM)
   return null;
 }
-// 종목별 강사 명단 = 종목탭 정본(지정강사 valid) 우선, 미로딩/탭없음이면 하드코딩 명단 폴백. 2026-07-16 GM
-// (하드코딩 LESSON_INSTRUCTOR_ROSTER 수영 명단에 '아쿠아' 등 타종목 혼입 오염 → 탭 valid로 대체해 '수영 강사만' 보장)
+// 종목별 팀장 — 미배정(담당자 X) 건 기본배정 대상·항상 명단(옵션·valid)에 포함. 2026-07-16 GM
+function _lessonTeamLeadOf(sportKey) {
+  var s = String(sportKey || '');
+  if (/아쿠아/.test(s)) return '천주희';
+  if (/수영/.test(s)) return '박민서';
+  if (/P\.?T/i.test(s)) return '김상식';
+  if (/필라/.test(s)) return '최은지';
+  if (/골프/.test(s)) return '최현준';
+  if (/체조|트램폴린/.test(s)) return '이형주';
+  if (/웰니스|wellness|루프/i.test(s)) return '루프메소드';
+  return '';
+}
+// 종목별 강사 명단 = 종목탭 정본(지정강사 valid) 우선, 미로딩/탭없음이면 하드코딩 명단 폴백 + 팀장 항상 포함. 2026-07-16 GM
 function _lessonRosterFor(sportKey, isYouth) {
   if (isYouth === undefined) isYouth = /WSC/i.test(String(sportKey || ''));
+  var list = null;
   var tab = _lessonSportTabName_(sportKey, isYouth);
   if (tab) {
     var res = _lessonSportTabResolved_[tab];
-    if (res && res.valid) { var v = Object.keys(res.valid); if (v.length) return v; }
-    _lessonEnsureSportTabLoaded_(tab);   // 미로딩 — 백그라운드 시작(다음 렌더에 정확 명단)
+    if (res && res.valid) { var v = Object.keys(res.valid); if (v.length) list = v; }
+    else _lessonEnsureSportTabLoaded_(tab);   // 미로딩 — 백그라운드 시작(다음 렌더에 정확 명단)
   }
-  var rk = _lessonRosterKeyOf(sportKey);
-  return (rk && LESSON_INSTRUCTOR_ROSTER[rk]) ? LESSON_INSTRUCTOR_ROSTER[rk].slice() : [];
+  if (!list) {
+    var rk = _lessonRosterKeyOf(sportKey);
+    list = (rk && LESSON_INSTRUCTOR_ROSTER[rk]) ? LESSON_INSTRUCTOR_ROSTER[rk].slice() : [];
+  }
+  var lead = _lessonTeamLeadOf(sportKey);
+  if (lead && list.indexOf(lead) < 0) list = [lead].concat(list);   // 팀장 항상 옵션·valid 포함
+  return list;
 }
 function _lessonOwnerOptionsFor(sportKey) {
   var list = _lessonRosterFor(sportKey);
@@ -4139,6 +4156,7 @@ function _lessonSportMgmt(row, sportKey) {
   var _valid = _lessonValidOwners(sportKey, isYouth), _vk = Object.keys(_valid);
   // 정규 강사 아님 → 미배정(담당자 X). 단, 단일 공급자 종목(웰니스=루프메소드·뮤지컬=편한별)은 그 공급자로 기본 배정. 2026-07-16 GM
   if (owner && _vk.length && !_valid[owner]) owner = (_vk.length === 1) ? _vk[0] : '';
+  if (!owner) owner = _lessonTeamLeadOf(sportKey) || '';   // ★미배정(담당자 X) → 종목 팀장 기본배정(GM 2026-07-16)
   return { status: row.status || '', owner: owner, contacts: row.contacts || [] };
 }
 // 저장 성공 후 로컬 반영 — 항상 행단일 필드(flat 모델). 백엔드 lesson_inquiry_update가 body.sport='' → row-level(flat L~P) 경로로 저장. 배973 시포·GM 2026-07-14.
