@@ -105,6 +105,21 @@ a { color:var(--accent); text-decoration:none; }
 .lf-note { font-size:11.5px; color:var(--dim); line-height:1.6; }
 .lf-note b { color:var(--text); font-weight:700; }
 .lf-note a { color:var(--accent); font-weight:600; white-space:nowrap; }
+
+/* ── 🔍 검색칸 ── */
+.search-input { width:100%; max-width:520px; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; background:var(--paper); color:var(--text); font-size:14px; font-family:inherit; outline:none; }
+.search-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(183,159,138,.15); }
+.search-input::placeholder { color:var(--dim); }
+
+/* ── 컬럼 내부 스크롤(페이지 세로 폭주 방지) ── */
+.col-body { max-height:72vh; overflow-y:auto; }
+
+/* ── ✅ 완료 컬럼 접기(스크롤 단축) ── */
+.done-collapsed { padding:16px 8px; text-align:center; }
+.done-collapsed .dc-n { font-size:13px; font-weight:800; color:var(--green); margin-bottom:10px; }
+.dc-btn { font-size:12px; font-weight:700; padding:7px 14px; border-radius:8px; background:var(--green-bg); color:var(--green); border:1px solid rgba(106,191,123,.4); cursor:pointer; font-family:inherit; }
+.dc-btn.dc-collapse { display:block; width:100%; margin-bottom:8px; background:var(--bg); color:var(--dim); border-color:var(--border); }
+.done-collapsed .dc-hint { font-size:11px; color:var(--dim); margin-top:10px; line-height:1.55; }
 </style>
 <!-- 🔒 사내 전용 커튼(GM 승인 2026-07-07) — 접수 회원 성함·연락처·내용(실명 포함) 대외 공개 차단. 인증 후 열람. (진짜 잠금=JWT ≈2026-09) -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
@@ -128,6 +143,11 @@ a { color:var(--accent); text-decoration:none; }
 <div class="content">
   <!-- 상태 요약 -->
   <div class="summary-row" id="statusSummary"></div>
+
+  <!-- 🔍 검색 -->
+  <div class="filter-block">
+    <input type="text" id="searchBox" class="search-input" placeholder="🔍 이름·연락처·내용·장소·번호·담당으로 검색…" oninput="setSearch(this.value)" autocomplete="off">
+  </div>
 
   <!-- 카테고리 필터 -->
   <div class="filter-block">
@@ -187,10 +207,17 @@ var _vocItems = [];   // reg_board(VOC 6종)
 var _lfItems  = [];   // lf_list → 습득물 매핑(게시중→접수·수령완료→완료)
 var _curCat = '';
 var _curDept = '';
+var _curSearch = '';
+var _doneExpanded = false;
 var _loading = false;
 
 /* VOC + 습득물 병합 후 렌더 (둘 중 하나만 갱신돼도 합쳐서 다시 그림) */
 function _merge(){ _allItems = _vocItems.concat(_lfItems); _render(); }
+
+/* 검색·완료접기 */
+function setSearch(v){ _curSearch = String(v||'').trim().toLowerCase(); _render(); }
+function toggleDone(){ _doneExpanded = !_doneExpanded; _render(); }
+function _hay(r){ var s=''; for(var k in r){ if(r.hasOwnProperty(k) && k.charAt(0)!=='_' && r[k]!=null) s += ' ' + r[k]; } return s.toLowerCase(); }
 
 function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function _catMeta(label){ for(var i=0;i<CAT_META.length;i++){ if(CAT_META[i].label===label) return CAT_META[i]; } return null; }
@@ -242,6 +269,7 @@ function _filtered(){
   return _allItems.filter(function(r){
     if(_curCat && String(r.category||'') !== _curCat) return false;
     if(_curDept && String(r.dept||'') !== _curDept) return false;
+    if(_curSearch && _hay(r).indexOf(_curSearch) < 0) return false;
     return true;
   });
 }
@@ -294,29 +322,18 @@ function _render(){
     html += '<span class="c" style="color:' + color + ';">' + list.length + '</span>';
     html += '</div><div class="col-body">';
     if(!list.length){ html += '<div class="col-empty">없음</div>'; }
-    else { list.forEach(function(r){ html += _card(r); }); }
+    /* ✅ 완료 컬럼 = 기본 접기(스크롤 단축). 검색 중엔 펼쳐서 결과 노출. */
+    else if(status==='완료' && !_doneExpanded && !_curSearch){
+      html += '<div class="done-collapsed"><div class="dc-n">✅ 완료 ' + list.length + '건</div>';
+      html += '<button type="button" class="dc-btn" onclick="toggleDone()">완료건 모두 보기 ▾</button>';
+      html += '<div class="dc-hint">스크롤을 줄이려 접어뒀어요.<br>특정 건은 위 검색으로 바로 찾을 수 있어요.</div></div>';
+    } else {
+      if(status==='완료' && _doneExpanded && !_curSearch){ html += '<button type="button" class="dc-btn dc-collapse" onclick="toggleDone()">완료건 접기 ▴</button>'; }
+      list.forEach(function(r){ html += _card(r); });
+    }
     html += '</div></div>';
   });
   board.innerHTML = html;
-
-  /* 이벤트 위임 */
-  board.addEventListener('change', function(e){
-    if(e.target && e.target.dataset && e.target.dataset.regAction==='status'){
-      _update(e.target.dataset.regId, e.target.dataset.regCat, {status:e.target.value});
-    }
-  });
-  board.addEventListener('click', function(e){
-    var btn = e.target.closest('[data-reg-save]');
-    if(!btn) return;
-    var card = btn.closest('[data-reg-card]');
-    if(!card) return;
-    var payload = {};
-    var a = card.querySelector('[data-reg-assignee]');
-    var m = card.querySelector('[data-reg-memo]');
-    if(a) payload.assignee = a.value;
-    if(m) payload.memo = m.value;
-    _update(card.dataset.regCard, card.dataset.regCat, payload, btn);
-  });
 }
 
 /* ── 카드 ── */
@@ -472,6 +489,29 @@ function lfLoad(){
     .catch(function(){ _lfLoading = false; /* 습득물 실패는 6종 보드 유지, 조용히 스킵 */ });
 }
 
+/* 보드 이벤트는 #board에 1회만 위임(재렌더마다 중복 부착 방지 — 상태변경 중복발송 버그 수정) */
+function _wireBoard(){
+  var board = document.getElementById('board');
+  board.addEventListener('change', function(e){
+    if(e.target && e.target.dataset && e.target.dataset.regAction==='status'){
+      _update(e.target.dataset.regId, e.target.dataset.regCat, {status:e.target.value});
+    }
+  });
+  board.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-reg-save]');
+    if(!btn) return;
+    var card = btn.closest('[data-reg-card]');
+    if(!card) return;
+    var payload = {};
+    var a = card.querySelector('[data-reg-assignee]');
+    var m = card.querySelector('[data-reg-memo]');
+    if(a) payload.assignee = a.value;
+    if(m) payload.memo = m.value;
+    _update(card.dataset.regCard, card.dataset.regCat, payload, btn);
+  });
+}
+
+_wireBoard();
 regLoad();
 lfLoad();
 </script>
