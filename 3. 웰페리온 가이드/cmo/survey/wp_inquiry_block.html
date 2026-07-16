@@ -13,7 +13,13 @@
      ①#header-outer 배경을 페이지 최상단(0px)부터 다크(#221F20)로, ②.container.main-content를 정확히
      container-wrap의 padding-top(40px)만큼 위로 끌어올려(margin-top:-40px) 히어로가 #header-outer 박스
      하단(데스크톱29px/모바일78px)에 바로 이어붙게 함(실측 기반 정밀값, 임의 여백 아님). 로고는 이제
-     첫 픽셀부터 다크 배경 안에 온전히 앉음. 수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
+     첫 픽셀부터 다크 배경 안에 온전히 앉음.
+     2026-07-16 GM 피드백③(웰리 검수 발견): 위 ②의 margin-top:-40px로 히어로 콘텐츠(슬로건 등)도 같이
+     40px 위로 밀려 로고(top~60·bottom~130)와 세로로 겹치는 부작용 수정 — .hero-band padding-top을
+     60px→100px(+40 보정)로 늘려 배경 박스는 그대로 상단 확장 유지하되 콘텐츠 시작 위치만 로고 클리어런스
+     확보(원래 위치로 복원). 동시에 히어로 소개문 줄바꿈 개선 — "세우고"의 '고'만 다음 줄로 넘어가던
+     어색한 끊김을 의미 단위 수동 <br> 3줄 분리 + word-break:keep-all(한글 어절 단위 줄바꿈)로 해소.
+     수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
 /* 문의 페이지(8394) 한정 — 헤더 로고 상단 잘림 해소 + 폭>1000px 다크 히어로 겹침 구간 베이지 전환 */
 body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
@@ -39,13 +45,13 @@ body.page-id-8394 .container-wrap .container.main-content { margin-top: -40px !i
 .wlp-inq a{text-decoration:none;color:inherit}
 
 /* ===== HERO — 다크 풀블리드 ===== */
-.wlp-inq .hero-band{background:var(--ink);padding:60px 20px 32px}
+.wlp-inq .hero-band{background:var(--ink);padding:100px 20px 32px}
 .wlp-inq .hero-inner{max-width:520px;margin:0 auto;text-align:center}
 .wlp-inq .slogan-en{font-size:14px;font-style:italic;color:#fff;opacity:.92;letter-spacing:.01em;margin:0 0 5px}
 .wlp-inq .slogan-kr{font-size:12px;color:#fff;opacity:.55;letter-spacing:.03em;margin:0 0 18px}
 .wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 18px}
 .wlp-inq .hero-inner h1{font-size:clamp(26px,7vw,36px);font-weight:800;letter-spacing:-.02em;color:#fff;margin:0 0 12px}
-.wlp-inq .hero-desc{font-size:14px;color:#fff;opacity:.7;line-height:1.8;max-width:380px;margin:0 auto}
+.wlp-inq .hero-desc{font-size:14px;color:#fff;opacity:.7;line-height:1.8;max-width:380px;margin:0 auto;word-break:keep-all}
 
 /* ===== BODY WRAP — 화이트 에디토리얼 ===== */
 .wlp-inq .wrap{max-width:720px;margin:0 auto;padding:34px 18px 72px}
@@ -103,7 +109,7 @@ body.page-id-8394 .container-wrap .container.main-content { margin-top: -40px !i
       <p class="slogan-kr">하루의 완성, 웰페리온</p>
       <div class="divider-coral"></div>
       <h1>문의하기</h1>
-      <p class="hero-desc">단순한 운동 시설이 아닙니다. 하루 루틴의 일부로, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간입니다.</p>
+      <p class="hero-desc">단순한 운동 시설이 아닙니다.<br>하루 루틴의 일부로, 건강의 기준을 세우고<br>그날의 완성도를 채워주는 공간입니다.</p>
     </div>
   </div>
 
