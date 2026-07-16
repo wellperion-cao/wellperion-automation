@@ -3952,15 +3952,14 @@ function _lessonOwnerSummaryRender(t) {
     var segs = _lessonSportSplit(r.sport); if (!segs.length) segs = [''];
     segs.forEach(function(seg){
       if (_lessonSegmentBucket(seg) !== sport) return;
-      var b = bucketOf(r.owner);
+      var b = bucketOf(_lessonSportMgmt(r, seg).owner);   // 종목탭 정본 보정 담당으로 그룹핑(타팀 오염 제외·미배정 집계) 2026-07-16 GM
       b.count++; total++;
       var s = String(r.status || '').trim() || '미정';
       b.statusCounts[s] = (b.statusCounts[s] || 0) + 1;
     });
   });
-  if (LESSON_INSTRUCTOR_ROSTER[sport]) {   // 명단에는 있으나 관리 회원 0인 담당자도 표시(부하 파악 목적, GM 지시)
-    LESSON_INSTRUCTOR_ROSTER[sport].forEach(function(name){ bucketOf(name); });
-  }
+  // 명단에는 있으나 관리 회원 0인 담당자도 표시(부하 파악 목적) — 종목탭 정본 강사(valid) 우선·오염 하드코딩 명단 대체. 2026-07-16 GM
+  _lessonRosterFor(sport, t === 'youth').forEach(function(name){ bucketOf(name); });
   var owners = Object.keys(byOwner).sort(function(a, b){
     if (byOwner[b].count !== byOwner[a].count) return byOwner[b].count - byOwner[a].count;
     return a.localeCompare(b);
@@ -4020,9 +4019,21 @@ function _lessonRosterKeyOf(sportKey) {
   if (/루프/.test(s)) return '루프 매소드';
   return null;
 }
-function _lessonOwnerOptionsFor(sportKey) {
+// 종목별 강사 명단 = 종목탭 정본(지정강사 valid) 우선, 미로딩/탭없음이면 하드코딩 명단 폴백. 2026-07-16 GM
+// (하드코딩 LESSON_INSTRUCTOR_ROSTER 수영 명단에 '아쿠아' 등 타종목 혼입 오염 → 탭 valid로 대체해 '수영 강사만' 보장)
+function _lessonRosterFor(sportKey, isYouth) {
+  if (isYouth === undefined) isYouth = /WSC/i.test(String(sportKey || ''));
+  var tab = _lessonSportTabName_(sportKey, isYouth);
+  if (tab) {
+    var res = _lessonSportTabResolved_[tab];
+    if (res && res.valid) { var v = Object.keys(res.valid); if (v.length) return v; }
+    _lessonEnsureSportTabLoaded_(tab);   // 미로딩 — 백그라운드 시작(다음 렌더에 정확 명단)
+  }
   var rk = _lessonRosterKeyOf(sportKey);
-  var list = (rk && LESSON_INSTRUCTOR_ROSTER[rk]) ? LESSON_INSTRUCTOR_ROSTER[rk].slice() : [];
+  return (rk && LESSON_INSTRUCTOR_ROSTER[rk]) ? LESSON_INSTRUCTOR_ROSTER[rk].slice() : [];
+}
+function _lessonOwnerOptionsFor(sportKey) {
+  var list = _lessonRosterFor(sportKey);
   list.push(LESSON_UNASSIGNED_OPTION);
   return list;
 }
