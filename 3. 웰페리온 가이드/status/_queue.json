@@ -593,5 +593,19 @@
     "artifact": "- 🔍 검색칸: 이름·연락처·내용·장소·번호·담당 실시간 필터(전 컬럼)\n- ✅ 완료 컬럼 기본 접기(카운트+펼치기) → 누적 완료로 길어지던 스크롤 해소\n  · 검색 중엔 완료 자동 노출(결과 안 놓치게)\n- 컬럼 내부 스크롤(max-height 72vh)로 페이지 세로 폭주 방지\n- net-zero 버그수정: _render마다 board 리스너 중복부착 → 1회 위임(_wireBoard)\n  (검색 재렌더 시 상태변경 중복발송 위험 제거)\n- 라이브검증: 완료 26건 접힘/펼침, 검색 보온병3·여자사우나12, 콘솔0 (CLI ad-hoc · 커밋 70199f89)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "70199f89e94f6dca9ba0754110ec4f155e625610"
+  },
+  {
+    "task_id": "COO-2026-07-16-ADHOC-aa3db4d5",
+    "clevel": "coo",
+    "title": "[시우] 현황 사진 썸네일(게이트) + 습득물 접수 폼 재디자인 (시우 1163)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-16",
+    "processed_at": "2026-07-16",
+    "ship_no": 1179,
+    "artifact": "- GAS: reg_board pv 키(직원 게이트) 통과 시 photoUrl 원본 반환→현황 썸네일\n  · 공개 호출은 계속 '비공개'(마스킹), 이름·연락처는 직원에게도 계속 마스킹\n  · lf_submit 텔레그램/주석 '습득물 등록'→'습득물 접수' 개명 · GAS 배포 @48\n- 현황: 사진 있는 접수 카드에 축소 썸네일(pv 게이트로 수신). 라이브검증\n  VOC-47·46 썸네일 실제 로드(naturalWidth 400)·이름 마스킹 유지·콘솔0\n- 폼 재디자인(lost_found_register + wp block): (CLI ad-hoc · 커밋 aa3db4d5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "aa3db4d5c9d8a8785a44d2c7fe857de347712b01"
   }
 ]
