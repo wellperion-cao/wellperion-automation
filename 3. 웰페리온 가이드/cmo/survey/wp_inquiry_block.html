@@ -4,11 +4,16 @@
      디자인: wp_inquiry_form.html 과 동일한 B안 토큰(팔레트 4색 BLACK #221F20·WHITE·BEIGE #B79F8A·CORAL #ED5B3F,
      Pretendard, 다크 풀블리드 히어로 + 화이트 에디토리얼 본문, 샤프 모서리, 선(line) SVG 아이콘 재사용).
      CSS 스코프 .wlp-inq 래퍼(Salient/WPBakery 테마 오염 차단). 외부 스크립트 의존 없음(폰트 CDN 1개 제외).
-     2026-07-16 GM 피드백: 헤더 로고(검정)가 폭>1000px에서 margin-top 32px 때문에 다크 히어로 상단
+     2026-07-16 GM 피드백①: 헤더 로고(검정)가 폭>1000px에서 margin-top 32px 때문에 다크 히어로 상단
      61px 안으로 흘러들어가 히어로 eyebrow "WELLPERION"과 겹치고 검정이라 안 보이던 문제 수정 —
      eyebrow 삭제 + 헤더 로고를 그 구간(폭>1000px)만 베이지(#B79F8A 근사, invert/sepia/hue-rotate
      필터로 실측 산출)로 전환해 다크 배경 위에서 브랜드 배지처럼 보이게 함. 히어로 padding도 컴팩트화.
-     수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
+     2026-07-16 GM 피드백②: 로고 위로 WP 테마 헤더의 흰 바(#header-outer, 데스크톱 29px/모바일 78px)
+     + container-wrap padding-top(40px, 회색 #f6f6f6)이 남아 로고가 흰/회색↔다크 경계에 걸쳐 보이던 문제 수정 —
+     ①#header-outer 배경을 페이지 최상단(0px)부터 다크(#221F20)로, ②.container.main-content를 정확히
+     container-wrap의 padding-top(40px)만큼 위로 끌어올려(margin-top:-40px) 히어로가 #header-outer 박스
+     하단(데스크톱29px/모바일78px)에 바로 이어붙게 함(실측 기반 정밀값, 임의 여백 아님). 로고는 이제
+     첫 픽셀부터 다크 배경 안에 온전히 앉음. 수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
 /* 문의 페이지(8394) 한정 — 헤더 로고 상단 잘림 해소 + 폭>1000px 다크 히어로 겹침 구간 베이지 전환 */
 body.page-id-8394 #header-outer #logo { margin-top: 32px !important; }
@@ -17,6 +22,9 @@ body.page-id-8394 #header-outer #logo img { filter: invert(65%) sepia(40%) satur
   body.page-id-8394 #header-outer #logo { margin-top: 22px !important; }
   body.page-id-8394 #header-outer #logo img { filter: none; }
 }
+/* 문의 페이지(8394) 한정 — 다크 배경을 페이지 최상단(헤더 영역)까지 확장, 로고 위 흰/회색 바 제거 */
+body.page-id-8394 #header-outer { background: #221F20 !important; }
+body.page-id-8394 .container-wrap .container.main-content { margin-top: -40px !important; }
 </style>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
