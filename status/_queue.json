@@ -327,7 +327,7 @@
     "task_id": "CMO-2026-07-16-AUTONOMY-TWIN-WINDOW-ADJUST",
     "clevel": "cmo",
     "title": "[시모] 자율화 배 2건(cmo106·747) 자율현황 표시 완성 — module_registry twin front_card.window M2·M1→자율현황 조정",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-16",
     "origin": "delegation",
@@ -335,7 +335,10 @@
     "module": "M1",
     "note": "[2026-07-16 웰리 배1047 이관 후속] cmo106(⑤평가환류)·cmo747(CMO 자율화 두뇌)이 STANDBY로 항로에서 빠졌으나, module_registry twin의 front_card.window가 M2·M1이라 자율현황 창에 미표시=과도기 공백. 시모가 cmo-marketing-funnel(window M2)·cmo-content-pipeline은 유지하되, cmo106/747에 해당하는 twin의 window를 '자율현황'으로 조정하거나 자율현황 카드 신설해 표시 완성. window 조정은 시모(CMO) 도메인 판단이라 웰리 직접변경 안 함(침범 방지).",
     "next": "cmo106·747의 자율현황 표시를 module_registry window 조정 또는 카드 신설로 완성. 라이브(자율현황.html) 표시 확인.",
-    "ship_no": 1155
+    "ship_no": 1155,
+    "processed_at": "2026-07-16",
+    "artifact": "https://wellperion-cao.github.io/wellperion-automation/자율현황.html",
+    "terminal": true
   },
   {
     "task_id": "CEO-2026-07-16-ADHOC-5cb86035",
@@ -369,12 +372,13 @@
     "task_id": "COO-2026-07-16-RECEPTION-LOSTFOUND-REFLECT",
     "clevel": "coo",
     "title": "[시우] 종합접수처 현황에 습득물 반영 — 별도 습득물 섹션(게시중 사진·게시중/수령 카운트, 6종 칸반과 안 섞음)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-16",
     "ship_no": 1163,
-    "note": "[2026-07-16 GM 지시] 종합접수처 현황(coo/reception/종합접수처_현황.html)에 습득물도 반영. GM 선택=별도 습득물 섹션(6종 칸반 위에 게시중 사진 썸네일+게시중/수령완료 카운트). 습득물은 상태체계(게시중/수령완료/철회)가 6종 칸반(접수/처리중/완료)과 달라 안 섞고 나란히. 데이터=같은 VOC GAS lf_list(전 상태·전 필드, TOKEN_ENFORCE OFF로 현재 GET 통과, 미래 JWT 대비 wp_access_token key 방어적 동봉). 읽기 전용 반영 — 수령(서명)·철회 액션은 기존 lost_found_register.html(등록·관리)·lost_found_gallery.html(공개) 유지, 현황엔 두 페이지 링크만.",
-    "next": "",
+    "note": "[2026-07-16 GM 지시] 종합접수처 현황(coo/reception/종합접수처_현황.html)에 습득물도 반영. GM 선택=별도 습득물 섹션(6종 칸반 위에 게시중 사진 썸네일+게시중/수령완료 카운트). 습득물은 상태체계(게시중/수령완료/철회)가 6종 칸반(접수/처리중/완료)과 달라 안 섞고 나란히. 데이터=같은 VOC GAS lf_list(전 상태·전 필드, TOKEN_ENFORCE OFF로 현재 GET 통과, 미래 JWT 대비 wp_access_token key 방어적 동봉). 읽기 전용 반영 — 수령(서명)·철회 액션은 기존 lost_found_register.html(등록·관리)·lost_found_gallery.html(공개) 유지, 현황엔 두 페이지 링크만. [2026-07-16 완료·커밋 beaff691] 습득물 섹션+CSS+lfLoad/_lfRender 배선. 라이브검증(로컬서버+Playwright, gate 통과): 게시중 1건(LF-5 여자사우나 귀금속) 사진카드·썸네일 렌더, 카운트 '게시중 1·수령완료 0', 6종 칸반 3컬럼 회귀0, 콘솔에러0. push→origin/master(GitHub Pages 라이브).",
+    "next": "🏁 입항완료 — 향후 습득물 상태전환(수령/철회)은 등록·관리/갤러리 페이지가 소유, 현황은 자동 반영(lf_list 실시간). 다음 불필요.",
+    "processed_at": "2026-07-16",
     "surface": "autonomy"
   },
   {
