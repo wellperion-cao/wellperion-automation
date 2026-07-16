@@ -163,7 +163,7 @@ var STATUS_BG    = {'접수':'var(--yellow-bg)','처리중':'var(--blue-bg)','�
 /* 6종 카테고리 (백엔드 REG_CATEGORIES 라벨과 동일) */
 var CAT_META = [
   {label:'분실물 접수',          icon:'📦', dept:'운영부', color:'var(--orange)', bg:'var(--orange-bg)'},
-  {label:'습득물 등록',          icon:'🧳', dept:'운영부', color:'var(--accent)', bg:'var(--accent-bg)'},
+  {label:'습득물 접수',          icon:'🧳', dept:'운영부', color:'var(--accent)', bg:'var(--accent-bg)'},
   {label:'시설물 고장 접수',      icon:'🔧', dept:'시설부', color:'var(--blue)',   bg:'var(--blue-bg)'},
   {label:'청결 이슈 접수',        icon:'🧹', dept:'지원부', color:'var(--green)',  bg:'var(--green-bg)'},
   {label:'컴플레인 접수',        icon:'📣', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'},
@@ -325,10 +325,10 @@ function _card(r){
   if(r._lf){
     var lid = _esc(r.regId||'');
     var lwhen = _esc(String(r.foundWhen||r.createdAt||'').replace('T',' '));
-    var lcm = _catMeta('습득물 등록');
+    var lcm = _catMeta('습득물 접수');
     var lh = '<div class="card">';
     lh += '<div class="card-top">';
-    lh += '<span class="badge" style="background:' + lcm.bg + ';color:' + lcm.color + ';">🧳 습득물 등록</span>';
+    lh += '<span class="badge" style="background:' + lcm.bg + ';color:' + lcm.color + ';">🧳 습득물 접수</span>';
     if(r._lfLabel) lh += '<span class="badge" style="background:var(--paper);color:var(--dim);">' + _esc(r._lfLabel) + '</span>';
     lh += '<span class="card-when">운영부</span>';
     if(lid) lh += '<span class="card-id">#' + lid + '</span>';
@@ -456,7 +456,7 @@ function lfLoad(){
         return {
           _lf: true,
           regId:    r.foundId  || '',
-          category: '습득물 등록',
+          category: '습득물 접수',
           dept:     '운영부',
           status:   LF_STATUS_MAP[String(r.status||'')],   // 게시중→접수 · 수령완료→완료
           _lfLabel: String(r.status||''),
