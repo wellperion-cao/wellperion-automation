@@ -106,6 +106,11 @@ a { color:var(--accent); text-decoration:none; }
 .lf-note b { color:var(--text); font-weight:700; }
 .lf-note a { color:var(--accent); font-weight:600; white-space:nowrap; }
 
+/* ── 상태 요약 + 검색(우측) 한 줄 ── */
+.summary-bar { display:flex; align-items:center; gap:12px 18px; flex-wrap:wrap; margin-bottom:14px; }
+.summary-bar .summary-row { margin-bottom:0; }
+.summary-bar .search-input { margin-left:auto; flex:0 1 340px; min-width:200px; }
+
 /* ── 🔍 검색칸 ── */
 .search-input { width:100%; max-width:520px; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; background:var(--paper); color:var(--text); font-size:14px; font-family:inherit; outline:none; }
 .search-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(183,159,138,.15); }
@@ -141,12 +146,10 @@ a { color:var(--accent); text-decoration:none; }
 </div>
 
 <div class="content">
-  <!-- 상태 요약 -->
-  <div class="summary-row" id="statusSummary"></div>
-
-  <!-- 🔍 검색 -->
-  <div class="filter-block">
-    <input type="text" id="searchBox" class="search-input" placeholder="🔍 이름·연락처·내용·장소·번호·담당으로 검색…" oninput="setSearch(this.value)" autocomplete="off">
+  <!-- 상태 요약 + 🔍 검색(우측) -->
+  <div class="summary-bar">
+    <div class="summary-row" id="statusSummary"></div>
+    <input type="text" id="searchBox" class="search-input" placeholder="🔍 이름·내용·장소·번호 검색…" oninput="setSearch(this.value)" autocomplete="off">
   </div>
 
   <!-- 카테고리 필터 -->
