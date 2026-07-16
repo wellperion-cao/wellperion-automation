@@ -39,7 +39,13 @@
      동일). .hero-band에 margin-top:-40px(단일값, 미디어쿼리 불필요)를 줘 베이지가 페이지 최상단(0px)
      까지 이어지게 함(다른 페이지 영향 0 — page-id-8394 스코프). 본문 카드(.type-card 등)는 흰색 유지해 대비.
      "1,000명 정원제" 안내를 하단→히어로 안(슬로건 바로 아래)으로 이관(중복 생성 아님 — 기존 하단
-     .capacity 블록 삭제 후 이동). 수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
+     .capacity 블록 삭제 후 이동).
+     2026-07-16 GM 피드백(색상 재변경): 베이지(#f5f0ea)→다크(#221F20)로 재전환("찐한 회색"). 헤더를 이미
+     display:none 처리해 로고 자체가 없으므로 예전 다크 시절의 로고 겹침·헤더 충돌 문제는 원천적으로
+     재발하지 않음(heroTop:0 유지, 실측 재확인). 히어로 텍스트를 다크 배경용으로 반전 — eyebrow=베이지,
+     슬로건 영문=흰색, 국문 부제·소개문=연회색(rgba(255,255,255,.7) 계열), "1,000명 정원제" 문장=흰색
+     본문+숫자만 코럴 강조, 코럴 디바이더 유지. 본문 카드(.type-card 등)는 흰색 그대로(다크 히어로+흰
+     본문 대비). 수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
 /* 문의 페이지(8394) 한정 — WP 테마 헤더 전체 숨김(로고·메뉴·ENG버튼). 다른 페이지 영향 0(page-id 스코프). */
 body.page-id-8394 #header-outer { display: none !important; }
@@ -56,18 +62,18 @@ body.page-id-8394 #header-outer { display: none !important; }
 .wlp-inq *{box-sizing:border-box}
 .wlp-inq a{text-decoration:none;color:inherit}
 
-/* ===== HERO — 밝은 브랜드 베이지(2026-07-16 GM 방향전환②: 헤더 숨김 + 배경 베이지 + 정원제 상단 이관) ===== */
-.wlp-inq .hero-band{background:#f5f0ea;margin-top:-40px;padding:64px 20px 30px}
+/* ===== HERO — 다크(2026-07-16 GM 색상 재변경: 베이지→다크 #221F20, 헤더 숨김 상태라 로고 겹침 없음) ===== */
+.wlp-inq .hero-band{background:var(--ink);margin-top:-40px;padding:64px 20px 30px}
 @media (max-width:1000px){
   .wlp-inq .hero-band{padding-top:56px}
 }
 .wlp-inq .hero-inner{max-width:520px;margin:0 auto;text-align:center}
 .wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin:0 0 14px}
-.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin:0 0 6px}
-.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--dim);letter-spacing:.02em;margin:0 0 18px}
+.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:#fff;margin:0 0 6px}
+.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:rgba(255,255,255,.7);letter-spacing:.02em;margin:0 0 18px}
 .wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 18px}
-.wlp-inq .hero-desc{font-size:13.5px;color:var(--dim);line-height:1.8;max-width:380px;margin:0 auto;word-break:keep-all}
-.wlp-inq .hero-capacity{font-size:14px;font-weight:700;color:var(--ink);line-height:1.7;max-width:380px;margin:20px auto 0}
+.wlp-inq .hero-desc{font-size:13.5px;color:rgba(255,255,255,.7);line-height:1.8;max-width:380px;margin:0 auto;word-break:keep-all}
+.wlp-inq .hero-capacity{font-size:14px;font-weight:700;color:#fff;line-height:1.7;max-width:380px;margin:20px auto 0}
 .wlp-inq .hero-capacity b{color:var(--coral);font-weight:800}
 
 /* ===== BODY WRAP — 화이트 에디토리얼 ===== */

@@ -35,6 +35,14 @@
      브레이크포인트 동일). .hero-band margin-top:-40px(단일값)로 베이지가 최상단까지 이어지게 함
      (page-id-8460 스코프, 다른 페이지 영향 0). "1,000명 정원제"는 이 폼에서는
      이미 GUIDES 뱃지(g-badges)로 히어로 바로 아래(가이드 카드 최상단)에 노출 중이라 구조 변경 불필요.
+     2026-07-16 GM 피드백(색상 재변경, 허브와 동일): 베이지(#f5f0ea)→다크(#221F20) 재전환. 헤더
+     display:none 상태 유지라 로고 겹침 재발 없음(heroTop:0). 히어로 텍스트 다크 배경용 반전(슬로건
+     흰색·부제/소개문 연회색·eyebrow 베이지·hero-note 코럴 유지). 본문 카드는 흰색 유지.
+     2026-07-16 GM 피드백(멤버십 필드 되돌림): FORMS.membership.program을 select(단일선택)→multi
+     (체크박스 복수선택)로 되돌림. 옵션 4등급(플래티넘/플래티넘+골프/노블레스/노블레스+골프)은 유지,
+     payload program 키·콤마조인 저장 방식은 기존 multi 필드와 동일(백엔드 무변경).
+     2026-07-16 GM 피드백(시설 태그 정정, 실제 시설명): GUIDES.membership.tags "라운지·커뮤니티"→
+     "CUPS 라운지", "생크몽드 스파" 뒤에 "부티부 헤어메이크업" 추가.
      수정 시 이 파일을 고치고 WP post 8460(draft-page --page survey) 재주입. -->
 <style>
 /* 문의 Survey 폼 페이지(8460) 한정 — WP 테마 헤더 전체 숨김. 다른 페이지 영향 0(page-id 스코프). */
@@ -54,18 +62,18 @@ body.page-id-8460 #header-outer { display: none !important; }
 .wlp-inq button{font-family:inherit;-webkit-appearance:none;appearance:none;cursor:pointer}
 .wlp-inq a{text-decoration:none;color:inherit}
 
-/* ===== HERO — 밝은 브랜드 베이지(2026-07-16 GM 방향전환②: 헤더 숨김 + 배경 베이지) ===== */
-.wlp-inq .hero-band{background:#f5f0ea;margin-top:-40px;padding:64px 20px 28px}
+/* ===== HERO — 다크(2026-07-16 GM 색상 재변경: 베이지→다크 #221F20, 헤더 숨김 상태라 로고 겹침 없음) ===== */
+.wlp-inq .hero-band{background:var(--ink);margin-top:-40px;padding:64px 20px 28px}
 @media (max-width:1000px){
   .wlp-inq .hero-band{padding-top:56px}
 }
 .wlp-inq .hero-inner{max-width:480px;margin:0 auto;text-align:center}
 .wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin-bottom:14px}
-.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-bottom:6px}
-.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--dim);letter-spacing:.02em;margin-bottom:18px}
+.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:#fff;margin-bottom:6px}
+.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:rgba(255,255,255,.7);letter-spacing:.02em;margin-bottom:18px}
 .wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 18px}
 .wlp-inq .hero-inner h1{display:none}
-.wlp-inq .hero-desc{font-size:13.5px;color:var(--dim);line-height:1.75;max-width:340px;margin:0 auto;word-break:keep-all}
+.wlp-inq .hero-desc{font-size:13.5px;color:rgba(255,255,255,.7);line-height:1.75;max-width:340px;margin:0 auto;word-break:keep-all}
 .wlp-inq .hero-note{font-size:12px;font-weight:700;color:var(--coral);letter-spacing:.02em;margin-top:12px}
 
 /* ===== BODY WRAP — 화이트 에디토리얼 ===== */
@@ -220,7 +228,7 @@ body.page-id-8460 #header-outer { display: none !important; }
       fields: [
         { key:'name',    label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
-        { key:'program', label:'관심 멤버십', type:'select', opt:true, ph:'선택해 주세요', opts:['플래티넘 (Gym + G.X + Sauna)','플래티넘+골프 (Gym + Golf + G.X + Sauna)','노블레스 (Gym + G.X + Swimming + Sauna)','노블레스+골프 (Gym + Golf + G.X + Swimming + Sauna)'] },
+        { key:'program', label:'관심 멤버십', type:'multi', opt:true, opts:['플래티넘 (Gym + G.X + Sauna)','플래티넘+골프 (Gym + Golf + G.X + Sauna)','노블레스 (Gym + G.X + Swimming + Sauna)','노블레스+골프 (Gym + Golf + G.X + Swimming + Sauna)'] },
         { key:'channel', label:'알게 된 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
         { key:'exp1Date',label:'시설 투어·상담 희망일', type:'date', opt:true },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'궁금하신 점을 자유롭게 적어주세요.' }
@@ -289,7 +297,7 @@ body.page-id-8460 #header-outer { display: none !important; }
   var GUIDES = {
     membership: {
       badges:['<b>1,000명</b> 정원제','연회비제 · 보증금 없음','한남동 <b>3,000평</b> 단일 시설'],
-      tags:['수영','스쿼시','골프','필라테스·PT','사우나·리커버리','라운지·커뮤니티','생크몽드 스파'],
+      tags:['수영','스쿼시','골프','필라테스·PT','사우나·리커버리','CUPS 라운지','생크몽드 스파','부티부 헤어메이크업'],
       note:'상담 및 투어는 사전 예약제로 운영됩니다.'
     },
     adult: {
