@@ -27,6 +27,9 @@
      문구·글자 크기는 B안 리스킨 이전 원본 wp_inquiry_form.html(커밋 46af9cc2, 밝은 배경·심플 버전)의
      사이즈 위계(큰 영문 슬로건→작은 국문 부제→코럴 디바이더→작은 소개문)를 참고하되 컬러는 브랜드
      정본색(BLACK #221F20·BEIGE #B79F8A·CORAL #ED5B3F)만 사용. 카드형(네모) 6버튼 레이아웃은 그대로 유지.
+     2026-07-16 웰리 검수(재발): 슬로건 위 작은 eyebrow "WELLPERION"(.eyebrow)이 바로 위 WP 헤더 로고의
+     워드마크 "WELLPERION"과 내용 중복 — eyebrow 완전 삭제(DOM+CSS, JS 미참조 확인). 로고 바로 아래
+     슬로건이 온다. 나머지(슬로건·디바이더·소개문·예약안내)는 무변경.
      수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
@@ -43,7 +46,6 @@
 /* ===== HERO — 밝은 심플(2026-07-16 GM 방향전환: 다크 풀블리드 폐기) ===== */
 .wlp-inq .hero-band{background:transparent;padding:40px 20px 6px}
 .wlp-inq .hero-inner{max-width:520px;margin:0 auto;text-align:center}
-.wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin:0 0 14px}
 .wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin:0 0 6px}
 .wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--dim);letter-spacing:.02em;margin:0 0 18px}
 .wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 18px}
@@ -101,7 +103,6 @@
 
   <div class="hero-band">
     <div class="hero-inner">
-      <p class="eyebrow">Wellperion</p>
       <p class="slogan-en">A Day, Well Completed.</p>
       <p class="slogan-kr">하루의 완성, 웰페리온</p>
       <div class="divider-coral"></div>
