@@ -1595,8 +1595,138 @@ async def run_publish_page(spec_key: str, post_id_arg: str, slug: "str | None" =
     return 0 if published else 8
 
 
+CUSTOMIZE_CSS_URL = "http://wellperion.com/wp/wp-admin/customize.php?autofocus%5Bsection%5D=custom_css"
+
+
+async def run_swap_additional_css(find: str, repl: str, dry_run: bool = False) -> int:
+    """WP 커스터마이저 '추가 CSS'(Additional CSS, <style id=wp-custom-css>)에서 find→repl 전역 치환.
+    용도: @font-face url 의 옛 호스트(wellperion.cafe24.com/font/ = CORS 차단) → 동일 오리진(/font/) 교정.
+    - CodeMirror DOM 대신 wp.customize JS API로 setting 값을 직접 읽고/쓴다(견고).
+    - 원본 CSS 타임스탬프 백업 · find 출현 0건이면 이미 교정으로 보고 무손상 종료.
+    - 무결성: 치환 후 find 잔존 0 · repl 증가분 == find 출현수 · 그 외 문자열 완전 동일(역치환 대조).
+    - 저장 후 라이브 프론트(홈)에서 옛 호스트 참조 0건 재확인(진짜 결과 검증).
+    - dry_run=True: 저장 없이 카운트·무결성만 보고."""
+    import datetime
+    async_playwright = _import_playwright()
+    print(f"[INFO] === 추가 CSS 전역 치환 (dry_run={dry_run}) ===")
+    print(f"[INFO] find: {find}")
+    print(f"[INFO] repl: {repl}")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(CUSTOMIZE_CSS_URL, wait_until="domcontentloaded", timeout=60_000)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    # 커스터마이저·custom_css setting 준비 대기 (최대 ~30s)
+    read = {"ready": False}
+    for _ in range(30):
+        read = await page.evaluate(
+            """() => {
+                if(!(window.wp && wp.customize && wp.customize.state)) return {ready:false};
+                if(!wp.customize.state('activated')) { /* 아직 부팅중일 수 있음 */ }
+                let id=null;
+                wp.customize.each(function(s){ if(s.id.indexOf('custom_css')===0) id=s.id; });
+                if(!id) return {ready:false};
+                return {ready:true, id:id, value: wp.customize(id).get() || ''};
+            }"""
+        )
+        if read.get("ready"):
+            break
+        await page.wait_for_timeout(1000)
+    if not read.get("ready"):
+        await page.screenshot(path=str(INSPECT_DIR / "wp_customize_css_notready.png"))
+        print("[ERROR] 커스터마이저 custom_css setting 미준비 — 중단(무손상). 스샷: wp_customize_css_notready.png")
+        await ctx.close(); await p.stop(); return 50
+    setting_id = read["id"]
+    original = read["value"] or ""
+    print(f"[INFO] custom_css setting id: {setting_id} (길이 {len(original)})")
+    if len(original) < 20:
+        print(f"[ERROR] CSS 비정상(길이 {len(original)}) — 중단(저장 안 함).")
+        await ctx.close(); await p.stop(); return 51
+
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = INSPECT_DIR / f"additional_css_backup_{ts}.txt"
+    backup_path.write_text(original, encoding="utf-8")
+    print(f"[INFO] 원본 백업: {backup_path}")
+
+    count = original.count(find)
+    print(f"[INFO] find 출현: {count}건")
+    if count == 0:
+        print("[INFO] find 0건 — 이미 교정됐거나 대상 없음. 저장 없이 종료(무손상).")
+        await ctx.close(); await p.stop(); return 0
+    new_css = original.replace(find, repl)
+    # 무결성 가드 (repl 이 find 의 부분문자열이어도 안전 — 카운트 겹침 가정 없음)
+    if new_css == original:
+        print("[ABORT] 치환 후 변화 없음 — 저장 안 함."); await ctx.close(); await p.stop(); return 52
+    if new_css.count(find) != 0:
+        print(f"[ABORT] find 잔존 {new_css.count(find)} — 저장 안 함."); await ctx.close(); await p.stop(); return 53
+    # 길이 델타 = count*(len(find)-len(repl)) 정확 일치 → 딱 count건만·그 외 무변경 증명
+    expected_delta = count * (len(find) - len(repl))
+    if len(original) - len(new_css) != expected_delta:
+        print(f"[ABORT] 길이 델타 불일치(기대 {expected_delta}, 실제 {len(original)-len(new_css)}) — 저장 안 함.")
+        await ctx.close(); await p.stop(); return 54
+    print(f"[INFO] 무결성 통과 · {count}건 교체 예정 (CSS 길이 {len(original)}→{len(new_css)})")
+
+    if dry_run:
+        idx = new_css.find(repl)
+        print(f"[INFO] 발췌(교체 지점): ...{new_css[max(0,idx-40):idx+len(repl)+30]}...")
+        print("[INFO] === DRY-RUN — 저장하지 않음 ===")
+        await ctx.close(); await p.stop(); return 0
+
+    # wp.customize API로 setting 값 세팅(→ dirty) 후 저장(Save & Publish)
+    setres = await page.evaluate(
+        """({id, val}) => { try {
+            wp.customize(id).set(val);
+            return {ok: wp.customize(id).get() === val};
+        } catch(e){ return {ok:false, err:String(e)}; } }""",
+        {"id": setting_id, "val": new_css},
+    )
+    if not setres.get("ok"):
+        print(f"[ABORT] setting 세팅 실패: {setres} — 저장 안 함."); await ctx.close(); await p.stop(); return 56
+    await page.wait_for_timeout(500)
+    # 저장 버튼 클릭 (#save) — 활성화될 때까지 잠깐 대기
+    try:
+        await page.click("#save", timeout=10_000)
+    except Exception:
+        await page.evaluate("() => { try{ wp.customize.previewer.save(); }catch(e){} }")
+    # saved 상태 폴링
+    saved = False
+    for _ in range(30):
+        saved = await page.evaluate(
+            "() => !!(window.wp && wp.customize && wp.customize.state && wp.customize.state('saved') && wp.customize.state('saved').get())"
+        )
+        if saved:
+            break
+        await page.wait_for_timeout(1000)
+    await page.screenshot(path=str(INSPECT_DIR / f"wp_customize_css_saved_{ts}.png"))
+    print(f"[INFO] 커스터마이저 저장 상태: {'saved' if saved else '미확정'}")
+    await ctx.close(); await p.stop()
+
+    # 라이브 프론트 재검증 (별도 요청 — 캐시 없는 진짜 결과)
+    import urllib.request
+    live_ok = None
+    try:
+        req = urllib.request.Request("http://wellperion.com/", headers={"Cache-Control": "no-cache"})
+        html = urllib.request.urlopen(req, timeout=30).read().decode("utf-8", "replace")
+        old_host = "wellperion.cafe24.com/font"
+        live_old = html.count(old_host)
+        live_new = html.count("/font/FuturaPT")
+        live_ok = (live_old == 0 and live_new > 0)
+        print(f"[INFO] 라이브 재검증: 옛 호스트 {live_old}건(기대 0) · /font/FuturaPT {live_new}건(>0)")
+    except Exception as e:
+        print(f"[WARN] 라이브 재검증 경고: {e}")
+    done = saved and (live_ok is not False)
+    print(f"[INFO] === 추가 CSS 치환 {'완료' if done else '확인 필요'} === (백업: {backup_path})")
+    return 0 if done else 57
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href/wpml-create-en/draft-inquiry-en/publish-inquiry-en/draft-reception/publish-reception/draft-page/publish-page/media-check/media-upload)")
+    ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href/wpml-create-en/draft-inquiry-en/publish-inquiry-en/draft-reception/publish-reception/draft-page/publish-page/media-check/media-upload/swap-additional-css)")
     ap.add_argument("--mode", choices=[
         "setup", "check", "inspect",
         "draft-inquiry", "publish-inquiry", "add-menu", "remove-menu", "swap-href",
@@ -1604,6 +1734,7 @@ def main() -> int:
         "draft-reception", "publish-reception", "swap-reception-text",
         "draft-page", "publish-page",
         "media-check", "media-upload",
+        "swap-additional-css",
     ], default="setup")
     ap.add_argument("--page", dest="page", default=None,
                     choices=["survey", "lf-gallery", "lf-register"],
@@ -1674,6 +1805,10 @@ def main() -> int:
         if not args.page or not args.post_id:
             print("[ERROR] publish-page는 --page {survey|lf-gallery|lf-register} 와 --post-id 필요"); return 1
         return asyncio.run(run_publish_page(args.page, args.post_id, args.slug))
+    if args.mode == "swap-additional-css":
+        if not args.find or not args.repl:
+            print("[ERROR] swap-additional-css는 --find --repl 필요"); return 1
+        return asyncio.run(run_swap_additional_css(args.find, args.repl, args.dry_run))
     if args.mode == "media-check":
         return asyncio.run(run_media_check())
     if args.mode == "media-upload":
