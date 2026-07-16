@@ -1352,8 +1352,9 @@ function applicantRow(a){
     if(stage==="최종 합격"){
       actions+='<button class="btn-sm" data-hire="'+esc(pageId)+'" data-name="'+esc(a["지원자명"]||"")+'" style="background:var(--gold);color:#fff;border-color:var(--gold)">✓ 입사 확정</button>';
     }
-    if(a.url){
-      actions+='<a href="'+esc(a.url)+'" target="_blank" class="btn-sm">원본 ↗</a>';
+    var origUrl=(a["원본 Notion URL"]||"")+"";
+    if(/^https?:\/\//i.test(origUrl)){
+      actions+='<a href="'+esc(origUrl)+'" target="_blank" class="btn-sm">원본 ↗</a>';
     }
   }
   return '<div data-applicant="'+esc(pageId)+'" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+apppid+'" title="클릭: 단계·면접일정 변경 / 불합격 처리" style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer">'+
