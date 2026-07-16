@@ -4156,7 +4156,12 @@ function _lessonSportMgmt(row, sportKey) {
   var _valid = _lessonValidOwners(sportKey, isYouth), _vk = Object.keys(_valid);
   // 정규 강사 아님 → 미배정(담당자 X). 단, 단일 공급자 종목(웰니스=루프메소드·뮤지컬=편한별)은 그 공급자로 기본 배정. 2026-07-16 GM
   if (owner && _vk.length && !_valid[owner]) owner = (_vk.length === 1) ? _vk[0] : '';
-  if (!owner) owner = _lessonTeamLeadOf(sportKey) || '';   // ★미배정(담당자 X) → 종목 팀장 기본배정(GM 2026-07-16)
+  // 미배정 → 종목 팀장 기본배정. 단 ★새 문의(미컨택: 진행상황 신규/미정/빈값)는 담당자 X 유지 — 팀장 자동배정 금지(팀장이 보고 직접 배정). GM 2026-07-16.
+  if (!owner) {
+    var _st = String(row.status || '').trim();
+    var _isNewInq = (!_st || _st === '미정' || _st === '신규' || _st === '미컨택');
+    if (!_isNewInq) owner = _lessonTeamLeadOf(sportKey) || '';
+  }
   return { status: row.status || '', owner: owner, contacts: row.contacts || [] };
 }
 // 저장 성공 후 로컬 반영 — 항상 행단일 필드(flat 모델). 백엔드 lesson_inquiry_update가 body.sport='' → row-level(flat L~P) 경로로 저장. 배973 시포·GM 2026-07-14.
