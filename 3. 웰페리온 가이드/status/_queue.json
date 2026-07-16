@@ -1452,5 +1452,19 @@
     "artifact": "- pv(사진 노출) 호출이 캐시 우회로 매번 ~4.4s → 별도 키 reg_board_staff_v1\n  로 캐시(45s)해 ~1.7s 회복(공개 캐시 히트와 동급)\n- 공개/직원 캐시 완전 분리 = 사진노출본이 공개 마스킹 캐시에 안 섞임\n- 쓰기 무효화 6곳을 _regBoardCacheClear_() 헬퍼로 통일(두 키 동시 remove)\n- 검증: 직원 사진 원본·이름 마스킹 유지 / 공개 '비공개' 유지 / 1.7~1.9s. GAS @49 (CLI ad-hoc · 커밋 52e18613)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "52e186136d0473cc5950275c7a97e470f04c42c1"
+  },
+  {
+    "task_id": "COO-2026-07-16-ADHOC-047e109f",
+    "clevel": "coo",
+    "title": "[시우] 습득물 접수 폼 안내박스 불릿 겹침 해소 (WP 테마 마커 억제, 시우 1163)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-16",
+    "processed_at": "2026-07-16",
+    "ship_no": 1239,
+    "artifact": "- Salient 테마가 li에 덧대던 불릿 → list-style:none!important + ::marker 비움\n- WP 8464 재주입·시크릿 검증: list-style-type none·단일 · 만 표시 (CLI ad-hoc · 커밋 047e109f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "047e109f8db38a6b3529424f16af1719c5ac3673"
   }
 ]
