@@ -345,7 +345,7 @@
     "artifact": "- 문제: 추가CSS @font-face 가 wellperion.cafe24.com/font/ 참조(CORS 헤더 없음)\n  → 크로스오리진 폰트 브라우저 차단, FuturaPT/HudsonNYSerif 사이트전역 미로드\n- 해법: 동일 폰트가 wellperion.com/font/ 에 이미 존재 → url만 /font/ 로 8건 치환\n  (재업로드 불요·CORS 소멸). FuturaPT svg 접두사 누락 1건 net-zero 동반 교정\n- 도구: swap-additional-css 모드 신설 — wp.customize JS API (CLI ad-hoc · 커밋 6fa70869)",
     "next": "🏁 입항완료. 관찰: 필라테스 계열 탭은 폼 스키마 달라 지정강사 컬럼 부재→flat 유지(추후 그 탭 정합시 자동 합류).",
     "adhoc_commit": "6fa70869f899837066122cc3d6dc4cdbcdc3b86a",
-    "note": " | [완료] 프론트 구현·라이브 검증 PASS: 손준원 수영→박민서/골프→최찬중·유진 P.T→이형진/수영→강대경/스쿼시→이상훈(종목별 상이)·P.T행→김혜진 등 종목별 정확. 탭실측 정정: WSC 탭명은 공백포함(WSC 수영). 탭없는 필라테스/WSC필라테스/WSC아쿠아=스키마상이→flat 폴백. 단일종목 회귀0·신규콘솔에러0. 커밋 c54510e9·라이브 배선 OK. | [2026-07-16 GM 정리기준 보강·라이브] 체조 문의에 수영팀 담당(송민근/박민서) 뜨는 오염 지적→근본규명: (a)이름은 종목탭에 있으나 전화형식차로 미스(이윤재) (b)탭 미존재자=flat 폴백. 보강=byName(유니크)+valid(정규강사집합) 추가, _lessonSportMgmt 전화→이름 매칭·못찾고 flat이 그 종목 강사집합에 없으면 미배정(타팀 오염 제거). 전 종목 공통. 라이브검증: 체조 254건 전부 체조팀(이형주/배자경/김영운)·수영팀 담당 0·수영회귀0·에러0. (워처 자동커밋 흡수·origin 정합8·byName live)"
+    "note": " | [완료] 프론트 구현·라이브 검증 PASS: 손준원 수영→박민서/골프→최찬중·유진 P.T→이형진/수영→강대경/스쿼시→이상훈(종목별 상이)·P.T행→김혜진 등 종목별 정확. 탭실측 정정: WSC 탭명은 공백포함(WSC 수영). 탭없는 필라테스/WSC필라테스/WSC아쿠아=스키마상이→flat 폴백. 단일종목 회귀0·신규콘솔에러0. 커밋 c54510e9·라이브 배선 OK. | [2026-07-16 GM 정리기준 보강·라이브] 체조 문의에 수영팀 담당(송민근/박민서) 뜨는 오염 지적→근본규명: (a)이름은 종목탭에 있으나 전화형식차로 미스(이윤재) (b)탭 미존재자=flat 폴백. 보강=byName(유니크)+valid(정규강사집합) 추가, _lessonSportMgmt 전화→이름 매칭·못찾고 flat이 그 종목 강사집합에 없으면 미배정(타팀 오염 제거). 전 종목 공통. 라이브검증: 체조 254건 전부 체조팀(이형주/배자경/김영운)·수영팀 담당 0·수영회귀0·에러0. (워처 자동커밋 흡수·origin 정합8·byName live) | [2026-07-16 담당자현황·드롭다운 정합] GM: 수영 종목 클릭시 수영 강사만 나와야하는데 타종목 강사 섞임. 원인=①담당자현황(_lessonOwnerSummaryRender)이 flat r.owner로 그룹핑 ②하드코딩 LESSON_INSTRUCTOR_ROSTER 수영명단에 아쿠아 등 혼입(드롭다운/명단 소스). 수리=요약 그룹핑을 _lessonSportMgmt 보정담당으로+_lessonRosterFor 헬퍼(종목탭 지정강사 valid 우선)로 명단주입·담당 드롭다운 소스 교체. 라이브검증: 수영 담당자현황=수영탭 9강사+미배정만(비수영 0). 전종목 공통. ★워처가 요약편집 1회 되돌려 재적용+즉시커밋(origin 정합 확인)."
   },
   {
     "task_id": "COO-2026-07-16-RECEPTION-LOSTFOUND-REFLECT",
@@ -1159,5 +1159,19 @@
     "artifact": "fix(cpo-member): 강습 현황에서 자체폼 테스트행(가짜번호 010-0000-) 숨김 — 표시전용 필터·데이터 무삭제·가역 (실고객 오염 방지·시토) (CLI ad-hoc · 커밋 66a73de7)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "66a73de7d90484202fbfc2e77d929711b47f2838"
+  },
+  {
+    "task_id": "CPO-2026-07-16-ADHOC-e30f8192",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-16",
+    "processed_at": "2026-07-16",
+    "ship_no": 1219,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 e30f8192)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e30f819203275995139f8005f3b0e3db63ca8c82"
   }
 ]

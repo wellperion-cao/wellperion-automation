@@ -3860,9 +3860,16 @@ function lessonLoad(t) {
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
       var _lsFresh = d.data || [];
       _lsRealLoaded = true;   // 이 시점부터 스냅샷 렌더는 무효(레이스 가드)
-      // [2026-07-16 시토] 자체폼 검증용 테스트 주입행 숨김 — 가짜번호 010-0000-XXXX 패턴만 제외(실고객 강습 현황 오염 방지).
-      //   표시 전용 필터(데이터·시트 무삭제·가역). 실제 시트행 삭제는 별도. 실고객 전화엔 0000-국번 없음 → 오제외 없음.
-      _lsFresh = _lsFresh.filter(function(r){ return String((r && r.phone) || '').replace(/\D/g, '').indexOf('0100000') !== 0; });
+      // [2026-07-16 시토] 검증용 테스트행 숨김 — '실고객만 깔끔' 목표(GM). 표시 전용(데이터·시트 무삭제·가역).
+      //   안전 마커만 제외: ①가짜번호 010-0000-XXXX ②이름이 '['로 시작(자동접수/검증 스텁) ③깨진글자(�) ④자동검증/E2E/테스트/UTF.
+      //   실고객 한글 이름·정상 번호엔 어느 조건도 안 걸림(오제외 0). 실제 시트행 삭제는 별도.
+      _lsFresh = _lsFresh.filter(function(r){
+        var ph = String((r && r.phone) || '').replace(/\D/g, '');
+        var nm = String((r && r.name) || '');
+        if (ph.indexOf('0100000') === 0) return false;
+        if (/^\[|�|자동검증|E2E|테스트|UTF/i.test(nm)) return false;
+        return true;
+      });
       _lessonCacheSave(_lsCacheKey, _lsFresh);   // 서버 진실 캐시(오버레이 전·D4)
       st.rows = WriteBuffer.applyOverlay(_lsFresh.slice(), 'lesson');   // 미동기 낙관값 재적용(R2)
       st.rowsLoaded = true;   // st.loaded(lessonInit 진입가드, fetch 시작 시점에 이미 true)와 별개 —
