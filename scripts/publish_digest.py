@@ -153,16 +153,16 @@ def build_digest(group: list[dict]) -> str:
     ]
     entries: list[tuple[int, str, str]] = []
     for it in group:
+        # ★ URL 미회수 채널도 이름은 노출 — 채널 누락 방지(2026-07-16 카카오 누락 수정).
+        #   엔진이 게시 URL을 못 잡은 채널(예: 카카오)이 디제스트에서 통째로 빠지던 버그.
         url = (it.get("post_url") or "").strip()
-        if not url:
-            continue
         ch = it.get("channel") or "채널 미지정"
         order, label = _channel_label(ch)
         entries.append((order, label, url))
     entries.sort(key=lambda e: e[0])
     for _, label, url in entries:
         lines.append(label)
-        lines.append(url)
+        lines.append(url if url else "게시됨 · 채널에서 확인")
     lines.append("")
     lines.append("좋아요·댓글로 응원 부탁드립니다 🙏")
     return "\n".join(lines)
