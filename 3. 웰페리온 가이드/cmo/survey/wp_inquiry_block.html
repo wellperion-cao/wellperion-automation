@@ -27,10 +27,21 @@
      문구·글자 크기는 B안 리스킨 이전 원본 wp_inquiry_form.html(커밋 46af9cc2, 밝은 배경·심플 버전)의
      사이즈 위계(큰 영문 슬로건→작은 국문 부제→코럴 디바이더→작은 소개문)를 참고하되 컬러는 브랜드
      정본색(BLACK #221F20·BEIGE #B79F8A·CORAL #ED5B3F)만 사용. 카드형(네모) 6버튼 레이아웃은 그대로 유지.
-     2026-07-16 웰리 검수(재발): 슬로건 위 작은 eyebrow "WELLPERION"(.eyebrow)이 바로 위 WP 헤더 로고의
-     워드마크 "WELLPERION"과 내용 중복 — eyebrow 완전 삭제(DOM+CSS, JS 미참조 확인). 로고 바로 아래
-     슬로건이 온다. 나머지(슬로건·디바이더·소개문·예약안내)는 무변경.
-     수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
+     2026-07-16 웰리 검수(재발, 이후 GM이 아래 방향전환으로 흡수·정정): 슬로건 위 작은 eyebrow
+     "WELLPERION"이 헤더 로고 워드마크와 중복이라 일시 삭제했었음.
+     2026-07-16 GM 방향전환②(헤더 자체 숨김 — 충돌 근본 해결): WP 테마 헤더(#header-outer, 로고·메뉴·
+     ENG버튼)를 page-id-8394 한정으로 display:none — 로고 찝힘·겹침·위치어긋남 문제의 근원 자체를 제거.
+     헤더가 사라지며 로고도 함께 사라지므로 히어로에 브랜드 표시를 되살림 — eyebrow "WELLPERION" 복원
+     (이제 헤더 로고가 없어 중복 아님). 홈 이동은 하단 소셜바 '홈페이지' 아이콘이 대체.
+     히어로 배경을 흰색→연한 브랜드 베이지(#f5f0ea)로 전환, container-wrap의 예약 여백(데스크톱69px/
+     모바일118px, 실측)만큼 .hero-band에 음수 margin-top을 줘 베이지가 페이지 최상단(0px)까지 이어지게
+     함(다른 페이지 영향 0 — page-id-8394 스코프). 본문 카드(.type-card 등)는 흰색 유지해 대비.
+     "1,000명 정원제" 안내를 하단→히어로 안(슬로건 바로 아래)으로 이관(중복 생성 아님 — 기존 하단
+     .capacity 블록 삭제 후 이동). 수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
+<style>
+/* 문의 페이지(8394) 한정 — WP 테마 헤더 전체 숨김(로고·메뉴·ENG버튼). 다른 페이지 영향 0(page-id 스코프). */
+body.page-id-8394 #header-outer { display: none !important; }
+</style>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
@@ -43,13 +54,19 @@
 .wlp-inq *{box-sizing:border-box}
 .wlp-inq a{text-decoration:none;color:inherit}
 
-/* ===== HERO — 밝은 심플(2026-07-16 GM 방향전환: 다크 풀블리드 폐기) ===== */
-.wlp-inq .hero-band{background:transparent;padding:40px 20px 6px}
+/* ===== HERO — 밝은 브랜드 베이지(2026-07-16 GM 방향전환②: 헤더 숨김 + 배경 베이지 + 정원제 상단 이관) ===== */
+.wlp-inq .hero-band{background:#f5f0ea;margin-top:-69px;padding:64px 20px 30px}
+@media (max-width:1000px){
+  .wlp-inq .hero-band{margin-top:-118px;padding-top:56px}
+}
 .wlp-inq .hero-inner{max-width:520px;margin:0 auto;text-align:center}
+.wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin:0 0 14px}
 .wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin:0 0 6px}
 .wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--dim);letter-spacing:.02em;margin:0 0 18px}
 .wlp-inq .divider-coral{width:36px;height:2px;background:var(--coral);margin:0 auto 18px}
 .wlp-inq .hero-desc{font-size:13.5px;color:var(--dim);line-height:1.8;max-width:380px;margin:0 auto;word-break:keep-all}
+.wlp-inq .hero-capacity{font-size:14px;font-weight:700;color:var(--ink);line-height:1.7;max-width:380px;margin:20px auto 0}
+.wlp-inq .hero-capacity b{color:var(--coral);font-weight:800}
 
 /* ===== BODY WRAP — 화이트 에디토리얼 ===== */
 .wlp-inq .wrap{max-width:720px;margin:0 auto;padding:34px 18px 72px}
@@ -88,12 +105,6 @@
 .wlp-inq .social-icon:hover .social-btn{opacity:.85}
 .wlp-inq .social-label{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dim)}
 
-/* 정원제 안내 */
-.wlp-inq .capacity{border-top:1px solid var(--line);padding-top:34px;text-align:center}
-.wlp-inq .capacity .divider-coral{margin-bottom:20px}
-.wlp-inq .capacity p{font-size:clamp(15px,3.2vw,18px);font-weight:700;color:var(--ink);line-height:1.75;margin:0}
-.wlp-inq .capacity p b{color:var(--coral);font-weight:800}
-
 @media (max-width:520px){
   .wlp-inq .type-grid{grid-template-columns:1fr}
 }
@@ -103,10 +114,12 @@
 
   <div class="hero-band">
     <div class="hero-inner">
+      <p class="eyebrow">Wellperion</p>
       <p class="slogan-en">A Day, Well Completed.</p>
       <p class="slogan-kr">하루의 완성, 웰페리온</p>
       <div class="divider-coral"></div>
       <p class="hero-desc">단순한 운동 시설이 아닙니다.<br>하루 루틴의 일부로, 건강의 기준을 세우고<br>그날의 완성도를 채워주는 공간입니다.</p>
+      <p class="hero-capacity">웰페리온은 <b>1,000명 정원제</b>(멤버십)로<br>쾌적한 공간을 제공합니다.</p>
     </div>
   </div>
 
@@ -211,12 +224,6 @@
         <span class="social-label">네이버지도</span>
       </a>
 
-    </div>
-
-    <!-- 정원제 문구 -->
-    <div class="capacity">
-      <div class="divider-coral"></div>
-      <p>웰페리온은 <b>1,000명 정원제</b>(멤버십)로<br>쾌적한 공간을 제공합니다.</p>
     </div>
 
   </div>
