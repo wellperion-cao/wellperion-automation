@@ -57,6 +57,9 @@
      (--beige, 코럴 대신 — "코럴 최소" 방침, 제출버튼·체크박스 선택 등 기능적 CTA색만 코럴 유지).
      본문 카드(.type-card 등)는 흰색+기존 베이지톤 보더 그대로(대비 유지). 문구 정정: "그날의"→
      "그 날의"(띄어쓰기), "1,000명 정원제(멤버십)로"→"1,000명 정원제(멤버십) 운영으로".
+     2026-07-16 GM 미세조정: 히어로 세로 여백 과다("정원제" 문구와 "상담 및 투어는 사전예약제" 사이) —
+     .hero-band padding-bottom 30→14, .wrap padding-top 34→18(합계 64px→32px)로 축소. 허브 맨 아래
+     (social-bar 이후)는 실측 결과 중복/잉여 줄 없음 확인(별도 삭제 대상 없음).
      수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
 /* 문의 페이지(8394) 한정 — WP 테마 헤더 전체 숨김(로고·메뉴·ENG버튼). 다른 페이지 영향 0(page-id 스코프). */
@@ -75,7 +78,7 @@ body.page-id-8394 #header-outer { display: none !important; }
 .wlp-inq a{text-decoration:none;color:inherit}
 
 /* ===== HERO — 밝은 베이지 우아(시안F, 2026-07-16 GM 최종확정: 히어로·본문 전체 동일 베이지로 통일) ===== */
-.wlp-inq .hero-band{background:var(--bg);max-width:720px;margin:-40px auto 0;padding:64px 20px 30px}
+.wlp-inq .hero-band{background:var(--bg);max-width:720px;margin:-40px auto 0;padding:64px 20px 14px}
 @media (max-width:1000px){
   .wlp-inq .hero-band{padding-top:56px}
 }
@@ -89,7 +92,7 @@ body.page-id-8394 #header-outer { display: none !important; }
 .wlp-inq .hero-capacity b{color:var(--beige);font-weight:800}
 
 /* ===== BODY WRAP — 같은 베이지 배경 + 흰 카드 대비 ===== */
-.wlp-inq .wrap{max-width:720px;margin:0 auto;padding:34px 18px 72px}
+.wlp-inq .wrap{max-width:720px;margin:0 auto;padding:18px 18px 72px}
 
 /* 사전예약제 안내 */
 .wlp-inq .reserve-note{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 32px;font-size:12.5px;font-weight:700;color:var(--beige);letter-spacing:.02em;text-align:center}

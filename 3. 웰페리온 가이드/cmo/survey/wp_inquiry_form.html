@@ -50,6 +50,17 @@
      새 --muted #6b6258, eyebrow·디바이더·hero-note·g-badge 강조=베이지(--beige, 코럴 대신). 가이드
      카드(.guide-card)도 흰색(#faf8f5→var(--paper))으로 통일해 다른 본문 카드와 동일 대비. 기능적 CTA
      (제출버튼·체크박스 선택 상태)는 코럴 유지.
+     2026-07-16 GM 지시: 성인/유소년/여름특강 강습종목(program) type:'multi'(체크박스 복수)→'radio'
+     (단일선택, 1개만)로 전환 — 한 문의당 종목 1개, 여러 종목 관심이면 개별 신청(payload program 키·
+     콤마조인 없는 단일 문자열, 백엔드 무변경). 멤버십 관심등급(program)은 multi 체크박스 그대로 유지
+     (등급은 종목과 별개). 라디오 그룹은 name 공유로 네이티브 단일선택 + change 시 그룹 전체 .on 클래스
+     재동기화. 라벨 옆 안내 힌트(f.hint, .hint 클래스, .opt와 동일 톤) "1개만 선택 · 여러 종목은 개별
+     신청해 주세요" 추가(3개 종목 필드 한정).
+     2026-07-16 GM 미세조정: 히어로 세로 여백 과다 — .hero-band padding-bottom 28→14, .wrap padding-top
+     28→16(합계 56px→30px)로 축소. 가이드카드 하단 중복 줄 제거: GUIDES.membership.note("상담 및 투어는
+     사전 예약제로 운영됩니다.")가 히어로 hero-note와 완전 동일 텍스트라 삭제(히어로 것만 남김, renderGuide
+     의 if(g.note) 가드가 있어 필드 삭제만으로 안전 — 다른 유형(adult/youth/summer/rental/business)의
+     note는 서로 다른 고유 정보라 유지).
      수정 시 이 파일을 고치고 WP post 8460(draft-page --page survey) 재주입. -->
 <style>
 /* 문의 Survey 폼 페이지(8460) 한정 — WP 테마 헤더 전체 숨김. 다른 페이지 영향 0(page-id 스코프). */
@@ -70,7 +81,7 @@ body.page-id-8460 #header-outer { display: none !important; }
 .wlp-inq a{text-decoration:none;color:inherit}
 
 /* ===== HERO — 밝은 베이지 우아(시안F, 2026-07-16 GM 최종확정: 히어로·본문 전체 동일 베이지로 통일) ===== */
-.wlp-inq .hero-band{background:var(--bg);max-width:540px;margin:-40px auto 0;padding:64px 20px 28px}
+.wlp-inq .hero-band{background:var(--bg);max-width:540px;margin:-40px auto 0;padding:64px 20px 14px}
 @media (max-width:1000px){
   .wlp-inq .hero-band{padding-top:56px}
 }
@@ -84,11 +95,12 @@ body.page-id-8460 #header-outer { display: none !important; }
 .wlp-inq .hero-note{font-size:12px;font-weight:700;color:var(--beige);letter-spacing:.02em;margin-top:12px}
 
 /* ===== BODY WRAP — 화이트 에디토리얼 ===== */
-.wlp-inq .wrap{max-width:540px;margin:0 auto;padding:28px 18px 70px}
+.wlp-inq .wrap{max-width:540px;margin:0 auto;padding:16px 18px 70px}
 
 .wlp-inq .card{background:var(--paper);border:1px solid var(--line);padding:22px 20px;margin-bottom:14px}
 .wlp-inq label.fl{display:block;font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:12px;letter-spacing:.04em;text-transform:uppercase}
 .wlp-inq label.fl .opt{font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;text-transform:none;letter-spacing:0}
+.wlp-inq label.fl .hint{display:block;font-size:11px;font-weight:500;color:var(--dim);text-transform:none;letter-spacing:0;margin-top:4px}
 
 /* ===== 폴백(?type= 없음/미매칭 — 허브 안내) ===== */
 .wlp-inq .fallback-card{text-align:center}
@@ -247,7 +259,7 @@ body.page-id-8460 #header-outer { display: none !important; }
       fields: [
         { key:'name',    label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
-        { key:'program', label:'강습 종목', type:'radio', opts:['수영','P.T','필라테스','골프','스쿼시','아쿠아로빅','발레·바레(루프메소드)','기타'] },
+        { key:'program', label:'강습 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['수영','P.T','필라테스','골프','스쿼시','아쿠아로빅','발레·바레(루프메소드)','기타'] },
         { key:'wishTime',label:'희망 레슨 시간', type:'text', opt:true, ph:'예: 평일 오전 / 주말 오후' },
         { key:'channel', label:'문의 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'문의하실 내용을 자유롭게 적어주세요.' }
@@ -259,7 +271,7 @@ body.page-id-8460 #header-outer { display: none !important; }
         { key:'name',    label:'성함(보호자)', type:'text', ph:'보호자 성함을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
         { key:'age',     label:'자녀 나이', type:'text', opt:true, ph:'예: 8세 / 초2' },
-        { key:'program', label:'강습 종목', type:'radio', opts:['수영','골프','스쿼시','체조&트램폴린','P.T','필라테스','모자수영','뮤지컬','기타'] },
+        { key:'program', label:'강습 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['수영','골프','스쿼시','체조&트램폴린','P.T','필라테스','모자수영','뮤지컬','기타'] },
         { key:'wishTime',label:'희망 레슨 시간', type:'text', opt:true, ph:'예: 평일 하원 후 / 주말 오전' },
         { key:'channel', label:'문의 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'문의하실 내용을 자유롭게 적어주세요.' }
@@ -271,7 +283,7 @@ body.page-id-8460 #header-outer { display: none !important; }
         { key:'name',    label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
         { key:'target',  label:'대상',    type:'select', ph:'선택해 주세요', opts:['성인','유소년'] },
-        { key:'program', label:'집중 종목', type:'radio', opts:['수영','체조','스쿼시','골프','유소년 성장PT'] },
+        { key:'program', label:'집중 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['수영','체조','스쿼시','골프','유소년 성장PT'] },
         { key:'wishMonth', label:'희망 월', type:'select', ph:'선택해 주세요', opts:['7월','8월','미정'] },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'궁금하신 점을 자유롭게 적어주세요.' }
       ]
@@ -305,8 +317,8 @@ body.page-id-8460 #header-outer { display: none !important; }
   var GUIDES = {
     membership: {
       badges:['<b>1,000명</b> 정원제','연회비제 · 보증금 없음','한남동 <b>3,000평</b> 단일 시설'],
-      tags:['수영','스쿼시','골프','필라테스·PT','사우나·리커버리','CUPS 라운지','생크몽드 스파','부티부 헤어메이크업'],
-      note:'상담 및 투어는 사전 예약제로 운영됩니다.'
+      tags:['수영','스쿼시','골프','필라테스·PT','사우나·리커버리','CUPS 라운지','생크몽드 스파','부티부 헤어메이크업']
+      // note 삭제 — 히어로의 hero-note "상담 및 투어는 사전 예약제로 운영됩니다"와 중복(2026-07-16 GM: 하단 중복 줄 제거)
     },
     adult: {
       lead:'수영·P.T·필라테스·골프·스쿼시·아쿠아로빅·발레·바레까지, 한남동에서 전문 강습을 받으실 수 있습니다.',
@@ -403,7 +415,7 @@ body.page-id-8460 #header-outer { display: none !important; }
     def.fields.forEach(function(f){
       var field = document.createElement('div'); field.className = 'field';
       var lab = document.createElement('label'); lab.className = 'fl'; lab.setAttribute('for','f_'+f.key);
-      lab.innerHTML = f.label + (f.opt ? ' <span class="opt">(선택)</span>' : '');
+      lab.innerHTML = f.label + (f.opt ? ' <span class="opt">(선택)</span>' : '') + (f.hint ? ' <span class="hint">'+f.hint+'</span>' : '');
       field.appendChild(lab);
 
       if (f.type === 'text' || f.type === 'tel') {

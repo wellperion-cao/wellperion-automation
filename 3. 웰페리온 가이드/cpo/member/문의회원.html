@@ -4981,9 +4981,13 @@ function _activeRender(rows, isFiltered) {
       if (h === '__recon__') { html += _reconCellHtml(row); return; }
       if (h === '__churn__') { html += _churnCellHtml(row); return; }
       var isPhone = (h === '휴대폰 번호');
-      var leftStyle = (h === '수강반종목명') ? 'text-align:left;' : '';
+      // 수강반종목명(멤버십 상품명) = 원본이 장식·혜택·기간까지 길어 칸 넘침 → 폭 고정+말줄임+마우스오버 전체보기(표시전용·데이터 무변경). 2026-07-16 시토
+      var isSport = (h === '수강반종목명');
+      var leftStyle = isSport ? 'text-align:left;max-width:240px;overflow:hidden;text-overflow:ellipsis;' : '';
       var editAttr = (!isPhone && _activeScope !== 'corp') ? ' data-col="' + esc(h) + '"' : '';
-      html += '<td style="white-space:nowrap;' + leftStyle + '"' + editAttr + '>' + esc(row[h] != null ? row[h] : '—') + '</td>';
+      var _cv = row[h] != null ? row[h] : '—';
+      var titleAttr = isSport ? ' title="' + esc(_cv) + '"' : '';
+      html += '<td style="white-space:nowrap;' + leftStyle + '"' + editAttr + titleAttr + '>' + esc(_cv) + '</td>';
     });
     html += '</tr>';
   });
@@ -6269,7 +6273,8 @@ function buildSelect(field, options, current) {
   opts.unshift('');
   opts.forEach(function(o){
     var op = document.createElement('option');
-    op.value = o; op.textContent = o || '(선택)';
+    // 표시만 축약(값 보존=저장 안전) — 관심프로그램 옛 상세 저장값(괄호 설명 포함)이 옵션으로 되살아나 칸을 넘치던 버그 수리. 2026-07-16 시토(표시전용·데이터 무변경)
+    op.value = o; op.textContent = ((field === 'program' && o) ? _shortProgram(o) : o) || '(선택)';
     if (o === cur) op.selected = true;
     sel.appendChild(op);
   });
