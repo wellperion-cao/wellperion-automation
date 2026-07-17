@@ -387,15 +387,15 @@
       "id": "chro-weekly-efficiency-report",
       "owner_role": "chro",
       "owner_nick": "시로",
-      "feature": "주간 효율 리포트 — 위임률·홉 낭비·반복작업 회고(A-7) ⚠️ 7/10부터 러너 크래시 수리 대기(스윕 하드닝 패턴 재적용 예정)",
+      "feature": "주간 효율 리포트 — 위임률·홉 낭비·반복작업 회고(A-7). 7/16 러너 하드닝·7/17 정기 무인 완주 확증",
       "data_source": {"kind": "json", "ref": "wellperion-hr/drafts/loops/ 주간 리포트"},
       "notify_spec": {"daily": false, "weekly": true, "monthly": false, "channel": null, "bot_id": null},
       "front_card": {"window": "자율현황", "anchor": "sec-chro-autonomy"},
       "autonomy": "propose",
-      "ai_free_fallback": "Windows 예약작업 WeeklyEfficiencyReport(매주 금 17:07) 무인 가동 설계 — 현재 러너 크래시로 미완주, 수리 전까지 미가동 정직 표기",
+      "ai_free_fallback": "Windows 예약작업 WeeklyEfficiencyReport(매주 금 17:07) 무인 가동 — 7/16 러너 하드닝(프로세스 종료기준 대기·RUN END 항상기록·45분 상한)으로 무음정지 해소, 7/17 17:07 정기 무인 완주 확증(RUN END exit=0·결과 산출)",
       "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
       "reversible": true,
-      "enabled": false,
+      "enabled": true,
       "honesty_default": "measured"
     },
     {
