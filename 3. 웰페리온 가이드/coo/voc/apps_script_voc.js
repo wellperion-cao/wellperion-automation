@@ -1055,7 +1055,7 @@ var LF_HEADERS = [
   // ★ 신규(2026-07-15 시토): 수령 시 '주는 담당자' 기록. 물리 컬럼 정합 위해 반드시 맨 끝에 추가
   //   (_lfHandover 는 _lfIdx_ 기반 positional write → 중간 삽입 시 기존 행 오정렬).
   { key: 'handoverStaff', label: '수령담당자'   },
-  // ★ 신규(2026-07-18 시우): 30일 자동 폐기 처리일. 동일 사유로 반드시 맨 끝에 추가.
+  // ★ 신규(2026-07-18 시우): 폐기 처리일(월별 코호트 폐기). 동일 사유로 반드시 맨 끝에 추가.
   { key: 'disposedAt',    label: '폐기일'       }
 ];
 var LF_STATUS = { POSTED: '게시중', HANDED: '수령완료', DISPOSED: '폐기물' };
@@ -1138,27 +1138,33 @@ function _lfIdx_(key) {
   return -1;
 }
 
-// ─── _lfAutoDispose_ — read-time sweep: 습득일(없으면 등록일)+30일 경과 & 게시중 → 폐기물 자동 전환 ───
-// GM 확정(2026-07-18): 크론 없이 lf_gallery/lf_list/lf_disposal 진입 시마다 호출(자가치유·멱등).
-// 날짜 파싱 실패 행은 건드리지 않음. 변경된 행이 있을 때만 setValues 저장.
+// ─── _lfMonthIndex_ — 날짜문자열 → 연*12+(월-1) 월코호트 인덱스 (Asia/Seoul 기준). 파싱 실패 시 null ───
+function _lfMonthIndex_(dateStr) {
+  var baseStr = String(dateStr || '').trim();
+  if (!baseStr) return null;
+  var baseDate = new Date(baseStr.replace(' ', 'T').slice(0, 10) + 'T00:00:00');
+  if (isNaN(baseDate.getTime())) return null; // 파싱 실패
+  var ym = Utilities.formatDate(baseDate, 'Asia/Seoul', 'yyyy-MM').split('-');
+  return parseInt(ym[0], 10) * 12 + (parseInt(ym[1], 10) - 1);
+}
+
+// ─── _lfAutoDispose_ — read-time sweep: 현재월 ≥ 습득월(foundWhen 없으면 createdAt)+2 & 게시중 → 폐기물 자동 전환 (월별 코호트) ───
+// GM 재확정(2026-07-18 v2): 습득월M → M+1 공지 → M+2 폐기(월 코호트). 크론 없이 lf_gallery/lf_list/lf_disposal 진입 시마다 호출(자가치유·멱등).
+// monthIndex 파싱 실패 행은 건드리지 않음. 변경된 행이 있을 때만 setValues 저장.
 function _lfAutoDispose_(sh) {
   var rows = _regReadAll(sh, LF_HEADERS);
   if (!rows.length) return;
   var todayStr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+  var curMonthIdx = _lfMonthIndex_(todayStr);
   var statusIdx = _lfIdx_('status');
   var disposedIdx = _lfIdx_('disposedAt');
   var data = sh.getRange(2, 1, rows.length, LF_HEADERS.length).getValues();
   var changed = false;
   rows.forEach(function (r, i) {
     if (String(r.status || '') !== LF_STATUS.POSTED) return;
-    var baseStr = String(r.foundWhen || r.createdAt || '').trim();
-    if (!baseStr) return;
-    var baseDate = new Date(baseStr.replace(' ', 'T').slice(0, 10) + 'T00:00:00');
-    if (isNaN(baseDate.getTime())) return; // 파싱 실패 행은 건드리지 않음
-    var deadline = new Date(baseDate.getTime());
-    deadline.setDate(deadline.getDate() + 30);
-    var deadlineStr = Utilities.formatDate(deadline, 'Asia/Seoul', 'yyyy-MM-dd');
-    if (deadlineStr > todayStr) return; // 아직 30일 미경과
+    var monthIdx = _lfMonthIndex_(r.foundWhen || r.createdAt);
+    if (monthIdx === null) return; // 파싱 실패 행은 건드리지 않음
+    if (curMonthIdx < monthIdx + 2) return; // 아직 폐기월 미도래
     data[i][statusIdx] = LF_STATUS.DISPOSED;
     data[i][disposedIdx] = todayStr;
     changed = true;
@@ -1208,7 +1214,7 @@ function _lfSubmit(body) {
 // ─── lf_gallery — 무인증 공개 갤러리 (게시중만 · 민감필드 미반환) ───
 function _lfGallery() {
   var sh = _lfGetSheet_();
-  _lfAutoDispose_(sh); // read-time sweep: 습득일+30일 경과분 폐기물 자동 전환 후 조회
+  _lfAutoDispose_(sh); // read-time sweep: 월코호트 폐기 대상(현재월≥습득월+2) 자동 전환 후 조회
   var rows = _regReadAll(sh, LF_HEADERS);
   var out = [];
   rows.forEach(function (r) {
@@ -1230,7 +1236,7 @@ function _lfGallery() {
 // ─── lf_list — 직원용 전체 목록 (GATED · 전 필드) ───
 function _lfList(params) {
   var sh = _lfGetSheet_();
-  _lfAutoDispose_(sh); // read-time sweep: 습득일+30일 경과분 폐기물 자동 전환 후 조회
+  _lfAutoDispose_(sh); // read-time sweep: 월코호트 폐기 대상(현재월≥습득월+2) 자동 전환 후 조회
   var rows = _regReadAll(sh, LF_HEADERS);
   var status = String((params && params.status) || '').trim();
   if (status) rows = rows.filter(function (r) { return String(r.status || '') === status; });
@@ -1321,33 +1327,30 @@ function _lfPurgeSignatures() {
 }
 
 // ─── lf_disposal — 폐기물 공지 A3 (공개 read · 게이트 불요 · 민감필드 미반환) ───
-// 시트 확보→_lfAutoDispose_ sweep→읽기. upcoming=게시중 중 잔여일≤7, disposed=폐기물(폐기일 desc).
+// 시트 확보→_lfAutoDispose_ sweep→읽기. upcoming=게시중 중 전월 습득 코호트(disposeMonth=습득월+2), disposed=폐기물(폐기일 desc).
 function _lfDisposal() {
   var sh = _lfGetSheet_();
   _lfAutoDispose_(sh);
   var rows = _regReadAll(sh, LF_HEADERS);
-  var todayStr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
-  var today = new Date(todayStr + 'T00:00:00');
+  var curMonthIdx = _lfMonthIndex_(Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'));
   var upcoming = [];
   var disposed = [];
   rows.forEach(function (r) {
     var status = String(r.status || '');
     if (status === LF_STATUS.POSTED) {
-      var baseStr = String(r.foundWhen || r.createdAt || '').trim();
-      if (!baseStr) return;
-      var baseDate = new Date(baseStr.replace(' ', 'T').slice(0, 10) + 'T00:00:00');
-      if (isNaN(baseDate.getTime())) return; // 파싱 실패 행은 제외
-      var deadline = new Date(baseDate.getTime());
-      deadline.setDate(deadline.getDate() + 30);
-      var remainDays = Math.round((deadline.getTime() - today.getTime()) / 86400000);
-      if (remainDays > 7) return;
+      var monthIdx = _lfMonthIndex_(r.foundWhen || r.createdAt);
+      if (monthIdx === null) return; // 파싱 실패 행은 제외
+      if (monthIdx !== curMonthIdx - 1) return; // 전월 습득분(=다음달 폐기 예정)만 임박 표시
+      var disposeIdx = monthIdx + 2;
+      var disposeMon = disposeIdx % 12 + 1;
+      var disposeMonth = Math.floor(disposeIdx / 12) + '-' + (disposeMon < 10 ? '0' + disposeMon : disposeMon);
       upcoming.push({
-        foundId:    r.foundId   || '',
-        itemDesc:   r.itemDesc  || '',
-        foundLoc:   r.foundLoc  || '',
-        foundWhen:  r.foundWhen || '',
-        photoUrl:   r.photoUrl  || '',
-        remainDays: remainDays
+        foundId:      r.foundId   || '',
+        itemDesc:     r.itemDesc  || '',
+        foundLoc:     r.foundLoc  || '',
+        foundWhen:    r.foundWhen || '',
+        photoUrl:     r.photoUrl  || '',
+        disposeMonth: disposeMonth
       });
     } else if (status === LF_STATUS.DISPOSED) {
       disposed.push({
@@ -1360,7 +1363,7 @@ function _lfDisposal() {
       });
     }
   });
-  upcoming.sort(function (a, b) { return a.remainDays - b.remainDays; });
+  upcoming.sort(function (a, b) { return String(a.foundId || '').localeCompare(String(b.foundId || '')); });
   disposed.sort(function (a, b) { return String(b.disposedAt || '') > String(a.disposedAt || '') ? 1 : -1; });
   return _vJson({ ok: true, upcoming: upcoming, disposed: disposed });
 }

@@ -7,11 +7,12 @@
 <title>웰페리온 습득 분실물 폐기 공지</title>
 <!--
   습득 분실물 — 폐기 공지 (A3 한 장 · 게시판 인쇄용 · COO 시우 배1165 · 2026-07-18)
-  · GM 지시: 30일 미수령 습득물은 자동 폐기. 폐기 예정 + 폐기 완료를 한 장에 공지.
+  · GM 지시: 월별 코호트로 자동 폐기(습득월 M → M+1 공지 → M+2 폐기). 폐기 예정 + 폐기 완료를 한 장에 공지.
   · 소스 = VOC/reception GAS action=lf_disposal (공개 read · 민감필드 미반환).
-    { upcoming:[게시중·잔여일<=7], disposed:[폐기물·폐기일 desc] }
-  · 폐기 전환은 GAS가 자동(습득일+30일 read-time sweep) — 이 페이지는 읽기·공지 전용.
+    { upcoming:[게시중·전월(M) 습득분·disposeMonth('YYYY-MM'=M+2)], disposed:[폐기물·폐기일 desc] }
+  · 폐기 전환은 GAS가 자동(현재월 ≥ 습득월+2, read-time sweep) — 이 페이지는 읽기·공지 전용.
   · 좌측정렬 풀폭 · A3 인쇄 가독(GM 페이지 표준).
+  · 2026-07-18 v2(시우): remainDays/30일 표기 폐기 → 월별 코호트(disposeMonth) 표기로 교체.
 -->
 <style>
 :root{
@@ -92,14 +93,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <div class="notice">
     <span style="font-size:18px;line-height:1">📢</span>
-    <div>습득물은 <b>습득일로부터 30일(1개월)</b> 보관 후 폐기됩니다. 아래 <b>폐기 예정</b> 목록에 본인 물품이 있으시면 <b>기간 내에 현장(리셉션·수영장·사우나 등)에서 본인 확인 후 수령</b>해 주세요. 기간 경과 시 자동 폐기되어 찾으실 수 없습니다.</div>
+    <div>습득물은 <b>습득한 달의 다음 달까지 공지</b>, <b>그다음 달에 자동 폐기</b>됩니다. 아래 <b>폐기 예정</b> 목록에 본인 물품이 있으시면 <b>이번 달 안에 현장(리셉션·수영장·사우나 등)에서 본인 확인 후 수령</b>해 주세요. 폐기월이 지나면 찾으실 수 없습니다.</div>
+  </div>
+
+  <div class="notice" style="background:var(--gray-bg);border-color:var(--gray-bd);color:#4a4640">
+    <span style="font-size:18px;line-height:1">📅</span>
+    <div><b>수집(습득한 달) → 다음 달 공지 → 그다음 달 폐기</b> (예: 7월 습득 → 8월 공지 → 9월 폐기)</div>
   </div>
 
   <div class="actions"><button class="pbtn" type="button" onclick="window.print()">🖨 A3 인쇄</button></div>
 
   <div class="sec upcoming">
     <div class="sec-h">⏳ 폐기 예정 <span class="cnt" id="up-cnt"></span></div>
-    <div class="sec-desc">보관 만료가 임박한 습득물입니다(잔여 7일 이내). 기간 내 수령해 주세요.</div>
+    <div class="sec-desc">전월 습득분 · 이번 달 공지 · 다음 달 폐기. 기간 내 수령해 주세요.</div>
     <div id="up-grid"><div class="empty">불러오는 중…</div></div>
   </div>
 
@@ -111,7 +117,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <div class="foot">
     · 문의: wellperion.com/ko/inquiry &nbsp;·&nbsp; 습득물 접수(직원): <a href="http://wellperion.com/ko/lost-found-register/">등록</a> &nbsp;·&nbsp; 습득물 보기: <a href="http://wellperion.com/ko/lost-found/">갤러리</a><br>
-    · 폐기 전환은 습득일 기준 30일 경과 시 자동 처리됩니다. 하루의 완성, 웰페리온
+    · 폐기 전환은 습득월 기준 월별 코호트로 자동 처리됩니다(습득월+2월 폐기). 하루의 완성, 웰페리온
   </div>
 </div>
 
@@ -121,12 +127,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function thumb(url,sz){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w'+(sz||400)):url; }
+  function monthLabel(ym){ var n=parseInt(String(ym||'').split('-')[1],10); return isNaN(n)?'':(n+'월'); } // 'YYYY-MM' → 'M월'
 
   function cardHtml(r, kind){
     var ph = r.photoUrl ? '<img class="thumb" src="'+esc(thumb(r.photoUrl,400))+'" alt="습득물 사진" loading="lazy" decoding="async">'
                         : '<div class="thumb none">사진 없음</div>';
     var pill = kind==='up'
-      ? '<span class="pill up">'+ (typeof r.remainDays==='number' ? ('폐기까지 '+r.remainDays+'일') : '폐기 임박') +'</span>'
+      ? '<span class="pill up">'+ (r.disposeMonth ? (esc(monthLabel(r.disposeMonth))+' 폐기 예정') : '폐기 임박') +'</span>'
       : '<span class="pill dp">폐기 '+esc(r.disposedAt||'')+'</span>';
     return '<div class="card '+(kind==='up'?'up':'dp')+'">'+ ph +
       '<div class="cbody">'+

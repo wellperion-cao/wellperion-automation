@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 습득물 운영 가이드 (회원·직원)</title>
+<!--
+  습득 분실물 운영 가이드 — 회원 안내 + 직원 SOP (COO 시우 배1165 · 2026-07-18)
+  · GM 지시: 월별 사이클(수집→공지→폐기)을 회원·직원 모두에게 공지·관리하는 가이드/프로세스로 정리.
+  · 사이클: 습득월 M → M+1 공지 → M+2 폐기 (예: 7월 습득 → 8월 공지 → 9월 폐기).
+  · 좌측정렬 풀폭 · A3 인쇄 가독(게시판 부착 가능).
+-->
+<style>
+:root{
+  --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
+  --accent:#b08d57;--accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;
+  --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);
+  --amber:#a4600a;--amber-bg:rgba(230,150,20,0.12);--amber-bd:rgba(230,150,20,0.42);
+  --gray:#5b5750;--gray-bg:rgba(90,86,80,0.07);
+  --blue:#2471a3;--blue-bg:rgba(36,113,163,0.10);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.65;font-size:16px;-webkit-text-size-adjust:100%}
+.wrap{max-width:1000px;margin:0 auto;padding:22px 20px 48px}
+
+.head{border-bottom:2px solid var(--accent);padding-bottom:14px;margin-bottom:20px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
+.head h1{font-size:clamp(22px,4.5vw,30px);font-weight:800;letter-spacing:-.5px}
+.head .sub{font-size:14px;color:#6b6b6b;margin-top:6px}
+
+.actions{margin:0 0 18px}
+.pbtn{font-size:13px;font-weight:700;padding:8px 18px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:9px;cursor:pointer;text-decoration:none;display:inline-block}
+.pbtn:hover{background:var(--accent-bg)}
+.pbtn+.pbtn{margin-left:8px}
+
+/* 사이클 스텝 */
+.cycle{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;margin-bottom:8px}
+.cy{flex:1;min-width:180px;border:1px solid var(--border);border-radius:13px;padding:15px 17px;background:var(--paper);position:relative}
+.cy.collect{border-left:4px solid var(--blue)}
+.cy.notice{border-left:4px solid var(--amber-bd)}
+.cy.dispose{border-left:4px solid var(--gray)}
+.cy .step{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--dim);text-transform:uppercase}
+.cy .big{font-size:18px;font-weight:800;margin:4px 0 6px}
+.cy .ex{font-size:12.5px;color:#6b6b6b}
+.cy.collect .big{color:var(--blue)} .cy.notice .big{color:var(--amber)} .cy.dispose .big{color:var(--gray)}
+.cycle-eg{font-size:13px;color:#6b5834;background:var(--accent-bg);border:1px solid rgba(176,141,87,0.28);border-radius:10px;padding:11px 15px;margin-bottom:26px}
+.cycle-eg b{color:#5a4a26}
+
+.sec{margin-bottom:28px}
+.sec-h{font-size:18px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.sec-desc{font-size:13px;color:var(--dim);margin-bottom:13px}
+.sec.member .sec-h{color:var(--green)}
+.sec.staff .sec-h{color:var(--blue)}
+
+.rows{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--paper)}
+.row{display:flex;gap:14px;padding:13px 16px;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.row .rk{flex:0 0 132px;font-size:13.5px;font-weight:800;color:var(--text)}
+.row .rv{flex:1;font-size:13.5px;color:#4a4640;line-height:1.6}
+.row .rv b{color:var(--text)}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:8px;margin-right:4px}
+.tag.g{color:var(--green);background:var(--green-bg)} .tag.a{color:var(--amber);background:var(--amber-bg)} .tag.b{color:var(--blue);background:var(--blue-bg)}
+
+.links{margin-top:8px;font-size:13px;color:var(--dim);line-height:1.9}
+.links a{color:var(--accent);font-weight:600}
+.foot{margin-top:22px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);line-height:1.7}
+
+@media print{
+  @page{size:A3;margin:12mm}
+  body{background:#fff;font-size:11.5px}
+  .wrap{max-width:none;padding:0}
+  .actions{display:none}
+  .head h1{color:#111}
+  .cy,.rows{border:1px solid #999 !important;break-inside:avoid}
+  .cycle-eg{background:#f7f2e8 !important;border:1px solid #c9b487 !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="eyebrow">WELLPERION · LOST &amp; FOUND</div>
+    <h1>🧳 습득 분실물 운영 가이드</h1>
+    <div class="sub">회원 안내 + 직원 운영 절차 (SOP) · 월별 사이클</div>
+  </div>
+
+  <div class="actions">
+    <a class="pbtn" href="javascript:window.print()">🖨 인쇄(A3)</a>
+    <a class="pbtn" href="http://wellperion.com/ko/lost-found/" target="_blank">👀 습득물 보기</a>
+    <a class="pbtn" href="lost_found_disposal.html" target="_blank">🗑 폐기 공지</a>
+  </div>
+
+  <!-- 사이클 -->
+  <div class="sec">
+    <div class="sec-h">📅 한눈에 보는 월별 사이클</div>
+    <div class="cycle">
+      <div class="cy collect"><div class="step">1단계 · 수집</div><div class="big">습득한 달</div><div class="ex">그 달에 습득된 물품을 접수·보관합니다.</div></div>
+      <div class="cy notice"><div class="step">2단계 · 공지</div><div class="big">다음 달</div><div class="ex">전월 습득분을 한 달간 공지 — "찾아가세요".</div></div>
+      <div class="cy dispose"><div class="step">3단계 · 폐기</div><div class="big">그다음 달</div><div class="ex">기간 내 미수령 물품을 폐기합니다.</div></div>
+    </div>
+    <div class="cycle-eg">예시 — <b>7월 습득</b> → <b>8월 공지</b>(찾아가세요) → <b>9월 폐기</b>. 즉 습득한 달을 포함해 약 두 달간 보관·공지 후 폐기됩니다.</div>
+  </div>
+
+  <!-- 회원 -->
+  <div class="sec member">
+    <div class="sec-h">🧑‍🤝‍🧑 회원 안내</div>
+    <div class="sec-desc">분실하신 물건을 찾는 방법입니다.</div>
+    <div class="rows">
+      <div class="row"><div class="rk">어디서 찾나요</div><div class="rv"><b>습득물 보기</b>(wellperion.com/ko/lost-found)에서 사진으로 확인하실 수 있습니다. 현장 리셉션에 문의하셔도 됩니다.</div></div>
+      <div class="row"><div class="rk">언제까지</div><div class="rv">습득한 달의 <b>다음 달까지</b> 공지됩니다. <span class="tag a">⏳ ○월 폐기 예정</span> 표시가 있으면 그달에 폐기되니 그전에 찾아가 주세요.</div></div>
+      <div class="row"><div class="rk">수령 방법</div><div class="rv">현장(리셉션·수영장·사우나 등)에서 <b>본인 확인 후 간단한 서명</b>으로 수령하실 수 있습니다.</div></div>
+      <div class="row"><div class="rk">폐기 후</div><div class="rv">폐기된 물품은 <b>폐기 공지</b>에 기록으로 남으며 다시 찾으실 수 없습니다. 미리 확인·수령을 권장드립니다.</div></div>
+    </div>
+  </div>
+
+  <!-- 직원 -->
+  <div class="sec staff">
+    <div class="sec-h">👷 직원 운영 절차 (SOP)</div>
+    <div class="sec-desc">접수부터 폐기까지, 시스템으로 관리합니다(수기 대장 대체).</div>
+    <div class="rows">
+      <div class="row"><div class="rk"><span class="tag b">접수</span></div><div class="rv"><b>습득물 접수</b>(직원 전용) 페이지에서 사진·습득일시·습득장소·설명·처리직원을 입력해 등록합니다. 등록 즉시 습득물 보기에 노출됩니다.</div></div>
+      <div class="row"><div class="rk"><span class="tag a">공지</span></div><div class="rv">매월 초, <b>폐기 공지(A3)</b>를 인쇄해 게시판에 부착합니다. 전월 습득분이 "○월 폐기 예정"으로 자동 정리됩니다. 온라인은 습득물 보기에 상시 노출됩니다.</div></div>
+      <div class="row"><div class="rk"><span class="tag g">수령</span></div><div class="rv">회원이 찾아오면 습득물 보기에서 해당 카드의 <b>수령</b> → 본인 확인 → 서명 → 완료. 시스템에서 자동으로 목록에서 내려갑니다.</div></div>
+      <div class="row"><div class="rk"><span class="tag" style="color:var(--gray);background:var(--gray-bg)">폐기</span></div><div class="rv">폐기월이 되면 해당 물품이 <b>자동으로 폐기 처리</b>됩니다(폐기일 기록). 실제 물품은 폐기 공지 목록에 맞춰 폐기하시면 됩니다.</div></div>
+      <div class="row"><div class="rk">오등록 정정</div><div class="rv">잘못 올린 항목은 습득물 보기 카드의 <b>🗑 삭제</b>(직원 전용)로 정정합니다.</div></div>
+    </div>
+    <div class="links">
+      · 습득물 접수(직원): <a href="http://wellperion.com/ko/lost-found-register/" target="_blank">등록</a><br>
+      · 습득물 보기(수령·삭제·폐기예정): <a href="http://wellperion.com/ko/lost-found/" target="_blank">갤러리</a><br>
+      · 폐기 공지(인쇄): <a href="lost_found_disposal.html" target="_blank">폐기 예정·완료</a>
+    </div>
+  </div>
+
+  <div class="foot">
+    · 문의: wellperion.com/ko/inquiry &nbsp;·&nbsp; 운영: 운영부(리셉션) &nbsp;·&nbsp; 하루의 완성, 웰페리온<br>
+    · 이 가이드는 게시판 부착용으로 A3 인쇄할 수 있습니다(우측 상단 🖨 인쇄).
+  </div>
+</div>
+</body>
+</html>

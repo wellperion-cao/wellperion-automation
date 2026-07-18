@@ -343,7 +343,7 @@ function _render(){
 
 /* ── 카드 ── */
 function _card(r){
-  /* 🧳 습득물 카드 — 사진+안내(읽기 전용). 수령(서명)은 '습득물 보기'에서 처리(위조 방지). 30일 미수령 시 자동 폐기(폐기 공지 게시). */
+  /* 🧳 습득물 카드 — 사진+안내(읽기 전용). 수령(서명)은 '습득물 보기'에서 처리(위조 방지). 월별 코호트로 자동 폐기(습득 다음 달 공지→그다음 달 폐기·폐기 공지 게시). */
   if(r._lf){
     var lid = _esc(r.regId||'');
     var lwhen = _esc(String(r.foundWhen||r.createdAt||'').replace('T',' '));
@@ -360,7 +360,7 @@ function _card(r){
     if(r.content) lh += '<div class="card-content">' + _esc(String(r.content)) + '</div>';
     if(r.loc) lh += '<div class="card-loc">습득장소: ' + _esc(String(r.loc)) + '</div>';
     lh += '<div class="divider"></div>';
-    lh += '<div class="lf-note">수령은 <b>습득물 보기</b>에서 · 30일 미수령 시 자동 폐기(폐기 공지 게시). <a href="http://wellperion.com/ko/lost-found-register/" target="_blank" rel="noopener">습득물 접수</a> · <a href="http://wellperion.com/ko/lost-found/" target="_blank" rel="noopener">습득물 보기</a> · <a href="lost_found_disposal.html" target="_blank" rel="noopener">폐기 공지</a></div>';
+    lh += '<div class="lf-note">수령은 <b>습득물 보기</b>에서 · 습득 다음 달 공지 → 그다음 달 폐기(월 사이클). <a href="http://wellperion.com/ko/lost-found-register/" target="_blank" rel="noopener">습득물 접수</a> · <a href="http://wellperion.com/ko/lost-found/" target="_blank" rel="noopener">습득물 보기</a> · <a href="lost_found_disposal.html" target="_blank" rel="noopener">폐기 공지</a> · <a href="lost_found_guide.html" target="_blank" rel="noopener">운영 가이드</a></div>';
     lh += '</div>';
     return lh;
   }

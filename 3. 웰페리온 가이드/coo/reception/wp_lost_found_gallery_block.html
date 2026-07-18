@@ -6,9 +6,11 @@
         카드 '수령' 버튼 → 현장 직원 본인확인 → 디지털 서명패드(canvas→PNG) → lf_handover.
      ★ 2026-07-18 생애주기 단순화(시우): 관리 탭 폐지로 오등록 삭제를 이 화면 직원 게이트 뒤로 이관.
         카드 우측 상단 작은 🗑 아이콘(기본 흐림·눈에 안 띔) → confirm → lf_delete(id) → 목록 새로고침.
-        30일 미수령 습득물은 자동 폐기(폐기 공지 게시)되어 갤러리에서 제외됩니다.
-     ★ 2026-07-18 폐기 공지 흡수(시우): lf_disposal(공개) 병행 fetch — 잔여 7일 이하 게시중 카드에 ⏳D-n 배지·상단 정렬,
+        습득월 기준 월별 코호트로 자동 폐기(폐기 공지 게시)되어 갤러리에서 제외됩니다.
+     ★ 2026-07-18 폐기 공지 흡수(시우): lf_disposal(공개) 병행 fetch — 전월 습득 코호트 게시중 카드에 ⏳M월 폐기예정 배지·상단 정렬(폐기월 오름차순),
         폐기완료 물품은 하단 접이식 '🗑 폐기 완료 기록' 읽기전용 카드. 인쇄용 lost_found_disposal.html(A3, Pages 절대경로) 링크 버튼 추가.
+     ★ 2026-07-18 v2(시우): 월별 코호트 폐기로 교체 — remainDays/30일 표기 폐기, disposeMonth('YYYY-MM') 기반 'M월 폐기예정' 표기.
+        사이클: 습득월 M → M+1 공지 → M+2 폐기(습득한 달의 다음 달까지 공지, 그다음 달에 폐기).
      ★ CSS 충돌 방지: 전 규칙을 .wlp-lfg 래퍼 하위로 스코프 → Salient/WPBakery 테마 오염 차단.
         WP 페이지 타이틀·Buttonizer·ENG 언어버튼은 body.wlp-lfg-page 한정으로 숨김
         (body 클래스는 하단 스크립트가 부착 — 페이지 id 는 빌드 시점에 알 수 없으므로 클래스 방식 사용). -->
@@ -190,7 +192,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   <div class="lf-policy">
     <div class="lf-policy-h">📋 습득 분실물 보관·폐기 안내 <span class="badge">회원·직원 필독</span></div>
     <ul>
-      <li>보관 기간: 습득일로부터 <b>30일 미수령 시 자동 폐기</b>되며 폐기 공지에 게시됩니다.</li>
+      <li>보관 기간: <b>습득한 달의 다음 달까지 공지</b>, 그다음 달에 <b>자동 폐기</b>됩니다(예: 7월 습득→8월 공지→9월 폐기).</li>
       <li>귀중품(현금·지갑·귀금속·전자기기 등)은 <b>경찰서(유실물센터)에 인계</b>합니다.</li>
       <li>그 외 물품은 1개월 경과 후 <b>자체 폐기</b>합니다.</li>
       <li>수령: 본인 확인 후 현장(리셉션·수영장·사우나 등)에서 서명하고 수령해 주세요.</li>
@@ -216,7 +218,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     </div>
   </div>
 
-  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>곧 폐기 예정인 물품은 ⏳ 배지로 표시되며, 폐기된 물품은 아래 기록에서 확인할 수 있습니다.<br>게시판 인쇄는 <b>폐기 공지(A3)</b>를 이용해 주세요 · 하루의 완성, 웰페리온</p>
+  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>곧 폐기 예정인 물품은 ⏳ 배지로 표시되며, 폐기된 물품은 아래 기록에서 확인할 수 있습니다.<br>습득한 달의 다음 달까지 공지 후, 그다음 달에 폐기됩니다 (예: 7월 습득→8월 공지→9월 폐기).<br>게시판 인쇄는 <b>폐기 공지(A3)</b>를 이용해 주세요 · 하루의 완성, 웰페리온</p>
 </div>
 
 <!-- 수령 서명 모달 -->
@@ -279,6 +281,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function toast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(function(){ t.className='toast'+(isErr?' err':''); },2600); }
   function _thumb(url,sz){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w'+(sz||400)):url; }
+  function _monthLabel(ym){ var n=parseInt(String(ym||'').split('-')[1],10); return isNaN(n)?'':(n+'월'); } // 'YYYY-MM' → 'M월'
 
   // 수령장소 옵션
   (function(){ var s=$('m_loc'); LOCATIONS.forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; s.appendChild(o); }); })();
@@ -287,7 +290,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   $('m_staff').addEventListener('change',function(){ var oth=$('m_staff_other'); if(this.value==='기타'){ oth.style.display='block'; oth.focus(); } else { oth.style.display='none'; oth.value=''; } });
 
   var _loading=false, _cur=null;
-  var _upcoming={}, _disposed=[], _lastRows=[]; // lf_disposal: foundId→remainDays 맵 · 폐기완료 목록 · 그리드 최근 렌더 원본
+  var _upcoming={}, _disposed=[], _lastRows=[]; // lf_disposal: foundId→disposeMonth('YYYY-MM') 맵 · 폐기완료 목록 · 그리드 최근 렌더 원본
 
   function _readCache(){ try{ var o=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); return (o&&Array.isArray(o.data))?o:null; }catch(e){ return null; } }
   function _writeCache(rows){ try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:rows})); }catch(e){} }
@@ -297,11 +300,11 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     _lastRows=rows;
     var grid=$('grid'); $('cnt').textContent=String(rows.length);
     if(!rows.length){ grid.innerHTML='<div class="state-msg">현재 게시중인 습득물이 없습니다.</div>'; return; }
-    // 폐기 임박(remainDays 있는 항목)을 그리드 상단으로 — 오름차순, 그 외는 기존 순서 유지(안정 정렬)
+    // 폐기 임박(disposeMonth 있는 항목=전월 습득 코호트)을 그리드 상단으로 — 폐기월 오름차순, 그 외는 기존 순서 유지(안정 정렬)
     var sorted=rows.slice().sort(function(a,b){
       var ra=_upcoming[a.foundId], rb=_upcoming[b.foundId];
       var ha=ra!=null, hb=rb!=null;
-      if(ha&&hb) return ra-rb;
+      if(ha&&hb) return ra<rb?-1:(ra>rb?1:0);
       if(ha) return -1;
       if(hb) return 1;
       return 0;
@@ -333,9 +336,9 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   function _gcard(r){
     var when=String(r.foundWhen||r.createdAt||'').replace('T',' ');
     var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,400))+'" alt="습득물 사진" loading="lazy" decoding="async">'):'<div class="ph"></div>';
-    var remainDays=_upcoming[r.foundId];
-    var imminent=remainDays!=null;
-    var badge=imminent?('<div class="disp-badge">⏳ D-'+_esc(remainDays)+' 폐기예정</div>'):'';
+    var disposeMonth=_upcoming[r.foundId];
+    var imminent=disposeMonth!=null;
+    var badge=imminent?('<div class="disp-badge">⏳ '+_esc(_monthLabel(disposeMonth))+' 폐기예정</div>'):'';
     return '<div class="gcard'+(imminent?' imminent':'')+'">'+ph+
       '<button class="del-btn" type="button" data-del="'+_esc(r.foundId||'')+'" title="직원 전용: 오등록 삭제">🗑</button>'+
       '<div class="body">'+badge+'<div class="gid">'+_esc(r.foundId||'')+'</div>'+
@@ -372,7 +375,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
         if(!d||!d.ok) return; // 실패는 조용히 스킵 — 게시중 그리드는 그대로 유지
         var up=Array.isArray(d.upcoming)?d.upcoming:[];
         _upcoming={};
-        up.forEach(function(u){ _upcoming[u.foundId]=u.remainDays; });
+        up.forEach(function(u){ _upcoming[u.foundId]=u.disposeMonth; });
         _disposed=Array.isArray(d.disposed)?d.disposed:[];
         if(_lastRows.length){ _renderRows(_lastRows); } // 이미 렌더된 게시중 그리드에 배지·정렬 재적용
         _renderDisposalSection();
