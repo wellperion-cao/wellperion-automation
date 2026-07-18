@@ -679,10 +679,10 @@ function doGet(e) {
   var gParam = String(e.parameter.gender || '').trim();
   var checkedLedger;
   if (gParam) {
-    checkedLedger = _resolveLedger(dept, date, gParam);   // INC 07-16 이관: 속성 저장 실패일에도 시트에서 체크 복원(9KB 무관)
+    checkedLedger = _getCheckLedger(dept, date, gParam);
   } else {
     // 성별 미지정(레거시·admin 집계): 성별맵 전체 반환 — 호출부가 필요 성별을 선택.
-    checkedLedger = { m: _resolveLedger(dept, date, 'm'), f: _resolveLedger(dept, date, 'f'), all: _resolveLedger(dept, date, 'all') };
+    checkedLedger = { m: _getCheckLedger(dept, date, 'm'), f: _getCheckLedger(dept, date, 'f'), all: _getCheckLedger(dept, date, 'all') };
   }
   return jsonRes({ date: date, zone: zone || 'all', rows: rows, groupSubmits: _getGroupSubmits(date), checkedLedger: checkedLedger, inspMemos: _getInspMemos(dept, gParam) });
 }
@@ -1118,78 +1118,6 @@ function _getCheckLedger(dept, date, gender) {
   if (!led.subAt) led.subAt = {};
   return led;
 }
-
-// ════════════════════════════════════════════════════════════════════════════
-// INC 07-16 근본이관(2026-07-18 시토) — 시트를 완료·이슈의 진실(source of truth)로 승격,
-//   속성창 원장(9KB/값·500KB/스크립트 한도)을 '순수 성능캐시'로 강등.
-// 배경: today_live 집계·페이지 복원이 속성창 원장(_getCheckLedger→led.cr)에서만 읽었다 →
-//   setProperty가 값 한도 초과로 실패하면(07-16) cr 미갱신 → 완료율 0%·복원 실패.
-//   Phase1(@164)이 시트 저장(_writePerRoundRows)은 살렸으나 today_live 표시는 여전히 실패한 속성에 묶임.
-// 이관: today_live·handleRead 읽기를 속성창→시트 백스톱 병합으로 전환. 속성창 저장이 어떤 경우도
-//   집계·복원을 막지 않는다(없어도 정답 — 언제든 시트에서 재생성). 쓰기 경로는 무변경(Phase1 보존).
-// ════════════════════════════════════════════════════════════════════════════
-
-// 시트(Phase1 보장 저장처)에서 원장(cr/sub/subAt)을 재구성. cr 키='<roundKey>_<id>'(am1/pm1/close1) —
-//   실제 저장 cr키·today_live _roundBucket과 동형(_roundLabelToKey가 시트 회차라벨→키 역매핑).
-// cr 포함 규칙 = _updateCheckLedger 미러: 완료 OR 이슈/노하우 있는 행만(미제출·무이슈 '미완료' 노이즈행 제외).
-// 실행 단위 메모(GAS는 매 요청 전역 초기화) — today_live가 성별×루프로 반복 호출해도 탭당 1회만 읽음.
-var _LEDGER_FROM_SHEET_CACHE = {};
-function _ledgerFromSheet(dept, date, gender) {
-  var out = { cr: {}, sub: {}, subAt: {} };
-  if (!date) return out;
-  var ck = String(dept) + '|' + String(date) + '|' + String(gender);
-  if (_LEDGER_FROM_SHEET_CACHE[ck]) return _LEDGER_FROM_SHEET_CACHE[ck];
-  var tabs = _deptTabs(dept);
-  var name = (gender === 'f') ? tabs.female : (gender === 'all') ? tabs.common : tabs.male;
-  if (!name) { _LEDGER_FROM_SHEET_CACHE[ck] = out; return out; }
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
-  if (!sheet) { _LEDGER_FROM_SHEET_CACHE[ck] = out; return out; }
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    var r = data[i];
-    if (!(String(r[0]) === date || formatDate(r[0]) === date)) continue;
-    var id = String(r[1] == null ? '' : r[1]).trim();
-    if (!id) continue;
-    var label = String(r[4] == null ? '' : r[4]);
-    var checked = String(r[5]) === '완료';
-    var iss = String(r[6] == null ? '' : r[6]);
-    var tip = String(r[7] == null ? '' : r[7]);
-    if (!(checked || iss || tip)) continue;   // 미제출·무이슈 미완료 노이즈행 = cr 미포함(_updateCheckLedger 동치)
-    var roundKey = _roundLabelToKey(label);   // 오전조→am1·오후조→pm1·마감조→close1
-    out.cr[roundKey + '_' + id] = {
-      by: String(r[11] == null ? '' : r[11]), at: String(r[9] == null ? '' : r[9]),
-      du: String(r[10] == null ? '' : r[10]), iss: iss, tip: tip,
-      measure: String(r[12] == null ? '' : r[12]),
-      reflected: (String(r[13] == null ? '' : r[13]) === 'Y') ? 'Y' : ''
-    };
-    // 제출도장(sub/subAt) 복원 — 시트 9열 '<라벨> 제출완료' → shiftKey. 먼저 채운 값 보존.
-    if (String(r[8] == null ? '' : r[8]).indexOf('제출완료') >= 0) {
-      var sk = _labelToShiftKey(label);
-      if (sk) {
-        if (!out.sub[sk] && String(r[11] || '')) out.sub[sk] = String(r[11]);
-        if (!out.subAt[sk] && String(r[9] || '')) out.subAt[sk] = String(r[9]);
-      }
-    }
-  }
-  _LEDGER_FROM_SHEET_CACHE[ck] = out;
-  return out;
-}
-
-// 속성창 원장(캐시)에 시트 재구성분을 비파괴 병합 — today_live·handleRead 공용 읽기 리졸버.
-//   속성 우선(정상일=과거값 그대로·회귀 0), 속성에 '없는' cr/sub 키만 시트에서 채움(속성 저장 실패일 자가복구).
-//   병합은 삭제 없이 '추가'만 → 완료율이 더 정확해질 순 있어도 정상일 값이 낮아지는 회귀는 구조적으로 불가.
-function _resolveLedger(dept, date, gender) {
-  var led = _getCheckLedger(dept, date, gender);   // 속성창(가능하면 완전)
-  var sh = _ledgerFromSheet(dept, date, gender);    // 시트 백스톱(Phase1 보장 저장처)
-  if (!led.cr) led.cr = {};
-  Object.keys(sh.cr).forEach(function (k) { if (led.cr[k] === undefined) led.cr[k] = sh.cr[k]; });
-  if (!led.sub) led.sub = {};
-  Object.keys(sh.sub).forEach(function (k) { if (led.sub[k] === undefined || led.sub[k] === '') led.sub[k] = sh.sub[k]; });
-  if (!led.subAt) led.subAt = {};
-  Object.keys(sh.subAt).forEach(function (k) { if (led.subAt[k] === undefined || led.subAt[k] === '') led.subAt[k] = sh.subAt[k]; });
-  return led;
-}
-
 // 원장 구조: { c:{itemId:1,...}, sub:{am,pm,night}, subAt:{am,pm,night} }
 // c=체크된 itemId 집합, sub=교대별 제출자, subAt=교대별 제출시각. 무이슈 완전완료일(시트행 0건)에도
 // admin 제출자·완료율 카드를 복원하기 위해 제출 메타도 함께 적립.
@@ -3883,7 +3811,7 @@ function handleTodayLive(params) {
   // 마스터에 없는 고아 id(리네임 잔재) 또는 마스터 항목에 없는 시프트는 분모가 없으므로 제외(100% 초과 차단).
   var doneByG = { m: newBuckets(), f: newBuckets(), all: newBuckets() };
   genders.forEach(function (g) {
-    var led = _resolveLedger(dept, date, g);   // INC 07-16 이관: 속성창→시트 백스톱 병합(9KB 한도 무관 정답)
+    var led = _getCheckLedger(dept, date, g);
     var cr = (led && led.cr && typeof led.cr === 'object') ? led.cr : {};
     var seenPair = {};   // 이 성별에서 done 1회 처리한 '항목|시프트'
     Object.keys(cr).forEach(function (k) {
@@ -3914,8 +3842,7 @@ function handleTodayLive(params) {
   // 회귀 0: 기존 필드 무변경, uncheckedByShift는 아래 return에만 새로 얹는다.
   var uncheckedByShift = {};
   ['m', 'f'].forEach(function (g) {
-    var ucLed = _resolveLedger(dept, date, g);   // INC 07-16 이관: 시트 백스톱 병합
-
+    var ucLed = _getCheckLedger(dept, date, g);
     var ucCr = (ucLed && ucLed.cr && typeof ucLed.cr === 'object') ? ucLed.cr : {};
     var ucDoneKey = {};   // 이 성별에서 완료 처리된 '항목|시프트' (seenPair와 동일 키 형식)
     Object.keys(ucCr).forEach(function (k) {
@@ -3982,7 +3909,7 @@ function handleTodayLive(params) {
   var allIssues = [];
   var _issSeenTL = {};
   ['m', 'f'].forEach(function (g) {
-    var led = _resolveLedger(dept, date, g);   // INC 07-16 이관: 시트 백스톱 병합(이슈 집계도 시트 자가복구)
+    var led = _getCheckLedger(dept, date, g);
     var cr = (led && led.cr && typeof led.cr === 'object') ? led.cr : {};
     Object.keys(cr).forEach(function (k) {
       var m = cr[k];
