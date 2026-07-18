@@ -2653,5 +2653,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 cd1b3a33)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "cd1b3a3362278f3921c81aee0f4be7ba4c74c2f0"
+  },
+  {
+    "task_id": "CMO-2026-07-18-ADHOC-5d43bc0d",
+    "clevel": "cmo",
+    "title": "[시모] 텔레그램 전역 페이싱 발송원 배선 — 버스트 429 근본차단 (배1211)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1323,
+    "artifact": "send_review_card.py _delete_message()가 deleteMessage 호출 직전 pace()를\n안 거치는 유일한 미배선 지점이었음(sendMessage/sendPhoto는 이미 배선됨).\nig_review_publish_watcher.py·publish_4channel_dispatcher.py·daily_scheduler.py는\n조사 결과 모든 발송 지점이 이미 tg_outbound_log.pace()에 물려있어 변경 불필요. (CLI ad-hoc · 커밋 5d43bc0d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "5d43bc0dec1c44c4d91f5a2a8601885279f218f6"
   }
 ]
