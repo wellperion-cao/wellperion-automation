@@ -1770,5 +1770,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 fc28c9e6)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "fc28c9e6d47158d7bb3242a4a405ef553a391e7a"
+  },
+  {
+    "task_id": "COO-2026-07-18-ADHOC-e8627696",
+    "clevel": "coo",
+    "title": "[시우] 인쇄 위젯 폴백→명시트리거 승격 — 결재 SSOT 비동기 렌더 순서 대응",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1387,
+    "artifact": "결재 SSOT는 render()가 데이터 fetch(await) 완료 후에만 처음 실행돼, print_options.js의\nDOMContentLoaded 초기 부착 시점엔 아직 담당자 줄(인쇄 버튼)이 없어 폴백(플로팅) 위젯이\n먼저 붙는다. 이전 재부착 가드는 \"이미 붙어있으면 스킵\"이라 폴백이 영구 고착돼 이후\nrender()가 실제 [data-po-trigger] 버튼을 만들어도 승격이 안 됐다(라이브 Playwright로\n결재 SSOT에서 위젯이 안 뜨는 것 실측). 폴백 상태에서 명시 트리거가 나타나면 폴백을\n걷어내고 다시 (CLI ad-hoc · 커밋 e8627696)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e86276965682e6e0e93f0bf5ca2d1b8686ab97eb"
   }
 ]
