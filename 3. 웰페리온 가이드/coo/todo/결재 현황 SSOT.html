@@ -610,8 +610,10 @@ function render() {
   });
   owHtml += '</select>';
   owHtml += '<button class="share-btn" onclick="openApprovalDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">결재 현황 대시보드</button>';
-  // 인쇄 버튼 — 현재 뷰가 캘린더면 캘린더 한 장 맞춤 인쇄, 트렐로면 기존 카드 보고서 인쇄 (2026-07-18 GM 요청)
-  owHtml += '<button class="share-btn" data-po-trigger onclick="' + (currentView === 'calendar' ? 'printApprovalCalendar()' : 'printApprovalCards()') + '" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">🖨 인쇄</button>';
+  // 인쇄 버튼 — 캘린더 뷰에서만 노출(캘린더 한 장 맞춤 인쇄). 트렐로(칸반)는 전체 인쇄 삭제(GM 확정 2026-07-18).
+  if (currentView === 'calendar') {
+    owHtml += '<button class="share-btn" data-po-trigger onclick="printApprovalCalendar()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">🖨 인쇄</button>';
+  }
   owHtml += '</div>';
   document.getElementById('ownerFilters').innerHTML = owHtml;
   // 담당자 줄 재렌더가 인쇄 버튼(data-po-trigger)을 통째로 교체 → print_options.js 위젯을
@@ -707,9 +709,6 @@ function render() {
     const sortKey = t => String(t.createdAt || t['생성일'] || t.updatedAt || t['수정일'] || t.startDate || t['시작일'] || t.completeTime || '');
     list.sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
   }
-
-  // 인쇄(카드 기준)용 — 현재 필터·정렬 반영 리스트 보관 (2026-06-03 GM)
-  window._lastApprovalList = list;
 
   // [결재-뷰] 칸반·캘린더 뷰 — 필터·검색·정렬이 적용된 list를 그대로 그린다 (2026-06-02 시모)
   if (currentView === 'kanban') {
@@ -942,16 +941,8 @@ function buildApprovalPrint(list) {
       + '</div>';
   }).join('');
 }
-function printApprovalCards() {
-  var list = window._lastApprovalList || [];
-  document.getElementById('approvalPrintArea').innerHTML = buildApprovalPrint(list);
-  document.body.setAttribute('data-print-mode', 'cards');
-  function _reset(){ document.body.removeAttribute('data-print-mode'); window.removeEventListener('afterprint', _reset); }
-  window.addEventListener('afterprint', _reset);
-  window.print();
-  setTimeout(_reset, 2000);  // afterprint 미발생 브라우저 폴백
-}
 // 카드 1건만 인쇄 (2026-06-03 GM) — 같은 카드 인쇄 포맷(서명칸 포함)으로 해당 건만.
+// (전체 카드 일괄 인쇄 printApprovalCards는 삭제 — 트렐로 툴바 인쇄 버튼 제거, GM 확정 2026-07-18)
 function printApprovalCard(id) {
   var t = (ALL_TASKS || []).filter(function(x){ return String(x.id) === String(id); })[0];
   if (!t) { alert('해당 건을 찾을 수 없습니다.'); return; }
@@ -2259,9 +2250,10 @@ function escAttr(s) {
     <!-- print_options.js 재도입 (2026-07-18 GM 피드백): 2026-07-15 나우열M이 제거한 사유는
          findTrigger가 첫 [onclick*="print"]를 무조건 잡아 문서 A4 뷰어 인쇄 버튼과 충돌하던 것.
          지금은 findTrigger가 [data-po-trigger]를 최우선으로 쓰도록 print_options.js 자체를 스코프
-         개선(하위호환) — 메인 목록 인쇄 버튼(printApprovalCards)에만 data-po-trigger를 부여해
-         그 버튼에만 위젯이 붙는다. 문서 A4 뷰어(닫기 버튼만 존재·인쇄 버튼 없음)·카드별 인쇄
-         (printApprovalCard)·대시보드 인쇄(printApprovalDashboard)는 절대 안 걸린다. -->
+         개선(하위호환) — 캘린더 뷰 전용 인쇄 버튼(printApprovalCalendar)에만 data-po-trigger를
+         부여해 그 버튼에만 위젯이 붙는다(트렐로는 인쇄 버튼 자체가 없음, GM 확정 2026-07-18).
+         문서 A4 뷰어(닫기 버튼만 존재·인쇄 버튼 없음)·카드별 인쇄(printApprovalCard)·
+         대시보드 인쇄(printApprovalDashboard)는 절대 안 걸린다. -->
     <script src="/wellperion-automation/_assets/print_options.js"></script>
 </body>
 </html>

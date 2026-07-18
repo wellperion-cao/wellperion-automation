@@ -107,15 +107,6 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 .wlp-lfg .state-msg{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--dim);font-size:14.5px}
 .wlp-lfg .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
 
-/* ── 운영 가이드 링크 버튼 (2026-07-18: 보기↔가이드 양방향 도입) ── */
-.wlp-lfg .guide-link-btn{
-  display:inline-flex;align-items:center;gap:6px;margin-top:2px;
-  padding:9px 16px;background:var(--accent-bg);color:var(--accent);
-  border:1.3px solid rgba(176,141,87,0.35);border-radius:20px;
-  font-size:12.5px;font-weight:700;letter-spacing:.2px
-}
-.wlp-lfg .guide-link-btn:hover{background:rgba(176,141,87,0.16)}
-
 /* ── 직원 모드(?staff=1) — 회원뷰엔 없는 직원 전용 컨트롤·안내 게이팅 (2026-07-18) ──
    ★ 특이도 함정: .wlp-lfg .gcard .del-btn·.wlp-lfg .gcard .claim·.wlp-lfg .print-btn 이 이미 display 를
    지정 → 숨김 규칙은 .staff-only 를 덧붙여 반드시 더 높은 특이도로 만들어야 순서 무관하게 이긴다. */
@@ -214,7 +205,6 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     <p>클럽에서 습득된 물건입니다. 본인 물건을 발견하시면 현장 직원에게 문의해 주세요.</p>
     <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
     <div class="staff-badge-pill">🛠 직원모드</div>
-    <a class="guide-link-btn" href="https://wellperion-cao.github.io/wellperion-automation/coo/reception/lost_found_guide.html" target="_blank" rel="noopener">📋 분실물 이용 안내</a>
   </div>
 
   <div class="lf-policy">
