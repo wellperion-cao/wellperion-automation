@@ -47,24 +47,11 @@
   .m-values .t-kicker{font-size:13px;letter-spacing:3px;color:var(--accent);font-weight:800;}
   .m-values h2{font-size:23px;font-weight:800;margin:6px 0 4px;letter-spacing:-.5px;}
   .m-values .t-sub{font-size:13.5px;color:var(--muted);margin-bottom:10px;}
-  /* 인재상 도식 — 순수 HTML/CSS(2026-07-18 A-5 2차) — html2canvas가 별도 처리를 요구하는
-     svg-as-image 경로를 피하기 위해 SVG를 걷어내고 div+border-radius로 재구성.
-     화면·JPG 캡처가 완전히 동일한 마크업/스타일을 공유(이원화 제거). */
-  .venn-html{position:relative;width:100%;max-width:330px;padding-bottom:72.222%;margin:4px auto 0;}
-  .venn-html .vh-node{position:absolute;width:24.444%;padding-bottom:24.444%;border-radius:50%;border-width:2px;border-style:solid;box-sizing:border-box;}
-  .venn-html .vh-node .lbl{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;font-weight:800;line-height:1.15;padding:0 4px;box-sizing:border-box;}
-  .venn-html .vh-center{position:absolute;width:27.778%;padding-bottom:27.778%;border-radius:50%;background:#0b1f3a;box-sizing:border-box;}
-  .venn-html .vh-center .lbl{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:800;}
-  .venn-html .vh-center .l1{color:#ffffff;}
-  .venn-html .vh-center .l2{color:#a9c9e8;margin-top:2px;}
-  .venn-html .vh-tl{left:13.333%;top:6.154%;background:#e2edf8;border-color:#3f6fa0;}
-  .venn-html .vh-tl .lbl{color:#1c3a56;}
-  .venn-html .vh-tr{left:62.222%;top:6.154%;background:#dbe6f4;border-color:#2f5f92;}
-  .venn-html .vh-tr .lbl{color:#1a3f5c;}
-  .venn-html .vh-bl{left:13.333%;top:60%;background:#e6edf6;border-color:#5c7896;}
-  .venn-html .vh-bl .lbl{color:#26425c;}
-  .venn-html .vh-br{left:62.222%;top:60%;background:#dfe8f4;border-color:#4a6f92;}
-  .venn-html .vh-br .lbl{color:#1f3852;}
+  /* 인재상 도식 — 정적 PNG 단일 소스(2026-07-18 A-5 3차) — SVG·div 재구성 모두 html2canvas 캡처에서
+     실패해(1차: svg-as-image 경로 크기판정 실패 / 2차: div 구성이 화면 렌더 자체를 파손) 최종적으로
+     42c3b999 원본 SVG를 오프라인 래스터라이즈(node @resvg/resvg-js, 3배율)한 PNG로 교체.
+     화면·JPG 캡처가 완전히 동일한 img 태그 하나를 그리므로 더 이상 분기 여지가 없다. */
+  .values-diagram{width:100%;max-width:330px;height:auto;display:block;margin:4px auto 0;}
   .quote{margin-top:16px;border-radius:16px;padding:24px 22px;background:linear-gradient(120deg,#0b1f3a,#173a5e);color:#fff;position:relative;overflow:hidden;text-align:center;}
   .quote::before{content:"\201C";position:absolute;left:14px;top:-6px;font-size:70px;color:rgba(255,255,255,.14);font-weight:800;}
   .quote .s-line{font-size:18px;font-weight:800;line-height:1.5;letter-spacing:-.4px;position:relative;}
@@ -162,13 +149,7 @@
       <div class="t-kicker">WHO WE LOOK FOR</div>
       <h2>웰페리온 인재상</h2>
       <div class="t-sub">네 가지 핵심 역량이 만나는 지점에 웰페리온의 인재가 있습니다</div>
-      <div class="venn-html" role="img" aria-label="웰페리온 인재상 도식">
-        <div class="vh-node vh-tl"><span class="lbl">문제해결</span></div>
-        <div class="vh-node vh-tr"><span class="lbl">팀워크</span></div>
-        <div class="vh-node vh-bl"><span class="lbl">주도성</span></div>
-        <div class="vh-node vh-br"><span class="lbl">프로세스</span></div>
-        <div class="vh-center"><span class="lbl"><span class="l1">웰페리온</span><span class="l2">인재상</span></span></div>
-      </div>
+      <img class="values-diagram" src="assets/values-diagram.png" alt="웰페리온 인재상 도식 — 문제해결, 팀워크, 주도성, 프로세스 네 가지 핵심 역량">
       <div class="quote" id="sloganQuote"><div class="s-line" id="sloganText">최고의 공간은 결국,<br><b>사람이 완성합니다</b></div></div>
     </div>
 
