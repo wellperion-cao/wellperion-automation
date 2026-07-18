@@ -346,6 +346,22 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   .dash-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .dash-stat-card{border:1px solid #ccc;background:#f9f9f9!important;break-inside:avoid;}
   .dash-stat-card .num{color:#333!important;}
+  /* ── [결재-캘린더 인쇄] 캘린더 뷰 한 장 맞춤 — 월 그리드+요약만, 나머지는 숨김 (GM 요청 2026-07-18) ──
+     실제 축소 비율(transform:scale)은 JS(printApprovalCalendar/calPrintScaleApply)가 선택 용지(A4/A3)·
+     방향에 맞춰 계산해 #calPrintInner에 적용 — 여기 CSS는 인쇄 대상만 좁힌다. */
+  body[data-print-mode="calendar"] .sticky-top,
+  body[data-print-mode="calendar"] .dash-overlay,
+  body[data-print-mode="calendar"] #docViewerOverlay,
+  body[data-print-mode="calendar"] #approvalPrintArea{display:none!important}
+  body[data-print-mode="calendar"] .content{display:block!important;padding:0!important}
+  body[data-print-mode="calendar"] .cal-nav-btn,
+  body[data-print-mode="calendar"] .cal-legend,
+  body[data-print-mode="calendar"] .cal-day-detail{display:none!important}
+  body[data-print-mode="calendar"] .cal-bar{margin-bottom:6px}
+  body[data-print-mode="calendar"] .cal-month-label{font-size:15px}
+  body[data-print-mode="calendar"] #calPrintOuter{overflow:hidden}
+  body[data-print-mode="calendar"] .cal-badge,
+  body[data-print-mode="calendar"] .cal-table td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 </style>
 <script src="../../_assets/gate.js" charset="utf-8"></script>
@@ -594,7 +610,8 @@ function render() {
   });
   owHtml += '</select>';
   owHtml += '<button class="share-btn" onclick="openApprovalDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">결재 현황 대시보드</button>';
-  owHtml += '<button class="share-btn" data-po-trigger onclick="printApprovalCards()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">🖨 인쇄</button>';
+  // 인쇄 버튼 — 현재 뷰가 캘린더면 캘린더 한 장 맞춤 인쇄, 트렐로면 기존 카드 보고서 인쇄 (2026-07-18 GM 요청)
+  owHtml += '<button class="share-btn" data-po-trigger onclick="' + (currentView === 'calendar' ? 'printApprovalCalendar()' : 'printApprovalCards()') + '" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">🖨 인쇄</button>';
   owHtml += '</div>';
   document.getElementById('ownerFilters').innerHTML = owHtml;
   // 담당자 줄 재렌더가 인쇄 버튼(data-po-trigger)을 통째로 교체 → print_options.js 위젯을
@@ -1810,6 +1827,68 @@ function printApprovalDashboard() {
   delete document.body.dataset.printMode;
 }
 
+/* ═══ [결재-캘린더 인쇄] 캘린더 뷰 한 장 맞춤(scale-to-fit) — GM 요청 2026-07-18 ═══
+   선택 용지(A4/A3)·방향(print_options.js가 <html data-print-paper>·<html data-print-orientation>에
+   세팅, 없으면 A4 세로 기본)에 맞춰 #calPrintInner를 transform:scale로 축소해 캘린더 전체가
+   정확히 1페이지에 들어가게 한다. #calPrintOuter는 축소된 실제 레이아웃 크기로 감싸(overflow:hidden)
+   인쇄 페이지네이션이 축소 전 크기로 빈 페이지를 만드는 것을 방지. */
+function calPrintPaperAreaPx() {
+  var MM = { A4: { w: 210, h: 297 }, A3: { w: 297, h: 420 } };
+  var paper = (document.documentElement.getAttribute('data-print-paper') === 'A3') ? 'A3' : 'A4';
+  var orientation = (document.documentElement.getAttribute('data-print-orientation') === 'landscape') ? 'landscape' : 'portrait';
+  var dims = MM[paper];
+  var pageW = orientation === 'landscape' ? dims.h : dims.w;
+  var pageH = orientation === 'landscape' ? dims.w : dims.h;
+  var margin = 8; // mm — print_options.js applyPageStyle()의 @page margin과 동일
+  var mmToPx = 96 / 25.4;
+  return { w: (pageW - margin * 2) * mmToPx, h: (pageH - margin * 2) * mmToPx };
+}
+function calPrintScaleApply() {
+  var outer = document.getElementById('calPrintOuter');
+  var inner = document.getElementById('calPrintInner');
+  if (!outer || !inner) return;
+  // 재측정 전 이전 스케일 초기화(원본 크기 기준으로 다시 측정)
+  inner.style.transform = 'none';
+  inner.style.width = 'auto';
+  outer.style.width = 'auto';
+  outer.style.height = 'auto';
+  var naturalW = inner.scrollWidth;
+  var naturalH = inner.scrollHeight;
+  if (!naturalW || !naturalH) return;
+  var area = calPrintPaperAreaPx();
+  var scale = Math.min(1, area.w / naturalW, area.h / naturalH);
+  outer.style.width = (naturalW * scale) + 'px';
+  outer.style.height = (naturalH * scale) + 'px';
+  outer.style.overflow = 'hidden';
+  inner.style.width = naturalW + 'px';
+  inner.style.transform = 'scale(' + scale + ')';
+  inner.style.transformOrigin = 'top left';
+}
+function calPrintScaleReset() {
+  var outer = document.getElementById('calPrintOuter');
+  var inner = document.getElementById('calPrintInner');
+  if (outer) { outer.style.width = ''; outer.style.height = ''; outer.style.overflow = ''; }
+  if (inner) { inner.style.transform = ''; inner.style.width = ''; inner.style.transformOrigin = ''; }
+}
+function printApprovalCalendar() {
+  document.body.setAttribute('data-print-mode', 'calendar');
+  function _reset(){ document.body.removeAttribute('data-print-mode'); calPrintScaleReset(); window.removeEventListener('afterprint', _reset); }
+  window.addEventListener('afterprint', _reset);
+  window.print();
+  setTimeout(_reset, 2000);  // afterprint 미발생 브라우저 폴백
+}
+// Ctrl+P 등 위젯을 거치지 않는 인쇄에서도 캘린더 뷰면 동일하게 한 장 맞춤 적용 (2026-07-18)
+window.addEventListener('beforeprint', function(){
+  if (!document.body.getAttribute('data-print-mode') && currentView === 'calendar') {
+    document.body.setAttribute('data-print-mode', 'calendar');
+  }
+  if (document.body.getAttribute('data-print-mode') === 'calendar') calPrintScaleApply();
+});
+window.addEventListener('afterprint', function(){
+  if (document.body.getAttribute('data-print-mode') === 'calendar') document.body.removeAttribute('data-print-mode');
+  calPrintScaleReset();
+});
+
 /* ═══════════════════════════════════════════
    [결재-뷰] 뷰 토글 (리스트 / 트렐로 칸반 / 캘린더) — 2026-06-02 시모
    ═══════════════════════════════════════════ */
@@ -2085,7 +2164,8 @@ function renderCalendar(list) {
   if (!list.length) {
     h += '<div class="empty-msg" style="padding:30px 0;"><span class="ico">📂</span>해당 조건의 결재 건이 없습니다.</div>';
   }
-  return h;
+  // 인쇄 한 장 맞춤용 이중 래퍼(calPrintScaleApply가 스케일 적용) — 화면에선 평범한 div라 무영향 (2026-07-18)
+  return '<div id="calPrintOuter"><div id="calPrintInner">' + h + '</div></div>';
 }
 function calShowDay(ds) {
   calSelectedDay = (calSelectedDay === ds) ? null : ds;
