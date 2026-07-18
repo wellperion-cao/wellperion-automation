@@ -1192,15 +1192,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="sumNewLessonYouth">–</b> 명</span></div>
       </div>
     </a>
-    <!-- 신규 등록 현황 = 강습 등록 원장(lesson_registry_list) 일/월/연 전용 뷰(lessonPane_{t}_reg)로 라우팅 — 전체명단(mem)과
-         분리. 2026-07-16 버그수리(전체명단 mem과 혼동+하이라이트 오배선 해소). -->
-    <a class="dash-card" data-kind="reg" data-lcard="reg" href="javascript:void(0)" onclick="_lessonComboClick('reg')">
-      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">신규 등록 현황</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboRegAdult">–</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboRegYouth">–</b> 명</span></div>
-      </div>
-    </a>
     <a class="dash-card" data-kind="mem" data-lcard="mem" href="javascript:void(0)" onclick="_lessonComboClick('mem')">
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">강습 회원 관리</span></div>
       <div class="dash-metrics">
@@ -1222,10 +1213,19 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboLossYouth">–</b> 명</span></div>
       </div>
     </a>
+    <!-- 멤버십 신규 등록 현황(구 '신규 등록 현황') — 2026-07-18 GM 지시로 라벨 변경 + 멤버십 담당자 배정 좌측으로 이동.
+         라우팅(lessonPane_{t}_reg)·데이터(lesson_registry_list)는 유지 — 라벨·위치만 변경. -->
+    <a class="dash-card" data-kind="reg" data-lcard="reg" href="javascript:void(0)" onclick="_lessonComboClick('reg')">
+      <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">멤버십 신규 등록 현황</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">성인</span><span class="dash-v"><b id="lessonComboRegAdult">–</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboRegYouth">–</b> 명</span></div>
+      </div>
+    </a>
     <!-- 담당자 배정 카드 — 2026-07-18 GM 지시로 멤버십 family→강습 family로 이동(강습 종목별 담당 강사 배정).
          _lessonComboClick(성인/유소년 스코프)가 아닌 전용 opener lessonOwnerAssignOpen 사용. -->
     <a class="dash-card" data-kind="owner" data-lcard="owner" href="javascript:void(0)" onclick="lessonOwnerAssignOpen(this)">
-      <div class="dash-head"><span class="dash-dot" style="background:var(--teal)"></span><span class="dash-title">🎯 담당자 배정</span></div>
+      <div class="dash-head"><span class="dash-dot" style="background:var(--teal)"></span><span class="dash-title">🎯 멤버십 담당자 배정</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">종목별</span><span class="dash-v">담당 강사 배정</span></div>
       </div>
@@ -3838,7 +3838,7 @@ function _lessonComboClick(card) {
 var _oaLoadedOnce = false;
 function lessonOwnerAssignOpen(cardEl) {
   var pane = document.getElementById('pane-ownerAssign');
-  if (pane) pane.style.display = '';
+  if (pane) pane.style.display = 'block';   // ⚠️ '' 금지 — .pane{display:none} CSS 기본값으로 되돌아가 패널이 안 뜬다. 명시적 block 필수.
   // 강습 type-pane(성인/유소년) 임시 숨김 — 담당자 배정 pane만 단독 표시.
   var _a = document.getElementById('type-lessonAdult'), _y = document.getElementById('type-lessonYouth');
   if (_a) _a.style.display = 'none';
