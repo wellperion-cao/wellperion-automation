@@ -593,8 +593,21 @@
     var lis = [];
     if(o.primary_surface) lis.push('<li>🖥️ 화면소유 · <b>' + esc(o.primary_surface) + '</b></li>');
     if(o.domain) lis.push('<li>🗂️ 도메인 · ' + esc(o.domain) + (o.executor ? ' <span style="color:var(--dim);">(실무 ' + esc(o.executor) + ')</span>' : '') + '</li>');
-    if(!lis.length) return '';
-    return lab + '<ul class="dim-bul">' + lis.join('') + '</ul>';
+    var out = lis.length ? lab + '<ul class="dim-bul">' + lis.join('') + '</ul>' : '';
+    out += northstarBlock(o);
+    return out;
+  }
+
+  // 🌟 북극성(장기 비전) — ownership_map.json 각 role의 "northstar" 필드(GM확정 2026-07-18). 미확정=placeholder 텍스트를 흐리게(dim) 표기.
+  function northstarBlock(o){
+    var raw = o && o.northstar;
+    if(!raw) return '';
+    var isPlaceholder = /^\[북극성/.test(raw);
+    var lab = '<span class="dim-label">🌟 북극성 <span style="font-weight:400;text-transform:none;font-size:9px;color:var(--dim);">(장기 비전)</span></span>';
+    var val = isPlaceholder
+      ? '<div class="dim-val" style="color:var(--dim);font-style:italic;">' + esc(raw) + '</div>'
+      : '<div class="dim-val">' + esc(raw) + '</div>';
+    return lab + val;
   }
 
   function ideasBlock(role){
