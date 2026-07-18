@@ -4290,6 +4290,8 @@ function _contentInquirySum(fcChannelMap) {
 function refreshPeriodSections() {
   var from = _rangeFromTo.from, to = _rangeFromTo.to;
   if (!from || !to) return;
+  var _statusEl = document.getElementById('period-status');
+  if (_statusEl) _statusEl.textContent = _periodLabel + ' · 불러오는 중…';
   var prev = _prevRange(from, to);
 
   Promise.all([
@@ -4321,6 +4323,7 @@ function refreshPeriodSections() {
     renderPostList(postRows);
 
     renderInsight(curPubByCh, curInqByCh);
+    if (_statusEl) _statusEl.textContent = _periodLabel + (fcCur === null ? ' · 문의 집계 실패(정직 표기)' : ' · 실측 완료');
   });
 }
 
@@ -4510,8 +4513,7 @@ function runCustomQuery() {
   if (statusEl) statusEl.textContent = _periodLabel + ' · 불러오는 중…';
   var navRow = document.getElementById('month-nav-row');
   if (navRow) navRow.style.display = 'none';
-  refreshPeriodSections();
-  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
+  refreshPeriodSections(); // period-status는 refreshPeriodSections가 단일 처리(resolve 시 실측 완료)
 }
 
 function switchPeriod(period) {
@@ -4541,9 +4543,7 @@ function switchPeriod(period) {
   } else {
     return; // 'custom' — toggleCustomRange가 처리
   }
-  if (statusEl) statusEl.textContent = _periodLabel + ' · 불러오는 중…';
-  refreshPeriodSections();
-  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
+  refreshPeriodSections(); // period-status(불러오는중→실측완료)는 refreshPeriodSections가 단일 처리
 }
 
 function loadYearToDate() {
@@ -4555,9 +4555,7 @@ function loadYearToDate() {
   _rangeFromTo = { from: y + '-01-01', to: y + '-' + m + '-' + d };
   _periodLabel = '올해(연초~오늘)';
   var statusEl = document.getElementById('period-status');
-  if (statusEl) statusEl.textContent = _periodLabel + ' · 불러오는 중…';
-  refreshPeriodSections();
-  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
+  refreshPeriodSections(); // period-status(불러오는중→실측완료)는 refreshPeriodSections가 단일 처리
 }
 
 // ─── 월 네비게이터 ────────────────────────────────────────────
@@ -4589,8 +4587,7 @@ function _loadMonthRange(year, month) {
   if (statusEl) statusEl.textContent = rangeLabel + ' · 불러오는 중…';
   _rangeFromTo = { from: from, to: to };
   _periodLabel = rangeLabel;
-  refreshPeriodSections();
-  if (statusEl) statusEl.textContent = rangeLabel + ' · 실측 완료';
+  refreshPeriodSections(); // period-status는 refreshPeriodSections가 단일 처리(resolve 시 실측 완료)
 }
 
 function _initDash() {
