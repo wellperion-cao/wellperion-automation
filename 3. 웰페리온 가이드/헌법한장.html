@@ -21,12 +21,6 @@
   header.page-head .sub{font-size:12px; color:var(--dim); line-height:1.45; flex:1; min-width:240px;}
   header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
-  .layers{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:2px 0 14px; padding:8px 11px; background:var(--paper); border:1px solid var(--border); border-radius:10px; font-size:12px;}
-  .layers a, .layers span.cur{text-decoration:none; border:1px solid var(--border-strong); border-radius:20px; padding:3px 12px; color:var(--text-soft); white-space:nowrap;}
-  .layers a:hover{border-color:var(--accent); color:var(--accent-soft);}
-  .layers span.cur{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
-  .layers .arw{color:var(--dim); font-size:11px;}
-
   h2.sec{font-size:15px; font-weight:700; margin:16px 0 2px; display:flex; align-items:center; gap:7px;}
   .sec-note{font-size:11px; color:var(--dim); margin-bottom:8px;}
 
@@ -326,18 +320,6 @@
     <script src="/wellperion-automation/_assets/print_options.js"></script>
   </header>
 
-  <div class="layers">
-    <span class="cur">🌟 북극성 (헌법)</span>
-    <span class="arw">›</span>
-    <a href="자율현황.html">🤖 자율 작업 현황</a>
-    <span class="arw">›</span>
-    <a href="월간운영계획.html">📋 월간 운영</a>
-    <span class="arw">›</span>
-    <a href="coo/check/전사_일정.html">🗓️ 전사 일정</a>
-    <span class="arw">›</span>
-    <a href="wellperion_guide(main).html#G1">🧭 오늘의 항로 (G1)</a>
-  </div>
-
   <!-- ════ 🌟 회사 비전 · 북극성 (헌법 맨 위 · 전사 정본 · 구 '북극성 목표' 카드 병합 2026-07-15) ════ -->
   <div class="vision">
     <span class="vision-star">🌟</span>
@@ -363,7 +345,7 @@
   <!-- ════ 👤 C레벨별 카드 (매트릭스 R/R + 🏭 제품화 성숙도 통합 · 구 '모듈 제품화 지도' 흡수 · 2026-07-18) ════ -->
   <div id="matrix-section">
   <h2 class="sec">👤 C레벨별 카드 <span style="font-size:11px;font-weight:400;color:var(--dim);">R/R + 제품화 성숙도</span> <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
-  <div class="sec-note" title="재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독. 🏭 제품화 = status/module_registry.json 직독.">각 C레벨을 한 행에 — 🌟 북극성·지표 / 🔧 일하는 법 / 🚧 소유·제품화. 상세 4차원은 S2 본인탭.</div>
+  <div class="sec-note" title="재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독. 🏭 제품화 = status/module_registry.json 직독.">각 C레벨을 한 행에 — 🌟 북극성·지표 / 🔧 일하는 법 / 🚧 소유·모듈. 상세 4차원은 S2 본인탭.</div>
   <div class="prod-legend" title="제품화 성숙도 — status/module_registry.json autonomy">
     <span class="prod-legtxt" style="font-weight:700;color:var(--accent-soft);">🏭 제품화 성숙도</span>
     <span class="prod-mat auto">🟢 완전무인</span><span class="prod-legtxt">예약/GAS 상시 — 졸업 근접</span>
@@ -379,7 +361,7 @@
           <th class="role-col">주체</th>
           <th class="grp-np">🌟 목표·지표</th>
           <th class="grp-boot">🔧 일하는 법</th>
-          <th class="grp-guard col-own">🚧 소유·제품화</th>
+          <th class="grp-guard col-own">🚧 소유·모듈</th>
         </tr>
       </thead>
       <tbody id="matrix-body">
@@ -584,18 +566,59 @@
     return lab + '<ul class="dim-bul">' + lis + '</ul>';
   }
 
-  // 🗺️ 소유·역할 — 정본 ssot/ownership_map.json 직독(읽기전용 · GM확정 7역할 소유맵 단일출처 · 2026-07-18).
+  // 🗺️ 소유·모듈 — 정본 ssot/ownership_map.json 직독(읽기전용 · GM확정 7역할 소유맵 단일출처 · 2026-07-18).
   //   role.id(=title.toLowerCase())로 매칭. 화면소유=primary_surface 강조 · 도메인소유=domain. 복사 금지(약속 L01 '한 곳만 본다').
   function ownershipBlock(role){
     var o = (_ownershipData && _ownershipData[role.id]) || null;
     if(!o) return '';
-    var lab = '<span class="dim-label">🗺️ 소유·역할 <span style="font-weight:400;text-transform:none;font-size:9px;color:var(--dim);">(정본 ssot/ownership_map.json)</span></span>';
+    var lab = '<span class="dim-label">🗺️ 소유·모듈 <span style="font-weight:400;text-transform:none;font-size:9px;color:var(--dim);">(정본 ssot/ownership_map.json)</span></span>';
     var lis = [];
     if(o.primary_surface) lis.push('<li>🖥️ 화면소유 · <b>' + esc(o.primary_surface) + '</b></li>');
     if(o.domain) lis.push('<li>🗂️ 도메인 · ' + esc(o.domain) + (o.executor ? ' <span style="color:var(--dim);">(실무 ' + esc(o.executor) + ')</span>' : '') + '</li>');
     var out = lis.length ? lab + '<ul class="dim-bul">' + lis.join('') + '</ul>' : '';
+    out += moduleLinksBlock(role);
     out += northstarBlock(o);
     return out;
+  }
+
+  // 🗺️ 소유·모듈 서술형 클릭 링크 — role.id → 실제 존재 확인된 href만(GM 지시 · 2026-07-18).
+  //   ownership_map.json/bootsetup_matrix.json 데이터는 수정하지 않고 이 렌더 상수만 사용.
+  //   href:null = 현재 페이지 자기 자신(비링크·현재 표시). cmo는 top-level 대표페이지가 아직 없어 M1 앵커로 임시 연결
+  //   — GM 확인 대기(추후 마케팅 자동화 전용 페이지 생기면 교체).
+  var MODULE_LINKS = {
+    ceo: [
+      { label: '북극성 (헌법 한장)', href: null },
+      { label: '오늘의 항로 (G1)', href: 'wellperion_guide(main).html#G1' }
+    ],
+    cto: [
+      { label: '자율 작업 현황', href: '자율현황.html' }
+    ],
+    coo: [
+      { label: '월간운영계획', href: '월간운영계획.html' },
+      { label: '전사회의', href: '전사회의.html' },
+      { label: '종합접수처', href: 'coo/reception/종합접수처_현황.html' }
+    ],
+    cmo: [
+      { label: '마케팅 자동화', href: 'wellperion_guide(main).html#M1' } // 임시 · GM 확인 대기(전용 top-level 페이지 없음)
+    ],
+    cpo: [
+      { label: '문의·회원 관리', href: 'cpo/member/문의회원.html' }
+    ],
+    chro: [
+      { label: '업무·결재 현황 SSOT', href: 'wellperion_guide(main).html#S3' }
+    ],
+    cfo: [
+      { label: '매출·지출 현황', href: 'cfo/finance/매출지출현황.html' }
+    ]
+  };
+  function moduleLinksBlock(role){
+    var links = MODULE_LINKS[role.id];
+    if(!links || !links.length) return '';
+    var items = links.map(function(l){
+      if(!l.href) return '<span class="own-chip" style="opacity:0.65;cursor:default;" title="현재 페이지">' + esc(l.label) + ' · 현재</span>';
+      return '<a class="own-chip" href="' + esc(l.href) + '">' + esc(l.label) + '</a>';
+    }).join('');
+    return '<div class="own-item" style="display:block;margin-top:2px;">' + items + '</div>';
   }
 
   // 🌟 북극성(장기 비전) — ownership_map.json 각 role의 "northstar" 필드(GM확정 2026-07-18). 미확정=placeholder 텍스트를 흐리게(dim) 표기.
@@ -870,7 +893,9 @@
       // 칸2 일하는 법 = 📚읽는 정본(2) + 🗓️하루 루틴(1)
       var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🗓️ 하루 루틴') + '</td>';
       // 칸3 소유 관리 = role.owns 링크칩(+선택 desc 1줄) + role.channels(선택·발행채널) — 둘 다 없으면 기존과 동일 렌더(하위호환)
-      var owns = (role.owns || []).map(function(o){
+      //   MODULE_LINKS[role.id]가 있는 역할(서술형 링크가 위 ownershipBlock에 이미 렌더됨)은 owns 칩을 '세부'로 라벨링(중복 구분 · 2026-07-18).
+      var ownsLabel = MODULE_LINKS[role.id] ? '<span class="dim-label" style="margin-top:6px;">🔗 세부</span>' : '';
+      var owns = ownsLabel + (role.owns || []).map(function(o){
         var desc = o.desc ? '<div class="own-desc">' + esc(o.desc) + '</div>' : '';
         return '<div class="own-item"><a class="own-chip" href="' + esc(o.href) + '">' + esc(o.label) + '</a>' + desc + '</div>';
       }).join('');
@@ -907,7 +932,7 @@
         return '<span class="mx-chip' + (_roleFilter === r.id ? ' on' : '') + '" data-act="role" data-val="' + esc(r.id) + '">' +
                esc(r.icon || '') + ' ' + esc(r.name) + '</span>';
       }).join('');
-    var colNames = ['🌟 목표·지표', '🔧 일하는 법', '🚧 소유 관리'];
+    var colNames = ['🌟 목표·지표', '🔧 일하는 법', '🚧 소유·모듈'];
     var colChips = colNames.map(function(n, i){
       return '<span class="mx-chip col' + (!_colHidden[i] ? ' on' : '') + '" data-act="col" data-val="' + i + '">' + esc(n) + '</span>';
     }).join('');
