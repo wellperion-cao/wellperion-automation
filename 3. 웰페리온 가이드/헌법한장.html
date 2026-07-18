@@ -77,7 +77,7 @@
   .kbar{height:6px; border-radius:4px; background:var(--surface); border:1px solid var(--border); overflow:hidden; margin-bottom:2px;}
   .kbar>i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-soft)); border-radius:4px;}
   .kbar.alt>i{background:linear-gradient(90deg,#3f8f4f,#6abf7b);}
-  .pstat{font-size:12px; color:var(--text-soft); margin-bottom:8px;}
+  .pstat{font-size:12px; color:var(--text-soft); margin-bottom:5px;}
   .pstat b{color:var(--accent-soft);}
   .todaychip{display:inline-block; font-size:11.5px; color:#f0c674; background:rgba(240,198,116,0.10); border:1px solid rgba(240,198,116,0.35); border-radius:7px; padding:3px 9px; margin-bottom:4px; line-height:1.35; white-space:normal;}
   /* ── 🌟 북극성 도달율 (궁극 목표 · 전면 · 골드) vs 작업 처리율 (보조 · 강등) — 2026-06-30 ── */
@@ -86,12 +86,12 @@
   .kbar.gold>i{background:linear-gradient(90deg,#b8860b,#f0c674);}
   .nsreach-meta{font-size:13px; color:#f0c674; font-weight:700; margin-top:2px;}
   .nsreach-meta b{color:#ffd97a; font-size:14px;}
-  /* 작업 처리율 — 보조 지표(활동량) · 강등(작게·dim·중립색) */
-  .workrate{margin:2px 0 8px; opacity:0.8;}
-  .workrate-h{display:block; font-size:9px; color:var(--dim); text-transform:none; letter-spacing:0; margin-bottom:2px;}
-  .kbar.neutral{height:4px;}
+  /* 작업 처리율 — 보조 지표(활동량) · 강등(작게·dim·중립색). 칸1 밸런스(2026-07-18): 더 작게·더 흐리게 */
+  .workrate{margin:1px 0 5px; opacity:0.62;}
+  .workrate-h{display:block; font-size:8.5px; color:var(--dim); text-transform:none; letter-spacing:0; margin-bottom:1px;}
+  .kbar.neutral{height:3px;}
   .kbar.neutral>i{background:var(--dim);}
-  .workrate-meta{font-size:10.5px; color:var(--dim);}
+  .workrate-meta{font-size:10px; color:var(--dim);}
   .workrate-meta b{color:var(--text-soft);}
   /* ── 🛡️ 재발방지 GUARDED (ssot/incidents.json 직독 · 역할 연관) — 2026-07-02 ── */
   .incd{margin:6px 0 4px; padding:6px 8px; border:1px solid rgba(106,191,123,0.28); border-left:3px solid #6abf7b; border-radius:8px; background:rgba(106,191,123,0.06);}
@@ -178,7 +178,7 @@
   .vision-ceo-ns b{color:var(--accent-soft); font-weight:600;}
   .vision-note{font-size:11px; color:var(--dim); margin-top:5px; line-height:1.45;}
   /* ── 🗺️ 북극성 지도: 대표 KPI 1개 + 측정 tier + 현재값 + 목표 + 경로 한 줄 (정직·2026-07-02) ── */
-  .nsmap{margin:5px 0 8px; padding:7px 9px; border:1px solid var(--border-strong); border-left:3px solid var(--accent-soft); border-radius:8px; background:var(--surface);}
+  .nsmap{margin:4px 0 6px; padding:6px 8px; border:1px solid var(--border-strong); border-left:3px solid var(--accent-soft); border-radius:8px; background:var(--surface);}
   .nsmap-h{display:block; font-size:10px; font-weight:800; color:var(--accent-soft); letter-spacing:0.01em; margin-bottom:4px;}
   .nsmap-row{font-size:12px; color:var(--text-soft); line-height:1.45; margin-bottom:2px;}
   .nsmap-row .nsmap-k{display:inline-block; min-width:58px; font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.02em;}
@@ -217,6 +217,50 @@
   .ccard .desc{font-size:11px; color:var(--dim); margin-bottom:8px; line-height:1.4;}
   .ccard a.lk{display:inline-block; font-size:11.5px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:3px 9px; margin:0 5px 5px 0;}
   .ccard a.lk:hover{background:var(--surface); border-color:var(--accent);}
+  .const-more{margin-top:8px; font-size:11.5px; color:var(--dim);}
+  .const-more a.lk{display:inline-block; font-size:11.5px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:3px 9px; margin-left:4px;}
+  .const-more a.lk:hover{background:var(--surface); border-color:var(--accent);}
+
+  /* ── 📜🛡️🏛️ 공통헌법 3종 접이식 인라인 (ssot/약속·incidents·canon_values.json 직독 단일소스 · 기본 접힘 · 2026-07-18) ── */
+  .const-wrap{margin-top:10px; display:flex; flex-direction:column; gap:8px;}
+  .const-sec{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; overflow:hidden;}
+  .const-h{display:flex; align-items:center; gap:8px; padding:10px 13px; cursor:pointer; font-size:13px; font-weight:700; user-select:none;}
+  .const-h:hover{background:var(--surface);}
+  .const-h .const-arrow{margin-left:auto; font-size:11px; color:var(--dim); transition:transform .15s;}
+  .const-sec.open .const-h .const-arrow{transform:rotate(90deg);}
+  .const-h .const-count{font-size:11px; font-weight:400; color:var(--dim); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:1px 8px;}
+  .const-body{display:none; padding:0 13px 13px; font-size:12px; overflow-x:auto;}
+  .const-sec.open .const-body{display:block;}
+  .const-status{font-size:11px; color:var(--dim); padding:2px 0;}
+  table.const-tbl{width:100%; border-collapse:collapse; font-size:11.5px; min-width:520px;}
+  table.const-tbl th, table.const-tbl td{border:1px solid var(--border); padding:5px 7px; text-align:left; vertical-align:top; line-height:1.4;}
+  table.const-tbl thead th{background:var(--surface); font-weight:700; font-size:10.5px; color:var(--dim);}
+  table.const-tbl td.const-cat{white-space:nowrap; font-weight:700; color:var(--accent-soft); font-size:10.5px;}
+  .const-badge{display:inline-block; font-size:9.5px; font-weight:700; border-radius:20px; padding:1px 7px; white-space:nowrap;}
+  .const-badge.guarded{color:#8fd89e; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
+  .const-badge.open{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
+  @media print{
+    .const-h .const-arrow{display:none;}
+    .const-sec{break-inside:avoid; background:#fff !important; border-color:#999 !important;}
+    .const-body{display:block !important;}
+    .const-h{background:#f4f4f4 !important; color:#111 !important;}
+    .const-h .const-count{background:#ececec !important; color:#333 !important; border-color:#999 !important;}
+    table.const-tbl, table.const-tbl th, table.const-tbl td{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    table.const-tbl thead th{background:#ececec !important; color:#000 !important;}
+    table.const-tbl td.const-cat{color:#4a2a91 !important;}
+    .const-badge.guarded{color:#1a6b34 !important; background:#e8f6ec !important; border-color:#7fbd91 !important;}
+    .const-badge.open{color:#9c1c74 !important; background:#fbe6f3 !important; border-color:#e0a0c8 !important;}
+    .const-more, .const-more a.lk{color:#111 !important; border-color:#666 !important;}
+  }
+
+  /* ── 🔧 칸2(일하는 법) 카드화 — 2블록 빈약 완화(억지 콘텐츠 추가 없이 시각 무게만 · 2026-07-18) ── */
+  .c2-card{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:8px;}
+  .c2-card:last-child{margin-bottom:0;}
+  .c2-card .dim-label{color:var(--accent-soft);}
+  @media print{
+    .c2-card{background:#fff !important; border-color:#ccc !important;}
+    .c2-card .dim-label{color:#4a2a91 !important;}
+  }
 
   footer.foot{margin-top:16px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
 
@@ -338,9 +382,10 @@
     </div>
   </div>
 
-  <!-- ════ 📜 공통 헌법 핵심 (전 C레벨 공유 원칙 · S2 정본 링크 · 2026-07-18 상단 이동) ════ -->
-  <h2 class="sec">📜 공통 헌법 핵심 <span style="font-size:11px;font-weight:400;color:var(--dim);">전 C레벨 공유 원칙 — 상세는 S2</span></h2>
+  <!-- ════ 📜 공통 헌법 핵심 (전 C레벨 공유 원칙 · 약속·재발방지·공식값 JSON 인라인 단일소스 · 2026-07-18 인라인 승격) ════ -->
+  <h2 class="sec">📜 공통 헌법 핵심 <span style="font-size:11px;font-weight:400;color:var(--dim);">전 C레벨 공유 원칙 — 약속·재발방지·공식값은 아래 인라인(단일소스), 나머지는 S2</span></h2>
   <div class="cards" id="common-cards"><!-- JS가 라이브 URL로 채움 --></div>
+  <div class="const-wrap" id="const-wrap"><!-- JS: 📜약속·🛡️재발방지·🏛️공식값 접이식 인라인(ssot/*.json 직독 · 단일소스 · 복사 아님) --></div>
 
   <!-- ════ 👤 C레벨별 카드 (매트릭스 R/R + 🏭 제품화 성숙도 통합 · 구 '모듈 제품화 지도' 흡수 · 2026-07-18) ════ -->
   <div id="matrix-section">
@@ -378,61 +423,41 @@
   // S2 라이브 URL 기준 (GitHub Pages 루트 = "3. 웰페리온 가이드/" → 접두사 없음)
   var S2 = 'wellperion_guide(main).html';
 
-  // ── B. 공통 4섹션 카드 (S2 앵커 링크) ──
+  // ── B. 공통 4섹션 카드 (S2 정본 없는 원칙만 발췌 — 실데이터 3종은 아래 인라인으로 이관 · 2026-07-18) ──
+  //   con-absolute/con-done4/con-unified/con-gm5/con-input5/con-token 개별 링크 22줄(헤더 back 링크와 동일 S2 패턴)은
+  //   전부 제거 → 카드는 desc 발췌문만 유지, 이동 대상 링크는 아래 단일 .const-more 1개로 수렴(Part3).
   var cards = [
     {
       h:'⚖️ 절대기준 2종',
-      // 인쇄 시 링크 숨김 → desc가 유일한 노출 지점(정직 요약 · S2 con-absolute/con-done4 원문 축약, 재열거 아닌 발췌).
-      d:'절대원칙 3: ①SSOT=웰페리온 ERP(Notion 아님) ②중복 금지(기존 업데이트만·신규는 진짜 신규일 때만) ③현황파악=GitHub commit·PR. 완료=4요건(①커밋 ②상태 ③다음 ④증거) 모두 충족해야 완료 — 증거 없으면 자동 거부.',
-      links:[
-        ['절대 원칙 3대', 'con-absolute'],
-        ['완료 4요건', 'con-done4']
-      ]
+      d:'절대원칙 3: ①SSOT=웰페리온 ERP(Notion 아님) ②중복 금지(기존 업데이트만·신규는 진짜 신규일 때만) ③현황파악=GitHub commit·PR. 완료=4요건(①커밋 ②상태 ③다음 ④증거) 모두 충족해야 완료 — 증거 없으면 자동 거부.'
     },
     {
       h:'🔗 통합원칙 10',
-      d:'기존건 마무리 우선(병행 시 결과보고) · 반복질문 금지 · 결재부하 제로(GM 결재 5종 외 항상 바로 진행) · 위임=R/R 위탁만(방향설정은 "지시") · 과거 회수 금지 등 9테마(S2 토글 상세)',
-      links:[
-        ['통합 원칙 보기', 'con-unified']
-      ]
+      d:'기존건 마무리 우선(병행 시 결과보고) · 반복질문 금지 · 결재부하 제로(GM 결재 5종 외 항상 바로 진행) · 위임=R/R 위탁만(방향설정은 "지시") · 과거 회수 금지 등 9테마'
     },
     {
-      h:'📌 정본데이터 7 (핵심4+기계3)',
-      d:'핵심4: 약속 · 재발방지 · 공식값 · KPI(ssot/kpi.json 정본) / 기계3: forbidden_terms · enforcement_mode · incident_baseline',
-      links:[
-        ['우리의 약속', 'common-promises'],
-        ['🛡️ 재발방지', 'common-incidents'],
-        ['🏛️ 공식값', 'common-canon-body']
-      ]
+      h:'📌 정본데이터 4 (약속·재발방지·공식값·KPI)',
+      d:'약속 · 🛡️ 재발방지 · 🏛️ 공식값은 아래 📜 공통 헌법 인라인에서 실데이터 그대로 펼쳐 볼 수 있다(단일소스 · 복사 아님). 📊 KPI(ssot/kpi.json 정본)는 아래 C레벨별 카드의 📊칸에 라이브 표시된다.'
     },
     {
       h:'🔌 운영 SOP 5',
-      // GM 결재 5종 실제 정의(S2 con-gm5 원문) — 인쇄본에서 카드 하나만 봐도 결재 기준이 서게.
-      d:'GM 결재 5종(이 5종 외 전부 자율 진행 후 보고): 💰결제(1원 이상) · 🔒보안(비밀번호·결제·키값) · 🚫금지 항목 변경 · 📐전략·방향·포지셔닝 · 🏷️브랜드·공식값 변경',
-      links:[
-        ['🎯 GM 결재 5종', 'con-gm5'],
-        ['🚫 입력 금지 5종', 'con-input5'],
-        ['🎚️ 토큰 라우팅', 'con-token']
-      ]
+      d:'GM 결재 5종(이 5종 외 전부 자율 진행 후 보고): 💰결제(1원 이상) · 🔒보안(비밀번호·결제·키값) · 🚫금지 항목 변경 · 📐전략·방향·포지셔닝 · 🏷️브랜드·공식값 변경'
     },
     {
       h:'⚖️ 자율화 전제 3',
       // 구 독립 '불변원리 3' 섹션 흡수(2026-07-15) — 위 4섹션을 자율 루프에 적용한 파생 3원칙. 별도 헌법 조항 아님(중복 제거).
-      d:'위 4섹션을 자율 루프에 적용한 3원칙 — ① 등록부 단일 SSOT(모든 화면·알림·루프는 module_registry.json 한 곳·복사 금지) · ② 가역만 자율(비가역=발행·배포·삭제·외부전송·결제·보안·전략·공식값은 GM 결재) · ③ 웰리는 위임·검증만(직접 도메인 실행 금지).',
-      links:[
-        ['① SSOT → 절대기준', 'con-absolute'],
-        ['② 가역 → GM 결재 5종', 'con-gm5'],
-        ['③ 위임 → 통합원칙', 'con-unified']
-      ]
+      d:'위 4섹션을 자율 루프에 적용한 3원칙 — ① 등록부 단일 SSOT(모든 화면·알림·루프는 module_registry.json 한 곳·복사 금지) · ② 가역만 자율(비가역=발행·배포·삭제·외부전송·결제·보안·전략·공식값은 GM 결재) · ③ 웰리는 위임·검증만(직접 도메인 실행 금지).'
     }
   ];
   var cc = document.getElementById('common-cards');
   cc.innerHTML = cards.map(function(c){
-    var ls = c.links.map(function(l){
-      return '<a class="lk" href="' + S2 + '#S2/common/' + l[1] + '">' + l[0] + ' ↗</a>';
-    }).join('');
-    return '<div class="ccard"><h3>' + c.h + '</h3><div class="desc">' + c.d + '</div>' + ls + '</div>';
+    return '<div class="ccard"><h3>' + c.h + '</h3><div class="desc">' + c.d + '</div></div>';
   }).join('');
+  // Part3: S2 정본 없는 원칙(절대원칙3·통합원칙10·금지5·토큰라우팅·업무처리3·검증표준) 전용 — 링크는 전 카드 통틀어 이 1개만.
+  cc.insertAdjacentHTML('afterend',
+    '<div class="const-more">⚖️ 절대원칙3 · 통합원칙10 · 금지5종 · 토큰라우팅 · 업무처리3 · 검증표준 상세' +
+    '<a class="lk" href="' + S2 + '#S2/common/con-absolute">웰페리온 ERP(S2)로 ↗</a></div>'
+  );
 
   // ── A. 매트릭스 정본 직독 렌더 + GM 3칸 병합 인라인 편집 (2026-06-29) ──
   //   읽기=RAW_URL(raw GitHub) → _matrixData에 8 dims 전체 보유.
@@ -453,6 +478,11 @@
   var _reachData = null;      // status/northstar_reach.json → role.id별 {reach_pct|null, mode, basis, milestones_done?, milestones_total?}
   var _ownershipData = null;  // ssot/ownership_map.json → role.id(title lowercase)별 {primary_surface, domain, executor} — GM확정 소유·역할 단일출처(2026-07-18)
   var _prodByRole = null;     // status/module_registry.json → owner_role별 모듈[] (구 renderProdStrip 그룹핑 재활용 · C레벨 카드 흡수 2026-07-18)
+  // 📜🛡️🏛️ 공통헌법 3종 인라인(2026-07-18) — 정본 ssot/약속.json·incidents.json·canon_values.json 직독 원본 배열(복사 아님).
+  var _promisesData = null;        // ssot/약속.json lessons[]
+  var _incidentsFullData = null;   // ssot/incidents.json incidents[] 전체(role 집계용 _incidents와 별개 · 인라인 표용)
+  var _canonValuesFullData = null; // ssot/canon_values.json values[]
+  var _constOpen = {};              // sectionId(promises/incidents/canon) → true(펼침). 기본 미지정=접힘.
   var _editMode = false;
   // 뷰 상태(GM PC 세션 한정 · 정본 아님): 역할 필터 · 칸 숨김 · 폴침
   var _roleFilter = null;     // null=전체, 아니면 role.id
@@ -518,6 +548,66 @@
     return String(s == null ? '' : s)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   };
+
+  // ── 📜🛡️🏛️ 공통헌법 3종 인라인(접이식 · 기본 접힘 · 2026-07-18) ──
+  //   ssot/약속.json·incidents.json·canon_values.json 직독 원본을 그대로 표로 렌더(복사 아님 · S2가 렌더하는 동일 JSON · 단일소스).
+  function constHeader(id, icon, title, count){
+    return '<div class="const-h" onclick="window._toggleConst(\'' + id + '\')">' +
+      '<span>' + icon + ' ' + esc(title) + '</span>' +
+      (count != null ? '<span class="const-count">' + count + '</span>' : '') +
+      '<span class="const-arrow">▶</span></div>';
+  }
+  function renderPromisesBody(){
+    if(_promisesData == null) return '<div class="const-status">불러오는 중…</div>';
+    if(!_promisesData.length) return '<div class="const-status">불러오지 못했습니다(ssot/약속.json).</div>';
+    var rows = _promisesData.map(function(l){
+      return '<tr><td class="const-cat">' + esc(l.분류 || '') + '</td><td><b>' + esc(l.약속 || '') + '</b></td><td>' + esc(l.내용 || '') + '</td></tr>';
+    }).join('');
+    return '<table class="const-tbl"><thead><tr><th>분류</th><th>약속</th><th>내용</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  function renderIncidentsInlineBody(){
+    if(_incidentsFullData == null) return '<div class="const-status">불러오는 중…</div>';
+    if(!_incidentsFullData.length) return '<div class="const-status">불러오지 못했습니다(ssot/incidents.json).</div>';
+    var rows = _incidentsFullData.map(function(inc){
+      var st = String(inc.상태 || '');
+      var badge = /GUARDED/.test(st) ? '<span class="const-badge guarded">🛡️ ' + esc(st) + '</span>'
+                : /OPEN/.test(st) ? '<span class="const-badge open">🔓 ' + esc(st) + '</span>'
+                : esc(st);
+      return '<tr><td class="const-cat">' + esc(inc.id || '') + '</td><td style="white-space:nowrap;">' + esc(inc.date || '') + '</td>' +
+             '<td>' + esc(inc.요약 || '') + '</td><td>' + badge + '</td></tr>';
+    }).join('');
+    return '<table class="const-tbl"><thead><tr><th>ID</th><th>날짜</th><th>요약</th><th>상태</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  function renderCanonBody(){
+    if(_canonValuesFullData == null) return '<div class="const-status">불러오는 중…</div>';
+    if(!_canonValuesFullData.length) return '<div class="const-status">불러오지 못했습니다(ssot/canon_values.json).</div>';
+    var rows = _canonValuesFullData.map(function(v){
+      return '<tr><td class="const-cat">' + esc(v.이름 || v.key || '') + '</td><td><b>' + esc(v.value || '') + '</b></td>' +
+             '<td style="color:var(--dim);font-size:10.5px;">' + esc(v.source || '') + '</td></tr>';
+    }).join('');
+    return '<table class="const-tbl"><thead><tr><th>이름</th><th>값</th><th>출처</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  function renderCommonInline(){
+    var el = document.getElementById('const-wrap');
+    if(!el) return;
+    var sections = [
+      { id:'promises',  icon:'📜', title:'우리의 약속', count:(_promisesData ? _promisesData.length : null), body: renderPromisesBody() },
+      { id:'incidents', icon:'🛡️', title:'재발방지',     count:(_incidentsFullData ? _incidentsFullData.length : null), body: renderIncidentsInlineBody() },
+      { id:'canon',     icon:'🏛️', title:'공식값',       count:(_canonValuesFullData ? _canonValuesFullData.length : null), body: renderCanonBody() }
+    ];
+    el.innerHTML = sections.map(function(s){
+      var open = !!_constOpen[s.id];
+      return '<div class="const-sec' + (open ? ' open' : '') + '" id="const-sec-' + s.id + '">' +
+        constHeader(s.id, s.icon, s.title, s.count) +
+        '<div class="const-body">' + s.body + '</div>' +
+      '</div>';
+    }).join('');
+  }
+  window._toggleConst = function(id){
+    _constOpen[id] = !_constOpen[id];
+    renderCommonInline();
+  };
+  renderCommonInline(); // 초기(fetch 전) 접힌 상태 + '불러오는 중…' 표시
 
   // ── 채널 로고(인라인 SVG · 렌더 전용) — JSON엔 [텔레그램]/[카톡] 텍스트 토큰만(편집·S2 안전). esc() 후 치환. ──
   var TG_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="텔레그램"><title>텔레그램</title><rect width="24" height="24" rx="7" fill="#229ED9"/><path transform="translate(3.2 3.6) scale(0.72)" d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.9-.75 1.12-1.52.7L11.6 16.8l-1.65 1.6c-.19.19-.35.29-.56.29z" fill="#fff"/></svg>';
@@ -634,11 +724,13 @@
     var raw = o && o.northstar;
     if(!raw) return '';
     var isPlaceholder = /^\[북극성/.test(raw);
+    // 칸 밸런스(2026-07-18 GM확정): 미확정 6역할=큰 블록 대신 정직 한 줄로 축약(강조·높이 축소).
+    // 확정 role(cmo 등)은 기존 라벨+본문 렌더 그대로 유지.
+    if(isPlaceholder){
+      return '<div class="dim-val" style="color:var(--dim);font-size:10.5px;margin:1px 0 5px;">🌟 북극성 미확정 <span style="font-style:italic;">(웰리 확정 대기)</span></div>';
+    }
     var lab = '<span class="dim-label">🌟 북극성 <span style="font-weight:400;text-transform:none;font-size:9px;color:var(--dim);">(장기 비전)</span></span>';
-    var val = isPlaceholder
-      ? '<div class="dim-val" style="color:var(--dim);font-style:italic;">' + esc(raw) + '</div>'
-      : '<div class="dim-val">' + esc(raw) + '</div>';
-    return lab + val;
+    return lab + '<div class="dim-val">' + esc(raw) + '</div>';
   }
 
   function ideasBlock(role){
@@ -898,8 +990,9 @@
       // 2026-07-07 GM승인: 🗺️북극성 지도 + 🌟북극성 도달율 두 블록을 northStarBlock() 하나로 병합(축 값 이중나열 제거).
       var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + northStarBlock(role) +
                kpiBlock(role) + workRateBlock(role) + progressBlock(role) + recommendBlock(role) + '</td>';
-      // 칸2 일하는 법 = 📚읽는 정본(2) + 🗓️하루 루틴(1)
-      var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🗓️ 하루 루틴') + '</td>';
+      // 칸2 일하는 법 = 📚읽는 정본(2) + 🗓️하루 루틴(1) — 카드화로 시각 빈약 완화(칸 밸런스 2026-07-18 · 콘텐츠 추가 없음)
+      var c2 = '<td><div class="c2-card">' + dimBlock(role, 2, '📚 읽는 정본') + '</div>' +
+               '<div class="c2-card">' + dimBlock(role, 1, '🗓️ 하루 루틴') + '</div></td>';
       // 칸3 소유 관리 = role.owns 링크칩(+선택 desc 1줄) + role.channels(선택·발행채널) — 둘 다 없으면 기존과 동일 렌더(하위호환)
       //   MODULE_LINKS[role.id] 중 href가 동일 대상인 owns 칩은 중복이라 제거(서술형 MODULE_LINK만 남김 · GM지시 2026-07-18).
       //   href 비교는 정규화(trim, 앵커 포함) 후 정확 일치만 중복 판정 — 세부항목(예: chro H1~H4)은 앵커가 서로 달라 유지됨.
@@ -1162,7 +1255,8 @@
     gasRead('status/northstar_reach.json', RAW_BASE + 'status/northstar_reach.json').catch(function(){ return null; }),
     gasRead('ssot/canon_values.json',      RAW_BASE + 'ssot/canon_values.json').catch(function(){ return null; }),
     gasRead('ssot/ownership_map.json',     RAW_BASE + 'ssot/ownership_map.json').catch(function(){ return null; }),
-    gasRead('status/module_registry.json', RAW_BASE + 'status/module_registry.json').catch(function(){ return null; })
+    gasRead('status/module_registry.json', RAW_BASE + 'status/module_registry.json').catch(function(){ return null; }),
+    gasRead('ssot/약속.json',               RAW_BASE + 'ssot/약속.json').catch(function(){ return null; })
   ])
     .then(function(arr){
       _matrixData = arr[0];
@@ -1178,8 +1272,13 @@
       _ownershipData = {};
       ((arr[8] && arr[8].roles) || []).forEach(function(o){ if(o && o.title) _ownershipData[String(o.title).toLowerCase()] = o; });
       _prodByRole = computeProdByRole(arr[9]);
+      // 📜🛡️🏛️ 공통헌법 3종 인라인 — arr[5]/arr[7]은 이미 위에서 fetch된 원본(incidents 전체·canon 전체) 재사용, 약속만 신규 arr[10].
+      _incidentsFullData = (arr[5] && arr[5].incidents) || [];
+      _canonValuesFullData = (arr[7] && arr[7].values) || [];
+      _promisesData = (arr[10] && arr[10].lessons) || [];
       renderMatrix();
       renderVisionDynamic(canonMap);
+      renderCommonInline();
       renderEditBtn();
       initColResizers();
       buildControlBar();
