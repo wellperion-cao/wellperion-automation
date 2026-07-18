@@ -96,7 +96,7 @@ except Exception:
 ROOT = Path(__file__).resolve().parent.parent
 ROOMS_CONFIG = Path(__file__).resolve().parent / "kakao_rooms.json"
 EVIDENCE_DIR = Path(__file__).resolve().parent / "poc-evidence"
-DEFAULT_ARCHIVE_DIR = ROOT / "1. AI학습자료_아카이브" / "10_매출보고"
+DEFAULT_ARCHIVE_DIR = ROOT / "1. AI자료_아카이브" / "10_매출보고"
 ARCHIVE_FILENAME_FMT = "웰페리온_일일보고_%Y%m%d.png"
 
 # 방 목록 편집 SSOT = T2 "카톡전송관리" 웹(GAS 시트). 로컬 kakao_rooms.json은 폴백 캐시.

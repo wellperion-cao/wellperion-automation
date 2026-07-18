@@ -10,7 +10,7 @@ import os
 import sys
 from PIL import Image, ImageOps
 
-DEFAULT_DIR = r"C:\Users\jjky0\welperion-automation\2. 브랜드_공식문서\시설 사진"
+DEFAULT_DIR = r"C:\Users\jjky0\welperion-automation\2. 브랜드_자료\시설 사진"
 
 
 def encode(im, quality):

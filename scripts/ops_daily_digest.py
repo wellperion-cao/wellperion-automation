@@ -12,11 +12,11 @@ GM 승인용 아침 메시지 1통을 생성한다. 메시지 4요소:
 ★개인정보 원칙(필수):
   - 대화 원문·원장(이슈 이력)·생성 메시지는 직원 실명 등 개인정보를 포함한다.
   - git에 추적되는 경로(status/·docs/·3. 웰페리온 가이드/ 등)에는 절대 쓰지 않는다.
-  - 입출력 전부 gitignore된 "1. AI학습자료_아카이브/11_카카오톡/★운영부/" 하위에만 저장.
+  - 입출력 전부 gitignore된 "1. AI자료_아카이브/11_카카오톡/★운영부/" 하위에만 저장.
   - 이 스크립트가 만든 산출물은 커밋하지 않는다(발행 전 GM 검수 전제).
 
-입력: 1. AI학습자료_아카이브/11_카카오톡/★운영부/{YYYY-MM}/*.txt (최신 파일)
-원장: 1. AI학습자료_아카이브/11_카카오톡/★운영부/_digest_ledger.json (날짜별 이슈 목록·해결여부 누적)
+입력: 1. AI자료_아카이브/11_카카오톡/★운영부/{YYYY-MM}/*.txt (최신 파일)
+원장: 1. AI자료_아카이브/11_카카오톡/★운영부/_digest_ledger.json (날짜별 이슈 목록·해결여부 누적)
 
 사용법:
   python scripts/ops_daily_digest.py                # 대상일=어제(없으면 최근 완결일) 자동
@@ -41,7 +41,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 
 # ── 경로 상수 (gitignore된 아카이브 하위 전용 — 절대 status/·docs/ 등 추적경로 금지) ──
 ROOT = Path(__file__).resolve().parent.parent
-KAKAO_ROOM_DIR = ROOT / "1. AI학습자료_아카이브" / "11_카카오톡" / "★운영부"
+KAKAO_ROOM_DIR = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★운영부"
 LEDGER_PATH = KAKAO_ROOM_DIR / "_digest_ledger.json"
 PENDING_DIGEST_PATH = KAKAO_ROOM_DIR / "_pending_digest.json"
 KPI_VALUES_PATH = ROOT / "status" / "kpi_values.json"

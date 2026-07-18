@@ -26,7 +26,7 @@ from compose_barre import (  # noqa: E402
 )
 from brand_constants import BEIGE, WHITE, GRAY, PROJECT_ROOT  # noqa: E402
 
-PHOTO_DIR = PROJECT_ROOT / "2. 브랜드_공식문서" / "시설 사진" / "web_10mb아래"
+PHOTO_DIR = PROJECT_ROOT / "2. 브랜드_자료" / "시설 사진" / "web_10mb아래"
 OUT_DIR = PROJECT_ROOT / "instagram" / "260629_공식_시설_F1종합" / "output(인스타그램)"
 TOTAL = 6
 

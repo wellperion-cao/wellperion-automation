@@ -12,7 +12,7 @@
 telegram_bot/bot.py 의 opsdig: 콜백(GM이 [✅ 방에 발송] 버튼을 탭했을 때)에서만 발생한다.
 
 ★개인정보(필수): 대화 원문·요약·대기 파일은 전부 gitignore된
-"1. AI학습자료_아카이브/11_카카오톡/★운영부/" 하위에만 저장. status/·docs/ 등 추적경로 금지.
+"1. AI자료_아카이브/11_카카오톡/★운영부/" 하위에만 저장. status/·docs/ 등 추적경로 금지.
 
 사용:
     python scripts/ops_morning_pipeline.py             # 실전(카톡 내보내기 포함, GM 텔레그램 실발송)
@@ -45,7 +45,7 @@ PY = sys.executable
 EXPORT_SCRIPT = ROOT / "scripts" / "ops_export_kakao.py"
 DIGEST_SCRIPT = ROOT / "scripts" / "ops_daily_digest.py"
 ENV_PATH = ROOT / "telegram_bot" / ".env"
-KAKAO_ROOM_DIR = ROOT / "1. AI학습자료_아카이브" / "11_카카오톡" / "★운영부"
+KAKAO_ROOM_DIR = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★운영부"
 PENDING_PATH = KAKAO_ROOM_DIR / "_pending_digest.json"
 
 _SEP = "=" * 60

@@ -59,7 +59,7 @@ EXPORT_URL = (
 )
 
 ARCHIVE_FILENAME_FMT = "웰페리온_일일보고_%Y%m%d.png"
-DEFAULT_ARCHIVE_DIR = ROOT / "1. AI학습자료_아카이브" / "10_매출보고"
+DEFAULT_ARCHIVE_DIR = ROOT / "1. AI자료_아카이브" / "10_매출보고"
 
 
 def log(msg: str) -> None:

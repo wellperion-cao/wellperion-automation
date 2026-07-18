@@ -37,7 +37,7 @@ except Exception:
 
 ROOT = Path(__file__).resolve().parent.parent
 SENDER = ROOT / "scripts" / "kakao_report_sender.py"
-PENDING = ROOT / "1. AI학습자료_아카이브" / "11_카카오톡" / "★운영부" / "_pending_digest.json"
+PENDING = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★운영부" / "_pending_digest.json"
 KILL_SWITCH = ROOT / "status" / "ops_digest_send.json"
 TARGET_ROOM = "★ 운영부"
 

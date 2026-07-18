@@ -10,9 +10,9 @@ _assets/logo — 웰페리온 공식 로고 자산 단일 SSOT
    - w_mark.png                    : W 한 글자 (정사각형, 워터마크·아이콘용)
 
 2. 출처
-   - wellperion_wordmark.png       ← 2. 브랜드_공식문서/로고(최종)/로고3.PNG
-   - wellperion_wordmark_white.png ← 2. 브랜드_공식문서/로고(최종)/로고1.PNG
-   - wellperion_wordmark_black.png ← 2. 브랜드_공식문서/로고(최종)/로고.PNG
+   - wellperion_wordmark.png       ← 2. 브랜드_자료/로고(최종)/로고3.PNG
+   - wellperion_wordmark_white.png ← 2. 브랜드_자료/로고(최종)/로고1.PNG
+   - wellperion_wordmark_black.png ← 2. 브랜드_자료/로고(최종)/로고.PNG
    - w_mark.png                    ← wellperion_brand_identity(최종시안).pdf 페이지 2 LOGO·VERTICAL 시안 PNG화
 
 3. 페이지에서 사용하는 법 (예시)
@@ -38,5 +38,5 @@ _assets/logo — 웰페리온 공식 로고 자산 단일 SSOT
    - 파일명·위치 변경 금지.
 
 6. 자산 공식 SSOT
-   - 색상·로고·서브브랜드 정의: 1. AI학습자료_아카이브/06_공지_안내/wellperion_brand_identity(최종시안).pdf
+   - 색상·로고·서브브랜드 정의: 1. AI자료_아카이브/06_공지_안내/wellperion_brand_identity(최종시안).pdf
    - 변경은 위 PDF 갱신 후 이 폴더 PNG 함께 교체.

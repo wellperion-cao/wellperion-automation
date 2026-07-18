@@ -1853,7 +1853,7 @@ async def cmd_m1_publish(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # 이미지 재생성 없음·시트 접근 없음. GAS(매출보고_자동발송.js sendTelegramPhoto)가 버튼을 붙인다.
 _KAKAO_SENDER = WORKDIR / "scripts" / "kakao_report_sender.py"
 _KAKAO_ROOMS_CONFIG = WORKDIR / "scripts" / "kakao_rooms.json"
-_KAKAO_DEFAULT_ARCHIVE_DIR = WORKDIR / "1. AI학습자료_아카이브" / "10_매출보고"
+_KAKAO_DEFAULT_ARCHIVE_DIR = WORKDIR / "1. AI자료_아카이브" / "10_매출보고"
 _KAKAO_STATUS_FILE = WORKDIR / "status" / "kakao_last_send.json"
 
 
@@ -1967,9 +1967,9 @@ async def cmd_kakao_send_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE
 # ★게이트(절대 원칙): ★운영부 방 전송은 이 콜백(GM 버튼 승인)에서만 발생한다 —
 # 파이프라인 자신은 절대 방에 직접 쓰지 않는다.
 # 대기 상태 파일은 개인정보(대화 파생물)라 gitignore된 아카이브에만 존재
-# ("1. AI학습자료_아카이브/11_카카오톡/★운영부/_pending_digest.json") — status/ 등 추적경로 금지,
+# ("1. AI자료_아카이브/11_카카오톡/★운영부/_pending_digest.json") — status/ 등 추적경로 금지,
 # 따라서 pub:/ns: 콜백과 달리 git 커밋을 하지 않는다.
-_OPS_PENDING_DIGEST = WORKDIR / "1. AI학습자료_아카이브" / "11_카카오톡" / "★운영부" / "_pending_digest.json"
+_OPS_PENDING_DIGEST = WORKDIR / "1. AI자료_아카이브" / "11_카카오톡" / "★운영부" / "_pending_digest.json"
 _OPS_DIGEST_ROOM_NAME = "★ 운영부"
 
 

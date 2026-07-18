@@ -6,7 +6,7 @@ GM 2026-07-07 지시: 기존 '시설 종합 F1'(6장 한 게시물)을 3편 시�
 
 디자인 정본 = compose_barre 스타일 프리미티브를 그대로 재사용(손 디자인 추측 금지).
 전 슬라이드 = 풀사진 + 하단 그라디언트 + 좌상단 풀로고 + 우상단 WELLPERION 칩 + 카운터.
-사진 정본 = 2. 브랜드_공식문서/01_시설_사진 (프로컷 094A* = web_10mb아래 / 사우나·탕 = 시설 사진/).
+사진 정본 = 2. 브랜드_자료/01_시설_사진 (프로컷 094A* = web_10mb아래 / 사우나·탕 = 시설 사진/).
 
 실행:
   python scripts\\compose_official_facility_series.py               # 3편 제작 + M5 등록
@@ -26,7 +26,7 @@ from compose_barre import (  # noqa: E402
 )
 from brand_constants import BEIGE, WHITE, GRAY, PROJECT_ROOT  # noqa: E402
 
-FAC = PROJECT_ROOT / "2. 브랜드_공식문서" / "01_시설_사진"
+FAC = PROJECT_ROOT / "2. 브랜드_자료" / "01_시설_사진"
 PRO = FAC / "web_10mb아래"     # 094A* 프로컷
 KAKAO = FAC / "시설 사진"       # 사우나·탕·휴게·로비·카페·테라스 등
 CINQ = FAC / "생크몽드(26년도)"   # 생크몽드 스파 (26년 최신 세트)

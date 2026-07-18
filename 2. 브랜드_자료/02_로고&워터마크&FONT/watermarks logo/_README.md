@@ -1,7 +1,7 @@
 _assets/logo/watermarks — 웰페리온 사업부별 워터마크 SSOT
 
 브랜드 가이드(wellperion_brand_identity 최종시안 PDF) 공식 컬러 기준 사업부별 corner+mark 워터마크.
-원본 출처: 2. 브랜드_공식문서/로고(최종)/wellperion-LOGO watermarks/
+원본 출처: 2. 브랜드_자료/로고(최종)/wellperion-LOGO watermarks/
 
 1. 파일명 규칙
    {사업부코드}_LOGO-{logo_hex}_BG-{bg_hex}_{타입}.png

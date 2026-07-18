@@ -4,7 +4,7 @@ on:
     branches: [master]
     paths:
       - '3. 웰페리온 가이드/**'
-      - '1. AI학습자료_아카이브/08_로고&워터마크/_assets/**'
+      - '1. AI자료_아카이브/08_로고&워터마크/_assets/**'
       - 'ssot/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -32,9 +32,9 @@ jobs:
         run: |
           mkdir -p _pages_build
           cp -r "3. 웰페리온 가이드/." _pages_build/
-          mkdir -p "_pages_build/1. AI학습자료_아카이브/08_로고&워터마크/_assets"
-          cp -r "1. AI학습자료_아카이브/08_로고&워터마크/_assets/." \
-                "_pages_build/1. AI학습자료_아카이브/08_로고&워터마크/_assets/"
+          mkdir -p "_pages_build/1. AI자료_아카이브/08_로고&워터마크/_assets"
+          cp -r "1. AI자료_아카이브/08_로고&워터마크/_assets/." \
+                "_pages_build/1. AI자료_아카이브/08_로고&워터마크/_assets/"
           mkdir -p _pages_build/ssot
           cp ssot/dashboard.html ssot/incidents.json ssot/canon_values.json "ssot/약속.json" _pages_build/ssot/
       - name: Setup Pages

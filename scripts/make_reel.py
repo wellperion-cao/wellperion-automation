@@ -65,7 +65,7 @@ MUSIC_POOL_DIR = PROJECT_ROOT / "instagram" / "_assets" / "music"
 # 폰트 위치 후보 (slide_compositor 와 동일 — 실제 존재 경로 자동 선택)
 _FONT_DIR_CANDIDATES = [
     PROJECT_ROOT / "brand" / "font",
-    PROJECT_ROOT / "2. 브랜드_공식문서" / "font",
+    PROJECT_ROOT / "2. 브랜드_자료" / "font",
 ]
 FONT_DIR = next((d for d in _FONT_DIR_CANDIDATES if d.exists()), _FONT_DIR_CANDIDATES[0])
 FONT_BOLD = FONT_DIR / "Pretendard-Bold.otf"

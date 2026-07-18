@@ -28,7 +28,7 @@ from brand_constants import BEIGE, BLACK_BG, WHITE, HIGHLIGHT, PROJECT_ROOT  # n
 
 W, H = 1080, 1350
 
-FAC = PROJECT_ROOT / "2. 브랜드_공식문서" / "01_시설_사진"
+FAC = PROJECT_ROOT / "2. 브랜드_자료" / "01_시설_사진"
 PRO = FAC / "web_10mb아래"      # 094A* 프로컷
 KAKAO = FAC / "시설 사진"        # 수영장·골프장 등
 

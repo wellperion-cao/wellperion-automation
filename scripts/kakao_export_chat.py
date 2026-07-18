@@ -11,7 +11,7 @@
 성공 레시피(2026-07-14 실측): ①KakaoTalk.exe 재실행(트레이→메인창 전면) ②방 검색 자동열기
 ③focus_window(포커스) ④room.type_keys('^s') ⑤저장 대화상자에 경로 set_edit_text+저장.
 
-★개인정보: 산출물(대화 원문)은 gitignore된 "1. AI학습자료_아카이브/11_카카오톡/{폴더}/{YYYY-MM}/"
+★개인정보: 산출물(대화 원문)은 gitignore된 "1. AI자료_아카이브/11_카카오톡/{폴더}/{YYYY-MM}/"
 에만. 이 스크립트·산출물은 커밋하지 않는다. 발송·요약은 범위 밖(ops_daily_digest.py).
 
 사용법:
@@ -43,7 +43,7 @@ if str(SCRIPTS) not in sys.path:
 KAKAO_EXE = os.environ.get(
     "KAKAOTALK_EXE", r"C:\Program Files (x86)\Kakao\KakaoTalk\KakaoTalk.exe"
 )
-ARCHIVE_BASE = ROOT / "1. AI학습자료_아카이브" / "11_카카오톡"
+ARCHIVE_BASE = ROOT / "1. AI자료_아카이브" / "11_카카오톡"
 # 카톡 방 제목 → 파일시스템 폴더명(★·공백 등 정규화, 기존 관례 유지)
 ROOM_DIR_NAME = {"★ 운영부": "★운영부"}
 

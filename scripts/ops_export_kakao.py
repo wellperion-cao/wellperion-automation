@@ -36,10 +36,10 @@ except Exception:
     pass
 
 ROOT = Path(__file__).resolve().parent.parent
-MONTH_DIR = ROOT / "1. AI학습자료_아카이브" / "11_카카오톡" / "★운영부" / datetime.now().strftime("%Y-%m")
+MONTH_DIR = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★운영부" / datetime.now().strftime("%Y-%m")
 HOME = Path.home()
 SEARCH_DIRS = [
-    ROOT / "1. AI학습자료_아카이브" / "11_카카오톡",
+    ROOT / "1. AI자료_아카이브" / "11_카카오톡",
     HOME / "Documents",
     HOME / "Downloads",
     HOME / "Desktop",
