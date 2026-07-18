@@ -2781,5 +2781,19 @@
     "ship_no": 1331,
     "note": "근본원인: scripts/publish_digest.py send_publish_digest()의 멱등 판정이 그룹키+해시 동일 비교였는데, 같은 콘텐츠(예: instagram/260715_L1_수영)가 채널별로 나뉘어 서로 다른 항목 부분집합으로 들어오면 해시가 매번 달라져 재발신됨. + 멱등 원장(.publish_digest_sent.json)에 L1 수영 키가 아예 없어(L2_PT만 존재) 재스캔마다 재발송되던 결함. 수리: (1) send_publish_digest() 멱등 판정을 'if ledger.get(key)==h' -> 'if key in ledger'로 강화(1콘텐츠=통합요약 평생 1회, 항목 부분집합·해시 변동 무관). 해시는 참조용 저장 유지. (2) review_queue.json의 발행완료 132항목을 모듈 자체 함수(group_published/_group_hash)로 그룹핑해 63개 콘텐츠 그룹키를 .publish_digest_sent.json에 백필 병합(기존 L2_PT 키 보존, 62개 신규키 추가, L1 수영 포함). (3) 검증 중 tests/test_publish_digest.py의 사전 존재 결함(실제 슬라이드 이미지가 리포에 존재해 _send_photo가 미모킹 상태로 실경로를 타 실제 텔레그램 전송이 발생 — 검증 과정에서 발견 즉시 수리, _first_slide_image monkeypatch로 차단) + 2026-07-16 IG 미리보기 비활성화 변경 이후 갱신 안 된 link_preview_options 관련 테스트 2종·preview_url 단언 1종을 현재 _send() 실제 계약에 맞게 수정(모두 사실관계 명시 주석 포함). pytest tests/test_publish_digest.py -q 8개 전부 통과. 백필 후 실제 원장 기준 L1 수영 5항목 재호출 시 _send/_send_photo 호출 0회(재발신 없음) 단언 통과 확인. (ship_no=1310은 다른 배가 선점 중이라 다음 가용 번호로 배정)",
     "next": "🔗 후속 후보: per-channel notify_published_links 도 콘텐츠 단위 dedup 검토(GM 메시지 형식 확인 후)"
+  },
+  {
+    "task_id": "COO-2026-07-18-ADHOC-fbff31ca",
+    "clevel": "coo",
+    "title": "[시우] 월간운영계획 종합접수처에 습득물 병합 + 섹션별 라이브 상태 배지(🟢/🟠/🔴)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1332,
+    "artifact": "- 월간운영계획: lf_list(습득물) 병합→종합접수처 집계·7종 보드·요약카드 자동 반영(게시중→접수·수령완료→완료·PII 미사용)\n- 7개 섹션 제목 옆 라이브 상태 배지(실시간=🟢/반반=🟠/수동·계획=🔴, title 근거 툴팁, GM 정직표기)\n- 종합접수처 현황 페이지 제목에 🟢 라이브 배지(전 접수·습득물 GAS 실시간) (CLI ad-hoc · 커밋 fbff31ca)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "fbff31caf2d045695524013f097415c9825012f6"
   }
 ]
