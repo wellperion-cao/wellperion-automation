@@ -13,8 +13,10 @@
         (예: instagram/260715_L1_수영/output(블로그) → instagram/260715_L1_수영).
         folder 없으면 id 에서 채널 접미(-BLOG 등 대문자 토큰)를 제거한 값.
 
-멱등: scripts/.publish_digest_sent.json 에 그룹키 → 해시(항목id·url·published_at 조합)
-      저장. 같은 콘텐츠를 재실행해도 해시가 같으면 재발신하지 않는다(재스팸 방지).
+멱등: scripts/.publish_digest_sent.json 에 그룹키 → 해시(항목id·url·published_at 조합,
+      참조용) 저장. 판정 기준은 **그룹키 존재 여부**(1콘텐츠 1회 — 항목 부분집합이 채널별로
+      나뉘어 들어와 해시가 달라져도 재발신하지 않는다). ★ 2026-07-18 시토: 같은 콘텐츠가
+      채널별로 분할 유입되며 해시가 매번 달라져 재발신되던 결함을 이 기준으로 수리.
 
 ★ 조용한 실패 금지: 토큰·챗ID 미설정이면 stderr에 [ERROR] 로그를 남기고 전송을
   시도하지 않는다 — 성공한 척 조용히 넘어가지 않는다.
@@ -169,7 +171,7 @@ def build_digest(group: list[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 멱등 — 그룹키 + 내용 해시로 1콘텐츠 1회 보장
+# 멱등 — 그룹키 존재 기준으로 1콘텐츠 1회 보장(해시는 참조용 저장만)
 # ---------------------------------------------------------------------------
 def _group_hash(group: list[dict]) -> str:
     payload = "||".join(sorted(
@@ -324,7 +326,10 @@ def send_publish_digest(
 ) -> int:
     """발행완료 항목들을 콘텐츠 단위로 묶어 문의·컨택·등록 알림방에 통합요약 1건씩 발신.
 
-    멱등: 이미 보낸 콘텐츠(그룹키+해시 동일)는 재발신하지 않는다.
+    멱등: 이미 보낸 콘텐츠(그룹키가 원장에 존재)는 재발신하지 않는다 — 그룹 내 항목
+    부분집합이 채널별로 나뉘어 들어와 해시가 달라져도 무관(1콘텐츠 = 통합요약 평생 1회).
+    (2026-07-18 시토: 해시 비교 방식은 채널별 분할 유입 시 재발신 결함이 있어 그룹키
+    존재 기준으로 강화.)
     조용한 실패 금지: 토큰/챗ID 미설정이면 [ERROR] 로그 남기고 전송 시도 없이 반환.
     반환: 실제 발신(또는 dry-run 출력)한 건수.
     """
@@ -349,8 +354,8 @@ def send_publish_digest(
     dirty = False
     for key, group in groups.items():
         h = _group_hash(group)
-        if ledger.get(key) == h:
-            continue  # 이미 같은 내용으로 발신됨 — 재스팸 방지
+        if key in ledger:
+            continue  # 이미 발신된 콘텐츠(그룹키 존재) — 항목 부분집합·해시 변동 무관 재스팸 방지
         msg = build_digest(group)
         preview_url = _instagram_preview_url(group)
         if dry_run:
