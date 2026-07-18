@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-8';
+window.__PV='20260718-1';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -397,13 +397,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </style>
 </head>
 <body>
+<div id="ssotViewTasks">
 
 <div class="sticky-top">
 <div class="header">
   <div class="header-top">
     <h1>웰페리온 업무 현황 SSOT</h1>
     <div class="header-right">
-      <a class="sheet-link" href="결재 현황 SSOT.html" target="_blank" rel="noopener" style="background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3);">
+      <a class="sheet-link" href="결재 현황 SSOT.html" onclick="ssotShowApproval();return false;" style="background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3);">
         <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
         결재 현황 SSOT
       </a>
@@ -3569,5 +3570,26 @@ function printResultReport(taskId, override) {
 }
 </script>
     <script src="/wellperion-automation/_assets/print_options.js"></script>
+
+</div><!-- /ssotViewTasks -->
+
+<div id="ssotViewApproval" style="display:none;"><iframe id="ssotApprovalFrame" title="결재 현황 SSOT" style="width:100%;border:0;display:block;min-height:100vh;"></iframe></div>
+
+<script>
+/* 업무↔결재 SSOT 인플레이스 전환 — 우측 상단 버튼 트리거, 별도 탭바 없음 (2026-07-18 GM 피드백) */
+function ssotShowApproval(){
+  var f=document.getElementById('ssotApprovalFrame');
+  if(!f.src){f.src='결재 현황 SSOT.html';}
+  document.getElementById('ssotViewTasks').style.display='none';
+  document.getElementById('ssotViewApproval').style.display='block';
+  window.scrollTo(0,0);
+}
+function ssotShowTasks(){
+  document.getElementById('ssotViewApproval').style.display='none';
+  document.getElementById('ssotViewTasks').style.display='block';
+}
+window.ssotShowApproval=ssotShowApproval;
+window.ssotShowTasks=ssotShowTasks;
+</script>
 </body>
 </html>

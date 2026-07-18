@@ -11,7 +11,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260715-11';
+window.__PV='20260718-1';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -347,7 +347,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   <div class="header-top">
     <h1>웰페리온 결재 현황 SSOT</h1>
     <div class="header-right">
-      <a class="sheet-link" href="업무 현황 SSOT.html" target="_blank" rel="noopener" style="background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3);">
+      <a class="sheet-link" href="업무 현황 SSOT.html" onclick="if(window.parent && window.parent!==window && window.parent.ssotShowTasks){window.parent.ssotShowTasks();return false;}" style="background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
         업무 현황 SSOT
       </a>
