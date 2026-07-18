@@ -32,7 +32,7 @@
   table.matrix thead th.grp-np{color:#f0c674;}
   table.matrix thead th.grp-boot{color:#7ac4f0;}
   table.matrix thead th.grp-guard{color:#6abf7b;}
-  table.matrix th.role-col{width:95px; min-width:90px;}
+  table.matrix th.role-col, table.matrix col.role-col{width:95px; min-width:90px;}
   td.role-cell{background:var(--surface);}
   td.role-cell .ricon{font-size:16px;}
   td.role-cell .rname{font-weight:800; font-size:14px;}
@@ -58,8 +58,8 @@
   table.matrix .rtbl td.rtbl-c{color:var(--text-soft);}
   table.matrix .rtbl tr.rtbl-sec td{background:var(--surface); color:var(--dim); font-weight:800; font-size:10.5px; text-align:center; letter-spacing:0.04em;}
   table.matrix .rtbl tr.rtbl-cap td{background:rgba(124,58,237,0.05); color:var(--dim); font-size:11px;}
-  table.matrix th.grp-np{width:300px;}
-  table.matrix th.grp-boot{width:300px;}
+  table.matrix th.grp-np, table.matrix col.grp-np{width:300px;}
+  table.matrix th.grp-boot, table.matrix col.grp-boot{width:300px;}
   .col-own{width:300px;}
   .own-chip{display:inline-block; font-size:11px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:2px 8px; margin:0 4px 4px 0;}
   .own-chip:hover{background:var(--surface); border-color:var(--accent);}
@@ -401,14 +401,12 @@
   <div class="mx-controls" id="mx-controls"><!-- JS: 역할·칸 필터 + 폴침 --></div>
   <div class="matrix-scroll">
     <table class="matrix">
-      <thead>
-        <tr>
-          <th class="role-col">주체</th>
-          <th class="grp-np">🌟 가는 곳·목표</th>
-          <th class="grp-boot">🔧 일하는 법</th>
-          <th class="grp-guard col-own">🚧 맡은 것</th>
-        </tr>
-      </thead>
+      <colgroup>
+        <col class="role-col">
+        <col class="grp-np">
+        <col class="grp-boot">
+        <col class="grp-guard col-own">
+      </colgroup>
       <tbody id="matrix-body">
         <tr><td colspan="4" class="matrix-status">매트릭스 정본을 불러오는 중…</td></tr>
       </tbody>
