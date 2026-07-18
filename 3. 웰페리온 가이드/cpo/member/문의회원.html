@@ -2762,6 +2762,16 @@ function _gzTimeKR_(val) {
   }
   return '';
 }
+// 문의일시(타임스탬프) 표시 전용 — _gzToISO_는 날짜만 반환(날짜 필터·월그룹 SSOT라 그대로 유지) → 시:분까지
+// 보존하는 별도 fn. timestamp: 매핑 2곳에서만 사용(2026-07-18 시간 유실 수정). Date=getHours/getMinutes,
+// 문자열='HH:mm' 패턴 추출(_gzTime_/_gzTimeKR_ 재사용 — consVal과 동일 패턴, 배973).
+function _gzToISODateTime_(val) {
+  if (!val) return '';
+  var datePart = _gzToISO_(val);
+  if (!datePart) return '';
+  var timePart = _gzTime_(val) || _gzTimeKR_(val);
+  return timePart ? (datePart + ' ' + timePart) : datePart;
+}
 function _gzTminKR_(val) {
   if (!val) return null;
   var s = String(val).trim();
@@ -2856,7 +2866,7 @@ function gvizMiRows_(headers, rows, gid) {
       tourDate: '', tourTime: '', exp3: '', exp3Time: '', visit2Date: '', visit2Time: '',
       visited:    (iVisited >= 0 && String(row[iVisited] == null ? '' : row[iVisited]).trim() !== '') ? true : false,
       visitDate:  (iVisited >= 0) ? _gzToISO_(row[iVisited]) : '',
-      timestamp:_gzToISO_(iTs   >= 0 ? row[iTs]   : ''),
+      timestamp:_gzToISODateTime_(iTs >= 0 ? row[iTs] : ''),
       memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
       owner:    iOwner >= 0 ? String(row[iOwner] || '') : '',
       contact1: (iC1 >= 0 && iC1 < row.length) ? _gzFmtContact_(row[iC1]) : '',
@@ -2922,7 +2932,7 @@ function gvizLessonRows_(headers, rows, gid) {
     }
     out.push({
       rowIndex: r + 2 + rowOffset,
-      timestamp: _gzToISO_(iTs >= 0 ? row[iTs] : ''),
+      timestamp: _gzToISODateTime_(iTs >= 0 ? row[iTs] : ''),
       name:    iName  >= 0 ? String(row[iName]  || '') : '',
       phone:   iPhone >= 0 ? _gzFmtPhone_(row[iPhone]) : '',
       age:     iAge   >= 0 ? String(row[iAge]   || '') : '',
@@ -7626,7 +7636,7 @@ function _tapToday() { return _mdashYmd(new Date()); }   // 기존 헬퍼 재사
 // 3분류 산출(오늘신규·미컨택·오늘예약) — cpo_report.py build_daily_report()의 ①②③과 동일 조건. rows=dbRows(사전로드, 추가 호출 없음).
 // ④이탈위험은 패널에서 제거(2026-07-09 GM 결정 — 이탈관리 모달·이탈방지 액션 모듈이 실측으로 이미 담당, 정보손실 0·중복 정리).
 function _tapClassify(rows, today) {
-  var todayNew = rows.filter(function(r){ return r.timestamp === today; });
+  var todayNew = rows.filter(function(r){ return String(r.timestamp || '').slice(0, 10) === today; });  // 2026-07-18: timestamp에 시:분 포함되어 날짜부분만 비교(정확 일치 금지)
   var uncontacted = rows.filter(function(r){ return _tapIsActive(r.status) && !((r.contacts || []).length > 0); });
   var todaysRes = [];
   rows.forEach(function(r){
@@ -7754,7 +7764,7 @@ function _tapClassifyLesson(today) {
   var todayNew = [], todaysConsult = [], uncontacted = [];
   types.forEach(function(t){
     (_lessonState[t].rows || []).forEach(function(r){
-      if (r.timestamp === today) todayNew.push({ t: t, row: r });
+      if (String(r.timestamp || '').slice(0, 10) === today) todayNew.push({ t: t, row: r });  // 2026-07-18: timestamp에 시:분 포함되어 날짜부분만 비교
       if (r.consult === today) todaysConsult.push({ t: t, row: r, time: r.consultTime || '' });
       var segs = _lessonSportSplit(r.sport); if (!segs.length) segs = [''];
       segs.forEach(function(sportKey){

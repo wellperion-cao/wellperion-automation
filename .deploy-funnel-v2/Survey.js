@@ -187,7 +187,7 @@ function _mirrorInquiryToStaffLog_(body, inqId) {
     var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
     var newRow = new Array(lastCol).fill('');
     function put(keys, val) { var i = _findCol_(headers, keys); if (i >= 0) newRow[i] = val; }
-    put(['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜'], Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy. M. d'));
+    put(['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜'], Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));  // 2026-07-18 시간 보존(구 날짜만→시:분:초 유실 수정)
     put(['성함', '이름'], body.name || '');
     put(['연락처', '휴대폰', '핸드폰', '전화'], body.phone || '');
     put(['진행현황', '진행상태', '상태'], '신규');
@@ -1662,7 +1662,9 @@ var _LESSON_MGMT_FIELDS = [
   { keys: ['진행상태', '진행현황', '진행상황', '진행 상황', '상태'], canon: '진행 상황' },
   { keys: ['관리담당', '지정 강사'],                                 canon: '지정 강사' },
   { keys: ['상담메모', '메모', '비고'],                             canon: '비고' },
-  { keys: [CONTACT_HIST_COL, 'Contact'],                            canon: 'Contact' }
+  { keys: [CONTACT_HIST_COL, 'Contact'],                            canon: 'Contact' },
+  { keys: ['LOSS사유'],                                             canon: 'LOSS사유' },      // 문의 퍼널 LOSS 사유(강습) — 멤버십과 동일 체계. 2026-07-18 시토(GM요청) 대행.
+  { keys: ['LOSS사유메모'],                                         canon: 'LOSS사유메모' }
 ];
 
 // gid 매칭 시트 핸들(탭명 변경에 강함).
@@ -1711,6 +1713,8 @@ function _lessonReadRows_(gid) {
   var iVisit = _findCol_(hdr, ['방문상태', '방문']);
   var iHist  = _findCol_(hdr, [CONTACT_HIST_COL, 'Contact']);  // 연락이력(JSON) 우선 → GM flat M컬럼 'Contact'(줄바꿈 포함이라 부분일치). 2026-07-14 시포·GM(배973)
   var iSportMgmt = _findColExact_(hdr, [LESSON_SPORT_MGMT_COL]);  // 종목별관리(JSON) — 축7. 2026-07-08 시포·GM
+  var iLossR  = _findCol_(hdr, ['LOSS사유']);      // 문의 퍼널 LOSS 사유(강습) — 멤버십과 동일 체계. 2026-07-18 시토(GM요청) 대행.
+  var iLossRN = _findCol_(hdr, ['LOSS사유메모']);
   var iLang  = _findCol_(hdr, ['Language']);  // 응답자 기재 언어(영문 탭 실측 헤더) — 영어 문의 뱃지 표시용. 2026-07-09 시포·GM
   // 영문 탭 행키 오프셋(_ROW_OFFSET_EN_) — 한글+영문 병합 시 rowIndex 충돌 방지(위 상수 주석 참고). 2026-07-09 시포·GM.
   var rowOffset = (gid === LESSON_GID_ADULT_EN || gid === LESSON_GID_YOUTH_EN) ? _ROW_OFFSET_EN_ : 0;
@@ -1752,6 +1756,8 @@ function _lessonReadRows_(gid) {
       contacts: _lHistArr,
       // 종목별 독립 관리(축7) — 파싱맵(없으면 {}). 분리 로직은 프론트에서만(GM 결정) — 여기선 원맵만 반환.
       bySport: _lessonSportMgmtParse_(iSportMgmt >= 0 ? row[iSportMgmt] : ''),
+      lossReason:     iLossR  >= 0 ? String(row[iLossR]  || '') : '',   // LOSS 사유(강습 문의 퍼널). 2026-07-18 시토(GM요청) 대행.
+      lossReasonNote: iLossRN >= 0 ? String(row[iLossRN] || '') : '',
       // 출처 물리 시트 gid + 기재 언어 — 영문 탭 병합 표시·저장 라우팅용(row.gid 그대로 되돌려 보내면 정확한 탭에 기록). 2026-07-09 시포·GM.
       gid: gid,
       lang: iLang >= 0 ? String(row[iLang] || '').trim() : ''
@@ -2605,7 +2611,7 @@ function _processAction(body) {
         var _imHdr = _miHeaders_(_imSh);
         var _imRow = new Array(_imHdr.length).fill('');
         function _imSet(names, val) { if (val === undefined || val === null || val === '') return; var ci = _miColIdx_(_imHdr, names); if (ci >= 0) _imRow[ci] = val; }
-        _imSet(['타임스탬프', '접수일', '날짜'], Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'));
+        _imSet(['타임스탬프', '접수일', '날짜'], Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));  // 2026-07-18 시간 보존
         _imSet(['성함', '이름'], _iName);
         _imSet(['연락처', '전화', '휴대폰'], _fmtPhone_(_iPhone));
         _imSet(['관심 있는 프로그램 종류', '관심 있는 프로그램 종목', '관심프로그램', '프로그램', '종목'], _iProgram);
@@ -2630,11 +2636,13 @@ function _processAction(body) {
         var _lsHdr = _lsSh.getRange(1, 1, 1, _lsSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
         var _lsRow = new Array(_lsHdr.length).fill('');
         function _lsSet(keys, val) { if (!val && val !== '') return; var ci = _findCol_(_lsHdr, keys); if (ci >= 0 && !_lsRow[ci]) _lsRow[ci] = val; }
-        var _lsToday = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
-        _lsSet(['타임스탬프'], _lsToday);
+        var _lsNowDt = new Date();
+        var _lsToday = Utilities.formatDate(_lsNowDt, 'Asia/Seoul', 'yyyy-MM-dd');            // 날짜 전용(문의일 등)
+        var _lsNowFull = Utilities.formatDate(_lsNowDt, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');  // 타임스탬프 전용(시:분:초 보존, 2026-07-18)
+        _lsSet(['타임스탬프'], _lsNowFull);
         var _lsDateCi = _findCol_(_lsHdr, ['문의일', '문의 일', '날짜']);
         if (_lsDateCi >= 0) { if (!_lsRow[_lsDateCi]) _lsRow[_lsDateCi] = _lsToday; }
-        else if (!String(_lsHdr[0] || '').trim() && !_lsRow[0]) { _lsRow[0] = _lsToday; }   // 성인탭 A열 빈헤더 대응
+        else if (!String(_lsHdr[0] || '').trim() && !_lsRow[0]) { _lsRow[0] = _lsNowFull; }   // 성인탭 A열 빈헤더=타임스탬프 대응(시간 보존)
         _lsSet(['성함', '이름'], _iName);
         _lsSet(['연락처', '핸드폰', '전화', '휴대폰'], _fmtPhone_(_iPhone));
         _lsSet(['나이', '연령', '자녀'], _iAge);
@@ -2658,7 +2666,7 @@ function _processAction(body) {
         var _rtHdr = _rtSh.getRange(1, 1, 1, _rtSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
         var _rtRow = new Array(_rtHdr.length).fill('');
         function _rtSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_rtHdr, [name]); if (ci >= 0) _rtRow[ci] = val; }
-        _rtSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'));
+        _rtSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));  // 2026-07-18 시간 보존
         _rtSet('성함', _iName);
         _rtSet('연락처', _fmtPhone_(_iPhone));
         _rtSet('대관 공간', _iSpace);
@@ -2678,7 +2686,7 @@ function _processAction(body) {
         var _bzHdr = _bzSh.getRange(1, 1, 1, _bzSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
         var _bzRow = new Array(_bzHdr.length).fill('');
         function _bzSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_bzHdr, [name]); if (ci >= 0) _bzRow[ci] = val; }
-        _bzSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'));
+        _bzSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));  // 2026-07-18 시간 보존
         _bzSet('성함', _iCompany + ' / ' + _iContactName);
         _bzSet('회사명', _iCompany);
         _bzSet('담당자', _iContactName);
@@ -2787,13 +2795,17 @@ function _processAction(body) {
       var mDstRow = new Array(mDst.hdr.length).fill('');
       var _mSet = function(keys, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(mDst.hdr, keys); if (ci >= 0 && !mDstRow[ci]) mDstRow[ci] = val; };
       var mDateRaw = _mSDate >= 0 ? mRow[_mSDate] : '';
-      var mDateStr = (mDateRaw instanceof Date && !isNaN(mDateRaw.getTime()))
+      var mDateOnlyStr = (mDateRaw instanceof Date && !isNaN(mDateRaw.getTime()))
         ? Utilities.formatDate(mDateRaw, 'Asia/Seoul', 'yyyy-MM-dd')
         : String(mDateRaw || '');
-      _mSet(['타임스탬프'], mDateStr);
+      // 타임스탬프는 시:분:초까지 보존(2026-07-18) — 소스가 Date면 전체 포맷, 문자열이면 원형 그대로 이관(이미 시간 포함일 수 있음).
+      var mDateFullStr = (mDateRaw instanceof Date && !isNaN(mDateRaw.getTime()))
+        ? Utilities.formatDate(mDateRaw, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')
+        : String(mDateRaw || '');
+      _mSet(['타임스탬프'], mDateFullStr);
       var _mDstDateCi = _findCol_(mDst.hdr, ['문의일', '문의 일', '날짜']);
-      if (_mDstDateCi >= 0) { if (!mDstRow[_mDstDateCi]) mDstRow[_mDstDateCi] = mDateStr; }
-      else if (!String(mDst.hdr[0] || '').trim() && !mDstRow[0]) { mDstRow[0] = mDateStr; }   // 성인탭 A열 빈헤더 대응
+      if (_mDstDateCi >= 0) { if (!mDstRow[_mDstDateCi]) mDstRow[_mDstDateCi] = mDateOnlyStr; }
+      else if (!String(mDst.hdr[0] || '').trim() && !mDstRow[0]) { mDstRow[0] = mDateFullStr; }   // 성인탭 A열 빈헤더=타임스탬프 대응
       _mSet(['성함', '이름'], mName);
       _mSet(['연락처', '핸드폰', '전화', '휴대폰'], _fmtPhone_(mPhone));
       _mSet(['나이', '연령', '자녀'], _mSAge >= 0 ? String(mRow[_mSAge] || '') : '');
@@ -2929,7 +2941,7 @@ function _processAction(body) {
       while (maRow.length <= ci) maRow.push('');
       maRow[ci] = val;
     }
-    var maNow = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+    var maNow = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');  // 2026-07-18 시간 보존(수기 입력 타임스탬프 폴백)
     if (!body.name && !body.phone) return _json({ ok: false, error: '이름 또는 전화번호 필수' });
     _maSet(['성함','이름'], body.name);
     _maSet(['연락처','전화','휴대폰'], _fmtPhone_(body.phone));  // 하이픈 텍스트로 저장 → 시트가 앞 0 보존
@@ -3444,6 +3456,8 @@ function _processAction(body) {
       _luSet(['상담메모', '메모', '비고'], body.memo);
       _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
       _luSet(['방문상태', '방문'], body.visited);
+      _luSet(['LOSS사유'], body.lossReason);       // 강습 LOSS 사유(문의 퍼널) — _lessonEnsureCols_가 칸 자동생성. 2026-07-18 시토(GM요청) 대행.
+      _luSet(['LOSS사유메모'], body.lossReasonNote);
       // ── 연락이력(가변) — 축2/축4: body.contacts(JSON 문자열/배열) 수신 시 저장. 미전송이면 무영향(기존 필드만 갱신).
       //    상담메모는 위 _luSet으로 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
       var _luHistPrevCount = 0;
