@@ -2198,9 +2198,14 @@ def _build_facility_ooc_detail(monthly: dict | None, today: str) -> str:
     return f"⚠️ 시설부 기준이탈 {len(lst)}건\n" + "\n".join(lines)
 
 
-def _dept_status_lines(facility_row: dict | None) -> str:
-    """4부서 상태 줄 (지원=별도 차트, 나머지). 시설=monthly_report 오늘행(실데이터),
-    주차=weekly(점검 제외 부서라 통상 미가동)."""
+def _dept_status_lines(facility_row: dict | None, facility_sessions: int = 0) -> str:
+    """4부서 상태 줄 (지원=별도 차트, 나머지). 주차=weekly(점검 제외 부서라 통상 미가동).
+
+    시설부(2026-07-18 시토, INC 07-16 관련 정합 수리): monthly_report dailySeries의 오늘 행(total)은
+    신뢰불가로 확인됨(07-15 stale 값이 재노출된 사례) — '활동 있었는지' 판정은 board(FACILITY_CHECK_{date}
+    .store.submissions 실 제출건수, kakao_daily_check_share.py::build_facility_lines와 동일 정본 소스)로
+    한다. facility_row(monthly)는 여전히 done/total/pct·기준이탈 건수 "장식"에만 쓰되, total=0인데
+    board엔 실제 세션이 있으면(stale 케이스) 세션 수 기준으로 활동 표시(미가동 오탐 차단)."""
     parking = _fetch_dept_weekly("parking")
 
     def dept_line(icon: str, name: str, data: dict | None) -> str:
@@ -2214,8 +2219,18 @@ def _dept_status_lines(facility_row: dict | None) -> str:
         ooc = data.get("outOfRangeCount", 0)
         return f"{icon} {name}: {done}/{total}({pct}%)" + (f" ⚠{ooc}" if ooc else "")
 
+    facility_total = (facility_row or {}).get("total", 0)
+    if facility_total:
+        fac_line = dept_line("🏗", "시설부", facility_row)
+    elif facility_sessions:
+        # monthly_report는 미가동(total=0)이지만 board엔 실제 제출 기록 있음 → stale 판정 오탐, 정본(board)으로 표시.
+        ooc = (facility_row or {}).get("outOfRangeCount", 0)
+        fac_line = f"🏗 시설부: {facility_sessions}회 점검" + (f" ⚠{ooc}" if ooc else "")
+    else:
+        fac_line = "🏗 시설부: 미가동(자체점검 준비 중)"
+
     return (
-        f"{dept_line('🏗', '시설부', facility_row)}\n"
+        f"{fac_line}\n"
         f"{dept_line('🅿', '주차', parking)}\n"
         f"🏢 운영부: 점검 체계 없음(규정·매뉴얼 운영)"
     )
@@ -2256,7 +2271,10 @@ def _build_23_body() -> str:
     # 시설·주차 통합 현황 + 기준이탈 내용(대시보드 링크 대체) — monthly_report 1회 조회로 재사용
     facility_monthly = _fetch_facility_monthly(today)
     facility_row = _facility_today_row(facility_monthly, today)
-    dept_lines = _dept_status_lines(facility_row)
+    # 2026-07-18 시토(INC 07-16 관련 정합 수리): 시설부 활동 판정을 monthly_report(stale 이력 있음) 대신
+    # board(정본·kakao_daily_check_share.py와 동일 소스)로 교정 — _dept_status_lines 참조.
+    fac_board_23 = _fetch_facility_board(today)
+    dept_lines = _dept_status_lines(facility_row, fac_board_23.get("sessions", 0))
     ooc_detail = _build_facility_ooc_detail(facility_monthly, today)
     ooc_block = f"\n\n{ooc_detail}" if ooc_detail else ""
 

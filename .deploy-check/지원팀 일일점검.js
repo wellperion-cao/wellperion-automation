@@ -1067,6 +1067,34 @@ function clearCheckLedger(dept) {
   Object.keys(all).forEach(function (k) { if (k.indexOf(prefix) === 0) { props.deleteProperty(k); removed++; } });
   return jsonRes({ ok: true, dept: dept, removed: removed });
 }
+// 원장 프로퍼티 자동 TTL 정리(2026-07-18 시토, INC 07-16 저장유실 수리 Phase1-③): 30일 초과
+// chk_<dept>_* 를 하루 1회(마커 프로퍼티로 dedup)만 청소해 스크립트 전체 500KB 한도 압박을 낮춘다.
+// ★한계: 이 정리는 '과거 날짜'만 지운다 — 당일 원장이 단독으로 9KB(값 개별 한도) 근접/초과하는
+// 문제 자체는 해소하지 않는다(그건 handleSave 재순서화 — 시트가 항상 원본 — 로 방어). 완전한 근본해결은
+// 원장을 프로퍼티 대신 전용 시트 탭으로 이관하는 것(별도 과제, GM 판단 대기 — 사유는 배포 코멘트 참조).
+// 지운 날짜의 체크박스 UI 복원(checkedLedger)만 못 하게 될 뿐 — 그 날짜의 진짜 기록(시트 행)은 무손상.
+var LEDGER_TTL_DAYS = 30;
+function _maybeTtlCleanupLedger(dept) {
+  try {
+    var d = String(dept || 'support').trim() || 'support';
+    var props = PropertiesService.getScriptProperties();
+    var markerKey = 'chkTtlLast_' + d;
+    var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+    if (props.getProperty(markerKey) === today) return;   // 오늘 이미 실행 — 매 저장마다 전수스캔 방지
+    var all = props.getProperties();
+    var prefix = CHK_PROP_PREFIX + d + '_';
+    var cutoffMs = Date.now() - LEDGER_TTL_DAYS * 24 * 60 * 60 * 1000;
+    Object.keys(all).forEach(function (k) {
+      if (k.indexOf(prefix) !== 0) return;
+      var short = k.slice(prefix.length);           // '<gender>_<yyyy-MM-dd>'
+      var us = short.indexOf('_');
+      var ds = us >= 0 ? short.slice(us + 1) : short;
+      var t = new Date(ds + 'T00:00:00+09:00').getTime();
+      if (!isNaN(t) && t < cutoffMs) props.deleteProperty(k);
+    });
+    props.setProperty(markerKey, today);
+  } catch (e) { /* fail-soft — TTL 정리 실패가 저장에 영향 없음(주 저장 경로 무관) */ }
+}
 // 항상 { c:{...}, sub:{...}, subAt:{...} } 정규화 형태로 반환(구버전 평면 원장 승격).
 function _getCheckLedger(dept, date, gender) {
   var led = {};
@@ -1085,8 +1113,15 @@ function _getCheckLedger(dept, date, gender) {
 // c=체크된 itemId 집합, sub=교대별 제출자, subAt=교대별 제출시각. 무이슈 완전완료일(시트행 0건)에도
 // admin 제출자·완료율 카드를 복원하기 위해 제출 메타도 함께 적립.
 // body: 전체 save payload(submitter_am 등 포함). checks: 이번 payload 항목만 반영(set/remove).
+// 2026-07-18 시토(INC 07-16 저장유실 긴급수리): 반환값 {ok,error,led} 계약 추가.
+// props.setProperty(원장 영속)가 값 한도(9KB/값·500KB/스크립트) 근접으로 예외 시 과거엔 이 함수가
+// 그대로 throw → handleSave 전체가 죽어 _writePerRoundRows(진짜 원본 시트 저장)까지 스킵됐다(07-16·17 전량 유실).
+// 이제 try/catch로 삼키지 않고 {ok:false,error}를 명확히 반환(조용한 성공 위장 금지) + 계산된 led를
+// 항상 함께 반환 — 호출부(handleSave)가 원장 영속 실패와 무관하게 이번 payload의 최신 led를
+// _writePerRoundRows에 그대로 넘겨 시트 저장은 always 진행(원인 무관 저장 복구).
 function _updateCheckLedger(dept, date, body) {
-  if (!date) return;
+  if (!date) return { ok: true, led: null };
+  _maybeTtlCleanupLedger(dept);   // 스크립트 전체 500KB 한도 압박 완화(하루 1회·과거 30일 초과분만·fail-soft)
   // 2026-06-12 시토: 저장 payload의 활성 성별탭(body.genderTab)으로 원장 키 분리 → 남/여 섞임 차단.
   var gender = (body && body.genderTab) || 'm';
   var checks = (body && body.checks) || [];
@@ -1188,7 +1223,13 @@ function _updateCheckLedger(dept, date, body) {
     });
     led.seen = _seen;
   }
-  props.setProperty(key, JSON.stringify(led));
+  try {
+    props.setProperty(key, JSON.stringify(led));
+    return { ok: true, led: led };
+  } catch (e) {
+    // 원장 영속만 실패 — 이 payload의 진짜 원본(시트)은 호출부가 led를 그대로 받아 별도 저장하므로 무손실.
+    return { ok: false, error: String((e && e.message) || e), led: led };
+  }
 }
 
 // 정상완료(완료 & 이슈·노하우·측정 모두 없음) = 이상치 아님 → 신규 시트행 미기록 대상.
@@ -1328,7 +1369,7 @@ function _checkSaveNotified(dept, date, gender, notiObj) {
   catch (e) { /* fail-soft */ }
 }
 
-function _writePerRoundRows(dept, date, body) {
+function _writePerRoundRows(dept, date, body, ledgerRes) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var gender = body.genderTab || 'm';
   var checks = body.checks || [];
@@ -1340,7 +1381,10 @@ function _writePerRoundRows(dept, date, body) {
   //   자동저장(includeSubmitMeta 미포함)이 그 회차 행을 재기록할 때 플래그가 없어 '미제출'로 덮어써,
   //   제출돼 텔레그램까지 나간 회차가 시트 I열만 '미제출'로 회귀하던 버그(handleSave가 _updateCheckLedger를
   //   먼저 호출하므로, 이 시점 led.sub는 영속 제출상태 = 텔레그램 발화조건과 동일). 회차별로 led.sub에서 산출.
-  var _led = _getCheckLedger(dept, date, gender);
+  // 2026-07-18 시토(INC 07-16 수리): ledgerRes.led(이번 payload로 방금 계산된 최신 led)가 있으면 그걸 우선 사용 —
+  //   props.setProperty가 값 한도 초과로 실패해도(ledgerRes.ok=false) 이번 저장의 제출도장·타이머는 여전히
+  //   정확히 반영된다(재조회 시 stale props로 폴백하던 회귀 차단). ledgerRes 미전달(구 호출부) 시 기존처럼 재조회.
+  var _led = (ledgerRes && ledgerRes.led) ? ledgerRes.led : _getCheckLedger(dept, date, gender);
   var _ledSub   = (_led && _led.sub)   || {};
   var _ledSubAt = (_led && _led.subAt) || {};
   var _ledTimers = (_led && _led.timers) || {};
@@ -1522,15 +1566,25 @@ function _writePerRoundRows(dept, date, body) {
     }
   } catch (e) {}
 
-  return jsonRes({ success: true, perRound: true, saved: total });
+  // 2026-07-18 시토(INC 07-16 수리): 시트 저장(success)은 원장 영속 성패와 무관하게 항상 여기 도달.
+  //   ledgerOk=false면 다음 새로고침·타기기 복원용 영속 상태만 미반영(이번 제출·측정·이슈는 시트에 이미 확정 저장됨).
+  //   success/ok는 그대로 true 유지(전면 재시도 배너로 오인시키지 않음) — ledgerOk/ledgerError는 진단용 부가 필드.
+  var resp = { success: true, perRound: true, saved: total, ledgerOk: !ledgerRes || ledgerRes.ok !== false };
+  if (ledgerRes && ledgerRes.ok === false) resp.ledgerError = ledgerRes.error;
+  return jsonRes(resp);
 }
 
 function handleSave(body) {
   _saveGroupSubmits(body.date, body.groupSubmits);   // 그룹별 제출 영속(zone/v2 두 경로 공통) — 2026-06-05 GM
-  _updateCheckLedger(body.dept, body.date, body);   // 완료 체크 원장 적립(2026-06-11 시우) — 과거일 복원·완료율 회귀 방지
+  // 완료 체크 원장 적립(2026-06-11 시우) — 과거일 복원·완료율 회귀 방지.
+  // 2026-07-18 시토(INC 07-16 저장유실 긴급수리): _updateCheckLedger는 이제 절대 throw하지 않고 {ok,error,led}를
+  // 반환한다(내부 try/catch). 과거엔 이 줄이 예외를 던지면 아래 _writePerRoundRows(진짜 원본 시트 저장)까지
+  // 통째로 스킵됐다 — 원장 프로퍼티 값한도(9KB/값) 근접 시 07-16·17 전량 유실의 직접 원인. 이제 결과를
+  // 받기만 하고 항상 다음 줄로 진행 — 원장 영속 성패와 무관하게 시트 저장은 always.
+  var _ledgerRes = _updateCheckLedger(body.dept, body.date, body);
   // 회차별 행 저장(GM 2026-06-15): roundChecks 키가 있으면(빈 배열 포함) 회차기반 페이로드 → (날짜+회차+항목) 키로 시트=원장 미러.
   // ★GM 2026-06-16 시우: 전부 취소하면 roundChecks=[]가 와서 V2Compat(마지막행 deleteRow 예외)로 새던 'uncheck 미반영' 차단 — 빈 배열도 _writePerRoundRows로.
-  if (Array.isArray(body.roundChecks)) return _writePerRoundRows(body.dept || 'support', body.date, body);
+  if (Array.isArray(body.roundChecks)) return _writePerRoundRows(body.dept || 'support', body.date, body, _ledgerRes);
   if (!body.zone) return _handleSaveV2Compat(body);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var date = body.date;
@@ -2907,6 +2961,9 @@ function saveFacilityMeasure(body) {
   }
   var doneCnt = 0; rows.forEach(function (r) { if (r[5] === '완료') doneCnt++; });
 
+  // 2026-07-18 시토: try 밖에서 미리 선언(기본 0) — 아래 스냅샷 try가 도중에 실패해도 return의
+  // abnormalCount는 항상 안전한 값(시설부 per-check 텔레그램 알림 Phase2⑧이 이 반환값을 사용).
+  var abnormalCount = 0;
   // 3) 제출 이력 스냅샷 적립(점검일지_facility) — 시설_공용구역 본 저장과 독립, 실패해도 본 저장에 영향 없음.
   try {
     var totalCnt = rows.length;
@@ -2920,7 +2977,7 @@ function saveFacilityMeasure(body) {
         abnormalHits.push(r[2] + '(' + h.field + '):' + h.value);
       });
     });
-    var abnormalCount = abnormalHits.length;
+    abnormalCount = abnormalHits.length;
     var abnormalNote = abnormalHits.join(' / ');
     // 점검 내용(항목별 측정값) — GM 2026-07-09: 이상내용만이 아니라 실제 점검 내용을 항목에 기록. 완료 항목의 name: 측정값 나열.
     var contentParts = [];
@@ -2948,7 +3005,8 @@ function saveFacilityMeasure(body) {
     if (fLast > 2) fsheet.getRange(2, 1, fLast - 1, fsheet.getLastColumn()).sort({ column: 1, ascending: false });
   } catch (e) {}
 
-  return jsonRes({ ok: true, dept: 'facility', date: date, round: round, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0 });
+  // abnormalCount: 시설부 per-check 텔레그램 알림(Phase2⑧, 2026-07-18)이 "이상 Y건" 표기에 사용.
+  return jsonRes({ ok: true, dept: 'facility', date: date, round: round, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0, abnormalCount: abnormalCount });
 }
 
 // ─── 금일 작업사항·지시사항만 스냅샷 갱신 (POST {action:'save_facility_notes', date, round, inspector, work, order, oocAction}) ───

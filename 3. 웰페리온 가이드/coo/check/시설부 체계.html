@@ -3868,11 +3868,21 @@ function vendorSubmitAddForm(){
     var items=FC_ROUND_ITEMS.map(function(it){ var m=measureFromMap(map,it); return {id:it.id,name:it.name,cat:it.cat,measure:m.measure,done:m.done}; })
       .concat(FC_DAILY_ITEMS.map(function(it){ var m=measureFromMap(dmap,it); return {id:it.id,name:it.name,cat:it.cat,measure:m.measure,done:m.done}; }));
     posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'save_facility_measure',date:date,round:ROUND_DAILY,inspector:insp,items:items,durMin:sub.durMin,startHHMM:sub.startHHMM,endHHMM:sub.endHHMM,work:sub.work,order:sub.order,note:sub.note})}).then(function(r){return r.json();}));
-    Promise.all(posts).then(function(){
+    Promise.all(posts).then(function(results){
       // 제출 성공 → 현재 점검 입력 리셋(다음 점검 즉시 가능). 제출/저장 버튼은 잠그지 않음(반복 가능).
       fcResetAfterSubmit(curR);
       fcRenderHistory();
       if(st)st.textContent='제출 완료 — 오늘 '+subCount+'건째 · 다시 점검하세요';
+      // 🏗 시설부 per-check 텔레그램 알림(GM 명시 요청, 2026-07-18 시토) — 지원부 sendTelegramRound가 쓰는
+      // 범용 notify_round 엔드포인트 재사용(백엔드 무변경, dept 무관·같은 점검관리방 chat_id). 기본 ON.
+      // abnormalCount는 save_facility_measure 응답(results[1])에서 옴 — 지어내기 금지(서버 실측값만).
+      try{
+        var _measureRes=(results&&results[1])||{};
+        var _ab=Number(_measureRes.abnormalCount||0);
+        var _fcMsg='🏗 시설부 '+subCount+'회차 제출 · 점검자 '+(insp||'-')+' · '+(_ab?('이상 '+_ab+'건'):'이상 없음');
+        fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+          body:JSON.stringify({action:'notify_round',dept:'facility',date:date,round:curR,message:_fcMsg})}).catch(function(){});
+      }catch(e){}
     }).catch(function(){ if(st)st.textContent='제출 실패(네트워크)'; });
   };
   window.fcLoad=function(){
