@@ -6,22 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>웰페리온 습득 분실물 현황</title>
 <!--
-  습득 분실물 — 무인증 공개 열람 갤러리 (시토 배1069 · 2026-07-15)
+  습득 분실물 — 회원 전용 공개 열람 갤러리 (2026-07-18 종합접수처 통합·시우)
   · 백엔드 lf_gallery(공개): 게시중만·민감필드(수령자/서명 등) 미반환. 사진은 공개 노출.
-  · 카드 '수령' 버튼 → 현장 직원 본인확인 → 디지털 서명패드(canvas→PNG) → lf_handover → 자동 수령완료(갤러리서 제거).
-  · 프론트 신규(회원·직원 현장 화면), 백엔드 재사용(_lfGallery/_lfHandover).
-  · ★ 종합접수처 '습득 분실물 현황 보기' 탭 링크는 GM go 대기(미링크 = 고객 미노출).
-  · 2026-07-18 생애주기 단순화(시우): 관리 탭 폐지로 오등록 삭제를 이 화면 직원 게이트 뒤로 이관.
-    카드 우측 상단 작은 🗑 아이콘(기본 흐림·눈에 안 띔) → confirm → lf_delete(id) → 목록 새로고침.
-    습득월 기준 월별 코호트로 자동 폐기(폐기 공지 게시)되어 갤러리에서 제외됩니다.
-  · 2026-07-18 폐기 공지 흡수(시우): lf_disposal(공개) 병행 fetch — 전월 습득 코호트 게시중 카드에 ⏳M월 폐기예정 배지·상단 정렬(폐기월 오름차순),
-    폐기완료 물품은 하단 접이식 '🗑 폐기 완료 기록' 읽기전용 카드. 인쇄용 lost_found_disposal.html(A3) 링크 버튼 추가.
-  · 2026-07-18 v2(시우): 월별 코호트 폐기로 교체 — remainDays/30일 표기 폐기, disposeMonth('YYYY-MM') 기반 'M월 폐기예정' 표기.
-    사이클: 습득월 M → M+1 공지 → M+2 폐기(습득한 달의 다음 달까지 공지, 그다음 달에 폐기).
-  · 2026-07-18 회원/직원 뷰 분리(시우): ?staff=1 직원모드에서만 A3인쇄·삭제·수령·처분완료기록 노출.
-    회원뷰는 열람 전용(현황 확인만). documentElement에 staff-mode 클래스 조기 부여로 FOUC 방지.
+  · 직원 처리(수령·삭제·A3 처분공지)는 게이트된 종합접수처_현황.html로 이관 — 이 화면은 순수 회원 둘러보기.
+  · lf_disposal(공개) upcoming만 병행 fetch → 게시중 카드에 ⏳M월 처분예정 배지(폐기 완료 기록은 종합접수처 전용).
+  · 습득월(foundWhen 우선·없으면 createdAt) 기준 월 선택 필터 추가 — 클라이언트 필터, 재조회 없음.
 -->
-<script>try{ if(/(?:^|[?&])staff=1(?:&|$)/.test(location.search)){ document.documentElement.classList.add('staff-mode'); } }catch(e){}</script>
 <style>
 :root{
   --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
@@ -43,73 +33,27 @@ a{color:var(--accent);text-decoration:none}
 .gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
 .gd-diamond{color:var(--accent);font-size:10px;line-height:1}
 
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-.count-pill{font-size:13px;font-weight:700;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:20px;padding:7px 15px}
-.count-pill .n{color:var(--accent);font-weight:800}
-.refresh{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--paper);color:var(--text);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
-.refresh:hover{border-color:var(--accent);color:var(--accent)}
+.topbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.month-filter{display:flex;align-items:center;gap:8px}
+.month-filter label{font-size:12.5px;font-weight:700;color:var(--dim)}
+.month-select{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--paper);color:var(--text);font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+.month-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
 .gcard{background:var(--paper);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.04);display:flex;flex-direction:column;position:relative}
 .gcard .ph{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--bg);border-bottom:1px solid var(--border);display:block}
-/* 직원용 오등록 삭제 — 기본 흐림(회원 혼동 방지), 작고 연한 아이콘 */
-.gcard .del-btn{
-  position:absolute;top:7px;right:7px;z-index:2;width:22px;height:22px;
-  display:flex;align-items:center;justify-content:center;border-radius:50%;
-  background:rgba(255,255,255,0.55);border:1px solid rgba(0,0,0,0.05);
-  color:rgba(192,57,43,0.38);font-size:11px;line-height:1;cursor:pointer;
-  opacity:.55;transition:opacity .15s,color .15s,background .15s
-}
-.gcard .del-btn:hover{opacity:1;color:var(--red);background:rgba(255,255,255,0.9)}
 .gcard .body{padding:13px 14px 14px;display:flex;flex-direction:column;flex:1}
 .gcard .gid{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.3px}
 .gcard .desc{font-size:14.5px;font-weight:600;margin:4px 0 7px;word-break:break-word;line-height:1.45}
-.gcard .meta{font-size:12.5px;color:var(--dim);line-height:1.7;margin-bottom:12px}
+.gcard .meta{font-size:12.5px;color:var(--dim);line-height:1.7}
 .gcard .meta .loc{color:var(--accent);font-weight:600}
-.gcard .claim{margin-top:auto;width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
-.gcard .claim:hover{opacity:.9}
 .state-msg{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--dim);font-size:14.5px}
 .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
-
-/* ── 직원 모드(?staff=1) — 회원뷰엔 없는 직원 전용 컨트롤·안내 게이팅 (2026-07-18) ──
-   ★ 특이도 함정: .gcard .del-btn·.gcard .claim·.print-btn 이 이미 display 를 지정(각 0,2,0/0,1,0) →
-   숨김 규칙은 .staff-only 를 덧붙여 반드시 더 높은 특이도로 만들어야 순서 무관하게 이긴다. */
-span.staff-only{display:none}
-.print-btn.staff-only{display:none}
-.gcard .del-btn.staff-only{display:none}
-.gcard .claim.staff-only{display:none}
-.staff-mode span.staff-only{display:inline}
-.staff-mode .print-btn.staff-only{display:inline-flex}
-.staff-mode .gcard .del-btn.staff-only{display:flex}
-.staff-mode .gcard .claim.staff-only{display:block}
-.staff-badge-pill{display:none}
-.staff-mode .staff-badge-pill{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 15px;background:rgba(59,58,68,0.08);color:#3b3a44;border:1px solid rgba(59,58,68,0.22);border-radius:20px;font-size:12px;font-weight:700;letter-spacing:.2px}
 
 /* ── 폐기 임박 배지·강조 (lf_disposal upcoming) ── */
 .gcard.imminent{border-color:#e8b44a;box-shadow:0 0 0 1px rgba(232,180,74,.35),0 1px 6px rgba(0,0,0,.04)}
 .disp-badge{display:inline-block;font-size:11px;font-weight:800;color:#8a5a00;background:#fdf0d5;border:1px solid #ecc478;border-radius:20px;padding:3px 10px;margin:0 6px 7px 0;letter-spacing:.2px}
 .cat-badge{display:inline-block;font-size:11px;font-weight:800;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 10px;margin:0 6px 7px 0;letter-spacing:.2px}
-
-/* ── 상단 액션 그룹(새로고침 + 폐기 공지 인쇄) ── */
-.topbar-actions{display:flex;gap:8px;flex-wrap:wrap}
-.print-btn{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--paper);color:var(--text);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
-.print-btn:hover{border-color:var(--accent);color:var(--accent)}
-
-/* ── 🗑 폐기 완료 기록 (접이식, 읽기전용) ── */
-.disposal-sec{margin-top:22px}
-.disposal-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;font-size:13.5px;font-weight:700;color:var(--text);font-family:inherit;cursor:pointer}
-.disposal-toggle:hover{border-color:var(--accent)}
-.disposal-toggle .dt-arrow{transition:transform .2s;color:var(--dim)}
-.disposal-toggle.open .dt-arrow{transform:rotate(180deg)}
-.disposal-body{margin-top:12px}
-.disposal-body[hidden]{display:none}
-.disposal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
-.dcard{background:var(--paper);border:1px solid var(--border);border-radius:14px;overflow:hidden;opacity:.85;display:flex;flex-direction:column}
-.dcard .ph{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--bg);display:block;filter:grayscale(.3)}
-.dcard .body{padding:10px 12px 12px}
-.dcard .gid{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px}
-.dcard .desc{font-size:13px;font-weight:600;margin:3px 0 5px;word-break:break-word;line-height:1.4}
-.dcard .meta{font-size:11.5px;color:var(--dim);line-height:1.6}
 
 /* ── 스켈레톤 (즉시 렌더·지연 로드 대기 · CLS 0) ── */
 .gcard.skel{pointer-events:none}
@@ -128,38 +72,9 @@ span.staff-only{display:none}
 .lf-policy li{position:relative;padding-left:15px;font-size:13px;color:#5c564d;line-height:1.75}
 .lf-policy li::before{content:"·";position:absolute;left:3px;color:var(--accent);font-weight:800}
 .lf-policy li b{color:var(--text);font-weight:700}
-
-/* ── 수령 서명 모달 ── */
-.modal-back{position:fixed;inset:0;background:rgba(20,18,16,0.55);z-index:9998;display:none;align-items:center;justify-content:center;padding:16px}
-.modal-back.show{display:flex}
-.modal{background:var(--paper);border-radius:18px;max-width:440px;width:100%;max-height:92vh;overflow-y:auto;padding:22px 20px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
-.modal h2{font-size:18px;font-weight:800;margin-bottom:4px}
-.modal .msub{font-size:12.5px;color:var(--dim);margin-bottom:16px}
-.modal .mitem{display:flex;gap:11px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:16px}
-.modal .mitem img{width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0}
-.modal .mitem .mt{font-size:13.5px;font-weight:600;word-break:break-word}
-.modal .mitem .mm{font-size:11.5px;color:var(--dim)}
-.mfield{margin-bottom:13px}
-.mfield label{display:block;font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:6px;letter-spacing:.3px}
-.mfield input,.mfield select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:12px 13px;border-radius:11px;font-size:15px;font-family:inherit;-webkit-appearance:none;appearance:none}
-.mfield input:focus,.mfield select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
-.sign-wrap{border:1.5px solid var(--border);border-radius:12px;background:#fff;position:relative;overflow:hidden}
-.sign-wrap canvas{display:block;width:100%;height:170px;touch-action:none;cursor:crosshair}
-.sign-hint{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);text-align:center;color:#c8c2b8;font-size:13px;pointer-events:none}
-.sign-clear{margin-top:7px;font-size:12.5px;color:var(--red);cursor:pointer;font-weight:600;display:inline-block}
-.mbtns{display:flex;gap:10px;margin-top:18px}
-.mbtns button{flex:1;padding:14px;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:none}
-.mbtns .cancel{background:var(--bg);border:1.5px solid var(--border);color:var(--text)}
-.mbtns .confirm{background:var(--green);color:#fff}
-.mbtns .confirm:disabled{opacity:.45;cursor:not-allowed}
-
-.toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.15);max-width:90%;text-align:center}
-.toast.show{transform:translateX(-50%) translateY(0)}
-.toast.err{background:var(--red)}
 </style>
 </head>
 <body>
-<div class="toast" id="toast"></div>
 <div class="wrap">
 
   <div class="brand">
@@ -167,7 +82,6 @@ span.staff-only{display:none}
     <h1>습득 분실물 현황</h1>
     <p>클럽에서 습득된 물건입니다. 본인 물건을 발견하시면 현장 직원에게 문의해 주세요.</p>
     <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
-    <div class="staff-badge-pill">🛠 직원모드</div>
   </div>
 
   <div class="lf-policy">
@@ -181,87 +95,29 @@ span.staff-only{display:none}
   </div>
 
   <div class="topbar">
-    <span class="count-pill">게시중 <span class="n" id="cnt">0</span>건</span>
-    <div class="topbar-actions">
-      <a class="print-btn staff-only" href="lost_found_disposal.html" target="_blank" rel="noopener">🖨 처분 공지 인쇄(A3)</a>
-      <button class="refresh" id="refreshBtn" type="button">↻ 새로고침</button>
+    <div class="month-filter">
+      <label for="monthSel">습득월</label>
+      <select class="month-select" id="monthSel"><option value="">전체</option></select>
     </div>
   </div>
 
   <div class="grid" id="grid"><div class="state-msg">불러오는 중…</div></div>
 
-  <div class="disposal-sec" id="disposalSec" style="display:none">
-    <button class="disposal-toggle" id="disposalToggle" type="button" aria-expanded="false">
-      <span>🗑 처분 완료 기록 (<span id="disposalCount">0</span>)</span><span class="dt-arrow">▾</span>
-    </button>
-    <div class="disposal-body" id="disposalBody" hidden>
-      <div class="disposal-grid" id="disposalGrid"></div>
-    </div>
-  </div>
-
-  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>곧 처분 예정인 물품은 ⏳ 배지로 표시됩니다.<span class="staff-only"> 처분된 물품은 아래 기록에서 확인할 수 있습니다.</span><br>습득한 달의 다음 달까지 공지 후, 그다음 달에 처분됩니다(소모품 폐기·그 외 경찰 인계).<br><span class="staff-only">게시판 인쇄는 <b>처분 공지(A3)</b>를 이용해 주세요 · </span>하루의 완성, 웰페리온</p>
-</div>
-
-<!-- 수령 서명 모달 -->
-<div class="modal-back" id="modalBack">
-  <div class="modal">
-    <h2>습득물 수령 확인</h2>
-    <div class="msub">현장 직원이 회원 본인확인 후 서명을 받아주세요.</div>
-    <div class="mitem" id="mItem"></div>
-
-    <!-- ① 수령 회원 서명 (성함 + 장소 + 서명패드) -->
-    <div class="mfield">
-      <label for="m_receiver">① 수령 회원 성함</label>
-      <input type="text" id="m_receiver" placeholder="수령하시는 회원 성함" autocomplete="off">
-    </div>
-    <div class="mfield">
-      <label for="m_loc">수령 장소</label>
-      <select id="m_loc"></select>
-    </div>
-    <div class="mfield">
-      <label>수령 회원 서명</label>
-      <div class="sign-wrap">
-        <canvas id="signPad"></canvas>
-        <div class="sign-hint" id="signHint">여기에 서명해 주세요</div>
-      </div>
-      <span class="sign-clear" id="signClear">✕ 다시 서명</span>
-    </div>
-
-    <!-- ② 주는 담당자 선택 -->
-    <div class="mfield">
-      <label for="m_staff">② 주는 담당자</label>
-      <select id="m_staff"></select>
-      <input type="text" id="m_staff_other" placeholder="담당자 성함 직접 입력" autocomplete="off" style="display:none;margin-top:8px">
-    </div>
-
-    <!-- ③ 확인 비밀번호 -->
-    <div class="mfield">
-      <label for="m_pw">③ 확인 비밀번호</label>
-      <input type="password" id="m_pw" placeholder="담당자 전용 비밀번호" autocomplete="off" inputmode="numeric">
-    </div>
-
-    <!-- ④ 수령 완료 -->
-    <div class="mbtns">
-      <button class="cancel" id="mCancel" type="button">취소</button>
-      <button class="confirm" id="mConfirm" type="button">수령 완료</button>
-    </div>
-  </div>
+  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>곧 처분 예정인 물품은 ⏳ 배지로 표시됩니다.<br>습득한 달의 다음 달까지 공지 후, 그다음 달에 처분됩니다(소모품 폐기·그 외 경찰 인계).<br>하루의 완성, 웰페리온</p>
 </div>
 
 <script>
 (function(){
   var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
-  var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
-  var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
-  var STAFF = ['김남욱GM','이경연실장','나우열M','최준용M','임정은M','윤병현AM','백승화사원']; // GM 제공 목록(그대로) + '기타' 옵션
   var CACHE_KEY = 'wlp_lf_gallery_v1';
-  var CACHE_TTL = 90000; // 90초 짧은 TTL — 수령완료 등 목록 변화 시 무효화
+  var CACHE_TTL = 90000; // 90초 짧은 TTL — 처분예정 배지 등 변화 시 무효화
 
   function $(id){ return document.getElementById(id); }
   function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-  function toast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(function(){ t.className='toast'+(isErr?' err':''); },2600); }
   function _thumb(url,sz){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w'+(sz||400)):url; }
-  function _monthLabel(ym){ var n=parseInt(String(ym||'').split('-')[1],10); return isNaN(n)?'':(n+'월'); } // 'YYYY-MM' → 'M월'
+  function _monthLabel(ym){ var n=parseInt(String(ym||'').split('-')[1],10); return isNaN(n)?'':(n+'월'); } // 'YYYY-MM' → 'M월' (배지용)
+  function _fullMonthLabel(ym){ var p=String(ym||'').split('-'); var y=parseInt(p[0],10),m=parseInt(p[1],10); return (isNaN(y)||isNaN(m))?ym:(y+'년 '+m+'월'); } // 'YYYY-MM' → 'YYYY년 M월' (필터용)
+  function _rowMonth(r){ var m=String(r.foundWhen||r.createdAt||'').slice(0,7); return /^\d{4}-\d{2}$/.test(m)?m:''; }
   function _catBadge(cat){
     if(cat==='consumable') return '<span class="cat-badge">🟢 소모품</span>';
     if(cat==='general') return '<span class="cat-badge">🟡 일반</span>';
@@ -269,23 +125,34 @@ span.staff-only{display:none}
     return '';
   }
 
-  // 수령장소 옵션
-  (function(){ var s=$('m_loc'); LOCATIONS.forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; s.appendChild(o); }); })();
-  // 주는 담당자 옵션 (선택 placeholder + 7명 + 기타)
-  (function(){ var s=$('m_staff'); var ph=document.createElement('option'); ph.value=''; ph.textContent='담당자 선택'; s.appendChild(ph); STAFF.forEach(function(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; s.appendChild(o); }); var e=document.createElement('option'); e.value='기타'; e.textContent='기타(직접 입력)'; s.appendChild(e); })();
-  $('m_staff').addEventListener('change',function(){ var oth=$('m_staff_other'); if(this.value==='기타'){ oth.style.display='block'; oth.focus(); } else { oth.style.display='none'; oth.value=''; } });
-
-  var _loading=false, _cur=null;
-  var _upcoming={}, _disposed=[], _lastRows=[]; // lf_disposal: foundId→disposeMonth('YYYY-MM') 맵 · 폐기완료 목록 · 그리드 최근 렌더 원본
+  var _loading=false, _monthSel='';
+  var _upcoming={}, _lastRows=[]; // lf_disposal: foundId→disposeMonth('YYYY-MM') 맵 · 그리드 원본(미필터 전체)
 
   function _readCache(){ try{ var o=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); return (o&&Array.isArray(o.data))?o:null; }catch(e){ return null; } }
   function _writeCache(rows){ try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:rows})); }catch(e){} }
-  function _clearCache(){ try{ localStorage.removeItem(CACHE_KEY); }catch(e){} }
   function _skeleton(n){ var one='<div class="gcard skel" aria-hidden="true"><div class="ph skel-ph"></div><div class="body"><div class="skel-line w40"></div><div class="skel-line w80"></div><div class="skel-line w60"></div><div class="skel-btn"></div></div></div>'; var s=''; for(var i=0;i<(n||6);i++){ s+=one; } return s; }
+
+  // ── 월 선택 필터 (foundWhen 습득월 기준, 클라이언트 필터 · 재fetch 없음) ──
+  function _populateMonths(rows){
+    var seen={}; rows.forEach(function(r){ var m=_rowMonth(r); if(m) seen[m]=true; });
+    var months=Object.keys(seen).sort().reverse(); // 내림차순(최신월 먼저)
+    var sel=$('monthSel'); var cur=sel.value;
+    sel.innerHTML='<option value="">전체</option>'+months.map(function(m){ return '<option value="'+m+'">'+_esc(_fullMonthLabel(m))+'</option>'; }).join('');
+    sel.value=(months.indexOf(cur)>=0)?cur:'';
+    _monthSel=sel.value;
+  }
+  function _applyFilter(rows){ return _monthSel?rows.filter(function(r){ return _rowMonth(r)===_monthSel; }):rows; }
+  $('monthSel').addEventListener('change',function(){ _monthSel=this.value; _renderFiltered(); });
+
   function _renderRows(rows){
     _lastRows=rows;
-    var grid=$('grid'); $('cnt').textContent=String(rows.length);
-    if(!rows.length){ grid.innerHTML='<div class="state-msg">현재 게시중인 습득물이 없습니다.</div>'; return; }
+    _populateMonths(rows);
+    _renderFiltered();
+  }
+  function _renderFiltered(){
+    var grid=$('grid');
+    var rows=_applyFilter(_lastRows);
+    if(!rows.length){ grid.innerHTML='<div class="state-msg">'+(_monthSel?'해당 월에 게시중인 습득물이 없습니다.':'현재 게시중인 습득물이 없습니다.')+'</div>'; return; }
     // 폐기 임박(disposeMonth 있는 항목=전월 습득 코호트)을 그리드 상단으로 — 폐기월 오름차순, 그 외는 기존 순서 유지(안정 정렬)
     var sorted=rows.slice().sort(function(a,b){
       var ra=_upcoming[a.foundId], rb=_upcoming[b.foundId];
@@ -301,7 +168,7 @@ span.staff-only{display:none}
   function load(opts){
     opts=opts||{};
     var grid=$('grid');
-    // 캐시 우선(stale-while-revalidate): 재방문·수령후 재조회 즉시 표시
+    // 캐시 우선(stale-while-revalidate): 재방문 시 즉시 표시
     if(!opts.force){
       var c=_readCache();
       if(c){ _renderRows(c.data); if(Date.now()-c.ts < CACHE_TTL){ return; } }
@@ -311,7 +178,7 @@ span.staff-only{display:none}
     fetch(VOC_API+'?action=lf_gallery&_='+Date.now(),{redirect:'follow',cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(d){ _loading=false;
-        if(!d||!d.ok){ if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">현황을 불러오지 못했습니다 — '+_esc(d&&d.error||'')+'</div>'; $('cnt').textContent='0'; } return; }
+        if(!d||!d.ok){ if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">현황을 불러오지 못했습니다 — '+_esc(d&&d.error||'')+'</div>'; } return; }
         var rows=Array.isArray(d.data)?d.data:[];
         _writeCache(rows);
         _renderRows(rows);
@@ -326,36 +193,13 @@ span.staff-only{display:none}
     var imminent=disposeMonth!=null;
     var badge=imminent?('<div class="disp-badge">⏳ '+_esc(_monthLabel(disposeMonth))+' 처분예정</div>'):'';
     return '<div class="gcard'+(imminent?' imminent':'')+'">'+ph+
-      '<button class="del-btn staff-only" type="button" data-del="'+_esc(r.foundId||'')+'" title="직원 전용: 오등록 삭제">🗑</button>'+
       '<div class="body">'+badge+_catBadge(r.category)+'<div class="gid">'+_esc(r.foundId||'')+'</div>'+
       '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
       '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>🕒 '+_esc(when||'-')+'</div>'+
-      '<button class="claim staff-only" type="button" data-claim="'+_esc(r.foundId||'')+'" data-desc="'+_esc(r.itemDesc||'')+'" data-loc="'+_esc(r.foundLoc||'')+'" data-photo="'+_esc(r.photoUrl||'')+'">수령</button>'+
       '</div></div>';
   }
 
-  // ── 처분 완료 카드(읽기전용) ──
-  function _dcard(r){
-    var when=String(r.disposedAt||'').replace('T',' ');
-    var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,300))+'" alt="처분된 습득물 사진" loading="lazy" decoding="async">'):'<div class="ph"></div>';
-    var trackLabel=r.track==='police'?('🚔 경찰 인계 '+_esc(when||'-')):('🗑 폐기 '+_esc(when||'-'));
-    return '<div class="dcard">'+ph+
-      '<div class="body"><div class="gid">'+_esc(r.foundId||'')+'</div>'+
-      '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
-      '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>'+trackLabel+'</div>'+
-      '</div></div>';
-  }
-
-  // ── 폐기 임박(upcoming)·폐기 완료(disposed) — lf_disposal(공개) ──
-  function _renderDisposalSection(){
-    if(!document.documentElement.classList.contains('staff-mode')) return; // 회원뷰: 처분 완료 기록은 직원 전용
-    var sec=$('disposalSec'), cnt=$('disposalCount'), grid=$('disposalGrid');
-    var n=_disposed.length;
-    cnt.textContent=String(n);
-    if(!n){ sec.style.display='none'; return; }
-    sec.style.display='block';
-    grid.innerHTML=_disposed.map(_dcard).join('');
-  }
+  // ── 폐기 임박(upcoming) — lf_disposal(공개). 처분 완료 기록·수령·삭제는 종합접수처(직원 게이트) 전용 ──
   function loadDisposal(){
     fetch(VOC_API+'?action=lf_disposal&_='+Date.now(),{redirect:'follow',cache:'no-store'})
       .then(function(r){ return r.json(); })
@@ -364,98 +208,10 @@ span.staff-only{display:none}
         var up=Array.isArray(d.upcoming)?d.upcoming:[];
         _upcoming={};
         up.forEach(function(u){ _upcoming[u.foundId]=u.disposeMonth; });
-        _disposed=Array.isArray(d.disposed)?d.disposed:[];
         if(_lastRows.length){ _renderRows(_lastRows); } // 이미 렌더된 게시중 그리드에 배지·정렬 재적용
-        _renderDisposalSection();
       })
       .catch(function(){ /* 조용히 스킵 */ });
   }
-  $('disposalToggle').addEventListener('click',function(){
-    var body=$('disposalBody');
-    var expanded=this.getAttribute('aria-expanded')==='true';
-    this.setAttribute('aria-expanded',expanded?'false':'true');
-    body.hidden=expanded;
-    this.classList.toggle('open',!expanded);
-  });
-
-  // ── 오등록 삭제 (직원 전용, lf_delete) ──
-  $('grid').addEventListener('click',function(ev){
-    var b=ev.target.closest('[data-del]'); if(!b) return;
-    var id=b.getAttribute('data-del');
-    if(!confirm('['+id+'] 오등록 습득물을 삭제할까요?')) return;
-    b.disabled=true;
-    fetch(VOC_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'lf_delete',t:VOC_SUBMIT_TOKEN,id:id})})
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        if(d&&d.ok){ toast(id+' 삭제 완료'); _clearCache(); load({force:true}); }
-        else { toast((d&&d.error)||'삭제 실패',true); b.disabled=false; }
-      })
-      .catch(function(){ toast('네트워크 오류',true); b.disabled=false; });
-  });
-
-  // ── 수령 모달 ──
-  $('grid').addEventListener('click',function(ev){
-    var b=ev.target.closest('[data-claim]'); if(!b) return;
-    _cur={ id:b.getAttribute('data-claim'), desc:b.getAttribute('data-desc'), loc:b.getAttribute('data-loc'), photo:b.getAttribute('data-photo') };
-    openModal();
-  });
-  function openModal(){
-    var img=_cur.photo?('<img src="'+_esc(_thumb(_cur.photo,120))+'" alt="">'):'';
-    $('mItem').innerHTML=img+'<div><div class="mt">'+_esc(_cur.desc||'(설명 없음)')+'</div><div class="mm">'+_esc(_cur.id)+' · 📍 '+_esc(_cur.loc||'-')+'</div></div>';
-    $('m_pw').value=''; $('m_receiver').value=''; $('m_staff').value=''; $('m_staff_other').value=''; $('m_staff_other').style.display='none'; if(_cur.loc){ $('m_loc').value=_cur.loc; }
-    clearPad();
-    $('modalBack').classList.add('show');
-    setTimeout(resizePad,30);
-  }
-  function closeModal(){ $('modalBack').classList.remove('show'); _cur=null; }
-  $('mCancel').addEventListener('click',closeModal);
-  $('modalBack').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
-
-  // ── 서명패드 (canvas + pointer → toDataURL PNG) ──
-  var cv=$('signPad'), ctx=cv.getContext('2d'), drawing=false, hasInk=false, lastX=0, lastY=0;
-  function resizePad(){
-    var rect=cv.getBoundingClientRect(); if(!rect.width) return;
-    var dpr=window.devicePixelRatio||1;
-    cv.width=Math.round(rect.width*dpr); cv.height=Math.round(rect.height*dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#1a1a1a';
-  }
-  window.addEventListener('resize',function(){ if($('modalBack').classList.contains('show')){ var d=hasInk?cv.toDataURL():null; resizePad(); } });
-  function _pt(e){ var r=cv.getBoundingClientRect(); var p=(e.touches&&e.touches[0])||e; return { x:p.clientX-r.left, y:p.clientY-r.top }; }
-  function start(e){ e.preventDefault(); drawing=true; var p=_pt(e); lastX=p.x; lastY=p.y; if(!hasInk){ hasInk=true; $('signHint').style.display='none'; } }
-  function move(e){ if(!drawing) return; e.preventDefault(); var p=_pt(e); ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke(); lastX=p.x; lastY=p.y; }
-  function end(){ drawing=false; }
-  cv.addEventListener('pointerdown',start); cv.addEventListener('pointermove',move);
-  window.addEventListener('pointerup',end);
-  function clearPad(){ hasInk=false; ctx&&ctx.clearRect(0,0,cv.width,cv.height); $('signHint').style.display='block'; }
-  $('signClear').addEventListener('click',clearPad);
-
-  // ── 수령 확정 (lf_handover) ──
-  $('mConfirm').addEventListener('click',function(){
-    if(!_cur){ return; }
-    // 검증 순서 = GM 흐름: ① 회원 성함·서명 → ② 담당자 → ③ 비밀번호
-    var receiver=$('m_receiver').value.trim();
-    if(!receiver){ toast('수령 회원 성함을 입력해 주세요',true); return; }
-    if(!hasInk){ toast('수령 회원 서명을 받아주세요',true); return; }
-    var staffSel=$('m_staff').value;
-    var handoverStaff=(staffSel==='기타')?$('m_staff_other').value.trim():staffSel;
-    if(!staffSel){ toast('주는 담당자를 선택해 주세요',true); return; }
-    if(staffSel==='기타' && !handoverStaff){ toast('담당자 성함을 입력해 주세요',true); $('m_staff_other').focus(); return; }
-    if($('m_pw').value.trim()!=='62611200'){ toast('비밀번호가 올바르지 않습니다',true); $('m_pw').focus(); return; }
-    var sign=cv.toDataURL('image/png');
-    var btn=this; btn.disabled=true; btn.textContent='처리 중…';
-    var payload={ action:'lf_handover', t:VOC_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
-    fetch(VOC_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        btn.disabled=false; btn.textContent='수령 완료';
-        if(d&&d.ok){ toast(_cur.id+' 수령완료 처리됨'); _clearCache(); closeModal(); load({force:true}); }
-        else { toast((d&&d.error)||'수령 처리 실패',true); }
-      })
-      .catch(function(){ btn.disabled=false; btn.textContent='수령 완료'; toast('네트워크 오류 — 다시 시도해 주세요',true); });
-  });
-
-  $('refreshBtn').addEventListener('click',function(){ load({force:true}); });
 
   // 헤더 로고 → 홈 대신 종합접수처(/ko/reception/)로 (WP Salient #logo; 스탠드얼론엔 없음 → 무해)
   function _relinkLogo(){ try{ var lg=document.getElementById('logo'); if(lg){ var a=(lg.tagName==='A')?lg:(lg.querySelector('a')||lg); if(a&&a.setAttribute){ a.setAttribute('href','/ko/reception/'); } } }catch(e){} }

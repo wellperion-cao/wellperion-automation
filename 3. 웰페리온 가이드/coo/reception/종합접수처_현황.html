@@ -125,6 +125,42 @@ a { color:var(--accent); text-decoration:none; }
 .dc-btn { font-size:12px; font-weight:700; padding:7px 14px; border-radius:8px; background:var(--green-bg); color:var(--green); border:1px solid rgba(106,191,123,.4); cursor:pointer; font-family:inherit; }
 .dc-btn.dc-collapse { display:block; width:100%; margin-bottom:8px; background:var(--bg); color:var(--dim); border-color:var(--border); }
 .done-collapsed .dc-hint { font-size:11px; color:var(--dim); margin-top:10px; line-height:1.55; }
+
+/* ── 🖊️ 습득물 수령 서명 모달 (직원 · gallery lost_found_gallery.html 포팅 + 다크테마 색 조정) ── */
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9998;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-back.show{display:flex;}
+.modal{background:var(--paper);border:1px solid var(--border);border-radius:18px;max-width:440px;width:100%;max-height:92vh;overflow-y:auto;padding:22px 20px;box-shadow:0 24px 60px rgba(0,0,0,.5);}
+.modal h2{font-size:18px;font-weight:800;margin-bottom:4px;color:var(--text);}
+.modal .msub{font-size:12.5px;color:var(--dim);margin-bottom:16px;}
+.modal .mitem{display:flex;gap:11px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:16px;}
+.modal .mitem img{width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0;}
+.modal .mitem .mt{font-size:13.5px;font-weight:600;word-break:break-word;color:var(--text);}
+.modal .mitem .mm{font-size:11.5px;color:var(--dim);}
+.mfield{margin-bottom:13px;}
+.mfield label{display:block;font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:6px;letter-spacing:.3px;}
+.mfield input,.mfield select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:12px 13px;border-radius:11px;font-size:15px;font-family:inherit;-webkit-appearance:none;appearance:none;}
+.mfield input:focus,.mfield select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(183,159,138,.18);}
+.sign-wrap{border:1.5px solid var(--border);border-radius:12px;background:#fff;position:relative;overflow:hidden;}
+.sign-wrap canvas{display:block;width:100%;height:170px;touch-action:none;cursor:crosshair;}
+.sign-hint{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);text-align:center;color:#b8b2a8;font-size:13px;pointer-events:none;}
+.sign-clear{margin-top:7px;font-size:12.5px;color:var(--red);cursor:pointer;font-weight:600;display:inline-block;}
+.mbtns{display:flex;gap:10px;margin-top:18px;}
+.mbtns button{flex:1;padding:14px;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:none;}
+.mbtns .cancel{background:var(--bg);border:1.5px solid var(--border);color:var(--text);}
+.mbtns .confirm{background:var(--green);color:#fff;}
+.mbtns .confirm:disabled{opacity:.45;cursor:not-allowed;}
+
+.toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:90%;text-align:center;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.err{background:var(--red);}
+
+/* ── 습득물 카드 직원 컨트롤(수령·삭제·A3 처분공지) ── */
+.lf-ctrl-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:2px;}
+.lf-btn{font-size:12px;font-weight:700;padding:6px 13px;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--paper);color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+.lf-claim{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.4);}
+.lf-del{font-size:11px;color:var(--dim);opacity:.75;}
+.lf-del:hover{color:var(--red);opacity:1;}
+.lf-a3{color:var(--dim);}
 </style>
 <!-- 🔒 사내 전용 커튼(GM 승인 2026-07-07) — 접수 회원 성함·연락처·내용(실명 포함) 대외 공개 차단. 인증 후 열람. (진짜 잠금=JWT ≈2026-09) -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
@@ -164,9 +200,64 @@ a { color:var(--accent); text-decoration:none; }
     <div class="chips" id="deptChips"></div>
   </div>
 
+  <!-- 접수월 필터 (습득물 foundWhen · 그 외 createdAt 월) -->
+  <div class="filter-block">
+    <div class="filter-label">접수월</div>
+    <div class="chips" id="monthChips"></div>
+  </div>
+
   <!-- 칸반 -->
   <div class="board" id="board">
     <div class="state-msg">불러오는 중…</div>
+  </div>
+</div>
+
+<!-- 🍞 토스트 -->
+<div class="toast" id="toast"></div>
+
+<!-- 🖊️ 습득물 수령 서명 모달 (gallery 포팅) -->
+<div class="modal-back" id="modalBack">
+  <div class="modal">
+    <h2>습득물 수령 확인</h2>
+    <div class="msub">현장 직원이 회원 본인확인 후 서명을 받아주세요.</div>
+    <div class="mitem" id="mItem"></div>
+
+    <!-- ① 수령 회원 서명 (성함 + 장소 + 서명패드) -->
+    <div class="mfield">
+      <label for="m_receiver">① 수령 회원 성함</label>
+      <input type="text" id="m_receiver" placeholder="수령하시는 회원 성함" autocomplete="off">
+    </div>
+    <div class="mfield">
+      <label for="m_loc">수령 장소</label>
+      <select id="m_loc"></select>
+    </div>
+    <div class="mfield">
+      <label>수령 회원 서명</label>
+      <div class="sign-wrap">
+        <canvas id="signPad"></canvas>
+        <div class="sign-hint" id="signHint">여기에 서명해 주세요</div>
+      </div>
+      <span class="sign-clear" id="signClear">✕ 다시 서명</span>
+    </div>
+
+    <!-- ② 주는 담당자 선택 -->
+    <div class="mfield">
+      <label for="m_staff">② 주는 담당자</label>
+      <select id="m_staff"></select>
+      <input type="text" id="m_staff_other" placeholder="담당자 성함 직접 입력" autocomplete="off" style="display:none;margin-top:8px">
+    </div>
+
+    <!-- ③ 확인 비밀번호 -->
+    <div class="mfield">
+      <label for="m_pw">③ 확인 비밀번호</label>
+      <input type="password" id="m_pw" placeholder="담당자 전용 비밀번호" autocomplete="off" inputmode="numeric">
+    </div>
+
+    <!-- ④ 수령 완료 -->
+    <div class="mbtns">
+      <button class="cancel" id="mCancel" type="button">취소</button>
+      <button class="confirm" id="mConfirm" type="button">수령 완료</button>
+    </div>
   </div>
 </div>
 
@@ -180,6 +271,11 @@ a { color:var(--accent); text-decoration:none; }
 var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
 /* 직원 현황(gate.js 뒤) 사진 노출 키 — 이 값이면 reg_board가 사진 원본 반환(썸네일용). 공개는 계속 '비공개'. */
 var REG_PV = 'wlp_reg_pv_2026';
+
+/* 🧳 습득물 직원 처리(수령·삭제) — lost_found_gallery.html 포팅 상수 (REG_API=VOC_API 동일 GAS) */
+var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
+var STAFF = ['김남욱GM','이경연실장','나우열M','최준용M','임정은M','윤병현AM','백승화사원'];
 
 var STATUS_LIST  = ['접수','처리중','완료'];
 var STATUS_COLOR = {'접수':'var(--yellow)','처리중':'var(--blue)','완료':'var(--green)'};
@@ -212,6 +308,7 @@ var _vocItems = [];   // reg_board(VOC 6종)
 var _lfItems  = [];   // lf_list → 습득물 매핑(게시중→접수·수령완료→완료)
 var _curCat = '';
 var _curDept = '';
+var _curMonth = '';
 var _curSearch = '';
 var _doneExpanded = false;
 var _loading = false;
@@ -226,6 +323,21 @@ function _hay(r){ var s=''; for(var k in r){ if(r.hasOwnProperty(k) && k.charAt(
 
 function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function _catMeta(label){ for(var i=0;i<CAT_META.length;i++){ if(CAT_META[i].label===label) return CAT_META[i]; } return null; }
+function $(id){ return document.getElementById(id); }
+function toast(msg, isErr){ var t=$('toast'); if(!t) return; t.textContent = msg; t.className = 'toast show' + (isErr?' err':''); setTimeout(function(){ t.className = 'toast' + (isErr?' err':''); }, 2600); }
+
+/* 접수월(YYYY-MM) 추출 — 습득물=foundWhen, 그 외=createdAt(서버 포맷 방어적 파싱, 실패시 '' → '전체'에만 포함) */
+function _monthOf(r){
+  var raw = r._lf ? (r.foundWhen || r.createdAt) : r.createdAt;
+  var m = String(raw||'').match(/^(\d{4}-\d{2})/);
+  return m ? m[1] : '';
+}
+function _monthLabel(ym){
+  var p = String(ym||'').split('-');
+  if(p.length < 2) return '';
+  var mo = parseInt(p[1], 10);
+  return isNaN(mo) ? '' : (p[0] + '년 ' + mo + '월');
+}
 
 /* ── 로드 (항상 전체 → 클라이언트 필터) ── */
 function regLoad(){
@@ -265,15 +377,27 @@ function _renderChips(){
     dh += '<button class="chip' + (_curDept===dep?' active':'') + '" onclick="setDept(\'' + dep + '\')">' + _esc(dep) + ' (' + n + ')</button>';
   });
   dc.innerHTML = dh;
+
+  var mc = document.getElementById('monthChips');
+  var months = {};
+  _allItems.forEach(function(r){ var ym = _monthOf(r); if(ym) months[ym] = (months[ym]||0) + 1; });
+  var monthKeys = Object.keys(months).sort().reverse();
+  var mh = '<button class="chip' + (_curMonth===''?' active':'') + '" onclick="setMonth(\'\')">전체</button>';
+  monthKeys.forEach(function(ym){
+    mh += '<button class="chip' + (_curMonth===ym?' active':'') + '" onclick="setMonth(\'' + ym + '\')">' + _esc(_monthLabel(ym)) + ' (' + months[ym] + ')</button>';
+  });
+  mc.innerHTML = mh;
 }
 function setCat(c){ _curCat = c; _render(); }
 function setDept(d){ _curDept = d; _render(); }
+function setMonth(m){ _curMonth = m; _render(); }
 
 /* ── 필터 적용 목록 ── */
 function _filtered(){
   return _allItems.filter(function(r){
     if(_curCat && String(r.category||'') !== _curCat) return false;
     if(_curDept && String(r.dept||'') !== _curDept) return false;
+    if(_curMonth && _monthOf(r) !== _curMonth) return false;
     if(_curSearch && _hay(r).indexOf(_curSearch) < 0) return false;
     return true;
   });
@@ -360,7 +484,14 @@ function _card(r){
     if(r.content) lh += '<div class="card-content">' + _esc(String(r.content)) + '</div>';
     if(r.loc) lh += '<div class="card-loc">습득장소: ' + _esc(String(r.loc)) + '</div>';
     lh += '<div class="divider"></div>';
-    lh += '<div class="lf-note">수령은 <b>습득물 보기</b>에서 · 습득 다음 달 공지 → 그다음 달 폐기(월 사이클). <a href="http://wellperion.com/ko/lost-found-register/" target="_blank" rel="noopener">습득물 접수</a> · <a href="http://wellperion.com/ko/lost-found/" target="_blank" rel="noopener">습득물 보기</a> · <a href="lost_found_disposal.html" target="_blank" rel="noopener">폐기 공지</a> · <a href="lost_found_guide.html" target="_blank" rel="noopener">운영 가이드</a></div>';
+    lh += '<div class="lf-note">습득 다음 달 공지 → 그다음 달 폐기(월 사이클). <a href="http://wellperion.com/ko/lost-found-register/" target="_blank" rel="noopener">습득물 접수</a> · <a href="http://wellperion.com/ko/lost-found/" target="_blank" rel="noopener">습득물 보기</a> · <a href="lost_found_guide.html" target="_blank" rel="noopener">운영 가이드</a></div>';
+    lh += '<div class="lf-ctrl-row">';
+    if(r._lfLabel==='게시중'){
+      lh += '<button type="button" class="lf-btn lf-claim" data-lf-claim="' + lid + '" data-lf-desc="' + _esc(String(r.content||'')) + '" data-lf-loc="' + _esc(String(r.loc||'')) + '" data-lf-photo="' + _esc(String(r.photoUrl||'')) + '">✅ 수령</button>';
+    }
+    lh += '<button type="button" class="lf-btn lf-del" data-lf-del="' + lid + '" title="오등록 삭제">🗑 삭제</button>';
+    lh += '<a class="lf-btn lf-a3" href="lost_found_disposal.html" target="_blank" rel="noopener">🖨 A3 처분공지</a>';
+    lh += '</div>';
     lh += '</div>';
     return lh;
   }
@@ -496,6 +627,85 @@ function lfLoad(){
     .catch(function(){ _lfLoading = false; /* 습득물 실패는 6종 보드 유지, 조용히 스킵 */ });
 }
 
+/* ═══════════════════════════════════════════
+   🖊️ 습득물 수령 서명 모달 (lost_found_gallery.html 포팅 — 순수 canvas·fetch, 외부lib 0)
+   흐름: 카드 '수령' → _cur 채움 → openModal → 서명 → mConfirm → lf_handover(REG_API)
+   ═══════════════════════════════════════════ */
+var _cur = null;
+
+/* 수령장소 옵션 */
+(function(){ var s = $('m_loc'); if(!s) return; LOCATIONS.forEach(function(l){ var o = document.createElement('option'); o.value = l; o.textContent = l; s.appendChild(o); }); })();
+/* 주는 담당자 옵션 (선택 placeholder + 7명 + 기타) */
+(function(){
+  var s = $('m_staff'); if(!s) return;
+  var ph = document.createElement('option'); ph.value = ''; ph.textContent = '담당자 선택'; s.appendChild(ph);
+  STAFF.forEach(function(n){ var o = document.createElement('option'); o.value = n; o.textContent = n; s.appendChild(o); });
+  var e = document.createElement('option'); e.value = '기타'; e.textContent = '기타(직접 입력)'; s.appendChild(e);
+})();
+if($('m_staff')){
+  $('m_staff').addEventListener('change', function(){
+    var oth = $('m_staff_other');
+    if(this.value==='기타'){ oth.style.display = 'block'; oth.focus(); }
+    else { oth.style.display = 'none'; oth.value = ''; }
+  });
+}
+
+function openModal(){
+  var img = _cur.photo ? ('<img src="' + _esc(_lfThumb(_cur.photo)) + '" alt="">') : '';
+  $('mItem').innerHTML = img + '<div><div class="mt">' + _esc(_cur.desc||'(설명 없음)') + '</div><div class="mm">' + _esc(_cur.id) + ' · 📍 ' + _esc(_cur.loc||'-') + '</div></div>';
+  $('m_pw').value = ''; $('m_receiver').value = ''; $('m_staff').value = ''; $('m_staff_other').value = ''; $('m_staff_other').style.display = 'none';
+  if(_cur.loc){ $('m_loc').value = _cur.loc; }
+  clearPad();
+  $('modalBack').classList.add('show');
+  setTimeout(resizePad, 30);
+}
+function closeModal(){ $('modalBack').classList.remove('show'); _cur = null; }
+$('mCancel').addEventListener('click', closeModal);
+$('modalBack').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+
+/* ── 서명패드 (canvas + pointer → toDataURL PNG) ── */
+var _signCv = $('signPad'), _signCtx = _signCv.getContext('2d'), _signDrawing = false, _signHasInk = false, _signLastX = 0, _signLastY = 0;
+function resizePad(){
+  var rect = _signCv.getBoundingClientRect(); if(!rect.width) return;
+  var dpr = window.devicePixelRatio || 1;
+  _signCv.width = Math.round(rect.width*dpr); _signCv.height = Math.round(rect.height*dpr);
+  _signCtx.setTransform(dpr,0,0,dpr,0,0);
+  _signCtx.lineWidth = 2.2; _signCtx.lineCap = 'round'; _signCtx.lineJoin = 'round'; _signCtx.strokeStyle = '#1a1a1a';
+}
+window.addEventListener('resize', function(){ if($('modalBack').classList.contains('show')){ resizePad(); } });
+function _pt(e){ var r = _signCv.getBoundingClientRect(); var p = (e.touches && e.touches[0]) || e; return { x: p.clientX - r.left, y: p.clientY - r.top }; }
+function _signStart(e){ e.preventDefault(); _signDrawing = true; var p = _pt(e); _signLastX = p.x; _signLastY = p.y; if(!_signHasInk){ _signHasInk = true; $('signHint').style.display = 'none'; } }
+function _signMove(e){ if(!_signDrawing) return; e.preventDefault(); var p = _pt(e); _signCtx.beginPath(); _signCtx.moveTo(_signLastX,_signLastY); _signCtx.lineTo(p.x,p.y); _signCtx.stroke(); _signLastX = p.x; _signLastY = p.y; }
+function _signEnd(){ _signDrawing = false; }
+_signCv.addEventListener('pointerdown', _signStart); _signCv.addEventListener('pointermove', _signMove);
+window.addEventListener('pointerup', _signEnd);
+function clearPad(){ _signHasInk = false; _signCtx && _signCtx.clearRect(0,0,_signCv.width,_signCv.height); $('signHint').style.display = 'block'; }
+$('signClear').addEventListener('click', clearPad);
+
+/* ── 수령 확정 (lf_handover) ── */
+$('mConfirm').addEventListener('click', function(){
+  if(!_cur) return;
+  var receiver = $('m_receiver').value.trim();
+  if(!receiver){ toast('수령 회원 성함을 입력해 주세요', true); return; }
+  if(!_signHasInk){ toast('수령 회원 서명을 받아주세요', true); return; }
+  var staffSel = $('m_staff').value;
+  var handoverStaff = (staffSel==='기타') ? $('m_staff_other').value.trim() : staffSel;
+  if(!staffSel){ toast('주는 담당자를 선택해 주세요', true); return; }
+  if(staffSel==='기타' && !handoverStaff){ toast('담당자 성함을 입력해 주세요', true); $('m_staff_other').focus(); return; }
+  if($('m_pw').value.trim()!=='62611200'){ toast('비밀번호가 올바르지 않습니다', true); $('m_pw').focus(); return; }
+  var sign = _signCv.toDataURL('image/png');
+  var btn = this; btn.disabled = true; btn.textContent = '처리 중…';
+  var payload = { action:'lf_handover', t:VOC_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
+  fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify(payload), redirect:'follow' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      btn.disabled = false; btn.textContent = '수령 완료';
+      if(d && d.ok){ toast(_cur.id + ' 수령완료 처리됨'); closeModal(); lfLoad(); }
+      else { toast((d && d.error) || '수령 처리 실패', true); }
+    })
+    .catch(function(){ btn.disabled = false; btn.textContent = '수령 완료'; toast('네트워크 오류 — 다시 시도해 주세요', true); });
+});
+
 /* 보드 이벤트는 #board에 1회만 위임(재렌더마다 중복 부착 방지 — 상태변경 중복발송 버그 수정) */
 function _wireBoard(){
   var board = document.getElementById('board');
@@ -505,16 +715,38 @@ function _wireBoard(){
     }
   });
   board.addEventListener('click', function(e){
-    var btn = e.target.closest('[data-reg-save]');
-    if(!btn) return;
-    var card = btn.closest('[data-reg-card]');
-    if(!card) return;
-    var payload = {};
-    var a = card.querySelector('[data-reg-assignee]');
-    var m = card.querySelector('[data-reg-memo]');
-    if(a) payload.assignee = a.value;
-    if(m) payload.memo = m.value;
-    _update(card.dataset.regCard, card.dataset.regCat, payload, btn);
+    var saveBtn = e.target.closest('[data-reg-save]');
+    if(saveBtn){
+      var card = saveBtn.closest('[data-reg-card]');
+      if(!card) return;
+      var payload = {};
+      var a = card.querySelector('[data-reg-assignee]');
+      var m = card.querySelector('[data-reg-memo]');
+      if(a) payload.assignee = a.value;
+      if(m) payload.memo = m.value;
+      _update(card.dataset.regCard, card.dataset.regCat, payload, saveBtn);
+      return;
+    }
+    var claimBtn = e.target.closest('[data-lf-claim]');
+    if(claimBtn){
+      _cur = { id: claimBtn.dataset.lfClaim, desc: claimBtn.dataset.lfDesc, loc: claimBtn.dataset.lfLoc, photo: claimBtn.dataset.lfPhoto };
+      openModal();
+      return;
+    }
+    var delBtn = e.target.closest('[data-lf-del]');
+    if(delBtn){
+      var delId = delBtn.dataset.lfDel;
+      if(!confirm('[' + delId + '] 습득물을 삭제할까요?')) return;
+      delBtn.disabled = true;
+      fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify({action:'lf_delete', t:VOC_SUBMIT_TOKEN, id:delId}), redirect:'follow' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if(d && d.ok){ toast(delId + ' 삭제 완료'); lfLoad(); }
+          else { toast((d && d.error) || '삭제 실패', true); delBtn.disabled = false; }
+        })
+        .catch(function(){ toast('네트워크 오류', true); delBtn.disabled = false; });
+      return;
+    }
   });
 }
 
