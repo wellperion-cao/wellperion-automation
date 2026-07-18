@@ -23,16 +23,9 @@
 
   --radius-sm:8px;--radius-md:12px;--radius-lg:14px;
   --shadow:0 1px 3px rgba(0,0,0,.35);
-
-  /* ── 🎯 단일 전환 퍼널(배 #897) 전용 팔레트 — 헌법한장 fn897 색 그대로 포팅 ── */
-  --fn-violet:#a78bfa; --fn-violet-deep:#7c5cf0; --fn-violet-glow:rgba(139,108,246,.18);
-  --fn-emerald:#34d399; --fn-emerald-dim:rgba(52,211,153,.14);
-  --fn-amber:#d9a441; --fn-amber-dim:rgba(217,164,65,.13);
-  --fn-track:#262038;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;font-size:14px;min-height:100vh}
-/* ── 배545 고도화① 숫자 자리맞춤(tabular-nums) — 전 대시보드 숫자 폭 고정(표 셀·KPI·히어로·IG·fn897 전부 커버, 순수 CSS·표시 전용) ── */
 body{font-variant-numeric:tabular-nums}
 a{color:var(--accent);text-decoration:none}
 a:hover{color:var(--text)}
@@ -147,7 +140,7 @@ a:hover{color:var(--text)}
   border-top:1px solid var(--border);margin-top:24px;
 }
 
-/* ── 배545 후속: A3 한 장 인쇄 — 화면 표시는 그대로, 인쇄 시에만 라이트 테마+압축 그리드 적용(표시전용, 값 변경 없음) ── */
+/* ── A3 세로 한 장 인쇄 ── */
 .print-btn{
   display:inline-flex;align-items:center;gap:6px;
   padding:6px 14px;border-radius:20px;
@@ -164,8 +157,8 @@ a:hover{color:var(--text)}
   .period-bar{gap:4px}
   .period-btn{padding:4px 10px;font-size:11px}
   .month-nav-label{font-size:13px;min-width:90px}
+  .insight-grid{grid-template-columns:1fr !important}
 }
-/* ── 배545: 유입채널·채널전환 교차표 — 좁은 화면 가로 스크롤 방지(표시 전용, 값 변경 없음) ── */
 @media(max-width:430px){
   .channel-table th{padding:8px 6px;font-size:9px}
   .channel-table td{padding:7px 6px;font-size:11px}
@@ -194,7 +187,7 @@ details.footnote-toggle > .fn-body{
   font-size:12px;color:var(--dim);line-height:1.75;
 }
 
-/* ── 페이지 소개 캡슐 — 대시보드 전체 소개 1회 (카드별 캡션과 별개) ── */
+/* ── 페이지 소개 캡슐 ── */
 .intro-capsule{
   background:var(--paper2);border:1px solid var(--border);
   border-left:3px solid var(--accent);border-radius:var(--radius-md);
@@ -208,133 +201,82 @@ details.footnote-toggle > .fn-body{
 }
 .intro-row b{color:var(--text);font-weight:700}
 
-/* ── 🎯 단일 전환 퍼널 보드 (배 #897 · 헌법한장 renderFunnel897 포팅 · status/kpi_values.json cmo·cpo 직독 · 2026-07-13) ── */
-.fn897-board{background:var(--paper); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px 20px 18px; margin:4px 0 14px; box-shadow:var(--shadow);}
-.fn897-grid{display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:center; gap:6px;}
-.fn897-node{text-align:center; padding:6px 4px;}
-.fn897-node .fn897-lab{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); font-weight:700; margin-bottom:6px;}
-.fn897-node .fn897-big{font-size:clamp(24px,3.6vw,36px); font-weight:800; letter-spacing:-.02em; line-height:1; color:var(--text);}
-.fn897-node .fn897-foot{font-size:11px; color:var(--dim); margin-top:6px;}
-.fn897-node.inq .fn897-big{color:var(--fn-violet);}
-.fn897-node.join .fn897-big{color:var(--fn-emerald);}
-.fn897-seg{text-align:center; min-width:112px; padding:0 4px;}
-.fn897-seg .fn897-arrow{font-size:18px; color:var(--dim); line-height:1;}
-.fn897-seg .fn897-rate{display:inline-block; margin-top:4px; font-size:17px; font-weight:800; letter-spacing:-.01em;}
-.fn897-seg .fn897-rate.v{color:var(--fn-violet);}
-.fn897-seg .fn897-rate.e{color:var(--fn-emerald);}
-.fn897-seg .fn897-cap{font-size:10.5px; color:var(--dim); margin-top:2px; line-height:1.3;}
-.fn897-seg .fn897-connector{height:2px; background:linear-gradient(90deg,transparent,var(--border),transparent); margin:10px 0 2px;}
-.fn897-scope{display:flex; gap:11px; align-items:flex-start; margin:14px 0 0; padding:12px 14px; background:var(--fn-amber-dim); border:1px solid rgba(217,164,65,.34); border-left:3px solid var(--fn-amber); border-radius:9px;}
-.fn897-scope .fn897-ic{flex:none; font-size:14px; line-height:1.4;}
-.fn897-scope p{margin:0; font-size:11.5px; color:#e7d6b4;}
-.fn897-scope b{color:var(--fn-amber); font-weight:700;}
-.fn897-cols{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;}
-.fn897-card{background:var(--paper2); border:1px solid var(--border); border-radius:11px; padding:16px 16px 17px;}
-.fn897-card h3{font-size:13px; margin:0; font-weight:800; letter-spacing:-.01em; display:flex; align-items:center; gap:7px;}
-.fn897-dot{width:8px; height:8px; border-radius:50%; flex:none;}
-.fn897-dot.v{background:var(--fn-violet); box-shadow:0 0 0 3px var(--fn-violet-glow);}
-.fn897-dot.e{background:var(--fn-emerald); box-shadow:0 0 0 3px var(--fn-emerald-dim);}
-.fn897-card .fn897-scopetag{font-size:10.5px; color:var(--dim); margin:5px 0 14px; font-weight:600;}
-.fn897-chan{display:flex; flex-direction:column; gap:9px;}
-.fn897-row{display:grid; grid-template-columns:82px 1fr auto; align-items:center; gap:10px;}
-.fn897-row .fn897-name{font-size:11.5px; color:var(--text); font-weight:600;}
-.fn897-track{height:18px; background:var(--fn-track); border-radius:5px; overflow:hidden; position:relative;}
-.fn897-fill{height:100%; border-radius:5px; width:100%;}
-.fn897-fill.meas{background:linear-gradient(90deg,var(--fn-violet-deep),var(--fn-violet));}
-.fn897-fill.untr{background:repeating-linear-gradient(45deg,#322a48,#322a48 6px,#2a2340 6px,#2a2340 12px);}
-.fn897-row .fn897-val{font-size:11.5px; font-weight:700; text-align:right; min-width:88px;}
-.fn897-chip{display:inline-block; font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:5px; letter-spacing:.02em; vertical-align:middle; margin-left:5px;}
-.fn897-chip.ok{background:var(--fn-emerald-dim); color:var(--fn-emerald);}
-.fn897-chip.no{background:rgba(122,120,112,.16); color:var(--dim);}
-.fn897-valnum.ok{color:var(--fn-emerald);}
-.fn897-valnum.no{color:var(--dim);}
-.fn897-joins{display:grid; grid-template-columns:1fr 1fr; gap:11px;}
-.fn897-stat{background:var(--paper); border:1px solid var(--border); border-radius:9px; padding:12px 13px 14px;}
-.fn897-stat .fn897-k{font-size:10.5px; color:var(--dim); font-weight:700; letter-spacing:.03em;}
-.fn897-stat .fn897-v{font-size:clamp(20px,3.2vw,27px); font-weight:800; margin-top:5px; line-height:1; color:var(--fn-emerald);}
-.fn897-stat .fn897-d{font-size:10.5px; color:var(--text); margin-top:6px;}
-.fn897-stat.cum .fn897-v{color:var(--text);}
-.fn897-foot-note{margin-top:16px; padding-top:12px; border-top:1px solid var(--border); display:flex; flex-wrap:wrap; gap:6px 18px;}
-.fn897-foot-note span{font-size:10.5px; color:var(--dim);}
-.fn897-foot-note b{color:var(--text); font-weight:700;}
-@media(max-width:640px){
-  .fn897-grid{grid-template-columns:1fr; gap:2px;}
-  .fn897-seg{transform:rotate(90deg); min-width:0; margin:2px 0;}
-  .fn897-seg .fn897-cap, .fn897-seg .fn897-connector{display:none;}
-  .fn897-cols, .fn897-joins{grid-template-columns:1fr;}
-  .fn897-row{grid-template-columns:70px 1fr auto;}
+/* ── 측정 준비중 배너 (지어내기 금지 — 없는 값은 정직 표기) ── */
+.measure-pending{
+  background:var(--paper2);border:1px solid var(--border);
+  border-left:3px solid var(--dim);border-radius:var(--radius-md);
+  padding:12px 16px;margin-bottom:12px;
+  font-size:12px;color:var(--text);line-height:1.7;
 }
+.measure-pending b{color:var(--accent)}
 
-/* ── 배545 후속: A3 한 장 인쇄 오버라이드 — 스타일시트 맨 끝에 위치(캐스케이드상 항상 우선) · 화면 표시는 무영향, 인쇄시에만 라이트테마+압축그리드 적용(표시전용, 값 변경 없음) ── */
+/* ── 채널별 성과 표 보조 ── */
+.delta{font-weight:700}
+.delta.up{color:var(--green)}
+.delta.down{color:var(--red)}
+.delta.flat{color:var(--dim);font-weight:400}
+.est-tag{font-size:9px;color:var(--dim);border:1px solid var(--border);border-radius:4px;padding:1px 4px;margin-left:4px;vertical-align:middle}
+
+/* ── 발행 대비 문의 추세(주차별) ── */
+.trend-wrap{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 14px 12px}
+.trend-chart{display:flex;gap:8px;align-items:flex-end;height:130px}
+.trend-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.trend-bars{display:flex;gap:3px;align-items:flex-end;height:96px;width:100%;justify-content:center}
+.trend-bar{width:38%;border-radius:3px 3px 0 0;min-height:2px;transition:height .2s}
+.trend-bar.pub{background:var(--accent)}
+.trend-bar.inq{background:var(--purple)}
+.trend-vals{font-size:9px;color:var(--dim);margin-top:5px;white-space:nowrap}
+.trend-wk{font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap}
+.trend-legend{display:flex;gap:16px;font-size:11px;color:var(--dim);margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+.trend-legend .dot{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
+
+/* ── 인사이트 ── */
+.insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.insight-card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 16px 15px}
+.insight-card.good{border-left:3px solid var(--green)}
+.insight-card.weak{border-left:3px solid var(--red)}
+.insight-card h4{font-size:12.5px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.insight-card p{font-size:12px;color:var(--dim);line-height:1.7}
+.insight-card b{color:var(--text)}
+
+/* ── 배545 후속 상속: A3 세로(portrait) 한 장 인쇄 (2026-07-18 GM: 세로로 재지정) ── */
 @media print{
   .print-btn,.period-btn,.custom-range,.month-nav{display:none !important}
-  @page{ size:A3 landscape; margin:7mm; }
+  @page{ size:A3 portrait; margin:8mm; }
   :root{
     --bg:#ffffff; --paper:#ffffff; --paper2:#f4f2ee; --text:#1a1816; --dim:#5a5850;
     --accent:#8a6d3f; --accent-bg:#f4ede2; --accent-hi:#ecdfc9; --border:#c9c4bc;
     --green:#2f7a3d; --green-bg:#eaf5ec;
     --red:#b23223; --red-bg:#fbeae7;
-    --yellow:#8a7115; --yellow-bg:#faf3d9;
-    --blue:#2f5f85; --blue-bg:#e7f0f7;
-    --orange:#8a5620; --orange-bg:#faeee0;
-    --purple:#5b4a8a; --purple-bg:#efeaf8;
-    --f1:#2f5f85; --f1-bg:#e7f0f7;
-    --f2:#5b4a8a; --f2-bg:#efeaf8;
-    --f3:#8a5620; --f3-bg:#faeee0;
-    --f4:#8a7115; --f4-bg:#faf3d9;
-    --f5:#2f7a3d; --f5-bg:#eaf5ec;
-    --fn-violet:#5b4a8a; --fn-violet-deep:#4a3d70; --fn-violet-glow:rgba(91,74,138,.18);
-    --fn-emerald:#1f6b4d; --fn-emerald-dim:#e3f2ea;
-    --fn-amber:#8a6416; --fn-amber-dim:#faf1de;
-    --fn-track:#e4e1da;
+    --purple:#5b4a8a;
   }
   *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important}
-  html,body{background:#fff !important;color:#1a1816 !important;font-size:7.5px;line-height:1.2}
-  .header{position:static;box-shadow:none;padding:0 0 4px}
-  .header h1{font-size:13px}
-  .header-meta{color:#5a5850;font-size:8px}
-  .content{max-width:100%;padding:0;column-count:3;column-gap:8px}
+  html,body{background:#fff !important;color:#1a1816 !important;font-size:9px;line-height:1.25}
+  .header{position:static;box-shadow:none;padding:0 0 5px}
+  .header h1{font-size:15px}
+  .header-meta{color:#5a5850;font-size:9px}
+  .content{max-width:100%;padding:0;column-count:2;column-gap:12px}
   .intro-capsule{display:none !important}
-  .section{margin-bottom:5px;break-inside:avoid;display:inline-block;width:100%}
-  .section-title{font-size:6.5px;margin-bottom:4px}
-  .fn897-board{padding:7px 8px 7px;box-shadow:none;margin:0 0 5px}
-  .fn897-grid{gap:1px}
-  .fn897-node{padding:3px 2px}
-  .fn897-node .fn897-lab{font-size:6.5px;margin-bottom:3px}
-  .fn897-node .fn897-big{font-size:14px}
-  .fn897-node .fn897-foot,.fn897-seg .fn897-cap{font-size:6.5px}
-  .fn897-seg{min-width:70px}
-  .fn897-seg .fn897-arrow{font-size:12px}
-  .fn897-seg .fn897-rate{font-size:10px;margin-top:2px}
-  .fn897-seg .fn897-connector{margin:6px 0 2px}
-  .fn897-cols{gap:6px;margin-top:6px}
-  .fn897-joins{gap:6px}
-  .fn897-card{padding:6px 7px 7px}
-  .fn897-card h3{font-size:9.5px}
-  .fn897-card .fn897-scopetag{font-size:6.5px;margin:3px 0 6px}
-  .fn897-chan{gap:4px}
-  .fn897-row{gap:6px}
-  .fn897-row .fn897-name,.fn897-row .fn897-val{font-size:7.5px}
-  .fn897-track{height:11px}
-  .fn897-chip{font-size:6.5px;padding:1px 4px}
-  .fn897-stat{padding:6px 7px 7px}
-  .fn897-stat .fn897-k{font-size:6.5px}
-  .fn897-stat .fn897-v{font-size:14px;margin-top:2px}
-  .fn897-stat .fn897-d{font-size:6.5px;margin-top:3px}
-  .fn897-scope{margin:6px 0 0;padding:6px 7px;gap:6px}
-  .fn897-scope .fn897-ic{font-size:10px}
-  .fn897-scope p{color:#1a1816 !important;font-size:6.5px}
-  .fn897-scope b{color:#1a1816 !important}
-  .fn897-foot-note{margin-top:6px;padding-top:5px;gap:3px 10px}
-  .fn897-foot-note span{font-size:6.5px}
-  .kpi-card,.channel-table{border:1px solid #c9c4bc;box-shadow:none}
-  .kpi-card{padding:5px 4px}
-  .kpi-card .num{font-size:14px}
-  .kpi-card .label,.kpi-card .sub,.kpi-card .unit{font-size:6.5px}
-  .channel-table th,.channel-table td{padding:3px 4px;font-size:6.5px}
-  details.footnote-toggle{margin-top:4px}
-  details.footnote-toggle > .fn-body{display:block !important;font-size:6.5px;padding:4px 6px;margin-top:4px;line-height:1.4}
-  details.footnote-toggle > summary{font-size:6.5px;padding:1px 0}
+  .section{margin-bottom:8px;break-inside:avoid;display:inline-block;width:100%}
+  .section-title{font-size:8px;margin-bottom:5px}
+  .kpi-card,.channel-table,.trend-wrap,.insight-card,.measure-pending{border:1px solid #c9c4bc;box-shadow:none}
+  .kpi-card{padding:7px 6px}
+  .kpi-card .num{font-size:17px}
+  .kpi-card .label,.kpi-card .sub,.kpi-card .unit{font-size:7.5px}
+  .channel-table th,.channel-table td{padding:4px 5px;font-size:7.5px}
+  .trend-wrap{padding:8px 8px 6px}
+  .trend-chart{height:90px}
+  .trend-bars{height:64px}
+  .trend-vals,.trend-wk{font-size:6.5px}
+  .trend-legend{font-size:8px;margin-top:6px;padding-top:6px}
+  .insight-grid{gap:8px}
+  .insight-card{padding:8px 9px 8px}
+  .insight-card h4{font-size:9px}
+  .insight-card p{font-size:7.5px}
+  .measure-pending{padding:7px 9px;font-size:7.5px}
+  details.footnote-toggle{margin-top:5px}
+  details.footnote-toggle > .fn-body{display:block !important;font-size:7px;padding:5px 7px;margin-top:5px;line-height:1.4}
+  details.footnote-toggle > summary{font-size:7px;padding:1px 0}
   details.footnote-toggle > summary::before{content:''}
   .page-footer{display:none}
   .flow-skeleton,.sk-pulse{display:none}
@@ -357,13 +299,11 @@ details.footnote-toggle > .fn-body{
 <div class="content">
 
   <!-- ════════════════════════════════════════════
-       ★ 조회 기간 — 페이지 최상단 단일 필터 (2026-07-18 GM: "날짜가 제일 상단에 있고 그 아래 현황 전부가 날짜 기준 반영")
-       월 네비게이터 + period-bar(일/주/월/기간/올해) + custom-range. 아래 채널별 현황(유입채널·채널별 전환율)이 이 기간을 공유.
-       단, 🎯 단일 전환 퍼널 히어로(fn897)는 설계상(2026-07-15 GM) 이번 달/전체 누적 고정 스코프라 이 필터의 영향을 받지 않음 — 정직 표기.
+       ① 조회 기간 — 페이지 최상단 단일 필터 (2026-07-18 GM)
+       아래 모든 실측 섹션(②③④⑤)이 이 기간을 공유(⑤ 추세만 최근 8주 고정 스코프 — 섹션 안내문에 명시).
        ════════════════════════════════════════════ -->
   <div class="section" style="margin-bottom:20px">
     <div class="section-title">조회 기간</div>
-    <!-- 월 네비게이터 — 기본 선택(월) 위에 표시 -->
     <div class="month-nav" id="month-nav-row">
       <button class="month-nav-btn" id="month-nav-prev" onclick="shiftMonth(-1)" title="이전 달">&#9664;</button>
       <span class="month-nav-label" id="month-nav-label">2026년 6월</span>
@@ -379,7 +319,6 @@ details.footnote-toggle > .fn-body{
       <span class="period-status" id="period-status">월간 기준 · 집계 불러오는 중…</span>
     </div>
 
-    <!-- 기간 직접 설정 — 한 번만 생성, 토글로 show/hide -->
     <div class="custom-range" id="custom-range-row">
       <input type="date" id="custom-from" />
       <span class="sep">~</span>
@@ -390,52 +329,72 @@ details.footnote-toggle > .fn-body{
   </div>
 
   <!-- ════════════════════════════════════════════
-       ★ 페이지 소개 캡슐 — 이 대시보드가 무엇/무슨 기능인지 한눈 요약 (실무진 눈높이)
-       카드별 캡션(배545/547 정직표기)과 별개 — 페이지 전체를 소개하는 상위 1개, 중복 아님
+       ★ 페이지 소개 캡슐 (2026-07-18 GM 재설계: 콘텐츠 → 문의 성과 전용)
+       문의 상담·등록·회원 세부는 시포(CPO) '문의&등록 현황'으로 이관 — 여기서는 다루지 않음.
        ════════════════════════════════════════════ -->
   <div class="intro-capsule">
-    <div class="intro-row"><span class="intro-tag">무엇</span><span>우리 마케팅이 사람을 얼마나 데려오는지 <b>한눈에 보는 판</b>입니다.</span></div>
-    <div class="intro-row"><span class="intro-tag">기능</span><span><b>발행(콘텐츠) → 문의(연락) → 등록(가입)</b>을 정직하게 보여줍니다 — 잰 것만 %로, 못 잰 건 숫자만 두고 "추적 밖"이라 표시합니다.</span></div>
-    <div class="intro-row"><span class="intro-tag">읽는 법</span><span>발행=이번 달 발행완료 콘텐츠 수 · 문의=실제 연락 · 등록=가입. 채널별 문의→가입 전환율은 표본이 있는 채널만 %로, 나머지는 문의 수만 표시합니다.</span></div>
+    <div class="intro-row"><span class="intro-tag">무엇</span><span>우리 콘텐츠가 문의를 얼마나 만들어내는지 <b>채널·게시글 단위</b>로 보는 판입니다.</span></div>
+    <div class="intro-row"><span class="intro-tag">기능</span><span><b>어떤 채널에 무엇을 올렸고, 그걸로 문의가 얼마나 늘고/줄었는지</b>만 정직하게 봅니다 — 잰 것만 실값으로, 못 잰 건 "측정 준비중"으로 표기합니다.</span></div>
+    <div class="intro-row"><span class="intro-tag">범위 밖</span><span>문의 상담·등록·회원 세부(멤버십/강습 종목별)는 시포(CPO) 「문의&등록 현황」에서 다룹니다 — 이 페이지에는 없습니다.</span></div>
   </div>
 
   <!-- ════════════════════════════════════════════
-       ★ 🎯 단일 전환 퍼널 히어로 — 발행 → 문의 → 가입 (배 #897 재설계 · GM 결정 2026-07-15)
-       정본: status/kpi_values.json (cmo·cpo 블록) + review_queue.json(발행완료 집계) 직독 · 시포 #849(문의→가입)
-       이 대시보드가 통합 SSOT — 헌법한장 #fn897-board는 폐기되고 이 섹션으로 링크 대체됨.
+       ② 요약 — 발행 게시물 · 콘텐츠 경유 문의 · 게시물당 문의 (선택 기간)
+       발행 = review_queue.json 발행완료(5채널: 인스타그램·네이버 블로그·네이버 카페·카카오·당근)
+       경유 문의 = funnel_conversion byChannel 중 위 5채널에 해당하는 문의 합(전화매칭 아님·유입채널 기준, 실측)
        ════════════════════════════════════════════ -->
   <div class="section">
-    <div class="section-title">단일 전환 퍼널 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">발행 → 문의 → 가입 · 한 보드에서 본다</span></div>
-    <div id="funnel897">
-      <div class="fn897-board" id="fn897-board">
-        <div style="color:var(--dim);font-size:13px">퍼널 데이터를 불러오는 중…</div>
-      </div>
+    <div class="section-title">요약 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">선택 기간 · 콘텐츠 5채널(인스타그램·네이버 블로그·네이버 카페·카카오·당근) 기준</span></div>
+    <div class="kpi-row" id="summary-kpi-row">
+      <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">발행 게시물</div></div>
+      <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">콘텐츠 경유 문의</div></div>
+      <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">게시물당 문의</div></div>
     </div>
   </div>
 
   <!-- ════════════════════════════════════════════
-       ③+★ 채널별 현황 — 유입채널(#3+#5) + 채널별 전환율(#744) 통합 섹션
-       (GM 2026-07-14: "유입채널이랑 채널별 전환 붙일순 없나?" — 둘 다 채널 기준이라 한 섹션에서 같이 읽도록 병합)
-       위: 채널 × 유형 교차표(셀=문의 건수) + 합계·비중 + 출처미상률 배지 — type_channel_breakdown(기간연동)
-       아래: 문의 → 등록(가입) 전환율 — funnel_conversion.byChannel(기간연동 · loadFunnelConversion이 상단 필터의 _rangeFromTo
-       from/to를 그대로 전달하고, 서버(Survey.js funnel_conversion, _fcInPeriod)도 동일 필터로 byChannel을 산출함을 실측 확인.
-       2026-07-18 GM 지시로 재확인 — 구주석 '기간연동 아님'은 오기였음, 아래 표 footer에 선택 기간 라벨도 명시함.
-       두 표 모두 GAS 표준 10버킷(_canonicalChannel_)으로 채널명이 이미 통일되어 있어 같은 채널명을 위아래로 나란히 읽을 수 있음.
-       390px 폭 제약(배545 기타-열 접기 회귀 방지) 상 단일 초광폭표 대신 표 2개를 한 섹션 안에 인접 배치(각자 반응형 유지, 값 손실 없음).
+       ③ 채널별 성과 — 5채널 × (발행·경유문의·게시물당 문의·증감)
+       증감 = 선택 기간과 동일 길이의 직전 기간 대비(문의 기준). 실측 두 번 조회.
        ════════════════════════════════════════════ -->
   <div class="section">
-    <div class="section-title">채널별 현황 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">문의 유입(채널×유형) + 전환율(문의→등록) · 같은 채널명으로 나란히</span></div>
-    <div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px">문의 유입 · 채널 × 유형</div>
-    <div id="inflow-channel-wrap">
-      <div class="flow-skeleton sk-pulse" style="height:120px;border-radius:var(--radius-md)"></div>
-    </div>
-    <div style="height:16px"></div>
-    <div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px">전환율 · 문의 → 등록(가입) <span style="font-weight:400">· 표본 적은 채널은 참고용</span></div>
-    <div id="channel-conversion-wrap">
-      <div class="flow-skeleton sk-pulse" style="height:120px;border-radius:var(--radius-md)"></div>
+    <div class="section-title">채널별 성과 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">발행 · 경유 문의 · 직전 기간 대비 증감</span></div>
+    <div id="channel-perf-wrap">
+      <div class="flow-skeleton sk-pulse"></div>
     </div>
   </div>
 
+  <!-- ════════════════════════════════════════════
+       ④ 게시글별 성과 — 게시글 단위 문의 귀속은 미구축(UTM 캠페인이 게시글 ID까지 연결되지 않음, 실측 확인)
+       측정 준비중 정직 표기 + 가능한 부분(발행 인벤토리)만 제공.
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">게시글별 성과 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">선택 기간 발행 게시글</span></div>
+    <div class="measure-pending">⚠ 게시글 단위(어떤 글이 문의 몇 건을 만들었나) 연결은 아직 <b>측정 준비중</b>입니다 — UTM이 채널까지는 붙지만 게시글 ID·문의 저장소에 캠페인 컬럼이 없어 게시글별 귀속이 불가합니다(실측 확인, 지어내지 않음). 채널 단위 성과는 위 ③을 참고하세요. 아래는 선택 기간 발행 게시글 목록입니다.</div>
+    <div id="post-list-wrap">
+      <div class="flow-skeleton sk-pulse" style="height:80px"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ⑤ 발행 대비 문의 추세(주차별) — 최근 8주 고정 스코프(상단 필터 영향 안 받음, 정직 표기)
+       발행 = review_queue.json(주별 집계) · 문의 = funnel_conversion(주별 from/to 8회 실측 조회, 콘텐츠 5채널 합)
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">발행 대비 문의 추세 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">최근 8주 고정 스코프 · 상단 필터 영향 없음</span></div>
+    <div class="trend-wrap" id="trend-wrap">
+      <div class="flow-skeleton sk-pulse" style="height:100px"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ⑥ 인사이트 — 채널별 게시물당 문의 비율(③ 실측치)로만 산출. 게시글 단위 인사이트는 ④가 준비중이라 보류.
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">인사이트 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">채널별 게시물당 문의(③) 기준 · 잘됨 더하기 / 약함 손보기</span></div>
+    <div id="insight-wrap">
+      <div class="flow-skeleton sk-pulse" style="height:90px"></div>
+    </div>
+  </div>
 
 </div>
 
@@ -444,710 +403,425 @@ details.footnote-toggle > .fn-body{
 </div>
 
 <script>
-// ─── 문의→가입 전환율 자동 집계 ───────────────────────────────
+// ─── 마케팅 현황 대시보드 — 콘텐츠 → 문의 성과 전용 재설계 (2026-07-18 GM 확정) ───────
+// 문의 상담·등록·회원 세부(멤버십/강습 종목별)는 CPO 「문의&등록 현황」으로 이관 — 이 페이지는 다루지 않는다.
+// 값 지어내기 금지: 실측 안 되는 지표는 '측정 준비중'으로 정직 표기.
+
 var FUNNEL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
-// PII 게이트는 서버(TOKEN_ENFORCE)에서 유지 — 대시보드는 집계만 공개, 원본은 보호된 시트에서 본다(GM 옵션A).
-// 클라이언트 열쇠 입력 UX 폐기: _wpUrl=passthrough.
-function _wpUrl(base) { return base; }
-
-// 채널별 비교 표 라이브 렌더
-var _fcData = null;   // funnel_conversion 응답 (byChannel 배열)
-var _flow = null;     // 핵심 지표 전환 흐름의 현재 날짜뷰 정규화 데이터 {inq,conv,byType,mode,label} — renderInflowChannel의 periodLabel 소스로도 쓰임
-var _rangeFromTo = { from: '', to: '' };  // 현재 선택된 기간 (기간연동 fetch에 붙임)
-var _skipPeriodChildFetch = false;        // 초기 부팅 병렬화: _applyPeriodData 첫 month 호출 시 자식 fetch 중복 방지
-
-var _DOT_COLORS = ['--f1','--f2','--f3','--f4','--f5'];
-
-// 2026-06-13(시모·GM): 채널 표준화를 GAS(_canonicalChannel_)로 단일화 → 화면측 재정규화 폐지.
-// byChannel/byChannelMonth는 이미 표준 10버킷이므로 라벨 그대로 표시(이중 정규화 충돌 방지).
-// 10종: 네이버·동부이촌동 커뮤니티·인스타그램·카카오톡·당근마켓·소개·지인·기존·과거 회원·오프라인·유선전화·기타·미상.
-var ETC_CHANNEL = '기타·미상';
-
-// ─── #3+#5 유입채널 현황 (inflow-channel-wrap) — 채널×유형 교차 병합 ─────
-// 기간 연동: type_channel_breakdown(_tcData, from/to 적용).
-// 행=채널 / 열=유형(멤버십·성인강습·유소년강습·…) + 합계 + 비중. 셀=문의 건수.
-// 구 별도 '유형×채널 교차' 섹션을 이 표에 통합(2026-06-19 GM). 출처미상률 배지 상단.
-function renderInflowChannel() {
-  var el = document.getElementById('inflow-channel-wrap');
-  if (!el) return;
-
-  var ETC = ETC_CHANNEL;
-  var periodLabel = (_flow && _flow.label) ? _flow.label : '이번 달';
-
-  // _tcData가 아직이면 스켈레톤/대기 유지
-  if (!_tcData || !_tcData.types) {
-    el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px">집계 준비 중</div>';
-    return;
-  }
-
-  // 렌더 유형(고정 순서) — 응답에 존재하는 유형만
-  var types = _tcOrderedTypes(_tcData.types).filter(function(t) { return _tcData.types[t.key]; });
-
-  // 채널별: 유형별 문의 + 합계 (기간 반영 — _tcData는 from/to로 조회됨)
-  var chMap = {};
-  types.forEach(function(t) {
-    (_tcData.types[t.key].channels || []).forEach(function(c) {
-      if (!c || !c.channel) return;
-      if (!chMap[c.channel]) chMap[c.channel] = { byType: {}, total: 0 };
-      chMap[c.channel].byType[t.key] = (chMap[c.channel].byType[t.key] || 0) + (c.inquiries || 0);
-      chMap[c.channel].total += (c.inquiries || 0);
-    });
-  });
-
-  var rows = Object.keys(chMap)
-    .filter(function(ch) { return chMap[ch].total > 0; })
-    .map(function(ch) { return { ch: ch, total: chMap[ch].total, byType: chMap[ch].byType }; });
-
-  // 배545: 유령열 병합(표시 전용) — 전체 대비 아주 작은 유형 열(예: 1/63 수준)은 표를 불필요하게
-  // 넓혀 390px에서 가로 스크롤을 유발. 총합 대비 2건 미만 또는 2% 미만인 유형만 '기타' 열로 접는다.
-  // 데이터 손실 없음 — 값은 '기타' 셀·합계 행에 그대로 합산되고, 채널별 total·grand합계는 변경되지 않는다.
-  var typeGrandTotals = {};
-  types.forEach(function(t) { typeGrandTotals[t.key] = 0; });
-  Object.keys(chMap).forEach(function(ch) {
-    types.forEach(function(t) { typeGrandTotals[t.key] += (chMap[ch].byType[t.key] || 0); });
-  });
-  var typeGrandSum = types.reduce(function(s, t) { return s + typeGrandTotals[t.key]; }, 0);
-  var TYPE_MERGE_MIN = 2;      // 절대 건수 임계값
-  var TYPE_MERGE_PCT = 0.02;   // 비중 임계값(전체 대비 2%)
-  var displayTypes = [], mergedTypeKeys = [];
-  types.forEach(function(t) {
-    var tot = typeGrandTotals[t.key] || 0;
-    var shouldMerge = tot < TYPE_MERGE_MIN || (typeGrandSum > 0 && tot / typeGrandSum < TYPE_MERGE_PCT);
-    if (shouldMerge) mergedTypeKeys.push(t.key); else displayTypes.push(t);
-  });
-  if (!displayTypes.length) { displayTypes = types; mergedTypeKeys = []; }  // 안전가드 — 전부 병합되는 극단값 방지
-  var showEtcTypeCol = mergedTypeKeys.length > 0;
-  function _etcTypeVal(byType) {
-    var s = 0;
-    mergedTypeKeys.forEach(function(k) { s += (byType[k] || 0); });
-    return s;
-  }
-
-  // 출처미상률 배지(전체 문의 기준)
-  var o = _tcData.overall || {};
-  var unkRate = (o.unknownRate === null || o.unknownRate === undefined) ? null : o.unknownRate;
-  var badgeHtml = '';
-  if (unkRate !== null) {
-    badgeHtml = '<div style="background:var(--red-bg);border:1px solid rgba(232,85,64,0.25);border-left:3px solid var(--red);border-radius:var(--radius-sm);padding:12px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px">'
-      + '<div style="font-size:30px;font-weight:800;color:var(--red);line-height:1;letter-spacing:-.03em">' + unkRate + '%</div>'
-      + '<div style="flex:1;min-width:180px">'
-      + '<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:3px">출처미상률</div>'
-      + '<div style="font-size:11px;color:var(--text)">문의 ' + _tcNum(o.total) + '건 중 ' + _tcNum(o.unknownChannel) + '건의 유입경로 미기록 — 콘텐츠 ROI 측정 불가 (문의폼 「어떻게 알고 오셨나요?」 필수화 필요)</div>'
-      + '</div></div>';
-  }
-
-  if (!rows.length) {
-    el.innerHTML = badgeHtml
-      + '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px;font-style:italic">' + periodLabel + ' 채널 문의 집계 준비 중</div>';
-    return;
-  }
-
-  // 정렬: 합계 desc, 기타·미상 맨 아래
-  rows.sort(function(a, b) {
-    if ((a.ch === ETC) !== (b.ch === ETC)) return a.ch === ETC ? 1 : -1;
-    return b.total - a.total;
-  });
-
-  var grand = rows.reduce(function(s, r) { return s + r.total; }, 0);
-
-  // 헤더: 채널 | [유형들] | (기타, 병합 있을 때만) | 합계 | 비중
-  var thead = '<thead><tr><th>채널</th>';
-  displayTypes.forEach(function(t) { thead += '<th style="text-align:right">' + t.label + '</th>'; });
-  if (showEtcTypeCol) thead += '<th style="text-align:right">기타</th>';
-  thead += '<th style="text-align:right">합계</th><th style="text-align:right">비중</th></tr></thead>';
-
-  var bodyHtml = '';
-  rows.forEach(function(r, i) {
-    var colorVar = 'var(' + _DOT_COLORS[i % _DOT_COLORS.length] + ')';
-    var pct = grand > 0 ? Math.round(r.total / grand * 100) : 0;
-    bodyHtml += '<tr>'
-      + '<td style="min-width:100px;white-space:nowrap"><span class="channel-dot" style="background:' + colorVar + '"></span>' + r.ch + '</td>';
-    displayTypes.forEach(function(t) {
-      var v = r.byType[t.key] || 0;
-      bodyHtml += '<td style="text-align:right;' + (v === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + (v === 0 ? '0' : v.toLocaleString('ko-KR')) + '</td>';
-    });
-    if (showEtcTypeCol) {
-      var ev = _etcTypeVal(r.byType);
-      bodyHtml += '<td style="text-align:right;' + (ev === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + (ev === 0 ? '0' : ev.toLocaleString('ko-KR')) + '</td>';
-    }
-    bodyHtml += '<td style="text-align:right;font-weight:700">' + r.total.toLocaleString('ko-KR') + '</td>'
-      + '<td style="text-align:right;color:var(--dim)">' + pct + '%</td>'
-      + '</tr>';
-  });
-
-  // 합계 행 — displayTypes + 기타(병합분) 합이 grand와 항상 정합(데이터 손실 없음, 표시만 병합)
-  var typeTotals = {};
-  displayTypes.forEach(function(t) { typeTotals[t.key] = typeGrandTotals[t.key] || 0; });
-  var etcColTotal = mergedTypeKeys.reduce(function(s, k) { return s + (typeGrandTotals[k] || 0); }, 0);
-  var footRow = '<tr style="border-top:2px solid var(--border)"><td style="font-weight:700;color:var(--dim)">합계</td>';
-  displayTypes.forEach(function(t) { footRow += '<td style="text-align:right;font-weight:700">' + typeTotals[t.key].toLocaleString('ko-KR') + '</td>'; });
-  if (showEtcTypeCol) footRow += '<td style="text-align:right;font-weight:700">' + etcColTotal.toLocaleString('ko-KR') + '</td>';
-  footRow += '<td style="text-align:right;font-weight:800;color:var(--accent)">' + grand.toLocaleString('ko-KR') + '</td>'
-    + '<td style="text-align:right;color:var(--dim)">100%</td></tr>';
-
-  el.innerHTML = badgeHtml
-    + '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">'
-    + '<table class="channel-table">' + thead + '<tbody>' + bodyHtml + footRow + '</tbody></table>'
-    + '<div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">'
-    + '선택 기간(' + periodLabel + ') 문의를 <b>채널 × 유형</b>으로 교차 집계 · 셀 = 문의 건수 · 채널명은 접수 시 선택한 경로 기준 · 과거 \'온라인\' 뭉침분·미기재는 \'기타·미상\'.'
-    + (showEtcTypeCol ? ' \'기타\' 유형 열 = 전체 대비 2건 미만 또는 2% 미만인 유형(' + mergedTypeKeys.map(function(k){ var m=_TC_TYPES[k]; return m?m.label:k; }).join('·') + ')을 합친 것 — 손실 없이 표시만 병합.' : '')
-    + '</div></div>';
-}
-
-async function loadFunnelConversion() {
-  if (FUNNEL_APPS_SCRIPT_URL.includes('DEPLOY_ID_HERE')) return;
-
-  try {
-    var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion');
-    if (_rangeFromTo.from && _rangeFromTo.to) { url += '&from=' + _rangeFromTo.from + '&to=' + _rangeFromTo.to; }  // 기간 연동(전환·채널 재집계)
-    var res  = await fetch(url, { redirect: 'follow' });
-    if (!res.ok) return;
-    var data = await res.json();
-    if (!data || !data.ok) return;
-
-    // 모듈 변수 저장 후 채널별 전환율 렌더 (유입채널 현황은 loadTypeChannel이 담당)
-    _fcData = data;
-    renderChannelConversion();  // 채널별 전환율(문의→등록, 배744) — byChannel 그대로 노출
-
-  } catch (e) {
-    console.warn('[funnel_conversion] 로드 실패:', e.message);
-  }
-}
-
-// ─── 채널별 전환율(문의→등록) — funnel_conversion.byChannel 그대로 노출 (배744) ──────
-// 분자·분모 정본 = funnel_conversion 단일 엔드포인트(byChannel 합 = total과 항상 정합, stage_funnel류 분모폭증 없음).
-// 표본 5건 미만은 leadtime-stats와 동일 기준선(⚠ 표본 적음)으로 참고용 라벨만 붙이고 %는 숨기지 않음(날조 대신 투명 표기).
-function renderChannelConversion() {
-  var el = document.getElementById('channel-conversion-wrap');
-  if (!el) return;
-  var periodLabel = (_flow && _flow.label) ? _flow.label : '이번 달';
-  if (!_fcData || !Array.isArray(_fcData.byChannel)) {
-    el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px">집계 준비 중</div>';
-    return;
-  }
-
-  var rows = _fcData.byChannel.slice();
-  rows.sort(function(a, b) {
-    if ((a.channel === ETC_CHANNEL) !== (b.channel === ETC_CHANNEL)) return a.channel === ETC_CHANNEL ? 1 : -1;
-    return b.inquiries - a.inquiries;
-  });
-
-  if (!rows.length) {
-    el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px;font-style:italic">채널별 전환 집계 준비 중</div>';
-    return;
-  }
-
-  var thead = '<thead><tr><th>채널</th><th style="text-align:right">문의</th><th style="text-align:right">등록(전환)</th><th style="text-align:right">전환율</th></tr></thead>';
-  var bodyHtml = rows.map(function(r, i) {
-    var colorVar = 'var(' + _DOT_COLORS[i % _DOT_COLORS.length] + ')';
-    var lowN = r.inquiries > 0 && r.inquiries < 5;
-    var rateCell;
-    if (!r.inquiries) rateCell = '<span style="color:var(--dim)">—</span>';
-    else if (lowN) rateCell = '<span style="font-size:12px">' + r.rate + '%</span> <span style="color:var(--red);font-size:10px;white-space:nowrap">⚠표본부족</span>';
-    else rateCell = '<span style="font-weight:700">' + r.rate + '%</span>';
-    return '<tr>'
-      + '<td style="min-width:100px;white-space:nowrap"><span class="channel-dot" style="background:' + colorVar + '"></span>' + esc(r.channel) + '</td>'
-      + '<td style="text-align:right">' + Number(r.inquiries || 0).toLocaleString('ko-KR') + '</td>'
-      + '<td style="text-align:right;font-weight:600">' + Number(r.converted || 0).toLocaleString('ko-KR') + '</td>'
-      + '<td style="text-align:right">' + rateCell + '</td>'
-      + '</tr>';
-  }).join('');
-
-  var t = _fcData.total || {};
-  var footRow = '<tr style="border-top:2px solid var(--border)"><td style="font-weight:700;color:var(--dim)">합계</td>'
-    + '<td style="text-align:right;font-weight:700">' + Number(t.inquiries || 0).toLocaleString('ko-KR') + '</td>'
-    + '<td style="text-align:right;font-weight:700">' + Number(t.converted || 0).toLocaleString('ko-KR') + '</td>'
-    + '<td style="text-align:right;font-weight:800;color:var(--accent)">' + (t.rate || 0) + '%</td></tr>';
-
-  var basisNote = _fcData.convBasis ? esc(_fcData.convBasis) : '유효회원∪강습등록 전화매칭';
-
-  el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">'
-    + '<table class="channel-table">' + thead + '<tbody>' + bodyHtml + footRow + '</tbody></table>'
-    + '<div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">'
-    + '선택 기간: ' + periodLabel + ' · 채널 = 문의 접수 시 선택한 경로 · 전환 판정 = ' + basisNote + ' · 표본 5건 미만은 ⚠표본부족(참고용, 날조 대신 투명 표기) · \'' + ETC_CHANNEL + '\'는 문의 시점 유입경로 미기록분이라 전환 귀속 신뢰도가 낮습니다.'
-    + '</div></div>';
-}
-
-// ─── 기간별 집계 (period_breakdown) ──────────────────────────────
-var _periodCache = {};
-var PERIOD_LABELS = { day: '일간', week: '주간', month: '월간' };
-
-async function loadPeriodBreakdown(period) {
-  period = period || 'month';
-
-  var statusEl = document.getElementById('period-status');
-  var label = PERIOD_LABELS[period] || period;
-
-  if (statusEl) statusEl.textContent = label + ' 기준 · 불러오는 중…';
-
-  if (_periodCache[period]) {
-    _applyPeriodData(_periodCache[period], period);
-    if (statusEl) statusEl.textContent = label + ' 기준 · ' + (_periodCache[period].generatedAt || '');
-    return;
-  }
-
-  if (FUNNEL_APPS_SCRIPT_URL.includes('DEPLOY_ID_HERE')) {
-    if (statusEl) statusEl.textContent = label + ' 기준 · 배포 대기';
-    return;
-  }
-
-  try {
-    var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown');
-    var res = await fetch(url, { redirect: 'follow' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var data = await res.json();
-    if (!data || !data.ok) throw new Error('ok=false');
-
-    _periodCache[period] = data;
-    ['day', 'week', 'month'].forEach(function(p) { if (!_periodCache[p]) _periodCache[p] = data; });
-
-    _applyPeriodData(data, period);
-    if (statusEl) statusEl.textContent = label + ' 기준 · ' + (data.generatedAt || '');
-  } catch (e) {
-    // 부팅 병렬화: period_breakdown 실패로 _applyPeriodData 미도달 시 플래그가
-    // 남으면 다음 정상 로드에서 자식 fetch가 1회 잘못 스킵됨 → 여기서 해제.
-    _skipPeriodChildFetch = false;
-    if (statusEl) statusEl.textContent = label + ' 기준 · 집계 준비 중';
-    console.warn('[period_breakdown] 로드 실패:', e.message);
-  }
-}
-
-function _applyPeriodData(data, period) {
-  // 기간별 등록값 추출 헬퍼 — regByType[유형][period키] 참조
-  function _regForPeriod_(typeName, periodKey) {
-    var rb = data.regByType;
-    if (!rb || !rb[typeName]) return null;
-    var v = rb[typeName][periodKey];
-    return (v !== undefined && v !== null) ? v : null;
-  }
-
-  // 핵심 지표 전환 흐름 — 선택 기간에 맞춰 _flow 갱신 (renderInflowChannel의 periodLabel 소스)
-  if (period === 'month') {
-    _flow = { inq:    (data.inquiries && data.inquiries.month) || 0,
-              conv:   (data.conversion && data.conversion.month) ? data.conversion.month.converted : null,
-              byType: (data.inquiries && data.inquiries.byTypeMonth) || {},
-              reg:    { 멤버십: _regForPeriod_('멤버십','month'),
-                        성인강습: _regForPeriod_('성인강습','month'),
-                        유소년강습: _regForPeriod_('유소년강습','month') },
-              mode: 'month', label: '이번 달' };
-  } else if (period === 'week') {
-    _flow = { inq:    (data.inquiries && data.inquiries.week) || 0,
-              conv:   null, byType: {},
-              reg:    { 멤버십: _regForPeriod_('멤버십','week'),
-                        성인강습: _regForPeriod_('성인강습','week'),
-                        유소년강습: _regForPeriod_('유소년강습','week') },
-              mode: 'week', label: '이번 주' };
-  } else if (period === 'day') {
-    _flow = { inq:    (data.inquiries && data.inquiries.day) || 0,
-              conv:   null, byType: {},
-              reg:    { 멤버십: _regForPeriod_('멤버십','day'),
-                        성인강습: _regForPeriod_('성인강습','day'),
-                        유소년강습: _regForPeriod_('유소년강습','day') },
-              mode: 'day', label: '오늘' };
-  } else if (period === 'year') {
-    _flow = { inq:    (data.inquiries && data.inquiries.month) || 0,
-              conv:   null, byType: {},
-              reg:    { 멤버십: _regForPeriod_('멤버십','year'),
-                        성인강습: _regForPeriod_('성인강습','year'),
-                        유소년강습: _regForPeriod_('유소년강습','year') },
-              mode: 'year', label: '올해' };
-  } else {
-    _flow = { inq:    (data.inquiries && data.inquiries[period] !== undefined) ? data.inquiries[period] : 0,
-              conv:   null, byType: {},
-              reg:    { 멤버십: _regForPeriod_('멤버십','custom'),
-                        성인강습: _regForPeriod_('성인강습','custom'),
-                        유소년강습: _regForPeriod_('유소년강습','custom') },
-              mode: 'range', label: (PERIOD_LABELS[period] || period) + ' 기준' };
-  }
-
-  // 기간 연동 — 선택 기간을 _rangeFromTo에 저장 후 자식 위젯 재조회
-  var _pd = new Date();
-  var _py = _pd.getFullYear();
-  var _pm = ('0' + (_pd.getMonth() + 1)).slice(-2);
-  var _pday = ('0' + _pd.getDate()).slice(-2);
-  if (period === 'month') {
-    _rangeFromTo = { from: _py + '-' + _pm + '-01', to: _py + '-' + _pm + '-' + _pday };
-  } else if (period === 'day') {
-    _rangeFromTo = { from: _py + '-' + _pm + '-' + _pday, to: _py + '-' + _pm + '-' + _pday };
-  } else if (period === 'week') {
-    var _w0 = new Date(_pd); _w0.setDate(_pd.getDate() - 6);
-    var _wy = _w0.getFullYear(); var _wm = ('0' + (_w0.getMonth() + 1)).slice(-2); var _wd = ('0' + _w0.getDate()).slice(-2);
-    _rangeFromTo = { from: _wy + '-' + _wm + '-' + _wd, to: _py + '-' + _pm + '-' + _pday };
-  } else if (period === 'year') {
-    _rangeFromTo = { from: _py + '-01-01', to: _py + '-' + _pm + '-' + _pday };   // 올해 1/1~오늘 (전체 누적 아님)
-  } else {
-    _rangeFromTo = { from: '', to: '' };
-  }
-  // 초기 부팅 1회는 DOMContentLoaded에서 _rangeFromTo(이번 달)를 미리 세팅해
-  // loadTypeChannel을 병렬 발사하므로 여기서의 중복 호출만 건너뛴다.
-  // 이후 모든 사용자 인터랙션(기간/월 전환)에서는 정상적으로 재조회한다.
-  if (_skipPeriodChildFetch) { _skipPeriodChildFetch = false; return; }
-  loadTypeChannel();
-  loadFunnelConversion();   // 전환·채널 전체수치 기간 재집계(from/to 반영)
-}
-
-// ─── 기간 직접 설정 (custom range) ──────────────────────────────
-function toggleCustomRange() {
-  var row = document.getElementById('custom-range-row');
-  var isShown = row.classList.contains('show');
-  // 다른 period 버튼 비활성화
-  document.querySelectorAll('.period-btn').forEach(function(btn) {
-    btn.classList.toggle('active', btn.dataset.period === 'custom' && !isShown);
-  });
-  if (isShown) {
-    row.classList.remove('show');
-  } else {
-    row.classList.add('show');
-  }
-}
-
-async function runCustomQuery() {
-  var fromEl  = document.getElementById('custom-from');
-  var toEl    = document.getElementById('custom-to');
-  var hintEl  = document.getElementById('custom-range-hint');
-  var statusEl = document.getElementById('period-status');
-
-  var from = fromEl ? fromEl.value : '';
-  var to   = toEl   ? toEl.value   : '';
-
-  if (!from || !to) {
-    if (hintEl) hintEl.textContent = '시작일과 종료일을 모두 입력해 주세요.';
-    return;
-  }
-  if (from > to) {
-    if (hintEl) hintEl.textContent = '시작일이 종료일보다 늦습니다.';
-    return;
-  }
-  if (hintEl) hintEl.textContent = '조회 중…';
-  if (statusEl) statusEl.textContent = '기간(' + from + '~' + to + ') · 불러오는 중…';
-
-  var rangeLabel = '기간(' + from + '~' + to + ')';
-
-  try {
-    var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown&from=' + from + '&to=' + to);
-    var res = await fetch(url, { redirect: 'follow' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var data = await res.json();
-    if (!data || !data.ok) throw new Error('ok=false');
-
-    _applyCustom(data, from, to);
-    if (hintEl) hintEl.textContent = '';
-    if (statusEl) statusEl.textContent = rangeLabel + ' · ' + (data.generatedAt || '집계 완료');
-  } catch (e) {
-    if (hintEl) hintEl.textContent = '집계 준비 중 — 잠시 후 다시 시도해 주세요.';
-    if (statusEl) statusEl.textContent = rangeLabel + ' · 집계 준비 중';
-    console.warn('[period_breakdown custom] 로드 실패:', e.message);
-  }
-}
-
-// GAS custom 응답 스키마(문의·전환 관련 필드만 사용): {from,to,inquiries,byChannel:{채널:N},byType:{유형:N},conversion:{inquiries,converted,rate}}
-function _applyCustom(data, from, to, monthCtx) {
-  var c = data.custom;
-  if (!c) return;  // custom 키 없으면 graceful — 아래 렌더는 모두 _flow 기반이라 자동 스킵
-
-  // 핵심 지표 전환 흐름 — 기간/지난달 뷰 갱신 (monthCtx.fullMonth면 월 단위로 목표 표시)
-  var _cReg = data.regByType;
-  var _periodKey = (monthCtx && monthCtx.fullMonth) ? 'month' : 'custom';
-  _flow = {
-    inq:    (c.inquiries !== undefined) ? c.inquiries : ((c.conversion && c.conversion.inquiries) || 0),
-    conv:   (c.conversion && c.conversion.converted !== undefined) ? c.conversion.converted : null,
-    byType: c.byType || {},
-    reg: {
-      멤버십:    (_cReg && _cReg['멤버십']    && _cReg['멤버십'][_periodKey]    !== null) ? _cReg['멤버십'][_periodKey]    : null,
-      성인강습:  (_cReg && _cReg['성인강습']  && _cReg['성인강습'][_periodKey]  !== null) ? _cReg['성인강습'][_periodKey]  : null,
-      유소년강습: (_cReg && _cReg['유소년강습'] && _cReg['유소년강습'][_periodKey] !== null) ? _cReg['유소년강습'][_periodKey] : null
-    },
-    mode:   (monthCtx && monthCtx.fullMonth) ? 'monthPast' : 'range',
-    label:  (monthCtx && monthCtx.label) ? monthCtx.label : ('기간(' + from + '~' + to + ')')
-  };
-
-  // 기간 연동 — custom 기간을 저장 후 유형채널·전환 재조회 (순환 없음)
-  _rangeFromTo = { from: from, to: to };
-  loadTypeChannel();
-  loadFunnelConversion();   // 전환·채널 전체수치 기간 재집계(from/to 반영)
-}
-
-// 기간 토글 버튼 전환
-function switchPeriod(period) {
-  // 기간 패널 닫기
-  document.getElementById('custom-range-row').classList.remove('show');
-  document.querySelectorAll('.period-btn').forEach(function(btn) {
-    btn.classList.toggle('active', btn.dataset.period === period);
-  });
-  // 월 네비게이터: 월 선택 시에만 표시
-  var navRow = document.getElementById('month-nav-row');
-  if (navRow) navRow.style.display = (period === 'month') ? 'flex' : 'none';
-  loadPeriodBreakdown(period);
-}
-
-// ─── 월 네비게이터 ────────────────────────────────────────────────
-// 현재 표시 중인 연/월 (오늘 기준 초기화)
-var _navYear  = new Date().getFullYear();
-var _navMonth = new Date().getMonth() + 1; // 1~12
-
-// 월 이동 (-1=이전달, +1=다음달)
-function shiftMonth(delta) {
-  _navMonth += delta;
-  if (_navMonth < 1)  { _navMonth = 12; _navYear--; }
-  if (_navMonth > 12) { _navMonth = 1;  _navYear++; }
-  _updateMonthNav();
-  _loadMonthRange(_navYear, _navMonth);
-}
-
-// 네비 라벨·버튼 상태 갱신
-function _updateMonthNav() {
-  var labelEl = document.getElementById('month-nav-label');
-  var nextBtn  = document.getElementById('month-nav-next');
-  if (labelEl) labelEl.textContent = _navYear + '년 ' + _navMonth + '월';
-
-  // 미래 달 비활성 — 오늘 달보다 크면 막기
-  if (nextBtn) {
-    var today = new Date();
-    var isCurrentOrFuture = (_navYear > today.getFullYear())
-      || (_navYear === today.getFullYear() && _navMonth >= today.getMonth() + 1);
-    nextBtn.disabled = isCurrentOrFuture;
-  }
-}
-
-// 선택 월의 1일~말일을 custom range로 GAS 조회
-// 이번 달이면 기존 month 경로 사용(일관 처리: from/to custom range로 통일)
-function _loadMonthRange(year, month) {
-  var from = year + '-' + String(month).padStart(2, '0') + '-01';
-  // 말일 계산: month+1 의 0일 = 해당 월 말일
-  var lastDay = new Date(year, month, 0).getDate();
-  var to   = year + '-' + String(month).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
-
-  var statusEl = document.getElementById('period-status');
-  var rangeLabel = year + '년 ' + month + '월';
-  if (statusEl) statusEl.textContent = rangeLabel + ' · 불러오는 중…';
-
-  // 이번 달이면 기존 month 경로 재사용(캐시 활용), 다른 달이면 custom range
-  var today = new Date();
-  var isThisMonth = (year === today.getFullYear() && month === today.getMonth() + 1);
-
-  if (isThisMonth) {
-    loadPeriodBreakdown('month');
-    return;
-  }
-
-  // 다른 달: custom range 직접 호출
-  if (FUNNEL_APPS_SCRIPT_URL.includes('DEPLOY_ID_HERE')) {
-    if (statusEl) statusEl.textContent = rangeLabel + ' · 배포 대기';
-    return;
-  }
-
-  (async function() {
-    try {
-      var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=period_breakdown&from=' + from + '&to=' + to);
-      var res = await fetch(url, { redirect: 'follow' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      var data = await res.json();
-      if (!data || !data.ok) throw new Error('ok=false');
-
-      _applyCustom(data, from, to, { fullMonth: true, label: rangeLabel });
-      if (statusEl) statusEl.textContent = rangeLabel + ' · ' + (data.generatedAt || '집계 완료');
-    } catch (e) {
-      if (statusEl) statusEl.textContent = rangeLabel + ' · 집계 준비 중';
-      console.warn('[month_nav custom] 로드 실패:', e.message);
-    }
-  })();
-}
-
-// ─── '올해' 바로가기 — 연초~오늘 기간조회(기존 runCustomQuery 재사용) ──────
-function loadYearToDate() {
-  var now = new Date();
-  var y = now.getFullYear();
-  var mm = ('0' + (now.getMonth() + 1)).slice(-2);
-  var dd = ('0' + now.getDate()).slice(-2);
-  var f = document.getElementById('custom-from');
-  var t = document.getElementById('custom-to');
-  if (f) f.value = y + '-01-01';
-  if (t) t.value = y + '-' + mm + '-' + dd;
-  document.querySelectorAll('.period-btn').forEach(function(b) { b.classList.remove('active'); });
-  var nav = document.getElementById('month-nav-row');
-  if (nav) nav.style.display = 'none';
-  runCustomQuery();
-}
-
-// ─── 유형×채널 교차 (type_channel_breakdown) ──────────
-var _tcData = null;
-
-// 유형 메타 lookup: 우선순위·색 정의. 응답에 있는 모든 유형을 렌더하되
-// lookup에 있는 유형은 이 순서로 앞에, 없는 유형은 기본 메타(회색)로 뒤에 표시.
-var _TC_TYPES = {
-  '멤버십':    { label: '멤버십',       color: 'var(--blue)',   order: 0 },
-  '성인강습':  { label: '성인 강습',    color: 'var(--orange)', order: 1 },
-  '유소년강습':{ label: '유소년 강습',  color: 'var(--purple)', order: 2 },
-};
-
-// 응답 types 객체에서 렌더 순서에 맞는 유형 배열 반환
-// lookup 유형 우선(order 순), 이후 나머지 alphabetical
-function _tcOrderedTypes(typesObj) {
-  if (!typesObj) return [];
-  var keys = Object.keys(typesObj);
-  var known = [], unknown = [];
-  keys.forEach(function(k) {
-    if (_TC_TYPES[k]) known.push(k);
-    else unknown.push(k);
-  });
-  known.sort(function(a, b) { return _TC_TYPES[a].order - _TC_TYPES[b].order; });
-  unknown.sort();
-  return known.concat(unknown).map(function(k) {
-    var meta = _TC_TYPES[k] || { label: k, color: 'var(--dim)', order: 99 };
-    return { key: k, label: meta.label, color: meta.color };
-  });
-}
-
-function _tcNum(n) {
-  return (n === null || n === undefined) ? '0' : Number(n).toLocaleString('ko-KR');
-}
-
-function _tcStub(msg) {
-  // 유입채널 현황 — 데이터 없음/실패 시 graceful 안내
-  var inflow = document.getElementById('inflow-channel-wrap');
-  if (inflow) inflow.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px">'
-    + (msg || '재배포 후 점등됩니다') + '</div>';
-}
-
-async function loadTypeChannel() {
-  var cards = document.getElementById('inflow-channel-wrap');
-  if (!cards) return;
-  if (FUNNEL_APPS_SCRIPT_URL.includes('DEPLOY_ID_HERE')) { _tcStub(); return; }
-
-  try {
-    var url = _wpUrl(FUNNEL_APPS_SCRIPT_URL + '?action=type_channel_breakdown');
-    if (_rangeFromTo.from && _rangeFromTo.to) { url += '&from=' + _rangeFromTo.from + '&to=' + _rangeFromTo.to; }
-    var res = await fetch(url, { redirect: 'follow' });
-    if (!res.ok) { _tcStub('HTTP ' + res.status + ' — 재배포 후 점등됩니다'); return; }
-    var data = await res.json();
-    if (!data || !data.ok || !data.types) { _tcStub('응답 형식 오류 — 재배포 후 점등됩니다'); return; }
-
-    _tcData = data;
-    renderInflowChannel();   // #3+#5 유입채널 현황(채널×유형 병합, 기간 연동) + 출처미상률 배지
-  } catch (e) {
-    console.warn('[type_channel_breakdown] 로드 실패:', e && e.message);
-    _tcStub((e && e.message) ? e.message + ' — 재배포 후 점등됩니다' : '재배포 후 점등됩니다');
-  }
-}
-
-// ─── 🎯 단일 전환 퍼널 보드 (배 #897 재설계 · GM 결정 2026-07-15) ──────────
-// 정본: status/kpi_values.json (cmo·cpo 블록) + review_queue.json(발행완료 집계) 직독 · 시포 #849(문의→가입).
-// 이 gasRead 메커니즘(GAS action=read_file → 실패 시 raw.githubusercontent.com 폴백)은 저장소-루트
-// 절대 경로만 쓰므로 이 페이지가 cmo/funnel/ 하위 2단계 깊이에 있어도 상대경로 문제가 없다 —
-// 헌법한장.html이 쓰는 것과 동일한 GAS 배포·동일한 경로 문자열('status/kpi_values.json')을 그대로 재사용.
-var GUIDEHUB_GAS_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
-var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
 function esc(s){
   return String(s == null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-function gasRead(path, rawUrl){
-  return fetch(GUIDEHUB_GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({action:'read_file', path:path})})
-    .then(function(r){ return r.json(); })
-    .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'read 실패'); })
-    .catch(function(){ return fetch(rawUrl + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
+
+// ─── 채널 표준화 ──────────────────────────────────────────────
+// review_queue.json의 자유텍스트 channel → 콘텐츠 5채널(발행 집계용).
+// GAS _canonicalChannel_()과 동일 원본 코드에서 확인: 인스타그램·카카오톡·당근마켓·네이버(블로그/검색)·
+// 동부이촌동 커뮤니티(카페)를 별도 버킷으로 실제 분리 집계함(.deploy-funnel/Survey.js 112행) — 날조 아님, 실측 매핑.
+var CONTENT_CHANNELS = ['인스타그램', '네이버 블로그', '네이버 카페', '카카오', '당근'];
+var _DOT_COLORS = ['--f1', '--f2', '--f3', '--f4', '--f5'];
+function canonPubChannel(raw) {
+  var s = String(raw || '');
+  if (/인스타/.test(s)) return '인스타그램';
+  if (/카카오/.test(s)) return '카카오';
+  if (/당근/.test(s)) return '당근';
+  if (/카페/.test(s)) return '네이버 카페';
+  if (/블로그/.test(s)) return '네이버 블로그';
+  return null; // 매핑 밖 채널 — 집계 제외(추정 금지)
+}
+// 발행 채널(콘텐츠 5채널) → GAS 문의 유입채널 표준 버킷(funnel_conversion byChannel의 channel 값과 정합)
+var PUB_TO_GAS_CHANNEL = {
+  '인스타그램': '인스타그램',
+  '네이버 블로그': '네이버',
+  '네이버 카페': '동부이촌동 커뮤니티',
+  '카카오': '카카오톡',
+  '당근': '당근마켓'
+};
+
+// ─── 날짜 유틸 ──────────────────────────────────────────────
+function _fmtYMD(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function _mondayOf(d) {
+  var dd = new Date(d);
+  var day = dd.getDay();
+  var diff = (day === 0 ? -6 : 1 - day);
+  dd.setDate(dd.getDate() + diff);
+  dd.setHours(0, 0, 0, 0);
+  return dd;
+}
+// 선택 기간과 동일 길이의 직전 기간(증감 비교용) — 실측 재조회 대상 범위 계산일 뿐 값을 만들지 않음.
+function _prevRange(from, to) {
+  var f = new Date(from + 'T00:00:00');
+  var t = new Date(to + 'T00:00:00');
+  var days = Math.round((t - f) / 86400000) + 1;
+  var prevTo = new Date(f); prevTo.setDate(prevTo.getDate() - 1);
+  var prevFrom = new Date(prevTo); prevFrom.setDate(prevFrom.getDate() - (days - 1));
+  return { from: _fmtYMD(prevFrom), to: _fmtYMD(prevTo) };
 }
 
-function fmtPct897(v){
-  if(v == null || typeof v !== 'number' || isNaN(v)) return null;
-  var s = v.toFixed(1);
-  if(s.indexOf('.') >= 0) s = s.replace(/0$/, '').replace(/\.$/, '');
-  return s + '%';
+// ─── 상태 ──────────────────────────────────────────────────
+var _rangeFromTo = { from: '', to: '' };
+var _periodLabel = '이번 달';
+var _rqCache = null;       // review_queue.json 캐시(1회 fetch)
+var _navYear = new Date().getFullYear();
+var _navMonth = new Date().getMonth() + 1;
+
+// ─── review_queue.json (발행 실측) ────────────────────────────
+function loadReviewQueue() {
+  if (_rqCache) return Promise.resolve(_rqCache);
+  return fetch('../review/review_queue.json', { redirect: 'follow' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) { _rqCache = Array.isArray(data) ? data : []; return _rqCache; })
+    .catch(function() { _rqCache = []; return _rqCache; });
 }
-function renderFunnel897(kpiRoles, genKst, publishedCount){
-  var el = document.getElementById('fn897-board');
-  if(!el) return;
-  var cpo = (kpiRoles && kpiRoles.cpo) || null;
-  if(!cpo){
-    el.innerHTML = '<div style="color:var(--dim);font-size:13px">퍼널 데이터 없음 · 정본: status/kpi_values.json</div>';
+
+// 발행완료 + 콘텐츠 5채널 + 기간(from~to, published_at 날짜부 기준) 필터
+function _pubItemsInRange(items, from, to) {
+  return (items || []).filter(function(it) {
+    if (!it || it.status !== '발행완료') return false;
+    var ch = canonPubChannel(it.channel);
+    if (!ch) return false;
+    var d = (typeof it.published_at === 'string') ? it.published_at.slice(0, 10) : '';
+    if (!d) return false;
+    return d >= from && d <= to;
+  });
+}
+function _pubCountByChannel(items) {
+  var out = {};
+  CONTENT_CHANNELS.forEach(function(c) { out[c] = 0; });
+  items.forEach(function(it) {
+    var ch = canonPubChannel(it.channel);
+    if (ch) out[ch] = (out[ch] || 0) + 1;
+  });
+  return out;
+}
+
+// ─── funnel_conversion (문의 실측) ────────────────────────────
+function fetchFunnelConversion(from, to) {
+  var url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion';
+  if (from && to) url += '&from=' + from + '&to=' + to;
+  return fetch(url, { redirect: 'follow' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+    .catch(function(e) { console.warn('[funnel_conversion] 실패:', e && e.message); return null; });
+}
+// byChannel 배열 → { GAS채널명: 문의수 } 맵
+function _fcChannelMap(fcData) {
+  var m = {};
+  if (fcData && Array.isArray(fcData.byChannel)) {
+    fcData.byChannel.forEach(function(r) { if (r && r.channel) m[r.channel] = r.inquiries || 0; });
+  }
+  return m;
+}
+// 콘텐츠 5채널에 해당하는 문의만 합산(소개·지인/기존·과거 회원/오프라인/기타·미상 등은 콘텐츠 유입이 아니므로 제외)
+function _contentInquirySum(fcChannelMap) {
+  var sum = 0;
+  CONTENT_CHANNELS.forEach(function(c) { sum += (fcChannelMap[PUB_TO_GAS_CHANNEL[c]] || 0); });
+  return sum;
+}
+
+// ─── ② 요약 + ③ 채널별 성과 — 선택 기간 실측 렌더 ─────────────
+function refreshPeriodSections() {
+  var from = _rangeFromTo.from, to = _rangeFromTo.to;
+  if (!from || !to) return;
+  var prev = _prevRange(from, to);
+
+  Promise.all([
+    loadReviewQueue(),
+    fetchFunnelConversion(from, to),
+    fetchFunnelConversion(prev.from, prev.to)
+  ]).then(function(res) {
+    var rq = res[0], fcCur = res[1], fcPrev = res[2];
+    var curItems = _pubItemsInRange(rq, from, to);
+    var prevItems = _pubItemsInRange(rq, prev.from, prev.to);
+    var curPubByCh = _pubCountByChannel(curItems);
+    var prevPubByCh = _pubCountByChannel(prevItems);
+    var curInqByCh = _fcChannelMap(fcCur);
+    var prevInqByCh = _fcChannelMap(fcPrev);
+
+    renderSummary(curItems.length, _contentInquirySum(curInqByCh), fcCur === null);
+    renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcCur === null);
+    renderPostList(curItems);
+    renderInsight(curPubByCh, curInqByCh);
+  });
+}
+
+function renderSummary(pubCount, inqSum, fcFailed) {
+  var el = document.getElementById('summary-kpi-row');
+  if (!el) return;
+  var perPost = pubCount > 0 ? (inqSum / pubCount).toFixed(1) : null;
+  el.innerHTML =
+    '<div class="kpi-card"><div class="num">' + pubCount.toLocaleString('ko-KR') + '</div><div class="label">발행 게시물</div><div class="sub">' + esc(_periodLabel) + ' · 콘텐츠 5채널</div></div>' +
+    '<div class="kpi-card"><div class="num">' + (fcFailed ? '<span class="placeholder" style="font-size:14px">집계 실패</span>' : inqSum.toLocaleString('ko-KR')) + '</div><div class="label">콘텐츠 경유 문의</div><div class="sub">' + esc(_periodLabel) + ' · 5채널 유입 합</div></div>' +
+    '<div class="kpi-card"><div class="num">' + (perPost != null ? perPost : '—') + '</div><div class="label">게시물당 문의</div><div class="sub">' + (pubCount > 0 ? '경유문의 ÷ 발행' : '발행 없음') + '</div></div>';
+}
+
+function _deltaHtml(cur, prev) {
+  var diff = cur - prev;
+  if (prev === 0 && cur === 0) return '<span class="delta flat">·</span>';
+  if (diff > 0) return '<span class="delta up">▲' + diff.toLocaleString('ko-KR') + '</span>';
+  if (diff < 0) return '<span class="delta down">▼' + Math.abs(diff).toLocaleString('ko-KR') + '</span>';
+  return '<span class="delta flat">±0</span>';
+}
+
+function renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcFailed) {
+  var el = document.getElementById('channel-perf-wrap');
+  if (!el) return;
+
+  var rows = CONTENT_CHANNELS.map(function(ch, i) {
+    var gasCh = PUB_TO_GAS_CHANNEL[ch];
+    var pub = curPubByCh[ch] || 0;
+    var pubPrev = prevPubByCh[ch] || 0;
+    var inq = curInqByCh[gasCh] || 0;
+    var inqPrev = prevInqByCh[gasCh] || 0;
+    var perPost = pub > 0 ? (inq / pub).toFixed(1) : '—';
+    return { ch: ch, i: i, pub: pub, pubPrev: pubPrev, inq: inq, inqPrev: inqPrev, perPost: perPost };
+  });
+
+  var thead = '<thead><tr><th>채널</th><th style="text-align:right">발행</th><th style="text-align:right">경유 문의</th><th style="text-align:right">게시물당 문의</th><th style="text-align:right">증감(문의, 직전기간)</th></tr></thead>';
+  var body = rows.map(function(r) {
+    var colorVar = 'var(' + _DOT_COLORS[r.i % _DOT_COLORS.length] + ')';
+    return '<tr>' +
+      '<td style="min-width:100px;white-space:nowrap"><span class="channel-dot" style="background:' + colorVar + '"></span>' + esc(r.ch) + '</td>' +
+      '<td style="text-align:right;' + (r.pub === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + r.pub.toLocaleString('ko-KR') + '</td>' +
+      '<td style="text-align:right;' + (r.inq === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + (fcFailed ? '<span class="placeholder">준비중</span>' : r.inq.toLocaleString('ko-KR')) + '</td>' +
+      '<td style="text-align:right">' + r.perPost + '</td>' +
+      '<td style="text-align:right">' + (fcFailed ? '—' : _deltaHtml(r.inq, r.inqPrev)) + '</td>' +
+      '</tr>';
+  }).join('');
+
+  el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">' +
+    '<table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table>' +
+    '<div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">' +
+    '선택 기간(' + esc(_periodLabel) + ') · 발행 = review_queue.json 발행완료 · 경유 문의 = 문의 접수 시 선택한 유입채널(GAS funnel_conversion 실측) · 증감 = 동일 길이 직전 기간 대비 · 네이버 블로그·카페는 시스템상 별도 채널(네이버 / 동부이촌동 커뮤니티)로 실제 분리 집계됩니다.' +
+    '</div></div>';
+}
+
+// ─── ④ 게시글별 성과 — 인벤토리만(문의 귀속 불가, 위 배너로 안내됨) ─────
+function renderPostList(items) {
+  var el = document.getElementById('post-list-wrap');
+  if (!el) return;
+  if (!items.length) {
+    el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px;font-style:italic">' + esc(_periodLabel) + ' 발행 게시글이 없습니다</div>';
     return;
   }
+  var sorted = items.slice().sort(function(a, b) { return (b.published_at || '').localeCompare(a.published_at || ''); }).slice(0, 40);
+  var thead = '<thead><tr><th>날짜</th><th>채널</th><th>제목</th></tr></thead>';
+  var body = sorted.map(function(it) {
+    var d = (it.published_at || '').slice(0, 10);
+    var ch = canonPubChannel(it.channel) || esc(it.channel);
+    var title = it.post_url ? '<a href="' + esc(it.post_url) + '" target="_blank" rel="noopener">' + esc(it.title || it.id) + '</a>' : esc(it.title || it.id);
+    return '<tr><td style="white-space:nowrap;color:var(--dim)">' + d + '</td><td style="white-space:nowrap">' + esc(ch) + '</td><td>' + title + '</td></tr>';
+  }).join('');
+  el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">' +
+    '<table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table>' +
+    '<div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">' + esc(_periodLabel) + ' 발행 ' + items.length + '건 중 최근 ' + sorted.length + '건 표시 · 문의 연결 = 측정 준비중</div></div>';
+}
 
-  var inqCount = (cpo && typeof cpo['이번달_전환_문의수'] === 'number') ? cpo['이번달_전환_문의수'] : null;
-  var joinCount = (cpo && typeof cpo['이번달_전환_가입수'] === 'number') ? cpo['이번달_전환_가입수'] : null;
-  var monthRate = (cpo && typeof cpo['이번달_전환율'] === 'number') ? cpo['이번달_전환율'] : null;
-  var cumRate = (cpo && typeof cpo['문의_가입_전환율'] === 'number') ? cpo['문의_가입_전환율'] : null;
-  var cumInq = (cpo && typeof cpo['전환_문의수'] === 'number') ? cpo['전환_문의수'] : null;
-  var cumJoin = (cpo && typeof cpo['전환_가입수'] === 'number') ? cpo['전환_가입수'] : null;
+// ─── ⑥ 인사이트 — 채널별 게시물당 문의(③ 실측치) 기준 ─────
+function renderInsight(pubByCh, inqByCh) {
+  var el = document.getElementById('insight-wrap');
+  if (!el) return;
+  var ranked = CONTENT_CHANNELS.map(function(ch) {
+    var pub = pubByCh[ch] || 0;
+    var inq = inqByCh[PUB_TO_GAS_CHANNEL[ch]] || 0;
+    return { ch: ch, pub: pub, inq: inq, ratio: pub > 0 ? inq / pub : null };
+  }).filter(function(r) { return r.ratio !== null; });
 
-  var monthRateStr = fmtPct897(monthRate) || '—';
-  var cumRateStr = fmtPct897(cumRate) || '—';
-
-  var html = '';
-  html += '<div class="fn897-grid">';
-  html +=   '<div class="fn897-node"><div class="fn897-lab">발행 · 콘텐츠</div><div class="fn897-big">' + (publishedCount != null ? publishedCount : '—') + '</div><div class="fn897-foot">발행완료 · 이번 달 누적</div></div>';
-  html +=   '<div class="fn897-seg"><div class="fn897-connector"></div><div class="fn897-arrow">→</div></div>';
-  html +=   '<div class="fn897-node inq"><div class="fn897-lab">연락 · 문의</div><div class="fn897-big">' + (inqCount != null ? inqCount : '—') + '</div><div class="fn897-foot">회사 전체 · 이번 달</div></div>';
-  html +=   '<div class="fn897-seg"><div class="fn897-connector"></div><div class="fn897-arrow">→</div><div class="fn897-rate e">' + monthRateStr + '</div><div class="fn897-cap">문의→가입<br>(회사 전체)</div></div>';
-  html +=   '<div class="fn897-node join"><div class="fn897-lab">등록 · 가입</div><div class="fn897-big">' + (joinCount != null ? joinCount : '—') + '</div><div class="fn897-foot">이번 달' + (cumRate != null ? ' · 전체 누적 ' + cumRateStr + '(기준 다름)' : '') + '</div></div>';
-  html += '</div>';
-
-  html += '<div class="fn897-scope"><span class="fn897-ic">⚖️</span><p>발행→문의 구간은 <b>콘텐츠 수</b>와 <b>문의자 수</b>로 단위가 달라 전환율(%)로 잇지 않습니다(억지로 나누면 거짓 숫자가 됩니다). 문의→가입은 <b>멤버십·성인강습·유소년강습</b> 합산 스코프입니다(렌트·비즈는 매칭 안 됨).</p></div>';
-
-  html += '<div style="margin-top:14px">';
-  html +=   '<div class="fn897-card"><h3><span class="fn897-dot e"></span> 연락 → 등록 · 문의→가입</h3><div class="fn897-scopetag">시포 #849 · 멤버십·성인강습·유소년강습 합산 (렌트·비즈는 매칭 안 됨)</div><div class="fn897-joins">';
-  html +=     '<div class="fn897-stat"><div class="fn897-k">이번 달</div><div class="fn897-v">' + monthRateStr + '</div><div class="fn897-d">' + (inqCount != null ? '문의 ' + inqCount + '건' : '문의 집계중') + ' → ' + (joinCount != null ? '가입 ' + joinCount + '건' : '가입 집계중') + '</div><div class="fn897-d" style="opacity:.7;margin-top:3px">등록월 기준 · 정밀</div></div>';
-  html +=     '<div class="fn897-stat cum"><div class="fn897-k">전체 누적</div><div class="fn897-v">' + cumRateStr + '</div><div class="fn897-d">' + (cumInq != null ? '문의 ' + cumInq.toLocaleString() + '건' : '집계중') + ' → ' + (cumJoin != null ? '가입 ' + cumJoin.toLocaleString() + '건' : '집계중') + '</div><div class="fn897-d" style="opacity:.7;margin-top:3px">여태까지 전부 · 전화번호 매칭 · 등록일 무관</div></div>';
-  html +=   '</div>';
-  if(monthRate != null && cumRate != null){
-    html += '<div class="fn897-scope" style="margin-top:12px"><span class="fn897-ic">💡</span><p>이번 달 ' + monthRateStr + '(등록월 기준)와 전체 누적 ' + cumRateStr + '(여태까지 전부 · 전화번호 매칭)은 <b>계산 기준이 달라 서로 빼서 비교하면 안 됩니다.</b>' + (monthRate < cumRate ? ' 이번 달 문의는 아직 상담·등록 여정 중이라 <b>진행 중 스냅샷</b>일 뿐입니다(월말로 갈수록 상승).' : '') + ' 문의회원 페이지의 \'멤버십 단독\' 카드와도 <b>스코프가 다른 별개 지표</b>입니다.</p></div>';
+  if (!ranked.length) {
+    el.innerHTML = '<div class="measure-pending">' + esc(_periodLabel) + ' 발행이 없어 채널별 비교가 측정 준비중입니다.</div>';
+    return;
   }
-  html +=   '</div>';
+  ranked.sort(function(a, b) { return b.ratio - a.ratio; });
+  var best = ranked[0];
+  var worst = ranked[ranked.length - 1];
 
-  html += '<div class="fn897-foot-note"><span><b>데이터 출처</b> · kpi_values.json(cpo) + review_queue.json(발행)' + (genKst ? ' · ' + esc(genKst) + ' 라이브' : '') + '</span><span><b>정직 원칙</b> · 약속 L05 (안 잰 건 지어내지 않기)</span></div>';
-
+  var html = '<div class="insight-grid">';
+  html += '<div class="insight-card good"><h4>🟢 잘됨 — 더하기</h4><p><b>' + esc(best.ch) + '</b> 채널이 게시물당 <b>' + best.ratio.toFixed(1) + '건</b> 문의로 가장 효율적입니다(발행 ' + best.pub + '건 · 경유문의 ' + best.inq + '건, ' + esc(_periodLabel) + '). 이 채널 발행 비중을 늘려보세요.</p></div>';
+  if (worst.ch !== best.ch) {
+    html += '<div class="insight-card weak"><h4>🔴 약함 — 손보기</h4><p><b>' + esc(worst.ch) + '</b> 채널은 게시물당 <b>' + worst.ratio.toFixed(1) + '건</b>으로 상대적으로 약합니다(발행 ' + worst.pub + '건 · 경유문의 ' + worst.inq + '건, ' + esc(_periodLabel) + '). 콘텐츠 각도·CTA 위치를 점검해보세요.</p></div>';
+  } else {
+    html += '<div class="insight-card weak"><h4>🔴 약함 — 손보기</h4><p>이번 기간엔 발행한 채널이 1곳뿐이라 비교 대상이 없습니다 — 다른 채널도 발행해야 손볼 곳이 보입니다.</p></div>';
+  }
+  var noPub = CONTENT_CHANNELS.filter(function(c) { return !(pubByCh[c] > 0); });
+  if (noPub.length) {
+    html += '</div><div class="measure-pending" style="margin-top:10px">' + esc(_periodLabel) + ' 미발행 채널: <b>' + noPub.map(esc).join(', ') + '</b></div>';
+  } else {
+    html += '</div>';
+  }
   el.innerHTML = html;
 }
 
-// 발행완료 콘텐츠 수(이번 달) — review_queue.json(콘텐츠 발행 큐)에서 status='발행완료' + published_at 이번 달분만 카운트.
-function _countPublishedThisMonth(items) {
-  if (!Array.isArray(items)) return null;
-  var now = new Date();
-  var ym = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
-  var n = 0;
-  items.forEach(function(it) {
-    if (it && it.status === '발행완료' && typeof it.published_at === 'string' && it.published_at.slice(0, 7) === ym) n++;
-  });
-  return n;
+// ─── ⑤ 발행 대비 문의 추세(주차별) — 최근 8주 고정 스코프 ─────
+function _buildWeekWindows(n) {
+  var today = new Date();
+  var thisMon = _mondayOf(today);
+  var weeks = [];
+  for (var i = n - 1; i >= 0; i--) {
+    var mon = new Date(thisMon); mon.setDate(mon.getDate() - i * 7);
+    var sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+    var cappedTo = sun > today ? today : sun;
+    weeks.push({ from: _fmtYMD(mon), to: _fmtYMD(cappedTo), label: (mon.getMonth() + 1) + '/' + mon.getDate() });
+  }
+  return weeks;
 }
 
-function loadFunnel897(){
-  var kpiPromise = gasRead('status/kpi_values.json', RAW_BASE + 'status/kpi_values.json').catch(function(){ return null; });
-  var rqPromise = fetch('../review/review_queue.json', { redirect: 'follow' })
-    .then(function(r){ return r.json(); })
-    .catch(function(){ return null; });
-  Promise.all([kpiPromise, rqPromise]).then(function(res){
-    var kv = res[0], rq = res[1];
-    if (!kv) {
-      var el = document.getElementById('fn897-board');
-      if (el) el.innerHTML = '<div style="color:var(--dim);font-size:13px">퍼널 데이터를 불러오지 못했습니다 · 정본: status/kpi_values.json</div>';
-      return;
-    }
-    renderFunnel897((kv && kv.roles) || {}, (kv && kv.generated_at_kst) || null, _countPublishedThisMonth(rq));
+function loadTrend() {
+  var el = document.getElementById('trend-wrap');
+  if (!el) return;
+  var weeks = _buildWeekWindows(8);
+
+  Promise.all([
+    loadReviewQueue(),
+    Promise.all(weeks.map(function(w) { return fetchFunnelConversion(w.from, w.to); }))
+  ]).then(function(res) {
+    var rq = res[0], fcArr = res[1];
+    var anyFail = fcArr.some(function(d) { return d === null; });
+    var points = weeks.map(function(w, i) {
+      var pubItems = _pubItemsInRange(rq, w.from, w.to);
+      var inq = fcArr[i] ? _contentInquirySum(_fcChannelMap(fcArr[i])) : 0;
+      return { label: w.label, pub: pubItems.length, inq: inq };
+    });
+    renderTrend(points, anyFail);
   });
+}
+
+function renderTrend(points, anyFail) {
+  var el = document.getElementById('trend-wrap');
+  if (!el) return;
+  var maxV = Math.max(1, Math.max.apply(null, points.map(function(p) { return Math.max(p.pub, p.inq); })));
+  var cols = points.map(function(p) {
+    var pubH = Math.round(p.pub / maxV * 100);
+    var inqH = Math.round(p.inq / maxV * 100);
+    return '<div class="trend-col">' +
+      '<div class="trend-bars">' +
+      '<div class="trend-bar pub" style="height:' + pubH + '%" title="발행 ' + p.pub + '건"></div>' +
+      '<div class="trend-bar inq" style="height:' + inqH + '%" title="문의 ' + p.inq + '건"></div>' +
+      '</div>' +
+      '<div class="trend-vals">' + p.pub + '/' + p.inq + '</div>' +
+      '<div class="trend-wk">' + esc(p.label) + '주</div>' +
+      '</div>';
+  }).join('');
+  el.innerHTML = '<div class="trend-chart">' + cols + '</div>' +
+    '<div class="trend-legend"><span><span class="dot" style="background:var(--accent)"></span>발행(건)</span><span><span class="dot" style="background:var(--purple)"></span>콘텐츠 경유 문의(건)</span></div>' +
+    (anyFail ? '<div class="measure-pending" style="margin-top:10px">일부 주차 문의 집계 실패 — 재시도 시 반영됩니다.</div>' : '') +
+    '<div style="padding-top:10px;font-size:11px;color:var(--dim)">각 열 상단 숫자 = 발행/문의(주 시작 월요일 기준, 이번 주는 오늘까지) · 두 값 모두 실측(추정 아님) · 최근 8주 고정 스코프라 상단 필터와 무관합니다.</div>';
+}
+
+// ─── 조회 기간 필터 UI 배선 (기존 UX 유지, 렌더 함수만 교체) ─────
+function toggleCustomRange() {
+  var row = document.getElementById('custom-range-row');
+  var isShown = row.classList.contains('show');
+  document.querySelectorAll('.period-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.period === 'custom' && !isShown);
+  });
+  if (isShown) { row.classList.remove('show'); } else { row.classList.add('show'); }
+}
+
+function runCustomQuery() {
+  var fromEl = document.getElementById('custom-from');
+  var toEl = document.getElementById('custom-to');
+  var hintEl = document.getElementById('custom-range-hint');
+  var statusEl = document.getElementById('period-status');
+  var from = fromEl ? fromEl.value : '';
+  var to = toEl ? toEl.value : '';
+  if (!from || !to) { if (hintEl) hintEl.textContent = '시작일과 종료일을 모두 입력해 주세요.'; return; }
+  if (from > to) { if (hintEl) hintEl.textContent = '시작일이 종료일보다 늦습니다.'; return; }
+  if (hintEl) hintEl.textContent = '';
+  _rangeFromTo = { from: from, to: to };
+  _periodLabel = '기간(' + from + '~' + to + ')';
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 불러오는 중…';
+  var navRow = document.getElementById('month-nav-row');
+  if (navRow) navRow.style.display = 'none';
+  refreshPeriodSections();
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
+}
+
+function switchPeriod(period) {
+  document.getElementById('custom-range-row').classList.remove('show');
+  document.querySelectorAll('.period-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.period === period);
+  });
+  var navRow = document.getElementById('month-nav-row');
+  if (navRow) navRow.style.display = (period === 'month') ? 'flex' : 'none';
+
+  var today = new Date();
+  var y = today.getFullYear(), m = ('0' + (today.getMonth() + 1)).slice(-2), d = ('0' + today.getDate()).slice(-2);
+  var statusEl = document.getElementById('period-status');
+
+  if (period === 'day') {
+    _rangeFromTo = { from: y + '-' + m + '-' + d, to: y + '-' + m + '-' + d };
+    _periodLabel = '오늘';
+  } else if (period === 'week') {
+    var w0 = new Date(today); w0.setDate(today.getDate() - 6);
+    _rangeFromTo = { from: _fmtYMD(w0), to: y + '-' + m + '-' + d };
+    _periodLabel = '이번 주(최근 7일)';
+  } else if (period === 'month') {
+    _rangeFromTo = { from: y + '-' + m + '-01', to: y + '-' + m + '-' + d };
+    _periodLabel = '이번 달';
+    _navYear = today.getFullYear(); _navMonth = today.getMonth() + 1;
+    _updateMonthNav();
+  } else {
+    return; // 'custom' — toggleCustomRange가 처리
+  }
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 불러오는 중…';
+  refreshPeriodSections();
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
+}
+
+function loadYearToDate() {
+  var now = new Date();
+  var y = now.getFullYear(), m = ('0' + (now.getMonth() + 1)).slice(-2), d = ('0' + now.getDate()).slice(-2);
+  document.querySelectorAll('.period-btn').forEach(function(b) { b.classList.remove('active'); });
+  var nav = document.getElementById('month-nav-row');
+  if (nav) nav.style.display = 'none';
+  _rangeFromTo = { from: y + '-01-01', to: y + '-' + m + '-' + d };
+  _periodLabel = '올해(연초~오늘)';
+  var statusEl = document.getElementById('period-status');
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 불러오는 중…';
+  refreshPeriodSections();
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
+}
+
+// ─── 월 네비게이터 ────────────────────────────────────────────
+function shiftMonth(delta) {
+  _navMonth += delta;
+  if (_navMonth < 1) { _navMonth = 12; _navYear--; }
+  if (_navMonth > 12) { _navMonth = 1; _navYear++; }
+  _updateMonthNav();
+  _loadMonthRange(_navYear, _navMonth);
+}
+function _updateMonthNav() {
+  var labelEl = document.getElementById('month-nav-label');
+  var nextBtn = document.getElementById('month-nav-next');
+  if (labelEl) labelEl.textContent = _navYear + '년 ' + _navMonth + '월';
+  if (nextBtn) {
+    var today = new Date();
+    var isCurrentOrFuture = (_navYear > today.getFullYear()) || (_navYear === today.getFullYear() && _navMonth >= today.getMonth() + 1);
+    nextBtn.disabled = isCurrentOrFuture;
+  }
+}
+function _loadMonthRange(year, month) {
+  var from = year + '-' + String(month).padStart(2, '0') + '-01';
+  var lastDay = new Date(year, month, 0).getDate();
+  var today = new Date();
+  var isThisMonth = (year === today.getFullYear() && month === today.getMonth() + 1);
+  var to = isThisMonth ? _fmtYMD(today) : year + '-' + String(month).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
+  var rangeLabel = year + '년 ' + month + '월';
+  var statusEl = document.getElementById('period-status');
+  if (statusEl) statusEl.textContent = rangeLabel + ' · 불러오는 중…';
+  _rangeFromTo = { from: from, to: to };
+  _periodLabel = rangeLabel;
+  refreshPeriodSections();
+  if (statusEl) statusEl.textContent = rangeLabel + ' · 실측 완료';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  // 월 네비게이터 초기화 — 오늘 달로 설정, 다음달 버튼 비활성
   _updateMonthNav();
-
-  // ── 즉시 로드 (초기 1회 병렬 발사 — 직렬 2왕복 제거) ──────────────
-  // 이번 달 기본범위는 응답 없이 즉시 산출 가능 → _rangeFromTo를 미리 세팅하고
-  // 4개 엔드포인트를 동시 발사. _applyPeriodData의 첫 month 호출은 자식 fetch를
-  // 건너뛰도록(_skipPeriodChildFetch) 표시해 이중 fetch를 방지한다.
-  var _bd = new Date();
-  var _by = _bd.getFullYear();
-  var _bm = ('0' + (_bd.getMonth() + 1)).slice(-2);
-  var _bday = ('0' + _bd.getDate()).slice(-2);
-  _rangeFromTo = { from: _by + '-' + _bm + '-01', to: _by + '-' + _bm + '-' + _bday };
-  _skipPeriodChildFetch = true;
-  loadFunnel897();                // ↑ 🎯 단일 전환 퍼널 보드(배#897) — status/kpi_values.json + review_queue.json 직독, 기간 무관 별도 fetch
-  loadFunnelConversion();        // 핵심 지표(전환흐름) 내부 렌더 포함
-  loadPeriodBreakdown('month');  // 기본 기간: 월 (자식 fetch는 위 플래그로 1회 스킵)
-  loadTypeChannel();             // ↑ 유입채널 현황(기간 연동) — period 응답 대기 없이 병렬
-  // 이후 기간/월 전환 등 사용자 인터랙션에서는 _applyPeriodData가 평소대로 자식 fetch 수행
-
+  var today = new Date();
+  var y = today.getFullYear(), m = ('0' + (today.getMonth() + 1)).slice(-2), d = ('0' + today.getDate()).slice(-2);
+  _rangeFromTo = { from: y + '-' + m + '-01', to: y + '-' + m + '-' + d };
+  _periodLabel = '이번 달';
+  refreshPeriodSections();
+  loadTrend();
 });
 </script>
 </body>
