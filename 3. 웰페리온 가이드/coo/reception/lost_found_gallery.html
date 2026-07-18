@@ -14,6 +14,8 @@
   · 2026-07-18 생애주기 단순화(시우): 관리 탭 폐지로 오등록 삭제를 이 화면 직원 게이트 뒤로 이관.
     카드 우측 상단 작은 🗑 아이콘(기본 흐림·눈에 안 띔) → confirm → lf_delete(id) → 목록 새로고침.
     30일 미수령 습득물은 자동 폐기(폐기 공지 게시)되어 갤러리에서 제외됩니다.
+  · 2026-07-18 폐기 공지 흡수(시우): lf_disposal(공개) 병행 fetch — 잔여 7일 이하 게시중 카드에 ⏳D-n 배지·상단 정렬,
+    폐기완료 물품은 하단 접이식 '🗑 폐기 완료 기록' 읽기전용 카드. 인쇄용 lost_found_disposal.html(A3) 링크 버튼 추가.
 -->
 <style>
 :root{
@@ -63,6 +65,31 @@ a{color:var(--accent);text-decoration:none}
 .gcard .claim:hover{opacity:.9}
 .state-msg{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--dim);font-size:14.5px}
 .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
+
+/* ── 폐기 임박 배지·강조 (lf_disposal upcoming) ── */
+.gcard.imminent{border-color:#e8b44a;box-shadow:0 0 0 1px rgba(232,180,74,.35),0 1px 6px rgba(0,0,0,.04)}
+.disp-badge{display:inline-block;font-size:11px;font-weight:800;color:#8a5a00;background:#fdf0d5;border:1px solid #ecc478;border-radius:20px;padding:3px 10px;margin-bottom:7px;letter-spacing:.2px}
+
+/* ── 상단 액션 그룹(새로고침 + 폐기 공지 인쇄) ── */
+.topbar-actions{display:flex;gap:8px;flex-wrap:wrap}
+.print-btn{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--paper);color:var(--text);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.print-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── 🗑 폐기 완료 기록 (접이식, 읽기전용) ── */
+.disposal-sec{margin-top:22px}
+.disposal-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;font-size:13.5px;font-weight:700;color:var(--text);font-family:inherit;cursor:pointer}
+.disposal-toggle:hover{border-color:var(--accent)}
+.disposal-toggle .dt-arrow{transition:transform .2s;color:var(--dim)}
+.disposal-toggle.open .dt-arrow{transform:rotate(180deg)}
+.disposal-body{margin-top:12px}
+.disposal-body[hidden]{display:none}
+.disposal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.dcard{background:var(--paper);border:1px solid var(--border);border-radius:14px;overflow:hidden;opacity:.85;display:flex;flex-direction:column}
+.dcard .ph{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--bg);display:block;filter:grayscale(.3)}
+.dcard .body{padding:10px 12px 12px}
+.dcard .gid{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px}
+.dcard .desc{font-size:13px;font-weight:600;margin:3px 0 5px;word-break:break-word;line-height:1.4}
+.dcard .meta{font-size:11.5px;color:var(--dim);line-height:1.6}
 
 /* ── 스켈레톤 (즉시 렌더·지연 로드 대기 · CLS 0) ── */
 .gcard.skel{pointer-events:none}
@@ -134,12 +161,24 @@ a{color:var(--accent);text-decoration:none}
 
   <div class="topbar">
     <span class="count-pill">게시중 <span class="n" id="cnt">0</span>건</span>
-    <button class="refresh" id="refreshBtn" type="button">↻ 새로고침</button>
+    <div class="topbar-actions">
+      <a class="print-btn" href="lost_found_disposal.html" target="_blank" rel="noopener">🖨 폐기 공지 인쇄(A3)</a>
+      <button class="refresh" id="refreshBtn" type="button">↻ 새로고침</button>
+    </div>
   </div>
 
   <div class="grid" id="grid"><div class="state-msg">불러오는 중…</div></div>
 
-  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>습득일로부터 30일 미수령 시 자동 폐기됩니다.<br>하루의 완성, 웰페리온</p>
+  <div class="disposal-sec" id="disposalSec" style="display:none">
+    <button class="disposal-toggle" id="disposalToggle" type="button" aria-expanded="false">
+      <span>🗑 폐기 완료 기록 (<span id="disposalCount">0</span>)</span><span class="dt-arrow">▾</span>
+    </button>
+    <div class="disposal-body" id="disposalBody" hidden>
+      <div class="disposal-grid" id="disposalGrid"></div>
+    </div>
+  </div>
+
+  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>곧 폐기 예정인 물품은 ⏳ 배지로 표시되며, 폐기된 물품은 아래 기록에서 확인할 수 있습니다.<br>게시판 인쇄는 <b>폐기 공지(A3)</b>를 이용해 주세요 · 하루의 완성, 웰페리온</p>
 </div>
 
 <!-- 수령 서명 모달 -->
@@ -209,12 +248,27 @@ a{color:var(--accent);text-decoration:none}
   $('m_staff').addEventListener('change',function(){ var oth=$('m_staff_other'); if(this.value==='기타'){ oth.style.display='block'; oth.focus(); } else { oth.style.display='none'; oth.value=''; } });
 
   var _loading=false, _cur=null;
+  var _upcoming={}, _disposed=[], _lastRows=[]; // lf_disposal: foundId→remainDays 맵 · 폐기완료 목록 · 그리드 최근 렌더 원본
 
   function _readCache(){ try{ var o=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); return (o&&Array.isArray(o.data))?o:null; }catch(e){ return null; } }
   function _writeCache(rows){ try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:rows})); }catch(e){} }
   function _clearCache(){ try{ localStorage.removeItem(CACHE_KEY); }catch(e){} }
   function _skeleton(n){ var one='<div class="gcard skel" aria-hidden="true"><div class="ph skel-ph"></div><div class="body"><div class="skel-line w40"></div><div class="skel-line w80"></div><div class="skel-line w60"></div><div class="skel-btn"></div></div></div>'; var s=''; for(var i=0;i<(n||6);i++){ s+=one; } return s; }
-  function _renderRows(rows){ var grid=$('grid'); $('cnt').textContent=String(rows.length); if(!rows.length){ grid.innerHTML='<div class="state-msg">현재 게시중인 습득물이 없습니다.</div>'; return; } grid.innerHTML=rows.map(_gcard).join(''); }
+  function _renderRows(rows){
+    _lastRows=rows;
+    var grid=$('grid'); $('cnt').textContent=String(rows.length);
+    if(!rows.length){ grid.innerHTML='<div class="state-msg">현재 게시중인 습득물이 없습니다.</div>'; return; }
+    // 폐기 임박(remainDays 있는 항목)을 그리드 상단으로 — 오름차순, 그 외는 기존 순서 유지(안정 정렬)
+    var sorted=rows.slice().sort(function(a,b){
+      var ra=_upcoming[a.foundId], rb=_upcoming[b.foundId];
+      var ha=ra!=null, hb=rb!=null;
+      if(ha&&hb) return ra-rb;
+      if(ha) return -1;
+      if(hb) return 1;
+      return 0;
+    });
+    grid.innerHTML=sorted.map(_gcard).join('');
+  }
 
   function load(opts){
     opts=opts||{};
@@ -240,14 +294,59 @@ a{color:var(--accent);text-decoration:none}
   function _gcard(r){
     var when=String(r.foundWhen||r.createdAt||'').replace('T',' ');
     var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,400))+'" alt="습득물 사진" loading="lazy" decoding="async">'):'<div class="ph"></div>';
-    return '<div class="gcard">'+ph+
+    var remainDays=_upcoming[r.foundId];
+    var imminent=remainDays!=null;
+    var badge=imminent?('<div class="disp-badge">⏳ D-'+_esc(remainDays)+' 폐기예정</div>'):'';
+    return '<div class="gcard'+(imminent?' imminent':'')+'">'+ph+
       '<button class="del-btn" type="button" data-del="'+_esc(r.foundId||'')+'" title="직원 전용: 오등록 삭제">🗑</button>'+
-      '<div class="body"><div class="gid">'+_esc(r.foundId||'')+'</div>'+
+      '<div class="body">'+badge+'<div class="gid">'+_esc(r.foundId||'')+'</div>'+
       '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
       '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>🕒 '+_esc(when||'-')+'</div>'+
       '<button class="claim" type="button" data-claim="'+_esc(r.foundId||'')+'" data-desc="'+_esc(r.itemDesc||'')+'" data-loc="'+_esc(r.foundLoc||'')+'" data-photo="'+_esc(r.photoUrl||'')+'">수령</button>'+
       '</div></div>';
   }
+
+  // ── 폐기 완료 카드(읽기전용) ──
+  function _dcard(r){
+    var when=String(r.disposedAt||'').replace('T',' ');
+    var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,300))+'" alt="폐기된 습득물 사진" loading="lazy" decoding="async">'):'<div class="ph"></div>';
+    return '<div class="dcard">'+ph+
+      '<div class="body"><div class="gid">'+_esc(r.foundId||'')+'</div>'+
+      '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
+      '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>🗑 '+_esc(when||'-')+' 폐기</div>'+
+      '</div></div>';
+  }
+
+  // ── 폐기 임박(upcoming)·폐기 완료(disposed) — lf_disposal(공개) ──
+  function _renderDisposalSection(){
+    var sec=$('disposalSec'), cnt=$('disposalCount'), grid=$('disposalGrid');
+    var n=_disposed.length;
+    cnt.textContent=String(n);
+    if(!n){ sec.style.display='none'; return; }
+    sec.style.display='block';
+    grid.innerHTML=_disposed.map(_dcard).join('');
+  }
+  function loadDisposal(){
+    fetch(VOC_API+'?action=lf_disposal&_='+Date.now(),{redirect:'follow',cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!d||!d.ok) return; // 실패는 조용히 스킵 — 게시중 그리드는 그대로 유지
+        var up=Array.isArray(d.upcoming)?d.upcoming:[];
+        _upcoming={};
+        up.forEach(function(u){ _upcoming[u.foundId]=u.remainDays; });
+        _disposed=Array.isArray(d.disposed)?d.disposed:[];
+        if(_lastRows.length){ _renderRows(_lastRows); } // 이미 렌더된 게시중 그리드에 배지·정렬 재적용
+        _renderDisposalSection();
+      })
+      .catch(function(){ /* 조용히 스킵 */ });
+  }
+  $('disposalToggle').addEventListener('click',function(){
+    var body=$('disposalBody');
+    var expanded=this.getAttribute('aria-expanded')==='true';
+    this.setAttribute('aria-expanded',expanded?'false':'true');
+    body.hidden=expanded;
+    this.classList.toggle('open',!expanded);
+  });
 
   // ── 오등록 삭제 (직원 전용, lf_delete) ──
   $('grid').addEventListener('click',function(ev){
@@ -334,7 +433,7 @@ a{color:var(--accent);text-decoration:none}
 
   // A1: 헤더·안내·레이아웃은 정적 즉시 렌더 → 그리드는 스켈레톤 → idle/지연 후 fetch(LCP를 GAS 콜드스타트와 분리)
   $('grid').innerHTML=_skeleton(6);
-  var _kick=function(){ load(); };
+  var _kick=function(){ load(); loadDisposal(); };
   if('requestIdleCallback' in window){ requestIdleCallback(_kick,{timeout:1200}); }
   else { setTimeout(_kick,60); }
 })();
