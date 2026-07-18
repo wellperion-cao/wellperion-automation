@@ -457,7 +457,9 @@ let activeCatFilter = '전체';   // '전체' | 카테고리
 let searchQuery = '';            // 키워드
 let activeSortBy = '최신순';    // '최신순' | '결재상태' | '카테고리' | '시작일순'
 // [결재-뷰] 뷰 모드: 'kanban'(기본) | 'calendar'. 리스트 폐지(2026-06-03 GM·업무현황 파리티). localStorage 유지
-let currentView = 'kanban';  // 캘린더 뷰 제거(2026-06-03 GM 정리) — 칸반 단일
+// 2026-06-03 GM '칸반 단일' 정리로 하드코딩됐던 것을 2026-07-18 GM 피드백으로 복원 —
+// 업무현황 SSOT(todo_view 키) 패턴과 동일하게 localStorage 기반(결재 전용 키 approval_view).
+let currentView = (function(){ try { return localStorage.getItem('approval_view') === 'calendar' ? 'calendar' : 'kanban'; } catch(e){ return 'kanban'; } })();
 let calViewYear, calViewMonth;  // 캘린더 표시 연·월 (init은 첫 렌더에서)
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -570,6 +572,11 @@ function render() {
   owHtml += '<button class="filter-btn owner-chip-btn ' + (activeRoleFilter==='GM'?'active':'') + '" style="background:var(--accent-bg);color:var(--accent);" onclick="setRoleFilter(\'GM\')">김남욱GM (' + pendingByRole['GM'] + ')</button>';
   // 정렬 드롭다운 + 대시보드·인쇄 — 담당자 버튼과 같은 줄 오른쪽(margin-left:auto)
   owHtml += '<div style="display:flex;gap:4px;margin-left:auto;align-items:center;flex-shrink:0;">';
+  // 뷰 토글: 트렐로(칸반) / 캘린더 — 업무현황 SSOT와 동일 마크업·스타일 (2026-07-18 GM 피드백: 복원)
+  owHtml += '<div style="display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;margin-right:4px;">';
+  owHtml += '<button class="view-toggle-btn' + (currentView === 'kanban' ? ' active' : '') + '" onclick="setView(\'kanban\')" title="트렐로(칸반) 보드">🗂 트렐로</button>';
+  owHtml += '<button class="view-toggle-btn' + (currentView === 'calendar' ? ' active' : '') + '" onclick="setView(\'calendar\')" title="월별 캘린더">🗓 캘린더</button>';
+  owHtml += '</div>';
   owHtml += '<select onchange="setSort(this.value)" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;flex-shrink:0;">';
   ['최신순','결재상태','카테고리','시작일순'].forEach(function(opt) {
     owHtml += '<option value="' + opt + '"' + (activeSortBy === opt ? ' selected' : '') + '>' + opt + (opt === '최신순' ? ' ▼' : '') + '</option>';

@@ -123,7 +123,13 @@
       '.po-wrap{position:relative; display:inline-block;' +
         '--po-fb-bg:#ffffff; --po-fb-text:#18181b; --po-fb-border:#d8d8d8; --po-fb-surface:#f2f2f4; --po-fb-dim:#84848c; --po-fb-accent:#6d5acd;}' +
       '@media (prefers-color-scheme: dark){ .po-wrap{ --po-fb-bg:#201f23; --po-fb-text:#f2f0ee; --po-fb-border:#423f47; --po-fb-surface:#2a2830; --po-fb-dim:#96939c; --po-fb-accent:#8f7cf0; } }' +
-      '.po-toggle{font:inherit; background:transparent; -webkit-appearance:none; appearance:none;}' +
+      // font-family만 상속(가독성 위해 페이지 폰트 흡수), font-size·weight·line-height는 손대지 않음 —
+      // 트리거 승격 케이스(예: 인접 .share-btn과 나란한 인쇄 버튼)가 그 클래스의 크기를 그대로
+      // 유지하게 함. 이전엔 font:inherit(shorthand)가 size/weight까지 리셋해 인접 버튼과 치수가
+      // 달라졌다(예: 대시보드 .share-btn 대비 폭/높이 불일치). 폴백 미니버튼은 아래
+      // .po-toggle.po-toggle-fallback 규칙이 font:inherit를 자체 보유(그 안에서 font-size만
+      // 재지정)해 동일 동작 유지 — 회귀 없음. 2026-07-18 GM 피드백.
+      '.po-toggle{font-family:inherit; background:transparent; -webkit-appearance:none; appearance:none;}' +
       // position:fixed(뷰포트 기준·JS로 top/right 계산) — absolute였을 때 .filter-bar(overflow-x:auto)
       // 같은 스크롤 클리핑 조상 안에 갇혀 sticky-top과 얽혀 스크롤 시 sticky 헤더가 깨지던 문제 차단.
       // 2026-07-18 GM 피드백.
@@ -154,7 +160,7 @@
       '.po-print-btn:focus-visible{outline:2px solid var(--accent,var(--po-fb-accent)); outline-offset:2px;}' +
       // 폴백(트리거 없는 페이지) 전용: 화면 우상단 고정 미니 버튼. .po-toggle 리셋 위에 자체 시각 chrome만 얹음
       // — 기존 트리거 승격 케이스(.po-toggle만 쓰고 페이지 class를 같이 상속)에는 영향 없음(별도 modifier class).
-      '.po-toggle.po-toggle-fallback{display:inline-flex; align-items:center; gap:2px; white-space:nowrap;' +
+      '.po-toggle.po-toggle-fallback{font:inherit; display:inline-flex; align-items:center; gap:2px; white-space:nowrap;' +
         'font-size:12px; padding:6px 12px; border-radius:20px;' +
         'background:var(--paper,var(--po-fb-bg)); color:var(--accent-soft,var(--text,var(--po-fb-text)));' +
         'border:1px solid var(--border-strong,var(--po-fb-border)); box-shadow:0 4px 14px rgba(0,0,0,0.18);}' +
