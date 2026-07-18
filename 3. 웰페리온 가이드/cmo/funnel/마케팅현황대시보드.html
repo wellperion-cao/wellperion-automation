@@ -80,7 +80,6 @@ a:hover{color:var(--text)}
 .channel-table tr:last-child td{border-bottom:none}
 .channel-table tr:hover td{background:var(--accent-bg)}
 .placeholder{color:var(--dim);font-style:italic;font-size:11px}
-.channel-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;flex-shrink:0}
 
 /* ── Period toggle ── */
 .period-bar{display:flex;align-items:center;gap:6px;margin-bottom:20px;flex-wrap:wrap}
@@ -162,7 +161,6 @@ a:hover{color:var(--text)}
 @media(max-width:430px){
   .channel-table th{padding:8px 6px;font-size:9px}
   .channel-table td{padding:7px 6px;font-size:11px}
-  .channel-table .channel-dot{width:6px;height:6px;margin-right:4px}
 }
 
 /* 스켈레톤 펄스 */
@@ -187,10 +185,14 @@ details.footnote-toggle > .fn-body{
   font-size:12px;color:var(--dim);line-height:1.75;
 }
 
-/* ── 게시글 채널 칩 ── */
+/* ── 채널 로고(인라인 SVG) ── */
+.chan-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:5px;margin-right:7px;overflow:hidden;vertical-align:middle;flex-shrink:0}
+.chan-icon svg{display:block;width:100%;height:100%}
 .chip-row{display:flex;flex-wrap:wrap;gap:4px}
-.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--text);background:var(--paper2);border:1px solid var(--border);border-radius:10px;padding:2px 7px;white-space:nowrap}
-.chip .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.chip{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:var(--paper2);border:1px solid var(--border);overflow:hidden;flex-shrink:0}
+.chip svg{display:block;width:13px;height:13px}
+.post-metric{font-size:10.5px;color:var(--dim);margin-top:2px}
+.post-metric b{color:var(--text);font-weight:600}
 
 /* ── 측정 준비중 배너 (지어내기 금지 — 없는 값은 정직 표기) ── */
 .measure-pending{
@@ -206,20 +208,18 @@ details.footnote-toggle > .fn-body{
 .delta.up{color:var(--green)}
 .delta.down{color:var(--red)}
 .delta.flat{color:var(--dim);font-weight:400}
-.est-tag{font-size:9px;color:var(--dim);border:1px solid var(--border);border-radius:4px;padding:1px 4px;margin-left:4px;vertical-align:middle}
 
-/* ── 발행 대비 문의 추세(주차별) ── */
-.trend-wrap{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 14px 12px}
-.trend-chart{display:flex;gap:8px;align-items:flex-end;height:130px}
+/* ── 발행 대비 문의 추세(주차별) — ③ 채널별 성과 섹션에 통합된 미니 스파크라인 ── */
+.trend-mini{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.trend-mini-label{font-size:10.5px;color:var(--dim);font-weight:700;margin-bottom:6px}
+.trend-chart{display:flex;gap:5px;align-items:flex-end;height:52px}
 .trend-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
-.trend-bars{display:flex;gap:3px;align-items:flex-end;height:96px;width:100%;justify-content:center}
-.trend-bar{width:38%;border-radius:3px 3px 0 0;min-height:2px;transition:height .2s}
+.trend-bars{display:flex;gap:2px;align-items:flex-end;height:44px;width:100%;justify-content:center}
+.trend-bar{width:42%;border-radius:2px 2px 0 0;min-height:2px}
 .trend-bar.pub{background:var(--accent)}
 .trend-bar.inq{background:var(--purple)}
-.trend-vals{font-size:9px;color:var(--dim);margin-top:5px;white-space:nowrap}
-.trend-wk{font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap}
-.trend-legend{display:flex;gap:16px;font-size:11px;color:var(--dim);margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
-.trend-legend .dot{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
+.trend-legend{display:flex;gap:14px;font-size:10.5px;color:var(--dim);margin-top:6px}
+.trend-legend .dot{width:7px;height:7px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
 
 /* ── 인사이트 ── */
 .insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -230,7 +230,10 @@ details.footnote-toggle > .fn-body{
 .insight-card p{font-size:12px;color:var(--dim);line-height:1.7}
 .insight-card b{color:var(--text)}
 
-/* ── 배545 후속 상속: A3 세로(portrait) 한 장 인쇄 (2026-07-18 GM: 세로로 재지정) ── */
+/* ── A3 세로 기본 한 장 인쇄 (2026-07-18 GM) — 실제 선택 용지·방향은 print_options.js가
+     문서 뒤쪽에 <style id="po-page-style">로 이 @page보다 나중에 주입해 우선함(공용 컴포넌트, 여러
+     가이드 페이지와 동일 패턴). 좌우 컬럼 분할 금지(단일 컬럼) + #print-fit을 JS가 zoom으로
+     선택 용지·방향에 맞춰 1페이지로 축소(스크린 표시는 무영향, printFit() 참고). ── */
 @media print{
   .print-btn,.period-btn,.custom-range,.month-nav{display:none !important}
   @page{ size:A3 portrait; margin:8mm; }
@@ -246,21 +249,23 @@ details.footnote-toggle > .fn-body{
   .header{position:static;box-shadow:none;padding:0 0 5px}
   .header h1{font-size:15px}
   .header-meta{color:#5a5850;font-size:9px}
-  .content{max-width:100%;padding:0;column-count:2;column-gap:12px}
-  .section{margin-bottom:8px;break-inside:avoid;display:inline-block;width:100%}
+  .content{max-width:100%;padding:0}
+  .section{margin-bottom:8px;break-inside:avoid}
   .section-title{font-size:8px;margin-bottom:5px}
-  .kpi-card,.channel-table,.trend-wrap,.insight-card,.measure-pending{border:1px solid #c9c4bc;box-shadow:none}
+  .kpi-card,.channel-table,.insight-card,.measure-pending{border:1px solid #c9c4bc;box-shadow:none}
   .kpi-card{padding:7px 6px}
   .kpi-card .num{font-size:17px}
   .kpi-card .label,.kpi-card .sub,.kpi-card .unit{font-size:7.5px}
   .channel-table th,.channel-table td{padding:4px 5px;font-size:7.5px}
-  .chip{font-size:6.5px;padding:1px 5px}
-  .chip .dot{width:5px;height:5px}
-  .trend-wrap{padding:8px 8px 6px}
-  .trend-chart{height:90px}
-  .trend-bars{height:64px}
-  .trend-vals,.trend-wk{font-size:6.5px}
-  .trend-legend{font-size:8px;margin-top:6px;padding-top:6px}
+  .chan-icon{width:11px;height:11px;margin-right:4px}
+  .chip{width:14px;height:14px}
+  .chip svg{width:9px;height:9px}
+  .post-metric{font-size:7px}
+  .trend-mini{margin-top:6px;padding-top:6px}
+  .trend-mini-label{font-size:7px;margin-bottom:4px}
+  .trend-chart{height:30px}
+  .trend-bars{height:24px}
+  .trend-legend{font-size:7px;margin-top:4px;gap:8px}
   .insight-grid{gap:8px}
   .insight-card{padding:8px 9px 8px}
   .insight-card h4{font-size:9px}
@@ -278,12 +283,13 @@ details.footnote-toggle > .fn-body{
 </head>
 <body>
 
+<div id="print-fit">
 <div class="header">
   <div class="header-left">
     <h1>마케팅 현황 대시보드</h1>
   </div>
   <div style="display:flex;align-items:center;gap:12px">
-    <button class="print-btn" onclick="window.print()">🖨 A3 인쇄</button>
+    <button class="print-btn" onclick="window.print()">🖨 인쇄</button>
     <span class="header-meta">AI CMO · 실무진: 김남욱 GM</span>
   </div>
 </div>
@@ -335,24 +341,30 @@ details.footnote-toggle > .fn-body{
   </div>
 
   <!-- ════════════════════════════════════════════
-       ③ 채널별 성과 — 5채널 × (발행·경유문의·게시물당 문의·증감)
+       ③ 채널별 성과 — 5채널 × (발행·경유문의·게시물당 문의·증감) + 최근 8주 발행/문의 미니 추세
        증감 = 선택 기간과 동일 길이의 직전 기간 대비(문의 기준). 실측 두 번 조회.
+       추세는 최근 8주 고정 스코프(상단 필터 영향 안 받음) — 2026-07-18 GM 지시로 별도 섹션에서 통합.
        ════════════════════════════════════════════ -->
   <div class="section">
     <div class="section-title">채널별 성과</div>
     <div id="channel-perf-wrap">
       <div class="flow-skeleton sk-pulse"></div>
     </div>
+    <div class="trend-mini" id="trend-wrap">
+      <div class="trend-mini-label">최근 8주 발행/문의 추세</div>
+      <div class="flow-skeleton sk-pulse" style="height:52px"></div>
+    </div>
   </div>
 
   <!-- ════════════════════════════════════════════
        ④ 게시글별 성과 — 공식 채널(@wellperion)만 · 콘텐츠(folder) 단위 dedupe · 최근 12건 상한
        게시글 단위 문의 귀속은 미구축(UTM 캠페인이 게시글 ID까지 연결되지 않음, 실측 확인) → 측정 준비중.
+       게시글별 반응 지표(조회·찜·댓글)는 실측 가능한 채널만 표시(engagement_feed.json·ig_engagement_ledger.json).
        ════════════════════════════════════════════ -->
   <div class="section">
     <div class="section-title">게시글별 성과</div>
-    <div class="measure-pending">⚠ 게시글 단위 문의 연결은 측정 준비중 — 채널 단위 성과는 위 ③ 참고.
-      <details class="footnote-toggle"><summary>왜 안 되나</summary><div class="fn-body">UTM은 채널까지만 붙고(예: utm_source=instagram), 게시글 ID·캠페인 코드가 문의 저장소 컬럼에 없어 어떤 글이 문의를 만들었는지는 아직 집계할 수 없습니다(실측 확인, 지어내지 않음). 아래는 공식 채널(@wellperion) 발행 콘텐츠 목록(개인계정 제외, 콘텐츠 단위로 채널 중복 제거)입니다.</div></details>
+    <div class="measure-pending">⚠ 게시글 단위 문의 연결은 측정 준비중 — 채널 단위 성과는 위 ③ 참고. 반응 지표는 실측 가능한 채널만 표시.
+      <details class="footnote-toggle"><summary>왜 안 되나</summary><div class="fn-body">UTM은 채널까지만 붙고(예: utm_source=instagram), 게시글 ID·캠페인 코드가 문의 저장소 컬럼에 없어 어떤 글이 문의를 만들었는지는 아직 집계할 수 없습니다(실측 확인, 지어내지 않음). 반응 지표(조회·찜·댓글)는 당근·네이버 카페·인스타그램 일부만 engagement_feed.json/ig_engagement_ledger.json에 실측치가 쌓이며, 블로그(조회수 로그인 필요)·카카오(비공개 지표)는 원천적으로 수집 불가입니다. 아래는 공식 채널(@wellperion) 발행 콘텐츠 목록(개인계정 제외, 콘텐츠 단위로 채널 중복 제거)입니다.</div></details>
     </div>
     <div id="post-list-wrap">
       <div class="flow-skeleton sk-pulse" style="height:80px"></div>
@@ -360,18 +372,7 @@ details.footnote-toggle > .fn-body{
   </div>
 
   <!-- ════════════════════════════════════════════
-       ⑤ 발행 대비 문의 추세(주차별) — 최근 8주 고정 스코프(상단 필터 영향 안 받음, 정직 표기)
-       발행 = review_queue.json(주별 집계) · 문의 = funnel_conversion(주별 from/to 8회 실측 조회, 콘텐츠 5채널 합)
-       ════════════════════════════════════════════ -->
-  <div class="section">
-    <div class="section-title">발행 대비 문의 추세</div>
-    <div class="trend-wrap" id="trend-wrap">
-      <div class="flow-skeleton sk-pulse" style="height:100px"></div>
-    </div>
-  </div>
-
-  <!-- ════════════════════════════════════════════
-       ⑥ 인사이트 — 채널별 게시물당 문의 비율(③ 실측치)로만 산출. 게시글 단위 인사이트는 ④가 준비중이라 보류.
+       ⑤ 인사이트 — 채널별 게시물당 문의 비율(③ 실측치)로만 산출. 게시글 단위 인사이트는 ④가 준비중이라 보류.
        ════════════════════════════════════════════ -->
   <div class="section">
     <div class="section-title">인사이트</div>
@@ -380,6 +381,7 @@ details.footnote-toggle > .fn-body{
     </div>
   </div>
 
+</div>
 </div>
 
 <div class="page-footer">
@@ -402,7 +404,6 @@ function esc(s){
 // GAS _canonicalChannel_()과 동일 원본 코드에서 확인: 인스타그램·카카오톡·당근마켓·네이버(블로그/검색)·
 // 동부이촌동 커뮤니티(카페)를 별도 버킷으로 실제 분리 집계함(.deploy-funnel/Survey.js 112행) — 날조 아님, 실측 매핑.
 var CONTENT_CHANNELS = ['인스타그램', '네이버 블로그', '네이버 카페', '카카오', '당근'];
-var _DOT_COLORS = ['--f1', '--f2', '--f3', '--f4', '--f5'];
 function canonPubChannel(raw) {
   var s = String(raw || '');
   if (/인스타/.test(s)) return '인스타그램';
@@ -420,7 +421,49 @@ var PUB_TO_GAS_CHANNEL = {
   '카카오': '카카오톡',
   '당근': '당근마켓'
 };
-var CHIP_ABBR = { '인스타그램': 'IG', '네이버 블로그': '블로그', '네이버 카페': '카페', '카카오': '카카오', '당근': '당근' };
+// ─── 채널 로고(인라인 SVG, CSP상 외부 이미지 금지) — 브랜드색 근사, 접근성은 title/aria-label로 ──
+var _iconSeq = 0;
+function chipIconSvg(ch) {
+  _iconSeq++;
+  var uid = 'ic' + _iconSeq;
+  switch (ch) {
+    case '인스타그램':
+      return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<defs><linearGradient id="' + uid + '" x1="0" y1="1" x2="1" y2="0">' +
+        '<stop offset="0" stop-color="#FEDA75"/><stop offset=".45" stop-color="#D62976"/><stop offset="1" stop-color="#4F5BD5"/>' +
+        '</linearGradient></defs>' +
+        '<rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="url(#' + uid + ')"/>' +
+        '<rect x="6.8" y="6.8" width="10.4" height="10.4" rx="3.2" fill="none" stroke="#fff" stroke-width="1.7"/>' +
+        '<circle cx="12" cy="12" r="3" fill="none" stroke="#fff" stroke-width="1.7"/>' +
+        '<circle cx="17.1" cy="6.9" r="1.1" fill="#fff"/></svg>';
+    case '네이버 블로그':
+      return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="#03C75A"/>' +
+        '<path d="M7 6.5h3.7l4.6 6.8V6.5H19v11h-3.7l-4.6-6.8v6.8H7v-11z" fill="#fff"/></svg>';
+    case '네이버 카페':
+      return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="#03C75A"/>' +
+        '<path d="M6.5 9.5h9v4.2a3 3 0 0 1-3 3h-3a3 3 0 0 1-3-3V9.5z" fill="none" stroke="#fff" stroke-width="1.6"/>' +
+        '<path d="M15.3 10.2h1.4a2 2 0 0 1 0 4h-1.1" fill="none" stroke="#fff" stroke-width="1.6"/>' +
+        '<path d="M8.3 7.3v1.2M11 7.3v1.2M13.7 7.3v1.2" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>';
+    case '카카오':
+      return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="#FEE500"/>' +
+        '<path d="M12 6.4c-4 0-7.2 2.5-7.2 5.6 0 1.9 1.3 3.6 3.2 4.6l-.8 3 3.2-1.9c.5.07 1.05.1 1.6.1 4 0 7.2-2.5 7.2-5.6S16 6.4 12 6.4z" fill="#3C1E1E"/></svg>';
+    case '당근':
+      return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="#FF8A3D"/>' +
+        '<path d="M12.3 8.2c2.4-.3 4.2-2.2 3.9-3.1-.9-.3-2.8.5-3.7 1.9" fill="#4CAF50"/>' +
+        '<path d="M9 9.2c2.6 0 6 1.7 6 4.6 0 3-3.4 5.6-4.7 5.6-1.1 0-1.6-1-1.3-2.1.2-.8-.1-1-.8-.7-1.2.6-2.3-.2-2.1-1.4.1-.8-.2-1-.9-.8-1.1.3-1.9-.6-1.4-1.7C4.4 10.8 6.6 9.2 9 9.2z" fill="#fff"/></svg>';
+    default:
+      return '';
+  }
+}
+function chanIconHtml(ch, cls) {
+  var svg = chipIconSvg(ch);
+  if (!svg) return '';
+  return '<span class="' + cls + '" title="' + esc(ch) + '" role="img" aria-label="' + esc(ch) + '">' + svg + '</span>';
+}
 
 // ─── 게시글별 성과(④) 전용 — 공식 채널만 · 콘텐츠 단위 dedupe ──────────
 // 2026-07-18 GM 지시: 개인계정(namuk.wellperion) 제외, 채널별 중복 엔트리는 콘텐츠(folder) 단위로 1줄 묶기.
@@ -437,39 +480,111 @@ function isOfficialItem(it) {
 function _groupKey(it) {
   return String((it && it.folder) || (it && it.id) || '').replace(/\/output\([^)]*\)/g, '');
 }
-function buildPostGroups(items, from, to) {
-  var filtered = (items || []).filter(function(it) {
-    if (!it || it.status !== '발행완료') return false;
-    if (!isOfficialItem(it)) return false;
-    if (!canonPubChannel(it.channel)) return false;
-    var d = (typeof it.published_at === 'string') ? it.published_at.slice(0, 10) : '';
-    if (!d || d < from || d > to) return false;
-    return true;
-  });
-  var groups = {};
-  var order = [];
-  filtered.forEach(function(it) {
+// ★2026-07-18 GM 버그 리포트(7/16 콘텐츠 IG만 표시) 근본 수정 ─────────────
+// 원인 실측: review_queue.json에서 같은 콘텐츠의 채널별 엔트리 중 일부(예: 260716_L2_PT의
+// BLOG/CAFE/DANGGN/KAKAO)는 status='발행완료'인데 published_at 필드가 null인 레코드가 실재함
+// (IG 엔트리만 published_at 보유). 종전 로직은 "그룹핑 전에 개별 항목의 published_at 유무로
+// 필터"했기 때문에 published_at 없는 채널 엔트리가 그룹 결성 전에 통째로 탈락 → IG 1개만 남음.
+// 수정: 먼저 콘텐츠(folder) 단위로 전부 묶고, 그룹의 대표 날짜(그룹 내 published_at 중 최댓값)로
+// "이 콘텐츠가 언제 나갔나"를 판정한 뒤, 그 대표 날짜가 기간에 들면 그룹의 모든 채널 엔트리를
+// (개별 published_at 유무와 무관하게) 채널 카운트에 포함한다 — status='발행완료'가 "실제로 나간
+// 채널"의 유일한 신호이므로(개별 published_at은 기록 누락일 뿐), 추정이 아니라 실제 발행 여부의
+// 올바른 판정 기준. 그룹 전체에 published_at이 하나도 없으면 시점 판단이 불가하므로 그 그룹은
+// 제외한다(추정 금지).
+function _buildContentGroups(rq) {
+  var recognized = (rq || []).filter(function(it) { return it && it.status === '발행완료' && canonPubChannel(it.channel); });
+  var groups = {}, order = [];
+  recognized.forEach(function(it) {
     var key = _groupKey(it);
     if (!groups[key]) { groups[key] = []; order.push(key); }
     groups[key].push(it);
   });
-  var rows = order.map(function(key) {
+  return order.map(function(key) {
     var arr = groups[key];
-    var ig = arr.filter(function(x) { return canonPubChannel(x.channel) === '인스타그램'; });
-    var titleSrc = ig[0] || arr[0];
-    var chans = {};
-    arr.forEach(function(x) { var c = canonPubChannel(x.channel); if (c) chans[c] = true; });
-    var dates = arr.map(function(x) { return x.published_at || ''; }).filter(Boolean);
+    var dates = arr.map(function(x) { return (typeof x.published_at === 'string') ? x.published_at.slice(0, 10) : ''; }).filter(Boolean);
     dates.sort();
+    return { key: key, items: arr, date: dates.length ? dates[dates.length - 1] : null };
+  }).filter(function(g) { return g.date; });
+}
+function buildPostGroups(rq, from, to) {
+  var groups = _buildContentGroups(rq).filter(function(g) { return g.date >= from && g.date <= to; });
+  var rows = groups.map(function(g) {
+    var officialItems = g.items.filter(isOfficialItem);
+    if (!officialItems.length) return null;
+    var ig = officialItems.filter(function(x) { return canonPubChannel(x.channel) === '인스타그램'; });
+    var titleSrc = ig[0] || officialItems[0];
+    var chans = {};
+    officialItems.forEach(function(x) { var c = canonPubChannel(x.channel); if (c) chans[c] = true; });
     return {
-      date: dates.length ? dates[dates.length - 1].slice(0, 10) : '',
+      date: g.date,
       title: titleSrc.title || titleSrc.id || '',
       url: titleSrc.post_url || null,
-      channels: CONTENT_CHANNELS.filter(function(c) { return chans[c]; })
+      channels: CONTENT_CHANNELS.filter(function(c) { return chans[c]; }),
+      items: officialItems,
+      metric: null
     };
-  });
+  }).filter(Boolean);
   rows.sort(function(a, b) { return b.date.localeCompare(a.date); });
   return rows;
+}
+
+// ─── 게시글별 반응 지표(④) — 실측 가능한 채널만(당근·네이버 카페=조회수/찜, 인스타그램=댓글) ──
+// blog_snapshot(조회수 로그인 필요) · kakao_snapshot(비공개 지표)는 원천 미수집 — 지어내지 않음.
+// 소스: cmo/funnel/engagement/engagement_feed.json(당근·카페·블로그 이벤트) + status/ig_engagement_ledger.json(IG).
+var _engCache = null;
+function loadEngagementFeed() {
+  if (_engCache !== null) return Promise.resolve(_engCache);
+  return fetch('engagement/engagement_feed.json', { redirect: 'follow' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) { _engCache = (data && Array.isArray(data.events)) ? data.events : []; return _engCache; })
+    .catch(function() { _engCache = []; return _engCache; });
+}
+// ★status/는 GH Pages 배포 산출물(_pages_build)에 안 포함됨(.github/workflows/pages.yml —
+// "3. 웰페리온 가이드/." 트리만 복사, status/ 제외) → 상대경로 fetch는 라이브에서 404.
+// raw.githubusercontent.com 직접 fetch(원본 코드의 기존 폴백 패턴과 동일)로 실측.
+var _igLedgerCache = null;
+var IG_LEDGER_RAW_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/ig_engagement_ledger.json';
+function loadIgLedger() {
+  if (_igLedgerCache !== null) return Promise.resolve(_igLedgerCache);
+  return fetch(IG_LEDGER_RAW_URL + '?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) { _igLedgerCache = (data && Array.isArray(data.episode_snapshots)) ? data.episode_snapshots : []; return _igLedgerCache; })
+    .catch(function() { _igLedgerCache = []; return _igLedgerCache; });
+}
+function _baseUrl(u) { return String(u || '').split('?')[0].replace(/\/$/, ''); }
+function _igShortcode(u) { var m = /\/p\/([A-Za-z0-9_-]+)/.exec(String(u || '')); return m ? m[1] : null; }
+function _latestEngByUrl(events) {
+  var m = {};
+  (events || []).forEach(function(ev) {
+    var key = _baseUrl(ev && ev.url);
+    if (!key) return;
+    if (!m[key] || (ev.collected_at || '') > (m[key].collected_at || '')) m[key] = ev;
+  });
+  return m;
+}
+function lookupPostMetric(row, engByUrl, igByShortcode) {
+  var parts = [];
+  row.items.forEach(function(it) {
+    var ch = canonPubChannel(it.channel);
+    if (ch === '인스타그램') {
+      var sc = _igShortcode(it.post_url);
+      var ep = sc ? igByShortcode[sc] : null;
+      if (ep && Array.isArray(ep.snapshots) && ep.snapshots.length) {
+        var snap = ep.snapshots[ep.snapshots.length - 1];
+        if (snap && snap.comments != null) parts.push('IG 댓글 ' + snap.comments);
+      }
+      return;
+    }
+    var ev = engByUrl[_baseUrl(it.post_url)];
+    if (!ev) return;
+    if (ch === '당근' && ev.totalViews != null) {
+      parts.push('당근 조회 ' + ev.totalViews + (ev.totalBookmarks ? ' · 찜 ' + ev.totalBookmarks : ''));
+    } else if (ch === '네이버 카페' && ev.totalViews != null) {
+      parts.push('카페 조회 ' + ev.totalViews);
+    }
+    // 블로그·카카오는 실측 필드가 없어(로그인 필요/비공개) 추가하지 않음 — 지어내지 않음.
+  });
+  return parts.length ? parts.join(' · ') : null;
 }
 
 // ─── 날짜 유틸 ──────────────────────────────────────────────
@@ -508,16 +623,13 @@ function loadReviewQueue() {
     .catch(function() { _rqCache = []; return _rqCache; });
 }
 
-// 발행완료 + 콘텐츠 5채널 + 기간(from~to, published_at 날짜부 기준) 필터
-function _pubItemsInRange(items, from, to) {
-  return (items || []).filter(function(it) {
-    if (!it || it.status !== '발행완료') return false;
-    var ch = canonPubChannel(it.channel);
-    if (!ch) return false;
-    var d = (typeof it.published_at === 'string') ? it.published_at.slice(0, 10) : '';
-    if (!d) return false;
-    return d >= from && d <= to;
-  });
+// 발행완료 + 콘텐츠 5채널 + 기간(from~to) 필터 — 콘텐츠(그룹) 대표 날짜 기준(버그 수정 근거는
+// _buildContentGroups 주석 참고: 개별 published_at 누락 채널 엔트리도 그룹 대표 날짜로 포함).
+function _pubItemsInRange(rq, from, to) {
+  var groups = _buildContentGroups(rq).filter(function(g) { return g.date >= from && g.date <= to; });
+  var out = [];
+  groups.forEach(function(g) { g.items.forEach(function(it) { out.push(it); }); });
+  return out;
 }
 function _pubCountByChannel(items) {
   var out = {};
@@ -562,9 +674,11 @@ function refreshPeriodSections() {
   Promise.all([
     loadReviewQueue(),
     fetchFunnelConversion(from, to),
-    fetchFunnelConversion(prev.from, prev.to)
+    fetchFunnelConversion(prev.from, prev.to),
+    loadEngagementFeed(),
+    loadIgLedger()
   ]).then(function(res) {
-    var rq = res[0], fcCur = res[1], fcPrev = res[2];
+    var rq = res[0], fcCur = res[1], fcPrev = res[2], engEvents = res[3], igEpisodes = res[4];
     var curItems = _pubItemsInRange(rq, from, to);
     var prevItems = _pubItemsInRange(rq, prev.from, prev.to);
     var curPubByCh = _pubCountByChannel(curItems);
@@ -574,7 +688,17 @@ function refreshPeriodSections() {
 
     renderSummary(curItems.length, _contentInquirySum(curInqByCh), fcCur === null);
     renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcCur === null);
-    renderPostList(buildPostGroups(rq, from, to));
+
+    var engByUrl = _latestEngByUrl(engEvents);
+    var igByShortcode = {};
+    (igEpisodes || []).forEach(function(ep) {
+      var sc = _igShortcode(ep && ep.post_url) || (ep && ep.episode_key);
+      if (sc) igByShortcode[sc] = ep;
+    });
+    var postRows = buildPostGroups(rq, from, to);
+    postRows.forEach(function(r) { r.metric = lookupPostMetric(r, engByUrl, igByShortcode); });
+    renderPostList(postRows);
+
     renderInsight(curPubByCh, curInqByCh);
   });
 }
@@ -613,9 +737,8 @@ function renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcF
 
   var thead = '<thead><tr><th>채널</th><th style="text-align:right">발행</th><th style="text-align:right">경유 문의</th><th style="text-align:right">게시물당</th><th style="text-align:right">증감</th></tr></thead>';
   var body = rows.map(function(r) {
-    var colorVar = 'var(' + _DOT_COLORS[r.i % _DOT_COLORS.length] + ')';
     return '<tr>' +
-      '<td style="min-width:100px;white-space:nowrap"><span class="channel-dot" style="background:' + colorVar + '"></span>' + esc(r.ch) + '</td>' +
+      '<td style="min-width:100px;white-space:nowrap">' + chanIconHtml(r.ch, 'chan-icon') + esc(r.ch) + '</td>' +
       '<td style="text-align:right;' + (r.pub === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + r.pub.toLocaleString('ko-KR') + '</td>' +
       '<td style="text-align:right;' + (r.inq === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + (fcFailed ? '<span class="placeholder">준비중</span>' : r.inq.toLocaleString('ko-KR')) + '</td>' +
       '<td style="text-align:right">' + r.perPost + '</td>' +
@@ -638,14 +761,16 @@ function renderPostList(rows) {
     return;
   }
   var shown = rows.slice(0, POST_LIST_CAP);
-  var thead = '<thead><tr><th>날짜</th><th>채널</th><th>제목</th></tr></thead>';
+  var thead = '<thead><tr><th>날짜</th><th>채널</th><th>제목 · 반응 지표</th></tr></thead>';
   var body = shown.map(function(r) {
     var chips = r.channels.map(function(c) {
-      var colorVar = 'var(' + _DOT_COLORS[CONTENT_CHANNELS.indexOf(c) % _DOT_COLORS.length] + ')';
-      return '<span class="chip"><span class="dot" style="background:' + colorVar + '"></span>' + esc(CHIP_ABBR[c] || c) + '</span>';
+      return '<span class="chip" title="' + esc(c) + '" role="img" aria-label="' + esc(c) + '">' + chipIconSvg(c) + '</span>';
     }).join('');
     var title = r.url ? '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + '</a>' : esc(r.title);
-    return '<tr><td style="white-space:nowrap;color:var(--dim)">' + r.date + '</td><td><div class="chip-row">' + chips + '</div></td><td>' + title + '</td></tr>';
+    var metricHtml = r.metric
+      ? '<div class="post-metric"><b>' + esc(r.metric) + '</b></div>'
+      : '<div class="post-metric">측정 준비중</div>';
+    return '<tr><td style="white-space:nowrap;color:var(--dim)">' + r.date + '</td><td><div class="chip-row">' + chips + '</div></td><td>' + title + metricHtml + '</td></tr>';
   }).join('');
   el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">' +
     '<table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table></div>' +
@@ -729,17 +854,14 @@ function renderTrend(points, anyFail) {
     var inqH = Math.round(p.inq / maxV * 100);
     return '<div class="trend-col">' +
       '<div class="trend-bars">' +
-      '<div class="trend-bar pub" style="height:' + pubH + '%" title="발행 ' + p.pub + '건"></div>' +
-      '<div class="trend-bar inq" style="height:' + inqH + '%" title="문의 ' + p.inq + '건"></div>' +
-      '</div>' +
-      '<div class="trend-vals">' + p.pub + '/' + p.inq + '</div>' +
-      '<div class="trend-wk">' + esc(p.label) + '주</div>' +
-      '</div>';
+      '<div class="trend-bar pub" style="height:' + pubH + '%" title="' + esc(p.label) + '주 · 발행 ' + p.pub + '건"></div>' +
+      '<div class="trend-bar inq" style="height:' + inqH + '%" title="' + esc(p.label) + '주 · 문의 ' + p.inq + '건"></div>' +
+      '</div></div>';
   }).join('');
-  el.innerHTML = '<div class="trend-chart">' + cols + '</div>' +
+  el.innerHTML = '<div class="trend-mini-label">최근 8주 발행/문의 추세<span style="font-weight:400;color:var(--dim)"> · 상단 필터와 무관(고정 스코프) · 막대에 마우스오버 시 정확한 값</span></div>' +
+    '<div class="trend-chart">' + cols + '</div>' +
     '<div class="trend-legend"><span><span class="dot" style="background:var(--accent)"></span>발행</span><span><span class="dot" style="background:var(--purple)"></span>문의</span></div>' +
-    (anyFail ? '<div class="measure-pending" style="margin-top:10px">일부 주차 문의 집계 실패 — 재시도 시 반영됩니다.</div>' : '') +
-    '<details class="footnote-toggle"><summary>기준</summary><div class="fn-body">각 열 상단 숫자 = 발행/문의(주 시작 월요일 기준, 이번 주는 오늘까지) · 두 값 모두 실측(추정 아님) · 최근 8주 고정 스코프라 상단 필터와 무관합니다.</div></details>';
+    (anyFail ? '<div class="measure-pending" style="margin-top:8px">일부 주차 문의 집계 실패 — 재시도 시 반영됩니다.</div>' : '');
 }
 
 // ─── 조회 기간 필터 UI 배선 (기존 UX 유지, 렌더 함수만 교체) ─────
@@ -859,6 +981,55 @@ document.addEventListener('DOMContentLoaded', function() {
   refreshPeriodSections();
   loadTrend();
 });
+
+// ─── 인쇄 한 장 맞춤(Fit-to-page) — 2026-07-18 GM: "좌우로 나뉘지 말고 한 장에" ───────
+// 공용 print_options.js가 용지(A4/A3)·방향(세로/가로)을 선택하면 <html data-print-paper|
+// data-print-orientation>에 반영한다(문서 하단 include, 전 가이드 공통 훅). 여기서는 선택된
+// 용지·방향의 실제 인쇄 가용 영역(px)을 계산해 #print-fit(헤더+본문 전체 래퍼)에 zoom을 적용,
+// 좌우 컬럼 분할·페이지 넘김 없이 한 장에 수렴시킨다. 화면(스크린) 표시는 무관(afterprint에서 리셋).
+function _printPageDims() {
+  var paper = (document.documentElement.getAttribute('data-print-paper') || 'A3').toUpperCase();
+  var orientation = document.documentElement.getAttribute('data-print-orientation') || 'portrait';
+  var mm = (paper === 'A4') ? [210, 297] : [297, 420];
+  var w = mm[0], h = mm[1];
+  if (orientation === 'landscape') { var t = w; w = h; h = t; }
+  var marginMm = 8;
+  var pxPerMm = 96 / 25.4;
+  return { w: (w - marginMm * 2) * pxPerMm, h: (h - marginMm * 2) * pxPerMm };
+}
+// 폭을 인쇄 가용폭(px)으로 먼저 강제해 실제 인쇄 폭 기준으로 자연 높이를 실측한다(스크린 뷰포트
+// 폭에 좌우되지 않게 — 헤드리스/실브라우저 모두 스크린 뷰포트 폭에서 measure하면 가로/세로가
+// 실제 인쇄 폭과 달라 오차 발생, 폭 고정 후 높이만 비율 축소가 유일하게 안전한 방법).
+function _resetPrintFit(wrap) { wrap.style.zoom = ''; wrap.style.width = ''; }
+function fitPrintPage() {
+  var wrap = document.getElementById('print-fit');
+  if (!wrap) return;
+  _resetPrintFit(wrap);
+  var dims = _printPageDims();
+  wrap.style.width = dims.w + 'px';
+  var natH = wrap.scrollHeight || wrap.offsetHeight;
+  if (!natH) { wrap.style.width = ''; return; }
+  var scale = Math.min(dims.h / natH, 1);
+  if (scale > 0 && scale < 0.999) wrap.style.zoom = scale;
+}
+window.addEventListener('beforeprint', fitPrintPage);
+window.addEventListener('afterprint', function() {
+  var wrap = document.getElementById('print-fit');
+  if (wrap) _resetPrintFit(wrap);
+});
+if (window.matchMedia) {
+  var _mqPrint = window.matchMedia('print');
+  var _onPrintMQ = function(mql) {
+    if (mql.matches) { fitPrintPage(); return; }
+    var w = document.getElementById('print-fit');
+    if (w) _resetPrintFit(w);
+  };
+  if (_mqPrint.addEventListener) _mqPrint.addEventListener('change', _onPrintMQ);
+  else if (_mqPrint.addListener) _mqPrint.addListener(_onPrintMQ);
+}
 </script>
+<!-- 공용 인쇄 옵션 위젯 — 용지(A4/A3)·방향(세로/가로) 선택 드롭다운으로 기존 인쇄 버튼을 자동 승격
+     (레포 표준 컴포넌트, cmo/funnel/월간마케팅보고서.html 등 30여 페이지와 동일 include·중복 구현 금지) -->
+<script src="/wellperion-automation/_assets/print_options.js"></script>
 </body>
 </html>
