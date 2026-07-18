@@ -2669,11 +2669,17 @@ def _build_digest_reception(today: str) -> str:
     )
 
 
+# 카카오톡 ★부서장 방 이름 — kakao_report_sender.py --only-room 매칭(열린 채팅창 제목과 정확히 일치해야 함).
+# GM이 2026-07-18 개설. 창 제목이 다르면 이 값을 실제 제목으로 맞출 것.
+KAKAO_DEPTHEAD_ROOM = "★부서장"
+
+
 def run_daily_digest() -> None:
-    """3방 하루 일과 정리 알림 오케스트레이터 — 매일 22:30."""
+    """3방 하루 일과 정리 알림 오케스트레이터 — 평일 22:30 / 주말 20:00.
+    문의 정리는 카카오톡 ★부서장 방에도 추가 발송(GM 2026-07-18)."""
     from datetime import timezone as _tz3
     today = (datetime.now(_tz3.utc) + timedelta(hours=9)).strftime("%Y-%m-%d")
-    label = "[22:30 하루 일과 정리]"
+    label = "[하루 일과 정리]"
     logger.info(f"{label} 시작 — today={today}")
 
     targets = [
@@ -2681,9 +2687,12 @@ def run_daily_digest() -> None:
         ("점검관리방", DIGEST_CHECK_CHAT_ID,     _build_digest_check),
         ("종합접수처", DIGEST_RECEPTION_CHAT_ID, _build_digest_reception),
     ]
+    inquiry_msg = None
     for room_name, chat_id, builder in targets:
         try:
             msg = builder(today)
+            if room_name == "문의알림방":
+                inquiry_msg = msg
             success = send_telegram(chat_id, msg)
             if success:
                 logger.info(f"{label} {room_name} 발송 완료 chat_id={chat_id}")
@@ -2691,6 +2700,22 @@ def run_daily_digest() -> None:
                 logger.error(f"{label} {room_name} 발송 실패 chat_id={chat_id}")
         except Exception as e:
             logger.error(f"{label} {room_name} 예외: {e}")
+
+    # 카카오톡 ★부서장 방에도 '문의 정리'만 발송(GM 2026-07-18). 데스크톱 자동화 — 해당 방 창이 열려 있어야 함.
+    # best-effort: 실패해도(창 미개방 등) 텔레그램 발송에는 무영향, 로그만 남김.
+    if inquiry_msg:
+        try:
+            sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
+            env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+            proc = subprocess.run(
+                [sys.executable, str(sender), "--message", inquiry_msg, "--only-room", KAKAO_DEPTHEAD_ROOM],
+                cwd=str(REPO_ROOT), capture_output=True, text=True,
+                encoding="utf-8", errors="replace", env=env, timeout=180,
+            )
+            tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+            logger.info(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송: {tail[0]}")
+        except Exception as e:
+            logger.error(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송 예외: {e}")
 
 
 def _build_07_combined_body() -> str:
@@ -3157,16 +3182,23 @@ def main():
             )
             logger.info(f"  등록: {slot} {hour:02d}:{minute:02d} 지원부 점검 미완 독려")
 
-        # ── 하루 일과 정리 (22:30) — 문의·점검·접수 3방 핵심+상세 — CTO 2026-06-29 ──
-        #   22:00=nudge_close·report_22 겹침 → 22:30 분리(GM 2026-06-29 지시).
+        # ── 하루 일과 정리 — 문의·점검·접수 3방 핵심+상세 — CTO 2026-06-29 ──
+        #   마감시간 연동: 평일(월~금) 22:30 / 주말(토·일) 20:00 (주말 20시 마감. GM 2026-07-18).
         scheduler.add_job(
             run_daily_digest,
-            trigger=CronTrigger(hour=22, minute=30, timezone="Asia/Seoul"),
-            id="daily_digest_2230",
+            trigger=CronTrigger(day_of_week="mon-fri", hour=22, minute=30, timezone="Asia/Seoul"),
+            id="daily_digest_weekday",
             misfire_grace_time=600,
             coalesce=True,
         )
-        logger.info("daily_digest_2230 등록 완료 (22:30) — 하루 일과 정리 3방 발송")
+        scheduler.add_job(
+            run_daily_digest,
+            trigger=CronTrigger(day_of_week="sat,sun", hour=20, minute=0, timezone="Asia/Seoul"),
+            id="daily_digest_weekend",
+            misfire_grace_time=600,
+            coalesce=True,
+        )
+        logger.info("daily_digest 등록 완료 — 평일 22:30 / 주말 20:00, 하루 일과 정리 3방 발송")
 
     logger.info(f"스케줄러 기동 완료. PID={os.getpid()}")
     try:

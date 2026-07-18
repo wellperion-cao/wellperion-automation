@@ -1241,6 +1241,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">종목별 담당 강사 재배정 · 강사 본인 이름 칩 클릭 = 본인 담당 회원만 소트</span>
       </div>
 
+      <!-- 종목별 배정현황 요약 카드(배정/회원수) — 카드 클릭=해당 종목 서브탭. GM 지시 2026-07-18. -->
+      <div id="oaSummary" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+
       <!-- 종목 서브탭(PT·골프·P.L·스쿼시·수영) -->
       <div id="oaSportBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
 
@@ -3782,6 +3785,7 @@ function switchFamily(fam) {
       if (!_lessonState.adult.memLoaded) lessonRegLoad('adult');
       if (!_lessonState.youth.memLoaded) lessonRegLoad('youth');
       _lessonComboRegLoad('adult'); _lessonComboRegLoad('youth');   // 신규 등록 현황 카드(2026-07-15 현황카드 일원화)
+      try { if (typeof _oaPreload === 'function') _oaPreload(); } catch(_oaErr){}   // 담당자 배정 데이터 사전로드(콜드 GAS ~11s 오버랩) — 2026-07-18
     }
   } catch(_sfErr){ /* best-effort — family 전환은 이미 확정, 렌더 실패해도 안 되돌림 */ }
   try { switchType(types[0]); } catch(e){}   // 그룹 첫 유형으로 전환(방어)
@@ -4092,9 +4096,14 @@ function _lessonOwnerSummaryRender(t) {
     var d = byOwner[o];
     var dist = statusOrder.filter(function(s){ return d.statusCounts[s]; })
       .map(function(s){ return esc(s) + ' ' + d.statusCounts[s]; }).join(' · ') || '—';
+    // 등록율 = SUC / 전체 컨택 건수(=담당 관리 회원수 d.count = 컨택중+가망+대기+SUC+LOSS+미정 합). GM 지시 2026-07-18: 명수 옆 크게.
+    var suc = d.statusCounts['SUC'] || 0;
+    var rate = d.count ? Math.round(suc / d.count * 100) : 0;
     return '<div style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--paper);font-size:12px">' +
       '<span style="font-weight:700;color:var(--text)">' + esc(o) + '</span> ' +
       '<span style="color:var(--teal);font-weight:700">' + d.count + '명</span>' +
+      '<span style="margin-left:8px;font-size:17px;font-weight:800;color:var(--accent);vertical-align:-1px">' + rate + '%</span>' +
+      '<span style="font-size:10px;color:var(--dim);margin-left:2px">등록율</span>' +
       '<div style="color:var(--dim);font-size:11px;margin-top:2px">' + dist + '</div></div>';
   }).join('');
   box.setAttribute('data-owner-summary-total', total);
@@ -4348,7 +4357,7 @@ function _lessonSportChipStyle(sportStr) {
 }
 // 강습 종목 짧은/변형 코드 → 표시용 정식 명칭(2b). 표시 전용 — 색상·필터키·백엔드 전송값은 원본 그대로. 2026-07-18 GM 지시.
 var LESSON_SPORT_DISPLAY_MAP = {
-  '수영':'수영 (개인레슨 / 단체레슨)',
+  '수영':'성인 수영 (개인레슨 / 단체레슨)',
   '필라':'필라테스','필라테스':'필라테스',
   'WSC수영':'WSC 수영','WSC 수영':'WSC 수영',
   '뮤지컬':'뮤지컬 (Brad Little Star Academy)',
@@ -5291,6 +5300,7 @@ var _oaSport = 'PT';           // 현재 종목탭(기본=PT)
 var _oaTrainer = '';           // 셀프소트 강사 필터('' = 전체)
 var _oaLimit = 200;            // 성능: 필터셋 최초 200명만(더 보기로 확장)
 var _oaComposing = false;
+var _oaFetching = false;       // member_active_list 로드 재진입 방어(프리로드+수동 오픈 동시 방지). 2026-07-18
 
 function _oaSportCfg(key){ for (var i=0;i<OWNER_ASSIGN_SPORTS.length;i++){ if (OWNER_ASSIGN_SPORTS[i].key===key) return OWNER_ASSIGN_SPORTS[i]; } return OWNER_ASSIGN_SPORTS[0]; }
 // 휴대폰 가운데 4자리 마스킹(010-****-5678)
@@ -5317,18 +5327,35 @@ function ownerAssignInit(){
 }
 function ownerAssignReload(){ _ownerAssignRows = null; _oaFetch(); }
 
+// 강습 family 진입 시 조용한 사전로드 — 유효회원 캐시(_activeRows) 있으면 재사용, 없으면 백그라운드 fetch 착수.
+// member_active_list는 콜드 GAS라 ~11s 소요 → 사용자가 카드 둘러보는 동안 미리 받아 담당자 배정 오픈 시 즉시 렌더.
+function _oaPreload(){
+  if (_ownerAssignRows && _ownerAssignRows.length) return;                                  // 이미 확보
+  if (_activeLoaded && _activeScope === 'valid' && _activeRows && _activeRows.length){       // 유효회원 사전로드분 재사용(중복 fetch 0)
+    _ownerAssignRows = _activeRows; return;
+  }
+  if (_oaFetching) return;                                                                    // 이미 fetch 진행 중
+  _oaFetch();
+}
+
 function _oaFetch(){
+  if (_oaFetching) return;   // 재진입 방어(프리로드+수동 오픈 동시 호출 시 중복 fetch 0)
+  _oaFetching = true;
   var body = document.getElementById('oaBody');
   if (body) body.innerHTML = '<tr><td><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  if (GAS_URL === GAS_PLACEHOLDER){ _oaRenderState('GAS 미연동 — URL 교체 후 사용 가능'); return; }
+  if (GAS_URL === GAS_PLACEHOLDER){ _oaFetching = false; _oaRenderState('GAS 미연동 — URL 교체 후 사용 가능'); return; }
   fetch(GAS_URL + '?action=member_active_list&scope=valid' + _wpKeyParam())
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
-      _ownerAssignRows = data.data || [];
+      _ownerAssignRows = data.data || [];   // 서버 계약 {ok, data:[...]} — data.data가 회원 배열
+      _oaFetching = false;
       _oaRender();
     })
-    .catch(function(err){ _oaRenderState('불러오기 실패: ' + (err.message || '')); });
+    .catch(function(err){
+      _oaFetching = false;
+      _oaRenderRetry('불러오기 실패: ' + (err.message || ''));   // 죽은 "불러오는 중" 대신 재시도 버튼
+    });
 }
 
 function _oaRenderSportBar(){
@@ -5373,6 +5400,7 @@ function _oaRenderTrainerChips(pop){
 
 function _oaRender(){
   var cfg = _oaSportCfg(_oaSport);
+  _oaRenderSummary();   // 종목별 배정현황 요약 카드(데이터 로드·종목 전환마다 재계산)
   var pop = _oaPopulation();
   _oaRenderTrainerChips(pop);
 
@@ -5478,6 +5506,38 @@ function _oaRenderState(msg){
   if (count) count.textContent = '';
   if (head) head.innerHTML = '<tr><th> </th></tr>';
   if (body) body.innerHTML = '<tr><td><div class="empty-state"><div class="empty-state-title">' + esc(msg) + '</div></div></td></tr>';
+}
+// 로드 실패 상태 — 죽은 "불러오는 중" 방지: 재시도 버튼(ownerAssignReload) 노출. 2026-07-18
+function _oaRenderRetry(msg){
+  var head = document.getElementById('oaHead');
+  var body = document.getElementById('oaBody');
+  var count = document.getElementById('oaCount');
+  if (count) count.textContent = '';
+  if (head) head.innerHTML = '<tr><th> </th></tr>';
+  if (body) body.innerHTML = '<tr><td><div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">' + esc(msg) + '</div><div class="empty-state-desc" style="margin-top:10px"><button type="button" class="btn-refresh" onclick="ownerAssignReload()">다시 시도</button></div></div></td></tr>';
+}
+// 종목별 배정현황 요약 카드 — 배정(담당자 있음, '담당자 X' 제외) / 회원수(그 종목 담당자 컬럼 채워진 회원). 카드 클릭=해당 종목 서브탭. GM 지시 2026-07-18.
+function _oaRenderSummary(){
+  var box = document.getElementById('oaSummary'); if (!box) return;
+  var rows = _ownerAssignRows || [];
+  if (!rows.length){ box.innerHTML = ''; return; }
+  var LABELS = { 'PT':'P.T', 'P.L':'필라테스' };   // 요약 카드 표기명(GM: P.T·필라테스)
+  var cards = OWNER_ASSIGN_SPORTS.map(function(s){
+    var pop = 0, assigned = 0;
+    for (var i=0;i<rows.length;i++){
+      var v = String(rows[i][s.col]||'').trim();
+      if (v === '') continue;              // 이 종목 담당자 컬럼 빈칸 = 그 종목 회원 아님
+      pop++;                               // 회원수(분모)
+      if (v !== LESSON_UNASSIGNED_OPTION) assigned++;   // 배정(분자) = 실제 담당자 있음
+    }
+    var on = (s.key === _oaSport);
+    var disp = LABELS[s.key] || s.label;
+    return '<div role="button" tabindex="0" onclick="_oaSetSport(\'' + s.key + '\')" style="cursor:pointer;flex:1 1 110px;min-width:100px;padding:10px 12px;border-radius:10px;border:1px solid ' + (on?'var(--teal-border)':'var(--border)') + ';background:' + (on?'var(--teal-bg)':'var(--paper)') + '">' +
+      '<div style="font-size:12px;font-weight:700;color:' + (on?'var(--teal)':'var(--dim)') + ';margin-bottom:4px">' + esc(disp) + '</div>' +
+      '<div style="font-size:20px;font-weight:800;color:var(--text);line-height:1.1"><span style="color:var(--teal)">' + assigned + '</span> <span style="color:var(--dim);font-size:15px">/ ' + pop + '</span></div>' +
+      '<div style="font-size:10px;color:var(--dim);margin-top:2px">배정 / 회원수</div></div>';
+  }).join('');
+  box.innerHTML = cards;
 }
 
 // Deliverable 5 — 멤버십 회원 관리 표의 담당자 요약셀(비어있지 않은 종목만 칩으로). 표시전용.

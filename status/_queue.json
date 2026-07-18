@@ -3227,5 +3227,34 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01HFwxwddx6Z1nhzHGL1nj4H (CLI ad-hoc · 커밋 4e341fc3)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4e341fc387ae7a0620088ff9352a2742777fef9b"
+  },
+  {
+    "task_id": "CPO-2026-07-18-TIMESTAMP-HHMMSS-SYSTEMIC",
+    "clevel": "cpo",
+    "module": "inquiry-timestamp",
+    "title": "[시포] 문의 타임스탬프 시분초 전면화 — intake근본수정+ERP시각보존+백필+연락처형식(3계층)",
+    "status": "PENDING",
+    "processed_at": null,
+    "priority": "🛳️",
+    "enqueued_at": "2026-07-18",
+    "ship_no": 9057,
+    "note": "GM 검수·결정(2026-07-18): 문의 타임스탬프 시분초 전면화 + 시간순 정렬 + 연락처 형식. 3계층 근본수정. [결정] 시각 채우기=날짜+순차합성시각(실제 시각 없음·정렬용), 원본 물리정렬 안 함(ERP 정렬에 맡김·IMPORTRANGE 담당 보존), 접수부터 시분초 받게 근본수정. ① intake 근본수정: Survey.js:190 _mirrorInquiryToStaffLog_ 타임스탬프 포맷 yyyy. M. d → yyyy-MM-dd HH:mm:ss. 다른 intake 경로(강습 신규탭 1799~·rental/business 1830~·appendRow 1585)도 date-only면 동일 수정. _parseAnyDate_(206~227)이 full 포맷 파싱함 확인. ② ERP 시각보존: 문의회원.html timestamp 필드 매핑(2798·2864 _gzToISO_)이 시각을 버림(2667 _gzToISO_ 날짜만 반환) → 시각 보존 변환기 신설(_gzToISODateTime_ 예: yyyy-MM-dd HH:mm)해서 강습·멤버십 timestamp에 적용. ★기존 _gzToISO_는 날짜필터·월그룹(신규등록현황 일/월/연) 소비자용이라 그대로 두고 신규 함수만 timestamp에 씀(slice(0,10) 프리픽스 호환 확인). _fmtInqDateTime가 시·분 표시·정렬 sub-day 정확해짐. ③ 백필(1회·GAS 관리함수, 행이동 없음): 성인강습(111889422)·유소년강습(268994754)+영문(311319200·931249179)·멤버십26년신규문의(1902010032) 빈/날짜만 타임스탬프를 그 행 날짜(col0/문의일)+순차합성시각으로 채움. 같은날 다건=현재 표시순 00:00:01,02.. 순차. 절대 행 삭제·이동 금지(팀시트 담당 정렬 보존). ④ 연락처 D열 010-xxxx-xxxx 정규화(공백/무구분 → 대시). 값만 수정. ⑤ 펀넬 GAS V2 재배포(clasp=새버전, /exec 갱신·V2 버전 여유 있음). 검수(웰리): gviz로 타임스탬프 채워짐+연락처 형식 확인, ERP에서 문의일시 시·분 표시+오늘 건 최신 위 실증. 라이브검증 후 GM 보고.",
+    "next": null,
+    "depends_on": null,
+    "surface": ".deploy-funnel-v2/Survey.js + 3. 웰페리온 가이드/cpo/member/문의회원.html"
+  },
+  {
+    "task_id": "CPO-2026-07-18-ADHOC-a55f2bbd",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 9067,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 a55f2bbd)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a55f2bbd6b3ef4f0baa5b0220a84806997149914"
   }
 ]
