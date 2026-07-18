@@ -107,22 +107,35 @@ def _get_access_token() -> str | None:
 
 # ── Apps Script API 조회 ─────────────────────────────────────────────────────
 def _fetch_version_count(script_id: str, access_token: str) -> int | None:
-    """최신 versionNumber(=총 버전수, 삭제불가 전제) 조회. 실패 시 None."""
-    url = f'https://script.googleapis.com/v1/projects/{script_id}/versions?pageSize=1'
-    req = urllib.request.Request(url, headers={'Authorization': f'Bearer {access_token}'})
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        print(f"[WARN] {script_id} API 조회 실패: HTTP {e.code} {e.reason}", flush=True)
-        return None
-    except Exception as e:
-        print(f"[WARN] {script_id} API 조회 예외: {e}", flush=True)
-        return None
-    versions = data.get('versions', [])
-    if not versions:
-        return 0
-    return max(v.get('versionNumber', 0) for v in versions)
+    """실제 버전 엔트리 수 조회(전체 페이지네이션 실카운트). 실패 시 None.
+
+    ★ 2026-07-18: 편집기 UI 버전 삭제가 가능해져(버전 일괄 삭제) max(versionNumber)는
+       더 이상 총 버전수와 같지 않다(삭제 후에도 최신 번호는 유지). 200 하드리밋은
+       '남아있는 버전 엔트리 수' 기준이므로 전체 페이지를 세어 실카운트를 반환한다.
+    """
+    total = 0
+    page_token = None
+    got_any = False
+    while True:
+        url = f'https://script.googleapis.com/v1/projects/{script_id}/versions?pageSize=100'
+        if page_token:
+            url += '&pageToken=' + urllib.parse.quote(page_token)
+        req = urllib.request.Request(url, headers={'Authorization': f'Bearer {access_token}'})
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            print(f"[WARN] {script_id} API 조회 실패: HTTP {e.code} {e.reason}", flush=True)
+            return None if not got_any else total
+        except Exception as e:
+            print(f"[WARN] {script_id} API 조회 예외: {e}", flush=True)
+            return None if not got_any else total
+        got_any = True
+        total += len(data.get('versions', []))
+        page_token = data.get('nextPageToken')
+        if not page_token:
+            break
+    return total
 
 
 # ── clasp CLI 폴백 ────────────────────────────────────────────────────────────
