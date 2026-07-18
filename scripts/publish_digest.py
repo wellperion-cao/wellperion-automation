@@ -117,6 +117,15 @@ def group_published(items: list[dict]) -> dict[str, list[dict]]:
 # ---------------------------------------------------------------------------
 _URL_REQUIRED_CHANNEL_RE = re.compile("블로그|카페|당근")
 _COMPLETE_STATUSES = {"발행완료", "발행검증대기"}
+# official(웰페리온 공식) 그룹은 5채널 전부가 표준 — 채널 유형별 엔트리 자체가 있는지 강제.
+# personal(namuk) 계정은 현행대로 IG 단독 허용(강제 미적용).
+_REQUIRED_OFFICIAL_CHANNELS: list[tuple[str, re.Pattern]] = [
+    ("인스타그램", re.compile("인스타")),
+    ("네이버 블로그", re.compile("블로그")),
+    ("네이버 카페", re.compile("카페")),
+    ("당근", re.compile("당근")),
+    ("카카오채널", re.compile("카카오")),
+]
 
 
 def _load_review_queue() -> list[dict]:
@@ -135,13 +144,36 @@ def _group_all_entries(folder: str, all_review_items: list[dict]) -> list[dict]:
     return [it for it in all_review_items if _base_key(it) == folder]
 
 
+def _group_is_official(entries: list[dict]) -> bool:
+    """official(웰페리온 공식) 계정 그룹 판정 — 엔트리 account에 'wellperion' 포함 & 'namuk' 미포함.
+    그룹 내 엔트리 하나라도 namuk 계정이면 personal로 간주(5채널 강제 미적용, 현행 IG 단독 허용)."""
+    saw_wellperion = False
+    for it in entries:
+        account = (it.get("account") or "").lower()
+        if "namuk" in account:
+            return False
+        if "wellperion" in account:
+            saw_wellperion = True
+    return saw_wellperion
+
+
 def _group_is_complete(folder: str, all_review_items: list[dict]) -> tuple[bool, str]:
     """folder(그룹키) 완결·표준 판정 — review_queue.json 전체에서 해당 그룹 엔트리를 모아
-    (A) 전 채널 발행 여부, (B) URL 회수 가능 채널(블로그·카페·당근)의 URL 회수 여부를 검사.
+    (C) official 그룹은 5채널 유형 전부 엔트리 존재 강제, (A) 전 채널 발행 여부,
+    (B) URL 회수 가능 채널(블로그·카페·당근)의 URL 회수 여부를 검사.
     True → 실무진 문의알림방 표준 디제스트 발신 대상. False → 사유와 함께 GM 개인 방 보류 대상."""
     entries = _group_all_entries(folder, all_review_items)
     if not entries:
         return False, "리뷰 큐에서 그룹 엔트리를 찾지 못함"
+
+    if _group_is_official(entries):
+        present_channels = [it.get("channel") or "" for it in entries]
+        missing_channel_types = [
+            label for label, pattern in _REQUIRED_OFFICIAL_CHANNELS
+            if not any(pattern.search(ch) for ch in present_channels)
+        ]
+        if missing_channel_types:
+            return False, ", ".join(missing_channel_types) + " 엔트리 없음(미등록)"
 
     not_published = [
         f"{it.get('channel') or '채널 미지정'}({it.get('status') or '미상태'})"
