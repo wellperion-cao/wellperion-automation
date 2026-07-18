@@ -177,6 +177,7 @@ def _delete_message(token: str, msg_id: int) -> bool:
     req = urllib.request.Request(
         f"https://api.telegram.org/bot{token}/deleteMessage", data=data, method="POST")
     try:
+        pace()
         with urllib.request.urlopen(req, timeout=10) as resp:
             return resp.status == 200
     except Exception:
