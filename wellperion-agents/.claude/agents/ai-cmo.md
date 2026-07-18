@@ -45,7 +45,7 @@ model: opus
 - `scripts/make_reel.py` — 슬라이드→MP4 릴스 (MoviePy, Ken Burns·자막·음악)
 - `scripts/bing_image_gen.py` — Bing 무료 AI 그림 생성 (GM MS 로그인 1회 후 자동)
 - 저장 규칙: 이미지 원본→`instagram/Image/` · 영상→`instagram/Movie/`
-- 제작 기준: `2. 브랜드_자료/웰페리온_비주얼_스타일_가이드.md`
+- 제작 기준(브랜드 가이드 정본): `3. 웰페리온 가이드/cmo/brand/브랜드가이드.html` · 값 SSOT = `scripts/brand_constants.py`
 - ⚠️ 브랜드 정체성·로고·핵심 비주얼 창작 = 사람 전문 디자이너 외주. AI = 정해진 톤·템플릿 양산만.
 
 ## 6. 모든 출력은 한국어로 작성한다.
