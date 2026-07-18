@@ -2089,6 +2089,14 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <input type="date" id="cmRegDate" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
       <span style="font-size:11px;color:var(--dim)">— 등록 완료 체크 시 이 날짜로 기록</span>
     </span></div>
+    <!-- 등록 종목 — 등록(SUC) 시 실제 등록한 종목 기록(문의 시 관심프로그램과 별개, 수정 가능). ✅ 등록 완료 체크 시에만 노출.
+         GM 요청(2026-07-18, 시토 대행) — 저장=member_inquiry_update(regProgram), GAS가 '등록종목' 칸 자동 생성. -->
+    <div class="consult-row" id="cmRegProgramRow" style="margin-top:6px;display:none"><span class="ck">등록 종목</span><span class="cv" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <input type="text" id="cmRegProgram" list="cmRegProgramList" placeholder="등록한 종목/프로그램" autocomplete="off"
+        style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;flex:1;min-width:160px">
+      <datalist id="cmRegProgramList"></datalist>
+      <span style="font-size:11px;color:var(--dim)">— 기본값=문의 프로그램, 수정 가능</span>
+    </span></div>
 
     <div class="consult-field-label">기존 메모</div>
     <div class="consult-memo-prev" id="cmMemoPrev">—</div>
@@ -2183,6 +2191,31 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeChurnModal()">취소</button>
       <button class="consult-btn-save" id="crSaveBtn" onclick="saveChurnModal()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOSS 사유 모달 — 문의 현황 표 '진행상황'을 LOSS로 바꿀 때(또는 이미 LOSS인데 사유 미기록 건) 오픈. 정형 드롭다운+메모.
+     ★기존회원 종료사유(churnOverlay·CHURN_REASON_COL)와 별개 체계 — 이건 '문의' 단계 LOSS 전용(등록 자체가 무산된 건).
+     저장=member_inquiry_update(lossReason·lossReasonNote). GAS _miEnsureCol_이 칸 없으면 자동 생성(GM 수작업 0).
+     GM 요청 사양(2026-07-18, 시토 대행). ══ -->
+<div class="consult-overlay" id="lossReasonOverlay" onclick="if(event.target===this)closeLossReasonModal()">
+  <div class="consult-modal" role="dialog" aria-modal="true">
+    <div class="consult-modal-head">
+      <span class="consult-modal-kind experience">LOSS</span>
+      <span class="consult-modal-title">LOSS 사유</span>
+    </div>
+    <div class="consult-row"><span class="ck">문의</span><span class="cv" id="lrMemberFixed">—</span></div>
+
+    <div class="consult-field-label">LOSS 사유</div>
+    <select id="lrReasonSel" onchange="_lrUpdateNoteReq()" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit"></select>
+
+    <div class="consult-field-label">메모 <span id="lrNoteReq" style="display:none;color:var(--red)">('기타' 선택 시 필수)</span></div>
+    <textarea class="consult-memo" id="lrNoteInput" placeholder="상세 사유를 입력하세요."></textarea>
+
+    <div class="consult-actions">
+      <button class="consult-btn-cancel" onclick="closeLossReasonModal()">취소</button>
+      <button class="consult-btn-save" id="lrSaveBtn" onclick="saveLossReasonModal()">저장</button>
     </div>
   </div>
 </div>
@@ -5940,6 +5973,13 @@ function openConsultModal(ev) {
   var _rdEl = document.getElementById('cmRegDate');
   var _td = new Date();
   _rdEl.value = ev.regDate || (_td.getFullYear() + '-' + String(_td.getMonth()+1).padStart(2,'0') + '-' + String(_td.getDate()).padStart(2,'0'));
+  // 등록 종목 — 기본값=기존 등록종목(있으면) 없으면 문의 프로그램. ✅ 등록 완료 체크 시에만 행 노출. 2026-07-18 시토(GM요청) 대행.
+  var _rpEl = document.getElementById('cmRegProgram');
+  _rpEl.value = ev.regProgram || ev.program || '';
+  var _rpList = document.getElementById('cmRegProgramList');
+  _rpList.innerHTML = PROGRAM_OPTIONS.map(function(p){ return '<option value="' + esc(p) + '">'; }).join('');
+  document.getElementById('cmRegProgramRow').style.display = _isReg ? '' : 'none';
+  document.getElementById('cmRegistered').onchange = function(){ document.getElementById('cmRegProgramRow').style.display = this.checked ? '' : 'none'; };
   var prevEl = document.getElementById('cmMemoPrev');
   prevEl.textContent = (ev.memo && String(ev.memo).trim()) ? ev.memo : '(기존 메모 없음)';
   document.getElementById('cmMemoInput').value = '';   // 모달 열 때 1회 초기화(IME 안전 — 입력 중 재생성 없음)
@@ -6001,7 +6041,11 @@ function saveConsultModal() {
   var visitedChanged = (visited !== origVisited);
   var regChanged = (registered !== origReg);
   var regDate = document.getElementById('cmRegDate').value;
-  if (!visitedChanged && !regChanged && !input && !c1Changed && !c2Changed && !c3Changed && !timeChanged && !dateChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
+  // 등록 종목 — 등록 완료(체크 상태)일 때만 의미 있음. 원본과 비교(첫 등록=기본자동채움값도 저장·기존 등록 건은 실제 수정만 저장). 2026-07-18 시토(GM요청) 대행.
+  var regProgram = document.getElementById('cmRegProgram').value.trim();
+  var origRegProgram = String(_consultEv.regProgram || '').trim();
+  var regProgramChanged = registered && (regProgram !== origRegProgram);
+  if (!visitedChanged && !regChanged && !input && !c1Changed && !c2Changed && !c3Changed && !timeChanged && !dateChanged && !regProgramChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
 
   var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex, keyPhone: _consultEv.phone || '' };
   if (c1Changed) payload.contact1 = c1;
@@ -6020,6 +6064,7 @@ function saveConsultModal() {
   // 등록 — 등록 완료면 진행상황 SUC + (새 등록일 때만)등록일자. 방문만(미등록)이면 퍼널 상태 '방문'.
   if (registered && regChanged) { payload.status = 'SUC'; if (!origReg) payload.regDate = regDate; }  // 신규 등록 시에만 전송(불필요 재전송 방지·리뷰 #5)
   else if (regChanged && origReg) { payload.status = (visited ? '방문' : '예약'); }   // 등록 해제 → 강등(서버가 등록현황에서도 제거)
+  if (regProgramChanged) payload.regProgram = regProgram;   // 등록 종목 — 등록 완료 상태에서만 전송(문의 시 관심프로그램과 별개). 2026-07-18 시토(GM요청) 대행.
   // 방문 완료는 독립 ✓플래그(payload.visited)로만 기록 — 진행상황(가망·컨택중 등 퍼널 단계)은 건드리지 않음. 2026-06-29 시포(리뷰 #2)
   // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
   if (input) {
@@ -6047,6 +6092,7 @@ function saveConsultModal() {
         if (payload.contact3 !== undefined) evRef.contact3 = payload.contact3;
         if (payload.memo !== undefined) evRef.memo = payload.memo;
         if (payload.regDate !== undefined) evRef.regDate = payload.regDate;   // 등록일자 로컬 반영 — 재오픈 시 오늘로 리셋 방지(리뷰 #4)
+        if (payload.regProgram !== undefined) evRef.regProgram = payload.regProgram;   // 등록 종목 로컬 반영. 2026-07-18 시토(GM요청) 대행.
         if (timeChanged) { evRef.time = selTime; evRef.tmin = _tminOf(selTime); }
         // 날짜 변경 → 로컬 재버킷(일정이 새 날짜로 이동). GAS 재조회 없이 즉시 반영. 2026-07-03 시포·GM
         if (dateChanged) {
@@ -6065,6 +6111,7 @@ function saveConsultModal() {
           if (payload.contact2 !== undefined) _dr.contact2 = payload.contact2;
           if (payload.contact3 !== undefined) _dr.contact3 = payload.contact3;
           if (payload.memo !== undefined) _dr.memo = payload.memo;
+          if (payload.regProgram !== undefined) _dr.regProgram = payload.regProgram;   // 2026-07-18 시토(GM요청) 대행.
         }
       }
       closeConsultModal();
@@ -6191,6 +6238,59 @@ function saveChurnModal() {
       showToast('종료사유 저장', 'ok');
       _churnPatchLocal(rowIndex, reason, note);
       closeChurnModal();
+    })
+    .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
+    .then(function(){ saveBtn.disabled = false; });
+}
+
+/* ─────────────────────────────────────────────
+   문의 LOSS 사유 기록 — 문의 현황 표 '진행상황'을 LOSS로 바꿀 때(＋기존 LOSS 건 사유 미기록)
+   정형 드롭다운+메모. ★기존회원 종료사유(churnOverlay·CHURN_REASON_COL·member_active_update)와
+   완전히 별개 체계 — 이건 '문의(inquiry)' 단계 LOSS 전용(등록 자체가 무산된 건), 저장=member_inquiry_update.
+   GAS _miEnsureCol_이 'LOSS사유'·'LOSS사유메모' 칸 없으면 자동 생성(GM 수작업 0).
+   GM 요청 사양(2026-07-18, 시토 대행). ───────────────────────────────────────────── */
+var INQ_LOSS_REASON_OPTIONS = ['가격', '거리/위치', '시간대 안 맞음', '타업체 선택', '단순 문의(등록의사 없음)', '연락 두절', '기타'];
+var _lossModal = null;   // { rowIndex, keyPhone, name }
+
+function _lrUpdateNoteReq() {
+  var sel = document.getElementById('lrReasonSel');
+  var req = document.getElementById('lrNoteReq');
+  if (!sel || !req) return;
+  req.style.display = (sel.value === '기타') ? '' : 'none';
+}
+function openInquiryLossModal(rowIndex) {
+  var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
+  if (!r) { showToast('문의 정보를 찾을 수 없습니다', 'err'); return; }
+  _lossModal = { rowIndex: r.rowIndex, keyPhone: r.phone || '', name: r.name || '' };
+  document.getElementById('lrMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '');
+  var sel = document.getElementById('lrReasonSel');
+  sel.innerHTML = '';
+  var blank = document.createElement('option'); blank.value = ''; blank.textContent = '— 선택 —'; sel.appendChild(blank);
+  INQ_LOSS_REASON_OPTIONS.forEach(function(opt){ var o = document.createElement('option'); o.value = opt; o.textContent = opt; sel.appendChild(o); });
+  sel.value = String(r.lossReason || '').trim();
+  document.getElementById('lrNoteInput').value = String(r.lossReasonNote || '').trim();
+  _lrUpdateNoteReq();
+  document.getElementById('lossReasonOverlay').classList.add('open');
+}
+function closeLossReasonModal() {
+  document.getElementById('lossReasonOverlay').classList.remove('open');
+  _lossModal = null;
+}
+function saveLossReasonModal() {
+  if (!_lossModal) return;
+  var reason = document.getElementById('lrReasonSel').value.trim();
+  var note = document.getElementById('lrNoteInput').value.trim();
+  if (reason === '기타' && !note) { showToast('기타 선택 시 메모를 입력해 주세요', 'err'); return; }
+  var rowIndex = _lossModal.rowIndex, keyPhone = _lossModal.keyPhone;
+  var saveBtn = document.getElementById('lrSaveBtn'); saveBtn.disabled = true;
+  apiPost({ action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, lossReason: reason, lossReasonNote: note })
+    .then(function(data){
+      if (data && data.ok === false) throw new Error(data.error || '저장 실패');
+      showToast('LOSS 사유 저장', 'ok');
+      var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
+      if (r) { r.lossReason = reason; r.lossReasonNote = note; }
+      if (_tabLoaded.db) renderDbTable();
+      closeLossReasonModal();
     })
     .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
     .then(function(){ saveBtn.disabled = false; });

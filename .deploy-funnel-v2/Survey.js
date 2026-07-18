@@ -1420,6 +1420,9 @@ function _miReadRows_(sh) {
   var iExp3  = _miColIdx_(hdr, ['체험3 확정시간','체험3']);
   var iV2Dt  = _miColIdx_(hdr, ['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2']);  // 2차 방문 날짜(달력 보강용·확정시간 칸과 별개)
   var iVisited = _miColIdx_(hdr, ['방문완료일','방문완료','방문일자']);  // 방문 완료(진행상황과 독립 — 등록돼도 방문 기록 유지). 2026-06-29 시포
+  var iRegProgram = _miColIdx_(hdr, ['등록종목']);      // 등록(SUC) 시 실제 등록한 종목 — 문의 시 관심프로그램(iProg)과 별개, 수정 가능. 2026-07-18 시토(GM요청) 대행.
+  var iLossReason = _miColIdx_(hdr, ['LOSS사유']);      // 문의 퍼널 LOSS 사유 — 기존회원 종료사유(CHURN_REASON_COL)와 별개 체계. 2026-07-18 시토(GM요청) 대행.
+  var iLossReasonNote = _miColIdx_(hdr, ['LOSS사유메모']);
   var iOwner = _miColIdx_(hdr, ['담당','담당자']);
   var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
   var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게','How Did You Hear About Us?']);
@@ -1456,6 +1459,9 @@ function _miReadRows_(sh) {
       tourDate: '', tourTime: '', exp3: '', exp3Time: '', visit2Date: '', visit2Time: '',
       visited:    (iVisited >= 0 && String(row[iVisited] == null ? '' : row[iVisited]).trim() !== '') ? true : false,  // 방문 완료 여부(독립·공백/0 오인 방지)
       visitDate:  (iVisited >= 0) ? _miToISO_(row[iVisited]) : '',  // 방문 완료일
+      regProgram: iRegProgram >= 0 ? String(row[iRegProgram] || '') : '',      // 등록 종목(SUC 시 실제 등록한 종목). 2026-07-18 시토(GM요청) 대행.
+      lossReason: iLossReason >= 0 ? String(row[iLossReason] || '') : '',      // LOSS 사유(문의 퍼널 전용).
+      lossReasonNote: iLossReasonNote >= 0 ? String(row[iLossReasonNote] || '') : '',
       timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
       memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
       owner:    iOwner >= 0 ? String(row[iOwner] || '') : '',
@@ -3093,6 +3099,22 @@ function _processAction(body) {
       var _vci = _miEnsureCol_(muSh, muHdr, '방문완료일');
       muSh.getRange(muRow, _vci + 1).setValue(body.visited ? (body.visitDate || _todayKR_()) : '');
     }
+    // 등록 종목 — 등록(SUC) 시 실제 등록한 종목(문의 시 관심프로그램과 별개, 수정 가능). 칸 없으면 자동 생성(GM 수작업 0).
+    //   GM 요청(2026-07-18, 시토 대행): "등록 시 어떤 종목을 등록했는지" 기록. 2026-07-18 시토·GM.
+    if (body.regProgram !== undefined) {
+      var _rpci = _miEnsureCol_(muSh, muHdr, '등록종목');
+      muSh.getRange(muRow, _rpci + 1).setValue(body.regProgram);
+    }
+    // LOSS 사유 — 문의 퍼널 LOSS 전용(기존회원 종료사유 모달·CHURN_REASON_COL과 별개 체계·혼동 금지). 칸 없으면 자동 생성.
+    //   GM 요청(2026-07-18, 시토 대행). 2026-07-18 시토·GM.
+    if (body.lossReason !== undefined) {
+      var _lrci = _miEnsureCol_(muSh, muHdr, 'LOSS사유');
+      muSh.getRange(muRow, _lrci + 1).setValue(body.lossReason);
+    }
+    if (body.lossReasonNote !== undefined) {
+      var _lrnci = _miEnsureCol_(muSh, muHdr, 'LOSS사유메모');
+      muSh.getRange(muRow, _lrnci + 1).setValue(body.lossReasonNote);
+    }
     // carry-over: 신규→SUC/단기SUC '실제 전환' 시에만 등록현황 탭 이관 + 등록 전환 전용 알림. 2026-06-26 시토·GM.
     //   A안(GM 결재): 유효회원(실계약 정본)에는 자동생성 안 함 — 계약 확정 시 사람 입력. 여기선 깔때기 이관+알림까지만.
     //   _regUpsert_는 멱등(전화키 매칭 갱신·없으면 today 도장) → SUC 저장 시 항상 실행해 등록현황 보장(중복 행 안 생김). 알림만 실제 전환(이전≠SUC) 1회. 프런트는 신규 등록 시에만 status=SUC 전송(불필요 재전송 방지).
@@ -3111,13 +3133,15 @@ function _processAction(body) {
     var _coProg  = body.program || (_coProgCi >= 0 ? String(muSh.getRange(muRow, _coProgCi + 1).getValue() || '') : '');
     var _coOwner = body.owner   || (_coOwnCi  >= 0 ? String(muSh.getRange(muRow, _coOwnCi  + 1).getValue() || '') : '');
     if (_isSucNew) {
+      // 등록종목(body.regProgram) 우선 — 실제 등록한 종목이 문의 시 관심프로그램(_coProg)과 다를 수 있음. 미전송 시 _coProg 폴백(기존 동작 보존).
+      var _coRegProg = (body.regProgram !== undefined && String(body.regProgram).trim()) ? String(body.regProgram).trim() : _coProg;
       // _regUpsert_는 멱등(전화키 존재 시 갱신·없으면 today 도장 추가) → SUC 저장 시 항상 등록현황 보장(과거 누락 건도 재저장으로 복구).
-      try { _regUpsert_(_coName, _coPhone, _coProg, body.regDate); } catch (e) {}
+      try { _regUpsert_(_coName, _coPhone, _coRegProg, body.regDate); } catch (e) {}
       // 등록 전환 전용 알림은 '실제 전환(이전≠SUC)' 1회만 — 매 저장 중복 알림 방지. '문의 알림' 방.
       if (!_wasSuc) {
         try {
           var _regChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-          _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + _muNewStatus + ')으로 전환\n· 이름: ' + (_coName || '-') + '\n· 프로그램: ' + _teamChip(_coProg) + (_coProg || '-') + '\n· 담당: ' + (_coOwner || '-'), _regChatId);
+          _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + _muNewStatus + ')으로 전환\n· 이름: ' + (_coName || '-') + '\n· 등록종목: ' + _teamChip(_coRegProg) + (_coRegProg || '-') + '\n· 담당: ' + (_coOwner || '-'), _regChatId);
         } catch (e) {}
       }
     }
