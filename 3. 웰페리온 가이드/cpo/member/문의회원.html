@@ -4318,10 +4318,8 @@ function _lessonSportChipStyle(sportStr) {
 }
 // 강습 종목 짧은/변형 코드 → 표시용 정식 명칭(2b). 표시 전용 — 색상·필터키·백엔드 전송값은 원본 그대로. 2026-07-18 GM 지시.
 var LESSON_SPORT_DISPLAY_MAP = {
-  '수영':'성인 수영 (개인레슨 / 단체레슨)',
-  'P.T':'성인 P.T','PT':'성인 P.T',
-  '골프':'성인 골프',
-  '필라':'성인 필라테스','필라테스':'성인 필라테스',
+  '수영':'수영 (개인레슨 / 단체레슨)',
+  '필라':'필라테스','필라테스':'필라테스',
   'WSC수영':'WSC 수영','WSC 수영':'WSC 수영'
 };
 function _lessonSportDisplay(v){ var k = String(v || '').trim(); return LESSON_SPORT_DISPLAY_MAP[k] || k; }
