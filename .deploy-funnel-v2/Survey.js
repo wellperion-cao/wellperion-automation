@@ -1899,11 +1899,7 @@ function _lessonScopeFilter_(rows, body) {
   return rows.filter(function(row) {
     var y = String(row.timestamp || '').slice(0, 4);
     if (!/^\d{4}$/.test(y)) return true;  // ★타임스탬프 파싱 실패(빈/비표준)는 버리지 않고 포함 — 조용한 누락 방지
-    if (y === yr) return true;
-    // #3 수리(2026-07-18 시포): 지난 연도라도 미해결(비종결)은 기본화면 유지 — 연말 롤오버 미처리 소실 방지(멤버십과 정합).
-    var st = String(row.status || '').trim();
-    var terminal = /완료|처리완료|해결|종료|등록|LOSS|이탈|실패/i.test(st);
-    return !terminal;
+    return y === yr;   // 연도필터 엄격 — 선택 연도만(2026 체크=2026만 표시). 2026-07-18 GM(#3 완화 롤백: '2026 체크해도 전체 뜸' 수리). 미해결 과거건은 '전체보기(scope=all)'로.
   });
 }
 
