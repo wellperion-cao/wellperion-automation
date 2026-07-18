@@ -2614,57 +2614,40 @@ function _processAction(body) {
         _imSet(['비고', '메모', '담당자메모'], WEB_INTAKE_TAG + (_iFastFlag ? ' ⚠️빠른제출' : ''));   // [웹접수] 유지(집계 중복방지)·utm 노이즈 제거
         _imSh.appendRow(_imRow);
         try { _cacheInvalidateJson_(_iCache, 'micache'); } catch (e) {}
-      } else if (_iCat === 'adult' || _iCat === 'youth') {
-        // 강습(성인/유소년) → '강습 신규문의' 스태프탭 append(없으면 생성). lesson_inquiry_list 병합 소스 포함 → 관리페이지 자동정합.
-        var _isYouth = (_iCat === 'youth');
+      } else if (_iCat === 'adult' || _iCat === 'youth' || _iCat === 'summer') {
+        // 강습(성인/유소년/여름특강) → 기존 구글폼 응답탭 저장으로 전환(자체폼·구글폼 통일 1단계, 2026-07-18 GM).
+        //   성인=1.성인강습(gid111889422) / 유소년·여름특강(성인분기 없음·무조건 유소년탭)=2.WSC강습(gid268994754).
+        //   두 탭 헤더 이름이 달라 유연매칭(_findCol_ 부분일치)으로 흡수. 읽기 병합 로직(_lessonIntakeReadRows_ 등)은 이번 증분 범위 밖 — 그대로 유지.
+        var _isSummer = (_iCat === 'summer');
+        var _isYouth = (_iCat === 'youth') || _isSummer;   // 여름특강=성인 분기 제거·유소년탭 고정(GM 정정 2026-07-18)
         var _iType = _isYouth ? '유소년강습' : '성인강습';
-        var _ilSh = _lessonIntakeSheet_(true);
-        if (!_ilSh) return _json({ ok: false, error: '강습 신규문의 시트 생성 실패' });   // 재시도 가능
-        var _ilHdr = _ilSh.getRange(1, 1, 1, _ilSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
-        var _ilRow = new Array(_ilHdr.length).fill('');
-        function _ilSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_ilHdr, [name]); if (ci >= 0) _ilRow[ci] = val; }
-        _ilSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'));
-        _ilSet('유형', _iType);
-        _ilSet('성함', _iName);
-        _ilSet('연락처', _fmtPhone_(_iPhone));
-        _ilSet('자녀 나이', _iAge);
-        _ilSet('강습 종목', _iProgram);
-        _ilSet('희망 레슨 시간', _iWish);
-        _ilSet('문의 경로', _iChannel || _canonicalChannel_(_iUtmSource));
-        _ilSet('문의 사항', _iMessage);
-        _ilSet('개인정보 수집·이용 동의', '동의');
-        _ilSet('접수ID', _iId);
-        _ilSet('진행 상황', '신규');
-        if (_iFastFlag) _ilSet('비고', '⚠️ 빠른제출 자동검토');   // 비고 간소화(2026-07-18 GM): 웹접수 보일러플레이트 제거(채널=문의경로 칸). 빠른제출만 플래그.
-        _ilSh.insertRowAfter(1); _ilSh.getRange(2, 1, 1, _ilRow.length).setValues([_ilRow]);   // 최근일자 상단(2026-07-18 GM): 새 접수를 2행에 삽입→위로 쌓임.
-        _lessonIntakeGidCache_ = _ilSh.getSheetId();
+        var _lsGid = _isYouth ? 268994754 : 111889422;
+        var _lsSh = _lessonSheet_(_lsGid);
+        if (!_lsSh) return _json({ ok: false, error: '강습 응답 시트 없음' });   // 재시도 가능
+        var _lsHdr = _lsSh.getRange(1, 1, 1, _lsSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+        var _lsRow = new Array(_lsHdr.length).fill('');
+        function _lsSet(keys, val) { if (!val && val !== '') return; var ci = _findCol_(_lsHdr, keys); if (ci >= 0 && !_lsRow[ci]) _lsRow[ci] = val; }
+        var _lsToday = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+        _lsSet(['타임스탬프'], _lsToday);
+        var _lsDateCi = _findCol_(_lsHdr, ['문의일', '문의 일', '날짜']);
+        if (_lsDateCi >= 0) { if (!_lsRow[_lsDateCi]) _lsRow[_lsDateCi] = _lsToday; }
+        else if (!String(_lsHdr[0] || '').trim() && !_lsRow[0]) { _lsRow[0] = _lsToday; }   // 성인탭 A열 빈헤더 대응
+        _lsSet(['성함', '이름'], _iName);
+        _lsSet(['연락처', '핸드폰', '전화', '휴대폰'], _fmtPhone_(_iPhone));
+        _lsSet(['나이', '연령', '자녀'], _iAge);
+        _lsSet(['강습 종목', '종목', '과목'], _isSummer ? ('여름방학특강 - ' + _iProgram) : _iProgram);
+        _lsSet(['문의 경로', '경로', '채널'], _iChannel || _canonicalChannel_(_iUtmSource));
+        _lsSet(['문의 사항', '문의사항', '내용'], _iMessage);
+        _lsSet(['희망', '레슨 시간', '시간'], _isSummer ? _iWishMonth : _iWish);
+        _lsSet(['접수 담당자', '담당자 혹은', '담당'], '웹 자동접수');
+        _lsSet(['개인정보', '동의', '수집·이용'], '동의');
+        _lsSet(['진행 상황', '진행상황', '상태'], '신규');
+        _lsSet(['비고', '메모'], _iId);   // 접수ID를 비고에 흘림(기존 탭엔 별도 ID칸 없음)
+        _lsSh.insertRowAfter(1); _lsSh.getRange(2, 1, 1, _lsRow.length).setValues([_lsRow]);   // 최근일자 상단(2026-07-18 GM 기존 지시 유지)
         try {
           _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|year');
           _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|all');
         } catch (e) {}
-      } else if (_iCat === 'summer') {
-        // 여름특강 → '강습 신규문의' 탭 재사용(집중강습 계열 권고안 채택, 2026-07-16 시토). 기존 성인/유소년 유형값과 구분되는
-        // '여름특강(성인)'/'여름특강(유소년)'을 '유형'에 적재 → lesson_inquiry_list 필터(성인강습/유소년강습)에는 안 잡히고
-        // 시트에는 유실 0으로 쌓인다(원장 raw 조회로 확인 가능). 대시보드 합류는 범위 밖(설계 §8 리스크1).
-        var _smType = '여름특강(' + (_iTarget === '유소년' ? '유소년' : '성인') + ')';
-        var _smSh = _lessonIntakeSheet_(true);
-        if (!_smSh) return _json({ ok: false, error: '강습 신규문의 시트 생성 실패' });
-        var _smHdr = _smSh.getRange(1, 1, 1, _smSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
-        var _smRow = new Array(_smHdr.length).fill('');
-        function _smSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_smHdr, [name]); if (ci >= 0) _smRow[ci] = val; }
-        _smSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'));
-        _smSet('유형', _smType);
-        _smSet('성함', _iName);
-        _smSet('연락처', _fmtPhone_(_iPhone));
-        _smSet('강습 종목', _iProgram);
-        _smSet('희망 레슨 시간', _iWishMonth);
-        _smSet('문의 사항', _iMessage);
-        _smSet('개인정보 수집·이용 동의', '동의');
-        _smSet('접수ID', _iId);
-        _smSet('진행 상황', '신규');
-        if (_iFastFlag) _smSet('비고', '⚠️ 빠른제출 자동검토');
-        _smSh.insertRowAfter(1); _smSh.getRange(2, 1, 1, _smRow.length).setValues([_smRow]);
-        _lessonIntakeGidCache_ = _smSh.getSheetId();
       } else if (_iCat === 'rental') {
         // 공간렌트 → '공간렌트 문의' 신규 탭(_MI_SS_ID 하위, 2026-07-16 시토)
         var _rtSh = _rentalIntakeSheet_(true);
@@ -2728,6 +2711,26 @@ function _processAction(body) {
         + (_iProgram ? ('\n관심: ' + _iProgram) : '') + _iExtra + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
     } catch (e) {}
     return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
+  }
+
+  // ─── (임시) 강습 폼탭 테스트행 삭제 — 증분1 검증 정리용. 웰리 수동. 2026-07-18 ───
+  if (action === 'cpo_lesson_test_delete') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _tRep = {};
+    [ { n: '1. 성인강습', gid: 111889422 }, { n: '2. WSC 강습', gid: 268994754 } ].forEach(function(cfg){
+      var sh = _sheetByGid_(LESSON_SS_ID, cfg.gid); if (!sh) { _tRep[cfg.n] = '없음'; return; }
+      var lr = sh.getLastRow(), lc = sh.getLastColumn(); if (lr < 2) { _tRep[cfg.n] = 0; return; }
+      var hdr = sh.getRange(1, 1, 1, lc).getValues()[0].map(function(v){ return String(v).trim(); });
+      var phI = _findCol_(hdr, ['연락처', '핸드폰', '전화', '휴대폰']); var nmI = _findCol_(hdr, ['성함', '이름']);
+      var data = sh.getRange(2, 1, lr - 1, lc).getValues(); var del = 0;
+      for (var r = data.length - 1; r >= 0; r--) {
+        var ph = phI >= 0 ? String(data[r][phI] || '').replace(/[^0-9]/g, '') : '';
+        var nm = nmI >= 0 ? String(data[r][nmI] || '') : '';
+        if (/^010000070/.test(ph) || /자동검증/.test(nm)) { sh.deleteRow(r + 2); del++; }
+      }
+      _tRep[cfg.n] = del;
+    });
+    return _json({ ok: true, deleted: _tRep });
   }
 
   // ─── (임시) 강습 등록현황 이관: 멤버십SS→강습SS 복사(삭제 별도). 웰리 수동. 2026-07-18 ───
