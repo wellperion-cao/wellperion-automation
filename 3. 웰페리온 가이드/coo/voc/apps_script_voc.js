@@ -1054,9 +1054,11 @@ var LF_HEADERS = [
   { key: 'staff',       label: '등록/처리직원'  },
   // ★ 신규(2026-07-15 시토): 수령 시 '주는 담당자' 기록. 물리 컬럼 정합 위해 반드시 맨 끝에 추가
   //   (_lfHandover 는 _lfIdx_ 기반 positional write → 중간 삽입 시 기존 행 오정렬).
-  { key: 'handoverStaff', label: '수령담당자'   }
+  { key: 'handoverStaff', label: '수령담당자'   },
+  // ★ 신규(2026-07-18 시우): 30일 자동 폐기 처리일. 동일 사유로 반드시 맨 끝에 추가.
+  { key: 'disposedAt',    label: '폐기일'       }
 ];
-var LF_STATUS = { POSTED: '게시중', HANDED: '수령완료', VOID: '철회' };
+var LF_STATUS = { POSTED: '게시중', HANDED: '수령완료', DISPOSED: '폐기물' };
 var LF_PHOTO_FOLDER_NAME = 'LF_Photos';       // 공개 VIEW (갤러리용)
 var LF_SIGN_FOLDER_NAME  = 'LF_Signatures';   // 비공개 (수령 서명 = 분쟁 증거)
 
@@ -1080,7 +1082,7 @@ function _lfGetSheet_() {
   var sh = ss.getSheetByName(LF_SHEET);
   if (sh) {
     if (sh.getLastRow() < 1) { sh.getRange(1, 1, 1, headers.length).setValues([headers]); return sh; }
-    // 자가치유: 신규 헤더(수령담당자 등) 누락 시 빈 헤더칸만 보강 (기존 라벨 무클로버·맨끝 append).
+    // 자가치유: 신규 헤더(수령담당자·폐기일 등) 누락 시 빈 헤더칸만 보강 (기존 라벨 무클로버·맨끝 append).
     var lastCol = Math.max(sh.getLastColumn(), 1);
     var width = Math.max(lastCol, headers.length);
     var cur = sh.getRange(1, 1, 1, width).getValues()[0];
@@ -1136,6 +1138,34 @@ function _lfIdx_(key) {
   return -1;
 }
 
+// ─── _lfAutoDispose_ — read-time sweep: 습득일(없으면 등록일)+30일 경과 & 게시중 → 폐기물 자동 전환 ───
+// GM 확정(2026-07-18): 크론 없이 lf_gallery/lf_list/lf_disposal 진입 시마다 호출(자가치유·멱등).
+// 날짜 파싱 실패 행은 건드리지 않음. 변경된 행이 있을 때만 setValues 저장.
+function _lfAutoDispose_(sh) {
+  var rows = _regReadAll(sh, LF_HEADERS);
+  if (!rows.length) return;
+  var todayStr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+  var statusIdx = _lfIdx_('status');
+  var disposedIdx = _lfIdx_('disposedAt');
+  var data = sh.getRange(2, 1, rows.length, LF_HEADERS.length).getValues();
+  var changed = false;
+  rows.forEach(function (r, i) {
+    if (String(r.status || '') !== LF_STATUS.POSTED) return;
+    var baseStr = String(r.foundWhen || r.createdAt || '').trim();
+    if (!baseStr) return;
+    var baseDate = new Date(baseStr.replace(' ', 'T').slice(0, 10) + 'T00:00:00');
+    if (isNaN(baseDate.getTime())) return; // 파싱 실패 행은 건드리지 않음
+    var deadline = new Date(baseDate.getTime());
+    deadline.setDate(deadline.getDate() + 30);
+    var deadlineStr = Utilities.formatDate(deadline, 'Asia/Seoul', 'yyyy-MM-dd');
+    if (deadlineStr > todayStr) return; // 아직 30일 미경과
+    data[i][statusIdx] = LF_STATUS.DISPOSED;
+    data[i][disposedIdx] = todayStr;
+    changed = true;
+  });
+  if (changed) sh.getRange(2, 1, rows.length, LF_HEADERS.length).setValues(data);
+}
+
 // ─── lf_submit — 직원 습득물 접수 (게이트 뒤 · 제출토큰) ───
 function _lfSubmit(body) {
   var foundWhen = String(body.foundWhen || '').trim();
@@ -1178,6 +1208,7 @@ function _lfSubmit(body) {
 // ─── lf_gallery — 무인증 공개 갤러리 (게시중만 · 민감필드 미반환) ───
 function _lfGallery() {
   var sh = _lfGetSheet_();
+  _lfAutoDispose_(sh); // read-time sweep: 습득일+30일 경과분 폐기물 자동 전환 후 조회
   var rows = _regReadAll(sh, LF_HEADERS);
   var out = [];
   rows.forEach(function (r) {
@@ -1199,6 +1230,7 @@ function _lfGallery() {
 // ─── lf_list — 직원용 전체 목록 (GATED · 전 필드) ───
 function _lfList(params) {
   var sh = _lfGetSheet_();
+  _lfAutoDispose_(sh); // read-time sweep: 습득일+30일 경과분 폐기물 자동 전환 후 조회
   var rows = _regReadAll(sh, LF_HEADERS);
   var status = String((params && params.status) || '').trim();
   if (status) rows = rows.filter(function (r) { return String(r.status || '') === status; });
@@ -1224,7 +1256,7 @@ function _lfHandover(body) {
   var existing = sh.getRange(rowNum, 1, 1, LF_HEADERS.length).getValues()[0];
   var curStatus = String(existing[_lfIdx_('status')] || '');
   if (curStatus !== LF_STATUS.POSTED) {
-    // 멱등·중복 수령 방지 — 이미 수령완료/철회면 거부
+    // 멱등·중복 수령 방지 — 이미 수령완료/폐기물이면 거부
     return _vJson({ ok: false, error: '이미 처리된 습득물입니다 (현재 상태: ' + curStatus + ').', code: 'ALREADY_HANDLED' });
   }
 
@@ -1254,23 +1286,6 @@ function _lfHandover(body) {
     '🕒 ' + now
   );
   return _vJson({ ok: true, id: id, status: LF_STATUS.HANDED, signPurgeAt: purgeStr });
-}
-
-// ─── lf_void — 오등록 철회 (게시중→철회) · 수령완료건은 철회 불가 ───
-function _lfVoid(body) {
-  var id = String(body.id || body.foundId || '').trim();
-  if (!id) return _vJson({ ok: false, error: '습득ID 필수' });
-  var sh = _lfGetSheet_();
-  var rowNum = _vFindRow(sh, id);
-  if (rowNum < 0) return _vJson({ ok: false, error: '해당 습득ID를 찾을 수 없습니다: ' + id });
-  var existing = sh.getRange(rowNum, 1, 1, LF_HEADERS.length).getValues()[0];
-  var curStatus = String(existing[_lfIdx_('status')] || '');
-  if (curStatus === LF_STATUS.HANDED) {
-    return _vJson({ ok: false, error: '이미 수령완료된 습득물은 철회할 수 없습니다.', code: 'ALREADY_HANDED' });
-  }
-  existing[_lfIdx_('status')] = LF_STATUS.VOID;
-  sh.getRange(rowNum, 1, 1, LF_HEADERS.length).setValues([existing]);
-  return _vJson({ ok: true, id: id, status: LF_STATUS.VOID });
 }
 
 // ─── lf_delete — 습득ID로 행 정밀 삭제 (GATED·내부, 배포검증 더미 청소용) ───
@@ -1305,6 +1320,51 @@ function _lfPurgeSignatures() {
   return _vJson({ ok: true, purged: purged });
 }
 
+// ─── lf_disposal — 폐기물 공지 A3 (공개 read · 게이트 불요 · 민감필드 미반환) ───
+// 시트 확보→_lfAutoDispose_ sweep→읽기. upcoming=게시중 중 잔여일≤7, disposed=폐기물(폐기일 desc).
+function _lfDisposal() {
+  var sh = _lfGetSheet_();
+  _lfAutoDispose_(sh);
+  var rows = _regReadAll(sh, LF_HEADERS);
+  var todayStr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+  var today = new Date(todayStr + 'T00:00:00');
+  var upcoming = [];
+  var disposed = [];
+  rows.forEach(function (r) {
+    var status = String(r.status || '');
+    if (status === LF_STATUS.POSTED) {
+      var baseStr = String(r.foundWhen || r.createdAt || '').trim();
+      if (!baseStr) return;
+      var baseDate = new Date(baseStr.replace(' ', 'T').slice(0, 10) + 'T00:00:00');
+      if (isNaN(baseDate.getTime())) return; // 파싱 실패 행은 제외
+      var deadline = new Date(baseDate.getTime());
+      deadline.setDate(deadline.getDate() + 30);
+      var remainDays = Math.round((deadline.getTime() - today.getTime()) / 86400000);
+      if (remainDays > 7) return;
+      upcoming.push({
+        foundId:    r.foundId   || '',
+        itemDesc:   r.itemDesc  || '',
+        foundLoc:   r.foundLoc  || '',
+        foundWhen:  r.foundWhen || '',
+        photoUrl:   r.photoUrl  || '',
+        remainDays: remainDays
+      });
+    } else if (status === LF_STATUS.DISPOSED) {
+      disposed.push({
+        foundId:    r.foundId    || '',
+        itemDesc:   r.itemDesc   || '',
+        foundLoc:   r.foundLoc   || '',
+        foundWhen:  r.foundWhen  || '',
+        photoUrl:   r.photoUrl   || '',
+        disposedAt: r.disposedAt || ''
+      });
+    }
+  });
+  upcoming.sort(function (a, b) { return a.remainDays - b.remainDays; });
+  disposed.sort(function (a, b) { return String(b.disposedAt || '') > String(a.disposedAt || '') ? 1 : -1; });
+  return _vJson({ ok: true, upcoming: upcoming, disposed: disposed });
+}
+
 // ═══════════════════════════════════════════
 //  접근 게이트 (PII 보호 — TOKEN_ENFORCE 스위치)
 // ═══════════════════════════════════════════
@@ -1322,9 +1382,10 @@ var _VOC_PUBLIC_ACTIONS = {
   reg_update:  true,  // 상태·담당·메모 갱신 — PII 미포함, 토큰 면제
   lf_submit:   true,  // 습득물 접수 — 제출토큰(_vSubmitGateOk_)으로 별도 보호, 접근키 면제
   lf_gallery:  true,  // 습득물 공개 갤러리 — 민감필드 미반환(게시중만), 토큰 면제
+  lf_disposal: true,  // 폐기물 공지 A3(게시예정+폐기완료) — 민감필드 미반환, 토큰 면제
   diag:        true   // read-only 진단 — 비밀값 절대 미노출, 불리언만 반환
   // ⚠️ reg_list 는 전체 PII(이름·연락처 원문) 포함 — 절대 public 금지, GATED 유지.
-  // ⚠️ lf_list/lf_handover/lf_void/lf_delete/lf_purge_signatures 는 public 아님(GATED) — 쓰기는 제출토큰 게이트.
+  // ⚠️ lf_list/lf_handover/lf_delete/lf_purge_signatures 는 public 아님(GATED) — 쓰기는 제출토큰 게이트.
   // voc_list / voc_update 도 게이트 적용.
 };
 function _vAccessProp_(k) {
@@ -1362,9 +1423,9 @@ function _vProcess(action, body, params) {
   }
 
   // ─── 접수 위조 방지(시토 2026-06-29 GM): 제출·쓰기 액션은 숨김토큰 + 속도제한 ───
-  //   lf_submit/lf_handover/lf_void(습득물 쓰기)도 동일 게이트 — 무단 등록·수령 위조 차단.
+  //   lf_submit/lf_handover(습득물 쓰기)도 동일 게이트 — 무단 등록·수령 위조 차단.
   if (action === 'reg_submit' || action === 'voc_submit' ||
-      action === 'lf_submit'  || action === 'lf_handover' || action === 'lf_void') {
+      action === 'lf_submit'  || action === 'lf_handover') {
     if (!_vSubmitGateOk_(body)) {
       return _vJson({ ok: false, error: '접수 권한 확인에 실패했습니다. 페이지를 새로고침 후 다시 시도해 주세요.', code: 'BAD_TOKEN' });
     }
@@ -1373,7 +1434,7 @@ function _vProcess(action, body, params) {
       (body && body.contact) || '',
       (body && body.content) || '',
       (body && (body.foundLoc || body.itemDesc)) || '',   // lf_submit 지문
-      (body && (body.id || body.receiver)) || ''           // lf_handover/void 지문
+      (body && (body.id || body.receiver)) || ''           // lf_handover 지문
     ].map(function (x) { return String(x || ''); }).join('|'));
     if (!_vRateLimitOk_(_fp)) {
       return _vJson({ ok: false, error: '요청이 많아 잠시 후 다시 시도해 주세요. (중복·과다 접수 방지)', code: 'RATE_LIMIT' });
@@ -1437,8 +1498,8 @@ function _vProcess(action, body, params) {
   if (action === 'lf_gallery')  return _lfGallery();               // 무인증 공개 갤러리(게시중·민감필드 미반환)
   if (action === 'lf_list')     return _lfList(params || body);    // 직원용 전체목록(GATED)
   if (action === 'lf_handover') return _lfHandover(body);          // 현장 서명 수령→수령완료(멱등)
-  if (action === 'lf_void')     return _lfVoid(body);              // 오등록 철회(게시중→철회)
   if (action === 'lf_delete')   return _lfDelete(body);            // 더미 청소용 행삭제(GATED)
+  if (action === 'lf_disposal') return _lfDisposal();              // 폐기물 공지(공개 read·자동폐기 sweep 포함)
   if (action === 'lf_purge_signatures') return _lfPurgeSignatures(); // 6개월 경과 서명 파기(GATED·스케줄)
 
   // ── 레거시 VOC 액션 (하위호환) ──
@@ -1479,7 +1540,7 @@ function doGet(e) {
     // POST redirect 우회: voc_ write action 이 GET 으로 와도 본문 병합 후 처리
     if (action === 'voc_submit' || action === 'voc_update' ||
         action === 'reg_submit' || action === 'reg_update' ||
-        action === 'lf_submit'  || action === 'lf_handover' || action === 'lf_void') {
+        action === 'lf_submit'  || action === 'lf_handover') {
       var body = {};
       Object.keys(e.parameter).forEach(function (k) { body[k] = e.parameter[k]; });
       if (e.postData && e.postData.contents) {

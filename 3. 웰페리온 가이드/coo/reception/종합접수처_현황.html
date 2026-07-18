@@ -343,7 +343,7 @@ function _render(){
 
 /* ── 카드 ── */
 function _card(r){
-  /* 🧳 습득물 카드 — 사진+안내(읽기 전용). 수령=서명 필요·철회=오등록 취소는 '습득물 관리'에서 처리(위조 방지). */
+  /* 🧳 습득물 카드 — 사진+안내(읽기 전용). 수령(서명)은 '습득물 보기'에서 처리(위조 방지). 30일 미수령 시 자동 폐기(폐기 공지 게시). */
   if(r._lf){
     var lid = _esc(r.regId||'');
     var lwhen = _esc(String(r.foundWhen||r.createdAt||'').replace('T',' '));
@@ -360,7 +360,7 @@ function _card(r){
     if(r.content) lh += '<div class="card-content">' + _esc(String(r.content)) + '</div>';
     if(r.loc) lh += '<div class="card-loc">습득장소: ' + _esc(String(r.loc)) + '</div>';
     lh += '<div class="divider"></div>';
-    lh += '<div class="lf-note">수령(서명)·오등록 철회는 <b>습득물 관리</b>에서 처리합니다. <a href="http://wellperion.com/ko/lost-found-register/" target="_blank" rel="noopener">등록·관리</a> · <a href="http://wellperion.com/ko/lost-found/" target="_blank" rel="noopener">갤러리</a></div>';
+    lh += '<div class="lf-note">수령은 <b>습득물 보기</b>에서 · 30일 미수령 시 자동 폐기(폐기 공지 게시). <a href="http://wellperion.com/ko/lost-found-register/" target="_blank" rel="noopener">습득물 접수</a> · <a href="http://wellperion.com/ko/lost-found/" target="_blank" rel="noopener">습득물 보기</a> · <a href="lost_found_disposal.html" target="_blank" rel="noopener">폐기 공지</a></div>';
     lh += '</div>';
     return lh;
   }
@@ -459,10 +459,10 @@ function _update(id, cat, payload, btn){
 /* ═══════════════════════════════════════════
    🧳 습득물 = 7번째 카테고리로 통합 (같은 접수/처리중/완료 보드)
    데이터: 같은 VOC GAS lf_list(전 상태). 상태 매핑 게시중→접수 · 수령완료→완료
-   (철회=오등록 취소는 미표시). 카드는 사진+안내(수령=서명 필요 → 습득물 관리에서).
+   (폐기물은 미표시). 카드는 사진+안내(수령=서명 필요 → 습득물 보기에서).
    미래 JWT 대비 wp_access_token key 방어적 동봉.
    ═══════════════════════════════════════════ */
-var LF_STATUS_MAP = { '게시중':'접수', '수령완료':'완료' };  // 철회는 제외(미포함)
+var LF_STATUS_MAP = { '게시중':'접수', '수령완료':'완료' };  // 폐기물은 제외(미포함)
 function _lfThumb(url){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w400'):url; }
 var _lfLoading = false;
 function lfLoad(){

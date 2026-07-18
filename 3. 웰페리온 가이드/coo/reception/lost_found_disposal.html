@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 습득 분실물 폐기 공지</title>
+<!--
+  습득 분실물 — 폐기 공지 (A3 한 장 · 게시판 인쇄용 · COO 시우 배1165 · 2026-07-18)
+  · GM 지시: 30일 미수령 습득물은 자동 폐기. 폐기 예정 + 폐기 완료를 한 장에 공지.
+  · 소스 = VOC/reception GAS action=lf_disposal (공개 read · 민감필드 미반환).
+    { upcoming:[게시중·잔여일<=7], disposed:[폐기물·폐기일 desc] }
+  · 폐기 전환은 GAS가 자동(습득일+30일 read-time sweep) — 이 페이지는 읽기·공지 전용.
+  · 좌측정렬 풀폭 · A3 인쇄 가독(GM 페이지 표준).
+-->
+<style>
+:root{
+  --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
+  --accent:#b08d57;--accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;
+  --amber:#a4600a;--amber-bg:rgba(230,150,20,0.12);--amber-bd:rgba(230,150,20,0.42);
+  --gray:#5b5750;--gray-bg:rgba(90,86,80,0.07);--gray-bd:rgba(90,86,80,0.28);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%}
+.wrap{max-width:1100px;margin:0 auto;padding:22px 20px 48px}
+
+/* ── 헤더 (좌측정렬 · 게시판 톤) ── */
+.head{border-bottom:2px solid var(--accent);padding-bottom:14px;margin-bottom:8px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
+.head h1{font-size:clamp(22px,4.5vw,30px);font-weight:800;letter-spacing:-.5px}
+.head .sub{font-size:14px;color:#6b6b6b;margin-top:6px}
+
+/* ── 안내 배너 ── */
+.notice{display:flex;gap:11px;align-items:flex-start;background:var(--accent-bg);border:1px solid rgba(176,141,87,0.3);border-radius:12px;padding:14px 16px;margin:16px 0 22px;font-size:13.5px;line-height:1.7;color:#6b5834}
+.notice b{color:#5a4a26}
+
+/* ── 섹션 ── */
+.sec{margin-bottom:26px}
+.sec-h{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:800;margin-bottom:4px}
+.sec-h .cnt{font-size:13px;font-weight:700;color:var(--dim)}
+.sec-desc{font-size:12.5px;color:var(--dim);margin-bottom:12px}
+.sec.upcoming .sec-h{color:var(--amber)}
+.sec.disposed .sec-h{color:var(--gray)}
+
+/* ── 카드 그리드 ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.card{background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.card.up{border-left:4px solid var(--amber-bd)}
+.card.dp{border-left:4px solid var(--gray-bd);opacity:.92}
+.thumb{width:100%;height:150px;object-fit:cover;background:#efece7;display:block}
+.thumb.none{display:flex;align-items:center;justify-content:center;color:#bbb;font-size:12px}
+.cbody{padding:11px 13px 13px;display:flex;flex-direction:column;gap:5px}
+.cid{font-size:11.5px;font-weight:700;color:var(--accent);letter-spacing:.3px}
+.cdesc{font-size:14px;font-weight:700;color:var(--text);line-height:1.45}
+.cmeta{font-size:12px;color:#6b6b6b}
+.pill{align-self:flex-start;margin-top:3px;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px}
+.pill.up{color:var(--amber);background:var(--amber-bg);border:1px solid var(--amber-bd)}
+.pill.dp{color:var(--gray);background:var(--gray-bg);border:1px solid var(--gray-bd)}
+
+.empty{color:var(--dim);font-size:13px;padding:14px;background:var(--paper);border:1px dashed var(--border);border-radius:10px}
+.foot{margin-top:20px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);line-height:1.7}
+.actions{margin:0 0 18px}
+.pbtn{font-size:13px;font-weight:700;padding:8px 18px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:9px;cursor:pointer}
+.pbtn:hover{background:var(--accent-bg)}
+
+/* ── A3 인쇄 ── */
+@media print{
+  @page{size:A3;margin:12mm}
+  body{background:#fff;font-size:11px}
+  .wrap{max-width:none;padding:0}
+  .actions{display:none}
+  .head{border-bottom:2px solid #999}
+  .head h1{color:#111}
+  .notice{background:#f7f2e8 !important;border:1px solid #c9b487 !important;color:#4a3d1f !important}
+  .grid{grid-template-columns:repeat(4,1fr);gap:7px}
+  .card{border:1px solid #999 !important;break-inside:avoid}
+  .thumb{height:96px}
+  .cdesc{font-size:11px}
+  .sec.upcoming .sec-h{color:#8a5008 !important}
+  .sec.disposed .sec-h{color:#444 !important}
+  .pill{border:1px solid #999 !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="eyebrow">WELLPERION · LOST &amp; FOUND</div>
+    <h1>🗑 습득 분실물 폐기 공지</h1>
+    <div class="sub">보관 기간이 지난 습득물의 폐기 예정·폐기 완료 안내입니다.</div>
+  </div>
+
+  <div class="notice">
+    <span style="font-size:18px;line-height:1">📢</span>
+    <div>습득물은 <b>습득일로부터 30일(1개월)</b> 보관 후 폐기됩니다. 아래 <b>폐기 예정</b> 목록에 본인 물품이 있으시면 <b>기간 내에 현장(리셉션·수영장·사우나 등)에서 본인 확인 후 수령</b>해 주세요. 기간 경과 시 자동 폐기되어 찾으실 수 없습니다.</div>
+  </div>
+
+  <div class="actions"><button class="pbtn" type="button" onclick="window.print()">🖨 A3 인쇄</button></div>
+
+  <div class="sec upcoming">
+    <div class="sec-h">⏳ 폐기 예정 <span class="cnt" id="up-cnt"></span></div>
+    <div class="sec-desc">보관 만료가 임박한 습득물입니다(잔여 7일 이내). 기간 내 수령해 주세요.</div>
+    <div id="up-grid"><div class="empty">불러오는 중…</div></div>
+  </div>
+
+  <div class="sec disposed">
+    <div class="sec-h">🗑 폐기 완료 <span class="cnt" id="dp-cnt"></span></div>
+    <div class="sec-desc">보관 기간 경과로 폐기 처리된 습득물 기록입니다.</div>
+    <div id="dp-grid"><div class="empty">불러오는 중…</div></div>
+  </div>
+
+  <div class="foot">
+    · 문의: wellperion.com/ko/inquiry &nbsp;·&nbsp; 습득물 접수(직원): <a href="http://wellperion.com/ko/lost-found-register/">등록</a> &nbsp;·&nbsp; 습득물 보기: <a href="http://wellperion.com/ko/lost-found/">갤러리</a><br>
+    · 폐기 전환은 습득일 기준 30일 경과 시 자동 처리됩니다. 하루의 완성, 웰페리온
+  </div>
+</div>
+
+<script>
+(function(){
+  var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function thumb(url,sz){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w'+(sz||400)):url; }
+
+  function cardHtml(r, kind){
+    var ph = r.photoUrl ? '<img class="thumb" src="'+esc(thumb(r.photoUrl,400))+'" alt="습득물 사진" loading="lazy" decoding="async">'
+                        : '<div class="thumb none">사진 없음</div>';
+    var pill = kind==='up'
+      ? '<span class="pill up">'+ (typeof r.remainDays==='number' ? ('폐기까지 '+r.remainDays+'일') : '폐기 임박') +'</span>'
+      : '<span class="pill dp">폐기 '+esc(r.disposedAt||'')+'</span>';
+    return '<div class="card '+(kind==='up'?'up':'dp')+'">'+ ph +
+      '<div class="cbody">'+
+        '<div class="cid">'+esc(r.foundId||'')+'</div>'+
+        '<div class="cdesc">'+esc(r.itemDesc||'(설명 없음)')+'</div>'+
+        (r.foundLoc?('<div class="cmeta">📍 '+esc(r.foundLoc)+'</div>'):'')+
+        (r.foundWhen?('<div class="cmeta">🕐 습득 '+esc(r.foundWhen)+'</div>'):'')+
+        pill+
+      '</div></div>';
+  }
+
+  function render(list, host, cnt, kind, emptyMsg){
+    var el=$(host), c=$(cnt);
+    if(!Array.isArray(list) || !list.length){ el.innerHTML='<div class="empty">'+emptyMsg+'</div>'; if(c)c.textContent='0건'; return; }
+    el.innerHTML='<div class="grid">'+ list.map(function(r){return cardHtml(r,kind);}).join('') +'</div>';
+    if(c)c.textContent=list.length+'건';
+  }
+
+  function load(){
+    fetch(VOC_API+'?action=lf_disposal&_='+Date.now(), {redirect:'follow', cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!d || !d.ok){ throw new Error('bad'); }
+        render(d.upcoming||[], 'up-grid','up-cnt','up','현재 폐기 예정(임박) 습득물이 없습니다.');
+        render(d.disposed||[], 'dp-grid','dp-cnt','dp','폐기 처리된 기록이 없습니다.');
+      })
+      .catch(function(){
+        $('up-grid').innerHTML='<div class="empty">목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>';
+        $('dp-grid').innerHTML='<div class="empty">목록을 불러오지 못했습니다.</div>';
+        $('up-cnt').textContent=''; $('dp-cnt').textContent='';
+      });
+  }
+  load();
+})();
+</script>
+</body>
+</html>
