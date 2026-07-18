@@ -7229,6 +7229,17 @@ function buildDbRow(row, isNew) {
     utag.textContent = '미입력';
     tdStatus.appendChild(utag);
   }
+  // 등록종목(SUC 계열)·LOSS 사유 병기 — 진행상황 칸 하단 소자막 + 툴팁. 데이터=dbRows(regProgram/lossReason). 2026-07-18 시토(GM요청) 대행.
+  var _stExtra = '';
+  if ((row.status === 'SUC' || row.status === '단기SUC') && String(row.regProgram || '').trim()) _stExtra = '🏷️ ' + String(row.regProgram).trim();
+  else if (row.status === 'LOSS' && String(row.lossReason || '').trim()) _stExtra = '사유: ' + String(row.lossReason).trim() + (String(row.lossReasonNote || '').trim() ? ' (' + String(row.lossReasonNote).trim() + ')' : '');
+  if (_stExtra) {
+    chip.title = _stExtra;
+    var _sub = document.createElement('div');
+    _sub.style.cssText = 'font-size:10px;color:var(--dim);margin-top:2px;max-width:130px;white-space:normal;line-height:1.3';
+    _sub.textContent = _stExtra;
+    tdStatus.appendChild(_sub);
+  }
   if (!READ_ONLY) { tdStatus.className = 'editable-cell'; tdStatus.addEventListener('click', function(){ _activateCellSelect(this, row, 'status', STATUS_OPTIONS); }); }
   tr.appendChild(tdStatus);
 
@@ -7390,6 +7401,10 @@ function _activateCellSelect(td, row, field, options) {
       td.textContent = newVal || '—';
     }
     if (newVal !== prevVal) { var p2 = {}; p2[field] = newVal; _saveCell(rowIndex, p2); }
+    // 진행상황을 LOSS로 바꾸면 사유 모달 자동 발동(사유 미기록 방지). 이미 LOSS+사유 있으면 재촉발 안 함. 2026-07-18 시토(GM요청) 대행.
+    if (field === 'status' && newVal === 'LOSS' && (newVal !== prevVal || !String(live.lossReason || '').trim())) {
+      try { openInquiryLossModal(rowIndex); } catch (e) {}
+    }
   }
   sel.addEventListener('change', commit);
   sel.addEventListener('blur', commit);
