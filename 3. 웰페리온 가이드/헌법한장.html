@@ -262,20 +262,18 @@
   .prod-mat.mech{color:var(--accent-soft); background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.32);}
   .prod-mat.semi{color:#7ac4f0; background:rgba(122,196,240,0.14); border:1px solid rgba(122,196,240,0.35);}
   .prod-mat.propose{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
-  .prod-strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:10px; margin:4px 0 14px;}
-  .prod-role{background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
-  .prod-role-h{font-size:13px; font-weight:700; margin-bottom:7px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
-  .prod-role-h .prod-count{font-size:10px; font-weight:400; color:var(--dim);}
-  .prod-mod{margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed var(--border);}
+  /* 🏭 제품화 블록 — C레벨 카드(매트릭스 소유·제품화 칸) 안에 인라인 삽입(구 별도 .prod-strip 지도 흡수 · 2026-07-18) */
+  .prod-cell{margin-top:8px; padding-top:7px; border-top:1px dashed var(--border);}
+  .prod-mod{margin-top:5px;}
+  .prod-mod:first-of-type{margin-top:3px;}
   .prod-mod:last-child{margin-bottom:0; padding-bottom:0; border-bottom:none;}
   .prod-feat{font-size:12px; color:var(--text-soft); line-height:1.42; margin-bottom:3px;}
   .prod-free{font-size:10.5px; color:var(--dim); line-height:1.4;}
   .prod-free b{color:#8fd89e; font-weight:600;}
   @media print{
-    .prod-role{background:#fff !important; border-color:#999 !important;}
-    .prod-role-h, .prod-feat{color:#111 !important;}
+    .prod-cell{border-color:#ccc !important;}
+    .prod-feat{color:#111 !important;}
     .prod-free{color:#333 !important;} .prod-free b{color:#1a6b34 !important;}
-    .prod-mod{border-color:#ccc !important;}
     .prod-mat{border-width:1px !important;}
     .prod-mat.auto{color:#1a6b34 !important; background:#e8f6ec !important;}
     .prod-mat.mech{color:#4a2a91 !important; background:#efe8fb !important;}
@@ -325,10 +323,21 @@
     </div>
   </div>
 
-  <!-- ════ A. 7주체 × 3칸 매트릭스 (편집형 · 2026-06-29 · 2026-07-07 북극성 지도 카드 합병) ════ -->
+  <!-- ════ 📜 공통 헌법 핵심 (전 C레벨 공유 원칙 · S2 정본 링크 · 2026-07-18 상단 이동) ════ -->
+  <h2 class="sec">📜 공통 헌법 핵심 <span style="font-size:11px;font-weight:400;color:var(--dim);">전 C레벨 공유 원칙 — 상세는 S2</span></h2>
+  <div class="cards" id="common-cards"><!-- JS가 라이브 URL로 채움 --></div>
+
+  <!-- ════ 👤 C레벨별 카드 (매트릭스 R/R + 🏭 제품화 성숙도 통합 · 구 '모듈 제품화 지도' 흡수 · 2026-07-18) ════ -->
   <div id="matrix-section">
-  <h2 class="sec">🧭 7주체 × 3칸 매트릭스 <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
-  <div class="sec-note" title="재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독.">북극성 도달율·핵심 3칸 요약 (상세 4차원은 S2 본인탭)</div>
+  <h2 class="sec">👤 C레벨별 카드 <span style="font-size:11px;font-weight:400;color:var(--dim);">R/R + 제품화 성숙도</span> <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
+  <div class="sec-note" title="재발방지·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 재발방지 GUARDED = ssot/incidents.json 직독. 🏭 제품화 = status/module_registry.json 직독.">각 C레벨을 한 행에 — 🌟 북극성·지표 / 🔧 일하는 법 / 🚧 소유·제품화. 상세 4차원은 S2 본인탭.</div>
+  <div class="prod-legend" title="제품화 성숙도 — status/module_registry.json autonomy">
+    <span class="prod-legtxt" style="font-weight:700;color:var(--accent-soft);">🏭 제품화 성숙도</span>
+    <span class="prod-mat auto">🟢 완전무인</span><span class="prod-legtxt">예약/GAS 상시 — 졸업 근접</span>
+    <span class="prod-mat mech">⚙️ 기계화</span><span class="prod-legtxt">사람이 화면서 대신 가능</span>
+    <span class="prod-mat semi">🔵 반자동</span><span class="prod-legtxt">무인 + GM 승인 게이트</span>
+    <span class="prod-mat propose">🟣 제안</span><span class="prod-legtxt">아직 AI 판단 필요</span>
+  </div>
   <div class="mx-controls" id="mx-controls"><!-- JS: 역할·칸 필터 + 폴침 --></div>
   <div class="matrix-scroll">
     <table class="matrix">
@@ -337,7 +346,7 @@
           <th class="role-col">주체</th>
           <th class="grp-np">🌟 목표·지표</th>
           <th class="grp-boot">🔧 일하는 법</th>
-          <th class="grp-guard col-own">🚧 소유 관리</th>
+          <th class="grp-guard col-own">🚧 소유·제품화</th>
         </tr>
       </thead>
       <tbody id="matrix-body">
@@ -346,22 +355,6 @@
     </table>
   </div>
   </div><!-- /matrix-section -->
-
-  <!-- ════ 🏭 모듈 제품화 지도 (module_registry.json 직독 · 타사 북극성 도달 · 최종: AI 없이 모듈만으로 · 2026-07-15) ════ -->
-  <h2 class="sec">🏭 모듈 제품화 지도 <span style="font-size:11px;font-weight:400;color:var(--dim);">다른 회사도 북극성에 도달 — 최종: AI 없이 모듈만으로</span></h2>
-  <div class="sec-note">우리가 AI로 만들어 검증한 모듈이 <b>'AI 없이도 도는' 상태</b>(<code>ai_free_fallback</code>)에 이르면, 그 모듈만 떼어 다른 회사에 줘도 그 회사가 자기 북극성에 도달한다. AI=만드는 도구 · 파는 것=모듈. 정본: <code>status/module_registry.json</code> 직독(feature·AI없이 도는 법·자율수준).</div>
-  <div class="prod-legend">
-    <span class="prod-mat auto">🟢 완전무인</span><span class="prod-legtxt">사람·AI 없이 예약/GAS 상시 — 졸업 근접</span>
-    <span class="prod-mat mech">⚙️ 기계화</span><span class="prod-legtxt">사람이 화면서 직접 대신 가능</span>
-    <span class="prod-mat semi">🔵 반자동</span><span class="prod-legtxt">무인 가동 + GM 승인 게이트</span>
-    <span class="prod-mat propose">🟣 제안</span><span class="prod-legtxt">아직 AI 판단 필요</span>
-  </div>
-  <div class="prod-strip" id="prod-strip"><div class="matrix-status">모듈 제품화 지도를 불러오는 중…</div></div>
-
-  <!-- ════ B. 공통 헌법 4섹션 (S2 정본으로 링크만) ════ -->
-  <h2 class="sec">📜 공통 헌법 4섹션</h2>
-  <div class="cards" id="common-cards"><!-- JS가 라이브 URL로 채움 --></div>
-
 
 </div>
 
@@ -444,6 +437,7 @@
   var _incidents = null;      // ssot/incidents.json → role.id별 {guarded, recent}
   var _reachData = null;      // status/northstar_reach.json → role.id별 {reach_pct|null, mode, basis, milestones_done?, milestones_total?}
   var _ownershipData = null;  // ssot/ownership_map.json → role.id(title lowercase)별 {primary_surface, domain, executor} — GM확정 소유·역할 단일출처(2026-07-18)
+  var _prodByRole = null;     // status/module_registry.json → owner_role별 모듈[] (구 renderProdStrip 그룹핑 재활용 · C레벨 카드 흡수 2026-07-18)
   var _editMode = false;
   // 뷰 상태(GM PC 세션 한정 · 정본 아님): 역할 필터 · 칸 숨김 · 폴침
   var _roleFilter = null;     // null=전체, 아니면 role.id
@@ -492,6 +486,14 @@
       o.guarded++;
       if(!o.recent || String(inc.date || '') >= String(o.recent.date || '')) o.recent = inc;
     });
+    return m;
+  }
+
+  // 🏭 모듈 제품화 — status/module_registry.json → owner_role별 그룹(구 renderProdStrip 그룹핑 재활용). autonomy=제품화 성숙도 배지.
+  var PROD_MAT = { auto:['auto','🟢 완전무인'], mech:['mech','⚙️ 기계화'], semi:['semi','🔵 반자동'], propose:['propose','🟣 제안'], manual:['manual','⚪ 수동'] };
+  function computeProdByRole(reg){
+    var m = {}, mods = (reg && reg.modules) || [];
+    mods.forEach(function(x){ var r = x.owner_role || '?'; (m[r] || (m[r] = [])).push(x); });
     return m;
   }
 
@@ -720,6 +722,20 @@
       '<div class="incd-meta">🛡️ 봉인 <b>' + c.guarded + '</b>건</div>' + rc + '</div>';
   }
 
+  // 🏭 모듈 & 제품화 성숙도 — _prodByRole[role.id] 렌더(구 별도 '모듈 제품화 지도' 섹션 흡수 · 2026-07-18).
+  //   구 renderProdStrip 렌더 로직 그대로 재활용: autonomy 배지 + ai_free_fallback. 모듈 없는 역할(gm·cfo)은 숨김.
+  function prodBlock(role){
+    var arr = (_prodByRole && _prodByRole[role.id]) || null;
+    if(!arr || !arr.length) return '';
+    var lab = '<span class="dim-label">🏭 모듈 & 제품화 ' + arr.length + '</span>';
+    var items = arr.map(function(m){
+      var mt = PROD_MAT[m.autonomy] || ['manual','⚪ ' + (m.autonomy || '?')];
+      var free = m.ai_free_fallback ? '<div class="prod-free"><b>AI 없이:</b> ' + esc(m.ai_free_fallback) + '</div>' : '';
+      return '<div class="prod-mod"><div class="prod-feat"><span class="prod-mat ' + mt[0] + '">' + mt[1] + '</span> ' + esc(m.feature || m.id) + '</div>' + free + '</div>';
+    }).join('');
+    return '<div class="prod-cell">' + lab + items + '</div>';
+  }
+
   // 🏷️ 정직 상태 배지(3종 단일 판정 · A3 인쇄 카드용 · 2026-07-04) — 신규 fetch 없음, 기존 _reachData만 사용.
   //   ✅measured = reach 실측(mode=measured & reach_pct 숫자) · 🔖draft = 마일스톤/제안본(mode=milestone, role.draft 있으면 우선) ·
   //   🔧unmeasured = 그 외(reach null·미설정). 가짜 숫자 금지(약속 L05) — 판정 자체가 정직 표기 그대로.
@@ -767,7 +783,7 @@
             return '<div class="chan-item"><b>' + esc(c.label) + '</b><span>' + esc(c.desc) + '</span></div>';
           }).join('') + '</div>';
       }
-      var c3 = '<td>' + ownershipBlock(role) + owns + chans + incidentsBlock(role) + ideasBlock(role) + '</td>';
+      var c3 = '<td>' + ownershipBlock(role) + owns + chans + prodBlock(role) + incidentsBlock(role) + ideasBlock(role) + '</td>';
       return '<tr data-role="' + esc(role.id) + '" class="' + (gm ? 'role-gm' : '') + '">' +
         '<td class="role-cell" style="border-left:4px solid ' + esc(ac) + ';">' +
           '<div class="ricon">' + esc(role.icon) + '</div>' +
@@ -1000,7 +1016,8 @@
     gasRead('ssot/incidents.json',        RAW_BASE + 'ssot/incidents.json').catch(function(){ return null; }),
     gasRead('status/northstar_reach.json', RAW_BASE + 'status/northstar_reach.json').catch(function(){ return null; }),
     gasRead('ssot/canon_values.json',      RAW_BASE + 'ssot/canon_values.json').catch(function(){ return null; }),
-    gasRead('ssot/ownership_map.json',     RAW_BASE + 'ssot/ownership_map.json').catch(function(){ return null; })
+    gasRead('ssot/ownership_map.json',     RAW_BASE + 'ssot/ownership_map.json').catch(function(){ return null; }),
+    gasRead('status/module_registry.json', RAW_BASE + 'status/module_registry.json').catch(function(){ return null; })
   ])
     .then(function(arr){
       _matrixData = arr[0];
@@ -1015,6 +1032,7 @@
       ((arr[7] && arr[7].values) || []).forEach(function(v){ if(v && v.key) canonMap[v.key] = v.value; });
       _ownershipData = {};
       ((arr[8] && arr[8].roles) || []).forEach(function(o){ if(o && o.title) _ownershipData[String(o.title).toLowerCase()] = o; });
+      _prodByRole = computeProdByRole(arr[9]);
       renderMatrix();
       renderVisionDynamic(canonMap);
       renderEditBtn();
@@ -1027,33 +1045,6 @@
         '). 정본: <code>coo/bootsetup_matrix.json</code></td></tr>';
     });
 
-  // ── 🏭 모듈 제품화 지도 — status/module_registry.json 직독 → owner_role별 그룹, autonomy=제품화 성숙도, ai_free_fallback=AI없이 도는 법 ──
-  var PROD_ORDER = ['ceo','cfo','chro','cmo','coo','cpo','cto'];
-  var PROD_MAT = { auto:['auto','🟢 완전무인'], mech:['mech','⚙️ 기계화'], semi:['semi','🔵 반자동'], propose:['propose','🟣 제안'], manual:['manual','⚪ 수동'] };
-  function renderProdStrip(reg){
-    var el = document.getElementById('prod-strip'); if(!el) return;
-    var mods = (reg && reg.modules) || [];
-    if(!mods.length){ el.innerHTML = '<div class="matrix-status">등록부 모듈 없음 · 정본: status/module_registry.json</div>'; return; }
-    var by = {};
-    mods.forEach(function(m){ var r = m.owner_role || '?'; (by[r] || (by[r] = [])).push(m); });
-    var roles = PROD_ORDER.filter(function(r){ return by[r]; });
-    Object.keys(by).forEach(function(r){ if(roles.indexOf(r) < 0) roles.push(r); });
-    el.innerHTML = roles.map(function(r){
-      var arr = by[r], nick = (arr[0] && arr[0].owner_nick) || '';
-      var items = arr.map(function(m){
-        var mt = PROD_MAT[m.autonomy] || ['manual','⚪ ' + (m.autonomy || '?')];
-        var free = m.ai_free_fallback ? '<div class="prod-free"><b>AI 없이:</b> ' + esc(m.ai_free_fallback) + '</div>' : '';
-        return '<div class="prod-mod"><div class="prod-feat"><span class="prod-mat ' + mt[0] + '">' + mt[1] + '</span> ' + esc(m.feature || m.id) + '</div>' + free + '</div>';
-      }).join('');
-      return '<div class="prod-role"><div class="prod-role-h">' + esc(nick || r.toUpperCase()) + ' <span class="prod-count">' + arr.length + '개 모듈</span></div>' + items + '</div>';
-    }).join('');
-  }
-  (function(){
-    fetch(RAW_BASE + 'status/module_registry.json', {cache:'no-store'})
-      .then(function(res){ return res.ok ? res.json() : null; })
-      .then(function(reg){ renderProdStrip(reg); })
-      .catch(function(){ var el = document.getElementById('prod-strip'); if(el) el.innerHTML = '<div class="matrix-status">등록부 로드 실패 · 새로고침</div>'; });
-  })();
 })();
 </script>
 </body>
