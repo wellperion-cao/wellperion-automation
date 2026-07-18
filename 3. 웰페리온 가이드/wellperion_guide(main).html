@@ -3551,13 +3551,13 @@ window._regAssign = function(id, category) {
 
         <!-- ── 마케팅 파이프라인 폐루프 5단계 (GM 박제 2026-06-23) ── -->
         <h4 style="margin-top:20px;">🔁 마케팅 파이프라인 (폐루프 5단계)</h4>
-        <div class="callout">시모(CMO)의 운영 북극성. 콘텐츠가 문의·등록을 만들고, 그 결과로 다음 콘텐츠를 평가·재기획하는 닫힌 고리. (GM 박제 2026-06-23)</div>
+        <div class="callout">시모(CMO)의 운영 북극성. 콘텐츠가 문의·등록을 만들고, 그 결과로 다음 콘텐츠를 평가·재기획하는 닫힌 고리. <strong>상단 '콘텐츠 허브 6단계'를 사업 성과(문의→등록)까지 확장한 것</strong> — 앞단(1 = 제작~발행)은 6단계와 동일, 이 루프의 초점은 <strong>뒷단(문의→등록→평가·환류)</strong>. 문의·등록(2·3)은 시포(CPO) 라인과 맞물림. (GM 박제 2026-06-23)</div>
         <table>
           <tr><th style="width:50px">단계</th><th>내용</th><th style="width:120px">상태</th></tr>
           <tr><td><strong>1</strong></td><td>콘텐츠 기획 → 자동 업로드 (M3→텔레그램 승인→5채널 발행)</td><td>✅ 완성</td></tr>
           <tr><td><strong>2</strong></td><td>CTA 문의 접수: 문의페이지 → 자동 집계·시트 기록 + 문의 DB 페이지(체험·투어&amp;상담 캘린더)</td><td>🟡 부분 (시트 의존·자체DB 미구축)</td></tr>
           <tr><td><strong>3</strong></td><td>회원 관리프로그램 신규 등록 명단 체크 → 문의 DB 페이지로 등록 체크·등록 현황 반영</td><td>❌ 약함 (등록 매칭=추정 → 자동화 진행 중)</td></tr>
-          <tr><td><strong>4</strong></td><td>마케팅 대시보드 현황</td><td>🟡 부분 (전환·등록=추정)</td></tr>
+          <tr><td><strong>4</strong></td><td>콘텐츠→문의 성과 대시보드 (M1 통합 · 채널별 실측)</td><td>🟡 부분 (채널 단위 실측 · 게시글 단위·등록 매칭은 CPO 라인)</td></tr>
           <tr><td><strong>5</strong></td><td>대시보드 분석 → 콘텐츠 평가 → 1)로 환류</td><td>❌ 약함 (정성뿐·구조화 루프 없음)</td></tr>
         </table>
         <p style="margin-top:8px;"><strong>우선순위:</strong> 3번 등록 매칭부터 — 고리가 닫혀야 4·5번 수치가 진실해진다.</p>
@@ -4517,6 +4517,18 @@ if (window.matchMedia) {
     <h3 id="m1-loop"><span class="ico">✍️</span>제작 품질 — 3렌즈 반복 <span style="font-size:12px;color:var(--dim);font-weight:400;">(전 C-Level 공통 표준 · 정본 = 헌법 한 장 / 부트셋업)</span></h3>
     <p>제작 세부 = <strong>기획·설계</strong>(소재·메시지·채널·타깃 · CS 스토리텔링·현실감 공식) → <strong>초안</strong>(카피·슬라이드) → <strong>디자인</strong>(compose_barre 룩·레이아웃). 여기까지가 상단 6단계 흐름의 <strong>'② 제작'</strong> 한 단계다.</p>
     <div class="callout tip"><strong>원샷 금지 — 제작 품질의 핵심.</strong> 초안을 <strong>① 고도화</strong>(브랜드 톤·후킹·현실감) → <strong>② 단순화</strong>(군더더기·과장 제거) → <strong>③ AI 검토</strong> 각각 <strong>별도 패스</strong>로 돌린다(한 번에 뭉치지 말 것). <br>※ 검수→발행→성과→환류 <strong>전체 루프는 상단 「콘텐츠 허브」 6단계</strong>가 정본 — 중복 표기 제거(구 '북극성 지향 제작 루프' 표 = 상단 6단계와 동일 루프였음). 현재 병목 = <strong>발행 후 반응 → 다음 기획 자동 반영(환류)</strong> 고리 — 시모 품질의 다음 한 걸음.</div>
+
+    <!-- 🔖 제작 참고 규칙 — 맨 아래 참고 규칙을 제작 지점에서 바로 닿게(2026-07-18 GM) -->
+    <div style="margin-top:14px;padding:13px 16px;background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;">
+      <div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:9px;">🔖 제작할 때 참고 — 아래 규칙으로 바로 이동</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <a href="#" onclick="event.preventDefault();document.getElementById('m1-notation').scrollIntoView({behavior:'smooth',block:'start'});" style="display:inline-block;font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:99px;background:var(--card);border:1px solid var(--border);color:var(--text);text-decoration:none;">📋 표기 규칙 (템플릿·CTA·태깅)</a>
+        <a href="#" onclick="event.preventDefault();document.getElementById('m1-folder-structure').scrollIntoView({behavior:'smooth',block:'start'});" style="display:inline-block;font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:99px;background:var(--card);border:1px solid var(--border);color:var(--text);text-decoration:none;">🗂️ 콘텐츠 폴더 구조</a>
+        <a href="#" onclick="event.preventDefault();document.getElementById('m1-output-split').scrollIntoView({behavior:'smooth',block:'start'});" style="display:inline-block;font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:99px;background:var(--card);border:1px solid var(--border);color:var(--text);text-decoration:none;">📤 output 5채널 분리</a>
+        <a href="#" onclick="event.preventDefault();document.getElementById('m1-completion-ssot').scrollIntoView({behavior:'smooth',block:'start'});" style="display:inline-block;font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:99px;background:var(--card);border:1px solid var(--border);color:var(--text);text-decoration:none;">🏁 제작 완료 표준 절차</a>
+      </div>
+      <div style="font-size:11px;color:var(--dim);margin-top:8px;">브랜드 톤·금지어·해시태그·채널별 규칙 정본 = 브랜드 스킬 + 기반 FOUNDATION(상단 ① 기반).</div>
+    </div>
 
     <!-- 문의 진입점 (2026-07-14 · GM 지시 · 하단 '검수·발행' 섹션에서 이동 — m1-status-hub 옆 상단 노출) -->
     <section id="m1-inquiry-entry" style="margin:0 0 18px;">
