@@ -97,6 +97,11 @@
 
   h2.sec{font-size:15px; font-weight:700; margin:13px 0 7px; display:flex; align-items:center; gap:7px;}
   h2.sec .stag{font-size:11px; font-weight:400; color:var(--dim);}
+  /* 🟢🟠🔴 섹션 라이브 상태 배지 — 실시간 자동측정=🟢 라이브 / 일부만 실시간=🟠 반반 / 수동·계획·미개통=🔴 비라이브 (GM 지시 2026-07-18 · 정직표기). title=근거 툴팁 */
+  .lvb{font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:999px; border:1px solid transparent; white-space:nowrap; line-height:1.55;}
+  .lvb-live{color:#1f7a3d; background:rgba(46,160,86,0.14); border-color:rgba(46,160,86,0.45);}
+  .lvb-half{color:#a4600a; background:rgba(230,150,20,0.15); border-color:rgba(230,150,20,0.5);}
+  .lvb-off{color:#b3352e; background:rgba(210,60,50,0.13); border-color:rgba(210,60,50,0.45);}
 
   /* ── 도달율 진행 막대 (공통) ── */
   .prog{display:flex; align-items:center; gap:8px; min-width:118px;}
@@ -958,7 +963,7 @@
 
     <!-- 💰 매출 종합 (0순위·맨앞 · GM 지시 2026-07-06 매출 라인 통합: 상단 좌=선택월 매출/우=연간 히스토리, 하단 전폭=부서별 월간실적|연간누계. 라이브 gviz 미러·보드 독립렌더·INC-001 값 저장 금지) -->
     <section class="blk fin-primary" data-blkid="fin">
-      <h2 class="sec has-link"><span class="rank0-badge">0순위</span>💰 매출 종합 <span class="stag">선택월·연간·부서별 · 목표 72억 대비</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
+      <h2 class="sec has-link"><span class="rank0-badge">0순위</span>💰 매출 종합 <span class="lvb lvb-live" title="매출 실적=home_kpi·gviz·team_sales 자동 실측(실시간). 목표값만 고정 정본.">🟢 라이브</span> <span class="stag">선택월·연간·부서별 · 목표 72억 대비</span><a class="cfo-link" href="cfo/finance/매출지출현황.html">📊 AI CFO 매출·지출 현황 →</a></h2>
       <div class="fin-top-split">
         <div class="fin-top-left">
           <div class="fin-sub-h">💰 선택월 매출 · 목표 대비</div>
@@ -974,38 +979,38 @@
 
     <!-- 🔧 점검 현황 & 종합 접수처 (GM 지시 2026-07-06: 점검=선택월 월간 집계 전환·명칭 정합) -->
     <section class="blk" data-blkid="check">
-      <h2 class="sec"><span class="chk-title-nw">🔧 점검 현황 &amp; 종합 접수처</span> <span class="stag">선택월 월간 집계 · 지원부·종합접수처·ERP · 실측만</span></h2>
+      <h2 class="sec"><span class="chk-title-nw">🔧 점검 현황 &amp; 종합 접수처</span> <span class="lvb lvb-half" title="지원부 점검·종합접수처(습득물 포함)=실시간 자동측정 / 시설부 점검=월간 측정 개통 전(정직 표기)">🟠 반반</span> <span class="stag">선택월 월간 집계 · 지원부·종합접수처·ERP · 실측만</span></h2>
       <div id="check-board"><div class="board-status">점검 현황을 불러오는 중…</div></div>
       <div id="issue-board" style="margin-top:14px;"><div class="board-status">종합 접수처 보드를 계산하는 중…</div></div>
     </section>
 
     <!-- 🗂️ 부서별 내용 = 표(table.rpt) 전환(실무 도달율+AI 활용%+월 목표·진척+체계 페이지 매핑 · GM 지시 2026-07-07 3차: 카드 그리드 → 표·A3 1p 맞춤) -->
     <section class="blk dept-cards" data-blkid="deptcards">
-      <h2 class="sec">🗂️ 부서별 내용 <span class="stag">부서별 도달율 + 월 목표·진척 · 체계 페이지 매핑</span></h2>
+      <h2 class="sec">🗂️ 부서별 내용 <span class="lvb lvb-off" title="월간계획 정본(objectives·수동 관리) — 실시간 자동측정 아님">🔴 비라이브</span> <span class="stag">부서별 도달율 + 월 목표·진척 · 체계 페이지 매핑</span></h2>
       <div id="dept-cards-board"></div>
     </section>
 
     <!-- 🗺️ 전략 로드맵 (GM 지시 2026-07-06 3차: 1~4분기 한 줄 가로 스트립) -->
     <section class="blk erp-roadmap-merge" data-blkid="roadmap">
-      <h2 class="sec">🗺️ 전략 로드맵 진척 <span class="stag">6단계 · 현재 단계</span></h2>
+      <h2 class="sec">🗺️ 전략 로드맵 진척 <span class="lvb lvb-off" title="전략 로드맵 정본(수동 관리) — 실시간 자동측정 아님">🔴 비라이브</span> <span class="stag">6단계 · 현재 단계</span></h2>
       <div id="roadmap-board"><div class="board-status">전략 로드맵 정본을 불러오는 중…</div></div>
     </section>
 
     <!-- 🎯 이달 핵심 과제 top3 (1·2·3순위 · 매출 제외 · 중요도 자동 선정 · GM 확정 2026-07-04) -->
     <section class="blk top3-wrap" id="top3-wrap" data-blkid="top3">
-      <h2 class="sec">🎯 이달 핵심 과제 top3 <span class="stag">매출 제외 · 중요도순 1·2·3</span></h2>
+      <h2 class="sec">🎯 이달 핵심 과제 top3 <span class="lvb lvb-off" title="월간계획 objectives(수동 관리) — 순위만 자동 선정, 진척값은 실시간 측정 아님">🔴 비라이브</span> <span class="stag">매출 제외 · 중요도순 1·2·3</span></h2>
       <div id="top3-board"><div class="board-status">핵심 과제 top3를 선정하는 중…</div></div>
     </section>
 
     <!-- 🗂️ 부서별 업무 현황 요약 (이달 objectives 부서별/담당별 집계 · 순수 추가 섹션 · GM 지시) -->
     <section class="blk dept-work-wrap" id="dept-work-wrap" data-blkid="deptwork">
-      <h2 class="sec">🗂️ 운영 현황 요약 <span class="stag">점검·접수처·업무 · 총/진행/완료</span></h2>
+      <h2 class="sec">🗂️ 운영 현황 요약 <span class="lvb lvb-half" title="점검·종합접수처(습득물 포함)=실시간 자동측정 / 업무=월간계획 objectives(수동)">🟠 반반</span> <span class="stag">점검·접수처·업무 · 총/진행/완료</span></h2>
       <div id="dept-work-summary"><div class="board-status">운영 현황을 집계하는 중…</div></div>
     </section>
 
     <!-- 📋 이달 핵심 과제 상세 (신규/이월 상세표 + 콤팩트 요약 · 舊 sum-hero — 상단 top3 아래 상세) -->
     <section class="blk sum-hero" id="report-hero-wrap" data-blkid="detail">
-      <h2 class="sec">📋 이달 핵심 과제 상세 <span class="stag">요약 + 신규·이월 상세</span></h2>
+      <h2 class="sec">📋 이달 핵심 과제 상세 <span class="lvb lvb-off" title="월간계획 objectives(수동 관리) — 실시간 자동측정 아님">🔴 비라이브</span> <span class="stag">요약 + 신규·이월 상세</span></h2>
       <div id="report-area"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
     </section>
@@ -1025,13 +1030,14 @@
   var KPI_PATH = 'status/kpi_values.json'; // KPI 자동집계(kpi_collector.py, 일 2회) — 🔧 점검 현황 실측치 소스(coo.지원부_점검완료율). 측정 불가=null(가짜값 없음).
   var CHECK_GAS = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec'; // 지원팀 일일점검 GAS(공용·kpi_collector.py와 동일 소스) — action=monthly_report&month=YYYY-MM byZone(m/f)로 🔧 점검 현황 지원부 남/여 월간 완료율 카드 분해(GM 지시 2026-07-06 월간 전환).
   var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec'; // 종합접수처 VOC GAS(coo/reception/종합접수처_현황.html과 동일) — action=reg_board. 🔧 점검 현황④ 카드 + 🗂️ 이슈·해결 공용(PII 미사용·집계만).
-  var VOC_CAT_META = [ // 6종 카테고리 → 담당부서. 컴플레인 접수 = 청결 이슈 접수 바로 아래 배치(GM 지시 2026-07-07)
+  var VOC_CAT_META = [ // 7종 카테고리 → 담당부서. 컴플레인 접수 = 청결 이슈 접수 바로 아래 배치(GM 지시 2026-07-07). 습득물 접수=7번째(GM 지시 2026-07-18·종합접수처_현황.html과 정합)
     {label:'분실물 접수', icon:'📦', dept:'운영부'},
     {label:'시설물 고장 접수', icon:'🔧', dept:'시설부'},
     {label:'청결 이슈 접수', icon:'🧹', dept:'지원부'},
     {label:'컴플레인 접수', icon:'📣', dept:'운영부'},
     {label:'직원·강사 칭찬합니다', icon:'⭐', dept:'운영부'},
-    {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부'}
+    {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부'},
+    {label:'습득물 접수', icon:'🧳', dept:'운영부'} // lf_list 병합(게시중→접수·수령완료→완료·철회 제외). 사진·PII 미사용, 상태 집계만.
   ];
   var VOC_STATUS_LIST = ['접수','처리중','완료'];
   var FIN_YEAR = '2026';
@@ -1260,6 +1266,19 @@
       .then(function(r){ return r.json(); })
       .then(function(d){ return (d && d.ok && Array.isArray(d.data)) ? d.data : null; })
       .catch(function(){ return null; });
+  }
+  // ── 종합접수처 습득물(lf_list) — 게시중→접수·수령완료→완료 매핑(철회 제외). 카테고리·상태 집계만(사진·PII 미사용). 실패=[] ──
+  //    reg_board(VOC 6종)와 별개 액션이라 병합해야 습득물이 종합접수처 집계에 반영된다(종합접수처_현황.html과 동일 규칙).
+  function readLfBoard(){
+    return fetch(REG_API + '?action=lf_list&_=' + Date.now(), {redirect:'follow', cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!(d && d.ok && Array.isArray(d.data))) return [];
+        var MAP = { '게시중':'접수', '수령완료':'완료' };
+        return d.data.filter(function(r){ return MAP[String(r.status||'')]; })
+          .map(function(r){ return { category:'습득물 접수', dept:'운영부', status:MAP[String(r.status||'')] }; });
+      })
+      .catch(function(){ return []; });
   }
   // ── 라이브 매출: home_kpi → sales.month(당월 실측). 실패/미측정=null ──
   function readHomeSales(){
@@ -3087,9 +3106,12 @@
     _checkTriggered = true;
     Promise.all([
       withTimeout(readKpiValues(), 8000, null),
-      withTimeout(readVocBoard(), 8000, null)
+      withTimeout(readVocBoard(), 8000, null),
+      withTimeout(readLfBoard(), 8000, [])
     ]).then(function(a){
       _kpiValues = a[0]; _vocBoard = a[1];
+      // 습득물(lf) 병합 — VOC 보드가 정상 로드됐을 때만 덧붙인다(VOC 실패 시 습득물만 부분표시=오해 방지, ④ 카드 '측정 개통 전' 유지).
+      if(_vocBoard && Array.isArray(a[2]) && a[2].length){ _vocBoard = _vocBoard.concat(a[2]); }
       _checkReady = true;
       if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); renderSummaryStrip(); renderDeptWorkSummary(); }
     });
