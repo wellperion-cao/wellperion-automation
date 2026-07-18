@@ -16,12 +16,35 @@ funnel GAS(`.deploy-funnel`)가 배포 버전 200개 하드리밋에 걸려 신�
    `/exec` URL을 전환한다. 절차는 `#9001 funnel 이사` 완료 후
    `scripts/gas_migrate_project.py`로 일반화 예정(§이사 플레이북).
 
-## 배포 전 확인
+## 배포 관문 — raw `clasp deploy` 금지 (2026-07-18 CTO 신설)
+**프로덕션 배포(`clasp deploy`)는 절대 raw로 직접 실행하지 않는다.** 반드시
+`scripts/gas_deploy_guard.py`(배포 직전 버전 가드)를 경유한다. 배포 하나가 조용히
+버전을 소비하는 것 자체를 막을 수는 없지만, 임계 임박을 배포 직전에 눈에 띄게
+경고해 "몰래 쌓이는" 사고(funnel #9001)를 재발방지한다.
+
+```bash
+# 개발/테스트는 여전히 clasp push + /dev URL — 버전 미소비, 가드 불필요
+python scripts/gas_deploy_guard.py <project> -- -i <deploymentId> -d "설명"
+# <project> = check | funnel | funnel-v2 | todo | voc (또는 .deploy-* 폴더명)
+```
+
+동작(배포 직전 버전수 조회 후 임계 판정):
+- **<180** : 🟢 조용히 통과 후 배포 진행.
+- **180~194** : ⚠️ 눈에 띄는 경고 출력 후 배포 진행(차단 안 함) — 이사 계획을 슬슬 준비.
+- **≥195** : 🔴 강경 경고 + **배포 기본 중단**. 강행하려면 `--force` 명시(200 직전
+  마지막 슬롯을 실수로 태우는 것 방지).
+- 버전 조회 자체가 실패하면 WARN만 출력하고 통과(오탐으로 배포를 막지 않는다).
+
+검증(실제 배포 없이 판정만): `--check-only` 플래그.
+
+## 배포 전 확인 (5개 프로젝트 일괄 표)
 ```bash
 python scripts/gas_version_monitor.py
 ```
 현재 5개 프로젝트 버전수를 표로 확인한다. 🔴(≥190)·🟠(≥150) 상태의 프로젝트는
-배포 전 반드시 확인 — 임박 시 신규 배포 대신 이사를 먼저 검토한다.
+배포 전 반드시 확인 — 임박 시 신규 배포 대신 이사를 먼저 검토한다. 개별 배포는
+위 `gas_deploy_guard.py`가 배포 직전 자동으로 이 조회를 수행하므로 수동 확인은
+보조 수단이다.
 
 ## 상시 모니터 (2026-07-18 CTO 신설)
 - `scripts/gas_version_monitor.py` — Apps Script API로 5개 프로젝트 버전수 조회.

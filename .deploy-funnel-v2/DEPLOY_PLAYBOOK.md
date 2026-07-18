@@ -14,12 +14,15 @@
    - 테스트는 편집기에서 함수 실행, 또는 인증된 `/dev` URL(소유자만)로.
    - ❌ 오늘의 실수: @188→@200까지 증분 테스트마다 배포 = 12버전 낭비.
 2. **`clasp deploy`(재배포)는 "완성된 기능당 1회"만.** 여러 수정을 모아 마지막에 한 번.
-3. 프로덕션 배포 명령(기존 배포 갱신, 새 배포 생성 금지):
+3. 프로덕션 배포 명령(기존 배포 갱신, 새 배포 생성 금지) — **raw `clasp deploy` 직접
+   호출 금지, 반드시 배포 직전 버전 가드 경유**(`scripts/gas_deploy_guard.py`,
+   `docs/GAS_배포_규율.md`):
    ```
-   cd .deploy-funnel-v2 && clasp push --force && \
-   clasp deploy -i AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo -d "설명"
+   python scripts/gas_deploy_guard.py funnel-v2 -- -i AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo -d "설명"
    ```
-4. 배포 전 `clasp list-versions | tail -1`로 잔여 확인. 180 넘으면 축2로 이사 준비.
+4. 가드가 배포 직전 버전수를 자동 조회해 180/195 임계를 판정한다(180~194=경고 후
+   진행, ≥195=기본 중단·`--force`로만 강행) — 수동 `clasp list-versions` 확인은
+   보조 수단.
 
 ## 축2 — 이사 플레이북 (또 차면 1회 실행)
 자동화 가능한 부분 = `scripts/gas_funnel_migrate.sh` (아래). **딱 한 단계만 수동**: 새 스크립트 편집기에서 cao가 함수 1회 실행→'허용'(OAuth 인증). 그 외(생성·push·배포·16곳 재배선·검증)는 스크립트가.

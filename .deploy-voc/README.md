@@ -10,10 +10,11 @@
 ## 배포 (소스 수정 후)
 ```bash
 cp "3. 웰페리온 가이드/coo/voc/apps_script_voc.js" .deploy-voc/VOC_배포.js
-cd .deploy-voc && clasp push -f && \
-  clasp deploy -i AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ
+python scripts/gas_deploy_guard.py voc -- -i AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ
 ```
 배포ID를 `-i`로 재사용해야 폼 VOC_API의 /exec URL이 보존된다(새 배포 만들면 URL 바뀜).
+**raw `clasp deploy` 직접 호출 금지** — 200 버전 하드리밋 배포 직전 가드
+(`scripts/gas_deploy_guard.py`, `docs/GAS_배포_규율.md`)를 반드시 경유한다.
 
 ## 게이트 활성화(보안)는 별도
 TOKEN_ENFORCE / ACCESS_TOKEN 활성화는 문의·VOC 전 시스템 함께 켜는 시토 작업(CTO-2026-06-17-GAS-PII-ACCESS-GATE)과 묶어 진행. 여기선 끄지도 켜지도 않는다(무중단).
