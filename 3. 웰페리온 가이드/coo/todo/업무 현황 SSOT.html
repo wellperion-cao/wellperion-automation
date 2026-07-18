@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260718-1';
+window.__PV='20260715-8';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -394,30 +394,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .task-actions{width:100%}
   .action-btn{flex:1;text-align:center}
 }
-
-/* ── 통합 탭 바 — 업무 현황 SSOT를 컨테이너로 결재 현황 SSOT 흡수 (2026-07-18 GM 승인 통합).
-   기존 두 페이지 콘텐츠·스크립트·데이터소스는 무수정 보존 — 탭 표시/숨김만 새로 추가. ── */
-.ssot-tab-bar{position:sticky;top:0;z-index:150;display:flex;align-items:center;gap:4px;height:44px;padding:0 16px;background:var(--paper);border-bottom:1px solid var(--border)}
-.ssot-tab-btn{flex:0 0 auto;padding:8px 16px;font-size:13px;font-weight:700;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.15s}
-.ssot-tab-btn:hover{background:var(--accent-bg);color:var(--accent)}
-.ssot-tab-btn.active{background:var(--accent);color:#fff}
-.sticky-top{top:44px}
-#panelTasks,#panelApproval{display:none}
-#panelTasks.ssot-active{display:block}
-#panelApproval.ssot-active{display:flex;flex-direction:column;min-height:calc(100vh - 44px)}
-#approvalFrame{width:100%;flex:1;min-height:calc(100vh - 44px);border:0;display:block;background:var(--bg)}
-@media print{.ssot-tab-bar{display:none!important}}
-@media(max-width:720px){.ssot-tab-btn{padding:7px 12px;font-size:12px}}
 </style>
 </head>
 <body>
-
-<div class="ssot-tab-bar">
-  <button type="button" class="ssot-tab-btn" id="ssotTabBtnTasks" onclick="ssotSelectTab('tasks')">📋 업무 현황</button>
-  <button type="button" class="ssot-tab-btn" id="ssotTabBtnApproval" onclick="ssotSelectTab('approval')">✅ 결재 현황</button>
-</div>
-
-<div id="panelTasks" class="ssot-active">
 
 <div class="sticky-top">
 <div class="header">
@@ -883,8 +862,6 @@ function buildFilters() {
   html += '<button class="share-btn" onclick="openDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">업무 현황 대시보드</button>';
   html += '<button class="share-btn" onclick="printTasks()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
   // 툴바 '🔗 링크'(화면 전체 공유) 제거 — 2026-06-05 GM
-  html += '<button class="share-btn" onclick="shareReport()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">보고용</button>';
-  html += '<button class="share-btn" onclick="shareList()">공유용</button>';
   html += '</div>';
   ownerEl.innerHTML = html;
 
@@ -3206,119 +3183,6 @@ function openDateRangePicker(id, startVal, endVal) {
 }
 
 /* ═══════════════════════════════════════════
-   Share — 공유용 (간단 명료)
-   ═══════════════════════════════════════════ */
-function shareList() {
-  const active = excludeNonStaff(ALL_TASKS.filter(t => t.status !== '완료'));
-  let filtered = _applyShareFilters(active);
-
-  const lines = [];
-  filtered.forEach(t => {
-    const cat = (t.category || '미분류').replace(/^\[\d+\]\s*/, '');
-    let line = '[' + cat + '] ' + (t.title || '');
-    if (t.owner) {
-      line += ' @' + t.owner.split(',').map(s => s.trim()).join(' @');
-    }
-    if (t.startDate || t.endDate) {
-      const s = t.startDate ? fmtDate(t.startDate).slice(5) : '';
-      const e = t.endDate ? fmtDate(t.endDate).slice(5) : '';
-      line += ' ' + s + '~' + e;
-    }
-    if (t.endDate) {
-      const badge = getDeadlineBadge(t.endDate);
-      if (badge && badge.cls !== 'due-ok') line += ' ' + badge.text;
-    }
-    lines.push(line);
-  });
-
-  _copyToClipboard(lines.join('\n'));
-}
-
-/* ═══════════════════════════════════════════
-   Share — 보고용 공유 (격식체)
-   ═══════════════════════════════════════════ */
-function shareReport() {
-  const active = excludeNonStaff(ALL_TASKS.filter(t => t.status !== '완료'));
-  let filtered = _applyShareFilters(active);
-
-  const now = new Date();
-  const ds = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
-  const user = getUser() || '김남욱GM';
-
-  const lines = [
-    '━━━ 웰페리온 업무 현황 보고 ━━━',
-    '보고일: ' + ds,
-    '보고자: ' + user,
-    ''
-  ];
-
-  // Group by category
-  const groups = {};
-  const catOrder = CATEGORIES.concat(['']);
-  filtered.forEach(t => {
-    const cat = t.category || '미분류';
-    if (!groups[cat]) groups[cat] = [];
-    groups[cat].push(t);
-  });
-
-  catOrder.forEach(cat => {
-    if (!groups[cat] || groups[cat].length === 0) return;
-    const label = cat || '미분류';
-    lines.push('■ ' + label + ' (' + groups[cat].length + '건)');
-    groups[cat].forEach((t, idx) => {
-      lines.push('  ' + (idx+1) + '. ' + (t.title || ''));
-      let meta = '     ';
-      if (t.owner) meta += '담당: ' + t.owner;
-      if (t.startDate || t.endDate) {
-        const s = t.startDate ? fmtDate(t.startDate).slice(5) : '';
-        const e = t.endDate ? fmtDate(t.endDate).slice(5) : '';
-        meta += ' | 기간: ' + s + '~' + e;
-      }
-      const status = t.status || '진행중';
-      meta += ' | 상태: ' + status;
-      if (t.endDate) {
-        const badge = getDeadlineBadge(t.endDate);
-        if (badge && badge.cls !== 'due-ok') meta += ' (' + badge.text + ')';
-      }
-      lines.push(meta);
-    });
-    lines.push('');
-  });
-
-  // Summary line
-  const total = filtered.length;
-  lines.push('━━━ 총 ' + total + '건 ━━━');
-
-  _copyToClipboard(lines.join('\n'));
-}
-
-/* ── Share helpers ── */
-function _applyShareFilters(tasks) {
-  let filtered = tasks;
-  if (activeOwnerFilter !== '전체') {
-    filtered = tasks.filter(t => (t.owner || '').includes(activeOwnerFilter));
-  }
-  if (activeCatFilter !== '전체') {
-    filtered = filtered.filter(t => t.category === activeCatFilter);
-  }
-  return filtered;
-}
-
-function _copyToClipboard(text) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => showToast('클립보드에 복사되었습니다'));
-  } else {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast('클립보드에 복사되었습니다');
-  }
-}
-
-/* ═══════════════════════════════════════════
    Toast
    ═══════════════════════════════════════════ */
 let toastTimer = null;
@@ -3705,59 +3569,5 @@ function printResultReport(taskId, override) {
 }
 </script>
     <script src="/wellperion-automation/_assets/print_options.js"></script>
-
-</div><!-- /panelTasks -->
-
-<div id="panelApproval">
-  <iframe id="approvalFrame" title="웰페리온 결재 현황 SSOT" loading="lazy"></iframe>
-</div>
-
-<script>
-/* ── 탭 통합 컨트롤러 (업무 현황 + 결재 현황, 2026-07-18 GM 승인) ──
-   위 두 패널의 콘텐츠·스크립트·데이터소스는 무수정 보존 — 탭 표시/숨김 + 결재 탭 iframe 지연로드만 담당. */
-(function(){
-  var PANEL_FILE = '결재 현황 SSOT_panel.html';
-  var STORE_KEY = 'welp_todo_active_tab';
-  var btnTasks = document.getElementById('ssotTabBtnTasks');
-  var btnApproval = document.getElementById('ssotTabBtnApproval');
-  var panelTasks = document.getElementById('panelTasks');
-  var panelApproval = document.getElementById('panelApproval');
-  var frame = document.getElementById('approvalFrame');
-
-  function ssotSelectTab(tab, opts) {
-    opts = opts || {};
-    var isApproval = tab === 'approval';
-    btnTasks.classList.toggle('active', !isApproval);
-    btnApproval.classList.toggle('active', isApproval);
-    panelTasks.classList.toggle('ssot-active', !isApproval);
-    panelApproval.classList.toggle('ssot-active', isApproval);
-    if (isApproval && !frame.dataset.loaded) {
-      var params = new URLSearchParams(location.search);
-      params.delete('tab');
-      var qs = params.toString();
-      frame.src = encodeURI(PANEL_FILE) + (qs ? ('?' + qs) : '');
-      frame.dataset.loaded = '1';
-    }
-    try { localStorage.setItem(STORE_KEY, tab); } catch (e) {}
-    if (!opts.skipUrl) {
-      try {
-        var u = new URL(location.href);
-        if (isApproval) u.searchParams.set('tab', 'approval'); else u.searchParams.delete('tab');
-        history.replaceState(null, '', u.toString());
-      } catch (e) {}
-    }
-  }
-  window.ssotSelectTab = ssotSelectTab;
-
-  var initialTab = 'tasks';
-  try {
-    var urlTab = new URLSearchParams(location.search).get('tab');
-    if (urlTab === 'approval') initialTab = 'approval';
-    else if (!urlTab) { var saved = localStorage.getItem(STORE_KEY); if (saved === 'approval') initialTab = 'approval'; }
-  } catch (e) {}
-  ssotSelectTab(initialTab, { skipUrl: true });
-})();
-</script>
-
 </body>
 </html>
