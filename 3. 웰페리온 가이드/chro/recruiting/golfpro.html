@@ -47,7 +47,24 @@
   .m-values .t-kicker{font-size:13px;letter-spacing:3px;color:var(--accent);font-weight:800;}
   .m-values h2{font-size:23px;font-weight:800;margin:6px 0 4px;letter-spacing:-.5px;}
   .m-values .t-sub{font-size:13.5px;color:var(--muted);margin-bottom:10px;}
-  .venn{width:100%;max-width:330px;height:auto;display:block;margin:4px auto 0;}
+  /* 인재상 도식 — 순수 HTML/CSS(2026-07-18 A-5 2차) — html2canvas가 별도 처리를 요구하는
+     svg-as-image 경로를 피하기 위해 SVG를 걷어내고 div+border-radius로 재구성.
+     화면·JPG 캡처가 완전히 동일한 마크업/스타일을 공유(이원화 제거). */
+  .venn-html{position:relative;width:100%;max-width:330px;padding-bottom:72.222%;margin:4px auto 0;}
+  .venn-html .vh-node{position:absolute;width:24.444%;padding-bottom:24.444%;border-radius:50%;border-width:2px;border-style:solid;box-sizing:border-box;}
+  .venn-html .vh-node .lbl{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;font-weight:800;line-height:1.15;padding:0 4px;box-sizing:border-box;}
+  .venn-html .vh-center{position:absolute;width:27.778%;padding-bottom:27.778%;border-radius:50%;background:#0b1f3a;box-sizing:border-box;}
+  .venn-html .vh-center .lbl{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:800;}
+  .venn-html .vh-center .l1{color:#ffffff;}
+  .venn-html .vh-center .l2{color:#a9c9e8;margin-top:2px;}
+  .venn-html .vh-tl{left:13.333%;top:6.154%;background:#e2edf8;border-color:#3f6fa0;}
+  .venn-html .vh-tl .lbl{color:#1c3a56;}
+  .venn-html .vh-tr{left:62.222%;top:6.154%;background:#dbe6f4;border-color:#2f5f92;}
+  .venn-html .vh-tr .lbl{color:#1a3f5c;}
+  .venn-html .vh-bl{left:13.333%;top:60%;background:#e6edf6;border-color:#5c7896;}
+  .venn-html .vh-bl .lbl{color:#26425c;}
+  .venn-html .vh-br{left:62.222%;top:60%;background:#dfe8f4;border-color:#4a6f92;}
+  .venn-html .vh-br .lbl{color:#1f3852;}
   .quote{margin-top:16px;border-radius:16px;padding:24px 22px;background:linear-gradient(120deg,#0b1f3a,#173a5e);color:#fff;position:relative;overflow:hidden;text-align:center;}
   .quote::before{content:"\201C";position:absolute;left:14px;top:-6px;font-size:70px;color:rgba(255,255,255,.14);font-weight:800;}
   .quote .s-line{font-size:18px;font-weight:800;line-height:1.5;letter-spacing:-.4px;position:relative;}
@@ -151,27 +168,13 @@
       <div class="t-kicker">WHO WE LOOK FOR</div>
       <h2>웰페리온이 찾는 프로</h2>
       <div class="t-sub">네 가지 핵심 역량 위에 전문성을 더한 골프 파트너를 찾습니다</div>
-      <svg class="venn" width="360" height="260" viewBox="0 0 360 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="웰페리온 인재상 도식">
-        <g stroke="#c3d4e4" stroke-width="2">
-          <line x1="180" y1="130" x2="92"  y2="60"/>
-          <line x1="180" y1="130" x2="268" y2="60"/>
-          <line x1="180" y1="130" x2="92"  y2="200"/>
-          <line x1="180" y1="130" x2="268" y2="200"/>
-        </g>
-        <g font-family="sans-serif" font-size="13" font-weight="800" text-anchor="middle">
-          <circle cx="92"  cy="60"  r="44" fill="#e2edf8" stroke="#3f6fa0" stroke-width="2"/>
-          <text x="92"  y="65"  fill="#1c3a56">문제해결</text>
-          <circle cx="268" cy="60"  r="44" fill="#dbe6f4" stroke="#2f5f92" stroke-width="2"/>
-          <text x="268" y="65"  fill="#1a3f5c">팀워크</text>
-          <circle cx="92"  cy="200" r="44" fill="#e6edf6" stroke="#5c7896" stroke-width="2"/>
-          <text x="92"  y="205" fill="#26425c">주도성</text>
-          <circle cx="268" cy="200" r="44" fill="#dfe8f4" stroke="#4a6f92" stroke-width="2"/>
-          <text x="268" y="205" fill="#1f3852">프로세스</text>
-        </g>
-        <circle cx="180" cy="130" r="50" fill="#0b1f3a"/>
-        <text x="180" y="125" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="800" fill="#ffffff">웰페리온</text>
-        <text x="180" y="143" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="800" fill="#a9c9e8">인재상</text>
-      </svg>
+      <div class="venn-html" role="img" aria-label="웰페리온 인재상 도식">
+        <div class="vh-node vh-tl"><span class="lbl">문제해결</span></div>
+        <div class="vh-node vh-tr"><span class="lbl">팀워크</span></div>
+        <div class="vh-node vh-bl"><span class="lbl">주도성</span></div>
+        <div class="vh-node vh-br"><span class="lbl">프로세스</span></div>
+        <div class="vh-center"><span class="lbl"><span class="l1">웰페리온</span><span class="l2">인재상</span></span></div>
+      </div>
       <div class="quote" id="sloganQuote"><div class="s-line" id="sloganText">최고의 공간은 결국,<br><b>사람이 완성합니다</b></div></div>
     </div>
 
@@ -342,18 +345,7 @@ function downloadPageAsJpg(){
       backgroundColor: bg,
       scale: 2.5,
       useCORS: true,
-      ignoreElements: function(el){ return el && el.id === 'jpgDownloadBtn'; },
-      onclone: function(clonedDoc){
-        // html2canvas의 SVGElementContainer는 CSS(width:100%/height:auto)가 아니라
-        // svg 요소 자체의 width/height 속성(baseVal)으로 고유 크기를 판단한다.
-        // 속성이 없으면 벤 다이어그램이 0크기로 처리되어 캡처에서 누락되므로,
-        // 캡처용 클론 문서에서 한 번 더 명시적으로 강제한다(정본 수정과 이중 방어).
-        var vennEls = clonedDoc.querySelectorAll('svg.venn');
-        for (var i = 0; i < vennEls.length; i++) {
-          vennEls[i].setAttribute('width', '360');
-          vennEls[i].setAttribute('height', '260');
-        }
-      }
+      ignoreElements: function(el){ return el && el.id === 'jpgDownloadBtn'; }
     }).then(function(canvas){
       var link = document.createElement('a');
       var fname = (document.title || 'wellperion_공고').replace(/[\\\/:*?"<>|]/g,'').trim();
