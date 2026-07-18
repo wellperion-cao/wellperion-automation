@@ -142,6 +142,9 @@
   .crow-prodseg.semi{color:#7ac4f0; background:rgba(122,196,240,0.14); border:1px solid rgba(122,196,240,0.35);}
   .crow-prodseg.propose{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
   .crow-prodseg.manual{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  .crow-metric{font-size:10px; font-weight:700; border-radius:20px; padding:1px 7px; white-space:nowrap; color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  .crow-metric.reach{color:#d4af37; background:rgba(184,134,11,0.14); border:1px solid rgba(184,134,11,0.35);}
+  .crow-metric.queue{color:var(--accent-soft); background:rgba(124,58,237,0.10); border:1px solid rgba(124,58,237,0.28);}
   @media (max-width:640px){ .crow-role{max-width:26ch;} }
   @media print{
     td.role-summary-cell{position:static !important; background:#f4f4f4 !important; color:#111 !important;}
@@ -153,6 +156,9 @@
     .crow-prodseg.mech{color:#4a2a91 !important; background:#efe8fb !important;}
     .crow-prodseg.semi{color:#1b4f72 !important; background:#e8f3fb !important;}
     .crow-prodseg.propose{color:#9c1c74 !important; background:#fbe6f3 !important;}
+    .crow-metric{border-width:1px !important;}
+    .crow-metric.reach{color:#8a6d1a !important; background:#f7f0dc !important;}
+    .crow-metric.queue{color:#4a2a91 !important; background:#efe8fb !important;}
   }
 
   /* ── 편집 모드 ── */
@@ -932,6 +938,23 @@
     });
     return '<span class="crow-prod" title="완성 정도 집계 · status/module_registry.json">🏭 모듈 ' + arr.length + '개 · ' + segs.join('') + '</span>';
   }
+  // 🎯도달·📍완료·진행 컴팩트 칩 — 접힘 요약 전용. 신규 fetch 없음: 펼침이 쓰는 동일 소스(_reachData·_queueCounts)만 재사용.
+  //   🎯 도달N% = northStarBlock()의 비-axes 분기와 동일 값(_reachData[role].reach_pct, mode 무관·측정+마일스톤 공통 실값).
+  //   axes형 역할(측정 커버리지만 있고 reach_pct 없음)은 커버리지≠도달이라 칩 생략(가짜 % 금지 · 약속 L05).
+  //   📍 완료·진행 = progressBlock()과 동일 _queueCounts[role.id]{active, doneToday}. 데이터 없는 role은 각 칩 자연 생략.
+  function crowMetrics(role){
+    var out = '';
+    var d = (_reachData && _reachData[role.id]) || null;
+    if(d && typeof d.reach_pct === 'number'){
+      var rpct = Math.max(0, Math.min(100, Math.round(d.reach_pct)));
+      out += '<span class="crow-metric reach" title="북극성 도달율(펼침 동일값) · status/northstar_reach.json">🎯 도달 ' + rpct + '%</span>';
+    }
+    var c = (_queueCounts && _queueCounts[role.id]) || null;
+    if(c){
+      out += '<span class="crow-metric queue" title="완료(오늘)·진행중 배 수(펼침 📍 지금 하는 일과 동일 집계) · status/_queue.json">📍 완료 ' + c.doneToday + ' · 진행 ' + c.active + '</span>';
+    }
+    return out;
+  }
   // 접힌 행 = colspan 4 요약 줄 하나(항상 보임). 셀 전체 클릭 = 펼치기.
   function summaryCell(role, ac){
     var oneL = roleOneLiner(role);
@@ -945,6 +968,7 @@
         (role.draft ? '<span class="rdraft">🔖 초안</span>' : '') +
         (oneL ? '<span class="crow-role">— ' + esc(oneL) + '</span>' : '') +
         prodSummary(role) +
+        crowMetrics(role) +
         statusBadge(reachStatus(role)) +
       '</div>' +
     '</td>';
