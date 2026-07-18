@@ -4,6 +4,9 @@
 정규 스케줄: 06/12/18/21/23시 텔레그램 자동 보고 (GM 알림 홍수 축소 · 2026-07-18 GM 승인)
   · GM DM: 06(개인)·18(개인)·21(마감)·23(마감점검 — 이상시만 조건부 발송)
   · 12시는 점검관리방(실무진) 전용 — GM DM 아님
+  · 점검 알림 통합(GM 2026-07-18 추가 확정): 오전점검(12시)·마감점검 개인DM(23시)은
+    킬스위치 CHECK_MORNING_1200_ENABLED/CHECK_2300_GM_DM_ENABLED=False 로 발송만 OFF
+    (22:30 점검관리방 다이제스트·23:00 카카오 4부서 요약은 무변경 유지). 계산/원장 적재는 보존.
   · 07(어제결산)·09(매출/진행)·15(중간정리)·22(취침) GM DM 슬롯은 08:00 통합브리프로 흡수·폐지
 테스트 모드: python daily_scheduler.py --test  →  1시간 주기 실행
 ※ 08시(오늘의 항로 통합브리프)는 ceo_morning_pipeline.py (별도 Task Scheduler) 담당 —
@@ -203,6 +206,11 @@ CFO_SHEET_URL = ENV.get("CFO_SHEET_URL", "")
 
 # 업무현황 SSOT API (G1 할일, 09·15시 공용)
 SSOT_API_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+
+# ── 점검 알림 통합 킬스위치 (GM 2026-07-18) ────────────────────────────────────
+#   가역·발송만 게이트(계산/원장 적재 등 부작용은 항상 보존). True로 되돌리면 즉시 부활.
+CHECK_MORNING_1200_ENABLED = False   # GM 2026-07-18: 오전 점검(12시) 알림 없앰. True로 되돌리면 부활
+CHECK_2300_GM_DM_ENABLED = False     # GM 2026-07-18: 마감점검 개인DM 중복 제거(점검관리방·카톡으로 수신). True로 부활
 
 
 # ── state.json 읽기/쓰기 ─────────────────────────────────────────────────────
@@ -2717,6 +2725,9 @@ def run_report(slot: str, test_mode: bool = False) -> None:
         if not _anom23:
             logger.info(f"{label} 마감 점검 이상 0 — GM DM 조건부 미발신(상세는 카톡 23시 담당)")
             return
+        if not CHECK_2300_GM_DM_ENABLED:
+            logger.info(f"{label} CHECK_2300_GM_DM_ENABLED=False — 마감점검 개인DM 게이트 OFF(점검관리방·카톡 23시로 수신, 계산/원장 적재는 보존). 미발신")
+            return
         body_override = _b23
         logger.info(f"{label} 마감 점검 이상 감지 — GM DM 발신")
 
@@ -2762,6 +2773,9 @@ def run_report(slot: str, test_mode: bool = False) -> None:
     # 12시 점검현황 = 점검관리방 전용(GM 2026-07-13) — 업무보고(owner DM) 중복 발송 제거.
     #   test_mode는 GM DM(owner)로 미리보기만(방 오발송 방지).
     if slot == "12" and not test_mode:
+        if not CHECK_MORNING_1200_ENABLED:
+            logger.info(f"{label} CHECK_MORNING_1200_ENABLED=False — 오전점검(12시) 게이트 OFF. 점검관리방 미발신(본문 계산은 보존)")
+            return
         room_ok = send_telegram(CHECK_NUDGE_CHAT_ID, body, parse_mode=parse_mode)
         logger.info(f"{label} 점검관리방 발송 {'완료' if room_ok else '실패'} chat_id={CHECK_NUDGE_CHAT_ID}")
         return
