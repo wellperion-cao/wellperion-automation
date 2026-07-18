@@ -99,6 +99,16 @@
 
   footer{margin-top:70px;border-top:1px solid var(--border);padding-top:16px;
     text-align:center;color:#a39b8f;font-size:12px}
+
+  /* 실제 화면 캡처 */
+  figure.shot{margin:16px 0 22px}
+  figure.shot img{display:block;width:100%;max-width:100%;height:auto;
+    border:1px solid var(--border);border-radius:12px;
+    box-shadow:0 4px 18px rgba(26,24,21,0.10)}
+  figure.shot.narrow img{max-width:560px;margin:0 auto}
+  figure.shot figcaption{text-align:center;font-size:13px;color:var(--dim);
+    margin-top:8px}
+  figure.shot figcaption b{color:#7a6a56}
 </style>
 </head>
 <body>
@@ -143,20 +153,40 @@
       <div class="dd">업무를 <b>마친 후</b> 결과를 보고할 때. 핵심 요약·경과·성과·교훈 서식이 자동으로 깔립니다.</div>
     </div>
   </div>
+  <figure class="shot">
+    <img src="guide_img/03_doc_tabs.png" alt="문서 칸의 양식 탭 3종 — 일반양식·기획안·결과보고">
+    <figcaption>▲ 실제 화면 — <b>📝 문서</b> 칸 위의 양식 탭 3종. 원하는 탭을 누르면 아래 편집기에 서식이 깔립니다.</figcaption>
+  </figure>
   <div class="callout"><span class="tag">TIP</span>같은 탭을 한 번 더 누르면 "서식으로 새로 시작할까요?" 확인 후 서식을 새로 깔 수 있습니다.</div>
 
   <h2 class="sec">3. 작성 방법 (기획안 기준)</h2>
   <ol class="steps">
     <li><b class="st-t">업무 현황 페이지에서 <span class="ui-btn dark">+ 업무 추가</span> 또는 기존 업무 카드의 편집을 엽니다</b>
-      <span class="st-d">업무명·담당자·기간을 먼저 입력해 두면 서식에 자동으로 채워집니다.</span></li>
+      <span class="st-d">업무명·담당자·기간을 먼저 입력해 두면 서식에 자동으로 채워집니다.</span>
+      <figure class="shot narrow">
+        <img src="guide_img/01_add_btn.png" alt="화면 하단의 + 업무 추가 버튼">
+        <figcaption>▲ 화면 하단에 항상 떠 있는 <b>[+ 업무 추가]</b> 버튼</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="guide_img/02_modal_top.jpg" alt="업무 추가 화면 — 업무명·카테고리·담당자·일정 입력">
+        <figcaption>▲ 실제 화면 — 버튼을 누르면 열리는 입력 화면. 업무명·담당자·일정부터 입력하세요.</figcaption>
+      </figure></li>
     <li><b class="st-t">📝 문서 칸에서 <span class="ui-btn" style="color:var(--blue)">📄 기획안</span> 탭을 클릭합니다</b>
-      <span class="st-d">웰페리온 공식 서식이 자동으로 깔리고, 업무명·작성자·작성일·기간이 자동 기입됩니다.</span></li>
+      <span class="st-d">웰페리온 공식 서식이 자동으로 깔리고, 업무명·작성자·작성일·기간이 자동 기입됩니다.</span>
+      <figure class="shot">
+        <img src="guide_img/04_plan_top.png" alt="기획안 탭 클릭 시 자동 삽입되는 공식 서식 — 업무명·작성자·작성일 자동 기입">
+        <figcaption>▲ 실제 화면 — 탭 한 번에 서식이 깔리고, 위에서 입력한 <b>업무명·작성자·날짜가 자동으로 채워진</b> 모습.</figcaption>
+      </figure></li>
     <li><b class="st-t">각 항목의 "내용을 입력하세요." 자리를 지우고 내용을 채웁니다</b>
       <span class="st-d">표에 줄이 더 필요하면 편집기 메뉴의 표 기능으로 행을 추가할 수 있습니다.</span></li>
     <li><b class="st-t">사진·캡처는 복사해서 그대로 붙여넣기(Ctrl+V) 하세요</b>
       <span class="st-d">이미지가 자동으로 업로드되어 문서에 들어갑니다. 파일 첨부 과정이 따로 없습니다.</span></li>
     <li><b class="st-t">저장 버튼을 누르면 완료</b>
-      <span class="st-d">업무 카드에 <span class="ui-btn">📄 기획안 문서 열기 — A4 크게 보기 ▸</span> 버튼이 생깁니다.</span></li>
+      <span class="st-d">화면 맨 아래의 저장 버튼을 누르면 업무 카드에 <span class="ui-btn">📄 기획안 문서 열기 — A4 크게 보기 ▸</span> 버튼이 생깁니다.</span>
+      <figure class="shot">
+        <img src="guide_img/08_modal_bottom.jpg" alt="화면 하단 — 진척 로그·첨부파일·결재요청 체크·인쇄/PDF·취소·저장 버튼">
+        <figcaption>▲ 실제 화면 — 화면 하단. 결재가 필요하면 <b>결재요청</b>에 체크하고, 오른쪽 아래 <b>[저장]</b>을 누릅니다.</figcaption>
+      </figure></li>
   </ol>
   <p class="muted">🎯 결과보고도 같은 방법입니다 — 탭만 <b>🎯 결과보고</b>를 누르면 됩니다.</p>
 
@@ -172,6 +202,10 @@
     <tr><td class="lbl">4. 실행 계획</td><td>일정 · 내용 · 담당을 표로 정리 (마일스톤)</td></tr>
     <tr><td class="lbl">5. 예산</td><td>항목 · 금액 · 비고 표 — 예산이 있으면 결재 라인과 연동됩니다</td></tr>
   </table></div>
+  <figure class="shot">
+    <img src="guide_img/05_plan_tables.png" alt="기획안 서식의 실행 계획·예산 표 부분">
+    <figcaption>▲ 실제 화면 — 기획안 서식 아랫부분. <b>실행 계획·예산 표</b>가 미리 그려져 있어 칸만 채우면 됩니다.</figcaption>
+  </figure>
 
   <h3 class="sub">🎯 결과보고 서식</h3>
   <div class="t-scroll"><table>
@@ -183,6 +217,14 @@
     <tr><td class="lbl">3. 결과·성과</td><td>지표 · 목표 · 실적 · 달성률 표 + 성과 사진 붙여넣기</td></tr>
     <tr><td class="lbl">4. 교훈 및 후속 계획</td><td>배운 점과 다음에 이어갈 일</td></tr>
   </table></div>
+  <figure class="shot">
+    <img src="guide_img/06_result_top.png" alt="결과보고 서식 상단 — 핵심 요약 칸과 개요">
+    <figcaption>▲ 실제 화면 — 결과보고 서식 윗부분. 검은 <b>핵심 요약</b> 칸이 이 서식의 얼굴입니다.</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="guide_img/07_result_bottom.png" alt="결과보고 서식 하단 — 진행 경과·결과 성과 표와 사진 붙여넣기 자리">
+    <figcaption>▲ 실제 화면 — 결과보고 서식 아랫부분. 성과 표 아래 점선 칸에 <b>사진을 그대로 붙여넣기(Ctrl+V)</b> 하면 됩니다.</figcaption>
+  </figure>
 
   <h2 class="sec">5. 열람과 인쇄</h2>
   <div class="t-scroll"><table>
@@ -194,6 +236,10 @@
     <tr><td class="lbl">결재란 포함 공식 출력</td>
       <td>결재 현황 페이지의 해당 카드에서 <span class="ui-btn dark">🖨 업무보고서 인쇄</span> 클릭 — 결재란과 기획안·결과보고가 함께 실린 공식 문서로 출력됩니다</td></tr>
   </table></div>
+  <figure class="shot narrow">
+    <img src="guide_img/09_viewer_a4.png" alt="A4 크게 보기 화면 — 흰 종이 위 문서와 인쇄/PDF·닫기 버튼">
+    <figcaption>▲ 실제 화면 — <b>A4 크게 보기</b>. 종이 그대로 보이고, 오른쪽 위 <b>[🖨 인쇄 / PDF]</b>로 바로 출력·저장할 수 있습니다.</figcaption>
+  </figure>
 
   <h2 class="sec">6. 자주 묻는 질문</h2>
   <details>
