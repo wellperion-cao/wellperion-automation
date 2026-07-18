@@ -1085,15 +1085,18 @@ function renderDash(){
   drawDonut("cSource",Object.keys(srcDist).length?srcDist:{"데이터 없음":1});
   try{ window.__lastDashSig=dashSig(); }catch(e){}
 }
-/* 오늘 생일 위젯 — PII 정적 노출 금지: 백엔드가 내려주는 안전 파생 필드 bday("MM-DD", 연도·성별 없음)만 읽어
+/* 생일 위젯(D-7 확장) — PII 정적 노출 금지: 백엔드가 내려주는 안전 파생 필드 bday("MM-DD", 연도·성별 없음)만 읽어
    월/일을 비교·표시한다. 주민번호 원본 필드는 백엔드 @58 지혈로 응답에서 완전히 제거되어 더는 존재하지 않으므로
    그 값을 정규식으로 탐지하던 구코드는 폐기(잔재 금지). 생년(나이)·원본 값은 절대 렌더링하지 않는다.
-   (2026-07-14 A-3, 재직자 케어 트랙 마일스톤 포착 — bday 배선으로 교체) */
+   (2026-07-14 A-3, 재직자 케어 트랙 마일스톤 포착 — bday 배선으로 교체)
+   (2026-07-18 A-5, 매니저 지시로 표시 범위를 "당일만" → "D-7 이내"로 확장 — 겸직 중복 제거·안전 파생 필드
+   읽기 등 기존 골격은 그대로 두고 날짜 판정·렌더링만 확장. 연말→연초 롤오버는 연도를 넘겨 재계산해 처리.) */
 function birthdayCard(emp){
   emp=emp||DB.emp||[];
   var active=emp.filter(function(e){return e["재직 상태"]!=="퇴사";});
   var today=new Date();
-  var tm=today.getMonth()+1, td=today.getDate();
+  today.setHours(0,0,0,0);
+  var ty=today.getFullYear();
   var byName={};
   active.forEach(function(e){
     var nm=(e["성명"]||e["이름"]||"").toString().trim();
@@ -1106,15 +1109,41 @@ function birthdayCard(emp){
       byName[nm]={dept:dept,mm:m?parseInt(m[1],10):null,dd:m?parseInt(m[2],10):null};
     }
   });
-  var hits=Object.keys(byName).filter(function(nm){return byName[nm].mm===tm&&byName[nm].dd===td;})
-    .map(function(nm){return {nm:nm,dept:byName[nm].dept,mm:byName[nm].mm,dd:byName[nm].dd};});
-  if(hits.length){
-    return '<div class="alert" style="background:linear-gradient(135deg,#fff8ec,#fdf3e0);border:1px solid var(--gold)">'+
-      '<b>🎂 오늘 생일</b><div>'+
-      hits.map(function(h){return '<b>'+esc(h.nm)+'</b>'+(h.dept?' · '+esc(h.dept):"")+' · '+h.mm+'월 '+h.dd+'일 — 생일을 진심으로 축하합니다 🎉';}).join('<br>')+
-      '</div></div>';
+  // 연도 무시하고 월·일만 비교 — 올해 날짜가 이미 지났으면 내년으로 넘겨 재계산(12월→1월 경계 롤오버 처리).
+  function daysUntil(mm,dd){
+    var d=new Date(ty,mm-1,dd);
+    d.setHours(0,0,0,0);
+    if(d<today){ d=new Date(ty+1,mm-1,dd); d.setHours(0,0,0,0); }
+    return Math.round((d-today)/86400000);
   }
-  return '<div class="alert empty" style="opacity:.8"><b>🎂 오늘 생일</b><div>오늘 생일인 직원이 없습니다.</div></div>';
+  var upcoming=Object.keys(byName).map(function(nm){
+    var b=byName[nm];
+    if(b.mm==null||b.dd==null)return null;
+    var d=daysUntil(b.mm,b.dd);
+    if(d<0||d>7)return null; // D-7 이내(오늘 포함)만 표시
+    return {nm:nm,dept:b.dept,mm:b.mm,dd:b.dd,d:d};
+  }).filter(Boolean).sort(function(a,b){return a.d-b.d;});
+  var todays=upcoming.filter(function(h){return h.d===0;});
+  var future=upcoming.filter(function(h){return h.d>0;});
+  if(!upcoming.length){
+    return '<div class="alert empty" style="opacity:.8"><b>🎂 다가오는 생일</b><div>7일 이내 생일인 직원이 없습니다.</div></div>';
+  }
+  var header=todays.length?'🎂 오늘 생일':'🎂 다가오는 생일';
+  var html='<div class="alert" style="background:linear-gradient(135deg,#fff8ec,#fdf3e0);border:1px solid var(--gold);flex-direction:column;gap:6px">';
+  html+='<b style="font-size:13.5px">'+header+'</b>';
+  if(todays.length){
+    // 당일 생일자 — 기존 문구 그대로, 시각적으로 확실히 강조(더 큰 글씨·골드 포인트).
+    html+='<div style="font-size:14px;font-weight:700;color:#7a5a16">'+
+      todays.map(function(h){return '<b>'+esc(h.nm)+'</b>'+(h.dept?' · '+esc(h.dept):"")+' · '+h.mm+'월 '+h.dd+'일 — 생일을 진심으로 축하합니다 🎉';}).join('<br>')+
+      '</div>';
+  }
+  if(future.length){
+    html+='<div style="font-size:12px;'+(todays.length?'border-top:1px dashed #e5d29c;padding-top:6px;':'')+'">'+
+      future.map(function(h){return '<b style="color:var(--gold-deep);display:inline-block;min-width:30px">D-'+h.d+'</b> '+esc(h.nm)+(h.dept?'<span style="color:var(--ink-soft)"> · '+esc(h.dept)+'</span>':"");}).join('<br>')+
+      '</div>';
+  }
+  html+='</div>';
+  return html;
 }
 function kpi(label,val,note){
   return '<div class="kpi"><div class="label">'+esc(label)+'</div>'+
