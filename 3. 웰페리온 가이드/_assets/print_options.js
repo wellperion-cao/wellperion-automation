@@ -195,10 +195,18 @@
     // 위젯(#po-toggle-btn)이 DOM에서 뜯겨나갈 수 있다. 이럴 때 앱이 재렌더 직후
     // window.wlpReattachPrintOptions()를 호출하면 여기서 다시 찾아 붙인다. 이미 살아있으면 스킵
     // (중복 위젯 방지). 트리거 속성이 없는 기존 페이지는 이 함수를 아무도 호출하지 않으므로 무영향.
-    var liveToggle = document.getElementById('po-toggle-btn');
-    if(liveToggle && liveToggle.isConnected) return;
-
     var trigger = findTrigger();
+    var usedExplicit = !!(trigger && trigger.hasAttribute && trigger.hasAttribute('data-po-trigger'));
+    var liveToggle = document.getElementById('po-toggle-btn');
+    if(liveToggle && liveToggle.isConnected){
+      var wasFallback = liveToggle.classList.contains('po-toggle-fallback');
+      if(!(wasFallback && usedExplicit)) return; // 이미 정상 부착 상태 — 그대로 둠
+      // 데이터 로드 전엔 트리거가 없어 폴백(플로팅) 버튼을 먼저 만들었는데, 이제 명시 트리거
+      // ([data-po-trigger])가 나타남 — 폴백을 걷어내고 제대로 다시 붙인다.
+      var oldWrap = liveToggle.parentElement;
+      if(oldWrap && oldWrap.classList.contains('po-wrap') && oldWrap.parentNode) oldWrap.parentNode.removeChild(oldWrap);
+    }
+
     var isFallback = !trigger; // 인쇄 트리거가 없는 페이지 — 플로팅 버튼을 스스로 생성(전 페이지 커버리지)
     if(isFallback && document.querySelector('.po-wrap.po-floating')) return; // 폴백 버튼은 1회만
     injectWidgetStyle();
