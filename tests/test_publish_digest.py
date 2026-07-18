@@ -129,6 +129,10 @@ def test_sends_to_inquiry_chat_id_not_gm_channel(monkeypatch):
         return True
 
     monkeypatch.setattr(pd, "_send", fake_send)
+    # ★ 2026-07-18 시토: L1 수영 콘텐츠의 실제 슬라이드 이미지가 리포에 존재해
+    #   _send_photo(미모킹) 실경로로 빠져 실제 텔레그램 전송이 발생하던 안전결함 수리.
+    #   이 테스트는 _send(텍스트) 경로 검증이 목적이므로 이미지 경로를 결정적으로 차단한다.
+    monkeypatch.setattr(pd, "_first_slide_image", lambda group: "")
     ledger_path = _tmp_ledger_path()
     try:
         expected_chat_id = pd._load_env_val(pd.TELEGRAM_INQUIRY_CHAT_ID_ENV_KEY)
@@ -140,8 +144,11 @@ def test_sends_to_inquiry_chat_id_not_gm_channel(monkeypatch):
         assert sent == 1
         assert captured["chat_id"] == expected_chat_id
         assert captured["chat_id"] != gm_chat_id or not gm_chat_id, "GM 채널로 가면 안 됨"
-        # 인스타그램 미리보기 카드 URL이 그룹의 인스타 post_url로 전달됐는지
-        assert captured["preview_url"] == "https://www.instagram.com/p/Day7fIBEphf/"
+        # ★ 2026-07-18 시토 수정: 2026-07-16부터 send_publish_digest()는 IG 미리보기 URL을
+        #   _send()에 전달하지 않는다(_send 자체도 preview_url 인자를 무시 — 429 유발이라 폐기).
+        #   옛 단언(IG post_url 전달)은 그 이전 설계를 테스트해 드리프트로 실패하던 것 — 현재
+        #   계약(항상 빈 값)에 맞춘다.
+        assert captured["preview_url"] == ""
     finally:
         if ledger_path.exists():
             ledger_path.unlink()
@@ -151,8 +158,12 @@ def test_sends_to_inquiry_chat_id_not_gm_channel(monkeypatch):
 # ②-1 인스타그램 미리보기 카드 — _send payload에 link_preview_options 실제 실림
 # ---------------------------------------------------------------------------
 def test_send_payload_includes_instagram_link_preview_options(monkeypatch):
-    """_send()가 sendMessage 요청 바디에 link_preview_options(JSON)를 실어
-    인스타 게시물이 본문 위 큰 이미지 카드로 뜨게 하는지 (urlopen 자체를 가로채 검증)."""
+    """_send()가 sendMessage 요청 바디에 link_preview_options(JSON)를 싣는지 검증
+    (urlopen 자체를 가로채 검증).
+    ★ 2026-07-18 시토 수정: 2026-07-16 진단(IG 링크 미리보기가 텔레그램 429 유발)으로
+    _send()가 미리보기를 항상 비활성(is_disabled=True)하도록 바뀐 뒤 테스트가 갱신되지
+    않아 옛 동작(prefer_large_media/show_above_text 카드)을 계속 단언하며 실패하던 드리프트
+    수리 — 현재 코드의 실제 계약(is_disabled=True 항상 실림)에 맞춘다."""
     import urllib.parse as _urlparse
 
     captured_data = {}
@@ -180,15 +191,15 @@ def test_send_payload_includes_instagram_link_preview_options(monkeypatch):
     assert ok is True
     assert "link_preview_options" in captured_data["body"], "link_preview_options가 payload에 없음"
     opts = json.loads(captured_data["body"]["link_preview_options"][0])
-    assert opts["url"] == "https://www.instagram.com/p/Day7fIBEphf/"
-    assert opts["prefer_large_media"] is True
-    assert opts["show_above_text"] is True
-    # 기존 disable_web_page_preview(미리보기 끄는 옵션)는 더 이상 실리지 않아야 함
+    assert opts["is_disabled"] is True
+    # 기존 disable_web_page_preview(구식 옵션명)는 실리지 않아야 함
     assert "disable_web_page_preview" not in captured_data["body"]
 
 
-def test_send_payload_omits_link_preview_options_without_instagram_url(monkeypatch):
-    """인스타 URL이 없으면 link_preview_options를 생략하고 정상 발송(에러 없이)."""
+def test_send_payload_disables_link_preview_without_instagram_url(monkeypatch):
+    """인스타 URL이 없어도 link_preview_options(is_disabled=True)는 여전히 실려 정상 발송된다.
+    ★ 2026-07-18 시토 수정: 옛 이름은 '미리보기 옵션 생략'이었으나, 2026-07-16부터 _send()는
+    preview_url 유무와 무관하게 항상 미리보기를 비활성화한다(429 방지) — 그 계약에 맞춘다."""
     import urllib.parse as _urlparse
 
     captured_data = {}
@@ -211,7 +222,9 @@ def test_send_payload_omits_link_preview_options_without_instagram_url(monkeypat
     ok = pd._send("FAKE_TOKEN", "12345", "본문 텍스트")
 
     assert ok is True
-    assert "link_preview_options" not in captured_data["body"]
+    assert "link_preview_options" in captured_data["body"]
+    opts = json.loads(captured_data["body"]["link_preview_options"][0])
+    assert opts["is_disabled"] is True
 
 
 # ---------------------------------------------------------------------------
@@ -246,6 +259,9 @@ def test_idempotent_second_call_sends_zero(monkeypatch):
         return True
 
     monkeypatch.setattr(pd, "_send", fake_send)
+    # ★ 2026-07-18 시토: 실제 슬라이드 이미지 존재 시 _send_photo(미모킹) 실경로로 빠지는
+    #   안전결함 수리 — 이 테스트는 _send 호출 횟수 검증이 목적이라 이미지 경로를 차단한다.
+    monkeypatch.setattr(pd, "_first_slide_image", lambda group: "")
     ledger_path = _tmp_ledger_path()
     try:
         first = pd.send_publish_digest(_l1_swim_items(), dry_run=False, ledger_path=ledger_path)
