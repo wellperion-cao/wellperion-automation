@@ -420,30 +420,6 @@
   /* ── 0순위 배지(💰 매출 섹션 헤더 · 월별 상단 재구성 · GM 확정 2026-07-04) ── */
   .rank0-badge{display:inline-block; font-size:11px; font-weight:800; color:#221F20; background:var(--gold); border-radius:7px; padding:2px 9px; margin-right:6px; letter-spacing:-0.01em; vertical-align:middle;}
 
-  /* ── 🗂️ 부서별 업무 현황 요약 (이달 objectives 부서별/담당별 집계 · 순수 추가 섹션) ── */
-  .blk.dept-work-wrap{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:5px 14px 10px; margin-bottom:4px;}
-  .blk.dept-work-wrap h2.sec{margin-top:8px;}
-  /* 🗂️ 운영 현황 요약 — 컴팩트 3카드(점검·접수처·업무 · 총/진행/완료). GM 지시 2026-07-15: 긴 부서별 표·담당별 칩 폐기(배1091) */
-  .ows-grid{display:flex; flex-wrap:wrap; gap:10px;}
-  .ows-card{flex:1; min-width:200px; background:var(--paper); border:1px solid var(--border-strong); border-radius:11px; padding:11px 14px 12px; display:flex; flex-direction:column; gap:8px;}
-  .ows-h{font-size:12.5px; font-weight:800; color:var(--text-soft);}
-  .ows-stats{display:flex; gap:8px;}
-  .ows-stat{flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px; background:var(--surface); border:1px solid var(--border-strong); border-radius:9px;}
-  .ows-stat .ows-n{font-size:21px; font-weight:800; letter-spacing:-0.02em; color:var(--text); font-variant-numeric:tabular-nums; line-height:1;}
-  .ows-stat .ows-l{font-size:10.5px; font-weight:700; color:var(--dim);}
-  .ows-stat.prog{border-color:rgba(122,196,240,0.45);} .ows-stat.prog .ows-n{color:var(--blue);}
-  .ows-stat.done{border-color:rgba(106,191,123,0.45);} .ows-stat.done .ows-n{color:var(--green);}
-  .ows-stats.pending{min-height:42px; align-items:center; justify-content:center;}
-  .ows-pend{font-size:13px; font-weight:700; color:var(--text-soft);}
-  .ows-sub{font-size:10.5px; color:var(--dim); line-height:1.5;}
-  /* home식 세분 표기(배1091) — 점검 월/오늘 mini · 접수처 선택월 접수/완료 row */
-  .ows-stat .ows-mini{font-size:9.5px; font-weight:800; color:var(--dim); margin-top:1px; font-variant-numeric:tabular-nums;}
-  .ows-stat .ows-mini.done{color:var(--green);}
-  .ows-monthline{display:flex; gap:12px; flex-wrap:wrap; font-size:10.5px; font-weight:800; padding:5px 8px; background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; font-variant-numeric:tabular-nums;}
-  .ows-monthline .lbl{color:var(--dim); font-weight:700;}
-  .ows-monthline .mn-new{color:var(--blue);} .ows-monthline .mn-done{color:var(--green);}
-  @media (max-width:640px){ .ows-card{min-width:100%;} }
-
   /* ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · 중요도 자동 선정 · GM 확정 2026-07-04) ── */
   .blk.top3-wrap{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:5px 14px 10px; margin-bottom:4px;}
   .blk.top3-wrap h2.sec{margin-top:8px;}
@@ -1016,12 +992,6 @@
       <div id="top3-board"><div class="board-status">핵심 과제 top3를 선정하는 중…</div></div>
     </section>
 
-    <!-- 🗂️ 부서별 업무 현황 요약 (이달 objectives 부서별/담당별 집계 · 순수 추가 섹션 · GM 지시) -->
-    <section class="blk dept-work-wrap" id="dept-work-wrap" data-blkid="deptwork">
-      <h2 class="sec">🗂️ 운영 현황 요약 <span class="lvb lvb-half" title="점검·종합접수처(습득물 포함)=실시간 자동측정 / 업무=월간계획 objectives(수동)">🟠 반반</span> <span class="stag">점검·접수처·업무 · 총/진행/완료</span></h2>
-      <div id="dept-work-summary"><div class="board-status">운영 현황을 집계하는 중…</div></div>
-    </section>
-
     <!-- 📋 이달 핵심 과제 상세 (신규/이월 상세표 + 콤팩트 요약 · 舊 sum-hero — 상단 top3 아래 상세) -->
     <section class="blk sum-hero" id="report-hero-wrap" data-blkid="detail">
       <h2 class="sec">📋 이달 핵심 과제 상세 <span class="lvb lvb-off" title="월간계획 objectives(수동 관리) — 실시간 자동측정 아님">🔴 비라이브</span> <span class="stag">요약 + 신규·이월 상세</span></h2>
@@ -1236,7 +1206,7 @@
     var cached = _cmLoad(monKey);
     // 캐시 있으면 즉시 '갱신 중'으로 값 노출(체감 0초) · 없으면 첫 방문만 '불러오는 중'.
     _checkMonthlyCache[monKey] = cached ? {status:'done', data:cached, stale:true} : {status:'loading'};
-    if(_sel === monKey && _checkReady && cached){ renderCheckStatus(); renderSummaryBoard(); renderSummaryStrip(); renderDeptWorkSummary(); }
+    if(_sel === monKey && _checkReady && cached){ renderCheckStatus(); renderSummaryBoard(); renderSummaryStrip(); }
     readCheckMonthly(monKey).then(function(d){
       if(d){
         _checkMonthlyCache[monKey] = {status:'done', data:d, stale:false};
@@ -1246,7 +1216,7 @@
       } else {
         _checkMonthlyCache[monKey] = {status:'done', data:null, stale:false}; // 캐시·응답 둘 다 없음=정직 '없음'
       }
-      if(_sel === monKey && _checkReady){ renderCheckStatus(); renderSummaryBoard(); renderSummaryStrip(); renderDeptWorkSummary(); }
+      if(_sel === monKey && _checkReady){ renderCheckStatus(); renderSummaryBoard(); renderSummaryStrip(); }
     });
   }
   // ── 오늘 일 단위 점검 — home #home-check-kpi와 동일 소스(CHECK_GAS action=today_live&dept=support). 서버 실시간 오늘 항목×회차 total/done.
@@ -1270,7 +1240,6 @@
     _checkDailyCache = {status:'loading'};
     readCheckDaily().then(function(d){
       _checkDailyCache = {status:'done', data:d}; // d=null이면 정직 '오늘 점검 데이터 대기'
-      if(_checkReady) renderDeptWorkSummary();
     });
   }
   // ── 종합접수처 VOC 접수 현황 — coo/reception/종합접수처_현황.html과 동일 GAS·액션(reg_board). 응답 필드(name/contact)는 서버가 이미 마스킹하지만
@@ -1632,106 +1601,6 @@
     }).join('');
     // t3-legend(산식 부연) 제거(GM 지시 2026-07-06 가독성 정리) — 요지는 헤더 stag('매출 제외 · 중요도순 1·2·3')로 충분.
     host.innerHTML = '<div class="t3-grid">' + cards + '</div>';
-  }
-
-  // ── 🗂️ 부서별 업무 현황 요약 (이달 objectives 부서별/담당별 집계 · 순수 추가 · 새 소스 없음 · GM 지시) ──
-  //   부서별: dept로 그룹 → 완료/진행/계획·이월/합계. 담당별: owner를 owner_nick 닉네임화 → 건수(완료·진행 내역).
-  //   정직: objectives 없으면 '이달 업무 없음'. 지어내기 없음(기존 필드만 사용).
-  // ── 🗂️ 운영 현황 요약(컴팩트 3카드) — 점검 현황·종합 접수처·업무 SSOT 각 [총합/진행/완료].
-  //    GM 지시 2026-07-15(배1091): 긴 부서별 표·담당별 칩 폐기 → 한눈 카드. 소스는 기존 fetch 재사용(새 GAS·지어내기 금지). 값 불가=정직 '측정 대기'. ──
-  function renderDeptWorkSummary(monKey){
-    var host = document.getElementById('dept-work-summary');
-    if(!host) return;
-    var mk = monKey || _sel;
-    function fmtN(n){ return (typeof n === 'number') ? n.toLocaleString('ko-KR') : n; }
-    // 작은 stat 카드(총합/진행/완료 · [총/진행/완료]). d 없으면 '측정 대기' 정직 표기(0 지어내기 금지).
-    // monthLine=옵션: 카드 하단 home식 '선택월 접수/완료' 미니 row(HTML 문자열). null이면 미표시.
-    function statCard(icon, title, d, sub, monthLine){
-      var body;
-      if(d){
-        body =
-          '<div class="ows-stats">' +
-            '<div class="ows-stat"><b class="ows-n">' + fmtN(d.total) + '</b><span class="ows-l">총합</span></div>' +
-            '<div class="ows-stat prog"><b class="ows-n">' + fmtN(d.prog) + '</b><span class="ows-l">진행</span></div>' +
-            '<div class="ows-stat done"><b class="ows-n">' + fmtN(d.done) + '</b><span class="ows-l">완료</span></div>' +
-          '</div>';
-      } else {
-        body = '<div class="ows-stats pending"><span class="ows-pend">측정 대기</span></div>';
-      }
-      return '<div class="ows-card"><div class="ows-h">' + icon + ' ' + esc(title) + '</div>' + body +
-        (monthLine || '') +
-        '<div class="ows-sub">' + esc(sub) + '</div></div>';
-    }
-    // 점검 전용 카드 — home식 월/오늘 2 그룹(각 큰 총합 + 완료 소형 라벨). 둘 다 없으면 '측정 대기'.
-    function checkCard(mon, day, sub){
-      function grp(label, g, wait){
-        if(g) return '<div class="ows-stat"><b class="ows-n">' + fmtN(g.total) + '</b><span class="ows-l">' + label + ' 항목·회차</span><span class="ows-mini done">완료 ' + fmtN(g.done) + '</span></div>';
-        return '<div class="ows-stat"><b class="ows-n">–</b><span class="ows-l">' + label + ' 항목·회차</span><span class="ows-mini">' + wait + '</span></div>';
-      }
-      var body = (mon || day)
-        ? '<div class="ows-stats">' + grp('월', mon, '월 데이터 대기') + grp('오늘', day, '오늘 점검 데이터 대기') + '</div>'
-        : '<div class="ows-stats pending"><span class="ows-pend">측정 대기</span></div>';
-      return '<div class="ows-card"><div class="ows-h">🔧 점검 현황</div>' + body +
-        '<div class="ows-sub">' + esc(sub) + '</div></div>';
-    }
-    // ① 점검 현황 — 월=지원부 월간 byZone(남/여) 항목 실측 합(sumTotal/sumDone) · 오늘=today_live 실측(_checkDailyCache). 시설부(입력률)는 건수 불가라 제외(정직). 데이터 없음=측정 대기.
-    var cmEntry = _checkMonthlyCache[mk];
-    var cmData = (cmEntry && cmEntry.status === 'done') ? cmEntry.data : null;
-    var cmLoading = (cmEntry && cmEntry.status === 'loading');
-    var chkMon = null;
-    if(cmData && Array.isArray(cmData.byZone)){
-      var ct = 0, cd = 0, chas = false;
-      cmData.byZone.forEach(function(z){
-        if(typeof z.sumTotal === 'number' && typeof z.sumDone === 'number' && z.sumTotal){ ct += z.sumTotal; cd += z.sumDone; chas = true; }
-      });
-      if(chas) chkMon = {total:ct, done:cd};
-    }
-    // 오늘 실측 — _checkDailyCache는 오늘치 단일(선택월 무관). 항상 오늘 스냅샷(정직: 과거 월 선택 시에도 '오늘' 라벨).
-    var cdEntry = _checkDailyCache;
-    var chkDay = (cdEntry && cdEntry.status === 'done' && cdEntry.data) ? cdEntry.data : null;
-    var cdLoading = (cdEntry && cdEntry.status === 'loading') || !cdEntry;
-    var chkSub;
-    if(chkMon || chkDay){ chkSub = '지원부 점검 항목×회차 실측 · 월=선택월·오늘=실시간'; }
-    else if(cmLoading || cdLoading){ chkSub = '점검 데이터 불러오는 중'; }
-    else { chkSub = '점검 데이터 없음(가짜값 없음)'; }
-    // ② 종합 접수처 — VOC reg_board(실시간). 누적: 완료=상태 '완료'·진행=그 외. 선택월(mk): 접수일(createdAt) 기준 월 접수/완료(근사). PII 미사용(상태·일자 집계만).
-    var voc = null, vocMonth = null;
-    if(Array.isArray(_vocBoard)){
-      var vt = _vocBoard.length, vdone = 0, mNew = 0, mDone = 0;
-      _vocBoard.forEach(function(r){
-        var st = String(r.status || r['상태'] || '접수');
-        if(st === '완료') vdone++;
-        var created = String(r.createdAt || r['접수일시'] || '');
-        if(created.slice(0, 7) === mk){ mNew++; if(st === '완료') mDone++; }
-      });
-      voc = {total:vt, done:vdone, prog:Math.max(0, vt - vdone)};
-      vocMonth = {mNew:mNew, mDone:mDone};
-    }
-    var vocSub = voc ? '누적 실시간 접수 · 진행=접수+처리중 · 월=선택월 접수(근사)' : (_checkReady ? 'VOC 접수 조회 실패(가짜값 없음)' : 'VOC 접수 불러오는 중');
-    var vocMonthLine = vocMonth
-      ? '<div class="ows-monthline"><span class="lbl">선택월</span><span class="mn-new">접수 ' + fmtN(vocMonth.mNew) + '</span><span class="mn-done">완료 ' + fmtN(vocMonth.mDone) + '</span></div>'
-      : '';
-    // ③ 업무 SSOT — 선택월 objectives 집계. 완료=status '완료' · 진행='진행'+'이월'.
-    var m = _data && _data.months && _data.months[mk];
-    var objs = (m && m.objectives) || [];
-    var obj = null;
-    if(objs.length){
-      var odone = 0, oprog = 0;
-      objs.forEach(function(o){
-        var st = o.status || '';
-        if(st === '완료') odone++;
-        else if(st === '진행' || st === '이월') oprog++;
-      });
-      obj = {total:objs.length, done:odone, prog:oprog};
-    }
-    var objSub = obj ? '이달 과제 · 진행=진행+이월' : '이달 등록된 과제 없음';
-    host.innerHTML = '<div class="ows-grid">' +
-      checkCard(chkMon, chkDay, chkSub) +
-      statCard('📮', '종합 접수처', voc, vocSub, vocMonthLine) +
-      statCard('🗂️', '업무 SSOT', obj, objSub) +
-    '</div>';
-    fetchCheckMonthlyFor(mk); // 선택월 점검 월간 kick-off(캐시/트리거됨=no-op) — 도착 시 갱신 핸들러가 재렌더
-    fetchCheckDaily();        // 오늘 점검 kick-off(1회·트리거됨=no-op) — 도착 시 재렌더
   }
 
   // ── 월 헤더 (테마 문구는 핵심과제 표와 중복 → 렌더 제거, GM 지시 2026-07-04. 데이터 m.theme/report.theme는 정본 보존) ──
@@ -2932,7 +2801,6 @@
     renderViewToggle();
     applyView();
     renderTop3();
-    renderDeptWorkSummary(_sel);
     renderAnnual();
     renderRoadmap();
     renderFinance();
@@ -3127,7 +2995,7 @@
       // 습득물(lf) 병합 — VOC 보드가 정상 로드됐을 때만 덧붙인다(VOC 실패 시 습득물만 부분표시=오해 방지, ④ 카드 '측정 개통 전' 유지).
       if(_vocBoard && Array.isArray(a[2]) && a[2].length){ _vocBoard = _vocBoard.concat(a[2]); }
       _checkReady = true;
-      if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); renderSummaryStrip(); renderDeptWorkSummary(); }
+      if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); renderSummaryStrip(); }
     });
   }
 
