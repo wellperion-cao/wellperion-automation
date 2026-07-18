@@ -1575,5 +1575,19 @@
     "artifact": "G1 항로 첫인상을 '경보'에서 '안심'으로 전환(표현·배치만, 데이터/집계/큐 로직 무변경):\n- 🟢 순항 중 요약 한 줄 신설(경보 위): 오늘 GM이 볼 것 N개(승인대기+GM결재)·대기 M척. 기존 계산값 재사용\n- ⚠️ 주의 신호 0건 항목(발행대조 등) 회색·축소로 경보 톤 완화\n- 숫자 충돌 해소: 🚢 상시 자동 N건↔오늘 신규 진행 배 문구 일치, 항로 대기/정박 라벨 명확화\n- ⚓ 대기 카드 우측 '언제' 배지(📅·🌙·⛔·👉·🗓️) — note/next서 추출, 없으면 생략\n- 카드 여백·줄간격 확대, SSOT/카테 (CLI ad-hoc · 커밋 7e7314bc)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "7e7314bce10b8e683f060fee4c78c0b8c308b429"
+  },
+  {
+    "task_id": "COO-2026-07-18-ADHOC-4ef31fef",
+    "clevel": "coo",
+    "title": "[시우] 습득물 보기에 폐기 공지 흡수 — 임박 배지·폐기완료 접이식·A3 인쇄버튼 (GM 결정)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1373,
+    "artifact": "- 보기 페이지 단일 허브: 게시중 카드에 ⏳D-N 폐기예정 배지(잔여≤7일·상단정렬)\n- 하단 접이식 '🗑 폐기 완료 기록'(lf_disposal.disposed·읽기전용)\n- '🖨 폐기 공지 인쇄(A3)' 버튼(→ lost_found_disposal.html)\n- 수령(lf_handover)·직원삭제(lf_delete) 무손상. 스탠드얼론+WP블록 로직 동일(.wlp-lfg 스코프) (CLI ad-hoc · 커밋 4ef31fef)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4ef31fef44bcf04430819cf4312a55adccd31d86"
   }
 ]
