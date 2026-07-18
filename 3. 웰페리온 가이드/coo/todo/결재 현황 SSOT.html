@@ -229,19 +229,29 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .kanban-col-body{padding:10px 12px;display:flex;flex-direction:column;gap:16px;min-height:60px}
 .kanban-col-body .approval-card{margin-bottom:0}
 .kanban-col-empty{font-size:12px;color:var(--dim);padding:14px 4px;text-align:center}
-/* ── [결재-캘린더] 월별 달력 (G1 gm1CalRender 패턴 이식) ── */
-.cal-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+/* ── [결재-캘린더] 결재 흐름 캘린더 — 이벤트 기반 (GM 2026-07-18 확정) ── */
+.cal-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}
 .cal-nav-btn{padding:6px 14px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--text);border:1px solid var(--border)}
 .cal-nav-btn:hover{background:var(--accent-bg);color:var(--accent)}
 .cal-month-label{font-size:16px;font-weight:700;min-width:120px;text-align:center}
 .cal-legend{margin-left:auto;font-size:11px;color:var(--dim)}
+.cal-summary{font-size:12px;font-weight:600;color:var(--dim);margin:0 0 12px;}
 .cal-table{width:100%;border-collapse:collapse;table-layout:fixed}
 .cal-table th{padding:6px 4px;text-align:center;font-size:12px;font-weight:700;color:var(--dim)}
-.cal-table td{vertical-align:top;padding:4px 3px;border:1px solid var(--border);height:84px;width:14.28%}
-.cal-daynum{font-size:12px;font-weight:700;margin-bottom:3px}
+.cal-table td{vertical-align:top;padding:4px 3px;border:1px solid var(--border);height:96px;width:14.28%}
+.cal-daynum{font-size:12px;font-weight:700;margin-bottom:2px}
+.cal-ev-count{font-size:10px;font-weight:700;color:var(--text);margin-bottom:2px;letter-spacing:-0.2px}
 .cal-badge{font-size:10px;border-radius:4px;padding:1px 5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .cal-badge:hover{filter:brightness(1.15)}
-.cal-undated{margin-top:14px}
+.cal-day-detail{margin-top:14px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--paper)}
+.cal-day-detail-head{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:8px}
+.cal-day-detail-close{margin-left:auto;font-size:11px;color:var(--dim);cursor:pointer}
+.cal-day-detail-close:hover{color:var(--accent)}
+.cal-day-detail-group{margin-bottom:8px}
+.cal-day-detail-group:last-child{margin-bottom:0}
+.cal-day-detail-group .g-label{font-size:11px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px}
+.cal-day-detail-item{font-size:12px;padding:3px 0;cursor:pointer}
+.cal-day-detail-item:hover{color:var(--accent)}
 @media (max-width:520px){
   .header h1{font-size:15px}
   .approval-card .title-row .card-meta-chips{max-width:130px;}
@@ -461,6 +471,7 @@ let activeSortBy = '최신순';    // '최신순' | '결재상태' | '카테고�
 // 업무현황 SSOT(todo_view 키) 패턴과 동일하게 localStorage 기반(결재 전용 키 approval_view).
 let currentView = (function(){ try { return localStorage.getItem('approval_view') === 'calendar' ? 'calendar' : 'kanban'; } catch(e){ return 'kanban'; } })();
 let calViewYear, calViewMonth;  // 캘린더 표시 연·월 (init은 첫 렌더에서)
+let calSelectedDay = null;      // 결재 흐름 캘린더 — 날짜 클릭 시 상세 패널에 표시할 날짜(YYYY-MM-DD) (GM 2026-07-18)
 
 document.addEventListener('DOMContentLoaded', function() {
   updateHeaderSub();
@@ -1910,15 +1921,21 @@ function initKanbanDrag() {
   });
 }
 
-/* ── 캘린더 뷰 (G1 gm1CalRender 패턴 이식) ──
-   날짜 기준 = 결재완료 건은 결재완료시각, 그 외는 시작일. 미일정 건은 하단 목록.
-   배지/일자 클릭 → 해당 카드로 딥링크(리스트 전환 후 스크롤·하이라이트). */
-function calColumnColor(t) {
-  const c = CAT_COLORS[t.category];
-  const base = c ? ('background:' + c.bg + ';color:' + c.color + ';') : 'background:var(--accent-bg);color:var(--accent);';
-  // 결재완료·반려 건은 흐리게(업무현황 SSOT 완료 흐림 파리티, 2026-06-03 GM)
-  const s = String(t.approvalStatus || '');
-  return base + ((s === '결재완료' || /반려/.test(s)) ? 'opacity:0.5;' : '');
+/* ── 결재 흐름 캘린더 — 이벤트 기반 (GM 2026-07-18 확정) ──
+   날짜마다 결재 '이벤트' 표시: 📥접수(createdAt)·✅완료(completeTime)·⛔반려(updatedAt 근사, completeTime 폴백).
+   한 건이 접수일·완료일 등 여러 날에 이벤트로 등장할 수 있음. 이벤트 칩 클릭=해당 카드로 딥링크(칸반 전환·하이라이트).
+   빈 날짜 영역 클릭=그날 이벤트 상세 패널 토글. 월 요약=이달 접수·완료·현재 대기·평균처리일. */
+function calDateOf(v) {
+  if (!v) return null;
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/) || s.match(/^(\d{4})[./](\d{2})[./](\d{2})/);
+  return m ? (m[1] + '-' + m[2] + '-' + m[3]) : null;
+}
+function calDaysBetween(a, b) {
+  const pa = a.split('-').map(Number), pb = b.split('-').map(Number);
+  const da = new Date(pa[0], pa[1] - 1, pa[2]);
+  const db = new Date(pb[0], pb[1] - 1, pb[2]);
+  return Math.round((db - da) / 86400000);
 }
 function renderCalendar(list) {
   const now = new Date();
@@ -1928,31 +1945,70 @@ function renderCalendar(list) {
   const firstDay = new Date(calViewYear, calViewMonth, 1).getDay();
   const lastDate = new Date(calViewYear, calViewMonth + 1, 0).getDate();
   const prevLast = new Date(calViewYear, calViewMonth, 0).getDate();
-
-  // 날짜 맵 — 시작일~종료일 기간 전체 칸에 분배(업무현황 SSOT 파리티). 종료일 없으면 시작일 1칸. (2026-06-03 GM)
-  const evMap = {};
-  const undated = [];
   const calPad2 = function(n){ return ('0' + n).slice(-2); };
-  list.forEach(t => {
-    const sd = String(t.startDate || '').slice(0, 10);
-    if (!sd || sd.length < 10) { undated.push(t); return; }
-    const ed = String(t.endDate || '').slice(0, 10) || sd;
-    let cur = sd, guard = 0;
-    while (cur <= ed && guard < 60) {
-      if (!evMap[cur]) evMap[cur] = [];
-      evMap[cur].push(t);
-      const dp = cur.split('-');
-      const dObj = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]) + 1);
-      cur = dObj.getFullYear() + '-' + calPad2(dObj.getMonth() + 1) + '-' + calPad2(dObj.getDate());
-      guard++;
+  const curMonthKey = calViewYear + '-' + calPad2(calViewMonth + 1);
+
+  function calPush(evMap, ds, kind, t) {
+    if (!evMap[ds]) evMap[ds] = { 접수: [], 완료: [], 반려: [] };
+    evMap[ds][kind].push(t);
+  }
+  function calEvStyle(kind) {
+    if (kind === '완료') return 'background:var(--green-bg);color:var(--green);';
+    if (kind === '반려') return 'background:var(--red-bg);color:var(--red);';
+    return 'background:var(--border);color:var(--dim);';  // 접수 = 중립 회색계
+  }
+  function calEvChip(t, kind, ds) {
+    let label = esc(t.title || '(제목 없음)');
+    if (kind === '접수') {
+      const isDone = t.approvalStatus === '결재완료';
+      const isRejected = /반려/.test(t.approvalStatus);
+      if (!isDone && !isRejected) label += ' <span style="opacity:.85;">(' + calDaysBetween(ds, td) + '일째 대기)</span>';
+    } else if (kind === '완료') {
+      const cds = calDateOf(t.createdAt);
+      label += ' ✅' + (cds ? ' (' + calDaysBetween(cds, ds) + '일 만에 완료)' : '');
+    } else {
+      label += ' ⛔ 반려';
     }
+    return '<div class="cal-badge" style="' + calEvStyle(kind) + '" title="' + escAttr(t.title || '') + '" onclick="event.stopPropagation();calGotoItem(\'' + escAttr(t.id) + '\')">' + label + '</div>';
+  }
+
+  // 날짜별 이벤트 맵 — 한 건이 접수일·완료일(반려일) 여러 날에 등장 가능
+  const evMap = {};
+  const unscheduled = [];
+  let monthReceived = 0, monthDone = 0, curPending = 0, durSum = 0, durCnt = 0;
+  list.forEach(t => {
+    const isDone = t.approvalStatus === '결재완료';
+    const isRejected = /반려/.test(t.approvalStatus);
+    const cds = calDateOf(t.createdAt);
+    let placed = false;
+    if (cds) {
+      calPush(evMap, cds, '접수', t);
+      placed = true;
+      if (cds.slice(0, 7) === curMonthKey) monthReceived++;
+    }
+    if (!isDone && !isRejected) curPending++;
+    if (isDone) {
+      const dd = calDateOf(t.completeTime) || calDateOf(t.updatedAt);
+      if (dd) {
+        calPush(evMap, dd, '완료', t);
+        placed = true;
+        if (dd.slice(0, 7) === curMonthKey) {
+          monthDone++;
+          if (cds) { durSum += calDaysBetween(cds, dd); durCnt++; }
+        }
+      }
+    } else if (isRejected) {
+      const rd = calDateOf(t.updatedAt) || calDateOf(t.completeTime);
+      if (rd) { calPush(evMap, rd, '반려', t); placed = true; }
+    }
+    if (!placed) unscheduled.push(t);
   });
+  const avgDur = durCnt ? (durSum / durCnt).toFixed(1) + '일' : '—';
 
   const cells = [];
   for (let i = firstDay - 1; i >= 0; i--) cells.push({ day: prevLast - i, dateStr: null, other: true });
   for (let d2 = 1; d2 <= lastDate; d2++) {
-    const ds = calViewYear + '-' + ('0' + (calViewMonth + 1)).slice(-2) + '-' + ('0' + d2).slice(-2);
-    cells.push({ day: d2, dateStr: ds, other: false });
+    cells.push({ day: d2, dateStr: curMonthKey + '-' + calPad2(d2), other: false });
   }
   let nextD = 1;
   while (cells.length < 42) cells.push({ day: nextD++, dateStr: null, other: true });
@@ -1963,8 +2019,9 @@ function renderCalendar(list) {
   h += '<span class="cal-month-label">' + calViewYear + '년 ' + (calViewMonth + 1) + '월</span>';
   h += '<button class="cal-nav-btn" onclick="calNextMonth()">다음 달 →</button>';
   h += '<button class="cal-nav-btn" onclick="calToday()" style="font-weight:600;color:var(--dim);">오늘로</button>';
-  h += '<span class="cal-legend">시작일~종료일 기간 표시 · 배지 클릭 시 트렐로에서 상세</span>';
+  h += '<span class="cal-legend">이벤트 칩 클릭=카드 상세 · 빈 날짜 클릭=그날 상세</span>';
   h += '</div>';
+  h += '<div class="cal-summary">이달: 📥 접수 ' + monthReceived + ' · ✅ 완료 ' + monthDone + ' · ⏳ 대기 ' + curPending + ' · 평균처리 ' + avgDur + '</div>';
   h += '<div style="overflow-x:auto;"><table class="cal-table"><thead><tr>';
   h += '<th style="color:#e85555;">일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th style="color:#5588ee;">토</th>';
   h += '</tr></thead><tbody>';
@@ -1973,19 +2030,27 @@ function renderCalendar(list) {
     h += '<tr>';
     for (let col = 0; col < 7; col++) {
       const cell = cells[row * 7 + col];
-      const tdStyle = cell.other ? 'opacity:0.35;' : ((cell.dateStr === td) ? 'background:var(--accent-bg);cursor:default;' : '');
-      h += '<td style="' + tdStyle + '">';
+      const clickable = !cell.other && !!cell.dateStr;
+      let tdStyle = cell.other ? 'opacity:0.35;' : ((cell.dateStr === td) ? 'background:var(--accent-bg);' : '');
+      if (clickable) tdStyle += 'cursor:pointer;';
+      if (clickable && cell.dateStr === calSelectedDay) tdStyle += 'outline:2px solid var(--accent);outline-offset:-2px;';
+      h += '<td style="' + tdStyle + '"' + (clickable ? ' onclick="calShowDay(\'' + cell.dateStr + '\')"' : '') + '>';
       const numStyle = (col === 0 ? 'color:#e85555;' : col === 6 ? 'color:#5588ee;' : '')
         + (cell.dateStr === td ? 'background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;' : '');
       h += '<div class="cal-daynum" style="' + numStyle + '">' + cell.day + '</div>';
-      if (!cell.other && cell.dateStr && evMap[cell.dateStr]) {
+      if (clickable && evMap[cell.dateStr]) {
         const evs = evMap[cell.dateStr];
-        const showN = Math.min(evs.length, 3);
-        for (let ei = 0; ei < showN; ei++) {
-          const ev = evs[ei];
-          h += '<div class="cal-badge" style="' + calColumnColor(ev) + '" title="' + escAttr(ev.title || '') + '" onclick="calGotoItem(\'' + escAttr(ev.id) + '\')">' + esc(ev.title || '(제목 없음)') + '</div>';
+        const rc = evs.접수.length, dc = evs.완료.length, jc = evs.반려.length;
+        if (rc || dc || jc) {
+          h += '<div class="cal-ev-count">' + (rc ? '📥' + rc + ' ' : '') + (dc ? '✅' + dc + ' ' : '') + (jc ? '⛔' + jc : '') + '</div>';
         }
-        if (evs.length > 3) h += '<div style="font-size:10px;color:var(--dim);">+' + (evs.length - 3) + '개</div>';
+        const chips = [];
+        evs.접수.forEach(t => chips.push(calEvChip(t, '접수', cell.dateStr)));
+        evs.완료.forEach(t => chips.push(calEvChip(t, '완료', cell.dateStr)));
+        evs.반려.forEach(t => chips.push(calEvChip(t, '반려', cell.dateStr)));
+        const showN = Math.min(chips.length, 3);
+        for (let ci = 0; ci < showN; ci++) h += chips[ci];
+        if (chips.length > 3) h += '<div style="font-size:10px;color:var(--dim);">+' + (chips.length - 3) + '개</div>';
       }
       h += '</td>';
     }
@@ -1993,22 +2058,42 @@ function renderCalendar(list) {
   }
   h += '</tbody></table></div>';
 
-  // 미일정(날짜 없음) 결재 건 목록
-  if (undated.length) {
-    h += '<div class="cal-undated"><div style="font-size:12px;font-weight:700;color:var(--dim);margin-bottom:6px;">📌 일정 미지정 (' + undated.length + '건)</div>';
-    undated.forEach(t => {
-      h += '<div class="cal-badge" style="display:inline-block;margin:0 6px 6px 0;' + calColumnColor(t) + '" onclick="calGotoItem(\'' + escAttr(t.id) + '\')">' + esc(t.title || '(제목 없음)') + '</div>';
-    });
+  // 날짜 데이터가 없어 캘린더에 배치 불가한 건(접수일·완료일 모두 결측) — 데이터 확인 필요
+  if (unscheduled.length) {
+    h += '<div class="cal-legend" style="margin-top:8px;">⚠ 날짜 데이터 없음 ' + unscheduled.length + '건 (접수일·완료일 확인 필요)</div>';
+  }
+
+  // 날짜 클릭 상세 패널
+  if (calSelectedDay) {
+    const sel = evMap[calSelectedDay] || { 접수: [], 완료: [], 반려: [] };
+    const total = sel.접수.length + sel.완료.length + sel.반려.length;
+    h += '<div class="cal-day-detail">';
+    h += '<div class="cal-day-detail-head"><strong>' + calSelectedDay + '</strong> 결재 이벤트' + (total ? '' : ' 없음') + '<span class="cal-day-detail-close" onclick="calShowDay(\'' + calSelectedDay + '\')">✕ 닫기</span></div>';
+    const calDetailGroup = function(kind, icon) {
+      if (!sel[kind].length) return '';
+      let s = '<div class="cal-day-detail-group"><span class="g-label">' + icon + ' ' + kind + ' ' + sel[kind].length + '건</span>';
+      sel[kind].forEach(t => {
+        s += '<div class="cal-day-detail-item" onclick="calGotoItem(\'' + escAttr(t.id) + '\')">· ' + esc(t.title || '(제목 없음)') + (t.category ? ' <span style="color:var(--dim);">' + esc(t.category) + '</span>' : '') + '</div>';
+      });
+      s += '</div>';
+      return s;
+    };
+    h += calDetailGroup('접수', '📥') + calDetailGroup('완료', '✅') + calDetailGroup('반려', '⛔');
     h += '</div>';
   }
+
   if (!list.length) {
     h += '<div class="empty-msg" style="padding:30px 0;"><span class="ico">📂</span>해당 조건의 결재 건이 없습니다.</div>';
   }
   return h;
 }
-function calPrevMonth() { if (calViewMonth === 0) { calViewMonth = 11; calViewYear--; } else { calViewMonth--; } render(); }
-function calNextMonth() { if (calViewMonth === 11) { calViewMonth = 0; calViewYear++; } else { calViewMonth++; } render(); }
-function calToday() { const n = new Date(); calViewYear = n.getFullYear(); calViewMonth = n.getMonth(); render(); }
+function calShowDay(ds) {
+  calSelectedDay = (calSelectedDay === ds) ? null : ds;
+  render();
+}
+function calPrevMonth() { if (calViewMonth === 0) { calViewMonth = 11; calViewYear--; } else { calViewMonth--; } calSelectedDay = null; render(); }
+function calNextMonth() { if (calViewMonth === 11) { calViewMonth = 0; calViewYear++; } else { calViewMonth++; } calSelectedDay = null; render(); }
+function calToday() { const n = new Date(); calViewYear = n.getFullYear(); calViewMonth = n.getMonth(); calSelectedDay = null; render(); }
 /* 캘린더 배지 클릭 → 트렐로 뷰로 전환 후 해당 카드 딥링크(스크롤·하이라이트·상세 펼침). 리스트 폐지(2026-06-03 GM) */
 function calGotoItem(id) {
   currentView = 'kanban';

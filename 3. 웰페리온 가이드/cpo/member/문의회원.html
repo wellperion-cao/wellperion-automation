@@ -1264,7 +1264,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 관리</span></div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">유효</span><span class="dash-v"><b class="lead" id="dMemActive">0</b> 명</span></div>
-        <!-- 단기=유효의 부분집합(중단기 회원구분 카운트), 법인=별도 법인현황 시트 합산치 — 유효(위 줄)에 합산 반영. 2026-07-07 시포·GM -->
+        <!-- 유효(위 줄)=server memberActive(유효회원시트 잔여일>0, 대기자 포함) 단일 소스=요약카드 총유효와 동일. 단기=유효의 부분집합(중단기 카운트), 법인=별도 법인현황 시트 참고치(유효에 합산 안 함). 2026-07-18 시포·GM -->
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
       </div>
     </a>
@@ -5347,10 +5347,8 @@ function renderActiveSummary() {
     _validWaitCnt = _waitMembers().length;
     _setTxt('dMemWait', _validWaitCnt);              // 카드5(대기자) 배선 유지
     _setTxt('dMemShort', counts['중단기'] || 0);      // 카드4 단기 배선 유지(배299)
-    if (_cpoStats) {
-      var _started = (Number(_cpoStats.memberActive) || 0) + (Number(_cpoStats.memberCorp) || 0) - _validWaitCnt;
-      _setTxt('dMemActive', _started < 0 ? 0 : _started);   // 카드4 유효(시작 도래분) 배선 유지(2026-07-16)
-    }
+    // 카드4 유효 = server memberActive 단일 소스(요약카드 '총 유효회원'과 동일값 고정). 법인·대기자는 별도 지표로만 표기. 2026-07-18 시포·GM
+    if (_cpoStats) _setTxt('dMemActive', Number(_cpoStats.memberActive) || 0);
   }
 
   var overview = _memberOverviewHtml();
@@ -5614,8 +5612,9 @@ function loadCpoTodayStats() {
       if (!d || !d.ok) return;
       // 카드3 등록 / 카드4 회원 현황. 신규 문의(todayInquiry)는 표면 DOM 없음 — renderSummaryHero가 _cpoStats에서 직접 읽음(배754).
       _setTxt('dRegToday', d.todayReg);     _setTxt('dRegMonth', d.monthReg);
-      // 유효=단기(memberActive, 유효회원시트 잔여일>0)+법인(memberCorp, 별도 법인현황시트) 합산 총원 — 두 소스는 disjoint(다른 시트)라 합산이 정직. 2026-07-07 시포·GM
-      _setTxt('dMemActive', (Number(d.memberActive) || 0) + (Number(d.memberCorp) || 0)); _setTxt('dMemCorp', d.memberCorp);
+      // 유효 = server memberActive(유효회원시트 잔여일>0, 법인·대기자와 별도 지표) 단일 소스 — 요약카드 '총 유효회원'과 항상 동일값.
+      //   법인(memberCorp)은 별도 지표로 카드4 하단(dMemCorp)에만 표기(유효에 합산하지 않음 → 요약카드와 6 어긋나던 문제 해소, 2026-07-18 시포·GM).
+      _setTxt('dMemActive', Number(d.memberActive) || 0); _setTxt('dMemCorp', d.memberCorp);
       _cpoStats = d; renderActiveSummary();   // 회원관리 탭 요약카드(유효·법인·종료·비율바·순증감)
       _setTxt('gToLoss', d.todayLoss); _setTxt('gMoLoss', d.monthLoss);   // CPO 가이드 이탈 현황(오늘/월)
       _setTxt('dMemLossToday', d.todayLoss); _setTxt('dMemLossMonth', d.monthLoss);   // 멤버십 4카드 LOSS 카드(CPO-2026-07-14-MEMBER-CARDS-FIX) — gToLoss/gMoLoss와 동일 소스 재사용
