@@ -2530,5 +2530,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_015DUy1oPfywXVW6iToHUefR (CLI ad-hoc · 커밋 94ae4a5d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "94ae4a5d6f0e77b6571122f841430acb14a31db3"
+  },
+  {
+    "task_id": "CEO-2026-07-18-ADHOC-94047959",
+    "clevel": "ceo",
+    "title": "[웰리] 문의알림 폴러 타임스탬프 하이워터 마커로 전환(행번호 마커 재발플러드 근본수리)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 9019,
+    "artifact": "행번호 마커(INQ_LASTROW)가 '맨 위 삽입' 인테이크 전환 후 밀려난 옛 행을 신규로\n오인해 실무진 방에 재발송하는 사고 발생. _notifyNewInquiries_를 타임스탬프 기준\n하이워터 마커(INQ_LASTTS_<ssId>_<gid>, 단일값)로 재작성해 삽입 위치와 무관하게\n신규 판별. 재가동 첫 실행은 기준선만 저장(발송 0)해 재플러드를 원천 차단하고,\n테스트/QA 더미 데이터는 실무진 방 대신 GM 개인봇으로 라우팅한다. (CLI ad-hoc · 커밋 94047959)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "94047959398f7a1a24867295e1d87434ddec697c"
   }
 ]

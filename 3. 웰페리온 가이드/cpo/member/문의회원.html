@@ -4214,6 +4214,30 @@ function _lessonVisibleLines(t) {
 var LESSON_PAGE_SIZE = 50;   // 팀 리더 작업뷰: 전 행 렌더 금지(세로 폭증 방지)·검색/더보기로 접근. 배944 후속.
 function lessonShowMore(t) { _lessonState[t].shown = (_lessonState[t].shown || LESSON_PAGE_SIZE) + 100; lessonRender(t); }
 function lessonSetQuery(t, v) { _lessonState[t].q = v; _lessonState[t].shown = LESSON_PAGE_SIZE; lessonRender(t); }
+// 종목별 색상칩(글자 바탕색) — 문의/회원 목록 종목 칸 공용. 키워드 포함매칭, 우선순위 고정
+// (필라 먼저 검사해 'P.T'와 안 섞이게). 신규 hex 없이 기존 테마변수(라이트·다크 공용) 재사용 — 가독성 보장.
+// GM 지시, 2026-07-18 시포.
+var LESSON_SPORT_COLOR_MAP = [
+  { re: /필라/,               v: 'orange'  },   // 필라테스
+  { re: /수영/,               v: 'blue'    },
+  { re: /P\.?T/i,             v: 'red'     },
+  { re: /골프/,               v: 'green'   },
+  { re: /스쿼시/,             v: 'emerald' },
+  { re: /체조|트램폴린/,       v: 'indigo'  },   // 남색 대체(테마 팔레트에 남색 변수 없음)
+  { re: /루프메소드|웰니스/,    v: 'purple'  }
+];
+function _lessonSportColor(sportStr) {
+  var s = String(sportStr || '');
+  for (var i = 0; i < LESSON_SPORT_COLOR_MAP.length; i++) {
+    if (LESSON_SPORT_COLOR_MAP[i].re.test(s)) return LESSON_SPORT_COLOR_MAP[i].v;
+  }
+  return '';
+}
+// 종목 칩 style 속성값 — 미매칭 종목은 빈 문자열(기본 유지, 색 없음).
+function _lessonSportChipStyle(sportStr) {
+  var v = _lessonSportColor(sportStr);
+  return v ? ('background:var(--' + v + '-bg);color:var(--' + v + ');border-radius:5px;padding:1px 6px;display:inline-block') : '';
+}
 // 강습 문의 행 HTML(문의 현황·LOSS 회원 관리 공용) — 상태/담당 편집 셀렉트·CONTACT 편집. 배973.
 function _lessonRowHtml(t, r, sportKey, sportLabel) {
   var mgmt = _lessonSportMgmt(r, sportKey), argSport = encodeURIComponent(sportKey);
@@ -4221,7 +4245,7 @@ function _lessonRowHtml(t, r, sportKey, sportLabel) {
     '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(r.timestamp || '—') + '</td>' +
     '<td class="left lesson-inq-cell-name" style="font-weight:700" title="' + esc(r.name || '') + '">' + esc(r.name || '—') + (t === 'youth' && String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
     '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
-    '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(sportLabel) + '">' + esc(sportLabel) + '</td>' +
+    '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(sportLabel) + '"><span style="' + _lessonSportChipStyle(sportLabel) + '">' + esc(sportLabel) + '</span></td>' +
     '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, sportKey, mgmt.status) + '</td>' +
     '<td style="font-size:12px">' + _lessonOwnerSelectHtml(t, r.rowIndex, sportKey, mgmt.owner) + '</td>' +
     '<td class="left editable-cell" style="font-size:11px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word" onclick="_lessonContactClick(\'' + t + '\',' + r.rowIndex + ',\'' + argSport + '\')">' + _lessonContactCellHtml(mgmt) + '</td>' +
@@ -4544,7 +4568,7 @@ function _lessonRegistryRender(t) {
   rows.forEach(function(r){
     html += '<tr>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(r.등록일 || r.타임스탬프 || '—') + '</td>' +
-      '<td style="font-size:12px">' + esc(r.종목 || '—') + '</td>' +
+      '<td style="font-size:12px"><span style="' + _lessonSportChipStyle(r.종목) + '">' + esc(r.종목 || '—') + '</span></td>' +
       '<td class="left" style="font-weight:700">' + esc(r.이름 || '—') + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(r.전화 || '—') + '</td>' +
       '<td style="font-size:12px">' + esc(r.상태 || '—') + '</td>' +
@@ -4654,7 +4678,7 @@ function _lessonRosterRender(t, kind) {
   var html = extNote;
   rows.forEach(function(r){
     html += '<tr>' +
-      '<td style="font-size:12px">' + esc(r.sport || '—') + '</td>' +
+      '<td style="font-size:12px"><span style="' + _lessonSportChipStyle(r.sport) + '">' + esc(r.sport || '—') + '</span></td>' +
       '<td class="left" style="font-weight:700">' + esc(r.name || '—') + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(r.phone || '—') + '</td>' +
       '<td style="font-size:12px">' + esc(r.status || '—') + '</td>' +
