@@ -2109,5 +2109,19 @@
     "artifact": "- ssot/ownership_map.json: 각 role에 northstar 필드 추가. CMO=GM 확정 텍스트, 나머지 6인=placeholder(\"[북극성 — 해당 C레벨·웰리 확정 예정]\", 웰리 후속 확정)\n- 헌법한장.html: ownershipBlock()에 northstarBlock() 추가 — 확정값은 일반 표시, placeholder는 dim/italic으로 미정 표기(비파괴 추가, 자율현황·월간운영계획 영향 없음) (CLI ad-hoc · 커밋 a6f88ec8)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a6f88ec89651ad23b55826d5c8dc0ed0133148b7"
+  },
+  {
+    "task_id": "CPO-2026-07-18-ADHOC-a615083e",
+    "clevel": "cpo",
+    "title": "[시포] 카드4 유효==요약 총유효 단일 소스 정합 (문의회원.html)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1410,
+    "artifact": "카드4 '유효'가 memberActive+memberCorp−대기자(=1011)로, 요약카드 총유효(memberActive=1005)와\n6 어긋나던 문제 해소. 6=법인32−대기자26. 헤드라인 '유효'를 server memberActive 단일 소스로 통일:\nloadCpoTodayStats·renderActiveSummary 두 write 사이트 모두 dMemActive=memberActive(1005)로 고정.\n법인(32)·대기자(26)는 유효에 합산하지 않고 별도 지표로만 표기(카드4 하단·카드5·요약 칩). (CLI ad-hoc · 커밋 a615083e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a615083e39dc19d6729f7f5a6ccb98ad11dec971"
   }
 ]
