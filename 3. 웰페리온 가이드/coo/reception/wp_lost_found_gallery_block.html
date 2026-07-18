@@ -105,6 +105,15 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 .wlp-lfg .state-msg{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--dim);font-size:14.5px}
 .wlp-lfg .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
 
+/* ── 운영 가이드 링크 버튼 (2026-07-18: 보기↔가이드 양방향 도입) ── */
+.wlp-lfg .guide-link-btn{
+  display:inline-flex;align-items:center;gap:6px;margin-top:2px;
+  padding:9px 16px;background:var(--accent-bg);color:var(--accent);
+  border:1.3px solid rgba(176,141,87,0.35);border-radius:20px;
+  font-size:12.5px;font-weight:700;letter-spacing:.2px
+}
+.wlp-lfg .guide-link-btn:hover{background:rgba(176,141,87,0.16)}
+
 /* ── 폐기 임박 배지·강조 (lf_disposal upcoming) ── */
 .wlp-lfg .gcard.imminent{border-color:#e8b44a;box-shadow:0 0 0 1px rgba(232,180,74,.35),0 1px 6px rgba(0,0,0,.04)}
 .wlp-lfg .disp-badge{display:inline-block;font-size:11px;font-weight:800;color:#8a5a00;background:#fdf0d5;border:1px solid #ecc478;border-radius:20px;padding:3px 10px;margin:0 6px 7px 0;letter-spacing:.2px}
@@ -188,14 +197,15 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     <h1>습득 분실물 현황</h1>
     <p>클럽에서 습득된 물건입니다. 본인 물건을 발견하시면 현장 직원에게 문의해 주세요.</p>
     <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
+    <a class="guide-link-btn" href="https://wellperion-cao.github.io/wellperion-automation/coo/reception/lost_found_guide.html" target="_blank" rel="noopener">📋 분실물 이용 안내</a>
   </div>
 
   <div class="lf-policy">
-    <div class="lf-policy-h">📋 습득 분실물 보관·폐기 안내 <span class="badge">회원·직원 필독</span></div>
+    <div class="lf-policy-h">📋 습득 분실물 보관·처분 안내 <span class="badge">회원·직원 필독</span></div>
     <ul>
-      <li>보관 기간: <b>습득한 달의 다음 달까지 공지</b>, 그다음 달에 <b>자동 폐기</b>됩니다(예: 7월 습득→8월 공지→9월 폐기).</li>
-      <li>귀중품(현금·지갑·귀금속·전자기기 등)은 <b>경찰서(유실물센터)에 인계</b>합니다.</li>
-      <li>그 외 물품은 1개월 경과 후 <b>자체 폐기</b>합니다.</li>
+      <li>📅 습득한 달 포함 약 <b>1~2개월 보관·공지 후 처분</b>합니다(습득월→다음달 공지→그다음달 처분).</li>
+      <li>🟢 소모품(우산·수건·양말)은 <b>처분월에 폐기</b> / 🟡 일반·🔴 귀중품은 관할 <b>경찰서·LOST112</b>로 인계합니다(유실물법).</li>
+      <li>귀중품(현금·지갑·귀금속·전자기기)은 접수 즉시 <b>별도 보관</b>합니다.</li>
       <li>수령: 본인 확인 후 현장(리셉션·수영장·사우나 등)에서 서명하고 수령해 주세요.</li>
     </ul>
   </div>
@@ -203,7 +213,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   <div class="topbar">
     <span class="count-pill">게시중 <span class="n" id="cnt">0</span>건</span>
     <div class="topbar-actions">
-      <a class="print-btn" href="https://wellperion-cao.github.io/wellperion-automation/coo/reception/lost_found_disposal.html" target="_blank" rel="noopener">🖨 폐기 공지 인쇄(A3)</a>
+      <a class="print-btn" href="https://wellperion-cao.github.io/wellperion-automation/coo/reception/lost_found_disposal.html" target="_blank" rel="noopener">🖨 처분 공지 인쇄(A3)</a>
       <button class="refresh" id="refreshBtn" type="button">↻ 새로고침</button>
     </div>
   </div>
@@ -219,7 +229,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     </div>
   </div>
 
-  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>곧 폐기 예정인 물품은 ⏳ 배지로 표시되며, 폐기된 물품은 아래 기록에서 확인할 수 있습니다.<br>습득한 달의 다음 달까지 공지 후, 그다음 달에 폐기됩니다 (예: 7월 습득→8월 공지→9월 폐기).<br>게시판 인쇄는 <b>폐기 공지(A3)</b>를 이용해 주세요 · 하루의 완성, 웰페리온</p>
+  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>곧 처분 예정인 물품은 ⏳ 배지로 표시되며, 처분된 물품은 아래 기록에서 확인할 수 있습니다.<br>습득한 달의 다음 달까지 공지 후, 그다음 달에 처분됩니다(소모품 폐기·그 외 경찰 인계).<br>게시판 인쇄는 <b>처분 공지(A3)</b>를 이용해 주세요 · 하루의 완성, 웰페리온</p>
 </div>
 
 <!-- 수령 서명 모달 -->
