@@ -579,6 +579,9 @@ function render() {
   owHtml += '<button class="share-btn" data-po-trigger onclick="printApprovalCards()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">🖨 인쇄</button>';
   owHtml += '</div>';
   document.getElementById('ownerFilters').innerHTML = owHtml;
+  // 담당자 줄 재렌더가 인쇄 버튼(data-po-trigger)을 통째로 교체 → print_options.js 위젯을
+  // 매번 다시 붙인다(2026-07-18 GM 피드백: A3/A4 선택기 부착).
+  if (window.wlpReattachPrintOptions) window.wlpReattachPrintOptions();
 
   // 3줄 — 카테고리 버튼 — 업무현황처럼 라벨 없이
   let ctHtml = '';

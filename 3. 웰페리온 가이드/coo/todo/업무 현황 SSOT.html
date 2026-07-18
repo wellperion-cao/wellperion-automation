@@ -865,6 +865,9 @@ function buildFilters() {
   // 툴바 '🔗 링크'(화면 전체 공유) 제거 — 2026-06-05 GM
   html += '</div>';
   ownerEl.innerHTML = html;
+  // 담당자 줄 재렌더가 인쇄 버튼(data-po-trigger)을 통째로 교체 → print_options.js 위젯을
+  // 매번 다시 붙인다(2026-07-18 GM 피드백: A3/A4 선택기 부착).
+  if (window.wlpReattachPrintOptions) window.wlpReattachPrintOptions();
 
   // Category filters (카운트 포함)
   const catEl = document.getElementById('catFilters');

@@ -190,8 +190,17 @@
   }
 
   function init(){
+    // 재부착 방지 가드: [data-po-trigger] 페이지는 앱이 자체 데이터 로드 후 컨테이너를
+    // innerHTML로 통째로 재렌더하는 경우가 있어(예: 업무·결재 SSOT 담당자 줄), 이전에 붙인
+    // 위젯(#po-toggle-btn)이 DOM에서 뜯겨나갈 수 있다. 이럴 때 앱이 재렌더 직후
+    // window.wlpReattachPrintOptions()를 호출하면 여기서 다시 찾아 붙인다. 이미 살아있으면 스킵
+    // (중복 위젯 방지). 트리거 속성이 없는 기존 페이지는 이 함수를 아무도 호출하지 않으므로 무영향.
+    var liveToggle = document.getElementById('po-toggle-btn');
+    if(liveToggle && liveToggle.isConnected) return;
+
     var trigger = findTrigger();
     var isFallback = !trigger; // 인쇄 트리거가 없는 페이지 — 플로팅 버튼을 스스로 생성(전 페이지 커버리지)
+    if(isFallback && document.querySelector('.po-wrap.po-floating')) return; // 폴백 버튼은 1회만
     injectWidgetStyle();
 
     var sections = detectSections();
@@ -363,6 +372,10 @@
 
     apply(); // 저장된 선택 즉시 반영(초기 @page·섹션 숨김)
   }
+
+  // 재부착 훅 공개 — [data-po-trigger]를 쓰면서 자체 재렌더로 트리거를 통째로 교체하는 페이지가
+  // 재렌더 직후 호출. 안 부르는 페이지(기존 8개)는 그냥 없는 함수라 무영향.
+  window.wlpReattachPrintOptions = init;
 
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', init);
