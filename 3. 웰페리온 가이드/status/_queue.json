@@ -1589,5 +1589,19 @@
     "artifact": "- 보기 페이지 단일 허브: 게시중 카드에 ⏳D-N 폐기예정 배지(잔여≤7일·상단정렬)\n- 하단 접이식 '🗑 폐기 완료 기록'(lf_disposal.disposed·읽기전용)\n- '🖨 폐기 공지 인쇄(A3)' 버튼(→ lost_found_disposal.html)\n- 수령(lf_handover)·직원삭제(lf_delete) 무손상. 스탠드얼론+WP블록 로직 동일(.wlp-lfg 스코프) (CLI ad-hoc · 커밋 4ef31fef)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4ef31fef44bcf04430819cf4312a55adccd31d86"
+  },
+  {
+    "task_id": "COO-2026-07-18-ADHOC-dac17bd6",
+    "clevel": "coo",
+    "title": "[시우] 업무·결재 SSOT 탭바 제거→우측상단 SSOT 버튼 네비 복귀 + 보고용·공유용 삭제 (GM 피드백)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1374,
+    "artifact": "756b130 탭 통합(업무 SSOT 컨테이너화+iframe 결재 패널)을 GM이 반려.\n업무·결재 현황 SSOT.html을 756b130 이전 독립 페이지로 원복(우측상단\n상호 링크버튼 네비 복귀), 결재 현황 SSOT_panel.html(임시 이관 사본)\n삭제. 두 페이지의 보고용(shareReport)·공유용(shareList) 버튼 및\n호출처 없는 함수 정의 제거(업무 SSOT는 전용 헬퍼 _applyShareFilters·\n_copyToClipboard도 함께 정리). (CLI ad-hoc · 커밋 dac17bd6)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "dac17bd6a3c252bbd27fcf6e0952c926a9506de1"
   }
 ]

@@ -556,7 +556,7 @@ function render() {
   approvalTasks.forEach(t => { if (t.category) catSet[t.category] = (catSet[t.category]||0) + 1; });
   const catList = Object.keys(catSet).sort();
 
-  // [결재-1] 1줄 — 상태 필터 + 정렬 드롭다운 + 대시보드·인쇄·보고용 (업무현황 정렬식 통일 · sticky 풀폭)
+  // [결재-1] 1줄 — 상태 필터 + 정렬 드롭다운 + 대시보드·인쇄 (업무현황 정렬식 통일 · sticky 풀폭)
   let stHtml = '';
   // 상태 필터 버튼(전체/진행중/결재완료/반려) 삭제 — 칸반에 완료·반려 칸이 이미 있어 중복·칸반서 미반영 (2026-06-05 GM)
   // activeFilter 기본값 '전체' 유지 → 칸반에 전체 표시. 건수는 각 칸반 칸 머리글에 노출.
