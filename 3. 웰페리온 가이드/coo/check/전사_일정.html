@@ -130,7 +130,7 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-
 .row.editable{cursor:pointer}
 .row.editable:hover{border-color:var(--accent)}
 /* ── 부서 탭 임베드 모드(?embed=1) — 군더더기 숨김, 부서 고정 ── */
-body.embed nav[aria-label="운영 흐름"],body.embed .honesty,body.embed footer,body.embed #chips,body.embed .sub{display:none!important}
+body.embed .honesty,body.embed footer,body.embed #chips,body.embed .sub{display:none!important}
 body.embed .wrap{padding:12px 14px 24px}
 body.embed h1{font-size:16px}
 body.embed .calwrap{margin-top:8px}
@@ -138,18 +138,6 @@ body.embed .calwrap{margin-top:8px}
 </head>
 <body>
 <div class="wrap">
-  <!-- 운영 흐름 네비 (GM 2026-07-14): 북극성(헌법) → 자율현황 → 월간운영 → 전사일정 → 오늘의 항로 -->
-  <nav aria-label="운영 흐름" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:13px;margin:0 0 14px;padding:9px 14px;background:var(--paper);border:1px solid var(--border);border-radius:11px;">
-    <a href="../../헌법한장.html" style="color:var(--dim);text-decoration:none;font-weight:650;">🌟 북극성(헌법)</a>
-    <span style="opacity:.4;">›</span>
-    <a href="../../자율현황.html" style="color:var(--dim);text-decoration:none;font-weight:650;">🤖 자율 작업 현황</a>
-    <span style="opacity:.4;">›</span>
-    <a href="../../월간운영계획.html" style="color:var(--dim);text-decoration:none;font-weight:650;">📋 월간 운영</a>
-    <span style="opacity:.4;">›</span>
-    <span style="font-weight:800;color:var(--accent);">🗓️ 전사 일정</span>
-    <span style="opacity:.4;">›</span>
-    <a href="../../wellperion_guide(main).html#G1" style="color:var(--dim);text-decoration:none;font-weight:650;">🧭 오늘의 항로</a>
-  </nav>
   <div class="header-top">
     <div>
       <h1>전사 일정<span class="scope" id="scopeLabel"></span></h1>

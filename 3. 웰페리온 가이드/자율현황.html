@@ -22,21 +22,6 @@
   header.page-head .sub{font-size:12px; color:var(--dim); line-height:1.45; flex:1; min-width:220px;}
   header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
-  /* ── 3층 네비 + 소유맵 스트립 = 한 박스 통합(GM 피드백 2026-07-18) ── */
-  .nav-own-box{margin:2px 0 14px; padding:8px 11px; background:var(--paper); border:1px solid var(--border); border-radius:10px;}
-  .layers{display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:12px;}
-  .layers a, .layers span.cur{text-decoration:none; border:1px solid var(--border-strong); border-radius:20px; padding:3px 12px; color:var(--text-soft); white-space:nowrap;}
-  .layers a:hover{border-color:var(--accent); color:var(--accent-soft);}
-  .layers span.cur{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
-  .layers .arw{color:var(--dim); font-size:11px;}
-
-  /* ── 🗺️ C레벨 소유·역할 스트립 (ssot/ownership_map.json 단일출처 fetch-render · GM확정 2026-07-18) ── */
-  .own-strip{display:flex; flex-wrap:wrap; gap:6px 8px; align-items:center; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-size:11.5px;}
-  .own-chip2{display:inline-flex; align-items:center; gap:5px; border:1px solid var(--border-strong); border-radius:20px; padding:3px 10px; background:var(--surface); white-space:nowrap;}
-  .own-chip2 b{color:var(--text);}
-  .own-chip2 .oc-role{color:var(--text-soft);}
-  .own-chip2.cur{border-color:var(--accent); background:rgba(124,58,237,0.10);}
-  .own-strip .os-src{margin-left:auto; font-size:10px; color:var(--dim);}
 
   /* 자율화 배너 */
   .auto-banner{display:flex; gap:12px; align-items:flex-start; margin:2px 0 18px; padding:12px 15px; border:1px solid rgba(124,58,237,0.30); border-left:4px solid var(--accent); border-radius:11px; background:rgba(124,58,237,0.06);}
@@ -310,24 +295,6 @@
     <a class="back" href="wellperion_guide(main).html#T2">← T2 업무자동화SSOT</a>
     <a class="back" href="헌법한장.html">🏛️ 헌법 한 장</a>
   </header>
-
-  <!-- 3층 네비 + 소유맵 스트립 한 박스 통합(GM 피드백 2026-07-18) -->
-  <div class="nav-own-box">
-    <div class="layers">
-      <a href="헌법한장.html">🌟 북극성 (헌법)</a>
-      <span class="arw">›</span>
-      <span class="cur">🤖 자율 작업 현황</span>
-      <span class="arw">›</span>
-      <a href="월간운영계획.html">📋 월간 운영</a>
-      <span class="arw">›</span>
-      <a href="coo/check/전사_일정.html">🗓️ 전사 일정</a>
-      <span class="arw">›</span>
-      <a href="wellperion_guide(main).html#G1">🧭 오늘의 항로 (G1)</a>
-    </div>
-
-    <!-- ════ 🗺️ C레벨 소유·역할 스트립 (ssot/ownership_map.json 단일출처 fetch-render · 정본 갱신은 GM 결재) ════ -->
-    <div class="own-strip" id="own-strip"><span style="color:var(--dim);">C레벨 소유·역할을 불러오는 중…</span></div>
-  </div>
 
   <section id="hero-autonomy" class="hero">
     <!-- renderHero() 채움 -->
@@ -1746,27 +1713,6 @@
       row.style.background = open ? 'var(--surface)' : '';
     }
   };
-
-  // ═══════════ 🗺️ C레벨 소유·역할 스트립 — ssot/ownership_map.json 단일출처 fetch-render(정본 · 복사 금지 · GM확정 2026-07-18) ═══════════
-  //   이 창(자율현황)=시토(CTO) 화면소유 강조. 별도 IIFE 안 필요(같은 파일 IIFE 내부) — 메인 Promise.all과 독립 로드.
-  function renderOwnershipStrip(map){
-    var el = document.getElementById('own-strip'); if(!el) return;
-    var roles = (map && Array.isArray(map.roles)) ? map.roles : [];
-    if(!roles.length){ el.innerHTML = '<span style="color:var(--dim);">C레벨 소유·역할 정본을 불러오지 못했습니다.</span>'; return; }
-    var chips = roles.map(function(r){
-      var isCur = r.type === '화면소유' && r.primary_surface === '자율작업현황';
-      var label = r.type === '화면소유' ? (r.primary_surface || '') : (r.domain || '');
-      return '<span class="own-chip2' + (isCur ? ' cur' : '') + '"><b>' + esc(r.nick) + '</b><span class="oc-role">' + esc(r.title) + ' · ' + esc(label) + '</span></span>';
-    }).join('');
-    el.innerHTML = chips + '<span class="os-src">정본: ssot/ownership_map.json</span>';
-  }
-  fetch(RAW_BASE + 'ssot/ownership_map.json', {cache:'no-store'})
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(map){ renderOwnershipStrip(map); })
-    .catch(function(){
-      var el = document.getElementById('own-strip');
-      if(el) el.innerHTML = '<span style="color:var(--dim);">C레벨 소유·역할 정본을 불러오지 못했습니다.</span>';
-    });
 
   // ═══════════ 로드 ═══════════
   Promise.all([
