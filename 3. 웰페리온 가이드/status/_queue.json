@@ -1338,5 +1338,47 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 ae58d180)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "ae58d18062fddad6d8e9dc2bd2a641923e5aad81"
+  },
+  {
+    "task_id": "COO-2026-07-18-ADHOC-7c02a7a2",
+    "clevel": "coo",
+    "title": "[시우] 습득물 파이프라인 단순화 + 폐기물 생애주기 (접수→보기 2단계·철회 폐지·30일 자동폐기)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1357,
+    "artifact": "- 접수(lost_found_register): 관리 탭 전면 제거, 접수만. 30일 자동폐기 안내\n- 보기(lost_found_gallery): 수령 유지 + 직원 전용 삭제(lf_delete) 배선, 30일 안내\n- NEW lost_found_disposal.html: 폐기 예정+완료 A3 공지(게시판 인쇄용, lf_disposal)\n- 종합접수처 현황: 습득물 안내·링크 2단계로 정리(철회/관리 문구 제거, 라이브 배지 보존)\n- reception_block: 링크 라벨 정합\n- GAS 소스(apps_script_voc.js) (CLI ad-hoc · 커밋 7c02a7a2)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "7c02a7a2e5488609fa7364fd5fcf14d9d7159e9c"
+  },
+  {
+    "task_id": "CPO-2026-07-18-ADHOC-43e71013",
+    "clevel": "cpo",
+    "title": "[시포] 강습 intake 시트 개선 (GM 지시·GAS @190) — 컬럼순서(유형→종목앞)·접수ID축소(21→14자)·비고 웹접수노이즈 제거·최근일자 상단삽입·#2 빠른제출 유실방지·#3 연말 미해결 소실방지 + 일회성 정리액션(테스트6행삭제·컬럼이동·비고17정리 실행완료)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1358,
+    "artifact": "라이브검증: 컬럼순서 유형↔종목 인접 확인·테스트행0·비고웹접수0·여름특강(조이진/조온동) 성인강습 합류 실증·회귀0 (CLI ad-hoc · 커밋 43e71013)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "43e71013d4bcf09ec73f7db9a271be1f54f74964"
+  },
+  {
+    "task_id": "COO-2026-07-18-ADHOC-756b1308",
+    "clevel": "coo",
+    "title": "[시우] 업무 현황 SSOT + 결재 현황 SSOT 탭 통합 (GM 승인)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1359,
+    "artifact": "업무 현황 SSOT.html을 컨테이너로 상단 탭 2개(업무 현황/결재 현황) 추가.\n결재 현황 SSOT의 원본 콘텐츠·스크립트·GAS 데이터소스는 무수정으로\n결재 현황 SSOT_panel.html에 그대로 이관해 iframe으로 결재 탭에 로드\n(JS 전역·CSS 클래스 충돌 없이 100% 기능 보존). 기존 결재 현황 SSOT.html은\n쿼리스트링 보존 리다이렉트 스텁으로 남겨 북마크·링크 보존. (CLI ad-hoc · 커밋 756b1308)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "756b1308dfaddd7c66cbfa2a7b2b43b291e12ef0"
   }
 ]
