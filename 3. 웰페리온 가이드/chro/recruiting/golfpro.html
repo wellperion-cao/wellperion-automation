@@ -41,10 +41,18 @@
   .m-stat b{display:block;font-size:17px;font-weight:800;color:var(--navy);}
   .m-stat span{display:block;font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;word-break:keep-all;}
   .m-title{font-size:11px;letter-spacing:2px;color:var(--accent);font-weight:800;text-transform:uppercase;margin-bottom:12px;}
-  .m-values{grid-column:span 12;}
+  .m-values{grid-column:span 12;text-align:center;}
   .val-chips{display:flex;flex-wrap:wrap;gap:10px;}
   .val-chips span{background:var(--accent-soft);color:var(--navy);font-weight:700;font-size:13px;padding:8px 16px;border-radius:999px;}
-  .quote{margin-top:16px;background:var(--navy);color:#fff;border-radius:14px;padding:18px 20px;font-size:15px;font-weight:700;text-align:center;line-height:1.6;}
+  .m-values .t-kicker{font-size:13px;letter-spacing:3px;color:var(--accent);font-weight:800;}
+  .m-values h2{font-size:23px;font-weight:800;margin:6px 0 4px;letter-spacing:-.5px;}
+  .m-values .t-sub{font-size:13.5px;color:var(--muted);margin-bottom:10px;}
+  .venn{width:100%;max-width:330px;height:auto;display:block;margin:4px auto 0;}
+  .quote{margin-top:16px;border-radius:16px;padding:24px 22px;background:linear-gradient(120deg,#0b1f3a,#173a5e);color:#fff;position:relative;overflow:hidden;text-align:center;}
+  .quote::before{content:"\201C";position:absolute;left:14px;top:-6px;font-size:70px;color:rgba(255,255,255,.14);font-weight:800;}
+  .quote .s-line{font-size:18px;font-weight:800;line-height:1.5;letter-spacing:-.4px;position:relative;}
+  .quote .s-line b{color:var(--gold);}
+  @media(max-width:620px){ .quote .s-line{font-size:16px;} }
   .m-ladder{grid-column:span 12;}
   .ladder-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;}
   .ladder-row .step{flex:1 1 130px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
@@ -107,7 +115,7 @@
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
   <span>JPG 다운로드</span>
 </button>
-<div class="wrap">
+<div class="wrap" id="captureRoot">
 
   <div class="topbar">
     <div class="brand">WELLPERION</div>
@@ -140,11 +148,31 @@
     <div class="card m-stat"><b>파트너 등급제</b><span>단계별 성장·보상</span></div>
 
     <div class="card m-values">
-      <div class="m-title">웰페리온이 찾는 프로</div>
-      <div class="val-chips">
-        <span>문제해결</span><span>팀워크</span><span>주도성</span><span>프로세스</span>
-      </div>
-      <div class="quote" id="sloganQuote"><span id="sloganText">"최고의 공간은 결국, 사람이 완성합니다"</span></div>
+      <div class="t-kicker">WHO WE LOOK FOR</div>
+      <h2>웰페리온이 찾는 프로</h2>
+      <div class="t-sub">네 가지 핵심 역량 위에 전문성을 더한 골프 파트너를 찾습니다</div>
+      <svg class="venn" viewBox="0 0 360 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="웰페리온 인재상 도식">
+        <g stroke="#c3d4e4" stroke-width="2">
+          <line x1="180" y1="130" x2="92"  y2="60"/>
+          <line x1="180" y1="130" x2="268" y2="60"/>
+          <line x1="180" y1="130" x2="92"  y2="200"/>
+          <line x1="180" y1="130" x2="268" y2="200"/>
+        </g>
+        <g font-family="sans-serif" font-size="13" font-weight="800" text-anchor="middle">
+          <circle cx="92"  cy="60"  r="44" fill="#e2edf8" stroke="#3f6fa0" stroke-width="2"/>
+          <text x="92"  y="65"  fill="#1c3a56">문제해결</text>
+          <circle cx="268" cy="60"  r="44" fill="#dbe6f4" stroke="#2f5f92" stroke-width="2"/>
+          <text x="268" y="65"  fill="#1a3f5c">팀워크</text>
+          <circle cx="92"  cy="200" r="44" fill="#e6edf6" stroke="#5c7896" stroke-width="2"/>
+          <text x="92"  y="205" fill="#26425c">주도성</text>
+          <circle cx="268" cy="200" r="44" fill="#dfe8f4" stroke="#4a6f92" stroke-width="2"/>
+          <text x="268" y="205" fill="#1f3852">프로세스</text>
+        </g>
+        <circle cx="180" cy="130" r="50" fill="#0b1f3a"/>
+        <text x="180" y="125" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="800" fill="#ffffff">웰페리온</text>
+        <text x="180" y="143" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="800" fill="#a9c9e8">인재상</text>
+      </svg>
+      <div class="quote" id="sloganQuote"><div class="s-line" id="sloganText">최고의 공간은 결국,<br><b>사람이 완성합니다</b></div></div>
     </div>
 
     <div class="card m-perk">
@@ -309,9 +337,10 @@ function downloadPageAsJpg(){
     var lbl = btn.querySelector('span');
     if(lbl) lbl.textContent = '생성 중...';
     var bg = getComputedStyle(document.body).backgroundColor || '#ffffff';
-    window.html2canvas(document.body, {
+    var captureTarget = document.getElementById('captureRoot') || document.body;
+    window.html2canvas(captureTarget, {
       backgroundColor: bg,
-      scale: 2,
+      scale: 2.5,
       useCORS: true,
       ignoreElements: function(el){ return el && el.id === 'jpgDownloadBtn'; }
     }).then(function(canvas){
