@@ -38,9 +38,8 @@
 
   /* ── 🗺️ C레벨 소유·역할 스트립 (ssot/ownership_map.json 단일출처 fetch-render · GM확정 2026-07-18) ── */
   .own-strip{display:flex; flex-wrap:wrap; gap:6px 8px; align-items:center; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-size:11.5px;}
-  .own-chip2{display:inline-flex; align-items:center; gap:5px; border:1px solid var(--border-strong); border-radius:20px; padding:3px 10px; background:var(--surface); white-space:nowrap;}
-  .own-chip2 b{color:var(--text);}
-  .own-chip2 .oc-role{color:var(--text-soft);}
+  .own-chip2{display:inline-flex; align-items:center; gap:5px; border:1px solid var(--border-strong); border-radius:20px; padding:3px 10px; background:var(--surface); white-space:nowrap; color:var(--text); font-weight:700; text-decoration:none;}
+  a.own-chip2:hover{border-color:var(--accent); color:var(--accent-soft); background:rgba(139,92,246,0.06);}
   .own-chip2.cur{border-color:var(--accent); background:rgba(139,92,246,0.10);}
   .own-strip .os-src{margin-left:auto; font-size:10px; color:var(--dim);}
 
@@ -92,11 +91,6 @@
 
   /* ── 경영진 보고 인쇄 배너(화면 숨김·인쇄+경영진 보고 모드에서만) ── */
   .print-head{display:none;}
-
-  /* ── 월 헤더 ── */
-  .month-head{margin:6px 0 14px; padding:12px 15px; border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:11px; background:var(--paper); display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;}
-  .month-head .mtitle{font-size:17px; font-weight:800;}
-  .month-head .mtheme{font-size:13px; color:var(--text-soft); flex:1; min-width:200px;}
 
   .mstat{display:inline-block; font-size:11.5px; font-weight:700; border-radius:20px; padding:3px 11px; white-space:nowrap;}
   .mstat.계획{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
@@ -442,9 +436,6 @@
   @media (max-width:720px){ .t3-card{min-width:calc(50% - 5px);} }
 
 
-  /* ── 🏷️ 이달 테마(월 헤더 상태 라벨 옆 인라인 · 舊 별도 그라디언트 배너 제거 · GM 정정 2026-07) ── */
-  .mtheme-report{font-size:11px; color:var(--accent-soft); white-space:normal;}
-
   /* ── 🔧 점검 현황 & 종합 접수처 ── */
   .chk-grid{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;}
   /* 점검 카드 = 대비 상향(GM 지시 2026-07-06 2차 · 다크테마 가독성) — 바탕 paper(밝게)·라벨/보조 텍스트 밝기 up */
@@ -488,7 +479,7 @@
   /* 연간 A3 뷰 = 연간 로드맵(annual-board) + 그 아래 월별 상세(report-grid) 전부 표시 — 연간 뷰가 월별 상세의 상위집합(GM 지시 2026-07-06 2차). impact-grid는 폐지분이라 계속 숨김. */
   .annual-board{display:none;}
   body.view-annual .annual-board{display:block;}
-  body.view-annual .impact-grid, body.view-annual #month-head{display:none !important;}
+  body.view-annual .impact-grid{display:none !important;}
 
   /* 🎯 1장 요약 뷰 = 폐지(GM 지시 2026-07-06 2차) — 연간 A3가 월별 상세를 포함하므로 별도 요약 뷰 불필요. summary-board 관련 CSS/JS는 비활성(섹션·토글 제거). */
   .sm-head{display:flex; flex-direction:column; gap:4px; border-bottom:2px solid var(--border-strong); padding-bottom:8px; margin-bottom:12px;}
@@ -653,7 +644,6 @@
     .wrap{max-width:none;}
     .nav-own-box, .impact-grid, .month-bar, .ebtn, header.page-head .back, .view-toggle{display:none !important;}
     /* 연간 뷰 인쇄 = 연간 로드맵 + 그 아래 월별 상세 전부(GM 지시 2026-07-06 2차) / 월별 뷰 인쇄 = 결론(연간 숨김·base CSS) */
-    body.view-annual #month-head{display:none !important;}
     /* 📊 연속 이니셔티브 상단밴드 = 두 단 전폭 상단(월별 A3) */
     .blk.mband-wrap{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
     .blk.mband-wrap h2.sec{margin-top:2px;}
@@ -732,7 +722,6 @@
     .blk.sum-hero h2.sec{margin-top:2px;}
     .sum-compact{color:#333 !important; font-size:8px; gap:3px 12px; padding:3px 0;}
     .rep-empty{color:#555 !important;}
-    .mtheme-report{color:#333 !important; font-size:7.5px;}
     /* 🔧 점검 현황 & 종합 접수처 = 두 단 전폭 상단·4카드 한 줄(시설부·지원부 남/여·종합접수처 · GM 지시 2026-07-07: 인쇄 시 카드가 아래로 내려가던 것 방지 — 반쪽 폭 2단 안에서 wrap 발생) */
     .blk[data-blkid="check"]{column-span:all; break-inside:avoid; margin-bottom:2px;}
     .chk-grid{flex-wrap:nowrap; gap:5px; margin-bottom:6px;}
@@ -765,11 +754,9 @@
     .rm-step .rbar{background:#eee !important; border-color:#999 !important; height:5px;} .rm-step .rbar>i{background:#555 !important;}
     .rm-step .rbadge{color:#000 !important; background:#f2f2f2 !important; border-color:#666 !important; font-size:6.5px;}
     .rm-legend{display:none !important;}
-    .month-head, .rpt-wrap, .metric, table.rpt tr, .erp-step, .erp-time, .rm-step, .rm-time, .rm-qgroup{break-inside:avoid;}
+    .rpt-wrap, .metric, table.rpt tr, .erp-step, .erp-time, .rm-step, .rm-time, .rm-qgroup{break-inside:avoid;}
     /* 인쇄 제목 = print-head 배너 1개만(GM 지적 2026-07-04 중복 제거) — 화면 헤더(제목·슬로건·컨트롤)는 인쇄 시 숨김 */
     header.page-head{display:none !important;}
-    .month-head{margin:2px 0 3px; padding:3px 8px; gap:3px 10px;}
-    .month-head .mtitle{font-size:11px;} .month-head .mtheme{font-size:8.5px;}
     .fchart, .erp-legend, .flegend{display:none !important;}  /* 막대차트·범례 생략(밀도) */
     /* 📈 연간 매출 히스토리(.fchart.hist)는 A3 인쇄본에 유지(GM 지시 2026-07-06) — 일반 .fchart 대시 차트는 계속 숨김. 흑백 가독 스타일 */
     .fchart.hist{display:flex !important; background:#fff !important; border:1px solid #999 !important; padding:4px 6px 3px !important; gap:5px !important; overflow:visible;}
@@ -808,13 +795,13 @@
     .metric{margin-top:4px; padding:4px 7px;}
     .erp-step{padding:8px 10px 7px; gap:4px;} .erp-step .ep{font-size:20px;} .erp-step .enote{font-size:8px; line-height:1.4;}
     .erp-time{gap:6px;}
-    .month-head, .rpt-wrap, table.rpt, .metric, .erp-step{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    .rpt-wrap, table.rpt, .metric, .erp-step{background:#fff !important; color:#111 !important; border-color:#999 !important;}
     table.rpt thead th{background:#f2f2f2 !important; color:#333 !important; border-color:#999 !important; padding:3px 6px; font-size:8px;}
     table.rpt tbody td{padding:1px 4px; font-size:8px;}
     table.rpt tbody td, table.rpt tbody tr:hover td, .fin tr.cur-m td{background:#fff !important; color:#222 !important; border-color:#ccc !important;}
     .r-title{font-size:8.5px;} .r-note{font-size:7.5px; line-height:1.32;}
     .fin tr.fin-tot td{background:#f2f2f2 !important;}
-    .r-title, .month-head .mtitle, .month-head .mtheme, .metric-meta, .metric-meta b, h2.sec, .fmo, .fin b, .prog .pnum, .erp-step .ep, .erp-step .em{color:#111 !important;}
+    .r-title, .metric-meta, .metric-meta b, h2.sec, .fmo, .fin b, .prog .pnum, .erp-step .ep, .erp-step .em{color:#111 !important;}
     .r-note, .metric-h, .fin-sub, .erp-step .enote{color:#333 !important;}
     .prog .track, .mbar, .erp-step .ebar{background:#eee !important; border-color:#999 !important;}
     .prog .track>i, .erp-step .ebar>i{background:#555 !important;}
@@ -860,7 +847,7 @@
     .print-head .ph-title{font-size:16px; font-weight:800; color:#111 !important;}
     .print-head .ph-sub{font-size:10px; color:#444 !important; margin-top:1px;}
     /* ══ 🎯 1장 요약 인쇄(A3 landscape 1장 보장 · 요약만 남기고 상세·연간·배너 전부 숨김) ══ */
-    body.view-summary .report-grid, body.view-summary .annual-board, body.view-summary #month-head, body.view-summary .print-head{display:none !important;}
+    body.view-summary .report-grid, body.view-summary .annual-board, body.view-summary .print-head{display:none !important;}
     body.view-summary .summary-board{display:block !important;}
     .summary-board{font-size:8px;}
     .sm-head{border-bottom:1.5px solid #999 !important; padding-bottom:4px; margin-bottom:6px;}
@@ -930,9 +917,6 @@
 
   <!-- 경영진 보고 인쇄 배너(A3 한 장 상단 · 상시) -->
   <div class="print-head" id="print-head"></div>
-
-  <!-- 월 헤더 -->
-  <div class="month-head" id="month-head" style="display:none;"></div>
 
   <!-- 📅 연간 A3 뷰 (뷰 토글 '연간 A3' 시 표시 · 월별 상세는 CSS로 숨김) -->
   <section class="annual-board" id="annual-board"><div class="board-status">연간 로드맵을 불러오는 중…</div></section>
@@ -1601,21 +1585,6 @@
     }).join('');
     // t3-legend(산식 부연) 제거(GM 지시 2026-07-06 가독성 정리) — 요지는 헤더 stag('매출 제외 · 중요도순 1·2·3')로 충분.
     host.innerHTML = '<div class="t3-grid">' + cards + '</div>';
-  }
-
-  // ── 월 헤더 (테마 문구는 핵심과제 표와 중복 → 렌더 제거, GM 지시 2026-07-04. 데이터 m.theme/report.theme는 정본 보존) ──
-  function renderMonthHead(){
-    var mh = document.getElementById('month-head');
-    var m = _data.months[_sel];
-    if(!m){ mh.style.display = 'none'; return; }
-    mh.style.display = 'flex';
-    var ms = m.month_status || '';
-    // '완료' = 보고 기간(그달) 마감 의미 — 개별 미완 과제가 병존할 수 있으므로 주석 명기(GM 정정 2026-07-04)
-    var doneHint = (ms === '완료') ? '<span class="mtheme-report" style="color:var(--dim)">※ \'완료\'=보고 기간(그달) 마감 · 개별 미완 과제는 다음 달 이월</span>' : '';
-    mh.innerHTML =
-      '<span class="mtitle">' + esc(_sel) + '</span>' +
-      '<span class="mstat ' + esc(ms) + '">' + esc(ms) + '</span>' +
-      doneHint;
   }
 
   // ── 도달율 진행 막대(공통) ──
@@ -2797,7 +2766,6 @@
   }
 
   function render(){
-    renderMonthHead();
     renderViewToggle();
     applyView();
     renderTop3();
@@ -3001,14 +2969,30 @@
 
   // ═══════════ 🗺️ C레벨 소유·역할 스트립 — ssot/ownership_map.json 단일출처 fetch-render(정본 · 복사 금지 · GM확정 2026-07-18) ═══════════
   //   이 창(월간운영계획)=시우(COO) 화면소유 강조. boot()와 독립 로드.
+  // 각 역할의 클릭 대상 페이지(현 파일 위치 기준 상대경로) — 실존 확인(Glob) 완료된 것만 매핑(GM 지시 2026-07-18)
+  var OWN_ROLE_HREF = {
+    ceo: '헌법한장.html',
+    cto: '자율현황.html',
+    coo: '월간운영계획.html',
+    cmo: 'wellperion_guide(main).html#M1',
+    cpo: 'cpo/member/문의회원.html',
+    chro: 'coo/todo/업무 현황 SSOT.html',
+    cfo: 'cfo/finance/매출지출현황.html'
+  };
   function renderOwnershipStrip(map){
     var el = document.getElementById('own-strip'); if(!el) return;
     var roles = (map && Array.isArray(map.roles)) ? map.roles : [];
     if(!roles.length){ el.innerHTML = '<span style="color:var(--dim);">C레벨 소유·역할 정본을 불러오지 못했습니다.</span>'; return; }
     var chips = roles.map(function(r){
+      var role = (r.title || '').toLowerCase();
       var isCur = r.type === '화면소유' && r.primary_surface && r.primary_surface.indexOf('월간운영계획') >= 0;
-      var label = r.type === '화면소유' ? (r.primary_surface || '') : (r.domain || '');
-      return '<span class="own-chip2' + (isCur ? ' cur' : '') + '"><b>' + esc(r.nick) + '</b><span class="oc-role">' + esc(r.title) + ' · ' + esc(label) + '</span></span>';
+      var tip = r.type === '화면소유' ? (r.primary_surface || '') : (r.domain || '');
+      var label = esc(r.nick) + ' ' + esc(TITLE_MAP[role] || r.title || '');
+      var href = OWN_ROLE_HREF[role];
+      if(href){
+        return '<a class="own-chip2' + (isCur ? ' cur' : '') + '" href="' + esc(href) + '" title="' + esc(tip) + '">' + label + '</a>';
+      }
+      return '<span class="own-chip2">' + label + '</span>';
     }).join('');
     el.innerHTML = chips + '<span class="os-src">정본: ssot/ownership_map.json</span>';
   }
