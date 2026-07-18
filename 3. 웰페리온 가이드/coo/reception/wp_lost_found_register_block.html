@@ -4,8 +4,10 @@
      ★ lost_found_register.html(스탠드얼론 원본)을 종합접수처(reception_block.html)와 동일한
         직접 인라인 주입 방식으로 변환: iframe 없이 vc_raw_html 로 페이지 본문에 그대로 심는다.
         결과: 페이지 단일 스크롤·헤더 로고/본문/푸터가 한 몸. self-contained(단일 정본).
-     ★ 기능: 등록 탭(사진 자동압축→Drive·습득일시·습득장소·설명·처리직원 → lf_submit),
-        관리 탭(lf_list 게시중 목록 + 오등록 철회 lf_void). 수령(서명)은 공개 갤러리 카드에서 진행.
+     ★ 기능: 접수 단일 폼(사진 자동압축→Drive·습득일시·습득장소·설명·처리직원 → lf_submit).
+        수령(서명)은 공개 갤러리 카드에서 진행.
+     ★ 2026-07-18 생애주기 단순화(시우): 관리 탭(lf_list·lf_void) 제거 — 접수 단일 폼. 오등록 삭제는
+        습득물 보기(갤러리) 직원 게이트에서 lf_delete로 처리. 30일 미수령 시 자동 폐기(폐기 공지 게시).
      ★ 접근 게이트(비밀번호 커튼) 제거 (2026-07-15 시토·GM 지시 "비밀번호 없애줘"):
         직원이 현장에서 바로 등록하도록 무인증 접근. gate.js 인라인 커튼 삭제 —
         단, 위조방지용 제출 토큰(VOC_SUBMIT_TOKEN=lf_submit)은 폼 내부에 그대로 유지(백엔드 보호).
@@ -95,14 +97,6 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
 .wlp-lfr .lf-policy li::before{content:"·";position:absolute;left:3px;color:var(--accent);font-weight:800}
 .wlp-lfr .lf-policy li b{color:var(--text);font-weight:700}
 
-/* 탭 */
-.wlp-lfr .tabs{display:flex;gap:8px;margin-bottom:16px}
-.wlp-lfr .tab{
-  flex:1;padding:11px;border:1.5px solid var(--border);border-radius:12px;background:var(--paper);
-  color:var(--text);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;text-align:center
-}
-.wlp-lfr .tab.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
-
 .wlp-lfr .card{background:var(--paper);border:1px solid var(--border);border-radius:18px;padding:20px 18px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
 .wlp-lfr .field{margin-bottom:15px}
 .wlp-lfr .field:last-child{margin-bottom:0}
@@ -143,18 +137,6 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
 .wlp-lfr .toast.err{background:var(--red)}
 
 .wlp-lfr .note{font-size:12.5px;color:var(--dim);text-align:center;margin-top:14px;line-height:1.7}
-
-/* 관리(목록) */
-.wlp-lfr .mgmt-item{display:flex;gap:12px;align-items:center;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px}
-.wlp-lfr .mgmt-item img{width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--border);flex-shrink:0;background:var(--bg)}
-.wlp-lfr .mgmt-body{flex:1;min-width:0}
-.wlp-lfr .mgmt-body .mid{font-size:11px;color:var(--dim)}
-.wlp-lfr .mgmt-body .mdesc{font-size:14px;font-weight:600;margin:2px 0;word-break:break-word}
-.wlp-lfr .mgmt-body .mmeta{font-size:12px;color:var(--dim)}
-.wlp-lfr .void-btn{padding:8px 12px;border:1.5px solid rgba(192,57,43,0.4);border-radius:10px;background:var(--red-bg);color:var(--red);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0}
-.wlp-lfr .mini-btn{padding:8px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0}
-.wlp-lfr .state-msg{padding:26px 4px;text-align:center;color:var(--dim);font-size:13.5px}
-.wlp-lfr .hidden{display:none!important}
 </style>
 <script>try{document.body.classList.add('wlp-lfr-page');}catch(e){}
 /* ① 헤더 로고 링크: 홈(/ko/) → 종합접수처(/ko/reception/) (2026-07-15 시토·GM 지시).
@@ -183,7 +165,7 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
   <div class="lf-policy">
     <div class="lf-policy-h">📋 습득 분실물 보관·폐기 안내 <span class="badge">직원 필독</span></div>
     <ul>
-      <li>보관 기간: 습득일로부터 <b>1개월(30일)</b> 보관 후 폐기합니다. 기간 내 미수령 시 처리됩니다.</li>
+      <li>보관 기간: 습득일로부터 <b>30일 미수령 시 자동 폐기</b>되며 폐기 공지에 게시됩니다.</li>
       <li>귀중품(현금·지갑·귀금속·전자기기 등)은 <b>경찰서(유실물센터)에 인계</b>합니다.</li>
       <li>그 외 물품은 1개월 경과 후 <b>자체 폐기</b>합니다.</li>
       <li>수령: 본인 확인 후 현장(리셉션·수영장·사우나 등)에서 서명하고 수령해 주세요.</li>
@@ -196,12 +178,7 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
     <b>개인을 식별할 수 있는 정보는 가리고</b> 촬영합니다. (공개 갤러리에 사진이 그대로 노출됩니다.)</span>
   </div>
 
-  <div class="tabs">
-    <button class="tab active" id="tabReg" type="button">＋ 습득물 접수</button>
-    <button class="tab" id="tabMgmt" type="button">🗂 등록 관리 · 철회</button>
-  </div>
-
-  <!-- ── 등록 탭 ── -->
+  <!-- ── 접수 폼 ── -->
   <div id="regPane">
     <div class="card">
       <div class="field">
@@ -238,18 +215,6 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
       <span class="submit-tag">직원용</span>
     </div>
     <p class="note">등록 즉시 회원 열람 갤러리(게시중)에 노출됩니다.<br>물건을 찾아가면 갤러리에서 현장 서명 후 자동으로 내려갑니다.</p>
-  </div>
-
-  <!-- ── 관리 탭 ── -->
-  <div id="mgmtPane" class="hidden">
-    <div class="card" style="padding:14px 14px 6px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.3px">게시중 습득물 (오등록 철회)</span>
-        <button class="mini-btn" id="reloadMgmt" type="button">↻ 새로고침</button>
-      </div>
-      <div id="mgmtList"><div class="state-msg">불러오는 중…</div></div>
-    </div>
-    <p class="note">'철회'는 잘못 올린 게시중 습득물을 갤러리에서 내립니다.<br>수령(서명) 처리는 회원 열람 갤러리의 '수령' 버튼에서 진행합니다.</p>
   </div>
 </div>
 </div>
@@ -320,53 +285,5 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
     $('f_itemDesc').value=''; $('f_staff').value='';
     var btn=$('submitBtn'); btn.disabled=false; btn.textContent='🧳 습득물 접수하기';
   }
-
-  // ── 탭 전환 ──
-  function showTab(which){
-    var reg=which==='reg';
-    $('tabReg').classList.toggle('active',reg); $('tabMgmt').classList.toggle('active',!reg);
-    $('regPane').classList.toggle('hidden',!reg); $('mgmtPane').classList.toggle('hidden',reg);
-    if(!reg) loadMgmt();
-  }
-  $('tabReg').addEventListener('click',function(){ showTab('reg'); });
-  $('tabMgmt').addEventListener('click',function(){ showTab('mgmt'); });
-  $('reloadMgmt').addEventListener('click',loadMgmt);
-
-  function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-
-  // ── 관리 목록 (lf_list, 게시중만) ──
-  var _mgmtLoading=false;
-  function loadMgmt(){
-    if(_mgmtLoading) return; _mgmtLoading=true;
-    var box=$('mgmtList'); box.innerHTML='<div class="state-msg">불러오는 중…</div>';
-    fetch(VOC_API+'?action=lf_list&status='+encodeURIComponent('게시중')+'&_='+Date.now(),{redirect:'follow',cache:'no-store'})
-      .then(function(r){ return r.json(); })
-      .then(function(d){ _mgmtLoading=false;
-        if(!d||!d.ok){ box.innerHTML='<div class="state-msg">목록을 불러오지 못했습니다 — '+_esc(d&&d.error||'')+'</div>'; return; }
-        var rows=(d.data||[]).filter(function(r){ return String(r.status||'')==='게시중'; });
-        if(!rows.length){ box.innerHTML='<div class="state-msg">게시중 습득물이 없습니다.</div>'; return; }
-        box.innerHTML=rows.map(function(r){
-          var img=r.photoUrl?('<img src="'+_esc(_thumb(r.photoUrl))+'" alt="">'):'<img alt="">';
-          return '<div class="mgmt-item">'+img+
-            '<div class="mgmt-body"><div class="mid">'+_esc(r.foundId||'')+'</div>'+
-            '<div class="mdesc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
-            '<div class="mmeta">📍 '+_esc(r.foundLoc||'-')+' · 🕒 '+_esc((r.foundWhen||r.createdAt||'').replace('T',' '))+'</div></div>'+
-            '<button class="void-btn" data-void="'+_esc(r.foundId||'')+'" type="button">철회</button></div>';
-        }).join('');
-      })
-      .catch(function(){ _mgmtLoading=false; box.innerHTML='<div class="state-msg">네트워크 오류 — 새로고침 해주세요.</div>'; });
-  }
-  function _thumb(url){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w200'):url; }
-
-  $('mgmtList').addEventListener('click',function(ev){
-    var b=ev.target.closest('[data-void]'); if(!b) return;
-    var id=b.getAttribute('data-void');
-    if(!confirm('['+id+'] 습득물을 철회(갤러리에서 내림)할까요?')) return;
-    b.disabled=true; b.textContent='철회 중…';
-    fetch(VOC_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'lf_void',t:VOC_SUBMIT_TOKEN,id:id})})
-      .then(function(r){ return r.json(); })
-      .then(function(d){ if(d&&d.ok){ toast(id+' 철회 완료'); loadMgmt(); } else { toast((d&&d.error)||'철회 실패',true); b.disabled=false; b.textContent='철회'; } })
-      .catch(function(){ toast('네트워크 오류',true); b.disabled=false; b.textContent='철회'; });
-  });
 })();
 </script>

@@ -4,6 +4,9 @@
         결과: 페이지 단일 스크롤·헤더 로고/본문/푸터가 한 몸. self-contained(단일 정본).
      ★ 기능: 백엔드 lf_gallery(공개, 게시중만·민감필드 미반환)로 습득물 카드 목록을 렌더,
         카드 '수령' 버튼 → 현장 직원 본인확인 → 디지털 서명패드(canvas→PNG) → lf_handover.
+     ★ 2026-07-18 생애주기 단순화(시우): 관리 탭 폐지로 오등록 삭제를 이 화면 직원 게이트 뒤로 이관.
+        카드 우측 상단 작은 🗑 아이콘(기본 흐림·눈에 안 띔) → confirm → lf_delete(id) → 목록 새로고침.
+        30일 미수령 습득물은 자동 폐기(폐기 공지 게시)되어 갤러리에서 제외됩니다.
      ★ CSS 충돌 방지: 전 규칙을 .wlp-lfg 래퍼 하위로 스코프 → Salient/WPBakery 테마 오염 차단.
         WP 페이지 타이틀·Buttonizer·ENG 언어버튼은 body.wlp-lfg-page 한정으로 숨김
         (body 클래스는 하단 스크립트가 부착 — 페이지 id 는 빌드 시점에 알 수 없으므로 클래스 방식 사용). -->
@@ -77,8 +80,17 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 .wlp-lfg .refresh:hover{border-color:var(--accent);color:var(--accent)}
 
 .wlp-lfg .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
-.wlp-lfg .gcard{background:var(--paper);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.04);display:flex;flex-direction:column}
+.wlp-lfg .gcard{background:var(--paper);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.04);display:flex;flex-direction:column;position:relative}
 .wlp-lfg .gcard .ph{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--bg);border-bottom:1px solid var(--border);display:block}
+/* 직원용 오등록 삭제 — 기본 흐림(회원 혼동 방지), 작고 연한 아이콘 */
+.wlp-lfg .gcard .del-btn{
+  position:absolute;top:7px;right:7px;z-index:2;width:22px;height:22px;
+  display:flex;align-items:center;justify-content:center;border-radius:50%;
+  background:rgba(255,255,255,0.55);border:1px solid rgba(0,0,0,0.05);
+  color:rgba(192,57,43,0.38);font-size:11px;line-height:1;cursor:pointer;
+  opacity:.55;transition:opacity .15s,color .15s,background .15s
+}
+.wlp-lfg .gcard .del-btn:hover{opacity:1;color:var(--red);background:rgba(255,255,255,0.9)}
 .wlp-lfg .gcard .body{padding:13px 14px 14px;display:flex;flex-direction:column;flex:1}
 .wlp-lfg .gcard .gid{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.3px}
 .wlp-lfg .gcard .desc{font-size:14.5px;font-weight:600;margin:4px 0 7px;word-break:break-word;line-height:1.45}
@@ -151,7 +163,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   <div class="lf-policy">
     <div class="lf-policy-h">📋 습득 분실물 보관·폐기 안내 <span class="badge">회원·직원 필독</span></div>
     <ul>
-      <li>보관 기간: 습득일로부터 <b>1개월(30일)</b> 보관 후 폐기합니다. 기간 내 미수령 시 처리됩니다.</li>
+      <li>보관 기간: 습득일로부터 <b>30일 미수령 시 자동 폐기</b>되며 폐기 공지에 게시됩니다.</li>
       <li>귀중품(현금·지갑·귀금속·전자기기 등)은 <b>경찰서(유실물센터)에 인계</b>합니다.</li>
       <li>그 외 물품은 1개월 경과 후 <b>자체 폐기</b>합니다.</li>
       <li>수령: 본인 확인 후 현장(리셉션·수영장·사우나 등)에서 서명하고 수령해 주세요.</li>
@@ -165,7 +177,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 
   <div class="grid" id="grid"><div class="state-msg">불러오는 중…</div></div>
 
-  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>하루의 완성, 웰페리온</p>
+  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>습득일로부터 30일 미수령 시 자동 폐기됩니다.<br>하루의 완성, 웰페리온</p>
 </div>
 
 <!-- 수령 서명 모달 -->
@@ -268,12 +280,28 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     var when=String(r.foundWhen||r.createdAt||'').replace('T',' ');
     var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,400))+'" alt="습득물 사진" loading="lazy" decoding="async">'):'<div class="ph"></div>';
     return '<div class="gcard">'+ph+
+      '<button class="del-btn" type="button" data-del="'+_esc(r.foundId||'')+'" title="직원 전용: 오등록 삭제">🗑</button>'+
       '<div class="body"><div class="gid">'+_esc(r.foundId||'')+'</div>'+
       '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
       '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>🕒 '+_esc(when||'-')+'</div>'+
       '<button class="claim" type="button" data-claim="'+_esc(r.foundId||'')+'" data-desc="'+_esc(r.itemDesc||'')+'" data-loc="'+_esc(r.foundLoc||'')+'" data-photo="'+_esc(r.photoUrl||'')+'">수령</button>'+
       '</div></div>';
   }
+
+  // ── 오등록 삭제 (직원 전용, lf_delete) ──
+  $('grid').addEventListener('click',function(ev){
+    var b=ev.target.closest('[data-del]'); if(!b) return;
+    var id=b.getAttribute('data-del');
+    if(!confirm('['+id+'] 오등록 습득물을 삭제할까요?')) return;
+    b.disabled=true;
+    fetch(VOC_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'lf_delete',t:VOC_SUBMIT_TOKEN,id:id})})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d&&d.ok){ toast(id+' 삭제 완료'); _clearCache(); load({force:true}); }
+        else { toast((d&&d.error)||'삭제 실패',true); b.disabled=false; }
+      })
+      .catch(function(){ toast('네트워크 오류',true); b.disabled=false; });
+  });
 
   // ── 수령 모달 ──
   $('grid').addEventListener('click',function(ev){
