@@ -627,7 +627,7 @@
     @page{size:A3 landscape; margin:8mm;}
     body{background:#fff; color:#111; padding:0; font-size:8.5px; line-height:1.4;}
     .wrap{max-width:none;}
-    #wlp-nav, .impact-grid, .month-bar, .ebtn, header.page-head .back, .view-toggle{display:none !important;}
+    .impact-grid, .month-bar, .ebtn, header.page-head .back, .view-toggle{display:none !important;}
     /* 연간 뷰 인쇄 = 연간 로드맵 + 그 아래 월별 상세 전부(GM 지시 2026-07-06 2차) / 월별 뷰 인쇄 = 결론(연간 숨김·base CSS) */
     /* 📊 연속 이니셔티브 상단밴드 = 두 단 전폭 상단(월별 A3) */
     .blk.mband-wrap{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
@@ -879,10 +879,6 @@
     </div>
     <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
   </header>
-
-  <!-- 웰페리온 공용 상단 네비 — 단일 소스 공유 컴포넌트(_assets/wlp_nav.js). 파일럿 적용(GM 지시 2026-07-18) -->
-  <div id="wlp-nav"></div>
-  <script src="/wellperion-automation/_assets/wlp_nav.js"></script>
 
   <!-- 🔥 임팩트 현황 4칸 = 폐지(GM 확정 2026-07-04 월별 상단 재구성). 매출=💰 0순위 섹션 + 핵심 과제=🎯 top3 섹션(중요도 자동)으로 대체·중복 제거. -->
 
