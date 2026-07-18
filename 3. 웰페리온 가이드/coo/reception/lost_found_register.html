@@ -11,6 +11,7 @@
     (eyebrow·h1·골드 디바이더) + 직원 전용 배지 + 차콜 그라디언트 제출버튼으로 시각 구분. JS·id 불변.
   · 2026-07-18 생애주기 단순화(시우): 관리 탭(lf_list·lf_void) 제거 — 접수 단일 폼. 오등록 삭제는
     습득물 보기(갤러리) 직원 게이트에서 lf_delete로 처리. 30일 미수령 시 자동 폐기(폐기 공지 게시).
+  · 2026-07-18 회원/직원 뷰 분리(시우): 습득물 보기(갤러리) 직원 진입 링크 추가(?staff=1).
   · gate.js 커튼(사내 전용) 뒤. 백엔드 = VOC/reception GAS lf_submit 액션(전용 시트 「습득물」).
   · 접수: 사진(자동압축→Drive)·습득일시·습득장소·설명·처리직원 → lf_submit.
   · 프론트 신규(직원 화면), 백엔드 재사용(_lfUpload_/_lfSubmit).
@@ -136,7 +137,7 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
     </div>
     <p>직원 전용 · 주운 물건을 접수하면 회원 열람 갤러리에 게시됩니다.</p>
     <div class="staff-badge">🔒 직원 전용 · 주운 물건 접수</div>
-    <div><a class="guide-link-btn" href="lost_found_guide.html" target="_blank" rel="noopener">📋 운영 가이드 (처리 규정·SOP)</a></div>
+    <div><a class="guide-link-btn" href="lost_found_guide.html" target="_blank" rel="noopener">📋 운영 가이드 (처리 규정·SOP)</a> <a class="guide-link-btn" href="lost_found_gallery.html?staff=1" target="_blank" rel="noopener">🧳 습득물 현황·처리</a></div>
   </div>
 
   <div class="lf-policy">

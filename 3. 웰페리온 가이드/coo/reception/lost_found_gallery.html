@@ -18,7 +18,10 @@
     폐기완료 물품은 하단 접이식 '🗑 폐기 완료 기록' 읽기전용 카드. 인쇄용 lost_found_disposal.html(A3) 링크 버튼 추가.
   · 2026-07-18 v2(시우): 월별 코호트 폐기로 교체 — remainDays/30일 표기 폐기, disposeMonth('YYYY-MM') 기반 'M월 폐기예정' 표기.
     사이클: 습득월 M → M+1 공지 → M+2 폐기(습득한 달의 다음 달까지 공지, 그다음 달에 폐기).
+  · 2026-07-18 회원/직원 뷰 분리(시우): ?staff=1 직원모드에서만 A3인쇄·삭제·수령·처분완료기록 노출.
+    회원뷰는 열람 전용(현황 확인만). documentElement에 staff-mode 클래스 조기 부여로 FOUC 방지.
 -->
+<script>try{ if(/(?:^|[?&])staff=1(?:&|$)/.test(location.search)){ document.documentElement.classList.add('staff-mode'); } }catch(e){}</script>
 <style>
 :root{
   --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
@@ -76,6 +79,20 @@ a{color:var(--accent);text-decoration:none}
   font-size:12.5px;font-weight:700;letter-spacing:.2px
 }
 .guide-link-btn:hover{background:rgba(176,141,87,0.16)}
+
+/* ── 직원 모드(?staff=1) — 회원뷰엔 없는 직원 전용 컨트롤·안내 게이팅 (2026-07-18) ──
+   ★ 특이도 함정: .gcard .del-btn·.gcard .claim·.print-btn 이 이미 display 를 지정(각 0,2,0/0,1,0) →
+   숨김 규칙은 .staff-only 를 덧붙여 반드시 더 높은 특이도로 만들어야 순서 무관하게 이긴다. */
+span.staff-only{display:none}
+.print-btn.staff-only{display:none}
+.gcard .del-btn.staff-only{display:none}
+.gcard .claim.staff-only{display:none}
+.staff-mode span.staff-only{display:inline}
+.staff-mode .print-btn.staff-only{display:inline-flex}
+.staff-mode .gcard .del-btn.staff-only{display:flex}
+.staff-mode .gcard .claim.staff-only{display:block}
+.staff-badge-pill{display:none}
+.staff-mode .staff-badge-pill{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 15px;background:rgba(59,58,68,0.08);color:#3b3a44;border:1px solid rgba(59,58,68,0.22);border-radius:20px;font-size:12px;font-weight:700;letter-spacing:.2px}
 
 /* ── 폐기 임박 배지·강조 (lf_disposal upcoming) ── */
 .gcard.imminent{border-color:#e8b44a;box-shadow:0 0 0 1px rgba(232,180,74,.35),0 1px 6px rgba(0,0,0,.04)}
@@ -159,6 +176,7 @@ a{color:var(--accent);text-decoration:none}
     <h1>습득 분실물 현황</h1>
     <p>클럽에서 습득된 물건입니다. 본인 물건을 발견하시면 현장 직원에게 문의해 주세요.</p>
     <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
+    <div class="staff-badge-pill">🛠 직원모드</div>
     <a class="guide-link-btn" href="lost_found_guide.html" target="_blank" rel="noopener">📋 분실물 이용 안내</a>
   </div>
 
@@ -175,7 +193,7 @@ a{color:var(--accent);text-decoration:none}
   <div class="topbar">
     <span class="count-pill">게시중 <span class="n" id="cnt">0</span>건</span>
     <div class="topbar-actions">
-      <a class="print-btn" href="lost_found_disposal.html" target="_blank" rel="noopener">🖨 처분 공지 인쇄(A3)</a>
+      <a class="print-btn staff-only" href="lost_found_disposal.html" target="_blank" rel="noopener">🖨 처분 공지 인쇄(A3)</a>
       <button class="refresh" id="refreshBtn" type="button">↻ 새로고침</button>
     </div>
   </div>
@@ -191,7 +209,7 @@ a{color:var(--accent);text-decoration:none}
     </div>
   </div>
 
-  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>곧 처분 예정인 물품은 ⏳ 배지로 표시되며, 처분된 물품은 아래 기록에서 확인할 수 있습니다.<br>습득한 달의 다음 달까지 공지 후, 그다음 달에 처분됩니다(소모품 폐기·그 외 경찰 인계).<br>게시판 인쇄는 <b>처분 공지(A3)</b>를 이용해 주세요 · 하루의 완성, 웰페리온</p>
+  <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>곧 처분 예정인 물품은 ⏳ 배지로 표시됩니다.<span class="staff-only"> 처분된 물품은 아래 기록에서 확인할 수 있습니다.</span><br>습득한 달의 다음 달까지 공지 후, 그다음 달에 처분됩니다(소모품 폐기·그 외 경찰 인계).<br><span class="staff-only">게시판 인쇄는 <b>처분 공지(A3)</b>를 이용해 주세요 · </span>하루의 완성, 웰페리온</p>
 </div>
 
 <!-- 수령 서명 모달 -->
@@ -318,11 +336,11 @@ a{color:var(--accent);text-decoration:none}
     var imminent=disposeMonth!=null;
     var badge=imminent?('<div class="disp-badge">⏳ '+_esc(_monthLabel(disposeMonth))+' 처분예정</div>'):'';
     return '<div class="gcard'+(imminent?' imminent':'')+'">'+ph+
-      '<button class="del-btn" type="button" data-del="'+_esc(r.foundId||'')+'" title="직원 전용: 오등록 삭제">🗑</button>'+
+      '<button class="del-btn staff-only" type="button" data-del="'+_esc(r.foundId||'')+'" title="직원 전용: 오등록 삭제">🗑</button>'+
       '<div class="body">'+badge+_catBadge(r.category)+'<div class="gid">'+_esc(r.foundId||'')+'</div>'+
       '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
       '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>🕒 '+_esc(when||'-')+'</div>'+
-      '<button class="claim" type="button" data-claim="'+_esc(r.foundId||'')+'" data-desc="'+_esc(r.itemDesc||'')+'" data-loc="'+_esc(r.foundLoc||'')+'" data-photo="'+_esc(r.photoUrl||'')+'">수령</button>'+
+      '<button class="claim staff-only" type="button" data-claim="'+_esc(r.foundId||'')+'" data-desc="'+_esc(r.itemDesc||'')+'" data-loc="'+_esc(r.foundLoc||'')+'" data-photo="'+_esc(r.photoUrl||'')+'">수령</button>'+
       '</div></div>';
   }
 
@@ -340,6 +358,7 @@ a{color:var(--accent);text-decoration:none}
 
   // ── 폐기 임박(upcoming)·폐기 완료(disposed) — lf_disposal(공개) ──
   function _renderDisposalSection(){
+    if(!document.documentElement.classList.contains('staff-mode')) return; // 회원뷰: 처분 완료 기록은 직원 전용
     var sec=$('disposalSec'), cnt=$('disposalCount'), grid=$('disposalGrid');
     var n=_disposed.length;
     cnt.textContent=String(n);

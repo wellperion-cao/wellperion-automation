@@ -8,6 +8,7 @@
         수령(서명)은 공개 갤러리 카드에서 진행.
      ★ 2026-07-18 생애주기 단순화(시우): 관리 탭(lf_list·lf_void) 제거 — 접수 단일 폼. 오등록 삭제는
         습득물 보기(갤러리) 직원 게이트에서 lf_delete로 처리. 30일 미수령 시 자동 폐기(폐기 공지 게시).
+     ★ 2026-07-18 회원/직원 뷰 분리(시우): 습득물 보기(갤러리) 직원 진입 링크 추가(?staff=1, 라이브 WP URL).
      ★ 접근 게이트(비밀번호 커튼) 제거 (2026-07-15 시토·GM 지시 "비밀번호 없애줘"):
         직원이 현장에서 바로 등록하도록 무인증 접근. gate.js 인라인 커튼 삭제 —
         단, 위조방지용 제출 토큰(VOC_SUBMIT_TOKEN=lf_submit)은 폼 내부에 그대로 유지(백엔드 보호).
@@ -169,7 +170,7 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
     </div>
     <p>직원 전용 · 주운 물건을 접수하면 회원 열람 갤러리에 게시됩니다.</p>
     <div class="staff-badge">🔒 직원 전용 · 주운 물건 접수</div>
-    <div><a class="guide-link-btn" href="https://wellperion-cao.github.io/wellperion-automation/coo/reception/lost_found_guide.html" target="_blank" rel="noopener">📋 운영 가이드 (처리 규정·SOP)</a></div>
+    <div><a class="guide-link-btn" href="https://wellperion-cao.github.io/wellperion-automation/coo/reception/lost_found_guide.html" target="_blank" rel="noopener">📋 운영 가이드 (처리 규정·SOP)</a> <a class="guide-link-btn" href="http://wellperion.com/ko/lost-found/?staff=1" target="_blank" rel="noopener">🧳 습득물 현황·처리</a></div>
   </div>
 
   <div class="lf-policy">
