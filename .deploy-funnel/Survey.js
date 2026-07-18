@@ -1953,7 +1953,7 @@ function _rentbizReadRows_(gid) {
   var iPhone = _findCol_(hdr, ['연락처', '전화', '휴대폰']);
   var iChan  = _findCol_(hdr, ['경로', '채널', '알게']);
   var iNote  = _findCol_(hdr, INQUIRY_CONTENT_KEYS);
-  var iStat  = _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '상태']);
+  var iStat  = _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '진행 상황', '상태']);
   var iOwner = _findCol_(hdr, ['접수 담당자', '관리담당', '담당자', '담당']);
   var out = [];
   for (var r = 0; r < data.length; r++) {
@@ -1982,7 +1982,7 @@ function _rentbizHasStatusCol_(gid) {
   var lastCol = sh.getLastColumn();
   if (lastCol < 1) return false;
   var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0];
-  return _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '상태']) >= 0;
+  return _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '진행 상황', '상태']) >= 0;
 }
 
 function _processAction(body) {
@@ -3360,7 +3360,14 @@ function _processAction(body) {
         .sort(function(a, b){ return b.v - a.v; });
     }
     var rsResult = { ok: true, total: rsTotal, thisMonth: rsThisMonth, byChannel: _rsSort(rsChan) };
-    rsResult.hasStatus = _rentbizHasStatusCol_(rsGid);
+    var _rsIntakeSh = null;
+    try {
+      var _rsT2 = String((body && body.type) || '').trim().toLowerCase();
+      var _rsIsBiz2 = (_rsT2 === 'biz' || _rsT2 === 'business' || _rsT2 === '비즈니스' || _rsT2 === '비즈니스파트너');
+      _rsIntakeSh = _rsIsBiz2 ? _businessIntakeSheet_(false) : _rentalIntakeSheet_(false);
+    } catch (e) {}
+    // #5 수리(2026-07-18 시포): 병합 intake 탭('진행 상황' 칼럼)도 상태 게이트에 포함 — 구 폼 gid만 보던 갭.
+    rsResult.hasStatus = _rentbizHasStatusCol_(rsGid) || (_rsIntakeSh ? _rentbizHasStatusCol_(_rsIntakeSh.getSheetId()) : false);
     if (rsResult.hasStatus) {
       var rsNew = 0, rsInProgress = 0, rsDone = 0;
       rsRows.forEach(function(row) {
