@@ -1742,5 +1742,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 11bc70c2)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "11bc70c2a730a26f1c8ee59e93f14e8477627ca5"
+  },
+  {
+    "task_id": "COO-2026-07-18-ADHOC-992ffe50",
+    "clevel": "coo",
+    "title": "[시우] 인쇄 위젯 재부착 훅 — 담당자 줄 비동기 재렌더가 위젯을 지우던 문제",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1385,
+    "artifact": "업무·결재 SSOT는 데이터 로드 후 buildFilters()/render()가 #ownerFilters를\ninnerHTML로 통째로 재작성해, DOMContentLoaded 시 1회만 붙는 print_options.js\n위젯(data-po-trigger 버튼)이 뜯겨나가던 실측 버그(라이브 Playwright로 확인).\nprint_options.js의 init을 재호출 가능한 idempotent 함수로 만들고\nwindow.wlpReattachPrintOptions로 공개, 두 SSOT 페이지가 담당자 줄 렌더\n직후 호출해 위젯을 (CLI ad-hoc · 커밋 992ffe50)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "992ffe503b177dbe3cc15cc1dd26cf220f9701df"
   }
 ]
