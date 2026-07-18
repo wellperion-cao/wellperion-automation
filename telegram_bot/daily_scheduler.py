@@ -2499,66 +2499,81 @@ def _inquiry_stage_of(raw: str) -> int:
     return 1  # 미인식 → ① 문의(안전 처리)
 
 
+# 종목·유형 색상 도트(GM 확정 스킴, _sportColor와 동일) — 텔레그램 텍스트 색상 불가 → 원형 이모지. 2026-07-18 시토(GM).
+_DIGEST_SPORT_DOT = [
+    ("아쿠아", "🔵"), ("수영", "🔵"), ("P.T", "🔴"), ("PT", "🔴"), ("필라", "🟠"),
+    ("스쿼시", "🟩"), ("골프", "🟢"), ("트램폴린", "🟦"), ("체조", "🟦"), ("멤버십", "🟡"),
+    ("뮤지컬", "⚫"), ("발레", "🟣"), ("바레", "🟣"), ("루프", "🟣"),
+]
+
+
+def _digest_dot(s: str) -> str:
+    k = (s or "").strip()
+    for kw, dot in _DIGEST_SPORT_DOT:
+        if kw in k:
+            return dot + " "
+    return ""
+
+
+def _digest_fetch_list(action: str, **params) -> list:
+    """funnel-v2 목록 조회(멤버십·강습). 실패 시 예외 전파(호출부에서 폴백)."""
+    r = requests.get(FUNNEL_EXEC_URL, params=dict(action=action, **params), timeout=40, allow_redirects=True)
+    r.raise_for_status()
+    d = r.json()
+    return d.get("data", []) if d.get("ok") else []
+
+
 def _build_digest_inquiry(today: str) -> str:
-    """문의알림방 — 오늘 문의 핵심요약 + 상세. str 반환(전송 분리)."""
+    """문의알림방 — 오늘 문의를 멤버십/성인강습/유소년강습 카테고리로 정리. str 반환(전송 분리).
+    intake(자체폼) 병합 조회라 실시간 알림이 누락된 건(예: 자체폼 강습)도 여기서 전부 포함된다. 2026-07-18 GM 고도화."""
     weekday = _WEEKDAY_KOR[datetime.now().weekday()]
-    header = f"📋 [하루 일과 정리] {today}({weekday})\n🔔 오늘의 문의 현황"
+    header = f"📊 [하루 일과 정리] {today}({weekday})\n🔔 오늘의 문의 정리"
     try:
-        resp = requests.get(
-            FUNNEL_EXEC_URL, params={"action": "inquiry_list"},
-            timeout=40, allow_redirects=True,
-        )
-        if resp.status_code != 200:
-            return f"{header}\n\n조회 실패 (HTTP {resp.status_code})"
-        data = resp.json()
-        if not data.get("ok"):
-            return f"{header}\n\n조회 실패 (ok=False)"
-        rows = data.get("data", [])
+        mem = _digest_fetch_list("member_inquiry_list")
+        adult = _digest_fetch_list("lesson_inquiry_list", type="성인강습")
+        youth = _digest_fetch_list("lesson_inquiry_list", type="유소년강습")
     except Exception:
         return f"{header}\n\n조회 지연으로 문의 현황을 불러오지 못했습니다. (서버 콜드스타트 추정 — 잠시 후 재시도됩니다)"
 
-    today_rows = [r for r in rows if _utc_iso_to_kst_date(r.get("시각", "")) == today]
-    if not today_rows:
+    def _today(rows: list) -> list:
+        return [r for r in rows if str(r.get("timestamp", "")).startswith(today)]
+
+    mem_t, adult_t, youth_t = _today(mem), _today(adult), _today(youth)
+    total = len(mem_t) + len(adult_t) + len(youth_t)
+    if total == 0:
         return f"{header}\n\n오늘 신규 문의 없음."
 
-    # 유형별 집계 + 상태(전환 rank) 집계
-    type_count: dict[str, int] = {}
-    handled = 0  # rank>=2 (응대/예약/방문/가입) = 처리·전환
-    for r in today_rows:
-        t = r.get("문의유형", "기타") or "기타"
-        type_count[t] = type_count.get(t, 0) + 1
-        if _inquiry_stage_of(r.get("상태", "")) >= 2:
-            handled += 1
+    import re as _re
 
-    summary_lines = [f"총 {len(today_rows)}건 (신규 {len(today_rows) - handled}건 · 처리·전환 {handled}건)"]
-    for t, c in sorted(type_count.items(), key=lambda x: -x[1]):
-        summary_lines.append(f"  · {t}: {c}건")
+    def _section(title: str, rows: list, sport_key: str, fixed_dot: str = "", strip_paren: bool = False) -> str:
+        head = f"■ {title} ({len(rows)})"
+        if not rows:
+            return head
+        lines = [head]
+        for r in rows[:20]:
+            sp = str(r.get(sport_key, "") or "").strip()
+            if strip_paren and sp:
+                sp = _re.sub(r"\s*[\(（][^)）]*[\)）]", "", sp).strip() or sp  # 플랜명 뒤 시설 나열 괄호 제거
+            nm = str(r.get("name", "") or "-").strip() or "-"
+            ph = str(r.get("phone", "") or "-").strip() or "-"
+            ch = str(r.get("channel", "") or "").strip()
+            dot = fixed_dot or _digest_dot(sp)  # 멤버십=유형색 고정(🟡) / 강습=종목색
+            line = f"{dot}{nm} · {ph}"
+            if sp:
+                line += f" · {sp}"
+            if ch:
+                line += f" · {ch}"
+            lines.append(line)
+        if len(rows) > 20:
+            lines.append(f"  …외 {len(rows) - 20}건")
+        return "\n".join(lines)
 
-    # 상세 (최대 15건)
-    detail_lines: list[str] = []
-    from datetime import timezone as _tz2
-    for r in today_rows[:15]:
-        try:
-            s = str(r.get("시각", "")).rstrip("Z").replace("T", " ")
-            dt_kst = datetime.fromisoformat(s).replace(tzinfo=_tz2.utc) + timedelta(hours=9)
-            hm = dt_kst.strftime("%H:%M")
-        except Exception:
-            hm = "--:--"
-        유형 = r.get("문의유형", "") or ""
-        채널 = r.get("유입채널", "") or ""
-        이름 = r.get("이름", "") or ""
-        name_part = f" ({이름})" if 이름 else ""
-        detail_lines.append(f"  {hm} {유형} / {채널}{name_part}")
-
-    over = len(today_rows) - 15
-    if over > 0:
-        detail_lines.append(f"  …외 {over}건")
-
-    return (
-        f"{header}\n\n"
-        f"[핵심 요약]\n" + "\n".join(summary_lines) + "\n\n"
-        f"[상세]\n" + "\n".join(detail_lines)
-    )
+    body = "\n\n".join([
+        _section("멤버십", mem_t, "program", fixed_dot="🟡 ", strip_paren=True),
+        _section("성인강습", adult_t, "sport"),
+        _section("유소년강습", youth_t, "sport"),
+    ])
+    return f"{header}\n\n총 {total}건\n\n{body}"
 
 
 def _build_digest_check(today: str) -> str:
