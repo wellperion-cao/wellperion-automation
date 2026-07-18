@@ -2733,6 +2733,102 @@ function _processAction(body) {
     return _json({ ok: true, deleted: _tRep });
   }
 
+  // ─── (임시) 강습 신규문의(자체폼 유입, 배1037) 탭 → 기존 폼탭(1.성인강습/2.WSC강습) 일회성 이관 ───
+  //   증분2(캐시수리·테스트삭제·17이관) 시포 2026-07-18. intake_submit 전환 때와 동일 유연키(_findCol_).
+  //   유형 라우팅: 성인강습→111889422 / 유소년강습·여름특강(...)→268994754(여름특강은 종목 앞에 '여름방학특강 - ' 접두).
+  //   지정 강사·Contact·진행 상황은 스태프 작업분이므로 기존값 그대로 보존 이관(신규 기본값으로 덮지 않음).
+  //   이관 후 원본 탭은 헤더만 남기고 데이터행 clear(탭 삭제 금지 — 새 문의가 계속 이 탭에 쌓이는 구조 유지).
+  if (action === 'cpo_migrate_intake_to_formtabs') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _miSrc = _lessonIntakeSheet_(false);
+    if (!_miSrc) return _json({ ok: false, error: '강습 신규문의 탭 없음' });
+    var _miLr = _miSrc.getLastRow(), _miLc = _miSrc.getLastColumn();
+    if (_miLr < 2) return _json({ ok: true, migrated: 0, remaining: 0 });
+    var _miHdr = _miSrc.getRange(1, 1, 1, _miLc).getValues()[0].map(function(v){ return String(v).trim(); });
+    var _miRows = _miSrc.getRange(2, 1, _miLr - 1, _miLc).getValues();
+    // 소스(강습 신규문의) 칼럼 인덱스 — 유연키
+    var _mSDate  = _findCol_(_miHdr, ['타임스탬프', '날짜']);
+    var _mSName  = _findCol_(_miHdr, ['성함', '이름']);
+    var _mSPhone = _findCol_(_miHdr, ['연락처', '핸드폰', '전화']);
+    var _mSAge   = _findCol_(_miHdr, ['나이', '연령', '자녀']);
+    var _mSType  = _findCol_(_miHdr, ['유형']);
+    var _mSSport = _findCol_(_miHdr, ['강습 종목', '종목']);
+    var _mSWish  = _findCol_(_miHdr, ['희망', '레슨 시간', '시간']);
+    var _mSChan  = _findCol_(_miHdr, ['문의 경로', '경로']);
+    var _mSNote  = _findCol_(_miHdr, ['문의 사항', '내용']);
+    var _mSAgree = _findCol_(_miHdr, ['개인정보', '동의']);
+    var _mSStat  = _findCol_(_miHdr, ['진행 상황', '상태']);
+    var _mSOwner = _findCol_(_miHdr, ['지정 강사']);
+    var _mSHist  = _findCol_(_miHdr, ['Contact', '연락이력']);
+    var _mSMemo  = _findCol_(_miHdr, ['비고']);
+    var _mDstCache = {};   // gid → { sh, hdr } — 목적 탭 핸들 캐시(반복 open 방지)
+    function _mDst(gid) {
+      if (_mDstCache[gid]) return _mDstCache[gid];
+      var sh = _lessonSheet_(gid);
+      var rec = sh ? { sh: sh, hdr: _lessonEnsureCols_(sh) } : null;
+      _mDstCache[gid] = rec;
+      return rec;
+    }
+    var _mMigrated = 0, _mSkipped = [];
+    for (var mi = 0; mi < _miRows.length; mi++) {
+      var mRow = _miRows[mi];
+      var mName = _mSName >= 0 ? String(mRow[_mSName] || '').trim() : '';
+      var mPhone = _mSPhone >= 0 ? String(mRow[_mSPhone] || '').trim() : '';
+      if (!mName && !mPhone) continue;   // 완전 빈 행(카운트 대상 아님) — clear로 함께 정리
+      var mType = _mSType >= 0 ? String(mRow[_mSType] || '').trim() : '';
+      var isYouth = (mType === '유소년강습') || /^여름특강/.test(mType);
+      var isSummer = /^여름특강/.test(mType);
+      var mGid = isYouth ? 268994754 : 111889422;
+      var mDst = _mDst(mGid);
+      if (!mDst) { _mSkipped.push({ srcRow: mi + 2, reason: 'dst-sheet-missing' }); continue; }
+      var mDstRow = new Array(mDst.hdr.length).fill('');
+      var _mSet = function(keys, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(mDst.hdr, keys); if (ci >= 0 && !mDstRow[ci]) mDstRow[ci] = val; };
+      var mDateRaw = _mSDate >= 0 ? mRow[_mSDate] : '';
+      var mDateStr = (mDateRaw instanceof Date && !isNaN(mDateRaw.getTime()))
+        ? Utilities.formatDate(mDateRaw, 'Asia/Seoul', 'yyyy-MM-dd')
+        : String(mDateRaw || '');
+      _mSet(['타임스탬프'], mDateStr);
+      var _mDstDateCi = _findCol_(mDst.hdr, ['문의일', '문의 일', '날짜']);
+      if (_mDstDateCi >= 0) { if (!mDstRow[_mDstDateCi]) mDstRow[_mDstDateCi] = mDateStr; }
+      else if (!String(mDst.hdr[0] || '').trim() && !mDstRow[0]) { mDstRow[0] = mDateStr; }   // 성인탭 A열 빈헤더 대응
+      _mSet(['성함', '이름'], mName);
+      _mSet(['연락처', '핸드폰', '전화', '휴대폰'], _fmtPhone_(mPhone));
+      _mSet(['나이', '연령', '자녀'], _mSAge >= 0 ? String(mRow[_mSAge] || '') : '');
+      var mSport = _mSSport >= 0 ? String(mRow[_mSSport] || '') : '';
+      _mSet(['강습 종목', '종목', '과목'], isSummer ? ('여름방학특강 - ' + mSport) : mSport);
+      _mSet(['문의 경로', '경로', '채널'], _mSChan >= 0 ? String(mRow[_mSChan] || '') : '');
+      _mSet(['문의 사항', '문의사항', '내용'], _mSNote >= 0 ? String(mRow[_mSNote] || '') : '');
+      _mSet(['희망', '레슨 시간', '시간'], _mSWish >= 0 ? String(mRow[_mSWish] || '') : '');
+      _mSet(['접수 담당자', '담당자 혹은', '담당'], '웹 자동접수');
+      _mSet(['개인정보', '동의', '수집·이용'], (_mSAgree >= 0 ? String(mRow[_mSAgree] || '') : '') || '동의');
+      // ★진행 상황·지정 강사·Contact·비고 — 직원 작업분 그대로 보존(신규 기본값으로 덮지 않음)
+      var mStat = _mSStat >= 0 ? String(mRow[_mSStat] || '') : '';
+      var _mDstStCi = _findCol_(mDst.hdr, ['진행 상황', '진행상황', '상태']);
+      if (_mDstStCi >= 0) mDstRow[_mDstStCi] = mStat || '신규';
+      var mOwner = _mSOwner >= 0 ? String(mRow[_mSOwner] || '') : '';
+      if (mOwner) { var _mDstOwCi = _findColExact_(mDst.hdr, ['지정 강사', '관리담당']); if (_mDstOwCi >= 0) mDstRow[_mDstOwCi] = mOwner; }
+      var mHist = _mSHist >= 0 ? mRow[_mSHist] : '';
+      if (mHist) { var _mDstHiCi = _findCol_(mDst.hdr, [CONTACT_HIST_COL, 'Contact']); if (_mDstHiCi >= 0) mDstRow[_mDstHiCi] = mHist; }
+      var mMemo = _mSMemo >= 0 ? String(mRow[_mSMemo] || '') : '';
+      var _mDstMeCi = _findCol_(mDst.hdr, ['비고', '메모']);
+      if (_mDstMeCi >= 0 && mMemo) mDstRow[_mDstMeCi] = mDstRow[_mDstMeCi] ? (mDstRow[_mDstMeCi] + ' / ' + mMemo) : mMemo;
+      mDst.sh.insertRowAfter(1);
+      mDst.sh.getRange(2, 1, 1, mDstRow.length).setValues([mDstRow]);
+      _mMigrated++;
+    }
+    _miSrc.getRange(2, 1, _miLr - 1, _miLc).clearContent();   // 헤더 유지·탭 삭제 금지 — 데이터행만 정리
+    var _mRemainRows = _miSrc.getRange(2, 1, _miLr - 1, _miLc).getValues();
+    var _mRemaining = _mRemainRows.filter(function(r){ return r.some(function(v){ return String(v || '').trim() !== ''; }); }).length;
+    try {
+      ['성인강습', '유소년강습'].forEach(function(t){
+        var _mCache = CacheService.getScriptCache();
+        _cacheInvalidateJson_(_mCache, 'licache|' + t + '|year');
+        _cacheInvalidateJson_(_mCache, 'licache|' + t + '|all');
+      });
+    } catch (e) {}
+    return _json({ ok: true, migrated: _mMigrated, remaining: _mRemaining, skipped: _mSkipped });
+  }
+
   // ─── (임시) 강습 등록현황 이관: 멤버십SS→강습SS 복사(삭제 별도). 웰리 수동. 2026-07-18 ───
   if (action === 'cpo_migrate_lesson_reg') {
     if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
