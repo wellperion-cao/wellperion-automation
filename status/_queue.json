@@ -3078,7 +3078,7 @@
     "clevel": "cpo",
     "module": "member-mgmt",
     "title": "[시포] 회원관리 GM검수 잔여 4건 — 읽기전용라벨정정·성인수영부활(유소년방어)·문의일시통일·담당자배정스코프",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "processed_at": null,
     "priority": "⛴️",
     "enqueued_at": "2026-07-18",
@@ -3086,7 +3086,9 @@
     "note": "GM 검수 결과 잔여 4건 (2026-07-18, 항목1·2 대부분은 이미 반영·이건 잔여만). ① [D1] 유효회원 표 라벨 \"읽기전용\"→\"편집가능\"으로 정정(동작=더블클릭 인라인편집+재등록/이탈모달 유지, ~1577행 \"유효회원 시트 · 읽기전용 · 연락처 표시\"). ② [D3] 성인 수영 표기 부활: 표시맵 수영→\"성인 수영 (개인레슨 / 단체레슨)\"로. 단 유소년(t==youth) 행엔 \"성인\" 미표기(07-18 7c88aa46 유소년 오표기 방지 유지)→_lessonSportDisplay/렌더 컨텍스트 분기. ③ 잔여 \"문의일\" 라벨 2곳(등록현황 reg-table ~2037·2092행): 문의일시로 통일 or 등록일 성격이면 판단 후 정리. ④ 담당자 배정 스코프 명확화: \"웰페리온 유효회원 종목별 담당자 배정만\"으로 안내문·동작 정리 + 신규 멤버십 등록현황 카드 월단위 기본 + 담당자 손쉬운 배정 UX. [D2] 대기자/LOSS 카드=현행 유지(삭제 금지·진입점 보존, GM 확정). 완료시 시크릿 라이브검증 후 웰리 대조.\n[웰리 대행 실행·2026-07-18 GM 퇴근 후 위임] 월요일 실무진 정식이용 목표. ★검수 확정: 강습 신규문의·강습 등록현황 탭=기능(삭제금지). 쓰기경로=GAS만. 안전게이트: 각 변경 후 테스트, 깨지면 git revert+중단. 컬럼 삭제는 getFormulas+IMPORTRANGE 검증된 것만(불확실=보존). 탭 삭제 금지. 물리정렬·행삭제 금지.",
     "next": null,
     "depends_on": null,
-    "surface": "3. 웰페리온 가이드/cpo/member/문의회원.html"
+    "surface": "3. 웰페리온 가이드/cpo/member/문의회원.html",
+    "completed_at": "2026-07-18",
+    "result_note": "DONE 2026-07-18(웰리 대행·검수완): 읽기전용→편집가능 라벨, 성인수영 부활(유소년 방어 scoped), reg-table 문의일시, 담당배정=유효회원 종목별. 커밋 82c875df+aa4e6818."
   },
   {
     "task_id": "CPO-2026-07-18-ADHOC-5d8a7dc5",
@@ -3233,7 +3235,7 @@
     "clevel": "cpo",
     "module": "inquiry-timestamp",
     "title": "[시포] 문의 타임스탬프 시분초 전면화 — intake근본수정+ERP시각보존+백필+연락처형식(3계층)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "processed_at": null,
     "priority": "🛳️",
     "enqueued_at": "2026-07-18",
@@ -3241,7 +3243,9 @@
     "note": "GM 검수·결정(2026-07-18): 문의 타임스탬프 시분초 전면화 + 시간순 정렬 + 연락처 형식. 3계층 근본수정. [결정] 시각 채우기=날짜+순차합성시각(실제 시각 없음·정렬용), 원본 물리정렬 안 함(ERP 정렬에 맡김·IMPORTRANGE 담당 보존), 접수부터 시분초 받게 근본수정. ① intake 근본수정: Survey.js:190 _mirrorInquiryToStaffLog_ 타임스탬프 포맷 yyyy. M. d → yyyy-MM-dd HH:mm:ss. 다른 intake 경로(강습 신규탭 1799~·rental/business 1830~·appendRow 1585)도 date-only면 동일 수정. _parseAnyDate_(206~227)이 full 포맷 파싱함 확인. ② ERP 시각보존: 문의회원.html timestamp 필드 매핑(2798·2864 _gzToISO_)이 시각을 버림(2667 _gzToISO_ 날짜만 반환) → 시각 보존 변환기 신설(_gzToISODateTime_ 예: yyyy-MM-dd HH:mm)해서 강습·멤버십 timestamp에 적용. ★기존 _gzToISO_는 날짜필터·월그룹(신규등록현황 일/월/연) 소비자용이라 그대로 두고 신규 함수만 timestamp에 씀(slice(0,10) 프리픽스 호환 확인). _fmtInqDateTime가 시·분 표시·정렬 sub-day 정확해짐. ③ 백필(1회·GAS 관리함수, 행이동 없음): 성인강습(111889422)·유소년강습(268994754)+영문(311319200·931249179)·멤버십26년신규문의(1902010032) 빈/날짜만 타임스탬프를 그 행 날짜(col0/문의일)+순차합성시각으로 채움. 같은날 다건=현재 표시순 00:00:01,02.. 순차. 절대 행 삭제·이동 금지(팀시트 담당 정렬 보존). ④ 연락처 D열 010-xxxx-xxxx 정규화(공백/무구분 → 대시). 값만 수정. ⑤ 펀넬 GAS V2 재배포(clasp=새버전, /exec 갱신·V2 버전 여유 있음). 검수(웰리): gviz로 타임스탬프 채워짐+연락처 형식 확인, ERP에서 문의일시 시·분 표시+오늘 건 최신 위 실증. 라이브검증 후 GM 보고.\n[웰리 대행 실행·2026-07-18 GM 퇴근 후 위임] 월요일 실무진 정식이용 목표. ★검수 확정: 강습 신규문의·강습 등록현황 탭=기능(삭제금지). 쓰기경로=GAS만. 안전게이트: 각 변경 후 테스트, 깨지면 git revert+중단. 컬럼 삭제는 getFormulas+IMPORTRANGE 검증된 것만(불확실=보존). 탭 삭제 금지. 물리정렬·행삭제 금지.",
     "next": null,
     "depends_on": null,
-    "surface": ".deploy-funnel-v2/Survey.js + 3. 웰페리온 가이드/cpo/member/문의회원.html"
+    "surface": ".deploy-funnel-v2/Survey.js + 3. 웰페리온 가이드/cpo/member/문의회원.html",
+    "completed_at": "2026-07-18",
+    "result_note": "DONE 2026-07-18(웰리 대행·검수완): intake 6경로 full timestamp+배포(funnel v18/200), ERP _gzToISODateTime_ 시각보존, 연락처 8447건 010-xxxx-xxxx. ★백필=시트쓰기 대신 ERP col0 폴백으로 대체(더 안전·무날조)—executor가 빈ts 0건 오판했으나 실제 19건(오늘 강습) 확인→폴백 수리·끝단검증(19건 상단정렬 확인). _tapClassify today비교 회귀도 수리."
   },
   {
     "task_id": "CPO-2026-07-18-ADHOC-a55f2bbd",
