@@ -1156,6 +1156,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_add:      true,  // 2026-06-29 등록현황 직접 추가(페이지 수기 등록)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
+  member_owner_save:          true,  // 2026-07-18 시포 — 종목별 담당자 5칸(화이트리스트) 단일셀 저장(전화 매칭)
   cpo_today_stats:            true,  // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
   cpo_churn_stats:            true,  // 2026-07-02 이탈 현황 실측(유효·이탈·이탈율·갱신임박 리스트) — 페이지 게이트 뒤(전체공개 정책과 동일)
   // 강습문의 페이지(CPO) — 멤버십 member_* 와 동일 정책(2026-06-26)
@@ -3263,6 +3264,18 @@ function _processAction(body) {
     var lglToday = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
     var lglFrom = String(body.from || lglToday);
     var lglTo   = String(body.to   || lglToday);
+    // 문의내용 조인(2a, 2026-07-18 시포): 강습 문의(성인+유소년, 한글+영문+자체폼 신규문의 모두 병합)의 note 필드
+    //   (_lessonReadRows_/_lessonIntakeReadRows_가 INQUIRY_CONTENT_KEYS로 탐지한 문의사항/문의내용/내용 칼럼)를
+    //   정규화 전화 키로 1회 맵 구성 후 등록현황 각 행에 O(1) 조회 조인. 동일 전화 여러 건이면 뒤(최근) 건이 이김.
+    var lglNoteMap = {};
+    try {
+      ['성인강습', '유소년강습'].forEach(function(t) {
+        _lessonReadRowsMerged_({ type: t }).forEach(function(r) {
+          var p = _normPhone_(r.phone);
+          if (p && r.note) lglNoteMap[p] = r.note;
+        });
+      });
+    } catch (eNoteMap) {}
     var lglData = [];
     try {
       var lglSh = _lessonRegSheet_();
@@ -3283,7 +3296,8 @@ function _processAction(body) {
             이름:   String(lgRow[2] || ''),
             전화:   _fmtPhone_(lgRow[3]),
             상태:   String(lgRow[4] || ''),
-            등록일: lgD
+            등록일: lgD,
+            문의내용: lglNoteMap[_normPhone_(lgRow[3])] || ''
           });
         }
       }
@@ -3890,6 +3904,33 @@ function _processAction(body) {
     if (auIdx < 0) return _json({ ok: false, error: '컬럼 미발견: ' + auCol });
     _auWriteCell(auIdx, auCol, body.value);
     return _json({ ok: true, rowIndex: auRow, col: auCol });
+  }
+
+  // ─── 종목별 담당자 저장(유효회원 5칸: PT/골프/P.L/스쿼시/수영 담당자) — 전화 매칭 단일셀 쓰기.
+  //   화이트리스트 외 field는 무조건 거부(임의 컬럼 쓰기 차단 — 안전 경계). 2026-07-18 시포.
+  if (action === 'member_owner_save') {
+    var mosAllowed = ['PT 담당자', '골프 담당자', 'P.L 담당자', '스쿼시 담당자', '수영 담당자'];
+    var mosField = String(body.field || '').trim();
+    if (mosAllowed.indexOf(mosField) < 0) return _json({ ok: false, error: 'bad field' });
+    var mosPhone = _normPhone_(body.phone);
+    if (!mosPhone) return _json({ ok: false, error: 'no member' });
+    var mosValue = String(body.value == null ? '' : body.value).trim();
+    var mosSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    if (!mosSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var mosLast = mosSh.getLastRow();
+    if (mosLast < 2) return _json({ ok: false, error: 'no member' });
+    var mosHdr = mosSh.getRange(1, 1, 1, mosSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    var mosPhoneIdx = mosHdr.indexOf(MEMBER_PHONE_COL);
+    var mosFieldIdx = mosHdr.indexOf(mosField);
+    if (mosPhoneIdx < 0 || mosFieldIdx < 0) return _json({ ok: false, error: '컬럼 미발견' });
+    var mosPhones = mosSh.getRange(2, mosPhoneIdx + 1, mosLast - 1, 1).getValues();
+    var mosRow = -1;
+    for (var mosI = 0; mosI < mosPhones.length; mosI++) {
+      if (_normPhone_(mosPhones[mosI][0]) === mosPhone) { mosRow = mosI + 2; break; }
+    }
+    if (mosRow < 0) return _json({ ok: false, error: 'no member' });
+    mosSh.getRange(mosRow, mosFieldIdx + 1).setValue(mosValue);
+    return _json({ ok: true, phone: mosPhone, field: mosField, value: mosValue, rowIndex: mosRow });
   }
 
   // ─── CPO 오늘 현황(PII 미노출 집계): 오늘/이번달 문의·등록 건수 2026-06-24 GM ───
