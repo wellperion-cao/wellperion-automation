@@ -753,22 +753,34 @@ function _realLastDataRow_(sh, idxPhone, idxDate, idxMemo) {
 
 // ─── 신규 문의 감지 → 텔레그램 '문의 알림' 방 발송 (시모, 2026-06-24) ───
 // FORM_SHEETS 각 시트의 신규 행을 5분마다 감지해 TELEGRAM_INQUIRY_CHAT_ID 방으로 알림.
-// ScriptProperties INQ_LASTROW_<ssId>_<gid> 에 마지막 처리한 실데이터 행번호 저장 → 중복 방지.
-// 최초 실행: 기준선만 저장, 과거 문의 일괄발송 없음.
-// ★ 마커 = 실데이터 마지막 행번호(전화번호/타임스탬프 기준). getLastRow()(빈행포함) 사용 금지.
+// ★ 타임스탬프 하이워터 마커(2026-07-18 재발방지, INC: 시트 '맨 위 삽입' 전환 후 행번호 마커가
+//   밀려난 옛 행을 신규로 오인해 실무진 방 재발송 플러드). ScriptProperties INQ_LASTTS_<ssId>_<gid>
+//   에 관측한 최대 타임스탬프(ms)를 단일값으로 저장 → '그 값보다 큰 타임스탬프' 행만 신규로 판정.
+//   삽입이 맨 위든 맨 아래든 무관하게 동작. 구 INQ_LASTROW(행번호 마커)는 다른 함수(onInquiryFormSubmit
+//   등)가 계속 쓰므로 그대로 두되, 이 폴러는 더 이상 참조하지 않는다.
+// 최초 실행(마커 없음=재가동 직후 포함): 기준선만 저장, 과거 문의 일괄발송 없음.
 var _INQUIRY_CHAT_ID_FALLBACK = '-5516675010';  // '문의 알림' 방 — 프로퍼티 없을 때 폴백(그룹 ID, 민감정보 아님)
+
+// 테스트/QA 데이터 판별 — 실무진 방이 아니라 GM 개인봇(CHAT_ID/TELEGRAM_CHAT_ID)으로 우회.
+// 전화번호가 테스트 더미(010-0000-...)로 시작하거나, 이름/내용에 테스트성 마커가 섞이면 테스트로 간주.
+function _isTestInquiryRow_(phone, name, content) {
+  var digits = String(phone || '').replace(/\D/g, '');
+  if (digits.indexOf('0100000') === 0) return true;
+  var blob = String(name || '') + ' ' + String(content || '');
+  return /테스트|자동검증|E2E|�|\[자동/.test(blob);
+}
 
 function _notifyNewInquiries_() {
   var props = PropertiesService.getScriptProperties();
   var inquiryChatId = props.getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
 
   FORM_SHEETS.forEach(function(cfg) {
-    var propKey = 'INQ_LASTROW_' + cfg.ssId + '_' + cfg.gid;
+    var propKey = 'INQ_LASTTS_' + cfg.ssId + '_' + cfg.gid;
     try {
       var sh = _sheetByGid_(cfg.ssId, cfg.gid);
       if (!sh) return;
 
-      // 헤더를 먼저 읽어 실데이터 탐색에 필요한 칼럼 인덱스 확보
+      // 헤더를 먼저 읽어 필요한 칼럼 인덱스 확보
       var lastCol = sh.getLastColumn();
       if (lastCol < 1) return;
       var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
@@ -780,35 +792,49 @@ function _notifyNewInquiries_() {
       var idxProg  = _findCol_(headers, cfg.programKeys || ['종목', '프로그램', '과목', 'Program']);
       var idxContent = _findCol_(headers, INQUIRY_CONTENT_KEYS);  // 문의 내용(자유서술) 칸 — GM 2026-06-29 시토
 
-      // ★ 실데이터 마지막 행번호 (전화번호/타임스탬프 기준, 빈행 제외)
-      var realLastRow = _realLastDataRow_(sh, idxPhone, idxDate, idxMemo);
-      var storedStr   = props.getProperty(propKey);
+      var lastRow = sh.getLastRow();
+      if (lastRow < 2 || idxDate < 0) return;  // 데이터 없거나 타임스탬프 칼럼 자체가 없으면 판별 불가 — 안전 스킵
 
-      // 최초 실행: 실데이터 기준선 저장 후 종료 (과거분 폭주 방지)
+      // 최근 ~500행 스캔 — 각 행의 타임스탬프를 수집(삽입 위치 무관하게 신규 판별하기 위함)
+      var readStart = Math.max(2, lastRow - 499);
+      var rows = sh.getRange(readStart, 1, lastRow - readStart + 1, lastCol).getValues();
+
+      var parsed = [];
+      var maxTs = -Infinity;
+      for (var ri = 0; ri < rows.length; ri++) {
+        var r = rows[ri];
+        // [웹접수] 미러 행 제외 (이미 submit_inquiry/intake_submit에서 발송)
+        if (idxMemo >= 0 && String(r[idxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) continue;
+        // 완전 빈 행 스킵
+        if (!r[idxDate] && (idxPhone < 0 || !r[idxPhone])) continue;
+        var rawTs = r[idxDate];
+        if (!rawTs) continue;  // 타임스탬프 없음 — 신규판별 불가, 안전 스킵
+        var d;
+        try { d = _normTs_(rawTs); } catch (e) { continue; }
+        if (!d || isNaN(d.getTime())) continue;  // 파싱 실패 — 안전 스킵
+        var t = d.getTime();
+        parsed.push({ r: r, t: t, d: d });
+        if (t > maxTs) maxTs = t;
+      }
+      if (!parsed.length) return;  // 유효 타임스탬프 행 없음
+
+      var storedStr = props.getProperty(propKey);
+
+      // 최초 실행(재가동 첫 실행 포함): 현재 최대 타임스탬프로 기준선만 저장, 발송 0 — 과거분 재발송 원천차단
       if (!storedStr) {
-        props.setProperty(propKey, String(realLastRow));
-        Logger.log('[문의알림] 기준선 저장 — ' + cfg.type + ' realLastRow=' + realLastRow);
+        props.setProperty(propKey, String(maxTs));
+        Logger.log('[문의알림] 기준선 저장(TS) — ' + cfg.type + ' maxTs=' + maxTs);
         return;
       }
 
-      var storedRow = parseInt(storedStr, 10) || 1;
-      if (realLastRow <= storedRow) return; // 신규 실데이터 없음
+      var storedTs = parseInt(storedStr, 10);
+      if (isNaN(storedTs)) storedTs = maxTs;  // 손상값 방어 — 대량 재발송 방지 우선
 
-      // 신규 행 처리 (storedRow+1 ~ realLastRow)
-      var newRows = sh.getRange(storedRow + 1, 1, realLastRow - storedRow, lastCol).getValues();
-      newRows.forEach(function(r) {
-        // [웹접수] 미러 행 제외 (이미 submit_inquiry에서 발송)
-        if (idxMemo >= 0 && String(r[idxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) return;
-        // 완전 빈 행 스킵
-        if (!r[idxDate >= 0 ? idxDate : 0] && (idxPhone < 0 || !r[idxPhone])) return;
+      // 신규 = 저장 기준선보다 타임스탬프가 큰 행만 (삽입이 맨 위든 맨 아래든 무관)
+      var newOnes = parsed.filter(function(p) { return p.t > storedTs; });
 
-        var ts = idxDate >= 0 ? r[idxDate] : '';
-        var tsStr = '';
-        try {
-          var d = _normTs_(ts);
-          tsStr = isNaN(d.getTime()) ? String(ts).substring(0, 16) : Utilities.formatDate(d, 'Asia/Seoul', 'MM/dd HH:mm');
-        } catch (e) { tsStr = String(ts).substring(0, 16); }
-
+      newOnes.forEach(function(p) {
+        var r = p.r;
         var name  = idxName  >= 0 ? String(r[idxName]  || '').trim() : '-';
         var phone = idxPhone >= 0 ? String(r[idxPhone] || '').trim() : '-';
         var chan  = idxChan  >= 0 ? String(r[idxChan]  || '').trim() : '-';
@@ -819,18 +845,23 @@ function _notifyNewInquiries_() {
 
         var content = idxContent >= 0 ? String(r[idxContent] || '').trim() : '';
         if (content.length > 300) content = content.substring(0, 300) + '…';
-        var msg = '🔔 [신규 문의]\n'
+        var isTest = _isTestInquiryRow_(phone, name, content);
+        var msg = (isTest ? '🧪 [테스트] ' : '') + '🔔 [신규 문의]\n'
           + '유형: ' + cfg.type + '\n'
           + (prog ? '종목: ' + _teamChip(prog) + prog + '\n' : '')
           + '이름: ' + name + '\n'
           + '연락처: ' + phone + '\n'
           + '유입채널: ' + chan
           + (content ? '\n내용: ' + content : '');
-        _notifyTelegram(msg, inquiryChatId);
+        if (isTest) {
+          _notifyTelegram(msg);  // chatIdOverride 미지정 → CHAT_ID/TELEGRAM_CHAT_ID(GM 개인봇)로 우회
+        } else {
+          _notifyTelegram(msg, inquiryChatId);
+        }
       });
 
-      // 기준선 갱신 — 실데이터 마지막 행번호로 저장 (빈행 포함 getLastRow 사용 금지)
-      props.setProperty(propKey, String(realLastRow));
+      // 기준선 갱신 — 본 실행에서 관측한 최대 타임스탬프(단일값)로 저장. 키 집합 누적 금지(INC-014 재발방지).
+      props.setProperty(propKey, String(maxTs));
     } catch (e) {
       Logger.log('[문의알림] ' + cfg.type + ' 오류: ' + e.message);
     }
