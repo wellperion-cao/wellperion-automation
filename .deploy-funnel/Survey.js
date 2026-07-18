@@ -1779,7 +1779,7 @@ function _lessonReadRowsMerged_(body) {
 var INTAKE_SUBMIT_TOKEN = 'wlp_intake_9f4c1b7e2a63';   // ScriptProperties INTAKE_SUBMIT_TOKEN 있으면 우선(없으면 이 기본값). 프론트 숨김토큰과 일치해야 함.
 var LESSON_INTAKE_SHEET_NAME = '강습 신규문의';
 var _ROW_OFFSET_INTAKE_ = 2000000;   // 강습 신규문의 탭 행키 네임스페이스(KR=0·EN=1000000과 분리 → 병합 rowIndex 충돌·오수정 방지)
-var LESSON_INTAKE_HEADERS = ['타임스탬프','유형','성함','연락처','자녀 나이','강습 종목','희망 레슨 시간','문의 경로','문의 사항','개인정보 수집·이용 동의','접수ID','진행 상황','지정 강사','Contact','비고'];
+var LESSON_INTAKE_HEADERS = ['타임스탬프','성함','연락처','자녀 나이','유형','강습 종목','희망 레슨 시간','문의 경로','문의 사항','개인정보 수집·이용 동의','접수ID','진행 상황','지정 강사','Contact','비고'];
 
 function _intakeToken_() { return _accessProp_('INTAKE_SUBMIT_TOKEN') || INTAKE_SUBMIT_TOKEN; }
 
@@ -1899,7 +1899,11 @@ function _lessonScopeFilter_(rows, body) {
   return rows.filter(function(row) {
     var y = String(row.timestamp || '').slice(0, 4);
     if (!/^\d{4}$/.test(y)) return true;  // ★타임스탬프 파싱 실패(빈/비표준)는 버리지 않고 포함 — 조용한 누락 방지
-    return y === yr;
+    if (y === yr) return true;
+    // #3 수리(2026-07-18 시포): 지난 연도라도 미해결(비종결)은 기본화면 유지 — 연말 롤오버 미처리 소실 방지(멤버십과 정합).
+    var st = String(row.status || '').trim();
+    var terminal = /완료|처리완료|해결|종료|등록|LOSS|이탈|실패/i.test(st);
+    return !terminal;
   });
 }
 
@@ -2536,11 +2540,11 @@ function _processAction(body) {
   if (action === 'intake_submit') {
     // 1) 토큰(위조방지)
     if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
-    // 2) 허니팟 — 봇이 채운 hp 값 있으면 조용히 성공가장(무기록·프론트 재시도 안 유발)
-    if (String(body.hp || '').trim() !== '') return _json({ ok: true, id: 'HP', dedup: true });
-    // 3) 타이밍 게이트 — 폼 표시~제출 최소 경과(프론트 계산 fillMs). 너무 빠르면 봇 → 조용히 성공가장
+    // 2) 허니팟 — 봇이 채운 hp 값 있으면 조용히 성공가장(무기록). 숨김필드라 사람 오탐 거의 없음. #2(2026-07-18): 드롭 추적 로그.
+    if (String(body.hp || '').trim() !== '') { try { Logger.log('[intake drop] honeypot phone=' + String(body.phone||'')); } catch(e){} return _json({ ok: true, id: 'HP', dedup: true }); }
+    // 3) 타이밍 게이트 — 너무 빠른 제출은 봇 의심이나 자동완성 등 정상 사용자 오탐 가능 → #2(2026-07-18 시포): 조용히 버리지 않고 저장하되 '검토' 플래그(비고)로 표면화(실사용자 유실 0).
     var _fillMs = parseInt(body.fillMs || '0', 10);
-    if (_fillMs > 0 && _fillMs < 1500) return _json({ ok: true, id: 'FAST', dedup: true });
+    var _iFastFlag = (_fillMs > 0 && _fillMs < 1500);
     // 4) 멱등 — submissionId 최근 처리 마커 있으면 기존 결과 반환(재시도로 인한 중복행 방지)
     var _iCache = CacheService.getScriptCache();
     var _sid = String(body.submissionId || '').slice(0, 64);
@@ -2571,7 +2575,7 @@ function _processAction(body) {
       _iCache.put(_rlKey, String(_rlN), 60);
       if (_rlN > 6) return _json({ ok: false, error: '잠시 후 다시 시도해 주세요.', noRetry: true });
     }
-    var _iId = _genId('WEB-');
+    var _iId = 'L' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyMMdd-HHmmss');   // 접수ID 축소(2026-07-18 GM): 21자→14자. 중복은 submissionId 멱등+레이트리밋 방지.
     var _iChannel = String(body.channel || '').trim();
     var _iProgram = String(body.program || '').trim();
     var _iMessage = String(body.message || '').trim();
@@ -2607,7 +2611,7 @@ function _processAction(body) {
         _imSet(['접수 담당자', '담당'], '웹 자동접수');
         _imSet(['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담'], body.exp1Date);
         _imSet(['기타 웰페리온에 대한 문의 사항', '기타 웰페리온', '자유롭게 적어', '문의 사항', '내용'], _iMessage);
-        _imSet(['비고', '메모', '담당자메모'], WEB_INTAKE_TAG + ' 자체폼 유입 (utm:' + (_iUtmSource || '-') + '/' + (_iUtmMedium || '-') + ', ' + _iId + ')');
+        _imSet(['비고', '메모', '담당자메모'], WEB_INTAKE_TAG + (_iFastFlag ? ' ⚠️빠른제출' : ''));   // [웹접수] 유지(집계 중복방지)·utm 노이즈 제거
         _imSh.appendRow(_imRow);
         try { _cacheInvalidateJson_(_iCache, 'micache'); } catch (e) {}
       } else if (_iCat === 'adult' || _iCat === 'youth') {
@@ -2631,8 +2635,8 @@ function _processAction(body) {
         _ilSet('개인정보 수집·이용 동의', '동의');
         _ilSet('접수ID', _iId);
         _ilSet('진행 상황', '신규');
-        _ilSet('비고', WEB_INTAKE_TAG + ' 자체폼 유입 (utm:' + (_iUtmSource || '-') + '/' + (_iUtmMedium || '-') + ')');
-        _ilSh.appendRow(_ilRow);
+        if (_iFastFlag) _ilSet('비고', '⚠️ 빠른제출 자동검토');   // 비고 간소화(2026-07-18 GM): 웹접수 보일러플레이트 제거(채널=문의경로 칸). 빠른제출만 플래그.
+        _ilSh.insertRowAfter(1); _ilSh.getRange(2, 1, 1, _ilRow.length).setValues([_ilRow]);   // 최근일자 상단(2026-07-18 GM): 새 접수를 2행에 삽입→위로 쌓임.
         _lessonIntakeGidCache_ = _ilSh.getSheetId();
         try {
           _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|year');
@@ -2658,8 +2662,8 @@ function _processAction(body) {
         _smSet('개인정보 수집·이용 동의', '동의');
         _smSet('접수ID', _iId);
         _smSet('진행 상황', '신규');
-        _smSet('비고', WEB_INTAKE_TAG + ' 자체폼 유입 (utm:' + (_iUtmSource || '-') + '/' + (_iUtmMedium || '-') + ')');
-        _smSh.appendRow(_smRow);
+        if (_iFastFlag) _smSet('비고', '⚠️ 빠른제출 자동검토');
+        _smSh.insertRowAfter(1); _smSh.getRange(2, 1, 1, _smRow.length).setValues([_smRow]);
         _lessonIntakeGidCache_ = _smSh.getSheetId();
       } else if (_iCat === 'rental') {
         // 공간렌트 → '공간렌트 문의' 신규 탭(_MI_SS_ID 하위, 2026-07-16 시토)
@@ -2679,7 +2683,7 @@ function _processAction(body) {
         _rtSet('개인정보 수집·이용 동의', '동의');
         _rtSet('접수ID', _iId);
         _rtSet('진행 상황', '신규');
-        _rtSet('비고', WEB_INTAKE_TAG + ' 자체폼 유입 (utm:' + (_iUtmSource || '-') + '/' + (_iUtmMedium || '-') + ')');
+        if (_iFastFlag) _rtSet('비고', '⚠️ 빠른제출 자동검토');
         _rtSh.appendRow(_rtRow);
       } else {
         // 비즈니스(_iCat === 'business') → '비즈니스 문의' 신규 탭(_MI_SS_ID 하위, 2026-07-16 시토)
@@ -2699,7 +2703,7 @@ function _processAction(body) {
         _bzSet('개인정보 수집·이용 동의', '동의');
         _bzSet('접수ID', _iId);
         _bzSet('진행 상황', '신규');
-        _bzSet('비고', WEB_INTAKE_TAG + ' 자체폼 유입 (utm:' + (_iUtmSource || '-') + '/' + (_iUtmMedium || '-') + ')');
+        if (_iFastFlag) _bzSet('비고', '⚠️ 빠른제출 자동검토');
         _bzSh.appendRow(_bzRow);
       }
     } catch (eIntake) {
@@ -2724,6 +2728,57 @@ function _processAction(body) {
         + (_iProgram ? ('\n관심: ' + _iProgram) : '') + _iExtra + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
     } catch (e) {}
     return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
+  }
+
+  // ─── 강습 신규문의 일회성 유지보수(테스트행 삭제·유형컬럼 재배치·비고 정리) — 2026-07-18 시포. 실행은 웰리 직접·수동 ───
+  if (action === 'cpo_intake_maintenance') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _mSh = _lessonIntakeSheet_(false);
+    if (!_mSh) return _json({ ok: false, error: '강습 신규문의 시트 없음' });
+    var _mLastCol = _mSh.getLastColumn();
+    var _mHdr = _mSh.getRange(1, 1, 1, _mLastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+    var _mReport = { deleted: 0, reordered: false, cleaned: 0 };
+    // 1) 테스트행 삭제(전화 정확매칭 6종 + 성함 자동검증/E2E) — 아래→위로 삭제(인덱스 밀림 방지)
+    var _mTestPhones = { '01000001111':1,'01000005555':1,'01000006666':1,'01011112223':1,'01011112224':1,'01011112225':1 };
+    var _mPhI = _findCol_(_mHdr, ['연락처','전화','휴대폰']);
+    var _mNmI = _findCol_(_mHdr, ['성함','이름']);
+    var _mLastRow = _mSh.getLastRow();
+    if (_mLastRow >= 2 && (_mPhI >= 0 || _mNmI >= 0)) {
+      var _mData = _mSh.getRange(2, 1, _mLastRow - 1, _mLastCol).getValues();
+      for (var _r = _mData.length - 1; _r >= 0; _r--) {
+        var _ph = _mPhI >= 0 ? String(_mData[_r][_mPhI] || '').replace(/[^0-9]/g,'') : '';
+        var _nm = _mNmI >= 0 ? String(_mData[_r][_mNmI] || '') : '';
+        var _isTest = (_ph && _mTestPhones[_ph]) || /자동검증|E2E|검증성인|검증유소년|검증여름/.test(_nm);
+        if (_isTest) { _mSh.deleteRow(_r + 2); _mReport.deleted++; }
+      }
+    }
+    // 2) 유형 컬럼을 강습 종목 앞으로 이동(insert+copy+delete)
+    var _mHdr2 = _mSh.getRange(1, 1, 1, _mSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    var _iTypeC = _mHdr2.indexOf('유형');          // 0-based
+    var _iSportC = _mHdr2.indexOf('강습 종목');
+    if (_iTypeC >= 0 && _iSportC >= 0 && _iTypeC !== _iSportC - 1) {
+      var _nRow = _mSh.getMaxRows();
+      _mSh.insertColumnBefore(_iSportC + 1);        // 강습 종목 앞 새 컬럼(1-based)
+      var _srcC = (_iTypeC + 1) > (_iSportC + 1) ? (_iTypeC + 2) : (_iTypeC + 1);  // 삽입으로 뒤 컬럼 +1 밀림 반영
+      var _typeVals = _mSh.getRange(1, _srcC, _nRow, 1).getValues();
+      _mSh.getRange(1, _iSportC + 1, _nRow, 1).setValues(_typeVals);
+      _mSh.deleteColumn(_srcC);                     // 옛 유형 컬럼 삭제
+      try { _mSh.getRange(1, 1, 1, _mSh.getLastColumn()).setFontWeight('bold'); _mSh.setFrozenRows(1); } catch(e){}
+      _mReport.reordered = true;
+    }
+    // 3) 기존 비고 [웹접수] 보일러플레이트 정리(빈칸으로)
+    var _mHdr3 = _mSh.getRange(1, 1, 1, _mSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    var _bgI = _findCol_(_mHdr3, ['비고']);
+    var _mLastRow3 = _mSh.getLastRow();
+    if (_bgI >= 0 && _mLastRow3 >= 2) {
+      var _bgVals = _mSh.getRange(2, _bgI + 1, _mLastRow3 - 1, 1).getValues();
+      var _changed = false;
+      for (var _b = 0; _b < _bgVals.length; _b++) {
+        if (String(_bgVals[_b][0] || '').indexOf('[웹접수]') >= 0) { _bgVals[_b][0] = ''; _mReport.cleaned++; _changed = true; }
+      }
+      if (_changed) _mSh.getRange(2, _bgI + 1, _mLastRow3 - 1, 1).setValues(_bgVals);
+    }
+    return _json({ ok: true, report: _mReport });
   }
 
   // ─── 문의 목록 ───
