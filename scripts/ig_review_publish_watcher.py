@@ -409,12 +409,18 @@ def publish_danggn(it: dict) -> tuple[bool, str]:
     당근은 당일 QR 로그인 세션 필요 — 세션 만료(exit 5)면 (False, '세션만료')로 폴백.
     반환: (성공여부, 사유). 발레 2026-06-05 사진 7장 자동게시 실증 — 발행완료 처리."""
     folder = it.get("folder", "")
+    body_file = it.get("body_file", "")
     cmd = [
         str(PY), str(DANGGN_SCRIPT),
         "--mode", "publish",
         "--i-am-sure",
         "--content-dir", folder,
     ]
+    # body_file 필드가 있으면 명시 전달 (2026-07-18 수정) — 미지정 시 스크립트가
+    # content-dir 루트의 danggn_copy.md만 찾아 output(당근)/ 하위 파일을 못 읽고
+    # "본문 없음"으로 실패했던 결함 수정. publish_kakao와 동일 패턴.
+    if body_file:
+        cmd += ["--body-file", str(ROOT / body_file)]
     if it.get("image_dir"):
         cmd += ["--image-dir", str(ROOT / it["image_dir"])]
     if it.get("image_glob"):
