@@ -1050,126 +1050,6 @@ def _is_settled_or_bridged(d: dict) -> bool:
     return False
 
 
-# ── 08:00 흡수 섹션 (2026-07-18 GM 승인 — GM DM 알림 홍수 축소) ─────────────────
-# 폐지된 GM DM 슬롯의 핵심값을 08:00 통합브리프로 접어 넣는다(값 유실 0).
-#   · 07시(어제결산·직원 공유카드) · 09시(매출 1줄) · 06:30(북극성 top 추천).
-# 소스는 전부 기존 것 재사용 — 새 채널·새 SSOT·새 스크립트 없음.
-QUOTES_PATH = STATUS_DIR / "quotes.json"
-NORTHSTAR_PENDING_PATH = STATUS_DIR / "northstar_pending.json"
-# home_kpi = 09시 _fetch_cfo_finance_block과 동일 소스(ERP home과 수치 일치). _G1_API와 같은 GAS 배포.
-_HOME_KPI_API = (
-    "https://script.google.com/macros/s/"
-    "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7"
-    "/exec?action=home_kpi"
-)
-
-
-def _kr_amt(n) -> str:
-    """한국식 금액 표기: 271488886 → '2억 7,148만'. ERP home krAmt와 동일 규칙."""
-    try:
-        n = round(float(n))
-    except (TypeError, ValueError):
-        return "—"
-    sign = "-" if n < 0 else ""
-    n = abs(n)
-    eok = n // 100000000
-    man = (n % 100000000) // 10000
-    if eok > 0 and man > 0:
-        return f"{sign}{eok}억 {man:,}만"
-    if eok > 0:
-        return f"{sign}{eok}억"
-    if man > 0:
-        return f"{sign}{man:,}만"
-    return f"{sign}{n:,}원"
-
-
-def fetch_sales_oneline() -> str:
-    """매출·지출 1줄 (구 09시 흡수 · 상세는 카톡 09:30 담당). ERP home과 동일 소스(home_kpi).
-    실패·데이터없음 시 ''(줄 생략)."""
-    try:
-        req = urllib.request.Request(
-            _HOME_KPI_API, headers={"User-Agent": "Mozilla/5.0 (CEO-morning-pipeline)"})
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-    except Exception as exc:
-        print(f"[WARN] 매출 1줄 조회 실패: {exc}", file=sys.stderr)
-        return ""
-    if not isinstance(data, dict) or not data.get("ok"):
-        return ""
-    sales = data.get("sales") or {}
-    expense = data.get("expense") or {}
-    s_month, e_month = sales.get("month"), expense.get("month")
-    if s_month is None and e_month is None:
-        return ""
-    return f"💰 이달 매출 {_kr_amt(s_month)} · 지출 {_kr_amt(e_month)}  (상세는 카톡 09:30)"
-
-
-def fetch_northstar_top() -> str:
-    """북극성 top 추천 1건 (구 06:30 카드 흡수). status/northstar_pending.json 재사용.
-    반환: 렌더 블록 또는 ''(파일 없음·후보 없음)."""
-    try:
-        data = json.loads(NORTHSTAR_PENDING_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return ""
-    # 오늘자 추천만 표시 — 06:30이 안 돌아 어제 것이 남았으면 생략(오해 방지).
-    if str(data.get("date", "")) != datetime.now().strftime("%Y-%m-%d"):
-        return ""
-    cands = data.get("candidates") or []
-    if not cands:
-        return ""
-    c = cands[0]
-    title = summarize_title(str(c.get("title", "")), limit=54)
-    fa = str(c.get("first_action", "")).strip()
-    diff = str(c.get("difficulty", "")).strip()
-    who = str(c.get("owner", "")).strip()
-    tag = " ✅승인됨" if str(data.get("status", "")) == "approved" else ""
-    head = f" {diff} {title}".rstrip() + (f" [{who}]" if who else "")
-    lines = [f"🧭 웰리의 오늘의 북극성 한 수{tag}", head]
-    if fa:
-        lines.append(f"   👉 첫 행동: {fa[:70]}")
-    return "\n".join(lines)
-
-
-def _staff_quote() -> str:
-    """직원 공유 카드용 06시대 명언 1건(활성). 실패 시 기본 문구."""
-    try:
-        data = json.loads(QUOTES_PATH.read_text(encoding="utf-8"))
-        active = [q.get("text", "") for q in data.get("06", []) if q.get("active") and q.get("text")]
-        if active:
-            import random
-            return random.choice(active)
-    except Exception:
-        pass
-    return "오늘 하루도 한 걸음씩, 꾸준함이 곧 실력입니다."
-
-
-def build_staff_share_card() -> str:
-    """직원 공유용 복붙 카드 (구 07시 직원카드 흡수) — 북극성 미션 + 오늘의 한 마디."""
-    now = datetime.now()
-    wd = ["월", "화", "수", "목", "금", "토", "일"][now.weekday()]
-    quote = _staff_quote()
-    return (
-        "✂️ ───── 직원 공유용 (아래부터 카톡 복붙) ─────\n"
-        f"🌟 {now.strftime('%Y-%m-%d')} ({wd}) 북극성\n"
-        "회원 한 사람의 건강한 하루를 완성한다\n\n"
-        "💬 오늘의 한 마디\n"
-        f"\"{quote}\""
-    )
-
-
-def build_yesterday_done_line(yday_items: list[dict]) -> list[str]:
-    """어제 완료 요약 1~2줄 (구 07시 결산 흡수). 건수 + 대표 최대 2건. 없으면 []."""
-    n = len(yday_items)
-    if n == 0:
-        return []
-    out = [f"🔗 지나온 항로 — 어제 입항 {n}건"]
-    reps = [plainify(summarize_title(str(d.get("title", "")))) for d in yday_items[:2]]
-    reps = [r for r in reps if r]
-    if reps:
-        out.append("  " + " · ".join(reps) + (f"  외 {n - len(reps)}건" if n > len(reps) else ""))
-    return out
-
-
 def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     """
     GM 아침 보고 — '오늘의 항로' 레이아웃 (2026-06-05 GM 재설계).
@@ -1247,18 +1127,6 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     ])
     lines.append("")
 
-    # ── 💰 매출·지출 1줄 (구 09시 GM DM 흡수 · 상세는 카톡 09:30) ──
-    _sales_line = fetch_sales_oneline()
-    if _sales_line:
-        lines.append(_sales_line)
-        lines.append("")
-
-    # ── 🔗 지나온 항로 (어제 완료 1~2줄, 구 07시 결산 흡수) ──
-    _yday_lines = build_yesterday_done_line(yday_items)
-    if _yday_lines:
-        lines += _yday_lines
-        lines.append("")
-
     # 항로 정합경고 — 큐↔시트 불일치(유령·중복·상태·형식) 있으면 08:00 보고 상단에 1줄(다같이 봄). fail-open.
     try:
         import sys as _sys
@@ -1296,7 +1164,7 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
             lines.append(f" · {plainify(summarize_title(u['title']))} ({mmdd} 마감){who}")
         lines.append("")
 
-    # ── '지나온 항로(어제 완료)'는 상단에 1~2줄로 흡수(구 07시 결산 폐지, GM 2026-07-18) ──
+    # ── 🔗 '지나온 항로(어제 완료)'는 07시 결산이 전담 — 08시는 '오늘 항로'만 (역할분담·중복제거, GM 2026-06-29) ──
 
     # ── 🧭 오늘의 항로 (배 종류로 묶음: 크루즈→여객선→돛단배) ──
     lines.append("🧭 오늘의 항로  (무거운 배부터 · 🔴급함 🌟북극성)")
@@ -1326,12 +1194,6 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
         lines.append(" · 오늘 띄울 배 없음")
     if deep:
         lines.append(f" ⚓ 명확화 대기 {len(deep)}건 — 항로 확정 후 출항")
-
-    # ── 🧭 웰리의 북극성 한 수 (구 06:30 추천 카드 흡수 · northstar_pending.json) ──
-    _ns_top = fetch_northstar_top()
-    if _ns_top:
-        lines.append("")
-        lines.append(_ns_top)
 
     # ── 🌟 북극성 침로 (없으면 섹션 생략) ──
     if northstar_today:
@@ -1368,10 +1230,6 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
             lines.append(f"{_circled(i)} {title_clean}{suffix}")
     else:
         lines.append("🔴 선장(GM) 결정: 없음")
-
-    # ── 직원 공유용 복붙 카드 (구 07시 직원카드 흡수) — 맨 아래 배치 ──
-    lines.append("")
-    lines.append(build_staff_share_card())
 
     return "\n".join(lines)
 

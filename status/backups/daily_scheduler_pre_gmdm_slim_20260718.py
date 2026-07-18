@@ -1,13 +1,9 @@
 """
-웰페리온 일일 자동 보고 스케줄러 v2.1
+웰페리온 일일 자동 보고 스케줄러 v2.0
 -------------------------------
-정규 스케줄: 06/12/18/21/23시 텔레그램 자동 보고 (GM 알림 홍수 축소 · 2026-07-18 GM 승인)
-  · GM DM: 06(개인)·18(개인)·21(마감)·23(마감점검 — 이상시만 조건부 발송)
-  · 12시는 점검관리방(실무진) 전용 — GM DM 아님
-  · 07(어제결산)·09(매출/진행)·15(중간정리)·22(취침) GM DM 슬롯은 08:00 통합브리프로 흡수·폐지
+정규 스케줄 (10개): 06/07/09/12/15/18/21/22/23시 정각 텔레그램 자동 보고
 테스트 모드: python daily_scheduler.py --test  →  1시간 주기 실행
-※ 08시(오늘의 항로 통합브리프)는 ceo_morning_pipeline.py (별도 Task Scheduler) 담당 —
-   어제완료·매출1줄·북극성top·직원카드를 흡수(2026-07-18). 여기서 중복 발송 없음
+※ 08시(오늘의 항로)는 ceo_morning_pipeline.py (별도 Task Scheduler) 담당 — 여기서 중복 발송 없음
 
 슬롯 정본 = 웰페리온 ERP T2(업무자동화SSOT) 텔레그램탭 — 슬롯 변경 시 T2만 수정
 ※ 08시(오늘의 항로)는 ceo_morning_pipeline.py 별도 Task Scheduler 담당 — 여기서 중복 발송 없음
@@ -2240,14 +2236,15 @@ def _dept_status_lines(facility_row: dict | None, facility_sessions: int = 0) ->
     )
 
 
-def _compute_23_body_and_anomaly() -> tuple[str, bool]:
-    """23시 마감 점검 본문 + 이상여부(has_anomaly)를 함께 반환.
+def _build_23_body() -> str:
+    """23시 — 마감 점검 현황 차트 상세형 [회사]
 
-    이상 = 미완 회차(약점 pct<100) OR 시설부 기준이탈(ooc) OR 반복 미완료 제안 중 하나라도 존재.
-    - live None(데이터 없음): (폴백본문, False) — 판정 불가라 GM DM 조건부 미발신(상세는 카톡 23시 담당).
-    - 정상(전 회차 완료·이탈 0): (본문, False) → GM DM 미발신.
-    - 이상 존재: (본문, True) → GM DM 발신.
-    부작용(미완료 원장 적재)은 기존과 동일하게 유지 — 23시 1회 실행 전제.
+    today_live(지원부 회차×성별) 성공 시 차트+약점+4부서 상태.
+    실패 시 기존 _build_checklist_block('23:00')로 폴백(빈 메시지/크래시 금지).
+
+    [2026-06-08 GM 지시] PC 종료 22:30→23:30 변경으로 23:00 발송 환경 확보 →
+    23시 마감 점검 슬롯 복원(10슬롯 정본).
+    [2026-06-18 시우] today_live 차트 상세형 업그레이드(라이브 GAS).
     """
     today = datetime.now().strftime("%Y-%m-%d")
     live = _fetch_support_today_live(today)
@@ -2260,14 +2257,13 @@ def _compute_23_body_and_anomaly() -> tuple[str, bool]:
         )
 
     if live is None:
-        # 폴백 — 기존 12/18 공용 블록 재사용. 판정 불가 → 이상 아님(조건부 미발신).
+        # 폴백 — 기존 12/18 공용 블록 재사용
         checklist_block = _build_checklist_block("23:00")
-        body = (
+        return (
             f"{_unified_header('23', '회사', '마감 점검')}\n"
             f"{checklist_block}\n\n"
             f"{_AUTO_FOOTER}"
         )
-        return body, False
 
     chart = _build_support_check_chart(live)
     weakspot = _build_support_weakspot(live)
@@ -2286,13 +2282,7 @@ def _compute_23_body_and_anomaly() -> tuple[str, bool]:
     suggest_lines = _cid.suggestion_lines_for_today(CHECK_INCOMPLETE_LEDGER, today) if _CID_OK else []
     suggest_block = ("\n\n" + "\n".join(suggest_lines)) if suggest_lines else ""
 
-    # 이상 판정 — 약점(미완회차)·기준이탈·반복제안 중 하나라도 있으면 True.
-    #   weakspot: "✅ 짚을 점 없음…"=정상, "⚠️ 짚을 점: 진행 데이터 없음"=데이터부재(이상 아님),
-    #   "⚠️ 짚을 점: … 독려 필요"=실제 미완(이상).
-    weakspot_anomaly = weakspot.startswith("⚠️") and "진행 데이터 없음" not in weakspot
-    has_anomaly = bool(weakspot_anomaly or ooc_detail or suggest_lines)
-
-    body = (
+    return (
         f"{_unified_header('23', '회사', '마감 점검')}\n"
         f"{chart}\n"
         f"{weakspot}\n\n"
@@ -2301,18 +2291,6 @@ def _compute_23_body_and_anomaly() -> tuple[str, bool]:
         f"{suggest_block}\n\n"
         f"{_AUTO_FOOTER}"
     )
-    return body, has_anomaly
-
-
-def _build_23_body() -> str:
-    """23시 — 마감 점검 현황 차트 상세형 [회사]. (--manual-test·폴백 미리보기용 · 본문만)
-
-    today_live(지원부 회차×성별) 성공 시 차트+약점+4부서 상태.
-    실패 시 기존 _build_checklist_block('23:00')로 폴백(빈 메시지/크래시 금지).
-    ※ 정규 23시 발신은 run_report가 _compute_23_body_and_anomaly()로 조건부(이상시만) 처리.
-    """
-    body, _ = _compute_23_body_and_anomaly()
-    return body
 
 
 # ── 지원부 점검 미완 자동 독려 (오후17시·마감22시·미완시만·하루1회) — 시우 2026-06-18 ──
@@ -2708,22 +2686,9 @@ def run_report(slot: str, test_mode: bool = False) -> None:
         logger.error(f"{label} owner_id 미등록 — state.json 확인 필요. 보고 생략.")
         return
 
-    # 23시 마감 점검 = 조건부 GM DM (GM 2026-07-18): 점검 이상(미완 회차·기준이탈·반복제안)
-    #   있을 때만 GM DM 발신, 정상이면 미발신 — 상세 점검은 카톡 23시가 담당.
-    #   test_mode는 미리보기라 항상 발신(GM DM). 여기서 본문을 한 번만 산출해 재조회 방지.
-    body_override: str | None = None
-    if slot == "23" and not test_mode:
-        _b23, _anom23 = _compute_23_body_and_anomaly()
-        if not _anom23:
-            logger.info(f"{label} 마감 점검 이상 0 — GM DM 조건부 미발신(상세는 카톡 23시 담당)")
-            return
-        body_override = _b23
-        logger.info(f"{label} 마감 점검 이상 감지 — GM DM 발신")
-
     try:
-        if body_override is not None:
-            body = body_override
-        elif (builder := SLOT_BUILDERS.get(slot)):
+        builder = SLOT_BUILDERS.get(slot)
+        if builder:
             body = builder()
         else:
             body = (
@@ -3085,18 +3050,19 @@ def main():
             next_run_time=datetime.now(),
         )
     else:
-        logger.info("=== 정규 스케줄 시작: 06/12/18/21/23시 (GM 알림 홍수 축소 · 2026-07-18 GM 승인) ===")
-        # [2026-06-07 GM 확정] 08시는 ceo_morning_pipeline(별도 Task Scheduler) 담당.
-        # [2026-07-18 GM 승인] GM DM 홍수 축소 — 07(어제결산)·09(매출/진행)·15(중간정리)·
-        #   22(취침) GM DM 슬롯 폐지. 핵심값(어제완료·매출1줄·북극성top·직원카드)은 08:00
-        #   통합브리프(ceo_morning_pipeline)로 흡수. 23시는 조건부(점검 이상시만 GM DM,
-        #   정상이면 미발신 — 상세는 카톡 23시 담당). 12시는 점검관리방(실무진) 전용이라 유지.
-        #   builder 함수(_build_07/09/15/22_body)는 보존 — 되돌림·--manual-test 미리보기용.
+        logger.info("=== 정규 스케줄 시작: 06/07/09/12/15/18/21/22/23시 (10슬롯) ===")
+        # [2026-06-07 GM 확정] 10슬롯 개편 — 08시는 ceo_morning_pipeline(별도 Task Scheduler) 담당
+        # [2026-06-08 GM] 23시 슬롯 복원 → 10슬롯. PC 종료 22:30→23:30 변경으로 23:00 발송 가능.
+        #   동시에 22시는 취침안내+종료인사 통합(별도 22:25 종료인사 예약작업 제거).
         schedule_map = {
             "06": (6, 0),
+            "07": (7, 0),
+            "09": (9, 0),
             "12": (12, 0),
+            "15": (15, 0),
             "18": (18, 0),
             "21": (21, 0),
+            "22": (22, 0),
             "23": (23, 0),
         }
         for slot, (hour, minute) in schedule_map.items():

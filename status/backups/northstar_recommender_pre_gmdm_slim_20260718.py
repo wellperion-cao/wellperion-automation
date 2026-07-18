@@ -894,16 +894,11 @@ def run(stdout_only: bool = False, send: bool = False):
         print("└")
     print(f"\n{'='*60}")
 
-    # 발송 모드 — G2 만료(이전 미승인) → 파일 기록 → 폐루프 로그
-    # [2026-07-18 GM 승인] 06:30 standalone GM DM 카드 발송 폐지 — 북극성 top은 08:00
-    #   통합브리프(ceo_morning_pipeline)로 흡수(GM 알림 홍수 축소). northstar_pending.json
-    #   기록·G2 만료·자율현황 라이브 top3 섹션·승인 콜백(봇 ns:)·웹 승인은 그대로 유지.
-    #   되돌림: 아래 send_card(pending) 주석을 해제하면 06:30 DM 카드 복원(가역).
+    # 발송 모드 — G2 만료(이전 미승인) → 파일 기록 → 카드 발송 → 폐루프 로그
     if send:
         expire_previous()
         PENDING_FILE.write_text(json.dumps(pending, ensure_ascii=False, indent=2), encoding="utf-8")
-        # sent = send_card(pending)   # ← 06:30 GM DM 발송 폐지(08:00 브리프 흡수). 복원 시 주석 해제.
-        sent = False
+        sent = send_card(pending)
         log_event(
             "proposed",
             date=pending["date"],
@@ -912,8 +907,7 @@ def run(stdout_only: bool = False, send: bool = False):
             roles=[c["role"] for c in candidates],
             titles=[c["title"][:60] for c in candidates],
         )
-        print(f"\n[3/3] 기록 완료: {PENDING_FILE} "
-              f"(06:30 GM DM 발송 폐지 — 북극성 top은 08:00 브리프로 흡수)")
+        print(f"\n[3/3] 기록·발송 완료: {PENDING_FILE} (텔레그램 {'발송' if sent else '미발송'})")
         print(f"[완료] ({now_str()})")
         return pending
 
