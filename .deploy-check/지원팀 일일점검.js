@@ -689,14 +689,23 @@ function doGet(e) {
 
 // ─── 그룹별 제출 영속 (2026-06-05 GM) — PropertiesService 날짜별 JSON, 병합·빈값 덮어쓰기 방지 ───
 var GSUB_PROP_PREFIX = 'gsub_';
+// 2026-07-18 시토(INC 07-16 수리 후속): 라이브 재현 테스트에서 실제 예외 메시지 확보 —
+// "속성 저장용량 한도를 초과했습니다"(스크립트 전체 500KB 총량 한도, 개별 9KB 한도와 별개 증상).
+// handleSave 첫 줄인 이 함수가 여전히 try/catch 없이 throw하면 _updateCheckLedger를 고쳐도 무의미
+// (여기서 먼저 죽어 handleSave 전체가 중단 → _writePerRoundRows 도달 자체를 못 함). 동일 원칙 적용:
+// 실패해도 삼키지 말고 로그만 남기되(그룹제출 도장은 부가기능) 호출부(handleSave)는 계속 진행.
 function _saveGroupSubmits(date, gs) {
   if (!date || !gs || typeof gs !== 'object') return;
-  var props = PropertiesService.getScriptProperties();
-  var key = GSUB_PROP_PREFIX + date;
-  var existing = {};
-  try { existing = JSON.parse(props.getProperty(key) || '{}'); } catch (e) {}
-  Object.keys(gs).forEach(function (k) { if (gs[k]) existing[k] = gs[k]; });  // 제출분만 추가/갱신(해제 없음)
-  props.setProperty(key, JSON.stringify(existing));
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var key = GSUB_PROP_PREFIX + date;
+    var existing = {};
+    try { existing = JSON.parse(props.getProperty(key) || '{}'); } catch (e) {}
+    Object.keys(gs).forEach(function (k) { if (gs[k]) existing[k] = gs[k]; });  // 제출분만 추가/갱신(해제 없음)
+    props.setProperty(key, JSON.stringify(existing));
+  } catch (e) {
+    // fail-soft — 그룹제출 영속 실패가 handleSave 전체(=진짜 원본 시트 저장)를 막지 않게.
+  }
 }
 function _getGroupSubmits(date) {
   try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(GSUB_PROP_PREFIX + date) || '{}'); }
