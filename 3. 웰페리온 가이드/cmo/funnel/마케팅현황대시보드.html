@@ -187,19 +187,10 @@ details.footnote-toggle > .fn-body{
   font-size:12px;color:var(--dim);line-height:1.75;
 }
 
-/* ── 페이지 소개 캡슐 ── */
-.intro-capsule{
-  background:var(--paper2);border:1px solid var(--border);
-  border-left:3px solid var(--accent);border-radius:var(--radius-md);
-  padding:14px 18px;margin-bottom:18px;
-  display:flex;flex-direction:column;gap:7px;
-}
-.intro-row{display:flex;gap:10px;align-items:baseline;font-size:12px;color:var(--dim);line-height:1.7}
-.intro-tag{
-  flex-shrink:0;width:46px;font-size:10px;font-weight:700;
-  color:var(--accent);letter-spacing:.04em;
-}
-.intro-row b{color:var(--text);font-weight:700}
+/* ── 게시글 채널 칩 ── */
+.chip-row{display:flex;flex-wrap:wrap;gap:4px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--text);background:var(--paper2);border:1px solid var(--border);border-radius:10px;padding:2px 7px;white-space:nowrap}
+.chip .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 
 /* ── 측정 준비중 배너 (지어내기 금지 — 없는 값은 정직 표기) ── */
 .measure-pending{
@@ -256,7 +247,6 @@ details.footnote-toggle > .fn-body{
   .header h1{font-size:15px}
   .header-meta{color:#5a5850;font-size:9px}
   .content{max-width:100%;padding:0;column-count:2;column-gap:12px}
-  .intro-capsule{display:none !important}
   .section{margin-bottom:8px;break-inside:avoid;display:inline-block;width:100%}
   .section-title{font-size:8px;margin-bottom:5px}
   .kpi-card,.channel-table,.trend-wrap,.insight-card,.measure-pending{border:1px solid #c9c4bc;box-shadow:none}
@@ -264,6 +254,8 @@ details.footnote-toggle > .fn-body{
   .kpi-card .num{font-size:17px}
   .kpi-card .label,.kpi-card .sub,.kpi-card .unit{font-size:7.5px}
   .channel-table th,.channel-table td{padding:4px 5px;font-size:7.5px}
+  .chip{font-size:6.5px;padding:1px 5px}
+  .chip .dot{width:5px;height:5px}
   .trend-wrap{padding:8px 8px 6px}
   .trend-chart{height:90px}
   .trend-bars{height:64px}
@@ -329,22 +321,12 @@ details.footnote-toggle > .fn-body{
   </div>
 
   <!-- ════════════════════════════════════════════
-       ★ 페이지 소개 캡슐 (2026-07-18 GM 재설계: 콘텐츠 → 문의 성과 전용)
-       문의 상담·등록·회원 세부는 시포(CPO) '문의&등록 현황'으로 이관 — 여기서는 다루지 않음.
-       ════════════════════════════════════════════ -->
-  <div class="intro-capsule">
-    <div class="intro-row"><span class="intro-tag">무엇</span><span>우리 콘텐츠가 문의를 얼마나 만들어내는지 <b>채널·게시글 단위</b>로 보는 판입니다.</span></div>
-    <div class="intro-row"><span class="intro-tag">기능</span><span><b>어떤 채널에 무엇을 올렸고, 그걸로 문의가 얼마나 늘고/줄었는지</b>만 정직하게 봅니다 — 잰 것만 실값으로, 못 잰 건 "측정 준비중"으로 표기합니다.</span></div>
-    <div class="intro-row"><span class="intro-tag">범위 밖</span><span>문의 상담·등록·회원 세부(멤버십/강습 종목별)는 시포(CPO) 「문의&등록 현황」에서 다룹니다 — 이 페이지에는 없습니다.</span></div>
-  </div>
-
-  <!-- ════════════════════════════════════════════
        ② 요약 — 발행 게시물 · 콘텐츠 경유 문의 · 게시물당 문의 (선택 기간)
        발행 = review_queue.json 발행완료(5채널: 인스타그램·네이버 블로그·네이버 카페·카카오·당근)
        경유 문의 = funnel_conversion byChannel 중 위 5채널에 해당하는 문의 합(전화매칭 아님·유입채널 기준, 실측)
        ════════════════════════════════════════════ -->
   <div class="section">
-    <div class="section-title">요약 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">선택 기간 · 콘텐츠 5채널(인스타그램·네이버 블로그·네이버 카페·카카오·당근) 기준</span></div>
+    <div class="section-title">요약</div>
     <div class="kpi-row" id="summary-kpi-row">
       <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">발행 게시물</div></div>
       <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">콘텐츠 경유 문의</div></div>
@@ -357,19 +339,21 @@ details.footnote-toggle > .fn-body{
        증감 = 선택 기간과 동일 길이의 직전 기간 대비(문의 기준). 실측 두 번 조회.
        ════════════════════════════════════════════ -->
   <div class="section">
-    <div class="section-title">채널별 성과 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">발행 · 경유 문의 · 직전 기간 대비 증감</span></div>
+    <div class="section-title">채널별 성과</div>
     <div id="channel-perf-wrap">
       <div class="flow-skeleton sk-pulse"></div>
     </div>
   </div>
 
   <!-- ════════════════════════════════════════════
-       ④ 게시글별 성과 — 게시글 단위 문의 귀속은 미구축(UTM 캠페인이 게시글 ID까지 연결되지 않음, 실측 확인)
-       측정 준비중 정직 표기 + 가능한 부분(발행 인벤토리)만 제공.
+       ④ 게시글별 성과 — 공식 채널(@wellperion)만 · 콘텐츠(folder) 단위 dedupe · 최근 12건 상한
+       게시글 단위 문의 귀속은 미구축(UTM 캠페인이 게시글 ID까지 연결되지 않음, 실측 확인) → 측정 준비중.
        ════════════════════════════════════════════ -->
   <div class="section">
-    <div class="section-title">게시글별 성과 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">선택 기간 발행 게시글</span></div>
-    <div class="measure-pending">⚠ 게시글 단위(어떤 글이 문의 몇 건을 만들었나) 연결은 아직 <b>측정 준비중</b>입니다 — UTM이 채널까지는 붙지만 게시글 ID·문의 저장소에 캠페인 컬럼이 없어 게시글별 귀속이 불가합니다(실측 확인, 지어내지 않음). 채널 단위 성과는 위 ③을 참고하세요. 아래는 선택 기간 발행 게시글 목록입니다.</div>
+    <div class="section-title">게시글별 성과</div>
+    <div class="measure-pending">⚠ 게시글 단위 문의 연결은 측정 준비중 — 채널 단위 성과는 위 ③ 참고.
+      <details class="footnote-toggle"><summary>왜 안 되나</summary><div class="fn-body">UTM은 채널까지만 붙고(예: utm_source=instagram), 게시글 ID·캠페인 코드가 문의 저장소 컬럼에 없어 어떤 글이 문의를 만들었는지는 아직 집계할 수 없습니다(실측 확인, 지어내지 않음). 아래는 공식 채널(@wellperion) 발행 콘텐츠 목록(개인계정 제외, 콘텐츠 단위로 채널 중복 제거)입니다.</div></details>
+    </div>
     <div id="post-list-wrap">
       <div class="flow-skeleton sk-pulse" style="height:80px"></div>
     </div>
@@ -380,7 +364,7 @@ details.footnote-toggle > .fn-body{
        발행 = review_queue.json(주별 집계) · 문의 = funnel_conversion(주별 from/to 8회 실측 조회, 콘텐츠 5채널 합)
        ════════════════════════════════════════════ -->
   <div class="section">
-    <div class="section-title">발행 대비 문의 추세 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">최근 8주 고정 스코프 · 상단 필터 영향 없음</span></div>
+    <div class="section-title">발행 대비 문의 추세</div>
     <div class="trend-wrap" id="trend-wrap">
       <div class="flow-skeleton sk-pulse" style="height:100px"></div>
     </div>
@@ -390,7 +374,7 @@ details.footnote-toggle > .fn-body{
        ⑥ 인사이트 — 채널별 게시물당 문의 비율(③ 실측치)로만 산출. 게시글 단위 인사이트는 ④가 준비중이라 보류.
        ════════════════════════════════════════════ -->
   <div class="section">
-    <div class="section-title">인사이트 <span style="font-size:9px;font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px">채널별 게시물당 문의(③) 기준 · 잘됨 더하기 / 약함 손보기</span></div>
+    <div class="section-title">인사이트</div>
     <div id="insight-wrap">
       <div class="flow-skeleton sk-pulse" style="height:90px"></div>
     </div>
@@ -436,6 +420,57 @@ var PUB_TO_GAS_CHANNEL = {
   '카카오': '카카오톡',
   '당근': '당근마켓'
 };
+var CHIP_ABBR = { '인스타그램': 'IG', '네이버 블로그': '블로그', '네이버 카페': '카페', '카카오': '카카오', '당근': '당근' };
+
+// ─── 게시글별 성과(④) 전용 — 공식 채널만 · 콘텐츠 단위 dedupe ──────────
+// 2026-07-18 GM 지시: 개인계정(namuk.wellperion) 제외, 채널별 중복 엔트리는 콘텐츠(folder) 단위로 1줄 묶기.
+// account 필드가 비어도(null) channel 텍스트에 namuk가 있으면 제외(실측: review_queue에 account=null인데
+// channel="인스타그램 (namuk.wellperion)"인 레거시 항목 존재 확인 — account만 보면 새어나감).
+function isOfficialItem(it) {
+  var acc = String((it && it.account) || '');
+  var ch = String((it && it.channel) || '');
+  if (/namuk/i.test(acc) || /namuk/i.test(ch)) return false;
+  return /wellperion/i.test(acc);
+}
+// 폴더 경로에서 채널별 산출물 표시 세그먼트(/output(...)) 제거 → 같은 콘텐츠의 여러 채널 발행을
+// 하나의 그룹 키로 묶는다(값 손실 없음, 표시 전용 그룹핑).
+function _groupKey(it) {
+  return String((it && it.folder) || (it && it.id) || '').replace(/\/output\([^)]*\)/g, '');
+}
+function buildPostGroups(items, from, to) {
+  var filtered = (items || []).filter(function(it) {
+    if (!it || it.status !== '발행완료') return false;
+    if (!isOfficialItem(it)) return false;
+    if (!canonPubChannel(it.channel)) return false;
+    var d = (typeof it.published_at === 'string') ? it.published_at.slice(0, 10) : '';
+    if (!d || d < from || d > to) return false;
+    return true;
+  });
+  var groups = {};
+  var order = [];
+  filtered.forEach(function(it) {
+    var key = _groupKey(it);
+    if (!groups[key]) { groups[key] = []; order.push(key); }
+    groups[key].push(it);
+  });
+  var rows = order.map(function(key) {
+    var arr = groups[key];
+    var ig = arr.filter(function(x) { return canonPubChannel(x.channel) === '인스타그램'; });
+    var titleSrc = ig[0] || arr[0];
+    var chans = {};
+    arr.forEach(function(x) { var c = canonPubChannel(x.channel); if (c) chans[c] = true; });
+    var dates = arr.map(function(x) { return x.published_at || ''; }).filter(Boolean);
+    dates.sort();
+    return {
+      date: dates.length ? dates[dates.length - 1].slice(0, 10) : '',
+      title: titleSrc.title || titleSrc.id || '',
+      url: titleSrc.post_url || null,
+      channels: CONTENT_CHANNELS.filter(function(c) { return chans[c]; })
+    };
+  });
+  rows.sort(function(a, b) { return b.date.localeCompare(a.date); });
+  return rows;
+}
 
 // ─── 날짜 유틸 ──────────────────────────────────────────────
 function _fmtYMD(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -539,7 +574,7 @@ function refreshPeriodSections() {
 
     renderSummary(curItems.length, _contentInquirySum(curInqByCh), fcCur === null);
     renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcCur === null);
-    renderPostList(curItems);
+    renderPostList(buildPostGroups(rq, from, to));
     renderInsight(curPubByCh, curInqByCh);
   });
 }
@@ -576,7 +611,7 @@ function renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcF
     return { ch: ch, i: i, pub: pub, pubPrev: pubPrev, inq: inq, inqPrev: inqPrev, perPost: perPost };
   });
 
-  var thead = '<thead><tr><th>채널</th><th style="text-align:right">발행</th><th style="text-align:right">경유 문의</th><th style="text-align:right">게시물당 문의</th><th style="text-align:right">증감(문의, 직전기간)</th></tr></thead>';
+  var thead = '<thead><tr><th>채널</th><th style="text-align:right">발행</th><th style="text-align:right">경유 문의</th><th style="text-align:right">게시물당</th><th style="text-align:right">증감</th></tr></thead>';
   var body = rows.map(function(r) {
     var colorVar = 'var(' + _DOT_COLORS[r.i % _DOT_COLORS.length] + ')';
     return '<tr>' +
@@ -589,31 +624,32 @@ function renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcF
   }).join('');
 
   el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">' +
-    '<table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table>' +
-    '<div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">' +
-    '선택 기간(' + esc(_periodLabel) + ') · 발행 = review_queue.json 발행완료 · 경유 문의 = 문의 접수 시 선택한 유입채널(GAS funnel_conversion 실측) · 증감 = 동일 길이 직전 기간 대비 · 네이버 블로그·카페는 시스템상 별도 채널(네이버 / 동부이촌동 커뮤니티)로 실제 분리 집계됩니다.' +
-    '</div></div>';
+    '<table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table></div>' +
+    '<details class="footnote-toggle"><summary>산출 기준</summary><div class="fn-body">선택 기간(' + esc(_periodLabel) + ') · 발행 = review_queue.json 발행완료 · 경유 문의 = 문의 접수 시 선택한 유입채널(GAS funnel_conversion 실측) · 증감 = 동일 길이 직전 기간 대비 · 네이버 블로그·카페는 시스템상 별도 채널(네이버 / 동부이촌동 커뮤니티)로 실제 분리 집계됩니다.</div></details>';
 }
 
-// ─── ④ 게시글별 성과 — 인벤토리만(문의 귀속 불가, 위 배너로 안내됨) ─────
-function renderPostList(items) {
+// ─── ④ 게시글별 성과 — 공식 채널만 · 콘텐츠 단위 dedupe · 인벤토리(문의 귀속 불가, 위 배너로 안내됨) ─────
+var POST_LIST_CAP = 12;
+function renderPostList(rows) {
   var el = document.getElementById('post-list-wrap');
   if (!el) return;
-  if (!items.length) {
+  if (!rows.length) {
     el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px;font-style:italic">' + esc(_periodLabel) + ' 발행 게시글이 없습니다</div>';
     return;
   }
-  var sorted = items.slice().sort(function(a, b) { return (b.published_at || '').localeCompare(a.published_at || ''); }).slice(0, 40);
+  var shown = rows.slice(0, POST_LIST_CAP);
   var thead = '<thead><tr><th>날짜</th><th>채널</th><th>제목</th></tr></thead>';
-  var body = sorted.map(function(it) {
-    var d = (it.published_at || '').slice(0, 10);
-    var ch = canonPubChannel(it.channel) || esc(it.channel);
-    var title = it.post_url ? '<a href="' + esc(it.post_url) + '" target="_blank" rel="noopener">' + esc(it.title || it.id) + '</a>' : esc(it.title || it.id);
-    return '<tr><td style="white-space:nowrap;color:var(--dim)">' + d + '</td><td style="white-space:nowrap">' + esc(ch) + '</td><td>' + title + '</td></tr>';
+  var body = shown.map(function(r) {
+    var chips = r.channels.map(function(c) {
+      var colorVar = 'var(' + _DOT_COLORS[CONTENT_CHANNELS.indexOf(c) % _DOT_COLORS.length] + ')';
+      return '<span class="chip"><span class="dot" style="background:' + colorVar + '"></span>' + esc(CHIP_ABBR[c] || c) + '</span>';
+    }).join('');
+    var title = r.url ? '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + '</a>' : esc(r.title);
+    return '<tr><td style="white-space:nowrap;color:var(--dim)">' + r.date + '</td><td><div class="chip-row">' + chips + '</div></td><td>' + title + '</td></tr>';
   }).join('');
   el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">' +
-    '<table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table>' +
-    '<div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">' + esc(_periodLabel) + ' 발행 ' + items.length + '건 중 최근 ' + sorted.length + '건 표시 · 문의 연결 = 측정 준비중</div></div>';
+    '<table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table></div>' +
+    '<div style="padding:6px 2px 0;font-size:10.5px;color:var(--dim)">' + esc(_periodLabel) + ' 콘텐츠 ' + rows.length + '건 중 최근 ' + shown.length + '건</div>';
 }
 
 // ─── ⑥ 인사이트 — 채널별 게시물당 문의(③ 실측치) 기준 ─────
@@ -701,9 +737,9 @@ function renderTrend(points, anyFail) {
       '</div>';
   }).join('');
   el.innerHTML = '<div class="trend-chart">' + cols + '</div>' +
-    '<div class="trend-legend"><span><span class="dot" style="background:var(--accent)"></span>발행(건)</span><span><span class="dot" style="background:var(--purple)"></span>콘텐츠 경유 문의(건)</span></div>' +
+    '<div class="trend-legend"><span><span class="dot" style="background:var(--accent)"></span>발행</span><span><span class="dot" style="background:var(--purple)"></span>문의</span></div>' +
     (anyFail ? '<div class="measure-pending" style="margin-top:10px">일부 주차 문의 집계 실패 — 재시도 시 반영됩니다.</div>' : '') +
-    '<div style="padding-top:10px;font-size:11px;color:var(--dim)">각 열 상단 숫자 = 발행/문의(주 시작 월요일 기준, 이번 주는 오늘까지) · 두 값 모두 실측(추정 아님) · 최근 8주 고정 스코프라 상단 필터와 무관합니다.</div>';
+    '<details class="footnote-toggle"><summary>기준</summary><div class="fn-body">각 열 상단 숫자 = 발행/문의(주 시작 월요일 기준, 이번 주는 오늘까지) · 두 값 모두 실측(추정 아님) · 최근 8주 고정 스코프라 상단 필터와 무관합니다.</div></details>';
 }
 
 // ─── 조회 기간 필터 UI 배선 (기존 UX 유지, 렌더 함수만 교체) ─────
