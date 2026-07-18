@@ -443,6 +443,7 @@
   var _pendingByRole = null;  // status/northstar_pending.json → role.id별 후보 1개
   var _incidents = null;      // ssot/incidents.json → role.id별 {guarded, recent}
   var _reachData = null;      // status/northstar_reach.json → role.id별 {reach_pct|null, mode, basis, milestones_done?, milestones_total?}
+  var _ownershipData = null;  // ssot/ownership_map.json → role.id(title lowercase)별 {primary_surface, domain, executor} — GM확정 소유·역할 단일출처(2026-07-18)
   var _editMode = false;
   // 뷰 상태(GM PC 세션 한정 · 정본 아님): 역할 필터 · 칸 숨김 · 폴침
   var _roleFilter = null;     // null=전체, 아니면 role.id
@@ -544,6 +545,19 @@
       ? items.map(function(s){ return '<li>' + chanLogo(esc(s)) + '</li>'; }).join('')
       : '<li class="dim-empty">—</li>';
     return lab + '<ul class="dim-bul">' + lis + '</ul>';
+  }
+
+  // 🗺️ 소유·역할 — 정본 ssot/ownership_map.json 직독(읽기전용 · GM확정 7역할 소유맵 단일출처 · 2026-07-18).
+  //   role.id(=title.toLowerCase())로 매칭. 화면소유=primary_surface 강조 · 도메인소유=domain. 복사 금지(약속 L01 '한 곳만 본다').
+  function ownershipBlock(role){
+    var o = (_ownershipData && _ownershipData[role.id]) || null;
+    if(!o) return '';
+    var lab = '<span class="dim-label">🗺️ 소유·역할 <span style="font-weight:400;text-transform:none;font-size:9px;color:var(--dim);">(정본 ssot/ownership_map.json)</span></span>';
+    var lis = [];
+    if(o.primary_surface) lis.push('<li>🖥️ 화면소유 · <b>' + esc(o.primary_surface) + '</b></li>');
+    if(o.domain) lis.push('<li>🗂️ 도메인 · ' + esc(o.domain) + (o.executor ? ' <span style="color:var(--dim);">(실무 ' + esc(o.executor) + ')</span>' : '') + '</li>');
+    if(!lis.length) return '';
+    return lab + '<ul class="dim-bul">' + lis.join('') + '</ul>';
   }
 
   function ideasBlock(role){
@@ -753,7 +767,7 @@
             return '<div class="chan-item"><b>' + esc(c.label) + '</b><span>' + esc(c.desc) + '</span></div>';
           }).join('') + '</div>';
       }
-      var c3 = '<td>' + owns + chans + incidentsBlock(role) + ideasBlock(role) + '</td>';
+      var c3 = '<td>' + ownershipBlock(role) + owns + chans + incidentsBlock(role) + ideasBlock(role) + '</td>';
       return '<tr data-role="' + esc(role.id) + '" class="' + (gm ? 'role-gm' : '') + '">' +
         '<td class="role-cell" style="border-left:4px solid ' + esc(ac) + ';">' +
           '<div class="ricon">' + esc(role.icon) + '</div>' +
@@ -985,7 +999,8 @@
     gasRead('status/northstar_pending.json', RAW_BASE + 'status/northstar_pending.json').catch(function(){ return null; }),
     gasRead('ssot/incidents.json',        RAW_BASE + 'ssot/incidents.json').catch(function(){ return null; }),
     gasRead('status/northstar_reach.json', RAW_BASE + 'status/northstar_reach.json').catch(function(){ return null; }),
-    gasRead('ssot/canon_values.json',      RAW_BASE + 'ssot/canon_values.json').catch(function(){ return null; })
+    gasRead('ssot/canon_values.json',      RAW_BASE + 'ssot/canon_values.json').catch(function(){ return null; }),
+    gasRead('ssot/ownership_map.json',     RAW_BASE + 'ssot/ownership_map.json').catch(function(){ return null; })
   ])
     .then(function(arr){
       _matrixData = arr[0];
@@ -998,6 +1013,8 @@
       _reachData = (arr[6] && arr[6].roles) || {};
       var canonMap = {};
       ((arr[7] && arr[7].values) || []).forEach(function(v){ if(v && v.key) canonMap[v.key] = v.value; });
+      _ownershipData = {};
+      ((arr[8] && arr[8].roles) || []).forEach(function(o){ if(o && o.title) _ownershipData[String(o.title).toLowerCase()] = o; });
       renderMatrix();
       renderVisionDynamic(canonMap);
       renderEditBtn();

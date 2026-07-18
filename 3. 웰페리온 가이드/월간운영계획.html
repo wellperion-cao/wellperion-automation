@@ -35,6 +35,14 @@
   .layers span.cur{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
   .layers .arw{color:var(--dim); font-size:11px;}
 
+  /* ── 🗺️ C레벨 소유·역할 스트립 (ssot/ownership_map.json 단일출처 fetch-render · GM확정 2026-07-18) ── */
+  .own-strip{display:flex; flex-wrap:wrap; gap:6px 8px; align-items:center; margin:2px 0 14px; padding:8px 11px; border:1px solid var(--border); border-radius:10px; background:var(--paper); font-size:11.5px;}
+  .own-chip2{display:inline-flex; align-items:center; gap:5px; border:1px solid var(--border-strong); border-radius:20px; padding:3px 10px; background:var(--surface); white-space:nowrap;}
+  .own-chip2 b{color:var(--text);}
+  .own-chip2 .oc-role{color:var(--text-soft);}
+  .own-chip2.cur{border-color:var(--accent); background:rgba(139,92,246,0.10);}
+  .own-strip .os-src{margin-left:auto; font-size:10px; color:var(--dim);}
+
   /* ── 📊 최상단 4지표 요약 스트립(A안 정보 위계 강화 · 실측만 · 배685 · 2026-07-14) ── */
   .sumstrip{display:flex; flex-wrap:wrap; gap:0; margin:0 0 14px; border:1px solid var(--border); border-radius:11px; overflow:hidden; background:var(--surface);}
   .ss-i{flex:1; min-width:150px; padding:9px 14px; border-right:1px solid var(--border);}
@@ -935,6 +943,9 @@
     <span class="arw">›</span>
     <a href="wellperion_guide(main).html#G1">🧭 오늘의 항로 (G1)</a>
   </div>
+
+  <!-- ════ 🗺️ C레벨 소유·역할 스트립 (ssot/ownership_map.json 단일출처 fetch-render · 정본 갱신은 GM 결재) ════ -->
+  <div class="own-strip" id="own-strip"><span style="color:var(--dim);">C레벨 소유·역할을 불러오는 중…</span></div>
 
   <!-- 🔥 임팩트 현황 4칸 = 폐지(GM 확정 2026-07-04 월별 상단 재구성). 매출=💰 0순위 섹션 + 핵심 과제=🎯 top3 섹션(중요도 자동)으로 대체·중복 제거. -->
 
@@ -3116,6 +3127,27 @@
       if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); renderSummaryStrip(); renderDeptWorkSummary(); }
     });
   }
+
+  // ═══════════ 🗺️ C레벨 소유·역할 스트립 — ssot/ownership_map.json 단일출처 fetch-render(정본 · 복사 금지 · GM확정 2026-07-18) ═══════════
+  //   이 창(월간운영계획)=시우(COO) 화면소유 강조. boot()와 독립 로드.
+  function renderOwnershipStrip(map){
+    var el = document.getElementById('own-strip'); if(!el) return;
+    var roles = (map && Array.isArray(map.roles)) ? map.roles : [];
+    if(!roles.length){ el.innerHTML = '<span style="color:var(--dim);">C레벨 소유·역할 정본을 불러오지 못했습니다.</span>'; return; }
+    var chips = roles.map(function(r){
+      var isCur = r.type === '화면소유' && r.primary_surface && r.primary_surface.indexOf('월간운영계획') >= 0;
+      var label = r.type === '화면소유' ? (r.primary_surface || '') : (r.domain || '');
+      return '<span class="own-chip2' + (isCur ? ' cur' : '') + '"><b>' + esc(r.nick) + '</b><span class="oc-role">' + esc(r.title) + ' · ' + esc(label) + '</span></span>';
+    }).join('');
+    el.innerHTML = chips + '<span class="os-src">정본: ssot/ownership_map.json</span>';
+  }
+  fetch(RAW_BASE + 'ssot/ownership_map.json', {cache:'no-store'})
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(map){ renderOwnershipStrip(map); })
+    .catch(function(){
+      var el = document.getElementById('own-strip');
+      if(el) el.innerHTML = '<span style="color:var(--dim);">C레벨 소유·역할 정본을 불러오지 못했습니다.</span>';
+    });
 
   boot();
 })();
