@@ -2932,7 +2932,8 @@ function gvizLessonRows_(headers, rows, gid) {
     }
     out.push({
       rowIndex: r + 2 + rowOffset,
-      timestamp: _gzToISODateTime_(iTs >= 0 ? row[iTs] : ''),
+      // 타임스탬프(iTs) 비면 col0(문의일/날짜)로 폴백 — 수동 삽입행(타임스탬프 미기입) 정렬 유실 방지. 2026-07-18 웰리.
+      timestamp: (_gzToISODateTime_(iTs >= 0 ? row[iTs] : '') || _gzToISO_(row[0] || '')),
       name:    iName  >= 0 ? String(row[iName]  || '') : '',
       phone:   iPhone >= 0 ? _gzFmtPhone_(row[iPhone]) : '',
       age:     iAge   >= 0 ? String(row[iAge]   || '') : '',
