@@ -223,8 +223,8 @@
 
   <!-- 06 사진 -->
   <section id="photo"><div class="wrap">
-    <span class="num">06</span><span class="eyebrow"> · Photography</span>
-    <h2>사진 · 이미지</h2>
+    <span class="num">06</span><span class="eyebrow"> · Photography & Video</span>
+    <h2>사진 · 영상</h2>
     <p class="sec-sub">모든 메인 슬라이드 사진은 <b>BLACK↔BEIGE 듀오톤</b> 필수(#221F20↔#B79F8A) — 어떤 사진이든 동일한 럭셔리 매거진 톤으로.</p>
     <div class="grid g3">
       <div class="card"><h4>색감</h4><p>따뜻한 뉴트럴 — 베이지 대리석·우드·아이보리. 차가운 형광 회피</p></div>
@@ -233,6 +233,27 @@
       <div class="card"><h4>피사체</h4><p>인물 없음(공간 위주). 시설·마감재가 주인공</p></div>
       <div class="card"><h4>레이아웃</h4><p>상단 65% 사진(듀오톤) + 하단 35% 정보 영역</p></div>
       <div class="card"><h4>아이콘</h4><p>선(line)으로만. <b>면 칠 아이콘 절대 금지</b></p></div>
+    </div>
+
+    <h4 style="font-size:15px;margin:28px 0 10px">슬라이드 자막·레이아웃 스타일 <span class="tag">슬라이드/영상 공통</span></h4>
+    <table>
+      <tr><th>요소</th><th>규칙</th></tr>
+      <tr><td><b>헤더</b></td><td>좌측 로고 + 우측 사업부 컬러 칩</td></tr>
+      <tr><td><b>액센트 바</b></td><td>HIGHLIGHT #ED5B3F 또는 베이지 가는 바</td></tr>
+      <tr><td><b>영문 라벨</b></td><td>대문자 + 자간(letter-spacing), 베이지 작게</td></tr>
+      <tr><td><b>풋터</b></td><td>하단 중앙 WELLPERION (베이지)</td></tr>
+      <tr><td><b>정렬</b></td><td>여백 중심 · 수직 중앙 · 럭셔리 매거진</td></tr>
+      <tr><td><b>위치 표기</b></td><td>"한남동"만 (건물명 "현대하이페리온" 금지)</td></tr>
+    </table>
+
+    <h4 style="font-size:15px;margin:28px 0 10px">릴스 · 영상 기준 <span class="tag">scripts/make_reel.py</span></h4>
+    <div class="grid g3">
+      <div class="card"><h4>포맷</h4><p>1080×1920 세로 · H.264/libx264 · 30fps · 레터박스 배경 BLACK #221F20</p></div>
+      <div class="card"><h4>모션</h4><p>Ken Burns 줌 1.0~1.12 (정적 슬라이드쇼 금지) · 장당 2.5초 · CrossFade 0.4초</p></div>
+      <div class="card"><h4>길이 · 훅</h4><p>15~25초 (이미지 6~9장) · <b>첫 3초</b>에 가장 강한 장면 + 한 줄 훅 텍스트</p></div>
+      <div class="card"><h4>자막</h4><p>PIL + Pretendard 직접 렌더 · 하단 18% + 반투명 띠 + 외곽선 · 핵심 문구만</p></div>
+      <div class="card"><h4>음악</h4><p>사람이 받은 <b>무료 음원만</b>(instagram/_assets/music/) · 자동 다운로드 금지 · 끝 0.5초 페이드아웃</p></div>
+      <div class="card"><h4>출력 · A/B</h4><p>instagram/Movie/{name}_{ts}.mp4 · 폴더에 영상 있으면 B(영상 릴스)/없으면 A(이미지 릴스) 자동</p></div>
     </div>
   </div></section>
 
@@ -251,6 +272,7 @@
       <tr><td><b>네이버 블로그 · 카페</b></td><td>SmartEditor 링크 카드</td></tr>
       <tr><td><b>카카오 채널</b></td><td>현행 본문 형식 유지</td></tr>
     </table>
+    <div class="callout" style="border-color:var(--line);background:var(--card)"><b>위치·멘션</b> — 위치는 인스타 자체 위치태그 기능(캡션에 "위치: ○○" 텍스트 안 넣음). 멘션은 캡션 본문 <span class="mono">@핸들</span> 평문으로만. &nbsp;·&nbsp; <b>개인 계정(@namuk) CTA는 별개</b> — 인라인 문의 URL·litt.ly 금지, 📌저장·💬댓글(편별 질문)·👀팔로우 도달 유도형.</div>
   </div></section>
 
   <!-- 08 두 계정 -->
