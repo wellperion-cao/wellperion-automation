@@ -28,21 +28,6 @@
   header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
 
-  /* ── 3층 네비(북극성→월간→오늘) + 소유맵 스트립 = 한 박스 통합(GM 피드백 2026-07-18) ── */
-  .nav-own-box{margin:2px 0 14px; padding:8px 11px; background:var(--paper); border:1px solid var(--border); border-radius:10px;}
-  .layers{display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:12px;}
-  .layers a, .layers span.cur{text-decoration:none; border:1px solid var(--border-strong); border-radius:20px; padding:3px 12px; color:var(--text-soft); white-space:nowrap;}
-  .layers a:hover{border-color:var(--accent); color:var(--accent-soft);}
-  .layers span.cur{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700;}
-  .layers .arw{color:var(--dim); font-size:11px;}
-
-  /* ── 🗺️ C레벨 소유·역할 스트립 (ssot/ownership_map.json 단일출처 fetch-render · GM확정 2026-07-18) ── */
-  .own-strip{display:flex; flex-wrap:wrap; gap:6px 8px; align-items:center; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-size:11.5px;}
-  .own-chip2{display:inline-flex; align-items:center; gap:5px; border:1px solid var(--border-strong); border-radius:20px; padding:3px 10px; background:var(--surface); white-space:nowrap; color:var(--text); font-weight:700; text-decoration:none;}
-  a.own-chip2:hover{border-color:var(--accent); color:var(--accent-soft); background:rgba(139,92,246,0.06);}
-  .own-chip2.cur{border-color:var(--accent); background:rgba(139,92,246,0.10);}
-  .own-strip .os-src{margin-left:auto; font-size:10px; color:var(--dim);}
-
   /* ── 📊 최상단 4지표 요약 스트립(A안 정보 위계 강화 · 실측만 · 배685 · 2026-07-14) ── */
   .sumstrip{display:flex; flex-wrap:wrap; gap:0; margin:0 0 14px; border:1px solid var(--border); border-radius:11px; overflow:hidden; background:var(--surface);}
   .ss-i{flex:1; min-width:150px; padding:9px 14px; border-right:1px solid var(--border);}
@@ -642,7 +627,7 @@
     @page{size:A3 landscape; margin:8mm;}
     body{background:#fff; color:#111; padding:0; font-size:8.5px; line-height:1.4;}
     .wrap{max-width:none;}
-    .nav-own-box, .impact-grid, .month-bar, .ebtn, header.page-head .back, .view-toggle{display:none !important;}
+    #wlp-nav, .impact-grid, .month-bar, .ebtn, header.page-head .back, .view-toggle{display:none !important;}
     /* 연간 뷰 인쇄 = 연간 로드맵 + 그 아래 월별 상세 전부(GM 지시 2026-07-06 2차) / 월별 뷰 인쇄 = 결론(연간 숨김·base CSS) */
     /* 📊 연속 이니셔티브 상단밴드 = 두 단 전폭 상단(월별 A3) */
     .blk.mband-wrap{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 6px !important; margin-bottom:5px;}
@@ -895,23 +880,9 @@
     <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
   </header>
 
-  <!-- 5층 구조: 북극성 → 자율현황 → 월간(현재) → 전사일정 → 오늘의 항로 (GM 지시 2026-07-03·전사일정 편입 07-14) + 소유맵 스트립 한 박스 통합(GM 피드백 2026-07-18) -->
-  <div class="nav-own-box">
-    <div class="layers">
-      <a href="헌법한장.html">🌟 북극성 (헌법)</a>
-      <span class="arw">›</span>
-      <a href="자율현황.html">🤖 자율 작업 현황</a>
-      <span class="arw">›</span>
-      <span class="cur">📋 월간 운영</span>
-      <span class="arw">›</span>
-      <a href="coo/check/전사_일정.html">🗓️ 전사 일정</a>
-      <span class="arw">›</span>
-      <a href="wellperion_guide(main).html#G1">🧭 오늘의 항로 (G1)</a>
-    </div>
-
-    <!-- ════ 🗺️ C레벨 소유·역할 스트립 (ssot/ownership_map.json 단일출처 fetch-render · 정본 갱신은 GM 결재) ════ -->
-    <div class="own-strip" id="own-strip"><span style="color:var(--dim);">C레벨 소유·역할을 불러오는 중…</span></div>
-  </div>
+  <!-- 웰페리온 공용 상단 네비 — 단일 소스 공유 컴포넌트(_assets/wlp_nav.js). 파일럿 적용(GM 지시 2026-07-18) -->
+  <div id="wlp-nav"></div>
+  <script src="/wellperion-automation/_assets/wlp_nav.js"></script>
 
   <!-- 🔥 임팩트 현황 4칸 = 폐지(GM 확정 2026-07-04 월별 상단 재구성). 매출=💰 0순위 섹션 + 핵심 과제=🎯 top3 섹션(중요도 자동)으로 대체·중복 제거. -->
 
@@ -2966,43 +2937,6 @@
       if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); renderSummaryStrip(); }
     });
   }
-
-  // ═══════════ 🗺️ C레벨 소유·역할 스트립 — ssot/ownership_map.json 단일출처 fetch-render(정본 · 복사 금지 · GM확정 2026-07-18) ═══════════
-  //   이 창(월간운영계획)=시우(COO) 화면소유 강조. boot()와 독립 로드.
-  // 각 역할의 클릭 대상 페이지(현 파일 위치 기준 상대경로) — 실존 확인(Glob) 완료된 것만 매핑(GM 지시 2026-07-18)
-  var OWN_ROLE_HREF = {
-    ceo: '헌법한장.html',
-    cto: '자율현황.html',
-    coo: '월간운영계획.html',
-    cmo: 'wellperion_guide(main).html#M1',
-    cpo: 'cpo/member/문의회원.html',
-    chro: 'coo/todo/업무 현황 SSOT.html',
-    cfo: 'cfo/finance/매출지출현황.html'
-  };
-  function renderOwnershipStrip(map){
-    var el = document.getElementById('own-strip'); if(!el) return;
-    var roles = (map && Array.isArray(map.roles)) ? map.roles : [];
-    if(!roles.length){ el.innerHTML = '<span style="color:var(--dim);">C레벨 소유·역할 정본을 불러오지 못했습니다.</span>'; return; }
-    var chips = roles.map(function(r){
-      var role = (r.title || '').toLowerCase();
-      var isCur = r.type === '화면소유' && r.primary_surface && r.primary_surface.indexOf('월간운영계획') >= 0;
-      var tip = r.type === '화면소유' ? (r.primary_surface || '') : (r.domain || '');
-      var label = esc(r.nick) + ' ' + esc(TITLE_MAP[role] || r.title || '');
-      var href = OWN_ROLE_HREF[role];
-      if(href){
-        return '<a class="own-chip2' + (isCur ? ' cur' : '') + '" href="' + esc(href) + '" title="' + esc(tip) + '">' + label + '</a>';
-      }
-      return '<span class="own-chip2">' + label + '</span>';
-    }).join('');
-    el.innerHTML = chips + '<span class="os-src">정본: ssot/ownership_map.json</span>';
-  }
-  fetch(RAW_BASE + 'ssot/ownership_map.json', {cache:'no-store'})
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(map){ renderOwnershipStrip(map); })
-    .catch(function(){
-      var el = document.getElementById('own-strip');
-      if(el) el.innerHTML = '<span style="color:var(--dim);">C레벨 소유·역할 정본을 불러오지 못했습니다.</span>';
-    });
 
   boot();
 })();
