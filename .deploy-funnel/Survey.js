@@ -705,6 +705,15 @@ function _teamChip(sport){
   return '';
 }
 
+// 종목별 색동그라미 — 문의알림방 메시지의 종목명 앞에 _teamChip(이모지)보다 앞서 붙는 색 프리픽스(GM 최종확정 2026-07-18).
+// 정본은 이 함수 하나뿐 — 색 매핑 복사 금지. 부분일치·첫 매치 우선(_teamChip과 동일 순서로 정렬). 미매칭은 ''(칩 없음).
+function _sportColor(sport){
+  var k=(sport||'').trim(); if(!k) return '';
+  var rules=[['아쿠아','🔵'],['수영','🔵'],['P.T','🔴'],['PT','🔴'],['필라','🟠'],['P.L','🟠'],['스쿼시','🟩'],['골프','🟢'],['트램폴린','🟦'],['체조','🟦'],['멤버십','🟡'],['뮤지컬','⚫'],['발레','🟣'],['바레','🟣'],['루프','🟣']];
+  for(var i=0;i<rules.length;i++){ if(k.indexOf(rules[i][0])>=0) return rules[i][1]+' '; }
+  return '';
+}
+
 // 회원권 프로그램명에서 뒤쪽 시설 나열 괄호 제거 — '노블레스 (Gym + G.X + Swimming + Sauna 이용)' → '노블레스'.
 // 콤마 다중 회원권도 각 괄호 제거. 멤버십 1차 컨택 알림 가독성용(GM 2026-07-15). 다 지워지면 원본 유지(빈값 방지).
 function _progNameOnly_(p){
@@ -848,7 +857,7 @@ function _notifyNewInquiries_() {
         var isTest = _isTestInquiryRow_(phone, name, content);
         var msg = (isTest ? '🧪 [테스트] ' : '') + '🔔 [신규 문의]\n'
           + '유형: ' + cfg.type + '\n'
-          + (prog ? '종목: ' + _teamChip(prog) + prog + '\n' : '')
+          + (prog ? '종목: ' + _sportColor(prog) + _teamChip(prog) + prog + '\n' : '')
           + '이름: ' + name + '\n'
           + '연락처: ' + phone + '\n'
           + '유입채널: ' + chan
@@ -931,7 +940,7 @@ function _notifyLessonStatusChanges_() {
 
       events.forEach(function(ev) {
         if (stored[ev.mark]) return;  // 이미 알린 전환
-        var chip = _teamChip(cfg.명);
+        var chip = _sportColor(cfg.명) + _teamChip(cfg.명);
         var who = ev.name || '(이름미상)';
         var owner = ev.owner ? (' · 담당 ' + ev.owner) : '';
         if (ev.bucket === 'SUC') {
@@ -1032,7 +1041,7 @@ function onInquiryFormSubmit(e) {
       if (content.length > 300) content = content.substring(0, 300) + '…';
       var msg = '🔔 [신규 문의 — 즉시]\n'
         + '유형: ' + cfg.type + '\n'
-        + (prog ? '종목: ' + _teamChip(prog) + prog + '\n' : '')
+        + (prog ? '종목: ' + _sportColor(prog) + _teamChip(prog) + prog + '\n' : '')
         + '이름: ' + name + '\n'
         + '연락처: ' + phone + '\n'
         + '유입채널: ' + chan
@@ -2438,7 +2447,7 @@ function _processAction(body) {
           if (content.length > 300) content = content.substring(0, 300) + '…';
           var msg = '🔔 [신규 문의 — 즉시]\n'
             + '유형: ' + pvCfg.type + '\n'
-            + (prog ? '종목: ' + _teamChip(prog) + prog + '\n' : '')
+            + (prog ? '종목: ' + _sportColor(prog) + _teamChip(prog) + prog + '\n' : '')
             + '이름: ' + name + '\n'
             + '연락처: ' + phone + '\n'
             + '유입채널: ' + chan
@@ -2739,7 +2748,7 @@ function _processAction(body) {
       if (_iCat === 'rental') _iExtra = (_iSpace ? ('\n공간: ' + _iSpace) : '') + (_iPurpose ? ('\n용도: ' + _iPurpose) : '');
       if (_iCat === 'business') _iExtra = (_iPartnerType ? ('\n제휴유형: ' + _iPartnerType) : '');
       _notifyTelegram('🔔 <b>[웹 문의 접수]</b> (자체폼)\n유형: ' + _iCatLabel + '\n이름: ' + _iDisplayName + '\n연락처: ' + _fmtPhone_(_iPhone)
-        + (_iProgram ? ('\n관심: ' + _iProgram) : '') + _iExtra + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
+        + (_iProgram ? ('\n관심: ' + _sportColor(_iProgram) + _iProgram) : '') + _iExtra + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
     } catch (e) {}
     return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
   }
@@ -2886,7 +2895,7 @@ function _processAction(body) {
       // 등록 전환 전용 알림 → '문의 알림' 방(수정 경로와 동일 포맷). add는 새 행이라 old/new 비교 불필요. 이름·프로그램·담당만(전화=PII 제외). 2026-06-26 시포.
       try {
         var _maRegChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-        _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + body.status + ')으로 전환\n· 이름: ' + (body.name || '-') + '\n· 프로그램: ' + _teamChip(body.program) + (body.program || '-') + '\n· 담당: ' + (body.owner || '-'), _maRegChatId);
+        _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + body.status + ')으로 전환\n· 이름: ' + (body.name || '-') + '\n· 프로그램: ' + _sportColor(body.program) + _teamChip(body.program) + (body.program || '-') + '\n· 담당: ' + (body.owner || '-'), _maRegChatId);
       } catch (e) {}
     }
     try { _notifyTelegram('➕ 전화·직접 문의 추가 — ' + (body.name || '(이름없음)') + ' · ' + (body.phone || '-') + ' · 채널:' + (body.channel || '유선전화')); } catch (e) {}
@@ -3055,7 +3064,7 @@ function _processAction(body) {
       if (!_wasSuc) {
         try {
           var _regChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-          _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + _muNewStatus + ')으로 전환\n· 이름: ' + (_coName || '-') + '\n· 프로그램: ' + _teamChip(_coProg) + (_coProg || '-') + '\n· 담당: ' + (_coOwner || '-'), _regChatId);
+          _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + _muNewStatus + ')으로 전환\n· 이름: ' + (_coName || '-') + '\n· 프로그램: ' + _sportColor(_coProg) + _teamChip(_coProg) + (_coProg || '-') + '\n· 담당: ' + (_coOwner || '-'), _regChatId);
         } catch (e) {}
       }
     }
@@ -3066,7 +3075,7 @@ function _processAction(body) {
         var _histFirst = _muHistNewArr[0];
         var _histWhen = ((_histFirst.date || '') + ' ' + (_histFirst.time || '')).trim();
         var _histChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-        _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + (_coName || '-') + ' (' + _teamChip(_coProg) + (_progNameOnly_(_coProg) || '-') + ')\n일시: ' + (_histWhen || '-') + '\n내용: ' + (_histFirst.note || '-') + (_coOwner ? '\n담당: ' + _coOwner : ''), _histChatId);
+        _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + (_coName || '-') + ' (' + _sportColor(_coProg) + _teamChip(_coProg) + (_progNameOnly_(_coProg) || '-') + ')\n일시: ' + (_histWhen || '-') + '\n내용: ' + (_histFirst.note || '-') + (_coOwner ? '\n담당: ' + _coOwner : ''), _histChatId);
       } catch (e) {}
     }
     // 등록 해제(이전 SUC → 신규 비SUC, status 명시 전송 시) — 잘못 등록 되돌리기: 등록현황에서 제거. 2026-06-29 시포.
@@ -3332,7 +3341,7 @@ function _processAction(body) {
           var _lsmHistWhen = ((_lsmHistFirst.date || '') + ' ' + (_lsmHistFirst.time || '')).trim();
           var _lsmOwnerVal = String(_lsmEntry.owner || '').trim();
           var _lsmContactChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-          _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + _lsmName + ' (' + _lsmTypeLabel + ' · ' + _teamChip(luSportKey) + luSportKey + ')\n일시: ' + (_lsmHistWhen || '-') + '\n내용: ' + (_lsmHistFirst.note || '-') + (_lsmOwnerVal ? '\n담당: ' + _lsmOwnerVal : ''), _lsmContactChatId);
+          _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + _lsmName + ' (' + _lsmTypeLabel + ' · ' + _sportColor(luSportKey) + _teamChip(luSportKey) + luSportKey + ')\n일시: ' + (_lsmHistWhen || '-') + '\n내용: ' + (_lsmHistFirst.note || '-') + (_lsmOwnerVal ? '\n담당: ' + _lsmOwnerVal : ''), _lsmContactChatId);
         } catch (e) {}
       }
     } else {
@@ -3374,7 +3383,7 @@ function _processAction(body) {
       try {
         if (_luIsSucNew && !_luWasSuc) {
           var _luRegChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-          _notifyTelegram('✅ <b>등록 전환(강습)</b> — 강습문의가 등록(' + _luNewStatus + ')으로 전환\n· 이름: ' + _luName + '\n· 종목: ' + _teamChip(_luSport) + _luSport + '\n· 담당: ' + (body.owner || '-'), _luRegChatId);
+          _notifyTelegram('✅ <b>등록 전환(강습)</b> — 강습문의가 등록(' + _luNewStatus + ')으로 전환\n· 이름: ' + _luName + '\n· 종목: ' + _sportColor(_luSport) + _teamChip(_luSport) + _luSport + '\n· 담당: ' + (body.owner || '-'), _luRegChatId);
         }
       } catch (e) {}
       // 1차 컨택 알림(축6, 이력-기준으로 일원화): 연락이력 0건 → ≥1건 전이 시 1회만. 2026-07-08 시포·GM.
@@ -3387,7 +3396,7 @@ function _processAction(body) {
           var _luHistFirst = _luHistNewArr[0];
           var _luHistWhen = ((_luHistFirst.date || '') + ' ' + (_luHistFirst.time || '')).trim();
           var _luContactChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-          _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + _luName + ' (' + _luTypeLabel + ' · ' + _teamChip(_luSport) + _luSport + ')\n일시: ' + (_luHistWhen || '-') + '\n내용: ' + (_luHistFirst.note || '-') + (_luOwnerVal ? '\n담당: ' + _luOwnerVal : ''), _luContactChatId);
+          _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + _luName + ' (' + _luTypeLabel + ' · ' + _sportColor(_luSport) + _teamChip(_luSport) + _luSport + ')\n일시: ' + (_luHistWhen || '-') + '\n내용: ' + (_luHistFirst.note || '-') + (_luOwnerVal ? '\n담당: ' + _luOwnerVal : ''), _luContactChatId);
         } catch (e) {}
       }
     }
@@ -3655,7 +3664,7 @@ function _processAction(body) {
     // 등록 추가 알림 → '문의 알림' 방(전환 3경로와 정합). override 누락 시 개인 OWNER방으로 새던 버그 수정 — 직접·법인 등록건도 문의알림방에 통보. 2026-07-06 시토·GM.
     try {
       var _raRegChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-      _notifyTelegram('➕ <b>등록 추가</b> — 직접/법인 등록\n· 이름: ' + (raName || '-') + '\n· 프로그램: ' + _teamChip(raProg) + (raProg || '-') + '\n· 등록일: ' + raDate, _raRegChatId);
+      _notifyTelegram('➕ <b>등록 추가</b> — 직접/법인 등록\n· 이름: ' + (raName || '-') + '\n· 프로그램: ' + _sportColor(raProg) + _teamChip(raProg) + (raProg || '-') + '\n· 등록일: ' + raDate, _raRegChatId);
     } catch (e) {}
     return _json({ ok: true, message: '등록 추가되었습니다.' });
   }

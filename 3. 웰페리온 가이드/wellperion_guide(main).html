@@ -2596,7 +2596,7 @@ window._regAssign = function(id, category) {
         <table id="s2-roadmap-table">
           <tr><th style="width:128px">모듈</th><th style="width:42%;">지금 (현재)</th><th>목표 (완성 시)</th></tr>
           <tr><td>👥 회원 (CPO)</td><td>회원 DB·재등록 현황 시트 운영</td><td>가입·갱신 자동 · 이탈징후 감지→케어 · NPS 자동수집 · 갱신율 추적</td></tr>
-          <tr><td>📡 마케팅 (CMO)</td><td>콘텐츠 제작→M3 검수→발행 + 퍼널·대시보드 추적 가동</td><td>초안→슬라이드→3채널 완전 자동발행 · 전환 자동 매칭</td></tr>
+          <tr><td>📡 마케팅 (CMO)</td><td>콘텐츠 제작→M3 검수→발행 + 퍼널·대시보드 추적 가동</td><td>초안→슬라이드→5채널 완전 자동발행 · 전환 자동 매칭</td></tr>
           <tr><td>🧑‍💻 운영 (COO)</td><td>지원부 점검앱·이슈 접수 시트 가동</td><td>점검 체크리스트 자동배포 · 이슈 접수→배정→SLA 추적 · 인수인계</td></tr>
           <tr><td>🖥️ 시설·IT (CTO)</td><td>점검 현황 보고·시스템 현황판 가동</td><td>출입·락커·키오스크 무인화 · 점검 자동알림 · 장애 감지</td></tr>
           <tr><td>💰 재무 (CFO)</td><td>매출·지출 집계 연동(일부 보완 중)</td><td>자동집계 · 이상지출 알림 · 예산 소진율 예측 · 세무일정</td></tr>
@@ -4745,8 +4745,8 @@ if (window.matchMedia) {
     <table>
       <tr><th>채널</th><th>발행 방식</th><th>스크립트 / 명령</th><th>비고</th></tr>
       <tr><td>인스타그램</td><td>✅ 자동 발행</td><td><code>scripts/instagram_upload_playwright.py</code></td><td>M3 [승인] 후 봇이 자동 실행</td></tr>
-      <tr><td>네이버 블로그</td><td>⚙️ 자동 임시저장 → GM 게시</td><td><code>scripts/naver_blog_upload_playwright.py</code></td><td>임시저장 큐 자동 적재 · GM이 SmartEditor에서 최종 게시</td></tr>
-      <tr><td>네이버 카페</td><td>⚙️ 자동 임시저장 → GM 게시</td><td><code>scripts/cafe_upload_playwright.py</code></td><td>동부이촌동 카페 · GM이 최종 게시</td></tr>
+      <tr><td>네이버 블로그</td><td>✅ 자동 공개발행</td><td><code>scripts/naver_blog_upload_playwright.py</code></td><td>GM 텔레그램 [승인] 시 워처가 자동 공개발행(2026-07-13~) · 회수·정정만 GM 직접</td></tr>
+      <tr><td>네이버 카페</td><td>✅ 자동 공개발행</td><td><code>scripts/cafe_upload_playwright.py</code></td><td>동부이촌동 카페 자동 공개발행(등록 자동, 2026-07-13~) · 회수·정정만 GM 직접</td></tr>
       <tr><td>카카오채널</td><td>✅ 스크립트 직접 발행</td><td><code>scripts/kakao_channel_upload_playwright.py --mode publish</code></td><td>승인 후 직접 실행</td></tr>
       <tr><td>당근채널</td><td>✅ 스크립트 직접 발행</td><td><code>scripts/danggn_upload_playwright.py --mode publish</code></td><td>쿠키 TTL 8~9h · 당일 반자동(에디터 자동입력 선행)</td></tr>
     </table>
@@ -4958,8 +4958,8 @@ if (window.matchMedia) {
                 <tr><td>역할</td><td>SEO 허브 · "웰페리온"·"한남동 스포츠클럽" 검색 유입</td></tr>
                 <tr><td>톤</td><td>전문성+정보 · "~합니다" 형식체 · 하이엔드 격조</td></tr>
                 <tr><td>제목</td><td>SEO 키워드 포함</td></tr>
-                <tr><td>이미지</td><td>본문 교차 삽입 (SmartEditor 자동 첨부 upload_with_images.py)</td></tr>
-                <tr><td>페이스</td><td>주 1~2회 · 임시저장 큐 0건 확인 후 가동</td></tr>
+                <tr><td>이미지</td><td>본문 교차 삽입 (SmartEditor 자동 첨부 · naver_blog_upload_playwright.py --image-dir)</td></tr>
+                <tr><td>페이스</td><td>주 1~2회 · GM [승인] 시 자동 공개발행</td></tr>
               </table>
             </div>
             <div class="callout" style="margin-top:10px;background:#1a2a1a;border-left:3px solid #059669;">
@@ -4968,7 +4968,7 @@ if (window.matchMedia) {
                 <li><strong>이미지</strong> — 프로젝트 폴더의 <code>output(블로그)</code>에서 가져와 <strong>슬라이드로 본문 맨 아래</strong></li>
                 <li><strong>스티커 2개</strong> — 본문 맨 처음 1개 + "문의" 다음 줄 1개</li>
                 <li><strong>제목</strong> — 본문 첫 줄을 제목으로 (본문에 제목 반복 X)</li>
-                <li><strong>종착지</strong> — 임시저장까지. GM 검수 후 직접 등록</li>
+                <li><strong>종착지</strong> — 자동 공개발행(GM 텔레그램 [승인] 시, 2026-07-13~). 회수·정정만 GM 직접</li>
               </ul>
             </div>
           </div>
@@ -5004,7 +5004,7 @@ if (window.matchMedia) {
                 <li><strong>게시판</strong> — "웰페리온 Spa&amp;Fitness" 선택 → 우측에서 <strong>"웰페리온"</strong>까지 선택</li>
                 <li><strong>이미지</strong> — 프로젝트 폴더의 <code>output(카페)</code>에서 가져와 <strong>슬라이드로 본문 맨 아래</strong></li>
                 <li><strong>스티커 2개</strong> — 본문 맨 처음(인사) + "문의" 다음 줄(화이팅)</li>
-                <li><strong>종착지</strong> — 임시저장까지. GM 검수 후 직접 등록</li>
+                <li><strong>종착지</strong> — 자동 공개발행(GM 텔레그램 [승인] 시, 2026-07-13~). 회수·정정만 GM 직접</li>
               </ul>
             </div>
           </div>
@@ -5081,7 +5081,7 @@ if (window.matchMedia) {
     <table>
       <tr><th>#</th><th>기둥</th><th>내용</th><th>상태</th><th>지금 가능?</th></tr>
       <tr><td>1</td><td><strong>채널별 검수 프로세스</strong></td><td>아래 <strong>✅ 채널별 검수 프로세스</strong> 참조 (흐름·채널별 체크포인트)</td><td>운영 중</td><td>✅ 지금 가능</td></tr>
-      <tr><td>2</td><td><strong>5채널 자동 업로드</strong></td><td>인스타그램 · 네이버 블로그 · 네이버 카페(동부이촌동) · 카카오채널 · 당근채널</td><td>구축 중</td><td>⚠️ 일부 가능<br><span style="font-size:11.5px;color:var(--dim);">IG 자동발행·블로그·카페 자동임시저장 가능 / 카카오·당근은 스크립트 직접 실행</span></td></tr>
+      <tr><td>2</td><td><strong>5채널 자동 업로드</strong></td><td>인스타그램 · 네이버 블로그 · 네이버 카페(동부이촌동) · 카카오채널 · 당근채널</td><td>✅ 가동</td><td>✅ 완전 자동<br><span style="font-size:11.5px;color:var(--dim);">GM 텔레그램 [승인] 시 5채널 전부 자동 공개발행(블로그·카페 포함, 2026-07-13~). 당근만 세션 만료 시 수동 폴백</span></td></tr>
       <tr><td>3</td><td><strong>문의 Survey + 누적 시트</strong></td><td>Survey 수집 → 누적 시트(유입채널·상태) 관리</td><td>고도화</td><td>✅ 지금 가능<br><span style="font-size:11.5px;color:var(--dim);">Survey 수집·시트 운영 중 / 대시보드 고도화 중</span></td></tr>
       <tr><td>4</td><td><strong>안내 가이드</strong></td><td>예약제 · Q&amp;A · 주차 · 이용 · 요금 표준 안내문</td><td>운영 중 (주차·요금 일부 GM/CPO 확인 필요)</td><td>✅ 지금 가능</td></tr>
       <tr><td>5</td><td><strong>문의·등록 현황 대시보드</strong></td><td>맨 위 <strong>📊 마케팅 현황</strong> 스트립 참조 (퍼널·전환 실측치)</td><td>정보 페이지 운영 · 문의 집계 정비 중</td><td>⚠️ 일부 가능<br><span style="font-size:11.5px;color:var(--dim);">정보 페이지 운영 · 전환 집계 정비 중</span></td></tr>
@@ -7740,7 +7740,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           <tr><td><code>telemetry_logger.py</code></td><td>wellperion.bat 진입 JSONL 적재(8 민감키워드 마스킹)</td></tr>
           <tr><td><code>health_check_helper.py</code></td><td>bat health 실행 helper(Win32_Process 감지)</td></tr>
           <tr><td><code>evolve_gate.py</code></td><td>Layer3 자기진화 게이트 스켈레톤(자동 patch 영구 금지)</td></tr>
-          <tr><td><code>upload_with_images.py</code></td><td>네이버 블로그 자동 발행</td></tr>
+          <tr><td><code>naver_blog_upload_playwright.py</code></td><td>네이버 블로그 자동 공개발행</td></tr>
           <tr><td><code>instagram_upload_playwright.py</code></td><td>IG 자동 발행</td></tr>
         </table>
         <p style="font-size:13px;"><strong>역할별 접두어</strong> — <code>cmo_*</code> 콘텐츠 · <code>coo_*</code> 운영이슈 · <code>chro_*</code> HR · <code>cto_*</code> 인프라 · <code>ceo_*</code> 통합보고</p>
