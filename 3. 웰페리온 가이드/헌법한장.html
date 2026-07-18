@@ -59,8 +59,8 @@
   table.matrix .rtbl tr.rtbl-sec td{background:var(--surface); color:var(--dim); font-weight:800; font-size:10.5px; text-align:center; letter-spacing:0.04em;}
   table.matrix .rtbl tr.rtbl-cap td{background:rgba(124,58,237,0.05); color:var(--dim); font-size:11px;}
   table.matrix th.grp-np{width:300px;}
-  table.matrix th.grp-boot{width:400px;}
-  .col-own{width:200px;}
+  table.matrix th.grp-boot{width:300px;}
+  .col-own{width:300px;}
   .own-chip{display:inline-block; font-size:11px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:2px 8px; margin:0 4px 4px 0;}
   .own-chip:hover{background:var(--surface); border-color:var(--accent);}
   /* ── 소유 페이지 1줄 설명 + 발행 채널 블록(선택 필드 · role.owns[].desc·role.channels — 없으면 기존과 동일 렌더) ──
@@ -611,6 +611,14 @@
       { label: '매출·지출 현황', href: 'cfo/finance/매출지출현황.html' }
     ]
   };
+  // 소유·모듈 중복판정 — owns[].href가 해당 role의 MODULE_LINKS href와 정규화(trim) 후 정확 일치하면 true(제거 대상).
+  //   href:null(현재 페이지 자기자신)은 비교 대상 아님. 데이터(ssot/owns) 수정 없이 렌더에서만 필터.
+  function ownsIsDupOfModuleLink(roleId, href){
+    var links = MODULE_LINKS[roleId];
+    if(!links || !href) return false;
+    var norm = String(href).trim();
+    return links.some(function(l){ return l.href && String(l.href).trim() === norm; });
+  }
   function moduleLinksBlock(role){
     var links = MODULE_LINKS[role.id];
     if(!links || !links.length) return '';
@@ -893,9 +901,11 @@
       // 칸2 일하는 법 = 📚읽는 정본(2) + 🗓️하루 루틴(1)
       var c2 = '<td>' + dimBlock(role, 2, '📚 읽는 정본') + dimBlock(role, 1, '🗓️ 하루 루틴') + '</td>';
       // 칸3 소유 관리 = role.owns 링크칩(+선택 desc 1줄) + role.channels(선택·발행채널) — 둘 다 없으면 기존과 동일 렌더(하위호환)
-      //   MODULE_LINKS[role.id]가 있는 역할(서술형 링크가 위 ownershipBlock에 이미 렌더됨)은 owns 칩을 '세부'로 라벨링(중복 구분 · 2026-07-18).
-      var ownsLabel = MODULE_LINKS[role.id] ? '<span class="dim-label" style="margin-top:6px;">🔗 세부</span>' : '';
-      var owns = ownsLabel + (role.owns || []).map(function(o){
+      //   MODULE_LINKS[role.id] 중 href가 동일 대상인 owns 칩은 중복이라 제거(서술형 MODULE_LINK만 남김 · GM지시 2026-07-18).
+      //   href 비교는 정규화(trim, 앵커 포함) 후 정확 일치만 중복 판정 — 세부항목(예: chro H1~H4)은 앵커가 서로 달라 유지됨.
+      var ownsFiltered = (role.owns || []).filter(function(o){ return !ownsIsDupOfModuleLink(role.id, o.href); });
+      var ownsLabel = (MODULE_LINKS[role.id] && ownsFiltered.length) ? '<span class="dim-label" style="margin-top:6px;">🔗 세부</span>' : '';
+      var owns = ownsLabel + ownsFiltered.map(function(o){
         var desc = o.desc ? '<div class="own-desc">' + esc(o.desc) + '</div>' : '';
         return '<div class="own-item"><a class="own-chip" href="' + esc(o.href) + '">' + esc(o.label) + '</a>' + desc + '</div>';
       }).join('');
