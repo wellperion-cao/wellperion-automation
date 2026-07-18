@@ -124,7 +124,10 @@
         '--po-fb-bg:#ffffff; --po-fb-text:#18181b; --po-fb-border:#d8d8d8; --po-fb-surface:#f2f2f4; --po-fb-dim:#84848c; --po-fb-accent:#6d5acd;}' +
       '@media (prefers-color-scheme: dark){ .po-wrap{ --po-fb-bg:#201f23; --po-fb-text:#f2f0ee; --po-fb-border:#423f47; --po-fb-surface:#2a2830; --po-fb-dim:#96939c; --po-fb-accent:#8f7cf0; } }' +
       '.po-toggle{font:inherit; background:transparent; -webkit-appearance:none; appearance:none;}' +
-      '.po-panel{position:absolute; top:calc(100% + 6px); right:0; z-index:9999; min-width:236px; max-width:290px;' +
+      // position:fixed(뷰포트 기준·JS로 top/right 계산) — absolute였을 때 .filter-bar(overflow-x:auto)
+      // 같은 스크롤 클리핑 조상 안에 갇혀 sticky-top과 얽혀 스크롤 시 sticky 헤더가 깨지던 문제 차단.
+      // 2026-07-18 GM 피드백.
+      '.po-panel{position:fixed; z-index:9999; min-width:236px; max-width:290px;' +
         'background:var(--paper,var(--po-fb-bg)); color:var(--text,var(--po-fb-text));' +
         'border:1px solid var(--border-strong,var(--po-fb-border)); border-radius:11px;' +
         'box-shadow:0 10px 30px rgba(0,0,0,0.24); padding:12px 14px; font-size:12px; line-height:1.5;' +
@@ -350,20 +353,35 @@
     });
     panel.appendChild(printBtn);
 
+    // position:fixed 패널을 버튼 기준(하단-오른쪽 정렬)으로 뷰포트 좌표에 앵커 — 조상의
+    // overflow-x:auto(.filter-bar 등) 클리핑을 완전히 벗어나 sticky 조상과 얽히지 않는다.
+    function positionPanel(){
+      var r = wrap.getBoundingClientRect();
+      panel.style.top = (r.bottom + 6) + 'px';
+      panel.style.right = (window.innerWidth - r.right) + 'px';
+      panel.style.left = 'auto';
+    }
     function openPanel(){
+      positionPanel();
       panel.hidden = false;
       btn.setAttribute('aria-expanded', 'true');
       document.addEventListener('mousedown', onDocClick, true);
       document.addEventListener('keydown', onKeyDown, true);
+      // 스크롤 시 닫기(표준 드롭다운 동작) — capture:true로 window에 걸어 페이지 스크롤은 물론
+      // .filter-bar(overflow-x:auto) 같은 중첩 스크롤 조상의 스크롤도 함께 감지. 단, 패널 내부
+      // 섹션 목록(.po-sections) 자체 스크롤은 제외(패널이 자기 스크롤에 닫히면 안 됨).
+      window.addEventListener('scroll', onScroll, { capture: true, passive: true });
     }
     function closePanel(){
       panel.hidden = true;
       btn.setAttribute('aria-expanded', 'false');
       document.removeEventListener('mousedown', onDocClick, true);
       document.removeEventListener('keydown', onKeyDown, true);
+      window.removeEventListener('scroll', onScroll, { capture: true });
     }
     function onDocClick(e){ if(!wrap.contains(e.target)) closePanel(); }
     function onKeyDown(e){ if(e.key === 'Escape'){ closePanel(); btn.focus(); } }
+    function onScroll(e){ if(panel.contains(e.target)) return; closePanel(); }
 
     btn.addEventListener('click', function(){
       if(panel.hidden) openPanel(); else closePanel();
