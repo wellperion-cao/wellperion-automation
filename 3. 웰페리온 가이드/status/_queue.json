@@ -2846,5 +2846,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UeLMffdqSq1vBkGxKuzPhk (CLI ad-hoc · 커밋 b30a04ab)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b30a04ab8eadaafad94f08d47093c9d17d580edf"
+  },
+  {
+    "task_id": "CPO-2026-07-18-ADHOC-8f172cf2",
+    "clevel": "cpo",
+    "title": "[시포] LOSS 사유 모달 자동발동 + 진행상황칸 등록종목/LOSS사유 병기 (배선 완성·시포 9034 대행)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 9040,
+    "artifact": "- 진행상황을 LOSS로 변경 시 openInquiryLossModal 자동 발동(사유 미기록 방지·이미 사유 있으면 재촉발 안함)\n- DB표 진행상황 칸: SUC계열=🏷️등록종목 / LOSS=사유(+메모) 소자막·툴팁 병기 (dbRows regProgram/lossReason 재활용)\n- 등록종목 기록 경로(상담모달→regProgram→GAS 등록종목칸)는 기존 배선 유지 (CLI ad-hoc · 커밋 8f172cf2)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8f172cf208b3df7cb3ca24eee7f3672e9fb2d1ca"
   }
 ]
