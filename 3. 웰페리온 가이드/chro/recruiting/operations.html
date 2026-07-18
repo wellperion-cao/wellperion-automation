@@ -154,7 +154,7 @@
       <div class="t-kicker">WHO WE LOOK FOR</div>
       <h2>웰페리온 인재상</h2>
       <div class="t-sub">네 가지 핵심 역량이 만나는 지점에 웰페리온의 인재가 있습니다</div>
-      <svg class="venn" viewBox="0 0 360 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="웰페리온 인재상 도식">
+      <svg class="venn" width="360" height="260" viewBox="0 0 360 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="웰페리온 인재상 도식">
         <g stroke="#c3d4e4" stroke-width="2">
           <line x1="180" y1="130" x2="92"  y2="60"/>
           <line x1="180" y1="130" x2="268" y2="60"/>
@@ -333,7 +333,18 @@ function downloadPageAsJpg(){
       backgroundColor: bg,
       scale: 2.5,
       useCORS: true,
-      ignoreElements: function(el){ return el && el.id === 'jpgDownloadBtn'; }
+      ignoreElements: function(el){ return el && el.id === 'jpgDownloadBtn'; },
+      onclone: function(clonedDoc){
+        // html2canvas의 SVGElementContainer는 CSS(width:100%/height:auto)가 아니라
+        // svg 요소 자체의 width/height 속성(baseVal)으로 고유 크기를 판단한다.
+        // 속성이 없으면 벤 다이어그램이 0크기로 처리되어 캡처에서 누락되므로,
+        // 캡처용 클론 문서에서 한 번 더 명시적으로 강제한다(정본 수정과 이중 방어).
+        var vennEls = clonedDoc.querySelectorAll('svg.venn');
+        for (var i = 0; i < vennEls.length; i++) {
+          vennEls[i].setAttribute('width', '360');
+          vennEls[i].setAttribute('height', '260');
+        }
+      }
     }).then(function(canvas){
       var link = document.createElement('a');
       var fname = (document.title || 'wellperion_공고').replace(/[\\\/:*?"<>|]/g,'').trim();
