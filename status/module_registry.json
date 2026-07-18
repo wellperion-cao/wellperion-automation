@@ -54,6 +54,19 @@
       "reversible": true
     },
     {
+      "id": "cto-gas-version-monitor",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "GAS 배포 버전 위생 모니터 — 5개 프로젝트(check·funnel·funnel-v2·todo·voc) 버전수 조회, 200 하드리밋 조기경고(funnel 200버전 배포막힘 재발방지)",
+      "data_source": {"kind": "gas", "ref": "Apps Script API projects.versions.list ×5 scriptId (scripts/gas_version_monitor.py)"},
+      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null, "notify_wired": true},
+      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "autonomy": "mech",
+      "ai_free_fallback": "13시 기존 텔레그램 헬스체크(telegram_health_check.py)에 얹어 매일 무인 점검 — 임계(≥180) 초과 시에만 OWNER DM 경보(새 채널 아님, 평소 무발신)",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true
+    },
+    {
       "id": "cto-weekly-self-review",
       "owner_role": "cto",
       "owner_nick": "시토",

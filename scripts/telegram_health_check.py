@@ -217,6 +217,38 @@ def _check_heartbeat(now: datetime.datetime | None = None) -> list[str]:
     return []
 
 
+# ── 점검 6: GAS 버전 위생 (2026-07-18 CTO) ───────────────────────────────────
+# funnel GAS가 200버전 하드리밋에 걸려 배포가 막힌 사고 재발방지 — 5개 GAS
+# 프로젝트의 배포 버전수를 조회해 임계(>=180)일 때만 경보 흐름에 합류시킨다.
+# 새 정기 알림 채널이 아니라 기존 13시 헬스체크에 얹는 방식(GM 알림 과부하 방지).
+def _check_gas_versions() -> list[str]:
+    """gas_version_monitor 임계(>=180) 결과만 문제 목록에 반영.
+    조회 실패는 오탐 방지 위해 WARN 로그만(경보 제외)."""
+    try:
+        sys.path.insert(0, _SCRIPT_DIR)
+        from gas_version_monitor import collect as _gas_collect
+        from gas_version_monitor import _ALERT_THRESHOLD, _HARD_LIMIT
+    except ImportError as e:
+        print(f"[WARN] gas_version_monitor 임포트 실패: {e}", flush=True)
+        return []
+
+    try:
+        results = _gas_collect()
+    except Exception as e:
+        print(f"[WARN] GAS 버전 조회 예외: {e} — 네트워크 이상(경보 제외)", flush=True)
+        return []
+
+    issues: list[str] = []
+    for r in results:
+        count = r.get('version_count')
+        if count is None:
+            print(f"[WARN] {r['project']} 버전 조회 실패 — 경보 제외", flush=True)
+            continue
+        if count >= _ALERT_THRESHOLD:
+            issues.append(f"⚠️ GAS 버전 임박: {r['project']} {count}/{_HARD_LIMIT}")
+    return issues
+
+
 # ── 경보 발송 ─────────────────────────────────────────────────────────────────
 def _send_alert(token: str, owner_id: int, message: str, dry_run: bool) -> None:
     """OWNER DM으로 경보. dry_run=True 면 stdout만."""
@@ -294,7 +326,13 @@ def main() -> None:
     except Exception as e:
         all_issues.append(f"하트비트 점검 예외: {e}")
 
-    # 6. 결과 출력 및 경보
+    # 6. GAS 버전 위생 (임계 미만이면 무발신 — 새 정기 알림 아님)
+    try:
+        all_issues.extend(_check_gas_versions())
+    except Exception as e:
+        all_issues.append(f"GAS 버전 점검 예외: {e}")
+
+    # 7. 결과 출력 및 경보
     if all_issues:
         today_str = datetime.date.today().strftime('%Y-%m-%d')
         alert_msg = (
