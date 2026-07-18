@@ -2526,5 +2526,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 87c86423)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "87c864231bc28a44425ce946cfaf0f4c2d50850d"
+  },
+  {
+    "task_id": "CTO-2026-07-18-ADHOC-1a52ef13",
+    "clevel": "cto",
+    "title": "[시토] 지원부 점검 서버저장 유실 긴급수리(INC 07-16) — 시트저장 원장영속과 분리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1314,
+    "artifact": "07-16부터 지원부 일일점검 저장이 서버에 전혀 남지 않던 급성 장애 수리.\n근본원인: _updateCheckLedger의 props.setProperty(원장 프로퍼티, 개별값 9KB 한도\n근접)가 예외 시 try/catch 없이 그대로 throw → handleSave 전체가 죽어 진짜 원본인\n시트 저장(_writePerRoundRows)까지 통째로 스킵됨(07-16·17 원장·시트 모두 0건,\n서버 어디에도 데이터 없음 확인 — 두 날짜분은 복구 불가). (CLI ad-hoc · 커밋 1a52ef13)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "1a52ef13b74ede7fb1de36ac6f4d02dcb3bee016"
   }
 ]
