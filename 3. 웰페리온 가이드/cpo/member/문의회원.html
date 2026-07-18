@@ -1371,10 +1371,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
           <input class="db-search" id="dbSearch" type="text" placeholder="이름·연락처·프로그램·메모 전체 검색…" autocomplete="off">
           <select class="db-filter" id="dbFilter">
             <option value="">전체 상태</option>
-            <option value="신규">신규</option>
+            <option value="미정">미정</option>
             <option value="컨택중">컨택중</option>
-            <option value="예약">예약</option>
-            <option value="방문">방문</option>
             <option value="SUC">SUC(등록)</option>
             <option value="단기SUC">단기SUC</option>
             <option value="결제완납">결제완납</option>
@@ -1400,7 +1398,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <table class="db-table" id="dbTable">
           <thead>
             <tr>
-              <th style="width:90px">문의일</th>
+              <th style="width:120px">문의일시</th>
               <th style="width:60px">성함</th>
               <th style="width:120px">연락처</th>
               <th style="width:90px">관심 프로그램</th>
@@ -1702,7 +1700,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <table class="reg-table lesson-inq-table">
           <thead>
             <tr>
-              <th class="left" style="width:88px">문의일</th>
+              <th class="left" style="width:112px">문의일시</th>
               <th class="left" style="width:100px">성함</th>
               <th style="width:122px">연락처</th>
               <th style="width:230px">강습종목</th>
@@ -1730,7 +1728,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="reg-table-wrap">
         <table class="reg-table lesson-inq-table">
           <thead><tr>
-            <th class="left" style="width:88px">문의일</th>
+            <th class="left" style="width:112px">문의일시</th>
             <th class="left" style="width:100px">성함</th>
             <th style="width:122px">연락처</th>
             <th style="width:230px">강습종목</th>
@@ -1757,7 +1755,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="reg-table-wrap">
         <table class="reg-table lesson-inq-table">
           <thead><tr>
-            <th class="left" style="width:88px">문의일</th>
+            <th class="left" style="width:112px">문의일시</th>
             <th class="left" style="width:100px">성함</th>
             <th style="width:122px">연락처</th>
             <th id="lessonWaitSportTh_adult" style="width:230px;cursor:pointer;user-select:none" title="클릭하여 종목별 정렬" onclick="_lessonWaitSortToggle('adult')">강습종목</th>
@@ -1874,7 +1872,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <table class="reg-table lesson-inq-table">
           <thead>
             <tr>
-              <th class="left" style="width:88px">문의일</th>
+              <th class="left" style="width:112px">문의일시</th>
               <th class="left" style="width:150px">성함</th>
               <th style="width:122px">연락처</th>
               <th style="width:230px">강습종목</th>
@@ -1902,7 +1900,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="reg-table-wrap">
         <table class="reg-table lesson-inq-table">
           <thead><tr>
-            <th class="left" style="width:88px">문의일</th>
+            <th class="left" style="width:112px">문의일시</th>
             <th class="left" style="width:100px">성함</th>
             <th style="width:122px">연락처</th>
             <th style="width:230px">강습종목</th>
@@ -1929,7 +1927,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="reg-table-wrap">
         <table class="reg-table lesson-inq-table">
           <thead><tr>
-            <th class="left" style="width:88px">문의일</th>
+            <th class="left" style="width:112px">문의일시</th>
             <th class="left" style="width:100px">성함</th>
             <th style="width:122px">연락처</th>
             <th id="lessonWaitSportTh_youth" style="width:230px;cursor:pointer;user-select:none" title="클릭하여 종목별 정렬" onclick="_lessonWaitSortToggle('youth')">강습종목</th>
@@ -4320,14 +4318,17 @@ function _lessonSportChipStyle(sportStr) {
 var LESSON_SPORT_DISPLAY_MAP = {
   '수영':'수영 (개인레슨 / 단체레슨)',
   '필라':'필라테스','필라테스':'필라테스',
-  'WSC수영':'WSC 수영','WSC 수영':'WSC 수영'
+  'WSC수영':'WSC 수영','WSC 수영':'WSC 수영',
+  '뮤지컬':'뮤지컬 (Brad Little Star Academy)',
+  'Swimming':'WSC 수영','swimming':'WSC 수영',
+  'Squash':'WSC 스쿼시','squash':'WSC 스쿼시'
 };
 function _lessonSportDisplay(v){ var k = String(v || '').trim(); return LESSON_SPORT_DISPLAY_MAP[k] || k; }
 // 강습 문의 행 HTML(문의 현황·LOSS 회원 관리 공용) — 상태/담당 편집 셀렉트·CONTACT 편집. 배973.
 function _lessonRowHtml(t, r, sportKey, sportLabel) {
   var mgmt = _lessonSportMgmt(r, sportKey), argSport = encodeURIComponent(sportKey);
   return '<tr data-row-index="' + r.rowIndex + '">' +
-    '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(r.timestamp || '—') + '</td>' +
+    '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(_fmtInqDateTime(r.timestamp)) + '</td>' +
     '<td class="left lesson-inq-cell-name" style="font-weight:700" title="' + esc(r.name || '') + '">' + esc(r.name || '—') + (t === 'youth' && String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
     '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
     '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(_lessonSportDisplay(sportLabel)) + '"><span style="' + _lessonSportChipStyle(sportLabel) + '">' + esc(_lessonSportDisplay(sportLabel)) + '</span></td>' +
@@ -4526,14 +4527,16 @@ function _lessonStatusClass(val) {
 }
 function _lessonStatusSelectHtml(t, rowIndex, sportKey, current) {
   var cur = String(current || '').trim();
-  var stCls = _lessonStatusClass(cur);
+  // 미컨택(빈값·신규·미컨택·미정) = '미정'으로 표시(선택). 저장값은 빈값 유지(백엔드 무변경). 2026-07-18 GM
+  var isUnset = (cur === '' || cur === '신규' || cur === '미컨택' || cur === '미정');
+  var stCls = isUnset ? '' : _lessonStatusClass(cur);
   var opts = LESSON_STATUS_OPTIONS.slice();
-  if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);   // 목록에 없는 기존값도 옵션으로 보존
+  if (!isUnset && opts.indexOf(cur) < 0) opts.unshift(cur);   // 목록에 없는 기존값도 옵션으로 보존
   var argSport = encodeURIComponent(sportKey);
   var html = '<select class="cell-select' + (stCls ? ' ' + stCls : '') + '" style="font-size:12px;padding:2px 6px" onchange="lessonStatusChange(this,\'' + t + '\',' + rowIndex + ',\'' + argSport + '\')">';
-  if (!cur) html += '<option value="" selected>— 미정 —</option>';
+  if (isUnset) html += '<option value="" selected>미정</option>';
   opts.forEach(function(o){
-    html += '<option value="' + esc(o) + '"' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>';
+    html += '<option value="' + esc(o) + '"' + (!isUnset && o === cur ? ' selected' : '') + '>' + esc(o) + '</option>';
   });
   html += '</select>';
   return html;
@@ -6391,7 +6394,7 @@ function saveConsultModal() {
   if (visitedChanged) { payload.visited = visited; if (visited) payload.visitDate = _consultEv.date || ''; }
   // 등록 — 등록 완료면 진행상황 SUC + (새 등록일 때만)등록일자. 방문만(미등록)이면 퍼널 상태 '방문'.
   if (registered && regChanged) { payload.status = 'SUC'; if (!origReg) payload.regDate = regDate; }  // 신규 등록 시에만 전송(불필요 재전송 방지·리뷰 #5)
-  else if (regChanged && origReg) { payload.status = (visited ? '방문' : '예약'); }   // 등록 해제 → 강등(서버가 등록현황에서도 제거)
+  else if (regChanged && origReg) { payload.status = '미정'; }   // 등록 해제 → 강등(미정). 방문여부는 visited 플래그가 별도 추적 · 퍼널 상태는 예약/방문 아님. 2026-07-18 GM
   if (regProgramChanged) payload.regProgram = regProgram;   // 등록 종목 — 등록 완료 상태에서만 전송(문의 시 관심프로그램과 별개). 2026-07-18 시토(GM요청) 대행.
   // 방문 완료는 독립 ✓플래그(payload.visited)로만 기록 — 진행상황(가망·컨택중 등 퍼널 단계)은 건드리지 않음. 2026-06-29 시포(리뷰 #2)
   // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
@@ -6982,7 +6985,7 @@ var dbRows = [];         // 현재 로드된 행 배열
 var dbSaveTimer = null;  // 디바운스 타이머 (셀 자동저장용)
 
 // 실무진 실제 사용 코드 (2026-06-20 GM 확정). 등록=SUC, 이탈=LOSS 등 시트 어휘 그대로.
-var STATUS_OPTIONS = ['신규','컨택중','가망','예약','방문','SUC','단기SUC','LOSS'];
+var STATUS_OPTIONS = ['미정','컨택중','가망','SUC','단기SUC','LOSS'];   // 신규·예약·방문 제거→미정(첫). 예약/방문은 달력 예약종류이지 진행상황 아님. 2026-07-18 GM
 // 관심 프로그램 = 4종 축약(노블레스/플래티넘/±골프). 상세설명 괄호 제거. 2026-07-08 시포·GM
 var PROGRAM_OPTIONS = ['노블레스', '플래티넘', '노블레스+골프', '플래티넘+골프'];
 // 저장값(구 상세 라벨 포함)을 4종 표시로 정규화 — 표시만 축약, 저장값 보존. 알 수 없는 값은 원본 유지. 2026-07-08 시포·GM
@@ -7005,6 +7008,7 @@ function buildSelect(field, options, current) {
   sel.dataset.field = field;
   var opts = options.slice();
   var cur = current || '';
+  if (field === 'status') cur = _memStatusDisplay(cur);   // 레거시 신규/예약/방문/빈값 → '미정' 선택(옵션에 존재)
   if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);
   opts.unshift('');
   opts.forEach(function(o){
@@ -7017,11 +7021,32 @@ function buildSelect(field, options, current) {
   return sel;
 }
 var STATUS_CLASS   = {
-  '신규':'new','컨택중':'contact','예약':'reserved','방문':'visited',
+  '미정':'new','컨택중':'contact',
   'SUC':'joined','단기SUC':'joined','LOSS':'lost',
-  // 과거값 호환(표시용)
+  // 과거값 호환(표시용) — 신규/예약/방문은 _memStatusDisplay가 '미정'으로 정규화되어 여기 키 불필요
   '응대':'contact','가입':'joined','이탈':'lost','보류':'hold','키오스크 완':'joined'
 };
+// 진행상황 표시 정규화 — 레거시 신규/예약/방문/빈값을 '미정'으로 표시(저장값과 별개·표시 전용). 2026-07-18 GM.
+function _memStatusDisplay(v){ var s = String(v == null ? '' : v).trim(); return (s === '' || s === '신규' || s === '예약' || s === '방문' || s === '미정') ? '미정' : s; }
+// 문의일시 표시 — 원본에 시:분이 있으면 'YYYY-MM-DD HH:MM', 없으면 날짜만(00:00 조작 금지). 2026-07-18 GM.
+function _fmtInqDateTime(v){
+  if (v == null || v === '') return '—';
+  var pad = function(n){ return ('0' + n).slice(-2); };
+  var d = null;
+  if (v instanceof Date) { d = v; }
+  else { var s0 = String(v).trim(); if (/\d{4}-\d{1,2}-\d{1,2}[T ]\d{1,2}:\d{2}/.test(s0)) { var dd = new Date(s0.replace(' ', 'T')); if (!isNaN(dd.getTime())) d = dd; } }
+  if (d && !isNaN(d.getTime())) {
+    var base = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    var hh = d.getHours(), mm = d.getMinutes();
+    return (hh || mm) ? (base + ' ' + pad(hh) + ':' + pad(mm)) : base;
+  }
+  var s = String(v).trim();
+  var dm = s.match(/(\d{4})[.\-\/]\s*(\d{1,2})[.\-\/]\s*(\d{1,2})/);
+  var dstr = dm ? (dm[1] + '-' + ('0' + dm[2]).slice(-2) + '-' + ('0' + dm[3]).slice(-2)) : s;
+  var tm = s.match(/\b(\d{1,2}):(\d{2})\b/);
+  if (tm) { var h = parseInt(tm[1], 10), mi = tm[2]; if (!(h === 0 && mi === '00')) return dstr + ' ' + ('0' + tm[1]).slice(-2) + ':' + tm[2]; }
+  return dstr;
+}
 
 // ── 멤버십 문의목록 캐시(배1037 D4 · stale-while-revalidate). ──
 var _DB_CACHE_KEY = 'cpo_iq_db_cache_v1';
@@ -7120,7 +7145,7 @@ function _dbFilteredRows() {
   var _TERMINAL = ['SUC','단기SUC','결제완납'];   // LOSS는 진행중만 보기에서도 노출(재등록 대응 대상). 2026-07-08 시포·GM
   var searchDigits = search.replace(/\D/g, '');   // 연락처 숫자만 매칭용(하이픈·공백 무시). 2026-07-02 시포(GM)
   return dbRows.filter(function(row){
-    var matchStatus = !filter || row.status === filter;
+    var matchStatus = !filter || _memStatusDisplay(row.status) === filter;   // '미정' 필터=레거시 신규/예약/방문/빈값 포함
     var matchSearch = true;
     if (search) {
       // 전체 항목 검색 — 이름·연락처·프로그램·상태·채널·담당·메모·Contact·일정 전부. 2026-07-02 시포(GM)
@@ -7473,13 +7498,13 @@ function buildDbRow(row, isNew) {
   tr.dataset.rowIndex = row.rowIndex || '';
   if (isNew) tr.classList.add('editing');
 
-  var statusCls = STATUS_CLASS[row.status] || 'new';
+  var statusCls = STATUS_CLASS[_memStatusDisplay(row.status)] || 'new';
   if (row.status === 'SUC' || row.status === '단기SUC') tr.classList.add('row-registered');  // 등록 회원 금색 강조
 
-  // ── 문의일 (읽기 전용) — 맨 앞 (2026-06-24 GM) ──
+  // ── 문의일시 (읽기 전용) — 맨 앞 (2026-06-24 GM · 시:분 표시 2026-07-18 GM) ──
   var tdTs = document.createElement('td');
   tdTs.style.fontSize = '12px'; tdTs.style.color = 'var(--dim)';
-  tdTs.textContent = row.timestamp || '—';
+  tdTs.textContent = _fmtInqDateTime(row.timestamp);
   tr.appendChild(tdTs);
 
   // ── 성함 ── (영문 탭 병합 행은 EN 뱃지 — 영어 문의 누수 수리, 2026-07-09 시포·GM)
@@ -7516,7 +7541,7 @@ function buildDbRow(row, isNew) {
   var statusUnfilled = _isStatusUnfilled(row.status);   // 빈값(미입력) 강조 — 배4, 2026-07-07 시포·GM
   var chip = document.createElement('span');
   chip.className = 'status-chip ' + statusCls + (statusUnfilled ? ' status-chip-unfilled' : '');
-  chip.textContent = row.status || '신규';
+  chip.textContent = _memStatusDisplay(row.status);
   tdStatus.appendChild(chip);
   if (statusUnfilled) {
     var utag = document.createElement('span');
@@ -7603,7 +7628,7 @@ function _saveCell(rowIndex, patch) {
     name:     r.name    || '',
     phone:    r.phone   || '',
     program:  r.program || '',
-    status:   r.status  || '신규',
+    status:   r.status  || '미정',
     channel:  r.channel || '',
     owner:    r.owner   || '',
     memo:     r.memo !== undefined ? r.memo : '',
@@ -7679,11 +7704,11 @@ function _activateCellSelect(td, row, field, options) {
     td.classList.remove('cell-active');
     td.innerHTML = '';
     if (field === 'status') {
-      var cls = STATUS_CLASS[newVal] || 'new';
+      var cls = STATUS_CLASS[_memStatusDisplay(newVal)] || 'new';
       var stUnfilled = _isStatusUnfilled(newVal);
       var chip = document.createElement('span');
       chip.className = 'status-chip ' + cls + (stUnfilled ? ' status-chip-unfilled' : '');
-      chip.textContent = newVal || '신규';
+      chip.textContent = _memStatusDisplay(newVal);
       td.appendChild(chip);
       if (stUnfilled) {
         var utag2 = document.createElement('span');
@@ -7847,7 +7872,7 @@ function addNewRow() {
   var emptyRow = tbody.querySelector('tr td[colspan]');
   if (emptyRow) emptyRow.closest('tr').remove();
 
-  var tempRow = { rowIndex: 0, name:'', phone:'', program:'', status:'신규', channel:'', owner:'', memo:'', timestamp:'', tourDate:'' };
+  var tempRow = { rowIndex: 0, name:'', phone:'', program:'', status:'미정', channel:'', owner:'', memo:'', timestamp:'', tourDate:'' };
   var tr = buildNewInputRow(tempRow);
   tbody.insertBefore(tr, tbody.firstChild);
   dbNewRowTr = tr;
@@ -7898,7 +7923,7 @@ function buildNewInputRow(row) {
   STATUS_OPTIONS.forEach(function(opt){
     var o = document.createElement('option');
     o.value = opt; o.textContent = opt;
-    if (opt === '신규') o.selected = true;
+    if (opt === '미정') o.selected = true;   // 신규 문의 기본=미정(신규 제거). 2026-07-18 GM
     selStatus.appendChild(o);
   });
 
@@ -7945,7 +7970,7 @@ function submitNewRow(tr) {
     name:      fields.name    || '',
     phone:     fields.phone   || '',
     program:   fields.program || '',
-    status:    fields.status  || '신규',
+    status:    fields.status  || '미정',
     channel:   fields.channel || '유선전화',
     owner:     fields.owner   || '',
     memo:      fields.memo    || '',
