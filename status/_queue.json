@@ -3058,5 +3058,34 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UeLMffdqSq1vBkGxKuzPhk (CLI ad-hoc · 커밋 227649a0)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "227649a039fea8cc9b7b293f91f148e583b6e2d4"
+  },
+  {
+    "task_id": "COO-2026-07-18-ADHOC-1f84cbfa",
+    "clevel": "coo",
+    "title": "[시우] 헌법한장 단순화(칸 밸런스)+공통헌법 JSON 인라인(약속·재발방지·공식값 단일소스) — S2 링크 1개 정리 (GM)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 9055,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01HFwxwddx6Z1nhzHGL1nj4H (CLI ad-hoc · 커밋 1f84cbfa)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "1f84cbfad30b5637576a0353a33180d945b64678"
+  },
+  {
+    "task_id": "CPO-2026-07-18-MEMBER-SPEC-REMAINDER",
+    "clevel": "cpo",
+    "module": "member-mgmt",
+    "title": "[시포] 회원관리 GM검수 잔여 4건 — 읽기전용라벨정정·성인수영부활(유소년방어)·문의일시통일·담당자배정스코프",
+    "status": "PENDING",
+    "processed_at": null,
+    "priority": "⛴️",
+    "enqueued_at": "2026-07-18",
+    "ship_no": 9056,
+    "note": "GM 검수 결과 잔여 4건 (2026-07-18, 항목1·2 대부분은 이미 반영·이건 잔여만). ① [D1] 유효회원 표 라벨 \"읽기전용\"→\"편집가능\"으로 정정(동작=더블클릭 인라인편집+재등록/이탈모달 유지, ~1577행 \"유효회원 시트 · 읽기전용 · 연락처 표시\"). ② [D3] 성인 수영 표기 부활: 표시맵 수영→\"성인 수영 (개인레슨 / 단체레슨)\"로. 단 유소년(t==youth) 행엔 \"성인\" 미표기(07-18 7c88aa46 유소년 오표기 방지 유지)→_lessonSportDisplay/렌더 컨텍스트 분기. ③ 잔여 \"문의일\" 라벨 2곳(등록현황 reg-table ~2037·2092행): 문의일시로 통일 or 등록일 성격이면 판단 후 정리. ④ 담당자 배정 스코프 명확화: \"웰페리온 유효회원 종목별 담당자 배정만\"으로 안내문·동작 정리 + 신규 멤버십 등록현황 카드 월단위 기본 + 담당자 손쉬운 배정 UX. [D2] 대기자/LOSS 카드=현행 유지(삭제 금지·진입점 보존, GM 확정). 완료시 시크릿 라이브검증 후 웰리 대조.",
+    "next": null,
+    "depends_on": null,
+    "surface": "3. 웰페리온 가이드/cpo/member/문의회원.html"
   }
 ]
