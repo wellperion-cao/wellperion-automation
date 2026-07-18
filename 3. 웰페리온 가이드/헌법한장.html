@@ -128,6 +128,39 @@
     td.role-cell .rname{font-size:13px;}
     table.matrix th, table.matrix td{padding:6px 7px;}
   }
+  /* ── ▶ C레벨 행 접기/펼치기 (progressive disclosure · 기본 접힘 · 요약 줄만 · 2026-07-18) ── */
+  .crow-toggle{background:var(--surface); color:var(--accent-soft); border:1px solid var(--border-strong); border-radius:6px; font-size:11px; line-height:1; padding:3px 7px; cursor:pointer; flex:none;}
+  .crow-toggle:hover{border-color:var(--accent); color:var(--text);}
+  .crow-toggle.open{color:var(--dim); margin-bottom:5px;}
+  td.role-summary-cell{cursor:pointer; padding:9px 12px !important; white-space:normal !important; position:sticky; left:0;}
+  td.role-summary-cell:hover{background:var(--surface);}
+  tr.role-gm td.role-summary-cell:hover{background:rgba(184,134,11,0.22);}
+  .role-summary-line{display:flex; flex-wrap:wrap; align-items:center; gap:5px 9px;}
+  .role-summary-cell .crow-toggle{color:var(--dim);}
+  .role-summary-cell .ricon{font-size:16px;}
+  .role-summary-cell .rname{font-weight:800; font-size:14px;}
+  .role-summary-cell .rtitle{font-size:11px; color:var(--dim);}
+  .crow-role{font-size:12px; color:var(--text-soft); max-width:44ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .crow-prod{font-size:11px; color:var(--dim); display:inline-flex; flex-wrap:wrap; align-items:center; gap:4px;}
+  .crow-prodseg{font-size:10px; font-weight:700; border-radius:20px; padding:1px 7px; white-space:nowrap;}
+  .crow-prodseg.auto{color:#8fd89e; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
+  .crow-prodseg.mech{color:var(--accent-soft); background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.32);}
+  .crow-prodseg.semi{color:#7ac4f0; background:rgba(122,196,240,0.14); border:1px solid rgba(122,196,240,0.35);}
+  .crow-prodseg.propose{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
+  .crow-prodseg.manual{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  @media (max-width:640px){ .crow-role{max-width:26ch;} }
+  @media print{
+    td.role-summary-cell{position:static !important; background:#f4f4f4 !important; color:#111 !important;}
+    .crow-toggle{display:none !important;}
+    .role-summary-cell .rname, .role-summary-cell .rtitle, .crow-role{color:#111 !important;}
+    .crow-prod{color:#333 !important;}
+    .crow-prodseg{border-width:1px !important;}
+    .crow-prodseg.auto{color:#1a6b34 !important; background:#e8f6ec !important;}
+    .crow-prodseg.mech{color:#4a2a91 !important; background:#efe8fb !important;}
+    .crow-prodseg.semi{color:#1b4f72 !important; background:#e8f3fb !important;}
+    .crow-prodseg.propose{color:#9c1c74 !important; background:#fbe6f3 !important;}
+  }
+
   /* ── 편집 모드 ── */
   .ebtn{font-size:11px; padding:3px 11px; border-radius:7px; cursor:pointer; margin-left:6px;}
   .ebtn.edit{background:var(--surface); color:var(--accent-soft); border:1px solid var(--accent);}
@@ -444,6 +477,8 @@
   var _colHidden = [false, false, false];
   var _compact = false;
   var _ctrlBound = false;
+  var _collapsed = {};          // role.id → true(접힘)/false(펼침). 기본(미지정)=접힘. progressive disclosure(2026-07-18)
+  var _forcePrintExpand = false; // 인쇄 시엔 전체 펼침(A3 인쇄 가독 보존) — beforeprint/afterprint 토글
 
   // 뷰어 로컬(=GM 기준 KST) 오늘 날짜 YYYY-MM-DD
   function localToday(){
@@ -736,6 +771,51 @@
     return '<div class="prod-cell">' + lab + items + '</div>';
   }
 
+  // ── ▶ progressive disclosure: 접힘 판정 · 요약 줄 조립(신규 fetch 없음 · 이미 로드된 데이터만) ──
+  //   기본 접힘 · 편집 모드/인쇄 시엔 전체 펼침.
+  function isCollapsed(role){
+    if(_editMode || _forcePrintExpand) return false;
+    return _collapsed[role.id] !== false;
+  }
+  // 역할 한 줄(짧게) — ownership_map.domain 우선, 없으면 북극성(dims[0]) 첫 줄.
+  function roleOneLiner(role){
+    var o = (_ownershipData && _ownershipData[role.id]) || null;
+    if(o && o.domain) return o.domain;
+    var d = (role.dims) || [];
+    var raw = String(d[0] == null ? '' : d[0]);
+    return (raw.split(/\n+/)[0] || '').trim();
+  }
+  // 🏭 제품화 요약 배지 — 이미 로드된 _prodByRole 그룹에서 autonomy 집계(새 fetch 금지). 모듈 없으면 빈 문자열.
+  function prodSummary(role){
+    var arr = (_prodByRole && _prodByRole[role.id]) || null;
+    if(!arr || !arr.length) return '';
+    var order = ['auto','mech','semi','propose','manual'];
+    var cnt = {};
+    arr.forEach(function(m){ var k = m.autonomy || 'manual'; cnt[k] = (cnt[k] || 0) + 1; });
+    var segs = order.filter(function(k){ return cnt[k]; }).map(function(k){
+      var mt = PROD_MAT[k] || ['manual','⚪ ' + k];
+      return '<span class="crow-prodseg ' + k + '">' + mt[1].replace(/\s/, '') + ' ' + cnt[k] + '</span>';
+    });
+    return '<span class="crow-prod" title="제품화 성숙도 집계 · status/module_registry.json">🏭 모듈 ' + arr.length + '개 · ' + segs.join('') + '</span>';
+  }
+  // 접힌 행 = colspan 4 요약 줄 하나(항상 보임). 셀 전체 클릭 = 펼치기.
+  function summaryCell(role, ac){
+    var oneL = roleOneLiner(role);
+    return '<td colspan="4" class="role-summary-cell" style="border-left:4px solid ' + esc(ac) + ';" ' +
+             'onclick="window._toggleRole(\'' + esc(role.id) + '\')" title="펼치기">' +
+      '<div class="role-summary-line">' +
+        '<span class="crow-toggle" aria-hidden="true">▶</span>' +
+        '<span class="ricon">' + esc(role.icon) + '</span>' +
+        '<span class="rname" style="color:' + esc(ac) + ';">' + esc(role.name) + '</span>' +
+        '<span class="rtitle">' + esc(role.title) + '</span>' +
+        (role.draft ? '<span class="rdraft">🔖 초안</span>' : '') +
+        (oneL ? '<span class="crow-role">— ' + esc(oneL) + '</span>' : '') +
+        prodSummary(role) +
+        statusBadge(reachStatus(role)) +
+      '</div>' +
+    '</td>';
+  }
+
   // 🏷️ 정직 상태 배지(3종 단일 판정 · A3 인쇄 카드용 · 2026-07-04) — 신규 fetch 없음, 기존 _reachData만 사용.
   //   ✅measured = reach 실측(mode=measured & reach_pct 숫자) · 🔖draft = 마일스톤/제안본(mode=milestone, role.draft 있으면 우선) ·
   //   🔧unmeasured = 그 외(reach null·미설정). 가짜 숫자 금지(약속 L05) — 판정 자체가 정직 표기 그대로.
@@ -764,6 +844,11 @@
     body.innerHTML = roles.map(function(role){
       var ac = role.accent || 'var(--accent)';
       var gm = role.id === 'gm';
+      // 접힘(기본) = 요약 줄 하나만. 펼침 = 기존 3칸 상세.
+      if(isCollapsed(role)){
+        return '<tr data-role="' + esc(role.id) + '" class="' + (gm ? 'role-gm ' : '') + 'crow-collapsed">' +
+          summaryCell(role, ac) + '</tr>';
+      }
       // 칸1 목표·지표 = 🌟북극성(dims[0]·편집) → 🌟북극성 지도·도달율(축별 실측+커버리지, 병합) → 📊담당 KPI 지표 정의(읽기전용)
       //   → 작업 처리율(보조·강등) → 📍진행현황 → 🌅오늘 추천.
       // 2026-07-07 GM승인: 🗺️북극성 지도 + 🌟북극성 도달율 두 블록을 northStarBlock() 하나로 병합(축 값 이중나열 제거).
@@ -784,8 +869,11 @@
           }).join('') + '</div>';
       }
       var c3 = '<td>' + ownershipBlock(role) + owns + chans + prodBlock(role) + incidentsBlock(role) + ideasBlock(role) + '</td>';
-      return '<tr data-role="' + esc(role.id) + '" class="' + (gm ? 'role-gm' : '') + '">' +
+      // 펼침 행: 역할 셀 상단에 접기 토글(▼). 편집 모드에선 토글 숨김(전체 펼침 고정).
+      var toggleBtn = _editMode ? '' : '<button class="crow-toggle open" onclick="window._toggleRole(\'' + esc(role.id) + '\')" title="접기" aria-label="접기">▼ 접기</button>';
+      return '<tr data-role="' + esc(role.id) + '" class="' + (gm ? 'role-gm ' : '') + 'crow-open">' +
         '<td class="role-cell" style="border-left:4px solid ' + esc(ac) + ';">' +
+          toggleBtn +
           '<div class="ricon">' + esc(role.icon) + '</div>' +
           '<div class="rname" style="color:' + esc(ac) + ';">' + esc(role.name) + (role.draft ? '<span class="rdraft">🔖 초안</span>' : '') + '</div>' +
           '<div class="rtitle">' + esc(role.title) + '</div>' +
@@ -913,6 +1001,15 @@
   }
 
   window._matrixEdit = function(){ setEdit(true); };
+  // ▶ 개별 C레벨 접기/펼치기 토글(아코디언 아님 · 각자 독립). 데이터 무변경 · 표현만 재렌더.
+  window._toggleRole = function(id){
+    _collapsed[id] = !(_collapsed[id] !== false);
+    renderMatrix();
+    applyViewState();
+  };
+  // 인쇄 시엔 전체 펼침 → A3 인쇄 가독 보존(화면 접힘과 무관).
+  window.addEventListener('beforeprint', function(){ _forcePrintExpand = true; renderMatrix(); applyViewState(); });
+  window.addEventListener('afterprint',  function(){ _forcePrintExpand = false; renderMatrix(); applyViewState(); });
   function fetchMatrix(){
     // 최신 보장: GAS read_file(GitHub API 직독·CDN 캐시 없음) → 실패 시 Pages 폴백
     return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
