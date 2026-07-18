@@ -53,7 +53,7 @@ RECENT_LEDGER_DAYS = 5  # 반복감지·미해결추적용으로 프롬프트에
 # env로 오버라이드 가능한 상수만 최소 복사.
 FUNNEL_EXEC_URL = os.environ.get(
     "FUNNEL_EXEC_URL",
-    "https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec",
+    "https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec",
 )
 # VOC·종합접수처 GAS(.deploy-voc/VOC_배포.js) — telegram_bot/daily_scheduler.py VOC_EXEC_URL과 동일 정본
 # (reg_list=6종 접수 카테고리: 분실물/시설물고장/청결/칭찬/쓴소리/컴플레인 통합).

@@ -115,7 +115,7 @@ _VOC_DIAG_URL = (
 )
 _FUNNEL_DIAG_URL = (
     "https://script.google.com/macros/s/"
-    "AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec"
+    "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec"
 )
 _CHECK_DIAG_URL = (
     "https://script.google.com/macros/s/"

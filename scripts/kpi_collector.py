@@ -83,7 +83,7 @@ _CHECK_GAS = (
 # 회원 문의/이탈 GAS (문의회원.html과 동일 정본 — cpo_churn_stats 등)
 _CPO_GAS = (
     "https://script.google.com/macros/s/"
-    "AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec"
+    "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec"
 )
 # 매출·업무 메가 GAS (.deploy-todo/업무&결재 현황.js — 월간운영계획.html·헌법한장.html과 동일 정본)
 # action=sales_monthly → '26년 매출 분석' AV3:AV14 미러(회사 전체 월별 마감 총매출). cao 인증 배포 완료(배354 phase1, 커밋 859a6bfa) — 신규 배포 불필요.

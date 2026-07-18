@@ -44,7 +44,7 @@ STATE_FILE = REPO_ROOT / "status" / "cpo_report_state.json"
 # 문의회원 데이터 GAS 엔드포인트 — daily_scheduler.py FUNNEL_EXEC_URL 과 동일(SSOT).
 FUNNEL_EXEC_URL = (
     "https://script.google.com/macros/s/"
-    "AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec"
+    "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec"
 )
 
 _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]

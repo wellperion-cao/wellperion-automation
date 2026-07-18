@@ -25,7 +25,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 # Funnel GAS webapp exec URL (scripts/telegram_health_check.py _FUNNEL_DIAG_URL 동일 소스)
 FUNNEL_EXEC_URL = (
     "https://script.google.com/macros/s/"
-    "AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec"
+    "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec"
 )
 
 # FORM_SHEETS (Survey.js 정본과 동기) — gid = 폼 응답탭

@@ -99,7 +99,7 @@ BRIEFS_DIR = _REPO_ROOT / "status" / "briefs"
 
 GAS_URL = (
     "https://script.google.com/macros/s/"
-    "AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec"
+    "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec"
 )
 
 OFFICIAL_ACCOUNT = "wellperion"  # 공식 계정 리터럴 — 정확 일치만 포함(namuk.wellperion 등 개인 계정 자동 배제).

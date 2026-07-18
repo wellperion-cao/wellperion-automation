@@ -815,7 +815,7 @@
   /* 💬 신규 문의 — 이번 달 문의 건수(문의 퍼널 SSOT survey GAS). 카운트만, 개인정보 미표시.
      1차 period_breakdown(재배포 후) → 실패 시 inquiry_list 이번달 카운트(현행 배포로 즉시 동작). 둘 다 실패 시 "—". */
   (function loadErpInquiry(){
-    var SURVEY_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+    var SURVEY_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
     function set(id, v){ var el = document.getElementById(id); if (el) el.textContent = v; }
     function curYM(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
     function fallbackList(){
@@ -848,7 +848,7 @@
      총 = 올해 1/1 이후 생성 건 기준 / 일일 = 오늘 생성 또는 오늘 완료 건. */
   (function loadHomeKpiOps(){
     var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
-    var SURVEY_URL   = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+    var SURVEY_URL   = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
     var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'];
     var _aiOwnerRe = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
 
@@ -1080,7 +1080,7 @@
     //   소스: cpo/member/문의회원.html §1 KPI가 쓰는 동일 GAS 액션(lesson_stats, type=성인강습/유소년강습,
     //   scope 미지정=연도 스코프)으로 통일 — gviz 어댑터 전량 제거(사문화 대비 원본은 git 이력으로 롤백 가능).
     (function loadLessonInqKpi(){
-      var SURVEY_URL = 'https://script.google.com/macros/s/AKfycbzdwSCCSSJ6JXLDoWuo7HG0JmBM2iy10TujFQ_O5JbTjnWaN7gOk-ddA4IAvsNfelg0xA/exec';
+      var SURVEY_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
       function set(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
       function fetchStats(type) {
         return fetch(SURVEY_URL + '?action=lesson_stats&type=' + encodeURIComponent(type) + '&_pv=' + Date.now(), { redirect:'follow' })
