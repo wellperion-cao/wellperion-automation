@@ -154,7 +154,7 @@
   .task-card:last-child{border-bottom:none}
   .task-card:hover{background:rgba(183,159,138,0.04)}
   /* G1 task-card 안에서만 적용 (acc-list 등 타 카드 충돌 방지 — id=today-task-list 스코프) */
-  #today-task-list .task-card{padding:14px 16px;border-bottom:1px solid rgba(61,56,53,0.4);border-radius:0;margin:0;box-shadow:none;border-left:none;border-top:none;border-right:none;}
+  #today-task-list .task-card{padding:17px 16px;border-bottom:1px solid rgba(61,56,53,0.28);border-radius:0;margin:0;box-shadow:none;border-left:none;border-top:none;border-right:none;line-height:1.55;}
   #today-task-list .task-card:first-child{border-top:1px solid rgba(61,56,53,0.4);}
   #today-task-list .task-card:hover{background:rgba(183,159,138,0.04);box-shadow:none;}
   /* toggle-arrow */
@@ -170,8 +170,11 @@
   .gm1-chip.status-hold{background:var(--warn-bg,rgba(183,159,138,0.12));color:var(--accent);}
   .gm1-chip.date{background:var(--accent-bg);color:var(--accent);cursor:pointer;}
   .gm1-chip.date:hover{background:rgba(183,159,138,0.25);}
-  .gm1-chip.ssot{background:rgba(126,87,194,0.15);color:#7e57c2;}
+  .gm1-chip.ssot{background:rgba(126,87,194,0.1);color:#7e57c2;opacity:0.6;font-size:9.5px;padding:1px 6px;}
   .gm1-chip.log{background:rgba(126,87,194,0.13);color:#7e57c2;}
+  /* 밀도 완화 — 예정 항구/입항 라인 줄간격·여백 확대, 카테고리·SSOT 태그 흐리게 (2026-07-18) */
+  #today-task-list .gm1-wait-line,#today-task-list .gm1-done-line{padding:11px 0!important;line-height:1.5;}
+  #today-task-list .gm1-tag-faint{opacity:0.62;}
   /* action-btn: 업무현황 SSOT 동일 */
   .gm1-action-btn{font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid;font-weight:600;transition:opacity 0.15s;white-space:nowrap;}
   .gm1-action-btn:hover{opacity:0.8;}
@@ -5072,6 +5075,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <button type="button" id="gm1-view-btn-status" class="gm1-view-btn" role="tab" aria-selected="true" style="border:none;border-radius:8px;padding:6px 14px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;background:var(--accent);color:#fff;">🧭 상태별</button>
         <button type="button" id="gm1-view-btn-northstar" class="gm1-view-btn" role="tab" aria-selected="false" style="border:none;border-radius:8px;padding:6px 14px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;background:transparent;color:var(--text);">🗺️ 북극성별</button>
       </div>
+      <!-- 🟢 순항 중 — 안심 요약 한 줄. 경보(⚠️ 주의 신호)보다 먼저 노출. 긍정 프레이밍(자율 시스템 정상). 표현 전용·기존 계산값 재사용 (2026-07-18) -->
+      <div id="gm1-cruise-summary" style="margin:6px 0 10px;"></div>
       <!-- ⚠️ 주의 신호 — 지금 GM이 행동할 신호(승인·대조)만 라이브 표시. 내부 운영신호(미푸시 등)는 금지(약속 L10). 2026-06-17 -->
       <div id="gm1-alert-signal" style="margin:6px 0 14px;"><div style="color:var(--dim);font-size:13px;">신호 확인 중…</div></div>
       <div id="today-task-list">
@@ -8470,6 +8475,11 @@ function crTab(btn, panelId) {
     var gm1SsotItems = [];   // SSOT(구글시트)에서 읽어온 GM 본인·결재 차례 항목 (항상 최신)
     var gm1InProgressCount = 0;   // 🚢 진행·상시 미션(_queue IN_PROGRESS) 개수 — 항로 제외·자율현황 위임 안내용 (2026-07-15 배237)
     var gm1ParkedCount = 0;       // ⚓ 정박·대기(_queue surface==autonomy) 개수 — 항로 대기 섹터 제외·자율현황 위임 안내용 (2026-07-15 배237)
+    // ── 🟢 순항 중 안심 요약용 공유 카운트 (표현 전용 · 기존 계산값 재사용 · 새 fetch 금지 · 2026-07-18) ──
+    //   gm1RenderToday(동기)에서 gmAppr·waitCount, gm1RenderAlertSignal(비동기 fetch)에서 reviewWait 채운 뒤 각자 gm1RenderCruiseSummary() 호출.
+    var gm1CruiseGmAppr = 0;       // GM이 지금 결재할 차례(apprGmTotal)
+    var gm1CruiseWaitCount = 0;    // 항로 대기(예정 항구 PENDING) 수
+    var gm1CruiseReviewWait = null; // 검수 승인대기(리뷰큐) 수 — null=아직 미도착
     var gm1CatFilter = { '업무':true, '결재':true, '기획':true, '개인':true };  // 분류 필터 체크 상태
     // 업무SSOT 이식 — 정렬·검색 상태 (2026-06-01) · 담당자 필터/정렬 UI 死코드 제거(2026-06-02 GM 단독 페이지)
     var gm1SortBy      = '최신순';  // '최신순' | '카테고리' | '시작일순'
@@ -9159,6 +9169,9 @@ function crTab(btn, panelId) {
       active = active.filter(function(t){ return catOf(t) !== '결재'; });
       var apprGmTotal = apprWait.length + apprActiveGm.length;   // GM이 지금 결재할 차례
       var apprInflightTotal = apprInflight.length;               // 결재 진행 중(부서장·대표 대기)
+      // 🟢 순항 요약 공유값 갱신(표현 전용·기존 계산 재사용) — 렌더 후 gm1RenderCruiseSummary 호출
+      gm1CruiseGmAppr = apprGmTotal;
+      gm1CruiseWaitCount = waiting.length;
 
       // ══ 도구 바 — 검색 input 포함 영역은 최초 1회만 생성(재렌더 시 손대지 않음 → IME 조합 유지) ══
       if (!document.getElementById('gm1-search')) {
@@ -9210,7 +9223,7 @@ function crTab(btn, panelId) {
       //   status==IN_PROGRESS 개수(gm1InProgressCount)를 안내 한 줄로 대체(하드코딩 목록 없음·라이브 자동 정합).
       if (gm1InProgressCount) {
         html += '<a href="자율현황.html#sec-active-missions" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(167,139,218,0.35);border-radius:10px;background:rgba(167,139,218,0.07);text-decoration:none;flex-wrap:wrap;">';
-        html += '<span style="flex:1;font-size:13.5px;font-weight:700;color:#a78bda;">🚢 진행·상시 미션 ' + gm1InProgressCount + '건 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 각 AI가 지금 굴리는 지속 시스템은 항로 대신 자율현황에서 관리</span></span>';
+        html += '<span style="flex:1;font-size:13.5px;font-weight:700;color:#a78bda;">🚢 지금 굴러가는 것 — 상시 자동 ' + gm1InProgressCount + '건 <span style="font-size:11px;font-weight:400;color:var(--dim);">(각 AI가 자율현황에서 관리 · 오늘 신규 진행 배는 아래)</span></span>';
         html += '<span style="font-size:12px;color:#a78bda;font-weight:600;">자율현황에서 관리 →</span>';
         html += '</a>';
       }
@@ -9333,16 +9346,19 @@ function crTab(btn, panelId) {
 
 
       if (!active.length) {
-        html += '<div style="color:var(--dim);font-size:13px;padding:12px 0;">오늘 진행 중인 항목이 없습니다.</div>';
+        html += '<div style="color:var(--dim);font-size:13px;padding:12px 0;">' +
+          (gm1InProgressCount
+            ? '오늘 새로 시작한 진행 배는 없음 — 상시 자동 ' + gm1InProgressCount + '건은 위 🚢 참조.'
+            : '오늘 진행 중인 항목이 없습니다.') + '</div>';
       }
 
       // ── 완료 라인 렌더 헬퍼 (오늘 입항·지난 입항 공통) ──
       function _gm1DoneLineHtml(t, showDate){
         var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
         var dateChip = (showDate && t._doneDate) ? '<span style="color:var(--dim);font-size:10.5px;margin-left:6px;">' + gm1Esc(String(t._doneDate).slice(5)) + ' 입항</span>' : '';
-        return '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
+        return '<div class="gm1-done-line" style="border-bottom:1px dashed var(--border);">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-          '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="display:inline-block;background:rgba(100,180,120,0.13);color:var(--green);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">✅ 완료</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + dateChip + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
+          '<span><span style="color:var(--green);font-weight:700;">✓</span> <span style="display:inline-block;background:rgba(100,180,120,0.13);color:var(--green);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">✅ 완료</span><span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + dateChip + (t.ssotAuto ? '<span class="gm1-tag-faint">' + catChip(t) + SSOT_BADGE + '</span>' : '') + '</span>' +
           // AI 배(queueSource)는 _queue 정본이라 G1서 복원 불가 → 버튼 숨김(무반응 방지). 시트 항목만 복원.
           (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" title="진행 중으로 되돌리기" style="font-size:11px;padding:2px 8px;flex-shrink:0;">↩ 복원</button>') +
           '</div>' + descHtml + '</div>';
@@ -9369,26 +9385,45 @@ function crTab(btn, panelId) {
       }
 
       // ⚓ 예정 항구 (대기 = PENDING) — 다음에 집을 배. 진행중과 입항완료 사이 표시 (GM 2026-06-13 A안)
+      // ── 📅 '언제' 배지 — 대기 배의 예정 시점을 note/next(=description)·제목에서 추출해 한눈 스캔. 없으면 배지 생략(표현 전용·데이터 무변경 2026-07-18) ──
+      function _gm1WhenBadge(t){
+        var s = String(t.description || '') + ' ' + String(t.title || '');
+        if (/막힘|차단|blocked|의존\s*대기|보류\s*대기/i.test(s)) return { e:'⛔', t:'막힘', c:'#c0483f', bg:'rgba(192,72,63,0.12)' };
+        if (/GM\s*(액션|지시|승인|결재|회신|답변|확인|결정)|GM\s*게이트/i.test(s)) return { e:'👉', t:'GM 액션', c:'#e8a33d', bg:'rgba(232,163,61,0.12)' };
+        if (/내일/.test(s)) return { e:'🗓️', t:'내일', c:'#8ca6d6', bg:'rgba(140,166,214,0.14)' };
+        var md = s.match(/(\d{1,2})\s*[\/월]\s*(\d{1,2})\s*일?/);
+        if (md) return { e:'📅', t:md[1] + '/' + md[2], c:'#8ca6d6', bg:'rgba(140,166,214,0.14)' };
+        var mo = s.match(/(\d{1,2})\s*월/);
+        if (mo) return { e:'🌙', t:mo[1] + '월+', c:'#8ca6d6', bg:'rgba(140,166,214,0.14)' };
+        return null;
+      }
+      function _gm1WhenBadgeHtml(t){
+        var w = _gm1WhenBadge(t);
+        if (!w) return '';
+        return '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:' + w.c + ';background:' + w.bg + ';padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0;">' + w.e + ' ' + gm1Esc(w.t) + '</span>';
+      }
       function _gm1WaitLineHtml(t){
         var _s = classifyShip(t);
         var _b = (_s.northstar ? ' <span title="북극성 직결">🌟</span>' : '') + (_s.urgent ? ' <span title="마감임박">🔴</span>' : '');
         var descHtml = t.description ? '<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:11px;list-style:none;">▼ 내용 보기</summary><div style="padding:6px 8px;background:var(--paper-soft,#f5f3f0);border-radius:6px;margin-top:4px;line-height:1.5;white-space:pre-wrap;color:var(--text);">' + gm1Esc(t.description) + '</div></details>' : '';
-        return '<div style="padding:8px 0;border-bottom:1px dashed var(--border);">' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-          '<span><span title="' + gm1Esc(_s.tier) + '" style="margin-right:3px;">' + _s.icon + '</span>' +
+        return '<div class="gm1-wait-line" style="border-bottom:1px dashed var(--border);">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+          '<span style="min-width:0;"><span title="' + gm1Esc(_s.tier) + '" style="margin-right:3px;">' + _s.icon + '</span>' +
           '<span style="display:inline-block;background:rgba(140,166,214,0.16);color:#8ca6d6;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">⚓ 대기</span>' +
-          '<span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + _b + (t.ssotAuto ? catChip(t) + SSOT_BADGE : '') + '</span>' +
+          '<span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + _b + (t.ssotAuto ? '<span class="gm1-tag-faint">' + catChip(t) + SSOT_BADGE + '</span>' : '') + '</span>' +
+          '<span style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' + _gm1WhenBadgeHtml(t) +
           (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" title="진행 중으로 시작" style="font-size:11px;padding:2px 8px;flex-shrink:0;">▶ 시작</button>') +
+          '</span>' +
           '</div>' + descHtml + '</div>';
       }
       function _gm1WaitSectionHtml(list){
         if (!list.length && !gm1ParkedCount) return '';
         var s = '<div style="margin-top:16px;padding-top:10px;border-top:1px solid var(--border);">';
-        s += '<div style="font-size:12.5px;font-weight:700;color:#8ca6d6;margin-bottom:6px;"><span style="margin-right:4px;">⚓</span>예정 항구 — 대기 ' + list.length + '건</div>';
+        s += '<div style="font-size:12.5px;font-weight:700;color:#8ca6d6;margin-bottom:6px;"><span style="margin-right:4px;">⚓</span>항로 대기 ' + list.length + ' <span style="font-size:11px;font-weight:400;color:var(--dim);">— 오늘 볼 것 (각 예정일 있음)</span></div>';
         // ── ⚓ 정박·대기 포인터 — surface==='autonomy' 배는 자율현황 위임(항로 대기 섹터 제외·카운트만) (2026-07-15 GM·배237) ──
         if (gm1ParkedCount) {
           s += '<a href="자율현황.html#sec-parked-missions" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:9px 12px;border:1px solid rgba(140,166,214,0.35);border-radius:8px;background:rgba(140,166,214,0.07);text-decoration:none;flex-wrap:wrap;">' +
-            '<span style="flex:1;font-size:12.5px;font-weight:700;color:#8ca6d6;">⚓ 정박·대기 ' + gm1ParkedCount + '건 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 조건·시각 트리거 대기 배는 항로 대신 자율현황에서 관리</span></span>' +
+            '<span style="flex:1;font-size:12.5px;font-weight:700;color:#8ca6d6;">⚓ 정박 ' + gm1ParkedCount + ' <span style="font-size:11px;font-weight:400;color:var(--dim);">— 자율현황·미래 (조건·시각 트리거 대기)</span></span>' +
             '<span style="font-size:12px;color:#8ca6d6;font-weight:600;">자율현황에서 관리 →</span></a>';
         }
         list.forEach(function(t){ s += _gm1WaitLineHtml(t); });
@@ -9436,6 +9471,8 @@ function crTab(btn, panelId) {
       // 카드 목록만 갱신 — 도구바(#gm1-toolbar)와 그 안의 검색 input은 손대지 않으므로
       //   한글 IME 조합·포커스·캐럿이 그대로 유지된다(업무 현황 SSOT 패턴).
       listEl.innerHTML = html;
+      // 🟢 순항 요약 재렌더 — gmAppr·waitCount 최신값 반영(표현 전용). 함수는 하단 정의(호이스팅) (2026-07-18)
+      if (typeof gm1RenderCruiseSummary === 'function') gm1RenderCruiseSummary();
 
       // 이벤트 위임 — onclick 단일 할당 (매 렌더 시 자동 교체 · 2026-05-28 hotfix)
       listEl.onclick = function(e) {
@@ -10474,6 +10511,9 @@ function crTab(btn, panelId) {
         var reviewWait = items.filter(function(it){ return (it && it.status) === '검수대기'; });
         var pubWait = items.filter(function(it){ return (it && it.status) === '발행검증대기'; });
         var rN = reviewWait.length, pN = pubWait.length;
+        // 🟢 순항 요약에 승인대기 수 반영 후 재렌더(표현 전용·기존 계산 재사용)
+        gm1CruiseReviewWait = rN;
+        gm1RenderCruiseSummary();
         function esc(s){ return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
         function go(){
           var a = document.querySelector('[data-id=M1]'); if (a) a.click();
@@ -10490,14 +10530,38 @@ function crTab(btn, panelId) {
         var h = '<div onclick="return gm1GoReview()" style="cursor:pointer;border:1px solid rgba(217,140,95,0.4);border-left:4px solid var(--warm,#d98c5f);border-radius:10px;padding:11px 14px;background:rgba(217,140,95,0.07);">';
         h += '<div style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--warm,#d98c5f);margin-bottom:8px;">⚠️ 주의 신호 — 지금 기다리는 것 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:auto;">눌러서 검수 화면으로 →</span></div>';
         h += '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">';
-        h += '<div><div style="font-size:26px;font-weight:800;line-height:1;color:' + (rN ? 'var(--warm,#d98c5f)' : 'var(--dim)') + ';">' + rN + '</div><div style="font-size:12px;color:var(--text-soft,#888);margin-top:2px;">🔍 승인 대기 (GM)</div>' + preview + '</div>';
-        h += '<div><div style="font-size:26px;font-weight:800;line-height:1;color:' + (pN ? '#7c3aed' : 'var(--dim)') + ';">' + pN + '</div><div style="font-size:12px;color:var(--text-soft,#888);margin-top:2px;">✓ 발행 대조 대기 (웰리)</div></div>';
+        // 0건 항목은 회색·축소(경보 톤 완화) — 실제 기다리는 신호만 눈에 띄게 (2026-07-18)
+        h += '<div style="' + (rN ? '' : 'opacity:0.4;') + '"><div style="font-size:' + (rN ? '26' : '18') + 'px;font-weight:800;line-height:1;color:' + (rN ? 'var(--warm,#d98c5f)' : 'var(--dim)') + ';">' + rN + '</div><div style="font-size:12px;color:var(--text-soft,#888);margin-top:2px;">🔍 승인 대기 (GM)</div>' + preview + '</div>';
+        h += '<div style="' + (pN ? '' : 'opacity:0.4;') + '"><div style="font-size:' + (pN ? '26' : '18') + 'px;font-weight:800;line-height:1;color:' + (pN ? '#7c3aed' : 'var(--dim)') + ';">' + pN + '</div><div style="font-size:12px;color:var(--text-soft,#888);margin-top:2px;">✓ 발행 대조 대기 (웰리)</div></div>';
         h += '</div></div>';
         box.innerHTML = h;
       }).catch(function(){
         box.innerHTML = '<div style="color:var(--dim);font-size:13px;">⚠️ 신호를 불러오지 못했습니다.</div>';
       });
     }
+
+    // ── 🟢 순항 중 — 안심 요약 한 줄 (경보 위·긍정 프레이밍). 표현 전용·기존 계산값 재사용·새 fetch 없음 (2026-07-18) ──
+    //   N = 승인대기(리뷰큐) + GM 결재 차례 = '오늘 GM이 볼 것'. M = 항로 대기(예정 항구) 수.
+    //   gm1RenderToday(동기)와 gm1RenderAlertSignal(비동기)가 각자 값 채운 뒤 이 함수를 호출 → 언제 불려도 최신 공유값으로 렌더.
+    function gm1RenderCruiseSummary() {
+      var box = document.getElementById('gm1-cruise-summary');
+      if (!box) return;
+      var rN = (gm1CruiseReviewWait == null) ? 0 : gm1CruiseReviewWait;
+      var N = rN + (gm1CruiseGmAppr || 0);   // 오늘 GM이 볼 것
+      var M = gm1CruiseWaitCount || 0;       // 항로 대기(각 예정일 있음)
+      var nStr = N > 0
+        ? '오늘 GM이 볼 것 <b style="font-weight:800;color:var(--green,#4a9d6b);">' + N + '개</b>'
+        : '오늘 GM이 볼 것 <b style="font-weight:800;">없음</b>';
+      var mStr = M > 0 ? ' · 대기 <b style="font-weight:700;">' + M + '척</b>(각 예정일 있음)' : '';
+      box.innerHTML =
+        '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;border:1px solid rgba(74,157,107,0.28);border-left:4px solid var(--green,#4a9d6b);border-radius:10px;padding:11px 15px;background:rgba(74,157,107,0.05);font-size:13.5px;line-height:1.5;">' +
+        '<span style="font-size:15px;">🟢</span>' +
+        '<span style="font-weight:800;color:var(--green,#4a9d6b);">순항 중</span>' +
+        '<span style="color:var(--dim);">—</span>' +
+        '<span style="color:var(--text-soft,#888);">자율 시스템 정상 가동 · ' + nStr + mStr + '</span>' +
+        '</div>';
+    }
+    gm1RenderCruiseSummary();
     gm1RenderAlertSignal();
 
     // ── 자동 새로고침 — stale-render 해소 (2026-06-16 웰리) ──
