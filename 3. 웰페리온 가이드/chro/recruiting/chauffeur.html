@@ -93,9 +93,29 @@
   .c-stat b{display:block;font-size:18px;font-weight:800;color:var(--navy);}
   .c-stat span{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;word-break:keep-all;line-height:1.45;}
   @media(max-width:620px){ .c-stats{grid-template-columns:repeat(2,1fr);} }
+
+  /* ===== JPG 다운로드 버튼 (2026-07-18 A-5) — 캡처 시 ignoreElements로 자체 제외 ===== */
+  .jpg-dl-btn{
+    position:fixed;top:18px;right:18px;z-index:50;
+    display:inline-flex;align-items:center;gap:7px;
+    background:rgba(255,255,255,.94);color:var(--navy);
+    border:1px solid var(--line);border-radius:999px;
+    padding:9px 16px;font-size:12.5px;font-weight:700;
+    font-family:inherit;cursor:pointer;
+    box-shadow:0 4px 14px rgba(11,31,58,.14);
+    transition:transform .15s ease,box-shadow .15s ease,opacity .15s ease;
+  }
+  .jpg-dl-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(11,31,58,.2);}
+  .jpg-dl-btn:disabled{opacity:.65;cursor:wait;transform:none;}
+  .jpg-dl-btn svg{width:14px;height:14px;flex:0 0 auto;}
+  @media(max-width:620px){ .jpg-dl-btn{top:12px;right:12px;padding:8px 12px;font-size:11px;} }
 </style>
 </head>
 <body data-jobbucket="수행기사">
+<button type="button" id="jpgDownloadBtn" class="jpg-dl-btn" onclick="downloadPageAsJpg()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+  <span>JPG 다운로드</span>
+</button>
 <div class="hero">
   <div class="brand">WELLPERION</div>
   <h1>사내이사 수행기사 채용</h1>
@@ -342,6 +362,51 @@
       }).catch(function(){ /* 실패 시 현행 하드코딩 유지 — 아무 것도 안 바꿈 */ });
   }catch(e){}
 })();
+</script>
+<script>
+// [추가 2026-07-18 A-5] JPG 다운로드 버튼 — html2canvas 지연로드(첫 클릭 시에만 CDN에서 가져옴).
+function downloadPageAsJpg(){
+  var btn = document.getElementById('jpgDownloadBtn');
+  if(!btn || btn.disabled) return;
+  var originalLabel = btn.innerHTML;
+  function doCapture(){
+    btn.disabled = true;
+    var lbl = btn.querySelector('span');
+    if(lbl) lbl.textContent = '생성 중...';
+    var bg = getComputedStyle(document.body).backgroundColor || '#ffffff';
+    window.html2canvas(document.body, {
+      backgroundColor: bg,
+      scale: 2,
+      useCORS: true,
+      ignoreElements: function(el){ return el && el.id === 'jpgDownloadBtn'; }
+    }).then(function(canvas){
+      var link = document.createElement('a');
+      var fname = (document.title || 'wellperion_공고').replace(/[\\\/:*?"<>|]/g,'').trim();
+      link.download = fname + '.jpg';
+      link.href = canvas.toDataURL('image/jpeg', 0.92);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }).catch(function(err){
+      console.error('[jpg-download]', err);
+      alert('이미지 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    }).then(function(){
+      btn.disabled = false;
+      btn.innerHTML = originalLabel;
+    });
+  }
+  if(window.html2canvas){ doCapture(); return; }
+  btn.disabled = true;
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  s.onload = function(){ btn.disabled = false; doCapture(); };
+  s.onerror = function(){
+    btn.disabled = false;
+    btn.innerHTML = originalLabel;
+    alert('이미지 변환 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.');
+  };
+  document.head.appendChild(s);
+}
 </script>
 </body>
 </html>
