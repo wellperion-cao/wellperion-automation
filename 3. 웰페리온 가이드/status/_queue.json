@@ -2249,5 +2249,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_015DUy1oPfywXVW6iToHUefR (CLI ad-hoc · 커밋 3e5d2fc3)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "3e5d2fc34b7a24bd11691a5eea160629986db54c"
+  },
+  {
+    "task_id": "COO-2026-07-18-ADHOC-95974d80",
+    "clevel": "coo",
+    "title": "[시우] 결재 SSOT 캘린더 인쇄 한 장 맞춤(scale-to-fit·용지 반영) (GM 요청)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1419,
+    "artifact": "캘린더 뷰 인쇄 시 sticky-top·툴바·day-detail을 숨기고 월 그리드+요약만\n출력. print_options.js가 세팅하는 data-print-paper/orientation(A4/A3·\n세로/가로, 없으면 A4 세로 기본)에 맞춰 실측 콘텐츠 크기 대비 scale을\n계산해 #calPrintInner에 transform:scale 적용 → 항상 1페이지에 맞춤.\nbeforeprint 전역 리스너로 위젯 인쇄·Ctrl+P 양쪽 동작. 트렐로/카드/문서\n인쇄 기존 동작 무변경. (CLI ad-hoc · 커밋 95974d80)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "95974d802b5a6814bfe7de23e22d595c1265b42e"
   }
 ]
