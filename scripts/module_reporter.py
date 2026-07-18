@@ -39,6 +39,7 @@ if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
 from module_registry import load_registry  # noqa: E402
+from clevel_colors import color_dot  # noqa: E402 — 부서 색동그라미 정본(단일 딕셔너리)
 
 _STATUS_DIR = os.path.join(_PROJECT_ROOT, "status")
 ROOMS_PATH = os.path.join(_STATUS_DIR, "telegram_rooms.json")
@@ -91,8 +92,10 @@ def selected_for_cadence(mod, cadence):
 
 
 # ── 템플릿 포맷 ──────────────────────────────────────────────────────────────
-def format_report(payload, module_name, cadence):
-    lines = [f"📊 {payload.get('title', module_name)} ({cadence})"]
+def format_report(payload, module_name, cadence, owner_role=None):
+    """owner_role 있으면 부서 색동그라미(clevel_colors 정본)를 제목 앞에 붙인다."""
+    dot_prefix = (color_dot(owner_role) + " ") if owner_role else ""
+    lines = [f"📊 {dot_prefix}{payload.get('title', module_name)} ({cadence})"]
     summary = payload.get("summary_line", "")
     if summary:
         lines.append(summary)
@@ -193,7 +196,8 @@ def run_report(cadence, *, dry_run=False, only_module=None,
             continue
 
         key = f"{mid}|{date_str}|{cadence}"
-        text = format_report(payload, mod.get("feature", mid), cadence)
+        text = format_report(payload, mod.get("feature", mid), cadence,
+                              owner_role=mod.get("owner_role"))
         bot_id = (mod.get("notify_spec") or {}).get("bot_id")
         chat_id = resolve_chat_id(bot_id, rooms)
 

@@ -66,6 +66,13 @@ except Exception:
     def is_routine(*_texts: str) -> bool:
         return False
 
+# 부서 색동그라미 정본(단일 딕셔너리) — scripts/clevel_colors.py. 복사 금지, import 만.
+try:
+    from clevel_colors import labeled as clevel_labeled
+except Exception:
+    def clevel_labeled(clevel: str) -> str:
+        return str(clevel or "").upper()
+
 # .env 로드(텔레그램 토큰/chat_id). 토큰 원문은 절대 stdout 출력하지 않는다.
 try:
     from dotenv import load_dotenv
@@ -304,15 +311,16 @@ def build_telegram_message(
     next_desc: str = "",
     terminal: bool = False,
 ) -> str:
-    """L18 세로 라벨 양식 보고 메시지.
+    """가독성 재정비 양식 (GM 피드백 2026-07-18) — 결론 먼저·짧은 줄·핵심 굵게·
+    불필요 내부값(task_id·버전·changelog) 접기. 부서 색동그라미(clevel_colors) 반영.
+    정보 손실 없음 — 접힌 값도 blockquote 안에 그대로 남는다(단지 시각적으로 후순위).
 
-    형식:
-        {STATUS_ICON} {status} · [{CLEVEL}] {task_id}
-        🔴 이슈: {title}
-        🔧 해결: {summary}
-        ✅ 반영: {version}{ · changelog}
-        🔍 증거: {artifact_url}   ← artifact_url 있을 때만
-        👉 다음: {next}           ← next_desc/terminal/bridge_label 있을 때만
+    형식(HTML parse_mode 전제):
+        {STATUS_ICON} <b>{색동그라미} {닉네임} · {title}</b>
+        {summary}                                    ← title 이 summary 와 다를 때만(중복 줄 생략)
+        📍 {기록위치: artifact_url 있으면 그대로, 없으면 status/{clevel}.json}
+        👉 다음: {next}                              ← next_desc/terminal/bridge_label 있을 때만
+        <blockquote expandable>🆔 {task_id} · 📦 {version}{ · changelog}</blockquote>
 
     STATUS_ICON: 완료→✅ · 이슈→⚠️ · 진행중→⏳ · 기타→•
     """
@@ -323,24 +331,20 @@ def build_telegram_message(
     }
     icon = _icon_map.get(status, _icon_map.get(status.lower(), "•"))
 
-    # 상태 헤더: 항상 출력
+    # 결론 먼저: 상태 아이콘 + 부서 색동그라미 + 닉네임 + 제목(굵게)
     display_title = title if title else summary
     lines: list[str] = [
-        icon + " " + status + " · [" + clevel.upper() + "] " + task_id,
-        "🔴 이슈: " + display_title,
-        "🔧 해결: " + summary,
+        icon + " <b>" + clevel_labeled(clevel) + " · " + display_title + "</b>",
     ]
+    # 한 일 1줄: title 을 별도로 준 경우만 붙인다(title 생략 시 summary==display_title
+    # 이라 굵은 제목과 완전 중복 — 접기 취지에 맞춰 중복 줄은 만들지 않는다).
+    if summary.strip() != display_title.strip():
+        lines.append(summary)
 
-    # ✅ 반영: version + optional changelog
-    version_str = version if version else "v1.0"
-    reflection = "✅ 반영: " + version_str
-    if changelog and changelog.strip():
-        reflection += " · " + changelog.strip()
-    lines.append(reflection)
-
-    # 🔍 증거: artifact_url 있을 때만
-    if artifact_url and artifact_url.strip():
-        lines.append("🔍 증거: " + artifact_url.strip())
+    # 📍 기록위치: 증거 URL 있으면 그대로, 없으면 status 파일 경로(항상 1줄 — 기록위치 알리기 원칙)
+    record_loc = artifact_url.strip() if (artifact_url and artifact_url.strip()) \
+        else ("status/" + clevel.lower() + ".json")
+    lines.append("📍 " + record_loc)
 
     # 👉 다음: next_desc > terminal > bridge_label 순. 셋 다 없으면 생략
     if next_desc and next_desc.strip():
@@ -349,6 +353,13 @@ def build_telegram_message(
         lines.append("👉 다음: 🌀 여기서 종결")
     elif bridge_label and bridge_label.strip():
         lines.append("👉 다음: " + bridge_label.strip())
+
+    # 접기: 내부값(task_id·버전·changelog) — 필요할 때만 펼쳐보는 후순위 정보
+    version_str = version if version else "v1.0"
+    fold_bits = ["🆔 " + task_id, "📦 " + version_str]
+    if changelog and changelog.strip():
+        fold_bits.append(changelog.strip())
+    lines.append("<blockquote expandable>" + " · ".join(fold_bits) + "</blockquote>")
 
     return "\n".join(lines)
 

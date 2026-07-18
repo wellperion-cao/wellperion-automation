@@ -33,9 +33,14 @@ ENV_PATH = ROOT / "telegram_bot" / ".env"
 
 sys.path.insert(0, str(ROOT / "scripts"))
 try:
-    from integration_health import check_bridges  # 연동 다리 자가점검 단일 정의
+    from integration_health import check_bridges, check_queue_mirror  # 연동 다리 자가점검 단일 정의
 except Exception:
     check_bridges = None
+    check_queue_mirror = None
+try:
+    import sync_queue_mirror  # 큐 미러 단방향·멱등 동기화(자가치유용)
+except Exception:
+    sync_queue_mirror = None
 
 # 감시할 예약작업 (작업명 → 사람이 읽을 이름)
 WATCH_TASKS = {
@@ -115,17 +120,46 @@ def collect_tasks():
     return items
 
 
+def _self_heal_queue_mirror():
+    """큐 미러 드리프트 자가치유: sync_queue_mirror(단방향·멱등) 자동 실행.
+    실패해도 예외를 삼킨다(fail-soft) — 실패 시 재확인에서 여전히 '이상'으로 남을 뿐."""
+    if sync_queue_mirror is None:
+        return
+    try:
+        sync_queue_mirror.main()
+    except Exception:
+        pass
+
+
 def collect_bridges():
-    """연동 다리 점검 → erp_status.json 'bridges' 필드용 리스트. 실패해도 빈 결과."""
+    """연동 다리 점검 → erp_status.json 'bridges' 필드용 리스트. 실패해도 빈 결과.
+
+    큐 미러 드리프트(GM 피드백 2026-07-18): 알림 전에 먼저 자가치유를 시도한다.
+    '큐 미러 동기' 다리가 '이상'이면 sync_queue_mirror 를 자동 실행 → 재점검.
+    치유되면 조용히 '정상'으로 반영(알림 없음). 치유 실패(진짜 이상)면 '이상' 그대로
+    남아 alert_newly_broken() 이 기존 경로(GM 개인봇 1줄)로만 알린다 — 실무진 방 금지.
+    """
     if check_bridges is None:
         return []
     try:
         rows = check_bridges()
     except Exception:
         return []
+    healed: list[tuple[str, bool, str]] = []
+    for nm, ok, detail in rows:
+        if not ok and nm == "큐 미러 동기" and check_queue_mirror is not None:
+            _self_heal_queue_mirror()
+            try:
+                nm2, ok2, detail2 = check_queue_mirror()
+                if ok2:
+                    detail2 = "드리프트 감지 → 자가치유 완료(자동 동기화) — " + detail2
+                nm, ok, detail = nm2, ok2, detail2
+            except Exception:
+                pass
+        healed.append((nm, ok, detail))
     return [
         {"name": nm, "state": "정상" if ok else "이상", "detail": detail}
-        for nm, ok, detail in rows
+        for nm, ok, detail in healed
     ]
 
 
