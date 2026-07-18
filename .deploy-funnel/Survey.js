@@ -1861,7 +1861,11 @@ function _lessonIntakeReadRows_(body) {
     var hasName = iName >= 0 && row[iName], hasPhone = iPhone >= 0 && row[iPhone];
     if (!hasName && !hasPhone) continue;
     var rowType = iType >= 0 ? String(row[iType] || '').trim() : '';
-    if (want && rowType && rowType !== want) continue;   // 유형 불일치 제외(값 없으면 포함 — 누락 방지)
+    // 여름특강(성인)/(유소년)을 성인강습/유소년강습 뷰에 합류 표시(2026-07-18 시포 — 저장O·현황 미표시 갭 수리). 원본 유형값 보존, 매칭용으로만 정규화.
+    var matchType = rowType;
+    if (/^여름특강\s*\(\s*성인/.test(rowType)) matchType = '성인강습';
+    else if (/^여름특강\s*\(\s*유소년/.test(rowType)) matchType = '유소년강습';
+    if (want && matchType && matchType !== want) continue;   // 유형 불일치 제외(값 없으면 포함 — 누락 방지)
     var histRaw = iHist >= 0 ? row[iHist] : '';
     var histArr = _resParse_(histRaw);
     if (!histArr.length) { var p = String(histRaw || '').trim(); if (p) histArr.push({ date: '', time: '', note: p }); }
@@ -1912,6 +1916,20 @@ function _rentbizGidOf_(body) {
   var t = String((body && body.type) || '').trim().toLowerCase();
   if (t === 'biz' || t === 'business' || t === '비즈니스' || t === '비즈니스파트너') return RENTBIZ_GID.biz;
   return RENTBIZ_GID.rent;
+}
+
+// 구글폼 원본 응답탭 + 자체폼 신규 intake 탭('공간렌트 문의'/'비즈니스 문의') 병합 읽기.
+//   2026-07-18 시포 — 자체폼 rental/business 저장분이 신규 탭에 쌓이나 rentbiz_inquiry_list가 옛 gid만 읽어 현황 미표시되던 갭 수리.
+//   두 소스 동일 SS(_MI_SS_ID===MEMBER_SPREADSHEET_ID). intake 탭은 gid로 재읽어(_rentbizReadRows_ 유연 컬럼) 동일 스키마 반환. 소스가 달라 중복 없음(구글폼 vs 자체폼).
+function _rentbizReadRowsMerged_(body) {
+  var rows = _rentbizReadRows_(_rentbizGidOf_(body));
+  try {
+    var t = String((body && body.type) || '').trim().toLowerCase();
+    var isBiz = (t === 'biz' || t === 'business' || t === '비즈니스' || t === '비즈니스파트너');
+    var iSh = isBiz ? _businessIntakeSheet_(false) : _rentalIntakeSheet_(false);
+    if (iSh) rows = rows.concat(_rentbizReadRows_(iSh.getSheetId()));
+  } catch (e) {}
+  return rows;
 }
 
 // 응답탭 시트 핸들 — 멤버십과 동일 스프레드시트(MEMBER_SPREADSHEET_ID)의 gid 매칭(탭명 변경에 강함).
@@ -3319,7 +3337,7 @@ function _processAction(body) {
   // ─── 공간렌트·비즈니스 문의 페이지(CPO): 전체 목록 ───
   //   강습문의(lesson_inquiry_list)와 동일 구조 — type=rent|biz, scope=all(미지정=올해만).
   if (action === 'rentbiz_inquiry_list') {
-    var rbRows = _lessonScopeFilter_(_rentbizReadRows_(_rentbizGidOf_(body)), body);
+    var rbRows = _lessonScopeFilter_(_rentbizReadRowsMerged_(body), body);
     return _json({ ok: true, count: rbRows.length, data: rbRows });
   }
 
@@ -3327,7 +3345,7 @@ function _processAction(body) {
   //   상태 컬럼이 시트에 없으면 hasStatus:false만 반환(신규/처리중/완료 지어내지 않음).
   if (action === 'rentbiz_stats') {
     var rsGid  = _rentbizGidOf_(body);
-    var rsRows = _lessonScopeFilter_(_rentbizReadRows_(rsGid), body);
+    var rsRows = _lessonScopeFilter_(_rentbizReadRowsMerged_(body), body);
     var rsTotal = rsRows.length;
     var rsMonth = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM');
     var rsThisMonth = 0;
