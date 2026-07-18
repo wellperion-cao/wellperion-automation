@@ -2730,41 +2730,6 @@ function _processAction(body) {
     return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
   }
 
-  // ─── (임시) CPO 시트 정리 — 강습 등록현황_bak 삭제(참조0 stale) · 공간렌트/비즈니스 테스트행 삭제. 웰리 수동 실행·검증 후 제거. 2026-07-18 ───
-  if (action === 'cpo_sheet_cleanup') {
-    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
-    var _dry = String(body.dry || '') === '1' || body.dry === true;
-    var _cRep = { bak: null, bakDeleted: false, bakWouldDelete: false, rentDeleted: 0, bizDeleted: 0, rentSurvivors: [], bizSurvivors: [], rentWould: [], bizWould: [] };
-    var _cSs = SpreadsheetApp.openById(_MI_SS_ID);
-    var _bak = null;
-    _cSs.getSheets().forEach(function(s){ if (s.getName().indexOf('강습 등록현황_bak') === 0) _bak = s; });
-    if (_bak) {
-      _cRep.bak = { name: _bak.getName(), rows: _bak.getLastRow(), cols: _bak.getLastColumn() };
-      _cRep.bakWouldDelete = true;
-      if (!_dry) { _cSs.deleteSheet(_bak); _cRep.bakDeleted = true; }
-    }
-    function _cDelTest(name) {
-      var sh = _cSs.getSheetByName(name); if (!sh) return { del: 0, surv: [], would: [] };
-      var lr = sh.getLastRow(), lc = sh.getLastColumn(); if (lr < 2 || lc < 1) return { del: 0, surv: [], would: [] };
-      var hdr = sh.getRange(1, 1, 1, lc).getValues()[0].map(function(v){ return String(v).trim(); });
-      var phI = _findCol_(hdr, ['연락처', '전화', '휴대폰']); var nmI = _findCol_(hdr, ['성함', '이름']);
-      var data = sh.getRange(2, 1, lr - 1, lc).getValues(); var del = 0, surv = [], would = [];
-      for (var r = data.length - 1; r >= 0; r--) {
-        var ph = phI >= 0 ? String(data[r][phI] || '').replace(/[^0-9]/g, '') : '';
-        var nm = nmI >= 0 ? String(data[r][nmI] || '') : '';
-        var isTest = /자동검증|E2E|검증|테스트/.test(nm) || /^0100000/.test(ph) || /^0101111/.test(ph);
-        if (isTest) { would.push(nm + '/' + ph); if (!_dry) { sh.deleteRow(r + 2); del++; } } else if (nm || ph) { surv.push(nm + '/' + ph); }
-      }
-      return { del: del, surv: surv, would: would };
-    }
-    var _rr = _cDelTest('공간렌트 문의'); _cRep.rentDeleted = _rr.del; _cRep.rentSurvivors = _rr.surv; _cRep.rentWould = _rr.would;
-    var _br = _cDelTest('비즈니스 문의'); _cRep.bizDeleted = _br.del; _cRep.bizSurvivors = _br.surv; _cRep.bizWould = _br.would;
-    _cRep.miTabs = _cSs.getSheets().map(function(s){ return s.getName(); });
-    try { _cRep.lessonTabs = SpreadsheetApp.openById(LESSON_SS_ID).getSheets().map(function(s){ return s.getName(); }); } catch (e) {}
-    _cRep.dry = _dry;
-    return _json({ ok: true, report: _cRep });
-  }
-
   // ─── (임시) 강습 등록현황 이관: 멤버십SS→강습SS 복사(삭제 별도). 웰리 수동. 2026-07-18 ───
   if (action === 'cpo_migrate_lesson_reg') {
     if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
