@@ -2730,57 +2730,6 @@ function _processAction(body) {
     return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
   }
 
-  // ─── 강습 신규문의 일회성 유지보수(테스트행 삭제·유형컬럼 재배치·비고 정리) — 2026-07-18 시포. 실행은 웰리 직접·수동 ───
-  if (action === 'cpo_intake_maintenance') {
-    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
-    var _mSh = _lessonIntakeSheet_(false);
-    if (!_mSh) return _json({ ok: false, error: '강습 신규문의 시트 없음' });
-    var _mLastCol = _mSh.getLastColumn();
-    var _mHdr = _mSh.getRange(1, 1, 1, _mLastCol).getValues()[0].map(function(v){ return String(v).trim(); });
-    var _mReport = { deleted: 0, reordered: false, cleaned: 0 };
-    // 1) 테스트행 삭제(전화 정확매칭 6종 + 성함 자동검증/E2E) — 아래→위로 삭제(인덱스 밀림 방지)
-    var _mTestPhones = { '01000001111':1,'01000005555':1,'01000006666':1,'01011112223':1,'01011112224':1,'01011112225':1 };
-    var _mPhI = _findCol_(_mHdr, ['연락처','전화','휴대폰']);
-    var _mNmI = _findCol_(_mHdr, ['성함','이름']);
-    var _mLastRow = _mSh.getLastRow();
-    if (_mLastRow >= 2 && (_mPhI >= 0 || _mNmI >= 0)) {
-      var _mData = _mSh.getRange(2, 1, _mLastRow - 1, _mLastCol).getValues();
-      for (var _r = _mData.length - 1; _r >= 0; _r--) {
-        var _ph = _mPhI >= 0 ? String(_mData[_r][_mPhI] || '').replace(/[^0-9]/g,'') : '';
-        var _nm = _mNmI >= 0 ? String(_mData[_r][_mNmI] || '') : '';
-        var _isTest = (_ph && _mTestPhones[_ph]) || /자동검증|E2E|검증성인|검증유소년|검증여름/.test(_nm);
-        if (_isTest) { _mSh.deleteRow(_r + 2); _mReport.deleted++; }
-      }
-    }
-    // 2) 유형 컬럼을 강습 종목 앞으로 이동(insert+copy+delete)
-    var _mHdr2 = _mSh.getRange(1, 1, 1, _mSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
-    var _iTypeC = _mHdr2.indexOf('유형');          // 0-based
-    var _iSportC = _mHdr2.indexOf('강습 종목');
-    if (_iTypeC >= 0 && _iSportC >= 0 && _iTypeC !== _iSportC - 1) {
-      var _nRow = _mSh.getMaxRows();
-      _mSh.insertColumnBefore(_iSportC + 1);        // 강습 종목 앞 새 컬럼(1-based)
-      var _srcC = (_iTypeC + 1) > (_iSportC + 1) ? (_iTypeC + 2) : (_iTypeC + 1);  // 삽입으로 뒤 컬럼 +1 밀림 반영
-      var _typeVals = _mSh.getRange(1, _srcC, _nRow, 1).getValues();
-      _mSh.getRange(1, _iSportC + 1, _nRow, 1).setValues(_typeVals);
-      _mSh.deleteColumn(_srcC);                     // 옛 유형 컬럼 삭제
-      try { _mSh.getRange(1, 1, 1, _mSh.getLastColumn()).setFontWeight('bold'); _mSh.setFrozenRows(1); } catch(e){}
-      _mReport.reordered = true;
-    }
-    // 3) 기존 비고 [웹접수] 보일러플레이트 정리(빈칸으로)
-    var _mHdr3 = _mSh.getRange(1, 1, 1, _mSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
-    var _bgI = _findCol_(_mHdr3, ['비고']);
-    var _mLastRow3 = _mSh.getLastRow();
-    if (_bgI >= 0 && _mLastRow3 >= 2) {
-      var _bgVals = _mSh.getRange(2, _bgI + 1, _mLastRow3 - 1, 1).getValues();
-      var _changed = false;
-      for (var _b = 0; _b < _bgVals.length; _b++) {
-        if (String(_bgVals[_b][0] || '').indexOf('[웹접수]') >= 0) { _bgVals[_b][0] = ''; _mReport.cleaned++; _changed = true; }
-      }
-      if (_changed) _mSh.getRange(2, _bgI + 1, _mLastRow3 - 1, 1).setValues(_bgVals);
-    }
-    return _json({ ok: true, report: _mReport });
-  }
-
   // ─── 문의 목록 ───
   if (action === 'inquiry_list') {
     const sh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
