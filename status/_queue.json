@@ -1254,5 +1254,19 @@
     "artifact": "auto(cmo): 검수 승인 건 발행 1건 / 수동대기 0건 (CLI ad-hoc · 커밋 3fc4bed8)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "3fc4bed8ec2eb79776efd09e32c2357a32d7a1ec"
+  },
+  {
+    "task_id": "CMO-2026-07-18-ADHOC-b90ea580",
+    "clevel": "cmo",
+    "title": "[시모] danggn 발행에 body_file 미전달 결함 수정",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1352,
+    "artifact": "publish_danggn()이 review_queue의 body_file 필드를 danggn_upload_playwright.py에\n전달하지 않아 content-dir 루트의 danggn_copy.md만 찾고 output(당근)/ 하위 실제\n파일을 못 읽어 \"본문 없음\"으로 실패했음(GOLF-DANGGN 1차 시도 exit=4). publish_kakao와\n동일하게 --body-file 명시 전달로 수정, 재승인 후 정상 발행 확인(2026-07-18). (CLI ad-hoc · 커밋 b90ea580)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b90ea5803fbee620a48805fffae5e1668dad59ec"
   }
 ]
