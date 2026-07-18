@@ -20,6 +20,15 @@
 
 ★ 조용한 실패 금지: 토큰·챗ID 미설정이면 stderr에 [ERROR] 로그를 남기고 전송을
   시도하지 않는다 — 성공한 척 조용히 넘어가지 않는다.
+
+품질 게이트 + 라우팅 (2026-07-18 GM 지시): 콘텐츠(folder) 1건 = 1이미지 + 5채널
+(인스타·블로그·카페·당근·카카오) 링크 전부가 '표준'이다. 발신 직전 review_queue.json
+전체에서 해당 folder 그룹을 모아 _group_is_complete() 로 표준 충족 여부를 판정한다.
+- 충족 → 실무진 문의알림방(TELEGRAM_INQUIRY_CHAT_ID)에 표준 디제스트(그룹 전체 채널
+  엔트리 기준, 이번 사이클 부분집합이 아님) 발송 후 SENT_LEDGER[folder] 기록(평생 1회).
+- 미충족 → 실무진 방엔 발송하지 않고 GM 개인 업무보고봇 방(TELEGRAM_CHAT_ID)에 사유와
+  함께 보류 1줄만 발송(같은 folder는 SENT_LEDGER[f"{folder}:held"] 로 1회만 — 완결되면
+  자동으로 표준 디제스트가 나간다).
 """
 from __future__ import annotations
 
@@ -43,9 +52,11 @@ from pathlib import Path
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 ENV_FILE = ROOT / "telegram_bot" / ".env"
 SENT_LEDGER = ROOT / "scripts" / ".publish_digest_sent.json"
+REVIEW_QUEUE_PATH = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
-TELEGRAM_INQUIRY_CHAT_ID_ENV_KEY = "TELEGRAM_INQUIRY_CHAT_ID"  # 문의·컨택·등록 알림방
+TELEGRAM_INQUIRY_CHAT_ID_ENV_KEY = "TELEGRAM_INQUIRY_CHAT_ID"  # 문의·컨택·등록 알림방(실무진)
+TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"  # GM 개인 업무보고봇 방(8254867551) — 보류 알림 전용
 
 _OUTPUT_SUFFIX_RE = re.compile(r"/output\([^)]*\)\s*$")
 _BRACKET_LABEL_RE = re.compile(r"\s*\[[^\]]*\]\s*")
@@ -99,6 +110,86 @@ def group_published(items: list[dict]) -> dict[str, list[dict]]:
         key = _base_key(it)
         groups.setdefault(key, []).append(it)
     return groups
+
+
+# ---------------------------------------------------------------------------
+# 품질 게이트 — folder(그룹키) 완결·표준 판정 (2026-07-18)
+# ---------------------------------------------------------------------------
+_URL_REQUIRED_CHANNEL_RE = re.compile("블로그|카페|당근")
+_COMPLETE_STATUSES = {"발행완료", "발행검증대기"}
+
+
+def _load_review_queue() -> list[dict]:
+    """완결 판정용 review_queue.json 전체 로드(폐기·검수대기·발행완료 등 상태 무관 전부).
+    로드 실패 시 빈 리스트(안전한 쪽=미완결 판정으로 귀결·오발신 방지) + [ERROR] 로그."""
+    try:
+        data = json.loads(REVIEW_QUEUE_PATH.read_text(encoding="utf-8"))
+        return data if isinstance(data, list) else []
+    except Exception as exc:
+        print(f"[ERROR] review_queue.json 로드 실패({REVIEW_QUEUE_PATH}): {exc}", file=sys.stderr)
+        return []
+
+
+def _group_all_entries(folder: str, all_review_items: list[dict]) -> list[dict]:
+    """folder(그룹키)에 속하는 review_queue 전체 엔트리 — 발행완료·검수대기·실패·폐기 전부."""
+    return [it for it in all_review_items if _base_key(it) == folder]
+
+
+def _group_is_complete(folder: str, all_review_items: list[dict]) -> tuple[bool, str]:
+    """folder(그룹키) 완결·표준 판정 — review_queue.json 전체에서 해당 그룹 엔트리를 모아
+    (A) 전 채널 발행 여부, (B) URL 회수 가능 채널(블로그·카페·당근)의 URL 회수 여부를 검사.
+    True → 실무진 문의알림방 표준 디제스트 발신 대상. False → 사유와 함께 GM 개인 방 보류 대상."""
+    entries = _group_all_entries(folder, all_review_items)
+    if not entries:
+        return False, "리뷰 큐에서 그룹 엔트리를 찾지 못함"
+
+    not_published = [
+        f"{it.get('channel') or '채널 미지정'}({it.get('status') or '미상태'})"
+        for it in entries
+        if (it.get("status") or "미상태") not in _COMPLETE_STATUSES
+    ]
+    if not_published:
+        return False, "미발행: " + ", ".join(not_published)
+
+    missing_url = [
+        it.get("channel") or "채널 미지정"
+        for it in entries
+        if _URL_REQUIRED_CHANNEL_RE.search(it.get("channel") or "")
+        and not (it.get("post_url") or "").strip()
+    ]
+    if missing_url:
+        return False, "URL 미회수: " + ", ".join(missing_url)
+
+    return True, ""
+
+
+def _dedup_channel_entries(entries: list[dict]) -> list[dict]:
+    """채널 라벨(고정 5종) 기준 1채널 1엔트리로 축약 — URL 있는 엔트리 우선, 동률이면
+    published_at 최신 우선. 같은 folder에 채널 중복 엔트리가 있어도(예: 인스타 2건)
+    표준 디제스트에 채널이 중복 표시되지 않도록 한다."""
+    best: dict[str, dict] = {}
+    for it in entries:
+        _, label = _channel_label(it.get("channel") or "채널 미지정")
+        cur = best.get(label)
+        if cur is None:
+            best[label] = it
+            continue
+        cur_has_url = bool((cur.get("post_url") or "").strip())
+        new_has_url = bool((it.get("post_url") or "").strip())
+        if new_has_url and not cur_has_url:
+            best[label] = it
+        elif new_has_url == cur_has_url and (it.get("published_at") or "") > (cur.get("published_at") or ""):
+            best[label] = it
+    return list(best.values())
+
+
+def _held_notice(folder: str, reason: str, entries: list[dict]) -> str:
+    """GM 개인 방 보류 알림 1줄 — 완결·URL 회수되면 자동으로 표준 디제스트가 나간다는 안내 포함."""
+    title = _digest_title(entries) if entries else folder
+    return (
+        f"⚠️ 발행 디제스트 기준 미달로 실무진 방 발송 보류 — {folder} / {title}: {reason}. "
+        "전 채널 완결·URL 회수되면 자동 발송."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -324,21 +415,31 @@ def send_publish_digest(
     dry_run: bool = False,
     ledger_path: Path | None = None,
 ) -> int:
-    """발행완료 항목들을 콘텐츠 단위로 묶어 문의·컨택·등록 알림방에 통합요약 1건씩 발신.
+    """발행완료 항목들을 콘텐츠 단위로 묶어 품질 게이트 통과 시 문의·컨택·등록 알림방에
+    통합요약 1건씩 발신. 게이트 미달이면 실무진 방엔 보내지 않고 GM 개인 방에 보류 1줄만
+    보낸다(2026-07-18 GM 지시 — 품질 게이트 + 라우팅).
+
+    품질 게이트(_group_is_complete): review_queue.json 전체에서 folder 그룹의 모든 엔트리를
+    모아 (A) 전 채널 발행 여부 (B) 블로그·카페·당근 URL 회수 여부를 검사한다.
+    - 충족 → 실무진 문의알림방. 디제스트는 이번 사이클 부분집합이 아니라 review_queue.json의
+      해당 folder 전체 채널 엔트리(5채널)로 구성 — 누락 0. SENT_LEDGER[folder]에 기록(평생 1회).
+    - 미충족 → 실무진 방엔 미발송. GM 개인 방(TELEGRAM_CHAT_ID)에 사유 포함 보류 1줄만 —
+      같은 folder는 SENT_LEDGER[f"{folder}:held"]로 1회만(재스팸 방지). 나중에 완결되면
+      (해당 folder 키가 아직 SENT_LEDGER에 없으므로) 다음 사이클에 자동으로 표준 디제스트 발송.
 
     멱등: 이미 보낸 콘텐츠(그룹키가 원장에 존재)는 재발신하지 않는다 — 그룹 내 항목
     부분집합이 채널별로 나뉘어 들어와 해시가 달라져도 무관(1콘텐츠 = 통합요약 평생 1회).
     (2026-07-18 시토: 해시 비교 방식은 채널별 분할 유입 시 재발신 결함이 있어 그룹키
     존재 기준으로 강화.)
     조용한 실패 금지: 토큰/챗ID 미설정이면 [ERROR] 로그 남기고 전송 시도 없이 반환.
-    반환: 실제 발신(또는 dry-run 출력)한 건수.
+    반환: 실무진 방에 실제 발신(또는 dry-run 출력)한 건수(보류 알림은 미포함).
     """
     if not items:
         return 0
 
     token = _load_env_val(TELEGRAM_TOKEN_ENV_KEY)
-    chat_id = _load_env_val(TELEGRAM_INQUIRY_CHAT_ID_ENV_KEY)
-    if not dry_run and (not token or not chat_id):
+    inquiry_chat_id = _load_env_val(TELEGRAM_INQUIRY_CHAT_ID_ENV_KEY)
+    if not dry_run and (not token or not inquiry_chat_id):
         print(
             "[ERROR] 발행완료 통합요약 발신 불가 — "
             f"{TELEGRAM_TOKEN_ENV_KEY} 또는 {TELEGRAM_INQUIRY_CHAT_ID_ENV_KEY} 미설정 "
@@ -346,20 +447,55 @@ def send_publish_digest(
             file=sys.stderr,
         )
         return 0
+    gm_chat_id = _load_env_val(TELEGRAM_CHAT_ID_ENV_KEY)
 
     lp = ledger_path or SENT_LEDGER
     groups = group_published(items)
+    all_review_items = _load_review_queue()
     ledger = _load_ledger(lp)
     sent = 0
     dirty = False
     for key, group in groups.items():
-        h = _group_hash(group)
         if key in ledger:
             continue  # 이미 발신된 콘텐츠(그룹키 존재) — 항목 부분집합·해시 변동 무관 재스팸 방지
-        msg = build_digest(group)
-        preview_url = _instagram_preview_url(group)
+
+        complete, reason = _group_is_complete(key, all_review_items)
+
+        if not complete:
+            held_key = f"{key}:held"
+            if held_key in ledger:
+                continue  # 이미 GM 보류 알림 발신함(같은 folder 1회만) — 완결되면 위 ledger 체크에서 자동 발송
+            group_entries = _group_all_entries(key, all_review_items) or group
+            notice = _held_notice(key, reason, group_entries)
+            if dry_run:
+                print("[DRY-RUN] → GM 개인 업무보고봇 방 대상 (기준 미달·보류, 실전송 없음)")
+                print(notice)
+                print("-" * 40)
+                continue  # dry-run 은 멱등 이력을 남기지 않는다(실제 발신 아님)
+            if not gm_chat_id:
+                print(
+                    f"[ERROR] 보류 알림 발신 불가 — {TELEGRAM_CHAT_ID_ENV_KEY} 미설정 "
+                    "(telegram_bot/.env 확인 필요) — 조용히 넘어가지 않음",
+                    file=sys.stderr,
+                )
+                continue
+            ok = _send(token, gm_chat_id, notice)
+            if ok:
+                ledger[held_key] = _group_hash(group_entries)
+                dirty = True
+                print(f"[INFO] 기준 미달 보류 알림 발신 완료: {key} — {reason}")
+            else:
+                print(f"[WARN] 기준 미달 보류 알림 발신 실패: {key}", file=sys.stderr)
+            continue
+
+        # 완결·표준 충족 — 이번 사이클 부분집합이 아니라 review_queue.json의 folder 전체
+        # 채널 엔트리(5채널, 중복 채널은 축약)로 표준 디제스트를 구성한다.
+        full_entries = _dedup_channel_entries(_group_all_entries(key, all_review_items) or group)
+        h = _group_hash(full_entries)
+        msg = build_digest(full_entries)
+        preview_url = _instagram_preview_url(full_entries)
         if dry_run:
-            print("[DRY-RUN] → 문의·컨택·등록 알림방 대상 (실전송 없음)")
+            print("[DRY-RUN] → 실무진 문의·컨택·등록 알림방 대상 (기준 충족, 실전송 없음)")
             print(msg)
             if preview_url:
                 print(f"[DRY-RUN] link_preview_options.url = {preview_url}")
@@ -368,11 +504,11 @@ def send_publish_digest(
             continue  # dry-run 은 멱등 이력을 남기지 않는다(실제 발신 아님)
         # GM 원안 '인스타 메인 1장 뷰' — 첫 슬라이드 이미지가 있으면 sendPhoto(캡션=디제스트),
         # 없거나 캡션이 sendPhoto 한도(1024자) 초과면 텍스트 발송으로 폴백.
-        img = _first_slide_image(group)
+        img = _first_slide_image(full_entries)
         if img and len(msg) <= 1024:
-            ok = _send_photo(token, chat_id, img, msg)
+            ok = _send_photo(token, inquiry_chat_id, img, msg)
         else:
-            ok = _send(token, chat_id, msg)
+            ok = _send(token, inquiry_chat_id, msg)
         if ok:
             ledger[key] = h
             dirty = True
