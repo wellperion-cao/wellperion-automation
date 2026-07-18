@@ -43,7 +43,12 @@
   }
 
   // ── 1) 기존 인쇄 트리거 탐지 ──
+  // 명시 스코프 우선: 페이지에 [data-po-trigger]가 있으면 그 요소만 트리거로 쓴다(인쇄 버튼이
+  // 여러 개인 페이지에서 다른 인쇄 버튼과 충돌 방지). 없으면 기존 자동탐지(첫 [onclick*="print"]
+  // 또는 🖨/인쇄 텍스트 버튼) 그대로 — 속성 없는 기존 페이지는 동작 불변. 2026-07-18.
   function findTrigger(){
+    var explicit = document.querySelector('[data-po-trigger]');
+    if(explicit) return explicit;
     var byAttr = document.querySelector('[onclick*="print"]');
     if(byAttr) return byAttr;
     var cands = document.querySelectorAll('a, button');

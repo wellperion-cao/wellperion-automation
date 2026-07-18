@@ -861,7 +861,7 @@ function buildFilters() {
   });
   html += '</select>';
   html += '<button class="share-btn" onclick="openDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">업무 현황 대시보드</button>';
-  html += '<button class="share-btn" onclick="printTasks()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
+  html += '<button class="share-btn" data-po-trigger onclick="printTasks()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
   // 툴바 '🔗 링크'(화면 전체 공유) 제거 — 2026-06-05 GM
   html += '</div>';
   ownerEl.innerHTML = html;
