@@ -357,6 +357,39 @@ details.footnote-toggle > .fn-body{
 <div class="content">
 
   <!-- ════════════════════════════════════════════
+       ★ 조회 기간 — 페이지 최상단 단일 필터 (2026-07-18 GM: "날짜가 제일 상단에 있고 그 아래 현황 전부가 날짜 기준 반영")
+       월 네비게이터 + period-bar(일/주/월/기간/올해) + custom-range. 아래 채널별 현황(유입채널·채널별 전환율)이 이 기간을 공유.
+       단, 🎯 단일 전환 퍼널 히어로(fn897)는 설계상(2026-07-15 GM) 이번 달/전체 누적 고정 스코프라 이 필터의 영향을 받지 않음 — 정직 표기.
+       ════════════════════════════════════════════ -->
+  <div class="section" style="margin-bottom:20px">
+    <div class="section-title">조회 기간</div>
+    <!-- 월 네비게이터 — 기본 선택(월) 위에 표시 -->
+    <div class="month-nav" id="month-nav-row">
+      <button class="month-nav-btn" id="month-nav-prev" onclick="shiftMonth(-1)" title="이전 달">&#9664;</button>
+      <span class="month-nav-label" id="month-nav-label">2026년 6월</span>
+      <button class="month-nav-btn" id="month-nav-next" onclick="shiftMonth(1)" title="다음 달" disabled>&#9654;</button>
+    </div>
+    <div class="period-bar">
+      <button class="period-btn" data-period="day" onclick="switchPeriod('day')">일</button>
+      <button class="period-btn" data-period="week" onclick="switchPeriod('week')">주</button>
+      <button class="period-btn active" data-period="month" onclick="switchPeriod('month')">월</button>
+      <button class="period-btn" data-period="custom" onclick="toggleCustomRange()">기간</button>
+      <button class="period-btn" onclick="loadYearToDate()">올해</button>
+      <a href="월간마케팅보고서.html" class="period-btn" style="text-decoration:none">📄 월간 보고서</a>
+      <span class="period-status" id="period-status">월간 기준 · 집계 불러오는 중…</span>
+    </div>
+
+    <!-- 기간 직접 설정 — 한 번만 생성, 토글로 show/hide -->
+    <div class="custom-range" id="custom-range-row">
+      <input type="date" id="custom-from" />
+      <span class="sep">~</span>
+      <input type="date" id="custom-to" />
+      <button class="custom-query-btn" onclick="runCustomQuery()">조회</button>
+      <span id="custom-range-hint" style="font-size:12px;color:var(--dim)"></span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
        ★ 페이지 소개 캡슐 — 이 대시보드가 무엇/무슨 기능인지 한눈 요약 (실무진 눈높이)
        카드별 캡션(배545/547 정직표기)과 별개 — 페이지 전체를 소개하는 상위 1개, 중복 아님
        ════════════════════════════════════════════ -->
@@ -380,37 +413,13 @@ details.footnote-toggle > .fn-body{
     </div>
   </div>
 
-  <!-- 기간 세그먼트 토글 (문의·전환 등에만 적용) -->
-  <!-- 월 네비게이터 — 기본 선택(월) 위에 표시 -->
-  <div class="month-nav" id="month-nav-row">
-    <button class="month-nav-btn" id="month-nav-prev" onclick="shiftMonth(-1)" title="이전 달">&#9664;</button>
-    <span class="month-nav-label" id="month-nav-label">2026년 6월</span>
-    <button class="month-nav-btn" id="month-nav-next" onclick="shiftMonth(1)" title="다음 달" disabled>&#9654;</button>
-  </div>
-  <div class="period-bar">
-    <button class="period-btn" data-period="day" onclick="switchPeriod('day')">일</button>
-    <button class="period-btn" data-period="week" onclick="switchPeriod('week')">주</button>
-    <button class="period-btn active" data-period="month" onclick="switchPeriod('month')">월</button>
-    <button class="period-btn" data-period="custom" onclick="toggleCustomRange()">기간</button>
-    <button class="period-btn" onclick="loadYearToDate()">올해</button>
-    <a href="월간마케팅보고서.html" class="period-btn" style="text-decoration:none">📄 월간 보고서</a>
-    <span class="period-status" id="period-status">월간 기준 · 집계 불러오는 중…</span>
-  </div>
-
-  <!-- 기간 직접 설정 — 한 번만 생성, 토글로 show/hide -->
-  <div class="custom-range" id="custom-range-row">
-    <input type="date" id="custom-from" />
-    <span class="sep">~</span>
-    <input type="date" id="custom-to" />
-    <button class="custom-query-btn" onclick="runCustomQuery()">조회</button>
-    <span id="custom-range-hint" style="font-size:12px;color:var(--dim)"></span>
-  </div>
-
   <!-- ════════════════════════════════════════════
        ③+★ 채널별 현황 — 유입채널(#3+#5) + 채널별 전환율(#744) 통합 섹션
        (GM 2026-07-14: "유입채널이랑 채널별 전환 붙일순 없나?" — 둘 다 채널 기준이라 한 섹션에서 같이 읽도록 병합)
        위: 채널 × 유형 교차표(셀=문의 건수) + 합계·비중 + 출처미상률 배지 — type_channel_breakdown(기간연동)
-       아래: 문의 → 등록(가입) 전환율 — funnel_conversion.byChannel(기간연동 아님 — 서버 convBasis 그대로 표기)
+       아래: 문의 → 등록(가입) 전환율 — funnel_conversion.byChannel(기간연동 · loadFunnelConversion이 상단 필터의 _rangeFromTo
+       from/to를 그대로 전달하고, 서버(Survey.js funnel_conversion, _fcInPeriod)도 동일 필터로 byChannel을 산출함을 실측 확인.
+       2026-07-18 GM 지시로 재확인 — 구주석 '기간연동 아님'은 오기였음, 아래 표 footer에 선택 기간 라벨도 명시함.
        두 표 모두 GAS 표준 10버킷(_canonicalChannel_)으로 채널명이 이미 통일되어 있어 같은 채널명을 위아래로 나란히 읽을 수 있음.
        390px 폭 제약(배545 기타-열 접기 회귀 방지) 상 단일 초광폭표 대신 표 2개를 한 섹션 안에 인접 배치(각자 반응형 유지, 값 손실 없음).
        ════════════════════════════════════════════ -->
@@ -611,6 +620,7 @@ async function loadFunnelConversion() {
 function renderChannelConversion() {
   var el = document.getElementById('channel-conversion-wrap');
   if (!el) return;
+  var periodLabel = (_flow && _flow.label) ? _flow.label : '이번 달';
   if (!_fcData || !Array.isArray(_fcData.byChannel)) {
     el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;color:var(--dim);font-size:13px">집계 준비 중</div>';
     return;
@@ -654,7 +664,7 @@ function renderChannelConversion() {
   el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">'
     + '<table class="channel-table">' + thead + '<tbody>' + bodyHtml + footRow + '</tbody></table>'
     + '<div style="padding:8px 16px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)">'
-    + '채널 = 문의 접수 시 선택한 경로 · 전환 판정 = ' + basisNote + ' · 표본 5건 미만은 ⚠표본부족(참고용, 날조 대신 투명 표기) · \'' + ETC_CHANNEL + '\'는 문의 시점 유입경로 미기록분이라 전환 귀속 신뢰도가 낮습니다.'
+    + '선택 기간: ' + periodLabel + ' · 채널 = 문의 접수 시 선택한 경로 · 전환 판정 = ' + basisNote + ' · 표본 5건 미만은 ⚠표본부족(참고용, 날조 대신 투명 표기) · \'' + ETC_CHANNEL + '\'는 문의 시점 유입경로 미기록분이라 전환 귀속 신뢰도가 낮습니다.'
     + '</div></div>';
 }
 

@@ -3755,32 +3755,40 @@ window._regAssign = function(id, category) {
     (function(){
       var BASE = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/kpi_values.json";
       var DASH_HREF = "cmo/funnel/마케팅현황대시보드.html";
-      var CACHE_KEY = "m1_kpi_strip_v1";
-      function card(label, value, tag){
+      var CACHE_KEY = "m1_kpi_strip_v2"; // v2: 월 값 + 전체 누적값 병기(2026-07-18 GM) — 구v1 캐시(누적 없음)는 자동 무효화
+      function card(label, value, cumLabel, cumValue, tag){
         return '<a href="'+DASH_HREF+'" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:14px;padding:22px 20px;background:var(--paper);">'
           + '<div style="font-size:.92rem;color:var(--dim);margin-bottom:11px;">'+label+'</div>'
           + '<div style="font-size:2rem;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;">'+value+'</div>'
-          + '<div style="font-size:.78rem;color:var(--dim);margin-top:8px;">'+tag+'</div></a>';
+          + '<div style="font-size:.78rem;color:var(--dim);margin-top:8px;">이번 달 · '+tag+'</div>'
+          + '<div style="font-size:.82rem;font-weight:700;color:var(--accent);margin-top:10px;font-variant-numeric:tabular-nums;">누적 '+cumValue+'</div>'
+          + '<div style="font-size:.72rem;color:var(--dim);margin-top:2px;">'+cumLabel+'</div></a>';
       }
-      function render(inq, join, rate, tag){
+      function render(m, tag){
         var el = document.getElementById('m1-status-cards'); if(!el) return;
-        el.innerHTML = card('이번달 문의', inq, tag)
-          + card('이번달 가입', join, tag)
-          + card('이번달 전환율', rate, tag)
+        el.innerHTML = card('이번달 문의', m.inq, '전체 누적 문의', m.cumInq, tag)
+          + card('이번달 가입', m.join, '전체 누적 가입', m.cumJoin, tag)
+          + card('이번달 전환율', m.rate, '전체 누적 전환율', m.cumRate, tag)
           + '<a href="'+DASH_HREF+'" target="_blank" style="display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--accent);font-weight:700;font-size:.95rem;border:1px dashed var(--border);border-radius:14px;padding:22px 20px;">전체 보기 →</a>';
       }
       function loadHub(){
         // 링크는 즉시 렌더(클릭 가능) · 지표는 직전 캐시 표시 후 백그라운드 갱신(stale-while-revalidate) — O1 운영 모듈 현황과 동일 패턴
         var cached=null; try{ cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){}
-        if(cached) render(cached.inq, cached.join, cached.rate, '측정값 · 갱신 중');
-        else render('—','—','—','측정값(measured)');
+        if(cached) render(cached, '갱신 중');
+        else render({inq:'—',join:'—',rate:'—',cumInq:'—',cumJoin:'—',cumRate:'—'}, '측정값(measured)');
         fetch(BASE+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(data){
           var cpo = (data && data.roles && data.roles.cpo) || {};
-          var inq = (cpo['이번달_전환_문의수']!=null) ? cpo['이번달_전환_문의수'] : '—';
-          var join = (cpo['이번달_전환_가입수']!=null) ? cpo['이번달_전환_가입수'] : '—';
-          var rate = (cpo['이번달_전환율']!=null) ? cpo['이번달_전환율']+'%' : '—';
-          render(inq, join, rate, '측정값(measured)');
-          try{ localStorage.setItem(CACHE_KEY, JSON.stringify({inq:inq,join:join,rate:rate})); }catch(e){}
+          // 누적 소스 = 같은 kpi_values.json cpo 블록의 전환_문의수/전환_가입수/문의_가입_전환율(전화매칭 기준 전체 누적) — 실측 확인, 지어낸 값 아님.
+          var m = {
+            inq:  (cpo['이번달_전환_문의수']!=null) ? cpo['이번달_전환_문의수'] : '—',
+            join: (cpo['이번달_전환_가입수']!=null) ? cpo['이번달_전환_가입수'] : '—',
+            rate: (cpo['이번달_전환율']!=null) ? cpo['이번달_전환율']+'%' : '—',
+            cumInq:  (cpo['전환_문의수']!=null) ? Number(cpo['전환_문의수']).toLocaleString('ko-KR') : '—',
+            cumJoin: (cpo['전환_가입수']!=null) ? Number(cpo['전환_가입수']).toLocaleString('ko-KR') : '—',
+            cumRate: (cpo['문의_가입_전환율']!=null) ? cpo['문의_가입_전환율']+'%' : '—'
+          };
+          render(m, '측정값(measured)');
+          try{ localStorage.setItem(CACHE_KEY, JSON.stringify(m)); }catch(e){}
         }).catch(function(){ if(!cached){ var el=document.getElementById('m1-status-cards'); if(el) el.innerHTML='<div style="color:var(--red);">마케팅 현황: (측정 실패 — 정직 표기)</div>'; } });
       }
       loadHub();
