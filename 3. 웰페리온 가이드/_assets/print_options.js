@@ -129,7 +129,10 @@
       // 달라졌다(예: 대시보드 .share-btn 대비 폭/높이 불일치). 폴백 미니버튼은 아래
       // .po-toggle.po-toggle-fallback 규칙이 font:inherit를 자체 보유(그 안에서 font-size만
       // 재지정)해 동일 동작 유지 — 회귀 없음. 2026-07-18 GM 피드백.
-      '.po-toggle{font-family:inherit; background:transparent; -webkit-appearance:none; appearance:none;}' +
+      // line-height도 명시 고정 — 🖨️ 이모지 글리프가 폴백 이모지 폰트의 큰 라인 메트릭을 끌어와
+      // line-height:normal 자동계산 시 인접 버튼보다 몇 px 더 커지는 것을 방지(2026-07-18 GM 피드백:
+      // 인쇄 버튼이 대시보드 버튼과 높이가 다름).
+      '.po-toggle{font-family:inherit; line-height:1.2; background:transparent; -webkit-appearance:none; appearance:none;}' +
       // position:fixed(뷰포트 기준·JS로 top/right 계산) — absolute였을 때 .filter-bar(overflow-x:auto)
       // 같은 스크롤 클리핑 조상 안에 갇혀 sticky-top과 얽혀 스크롤 시 sticky 헤더가 깨지던 문제 차단.
       // 2026-07-18 GM 피드백.
