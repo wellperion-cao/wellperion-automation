@@ -797,11 +797,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr}}
 /* 현황카드 일원화(한 줄) — 2026-07-15 GM 지시. 전환보드 삭제 후 멤버십 6카드·강습 5카드를 각각 한 줄로. */
 #memberTabNav{grid-template-columns:repeat(4,1fr)}
-#memberTabNavWait{grid-template-columns:repeat(2,1fr)}
 #lessonComboBoard{grid-template-columns:repeat(5,1fr)}
-@media(max-width:1100px){#memberTabNav,#lessonComboBoard,#memberTabNavWait{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1100px){#memberTabNav,#lessonComboBoard{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){#memberTabNav,#lessonComboBoard{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:520px){#memberTabNav,#lessonComboBoard,#memberTabNavWait{grid-template-columns:1fr}}
+@media(max-width:520px){#memberTabNav,#lessonComboBoard{grid-template-columns:1fr}}
 
 /* ═══════════════════════════════════════
    멤버십 현황 집중형 대시보드 모달 — 배3, 2026-07-07 시포·GM
@@ -1233,12 +1232,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
   <div id="type-membership" class="type-pane active">
 
-  <!-- ══ 현황카드 4+2종(2줄) — 2026-07-15 GM 지시(전환보드 삭제→현황카드 일원화), 2026-07-18 GM 재지시(대기자·LOSS
-       하단 통합)로 레이아웃 분리. 카드1·2(새 문의·오늘 예약)는 구 #cpoTodayStrip 히어로 카드(sumNewCard·sumBookCard)
+  <!-- ══ 현황카드 4종(1줄) — 2026-07-15 GM 지시(전환보드 삭제→현황카드 일원화), 2026-07-18 GM 재지시로 대기자·LOSS
+       카드(구 카드5·6, #memberTabNavWait) 완전 삭제 — 하단 '멤버십 회원 관리' 탭의 4소트 세그먼트(유효/대기자/법인/LOSS,
+       line~1573)와 중복이라 제거. 카드1·2(새 문의·오늘 예약)는 구 #cpoTodayStrip 히어로 카드(sumNewCard·sumBookCard)
        그대로 이관 — id·onclick·표시값·클릭동작 100% 동일 보존, "오늘 예약"은 GM 지시로 형태 변경 없음. 카드3·4(등록·회원)는
-       상단 #memberTabNav(4카드), 카드5·6(대기자·LOSS)은 하단 #memberTabNavWait(2카드)로 분리 — 구 4카드
-       (CPO-2026-07-14-MEMBER-CARDS-FIX) id·onclick·데이터 배선 변경 없이 이동만, 기존 멤버십 데이터(cpo_today_stats)만 재활용(신규 fetch 없음).
-       대기자=멤버십 문의 진행상태에 '대기' 버킷이 존재하지 않아(STATUS_OPTIONS 참조, 강습 전용) 정직표기(미구현). ══ -->
+       #memberTabNav(4카드) (CPO-2026-07-14-MEMBER-CARDS-FIX) id·onclick·데이터 배선 변경 없이 이동만, 기존 멤버십
+       데이터(cpo_today_stats)만 재활용(신규 fetch 없음). ══ -->
   <div class="dash-grid" id="memberTabNav">
     <!-- 카드1: 새 문의 (구 히어로 sumNewCard → 2026-07-16 GM 지시로 카드3과 동일한 dash-card 금일/월간 형식 통일. id sumNew 유지=데이터배선 보존) -->
     <a class="dash-card" data-kind="inq" href="javascript:void(0)" onclick="heroCardClick('new');_memHighlight(this)">
@@ -1271,25 +1270,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line"><span class="dash-k">유효</span><span class="dash-v"><b class="lead" id="dMemActive">0</b> 명</span></div>
         <!-- 유효(위 줄)=server memberActive+memberCorp(법인, 총 유효회원 수에 합산) 단일 소스=요약카드 총유효와 동일. 단기=유효의 부분집합(중단기 카운트), 법인 단독표기(dMemCorp)는 하단에 별도 유지. 2026-07-18 시포·GM -->
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
-      </div>
-    </a>
-  </div>
-  <!-- 대기자·LOSS 하단 통합(카드5·6) — 2026-07-18 GM 지시("위에 카드 대기자/LOSS 2개는 아래로 합쳐야"). 상단 4카드와
-       분리된 별도 묶음(한 행). id·onclick·데이터 배선(dMemWait/dMemLossToday/dMemLossMonth)은 그대로 이동만(값 로직 무변경). -->
-  <div class="dash-grid" id="memberTabNavWait">
-    <!-- 카드5: 대기자 회원 관리 (2026-07-16 GM 지시 — 유효회원 시작일자 > 오늘 인 회원을 대기자로 분리·클릭형 전환) -->
-    <a class="dash-card" data-kind="wait" href="javascript:void(0)" onclick="showWaitMembers();_memHighlight(this)">
-      <div class="dash-head"><span class="dash-dot" style="background:var(--accent)"></span><span class="dash-title">대기자 회원 관리</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">시작 전</span><span class="dash-v"><b class="lead" id="dMemWait">0</b> 명</span></div>
-      </div>
-    </a>
-    <!-- 카드6: LOSS 회원 관리 (이탈 — cpo_today_stats.todayLoss/monthLoss 재활용, 기존 gToLoss/gMoLoss와 동일 소스) -->
-    <a class="dash-card" data-kind="loss" href="javascript:void(0)" onclick="openChurnManage();_memHighlight(this)">
-      <div class="dash-head"><span class="dash-dot" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dMemLossToday">0</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dMemLossMonth">0</b> 명</span></div>
       </div>
     </a>
   </div>
@@ -3636,8 +3616,7 @@ function loadChurnStats(el){
 // 멤버십 현황카드 6종 클릭 일관화(2026-07-16 GM 지시) — 어떤 카드든 클릭=자기 하이라이트+화면전환.
 // 각 카드 onclick은 "액션();_memHighlight(this)" 순서(하이라이트를 마지막에=switchTab의 data-tab 토글을 덮어써 항상 자기 카드만 active).
 function _memHighlight(el){
-  // 대기자·LOSS 카드가 #memberTabNavWait로 분리(2026-07-18)돼도 상호배타 하이라이트 유지 — 두 컨테이너 모두 클리어.
-  document.querySelectorAll('#memberTabNav .dash-card, #memberTabNavWait .dash-card').forEach(function(c){ c.classList.remove('active'); });
+  document.querySelectorAll('#memberTabNav .dash-card').forEach(function(c){ c.classList.remove('active'); });
   if (el && el.classList) el.classList.add('active');
 }
 function switchTab(id, btn) {
@@ -5333,8 +5312,6 @@ function _memberOverviewHtml() {
   if (!hasSrv && !tc) return '';
   var corp = Number(d.memberCorp) || 0;
   var totalValid = ((d.memberActive != null) ? (Number(d.memberActive) || 0) : (_validTotal || 0)) + corp;
-  var loss = Number(d.memberEnded) || 0;
-  var wait = _validWaitCnt || 0;
   var g = function(k){ return tc ? (tc[k] || 0) : '—'; };
   var typeChips =
     _memberChip('멤버십', g('멤버십'), 'type') +
@@ -5344,9 +5321,7 @@ function _memberOverviewHtml() {
     _memberChip('보증금', g('보증금'), 'type') +
     _memberChip('FAN VIP', g('FAN VIP'), 'type') +
     ((tc && (tc['기타'] || 0) > 0) ? _memberChip('기타', tc['기타'], 'type') : '');
-  var stateChips =
-    _memberChip('🕐 대기자', wait, 'wait') +
-    _memberChip('📉 LOSS', loss, 'loss');
+  // 대기자·LOSS 칩은 2026-07-18 GM 지시로 삭제 — 멤버십 회원 관리 탭의 4소트 세그먼트(유효/대기자/법인/LOSS)와 중복.
   var foot = tc ? '' : '<div style="font-size:10px;color:var(--dim);margin-top:4px">※ 유형별 수치는 유효회원 명단 로드 후 표시됩니다</div>';
   return '<div>' +
       '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">' +
@@ -5356,10 +5331,7 @@ function _memberOverviewHtml() {
           '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
         '</div>' +
         '<div style="width:1px;height:52px;background:var(--border);flex-shrink:0"></div>' +
-        '<div style="display:flex;flex-direction:column;gap:6px">' +
-          '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">' + typeChips + '</div>' +
-          '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">' + stateChips + '</div>' +
-        '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">' + typeChips + '</div>' +
       '</div>' + foot +
     '</div>';
 }
