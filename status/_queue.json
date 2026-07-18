@@ -1,5 +1,21 @@
 [
   {
+    "task_id": "COO-2026-07-18-LOSTFOUND-2TRACK-DISPOSAL",
+    "clevel": "coo",
+    "title": "[시우] 습득물 처분 유실물법 2트랙 정합 — 소모품 폐기/일반·고가 경찰인계 + 운영 가이드",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "module": "coo",
+    "surface": "autonomy",
+    "note": "[2026-07-18 GM 지시·완결] GM이 회사문서에 유실물법 기준 분실물 처리규정+회원 안내문 작성 → 라이브 습득물 시스템(전체 자동폐기)과 충돌 발견(일반·고가품도 경찰제출 없이 2개월 뒤 폐기=임의폐기 횡령소지). GM 결정=절충 2트랙 + A안(월사이클 유지, 처분단계만 물품별 분기). 구현: ①가이드 lost_found_guide.html 재작성·발행(bd707d8b) — 월사이클+물품3구분+회원안내+직원SOP+A3. ②GAS(단일소스 apps_script_voc.js·배포 VOC_배포.js @53): LF_HEADERS 맨끝 category 컬럼 append(positional write 안전)·LF_STATUS POLICE(경찰인계) 추가·_lfAutoDispose_ 트랙분기(consumable→폐기물 / general·valuable·빈값→경찰인계, 처분일 기록; 빈값=안전기본으로 기존 미분류 임의폐기 위험 즉시 제거)·lf_submit category 접수(기본 general)·gallery/list/disposal 응답 category·track. ③프론트: register 물품구분 select+헬퍼+정책문구 2트랙 교체, gallery 물품배지🟢🟡🔴+'처분예정'+track별 완료표기, disposal 처분예정/완료 각 폐기(소모품)·경찰(일반고가) 4분할. WP 재주입 register8464·gallery8462(draft-page 발행유지). E2E 실테스트 통과(consumable→폐기물/general·valuable→경찰인계, category·track 실림, 테스트행 삭제, 실데이터 0건 영향). Pages 3×200·WP 2 신마커·콘솔0 라이브검증 PASS. 스펙=docs/superpowers/specs/2026-07-18-lostfound-2track-disposal.md. ★커밋 traceability 흠집(정직): Stage2 코드 7파일 커밋이 동시 자동커밋(문의 스냅샷) 레이스로 3d3d7663(메시지 'chore(cpo): 문의 스냅샷')에 편승 기록됨 — git show 상 7파일 diff 정상 포함·push 완료. INC-008/009 원칙(pushed history rewrite 금지)상 amend 안 하고 본 note로 박제.",
+    "next": "🔗 다음 후보(필요시 GM 지시): 경찰 '제출완료' 별도 상태(현 MVP=경찰인계 표시까지) · 기존 미분류 습득물 일괄 재분류 UI · 소모품 오분류 정정 도구.",
+    "depends_on": "",
+    "ship_no": 1403
+  },
+  {
     "task_id": "COO-2026-07-18-LOSTFOUND-LIFECYCLE-SIMPLIFY",
     "clevel": "coo",
     "title": "[시우] 습득물 파이프라인 단순화 + 폐기물 생애주기 — 접수→보기(수령) 2단계·철회 폐지·30일 자동폐기(A3 공지+시트)",
@@ -2051,5 +2067,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 8a9c67e5)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8a9c67e5ebb70b03b951465a226a1f4c25606a08"
+  },
+  {
+    "task_id": "CPO-2026-07-18-ADHOC-822f7704",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1407,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 822f7704)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "822f770401b8dc2f74ffe92262f3fcd8d0379d54"
   }
 ]

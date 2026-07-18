@@ -1561,13 +1561,17 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <!-- 이탈방지 액션 모듈(⏰갱신임박·📉저이용) = 2026-07-15 GM 재지시로 상단 단독 패널 폐지 → 이탈관리 모달(openChurnManage)·
            오늘 할 일(tapBody)로 이관·병합. 여기 없음(중복 아님). -->
 
-      <div class="active-toggle" style="display:flex;gap:6px;margin-bottom:12px">
-        <button type="button" id="activeScopeValid" class="seg-btn" onclick="setActiveScope('valid', this)"
+      <!-- 4소트 세그먼트(유효/대기자/법인/LOSS) — 2026-07-18 시포·GM. 대기자=유효 스코프 미래시작 분리(신규 fetch 없음·_activeStartFilter 재사용),
+           LOSS=구 '종료 회원'(scope=ended) 라벨 통일. 유효=시작 도래분만. setActiveSeg 단일 진입점. -->
+      <div class="active-toggle" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <button type="button" id="activeScopeValid" class="seg-btn" onclick="setActiveSeg('valid', this)"
           style="padding:7px 16px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">유효회원</button>
-        <button type="button" id="activeScopeCorp" class="seg-btn" onclick="setActiveScope('corp', this)"
+        <button type="button" id="activeScopeWait" class="seg-btn" onclick="setActiveSeg('waiting', this)"
+          style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">대기자</button>
+        <button type="button" id="activeScopeCorp" class="seg-btn" onclick="setActiveSeg('corp', this)"
           style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">법인회원</button>
-        <button type="button" id="activeScopeEnded" class="seg-btn" onclick="setActiveScope('ended', this)"
-          style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">종료 회원</button>
+        <button type="button" id="activeScopeEnded" class="seg-btn" onclick="setActiveSeg('ended', this)"
+          style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">LOSS</button>
       </div>
 
       <div class="active-search-wrap">
@@ -1729,6 +1733,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="info-box accent" style="margin-bottom:14px">
         <strong>성인 강습 회원 관리</strong> — 수강(등록) 회원 전체 명단. 상태·담당·메모 편집은 다음 단계.
       </div>
+      <!-- 강습 현황카드(#3, 2026-07-18 시포·GM): 수강 총원 + 문의상태 버킷(진행/대기/LOSS). 종목별 등록인원=아래 필터칩 재사용. -->
+      <div id="lessonMemStatus_adult" class="card" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--teal)"></div>
       <div class="card">
         <div class="card-title"><span class="icon">🧑‍🏫</span>수강 회원 명단
           <span id="lessonMemStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
@@ -1899,6 +1905,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="info-box accent" style="margin-bottom:14px">
         <strong>유소년 강습 회원 관리</strong> — 수강(등록) 회원 전체 명단. 상태·담당·메모 편집은 다음 단계.
       </div>
+      <!-- 강습 현황카드(#3, 2026-07-18 시포·GM): 수강 총원 + 문의상태 버킷(진행/대기/LOSS). 종목별 등록인원=아래 필터칩 재사용. -->
+      <div id="lessonMemStatus_youth" class="card" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--teal)"></div>
       <div class="card">
         <div class="card-title"><span class="icon">🧑‍🏫</span>수강 회원 명단
           <span id="lessonMemStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
@@ -4258,6 +4266,44 @@ function _lessonUpdateBucketCounts(t) {
   rows.forEach(function(r){ var s = String(r.status || '').trim(); if (s === 'LOSS') loss++; else if (s === '대기') wait++; });
   var e1 = document.getElementById('lessonCardLoss_' + t); if (e1) e1.textContent = loss;
   var e2 = document.getElementById('lessonCardWait_' + t); if (e2) e2.textContent = wait;
+  _lessonMemStatus(t);   // 강습 회원관리 현황카드(#3) 문의상태 버킷 동기 갱신
+}
+
+// 강습 회원관리 현황카드(#3, 2026-07-18 시포·GM) — 수강 총원 + 문의상태 버킷(진행/대기/LOSS).
+//   종목별 등록인원은 아래 종목 필터칩(_lessonRosterChips) 재사용, 여기선 총원·상태 버킷만.
+//   멤버십식 유효/만료·잔여회차는 강습 데이터에 없음 → 표기하지 않음(정직). 문의상태=lesson_inquiry rows 재사용(신규 fetch 0).
+function _lessonMemStatus(t) {
+  var box = document.getElementById('lessonMemStatus_' + t);
+  if (!box) return;
+  var st = _lessonState[t] || {};
+  var roster = st.roster || [];
+  var rows = st.rows || [];
+  var loss = 0, wait = 0, prog = 0;
+  rows.forEach(function(r){
+    var s = String(r.status || '').trim();
+    if (s === 'LOSS') loss++;
+    else if (s === '대기') wait++;
+    else prog++;
+  });
+  var inqLoaded = st.rowsLoaded || rows.length;
+  var statusChips = inqLoaded
+    ? (_memberChip('진행중', prog, 'type') + _memberChip('🕐 대기', wait, 'wait') + _memberChip('📉 LOSS', loss, 'loss'))
+    : '<span style="font-size:12px;color:var(--dim)">문의 현황 로드 후 표시</span>';
+  box.style.display = '';
+  box.innerHTML =
+    '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px">' +
+      '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
+        '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">수강 회원</div>' +
+        '<div style="font-size:34px;font-weight:800;color:var(--teal);line-height:1">' + roster.length.toLocaleString() + '</div>' +
+        '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
+      '</div>' +
+      '<div style="width:1px;height:52px;background:var(--border);flex-shrink:0"></div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px">' +
+        '<div style="font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.06em">문의 상태</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">' + statusChips + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="font-size:10.5px;color:var(--dim);margin-top:2px">※ 종목별 등록인원 = 아래 종목 필터칩 · 멤버십식 유효/만료·잔여회차는 데이터 없음(—)</div>';
 }
 function lessonRender(t) {
   var tbody = document.getElementById('lessonBody_' + t);
@@ -4419,6 +4465,7 @@ function lessonRegLoad(t) {
       st.roster = d.roster || [];
       st.bySport = d.bySport || [];   // 외부관리 프로그램(루프메소드 등) 정직 표기용
       _lessonRosterChips(t, 'mem'); _lessonRosterRender(t, 'mem');
+      _lessonMemStatus(t);   // 현황카드(#3) 수강 총원 갱신
       var ms = document.getElementById('lessonMemStatLine_' + t);
       if (ms) ms.textContent = '수강 ' + (d.total || 0) + '명';
       var card = document.getElementById('lessonCardMem_' + t);   // 대시카드3(강습 회원 관리) 숫자 배선. 2026-07-07 시포
@@ -4982,7 +5029,7 @@ function openReconForMember(rowIndex) {
 // 이동 — activeScopeEnded 토글 클릭과 동일 동작 재사용(신규 fetch 로직 없음) + 스크롤. GM 지시(2026-07-15).
 function jumpToEndedMembers() {
   var btn = document.getElementById('activeScopeEnded');
-  if (btn) setActiveScope('ended', btn);
+  if (btn) setActiveSeg('ended', btn);
   var wrap = document.getElementById('activeTable');
   if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -4996,6 +5043,19 @@ function setActiveScope(scope, btn) {
   if (btn) { btn.style.background = 'var(--teal-bg)'; btn.style.color = 'var(--teal)'; btn.style.borderColor = 'var(--teal-border)'; }
   var si = document.getElementById('activeSearch'); if (si) si.value = '';
   loadActiveMembers();
+}
+
+// 4소트 세그먼트 단일 진입점(유효/대기자/법인/LOSS) — 2026-07-18 시포·GM.
+//   waiting = valid 스코프 + 미래시작 필터(신규 fetch 없이 같은 valid 응답을 클라 분리, _activeStartFilterApply 재사용).
+//   valid/corp/ended = 기존 setActiveScope 재사용(각 scope 1회 fetch, 기존과 동일). 유효/법인/LOSS 진입 시 대기자 필터는 'started'로 리셋.
+function setActiveSeg(seg, btn) {
+  if (seg === 'waiting') {
+    _activeStartFilter = 'waiting';
+    setActiveScope('valid', btn);   // btn=대기자 버튼 → setActiveScope가 해당 버튼만 활성화
+  } else {
+    _activeStartFilter = 'started';
+    setActiveScope(seg, btn);
+  }
 }
 
 function loadActiveMembers() {
@@ -5030,20 +5090,12 @@ function loadActiveMembers() {
 
 // 대기자(미래시작) 카드 클릭 → 멤버십 회원 관리 탭으로 전환·대기자만 표시(2026-07-16 GM 지시). 신규 fetch 없음(_activeRows 재사용).
 function showWaitMembers() {
-  _activeStartFilter = 'waiting';
   switchTab('active');
-  var si = document.getElementById('activeSearch'); if (si) si.value = '';
-  if (_activeScope !== 'valid') {
-    setActiveScope('valid', document.getElementById('activeScopeValid'));   // 재조회 후 대기자 필터가 반영된 채로 자동 재렌더
-  } else {
-    _activeRender(_activeStartFilterApply(_activeRows));
-  }
+  setActiveSeg('waiting', document.getElementById('activeScopeWait'));   // 대기자 세그먼트로 진입(버튼 활성화·valid 재조회·미래시작만 렌더)
 }
-// 대기자 보기에서 "전체 보기로 →" 클릭 시 기본(시작 도래분만) 복귀.
+// 대기자 보기에서 "전체 보기로 →" 클릭 시 유효회원 세그먼트로 복귀.
 function _activeBackToStarted() {
-  _activeStartFilter = 'started';
-  var si = document.getElementById('activeSearch');
-  _activeFilter(si ? si.value : '');
+  setActiveSeg('valid', document.getElementById('activeScopeValid'));
 }
 // 대기자 보기 중 안내 배너 — 유효회원 스코프에서만 노출.
 function _renderActiveStartBanner() {
@@ -5217,73 +5269,95 @@ function _composeHtml() {
     '</div>';
 }
 
+/* ─── 멤버십 현황 요약카드(#2, 2026-07-18 시포·GM) ───
+   총유효·유형별(멤버십/입주민/단기/보증금/FAN VIP/기타)·대기자·법인·LOSS 카운트를 한 카드에.
+   유형별 집계 = valid 전량 로드분 캐시(_validTypeCounts) 기준 → 세그먼트를 바꿔도 값이 흔들리지 않음(정확성).
+   서버 집계 재사용(cpo_today_stats): 총유효=memberActive · 법인=memberCorp · LOSS=memberEnded (신규 fetch 0).
+   미로드 유형은 '—' 정직 표기. */
+var _validTypeCounts = null;   // {멤버십,입주민,중단기,보증금,FAN VIP,기타}
+var _validTotal = 0;
+var _validWaitCnt = 0;
+
+function _memberChip(label, val, kind) {
+  var C = { type: ['var(--teal-bg)','var(--teal-border)','var(--teal)'],
+            wait: ['var(--accent-bg)','var(--accent-border)','var(--accent)'],
+            loss: ['rgba(200,117,111,.12)','#c8756f','#c8756f'] };
+  var c = C[kind] || C.type;
+  var num = (val === '—') ? '—' : (Number(val) || 0).toLocaleString();
+  return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:' + c[0] + ';border:1px solid ' + c[1] + ';font-size:12px;font-weight:700;color:' + c[2] + ';white-space:nowrap">' +
+    esc(label) + '<span style="font-size:14px;font-weight:800">' + num + '</span></span>';
+}
+function _memberOverviewHtml() {
+  var d = _cpoStats || {};
+  var tc = _validTypeCounts;
+  var hasSrv = _cpoStats && (d.memberActive != null || d.memberCorp != null || d.memberEnded != null);
+  if (!hasSrv && !tc) return '';
+  var totalValid = (d.memberActive != null) ? (Number(d.memberActive) || 0) : (_validTotal || 0);
+  var corp = Number(d.memberCorp) || 0;
+  var loss = Number(d.memberEnded) || 0;
+  var wait = _validWaitCnt || 0;
+  var g = function(k){ return tc ? (tc[k] || 0) : '—'; };
+  var typeChips =
+    _memberChip('멤버십', g('멤버십'), 'type') +
+    _memberChip('입주민', g('입주민'), 'type') +
+    _memberChip('단기',   g('중단기'), 'type') +
+    _memberChip('보증금', g('보증금'), 'type') +
+    _memberChip('FAN VIP', g('FAN VIP'), 'type') +
+    ((tc && (tc['기타'] || 0) > 0) ? _memberChip('기타', tc['기타'], 'type') : '');
+  var stateChips =
+    _memberChip('🕐 대기자', wait, 'wait') +
+    _memberChip('🏢 법인', corp, 'type') +
+    _memberChip('📉 LOSS', loss, 'loss');
+  var foot = tc ? '' : '<div style="font-size:10px;color:var(--dim);margin-top:4px">※ 유형별 수치는 유효회원 명단 로드 후 표시됩니다</div>';
+  return '<div>' +
+      '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">' +
+        '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
+          '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">총 유효회원</div>' +
+          '<div style="font-size:34px;font-weight:800;color:var(--teal);line-height:1">' + totalValid.toLocaleString() + '</div>' +
+          '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
+        '</div>' +
+        '<div style="width:1px;height:52px;background:var(--border);flex-shrink:0"></div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px">' +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">' + typeChips + '</div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">' + stateChips + '</div>' +
+        '</div>' +
+      '</div>' + foot +
+    '</div>';
+}
+
 function renderActiveSummary() {
   var el = document.getElementById('activeSummary');
   if (!el) return;
   var rows = _activeRows || [];
-  // 대기자(미래시작) 카운트 + 카드4(dMemActive) 시작된 수만 표기(2026-07-16 GM 지시). 유효회원 스코프·_activeRows 로드 시에만 반영,
-  // 미로드 시엔 loadCpoTodayStats가 세팅한 원값(memberActive+corp) 유지.
-  if (_activeScope === 'valid') {
-    var _waitCnt = _waitMembers().length;
-    _setTxt('dMemWait', _waitCnt);
-    if (_cpoStats && rows.length) {
-      var _started = (Number(_cpoStats.memberActive) || 0) + (Number(_cpoStats.memberCorp) || 0) - _waitCnt;
-      _setTxt('dMemActive', _started < 0 ? 0 : _started);
+
+  // valid 스코프 데이터 도착 시에만 유형 집계 캐시 갱신(대기자 포함 전량 기준). corp/ended/대기자 필터로 이동해도
+  // 현황카드 유형 수치는 이 캐시로 안정 유지. 카드4/5 배선(dMemActive/dMemWait/dMemShort)도 여기서 갱신(기존 동작 보존).
+  if (_activeScope === 'valid' && rows.length) {
+    var counts = {};
+    var KNOWN = ['멤버십','입주민','중단기','보증금','FAN VIP'];
+    var TYPO_MAP = { '맴버십': '멤버십', '멥버십': '멤버십' };   // 회원구분 오타 정규화(배299, 2026-07-03 시포)
+    rows.forEach(function(row){
+      var v = String(row['회원\n구분'] || row['회원구분'] || '').trim() || '기타';
+      if (TYPO_MAP[v]) v = TYPO_MAP[v];
+      if (KNOWN.indexOf(v) < 0) v = '기타';
+      counts[v] = (counts[v] || 0) + 1;
+    });
+    _validTypeCounts = counts;
+    _validTotal = rows.length;
+    _validWaitCnt = _waitMembers().length;
+    _setTxt('dMemWait', _validWaitCnt);              // 카드5(대기자) 배선 유지
+    _setTxt('dMemShort', counts['중단기'] || 0);      // 카드4 단기 배선 유지(배299)
+    if (_cpoStats) {
+      var _started = (Number(_cpoStats.memberActive) || 0) + (Number(_cpoStats.memberCorp) || 0) - _validWaitCnt;
+      _setTxt('dMemActive', _started < 0 ? 0 : _started);   // 카드4 유효(시작 도래분) 배선 유지(2026-07-16)
     }
   }
-  var _cross = _composeHtml();
-  if (rows.length === 0 && !_cross) { el.style.display = 'none'; return; }
+
+  var overview = _memberOverviewHtml();
+  var cross = _composeHtml();
+  if (!overview && !cross) { el.style.display = 'none'; return; }
   el.style.display = '';
-  if (rows.length === 0) { el.innerHTML = _cross; return; }   // 구성만(아직 scope 미로드)
-
-  var title = _activeScope === 'ended' ? '종료회원 현황' : (_activeScope === 'corp' ? '법인회원 현황' : '유효회원 현황');
-  var counts = {};
-  var KNOWN = ['멤버십','입주민','중단기','보증금','FAN VIP'];
-  var TYPO_MAP = { '맴버십': '멤버십', '멥버십': '멤버십' };   // 회원구분 오타 정규화(배299, 2026-07-03 시포)
-  rows.forEach(function(row){
-    var v = String(row['회원\n구분'] || row['회원구분'] || '').trim() || '기타';
-    if (TYPO_MAP[v]) v = TYPO_MAP[v];
-    if (KNOWN.indexOf(v) < 0) v = '기타';
-    counts[v] = (counts[v] || 0) + 1;
-  });
-  if (_activeScope === 'valid') {
-    _setTxt('dMemShort', counts['중단기'] || 0);   // 단기권(중단기) 카드 표시 — valid 스코프만(배299, 2026-07-07 시포·GM). 멤버십 현황 모달 §4 단기 수치도 이 값 참조.
-  }
-
-  var chipsHtml = KNOWN.map(function(k){
-    var n = counts[k] || 0;
-    if (n === 0) return '';
-    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:var(--teal-bg);border:1px solid var(--teal-border);font-size:12px;font-weight:700;color:var(--teal);white-space:nowrap">' +
-      esc(k) + '<span style="font-size:14px;font-weight:800">' + n + '</span></span>';
-  }).join('');
-  var etc = counts['기타'] || 0;
-  if (etc > 0) {
-    chipsHtml += '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:var(--accent-bg);border:1px solid var(--accent-border);font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap">기타<span style="font-size:14px;font-weight:800">' + etc + '</span></span>';
-  }
-
-  // GM 요청 형식: "유효 N명 (멤버십 X / 입주민 Y / 중단기 Z / 보증금 W / FAN VIP V / 기타 U)" 한눈에(배299, 2026-07-03 시포)
-  var scopeWord = _activeScope === 'ended' ? '종료' : (_activeScope === 'corp' ? '법인' : '유효');
-  var breakdownStr = KNOWN.concat(['기타']).map(function(k){ return k + ' ' + (counts[k] || 0); }).join(' / ');
-  var summaryLine = scopeWord + ' ' + rows.length.toLocaleString() + '명 (' + breakdownStr + ')';
-  var footnote = (_activeScope === 'valid')
-    ? '<div style="font-size:10px;color:var(--dim);margin-top:2px">※ 유효=잔여일&gt;0 기준(다른 화면의 유효회원 수와 소폭 다를 수 있음)</div>'
-    : '';
-
-  el.innerHTML =
-    _cross + (_cross ? '<div style="height:1px;background:var(--border);margin:11px 0"></div>' : '') +
-    '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
-      '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
-        '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">' + esc(title) + '</div>' +
-        '<div style="font-size:34px;font-weight:800;color:var(--teal);line-height:1">' + rows.length + '</div>' +
-        '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
-      '</div>' +
-      '<div style="width:1px;height:40px;background:var(--border);flex-shrink:0"></div>' +
-      '<div style="display:flex;flex-direction:column;gap:5px">' +
-        '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">' + chipsHtml + '</div>' +
-        '<div style="font-size:11px;color:var(--dim)">' + esc(summaryLine) + '</div>' +
-      '</div>' +
-    '</div>' +
-    footnote;
+  el.innerHTML = overview + ((overview && cross) ? '<div style="height:1px;background:var(--border);margin:11px 0"></div>' : '') + cross;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
