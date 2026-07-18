@@ -236,12 +236,13 @@
     "task_id": "CEO-2026-07-16-NORTHSTAR-1156",
     "clevel": "ceo",
     "title": "[북극성추천] AI CEO 북극성 'ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하' 향한 다음 브릿지 한 칸 설계",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-16",
+    "processed_at": "2026-07-18",
     "ship_no": 1156,
-    "note": "[웰리 북극성 추천 승인 2026-06-29] / 🌟 북극성: ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자\n📍 지금: 활성 2척 · 완료건 next 3건 · KPI 완결률=0.0, 완료=0, 활성=1\n👉 오늘 한 수: AI CEO 북극성 'ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하' 향한 다음 브릿지 한 칸 설계 (신호①) / 근거: 신호① 북극성 갭 — [ceo] 북극성 서술 대비 비어있는 다음 걸음(소유: home, G1)",
-    "next": "",
+    "note": "[웰리 북극성 추천 승인 2026-06-29] / 🌟 북극성: ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자\n📍 지금: 활성 2척 · 완료건 next 3건 · KPI 완결률=0.0, 완료=0, 활성=1\n👉 오늘 한 수: AI CEO 북극성 'ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하' 향한 다음 브릿지 한 칸 설계 (신호①) / 근거: 신호① 북극성 갭 — [ceo] 북극성 서술 대비 비어있는 다음 걸음(소유: home, G1)\n[2026-07-18 브릿지 산출·라이브 완료] GM이 카톡 점검 다이제스트 0/105 의문 제기 → 진상조사로 지원부 점검 07-16부터 서버 저장 유실(급성 고장·GAS 프로퍼티 9KB 한도, _updateCheckLedger·_saveGroupSubmits 미보호 setProperty가 시트 저장까지 통째로 죽임) 확정. 북극성 '반복 자동화·본질 집중'의 다음 한 칸 = 점검 신뢰성 자동화로 굳힘. 라이브 발효(GAS @164 배포): ①저장 fail-soft 격리(프로퍼티 실패해도 시트 영속) ②거짓 완료 알림 차단(notify_round를 저장 성공 확인 후에만) ③실패 빨간배너 표면화(INC-013 교훈) ④시설부 per-check 텔레그램 알림 신설(GM 요청) ⑤23시 보고 stale 소스→board 정합(스케줄러 재기동 후 발효). 웰리 검수=배포본 테스트 저장→서버 시트 실반영 확인→정리 완료. 커밋 1a52ef13·707c8dbf. 07-16·17 유실분=복구 불가(서버·시트 양쪽 미생성).",
+    "next": "🔗 다음 브릿지 후보: ①점검 원장 프로퍼티→전용 시트 탭 근본 이관(TTL·9KB 한도 항구 해소) ②23시 정합 발효(스케줄러 재기동) — 둘 다 가역·GM go 시 착수",
     "depends_on": ""
   },
   {
@@ -2554,5 +2555,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 e72c898e)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e72c898ed12b858317ca419663f016a1eb27fa16"
+  },
+  {
+    "task_id": "CTO-2026-07-18-ADHOC-707c8dbf",
+    "clevel": "cto",
+    "title": "[시토] INC 07-16 후속 — _saveGroupSubmits도 fail-soft 처리(라이브 재현 확인)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1316,
+    "artifact": "배포 후 라이브 검수 중 테스트 저장이 여전히 {\"error\":\"속성 저장용량 한도를\n초과했습니다\"}로 실패하는 것을 실측 확인. handleSave의 첫 줄인\n_saveGroupSubmits의 props.setProperty가 try/catch 없이 그대로 throw하고\n있었음 — _updateCheckLedger를 고쳐도 이 함수가 먼저 죽으면 여전히\n_writePerRoundRows(시트 저장)에 도달 못함(같은 부류의 구멍을 놓쳤음). (CLI ad-hoc · 커밋 707c8dbf)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "707c8dbff25e3557e36911d879885e32c3323e0e"
   }
 ]
