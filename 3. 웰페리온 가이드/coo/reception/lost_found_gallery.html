@@ -70,7 +70,8 @@ a{color:var(--accent);text-decoration:none}
 
 /* ── 폐기 임박 배지·강조 (lf_disposal upcoming) ── */
 .gcard.imminent{border-color:#e8b44a;box-shadow:0 0 0 1px rgba(232,180,74,.35),0 1px 6px rgba(0,0,0,.04)}
-.disp-badge{display:inline-block;font-size:11px;font-weight:800;color:#8a5a00;background:#fdf0d5;border:1px solid #ecc478;border-radius:20px;padding:3px 10px;margin-bottom:7px;letter-spacing:.2px}
+.disp-badge{display:inline-block;font-size:11px;font-weight:800;color:#8a5a00;background:#fdf0d5;border:1px solid #ecc478;border-radius:20px;padding:3px 10px;margin:0 6px 7px 0;letter-spacing:.2px}
+.cat-badge{display:inline-block;font-size:11px;font-weight:800;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 10px;margin:0 6px 7px 0;letter-spacing:.2px}
 
 /* ── 상단 액션 그룹(새로고침 + 폐기 공지 인쇄) ── */
 .topbar-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -173,7 +174,7 @@ a{color:var(--accent);text-decoration:none}
 
   <div class="disposal-sec" id="disposalSec" style="display:none">
     <button class="disposal-toggle" id="disposalToggle" type="button" aria-expanded="false">
-      <span>🗑 폐기 완료 기록 (<span id="disposalCount">0</span>)</span><span class="dt-arrow">▾</span>
+      <span>🗑 처분 완료 기록 (<span id="disposalCount">0</span>)</span><span class="dt-arrow">▾</span>
     </button>
     <div class="disposal-body" id="disposalBody" hidden>
       <div class="disposal-grid" id="disposalGrid"></div>
@@ -243,6 +244,12 @@ a{color:var(--accent);text-decoration:none}
   function toast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(function(){ t.className='toast'+(isErr?' err':''); },2600); }
   function _thumb(url,sz){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w'+(sz||400)):url; }
   function _monthLabel(ym){ var n=parseInt(String(ym||'').split('-')[1],10); return isNaN(n)?'':(n+'월'); } // 'YYYY-MM' → 'M월'
+  function _catBadge(cat){
+    if(cat==='consumable') return '<span class="cat-badge">🟢 소모품</span>';
+    if(cat==='general') return '<span class="cat-badge">🟡 일반</span>';
+    if(cat==='valuable') return '<span class="cat-badge">🔴 고가·중요</span>';
+    return '';
+  }
 
   // 수령장소 옵션
   (function(){ var s=$('m_loc'); LOCATIONS.forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; s.appendChild(o); }); })();
@@ -299,24 +306,25 @@ a{color:var(--accent);text-decoration:none}
     var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,400))+'" alt="습득물 사진" loading="lazy" decoding="async">'):'<div class="ph"></div>';
     var disposeMonth=_upcoming[r.foundId];
     var imminent=disposeMonth!=null;
-    var badge=imminent?('<div class="disp-badge">⏳ '+_esc(_monthLabel(disposeMonth))+' 폐기예정</div>'):'';
+    var badge=imminent?('<div class="disp-badge">⏳ '+_esc(_monthLabel(disposeMonth))+' 처분예정</div>'):'';
     return '<div class="gcard'+(imminent?' imminent':'')+'">'+ph+
       '<button class="del-btn" type="button" data-del="'+_esc(r.foundId||'')+'" title="직원 전용: 오등록 삭제">🗑</button>'+
-      '<div class="body">'+badge+'<div class="gid">'+_esc(r.foundId||'')+'</div>'+
+      '<div class="body">'+badge+_catBadge(r.category)+'<div class="gid">'+_esc(r.foundId||'')+'</div>'+
       '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
       '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>🕒 '+_esc(when||'-')+'</div>'+
       '<button class="claim" type="button" data-claim="'+_esc(r.foundId||'')+'" data-desc="'+_esc(r.itemDesc||'')+'" data-loc="'+_esc(r.foundLoc||'')+'" data-photo="'+_esc(r.photoUrl||'')+'">수령</button>'+
       '</div></div>';
   }
 
-  // ── 폐기 완료 카드(읽기전용) ──
+  // ── 처분 완료 카드(읽기전용) ──
   function _dcard(r){
     var when=String(r.disposedAt||'').replace('T',' ');
-    var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,300))+'" alt="폐기된 습득물 사진" loading="lazy" decoding="async">'):'<div class="ph"></div>';
+    var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,300))+'" alt="처분된 습득물 사진" loading="lazy" decoding="async">'):'<div class="ph"></div>';
+    var trackLabel=r.track==='police'?('🚔 경찰 인계 '+_esc(when||'-')):('🗑 폐기 '+_esc(when||'-'));
     return '<div class="dcard">'+ph+
       '<div class="body"><div class="gid">'+_esc(r.foundId||'')+'</div>'+
       '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
-      '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>🗑 '+_esc(when||'-')+' 폐기</div>'+
+      '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>'+trackLabel+'</div>'+
       '</div></div>';
   }
 

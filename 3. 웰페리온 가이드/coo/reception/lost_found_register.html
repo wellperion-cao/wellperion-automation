@@ -74,6 +74,7 @@ a{color:var(--accent);text-decoration:none}
 .field:last-child{margin-bottom:0}
 label.fl{display:block;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;letter-spacing:.3px;text-transform:uppercase}
 label.fl .opt{font-size:12px;font-weight:500;color:var(--dim);margin-left:4px;text-transform:none}
+.fl-help{font-size:12px;color:var(--dim);margin-top:7px;line-height:1.6}
 input[type=text],input[type=datetime-local],textarea,select{
   width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);
   padding:13px 14px;border-radius:12px;font-size:15px;font-family:inherit;line-height:1.5;-webkit-appearance:none;appearance:none
@@ -132,9 +133,9 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
   <div class="lf-policy">
     <div class="lf-policy-h">📋 습득 분실물 보관·폐기 안내 <span class="badge">직원 필독</span></div>
     <ul>
-      <li>보관 기간: 습득일로부터 <b>30일 미수령 시 자동 폐기</b>되며 폐기 공지에 게시됩니다.</li>
-      <li>귀중품(현금·지갑·귀금속·전자기기 등)은 <b>경찰서(유실물센터)에 인계</b>합니다.</li>
-      <li>그 외 물품은 1개월 경과 후 <b>자체 폐기</b>합니다.</li>
+      <li>📅 습득한 달 포함 약 <b>1~2개월 보관·공지 후 처분</b>합니다(습득월→다음달 공지→그다음달 처분).</li>
+      <li>🟢소모품=<b>폐기</b> / 🟡일반·🔴고가=관할 <b>경찰서·LOST112 인계</b>(유실물법).</li>
+      <li>고가·중요품은 접수 즉시 <b>별도 보관·책임자 보고</b>. 귀중품은 개인 사물함 이용을 권장드립니다.</li>
       <li>수령: 본인 확인 후 현장(리셉션·수영장·사우나 등)에서 서명하고 수령해 주세요.</li>
     </ul>
   </div>
@@ -171,6 +172,15 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
       <div class="field">
         <label class="fl" for="f_itemDesc">습득물 설명 <span class="opt">(브랜드·색상·특징)</span></label>
         <textarea id="f_itemDesc" placeholder="예: 검정 가죽 지갑, 흰색 에어팟 케이스 …"></textarea>
+      </div>
+      <div class="field">
+        <label class="fl" for="f_category">물품 구분</label>
+        <select id="f_category">
+          <option value="consumable">소모품 (우산·수건·양말 등)</option>
+          <option value="general" selected>일반품 (의류·잡화 등)</option>
+          <option value="valuable">고가·중요품 (귀금속·전자기기·현금·카드·신분증)</option>
+        </select>
+        <div class="fl-help">소모품만 처분월에 폐기됩니다. 일반·고가품은 관할 경찰서·LOST112로 인계됩니다. 고가·중요품은 접수 즉시 별도 보관·책임자 보고.</div>
       </div>
       <div class="field">
         <label class="fl" for="f_staff">등록 직원 <span class="opt">(선택)</span></label>
@@ -237,7 +247,7 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
     var btn=this; btn.disabled=true; btn.textContent='등록 중…';
     var payload={ action:'lf_submit', t:VOC_SUBMIT_TOKEN,
       foundWhen:$('f_foundWhen').value.trim(), foundLoc:foundLoc, itemDesc:itemDesc,
-      staff:$('f_staff').value.trim(), photo:photoData, fileName:photoName, mimeType:photoMime };
+      category:$('f_category').value, staff:$('f_staff').value.trim(), photo:photoData, fileName:photoName, mimeType:photoMime };
     fetch(VOC_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
       .then(function(r){ return r.json(); })
       .then(function(res){

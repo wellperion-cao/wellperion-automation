@@ -1056,9 +1056,11 @@ var LF_HEADERS = [
   //   (_lfHandover 는 _lfIdx_ 기반 positional write → 중간 삽입 시 기존 행 오정렬).
   { key: 'handoverStaff', label: '수령담당자'   },
   // ★ 신규(2026-07-18 시우): 폐기 처리일(월별 코호트 폐기). 동일 사유로 반드시 맨 끝에 추가.
-  { key: 'disposedAt',    label: '폐기일'       }
+  { key: 'disposedAt',    label: '폐기일'       },
+  // ★ 신규(2026-07-18 시우): 물품구분 2트랙 처분(consumable/general/valuable). 동일 사유로 반드시 맨 끝에 추가.
+  { key: 'category',      label: '물품구분'     }
 ];
-var LF_STATUS = { POSTED: '게시중', HANDED: '수령완료', DISPOSED: '폐기물' };
+var LF_STATUS = { POSTED: '게시중', HANDED: '수령완료', DISPOSED: '폐기물', POLICE: '경찰인계' };
 var LF_PHOTO_FOLDER_NAME = 'LF_Photos';       // 공개 VIEW (갤러리용)
 var LF_SIGN_FOLDER_NAME  = 'LF_Signatures';   // 비공개 (수령 서명 = 분쟁 증거)
 
@@ -1165,7 +1167,13 @@ function _lfAutoDispose_(sh) {
     var monthIdx = _lfMonthIndex_(r.foundWhen || r.createdAt);
     if (monthIdx === null) return; // 파싱 실패 행은 건드리지 않음
     if (curMonthIdx < monthIdx + 2) return; // 아직 폐기월 미도래
-    data[i][statusIdx] = LF_STATUS.DISPOSED;
+    // ★ 2트랙 분기(2026-07-18 시우): consumable=자동폐기(현행), 그 외(general/valuable/빈값)=경찰인계.
+    //   빈값(기존 미분류 데이터)도 경찰인계 트랙 — 임의폐기 위험 즉시 제거(안전 기본값).
+    if (String(r.category || '') === 'consumable') {
+      data[i][statusIdx] = LF_STATUS.DISPOSED;
+    } else {
+      data[i][statusIdx] = LF_STATUS.POLICE;
+    }
     data[i][disposedIdx] = todayStr;
     changed = true;
   });
@@ -1178,6 +1186,8 @@ function _lfSubmit(body) {
   var foundLoc  = String(body.foundLoc  || body.loc || '').trim();
   var itemDesc  = String(body.itemDesc  || body.content || '').trim();
   var staff     = String(body.staff     || '').trim();
+  var category  = String(body.category  || '').trim();
+  if (['consumable', 'general', 'valuable'].indexOf(category) < 0) category = 'general';
   var photo    = body.photo || body.file || body.base64 || '';
   var fileName = body.fileName || '';
   var mimeType = body.mimeType || 'image/jpeg';
@@ -1196,7 +1206,7 @@ function _lfSubmit(body) {
   var _set = function (key, val) { var i = _lfIdx_(key); if (i >= 0) row[i] = val; };
   _set('foundId', id); _set('createdAt', now); _set('foundWhen', foundWhen);
   _set('foundLoc', foundLoc); _set('itemDesc', itemDesc); _set('photoUrl', photoUrl);
-  _set('status', LF_STATUS.POSTED); _set('staff', staff);
+  _set('status', LF_STATUS.POSTED); _set('staff', staff); _set('category', category);
   var newRow = sh.getLastRow() + 1;
   sh.getRange(newRow, 1, 1, row.length).setValues([row]);
 
@@ -1226,7 +1236,8 @@ function _lfGallery() {
       foundLoc:  r.foundLoc  || '',
       itemDesc:  r.itemDesc  || '',
       photoUrl:  r.photoUrl  || '',
-      createdAt: r.createdAt || ''
+      createdAt: r.createdAt || '',
+      category:  r.category  || ''
     });
   });
   out.sort(function (a, b) { return String(b.createdAt || '') > String(a.createdAt || '') ? 1 : -1; });
@@ -1337,6 +1348,7 @@ function _lfDisposal() {
   var disposed = [];
   rows.forEach(function (r) {
     var status = String(r.status || '');
+    var category = String(r.category || '');
     if (status === LF_STATUS.POSTED) {
       var monthIdx = _lfMonthIndex_(r.foundWhen || r.createdAt);
       if (monthIdx === null) return; // 파싱 실패 행은 제외
@@ -1350,16 +1362,20 @@ function _lfDisposal() {
         foundLoc:     r.foundLoc  || '',
         foundWhen:    r.foundWhen || '',
         photoUrl:     r.photoUrl  || '',
-        disposeMonth: disposeMonth
+        disposeMonth: disposeMonth,
+        category:     category,
+        track:        category === 'consumable' ? 'dispose' : 'police'
       });
-    } else if (status === LF_STATUS.DISPOSED) {
+    } else if (status === LF_STATUS.DISPOSED || status === LF_STATUS.POLICE) {
       disposed.push({
         foundId:    r.foundId    || '',
         itemDesc:   r.itemDesc   || '',
         foundLoc:   r.foundLoc   || '',
         foundWhen:  r.foundWhen  || '',
         photoUrl:   r.photoUrl   || '',
-        disposedAt: r.disposedAt || ''
+        disposedAt: r.disposedAt || '',
+        category:   category,
+        track:      status === LF_STATUS.DISPOSED ? 'dispose' : 'police'
       });
     }
   });
