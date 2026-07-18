@@ -1,5 +1,19 @@
 [
   {
+    "task_id": "COO-2026-07-18-LOSTFOUND-LIFECYCLE-SIMPLIFY",
+    "clevel": "coo",
+    "title": "[시우] 습득물 파이프라인 단순화 + 폐기물 생애주기 — 접수→보기(수령) 2단계·철회 폐지·30일 자동폐기(A3 공지+시트)",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-18",
+    "note": "[2026-07-18 GM 지시] 습득물이 종합접수처 6종과 따로 노는 느낌 → 별도 등록·관리·철회 페이지 폐지. 접수(6종처럼)→습득물 보기에서 수령 마무리 2단계. 30일 경과 미수령=폐기물(A3 공지+시트). GM 확정(AskUserQuestion): ①폐기전환=완전자동 ②A3=폐기예정+완료 둘다 ③시트=기존 습득물시트 통합(상태'폐기물'+폐기일 컬럼). 스펙=docs/superpowers/specs/2026-07-18-lostfound-lifecycle-simplify.md. GAS(VOC_배포.js): DISPOSED 상태·disposedAt·헤더리페어·_lfAutoDispose_ read-time sweep·lf_disposal 신규·lf_void 제거·lf_delete 유지. 프론트: register(관리탭 제거)·gallery(수령+직원삭제)·NEW disposal A3·현황 안내정리·reception 링크·WP재주입. GAS 웹앱 수동재배포=GM 핸드오프.",
+    "next": "구현→커밋·라이브검증(프론트)→GAS 배포 핸드오프(GM 크롬+메모장)→배포후 폐기 자동전환 실데이터 검증",
+    "depends_on": "",
+    "ship_no": 1165,
+    "module": "coo",
+    "surface": "autonomy"
+  },
+  {
     "task_id": "CTO-2026-06-23-SELF-HOSTED-SERVER-SETUP",
     "clevel": "cto",
     "title": "[시토] AWS 멀티테넌트 ERP SaaS 구축 (구 자체서버) — 여러 회사용 ERP+브로제이 흡수, 웰페리온 1호 테넌트",
@@ -1268,5 +1282,19 @@
     "artifact": "publish_danggn()이 review_queue의 body_file 필드를 danggn_upload_playwright.py에\n전달하지 않아 content-dir 루트의 danggn_copy.md만 찾고 output(당근)/ 하위 실제\n파일을 못 읽어 \"본문 없음\"으로 실패했음(GOLF-DANGGN 1차 시도 exit=4). publish_kakao와\n동일하게 --body-file 명시 전달로 수정, 재승인 후 정상 발행 확인(2026-07-18). (CLI ad-hoc · 커밋 b90ea580)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b90ea5803fbee620a48805fffae5e1668dad59ec"
+  },
+  {
+    "task_id": "CPO-2026-07-18-ADHOC-4796d3d5",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1353,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 4796d3d5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4796d3d5c702379aaae21e08a7c9a96ebcc8b5b4"
   }
 ]
