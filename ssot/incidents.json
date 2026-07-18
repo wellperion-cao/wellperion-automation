@@ -228,6 +228,22 @@
       "차단조치": "USE_GVIZ=false 롤백(읽기=GAS member_inquiry_list 정확 물리행 복귀·문서화된 1줄 역롤백). 코드 주석에 재활성 금지·근본원인 박제. 후속(별도 배 CPO-2026-07-13-INQUIRY-GVIZ-ROWINDEX-REFIX): gviz rowIndex 물리행 정합 또는 백엔드 phone-키 저장으로 성능 재최적화 + apiPost 저장실패 표면화(no-cors 낙관 제거해 실패를 화면에 노출).",
       "상태": "GUARDED",
       "검증증거": "라이브 실증: POST rowIndex=172(gviz값)+조화순 실전화 → ok:false error:row-key-mismatch(실패 메커니즘 재현·비파괴). POST rowIndex=587(GAS 물리행)+실전화 → ok:true → 재조회 예약 영속 확인 → 빈값 복구·재조회 [] 확인(순변화0). USE_GVIZ=false 커밋 15372ca4·origin 반영. [2026-07-13 근본수리 완료·후속배 흡수] 백엔드 phone-키 폴백(_findRowByPhone_) GAS@153 배포 — rowIndex 어긋나면 keyPhone으로 올바른 물리 행 복구(정상 케이스 무변경·회귀0). 라이브실증: 버그 rowIndex172+조화순 실전화 저장→행587 정확 기록(전엔 row-key-mismatch 거부)·기존 07-20 보존·복구. gviz 어긋남 근본 무해화 → USE_GVIZ=true 재활성(빠른읽기 ~1초 복원). member_inquiry_update·lesson_inquiry_update 적용."
+    },
+    {
+      "id": "INC-014",
+      "date": "2026-07-18",
+      "watch_globs": [
+        ".deploy-check/지원팀 일일점검.js",
+        "3. 웰페리온 가이드/coo/check/지원부 체계.html"
+      ],
+      "gate": "warn",
+      "요약": "지원부 점검을 정상적으로 하고 제출해도 07-16·17 이틀간 서버에 안 남던 문제. 완료 요약본을 구글 속성창(칸당 9KB 한계)에 쌓다 꽉 차서 저장이 터졌고, 안전장치가 없어 시트 저장까지 통째로 멈췄다. 게다가 텔레그램 '완료' 알림이 저장 성공을 확인 안 해 실패를 감췄다. 시트를 진짜 원본으로 승격하고 속성창 의존을 없애 다시는 안 그럽니다.",
+      "증상": "카톡 점검 다이제스트 07-17 지원부 0/105·시설 0. 실무진은 점검·제출(텔레그램 '완료' 알림 발화)했으나 서버 원장·시트 양쪽 07-16·17 데이터 전무·today_live 0%. 07-15 정상(106/108·98%)→07-16 절벽 0%(급성). GM이 '점검 다 한 걸로 텔레그램 봤는데 0이 맞냐'로 발견.",
+      "본질": "이중. ① 완료 원장을 PropertiesService(값당 9KB 하드리밋·자동정리 없음)에 누적 저장 → 개별 값이 94%까지 참 → 07-16 setProperty가 한도초과 throw, try/catch 부재로 handleSave 전체 사망→_writePerRoundRows(시트) 도달 못함(저장구조 한계+미보호). ② 텔레그램 완료 알림(notify_round)이 서버 저장 성공과 무관하게 브라우저 계산값으로 발화 → 저장 실패를 완료로 위장(검증멈춤·INC-011/013 결 3회째 재발).",
+      "뿌리분류": "검증멈춤",
+      "차단조치": "Phase1(@164)=_updateCheckLedger·_saveGroupSubmits의 setProperty를 try/catch fail-soft로 격리(프로퍼티 실패해도 시트 저장 무조건 진행)·저장 실패 시 {ok:false} 반환+프론트 빨간 실패배너 표면화·notify_round를 서버 저장 성공 확인 후에만 발화·오래된 chk_* 30일 TTL 정리. Phase2 근본(@165)=시트를 완료·이슈 단일 진실(SoT)로 승격, today_live 집계·페이지 복원을 시트에서 읽게 전환(_ledgerFromSheet/_resolveLedger), 속성창은 순수 성능캐시로 강등(props-first 병합) → 9KB 천장이 저장·집계를 영구히 못 막음. 07-16·17 유실분=복구 불가(양쪽 미생성·정직 0 표기).",
+      "상태": "GUARDED",
+      "검증증거": "라이브 실증. @164 배포 후 테스트 저장→서버 시트 실반영(dump_zone 확인)→정리=출혈정지 실효. @165 배포 후 5PASS: ★속성창 강제 비움(restore_cr '{}')에도 today_live done=1 시트값 정상=9KB천장제거 입증 · 07-15 배포 전후 106/108·98% 동일(회귀0) · Phase1 fail-soft·시설 per-check 알림·거짓알림차단 무회귀 · 테스트 데이터 원상복구. 커밋 1a52ef13·707c8dbf·2c61d354. 백업 status/backups/지원팀_일일점검_pre_INC0716_migration_20260718*·dump_cr_live_pre_deploy_20260718*. 웰리 검수=배포본 today_live 07-15 재확인. ※같은 '완료를 실증 없이 표시' 본질 3회째(INC-011·013·014)→구조(시트 SoT·서버확인 알림)로 근본 봉인."
     }
   ]
 }
