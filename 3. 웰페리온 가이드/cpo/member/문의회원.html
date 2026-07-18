@@ -795,9 +795,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .dash-card[data-kind="wait"] .dash-v b.lead{color:var(--accent)}
 @media(max-width:900px){.dash-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr}}
-/* 현황카드 일원화(한 줄) — 2026-07-15 GM 지시. 전환보드 삭제 후 멤버십 카드(6→7, 담당자 배정 추가)·강습 5카드를 각각 한 줄로. */
-#memberTabNav{grid-template-columns:repeat(7,1fr)}
-#lessonComboBoard{grid-template-columns:repeat(5,1fr)}
+/* 현황카드 일원화(한 줄) — 2026-07-15 GM 지시. 전환보드 삭제 후 멤버십 6카드·강습 6카드(2026-07-18 담당자 배정 카드를 멤버십→강습 family로 이동)를 각각 한 줄로. */
+#memberTabNav{grid-template-columns:repeat(6,1fr)}
+#lessonComboBoard{grid-template-columns:repeat(6,1fr)}
 @media(max-width:1100px){#memberTabNav,#lessonComboBoard{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){#memberTabNav,#lessonComboBoard{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){#memberTabNav,#lessonComboBoard{grid-template-columns:1fr}}
@@ -1222,6 +1222,47 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line"><span class="dash-k">유소년</span><span class="dash-v"><b id="lessonComboLossYouth">–</b> 명</span></div>
       </div>
     </a>
+    <!-- 담당자 배정 카드 — 2026-07-18 GM 지시로 멤버십 family→강습 family로 이동(강습 종목별 담당 강사 배정).
+         _lessonComboClick(성인/유소년 스코프)가 아닌 전용 opener lessonOwnerAssignOpen 사용. -->
+    <a class="dash-card" data-kind="owner" data-lcard="owner" href="javascript:void(0)" onclick="lessonOwnerAssignOpen(this)">
+      <div class="dash-head"><span class="dash-dot" style="background:var(--teal)"></span><span class="dash-title">🎯 담당자 배정</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">종목별</span><span class="dash-v">담당 강사 배정</span></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- 강습 담당자 배정 pane — 2026-07-18 멤버십 family(#type-membership)에서 강습 family 공유 최상위로 이동.
+       #lessonComboBoard 카드 행의 형제(성인/유소년 type-pane 밖) → lessonOwnerAssignOpen이 표시·숨김 관리. -->
+  <div id="pane-ownerAssign" class="pane" style="display:none">
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">🎯</span>강습 담당자 배정
+        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">종목별 담당 강사 재배정 · 강사 본인 이름 칩 클릭 = 본인 담당 회원만 소트</span>
+      </div>
+
+      <!-- 종목 서브탭(PT·골프·P.L·스쿼시·수영) -->
+      <div id="oaSportBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+
+      <div class="active-search-wrap">
+        <input type="text" id="oaSearch" class="active-search" placeholder="이름·전화 검색…" autocomplete="off">
+        <button class="btn-refresh" onclick="ownerAssignReload()">새로고침</button>
+      </div>
+
+      <!-- 강사 필터 칩(셀프소트) = 이 종목 담당자 실제값 분포 -->
+      <div id="oaTrainerChips" style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0"></div>
+
+      <div class="active-count" id="oaCount"></div>
+
+      <div class="reg-table-wrap">
+        <table class="reg-table" id="oaTable">
+          <thead id="oaHead"><tr><th>불러오는 중…</th></tr></thead>
+          <tbody id="oaBody">
+            <tr><td><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- 이탈방지 액션 모듈(⏰갱신임박·📉저이용) = 2026-07-15 GM 재지시로 상단 단독 패널 제거 → 이탈관리 모달(openChurnManage,
@@ -1288,13 +1329,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dMemLossToday">0</b> 명</span></div>
         <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dMemLossMonth">0</b> 명</span></div>
-      </div>
-    </a>
-    <!-- 카드7: 멤버십 담당자 배정 (종목별 담당 강사 재배정·강사 셀프소트 — 내부 탭). 2026-07-18 시포·GM -->
-    <a class="dash-card" data-kind="owner" data-tab="ownerAssign" href="javascript:void(0)" onclick="switchTab('ownerAssign');_memHighlight(this)">
-      <div class="dash-head"><span class="dash-dot" style="background:var(--teal)"></span><span class="dash-title">🎯 멤버십 담당자 배정</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">종목별</span><span class="dash-v">담당 강사 배정</span></div>
       </div>
     </a>
   </div>
@@ -1616,38 +1650,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
   </div>
 
-  <!-- ══════════════════════════════ 7. 멤버십 담당자 배정 (종목별 담당 강사 재배정 · 강사 셀프소트) ══════════════════════════════ -->
-  <div id="pane-ownerAssign" class="pane">
-    <div class="card">
-      <div class="card-title">
-        <span class="icon">🎯</span>멤버십 담당자 배정
-        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">종목별 담당 강사 재배정 · 강사 본인 이름 칩 클릭 = 본인 담당 회원만 소트</span>
-      </div>
-
-      <!-- 종목 서브탭(PT·골프·P.L·스쿼시·수영) -->
-      <div id="oaSportBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
-
-      <div class="active-search-wrap">
-        <input type="text" id="oaSearch" class="active-search" placeholder="이름·전화 검색…" autocomplete="off">
-        <button class="btn-refresh" onclick="ownerAssignReload()">새로고침</button>
-      </div>
-
-      <!-- 강사 필터 칩(셀프소트) = 이 종목 담당자 실제값 분포 -->
-      <div id="oaTrainerChips" style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0"></div>
-
-      <div class="active-count" id="oaCount"></div>
-
-      <div class="reg-table-wrap">
-        <table class="reg-table" id="oaTable">
-          <thead id="oaHead"><tr><th>불러오는 중…</th></tr></thead>
-          <tbody id="oaBody">
-            <tr><td><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
   </div><!-- /type-membership -->
 
   <!-- ══════════════════════════════ 유형: 성인 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
@@ -1807,7 +1809,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="card">
         <div class="card-title"><span class="icon">🆕</span>강습 등록 현황
           <span id="lessonRegStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
-          <button class="btn-refresh" onclick="lessonRegSetRange('adult', _lessonState['adult'].regRange||'day')" style="margin-left:auto">새로고침</button>
+          <button class="btn-refresh" onclick="lessonRegSetRange('adult', _lessonState['adult'].regRange||'month')" style="margin-left:auto">새로고침</button>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:10px">
           <button type="button" id="lessonRegBtnDay_adult"   class="btn-query lreg-range" data-range="day"   onclick="lessonRegSetRange('adult','day')"   style="padding:6px 14px;font-size:12px">일</button>
@@ -1979,7 +1981,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="card">
         <div class="card-title"><span class="icon">🆕</span>강습 등록 현황
           <span id="lessonRegStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
-          <button class="btn-refresh" onclick="lessonRegSetRange('youth', _lessonState['youth'].regRange||'day')" style="margin-left:auto">새로고침</button>
+          <button class="btn-refresh" onclick="lessonRegSetRange('youth', _lessonState['youth'].regRange||'month')" style="margin-left:auto">새로고침</button>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:10px">
           <button type="button" id="lessonRegBtnDay_youth"   class="btn-query lreg-range" data-range="day"   onclick="lessonRegSetRange('youth','day')"   style="padding:6px 14px;font-size:12px">일</button>
@@ -3718,7 +3720,7 @@ function switchTab(id, btn) {
   if (id === 'calendar'   && !_tabLoaded.calendar)   { _tabLoaded.calendar = true;   loadCalendarData(); }
   if (id === 'registered' && !_tabLoaded.registered) { _tabLoaded.registered = true; setRegRange(_regRangeMode || 'day'); }
   if (id === 'active'     && !_tabLoaded.active)     { _tabLoaded.active = true;     loadActiveMembers(); }
-  if (id === 'ownerAssign' && !_tabLoaded.ownerAssign) { _tabLoaded.ownerAssign = true; ownerAssignInit(); }
+  // ownerAssign 훅 제거(2026-07-18): 담당자 배정이 강습 family로 이동 → lessonOwnerAssignOpen 전용 opener가 로드 관리.
 }
 
 // syncFunnel — 내비 탭 전환으로 대체됨. 하위 호환 보존용 빈 함수.
@@ -3772,6 +3774,9 @@ function switchFamily(fam) {
     // 강습 통합 4카드(CPO-2026-07-14-LESSON-4CARD) — 성인+유소년 한 줄, 강습 family에서만 노출.
     var _comboEl = document.getElementById('lessonComboBoard');
     if (_comboEl) _comboEl.style.display = (fam === 'lesson') ? '' : 'none';
+    // 담당자 배정 pane은 강습 opener(lessonOwnerAssignOpen)만 표시 — family 전환 시 항상 숨김(멤버십·강습 초기 진입 모두 type-pane 우선).
+    var _oaPane = document.getElementById('pane-ownerAssign');
+    if (_oaPane) _oaPane.style.display = 'none';
     if (fam === 'lesson') {
       lessonInit('adult'); lessonInit('youth');
       if (!_lessonState.adult.memLoaded) lessonRegLoad('adult');
@@ -3786,9 +3791,9 @@ function switchFamily(fam) {
 // target='adult'(성인강습) | 'youth'(유소년강습). DOM id 접미사 + GAS type 파라미터로 분기.
 var _lessonState = {
   adult: { rows: [], scope: 'year', sport: '', loaded: false, type: '성인강습',
-           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regLoaded: false, memLoaded: false, comboRegLoaded: false },
+           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regRange: 'month', regLoaded: false, memLoaded: false, comboRegLoaded: false },
   youth: { rows: [], scope: 'year', sport: '', loaded: false, type: '유소년강습',
-           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regLoaded: false, memLoaded: false, comboRegLoaded: false }
+           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regRange: 'month', regLoaded: false, memLoaded: false, comboRegLoaded: false }
 };
 
 // 강습 현황카드(성인+유소년, CPO-2026-07-14-LESSON-4CARD → 2026-07-15 GM 지시로 5카드 재구성) 값 미러 — 기존
@@ -3820,11 +3825,38 @@ var _lessonState = {
 // 강습 통합 4카드 클릭 라우팅 — 현재 활성 강습 탭(성인/유소년)을 판별해 기존 lessonSwitchCard(t, card)를 그대로 호출.
 // 신규 데이터 로직 없음(표시·내비게이션 전용). CPO-2026-07-14-LESSON-4CARD.
 function _lessonComboClick(card) {
+  _lessonOwnerAssignHide();   // 담당자 배정 pane 활성 상태였으면 숨기고 type-pane 복원(2026-07-18)
   var youthChip = document.querySelector('.type-chip[data-type="lessonYouth"]');
   var t = (youthChip && youthChip.classList.contains('active')) ? 'youth' : 'adult';
   switchType(t === 'youth' ? 'lessonYouth' : 'lessonAdult');   // 현재 탭 유지/전환(이미 해당 탭이면 사실상 no-op)
   lessonSwitchCard(t, card);   // switchType 내부가 카드를 'inq'로 되돌리므로, 실제 요청 카드로 다시 전환
   // (자동 스크롤 제거 — GM 지시 2026-07-16: 강습 콤보카드 클릭 시 아래로 자동 내려가는 동작 삭제. 자기카드 하이라이트만 유지.)
+}
+
+/* ── 강습 담당자 배정 opener(전용) — 2026-07-18 멤버십→강습 family 이동. _lessonComboClick(성인/유소년 스코프)와
+      독립. pane-ownerAssign을 표시하고 성인/유소년 type-pane을 임시로 숨김(그 아래로 subpane이 겹쳐 보이지 않도록). ── */
+var _oaLoadedOnce = false;
+function lessonOwnerAssignOpen(cardEl) {
+  var pane = document.getElementById('pane-ownerAssign');
+  if (pane) pane.style.display = '';
+  // 강습 type-pane(성인/유소년) 임시 숨김 — 담당자 배정 pane만 단독 표시.
+  var _a = document.getElementById('type-lessonAdult'), _y = document.getElementById('type-lessonYouth');
+  if (_a) _a.style.display = 'none';
+  if (_y) _y.style.display = 'none';
+  // 콤보보드 카드 active 표시(담당자 배정만 active).
+  var combo = document.getElementById('lessonComboBoard');
+  if (combo) combo.querySelectorAll('.dash-card[data-lcard]').forEach(function(c){
+    c.classList.toggle('active', c === cardEl || c.getAttribute('data-lcard') === 'owner');
+  });
+  if (!_oaLoadedOnce) { _oaLoadedOnce = true; ownerAssignInit(); }
+}
+/* 담당자 배정 pane 숨김 + 강습 type-pane 인라인 display 복원(switchType의 .active 클래스가 다시 표시 제어). */
+function _lessonOwnerAssignHide() {
+  var pane = document.getElementById('pane-ownerAssign');
+  if (pane) pane.style.display = 'none';
+  var _a = document.getElementById('type-lessonAdult'), _y = document.getElementById('type-lessonYouth');
+  if (_a) _a.style.display = '';   // 인라인 none 제거 → .type-pane.active CSS가 다시 표시 관리
+  if (_y) _y.style.display = '';
 }
 
 /* 강습 대시카드 전환(문의/등록/회원) — 멤버십 switchTab 와 독립(id 충돌 회피). 2026-06-27 시포. */
@@ -3847,7 +3879,7 @@ function lessonSwitchCard(t, card) {
   if (card === 'loss') { lessonLossRender(t); }                    // LOSS 회원 관리 — 문의 rows 중 status=LOSS 필터(별도 fetch 없음)
   if (card === 'wait') { lessonWaitRender(t); }                    // 대기자 회원 관리 — status=대기 필터
   if (card === 'mem' && !st.memLoaded) { lessonRegLoad(t); }        // 강습 회원 관리(전체 roster)
-  if (card === 'reg') { lessonRegSetRange(t, st.regRange || 'day'); }  // 신규 등록 현황(일/월/연) — 2026-07-16 버그수리
+  if (card === 'reg') { lessonRegSetRange(t, st.regRange || 'month'); }  // 신규 등록 현황(일/월/연) — 기본=월(2026-07-18 GM 지시, 멤버십 등록현황과 대칭)
 }
 
 function lessonInit(t) {
