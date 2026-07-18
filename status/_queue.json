@@ -2768,5 +2768,18 @@
     "artifact": "GM(2026-07-18): 골프 전 버전(힘 빼기·겸손)이 더 낫다 → 복원 + PT처럼 임팩트 철학 멘트 1장('결국 힘을 뺄 줄 아는 사람이 공을 더 멀리 — 골프도 삶도'). 6장. M5 재검수 등록·텔레그램 시안 카드 갱신. 구 v3(정직한 점수판) 대체. 미발행 타채널 임시폴더(구 v3 이미지) 정리. (CLI ad-hoc · 커밋 69ea2456)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "69ea2456a62a2b320ce22529914aa73f0e4a2218"
+  },
+  {
+    "task_id": "CTO-2026-07-18-PUBLISH-DIGEST-IDEMPOTENCY-FIX",
+    "clevel": "cto",
+    "title": "[시토] 발행완료 통합요약 중복발신 수리 — 멱등키 콘텐츠단위 강화+원장 백필(디지털디톡스 4중발신 차단)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "processed_at": "2026-07-18",
+    "ship_no": 1331,
+    "note": "근본원인: scripts/publish_digest.py send_publish_digest()의 멱등 판정이 그룹키+해시 동일 비교였는데, 같은 콘텐츠(예: instagram/260715_L1_수영)가 채널별로 나뉘어 서로 다른 항목 부분집합으로 들어오면 해시가 매번 달라져 재발신됨. + 멱등 원장(.publish_digest_sent.json)에 L1 수영 키가 아예 없어(L2_PT만 존재) 재스캔마다 재발송되던 결함. 수리: (1) send_publish_digest() 멱등 판정을 'if ledger.get(key)==h' -> 'if key in ledger'로 강화(1콘텐츠=통합요약 평생 1회, 항목 부분집합·해시 변동 무관). 해시는 참조용 저장 유지. (2) review_queue.json의 발행완료 132항목을 모듈 자체 함수(group_published/_group_hash)로 그룹핑해 63개 콘텐츠 그룹키를 .publish_digest_sent.json에 백필 병합(기존 L2_PT 키 보존, 62개 신규키 추가, L1 수영 포함). (3) 검증 중 tests/test_publish_digest.py의 사전 존재 결함(실제 슬라이드 이미지가 리포에 존재해 _send_photo가 미모킹 상태로 실경로를 타 실제 텔레그램 전송이 발생 — 검증 과정에서 발견 즉시 수리, _first_slide_image monkeypatch로 차단) + 2026-07-16 IG 미리보기 비활성화 변경 이후 갱신 안 된 link_preview_options 관련 테스트 2종·preview_url 단언 1종을 현재 _send() 실제 계약에 맞게 수정(모두 사실관계 명시 주석 포함). pytest tests/test_publish_digest.py -q 8개 전부 통과. 백필 후 실제 원장 기준 L1 수영 5항목 재호출 시 _send/_send_photo 호출 0회(재발신 없음) 단언 통과 확인. (ship_no=1310은 다른 배가 선점 중이라 다음 가용 번호로 배정)",
+    "next": "🔗 후속 후보: per-channel notify_published_links 도 콘텐츠 단위 dedup 검토(GM 메시지 형식 확인 후)"
   }
 ]
