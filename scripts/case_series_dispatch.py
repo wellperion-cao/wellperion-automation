@@ -65,6 +65,13 @@ _DONE_STATUS_KW = ("검수발송", "발행완료", "보류")  # 안전망 — �
 WEEKDAY_TRACK = "평일"
 WEEKEND_TRACK = "주말GM"
 
+# 실제 카드 발송 SSOT — send_review_card.py 가 발송 성공 시 이 파일에 item_id 를 키로 적는다.
+# (2026-07-19 재발방지 · CASE13 사고) "review_queue 에 존재" ≠ "카드 발송 완료" — 반드시
+# 이 파일로 실발송 여부를 확인한다. review_queue 존재만 보고 스킵하면 send_card=False 로
+# 선등록(카드 보류)된 편이 영영 카드를 못 받는다.
+CARD_MSGID_STORE = ROOT / "scripts" / ".review_card_msgids.json"
+_GM_CONFIRM_RE = re.compile(r"\[GM\s*확인")  # 대본/캡션에 남아있으면 아직 GM 확인 대기(보류 유지)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 텔레그램 (토큰 stdout 노출 금지)
@@ -178,17 +185,96 @@ def _queue_items() -> list[dict]:
         return []
 
 
-def _case_already_queued(num: int) -> bool:
-    """같은 편 번호(CASE{NN})가 review_queue 에 이미 검수대기/발행완료로 있으면 True.
-
-    3중 가드 ②: 재고표 마킹이 실패했더라도 큐에 이미 올라가 있으면 재발송 사고를 막는다.
-    """
+def _find_queued_item(num: int) -> dict | None:
+    """같은 편 번호(CASE{NN})의 review_queue 항목(검수대기/발행완료)을 반환. 없으면 None."""
     marker = f"-CASE{num:02d}-"
     for item in _queue_items():
         item_id = str(item.get("id", ""))
         if marker in item_id and item.get("status") in ("검수대기", "발행완료"):
-            return True
+            return item
+    return None
+
+
+def _case_already_queued(num: int) -> bool:
+    """같은 편 번호(CASE{NN})가 review_queue 에 이미 검수대기/발행완료로 있으면 True.
+
+    3중 가드 ②: 재고표 마킹이 실패했더라도 큐에 이미 올라가 있으면 재등록(중복 등록) 사고를 막는다.
+    ⚠️ 이건 "새로 register_publish 해도 되는가"만 판정한다 — 카드 발송 여부는 별개
+    (.review_card_msgids.json 이 SSOT, _card_sent_ids 참고). 2026-07-19 CASE13 사고:
+    이 함수의 True 를 "카드까지 이미 나갔다"로 오인해 선등록(카드 보류) 편이 영영
+    스킵되던 버그 — recover_stalled_cards() 가 그 틈을 별도로 메운다.
+    """
+    return _find_queued_item(num) is not None
+
+
+def _card_sent_ids() -> set:
+    """실제 카드 발송 SSOT(.review_card_msgids.json) 키 집합. 파일에 없으면 카드 미발송."""
+    try:
+        if not CARD_MSGID_STORE.exists():
+            return set()
+        raw = json.loads(CARD_MSGID_STORE.read_text(encoding="utf-8"))
+        return set(raw.keys()) if isinstance(raw, dict) else set()
+    except Exception:
+        return set()
+
+
+def _gm_confirm_pending(case: dict) -> bool:
+    """대본 html·caption.md 에 '[GM 확인' 플레이스홀더가 남아있으면 True.
+
+    True 면 GM이 아직 빈칸을 안 채운 것 — 카드 발송은 여전히 보류해야 한다
+    (선등록 단계에서 의도적으로 send_card=False 로 남겨둔 상태와 동일 취급).
+    """
+    folder = ROOT / case["folder"]
+    diary_html = folder / f"ep{case['num']:02d}_diary_source.html"
+    caption_md = folder / "caption.md"
+    for p in (diary_html, caption_md):
+        try:
+            if p.exists() and _GM_CONFIRM_RE.search(p.read_text(encoding="utf-8")):
+                return True
+        except Exception:
+            continue
     return False
+
+
+def recover_stalled_cards(rows: list[dict], today_iso: str, dry_run: bool) -> None:
+    """선등록(send_card=False)된 채 카드 미발송으로 방치된 편을 복구 (2026-07-19 CASE13 재발방지).
+
+    요일 게이트와 무관하게 재고표 전체를 훑는다(평일/주말 어느 트랙이든 같은 사고가 날 수 있음).
+    편별 3가지 상태를 명확히 구분:
+      ① review_queue 미등록            → 여기서 손대지 않음(정상 신규 후보, pick_next_case 몫)
+      ② 등록됨 + 카드 이미 발송(SSOT)   → 멱등: 재발송 안 함. 재고표만 뒤늦게 마킹.
+      ③ 등록됨 + 카드 미발송 + GM확인 대기(플레이스홀더 남음) → 여전히 보류(정상, 카드 안 보냄)
+      ④ 등록됨 + 카드 미발송 + GM확인 완료             → 카드 발송 트리거 + 재고표 마킹
+    """
+    sent_ids = _card_sent_ids()
+    for r in rows:
+        if r["status"] != STOCK_STATUS:
+            continue  # 재고표 상태가 이미 다음 단계로 넘어간 행은 여기서 안 건드림
+        item = _find_queued_item(r["num"])
+        if item is None:
+            continue  # ① 아직 등록도 안 됨 — 정상 신규 후보(별도 흐름)
+        item_id = str(item.get("id", ""))
+        if item_id in sent_ids:
+            print(f"[INFO] #{r['num']} 카드 이미 발송됨(id={item_id}) — 멱등 스킵, 재고표만 갱신 시도.")
+            if not dry_run:
+                mark_case_dispatched(r, today_iso)
+            else:
+                print(f"[DRY-RUN] #{r['num']} 재고표 마킹 스킵(dry-run)")
+            continue
+        if _gm_confirm_pending(r):
+            print(f"[INFO] #{r['num']} 선등록(카드 보류) — GM 확인 미완료([GM 확인] 남음), 보류 유지.")
+            continue
+        print(f"[INFO] #{r['num']} 선등록 완료 + GM 확인 완료 + 카드 미발송 → 카드 발송 트리거(id={item_id})")
+        if dry_run:
+            print(f"[DRY-RUN] #{r['num']} 카드 발송 스킵(dry-run) — 실제 미발송")
+            continue
+        if send_review_card(item_id):
+            mark_case_dispatched(r, today_iso)
+        else:
+            telegram(
+                f"⚠️ 실전사례 {r['num']:02d} 선등록 카드 발송 재시도 실패 — id={item_id}. "
+                f"수동: send_review_card.py --id {item_id}"
+            )
 
 
 def pick_next_case(rows: list[dict], track: str) -> dict | None:
@@ -405,6 +491,10 @@ def run(dry_run: bool, plan_only: bool) -> int:
         print(f"[ERROR] {msg}")
         telegram(msg)
         return 1
+
+    # 1.5) 선등록(카드 보류) 복구 패스 — 요일 게이트·트랙과 무관하게 재고표 전체 대상.
+    #      plan_only 는 부작용 없이 상태만 보여주므로 dry_run 취급(2026-07-19 CASE13 재발방지).
+    recover_stalled_cards(rows, today_iso, dry_run=(dry_run or plan_only))
 
     # 2) 다음 편 선정 (소진 시 생성 금지)
     nxt = pick_next_case(rows, track)
