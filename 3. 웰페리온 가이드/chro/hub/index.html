@@ -447,6 +447,7 @@
     <section class="panel" data-panel="dash"></section>
     <section class="panel" data-panel="emp"></section>
     <section class="panel" data-panel="hire"></section>
+    <section class="panel" data-panel="chan"></section>
     <section class="panel" data-panel="onbo"></section>
     <section class="panel" data-panel="eval"></section>
     <section class="panel" data-panel="exit"></section>
@@ -646,6 +647,7 @@
 </div>
 
 <script src="ob_guide_data.js"></script>
+<script src="channel-data.js"></script>
 <script>
 "use strict";
 /* ============ config ============ */
@@ -663,11 +665,12 @@ var DBMETA=[["emp","임직원 명부"],["hire","채용 공고"],["appl","지원�
   ["onbo","온보딩 체크리스트"],["eval","인사평가"],["exit","퇴사 처리"]];
 var TABS = [
   {id:"dash",label:"대시보드"},{id:"emp",label:"임직원"},{id:"hire",label:"채용"},
+  {id:"chan",label:"채널 배포"},
   {id:"onbo",label:"온보딩"},{id:"eval",label:"평가·포상"},{id:"exit",label:"퇴사"},
   {id:"docs",label:"인사 서류함"},{id:"std",label:"운영 기준"}
 ];
-// 뷰어 모드(비관리자)에서 숨길 탭: 채용·온보딩·평가(포상 병합 탭 포함). 2026-07-13 매니저 지시.
-var HIDDEN_TABS_VIEWER = ["hire","onbo","eval"];
+// 뷰어 모드(비관리자)에서 숨길 탭: 채용·채널배포·온보딩·평가(포상 병합 탭 포함). 2026-07-13 매니저 지시(채널배포는 2026-07-19 신설, 채용 준비 도구라 동일 취급).
+var HIDDEN_TABS_VIEWER = ["hire","chan","onbo","eval"];
 function visibleTabs(){
   if(SESSION_ROLE==="admin")return TABS;
   return TABS.filter(function(t){return HIDDEN_TABS_VIEWER.indexOf(t.id)===-1;});
@@ -1404,6 +1407,150 @@ function applicantRow(a){
       kv("담당 면접관",txt(a["담당 면접관"])||"—")+
     '</div>'+
   '</div>';
+}
+
+/* ============ 채널 배포 센터 (A-5, 2026-07-19) ============
+ * 선택한 공고를 채널별(잡코리아·알바몬·다음카페·당근알바) 게시 재료로 준비.
+ * 로컬 텍스트/HTML 생성만 — 외부 채널 접속·자동 게시는 하지 않음(복사·다운로드용 준비 도구).
+ * 데이터·생성기 = channel-data.js(window.CHANNEL_HUB). */
+var CHAN_PLATFORM_LINKS = {
+  jobkorea:{label:"잡코리아 바로가기", url:"https://www.jobkorea.co.kr", note:"기업회원 로그인 → 공고 등록 → 상세내용 에디터의 HTML 모드에 붙여넣기"},
+  albamon:{label:"알바몬 바로가기", url:"https://www.albamon.com", note:"기업회원 로그인 → 공고 등록 → 상세내용 에디터에 붙여넣기(에디터 특성 미실측 · 보수적 안전판)"},
+  daumcafe:{label:"스포드림 카페 바로가기", url:"https://cafe.daum.net/spodream", note:"다음(Daum) 로그인 · 카페 가입 상태 확인 → 구인 게시판 글쓰기 → 이미지+본문 붙여넣기"},
+  danggeun:{label:"당근마켓 바로가기", url:"https://www.daangn.com", note:"당근마켓 앱/웹 '알바' 메뉴 → 글쓰기 → 상세 설명란에 붙여넣기, 근무지=한남동 설정"}
+};
+function chanCopyBtn(key,label){
+  return '<button type="button" class="btn-sm" data-chancopy="'+esc(key)+'">'+esc(label||"복사")+'</button>';
+}
+function renderChannel(){
+  var html='<style>'+
+    '.chan-guide{font-size:12.5px;color:var(--ink-soft);line-height:1.8;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:10px;padding:12px 16px;margin-bottom:14px}'+
+    '.chan-picker{display:flex;align-items:center;gap:10px;flex-wrap:wrap}'+
+    '.chan-picker select{font-size:13.5px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;font-family:inherit;min-width:280px;background:#fff}'+
+    '.chan-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 10px}'+
+    '.chan-tabbtn{font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;font-family:inherit}'+
+    '.chan-tabbtn.active{background:var(--navy,#0b1f3a);color:#fff;border-color:var(--navy,#0b1f3a)}'+
+    '.chan-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-top:4px}'+
+    '.chan-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px}'+
+    '.chan-tone{font-size:12px;color:var(--ink-faint);margin-top:3px}'+
+    '.chan-where{font-size:12px;color:var(--gold-deep,#a98a52);background:var(--surface-2);border-radius:8px;padding:8px 12px;margin:10px 0}'+
+    '.chan-pre{white-space:pre-wrap;word-break:break-word;font-family:"Pretendard","Malgun Gothic",sans-serif;font-size:12.5px;line-height:1.8;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-soft);border-radius:10px;padding:14px 16px;max-height:420px;overflow:auto;margin-top:8px}'+
+    '.chan-pre.src{font-family:"Consolas","D2Coding",monospace;font-size:11px;max-height:320px}'+
+    '.chan-assets{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}'+
+    '.chan-assets a{font-size:12px;font-weight:700;color:var(--gold-deep,#a98a52);text-decoration:none;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:8px;padding:7px 12px}'+
+    '.chan-notready{padding:26px 10px;text-align:center;color:var(--ink-faint);font-size:13px;line-height:1.9}'+
+    '</style>';
+  html+='<div class="sec-title">채널 배포 센터</div>';
+  html+='<div class="chan-guide"><b>이 화면은 준비 도구입니다.</b> 외부 채널에 자동으로 게시하지 않습니다 — 공고를 선택하면 잡코리아·알바몬·다음카페(스포드림)·당근알바용 게시 재료(텍스트/HTML·이미지 링크·채널 바로가기)를 만들어 드립니다. 각 채널 카드의 "복사" 버튼으로 내용을 복사한 뒤, 매니저님이 해당 채널에 직접 로그인해 붙여넣어 주세요.</div>';
+
+  if(ERR.hire){ html+=errCard("채용 공고 DB","hire"); setPanel("chan",html); return; }
+  if(typeof CHANNEL_HUB==="undefined"){
+    html+='<div class="card"><div class="empty-state"><div class="es-ic">⚠</div>채널 생성기(channel-data.js)를 불러오지 못했습니다.</div></div>';
+    setPanel("chan",html); return;
+  }
+
+  var activeJobs=(DB.hire||[]).filter(function(h){return h["채용 상태"]!=="마감";});
+  if(!activeJobs.length){
+    html+='<div class="card">'+emptyState("공고중인 채용이 없습니다.","◔")+'</div>';
+    setPanel("chan",html); return;
+  }
+
+  html+='<div class="card chan-picker">'+
+    '<div class="k">공고 선택</div>'+
+    '<select id="chanPosSelect">'+activeJobs.map(function(h,i){
+      return '<option value="'+i+'">'+esc(h["포지션명"])+' · '+esc(h["부서"]||"")+'</option>';
+    }).join("")+'</select>'+
+    '</div>';
+  html+='<div id="chanDetail"></div>';
+
+  setPanel("chan",html);
+
+  var selEl=document.getElementById("chanPosSelect");
+  var savedIdx=window.__chanSelIdx||0; if(savedIdx>=activeJobs.length||savedIdx<0)savedIdx=0;
+  selEl.value=String(savedIdx);
+  selEl.addEventListener("change",function(){
+    window.__chanSelIdx=parseInt(selEl.value,10)||0;
+    renderChannelDetail(activeJobs[window.__chanSelIdx]);
+  });
+  renderChannelDetail(activeJobs[savedIdx]);
+
+  var detailEl=document.getElementById("chanDetail");
+  detailEl.addEventListener("click",function(ev){
+    var tb=ev.target.closest("[data-chantab]");
+    if(tb){
+      var pane=tb.closest(".chan-tabwrap");
+      pane.querySelectorAll(".chan-tabbtn").forEach(function(b){b.classList.toggle("active",b===tb);});
+      pane.querySelectorAll(".chan-pane").forEach(function(p){p.style.display=(p.getAttribute("data-pane")===tb.getAttribute("data-chantab"))?"":"none";});
+      return;
+    }
+    var cp=ev.target.closest("[data-chancopy]");
+    if(cp){
+      var key=cp.getAttribute("data-chancopy");
+      var text=(window.__chanTexts||{})[key]||"";
+      var done=function(){ var lbl=cp.textContent; cp.textContent="복사됨"; cp.style.background="var(--gold,#a98a52)"; cp.style.color="#fff";
+        setTimeout(function(){ cp.textContent=lbl; cp.style.background=""; cp.style.color=""; },1500); };
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(function(){ chanFallbackCopy(text); done(); });
+      }else{ chanFallbackCopy(text); done(); }
+      return;
+    }
+  });
+}
+function chanFallbackCopy(text){
+  var ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.left="-9999px";
+  document.body.appendChild(ta); ta.select();
+  try{document.execCommand("copy");}catch(e){}
+  document.body.removeChild(ta);
+}
+function renderChannelDetail(h){
+  var posName=h["포지션명"]||"", dept=h["부서"]||"";
+  var key=CHANNEL_HUB.matchSource(posName,dept);
+  var box=document.getElementById("chanDetail");
+  if(!key){
+    box.innerHTML='<div class="card"><div class="chan-notready">'+
+      '<b>'+esc(posName)+'</b>에 대한 채널별 게시 재료가 아직 준비되지 않았습니다.<br>'+
+      '현재는 사우나 주임·골프 프로·주차관리·운영부(오후) 4개 공고만 재료가 준비되어 있습니다.<br>'+
+      '이 공고의 재료가 필요하시면 매니저님께서 CHRO(A-5 배포담당자)에게 준비를 요청해 주세요 — 공고 실데이터를 확인한 뒤 만들어 드립니다(창작 없이 실데이터 기준).'+
+      '</div></div>';
+    return;
+  }
+  var d=CHANNEL_HUB.fullData(key);
+  var jk=CHANNEL_HUB.gen.jobkorea(d).text;
+  var ab=CHANNEL_HUB.gen.albamon(d).text;
+  var dg=CHANNEL_HUB.gen.danggeun(d);
+  var dc=CHANNEL_HUB.gen.daumcafe(d);
+  window.__chanTexts={jobkorea:jk,albamon:ab,danggeun:dg,daumcafe:dc};
+
+  var channels=[
+    {key:"jobkorea",name:"잡코리아",tone:"주력 채널 · 에디터 호환 리치 HTML",src:true,text:jk},
+    {key:"albamon",name:"알바몬",tone:"보수적 안전판 · 인라인 스타일",src:true,text:ab},
+    {key:"daumcafe",name:"다음카페 (스포드림)",tone:"텍스트 + 이미지 첨부 안내",src:false,text:dc},
+    {key:"danggeun",name:"당근알바",tone:"간결 · 한남동 지역 강조",src:false,text:dg}
+  ];
+  var tabs=channels.map(function(c,i){return '<button type="button" class="chan-tabbtn'+(i===0?" active":"")+'" data-chantab="'+c.key+'">'+esc(c.name)+'</button>';}).join("");
+  var panes=channels.map(function(c,i){
+    var link=CHAN_PLATFORM_LINKS[c.key];
+    return '<div class="chan-pane" data-pane="'+c.key+'" style="'+(i===0?"":"display:none")+'">'+
+      '<div class="chan-card">'+
+      '<div class="chan-card-head"><div><div style="font-weight:800;font-size:15px;color:var(--navy,#0b1f3a)">'+esc(c.name)+'</div>'+
+      '<div class="chan-tone">'+esc(c.tone)+'</div></div>'+
+      chanCopyBtn(c.key, c.src?"HTML 소스 복사":"복사")+
+      '</div>'+
+      (link?('<div class="chan-where">'+esc(link.note)+' — <a href="'+esc(link.url)+'" target="_blank" rel="noopener" style="color:inherit;font-weight:800;text-decoration:underline">'+esc(link.label)+' ↗</a></div>'):"")+
+      '<div class="chan-pre'+(c.src?" src":"")+'">'+esc(c.text)+'</div>'+
+      '</div></div>';
+  }).join("");
+
+  box.innerHTML='<div class="chan-tabwrap"><div class="card" style="padding:16px 18px">'+
+    '<div style="font-weight:800;font-size:15.5px;color:var(--navy,#0b1f3a)">'+esc(d.titleLong)+'</div>'+
+    '<div class="chan-tone" style="margin-top:2px">'+esc(d.dept)+' · '+esc(d.employmentType)+' · '+esc(d.salary.monthly)+'</div>'+
+    '<div class="chan-assets">'+
+      '<a href="'+esc(d.urls.valuesDiagram)+'" target="_blank" rel="noopener">⬇ 인재상 도표 이미지</a>'+
+      '<a href="'+esc(d.urls.recruitPage)+'" target="_blank" rel="noopener">↗ 리크루팅 페이지 (상단 "JPG 다운로드" 버튼으로 공고 카드 이미지 생성)</a>'+
+    '</div>'+
+    '<div class="chan-tabs">'+tabs+'</div>'+
+    panes+
+    '</div></div>';
 }
 
 // ============ A4 출력 페이지 (새 창) ============
@@ -3487,7 +3634,7 @@ function drawDonut(cid,obj){
   }catch(e){el.parentNode.innerHTML='<div class="muted" style="padding:36px 10px;text-align:center">차트 표시 오류</div>';}
 }
 var RENDERED={};
-var RENDERERS={dash:renderDash,emp:renderEmp,hire:renderHire,onbo:renderOnbo,
+var RENDERERS={dash:renderDash,emp:renderEmp,hire:renderHire,chan:renderChannel,onbo:renderOnbo,
   eval:renderEval,exit:renderExit,docs:renderDocs,std:renderStd};
 function showTab(id){
   // 뷰어 모드는 채용·온보딩·평가 탭에 딥링크/직접호출로도 도달 불가 — 대시보드로 폴백
