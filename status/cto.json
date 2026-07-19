@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "NEXT-20260707-160113",
-  "last_task_id": "NEXT-20260707-160113",
+  "task_id": "CTO-2026-07-18-REGLOSS-SCAFFOLD-HANDOFF",
+  "last_task_id": "CTO-2026-07-18-REGLOSS-SCAFFOLD-HANDOFF",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-07-09T03:36:46Z",
+  "last_pushed_at": "2026-07-18T10:22:42Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -85,12 +85,28 @@
       "note": "북극성별 보기=G1 토글로 이미 완료·고도화, 별도 배 불필요 확정(선행배 CTO-2026-07-06-VOYAGE-MAP-PAGE DONE·항해지도.html→G1 리다이렉트 스텁 확인)",
       "updated_at": "2026-07-09T03:36:46Z",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-07-18-TELEGRAM-INQUIRY-STABILIZATION",
+      "title": "[시토] 텔레그램·문의알림 안정화 — 플러드 근본수리+테스트라우팅+종목색상+가독성+드리프트 자가치유",
+      "status": "DONE",
+      "note": "①문의 폴러 플러드 근본수리(행번호→타임스탬프 마커·삽입무관·INC-015 GUARDED)+안전 재가동 ②테스트 문의→실무진방 아닌 GM 개인봇 라우팅 ③문의 알림 종목색상 11지점(수영🔵PT🔴골프🟢필라🟠멤버십🟡루프/발레🟣체조/유소년🟦뮤지컬⚫스쿼시🟩)·이름연락처내용 보존 ④완료보고 가독성(결론먼저·색동그라미·접기) ⑤큐미러 드리프트 자가치유(알림→자동동기화). 문의방 가이드 초안 개인봇 발송.",
+      "updated_at": "2026-07-18T09:48:10Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-07-18-REGLOSS-SCAFFOLD-HANDOFF",
+      "title": "[시토] 등록종목·LOSS사유 기록 뼈대 준비 + 시포 인계",
+      "status": "DONE",
+      "note": "GM 요청 기능 뼈대 구축: 문의회원.html에 등록종목 입력칸(#cmRegProgramRow)+LOSS사유 모달(#lossReasonOverlay), .deploy-funnel-v2/Survey.js에 regProgram·lossReason 저장핸들러(+28줄). 라이브 페이지 무손상 실측(렌더정상·콘솔 파싱에러0·추가요소 숨김). ★핵심발견: 문의회원 라이브 GAS=v2(1BezMSW·5/200 여유)라 200버전 한도 무관·배포가능. 배선(LOSS모달 발동·등록종목 저장·행표시) 미완 — 시포가 이 파일 실시간 커밋 중이라 충돌방지 위해 시토 중단·인계(파괴적 git 미사용·INC-009).",
+      "updated_at": "2026-07-18T10:22:42Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "북극성별 보기는 G1 토글로 유지·고도화(별도 배 불필요)",
-  "artifact_url": "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#G1/northstar (gm1-northstar-view 라이브 구현·항해지도.html은 리다이렉트 스텁)",
+  "title": "[시토] 등록종목·LOSS사유 기록 뼈대 준비 + 시포 인계",
+  "artifact_url": "https://wellperion-cao.github.io/wellperion-automation/cpo/member/문의회원.html?manage=membership",
   "commit": "",
-  "note": "북극성별 보기=G1 토글로 이미 완료·고도화, 별도 배 불필요 확정(선행배 CTO-2026-07-06-VOYAGE-MAP-PAGE DONE·항해지도.html→G1 리다이렉트 스텁 확인)",
-  "updated_at": "2026-07-09T03:36:46Z"
+  "note": "GM 요청 기능 뼈대 구축: 문의회원.html에 등록종목 입력칸(#cmRegProgramRow)+LOSS사유 모달(#lossReasonOverlay), .deploy-funnel-v2/Survey.js에 regProgram·lossReason 저장핸들러(+28줄). 라이브 페이지 무손상 실측(렌더정상·콘솔 파싱에러0·추가요소 숨김). ★핵심발견: 문의회원 라이브 GAS=v2(1BezMSW·5/200 여유)라 200버전 한도 무관·배포가능. 배선(LOSS모달 발동·등록종목 저장·행표시) 미완 — 시포가 이 파일 실시간 커밋 중이라 충돌방지 위해 시토 중단·인계(파괴적 git 미사용·INC-009).",
+  "updated_at": "2026-07-18T10:22:42Z"
 }
