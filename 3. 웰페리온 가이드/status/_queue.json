@@ -548,5 +548,19 @@
     "artifact": "GM 확인([GM 확인] 플레이스홀더 2곳)을 실제 답변으로 채움: 가족과 보낸 시간=\n\"세 아들이랑 맛집 탐방\", 느낀 점=\"사소한 부분에 행복\". 4·5컷 슬라이드 재렌더\n+ 검수 미리보기 갱신, 텔레그램 승인 카드 재발송(send_review_card.py --id\nCMO-2026-07-19-CASE13-오롯이쉼) 완료. 재고표 #13 상태를 검수발송(2026-07-19)로\n갱신 — 07:30 디스패처가 선등록(카드 보류) 상태를 카드 미발송으로 오인해 건너뛴\n사고(별도 커밋에서 근본 수정) 복구. (CLI ad-hoc · 커밋 62787506)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "6278750677cb9b87cc158eb27da935cd5fae618c"
+  },
+  {
+    "task_id": "CMO-2026-07-19-ADHOC-4f590766",
+    "clevel": "cmo",
+    "title": "[시모] case_series_dispatch 선등록 카드 미발송 재발방지 (CASE13 사고)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-19",
+    "processed_at": "2026-07-19",
+    "ship_no": 9111,
+    "artifact": "근본원인: _case_already_queued() 가 \"review_queue 존재\"만으로 \"카드 발송\n완료\"로 오인 — send_card=False 로 선등록(GM 확인 대기)된 편(오늘 CASE13)이\n07:30 디스패처에서 매일 \"이미 존재 — 재선정 스킵\"으로 처리되며 텔레그램 승인\n카드가 끝내 발송되지 않은 원인. (CLI ad-hoc · 커밋 4f590766)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4f590766fe934351133a55ee819b28e23b1ece3a"
   }
 ]
