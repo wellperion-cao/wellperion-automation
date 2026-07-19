@@ -61,7 +61,6 @@ DEFAULT_GAS_URL = (
 # 회차 표준(순서 고정) — 라벨은 실제 운영 명칭(오전조/오후조/마감조). 주말은 오후조 미운영(서버가 total=0).
 _SHIFTS = [("am", "오전조"), ("pm", "오후조"), ("close", "마감조")]
 
-_MAX_OUT_OF_RANGE = 3   # 시설부 기준이탈 상세 최대 줄(핵심요약 — 간결)
 
 
 def _num(n) -> str:
@@ -88,42 +87,27 @@ def fetch_gas(params: dict, url: str = DEFAULT_GAS_URL, timeout: float = 20.0) -
 
 
 # ── 지원부 ────────────────────────────────────────────────────────────────
-def shift_breakdown(d: dict) -> list[tuple[str, int, int, int]]:
-    """today_live dict → [(라벨, done, total, pct)] — **분모(total)>0 회차만**.
-    서버가 주말 pm을 0으로 주므로 total>0 필터만으로 주말 오후조가 자동 제외(문제1 해결)."""
-    out = []
-    for key, label in _SHIFTS:
-        total = int(d.get(key + "Total", 0) or 0)
-        if total <= 0:
-            continue
-        done = int(d.get(key, 0) or 0)
-        pct = round(done / total * 100) if total else 0
-        out.append((label, done, total, pct))
-    return out
-
-
-def weakspot(d: dict) -> str:
-    """byGender 회차×성별 중 분모>0이고 완료율 최저인 칸 = 짚을 점 한 줄(독려 대상)."""
+def support_issues(d: dict) -> list[str]:
+    """미점검·미달 회차를 **빠짐없이** 짚음(1개만 X). GM 2026-07-19 피드백1.
+    한 구역(남/여) 전체가 0%면 "여성구역 전체 미점검(오전조·마감조)"처럼 통으로 직관 표기.
+    부분 미달이면 회차별로 "여성구역 마감조 3/13(23%)". 전부 완료면 [](이상 없음)."""
     g = d.get("byGender", {}) or {}
-    glabel = {"m": "남", "f": "여"}
-    worst = None  # (pct, gender, shift, done, total)
-    for gk in ("m", "f"):
+    out: list[str] = []
+    for gk, glabel in (("m", "남성구역"), ("f", "여성구역")):
         part = g.get(gk, {}) or {}
-        for rk, rlabel in _SHIFTS:
-            total = int(part.get(rk + "Total", 0) or 0)
-            if total <= 0:
-                continue
-            done = int(part.get(rk, 0) or 0)
-            p = round(done / total * 100)
-            cand = (p, glabel[gk], rlabel, done, total)
-            if worst is None or p < worst[0]:
-                worst = cand
-    if worst is None:
-        return "⚠️ 짚을 점: 진행 데이터 없음"
-    p, gl, rl, done, total = worst
-    if p >= 100:
-        return "✅ 짚을 점 없음 — 전 회차 완료"
-    return f"⚠️ 짚을 점: {gl} {rl} {done}/{total}({p}%) — 독려 필요"
+        shifts = [(lbl, int(part.get(k, 0) or 0), int(part.get(k + "Total", 0) or 0))
+                  for k, lbl in _SHIFTS if int(part.get(k + "Total", 0) or 0) > 0]
+        incomplete = [(lbl, dn, tt) for lbl, dn, tt in shifts if dn < tt]
+        if not incomplete:
+            continue
+        # 구역 전체 미점검(전 회차 0) → 통으로
+        if len(incomplete) == len(shifts) and all(dn == 0 for _, dn, _ in shifts):
+            out.append(f"{glabel} 전체 미점검({'·'.join(l for l, _, _ in shifts)})")
+        else:
+            for lbl, dn, tt in incomplete:
+                p = round(dn / tt * 100) if tt else 0
+                out.append(f"{glabel} {lbl} {dn}/{tt}({p}%)")
+    return out
 
 
 def _pct_str(done: int, total: int) -> str:
@@ -183,33 +167,61 @@ def build_support_section(today: str, url: str = DEFAULT_GAS_URL,
     filled["support_status"] = True
     lines = [f"🛠 지원부 현황 {done}/{total}({_pct_str(done, total)})"]
 
-    # 남성구역·여성구역 각각(합산 아님) — 각 구역 완료율 + 회차분해(요일반영·분모>0만)
+    # 남성구역·여성구역 각각(합산 아님) — 각 구역 완료율 + 회차분해(요일반영·분모>0만·한 줄 콤팩트)
     g = d.get("byGender", {}) or {}
     for gk, glabel in (("m", "남성구역"), ("f", "여성구역")):
         part = g.get(gk, {}) or {}
         g_t = sum(int(part.get(k + "Total", 0) or 0) for k, _ in _SHIFTS)
         g_d = sum(int(part.get(k, 0) or 0) for k, _ in _SHIFTS)
-        lines.append(f"  {glabel} {g_d}/{g_t}({_pct_str(g_d, g_t)})")
         br = gender_shift_breakdown(part)
-        if br:
-            lines.append("    " + " · ".join(f"{lb} {dn}/{tt}({p}%)" for lb, dn, tt, p in br))
+        detail = " — " + " · ".join(f"{lb} {dn}/{tt}" for lb, dn, tt, _ in br) if br else ""
+        lines.append(f"  {glabel} {g_d}/{g_t}({_pct_str(g_d, g_t)}){detail}")
 
-    # 1회성 짚을 점(오늘 최저 회차) — 반복 이슈와 구분
-    ws = weakspot(d)
-    lines.append(f"  {ws.replace('짚을 점', '오늘 짚을 점')}")
-
-    # 반복 이슈(원장 기반 · 반복 패턴만 승격)
-    rec = recurring_issue_lines(today)
+    # ── 이슈사항(현황과 함께) — 미점검 회차 전부 + 반복 이슈. GM 2026-07-19 피드백1·2 ──
+    issues = support_issues(d)          # 1회성 미점검(빠짐없이)
+    rec = recurring_issue_lines(today)  # 반복(원장) — 이미 " " 들여쓰기 리스트
     filled["support_recurring"] = max(0, len(rec) - 1) if rec else 0
+    if issues:
+        lines.append("  ❗ 짚을 점: " + ", ".join(issues) + " — 독려 필요")
+    elif not rec:
+        lines.append("  ✅ 이상 없음 — 전 회차 완료")
     lines += rec
     return (lines, filled)
 
 
+_MAX_WORKLOG = 8   # 작업일지 표시 최대 항목(초과 시 '외 N')
+
+
+def facility_worklog(subs: list) -> tuple[list[str], list[str]]:
+    """board submissions → (작업사항 리스트, 특이사항 리스트). GM 2026-07-19 피드백3.
+    work=회차 누적이라 '가장 항목 많은' 제출 1개를 대표로(중복 자동 흡수) · note=전 회차 유니크."""
+    if not isinstance(subs, list) or not subs:
+        return ([], [])
+
+    def _lines(v):
+        return [ln.strip() for ln in str(v or "").replace("\r", "").split("\n") if ln.strip()]
+
+    # 작업사항: 누적 필드라 가장 풍부한(항목 최다) 제출을 대표로 사용
+    best = max(subs, key=lambda s: len(_lines(s.get("work"))), default=None)
+    work_items = _lines(best.get("work")) if best else []
+
+    # 특이사항(note)·기준이탈조치(oocAction) — 전 회차에서 유니크 수집(순서 보존)
+    notes: list[str] = []
+    seen = set()
+    for s in subs:
+        for f in ("note", "oocAction"):
+            for ln in _lines(s.get(f)):
+                if ln not in seen:
+                    seen.add(ln)
+                    notes.append(ln)
+    return (work_items, notes)
+
+
 # ── 시설부 ────────────────────────────────────────────────────────────────
 def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list[str], dict]:
-    """시설부 핵심요약: 실제 회수(board.submissions) + 기준이탈 유무(monthly outOfRange 오늘분).
-    회수 = len(board.store.submissions)(정본·페이지 'N회 완료' 일치, GM 2026-07-15)."""
-    filled = {"facility_status": False, "facility_outofrange": 0}
+    """시설부 핵심요약: 회수(board.submissions) + **작업일지(work) + 이슈사항(기준이탈·특이사항note)**.
+    회수 = len(board.store.submissions)(정본·페이지 'N회 완료' 일치, GM 2026-07-15). GM 2026-07-19 피드백3."""
+    filled = {"facility_status": False, "facility_outofrange": 0, "facility_worklog": False}
 
     board = fetch_gas({"action": "board", "key": f"FACILITY_CHECK_{today}"}, url)
     subs = (((board or {}).get("board") or {}).get("store") or {}).get("submissions")
@@ -223,19 +235,38 @@ def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list
     filled["facility_outofrange"] = len(today_oor)
 
     lines: list[str] = []
-    if sessions:
-        filled["facility_status"] = True
-        head = f"🏗 시설부 현황 {sessions}회 점검"
-        head += f" · 이상 {len(today_oor)}건" if today_oor else " · 이상 없음"
-        lines.append(head)
-    else:
+    if not sessions:
         lines.append("🏗 시설부 현황: 오늘 점검 입력 없음")
+        return (lines, filled)
 
-    for x in today_oor[:_MAX_OUT_OF_RANGE]:
-        name = str(x.get("name", "")).split("(")[0].strip() or str(x.get("name", ""))
-        lines.append(f"  · {name} {_num(x.get('value'))} (기준 {_num(x.get('min'))}~{_num(x.get('max'))})")
-    if len(today_oor) > _MAX_OUT_OF_RANGE:
-        lines.append(f"  · 외 {len(today_oor) - _MAX_OUT_OF_RANGE}건")
+    filled["facility_status"] = True
+    head = f"🏗 시설부 현황 {sessions}회 점검"
+    head += f" · 이상 {len(today_oor)}건" if today_oor else " · 이상 없음"
+    lines.append(head)
+
+    # 작업일지(무슨 점검·작업을 했는지) — 실데이터(work). 없으면 정직히 생략(지어내기 금지).
+    work_items, notes = facility_worklog(subs)
+    if work_items:
+        filled["facility_worklog"] = True
+        shown = work_items[:_MAX_WORKLOG]
+        tail = f" 외 {len(work_items) - _MAX_WORKLOG}건" if len(work_items) > _MAX_WORKLOG else ""
+        lines.append("  📋 작업일지: " + " · ".join(shown) + tail)
+    else:
+        lines.append("  📋 작업일지: 데이터 없음")
+
+    # 이슈사항 = 기준이탈(인라인 압축) + 특이사항(note)
+    if today_oor:
+        parts = []
+        for x in today_oor[:2]:
+            name = str(x.get("name", "")).split("(")[0].strip() or str(x.get("name", ""))
+            parts.append(f"{name} {_num(x.get('value'))}(기준 {_num(x.get('min'))}~{_num(x.get('max'))})")
+        extra = f" 외 {len(today_oor) - 2}건" if len(today_oor) > 2 else ""
+        lines.append(f"  ❗ 기준이탈 {len(today_oor)}건: " + " · ".join(parts) + extra)
+    if notes:
+        note_txt = " / ".join(notes[:2])
+        if len(note_txt) > 90:
+            note_txt = note_txt[:90] + "…"
+        lines.append("  📝 특이사항: " + note_txt)
     return (lines, filled)
 
 
