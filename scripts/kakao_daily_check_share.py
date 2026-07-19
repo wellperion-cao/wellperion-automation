@@ -35,13 +35,10 @@ from __future__ import annotations
 
 import argparse
 import io
-import json
 import os
 import subprocess
 import sys
 import time
-import urllib.parse
-import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -55,23 +52,13 @@ except Exception:
 ROOT = Path(__file__).resolve().parent.parent
 SENDER = ROOT / "scripts" / "kakao_report_sender.py"
 
-# 점검 GAS(CHECK_API · monthly_check_report.py와 동일 배포 URL)
-GAS_URL = (
-    "https://script.google.com/macros/s/"
-    "AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec"
-)
+# 3섹션 핵심요약 렌더 = 공용 모듈(텔레그램 점검관리방과 단일 진실). scripts/ 동일 폴더.
+import support_check_summary  # noqa: E402
 
 # 발송 대상 방(단일·고정 — 절대 다른 방 금지)
 TARGET_ROOM = "★운영+시설+지원+주차"
 
 _DOW_KO = ["월", "화", "수", "목", "금", "토", "일"]
-_SHIFT_KO = {"am": "오전", "pm": "오후", "close": "마감", "night": "야간"}
-_GENDER_KO = {"m": "남", "f": "여"}
-
-MAX_OUT_OF_RANGE = 6      # 기준이탈 표시 최대 줄
-MAX_UNCHECKED = 6         # 미체크 항목 표시 최대 개수
-MAX_ISSUES = 3            # 이슈 표시 최대 개수
-MAX_FACILITY_DETAIL = 4   # 시설부 회차별 시각을 한 줄씩 상세 표시할 최대 회수(초과 시 콤팩트 나열)
 
 
 def log(msg: str) -> None:
@@ -79,208 +66,21 @@ def log(msg: str) -> None:
     print(f"[{ts}] {msg}", flush=True)
 
 
-def _fmt_num(n) -> str:
-    """정수면 '32', 소수면 '32.2' (%g 스타일 — 불필요한 .0 제거)."""
-    try:
-        f = float(n)
-    except (TypeError, ValueError):
-        return str(n)
-    return str(int(f)) if f.is_integer() else str(f)
-
-
-def fetch_gas(params: dict, timeout: float = 20.0) -> dict | None:
-    """GAS GET 호출 → dict(ok=true)만 반환. 실패·ok=false는 None(정직 — 지어내기 금지)."""
-    url = GAS_URL + "?" + urllib.parse.urlencode(params)
-    try:
-        with urllib.request.urlopen(urllib.request.Request(url), timeout=timeout) as r:
-            data = json.loads(r.read().decode("utf-8"))
-    except Exception as e:
-        log(f"[GAS] 조회 실패({params}): {type(e).__name__}: {e}")
-        return None
-    if not isinstance(data, dict) or not data.get("ok"):
-        log(f"[GAS] 응답 ok=false({params}): {str(data)[:200]}")
-        return None
-    return data
-
-
 # ══════════════════════════════════════════════════════════════════════════
-#  섹션 빌더 — 각 부서 데이터 dict → 카톡 본문 라인 리스트(값 없으면 빈 리스트)
-# ══════════════════════════════════════════════════════════════════════════
-def _fetch_facility_board(today: str) -> dict:
-    """시설부 오늘 board 한 번 호출 → 실제 제출 회수·각 회차 시각·점검자.
-    daily_scheduler.py::_fetch_facility_board와 동일 패턴(?action=board&key=FACILITY_CHECK_{today}).
-    회수 = len(board.store.submissions) — monthly sessionCount(라운드종류=1 고정, 항상 1)가 아닌
-    실제 제출 건수(페이지 'N회 완료'와 일치·오늘 키라 stale 없음, GM 2026-07-15).
-    반환: {"sessions": int, "submissions": list}."""
-    out = {"sessions": 0, "submissions": []}
-    data = fetch_gas({"action": "board", "key": f"FACILITY_CHECK_{today}"})
-    if not isinstance(data, dict):
-        return out
-    store = ((data.get("board") or {}).get("store") or {})
-    subs = store.get("submissions")
-    if isinstance(subs, list):
-        out["submissions"] = subs
-        out["sessions"] = len(subs)
-    return out
-
-
-def build_facility_lines(today: str) -> tuple[list[str], dict]:
-    """시설부: board에서 실제 회수·회차별 시각(정직 소스) + monthly outOfRange로 기준이탈.
-    GM 2026-07-13 결정(이벤트 중심 — 회수·이상 유무 중심, % 부차) + GM 2026-07-15 회수·시각 정직화.
-    today_live로 작업/지시 있으면 덧붙임."""
-    filled = {"facility_status": False, "facility_outofrange": 0, "facility_worknote": False}
-
-    # 회수·시각·점검자 = board 실데이터(정본)
-    board = _fetch_facility_board(today)
-    sessions = board["sessions"]
-
-    # 기준이탈(오늘분만) = monthly_report outOfRange.list(항목·값·기준). 회수 소스와 분리.
-    month = today[:7]
-    monthly = fetch_gas({"action": "monthly_report", "dept": "facility", "month": month})
-    today_oor = []
-    if isinstance(monthly, dict):
-        oor = ((monthly.get("outOfRange") or {}).get("list")) or []
-        today_oor = [x for x in oor if str(x.get("date")) == today]
-    filled["facility_outofrange"] = len(today_oor)
-
-    lines: list[str] = []
-    if sessions:
-        filled["facility_status"] = True
-        ooc_n = len(today_oor)
-        head = f"🏗 시설부 {sessions}회 점검"
-        head += f" · 이상 {ooc_n}건" if ooc_n else " · 이상 없음"
-        lines.append(head)
-
-        # 회차별 시각·점검자 — seq 순. 회수 많으면(초과 시) 시각만 콤팩트 나열(모바일 가독성).
-        subs = sorted(board["submissions"], key=lambda s: (s.get("seq") or 0))
-        if sessions <= MAX_FACILITY_DETAIL:
-            for i, s in enumerate(subs, 1):
-                seq = s.get("seq") or i
-                st = str(s.get("startHHMM") or "").strip()
-                en = str(s.get("endHHMM") or "").strip()
-                insp = str(s.get("inspector") or "").strip()
-                span = f"{st}~{en}" if st and en else (st or en or "시각미상")
-                insp_s = f" ({insp})" if insp else ""
-                lines.append(f"  · {seq}회 {span}{insp_s}")
-        else:
-            times = [str(s.get("startHHMM") or "").strip() for s in subs
-                     if str(s.get("startHHMM") or "").strip()]
-            insps = list(dict.fromkeys(
-                str(s.get("inspector") or "").strip() for s in subs
-                if str(s.get("inspector") or "").strip()))
-            insp_s = f" · {', '.join(insps)}" if insps else ""
-            lines.append("  · 점검 시각: " + "·".join(times) + insp_s)
-    else:
-        lines.append("🏗 시설부: 오늘 점검 입력 없음")
-
-    # 기준이탈 상세(오늘분만) — 개선 필요
-    if today_oor:
-        lines.append(f"⚠ 기준이탈 {len(today_oor)}건 (개선 필요)")
-        for x in today_oor[:MAX_OUT_OF_RANGE]:
-            name = str(x.get("name", "")).split("(")[0].strip() or str(x.get("name", ""))
-            val = _fmt_num(x.get("value"))
-            lo, hi = _fmt_num(x.get("min")), _fmt_num(x.get("max"))
-            lines.append(f"  · {name} {val} (기준 {lo}~{hi})")
-        if len(today_oor) > MAX_OUT_OF_RANGE:
-            lines.append(f"  · 외 {len(today_oor) - MAX_OUT_OF_RANGE}건")
-
-    # 작업/지시사항 — facility today_live 응답에 있으면 포함(현재 미가동 시 자동 생략)
-    tl = fetch_gas({"action": "today_live", "dept": "facility"})
-    if isinstance(tl, dict):
-        notes = []
-        for key in ("worknote", "workNote", "작업사항", "instruction", "지시사항"):
-            v = tl.get(key)
-            if isinstance(v, str) and v.strip():
-                notes.append(v.strip())
-        if notes:
-            filled["facility_worknote"] = True
-            lines.append("📝 작업/지시: " + " / ".join(notes[:3]))
-
-    return (lines, filled)
-
-
-def build_support_lines() -> tuple[list[str], dict]:
-    """지원부: today_live done/total/pct + 미체크(uncheckedByShift) + 이슈(allIssues)."""
-    data = fetch_gas({"action": "today_live", "dept": "support"})
-    filled = {"support_status": False, "support_unchecked": 0, "support_issues": 0}
-    if data is None:
-        return (["🛠 지원부: 데이터 조회 실패(정직 표기)"], filled)
-
-    lines: list[str] = []
-    total = data.get("total")
-    if isinstance(total, (int, float)) and total:
-        filled["support_status"] = True
-        lines.append(f"🛠 지원부 {data.get('done', 0)}/{total}({data.get('pct', 0)}%)")
-    else:
-        lines.append("🛠 지원부: 오늘 점검 입력 없음")
-
-    # 미체크 항목(회차×성별) 평탄화 — 개선 유도
-    unchecked = data.get("uncheckedByShift") or {}
-    flat: list[str] = []
-    for shift, by_gender in unchecked.items():
-        if not isinstance(by_gender, dict):
-            continue
-        shift_ko = _SHIFT_KO.get(shift, shift)
-        for gender, items in by_gender.items():
-            g_ko = _GENDER_KO.get(gender, gender)
-            for it in (items or []):
-                flat.append(f"[{shift_ko}{g_ko}] {it}")
-    filled["support_unchecked"] = len(flat)
-    if flat:
-        shown = flat[:MAX_UNCHECKED]
-        tail = f" 외 {len(flat) - MAX_UNCHECKED}건" if len(flat) > MAX_UNCHECKED else ""
-        lines.append(f"❗ 미체크 {len(flat)}건 — " + ", ".join(shown) + tail)
-
-    # 이슈 요약(allIssues)
-    issues = data.get("allIssues") or []
-    filled["support_issues"] = len(issues)
-    if issues:
-        lines.append(f"🗒 이슈 {len(issues)}건")
-        for x in issues[:MAX_ISSUES]:
-            txt = " ".join(str(x.get("issue", "")).split()).strip()
-            if len(txt) > 40:
-                txt = txt[:40] + "…"
-            by = str(x.get("by", "")).strip()
-            by_s = f" ({by})" if by else ""
-            lines.append(f"  · {txt}{by_s}")
-        if len(issues) > MAX_ISSUES:
-            lines.append(f"  · 외 {len(issues) - MAX_ISSUES}건")
-
-    return (lines, filled)
-
-
-def build_parking_lines(today: str) -> tuple[list[str], dict]:
-    """주차: weekly에서 오늘 행 데이터 있으면 포함, 없으면 '자체점검 준비 중' 정직 표기."""
-    filled = {"parking": False}
-    data = fetch_gas({"action": "weekly", "dept": "parking"})
-    if isinstance(data, dict):
-        for d in data.get("data") or []:
-            if str(d.get("date")) == today and isinstance(d.get("total"), (int, float)) and d.get("total"):
-                filled["parking"] = True
-                return ([f"🅿 주차 {d.get('done', 0)}/{d.get('total')}({d.get('pct', 0)}%)"], filled)
-    return (["🅿 주차: 자체점검 준비 중"], filled)
-
-
-# ══════════════════════════════════════════════════════════════════════════
-#  본문 조립
+#  본문 조립 — 3섹션 핵심요약은 공용 모듈(support_check_summary)이 렌더(단일 진실).
+#  텔레그램 점검관리방과 동일 포맷 보장 + 회차분해 요일반영(주말 2회차). GM 2026-07-19.
 # ══════════════════════════════════════════════════════════════════════════
 def build_body(now: datetime | None = None) -> tuple[str, dict]:
     now = now or datetime.now()
-    today = now.strftime("%Y-%m-%d")
     title_date = f"{now.strftime('%m-%d')}({_DOW_KO[now.weekday()]})"
     bar = "━" * 12
 
-    fac_lines, fac_fill = build_facility_lines(today)
-    sup_lines, sup_fill = build_support_lines()
-    par_lines, par_fill = build_parking_lines(today)
+    summary_lines, filled = support_check_summary.build_summary_lines(now=now)
 
     body_lines = [f"📋 일일 점검 현황 공유 — {title_date}", bar]
-    body_lines += fac_lines
-    body_lines += sup_lines
-    body_lines += par_lines
+    body_lines += summary_lines
     body_lines += [bar, "오늘도 수고 많으셨습니다. 감사합니다 🙏"]
 
-    filled = {**fac_fill, **sup_fill, **par_fill}
     return ("\n".join(body_lines), filled)
 
 

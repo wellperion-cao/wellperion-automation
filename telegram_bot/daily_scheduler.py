@@ -2093,11 +2093,10 @@ def _build_support_check_chart(d: dict) -> str:
         # 회차별 done/total — key in {"am","pm","close"}
         return f"{part.get(key, 0)}/{part.get(key + 'Total', 0)}"
 
-    rows = [
-        ("오전", "am"),
-        ("오후", "pm"),
-        ("마감", "close"),
-    ]
+    # [GM 2026-07-19] 분모(total)>0 회차만 렌더 — 주말은 서버가 pmTotal=0을 주므로
+    # 오후조 유령행(0/0)이 자동 제외됨(주말 2회차·평일 3회차 정합). 홈 parseGenderKpi와 동일 규칙.
+    _all_rows = [("오전조", "am"), ("오후조", "pm"), ("마감조", "close")]
+    rows = [(lb, k) for lb, k in _all_rows if (d.get(k + "Total", 0) or 0) > 0]
 
     # 열 폭 계산
     h_round, h_m, h_f, h_sum = "회차", "남", "여", "합계"
@@ -2577,41 +2576,20 @@ def _build_digest_inquiry(today: str) -> str:
 
 
 def _build_digest_check(today: str) -> str:
-    """점검관리방 — 종일 완료율 + 남/여 + 약점 + 차트. str 반환(전송 분리)."""
+    """점검관리방 — 3섹션 핵심요약(🏗 시설부 / 🛠 지원부 / 🅿 주차부). str 반환(전송 분리).
+    GM 2026-07-19: 카톡 23시 공유방과 **동일 포맷**(공용 모듈 support_check_summary)으로 통일 +
+    지원부 회차분해 요일 반영(주말=오전조·마감조 2회차, 평일 3회차 · 서버 total>0 회차만)."""
     weekday = _WEEKDAY_KOR[datetime.now().weekday()]
     md = datetime.now().strftime("%m-%d")
     # 제목 = 'MM-DD(요일) 금일 점검 현황보고' (GM 2026-07-13: 12시 오전보고와 짝 · 저녁=금일 종합)
     header = f"🌙 {md}({weekday}) 금일 점검 현황보고\n{_DIVIDER}"
-    d = _fetch_support_today_live(today)
-    if d is None:
+    try:
+        import support_check_summary as _scs   # scripts/ 는 상단에서 sys.path 삽입됨
+        lines, _filled = _scs.build_summary_lines(date=today)
+        return f"{header}\n\n" + "\n".join(lines)
+    except Exception as e:
+        logger.warning(f"점검 핵심요약 렌더 실패(폴백): {e}")
         return f"{header}\n\n점검 데이터 조회 실패."
-
-    total = d.get("total", 0)
-    done = d.get("done", 0)
-    pct_all = f"{round(done / total * 100)}%" if total else "-"
-
-    g = d.get("byGender", {})
-    gm = g.get("m", {})
-    gf = g.get("f", {})
-    m_t = sum(gm.get(k + "Total", 0) for k in ("am", "pm", "close"))
-    m_d = sum(gm.get(k, 0) for k in ("am", "pm", "close"))
-    f_t = sum(gf.get(k + "Total", 0) for k in ("am", "pm", "close"))
-    f_d = sum(gf.get(k, 0) for k in ("am", "pm", "close"))
-    m_pct = f"{round(m_d / m_t * 100)}%" if m_t else "-"
-    f_pct = f"{round(f_d / f_t * 100)}%" if f_t else "-"
-
-    weakspot = _build_support_weakspot(d)
-    chart = _build_support_check_chart(d)
-
-    return (
-        f"{header}\n\n"
-        f"[핵심 요약]\n"
-        f"종일 완료율: {done}/{total}({pct_all})\n"
-        f"  남성구역: {m_d}/{m_t}({m_pct}) · 여성구역: {f_d}/{f_t}({f_pct})\n"
-        f"{weakspot}\n\n"
-        f"[상세]\n"
-        f"{chart}"
-    )
 
 
 def _build_digest_reception(today: str) -> str:
