@@ -3718,5 +3718,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 4d3f8f57)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4d3f8f57b17d11645a458c9879e54909c6548fb6"
+  },
+  {
+    "task_id": "CTO-2026-07-19-ADHOC-5b23eb48",
+    "clevel": "cto",
+    "title": "[시토] 점검 현황 주말 회차 버그 수정 + 텔레그램·카톡 통일포맷",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-19",
+    "processed_at": "2026-07-19",
+    "ship_no": 9100,
+    "artifact": "- 문제1(주말 회차): _build_support_check_chart가 요일 무관 3행 고정 →\n  분모(total)>0 회차만 렌더로 수정. 서버는 이미 주말 pmTotal=0 반환(배173)\n  이므로 주말 2회차(오전조·마감조)·평일 3회차 자동 정합. 홈 parseGenderKpi와 동일 규칙.\n- 문제2(내용 통일): scripts/support_check_summary.py 신규 공용 모듈로\n  3섹션 핵심요약(시설/지원/주차) 단일화. 텔레그램 _build_digest_check와\n  카톡 build_body 양쪽이 (CLI ad-hoc · 커밋 5b23eb48)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "5b23eb488b74af835bc8973b14f9c39cd0b67a42"
   }
 ]
