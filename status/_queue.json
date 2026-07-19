@@ -1248,5 +1248,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 8a711581)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8a7115816d04ddc3548a976b57dad0a0dcb98ad3"
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-e6032f7c",
+    "clevel": "cmo",
+    "title": "[시모] 실전사례 카드발송 멱등키를 편 번호(CASE{NN}) 기준으로 전환",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9161,
+    "artifact": "배경: make_queue_id()가 실행 날짜를 id에 박아 넣고, recover_stalled_cards()의\n\"이미 발송됨\" 판정이 그 id 완전일치(item_id in sent_ids)만 봤다. 재고표 재선정으로\n같은 편이 다른 날짜 id로 재등록되면(예: 8편이 7/17→7/20 id로 재등록) 옛 발송이력과\n키가 어긋나 \"미발송\"으로 오판 → 재발송. 동종 3회(6/14 골프, 7/19 CASE13, 7/20 CASE08). (CLI ad-hoc · 커밋 e6032f7c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e6032f7c0a50822f64f6af9aa03c63df188acee0"
   }
 ]
