@@ -185,6 +185,15 @@ def _queue_items() -> list[dict]:
         return []
 
 
+_CASE_MARKER_RE = re.compile(r"-CASE(\d{2})-")
+
+
+def _extract_case_num(item_id: str) -> int | None:
+    """id 문자열에서 편 번호(-CASE{NN}-)를 추출. 마커 없으면 None."""
+    m = _CASE_MARKER_RE.search(item_id)
+    return int(m.group(1)) if m else None
+
+
 def _find_queued_item(num: int) -> dict | None:
     """같은 편 번호(CASE{NN})의 review_queue 항목(검수대기/발행완료)을 반환. 없으면 None."""
     marker = f"-CASE{num:02d}-"
@@ -218,6 +227,26 @@ def _card_sent_ids() -> set:
         return set()
 
 
+def _card_sent_case_nums() -> set:
+    """카드 발송 SSOT 키들에서 편 번호(CASE{NN})만 뽑은 집합 (2026-07-20 8편 재발송 재발방지).
+
+    .review_card_msgids.json 키는 발송 당시 등록id(날짜 포함, 예: CMO-2026-07-17-CASE08-...)
+    그대로다. 같은 편이 다음날 재고표 재선정으로 새 날짜 id(CMO-2026-07-20-CASE08-...)로
+    다시 등록되면 완전일치 비교(item_id in sent_ids)가 실패해 "미발송"으로 오판 →
+    recover_stalled_cards() 가 재발송한다(동종 3회: 6/14 골프 → 7/19 CASE13 → 7/20 CASE08).
+    편 번호만 추출해 비교하면 등록id의 날짜가 바뀌어도 같은 편으로 인식 — _find_queued_item()
+    이 이미 -CASE{NN}- 마커로 조회하는 것과 같은 기준으로 맞춘 것. CASE 마커 없는 구형 id
+    (예: AI 시리즈, 채널별 개별 id)는 조용히 건너뛴다(그 편들은 원래 완전일치로만 판정됨 —
+    이 함수는 recover_stalled_cards 안에서 완전일치 폴백과 함께 쓰인다).
+    """
+    nums = set()
+    for item_id in _card_sent_ids():
+        n = _extract_case_num(item_id)
+        if n is not None:
+            nums.add(n)
+    return nums
+
+
 def _gm_confirm_pending(case: dict) -> bool:
     """대본 html·caption.md 에 '[GM 확인' 플레이스홀더가 남아있으면 True.
 
@@ -245,8 +274,13 @@ def recover_stalled_cards(rows: list[dict], today_iso: str, dry_run: bool) -> No
       ② 등록됨 + 카드 이미 발송(SSOT)   → 멱등: 재발송 안 함. 재고표만 뒤늦게 마킹.
       ③ 등록됨 + 카드 미발송 + GM확인 대기(플레이스홀더 남음) → 여전히 보류(정상, 카드 안 보냄)
       ④ 등록됨 + 카드 미발송 + GM확인 완료             → 카드 발송 트리거 + 재고표 마킹
+
+    ②판정 키 = 편 번호(CASE{NN}) 기준(2026-07-20 8편 재발송 재발방지). 등록id 완전일치
+    (구형 id·CASE 마커 없는 케이스 하위호환)와 편 번호 추출(_card_sent_case_nums, 재등록으로
+    id 날짜가 바뀌어도 인식) 둘 다로 판정 — 하나라도 걸리면 이미 발송된 것으로 본다.
     """
     sent_ids = _card_sent_ids()
+    sent_case_nums = _card_sent_case_nums()
     for r in rows:
         if r["status"] != STOCK_STATUS:
             continue  # 재고표 상태가 이미 다음 단계로 넘어간 행은 여기서 안 건드림
@@ -254,7 +288,7 @@ def recover_stalled_cards(rows: list[dict], today_iso: str, dry_run: bool) -> No
         if item is None:
             continue  # ① 아직 등록도 안 됨 — 정상 신규 후보(별도 흐름)
         item_id = str(item.get("id", ""))
-        if item_id in sent_ids:
+        if item_id in sent_ids or r["num"] in sent_case_nums:
             print(f"[INFO] #{r['num']} 카드 이미 발송됨(id={item_id}) — 멱등 스킵, 재고표만 갱신 시도.")
             if not dry_run:
                 mark_case_dispatched(r, today_iso)
