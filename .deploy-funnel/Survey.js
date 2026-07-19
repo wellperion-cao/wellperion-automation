@@ -5380,3 +5380,27 @@ function listInquirySheetTabs() {
   Logger.log('==============================');
   Logger.log('완료. 위 gid 를 FORM_SHEETS 영문 항목에 입력하세요.');
 }
+
+// ════════════════════════════════════════════════════════════════════════
+// [2026-07-19 시토] v1(백업) 문의알림 트리거 전삭제 — GM 1회 실행용.
+// v1→v2 이사(2026-07-18) 때 문의 트리거가 v2로 이전·정리되지 않아 v1(백업)이 계속
+// 문의알림방으로 발송 → 문의알림 이중발신의 근본원인. 이 함수로 v1의 문의 트리거만 전삭제.
+// 삭제 대상 = onInquiryFormSubmit(폼별) · _notifyNewInquiries_(5분 poller).
+// 보존 = memberMatchAutostamp 등 문의알림과 무관한 트리거.
+// 실행 후 v1 문의 트리거 0 → 알림은 v2(prod)가 전담(setupInquiryTriggersV2로 설치).
+// ════════════════════════════════════════════════════════════════════════
+function cleanupInquiryTriggersV1() {
+  var TARGETS = ['onInquiryFormSubmit', '_notifyNewInquiries_'];
+  var triggers = ScriptApp.getProjectTriggers();
+  var removed = [];
+  for (var i = 0; i < triggers.length; i++) {
+    var h = triggers[i].getHandlerFunction();
+    if (TARGETS.indexOf(h) >= 0) {
+      ScriptApp.deleteTrigger(triggers[i]);
+      removed.push(h);
+    }
+  }
+  var msg = '[v1 문의트리거 정리] 삭제 ' + removed.length + '개: ' + (removed.join(', ') || '(없음)');
+  Logger.log(msg);
+  return msg;
+}

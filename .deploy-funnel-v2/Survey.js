@@ -1098,6 +1098,20 @@ function installInquiryFormSubmitTriggers() {
   return results;
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// [2026-07-19 시토] v2(prod) 문의알림 트리거 설치 — GM 1회 실행용(이사 완결).
+// v1→v2 이사(2026-07-18) 때 미이전된 문의 트리거를 v2에 설치한다. 현행 dedup 코드라
+// onInquiryFormSubmit(즉시)이 마커 INQ_LASTROW 갱신 → 5분 poller가 같은 행 재발송 안 함
+// → 문의당 알림 1회만(단일 보장). installInquiryFormSubmitTriggers는 멱등(중복설치 방지).
+// ★반드시 v1의 cleanupInquiryTriggersV1 실행 '후'에 실행(순서 어기면 순간 3중).
+// 최종 상태: v2 = onFormSubmit(멤버십) + 폴링 백스톱, v1 = 문의 트리거 0.
+// ════════════════════════════════════════════════════════════════════════
+function setupInquiryTriggersV2() {
+  var results = installInquiryFormSubmitTriggers();
+  Logger.log('[v2 문의트리거 설치] ' + JSON.stringify(results));
+  return results;
+}
+
 // '문의 알림' 방 → GAS 토큰 작동 1회 확인 (일회용 — GAS 에디터에서 수동 실행)
 // ① 봇 토큰 존재여부 Logger 출력 ② 토큰 있으면 테스트 메시지 발송 후 응답코드 출력
 function verifyInquiryNotify() {
