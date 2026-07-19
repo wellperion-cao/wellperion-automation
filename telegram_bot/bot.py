@@ -1683,10 +1683,15 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     new_status = "승인" if decision == "approve" else "반려"
     targets = []
     missing = []
+    cancelled = []
     for iid in item_ids:
         t = next((it for it in items if it.get("id") == iid), None)
         if t is None:
             missing.append(iid)
+        elif t.get("status") == "폐기":
+            # 2026-07-20 8편 취소 사고 재발방지: 이미 나가있던 승인카드를 GM이 실수로
+            # 눌러도 취소된 항목은 status 덮어쓰기·발행 절대 금지. 안내만 회신.
+            cancelled.append(t)
         else:
             t["status"] = new_status
             targets.append(t)
@@ -1694,6 +1699,13 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if missing:
         await ctx.bot.send_message(chat_id=q.message.chat_id,
             text=f"⚠️ 큐에서 항목을 찾지 못함: {', '.join(missing)}")
+        if not targets:
+            return
+
+    if cancelled:
+        cancelled_titles = ", ".join(c.get("title", c.get("id", "")) for c in cancelled)
+        await ctx.bot.send_message(chat_id=q.message.chat_id,
+            text=f"🚫 취소된 건입니다 — 발행하지 않습니다: {cancelled_titles}")
         if not targets:
             return
 
