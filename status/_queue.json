@@ -3785,5 +3785,33 @@
     "artifact": "- 문제1(주말 회차): _build_support_check_chart가 요일 무관 3행 고정 →\n  분모(total)>0 회차만 렌더로 수정. 서버는 이미 주말 pmTotal=0 반환(배173)\n  이므로 주말 2회차(오전조·마감조)·평일 3회차 자동 정합. 홈 parseGenderKpi와 동일 규칙.\n- 문제2(내용 통일): scripts/support_check_summary.py 신규 공용 모듈로\n  3섹션 핵심요약(시설/지원/주차) 단일화. 텔레그램 _build_digest_check와\n  카톡 build_body 양쪽이 (CLI ad-hoc · 커밋 2cee0a0b)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "2cee0a0bf9ef65b23ee7b5b661a3e25ac81a8447"
+  },
+  {
+    "task_id": "CPO-2026-07-19-ADHOC-fae7af5c",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-19",
+    "processed_at": "2026-07-19",
+    "ship_no": 9103,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 fae7af5c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "fae7af5ca0290e8120e9ab53f971c35edb25c0a4"
+  },
+  {
+    "task_id": "CTO-2026-07-19-ADHOC-f42752c2",
+    "clevel": "cto",
+    "title": "[시토] 점검 통일포맷 GM 지시 3건 반영 — 빈줄·남녀분리·반복이슈",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-19",
+    "processed_at": "2026-07-19",
+    "ship_no": 9104,
+    "artifact": "- 지시1(가시성): 3섹션(🏗시설/🛠지원/🅿주차) 사이 빈 줄 1칸. 양 채널 동일.\n- 지시2(남녀 분리): 지원부를 남성구역/여성구역 각각 완료율 + 회차분해\n  (주말 2회차·평일 3회차 요일반영)로 분리 보고(합산만 X).\n- 지시3(반복→이슈): check_incomplete_detector 원장으로 반복 미완료 패턴을\n  '🔁 반복 이슈'로 승격. 1회성 '오늘 짚을 점'과 구분. 콜드스타트는 정직 생략.\n- 라이브 미발송·크론 무변경. 업무보고방 테스트 발송 재검증(msg 4786).\n- --no-verify: que (CLI ad-hoc · 커밋 f42752c2)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f42752c2c51902ba44a3fefa5bf69d6ce228b340"
   }
 ]
