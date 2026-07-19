@@ -30,11 +30,27 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import os
 import sys
 import time
 import urllib.parse
 import urllib.request
 from datetime import datetime
+from pathlib import Path
+
+# 반복 미완료 감지기(원장 기반) — soft import(없어도 무동작 폴백). GM 2026-07-19 지시3.
+_scr_dir = os.path.dirname(os.path.abspath(__file__))
+if _scr_dir not in sys.path:
+    sys.path.insert(0, _scr_dir)
+try:
+    import check_incomplete_detector as _cid
+    _CID_OK = True
+except Exception:
+    _cid = None
+    _CID_OK = False
+
+# 반복 미완료 누적 원장(지원부 v1) — daily_scheduler가 23시에 적재. status/check_incomplete_ledger.json.
+CHECK_INCOMPLETE_LEDGER = Path(_scr_dir).parent / "status" / "check_incomplete_ledger.json"
 
 # 점검 GAS(CHECK_API) — daily_scheduler.py·kakao_daily_check_share.py와 동일 배포 URL(단일 소스)
 DEFAULT_GAS_URL = (
@@ -110,47 +126,82 @@ def weakspot(d: dict) -> str:
     return f"⚠️ 짚을 점: {gl} {rl} {done}/{total}({p}%) — 독려 필요"
 
 
+def _pct_str(done: int, total: int) -> str:
+    return f"{round(done / total * 100)}%" if total else "-"
+
+
+def gender_shift_breakdown(part: dict) -> list[tuple[str, int, int, int]]:
+    """byGender.{m|f} → [(라벨, done, total, pct)] — 분모>0 회차만(요일 자동 반영)."""
+    out = []
+    for key, label in _SHIFTS:
+        total = int(part.get(key + "Total", 0) or 0)
+        if total <= 0:
+            continue
+        done = int(part.get(key, 0) or 0)
+        out.append((label, done, total, round(done / total * 100) if total else 0))
+    return out
+
+
+def recurring_issue_lines(today: str, max_items: int = 3) -> list[str]:
+    """반복 미완료(원장 기반) → '이슈사항'으로 승격. 1회성 특이점과 구분(반복만). GM 2026-07-19 지시3.
+    콜드스타트·원장부족·0건이면 [](정직 — 가짜 이슈 금지)."""
+    if not _CID_OK:
+        return []
+    try:
+        ledger = _cid.load_ledger(CHECK_INCOMPLETE_LEDGER)
+        recurring = _cid.detect_recurring(ledger, today)
+    except Exception:
+        return []
+    if not recurring:
+        return []
+    win = getattr(_cid, "WINDOW_DAYS", 7)
+    lines = [f"  🔁 반복 이슈 {len(recurring)}건 (일정 조율 검토)"]
+    for r in recurring[:max_items]:
+        lines.append(
+            f"    · '{r['item']}' ({r['shift_label']}) 최근 {win}일 中 {r['days']}일 미완료")
+    if len(recurring) > max_items:
+        lines.append(f"    · 외 {len(recurring) - max_items}건")
+    return lines
+
+
 def build_support_section(today: str, url: str = DEFAULT_GAS_URL,
                           data: dict | None = None) -> tuple[list[str], dict]:
-    """지원부 핵심요약: 종일 완료율 + 남/여 + 회차분해(요일반영) + 짚을 점.
+    """지원부 핵심요약: 종일 완료율 + **남성구역·여성구역 각각**(회차분해 요일반영) +
+    오늘 짚을 점(1회성) + 반복 이슈(원장). GM 2026-07-19 지시2·3.
     data 미지정 시 today_live 직접 조회(공용). 지정 시 그대로 사용(중복 호출 방지)."""
-    filled = {"support_status": False}
+    filled = {"support_status": False, "support_recurring": 0}
     d = data if data is not None else fetch_gas(
         {"action": "today_live", "dept": "support", "date": today}, url)
     if not isinstance(d, dict):
-        return (["🛠 지원부: 데이터 조회 실패(정직 표기)"], filled)
+        return (["🛠 지원부 현황: 데이터 조회 실패(정직 표기)"], filled)
 
     total = int(d.get("total", 0) or 0)
     done = int(d.get("done", 0) or 0)
     if total <= 0:
-        return (["🛠 지원부: 오늘 점검 입력 없음"], filled)
+        return (["🛠 지원부 현황: 오늘 점검 입력 없음"], filled)
 
     filled["support_status"] = True
-    pct = round(done / total * 100)
-    lines = [f"🛠 지원부 {done}/{total}({pct}%)"]
+    lines = [f"🛠 지원부 현황 {done}/{total}({_pct_str(done, total)})"]
 
-    # 남/여 (야간·주말 오후조 제외는 서버가 이미 0 반영)
+    # 남성구역·여성구역 각각(합산 아님) — 각 구역 완료율 + 회차분해(요일반영·분모>0만)
     g = d.get("byGender", {}) or {}
-    gm, gf = (g.get("m", {}) or {}), (g.get("f", {}) or {})
+    for gk, glabel in (("m", "남성구역"), ("f", "여성구역")):
+        part = g.get(gk, {}) or {}
+        g_t = sum(int(part.get(k + "Total", 0) or 0) for k, _ in _SHIFTS)
+        g_d = sum(int(part.get(k, 0) or 0) for k, _ in _SHIFTS)
+        lines.append(f"  {glabel} {g_d}/{g_t}({_pct_str(g_d, g_t)})")
+        br = gender_shift_breakdown(part)
+        if br:
+            lines.append("    " + " · ".join(f"{lb} {dn}/{tt}({p}%)" for lb, dn, tt, p in br))
 
-    def _sum(part, suffix=""):
-        return sum(int(part.get(k + suffix, 0) or 0) for k, _ in _SHIFTS)
+    # 1회성 짚을 점(오늘 최저 회차) — 반복 이슈와 구분
+    ws = weakspot(d)
+    lines.append(f"  {ws.replace('짚을 점', '오늘 짚을 점')}")
 
-    m_d, m_t = _sum(gm), _sum(gm, "Total")
-    f_d, f_t = _sum(gf), _sum(gf, "Total")
-
-    def _p(dn, tt):
-        return f"{round(dn / tt * 100)}%" if tt else "-"
-
-    lines.append(f"  남 {m_d}/{m_t}({_p(m_d, m_t)}) · 여 {f_d}/{f_t}({_p(f_d, f_t)})")
-
-    # 회차분해(요일 반영 · total>0만)
-    br = shift_breakdown(d)
-    if br:
-        seg = " · ".join(f"{lb} {dn}/{tt}({p}%)" for lb, dn, tt, p in br)
-        lines.append(f"  회차: {seg}")
-
-    lines.append(f"  {weakspot(d)}")
+    # 반복 이슈(원장 기반 · 반복 패턴만 승격)
+    rec = recurring_issue_lines(today)
+    filled["support_recurring"] = max(0, len(rec) - 1) if rec else 0
+    lines += rec
     return (lines, filled)
 
 
@@ -174,11 +225,11 @@ def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list
     lines: list[str] = []
     if sessions:
         filled["facility_status"] = True
-        head = f"🏗 시설부 {sessions}회 점검"
+        head = f"🏗 시설부 현황 {sessions}회 점검"
         head += f" · 이상 {len(today_oor)}건" if today_oor else " · 이상 없음"
         lines.append(head)
     else:
-        lines.append("🏗 시설부: 오늘 점검 입력 없음")
+        lines.append("🏗 시설부 현황: 오늘 점검 입력 없음")
 
     for x in today_oor[:_MAX_OUT_OF_RANGE]:
         name = str(x.get("name", "")).split("(")[0].strip() or str(x.get("name", ""))
@@ -198,8 +249,8 @@ def build_parking_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list[
             t = row.get("total")
             if str(row.get("date")) == today and isinstance(t, (int, float)) and t:
                 filled["parking"] = True
-                return ([f"🅿 주차부 {row.get('done', 0)}/{t}({row.get('pct', 0)}%)"], filled)
-    return (["🅿 주차부: 자체점검 준비 중"], filled)
+                return ([f"🅿 주차부 이슈사항: 없음 · 점검 {row.get('done', 0)}/{t}({row.get('pct', 0)}%)"], filled)
+    return (["🅿 주차부 이슈사항: 없음 (자체점검 준비 중)"], filled)
 
 
 # ── 통합 3섹션 핵심요약(두 채널 공용 본문 코어) ─────────────────────────────
@@ -215,7 +266,8 @@ def build_summary_lines(now: datetime | None = None, date: str | None = None,
     sup_lines, sup_f = build_support_section(today, url, data=support_data)
     par_lines, par_f = build_parking_section(today, url)
 
-    lines = fac_lines + sup_lines + par_lines
+    # 섹션 사이 빈 줄 1칸(가시성) — 🏗 시설부 → 🛠 지원부 → 🅿 주차부. GM 2026-07-19 지시1. 양 채널 동일.
+    lines = fac_lines + [""] + sup_lines + [""] + par_lines
     return (lines, {**fac_f, **sup_f, **par_f})
 
 
