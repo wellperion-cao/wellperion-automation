@@ -398,6 +398,24 @@
       "차단조치": "미차단(보고만) — ①.bat에 --live 추가는 곧 실제 텔레그램 발송 개시(외부 전송 시작)라 이번 세션 안전수칙(\"라이브 발효는 GM go\") 위반이라 보류. 후속 결정 필요: 정말 매일 조용히 draft만 만들려던 의도였는지, --live 누락이 단순 실수였는지 GM/시우(coo-monthly-ops 소유) 확인 후 처리. ②coo-monthly-ops 는 08-01 첫 발동 때 실제로 도는지 재확인 필요(캘린더 표식만, 코드 변경 없음).",
       "상태": "OPEN",
       "검증증거": "PowerShell Get-ScheduledTaskInfo -TaskName \"Wellperion-MonthlyOps-Start-0900\" → LastRunTime=1999-11-30(미실행 코드)·LastTaskResult=267011·NextRunTime=2026-08-01. ops/*.bat 3개 파일 grep 확인 — --live 문자열 없음(module_reporter.py argparse 기본 args.live=False 확인)."
+    },
+    {
+      "id": "INC-024",
+      "date": "2026-07-20",
+      "watch_globs": [
+        ".deploy-funnel-v2/Survey.js",
+        ".deploy-voc/VOC_배포.js",
+        "3. 웰페리온 가이드/cpo/member/membership.html",
+        "status/inquiry_snapshot_*.json"
+      ],
+      "gate": "warn",
+      "요약": "배21(회원 개인정보 무인증 노출 차단 재설계) — GM이 설계안 4개(A/B/C/D) 중 D안(9월 자체서버 이전 + JWT 진짜 로그인)을 결재, 중간 조치(B 마스킹 등) 없이 9월까지 현 무인증 공개 상태를 의식적으로 유지하기로 결정. '미조치'가 아니라 'GM이 위험을 알고 수용한 의도된 대기'로 기록.",
+      "증상": "실측 확인된 무인증 노출 통로 4개: ①회원관리 페이지 GAS 액션 8종(Survey.js:1200-1236, member_inquiry_list 등 — 실명·전화 전체, 면제 등재로 토큰검사 자체를 안 받음) ②회원관리 페이지 커튼(membership.html:1117, 비번 1200 소스 노출) ③사내 8개 페이지 커튼(_assets/gate.js:19, 비번 wellperion!@345 소스 노출) ④공개 GitHub 스냅샷 JSON 2개(status/inquiry_snapshot_*.json, 1,100건+ 실명·전화·상담메모 — 이 항목은 2026-07-18 GM이 이미 별건으로 인지·수용, 본 사고 안에서는 참조만·중복 등록 아님). 상세 실측·근거는 설계 문서 §2-1 참조.",
+      "본질": "과거(2026-06-18) TOKEN_ENFORCE 부분 게이트 시도는 PII 반환 액션이 처음부터 '공개 액션' 면제목록에 올라 있어 효과 없이 페이지만 잠그고 롤백됨(설계 문서 §2-1 핵심결함). 재설계 결과 4개 안 중 시토는 B(마스킹, fail-soft, 이번 주 가능, 1초 롤백)를 추천했으나, GM은 중간 조치 없이 D(9월 서버+JWT, 유일한 진짜 잠금)로 한 번에 가는 쪽을 선택. 즉 '더 안전한 임시 조치를 마다하고 완전한 해결까지 기다린다'는 GM의 명시적 트레이드오프 수용.",
+      "뿌리분류": "의식적예외",
+      "차단조치": "미차단(GM 의식적 수용) — 코드·설정·배포 0 변경. B/C안 모두 보류. 해소 시점=2026-09 자체서버(AWS) 이전 + JWT 세션 인증 도입(배101과 한 틀, 배21 depends_on을 배101 task_id로 구조화해 배101 완료 시 gm_aide_scan 재개가능 감지기가 배21을 자동 표면화하도록 배선). 설계 문서: docs/superpowers/specs/2026-07-20-pii-무인증노출-차단-design.md.",
+      "상태": "OPEN",
+      "검증증거": "GM 결재 결과 팀리드 전달(2026-07-20, D안 확정) · status/_queue.json ship_no 21 note/next/depends_on 갱신 · ship_no 101 note 역참조 추가 · ship_no 9101(AIDE 자동제안, 동일 질문 재확인 요청) DONE 처리로 해소 · 설계 문서 4안 비교표(§1부) 대조 확인."
     }
   ]
 }
