@@ -1236,6 +1236,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
+// naver_split_midcat 비밀 가드값 — 시트 데이터 검증 규칙 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
+var _NAVER_SPLIT_GUARD = 'wp-naver-midcat-split-2026-gm-ok';
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
 }
@@ -3626,6 +3628,115 @@ function _processAction(body) {
       viewUrl: aufForm.getPublishedUrl(),
       title: AUF_TITLE
     });
+  }
+
+  // ─── 네이버 중분류 'N-플레이스(검색)' 분리 (2026-07-20 GM 승인·배9351) ───
+  //   문의 경로(중분류) 드롭다운의 'N-플레이스(검색)' 단일값을 'N-플레이스'·'N-검색' 두 값으로 분리.
+  //   기존 셀 데이터는 절대 미변경(과거 197건은 그대로 'N-플레이스(검색)'로 남음) — 드롭다운 "목록"만 갱신.
+  //   mode=diag(기본, 읽기전용): Data Validation 목록·바인딩폼 여부 진단만. mode=apply(가드 필수): 실제 목록 교체.
+  //   ★ 가드 필수 — 시트 데이터 검증 규칙을 실제 변형하므로 _SURVEY_PUBLIC_ACTIONS 화이트리스트에 절대 넣지 않는다.
+  if (action === 'naver_split_midcat') {
+    var nsmMode = String(body.mode || 'diag');
+    var nsmSsId = MEMBER_SPREADSHEET_ID;
+    var nsmGid = 1902010032; // '26년 신규문의' 스태프 로그(멤버십)
+    var nsmOld = 'N-플레이스(검색)';
+    var nsmNewA = 'N-플레이스';
+    var nsmNewB = 'N-검색';
+    try {
+      var nsmSs = SpreadsheetApp.openById(nsmSsId);
+      var nsmSheets = nsmSs.getSheets();
+      var nsmSheet = null;
+      for (var nsi = 0; nsi < nsmSheets.length; nsi++) {
+        if (nsmSheets[nsi].getSheetId() === nsmGid) { nsmSheet = nsmSheets[nsi]; break; }
+      }
+      if (!nsmSheet) return _json({ ok: false, error: 'sheet-not-found', gid: nsmGid });
+      var nsmLastCol = nsmSheet.getLastColumn();
+      var nsmHeaders = nsmSheet.getRange(1, 1, 1, nsmLastCol).getValues()[0];
+      var nsmColIdx = -1;
+      for (var nhi = 0; nhi < nsmHeaders.length; nhi++) {
+        if (String(nsmHeaders[nhi] || '').indexOf('중분류') >= 0) { nsmColIdx = nhi; break; }
+      }
+      if (nsmColIdx < 0) return _json({ ok: false, error: 'column-not-found', headers: nsmHeaders });
+      var nsmBoundForm = '';
+      try { nsmBoundForm = nsmSs.getFormUrl() || ''; } catch (efu) {}
+      // 검증규칙은 보통 열 전체에 동일 적용되지만, 혹시 행마다 다를 수 있어 앞쪽 여러 행을 훑어 첫 규칙을 채택.
+      var nsmLastRow = nsmSheet.getLastRow();
+      var nsmProbeRows = Math.min(Math.max(nsmLastRow - 1, 1), 20);
+      var nsmDv = null;
+      if (nsmProbeRows > 0) {
+        var nsmDvCol = nsmSheet.getRange(2, nsmColIdx + 1, nsmProbeRows, 1).getDataValidations();
+        for (var ndr = 0; ndr < nsmDvCol.length; ndr++) {
+          if (nsmDvCol[ndr][0]) { nsmDv = nsmDvCol[ndr][0]; break; }
+        }
+      }
+      var nsmOldValueCellCount = 0;
+      if (nsmLastRow >= 2) {
+        var nsmVals = nsmSheet.getRange(2, nsmColIdx + 1, nsmLastRow - 1, 1).getValues();
+        for (var nvr = 0; nvr < nsmVals.length; nvr++) {
+          if (String(nsmVals[nvr][0] || '').trim() === nsmOld) nsmOldValueCellCount++;
+        }
+      }
+      var nsmDiag = {
+        ok: true,
+        mode: nsmMode,
+        headerFound: String(nsmHeaders[nsmColIdx]),
+        colIndex: nsmColIdx + 1,
+        boundFormUrl: nsmBoundForm,
+        hasDataValidation: !!nsmDv,
+        dvType: nsmDv ? String(nsmDv.getCriteriaType()) : null,
+        dvValues: nsmDv ? nsmDv.getCriteriaValues() : null,
+        oldValueCellCount: nsmOldValueCellCount
+      };
+      if (nsmMode === 'apply') {
+        if (String(body.key || '') !== _NAVER_SPLIT_GUARD) {
+          return _json({ ok: false, error: 'guard-mismatch' });
+        }
+        if (!nsmDv || String(nsmDv.getCriteriaType()) !== 'VALUE_IN_LIST') {
+          return _json({ ok: false, error: 'not-a-list-validation', diag: nsmDiag });
+        }
+        var nsmCrit = nsmDv.getCriteriaValues();
+        var nsmOldList = nsmCrit[0];
+        var nsmShowDropdown = nsmCrit[1];
+        var nsmNewList = [];
+        var nsmReplaced = false;
+        for (var nli = 0; nli < nsmOldList.length; nli++) {
+          if (String(nsmOldList[nli]).trim() === nsmOld) {
+            nsmNewList.push(nsmNewA);
+            nsmNewList.push(nsmNewB);
+            nsmReplaced = true;
+          } else {
+            nsmNewList.push(nsmOldList[nli]);
+          }
+        }
+        if (!nsmReplaced) {
+          return _json({ ok: false, error: 'old-value-not-in-list', list: nsmOldList });
+        }
+        var nsmNewRule = SpreadsheetApp.newDataValidation()
+          .requireValueInList(nsmNewList, nsmShowDropdown)
+          .setAllowInvalid(nsmDv.getAllowInvalid())
+          .build();
+        // 헤더 제외 전체 열에 새 "목록" 규칙만 재적용 — setDataValidation은 기존 셀 값을 건드리지 않음.
+        var nsmMaxRows = nsmSheet.getMaxRows();
+        var nsmFullRange = nsmSheet.getRange(2, nsmColIdx + 1, Math.max(nsmMaxRows - 1, 1), 1);
+        nsmFullRange.setDataValidation(nsmNewRule);
+        var nsmRecheckVals = nsmLastRow >= 2 ? nsmSheet.getRange(2, nsmColIdx + 1, nsmLastRow - 1, 1).getValues() : [];
+        var nsmOldValueCellCountAfter = 0;
+        for (var nvr2 = 0; nvr2 < nsmRecheckVals.length; nvr2++) {
+          if (String(nsmRecheckVals[nvr2][0] || '').trim() === nsmOld) nsmOldValueCellCountAfter++;
+        }
+        return _json({
+          ok: true,
+          applied: true,
+          oldList: nsmOldList,
+          newList: nsmNewList,
+          oldValueCellCountBefore: nsmOldValueCellCount,
+          oldValueCellCountAfter: nsmOldValueCellCountAfter
+        });
+      }
+      return _json(nsmDiag);
+    } catch (e) {
+      return _json({ ok: false, error: String(e) });
+    }
   }
 
   // ─── 회원관리 페이지(CPO): 등록회원 명단 조회 (등록기간 from~to 필터, 1~12월 체크 포함) ───

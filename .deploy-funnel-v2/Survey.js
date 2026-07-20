@@ -1256,6 +1256,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   member_owner_save:          true,  // 2026-07-18 시포 — 종목별 담당자 5칸(화이트리스트) 단일셀 저장(전화 매칭)
+  member_owner_bulk_set:      true,  // 2026-07-20 GM 지시 — 멤버십 담당자('담당자'만) 열 일괄 배치 쓰기(setValues 1회)
   member_active_summary:      true,  // 2026-07-20 시포 — 회원관리 카드 요약 집계(§2-A 로딩속도, PII 미노출·숫자만)
   cpo_today_stats:            true,  // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
   cpo_churn_stats:            true,  // 2026-07-02 이탈 현황 실측(유효·이탈·이탈율·갱신임박 리스트) — 페이지 게이트 뒤(전체공개 정책과 동일)
@@ -1286,6 +1287,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
+// naver_split_midcat 비밀 가드값 — 시트 데이터 검증 규칙 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
+var _NAVER_SPLIT_GUARD = 'wp-naver-midcat-split-2026-gm-ok';
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
 }
@@ -1417,6 +1420,28 @@ function _miToISO_(val) {
   var m = s.match(/(\d{4})[\.\-\/]?\s*(\d{1,2})[\.\-\/]?\s*(\d{1,2})/);
   if (m) return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
   return s;
+}
+// 접수 타임스탬프 전용 직렬화 — 시각을 살려서 내보낸다. 2026-07-20 시포(GM 지적).
+//   _miToISO_는 날짜만 반환한다(YYYY-MM-DD). 그건 예약일·방문일·상담일처럼 '날짜만' 의미 있는 칸엔 맞지만,
+//   접수 타임스탬프에 쓰면 시트엔 07:03:25가 멀쩡히 있는데 화면엔 날짜만 뜬다 — 실제로 627건 전부 그랬다.
+//   화면 _fmtInqDateTime(membership.html)은 'YYYY-MM-DD HH:MM' 형태를 받으면 시:분을 표시하도록 이미 돼 있다.
+//   ★_miToISO_ 자체는 건드리지 않는다 — 호출부 11곳 중 대부분이 날짜 전용 칸이라 바꾸면 그쪽이 깨진다.
+//   자정(00:00:00)은 '시각 미상'이라 날짜만 반환(원유선 건처럼 근거 없이 00:00이 찍힌 행을 시각처럼 보이지 않게).
+function _miToISOTime_(val) {
+  if (!val) return '';
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    var p = function (n) { return ('0' + n).slice(-2); };
+    var base = val.getFullYear() + '-' + p(val.getMonth() + 1) + '-' + p(val.getDate());
+    var h = val.getHours(), mi = val.getMinutes(), s = val.getSeconds();
+    return (h || mi || s) ? (base + ' ' + p(h) + ':' + p(mi) + ':' + p(s)) : base;
+  }
+  var t = String(val).trim();
+  var mt = t.match(/(\d{4})[.\-\/]\s*(\d{1,2})[.\-\/]\s*(\d{1,2})[T\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (mt) {
+    var pp = function (n) { return ('0' + n).slice(-2); };
+    return mt[1] + '-' + pp(mt[2]) + '-' + pp(mt[3]) + ' ' + pp(mt[4]) + ':' + mt[5] + ':' + (mt[6] || '00');
+  }
+  return _miToISO_(val);   // 시각 없는 값은 기존 동작 그대로
 }
 // 셀에서 시간(HH:MM) 추출 — Date면 getHours, 문자열이면 'HH:MM' 매칭. 자정(00:00)=시간미설정으로 간주.
 function _miTime_(val) {
@@ -1611,11 +1636,23 @@ function _miReadRows_(sh) {
       if (_mo.exp2) _resArr.push({ date: _mo.exp2, time: _mo.exp2Time || '', note: '' });
     }
     _mo.reservations = _resArr;
-    // 연락이력(가변): JSON 우선 → 없으면 Contact1/2/3 흡수(비파괴·하위호환). 2026-07-08 시포·GM(축2)
-    var _histArr = _resParse_(iHist >= 0 ? row[iHist] : '');
-    if (!_histArr.length) {
-      [_mo.contact1, _mo.contact2, _mo.contact3].forEach(function(cv){
-        if (cv) _histArr.push({ date: '', time: '', note: cv });
+    // ★읽는 순서 정정(2026-07-20 GM 지적) — Contact1/2/3(O·P·Q)가 정본, 연락이력은 4건째부터의 넘침분.
+    //   기존엔 연락이력을 우선 읽고 없을 때만 Contact를 흡수했다. 그래서 새 칸이 정본처럼 굳어졌다.
+    //   이제 Contact1/2/3을 먼저 싣고, 연락이력에 남은 것(넘침분)을 뒤에 붙인다.
+    //   과거 데이터 호환: 연락이력에만 있고 Contact가 빈 옛 행(실측 17건)도 그대로 다 보인다.
+    var _histArr = [];
+    [_mo.contact1, _mo.contact2, _mo.contact3].forEach(function(cv){
+      if (cv) _histArr.push({ date: '', time: '', note: cv });
+    });
+    var _histOverflow = _resParse_(iHist >= 0 ? row[iHist] : '');
+    if (_histOverflow.length) {
+      // 중복 방지: 넘침분에 Contact와 같은 내용이 들어있는 옛 행(합성 저장분)은 한 번만 싣는다.
+      var _seenNotes = {};
+      _histArr.forEach(function(e){ _seenNotes[String(e.note || '').trim()] = 1; });
+      _histOverflow.forEach(function(e){
+        var k = String(e.note || '').trim();
+        if (k && _seenNotes[k]) return;
+        _histArr.push(e);
       });
     }
     _mo.contacts = _histArr;
@@ -3246,6 +3283,144 @@ function _processAction(body) {
     return _json({ ok: false, error: 'unknown_mode' });
   }
 
+  // ─── (일회성 진단) 강습 두 탭(성인·WSC) 타임스탬프 원본 실측 — 시:분:초 결손 행수 확정 ───
+  //   배경: 2026-07-18 자체폼 직접쓰기 전환 과도기 코드가 타임스탬프에 날짜만 기록한 버그(09452c5b·a8830062로
+  //   현재는 수리됨 — 과거 데이터만 결손). lesson_inquiry_list(_miToISO_ 경유)는 날짜로 잘라내 결손 판별 불가 →
+  //   원본 셀 타입·값을 그대로 덤프하는 읽기전용 전용 진단. 쓰기 없음. 2026-07-20 시토(GM 지시).
+  if (action === 'cpo_lesson_ts_scan') {
+    try {
+      var ltsTargets = [
+        { gid: LESSON_GID,       type: '성인강습' },
+        { gid: LESSON_GID_YOUTH, type: '유소년강습(WSC)' }
+      ];
+      var ltsOut = [];
+      ltsTargets.forEach(function (t) {
+        var sh = _lessonSheet_(t.gid);
+        var rec = { gid: t.gid, type: t.type, sheetName: null, lastRow: 0, totalRows: 0, missingCount: 0, rows: [] };
+        if (!sh) { rec.error = 'sheet_not_found'; ltsOut.push(rec); return; }
+        rec.sheetName = sh.getName();
+        var lastRow = sh.getLastRow();
+        rec.lastRow = lastRow;
+        if (lastRow < 2) { ltsOut.push(rec); return; }
+        var lastCol = sh.getLastColumn();
+        var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+        var ciTs    = _findCol_(hdr, ['타임스탬프']);
+        var ciName  = _findCol_(hdr, ['성함', '이름']);
+        var ciPhone = _findCol_(hdr, ['연락처', '핸드폰', '전화', '휴대폰']);
+        if (ciTs < 0) { rec.error = 'ts_col_not_found'; ltsOut.push(rec); return; }
+        var dataN = lastRow - 1;
+        var rows = sh.getRange(2, 1, dataN, lastCol).getValues();
+        for (var i = 0; i < rows.length; i++) {
+          var rowNum = i + 2;
+          var r = rows[i];
+          var raw = r[ciTs];
+          var name  = ciName  >= 0 ? String(r[ciName]  || '') : '';
+          var phone = ciPhone >= 0 ? String(r[ciPhone] || '') : '';
+          if (!raw && !name && !phone) continue;  // 완전 빈 행 스킵
+          rec.totalRows++;
+          var valType = (raw instanceof Date) ? 'Date' : ((raw === '' || raw == null) ? 'empty' : 'string');
+          var hasTime = false;
+          if (raw instanceof Date && !isNaN(raw.getTime())) {
+            hasTime = !(raw.getHours() === 0 && raw.getMinutes() === 0 && raw.getSeconds() === 0);
+          } else if (valType === 'string') {
+            hasTime = /\d{1,2}:\d{2}(:\d{2})?/.test(String(raw));
+          }
+          if (!hasTime) {
+            rec.missingCount++;
+            rec.rows.push({
+              row: rowNum, valType: valType,
+              raw: (raw instanceof Date) ? Utilities.formatDate(raw, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(raw == null ? '' : raw),
+              name: name.substring(0, 20), phone: phone
+            });
+          }
+        }
+        ltsOut.push(rec);
+      });
+      return _json({ ok: true, sheets: ltsOut });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── (일회성) 강습 두 탭 타임스탬프 결손 행 복구 — 접수ID(L+yyMMdd-HHmmss)로 역산 ───
+  //   위 cpo_restore_lost_timestamps_0718과 동일 패턴(연락처+접수ID 이중확인, 정확히 1건일 때만, 실제 Date
+  //   객체 기록, 이미 시:분:초 있으면 스킵). 다만 대상 목록은 python(git 이력 회수)에서 동적으로 넘겨받는다
+  //   (조아람 3건·이수진 성인/유소년 2건처럼 매칭 경우의수가 커 하드코딩 불가). 서버는 반드시 ①대상 행의
+  //   현재 전화번호가 target.phone과 일치 ②현재 타임스탬프가 아직 시:분:초 없음(경합 재확인) 을 재검증한 뒤에만
+  //   쓴다 — 둘 중 하나라도 어긋나면 그 target만 skip(다른 target엔 영향 없음). mode=dryrun(기본)/execute.
+  //   2026-07-20 시토(GM 지시).
+  if (action === 'cpo_lesson_ts_fill_0720') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var ltfMode = String(body.mode || 'dryrun');
+    var ltfTargets;
+    try { ltfTargets = JSON.parse(body.targets || '[]'); } catch (e) { return _json({ ok: false, error: 'bad_targets_json' }); }
+    if (!Array.isArray(ltfTargets) || !ltfTargets.length) return _json({ ok: false, error: 'no_targets' });
+
+    var ltfNorm = function (p) { return String(p == null ? '' : p).replace(/\D/g, ''); };
+    var ltfFmt = function (v) { return (v instanceof Date) ? Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(v == null ? '' : v); };
+
+    var ltfShCache = {};
+    var ltfGetSheetInfo = function (gid) {
+      if (ltfShCache[gid]) return ltfShCache[gid];
+      var sh = _lessonSheet_(gid);
+      if (!sh) return null;
+      var lastCol = sh.getLastColumn();
+      var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+      var ciTs = _findCol_(hdr, ['타임스탬프']);
+      var ciPhone = _findCol_(hdr, ['연락처', '핸드폰', '전화', '휴대폰']);
+      var info = { sh: sh, ciTs: ciTs, ciPhone: ciPhone, lastRowBefore: sh.getLastRow() };
+      ltfShCache[gid] = info;
+      return info;
+    };
+
+    var ltfResults = [], ltfSkip = [];
+    ltfTargets.forEach(function (t) {
+      var info = ltfGetSheetInfo(t.gid);
+      if (!info || info.ciTs < 0 || info.ciPhone < 0) { ltfSkip.push({ target: t, reason: 'sheet_or_column_not_found' }); return; }
+      var curPhone = info.sh.getRange(t.row, info.ciPhone + 1).getValue();
+      if (ltfNorm(curPhone) !== ltfNorm(t.phone)) {
+        ltfSkip.push({ target: t, reason: 'phone_mismatch', rowPhoneNow: String(curPhone) }); return;
+      }
+      var curTs = info.sh.getRange(t.row, info.ciTs + 1).getValue();
+      var hasTimeNow = (curTs instanceof Date) && !isNaN(curTs.getTime()) && !(curTs.getHours() === 0 && curTs.getMinutes() === 0 && curTs.getSeconds() === 0);
+      if (hasTimeNow) { ltfSkip.push({ target: t, reason: 'already_has_time', currentValue: ltfFmt(curTs) }); return; }
+      var m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(String(t.iso || ''));
+      if (!m) { ltfSkip.push({ target: t, reason: 'bad_iso' }); return; }
+      var newDate = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), parseInt(m[4], 10), parseInt(m[5], 10), parseInt(m[6], 10));
+      ltfResults.push({ gid: t.gid, row: t.row, name: t.name || '', phone: t.phone, before: ltfFmt(curTs), after: ltfFmt(newDate), afterDate: newDate, ciTs: info.ciTs });
+    });
+
+    if (ltfMode === 'dryrun') {
+      return _json({
+        ok: true, mode: 'dryrun',
+        willWrite: ltfResults.map(function (r) { return { gid: r.gid, row: r.row, name: r.name, phone: r.phone, before: r.before, after: r.after }; }),
+        skip: ltfSkip
+      });
+    }
+    if (ltfMode === 'execute') {
+      var ltfWritten = [], ltfRaceSkip = [];
+      ltfResults.forEach(function (r) {
+        var info = ltfShCache[r.gid];
+        // 쓰기 직전 재확인(경합 방지) — 그 사이 이미 시각이 채워졌으면 절대 덮어쓰지 않음
+        var curNow = info.sh.getRange(r.row, r.ciTs + 1).getValue();
+        var hasTimeNowB = (curNow instanceof Date) && !isNaN(curNow.getTime()) && !(curNow.getHours() === 0 && curNow.getMinutes() === 0 && curNow.getSeconds() === 0);
+        if (hasTimeNowB) { ltfRaceSkip.push({ gid: r.gid, row: r.row, name: r.name, reason: 'race_already_has_time', currentValue: ltfFmt(curNow) }); return; }
+        info.sh.getRange(r.row, r.ciTs + 1).setValue(r.afterDate);
+        ltfWritten.push({ gid: r.gid, row: r.row, name: r.name, phone: r.phone, before: r.before, after: r.after });
+      });
+      var ltfRowCounts = {};
+      Object.keys(ltfShCache).forEach(function (gid) {
+        var info = ltfShCache[gid];
+        ltfRowCounts[gid] = { before: info.lastRowBefore, after: info.sh.getLastRow() };
+      });
+      return _json({
+        ok: true, mode: 'execute', writtenCount: ltfWritten.length, written: ltfWritten,
+        skip: ltfSkip, raceSkip: ltfRaceSkip, rowCounts: ltfRowCounts
+      });
+    }
+    return _json({ ok: false, error: 'unknown_mode' });
+  }
+
   // ─── (일회성) 유소년강습 '유입경로(자동)' 칸 JSON 오염 정리 — 2026-07-20 시포(GM 승인 정리 5건 中 1) ───
   //   배경: cpo_wsc_contact_migrate13(위)로 28건 중 17건은 이미 Contact로 이관 완료. 남은 11건은 애초
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가
@@ -3846,39 +4021,74 @@ function _processAction(body) {
     //    Contact1/2/3은 위에서 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
     var _muHistPrevCount = 0;
     var _muHistNewArr = null;
+    // ★저장 위치 정정(2026-07-20 GM 지적) — 기존 Contact1/2/3(O·P·Q)가 정본이다.
+    //   그동안 '연락이력'이라는 칸을 새로 만들어 JSON으로 쌓았는데, 멀쩡한 칸을 두고 새 칸을 만든 것이 잘못이었다.
+    //   (실측: 연락이력이 있어 보이는 468행 중 454행은 실제로 Contact1/2/3에서 합성된 값이었고, 진짜 JSON은 17행뿐)
+    //   → 앞 3건은 Contact1/2/3에 사람이 읽는 글로 쓴다. 4건째부터만 '연락이력'에 넘긴다(3칸으로는 부족한 경우만).
+    //   3건 이하면 연락이력 칸은 비운다 — 같은 내용이 두 곳에 남지 않게(진실은 한 곳).
     if (body.contacts !== undefined) {
       try {
         var _muHistCi = _miColIdx_(muHdr, [CONTACT_HIST_COL]);
         var _muPrevHistArr = (_muHistCi >= 0) ? _resParse_(muSh.getRange(muRow, _muHistCi + 1).getValue()) : [];
         _muHistPrevCount = _muPrevHistArr.length;
         _muHistNewArr = _resParse_(body.contacts);
-        var _muHistCi2 = _miEnsureCol_(muSh, muHdr, CONTACT_HIST_COL);
-        var _muHistCell = muSh.getRange(muRow, _muHistCi2 + 1);
-        _muHistCell.setNumberFormat('@');
-        _muHistCell.setValue(_resStringify_(_muHistNewArr));
+
+        // {date,time,note} → 사람이 읽는 한 줄. 날짜·시각이 없으면 내용만(기존 수기 표기와 같은 모양).
+        var _muCFmt = function (e) {
+          if (!e) return '';
+          var pre = String((e.date || '') + ' ' + (e.time || '')).trim();
+          var body_ = String(e.note || '').trim();
+          return pre ? (pre + ' ' + body_).trim() : body_;
+        };
+        // 앞 3건 → Contact1/2/3. 해당 칸이 없으면 만들지 않고 건너뛴다(칸 자동생성 금지 — 이번 사고의 원인).
+        for (var _ci = 0; _ci < 3; _ci++) {
+          var _cCol = _miColIdx_(muHdr, ['Contact' + (_ci + 1)]);
+          if (_cCol < 0) continue;
+          muSh.getRange(muRow, _cCol + 1).setValue(_muCFmt(_muHistNewArr[_ci]));
+        }
+        // 4건째부터만 연락이력에 보관. 3건 이하면 비운다. 칸이 없으면 만들지 않는다.
+        var _muOverflow = _muHistNewArr.length > 3 ? _muHistNewArr.slice(3) : [];
+        var _muHistCi2 = _miColIdx_(muHdr, [CONTACT_HIST_COL]);
+        if (_muHistCi2 >= 0) {
+          var _muHistCell = muSh.getRange(muRow, _muHistCi2 + 1);
+          _muHistCell.setNumberFormat('@');
+          _muHistCell.setValue(_muOverflow.length ? _resStringify_(_muOverflow) : '');
+        } else if (_muOverflow.length) {
+          // 넘치는데 보관할 칸이 없을 때만 생성(4건 이상인 실사용이 생긴 경우) — 그 외엔 절대 만들지 않는다.
+          var _muHistCi3 = _miEnsureCol_(muSh, muHdr, CONTACT_HIST_COL);
+          muSh.getRange(muRow, _muHistCi3 + 1).setNumberFormat('@');
+          muSh.getRange(muRow, _muHistCi3 + 1).setValue(_resStringify_(_muOverflow));
+        }
       } catch (eHist) { Logger.log('연락이력 저장 실패: ' + eHist.message); }
     }
     // 방문 완료 — 진행상황과 독립 칸(방문완료일). 등록(SUC)돼도 방문 기록 유지. body.visited 미전송이면 무변경.
     //   true=방문일자(없으면 오늘) 기록 / false=클리어. 칸 없으면 _miEnsureCol_이 생성. 2026-06-29 시포.
     if (body.visited !== undefined) {
-      var _vci = _miEnsureCol_(muSh, muHdr, '방문완료일');
-      muSh.getRange(muRow, _vci + 1).setValue(body.visited ? (body.visitDate || _todayKR_()) : '');
+      var _vci = _miColIdx_(muHdr, ['방문완료일']);   // ★칸 자동생성 금지(2026-07-20 GM) — 없으면 건너뛴다
+      if (_vci >= 0) muSh.getRange(muRow, _vci + 1).setValue(body.visited ? (body.visitDate || _todayKR_()) : '');
     }
     // 등록 종목 — 등록(SUC) 시 실제 등록한 종목(문의 시 관심프로그램과 별개, 수정 가능). 칸 없으면 자동 생성(GM 수작업 0).
     //   GM 요청(2026-07-18, 시토 대행): "등록 시 어떤 종목을 등록했는지" 기록. 2026-07-18 시토·GM.
     if (body.regProgram !== undefined) {
-      var _rpci = _miEnsureCol_(muSh, muHdr, '등록종목');
-      muSh.getRange(muRow, _rpci + 1).setValue(body.regProgram);
+      var _rpci = _miColIdx_(muHdr, ['등록종목']);   // ★칸 자동생성 금지(2026-07-20 GM) — 없으면 조용히 건너뛴다
+      if (_rpci >= 0) muSh.getRange(muRow, _rpci + 1).setValue(body.regProgram);
     }
-    // LOSS 사유 — 문의 퍼널 LOSS 전용(기존회원 종료사유 모달·CHURN_REASON_COL과 별개 체계·혼동 금지). 칸 없으면 자동 생성.
-    //   GM 요청(2026-07-18, 시토 대행). 2026-07-18 시토·GM.
-    if (body.lossReason !== undefined) {
-      var _lrci = _miEnsureCol_(muSh, muHdr, 'LOSS사유');
-      muSh.getRange(muRow, _lrci + 1).setValue(body.lossReason);
-    }
-    if (body.lossReasonNote !== undefined) {
-      var _lrnci = _miEnsureCol_(muSh, muHdr, 'LOSS사유메모');
-      muSh.getRange(muRow, _lrnci + 1).setValue(body.lossReasonNote);
+    // ★LOSS 사유 저장 위치 정정(2026-07-20 GM 지적) — 기존 '미등록 사유' 칸이 정본이다.
+    //   07-18에 LOSS사유·LOSS사유메모 칸을 새로 만들었는데, 같은 뜻의 '미등록 사유'가 이미 있었다.
+    //   기능은 GM이 요청한 게 맞지만 칸을 새로 만든 것은 내 설계 판단 착오였다(실측: 두 칸 모두 데이터 0건).
+    //   → 사유와 메모를 '미등록 사유' 한 칸에 합쳐 쓴다. 메모가 있으면 '사유 (메모)' 형태.
+    //   칸이 없으면 만들지 않고 건너뛴다 — 칸 자동생성이 이번 사고의 뿌리다.
+    if (body.lossReason !== undefined || body.lossReasonNote !== undefined) {
+      var _lrci = _miColIdx_(muHdr, ['미등록 사유', '미등록사유']);
+      if (_lrci >= 0) {
+        var _lrCur = String(muSh.getRange(muRow, _lrci + 1).getValue() || '').trim();
+        var _lrR = (body.lossReason !== undefined) ? String(body.lossReason || '').trim() : '';
+        var _lrN = (body.lossReasonNote !== undefined) ? String(body.lossReasonNote || '').trim() : '';
+        // 둘 중 하나만 전송된 경우 나머지는 기존 값을 지우지 않는다(부분 저장 방어).
+        var _lrOut = _lrR ? (_lrN ? (_lrR + ' (' + _lrN + ')') : _lrR)
+                          : (_lrN ? _lrN : (body.lossReason === '' || body.lossReasonNote === '') ? '' : _lrCur);
+        muSh.getRange(muRow, _lrci + 1).setValue(_lrOut);
+      }
     }
     // carry-over: 신규→SUC/단기SUC '실제 전환' 시에만 등록현황 탭 이관 + 등록 전환 전용 알림. 2026-06-26 시토·GM.
     //   A안(GM 결재): 유효회원(실계약 정본)에는 자동생성 안 함 — 계약 확정 시 사람 입력. 여기선 깔때기 이관+알림까지만.
@@ -4625,6 +4835,206 @@ function _processAction(body) {
     });
   }
 
+  // ─── 네이버 중분류 'N-플레이스(검색)' 분리 (2026-07-20 GM 승인·배9351) ───
+  //   문의 경로(중분류) 드롭다운의 'N-플레이스(검색)' 단일값을 'N-플레이스'·'N-검색' 두 값으로 분리.
+  //   기존 셀 데이터는 절대 미변경(과거 197건은 그대로 'N-플레이스(검색)'로 남음) — 드롭다운 "목록"만 갱신.
+  //   mode=diag(기본, 읽기전용): Data Validation 목록·바인딩폼 여부 진단만. mode=apply(가드 필수): 실제 목록 교체.
+  //   ★ 가드 필수 — 시트 데이터 검증 규칙을 실제 변형하므로 _SURVEY_PUBLIC_ACTIONS 화이트리스트에 절대 넣지 않는다.
+  if (action === 'naver_split_midcat') {
+    var nsmMode = String(body.mode || 'diag');
+    var nsmGid = 1902010032; // '26년 신규문의' 스태프 로그(멤버십)
+    var nsmOld = 'N-플레이스(검색)';
+    var nsmNewA = 'N-플레이스';
+    var nsmNewB = 'N-검색';
+    try {
+      var nsmSs = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+      var nsmSheet = _sheetByGid_(MEMBER_SPREADSHEET_ID, nsmGid);
+      if (!nsmSheet) return _json({ ok: false, error: 'sheet-not-found', gid: nsmGid });
+      var nsmLastCol = nsmSheet.getLastColumn();
+      var nsmHeaders = nsmSheet.getRange(1, 1, 1, nsmLastCol).getValues()[0];
+      var nsmColIdx = -1;
+      for (var nhi = 0; nhi < nsmHeaders.length; nhi++) {
+        if (String(nsmHeaders[nhi] || '').indexOf('중분류') >= 0) { nsmColIdx = nhi; break; }
+      }
+      if (nsmColIdx < 0) return _json({ ok: false, error: 'column-not-found', headers: nsmHeaders });
+      var nsmBoundForm = '';
+      try { nsmBoundForm = nsmSs.getFormUrl() || ''; } catch (efu) {}
+      // 검증규칙은 보통 열 전체에 동일 적용되지만 혹시 몰라 샘플 행 여러 개를 훑어 첫 규칙을 채택(전체 getDataValidations는 대형시트에서 느림).
+      var nsmLastRow = nsmSheet.getLastRow();
+      var nsmDv = null;
+      if (nsmLastRow >= 2) {
+        var nsmMidRow = Math.floor((2 + nsmLastRow) / 2);
+        var nsmSampleRows = [2, 3, nsmMidRow, nsmLastRow].filter(function (rr, idx, arr) { return rr >= 2 && rr <= nsmLastRow && arr.indexOf(rr) === idx; });
+        for (var nsr = 0; nsr < nsmSampleRows.length; nsr++) {
+          var rule = nsmSheet.getRange(nsmSampleRows[nsr], nsmColIdx + 1).getDataValidation();
+          if (rule) { nsmDv = rule; break; }
+        }
+      }
+      var nsmOldValueCellCount = 0;
+      if (nsmLastRow >= 2) {
+        var nsmVals = nsmSheet.getRange(2, nsmColIdx + 1, nsmLastRow - 1, 1).getValues();
+        for (var nvr = 0; nvr < nsmVals.length; nvr++) {
+          if (String(nsmVals[nvr][0] || '').trim() === nsmOld) nsmOldValueCellCount++;
+        }
+      }
+      var nsmCritType = nsmDv ? String(nsmDv.getCriteriaType()) : null;
+      var nsmRangeInfo = null;
+      var nsmSrcRange = null;
+      if (nsmDv && nsmCritType === 'VALUE_IN_RANGE') {
+        try {
+          nsmSrcRange = nsmDv.getCriteriaValues()[0]; // Range 객체(옵션 목록이 실제 저장된 참조 범위)
+          var nsmRangeVals = nsmSrcRange.getValues();
+          var nsmFlatVals = [];
+          for (var rvi = 0; rvi < nsmRangeVals.length; rvi++) {
+            nsmFlatVals.push(String(nsmRangeVals[rvi][0] || ''));
+          }
+          nsmRangeInfo = {
+            sheetName: nsmSrcRange.getSheet().getName(),
+            a1: nsmSrcRange.getA1Notation(),
+            row: nsmSrcRange.getRow(),
+            col: nsmSrcRange.getColumn(),
+            numRows: nsmSrcRange.getNumRows(),
+            values: nsmFlatVals
+          };
+          // 보호된 범위/시트 진단 — 'apply' 시도가 "보호된 셀" 예외로 막혔을 때 원인 파악용.
+          try {
+            var nsmProtInfo = [];
+            var nsmSheetProts = nsmSrcRange.getSheet().getProtections(SpreadsheetApp.ProtectionType.SHEET);
+            for (var pspi = 0; pspi < nsmSheetProts.length; pspi++) {
+              var spp = nsmSheetProts[pspi];
+              var sppEditors = [];
+              try { sppEditors = spp.getEditors().map(function(u){return u.getEmail();}); } catch (ee1) {}
+              nsmProtInfo.push({ type: 'SHEET', desc: spp.getDescription(), editors: sppEditors, canEditByMe: spp.canEdit() });
+            }
+            var nsmRangeProts = nsmSrcRange.getSheet().getProtections(SpreadsheetApp.ProtectionType.RANGE);
+            for (var prpi = 0; prpi < nsmRangeProts.length; prpi++) {
+              var rpp = nsmRangeProts[prpi];
+              var rppEditors = [];
+              try { rppEditors = rpp.getEditors().map(function(u){return u.getEmail();}); } catch (ee2) {}
+              nsmProtInfo.push({ type: 'RANGE', a1: rpp.getRange().getA1Notation(), desc: rpp.getDescription(), editors: rppEditors, canEditByMe: rpp.canEdit() });
+            }
+            nsmRangeInfo.protections = nsmProtInfo;
+          } catch (eprot) { nsmRangeInfo.protectionCheckError = String(eprot); }
+        } catch (erx) { nsmRangeInfo = { error: String(erx) }; }
+      }
+      var nsmDiag = {
+        ok: true,
+        mode: nsmMode,
+        headerFound: String(nsmHeaders[nsmColIdx]),
+        colIndex: nsmColIdx + 1,
+        boundFormUrl: nsmBoundForm,
+        hasDataValidation: !!nsmDv,
+        dvType: nsmCritType,
+        dvValues: (nsmDv && nsmCritType === 'VALUE_IN_LIST') ? nsmDv.getCriteriaValues() : null,
+        rangeInfo: nsmRangeInfo,
+        oldValueCellCount: nsmOldValueCellCount
+      };
+      if (nsmMode === 'apply') {
+        if (String(body.key || '') !== _NAVER_SPLIT_GUARD) {
+          return _json({ ok: false, error: 'guard-mismatch' });
+        }
+        if (!nsmDv) return _json({ ok: false, error: 'no-validation-rule', diag: nsmDiag });
+
+        if (nsmCritType === 'VALUE_IN_LIST') {
+          var nsmCrit = nsmDv.getCriteriaValues();
+          var nsmOldList = nsmCrit[0];
+          var nsmShowDropdown = nsmCrit[1];
+          var nsmNewList = [];
+          var nsmReplaced = false;
+          for (var nli = 0; nli < nsmOldList.length; nli++) {
+            if (String(nsmOldList[nli]).trim() === nsmOld) {
+              nsmNewList.push(nsmNewA);
+              nsmNewList.push(nsmNewB);
+              nsmReplaced = true;
+            } else {
+              nsmNewList.push(nsmOldList[nli]);
+            }
+          }
+          if (!nsmReplaced) return _json({ ok: false, error: 'old-value-not-in-list', list: nsmOldList });
+          var nsmNewRule = SpreadsheetApp.newDataValidation()
+            .requireValueInList(nsmNewList, nsmShowDropdown)
+            .setAllowInvalid(true)
+            .build();
+          var nsmMaxRows = nsmSheet.getMaxRows();
+          var nsmFullRange = nsmSheet.getRange(2, nsmColIdx + 1, Math.max(nsmMaxRows - 1, 1), 1);
+          nsmFullRange.setDataValidation(nsmNewRule);
+        } else if (nsmCritType === 'VALUE_IN_RANGE') {
+          if (!nsmSrcRange) return _json({ ok: false, error: 'range-unresolved', diag: nsmDiag });
+          var nsmRangeVals2 = nsmSrcRange.getValues();
+          var nsmTargetRow = -1;
+          for (var rv2 = 0; rv2 < nsmRangeVals2.length; rv2++) {
+            if (String(nsmRangeVals2[rv2][0] || '').trim() === nsmOld) { nsmTargetRow = rv2; break; }
+          }
+          if (nsmTargetRow < 0) return _json({ ok: false, error: 'old-value-not-in-range', rangeInfo: nsmRangeInfo });
+          // 옵션 목록 범위 안의 빈 칸(패딩)을 찾아 두 번째 값을 넣는다. 없으면 범위 바로 아래 빈 행을 사용(옵션 시트 전용 — 문의 데이터 시트 아님).
+          var nsmEmptyRow = -1;
+          for (var rv3 = 0; rv3 < nsmRangeVals2.length; rv3++) {
+            if (rv3 !== nsmTargetRow && !String(nsmRangeVals2[rv3][0] || '').trim()) { nsmEmptyRow = rv3; break; }
+          }
+          var nsmOptSheet = nsmSrcRange.getSheet();
+          var nsmOptCol = nsmSrcRange.getColumn();
+          var nsmOptStartRow = nsmSrcRange.getRow();
+          // 1) 기존 값 칸 → 'N-플레이스'로 교체(선택항목 목록 수정 — 문의 데이터 시트 아님, 허용 범위)
+          nsmOptSheet.getRange(nsmOptStartRow + nsmTargetRow, nsmOptCol).setValue(nsmNewA);
+          var nsmUsedEmptyPad = false, nsmExpandedRange = false;
+          if (nsmEmptyRow >= 0) {
+            nsmOptSheet.getRange(nsmOptStartRow + nsmEmptyRow, nsmOptCol).setValue(nsmNewB);
+            nsmUsedEmptyPad = true;
+          } else {
+            // 패딩 없음 → 범위 바로 다음 행에 추가하고, 검증 규칙의 참조범위를 1행 확장.
+            // 안전장치: 그 다음 행이 이미 다른 용도로 쓰이고 있으면(빈칸 아니면) 절대 덮어쓰지 않고 중단.
+            var nsmNextRow = nsmOptStartRow + nsmRangeVals2.length;
+            var nsmNextCellVal = String(nsmOptSheet.getRange(nsmNextRow, nsmOptCol).getValue() || '').trim();
+            if (nsmNextCellVal) {
+              return _json({ ok: false, error: 'next-row-occupied-abort', row: nsmNextRow, col: nsmOptCol, existingValue: nsmNextCellVal });
+            }
+            nsmOptSheet.getRange(nsmNextRow, nsmOptCol).setValue(nsmNewB);
+            var nsmExpandedSrc = nsmOptSheet.getRange(nsmOptStartRow, nsmOptCol, nsmRangeVals2.length + 1, 1);
+            var nsmExpandedRule = SpreadsheetApp.newDataValidation()
+              .requireValueInRange(nsmExpandedSrc, true)
+              .setAllowInvalid(true)
+              .build();
+            var nsmMaxRows2 = nsmSheet.getMaxRows();
+            nsmSheet.getRange(2, nsmColIdx + 1, Math.max(nsmMaxRows2 - 1, 1), 1).setDataValidation(nsmExpandedRule);
+            nsmExpandedRange = true;
+          }
+          var nsmOldValueCellCountAfterR = 0;
+          var nsmRecheckR = nsmLastRow >= 2 ? nsmSheet.getRange(2, nsmColIdx + 1, nsmLastRow - 1, 1).getValues() : [];
+          for (var rvr = 0; rvr < nsmRecheckR.length; rvr++) {
+            if (String(nsmRecheckR[rvr][0] || '').trim() === nsmOld) nsmOldValueCellCountAfterR++;
+          }
+          return _json({
+            ok: true,
+            applied: true,
+            mode: 'range',
+            optionSheet: nsmOptSheet.getName(),
+            usedEmptyPad: nsmUsedEmptyPad,
+            expandedRange: nsmExpandedRange,
+            oldValueCellCountBefore: nsmOldValueCellCount,
+            oldValueCellCountAfter: nsmOldValueCellCountAfterR
+          });
+        } else {
+          return _json({ ok: false, error: 'unsupported-criteria-type', dvType: nsmCritType, diag: nsmDiag });
+        }
+        var nsmRecheckVals = nsmLastRow >= 2 ? nsmSheet.getRange(2, nsmColIdx + 1, nsmLastRow - 1, 1).getValues() : [];
+        var nsmOldValueCellCountAfter = 0;
+        for (var nvr2 = 0; nvr2 < nsmRecheckVals.length; nvr2++) {
+          if (String(nsmRecheckVals[nvr2][0] || '').trim() === nsmOld) nsmOldValueCellCountAfter++;
+        }
+        return _json({
+          ok: true,
+          applied: true,
+          mode: 'list',
+          oldValueCellCountBefore: nsmOldValueCellCount,
+          oldValueCellCountAfter: nsmOldValueCellCountAfter
+        });
+      }
+      return _json(nsmDiag);
+    } catch (e) {
+      return _json({ ok: false, error: String(e) });
+    }
+  }
+
   // ─── 회원관리 페이지(CPO): 등록회원 명단 조회 (등록기간 from~to 필터, 1~12월 체크 포함) ───
   if (action === 'member_registered_list') {
     // 2026-06-25 GM: 실제 회원 DB(유효회원 시트) 등록일자 기준 — 대시보드 '멤버십 등록건' 카드와 동일 소스.
@@ -5071,6 +5481,59 @@ function _processAction(body) {
     if (mosRow < 0) return _json({ ok: false, error: 'no member' });
     mosSh.getRange(mosRow, mosFieldIdx + 1).setValue(mosValue);
     return _json({ ok: true, phone: mosPhone, field: mosField, value: mosValue, rowIndex: mosRow });
+  }
+
+  // ─── 멤버십 담당자 열 일괄 배치 쓰기(단일 setValues 1회) — 행단위 POST 1,006회(약 50분) → 1회(수 초) 전환.
+  //   ⚠️ field 화이트리스트: '담당자'(A열, 멤버십 담당)만 허용 — 강습 담당 5칸(PT/골프/P.L/스쿼시/수영)은 절대 불허.
+  //   ⚠️ 헤더 정확일치만 매칭(INC-020 재발방지 — 부분일치 indexOf 오매칭 금지, 쓸 필드 한정).
+  //   scope=valid: member_active_list 와 동일 판정기준(잔여일>0 & 재등록분류 이탈표시 없음)으로 대상 행만
+  //   값 교체, 범위밖(유효 아님) 행은 원값 그대로 같이 써 무변경. 단일 열 range 로만 setValues
+  //   (행 추가·삭제 0, 다른 열 무손상). 2026-07-20 GM 지시(대량 변경 배치화 — 6.1초/건→일괄).
+  if (action === 'member_owner_bulk_set') {
+    var mbAllowed = ['담당자'];
+    var mbField = String(body.field || '').trim();
+    if (mbAllowed.indexOf(mbField) < 0) return _json({ ok: false, error: 'bad field' });
+    var mbValue = String(body.value == null ? '' : body.value).trim();
+    if (!mbValue) return _json({ ok: false, error: 'value 필수' });
+    var mbScope = String(body.scope || 'valid');
+    if (mbScope !== 'valid') return _json({ ok: false, error: 'scope=valid 만 지원' });
+    var mbSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    if (!mbSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var mbLast = mbSh.getLastRow();
+    var mbCols = mbSh.getLastColumn();
+    if (mbLast < 2 || mbCols < 1) return _json({ ok: true, scope: mbScope, total: 0, changed: 0, skipped: 0, before: {}, after: {} });
+    var mbHdr = mbSh.getRange(1, 1, 1, mbCols).getValues()[0].map(function(v){ return String(v).trim(); });
+    // 쓸 필드 — 정확일치만(INC-020 재발방지)
+    var mbFieldIdx = -1;
+    for (var mfi = 0; mfi < mbHdr.length; mfi++) { if (mbHdr[mfi] === mbField) { mbFieldIdx = mfi; break; } }
+    if (mbFieldIdx < 0) return _json({ ok: false, error: '컬럼 미발견: ' + mbField });
+    // scope=valid 판정 칸(잔여일·재등록분류) — member_active_list 와 동일 퍼지매칭(기존 판정 로직 재사용, 쓸 필드와는 무관)
+    function _mbIdx(want){ var w = String(want).replace(/\s/g,''); for (var i=0;i<mbHdr.length;i++){ if (mbHdr[i].replace(/\s/g,'').indexOf(w) >= 0) return i; } return -1; }
+    var mbRemIdx = _mbIdx('잔여일'), mbReIdx = _mbIdx('재등록분류');
+    var mbLoss = { 'LOSS': 1, '환불': 1, '양도LOSS': 1 };
+    var mbRows = mbLast - 1;
+    var mbAllVals = mbSh.getRange(2, 1, mbRows, mbCols).getValues();  // 판정용 전체 열 읽기(쓰기는 대상 열 1개만)
+    var mbBefore = {}, mbAfter = {};
+    var mbChanged = 0, mbSkipped = 0, mbTotal = 0;
+    var mbOut = [];
+    for (var mbI = 0; mbI < mbAllVals.length; mbI++) {
+      var mbRowArr = mbAllVals[mbI];
+      var mbCur = String(mbRowArr[mbFieldIdx] == null ? '' : mbRowArr[mbFieldIdx]).trim();
+      var mbRemRaw = mbRemIdx >= 0 ? String(mbRowArr[mbRemIdx] == null ? '' : mbRowArr[mbRemIdx]).replace(/[^0-9\-]/g, '') : '';
+      var mbRem = (mbRemRaw === '' || mbRemRaw === '-') ? NaN : parseInt(mbRemRaw, 10);
+      var mbReV = mbReIdx >= 0 ? String(mbRowArr[mbReIdx] == null ? '' : mbRowArr[mbReIdx]).trim() : '';
+      var mbIsValid = !isNaN(mbRem) && mbRem > 0 && !mbLoss[mbReV];
+      if (!mbIsValid) { mbOut.push([mbCur]); continue; }  // 범위밖(유효회원 아님) — 원값 그대로, 집계 제외
+      mbTotal++;
+      var mbKey = mbCur || '(빈값)';
+      mbBefore[mbKey] = (mbBefore[mbKey] || 0) + 1;
+      if (mbCur === mbValue) { mbOut.push([mbCur]); mbSkipped++; }
+      else { mbOut.push([mbValue]); mbChanged++; }
+      var mbAK = (mbCur === mbValue ? mbCur : mbValue) || '(빈값)';
+      mbAfter[mbAK] = (mbAfter[mbAK] || 0) + 1;
+    }
+    if (mbChanged > 0) mbSh.getRange(2, mbFieldIdx + 1, mbRows, 1).setValues(mbOut);  // 단일 열 range 1회 — 다른 열 무손상
+    return _json({ ok: true, scope: mbScope, field: mbField, value: mbValue, total: mbTotal, changed: mbChanged, skipped: mbSkipped, before: mbBefore, after: mbAfter });
   }
 
   // ─── 멤버십 회원관리 요약 집계(§2-A 로딩속도) — 2026-07-20 시포 ───
