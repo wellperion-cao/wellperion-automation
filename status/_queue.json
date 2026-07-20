@@ -1901,5 +1901,19 @@
     "artifact": "- LOSS사유(성인 Q열/WSC R열)에 걸린 VALUE_IN_RANGE(allowInvalid=false) 규칙이\n  화면 선택지와 불일치해 저장을 통째로 거부(예: 셀 Q3433) → 07-18 신설 이후\n  LOSS사유 저장 0건. 진단용 loss_reason_setup 액션(diag/apply/verify/test)으로\n  기존 규칙을 실측 확인 후, 화면 INQ_LOSS_REASON_OPTIONS 7종 목록(allowInvalid=true,\n  경고방식)으로 양쪽 시트 재설정. 되읽기 검증 완료(VALUE_IN_LIST· (CLI ad-hoc · 커밋 a8830062)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a883006229c1d651a596b0ce20e55710e2b2067d"
+  },
+  {
+    "task_id": "CTO-2026-07-20-ADHOC-b2f6c805",
+    "clevel": "cto",
+    "title": "[시토] 회원 만료임박 알림 — 강사별묶음 섹션 삭제·87명 전원 단일명단·자동 메시지분할",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9273,
+    "artifact": "GM 지시 반영: 종목(강사)가 이미 회원별 줄에 있어 중복이던 강사별 묶음 섹션 제거,\n초순/중순/하순 분할 대신 익월 만기자 87명 전원을 종료일자 오름차순 단일 명단으로.\n4096자 한도 대비 3800자 안전마진 기준 자동 분할(줄 단위, 헤더=1번째만·팁/서명=\n마지막만, (i/N) 마커), 연속발송 429 방지 2초 간격. (CLI ad-hoc · 커밋 b2f6c805)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b2f6c8059dec8de54029db0cebb9883f03784456"
   }
 ]
