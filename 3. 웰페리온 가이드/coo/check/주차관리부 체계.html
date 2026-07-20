@@ -459,6 +459,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('mplan')">📊 월간 주차관리부 현황·계획·보고</button>
   <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
   <button class="tab" onclick="switchTab('vendorboard')">🏢 거래업체</button>
+  <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <!-- 인쇄 버튼 통합 드롭다운 (지원부·운영부·시설부 체계 동일 패턴 · 버튼 난립 해소) -->
     <div class="tab-dropdown" id="printDropdown">
@@ -482,11 +483,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-policy" class="content">
   <h2 style="font-size:20px;margin-bottom:6px;">주차관리부 규정</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 운영 기준·정기 회의 규정을 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);font-weight:700;font-size:11px;">[편집 가능 — GM 검토]</span></p>
-  <!-- ── 🧑‍💼 채용 현황 — CHRO 채용 시트(db:hire) 라이브 연동. 값은 여기 없음(렌더만) · 실패 시 미표시.
-       접히는 섹션 안에 두면 안 보임 → 탭 최상단 고정 배치. (시우 2026-07-20) ── -->
-  <div id="hiring-host"></div>
-  <script src="hiring-status.js"></script>
-  <script>renderHiringStatus('hiring-host','주차관리부');</script>
 
   <div class="board-fullwidth">
     <!-- 규정 보드: renderPolicyBoard()가 #policy-board(display:contents)에 .board-col 주입. 운영 기준·정기 회의 컬럼. (발렛은 별도 탭) -->
@@ -734,6 +730,18 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <iframe id="vendorboardFrame" data-src="전사_거래업체.html?dept=주차관리부&embed=1" title="주차관리부 거래업체" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
 </div>
 
+<!-- ══ 「🧑‍💼 채용 현황」 탭 — CHRO 채용 시트(db:hire) 라이브 연동. 값은 여기 없음(렌더만) · 실패 시 미표시.
+     "공고 보기"를 누르면 원본 공고 페이지를 그 자리에서 펼친다(다른 페이지로 나가지 않음 · 사본 아님).
+     (배9182 후속 · GM 지시로 링크→인라인 전환, 탭 신설 · 시우 2026-07-20) ══ -->
+<div id="tab-hiring" class="content hidden">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
+    <span>🧑‍💼 <b style="color:var(--text)">주차관리부 채용 현황</b> — 채용 시트(인사 담당 관리)에서 자동으로 불러옵니다. "공고 보기"를 누르면 원본 공고가 바로 아래에 펼쳐집니다.</span>
+  </div>
+  <div id="hiring-host"></div>
+  <script src="hiring-status.js"></script>
+  <script>renderHiringStatus('hiring-host','주차관리부');</script>
+</div>
+
 <!-- 점검(지상)·점검(지하)·현황 대시보드 탭 전면 제거 (GM 2026-06-12). 점검은 지원부 점검 시스템과 충돌·동기화 문제로 제거.
      2026-06-23: 규정·가이드·매뉴얼 3보드 전체 카드 편집형 전환 (운영부 카드 시스템 이식 · saveBoard GAS 공유 저장 · requireEditAuth 1234). -->
 
@@ -787,7 +795,7 @@ function switchTab(tab){
     var oc=t.getAttribute('onclick')||'';
     t.classList.toggle('active', oc.indexOf("'"+tab+"'")>=0);
   });
-  ['policy','guide','manual','valet','mplan','schedule','vendorboard'].forEach(function(id){
+  ['policy','guide','manual','valet','mplan','schedule','vendorboard','hiring'].forEach(function(id){
     var el=document.getElementById('tab-'+id);
     if(el) el.classList.toggle('hidden', id!==tab);
   });
