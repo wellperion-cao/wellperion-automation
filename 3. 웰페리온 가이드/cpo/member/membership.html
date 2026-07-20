@@ -2320,6 +2320,32 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </div>
 </div>
 
+<!-- ══ 휴회 모달 — 멤버십 표 '휴회' 통합셀 클릭 시. 선택 입력(강제 아님) — 종료일자는 그대로 두고 판별용 기록만.
+     저장=member_active_update(fields:휴회 시작일·휴회 종료일·휴회 메모). GAS _auFindCol이 칸 없으면 자동 생성(GM 승인, 2026-07-20 시포). ══ -->
+<div class="consult-overlay" id="holdOverlay" onclick="if(event.target===this)closeHoldModal()">
+  <div class="consult-modal" role="dialog" aria-modal="true">
+    <div class="consult-modal-head">
+      <span class="consult-modal-kind experience">휴회</span>
+      <span class="consult-modal-title">휴회 정보</span>
+    </div>
+    <div class="consult-row"><span class="ck">회원</span><span class="cv" id="hdMemberFixed">—</span></div>
+
+    <div class="consult-field-label">휴회 시작일</div>
+    <input type="date" id="hdStartInput" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+
+    <div class="consult-field-label">휴회 종료일</div>
+    <input type="date" id="hdEndInput" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+
+    <div class="consult-field-label">메모</div>
+    <textarea class="consult-memo" id="hdNoteInput" placeholder="소급 적용·대표님 컨펌 등 특이사항(선택)"></textarea>
+
+    <div class="consult-actions">
+      <button class="consult-btn-cancel" onclick="closeHoldModal()">취소</button>
+      <button class="consult-btn-save" id="hdSaveBtn" onclick="saveHoldModal()">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ LOSS 사유 모달 — 문의 현황 표 '진행상황'을 LOSS로 바꿀 때(또는 이미 LOSS인데 사유 미기록 건) 오픈. 정형 드롭다운+메모.
      ★기존회원 종료사유(churnOverlay·CHURN_REASON_COL)와 별개 체계 — 이건 '문의' 단계 LOSS 전용(등록 자체가 무산된 건).
      저장=member_inquiry_update(lossReason·lossReasonNote). GAS _miEnsureCol_이 칸 없으면 자동 생성(GM 수작업 0).
@@ -5955,6 +5981,7 @@ function _activeDisplayCols() {
     if (hasRecon && h === remainCol) out.push('__recon__');    // 잔여일 뒤 통합셀
   });
   if (hasRecon && !remainCol) out.push('__recon__');           // 잔여일 컬럼 없으면 폴백(뒤)
+  out.push('__hold__');                                         // 휴회 통합셀(선택 입력 — 강제 아님). 2026-07-20 시포·GM
   out.push('__owners__');                                       // 종목별 담당자 통합 요약셀(비어있지 않은 종목만 칩). 2026-07-18 시포·GM
   if (unregCol) out.push(unregCol);                            // 미등록사유 맨뒤
   return out;
@@ -5970,6 +5997,68 @@ function _reconCellHtml(row) {
   return '<td class="recon-cell recon-empty" data-recon="' + ri + '" title="재등록 예약 잡기" style="white-space:nowrap;cursor:pointer;color:var(--dim)">＋ 상담 잡기</td>';
 }
 
+/* ─────────────────────────────────────────────
+   휴회(회원권 일시정지) 통합셀 — 유효회원 표 전용, 선택 입력(강제 아님 — 종료사유와 달리 '오늘 할 일' 미기록 알림 없음).
+   목적=종료일자는 수기 유지하되 '지금 휴회 중'을 판별 가능하게(만료임박 알림 오발신 방지). 종료일자 자동재계산 없음.
+   저장=member_active_update(fields:휴회 시작일·휴회 종료일·휴회 메모) — GAS _auFindCol이 칸 없으면 자동 생성.
+   GM 승인 사양(2026-07-20 시포). ───────────────────────────────────────────── */
+var HOLD_START_COL = '휴회 시작일';
+var HOLD_END_COL = '휴회 종료일';
+var HOLD_NOTE_COL = '휴회 메모';
+var _holdModal = null;   // { rowIndex, keyPhone, name }
+function _holdCellHtml(row) {
+  var start = String(row[HOLD_START_COL] || '').trim();
+  var end = String(row[HOLD_END_COL] || '').trim();
+  var ri = row.rowIndex != null ? esc(String(row.rowIndex)) : '';
+  if (start || end) {
+    var label = (row['휴회중'] ? '휴회중' : '휴회') + (end ? ' · ~' + end : (start ? ' · ' + start + '~' : ''));
+    return '<td class="hold-cell" data-hold="' + ri + '" title="휴회 정보 수정" style="white-space:nowrap;cursor:pointer;color:' + (row['휴회중'] ? 'var(--accent)' : 'var(--text)') + ';font-weight:600">' + esc(label) + '</td>';
+  }
+  return '<td class="hold-cell hold-empty" data-hold="' + ri + '" title="휴회 입력(선택)" style="white-space:nowrap;cursor:pointer;color:var(--dim)">－</td>';
+}
+function openHoldModal(rowIndex) {
+  var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
+  if (!r) { showToast('회원 정보를 찾을 수 없습니다', 'err'); return; }
+  var name = String(r['회원명'] || '').trim();
+  var phone = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
+  _holdModal = { rowIndex: r.rowIndex, keyPhone: phone, name: name };
+  document.getElementById('hdMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '');
+  document.getElementById('hdStartInput').value = String(r[HOLD_START_COL] || '').trim();
+  document.getElementById('hdEndInput').value = String(r[HOLD_END_COL] || '').trim();
+  document.getElementById('hdNoteInput').value = String(r[HOLD_NOTE_COL] || '').trim();
+  document.getElementById('holdOverlay').classList.add('open');
+}
+function closeHoldModal() {
+  document.getElementById('holdOverlay').classList.remove('open');
+  _holdModal = null;
+}
+function _holdPatchLocal(rowIndex, start, end, note) {
+  var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
+  if (!r) return;
+  r[HOLD_START_COL] = start; r[HOLD_END_COL] = end; r[HOLD_NOTE_COL] = note;
+  r['휴회중'] = !!(end && end >= _todayKR8601_());
+  if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
+}
+function _todayKR8601_() { return new Date().toISOString().slice(0, 10); }   // 로컬(GM PC) 기준 — 서버 판별(휴회중)은 KST로 별도 재계산됨
+function saveHoldModal() {
+  if (!_holdModal) return;
+  var start = document.getElementById('hdStartInput').value.trim();
+  var end = document.getElementById('hdEndInput').value.trim();
+  var note = document.getElementById('hdNoteInput').value.trim();
+  var rowIndex = _holdModal.rowIndex, keyPhone = _holdModal.keyPhone;
+  var fields = {}; fields[HOLD_START_COL] = start; fields[HOLD_END_COL] = end; fields[HOLD_NOTE_COL] = note;
+  var saveBtn = document.getElementById('hdSaveBtn'); saveBtn.disabled = true;
+  apiPost({ action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, fields: fields })
+    .then(function(data){
+      if (data && data.ok === false) throw new Error(data.error || '저장 실패');
+      showToast('휴회 정보 저장', 'ok');
+      _holdPatchLocal(rowIndex, start, end, note);
+      closeHoldModal();
+    })
+    .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
+    .then(function(){ saveBtn.disabled = false; });
+}
+
 function _activeRender(rows, isFiltered) {
   var head  = document.getElementById('activeHead');
   var tbody = document.getElementById('activeBody');
@@ -5979,6 +6068,7 @@ function _activeRender(rows, isFiltered) {
   if (!isFiltered) {
     var ths = displayCols.map(function(h){
       if (h === '__recon__') return '<th style="white-space:nowrap">재등록 상담</th>';   // 통합셀(정렬 대상 아님)
+      if (h === '__hold__') return '<th style="white-space:nowrap">휴회</th>';           // 통합셀(정렬 대상 아님) 2026-07-20 시포·GM
       if (h === '__churn__') return '<th style="white-space:nowrap">종료사유</th>';       // 통합셀(정렬 대상 아님) 2026-07-09 시포·GM
       if (h === '__owners__') return '<th style="white-space:nowrap">담당자</th>';        // 종목별 담당자 요약(정렬 대상 아님) 2026-07-18 시포·GM
       var leftAlign = (h === '수강반종목명') ? ';text-align:left' : '';
@@ -6016,6 +6106,7 @@ function _activeRender(rows, isFiltered) {
     html += '<tr data-rowindex="' + esc(ri) + '">';
     displayCols.forEach(function(h){
       if (h === '__recon__') { html += _reconCellHtml(row); return; }
+      if (h === '__hold__') { html += _holdCellHtml(row); return; }
       if (h === '__churn__') { html += _churnCellHtml(row); return; }
       if (h === '__owners__') { html += _ownersCellHtml(row); return; }
       var isPhone = (h === '휴대폰 번호');
@@ -6271,6 +6362,8 @@ function _wireActiveDblclick(){
   tbody.addEventListener('click', function(e){
     var cell = e.target.closest ? e.target.closest('td.recon-cell') : null;
     if (cell) { var ri = parseInt(cell.getAttribute('data-recon'), 10); if (ri) openReconForMember(ri); return; }
+    var hcell = e.target.closest ? e.target.closest('td.hold-cell') : null;
+    if (hcell) { var hri = parseInt(hcell.getAttribute('data-hold'), 10); if (hri) openHoldModal(hri); return; }
     var ccell = e.target.closest ? e.target.closest('td.churn-reason-cell') : null;
     if (ccell) { var cri = parseInt(ccell.getAttribute('data-churn'), 10); if (cri) openChurnReasonModal(cri); }
   });

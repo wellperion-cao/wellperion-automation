@@ -1307,6 +1307,13 @@ function _miEnsureCol_(sh, hdr, name) {
   hdr.push(name);
   return newCol - 1;
 }
+// 휴회 중 판별 — '휴회 종료일' 있고 오늘≤휴회종료일이면 true. 원본 칸(종료일자)은 그대로 두고 표시용 파생값만 계산
+//   (자동재계산 없음 — GM 승인 설계). member_active_list obj(회원명 등 이미 문자열 매핑된 레코드)를 그대로 받는다. 2026-07-20 시포·GM.
+function _memberOnHold_(obj) {
+  var end = String((obj && obj['휴회 종료일']) || '').trim();
+  if (!end) return false;
+  return _dateOnlyStrip_(end) >= _todayKR_();
+}
 // 전화번호 표시 정규화 — 시트가 '01034761531'을 숫자로 저장해 앞 0이 떨어진 '1034761531'로 보이는 문제 교정.
 //   무조건 '010-3476-1531' 형식. 판단 불가(자릿수 안 맞음)면 원문 보존(손실 금지). 2026-06-26 시포·GM.
 function _fmtPhone_(v) {
@@ -3936,6 +3943,7 @@ function _processAction(body) {
           if (_chaM && parseInt(_chaM[0], 10) >= 2) obj[aaHdrRaw[aiCls]] = '재등록';
         }
         if (!aaFull && aaNameKey) obj[aaNameKey] = _svMaskName_(obj[aaNameKey]);
+        obj['휴회중'] = _memberOnHold_(obj);   // 파생 필드(표시 전용) — 원본 칸 아님. 2026-07-20 시포·GM.
         aaRows.push(obj);
       }
     }
@@ -3979,7 +3987,8 @@ function _processAction(body) {
       for (var a1 = 0; a1 < auHdr.length; a1++) { if (auHdr[a1].replace(/\s/g, '') === w) { ix = a1; break; } }
       if (ix < 0) { for (var a2 = 0; a2 < auHdr.length; a2++) { if (auHdr[a2] && auHdr[a2].replace(/\s/g, '').indexOf(w) >= 0) { ix = a2; break; } } }
       // '종료사유'(+'종료사유메모') 자동 신설 — 회원 종료사유 기록 기능(GM 확정), GAS가 칸 생성해 GM 수작업 0. 2026-07-09 시포·GM.
-      if (ix < 0 && (w.indexOf('재등록상담') >= 0 || w.indexOf('재등록예약목록') >= 0 || w.indexOf('종료사유') >= 0)) ix = _miEnsureCol_(auSh, auHdr, String(colName).trim());
+      // '휴회 시작일'·'휴회 종료일'·'휴회 메모' 자동 신설 — 휴회 전용 칸(GM 승인), 첫 write 시 맨 끝에 append. 2026-07-20 시포·GM.
+      if (ix < 0 && (w.indexOf('재등록상담') >= 0 || w.indexOf('재등록예약목록') >= 0 || w.indexOf('종료사유') >= 0 || w.indexOf('휴회') >= 0)) ix = _miEnsureCol_(auSh, auHdr, String(colName).trim());
       return ix;
     }
     // 셀 쓰기 — 재등록상담 칸(날짜·시간·내용)은 텍스트 서식(@) 강제 후 기록. '09:00'·'2026-07-15'가 시간/날짜 값으로

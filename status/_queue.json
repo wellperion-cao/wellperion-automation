@@ -1678,5 +1678,19 @@
     "artifact": "GM: 시포가 정신없으니 시우가 다 정리해서 넘긴다.\n실측 진단: 문의&등록현황이 느린 원인 = 집계 엔드포인트 부재로 전량 fetch\n  · member_inquiry_list 기간 파라미터 없음 (멤버십 632건/584KB, 강습 682KB)\n  · member_active_list 콜드 GAS ~11초 (코드 주석 자인)\n  · 632행 DOM 전량 생성, 페이지네이션·가상스크롤 전무\n  · 필터/정렬 100% 클라이언트 전량 재스캔\nO3(재등록 대시보드)가 빠른 이유 = 서버 집계본(약 4KB 고정) + 3층 렌더 폴백 +  (CLI ad-hoc · 커밋 5da7b85a)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "5da7b85a0f33693ce4b7fcc64c2131409955a274"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-3055c416",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9258,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 3055c416)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "3055c4161ed6798870105d0396a504ca838248f6"
   }
 ]
