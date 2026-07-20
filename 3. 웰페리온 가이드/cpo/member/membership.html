@@ -1509,7 +1509,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <option value="재문의로 종결">재문의로 종결</option>
           </select>
           <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납)·재문의로 종결된 건을 숨겨 진행 중·LOSS 건만 봅니다. 지난 문의는 '전체 상태' 필터에서 '재문의로 종결' 선택으로 확인.">
-            <input type="checkbox" id="dbHideRegistered" checked onchange="renderDbTable()" style="cursor:pointer"> 진행중만 보기 <span style="font-size:11px;color:var(--dim)">(가입완료·재문의종결 숨김 · LOSS 노출)</span>
+            <input type="checkbox" id="dbHideRegistered" checked onchange="_dbLimit=200;renderDbTable()" style="cursor:pointer"> 진행중만 보기 <span style="font-size:11px;color:var(--dim)">(가입완료·재문의종결 숨김 · LOSS 노출)</span>
           </label>
         </div>
         <div class="db-toolbar-actions">
@@ -3424,6 +3424,15 @@ function _mdashPeriodRange(period){
   if (period === 'total') return { from: null, to: to, label: '전체 누적' };
   return { from: _mdashYmd(new Date(now.getFullYear(), now.getMonth(), 1)), to: to, label: '이번달' };  // month(기본)
 }
+// 가입 원본 조회 범위 — ⑥(올해 월별 등록)이 항상 요구하는 "연초~오늘"을 기본 스코프로 사용(전체 이력 대신).
+// '총' 토글을 실제로 선택했을 때만 전체(2022~) 재조회 — 실측: 등록 1,695건 중 1,498건(88%)이 2026년 이전
+// 이력이라 기본 스코프를 연초로 좁히면 응답이 크게 줄어든다(263KB → 약 30KB대). 2026-07-20 화면개편 2단계(C), 시포.
+var _mdashRegScope = null;   // 'year' | 'total' — 현재 _mdashRawReg에 실제로 로드된 범위(재조회 필요 여부 판정용)
+function _mdashRegFetchRange(period){
+  var now = new Date();
+  if (period === 'total') return { from: '', to: _mdashYmd(now), scope: 'total' };
+  return { from: _mdashYmd(new Date(now.getFullYear(), 0, 1)), to: _mdashYmd(now), scope: 'year' };
+}
 function _mdashPeriodTabsHtml(){
   return '<div class="mdash-ptabs" id="mdashPtabs">' + _MDASH_PERIODS.map(function(p){
     return '<button type="button" class="mdash-ptab' + (p[0] === _mdashPeriod ? ' active' : '') +
@@ -3438,6 +3447,18 @@ function _mdashSetPeriod(period){
   if (wrap) Array.prototype.forEach.call(wrap.children, function(btn){
     btn.classList.toggle('active', btn.getAttribute('data-period') === period);
   });
+  // '총' 토글은 기본 스코프(연초~오늘)를 벗어나는 2022~2025년 가입 이력이 필요 — 아직 그 범위로 로드돼
+  // 있지 않을 때만 재조회(1회, 이후엔 캐시 재사용). 그 외 토글(일/월/연)은 이미 로드된 연초~오늘 범위 안에
+  // 포함되므로 재조회 없이 클라 필터만 재계산(기존 방식 그대로 유지). 2026-07-20 화면개편 2단계(C).
+  if (period === 'total' && _mdashRegScope !== 'total') {
+    var range = _mdashRegFetchRange('total');
+    _mdashRegScope = 'total';
+    _mdashFetchRegistered(range.from, range.to, function(d){
+      _mdashRawReg = (d && d.data) ? d.data : null;
+      _mdashRenderKpiCards();
+    });
+    return;
+  }
   _mdashRenderKpiCards();
 }
 function _mdashKpiFmt(v){ return v === undefined ? '…' : (v === null ? '–' : v.toLocaleString()); }
@@ -3490,12 +3511,12 @@ function loadInquiryDash(){
   var body = document.getElementById('inquiryDashModalBody');
   if (!body) return;
   var _ld = '<div style="color:var(--dim);font-size:11px">불러오는 중…</div>';
-  _mdashRawInq = undefined; _mdashRawReg = undefined;   // 이번 열람 회차의 원본 보관소 초기화(기간 토글이 재사용)
+  _mdashRawInq = undefined; _mdashRawReg = undefined; _mdashRegScope = null;   // 이번 열람 회차의 원본 보관소 초기화(기간 토글이 재사용)
   body.innerHTML =
     _mdashPeriodTabsHtml() +
     '<div class="mdash-sec"><div class="mdash-sec-hd" id="mdashPerfHd">① ' + _mdashPeriodRange(_mdashPeriod).label + ' 성과</div>' +
       '<div id="mdashSecPerf" class="mdash-kpirow">' + _ld + '</div>' +
-      '<div class="mdash-caveat">신규 문의=member_inquiry_list(26년 신규문의 시트) 접수일 실측, 멤버십 유형만(강습·렌트·비즈 제외) · 가입=member_registered_list(유효회원 시트) 등록일자 실측 · 전환율=선택 기간 가입/선택 기간 문의 · 기간 전환 시 재조회 없이 이미 불러온 데이터에서 즉시 재계산.</div></div>' +
+      '<div class="mdash-caveat">신규 문의=member_inquiry_list(26년 신규문의 시트) 접수일 실측, 멤버십 유형만(강습·렌트·비즈 제외) · 가입=member_registered_list(유효회원 시트) 등록일자 실측 · 전환율=선택 기간 가입/선택 기간 문의 · 문의는 문의DB 탭에 이미 로드된 데이터 재사용(중복 fetch 0) · 가입은 기본 연초~오늘 스코프로 조회, 일·월·연 토글은 재조회 없이 즉시 재계산 · \'총\' 선택 시에만 2022년~ 전체 1회 추가 조회.</div></div>' +
     '<div class="mdash-sec"><div class="mdash-sec-hd">② 문의 이후 퍼널 (누적)</div>' +
       '<div id="postInqSecFunnel">' + _ld + '</div>' +
       '<div class="mdash-caveat">기간 토글 영향 없음 — stage_funnel 현재 시점 누적 스냅샷.</div></div>' +
@@ -3588,6 +3609,11 @@ function loadInquiryDash(){
       _mdashRenderKpiCards();
       _mdashRenderMonthlyReg();
     }
+    // ★2026-07-20 화면개편 2단계(C): 문의DB 탭(pane-db)이 이미 loadDbData()로 member_inquiry_list 전량을
+    // dbRows에 담아둔다 — 같은 액션·같은 파라미터(USE_GVIZ 폐기 이후 dbRows도 SUC·LOSS 포함 전량, 2026-07-16 시토).
+    // 이 모달이 별도로 다시 fetch하면 완전히 동일한 응답(실측 584KB)을 중복 수신하는 셈 — dbRows가 이미
+    // 채워져 있으면 그대로 재사용하고, 아직 로딩 전(또는 실패)이면 기존처럼 자체 fetch로 폴백(정보손실 0).
+    if (dbRows && dbRows.length) { _compute(dbRows); return; }
     if (GAS_URL === GAS_PLACEHOLDER) { _compute(dbRows || []); return; }   // 백엔드 미연동 폴백(값 과소 가능)
     fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam())
       .then(function(r){ return r.json(); })
@@ -3602,9 +3628,13 @@ function loadInquiryDash(){
       });
   }
   _mdashLoadInqAnalytics();
-  // 가입 원본 — from/to 공란=전체 1회 fetch(구 이번달·지난달·올해 3회 분리 fetch를 통합, GAS 호출 3→1로 감소·추가 체감속도 개선).
-  // 기간 토글은 이 배열을 다시 필터링만 한다(_mdashComputeKpi) — 새 fetch 없음.
-  _mdashFetchRegistered('', '', function(d){
+  // 가입 원본 — 기본 스코프=연초~오늘(⑥이 요구하는 최소 범위, '총' 토글 시에만 전체 재조회 — _mdashSetPeriod 참고).
+  // ★2026-07-20 화면개편 2단계(C, GM 지시): 종전엔 from/to 공란(전체 이력, 1,695건/263KB)을 매번 전량 받았으나
+  // 실측 결과 88%(1,498건)가 2026년 이전 이력이라 기본(당월) 진입에는 불필요 — 연초 스코프로 좁혀 응답을 줄인다.
+  // 기간 토글(일/월/연)은 이 배열을 다시 필터링만 한다(_mdashComputeKpi) — 새 fetch 없음.
+  var _mdashRegRange0 = _mdashRegFetchRange(_mdashPeriod);
+  _mdashRegScope = _mdashRegRange0.scope;
+  _mdashFetchRegistered(_mdashRegRange0.from, _mdashRegRange0.to, function(d){
     _mdashRawReg = (d && d.data) ? d.data : null;
     res.regDone = true;
     _mdashRenderKpiCards();
@@ -7974,6 +8004,10 @@ function _updateDbGraduatedInfo() {
   el.textContent = '· 가입완료 ' + sucN + '건 졸업(등록현황·회원관리에서 확인)';   // LOSS는 목록에 노출되므로 졸업 카운트에서 제외. 2026-07-08 시포·GM
 }
 
+// 목록 페이지 나눔("더 보기") — pane-ownerAssign의 _oaLimit/_oaShowMore와 동일 패턴 재사용(2026-07-20, 화면개편 2단계 D).
+// 632행을 매번 전량 appendChild하던 렌더 비용 절감(검색·필터는 여전히 dbRows 전체 대상 — 데이터 손실 없음, 렌더 개수만 제한).
+var _dbLimit = 200;
+function _dbShowMore(){ _dbLimit += 200; renderDbTable(); }
 function renderDbTable() {
   var filtered = _dbFilteredRows();
   var tbody = document.getElementById('dbBody');
@@ -7991,10 +8025,24 @@ function renderDbTable() {
 
   _riIdx = _riBuildIndex();   // 재문의 배지용 전화 인덱스 — 매 렌더 재빌드(추가 GAS 호출 0, dbRows 재사용)
   tbody.innerHTML = '';
-  filtered.forEach(function(row){
+  var shown = filtered.slice(0, _dbLimit);
+  shown.forEach(function(row){
     tbody.appendChild(buildDbRow(row, false));
   });
-  document.getElementById('dbCount').textContent = '총 ' + dbRows.length + '건 중 ' + filtered.length + '건 표시';
+  if (filtered.length > shown.length) {
+    var moreTr = document.createElement('tr');
+    var moreTd = document.createElement('td');
+    moreTd.colSpan = 10;
+    moreTd.style.cssText = 'text-align:center;padding:10px';
+    var moreBtn = document.createElement('button');
+    moreBtn.type = 'button'; moreBtn.className = 'btn-refresh';
+    moreBtn.textContent = '더 보기 (' + (filtered.length - shown.length) + '건 남음)';
+    moreBtn.onclick = _dbShowMore;
+    moreTd.appendChild(moreBtn);
+    moreTr.appendChild(moreTd);
+    tbody.appendChild(moreTr);
+  }
+  document.getElementById('dbCount').textContent = '총 ' + dbRows.length + '건 중 ' + filtered.length + '건 표시' + (filtered.length > shown.length ? ' (' + shown.length + '건 렌더됨)' : '');
   _updateDbUnfilledBadge(filtered);
   _updateDbGraduatedInfo();
 }
@@ -8798,9 +8846,9 @@ function submitNewRow(tr) {
   var searchEl = document.getElementById('dbSearch');
   var composing = false;
   searchEl.addEventListener('compositionstart', function(){ composing = true; });
-  searchEl.addEventListener('compositionend', function(){ composing = false; renderDbTable(); });
-  searchEl.addEventListener('input', function(){ if (!composing) renderDbTable(); });
-  document.getElementById('dbFilter').addEventListener('change', renderDbTable);
+  searchEl.addEventListener('compositionend', function(){ composing = false; _dbLimit = 200; renderDbTable(); });
+  searchEl.addEventListener('input', function(){ if (!composing) { _dbLimit = 200; renderDbTable(); } });
+  document.getElementById('dbFilter').addEventListener('change', function(){ _dbLimit = 200; renderDbTable(); });
 })();
 
 /* ─────────────────────────────────────────────
