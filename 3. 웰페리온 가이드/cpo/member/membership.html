@@ -2372,7 +2372,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
 <!-- ══ LOSS 사유 모달 — 문의 현황 표 '진행상황'을 LOSS로 바꿀 때(또는 이미 LOSS인데 사유 미기록 건) 오픈. 정형 드롭다운+메모.
      ★기존회원 종료사유(churnOverlay·CHURN_REASON_COL)와 별개 체계 — 이건 '문의' 단계 LOSS 전용(등록 자체가 무산된 건).
-     저장=member_inquiry_update(lossReason·lossReasonNote). GAS _miEnsureCol_이 칸 없으면 자동 생성(GM 수작업 0).
+     저장=member_inquiry_update(lossReason) → 기존 '미등록 사유' 칸. 메모는 폐기(2026-07-20 GM), 칸 자동생성도 안 한다.
      GM 요청 사양(2026-07-18, 시토 대행). ══ -->
 <div class="consult-overlay" id="lossReasonOverlay" onclick="if(event.target===this)closeLossReasonModal()">
   <div class="consult-modal" role="dialog" aria-modal="true">
@@ -2383,10 +2383,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="consult-row"><span class="ck">문의</span><span class="cv" id="lrMemberFixed">—</span></div>
 
     <div class="consult-field-label">LOSS 사유</div>
-    <select id="lrReasonSel" onchange="_lrUpdateNoteReq()" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit"></select>
-
-    <div class="consult-field-label">메모 <span id="lrNoteReq" style="display:none;color:var(--red)">('기타' 선택 시 필수)</span></div>
-    <textarea class="consult-memo" id="lrNoteInput" placeholder="상세 사유를 입력하세요."></textarea>
+    <select id="lrReasonSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit"></select>
+    <!-- 메모칸 폐기(2026-07-20 GM) — "LOSS사유메모도 필요없어". 사유는 기존 '미등록 사유' 칸 하나에만 저장. -->
 
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeLossReasonModal()">취소</button>
@@ -4736,7 +4734,7 @@ function _lessonRowHtml(t, r, sportKey, sportLabel) {
     '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
     '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '"><span style="' + _lessonSportChipStyle(sportLabel) + '">' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '</span></td>' +
     '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, sportKey, mgmt.status) +
-      ((String(r.status || '').trim() === 'LOSS' && String(r.lossReason || '').trim()) ? '<div style="font-size:10px;color:var(--dim);margin-top:3px;line-height:1.3;white-space:normal">사유: ' + esc(String(r.lossReason).trim()) + (String(r.lossReasonNote || '').trim() ? ' (' + esc(String(r.lossReasonNote).trim()) + ')' : '') + '</div>' : '') + '</td>' +
+      ((String(r.status || '').trim() === 'LOSS' && String(r.lossReason || '').trim()) ? '<div style="font-size:10px;color:var(--dim);margin-top:3px;line-height:1.3;white-space:normal">사유: ' + esc(String(r.lossReason).trim()) + '</div>' : '') + '</td>' +
     '<td style="font-size:12px">' + _lessonOwnerSelectHtml(t, r.rowIndex, sportKey, mgmt.owner) + '</td>' +
     '<td class="left editable-cell" style="font-size:11px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word" onclick="_lessonContactClick(\'' + t + '\',' + r.rowIndex + ',\'' + argSport + '\')">' + _lessonContactCellHtml(mgmt) + '</td>' +
   '</tr>';
@@ -7419,21 +7417,13 @@ function saveChurnModal() {
 var INQ_LOSS_REASON_OPTIONS = ['가격', '거리/위치', '시간대 안 맞음', '타업체 선택', '단순 문의(등록의사 없음)', '연락 두절', '기타'];
 var _lossModal = null;   // { rowIndex, keyPhone, name }
 
-function _lrUpdateNoteReq() {
-  var sel = document.getElementById('lrReasonSel');
-  var req = document.getElementById('lrNoteReq');
-  if (!sel || !req) return;
-  req.style.display = (sel.value === '기타') ? '' : 'none';
-}
 // LOSS 사유 모달 셀렉트/메모 채우기 공통(멤버십·강습 공유). 2026-07-18 시토(GM요청) 대행.
-function _lossModalFill(reason, note) {
+function _lossModalFill(reason) {
   var sel = document.getElementById('lrReasonSel');
   sel.innerHTML = '';
   var blank = document.createElement('option'); blank.value = ''; blank.textContent = '— 선택 —'; sel.appendChild(blank);
   INQ_LOSS_REASON_OPTIONS.forEach(function(opt){ var o = document.createElement('option'); o.value = opt; o.textContent = opt; sel.appendChild(o); });
   sel.value = String(reason || '').trim();
-  document.getElementById('lrNoteInput').value = String(note || '').trim();
-  _lrUpdateNoteReq();
   document.getElementById('lossReasonOverlay').classList.add('open');
 }
 function openInquiryLossModal(rowIndex) {
@@ -7441,7 +7431,7 @@ function openInquiryLossModal(rowIndex) {
   if (!r) { showToast('문의 정보를 찾을 수 없습니다', 'err'); return; }
   _lossModal = { mode: 'member', rowIndex: r.rowIndex, keyPhone: r.phone || '', name: r.name || '' };
   document.getElementById('lrMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '');
-  _lossModalFill(r.lossReason, r.lossReasonNote);
+  _lossModalFill(r.lossReason);
 }
 // 강습 LOSS 사유 모달 — 강습 진행상태를 LOSS로 바꿀 때 발동(멤버십과 동일 UI, 저장=lesson_inquiry_update row-level). 2026-07-18 시토(GM요청) 대행.
 function openLessonLossModal(t, rowIndex) {
@@ -7450,7 +7440,7 @@ function openLessonLossModal(t, rowIndex) {
   var st = _lessonState[t];
   _lossModal = { mode: 'lesson', t: t, rowIndex: r.rowIndex, keyPhone: r.phone || '', name: r.name || '', type: (st && st.type) || '', gid: r.gid };
   document.getElementById('lrMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '') + (r.sport ? ' · ' + r.sport : '');
-  _lossModalFill(r.lossReason, r.lossReasonNote);
+  _lossModalFill(r.lossReason);
 }
 function closeLossReasonModal() {
   document.getElementById('lossReasonOverlay').classList.remove('open');
@@ -7458,16 +7448,16 @@ function closeLossReasonModal() {
 }
 function saveLossReasonModal() {
   if (!_lossModal) return;
+  // ★메모 폐기(2026-07-20 GM 확정) — "LOSS사유메모도 필요없어". 사유는 기존 '미등록 사유' 칸 하나에만 저장한다.
+  //   '기타' 선택 시 메모 필수 규칙도 함께 폐기(메모칸 자체가 없어졌으므로).
   var reason = document.getElementById('lrReasonSel').value.trim();
-  var note = document.getElementById('lrNoteInput').value.trim();
-  if (reason === '기타' && !note) { showToast('기타 선택 시 메모를 입력해 주세요', 'err'); return; }
   var rowIndex = _lossModal.rowIndex, keyPhone = _lossModal.keyPhone;
   var saveBtn = document.getElementById('lrSaveBtn'); saveBtn.disabled = true;
   // 강습(mode='lesson')=lesson_inquiry_update row-level 경로(sport:'' → flat 컬럼) / 멤버십=member_inquiry_update. 2026-07-18 시토(GM요청) 대행.
   var _isLesson = (_lossModal.mode === 'lesson');
   var _payload = _isLesson
-    ? { action: 'lesson_inquiry_update', type: _lossModal.type, rowIndex: rowIndex, keyPhone: keyPhone, sport: '', gid: _lossModal.gid, lossReason: reason, lossReasonNote: note }
-    : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, lossReason: reason, lossReasonNote: note };
+    ? { action: 'lesson_inquiry_update', type: _lossModal.type, rowIndex: rowIndex, keyPhone: keyPhone, sport: '', gid: _lossModal.gid, lossReason: reason }
+    : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, lossReason: reason };
   var _t = _isLesson ? _lossModal.t : null;
   apiPost(_payload)
     .then(function(data){
@@ -7475,11 +7465,11 @@ function saveLossReasonModal() {
       showToast('LOSS 사유 저장', 'ok');
       if (_isLesson) {
         var lr = _lessonFindRow(_t, rowIndex);
-        if (lr) { lr.lossReason = reason; lr.lossReasonNote = note; }
+        if (lr) { lr.lossReason = reason; }
         try { lessonLossRender(_t); } catch (e) {}
       } else {
         var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
-        if (r) { r.lossReason = reason; r.lossReasonNote = note; }
+        if (r) { r.lossReason = reason; }
         if (_tabLoaded.db) renderDbTable();
       }
       closeLossReasonModal();
@@ -8597,7 +8587,7 @@ function buildDbRow(row, isNew) {
   // 등록종목(SUC 계열)·LOSS 사유 병기 — 진행상황 칸 하단 소자막 + 툴팁. 데이터=dbRows(regProgram/lossReason). 2026-07-18 시토(GM요청) 대행.
   var _stExtra = '';
   if ((row.status === 'SUC' || row.status === '단기SUC') && String(row.regProgram || '').trim()) _stExtra = '🏷️ ' + String(row.regProgram).trim();
-  else if (row.status === 'LOSS' && String(row.lossReason || '').trim()) _stExtra = '사유: ' + String(row.lossReason).trim() + (String(row.lossReasonNote || '').trim() ? ' (' + String(row.lossReasonNote).trim() + ')' : '');
+  else if (row.status === 'LOSS' && String(row.lossReason || '').trim()) _stExtra = '사유: ' + String(row.lossReason).trim();
   if (_stExtra) {
     chip.title = _stExtra;
     var _sub = document.createElement('div');

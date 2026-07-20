@@ -3423,6 +3423,107 @@ function _processAction(body) {
     return _json({ ok: false, error: 'unknown_mode' });
   }
 
+  // ─── (일회성 백업) 강습 팀시트 13개 탭 전량 값 스냅샷 — 행 재정렬 전 필수 선행 ───
+  //   배경: LESSON_TEAM_SHEETS 13탭은 왼쪽=IMPORTRANGE(원본 따라 이동)·오른쪽=팀장 직접입력(진행상황·담당,
+  //   위치 고정) 구조라, 원본(1.성인강습/2.WSC강습) 행 순서를 바꾸면 왼쪽만 따라 움직여 이름↔진행상황이
+  //   어긋날 위험이 있다(CPO-배973 핸드오프 근거). 이동 전 13탭 전체를 읽기전용으로 스냅샷해 사후 대조 근거를
+  //   남긴다 — 쓰기 없음. 2026-07-20 시토(GM 지시).
+  if (action === 'cpo_lesson_teamsheet_dump') {
+    try {
+      var tdOut = [];
+      LESSON_TEAM_SHEETS.forEach(function (cfg) {
+        var rec = { ssId: cfg.ssId, gid: cfg.gid, 유형: cfg.유형, 명: cfg.명, sheetName: null, lastRow: 0, lastCol: 0, headers: [], rows: [], error: null };
+        try {
+          var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+          if (!sh) { rec.error = 'sheet_not_found'; tdOut.push(rec); return; }
+          rec.sheetName = sh.getName();
+          var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+          rec.lastRow = lastRow; rec.lastCol = lastCol;
+          if (lastRow < 1 || lastCol < 1) { tdOut.push(rec); return; }
+          var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+          rec.headers = hdr;
+          if (lastRow >= 2) {
+            var vals = sh.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();  // 표시값(날짜·서식 포함, 사람이 읽는 그대로) 스냅샷
+            rec.rows = vals;
+          }
+        } catch (e2) { rec.error = e2.message; }
+        tdOut.push(rec);
+      });
+      return _json({ ok: true, sheets: tdOut });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── (일회성 진단) 강습 두 탭(성인·WSC) 자체폼 유입 블록 위치 실측 — 행 재정렬 사전분석 ───
+  //   read_rows_by_rownum(FORM_SHEETS 전용)로는 임의 행 범위 원문을 볼 수 있으나 '경계'(자체폼 블록이
+  //   어디서 끝나고 레거시 오름차순 블록이 시작되는지)를 자동 판별하진 않는다 — 이 액션은 상단부(자체폼
+  //   insertRowAfter(1) 유입 후보)와 하단부(레거시)를 함께 스캔해 실측 경계 후보를 반환한다. 쓰기 없음.
+  if (action === 'cpo_lesson_ts_scan_boundary') {
+    try {
+      var tbTargets = [
+        { gid: LESSON_GID, type: '성인강습' },
+        { gid: LESSON_GID_YOUTH, type: '유소년강습(WSC)' }
+      ];
+      var tbOut = [];
+      tbTargets.forEach(function (t) {
+        var sh = _lessonSheet_(t.gid);
+        var rec = { gid: t.gid, type: t.type, lastRow: 0, topBlock: [], tailScan: [] };
+        if (!sh) { rec.error = 'sheet_not_found'; tbOut.push(rec); return; }
+        var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+        rec.lastRow = lastRow;
+        var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+        var ciTs = _findCol_(hdr, ['타임스탬프']);
+        var ciName = _findCol_(hdr, ['성함', '이름']);
+        var ciPhone = _findCol_(hdr, ['연락처', '핸드폰', '전화', '휴대폰']);
+        var fmtCell = function (raw) {
+          if (raw instanceof Date && !isNaN(raw.getTime())) {
+            var hasT = !(raw.getHours() === 0 && raw.getMinutes() === 0 && raw.getSeconds() === 0);
+            return Utilities.formatDate(raw, 'Asia/Seoul', hasT ? 'yyyy-MM-dd HH:mm:ss' : 'yyyy-MM-dd') + (hasT ? '' : '(시각없음)');
+          }
+          return String(raw == null ? '' : raw);
+        };
+        // 상단부(2~60) 전량
+        var topN = Math.min(60, Math.max(0, lastRow - 1));
+        if (topN > 0) {
+          var topRows = sh.getRange(2, 1, topN, lastCol).getValues();
+          for (var i = 0; i < topRows.length; i++) {
+            var r = topRows[i];
+            var nm = ciName >= 0 ? String(r[ciName] || '') : '';
+            var ph = ciPhone >= 0 ? String(r[ciPhone] || '') : '';
+            if (!nm && !ph) continue;
+            rec.topBlock.push({ row: i + 2, ts: fmtCell(ciTs >= 0 ? r[ciTs] : ''), name: nm.substring(0, 15), phone: ph });
+          }
+        }
+        // 하단부(뒤에서부터 역방향 스캔, 최대 400행) — 마지막 non-blank 행부터 위로
+        var scanFrom = lastRow;
+        var found = 0, probeRows = [];
+        var chunk = 100;
+        while (scanFrom >= 2 && found < 60) {
+          var start = Math.max(2, scanFrom - chunk + 1);
+          var n = scanFrom - start + 1;
+          var block = sh.getRange(start, 1, n, lastCol).getValues();
+          for (var j = block.length - 1; j >= 0; j--) {
+            var rr = block[j];
+            var rowNum = start + j;
+            var nm2 = ciName >= 0 ? String(rr[ciName] || '') : '';
+            var ph2 = ciPhone >= 0 ? String(rr[ciPhone] || '') : '';
+            if (!nm2 && !ph2) continue;
+            probeRows.push({ row: rowNum, ts: fmtCell(ciTs >= 0 ? rr[ciTs] : ''), name: nm2.substring(0, 15), phone: ph2 });
+            found++;
+            if (found >= 60) break;
+          }
+          scanFrom = start - 1;
+        }
+        rec.tailScan = probeRows;  // 최신행(마지막 non-blank)부터 역순
+        tbOut.push(rec);
+      });
+      return _json({ ok: true, sheets: tbOut });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
   // ─── (일회성) 유소년강습 '유입경로(자동)' 칸 JSON 오염 정리 — 2026-07-20 시포(GM 승인 정리 5건 中 1) ───
   //   배경: cpo_wsc_contact_migrate13(위)로 28건 중 17건은 이미 Contact로 이관 완료. 남은 11건은 애초
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가
@@ -4080,17 +4181,11 @@ function _processAction(body) {
     //   기능은 GM이 요청한 게 맞지만 칸을 새로 만든 것은 내 설계 판단 착오였다(실측: 두 칸 모두 데이터 0건).
     //   → 사유와 메모를 '미등록 사유' 한 칸에 합쳐 쓴다. 메모가 있으면 '사유 (메모)' 형태.
     //   칸이 없으면 만들지 않고 건너뛴다 — 칸 자동생성이 이번 사고의 뿌리다.
-    if (body.lossReason !== undefined || body.lossReasonNote !== undefined) {
+    //   ★메모 폐기(2026-07-20 GM 확정) — "LOSS사유메모도 필요없어". 사유 하나만 '미등록 사유'에 쓴다.
+    //   body.lossReasonNote는 옛 화면이 보내와도 무시한다(칸도 만들지 않는다).
+    if (body.lossReason !== undefined) {
       var _lrci = _miColIdx_(muHdr, ['미등록 사유', '미등록사유']);
-      if (_lrci >= 0) {
-        var _lrCur = String(muSh.getRange(muRow, _lrci + 1).getValue() || '').trim();
-        var _lrR = (body.lossReason !== undefined) ? String(body.lossReason || '').trim() : '';
-        var _lrN = (body.lossReasonNote !== undefined) ? String(body.lossReasonNote || '').trim() : '';
-        // 둘 중 하나만 전송된 경우 나머지는 기존 값을 지우지 않는다(부분 저장 방어).
-        var _lrOut = _lrR ? (_lrN ? (_lrR + ' (' + _lrN + ')') : _lrR)
-                          : (_lrN ? _lrN : (body.lossReason === '' || body.lossReasonNote === '') ? '' : _lrCur);
-        muSh.getRange(muRow, _lrci + 1).setValue(_lrOut);
-      }
+      if (_lrci >= 0) muSh.getRange(muRow, _lrci + 1).setValue(String(body.lossReason || '').trim());
     }
     // carry-over: 신규→SUC/단기SUC '실제 전환' 시에만 등록현황 탭 이관 + 등록 전환 전용 알림. 2026-06-26 시토·GM.
     //   A안(GM 결재): 유효회원(실계약 정본)에는 자동생성 안 함 — 계약 확정 시 사람 입력. 여기선 깔때기 이관+알림까지만.
@@ -4431,8 +4526,8 @@ function _processAction(body) {
       _luSet(['상담메모', '메모', '비고'], body.memo);
       _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
       _luSet(['방문상태', '방문'], body.visited);
-      _luSet(['LOSS사유'], body.lossReason);       // 강습 LOSS 사유(문의 퍼널) — _lessonEnsureCols_가 칸 자동생성. 2026-07-18 시토(GM요청) 대행.
-      _luSet(['LOSS사유메모'], body.lossReasonNote);
+      _luSet(['LOSS사유'], body.lossReason);       // 강습 LOSS 사유(문의 퍼널). 2026-07-18 시토(GM요청) 대행.
+      // ★LOSS사유메모 폐기(2026-07-20 GM 확정) — "LOSS사유메모도 필요없어". 화면에서도 메모칸을 없앴다.
       _luSet(['등록종목'], body.regProgram);        // 강습 등록 종목(SUC 시 실제 등록한 종목) — 멤버십과 동일 체계, 칸 자동생성. 2026-07-20 시포(GM요청).
       // ── 연락이력(가변) — 축2/축4: body.contacts(JSON 문자열/배열) 수신 시 저장. 미전송이면 무영향(기존 필드만 갱신).
       //    상담메모는 위 _luSet으로 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
@@ -4543,6 +4638,46 @@ function _processAction(body) {
   //   ★ 이름 정확일치로만 잡는다. 부분일치 금지 — '5. 시설투어…날짜는…' 같은 칸을 지울 수 있다.
   //   ★ A열(index 0)이 아니면 거부. 타임스탬프 칸이 없어도 거부(유일한 날짜 칸을 지우는 사고 차단).
   //   dryRun=1이면 아무것도 지우지 않고 삭제 대상·표본만 반환.
+  // ─── (일회성) 07-18에 잘못 신설한 LOSS사유·LOSS사유메모 칸 제거 — 2026-07-20 GM 확정 ───
+  //   같은 뜻의 '미등록 사유' 칸이 원래 있었는데 새 칸을 만든 것이 착오였다. 메모는 아예 불필요(GM).
+  //   실측 두 칸 모두 데이터 0건 — 옮길 값이 없다. 값이 하나라도 있으면 삭제를 거부한다(안전장치).
+  //   '미등록 사유' 칸 존재도 확인한 뒤에만 지운다(사유 기록처가 전멸하는 것 방지).
+  if (action === 'del_loss_cols_20260720') {
+    if (String(body.key || '') !== 'wlp_delloss_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var dlDry = (String(body.dryRun || '') === '1');
+    var dlSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!dlSh) return _json({ ok: false, error: '시트 없음' });
+    var dlHdr = dlSh.getRange(1, 1, 1, dlSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    if (dlHdr.indexOf('미등록 사유') < 0 && dlHdr.indexOf('미등록사유') < 0) {
+      return _json({ ok: false, error: 'no-fallback-col', detail: "'미등록 사유' 칸이 없어 삭제 거부 — 사유 기록처가 없어진다", headers: dlHdr });
+    }
+    var dlLast = dlSh.getLastRow();
+    var dlReport = [];
+    ['LOSS사유', 'LOSS사유메모'].forEach(function (nm) {
+      var ix = dlHdr.indexOf(nm);   // 정확일치만
+      if (ix < 0) { dlReport.push({ col: nm, status: 'absent' }); return; }
+      var filled = 0, samples = [];
+      if (dlLast >= 2) {
+        var vals = dlSh.getRange(2, ix + 1, dlLast - 1, 1).getValues();
+        for (var vi = 0; vi < vals.length; vi++) {
+          var v = String(vals[vi][0] == null ? '' : vals[vi][0]).trim();
+          if (v) { filled++; if (samples.length < 5) samples.push({ row: vi + 2, value: v }); }
+        }
+      }
+      dlReport.push({ col: nm, idx: ix, filled: filled, samples: samples });
+    });
+    var dlBlocked = dlReport.filter(function (r) { return r.filled > 0; });
+    if (dlBlocked.length) return _json({ ok: false, error: 'has-data', detail: '값이 있는 칸은 지우지 않는다', blocked: dlBlocked });
+    if (dlDry) return _json({ ok: true, dryRun: true, colsBefore: dlHdr.length, report: dlReport, headers: dlHdr });
+    // 실행 — 인덱스가 큰 칸부터 지워야 앞 칸 삭제로 위치가 밀리지 않는다
+    var dlTargets = dlReport.filter(function (r) { return r.idx !== undefined; }).sort(function (a, b) { return b.idx - a.idx; });
+    dlTargets.forEach(function (t) { dlSh.deleteColumn(t.idx + 1); });
+    SpreadsheetApp.flush();
+    var dlAfter = dlSh.getRange(1, 1, 1, dlSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    return _json({ ok: true, deleted: dlTargets.map(function(t){ return t.col; }),
+                   colsBefore: dlHdr.length, colsAfter: dlAfter.length, headersAfter: dlAfter });
+  }
+
   if (action === 'delete_date_col_20260720') {
     if (String(body.key || '') !== 'wlp_delcol_date_20260720') return _json({ ok: false, error: 'guard-mismatch' });
     var dcDry = (String(body.dryRun || '') === '1');
