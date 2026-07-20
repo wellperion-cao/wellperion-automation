@@ -1955,5 +1955,19 @@
     "artifact": "GM 지시(2026-07-20): 발행 후 반응을 측정하고, 반응 없으면 개선안을 만드는 폐루프를\n새로 얹는다. 2026-07-15 삭제된 클릭 집계는 되살리지 않고 실측 가능한 신호(IG 도달·\n당근 조회/찜·카페 조회)로 대체. (CLI ad-hoc · 커밋 da4e5a61)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "da4e5a6118e6173d859f8a6cad3f717c89c57940"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-79f6fe5e",
+    "clevel": "cpo",
+    "title": "[시포] 시트 칸 계약 점검기 신설 — 재발방지 A안 0단계(값 규칙 포함)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9276,
+    "artifact": "GM 확정 승인건. ssot/sheet_columns.json(문의·회원·강습 6개 시트 헤더+값\n규칙+시트관계 계약)과 scripts/collectors/cpo_sheet_contract.py(--seed로\n라이브 헤더 자동생성, req/allowed/refs/value_rule만 사람 편집)를 신설해\n매일 07:50 daily_scheduler.py에 직결 등록했다. 값 규칙 없이는 오늘 사고\n9건 중 3건만 잡히던 것을 8건까지 확장 — 실제 1회 실행에서 타임스탬프\n시분초 유실(inquiry_2026)·member_hold  (CLI ad-hoc · 커밋 79f6fe5e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "79f6fe5e81979bb5477bc64e1c2faa770ec85e0d"
   }
 ]
