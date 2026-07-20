@@ -266,12 +266,7 @@
       <div class="card"><h4>해시태그 순서 (3규칙)</h4><p>① 지역+종목(#한남동골프) → ② 종목·주제·타깃 → ③ <b>#웰페리온 #WELLPERION 맨 끝 2개 고정</b></p><p style="margin-top:8px;color:var(--dim);font-size:12px">예: #한남동골프 #유소년골프 #KPGA #스포츠클럽 #웰페리온 #WELLPERION</p></div>
       <div class="card"><h4>CTA 표준 <span class="tag">한 줄 · 한국어만</span></h4><p style="font-size:15px;font-weight:800;color:var(--ink);background:var(--paper2);padding:10px 12px;border-radius:8px;margin-top:2px">문의 : wellperion.com/ko/inquiry</p><p style="margin-top:8px;color:var(--coral);font-size:12px">영문 줄(/en/inquiry)·litt.ly = 폐기(2026-06-08). 개인 010 번호 절대 금지.</p></div>
     </div>
-    <table>
-      <tr><th>채널</th><th>CTA 삽입 방식</th></tr>
-      <tr><td><b>인스타그램 · 당근</b></td><td>본문에 평문 URL 안 넣음 → 프로필 bio 링크 유도(“프로필 링크로 문의”)</td></tr>
-      <tr><td><b>네이버 블로그 · 카페</b></td><td>SmartEditor 링크 카드</td></tr>
-      <tr><td><b>카카오 채널</b></td><td>현행 본문 형식 유지</td></tr>
-    </table>
+    <div class="card"><b>채널별 CTA 삽입 규칙 정본 = <span class="mono">scripts/cta_utm.py</span></b>(파일 상단 "CTA 단일화 설계" 주석, 2026-07-20 GM 승인). 실행되는 코드가 곧 규칙이라 여기서 다시 표로 옮기지 않는다 — 바뀌면 그 파일만 고친다.</div>
     <div class="callout" style="border-color:var(--line);background:var(--card)"><b>위치·멘션</b> — 위치는 인스타 자체 위치태그 기능(캡션에 "위치: ○○" 텍스트 안 넣음). 멘션은 캡션 본문 <span class="mono">@핸들</span> 평문으로만. &nbsp;·&nbsp; <b>개인 계정(@namuk) CTA는 별개</b> — 인라인 문의 URL·litt.ly 금지, 📌저장·💬댓글(편별 질문)·👀팔로우 도달 유도형.</div>
   </div></section>
 
@@ -326,7 +321,7 @@
       <tr><td>③</td><td>기능 클리셰 아닌 마음/삶 연결 각</td></tr>
       <tr><td>④</td><td>장면이 현실적(비현실·과장 없음)</td></tr>
       <tr><td>⑤</td><td>계정별 로고·컬러·톤 준수</td></tr>
-      <tr><td>⑥</td><td>CTA 채널 규칙(IG·당근 bio 유도) · 해시태그 순서</td></tr>
+      <tr><td>⑥</td><td>CTA 채널 규칙(정본 <span class="mono">scripts/cta_utm.py</span>) · 해시태그 순서</td></tr>
       <tr><td>⑦</td><td>금지어(“피트니스”·“현대하이페리온”) 미혼입</td></tr>
     </table>
   </div></section>
