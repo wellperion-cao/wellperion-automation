@@ -98,6 +98,16 @@ table.roster td{white-space:nowrap}
   <div id="loading" class="skel">데이터를 불러오는 중입니다…</div>
   <div id="app" class="hidden">
     <div class="tabs" id="tabs"></div>
+    <!-- 2026-07-20 GM 지시 — '이번 재등록 대상' 패널: 집계 숫자는 공개, 명단(이름 포함)은
+         PIN 게이트 뒤(기존 AUTHED/reqRoster()/rosterBlock() 패턴 그대로 재사용 — 새 인증 발명 없음). -->
+    <section class="panel" id="renewalTargetPanel" style="margin-bottom:16px">
+      <h2>이번 재등록 대상</h2>
+      <span class="tag" id="rtTag">익월 만기자 · 집계 로딩 중…</span>
+      <div id="rtKpis" style="display:flex;gap:26px;flex-wrap:wrap;margin-top:12px"></div>
+      <div id="rtOwnerBar"></div>
+      <div id="rtRosterWrap"></div>
+      <div id="rtTips" style="margin-top:14px;font-size:12px;color:var(--muted);line-height:1.7"></div>
+    </section>
     <div id="view-all">
       <section class="kpis" id="allKpi"></section>
       <section class="grid2">
@@ -126,6 +136,7 @@ table.roster td{white-space:nowrap}
   <footer>호스팅 <b>GitHub Pages</b> · 데이터 <b>Google 시트(Apps Script)</b> · 집계 지표만 표시(개인정보 미포함) · <span id="foot"></span></footer>
 </div>
 
+<script src="../../_assets/sport_colors.js"></script>
 <script>
 /* ===== 배포 후 이 값만 본인 Apps Script 웹앱 URL(.../exec)로 바꾸세요 ===== */
 const APPS_URL = 'https://script.google.com/macros/s/AKfycbzY3ZvW_TY8UpVB99yJZoaXrZvsNK-nn_z3u5jBJyCM9pbR9vt30Vmp014LeDpGYFt7/exec';
@@ -157,8 +168,123 @@ function reqRoster(){if(AUTHED){repaint();return;}
   s.src=APPS_URL+(APPS_URL.indexOf('?')<0?'?':'&')+'callback=__wpR&pin='+encodeURIComponent(pin)+'&_='+Date.now();
   document.body.appendChild(s);}
 window.__wpR=function(p){if(!p||!p.authed){alert('PIN이 맞지 않습니다.');return;}
-  AUTHED=true;ROSTER={};(p.months||[]).forEach(m=>{if(m.roster)ROSTER[m.num]=m.roster;});repaint();};
+  AUTHED=true;ROSTER={};(p.months||[]).forEach(m=>{if(m.roster)ROSTER[m.num]=m.roster;});repaint();
+  if(typeof rtRepaint==='function')rtRepaint();};  // 2026-07-20: 같은 PIN 통과로 '이번 재등록 대상' 명단도 동시 해제
 function repaint(){const a=document.querySelector('.tab.active');if(a)select(a.textContent);}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 2026-07-20 GM 지시 — '이번 재등록 대상' 패널(익월 만기자). 새 인증 방식 발명 금지 —
+// 위 AUTHED/reqRoster()/__wpR 의 PIN 흐름을 그대로 재사용한다(동일 전역 AUTHED로 게이팅).
+// 집계 숫자(총원·미컨택·담당자별)는 status/member_expiry_summary.json(공개, PII 없음,
+// scripts/member_expiry_alert.py 생성)에서 판정 없이 그대로 읽는다 — 페이지 JS가 필터
+// 로직을 다시 만들지 않기 위함(약속 L01, 두 곳이 갈리면 사고).
+// 상세 명단(이름 포함)은 PIN 통과 후에만 funnel GAS(member_active_list, APPS_URL과는
+// 다른 백엔드)에서 라이브로 받는다 — 공개 파일에 PII를 절대 넣지 않는다(무인증 노출 방지).
+// ⚠️ 아래 필터·정규화 규칙(RT_END_KEY 시작문자열 매칭·RT_UNASSIGNED_MARKERS)은
+// scripts/member_expiry_alert.py 의 fetch_next_month_expiring()/_normalize_owner() 를
+// 그대로 미러링한 것 — 둘 중 하나를 고치면 반드시 다른 쪽도 맞춰야 한다.
+// ══════════════════════════════════════════════════════════════════════════
+const RENEWAL_FUNNEL_URL='https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+const RENEWAL_SUMMARY_URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/member_expiry_summary.json';
+const RT_END_KEY='종료\n일자',RT_OWNER_KEY='담당자',RT_NAME_KEY='회원명',RT_CDATE_KEY='재등록상담 날짜',RT_CNOTE_KEY='재등록상담 내용';
+const RT_SUBJECTS=[['PT','PT 담당자'],['골프','골프 담당자'],['필라테스','P.L 담당자'],['스쿼시','스쿼시 담당자'],['수영','수영 담당자']];
+const RT_UNASSIGNED_MARKERS={'':1,'담당자x':1,'-':1,'미정':1,'미배정':1,'tbd':1,'n/a':1};
+const RT_TIPS_HTML='<b>💡 컨택 팁</b><br>'+
+  '· 강습 담당강사가 있는 회원은 강사가 수업 중 자연스럽게 재등록을 안내하는 편이 전화보다 응답률이 높습니다 — 아래 명단의 담당강사를 통해 접점을 만드세요.<br>'+
+  '· 재등록상담 날짜/내용 이력이 있는 회원은 그 내용부터 확인한 뒤 연락하세요(중복질문 방지).<br>'+
+  '· 비고(운영부 참고사항)·강습팀 참고사항(이용 시간 기록)에 메모가 있으면 컨택 전 먼저 확인하세요.<br>'+
+  '· 담당자 미배정 회원은 재등록 컨택이 아예 누락될 위험이 가장 크니 최우선으로 처리하세요.';
+let RT_SUMMARY=null,RT_ROWS=null,RT_OWNER_FILTER='전체',RT_LOADING=false,RT_ERR='';
+
+function rtNormOwner(v){const s=String(v==null?'':v).trim();if(!s)return '';const c=s.replace(/\s+/g,'').toLowerCase();return RT_UNASSIGNED_MARKERS[c]?'':s;}
+function rtLessons(row){const out=[];RT_SUBJECTS.forEach(pair=>{const t=rtNormOwner(row[pair[1]]);if(t)out.push([pair[0],t]);});return out;}
+function rtIsContacted(row){return !!(String(row[RT_CDATE_KEY]||'').trim()||String(row[RT_CNOTE_KEY]||'').trim());}
+function rtNextMonthStr(){const d=new Date();let y=d.getFullYear(),m=d.getMonth()+2;if(m>12){y++;m=1;}return y+'-'+String(m).padStart(2,'0');}
+
+function rtLoadSummary(){
+  fetch(RENEWAL_SUMMARY_URL+'?t='+Date.now(),{cache:'no-store'})
+    .then(r=>{if(!r.ok)throw new Error('summary HTTP '+r.status);return r.json();})
+    .then(s=>{RT_SUMMARY=s;RT_ERR='';rtRepaint();})
+    .catch(e=>{console.warn('[renewal] 집계 스냅샷 실패(폴백)',e);RT_ERR='집계 스냅샷을 불러오지 못했습니다 — '+e.message;rtRepaint();});
+}
+function rtSetOwnerFilter(o){RT_OWNER_FILTER=o;rtRepaint();}
+function rtOwnerBarHtml(){
+  if(!RT_SUMMARY||!RT_SUMMARY.by_owner)return '';
+  const owners=Object.keys(RT_SUMMARY.by_owner);
+  let html=owners.map(o=>{
+    const n=RT_SUMMARY.by_owner[o],active=(RT_OWNER_FILTER===o),isUn=(o==='미배정');
+    return `<button class="tab${active?' active':''}" style="${isUn?'border-color:'+CORAL+';color:'+CORAL:''}" onclick="rtSetOwnerFilter('${o.replace(/'/g,"\\'")}')">${esc(o)} ${n}명</button>`;
+  }).join(' ');
+  html+=` <button class="tab${RT_OWNER_FILTER==='전체'?' active':''}" onclick="rtSetOwnerFilter('전체')">전체 ${RT_SUMMARY.total}명</button>`;
+  return html;
+}
+function rtFetchRoster(){
+  if(RT_LOADING)return;
+  RT_LOADING=true;RT_ERR='';rtRepaint();
+  const nm=rtNextMonthStr();
+  fetch(RENEWAL_FUNNEL_URL+'?action=member_active_list&scope=valid')
+    .then(r=>r.json())
+    .then(d=>{
+      RT_LOADING=false;
+      if(!d||!d.ok){RT_ROWS=[];RT_ERR='명단 조회 실패: '+((d&&d.error)||'응답 오류');rtRepaint();return;}
+      let rows=(d.data||[]).filter(r=>String(r[RT_END_KEY]||'').trim().indexOf(nm)===0);
+      rows.sort((a,b)=>String(a[RT_END_KEY]||'').localeCompare(String(b[RT_END_KEY]||'')));
+      RT_ROWS=rows;rtRepaint();
+    })
+    .catch(e=>{RT_LOADING=false;RT_ROWS=null;RT_ERR='명단 조회 실패(네트워크): '+e.message;rtRepaint();});
+}
+function rtMarkContacted(rowIndex,phone,btnEl){
+  if(!confirm('컨택완료로 표시할까요? (재등록상담 날짜에 오늘 날짜가 기록됩니다)'))return;
+  if(btnEl){btnEl.disabled=true;btnEl.textContent='저장 중…';}
+  const today=new Date(),todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const payload={action:'member_active_update',rowIndex:rowIndex,keyPhone:phone||'',fields:{}};
+  payload.fields[RT_CDATE_KEY]=todayStr;
+  fetch(RENEWAL_FUNNEL_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+    .then(r=>r.text())
+    .then(txt=>{let data;try{data=JSON.parse(txt);}catch(e){data={ok:false,error:'응답 파싱 실패'};}
+      if(!data.ok)throw new Error(data.error||'저장 실패');
+      RT_ROWS=null;rtFetchRoster();})   // 조용히 성공한 척 금지 — 재조회로 실제 반영 확인
+    .catch(e=>{
+      if(btnEl){btnEl.disabled=false;btnEl.textContent='완료 표시';}
+      alert('저장 실패: '+e.message+' — 다시 시도해주세요.');
+    });
+}
+function rtRosterSection(){
+  if(!AUTHED)return `<button class="rosterBtn" onclick="reqRoster()">🔒 재등록 대상 명단 보기 (PIN)</button> <span class="pii-note">이름·강습 담당자 포함 · 사내 전용</span>`;
+  if(RT_ERR&&RT_ROWS===null)return `<div style="color:${CORAL};font-size:12px;margin-top:8px">${esc(RT_ERR)} <button class="rosterBtn" onclick="rtFetchRoster()">다시 시도</button></div>`;
+  if(RT_LOADING||RT_ROWS===null){if(!RT_LOADING)rtFetchRoster();return '<div class="skel" style="padding:20px 0">명단 불러오는 중… (최초 호출은 10초 이상 걸릴 수 있습니다)</div>';}
+  let rows=RT_ROWS;
+  if(RT_OWNER_FILTER!=='전체')rows=rows.filter(r=>(rtNormOwner(r[RT_OWNER_KEY])||'미배정')===RT_OWNER_FILTER);
+  const body=rows.map((r,i)=>{
+    const end=String(r[RT_END_KEY]||'').trim();
+    const lessons=rtLessons(r);
+    const lessonHtml=lessons.length?lessons.map(l=>(typeof sportDot==='function'?sportDot(l[0]):'')+esc(l[0])+'('+esc(l[1])+')').join(' · '):'담당자 미배정';
+    const owner=rtNormOwner(r[RT_OWNER_KEY])||'미배정';
+    const contacted=rtIsContacted(r);
+    const phone=String(r['휴대폰 번호']||'').replace(/'/g,"\\'");
+    const statusHtml=contacted?'<span style="color:#4F9D7F;font-weight:700">컨택완</span>':
+      `<span style="color:${CORAL};font-weight:700">미컨택</span> <button class="rosterBtn" style="padding:2px 8px;font-size:11px" onclick="rtMarkContacted(${r.rowIndex},'${phone}',this)">완료 표시</button>`;
+    return `<tr><td>${i+1}</td><td>${esc(end)}</td><td>${esc(r[RT_NAME_KEY]||'')}</td><td>${esc(owner)}</td><td>${lessonHtml}</td><td>${statusHtml}</td></tr>`;
+  }).join('');
+  return `<div style="font-size:12px;color:var(--muted);margin:8px 0 4px">🔓 재등록 대상 명단 · ${rows.length}명 <span class="pii-note">(개인정보 · 외부 공유 금지)</span></div>`+
+    `<div style="overflow-x:auto"><table class="roster"><thead><tr><th>No</th><th>종료일</th><th>회원명</th><th>멤버십담당</th><th>강습(종목·강사)</th><th>컨택 상태</th></tr></thead><tbody>${body||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:14px 0">대상 없음</td></tr>'}</tbody></table></div>`;
+}
+function rtRepaint(){
+  const kpiEl=document.getElementById('rtKpis'),tagEl=document.getElementById('rtTag');
+  if(!kpiEl||!tagEl)return;
+  if(RT_ERR&&!RT_SUMMARY){kpiEl.innerHTML=`<div style="color:${CORAL};font-size:13px">${esc(RT_ERR)} <button class="rosterBtn" onclick="rtLoadSummary()">다시 시도</button></div>`;}
+  else if(!RT_SUMMARY){kpiEl.innerHTML='<div class="skel" style="padding:10px 0">집계 불러오는 중…</div>';}
+  else{
+    tagEl.textContent=RT_SUMMARY.next_month+' 종료 예정 · 집계 '+(RT_SUMMARY.generated_at||'');
+    kpiEl.innerHTML=
+      `<div><div style="font-size:12px;color:var(--muted)">대상</div><div style="font-size:22px;font-weight:800">${RT_SUMMARY.total}명</div></div>`+
+      `<div><div style="font-size:12px;color:var(--muted)">미컨택</div><div style="font-size:22px;font-weight:800;color:${CORAL}">${RT_SUMMARY.uncontacted}명</div></div>`+
+      `<div><div style="font-size:12px;color:var(--muted)">강습 담당자 미배정</div><div style="font-size:22px;font-weight:800">${RT_SUMMARY.unassigned_lesson_count}명</div></div>`;
+    document.getElementById('rtOwnerBar').innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${rtOwnerBarHtml()}</div>`;
+  }
+  document.getElementById('rtRosterWrap').innerHTML=rtRosterSection();
+  document.getElementById('rtTips').innerHTML=RT_TIPS_HTML;
+}
 
 function renderAll(){
   const maxN=Math.max(...DATA.map(m=>m.num)),latest=DATA[DATA.length-1];
@@ -264,6 +390,7 @@ function load(){
 }
 document.getElementById('retry').onclick=load;
 load();
+rtRepaint();rtLoadSummary();  // '이번 재등록 대상' 패널 — 집계 스냅샷·PIN 버튼 상태 즉시 렌더
 // 매일 오전 10시 자동 새로고침 (항상 켜둔 화면용)
 setInterval(function(){var n=new Date();if(n.getHours()===10&&n.getMinutes()===0)location.reload();},60000);
 // ERP(허브)에 끼워 넣었을 때: 내용 높이에 맞춰 iframe 자동 확장 → 안쪽 스크롤 제거(허브 스크롤 하나로)

@@ -3,12 +3,17 @@
 회원 만료 임박(익월 종료일자 기준 만기자) 텔레그램 알림 — 배9253(시포→시토 인계).
 2026-07-20 GM 확정: 시포 스펙 채택 — 매월 1회(4주차 첫 월요일), 익월(발송월+1)
 종료일자 기준 만기자 전원 대상(잔여일 0~30 주간필터 방식은 폐기).
-2026-07-20 GM 수정 2건: ①강사별 묶음 섹션 삭제(회원별 줄에 이미 종목(강사) 표기 —
-중복) ②초순/중순/하순 분할 폐기, 87명 전원을 종료일자 오름차순 단일 명단으로 —
-4096자 한도 초과 시 여러 메시지로 자동 분할 발송.
-2026-07-20 GM 수정 3 — 회원 줄 종목 앞에 색 동그라미 표기. 색 표는 scripts/sport_colors.py
-(telegram_bot/daily_scheduler.py `_DIGEST_SPORT_DOT` 을 그대로 옮긴 SSOT) 를 import 해서
-쓴다 — 색 표를 이 파일에 하드코딩하지 않는다(약속 L01 '한 곳만 본다').
+
+2026-07-20 GM 최종 결정 — 명단은 페이지로, 텔레그램은 요약+링크로:
+회원 명단(이름·종목·강사)은 `3. 웰페리온 가이드/cpo/member/renewal.html` 의 새 패널
+('이번 재등록 대상', PIN 게이트 뒤)에서 라이브로 보여준다. 이 스크립트는 더 이상 명단을
+텔레그램에 싣지 않는다 — 요약 숫자 1줄 + 대시보드 링크만 발송(단일 메시지, 분할 로직 불필요).
+동시에 페이지가 읽을 **집계 숫자 전용**(PII 없음) 스냅샷을 status/member_expiry_summary.json
+으로 떨어뜨린다 — 페이지·텔레그램 두 표면이 같은 숫자를 쓰게 해 판정 기준이 갈리지 않게 한다.
+⚠️ 상세 명단(이름 포함)은 이 JSON에 넣지 않는다 — 이 파일은 GitHub Pages/raw.githubusercontent
+로 누구나 인증 없이 받을 수 있어, PII를 넣으면 그게 곧 무인증 공개가 된다(페이지 쪽 PIN 게이트가
+막아도 소용없음 — 원본 파일 자체가 공개 URL이므로). 상세 명단은 페이지가 PIN 통과 후 funnel GAS
+에서 직접(라이브) 받아온다 — renewal.html 참고.
 
 기존 인프라 재활용(맨땅 신축 금지):
 - 데이터: GAS action `member_active_list&scope=valid` (구현 .deploy-funnel-v2/Survey.js:3855-3949).
@@ -22,26 +27,26 @@
    Survey.js:3904 _aaIdx() 같은 indexOf 부분일치 재구현 없이 리터럴 키로 바로 접근한다.
 ⚠️ 담당자 칸에는 빈 값 외에 '담당자 X' 같은 플레이스홀더 문자열이 실제로 들어있는 행이
    있다(GM 확인, 2026-07-20). 이를 실제 강사 이름으로 오인하면 통계가 오염된다 —
-   _normalize_owner() 로 빈값과 동일하게 처리한다.
-⚠️ 다발 발신 시 텔레그램 429(플러드) 이력 있음(reference_telegram_burst_send_flood) —
-   메시지 사이 최소 2초 간격을 명시적으로 둔다(전역 pace() 1.2초와 별개로 추가 확보).
+   _normalize_owner() 로 빈값과 동일하게 처리한다. renewal.html 의 JS 도 이 필터·정규화
+   규칙을 그대로 미러링해야 한다(판정 기준이 두 곳에서 갈리면 사고 — 약속 L01).
+⚠️ 컨택완료 판정 = 새 칸을 만들지 않고 기존 '재등록상담 날짜'/'재등록상담 내용' 값 존재
+   여부로만 판단한다(GM 지시, 2026-07-20).
 
 GM 절대 제약:
-- 연락처(휴대폰) 어떤 필드도 메시지에 포함 금지.
+- 연락처(휴대폰) 어떤 필드도 메시지·요약 JSON에 포함 금지.
 - 발송 대상은 GM 개인방(8254867551) 한 곳만 — 실무진 방 발송·다른 chat_id 인자 없음.
 """
 from __future__ import annotations
 
 import argparse
-import html
+import json
 import re
-import time
 from datetime import datetime
+from pathlib import Path
 
 import requests
 
-from cpo_report import GM_CHAT_ID, TELEGRAM_TOKEN, _gas_get, _today_str, _WEEKDAY_KOR
-from sport_colors import sport_dot
+from cpo_report import GM_CHAT_ID, TELEGRAM_TOKEN, _gas_get, _today_str
 
 try:  # 발신 공용 로깅·페이싱(best-effort) — 임포트 실패해도 발신 무영향
     from tg_outbound_log import log_outbound, pace
@@ -52,9 +57,16 @@ except Exception:
     def pace(*a, **k):
         return None
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SUMMARY_PATH = REPO_ROOT / "status" / "member_expiry_summary.json"
+DASHBOARD_URL = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/renewal.html"
+
 # ── 유효회원 시트(GAS member_active_list) 리터럴 헤더 키 — 정확일치 전용 ────────
 NAME_KEY = "회원명"
-END_KEY = "종료\n일자"  # 익월 만기자 필터 기준(잔여일 역산 금지 — GM 지시)
+END_KEY = "종료\n일자"       # 익월 만기자 필터 기준(잔여일 역산 금지 — GM 지시)
+OWNER_KEY = "담당자"         # A열, 멤버십(신규·재등록 상담) 담당
+CONTACT_DATE_KEY = "재등록상담 날짜"
+CONTACT_NOTE_KEY = "재등록상담 내용"
 
 # 강습 종목(표시명) → 유효회원 시트 담당자 헤더(정확일치). P.L 담당자 = 필라테스.
 SUBJECT_TEACHER_KEYS = [
@@ -65,13 +77,10 @@ SUBJECT_TEACHER_KEYS = [
     ("수영", "수영 담당자"),
 ]
 
-# 담당자 칸에 실제로 들어있는 '미배정' 표기 변형(빈값과 동일 취급).
+# 담당자 칸에 실제로 들어있는 '미배정' 표기 변형(빈값과 동일 취급). renewal.html JS 미러링 대상.
 _UNASSIGNED_MARKERS = {"", "담당자x", "-", "미정", "미배정", "tbd", "n/a"}
 
-_TITLE_BASE = "🔔 [AI CPO-시포] 회원 만료 임박 알림(익월 만기)"
-_MSG_BUDGET = 3800       # GM 지시: 4096자 한도 대비 안전마진
-_SEND_GAP_SEC = 2        # GM 지시: 연속 발송 429 방지 최소 간격
-_FOOTER = "시포 · 월 1회(4주차 월요일) 정기 발송 예정 · 이번은 테스트"
+_FOOTER = "시포 · 월 1회(4주차 월요일) 정기 발송"
 
 
 def _normalize_owner(v) -> str:
@@ -114,143 +123,73 @@ def _member_lessons(row: dict) -> list[tuple[str, str]]:
     return out
 
 
-def _lessons_str(row: dict) -> str:
-    """종목(강사) 목록 문자열. 종목명 앞에 사내 표준 색 동그라미(scripts/sport_colors.py
-    SSOT)를 공백 없이 붙인다 — 매칭 실패 종목은 동그라미 없이 이름만(임의 색 부여 금지)."""
-    lessons = _member_lessons(row)
-    if not lessons:
-        return "담당자 미배정"
-    parts = []
-    for subj, teacher in lessons:
-        dot = sport_dot(subj)
-        parts.append(f"{dot}{html.escape(subj)}({html.escape(teacher)})")
-    return " · ".join(parts)
+def _is_contacted(row: dict) -> bool:
+    """컨택완료 판정 — '재등록상담 날짜' 또는 '재등록상담 내용' 값이 하나라도 있으면 컨택완."""
+    return bool(str(row.get(CONTACT_DATE_KEY) or "").strip()) or bool(str(row.get(CONTACT_NOTE_KEY) or "").strip())
 
 
-def _member_line(row: dict) -> str:
-    end_v = str(row.get(END_KEY) or "").strip()
-    day_label = end_v[5:] if len(end_v) == 10 else "?"  # "MM-DD"
-    name = html.escape(str(row.get(NAME_KEY) or "(이름없음)").strip())
-    return f"{day_label} {name} — {_lessons_str(row)}"
-
-
-def _tips_lines() -> list[str]:
-    """컨택 팁 — 유효회원 시트에 실제로 존재하는 필드에만 근거(최근 방문일·결제금액·구조화
-    선호시간대는 시트에 없어 전제하지 않는다). 강사별 묶음 섹션 삭제에 맞춰 1번째 문구 수정
-    (없는 섹션 참조 금지, 취지=강사를 통한 접점은 유지)."""
-    return [
-        "<b>💡 컨택 팁</b>",
-        "· 강습 담당강사가 있는 회원은 강사가 수업 중 자연스럽게 재등록을 안내하는 편이 전화보다 응답률이 높습니다 — 각 줄에 표시된 담당강사를 통해 접점을 만드세요.",
-        "· 재등록상담 날짜/내용 이력이 있는 회원은 그 내용부터 확인한 뒤 연락하세요(중복질문 방지).",
-        "· 비고(운영부 참고사항)·강습팀 참고사항(이용 시간 기록)에 메모가 있으면 컨택 전 먼저 확인하세요.",
-        "· 담당자 미배정 회원은 재등록 컨택이 아예 누락될 위험이 가장 크니 최우선으로 처리하세요.",
-    ]
-
-
-def _render(marker: str, date_line: str, include_header: bool, header_lines: list[str],
-            body_lines: list[str], include_footer: bool, footer_lines: list[str]) -> str:
-    parts = [f"{_TITLE_BASE} {marker}", date_line]
-    if include_header:
-        parts.append("")
-        parts.extend(header_lines)
-    if body_lines:
-        parts.append("")
-        parts.extend(body_lines)
-    if include_footer:
-        parts.append("")
-        parts.extend(footer_lines)
-    return "\n".join(parts)
-
-
-def build_messages(today: str | None = None) -> list[str]:
-    """익월 만기자 알림을 4096자 한도 안전마진(3800자) 기준으로 자동 분할한 메시지 목록.
-    회원 줄은 절대 중간에서 자르지 않는다(줄 단위 분할)."""
+def compute_summary(today: str | None = None) -> dict | None:
+    """텔레그램 요약·renewal.html 공개 스냅샷 양쪽이 함께 쓰는 집계(PII 없음). 조회 실패 시 None."""
     today = today or _today_str()
-    weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
-    date_line = f"{today}({weekday})"
-
     fetched = fetch_next_month_expiring(today)
     if fetched is None:
-        err = (
-            f"{_TITLE_BASE} (1/1)\n{date_line}\n\n"
-            f"⚠️ 데이터 없음 — 유효회원 조회 실패(GAS 응답 없음). 잠시 후 재시도 필요.\n\n{_FOOTER}"
-        )
-        return [err]
-
+        return None
     next_month, rows = fetched
-    total = len(rows)
-    unassigned = [r for r in rows if not _member_lessons(r)]
 
-    header_lines = [f"대상: {next_month} 종료 예정 회원 {total}명", "", "※ 신규·재등록 상담 담당 = 임정은", ""]
-    header_lines.append(f"<b>⚠️ 담당자 미배정 {len(unassigned)}명</b>")
-    if not unassigned:
-        header_lines.append("없음(전원 강습 담당강사 배정 확인)")
-    else:
-        for r in unassigned:
-            name = html.escape(str(r.get(NAME_KEY) or "(이름없음)").strip())
-            end_v = html.escape(str(r.get(END_KEY) or "").strip())
-            header_lines.append(f"· {name} ({end_v} 종료)")
+    by_owner: dict[str, int] = {}
+    for r in rows:
+        owner = _normalize_owner(r.get(OWNER_KEY)) or "미배정"
+        by_owner[owner] = by_owner.get(owner, 0) + 1
 
-    footer_lines = list(_tips_lines())
-    footer_lines.append("")
-    footer_lines.append(_FOOTER)
+    unassigned_lesson = sum(1 for r in rows if not _member_lessons(r))
+    uncontacted = sum(1 for r in rows if not _is_contacted(r))
 
-    member_lines = [_member_line(r) for r in rows]  # 이미 종료일자 오름차순
-
-    # ── 1차 패스: 넉넉한 자리수 마커("(10/10)")로 안전하게 청크 경계 산정 ──
-    _PLACEHOLDER_MARKER = "(10/10)"
-
-    class _Chunk:
-        __slots__ = ("header", "footer", "lines")
-
-        def __init__(self, header: bool):
-            self.header = header
-            self.footer = False
-            self.lines: list[str] = []
-
-    chunks: list[_Chunk] = [_Chunk(header=True)]
-    cur = chunks[0]
-    for line in member_lines:
-        trial = cur.lines + [line]
-        text = _render(_PLACEHOLDER_MARKER, date_line, cur.header, header_lines, trial, False, footer_lines)
-        if len(text) <= _MSG_BUDGET or not cur.lines:
-            cur.lines = trial
-        else:
-            new_chunk = _Chunk(header=False)
-            new_chunk.lines = [line]
-            chunks.append(new_chunk)
-            cur = new_chunk
-
-    # 마지막 청크에 팁+서명(footer) 붙이기 시도. 안 들어가면 footer 전용 메시지 추가.
-    trial_text = _render(_PLACEHOLDER_MARKER, date_line, cur.header, header_lines, cur.lines, True, footer_lines)
-    if len(trial_text) <= _MSG_BUDGET or not cur.lines:
-        cur.footer = True
-    else:
-        footer_chunk = _Chunk(header=False)
-        footer_chunk.footer = True
-        chunks.append(footer_chunk)
-
-    # ── 2차 패스: 실제 (i/N) 마커로 최종 렌더 ──
-    n = len(chunks)
-    messages = []
-    for i, ch in enumerate(chunks, start=1):
-        marker = f"({i}/{n})"
-        messages.append(_render(marker, date_line, ch.header, header_lines, ch.lines, ch.footer, footer_lines))
-    return messages
+    return {
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "next_month": next_month,
+        "total": len(rows),
+        "uncontacted": uncontacted,
+        "unassigned_lesson_count": unassigned_lesson,
+        "by_owner": by_owner,
+        "dashboard_url": DASHBOARD_URL,
+    }
 
 
-def _send_telegram_html(chat_id: int, text: str) -> tuple[int | None, str | None]:
-    """HTML parse_mode 발신. 성공 시 (message_id, None), 실패 시 (None, 에러메시지)."""
+def write_summary_json(summary: dict) -> Path:
+    SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SUMMARY_PATH.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    return SUMMARY_PATH
+
+
+def build_message(today: str | None = None) -> str:
+    """단일 요약 메시지(명단 없음) — 명단은 renewal.html 대시보드 링크로 위임."""
+    today = today or _today_str()
+    summary = compute_summary(today)
+    if summary is None:
+        return (
+            "🔔 [AI CPO-시포] 재등록 컨택 대상\n\n"
+            "⚠️ 데이터 없음 — 유효회원 조회 실패(GAS 응답 없음). 잠시 후 재시도 필요.\n\n"
+            f"{_FOOTER}"
+        )
+    lines = [
+        f"🔔 [AI CPO-시포] 재등록 컨택 대상 · {summary['next_month']} 만기",
+        f"대상 {summary['total']}명 · 미컨택 {summary['uncontacted']}명",
+        "※ 신규·재등록 상담 담당 = 임정은",
+        f"⚠️ 담당자 미배정 {summary['unassigned_lesson_count']}명",
+        f"👉 명단 보기: {DASHBOARD_URL}",
+        _FOOTER,
+    ]
+    return "\n".join(lines)
+
+
+def _send_telegram(chat_id: int, text: str) -> tuple[int | None, str | None]:
+    """단순 텍스트 발신(요약 메시지는 HTML 마크업 불필요). 성공 시 (message_id, None)."""
     if not TELEGRAM_TOKEN:
         return None, "TELEGRAM_BOT_TOKEN 미설정"
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     try:
         pace()
-        resp = requests.post(
-            url,
-            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
-            timeout=15,
-        )
+        resp = requests.post(url, json={"chat_id": chat_id, "text": text}, timeout=15)
         data = resp.json()
         ok = resp.status_code == 200 and bool(data.get("ok"))
         log_outbound(text, chat_id=chat_id, source="member_expiry_alert", ok=ok, kind="sendMessage")
@@ -264,27 +203,29 @@ def _send_telegram_html(chat_id: int, text: str) -> tuple[int | None, str | None
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="회원 만료 임박(익월 종료일자 기준) 알림 — 기본은 렌더만(발신 안 함)."
+        description="회원 만료 임박(익월 종료일자 기준) 요약 알림 — 기본은 렌더+스냅샷 기록만(발신 안 함)."
     )
     parser.add_argument(
         "--send",
         action="store_true",
-        help="GM 개인방(8254867551)으로 실발신(분할 순차 발송, 메시지 간 2초 간격). 다른 chat_id는 받지 않는다.",
+        help="GM 개인방(8254867551)으로 실발신. 다른 chat_id는 받지 않는다(하드코딩 안전장치).",
     )
     args = parser.parse_args()
 
-    texts = build_messages()
-    for i, t in enumerate(texts, start=1):
-        print(f"===== 메시지 {i}/{len(texts)} ({len(t)}자) =====")
-        print(t)
-        print()
+    today_str = _today_str()
+    summary = compute_summary(today_str)
+    text = build_message(today_str)
+    print(text)
+    print(f"\n[길이] {len(text)}자")
+
+    if summary is not None:
+        path = write_summary_json(summary)
+        print(f"\n[스냅샷 기록] {path}")
+        print(json.dumps(summary, ensure_ascii=False, indent=2))
 
     if args.send:
-        for i, t in enumerate(texts, start=1):
-            if i > 1:
-                time.sleep(_SEND_GAP_SEC)
-            msg_id, err = _send_telegram_html(GM_CHAT_ID, t)
-            if msg_id is not None:
-                print(f"[발신 성공] {i}/{len(texts)} message_id={msg_id} chat_id={GM_CHAT_ID}")
-            else:
-                print(f"[발신 실패] {i}/{len(texts)} {err}")
+        msg_id, err = _send_telegram(GM_CHAT_ID, text)
+        if msg_id is not None:
+            print(f"\n[발신 성공] message_id={msg_id} chat_id={GM_CHAT_ID}")
+        else:
+            print(f"\n[발신 실패] {err}")
