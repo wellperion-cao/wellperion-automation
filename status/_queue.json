@@ -2503,5 +2503,20 @@
     "artifact": "GM이 설계안 4개(A/B/C/D) 중 D(9월 서버+JWT)를 결재 — 중간 마스킹 조치 없이\n9월까지 현 무인증 공개 상태를 의식적으로 유지하기로 결정. incidents.json에\n뿌리분류=의식적예외·상태=OPEN으로 기록(코드/설정 변경 없음, 기록만). (CLI ad-hoc · 커밋 69763288)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "6976328804cb713f7930ac5e6a5a6705b9643065"
+  },
+  {
+    "task_id": "CTO-2026-07-20-SHARED-WORKTREE-COMMIT-SAFETY",
+    "clevel": "cto",
+    "title": "[시토] 공유 워크트리 동시 커밋 정비 — 자동 커밋 스크립트가 남의 변경까지 쓸어담는 구조",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "from": "cpo",
+    "note": "2026-07-20 시포 라인에서 실측 보고. 문제: 여러 AI 세션이 같은 워크트리에서 동시 작업하는데 자동 커밋 스크립트가 커밋 시점 작업트리 전체를 add해 무관한 변경까지 함께 실린다. 실측 — ① 시포의 Survey.js 수정이 6회 이상 다른 작업 커밋(예: chore(cpo) 문의 스냅샷 자동 발행 / feat(cto) 모듈 침묵 감지기 신설 / chore(erp) 시스템 현황 자동 발행 / revert(infra) cancel-in-progress 원복 / feat(cpo) 신규 문의·등록 현황 재구성)에 실려 나감. ② 커밋 3055c416(\"chore(cpo): 문의 스냅샷 자동 발행\")에 화면 파일명 변경 2건+브랜드 가이드 문서 신규 95줄이 함께 실림 — 스냅샷 스크립트와 무관. ③ git commit이 cannot lock ref 'HEAD'로 실패하는 경합이 오늘 5회 이상 반복, 실패했는데도 스테이징분이 다른 커밋에 흡수돼 \"성공한 것처럼\" 보이는 사례 다수. ④ git stash autostash 24건 누적. 영향(정직히): 작업물 유실 확인된 바 없음(매번 내용 대조로 확인) — 그러나 커밋 메시지와 실제 내용 불일치로 추적 불가·부분 되돌리기 불가·사고 조사 원인 추적 막힘(오늘 INC-020 조사 중 \"누가 이 파일명을 바꿨는지\" 특정 불가, 전 커밋 author가 단일계정 Wellperion GM). 시우도 독립적으로 같은 문제 보고: status/briefs/시포_인계_문의등록현황_개편_20260720.md §4 \"커밋 경합 주의 — 여러 세션이 동시에 커밋한다. git add 후 실제로 스테이지됐는지 확인하고 커밋할 것, 오늘 시우가 두 번 헛커밋했다\" → 시포·시우 두 라인 독립 보고. 관련기록: ssot/incidents.json INC-020, 메모리 reference_guidehub_concurrent_commit_corruption·feedback_git_commit_atomic_vs_watcher_reset·feedback_no_destructive_git_in_shared_worktree. 시포 제안(참고용, 강제 아님) — 자동 커밋 스크립트가 자기 산출물 경로만 명시 git add(작업트리 전체 add 금지) / 커밋 전 스테이징 내용이 자기 것인지 검증하는 가드 / 동시 커밋 직렬화(락 또는 큐) / cannot lock ref 'HEAD' 실패 시 명확한 실패 신호(현재는 실패해도 남의 커밋에 흡수돼 성공처럼 보임). R/R: 시포 소관=문제 보고·사례 제공, 시토 소관=원인 분석·설계·구현·우선순위 판단. 기존 시토 배 9206(회원 텔레그램 알림방 담당자 미배정 독려)·9253(회원 만료임박 알림 자동화)과는 성격이 다른 별개 건(그쪽은 회원 알림 콘텐츠·배선, 본 배는 git 인프라 동시성) — 혼동 방지 위해 별도 배로 신규 등록. AI 세션이 동시에 늘어날수록 악화되는 구조라는 점만 명시.",
+    "next": "시토 원인분석·설계 착수 대기 — 우선순위·구현 방식은 시토 판단.",
+    "depends_on": "",
+    "ship_no": 9315,
+    "module": "T1",
+    "surface": "autonomy"
   }
 ]
