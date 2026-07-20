@@ -126,6 +126,75 @@ except Exception:
     _CID_OK = False
     _cid = None  # type: ignore[assignment]
 
+# 운영 다이제스트 공용 수집층 (scripts/collectors/ops_shared.py) — GAS URL 상수 3종
+# (FUNNEL_EXEC_URL·VOC_EXEC_URL·SSOT_API_URL)·재시도 GET 래퍼·UTC→KST 변환·업무완료
+# 상태셋. scripts/ops_daily_digest.py(아침)와의 중복 정의를 여기로 수렴한다
+# (2026-07-21 순수 리팩터 — 값·동작 무변경). import 실패 시 원본과 완전히 동일한
+# 인라인 정의로 폴백(이 파일은 상주 봇이라 기동 실패를 절대 허용하지 않는다).
+try:
+    import os as _os4, sys as _sys4
+    _scr4 = _os4.path.abspath(_os4.path.join(_os4.path.dirname(_os4.path.abspath(__file__)), "..", "scripts"))
+    if _scr4 not in _sys4.path:
+        _sys4.path.insert(0, _scr4)
+    from collectors.ops_shared import (
+        FUNNEL_EXEC_URL,
+        VOC_EXEC_URL,
+        SSOT_API_URL,
+        TODO_DONE_STATUSES as _TODO_DONE_STATUSES,
+        gas_get as _gas_get_shared,
+        utc_iso_to_kst_date as _utc_iso_to_kst_date,
+    )
+
+    def _gas_get(
+        url: str,
+        params: dict | None = None,
+        *,
+        timeout: int = 40,
+        attempts: int = 3,
+        label: str = "GAS",
+    ) -> requests.Response | None:
+        """GAS(script.google.com) GET 재시도 래퍼 — ops_shared.gas_get에 logger.warning을
+        log_fn으로 바인딩해 기존 실패 경보 동작을 그대로 보존."""
+        return _gas_get_shared(url, params, timeout=timeout, attempts=attempts, label=label, log_fn=logger.warning)
+except Exception:
+    FUNNEL_EXEC_URL = (
+        "https://script.google.com/macros/s/"
+        "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec"
+    )
+    VOC_EXEC_URL = (
+        "https://script.google.com/macros/s/"
+        "AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec"
+    )
+    SSOT_API_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+    _TODO_DONE_STATUSES = {"완료", "폐기", "DONE", "완료됨"}
+
+    def _gas_get(
+        url: str,
+        params: dict | None = None,
+        *,
+        timeout: int = 40,
+        attempts: int = 3,
+        label: str = "GAS",
+    ) -> requests.Response | None:
+        for attempt in range(1, attempts + 1):
+            try:
+                resp = requests.get(url, params=params, timeout=timeout)
+                if resp.status_code == 200:
+                    return resp
+                logger.warning(f"{label} HTTP {resp.status_code} (시도 {attempt}/{attempts})")
+            except Exception as e:
+                logger.warning(f"{label} 조회 실패 (시도 {attempt}/{attempts}): {e}")
+        return None
+
+    def _utc_iso_to_kst_date(iso_str: str) -> str:
+        from datetime import timezone as _tz
+        try:
+            s = str(iso_str).rstrip("Z").replace("T", " ")
+            dt_utc = datetime.fromisoformat(s).replace(tzinfo=_tz.utc)
+            return (dt_utc + timedelta(hours=9)).strftime("%Y-%m-%d")
+        except Exception:
+            return ""
+
 # ── v1.2 헬스체크 상수 ────────────────────────────────────────────────────────
 FAILURE_STATE_FILE = Path(__file__).parent / "telegram_failure.json"
 _ENV_MTIME: float = 0.0          # .env 마지막 수정 시각 추적용
@@ -205,8 +274,7 @@ SUPPORT_CHECK_API_URL = ENV.get(
 # 9시 매출·지출 현황용 (CFO 시트 — GM이 시트 링크 제공 후 .env CFO_SHEET_URL에 등록)
 CFO_SHEET_URL = ENV.get("CFO_SHEET_URL", "")
 
-# 업무현황 SSOT API (G1 할일, 09·15시 공용)
-SSOT_API_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+# 업무현황 SSOT API (G1 할일, 09·15시 공용) — 정의는 collectors.ops_shared(위에서 import).
 
 # ── 점검 알림 통합 킬스위치 (GM 2026-07-18) ────────────────────────────────────
 #   가역·발송만 게이트(계산/원장 적재 등 부작용은 항상 보존). True로 되돌리면 즉시 부활.
@@ -512,27 +580,7 @@ _NICK_RE = re.compile(r"^\[([가-힣A-Za-z0-9]{2,6})\]")
 # GAS는 콜드스타트 시 15s를 넘겨 응답하는 경우가 있어 단발 timeout=15로는
 # 조용히 빈칸/실패가 났다 (09시 매출칸 누락·12시 "Read timed out" 재발 사고).
 # _fetch_cfo_finance_block에 적용한 timeout=40 + 3회 재시도 패턴을 공용 헬퍼로 일반화.
-def _gas_get(
-    url: str,
-    params: dict | None = None,
-    *,
-    timeout: int = 40,
-    attempts: int = 3,
-    label: str = "GAS",
-) -> requests.Response | None:
-    """GAS(script.google.com) GET 재시도 래퍼. 성공(HTTP 200) 시 Response, 전량 실패 시 None."""
-    last_err = None
-    for attempt in range(1, attempts + 1):
-        try:
-            resp = requests.get(url, params=params, timeout=timeout)
-            if resp.status_code == 200:
-                return resp
-            last_err = f"HTTP {resp.status_code}"
-            logger.warning(f"{label} {last_err} (시도 {attempt}/{attempts})")
-        except Exception as e:
-            last_err = str(e)[:80]
-            logger.warning(f"{label} 조회 실패 (시도 {attempt}/{attempts}): {e}")
-    return None
+# 정의는 collectors.ops_shared(위에서 logger.warning 바인딩 래퍼로 import).
 
 
 def fetch_yesterday_summary() -> str:
@@ -651,7 +699,7 @@ def _fetch_open_todo_cards_for_tomorrow() -> list[dict]:
 
 
 # ── G1 할일 fetch (09·15시 공용, 업무현황 SSOT API) ──────────────────────────
-_TODO_DONE_STATUSES = {"완료", "폐기", "DONE", "완료됨"}
+# _TODO_DONE_STATUSES 정의는 collectors.ops_shared(위에서 import).
 
 
 def fetch_gm_todos(only_in_progress: bool = False) -> list[str] | None:
@@ -2332,14 +2380,7 @@ CHECK_NUDGE_CHAT_ID = int(ENV.get("TELEGRAM_CHECK_CHAT_ID") or -5136037543)
 DIGEST_INQUIRY_CHAT_ID   = int(ENV.get("TELEGRAM_INQUIRY_CHAT_ID")   or -5516675010)
 DIGEST_CHECK_CHAT_ID     = int(ENV.get("TELEGRAM_CHECK_CHAT_ID")     or -5136037543)
 DIGEST_RECEPTION_CHAT_ID = int(ENV.get("TELEGRAM_RECEPTION_CHAT_ID") or -5065206276)
-FUNNEL_EXEC_URL = (
-    "https://script.google.com/macros/s/"
-    "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec"
-)
-VOC_EXEC_URL = (
-    "https://script.google.com/macros/s/"
-    "AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec"
-)
+# FUNNEL_EXEC_URL·VOC_EXEC_URL 정의는 collectors.ops_shared(위에서 import).
 
 
 def _merged_unchecked_names(live: dict, shift: str) -> list[str]:
@@ -2462,16 +2503,7 @@ def run_nudge(shift: str) -> None:
 
 
 # ── 하루 일과 정리 빌더 3종 + 오케스트레이터 ─────────────────────────────────
-
-def _utc_iso_to_kst_date(iso_str: str) -> str:
-    """UTC ISO 8601 문자열(Z suffix) → KST YYYY-MM-DD."""
-    from datetime import timezone as _tz
-    try:
-        s = str(iso_str).rstrip("Z").replace("T", " ")
-        dt_utc = datetime.fromisoformat(s).replace(tzinfo=_tz.utc)
-        return (dt_utc + timedelta(hours=9)).strftime("%Y-%m-%d")
-    except Exception:
-        return ""
+# _utc_iso_to_kst_date 정의는 collectors.ops_shared(위에서 import).
 
 
 def _inquiry_stage_of(raw: str) -> int:

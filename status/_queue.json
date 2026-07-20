@@ -16,6 +16,36 @@
     "surface": "autonomy"
   },
   {
+    "task_id": "CEO-2026-07-21-MODULE-MERGE-AIDE-INTEGRITY",
+    "clevel": "ceo",
+    "title": "[웰리] 모듈 병합 제기(시토) — ①gap-detector↔gm-aide 이중등록 표기정리 ②전사 무결성 감시 표준화",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "from": "cto",
+    "note": "2026-07-21 시토 배9420 스캔 제기. 상세=status/briefs/시토_모듈병합_제기_20260721.md. #3: cto-aide-gap-detector와 ceo-gm-aide가 같은 로그 gm_aide_scan_log.jsonl을 읽는 한 파이프라인인데 등록부에 2개로 쪼개짐 → 등록부 표기정리(gap-detector를 gm-aide 하위 컴포넌트로 명시 or 앵커 통일, 저위험·값만). #5: 시토 #1 하네스(cto-self-health-watchdog)를 전사 무결성 감시 표준으로 채택해 cpo-sheet-contract(07:50)·(살아있으면)chro를 같은 하네스로 편입, GM 하루1통 전사 이상요약 한판. 시토 #1 라이브 발효 후 표준안 제시 예정. 결재·오케스트레이션=웰리.",
+    "next": "웰리 판단 — #3 표기정리는 시토에 지시 시 즉시(저위험), #5는 시토 #1 라이브 발효 후 표준화 착수.",
+    "depends_on": "",
+    "ship_no": 9421,
+    "module": "home",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "CMO-2026-07-21-REACTION-LOOP-DEDUP",
+    "clevel": "cmo",
+    "title": "[시모] 모듈 병합 제기(시토) — cmo-eval-feedback-loop ↔ cmo-reaction-loop 반응루프 중복 정리",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "from": "cto",
+    "note": "2026-07-21 시토 배9420 스캔 제기. 상세=status/briefs/시토_모듈병합_제기_20260721.md #4. 두 모듈 다 weekly·propose·반응기반 — eval-feedback(반응원장→주간 Top/Bottom→기획반영) vs reaction-loop(콘텐츠1건 반응성적표→저조시 개선제안). 입력·출력·주기 거의 동일, 데이터소스만 다름(ig_engagement_ledger vs cmo_reaction_scorecard). 통합 or 명확한 층분리(건별/주간)를 시모가 판단. 둘 다 STANDBY/propose라 라이브 충돌 없음. 콘텐츠 도메인이라 시토는 제기만.",
+    "next": "시모 판단 — 반응→평가→개선제안 단일루프 통합 vs 층분리 결정.",
+    "depends_on": "",
+    "ship_no": 9422,
+    "module": "M1",
+    "surface": "autonomy"
+  },
+  {
     "task_id": "CTO-2026-06-23-SELF-HOSTED-SERVER-SETUP",
     "clevel": "cto",
     "title": "[시토] AWS 멀티테넌트 ERP SaaS 구축 (구 자체서버) — 여러 회사용 ERP+브로제이 흡수, 웰페리온 1호 테넌트",
@@ -305,14 +335,16 @@
     "task_id": "CTO-2026-07-20-DIGEST-MERGE",
     "clevel": "cto",
     "title": "[시토] 밤 보고 병합 — 21시 마케팅 + 22:30 문의정리 한 장으로 + 회원관리 미처리(종목별) 신설",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "from": "cto",
     "origin": "gm",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-20T10:30:00Z",
+    "processed_at": "2026-07-21",
     "ship_no": 9102,
-    "note": "GM 지시 3건: ①상세=일일 마케팅 정리보고(CMO-) 줄 제거 ②21시 마케팅카드를 문의정리에 병합, 평일 22:30/주말·공휴일 20:00 ③멤버십·강습 진행상태 미정·담당자 미배정을 종목별로 보고에 포함. 코드 완료·커밋 8fdfd5c1. GM 개인방 테스트발송 성공(message_id 4840). 미완=스케줄러 프로세스가 관리자권한 기동이라 재기동 불가 → 다음 재부팅 시 신코드 발효. 그때까지 21시 단독카드 재활성 유지(오늘 밤 공백 방지), 발효 확인 후 21시 작업 비활성이 마지막 단계. [2026-07-20 3차 완료] 종목 정규화(체조/트램폴린 통합·영문 Swimming 등 흡수·웰니스→루프메소드)·HTML엔티티 유출 수리·테스트행 필터(Survey.js _isTestInquiryRow_ 규칙 이식, 4건 제외) 반영. GM 개인방 최종 테스트발송 성공(message_id 4846). 커밋 abacdfe6. [2026-07-20 5차] GM 선택=표 정렬형+종목 고유색 유지. 당월/누적 축 교체·라벨 풀어쓰기(진행상태 미정/담당자 미배정)·0건 숨김+격려문구·고정폭 표(한글이모지 표시폭 패딩)·문의알림방만 parse_mode=HTML(<pre>)·카톡 사본은 평문판 분리. 개인방 테스트발송 4848. 커밋 7949a059. 미검증=실제 렌더 열 정렬(GM 육안 확인 필요).",
-    "next": "내일 재부팅 후 ①스케줄러 신크론(daily_digest_early/late) 등록 확인 ②Wellperion-CMO-Daily-Marketing-2100 비활성 ③밤 병합카드 실착 확인. 별건=문의 시트 테스트행 실물 삭제는 시포 소관(보고 노출은 차단 완료)."
+    "artifact_url": "git:7949a059 / telegram_msg_id:4848",
+    "note": "GM 지시 3건: ①상세=일일 마케팅 정리보고(CMO-) 줄 제거 ②21시 마케팅카드를 문의정리에 병합, 평일 22:30/주말·공휴일 20:00 ③멤버십·강습 진행상태 미정·담당자 미배정을 종목별로 보고에 포함. 코드 완료·커밋 8fdfd5c1. GM 개인방 테스트발송 성공(message_id 4840). 미완=스케줄러 프로세스가 관리자권한 기동이라 재기동 불가 → 다음 재부팅 시 신코드 발효. 그때까지 21시 단독카드 재활성 유지(오늘 밤 공백 방지), 발효 확인 후 21시 작업 비활성이 마지막 단계. [2026-07-20 3차 완료] 종목 정규화(체조/트램폴린 통합·영문 Swimming 등 흡수·웰니스→루프메소드)·HTML엔티티 유출 수리·테스트행 필터(Survey.js _isTestInquiryRow_ 규칙 이식, 4건 제외) 반영. GM 개인방 최종 테스트발송 성공(message_id 4846). 커밋 abacdfe6. [2026-07-20 5차] GM 선택=표 정렬형+종목 고유색 유지. 당월/누적 축 교체·라벨 풀어쓰기(진행상태 미정/담당자 미배정)·0건 숨김+격려문구·고정폭 표(한글이모지 표시폭 패딩)·문의알림방만 parse_mode=HTML(<pre>)·카톡 사본은 평문판 분리. 개인방 테스트발송 4848. 커밋 7949a059. [2026-07-21 웰리 검증완료] 커밋 3종·테스트발송 msg_id 4840/4846/4848 확인, _build_digest_inquiry·_append_digest_marketing_section·_build_digest_member_unprocessed·_digest_finalize_html 로직 정상, 20:00/22:30 2-gate lines 3691-3706 정상. 열정렬 시각확인만 GM 육안 필요(subjective_uncertain).",
+    "next": "PC 재부팅 후 신코드 발효 확인 → 22:30 병합카드 실착·열정렬 GM 육안 확인 → 이상 없으면 Wellperion-CMO-Daily-Marketing-2100 비활성 처리."
   },
   {
     "task_id": "COO-2026-07-20-FCHECK-THRESHOLD-SSOT",
@@ -695,5 +727,19 @@
     "artifact": "- 흩어진 북극성추천·표류감지·next촉구를 단일 모듈로 통합\n- 배 검수(상태 정직성) + 배별 종착지(다음+최종 북극성) 추천\n- 당분간 GM 함께 결정(제안만) → 신뢰 후 가역 자율\n- 과거 사고 메모리 기반 7대 방어(dedup·429·거짓종착지·비파괴 등) (CLI ad-hoc · 커밋 227dcd63)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "227dcd63dcb842a65abe8caffe94a830b5d8e2de"
+  },
+  {
+    "task_id": "CPO-2026-07-21-ADHOC-19d96582",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9429,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 19d96582)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "19d9658297c7b5332ad25bc15ffd6ee16247e1d2"
   }
 ]

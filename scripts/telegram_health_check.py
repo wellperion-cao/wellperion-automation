@@ -246,15 +246,17 @@ def _check_gas_versions() -> list[str]:
     except Exception:
         pass  # 하트비트 실패가 헬스체크 본 작업을 막지 않는다(fail-soft)
 
-    issues: list[str] = []
-    for r in results:
-        count = r.get('version_count')
-        if count is None:
-            print(f"[WARN] {r['project']} 버전 조회 실패 — 경보 제외", flush=True)
-            continue
-        if count >= _ALERT_THRESHOLD:
-            issues.append(f"⚠️ GAS 버전 임박: {r['project']} {count}/{_HARD_LIMIT}")
-    return issues
+    # [2026-07-21 병합] gas 버전경보는 self_health_watchdog 일일 디제스트로 이관, 역롤백=주석해제
+    # issues: list[str] = []
+    # for r in results:
+    #     count = r.get('version_count')
+    #     if count is None:
+    #         print(f"[WARN] {r['project']} 버전 조회 실패 — 경보 제외", flush=True)
+    #         continue
+    #     if count >= _ALERT_THRESHOLD:
+    #         issues.append(f"⚠️ GAS 버전 임박: {r['project']} {count}/{_HARD_LIMIT}")
+    # return issues
+    return []
 
 
 # ── 경보 발송 ─────────────────────────────────────────────────────────────────

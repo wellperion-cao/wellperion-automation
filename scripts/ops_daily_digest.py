@@ -32,10 +32,8 @@ import os
 import re
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
-
-import requests
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
@@ -48,27 +46,28 @@ KPI_VALUES_PATH = ROOT / "status" / "kpi_values.json"
 
 RECENT_LEDGER_DAYS = 5  # 반복감지·미해결추적용으로 프롬프트에 주입할 과거 원장 기간
 
-# 문의·등록 GAS(.deploy-funnel/Survey.js 배포본) — kpi_collector.py _CPO_GAS·telegram_bot/daily_scheduler.py
-# FUNNEL_EXEC_URL과 동일 정본(inquiry_list=문의알림방 대시보드 소스). import는 하지 않는다(사이드이펙트 회피),
-# env로 오버라이드 가능한 상수만 최소 복사.
-FUNNEL_EXEC_URL = os.environ.get(
-    "FUNNEL_EXEC_URL",
-    "https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec",
-)
-# VOC·종합접수처 GAS(.deploy-voc/VOC_배포.js) — telegram_bot/daily_scheduler.py VOC_EXEC_URL과 동일 정본
-# (reg_list=6종 접수 카테고리: 분실물/시설물고장/청결/칭찬/쓴소리/컴플레인 통합).
-VOC_EXEC_URL = os.environ.get(
-    "VOC_EXEC_URL",
-    "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec",
-)
-# 실무진 업무현황(G1 항로 SSOT·S3) GAS — telegram_bot/daily_scheduler.py SSOT_API_URL(action=todo_list)과
-# 동일 정본. import는 하지 않는다(봇 사이드이펙트 회피), env로 오버라이드 가능한 상수만 최소 복사.
-SSOT_API_URL = os.environ.get(
-    "SSOT_API_URL",
-    "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec",
-)
-# telegram_bot/daily_scheduler.py _TODO_DONE_STATUSES와 동일(todo_list '상태' 완료 판정 기준).
-_TODO_DONE_STATUSES = {"완료", "폐기", "DONE", "완료됨"}
+# GAS URL 상수 3종(FUNNEL_EXEC_URL·VOC_EXEC_URL·SSOT_API_URL)·_TODO_DONE_STATUSES는
+# telegram_bot/daily_scheduler.py와의 중복 정의를 scripts/collectors/ops_shared.py 공용
+# 수집층으로 수렴(2026-07-21 순수 리팩터 — 값·동작 무변경).
+try:
+    from collectors.ops_shared import (
+        FUNNEL_EXEC_URL,
+        VOC_EXEC_URL,
+        SSOT_API_URL,
+        TODO_DONE_STATUSES as _TODO_DONE_STATUSES,
+        gas_get as _gas_get,
+        utc_iso_to_kst_date as _utc_iso_to_kst_date,
+    )
+except ImportError:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from collectors.ops_shared import (
+        FUNNEL_EXEC_URL,
+        VOC_EXEC_URL,
+        SSOT_API_URL,
+        TODO_DONE_STATUSES as _TODO_DONE_STATUSES,
+        gas_get as _gas_get,
+        utc_iso_to_kst_date as _utc_iso_to_kst_date,
+    )
 
 MONTH_DIR_RE = re.compile(r"^\d{4}-\d{2}$")
 DATE_SEP_RE = re.compile(r"^-{3,}.*?(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일.*-{3,}\s*$")
@@ -83,17 +82,8 @@ def now_str() -> str:
 # ═══════════════════════════════════════════
 #  0) 공용 GAS 조회 래퍼(재시도) — 문의·VOC(종합접수)·예약·업무 블록 공용.
 #     숫자는 LLM에 맡기지 않고 결정론적 실측만. 실패=호출부에서 "측정 불가" 정직 표기.
+#     정의는 scripts/collectors/ops_shared.gas_get (위에서 _gas_get으로 import).
 # ═══════════════════════════════════════════
-def _gas_get(url: str, params: dict | None = None, *, timeout: int = 40, attempts: int = 3, label: str = "GAS") -> object | None:
-    """GAS(script.google.com) GET 재시도 래퍼. 성공(HTTP 200) 시 Response, 전량 실패 시 None."""
-    for attempt in range(1, attempts + 1):
-        try:
-            resp = requests.get(url, params=params, timeout=timeout)
-            if resp.status_code == 200:
-                return resp
-        except Exception:
-            pass
-    return None
 
 
 def _split_llm(message: str) -> "tuple[str, str, str]":
@@ -117,17 +107,7 @@ def _split_llm(message: str) -> "tuple[str, str, str]":
 #       "측정 불가 · 소스 배선 후속"으로 정직 표기. insert 지점만 확장(기존 로직 무접촉).
 # ═══════════════════════════════════════════
 _NO_SOURCE = "측정 불가 · 소스 배선 후속"
-
-
-def _utc_iso_to_kst_date(iso_str: str) -> str:
-    """UTC ISO 8601 문자열(Z suffix) → KST YYYY-MM-DD.
-    telegram_bot/daily_scheduler.py _utc_iso_to_kst_date와 동일 로직 최소 복사(import 회피)."""
-    try:
-        s = str(iso_str).rstrip("Z").replace("T", " ")
-        dt_utc = datetime.fromisoformat(s).replace(tzinfo=timezone.utc)
-        return (dt_utc + timedelta(hours=9)).strftime("%Y-%m-%d")
-    except Exception:
-        return ""
+# _utc_iso_to_kst_date 정의는 scripts/collectors/ops_shared.utc_iso_to_kst_date (위에서 import).
 
 
 def build_inquiry_block(target_date: str) -> str:
