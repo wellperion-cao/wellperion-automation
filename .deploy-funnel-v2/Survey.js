@@ -2838,11 +2838,11 @@ function _processAction(body) {
         var _lsToday = Utilities.formatDate(_lsNowDt, 'Asia/Seoul', 'yyyy-MM-dd');            // 날짜 전용(문의일 등)
         var _lsNowFull = Utilities.formatDate(_lsNowDt, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');  // 타임스탬프 전용(시:분:초 보존, 2026-07-18)
         _lsSet(['타임스탬프'], _lsNowDt);   // ★실제 Date(2026-07-20 GM) — 문자열이면 정렬이 깨진다
-        var _lsDateCi = _findCol_(_lsHdr, ['문의일', '문의 일', '날짜']);
-        if (_lsDateCi >= 0) { if (!_lsRow[_lsDateCi]) _lsRow[_lsDateCi] = _lsToday; }
-        // 성인탭 A열(빈헤더)은 실측상 '26. 1. 1 ' 같은 날짜전용 문자열 칸(문의일 계열) — 타임스탬프 아님.
-        //   여기에 시분초 문자열을 넣으면 기존 479건과 표기가 갈린다. 기존 다수 포맷으로 통일. 2026-07-20 GM.
-        else if (!String(_lsHdr[0] || '').trim() && !_lsRow[0]) { _lsRow[0] = _korDateOnly_(_lsNowDt); }
+        // ★'문의일'(A열) 쓰기 제거 — 2026-07-20 GM 지시(칸 삭제 선행 작업).
+        //   ①타임스탬프가 같은 정보를 더 정확히(시:분:초까지) 담고 있어 중복이다.
+        //   ②칸을 지운 뒤에도 이 쓰기가 남아 있으면 _findCol_의 부분일치 폴백이 엉뚱한 칸을 잡아 덮어쓴다 —
+        //     멤버십 시트에서 같은 패턴이 고객의 '투어 희망일' 칸을 덮어쓸 뻔했다(실측 시뮬레이션으로 확인).
+        //   그래서 칸 삭제보다 이 쓰기 제거가 먼저다. 순서를 바꾸면 그 사이 들어온 문의가 오염된다.
         _lsSet(['성함', '이름'], _iName);
         _lsSet(['연락처', '핸드폰', '전화', '휴대폰'], _fmtPhone_(_iPhone));
         _lsSet(['나이', '연령', '자녀'], _iAge);
@@ -3044,9 +3044,8 @@ function _processAction(body) {
         ? Utilities.formatDate(mDateRaw, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')
         : String(mDateRaw || '');
       _mSet(['타임스탬프'], mDateFullStr);
-      var _mDstDateCi = _findCol_(mDst.hdr, ['문의일', '문의 일', '날짜']);
-      if (_mDstDateCi >= 0) { if (!mDstRow[_mDstDateCi]) mDstRow[_mDstDateCi] = mDateOnlyStr; }
-      else if (!String(mDst.hdr[0] || '').trim() && !mDstRow[0]) { mDstRow[0] = mDateFullStr; }   // 성인탭 A열 빈헤더=타임스탬프 대응
+      // ★'문의일' 쓰기 제거(2026-07-20 GM) — 위 intake 경로와 동일 사유.
+      //   타임스탬프가 같은 값을 더 정확히 담고, 칸 삭제 후엔 부분일치 폴백이 엉뚱한 칸을 덮어쓴다.
       _mSet(['성함', '이름'], mName);
       _mSet(['연락처', '핸드폰', '전화', '휴대폰'], _fmtPhone_(mPhone));
       _mSet(['나이', '연령', '자녀'], _mSAge >= 0 ? String(mRow[_mSAge] || '') : '');
@@ -4921,11 +4920,78 @@ function _processAction(body) {
   //   ★ 이름 정확일치로만 잡는다. 부분일치 금지 — '5. 시설투어…날짜는…' 같은 칸을 지울 수 있다.
   //   ★ A열(index 0)이 아니면 거부. 타임스탬프 칸이 없어도 거부(유일한 날짜 칸을 지우는 사고 차단).
   //   dryRun=1이면 아무것도 지우지 않고 삭제 대상·표본만 반환.
+  // ─── (일회성) 강습 두 탭 '문의일'(A열) 삭제 — 2026-07-20 GM 지시 ───
+  //   타임스탬프가 같은 정보를 시:분:초까지 담고 있어 중복. 쓰기 경로는 이 액션 배포 전에 먼저 제거했다.
+  //   안전장치 4중: ①A열 정확일치 '문의일'만(또는 빈 헤더) ②타임스탬프 칸 존재 필수(날짜 정보 전멸 방지)
+  //   ③삭제 전 A열 값 전량 백업 반환 ④dryRun 기본.
+  if (action === 'del_lesson_datecol_20260720') {
+    if (String(body.key || '') !== 'wlp_dellesson_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var dlDry2 = (String(body.dryRun || '') === '1');
+    var dlGids = [LESSON_GID, LESSON_GID_YOUTH];
+    var dlOut = [];
+    for (var dg = 0; dg < dlGids.length; dg++) {
+      var g = dlGids[dg];
+      var sh = _sheetByGid_(LESSON_SS_ID, g);
+      if (!sh) { dlOut.push({ gid: g, error: 'sheet_not_found' }); continue; }
+      var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+      var h0 = hdr[0] || '';
+      if (h0 && h0.replace(/\s+/g, '') !== '문의일') { dlOut.push({ gid: g, skipped: true, reason: 'A열이 문의일이 아님', a0: h0 }); continue; }
+      var tsIx = -1;
+      for (var ti = 0; ti < hdr.length; ti++) { if (hdr[ti].replace(/\s+/g, '') === '타임스탬프') { tsIx = ti; break; } }
+      if (tsIx < 0) { dlOut.push({ gid: g, skipped: true, reason: '타임스탬프 칸 없음 — 삭제 거부' }); continue; }
+      var last = sh.getLastRow(), filled = 0, backup = [], sample = [];
+      if (last >= 2) {
+        var col = sh.getRange(2, 1, last - 1, 1).getValues();
+        var tsCol = sh.getRange(2, tsIx + 1, last - 1, 1).getValues();
+        for (var ri = 0; ri < col.length; ri++) {
+          var v = col[ri][0];
+          var vs = (v instanceof Date) ? Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd') : String(v == null ? '' : v).trim();
+          if (!vs) continue;
+          filled++;
+          backup.push({ row: ri + 2, value: vs });
+          if (sample.length < 3) {
+            var tv = tsCol[ri][0];
+            sample.push({ row: ri + 2, 문의일: vs, 타임스탬프: (tv instanceof Date) ? Utilities.formatDate(tv, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(tv || '') });
+          }
+        }
+      }
+      if (dlDry2) { dlOut.push({ gid: g, a0: h0, tsIdx: tsIx, colsBefore: hdr.length, filled: filled, totalRows: Math.max(0, last - 1), sample: sample }); continue; }
+      sh.deleteColumn(1);
+      SpreadsheetApp.flush();
+      var hdr2 = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+      dlOut.push({ gid: g, deleted: true, colsBefore: hdr.length, colsAfter: hdr2.length, backedUp: backup.length, backup: backup, newFirstHeader: hdr2[0] });
+    }
+    return _json({ ok: true, dryRun: dlDry2, results: dlOut });
+  }
+
+  // ─── 공용 가드(2026-07-20 GM 부재 중 보호조치) ───
+  //   §1-A 병합 과정에서 '유입경로(자동)' 이름이 개칭·재사용되며 이름을 더 이상 신뢰할 수 없게 됐다
+  //   (구F열='문의 경로(중분류)'가 개칭되며 616건 채널 정본을 담은 채 이 이름을 쓰게 됨).
+  //   그래서 이름이 아니라 '삭제 직전 실측 값 건수'로 막는다. dedup_autoroute·finalize_cols·consolidate_cols
+  //   세 액션의 칸 삭제 호출부는 이 함수를 통과해야 한다. 10건 이상이면 거부 + GM 업무보고봇방(TELEGRAM_CHAT_ID) 경고.
+  //   ★삭제만 막는다 — 값 이관 등 다른 동작·기존 안전장치(값 0건 조건 등)는 그대로 둔다.
+  function _guardColDeleteByContent20260720_(sh, colIdx1, colName) {
+    var last = sh.getLastRow();
+    var filled = 0;
+    if (last >= 2) {
+      var vals = sh.getRange(2, colIdx1, last - 1, 1).getValues();
+      for (var gi = 0; gi < vals.length; gi++) {
+        if (String(vals[gi][0] == null ? '' : vals[gi][0]).trim()) filled++;
+        if (filled >= 10) break;
+      }
+    }
+    if (filled >= 10) {
+      try { _notifyTelegram('🛑 [가드] 칸 삭제 거부 — "' + colName + '" 칸 값 ' + filled + '건+(임계10) — §1-A 채널칸 오삭제 방지 가드 작동. GM 확인 필요.'); } catch (e) {}
+      return false;
+    }
+    return true;
+  }
+
   // ─── (일회성) 중복된 '유입경로(자동)' 칸 해소 — 2026-07-20 ───
   //   중분류를 '유입경로(자동)'으로 개칭한 결과 같은 이름 칸이 둘이 됐다(F=616건 정본 / S=폼 소유 3건).
   //   S는 우리 코드가 구글폼에 만든 기술용 문항('자동 입력 항목 — 비워두셔도 됩니다')이라 칸만 지우면 되살아난다.
   //   → ①S의 값을 앞 칸(정본)의 빈 행에 합치고 ②폼 문항 삭제 ③S 칸 삭제. 순서 고정.
-  //   안전장치: S에 값이 6건 이상이면 중단(예상과 다르면 사람이 본다).
+  //   안전장치: S에 값이 6건 이상이면 중단(예상과 다르면 사람이 본다). + 삭제 직전 재확인(공용 가드, 임계10).
   if (action === 'dedup_autoroute_20260720') {
     if (String(body.key || '') !== 'wlp_dedup_20260720') return _json({ ok: false, error: 'guard-mismatch' });
     var daDry = (String(body.dryRun || '') === '1');
