@@ -4318,6 +4318,70 @@ function _processAction(body) {
     return _json(rsResult);
   }
 
+  // ─── (진단·읽기전용) 레거시 구글폼 실태 확인 — 2026-07-20 시포 ───
+  //   목적: '옛 구글폼이 아직 살아서 응답을 받고 있나'를 추측이 아니라 실측으로 판정.
+  //   지금 문의 유입 정본은 자체폼(intake_submit → SpreadsheetApp 직접 write)이라는 GM 확인이 있고,
+  //   구글폼은 레거시 껍데기로 추정된다. 그 추정을 숫자로 검증한다.
+  //   ★ 아무것도 쓰지 않는다 — getFormUrl/getResponses/getItems 전부 읽기. 폼 변형·연결해제 없음.
+  if (action === 'diag_form_link_20260720') {
+    if (String(body.key || '') !== 'wlp_diag_form_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var dfOut = { sheets: [], triggers: [], form: null };
+    try {
+      var dfSs = SpreadsheetApp.openById(FORM_SHEETS[0].ssId);
+      // ① 스프레드시트 내 전 탭의 폼 연결 여부 — 어느 탭이 진짜 폼 응답탭인지 확정
+      dfSs.getSheets().forEach(function(s) {
+        var fu = null, err = null;
+        try { fu = s.getFormUrl(); } catch (e) { err = String(e); }
+        dfOut.sheets.push({ name: s.getName(), gid: s.getSheetId(), rows: s.getLastRow(),
+                            cols: s.getLastColumn(), formUrl: fu || null, error: err });
+      });
+    } catch (e) { return _json({ ok: false, error: 'openById 실패', detail: String(e) }); }
+    // ② 설치된 onFormSubmit 트리거 실태
+    try {
+      ScriptApp.getProjectTriggers().forEach(function(t) {
+        var h = t.getHandlerFunction();
+        if (h === 'onInquiryFormSubmit' || String(t.getEventType()) === 'ON_FORM_SUBMIT') {
+          dfOut.triggers.push({ handler: h, eventType: String(t.getEventType()),
+                                sourceId: (t.getTriggerSourceId ? t.getTriggerSourceId() : null) });
+        }
+      });
+    } catch (e) { dfOut.triggers.push({ error: String(e) }); }
+    // ③ 대상 탭에 붙은 폼의 생사 판정 — 응답 수 · 마지막 응답 시각 · 수신 여부 · 문항 목록
+    var dfTarget = null;
+    dfOut.sheets.forEach(function(s) { if (s.gid === FORM_SHEETS[0].gid) dfTarget = s; });
+    if (dfTarget && dfTarget.formUrl) {
+      try {
+        var dfForm = FormApp.openByUrl(dfTarget.formUrl);
+        var dfResp = dfForm.getResponses();
+        var dfLast = dfResp.length ? dfResp[dfResp.length - 1].getTimestamp() : null;
+        var dfItems = dfForm.getItems().map(function(it) {
+          return { title: it.getTitle(), type: String(it.getType()) };
+        });
+        dfOut.form = {
+          id: dfForm.getId(), title: dfForm.getTitle(),
+          acceptingResponses: dfForm.isAcceptingResponses(),
+          publishedUrl: (function(){ try { return dfForm.getPublishedUrl(); } catch (e) { return null; } })(),
+          responseCount: dfResp.length,
+          lastResponseAt: dfLast ? Utilities.formatDate(dfLast, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : null,
+          firstResponseAt: dfResp.length ? Utilities.formatDate(dfResp[0].getTimestamp(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : null,
+          itemCount: dfItems.length, items: dfItems
+        };
+        // ④ 폼 문항 ↔ 시트 헤더 대응 — 어떤 칸이 '폼 소유'인지 확정(삭제 안전성 판정의 핵심)
+        var dfSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+        var dfHdr = dfSh.getRange(1, 1, 1, dfSh.getLastColumn()).getValues()[0];
+        dfOut.form.headerMap = dfHdr.map(function(h, i) {
+          var hn = String(h || '').replace(/\s/g, '');
+          var owned = dfItems.some(function(it) {
+            var tn = String(it.title || '').replace(/\s/g, '');
+            return tn && (hn === tn || hn.indexOf(tn) >= 0 || tn.indexOf(hn) >= 0);
+          });
+          return { idx: i, header: String(h || '').substring(0, 40), formOwned: owned };
+        });
+      } catch (e) { dfOut.form = { error: 'FormApp 접근 실패', detail: String(e), formUrl: dfTarget.formUrl }; }
+    }
+    return _json({ ok: true, readOnly: true, result: dfOut });
+  }
+
   // ─── (일회성) 문의 채널값 정리 3건 — 2026-07-20 시포(리드 승인 범위) ───
   //   승인 범위: ① 중분류 빈칸 반영 2건 ② '유입경로(자동)'에 직원명이 들어간 오염 1건을 비고로 이관.
   //   ★ 칸 구조는 절대 건드리지 않는다 — §1-A(유입경로 병합·삭제)·§1-B(날짜 삭제)는 GM 결정 대기 중.
