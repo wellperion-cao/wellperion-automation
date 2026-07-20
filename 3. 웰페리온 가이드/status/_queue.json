@@ -1428,5 +1428,19 @@
     "artifact": "배1307(북극성 브릿지 — 웰리 지시) 실행 산출물. 실측: welly_auto_runner_log.jsonl\n33회 중 23회(70%)가 working_tree_dirty로 skip. 원인 재진단 결과 GM 가설(문의\n스냅샷·heartbeat 등 노이즈)은 틀림 — 이미 NOISE_PATH_PATTERNS allowlist로 걸러지던\n것들이었고, 실제 차단 파일 12~345건은 타 clevel이 며칠째 방치한 진짜 콘텐츠(제안서·\n큐레이션·deploy-funnel 스캐폴드)였음. 사전 전면차단 → 사후 확정 sweep 검증(baseline\nforeign 파일 대조 + git revert 자동원복)으로 재설계. 부수 발견·수리: 커밋 504b6c4f\n원인이던 sync_queue_mirror.py 디스크 직독 취약점도 --pre-commit(staged 전용)으로\n동시 수리. INC-017 등록(GUARDED). 테스트 114/114 통과(신규 sweep 회귀 포함).\n(CLI ad-hoc · 커밋 75d1d4e9)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "75d1d4e95dea3da49d3cd5b54b203573d0110190"
+  },
+  {
+    "task_id": "CTO-2026-07-20-ADHOC-0cd3042f",
+    "clevel": "cto",
+    "title": "[시토] 배1307 완료 기록 clevel 오귀속 정정 + INC-017 등록",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9176,
+    "artifact": "post-commit 자동 로그 훅(auto_log_adhoc_to_queue.py)이 커밋 제목의 \"웰리\"\n언급(설계 배경 서술)을 닉네임 토큰으로 오인해 clevel을 ceo로 잘못 귀속했다\n(실제 작업자는 cto/시토). task_id·clevel·title 정정 + 배1307·INC-017 연결\n근거를 artifact에 명시. INC-017(sync_queue_mirror.py --pre-commit 스코프\n수정, GUARDED) ssot/incidents.json에 신규 등록. (CLI ad-hoc · 커밋 0cd3042f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "0cd3042f841e507db863d4d2795e8dc6e733f50c"
   }
 ]
