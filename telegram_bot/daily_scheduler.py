@@ -2676,18 +2676,17 @@ _DIGEST_LOSS_STATUSES = {"LOSS", "환불", "양도LOSS"}
 _DIGEST_SUCCESS_STATUSES = {"SUC", "단기SUC"}
 
 
-def _digest_unprocessed_counts(rows: list, field: str, today: str, month_prefix: str) -> tuple:
-    """rows 중 이번 달(month_prefix="YYYY-MM") 유입분만 대상 — 종목별 {종목: [금일, 당월, 미정, 미배정]}
-    집계 + 카테고리 전체 합계(금일, 당월) 반환(GM 2026-07-20 수정1 — 전체누적 대신 당월로 축소).
-    미처리 = 미정(status 공백) 또는 미배정(owner 공백 & 비종결) 하나라도 해당하는 건.
-    한 사람이 여러 종목이면 _split_sports() 로 쪼개 종목마다 각각 1건씩 계상(GM 수정2)."""
+def _digest_unprocessed_counts(rows: list, field: str, month_prefix: str) -> tuple:
+    """rows 전체(누적, 필터 없음) + 이번 달(month_prefix="YYYY-MM") 두 축을 동시에 집계 —
+    종목별 {종목: [당월미정, 당월미배정, 누적미정, 누적미배정]} + 카테고리 전체 합계 4종 반환
+    (GM 2026-07-20 — 금일 축 폐기, 당월/누적 두 축으로 교체. 담당자 미배정은 '오늘' 단위가
+    의미 없다는 GM 지적).
+    미처리 = 진행상태 미정(status 공백) 또는 담당자 미배정(owner 공백 & 비종결) 하나라도 해당하는 건.
+    한 사람이 여러 종목이면 _split_sports() 로 쪼개 종목마다 각각 1건씩 계상."""
     counts: dict = {}
-    cat_today = 0
-    cat_month = 0
+    cat = [0, 0, 0, 0]  # [당월미정, 당월미배정, 누적미정, 누적미배정]
     for r in rows:
         ts = str(r.get("timestamp", "") or "")
-        if not ts.startswith(month_prefix):
-            continue
         status = str(r.get("status", "") or "").strip()
         owner = str(r.get("owner", "") or "").strip()
         undecided = not status
@@ -2695,35 +2694,41 @@ def _digest_unprocessed_counts(rows: list, field: str, today: str, month_prefix:
         unassigned = (not owner) and not is_terminal
         if not undecided and not unassigned:
             continue
-        is_today = ts.startswith(today)
+        is_month = ts.startswith(month_prefix)
         species = _split_sports(str(r.get(field, "") or "")) or ["미분류"]
         for sp in species:
-            c = counts.setdefault(sp, [0, 0, 0, 0])  # [금일, 당월, 미정, 미배정]
-            c[1] += 1
-            cat_month += 1
-            if is_today:
-                c[0] += 1
-                cat_today += 1
+            c = counts.setdefault(sp, [0, 0, 0, 0])
             if undecided:
                 c[2] += 1
+                cat[2] += 1
+                if is_month:
+                    c[0] += 1
+                    cat[0] += 1
             if unassigned:
                 c[3] += 1
-    return counts, cat_today, cat_month
+                cat[3] += 1
+                if is_month:
+                    c[1] += 1
+                    cat[1] += 1
+    return counts, cat
 
 
-def _digest_unprocessed_section(title: str, rows: list, field: str, today: str, month_prefix: str,
+def _digest_unprocessed_section(title: str, rows: list, field: str, month_prefix: str,
                                  fixed_dot: str = "") -> str:
-    """종목별 금일/당월(미정/미배정 병기) 카운트를 당월 내림차순 최대 8줄 + '…외 N개 종목'으로 렌더.
-    당월 0인 종목 줄은 자연히 생략(집계에 진입 자체를 안 함)."""
-    counts, cat_today, cat_month = _digest_unprocessed_counts(rows, field, today, month_prefix)
-    if cat_month == 0:
-        return f"■ {title} — 없음"
-    lines = [f"■ {title} (금일 {cat_today} · 당월 {cat_month})"]
-    ranked = sorted(counts.items(), key=lambda kv: -kv[1][1])
+    """종목별 진행상태 미정/담당자 미배정을 '당월/누적' 두 축(슬래시 표기)으로 렌더.
+    정렬 = 당월 합(미정+미배정) 내림차순, 동률이면 누적 합 내림차순. 최대 8줄 + '…외 N개 종목'.
+    당월·누적 전부 0인 종목은 집계에 진입 자체를 안 해 자연히 생략. 카테고리 전체가 0이면
+    담백한 완료 격려 문구로 대체(GM 2026-07-20 수정3)."""
+    counts, cat = _digest_unprocessed_counts(rows, field, month_prefix)
+    if not counts:
+        return f"■ {title} — ✅ 진행상태·담당자 모두 정리 완료. 깔끔합니다."
+    cmu, cma, ccu, cca = cat
+    lines = [f"■ {title} — 진행상태 미정 {cmu}/{ccu} · 담당자 미배정 {cma}/{cca}"]
+    ranked = sorted(counts.items(), key=lambda kv: (-(kv[1][0] + kv[1][1]), -(kv[1][2] + kv[1][3])))
     shown = ranked[:8]
-    for sp, (t, m, undecided, unassigned) in shown:
+    for sp, (mu, ma, cu, ca) in shown:
         dot = fixed_dot or _digest_dot(sp)
-        lines.append(f"  {dot}{sp} — 금일 {t} · 당월 {m} (미정 {undecided} · 미배정 {unassigned})")
+        lines.append(f"  {dot}{sp} — 진행상태 미정 {mu}/{cu} · 담당자 미배정 {ma}/{ca}")
     remaining = len(ranked) - len(shown)
     if remaining > 0:
         lines.append(f"  …외 {remaining}개 종목")
@@ -2731,17 +2736,21 @@ def _digest_unprocessed_section(title: str, rows: list, field: str, today: str, 
 
 
 def _build_digest_member_unprocessed(mem: list, adult: list, youth: list, today: str) -> str:
-    """🗂 회원관리 미처리 현황(종목별, 당월) — 오늘 문의 목록 뒤·마케팅 섹션 앞에 삽입
-    (GM 2026-07-20, 수정1로 전체누적→당월 축소). 범위 = 이번 달 1일~지금 유입분 중 미처리(미정/미배정)만.
+    """🗂 회원관리 미처리 현황(종목별, 당월/누적) — 오늘 문의 목록 뒤·마케팅 섹션 앞에 삽입
+    (GM 2026-07-20 — 금일 축 폐기, 당월(이번 달 1일~지금)/누적(전체 기간) 두 축으로 교체).
     한 사람 다종목은 _split_sports() 로 종목별로 나눠 계상."""
     month_prefix = today[:7]  # "YYYY-MM"
     month_label = f"{today[:4]}년 {int(today[5:7])}월"
-    body = "\n\n".join([
-        _digest_unprocessed_section("멤버십", mem, "program", today, month_prefix, fixed_dot="🟡 "),
-        _digest_unprocessed_section("성인강습", adult, "sport", today, month_prefix),
-        _digest_unprocessed_section("유소년강습", youth, "sport", today, month_prefix),
-    ])
-    return f"━━━━━━━━━━\n🗂 회원관리 미처리 현황 ({month_label})\n\n{body}"
+    header = f"━━━━━━━━━━\n🗂 회원관리 미처리 현황 ({month_label})"
+    sections = [
+        _digest_unprocessed_section("멤버십", mem, "program", month_prefix, fixed_dot="🟡 "),
+        _digest_unprocessed_section("성인강습", adult, "sport", month_prefix),
+        _digest_unprocessed_section("유소년강습", youth, "sport", month_prefix),
+    ]
+    # 세 카테고리 전부 완료(✅)면 섹션 본문 전체를 담백한 한 줄로 대체(GM 결함3-전체 케이스).
+    if all("✅" in s for s in sections):
+        return f"{header}\n✅ 전 종목 진행상태·담당자 배정 완료. 미처리 0건입니다."
+    return f"{header}\n숫자 = 당월 / 누적\n\n" + "\n\n".join(sections)
 
 
 def _append_digest_marketing_section(msg: str) -> str:

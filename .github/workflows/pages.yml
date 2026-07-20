@@ -15,10 +15,17 @@ permissions:
   id-token: write
 
 # 2026-07-03: 커밋 폭주 시 배포 겹침→"try again later" 간헐 실패로 GM 실패메일 폭탄.
-# cancel-in-progress:true = 새 푸시 오면 겹친 옛 배포 취소(취소는 실패 아님·메일 없음), 최신만 배포.
+#   → cancel-in-progress:true 로 겹친 옛 배포를 취소해 메일 폭탄은 막았음.
+# 2026-07-20 (시우·GM 승인): 그 설정이 반대 방향 사고를 낳음 — C-Level 자동화가 30초~1분마다
+#   커밋하면서 배포가 시작될 때마다 다음 푸시에 취소됨. 최근 20회 중 취소 15 / 성공 3.
+#   결과: 라이브가 몇 시간씩 옛 버전에 머물러 "푸시했으니 반영됨" 보고가 전부 거짓이 됨(약속 L03 붕괴).
+#   → cancel-in-progress:false. 취소 대신 '줄 세우기'.
+#   겹침 방지는 그대로(동시 실행 0 → "try again later" 재발 없음)이면서, 최신 커밋이 반드시 배포된다.
+#   대기열은 무한정 늘지 않는다 — 대기 중 run 은 더 새 커밋이 오면 GitHub 이 자동 교체(superseded)한다.
+#   ※ 이 값을 true 로 되돌리면 라이브 반영이 다시 막힌다. 되돌리기 전 반드시 배포 성공률부터 확인할 것.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
