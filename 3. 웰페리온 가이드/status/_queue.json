@@ -2249,5 +2249,47 @@
     "artifact": "GM 원 지시가 \"en/inquiry도 같게\"였는데 색까지 다르면 \"같게\"가 아니라는 team-lead 판단으로 진행\n(가역 변경, GM 재확인 없이 웰리 결정). 눈대중 근사가 아니라 KO 소스(wp_inquiry_block.html)의\n실제 값 --bg:#f5f0ea를 그대로 가져와 #wlp-en-inquiry-root에 적용 + KO·8460과 동일한 50vw\n브레이크아웃으로 풀블리드. (CLI ad-hoc · 커밋 096d6213)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "096d62133b4a6e0841298f4d430c21943aa9f052"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-d78e8e4d",
+    "clevel": "cpo",
+    "title": "[시포] 담당자 일괄변경 실행 전 백업(유효회원 4쌍 209건) 영구 저장",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9234,
+    "artifact": "GM 승인 담당자 재배정(스쿼시 최수진/이우성→이상훈, 골프 김명선/정시우→최현준) 실행 전\n원본 스냅샷(회원명·연락처·현재값) — 세션 스크래치패드는 종료 시 소실되므로 저장소로 이관. (CLI ad-hoc · 커밋 d78e8e4d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d78e8e4d0524cc249ddb2299b8049aa85d7acd1a"
+  },
+  {
+    "task_id": "CEO-2026-07-20-ADHOC-d7c3838e",
+    "clevel": "ceo",
+    "title": "[웰리] 영문 문의 페이지(8408) 상단 잔여 흰/회색 띠 아이보리로 마감 (웰리 검수 발견)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9235,
+    "artifact": "이전 커밋(096d6213)에서 #wlp-en-inquiry-root에만 아이보리를 채웠는데, 그 위 WP 테마\n#header-outer(29px, 흰색, KOR버튼 포함)+.container-wrap 예약 padding-top(40px, 회색) =\n~69px 띠가 상단에 남아 KO 페이지(맨 위부터 바로 아이보리)와 완전히 같지 않았음(웰리 검수 발견,\n스크린샷 대조로 확인). (CLI ad-hoc · 커밋 d7c3838e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d7c3838e2c514167361e44764b012422e3bc79ea"
+  },
+  {
+    "task_id": "CEO-2026-07-20-ADHOC-abf476ee",
+    "clevel": "ceo",
+    "title": "[웰리] 장애 동안 cancel-in-progress true 원복 — 실패메일 폭탄 방지 (배9199)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9236,
+    "artifact": "배포 정체의 실제 주범은 커밋 폭주가 아니라 GitHub 장애였다.\n증거: 실패 로그 'Get Pages site failed. No server is currently available'(run 29710558853 등)\n     githubstatus.com Actions=partial_outage / API=degraded / Incident 조사중\n     성공 배포가 01:21:45 를 끝으로 전면 중단.\nfalse(줄세우기)로 장애를 맞으면 취소 대신 실패가 쌓여 07-03 실패메일 폭탄이 재발한다.\n→ 장애 동안 tru (CLI ad-hoc · 커밋 abf476ee)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "abf476eede506e8bec9d39703be2c02fed057b20"
   }
 ]

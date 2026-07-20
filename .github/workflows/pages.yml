@@ -45,9 +45,16 @@ permissions:
 #   겹침 방지는 그대로(동시 실행 0 → "try again later" 재발 없음)이면서, 최신 커밋이 반드시 배포된다.
 #   대기열은 무한정 늘지 않는다 — 대기 중 run 은 더 새 커밋이 오면 GitHub 이 자동 교체(superseded)한다.
 #   ※ 이 값을 true 로 되돌리면 라이브 반영이 다시 막힌다. 되돌리기 전 반드시 배포 성공률부터 확인할 것.
+# 2026-07-20 12:0x (시우·GM 승인) 임시 원복 → true.
+#   위 07-20 기록은 "커밋 폭주가 배포를 막는다"는 진단이었으나, 실제 주범은 **GitHub 장애**였다.
+#   증거: 실패 로그 "Get Pages site failed. No server is currently available to service your request"
+#        (run 29710558853 등) · githubstatus.com: Actions=partial_outage, API=degraded (Incident 조사중)
+#        · 성공 배포가 01:21:45 를 끝으로 전면 중단.
+#   false(줄 세우기) 상태로 장애를 맞으면 취소 대신 '실패'가 쌓여 GM 실패메일 폭탄(07-03 사고)이 재발한다.
+#   → 장애 동안 true 로 원복. ★GitHub 장애 복구 후 false 재검토할 것(커밋 폭주 이슈 자체는 실재 — 시토 인계).
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
