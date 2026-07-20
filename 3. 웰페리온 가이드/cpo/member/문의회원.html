@@ -2335,6 +2335,26 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </div>
 </div>
 
+<!-- 등록종목 모달 — 문의 현황 표 '진행상황'을 SUC(단기SUC 포함)로 바꿀 때 발동. LOSS 사유 모달과 완전 대칭 구조.
+     GM 요청 사양(2026-07-20, 시포). 저장=member_inquiry_update/lesson_inquiry_update(regProgram). -->
+<div class="consult-overlay" id="regProgramOverlay" onclick="if(event.target===this)closeRegProgramModal()">
+  <div class="consult-modal" role="dialog" aria-modal="true">
+    <div class="consult-modal-head">
+      <span class="consult-modal-kind experience">SUC</span>
+      <span class="consult-modal-title">등록 종목</span>
+    </div>
+    <div class="consult-row"><span class="ck">문의</span><span class="cv" id="rpMemberFixed">—</span></div>
+
+    <div class="consult-field-label">등록 종목</div>
+    <select id="rpProgramSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit"></select>
+
+    <div class="consult-actions">
+      <button class="consult-btn-cancel" onclick="closeRegProgramModal()">취소</button>
+      <button class="consult-btn-save" id="rpSaveBtn" onclick="saveRegProgramModal()">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 가이드 문서 모달 (회원관리.html에서 이식 — 운영원칙·정기루틴·이탈대응·이탈현황) 2026-06-26 시포 통합 ══ -->
 <div class="gdoc-overlay" id="gdocOverlay" onclick="if(event.target===this)closeGdoc()">
   <div class="gdoc-modal" role="dialog" aria-modal="true">
@@ -4615,6 +4635,10 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
   // 진행상태를 LOSS로 바꾸면 사유 모달 자동 발동(멤버십과 동일 — 사유 미기록 방지). 이미 사유 있으면 재촉발 안 함. 2026-07-18 시토(GM요청) 대행.
   if (newVal === 'LOSS' && (prevVal !== 'LOSS' || !String((row && row.lossReason) || '').trim())) {
     try { openLessonLossModal(t, rowIndex); } catch (e) {}
+  }
+  // 진행상태를 SUC로 바꾸면 등록종목 모달 자동 발동(LOSS와 대칭 — 종목 미기록 방지). 이미 등록종목 있으면 재촉발 안 함. 2026-07-20 시포(GM요청).
+  if (newVal === 'SUC' && (prevVal !== 'SUC' || !String((row && row.regProgram) || '').trim())) {
+    try { openLessonRegProgramModal(t, rowIndex, sportKey); } catch (e) {}
   }
 }
 
@@ -6971,6 +6995,74 @@ function saveLossReasonModal() {
     .then(function(){ saveBtn.disabled = false; });
 }
 
+/* ─────────────────────────────────────────────
+   등록 종목 기록 — 문의 현황 표 '진행상황'을 SUC(단기SUC 포함)로 바꿀 때(＋기존 SUC 건 종목 미기록)
+   LOSS 사유 모달과 완전 대칭(_lossModal↔_regProgramModal, openInquiryLossModal↔openInquiryRegProgramModal 등
+   동일 네이밍·가드·취소 동작). 저장=member_inquiry_update/lesson_inquiry_update(regProgram) — 기존 백엔드 필드 재사용.
+   종목 선택지: 멤버십=PROGRAM_OPTIONS(캘린더 상담모달 cmRegProgram과 동일 출처) / 강습=LESSON_INSTRUCTOR_ROSTER 종목키.
+   GM 요청 사양(2026-07-20, 시포). ───────────────────────────────────────────── */
+var _regProgramModal = null;   // { mode, rowIndex/t, keyPhone, name, gid, type }
+
+// 등록종목 모달 셀렉트 채우기 공통(멤버십·강습 공유) — _lossModalFill 대칭.
+function _regProgramModalFill(options, current) {
+  var sel = document.getElementById('rpProgramSel');
+  sel.innerHTML = '';
+  var blank = document.createElement('option'); blank.value = ''; blank.textContent = '— 선택 —'; sel.appendChild(blank);
+  options.forEach(function(opt){ var o = document.createElement('option'); o.value = opt; o.textContent = opt; sel.appendChild(o); });
+  sel.value = String(current || '').trim();
+  document.getElementById('regProgramOverlay').classList.add('open');
+}
+function openInquiryRegProgramModal(rowIndex) {
+  var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
+  if (!r) { showToast('문의 정보를 찾을 수 없습니다', 'err'); return; }
+  _regProgramModal = { mode: 'member', rowIndex: r.rowIndex, keyPhone: r.phone || '', name: r.name || '' };
+  document.getElementById('rpMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '');
+  _regProgramModalFill(PROGRAM_OPTIONS, r.regProgram || r.program);
+}
+// 강습 등록종목 모달 — 강습 진행상태를 SUC로 바꿀 때 발동(멤버십과 동일 UI, 저장=lesson_inquiry_update row-level).
+function openLessonRegProgramModal(t, rowIndex, sportKey) {
+  var r = _lessonFindRow(t, rowIndex);
+  if (!r) { showToast('강습 문의 정보를 찾을 수 없습니다', 'err'); return; }
+  var st = _lessonState[t];
+  _regProgramModal = { mode: 'lesson', t: t, rowIndex: r.rowIndex, keyPhone: r.phone || '', name: r.name || '', type: (st && st.type) || '', gid: r.gid };
+  document.getElementById('rpMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '') + (sportKey ? ' · ' + sportKey : '');
+  var _cur = String(r.regProgram || '').trim() || _lessonRosterKeyOf(sportKey) || '';
+  _regProgramModalFill(Object.keys(LESSON_INSTRUCTOR_ROSTER), _cur);
+}
+function closeRegProgramModal() {
+  document.getElementById('regProgramOverlay').classList.remove('open');
+  _regProgramModal = null;
+}
+function saveRegProgramModal() {
+  if (!_regProgramModal) return;
+  var program = document.getElementById('rpProgramSel').value.trim();
+  if (!program) { showToast('등록 종목을 선택해 주세요', 'err'); return; }
+  var rowIndex = _regProgramModal.rowIndex, keyPhone = _regProgramModal.keyPhone;
+  var saveBtn = document.getElementById('rpSaveBtn'); saveBtn.disabled = true;
+  var _isLesson = (_regProgramModal.mode === 'lesson');
+  var _payload = _isLesson
+    ? { action: 'lesson_inquiry_update', type: _regProgramModal.type, rowIndex: rowIndex, keyPhone: keyPhone, sport: '', gid: _regProgramModal.gid, regProgram: program }
+    : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, regProgram: program };
+  var _t = _isLesson ? _regProgramModal.t : null;
+  apiPost(_payload)
+    .then(function(data){
+      if (data && data.ok === false) throw new Error(data.error || '저장 실패');
+      showToast('등록 종목 저장', 'ok');
+      if (_isLesson) {
+        var lr = _lessonFindRow(_t, rowIndex);
+        if (lr) { lr.regProgram = program; }
+        try { lessonRender(_t); } catch (e) {}
+      } else {
+        var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
+        if (r) { r.regProgram = program; }
+        if (_tabLoaded.db) renderDbTable();
+      }
+      closeRegProgramModal();
+    })
+    .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
+    .then(function(){ saveBtn.disabled = false; });
+}
+
 function _resFillTimeOptions(sel, cur) {
   sel.innerHTML = '';
   var blank = document.createElement('option'); blank.value = ''; blank.textContent = '시간 미정'; sel.appendChild(blank);
@@ -8043,6 +8135,10 @@ function _activateCellSelect(td, row, field, options) {
     // 진행상황을 LOSS로 바꾸면 사유 모달 자동 발동(사유 미기록 방지). 이미 LOSS+사유 있으면 재촉발 안 함. 2026-07-18 시토(GM요청) 대행.
     if (field === 'status' && newVal === 'LOSS' && (newVal !== prevVal || !String(live.lossReason || '').trim())) {
       try { openInquiryLossModal(rowIndex); } catch (e) {}
+    }
+    // 진행상황을 SUC(단기SUC 포함)로 바꾸면 등록종목 모달 자동 발동(LOSS와 대칭 — 종목 미기록 방지). 이미 등록종목 있으면 재촉발 안 함. 2026-07-20 시포(GM요청).
+    if (field === 'status' && (newVal === 'SUC' || newVal === '단기SUC') && (newVal !== prevVal || !String(live.regProgram || '').trim())) {
+      try { openInquiryRegProgramModal(rowIndex); } catch (e) {}
     }
   }
   sel.addEventListener('change', commit);
