@@ -59,6 +59,7 @@ from clevel_colors import color_dot  # noqa: E402
 PROJECT_ROOT = Path(_PROJECT_ROOT)
 STATUS_DIR = PROJECT_ROOT / "status"
 LOG_PATH = STATUS_DIR / "module_silence_log.jsonl"
+SNAPSHOT_PATH = STATUS_DIR / "module_silence_snapshot.json"  # 자율현황.html #layer-automation 이 읽는 발행물(로컬 기록 전용·알림 아님)
 ROOMS_PATH = STATUS_DIR / "telegram_rooms.json"
 BOT_ROOM = "자동화현황방"  # 기존 채널 재사용(새 봇·새 방 금지)
 LINK = "https://wellperion-cao.github.io/wellperion-automation/자율현황.html#health"
@@ -335,6 +336,36 @@ def silent_modules(scan_result):
     return [r for r in scan_result if r.get("status") == "silent"]
 
 
+# ── 스냅샷 발행(로컬 파일만 기록 · 알림·발신과 무관) ────────────────────────
+def build_snapshot(scan, now=None):
+    """전체 스캔 결과 → 화면(자율현황.html)이 읽을 스냅샷 dict."""
+    now = _now_utc(now)
+    counts = {"ok": 0, "silent": 0, "unmeasurable": 0, "not_applicable": 0}
+    for r in scan:
+        st = r.get("status")
+        if st in counts:
+            counts[st] += 1
+    return {
+        "_doc": "모듈 침묵 감지기 최신 스캔 스냅샷 — 자율현황.html #layer-automation 렌더 전용. "
+                "알림 발신과 무관(발신 로그는 module_silence_log.jsonl). "
+                "발행: module_silence_detector.py --publish.",
+        "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at_kst": (now.astimezone(KST)).strftime("%Y-%m-%d %H:%M"),
+        "total": len(scan),
+        "summary": counts,
+        "modules": scan,
+    }
+
+
+def publish_snapshot(path: Path = SNAPSHOT_PATH, root: Path = PROJECT_ROOT, now=None,
+                      registry_path=None):
+    """전체 스캔 → 스냅샷 파일 기록(덮어쓰기). 네트워크 호출·알림 발신 없음."""
+    scan = scan_registry(root=root, now=now, registry_path=registry_path)
+    snap = build_snapshot(scan, now=now)
+    path.write_text(json.dumps(snap, ensure_ascii=False, indent=2), encoding="utf-8")
+    return snap
+
+
 # ── 발신(하루 1통 묶음) ────────────────────────────────────────────────────
 def _load_json(path, default):
     try:
@@ -457,7 +488,16 @@ def main(argv=None):
     ap.add_argument("--live", action="store_true",
                      help="실제 발송(기본은 드라이런 — 안전 기본값)")
     ap.add_argument("--scan-only", action="store_true", help="전체 스캔 표만 출력, 발신 로직 미실행")
+    ap.add_argument("--publish", action="store_true",
+                     help="스냅샷 파일만 기록(status/module_silence_snapshot.json) — 알림 발신 없음")
     args = ap.parse_args(argv)
+
+    if args.publish:
+        snap = publish_snapshot()
+        c = snap["summary"]
+        print(f"[published] {SNAPSHOT_PATH} — 총 {snap['total']}건 "
+              f"(정상 {c['ok']} · 침묵 {c['silent']} · 모름 {c['unmeasurable']} · 대상아님 {c['not_applicable']})")
+        return 0
 
     if args.scan_only:
         scan = scan_registry()

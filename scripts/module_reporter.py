@@ -234,6 +234,15 @@ def run_report(cadence, *, dry_run=False, only_module=None,
         results.append({"module": mid, "action": "sent" if ok else "send_failed",
                         "dedup_key": key, "sent": ok})
 
+    # 침묵 감지기 스냅샷 갱신(배1307 4차) — 기존 daily 예약작업에 편승, 새 스케줄러 등록 없음.
+    # 로컬 파일 기록뿐(알림·네트워크 없음) → dry-run "부작용 0" 계약 보존 위해 실발행에서만 실행.
+    if cadence == "daily" and not dry_run:
+        try:
+            from module_silence_detector import publish_snapshot  # noqa: PLC0415
+            publish_snapshot()
+        except Exception:
+            pass  # 스냅샷 갱신 실패가 본 리포터의 발송 결과를 막지 않는다
+
     return {"cadence": cadence, "date": date_str, "dry_run": dry_run, "results": results}
 
 

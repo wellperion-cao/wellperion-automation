@@ -2634,6 +2634,42 @@ def _digest_fetch_list(action: str, **params) -> list:
     return d.get("data", []) if d.get("ok") else []
 
 
+# QA/배포검증 더미 행 판정 — .deploy-funnel/Survey.js:787-792 _isTestInquiryRow_() 와 동일 규칙
+# (정본, 두 곳이 어긋나면 안 됨 — GM 2026-07-20). 새 규칙 발명 금지, 그대로 이식.
+_DIGEST_TEST_ROW_RE = re.compile(r"테스트|자동검증|E2E|�|\[자동")
+
+
+def _is_test_row(r: dict) -> bool:
+    """전화번호가 010-0000 더미로 시작하거나, name+phone+content/memo 텍스트에 테스트성 마커
+    (테스트/자동검증/E2E/깨진문자�/[자동)가 섞이면 QA/배포검증용 더미 행으로 판정."""
+    phone = str(r.get("phone", "") or "")
+    digits = re.sub(r"\D", "", phone)
+    if digits.startswith("0100000"):
+        return True
+    name = str(r.get("name", "") or "")
+    content = " ".join([
+        str(r.get("inquiryContent", "") or ""),
+        str(r.get("memo", "") or ""),
+        str(r.get("content", "") or ""),
+    ])
+    blob = f"{name} {phone} {content}"
+    return bool(_DIGEST_TEST_ROW_RE.search(blob))
+
+
+def _filter_test_rows(rows: list) -> tuple:
+    """_is_test_row() 로 QA/배포검증 더미 행을 걸러낸다. 반환 = (필터된 rows, 제외 건수).
+    오늘 문의 목록·미처리 현황 집계 양쪽이 같은 필터링 결과를 공유하도록 호출부(딱 한 곳,
+    _build_digest_inquiry의 GAS 응답 수신 직후)에서만 호출한다 — GM 2026-07-20."""
+    kept: list = []
+    removed = 0
+    for r in rows:
+        if _is_test_row(r):
+            removed += 1
+        else:
+            kept.append(r)
+    return kept, removed
+
+
 # 회원관리 미처리 현황 판정 상태값 — cpo_report.py _LOSS_STATUSES/_SUCCESS_STATUSES 정본과 동일.
 # 2026-07-20 GM: 담당자 미배정 집계에서 이미 종결(LOSS/성공)된 건은 정상(담당자 없어도 OK)이라 제외.
 _DIGEST_LOSS_STATUSES = {"LOSS", "환불", "양도LOSS"}
@@ -2738,12 +2774,19 @@ def _build_digest_inquiry(today: str) -> str:
     weekday = _WEEKDAY_KOR[datetime.now().weekday()]
     header = f"📊 [하루 일과 정리] {today}({weekday})\n🔔 오늘의 문의 정리"
     try:
-        mem = _digest_fetch_list("member_inquiry_list")
-        adult = _digest_fetch_list("lesson_inquiry_list", type="성인강습")
-        youth = _digest_fetch_list("lesson_inquiry_list", type="유소년강습")
+        mem_raw = _digest_fetch_list("member_inquiry_list")
+        adult_raw = _digest_fetch_list("lesson_inquiry_list", type="성인강습")
+        youth_raw = _digest_fetch_list("lesson_inquiry_list", type="유소년강습")
     except Exception:
         msg = f"{header}\n\n조회 지연으로 문의 현황을 불러오지 못했습니다. (서버 콜드스타트 추정 — 잠시 후 재시도됩니다)"
         return _append_digest_marketing_section(msg)
+
+    # QA/배포검증 더미 행 제외 — GAS 응답 수신 직후 한 곳에서만 필터링(GM 2026-07-20).
+    # 이후 오늘 문의 목록·미처리 현황 집계 모두 이 필터된 리스트를 공유해서 쓴다(중복 필터링 금지).
+    mem, mem_removed = _filter_test_rows(mem_raw)
+    adult, adult_removed = _filter_test_rows(adult_raw)
+    youth, youth_removed = _filter_test_rows(youth_raw)
+    test_removed_total = mem_removed + adult_removed + youth_removed
 
     def _today(rows: list) -> list:
         return [r for r in rows if str(r.get("timestamp", "")).startswith(today)]
@@ -2792,7 +2835,10 @@ def _build_digest_inquiry(today: str) -> str:
     unprocessed = _build_digest_member_unprocessed(mem, adult, youth, today)
     msg = f"{msg}\n\n{unprocessed}"
 
-    return _append_digest_marketing_section(msg)
+    result = _append_digest_marketing_section(msg)
+    if test_removed_total:
+        result = f"{result}\n· (테스트행 {test_removed_total}건 제외)"
+    return result
 
 
 def _build_digest_check(today: str) -> str:

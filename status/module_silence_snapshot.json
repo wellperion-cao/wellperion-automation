@@ -1,0 +1,314 @@
+{
+  "_doc": "모듈 침묵 감지기 최신 스캔 스냅샷 — 자율현황.html #layer-automation 렌더 전용. 알림 발신과 무관(발신 로그는 module_silence_log.jsonl). 발행: module_silence_detector.py --publish.",
+  "generated_at": "2026-07-20T01:53:33Z",
+  "generated_at_kst": "2026-07-20 10:53",
+  "total": 29,
+  "summary": {
+    "ok": 7,
+    "silent": 0,
+    "unmeasurable": 21,
+    "not_applicable": 1
+  },
+  "modules": [
+    {
+      "id": "cto-automation-health",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "자동화 건강 점수판 — 예약작업 실행결과 30분 갱신",
+      "status": "ok",
+      "last_activity": "2026-07-20T01:26:32+00:00",
+      "method": "erp_status.json 내부 timestamp",
+      "cadence": "weekly",
+      "max_allowed_hours": 216,
+      "silence_hours": 0.5,
+      "detail": "0.5h 전 마지막 신호(erp_status.json 내부 timestamp) · 허용 216h(weekly)"
+    },
+    {
+      "id": "cto-aide-gap-detector",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "자율 틈 감지기 — 정체/재개가능 배 감시(재개=자율태그·정체=surface)",
+      "status": "ok",
+      "last_activity": "2026-07-20T06:32:29+09:00",
+      "method": "gm_aide_scan_log.jsonl 마지막 레코드 timestamp",
+      "cadence": "daily",
+      "max_allowed_hours": 30,
+      "silence_hours": 4.4,
+      "detail": "4.4h 전 마지막 신호(gm_aide_scan_log.jsonl 마지막 레코드 timestamp) · 허용 30h(daily)"
+    },
+    {
+      "id": "cto-check-gas",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "점검 GAS 파이프 — 시설/지원부 점검 today_live·monthly 집계",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['CHECK_API weekly/monthly'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "cto-gas-version-monitor",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "GAS 배포 버전 위생 모니터 — 5개 프로젝트(check·funnel·funnel-v2·todo·voc) 버전수 조회, 200 하드리밋 조기경고(funnel 200버전 배포막힘 재발방지)",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['Apps Script API projects.versions.list ×5 scriptId'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "cto-weekly-self-review",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "주간 AI 자기정리·학습 — Before/After 카드 자체발신(일요일 10:30)",
+      "status": "unmeasurable",
+      "detail": "주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
+      "last_activity": "2026-07-19T10:34:27+09:00",
+      "method": "self_review_log.jsonl 마지막 레코드 timestamp",
+      "silence_hours": 24.3
+    },
+    {
+      "id": "cto-ops-morning-digest",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "★운영부 아침 운영 다이제스트 — 매일 07:30, 어제 방 내용·오늘 챙길 것·업무·문의·종합접수를 자동 정리해 발송(승인 게이트)",
+      "status": "ok",
+      "last_activity": "2026-07-19T22:31:44.679186+00:00",
+      "method": "디렉터리 1. AI자료_아카이브/11_카카오톡/★운영부/ 내 최신파일(_pending_digest.json) mtime",
+      "cadence": "daily",
+      "max_allowed_hours": 30,
+      "silence_hours": 3.4,
+      "detail": "3.4h 전 마지막 신호(디렉터리 1. AI자료_아카이브/11_카카오톡/★운영부/ 내 최신파일(_pending_digest.json) mtime) · 허용 30h(daily)"
+    },
+    {
+      "id": "cto-kakao-sales-report",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "카톡 매출·운영 보고 — 매일 09:30 매출 이미지를 카톡 3방(회장님·관리부·운영부)에 무인 발송(휴관일 인지)",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: [\"매출보고 '보고' 탭 H2:S21 시트 export\"])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "cto-kakao-check-share",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "🌙 점검 현황 통일 발송 — 텔레그램 점검관리방(주말 20:00/평일 22:30) + 카톡 23:00 '운영+시설+지원+주차' 방에 시설·지원·주차 3섹션 핵심요약을 공용 모듈(support_check_summary.py)로 동일 포맷 무인 발송. 주말 회차 정합(오후조 유령행 제거)·남녀 구역 분리·미점검 회차 전부 짚기·시설 작업일지·반복이슈 승격. 2026-07-19 GM go 라이브 발효(v3)",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['점검 GAS', '공용 렌더 scripts/support_check_summary.py'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "cmo-content-pipeline",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "콘텐츠 허브 — 기반→제작→검수→발행→성과→환류 한 흐름(M1 단일화). 제작/검수대기/발행완료 카운트 + 콘텐츠→문의 채널별 성과. AI 없이 자체 가동(검수·발행·성과=도구)·제품화(기반 교체)",
+      "status": "ok",
+      "last_activity": "2026-07-19T23:57:10.445263+00:00",
+      "method": "review_queue.json mtime",
+      "cadence": "daily",
+      "max_allowed_hours": 30,
+      "silence_hours": 1.9,
+      "detail": "1.9h 전 마지막 신호(review_queue.json mtime) · 허용 30h(daily)"
+    },
+    {
+      "id": "cmo-marketing-funnel",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "마케팅 퍼널·채널 성과 — 채널별 문의·전환율(정직 꼬리표)",
+      "status": "ok",
+      "last_activity": "2026-07-20T10:14:40+09:00",
+      "method": "kpi_values.json 내부 timestamp",
+      "cadence": "weekly",
+      "max_allowed_hours": 216,
+      "silence_hours": 0.6,
+      "detail": "0.6h 전 마지막 신호(kpi_values.json 내부 timestamp) · 허용 216h(weekly)"
+    },
+    {
+      "id": "cmo-case-series-dispatch",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "개인계정 실전사례 시리즈 자동 디스패치 — 평일 07:30 재고(06~09) 순차 선정·검수카드 발송, GM 텔레그램 승인 후 자동 발행",
+      "status": "ok",
+      "last_activity": "2026-07-20T00:57:45.400730+00:00",
+      "method": "_실전사례_2주플랜.md mtime",
+      "cadence": "daily",
+      "max_allowed_hours": 30,
+      "silence_hours": 0.9,
+      "detail": "0.9h 전 마지막 신호(_실전사례_2주플랜.md mtime) · 허용 30h(daily)"
+    },
+    {
+      "id": "cmo-publish-digest",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "발행완료 → 콘텐츠 1건 통합요약 자동발신 (문의·컨택·등록 알림방) — 채널별 조각 대신 한 장, 5채널 링크 묶음",
+      "status": "unmeasurable",
+      "detail": "주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
+      "last_activity": "2026-07-18T04:25:41.312859+00:00",
+      "method": ".publish_digest_sent.json mtime",
+      "silence_hours": 45.5
+    },
+    {
+      "id": "cmo-eval-feedback-loop",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "⑤ 평가 환류 자동화 — 반응 원장(배31·매일 09:30 자동수집)→주간 콘텐츠 Top/Bottom 시그널→다음 기획 반영",
+      "status": "unmeasurable",
+      "detail": "주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
+      "last_activity": "2026-07-20T01:21:35.431961+00:00",
+      "method": "ig_engagement_ledger.json mtime",
+      "silence_hours": 0.5
+    },
+    {
+      "id": "cmo-autonomy-brain",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "CMO 자율화 두뇌(레퍼런스) — M3→M1 병합·모듈별 자동보고 뼈대(채널 자격증명 웹등록·자동로그인 로드맵, 타 C-Level 복제 템플릿)",
+      "status": "not_applicable",
+      "detail": "정적 설계문서(가동형 모듈 아님)"
+    },
+    {
+      "id": "coo-check-status",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "부서별 점검 완료율·이상 한눈에 (운영 점검 현황)",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['CHECK_API weekly&dept=facility / today_live&dept=support'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "coo-work-approval",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "업무·결재 현황 — 활성 업무·결재 대기·마감 초과",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['TODO_API action=todo_list'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "coo-schedule-ssot",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "전사 일정 SSOT — 반복 의무·법정 점검 단일출처(부서별 필터·기한 도래 선별·업무결재 예행연동)",
+      "status": "unmeasurable",
+      "detail": "주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
+      "last_activity": "2026-07-10T00:00:00+09:00",
+      "method": "schedule_ssot.json 내부 timestamp",
+      "silence_hours": 250.9
+    },
+    {
+      "id": "coo-monthly-ops",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "월간운영계획·전사회의 — 부서별 매출목표·이니셔티브·반기 리뷰 SSOT",
+      "status": "unmeasurable",
+      "detail": "주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
+      "last_activity": "2026-07-06T00:00:00+09:00",
+      "method": "monthly_ops_plan.json 내부 timestamp",
+      "silence_hours": 346.9
+    },
+    {
+      "id": "coo-notice",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "공지·안내문 서식 생성·저장 — 인쇄용 공지 템플릿(공용 GAS 저장목록)",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['TODO_API action=notice_list'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "cpo-inquiry-daily-actions",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "문의 라이프사이클 일일 액션(미컨택·오늘 상담·이탈위험)",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "cpo-member-rollup",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "회원 현황 롤업(신규문의·문의→가입 전환율·이탈·예약활성)",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "cto-weekly-page-hygiene",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "주간 페이지 위생 자동화 — 하위모델 전수감사→죽은코드(A) grep-0 게이트 통과 시 자동삭제·나머지(B/C/D)는 정리안 제안, 매주 일요일 09:00",
+      "status": "ok",
+      "last_activity": "2026-07-19T04:25:09.041956+00:00",
+      "method": "page_hygiene_proposal_20260719.md mtime",
+      "cadence": "weekly",
+      "max_allowed_hours": 216,
+      "silence_hours": 21.5,
+      "detail": "21.5h 전 마지막 신호(page_hygiene_proposal_20260719.md mtime) · 허용 216h(weekly)"
+    },
+    {
+      "id": "ceo-gm-aide",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "GM 보좌 자율화 두뇌 — GM 성향·놓친 것 학습·선제 포착(재개가능 배 자율태그·정체 surface·프로필 일일갱신)",
+      "status": "unmeasurable",
+      "detail": "주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
+      "last_activity": "2026-07-20T00:57:45.414747+00:00",
+      "method": "gm_profile.md mtime",
+      "silence_hours": 0.9
+    },
+    {
+      "id": "cto-inquiry-read-snapshot",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "문의회원 읽기 서버 스냅샷 — 3분 주기로 멤버십·강습(연간뷰) 문의 목록을 GAS에서 조회해 status/inquiry_snapshot_*.json에 무인 발행, 페이지 첫 진입 0초 렌더용 가속층(진실=여전히 배경 gviz/GAS 재검증, 스냅샷은 콜드 화면 전용)",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['member_inquiry_list / lesson_inquiry_list'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "chro-daily-integrity-sweep",
+      "owner_role": "chro",
+      "owner_nick": "시로",
+      "feature": "일일 정합성 스윕 — HR 허브·라이브 데이터 11항목 자동 점검(사진404·공고·KPI·배지·평점·PII·주경로 하트비트·폴더미등록·나이 교차검증·가산점 클램프) + 이력서 주경로 자가치유",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['wellperion-hr/drafts/loops/ 스윕 결과'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "chro-onboarding-weekly-watch",
+      "owner_role": "chro",
+      "owner_nick": "시로",
+      "feature": "온보딩 위클리 워치 — 진행중 온보딩 30-60-90 진척·주간 체크인 지연 관찰·보고(A-3)",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['HR 백엔드 db:onbo'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "chro-weekly-efficiency-report",
+      "owner_role": "chro",
+      "owner_nick": "시로",
+      "feature": "주간 효율 리포트 — 위임률·홉 낭비·반복작업 회고(A-7). 7/16 러너 하드닝·7/17 정기 무인 완주 확증",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['wellperion-hr/drafts/loops/ 주간 리포트'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "cto-module-silence-detector",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "🔇 모듈 침묵 감지기 — 등록부 28개 모듈의 로컬 아티팩트 신선도를 감시, notify_spec 예상주기(daily/weekly/monthly) 초과 침묵만 하루 1통 묶어 발신(정상시 무발신). INC-018(KPI 집계기 6일 침묵) 재발방지를 등록부 전체로 확장(배1307 3차, INC-019).",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['status/module_silence_log.jsonl'])",
+      "method": "unresolvable"
+    },
+    {
+      "id": "chro-gmail-job-title-fetch",
+      "owner_role": "chro",
+      "owner_nick": "시로",
+      "feature": "Gmail 공고명 자동취득 — 잡코리아 지원안내 메일에서 공고명 자동 수집→지원자-공고 배정 근거 적재(7/16 가동)",
+      "status": "unmeasurable",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['cao GAS 웰페리온_잡코리아_공고명취득→공고명 manifest'])",
+      "method": "unresolvable"
+    }
+  ]
+}
