@@ -3,8 +3,11 @@
         직접 인라인 주입 방식으로 변환: iframe 없이 vc_raw_html 로 페이지 본문에 그대로 심는다.
         결과: 페이지 단일 스크롤·헤더 로고/본문/푸터가 한 몸. self-contained(단일 정본).
      ★ 기능: 백엔드 lf_gallery(공개, 게시중만·민감필드 미반환)로 습득물 카드 목록을 렌더.
-     ★ 2026-07-18 회원 전용화(시우): 직원 처리(수령·삭제·A3 처분공지)는 게이트된 종합접수처_현황.html로 이관 —
-        이 화면은 순수 회원 둘러보기. lf_disposal(공개) upcoming만 병행 fetch → ⏳M월 처분예정 배지(폐기 완료 기록 제외).
+     ★ 삭제(lf_delete)·A3 처분공지 인쇄·처분완료 기록은 게이트된 종합접수처_현황.html에 그대로 둔다(이관 유지).
+     ★ 2026-07-20(시우·GM 지시): '수령'만 이 화면에 복구. 카드 '수령' 클릭 → 직원 PIN 확인(LF_STAFF_PIN,
+        sessionStorage로 세션 중 1회만) → 통과 시 서명 모달(성함·장소·서명패드·담당자) → lf_handover.
+        비밀번호 모르는 회원에게는 겁주지 않는 안내만 표시.
+        lf_disposal(공개) upcoming만 병행 fetch → ⏳M월 처분예정 배지(폐기 완료 기록 제외).
         습득월(foundWhen 우선·없으면 createdAt) 기준 월 선택 필터 추가 — 클라이언트 필터, 재조회 없음.
      ★ CSS 충돌 방지: 전 규칙을 .wlp-lfg 래퍼 하위로 스코프 → Salient/WPBakery 테마 오염 차단.
         WP 페이지 타이틀·Buttonizer·ENG 언어버튼은 body.wlp-lfg-page 한정으로 숨김
@@ -84,8 +87,10 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 .wlp-lfg .gcard .body{padding:13px 14px 14px;display:flex;flex-direction:column;flex:1}
 .wlp-lfg .gcard .gid{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.3px}
 .wlp-lfg .gcard .desc{font-size:14.5px;font-weight:600;margin:4px 0 7px;word-break:break-word;line-height:1.45}
-.wlp-lfg .gcard .meta{font-size:12.5px;color:var(--dim);line-height:1.7}
+.wlp-lfg .gcard .meta{font-size:12.5px;color:var(--dim);line-height:1.7;margin-bottom:12px}
 .wlp-lfg .gcard .meta .loc{color:var(--accent);font-weight:600}
+.wlp-lfg .gcard .claim{margin-top:auto;width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
+.wlp-lfg .gcard .claim:hover{opacity:.9}
 .wlp-lfg .state-msg{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--dim);font-size:14.5px}
 .wlp-lfg .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
 
@@ -111,10 +116,42 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 .wlp-lfg .lf-policy li{position:relative;padding-left:15px;font-size:13px;color:#5c564d;line-height:1.75;list-style:none !important}
 .wlp-lfg .lf-policy li::before{content:"·";position:absolute;left:3px;color:var(--accent);font-weight:800}
 .wlp-lfg .lf-policy li b{color:var(--text);font-weight:700}
+
+/* ── 수령 서명 모달 ── */
+.wlp-lfg .modal-back{position:fixed;inset:0;background:rgba(20,18,16,0.55);z-index:9998;display:none;align-items:center;justify-content:center;padding:16px}
+.wlp-lfg .modal-back.show{display:flex}
+.wlp-lfg .modal{background:var(--paper);border-radius:18px;max-width:440px;width:100%;max-height:92vh;overflow-y:auto;padding:22px 20px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.wlp-lfg .modal h2{font-size:18px;font-weight:800;margin-bottom:4px}
+.wlp-lfg .modal .msub{font-size:12.5px;color:var(--dim);margin-bottom:16px}
+.wlp-lfg .modal .mitem{display:flex;gap:11px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:16px}
+.wlp-lfg .modal .mitem img{width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0}
+.wlp-lfg .modal .mitem .mt{font-size:13.5px;font-weight:600;word-break:break-word}
+.wlp-lfg .modal .mitem .mm{font-size:11.5px;color:var(--dim)}
+.wlp-lfg .mfield{margin-bottom:13px}
+.wlp-lfg .mfield label{display:block;font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:6px;letter-spacing:.3px}
+.wlp-lfg .mfield input,.wlp-lfg .mfield select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:12px 13px;border-radius:11px;font-size:15px;font-family:inherit;-webkit-appearance:none;appearance:none}
+.wlp-lfg .mfield input:focus,.wlp-lfg .mfield select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
+.wlp-lfg .sign-wrap{border:1.5px solid var(--border);border-radius:12px;background:#fff;position:relative;overflow:hidden}
+.wlp-lfg .sign-wrap canvas{display:block;width:100%;height:170px;touch-action:none;cursor:crosshair}
+.wlp-lfg .sign-hint{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);text-align:center;color:#c8c2b8;font-size:13px;pointer-events:none}
+.wlp-lfg .sign-clear{margin-top:7px;font-size:12.5px;color:var(--red);cursor:pointer;font-weight:600;display:inline-block}
+.wlp-lfg .mbtns{display:flex;gap:10px;margin-top:18px}
+.wlp-lfg .mbtns button{flex:1;padding:14px;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:none}
+.wlp-lfg .mbtns .cancel{background:var(--bg);border:1.5px solid var(--border);color:var(--text)}
+.wlp-lfg .mbtns .confirm{background:var(--green);color:#fff}
+.wlp-lfg .mbtns .confirm:disabled{opacity:.45;cursor:not-allowed}
+
+/* ── 직원 PIN 확인 모달 (수령 진입 게이트) ── */
+.wlp-lfg .pin-err{color:var(--red);font-size:12.5px;font-weight:700;margin:-5px 0 14px}
+
+.wlp-lfg .toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.15);max-width:90%;text-align:center}
+.wlp-lfg .toast.show{transform:translateX(-50%) translateY(0)}
+.wlp-lfg .toast.err{background:var(--red)}
 </style>
 <script>try{document.body.classList.add('wlp-lfg-page');}catch(e){}</script>
 
 <div class="wlp-lfg">
+<div class="toast" id="toast"></div>
 <div class="wrap">
 
   <div class="brand">
@@ -145,16 +182,81 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 
   <p class="info-note">본인 물건 확인은 <b>현장 직원</b>이 도와드립니다. 수령 시 간단한 서명이 필요합니다.<br>곧 처분 예정인 물품은 ⏳ 배지로 표시됩니다.<br>습득한 달의 다음 달까지 공지 후, 그다음 달에 처분됩니다(소모품 폐기·그 외 경찰 인계).<br>하루의 완성, 웰페리온</p>
 </div>
+
+<!-- 직원 확인 PIN 모달 (수령 진입 게이트) -->
+<div class="modal-back" id="pinBack">
+  <div class="modal">
+    <h2>직원 확인</h2>
+    <div class="msub">직원 전용입니다. 수령은 현장 직원에게 요청해 주세요.</div>
+    <div class="mfield">
+      <label for="pinInput">직원 비밀번호</label>
+      <input type="password" id="pinInput" placeholder="비밀번호 입력" autocomplete="off" inputmode="numeric">
+    </div>
+    <div class="pin-err" id="pinErr" style="display:none">비밀번호가 맞지 않습니다</div>
+    <div class="mbtns">
+      <button class="cancel" id="pinCancel" type="button">취소</button>
+      <button class="confirm" id="pinConfirm" type="button">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 수령 서명 모달 -->
+<div class="modal-back" id="modalBack">
+  <div class="modal">
+    <h2>습득물 수령 확인</h2>
+    <div class="msub">현장 직원이 회원 본인확인 후 서명을 받아주세요.</div>
+    <div class="mitem" id="mItem"></div>
+
+    <!-- ① 수령 회원 서명 (성함 + 장소 + 서명패드) -->
+    <div class="mfield">
+      <label for="m_receiver">① 수령 회원 성함</label>
+      <input type="text" id="m_receiver" placeholder="수령하시는 회원 성함" autocomplete="off">
+    </div>
+    <div class="mfield">
+      <label for="m_loc">수령 장소</label>
+      <select id="m_loc"></select>
+    </div>
+    <div class="mfield">
+      <label>수령 회원 서명</label>
+      <div class="sign-wrap">
+        <canvas id="signPad"></canvas>
+        <div class="sign-hint" id="signHint">여기에 서명해 주세요</div>
+      </div>
+      <span class="sign-clear" id="signClear">✕ 다시 서명</span>
+    </div>
+
+    <!-- ② 주는 담당자 선택 -->
+    <div class="mfield">
+      <label for="m_staff">② 주는 담당자</label>
+      <select id="m_staff"></select>
+      <input type="text" id="m_staff_other" placeholder="담당자 성함 직접 입력" autocomplete="off" style="display:none;margin-top:8px">
+    </div>
+
+    <!-- ③ 수령 완료 -->
+    <div class="mbtns">
+      <button class="cancel" id="mCancel" type="button">취소</button>
+      <button class="confirm" id="mConfirm" type="button">수령 완료</button>
+    </div>
+  </div>
+</div>
 </div>
 
 <script>
 (function(){
   var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+  var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+  var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
+  var STAFF = ['김남욱GM','이경연실장','나우열M','최준용M','임정은M','윤병현AM','백승화사원']; // GM 제공 목록(그대로) + '기타' 옵션
   var CACHE_KEY = 'wlp_lf_gallery_v1';
   var CACHE_TTL = 90000; // 90초 짧은 TTL — 처분예정 배지 등 변화 시 무효화
+  // ⚠️ 화면 쪽 PIN — 소스보기로 노출된다. '실수 방지' 수준의 잠금이며 진짜 보안이 아니다.
+  // 진짜 잠금이 필요하면 서버(lf_handover)에서 검증해야 한다. (시우 2026-07-20 · GM 지시)
+  var LF_STAFF_PIN = '62611200';
+  var PIN_SESSION_KEY = 'wlp_lf_staff_pin_ok';
 
   function $(id){ return document.getElementById(id); }
   function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function toast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(function(){ t.className='toast'+(isErr?' err':''); },2600); }
   function _thumb(url,sz){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w'+(sz||400)):url; }
   function _monthLabel(ym){ var n=parseInt(String(ym||'').split('-')[1],10); return isNaN(n)?'':(n+'월'); } // 'YYYY-MM' → 'M월' (배지용)
   function _fullMonthLabel(ym){ var p=String(ym||'').split('-'); var y=parseInt(p[0],10),m=parseInt(p[1],10); return (isNaN(y)||isNaN(m))?ym:(y+'년 '+m+'월'); } // 'YYYY-MM' → 'YYYY년 M월' (필터용)
@@ -166,11 +268,18 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     return '';
   }
 
-  var _loading=false, _monthSel='';
+  // 수령장소 옵션
+  (function(){ var s=$('m_loc'); LOCATIONS.forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; s.appendChild(o); }); })();
+  // 주는 담당자 옵션 (선택 placeholder + 7명 + 기타)
+  (function(){ var s=$('m_staff'); var ph=document.createElement('option'); ph.value=''; ph.textContent='담당자 선택'; s.appendChild(ph); STAFF.forEach(function(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; s.appendChild(o); }); var e=document.createElement('option'); e.value='기타'; e.textContent='기타(직접 입력)'; s.appendChild(e); })();
+  $('m_staff').addEventListener('change',function(){ var oth=$('m_staff_other'); if(this.value==='기타'){ oth.style.display='block'; oth.focus(); } else { oth.style.display='none'; oth.value=''; } });
+
+  var _loading=false, _monthSel='', _cur=null;
   var _upcoming={}, _lastRows=[]; // lf_disposal: foundId→disposeMonth('YYYY-MM') 맵 · 그리드 원본(미필터 전체)
 
   function _readCache(){ try{ var o=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); return (o&&Array.isArray(o.data))?o:null; }catch(e){ return null; } }
   function _writeCache(rows){ try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:rows})); }catch(e){} }
+  function _clearCache(){ try{ localStorage.removeItem(CACHE_KEY); }catch(e){} }
   function _skeleton(n){ var one='<div class="gcard skel" aria-hidden="true"><div class="ph skel-ph"></div><div class="body"><div class="skel-line w40"></div><div class="skel-line w80"></div><div class="skel-line w60"></div><div class="skel-btn"></div></div></div>'; var s=''; for(var i=0;i<(n||6);i++){ s+=one; } return s; }
 
   // ── 월 선택 필터 (foundWhen 습득월 기준, 클라이언트 필터 · 재fetch 없음) ──
@@ -237,6 +346,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
       '<div class="body">'+badge+_catBadge(r.category)+'<div class="gid">'+_esc(r.foundId||'')+'</div>'+
       '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
       '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>🕒 '+_esc(when||'-')+'</div>'+
+      '<button class="claim" type="button" data-claim="'+_esc(r.foundId||'')+'" data-desc="'+_esc(r.itemDesc||'')+'" data-loc="'+_esc(r.foundLoc||'')+'" data-photo="'+_esc(r.photoUrl||'')+'">수령</button>'+
       '</div></div>';
   }
 
@@ -253,6 +363,93 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
       })
       .catch(function(){ /* 조용히 스킵 */ });
   }
+
+  // ── 직원 PIN 확인 (수령 진입 게이트, sessionStorage로 세션 중 1회만) ──
+  function _staffPinOk(){ try{ return sessionStorage.getItem(PIN_SESSION_KEY)==='1'; }catch(e){ return false; } }
+  function _setStaffPinOk(){ try{ sessionStorage.setItem(PIN_SESSION_KEY,'1'); }catch(e){} }
+  var _pinCb=null;
+  function _askStaffPin(cb){
+    _pinCb=cb;
+    $('pinErr').style.display='none';
+    $('pinInput').value='';
+    $('pinBack').classList.add('show');
+    setTimeout(function(){ $('pinInput').focus(); },30);
+  }
+  function _closePinModal(){ $('pinBack').classList.remove('show'); _pinCb=null; }
+  $('pinCancel').addEventListener('click',_closePinModal);
+  $('pinBack').addEventListener('click',function(e){ if(e.target===this) _closePinModal(); });
+  $('pinConfirm').addEventListener('click',function(){
+    if($('pinInput').value===LF_STAFF_PIN){
+      _setStaffPinOk();
+      var cb=_pinCb; _closePinModal();
+      if(cb) cb();
+    } else {
+      $('pinErr').style.display='block';
+    }
+  });
+  $('pinInput').addEventListener('keydown',function(e){ if(e.key==='Enter'){ $('pinConfirm').click(); } });
+
+  // ── 수령 모달 ──
+  $('grid').addEventListener('click',function(ev){
+    var b=ev.target.closest('[data-claim]'); if(!b) return;
+    _cur={ id:b.getAttribute('data-claim'), desc:b.getAttribute('data-desc'), loc:b.getAttribute('data-loc'), photo:b.getAttribute('data-photo') };
+    if(_staffPinOk()){ openModal(); return; }
+    _askStaffPin(openModal);
+  });
+  function openModal(){
+    var img=_cur.photo?('<img src="'+_esc(_thumb(_cur.photo,120))+'" alt="">'):'';
+    $('mItem').innerHTML=img+'<div><div class="mt">'+_esc(_cur.desc||'(설명 없음)')+'</div><div class="mm">'+_esc(_cur.id)+' · 📍 '+_esc(_cur.loc||'-')+'</div></div>';
+    $('m_receiver').value=''; $('m_staff').value=''; $('m_staff_other').value=''; $('m_staff_other').style.display='none'; if(_cur.loc){ $('m_loc').value=_cur.loc; }
+    clearPad();
+    $('modalBack').classList.add('show');
+    setTimeout(resizePad,30);
+  }
+  function closeModal(){ $('modalBack').classList.remove('show'); _cur=null; }
+  $('mCancel').addEventListener('click',closeModal);
+  $('modalBack').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+
+  // ── 서명패드 (canvas + pointer → toDataURL PNG) ──
+  var cv=$('signPad'), ctx=cv.getContext('2d'), drawing=false, hasInk=false, lastX=0, lastY=0;
+  function resizePad(){
+    var rect=cv.getBoundingClientRect(); if(!rect.width) return;
+    var dpr=window.devicePixelRatio||1;
+    cv.width=Math.round(rect.width*dpr); cv.height=Math.round(rect.height*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#1a1a1a';
+  }
+  window.addEventListener('resize',function(){ if($('modalBack').classList.contains('show')){ resizePad(); } });
+  function _pt(e){ var r=cv.getBoundingClientRect(); var p=(e.touches&&e.touches[0])||e; return { x:p.clientX-r.left, y:p.clientY-r.top }; }
+  function start(e){ e.preventDefault(); drawing=true; var p=_pt(e); lastX=p.x; lastY=p.y; if(!hasInk){ hasInk=true; $('signHint').style.display='none'; } }
+  function move(e){ if(!drawing) return; e.preventDefault(); var p=_pt(e); ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke(); lastX=p.x; lastY=p.y; }
+  function end(){ drawing=false; }
+  cv.addEventListener('pointerdown',start); cv.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',end);
+  function clearPad(){ hasInk=false; ctx&&ctx.clearRect(0,0,cv.width,cv.height); $('signHint').style.display='block'; }
+  $('signClear').addEventListener('click',clearPad);
+
+  // ── 수령 확정 (lf_handover) ──
+  $('mConfirm').addEventListener('click',function(){
+    if(!_cur){ return; }
+    // 검증 순서: ① 회원 성함·서명 → ② 담당자 (PIN은 버튼 클릭 시점에 이미 확인됨)
+    var receiver=$('m_receiver').value.trim();
+    if(!receiver){ toast('수령 회원 성함을 입력해 주세요',true); return; }
+    if(!hasInk){ toast('수령 회원 서명을 받아주세요',true); return; }
+    var staffSel=$('m_staff').value;
+    var handoverStaff=(staffSel==='기타')?$('m_staff_other').value.trim():staffSel;
+    if(!staffSel){ toast('주는 담당자를 선택해 주세요',true); return; }
+    if(staffSel==='기타' && !handoverStaff){ toast('담당자 성함을 입력해 주세요',true); $('m_staff_other').focus(); return; }
+    var sign=cv.toDataURL('image/png');
+    var btn=this; btn.disabled=true; btn.textContent='처리 중…';
+    var payload={ action:'lf_handover', t:VOC_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
+    fetch(VOC_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        btn.disabled=false; btn.textContent='수령 완료';
+        if(d&&d.ok){ toast(_cur.id+' 수령완료 처리됨'); _clearCache(); closeModal(); load({force:true}); }
+        else { toast((d&&d.error)||'수령 처리 실패',true); }
+      })
+      .catch(function(){ btn.disabled=false; btn.textContent='수령 완료'; toast('네트워크 오류 — 다시 시도해 주세요',true); });
+  });
 
   // 헤더 로고 → 홈 대신 종합접수처(/ko/reception/)로 (WP Salient #logo; 스탠드얼론엔 없음 → 무해)
   function _relinkLogo(){ try{ var lg=document.getElementById('logo'); if(lg){ var a=(lg.tagName==='A')?lg:(lg.querySelector('a')||lg); if(a&&a.setAttribute){ a.setAttribute('href','/ko/reception/'); } } }catch(e){} }
