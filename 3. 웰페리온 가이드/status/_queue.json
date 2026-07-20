@@ -2741,25 +2741,27 @@
   {
     "task_id": "COO-2026-07-20-O2-HANDLER-BUGS",
     "clevel": "coo",
-    "title": "[시우→최준용M] 종합접수처 O2 보드 버그 3건 (실무 이관)",
-    "status": "PENDING",
+    "title": "[시우] 종합접수처 O2 보드 버그 3건 수리",
+    "status": "IN_PROGRESS",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-20",
-    "note": "[2026-07-20 GM 지시] 운영 실무=최준용M 소관 → 붙여넣기용 프롬프트로 이관. 문서 status/briefs/최준용M_종합접수처_처리자버그_프롬프트_20260720.md 의 「여기부터 복사」 블록.\n라이브 실측 진단: 처리자 입력칸 33 / 중복표시 24 (처리자 기입 건수와 일치).\n①처리자 중복표시 — _regCard 의 COMMON_KEYS 에 '처리자' 누락\n②★저장 실패해도 저장됨✓ — _regHandlerSave/_regMemoSave/_regSms/_regAssign 4곳 모두 성공표시를 fetch 전에 내고 .catch 로 실패를 삼킴 (INC-011·013 동종)\n③_regAssign 이 HTML 이 넘긴 this(3번째 인자) 미수신, 전역 event.target 의존\n별건: 저장소 apps_script_voc.js 가 라이브보다 구버전(handler·sms 칸 없음) — 시토 정리 대상.",
-    "next": "GM이 최준용M에게 전달. 완료 보고 오면 라이브 확인 후 입항.",
+    "note": "[2026-07-20 GM 지시] 운영 실무=최준용M 소관 → 붙여넣기용 프롬프트로 이관. 문서 status/briefs/최준용M_종합접수처_처리자버그_프롬프트_20260720.md 의 「여기부터 복사」 블록.\n라이브 실측 진단: 처리자 입력칸 33 / 중복표시 24 (처리자 기입 건수와 일치).\n①처리자 중복표시 — _regCard 의 COMMON_KEYS 에 '처리자' 누락\n②★저장 실패해도 저장됨✓ — _regHandlerSave/_regMemoSave/_regSms/_regAssign 4곳 모두 성공표시를 fetch 전에 내고 .catch 로 실패를 삼킴 (INC-011·013 동종)\n③_regAssign 이 HTML 이 넘긴 this(3번째 인자) 미수신, 전역 event.target 의존\n별건: 저장소 apps_script_voc.js 가 라이브보다 구버전(handler·sms 칸 없음) — 시토 정리 대상.\n[2026-07-20 GM] 최준용M 이관 취소 → 시우가 직접 수리. 프롬프트 문서는 참고용으로 유지.",
+    "next": "①처리자 중복표시 ②저장 실패 위장 4곳 ③배정 버튼 인자 — 수리 후 라이브 확인.",
     "ship_no": 9334,
     "surface": "g1"
   },
   {
-    "task_id": "CHRO-2026-07-20-HIRE-SHEET-DEPT",
-    "clevel": "chro",
-    "title": "[시우→나우열M] 채용 시트 부서 칸 추가 + 주차 공고 소속 정정 + 허브 통일",
-    "status": "PENDING",
-    "priority": "⛴️여객선",
+    "task_id": "CPO-2026-07-20-ADHOC-6cad0dd8",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
     "enqueued_at": "2026-07-20",
-    "note": "[2026-07-20 GM 지시] 인사 실무=나우열M 소관 → 붙여넣기용 프롬프트로 이관. 문서 status/briefs/나우열M_채용시트_부서칸_프롬프트_20260720.md 의 「여기부터 복사」 블록.\n①db:hire 시트에 부서 칸 추가(주차관리부/시설부/운영부/지원부/파트너팀 5종) + GAS public-job-status 응답에 dept 포함 → 새 버전 배포 필수\n②주차 공고 소속 (시설부)→(주차관리부) 정정 — 주차관리부는 독립 부서\n③채용 목록 허브 index.html 벤토 디자인 통일 + 시트에서 자동 렌더(현재 손으로 적은 고정값)\n배경: 시우가 5개 부서 체계 페이지에 채용 현황을 라이브 연동(배9182)했으나, 시트에 부서 칸이 없어 공고 제목 키워드로 임시 매칭 중 — 제목 바뀌면 끊긴다.",
-    "next": "완료 시 시우가 coo/check/hiring-status.js 의 임시 DEPT_RULES 제거하고 j.dept 직접 매칭으로 전환(배9182 후속).",
-    "ship_no": 9335,
-    "surface": "g1"
+    "processed_at": "2026-07-20",
+    "ship_no": 9336,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 6cad0dd8)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6cad0dd8a26abace873b9680b9e0095b54da5e9c"
   }
 ]
