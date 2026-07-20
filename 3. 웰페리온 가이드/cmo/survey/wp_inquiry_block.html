@@ -60,10 +60,38 @@
      2026-07-16 GM 미세조정: 히어로 세로 여백 과다("정원제" 문구와 "상담 및 투어는 사전예약제" 사이) —
      .hero-band padding-bottom 30→14, .wrap padding-top 34→18(합계 64px→32px)로 축소. 허브 맨 아래
      (social-bar 이후)는 실측 결과 중복/잉여 줄 없음 확인(별도 삭제 대상 없음).
+     2026-07-20 GM 지시: Survey폼(8460)에 적용한 배경 풀블리드+하단여백 제거를 이 페이지(메인 문의,
+     GM이 실제로 가리킨 대상)에도 동일 적용. 원인·처방 동일(같은 WP 테마 래퍼 구조 — .container.main-
+     content padding:0 90px 거터 + .container-wrap padding-bottom 40px + wpb_raw_code margin-bottom
+     35px=고정 75px, 8460과 실측 일치). ::before 50vw 브레이크아웃 + .wlp-inq margin-bottom:-75px로
+     동일 처리(8460과 같은 코드 패턴, 자체선택 사이드바 없음).
+     2026-07-20 GM 지시(언어전환): 영문판(/en/inquiry/, 8408)엔 WP 테마 네이티브 언어전환 버튼
+     (a.lang-header, "KOR")이 보이는데, 이 페이지는 위 #header-outer를 통째로 숨겨놔서 그 안에 같이
+     있는 네이티브 "ENG" 버튼도 함께 숨어버려 안 보였음(DOM엔 있으나 0×0, 실측 확인). 헤더를 다시 켜면
+     예전에 몇 차례 고생해서 잡은 로고·히어로 겹침 문제가 재발하므로(위 이력 참고) 헤더는 계속 숨김
+     유지 — 대신 .hero-band 안에 새 .lang-switch 링크를 직접 추가(네이티브 버튼과 동일한 알약형·2px
+     테두리·24px 라운드·"ENG" 대문자 표기 계승, 색만 이 페이지 베이지 배경에 맞게 반전 — 네이티브는
+     흰 배경 위 흰색이라 이 베이지 배경에선 그대로 못 씀). .hero-band(720px 가운데정렬 컬럼) 안이 아닌
+     .wlp-inq 최상위 직계로 배치 — 컨텐츠 영역(WP 90px 거터 안쪽) 우상단에 앉아 영문판 네이티브 버튼의
+     "화면 진짜 모서리" 위치와는 살짝(≈120px) 다르지만, 이 페이지 다른 요소(카드 등)도 전부 같은 90px
+     거터 안에서 끝나므로 이 페이지 자체 기준으론 일관됨 — position:fixed로 픽셀 일치시키는 안은
+     영문판에 없는 "항상 고정" 동작을 새로 만드는 것이라 보류(GM 확인 필요시 후속).
+     ★함정(실측 발견): href="http://wellperion.com/en/inquiry/" 리터럴을 그대로 쓰면 WPML이 본문
+     콘텐츠 안의 내부링크를 "현재 보고 있는 언어로" 자동 교정하는 필터가 서버단에서 이를 감지해
+     href를 조용히 /ko/inquiry/(자기 자신)로 되돌려버림(라이브 HTML 소스 직접 확인 — 렌더 후 DOM이
+     아니라 서버가 이미 고친 원본 자체가 틀어짐, 네이티브 a.lang-header는 WPML 자체 함수 출력이라
+     이 필터를 안 타서 멀쩡함). 우회: href="#" + onclick으로 location.href를 JS 문자열로 나눠서
+     대입(리터럴 URL 문자열이 페이지 소스 어디에도 "href=..." 형태로 등장하지 않게)해 WPML의 href
+     패턴매칭을 회피. 이 페이지의 다른 href(예: /ko/inquiry-form/?type=...)는 같은 언어(ko) 내
+     이동이라 이 필터에 안 걸림 — 문제는 "다른 언어로 나가는 링크"에서만 발생.
      수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <style>
-/* 문의 페이지(8394) 한정 — WP 테마 헤더 전체 숨김(로고·메뉴·ENG버튼). 다른 페이지 영향 0(page-id 스코프). */
+/* 문의 페이지(8394) 한정 — WP 테마 헤더 전체 숨김(로고·메뉴·네이티브 ENG버튼 포함). 다른 페이지
+   영향 0(page-id 스코프). 네이티브 언어전환 버튼이 같이 숨는 문제는 .lang-switch로 별도 대체(하단). */
 body.page-id-8394 #header-outer { display: none !important; }
+/* 하단 여백 제거(2026-07-20 GM 지시) — .wlp-inq{margin-bottom:-75px}만으로는 WPBakery 테마
+   기본 마진(특이도 0,1,1)이 우리 규칙(0,1,0)을 이겨 무시됨(8460 실측으로 확인된 함정, 동일 적용). */
+body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
 </style>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
@@ -73,12 +101,29 @@ body.page-id-8394 #header-outer { display: none !important; }
   background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   -webkit-text-size-adjust:100%;box-sizing:border-box;
+  position:relative;
 }
 .wlp-inq *{box-sizing:border-box}
 .wlp-inq a{text-decoration:none;color:inherit}
+/* 배경 풀블리드(PC 좌우 짤림 해소, 2026-07-20 GM 지시) — width:100vw 대신 left/right:50%+margin:-50vw만
+   사용해 스크롤바 폭 오버플로(가로스크롤) 함정 회피(8460과 동일 기법). */
+.wlp-inq::before{
+  content:'';position:absolute;top:0;bottom:0;left:50%;right:50%;
+  margin-left:-50vw;margin-right:-50vw;background:var(--bg);z-index:-1;
+}
+
+/* 언어 전환(2026-07-20 GM 지시) — 네이티브 a.lang-header("ENG", 흰 배경용 흰 알약)가 헤더 숨김으로
+   같이 숨어 이 페이지엔 안 보이던 것을, 같은 모양(2px 테두리·24px 라운드·대문자 표기)으로 베이지
+   배경에 맞게 색만 반전해 히어로 우측 상단에 재현. 모바일도 같은 자리(터치 44px 이상 확보). */
+.wlp-inq .lang-switch{position:absolute;top:16px;right:16px;z-index:5;display:inline-flex;align-items:center;justify-content:center;
+  padding:10px 18px;min-height:44px;min-width:44px;border:2px solid var(--ink);border-radius:24px;color:var(--ink);
+  font-size:13px;font-weight:700;letter-spacing:.02em;background:transparent}
+@media (max-width:520px){
+  .wlp-inq .lang-switch{top:10px;right:10px;padding:9px 16px;font-size:12.5px}
+}
 
 /* ===== HERO — 밝은 베이지 우아(시안F, 2026-07-16 GM 최종확정: 히어로·본문 전체 동일 베이지로 통일) ===== */
-.wlp-inq .hero-band{background:var(--bg);max-width:720px;margin:-40px auto 0;padding:64px 20px 14px}
+.wlp-inq .hero-band{background:var(--bg);max-width:720px;margin:-40px auto 0;padding:64px 20px 14px;position:relative}
 @media (max-width:1000px){
   .wlp-inq .hero-band{padding-top:56px}
 }
@@ -135,6 +180,7 @@ body.page-id-8394 #header-outer { display: none !important; }
 
 <div class="wlp-inq">
 
+  <a class="lang-switch" href="#" onclick="location.href='http://wellperion.com/'+'en/inquiry/';return false;">ENG</a>
   <div class="hero-band">
     <div class="hero-inner">
       <p class="eyebrow">Wellperion</p>

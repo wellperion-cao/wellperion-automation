@@ -12,6 +12,20 @@
      system import) and the rounded style matches this page's own card grid below. iframe
      title translated to English ("Wellperion Introduction", reusing the placeholder's own
      existing English label — no new copy invented).
+     2026-07-20 GM instruction: remove the empty bottom margin, same as the KO page
+     (/ko/inquiry/, 8394) and the Survey form (8460) — measured live: this page's own theme
+     wrapper (.container-wrap padding-bottom 40px + the raw-HTML content block's own
+     margin-bottom 35px = a fixed 75px gray gap) leaves the same 75px empty strip before the
+     footer, confirmed identical to the other two pages (same injection mechanism). Fixed the
+     same way: #wlp-en-inquiry-root { margin-bottom: -75px }.
+     Note (checked, not changed): unlike the KO/Survey pages, this page has no distinct
+     background color of its own (fully transparent — the visible gray you see everywhere is
+     just the theme's own default), so there is no "ivory background cut off at the edges" to
+     fix here — nothing to extend left/right since nothing colored exists to be cut. Flagging
+     rather than inventing a new ivory-background redesign unasked; see report.
+     This page's own language switch (a.lang-header, "KOR", top-right) already exists and
+     already works — no change needed there (unlike KO where the same native switcher is
+     hidden by that page's own #header-outer:none and had to be rebuilt).
      To update: edit this file and re-inject via draft-inquiry-en mode. -->
 <style>
 /* English inquiry page (WP page-id 8408) — header logo top-clip fix */
@@ -19,8 +33,11 @@ body.page-id-8408 #header-outer #logo { margin-top: 32px !important; }
 @media (max-width: 1000px) {
   body.page-id-8408 #header-outer #logo { margin-top: 22px !important; }
 }
+/* 하단 여백 제거(2026-07-20 GM 지시) — KO(8394)·Survey폼(8460)과 동일한 고정 75px 회색 여백
+   (container-wrap padding-bottom 40px + raw-html 블록 margin-bottom 35px) 실측 확인, 동일 처방. */
+body.page-id-8408 #wlp-en-inquiry-root { margin-bottom: -75px !important; }
 </style>
-<div style="max-width:760px;margin:0 auto;padding:70px 16px 80px;font-family:'Noto Sans KR',-apple-system,'Malgun Gothic',sans-serif;">
+<div id="wlp-en-inquiry-root" style="max-width:760px;margin:0 auto;padding:70px 16px 80px;font-family:'Noto Sans KR',-apple-system,'Malgun Gothic',sans-serif;">
   <div style="text-align:center;margin:8px 0 24px;">
     <h2 style="font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#1a1a1a;margin:0 0 10px;">Wellperion Inquiry</h2>
     <p style="font-size:15px;line-height:1.7;color:#666;margin:0;">
