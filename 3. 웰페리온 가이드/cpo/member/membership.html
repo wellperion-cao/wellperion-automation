@@ -1545,7 +1545,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
               <th style="width:100px">관심 프로그램</th>
               <th style="width:108px">진행상황</th>
               <th style="width:104px">유입채널</th>
-              <th class="db-owner-col">담당</th>
+              <!-- ★width:0 필수(2026-07-20 3차 · GM "우측에 빈틈 왜 만들어?"). display:none 칸이라도
+                   width를 비우면 '가변 칸'으로 취급돼 남는 폭을 n등분해 가져가고, 안 보이니 그대로 빈 띠가 된다.
+                   2차 수정에서 width:85px를 지웠다가 이 칸이 335px을 먹어 틈이 4배가 된 회귀를 만들었다. -->
+              <th style="width:0" class="db-owner-col">담당</th>
               <th>문의 내용</th>
               <th>CONTACT (연락 이력)</th>
               <th style="width:190px">일정 (예약)</th>
@@ -2813,8 +2816,10 @@ function _gzFmtContact_(v) {
   if (s.trim() && /^[\d\s\-+().]+$/.test(s.trim())) return _gzFmtPhone_(s);
   return s;
 }
+// 2026-07-20 시모: Survey.js CANONICAL_CHANNELS와 정합 — '유선전화' 10번째 버킷 추가(회원관리 드롭다운
+//   CHANNEL_OPTIONS엔 있었는데 이 배열엔 누락돼 있던 정본 불일치 수정, 상세 근거는 Survey.js 쪽 주석 참고).
 var GZ_CANONICAL_CHANNELS = ['네이버', '동부이촌동 커뮤니티', '인스타그램', '카카오톡', '당근마켓',
-                              '소개·지인', '기존·과거 회원', '오프라인', '기타·미상'];
+                              '소개·지인', '기존·과거 회원', '오프라인', '유선전화', '기타·미상'];
 function _gzCanonicalChannel_(raw) {
   var s = String(raw == null ? '' : raw).trim();
   if (!s) return '기타·미상';
@@ -2827,7 +2832,30 @@ function _gzCanonicalChannel_(raw) {
   if (/소개|지인|친구|friend|추천|동기/i.test(s)) return '소개·지인';
   if (/회원|가족|자녀|아이|아들|딸|형|누나|언니|동생|둘째|첫째|보호자|학부모|부모|母|수강|강습|다녔|다니|이용|경험|기존|과거|재수강|정회원|연회원|멤버십회원|멤버쉽|wsc|준회원|수강생/i.test(s)) return '기존·과거 회원';
   if (/간판|현수막|홍보물|우편|워크인|방문|지나가|지나는|집근처|근처|동네|거주|입주|하이페리온|길에|봤|보여서|아파트|오프라인/.test(s)) return '오프라인';
+  if (/^유선\s*전화$|^전화\s*문의$/.test(s)) return '유선전화';
   return '기타·미상';
+}
+// 유입채널 원문 3단 해석(대분류→중분류→자동UTM) — Survey.js _resolveInquiryChannelRaw_ 1:1 이식.
+// 2026-07-20 시모(GM 지시): gvizMiRows_(클라이언트 gviz 직독 경로)가 대분류 1칸만 읽어 Survey.js
+// _miReadRows_·M1(_collectFormInquiries_)과 다른 값을 보여주던 사고 재발방지 — 서버·클라 양쪽 모두
+// 같은 3단 규칙을 적용한다(런타임이 달라 함수 자체 공유는 불가 → 알고리즘을 동일하게 유지).
+function _gzResolveInquiryChannelRaw_(headers, row, channelKeys) {
+  var idxChan = _gzColIdx_(headers, channelKeys);
+  var idxChanFine = _gzColIdx_(headers, ['중분류']);
+  var idxAuto = _gzColIdx_(headers, ['유입경로(자동)', '유입경로자동', '유입경로_자동']);
+  var chanRaw = (idxChan >= 0 ? String(row[idxChan] || '').trim() : '');
+  if (idxChanFine >= 0) {
+    var midRaw = String(row[idxChanFine] || '').trim();
+    if (midRaw && _gzCanonicalChannel_(midRaw) !== '기타·미상') chanRaw = midRaw;
+  }
+  if (idxAuto >= 0) {
+    var autoRaw = String(row[idxAuto] || '').trim();
+    if (autoRaw) {
+      var autoSrc = autoRaw.split('|')[0].trim();
+      if (_gzCanonicalChannel_(autoSrc) !== '기타·미상') chanRaw = autoSrc;
+    }
+  }
+  return chanRaw;
 }
 function _gzToISO_(val) {
   if (!val) return '';
@@ -2940,7 +2968,7 @@ function gvizMiRows_(headers, rows, gid) {
   var iVisited = _gzColIdx_(headers, ['방문완료일','방문완료','방문일자']);
   var iOwner = _gzColIdx_(headers, ['담당','담당자']);
   var iMemo  = _gzColIdx_(headers, ['메모','비고','담당자메모']);
-  var iChan  = _gzColIdx_(headers, ['문의채널','유입채널','채널','경로','알게','How Did You Hear About Us?']);
+  var _GZ_CHAN_KEYS = ['문의채널','유입채널','채널','경로','알게','How Did You Hear About Us?'];  // 대분류 — 3단 우선순위는 _gzResolveInquiryChannelRaw_ 공용 로직(Survey.js와 정합, 2026-07-20)
   var iContent = _gzColIdx_(headers, ['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항','문의사항','Health & Wellness Goals']);
   var iRes  = _gzColIdx_(headers, [INQ_RES_COL_GZ]);
   // 위치 폴백 17/18/19 제거(2026-07-20 시포) — Survey.js _miReadRows_와 정합. 정답 위치는 16/17/18인데 한 칸씩 밀린 폴백이 지뢰였음.
@@ -2963,7 +2991,7 @@ function gvizMiRows_(headers, rows, gid) {
       phone:    iPhone >= 0 ? _gzFmtPhone_(row[iPhone]) : '',
       program:  iProg  >= 0 ? String(row[iProg]  || '') : '',
       status:   iStat  >= 0 ? String(row[iStat]  || '') : '',
-      channel:  (iChan >= 0 && row[iChan]) ? _gzCanonicalChannel_(String(row[iChan])) : '',
+      channel:  (function(){ var _cr = _gzResolveInquiryChannelRaw_(headers, row, _GZ_CHAN_KEYS); return _cr ? _gzCanonicalChannel_(_cr) : ''; })(),
       exp1:     (_gzToISO_(iTour >= 0 ? row[iTour] : '') || _gzToISO_(iExp1 >= 0 ? row[iExp1] : '')),
       exp1Time: _gzTime_(iExp1 >= 0 ? row[iExp1] : ''),
       exp2:     (_gzToISO_(iV2Dt >= 0 ? row[iV2Dt] : '') || _gzToISO_(iExp2 >= 0 ? row[iExp2] : '')),
@@ -7831,7 +7859,8 @@ function _shortProgram(p){
   return s;
 }
 var OWNER_OPTIONS = ['임정은','최준용','이경연','이지영','김남욱','고수자','강경희','윤병현'];
-// 유입채널 표준 10버킷 (Survey.js CANONICAL_CHANNELS 와 동일 — 마케팅 채널 귀속)
+// 유입채널 표준 10버킷 — Survey.js CANONICAL_CHANNELS·_canonicalChannel_와 실제로 동일(2026-07-20 정합 확인·
+//   과거엔 '유선전화'가 여기에만 있고 서버 쪽엔 없어 "동일하다"는 주석이 거짓이었음 — 서버에 10번째 버킷 추가로 통일).
 var CHANNEL_OPTIONS = ['네이버','동부이촌동 커뮤니티','인스타그램','카카오톡','당근마켓',
                        '소개·지인','기존·과거 회원','오프라인','유선전화','기타·미상'];
 // 드롭다운 생성 — 목록에 없는 현재값도 보존(데이터 손실 방지). IME 안전(재생성 없음).

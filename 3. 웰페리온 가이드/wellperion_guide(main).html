@@ -4047,12 +4047,41 @@ window._regAssign = function(id, category) {
   </div>
 
   <!-- ════════════════════════════════════════════
+       ②-b 가입전환율 — 모수 분리 표시 (2026-07-20 GM 지시)
+       기존엔 "41.3%"가 멤버십만인지 강습 포함인지 화면에 안 드러났다(모수 불명확). 여기서 둘 다 병기한다.
+       분모(문의)는 멤버십+성인강습+유소년강습 통합 문의로 공통 — 분자(가입)만 다르다:
+       멤버십만 = 유효회원 전화매칭 단독 / 강습 포함 = 유효회원∪강습등록 전화매칭 union.
+       데이터 = funnel_conversion total(convertedMemberOnly·converted·lessonAdded, 서버 기존 필드 그대로 — 신규 집계 없음).
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">가입전환율 — 모수 기준</div>
+    <div class="kpi-row" id="conv-basis-kpi-row">
+      <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">전환율(멤버십만)</div></div>
+      <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">전환율(강습 포함)</div></div>
+    </div>
+    <div style="font-size:10.5px;color:var(--dim);margin-top:6px" id="conv-basis-note"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
        ③ 채널별 성과 — 5채널 × (발행·경유문의·게시물당 문의·증감)
        증감 = 선택 기간과 동일 길이의 직전 기간 대비(문의 기준). 실측 두 번 조회.
        ════════════════════════════════════════════ -->
   <div class="section">
     <div class="section-title">채널별 성과</div>
     <div id="channel-perf-wrap">
+      <div class="flow-skeleton sk-pulse"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ③-b 강습 종목별 문의·등록 (2026-07-20 GM 지시 — "강습도 종목별로 나눠 표시")
+       데이터 = lesson_breakdown 액션(팀시트 기반 기존 서버 로직 그대로 재사용 — 신규 집계 없음).
+       문의=선택 기간(팀시트 타임스탬프 기준) · 등록=누적(팀시트에 등록일이 없어 기간분리 불가, 정직 표기).
+       실제 데이터가 있는 종목만 표시 — 시트/상태열 미발견은 '미상'(0으로 날조하지 않음).
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">강습 종목별 문의·등록</div>
+    <div id="lesson-breakdown-wrap">
       <div class="flow-skeleton sk-pulse"></div>
     </div>
   </div>
@@ -4084,8 +4113,10 @@ window._regAssign = function(id, category) {
     <script>
 (function(){
 // ─── 마케팅 현황 대시보드 — 콘텐츠 → 문의 성과 전용 재설계 (2026-07-18 GM 확정) ───────
-// 문의 상담·등록·회원 세부(멤버십/강습 종목별)는 CPO 「문의&등록 현황」으로 이관 — 이 페이지는 다루지 않는다.
-// 값 지어내기 금지: 실측 안 되는 지표는 '측정 준비중'으로 정직 표기.
+// 문의 개별 상담·CRM 편집(이름·연락처·상담이력)은 CPO 「문의&등록 현황」소관 — 이 페이지는 다루지 않는다.
+// 단 집계 수치(가입전환율 모수 구분·강습 종목별 문의/등록 건수)는 2026-07-20 GM 지시로 이 페이지에도 병기한다
+// (모수 불명확·종목별 미분리 문제 해소 — 서버 기존 필드/액션 재사용, 신규 집계 로직 없음).
+// 값 지어내기 금지: 실측 안 되는 지표는 '측정 준비중'/'미상'으로 정직 표기.
 
 var FUNNEL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
 function esc(s){
@@ -4247,6 +4278,15 @@ function fetchFunnelConversion(from, to) {
     .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
     .catch(function(e) { console.warn('[funnel_conversion] 실패:', e && e.message); return null; });
 }
+// ─── lesson_breakdown (강습 종목별 문의·등록, 서버 기존 액션) — 2026-07-20 GM 지시 ───
+function fetchLessonBreakdown(from, to) {
+  var url = FUNNEL_APPS_SCRIPT_URL + '?action=lesson_breakdown';
+  if (from && to) url += '&from=' + from + '&to=' + to;
+  return fetch(url, { redirect: 'follow' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+    .catch(function(e) { console.warn('[lesson_breakdown] 실패:', e && e.message); return null; });
+}
 // byChannel 배열 → { GAS채널명: 문의수 } 맵
 function _fcChannelMap(fcData) {
   var m = {};
@@ -4347,9 +4387,10 @@ function refreshPeriodSections() {
   Promise.all([
     loadReviewQueue(),
     fetchFunnelConversion(from, to),
-    fetchFunnelConversion(prev.from, prev.to)
+    fetchFunnelConversion(prev.from, prev.to),
+    fetchLessonBreakdown(from, to)
   ]).then(function(res) {
-    var rq = res[0], fcCur = res[1], fcPrev = res[2];
+    var rq = res[0], fcCur = res[1], fcPrev = res[2], lb = res[3];
     var curItems = _pubItemsInRange(rq, from, to);
     var prevItems = _pubItemsInRange(rq, prev.from, prev.to);
     var curPubByCh = _pubCountByChannel(curItems);
@@ -4359,10 +4400,71 @@ function refreshPeriodSections() {
     var curStatsByCh = _fcChannelStatsMap(fcCur);  // {inquiries, converted, rate} — 가입전환 상세 드릴다운용
 
     renderSummary(curItems.length, _contentInquirySum(curInqByCh), fcCur === null);
+    renderConvBasis(fcCur, fcCur === null);
     renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcCur === null, curStatsByCh);
+    renderLessonBreakdown(lb);
 
     renderInsight(curPubByCh, curInqByCh);
   });
+}
+
+// ─── ②-b 가입전환율 모수 분리(멤버십만 / 강습 포함) — 2026-07-20 GM 지시 ─────
+function renderConvBasis(fcCur, fcFailed) {
+  var el = document.getElementById('conv-basis-kpi-row');
+  var noteEl = document.getElementById('conv-basis-note');
+  if (!el) return;
+  if (fcFailed || !fcCur || !fcCur.total) {
+    el.innerHTML =
+      '<div class="kpi-card"><div class="num" style="font-size:14px"><span class="placeholder">집계 실패</span></div><div class="label">전환율(멤버십만)</div></div>' +
+      '<div class="kpi-card"><div class="num" style="font-size:14px"><span class="placeholder">집계 실패</span></div><div class="label">전환율(강습 포함)</div></div>';
+    if (noteEl) noteEl.textContent = '';
+    return;
+  }
+  var t = fcCur.total;
+  var inq = t.inquiries || 0;
+  var convM = t.convertedMemberOnly || 0;
+  var convAll = t.converted || 0;
+  var rateM = inq > 0 ? Math.round((convM / inq) * 1000) / 10 : 0;
+  var rateAll = (t.rate != null) ? t.rate : (inq > 0 ? Math.round((convAll / inq) * 1000) / 10 : 0);
+  el.innerHTML =
+    '<div class="kpi-card"><div class="num">' + rateM + '<span class="unit">%</span></div><div class="label">전환율(멤버십만)</div><div class="sub">가입 ' + convM.toLocaleString('ko-KR') + ' / 문의 ' + inq.toLocaleString('ko-KR') + '</div></div>' +
+    '<div class="kpi-card"><div class="num">' + rateAll + '<span class="unit">%</span></div><div class="label">전환율(강습 포함)</div><div class="sub">가입 ' + convAll.toLocaleString('ko-KR') + ' / 문의 ' + inq.toLocaleString('ko-KR') + ' · 강습등록 +' + (t.lessonAdded || 0) + '건</div></div>';
+  if (noteEl) noteEl.textContent = esc(_periodLabel) + ' 기준 · 분모(문의 ' + inq.toLocaleString('ko-KR') + '건)는 멤버십+성인강습+유소년강습 통합 문의로 공통, 분자(가입)만 다름 — 멤버십만=유효회원 전화매칭 단독 / 강습 포함=유효회원∪강습등록 전화매칭 union. ' + esc(t.convBasis || '');
+}
+
+// ─── ③-b 강습 종목별 문의·등록 — 2026-07-20 GM 지시 ─────
+function _lbCellHtml(v) {
+  return (v == null) ? '<span class="placeholder">미상</span>' : v.toLocaleString('ko-KR');
+}
+function renderLessonBreakdown(lb) {
+  var el = document.getElementById('lesson-breakdown-wrap');
+  if (!el) return;
+  if (!lb || !lb.data) {
+    el.innerHTML = '<div class="measure-pending">강습 종목별 집계 실패 — 잠시 후 다시 시도해주세요.</div>';
+    return;
+  }
+  var html = '';
+  Object.keys(lb.data).forEach(function(grp) {
+    var items = lb.data[grp] || [];
+    if (!items.length) return;
+    var thead = '<thead><tr><th>종목</th><th style="text-align:right">문의(' + esc(_periodLabel) + ')</th><th style="text-align:right">등록(누적)</th></tr></thead>';
+    var body = items.map(function(it) {
+      return '<tr><td>' + esc(it.명) + '</td><td style="text-align:right">' + _lbCellHtml(it.inquiries) + '</td><td style="text-align:right">' + _lbCellHtml(it.registered) + '</td></tr>';
+    }).join('');
+    html += '<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px">' + esc(grp) + '</div>' +
+      '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto"><table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table></div></div>';
+  });
+  if (Array.isArray(lb.others) && lb.others.length) {
+    var othBody = lb.others.map(function(o) {
+      return '<tr><td>' + esc(o.유형) + ' · ' + esc(o.명) + '</td><td style="text-align:right">' + _lbCellHtml(o.inquiries) + '</td><td style="text-align:right">' + _lbCellHtml(o.registered) + '</td></tr>';
+    }).join('');
+    html += '<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px">기타(표준 목록 외 시트 존재)</div>' +
+      '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto"><table class="channel-table"><thead><tr><th>종목</th><th style="text-align:right">문의</th><th style="text-align:right">등록</th></tr></thead><tbody>' + othBody + '</tbody></table></div></div>';
+  }
+  if (!html) html = '<div class="measure-pending">종목별 데이터 없음.</div>';
+  html += '<div style="font-size:10.5px;color:var(--dim)">' + esc(lb.basis || '') +
+    (Array.isArray(lb.unmatched) && lb.unmatched.length ? ' · 데이터 미연결 종목(미상): ' + lb.unmatched.map(function(u){ return esc(u.명); }).join(', ') : '') + '</div>';
+  el.innerHTML = html;
 }
 
 function renderSummary(pubCount, inqSum, fcFailed) {
