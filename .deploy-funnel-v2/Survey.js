@@ -4383,7 +4383,7 @@ function _processAction(body) {
       return !isNaN(t) && t >= fdF && t <= fdT;
     }
     var fdCache = CacheService.getScriptCache();
-    var fdCacheKey = 'fcd_v1_' + fdFrom + '_' + fdTo;
+    var fdCacheKey = 'fcd_v2_' + fdFrom + '_' + fdTo;  // v2: 강습원장 시드(2000-01-01) placeholder 확인불가 처리 반영 — 구캐시 무효화
     var fdHit = fdCache.get(fdCacheKey);
     if (fdHit && !_nc) return _json(JSON.parse(fdHit));
 
@@ -4438,6 +4438,7 @@ function _processAction(body) {
           var n = _normPhone_(row[3]);   // 전화
           if (!n) return;
           var iso = _miToISO_(row[5]);   // 등록일
+          if (iso === '2000-01-01') return;  // 원장 시드 기준선 placeholder(_syncLessonRegistry_ 시드모드) — 실제 등록일 아님, 확인불가로 취급(날조 금지)
           if (iso && (!fdLessonRegMap.hasOwnProperty(n) || iso < fdLessonRegMap[n])) fdLessonRegMap[n] = iso;
         });
       }
