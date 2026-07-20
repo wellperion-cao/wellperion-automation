@@ -2674,7 +2674,10 @@ function _processAction(body) {
         function _imSet(names, val) { if (val === undefined || val === null || val === '') return; var ci = _miColIdx_(_imHdr, names); if (ci >= 0) _imRow[ci] = val; }
         var _imNowDt = new Date();
         _imSet(['날짜', '접수일'], _korDateOnly_(_imNowDt));       // A열 — 기존 444건 다수 포맷 'yy. M. d' 통일(2026-07-20). '타임스탬프'와 한 호출로 합치면 _miColIdx_가 B만 채우므로 반드시 분리
-        _imSet(['타임스탬프', 'timestamp'], _korDateTime_(_imNowDt));  // B열 — 기존 다수 포맷 'yyyy. M. d 오전/오후 h:mm:ss' 통일
+        // B열 — ★실제 Date로 기록(2026-07-20 GM). 문자열로 쓰면 시트가 텍스트로 저장해 진짜 날짜값과
+        //   따로 정렬돼 맨 위/맨 아래로 튄다(GM 지적: Nicole·한혜수·원유선 건). Date면 시트 자체 서식이
+        //   적용돼 시분초 보존 + 정렬·비교 정상.
+        _imSet(['타임스탬프', 'timestamp'], _imNowDt);
         _imSet(['성함', '이름'], _iName);
         _imSet(['연락처', '전화', '휴대폰'], _fmtPhone_(_iPhone));
         _imSet(['관심 있는 프로그램 종류', '관심 있는 프로그램 종목', '관심프로그램', '프로그램', '종목'], _iProgram);
@@ -2711,10 +2714,12 @@ function _processAction(body) {
         var _lsNowDt = new Date();
         var _lsToday = Utilities.formatDate(_lsNowDt, 'Asia/Seoul', 'yyyy-MM-dd');            // 날짜 전용(문의일 등)
         var _lsNowFull = Utilities.formatDate(_lsNowDt, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');  // 타임스탬프 전용(시:분:초 보존, 2026-07-18)
-        _lsSet(['타임스탬프'], _lsNowFull);
+        _lsSet(['타임스탬프'], _lsNowDt);   // ★실제 Date(2026-07-20 GM) — 문자열이면 정렬이 깨진다
         var _lsDateCi = _findCol_(_lsHdr, ['문의일', '문의 일', '날짜']);
         if (_lsDateCi >= 0) { if (!_lsRow[_lsDateCi]) _lsRow[_lsDateCi] = _lsToday; }
-        else if (!String(_lsHdr[0] || '').trim() && !_lsRow[0]) { _lsRow[0] = _lsNowFull; }   // 성인탭 A열 빈헤더=타임스탬프 대응(시간 보존)
+        // 성인탭 A열(빈헤더)은 실측상 '26. 1. 1 ' 같은 날짜전용 문자열 칸(문의일 계열) — 타임스탬프 아님.
+        //   여기에 시분초 문자열을 넣으면 기존 479건과 표기가 갈린다. 기존 다수 포맷으로 통일. 2026-07-20 GM.
+        else if (!String(_lsHdr[0] || '').trim() && !_lsRow[0]) { _lsRow[0] = _korDateOnly_(_lsNowDt); }
         _lsSet(['성함', '이름'], _iName);
         _lsSet(['연락처', '핸드폰', '전화', '휴대폰'], _fmtPhone_(_iPhone));
         _lsSet(['나이', '연령', '자녀'], _iAge);
@@ -2742,7 +2747,7 @@ function _processAction(body) {
         var _rtHdr = _rtSh.getRange(1, 1, 1, _rtSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
         var _rtRow = new Array(_rtHdr.length).fill('');
         function _rtSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_rtHdr, [name]); if (ci >= 0) _rtRow[ci] = val; }
-        _rtSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));  // 2026-07-18 시간 보존
+        _rtSet('타임스탬프', new Date());  // ★실제 Date(2026-07-20 GM) — 문자열이면 정렬이 깨진다
         _rtSet('성함', _iName);
         _rtSet('연락처', _fmtPhone_(_iPhone));
         _rtSet('대관 공간', _iSpace);
@@ -2762,7 +2767,7 @@ function _processAction(body) {
         var _bzHdr = _bzSh.getRange(1, 1, 1, _bzSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
         var _bzRow = new Array(_bzHdr.length).fill('');
         function _bzSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_bzHdr, [name]); if (ci >= 0) _bzRow[ci] = val; }
-        _bzSet('타임스탬프', Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));  // 2026-07-18 시간 보존
+        _bzSet('타임스탬프', new Date());  // ★실제 Date(2026-07-20 GM) — 문자열이면 정렬이 깨진다
         _bzSet('성함', _iCompany + ' / ' + _iContactName);
         _bzSet('회사명', _iCompany);
         _bzSet('담당자', _iContactName);
@@ -4025,16 +4030,24 @@ function _processAction(body) {
       if (lrColIdx < 0) { lrItem.error = 'LOSS사유 헤더 없음'; lrReport.push(lrItem); continue; }
 
       if (lrMode === 'diag' || lrMode === 'verify') {
-        var lrRuleSamples = [], lrSeen = {};
+        // 전체 열 getDataValidations()는 행이 수백~수천이면 GAS에서 극단적으로 느림(실측 180초+ 타임아웃).
+        // 데이터 확인 규칙은 보통 연속 범위 단위로 한 번에 걸리므로 소수 샘플 행(앞/중간/뒤)만 단일 셀로 훑어도
+        // 서로 다른 규칙 구간이 있으면 대부분 걸러진다. 2026-07-20 시포(타임아웃 수리).
+        var lrRuleSamples = [], lrSeen = {}, lrSampleRows = [];
         if (lrLastRow >= 2) {
-          var lrRules = lrSh.getRange(2, lrColIdx + 1, lrLastRow - 1, 1).getDataValidations();
-          for (var ri = 0; ri < lrRules.length; ri++) {
-            var info = _lrRuleInfo_(lrRules[ri][0]);
+          var lrMidRow = Math.floor((2 + lrLastRow) / 2);
+          [2, 3, lrMidRow, lrLastRow - 1, lrLastRow].forEach(function (rr) {
+            if (rr >= 2 && rr <= lrLastRow && lrSampleRows.indexOf(rr) < 0) lrSampleRows.push(rr);
+          });
+          lrSampleRows.forEach(function (rr) {
+            var rule = lrSh.getRange(rr, lrColIdx + 1).getDataValidation();
+            var info = _lrRuleInfo_(rule);
             var key = info ? JSON.stringify(info) : 'NONE';
-            if (!lrSeen[key]) { lrSeen[key] = true; lrRuleSamples.push(info); }
-          }
+            if (!lrSeen[key]) { lrSeen[key] = true; lrRuleSamples.push({ row: rr, rule: info }); }
+          });
         }
-        lrItem.existingRules = lrRuleSamples;  // 행마다 규칙이 다르면 여러 개로 나타남(원인 규명 자료)
+        lrItem.sampledRows = lrSampleRows;
+        lrItem.existingRules = lrRuleSamples;  // 샘플 행마다 규칙이 다르면 여러 개로 나타남(원인 규명 자료) — 표본이라 전 구간 보장은 아님
         if (lrNoteColIdx >= 0 && lrLastRow >= 2) {
           lrItem.noteColRule = _lrRuleInfo_(lrSh.getRange(2, lrNoteColIdx + 1).getDataValidation());
         }
