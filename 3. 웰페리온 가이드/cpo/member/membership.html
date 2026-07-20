@@ -736,6 +736,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .reg-new-badge{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:6px;background:var(--accent);color:#fff;margin-left:6px;vertical-align:middle}
 /* 영어로 접수된 문의 뱃지 — 영어 문의 누수 수리(한글+영문 탭 병합 표시). 2026-07-09 시포·GM. */
 .lang-badge-en{display:inline-block;font-size:9px;font-weight:800;padding:1px 6px;border-radius:6px;background:#2563eb;color:#fff;margin-left:6px;vertical-align:middle}
+/* 재문의(같은 연락처) 배지 — 기존 배지 체계(등록완료=accent 금색·LOSS=red 빨강) 색토큰 재사용, 새 색 발명 금지. GM 지시 2026-07-20. */
+.ri-badge{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 7px;border-radius:6px;margin-left:6px;vertical-align:middle;cursor:pointer;white-space:nowrap}
+.ri-badge-repeat{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
+.ri-badge-loss{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.ri-badge-family{background:var(--bg);color:var(--dim);border:1px solid var(--border)}
 
 /* ═══════════════════════════════════════
    멤버십 회원관리
@@ -2379,6 +2384,38 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeRegProgramModal()">취소</button>
       <button class="consult-btn-save" id="rpSaveBtn" onclick="saveRegProgramModal()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 재문의 이력 모달 — 같은 연락처의 이전 문의 표시(읽기 전용, 시트 쓰기 없음). LOSS 사유 모달과 동일 overlay/modal 패턴 재사용.
+     이름 완전일치=재문의(재문의 목록) / 이름 다르면 가족·동반 등 '같은 번호 다른 문의'(별도 목록) — 병합·이관 없음, 표시만. GM 지시 2026-07-20, 시포. -->
+<div class="consult-overlay" id="repeatInquiryOverlay" onclick="if(event.target===this)closeRepeatInquiryModal()">
+  <div class="consult-modal" role="dialog" aria-modal="true">
+    <div class="consult-modal-head">
+      <span class="consult-modal-kind experience" id="riKind">재문의</span>
+      <span class="consult-modal-title">문의 이력</span>
+    </div>
+    <div class="consult-row"><span class="ck">문의</span><span class="cv" id="riMemberFixed">—</span></div>
+
+    <div id="riLossBanner" style="display:none;margin:10px 0 4px;padding:9px 12px;border-radius:8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);font-size:12.5px;font-weight:700">
+      ⚠️ 이전에 LOSS된 고객 — 재문의(한 번 놓쳤다 돌아온 고객 · 성사 확률 높음)
+    </div>
+
+    <div id="riRepeatSection" style="display:none">
+      <div class="consult-field-label">이전 문의 (이름 동일 · 시간순)</div>
+      <div id="riRepeatList"></div>
+    </div>
+
+    <div id="riFamilySection" style="display:none">
+      <div class="consult-field-label">같은 번호로 접수된 다른 건 (이름 다름 — 가족·동반 추정)</div>
+      <div id="riFamilyList"></div>
+    </div>
+
+    <div id="riSummary" style="display:none;margin-top:12px;font-size:12.5px;font-weight:700;color:var(--accent)"></div>
+
+    <div class="consult-actions">
+      <button class="consult-btn-cancel" onclick="closeRepeatInquiryModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -7281,6 +7318,120 @@ function saveRegProgramModal() {
     .then(function(){ saveBtn.disabled = false; });
 }
 
+/* ─────────────────────────────────────────────
+   재문의 이력(같은 연락처) — 배지+팝업. 표시 전용(GAS 호출·시트 쓰기 0, 새 fetch 0 — dbRows 재사용).
+   행 병합·이관 절대 금지 — 각 행이 그 시점의 진실이라 합치면 퍼널 분석(문의→등록 소요·LOSS 후 복귀)이 불가능해짐(GM 방침).
+   이름 완전일치=재문의(카운트) / 이름 다르면 '같은 번호 다른 문의'(가족·동반 추정, 카운트 제외) — 실측 사례:
+   심우섭·심재엽(같은 날·같은 번호·다른 이름=가족), 김동완 외1인(동반 문의). GM 지시 2026-07-20, 시포.
+───────────────────────────────────────────── */
+var _riIdx = null;   // 전화(digits) → dbRows 배열. renderDbTable()이 매 렌더 시 재빌드(추가 GAS 호출 없음).
+function _riBuildIndex() {
+  var idx = {};
+  dbRows.forEach(function(r){
+    var p = _mregNormPhone(r.phone);
+    if (!p) return;
+    (idx[p] = idx[p] || []).push(r);
+  });
+  return idx;
+}
+// row 1건의 재문의/동일번호 그룹 산출 — idx=_riBuildIndex() 결과 재사용(호출부마다 재빌드 금지).
+function _riGroupFor(row, idx) {
+  var p = _mregNormPhone(row.phone);
+  if (!p) return null;
+  var group = (idx || _riIdx || {})[p];
+  if (!group || group.length < 2) return null;
+  var name = String(row.name || '').trim();
+  var others = group.filter(function(r){ return r.rowIndex !== row.rowIndex; });
+  var sameName = name ? others.filter(function(r){ return String(r.name || '').trim() === name; }) : [];
+  var diffName = others.filter(function(r){ return sameName.indexOf(r) < 0; });
+  var ts = String(row.timestamp || '');
+  var priorSameName = sameName.filter(function(r){ return String(r.timestamp || '') < ts; })
+    .sort(function(a, b){ return String(a.timestamp || '').localeCompare(String(b.timestamp || '')); });
+  if (!priorSameName.length && !diffName.length) return null;   // 이름 동일 최초건(향후 재문의만 존재)=배지 없음
+  return { sameName: sameName, diffName: diffName, priorSameName: priorSameName };
+}
+// 문의 목록 행에 붙일 배지 HTML — 재문의(이전 건에 LOSS 있으면 강조색) 우선, 없으면 '같은 번호 다른 문의'.
+function _riBadgeHtml(row) {
+  var g = _riGroupFor(row, _riIdx);
+  if (!g) return '';
+  if (g.priorSameName.length) {
+    var hasLoss = g.priorSameName.some(function(r){ return TAP_LOSS_STATUSES.indexOf(String(r.status || '').trim()) >= 0; });
+    return '<span class="ri-badge ' + (hasLoss ? 'ri-badge-loss' : 'ri-badge-repeat') + '" onclick="event.stopPropagation();openRepeatInquiryModal(' + row.rowIndex + ')" title="이전 문의 이력 보기">🔁 이전 문의 ' + g.priorSameName.length + '건</span>';
+  }
+  return '<span class="ri-badge ri-badge-family" onclick="event.stopPropagation();openRepeatInquiryModal(' + row.rowIndex + ')" title="같은 번호로 접수된 다른 문의(가족·동반 추정)">👥 같은 번호 다른 문의 ' + g.diffName.length + '건</span>';
+}
+function _riParseDate(v) {
+  var m = String(v || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+}
+function _riDaysBetween(fromTs, toTs) {
+  var f = _riParseDate(fromTs), t = _riParseDate(toTs);
+  return (f && t) ? Math.round((t - f) / 86400000) : null;
+}
+// 이력 카드 1건 렌더 — 문의일·진행현황·프로그램·경로·문의사항·Contact(연락 이력). _renderContactCell과 동일 데이터소스(_rowContacts·_ctSort) 재사용.
+function _riEntryHtml(r) {
+  var statusCls = STATUS_CLASS[_memStatusDisplay(r.status)] || 'new';
+  var contactList = _ctSort(_rowContacts(r));
+  var contactTxt = contactList.length
+    ? contactList.slice().reverse().map(function(c){
+        var d = c.date ? c.date.slice(5).replace('-', '/') : '';
+        return ((d || c.time) ? (d + ' ' + (c.time || '')).trim() + ' — ' : '') + (c.note || '');
+      }).join(' / ')
+    : '—';
+  return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--bg)">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+      '<span style="font-size:12px;color:var(--dim-mid);font-weight:700">' + esc(_fmtInqDateTime(r.timestamp)) + '</span>' +
+      '<span class="status-chip ' + statusCls + '" style="font-size:10.5px">' + esc(_memStatusDisplay(r.status)) + '</span>' +
+    '</div>' +
+    '<div class="consult-row" style="margin-bottom:4px"><span class="ck">이름</span><span class="cv">' + esc(r.name || '—') + '</span></div>' +
+    '<div class="consult-row" style="margin-bottom:4px"><span class="ck">프로그램</span><span class="cv">' + esc(_shortProgram(r.program) || '—') + '</span></div>' +
+    '<div class="consult-row" style="margin-bottom:4px"><span class="ck">경로</span><span class="cv">' + esc(r.channel || '—') + '</span></div>' +
+    '<div class="consult-row" style="margin-bottom:4px"><span class="ck">문의사항</span><span class="cv" style="font-weight:400">' + esc(r.inquiryContent || '—') + '</span></div>' +
+    '<div class="consult-row" style="margin-bottom:0"><span class="ck">Contact</span><span class="cv" style="font-weight:400">' + esc(contactTxt) + '</span></div>' +
+  '</div>';
+}
+function openRepeatInquiryModal(rowIndex) {
+  var row = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
+  if (!row) { showToast('문의 정보를 찾을 수 없습니다', 'err'); return; }
+  var g = _riGroupFor(row, _riIdx);
+  if (!g) { showToast('이력 정보를 찾을 수 없습니다', 'err'); return; }
+
+  document.getElementById('riMemberFixed').textContent = (row.name || '—') + (row.phone ? ' · ' + row.phone : '');
+
+  var hasLoss = g.priorSameName.some(function(r){ return TAP_LOSS_STATUSES.indexOf(String(r.status || '').trim()) >= 0; });
+  document.getElementById('riLossBanner').style.display = hasLoss ? '' : 'none';
+  var kindEl = document.getElementById('riKind');
+  kindEl.className = 'consult-modal-kind ' + (hasLoss ? '' : 'experience');
+  kindEl.style.cssText = hasLoss ? 'background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)' : '';
+  kindEl.textContent = hasLoss ? '⚠️ LOSS 재문의' : (g.priorSameName.length ? '재문의' : '동일번호');
+
+  // 매 오픈마다 내용을 항상 다시 씀(빈 문자열 포함) — 이전 회원 팝업의 잔여 HTML이 display:none 뒤에 남아있지 않게(위생).
+  var repeatSec = document.getElementById('riRepeatSection');
+  document.getElementById('riRepeatList').innerHTML = g.priorSameName.length ? g.priorSameName.map(_riEntryHtml).join('') : '';
+  repeatSec.style.display = g.priorSameName.length ? '' : 'none';
+
+  var famSec = document.getElementById('riFamilySection');
+  var famSorted = g.diffName.slice().sort(function(a, b){ return String(a.timestamp || '').localeCompare(String(b.timestamp || '')); });
+  document.getElementById('riFamilyList').innerHTML = famSorted.length ? famSorted.map(_riEntryHtml).join('') : '';
+  famSec.style.display = famSorted.length ? '' : 'none';
+
+  var summaryEl = document.getElementById('riSummary');
+  if (g.priorSameName.length) {
+    var lastPrior = g.priorSameName[g.priorSameName.length - 1];
+    var days = _riDaysBetween(lastPrior.timestamp, row.timestamp);
+    summaryEl.textContent = '이번이 ' + (g.priorSameName.length + 1) + '번째 · 이전 문의로부터 ' + (days == null ? '알 수 없는' : days) + '일 만에 재문의';
+    summaryEl.style.display = '';
+  } else {
+    summaryEl.textContent = '';
+    summaryEl.style.display = 'none';
+  }
+
+  document.getElementById('repeatInquiryOverlay').classList.add('open');
+}
+function closeRepeatInquiryModal() {
+  document.getElementById('repeatInquiryOverlay').classList.remove('open');
+}
+
 function _resFillTimeOptions(sel, cur) {
   sel.innerHTML = '';
   var blank = document.createElement('option'); blank.value = ''; blank.textContent = '시간 미정'; sel.appendChild(blank);
@@ -7826,6 +7977,7 @@ function renderDbTable() {
     return;
   }
 
+  _riIdx = _riBuildIndex();   // 재문의 배지용 전화 인덱스 — 매 렌더 재빌드(추가 GAS 호출 0, dbRows 재사용)
   tbody.innerHTML = '';
   filtered.forEach(function(row){
     tbody.appendChild(buildDbRow(row, false));
@@ -8131,9 +8283,10 @@ function buildDbRow(row, isNew) {
   if (row.status === 'SUC' || row.status === '단기SUC') tr.classList.add('row-registered');  // 등록 회원 금색 강조
 
   // ── 문의일시 (읽기 전용) — 맨 앞 (2026-06-24 GM · 시:분 표시 2026-07-18 GM) ──
+  // 재문의(같은 연락처) 배지 병기 — 표시 전용, 클릭 시 이전 문의 이력 팝업. GM 지시 2026-07-20, 시포.
   var tdTs = document.createElement('td');
   tdTs.style.fontSize = '12px'; tdTs.style.color = 'var(--dim)';
-  tdTs.textContent = _fmtInqDateTime(row.timestamp);
+  tdTs.innerHTML = esc(_fmtInqDateTime(row.timestamp)) + _riBadgeHtml(row);
   tr.appendChild(tdTs);
 
   // ── 성함 ── (영문 탭 병합 행은 EN 뱃지 — 영어 문의 누수 수리, 2026-07-09 시포·GM)
