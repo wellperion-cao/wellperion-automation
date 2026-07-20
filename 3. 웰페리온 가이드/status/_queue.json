@@ -1969,5 +1969,19 @@
     "artifact": "- status/_queue.json(+미러): CTO-2026-07-20-MODULE-SILENCE-DETECTOR(ship 9197)에\n  4차 실행분(자율현황.html 정직화) 추가 기록 — 배 업그레이드(신규 배 생성 안 함).\n- ssot/incidents.json: INC-021 등록(GUARDED) — automation_health exit code만으로\n  \"정상\"을 표시하던 화면 계층의 측정 부재 재발(INC-018·019와 같은 뿌리) 및 차단조치. (CLI ad-hoc · 커밋 2fababfe)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "2fababfe75a31e1201899cc35ba9848912d1230e"
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-699da894",
+    "clevel": "cmo",
+    "title": "[시모] 문의 Survey 폼(8460) 배경 좌우 풀블리드 + 하단 여백 제거 (GM 지시)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9214,
+    "artifact": "/ko/inquiry-form/?type=membership — PC에서 배경(아이보리)이 좌우 90px WP 거터만큼\n잘려 보이던 것을 .wlp-inq::before 50vw 브레이크아웃(스크롤바 함정 회피)으로 뷰포트\n끝까지 확장. 하단은 .container-wrap padding-bottom(40px)+.wpb_raw_code margin-bottom\n(35px)=고정 75px 여백을 .wlp-inq margin-bottom:-75px(위 여백 삭제 때 hero-band\nmargin-top:-40px와 동일 원리)로 제거. W (CLI ad-hoc · 커밋 699da894)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "699da89415efb301592a1087eb629c1bf14dacc0"
   }
 ]
