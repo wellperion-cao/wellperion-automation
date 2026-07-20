@@ -1480,10 +1480,12 @@ function _miReadRows_(sh) {
   var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게','How Did You Hear About Us?']);
   var iContent = _miColIdx_(hdr, ['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항','문의사항','Health & Wellness Goals']);  // N열 자유서술 문의내용(#1). 2026-07-02 시포·GM
   var iRes  = _miColIdx_(hdr, [INQ_RES_COL]);  // 예약목록(JSON) — 가변 예약. 없으면 체험1·2 흡수. 2026-07-03 시포·GM
-  // 연락기록 3칸 — Contact1·Contact2·Contact3 헤더 우선, 못 찾으면 절대 컬럼 18/19/20(0-based 17/18/19) 폴백 (2026-06-26 시포)
-  var iC1 = _miColIdx_(hdr, ['Contact1']); if (iC1 < 0) iC1 = 17;
-  var iC2 = _miColIdx_(hdr, ['Contact2']); if (iC2 < 0) iC2 = 18;
-  var iC3 = _miColIdx_(hdr, ['Contact3']); if (iC3 < 0) iC3 = 19;
+  // 연락기록 3칸 — Contact1·Contact2·Contact3 헤더 이름 탐색만 사용(위치 폴백 17/18/19 제거, 2026-07-20 시포).
+  //   실측: 정답 위치는 16/17/18(Contact1=Q·Contact2=R·Contact3=S)인데 폴백이 한 칸씩 밀려 있어 Contact3→진행현황(T) 오염 잠복 지뢰였음.
+  //   현재 헤더는 이름 탐색이 항상 성공(gviz 실측 검증) — 못 찾을 때만 로그 남기고 -1 유지(아래 소비처가 빈 값으로 안전 처리, 엉뚱한 칸 오염 없음).
+  var iC1 = _miColIdx_(hdr, ['Contact1']); if (iC1 < 0) Logger.log('_miReadRows_: Contact1 칸 못찾음(헤더 확인 필요)');
+  var iC2 = _miColIdx_(hdr, ['Contact2']); if (iC2 < 0) Logger.log('_miReadRows_: Contact2 칸 못찾음(헤더 확인 필요)');
+  var iC3 = _miColIdx_(hdr, ['Contact3']); if (iC3 < 0) Logger.log('_miReadRows_: Contact3 칸 못찾음(헤더 확인 필요)');
   var iHist = _miColIdx_(hdr, [CONTACT_HIST_COL]);  // 연락이력(JSON) — 가변 컨택 이력. 2026-07-08 시포·GM(축2)
   var iLang = _miColIdx_(hdr, ['Preferred Language','Language']);  // 응답자 기재 언어(영문 탭 실측 헤더) — 영어 문의 뱃지 표시용. 2026-07-09 시포·GM
   // 영문 탭 행키 오프셋(_ROW_OFFSET_EN_) — 한글+영문 병합 시 rowIndex 충돌 방지(정의부 주석 참고). 2026-07-09 시포·GM.
@@ -2679,6 +2681,7 @@ function _processAction(body) {
         _imSet(['기타 웰페리온에 대한 문의 사항', '기타 웰페리온', '자유롭게 적어', '문의 사항', '내용'], _iMessage);
         _imSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '')) : (_iChannel || ''));  // V열 — utm 원본 제자리 기록(2026-07-20). H/I(중분류·소분류)는 자기신고 분류라 건드리지 않음
         _imSet(['비고', '메모', '담당자메모'], WEB_INTAKE_TAG + (_iFastFlag ? ' ⚠️빠른제출' : ''));   // [웹접수] 유지(집계 중복방지). utm 원문은 위 유입경로(자동)로 이관 — 비고엔 더 이상 처박지 않음(2026-07-20)
+        _imSet(['개인정보 수집·이용 동의'], '동의');   // U열 — 검증만 하고 미기록이던 버그 수리(2026-07-20 시포). 강습·공간렌트·비즈니스 분기와 동일 표기 '동의' 통일. 헤더가 매우 긴 문장이라 짧은 키(동의·개인정보)는 다른 칸과 충돌 위험 있어 실헤더 대조로 확인한 고유 서두 구절만 사용. 과거 행은 무변경(신규 append만).
         _imSh.appendRow(_imRow);
         try { _cacheInvalidateJson_(_iCache, 'micache'); } catch (e) {}
       } else if (_iCat === 'adult' || _iCat === 'youth' || _iCat === 'summer') {
@@ -3105,11 +3108,12 @@ function _processAction(body) {
       var ci = _miColIdx_(maHdr, colNames);
       if (ci >= 0) maRow[ci] = val;
     }
-    // 연락기록 — 헤더 우선, 못 찾으면 절대 컬럼 폴백(0-based). 행 배열이 짧으면 확장. (2026-06-26 시포)
-    function _maSetCol(colNames, absIdx0, val) {
+    // 연락기록 — 헤더 이름 탐색만 사용(위치 폴백 제거, 2026-07-20 시포 — member_inquiry_update와 동일 지뢰라 함께 수리). 행 배열이 짧으면 확장.
+    //   못 찾으면 조용히 엉뚱한 칸에 쓰지 않고 로그만 남기고 스킵.
+    function _maSetCol(colNames, val) {
       if (val === undefined || val === null || val === '') return;
       var ci = _miColIdx_(maHdr, colNames);
-      if (ci < 0) ci = absIdx0;
+      if (ci < 0) { Logger.log('_maSetCol 스킵(칸 없음): ' + JSON.stringify(colNames) + ' val=' + val); return; }
       while (maRow.length <= ci) maRow.push('');
       maRow[ci] = val;
     }
@@ -3128,9 +3132,9 @@ function _processAction(body) {
     _maSet(['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2'], body.exp2Date);        // L = 체험2 날짜
     _maSet(['체험2 확정시간','체험2'], body.exp2Time);                                          // M = 체험2 시간
     _maSet(['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항'], body.inquiryContent);  // N = 문의내용(#1)
-    _maSetCol(['Contact1'], 17, _fmtContact_(body.contact1));
-    _maSetCol(['Contact2'], 18, _fmtContact_(body.contact2));
-    _maSetCol(['Contact3'], 19, _fmtContact_(body.contact3));
+    _maSetCol(['Contact1'], _fmtContact_(body.contact1));
+    _maSetCol(['Contact2'], _fmtContact_(body.contact2));
+    _maSetCol(['Contact3'], _fmtContact_(body.contact3));
     _maSet(['타임스탬프','접수일','날짜'], body.timestamp || maNow);
     maSh.appendRow(maRow);
     if (body.status === 'SUC' || body.status === '단기SUC') {
@@ -3206,11 +3210,12 @@ function _processAction(body) {
       var ci = _miColIdx_(muHdr, colNames);
       if (ci >= 0) muSh.getRange(muRow, ci + 1).setValue(val);
     }
-    // 연락기록 — 헤더 우선, 못 찾으면 절대 컬럼 폴백(0-based). undefined/null 스킵('' 은 클리어). (2026-06-26 시포)
-    function _muSetCol(colNames, absIdx0, val) {
+    // 연락기록 — 헤더 이름 탐색만 사용(위치 폴백 제거, 2026-07-20 시포 — 폴백이 한 칸씩 밀려 Contact3 저장 시 '진행현황'(T열)을 덮어쓰던 지뢰). undefined/null 스킵('' 은 클리어).
+    //   못 찾으면 조용히 엉뚱한 칸에 쓰지 않고 로그만 남기고 스킵(쓰기 경로라 가장 보수적으로 — 못 찾으면 아무 것도 안 쓴다).
+    function _muSetCol(colNames, val) {
       if (val === undefined || val === null) return;
       var ci = _miColIdx_(muHdr, colNames);
-      if (ci < 0) ci = absIdx0;
+      if (ci < 0) { Logger.log('_muSetCol 스킵(칸 없음): ' + JSON.stringify(colNames) + ' val=' + val); return; }
       muSh.getRange(muRow, ci + 1).setValue(val);
     }
     // 등록 전환 감지: 상태 변경 '전' 값 캡처(신규→SUC 실제 전환 시점만 이관·알림 — 중복발화 차단). 2026-06-26 시토·GM.
@@ -3258,9 +3263,9 @@ function _processAction(body) {
         _rcCell.setValue(_resStringify_(_rebuilt));
       }
     }
-    _muSetCol(['Contact1'], 17, _fmtContactOrUndef_(body.contact1));
-    _muSetCol(['Contact2'], 18, _fmtContactOrUndef_(body.contact2));
-    _muSetCol(['Contact3'], 19, _fmtContactOrUndef_(body.contact3));
+    _muSetCol(['Contact1'], _fmtContactOrUndef_(body.contact1));
+    _muSetCol(['Contact2'], _fmtContactOrUndef_(body.contact2));
+    _muSetCol(['Contact3'], _fmtContactOrUndef_(body.contact3));
     // ── 연락이력(가변) — 축2: body.contacts(JSON 문자열/배열) 수신 시 저장. 미전송이면 무영향(기존 필드만 갱신).
     //    Contact1/2/3은 위에서 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
     var _muHistPrevCount = 0;
