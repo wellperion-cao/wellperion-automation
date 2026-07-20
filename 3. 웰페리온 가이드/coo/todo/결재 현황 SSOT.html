@@ -1959,9 +1959,16 @@ function renderKanban(list) {
   h += '</div>';
 
   // 결재완료·반려 = 보드 아래 접이식 토글 (눌러서 펼침 — 업무현황 보류·완료 로그처럼, 2026-06-05 GM)
+  // 최근 24시간 내 완료된 건이 섞여 있으면 기본 펼침 — 방금 서명 완료된 건이 접힌 토글 뒤로 숨어
+  // "사라졌다"고 오인되는 사고 재발방지 (2026-07-20 결재문서 소실 오인 사고 조사 후 GM 안심용 조치).
   if (doneList.length) {
-    h += '<div class="group-toggle" onclick="toggleDetail(this)" style="margin-top:16px;"><span class="arrow">▶</span>✅ 결재완료<span class="gcount">' + doneList.length + '건</span></div>';
-    h += '<div class="detail-body">';
+    var _hasRecentDone = doneList.some(function(t){
+      var ct = t.completeTime ? new Date(t.completeTime) : null;
+      return ct && !isNaN(ct.getTime()) && (Date.now() - ct.getTime()) < 24 * 60 * 60 * 1000;
+    });
+    var _doneOpenCls = _hasRecentDone ? ' open' : '';
+    h += '<div class="group-toggle' + _doneOpenCls + '" onclick="toggleDetail(this)" style="margin-top:16px;"><span class="arrow">▶</span>✅ 결재완료<span class="gcount">' + doneList.length + '건</span></div>';
+    h += '<div class="detail-body' + _doneOpenCls + '">';
     doneList.forEach((t, i) => { h += renderApprovalCard(t, i + 1); });
     h += '</div>';
   }
