@@ -101,6 +101,12 @@
 
         var styleHTML = '';
         doc.querySelectorAll('head style').forEach(function (s) { styleHTML += s.outerHTML; });
+        /* 원본 스타일의 :root{ --navy:...; ... } 는 실제 문서 루트(<html>)에만 매치되고
+           Shadow DOM 안에서는 아무 것도 선택하지 못한다 — 그 결과 var(--navy) 등이 전부
+           빈 값이 되어(예: 지원하기 버튼 color:var(--navy)) 텍스트가 안 보이는 요소가 생긴다.
+           원본 파일은 그대로 두고, 이 컴포넌트가 주입할 때만 :root → :host로 바꿔
+           같은 변수들이 이 Shadow DOM 안에서도 정의되게 한다(내용·값은 원본과 동일). */
+        styleHTML = styleHTML.replace(/:root(\s*\{)/, ':host$1');
 
         var host = document.createElement('div');
         host.className = 'hiring-embed';
