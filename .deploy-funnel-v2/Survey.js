@@ -1207,7 +1207,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   count_missed_inquiries:     true,  // 읽기전용: 특정 시각 이후 신규 실데이터 행 건수 집계 (2026-06-25)
   read_rows_by_rownum:        true,  // 읽기전용: 지정 시트·행번호의 알림 필드 원문 반환 (2026-06-25)
   preview_notify_msg:         true,  // 읽기전용: 지정 행의 알림 메시지 텍스트 미리보기(발송 0) (2026-06-25)
-  lesson_rewire_audit:        true   // [진단·읽기전용] 6팀시트 은퇴 안전게이트 — OLD(6팀시트) vs NEW(메인4시트 flat O) IDENTICAL 대조(카운트만·PII 미노출). 배973 시포. 2026-07-15 실측: 불일치(성인 812→794·유소년 926→908 등, 상세=재배선핸드오프). 은퇴 전 이 액션이 OLD≡NEW 반환할 때까지 반복 검증.
+  lesson_rewire_audit:        true,  // [진단·읽기전용] 6팀시트 은퇴 안전게이트 — OLD(6팀시트) vs NEW(메인4시트 flat O) IDENTICAL 대조(카운트만·PII 미노출). 배973 시포. 2026-07-15 실측: 불일치(성인 812→794·유소년 926→908 등, 상세=재배선핸드오프). 은퇴 전 이 액션이 OLD≡NEW 반환할 때까지 반복 검증.
+  funnel_conversion_detail:   true   // 2026-07-20 GM 지시(배834) — M1 마케팅 대시보드 채널별 가입전환 상세 명단. PII 노출(이름·연락처뒷4자리) — member_inquiry_list 등과 동일 정책(전체공개, 읽기전용·원본시트 미변경). 연락처는 서버에서 뒷4자리로 절단 후 반환(전체번호 미노출).
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -4363,6 +4364,174 @@ function _processAction(body) {
     return _json(fcResult);
   }
 
+  // ─── 채널별 가입전환 상세 명단 (GM 지시 2026-07-20 · 배834 묶음C) ───
+  // funnel_conversion(byChannel, 비정밀·전체누적 경로)과 완전히 동일한 매칭 규칙(전화매칭:
+  // 유효회원∪강습등록)을 재사용 — "전환 N건 = 이 사람들"의 채널별 건수가 그 액션의 byChannel[ch].converted
+  // 와 항상 일치하도록 로직을 복제(회귀 없음, 읽기 전용 — 원본 시트 미변경).
+  // 개인정보 최소화: 연락처는 서버에서 뒷 4자리만 자름(전체 번호 응답 없음).
+  if (action === 'funnel_conversion_detail') {
+    // from/to(YYYY-MM-DD KST) 있으면 문의 시각 기준 기간필터(funnel_conversion 비정밀 경로와 동일 규칙) —
+    // 없으면 전체 누적. 이래야 기간뷰에서 '가입 N건' 클릭 시 명단 건수가 그 기간의 byChannel.converted와 정합.
+    var fdFrom = body.from || '';
+    var fdTo   = body.to   || '';
+    var fdPeriod = !!(fdFrom && fdTo);
+    var fdF = fdPeriod ? new Date(fdFrom + 'T00:00:00+09:00').getTime() : 0;
+    var fdT = fdPeriod ? new Date(fdTo   + 'T23:59:59+09:00').getTime() : 0;
+    function _fdInPeriod_(ts) {
+      if (!fdPeriod) return true;
+      var t = ts ? _normTs_(ts).getTime() : NaN;
+      return !isNaN(t) && t >= fdF && t <= fdT;
+    }
+    var fdCache = CacheService.getScriptCache();
+    var fdCacheKey = 'fcd_v1_' + fdFrom + '_' + fdTo;
+    var fdHit = fdCache.get(fdCacheKey);
+    if (fdHit && !_nc) return _json(JSON.parse(fdHit));
+
+    // ① 회원부 전화 Set + 등록일 맵(상세 명단은 등록일 표시가 목적이라 항상 구성 — 정밀모드 게이트 없음)
+    var fdMemberSs   = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+    var fdMemberSh   = fdMemberSs.getSheetByName(MEMBER_SHEET);
+    var fdMemberLast = fdMemberSh.getLastRow();
+    var fdMemberSet    = {};
+    var fdMemberRegMap = {};
+    if (fdMemberLast >= 2) {
+      var fdMemberHeaders = fdMemberSh.getRange(1, 1, 1, fdMemberSh.getLastColumn()).getValues()[0];
+      var fdPhoneColIdx = fdMemberHeaders.indexOf(MEMBER_PHONE_COL);
+      var fdDateColIdx = -1;
+      (function() {
+        var want = String(MEMBER_DATE_COL).replace(/\s+/g, '');
+        for (var hi = 0; hi < fdMemberHeaders.length; hi++) {
+          if (String(fdMemberHeaders[hi]).replace(/\s+/g, '') === want) { fdDateColIdx = hi; return; }
+        }
+      })();
+      if (fdPhoneColIdx >= 0) {
+        var fdMemberRows = fdMemberSh.getRange(2, 1, fdMemberLast - 1, fdMemberSh.getLastColumn()).getValues();
+        fdMemberRows.forEach(function(r) {
+          var n = normalizePhone_(r[fdPhoneColIdx]);
+          if (!n) return;
+          fdMemberSet[n] = true;
+          if (fdDateColIdx >= 0) fdMemberRegMap[n] = r[fdDateColIdx];
+        });
+      }
+    }
+
+    // ①-b 강습 등록자 전화 Set + 종목(phone → sport, funnel_conversion과 동일 로스터 소스)
+    var fdLessonSet = {};
+    var fdLessonSportMap = {};
+    ['성인강습', '유소년강습'].forEach(function(fdType) {
+      _collectLessonRoster_(fdType).forEach(function(m) {
+        var n = _normPhone_(m.phone);
+        if (!n) return;
+        fdLessonSet[n] = true;
+        if (!fdLessonSportMap.hasOwnProperty(n)) fdLessonSportMap[n] = m.sport;
+      });
+    });
+
+    // ①-c 강습 등록원장 전화→등록일 맵(정밀모드와 동일 소스·로직 재사용, 게이트 없이 항상 실행)
+    var fdLessonRegMap = {};
+    try {
+      _syncLessonRegistry_();
+      var fdLrSh   = _lessonRegSheet_();
+      var fdLrLast = fdLrSh.getLastRow();
+      if (fdLrLast >= 2) {
+        var fdLrRows = fdLrSh.getRange(2, 1, fdLrLast - 1, _LESSON_REG_HEADER.length).getValues();
+        fdLrRows.forEach(function(row) {
+          var n = _normPhone_(row[3]);   // 전화
+          if (!n) return;
+          var iso = _miToISO_(row[5]);   // 등록일
+          if (iso && (!fdLessonRegMap.hasOwnProperty(n) || iso < fdLessonRegMap[n])) fdLessonRegMap[n] = iso;
+        });
+      }
+    } catch (eFdLr) {}
+
+    function _fdRegDate_(phone) {
+      if (fdMemberRegMap.hasOwnProperty(phone)) {
+        var v = fdMemberRegMap[phone];
+        var iso = (v instanceof Date && !isNaN(v.getTime())) ? Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd') : _miToISO_(v);
+        if (iso) return iso;
+      }
+      if (fdLessonRegMap.hasOwnProperty(phone)) return fdLessonRegMap[phone];
+      return null;  // 원장에서 등록일 미확인 — 프론트 '확인불가' 표기(날조 금지)
+    }
+    // funnel_conversion 비정밀 경로와 동일 판정(전화매칭만, 등록일 미사용) — byChannel.converted 건수와 항상 정합.
+    function _fdConverted_(phone) {
+      if (!phone) return { memberOnly: false, lessonOnly: false, any: false };
+      var mo = !!fdMemberSet[phone];
+      var lo = !!fdLessonSet[phone];
+      return { memberOnly: mo && !lo, lessonOnly: lo && !mo, any: (mo || lo) };
+    }
+    function _fdPhone4_(phone) { return (phone && phone.length >= 4) ? phone.slice(-4) : '확인불가'; }
+    function _fdBasisLabel_(conv) { return conv.memberOnly ? '멤버십 전화매칭' : (conv.lessonOnly ? '강습등록 전화매칭' : '멤버십+강습등록 전화매칭'); }
+    function _fdTypeLabel_(phone, fallback) {
+      return fdLessonSportMap.hasOwnProperty(phone) ? fdLessonSportMap[phone] : (fallback || '확인불가');
+    }
+
+    var fdByChannel = {};  // { 채널명: [ {name, phone4, type, inquiryDate, regDate, regDateConfirmed, matchBasis} ... ] }
+    function _fdPush_(channel, rec) {
+      if (!fdByChannel[channel]) fdByChannel[channel] = [];
+      fdByChannel[channel].push(rec);
+    }
+
+    // ② 문의접수 시트 — 전환된 행만 명단화(비전환 문의는 상세 미노출, 이미 채널 문의수 합계로 별도 표시됨)
+    var fdInqSh   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
+    var fdInqLast = fdInqSh.getLastRow();
+    if (fdInqLast >= 2) {
+      var fdInqData    = fdInqSh.getRange(2, 1, fdInqLast - 1, INQUIRY_HEADERS.length).getValues();
+      var fdIdxName    = INQUIRY_HEADERS.indexOf('이름');
+      var fdIdxPhone   = INQUIRY_HEADERS.indexOf('연락처');
+      var fdIdxChannel = INQUIRY_HEADERS.indexOf('유입채널');
+      var fdIdxDate    = INQUIRY_HEADERS.indexOf('시각');
+      var fdIdxType    = INQUIRY_HEADERS.indexOf('문의유형');
+      fdInqData.forEach(function(row) {
+        if (!_fdInPeriod_(row[fdIdxDate])) return;   // 기간 필터(미지정=전체 누적)
+        var phone = normalizePhone_(row[fdIdxPhone]);
+        var conv  = _fdConverted_(phone);
+        if (!conv.any) return;
+        var channel = _canonicalChannel_(row[fdIdxChannel]);
+        var regDate = _fdRegDate_(phone);
+        _fdPush_(channel, {
+          name:             fdIdxName >= 0 ? (String(row[fdIdxName] || '').trim() || '확인불가') : '확인불가',
+          phone4:           _fdPhone4_(phone),
+          type:             _fdTypeLabel_(phone, fdIdxType >= 0 ? String(row[fdIdxType] || '') : ''),
+          inquiryDate:      _miToISO_(row[fdIdxDate]) || '확인불가',
+          regDate:          regDate || '확인불가',
+          regDateConfirmed: !!regDate,
+          matchBasis:       _fdBasisLabel_(conv)
+        });
+      });
+    }
+    // ②-b 구글폼 응답 문의 합류 — 이 소스는 이름 필드를 수집하지 않음(원본 폼 구조 한계) → 정직하게 '확인불가' 표기.
+    _collectFormInquiries_().forEach(function(f) {
+      if (!_fdInPeriod_(f.시각)) return;   // 기간 필터(미지정=전체 누적)
+      var phone = normalizePhone_(f.연락처);
+      var conv  = _fdConverted_(phone);
+      if (!conv.any) return;
+      var channel = _canonicalChannel_(f.유입채널);
+      var regDate = _fdRegDate_(phone);
+      _fdPush_(channel, {
+        name:             '확인불가(이름 미수집 폼)',
+        phone4:           _fdPhone4_(phone),
+        type:             _fdTypeLabel_(phone, f.문의유형 || ''),
+        inquiryDate:      _miToISO_(f.시각) || '확인불가',
+        regDate:          regDate || '확인불가',
+        regDateConfirmed: !!regDate,
+        matchBasis:       _fdBasisLabel_(conv)
+      });
+    });
+
+    var fdResult = {
+      ok: true,
+      byChannel: fdByChannel,
+      periodMode: fdPeriod,
+      period: { from: fdFrom, to: fdTo },
+      note: (fdPeriod ? '문의=선택기간(시각 기준)' : '문의·전환 전체 누적(기간무필터)') +
+        ' · 전환판정=전화매칭(유효회원∪강습등록, 등록일 미사용) — funnel_conversion(비정밀) byChannel.converted와 동일기준·건수 정합 · ' +
+        '연락처는 서버에서 뒷4자리만 반환 · regDate=확인불가는 원장에서 등록일 미확인(날조 아님) · 폼 경로 문의는 이름 미수집(원본 한계)',
+      generatedAt: _now()
+    };
+    try { fdCache.put(fdCacheKey, JSON.stringify(fdResult), 1800); } catch (e) { /* 캐시 저장 실패 무시 */ }
+    return _json(fdResult);
+  }
+
   // ─── 유형×채널×등록 교차 집계 (마케팅 대시보드 고도화 2026-06-16) ───
   // 멤버십·성인강습·유소년 각각 어느 채널로 문의가 들어와 등록(전환)까지 갔는지 매트릭스.
   // 전환 기준 = 멤버십·기타는 유효회원 전화매칭 / 강습은 종목별 팀시트 '등록'(정본).
@@ -5564,4 +5733,17 @@ function listInquirySheetTabs() {
 
   Logger.log('==============================');
   Logger.log('완료. 위 gid 를 FORM_SHEETS 영문 항목에 입력하세요.');
+}
+
+// ─── [일회성 · 편집기 실행 전용] 유효회원 시트 A1 헤더 오타 수리 'ㄹ'→'담당자' ───
+// 2026-07-20 시포 — GM 결재 완료건. doGet/doPost 액션에 미배선(공개 호출 불가) — 편집기에서 1회 실행 후 삭제할 것.
+// 안전장치: A1이 정확히 'ㄹ'일 때만 쓴다(이미 바뀌었거나 다른 값이면 아무것도 안 하고 로그만 남김) — 오작동으로 다른 값 덮어쓰기 방지.
+function fixMemberSheetHeaderA1_() {
+  var sh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+  if (!sh) { Logger.log('유효회원 시트 없음'); return; }
+  var cell = sh.getRange(1, 1);
+  var cur = String(cell.getValue()).trim();
+  if (cur !== 'ㄹ') { Logger.log('A1 현재값이 ㄹ 아님(값="' + cur + '") — 미변경(안전가드)'); return; }
+  cell.setValue('담당자');
+  Logger.log('A1: "ㄹ" → "담당자" 변경 완료');
 }

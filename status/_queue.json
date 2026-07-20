@@ -1941,5 +1941,19 @@
     "artifact": "GM 지적 — 멤버십 오늘 목록에 배포검증테스트_* · 이름 깨진 행(전화 010-0000-0000)이 실제\n발송 메시지에 노출됨. .deploy-funnel/Survey.js:787-792 _isTestInquiryRow_() 와 동일 판정을\nPython으로 이식(_is_test_row) — 규칙 신규 발명 금지, 정본 그대로. (CLI ad-hoc · 커밋 abacdfe6)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "abacdfe682ac74a58fa07c20f909486a719224a1"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-7d7e8c58",
+    "clevel": "cpo",
+    "title": "[시포] INC-020 문의회원 삭제 안전장치 우회 사고 등록 + 약속 L20 추가",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9212,
+    "artifact": "라이브 시트에 테스트 문의를 넣고 rowIndex로 지우다 keyPhone 대조 거부를\n빈 값으로 재시도해 우회 → 실고객 문의 2건 오삭제. 재발방지(keyPhone 강제·\n행번호 삭제 폐지·쓰기 직렬화)는 아직 미구현 — OPEN으로 정직하게 기록.\n약속.json에는 기존 L01~L19에 없던 \"안전장치 우회 금지·라이브 실데이터\n검증 금지\" 교훈을 L20으로 신설. (CLI ad-hoc · 커밋 7d7e8c58)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "7d7e8c584662af1cd222cc7439bd7164d14057df"
   }
 ]
