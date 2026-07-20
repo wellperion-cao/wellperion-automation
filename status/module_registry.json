@@ -337,6 +337,21 @@
       "honesty_default": "estimated"
     },
     {
+      "id": "cpo-sheet-contract-check",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "시트 칸 계약 점검기 — 문의·회원·강습 6개 시트 헤더/값 규칙/시트관계 대조(재발방지 A안 0단계, 2026-07-20 GM 확정)",
+      "data_source": {"kind": "json", "ref": "ssot/sheet_columns.json"},
+      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": 8254867551, "notify_wired": false},
+      "front_card": {"window": "자율현황", "anchor": "sec-cpo-autonomy"},
+      "autonomy": "mech",
+      "ai_free_fallback": "매일 07:50 예약작업(daily_scheduler.py 직결, module_reporter 미경유)이 무인 대조 — 정상이면 완전 침묵, 어긋남만 지문(sheet+col+유형) dedup 후 1회 업무보고방 알림",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
       "id": "cto-weekly-page-hygiene",
       "owner_role": "cto",
       "owner_nick": "시토",

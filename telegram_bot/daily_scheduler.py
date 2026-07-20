@@ -2763,23 +2763,109 @@ _PRE_CLOSE = "\x01PRE_CLOSE\x01"
 _DIGEST_TABLE_SPECIES_W = 14
 _DIGEST_TABLE_NUM_W = 8
 
+# team_sales 팀 키 → 다이제스트 정규 종목명(_DIGEST_SPORT_CANON 표기와 동일) 매핑.
+# 정본 = .deploy-todo/업무&결재 현황.js:1332-1341 TEAM_LABEL_MAP — 새 규칙 발명 금지, 그대로 이식.
+# '체조&트램'(key=gym) = 다이제스트의 '체조'와 같은 것(GM 2026-07-20 확인).
+_TEAM_SALES_KEY_TO_CANON = {
+    "pt": "P.T", "pilates": "필라테스", "swim": "수영", "squash": "스쿼시",
+    "gym": "체조", "golf": "골프", "musical": "뮤지컬", "gxe": "GXE",
+}
 
-def _digest_table_lines(counts: dict, cat: list, fixed_dot: str) -> list[str]:
+_digest_sport_rank_cache: dict = {}  # {"YYYY-MM-DD": [(종목, 누적매출), ...] | None} — 당일 1회 캐시
+
+
+def _digest_sport_rank(today: str) -> list | None:
+    """team_sales_h1(1~6월 합산, scripts/kpi_collector.py:127-130 _CFO_GAS = 이 파일의
+    SSOT_API_URL과 동일 GAS) + team_sales(7월~당월, 개별 월 합산) 로 종목별 연중 누적매출
+    내림차순 순위를 만든다(GM 2026-07-20 — 표 정렬을 매출 순위 고정으로 교체, 당월 단독이면
+    월초에 순서가 요동쳐 '고정'이 안 됨). [(종목, 누적매출원), ...] 매출 내림차순 반환.
+    프로세스 메모리에 당일 1회만 캐시(다이제스트는 하루 한 번이라 재조회 불필요).
+    실패 시 예외를 던지지 않고 None 반환 — 호출부는 기존 당월 합 내림차순 정렬로 폴백한다."""
+    if today in _digest_sport_rank_cache:
+        return _digest_sport_rank_cache[today]
+
+    result = None
+    try:
+        year = int(today[:4])
+        cur_month = int(today[5:7])
+        totals: dict = {}
+
+        h1_resp = _gas_get(SSOT_API_URL, params={"action": "team_sales_h1", "year": year}, label="team_sales_h1")
+        if h1_resp is None:
+            raise RuntimeError("team_sales_h1 조회 실패(재시도 소진)")
+        h1 = h1_resp.json()
+        if not h1.get("ok"):
+            raise RuntimeError(f"team_sales_h1 ok=false: {h1.get('error')}")
+        for q in ("q1", "q2"):
+            for key, v in (h1.get(q) or {}).items():
+                actual = v.get("actual") if isinstance(v, dict) else None
+                if actual is None:
+                    continue
+                canon = _TEAM_SALES_KEY_TO_CANON.get(key, key)
+                totals[canon] = totals.get(canon, 0) + actual
+
+        for m in range(7, cur_month + 1):
+            resp = _gas_get(SSOT_API_URL, params={"action": "team_sales", "year": year, "month": m},
+                             label=f"team_sales({m}월)")
+            if resp is None:
+                continue
+            d = resp.json()
+            if not d.get("ok"):
+                continue
+            for t in d.get("teams") or []:
+                actual = t.get("actual")
+                if actual is None:
+                    continue
+                canon = _TEAM_SALES_KEY_TO_CANON.get(t.get("key"), t.get("name"))
+                totals[canon] = totals.get(canon, 0) + actual
+
+        if not totals:
+            raise RuntimeError("팀별 매출 합계가 비어있음(모든 월 조회 실패)")
+
+        result = sorted(totals.items(), key=lambda kv: -kv[1])
+    except Exception as e:
+        logger.warning(f"[하루 일과 정리] 매출 순위(team_sales) 조회 실패 — 당월 합 내림차순으로 폴백: {e}")
+        result = None
+
+    _digest_sport_rank_cache[today] = result
+    return result
+
+
+def _digest_table_lines(counts: dict, cat: list, fixed_dot: str, rank: list | None = None,
+                         cap: int | None = None) -> list[str]:
     """종목별 당월/누적 카운트를 고정폭 표 라인 리스트로 렌더(<pre> 안에 그대로 들어갈 내용,
     태그 없음). 색은 기존 종목 고유색(_digest_dot/fixed_dot) 그대로 — 심각도 색 아님.
-    정렬 = 당월 합(미정+미배정) 내림차순, 동률이면 누적 합 내림차순. 최대 8줄 + '…외 N개 종목'.
+    rank 가 있으면(매출 순위) 그 순서를 우선 적용하고, rank 에 없는 종목(매출 원장 자체가
+    없는 루프메소드 등)은 뒤로 붙여 그들끼리 당월 합 내림차순(GM 2026-07-20). rank 가 없으면
+    (폴백 또는 멤버십) 기존대로 당월 합 내림차순·동률 시 누적 합 내림차순.
+    cap 을 주면 상한 줄 수 + '…외 N개 종목' 유지(멤버십 전용, 성인·유소년은 cap=None=무제한).
     마지막에 구분선 + 합계 행(표에 안 잡힌 잘린 종목까지 포함한 카테고리 전체 합계)."""
     sw, nw = _DIGEST_TABLE_SPECIES_W, _DIGEST_TABLE_NUM_W
     lines = [_pad_right("종목", sw) + " " + _pad_left("진행상태", nw) + "  " + _pad_left("담당자", nw)]
-    ranked = sorted(counts.items(), key=lambda kv: (-(kv[1][0] + kv[1][1]), -(kv[1][2] + kv[1][3])))
-    shown = ranked[:8]
+
+    if rank:
+        rank_index = {name: i for i, (name, _amt) in enumerate(rank)}
+
+        def _sort_key(kv):
+            sp, (mu, ma, cu, ca) = kv
+            idx = rank_index.get(sp)
+            if idx is not None:
+                return (0, idx)
+            return (1, -(mu + ma), -(cu + ca))
+
+        ordered = sorted(counts.items(), key=_sort_key)
+    else:
+        ordered = sorted(counts.items(), key=lambda kv: (-(kv[1][0] + kv[1][1]), -(kv[1][2] + kv[1][3])))
+
+    shown = ordered[:cap] if cap else ordered
     for sp, (mu, ma, cu, ca) in shown:
         dot = fixed_dot or _digest_dot(sp)
         label = f"{dot}{sp}"
         lines.append(_pad_right(label, sw) + " " + _pad_left(f"{mu}/{cu}", nw) + "  " + _pad_left(f"{ma}/{ca}", nw))
-    remaining = len(ranked) - len(shown)
-    if remaining > 0:
-        lines.append(f"…외 {remaining}개 종목")
+    if cap:
+        remaining = len(ordered) - len(shown)
+        if remaining > 0:
+            lines.append(f"…외 {remaining}개 종목")
     lines.append("─" * (sw + 1 + nw + 2 + nw))
     cmu, cma, ccu, cca = cat
     lines.append(_pad_left("합계", sw) + " " + _pad_left(f"{cmu}/{ccu}", nw) + "  " + _pad_left(f"{cma}/{cca}", nw))
@@ -2787,28 +2873,32 @@ def _digest_table_lines(counts: dict, cat: list, fixed_dot: str) -> list[str]:
 
 
 def _digest_unprocessed_section(title: str, rows: list, field: str, month_prefix: str,
-                                 fixed_dot: str = "") -> str:
+                                 fixed_dot: str = "", rank: list | None = None,
+                                 cap: int | None = None) -> str:
     """▸ {title} 카테고리 블록. 미처리 있으면 고정폭 표(<pre> 마커로 감쌈), 없으면 담백한 완료
     격려 1줄(표 없음). 카테고리 제목은 표 밖에 둔다(GM 2026-07-20 — 표 가시성 개선)."""
     head = f"▸ {title}"
     counts, cat = _digest_unprocessed_counts(rows, field, month_prefix)
     if not counts:
         return f"{head}\n✅ 진행상태·담당자 모두 정리 완료."
-    table = _digest_table_lines(counts, cat, fixed_dot)
+    table = _digest_table_lines(counts, cat, fixed_dot, rank=rank, cap=cap)
     return f"{head}\n{_PRE_OPEN}" + "\n".join(table) + _PRE_CLOSE
 
 
 def _build_digest_member_unprocessed(mem: list, adult: list, youth: list, today: str) -> str:
     """🗂 회원관리 미처리 현황(종목별, 당월/누적, 고정폭 표) — 오늘 문의 목록 뒤·마케팅 섹션 앞에
     삽입(GM 2026-07-20 — 표 렌더로 가시성 개선. 색은 기존 종목 고유색 유지, 심각도 색 아님).
-    한 사람 다종목은 _split_sports() 로 종목별로 나눠 계상."""
+    성인강습·유소년강습은 매출 순위(_digest_sport_rank) 고정 순서를 공유(GM 지시) — 순위 조회
+    실패 시 기존 당월 합 내림차순으로 폴백. 멤버십은 종목 개념이 달라 현행 그대로(순위·상한
+    모두 무변경). 한 사람 다종목은 _split_sports() 로 종목별로 나눠 계상."""
     month_prefix = today[:7]  # "YYYY-MM"
     month_label = f"{today[:4]}년 {int(today[5:7])}월"
     title = "━━━━━━━━━━\n🗂 회원관리 미처리 현황"
+    sport_rank = _digest_sport_rank(today)
     sections = [
-        _digest_unprocessed_section("멤버십", mem, "program", month_prefix, fixed_dot="🟡 "),
-        _digest_unprocessed_section("성인강습", adult, "sport", month_prefix),
-        _digest_unprocessed_section("유소년강습", youth, "sport", month_prefix),
+        _digest_unprocessed_section("멤버십", mem, "program", month_prefix, fixed_dot="🟡 ", cap=8),
+        _digest_unprocessed_section("성인강습", adult, "sport", month_prefix, rank=sport_rank),
+        _digest_unprocessed_section("유소년강습", youth, "sport", month_prefix, rank=sport_rank),
     ]
     # 세 카테고리 전부 완료(표를 만든 카테고리가 하나도 없음)면 섹션 전체를 담백한 한 줄로
     # 대체(직전 라운드 로직 그대로 — GM 2026-07-20 유지 지시).
@@ -3381,6 +3471,28 @@ def main():
         next_run_time=datetime.now(),
     )
     logger.info("kpi_collector 등록 완료 (07:50·21:00 일 2회) — S2 KPI 라이브 배지")
+
+    # ── 시트 칸 계약 점검 (매일 07:50 — 08:00 통합 브리프 직전) — CPO 2026-07-20 ──
+    # 재발방지 A안 0단계(GM 확정, 값 규칙 포함). 정상이면 완전 침묵 — 어긋남만 업무보고방 알림.
+    def _check_sheet_contract():
+        try:
+            subprocess.run(
+                [sys.executable, "scripts/collectors/cpo_sheet_contract.py"],
+                cwd=str(BASE.parent), timeout=180,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            logger.info("cpo_sheet_contract 실행 완료 (시트 칸 계약 점검)")
+        except Exception as e:
+            logger.error(f"cpo_sheet_contract 실행 실패: {e}")
+
+    scheduler.add_job(
+        _check_sheet_contract,
+        trigger=CronTrigger(hour=7, minute=50),
+        id="cpo_sheet_contract_check",
+        misfire_grace_time=600,
+        coalesce=True,
+    )
+    logger.info("cpo_sheet_contract 등록 완료 (매일 07:50) — 시트 칸 계약 점검(재발방지 A안 0단계)")
 
     # ── 주차 매출 일일 수집 (매일 07:00 + 기동 시 1회) — 08:00 보고 전 갱신 — CTO 2026-06-19 ──
     def _crawl_parking_revenue():

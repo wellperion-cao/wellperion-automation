@@ -1941,5 +1941,19 @@
     "artifact": "INC-017 후속(INC-022 신규등록·GUARDED). 진단: 공유 워크트리에서 'git add(자기 파일만) → git commit(pathspec 없음)' 조합 자체가 안전하지 않음을 확인 — add~commit 사이 다른 세션이 같은 인덱스에 얹은 무관 파일까지 bare commit이 통째로 쓸어감(격리 tmp repo 재현). 수리: ①git_lock.py git_commit_push()·auto_log_adhoc_to_queue.py _commit_queue()·commit_ig_reach.py·commit_engagement.py·weekly_page_hygiene.py 5곳 'git commit -m msg -- <paths>'로 pathspec 강제(구조적 근본수리, 락 없이도 섞임 차단). ②assign_ship_numbers.py에 --pre-commit 게이트(INC-017 sync_queue_mirror.py와 동일 패턴) — status/_queue.json이 이번 커밋에 실제 staged 됐을 때만 동작·add. ③auto_log_adhoc_to_queue._attribute_clevel() 우선순위 수정 — 명시 scope 태그(예: fix(cto):)가 본문 속 우연한 닉네임 언급보다 우선하도록(실사례 75d1d4e9가 '웰리' 언급 때문에 ceo로 오귀속됐던 버그, 0cd3042f 수동정정 이후 근본수리). ④부수: git_commit_push()의 'nothing to commit' 판정 문자열이 실제 git 출력과 안 맞아 무해 no-op가 예외로 격상되던 latent bug 동시수리.",
     "next": "🏁 입항완료(루틴) — 남은 스코프: 사람이 터미널에서 직접 치는 bare git commit(pathspec 없음)까지는 구조로 못 막음(자동화 경로만 커버). 필요시 후속으로 커밋 wrapper alias 검토 여지.",
     "ship_no": 9274
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-da4e5a61",
+    "clevel": "cmo",
+    "title": "[시모] 발행 루프를 감싸는 상위 루프 — 반응 파악→반응없음 개선제안(배834)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9275,
+    "artifact": "GM 지시(2026-07-20): 발행 후 반응을 측정하고, 반응 없으면 개선안을 만드는 폐루프를\n새로 얹는다. 2026-07-15 삭제된 클릭 집계는 되살리지 않고 실측 가능한 신호(IG 도달·\n당근 조회/찜·카페 조회)로 대체. (CLI ad-hoc · 커밋 da4e5a61)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "da4e5a6118e6173d859f8a6cad3f717c89c57940"
   }
 ]

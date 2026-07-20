@@ -1,0 +1,742 @@
+{
+  "_doc": "시트 칸 계약 SSOT — cpo_sheet_contract.py가 매일 07:50 대조. canon_values.json과 별개(그건 레포 문자열 스캔, 이건 라이브 시트 대조 — 실행 방식이 달라 합치면 divergence_scan.py가 오탐한다). 90%는 --seed 자동생성(라이브 헤더 그대로), 사람은 req(필수여부)·allowed(허용값)·refs(시트 관계)·value_rule(숫자 범위)만 편집한다. 자동 갱신 금지 — 헤더가 바뀌어도 계약서는 따라가지 않는다(사고를 추종하게 됨). 변경 시 알림만, 사람이 --accept로 승인해야 갱신된다.",
+  "_schema": {
+    "sheets.<key>": "{ss_id, gid, read_via, columns[], refs?, known_collisions?}",
+    "columns[]": "{name(리터럴 헤더), req, allowed?, format?, blank_check?, date_col?, value_rule?, front_check?}",
+    "refs": "{forbid_patterns, note, join, target} — 금지 칸·시트 관계",
+    "known_collisions": "시드 시점에 이미 있던 부분문자열 충돌 쌍(베이스라인) — 이후 '신규' 충돌만 🔴"
+  },
+  "sheets": {
+    "inquiry_2026": {
+      "ss_id": "12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U",
+      "gid": 1902010032,
+      "read_via": "gviz",
+      "columns": [
+        {
+          "name": "날짜",
+          "req": false
+        },
+        {
+          "name": "타임스탬프",
+          "req": true,
+          "format": "datetime_hms",
+          "date_col": true
+        },
+        {
+          "name": "1. 성함",
+          "req": true
+        },
+        {
+          "name": "2. 연락처",
+          "req": true
+        },
+        {
+          "name": "거주지 [거주지역]",
+          "req": false
+        },
+        {
+          "name": "3. 관심 있는 프로그램 종목",
+          "req": false
+        },
+        {
+          "name": "4. 웰페리온을 어떤 경로로 알게 되셨나요?",
+          "req": false
+        },
+        {
+          "name": "문의 경로\n(중분류)",
+          "req": false
+        },
+        {
+          "name": "문의 경로\n(소분류)",
+          "req": false
+        },
+        {
+          "name": "5. 시설투어 및 상담을 희망하는 날짜는 언제인가요?",
+          "req": false
+        },
+        {
+          "name": "체험1\n확정시간",
+          "req": false
+        },
+        {
+          "name": "시설 체험 예약2(날짜 기록)",
+          "req": false
+        },
+        {
+          "name": "체험2\n확정시간",
+          "req": false
+        },
+        {
+          "name": "6. 웰페리온에 대한 문의 사항 및 운동 목적 등을 기록해주시면 참고하여 상담 진행됩니다. 감사합니다.",
+          "req": false
+        },
+        {
+          "name": "접수 담당자 혹은 본인 이름",
+          "req": false
+        },
+        {
+          "name": " Contact1",
+          "req": false
+        },
+        {
+          "name": " Contact2",
+          "req": false
+        },
+        {
+          "name": " Contact3",
+          "req": false
+        },
+        {
+          "name": " 진행현황",
+          "req": true,
+          "blank_check": false,
+          "allowed": [
+            "LOSS",
+            "SUC",
+            "컨택중",
+            "가망",
+            "단기SUC"
+          ]
+        },
+        {
+          "name": "7. 개인정보 수집·이용 동의\n대한민국 「개인정보 보호법」에 따라, 웰페리온 주식회사는 아래와 같이 귀하의 개인정보를 수집·이용합니다.\n수집 및 이용 목적: 회원권 상담 및 클럽 투어 예약·진행, 회원권 관련 문의 응대 \n수집 항목: 성명, 휴대전화번호, 관심 프로그램, 희망 방문일, 웰니스 목표 \n보유 및 이용 기간: 수집일로부터 1년 또는 수집 목적 달성 시까지(둘 중 먼저 도래하는 시점) \n제3자 제공: 법령에 따른 경우를 제외하고, 별도의 동의 없이 제3자에게 제공하지 않습니다.\n귀하는 개인정보 수집·이용에 대한 동의를 거부할 권리가 있습니다. 다만, 동의를 거부하실 경우 상담 및 예약 접수가 제한될 수 있습니다.",
+          "req": true,
+          "blank_check": true
+        },
+        {
+          "name": "유입경로(자동)",
+          "req": false
+        },
+        {
+          "name": " 미등록 사유",
+          "req": false
+        },
+        {
+          "name": " 비고",
+          "req": false
+        },
+        {
+          "name": "당일컨택",
+          "req": false
+        },
+        {
+          "name": "등록매칭(자동)",
+          "req": false
+        },
+        {
+          "name": "등록일(자동)",
+          "req": false
+        },
+        {
+          "name": "방문완료일",
+          "req": false
+        },
+        {
+          "name": "예약목록",
+          "req": false
+        },
+        {
+          "name": "연락이력",
+          "req": false
+        },
+        {
+          "name": "등록종목",
+          "req": false
+        },
+        {
+          "name": "LOSS사유",
+          "req": false,
+          "allowed": [
+            "가격",
+            "거리/위치",
+            "시간대 안 맞음",
+            "타업체 선택",
+            "단순 문의(등록의사 없음)",
+            "연락 두절",
+            "기타"
+          ],
+          "front_check": true
+        },
+        {
+          "name": "LOSS사유메모",
+          "req": false,
+          "allowed": [
+            "가격",
+            "거리/위치",
+            "시간대 안 맞음",
+            "타업체 선택",
+            "단순 문의(등록의사 없음)",
+            "연락 두절",
+            "기타"
+          ],
+          "front_check": true
+        }
+      ],
+      "known_collisions": [
+        [
+          "5. 시설투어 및 상담을 희망하는 날짜는 언제인가요?",
+          "날짜"
+        ],
+        [
+          "날짜",
+          "시설 체험 예약2(날짜 기록)"
+        ],
+        [
+          "LOSS사유",
+          "LOSS사유메모"
+        ]
+      ]
+    },
+    "lesson_adult": {
+      "ss_id": "1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw",
+      "gid": 111889422,
+      "read_via": "gviz",
+      "columns": [
+        {
+          "name": " ",
+          "req": false
+        },
+        {
+          "name": "타임스탬프",
+          "req": true,
+          "format": "datetime_hms",
+          "date_col": true
+        },
+        {
+          "name": "성함(Name)",
+          "req": true
+        },
+        {
+          "name": "연락처(Phone Number)",
+          "req": true
+        },
+        {
+          "name": "나이(연령대) [나이(연령대)]",
+          "req": false
+        },
+        {
+          "name": "성인 강습 종목 (희망종목 모두 체크)",
+          "req": false
+        },
+        {
+          "name": "문의 경로",
+          "req": false
+        },
+        {
+          "name": "웰페리온에 대한 문의 사항 있다면 자유롭게 적어주세요.",
+          "req": false
+        },
+        {
+          "name": "접수 담당자 혹은 본인 이름",
+          "req": false
+        },
+        {
+          "name": "희망하시는 레슨 시간을 체크해주세요",
+          "req": false
+        },
+        {
+          "name": "웰페리온은 원활한 강습 상담 및 OT 진행을 위해 아래와 같이 개인정보를 수집·이용하고자 합니다.\n\n1. 수집 및 이용 목적\n- 담당 강사 배정 및 안내 , 강습 상담, 무료 체험(OT) 일정 조율\n- 배정된 담당 강사의 일정 조율을 위한 개별 연락(문자/전화)\n\n2. 수집하는 개인정보 항목\n- 필수항목: 성함, 연락처, 나이(연령대), 희망 강습 종목, 희망 강습 시간 등 설문 작성 내용 일체\n\n3. 보유 및 이용 기간\n- 상담 완료 및 무료 체험 종료 시까지 (단, 등록 회원의 경우 회원 탈퇴 시까지)\n- 상담 미진행 시 수집일로부터 3개월 후 파기\n\n4. 동의 거부 권리\n- 귀하는 개인정보 수집 및 이용에 거부할 권리가 있습니다. 단, 동의를 거부하실 경우 담당 강사 배정 및 무료 체험(OT) 예약이 불가능합니다.\n\n※ 본 동의를 통해 배정된 담당 강사가 회원님의 연락처로 직접 연락드려 일정을 조율하는 것에 동의하는 것으로 간주합니다.",
+          "req": true,
+          "blank_check": true
+        },
+        {
+          "name": "지정 강사",
+          "req": false
+        },
+        {
+          "name": "Contact\n(컨택 내용)",
+          "req": false
+        },
+        {
+          "name": "비고",
+          "req": false
+        },
+        {
+          "name": "진행 상황",
+          "req": true,
+          "blank_check": false,
+          "allowed": [
+            "컨택중",
+            "LOSS",
+            "SUC",
+            "신규",
+            "가망"
+          ]
+        },
+        {
+          "name": "미등록 사유",
+          "req": false
+        },
+        {
+          "name": "LOSS사유",
+          "req": false,
+          "allowed": [
+            "가격",
+            "거리/위치",
+            "시간대 안 맞음",
+            "타업체 선택",
+            "단순 문의(등록의사 없음)",
+            "연락 두절",
+            "기타"
+          ],
+          "front_check": true
+        },
+        {
+          "name": "LOSS사유메모",
+          "req": false,
+          "allowed": [
+            "가격",
+            "거리/위치",
+            "시간대 안 맞음",
+            "타업체 선택",
+            "단순 문의(등록의사 없음)",
+            "연락 두절",
+            "기타"
+          ],
+          "front_check": true
+        },
+        {
+          "name": "등록종목",
+          "req": false
+        }
+      ],
+      "known_collisions": [
+        [
+          "LOSS사유",
+          "LOSS사유메모"
+        ]
+      ]
+    },
+    "lesson_wsc": {
+      "ss_id": "1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw",
+      "gid": 268994754,
+      "read_via": "gviz",
+      "columns": [
+        {
+          "name": "문의일",
+          "req": false
+        },
+        {
+          "name": "타임스탬프",
+          "req": true,
+          "format": "datetime_hms",
+          "date_col": true
+        },
+        {
+          "name": "유소년 이름",
+          "req": true
+        },
+        {
+          "name": "핸드폰 연락처",
+          "req": true
+        },
+        {
+          "name": "나이",
+          "req": false
+        },
+        {
+          "name": "WSC 강습 종목 (희망종목 모두 체크)",
+          "req": false
+        },
+        {
+          "name": "문의 경로",
+          "req": false
+        },
+        {
+          "name": "기타 웰페리온에 대한 문의 사항 있다면 자유롭게 적어주세요.",
+          "req": false
+        },
+        {
+          "name": "접수 담당자 혹은 보호자 이름",
+          "req": false
+        },
+        {
+          "name": "희망하시는 레슨 시간을 체크해주세요",
+          "req": false
+        },
+        {
+          "name": "웰페리온은 원활한 유소년 강습 상담 진행을 위해 아래와 같이 개인정보를 수집·이용하고자 합니다.\n\n1. 수집 및 이용 목적\n- 담당 강사 배정 및 안내 , 강습 상담 등\n- 배정된 담당 강사의 일정 조율을 위한 개별 연락(문자/전화)\n\n2. 수집하는 개인정보 항목\n- 필수항목: 성함, 연락처, 나이(연령대), 희망 강습 종목 등 설문 작성 내용 일체\n\n3. 보유 및 이용 기간\n- 상담 완료 시까지 (단, 등록 회원의 경우 회원 탈퇴 시까지)\n- 상담 미진행 시 수집일로부터 3개월 후 파기\n\n4. 동의 거부 권리\n- 귀하는 개인정보 수집 및 이용에 거부할 권리가 있습니다. 단, 동의를 거부하실 경우 담당 강사 배정 및 상담이 불가능합니다.\n\n※ 본 동의를 통해 배정된 담당 강사가 회원님의 연락처로 직접 연락드려 일정을 조율하는 것에 동의하는 것으로 간주합니다.",
+          "req": true,
+          "blank_check": true
+        },
+        {
+          "name": "지정 강사",
+          "req": false
+        },
+        {
+          "name": "유입경로(자동)",
+          "req": false
+        },
+        {
+          "name": "비고",
+          "req": false
+        },
+        {
+          "name": "진행 상황",
+          "req": true,
+          "blank_check": false,
+          "allowed": [
+            "컨택중",
+            "LOSS",
+            "SUC",
+            "신규",
+            "가망",
+            "대기"
+          ]
+        },
+        {
+          "name": "미등록 사유",
+          "req": false
+        },
+        {
+          "name": "Contact",
+          "req": false
+        },
+        {
+          "name": "LOSS사유",
+          "req": false,
+          "allowed": [
+            "가격",
+            "거리/위치",
+            "시간대 안 맞음",
+            "타업체 선택",
+            "단순 문의(등록의사 없음)",
+            "연락 두절",
+            "기타"
+          ],
+          "front_check": true
+        },
+        {
+          "name": "LOSS사유메모",
+          "req": false,
+          "allowed": [
+            "가격",
+            "거리/위치",
+            "시간대 안 맞음",
+            "타업체 선택",
+            "단순 문의(등록의사 없음)",
+            "연락 두절",
+            "기타"
+          ],
+          "front_check": true
+        },
+        {
+          "name": "등록종목",
+          "req": false
+        }
+      ],
+      "known_collisions": [
+        [
+          "나이",
+          "웰페리온은 원활한 유소년 강습 상담 진행을 위해 아래와 같이 개인정보를 수집·이용하고자 합니다.\n\n1. 수집 및 이용 목적\n- 담당 강사 배정 및 안내 , 강습 상담 등\n- 배정된 담당 강사의 일정 조율을 위한 개별 연락(문자/전화)\n\n2. 수집하는 개인정보 항목\n- 필수항목: 성함, 연락처, 나이(연령대), 희망 강습 종목 등 설문 작성 내용 일체\n\n3. 보유 및 이용 기간\n- 상담 완료 시까지 (단, 등록 회원의 경우 회원 탈퇴 시까지)\n- 상담 미진행 시 수집일로부터 3개월 후 파기\n\n4. 동의 거부 권리\n- 귀하는 개인정보 수집 및 이용에 거부할 권리가 있습니다. 단, 동의를 거부하실 경우 담당 강사 배정 및 상담이 불가능합니다.\n\n※ 본 동의를 통해 배정된 담당 강사가 회원님의 연락처로 직접 연락드려 일정을 조율하는 것에 동의하는 것으로 간주합니다."
+        ],
+        [
+          "LOSS사유",
+          "LOSS사유메모"
+        ]
+      ]
+    },
+    "lesson_register": {
+      "ss_id": "1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw",
+      "gid": null,
+      "read_via": "gviz",
+      "sheet_name": "강습 등록현황",
+      "columns": [
+        {
+          "name": "유형",
+          "req": false
+        },
+        {
+          "name": "종목",
+          "req": false
+        },
+        {
+          "name": "이름",
+          "req": true
+        },
+        {
+          "name": "전화",
+          "req": true
+        },
+        {
+          "name": "상태",
+          "req": true
+        },
+        {
+          "name": "등록일",
+          "req": true,
+          "date_col": true
+        },
+        {
+          "name": "키",
+          "req": false
+        }
+      ],
+      "known_collisions": []
+    },
+    "member_active": {
+      "ss_id": "12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U",
+      "gid": 259014685,
+      "read_via": "gas",
+      "gas_action": "member_active_list",
+      "gas_params": {
+        "scope": "valid"
+      },
+      "columns": [
+        {
+          "name": "담당자",
+          "req": false
+        },
+        {
+          "name": "회원명",
+          "req": true
+        },
+        {
+          "name": "휴대폰 번호",
+          "req": true
+        },
+        {
+          "name": "회원\n구분",
+          "req": false
+        },
+        {
+          "name": "나이",
+          "req": false
+        },
+        {
+          "name": "수강반종목명",
+          "req": false
+        },
+        {
+          "name": "등록 분류",
+          "req": false
+        },
+        {
+          "name": "등록\n일자",
+          "req": true,
+          "date_col": true
+        },
+        {
+          "name": "시작\n일자",
+          "req": false
+        },
+        {
+          "name": "종료\n일자",
+          "req": false
+        },
+        {
+          "name": "락커",
+          "req": false
+        },
+        {
+          "name": "재등록\n분류",
+          "req": false
+        },
+        {
+          "name": "등록\n회차",
+          "req": false
+        },
+        {
+          "name": "LOSS\n일자",
+          "req": false
+        },
+        {
+          "name": "잔여일\n(일)",
+          "req": false
+        },
+        {
+          "name": "미등록사유",
+          "req": false
+        },
+        {
+          "name": "이용\n일수",
+          "req": false
+        },
+        {
+          "name": "비고(운영부 참고사항)",
+          "req": false
+        },
+        {
+          "name": "주소",
+          "req": false
+        },
+        {
+          "name": "강습팀\n참고사항(이용 시간 기록)",
+          "req": false
+        },
+        {
+          "name": "PT 담당자",
+          "req": false
+        },
+        {
+          "name": "PT Contact",
+          "req": false
+        },
+        {
+          "name": "골프 담당자",
+          "req": false
+        },
+        {
+          "name": "GOLF Contact",
+          "req": false
+        },
+        {
+          "name": "P.L 담당자",
+          "req": false
+        },
+        {
+          "name": "P.L Contact",
+          "req": false
+        },
+        {
+          "name": "스쿼시 담당자",
+          "req": false
+        },
+        {
+          "name": "스쿼시 Contact",
+          "req": false
+        },
+        {
+          "name": "수영 담당자",
+          "req": false
+        },
+        {
+          "name": "수영 Contact",
+          "req": false
+        },
+        {
+          "name": "재등록상담 날짜",
+          "req": false
+        },
+        {
+          "name": "재등록상담 시간",
+          "req": false
+        },
+        {
+          "name": "재등록상담 내용",
+          "req": false
+        },
+        {
+          "name": "재등록예약목록",
+          "req": false
+        },
+        {
+          "name": "종료사유",
+          "req": false
+        },
+        {
+          "name": "종료사유메모",
+          "req": false
+        }
+      ],
+      "known_collisions": [
+        [
+          "PT 담당자",
+          "담당자"
+        ],
+        [
+          "골프 담당자",
+          "담당자"
+        ],
+        [
+          "P.L 담당자",
+          "담당자"
+        ],
+        [
+          "담당자",
+          "스쿼시 담당자"
+        ],
+        [
+          "담당자",
+          "수영 담당자"
+        ],
+        [
+          "등록 분류",
+          "재등록\n분류"
+        ],
+        [
+          "종료사유",
+          "종료사유메모"
+        ]
+      ],
+      "refs": {
+        "forbid_patterns": [
+          "휴회"
+        ],
+        "note": "휴회 진실은 member_hold(휴회신청 응답) 시트 하나뿐. 유효회원 시트에 휴회 칸 자동생성 금지(2026-07-20 v28→v29 철회 사고 재발방지). join=연락처.",
+        "join": "연락처",
+        "target": "member_hold"
+      }
+    },
+    "member_hold": {
+      "ss_id": "1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ",
+      "gid": 514238773,
+      "read_via": "gas",
+      "gas_action": "hold_sheet_probe",
+      "gas_params": {
+        "t": "wlp_intake_9f4c1b7e2a63"
+      },
+      "columns": [
+        {
+          "name": "010-4854-0000",
+          "req": false
+        },
+        {
+          "name": "성명",
+          "req": true
+        },
+        {
+          "name": "연락처",
+          "req": true
+        },
+        {
+          "name": "휴회 차수",
+          "req": false,
+          "value_rule": {
+            "max": 3
+          }
+        },
+        {
+          "name": "휴회 시작일",
+          "req": true,
+          "date_col": true
+        },
+        {
+          "name": "휴회 만료일",
+          "req": false
+        },
+        {
+          "name": "휴회 사유",
+          "req": false
+        },
+        {
+          "name": "특이사항",
+          "req": false
+        },
+        {
+          "name": "담당자",
+          "req": false
+        },
+        {
+          "name": "휴회 일수",
+          "req": false,
+          "value_rule": {
+            "min": 7,
+            "max": 60
+          }
+        },
+        {
+          "name": "진행 상황",
+          "req": true,
+          "blank_check": false
+        },
+        {
+          "name": "비고",
+          "req": false
+        }
+      ],
+      "known_collisions": []
+    }
+  },
+  "_seeded_at": "2026-07-20 14:00:48"
+}
