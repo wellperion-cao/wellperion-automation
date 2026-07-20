@@ -3165,5 +3165,18 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 ed06c252)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "ed06c25287875e1e33f72c322c9130100c0c295c"
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-NAVER-SPLIT-MIDCAT",
+    "clevel": "cmo",
+    "title": "[시모] 배9351 후속 — 문의 중분류 'N-플레이스(검색)' → 'N-플레이스'·'N-검색' 분리 (GM 승인)",
+    "status": "BLOCKED",
+    "terminal": false,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9351,
+    "artifact": "정본 확인: 멤버십 문의 시트(12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U) 'DATA' 탭 D2:D30 — '26년 신규문의' 탭(gid 1902010032) G열 '문의 경로(중분류)' 데이터 확인 규칙이 이 범위를 참조(REQUIRE_VALUE_IN_RANGE). WP폼(wp_inquiry_form.html)·membership.html 드롭다운·구글폼은 전부 별개 필드(대분류/채널)라 무관함을 확인. GAS(.deploy-funnel-v2/Survey.js) 액션 naver_split_midcat(mode=diag|apply, 가드 필수) 작성·배포(@57)해 diag로 정확한 옵션 목록 29건 실측 확인(oldValueCellCount=198, 무변경 확인용). apply 시도 → 'DATA' 시트가 시트보호(canEditByMe=false)로 잠겨 있어 자동화로 값 수정 불가(보호편집자 목록에 배포계정 미포함). _canonicalChannel_ 정규식(플레이스|검색 등 부분일치)은 이미 'N-플레이스'·'N-검색' 신규값을 '네이버'로 정상 분류함을 코드 확인 완료 — 3단계는 코드변경 불요.",
+    "next": "⚓ 대기 — GM이 'DATA' 탭 시트보호를 풀거나(또는 배포계정 편집자 추가), 혹은 GM이 직접 D3셀 'N-플레이스(검색)'→'N-플레이스'로 수정 + D31에 'N-검색' 추가 + G열 데이터확인 참조범위를 D2:D31로 확장. 그 후 GET .../exec?action=naver_split_midcat&mode=apply&key=wp-naver-midcat-split-2026-gm-ok 1회 호출하면 자동 적용·검증까지 마무리됨(기존 198건 셀값은 절대 안 건드림)."
   }
 ]
