@@ -394,12 +394,9 @@ def build_ep3(out_ep: Path) -> None:
 # ---------------------------------------------------------------------------
 # 해시태그 순서: ① 지역+종목 → ② 종목·주제·타겟 → ③ 브랜드(맨 끝 고정)
 _HASHTAGS = "#한남동골프 #유소년골프 #주니어골프 #KPGA #골프레슨 #스포츠클럽 #웰페리온 #WELLPERION"
-# 채널별 CTA:
-#   IG·당근 = 평문 URL 넣지 않음 (클릭 불가라 지저분). 프로필 링크로 유도.
-#   블로그·카페 = SmartEditor 링크 카드로 삽입 (PoC 완료 후 자동화).
-#   카카오 = 현행 유지.
+# 채널별 CTA 규칙 정본 = scripts/cta_utm.py (2026-07-20 GM 승인) — 여기서 재서술 안 함.
 _CTA_URL = "wellperion.com/ko/inquiry"
-_CTA_BLOG = f"문의 : {_CTA_URL}"  # 블로그·카페·카카오용 평문 CTA (링크 카드 PoC 전 임시)
+_CTA_BLOG = f"문의 : {_CTA_URL}"  # 평문 CTA (링크 카드 PoC 전 임시, 채널 적용 규칙은 cta_utm.py 참조)
 
 
 def write_captions(base_out: Path) -> None:
