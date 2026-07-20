@@ -5065,6 +5065,14 @@ function _processAction(body) {
         if (v instanceof Date && !isNaN(v.getTime())) return Utilities.formatDate(v, maTz, 'yyyy-MM-dd');
         return _miToISO_(v) || '';
       }
+      // 대기자 판정 전용 — member_active_list의 셀 직렬화(Date→ISO, 그 외 String)를 그대로 재현한다.
+      //   화면 _isFutureStart(membership.html:5506)가 그 문자열에 엄격정규식 /^\d{4}-\d{2}-\d{2}/를 걸고,
+      //   형식이 아니면 '이미 시작된 것'으로 본다. _maISO(느슨 파싱)를 쓰면 '25. 10 .15' 같은 오형식 값까지
+      //   날짜로 살려내 화면보다 1건 많게 샌다(2026-07-20 실측: 27 vs 화면 26). 화면 숫자가 정답이므로 동일 규칙 사용.
+      function _maCell(v) {
+        if (v instanceof Date && !isNaN(v.getTime())) return Utilities.formatDate(v, maTz, 'yyyy-MM-dd');
+        return (v === null || v === undefined) ? '' : String(v);
+      }
       function _maBump(bucket, iso) {
         bucket.total++;
         if (!iso) return;                                   // 날짜 못 읽으면 total에만 포함(계약 §2)
@@ -5087,8 +5095,10 @@ function _processAction(body) {
           mv = MA_TYPO[mv] || mv;
           if (!mv || !MA_KNOWN[mv]) mv = '기타';
           maRes.typeCounts[mv]++;
-          var maSt = maStI >= 0 ? _maISO(mrow[maStI]) : '';
-          if (maSt && maSt > maToday) { maRes.waitingCount++; _maBump(maRes.waitPeriods, maSt); }
+          var maStS = maStI >= 0 ? _maCell(mrow[maStI]).trim() : '';
+          if (/^\d{4}-\d{2}-\d{2}/.test(maStS) && maStS.slice(0, 10) > maToday) {
+            maRes.waitingCount++; _maBump(maRes.waitPeriods, maStS.slice(0, 10));
+          }
         } else {
           maRes.endedTotal++;
           _maBump(maRes.lossPeriods, maLossI >= 0 ? _maISO(mrow[maLossI]) : '');
