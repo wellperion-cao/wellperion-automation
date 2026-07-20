@@ -1396,5 +1396,19 @@
     "artifact": "앞 커밋 abf476ee 에 실제 변경이 안 실렸다(동시 커밋 경합). 내용 재적용.\n배포 정체의 실제 주범 = GitHub 장애(Actions partial_outage). 커밋 폭주 아님.\nfalse 상태로 장애를 맞으면 실패가 쌓여 07-03 실패메일 폭탄 재발 → 장애 동안 true. GM 승인. (CLI ad-hoc · 커밋 17889d6d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "17889d6db920e6db30a1756126b50c49c49bf34a"
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-en-inquiry-topstrip",
+    "clevel": "cmo",
+    "title": "[시모] 영문 문의 페이지(8408) 최상단 잔여 흰/회색 띠 재검증 — 이미 라이브 반영 확인",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9238,
+    "artifact": "team-lead 보고 근거 스크린샷(en_inquiry_8408_bg_after_desktop_20260720.png, 11:46:53)이\n실제 색상 수정 커밋(096d6213, 11:47:06)보다 13초 먼저 찍혀 수정 전 상태를 담고 있었음(오탐).\n라이브 재확인(en-US locale로 WPML 브라우저 자동리다이렉트 우회 후 측정) — #header-outer·\n.container-wrap 배경 rgb(245,240,234)=#f5f0ea로 KO(8394)와 완전 일치, 화면 최상단 y:0부터\n끊김 없이 아이보리. KOR 버튼 표시+실클릭으로 /ko/inquiry/ 정상 이동 재확인. PC 1440·1920·\n모바일 390 가로스크롤 0. 코드 변경 없음(096d6213이 이미 정답). 스크린샷: en_inquiry_8408_\ntop_recheck2_20260720.png · ko_inquiry_8394_top_recheck_20260720.png · en_inquiry_8408_\nuw1920_20260720.png · en_inquiry_8408_mobile390_20260720.png",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "096d62133b4a6e0841298f4d430c21943aa9f052"
   }
 ]
