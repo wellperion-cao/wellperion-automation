@@ -412,6 +412,21 @@
       "honesty_default": "measured"
     },
     {
+      "id": "cto-module-silence-detector",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "🔇 모듈 침묵 감지기 — 등록부 28개 모듈의 로컬 아티팩트 신선도를 감시, notify_spec 예상주기(daily/weekly/monthly) 초과 침묵만 하루 1통 묶어 발신(정상시 무발신). INC-018(KPI 집계기 6일 침묵) 재발방지를 등록부 전체로 확장(배1307 3차, INC-019).",
+      "data_source": {"kind": "json", "ref": "status/module_silence_log.jsonl"},
+      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
+      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "autonomy": "mech",
+      "ai_free_fallback": "스캔·판정·묶음발신 전부 결정론적(AI 세션 불요, scripts/module_silence_detector.py 단독 실행). bot_id 는 의도적으로 null — 발신은 module_reporter.py 의 범용 모듈별 파이프라인이 아니라 이 모듈 자체의 run_detector()가 자동화현황방(telegram_rooms.json 기존 배선)으로 직접 하루 1통 묶어 보낸다(module_reporter 이중 트리거 방지). 예약작업 등록은 GM go 대기 — 현재는 CLI 수동/드라이런만 검증 완료, 상시 무인가동 미시작.",
+      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
       "id": "chro-gmail-job-title-fetch",
       "owner_role": "chro",
       "owner_nick": "시로",

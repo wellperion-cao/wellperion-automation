@@ -310,6 +310,22 @@
       "차단조치": "① telegram_bot/daily_scheduler.py _collect_kpi() subprocess timeout 을 120s → 300s 로 상향(실측 최대 211s + 여유). ② scripts/integration_health.py 에 check_kpi_freshness() 신설·check_bridges() 에 편입 — kpi_values.json generated_at 이 25h(스케줄 최대간격 13.2h + 1회 결측 허용) 초과 시 global.health='warn' 으로 즉시 드러남 (재발 시 침묵하지 않고 KPI 자체가 자기 신선도를 보고).",
       "상태": "GUARDED",
       "검증증거": "kpi_collector.py 를 직접 1회 실행해 rc=0·211s 로 성공 확인(구 120s timeout 초과분 실측 재현) → status/kpi_values.json 이 2026-07-20 09:53 KST 로 갱신되고 cpo 완료=68·cto 완료=10·cmo 완료=8 등 실제 status/_queue.json 의 DONE 건수(clevel별 카운트 대조)와 일치함을 확인. 재실행(09:59) 시 GAS 캐시 히트로 31s 만에 완료 — 300s 상향 여유분 타당성 확인. check_bridges() 단독 실행으로 신설 check_kpi_freshness 가 '0.0h 전 갱신 — 정상' 정상 출력 확인(6/6 OK). ⚠️ daily_scheduler.py 코드 수정은 커밋에 반영했으나, 이미 가동 중인 WellperionDailyScheduler 프로세스(elevated, RunLevel=HighestAvailable)는 재기동 전까지 구 timeout=120s 를 메모리에 그대로 들고 있다 — 재기동은 ops/restart_daily_scheduler.bat(GM UAC 승인 필요) 또는 익일 자동 로그온 재기동으로 라이브 반영."
+    },
+    {
+      "id": "INC-019",
+      "date": "2026-07-20",
+      "watch_globs": [
+        "status/module_registry.json",
+        "scripts/module_silence_detector.py"
+      ],
+      "gate": "warn",
+      "요약": "등록모듈 28개 중 17개가 notify_wired:false 또는 bot_id:null — 돌긴 도는데 결과가 GM에게 안 감. INC-018(KPI 집계기 6일 침묵)처럼 '측정의 측정'이 없는 모듈이 대부분이라 똑같은 사고가 아무 때나 재발할 수 있었다. 등록부 전체를 도는 침묵 감지기를 만들어, 평소엔 조용하고 예상 주기를 넘겨 조용할 때만 하루 1통으로 알리게 했다(배1307 3차).",
+      "증상": "check_kpi_freshness() 같은 신선도 감시가 KPI 모듈 1개에만 있고 나머지 27개엔 없었다 — 침묵이 발생해도 관측 자체가 없어 아무도 모른다. 인시던트 15건 중 7건이 같은 뿌리(검증멈춤)에서 반복.",
+      "본질": "17개에 알림을 각자 붙이면 하루 17통 폭탄이 되어 GM이 안 보게 되고(노이즈로 무력화), 안 붙이면 침묵을 아무도 모른다(INC-018 재발). 판정 규칙이 모듈마다 따로 있지 않고, 등록부 하나를 순회하며 '예상 주기 대비 침묵'만 가려내는 단일 감지기가 없었다.",
+      "뿌리분류": "검증멈춤",
+      "차단조치": "scripts/module_silence_detector.py 신설 — 등록부 각 모듈의 data_source.ref 에서 로컬 아티팩트(json/jsonl 내부 timestamp 우선, 없으면 mtime — .py 코드파일은 신호 제외)를 찾고, notify_spec.daily/weekly/monthly(등록부에 실재하는 유일한 주기 필드)로 예상 최대 침묵(30h/216h/840h)을 정해 초과 시에만 'silent'. 로컬 아티팩트가 없거나 주기 미선언이면 silent 로 오분류하지 않고 '판정불가'로 정직 분리(임의추정 금지). 침묵 0건이면 무발신, 1건 이상이면 기존 채널(자동화현황방)에 하루 1통 묶어 발신(멱등 로그 status/module_silence_log.jsonl) — 새 봇·새 채널 없음. module_registry.json 에 cto-module-silence-detector 비파괴 추가(기존 필드 무변경·소비자 무영향).",
+      "상태": "GUARDED",
+      "검증증거": "실측 스캔(2026-07-20 10:2x KST, 라이브 등록부 28건): ok 7 · silent 0 · 판정불가 20(대부분 gas/sheet kind — 원격뿐 로컬 산출물 없음) · 대상아님 1(doc). 역재현: gm_aide_scan_log.jsonl 스냅샷을 scratch 사본(라이브 무변경)에서 54.4h 전으로 조작 → silent 정확 판정. 오탐확인: 동일 스냅샷 최신 사본은 ok(오탐 0). 다중침묵 묶음발신: 침묵 2건 시뮬레이션 → 발신 문자열 1개(헤더+2줄+링크)로 병합 확인, 개별 발송 없음. ⚠️ 정직 한계: 20/28 모듈은 원격(GAS/Sheet)뿐이라 로컬 아티팩트가 없어 아직 이 감지기가 판정 불가 — 이 20개는 INC-018 급 재발방지가 아직 완결되지 않음(후속: 하트비트 파일 필요). 실제 텔레그램 발송·스케줄 등록은 미실행(GM go 대기, 드라이런만 검증 — 배포·라이브 발송 금지 지시 준수)."
     }
   ]
 }
