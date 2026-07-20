@@ -28078,5 +28078,48 @@
     "next": "① 예약작업(daily 편승) 완료 · 화면 정직화 완료 — GM 확인만 남음. ② 21개 판정불가 모듈 하트비트 부여는 별도 후속과제로 보류.",
     "ship_no": 9197,
     "surface": "autonomy"
+  },
+  {
+    "task_id": "AIDE-2026-07-19-LONG-PENDING-9101",
+    "clevel": "cto",
+    "title": "[GM보좌 제안] [CTO-2026-06-18-PII-PROTECTION-REDESIGN] 31일째 PENDING 장기 미착수",
+    "status": "DONE",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-19",
+    "ship_no": 9101,
+    "note": "[2026-07-19 GM보좌 제안·웰리 포착] 31일 대기 — 우선순위 재확인 또는 폐기(삭제) 판단 필요(GM 결정 게이트) (포착유형=long_pending · 가역성=비가역 · 근거=enqueued_at=2026-06-18 priority=HIGH title=[시토] 회원 개인정보 보호 큰 틀 재설계 — 무인증 노출 근본 차단(인증·접근통제 아키텍). 조치안: GM 결정 필요(착수/우선순위 하향/폐기) — 비가역(폐기) 포함 → 제안만. KPI→북극성: [cto·시토] 현재 KPI(완결률=0.0, 완료=0, 활성=8) → 북극성 '서버·ERP 백엔드(서버+시트)단을 GM이 신경 안 써도 되게' 로 잇는 결정 게이트. GM프로필 근거(자주 놓치는 것): **완료 건의 '다음 한 수'**: 표류 11건이 가장 직접적 신호. 마무리 시점에 후속 배(bridge)를 남기지 않아 웰리가 '👉 다음 정하세요'로 촉구해야 하는 지점이 반복됨(근거: 표류 11건). ※ phase1=제안(대기)까지만 — 실제 도메인 작업은 GM 결정 후. [2026-07-20 시토] 본 제안이 묻던 질문(착수/우선순위 하향/폐기)에 GM이 D안으로 답함 — 9월 서버 이전까지 현상 유지를 의식적으로 수용(배21 note·INC-024 참조). 폐기 아님, 정박 유지. 종료.",
+    "next": "해소 — GM D안 결재(배21 note 참조)로 응답 완료. 추가 조치 불필요.",
+    "depends_on": "",
+    "source": "gm_aide_scan",
+    "reversibility": "비가역",
+    "aide_proposal_key": "gmaide|long_pending|CTO-2026-06-18-PII-PROTECTION-REDESIGN",
+    "terminal": true
+  },
+  {
+    "task_id": "CTO-2026-07-20-SSOT-RULE-DIVERGENCE-GUARD",
+    "clevel": "cto",
+    "title": "[시토] SSOT 재발방지 - '규칙' 계층 감시 확장(채널별 CTA 규칙 재서술 탐지) + gitignore 사각지대 처리",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "terminal": true,
+    "note": "GM 지시(2026-07-20): \"규칙이 여러 곳에 중복 정의되는 문제\" 재발방지를 기계로 박음. 배경: 채널별 CTA(문의 링크) 규칙이 5곳에 각각 서술돼 서로 어긋났고 2026-06-08 폐기분까지 살아있었음 — 값(canon_values.json)은 divergence_scan.py가 감시했지만 '규칙' 계층은 무방비였음. ① canon_values.json에 새 \"rules\" 배열 신설(새 레지스트리 파일 아님, 기존 파일 확장 — CLAUDE.md §3-2 단일등록부 정신). cta_channel_rules 1건 등록(source=scripts/cta_utm.py). ② ssot/divergence_scan.py를 v2로 확장 — run_rule_scan() 신설. 규칙은 값과 달리 고정 문자열이 아니라 매번 다르게 재서술되므로, 리터럴 매칭 대신 '신호 동시등장'(채널명 2개+ & CTA 단어경계매칭이 5줄 구간 안에 함께 등장)으로 탐지. 실측 캘리브레이션(1319→2건까지 오탐 제거): EXCLUDE_DIRS에 worktrees 추가(.claude/worktrees 6벌 중복이 값스캔 1179건·규칙스캔 90여건의 진짜 원인이었음 — 부수 발견), CTA 단어경계 정규식(\\bCTA\\b, LINK_CARD_CTA_URL같은 식별자·cta_utm.py 파일 인용 오매칭 제거), allow_globs에 실측 확인된 정상 소비자·포인터·콘텐츠·설계문서 경로 추가(generate_channel_copy.py=cta_utm 실제 import 소비자, SKILL.md=스킬 키워드 목록, instagram/**·docs/**=콘텐츠·날짜박제 설계문서). ③ssot/incident_regression_monitor.py._divergence_map()이 run_rule_scan도 병합(rule: 접두)해 기존 baseline·회귀판정·텔레그램 경보 경로를 그대로 재사용(새 플러밍 0). ④자동실행 배선: status/schedule.json에 \"매일 09:15\" 로 문서화만 돼있고 실제 Windows 예약작업이 없던 사각지대 발견(Get-ScheduledTask에 없음) — 새 예약작업 등록 대신 이미 라이브인 Wellperion-Module-Report-Daily(scripts/module_reporter.py --cadence daily)에 편승 호출 추가(module_silence_detector.publish_snapshot()과 동일 기존 패턴 재사용). ⑤gitignore 사각지대: .claude/skills/wellperion-brand/SKILL.md가 blanket \".claude/\" ignore에 걸려 내 PC에만 반영되고 다른 환경은 옛 규칙을 보고 있었음(비밀정보 없음 확인 — 순수 포인터형 브랜드 요약 문서). gitignore 부정 패턴(!.claude/skills/...)만으로는 git이 '부모 디렉터리 배제시 재포함 불가' 제약으로 실동작 안 함을 격리 repro로 실증(기존 wellperion-agents/.claude 예외도 동일 제약 — force-add로 이미 트래킹됐던 것으로 재확인) → git add -f로 강제 트래킹, gitignore 예외 라인은 문서화 목적으로 유지. 실제로 다른 세션 자동커밋(2881fcc7 chore(cpo))에 편승되어 이미 origin에 push 완료(라이브 반영). ⑥검증: scripts/_tmp_rule_scan_verify.py에 고의 중복(블로그·카페·당근·카카오 CTA 재서술)을 심어 divergence_scan --json으로 실제 탐지 확인(PASS) → 파일 삭제 후 재스캔 정상 소멸 확인. 텔레그램 경보는 incident_regression_monitor._alert()를 직접 호출 + 원시 urllib 응답 캡처로 이중 검증 — Telegram API ok:true·chat_id가 TELEGRAM_CHAT_ID(GM 업무보고봇방)와 정확히 일치 확인(실무진방 아님). ⑦전체 스캔 결과(실측): 값 발산 1319→140건(worktree 제외 후, 기존 값스캔 자체는 이번 작업 범위 밖·incident_regression_monitor 기존 baseline이 흡수), 규칙 발산 2건(진짜 위반, 오탐 0) — ① `3. 웰페리온 가이드/wellperion_guide(main).html`의 '채널별 CTA' 표(3536행 부근)가 cta_utm.py 현행과 어긋난 채 남음(당근을 'URL 미기재'로 오기재, 카카오 누락) ② `scripts/compose_golf.py`(397~400행) 주석이 채널별 CTA 규칙을 옛 버전으로 재서술 — 둘 다 이 작업에서 코드 수정은 안 함(탐지장치 구축이 scope, 발견만 하고 자동수정 안 함이 설계 원칙), incident_regression_monitor 정상 가동 확인 후 --set-baseline으로 오늘 상태 흡수(신규 재서술만 향후 경보). ⚠️막힌 것: 이 작업과 무관한 배 834(CMO 북극성 제작루프, task_id=CMO-2026-07-09-NORTHSTAR-PRODUCTION-LOOP)가 지시 그대로였음 — 무관한 진행중 대형 기록에 이 작업 note를 섞으면 오염이라 판단해 이 신규 배로 분리 등록함(GM 확인 요청). wellperion_guide(main).html·compose_golf.py 2건 실수정은 후속 배로 남김.",
+    "next": "wellperion_guide(main).html '채널별 CTA' 표·compose_golf.py 397~400행 주석 - cta_utm.py 정본 포인터로 교체(실수정 후속배). 규칙 레지스트리에 다른 반복재서술 후보도 여유될 때 확장 검토.",
+    "depends_on": "",
+    "ship_no": 9261
+  },
+  {
+    "task_id": "CTO-2026-07-20-MODULE-HEARTBEAT-1307-5CHA",
+    "clevel": "cto",
+    "title": "[시토] 모듈 하트비트 배선 — 등록부 판정불가 21개 중 11개 확인됨 전환(배1307 5차)",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-20",
+    "note": "[배1307 5차] 모듈 침묵 감지기(3차)의 \"판정불가\" 21개(등록부 29개 중) 해소 작업. 공통 유틸 신설 scripts/module_heartbeat.py(record_heartbeat) — 모듈이 실제 결과를 낸 시점에 status/heartbeats/{id}.json 1개씩 기록(공유 jsonl 마지막줄 오판정 함정 회피, 파일당 모듈 1개 고정). 4개 실제 산출 지점에 한 줄씩 배선: module_reporter.py(collect() 성공 직후, heartbeat=True 파라미터로 pytest 오염 차단·main()만 opt-in) · coo_report_line.py(GAS fetch 성공 직후, 동일 opt-in 패턴) · telegram_health_check.py (_check_gas_versions 성공 직후) · kakao_daily_check_share.py(카톡 발송 rc==0 직후). 등록부 11개 수정(6개=코드+ref 배선, 5개=이미 있던 로컬 파일에 ref만 정합 또는 실측 확인된 실주기 반영 — cto-weekly-self-review 주간, ceo-gm-aide 일간, cto-inquiry-read-snapshot 일간+ref오류 수정, cmo-eval-feedback-loop 주간+ref수정, cto-kakao-sales-report ref추가). 실측 검증: 6개 전부 실제(읽기전용 GAS 호출 또는 mock 발송) 1회 구동으로 하트비트 파일 생성 확인 → module_silence_detector --scan-only 재실행해 unmeasurable→ok 전환 실측(11/11). 역재현(judge_module now=+40h)으로 daily 모듈 7개 전부 silent 전환 확인, weekly 모듈 3개는 +40h에도 ok 유지 확인(오탐 없음). pytest tests/test_module_reporter.py· test_coo_report_line.py·test_module_registry.py 35건 전부 통과(회귀 0, 테스트 오염 0 — heartbeat 기본 False라 fake id로 status/heartbeats/ 더럽히지 않음 확인). cto-module-silence-detector 자기 자신도 --live 1회(침묵 0건 확인 후 안전하게) 구동해 첫 로그 남김·ok 전환. 최종: 판정불가 21 → 11 확인됨 전환(+자기자신 1 별도) = 판정불가 잔여 9(원 21개 기준) — 저장소 밖 GAS전용(cto-check-gas·chro-gmail-job-title-fetch) · 별도저장소 wellperion-hr 부재(chro-daily-integrity-sweep·onboarding-weekly-watch· weekly-efficiency-report) · 수기도구라 자동주기 없음(coo-notice·coo-schedule-ssot) · 이벤트구동이라 주기선언이 오히려 오탐 유발(cmo-publish-digest, 판정불가가 설계상 정상) · 등록은 됐으나 실제 미발동 확인(coo-monthly-ops, INC-023). 부수 발견 INC-023 등록(관찰만, 미조치) — ops/module_report_*.bat 3개가 --live 없이 항상 드라이런만 돔(발송·로그 0), coo-monthly-ops 유일 자동갱신 트리거가 등록 후 한 번도 미발동(LastTaskResult=267011).",
+    "next": "🌀 표류 방지 — 다음 후보: ①ops/module_report_*.bat --live 여부 GM/시우 확인(INC-023) ②coo-monthly-ops 08-01 첫 발동 재확인 ③cmo-reaction-loop data_source.ref 자기지시적 mtime 오판정(status 디렉터리 전체 fallback) 실측 발견 — 소유 CMO 세션에 별도 전달 필요.",
+    "depends_on": "",
+    "module": "T2",
+    "surface": "autonomy",
+    "ship_no": 9278
   }
 ]

@@ -503,19 +503,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .cell-select:focus{border-color:var(--emerald);box-shadow:0 0 0 1px var(--emerald) inset}
 
 /* ── 멤버십 문의 현황표(#dbTable) 담당 칼럼 화면 숨김 — 데이터·저장은 유지, 표시만 제거. 강습표는 미적용(지시 범위). 2026-07-07 시포·GM ── */
-/* 담당 칸 숨김 — display:none 금지(2026-07-20 3차 · GM "우측에 빈틈 왜 만들어?").
-   table-layout:fixed에서 display:none 셀은 박스를 만들지 않아 width 선언이 무시되고 auto 칸으로 취급된다.
-   그 결과 남는 폭을 다른 가변 칸과 1/n로 나눠 갖고, 정작 안 보이니 그만큼이 표 오른쪽에 죽은 공간으로 남았다
-   (1920px에서 335px 실측). 셀은 살려두고(=width:0이 먹도록) 폭·여백·내용만 0으로 접는다.
-   DOM 구조·셀 인덱스·owner 저장 경로는 그대로 — 표시만 접는 것이라 부작용 없음. */
-/* 선택자에 .db-table을 반드시 포함 — `.db-table th{padding:10px 12px}`(특이도 0,1,1)가
-   `.db-owner-col`(0,1,0)을 이겨서 좌우 패딩 24px이 죽은 띠로 남았다(실측). */
-.db-table th.db-owner-col,
-.db-table td.db-owner-col{
-  width:0;max-width:0;
-  padding-left:0;padding-right:0;border-left:none;border-right:none;
-  overflow:hidden;visibility:hidden;white-space:nowrap;
-}
+.db-owner-col{display:none}
 
 /* ── 편집 가능 셀 어포던스 ── */
 .editable-cell{cursor:pointer;position:relative}
