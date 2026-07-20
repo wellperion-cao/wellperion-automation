@@ -27,8 +27,17 @@
      scrollbar-overflow trap). White cards (already #fff) now read correctly against it, same
      as KO's white cards on beige.
      This page's own language switch (a.lang-header, "KOR", top-right) already exists and
-     already works — no change needed there (unlike KO where the same native switcher is
-     hidden by that page's own #header-outer:none and had to be rebuilt).
+     already works.
+     2026-07-20 GM re-check (웰리 검수): the ivory fill above only reached #wlp-en-inquiry-root
+     itself, which starts below the WP theme's own #header-outer (29px, white bg — the KOR
+     button lives inside this) + .container-wrap's reserved padding-top (40px, gray) — so a
+     ~69px white/gray strip stayed at the very top while KO starts ivory from y:0. Do NOT hide
+     #header-outer (that's exactly the trap already hit on the KO page — hiding it would also
+     hide the KOR button, which is inside it). Minimal color-only fix instead: recolor
+     #header-outer and .container-wrap backgrounds to the same #f5f0ea (page-scoped, no layout
+     change). Side effect: a.lang-header's native style is white text/2px white border made for
+     the old white header bg — invisible on ivory, so recolored to --ink (#221F20) to match,
+     same contrast fix already applied to KO's own switcher pill (same problem, same solution).
      To update: edit this file and re-inject via draft-inquiry-en mode. -->
 <style>
 /* English inquiry page (WP page-id 8408) — header logo top-clip fix */
@@ -45,6 +54,14 @@ body.page-id-8408 #wlp-en-inquiry-root::before {
   content: ''; position: absolute; top: 0; bottom: 0; left: 50%; right: 50%;
   margin-left: -50vw; margin-right: -50vw; background: #f5f0ea; z-index: -1;
 }
+/* 상단 잔여 흰/회색 띠 마감(웰리 검수 발견, 2026-07-20) — #header-outer(29px, KOR버튼 포함)를
+   숨기지 않고(숨기면 KOR버튼도 같이 사라짐 — KO페이지에서 이미 겪은 함정) 배경색만 이어붙임.
+   .container-wrap도 같이 칠해 그 사이 40px 예약여백까지 이음(레이아웃 변경 없음, 색상만). */
+body.page-id-8408 #header-outer { background: #f5f0ea !important; }
+body.page-id-8408 .container-wrap { background: #f5f0ea !important; }
+/* KOR 버튼 흰색-on-흰배경용 스타일이었던 것을 새 아이보리 배경에서도 보이도록 잉크색으로 반전
+   (KO페이지의 자체제작 ENG 버튼에 이미 적용한 것과 같은 대비 문제·같은 해법). */
+body.page-id-8408 a.lang-header { color: #221F20 !important; border-color: #221F20 !important; }
 </style>
 <div id="wlp-en-inquiry-root" style="max-width:760px;margin:0 auto;padding:70px 16px 80px;font-family:'Noto Sans KR',-apple-system,'Malgun Gothic',sans-serif;">
   <div style="text-align:center;margin:8px 0 24px;">
