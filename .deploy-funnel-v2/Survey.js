@@ -1443,6 +1443,29 @@ function _miToISOTime_(val) {
   }
   return _miToISO_(val);   // 시각 없는 값은 기존 동작 그대로
 }
+// ★예약 4슬롯 헬퍼 — 신·구 형식 동시 지원 (2026-07-20 GM 지시)
+//   구 형식: G=날짜 / H=시간 / I=날짜 / J=시간  → 두 칸이 예약 1건, 최대 2건
+//   신 형식: G·H·I·J 각각 '2026-07-08 12:00'  → 한 칸이 예약 1건, 최대 4건
+//   판별은 '값'이 아니라 'H칸 제목'으로 한다 — 값으로 판별하면 시간이 아직 안 잡힌 행에서 오판한다.
+//   (G는 구글폼 문항이라 제목을 못 바꾸지만 H·I·J는 우리 칸이라 이관 때 '예약2/3/4'로 바꾼다)
+function _miIsSlotFormat_(hdr, iExp1) {
+  if (iExp1 < 0) return false;
+  var h = String(hdr[iExp1] || '').replace(/\s+/g, '');
+  return h === '예약2';
+}
+function _miSlotPair_(hdr, row, iTour, iExp1, iV2Dt, iExp2, n) {
+  var cells = [iTour >= 0 ? row[iTour] : '', iExp1 >= 0 ? row[iExp1] : '',
+               iV2Dt >= 0 ? row[iV2Dt] : '', iExp2 >= 0 ? row[iExp2] : ''];
+  if (_miIsSlotFormat_(hdr, iExp1)) {
+    var v = cells[n];
+    return { date: _miToISO_(v), time: _miTime_(v) };
+  }
+  if (n === 0) return { date: _miToISO_(cells[0]) || _miToISO_(cells[1]), time: _miTime_(cells[1]) };
+  if (n === 1) return { date: _miToISO_(cells[2]) || _miToISO_(cells[3]), time: _miTime_(cells[3]) };
+  return { date: '', time: '' };
+}
+function _miSlotDate_(hdr, row, a, b, c, d, n) { return _miSlotPair_(hdr, row, a, b, c, d, n).date; }
+function _miSlotTime_(hdr, row, a, b, c, d, n) { return _miSlotPair_(hdr, row, a, b, c, d, n).time; }
 // 셀에서 시간(HH:MM) 추출 — Date면 getHours, 문자열이면 'HH:MM' 매칭. 자정(00:00)=시간미설정으로 간주.
 function _miTime_(val) {
   if (!val) return '';
@@ -1570,10 +1593,11 @@ function _miReadRows_(sh) {
   var iStat  = _miColIdx_(hdr, ['진행현황','진행상황','진행상태','상태']);
   var iTs    = _miColIdx_(hdr, ['타임스탬프','접수일','날짜']);
   var iTour  = _miColIdx_(hdr, ['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담']);
-  var iExp1  = _miColIdx_(hdr, ['체험1 확정시간','체험1']);
-  var iExp2  = _miColIdx_(hdr, ['체험2 확정시간','체험2']);
+  // ★4슬롯 이관(2026-07-20 GM) — 신 제목 '예약2/3/4'를 앞에 둬 정확일치로 먼저 잡는다. 옛 이름은 하위호환으로 유지.
+  var iExp1  = _miColIdx_(hdr, ['예약2','체험1 확정시간','체험1']);
+  var iExp2  = _miColIdx_(hdr, ['예약4','체험2 확정시간','체험2']);
   var iExp3  = _miColIdx_(hdr, ['체험3 확정시간','체험3']);
-  var iV2Dt  = _miColIdx_(hdr, ['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2']);  // 2차 방문 날짜(달력 보강용·확정시간 칸과 별개)
+  var iV2Dt  = _miColIdx_(hdr, ['예약3','시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2']);  // 2차 방문 날짜(달력 보강용·확정시간 칸과 별개)
   var iVisited = _miColIdx_(hdr, ['방문완료일','방문완료','방문일자']);  // 방문 완료(진행상황과 독립 — 등록돼도 방문 기록 유지). 2026-06-29 시포
   var iRegProgram = _miColIdx_(hdr, ['등록종목']);      // 등록(SUC) 시 실제 등록한 종목 — 문의 시 관심프로그램(iProg)과 별개, 수정 가능. 2026-07-18 시토(GM요청) 대행.
   // ★'미등록 사유'(기존 칸)를 폴백으로 추가(2026-07-20 GM 지적) — LOSS사유 칸을 새로 만든 것이 착오였고,
@@ -1609,10 +1633,15 @@ function _miReadRows_(sh) {
       channel:  (function(){ var _cr = _resolveInquiryChannelRaw_(hdr, row, _CHAN_KEYS); return _cr ? _canonicalChannel_(_cr) : ''; })(),  // 유입채널 표준 10버킷(대분류→중분류→자동UTM 3단, M1과 동일 SSOT. 빈값은 빈값 유지)
       // ── 체험 일정 분리 저장(#4, 2026-07-02 시포·GM): 체험1 날짜=J(시설투어·상담 예약)/시간=K(체험1 확정시간), 체험2 날짜=L(시설 체험 예약2)/시간=M(체험2 확정시간).
       //    상담=체험1(동일 1차 방문). 하위호환: 분리 날짜칸(J/L)이 비면 옛 결합칸(K/M)의 날짜부로 폴백 → 무손실.
-      exp1:     (_miToISO_(iTour >= 0 ? row[iTour] : '') || _miToISO_(iExp1 >= 0 ? row[iExp1] : '')),
-      exp1Time: _miTime_(iExp1 >= 0 ? row[iExp1] : ''),
-      exp2:     (_miToISO_(iV2Dt >= 0 ? row[iV2Dt] : '') || _miToISO_(iExp2 >= 0 ? row[iExp2] : '')),
-      exp2Time: _miTime_(iExp2 >= 0 ? row[iExp2] : ''),
+      // ★신·구 형식 동시 지원(2026-07-20 GM) — 예약을 '날짜 시간' 한 칸씩 4슬롯(G·H·I·J)으로 바꾸는 중이다.
+      //   구 형식: G=날짜 / H=시간 / I=날짜 / J=시간  (두 칸이 예약 1건)
+      //   신 형식: G·H·I·J 각각 '2026-07-08 12:00'   (한 칸이 예약 1건 → 최대 4건)
+      //   판별: 첫 칸(G)에 시각 성분이 있으면 신 형식으로 본다. 데이터 이관 전후 어느 상태에서도 화면이 안 깨진다.
+      //   ※ exp1/exp1Time/exp2/exp2Time 필드명은 그대로 유지 — 화면이 이 이름으로 읽고 있어 계약을 안 깬다.
+      exp1:     _miSlotDate_(hdr, row, iTour, iExp1, iV2Dt, iExp2, 0),
+      exp1Time: _miSlotTime_(hdr, row, iTour, iExp1, iV2Dt, iExp2, 0),
+      exp2:     _miSlotDate_(hdr, row, iTour, iExp1, iV2Dt, iExp2, 1),
+      exp2Time: _miSlotTime_(hdr, row, iTour, iExp1, iV2Dt, iExp2, 1),
       inquiryContent: iContent >= 0 ? String(row[iContent] || '') : '',   // 문의 내용(N열 자유서술) — #1
       // 하위호환 유지(옛 필드 — 미사용, 잔존 참조 안전용): 상담·체험3·2차방문은 체험1/2로 흡수
       tourDate: '', tourTime: '', exp3: '', exp3Time: '', visit2Date: '', visit2Time: '',
@@ -4927,6 +4956,151 @@ function _processAction(body) {
   // ─── (범용) 멤버십 문의 시트 칸 1개 삭제 — 이름 정확일치 + 값 전량 백업 + dryRun ───
   //   정확일치만(부분일치로 엉뚱한 칸 지우는 사고 방지). 같은 이름이 둘이면 거부.
   //   반환에 값 전량을 담으므로 호출부가 파일로 저장하면 그것이 유일한 복구 근거다.
+  // ─── (일회성) 예약을 4슬롯으로 이관 — 2026-07-20 GM 확정 ───
+  //   구: G=날짜/H=시간(예약1), I=날짜/J=시간(예약2)  → 신: G·H·I·J 각각 '날짜 시간'(예약1~4)
+  //   값 이관 + H/I/J 제목 변경('예약2/3/4')을 한 번에 한다. 제목이 바뀌는 순간 읽기가 신 형식으로 전환되므로
+  //   둘이 갈라지면 안 된다. G는 구글폼 문항이라 제목을 못 바꾼다(값만 바꾼다).
+  //   멱등: 이미 H 제목이 '예약2'면 no-op.
+  // ─── (일회성) 4슬롯 마무리 — 예약3 검증 + 메모 비고 이관 + 예약목록 칸 삭제 (2026-07-20 GM) ───
+  // ─── (일회성) 예약1(G) 자유서술 값 → 비고 이관 + 시간 중복 정리 (2026-07-20 GM) ───
+  //   G는 구글폼 문항이라 고객이 날짜 대신 문장을 적은 값이 섞여 있다("일정에 맞춰 예약 도와드리겠습니다" 등).
+  //   예약 칸에 문장이 있으면 예약으로 못 쓴다 → 비고로 옮기고 G는 비운다(정보 보존, 칸 용도 정리).
+  //   덤: 4슬롯 이관 때 내가 시간을 중복시킨 값('체험1 21:00 21:00')은 뒤 중복분을 떼고 옮긴다.
+  if (action === 'move_freetext_g_20260720') {
+    if (String(body.key || '') !== 'wlp_freetext_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var mgDry = (String(body.dryRun || '') === '1');
+    var mgSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!mgSh) return _json({ ok: false, error: '시트 없음' });
+    var mgHdr = mgSh.getRange(1, 1, 1, mgSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var mgN = function (x) { return String(x || '').replace(/\s+/g, ''); };
+    var iG = -1, iBigo = -1, iName = -1;
+    for (var gi = 0; gi < mgHdr.length; gi++) {
+      var hn = mgN(mgHdr[gi]);
+      if (iG < 0 && hn.indexOf('5.시설투어') === 0) iG = gi;
+      if (hn === '비고') iBigo = gi;
+      if (hn === '1.성함') iName = gi;
+    }
+    if (iG < 0 || iBigo < 0) return _json({ ok: false, error: 'col-not-found', iG: iG, iBigo: iBigo });
+    var mgLast = mgSh.getLastRow();
+    var mgAll = mgLast >= 2 ? mgSh.getRange(2, 1, mgLast - 1, mgHdr.length).getValues() : [];
+    var mgPlan = [];
+    for (var mr = 0; mr < mgAll.length; mr++) {
+      var R = mgAll[mr], v = R[iG];
+      if (v instanceof Date) continue;                       // 진짜 날짜값은 대상 아님
+      var vs = String(v == null ? '' : v).trim();
+      if (!vs) continue;
+      if (/^\d{4}-\d{2}-\d{2}( \d{1,2}:\d{2})?$/.test(vs)) continue;   // 정상 형식 통과
+      // 시간 중복 정리: 끝에 붙은 ' HH:MM' 이 앞에도 있으면 뒤엣것 제거
+      var cleaned = vs.replace(/\s+(\d{1,2}:\d{2})$/, function (m, t) { return vs.indexOf(t) < vs.length - m.length ? '' : m; });
+      var cur = String(R[iBigo] == null ? '' : R[iBigo]).trim();
+      if (cur.indexOf(cleaned) >= 0) { mgPlan.push({ row: mr + 2, name: iName >= 0 ? String(R[iName] || '') : '', from: vs, to: cleaned, bigo: '(이미 있음)', skipBigo: true }); continue; }
+      mgPlan.push({ row: mr + 2, name: iName >= 0 ? String(R[iName] || '') : '', from: vs, to: cleaned,
+                    bigo: (cur ? cur + ' / ' : '') + '희망일 메모: ' + cleaned });
+    }
+    if (mgDry) return _json({ ok: true, dryRun: true, count: mgPlan.length, plan: mgPlan });
+    mgPlan.forEach(function (p) {
+      if (!p.skipBigo) mgSh.getRange(p.row, iBigo + 1).setValue(p.bigo);
+      mgSh.getRange(p.row, iG + 1).setValue('');
+    });
+    SpreadsheetApp.flush();
+    return _json({ ok: true, moved: mgPlan.length, plan: mgPlan });
+  }
+
+  if (action === 'finish_slot4_20260720') {
+    if (String(body.key || '') !== 'wlp_finish_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var fsDry = (String(body.dryRun || '') === '1');
+    var fsSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!fsSh) return _json({ ok: false, error: '시트 없음' });
+    var fsHdr = fsSh.getRange(1, 1, 1, fsSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var fsN = function (x) { return String(x || '').replace(/\s+/g, ''); };
+    var iR3 = -1, iRs = -1, iBigo = -1, iName = -1;
+    for (var fi = 0; fi < fsHdr.length; fi++) {
+      var hn = fsN(fsHdr[fi]);
+      if (hn === '예약3') iR3 = fi;
+      if (hn === '예약목록') iRs = fi;
+      if (hn === '비고') iBigo = fi;
+      if (hn === '1.성함') iName = fi;
+    }
+    if (iRs < 0) return _json({ ok: true, note: '예약목록 칸 이미 없음', headers: fsHdr });
+    if (iR3 < 0 || iBigo < 0) return _json({ ok: false, error: 'col-not-found', iR3: iR3, iBigo: iBigo });
+    var fsLast = fsSh.getLastRow();
+    var fsAll = fsLast >= 2 ? fsSh.getRange(2, 1, fsLast - 1, fsHdr.length).getValues() : [];
+    var chk3 = [], notes = [];
+    for (var fr = 0; fr < fsAll.length; fr++) {
+      var R = fsAll[fr], raw = String(R[iRs] == null ? '' : R[iRs]).trim();
+      if (!raw) continue;
+      var arr = _resParse_(raw);
+      var nm = iName >= 0 ? String(R[iName] || '') : '';
+      if (arr.length > 2) chk3.push({ row: fr + 2, name: nm, expect: arr[2].date || '', actual: String(R[iR3] == null ? '' : R[iR3]).trim() ? _miToISO_(R[iR3]) : '' });
+      for (var ai = 0; ai < arr.length; ai++) {
+        var nt = String((arr[ai] || {}).note || '').trim();
+        if (!nt) continue;
+        var cur = String(R[iBigo] == null ? '' : R[iBigo]).trim();
+        if (cur.indexOf(nt) >= 0) continue;
+        notes.push({ row: fr + 2, name: nm, note: nt, curBigo: cur.substring(0, 40), newBigo: (cur ? cur + ' / ' : '') + '예약메모: ' + nt });
+      }
+    }
+    if (fsDry) return _json({ ok: true, dryRun: true, 예약3검증: chk3, 메모이관: notes, colsBefore: fsHdr.length });
+    notes.forEach(function (n) { fsSh.getRange(n.row, iBigo + 1).setValue(n.newBigo); });
+    SpreadsheetApp.flush();
+    fsSh.deleteColumn(iRs + 1);
+    SpreadsheetApp.flush();
+    var fsAfter = fsSh.getRange(1, 1, 1, fsSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    return _json({ ok: true, 메모이관: notes.length, 예약3검증: chk3, colsBefore: fsHdr.length, colsAfter: fsAfter.length, headersAfter: fsAfter });
+  }
+
+  if (action === 'migrate_slot4_20260720') {
+    if (String(body.key || '') !== 'wlp_slot4_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var msDry = (String(body.dryRun || '') === '1');
+    var msSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!msSh) return _json({ ok: false, error: '시트 없음' });
+    var msHdr = msSh.getRange(1, 1, 1, msSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var msN = function (x) { return String(x || '').replace(/\s+/g, ''); };
+    var iT = -1, iE1 = -1, iV2 = -1, iE2 = -1, iRs = -1;
+    for (var mi = 0; mi < msHdr.length; mi++) {
+      var hn = msN(msHdr[mi]);
+      if (iT < 0 && hn.indexOf('5.시설투어') === 0) iT = mi;
+      if (iE1 < 0 && (hn === '체험1확정시간' || hn === '예약2')) iE1 = mi;
+      if (iV2 < 0 && hn.indexOf('시설체험예약2') === 0) iV2 = mi;
+      if (iE2 < 0 && (hn === '체험2확정시간' || hn === '예약4')) iE2 = mi;
+      if (iRs < 0 && hn === '예약목록') iRs = mi;
+    }
+    if (iT < 0 || iE1 < 0 || iV2 < 0 || iE2 < 0) return _json({ ok: false, error: 'col-not-found', iT: iT, iE1: iE1, iV2: iV2, iE2: iE2, headers: msHdr });
+    if (msN(msHdr[iE1]) === '예약2') return _json({ ok: true, note: '이미 이관됨(멱등)', headers: msHdr });
+    var msLast = msSh.getLastRow();
+    var msAll = msLast >= 2 ? msSh.getRange(2, 1, msLast - 1, msHdr.length).getValues() : [];
+    var comb = function (d, t) { d = String(d || '').trim(); t = String(t || '').trim(); return d ? (t ? (d + ' ' + t) : d) : ''; };
+    var msRows = [], msChanged = 0, msSample = [];
+    for (var mr = 0; mr < msAll.length; mr++) {
+      var R = msAll[mr];
+      var d1 = _miToISO_(R[iT]) || _miToISO_(R[iE1]), t1 = _miTime_(R[iE1]);
+      var d2 = _miToISO_(R[iV2]) || _miToISO_(R[iE2]), t2 = _miTime_(R[iE2]);
+      var s1 = comb(d1, t1), s2 = comb(d2, t2), s3 = '', s4 = '';
+      if (iRs >= 0) {
+        var arr = _resParse_(R[iRs]);
+        if (arr.length > 2) s3 = comb(arr[2].date, arr[2].time);
+        if (arr.length > 3) s4 = comb(arr[3].date, arr[3].time);
+      }
+      msRows.push([s1, s2, s3, s4]);
+      if (s1 || s2 || s3 || s4) { msChanged++; if (msSample.length < 5) msSample.push({ row: mr + 2, slot1: s1, slot2: s2, slot3: s3, slot4: s4 }); }
+    }
+    if (msDry) return _json({ ok: true, dryRun: true, cols: { G: msHdr[iT], H: msHdr[iE1], I: msHdr[iV2], J: msHdr[iE2], 예약목록: iRs }, rowsWithData: msChanged, totalRows: msAll.length, sample: msSample });
+    for (var mw = 0; mw < msRows.length; mw++) {
+      var rw = mw + 2, v = msRows[mw];
+      msSh.getRange(rw, iT + 1).setValue(v[0]);
+      msSh.getRange(rw, iE1 + 1).setValue(v[1]);
+      msSh.getRange(rw, iV2 + 1).setValue(v[2]);
+      msSh.getRange(rw, iE2 + 1).setValue(v[3]);
+    }
+    SpreadsheetApp.flush();
+    msSh.getRange(1, iE1 + 1).setValue('예약2');
+    msSh.getRange(1, iV2 + 1).setValue('예약3');
+    msSh.getRange(1, iE2 + 1).setValue('예약4');
+    SpreadsheetApp.flush();
+    var msAfter = msSh.getRange(1, 1, 1, msSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    return _json({ ok: true, migratedRows: msChanged, totalRows: msAll.length, headersAfter: msAfter });
+  }
+
   if (action === 'del_col_by_name_20260720') {
     if (String(body.key || '') !== 'wlp_delcol_20260720') return _json({ ok: false, error: 'guard-mismatch' });
     var dnName = String(body.name || '').trim();
