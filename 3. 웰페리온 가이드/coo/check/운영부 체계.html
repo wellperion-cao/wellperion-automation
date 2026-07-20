@@ -576,6 +576,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('mplan')">📊 월간 운영부 계획·보고</button>
   <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
   <button class="tab" onclick="switchTab('vendorboard')">🏢 거래업체</button>
+  <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
   <div style="display:flex;gap:4px;margin-left:auto;">
     <!-- 인쇄 버튼 통합 드롭다운 (지원부 체계 동일 패턴 · 버튼 난립 해소) -->
     <div class="tab-dropdown" id="printDropdown">
@@ -1179,6 +1180,18 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <a href="전사_거래업체.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 거래업체 전체 보기 ↗</a>
   </div>
   <iframe id="vendorboardFrame" data-src="전사_거래업체.html?dept=운영부&embed=1" title="운영부 거래업체" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
+</div>
+
+<!-- ══ 「🧑‍💼 채용 현황」 탭 — CHRO 채용 시트(db:hire) 라이브 연동. 값은 여기 없음(렌더만) · 실패 시 미표시.
+     클릭 없이 탭을 열면 바로 원본 공고 본문이 그 자리에 그대로 펼쳐진다(다른 페이지로 나가지 않음 · 사본 아님).
+     .board-fullwidth로 720px 중앙정렬(.content) 제약을 벗어나 좌측정렬·폭 최대 활용.
+     (배9182 확산 · 주차관리부 체계와 동일 패턴 · 시우 2026-07-20) ══ -->
+<div id="tab-hiring" class="content hidden">
+  <div class="board-fullwidth" style="padding:0 20px 40px;">
+    <div id="hiring-host"></div>
+    <script src="hiring-status.js"></script>
+    <script>renderHiringStatus('hiring-host','운영부');</script>
+  </div>
 </div>
 
   <script>
@@ -1807,6 +1820,7 @@ function switchTab(tab, opts){
   if(tab==='schedule'){ var _f=document.getElementById('scheduleFrame'); if(_f && !_f.src && _f.getAttribute('data-src')) _f.src=_f.getAttribute('data-src'); }
   var _vb=document.getElementById('tab-vendorboard'); if(_vb) _vb.classList.toggle('hidden',tab!=='vendorboard');
   if(tab==='vendorboard'){ var _vf=document.getElementById('vendorboardFrame'); if(_vf && !_vf.src && _vf.getAttribute('data-src')) _vf.src=_vf.getAttribute('data-src'); }
+  var _hr=document.getElementById('tab-hiring'); if(_hr) _hr.classList.toggle('hidden',tab!=='hiring');
   if(tab==='manual'){renderBoard();renderManualItems();}
   if(tab==='admin'){renderAdmin();}
   if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }

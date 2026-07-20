@@ -21,8 +21,9 @@
 
    ⚠️ 부서 개수 정정(2026-07-20) — 실제 부서는 4개(주차관리부·운영부·시설부·지원부)뿐이다.
       파트너팀은 별도 체계 페이지(파트너팀 체계.html)로, 이 4개 부서에 포함되지 않는다.
-      아래 JOB_PAGES 의 dept 값에 '파트너팀'이 있는 건 그 부서 체계 페이지에서 이
-      컴포넌트를 재사용할 때를 위한 것 — 4개 부서 확산 대상 목록과 혼동하지 말 것.
+      4개 부서 체계 페이지 모두 이 컴포넌트를 재사용 중(2026-07-20 확산 완료).
+      4개 부서 어디에도 안 붙는 공고(골프 프로·수행기사)는 JOB_PAGES에 dept:null로
+      명시 등록해둔다 — 억지로 부서에 끼워 넣지 않고, 대응표에서 눈에 보이게 남긴다.
 
    사용법 : <div id="hiring-host"></div>
             <script src="hiring-status.js"></script>
@@ -39,10 +40,12 @@
   var JOB_PAGES = [
     { file: 'parking.html',    dept: '주차관리부', bucket: null,     jobkey: '주차관리자 · 발렛파킹 (시설부)' },
     { file: 'sauna.html',      dept: '지원부',     bucket: null,     jobkey: '남자사우나 주임' },
-    { file: 'golfpro.html',    dept: '파트너팀',   bucket: null,     jobkey: '오전 골프 프로' },
-    { file: 'operations.html', dept: '운영부',     bucket: '리셉션', jobkey: null }
-    // chauffeur.html(수행기사)은 index.html 채용 목록에 아직 게시되지 않은 페이지 —
-    // 현재 어느 부서 체계에도 연결하지 않는다(의도적 제외 · 누락 아님).
+    { file: 'operations.html', dept: '운영부',     bucket: '리셉션', jobkey: null },
+    // 시설부 — 2026-07-20 현재 시설부로 분류되는 공고 없음(모집 없음으로 표시됨). 아래는
+    // 4개 부서(주차관리부·운영부·시설부·지원부)에 속하지 않는 공고 — 억지로 넣지 않고
+    // 명시적으로 '부서 미해당'으로 남긴다(dept:null → 어느 부서 탭에도 뜨지 않음, GM 별도 판단 대기).
+    { file: 'golfpro.html',    dept: null, note: '파트너팀 성격(오전 골프 프로) — 4개 부서 아님, 파트너팀 체계 재사용 시 여기 dept 채울 것', bucket: null, jobkey: '오전 골프 프로' },
+    { file: 'chauffeur.html',  dept: null, note: '수행기사 — 4개 부서·파트너팀 어디에도 속하지 않음. index.html 채용 목록에도 아직 미게시.', bucket: '수행기사', jobkey: null }
   ];
 
   function normKey(s) {

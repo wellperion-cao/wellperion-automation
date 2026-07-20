@@ -910,6 +910,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('monthly')">📊 월간 지원부 현황·계획·보고</button>
   <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
   <button class="tab" onclick="switchTab('vendorboard')">🏢 거래업체</button>
+  <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
   <!-- 구 '📅 월간 보고 ▾' 드롭다운(2026-06 고정 A3 인쇄) 삭제 — 월간보고 탭 안 '🖨 A3 인쇄' 버튼(선택월 동적)과 중복. 2026-07-06 시우·GM -->
   <div style="display:flex;gap:4px;margin-left:auto;align-items:center;">
     <!-- 인쇄 버튼 통합 드롭다운 (월간 보고와 동일 패턴 · 버튼 난립 해소 2026-07-02 시우, GM) -->
@@ -1756,6 +1757,18 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <a href="전사_거래업체.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 거래업체 전체 보기 ↗</a>
   </div>
   <iframe id="vendorboardFrame" data-src="전사_거래업체.html?dept=지원부&embed=1" title="지원부 거래업체" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
+</div>
+
+<!-- ══ 「🧑‍💼 채용 현황」 탭 — CHRO 채용 시트(db:hire) 라이브 연동. 값은 여기 없음(렌더만) · 실패 시 미표시.
+     클릭 없이 탭을 열면 바로 원본 공고 본문이 그 자리에 그대로 펼쳐진다(다른 페이지로 나가지 않음 · 사본 아님).
+     .board-fullwidth로 720px 중앙정렬(.content) 제약을 벗어나 좌측정렬·폭 최대 활용.
+     (배9182 확산 · 주차관리부 체계와 동일 패턴 · 시우 2026-07-20) ══ -->
+<div id="tab-hiring" class="content hidden">
+  <div class="board-fullwidth" style="padding:0 20px 40px;">
+    <div id="hiring-host"></div>
+    <script src="hiring-status.js"></script>
+    <script>renderHiringStatus('hiring-host','지원부');</script>
+  </div>
 </div>
 
 <!-- ══ 「📅 월간 지원부 계획·보고」 통합 탭 — monthly_ops_plan.json 핵심과제(주인공·상단) + 점검 monthly_report 라이브 대시보드 (배208 2단계 Phase B + 이달 부서 현황 통합 2026-07-07) ══ -->
@@ -5446,6 +5459,7 @@ function switchTab(tab, opts){
   if(tab==='schedule'){ var _f=document.getElementById('scheduleFrame'); if(_f && !_f.src && _f.getAttribute('data-src')) _f.src=_f.getAttribute('data-src'); }
   var _vb=document.getElementById('tab-vendorboard'); if(_vb) _vb.classList.toggle('hidden',tab!=='vendorboard');
   if(tab==='vendorboard'){ var _vf=document.getElementById('vendorboardFrame'); if(_vf && !_vf.src && _vf.getAttribute('data-src')) _vf.src=_vf.getAttribute('data-src'); }
+  var _hr=document.getElementById('tab-hiring'); if(_hr) _hr.classList.toggle('hidden',tab!=='hiring');
   if(tab==='supply'){ if(typeof loadSupplyFromBackend==='function') loadSupplyFromBackend(); }
   if(tab==='guide'){ if(typeof loadCsFromBackend==='function') loadCsFromBackend(); }
   // Show correct submit bar
