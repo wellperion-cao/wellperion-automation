@@ -450,7 +450,9 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 
   // ── UTM 캡처(채널 귀속) ──
   var UTM_SOURCE = qp('utm_source') || '';
-  var UTM_MEDIUM = qp('utm_medium') || '';
+  // UTM_CONTENT = 같은 채널 안의 세부 출처. IG는 계정 구분(official=@wellperion / namuk=@namuk.wellperion).
+  //   정본 = scripts/cta_utm.py build_ig_bio_url. 2026-07-20 시모.
+  var UTM_MEDIUM = qp('utm_medium') || '', UTM_CONTENT = qp('utm_content') || '';
 
   // ── 가이드 렌더(약간의 소개) ──
   function renderGuide(cat){
@@ -706,7 +708,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
       space:vals.space||'', purpose:vals.purpose||'', wishDate:vals.wishDate||'', headcount:vals.headcount||'',
       company:vals.company||'', contactName:vals.contactName||'', partnerType:vals.partnerType||'', docLink:vals.docLink||'', proposal:vals.proposal||'',
       consent:true, hp:vals.hp||'', fillMs:(formShownAt? (Date.now()-formShownAt) : 0),
-      utmSource:UTM_SOURCE, utmMedium:UTM_MEDIUM
+      utmSource:UTM_SOURCE, utmContent:UTM_CONTENT, utmMedium:UTM_MEDIUM
     };
     activeSid = sid;
     var item = { payload:payload, attempts:0, nextAt:0 };

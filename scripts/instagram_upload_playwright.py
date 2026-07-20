@@ -42,10 +42,10 @@ from playwright.async_api import async_playwright
 
 # 계정별 고정 선두 해시태그 헬퍼 (scripts/ 동일 디렉터리 · SSOT=cta_utm)
 try:
-    from cta_utm import apply_head_tags
+    from cta_utm import apply_head_tags, IG_BIO_CTA_TEXT
 except ImportError:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from cta_utm import apply_head_tags
+    from cta_utm import apply_head_tags, IG_BIO_CTA_TEXT
 
 
 # -----------------------------------------------------------------
@@ -274,6 +274,11 @@ class PostSpec:
         parts: list[str] = []
         if body:
             parts.append(body)
+        # 프로필 링크 유도 1줄 보장 (cta_utm 원칙 ⑤-2) — IG는 게시물 링크가 클릭 불가라
+        # bio 링크가 유일한 유입 경로다. 이 줄이 빠지면 그 게시물의 기여는 측정에서 사라진다.
+        # 이미 안내 문구가 있으면(표현이 달라도) 중복 추가하지 않는다.
+        if not re.search(r"프로필\s*링크", body):
+            parts.append(IG_BIO_CTA_TEXT)
         if mention_line:
             parts.append(mention_line)
         if hashtag_line:

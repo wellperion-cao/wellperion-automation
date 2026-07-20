@@ -309,7 +309,8 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
     try{
       var u=new URLSearchParams(location.search);
       var url=new URL(a.href, location.href);
-      ['utm_source','utm_medium','utm_campaign'].forEach(function(k){ var val=u.get(k); if(val) url.searchParams.set(k,val); });
+      // utm_content = IG 계정 구분(official|namuk) — 빠뜨리면 '어느 계정이 데려왔나'가 여기서 소실된다(2026-07-20 시모)
+      ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(function(k){ var val=u.get(k); if(val) url.searchParams.set(k,val); });
       a.href=url.href;
     }catch(e){}
   };

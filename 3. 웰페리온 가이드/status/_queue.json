@@ -2861,5 +2861,17 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 982b8aac)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "982b8aac075d018b0336d2e34e4922d865b0a4a3"
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-igattr01",
+    "clevel": "cmo",
+    "title": "[시모] 인스타 유입 기여 측정화 — bio UTM 계정별 귀속 + 자체폼 문의 집계누락 수리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9345,
+    "artifact": "GM 승인(2026-07-20). 문제: IG는 게시물 링크가 클릭 불가라 인스타를 보고 온 사람도 네이버 검색을 거쳐\n'네이버'로 집계 → 인스타 기여가 구조적으로 과소집계. 시모 최우선 KPI(노출→문의 전환율)가 측정 불가.\n\n실측 결과 배관은 이미 대부분 살아 있었다:\n · 두 계정 bio 링크에 이미 UTM이 붙어 있었음(공식 utm_content=official / 개인 =namuk) → IG 프로필 수정 불필요.\n · 그러나 utm_content 를 받아 적는 코드가 어디에도 없어 계정 구분이 통째로 유실되고 있었음.\n · 더 큰 구멍: 자체 문의폼(intake_submit, 07-16 라이브) 문의가 [웹접수] 표식만 보고 집계에서 통째 제외돼\n   M1에 아예 안 잡히고 있었음(07-20 실측 그날 3건 전원 누락). UTM을 아무리 잘 달아도 대시보드에 뜰 수 없었다.\n\n조치:\n ① scripts/cta_utm.py — 원칙 ⑤-1/⑤-2 신설(정본 1곳). build_ig_bio_url(계정)·IG_BIO_CTA_TEXT 추가.\n    계정 구분은 utm_content(official|namuk) — utm_source에 섞으면 채널 버킷이 둘로 갈라지므로 금지.\n ② utm_content 전 구간 배선: WP 문의페이지(8394) 파라미터 승계 → 자체폼(8460) 캡처 → GAS 수신 →\n    유입경로(자동) 칸 3세그먼트 기록(instagram|bio|namuk). WP 2페이지 모두 외과적 1문자열 교체(백업 보존).\n ③ _collectFormInquiries_ [웹접수] 과잉제외 수리 — 미러 서명 '(utm:' 있을 때만 제외(이중집계는 계속 방지).\n ④ instagram_upload_playwright.merged_caption — 프로필 링크 유도 1줄 자동 보장(누락 시에만 삽입).\n\n검증(라이브 E2E): 테스트 문의 1건 제출(L260720-182532) → 시트 유입경로(자동)='instagram|bio|namuk' 확인 →\nfunnel_conversion 오늘 집계 12건→15건(누락 3건 정확히 복구, 이중집계 0) · 인스타그램 1건 신규 표시.\nGAS funnel-v2 @44·@45 배포(버전 44/200).\n\n남은 것: 테스트 행이 라이브 시트에 남아 있다(이름 '[테스트] IG귀속검증 시모' / 010-0000-0000).\n실데이터 오삭제 위험이 커 지우지 않고 표기만 함 — 삭제는 이 대조키로 지목해서 별도 처리.\n계정별(공식/개인) 분리 표는 M1에 아직 안 만듦 — 실데이터 0건이라 지금 만들면 빈 칸만 뜬다. 데이터 쌓인 뒤."
   }
 ]

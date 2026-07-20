@@ -243,6 +243,12 @@ function _mirrorInquiryToStaffLog_(body, inqId) {
     put(['진행현황', '진행상태', '상태'], '신규');
     put(['채널', '경로', '알게'], _canonicalChannel_(body.utmSource || body.inflow || ''));
     put(['접수 담당자', '담당'], '웹 자동접수');
+    // V열 utm 원문 — intake_submit 경로와 동일 포맷('source|medium|content'). 2026-07-20 시모:
+    //   이 미러 경로만 V열을 안 채워 같은 문의가 경로에 따라 계정 구분이 되기도 안 되기도 했다.
+    put(['유입경로(자동)', '유입경로자동', '유입경로_자동'],
+        body.utmSource ? (String(body.utmSource)
+          + (body.utmMedium ? '|' + body.utmMedium : '')
+          + (body.utmContent ? '|' + body.utmContent : '')) : '');
     var memo = WEB_INTAKE_TAG + ' 유형:' + (body.type || '-')
              + (body.message ? ' / ' + String(body.message).substring(0, 200) : '')
              + ' (utm:' + (body.utmSource || '-') + '/' + (body.utmMedium || '-') + ', ' + inqId + ')';
@@ -295,8 +301,15 @@ function _collectFormInquiries_() {
       var rows = sh.getRange(2, 1, last - 1, lastCol).getValues();
       rows.forEach(function(r) {
         if (!r[idxDate] && (idxPhone < 0 || !r[idxPhone])) return; // 빈 행 스킵
-        // CTA 웹폼 미러 행([웹접수])은 문의접수 시트로 이미 1회 집계됨 → 여기선 제외(이중집계 방지)
-        if (idxMemoCfi >= 0 && String(r[idxMemoCfi] || '').indexOf(WEB_INTAKE_TAG) >= 0) return;
+        // [웹접수] 표식을 두 경로가 공유한다 — 표식만 보고 싸잡아 빼면 안 된다(2026-07-20 시모 실측).
+        //   ① CTA 미러(_mirrorInquiryToStaffLog_): 문의접수 시트에도 같이 적힌다 → 여기서 빼야 이중집계 방지.
+        //      이 경로만 메모에 '(utm:' 서명을 남긴다.
+        //   ② intake_submit(자체 문의폼, 2026-07-16 라이브~): 문의접수 시트에 적지 않는다 → 여기서 빼면
+        //      어디에서도 집계되지 않는다. 실제로 07-16 이후 자체폼 문의가 통째로 M1에서 사라져 있었고
+        //      (07-20 실측: 그날 멤버십탭 3건 전원 누락), 그래서 UTM을 제대로 달아도 인스타 기여가
+        //      대시보드에 뜨지 않았다. 미러 서명이 있을 때만 제외한다.
+        var _memoCfi = idxMemoCfi >= 0 ? String(r[idxMemoCfi] || '') : '';
+        if (_memoCfi.indexOf(WEB_INTAKE_TAG) >= 0 && _memoCfi.indexOf('(utm:') >= 0) return;
         // 채널 = 대분류→중분류→자동UTM 3단 우선순위(공용 SSOT _resolveInquiryChannelRaw_, 회원관리 화면과 동일 규칙).
         var chanRaw = _resolveInquiryChannelRaw_(headers, r, cfg.channelKeys);
         out.push({
@@ -2713,6 +2726,10 @@ function _processAction(body) {
     var _iAge = String(body.age || '').trim();
     var _iUtmSource = String(body.utmSource || '').trim();
     var _iUtmMedium = String(body.utmMedium || '').trim();
+    // utm_content = 같은 채널 내 세부 출처. IG는 계정 구분(official=@wellperion / namuk=@namuk.wellperion).
+    //   V열 3번째 세그먼트로 기록 → 'instagram|bio|official'. 채널 판정은 split('|')[0]만 보므로 영향 없음.
+    //   2026-07-20 시모: 이 값을 안 받아 적으면 '인스타 1건'이 어느 계정 기여인지 영영 알 수 없다.
+    var _iUtmContent = String(body.utmContent || '').trim();
     // 신규 3종 전용 필드(2026-07-16 시토) — wp_inquiry_form.html payload 계약과 1:1
     var _iTarget = String(body.target || '').trim();           // summer: 성인/유소년
     var _iWishMonth = String(body.wishMonth || '').trim();     // summer: 희망 월
@@ -2746,7 +2763,7 @@ function _processAction(body) {
         _imSet(['접수 담당자', '담당'], '웹 자동접수');
         _imSet(['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담'], _dateOnlyStrip_(body.exp1Date));  // 날짜 전용 칸 — 시각 혼입 방어(2026-07-20)
         _imSet(['기타 웰페리온에 대한 문의 사항', '기타 웰페리온', '자유롭게 적어', '문의 사항', '내용'], _iMessage);
-        _imSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '')) : (_iChannel || ''));  // V열 — utm 원본 제자리 기록(2026-07-20). H/I(중분류·소분류)는 자기신고 분류라 건드리지 않음
+        _imSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '') + (_iUtmContent ? '|' + _iUtmContent : '')) : (_iChannel || ''));  // V열 — utm 원본 제자리 기록(2026-07-20, content 세그먼트 추가). H/I(중분류·소분류)는 자기신고 분류라 건드리지 않음
         _imSet(['비고', '메모', '담당자메모'], WEB_INTAKE_TAG + (_iFastFlag ? ' ⚠️빠른제출' : ''));   // [웹접수] 유지(집계 중복방지). utm 원문은 위 유입경로(자동)로 이관 — 비고엔 더 이상 처박지 않음(2026-07-20)
         _imSet(['개인정보 수집·이용 동의'], '동의');   // U열 — 검증만 하고 미기록이던 버그 수리(2026-07-20 시포). 강습·공간렌트·비즈니스 분기와 동일 표기 '동의' 통일. 헤더가 매우 긴 문장이라 짧은 키(동의·개인정보)는 다른 칸과 충돌 위험 있어 실헤더 대조로 확인한 고유 서두 구절만 사용. 과거 행은 무변경(신규 append만).
         _imSh.appendRow(_imRow);

@@ -56,12 +56,37 @@ _INQ_RE = re.compile(r"((?:https?://)?wellperion\.com/ko/inquiry)/?(?![\w./?=#-]
 #      (F1 카페 '문의 링크 통째 소실' 재발 방지 — 링크는 어떤 경우에도 1개 남는다).
 #   ④ 텍스트 채널(카카오·당근): 깨끗한 '문의' 줄 1개만(ensure_single_clean_cta) —
 #      UTM 부착 금지(사람 눈에 보이는 텍스트가 곧 링크라 숨길 곳이 없음. 추적보다 깨끗함 우선).
-#   ⑤ 인스타그램(IG): 본문에 CTA 링크 줄 없음 — 프로필 bio 링크로 유도(귀속은 bio 클릭 로그).
-#      IG 업로더는 append_cta_card·ensure_single_clean_cta 둘 다 호출하지 않는다.
+#   ⑤ 인스타그램(IG): 본문에 CTA 링크 줄 없음(게시물 링크는 클릭 불가) — 유일한 클릭 경로인
+#      프로필 bio 링크로 유도한다. IG 업로더는 append_cta_card·ensure_single_clean_cta 둘 다 호출하지 않는다.
+#      ⑤-1 bio 링크 = build_ig_bio_url(계정) — 이것만이 IG 기여의 측정 지점이다.
+#           bio 링크에 UTM이 없으면 IG를 보고 온 사람도 네이버 검색을 거쳐 '네이버'로 집계된다(과소집계).
+#           utm_source=instagram(채널 집계) + utm_medium=bio + utm_content=official|namuk(계정 구분).
+#           계정 구분을 utm_source에 섞지 않는다 — 섞으면 채널 버킷이 둘로 갈라진다.
+#      ⑤-2 캡션 유도 문구 = IG_BIO_CTA_TEXT 1줄. 압박 없이 알리는 톤 — 링크 URL을 캡션에 쓰지 않는다.
 # ─────────────────────────────────────────────────────────────
 
 # 텍스트 CTA 표준 1줄 (UTM 없음 — 사람 눈에 깨끗한 도메인만)
 CLEAN_CTA_TEXT = "문의 : wellperion.com/ko/inquiry"
+
+# IG 캡션 표준 유도 1줄 (원칙 ⑤-2) — URL 없이 프로필 링크만 가리킨다
+IG_BIO_CTA_TEXT = "프로필 링크로 편하게 문의해 주세요."
+
+# IG 계정명(profiles/instagram/{account} 와 동일 키) → utm_content 코드(계정 식별자).
+# 채널(utm_source)은 두 계정 모두 'instagram' — 집계는 '인스타그램' 한 버킷, 계정 구분은 utm_content.
+IG_ACCOUNT_CONTENT = {
+    "wellperion":       "official",   # @wellperion (공식)
+    "namuk.wellperion": "namuk",      # @namuk.wellperion (개인)
+}
+
+
+def build_ig_bio_url(account: str) -> str:
+    """IG 프로필 bio 링크 URL의 정본 (원칙 ⑤-1).
+    account: 'wellperion'(공식) | 'namuk.wellperion'(개인).
+    미등록 계정이면 utm_content 없이(계정 미상) 반환 — 없는 계정을 지어내지 않는다."""
+    url = f"{build_inquiry_utm_url('instagram')}"
+    url = url.replace("utm_medium=social", "utm_medium=bio")   # bio 링크는 medium=bio
+    code = IG_ACCOUNT_CONTENT.get(account)
+    return f"{url}&utm_content={code}" if code else url
 
 
 def build_inquiry_utm_url(channel: str, campaign: str | None = None) -> str:
