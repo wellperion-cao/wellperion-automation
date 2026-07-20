@@ -1041,6 +1041,21 @@
         return rows;
       }
       // CSV rows → 타임스탬프 컬럼(tsCol) 기준 올해누적(total)/이번달(month) 카운트. 헤더 행(0번) 제외.
+      // 헤더 '이름'으로 타임스탬프 칸 위치를 찾는다(2026-07-20 시포). 위치 인덱스 하드코딩은 칸이 하나만
+      //   추가·삭제돼도 엉뚱한 칸(성함 등)을 날짜로 읽어 KPI가 조용히 0이 된다 — 실제로 A열 '날짜' 삭제 예정.
+      //   못 찾으면 기존 인덱스로 폴백(무중단).
+      function tsColOf(rows, names, fallback) {
+        var h = rows && rows[0];
+        if (!h) return fallback;
+        // names 순서 = 우선순위. 반드시 후보명 바깥루프 — 칸을 바깥루프로 돌리면 A열 '날짜'가
+        //   B열 '타임스탬프'보다 먼저 걸려 우선순위가 무시된다(2026-07-20 실측으로 잡은 버그).
+        for (var n = 0; n < names.length; n++) {
+          for (var c = 0; c < h.length; c++) {
+            if (String(h[c] || '').replace(/\s/g, '').indexOf(names[n]) >= 0) return c;
+          }
+        }
+        return fallback;
+      }
       function curYM(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2); }
       function countRows(rows, tsCol) {
         var yStart = yearStart(), ym = curYM(), total = 0, month = 0;
@@ -1057,8 +1072,10 @@
       var p1 = fetch(BASE + GID_KO + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
       var p2 = fetch(BASE + GID_EN + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
       Promise.all([p1, p2]).then(function(results){
-        var ko = countRows(parseCSV(results[0]), 1); // 한국어: B열(인덱스1)
-        var en = countRows(parseCSV(results[1]), 0); // 영문: A열(인덱스0)
+        var koRows = parseCSV(results[0]), enRows = parseCSV(results[1]);
+        // 한국어 탭은 A열'날짜'+B열'타임스탬프'가 별도로 존재 → '타임스탬프' 우선 매칭('날짜'는 뒤 후보).
+        var ko = countRows(koRows, tsColOf(koRows, ['타임스탬프', '접수일', '날짜'], 1));
+        var en = countRows(enRows, tsColOf(enRows, ['타임스탬프', 'Timestamp', '접수일', '날짜'], 0));
         set('kpiMiInqTotal', (ko.total + en.total).toLocaleString()); // 올해 누적
         set('kpiMiInqMonth', ko.month + en.month); // 이번달
       }).catch(function(){ /* "—" 유지 */ });
