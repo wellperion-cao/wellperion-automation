@@ -6,6 +6,9 @@
 2026-07-20 GM 수정 2건: ①강사별 묶음 섹션 삭제(회원별 줄에 이미 종목(강사) 표기 —
 중복) ②초순/중순/하순 분할 폐기, 87명 전원을 종료일자 오름차순 단일 명단으로 —
 4096자 한도 초과 시 여러 메시지로 자동 분할 발송.
+2026-07-20 GM 수정 3 — 회원 줄 종목 앞에 색 동그라미 표기. 색 표는 scripts/sport_colors.py
+(telegram_bot/daily_scheduler.py `_DIGEST_SPORT_DOT` 을 그대로 옮긴 SSOT) 를 import 해서
+쓴다 — 색 표를 이 파일에 하드코딩하지 않는다(약속 L01 '한 곳만 본다').
 
 기존 인프라 재활용(맨땅 신축 금지):
 - 데이터: GAS action `member_active_list&scope=valid` (구현 .deploy-funnel-v2/Survey.js:3855-3949).
@@ -38,6 +41,7 @@ from datetime import datetime
 import requests
 
 from cpo_report import GM_CHAT_ID, TELEGRAM_TOKEN, _gas_get, _today_str, _WEEKDAY_KOR
+from sport_colors import sport_dot
 
 try:  # 발신 공용 로깅·페이싱(best-effort) — 임포트 실패해도 발신 무영향
     from tg_outbound_log import log_outbound, pace
@@ -111,10 +115,16 @@ def _member_lessons(row: dict) -> list[tuple[str, str]]:
 
 
 def _lessons_str(row: dict) -> str:
+    """종목(강사) 목록 문자열. 종목명 앞에 사내 표준 색 동그라미(scripts/sport_colors.py
+    SSOT)를 공백 없이 붙인다 — 매칭 실패 종목은 동그라미 없이 이름만(임의 색 부여 금지)."""
     lessons = _member_lessons(row)
     if not lessons:
         return "담당자 미배정"
-    return " · ".join(f"{html.escape(subj)}({html.escape(teacher)})" for subj, teacher in lessons)
+    parts = []
+    for subj, teacher in lessons:
+        dot = sport_dot(subj)
+        parts.append(f"{dot}{html.escape(subj)}({html.escape(teacher)})")
+    return " · ".join(parts)
 
 
 def _member_line(row: dict) -> str:
