@@ -1382,5 +1382,19 @@
     "artifact": "배포 정체의 실제 주범은 커밋 폭주가 아니라 GitHub 장애였다.\n증거: 실패 로그 'Get Pages site failed. No server is currently available'(run 29710558853 등)\n     githubstatus.com Actions=partial_outage / API=degraded / Incident 조사중\n     성공 배포가 01:21:45 를 끝으로 전면 중단.\nfalse(줄세우기)로 장애를 맞으면 취소 대신 실패가 쌓여 07-03 실패메일 폭탄이 재발한다.\n→ 장애 동안 tru (CLI ad-hoc · 커밋 abf476ee)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "abf476eede506e8bec9d39703be2c02fed057b20"
+  },
+  {
+    "task_id": "CEO-2026-07-20-ADHOC-17889d6d",
+    "clevel": "ceo",
+    "title": "[웰리] 장애 동안 cancel-in-progress true 원복 (배9199) — 재커밋",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9237,
+    "artifact": "앞 커밋 abf476ee 에 실제 변경이 안 실렸다(동시 커밋 경합). 내용 재적용.\n배포 정체의 실제 주범 = GitHub 장애(Actions partial_outage). 커밋 폭주 아님.\nfalse 상태로 장애를 맞으면 실패가 쌓여 07-03 실패메일 폭탄 재발 → 장애 동안 true. GM 승인. (CLI ad-hoc · 커밋 17889d6d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "17889d6db920e6db30a1756126b50c49c49bf34a"
   }
 ]
