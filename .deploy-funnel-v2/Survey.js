@@ -3048,6 +3048,92 @@ function _processAction(body) {
     });
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // ★ [읽기 전용 진단] INC-020 복구 전제조건 라이브 실측 — 2026-07-20 시포(팀리드 대행).
+  // inc020_restore 가 'rows-not-blank'로 멈춘 원인을 확인하기 위한 진단 전용 액션.
+  // gviz는 캐시 지연으로 못 믿는다 — SpreadsheetApp 직독만 사용. 쓰기 코드 없음(setValue·
+  // insertRows·deleteRow 전무). 실행 후 제거 대상(inc020_restore와 함께 정리).
+  // ═══════════════════════════════════════════════════════════════════
+  if (action === 'inc020_diag') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });  // inc020_restore와 동일 내부전용 토큰게이트
+    var _idSh = _miSheet_();
+    if (!_idSh) return _json({ ok: false, error: '시트 없음' });
+    var _idHdr = _miHeaders_(_idSh);
+    var _idPhCi = _miColIdx_(_idHdr, ['연락처', '전화', '휴대폰']);
+    var _idNmCi = _miColIdx_(_idHdr, ['성함', '이름']);
+    var _idTsCi = _miColIdx_(_idHdr, ['타임스탬프']);
+    if (_idPhCi < 0) return _json({ ok: false, error: '연락처 칸 못 찾음' });
+    var _idLast = _idSh.getLastRow();
+    if (_idLast < 2) return _json({ ok: true, totalRows: _idLast, error: '데이터 없음' });
+    var _idData = _idSh.getRange(2, 1, _idLast - 1, _idHdr.length).getValues();
+
+    function _idIsBlank_(arr) {
+      for (var c = 0; c < arr.length; c++) { if (String(arr[c] || '').trim() !== '') return false; }
+      return true;
+    }
+    // physicalRow = 실제 시트 행번호(헤더=1행 기준 1-base)
+    function _idRowInfo_(physicalRow) {
+      if (physicalRow < 2 || physicalRow > _idLast) return { rowNum: physicalRow, outOfRange: true };
+      var arr = _idData[physicalRow - 2];
+      return {
+        rowNum: physicalRow,
+        name: _idNmCi >= 0 ? String(arr[_idNmCi] || '') : '',
+        phone: _idPhCi >= 0 ? String(arr[_idPhCi] || '') : '',
+        timestamp: _idTsCi >= 0 ? String(arr[_idTsCi] || '') : '',
+        isBlank: _idIsBlank_(arr)
+      };
+    }
+
+    // ① 권소현(010-3794-3617) 실제 행번호·매치건수
+    var _idKwonPh = _normPhone_('010-3794-3617');
+    var _idKwonRows = [];
+    for (var i1 = 0; i1 < _idData.length; i1++) { if (_normPhone_(_idData[i1][_idPhCi]) === _idKwonPh) _idKwonRows.push(i1 + 2); }
+
+    // ② 권소현 기준 위 2행 · 아래 6행(첫 매치 앵커) — 본인 행 포함(참고용)
+    var _idNeighbors = [];
+    var _idKwonRowInfo = null;
+    if (_idKwonRows.length > 0) {
+      var _idAnchor = _idKwonRows[0];
+      _idKwonRowInfo = _idRowInfo_(_idAnchor);
+      for (var off = -2; off <= 6; off++) {
+        if (off === 0) continue;   // 본인 행은 _idKwonRowInfo로 별도 표기
+        _idNeighbors.push(_idRowInfo_(_idAnchor + off));
+      }
+    }
+
+    // ③ 이동걸(010-3777-6675) 실제 행번호
+    var _idDgPh = _normPhone_('010-3777-6675');
+    var _idDgRows = [];
+    for (var i3 = 0; i3 < _idData.length; i3++) { if (_normPhone_(_idData[i3][_idPhCi]) === _idDgPh) _idDgRows.push(i3 + 2); }
+
+    // ④ 복구대상 전화(010-5215-9886/010-8816-2121) 이미 존재하는지
+    var _idNew1 = _normPhone_('010-5215-9886'), _idNew2 = _normPhone_('010-8816-2121');
+    var _idNew1Rows = [], _idNew2Rows = [];
+    for (var i4 = 0; i4 < _idData.length; i4++) {
+      var _p4 = _normPhone_(_idData[i4][_idPhCi]);
+      if (_p4 === _idNew1) _idNew1Rows.push(i4 + 2);
+      if (_p4 === _idNew2) _idNew2Rows.push(i4 + 2);
+    }
+
+    // ⑥ 완전히 빈 행 전수 스캔
+    var _idBlankRows = [];
+    for (var i6 = 0; i6 < _idData.length; i6++) { if (_idIsBlank_(_idData[i6])) _idBlankRows.push(i6 + 2); }
+
+    return _json({
+      ok: true,
+      totalRows: _idLast,   // ⑤ getLastRow()
+      kwon: { phone: '010-3794-3617', matchRows: _idKwonRows, matchCount: _idKwonRows.length, rowInfo: _idKwonRowInfo },
+      neighbors: _idNeighbors,   // 권소현 앵커 기준 -2~-1(위 2행)·1~6(아래 6행), 본인행 제외
+      dongguel: { phone: '010-3777-6675', matchRows: _idDgRows, matchCount: _idDgRows.length },
+      alreadyRestored: {
+        '010-5215-9886': _idNew1Rows,
+        '010-8816-2121': _idNew2Rows
+      },
+      blankRows: _idBlankRows,
+      blankRowCount: _idBlankRows.length
+    });
+  }
+
   // ─── 문의 목록 ───
   if (action === 'inquiry_list') {
     const sh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
