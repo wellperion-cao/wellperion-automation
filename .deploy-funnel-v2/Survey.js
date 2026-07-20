@@ -1576,7 +1576,9 @@ function _miReadRows_(sh) {
   var iV2Dt  = _miColIdx_(hdr, ['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2']);  // 2차 방문 날짜(달력 보강용·확정시간 칸과 별개)
   var iVisited = _miColIdx_(hdr, ['방문완료일','방문완료','방문일자']);  // 방문 완료(진행상황과 독립 — 등록돼도 방문 기록 유지). 2026-06-29 시포
   var iRegProgram = _miColIdx_(hdr, ['등록종목']);      // 등록(SUC) 시 실제 등록한 종목 — 문의 시 관심프로그램(iProg)과 별개, 수정 가능. 2026-07-18 시토(GM요청) 대행.
-  var iLossReason = _miColIdx_(hdr, ['LOSS사유']);      // 문의 퍼널 LOSS 사유 — 기존회원 종료사유(CHURN_REASON_COL)와 별개 체계. 2026-07-18 시토(GM요청) 대행.
+  // ★'미등록 사유'(기존 칸)를 폴백으로 추가(2026-07-20 GM 지적) — LOSS사유 칸을 새로 만든 것이 착오였고,
+  //   같은 뜻의 '미등록 사유'가 원래 있었다. LOSS사유 칸이 남아 있으면 그것을 먼저(하위호환), 없으면 미등록 사유를 읽는다.
+  var iLossReason = _miColIdx_(hdr, ['LOSS사유', '미등록 사유', '미등록사유']);
   var iLossReasonNote = _miColIdx_(hdr, ['LOSS사유메모']);
   var iOwner = _miColIdx_(hdr, ['담당','담당자']);
   var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
@@ -1619,7 +1621,7 @@ function _miReadRows_(sh) {
       regProgram: iRegProgram >= 0 ? String(row[iRegProgram] || '') : '',      // 등록 종목(SUC 시 실제 등록한 종목). 2026-07-18 시토(GM요청) 대행.
       lossReason: iLossReason >= 0 ? String(row[iLossReason] || '') : '',      // LOSS 사유(문의 퍼널 전용).
       lossReasonNote: iLossReasonNote >= 0 ? String(row[iLossReasonNote] || '') : '',
-      timestamp:_miToISO_(iTs   >= 0 ? row[iTs]   : ''),
+      timestamp:_miToISOTime_(iTs >= 0 ? row[iTs] : ''),   // ★시각 보존(2026-07-20 GM) — _miToISO_는 날짜만 남겨 627건 전부 시분초가 잘렸었다
       memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
       owner:    iOwner >= 0 ? String(row[iOwner] || '') : '',
       contact1: (iC1 >= 0 && iC1 < row.length) ? _fmtContact_(row[iC1]) : '',
