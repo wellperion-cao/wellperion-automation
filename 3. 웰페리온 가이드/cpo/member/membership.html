@@ -1506,9 +1506,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <option value="단기SUC">단기SUC</option>
             <option value="결제완납">결제완납</option>
             <option value="LOSS">LOSS</option>
+            <option value="재문의로 종결">재문의로 종결</option>
           </select>
-          <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납) 건을 숨겨 진행 중·LOSS 건만 봅니다">
-            <input type="checkbox" id="dbHideRegistered" checked onchange="renderDbTable()" style="cursor:pointer"> 진행중만 보기 <span style="font-size:11px;color:var(--dim)">(가입완료 숨김 · LOSS 노출)</span>
+          <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납)·재문의로 종결된 건을 숨겨 진행 중·LOSS 건만 봅니다. 지난 문의는 '전체 상태' 필터에서 '재문의로 종결' 선택으로 확인.">
+            <input type="checkbox" id="dbHideRegistered" checked onchange="renderDbTable()" style="cursor:pointer"> 진행중만 보기 <span style="font-size:11px;color:var(--dim)">(가입완료·재문의종결 숨김 · LOSS 노출)</span>
           </label>
         </div>
         <div class="db-toolbar-actions">
@@ -4022,10 +4023,15 @@ function switchFamily(fam) {
     c.style.display = (types.indexOf(c.getAttribute('data-type')) >= 0) ? '' : 'none';
   });
   var _famName = (fam === 'lesson') ? '강습 회원관리' : '멤버십 회원관리';
-  // 강습 전용 현황 팝업 버튼만 family 배타 표시 — 신규 문의 & 등록 현황(#btnInquiryDash)은 멤버십+강습 통합 뷰라 항상 노출.
-  // 배3 후속, 2026-07-07 시포·GM / 2026-07-20 시포·GM(통합 배선)
+  // 현황 팝업 버튼 family 배타 표시 — 배3 후속, 2026-07-07 시포·GM.
+  // ★정정(2026-07-20 GM 지적): "멤버십+강습 통합 뷰라 항상 노출" 판단은 오판이었음 — 신규 문의 & 등록 현황·재등록 현황은
+  // 멤버십 전용 화면(강습 회원관리에 왜 뜨냐는 GM 지적)이라 강습 family에선 숨긴다. 통합 전 원래 동작으로 되돌림.
   var _btnLes = document.getElementById('btnLessonDash');
   if (_btnLes) _btnLes.style.display = (fam === 'lesson') ? '' : 'none';
+  var _btnInq = document.getElementById('btnInquiryDash');
+  if (_btnInq) _btnInq.style.display = (fam === 'lesson') ? 'none' : '';
+  var _btnRenew = document.getElementById('btnRenewDash');
+  if (_btnRenew) _btnRenew.style.display = (fam === 'lesson') ? 'none' : '';
   // 본문 중복 제목(#manageFamilyLabel)은 2026-07-15 GM 지시로 삭제 — 상단 H1(pageTitleTxt)이 이미 그룹명을 표시.
   var titleEl = document.getElementById('pageTitleTxt');   // 상단 H1도 그룹명으로(통합 회원 관리 → 멤버십/강습). 2026-07-02 시포·GM
   if (titleEl) titleEl.textContent = _famName;
@@ -7324,6 +7330,12 @@ function saveRegProgramModal() {
    이름 완전일치=재문의(카운트) / 이름 다르면 '같은 번호 다른 문의'(가족·동반 추정, 카운트 제외) — 실측 사례:
    심우섭·심재엽(같은 날·같은 번호·다른 이름=가족), 김동완 외1인(동반 문의). GM 지시 2026-07-20, 시포.
 ───────────────────────────────────────────── */
+// '재문의로 종결' 처리 3건(GM 확정, 2026-07-20) 중 원래 상태가 LOSS였던 건 — rowIndex 기준(연락처+이름+타임스탬프로 특정 확인됨).
+// 진행현황 칸이 '재문의로 종결'로 바뀌어 원문 LOSS 표시가 사라지므로, 팝업 'LOSS 후 재문의' 강조만 표시 전용으로 보존(시트 재기재 없음).
+// 강민희(010-9128-9137, 행452, 2026-05-06)만 해당 — 김정연·한혜수 건은 LOSS가 아니었으므로 미포함.
+var RI_WAS_LOSS_ROWS = { 452: 1 };
+// 이 이력 건이 LOSS(또는 그 표시 전용 보존건)인지 — 배지·팝업 공용(중복 로직 방지).
+function _riIsLoss(r) { return TAP_LOSS_STATUSES.indexOf(String(r.status || '').trim()) >= 0 || !!RI_WAS_LOSS_ROWS[r.rowIndex]; }
 var _riIdx = null;   // 전화(digits) → dbRows 배열. renderDbTable()이 매 렌더 시 재빌드(추가 GAS 호출 없음).
 function _riBuildIndex() {
   var idx = {};
@@ -7355,7 +7367,7 @@ function _riBadgeHtml(row) {
   var g = _riGroupFor(row, _riIdx);
   if (!g) return '';
   if (g.priorSameName.length) {
-    var hasLoss = g.priorSameName.some(function(r){ return TAP_LOSS_STATUSES.indexOf(String(r.status || '').trim()) >= 0; });
+    var hasLoss = g.priorSameName.some(_riIsLoss);
     return '<span class="ri-badge ' + (hasLoss ? 'ri-badge-loss' : 'ri-badge-repeat') + '" onclick="event.stopPropagation();openRepeatInquiryModal(' + row.rowIndex + ')" title="이전 문의 이력 보기">🔁 이전 문의 ' + g.priorSameName.length + '건</span>';
   }
   return '<span class="ri-badge ri-badge-family" onclick="event.stopPropagation();openRepeatInquiryModal(' + row.rowIndex + ')" title="같은 번호로 접수된 다른 문의(가족·동반 추정)">👥 같은 번호 다른 문의 ' + g.diffName.length + '건</span>';
@@ -7398,7 +7410,7 @@ function openRepeatInquiryModal(rowIndex) {
 
   document.getElementById('riMemberFixed').textContent = (row.name || '—') + (row.phone ? ' · ' + row.phone : '');
 
-  var hasLoss = g.priorSameName.some(function(r){ return TAP_LOSS_STATUSES.indexOf(String(r.status || '').trim()) >= 0; });
+  var hasLoss = g.priorSameName.some(_riIsLoss);
   document.getElementById('riLossBanner').style.display = hasLoss ? '' : 'none';
   var kindEl = document.getElementById('riKind');
   kindEl.className = 'consult-modal-kind ' + (hasLoss ? '' : 'experience');
@@ -7765,7 +7777,7 @@ var dbRows = [];         // 현재 로드된 행 배열
 var dbSaveTimer = null;  // 디바운스 타이머 (셀 자동저장용)
 
 // 실무진 실제 사용 코드 (2026-06-20 GM 확정). 등록=SUC, 이탈=LOSS 등 시트 어휘 그대로.
-var STATUS_OPTIONS = ['미정','컨택중','가망','SUC','단기SUC','LOSS'];   // 신규·예약·방문 제거→미정(첫). 예약/방문은 달력 예약종류이지 진행상황 아님. 2026-07-18 GM
+var STATUS_OPTIONS = ['미정','컨택중','가망','SUC','단기SUC','LOSS','재문의로 종결'];   // 신규·예약·방문 제거→미정(첫). 예약/방문은 달력 예약종류이지 진행상황 아님. 2026-07-18 GM. '재문의로 종결'=같은 사람이 다른 행으로 재문의·등록해 이 행이 종결됨(GM 확정, 2026-07-20)
 // 관심 프로그램 = 4종 축약(노블레스/플래티넘/±골프). 상세설명 괄호 제거. 2026-07-08 시포·GM
 var PROGRAM_OPTIONS = ['노블레스', '플래티넘', '노블레스+골프', '플래티넘+골프'];
 // 저장값(구 상세 라벨 포함)을 4종 표시로 정규화 — 표시만 축약, 저장값 보존. 알 수 없는 값은 원본 유지. 2026-07-08 시포·GM
@@ -7802,7 +7814,7 @@ function buildSelect(field, options, current) {
 }
 var STATUS_CLASS   = {
   '미정':'new','컨택중':'contact',
-  'SUC':'joined','단기SUC':'joined','LOSS':'lost',
+  'SUC':'joined','단기SUC':'joined','LOSS':'lost','재문의로 종결':'hold',
   // 과거값 호환(표시용) — 신규/예약/방문은 _memStatusDisplay가 '미정'으로 정규화되어 여기 키 불필요
   '응대':'contact','가입':'joined','이탈':'lost','보류':'hold','키오스크 완':'joined'
 };
@@ -7922,7 +7934,7 @@ function _dbFilteredRows() {
 
   var _hideRegEl = document.getElementById('dbHideRegistered');
   var hideReg = _hideRegEl && _hideRegEl.checked;   // '진행중만 보기' — 등록·완납·이탈 종결건 숨김
-  var _TERMINAL = ['SUC','단기SUC','결제완납'];   // LOSS는 진행중만 보기에서도 노출(재등록 대응 대상). 2026-07-08 시포·GM
+  var _TERMINAL = ['SUC','단기SUC','결제완납','재문의로 종결'];   // LOSS는 진행중만 보기에서도 노출(재등록 대응 대상). 2026-07-08 시포·GM. '재문의로 종결'=다른 행으로 재문의·등록 이관된 종결건(GM 확정, 2026-07-20) — 체크박스 해제 시에만 노출
   var searchDigits = search.replace(/\D/g, '');   // 연락처 숫자만 매칭용(하이픈·공백 무시). 2026-07-02 시포(GM)
   return dbRows.filter(function(row){
     var matchStatus = !filter || _memStatusDisplay(row.status) === filter;   // '미정' 필터=레거시 신규/예약/방문/빈값 포함
