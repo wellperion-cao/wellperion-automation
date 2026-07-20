@@ -1566,5 +1566,19 @@
     "artifact": "발행은 성공했는데 공개 URL 폴링(12초) 실패 시 워처가 '발행실패'로 찍어\n재발행 시 중복 게시 위험이 있었다. exit 8(URL 미회수)을 exit 7(실failure)과\n분리해 새 상태 '확인필요(발행됨·URL미회수)'로 도장 — APPROVED_STATES에\n없어 재발행되지 않는다. reconcile_published.py에 이 상태를 배선해 URL만\n나중에 재회수하면 발행완료로 자동 전환. publish_digest.py 완결 판정에도\n반영(URL 보강 전까지는 디제스트 보류, 미발행으로 오분류하지 않음). (CLI ad-hoc · 커밋 23d1534d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "23d1534d504a2223943e395bdb9ce5fd8a6e218d"
+  },
+  {
+    "task_id": "COO-2026-07-20-ADHOC-967f5ac5",
+    "clevel": "coo",
+    "title": "[시우] 최준용M 인계 — 종합접수처 O2 보드 버그 3건 프롬프트 (GM 지시)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9250,
+    "artifact": "라이브 실측 진단: 처리자 입력칸 33 / 중복표시 24 (= 처리자 기입 건수 일치).\n① 처리자 중복 표시 — _regCard 의 COMMON_KEYS 에 '처리자' 누락\n② 저장 실패해도 '저장됨 ✓' — _regHandlerSave/_regMemoSave/_regSms/_regAssign 4곳 모두\n   성공표시를 fetch 전에 내고 .catch 로 실패를 삼킴 (INC-011·013 과 동일 계열)\n③ _regAssign 이 HTML 이 넘긴 this(3번째 인자)를 안 받고 전역 event.target 의존 (CLI ad-hoc · 커밋 967f5ac5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "967f5ac5f802c55d06b56133df46b08893f09077"
   }
 ]
