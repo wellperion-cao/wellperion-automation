@@ -1438,5 +1438,32 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 450c39ea)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "450c39ea674db69541be4ec1c4318578cf7a8162"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-81f13b82",
+    "clevel": "cpo",
+    "title": "[시포] 웹 멤버십 문의 동의 미기록 + Contact 위치폴백 지뢰 수리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9241,
+    "artifact": "- intake_submit membership 분기가 개인정보 동의를 검증만 하고 U열에 기록하지 않던 버그 수리(법적 사안). 강습·공간렌트·비즈니스 분기와 동일 표기 '동의' 통일, 실헤더 gviz 대조로 고유 서두 구절만 매칭키로 사용(과거 데이터는 무변경).\n- Contact1/2/3 이름 탐색 실패 시 한 칸씩 밀린 위치 폴백(17/18/19, 정답은 16/17/18)이 Contact3 저장 시 진행현황(T열)을 덮어쓸 수 있던 지뢰 제거. 현재 헤더는 이름 탐색이 항상 성공함을 실측 검증(gviz) — 폴백 대신 못 찾 (CLI ad-hoc · 커밋 81f13b82)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "81f13b82bcffecba85af4ccefefaa32ce16b3d30"
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-wpml-redirect",
+    "clevel": "cmo",
+    "title": "[시모] WPML 브라우저 언어 자동 리다이렉트 전역 비활성화 (GM 승인)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9242,
+    "artifact": "GM 승인 — 한국어 브라우저가 /en/inquiry/ 첫 진입 시 /ko/inquiry/로 자동 튕기던 문제(ship9231 언어전환버튼을 무력화) 해결. 원인=WPML 전역 설정(WP관리자 > WPML > Languages > 브라우저 언어 리다이렉트, icl_automatic_redirect=1 \"번역이 존재하는 경우에만 리다이렉트\"). Playwright로 관리자 세션 재사용해 값을 0(비활성화)으로 변경·저장·새로고침 후 유지 확인(AJAX 응답 \"데이터 저장됨\"). 적용범위=사이트 전역(문의 페이지 한정 아님 — 모든 페이지의 브라우저언어 자동전환이 꺼짐, 부작용 없음을 /en/ 홈 재확인). 되돌리기=같은 화면에서 라디오를 \"번역이 존재하는 경우에만 리다이렉트\"로 다시 선택 후 저장(1분 내 원복 가능, 코드 변경 아님·순수 WP 관리자 설정). 검증(신규 쿠키없는 크롬 프로필+ko-KR 로케일, 실브라우저): ①/en/inquiry/ 최초진입 EN 유지 PASS ②KOR버튼→/ko/inquiry/ 이동 PASS ③ENG버튼→/en/inquiry/ 복귀·유지 PASS ④/en/ 홈 정상(EN 유지, 부작용 없음) PASS. 스크린샷: scripts/poc-evidence/{wpml_redirect_before_20260720.png, wpml_redirect_after_save_20260720.png, wpml_redirect_after_reload_20260720.png, verify1_en_inquiry_first_visit_20260720.png, verify2_after_kor_click_20260720.png, verify3_after_eng_click_20260720.png, verify4_en_home_20260720.png} (로컬 전용, .gitignore 대상·git 커밋 없음 — 코드 변경 없이 WP 관리자 설정만 변경).",
+    "next": "🏁 입항완료(루틴) — 다음 불필요. 트레이드오프: 외국인 방문자가 한글 브라우저로 접속해도 더는 영어로 자동전환되지 않음(GM 승인·인지)."
   }
 ]
