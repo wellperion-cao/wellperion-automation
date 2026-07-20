@@ -3,7 +3,7 @@
 문의회원 읽기 서버 스냅샷 job (2026-07-16 시토)
 설계 정본: docs/superpowers/specs/2026-07-16-문의읽기-서버스냅샷-design.md
 
-목적: 문의회원.html 첫 진입·모든 기기에서 0초 렌더 — localStorage 캐시가 없는 콜드 화면을 위해
+목적: membership.html 첫 진입·모든 기기에서 0초 렌더 — localStorage 캐시가 없는 콜드 화면을 위해
 2~3분 주기로 멤버십·강습(연간뷰) 문의 목록을 미리 서버(git)에 덤프해둔다.
 
 데이터 소스: gviz 어댑터를 새로 포팅하지 않고 scripts/cpo_report.py 가 이미 프로덕션에서 쓰는

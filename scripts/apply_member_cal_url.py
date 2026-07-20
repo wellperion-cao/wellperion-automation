@@ -1,6 +1,6 @@
 """
 apply_member_cal_url.py
-문의회원.html 내 __MEMBER_CAL_GAS_URL__ 자리표시자를 실제 GAS 배포 URL로 일괄 치환.
+membership.html 내 __MEMBER_CAL_GAS_URL__ 자리표시자를 실제 GAS 배포 URL로 일괄 치환.
 
 사용법:
     python scripts/apply_member_cal_url.py <GAS_EXEC_URL>
@@ -14,7 +14,7 @@ apply_member_cal_url.py
 import sys
 import re
 
-TARGET = "3. 웰페리온 가이드/cpo/member/문의회원.html"
+TARGET = "3. 웰페리온 가이드/cpo/member/membership.html"
 PLACEHOLDER = "__MEMBER_CAL_GAS_URL__"
 
 

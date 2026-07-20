@@ -595,7 +595,7 @@
       </div>
       <div class="rcard" style="--rc:var(--teal)">
         <div class="rcard-top"><span class="cmo-stage live">②</span><span class="rcard-ico">📋</span>
-          <span class="rcard-tt"><span class="rcard-nm">CPO 문의 관리 대시보드 (문의회원.html)</span><span class="rcard-cy">매 요청</span></span>
+          <span class="rcard-tt"><span class="rcard-nm">CPO 문의 관리 대시보드 (membership.html)</span><span class="rcard-cy">매 요청</span></span>
           <span class="pill on">라이브</span></div>
         <div class="rrow"><span class="rk">무엇을</span><span class="rv">5종 문의 목록·상태·전환을 실데이터로 렌더. 공간렌트·비즈니스 관리패널 추가 → 관리 커버리지 5종 완성(상태 분류는 수기)</span></div>
       </div>
@@ -1115,7 +1115,7 @@
   // COO_API_URL = 지원부 체계.html(coo/check/지원부 체계.html)과 동일 GAS 웹앱 — 신규 배포 없음, 기존 today_live·monthly_report 액션만 재사용.
   var COO_API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
   // CPO_CHURN_URL = 회원 GAS(cpo_churn_stats 액션) — 시포 라이프사이클 루프 라이브 스탯 스트립용
-  // 2026-07-04 수정(시토): 배포 ID 오타(AKfycbw…) → 문의회원.html과 동일 정상 배포(AKfycbz…)로 정합. 라이브 CORS 실패 2건 해소.
+  // 2026-07-04 수정(시토): 배포 ID 오타(AKfycbw…) → membership.html과 동일 정상 배포(AKfycbz…)로 정합. 라이브 CORS 실패 2건 해소.
   var CPO_CHURN_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
   function cpoFetchChurnStats(){
     return fetch(CPO_CHURN_URL + '?action=cpo_churn_stats&_pv=' + Date.now(), {redirect:'follow'})

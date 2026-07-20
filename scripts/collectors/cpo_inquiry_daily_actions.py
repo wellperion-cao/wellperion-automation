@@ -27,7 +27,7 @@ if _SCRIPTS_DIR not in sys.path:
 from collectors.base import make_payload  # noqa: E402
 import cpo_report  # noqa: E402 — 기존 fetch·분류 로직 재사용(중복 복사 금지)
 
-_LINK = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/%EB%AC%B8%EC%9D%98%ED%9A%8C%EC%9B%90.html"
+_LINK = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html"
 
 
 def collect(module=None) -> dict:

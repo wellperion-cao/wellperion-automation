@@ -12,7 +12,7 @@ cd "$REPO"
 
 # 재배선 대상 16곳 (status/_queue.json·backups·워크트리 제외)
 FILES=(
-"3. 웰페리온 가이드/cpo/member/문의회원.html"
+"3. 웰페리온 가이드/cpo/member/membership.html"
 "3. 웰페리온 가이드/cmo/funnel/마케팅현황대시보드.html"
 "3. 웰페리온 가이드/wellperion_guide(main).html"
 "3. 웰페리온 가이드/자율현황.html"

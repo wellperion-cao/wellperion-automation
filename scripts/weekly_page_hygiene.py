@@ -73,7 +73,7 @@ PAGE_TARGETS: list[dict] = [
     {"clevel": "coo", "label": "메인가이드 O3(재등록)", "path": "3. 웰페리온 가이드/wellperion_guide(main).html", "anchor": "O3"},
     {"clevel": "coo", "label": "메인가이드 O4", "path": "3. 웰페리온 가이드/wellperion_guide(main).html", "anchor": "O4"},
     # ── CPO 3 (2026-07-14 추가) ──
-    {"clevel": "cpo", "label": "문의회원", "path": "3. 웰페리온 가이드/cpo/member/문의회원.html"},
+    {"clevel": "cpo", "label": "문의회원", "path": "3. 웰페리온 가이드/cpo/member/membership.html"},
     {"clevel": "cpo", "label": "강습회원관리", "path": "3. 웰페리온 가이드/cpo/member/강습회원관리.html"},
     {"clevel": "cpo", "label": "상품기획", "path": "3. 웰페리온 가이드/cpo/product/상품기획.html"},
     # ── CMO 7 (2026-07-14 추가) ──

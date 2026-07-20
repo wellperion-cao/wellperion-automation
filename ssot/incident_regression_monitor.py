@@ -12,7 +12,8 @@
   - 처음 실행 시 현재 상태를 baseline으로 적립(established) → 경보 없음.
 
 검사 3종:
-  ① 캐논 발산 — divergence_scan 재활용. baseline 대비 신규 복사(INC-001/004/005 류) 0이어야.
+  ① 캐논·규칙 발산 — divergence_scan 재활용(값=run_scan·규칙=run_rule_scan, 2026-07-20 확장).
+     baseline 대비 신규 복사/재서술(INC-001/004/005 류·채널별 CTA 규칙 중복사고 류) 0이어야.
   ② 가드 자산 무결 — INC-005~008 차단조치 핵심 파일·훅 실재(유실=회귀).
   ③ 박제 무결 — incidents.json GUARDED 인시던트가 GUARDED 유지.
 
@@ -53,16 +54,24 @@ def _is_code(f: str) -> bool:
 
 
 def _divergence_map() -> dict | None:
-    """캐논 발산(정본·allow_globs 밖 복사) → {key: set(files)}. 스캐너 오류 시 None."""
+    """캐논·규칙 발산(정본·allow_globs 밖 복사/재서술) → {key: set(files)}. 스캐너 오류 시 None.
+    2026-07-20: 값(run_scan) + 규칙(run_rule_scan, canon_values.json "rules") 둘 다 병합 —
+    같은 baseline·회귀·텔레그램 경보 경로를 그대로 재사용(새 플러밍 없음). 규칙 키는
+    'rule:' 접두로 값 키와 구분(예: rule:cta_channel_rules)."""
     try:
-        from divergence_scan import run_scan, load_canon  # type: ignore
+        from divergence_scan import run_scan, run_rule_scan, load_canon  # type: ignore
         canon = load_canon(_ROOT)
         results = run_scan(_ROOT, canon)
+        rule_results = run_rule_scan(_ROOT, canon)
         out = {}
         for r in results:
             files = {h.get("file", "") for h in r.get("hits", []) if h.get("file")}
             if files:
                 out[r.get("key", "?")] = files
+        for r in rule_results:
+            files = {h.get("file", "") for h in r.get("hits", []) if h.get("file")}
+            if files:
+                out[f"rule:{r.get('key', '?')}"] = files
         return out
     except Exception:
         return None

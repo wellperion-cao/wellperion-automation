@@ -35,6 +35,7 @@ from datetime import datetime
 
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPTS_DIR)
+_SSOT_DIR = os.path.join(_PROJECT_ROOT, "ssot")
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
@@ -242,6 +243,19 @@ def run_report(cadence, *, dry_run=False, only_module=None,
             publish_snapshot()
         except Exception:
             pass  # 스냅샷 갱신 실패가 본 리포터의 발송 결과를 막지 않는다
+
+        # 재발방지 회귀감시(캐논값·규칙 발산) 일일 실행(2026-07-20 웰리) — status/schedule.json에
+        # "매일 09:15" 로 문서화만 돼 있고 실제 Task Scheduler 등록이 없던 사각지대를,
+        # 새 예약작업 등록 대신 이미 라이브 등록된 Wellperion-Module-Report-Daily 에 편승해 메운다.
+        # 회귀(신규 캐논복사/규칙재서술·가드유실·박제깨짐) 발견 시 내부에서 텔레그램 1줄 경보
+        # (telegram_bot/.env TELEGRAM_CHAT_ID=GM 업무보고봇방)까지 자체 처리 — 정상이면 무발신.
+        try:
+            if _SSOT_DIR not in sys.path:
+                sys.path.insert(0, _SSOT_DIR)
+            from incident_regression_monitor import run as run_regression_monitor  # noqa: PLC0415
+            run_regression_monitor()
+        except Exception:
+            pass  # 회귀감시 실패가 본 리포터의 발송 결과를 막지 않는다
 
     return {"cadence": cadence, "date": date_str, "dry_run": dry_run, "results": results}
 

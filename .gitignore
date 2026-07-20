@@ -18,6 +18,13 @@ scripts/_archive/
 !wellperion-agents/.claude/
 !wellperion-agents/.claude/agents/
 !wellperion-agents/.claude/agents/*.md
+# 예외: 웰페리온 브랜드 스킬 = 콘텐츠 규칙 요약·포인터 자산, 비밀정보 없음 — 팀 전체 공유 필요
+# (2026-07-20 웰리, SSOT 재발방지 감사 중 발견: .claude/ 통째 ignore라 이 파일이 내 PC에만
+#  반영되고 다른 환경은 옛 규칙을 보는 사각지대였다. .claude/settings*.json 등 로컬 런타임
+#  설정은 계속 ignore — SKILL.md 1개 파일만 예외.)
+!.claude/skills/
+!.claude/skills/wellperion-brand/
+!.claude/skills/wellperion-brand/SKILL.md
 telegram_bot/state.json
 telegram_bot/status_change_state.json
 telegram_bot/status_regression_guard_state.json

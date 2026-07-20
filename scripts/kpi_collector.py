@@ -117,7 +117,7 @@ _CHECK_GAS = (
     "https://script.google.com/macros/s/"
     "AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec"
 )
-# 회원 문의/이탈 GAS (문의회원.html과 동일 정본 — cpo_churn_stats 등)
+# 회원 문의/이탈 GAS (membership.html과 동일 정본 — cpo_churn_stats 등)
 _CPO_GAS = (
     "https://script.google.com/macros/s/"
     "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec"

@@ -1,5 +1,37 @@
 {
   "_doc": "캐논 값 단일출처 레지스트리. divergence_scan.py가 읽어 하드코딩 복사본을 탐지한다. 새 캐논값 = 여기 1줄 append. value=찾을 문자열, source=정본 위치, allow_globs=복사 허용(정본·설정) 경로.",
+  "_rules_doc": "규칙(값이 아니라 '서술형 절차·구분 규칙') 단일출처 레지스트리 (2026-07-20 GM 지시 — 채널별 CTA 규칙 5곳 중복·불일치 사고 재발방지). 값과 달리 규칙은 매번 다른 문장으로 재서술되므로 리터럴 문자열 매칭이 아니라 신호 동시등장(예: 채널명 2개+ & CTA 신호가 같은 근접 구간에 함께 등장)으로 탐지한다. divergence_scan.run_rule_scan()이 읽는다. 새 규칙 = 여기 1줄 append(새 레지스트리 파일 신설 금지 — CLAUDE.md §3-2 단일등록부 정신).",
+  "rules": [
+    {
+      "key": "cta_channel_rules",
+      "이름": "채널별 CTA(문의 링크) 규칙",
+      "source": "scripts/cta_utm.py",
+      "fingerprint_channels": ["블로그", "카페", "당근", "카카오", "인스타그램", "페이스북", "IG"],
+      "fingerprint_cta": ["CTA", "cta"],
+      "min_channels": 2,
+      "window_lines": 5,
+      "allow_globs": [
+        "scripts/cta_utm.py",
+        "ssot/**",
+        "status/_queue.json",
+        "status/_queue_archive.json",
+        "3. 웰페리온 가이드/status/_queue.json",
+        "3. 웰페리온 가이드/status/_queue_archive.json",
+        "3. 웰페리온 가이드/cmo/review/review_queue.json",
+        "status/briefs/**",
+        "3. 웰페리온 가이드/cmo/brand/브랜드가이드.html",
+        "3. 웰페리온 가이드/cmo/expansion_plan.md",
+        "2. 브랜드_자료/웰페리온_기반_FOUNDATION.md",
+        ".claude/skills/wellperion-brand/SKILL.md",
+        "scripts/generate_channel_copy.py",
+        "instagram/**",
+        "docs/**",
+        "tmp/**",
+        ".omc/**"
+      ],
+      "note": "2026-07-20 GM 승인으로 정본=scripts/cta_utm.py 파일 상단 'CTA 단일화 설계' 주석 1곳으로 확정(약속 L01). 이전엔 채널별 CTA 삽입 규칙이 5곳에 각각 서술돼 서로 어긋났고(폐기된 3번째 버전까지 살아있었음), 값 계층(canon_values)만 감시돼 '규칙' 계층은 조용히 번졌다. 브랜드가이드.html·FOUNDATION.md·SKILL.md는 오늘 정본을 가리키는 포인터로 교체 완료(재서술 아님, FP 허용). generate_channel_copy.py는 cta_utm.CLEAN_CTA_TEXT를 실제 import해 쓰는 소비자(재구현 아님). instagram/**·docs/**는 콘텐츠 소재·날짜박제 설계문서(살아있는 규정 아님, 재동기화 대상 아님). 새로운 곳에 규칙이 다시 서술되면 탐지 대상 — 실측 결과 wellperion_guide(main).html '채널별 CTA' 표(line 3536 부근)가 cta_utm.py 현행 규칙과 어긋난 채 남은 진짜 재서술로 확인됨(당근을 URL 미기재로 오기재·카카오 누락 등) — 후속 정리 대상, 이 감시장치는 발견만 하고 자동 수정하지 않는다."
+    }
+  ],
   "values": [
     {
       "key": "official_phone",
