@@ -2514,6 +2514,48 @@ def _digest_dot(s: str) -> str:
     return ""
 
 
+# 종목 정규명 — _DIGEST_SPORT_DOT 매칭 키워드 → 표시용 정식 명칭(예: '필라'→'필라테스', '루프'→'루프메소드').
+# 2026-07-20 GM(수정1) — _split_sports() 전용, 색상 도트 매칭(_digest_dot)과는 별개 표시 이름 테이블.
+_DIGEST_SPORT_CANON = {
+    "아쿠아": "아쿠아", "수영": "수영", "P.T": "P.T", "PT": "P.T", "필라": "필라테스",
+    "스쿼시": "스쿼시", "골프": "골프", "트램폴린": "트램폴린", "체조": "체조",
+    "멤버십": "멤버십", "뮤지컬": "뮤지컬", "발레": "발레", "바레": "바레", "루프": "루프메소드",
+}
+
+
+def _split_sports(s: str) -> list[str]:
+    """한 사람이 여러 종목을 콤마 등으로 나열한 문자열을 종목별로 쪼갠다(GM 2026-07-20 수정2).
+    구분자 = , · / | ('&'는 분리 안 함 — '체조 & 트램폴린'은 한 종목으로 유지).
+    괄호 부연(예: '(개인레슨 / 단체레슨)', '(화, 목 13:00 클래스)')은 분리 전에 문자열 전체에서
+    먼저 통째로 제거한다 — 괄호 안에도 구분자(, / ·)가 섞여 있어 조각부터 내면 괄호가 반으로
+    잘려 '단체레슨)' 처럼 깨진다(2026-07-20 GM 수정4, 실사례로 발견·수리).
+    남은 조각마다 WSC 접두어 제거 후 _DIGEST_SPORT_DOT 키워드와 '단일' 매칭되면 정규 종목명으로
+    치환(복수 키워드가 동시에 매칭되는 모호한 조각 — 예: 체조 & 트램폴린 — 은 매칭 실패로 보고 정리된
+    원문을 그대로 유지). 중복 제거·순서 보존·빈값 제외."""
+    import re as _re
+
+    raw = str(s or "").strip()
+    if not raw:
+        return []
+    cleaned = _re.sub(r"\s*[\(（][^()（）]*[\)）]", "", raw)
+    pieces = _re.split(r"[,·/|]", cleaned)
+    out: list[str] = []
+    seen: set[str] = set()
+    for piece in pieces:
+        p = piece.strip()
+        if not p:
+            continue
+        p = _re.sub(r"^WSC\s*", "", p, flags=_re.IGNORECASE).strip()
+        if not p:
+            continue
+        matched = [kw for kw, _dot in _DIGEST_SPORT_DOT if kw in p]
+        name = _DIGEST_SPORT_CANON.get(matched[0], matched[0]) if len(set(matched)) == 1 else p
+        if name not in seen:
+            seen.add(name)
+            out.append(name)
+    return out
+
+
 def _digest_fetch_list(action: str, **params) -> list:
     """funnel-v2 목록 조회(멤버십·강습). 실패 시 예외 전파(호출부에서 폴백)."""
     r = requests.get(FUNNEL_EXEC_URL, params=dict(action=action, **params), timeout=40, allow_redirects=True)
@@ -2528,67 +2570,72 @@ _DIGEST_LOSS_STATUSES = {"LOSS", "환불", "양도LOSS"}
 _DIGEST_SUCCESS_STATUSES = {"SUC", "단기SUC"}
 
 
-def _digest_unprocessed_counts(rows: list, key_fn, strip_paren: bool = False) -> tuple:
-    """rows 전체(오늘 필터 없음) 대상 종목별 {종목: [미정, 미배정]} 집계 + 카테고리 전체 합계 반환.
-    진행상태 미정=status 공백. 담당자 미배정=owner 공백 이면서 status 가 종결(LOSS계열·성공계열)이 아닌 건."""
-    import re as _re
-
+def _digest_unprocessed_counts(rows: list, field: str, today: str, month_prefix: str) -> tuple:
+    """rows 중 이번 달(month_prefix="YYYY-MM") 유입분만 대상 — 종목별 {종목: [금일, 당월, 미정, 미배정]}
+    집계 + 카테고리 전체 합계(금일, 당월) 반환(GM 2026-07-20 수정1 — 전체누적 대신 당월로 축소).
+    미처리 = 미정(status 공백) 또는 미배정(owner 공백 & 비종결) 하나라도 해당하는 건.
+    한 사람이 여러 종목이면 _split_sports() 로 쪼개 종목마다 각각 1건씩 계상(GM 수정2)."""
     counts: dict = {}
-    total_undecided = 0
-    total_unassigned = 0
+    cat_today = 0
+    cat_month = 0
     for r in rows:
+        ts = str(r.get("timestamp", "") or "")
+        if not ts.startswith(month_prefix):
+            continue
         status = str(r.get("status", "") or "").strip()
         owner = str(r.get("owner", "") or "").strip()
-        sp = str(key_fn(r) or "").strip()
-        if strip_paren and sp:
-            sp = _re.sub(r"\s*[\(（][^)）]*[\)）]", "", sp).strip() or sp  # 플랜명 뒤 시설 나열 괄호 제거
-        sp = sp or "미분류"
         undecided = not status
         is_terminal = status in _DIGEST_LOSS_STATUSES or status in _DIGEST_SUCCESS_STATUSES
         unassigned = (not owner) and not is_terminal
         if not undecided and not unassigned:
             continue
-        c = counts.setdefault(sp, [0, 0])
-        if undecided:
-            c[0] += 1
-            total_undecided += 1
-        if unassigned:
+        is_today = ts.startswith(today)
+        species = _split_sports(str(r.get(field, "") or "")) or ["미분류"]
+        for sp in species:
+            c = counts.setdefault(sp, [0, 0, 0, 0])  # [금일, 당월, 미정, 미배정]
             c[1] += 1
-            total_unassigned += 1
-    return counts, total_undecided, total_unassigned
+            cat_month += 1
+            if is_today:
+                c[0] += 1
+                cat_today += 1
+            if undecided:
+                c[2] += 1
+            if unassigned:
+                c[3] += 1
+    return counts, cat_today, cat_month
 
 
-def _digest_unprocessed_section(title: str, rows: list, key_fn, fixed_dot: str = "", strip_paren: bool = False) -> str:
-    """종목별 미정/미배정 카운트를 (미정+미배정) 합 내림차순 최대 8줄 + '…외 N개 종목'으로 렌더."""
-    counts, total_undecided, total_unassigned = _digest_unprocessed_counts(rows, key_fn, strip_paren)
-    if total_undecided == 0 and total_unassigned == 0:
+def _digest_unprocessed_section(title: str, rows: list, field: str, today: str, month_prefix: str,
+                                 fixed_dot: str = "") -> str:
+    """종목별 금일/당월(미정/미배정 병기) 카운트를 당월 내림차순 최대 8줄 + '…외 N개 종목'으로 렌더.
+    당월 0인 종목 줄은 자연히 생략(집계에 진입 자체를 안 함)."""
+    counts, cat_today, cat_month = _digest_unprocessed_counts(rows, field, today, month_prefix)
+    if cat_month == 0:
         return f"■ {title} — 없음"
-    lines = [f"■ {title} (진행상태 미정 {total_undecided} · 담당자 미배정 {total_unassigned})"]
-    ranked = sorted(counts.items(), key=lambda kv: -(kv[1][0] + kv[1][1]))
+    lines = [f"■ {title} (금일 {cat_today} · 당월 {cat_month})"]
+    ranked = sorted(counts.items(), key=lambda kv: -kv[1][1])
     shown = ranked[:8]
-    for sp, (undecided, unassigned) in shown:
+    for sp, (t, m, undecided, unassigned) in shown:
         dot = fixed_dot or _digest_dot(sp)
-        parts = []
-        if undecided:
-            parts.append(f"미정 {undecided}")
-        if unassigned:
-            parts.append(f"미배정 {unassigned}")
-        lines.append(f"  {dot}{sp} — " + " · ".join(parts))
+        lines.append(f"  {dot}{sp} — 금일 {t} · 당월 {m} (미정 {undecided} · 미배정 {unassigned})")
     remaining = len(ranked) - len(shown)
     if remaining > 0:
         lines.append(f"  …외 {remaining}개 종목")
     return "\n".join(lines)
 
 
-def _build_digest_member_unprocessed(mem: list, adult: list, youth: list) -> str:
-    """🗂 회원관리 미처리 현황(종목별) — 오늘 문의 목록 뒤·마케팅 섹션 앞에 삽입(GM 2026-07-20).
-    전체 rows(오늘 필터 없음) 대상 — 진행상태 미정·담당자 미배정을 종목별로 집계."""
+def _build_digest_member_unprocessed(mem: list, adult: list, youth: list, today: str) -> str:
+    """🗂 회원관리 미처리 현황(종목별, 당월) — 오늘 문의 목록 뒤·마케팅 섹션 앞에 삽입
+    (GM 2026-07-20, 수정1로 전체누적→당월 축소). 범위 = 이번 달 1일~지금 유입분 중 미처리(미정/미배정)만.
+    한 사람 다종목은 _split_sports() 로 종목별로 나눠 계상."""
+    month_prefix = today[:7]  # "YYYY-MM"
+    month_label = f"{today[:4]}년 {int(today[5:7])}월"
     body = "\n\n".join([
-        _digest_unprocessed_section("멤버십", mem, lambda r: r.get("program"), fixed_dot="🟡 ", strip_paren=True),
-        _digest_unprocessed_section("성인강습", adult, lambda r: r.get("bucket") or r.get("sport")),
-        _digest_unprocessed_section("유소년강습", youth, lambda r: r.get("bucket") or r.get("sport")),
+        _digest_unprocessed_section("멤버십", mem, "program", today, month_prefix, fixed_dot="🟡 "),
+        _digest_unprocessed_section("성인강습", adult, "sport", today, month_prefix),
+        _digest_unprocessed_section("유소년강습", youth, "sport", today, month_prefix),
     ])
-    return f"━━━━━━━━━━\n🗂 회원관리 미처리 현황\n\n{body}"
+    return f"━━━━━━━━━━\n🗂 회원관리 미처리 현황 ({month_label})\n\n{body}"
 
 
 def _append_digest_marketing_section(msg: str) -> str:
@@ -2628,39 +2675,43 @@ def _build_digest_inquiry(today: str) -> str:
     if total == 0:
         msg = f"{header}\n\n오늘 신규 문의 없음."
     else:
-        import re as _re
-
-        def _section(title: str, rows: list, sport_key: str, fixed_dot: str = "", strip_paren: bool = False) -> str:
-            head = f"■ {title} ({len(rows)})"
+        def _section(title: str, rows: list, field: str, fixed_dot: str = "") -> str:
+            """종목별 그룹 렌더(GM 2026-07-20 수정3 — 사람 한 줄 나열 → 종목별 그룹).
+            _split_sports() 로 한 사람이 여러 종목이면 종목마다 각각 노출(의도된 중복)."""
             if not rows:
-                return head
-            lines = [head]
-            for r in rows[:20]:
-                sp = str(r.get(sport_key, "") or "").strip()
-                if strip_paren and sp:
-                    sp = _re.sub(r"\s*[\(（][^)）]*[\)）]", "", sp).strip() or sp  # 플랜명 뒤 시설 나열 괄호 제거
+                return f"■ {title} (0)"
+            groups: dict = {}
+            for r in rows:
                 nm = str(r.get("name", "") or "-").strip() or "-"
                 ph = str(r.get("phone", "") or "-").strip() or "-"
                 ch = str(r.get("channel", "") or "").strip()
+                species = _split_sports(str(r.get(field, "") or "")) or ["미분류"]
+                for sp in species:
+                    groups.setdefault(sp, []).append((nm, ph, ch))
+            person_count = len(rows)
+            species_count = sum(len(v) for v in groups.values())
+            lines = [f"■ {title} ({person_count}명 · 종목 {species_count}건)"]
+            ranked = sorted(groups.items(), key=lambda kv: -len(kv[1]))
+            for sp, entries in ranked:
                 dot = fixed_dot or _digest_dot(sp)  # 멤버십=유형색 고정(🟡) / 강습=종목색
-                line = f"{dot}{nm} · {ph}"
-                if sp:
-                    line += f" · {sp}"
-                if ch:
-                    line += f" · {ch}"
-                lines.append(line)
-            if len(rows) > 20:
-                lines.append(f"  …외 {len(rows) - 20}건")
+                lines.append(f"{dot}{sp} ({len(entries)})")
+                for nm, ph, ch in entries[:20]:
+                    line = f"   {nm} · {ph}"
+                    if ch:
+                        line += f" · {ch}"
+                    lines.append(line)
+                if len(entries) > 20:
+                    lines.append(f"   …외 {len(entries) - 20}명")
             return "\n".join(lines)
 
         body = "\n\n".join([
-            _section("멤버십", mem_t, "program", fixed_dot="🟡 ", strip_paren=True),
+            _section("멤버십", mem_t, "program", fixed_dot="🟡 "),
             _section("성인강습", adult_t, "sport"),
             _section("유소년강습", youth_t, "sport"),
         ])
         msg = f"{header}\n\n총 {total}건\n\n{body}"
 
-    unprocessed = _build_digest_member_unprocessed(mem, adult, youth)
+    unprocessed = _build_digest_member_unprocessed(mem, adult, youth, today)
     msg = f"{msg}\n\n{unprocessed}"
 
     return _append_digest_marketing_section(msg)
