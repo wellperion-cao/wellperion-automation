@@ -1593,5 +1593,19 @@
     "artifact": "이전 커밋 7ad5dbf2가 동시 커밋 경합으로 엉뚱한 파일(문의회원.html)에 붙어\nSurvey.js 변경분이 실제로는 반영되지 않았음 — 이 커밋으로 정정. (CLI ad-hoc · 커밋 e1195de9)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e1195de9b871f2d06bb4fa7c77bdd8cdb2e35418"
+  },
+  {
+    "task_id": "CTO-2026-07-20-ADHOC-8c4a73fc",
+    "clevel": "cto",
+    "title": "[시토] KPI 집계기 6일 timeout 죽음 복구 (배1307 2차)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9188,
+    "artifact": "kpi_collector.py 가 07-14 이후 GAS 호출 확장으로 실측 소요시간이 최대 211s로\n늘었는데 daily_scheduler.py subprocess timeout=120s는 그대로라 매 스케줄\n(07:50·21:00·기동시) 강제종료 — kpi_values.json이 6일간 동결(완결률 0.0으로\n죽어보였으나 실적 부재 아닌 측정 실패). timeout 120→300s로 상향, 재발 시\n침묵하지 않도록 integration_health.py에 check_kpi_freshness 신설(25h 초과 시\nhealth=w (CLI ad-hoc · 커밋 8c4a73fc)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8c4a73fc09e297e023e5467ea1d9e44138dff4eb"
   }
 ]
