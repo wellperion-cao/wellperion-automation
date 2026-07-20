@@ -1716,7 +1716,8 @@ var _LESSON_MGMT_FIELDS = [
   { keys: ['상담메모', '메모', '비고'],                             canon: '비고' },
   { keys: [CONTACT_HIST_COL, 'Contact'],                            canon: 'Contact' },
   { keys: ['LOSS사유'],                                             canon: 'LOSS사유' },      // 문의 퍼널 LOSS 사유(강습) — 멤버십과 동일 체계. 2026-07-18 시토(GM요청) 대행.
-  { keys: ['LOSS사유메모'],                                         canon: 'LOSS사유메모' }
+  { keys: ['LOSS사유메모'],                                         canon: 'LOSS사유메모' },
+  { keys: ['등록종목'],                                             canon: '등록종목' }        // 등록(SUC) 시 실제 등록한 종목 — 멤버십 member_inquiry_update와 동일 체계. LOSS사유와 같은 정확일치 전용 키(부분일치 충돌 방지 — '성인 강습 종목'/'WSC 강습 종목' 등 기존 종목칸과 별개). 2026-07-20 시포(GM요청).
 ];
 
 // gid 매칭 시트 핸들(탭명 변경에 강함).
@@ -1767,6 +1768,7 @@ function _lessonReadRows_(gid) {
   var iSportMgmt = _findColExact_(hdr, [LESSON_SPORT_MGMT_COL]);  // 종목별관리(JSON) — 축7. 2026-07-08 시포·GM
   var iLossR  = _findCol_(hdr, ['LOSS사유']);      // 문의 퍼널 LOSS 사유(강습) — 멤버십과 동일 체계. 2026-07-18 시토(GM요청) 대행.
   var iLossRN = _findCol_(hdr, ['LOSS사유메모']);
+  var iRegProgram = _findCol_(hdr, ['등록종목']);  // 등록(SUC) 시 실제 등록한 종목(강습) — 멤버십과 동일 체계. 2026-07-20 시포(GM요청).
   var iLang  = _findCol_(hdr, ['Language']);  // 응답자 기재 언어(영문 탭 실측 헤더) — 영어 문의 뱃지 표시용. 2026-07-09 시포·GM
   // 영문 탭 행키 오프셋(_ROW_OFFSET_EN_) — 한글+영문 병합 시 rowIndex 충돌 방지(위 상수 주석 참고). 2026-07-09 시포·GM.
   var rowOffset = (gid === LESSON_GID_ADULT_EN || gid === LESSON_GID_YOUTH_EN) ? _ROW_OFFSET_EN_ : 0;
@@ -1810,6 +1812,7 @@ function _lessonReadRows_(gid) {
       bySport: _lessonSportMgmtParse_(iSportMgmt >= 0 ? row[iSportMgmt] : ''),
       lossReason:     iLossR  >= 0 ? String(row[iLossR]  || '') : '',   // LOSS 사유(강습 문의 퍼널). 2026-07-18 시토(GM요청) 대행.
       lossReasonNote: iLossRN >= 0 ? String(row[iLossRN] || '') : '',
+      regProgram: iRegProgram >= 0 ? String(row[iRegProgram] || '') : '',   // 등록 종목(SUC 시 실제 등록한 종목, 강습). 2026-07-20 시포(GM요청).
       // 출처 물리 시트 gid + 기재 언어 — 영문 탭 병합 표시·저장 라우팅용(row.gid 그대로 되돌려 보내면 정확한 탭에 기록). 2026-07-09 시포·GM.
       gid: gid,
       lang: iLang >= 0 ? String(row[iLang] || '').trim() : ''
@@ -3513,6 +3516,7 @@ function _processAction(body) {
       _luSet(['방문상태', '방문'], body.visited);
       _luSet(['LOSS사유'], body.lossReason);       // 강습 LOSS 사유(문의 퍼널) — _lessonEnsureCols_가 칸 자동생성. 2026-07-18 시토(GM요청) 대행.
       _luSet(['LOSS사유메모'], body.lossReasonNote);
+      _luSet(['등록종목'], body.regProgram);        // 강습 등록 종목(SUC 시 실제 등록한 종목) — 멤버십과 동일 체계, 칸 자동생성. 2026-07-20 시포(GM요청).
       // ── 연락이력(가변) — 축2/축4: body.contacts(JSON 문자열/배열) 수신 시 저장. 미전송이면 무영향(기존 필드만 갱신).
       //    상담메모는 위 _luSet으로 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
       var _luHistPrevCount = 0;
