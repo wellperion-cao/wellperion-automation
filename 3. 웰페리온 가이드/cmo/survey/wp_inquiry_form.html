@@ -329,7 +329,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
         { key:'name',    label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
         { key:'program', label:'강습 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['수영','P.T','필라테스','골프','스쿼시','아쿠아로빅','발레·바레(루프메소드)','기타'] },
-        { key:'wishTime',label:'희망 레슨 시간', type:'text', opt:true, ph:'예: 평일 오전 / 주말 오후' },
+        { key:'wishTime',label:'희망 레슨 시간', type:'daytime', opt:true, days:['월','화','수','목','금','토','일'], times:['오전','오후','저녁'] },
         { key:'channel', label:'문의 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'문의하실 내용을 자유롭게 적어주세요.' }
       ]
@@ -341,7 +341,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
         { key:'age',     label:'자녀 나이', type:'text', opt:true, ph:'예: 8세 / 초2' },
         { key:'program', label:'강습 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['WSC수영','WSC골프','WSC스쿼시','WSC체조&트램폴린','WSC P.T','WSC필라테스','모자수영','영어 뮤지컬','기타'] },
-        { key:'wishTime',label:'희망 레슨 시간', type:'text', opt:true, ph:'예: 평일 하원 후 / 주말 오전' },
+        { key:'wishTime',label:'희망 레슨 시간', type:'daytime', opt:true, days:['월','화','수','목','금','토','일'], times:['오전','오후','저녁'] },
         { key:'channel', label:'문의 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
         { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'문의하실 내용을 자유롭게 적어주세요.' }
       ]
@@ -511,6 +511,22 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
           grid.appendChild(l);
         });
         field.appendChild(grid);
+      } else if (f.type === 'daytime') {
+        // 요일(월~일)+시간대 복수선택 → collect에서 한 칸(wishTime)에 합쳐 저장(칸·행 추가 없음, 2026-07-21 GM)
+        [['요일', f.days, '_days', '0'], ['시간대', f.times, '_times', '12px']].forEach(function(grp){
+          var cap=document.createElement('div'); cap.textContent=grp[0];
+          cap.style.cssText='font-size:11.5px;font-weight:600;color:#8a8178;margin:'+grp[3]+' 0 6px';
+          field.appendChild(cap);
+          var g=document.createElement('div'); g.className='multi'; g.id='f_'+f.key+grp[2];
+          (grp[1]||[]).forEach(function(o){
+            var l=document.createElement('label');
+            var cb=document.createElement('input'); cb.type='checkbox'; cb.value=o;
+            cb.addEventListener('change', function(){ l.className=this.checked?'on':''; });
+            l.appendChild(cb); var sp=document.createElement('span'); sp.textContent=o; l.appendChild(sp);
+            g.appendChild(l);
+          });
+          field.appendChild(g);
+        });
       } else if (f.type === 'radio') {
         // 단일 선택(1개만) — 한 문의당 종목 1개, 여러 종목 관심이면 별도 신청(2026-07-16 GM 지시)
         var rgrid = document.createElement('div'); rgrid.className='multi'; rgrid.id='f_'+f.key;
@@ -558,6 +574,14 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
         var grid = $('f_'+f.key);
         if (grid) Array.prototype.forEach.call(grid.querySelectorAll('input[type=checkbox]'), function(cb){ if (cb.checked) picks.push(cb.value); });
         out[f.key] = picks.join(', ');
+      } else if (f.type === 'daytime') {
+        var parts = [];
+        ['_days','_times'].forEach(function(suf){
+          var g = $('f_'+f.key+suf); var ps = [];
+          if (g) Array.prototype.forEach.call(g.querySelectorAll('input[type=checkbox]'), function(cb){ if (cb.checked) ps.push(cb.value); });
+          if (ps.length) parts.push(ps.join(', '));
+        });
+        out[f.key] = parts.join(' / ');   // 예: "월, 수, 금 / 오전, 저녁" — 한 칸 저장
       } else if (f.type === 'radio') {
         var rgrid = $('f_'+f.key);
         var checked = rgrid ? rgrid.querySelector('input[type=radio]:checked') : null;
