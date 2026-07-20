@@ -80,7 +80,10 @@ fi
 # 미러가 라이브 200 도달 실파일. 멱등(동일하면 no-op)·fail-open.
 QUEUE_MIRROR="$REPO_ROOT/scripts/sync_queue_mirror.py"
 if [ -f "$QUEUE_MIRROR" ] && [ -n "$PYBIN" ]; then
-  PYTHONUTF8=1 "$PYBIN" "$QUEUE_MIRROR"
+  # --pre-commit(2026-07-20 배1307 사고대응): 이번 커밋에 실제 staged 된 원본만, 인덱스에서
+  # 읽어 동기화한다. 무관한 동시 세션의 작업트리 편집(디스크 상태)이 섞여 들어가는 사고
+  # (커밋 504b6c4f 원인) 재발 방지 — scripts/sync_queue_mirror.py 상단 주석 참고.
+  PYTHONUTF8=1 "$PYBIN" "$QUEUE_MIRROR" --pre-commit
   # 항상 exit 0 (fail-open) — 반환값 무시, 커밋 절대 막지 않음.
 fi
 

@@ -20,11 +20,19 @@ welly_auto_runner.py — 예약 Claude 러너 MVP (배237 phase3, GM 승인 2026
      재선택 금지(status/welly_auto_runner_state.json) · claude 호출 타임아웃.
   5) 역롤백: LIVE 실행 전후 git HEAD 커밋 해시를 로그(status/welly_auto_runner_log.jsonl)에
      남긴다 — 문제 시 `git revert <commit>` 한 줄로 되돌릴 수 있다.
-  6) 클린트리 가드(working_tree_guard): LIVE 실행 직전 워킹트리를 점검한다. 이 리포는
-     자동화가 status/*.json·*.jsonl·로그·heartbeat·cache 등을 상시 건드려 항상 조금
-     지저분하다(정상 노이즈) — 이건 통과시키되, allowlist 밖 진짜 미커밋 작업(*.py·*.html
-     등 코드·docs·콘텐츠)이 남아 있으면 즉시 차단·skip한다. 무인 세션이 방치된 무관 작업을
-     자기 커밋에 쓸어담는 사고를 막는다(2026-07-13 관측 결함 대응).
+  6) 클린트리 베이스라인 + 사후 스코프 검증(2026-07-20 재설계, 배1307 실행): LIVE 실행 직전
+     워킹트리를 점검해 allowlist(NOISE_PATH_PATTERNS) 밖 진짜 미커밋 작업을 "베이스라인
+     foreign 파일"로만 기록한다(더 이상 사전 차단하지 않음 — 이 리포는 여러 세션이 동시에
+     문서·콘텐츠를 남기는 구조라 완전히 클린한 순간이 드물어, 전면 차단은 러너를 상시 헛돌게
+     했다 — 실측 33회 중 23회(70%) skip, 그 dirty 파일 전량이 CPO 스냅샷·heartbeat 같은
+     이미 allowlist된 노이즈가 아니라 타 clevel이 남긴 채 며칠째 방치된 진짜 콘텐츠였음).
+     대신 LIVE 실행·커밋 뒤 실제 커밋에 포함된 파일(changed_files)을 베이스라인 foreign
+     파일 집합과 대조한다(_check_sweep_violation) — 겹치면 "이 세션이 남의 미커밋 작업을
+     자기 커밋에 쓸어담았다"는 확정 증거이므로 즉시 `git revert --no-edit`로 되돌리고
+     (충돌 시 --abort로 중간상태 방치 없이 원복) 배를 실패·쿨다운 처리한다. 사전 차단
+     대신 사후 확정 검증으로 바꿔 같은 보호를 더 정확하게 준다(2026-07-13 관측 결함
+     대응은 유지 — 무인 세션이 방치된 무관 작업을 자기 커밋에 쓸어담는 사고는 여전히 막힘).
+     git status 자체가 실패하면(안전 확인 불가) 기존대로 fail-closed 차단한다.
 
 라이브 부작용 0 함수(순수) — select_one_low_risk_ship, build_orchestration_prompt.
 run_once만 게이트에 따라 실제 I/O(파일 읽기/쓰기·subprocess) 수행.
@@ -707,10 +715,13 @@ def working_tree_guard(repo_root: str | None = None) -> dict:
     """
     무인(RUNNER_LIVE) 실행 직전 워킹트리를 점검한다.
     상시 자동생성 노이즈(NOISE_PATH_PATTERNS)는 통과시키고, allowlist 밖 진짜 미커밋
-    작업이 남아 있으면 차단한다(무인 세션이 방치된 무관 작업을 자기 커밋에 쓸어담는 사고 방지).
+    작업(real_work_files)은 "베이스라인 foreign 파일"로만 보고한다 — 2026-07-20 재설계로
+    이 함수 자체는 더 이상 실행을 막지 않는다(호출측 run_once()가 이 목록을 기록해 두었다가
+    LIVE 커밋 뒤 실제로 그 파일이 커밋에 섞였는지 사후 대조한다 — _check_sweep_violation 참고).
+    blocked=True는 오직 git status 자체가 실패한 경우(안전 확인 불가)에만 발생한다(fail-closed).
 
-    반환 dict 키: blocked(bool), dirty_files(list[str], 전체), real_work_files(list[str],
-    노이즈 제외 진짜 미커밋 작업), reason(str).
+    반환 dict 키: blocked(bool, git_error일 때만 True), git_error(bool), dirty_files(list[str],
+    전체), real_work_files(list[str], 노이즈 제외 진짜 미커밋 작업 = 베이스라인 foreign 목록), reason(str).
     """
     repo_root = repo_root or _PROJECT_ROOT
     try:
@@ -723,27 +734,28 @@ def working_tree_guard(repo_root: str | None = None) -> dict:
         )
     except Exception as e:  # noqa: BLE001
         return {
-            "blocked": True, "dirty_files": [], "real_work_files": [],
+            "blocked": True, "git_error": True, "dirty_files": [], "real_work_files": [],
             "reason": f"git status 실행 실패 — 안전 우선 차단: {type(e).__name__}: {e}",
         }
     if out.returncode != 0:
         return {
-            "blocked": True, "dirty_files": [], "real_work_files": [],
+            "blocked": True, "git_error": True, "dirty_files": [], "real_work_files": [],
             "reason": f"git status 실패(rc={out.returncode}) — 안전 우선 차단: {out.stderr.strip()[:300]}",
         }
 
     dirty_files = _parse_porcelain_paths(out.stdout)
     real_work_files = [p for p in dirty_files if not _is_noise_path(p)]
-    blocked = bool(real_work_files)
+    has_foreign = bool(real_work_files)
     reason = (
         f"워킹트리에 노이즈 allowlist 밖 미커밋 작업 {len(real_work_files)}건 — "
-        f"클린트리 가드 발동(skip): {', '.join(real_work_files[:10])}"
-        if blocked else
-        f"워킹트리 클린(노이즈 {len(dirty_files)}건 또는 완전 클린) — 가드 통과"
+        f"베이스라인 foreign 파일로 기록(차단하지 않음, 커밋 뒤 사후 대조): "
+        f"{', '.join(real_work_files[:10])}"
+        if has_foreign else
+        f"워킹트리 클린(노이즈 {len(dirty_files)}건 또는 완전 클린)"
     )
     return {
-        "blocked": blocked, "dirty_files": dirty_files, "real_work_files": real_work_files,
-        "reason": reason,
+        "blocked": False, "git_error": False, "dirty_files": dirty_files,
+        "real_work_files": real_work_files, "reason": reason,
     }
 
 
@@ -818,6 +830,56 @@ def _commit_changed_files(repo_root: str, before: str | None, after: str | None)
         return []
 
 
+def _check_sweep_violation(baseline_foreign_files: list[str], changed_files: list[str]) -> list[str]:
+    """
+    PURE — LIVE 커밋(changed_files)에 베이스라인 foreign 파일(세션 시작 전부터 이미
+    미커밋 상태였던, allowlist 밖 무관 파일)이 섞였는지 대조한다. 교집합 = 확정 스코프
+    이탈("이 세션이 남의 미커밋 작업을 자기 커밋에 쓸어담았다"). 정렬된 리스트 반환(빈 리스트=위반 없음).
+    """
+    return sorted(set(baseline_foreign_files) & set(changed_files))
+
+
+def _attempt_safe_revert(repo_root: str, commit: str) -> dict:
+    """
+    스코프 이탈 커밋 감지 시 안전 되돌림 시도. git revert는 새 커밋을 만들 뿐 히스토리를
+    지우지 않으므로 파괴적 명령이 아니다(reset --hard·강제 푸시 금지 원칙과 무관).
+    충돌 등으로 revert 자체가 실패하면 즉시 --abort로 중간상태를 방치하지 않는다
+    (공유 워크트리 — 다른 세션이 동시에 작업 중일 수 있음).
+    반환: {attempted, ok, revert_commit, stderr}.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "revert", "--no-edit", commit],
+            cwd=repo_root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30,
+        )
+        if out.returncode == 0:
+            return {
+                "attempted": True, "ok": True,
+                "revert_commit": _git_head(repo_root), "stderr": "",
+            }
+        subprocess.run(
+            ["git", "revert", "--abort"], cwd=repo_root,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15,
+        )
+        return {
+            "attempted": True, "ok": False, "revert_commit": None,
+            "stderr": (out.stderr or "").strip()[:300],
+        }
+    except Exception as e:  # noqa: BLE001
+        try:
+            subprocess.run(
+                ["git", "revert", "--abort"], cwd=repo_root,
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        return {
+            "attempted": True, "ok": False, "revert_commit": None,
+            "stderr": f"{type(e).__name__}: {e}",
+        }
+
+
 def _append_log(entry: dict, path: str) -> None:
     entry = dict(entry)
     entry.setdefault("at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
@@ -845,6 +907,9 @@ def run_once(
     반환 dict 키: mode("guard-blocked"|"dry-run"|"live"|"parked"), ship(dict|None),
     prompt(str|None), executed(bool), commit(str|None), reason(str, 있을 때만).
     mode=="parked"일 때만 ambiguous_reasons(list[str])·parked(bool)·ping(dict) 추가.
+    LIVE 실행됐을 때만 baseline_foreign_files(list[str], 세션 시작 전 이미 미커밋이던 무관
+    파일)·swept_files(list[str], 커밋에 섞인 베이스라인 파일 — 빈 리스트=위반 없음)·
+    revert_result(dict|None, swept_files 있을 때만) 추가.
     """
     queue_path = queue_path or DEFAULT_QUEUE_PATH
     state_path = state_path or DEFAULT_STATE_PATH
@@ -862,20 +927,27 @@ def run_once(
         _append_log({"event": "guard_blocked"}, log_path)
         return result
 
-    # ── 클린트리 가드: LIVE 실행 시에만, 선별·실행 전에 워킹트리 점검 ──
+    # ── 클린트리 베이스라인: LIVE 실행 시에만, 선별·실행 전에 워킹트리를 점검한다.
+    # 2026-07-20 재설계 — git status 자체가 실패한 경우(안전 확인 불가)에만 fail-closed
+    # 차단한다. allowlist 밖 foreign 파일이 있어도 더 이상 여기서 막지 않고 베이스라인으로만
+    # 기록해 두었다가, LIVE 커밋 뒤 실제로 그 파일이 섞였는지 사후 대조한다(아래 sweep 검사).
+    baseline_foreign_files: list[str] = []
     if live:
         tree_guard = working_tree_guard()
-        if tree_guard["blocked"]:
+        if tree_guard["git_error"]:
             result = {
                 "mode": "live", "ship": None, "prompt": None, "executed": False, "commit": None,
                 "reason": tree_guard["reason"],
                 "dirty_files": tree_guard["real_work_files"],
             }
+            _append_log({"event": "working_tree_git_error", "reason": tree_guard["reason"]}, log_path)
+            return result
+        baseline_foreign_files = tree_guard["real_work_files"]
+        if baseline_foreign_files:
             _append_log(
-                {"event": "working_tree_dirty", "real_work_files": tree_guard["real_work_files"]},
+                {"event": "working_tree_baseline_dirty", "real_work_files": baseline_foreign_files},
                 log_path,
             )
-            return result
 
     queue = _load_queue(queue_path)
     registry = load_registry(registry_path)
@@ -989,8 +1061,27 @@ def run_once(
     # 선언 범위 밖 파일 혼입 여부를 나중에 감사할 수 있게 남긴다(완전 자동 판정은 아님).
     changed_files = _commit_changed_files(_PROJECT_ROOT, before_commit, new_commit)
 
+    # ── 스코프 이탈(sweep) 확정 검증: 세션 시작 전부터 이미 미커밋 상태였던 베이스라인
+    # foreign 파일(baseline_foreign_files)이 이번 커밋(changed_files)에 섞였는지 대조한다.
+    # 섞였으면 "무인 세션이 남의 미커밋 작업을 자기 커밋에 쓸어담았다"는 확정 사고이므로
+    # 즉시 안전 되돌림(git revert — 비파괴) + 실패·쿨다운 처리한다(6번 항목 참고).
+    swept_files: list[str] = []
+    revert_result: dict | None = None
+    if new_commit:
+        swept_files = _check_sweep_violation(baseline_foreign_files, changed_files)
+        if swept_files:
+            revert_result = _attempt_safe_revert(_PROJECT_ROOT, new_commit)
+            _append_log(
+                {
+                    "event": "sweep_violation", "task_id": ship.get("task_id"),
+                    "commit": new_commit, "swept_files": swept_files, "revert": revert_result,
+                },
+                log_path,
+            )
+
     # ── 증분2: 자동 검수(세션 stdout 구조화 검증 결과 파싱) → 완료 신뢰 판정 ──
-    execution_ok = ok and bool(new_commit)
+    # sweep 위반이 확인되면 검수 결과와 무관하게 실행 자체를 실패로 취급한다(안전이 완료보다 우선).
+    execution_ok = ok and bool(new_commit) and not swept_files
     verify_parsed = parse_verification_result(stdout_text)
     verdict = build_auto_review_verdict(verify_parsed, committed=bool(new_commit))
 
@@ -1010,8 +1101,17 @@ def run_once(
     review_parked = False
     state["run_count"] = state.get("run_count", 0) + 1
     if not execution_ok:
-        # 실행/커밋 자체 실패 — 기존 경로(쿨다운). 검수 이전 문제.
-        _mark_cooldown(state, ship["task_id"], reason=(stderr_text or "커밋 생성 안 됨")[:200])
+        if swept_files:
+            # 스코프 이탈 확정 — 검수 이전 문제(안전 최우선). revert 성공 여부와 무관하게 실패 처리.
+            revert_note = "자동 되돌림 성공" if (revert_result or {}).get("ok") else "자동 되돌림 실패 — GM 수동 확인 필요"
+            _mark_cooldown(
+                state, ship["task_id"],
+                reason=(f"스코프 이탈 — 베이스라인 무관 파일 혼입({revert_note}): "
+                        + ", ".join(swept_files[:5]))[:200],
+            )
+        else:
+            # 실행/커밋 자체 실패 — 기존 경로(쿨다운). 검수 이전 문제.
+            _mark_cooldown(state, ship["task_id"], reason=(stderr_text or "커밋 생성 안 됨")[:200])
     else:
         # 실행·커밋됨 → 사후감사(로드맵3)로 선언 완료가 큐에 반영됐는지 대조.
         post_audit = audit_completion_in_queue(queue_path, ship["task_id"])
@@ -1045,6 +1145,8 @@ def run_once(
         "success": success, "commit": new_commit, "before_commit": before_commit,
         "stderr_tail": stderr_text[-500:] if stderr_text else "",
         "changed_files": changed_files,
+        "baseline_foreign_files": baseline_foreign_files,
+        "swept_files": swept_files, "revert_result": revert_result,
         "auto_review": verdict, "verify_parsed": verify_parsed,
         "post_audit": post_audit, "review_parked": review_parked,
         "render_verify": render_summary,
@@ -1053,6 +1155,7 @@ def run_once(
         {
             "event": "live_run", "task_id": ship.get("task_id"), "success": success,
             "commit": new_commit, "before_commit": before_commit, "changed_files": changed_files,
+            "swept_files": swept_files,
             "review_passed": verdict["passed"], "review_ambiguous": verdict["ambiguous"],
             "review_parked": review_parked,
             "post_audit_reflected": (post_audit or {}).get("reflected"),

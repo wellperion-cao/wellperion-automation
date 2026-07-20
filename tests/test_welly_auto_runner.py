@@ -298,7 +298,9 @@ def test_working_tree_guard_passes_when_only_noise_dirty(tmp_path):
     assert len(result["dirty_files"]) == 5
 
 
-def test_working_tree_guard_blocks_on_real_work_file(tmp_path):
+def test_working_tree_guard_reports_real_work_file_as_baseline_not_blocked(tmp_path):
+    # 2026-07-20 재설계: 진짜 미커밋 작업이 있어도 더 이상 여기서 차단하지 않는다.
+    # real_work_files로만 보고(베이스라인) — run_once가 이걸 들고 있다가 커밋 뒤 사후 대조한다.
     _init_git_repo(tmp_path)
     (tmp_path / "status").mkdir()
     (tmp_path / "status" / "kpi_values.json").write_text("{}", encoding="utf-8")  # 노이즈
@@ -307,9 +309,21 @@ def test_working_tree_guard_blocks_on_real_work_file(tmp_path):
     (scripts_dir / "some_new_feature.py").write_text("print('hi')\n", encoding="utf-8")  # 진짜 작업
 
     result = war.working_tree_guard(repo_root=str(tmp_path))
-    assert result["blocked"] is True
+    assert result["blocked"] is False
+    assert result["git_error"] is False
     assert "scripts/some_new_feature.py" in result["real_work_files"]
     assert "status/kpi_values.json" not in result["real_work_files"]
+
+
+def test_working_tree_guard_blocks_on_git_error(tmp_path, monkeypatch):
+    # git status 실행 자체가 실패하면(안전 확인 불가) fail-closed 로 여전히 차단한다.
+    def _boom(*a, **kw):
+        raise RuntimeError("git 실행 실패(테스트)")
+
+    monkeypatch.setattr(war.subprocess, "run", _boom)
+    result = war.working_tree_guard(repo_root=str(tmp_path))
+    assert result["blocked"] is True
+    assert result["git_error"] is True
 
 
 @pytest.mark.parametrize(
@@ -360,7 +374,8 @@ def test_run_once_dry_run_does_not_check_working_tree(tmp_path, monkeypatch):
     assert result["mode"] == "dry-run"
 
 
-def test_run_once_live_blocked_by_working_tree_guard(tmp_path, monkeypatch):
+def test_run_once_live_blocked_by_working_tree_git_error(tmp_path, monkeypatch):
+    # git status 자체 실패(안전 확인 불가) 만 여전히 사전 차단한다(fail-closed).
     queue = [_ship()]
     queue_path = tmp_path / "_queue.json"
     queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
@@ -372,8 +387,8 @@ def test_run_once_live_blocked_by_working_tree_guard(tmp_path, monkeypatch):
     monkeypatch.setattr(
         war, "working_tree_guard",
         lambda *a, **kw: {
-            "blocked": True, "dirty_files": ["scripts/foo.py"],
-            "real_work_files": ["scripts/foo.py"], "reason": "테스트 차단",
+            "blocked": True, "git_error": True, "dirty_files": [],
+            "real_work_files": [], "reason": "테스트 차단(git 오류)",
         },
     )
 
@@ -389,7 +404,39 @@ def test_run_once_live_blocked_by_working_tree_guard(tmp_path, monkeypatch):
     assert result["executed"] is False
     assert result["ship"] is None
     assert result["commit"] is None
-    assert "scripts/foo.py" in result["dirty_files"]
+
+
+def test_run_once_live_does_not_block_on_baseline_dirty_real_work_files(tmp_path, monkeypatch):
+    # 2026-07-20 재설계: real_work_files(베이스라인 foreign 파일)가 있어도 더 이상 사전
+    # 차단하지 않는다 — 선별 단계까지 진행한다(비가역 배만 있으니 claude는 여전히 안 불림).
+    queue = [_ship(note="보안 설정 변경")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    monkeypatch.setattr(
+        war, "working_tree_guard",
+        lambda *a, **kw: {
+            "blocked": False, "git_error": False, "dirty_files": ["instagram/foo.md"],
+            "real_work_files": ["instagram/foo.md"], "reason": "베이스라인 foreign 파일 있음",
+        },
+    )
+
+    def _boom(*a, **kw):
+        raise AssertionError("후보 0건인데 subprocess.run이 호출됨")
+
+    monkeypatch.setattr(war.subprocess, "run", _boom)
+
+    result = war.run_once(
+        clevel="cto",
+        queue_path=str(queue_path),
+        registry_path=None,
+        state_path=str(tmp_path / "state.json"),
+        log_path=str(tmp_path / "log.jsonl"),
+        live=True,
+    )
+    assert result["mode"] == "live"
+    assert result["ship"] is None
+    assert result["executed"] is False
 
 
 def test_run_once_live_passes_guard_then_proceeds_to_selection(tmp_path, monkeypatch):
@@ -400,7 +447,10 @@ def test_run_once_live_passes_guard_then_proceeds_to_selection(tmp_path, monkeyp
 
     monkeypatch.setattr(
         war, "working_tree_guard",
-        lambda *a, **kw: {"blocked": False, "dirty_files": [], "real_work_files": [], "reason": "클린"},
+        lambda *a, **kw: {
+            "blocked": False, "git_error": False, "dirty_files": [], "real_work_files": [],
+            "reason": "클린",
+        },
     )
 
     def _boom(*a, **kw):
@@ -729,7 +779,10 @@ def test_run_cycle_never_executes_ambiguous_ship_across_any_clevel(tmp_path, mon
     monkeypatch.setattr(war.subprocess, "run", _boom)
     monkeypatch.setattr(
         war, "working_tree_guard",
-        lambda *a, **kw: {"blocked": False, "dirty_files": [], "real_work_files": [], "reason": "클린"},
+        lambda *a, **kw: {
+            "blocked": False, "git_error": False, "dirty_files": [], "real_work_files": [],
+            "reason": "클린",
+        },
     )
 
     cycle = war.run_cycle(
@@ -780,7 +833,10 @@ def test_run_once_live_ambiguous_ship_parks_flag_and_previews_ping_without_real_
     monkeypatch.delenv(war.PING_LIVE_ENV_VAR, raising=False)  # 기본 OFF — 실전송 게이트 잠김 확인
     monkeypatch.setattr(
         war, "working_tree_guard",
-        lambda *a, **kw: {"blocked": False, "dirty_files": [], "real_work_files": [], "reason": "클린"},
+        lambda *a, **kw: {
+            "blocked": False, "git_error": False, "dirty_files": [], "real_work_files": [],
+            "reason": "클린",
+        },
     )
 
     def _boom(*a, **kw):
@@ -988,7 +1044,10 @@ def _wire_live_success_env(monkeypatch, stdout, before="a" * 40, after="b" * 40,
     모사해 큐 ship status를 DONE으로 바꾼다(사후감사 reflected=True 재현)."""
     monkeypatch.setattr(
         war, "working_tree_guard",
-        lambda *a, **kw: {"blocked": False, "dirty_files": [], "real_work_files": [], "reason": "클린"},
+        lambda *a, **kw: {
+            "blocked": False, "git_error": False, "dirty_files": [], "real_work_files": [],
+            "reason": "클린",
+        },
     )
     monkeypatch.setattr(war.shutil, "which", lambda name: r"C:\fake\claude.exe")
     heads = iter([before, after])
@@ -1079,6 +1138,144 @@ def test_run_once_live_verify_false_cooldowns_without_park(tmp_path, monkeypatch
     assert saved[0].get("aide_interview_needed") is None  # park 안 됨(큐 무변경)
     state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
     assert "CTO-2026-07-13-A" in state.get("cooldown", {})
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 2026-07-20 재설계(배1307 실행) — 사전 차단 폐지 + 사후 스코프(sweep) 검증
+# ══════════════════════════════════════════════════════════════════════
+
+# ── _check_sweep_violation: PURE 교집합 판정 ──
+def test_check_sweep_violation_detects_overlap():
+    swept = war._check_sweep_violation(
+        baseline_foreign_files=["instagram/foo.md", "status/proposal.md"],
+        changed_files=["scripts/x.py", "status/proposal.md"],
+    )
+    assert swept == ["status/proposal.md"]
+
+
+def test_check_sweep_violation_empty_when_disjoint():
+    swept = war._check_sweep_violation(
+        baseline_foreign_files=["instagram/foo.md"],
+        changed_files=["scripts/x.py"],
+    )
+    assert swept == []
+
+
+def test_check_sweep_violation_empty_when_no_baseline():
+    swept = war._check_sweep_violation(baseline_foreign_files=[], changed_files=["scripts/x.py"])
+    assert swept == []
+
+
+# ── _attempt_safe_revert: 실제 격리 tmp git 저장소로 성공/충돌 두 경로를 실측 ──
+def _run_git(args, cwd):
+    import subprocess as sp
+
+    out = sp.run(
+        ["git"] + args, cwd=str(cwd), capture_output=True, text=True,
+        encoding="utf-8", errors="replace", check=True,
+    )
+    return out.stdout.strip()
+
+
+def test_attempt_safe_revert_succeeds_on_clean_history(tmp_path):
+    _init_git_repo(tmp_path)
+    (tmp_path / "file.txt").write_text("A\n", encoding="utf-8")
+    _run_git(["add", "file.txt"], tmp_path)
+    _run_git(["commit", "-m", "c1"], tmp_path)
+
+    (tmp_path / "file.txt").write_text("B\n", encoding="utf-8")
+    _run_git(["add", "file.txt"], tmp_path)
+    _run_git(["commit", "-m", "c2 (스코프 이탈로 가정)"], tmp_path)
+    swept_commit = _run_git(["rev-parse", "HEAD"], tmp_path)
+
+    result = war._attempt_safe_revert(str(tmp_path), swept_commit)
+    assert result["attempted"] is True
+    assert result["ok"] is True
+    assert result["revert_commit"] is not None
+    # 실제로 되돌려져 원래 내용(A)으로 복원됐는지 확인(파일 시스템 실측).
+    assert (tmp_path / "file.txt").read_text(encoding="utf-8") == "A\n"
+
+
+def test_attempt_safe_revert_aborts_cleanly_on_conflict(tmp_path):
+    _init_git_repo(tmp_path)
+    (tmp_path / "file.txt").write_text("A\n", encoding="utf-8")
+    _run_git(["add", "file.txt"], tmp_path)
+    _run_git(["commit", "-m", "c1"], tmp_path)
+
+    (tmp_path / "file.txt").write_text("B\n", encoding="utf-8")
+    _run_git(["add", "file.txt"], tmp_path)
+    _run_git(["commit", "-m", "c2 (스코프 이탈로 가정)"], tmp_path)
+    swept_commit = _run_git(["rev-parse", "HEAD"], tmp_path)
+
+    # c3: 같은 줄을 또 바꿔 c2를 되돌리면 충돌하게 만든다(동시 작업 시나리오 재현).
+    (tmp_path / "file.txt").write_text("C\n", encoding="utf-8")
+    _run_git(["add", "file.txt"], tmp_path)
+    _run_git(["commit", "-m", "c3 (다른 세션의 그 이후 정상 커밋)"], tmp_path)
+    head_before_revert = _run_git(["rev-parse", "HEAD"], tmp_path)
+
+    result = war._attempt_safe_revert(str(tmp_path), swept_commit)
+    assert result["attempted"] is True
+    assert result["ok"] is False
+    assert result["revert_commit"] is None
+    # --abort로 중간상태를 방치하지 않았는지 확인: HEAD 불변 + 워킹트리 클린.
+    assert _run_git(["rev-parse", "HEAD"], tmp_path) == head_before_revert
+    status = _run_git(["status", "--porcelain"], tmp_path)
+    assert status == ""
+
+
+# ── run_once LIVE 통합: sweep 위반 감지 → 실패 강제 + 되돌림 시도(모킹) ──
+def test_run_once_live_sweep_violation_forces_failure_and_logs(tmp_path, monkeypatch):
+    queue = [_ship(note="충분히 구체적인 내부 점검 스크립트 patch 절차")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    # 베이스라인: 세션 시작 전부터 이미 미커밋이던 무관 파일.
+    monkeypatch.setattr(
+        war, "working_tree_guard",
+        lambda *a, **kw: {
+            "blocked": False, "git_error": False,
+            "dirty_files": ["status/other_clevel_proposal.md"],
+            "real_work_files": ["status/other_clevel_proposal.md"], "reason": "베이스라인",
+        },
+    )
+    monkeypatch.setattr(war.shutil, "which", lambda name: r"C:\fake\claude.exe")
+    heads = iter(["a" * 40, "b" * 40])
+    monkeypatch.setattr(war, "_git_head", lambda root: next(heads))
+    # 세션 커밋이 자기 의도(scripts/x.py) + 베이스라인 무관 파일까지 함께 건드렸다고 가정(사고 재현).
+    monkeypatch.setattr(
+        war, "_commit_changed_files",
+        lambda root, b, a: ["scripts/x.py", "status/other_clevel_proposal.md"],
+    )
+    revert_calls = []
+
+    def _fake_revert(root, commit):
+        revert_calls.append(commit)
+        return {"attempted": True, "ok": True, "revert_commit": "c" * 40, "stderr": ""}
+
+    monkeypatch.setattr(war, "_attempt_safe_revert", _fake_revert)
+
+    stdout = 'WELLY_VERIFY: {"verified": true, "kind": "script", "evidence": "pytest 3 passed"}\n'
+    monkeypatch.setattr(war.subprocess, "run", lambda *a, **kw: _fake_proc(0, stdout))
+
+    result = war.run_once(
+        clevel="cto", queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping.json"), live=True,
+    )
+
+    assert result["swept_files"] == ["status/other_clevel_proposal.md"]
+    assert result["revert_result"]["ok"] is True
+    # 검수(WELLY_VERIFY)는 통과였지만 sweep 위반이 우선해 success는 여전히 False.
+    assert result["success"] is False
+    assert revert_calls == ["b" * 40]
+
+    state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    cooldown_reason = state["cooldown"]["CTO-2026-07-13-A"]["reason"]
+    assert "스코프 이탈" in cooldown_reason
+
+    log_lines = (tmp_path / "log.jsonl").read_text(encoding="utf-8").splitlines()
+    events = [json.loads(ln)["event"] for ln in log_lines]
+    assert "sweep_violation" in events
 
 
 # ══════════════════════════════════════════════════════════════════════
