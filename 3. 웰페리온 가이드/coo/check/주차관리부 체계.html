@@ -731,15 +731,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 
 <!-- ══ 「🧑‍💼 채용 현황」 탭 — CHRO 채용 시트(db:hire) 라이브 연동. 값은 여기 없음(렌더만) · 실패 시 미표시.
-     "공고 보기"를 누르면 원본 공고 페이지를 그 자리에서 펼친다(다른 페이지로 나가지 않음 · 사본 아님).
-     (배9182 후속 · GM 지시로 링크→인라인 전환, 탭 신설 · 시우 2026-07-20) ══ -->
+     클릭 없이 탭을 열면 바로 원본 공고 본문이 그 자리에 펼쳐진다(다른 페이지로 나가지 않음 · 사본 아님).
+     .board-fullwidth로 720px 중앙정렬(.content) 제약을 벗어나 좌측정렬·폭 최대 활용(GM 지시).
+     (배9182 3차 개정 · GM 지시로 링크→본문 인라인 렌더 전환, 좌측정렬·풀폭 · 시우 2026-07-20) ══ -->
 <div id="tab-hiring" class="content hidden">
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
-    <span>🧑‍💼 <b style="color:var(--text)">주차관리부 채용 현황</b> — 채용 시트(인사 담당 관리)에서 자동으로 불러옵니다. "공고 보기"를 누르면 원본 공고가 바로 아래에 펼쳐집니다.</span>
+  <div class="board-fullwidth" style="padding:0 20px 40px;">
+    <div id="hiring-host"></div>
+    <script src="hiring-status.js"></script>
+    <script>renderHiringStatus('hiring-host','주차관리부');</script>
   </div>
-  <div id="hiring-host"></div>
-  <script src="hiring-status.js"></script>
-  <script>renderHiringStatus('hiring-host','주차관리부');</script>
 </div>
 
 <!-- 점검(지상)·점검(지하)·현황 대시보드 탭 전면 제거 (GM 2026-06-12). 점검은 지원부 점검 시스템과 충돌·동기화 문제로 제거.

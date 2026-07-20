@@ -1,19 +1,28 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   부서 체계 페이지 ↔ 채용 현황 연동 컴포넌트 (시우 · 2026-07-20, 배9182 후속)
+   부서 체계 페이지 ↔ 채용 현황 연동 컴포넌트 (시우 · 2026-07-20, 배9182 3차 개정)
 
-   목적 : 각 부서 체계 페이지 "채용 현황" 탭에서 "우리 부서 지금 누구 뽑고 있나"를
-          공고 목록으로 보여주고, 클릭하면 그 자리에서(다른 페이지로 나가지 않고)
-          원본 공고 페이지를 그대로 펼쳐 보여준다.
+   목적 : 각 부서 체계 페이지 "채용 현황" 탭을 열면, 클릭 없이 그 자리에 채용
+          공고 본문(지원자격·업무내용·근무조건·우대사항 등)이 원본 그대로 보인다.
+          링크·버튼으로 다른 곳에 내보내지 않는다(클릭을 요구하던 이전 방식 폐기 — GM 3회 지적).
    출처 : 채용 SSOT = CHRO 채용 시트(db:hire) — 나우열 매니저 관리.
-          GAS action="public-job-status" 로 라이브 조회. 이 파일은 값을 갖지 않는다(렌더만).
+          GAS action="public-job-status" 로 라이브 조회해 "지금 열려 있는 자리"를 정하고,
+          공고 본문 자체는 원본 recruiting/*.html 을 fetch로 그대로 가져와 얹는다
+          (복사 없음 — 원본이 바뀌면 다음 로드 때 같이 바뀐다).
+   방식 : 원본 페이지의 <style> + 본문(#captureRoot)을 Shadow DOM에 그대로 주입한다.
+          Shadow DOM을 쓰는 이유 — iframe처럼 "페이지 안에 페이지"로 보이지 않으면서도,
+          원본 CSS(.card·.bento 등 범용 클래스명)가 이 부서 체계 페이지의 스타일과
+          충돌하지 않도록 격리한다.
    원칙 : 조회 실패 시 카드를 아예 그리지 않는다(틀린 정보 노출 금지 · 폴백=침묵).
 
-   부서 매칭 (2026-07-20 개정) — GM 지시: 시트에 부서 칸을 요청하지 않고 우리 쪽에서
-   명시적 대응표(JOB_PAGES)로 관리한다. 공고 제목 키워드 추측 방식(구 DEPT_RULES) 폐기.
-   각 공고 페이지가 이미 자기 자신을 식별하는 data-jobbucket/data-jobkey 속성을
-   그대로 재사용해 매칭한다 — 그 페이지가 스스로를 알아보는 방식과 동일하므로
-   탭에 뜨는 공고 = 실제 그 페이지가 맞다(이중 판정 불일치 없음).
-   새 공고가 이 표에 없으면 '미분류'로 콘솔에 남긴다(조용히 사라지지 않음).
+   부서 매칭 — GM 지시로 시트에 부서 칸을 요청하지 않고 우리 쪽 명시 대응표(JOB_PAGES)로
+   관리한다. 각 공고 페이지가 이미 자기 자신을 식별하는 data-jobbucket/data-jobkey
+   속성을 그대로 재사용해 매칭(그 페이지가 스스로를 알아보는 방식과 동일).
+   새 공고가 이 표에 없으면 콘솔에 '미분류'로 남긴다(조용히 사라지지 않음).
+
+   ⚠️ 부서 개수 정정(2026-07-20) — 실제 부서는 4개(주차관리부·운영부·시설부·지원부)뿐이다.
+      파트너팀은 별도 체계 페이지(파트너팀 체계.html)로, 이 4개 부서에 포함되지 않는다.
+      아래 JOB_PAGES 의 dept 값에 '파트너팀'이 있는 건 그 부서 체계 페이지에서 이
+      컴포넌트를 재사용할 때를 위한 것 — 4개 부서 확산 대상 목록과 혼동하지 말 것.
 
    사용법 : <div id="hiring-host"></div>
             <script src="hiring-status.js"></script>
@@ -39,9 +48,6 @@
   function normKey(s) {
     return String(s || '').replace(/\s|[()（）]/g, '').toLowerCase();
   }
-  function hay(job) {
-    return String(job.position || '') + ' ' + String(job.bucket || '');
-  }
   /* 각 공고 페이지가 자기 자신을 알아보는 것과 동일한 알고리즘(원본 recruiting/*.html
      내 로직 그대로) — bucket 정확 일치 우선, 없으면 jobkey 부분 일치. */
   function matchPage(job) {
@@ -62,16 +68,65 @@
     var p = matchPage(job);
     return p ? p.dept : '';
   }
-  function pageOf(job) {
-    var p = matchPage(job);
-    return RECRUIT_BASE + (p ? p.file : 'index.html');
-  }
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
   }
-  var _uid = 0;
+
+  /* 원본 공고 페이지를 그대로 가져와 그 자리에 얹는다 — 클릭 불필요.
+     Shadow DOM에 원본 <style>+본문을 주입해 원본 디자인 그대로 보이게 하되,
+     부서 체계 페이지의 스타일과는 서로 새지 않게 격리한다. */
+  function renderPosting(mount, url) {
+    var loading = document.createElement('p');
+    loading.style.cssText = 'font-size:13px;color:var(--dim);margin:8px 0;';
+    loading.textContent = '공고 내용을 불러오는 중…';
+    mount.appendChild(loading);
+
+    fetch(url)
+      .then(function (r) { if (!r.ok) throw new Error('fetch_failed'); return r.text(); })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var root = doc.getElementById('captureRoot');
+        if (!root) throw new Error('no_captureRoot');
+
+        /* 상대 경로 이미지(assets/...)를 원본 폴더 기준으로 재해석 —
+           이 컴포넌트가 다른 폴더(coo/check/)에서 불러오기 때문에 그대로 두면 깨진다. */
+        root.querySelectorAll('img[src]').forEach(function (img) {
+          var v = img.getAttribute('src') || '';
+          if (!/^(https?:)?\/\//.test(v) && v.indexOf('data:') !== 0 && v.indexOf('/') !== 0) {
+            img.setAttribute('src', RECRUIT_BASE + v);
+          }
+        });
+
+        var styleHTML = '';
+        doc.querySelectorAll('head style').forEach(function (s) { styleHTML += s.outerHTML; });
+
+        var host = document.createElement('div');
+        host.className = 'hiring-embed';
+        var shadow = host.attachShadow({ mode: 'open' });
+        /* 좌측정렬·폭 최대 활용(GM 지시) — 원본의 .wrap은 max-width:1040px에 margin:0 auto로
+           가운데 정렬되도록 디자인돼 있다. 이 탭은 .board-fullwidth로 이미 화면 폭을 최대로
+           쓰고 있으므로, 그 안에서까지 원본이 다시 가운데로 좁게 모이면 양옆에 큰 빈 여백이
+           남는다 — 내용·스타일은 원본 그대로 두고 정렬·폭만 이 탭에 맞게 편다. */
+        shadow.innerHTML = '<style>:host{display:block;} .wrap{margin:0!important;max-width:100%!important;}</style>' + styleHTML +
+          '<div class="wrap" id="captureRoot">' + root.innerHTML + '</div>';
+
+        /* 지원하기 버튼 — 원본 페이지의 모달·업로드 스크립트는 여기 없으므로
+           원본 페이지를 새 창으로 열어 그 자리에서 지원을 이어가게 한다. */
+        var applyBtn = shadow.getElementById('applyOpenBtn');
+        if (applyBtn) {
+          applyBtn.removeAttribute('onclick');
+          applyBtn.addEventListener('click', function () { window.open(url, '_blank', 'noopener'); });
+        }
+
+        loading.remove();
+        mount.appendChild(host);
+      })
+      .catch(function () {
+        loading.textContent = '공고 내용을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요. (원본: ' + url + ')';
+      });
+  }
 
   function paint(host, dept, jobs) {
     /* 대응표에 없는 공고 = 미분류 — 조용히 사라지지 않도록 콘솔에 남긴다. */
@@ -83,60 +138,28 @@
       return j.closed !== true && deptOf(j) === dept;
     });
 
-    var rows = open.map(function (j) {
-      var uid = 'hjob-' + (++_uid);
-      var url = pageOf(j);
-      return '<tr>' +
-          '<td style="padding:9px 10px;border:1px solid var(--border);font-weight:650;">' + esc(j.position) + '</td>' +
-          '<td style="padding:9px 10px;border:1px solid var(--border);white-space:nowrap;color:#2f7d4f;font-weight:700;">● 공고중</td>' +
-          '<td style="padding:9px 10px;border:1px solid var(--border);white-space:nowrap;">' +
-            '<button type="button" onclick="toggleHiringJob(\'' + uid + '\',\'' + esc(url).replace(/'/g, "\\'") + '\')" ' +
-              'style="border:1px solid var(--accent);background:none;color:var(--accent);border-radius:8px;padding:6px 12px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;">공고 보기 ▾</button>' +
-          '</td></tr>' +
-        '<tr id="' + uid + '-row" class="hidden"><td colspan="3" style="padding:0;border:1px solid var(--border);">' +
-          '<iframe id="' + uid + '-frame" data-src="' + esc(url) + '" title="' + esc(j.position) + ' 공고" ' +
-            'style="width:100%;height:min(78vh,900px);border:none;display:block;background:var(--bg);"></iframe>' +
-        '</td></tr>';
-    }).join('');
-
-    var body = open.length
-      ? '<div style="overflow-x:auto;"><table style="width:100%;min-width:420px;border-collapse:collapse;font-size:13px;margin-bottom:8px;">' +
-          '<tr style="background:var(--paper);">' +
-            '<th style="padding:9px 10px;border:1px solid var(--border);text-align:left;">모집 중인 자리</th>' +
-            '<th style="padding:9px 10px;border:1px solid var(--border);width:84px;">상태</th>' +
-            '<th style="padding:9px 10px;border:1px solid var(--border);width:108px;">공고</th>' +
-          '</tr>' + rows +
-        '</table></div>'
-      : '<p style="font-size:13px;color:var(--dim);margin:0 0 8px;">현재 ' + esc(dept) + '에서 모집 중인 자리가 없습니다.</p>';
-
     host.innerHTML =
-      '<div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--paper);margin:14px 0;">' +
-        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">' +
+      '<div style="margin:14px 0;">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">' +
           '<span style="font-size:14px;font-weight:700;color:var(--accent);">🧑‍💼 ' + esc(dept) + ' 채용 현황</span>' +
           (open.length ? '<span style="font-size:11.5px;font-weight:700;color:#2f7d4f;background:#e6f4ea;border:1px solid #cfe9d7;border-radius:999px;padding:3px 10px;">모집 중 ' + open.length + '건</span>' : '') +
           '<a href="' + RECRUIT_BASE + 'index.html" target="_blank" rel="noopener" style="margin-left:auto;font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap;">전체 채용 목록 ↗</a>' +
-        '</div>' + body +
-        '<p style="font-size:11.5px;color:var(--dim);margin:0;line-height:1.6;">채용 시트(인사 담당 관리)에서 자동으로 가져옵니다 — 이 표는 직접 고치지 않습니다. "공고 보기"를 누르면 원본 공고 페이지가 바로 아래에 펼쳐집니다(사본 아님 · 원본 실시간 반영). 내용 변경은 인사 담당에게 요청해 주세요.</p>' +
+        '</div>' +
+        (open.length ? '' : '<p style="font-size:13px;color:var(--dim);margin:0 0 8px;">현재 ' + esc(dept) + '에서 모집 중인 자리가 없습니다.</p>') +
+        '<div id="hiring-postings"></div>' +
+        (open.length ? '<p style="font-size:11.5px;color:var(--dim);margin:16px 0 0;line-height:1.6;">채용 시트(인사 담당 관리)와 원본 공고 페이지에서 자동으로 불러옵니다 — 원본이 바뀌면 여기도 함께 바뀝니다. 지원은 원본 페이지에서 진행됩니다.</p>' : '') +
       '</div>';
-  }
 
-  /* 공고 보기 토글 — 클릭 시 그 자리(바로 아래 행)에 원본 공고 페이지를 펼친다.
-     iframe src는 최초 펼칠 때만 채운다(불필요한 로드 방지). 다른 페이지로 이동하지 않는다. */
-  window.toggleHiringJob = function (uid, url) {
-    var row = document.getElementById(uid + '-row');
-    var frame = document.getElementById(uid + '-frame');
-    var btn = (row && row.previousElementSibling) ? row.previousElementSibling.querySelector('button') : null;
-    if (!row) return;
-    var willOpen = row.classList.contains('hidden');
-    if (willOpen) {
-      if (frame && !frame.getAttribute('src')) frame.setAttribute('src', frame.getAttribute('data-src'));
-      row.classList.remove('hidden');
-      if (btn) btn.textContent = '공고 접기 ▴';
-    } else {
-      row.classList.add('hidden');
-      if (btn) btn.textContent = '공고 보기 ▾';
-    }
-  };
+    var postHost = host.querySelector('#hiring-postings');
+    open.forEach(function (j, i) {
+      var p = matchPage(j);
+      var url = RECRUIT_BASE + (p ? p.file : 'index.html');
+      var block = document.createElement('div');
+      if (i > 0) block.style.cssText = 'margin-top:22px;border-top:1px dashed var(--border);padding-top:18px;';
+      postHost.appendChild(block);
+      renderPosting(block, url);
+    });
+  }
 
   window.renderHiringStatus = function (hostId, dept) {
     var host = document.getElementById(hostId);
