@@ -2751,7 +2751,13 @@ function _processAction(body) {
         var _imRow = new Array(_imHdr.length).fill('');
         function _imSet(names, val) { if (val === undefined || val === null || val === '') return; var ci = _miColIdx_(_imHdr, names); if (ci >= 0) _imRow[ci] = val; }
         var _imNowDt = new Date();
-        _imSet(['날짜', '접수일'], _korDateOnly_(_imNowDt));       // A열 — 기존 444건 다수 포맷 'yy. M. d' 통일(2026-07-20). '타임스탬프'와 한 호출로 합치면 _miColIdx_가 B만 채우므로 반드시 분리
+        // A열 '날짜' 쓰기 제거(2026-07-20 시포 · 확정스펙 §1-B). 칸 삭제에 앞서 쓰기 경로부터 끊는다.
+        //   ★ 그냥 두고 칸만 지우면 이 줄이 고객 데이터를 오염시킨다 —
+        //     _miColIdx_(:1344)는 정확일치 실패 시 부분일치로 폴백하는데(:1347), 후보가 ['날짜','접수일']뿐이라
+        //     '날짜'를 품은 다른 헤더가 걸린다. 실헤더 시뮬레이션 결과 '5. 시설투어 및 상담을 희망하는 날짜는
+        //     언제인가요?' 칸이 반환됐다 → 신규 웹접수마다 접수일자가 고객의 투어 희망일을 덮어쓴다.
+        //     에러가 안 나서 발견도 늦는다. 이름참조라도 부분일치 폴백이 있으면 안전하지 않다는 사례.
+        //   타임스탬프(B열)는 아래에서 계속 기록하므로 접수 시각 정보는 유실되지 않는다.
         // B열 — ★실제 Date로 기록(2026-07-20 GM). 문자열로 쓰면 시트가 텍스트로 저장해 진짜 날짜값과
         //   따로 정렬돼 맨 위/맨 아래로 튄다(GM 지적: Nicole·한혜수·원유선 건). Date면 시트 자체 서식이
         //   적용돼 시분초 보존 + 정렬·비교 정상.
@@ -4317,6 +4323,53 @@ function _processAction(body) {
       rsResult.new = rsNew; rsResult.inProgress = rsInProgress; rsResult.done = rsDone;
     }
     return _json(rsResult);
+  }
+
+  // ─── (일회성) A열 '날짜' 칸 삭제 — 2026-07-20 시포 · 확정스펙 §1-B(GM 확정 옵션2) ───
+  //   선행조건(이미 완료): ① guide(main).html KPI 위치참조 → 이름참조 전환(19a622aa)
+  //     ② intake_submit의 A열 쓰기 제거(부분일치 폴백이 투어희망일을 덮어쓰는 경로 차단)
+  //   ★ 이름 정확일치로만 잡는다. 부분일치 금지 — '5. 시설투어…날짜는…' 같은 칸을 지울 수 있다.
+  //   ★ A열(index 0)이 아니면 거부. 타임스탬프 칸이 없어도 거부(유일한 날짜 칸을 지우는 사고 차단).
+  //   dryRun=1이면 아무것도 지우지 않고 삭제 대상·표본만 반환.
+  if (action === 'delete_date_col_20260720') {
+    if (String(body.key || '') !== 'wlp_delcol_date_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var dcDry = (String(body.dryRun || '') === '1');
+    var dcSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!dcSh) return _json({ ok: false, error: '시트 없음' });
+    var dcHdr = dcSh.getRange(1, 1, 1, dcSh.getLastColumn()).getValues()[0];
+    var dcIdx = -1;
+    for (var dci = 0; dci < dcHdr.length; dci++) {
+      if (String(dcHdr[dci] == null ? '' : dcHdr[dci]).trim() === '날짜') { dcIdx = dci; break; }  // 정확일치만
+    }
+    if (dcIdx < 0) return _json({ ok: false, error: 'no-target', detail: "'날짜' 정확일치 칸 없음(이미 삭제됐을 수 있음)", headers: dcHdr });
+    if (dcIdx !== 0) return _json({ ok: false, error: 'unexpected-position', detail: 'A열이 아님 idx=' + dcIdx, headers: dcHdr });
+    var dcTsIdx = -1;
+    for (var dct = 0; dct < dcHdr.length; dct++) {
+      if (String(dcHdr[dct] == null ? '' : dcHdr[dct]).trim() === '타임스탬프') { dcTsIdx = dct; break; }
+    }
+    if (dcTsIdx < 0) return _json({ ok: false, error: 'no-timestamp-col', detail: '타임스탬프 칸이 없어 삭제 거부(날짜 정보 전멸 방지)' });
+    var dcLast = dcSh.getLastRow();
+    var dcSample = [];
+    if (dcLast >= 2) {
+      var dcN = Math.min(5, dcLast - 1);
+      var dcVals = dcSh.getRange(2, 1, dcN, Math.max(2, dcTsIdx + 1)).getValues();
+      for (var dcs = 0; dcs < dcVals.length; dcs++) {
+        dcSample.push({ '날짜': String(dcVals[dcs][dcIdx] || ''), '타임스탬프': String(dcVals[dcs][dcTsIdx] || '') });
+      }
+    }
+    var dcBefore = dcHdr.map(function(h){ return String(h == null ? '' : h).substring(0, 24); });
+    if (dcDry) {
+      return _json({ ok: true, dryRun: true, targetIdx: dcIdx, targetHeader: '날짜', tsIdx: dcTsIdx,
+                     colsBefore: dcHdr.length, colsAfterExpected: dcHdr.length - 1,
+                     rows: dcLast - 1, sample: dcSample, headersBefore: dcBefore });
+    }
+    dcSh.deleteColumn(dcIdx + 1);
+    SpreadsheetApp.flush();
+    var dcHdr2 = dcSh.getRange(1, 1, 1, dcSh.getLastColumn()).getValues()[0];
+    return _json({ ok: true, dryRun: false, deleted: '날짜',
+                   colsBefore: dcHdr.length, colsAfter: dcHdr2.length,
+                   newFirstHeader: String(dcHdr2[0] || ''),
+                   headersAfter: dcHdr2.map(function(h){ return String(h == null ? '' : h).substring(0, 24); }) });
   }
 
   // ─── (진단·읽기전용) 레거시 구글폼 실태 확인 — 2026-07-20 시포 ───
