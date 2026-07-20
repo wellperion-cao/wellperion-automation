@@ -216,14 +216,16 @@
     "task_id": "CHRO-2026-08-01-PARK-NAMIL-PROMOTION",
     "clevel": "chro",
     "title": "[시로] 박남일 8/1 진급 반영 + 급여 조정(+15만원)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-15",
     "ship_no": 1122,
     "module": "home",
     "note": "GM 지시(2026-07-15): 박남일 화요일부 호칭 주임→반장(페이지 반영 완료·시우). 8/1부터 정식 진급하여 급여 +15만원 추가. HR·급여 반영은 시로(CHRO)/파트너팀 소관. 8/1 급여 처리 시 반영. 급여 상세는 공개 페이지 미노출(PII).",
-    "next": "8/1 급여 처리에 진급·급여 조정 반영",
-    "depends_on": ""
+    "next": "8/1 급여 처리 시 파트너팀이 반영 — 시로 확인",
+    "depends_on": "",
+    "processed_at": "2026-07-21",
+    "artifact": "status/briefs/CHRO-박남일-진급-급여조정-20260801.md"
   },
   {
     "task_id": "NEXT-20260715-185046",
@@ -787,5 +789,16 @@
     "artifact": "시로(CHRO) 도메인 - 박남일 주임->반장 진급 확정 기록.\n8/1 급여 +150,000원 파트너팀 실행 지시서(내부 PII 전용).\n공개 페이지 미노출 - status/briefs/ 내부 전용 파일. (CLI ad-hoc · 커밋 d730c152)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "d730c1528283a5f83d22550bb4da1c5c63fb8da6"
+  },
+  {
+    "task_id": "NEXT-20260721-082638",
+    "clevel": "chro",
+    "title": "8/1 급여 처리 시 파트너팀이 반영 — 시로 확인",
+    "status": "PENDING",
+    "depends_on": "CHRO-2026-08-01-PARK-NAMIL-PROMOTION",
+    "from": "chro",
+    "origin": "bridge",
+    "enqueued_at": "2026-07-20T23:26:38Z",
+    "ship_no": 9433
   }
 ]
