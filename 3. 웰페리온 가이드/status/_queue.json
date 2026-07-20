@@ -1498,5 +1498,31 @@
     "artifact": "auto(cto): scheduled IG reach collect (ledger+summary, 배588) (CLI ad-hoc · 커밋 0502d019)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "0502d0198405c9298613e762c2ccc16779fe6978"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-b216ca58",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9181,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 b216ca58)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b216ca58fa36490838f0450ca4b22c52f14391c2"
+  },
+  {
+    "task_id": "COO-2026-07-20-DEPT-HIRING-WIRING",
+    "clevel": "coo",
+    "title": "[시우] 부서 체계 페이지 ↔ 채용 현황 연동 (주차관리부부터 5개 부서)",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-20",
+    "note": "[2026-07-20 GM 지시] 주차관리부 채용부터 각 부서 체계 페이지에 채용 현황이 이어지게 연동. 채용 SSOT=CHRO 채용 시트(db:hire·나우열M 관리), GAS public-job-status 라이브 조회. 재사용 컴포넌트 coo/check/hiring-status.js 신규 + 5개 부서 체계 페이지(주차관리부·시설부·운영부·지원부·파트너팀) 배선. 값 복사 없음(렌더만)·조회 실패 시 미표시.\n[확인] 공고 5종은 2026-07-18 벤토 시안 전환 이미 완료 — 남은 건 허브 index.html 구버전.\n[이슈] 채용 시트에 부서 칸 없음 → 제목 키워드로 임시 매칭. 주차 공고가 옛 소속 (시설부)로 등록돼 있음. 나우열M 프롬프트로 이관.",
+    "next": "라이브 검증 후 완료. 후속=나우열M 시트 부서 칸 추가되면 hiring-status.js DEPT_RULES 제거하고 j.dept 직접 매칭.",
+    "ship_no": 9182,
+    "surface": "g1"
   }
 ]
