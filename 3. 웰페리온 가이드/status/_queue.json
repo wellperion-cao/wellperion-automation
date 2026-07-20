@@ -1800,5 +1800,19 @@
     "artifact": "라이브 검증에서 5개 부서 중 주차관리부만 카드 미표시.\n원인: '⏱ 근무·휴게 시간' 접이식 섹션 내부에 배치 → 펼치기 전 display:none.\n조치: tab-policy 최상단(항상 보이는 위치)으로 이동. (CLI ad-hoc · 커밋 90443eb6)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "90443eb61476710daf571005089dea33690bea03"
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-c8127efd",
+    "clevel": "cmo",
+    "title": "[시모] 회원관리 미처리 현황 = 당월 축 + 종목 split + 문의목록 종목별 재구성",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9202,
+    "artifact": "GM 피드백 3건 반영(병합 다이제스트 후속 수정):\n- 미처리 현황: 전체누적 → 당월(이번 달 1일~지금)만, 종목 줄에 금일/당월 병기\n  ('■ 종목 — 금일 N · 당월 M (미정 X · 미배정 Y)'), 섹션 제목에 대상 월 명시\n- _split_sports() 신설: 한 사람이 여러 종목을 콤마 등으로 나열한 필드(sport/program)를\n  종목별로 쪼갬(구분자 , · / | · '&'는 미분리). WSC 접두어·괄호 부연 제거 후\n  _DIGEST_SPORT_DOT 키워드 단일매칭 시 정규명 치환, 모호/실패분은 (CLI ad-hoc · 커밋 c8127efd)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c8127efdbc132e0ba9153fa54bffdd2875feaec0"
   }
 ]
