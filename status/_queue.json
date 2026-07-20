@@ -917,7 +917,7 @@
     "status": "PENDING",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-20",
-    "note": "2026-07-20 GM 지시. 물리 삭제 금지(인덱스 하드코딩 파손 위험). 조사 진행 중. | [2026-07-20 시모 인계 — 배9358에서 append] ⚠️ 착수 전 확인: '유입경로(자동)' 칸은 시모 소유다. Survey.js:2767이 이 칸에 UTM 3세그먼트(source|medium|content)를 기록하며, utm_content가 인스타 계정 구분(official/namuk)을 담는 유일한 칸이다(커밋 5f716aa6). 시포_배치_20260720_확정스펙 §1-A는 이 칸을 중분류에 병합 후 삭제하고 채널판정을 3단→2단 축소하라고 적고 있으나, 그대로 실행하면 계정별 기여 측정이 불가로 회귀하고 중분류 한 칸에 3세그먼트를 합치는 것은 커밋 5f716aa6가 금지한 방식(채널 버킷 갈라짐)이다. → 삭제·병합은 GM 재확정 후에만. JSON 오염 정리(상담로그가 잘못 들어간 건)는 이 제약과 무관하므로 계속 진행 가능. 기준선 문서: status/briefs/CMO-to-CPO-채널귀속-기준선-20260720.md §5-A | [2026-07-20 GM부재중 보호조치 — append] §1-A 잔여 실행 동결: GM 재확정 전 '유입경로(자동)' 칸(=현 F열, 개칭 후 616건 채널정본 보유) 삭제 금지. 이유: finalize_cols_20260720/dedup_autoroute_20260720 실행으로 이름이 개칭·재사용되며 이름과 내용이 어긋났다(과거 UTM 전용 칸이 아니라 채널 귀속 정본이 이 이름 아래 있음). Survey.js에 내용기반 삭제가드(_guardColDeleteByContent20260720_, 임계10건) 추가 완료. 상세: status/briefs/CMO-to-CPO-채널귀속-기준선-20260720.md 상단 🔴긴급갱신.",
+    "note": "2026-07-20 GM 지시. 물리 삭제 금지(인덱스 하드코딩 파손 위험). 조사 진행 중. | [2026-07-20 시모 인계 — 배9358에서 append] ⚠️ 착수 전 확인: '유입경로(자동)' 칸은 시모 소유다. Survey.js:2767이 이 칸에 UTM 3세그먼트(source|medium|content)를 기록하며, utm_content가 인스타 계정 구분(official/namuk)을 담는 유일한 칸이다(커밋 5f716aa6). 시포_배치_20260720_확정스펙 §1-A는 이 칸을 중분류에 병합 후 삭제하고 채널판정을 3단→2단 축소하라고 적고 있으나, 그대로 실행하면 계정별 기여 측정이 불가로 회귀하고 중분류 한 칸에 3세그먼트를 합치는 것은 커밋 5f716aa6가 금지한 방식(채널 버킷 갈라짐)이다. → 삭제·병합은 GM 재확정 후에만. JSON 오염 정리(상담로그가 잘못 들어간 건)는 이 제약과 무관하므로 계속 진행 가능. 기준선 문서: status/briefs/CMO-to-CPO-채널귀속-기준선-20260720.md §5-A | [2026-07-20 GM부재중 보호조치 — append] §1-A 잔여 실행 동결: GM 재확정 전 '유입경로(자동)' 칸(=현 F열, 개칭 후 616건 채널정본 보유) 삭제 금지. 이유: finalize_cols_20260720/dedup_autoroute_20260720 실행으로 이름이 개칭·재사용되며 이름과 내용이 어긋났다(과거 UTM 전용 칸이 아니라 채널 귀속 정본이 이 이름 아래 있음). Survey.js에 내용기반 삭제가드(_guardColDeleteByContent20260720_, 임계10건) 추가 완료. 상세: status/briefs/CMO-to-CPO-채널귀속-기준선-20260720.md 상단 🔴긴급갱신. | [2026-07-20 GM부재중 보호조치 — append2] 내일 07:50 cpo_sheet_contract.py 대조 예고: ssot/sheet_columns.json이 32칸 기준인데 오늘 칸 정리(finalize_cols/dedup_autoroute/consolidate_cols)로 라이브가 22칸 — req:true 칸은 안 건드려 🔴 오탐 가능성은 낮지만 🟡/🟢 드리프트 로그가 대량 발생할 수 있음. 임의 재시드 금지 — 시포가 정리 완료 확정 후 --seed. 상세: ssot/sheet_columns.json _known_drift_20260720.",
     "next": "조사 후 배선제거+숨김 방식으로 정리 진행 | ⚠️ '유입경로(자동)' 칸 삭제·중분류 병합은 GM 재확정 전 금지(시모 UTM 귀속 유실) — 기준선 §5-A | ⚠️ §1-A 잔여 실행(F열=유입경로(자동) 삭제) 동결 — GM 재확정 전 금지(이름 개칭으로 이름≠내용)",
     "depends_on": "",
     "ship_no": 9203,
@@ -3415,5 +3415,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 84300156)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "84300156adb05b1a1f80d6dedff8cf2cf90d0b73"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-553b395c",
+    "clevel": "cpo",
+    "title": "[시포] F열(유입경로자동) 오삭제 방지 가드 완성 (GM 부재 중 보호조치)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9385,
+    "artifact": "_guardColDeleteByContent20260720_ 도우미 함수가 무관한 채 커밋된 상태였다(동시 자동커밋).\n호출부를 추가해 dedup_autoroute_20260720/finalize_cols_20260720/consolidate_cols_20260720\n세 액션의 칸 삭제 직전 실제 값 10건 이상이면 이름과 무관하게 거부하고 GM 업무보고봇방에\n경고를 보내도록 완성. 배경: 문의 경로(중분류)가 유입경로(자동)으로 개칭되며 이름이\n더 이상 신뢰할 수 없게 됨 — F열(현 유입경로자동)=616건 채널 정본을 이름 기준 (CLI ad-hoc · 커밋 553b395c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "553b395ca974e3e28b1ceb6fc46dddb74fe428c2"
   }
 ]
