@@ -2499,60 +2499,130 @@ def _inquiry_stage_of(raw: str) -> int:
 
 
 # 종목·유형 색상 도트(GM 확정 스킴, _sportColor와 동일) — 텔레그램 텍스트 색상 불가 → 원형 이모지. 2026-07-18 시토(GM).
+# 2026-07-20 GM(결함3) — 영문 탭 별칭 추가(대소문자 무시 매칭, _split_sports 참고). 매칭은 대소문자 무시로
+# 수행하므로 여기 표기 케이스는 가독성용일 뿐 실제 비교에는 영향 없음.
 _DIGEST_SPORT_DOT = [
-    ("아쿠아", "🔵"), ("수영", "🔵"), ("P.T", "🔴"), ("PT", "🔴"), ("필라", "🟠"),
-    ("스쿼시", "🟩"), ("골프", "🟢"), ("트램폴린", "🟦"), ("체조", "🟦"), ("멤버십", "🟡"),
-    ("뮤지컬", "⚫"), ("발레", "🟣"), ("바레", "🟣"), ("루프", "🟣"),
+    ("아쿠아", "🔵"), ("수영", "🔵"), ("Swimming", "🔵"),
+    ("P.T", "🔴"), ("PT", "🔴"), ("Personal Training", "🔴"),
+    ("필라", "🟠"), ("Pilates", "🟠"),
+    ("스쿼시", "🟩"), ("Squash", "🟩"),
+    ("골프", "🟢"), ("Golf", "🟢"),
+    ("트램폴린", "🟦"), ("체조", "🟦"), ("Gymnastics", "🟦"),
+    ("멤버십", "🟡"), ("Membership", "🟡"),
+    ("뮤지컬", "⚫"), ("Musical", "⚫"),
+    ("발레", "🟣"), ("바레", "🟣"), ("루프", "🟣"), ("Ballet", "🟣"), ("Barre", "🟣"),
 ]
 
 
 def _digest_dot(s: str) -> str:
-    k = (s or "").strip()
+    k = (s or "").strip().lower()
     for kw, dot in _DIGEST_SPORT_DOT:
-        if kw in k:
+        if kw.lower() in k:
             return dot + " "
     return ""
 
 
-# 종목 정규명 — _DIGEST_SPORT_DOT 매칭 키워드 → 표시용 정식 명칭(예: '필라'→'필라테스', '루프'→'루프메소드').
+# 종목 정규명 — _DIGEST_SPORT_DOT 매칭 키워드 → 표시용 정식 명칭(예: '필라'→'필라테스', 'Swimming'→'수영').
 # 2026-07-20 GM(수정1) — _split_sports() 전용, 색상 도트 매칭(_digest_dot)과는 별개 표시 이름 테이블.
+# 결함4(2026-07-20): 발레·바레·루프 는 사내 정규명이 '루프메소드' 하나로 통일 — 3개 키워드 모두 흡수.
 _DIGEST_SPORT_CANON = {
-    "아쿠아": "아쿠아", "수영": "수영", "P.T": "P.T", "PT": "P.T", "필라": "필라테스",
-    "스쿼시": "스쿼시", "골프": "골프", "트램폴린": "트램폴린", "체조": "체조",
-    "멤버십": "멤버십", "뮤지컬": "뮤지컬", "발레": "발레", "바레": "바레", "루프": "루프메소드",
+    "아쿠아": "아쿠아", "Swimming": "수영", "수영": "수영",
+    "P.T": "P.T", "PT": "P.T", "Personal Training": "P.T",
+    "필라": "필라테스", "Pilates": "필라테스",
+    "스쿼시": "스쿼시", "Squash": "스쿼시",
+    "골프": "골프", "Golf": "골프",
+    "트램폴린": "트램폴린", "체조": "체조", "Gymnastics": "체조",
+    "멤버십": "멤버십", "Membership": "멤버십",
+    "뮤지컬": "뮤지컬", "Musical": "뮤지컬",
+    "발레": "루프메소드", "바레": "루프메소드", "루프": "루프메소드",
+    "Ballet": "루프메소드", "Barre": "루프메소드",
 }
 
 
-def _split_sports(s: str) -> list[str]:
-    """한 사람이 여러 종목을 콤마 등으로 나열한 문자열을 종목별로 쪼갠다(GM 2026-07-20 수정2).
-    구분자 = , · / | ('&'는 분리 안 함 — '체조 & 트램폴린'은 한 종목으로 유지).
-    괄호 부연(예: '(개인레슨 / 단체레슨)', '(화, 목 13:00 클래스)')은 분리 전에 문자열 전체에서
-    먼저 통째로 제거한다 — 괄호 안에도 구분자(, / ·)가 섞여 있어 조각부터 내면 괄호가 반으로
-    잘려 '단체레슨)' 처럼 깨진다(2026-07-20 GM 수정4, 실사례로 발견·수리).
-    남은 조각마다 WSC 접두어 제거 후 _DIGEST_SPORT_DOT 키워드와 '단일' 매칭되면 정규 종목명으로
-    치환(복수 키워드가 동시에 매칭되는 모호한 조각 — 예: 체조 & 트램폴린 — 은 매칭 실패로 보고 정리된
-    원문을 그대로 유지). 중복 제거·순서 보존·빈값 제외."""
+def _digest_paren_has_sport(text: str) -> bool:
+    """괄호 안 내용에 _DIGEST_SPORT_DOT 키워드가 하나라도 있으면 True(대소문자 무시).
+    결함4 — '웰니스 프로그램(바레, 발레)'처럼 괄호 안이 실제 종목 나열인 경우를 판별."""
+    t = (text or "").lower()
+    return any(kw.lower() in t for kw, _dot in _DIGEST_SPORT_DOT)
+
+
+def _digest_top_level_split(text: str) -> list[str]:
+    """콤마 등 구분자로 쪼개되 괄호 안의 구분자는 무시한다(깊이 추적) — 결함4/이전 라운드 수정4의
+    후속: 예전엔 괄호를 먼저 통째로 지웠지만, 이번엔 괄호 안 내용을 종목 나열로 살릴 수도 있어야
+    해서 괄호 깊이를 실제로 추적하는 파서로 교체."""
+    parts: list[str] = []
+    buf: list[str] = []
+    depth = 0
+    for ch in text:
+        if ch in "([（":
+            depth += 1
+            buf.append(ch)
+        elif ch in ")]）":
+            depth = max(0, depth - 1)
+            buf.append(ch)
+        elif ch in ",·/|" and depth == 0:
+            parts.append("".join(buf))
+            buf = []
+        else:
+            buf.append(ch)
+    parts.append("".join(buf))
+    return parts
+
+
+def _digest_expand_segment(seg: str) -> list[str]:
+    """세그먼트 안 괄호 부연 하나를 처리(결함4). 괄호 안에 종목 키워드가 있으면 그 내용을
+    (콤마 등으로 재분해해) 분해 대상으로 쓰고 바깥 라벨은 버린다(예: '웰니스 프로그램(바레, 발레)'
+    → ['바레', ' 발레']). 키워드가 없으면 기존처럼 괄호+내용만 지우고 바깥 라벨을 남긴다
+    (예: '뮤지컬 (Brad Little Star Academy)' → ['뮤지컬'])."""
     import re as _re
 
-    raw = str(s or "").strip()
+    m = _re.search(r"[\(（]([^()（）]*)[\)）]", seg)
+    if m and _digest_paren_has_sport(m.group(1)):
+        return _digest_top_level_split(m.group(1))
+    return [_re.sub(r"\s*[\(（][^()（）]*[\)）]", "", seg)]
+
+
+def _split_sports(s: str) -> list[str]:
+    """한 사람이 여러 종목을 콤마 등으로 나열한 문자열을 종목별로 쪼갠다(GM 2026-07-20 수정2, 결함2~4 수리).
+    구분자 = , · / | ('&'는 분리 안 함 — '체조 & 트램폴린'은 한 종목으로 유지·이후 정규화 단계에서
+    '체조' 로 흡수).
+    1) 업스트림에 HTML 엔티티가 섞여 있으면 먼저 풀어서 복구(html.unescape, 결함1).
+    2) 괄호 깊이를 추적해 최상위 구분자로만 분리(괄호 안의 , / · 는 안 건드림).
+    3) 세그먼트별 괄호 처리(_digest_expand_segment) — 종목 나열 괄호는 살리고, 부연 설명 괄호는 버림.
+    4) 조각마다 WSC 접두어 제거 후 _DIGEST_SPORT_DOT 키워드 중 '문자열에서 가장 앞서 나온'(인덱스
+       최소, 동률이면 더 긴 키워드) 키워드의 정규명으로 통일(대소문자 무시) — 매칭이 여러 개여도
+       원문을 살리지 않는다(결함2: '체조 & 트램폴린' → '체조'). 매칭이 아예 없는 조각만 정리된
+       원문을 그대로 유지.
+    중복 제거·순서 보존·빈값 제외."""
+    import re as _re
+
+    raw = html.unescape(str(s or "")).strip()
     if not raw:
         return []
-    cleaned = _re.sub(r"\s*[\(（][^()（）]*[\)）]", "", raw)
-    pieces = _re.split(r"[,·/|]", cleaned)
     out: list[str] = []
     seen: set[str] = set()
-    for piece in pieces:
-        p = piece.strip()
-        if not p:
-            continue
-        p = _re.sub(r"^WSC\s*", "", p, flags=_re.IGNORECASE).strip()
-        if not p:
-            continue
-        matched = [kw for kw, _dot in _DIGEST_SPORT_DOT if kw in p]
-        name = _DIGEST_SPORT_CANON.get(matched[0], matched[0]) if len(set(matched)) == 1 else p
-        if name not in seen:
-            seen.add(name)
-            out.append(name)
+    for seg in _digest_top_level_split(raw):
+        for piece in _digest_expand_segment(seg):
+            p = piece.strip()
+            if not p:
+                continue
+            p = _re.sub(r"^WSC\s*", "", p, flags=_re.IGNORECASE).strip()
+            if not p:
+                continue
+            p_lower = p.lower()
+            matches = []
+            for kw, _dot in _DIGEST_SPORT_DOT:
+                idx = p_lower.find(kw.lower())
+                if idx != -1:
+                    matches.append((idx, -len(kw), kw))
+            if matches:
+                matches.sort()
+                name = _DIGEST_SPORT_CANON.get(matches[0][2], matches[0][2])
+            else:
+                name = p
+            if name not in seen:
+                seen.add(name)
+                out.append(name)
     return out
 
 
@@ -2640,17 +2710,25 @@ def _build_digest_member_unprocessed(mem: list, adult: list, youth: list, today:
 
 def _append_digest_marketing_section(msg: str) -> str:
     """문의 정리 메시지 맨 끝에 📣 마케팅 정리 섹션을 붙인다(GM 2026-07-20, 21시 단독발송 통합·하루 카드 하나).
-    실패해도 문의 정리 본문은 그대로 나가야 한다 — best-effort try/except."""
+    실패해도 문의 정리 본문은 그대로 나가야 한다 — best-effort try/except.
+    _build_digest_inquiry() 의 모든 return 경로가 이 함수를 거쳐 나가므로, HTML 엔티티 유출 방지
+    (결함1) 최종 안전망도 여기서 한 번에 건다: send_telegram() 기본 parse_mode=MarkdownV2 라
+    &amp;/&lt;/&gt; 이스케이프는 불필요·유해 — 남아있으면 무조건 풀어서(html.unescape) 발송한다."""
     try:
         import weekly_marketing_feedback as _wmf  # scripts/ 는 상단에서 sys.path 삽입됨
 
         card_text = _wmf.build_daily_card_text()
         card_lines = card_text.split("\n")
         body = "\n".join(card_lines[1:]).strip("\n") if len(card_lines) > 1 else card_text
-        return f"{msg}\n\n━━━━━━━━━━\n📣 마케팅 정리\n{body}"
+        result = f"{msg}\n\n━━━━━━━━━━\n📣 마케팅 정리\n{body}"
     except Exception as e:
         logger.warning(f"[하루 일과 정리] 마케팅 섹션 병합 실패(문의 정리 본문은 그대로 발송): {e}")
-        return msg
+        result = msg
+
+    if any(bad in result for bad in ("&amp;", "&lt;", "&gt;")):
+        logger.warning("[하루 일과 정리] 최종 메시지에 HTML 엔티티 잔존 감지 — html.unescape 로 강제 정규화")
+        result = html.unescape(result)
+    return result
 
 
 def _build_digest_inquiry(today: str) -> str:
@@ -2682,9 +2760,9 @@ def _build_digest_inquiry(today: str) -> str:
                 return f"■ {title} (0)"
             groups: dict = {}
             for r in rows:
-                nm = str(r.get("name", "") or "-").strip() or "-"
-                ph = str(r.get("phone", "") or "-").strip() or "-"
-                ch = str(r.get("channel", "") or "").strip()
+                nm = html.unescape(str(r.get("name", "") or "-")).strip() or "-"
+                ph = html.unescape(str(r.get("phone", "") or "-")).strip() or "-"
+                ch = html.unescape(str(r.get("channel", "") or "")).strip()
                 species = _split_sports(str(r.get(field, "") or "")) or ["미분류"]
                 for sp in species:
                     groups.setdefault(sp, []).append((nm, ph, ch))
