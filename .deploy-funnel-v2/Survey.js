@@ -2693,7 +2693,14 @@ function _processAction(body) {
         if (!_lsSh) return _json({ ok: false, error: '강습 응답 시트 없음' });   // 재시도 가능
         var _lsHdr = _lsSh.getRange(1, 1, 1, _lsSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
         var _lsRow = new Array(_lsHdr.length).fill('');
-        function _lsSet(keys, val) { if (!val && val !== '') return; var ci = _findCol_(_lsHdr, keys); if (ci >= 0 && !_lsRow[ci]) _lsRow[ci] = val; }
+        // 배(희망 레슨시간 유실, 2026-07-20): 칸을 못 찾거나 이미 값이 있어 조용히 스킵될 때 로그만 남김(동작 무변경 — 쓰기 조건은 기존과 100% 동일).
+        function _lsSet(keys, val) {
+          if (!val && val !== '') return;
+          var ci = _findCol_(_lsHdr, keys);
+          if (ci < 0) { Logger.log('_lsSet 스킵(칸 없음): keys=' + JSON.stringify(keys) + ' val=' + val); return; }
+          if (_lsRow[ci]) { Logger.log('_lsSet 스킵(이미 값 있음 — 다른 필드와 칸 충돌 의심): keys=' + JSON.stringify(keys) + ' col="' + _lsHdr[ci] + '"(idx' + ci + ') newVal=' + val + ' existingVal=' + _lsRow[ci]); return; }
+          _lsRow[ci] = val;
+        }
         var _lsNowDt = new Date();
         var _lsToday = Utilities.formatDate(_lsNowDt, 'Asia/Seoul', 'yyyy-MM-dd');            // 날짜 전용(문의일 등)
         var _lsNowFull = Utilities.formatDate(_lsNowDt, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');  // 타임스탬프 전용(시:분:초 보존, 2026-07-18)
@@ -2707,7 +2714,11 @@ function _processAction(body) {
         _lsSet(['강습 종목', '종목', '과목'], _isSummer ? ('여름방학특강 - ' + _iProgram) : _iProgram);
         _lsSet(['문의 경로', '경로', '채널'], _iChannel || _canonicalChannel_(_iUtmSource));
         _lsSet(['문의 사항', '문의사항', '내용'], _iMessage);
-        _lsSet(['희망', '레슨 시간', '시간'], _isSummer ? _iWishMonth : _iWish);
+        // 배(희망 레슨시간 유실, 2026-07-20 실측규명): 구키 ['희망','레슨 시간','시간']는 '희망' 부분일치가
+        //   idx5 종목칸("...강습 종목 (희망종목 모두 체크)")에 먼저 걸려 정답칸(idx9)에 도달 못하고 조용히 스킵됨
+        //   (idx5가 이미 채워져 있어 _lsSet 가드가 막음). 정답 헤더 전문을 정확일치 1순위로, 폴백은 다른 헤더와
+        //   충돌 없는 '레슨 시간'만 남김(성인·WSC 양쪽 실제 헤더 대조 검증 완료 — 둘 다 idx9 정확 반환).
+        _lsSet(['희망하시는 레슨 시간을 체크해주세요', '레슨 시간'], _isSummer ? _iWishMonth : _iWish);
         _lsSet(['접수 담당자', '담당자 혹은', '담당'], '웹 자동접수');
         _lsSet(['개인정보', '동의', '수집·이용'], '동의');
         _lsSet(['진행 상황', '진행상황', '상태'], '신규');
@@ -2929,6 +2940,109 @@ function _processAction(body) {
     var _oRows = _oSh.getLastRow();
     _oSs.deleteSheet(_oSh);
     return _json({ ok: true, deleted: true, rows: _oRows });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ★ INC-020 복구 전용 · 실행 후 제거할 것. 2026-07-20 시포(GM 지시, 팀리드 대행).
+  // 동시접근으로 행이 밀린 상태에서 member_inquiry_delete가 잘못 호출돼 실고객 문의 2건(권소현 행 바로
+  // 아래에 GM이 미리 만들어둔 빈 줄 2개)이 삭제된 사고 복구. rowIndex 하드코딩 절대 금지 — gviz는 캐시
+  // 지연으로 실제 시트와 행번호가 다를 수 있어(GM 화면 실측과 불일치 확인됨) SpreadsheetApp으로 매 호출
+  // 라이브 상태에서 이름·전화 앵커를 다시 찾는다. 행 삽입·삭제 금지 — 이미 있는 빈 행 2개에 값만 채움.
+  // 가드 1~4 중 하나라도 실패하면 아무것도 쓰지 않고 실패만 반환(멱등·안전 우선). 배포 후 팀리드 지시로만
+  // 1회 실행 — 아직 실행 안 함. 실행 완료 확인 후 다음 배포에서 이 액션 통째로 제거할 것.
+  // ═══════════════════════════════════════════════════════════════════
+  if (action === 'inc020_restore') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });  // cpo_lesson_test_delete·cpo_delete_old_lesson_reg와 동일 내부전용 토큰게이트
+    var _irSh = _miSheet_();
+    if (!_irSh) return _json({ ok: false, error: '시트 없음' });
+    var _irHdr = _miHeaders_(_irSh);
+    var _irPhCi = _miColIdx_(_irHdr, ['연락처', '전화', '휴대폰']);
+    if (_irPhCi < 0) return _json({ ok: false, error: '연락처 칸 못 찾음' });
+    var _irLastBefore = _irSh.getLastRow();
+    if (_irLastBefore < 2) return _json({ ok: false, error: '데이터 없음' });
+    var _irData = _irSh.getRange(2, 1, _irLastBefore - 1, _irHdr.length).getValues();  // 라이브 1회 스캔(가드1·4 공용)
+
+    // 가드1 — 권소현(010-3794-3617) 행, 정확히 1건이어야 함.
+    var _irAnchorPh = _normPhone_('010-3794-3617');
+    var _irAnchorRows = [];
+    for (var _i1 = 0; _i1 < _irData.length; _i1++) { if (_normPhone_(_irData[_i1][_irPhCi]) === _irAnchorPh) _irAnchorRows.push(_i1 + 2); }
+    if (_irAnchorRows.length !== 1) return _json({ ok: false, error: 'anchor-not-unique', detail: '권소현(010-3794-3617) 행 ' + _irAnchorRows.length + '건 발견 — 정확히 1건이어야 함', anchorRows: _irAnchorRows });
+    var _irAnchorRow = _irAnchorRows[0];
+
+    // 가드2 — 앵커 바로 아래 2개 행이 완전히 빈 행인지(라이브 재확인 — 가드3 직전까지 최신 상태 보장).
+    var _irBlank1Row = _irAnchorRow + 1, _irBlank2Row = _irAnchorRow + 2;
+    if (_irBlank2Row > _irSh.getLastRow()) return _json({ ok: false, error: 'not-enough-rows', detail: '권소현 아래 2개 행이 존재하지 않음' });
+    function _irIsBlankRow_(rowNum) {
+      var vals = _irSh.getRange(rowNum, 1, 1, _irHdr.length).getValues()[0];
+      for (var _c = 0; _c < vals.length; _c++) { if (String(vals[_c] || '').trim() !== '') return false; }
+      return true;
+    }
+    if (!_irIsBlankRow_(_irBlank1Row) || !_irIsBlankRow_(_irBlank2Row)) return _json({ ok: false, error: 'rows-not-blank', detail: '권소현 아래 2개 행 중 하나 이상에 값이 있음 — 중단(행 삽입·삭제 없이는 복구 불가 상태)' });
+
+    // 가드3 — 그 다음 행(앵커+3)이 이동걸(010-3777-6675)인지.
+    var _irDgRow = _irAnchorRow + 3;
+    if (_irDgRow > _irSh.getLastRow()) return _json({ ok: false, error: 'anchor2-missing', detail: '이동걸 위치에 행이 없음' });
+    var _irDgPhVal = _irSh.getRange(_irDgRow, _irPhCi + 1).getValue();
+    if (_normPhone_(_irDgPhVal) !== _normPhone_('010-3777-6675')) return _json({ ok: false, error: 'anchor2-mismatch', detail: '권소현+3행이 이동걸(010-3777-6675)이 아님 — 실제값:' + _irDgPhVal });
+
+    // 가드4(멱등성) — 시트 전체에 복구 대상 전화(010-5215-9886/010-8816-2121)가 이미 있으면 중단(중복 입력 방지).
+    var _irNew1 = _normPhone_('010-5215-9886'), _irNew2 = _normPhone_('010-8816-2121');
+    for (var _i4 = 0; _i4 < _irData.length; _i4++) {
+      var _p4 = _normPhone_(_irData[_i4][_irPhCi]);
+      if (_p4 === _irNew1 || _p4 === _irNew2) return _json({ ok: false, error: 'already-restored', detail: '이미 복구된 것으로 보이는 연락처가 시트에 존재 — 멱등 가드로 중단' });
+    }
+
+    // ── 가드 1~4 전부 통과 — 이제부터 쓴다. 행 삽입·삭제 없음(insertRows·deleteRow 호출 자체가 없음) — 이미 있는 빈 행 2개에 setValues만. ──
+    // 헤더는 전부 이름 매칭(_miColIdx_ — 정확일치 1순위·부분일치는 다른 칸과 안 겹치는 고유 단어만 폴백). 열 번호 하드코딩 없음.
+    var _irNameKeys = { 날짜:['날짜'], 타임: ['타임스탬프'], 성함:['성함','이름'], 연락처:['연락처','전화','휴대폰'],
+      거주지:['거주지 [거주지역]','거주지'],
+      프로그램:['3. 관심 있는 프로그램 종목','관심 있는 프로그램 종류','관심프로그램','프로그램'],
+      경로메인:['4. 웰페리온을 어떤 경로로 알게 되셨나요?','웰페리온을 어떤 경로로 알게'],
+      경로중분류:['문의 경로\n(중분류)','중분류'], 경로소분류:['문의 경로\n(소분류)','소분류'],
+      문의사항:['6. 웰페리온에 대한 문의 사항 및 운동 목적 등을 기록해주시면 참고하여 상담 진행됩니다. 감사합니다.',
+                '기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항','문의사항','Health & Wellness Goals'],
+      접수담당자:['접수 담당자 혹은 본인 이름'], Contact1:['Contact1'], 진행현황:['진행현황'] };
+    function _irBuildRow_(f) {
+      var row = new Array(_irHdr.length).fill('');
+      function set(k, val) { if (val === undefined || val === null || val === '') return; var ci = _miColIdx_(_irHdr, _irNameKeys[k]); if (ci >= 0) row[ci] = val; }
+      set('날짜', f.dateStr); set('타임', f.ts); set('성함', f.name); set('연락처', f.phone); set('거주지', f.region);
+      set('프로그램', f.program); set('경로메인', f.channelMain); set('경로중분류', f.channelMid); set('경로소분류', f.channelSub);
+      set('문의사항', f.note); set('접수담당자', f.staff); set('Contact1', f.contact1); set('진행현황', f.status);
+      return row;
+    }
+    // 입력값 — GM 지시 그대로, 한 글자도 변경 없음. 타임스탬프=실제 Date(문자열 아님), KST 16:28:40/18:32:44를 UTC 인스턴트로 고정(스크립트/시트 타임존 설정과 무관하게 항상 정확).
+    var _irRow1 = _irBuildRow_({
+      dateStr: '26. 5. 4 오', ts: new Date(Date.UTC(2026, 4, 4, 7, 28, 40)),
+      name: '여', phone: '010-5215-9886', region: '기타',
+      program: '플래티넘 (Gym + G.X + Sauna 이용)',
+      channelMain: '오프라인 (옥외간판/아파트 홍보물/현수막)', channelMid: '아파트 홍보', channelSub: '남산타운',
+      note: '남산타운-실장님', staff: '임정은', contact1: '26/5/4 무응답/담당자 문자 발송완-정은', status: '컨택중'
+    });
+    var _irRow2 = _irBuildRow_({
+      dateStr: '26. 5. 4 오', ts: new Date(Date.UTC(2026, 4, 4, 9, 32, 44)),
+      name: '장수진', phone: '010-8816-2121', region: '기타',
+      program: '노블레스 (Gym + G.X + Swimming + Sauna 이용)',
+      channelMain: '인지도 (입주민/만기회원/준회원)', channelMid: '준회원', channelSub: '',
+      note: '멤버십상담/주희쌤전달', staff: '임정은', contact1: '26/5/4 무응답/담당자 문자 발송완-정은', status: '컨택중'
+    });
+    _irSh.getRange(_irBlank1Row, 1, 1, _irRow1.length).setValues([_irRow1]);
+    _irSh.getRange(_irBlank2Row, 1, 1, _irRow2.length).setValues([_irRow2]);
+
+    // 쓰기 후 되읽어 검증(라이브 재조회).
+    var _irV1 = _irSh.getRange(_irBlank1Row, 1, 1, _irHdr.length).getValues()[0];
+    var _irV2 = _irSh.getRange(_irBlank2Row, 1, 1, _irHdr.length).getValues()[0];
+    try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
+    try { _notifyTelegram('🛠 INC-020 복구 실행 — 행 ' + _irBlank1Row + '·' + _irBlank2Row + ' 채움(권소현 행 ' + _irAnchorRow + ' 앵커)'); } catch (e) {}
+    return _json({
+      ok: true, message: 'INC-020 복구 완료',
+      anchorRow: _irAnchorRow, restoredRow1: _irBlank1Row, restoredRow2: _irBlank2Row,
+      headerMatch: Object.keys(_irNameKeys).reduce(function(acc, k) { acc[k] = _miColIdx_(_irHdr, _irNameKeys[k]); return acc; }, { 연락처: _irPhCi }),
+      verifyReadback: {
+        row1PhoneMatch: _normPhone_(_irV1[_irPhCi]) === _irNew1,
+        row2PhoneMatch: _normPhone_(_irV2[_irPhCi]) === _irNew2
+      },
+      rowsBefore: _irLastBefore, rowsAfter: _irSh.getLastRow()
+    });
   }
 
   // ─── 문의 목록 ───
@@ -3244,17 +3358,18 @@ function _processAction(body) {
     if (!mdSh) return _json({ ok: false, error: '시트 없음' });
     if (mdRow >= _ROW_OFFSET_EN_) mdRow -= _ROW_OFFSET_EN_;  // 실제 물리 행으로 디코드. 2026-07-09 시포·GM.
     if (mdRow > mdSh.getLastRow()) return _json({ ok: false, error: '행 범위 초과' });
-    // ★행키 검증(fail-safe·keyPhone 동봉 권장): keyPhone 동봉 시 대상 행 전화가 비었거나(검증 불가) keyPhone과 다르면
-    //   삭제를 거부한다(구버전은 전화 공백이면 통과시켜 rowIndex 밀림 시 오삭제 위험 — 2026-07-08 시토 안전수리).
-    //   keyPhone 미전송(구 폴백)은 하위호환으로 검증 생략 — 신규 호출부는 keyPhone 동봉 권장.
-    if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
-      var _mdHdr = _miHeaders_(mdSh);
-      var _mdPhCi = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰']);
-      var _mdRowPh = (_mdPhCi >= 0) ? _normPhone_(mdSh.getRange(mdRow, _mdPhCi + 1).getValue()) : '';
-      var _mdKeyPh = _normPhone_(body.keyPhone);
-      if (!_mdRowPh || _mdRowPh !== _mdKeyPh) {
-        return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 불일치/불명) — 목록 새로고침 후 다시 시도' });
-      }
+    // ★행키 검증(필수·예외 없음, INC-020 재발방지 2026-07-20): keyPhone 미전송/빈값이면 대조 없이 무조건 거부.
+    //   구버전은 keyPhone 미전송 시 하위호환으로 검증을 생략해 통과시켰고, 동시접근으로 행이 밀린 상태에서
+    //   그 폴백이 실사용돼 실고객 문의 2건이 삭제되는 사고(INC-020)로 이어짐 — 폴백 완전 제거.
+    if (body.keyPhone === undefined || String(body.keyPhone) === '') {
+      return _json({ ok: false, error: 'keyPhone 필수 — 대조 없이 삭제 불가' });
+    }
+    var _mdHdr = _miHeaders_(mdSh);
+    var _mdPhCi = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰']);
+    var _mdRowPh = (_mdPhCi >= 0) ? _normPhone_(mdSh.getRange(mdRow, _mdPhCi + 1).getValue()) : '';
+    var _mdKeyPh = _normPhone_(body.keyPhone);
+    if (!_mdRowPh || _mdRowPh !== _mdKeyPh) {
+      return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 불일치/불명) — 목록 새로고침 후 다시 시도' });
     }
     mdSh.deleteRow(mdRow);
     // 조회 캐시 무효화(축1) — delete 직후 최대 60초 stale 반환 방지(연쇄 오삭제 위험 차단). 2026-07-08 시토 안전수리.
