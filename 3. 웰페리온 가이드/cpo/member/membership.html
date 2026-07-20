@@ -456,7 +456,11 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 }
 .db-table{
   width:100%;border-collapse:collapse;
-  font-size:13px;min-width:760px;
+  font-size:13px;
+  /* min-width 760→1270 (2026-07-20 2차). 고정폭 합이 824px이라 760에선 남는 폭이 없어
+     가변 두 칸(문의 내용·CONTACT)이 0으로 짜부라진다. 1270 = 고정 824 + 가변 2칸 × 최소 223.
+     실질 변화 없음 — 이전에도 선언폭 합이 1210px여서 그 아래에선 이미 가로 스크롤이었다. */
+  min-width:1270px;
   table-layout:fixed;
 }
 .db-table th{
@@ -737,7 +741,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 /* 영어로 접수된 문의 뱃지 — 영어 문의 누수 수리(한글+영문 탭 병합 표시). 2026-07-09 시포·GM. */
 .lang-badge-en{display:inline-block;font-size:9px;font-weight:800;padding:1px 6px;border-radius:6px;background:#2563eb;color:#fff;margin-left:6px;vertical-align:middle}
 /* 재문의(같은 연락처) 배지 — 기존 배지 체계(등록완료=accent 금색·LOSS=red 빨강) 색토큰 재사용, 새 색 발명 금지. GM 지시 2026-07-20. */
-.ri-badge{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 7px;border-radius:6px;margin-left:6px;vertical-align:middle;cursor:pointer;white-space:nowrap}
+/* margin-left 제거(2026-07-20 2차) — CONTACT 칸으로 옮기며 배지가 자기 줄을 갖는다. 인라인 병기가 아니라 들여쓰기가 필요 없음. */
+.ri-badge{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 7px;border-radius:6px;vertical-align:middle;cursor:pointer;white-space:nowrap}
 .ri-badge-repeat{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
 .ri-badge-loss{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
 .ri-badge-family{background:var(--bg);color:var(--dim);border:1px solid var(--border)}
@@ -1527,17 +1532,23 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="db-table-wrap">
         <table class="db-table" id="dbTable">
           <thead>
+            <!-- 열폭 재조정 2026-07-20 2차(GM 지적: 칸이 좁고 오른쪽 끝이 비어 보인다).
+                 원인 ①성함 60px = 3글자도 안 들어감(연락처의 절반) ②숨김 칸(담당·display:none)에 85px가 선언돼 있었음
+                 ③모든 칸에 고정 px를 줘서 합(1210px)보다 넓은 화면에선 남는 폭이 갈 곳 없이 오른쪽에 남았음.
+                 해법: 자유서술 두 칸(문의 내용·CONTACT)만 width를 비워 남는 폭을 반씩 나눠 갖게 한다
+                 (table-layout:fixed의 표준 동작). 한 칸만 비우면 그 칸이 폭을 독식해 빈 띠가 그대로 옮겨간다
+                 — 1600px에서 CONTACT 528px가 되는 것을 렌더로 확인하고 두 칸으로 정정했다. -->
             <tr>
-              <th style="width:120px">문의일시</th>
-              <th style="width:60px">성함</th>
+              <th style="width:110px">문의일시</th>
+              <th style="width:92px">성함</th>
               <th style="width:120px">연락처</th>
-              <th style="width:90px">관심 프로그램</th>
-              <th style="width:90px">진행상황</th>
-              <th style="width:110px">유입채널</th>
-              <th style="width:85px" class="db-owner-col">담당</th>
-              <th style="width:200px">문의 내용</th>
-              <th style="width:220px">CONTACT (연락 이력)</th>
-              <th style="width:200px">일정 (예약)</th>
+              <th style="width:100px">관심 프로그램</th>
+              <th style="width:108px">진행상황</th>
+              <th style="width:104px">유입채널</th>
+              <th class="db-owner-col">담당</th>
+              <th>문의 내용</th>
+              <th>CONTACT (연락 이력)</th>
+              <th style="width:190px">일정 (예약)</th>
             </tr>
           </thead>
           <tbody id="dbBody">
@@ -8343,10 +8354,10 @@ function buildDbRow(row, isNew) {
   if (row.status === 'SUC' || row.status === '단기SUC') tr.classList.add('row-registered');  // 등록 회원 금색 강조
 
   // ── 문의일시 (읽기 전용) — 맨 앞 (2026-06-24 GM · 시:분 표시 2026-07-18 GM) ──
-  // 재문의(같은 연락처) 배지 병기 — 표시 전용, 클릭 시 이전 문의 이력 팝업. GM 지시 2026-07-20, 시포.
+  // 재문의 배지는 CONTACT 칸으로 이동(아래 [6]) — GM 지시 2026-07-20 2차.
   var tdTs = document.createElement('td');
   tdTs.style.fontSize = '12px'; tdTs.style.color = 'var(--dim)';
-  tdTs.innerHTML = esc(_fmtInqDateTime(row.timestamp)) + _riBadgeHtml(row);
+  tdTs.textContent = _fmtInqDateTime(row.timestamp);
   tr.appendChild(tdTs);
 
   // ── 성함 ── (영문 탭 병합 행은 EN 뱃지 — 영어 문의 누수 수리, 2026-07-09 시포·GM)
@@ -8431,8 +8442,13 @@ function buildDbRow(row, isNew) {
   // ── [6] Contact (연락 기록 1·2·3) — 체험1~3처럼 3칸 (2026-06-26 GM: 메모칸→Contact) ──
   var tdContact = document.createElement('td');
   tdContact.style.fontSize = '11px'; tdContact.style.color = 'var(--text)'; tdContact.style.lineHeight = '1.6';
-  tdContact.style.maxWidth = '220px'; tdContact.style.whiteSpace = 'pre-wrap'; tdContact.style.wordBreak = 'break-word';
+  tdContact.style.whiteSpace = 'pre-wrap'; tdContact.style.wordBreak = 'break-word';   // maxWidth 제거 — 이 칸이 남는 폭을 흡수한다(thead에 width 미지정)
   _renderContactCell(tdContact, row);
+  // 재문의(같은 연락처) 배지 — 문의일시 칸에서 이곳으로 이동(GM 지시 2026-07-20 2차).
+  //   ①성격상 '이력'이라 연락 이력과 같이 봐야 하고 ②120px 문의일시 칸에서 날짜를 밀어내 줄바꿈을 만들고 있었다.
+  //   _renderContactCell이 innerHTML을 통째로 덮으므로 반드시 그 뒤에 prepend한다.
+  var _riHtml = _riBadgeHtml(row);
+  if (_riHtml) tdContact.insertAdjacentHTML('afterbegin', '<div style="margin-bottom:5px">' + _riHtml + '</div>');
   if (!READ_ONLY) { tdContact.className = 'editable-cell'; tdContact.addEventListener('click', function(){ _activateCellContact(this, row); }); }
   tr.appendChild(tdContact);
 
