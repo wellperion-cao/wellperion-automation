@@ -1,7 +1,7 @@
 {
   "_doc": "모듈 침묵 감지기 최신 스캔 스냅샷 — 자율현황.html #layer-automation 렌더 전용. 알림 발신과 무관(발신 로그는 module_silence_log.jsonl). 발행: module_silence_detector.py --publish.",
-  "generated_at": "2026-07-20T05:11:52Z",
-  "generated_at_kst": "2026-07-20 14:11",
+  "generated_at": "2026-07-20T08:31:32Z",
+  "generated_at_kst": "2026-07-20 17:31",
   "total": 31,
   "summary": {
     "ok": 20,
@@ -16,12 +16,12 @@
       "owner_nick": "시토",
       "feature": "자동화 건강 점수판 — 예약작업 실행결과 30분 갱신",
       "status": "ok",
-      "last_activity": "2026-07-20T04:56:33+00:00",
+      "last_activity": "2026-07-20T08:26:30+00:00",
       "method": "erp_status.json 내부 timestamp",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 0.3,
-      "detail": "0.3h 전 마지막 신호(erp_status.json 내부 timestamp) · 허용 216h(weekly)"
+      "silence_hours": 0.1,
+      "detail": "0.1h 전 마지막 신호(erp_status.json 내부 timestamp) · 허용 216h(weekly)"
     },
     {
       "id": "cto-aide-gap-detector",
@@ -33,8 +33,8 @@
       "method": "gm_aide_scan_log.jsonl 마지막 레코드 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 7.7,
-      "detail": "7.7h 전 마지막 신호(gm_aide_scan_log.jsonl 마지막 레코드 timestamp) · 허용 30h(daily)"
+      "silence_hours": 11.0,
+      "detail": "11.0h 전 마지막 신호(gm_aide_scan_log.jsonl 마지막 레코드 timestamp) · 허용 30h(daily)"
     },
     {
       "id": "cto-check-gas",
@@ -55,8 +55,8 @@
       "method": "cto-gas-version-monitor.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 0.0,
-      "detail": "0.0h 전 마지막 신호(cto-gas-version-monitor.json 내부 timestamp) · 허용 30h(daily)"
+      "silence_hours": 3.4,
+      "detail": "3.4h 전 마지막 신호(cto-gas-version-monitor.json 내부 timestamp) · 허용 30h(daily)"
     },
     {
       "id": "cto-weekly-self-review",
@@ -68,8 +68,8 @@
       "method": "self_review_log.jsonl 마지막 레코드 timestamp",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 27.6,
-      "detail": "27.6h 전 마지막 신호(self_review_log.jsonl 마지막 레코드 timestamp) · 허용 216h(weekly)"
+      "silence_hours": 31.0,
+      "detail": "31.0h 전 마지막 신호(self_review_log.jsonl 마지막 레코드 timestamp) · 허용 216h(weekly)"
     },
     {
       "id": "cto-ops-morning-digest",
@@ -81,8 +81,8 @@
       "method": "디렉터리 1. AI자료_아카이브/11_카카오톡/★운영부/ 내 최신파일(_pending_digest.json) mtime",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 6.7,
-      "detail": "6.7h 전 마지막 신호(디렉터리 1. AI자료_아카이브/11_카카오톡/★운영부/ 내 최신파일(_pending_digest.json) mtime) · 허용 30h(daily)"
+      "silence_hours": 10.0,
+      "detail": "10.0h 전 마지막 신호(디렉터리 1. AI자료_아카이브/11_카카오톡/★운영부/ 내 최신파일(_pending_digest.json) mtime) · 허용 30h(daily)"
     },
     {
       "id": "cto-kakao-sales-report",
@@ -94,8 +94,8 @@
       "method": "kakao_last_send.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 4.7,
-      "detail": "4.7h 전 마지막 신호(kakao_last_send.json 내부 timestamp) · 허용 30h(daily)"
+      "silence_hours": 8.0,
+      "detail": "8.0h 전 마지막 신호(kakao_last_send.json 내부 timestamp) · 허용 30h(daily)"
     },
     {
       "id": "cto-kakao-check-share",
@@ -107,8 +107,8 @@
       "method": "cto-kakao-check-share.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 0.0,
-      "detail": "0.0h 전 마지막 신호(cto-kakao-check-share.json 내부 timestamp) · 허용 30h(daily)"
+      "silence_hours": 3.3,
+      "detail": "3.3h 전 마지막 신호(cto-kakao-check-share.json 내부 timestamp) · 허용 30h(daily)"
     },
     {
       "id": "cmo-content-pipeline",
@@ -120,8 +120,8 @@
       "method": "review_queue.json mtime",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 1.5,
-      "detail": "1.5h 전 마지막 신호(review_queue.json mtime) · 허용 30h(daily)"
+      "silence_hours": 4.8,
+      "detail": "4.8h 전 마지막 신호(review_queue.json mtime) · 허용 30h(daily)"
     },
     {
       "id": "cmo-marketing-funnel",
@@ -133,8 +133,8 @@
       "method": "kpi_values.json 내부 timestamp",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 4.0,
-      "detail": "4.0h 전 마지막 신호(kpi_values.json 내부 timestamp) · 허용 216h(weekly)"
+      "silence_hours": 7.3,
+      "detail": "7.3h 전 마지막 신호(kpi_values.json 내부 timestamp) · 허용 216h(weekly)"
     },
     {
       "id": "cmo-case-series-dispatch",
@@ -142,12 +142,12 @@
       "owner_nick": "시모",
       "feature": "개인계정 실전사례 시리즈 자동 디스패치 — 평일 07:30 재고(06~09) 순차 선정·검수카드 발송, GM 텔레그램 승인 후 자동 발행",
       "status": "ok",
-      "last_activity": "2026-07-20T05:11:35.748735+00:00",
+      "last_activity": "2026-07-20T07:29:41.060166+00:00",
       "method": "_실전사례_2주플랜.md mtime",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 0.0,
-      "detail": "0.0h 전 마지막 신호(_실전사례_2주플랜.md mtime) · 허용 30h(daily)"
+      "silence_hours": 1.0,
+      "detail": "1.0h 전 마지막 신호(_실전사례_2주플랜.md mtime) · 허용 30h(daily)"
     },
     {
       "id": "cmo-publish-digest",
@@ -156,9 +156,9 @@
       "feature": "발행완료 → 콘텐츠 1건 통합요약 자동발신 (문의·컨택·등록 알림방) — 채널별 조각 대신 한 장, 5채널 링크 묶음",
       "status": "unmeasurable",
       "detail": "주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
-      "last_activity": "2026-07-20T05:11:35.749735+00:00",
+      "last_activity": "2026-07-20T07:29:41.061165+00:00",
       "method": ".publish_digest_sent.json mtime",
-      "silence_hours": 0.0
+      "silence_hours": 1.0
     },
     {
       "id": "cmo-eval-feedback-loop",
@@ -170,8 +170,8 @@
       "method": "CMO-weekly-feedback-20260720.md mtime",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 0.2,
-      "detail": "0.2h 전 마지막 신호(CMO-weekly-feedback-20260720.md mtime) · 허용 216h(weekly)"
+      "silence_hours": 3.5,
+      "detail": "3.5h 전 마지막 신호(CMO-weekly-feedback-20260720.md mtime) · 허용 216h(weekly)"
     },
     {
       "id": "cmo-reaction-loop",
@@ -179,12 +179,12 @@
       "owner_nick": "시모",
       "feature": "발행 루프를 감싸는 상위 루프 — 콘텐츠 1건=반응 성적표 1장(IG 도달·당근 조회/찜·카페 조회 실측, 클릭 아님) → 최근 발행분 대비 상대 판정(저조/정상범위/판정보류) → 저조 시 로드맵 근거 개선안 GM께 제안(반무인, 자동 재발행 없음). 배834(북극성 제작 루프) 폐루프의 클릭 대체 입력.",
       "status": "ok",
-      "last_activity": "2026-07-20T05:11:52.242310+00:00",
-      "method": "디렉터리 status 내 최신파일(module_silence_log.jsonl) mtime",
+      "last_activity": "2026-07-20T08:30:31.852017+00:00",
+      "method": "디렉터리 status 내 최신파일(inquiry_snapshot_lesson.json) mtime",
       "cadence": "weekly",
       "max_allowed_hours": 216,
       "silence_hours": 0.0,
-      "detail": "0.0h 전 마지막 신호(디렉터리 status 내 최신파일(module_silence_log.jsonl) mtime) · 허용 216h(weekly)"
+      "detail": "0.0h 전 마지막 신호(디렉터리 status 내 최신파일(inquiry_snapshot_lesson.json) mtime) · 허용 216h(weekly)"
     },
     {
       "id": "cmo-autonomy-brain",
@@ -204,8 +204,8 @@
       "method": "coo-check-status.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 0.0,
-      "detail": "0.0h 전 마지막 신호(coo-check-status.json 내부 timestamp) · 허용 30h(daily)"
+      "silence_hours": 3.4,
+      "detail": "3.4h 전 마지막 신호(coo-check-status.json 내부 timestamp) · 허용 30h(daily)"
     },
     {
       "id": "coo-work-approval",
@@ -217,8 +217,8 @@
       "method": "coo-work-approval.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 0.0,
-      "detail": "0.0h 전 마지막 신호(coo-work-approval.json 내부 timestamp) · 허용 30h(daily)"
+      "silence_hours": 3.4,
+      "detail": "3.4h 전 마지막 신호(coo-work-approval.json 내부 timestamp) · 허용 30h(daily)"
     },
     {
       "id": "coo-schedule-ssot",
@@ -229,7 +229,7 @@
       "detail": "주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
       "last_activity": "2026-07-10T00:00:00+09:00",
       "method": "schedule_ssot.json 내부 timestamp",
-      "silence_hours": 254.2
+      "silence_hours": 257.5
     },
     {
       "id": "coo-monthly-ops",
@@ -240,7 +240,7 @@
       "detail": "주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
       "last_activity": "2026-07-06T00:00:00+09:00",
       "method": "monthly_ops_plan.json 내부 timestamp",
-      "silence_hours": 350.2
+      "silence_hours": 353.5
     },
     {
       "id": "coo-notice",
@@ -261,8 +261,8 @@
       "method": "cpo-inquiry-daily-actions.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 0.0,
-      "detail": "0.0h 전 마지막 신호(cpo-inquiry-daily-actions.json 내부 timestamp) · 허용 30h(daily)"
+      "silence_hours": 3.4,
+      "detail": "3.4h 전 마지막 신호(cpo-inquiry-daily-actions.json 내부 timestamp) · 허용 30h(daily)"
     },
     {
       "id": "cpo-member-rollup",
@@ -274,8 +274,8 @@
       "method": "cpo-member-rollup.json 내부 timestamp",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 0.0,
-      "detail": "0.0h 전 마지막 신호(cpo-member-rollup.json 내부 timestamp) · 허용 216h(weekly)"
+      "silence_hours": 3.3,
+      "detail": "3.3h 전 마지막 신호(cpo-member-rollup.json 내부 timestamp) · 허용 216h(weekly)"
     },
     {
       "id": "cpo-sheet-contract-check",
@@ -284,9 +284,9 @@
       "feature": "시트 칸 계약 점검기 — 문의·회원·강습 6개 시트 헤더/값 규칙/시트관계 대조(재발방지 A안 0단계, 2026-07-20 GM 확정)",
       "status": "unmeasurable",
       "detail": "주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
-      "last_activity": "2026-07-20T05:00:48.666115+00:00",
+      "last_activity": "2026-07-20T08:13:48.608980+00:00",
       "method": "sheet_columns.json mtime",
-      "silence_hours": 0.2
+      "silence_hours": 0.3
     },
     {
       "id": "cto-weekly-page-hygiene",
@@ -298,8 +298,8 @@
       "method": "page_hygiene_proposal_20260719.md mtime",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 24.8,
-      "detail": "24.8h 전 마지막 신호(page_hygiene_proposal_20260719.md mtime) · 허용 216h(weekly)"
+      "silence_hours": 28.1,
+      "detail": "28.1h 전 마지막 신호(page_hygiene_proposal_20260719.md mtime) · 허용 216h(weekly)"
     },
     {
       "id": "ceo-gm-aide",
@@ -307,12 +307,12 @@
       "owner_nick": "웰리",
       "feature": "GM 보좌 자율화 두뇌 — GM 성향·놓친 것 학습·선제 포착(재개가능 배 자율태그·정체 surface·프로필 일일갱신)",
       "status": "ok",
-      "last_activity": "2026-07-20T05:11:35.761249+00:00",
+      "last_activity": "2026-07-20T07:29:41.068164+00:00",
       "method": "gm_profile.md mtime",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 0.0,
-      "detail": "0.0h 전 마지막 신호(gm_profile.md mtime) · 허용 30h(daily)"
+      "silence_hours": 1.0,
+      "detail": "1.0h 전 마지막 신호(gm_profile.md mtime) · 허용 30h(daily)"
     },
     {
       "id": "cto-inquiry-read-snapshot",
@@ -320,38 +320,38 @@
       "owner_nick": "시토",
       "feature": "문의회원 읽기 서버 스냅샷 — 3분 주기로 멤버십·강습(연간뷰) 문의 목록을 GAS에서 조회해 status/inquiry_snapshot_*.json에 무인 발행, 페이지 첫 진입 0초 렌더용 가속층(진실=여전히 배경 gviz/GAS 재검증, 스냅샷은 콜드 화면 전용)",
       "status": "ok",
-      "last_activity": "2026-07-20T05:11:35.766248+00:00",
-      "method": "inquiry_snapshot_member.json mtime",
+      "last_activity": "2026-07-20T08:30:31.852017+00:00",
+      "method": "inquiry_snapshot_lesson.json mtime",
       "cadence": "daily",
       "max_allowed_hours": 30,
       "silence_hours": 0.0,
-      "detail": "0.0h 전 마지막 신호(inquiry_snapshot_member.json mtime) · 허용 30h(daily)"
+      "detail": "0.0h 전 마지막 신호(inquiry_snapshot_lesson.json mtime) · 허용 30h(daily)"
     },
     {
       "id": "chro-daily-integrity-sweep",
       "owner_role": "chro",
       "owner_nick": "시로",
-      "feature": "일일 정합성 스윕 — HR 허브·라이브 데이터 11항목 자동 점검(사진404·공고·KPI·배지·평점·PII·주경로 하트비트·폴더미등록·나이 교차검증·가산점 클램프) + 이력서 주경로 자가치유",
+      "feature": "일일 정합성 스윕(설계만·미가동) — HR 허브·라이브 데이터 11항목 자동 점검(사진404·공고·KPI·배지·평점·PII·주경로 하트비트·폴더미등록·나이 교차검증·가산점 클램프) + 이력서 주경로 자가치유",
       "status": "unmeasurable",
-      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['wellperion-hr/drafts/loops/ 스윕 결과'])",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['wellperion-hr/drafts/loops/ 스윕 결과 — 실체 없음'])",
       "method": "unresolvable"
     },
     {
       "id": "chro-onboarding-weekly-watch",
       "owner_role": "chro",
       "owner_nick": "시로",
-      "feature": "온보딩 위클리 워치 — 진행중 온보딩 30-60-90 진척·주간 체크인 지연 관찰·보고(A-3)",
+      "feature": "온보딩 위클리 워치(주간 자동집계 레이어 미구축) — 하부 HR 백엔드 온보딩 체크인 API는 라이브 확인됨, 30-60-90 진척 주간 관찰·보고 자동화 자체는 없음",
       "status": "unmeasurable",
-      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['HR 백엔드 db:onbo'])",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['HR 백엔드 db:onbo — exec URL 라이브 확인됨, 주간 집계 레이어 없음'])",
       "method": "unresolvable"
     },
     {
       "id": "chro-weekly-efficiency-report",
       "owner_role": "chro",
       "owner_nick": "시로",
-      "feature": "주간 효율 리포트 — 위임률·홉 낭비·반복작업 회고(A-7). 7/16 러너 하드닝·7/17 정기 무인 완주 확증",
+      "feature": "주간 효율 리포트(설계만·미가동) — 위임률·홉 낭비·반복작업 회고(A-7) 구상. '7/17 정기 무인 완주 확증' 표기는 근거 없음으로 확인되어 철회",
       "status": "unmeasurable",
-      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['wellperion-hr/drafts/loops/ 주간 리포트'])",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['wellperion-hr/drafts/loops/ 주간 리포트 — 실체 없음'])",
       "method": "unresolvable"
     },
     {
@@ -364,16 +364,16 @@
       "method": "module_silence_log.jsonl 마지막 레코드 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 14.2,
-      "detail": "14.2h 전 마지막 신호(module_silence_log.jsonl 마지막 레코드 timestamp) · 허용 30h(daily)"
+      "silence_hours": 17.5,
+      "detail": "17.5h 전 마지막 신호(module_silence_log.jsonl 마지막 레코드 timestamp) · 허용 30h(daily)"
     },
     {
       "id": "chro-gmail-job-title-fetch",
       "owner_role": "chro",
       "owner_nick": "시로",
-      "feature": "Gmail 공고명 자동취득 — 잡코리아 지원안내 메일에서 공고명 자동 수집→지원자-공고 배정 근거 적재(7/16 가동)",
+      "feature": "Gmail 공고명 자동취득(미확인) — 잡코리아 지원안내 메일에서 공고명 자동 수집→지원자-공고 배정 근거 적재 주장(7/16 가동 주장, 이 저장소에서 실측 불가)",
       "status": "unmeasurable",
-      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['cao GAS 웰페리온_잡코리아_공고명취득→공고명 manifest'])",
+      "detail": "로컬 아티팩트 판정불가 — 로컬 아티팩트 없음(시도: ['cao GAS 웰페리온_잡코리아_공고명취득→공고명 manifest — 이 저장소에 clasp 배포·코드·산출물 흔적 0건'])",
       "method": "unresolvable"
     }
   ]

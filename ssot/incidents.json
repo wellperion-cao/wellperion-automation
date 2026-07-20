@@ -416,6 +416,21 @@
       "차단조치": "미차단(GM 의식적 수용) — 코드·설정·배포 0 변경. B/C안 모두 보류. 해소 시점=2026-09 자체서버(AWS) 이전 + JWT 세션 인증 도입(배101과 한 틀, 배21 depends_on을 배101 task_id로 구조화해 배101 완료 시 gm_aide_scan 재개가능 감지기가 배21을 자동 표면화하도록 배선). 설계 문서: docs/superpowers/specs/2026-07-20-pii-무인증노출-차단-design.md.",
       "상태": "OPEN",
       "검증증거": "GM 결재 결과 팀리드 전달(2026-07-20, D안 확정) · status/_queue.json ship_no 21 note/next/depends_on 갱신 · ship_no 101 note 역참조 추가 · ship_no 9101(AIDE 자동제안, 동일 질문 재확인 요청) DONE 처리로 해소 · 설계 문서 4안 비교표(§1부) 대조 확인."
+    },
+    {
+      "id": "INC-025",
+      "date": "2026-07-20",
+      "watch_globs": [
+        "status/module_registry.json"
+      ],
+      "gate": "warn",
+      "요약": "CHRO(시로) 모듈 등록부 4건 중 3건(chro-daily-integrity-sweep·chro-onboarding-weekly-watch·chro-weekly-efficiency-report)이 존재하지 않는 Windows 예약작업을 '무인 가동 중'이라고 표기해왔다 — 그중 1건(주간 효율 리포트)은 2026-07-17 커밋(47f6b8b1)에서 '정기 무인 완주 확증'까지 명시적으로 기록했으나 근거를 재현할 수 없었다. 앞선 세션이 이 4건을 'wellperion-hr 저장소가 없어 확인 불가'로 오분류한 것도 2차 문제(존재하지 않는 경로를 근거로 든 것) — 근본 문제는 그보다 앞서 애초에 가동 실체가 없었다는 것.",
+      "증상": "2026-07-20 실측: Get-ScheduledTask 전수조회(231개) + schtasks 전량조회에 CHRO_DailyIntegritySweep·OnboardingWeeklyWatch·WeeklyEfficiencyReport 3개 태스크명 0건. Get-WinEvent(Microsoft-Windows-TaskScheduler/Operational, 500건) 에도 3개 태스크명 이력 0건. wellperion-hr 디렉터리는 이 PC 전체(홈·문서·데스크톱·AppData 등)에 0건. 이 스윕·리포트를 수행할 파이썬/GAS 스크립트도 저장소에 없음. 4번째 모듈(chro-gmail-job-title-fetch)은 저장소에 clasp·코드·산출물 흔적이 전혀 없어 긍정도 부정도 증거가 없는 별도 케이스(cao 개인 GAS 계정 소관일 가능성, 미확인으로 정직 표기만).",
+      "본질": "등록부 텍스트(feature/ai_free_fallback)에 '무인 가동 중'·'정기 무인 완주 확증' 같은 운영 사실 문장이 실측 없이 기재·갱신됐다(2026-07-16 최초 등록 ea77d582, 2026-07-17 '완주 확증' 갱신 47f6b8b1 — 둘 다 Claude Fable 5 공동작성). 코드/스케줄 없이 문서 상태만 '가동'으로 박제된 사례 — module_heartbeat.py 도입 취지(떴다≠결과를 냈다)보다 한 단계 앞선 문제(애초에 뜬 적도 없다).",
+      "뿌리분류": "문서박제",
+      "차단조치": "module_registry.json chro-* 4건 텍스트 정정(2026-07-20) — 3건은 enabled true→false + ai_free_fallback에 미가동 실측 근거 명기, 1건(gmail-job-title-fetch)은 미확인 표기로 신뢰도 하향. 구조적 재발방지(예: 예약작업 존재를 스캔해 registry 주장과 대조하는 자동 검증기)는 아직 없음 — 이번은 값 정정만, 구조는 미차단.",
+      "상태": "OPEN",
+      "검증증거": "python scripts/module_silence_detector.py --scan-only → chro-* 4건 전부 unmeasurable 유지(정정 전후 판정 결과 동일, 즉 이번 정정은 판정 개선이 아니라 표기의 정직성 회복 — 실제로 가동 중인 것으로 잘못 표기됐던 3건이 이제 정직하게 미가동으로 표기됨). curl read-only 프로브로 chro-onboarding-weekly-watch 하부 GAS 웹앱(exec URL)만은 실제 라이브 확인(pin_invalid 응답)."
     }
   ]
 }
