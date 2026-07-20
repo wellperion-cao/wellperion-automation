@@ -4970,6 +4970,106 @@ function _processAction(body) {
   //   최근 데이터에 12:05 / 10:35 처럼 5분씩 밀린 값이 섞여 있다(예약이 5분 단위로 잡힐 리 없다 = 오염).
   //   GM 지시: 되돌리지 말고 30분 단위로 정리한다. 가장 가까운 00분/30분으로 반올림.
   //   대상: 예약1(G)·예약2(H)·예약3(I)·예약4(J) 네 칸의 '날짜 시간' 값. 날짜만 있는 값은 건드리지 않는다.
+  // ─── (일회성) 타임스탬프 서식 표시 + 시각유실 3건 제자리 이동 — 2026-07-20 GM 지시 ───
+  //   ①타임스탬프 칸 서식을 'yyyy-mm-dd hh:mm:ss'로 → 값엔 시각이 있는데 시트에 날짜만 보이던 문제 해소.
+  //   ②Nicole·한혜수·원유선은 타임스탬프 기준 자리가 아니라 시트 끝에 붙어 있다 → 날짜순 제자리로 옮긴다.
+  //   ★행 삭제 없음. moveRows(이동)만 사용 — INC-020(행 삭제 사고) 재발 방지.
+  //   ★대상은 행번호가 아니라 성함+연락처로 특정한다.
+  // ─── (일회성) 시트 꼬리 구간을 타임스탬프 오름차순 정렬 — 2026-07-20 ───
+  //   앞서 moveRows로 3건을 옮기다 서로를 밀어내 순서가 어긋났다(같은 목적지로 순차 이동한 내 로직 오류).
+  //   행 삭제·삽입 없이 지정 구간의 '값'만 정렬한다(Range.sort) — 안전.
+  //   from/to를 명시적으로 받아 전체 시트를 건드리지 않는다.
+  if (action === 'sort_tail_by_ts_20260720') {
+    if (String(body.key || '') !== 'wlp_sorttail_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var stFrom = parseInt(body.from || '0', 10), stTo = parseInt(body.to || '0', 10);
+    if (!(stFrom > 1) || !(stTo > stFrom)) return _json({ ok: false, error: 'range-required', from: stFrom, to: stTo });
+    var stDry = (String(body.dryRun || '') === '1');
+    var stSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!stSh) return _json({ ok: false, error: '시트 없음' });
+    var stHdr = stSh.getRange(1, 1, 1, stSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var iTs = stHdr.indexOf('타임스탬프'), iNm = stHdr.indexOf('1. 성함');
+    if (iTs < 0) return _json({ ok: false, error: 'ts-col-not-found' });
+    if (stTo > stSh.getLastRow()) stTo = stSh.getLastRow();
+    var rng = stSh.getRange(stFrom, 1, stTo - stFrom + 1, stHdr.length);
+    var before = rng.getValues().map(function (r, i) {
+      var v = r[iTs];
+      return { row: stFrom + i, name: iNm >= 0 ? String(r[iNm] || '') : '',
+               ts: (v instanceof Date) ? Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(v || '') };
+    });
+    if (stDry) return _json({ ok: true, dryRun: true, from: stFrom, to: stTo, before: before });
+    rng.sort({ column: iTs + 1, ascending: true });
+    SpreadsheetApp.flush();
+    var after = stSh.getRange(stFrom, 1, stTo - stFrom + 1, stHdr.length).getValues().map(function (r, i) {
+      var v = r[iTs];
+      return { row: stFrom + i, name: iNm >= 0 ? String(r[iNm] || '') : '',
+               ts: (v instanceof Date) ? Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(v || '') };
+    });
+    return _json({ ok: true, sorted: true, from: stFrom, to: stTo, after: after });
+  }
+
+  if (action === 'fix_ts_display_move_20260720') {
+    if (String(body.key || '') !== 'wlp_tsfix_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var tfDry = (String(body.dryRun || '') === '1');
+    var tfSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!tfSh) return _json({ ok: false, error: '시트 없음' });
+    var tfHdr = tfSh.getRange(1, 1, 1, tfSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var iTs = tfHdr.indexOf('타임스탬프'), iNm = tfHdr.indexOf('1. 성함'), iPh = tfHdr.indexOf('2. 연락처');
+    if (iTs < 0 || iNm < 0 || iPh < 0) return _json({ ok: false, error: 'col-not-found' });
+    var tfLast = tfSh.getLastRow();
+    // ① 서식
+    if (!tfDry && tfLast >= 2) { tfSh.getRange(2, iTs + 1, tfLast - 1, 1).setNumberFormat('yyyy-mm-dd hh:mm:ss'); SpreadsheetApp.flush(); }
+    // ② 이동 대상 특정 (성함+연락처)
+    var targets = [
+      // ★날짜까지 대조키에 넣는다 — 한혜수님은 같은 번호로 6/18·7/18 두 건이 있어(재문의) 이름+연락처만으론 특정 불가.
+      //   안전장치가 'not-unique'로 거부한 것이 맞았다. 키를 빼는 게 아니라 더하는 방향으로 해결한다(INC-020 교훈).
+      { name: 'Nicole choi', phone: '010-9119-2494', date: '2026-07-18' },
+      { name: '한혜수',      phone: '010-4108-7735', date: '2026-07-18' },
+      { name: '원유선',      phone: '010-2217-1558', date: '2026-07-18' }
+    ];
+    var norm = function (x) { return String(x || '').replace(/\D/g, ''); };
+    var all = tfLast >= 2 ? tfSh.getRange(2, 1, tfLast - 1, tfHdr.length).getValues() : [];
+    var found = [], notUnique = [];
+    targets.forEach(function (t) {
+      var hits = [];
+      for (var i = 0; i < all.length; i++) {
+        if (String(all[i][iNm] || '').trim() !== t.name) continue;
+        if (norm(all[i][iPh]) !== norm(t.phone)) continue;
+        var tv = all[i][iTs];
+        var tvs = (tv instanceof Date) ? Utilities.formatDate(tv, 'Asia/Seoul', 'yyyy-MM-dd') : String(tv || '').substring(0, 10);
+        if (t.date && tvs !== t.date) continue;
+        hits.push(i + 2);
+      }
+      if (hits.length !== 1) { notUnique.push({ name: t.name, hits: hits.length }); return; }
+      var ts = all[hits[0] - 2][iTs];
+      found.push({ name: t.name, row: hits[0], ts: (ts instanceof Date) ? Utilities.formatDate(ts, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(ts || '') });
+    });
+    if (notUnique.length) return _json({ ok: false, error: 'not-unique', detail: notUnique });
+    // 각 대상이 가야 할 위치 = 자기보다 늦은 타임스탬프가 처음 나오는 행
+    var dests = found.map(function (f) {
+      var myTs = f.ts.substring(0, 10);
+      var dest = -1;
+      for (var i = 0; i < all.length; i++) {
+        var r = i + 2;
+        if (r === f.row) continue;
+        var v = all[i][iTs];
+        var vs = (v instanceof Date) ? Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd') : String(v || '').substring(0, 10);
+        if (!vs) continue;
+        if (vs > myTs) { dest = r; break; }
+      }
+      return { name: f.name, from: f.row, ts: f.ts, moveBefore: dest };
+    });
+    if (tfDry) return _json({ ok: true, dryRun: true, formatWillSet: 'yyyy-mm-dd hh:mm:ss', targets: dests, lastRow: tfLast });
+    // 이동 — 아래 행부터 처리해야 위 행 이동이 인덱스를 흔들지 않는다
+    var moved = [];
+    dests.sort(function (a, b) { return b.from - a.from; }).forEach(function (m) {
+      if (m.moveBefore < 0 || m.moveBefore === m.from) { moved.push({ name: m.name, skipped: '이미 제자리' }); return; }
+      tfSh.moveRows(tfSh.getRange(m.from + ':' + m.from), m.moveBefore);
+      SpreadsheetApp.flush();
+      moved.push({ name: m.name, from: m.from, to: m.moveBefore, ts: m.ts });
+    });
+    return _json({ ok: true, formatSet: true, moved: moved });
+  }
+
   if (action === 'normalize_slot_time_20260720') {
     if (String(body.key || '') !== 'wlp_normtime_20260720') return _json({ ok: false, error: 'guard-mismatch' });
     var ntDry = (String(body.dryRun || '') === '1');
