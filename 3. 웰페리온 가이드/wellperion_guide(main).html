@@ -4158,6 +4158,19 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
   </div>
 
   <!-- ════════════════════════════════════════════
+       ③-a 전 유입채널 실측 (2026-07-20 시모 — 네이버 유입 진단)
+       위 '채널별 성과'는 우리가 발행하는 콘텐츠 5채널만 본다. 그래서 실제 문의를 가장 많이 데려오는
+       경로(네이버·소개·지인·오프라인 등 콘텐츠 밖 채널)가 화면에서 통째로 빠져 있었다.
+       데이터 = 이미 받아둔 funnel_conversion 응답의 byChannel 그대로(추가 조회·신규 집계 없음).
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">전 유입채널 실측 (콘텐츠 밖 포함)</div>
+    <div id="all-channel-wrap">
+      <div class="flow-skeleton sk-pulse"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
        ③-b 강습 종목별 문의·등록 (2026-07-20 GM 지시 — "강습도 종목별로 나눠 표시")
        데이터 = lesson_breakdown 액션(팀시트 기반 기존 서버 로직 그대로 재사용 — 신규 집계 없음).
        문의=선택 기간(팀시트 타임스탬프 기준) · 등록=누적(팀시트에 등록일이 없어 기간분리 불가, 정직 표기).
@@ -4486,6 +4499,7 @@ function refreshPeriodSections() {
     renderSummary(curItems.length, _contentInquirySum(curInqByCh), fcCur === null);
     renderConvBasis(fcCur, fcCur === null);
     renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcCur === null, curStatsByCh);
+    renderAllChannels(fcCur, fcPrev);
     renderLessonBreakdown(lb);
 
     renderInsight(curPubByCh, curInqByCh);
@@ -4606,6 +4620,46 @@ function renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcF
     '<div style="font-size:10.5px;color:var(--dim);margin-top:6px">가입(전환) 숫자를 클릭하면 실제 명단(이름·연락처 뒷4자리·종목·문의일·등록일)이 펼쳐집니다 — GM 지시(2026-07-20, 배834). 전환판정=전화매칭(유효회원∪강습등록), 문의 시점 채널 자기신고 기준이라 오분류 가능성이 있습니다.</div>';
 }
 
+
+// ─── ③-a 전 유입채널 실측 — 2026-07-20 시모(네이버 유입 진단) ─────
+// 콘텐츠 5채널 표만으로는 실제 문의의 대부분을 데려오는 경로가 안 보인다(실측: 네이버가 단일 최대,
+// 인스타·당근은 한 자릿수). 같은 funnel_conversion 응답의 byChannel을 그대로 정렬해 전 채널을 보여준다.
+// 새 집계·새 조회 없음 — fcCur/fcPrev는 refreshPeriodSections가 이미 받아둔 값.
+function renderAllChannels(fcCur, fcPrev) {
+  var el = document.getElementById('all-channel-wrap');
+  if (!el) return;
+  if (!fcCur || !Array.isArray(fcCur.byChannel) || !fcCur.byChannel.length) {
+    el.innerHTML = '<div class="measure-pending">전 유입채널 집계 실패 — 잠시 후 다시 시도해주세요.</div>';
+    return;
+  }
+  var prevMap = _fcChannelMap(fcPrev);
+  var rows = fcCur.byChannel.slice().sort(function(a, b) { return (b.inquiries || 0) - (a.inquiries || 0); });
+  var totalInq = rows.reduce(function(s, r) { return s + (r.inquiries || 0); }, 0);
+
+  var thead = '<thead><tr><th>유입채널</th><th style="text-align:right">문의</th><th style="text-align:right">비중</th><th style="text-align:right">증감</th><th style="text-align:right">가입</th><th style="text-align:right">전환율</th></tr></thead>';
+  var body = rows.map(function(r) {
+    var inq = r.inquiries || 0, conv = r.converted || 0;
+    var rate = (r.rate == null) ? 0 : r.rate;
+    var share = totalInq > 0 ? Math.round(inq / totalInq * 1000) / 10 : 0;
+    return '<tr>' +
+      '<td style="min-width:110px;white-space:nowrap">' + esc(r.channel) + '</td>' +
+      '<td style="text-align:right;font-weight:600">' + inq.toLocaleString('ko-KR') + '</td>' +
+      '<td style="text-align:right;color:var(--dim)">' + share + '%</td>' +
+      '<td style="text-align:right">' + _deltaHtml(inq, prevMap[r.channel] || 0) + '</td>' +
+      '<td style="text-align:right;' + (conv === 0 ? 'color:var(--dim)' : '') + '">' + conv.toLocaleString('ko-KR') + '</td>' +
+      '<td style="text-align:right;' + (rate === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + rate + '%</td>' +
+      '</tr>';
+  }).join('');
+
+  el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">' +
+    '<table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table></div>' +
+    '<div style="font-size:10.5px;color:var(--dim);margin-top:6px">' +
+    '채널=문의 시점 자기신고(폼·리셉션 기록) 기준 · 전환판정=전화매칭(유효회원∪강습등록) — 위 표와 같은 규칙. ' +
+    '<b>네이버 세부경로(플레이스/검색/블로그) 분리는 현재 측정불가</b>입니다: 문의시트 중분류 칸이 ' +
+    '\'N-플레이스(검색)\' 한 값으로 플레이스와 검색을 묶어 받고(2026-07-20 실측 네이버 204건 중 197건=96.6%), ' +
+    '소분류 칸은 1.8%·자동 UTM 칸은 0.8%만 채워져 있습니다. 분리 측정이 켜지기 전까지 이 칸을 쪼개 표시하지 않습니다(추정 금지).' +
+    '</div>';
+}
 
 // ─── ⑥ 인사이트 — 채널별 게시물당 문의(③ 실측치) 기준 ─────
 function renderInsight(pubByCh, inqByCh) {

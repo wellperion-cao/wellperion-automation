@@ -24,21 +24,28 @@ def append_cta_card(image_paths):
 
 
 # 채널 키 → utm_source 코드 (대시보드 UTM_LABELS와 정합)
+# naver_place = 자동 업로더가 없는 '수동 배치' 채널(네이버 스마트플레이스 업체정보의 홈페이지/예약 링크).
+#   2026-07-20 시모 실측 근거: 문의 자기신고 네이버 204건 중 197건(96.6%)이 중분류 'N-플레이스(검색)'
+#   단일값 — 플레이스와 검색이 한 버킷에 묶여 분리 불가. 자동 UTM 칸은 628건 중 5건(0.8%)만 채워져
+#   플레이스 유입을 링크 레벨에서 구분할 수단이 현재 0. 이 코드를 플레이스 관리자 링크에 1회 심으면
+#   그 이후 유입부터 '플레이스 경유'가 자동 UTM 칸에 남는다(소급 불가).
 CHANNEL_UTM = {
-    "naver_blog": "naver_blog",
-    "naver_cafe": "naver_cafe",
-    "danggn":     "danggn",
-    "kakao":      "kakao",
-    "instagram":  "instagram",
+    "naver_blog":  "naver_blog",
+    "naver_cafe":  "naver_cafe",
+    "naver_place": "naver_place",
+    "danggn":      "danggn",
+    "kakao":       "kakao",
+    "instagram":   "instagram",
 }
 
 # 채널 키 → utm_medium 코드
 CHANNEL_MEDIUM = {
-    "naver_blog": "blog",
-    "naver_cafe": "cafe",
-    "danggn":     "community",
-    "kakao":      "messaging",
-    "instagram":  "social",
+    "naver_blog":  "blog",
+    "naver_cafe":  "cafe",
+    "naver_place": "place",
+    "danggn":      "community",
+    "kakao":       "messaging",
+    "instagram":   "social",
 }
 
 # wellperion.com/ko/inquiry (http(s):// 선택, 끝 슬래시 선택) — 뒤에 쿼리/추가경로 없을 때만

@@ -2901,5 +2901,32 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 f3c449c4)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f3c449c4ec9fe3b3e0345da29728b8e9fc58fef8"
+  },
+  {
+    "task_id": "CEO-2026-07-20-ADHOC-fe1dc995",
+    "clevel": "ceo",
+    "title": "[웰리] ship_no 중복 해소 — 9331 병합 / 9255 충돌 재부여(9347)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9350,
+    "artifact": "- 9331: 동일 task_id(CMO-2026-07-20-ADHOC-b28b17c0) 중복 2건 → 1건 병합(정보 손실 0)\n- 9255: 시포 배(선등록) 유지, 시모 REACTION-LOOP 배에 9347 재부여\n- ship_no 유일성 회복 확인(중복 0건) (CLI ad-hoc · 커밋 fe1dc995)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "fe1dc995c854fef92e5d34a7e5f9d06174323277"
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-NAVER-INFLOW",
+    "clevel": "cmo",
+    "title": "[시모] 네이버 유입 진단 — 세부경로 실측·측정구멍 확인 + M1 전 유입채널 표 신설",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9351,
+    "artifact": "실측(gviz 읽기전용 · Survey.js _canonicalChannel_/_resolveInquiryChannelRaw_/_stageOf_ 1:1 이식, 새 집계로직 없음): 멤버십 26년 신규문의 628건 중 네이버 204건(단일 최대). 세부경로는 중분류 'N-플레이스(검색)' 197건(96.6%)·블로그 2·세부미상 3 — 플레이스와 검색이 한 값에 묶여 있어 분리 측정불가. 소분류칸 1.8%(11/628)·자동UTM칸 0.8%(5/628)만 채워져 링크레벨 귀속수단이 사실상 0. 전환율: 네이버 22.1%(45/204)로 소개·지인 46.8%의 절반 — 볼륨 최대·전환 최약. 추세: 네이버 문의점유 32.8%(1월)→42.9%(6월) 상승, 반대로 전환은 22.7%→16.7%→8.3%(7월, 월중) 하락. 단계정체: 네이버 문의의 41%가 '1문의' 단계에 멈춤(소개·지인 18%), 이탈률은 37% vs 35%로 유사 — 유입 질이 아니라 응대 이후 진도가 문제. LOSS 사유 '강습전환' 네이버 6.4% vs 비네이버 3.8%. 실행: (1) scripts/cta_utm.py에 naver_place 채널 추가(utm_source=naver_place·utm_medium=place) — WP 문의페이지 프리필(wpToSurvey)이 범용 패스스루라 페이지 코드 변경 불필요, 플레이스 관리자 링크 1회 교체로 그 이후 유입부터 자동 귀속. (2) M1 #m1-dash에 '전 유입채널 실측(콘텐츠 밖 포함)' 섹션 신설 — 기존 funnel_conversion byChannel 응답 그대로 재사용(추가 조회·신규 집계 0). 네이버 세부경로는 칸을 쪼개지 않고 측정불가 사유를 각주로 정직 표기. 검증: Playwright 로컬 http 렌더에서 라이브 데이터 표시 확인·pageerror 0건, ssot/divergence_scan.py 규칙 재서술 0건. GM 조치 필요(외부 서비스·저장소 내 자동화 수단 없음): 스마트플레이스 홈페이지 링크 교체 + 문의시트 중분류 드롭다운 분리.",
+    "next": "🔗 다음 — 중분류 N-플레이스/N-검색 분리 + 플레이스 링크 UTM 적용 후 2~4주 데이터가 쌓이면 M1에 네이버 세부경로 칸 개설(지금은 데이터가 얕아 보류)"
   }
 ]
