@@ -44,6 +44,7 @@ import re
 import subprocess
 import sys
 import time
+import unicodedata
 from datetime import datetime, timedelta
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
@@ -2713,44 +2714,121 @@ def _digest_unprocessed_counts(rows: list, field: str, month_prefix: str) -> tup
     return counts, cat
 
 
-def _digest_unprocessed_section(title: str, rows: list, field: str, month_prefix: str,
-                                 fixed_dot: str = "") -> str:
-    """종목별 진행상태 미정/담당자 미배정을 '당월/누적' 두 축(슬래시 표기)으로 렌더.
+# ── 고정폭 표 렌더 유틸(GM 2026-07-20) — 한글/이모지 표시폭 기준 패딩. len() 정렬 금지(한글 어긋남) ──
+def _disp_width(s: str) -> int:
+    """문자열 표시폭 합산. 전각(동아시아 W/F)·이모지(≥U+1F300)=2, 결합문자/변이선택자=0, 그 외=1."""
+    width = 0
+    for ch in s:
+        if unicodedata.combining(ch) != 0 or ch in ("️", "︎", "‍"):
+            continue
+        if unicodedata.east_asian_width(ch) in ("W", "F"):
+            width += 2
+        elif ord(ch) >= 0x1F300:
+            width += 2
+        else:
+            width += 1
+    return width
+
+
+def _truncate_disp(s: str, width: int) -> str:
+    """표시폭 width 를 넘으면 그 안에 맞춰 자르고 … 를 붙인다(… 자리 1칸 확보)."""
+    if _disp_width(s) <= width:
+        return s
+    out: list[str] = []
+    w = 0
+    for ch in s:
+        cw = _disp_width(ch)
+        if w + cw > width - 1:
+            break
+        out.append(ch)
+        w += cw
+    return "".join(out) + "…"
+
+
+def _pad_right(s: str, width: int) -> str:
+    s = _truncate_disp(s, width)
+    return s + (" " * max(0, width - _disp_width(s)))
+
+
+def _pad_left(s: str, width: int) -> str:
+    s = _truncate_disp(s, width)
+    return (" " * max(0, width - _disp_width(s))) + s
+
+
+# <pre> 위치 마커 — _build_digest_inquiry() 는 이 마커가 박힌 '로직 메시지'를 만들고,
+# _digest_finalize_html/_digest_finalize_plain 이 채널별로 최종 페이로드를 뽑아낸다.
+_PRE_OPEN = "\x01PRE_OPEN\x01"
+_PRE_CLOSE = "\x01PRE_CLOSE\x01"
+
+_DIGEST_TABLE_SPECIES_W = 14
+_DIGEST_TABLE_NUM_W = 8
+
+
+def _digest_table_lines(counts: dict, cat: list, fixed_dot: str) -> list[str]:
+    """종목별 당월/누적 카운트를 고정폭 표 라인 리스트로 렌더(<pre> 안에 그대로 들어갈 내용,
+    태그 없음). 색은 기존 종목 고유색(_digest_dot/fixed_dot) 그대로 — 심각도 색 아님.
     정렬 = 당월 합(미정+미배정) 내림차순, 동률이면 누적 합 내림차순. 최대 8줄 + '…외 N개 종목'.
-    당월·누적 전부 0인 종목은 집계에 진입 자체를 안 해 자연히 생략. 카테고리 전체가 0이면
-    담백한 완료 격려 문구로 대체(GM 2026-07-20 수정3)."""
-    counts, cat = _digest_unprocessed_counts(rows, field, month_prefix)
-    if not counts:
-        return f"■ {title} — ✅ 진행상태·담당자 모두 정리 완료. 깔끔합니다."
-    cmu, cma, ccu, cca = cat
-    lines = [f"■ {title} — 진행상태 미정 {cmu}/{ccu} · 담당자 미배정 {cma}/{cca}"]
+    마지막에 구분선 + 합계 행(표에 안 잡힌 잘린 종목까지 포함한 카테고리 전체 합계)."""
+    sw, nw = _DIGEST_TABLE_SPECIES_W, _DIGEST_TABLE_NUM_W
+    lines = [_pad_right("종목", sw) + " " + _pad_left("진행상태", nw) + "  " + _pad_left("담당자", nw)]
     ranked = sorted(counts.items(), key=lambda kv: (-(kv[1][0] + kv[1][1]), -(kv[1][2] + kv[1][3])))
     shown = ranked[:8]
     for sp, (mu, ma, cu, ca) in shown:
         dot = fixed_dot or _digest_dot(sp)
-        lines.append(f"  {dot}{sp} — 진행상태 미정 {mu}/{cu} · 담당자 미배정 {ma}/{ca}")
+        label = f"{dot}{sp}"
+        lines.append(_pad_right(label, sw) + " " + _pad_left(f"{mu}/{cu}", nw) + "  " + _pad_left(f"{ma}/{ca}", nw))
     remaining = len(ranked) - len(shown)
     if remaining > 0:
-        lines.append(f"  …외 {remaining}개 종목")
-    return "\n".join(lines)
+        lines.append(f"…외 {remaining}개 종목")
+    lines.append("─" * (sw + 1 + nw + 2 + nw))
+    cmu, cma, ccu, cca = cat
+    lines.append(_pad_left("합계", sw) + " " + _pad_left(f"{cmu}/{ccu}", nw) + "  " + _pad_left(f"{cma}/{cca}", nw))
+    return lines
+
+
+def _digest_unprocessed_section(title: str, rows: list, field: str, month_prefix: str,
+                                 fixed_dot: str = "") -> str:
+    """▸ {title} 카테고리 블록. 미처리 있으면 고정폭 표(<pre> 마커로 감쌈), 없으면 담백한 완료
+    격려 1줄(표 없음). 카테고리 제목은 표 밖에 둔다(GM 2026-07-20 — 표 가시성 개선)."""
+    head = f"▸ {title}"
+    counts, cat = _digest_unprocessed_counts(rows, field, month_prefix)
+    if not counts:
+        return f"{head}\n✅ 진행상태·담당자 모두 정리 완료."
+    table = _digest_table_lines(counts, cat, fixed_dot)
+    return f"{head}\n{_PRE_OPEN}" + "\n".join(table) + _PRE_CLOSE
 
 
 def _build_digest_member_unprocessed(mem: list, adult: list, youth: list, today: str) -> str:
-    """🗂 회원관리 미처리 현황(종목별, 당월/누적) — 오늘 문의 목록 뒤·마케팅 섹션 앞에 삽입
-    (GM 2026-07-20 — 금일 축 폐기, 당월(이번 달 1일~지금)/누적(전체 기간) 두 축으로 교체).
+    """🗂 회원관리 미처리 현황(종목별, 당월/누적, 고정폭 표) — 오늘 문의 목록 뒤·마케팅 섹션 앞에
+    삽입(GM 2026-07-20 — 표 렌더로 가시성 개선. 색은 기존 종목 고유색 유지, 심각도 색 아님).
     한 사람 다종목은 _split_sports() 로 종목별로 나눠 계상."""
     month_prefix = today[:7]  # "YYYY-MM"
     month_label = f"{today[:4]}년 {int(today[5:7])}월"
-    header = f"━━━━━━━━━━\n🗂 회원관리 미처리 현황 ({month_label})"
+    title = "━━━━━━━━━━\n🗂 회원관리 미처리 현황"
     sections = [
         _digest_unprocessed_section("멤버십", mem, "program", month_prefix, fixed_dot="🟡 "),
         _digest_unprocessed_section("성인강습", adult, "sport", month_prefix),
         _digest_unprocessed_section("유소년강습", youth, "sport", month_prefix),
     ]
-    # 세 카테고리 전부 완료(✅)면 섹션 본문 전체를 담백한 한 줄로 대체(GM 결함3-전체 케이스).
-    if all("✅" in s for s in sections):
-        return f"{header}\n✅ 전 종목 진행상태·담당자 배정 완료. 미처리 0건입니다."
-    return f"{header}\n숫자 = 당월 / 누적\n\n" + "\n\n".join(sections)
+    # 세 카테고리 전부 완료(표를 만든 카테고리가 하나도 없음)면 섹션 전체를 담백한 한 줄로
+    # 대체(직전 라운드 로직 그대로 — GM 2026-07-20 유지 지시).
+    if all(_PRE_OPEN not in s for s in sections):
+        return f"{title}\n✅ 전 종목 진행상태·담당자 배정 완료. 미처리 0건입니다."
+    return f"{title}\n{month_label} · 숫자 = 당월/누적\n\n" + "\n\n".join(sections)
+
+
+def _digest_finalize_html(logical: str) -> str:
+    """로직 메시지(<pre> 마커 포함, 아직 미이스케이프) → 텔레그램 parse_mode=HTML 페이로드.
+    전체를 한 번에 html.escape() 해 이름·채널·종목명 등 어떤 동적 텍스트에도 빠짐없이 적용되게
+    한 뒤, <pre> 마커만 실제 태그로 되돌린다(마커는 &/</> 를 포함하지 않아 escape 로 안 바뀜)."""
+    escaped = html.escape(logical, quote=False)
+    return escaped.replace(_PRE_OPEN, "<pre>").replace(_PRE_CLOSE, "</pre>")
+
+
+def _digest_finalize_plain(logical: str) -> str:
+    """로직 메시지 → 카카오톡 등 HTML 을 못 읽는 채널용 평문. 마커만 제거(이스케이프 없음 —
+    실제 태그를 넣은 적이 없으므로 벗길 엔티티도 없다). 표의 공백 패딩 정렬은 그대로 남는다."""
+    return logical.replace(_PRE_OPEN, "").replace(_PRE_CLOSE, "")
 
 
 def _append_digest_marketing_section(msg: str) -> str:
@@ -2948,17 +3026,28 @@ def run_daily_digest(early: bool = False) -> None:
     label = "[하루 일과 정리]"
     logger.info(f"{label} 시작 — today={today}")
 
+    # 문의알림방만 별도 처리(GM 2026-07-20) — <pre> 고정폭 표를 쓰므로 parse_mode="HTML" 로 발송.
+    # 점검관리방·종합접수처는 기존 그대로(MarkdownV2 기본, 무변경).
+    inquiry_msg = None  # 카카오용 평문(태그·엔티티 없음)
+    try:
+        inquiry_logical = _build_digest_inquiry(today)
+        inquiry_html = _digest_finalize_html(inquiry_logical)
+        inquiry_msg = _digest_finalize_plain(inquiry_logical)
+        success = send_telegram(DIGEST_INQUIRY_CHAT_ID, inquiry_html, parse_mode="HTML")
+        if success:
+            logger.info(f"{label} 문의알림방 발송 완료 chat_id={DIGEST_INQUIRY_CHAT_ID} (HTML)")
+        else:
+            logger.error(f"{label} 문의알림방 발송 실패 chat_id={DIGEST_INQUIRY_CHAT_ID}")
+    except Exception as e:
+        logger.error(f"{label} 문의알림방 예외: {e}")
+
     targets = [
-        ("문의알림방", DIGEST_INQUIRY_CHAT_ID,   _build_digest_inquiry),
         ("점검관리방", DIGEST_CHECK_CHAT_ID,     _build_digest_check),
         ("종합접수처", DIGEST_RECEPTION_CHAT_ID, _build_digest_reception),
     ]
-    inquiry_msg = None
     for room_name, chat_id, builder in targets:
         try:
             msg = builder(today)
-            if room_name == "문의알림방":
-                inquiry_msg = msg
             success = send_telegram(chat_id, msg)
             if success:
                 logger.info(f"{label} {room_name} 발송 완료 chat_id={chat_id}")
