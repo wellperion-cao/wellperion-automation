@@ -18,11 +18,14 @@
      margin-bottom 35px = a fixed 75px gray gap) leaves the same 75px empty strip before the
      footer, confirmed identical to the other two pages (same injection mechanism). Fixed the
      same way: #wlp-en-inquiry-root { margin-bottom: -75px }.
-     Note (checked, not changed): unlike the KO/Survey pages, this page has no distinct
-     background color of its own (fully transparent — the visible gray you see everywhere is
-     just the theme's own default), so there is no "ivory background cut off at the edges" to
-     fix here — nothing to extend left/right since nothing colored exists to be cut. Flagging
-     rather than inventing a new ivory-background redesign unasked; see report.
+     2026-07-20 GM instruction (webmaster decision, no re-ask — reversible change): apply the
+     same ivory background as the KO page after all. Originally this page had no background
+     color (flagged rather than assumed) — but the GM's original ask was for the two pages to
+     look "the same," and a color mismatch isn't "the same." Used the exact value KO actually
+     uses (--bg:#f5f0ea in wp_inquiry_block.html), not an eyeballed approximation. Full-bleed
+     via the same 50vw-breakout ::before technique as KO/Survey form (avoids the width:100vw
+     scrollbar-overflow trap). White cards (already #fff) now read correctly against it, same
+     as KO's white cards on beige.
      This page's own language switch (a.lang-header, "KOR", top-right) already exists and
      already works — no change needed there (unlike KO where the same native switcher is
      hidden by that page's own #header-outer:none and had to be rebuilt).
@@ -35,7 +38,13 @@ body.page-id-8408 #header-outer #logo { margin-top: 32px !important; }
 }
 /* 하단 여백 제거(2026-07-20 GM 지시) — KO(8394)·Survey폼(8460)과 동일한 고정 75px 회색 여백
    (container-wrap padding-bottom 40px + raw-html 블록 margin-bottom 35px) 실측 확인, 동일 처방. */
-body.page-id-8408 #wlp-en-inquiry-root { margin-bottom: -75px !important; }
+body.page-id-8408 #wlp-en-inquiry-root { margin-bottom: -75px !important; background: #f5f0ea; position: relative; }
+/* 아이보리 배경 풀블리드(2026-07-20 GM 지시 — KO와 같은 값 #f5f0ea 그대로, 눈대중 근사 아님) —
+   width:100vw 대신 left/right:50%+margin:-50vw만 사용해 스크롤바 폭 오버플로 함정 회피(KO·8460과 동일 기법). */
+body.page-id-8408 #wlp-en-inquiry-root::before {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 50%; right: 50%;
+  margin-left: -50vw; margin-right: -50vw; background: #f5f0ea; z-index: -1;
+}
 </style>
 <div id="wlp-en-inquiry-root" style="max-width:760px;margin:0 auto;padding:70px 16px 80px;font-family:'Noto Sans KR',-apple-system,'Malgun Gothic',sans-serif;">
   <div style="text-align:center;margin:8px 0 24px;">
