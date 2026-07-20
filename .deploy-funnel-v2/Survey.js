@@ -4318,6 +4318,80 @@ function _processAction(body) {
     return _json(rsResult);
   }
 
+  // ─── (일회성) 문의 채널값 정리 3건 — 2026-07-20 시포(리드 승인 범위) ───
+  //   승인 범위: ① 중분류 빈칸 반영 2건 ② '유입경로(자동)'에 직원명이 들어간 오염 1건을 비고로 이관.
+  //   ★ 칸 구조는 절대 건드리지 않는다 — §1-A(유입경로 병합·삭제)·§1-B(날짜 삭제)는 GM 결정 대기 중.
+  //   ★ 대조키 = 성함 + 연락처(숫자정규화) 둘 다 일치. rowIndex 미사용 —
+  //     INC-020(행번호로 지웠다가 실고객 2명 오삭제) 재발방지. 매칭이 정확히 1건이 아니면 그 건은 건너뛴다(추측 금지).
+  //   멱등: 목표값이 이미 들어있으면 skip. dryRun=1이면 한 글자도 쓰지 않고 매칭·예정변경만 반환.
+  if (action === 'fix_inquiry_channel_20260720') {
+    var _FIC_GUARD = 'wlp_fix_ch_20260720';
+    if (String(body.key || '') !== _FIC_GUARD) return _json({ ok: false, error: 'guard-mismatch' });
+    var ficDry = (String(body.dryRun || '') === '1');
+    var ficSh  = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!ficSh) return _json({ ok: false, error: '시트 없음' });
+    var ficHdr  = ficSh.getRange(1, 1, 1, ficSh.getLastColumn()).getValues()[0];
+    var ciName  = _findCol_(ficHdr, ['성함', '이름']);
+    var ciPhone = _findCol_(ficHdr, ['연락처', '전화', '휴대폰']);
+    var ciMid   = _findCol_(ficHdr, ['중분류']);
+    var ciAuto  = _findCol_(ficHdr, ['유입경로(자동)', '유입경로자동', '유입경로_자동']);
+    var ciMemo  = _findCol_(ficHdr, ['비고', '메모']);
+    if (ciName < 0 || ciPhone < 0) return _json({ ok: false, error: '성함/연락처 칸 탐색 실패' });
+    // 칸 위치를 응답에 실어 호출부가 눈으로 검증할 수 있게 한다(엉뚱한 칸에 쓰는 사고 조기 발견).
+    var ficCols = { 성함: ciName, 연락처: ciPhone, 중분류: ciMid, '유입경로(자동)': ciAuto, 비고: ciMemo,
+                    헤더확인: { 중분류: ciMid >= 0 ? ficHdr[ciMid] : null, 비고: ciMemo >= 0 ? ficHdr[ciMemo] : null } };
+    var ficTargets = [
+      { 용도: '중분류반영',   성함: '조아람', 연락처: '010-8923-0810', 중분류: '네이버 블로그' },
+      { 용도: '중분류반영',   성함: '익명여', 연락처: '010-9265-5742', 중분류: '네이버 검색·플레이스' },
+      { 용도: '오염_비고이관', 성함: '여',   연락처: '010-3929-5258', 자동값비우기: true }
+    ];
+    var ficLast = ficSh.getLastRow();
+    var ficAll  = ficSh.getRange(2, 1, ficLast - 1, ficHdr.length).getValues();
+    var ficOut = [], ficApplied = 0, ficSkipped = 0, ficErr = 0;
+    ficTargets.forEach(function(t) {
+      var keyPh = _normPhone_(t.연락처), keyNm = String(t.성함).trim();
+      var hits = [];
+      for (var i = 0; i < ficAll.length; i++) {
+        if (_normPhone_(ficAll[i][ciPhone]) === keyPh && String(ficAll[i][ciName] || '').trim() === keyNm) {
+          hits.push(i + 2); // 물리 행(참고용) — 매칭 결과일 뿐 입력키가 아니다
+        }
+      }
+      if (hits.length !== 1) {
+        ficErr++;
+        ficOut.push({ 용도: t.용도, 대조키: t.성함 + '/' + t.연락처, 결과: '건너뜀', 사유: '매칭 ' + hits.length + '건(1건이어야 함)' });
+        return;
+      }
+      var row = hits[0], r = ficAll[row - 2];
+      var before = { 중분류: ciMid >= 0 ? String(r[ciMid] || '') : null,
+                     '유입경로(자동)': ciAuto >= 0 ? String(r[ciAuto] || '') : null,
+                     비고: ciMemo >= 0 ? String(r[ciMemo] || '') : null };
+      var plan = [];
+      if (t.중분류) {
+        if (ciMid < 0) { ficErr++; ficOut.push({ 용도: t.용도, 대조키: t.성함, 결과: '건너뜀', 사유: '중분류 칸 없음' }); return; }
+        if (String(before.중분류).trim()) plan.push({ 칸: '중분류', 결과: 'skip(이미 값 있음)' });
+        else plan.push({ 칸: '중분류', 전: before.중분류, 후: t.중분류, 열: ciMid + 1 });
+      }
+      if (t.자동값비우기) {
+        if (ciAuto < 0 || ciMemo < 0) { ficErr++; ficOut.push({ 용도: t.용도, 대조키: t.성함, 결과: '건너뜀', 사유: '유입경로(자동)/비고 칸 없음' }); return; }
+        var moved = String(before['유입경로(자동)'] || '').trim();
+        if (!moved) plan.push({ 칸: '유입경로(자동)', 결과: 'skip(이미 비어있음)' });
+        else if (String(before.비고).trim()) plan.push({ 칸: '비고', 결과: 'skip(비고에 기존값 있어 덮지 않음)', 기존: before.비고 });
+        else {
+          plan.push({ 칸: '비고', 전: before.비고, 후: moved + ' (유입경로(자동)에서 이관 2026-07-20)', 열: ciMemo + 1 });
+          plan.push({ 칸: '유입경로(자동)', 전: moved, 후: '', 열: ciAuto + 1 });
+        }
+      }
+      if (!ficDry) {
+        plan.forEach(function(p) { if (p.열) ficSh.getRange(row, p.열).setValue(p.후); });
+      }
+      var did = plan.filter(function(p) { return !!p.열; }).length;
+      if (did) ficApplied++; else ficSkipped++;
+      ficOut.push({ 용도: t.용도, 대조키: t.성함 + '/' + t.연락처, 매칭행_참고: row, 결과: did ? (ficDry ? '적용예정' : '적용') : 'skip', 변경: plan });
+    });
+    return _json({ ok: true, dryRun: ficDry, 칸위치: ficCols, 총행수: ficAll.length,
+                   요약: { 적용: ficApplied, skip: ficSkipped, 오류: ficErr }, 상세: ficOut });
+  }
+
   // ─── UTM 귀속(파일럿): 구글폼에 '유입경로(자동)' 텍스트 항목 추가 + prefill entry ID 회수 (2026-06-23 ship113) ───
   //   ★ 가드 필수 — 폼을 실제로 변형하므로 _SURVEY_PUBLIC_ACTIONS 화이트리스트에 절대 넣지 않는다.
   //     비밀 파라미터 key === _ADD_UTM_GUARD 일치할 때만 실행(무단호출 차단).
