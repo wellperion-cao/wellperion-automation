@@ -1760,5 +1760,31 @@
     "artifact": "등록모듈 28개 중 17개가 알림 미배선(notify_wired:false/bot_id:null)이라\nKPI 집계기 6일 침묵(INC-018)과 같은 사고가 언제든 재발할 수 있었다.\n\"알림 붙이기\" 대신 등록부 전체를 순회하는 침묵 감지기로 확장:\n정상시 무발신, 예상 주기(daily/weekly/monthly) 초과 침묵만 하루 1통\n묶어 기존 채널(자동화현황방)로 통지. 실측 스캔 ok 7·silent 0·판정불가\n21·대상아님 1. 역재현·오탐확인·묶음발신 3종 검증 통과(scratch 사본,\n라이브 무변경). 실발송·스케줄 (CLI ad-hoc · 커밋 be284a1b)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "be284a1b64d403200f5d88b4a0b0db2139e52cab"
+  },
+  {
+    "task_id": "COO-2026-07-20-FCHECK-THRESHOLD-SSOT",
+    "clevel": "coo",
+    "title": "[시우] 시설부 점검 기준값 단일화 + 2단 경보(🔴법정/🟡목표) 전환",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-20",
+    "note": "[2026-07-20 GM 지시·deep-interview 7라운드 완료·모호도 4.7%] 증상: 시설부 점검 제출마다 이상건. 원인=정합어긋남 — 같은 측정항목 정상범위가 3곳(입력화면 FC_RANGES / GAS FC_MEASURE_RANGES / 대시보드 FACILITY_RANGES)에 다르게 하드코딩. 07-10~11 커밋이 입력화면만 법정기준으로 완화하고 서버·대시보드 미수정 → 현장 초록·서버 이상 재판정.\n확정: ①🔴=법정기준만(체육시설법 pH5.8~8.6·잔류염소0.4~1.0) 🟡=목표치(2주 실측 후 확정·그때까지 경보없이 기록만) ②기준값 원천=시트1곳, 수정UI=시설부 체계 페이지 편집표(saveBoard 패턴) ③기준밖 사유칸 ④법정 외부검사3종(탁도·과망간산칼륨·대장균군)=별도 수질검사기록 칸 분리 ⑤반복감지 자동제안=후속 이관.\n수온은 법정기준 없음 — 임의값 26~30 폐기, 목표치로만 관리.\n명세=.omc/specs/deep-interview-facility-check-threshold-ssot.md",
+    "next": "화면·기준표까지 자율 진행. ★GAS 웹앱 재배포(비가역·라이브 반영)는 GM 결재 후. 완료조건=초록 입력값이 제출 후에도 정상 3회 연속.",
+    "ship_no": 9199,
+    "surface": "g1"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-457f7987",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9200,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 457f7987)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "457f79879d1823a28452e5da81d45cd671a62fbe"
   }
 ]

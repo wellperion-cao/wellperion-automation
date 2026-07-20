@@ -482,6 +482,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-policy" class="content">
   <h2 style="font-size:20px;margin-bottom:6px;">주차관리부 규정</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 운영 기준·정기 회의 규정을 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);font-weight:700;font-size:11px;">[편집 가능 — GM 검토]</span></p>
+  <!-- ── 🧑‍💼 채용 현황 — CHRO 채용 시트(db:hire) 라이브 연동. 값은 여기 없음(렌더만) · 실패 시 미표시.
+       접히는 섹션 안에 두면 안 보임 → 탭 최상단 고정 배치. (시우 2026-07-20) ── -->
+  <div id="hiring-host"></div>
+  <script src="hiring-status.js"></script>
+  <script>renderHiringStatus('hiring-host','주차관리부');</script>
+
   <div class="board-fullwidth">
     <!-- 규정 보드: renderPolicyBoard()가 #policy-board(display:contents)에 .board-col 주입. 운영 기준·정기 회의 컬럼. (발렛은 별도 탭) -->
     <div class="board-scroll" id="policy-flow">
@@ -559,11 +565,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div id="parking-staff-body"></div>
   <button type="button" class="quickadd-btn" style="width:auto;padding:8px 14px;margin:10px 0;" onclick="parkingAddRow('staff')">＋ 직원 추가</button>
   <p style="font-size:12px;color:var(--dim);margin:0 0 4px;line-height:1.6;">※ 야간조 없음. 오후조 담당자는 충원 진행 중 — 확정 시 본 표 갱신 (현황 기준 운영).</p>
-
-  <!-- ── 🧑‍💼 채용 현황 — CHRO 채용 시트(db:hire) 라이브 연동. 값은 여기 없음(렌더만) · 실패 시 미표시. (시우 2026-07-20) ── -->
-  <div id="hiring-host"></div>
-  <script src="hiring-status.js"></script>
-  <script>renderHiringStatus('hiring-host','주차관리부');</script>
 
     </div>
       </div>
