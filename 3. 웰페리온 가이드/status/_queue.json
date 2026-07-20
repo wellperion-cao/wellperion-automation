@@ -1,5 +1,21 @@
 [
   {
+    "task_id": "CTO-2026-07-21-MODULE-MERGE",
+    "clevel": "cto",
+    "title": "[시토] 자율화 모듈 병합 — 비슷한 맥락끼리 확장·통합(감시 4종→하네스1·운영 다이제스트 수집층 공유·타도메인 3건 제기)",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-21",
+    "from": "gm",
+    "origin": "gm",
+    "note": "2026-07-21 GM 지시('자율화 모듈/파이프라인 중 비슷한 맥락끼리 확장 병합할 것 없나'). 등록부 28모듈 전수 스캔 → 5클러스터 발견, GM '전부 다 진행' 결재. #1 자가건강 감시 통합(시토 도메인): automation-health+gas-version-monitor+module-silence-detector+page-hygiene 발신경로 4·방 3·토큰로더 4 흩어짐 → module_silence_detector 승격 하네스 1개+하루1통 이상요약(자동화현황방), 게이트 SELF_HEALTH_WATCHDOG_LIVE 기본OFF·dry-run 검증, 소스모듈 존치·read-only 애그리게이트. #2 운영 다이제스트 수집층 공유(시토 도메인): ops_daily_digest.py(아침 07:30 카톡★운영부)+daily_scheduler.run_daily_digest(밤 20:00/22:30 텔레그램3방)이 GAS URL상수·종합접수 reg_list·member_inquiry_list·_gas_get·테스트행필터를 바이트단위 복제 → scripts/collectors/ 공용 수집층 추출(동작보존, 아침도 테스트행필터 이득). daily_scheduler는 관리자권한 상주라 재부팅 전 휴면=자연 검증창. #3 gap-detector+gm-aide 같은 로그(gm_aide_scan_log.jsonl) 이중등록→웰리 제기. #4 cmo-eval-feedback+cmo-reaction-loop 반응루프 중복→시모 제기. #5 #1 하네스를 전사 무결성표준으로 확장(cpo-sheet-contract·chro)→웰리 제기. 설계=스크래치패드 merge1_watchdog_design.md·merge_proposals_3to5.md.",
+    "next": "#1 하네스 구현·dry-run 검증 → #2 수집층 추출·동작보존 검증 → 등록부 반영 → 원샷 커밋·푸시 → #3~5 소유주 제기. 라이브 발신 발효는 GM go 대기.",
+    "depends_on": "",
+    "ship_no": 9420,
+    "module": "T1",
+    "surface": "autonomy"
+  },
+  {
     "task_id": "CTO-2026-06-23-SELF-HOSTED-SERVER-SETUP",
     "clevel": "cto",
     "title": "[시토] AWS 멀티테넌트 ERP SaaS 구축 (구 자체서버) — 여러 회사용 ERP+브로제이 흡수, 웰페리온 1호 테넌트",
@@ -650,5 +666,19 @@
     "artifact": "기능1(SUC→등록종목)·2(LOSS→사유)는 이미 완성 배선 — 이번 완성분:\n- 멤버십: 등록종목을 새 칸 없이 기존 '관심 프로그램' 칸에 갱신(retarget)\n- 강습: 등록모달에 회수 select 추가 → (종목,회수)→유효기간 자동계산·저장\n  · 자동=P.T/필라/골프/스쿼시/유소년WSC(규칙 명확) · 수동폴백=성인수영/발레/뮤지컬\n  · 등록회수·유효기간 칸 _LESSON_MGMT_FIELDS 등재로 자동생성\n유효기간 정본=상품기획 요금표(수기동기화). node·계산 검증 PASS.\n라이브 발효(GAS 재배포+Pa (CLI ad-hoc · 커밋 1f8d0c4c)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "1f8d0c4ccf617d14e4b23040daeca6213e6c4553"
+  },
+  {
+    "task_id": "CPO-2026-07-21-ADHOC-9019f3e1",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9427,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 9019f3e1)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "9019f3e17c671f9b4eb97cbd5c4645a90d9673ee"
   }
 ]
