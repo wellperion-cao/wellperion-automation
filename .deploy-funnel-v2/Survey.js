@@ -3605,6 +3605,125 @@ function _processAction(body) {
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가
   //   JSON(원래 utm 문자열 칸)으로 오염된 28건 전부를 대상으로, Contact 칸에 실제 내용이 있는 행만 비운다.
   //   Contact가 비어있는 행은 유일 기록 소실 위험 → 절대 비우지 않고 skip 보고. 열 삭제 없음(값만 클리어).
+  // ─── (긴급 원복) cpo_lesson_row_reorder_0720 이 만든 성인강습 팀시트 어긋남 원인 제거 ───
+  //   배경: cpo_lesson_row_reorder_0720 실행 후 'P.T 성인' 팀시트가 IMPORTRANGE 재정렬로
+  //   담당·진행상황이 어긋남(GM 실측). 원인 제거 = 원본(1.성인강습, gid111889422) 행 순서를
+  //   이동 전으로 되돌려 IMPORTRANGE가 자연 복귀하게 함(팀시트 직접수정 금지).
+  //   2단계 — ① 레거시 오름차순 블록을 통째로 moveRows(검증된 S<D 방향)해 자체폼 18행을
+  //   앞쪽으로 되돌림 ② 좁은 범위(2~30행) 안에서 연락처+타임스탬프 이중키로 매 이동 직전
+  //   현재 위치를 재검색해 정확한 원래 행번호로 개별 이동(조아람 3건처럼 연락처만으론 구분 안
+  //   되는 경우 타임스탬프까지 일치해야 매치 — 잘못된 행을 옮기지 않는다). 모든 이동은 직후
+  //   즉시 재검증, 하나라도 어긋나면 그 자리에서 중단(추가 이동 없음). 2026-07-20 시토(GM 긴급지시).
+  if (action === 'cpo_lesson_row_restore_0720') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var rsMode = String(body.mode || 'dryrun');
+    var rsGid = parseInt(body.gid, 10);
+    var rsSh = _lessonSheet_(rsGid);
+    if (!rsSh) return _json({ ok: false, error: 'sheet_not_found' });
+    var rsLastCol = rsSh.getLastColumn();
+    var rsRowCountBefore = rsSh.getLastRow();
+    var rsHdr = rsSh.getRange(1, 1, 1, rsLastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+    var rsCiPhone = _findCol_(rsHdr, ['연락처', '핸드폰', '전화', '휴대폰']);
+    var rsCiTs = _findCol_(rsHdr, ['타임스탬프']);
+    if (rsCiPhone < 0 || rsCiTs < 0) return _json({ ok: false, error: 'col_not_found', rsCiPhone: rsCiPhone, rsCiTs: rsCiTs });
+    var rsNormP = function (p) { return String(p == null ? '' : p).replace(/\D/g, ''); };
+    var rsFmtTs = function (v) {
+      if (v instanceof Date && !isNaN(v.getTime())) return Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+      return String(v == null ? '' : v);
+    };
+
+    if (rsMode === 'dryrun') {
+      var lb0 = JSON.parse(body.legacyBlock || '{}');
+      var chkFrom = rsSh.getRange(lb0.from, 1, 1, rsLastCol).getValues()[0];
+      var chkTo = rsSh.getRange(lb0.to, 1, 1, rsLastCol).getValues()[0];
+      var chkNext = rsSh.getRange(lb0.to + 1, 1, 1, rsLastCol).getValues()[0];
+      return _json({
+        ok: true, mode: 'dryrun', rowCountBefore: rsRowCountBefore,
+        legacyFrom: { row: lb0.from, phone: String(chkFrom[rsCiPhone]), ts: rsFmtTs(chkFrom[rsCiTs]) },
+        legacyTo: { row: lb0.to, phone: String(chkTo[rsCiPhone]), ts: rsFmtTs(chkTo[rsCiTs]) },
+        rightAfterBlock: { row: lb0.to + 1, phone: String(chkNext[rsCiPhone]), ts: rsFmtTs(chkNext[rsCiTs]) }
+      });
+    }
+
+    if (rsMode === 'execute_step1_legacy_block_move') {
+      var lb = JSON.parse(body.legacyBlock || '{}');  // {from, to, destIndex}
+      if (!lb.from || !lb.to || !lb.destIndex) return _json({ ok: false, error: 'legacyBlock 필수(from/to/destIndex)' });
+      // 사전 재확인 — 블록 경계 전화번호가 기대값과 일치해야 시작(경합 방지)
+      if (body.expectFromPhone) {
+        var fPhone = rsSh.getRange(lb.from, rsCiPhone + 1).getValue();
+        if (rsNormP(fPhone) !== rsNormP(body.expectFromPhone)) {
+          return _json({ ok: false, error: 'legacy_from_phone_mismatch', expected: body.expectFromPhone, actual: String(fPhone) });
+        }
+      }
+      if (body.expectToPhone) {
+        var tPhone = rsSh.getRange(lb.to, rsCiPhone + 1).getValue();
+        if (rsNormP(tPhone) !== rsNormP(body.expectToPhone)) {
+          return _json({ ok: false, error: 'legacy_to_phone_mismatch', expected: body.expectToPhone, actual: String(tPhone) });
+        }
+      }
+      var srcRange = rsSh.getRange(lb.from, 1, lb.to - lb.from + 1, rsLastCol);
+      rsSh.moveRows(srcRange, lb.destIndex);
+      var rsRowCountAfter1 = rsSh.getLastRow();
+      // 검증 — 이동 후 새 레거시 시작행(=lb.from 위치, 18행이 앞으로 당겨진 뒤 그 자리)과
+      // 새 레거시 끝행(=destIndex-1)이 기대 전화번호와 일치하는지
+      var newLegacyStartRow = lb.from + (lb.destIndex - lb.to - 1);  // 블록이 뒤로 밀린 만큼 시작행도 뒤로
+      var newLegacyEndRow = lb.destIndex - 1;
+      var vStart = rsSh.getRange(newLegacyStartRow, rsCiPhone + 1).getValue();
+      var vEnd = rsSh.getRange(newLegacyEndRow, rsCiPhone + 1).getValue();
+      return _json({
+        ok: true, mode: 'execute_step1_legacy_block_move', rowCountBefore: rsRowCountBefore, rowCountAfter: rsRowCountAfter1,
+        rowCountUnchanged: rsRowCountBefore === rsRowCountAfter1,
+        newLegacyStartRow: newLegacyStartRow, newLegacyStartPhone: String(vStart),
+        newLegacyEndRow: newLegacyEndRow, newLegacyEndPhone: String(vEnd)
+      });
+    }
+
+    if (rsMode === 'execute_step2_restore_individual') {
+      var rsTargets;
+      try { rsTargets = JSON.parse(body.targets || '[]'); } catch (e) { return _json({ ok: false, error: 'bad_targets_json' }); }
+      if (!rsTargets.length) return _json({ ok: false, error: 'no_targets' });
+      var searchFrom = parseInt(body.searchFrom || '2', 10), searchTo = parseInt(body.searchTo || '30', 10);
+      var executed = [];
+      for (var i = 0; i < rsTargets.length; i++) {
+        var t = rsTargets[i];
+        var n = searchTo - searchFrom + 1;
+        var block = rsSh.getRange(searchFrom, 1, n, rsLastCol).getValues();
+        var foundRow = -1, matchCount = 0;
+        for (var j = 0; j < block.length; j++) {
+          var rowPhone = rsNormP(block[j][rsCiPhone]);
+          var rowTsStr = rsFmtTs(block[j][rsCiTs]);
+          if (rowPhone === rsNormP(t.phone) && rowTsStr === t.ts) { foundRow = searchFrom + j; matchCount++; }
+        }
+        if (matchCount !== 1) {
+          return _json({
+            ok: false, error: 'search_not_unique', target: t, matchCount: matchCount, foundRow: foundRow,
+            executed: executed, rowCountNow: rsSh.getLastRow(), rowCountBefore: rsRowCountBefore
+          });
+        }
+        var srcRow = foundRow;
+        var destIndex = (srcRow < t.originalRow) ? (t.originalRow + 1) : t.originalRow;
+        rsSh.moveRows(rsSh.getRange(srcRow, 1, 1, rsLastCol), destIndex);
+        var landedRow = (srcRow < t.originalRow) ? (destIndex - 1) : destIndex;
+        var verifyPhone = rsSh.getRange(landedRow, rsCiPhone + 1).getValue();
+        var verifyTs = rsFmtTs(rsSh.getRange(landedRow, rsCiTs + 1).getValue());
+        if (rsNormP(verifyPhone) !== rsNormP(t.phone) || verifyTs !== t.ts) {
+          return _json({
+            ok: false, error: 'move_verify_failed_ABORTED',
+            failedAt: { target: t, srcRow: srcRow, destIndex: destIndex, landedRow: landedRow, actualPhone: String(verifyPhone), actualTs: verifyTs },
+            executed: executed, rowCountNow: rsSh.getLastRow(), rowCountBefore: rsRowCountBefore
+          });
+        }
+        executed.push({ name: t.name, phone: t.phone, ts: t.ts, srcRow: srcRow, landedRow: landedRow, expectedOriginalRow: t.originalRow, exact: landedRow === t.originalRow });
+      }
+      var rsRowCountAfter2 = rsSh.getLastRow();
+      return _json({
+        ok: true, mode: 'execute_step2_restore_individual', executedCount: executed.length, executed: executed,
+        rowCountBefore: rsRowCountBefore, rowCountAfter: rsRowCountAfter2, rowCountUnchanged: rsRowCountBefore === rsRowCountAfter2
+      });
+    }
+    return _json({ ok: false, error: 'unknown_mode' });
+  }
+
   if (action === 'cpo_clear_wsc_auto_json') {
     if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
     var cwMode = String(body.mode || 'probe');
@@ -4714,6 +4833,64 @@ function _processAction(body) {
   //   ★ 이름 정확일치로만 잡는다. 부분일치 금지 — '5. 시설투어…날짜는…' 같은 칸을 지울 수 있다.
   //   ★ A열(index 0)이 아니면 거부. 타임스탬프 칸이 없어도 거부(유일한 날짜 칸을 지우는 사고 차단).
   //   dryRun=1이면 아무것도 지우지 않고 삭제 대상·표본만 반환.
+  // ─── (일회성) 뒤에 붙은 잉여 칸 통합 정리 — 2026-07-20 GM 확정 ───
+  //   GM: "등록매칭도 R 진행현황에 매핑하면 되는데 이것도 새로 만들고, 등록일은 유효회원 시트에 기록하면 되는데
+  //        신규문의시트에 추가해놨네, 다른 항목값들도 다 지맘대로 추가해버렸네"
+  //   ①유입경로(자동) 값 → '문의 경로(중분류)'로 이관(중분류가 빈 행에만 — 사람 입력 우선).
+  //     ★칸 자체는 안 지운다: 구글폼 문항에 '유입경로(자동)'이 있어 지워도 다음 제출 때 되살아난다(문의 91%가 구글폼).
+  //   ②잉여 칸 삭제 — 값이 있는 칸은 거부하고 보고만 한다(사람이 판단할 것).
+  if (action === 'consolidate_cols_20260720') {
+    if (String(body.key || '') !== 'wlp_consol_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var ccDry = (String(body.dryRun || '') === '1');
+    var ccSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!ccSh) return _json({ ok: false, error: '시트 없음' });
+    var ccHdr = ccSh.getRange(1, 1, 1, ccSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var ccLast = ccSh.getLastRow();
+    var ccFind = function (want) { for (var i = 0; i < ccHdr.length; i++) { if (ccHdr[i].replace(/\s+/g, '') === want.replace(/\s+/g, '')) return i; } return -1; };
+    var ccAuto = ccFind('유입경로(자동)');
+    var ccMid  = -1;
+    for (var cm = 0; cm < ccHdr.length; cm++) { if (ccHdr[cm].replace(/\s+/g, '').indexOf('문의경로(중분류)') === 0) { ccMid = cm; break; } }
+    if (ccAuto < 0 || ccMid < 0) return _json({ ok: false, error: 'col-not-found', auto: ccAuto, mid: ccMid, headers: ccHdr });
+
+    var ccAll = ccLast >= 2 ? ccSh.getRange(2, 1, ccLast - 1, ccHdr.length).getValues() : [];
+    // ① 이관 대상 산출
+    var ccMoves = [];
+    for (var cr = 0; cr < ccAll.length; cr++) {
+      var av = String(ccAll[cr][ccAuto] == null ? '' : ccAll[cr][ccAuto]).trim();
+      var mv = String(ccAll[cr][ccMid]  == null ? '' : ccAll[cr][ccMid]).trim();
+      if (av && !mv) ccMoves.push({ row: cr + 2, from: av });
+    }
+    // ② 삭제 후보 — 값 있으면 거부
+    var ccCandidates = ['당일컨택', '등록매칭(자동)', '등록일(자동)', '방문완료일', '예약목록', '연락이력', '등록종목'];
+    var ccReport = [];
+    ccCandidates.forEach(function (nm) {
+      var ix = ccFind(nm);
+      if (ix < 0) { ccReport.push({ col: nm, status: 'absent' }); return; }
+      var filled = 0, samples = [];
+      for (var q = 0; q < ccAll.length; q++) {
+        var v = String(ccAll[q][ix] == null ? '' : ccAll[q][ix]).trim();
+        if (v) { filled++; if (samples.length < 3) samples.push({ row: q + 2, value: v.substring(0, 60) }); }
+      }
+      ccReport.push({ col: nm, idx: ix, filled: filled, samples: samples, deletable: filled === 0 });
+    });
+
+    if (ccDry) return _json({ ok: true, dryRun: true, colsBefore: ccHdr.length,
+                              autoToMidMoves: ccMoves.length, moveSample: ccMoves.slice(0, 5),
+                              report: ccReport, headers: ccHdr });
+
+    // 실행 ① 값 이관
+    ccMoves.forEach(function (m) { ccSh.getRange(m.row, ccMid + 1).setValue(m.from); });
+    SpreadsheetApp.flush();
+    // 실행 ② 값 0건인 칸만 삭제(뒤에서부터)
+    var ccDel = ccReport.filter(function (r) { return r.deletable && r.idx !== undefined; }).sort(function (a, b) { return b.idx - a.idx; });
+    ccDel.forEach(function (t) { ccSh.deleteColumn(t.idx + 1); });
+    SpreadsheetApp.flush();
+    var ccAfter = ccSh.getRange(1, 1, 1, ccSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    return _json({ ok: true, moved: ccMoves.length, deleted: ccDel.map(function(t){ return t.col; }),
+                   kept: ccReport.filter(function(r){ return r.filled > 0; }).map(function(r){ return { col: r.col, filled: r.filled }; }),
+                   colsBefore: ccHdr.length, colsAfter: ccAfter.length, headersAfter: ccAfter });
+  }
+
   // ─── (일회성) 거주지 항목 전면 폐기 — 2026-07-20 GM 확정 ("자체폼이랑 구글폼 구글시트 다 삭제하자") ───
   //   근거: 구글폼이 4,759건 받는 동안 계속 수집했으나 ERP 어디에서도 읽지 않는다(Survey.js 0곳·회원관리 화면 0곳).
   //   즉 고객은 채우는데 아무도 안 보는 칸이었다.
