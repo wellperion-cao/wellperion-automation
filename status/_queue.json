@@ -1887,5 +1887,19 @@
     "artifact": "유입경로(자동) 칸에 잘못 들어간 상담로그 JSON 43건 전체(행·이름·연락처·유입경로 원문·\nContact 현재값) 백업. team-lead 대조 결과 GM 원지시 13건은 이름+연락처 기준 17건 대상 안에\n전원 포함 확인(gviz 압축행번호 vs getLastRow 물리행번호 차이였을 뿐, 데이터 자체는 일치).\n이관 실행 전 스냅샷 — 검증 후 정리 대상. (CLI ad-hoc · 커밋 4a0fdf0f)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4a0fdf0f226bdb6fc287a3041500b999771af652"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-a8830062",
+    "clevel": "cpo",
+    "title": "[시포] 강습 LOSS사유 저장거부 수리 + 타임스탬프 Date기록(시토 병합)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9272,
+    "artifact": "- LOSS사유(성인 Q열/WSC R열)에 걸린 VALUE_IN_RANGE(allowInvalid=false) 규칙이\n  화면 선택지와 불일치해 저장을 통째로 거부(예: 셀 Q3433) → 07-18 신설 이후\n  LOSS사유 저장 0건. 진단용 loss_reason_setup 액션(diag/apply/verify/test)으로\n  기존 규칙을 실측 확인 후, 화면 INQ_LOSS_REASON_OPTIONS 7종 목록(allowInvalid=true,\n  경고방식)으로 양쪽 시트 재설정. 되읽기 검증 완료(VALUE_IN_LIST· (CLI ad-hoc · 커밋 a8830062)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a883006229c1d651a596b0ce20e55710e2b2067d"
   }
 ]
