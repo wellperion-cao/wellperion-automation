@@ -37,14 +37,51 @@ def _load_queue() -> list[dict]:
         return []
 
 
+def _is_machine_ship(ship: dict) -> bool:
+    """
+    기계 자동발행 배 판별 (2026-07-20 GM 결재 [A]안 · INC-018 후속 · 배9186→배1307).
+    완결률(대표 숫자)=사람·AI 실무 배만. 무인 예약 스크립트가 찍어내는 스냅샷/현황
+    발행(예: 문의 스냅샷 3분마다·주차매출 등)은 실무 신호가 아니라 분자·분모에서 뺀다
+    (건수는 _role_stats 가 "기계발행_건수"로 별도 병기 — 삭제·은폐 아님).
+
+    판별 = 구조적 신호 2개 AND(개별 업무명 하드코딩 금지 · GM 지시):
+      ① adhoc_commit 존재 — auto_log_adhoc_to_queue.py 가 git 커밋을 그대로 배로 흡수한
+         것(사람/AI가 직접 큐에 적어넣은 배가 아니라, 원본 커밋 주체를 되짚어야 하는 배).
+      ② title 에 정확한 문구 "자동 발행" 포함 — 이 문구는 이미 이 저장소의 예약(Task
+         Scheduler) 스냅샷/현황 스크립트가 공유하는 커밋 제목 관례다(cpo_inquiry_snapshot.py
+         "문의 스냅샷 자동 발행"·parking_revenue_crawler.py "주차 매출 현황 자동 발행"·
+         erp_status_publisher.py "시스템 현황 자동 발행" 전부 이 문구로 커밋 — 마지막 것은
+         auto_log_adhoc_to_queue.py 스킵규칙에 이미 이 문구가 키워드로 쓰이고 있었음,
+         2026-07-20 확인). title 은 adhoc 배 생성 시 커밋 subject 를 그대로 물려받으므로
+         (conventional prefix 만 벗김) git 재조회 없이 큐 데이터만으로 판별 가능.
+      실측 검증(2026-07-20): 전체 큐+아카이브 2,122배 중 이 조건에 걸리는 배=정확히 292건
+      (문의 스냅샷)+28건(주차매출) 뿐 — 오탐 0건(예: "auto(cmo): 검수 승인 — …" 류 실제
+      콘텐츠 발행 배·"자동push 경합" 등 "자동"만 들어간 실무 커밋은 전혀 안 걸림).
+      새 예약 스크립트도 이 관례(커밋 제목에 "자동 발행")만 따르면 자동 편입 —
+      배 이름별 하드코딩 불필요.
+    """
+    if not isinstance(ship, dict):
+        return False
+    if not ship.get("adhoc_commit"):
+        return False
+    return "자동 발행" in (ship.get("title") or "")
+
+
 def _role_stats(ships: list[dict], role: str) -> dict:
-    """role별 완료/활성/완결률 계산. 완결률 = DONE / (DONE + ACTIVE)."""
-    role_ships = [s for s in ships if isinstance(s, dict) and s.get("clevel") == role]
-    done   = sum(1 for s in role_ships if s.get("status") in DONE)
-    active = sum(1 for s in role_ships if s.get("status") in ACTIVE)
+    """
+    role별 완료/활성/완결률 계산. 완결률 = DONE / (DONE + ACTIVE) — 사람·AI 실무 배만
+    (2026-07-20 GM 결재 [A]안: 기계 자동발행 배는 분자·분모 제외). 기계 배 건수는
+    "기계발행_건수"로 별도 병기(가동량 신호 유지 · _is_machine_ship 참조).
+    """
+    role_ships    = [s for s in ships if isinstance(s, dict) and s.get("clevel") == role]
+    machine_ships = [s for s in role_ships if _is_machine_ship(s)]
+    human_ships   = [s for s in role_ships if not _is_machine_ship(s)]
+    done   = sum(1 for s in human_ships if s.get("status") in DONE)
+    active = sum(1 for s in human_ships if s.get("status") in ACTIVE)
     total  = done + active
     rate   = round(done / total, 4) if total > 0 else None
-    return {"완결률": rate, "완료": done, "활성": active}
+    machine_done = sum(1 for s in machine_ships if s.get("status") in DONE)
+    return {"완결률": rate, "완료": done, "활성": active, "기계발행_건수": machine_done}
 
 
 def _unpushed_count() -> int | None:

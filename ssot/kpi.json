@@ -1,6 +1,7 @@
 {
   "_doc": "역할별 담당 KPI 단일출처. S2 본인탭(data-panel={role})의 '담당 KPI' 행을 이 파일로 렌더한다(raw.githubusercontent 직접 fetch, 미러 없음). 부팅 시 AI가 직독(약속·incidents·canon과 동급 정본). 값=전략이라 변경은 GM 결재. tier 표기: ✅=지금 측정가능 · 🔧=측정 인프라 구축 필요 · ★=정성(숫자 불가·정직 인정). 정본=이 파일, S2=사람용 렌더. kpi_html=렌더되는 셀 내용(단일 필드 — 복사본 만들지 말 것).",
   "정본": "ssot/kpi.json (역할 KPI 단일출처 — 구조0 정합 · KPI 정의 GM 결재 2026-06-23)",
+  "_완결률_정의": "C-Level 실행 완결률(kpi_values.json roles.{role}.완결률 · 대표 숫자) = 사람·AI 실무 배만으로 계산한다(DONE/(DONE+ACTIVE), status/_queue.json 기준). 무인 예약 스크립트가 찍어내는 스냅샷/현황 자동발행 배(예: 문의 스냅샷 3분마다·주차매출 등)는 실무 신호가 아니라 분자·분모에서 제외 — 삭제·은폐가 아니라 같은 role 블록의 '기계발행_건수' 필드로 건수만 따로 병기해 가동량 신호는 유지한다. 판별=scripts/kpi_collector.py의 _is_machine_ship() 단일 지점(구조적 신호: ①adhoc_commit 존재 ②title에 '자동 발행' 문구 — 개별 업무명 하드코딩 아님, 새 예약 스크립트도 이 관례만 따르면 자동 편입). GM 결재 2026-07-20(INC-018 후속·배9186 제안 [A]/[B] 중 [A]안 확정) — 정의 변경이라 과거 대비 완결률 수치가 하락하는 게 정상(특히 cpo: 변경 전 0.9452는 대부분 기계발행이 만든 착시였음).",
   "roles": {
     "ceo": { "nickname": "웰리", "kpi_html": "✅ C-Level 실행 완결률(디스패치→검증→완결) · ✅ G1 항로 정합·미푸시 0 · ★ 전사 북극성(전환 엔진) 진척 · ★ 위임 완결도(GM=G1만) <span style=\"font-size:11px;color:var(--dim);\">— ✅측정 ·🔧구축필요 ·★정성 / 운영 리듬: 매일 S2·G1 오전·오후 각 1건 정리</span>" },
     "coo": { "nickname": "시우", "kpi_html": "✅ 점검 완료율(4부서 일일점검 · home 집계 · 목표 ≥95%) · ✅ 운영 마찰 인시던트 수↓(이슈시트·incidents) <span style=\"font-size:11px;color:var(--dim);\">— 둘 다 측정 가능(강한 축)</span>" },

@@ -1650,5 +1650,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 58672c37)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "58672c371d3f6f1415361ff14010e20330c92153"
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-8fdfd5c1",
+    "clevel": "cmo",
+    "title": "[시모] 21시 마케팅카드 22:30/20시 문의정리에 병합 + 회원관리 미처리 현황 신설",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9192,
+    "artifact": "- weekly_marketing_feedback.py: daily 카드 '상세=' 각주 제거, 텔레그램 발송 없이\n  카드 본문만 만드는 build_daily_card_text() 신설(run_daily가 이를 재사용하도록 리팩터)\n- daily_scheduler.py: _build_digest_inquiry() 끝에 마케팅 정리 섹션 append + 종목별\n  '진행상태 미정/담당자 미배정' 회원관리 미처리 현황 섹션 신설. run_daily_digest(early)\n  게이트 도입 — close_days 기준 휴일=20:00  (CLI ad-hoc · 커밋 8fdfd5c1)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8fdfd5c19f2b11f6d9217acfe0c8b07611d10051"
   }
 ]
