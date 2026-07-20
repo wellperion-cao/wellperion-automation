@@ -5040,7 +5040,13 @@ function _processAction(body) {
     var daIdx2 = [];
     for (var db = 0; db < daHdr2.length; db++) { if (daHdr2[db].replace(/\s+/g, '') === '유입경로(자동)') daIdx2.push(db); }
     var daDeleted = false;
-    if (daIdx2.length >= 2) { daSh.deleteColumn(daIdx2[daIdx2.length - 1] + 1); daDeleted = true; SpreadsheetApp.flush(); }
+    if (daIdx2.length >= 2) {
+      var daDelIdx1 = daIdx2[daIdx2.length - 1] + 1;
+      if (!_guardColDeleteByContent20260720_(daSh, daDelIdx1, daHdr2[daDelIdx1 - 1])) {
+        return _json({ ok: false, error: 'guard-blocked', detail: '삭제 대상 칸에 값 10건 이상 — 중단(채널칸 오삭제 방지)', colName: daHdr2[daDelIdx1 - 1], movedAlready: daMoves.length, formDeleted: daFormDeleted });
+      }
+      daSh.deleteColumn(daDelIdx1); daDeleted = true; SpreadsheetApp.flush();
+    }
     var daAfter = daSh.getRange(1, 1, 1, daSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
     return _json({ ok: true, moved: daMoves.length, formDeleted: daFormDeleted, colDeleted: daDeleted,
                    colsBefore: daHdr.length, colsAfter: daAfter.length, headersAfter: daAfter });
@@ -5124,7 +5130,11 @@ function _processAction(body) {
     var fcDelNames = ['등록일(자동)', '등록매칭(자동)', '방문완료일', '연락이력'];
     var fcDelIdx = fcDelNames.map(function (n) { return { name: n, idx: fcFind(n) }; }).filter(function (x) { return x.idx >= 0; })
                      .sort(function (a, b) { return b.idx - a.idx; });
-    fcDelIdx.forEach(function (t) { fcSh.deleteColumn(t.idx + 1); });
+    var fcBlocked = [];
+    fcDelIdx.forEach(function (t) {
+      if (_guardColDeleteByContent20260720_(fcSh, t.idx + 1, t.name)) { fcSh.deleteColumn(t.idx + 1); }
+      else { fcBlocked.push(t.name); }
+    });
     SpreadsheetApp.flush();
     // ④ 개칭 — 삭제 후 위치 재조회
     var fcHdr2 = fcSh.getRange(1, 1, 1, fcSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
@@ -5134,7 +5144,8 @@ function _processAction(body) {
     if (iMid2 >= 0) { fcSh.getRange(1, iMid2 + 1).setValue('유입경로(자동)'); renamed = true; SpreadsheetApp.flush(); }
     var fcAfter = fcSh.getRange(1, 1, 1, fcSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
     return _json({ ok: true, moved: { 연락이력: fcPlan.histToContact.length, 방문완료일: fcPlan.visitToExp.length, 자동: fcPlan.autoToMid.length },
-                   deleted: fcDelIdx.map(function(t){ return t.name; }), renamed: renamed,
+                   deleted: fcDelIdx.map(function(t){ return t.name; }).filter(function(n){ return fcBlocked.indexOf(n) < 0; }),
+                   blocked: fcBlocked, renamed: renamed,
                    colsBefore: fcHdr.length, colsAfter: fcAfter.length, headersAfter: fcAfter });
   }
 
@@ -5189,10 +5200,16 @@ function _processAction(body) {
     SpreadsheetApp.flush();
     // 실행 ② 값 0건인 칸만 삭제(뒤에서부터)
     var ccDel = ccReport.filter(function (r) { return r.deletable && r.idx !== undefined; }).sort(function (a, b) { return b.idx - a.idx; });
-    ccDel.forEach(function (t) { ccSh.deleteColumn(t.idx + 1); });
+    var ccBlocked = [];
+    ccDel.forEach(function (t) {
+      if (_guardColDeleteByContent20260720_(ccSh, t.idx + 1, t.col)) { ccSh.deleteColumn(t.idx + 1); }
+      else { ccBlocked.push(t.col); }
+    });
     SpreadsheetApp.flush();
     var ccAfter = ccSh.getRange(1, 1, 1, ccSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
-    return _json({ ok: true, moved: ccMoves.length, deleted: ccDel.map(function(t){ return t.col; }),
+    return _json({ ok: true, moved: ccMoves.length,
+                   deleted: ccDel.map(function(t){ return t.col; }).filter(function(n){ return ccBlocked.indexOf(n) < 0; }),
+                   blocked: ccBlocked,
                    kept: ccReport.filter(function(r){ return r.filled > 0; }).map(function(r){ return { col: r.col, filled: r.filled }; }),
                    colsBefore: ccHdr.length, colsAfter: ccAfter.length, headersAfter: ccAfter });
   }
