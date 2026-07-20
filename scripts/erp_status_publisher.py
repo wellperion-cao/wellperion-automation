@@ -391,10 +391,15 @@ def main():
 
     if "--push" in sys.argv:
         try:
-            subprocess.run(["git", "add", str(OUT)], cwd=ROOT, check=True)
+            # ★커밋에 반드시 경로를 준다(`-- <path>`). 2026-07-20 시포.
+            #   경로 없는 `git commit`은 '인덱스에 올라와 있는 것 전부'를 커밋한다. 이 저장소는 여러 세션이
+            #   동시에 작업하는 공용 워킹트리라, 남이 staged 해둔 낡은 파일까지 딸려 들어간다.
+            #   실제 사고: f155761d 가 낡은 membership.html을 함께 커밋해 CPO 화면 수정(b8b1e3e7)을 통째로 되돌림.
+            #   `-- <path>`를 주면 그 경로의 '워킹트리 내용만' 커밋하고 인덱스는 건드리지 않는다.
             subprocess.run(
                 ["git", "commit", "-m",
-                 "chore(erp): 시스템 현황 자동 발행 (erp_status.json)"],
+                 "chore(erp): 시스템 현황 자동 발행 (erp_status.json)",
+                 "--", str(OUT)],
                 cwd=ROOT, check=True,
             )
             subprocess.run(["git", "pull", "--rebase", "--autostash",

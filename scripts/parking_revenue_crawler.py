@@ -184,9 +184,12 @@ def collect(month_str=None):
 def _git_push():
     import subprocess
     try:
-        subprocess.run(["git", "add", str(OUT)], cwd=ROOT, check=True)
+        # ★커밋에 반드시 경로를 준다(`-- <path>`) — erp_status_publisher.py와 동일 사유. 2026-07-20 시포.
+        #   경로 없는 `git commit`은 인덱스 전체를 커밋해, 공용 워킹트리에서 남이 staged 해둔 파일까지 삼킨다.
+        #   (erp 쪽에서 실제로 남의 화면 수정을 되돌린 사고가 났고, 이 스크립트도 같은 패턴이라 선제 수정)
         subprocess.run(
-            ["git", "commit", "-m", "chore(parking): 주차 매출 현황 자동 발행 (parking_revenue.json)"],
+            ["git", "commit", "-m", "chore(parking): 주차 매출 현황 자동 발행 (parking_revenue.json)",
+             "--", str(OUT)],
             cwd=ROOT, check=True,
         )
         subprocess.run(["git", "pull", "--rebase", "--autostash", "origin", "master"], cwd=ROOT, check=False)
