@@ -196,7 +196,10 @@ function _mirrorInquiryToStaffLog_(body, inqId) {
     var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
     var newRow = new Array(lastCol).fill('');
     function put(keys, val) { var i = _findCol_(headers, keys); if (i >= 0) newRow[i] = val; }
-    put(['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜'], Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));  // 2026-07-18 시간 보존(구 날짜만→시:분:초 유실 수정)
+    // 타임스탬프 = 문자열이 아니라 실제 Date로 기록(2026-07-20 시포·GM). 문자열로 찍으면 시트 서식과 어긋나
+    //   'yyyy. M. d'(시분초 유실) / 'yyyy-MM-dd HH:mm:ss'(ISO 혼재) 처럼 같은 칸에 포맷이 섞인다.
+    //   Date로 넣으면 시트 자체 서식(yyyy. m. d 오전/오후 h:mm:ss)이 적용돼 시분초 보존 + 정렬·비교 가능.
+    put(['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜'], new Date());
     put(['성함', '이름'], body.name || '');
     put(['연락처', '휴대폰', '핸드폰', '전화'], body.phone || '');
     put(['진행현황', '진행상태', '상태'], '신규');

@@ -2522,8 +2522,93 @@ def _digest_fetch_list(action: str, **params) -> list:
     return d.get("data", []) if d.get("ok") else []
 
 
+# 회원관리 미처리 현황 판정 상태값 — cpo_report.py _LOSS_STATUSES/_SUCCESS_STATUSES 정본과 동일.
+# 2026-07-20 GM: 담당자 미배정 집계에서 이미 종결(LOSS/성공)된 건은 정상(담당자 없어도 OK)이라 제외.
+_DIGEST_LOSS_STATUSES = {"LOSS", "환불", "양도LOSS"}
+_DIGEST_SUCCESS_STATUSES = {"SUC", "단기SUC"}
+
+
+def _digest_unprocessed_counts(rows: list, key_fn, strip_paren: bool = False) -> tuple:
+    """rows 전체(오늘 필터 없음) 대상 종목별 {종목: [미정, 미배정]} 집계 + 카테고리 전체 합계 반환.
+    진행상태 미정=status 공백. 담당자 미배정=owner 공백 이면서 status 가 종결(LOSS계열·성공계열)이 아닌 건."""
+    import re as _re
+
+    counts: dict = {}
+    total_undecided = 0
+    total_unassigned = 0
+    for r in rows:
+        status = str(r.get("status", "") or "").strip()
+        owner = str(r.get("owner", "") or "").strip()
+        sp = str(key_fn(r) or "").strip()
+        if strip_paren and sp:
+            sp = _re.sub(r"\s*[\(（][^)）]*[\)）]", "", sp).strip() or sp  # 플랜명 뒤 시설 나열 괄호 제거
+        sp = sp or "미분류"
+        undecided = not status
+        is_terminal = status in _DIGEST_LOSS_STATUSES or status in _DIGEST_SUCCESS_STATUSES
+        unassigned = (not owner) and not is_terminal
+        if not undecided and not unassigned:
+            continue
+        c = counts.setdefault(sp, [0, 0])
+        if undecided:
+            c[0] += 1
+            total_undecided += 1
+        if unassigned:
+            c[1] += 1
+            total_unassigned += 1
+    return counts, total_undecided, total_unassigned
+
+
+def _digest_unprocessed_section(title: str, rows: list, key_fn, fixed_dot: str = "", strip_paren: bool = False) -> str:
+    """종목별 미정/미배정 카운트를 (미정+미배정) 합 내림차순 최대 8줄 + '…외 N개 종목'으로 렌더."""
+    counts, total_undecided, total_unassigned = _digest_unprocessed_counts(rows, key_fn, strip_paren)
+    if total_undecided == 0 and total_unassigned == 0:
+        return f"■ {title} — 없음"
+    lines = [f"■ {title} (진행상태 미정 {total_undecided} · 담당자 미배정 {total_unassigned})"]
+    ranked = sorted(counts.items(), key=lambda kv: -(kv[1][0] + kv[1][1]))
+    shown = ranked[:8]
+    for sp, (undecided, unassigned) in shown:
+        dot = fixed_dot or _digest_dot(sp)
+        parts = []
+        if undecided:
+            parts.append(f"미정 {undecided}")
+        if unassigned:
+            parts.append(f"미배정 {unassigned}")
+        lines.append(f"  {dot}{sp} — " + " · ".join(parts))
+    remaining = len(ranked) - len(shown)
+    if remaining > 0:
+        lines.append(f"  …외 {remaining}개 종목")
+    return "\n".join(lines)
+
+
+def _build_digest_member_unprocessed(mem: list, adult: list, youth: list) -> str:
+    """🗂 회원관리 미처리 현황(종목별) — 오늘 문의 목록 뒤·마케팅 섹션 앞에 삽입(GM 2026-07-20).
+    전체 rows(오늘 필터 없음) 대상 — 진행상태 미정·담당자 미배정을 종목별로 집계."""
+    body = "\n\n".join([
+        _digest_unprocessed_section("멤버십", mem, lambda r: r.get("program"), fixed_dot="🟡 ", strip_paren=True),
+        _digest_unprocessed_section("성인강습", adult, lambda r: r.get("bucket") or r.get("sport")),
+        _digest_unprocessed_section("유소년강습", youth, lambda r: r.get("bucket") or r.get("sport")),
+    ])
+    return f"━━━━━━━━━━\n🗂 회원관리 미처리 현황\n\n{body}"
+
+
+def _append_digest_marketing_section(msg: str) -> str:
+    """문의 정리 메시지 맨 끝에 📣 마케팅 정리 섹션을 붙인다(GM 2026-07-20, 21시 단독발송 통합·하루 카드 하나).
+    실패해도 문의 정리 본문은 그대로 나가야 한다 — best-effort try/except."""
+    try:
+        import weekly_marketing_feedback as _wmf  # scripts/ 는 상단에서 sys.path 삽입됨
+
+        card_text = _wmf.build_daily_card_text()
+        card_lines = card_text.split("\n")
+        body = "\n".join(card_lines[1:]).strip("\n") if len(card_lines) > 1 else card_text
+        return f"{msg}\n\n━━━━━━━━━━\n📣 마케팅 정리\n{body}"
+    except Exception as e:
+        logger.warning(f"[하루 일과 정리] 마케팅 섹션 병합 실패(문의 정리 본문은 그대로 발송): {e}")
+        return msg
+
+
 def _build_digest_inquiry(today: str) -> str:
-    """문의알림방 — 오늘 문의를 멤버십/성인강습/유소년강습 카테고리로 정리. str 반환(전송 분리).
+    """문의알림방 — 오늘 문의를 멤버십/성인강습/유소년강습 카테고리로 정리 + 회원관리 미처리 현황 +
+    마케팅 정리(21시 단독발송 통합, GM 2026-07-20). str 반환(전송 분리).
     intake(자체폼) 병합 조회라 실시간 알림이 누락된 건(예: 자체폼 강습)도 여기서 전부 포함된다. 2026-07-18 GM 고도화."""
     weekday = _WEEKDAY_KOR[datetime.now().weekday()]
     header = f"📊 [하루 일과 정리] {today}({weekday})\n🔔 오늘의 문의 정리"
@@ -2532,7 +2617,8 @@ def _build_digest_inquiry(today: str) -> str:
         adult = _digest_fetch_list("lesson_inquiry_list", type="성인강습")
         youth = _digest_fetch_list("lesson_inquiry_list", type="유소년강습")
     except Exception:
-        return f"{header}\n\n조회 지연으로 문의 현황을 불러오지 못했습니다. (서버 콜드스타트 추정 — 잠시 후 재시도됩니다)"
+        msg = f"{header}\n\n조회 지연으로 문의 현황을 불러오지 못했습니다. (서버 콜드스타트 추정 — 잠시 후 재시도됩니다)"
+        return _append_digest_marketing_section(msg)
 
     def _today(rows: list) -> list:
         return [r for r in rows if str(r.get("timestamp", "")).startswith(today)]
@@ -2540,39 +2626,44 @@ def _build_digest_inquiry(today: str) -> str:
     mem_t, adult_t, youth_t = _today(mem), _today(adult), _today(youth)
     total = len(mem_t) + len(adult_t) + len(youth_t)
     if total == 0:
-        return f"{header}\n\n오늘 신규 문의 없음."
+        msg = f"{header}\n\n오늘 신규 문의 없음."
+    else:
+        import re as _re
 
-    import re as _re
+        def _section(title: str, rows: list, sport_key: str, fixed_dot: str = "", strip_paren: bool = False) -> str:
+            head = f"■ {title} ({len(rows)})"
+            if not rows:
+                return head
+            lines = [head]
+            for r in rows[:20]:
+                sp = str(r.get(sport_key, "") or "").strip()
+                if strip_paren and sp:
+                    sp = _re.sub(r"\s*[\(（][^)）]*[\)）]", "", sp).strip() or sp  # 플랜명 뒤 시설 나열 괄호 제거
+                nm = str(r.get("name", "") or "-").strip() or "-"
+                ph = str(r.get("phone", "") or "-").strip() or "-"
+                ch = str(r.get("channel", "") or "").strip()
+                dot = fixed_dot or _digest_dot(sp)  # 멤버십=유형색 고정(🟡) / 강습=종목색
+                line = f"{dot}{nm} · {ph}"
+                if sp:
+                    line += f" · {sp}"
+                if ch:
+                    line += f" · {ch}"
+                lines.append(line)
+            if len(rows) > 20:
+                lines.append(f"  …외 {len(rows) - 20}건")
+            return "\n".join(lines)
 
-    def _section(title: str, rows: list, sport_key: str, fixed_dot: str = "", strip_paren: bool = False) -> str:
-        head = f"■ {title} ({len(rows)})"
-        if not rows:
-            return head
-        lines = [head]
-        for r in rows[:20]:
-            sp = str(r.get(sport_key, "") or "").strip()
-            if strip_paren and sp:
-                sp = _re.sub(r"\s*[\(（][^)）]*[\)）]", "", sp).strip() or sp  # 플랜명 뒤 시설 나열 괄호 제거
-            nm = str(r.get("name", "") or "-").strip() or "-"
-            ph = str(r.get("phone", "") or "-").strip() or "-"
-            ch = str(r.get("channel", "") or "").strip()
-            dot = fixed_dot or _digest_dot(sp)  # 멤버십=유형색 고정(🟡) / 강습=종목색
-            line = f"{dot}{nm} · {ph}"
-            if sp:
-                line += f" · {sp}"
-            if ch:
-                line += f" · {ch}"
-            lines.append(line)
-        if len(rows) > 20:
-            lines.append(f"  …외 {len(rows) - 20}건")
-        return "\n".join(lines)
+        body = "\n\n".join([
+            _section("멤버십", mem_t, "program", fixed_dot="🟡 ", strip_paren=True),
+            _section("성인강습", adult_t, "sport"),
+            _section("유소년강습", youth_t, "sport"),
+        ])
+        msg = f"{header}\n\n총 {total}건\n\n{body}"
 
-    body = "\n\n".join([
-        _section("멤버십", mem_t, "program", fixed_dot="🟡 ", strip_paren=True),
-        _section("성인강습", adult_t, "sport"),
-        _section("유소년강습", youth_t, "sport"),
-    ])
-    return f"{header}\n\n총 {total}건\n\n{body}"
+    unprocessed = _build_digest_member_unprocessed(mem, adult, youth)
+    msg = f"{msg}\n\n{unprocessed}"
+
+    return _append_digest_marketing_section(msg)
 
 
 def _build_digest_check(today: str) -> str:
@@ -2652,11 +2743,24 @@ def _build_digest_reception(today: str) -> str:
 KAKAO_DEPTHEAD_ROOM = "★부서장"
 
 
-def run_daily_digest() -> None:
-    """3방 하루 일과 정리 알림 오케스트레이터 — 평일 22:30 / 주말 20:00.
+def _is_rest_day(d) -> bool:
+    """주말(토·일) 또는 휴관·공휴일(close_days) → 20시 발송."""
+    import close_days as _cd  # scripts/ 는 상단에서 sys.path 삽입됨
+    return d.weekday() >= 5 or _cd.is_closed(d)
+
+
+def run_daily_digest(early: bool = False) -> None:
+    """3방 하루 일과 정리 알림 오케스트레이터 — 매일 20:00/22:30 둘 다 등록되지만,
+    휴일(주말·close_days)은 20:00(early=True)만 실행 / 평일은 22:30(early=False)만 실행
+    (GM 2026-07-20, close_days 공휴일 반영 — 기존 요일 고정 mon-fri/sat,sun 을 대체).
     문의 정리는 카카오톡 ★부서장 방에도 추가 발송(GM 2026-07-18)."""
     from datetime import timezone as _tz3
-    today = (datetime.now(_tz3.utc) + timedelta(hours=9)).strftime("%Y-%m-%d")
+    now_dt = datetime.now(_tz3.utc) + timedelta(hours=9)
+    today = now_dt.strftime("%Y-%m-%d")
+    rest_day = _is_rest_day(now_dt.date())
+    if rest_day != early:
+        logger.info(f"[하루 일과 정리] 게이트 스킵 — early={early} rest_day={rest_day} today={today}")
+        return
     label = "[하루 일과 정리]"
     logger.info(f"{label} 시작 — today={today}")
 
@@ -3164,22 +3268,26 @@ def main():
             logger.info(f"  등록: {slot} {hour:02d}:{minute:02d} 지원부 점검 미완 독려")
 
         # ── 하루 일과 정리 — 문의·점검·접수 3방 핵심+상세 — CTO 2026-06-29 ──
-        #   마감시간 연동: 평일(월~금) 22:30 / 주말(토·일) 20:00 (주말 20시 마감. GM 2026-07-18).
+        #   마감시간 연동: 휴일(주말·close_days 공휴일)=20:00 / 평일=22:30 (GM 2026-07-20,
+        #   요일 고정(mon-fri/sat,sun) 대신 close_days 판정으로 교체 — 신정 등 평일 공휴일도 20시 반영).
+        #   두 잡 모두 매일 등록하되 run_daily_digest(early) 내부 게이트가 실제 실행 여부를 가른다.
         scheduler.add_job(
             run_daily_digest,
-            trigger=CronTrigger(day_of_week="mon-fri", hour=22, minute=30, timezone="Asia/Seoul"),
-            id="daily_digest_weekday",
+            trigger=CronTrigger(hour=20, minute=0, timezone="Asia/Seoul"),
+            args=[True],
+            id="daily_digest_early",
             misfire_grace_time=600,
             coalesce=True,
         )
         scheduler.add_job(
             run_daily_digest,
-            trigger=CronTrigger(day_of_week="sat,sun", hour=20, minute=0, timezone="Asia/Seoul"),
-            id="daily_digest_weekend",
+            trigger=CronTrigger(hour=22, minute=30, timezone="Asia/Seoul"),
+            args=[False],
+            id="daily_digest_late",
             misfire_grace_time=600,
             coalesce=True,
         )
-        logger.info("daily_digest 등록 완료 — 평일 22:30 / 주말 20:00, 하루 일과 정리 3방 발송")
+        logger.info("daily_digest 등록 완료 — 매일 20:00(휴일 게이트)/22:30(평일 게이트), 하루 일과 정리 3방 발송")
 
     logger.info(f"스케줄러 기동 완료. PID={os.getpid()}")
     try:

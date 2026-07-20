@@ -630,8 +630,6 @@ def build_daily_telegram_summary(items: list[dict], fc: dict | None,
     reg_lines = _registration_oneliner(mr, lr).split("\n")
     lines.append("· ③ " + reg_lines[0].lstrip("· "))
     lines.append(reg_lines[1])
-    lines.append("")
-    lines.append(f"상세=일일 마케팅 정리 보고 ({out_path.name})")
     return "\n".join(lines)
 
 
@@ -759,39 +757,50 @@ def run_weekly(dry_run: bool = False):
         send_telegram_summary(summary_text)
 
 
+def build_daily_card_text(now: datetime.datetime | None = None) -> str:
+    """일일 마케팅 카드 본문만 생성(브리프 md 저장 포함, 텔레그램 발송 없음).
+    daily_scheduler 병합 다이제스트가 호출한다. 실패해도 예외를 밖으로 던지지 않고
+    1줄 폴백 문자열을 반환한다(문의 정리 다이제스트 전체가 죽지 않도록)."""
+    if now is None:
+        now = datetime.datetime.now()
+    date_str = now.strftime("%Y-%m-%d")
+    try:
+        print("[INFO] 시모 일일 마케팅 정리 카드 생성 시작")
+        print(f"[INFO] 집계 대상: {date_str} (오늘)")
+
+        # load_official_recent 는 7일 윈도우 기준 재사용 함수 — days=2 로 넉넉히 받아 오늘자만 필터링(신규 배관 없음).
+        recent = load_official_recent(days=2, now=now)
+        items = [it for it in recent if (it.get("published_at") or "")[:10] == date_str]
+        print(f"[INFO] 공식(@wellperion) 발행완료 콘텐츠 {len(items)}건 (오늘)")
+
+        fc = fetch_funnel_conversion(date_str, date_str)
+        mr = fetch_member_registered(date_str, date_str)
+        lr = fetch_lesson_registry(date_str, date_str)
+
+        brief_md = build_daily_brief(items, fc, mr, lr, date_str, now)
+
+        BRIEFS_DIR.mkdir(parents=True, exist_ok=True)
+        out_path = BRIEFS_DIR / f"CMO-daily-feedback-{now.strftime('%Y%m%d')}.md"
+        out_path.write_text(brief_md, encoding="utf-8")
+
+        print(f"[INFO] 일일 브리프 생성 완료: {out_path}")
+
+        return build_daily_telegram_summary(items, fc, mr, lr, date_str, out_path)
+    except Exception as e:
+        print(f"[WARN] 일일 마케팅 카드 생성 실패: {e}")
+        return f"오늘 마케팅 정리 — {date_str} (수집 실패)"
+
+
 def run_daily(dry_run: bool = False):
     now = datetime.datetime.now()
-    date_str = now.strftime("%Y-%m-%d")
+    summary_text = build_daily_card_text(now)
 
-    print("[INFO] 시모 일일 마케팅 정리 카드 생성 시작")
-    print(f"[INFO] 집계 대상: {date_str} (오늘)")
-
-    # load_official_recent 는 7일 윈도우 기준 재사용 함수 — days=2 로 넉넉히 받아 오늘자만 필터링(신규 배관 없음).
-    recent = load_official_recent(days=2, now=now)
-    items = [it for it in recent if (it.get("published_at") or "")[:10] == date_str]
-    print(f"[INFO] 공식(@wellperion) 발행완료 콘텐츠 {len(items)}건 (오늘)")
-
-    fc = fetch_funnel_conversion(date_str, date_str)
-    mr = fetch_member_registered(date_str, date_str)
-    lr = fetch_lesson_registry(date_str, date_str)
-
-    brief_md = build_daily_brief(items, fc, mr, lr, date_str, now)
-
-    BRIEFS_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = BRIEFS_DIR / f"CMO-daily-feedback-{now.strftime('%Y%m%d')}.md"
-    out_path.write_text(brief_md, encoding="utf-8")
-
-    print(f"[INFO] 일일 브리프 생성 완료: {out_path}")
     print("─" * 60)
-    print(brief_md)
+    print(summary_text)
     print("─" * 60)
 
-    summary_text = build_daily_telegram_summary(items, fc, mr, lr, date_str, out_path)
     if dry_run:
         print("[INFO] --dry-run: 텔레그램 실제 발송 생략 — 카드 텍스트만 stdout 출력")
-        print("─" * 60)
-        print(summary_text)
-        print("─" * 60)
     else:
         send_telegram_summary(summary_text)
 

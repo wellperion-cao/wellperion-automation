@@ -1578,7 +1578,8 @@
     "processed_at": "2026-07-20",
     "ship_no": 9186,
     "artifact": "진단: kpi_collector.py 자체는 정상(rc=0) — 07-14경 비교기준선 GAS 호출 추가로 실측 소요시간이 캐시미스 시 최대 211s 로 늘었는데 daily_scheduler.py 의 subprocess timeout=120s 는 그대로라 매 스케줄(07:50·21:00·기동시) 강제종료. 6일간 kpi_values.json 동결(완결률 0.0 표시 — 실적 부재 아닌 측정 실패). 완결률 0.0의 '큐→아카이브 이관' 가설은 부분 반박: queue_archive_sweep.py 는 '오늘 아닌 terminal'만 이관해 완결률이 원래 '오늘-only 스냅샷'이라 이른 아침엔 0이 정상 — 별개로 발견한 진짜 왜곡은 기계 자동발행(문의 스냅샷 3분마다 등)이 오늘자 DONE의 다수(cpo 사례: 68/68=100%)를 차지해 완결률을 실무 신호로 못 씀. 수정(즉시): ①daily_scheduler.py timeout 120→300s ②integration_health.py check_kpi_freshness 신설(25h 초과시 health=warn, 재발 시 침묵 방지) — INC-018 GUARDED 등록. 제안(GM 결재 대기, 코드 미반영): 기계발행/실무 배 KPI 분리 집계. (커밋은 뒤이어 push)",
-    "next": "👉 GM: 오늘 21:00 KPI 자동집계도 새 timeout 적용받게 하려면 ops/restart_daily_scheduler.bat 더블클릭+UAC 승인(선택) — 안 하셔도 익일 자동 로그온 재기동으로 자연 반영됨(위험 없음). + 완결률 정의(기계발행 노이즈 분리) GM 결재 대기."
+    "next": "🏁 입항완료(루틴) — 완결률 정의(기계발행 노이즈 분리) GM 결재 완료·반영 끝. 다음 불필요.",
+    "note": "[2026-07-20 시토 실행] GM 결재 [A]안 확정(사람·AI 실무 배만 완결률 분자·분모, 기계 자동발행 배는 건수만 별도 병기) — 배1307 실행. scripts/kpi_collector.py: _is_machine_ship() 신설(구조적 판별 단일지점 — 신호=①adhoc_commit 존재 ②title에 정확한 문구 \"자동 발행\" 포함, 개별 업무명 하드코딩 아님) + _role_stats() 가 이 필터로 사람 배만 완결률 계산, 기계 배는 \"기계발행_건수\"로 병기. ssot/kpi.json 에 _완결률_정의 필드 신설(정의·판별지점·GM결재일 명시). 실측 검증: 전체 큐+아카이브 2,122배 대조 → 기계판정 정확히 320건(문의스냅샷292+주차매출28), 오탐 0건(auto(cmo) 콘텐츠발행류·\"자동push\" 등 실무커밋 전혀 안걸림). 라이브 재집계 결과 cpo 완결률 0.9452(완료69/활성4, 기계섞임)→0.4286(완료3/활성4, 기계발행_건수=70 별도표기) — 정의변경에 따른 정상 하락(방어 안 함). status/kpi_values.json 갱신 완료·커밋 예정."
   },
   {
     "task_id": "CPO-2026-07-20-ADHOC-e1195de9",
@@ -1635,5 +1636,19 @@
     "artifact": "시포 보정 지시(GM 지시 경유) 반영: 병렬 조사에서 확정된 근본원인 —\n_findCol_(헤더 인덱스 오름차순 스캔 + 부분일치)가 ['타임스탬프',...,'날짜'] 같은\n키리스트에서 '26년 신규문의' 탭처럼 '날짜'(A)·'타임스탬프'(B)가 별도 칸으로 공존하면\n의도(B)와 무관하게 먼저 걸리는 A를 반환하던 구조적 버그. (CLI ad-hoc · 커밋 a567a8b8)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a567a8b8e9e46f0a24034fd9f7a460b0efe429d5"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-58672c37",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9191,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 58672c37)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "58672c371d3f6f1415361ff14010e20330c92153"
   }
 ]
