@@ -1552,5 +1552,19 @@
     "artifact": "URL 폴링(12초) 실패로 워처가 '발행실패' 오도장 — 실사 확인 결과 두 채널\n모두 실제 발행 성공. post_url·published_at 보강, 발행완료로 정정. (CLI ad-hoc · 커밋 84b2bcb3)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "84b2bcb315b5589d1cd989481c66430cc16e031d"
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-23d1534d",
+    "clevel": "cmo",
+    "title": "[시모] 블로그·카페 'URL 미회수' 발행실패 오도장 재발방지 (배834 2단계)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9249,
+    "artifact": "발행은 성공했는데 공개 URL 폴링(12초) 실패 시 워처가 '발행실패'로 찍어\n재발행 시 중복 게시 위험이 있었다. exit 8(URL 미회수)을 exit 7(실failure)과\n분리해 새 상태 '확인필요(발행됨·URL미회수)'로 도장 — APPROVED_STATES에\n없어 재발행되지 않는다. reconcile_published.py에 이 상태를 배선해 URL만\n나중에 재회수하면 발행완료로 자동 전환. publish_digest.py 완결 판정에도\n반영(URL 보강 전까지는 디제스트 보류, 미발행으로 오분류하지 않음). (CLI ad-hoc · 커밋 23d1534d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "23d1534d504a2223943e395bdb9ce5fd8a6e218d"
   }
 ]
