@@ -1256,6 +1256,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   member_owner_save:          true,  // 2026-07-18 시포 — 종목별 담당자 5칸(화이트리스트) 단일셀 저장(전화 매칭)
+  member_active_summary:      true,  // 2026-07-20 시포 — 회원관리 카드 요약 집계(§2-A 로딩속도, PII 미노출·숫자만)
   cpo_today_stats:            true,  // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
   cpo_churn_stats:            true,  // 2026-07-02 이탈 현황 실측(유효·이탈·이탈율·갱신임박 리스트) — 페이지 게이트 뒤(전체공개 정책과 동일)
   // 강습문의 페이지(CPO) — 멤버십 member_* 와 동일 정책(2026-06-26)
@@ -5017,6 +5018,85 @@ function _processAction(body) {
     if (mosRow < 0) return _json({ ok: false, error: 'no member' });
     mosSh.getRange(mosRow, mosFieldIdx + 1).setValue(mosValue);
     return _json({ ok: true, phone: mosPhone, field: mosField, value: mosValue, rowIndex: mosRow });
+  }
+
+  // ─── 멤버십 회원관리 요약 집계(§2-A 로딩속도) — 2026-07-20 시포 ───
+  //   목적: 화면이 카드 숫자를 세려고 member_active_list(1,006행×37열, 콜드 ~11초)를 통째로 기다리던 것을
+  //   서버 집계 작은 응답으로 대체. 계약 = docs/superpowers/specs/2026-07-20-member-active-summary-contract.md
+  //   ★ 유효성 판정은 cpo_today_stats와 100% 동일 공식 재사용(재정의 금지) — 회원명 있는 행만, 잔여일>0, 이탈표시 없음.
+  //   ★ member_active_list는 그대로 둔다(표·검색·인라인편집·담당자배정이 실레코드를 쓰므로). 이 액션은 부가 최적화.
+  if (action === 'member_active_summary') {
+    var maCache = CacheService.getScriptCache();
+    var maCached = maCache.get('member_active_summary_v1');
+    if (maCached) return _json(JSON.parse(maCached));
+    var maTz = 'Asia/Seoul';
+    var maToday = Utilities.formatDate(new Date(), maTz, 'yyyy-MM-dd');
+    var maMonthStart = maToday.slice(0, 8) + '01';
+    var maYearStart  = maToday.slice(0, 4) + '-01-01';
+    var maRes = { ok: true, action: 'member_active_summary', date: maToday,
+                  validTotal: 0, endedTotal: 0, waitingCount: 0,
+                  typeCounts: { '멤버십': 0, '입주민': 0, '중단기': 0, '보증금': 0, 'FAN VIP': 0, '기타': 0 },
+                  lossPeriods: { day: 0, month: 0, year: 0, total: 0 },
+                  waitPeriods: { day: 0, month: 0, year: 0, total: 0 } };
+    try {
+      var maSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+      if (!maSh || maSh.getLastRow() < 2) return _json(maRes);
+      var maCols = maSh.getLastColumn();
+      var maHdr = maSh.getRange(1, 1, 1, maCols).getValues()[0].map(function(v){ return String(v).trim(); });
+      // 헤더 퍼지매칭 — cpo_today_stats._crIdx와 동일 관례(공백·개행 제거 후 부분일치)
+      function _maIdx(want){ var w = String(want).replace(/\s/g, ''); for (var i = 0; i < maHdr.length; i++){ if (maHdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; } return -1; }
+      var maNmI  = _maIdx('회원명');
+      var maRemI = _maIdx('잔여일');
+      var maReI  = _maIdx('재등록분류');
+      var maTypI = _maIdx('회원구분');
+      var maStI  = _maIdx('시작일자');
+      // LOSS 날짜 칸: 이탈일→해지일→LOSS일자→종료일.
+      //   ★ 'LOSS일자'를 '종료일'보다 먼저 본다. 이 시트엔 '종료\n일자'와 'LOSS\n일자'가 별개로 존재하고,
+      //     '종료일'로 먼저 잡으면 '종료일자'가 걸려 월간 LOSS가 19로 나온다(정답 21은 LOSS일자 기준).
+      //     계약서 §2 본문의 '이탈일→해지일→종료일' 표기는 이 시트 실헤더와 어긋난다 — 계약서 정정 필요.
+      var maLossI = _maIdx('이탈일');
+      if (maLossI < 0) maLossI = _maIdx('해지일');
+      if (maLossI < 0) maLossI = _maIdx('LOSS일자');
+      if (maLossI < 0) maLossI = _maIdx('종료일');
+      var _MA_LOSS = { 'LOSS': 1, '환불': 1, '양도LOSS': 1 };
+      var MA_TYPO  = { '맴버십': '멤버십', '멥버십': '멤버십' };
+      var MA_KNOWN = { '멤버십': 1, '입주민': 1, '중단기': 1, '보증금': 1, 'FAN VIP': 1 };
+      function _maISO(v) {
+        if (v instanceof Date && !isNaN(v.getTime())) return Utilities.formatDate(v, maTz, 'yyyy-MM-dd');
+        return _miToISO_(v) || '';
+      }
+      function _maBump(bucket, iso) {
+        bucket.total++;
+        if (!iso) return;                                   // 날짜 못 읽으면 total에만 포함(계약 §2)
+        if (iso === maToday) bucket.day++;
+        if (iso >= maMonthStart && iso <= maToday) bucket.month++;
+        if (iso >= maYearStart  && iso <= maToday) bucket.year++;
+      }
+      var maAll = maSh.getRange(2, 1, maSh.getLastRow() - 1, maCols).getValues();
+      for (var mi = 0; mi < maAll.length; mi++) {
+        var mrow = maAll[mi];
+        // 회원명 없는 행은 통째로 제외 — cpo_today_stats와 동일(유효·종료 어느 쪽에도 안 넣는다)
+        if (maNmI >= 0 && !String(mrow[maNmI] == null ? '' : mrow[maNmI]).trim()) continue;
+        var maRemRaw = maRemI >= 0 ? String(mrow[maRemI] == null ? '' : mrow[maRemI]).replace(/[^0-9\-]/g, '') : '';
+        var maRem = (maRemRaw === '' || maRemRaw === '-') ? NaN : parseInt(maRemRaw, 10);
+        var maReV = maReI >= 0 ? String(mrow[maReI] == null ? '' : mrow[maReI]).trim() : '';
+        var maValid = !isNaN(maRem) && maRem > 0 && !_MA_LOSS[maReV];
+        if (maValid) {
+          maRes.validTotal++;
+          var mv = maTypI >= 0 ? String(mrow[maTypI] == null ? '' : mrow[maTypI]).trim() : '';
+          mv = MA_TYPO[mv] || mv;
+          if (!mv || !MA_KNOWN[mv]) mv = '기타';
+          maRes.typeCounts[mv]++;
+          var maSt = maStI >= 0 ? _maISO(mrow[maStI]) : '';
+          if (maSt && maSt > maToday) { maRes.waitingCount++; _maBump(maRes.waitPeriods, maSt); }
+        } else {
+          maRes.endedTotal++;
+          _maBump(maRes.lossPeriods, maLossI >= 0 ? _maISO(mrow[maLossI]) : '');
+        }
+      }
+    } catch (eMa) { return _json({ ok: false, action: 'member_active_summary', error: String(eMa) }); }
+    try { maCache.put('member_active_summary_v1', JSON.stringify(maRes), 60); } catch (eMc) {}
+    return _json(maRes);
   }
 
   // ─── CPO 오늘 현황(PII 미노출 집계): 오늘/이번달 문의·등록 건수 2026-06-24 GM ───
