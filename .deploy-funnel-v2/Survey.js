@@ -4714,6 +4714,82 @@ function _processAction(body) {
   //   ★ 이름 정확일치로만 잡는다. 부분일치 금지 — '5. 시설투어…날짜는…' 같은 칸을 지울 수 있다.
   //   ★ A열(index 0)이 아니면 거부. 타임스탬프 칸이 없어도 거부(유일한 날짜 칸을 지우는 사고 차단).
   //   dryRun=1이면 아무것도 지우지 않고 삭제 대상·표본만 반환.
+  // ─── (일회성) 거주지 항목 전면 폐기 — 2026-07-20 GM 확정 ("자체폼이랑 구글폼 구글시트 다 삭제하자") ───
+  //   근거: 구글폼이 4,759건 받는 동안 계속 수집했으나 ERP 어디에서도 읽지 않는다(Survey.js 0곳·회원관리 화면 0곳).
+  //   즉 고객은 채우는데 아무도 안 보는 칸이었다.
+  //   ★순서 고정: 폼 문항 삭제 → 그 다음 시트 칸 삭제. 반대로 하면 다음 제출 때 폼이 칸을 되살린다.
+  //   삭제 전 값 전량을 응답에 담아 반환한다(되돌릴 유일한 근거 — 호출부가 파일로 저장한다).
+  if (action === 'del_residence_20260720') {
+    if (String(body.key || '') !== 'wlp_delres_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var drDry = (String(body.dryRun || '') === '1');
+    var drSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!drSh) return _json({ ok: false, error: '시트 없음' });
+    var drHdr = drSh.getRange(1, 1, 1, drSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var drIdx = -1;
+    for (var dri = 0; dri < drHdr.length; dri++) { if (drHdr[dri].indexOf('거주지') === 0) { drIdx = dri; break; } }
+    if (drIdx < 0) return _json({ ok: false, error: 'no-target', detail: '거주지로 시작하는 칸 없음(이미 삭제됐을 수 있음)', headers: drHdr });
+
+    // 값 전량 백업 — 성함·연락처와 함께 담아야 나중에 어느 고객 것인지 알 수 있다
+    var drNameI = drHdr.indexOf('1. 성함'), drPhoneI = drHdr.indexOf('2. 연락처');
+    var drLast = drSh.getLastRow(), drBackup = [], drFilled = 0;
+    if (drLast >= 2) {
+      var drAll = drSh.getRange(2, 1, drLast - 1, drHdr.length).getValues();
+      for (var drr = 0; drr < drAll.length; drr++) {
+        var drV = String(drAll[drr][drIdx] == null ? '' : drAll[drr][drIdx]).trim();
+        if (!drV) continue;
+        drFilled++;
+        drBackup.push({ row: drr + 2,
+                        name: drNameI >= 0 ? String(drAll[drr][drNameI] || '') : '',
+                        phone: drPhoneI >= 0 ? String(drAll[drr][drPhoneI] || '') : '',
+                        residence: drV });
+      }
+    }
+
+    // 폼 문항 확인
+    var drFormUrl = '', drFormItem = null, drFormTitle = '';
+    try {
+      drFormUrl = drSh.getFormUrl() || '';
+      if (drFormUrl) {
+        var drForm = FormApp.openByUrl(drFormUrl);
+        var drItems = drForm.getItems();
+        for (var dfi = 0; dfi < drItems.length; dfi++) {
+          if (String(drItems[dfi].getTitle() || '').indexOf('거주지') >= 0) { drFormItem = drItems[dfi]; drFormTitle = drItems[dfi].getTitle(); break; }
+        }
+      }
+    } catch (eF) { return _json({ ok: false, error: 'form_open_fail', detail: String(eF.message || eF) }); }
+
+    if (drDry) {
+      // 값 분포 — 지울 가치가 있는 데이터인지 사람이 판단할 근거
+      var drDist = {};
+      drBackup.forEach(function (b) { drDist[b.residence] = (drDist[b.residence] || 0) + 1; });
+      var drDistArr = Object.keys(drDist).map(function (k) { return { value: k, count: drDist[k] }; })
+                        .sort(function (a, b) { return b.count - a.count; });
+      // 폼 문항 목록도 같이 — '거주지'가 없다면 어떤 문항들이 있는지 확인용
+      var drFormTitles = [];
+      try { if (drFormUrl) FormApp.openByUrl(drFormUrl).getItems().forEach(function (it) { drFormTitles.push(String(it.getTitle() || '').substring(0, 40)); }); } catch (e2) {}
+      return _json({ ok: true, dryRun: true, colIdx: drIdx, colHeader: drHdr[drIdx],
+                     colsBefore: drHdr.length, rowsWithValue: drFilled, totalRows: drLast - 1,
+                     formUrl: drFormUrl ? '있음' : '없음', formItemFound: !!drFormItem, formItemTitle: drFormTitle,
+                     formTitles: drFormTitles, distribution: drDistArr,
+                     sample: drBackup.slice(0, 5) });
+    }
+
+    // ① 폼 문항 삭제 먼저
+    var drFormDeleted = false;
+    if (drFormItem) { try { FormApp.openByUrl(drFormUrl).deleteItem(drFormItem); drFormDeleted = true; } catch (eD) { return _json({ ok: false, error: 'form_item_delete_fail', detail: String(eD.message || eD) }); } }
+    // ② 그 다음 시트 칸 삭제 (헤더 재확인 — 폼 편집 사이 위치가 바뀌었을 수 있다)
+    var drHdr2 = drSh.getRange(1, 1, 1, drSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var drIdx2 = -1;
+    for (var dj = 0; dj < drHdr2.length; dj++) { if (drHdr2[dj].indexOf('거주지') === 0) { drIdx2 = dj; break; } }
+    if (drIdx2 < 0) return _json({ ok: true, formDeleted: drFormDeleted, colDeleted: false, note: '폼 삭제 후 칸이 이미 없음', backup: drBackup });
+    drSh.deleteColumn(drIdx2 + 1);
+    SpreadsheetApp.flush();
+    var drAfter = drSh.getRange(1, 1, 1, drSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    return _json({ ok: true, formDeleted: drFormDeleted, formItemTitle: drFormTitle, colDeleted: true,
+                   colsBefore: drHdr.length, colsAfter: drAfter.length,
+                   backedUpRows: drBackup.length, backup: drBackup, headersAfter: drAfter });
+  }
+
   // ─── (일회성) 07-18에 잘못 신설한 LOSS사유·LOSS사유메모 칸 제거 — 2026-07-20 GM 확정 ───
   //   같은 뜻의 '미등록 사유' 칸이 원래 있었는데 새 칸을 만든 것이 착오였다. 메모는 아예 불필요(GM).
   //   실측 두 칸 모두 데이터 0건 — 옮길 값이 없다. 값이 하나라도 있으면 삭제를 거부한다(안전장치).
