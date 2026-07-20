@@ -3332,5 +3332,46 @@
     "artifact": "목적 달성(커밋됨→푸시됨→라이브반영 3단 불일치·수렴을 실측 재현) 후 원복. (CLI ad-hoc · 커밋 40aaef77)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "40aaef776292bb582913066efea26a5c57a1b49f"
+  },
+  {
+    "task_id": "CTO-2026-07-20-ADHOC-04afafe7",
+    "clevel": "cto",
+    "title": "[시토] 위임 상태확인 게이트 + 중복배정 체크 + 위임 체크리스트 템플릿 신설 (INC-026)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9380,
+    "artifact": "GM 지시(팀리드 경유, 2026-07-20): 웰리 위임 품질 결함 실측(오늘 요구조각전달 4회·배포직전 오판 3회·지시교차 1회·중복배정 3회·담당 누락보고 2회·담당 유휴대기 4회) 재발방지를 문서가 아닌 코드/장치로 박제. 산출물 2건: ①scripts/delegation_state_check.py — state 서브커맨드(파일·문자열 기준 로컬HEAD·origin·라이브 3계층 대조, 커밋됨/푸시됨/라이브반영을 구분해 배포지연을 담당 헛돌림과 혼동하지 않게 함) + dup 서브커맨드(status/_queue.json PENDING·IN_PROGRESS 매치 검색, 새 담당 배정 전 중복배정 확인). ②wellperion-agents/templates/delegation_checklist.md — 기존 약속 L18(표준 보고 표) 확장, 위임 요구사항 번호화+보고 시 번호별 처리결과 강제(신규 보고체계 아님). 실제 재현검증: 3. 웰페리온 가이드/cto/automation/카톡전송관리.html에 무해 HTML 주석 마커 추가→커밋 26e3ae5e·푸시 직후 state 실행 결과 커밋됨✅/푸시됨✅/라이브❌(exit 1) 확인 → GitHub Pages 배포(run 29738453331) 완료 후 재실행 결과 3계층 전부✅(exit 0)로 전환 — 오늘 3회 헛돌림의 정확한 원인 패턴을 재현하고 장치가 이를 구분해내는 것을 실측 확인. dup은 실제 큐 데이터로 매치(\"카톡\"→배906·9102 검출, exit 1)/무매치(\"WPML\"→exit 0) 양쪽 확인. 한계(정직 표기): 웰리가 실제로 이 스크립트를 위임 전 습관적으로 호출하도록 강제하는 훅은 아직 없음(도구는 있으나 사용은 웰리 판단) — 담당 지시누락(2건)·유휴대기(4건) 유형은 본 장치가 직접 못 막음(체크리스트 템플릿이 지시누락만 완화). ssot/incidents.json INC-026 등록. (CLI ad-hoc · 커밋 04afafe7)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "04afafe72b435b86315beaae6f654c34d149f132"
+  },
+  {
+    "task_id": "CTO-2026-07-20-ADHOC-bae77766",
+    "clevel": "cto",
+    "title": "[시토] 성인강습 P.T팀시트 어긋남 원복 + 원인 규명(FILTER+IMPORTRANGE 전파) + WSC 레거시 정렬결함 범위 실측",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9381,
+    "artifact": "- cpo_lesson_row_restore_0720: 이전 커밋(31f8c8d1)의 cpo_lesson_row_reorder_0720이 유발한\n  'P.T 성인' 팀시트 담당/진행상황 528행 어긋남을 원본(1.성인강습, gid111889422) 행 순서\n  원복으로 해소(팀시트 직접수정 없음 — 원인 제거 방식). 2단계: ①레거시 오름차순 블록을\n  단일 moveRows(검증된 S<D 방향)로 통째 복귀 ②좁은 범위(2~30행)에서 연락처+타임스탬프\n  이중키 재검색 기반 개별 moveRows로 18행 정확히 원위치 복원. 성 (CLI ad-hoc · 커밋 bae77766)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "bae77766331437c12ce3089a3994aec2dddded2e"
+  },
+  {
+    "task_id": "CTO-2026-07-20-LESSON-TIMESTAMP-REPAIR",
+    "clevel": "cto",
+    "title": "[시토] 강습 자체폼 타임스탬프 복구 + 행 시간순 재배치 (시포 대행)",
+    "status": "IN_PROGRESS",
+    "from": "gm",
+    "origin": "gm",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-20T20:30:00Z",
+    "ship_no": 9260,
+    "note": "GM 지시(시포 업무 밀림 대행). 원인=07-18 intake_submit 응답탭 직접쓰기 전환 시 Utilities.formatDate yyyy-MM-dd 로 날짜만 기록(09452c5b 수리)+문자열 저장 정렬튐(a8830062 수리). 현행 코드 정상, 과거 데이터만 문제. 실측 결손=성인41·WSC13=54건. 접수ID(L{yyMMdd-HHmmss}, inquiry_snapshot_lesson.json git 248커밋에서 회수) 대조로 4건 채움(김주희·서정희·김도연·김세연, 실제 Date). 나머지 43건=접수ID 없어 빈칸 유지(시각 창작 금지). ★행 이동 사고·원복 완료: 성인 18행 이동 → P.T 성인 팀시트 528행 어긋남 → 원본 순서 원복으로 해소(diff 0 실측, 13탭 전량 확인, 행총수 3805 불변). 근본원인=종목별 중간탭이 =FILTER(IMPORTRANGE(1.성인강습)) 라 원본 행순서를 그대로 따름. 안전 이동법=이동 전 해당 팀시트 담당·진행상황을 연락처+타임스탬프 키로 스냅샷→이동 후 키 기준 재기입. 별건 발견=WSC 레거시 시간역전 243건(행16~1694 집중, 날짜 문자열 사전식 정렬). INC-020 상태표 드리프트 정정(정본 GUARDED 반영).",
+    "next": "①GM 결정: 안전 이동법(팀시트 키 기준 스냅샷·재기입)으로 성인 18행 재이동 진행 여부 ②WSC 자체폼 유입행 이동 기준 확정(레거시 243건 역전 선처리 여부) ③접수ID 없는 43건 처리 방침"
   }
 ]

@@ -431,6 +431,22 @@
       "차단조치": "module_registry.json chro-* 4건 텍스트 정정(2026-07-20) — 3건은 enabled true→false + ai_free_fallback에 미가동 실측 근거 명기, 1건(gmail-job-title-fetch)은 미확인 표기로 신뢰도 하향. 구조적 재발방지(예: 예약작업 존재를 스캔해 registry 주장과 대조하는 자동 검증기)는 아직 없음 — 이번은 값 정정만, 구조는 미차단.",
       "상태": "OPEN",
       "검증증거": "python scripts/module_silence_detector.py --scan-only → chro-* 4건 전부 unmeasurable 유지(정정 전후 판정 결과 동일, 즉 이번 정정은 판정 개선이 아니라 표기의 정직성 회복 — 실제로 가동 중인 것으로 잘못 표기됐던 3건이 이제 정직하게 미가동으로 표기됨). curl read-only 프로브로 chro-onboarding-weekly-watch 하부 GAS 웹앱(exec URL)만은 실제 라이브 확인(pin_invalid 응답)."
+    },
+    {
+      "id": "INC-026",
+      "date": "2026-07-20",
+      "watch_globs": [
+        "scripts/delegation_state_check.py",
+        "wellperion-agents/templates/delegation_checklist.md"
+      ],
+      "gate": "warn",
+      "요약": "웰리(AI CEO) 위임 품질 결함으로 반복 헛돌림 발생 — GM이 'C레벨 속도가 떨어졌다'고 지적했으나 실측 결과 대부분 담당 문제가 아니라 웰리의 위임 판단 문제였다. 핵심 유형: ①담당 커밋·배포 직전 시점에 상태를 확인해 '아직 안 됐다'고 오판 후 헛재지시(3회) ②유휴 알림을 미완료로 오인해 이미 진행 중인 대상에 새 담당 중복배정(3회, WPML 설정 이중 토글 등).",
+      "증상": "웰리가 담당에게 재지시하는 시점에 실제 확인한 것이 git log·grep 등 스냅샷이었고, 그 스냅샷이 이미 낡아 있었다(담당의 커밋·푸시 직후 GitHub Pages 배포 지연 구간과 겹침 — 배포 적체는 별건 CTO-2026-07-20-PAGES-DEPLOY-BACKLOG(배9332)·-QUEUE-STARVATION 소관, 본 사고에서는 참조만). '커밋됨'·'푸시됨'·'라이브 반영됨'을 한 단어('안 됐다')로 뭉뚱그려 판단해 실제로는 이미 끝난 작업을 다시 시키거나, 이미 누군가 처리 중인 대상에 새 담당을 겹쳐 붙였다.",
+      "본질": "위임 판단에 쓴 근거가 '지금 실제 상태'가 아니라 '확인한 시점의 스냅샷'이었다 — 확인 자체를 생략한 게 아니라, 확인은 했으나 3계층(로컬 HEAD·origin·라이브)을 구분하지 않고 하나로 뭉쳐 판단을 멈춘 것(검증멈춤). 왕복을 줄이려고 GM이 최종 모습을 미리 다 말하게 만드는 건 잘못된 해법(화면 작업은 보며 디테일이 나오는 게 정상)이라는 GM 합의 방향에 따라, 왕복 횟수가 아니라 왕복 1회의 판단 비용을 낮추는 쪽으로 장치화했다.",
+      "뿌리분류": "검증멈춤",
+      "차단조치": "scripts/delegation_state_check.py 신설 — state 서브커맨드가 로컬HEAD·origin·라이브 3계층을 한 번에 대조해 '커밋됨/푸시됨/라이브반영'을 구분 표시(--string 지정 시 exit code로 게이트 판정까지 가능). dup 서브커맨드가 status/_queue.json PENDING·IN_PROGRESS를 키워드로 검색해 중복배정 여부를 기계로 확인. wellperion-agents/templates/delegation_checklist.md(L18 확장)로 위임 요구사항 번호화+보고 시 번호별 처리결과 강제를 템플릿화. 정직한 한계: 이 도구를 위임 전 실제로 호출하는 것은 아직 웰리의 판단에 달려 있다 — 호출을 구조적으로 강제하는 훅(예: 위임 프롬프트 생성 경로에 배선)은 이번 범위 밖. 또한 '지시 교차'(거의 동시 도착한 상반 지시)·'담당 유휴 대기'(담당이 보고 없이 대기)는 본 장치가 직접 못 막는다 — 상태확인 게이트는 웰리 쪽 오판만 겨냥한다.",
+      "상태": "GUARDED",
+      "검증증거": "실제 사고 패턴 재현: 3. 웰페리온 가이드/cto/automation/카톡전송관리.html에 무해 HTML 주석 마커 추가 후 커밋 26e3ae5e(자동 push 확인) 직후 `delegation_state_check.py state`를 라이브 URL과 함께 실행 → 커밋됨✅/푸시됨✅/라이브❌ 정확히 구분(exit 1, gh run 29738453331 in_progress 확인). GitHub Pages 배포 완료(gh run status=completed/success) 후 동일 명령 재실행 → 3계층 전부✅(exit 0)로 정확히 전환 확인. dup 서브커맨드는 실제 큐로 매치(\"카톡\" 검색→배906·9102 검출, exit 1)/무매치(\"WPML\"→exit 0) 양쪽 확인. 재현검증용 마커는 커밋 40aaef77로 원복 완료(GM 화면·기능 영향 0)."
     }
   ]
 }
