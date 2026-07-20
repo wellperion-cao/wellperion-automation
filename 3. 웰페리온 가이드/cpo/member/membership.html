@@ -803,12 +803,15 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 @media(max-width:520px){#memberTabNav,#lessonComboBoard{grid-template-columns:1fr}}
 
 /* ═══════════════════════════════════════
-   문의 & 등록 현황 집중형 대시보드 모달 — 배3, 2026-07-07 시포·GM / 2026-07-20 통합
-   진입=📊 문의 & 등록 현황 버튼 → #inquiryDashModalOverlay(openInquiryDash). 6섹션 한 화면 집중형(구 멤버십 문의 현황+문의 이후 현황 통합).
+   🆕 신규 문의 & 등록 현황 집중형 대시보드 모달 — 배3, 2026-07-07 시포·GM / 2026-07-20 통합 / 2026-07-20(2차) 기간 토글
+   진입=🆕 신규 문의 & 등록 현황 버튼 → #inquiryDashModalOverlay(openInquiryDash). 6섹션 한 화면 집중형(구 멤버십 문의 현황+문의 이후 현황 통합).
    ①=member_inquiry_list(dbRows)·member_registered_list(멤버십 전용, 정확성 교정) · ②③=stage_funnel · ④=①과 동일 소스 재사용 · ⑤=cpo_today_stats·cpo_churn_stats · ⑥=member_registered_list(올해분, ①의 y-fetch 재사용)+①의 문의 fetch 재사용. 새 GAS 0.
    정직성: 연간=올해 누적 합계만(작년비·추세 없음) · 지난달 없음·측정 불가 = '–'.
    ⑥ 월별 등록 현황: 기존 수기 월별 집계 탭(가이드허브 26년 문의 현황 시트) 대체 — member_registered_list(유효회원 시트 등록일자) 원본에서 매 열람 시 실시간 재계산.
    문의 시트의 '등록일(자동)' 열(전화번호 매칭 스탬프)은 검증 결과 문의 상태(진행현황)와 6~15% 불일치가 확인돼(2026-07-20 시포) 채택하지 않음 — 유효회원 시트 등록일자가 더 신뢰도 높은 정본.
+   ★기간 토글(일/월/연/총, 기본=월): ①만 기간에 반응(_mdashComputeKpi) — ②③⑤는 현재 시점 스냅샷, ④는 전체 누적이라
+   토글 무영향(헤더 "(누적)"/"(현재 기준)" 명시 + 캐비어트 문구로 표기). ⑥은 성격상 연 단위 고정. 새 fetch 0 — 이미 받은
+   _mdashRawInq(전체)·_mdashRawReg(전체, from/to 공란)를 클라에서 날짜 필터만 재계산.
    ═══════════════════════════════════════ */
 .mdash-sec{margin-bottom:18px}
 .mdash-sec:last-child{margin-bottom:0}
@@ -849,6 +852,17 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .mdash-mreg-table th:first-child,.mdash-mreg-table td:first-child{text-align:left}
 .mdash-mreg-table tr:last-child td{border-bottom:none}
 .mdash-mreg-table tr.mreg-cur td{font-weight:800;color:var(--accent)}
+.mdash-ptabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.mdash-ptab{font:inherit;font-size:12px;font-weight:700;color:var(--dim-mid);background:rgba(125,123,116,0.07);border:1px solid var(--border-subtle);border-radius:999px;padding:6px 15px;cursor:pointer}
+.mdash-ptab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.mdash-kpirow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mdash-kpi{padding:13px 14px;border-radius:9px;background:rgba(125,123,116,0.07);border:1px solid var(--border-subtle);position:relative;overflow:hidden}
+.mdash-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--dim)}
+.mdash-kpi.accent::before{background:var(--accent)}
+.mdash-kpi-label{font-size:11px;font-weight:700;color:var(--dim-mid)}
+.mdash-kpi-val{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-0.02em;margin-top:5px}
+.mdash-kpi-note{font-size:10.5px;color:var(--dim);margin-top:4px}
+@media(max-width:520px){.mdash-kpirow{grid-template-columns:1fr}}
 
 /* ── 오늘 할 일 액션 패널(상담사용) — 배754, 2026-07-09 시포·GM ── */
 .tap-sec{border:1px solid var(--border-subtle);border-radius:10px;margin-bottom:8px;overflow:hidden}
@@ -1141,7 +1155,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="hz-zone z-status">
           <div class="hz-zone-label">📊 현황 (라이브)</div>
           <div class="hz-btns">
-            <button class="action-btn" id="btnInquiryDash" onclick="openInquiryDash()">📊 문의 & 등록 현황</button>
+            <button class="action-btn" id="btnInquiryDash" onclick="openInquiryDash()">🆕 신규 문의 & 등록 현황</button>
             <!-- 재등록 현황 버튼 — 원본 대시보드(renewal.html)를 모달 iframe으로 노출. 사본 생성 금지(원본 변경 시
                  어긋남 방지, 2026-07-16 시설부 기준값 사고 재발방지). openInquiryDash 패턴 벤치마킹, 기존 코드 미변경. 2026-07-20 GM 지시 -->
             <button class="action-btn" id="btnRenewDash" onclick="openRenewDash()">🔄 재등록 현황</button>
@@ -1229,6 +1243,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
          일/월 토글로 재배선 + 신규 회원 종목별 담당자 인라인 배정(membershipRegOpen). 데이터=멤버십 회원 DB 등록일. -->
     <a class="dash-card" data-kind="reg" data-lcard="reg" href="javascript:void(0)" onclick="membershipRegOpen(this)">
       <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">멤버십 신규 등록 현황</span></div>
+      <div style="font-size:10.5px;font-weight:400;color:var(--dim);margin:1px 0 0 16px">(P.T / 필라테스 / 골프 담당자 배정)</div>
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="lessonComboMRegToday">–</b> 명</span></div>
         <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="lessonComboMRegMonth">–</b> 명</span></div>
@@ -1287,7 +1302,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="card">
       <div class="card-title">
         <span class="icon">📋</span>멤버십 신규 등록현황
-        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">회원 DB 등록일 기준 · 월 단위 기본(◀▶ 이동) · 신규 회원 종목별 담당자 배정</span>
+        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">회원 DB 등록일 기준 · 월 단위 기본(◀▶ 이동) · 신규 회원 종목별 담당자 배정 (P.T / 필라테스 / 골프)</span>
       </div>
 
       <div class="reg-toolbar">
@@ -1413,7 +1428,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
        월간 예약(dTourMon)은 표면 노출처가 없어졌음(정직 기록) — 데이터 자체는 캘린더 월간 스크롤로 직접 셀 수 있어
        완전 손실은 아니나, 집계 숫자로는 현재 미노출. -->
 
-  <!-- 문의 & 등록 현황 집중형 대시보드 = 버튼(📊 문의 & 등록 현황) → 팝업(#inquiryDashModalOverlay). 배3, 2026-07-07 시포·GM / 2026-07-20 통합 -->
+  <!-- 🆕 신규 문의 & 등록 현황 집중형 대시보드 = 버튼(🆕 신규 문의 & 등록 현황) → 팝업(#inquiryDashModalOverlay). 배3, 2026-07-07 시포·GM / 2026-07-20 통합 -->
 
   <!-- ══════════════════════════════ 1. 예약 달력 ══════════════════════════════ -->
   <div id="pane-calendar" class="pane">
@@ -2512,14 +2527,17 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </div>
 </div>
 
-<!-- ══ 문의 & 등록 현황 집중형 대시보드 모달 (버튼 📊 문의 & 등록 현황 → openInquiryDash). 5섹션 한 화면 — 구 멤버십 문의
+<!-- ══ 🆕 신규 문의 & 등록 현황 집중형 대시보드 모달 (버튼 🆕 신규 문의 & 등록 현황 → openInquiryDash). 5섹션 한 화면 — 구 멤버십 문의
      현황(#mdashModalOverlay)·구 문의 이후 현황(#postInqModalOverlay) 통합(중복 fetch 제거, 버튼 2개→1개). 2026-07-20 시포·GM.
      구 전환율 팝업(#convModalOverlay)·구 단계별 퍼널 팝업(#funnelModalOverlay)은 이미 앞서 이 팝업의 ①③(전환율)·②(퍼널)로
-     흡수되어 폐기(중복 버튼 제거, 배3 후속). 배3, 2026-07-07 시포·GM ══ -->
+     흡수되어 폐기(중복 버튼 제거, 배3 후속). 배3, 2026-07-07 시포·GM.
+     2026-07-20 시포(2차): "신규"로 개명 + 기간 토글(일/월/연/총, 기본=월) 신설 — GM 불만("전체 누적만 보여서 별로·느림")
+     대응. ★새 fetch 금지 — 이미 받은 member_inquiry_list(전체)·member_registered_list(전체, from/to 공란=전체) 원본을
+     _mdashRawInq·_mdashRawReg에 보관해두고 기간 전환은 클라 필터만 재계산(_mdashSetPeriod). 상세 = ① 섹션. ══ -->
 <div class="gdoc-overlay" id="inquiryDashModalOverlay" onclick="if(event.target===this)closeInquiryDash()">
   <div class="gdoc-modal" role="dialog" aria-modal="true">
     <div class="gdoc-modal-head">
-      <span class="gdoc-modal-title">📊 문의 & 등록 현황</span>
+      <span class="gdoc-modal-title">🆕 신규 문의 & 등록 현황</span>
       <button class="gdoc-close" type="button" onclick="closeInquiryDash()" aria-label="닫기">&times;</button>
     </div>
     <div id="inquiryDashModalBody">
@@ -3266,7 +3284,7 @@ function loadChurnTopBadges(){
     _setTxt('chSigD7', bk.b7); _setTxt('chSigD830', bk.b14 + bk.b30);
   });
 }
-/* ── 문의 & 등록 현황 집중형 대시보드 모달 — 진입 버튼(📊 문의 & 등록 현황) → #inquiryDashModalOverlay.
+/* ── 🆕 신규 문의 & 등록 현황 집중형 대시보드 모달 — 진입 버튼(🆕 신규 문의 & 등록 현황) → #inquiryDashModalOverlay.
    구 멤버십 문의 현황(#mdashModalOverlay)+구 문의 이후 현황(#postInqModalOverlay) 통합(버튼 2개→1개, 중복 fetch 제거). 2026-07-20 시포·GM.
    ①④ 정확성 교정(2026-07-07 시포·GM): 구 funnel_conversion은 멤버십+강습+렌트+비즈 전 채널을 합산해
    과대집계(7월 예: 신규문의 53·전환율 11.3% — 실측 멤버십 단독은 10건). member_inquiry_list(dbRows, 26년
@@ -3345,7 +3363,8 @@ function _mdashMetric(label, now, prev, ytd, isRate, prevMeasurable){
          '<div class="mdash-3col"><span class="mdash-now">' + nowStr + '</span>' + delta +
          '<span class="mdash-ytd">올해 <b>' + ytdStr + '</b></span></div></div>';
 }
-// 가입(등록) 기간 카운트 — member_registered_list(유효회원 시트 등록일자, 멤버십 전용). 실패 시 cb(null).
+// 가입(등록) 기간 카운트 — member_registered_list(유효회원 시트 등록일자, 멤버십 전용). from/to 공란=전체(백엔드
+// L3968 확인: rlFrom·rlTo가 falsy면 조건 스킵→전체 반환). 실패 시 cb(null).
 function _mdashFetchRegistered(from, to, cb){
   if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
   fetch(GAS_URL + '?action=member_registered_list&from=' + from + '&to=' + to + _wpKeyParam())
@@ -3353,57 +3372,120 @@ function _mdashFetchRegistered(from, to, cb){
     .then(function(d){ cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
 }
+// ★기간 토글(일/월/연/총, 기본=월) — 신규 문의 & 등록 현황 ①만 반응. 새 fetch 금지: _mdashRawInq·_mdashRawReg
+// (둘 다 loadInquiryDash가 전체 원본으로 1회만 채움)에 대해 클라 필터만 다시 계산한다. 2026-07-20 시포·GM(2차).
+var _mdashPeriod = 'month';
+var _mdashRawInq;  // undefined=로딩중 · null=실패(측정불가) · array=member_inquiry_list 전체(스코프 필터 전)
+var _mdashRawReg;  // undefined=로딩중 · null=실패(측정불가) · array=member_registered_list 전체
+var _MDASH_PERIODS = [['day', '일'], ['month', '월'], ['year', '연'], ['total', '총']];
+function _mdashPeriodRange(period){
+  var now = new Date();
+  var to = _mdashYmd(now);
+  if (period === 'day') return { from: to, to: to, label: '오늘' };
+  if (period === 'year') return { from: _mdashYmd(new Date(now.getFullYear(), 0, 1)), to: to, label: '올해' };
+  if (period === 'total') return { from: null, to: to, label: '전체 누적' };
+  return { from: _mdashYmd(new Date(now.getFullYear(), now.getMonth(), 1)), to: to, label: '이번달' };  // month(기본)
+}
+function _mdashPeriodTabsHtml(){
+  return '<div class="mdash-ptabs" id="mdashPtabs">' + _MDASH_PERIODS.map(function(p){
+    return '<button type="button" class="mdash-ptab' + (p[0] === _mdashPeriod ? ' active' : '') +
+      '" data-period="' + p[0] + '" onclick="_mdashSetPeriod(\'' + p[0] + '\')">' + p[1] + '</button>';
+  }).join('') + '</div>';
+}
+// 기간 버튼 클릭 — fetch 없음. 이미 보관된 _mdashRawInq·_mdashRawReg를 다시 필터링해 ①만 재렌더.
+function _mdashSetPeriod(period){
+  if (_mdashPeriod === period) return;
+  _mdashPeriod = period;
+  var wrap = document.getElementById('mdashPtabs');
+  if (wrap) Array.prototype.forEach.call(wrap.children, function(btn){
+    btn.classList.toggle('active', btn.getAttribute('data-period') === period);
+  });
+  _mdashRenderKpiCards();
+}
+function _mdashKpiFmt(v){ return v === undefined ? '…' : (v === null ? '–' : v.toLocaleString()); }
+// ① 선택 기간의 신규 문의·가입·전환율 — 원본 배열(_mdashRawInq·_mdashRawReg)을 기간 범위로 필터링만 한다.
+function _mdashComputeKpi(period){
+  var r = _mdashPeriodRange(period);
+  var inqCount, regCount;
+  if (_mdashRawInq === undefined) inqCount = undefined;
+  else if (_mdashRawInq === null) inqCount = null;
+  else {
+    inqCount = 0;
+    _mdashRawInq.forEach(function(row){
+      if (!_mdashInScope(row)) return;
+      var d10 = String(row.timestamp || '').slice(0, 10);
+      if (!d10) return;
+      if (r.from && d10 < r.from) return;
+      if (d10 > r.to) return;
+      inqCount++;
+    });
+  }
+  if (_mdashRawReg === undefined) regCount = undefined;
+  else if (_mdashRawReg === null) regCount = null;
+  else {
+    var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    regCount = 0;
+    _mdashRawReg.forEach(function(row){
+      var d = String(row.regDate || '');
+      if (!DATE_RE.test(d)) return;
+      if (r.from && d < r.from) return;
+      if (d > r.to) return;
+      regCount++;
+    });
+  }
+  var rate = null;
+  if (typeof inqCount === 'number' && inqCount > 0 && typeof regCount === 'number') rate = Math.round(regCount / inqCount * 1000) / 10;
+  return { inq: inqCount, reg: regCount, rate: rate, range: r };
+}
+function _mdashRenderKpiCards(){
+  var el = document.getElementById('mdashSecPerf'); if (!el) return;
+  var hd = document.getElementById('mdashPerfHd');
+  var k = _mdashComputeKpi(_mdashPeriod);
+  if (hd) hd.textContent = '① ' + k.range.label + ' 성과';
+  var rangeTxt = k.range.from ? (k.range.from === k.range.to ? k.range.from : (k.range.from + ' ~ ' + k.range.to)) : '전체 기간';
+  el.innerHTML =
+    '<div class="mdash-kpi"><div class="mdash-kpi-label">신규 문의</div><div class="mdash-kpi-val">' + _mdashKpiFmt(k.inq) + '</div><div class="mdash-kpi-note">' + esc(rangeTxt) + '</div></div>' +
+    '<div class="mdash-kpi"><div class="mdash-kpi-label">가입</div><div class="mdash-kpi-val">' + _mdashKpiFmt(k.reg) + '</div><div class="mdash-kpi-note">' + esc(rangeTxt) + '</div></div>' +
+    '<div class="mdash-kpi accent"><div class="mdash-kpi-label">전환율</div><div class="mdash-kpi-val">' + (k.rate == null ? '–' : k.rate + '%') + '</div><div class="mdash-kpi-note">가입/문의</div></div>';
+}
 function loadInquiryDash(){
   var body = document.getElementById('inquiryDashModalBody');
   if (!body) return;
   var _ld = '<div style="color:var(--dim);font-size:11px">불러오는 중…</div>';
+  _mdashRawInq = undefined; _mdashRawReg = undefined;   // 이번 열람 회차의 원본 보관소 초기화(기간 토글이 재사용)
   body.innerHTML =
-    '<div class="mdash-sec"><div class="mdash-sec-hd">① 이번달 성과</div>' +
-      '<div id="mdashSecPerf" class="mdash-metrics">' + _ld + '</div>' +
-      '<div class="mdash-caveat">신규 문의=member_inquiry_list(26년 신규문의 시트) 접수일 실측, 멤버십 유형만(강습·렌트·비즈 제외) · 가입=member_registered_list(유효회원 시트) 등록일자 실측 · 전환율=이번달 가입/이번달 문의 · 지난달 델타=같은 일자까지 공정 비교 · 올해=1월~오늘 누적(추세·작년비 없음).</div></div>' +
-    '<div class="mdash-sec"><div class="mdash-sec-hd">② 문의 이후 퍼널</div>' +
-      '<div id="postInqSecFunnel">' + _ld + '</div></div>' +
-    '<div class="mdash-sec"><div class="mdash-sec-hd">③ 처리 현황</div>' +
-      '<div id="postInqSecStatus">' + _ld + '</div></div>' +
+    _mdashPeriodTabsHtml() +
+    '<div class="mdash-sec"><div class="mdash-sec-hd" id="mdashPerfHd">① ' + _mdashPeriodRange(_mdashPeriod).label + ' 성과</div>' +
+      '<div id="mdashSecPerf" class="mdash-kpirow">' + _ld + '</div>' +
+      '<div class="mdash-caveat">신규 문의=member_inquiry_list(26년 신규문의 시트) 접수일 실측, 멤버십 유형만(강습·렌트·비즈 제외) · 가입=member_registered_list(유효회원 시트) 등록일자 실측 · 전환율=선택 기간 가입/선택 기간 문의 · 기간 전환 시 재조회 없이 이미 불러온 데이터에서 즉시 재계산.</div></div>' +
+    '<div class="mdash-sec"><div class="mdash-sec-hd">② 문의 이후 퍼널 (누적)</div>' +
+      '<div id="postInqSecFunnel">' + _ld + '</div>' +
+      '<div class="mdash-caveat">기간 토글 영향 없음 — stage_funnel 현재 시점 누적 스냅샷.</div></div>' +
+    '<div class="mdash-sec"><div class="mdash-sec-hd">③ 처리 현황 (누적)</div>' +
+      '<div id="postInqSecStatus">' + _ld + '</div>' +
+      '<div class="mdash-caveat">기간 토글 영향 없음 — 현재 시점 누적 스냅샷.</div></div>' +
     '<div class="mdash-sec"><div class="mdash-sec-hd">④ 채널 효율 (누적)</div>' +
-      '<div id="mdashSecChannel">' + _ld + '</div></div>' +
-    '<div class="mdash-sec"><div class="mdash-sec-hd">⑤ 회원 구성·LOSS</div>' +
-      '<div id="mdashSecMember">' + _ld + '</div></div>' +
-    '<div class="mdash-sec"><div class="mdash-sec-hd">⑥ 월별 등록 현황 (올해)</div>' +
+      '<div id="mdashSecChannel">' + _ld + '</div>' +
+      '<div class="mdash-caveat">기간 토글 영향 없음 — 전체 누적 문의 기준.</div></div>' +
+    '<div class="mdash-sec"><div class="mdash-sec-hd">⑤ 회원 구성·LOSS (현재 기준)</div>' +
+      '<div id="mdashSecMember">' + _ld + '</div>' +
+      '<div class="mdash-caveat">기간 토글 영향 없음 — 현재 시점 스냅샷.</div></div>' +
+    '<div class="mdash-sec"><div class="mdash-sec-hd">⑥ 월별 등록 현황 (올해, 연 단위 고정)</div>' +
       '<div id="mdashSecMonthlyReg">' + _ld + '</div>' +
       '<div class="mdash-caveat" id="mdashMonthlyRegCaveat"></div></div>';
   var now = new Date();
-  var mStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  var lStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  // 지난달 대비=같은 일자까지(MTD vs MTD) 공정 비교. 말일 초과분은 지난달 말일로 클램프.
-  var _prevLen = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
-  var lEnd   = new Date(now.getFullYear(), now.getMonth() - 1, Math.min(now.getDate(), _prevLen));
-  var yStart = new Date(now.getFullYear(), 0, 1);
-  var mStr = _mdashYmd(mStart), nowStr = _mdashYmd(now), lStr = _mdashYmd(lStart), lEndStr = _mdashYmd(lEnd), yStr = _mdashYmd(yStart);
-  var res = { reg: { m: undefined, l: undefined, y: undefined }, inqDone: false, inq: null };
-  function _perfReady(){
-    if (res.reg.m === undefined || res.reg.l === undefined || res.reg.y === undefined || !res.inqDone) return;
-    var el = document.getElementById('mdashSecPerf'); if (!el) return;
-    var inq = res.inq;
-    var regM = res.reg.m ? res.reg.m.count : null, regL = res.reg.l ? res.reg.l.count : null, regY = res.reg.y ? res.reg.y.count : null;
-    var rateM = (inq.m != null && inq.m > 0 && regM != null) ? Math.round(regM / inq.m * 1000) / 10 : null;
-    var rateL = (inq.l != null && inq.l > 0 && regL != null) ? Math.round(regL / inq.l * 1000) / 10 : null;
-    var rateY = (inq.y != null && inq.y > 0 && regY != null) ? Math.round(regY / inq.y * 1000) / 10 : null;
-    el.innerHTML =
-      _mdashMetric('신규 문의', inq.m, inq.l, inq.y, false, inq.l != null) +
-      _mdashMetric('가입', regM, regL, regY, false, !!res.reg.l) +
-      _mdashMetric('전환율(가입/문의)', rateM, rateL, rateY, true, rateL != null);
-  }
-  // ⑥ 월별 등록 현황 — member_registered_list(유효회원 시트 등록일자, res.reg.y=①의 y-fetch 재사용)를
-  // 월별로 그룹핑해 표로 렌더. 문의 시트 '등록일(자동)' 열은 검증 결과 진행현황과 어긋나는 건이 있어
+  var yStr = _mdashYmd(new Date(now.getFullYear(), 0, 1));
+  var res = { inqDone: false, inqByMonth: null, regDone: false };
+  // ⑥ 월별 등록 현황 — _mdashRawReg(member_registered_list 전체, 새 fetch 없음)를 올해분만 걸러 월별로
+  // 그룹핑해 표로 렌더. 문의 시트 '등록일(자동)' 열은 검증 결과 진행현황과 어긋나는 건이 있어
   // (2026-07-20 시포: SUC인데 등록일 없음 12건, 등록일 있는데 SUC 아님 29건 / 632건 중 41건) 미채택 —
   // 유효회원 시트 등록일자(=①⑤와 동일 정본)가 더 신뢰도 높음. 기존 수기 월별 집계 탭은 읽지 않음.
-  // res.reg.y·res.inqDone(전환율 분모) 둘 다 준비된 뒤에만 렌더(어느 콜백이 늦어도 안전 — 두 호출부에서 각각 재호출).
+  // res.regDone·res.inqDone(전환율 분모) 둘 다 준비된 뒤에만 렌더(어느 콜백이 늦어도 안전 — 두 호출부에서 각각 재호출).
   function _mdashRenderMonthlyReg(){
-    if (res.reg.y === undefined || !res.inqDone) return;
+    if (!res.regDone || !res.inqDone) return;
     var el = document.getElementById('mdashSecMonthlyReg'); if (!el) return;
     var caveatEl = document.getElementById('mdashMonthlyRegCaveat');
-    if (!res.reg.y || !res.reg.y.data) {
+    if (!_mdashRawReg) {
       el.innerHTML = '<div style="color:var(--dim);font-size:11px">등록 데이터 불러오기 실패</div>';
       return;
     }
@@ -3411,9 +3493,10 @@ function loadInquiryDash(){
     var curMonth = now.getMonth() + 1;  // 1~12 — 오늘까지만 의미 있는 달
     var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
     var counts = {}, excluded = 0;
-    res.reg.y.data.forEach(function(r){
+    _mdashRawReg.forEach(function(r){
       var d = String(r.regDate || '');
       if (!DATE_RE.test(d)) { excluded++; return; }   // 형식 이상행(시트 하단 재등록횟수 요약 등 비회원 행) 제외
+      if (d.slice(0, 4) !== String(year)) return;     // 올해분만(전체 원본에서 연도 필터, 새 fetch 없음)
       var mo = parseInt(d.slice(5, 7), 10);
       counts[mo] = (counts[mo] || 0) + 1;
     });
@@ -3446,17 +3529,13 @@ function loadInquiryDash(){
   // 목록 UI(gviz)는 활성만 보여도 맞지만, 대시보드(누적 분석)는 전체 문의를 써야 정확 → 소스 분리.
   function _mdashLoadInqAnalytics(){
     function _compute(allInq){
-      var mCount = 0, lCount = 0, yCount = 0;
-      var chMap = {};   // §3 채널별 { inq, joined } — 전체 문의(누적) 기준
+      _mdashRawInq = allInq || [];   // ★기간 토글(_mdashComputeKpi)이 재조회 없이 다시 필터링할 원본
+      var chMap = {};   // §4 채널별 { inq, joined } — 전체 문의(누적) 기준, 토글 무영향
       var byMonth = {}; // ⑥ 월별 문의건수(올해분, 'YYYY-MM' 키) — 등록 대비 전환율 분모, 새 fetch 없이 재사용
       var joinSet = { 'SUC':1, '단기SUC':1, '결제완납':1 };
-      (allInq || []).forEach(function(row){
+      _mdashRawInq.forEach(function(row){
         if (!_mdashInScope(row)) return;
         var ts = String(row.timestamp || '');
-        var d10 = ts.slice(0, 10);
-        if (ts.indexOf(mStr.slice(0,7)) === 0) mCount++;
-        if (d10 >= lStr && d10 <= lEndStr) lCount++;
-        if (ts.indexOf(yStr.slice(0,4)) === 0) yCount++;
         var ym = ts.slice(0, 7);
         if (ym.indexOf(yStr.slice(0,4)) === 0) byMonth[ym] = (byMonth[ym] || 0) + 1;
         var ch = row.channel ? String(row.channel).trim() : '';
@@ -3465,11 +3544,10 @@ function loadInquiryDash(){
         chMap[ch].inq++;
         if (joinSet[row.status]) chMap[ch].joined++;
       });
-      res.inq = { m: mCount, l: lCount, y: yCount };
       res.inqByMonth = byMonth;
       res.inqDone = true;
       _renderMdashChannelFromMap(chMap);
-      _perfReady();
+      _mdashRenderKpiCards();
       _mdashRenderMonthlyReg();
     }
     if (GAS_URL === GAS_PLACEHOLDER) { _compute(dbRows || []); return; }   // 백엔드 미연동 폴백(값 과소 가능)
@@ -3477,17 +3555,23 @@ function loadInquiryDash(){
       .then(function(r){ return r.json(); })
       .then(function(d){ _compute((d && d.data) || []); })
       .catch(function(){
-        res.inq = { m: null, l: null, y: null }; res.inqByMonth = null; res.inqDone = true;   // 실패=측정불가(전환율도 '–'), 채널 실패표기
+        _mdashRawInq = null;   // 실패=측정불가(전환율도 '–'), 채널 실패표기
+        res.inqByMonth = null; res.inqDone = true;
         var el = document.getElementById('mdashSecChannel');
         if (el) el.innerHTML = '<div style="color:var(--dim);font-size:11px">채널 데이터 불러오기 실패</div>';
-        _perfReady();
+        _mdashRenderKpiCards();
         _mdashRenderMonthlyReg();
       });
   }
   _mdashLoadInqAnalytics();
-  _mdashFetchRegistered(mStr, nowStr, function(d){ res.reg.m = d; _perfReady(); });
-  _mdashFetchRegistered(lStr, lEndStr, function(d){ res.reg.l = d; _perfReady(); });
-  _mdashFetchRegistered(yStr, nowStr, function(d){ res.reg.y = d; _perfReady(); _mdashRenderMonthlyReg(); });
+  // 가입 원본 — from/to 공란=전체 1회 fetch(구 이번달·지난달·올해 3회 분리 fetch를 통합, GAS 호출 3→1로 감소·추가 체감속도 개선).
+  // 기간 토글은 이 배열을 다시 필터링만 한다(_mdashComputeKpi) — 새 fetch 없음.
+  _mdashFetchRegistered('', '', function(d){
+    _mdashRawReg = (d && d.data) ? d.data : null;
+    res.regDone = true;
+    _mdashRenderKpiCards();
+    _mdashRenderMonthlyReg();
+  });
   // ── §2 문의 이후 퍼널 + §3 처리 현황 (stage_funnel 1회 fetch 공유 — 구 멤버십②+이후① 통합, 중복 fetch 제거) ──
   _postInqFetchFunnel(function(fd){
     _postInqFetchTc(function(tcd){ _postInqRenderFunnel(fd, tcd); });
@@ -3901,7 +3985,7 @@ function switchFamily(fam) {
     c.style.display = (types.indexOf(c.getAttribute('data-type')) >= 0) ? '' : 'none';
   });
   var _famName = (fam === 'lesson') ? '강습 회원관리' : '멤버십 회원관리';
-  // 강습 전용 현황 팝업 버튼만 family 배타 표시 — 문의 & 등록 현황(#btnInquiryDash)은 멤버십+강습 통합 뷰라 항상 노출.
+  // 강습 전용 현황 팝업 버튼만 family 배타 표시 — 신규 문의 & 등록 현황(#btnInquiryDash)은 멤버십+강습 통합 뷰라 항상 노출.
   // 배3 후속, 2026-07-07 시포·GM / 2026-07-20 시포·GM(통합 배선)
   var _btnLes = document.getElementById('btnLessonDash');
   if (_btnLes) _btnLes.style.display = (fam === 'lesson') ? '' : 'none';
@@ -4275,7 +4359,7 @@ function _lessonVisibleRows(t) {
 // 강습 종목별 담당(강사) 명단 — status/lesson_instructor_roster.json 내용 그대로 임베드
 // (GitHub Pages는 status/ 미서빙 → 페이지 자체 JS const로 복사. 원본 갱신 시 이 블록도 함께 갱신). 축7, 2026-07-08 시포·GM.
 var LESSON_INSTRUCTOR_ROSTER = {
-  "P.T": ["김상식", "김종진", "최동오", "김혜진", "김재용", "김지훈", "이형진", "최도희"],
+  "P.T": ["김상식", "김종진", "최동오", "김혜진", "김재용", "김지훈", "이형진", "최도희", "양승문"],
   "필라테스": ["최은지", "조영은", "황동희"],
   "골프": ["최현준", "김태엽", "박찬중"],
   "스쿼시": ["이상훈", "박상현"],
@@ -5461,6 +5545,26 @@ var _oaComposing = false;
 var _oaFetching = false;       // member_active_list 로드 재진입 방어(프리로드+수동 오픈 동시 방지). 2026-07-18
 
 function _oaSportCfg(key){ for (var i=0;i<OWNER_ASSIGN_SPORTS.length;i++){ if (OWNER_ASSIGN_SPORTS[i].key===key) return OWNER_ASSIGN_SPORTS[i]; } return OWNER_ASSIGN_SPORTS[0]; }
+
+// 배정 가능 종목·제외/보강 단일 정의 — GM 지시 2026-07-20: 회원 종목이 무엇이든 상관없이
+// 담당자 배정 후보는 P.T·필라테스·골프 강사로만 한정(수영·스쿼시 등 5탭 population 표시는 유지, 새 선택지만 제한).
+// 퇴사자(이정한·정시우·김명선·이우성)는 하드코딩·팀시트·회원데이터 세 경로 어디서 유입되든 여기 한 곳에서 제외.
+// 유승용(스쿼시)은 국가대표 활동으로 배정만 제외될 뿐 퇴사자 아님 — 이 종목 제한(스쿼시 자체가 배정 후보 밖)으로 자연히 빠지므로 별도 처리 불필요.
+var OWNER_ASSIGN_ROSTER_KEYS = ['PT', '골프', 'P.L'];
+var OWNER_ASSIGN_EXCLUDE = { '이정한': 1, '정시우': 1, '김명선': 1, '이우성': 1 };
+var OWNER_ASSIGN_FORCE_INCLUDE = { 'PT': ['양승문'] };   // 유효회원 116명 실사용 담당자인데 명단(하드코딩/팀시트) 누락분 보강
+// 종목 상관없이 통합된 배정 후보 목록(끝=담당자 X). pane-ownerAssign·mreg 담당자 셀 공용.
+function _oaOwnerOptionsCombined(){
+  var seen = {}, list = [];
+  OWNER_ASSIGN_ROSTER_KEYS.forEach(function(key){
+    var cfg = _oaSportCfg(key);
+    _lessonRosterFor(cfg.rosterKey).forEach(function(n){ if (n && !seen[n] && !OWNER_ASSIGN_EXCLUDE[n]) { seen[n] = 1; list.push(n); } });
+    (OWNER_ASSIGN_FORCE_INCLUDE[key] || []).forEach(function(n){ if (!seen[n]) { seen[n] = 1; list.push(n); } });
+  });
+  list.push(LESSON_UNASSIGNED_OPTION);
+  return list;
+}
+
 // 휴대폰 가운데 4자리 마스킹(010-****-5678)
 function _oaMaskPhone(p){
   var s = String(p||'').trim(); if (!s) return '—';
@@ -5586,11 +5690,12 @@ function _oaRender(){
     return;
   }
 
-  // 드롭다운 옵션 = 명단(roster) ∪ 컬럼 실제값 + '담당자 X'
-  var opts = _lessonOwnerOptionsFor(cfg.rosterKey);   // 새 배열(끝=담당자 X)
+  // 드롭다운 옵션 = 종목 무관 P.T·필라테스·골프 통합 명단(roster) ∪ 컬럼 실제값 + '담당자 X'(GM 2026-07-20)
+  var opts = _oaOwnerOptionsCombined();   // 새 배열(끝=담당자 X)
   var optSet = {}; opts.forEach(function(o){ optSet[o] = 1; });
   var present = {}; pop.forEach(function(r){ var v = String(r[cfg.col]||'').trim(); if (v) present[v] = 1; });
-  Object.keys(present).forEach(function(v){ if (!optSet[v]){ opts.splice(opts.length - 1, 0, v); optSet[v] = 1; } });   // '담당자 X' 앞에 삽입
+  Object.keys(present).forEach(function(v){ if (!optSet[v]){ opts.splice(opts.length - 1, 0, v); optSet[v] = 1; } });
+  Object.keys(OWNER_ASSIGN_EXCLUDE).forEach(function(n){ var idx = opts.indexOf(n); if (idx >= 0) opts.splice(idx, 1); });   // 퇴사자 — 회원데이터 경로 유입분도 최종 제외(현재 배정 0명 확인됨)
 
   var shown = rows.slice(0, _oaLimit);
   var html = '';
@@ -5890,23 +5995,11 @@ function _mregFindMember(phone){
   }
   return null;
 }
-// 프로그램/수강반 문자열 → OWNER_ASSIGN_SPORTS key 목록(포함매칭). 매칭 0=호출부가 5종 전부 표시.
-function _mregPlanSports(program){
-  var s = String(program || '');
-  var keys = [];
-  if (/수영/.test(s)) keys.push('수영');
-  if (/골프/.test(s)) keys.push('골프');
-  if (/P\.?T|피티/i.test(s)) keys.push('PT');
-  if (/필라|P\.?L/i.test(s)) keys.push('P.L');
-  if (/스쿼시/.test(s)) keys.push('스쿼시');
-  return keys;
-}
 function _mregOwnerCell(m, membersReady){
   if (!membersReady) return '<span style="font-size:11px;color:var(--dim);white-space:nowrap">회원 매칭 로딩 중…</span>';
   var member = _mregFindMember(m.phone);
   if (!member) return '<span style="font-size:11px;color:var(--dim);white-space:nowrap">회원 매칭 대기</span>';
-  var keys = _mregPlanSports(m.program);
-  var sports = keys.length ? keys : OWNER_ASSIGN_SPORTS.map(function(s){ return s.key; });
+  var sports = OWNER_ASSIGN_ROSTER_KEYS;   // 등록 프로그램 무관 — P.T·필라테스·골프 3종만 표시(GM 2026-07-20)
   var phoneAttr = esc(String(m.phone || ''));
   var ri = (member.rowIndex != null) ? esc(String(member.rowIndex)) : '';
   var html = '<div style="display:flex;flex-wrap:wrap;gap:6px">';
@@ -5914,7 +6007,7 @@ function _mregOwnerCell(m, membersReady){
     var cfg = _oaSportCfg(key);
     var cur = String(member[cfg.col] || '').trim();
     var selVal = cur || LESSON_UNASSIGNED_OPTION;   // 빈칸=미배정(담당자 X)로 표시
-    var opts = _lessonOwnerOptionsFor(cfg.rosterKey);   // 새 배열(끝=담당자 X)
+    var opts = _oaOwnerOptionsCombined();   // 종목 상관없이 P.T·필라테스·골프 통합(GM 2026-07-20) — 새 배열(끝=담당자 X)
     var optSet = {}; opts.forEach(function(o){ optSet[o] = 1; });
     if (cur && !optSet[cur]) opts.splice(opts.length - 1, 0, cur);   // 현재값이 명단에 없으면 '담당자 X' 앞에 삽입
     var sel = '<select class="mreg-owner-sel" data-field="' + esc(cfg.col) + '" data-phone="' + phoneAttr + '" data-rowindex="' + ri + '" title="' + esc(cfg.label) + ' 담당자" style="max-width:130px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:11.5px;font-family:inherit;cursor:pointer">';
@@ -6442,7 +6535,7 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false, 
   loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
   _tabLoaded.active = true; loadActiveMembers();  // 유효회원 사전로드 — pane 미개방에도 단기권 카드·통합검색 데이터 채움(배299, 2026-07-07 시포·GM)
   _tabLoaded.db = true; loadDbData();  // 문의 DB 사전로드 — 통합검색·이번달 문의 집계 데이터 채움(배3, 2026-07-07 시포·GM)
-  // 문의 & 등록 현황 대시보드 = 📊 버튼 → 팝업(openInquiryDash) lazy load. 전환율·퍼널·LOSS신호도 각 팝업 오픈 시 lazy fetch(배3, 2026-07-07 시포·GM).
+  // 신규 문의 & 등록 현황 대시보드 = 🆕 버튼 → 팝업(openInquiryDash) lazy load. 전환율·퍼널·LOSS신호도 각 팝업 오픈 시 lazy fetch(배3, 2026-07-07 시포·GM).
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
 })();
 
