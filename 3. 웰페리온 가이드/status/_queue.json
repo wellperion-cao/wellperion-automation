@@ -1,5 +1,19 @@
 [
   {
+    "task_id": "CMO-2026-07-20-ADHOC-b28b17c0",
+    "clevel": "cmo",
+    "title": "[시모] 채널분류 3단우선순위 공용함수화 + M1 모수분리·강습종목별 + 전환집계/명단 로우수집 단일화",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9331,
+    "artifact": "GM 지시(2026-07-20): (A)회원관리 화면(_miReadRows_)이 유입경로 대분류 1칸만 읽어 M1(_collectFormInquiries_,\n대분류→중분류→자동UTM 3단)과 다르게 집계되던 사고(실측 네이버 21건 vs 203건, 39% 어긋남) — 로직 복붙 대신\n_resolveInquiryChannelRaw_(서버)·_gzResolveInquiryChannelRaw_(클라 gviz 1:1이식) 공용함수로 통일. 드롭다운\nCHANNEL_OPTIONS(10종·유선전화)와 서버 CANONICAL_CHANNELS(9종) 불일치도 발견해 서버에 10번째 버킷 추가로\n통일(거짓 \"동일하다\" 주석 정정). 재배포 후 라이브 대조: 네이버 204(회원관리)/201(M1 멤버십전용) 등 전 채널\n2%대로 수렴(잔여차=EN탭 병합+dedup 정책 차이, 설명됨). (B)M1 #m1-dash에 가입전환율 멤버십만/강습포함 병기\n(fcnnel_conversion.total 기존 필드 재사용) — 41.3%가 무엇의 41.3%인지 화면에 드러남. (3)GM 추가지시: 강습\n종목별(수영·골프·스쿼시·P.T·필라테스·아쿠아로빅·발레·바레 등 실존 종목만) 문의·등록 신규 섹션 — 기존\nlesson_breakdown 액션 그대로 재사용(신규 집계 로직 없음). 작업 중 GM 실사용 제보(M1 채널 건수 클릭→명단\n불일치) 추가 발견·즉시 수정: funnel_conversion(집계)·funnel_conversion_detail(명단)이 각자 독립 순회하며\n실서비스에서 어긋나던 것을 _collectAllInquiryRows_ 단일 함수로 통합 — 재배포 후 라이브 재대조 결과 전\n채널 집계=명단 완전 일치(71/432/600/1368/1174/6/3 전부 OK, 총합 3654=3654). GAS(.deploy-funnel-v2,\nscriptId 1BezMSW…) push+deploy 완료(버전 40/200, @42) — 라이브 응답으로 검증. ssot/divergence_scan.py\n위반 0건. (CLI ad-hoc · 커밋 b28b17c0)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b28b17c0dbaf3fa4e3b1891713a1c07dcb84d6fd"
+  },
+  {
     "task_id": "CTO-2026-06-23-SELF-HOSTED-SERVER-SETUP",
     "clevel": "cto",
     "title": "[시토] AWS 멀티테넌트 ERP SaaS 구축 (구 자체서버) — 여러 회사용 ERP+브로제이 흡수, 웰페리온 1호 테넌트",
@@ -2672,5 +2686,75 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 9a7e40ac)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9a7e40acb1822db088461ceb4e380659832cd9a9"
+  },
+  {
+    "task_id": "CHRO-2026-07-20-ADHOC-268adbc3",
+    "clevel": "chro",
+    "title": "[시로] 등록부 chro-* 4건 허위 '가동 중' 표기 정정 — 실측 결과 3건 미가동 확인(INC-025)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9327,
+    "artifact": "module_registry.json chro-daily-integrity-sweep · chro-onboarding-weekly-watch ·\nchro-weekly-efficiency-report 3건이 존재하지 않는 Windows 예약작업(CHRO_DailyIntegritySweep·\nOnboardingWeeklyWatch·WeeklyEfficiencyReport)을 '무인 가동 중'이라 표기해온 것을\n실측으로 확인·정정. Get-ScheduledTask 전수조회(231개)+TaskScheduler 이벤트로그\n500건 전량에 3 (CLI ad-hoc · 커밋 268adbc3)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "268adbc38ca27d3ac1d677e5aba76d7d1dce7eb9"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-f5525b78",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9328,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 f5525b78)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f5525b7895e4797aaf071cb6d6a99cdb11399854"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-dff4e27c",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9329,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 dff4e27c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "dff4e27c9db7e8a80f09723b0db6ad1d7eff0cb2"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-d2b2deaa",
+    "clevel": "cpo",
+    "title": "[시포] 강습 비고칸 접수ID 오염 중단 + 기존 12건 정리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9330,
+    "artifact": "intake_submit이 접수ID(타임스탬프 재표현, 강습 도메인 키 미사용)를 비고에 흘려써\nCONTACT(연락이력) 읽기 폴백을 오염시켜 미컨택 건이 \"연락 이력 있음\"처럼 보이던\n문제 수정. 신규 유입 기록 중단(_lsSet 호출 제거) + 일회성 정리 액션\n(cpo_clean_intake_id_memo)으로 기존 오염 12건(성인 10 · WSC 2) 값 기준 정리,\n실무진 메모 섞인 값은 보존. v43 배포·SpreadsheetApp 재조회로 잔여 0건 확인. (CLI ad-hoc · 커밋 d2b2deaa)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d2b2deaa31fe9a86d8f69795d657a20434be2fc2"
+  },
+  {
+    "task_id": "CMO-2026-07-20-ADHOC-b28b17c0",
+    "clevel": "cmo",
+    "title": "[시모] 채널분류 3단우선순위 공용함수화 + M1 모수분리·강습종목별 + 전환집계/명단 로우수집 단일화",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9331,
+    "artifact": "- membership.html(_gzResolveInquiryChannelRaw_)·Survey.js(_resolveInquiryChannelRaw_ 이미 커밋됨)를\n  같은 대분류→중분류→자동UTM 3단 규칙으로 통일 — 회원관리 화면이 대분류 1칸만 읽어 M1과 다르게 집계되던\n  사고(네이버 21건 vs 203건) 재발방지. 실측 정합 확인: 네이버 204(회원관리) vs 201(M1 멤버십전용), 나머지\n  채널도 오차 2% 이내로 수렴(잔여 차는 EN탭 병합·dedup 정책 차이로 설명됨, 날조 아님).\n- CHANNEL (CLI ad-hoc · 커밋 b28b17c0)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b28b17c0dbaf3fa4e3b1891713a1c07dcb84d6fd"
   }
 ]
