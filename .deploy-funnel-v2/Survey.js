@@ -2949,6 +2949,94 @@ function _processAction(body) {
     return _json({ ok: true, deleted: true, rows: _oRows });
   }
 
+  // ─── (일회성) 유소년강습 문의 시트 — 유입경로(자동)에 잘못 들어간 상담로그 JSON을 Contact로 이관 ───
+  //   배경: 2026-06~07 배선오류로 '유입경로(자동)'(idx12) 칸에 상담 로그 JSON([{date,time,note}])이
+  //   28건 잘못 기록됨(07-09 이후 재발 없음). 그중 Contact(idx16)이 비어 유일 기록인 건만 note를 이관.
+  //   행 삭제·삽입·정렬 절대 없음(setValue만). 원본 유입경로 칸은 이번엔 비우지 않음(검증 후 별도 지시).
+  //   mode=probe(기본, 읽기전용 전수조사) / dryrun(쓸 대상만 미리보기) / execute(실제 기록, 대상만 setValue).
+  //   2026-07-20 시포(GM 승인, INC-020 이후 극도 주의 지시).
+  if (action === 'cpo_wsc_contact_migrate13') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var wcMode = String(body.mode || 'probe');
+    var wcSh = _sheetByGid_('1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', 268994754);
+    if (!wcSh) return _json({ ok: false, error: 'sheet_not_found' });
+    var wcLastRow = wcSh.getLastRow(), wcLastCol = wcSh.getLastColumn();
+    var wcHdr = wcSh.getRange(1, 1, 1, wcLastCol).getDisplayValues()[0];
+    // 열 인덱스(0-based) — GM 실측 고정값(2026-07-20 시포 확인): 2=이름 3=연락처 12=유입경로(자동) 16=Contact
+    var IDX_NAME = 2, IDX_PHONE = 3, IDX_AUTO = 12, IDX_CONTACT = 16;
+    var wcDataN = Math.max(0, wcLastRow - 1);
+    var wcRows = wcDataN > 0 ? wcSh.getRange(2, 1, wcDataN, wcLastCol).getValues() : [];
+
+    var wcCandidates = []; // 유입경로(자동)에 JSON 형태 값이 있는 모든 행(28건 기대·백업용)
+    for (var wi = 0; wi < wcRows.length; wi++) {
+      var wRowNum = wi + 2;
+      var wAutoStr = String(wcRows[wi][IDX_AUTO] == null ? '' : wcRows[wi][IDX_AUTO]);
+      var wTrim = wAutoStr.trim();
+      if (!wTrim || (wTrim.charAt(0) !== '[' && wTrim.charAt(0) !== '{')) continue; // JSON 형태 아니면 후보 제외
+      var wContactStr = String(wcRows[wi][IDX_CONTACT] == null ? '' : wcRows[wi][IDX_CONTACT]);
+      var wParsed = null, wParseErr = null, wNote = '';
+      try {
+        wParsed = JSON.parse(wTrim);
+        if (Array.isArray(wParsed)) {
+          var wNotes = wParsed.map(function (it) { return (it && typeof it.note === 'string') ? it.note : ''; }).filter(function (s) { return s; });
+          wNote = wNotes.join('\n');
+          if (!wNote) wParseErr = 'note_empty';
+        } else if (wParsed && typeof wParsed.note === 'string') {
+          wNote = wParsed.note;
+        } else {
+          wParseErr = 'no_note_field';
+        }
+      } catch (wEx) {
+        wParseErr = 'json_parse_fail: ' + wEx.message;
+      }
+      wcCandidates.push({
+        row: wRowNum,
+        name: String(wcRows[wi][IDX_NAME] == null ? '' : wcRows[wi][IDX_NAME]).trim(),
+        phone: String(wcRows[wi][IDX_PHONE] == null ? '' : wcRows[wi][IDX_PHONE]).trim(),
+        autoRaw: wAutoStr,
+        contactCurrent: wContactStr,
+        contactEmpty: wContactStr.trim() === '',
+        note: wNote,
+        parseErr: wParseErr
+      });
+    }
+
+    var wcTargets = wcCandidates.filter(function (c) { return c.contactEmpty && !c.parseErr; });
+    var wcSkipHasContact = wcCandidates.filter(function (c) { return !c.contactEmpty; }).map(function (c) { return { row: c.row, reason: 'contact_not_empty' }; });
+    var wcSkipParseErr = wcCandidates.filter(function (c) { return c.contactEmpty && c.parseErr; }).map(function (c) { return { row: c.row, reason: c.parseErr }; });
+
+    if (wcMode === 'probe') {
+      return _json({
+        ok: true, mode: 'probe', lastRow: wcLastRow, lastCol: wcLastCol,
+        headers: { name: wcHdr[IDX_NAME], phone: wcHdr[IDX_PHONE], auto: wcHdr[IDX_AUTO], contact: wcHdr[IDX_CONTACT] },
+        candidateCount: wcCandidates.length, targetCount: wcTargets.length, candidates: wcCandidates
+      });
+    }
+    if (wcMode === 'dryrun') {
+      return _json({
+        ok: true, mode: 'dryrun', targetCount: wcTargets.length,
+        targets: wcTargets.map(function (c) { return { row: c.row, name: c.name, phone: c.phone, note: c.note }; }),
+        skipHasContact: wcSkipHasContact, skipParseErr: wcSkipParseErr
+      });
+    }
+    if (wcMode === 'execute') {
+      var wcWritten = [], wcSkipRace = [];
+      wcTargets.forEach(function (c) {
+        // 쓰기 직전 재확인 — 그 사이 값이 채워졌으면 절대 덮어쓰지 않음
+        var wCur = wcSh.getRange(c.row, IDX_CONTACT + 1).getValue();
+        var wCurStr = String(wCur == null ? '' : wCur);
+        if (wCurStr.trim() !== '') { wcSkipRace.push({ row: c.row, reason: 'contact_filled_before_write' }); return; }
+        wcSh.getRange(c.row, IDX_CONTACT + 1).setValue(c.note);
+        wcWritten.push({ row: c.row, name: c.name, note: c.note });
+      });
+      return _json({
+        ok: true, mode: 'execute', writtenCount: wcWritten.length, written: wcWritten,
+        skipHasContact: wcSkipHasContact, skipParseErr: wcSkipParseErr, skipRace: wcSkipRace
+      });
+    }
+    return _json({ ok: false, error: 'unknown_mode' });
+  }
+
   // ─── 문의 목록 ───
   if (action === 'inquiry_list') {
     const sh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
@@ -3263,21 +3351,30 @@ function _processAction(body) {
     var mdSh = _miResolveSheet_(body.gid, body.rowIndex);  // gid 또는 rowIndex 오프셋으로 물리 시트 라우팅(2026-07-09 시포·GM, 영어 문의 누수 수리)
     if (!mdSh) return _json({ ok: false, error: '시트 없음' });
     if (mdRow >= _ROW_OFFSET_EN_) mdRow -= _ROW_OFFSET_EN_;  // 실제 물리 행으로 디코드. 2026-07-09 시포·GM.
-    if (mdRow > mdSh.getLastRow()) return _json({ ok: false, error: '행 범위 초과' });
     // ★행키 검증(필수·예외 없음, INC-020 재발방지 2026-07-20): keyPhone 미전송/빈값이면 대조 없이 무조건 거부.
     //   구버전은 keyPhone 미전송 시 하위호환으로 검증을 생략해 통과시켰고, 동시접근으로 행이 밀린 상태에서
     //   그 폴백이 실사용돼 실고객 문의 2건이 삭제되는 사고(INC-020)로 이어짐 — 폴백 완전 제거.
     if (body.keyPhone === undefined || String(body.keyPhone) === '') {
       return _json({ ok: false, error: 'keyPhone 필수 — 대조 없이 삭제 불가' });
     }
-    var _mdHdr = _miHeaders_(mdSh);
-    var _mdPhCi = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰']);
-    var _mdRowPh = (_mdPhCi >= 0) ? _normPhone_(mdSh.getRange(mdRow, _mdPhCi + 1).getValue()) : '';
-    var _mdKeyPh = _normPhone_(body.keyPhone);
-    if (!_mdRowPh || _mdRowPh !== _mdKeyPh) {
-      return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 불일치/불명) — 목록 새로고침 후 다시 시도' });
+    // ★쓰기 직렬화(INC-020 재발방지 ③, 2026-07-20): 범위확인→전화대조→삭제 사이에 동시 호출이 같은 시트에
+    //   행을 밀어넣으면(삽입·삭제) 검증 통과 후 엉뚱한 행이 지워질 수 있다 — 락을 잡고 검증부터 삭제까지
+    //   한 번의 원자 구간으로 묶는다. 락 획득 실패 시 삭제하지 않고 재시도 요청(무음 스킵 금지).
+    var _mdLock = LockService.getScriptLock();
+    if (!_mdLock.tryLock(8000)) return _json({ ok: false, error: 'locked', detail: '다른 쓰기 작업 진행 중 — 잠시 후 다시 시도' });
+    try {
+      if (mdRow > mdSh.getLastRow()) return _json({ ok: false, error: '행 범위 초과' });
+      var _mdHdr = _miHeaders_(mdSh);
+      var _mdPhCi = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰']);
+      var _mdRowPh = (_mdPhCi >= 0) ? _normPhone_(mdSh.getRange(mdRow, _mdPhCi + 1).getValue()) : '';
+      var _mdKeyPh = _normPhone_(body.keyPhone);
+      if (!_mdRowPh || _mdRowPh !== _mdKeyPh) {
+        return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 불일치/불명) — 목록 새로고침 후 다시 시도' });
+      }
+      mdSh.deleteRow(mdRow);
+    } finally {
+      _mdLock.releaseLock();
     }
-    mdSh.deleteRow(mdRow);
     // 조회 캐시 무효화(축1) — delete 직후 최대 60초 stale 반환 방지(연쇄 오삭제 위험 차단). 2026-07-08 시토 안전수리.
     try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
     try { _notifyTelegram('🗑 문의회원 삭제(공개페이지) — 행 ' + mdRow); } catch (e) {}
@@ -3851,6 +3948,148 @@ function _processAction(body) {
       _notifyTelegram('➕ <b>등록 추가</b> — 직접/법인 등록\n· 이름: ' + (raName || '-') + '\n· 프로그램: ' + _teamChip(raProg) + (raProg || '-') + '\n· 등록일: ' + raDate, _raRegChatId);
     } catch (e) {}
     return _json({ ok: true, message: '등록 추가되었습니다.' });
+  }
+
+  // ─── 휴회 시트 구조 조사 (읽기 전용·일회성·내부토큰) ───
+  //   휴회는 별도 전용 시트에서 관리됨(2026-07-20 GM). 연동 설계를 위한 구조 파악용.
+  //   gviz로는 401(비공개)이라 GAS 계정 권한으로만 읽힌다. 쓰기 코드 없음. 조사 완료 후 제거 예정.
+  if (action === 'hold_sheet_probe') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var hpSs = SpreadsheetApp.openById('1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ');
+    var hpTabs = hpSs.getSheets().map(function (s) {
+      return { name: s.getName(), gid: s.getSheetId(), rows: s.getLastRow(), cols: s.getLastColumn() };
+    });
+    var hpTarget = null, hpAll = hpSs.getSheets();
+    for (var hi = 0; hi < hpAll.length; hi++) { if (hpAll[hi].getSheetId() === 514238773) { hpTarget = hpAll[hi]; break; } }
+    if (!hpTarget) return _json({ ok: true, tabs: hpTabs, target: null, note: 'gid 514238773 탭 없음' });
+    var hpLastR = hpTarget.getLastRow(), hpLastC = hpTarget.getLastColumn();
+    var hpHdr = hpLastR > 0 ? hpTarget.getRange(1, 1, 1, hpLastC).getDisplayValues()[0] : [];
+    // full=1 — 실측 분석(재등록 대상 교차·규칙 위반·연결키 신뢰도)에 전체 567행 필요. 기본은 기존 head/tail 샘플만(가벼움 유지). 2026-07-20 시포.
+    if (String(body.full || '') === '1') {
+      var hpAllN = Math.max(0, hpLastR - 1);
+      var hpAllRows = hpAllN > 0 ? hpTarget.getRange(2, 1, hpAllN, hpLastC).getDisplayValues() : [];
+      return _json({ ok: true, target: { name: hpTarget.getName(), gid: 514238773, rows: hpLastR, cols: hpLastC },
+                     headers: hpHdr, rows: hpAllRows });
+    }
+    var hpN = Math.min(hpLastR - 1, 12);
+    var hpSample = hpN > 0 ? hpTarget.getRange(2, 1, hpN, hpLastC).getDisplayValues() : [];
+    var hpTailN = Math.min(hpLastR - 1, 8);
+    var hpTail = hpTailN > 0 ? hpTarget.getRange(Math.max(2, hpLastR - hpTailN + 1), 1, hpTailN, hpLastC).getDisplayValues() : [];
+    return _json({ ok: true, tabs: hpTabs, target: { name: hpTarget.getName(), gid: 514238773, rows: hpLastR, cols: hpLastC },
+                   headers: hpHdr, head: hpSample, tail: hpTail });
+  }
+
+  // ─── 강습 LOSS사유 데이터 확인 규칙 진단·셋업 (일회성·내부토큰) ───
+  //   사고: 07-18 신설 이후 LOSS사유 저장 0건 — 시트에 걸린 데이터 확인 규칙이 화면 선택지(INQ_LOSS_REASON_OPTIONS)와
+  //   불일치해 저장이 통째로 거부됨(예: 셀 Q3433 데이터 확인 규칙 위반). gviz로는 규칙 자체를 읽을 수 없어 밖에서 확인 불가였음.
+  //   mode=diag(기본,읽기전용) / apply(규칙 설정·값은 안 건드림) / verify(되읽기) / test(테스트행 1건 저장→즉시원복).
+  //   헤더는 정확일치로만 찾는다(열 번호 하드코딩 금지 — 성인/유소년 두 시트가 위치 다름). 2026-07-20 시포(GM 승인).
+  if (action === 'loss_reason_setup') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var lrMode = String(body.mode || 'diag');
+    var LR_OPTIONS = ['가격', '거리/위치', '시간대 안 맞음', '타업체 선택', '단순 문의(등록의사 없음)', '연락 두절', '기타'];  // membership.html INQ_LOSS_REASON_OPTIONS와 문자 단위 일치 확인됨(2026-07-20)
+    var lrTargets = [
+      { gid: 111889422, type: '성인강습' },
+      { gid: 268994754, type: '유소년강습(WSC)' }
+    ];
+    var _lrColLetter_ = function (n) {
+      var s = '';
+      while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+      return s;
+    };
+    var _lrRuleInfo_ = function (rule) {
+      if (!rule) return null;
+      var info = { criteriaType: String(rule.getCriteriaType()), allowInvalid: rule.getAllowInvalid(), helpText: rule.getHelpText() || '' };
+      try { info.criteriaValues = rule.getCriteriaValues(); } catch (e) { info.criteriaValues = null; }
+      return info;
+    };
+
+    var lrReport = [];
+    for (var lti = 0; lti < lrTargets.length; lti++) {
+      var lrCfg = lrTargets[lti];
+      var lrSh = _sheetByGid_(LESSON_SS_ID, lrCfg.gid);
+      var lrItem = { type: lrCfg.type, gid: lrCfg.gid };
+      if (!lrSh) { lrItem.error = '시트 없음'; lrReport.push(lrItem); continue; }
+      lrItem.sheetName = lrSh.getName();
+      var lrLastCol = lrSh.getLastColumn();
+      var lrLastRow = lrSh.getLastRow();
+      lrItem.lastRow = lrLastRow; lrItem.lastCol = lrLastCol;
+      var lrHdr = lrLastCol > 0 ? lrSh.getRange(1, 1, 1, lrLastCol).getValues()[0].map(function (v) { return String(v).trim(); }) : [];
+      var lrColIdx = -1, lrNoteColIdx = -1;
+      for (var hci = 0; hci < lrHdr.length; hci++) {
+        if (lrHdr[hci] === 'LOSS사유') lrColIdx = hci;
+        if (lrHdr[hci] === 'LOSS사유메모') lrNoteColIdx = hci;
+      }
+      lrItem.lossReasonCol = lrColIdx >= 0 ? { colNum: lrColIdx + 1, colLetter: _lrColLetter_(lrColIdx + 1) } : null;
+      lrItem.lossReasonNoteCol = lrNoteColIdx >= 0 ? { colNum: lrNoteColIdx + 1, colLetter: _lrColLetter_(lrNoteColIdx + 1) } : null;
+      if (lrColIdx < 0) { lrItem.error = 'LOSS사유 헤더 없음'; lrReport.push(lrItem); continue; }
+
+      if (lrMode === 'diag' || lrMode === 'verify') {
+        var lrRuleSamples = [], lrSeen = {};
+        if (lrLastRow >= 2) {
+          var lrRules = lrSh.getRange(2, lrColIdx + 1, lrLastRow - 1, 1).getDataValidations();
+          for (var ri = 0; ri < lrRules.length; ri++) {
+            var info = _lrRuleInfo_(lrRules[ri][0]);
+            var key = info ? JSON.stringify(info) : 'NONE';
+            if (!lrSeen[key]) { lrSeen[key] = true; lrRuleSamples.push(info); }
+          }
+        }
+        lrItem.existingRules = lrRuleSamples;  // 행마다 규칙이 다르면 여러 개로 나타남(원인 규명 자료)
+        if (lrNoteColIdx >= 0 && lrLastRow >= 2) {
+          lrItem.noteColRule = _lrRuleInfo_(lrSh.getRange(2, lrNoteColIdx + 1).getDataValidation());
+        }
+        var lrValCount = 0;
+        if (lrLastRow >= 2) {
+          var lrVals = lrSh.getRange(2, lrColIdx + 1, lrLastRow - 1, 1).getValues();
+          for (var vi = 0; vi < lrVals.length; vi++) if (String(lrVals[vi][0] || '').trim()) lrValCount++;
+        }
+        lrItem.valueCount = lrValCount;
+      }
+
+      if (lrMode === 'apply') {
+        var lrMaxRows = lrSh.getMaxRows();
+        var lrBufferEnd = Math.min(lrLastRow + 300, lrMaxRows);
+        var lrNumRows = lrBufferEnd - 1;  // 2행부터
+        if (lrNumRows < 1) { lrItem.error = '적용 행 없음'; lrReport.push(lrItem); continue; }
+        var lrRule = SpreadsheetApp.newDataValidation()
+          .requireValueInList(LR_OPTIONS, true)
+          .setAllowInvalid(true)  // ★경고 방식 — 엄격 규칙이 저장을 통째로 막던 원인 재발 방지
+          .setHelpText('화면 선택지와 동일. 목록 밖 값은 점검기가 확인합니다.')
+          .build();
+        lrSh.getRange(2, lrColIdx + 1, lrNumRows, 1).setDataValidation(lrRule);
+        lrItem.applied = { fromRow: 2, toRow: 2 + lrNumRows - 1, options: LR_OPTIONS };
+      }
+
+      if (lrMode === 'test') {
+        var lrNameColIdx = -1, lrPhoneColIdx = -1;
+        for (var hci2 = 0; hci2 < lrHdr.length; hci2++) {
+          if (lrHdr[hci2] === '성함' || lrHdr[hci2] === '이름') lrNameColIdx = hci2;
+          if (lrHdr[hci2] === '연락처' || lrHdr[hci2] === '전화') lrPhoneColIdx = hci2;
+        }
+        var lrTestRow = -1;
+        if (lrLastRow >= 2 && (lrNameColIdx >= 0 || lrPhoneColIdx >= 0)) {
+          var lrNCols = Math.max(lrNameColIdx, lrPhoneColIdx) + 1;
+          var lrAllVals = lrSh.getRange(2, 1, lrLastRow - 1, lrNCols).getValues();
+          for (var tri = 0; tri < lrAllVals.length; tri++) {
+            var tName = lrNameColIdx >= 0 ? String(lrAllVals[tri][lrNameColIdx] || '') : '';
+            var tPhone = lrPhoneColIdx >= 0 ? String(lrAllVals[tri][lrPhoneColIdx] || '') : '';
+            if (tName.indexOf('테스트') >= 0 || tPhone.replace(/[^0-9]/g, '') === '01000000000') { lrTestRow = tri + 2; break; }
+          }
+        }
+        if (lrTestRow < 0) { lrItem.testResult = '미검증(테스트 행 없음)'; lrReport.push(lrItem); continue; }
+        var lrCell = lrSh.getRange(lrTestRow, lrColIdx + 1);
+        lrCell.setValue('가격');
+        SpreadsheetApp.flush();
+        var lrReadBack = String(lrCell.getValue() || '');
+        lrCell.setValue('');  // 즉시 원복
+        SpreadsheetApp.flush();
+        lrItem.testResult = { row: lrTestRow, wrote: '가격', readBack: lrReadBack, success: lrReadBack === '가격', reverted: String(lrCell.getValue() || '') === '' };
+      }
+
+      lrReport.push(lrItem);
+    }
+
+    return _json({ ok: true, mode: lrMode, sheets: lrReport });
   }
 
   // ─── 회원관리 페이지(CPO): 멤버십 회원 명단 ('유효회원' 시트, 읽기전용·전화 마스킹) ───
