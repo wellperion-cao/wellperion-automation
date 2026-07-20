@@ -1657,7 +1657,7 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       var photo = String(it['사진URL'] || '').trim();
       var dt = _regEsc(String(it['접수일시'] || '').slice(0, 16));
       // 공통 외 추가필드 (접수ID·카테고리·접수일시·이름·연락처·위치·내용·사진URL·상태·담당·처리메모·부서 제외)
-      var COMMON_KEYS = ['접수ID','카테고리','접수일시','이름','연락처','위치','내용','사진URL','상태','담당','처리메모','부서','slaHours','deadline','remainH','slaStatus','접수문자','조치문자'];
+      var COMMON_KEYS = ['접수ID','카테고리','접수일시','이름','연락처','위치','내용','사진URL','상태','담당','처리메모','부서','처리자','slaHours','deadline','remainH','slaStatus','접수문자','조치문자']; // 처리자 추가 — 입력칸과 추가정보 줄 중복 표시 방지
       var extras = '';
       Object.keys(it).forEach(function(k){
         if(COMMON_KEYS.indexOf(k) === -1 && it[k] !== '' && it[k] !== null && it[k] !== undefined){
@@ -1739,10 +1739,21 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       var memo = el ? el.value.trim() : '';
       var payload = {action:'reg_update', id:id, category:category, memo:memo};
       var _k = (typeof _wpKey === 'function') ? _wpKey() : ''; if(_k) payload.key = _k;
-      if(btn){ btn.textContent = '저장됨 ✓'; btn.style.color = '#6abf7b'; btn.style.borderColor = 'rgba(106,191,123,0.4)'; }
+      // 응답 확인 전까지는 "저장 중" — 서버 확인(ok===true) 후에만 성공 표시, 실패는 조용히 삼키지 않는다
+      if(btn){ btn.textContent = '저장 중…'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; }
       fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)})
-        .catch(function(){});
-      setTimeout(function(){ if(btn){ btn.textContent = '메모 저장'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; } }, 2000);
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+          if(res && res.ok === true){
+            if(btn){ btn.textContent = '저장됨 ✓'; btn.style.color = '#6abf7b'; btn.style.borderColor = 'rgba(106,191,123,0.4)'; }
+            setTimeout(function(){ if(btn){ btn.textContent = '메모 저장'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; } }, 2000);
+          } else {
+            if(btn){ btn.textContent = '저장 실패 ✕'; btn.style.color = '#e65b3f'; btn.style.borderColor = 'rgba(230,91,63,0.4)'; }
+          }
+        })
+        .catch(function(){
+          if(btn){ btn.textContent = '저장 실패 ✕'; btn.style.color = '#e65b3f'; btn.style.borderColor = 'rgba(230,91,63,0.4)'; }
+        });
     };
     // 처리자 저장 (실제 처리한 사람 — 인사고과 결산용). 화면 새로고침 없이 즉시 저장.
     window._regHandlerSave = function(id, category, btn){
@@ -1750,53 +1761,109 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       var val = el ? el.value.trim() : '';
       var payload = {action:'reg_update', id:id, category:category, handler:val};
       var _k = (typeof _wpKey === 'function') ? _wpKey() : ''; if(_k) payload.key = _k;
-      if(btn){ btn.textContent = '저장됨 ✓'; btn.style.color = '#6abf7b'; btn.style.borderColor = 'rgba(106,191,123,0.4)'; }
+      // 응답 확인 전까지는 "저장 중" — 서버 확인(ok===true) 후에만 성공 표시, 실패는 조용히 삼키지 않는다
+      if(btn){ btn.textContent = '저장 중…'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; }
       fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)})
-        .catch(function(){});
-      setTimeout(function(){ if(btn){ btn.textContent = '저장'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; } }, 2000);
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+          if(res && res.ok === true){
+            if(btn){ btn.textContent = '저장됨 ✓'; btn.style.color = '#6abf7b'; btn.style.borderColor = 'rgba(106,191,123,0.4)'; }
+            setTimeout(function(){ if(btn){ btn.textContent = '저장'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; } }, 2000);
+          } else {
+            if(btn){ btn.textContent = '저장 실패 ✕'; btn.style.color = '#e65b3f'; btn.style.borderColor = 'rgba(230,91,63,0.4)'; }
+          }
+        })
+        .catch(function(){
+          if(btn){ btn.textContent = '저장 실패 ✕'; btn.style.color = '#e65b3f'; btn.style.borderColor = 'rgba(230,91,63,0.4)'; }
+        });
     };
     // 문자 발송 체크 — 체크 시 오늘 날짜 기록(시트 저장·양방향), 해제 시 비움. 화면 새로고침 없음.
+    // 서버 확인(ok===true) 전까지 낙관 표시 대신 "저장 중" 유지, 실패 시 체크상태·날짜표시 모두 원복
     window._regSms = function(id, category, field, chk){
+      var span = document.getElementById('regsms-' + field + '-' + id);
+      var prevChecked = !chk.checked; // onchange는 이미 토글된 후 발동 — 실패 시 되돌릴 이전 상태
+      var prevText = span ? span.textContent : '';
       var d = new Date();
       var val = chk.checked ? (d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2)) : '';
-      var span = document.getElementById('regsms-' + field + '-' + id);
-      if(span) span.textContent = val ? (' ' + val) : '';
+      if(span){ span.textContent = ' 저장 중…'; span.style.color = 'var(--dim)'; }
       var payload = {action:'reg_update', id:id, category:category};
       payload[field] = val;
       var _k = (typeof _wpKey === 'function') ? _wpKey() : ''; if(_k) payload.key = _k;
       fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)})
-        .catch(function(){});
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+          if(res && res.ok === true){
+            if(span){ span.textContent = val ? (' ' + val) : ''; span.style.color = 'var(--accent)'; }
+          } else {
+            chk.checked = prevChecked;
+            if(span){ span.textContent = ' 저장 실패 ✕'; span.style.color = '#e65b3f'; }
+            setTimeout(function(){ if(span){ span.textContent = prevText; span.style.color = 'var(--accent)'; } }, 2500);
+          }
+        })
+        .catch(function(){
+          chk.checked = prevChecked;
+          if(span){ span.textContent = ' 저장 실패 ✕'; span.style.color = '#e65b3f'; }
+          setTimeout(function(){ if(span){ span.textContent = prevText; span.style.color = 'var(--accent)'; } }, 2500);
+        });
     };
 
     // 3. 🌟 핵심! 배정 시에는 화면 새로고침 없이 초록색 피드백만 주도록 독립시킴
-window._regAssign = function(id, category) {
+    // 4. 버튼(this)을 인자로 직접 받는다 — event.target 의존 제거(크롬 외 브라우저 오동작 방지), 서버 확인 후에만 성공 표시
+    window._regAssign = function(id, category, btn) {
       var el = document.getElementById('regva-' + id);
       var assignee = el ? el.value.trim() : '';
 
-      // 클릭한 배정 버튼을 즉시 초록색 완료 상태로 변경
-      var btn = event.target;
-      btn.textContent = '완료 ✓';
-      btn.style.background = 'rgba(106,191,123,0.12)';
-      btn.style.color = '#6abf7b';
-      btn.style.borderColor = 'rgba(106,191,123,0.4)';
+      // 응답 확인 전까지는 "저장 중" 표시
+      if(btn){
+        btn.textContent = '저장 중…';
+        btn.style.background = 'var(--paper)';
+        btn.style.color = 'var(--text)';
+        btn.style.borderColor = 'var(--border)';
+      }
 
-      // 화면 새로고침 없이 몰래 데이터만 백엔드로 전송
       var payload = { action: 'reg_update', id: id, category: category, assignee: assignee };
       if (typeof _wpKey === 'function') payload.key = _wpKey();
 
       fetch(_REG_API, {
         method: 'POST',
+        redirect: 'follow',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
-      });
-
-      // 2초 뒤 원래 배정 버튼 모양으로 되돌리기
-      setTimeout(function() {
-        btn.textContent = '배정';
-        btn.style.background = 'var(--paper)';
-        btn.style.color = 'var(--text)';
-        btn.style.borderColor = 'var(--border)';
-      }, 2000);
+      })
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+          if(res && res.ok === true){
+            if(btn){
+              btn.textContent = '완료 ✓';
+              btn.style.background = 'rgba(106,191,123,0.12)';
+              btn.style.color = '#6abf7b';
+              btn.style.borderColor = 'rgba(106,191,123,0.4)';
+            }
+            setTimeout(function() {
+              if(btn){
+                btn.textContent = '배정';
+                btn.style.background = 'var(--paper)';
+                btn.style.color = 'var(--text)';
+                btn.style.borderColor = 'var(--border)';
+              }
+            }, 2000);
+          } else {
+            if(btn){
+              btn.textContent = '저장 실패 ✕';
+              btn.style.background = 'rgba(230,91,63,0.12)';
+              btn.style.color = '#e65b3f';
+              btn.style.borderColor = 'rgba(230,91,63,0.4)';
+            }
+          }
+        })
+        .catch(function(){
+          if(btn){
+            btn.textContent = '저장 실패 ✕';
+            btn.style.background = 'rgba(230,91,63,0.12)';
+            btn.style.color = '#e65b3f';
+            btn.style.borderColor = 'rgba(230,91,63,0.4)';
+          }
+        });
     };
     function _regPost(payload, okMsg){
       var _p = Object.assign({}, payload);
