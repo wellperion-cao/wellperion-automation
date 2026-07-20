@@ -1746,5 +1746,19 @@
     "next": "GM/웰리 확인 → ①예약작업(1일1회 CLI 등록) go 여부 ②21개 판정불가 모듈 하트비트 부여 우선순위 결정",
     "ship_no": 9197,
     "surface": "autonomy"
+  },
+  {
+    "task_id": "CTO-2026-07-20-ADHOC-be284a1b",
+    "clevel": "cto",
+    "title": "[시토] 모듈 침묵 감지기 신설 (배1307 3차, INC-019)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9198,
+    "artifact": "등록모듈 28개 중 17개가 알림 미배선(notify_wired:false/bot_id:null)이라\nKPI 집계기 6일 침묵(INC-018)과 같은 사고가 언제든 재발할 수 있었다.\n\"알림 붙이기\" 대신 등록부 전체를 순회하는 침묵 감지기로 확장:\n정상시 무발신, 예상 주기(daily/weekly/monthly) 초과 침묵만 하루 1통\n묶어 기존 채널(자동화현황방)로 통지. 실측 스캔 ok 7·silent 0·판정불가\n21·대상아님 1. 역재현·오탐확인·묶음발신 3종 검증 통과(scratch 사본,\n라이브 무변경). 실발송·스케줄 (CLI ad-hoc · 커밋 be284a1b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "be284a1b64d403200f5d88b4a0b0db2139e52cab"
   }
 ]
