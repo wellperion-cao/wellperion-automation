@@ -5522,6 +5522,56 @@ function _activeStartFilterApply(rows) {
   if (_activeStartFilter === 'all') return rows;
   return rows.filter(function(row){ return !_isFutureStart(row); });   // 기본 'started'
 }
+
+/* LOSS·대기자 카드 월 단위 보기(2026-07-20 GM 지시) — 헤더가 항상 '총 유효회원'으로 고정 표시되던 결함(§2-B·§2-C)과
+   짝으로 추가. 새 패턴 발명 금지 — 날짜범위 계산은 기존 _mdashPeriodRange(일/월/연/총)를 그대로 재사용한다.
+   상태·전환 함수만 이 카드 전용으로 분리(_actPeriod/_actSetPeriod) — 마케팅 KPI 섹션의 _mdashPeriod와 변수를
+   공유하면 서로 다른 화면의 토글이 간섭한다. */
+var _actPeriod = 'total';   // 'day'|'month'|'year'|'total'(기본=전체 — 기존 미필터 카운트와 동일하게 시작, 회귀 없음)
+// 이 토글은 날짜 개념이 있는 두 카드에서만 노출·적용 — LOSS(ended)와 대기자(valid+waiting).
+function _actPeriodApplicable() {
+  return _activeScope === 'ended' || (_activeScope === 'valid' && _activeStartFilter === 'waiting');
+}
+// 필터 기준일 — LOSS=LOSS일자(없으면 종료일자 폴백, _applyEndedSort와 동일 우선순위) · 대기자=시작일자(_memStartKey 재사용)
+function _actPeriodDate(row) {
+  if (_activeScope === 'ended') {
+    var lossCol = _capCol(_activeHeaders, 'LOSS일자');
+    var endCol  = _capCol(_activeHeaders, '종료일자');
+    var v = (lossCol && row[lossCol]) ? row[lossCol] : (endCol ? row[endCol] : '');
+    return String(v || '').trim().slice(0, 10);
+  }
+  var key = _memStartKey(row);
+  return key ? String(row[key] || '').trim().slice(0, 10) : '';
+}
+function _actPeriodFilter(rows) {
+  if (!_actPeriodApplicable() || _actPeriod === 'total') return rows;
+  var r = _mdashPeriodRange(_actPeriod);   // 기존 함수 재사용(신규 발명 금지)
+  return rows.filter(function(row){
+    var d = _actPeriodDate(row);
+    if (!d) return false;
+    if (r.from && d < r.from) return false;
+    return d <= r.to;
+  });
+}
+function _actPeriodTabsHtml() {
+  return '<div class="mdash-ptabs" id="actPtabs" style="margin:8px 0 0">' + _MDASH_PERIODS.map(function(p){
+    return '<button type="button" class="mdash-ptab' + (p[0] === _actPeriod ? ' active' : '') +
+      '" data-period="' + p[0] + '" onclick="_actSetPeriod(\'' + p[0] + '\')">' + p[1] + '</button>';
+  }).join('') + '</div>';
+}
+// 기간 전환 — 신규 fetch 없음(로드된 _activeRows 재필터만, _mdashSetPeriod와 동일 원칙). 검색어가 있으면 유지한 채 재계산.
+function _actSetPeriod(period) {
+  if (_actPeriod === period) return;
+  _actPeriod = period;
+  renderActiveSummary();
+  var si = document.getElementById('activeSearch');
+  _activeFilter(si ? si.value : '');
+}
+// 대기자 필터 + 월단위 보기 결합(신규 fetch 없이 로드분만 재필터) — loadActiveMembers·_activeFilter·헤더 카운트 공용.
+// 헤더 건수(§2-B·§2-C)와 표에 실제 뿌려지는 행이 항상 같은 값을 쓰도록 단일 함수로 통일.
+function _activeBaseRows() {
+  return _actPeriodFilter(_activeStartFilterApply(_activeRows));
+}
 var _activeSort    = { col: null, dir: -1 };  // 헤더 클릭 정렬(제목 클릭 = 정렬). 기본 정렬(잔여일 임박순=valid·종료일 내림차순=ended)은 클라이언트에서 적용(_applyRemainSort·_applyEndedSort). 2026-07-15 GM 지시
 function _activeSortBy(col) {
   if (_activeSort.col === col) _activeSort.dir = -_activeSort.dir;
@@ -5544,6 +5594,17 @@ function _remainSortKey(v) {
   if (isNaN(n)) return 1e15;   // 미상(빈칸·비숫자) → 맨뒤
   if (n <= 0)   return 1e14;   // 만료·이탈(잔여일 ≤ 0) → 양수 뒤로
   return n;                    // 양수: 작을수록(임박) 위로
+}
+// 잔여일 색상(§2-D, GM 지시 2026-07-20) — 10일 이내=빨강 / 30일 이내=주황 / 그 외=null(현행 기본 스타일 유지).
+// 만료(0 이하)는 임박(빨강)과 다른 회색으로 확실히 구분 + 아이콘·굵기 병기(색만으로 구분 금지 — 색각 이상 대비).
+// 파싱은 _remainSortKey와 동일 정규식(일관성) — 기존 토큰(--red/--orange/--dim-mid)만 사용, 새 색 발명 금지.
+function _remainColorInfo(v) {
+  var n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, ''));
+  if (isNaN(n)) return null;
+  if (n <= 0)  return { color: 'var(--dim-mid)', icon: '⏹ ', weight: 700 };   // 만료 — 회색+정지 아이콘
+  if (n <= 10) return { color: 'var(--red)',    icon: '🔴 ', weight: 800 };   // 10일 이내 — 빨강
+  if (n <= 30) return { color: 'var(--orange)', icon: '🟠 ', weight: 700 };   // 30일 이내 — 주황
+  return null;
 }
 function _applyRemainSort() {
   var remainCol = null;
@@ -5606,6 +5667,7 @@ function setActiveScope(scope, btn) {
 //   waiting = valid 스코프 + 미래시작 필터(신규 fetch 없이 같은 valid 응답을 클라 분리, _activeStartFilterApply 재사용).
 //   valid/corp/ended = 기존 setActiveScope 재사용(각 scope 1회 fetch, 기존과 동일). 유효/법인/LOSS 진입 시 대기자 필터는 'started'로 리셋.
 function setActiveSeg(seg, btn) {
+  _actPeriod = 'total';   // 카드 재진입마다 월단위 보기 초기화 — 항상 전체 건수부터 시작(2026-07-20 시포·GM)
   if (seg === 'waiting') {
     _activeStartFilter = 'waiting';
     setActiveScope('valid', btn);   // btn=대기자 버튼 → setActiveScope가 해당 버튼만 활성화
@@ -5632,7 +5694,7 @@ function loadActiveMembers() {
       _activeLoaded  = true;
       if (_activeScope === 'valid') _applyRemainSort();        // 기본=잔여일 임박순(작은 양수 먼저). 2026-07-03 시포·GM
       else if (_activeScope === 'ended') _applyEndedSort();    // 기본=종료일 내림차순(최근 종료 상단). 2026-07-15 GM 지시
-      _activeRender(_activeStartFilterApply(_activeRows));   // 대기자(미래시작) 기본 제외(2026-07-16 GM 지시)
+      _activeRender(_activeBaseRows());   // 대기자 필터 + 월단위 보기 결합(2026-07-20 시포·GM, 기존 2026-07-16 GM 지시 위에 확장)
       renderActiveSummary();
       renderChurnActionPanel();   // 이탈방지 액션 모듈(배754 후속) — scope 전환마다 재계산
       if (typeof _tapReady !== 'undefined' && _tapReady) renderTodayActionPanel();   // 오늘 할 일의 갱신임박·저이용 섹션도 _activeRows 도착 시 동기 재계산(2026-07-15 병합)
@@ -6184,7 +6246,7 @@ function _activeWireSearch() {
 
 function _activeFilter(query) {
   var q = query.trim().toLowerCase();
-  var base = _activeStartFilterApply(_activeRows);   // 대기자 필터와 AND 결합(2026-07-16 GM 지시)
+  var base = _activeBaseRows();   // 대기자 필터 + 월단위 보기와 AND 결합(2026-07-16 GM 지시 확장, 2026-07-20 시포·GM)
   if (!q) {
     _activeRender(base);
     return;
@@ -6300,6 +6362,12 @@ function _activeRender(rows, isFiltered) {
       var editAttr = (!isPhone && _activeScope !== 'corp') ? ' data-col="' + esc(h) + '"' : '';
       var _cv = row[h] != null ? row[h] : '—';
       var titleAttr = isSport ? ' title="' + esc(_cv) + '"' : '';
+      // 잔여일 색상(GM 지시 2026-07-20): 10일 이내=빨강·30일 이내=주황·만료(0 이하)=회색(임박과 확실히 구분).
+      // 색만으로 구분하지 않도록 아이콘+굵기 병기(색각 이상 대비). 기존 토큰(--red/--orange/--dim-mid) 재사용, 새 색 발명 금지.
+      if (/잔여일/.test(h)) {
+        var rc = _remainColorInfo(_cv);
+        if (rc) { html += '<td style="white-space:nowrap"' + editAttr + '><span style="color:' + rc.color + ';font-weight:' + rc.weight + '">' + rc.icon + esc(_cv) + '</span></td>'; return; }
+      }
       html += '<td style="white-space:nowrap;' + leftStyle + '"' + editAttr + titleAttr + '>' + esc(_cv) + '</td>';
     });
     html += '</tr>';
@@ -6352,7 +6420,29 @@ function _memberChip(label, val, kind, onclick) {
   return '<span' + clickBits + ' style="' + cursor + 'display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:' + c[0] + ';border:1px solid ' + c[1] + ';font-size:12px;font-weight:700;color:' + c[2] + ';white-space:nowrap">' +
     esc(label) + '<span style="font-size:14px;font-weight:800">' + num + '</span></span>';
 }
+// LOSS·대기자 카드 진입 시 헤더 — '보고 있는 집합 이름 + 실측 건수'(GM 지적, 2026-07-20). 두 카드 결함이 같은
+// 뿌리(헤더가 항상 '총 유효회원' 블록 고정)라 여기 한 함수로 같이 고친다. count는 _activeBaseRows()로 표에 실제
+// 뿌려지는 행과 항상 동일값(하드코딩 금지, R9 실측). 그 외 스코프(총 유효회원 등)는 null→기존 블록 그대로.
+function _activeHeaderInfo() {
+  if (_activeScope === 'ended') return { label: 'LOSS 회원', color: '#c8756f' };
+  if (_activeScope === 'valid' && _activeStartFilter === 'waiting') return { label: '대기자 회원', color: 'var(--accent)' };
+  return null;
+}
 function _memberOverviewHtml() {
+  var hi = _activeHeaderInfo();
+  if (hi) {
+    var cnt = _activeBaseRows().length;
+    return '<div>' +
+        '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">' +
+          '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
+            '<div style="font-size:10px;font-weight:700;color:' + hi.color + ';letter-spacing:0.08em;margin-bottom:2px">' + esc(hi.label) + '</div>' +
+            '<div style="font-size:34px;font-weight:800;color:' + hi.color + ';line-height:1">' + cnt.toLocaleString() + '</div>' +
+            '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
+          '</div>' +
+        '</div>' +
+        _actPeriodTabsHtml() +
+      '</div>';
+  }
   var d = _cpoStats || {};
   var tc = _validTypeCounts;
   var hasSrv = _cpoStats && (d.memberActive != null || d.memberCorp != null || d.memberEnded != null);
