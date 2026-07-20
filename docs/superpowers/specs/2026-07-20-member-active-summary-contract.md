@@ -30,7 +30,9 @@
 ## 2. 계산 로직 — `cpo_today_stats`와 동일한 유효성 판정 재사용
 
 시트: `MEMBER_SPREADSHEET_ID`(`12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U`) → 시트명 `유효회원`(`MEMBER_SHEET`).
-헤더 매칭: 공백/개행 무시 후 부분일치(`_aaIdx`/`_crIdx`와 동일 관례) — `잔여일`, `재등록분류`, `회원\n구분`(또는 `회원구분`), `시작\n일자`(공백 제거 후 `시작일자` 포함), `이탈일`→`해지일`→`종료일`(우선순위, `cpo_today_stats`·`member_active_list`와 완전히 동일한 순서).
+헤더 매칭: 공백/개행 무시 후 부분일치(`_aaIdx`/`_crIdx`와 동일 관례) — `잔여일`, `재등록분류`, `회원\n구분`(또는 `회원구분`), `시작\n일자`(공백 제거 후 `시작일자` 포함).
+
+> **정정(2026-07-20, backend-sheet 구현 중 확인 — v50 배포에 반영됨):** LOSS 날짜 우선순위는 `이탈일→해지일→종료일`이 **아니라 `이탈일→해지일→LOSS일자→종료일`**이다. 이 시트엔 `종료일자`와 `LOSS일자`가 **별개 칸**이라, `종료일`로 퍼지매칭하면 `종료일자`가 먼저 걸려버려 정답(21)이 아닌 19가 나온다. 아래 §2·실측 예시는 정정된 순서 기준.
 
 ```
 유효(isValid) 판정 — cpo_today_stats·member_active_list와 100% 동일 공식(재정의 금지):
@@ -58,7 +60,8 @@ endedTotal = isValid=false인 행 수 (= 기존 cpo_today_stats.memberEnded와 �
   year  범위 = [올해 1월 1일, today]
   total      = 범위 없음(날짜 파싱 없이 무조건 포함) — day/month/year는 날짜를 못 읽으면 그 행 제외(제외 규칙까지 동일해야 함)
 
-  lossPeriods: isValid=false인 행의 "LOSS일자"(이탈일→해지일→종료일 우선순위, 없으면 그 행은 day/month/year에서 제외하되 total에는 포함)가
+  lossPeriods: isValid=false인 행의 LOSS 날짜(이탈일→해지일→LOSS일자→종료일 우선순위 — 종료일자와 LOSS일자는 별개 칸이니 순서 뒤바꾸지 말 것.
+               없으면 그 행은 day/month/year에서 제외하되 total에는 포함)가
                각 범위에 드는 건수. total = endedTotal과 반드시 일치.
   waitPeriods: waitingCount 대상 행의 "시작일자"가 각 범위에 드는 건수. total = waitingCount와 반드시 일치.
 ```
@@ -89,18 +92,20 @@ endedTotal = isValid=false인 행 수 (= 기존 cpo_today_stats.memberEnded와 �
     "FAN VIP": 7,
     "기타": 3
   },
-  "lossPeriods":  { "day": 0, "month": 21, "year": 0, "total": 704 },
-  "waitPeriods":  { "day": 0, "month": 0,  "year": 0, "total": 26 }
+  "lossPeriods":  { "day": 1, "month": 21, "year": 173, "total": 704 },
+  "waitPeriods":  { "day": 0, "month": 0,  "year": 0,   "total": 26 }
 }
 ```
 
-- `lossPeriods.year`/`waitPeriods.year` 예시값이 실제로 0이 나올 수 있음(연초~오늘 범위인데 표본 데이터가 그 안에 없는 경우) — **지어내지 말고 로직대로 계산한 실제값**을 반환. 위 JSON은 필드 존재·타입 예시일 뿐, 승인 기준 숫자가 아니다(§5의 교차검증이 진짜 기준).
+> **v50 배포 완료(2026-07-20, backend-sheet 실측) — 위 예시는 실제 라이브 응답값이다.** 응답 크기 327B, 응답시간 2,145~2,882ms(기존 `member_active_list` 9,252ms/1,153,177B 대비). §5 교차검증 전항목 일치 확인.
+
+- 위 실측값은 매일 바뀐다(시트가 변하니까) — 재검증 시엔 "형태"가 아니라 **그 시점 화면의 클라이언트 계산값과 일치하는지**가 기준(§5).
 - 모든 카운트 필드는 정수. 빈 칸/파싱 실패 행은 조용히 제외(에러 아님).
 - `ok:false` 응답 시 프론트는 기존 대기 방식(전체 fetch)으로 폴백 — 이 액션은 "있으면 빠르고, 없어도 안 죽는" 부가 최적화여야 한다.
 
-## 4. 프론트 반영 계획 (지금 하지 않음 — 액션 배포 후 배선 시 참고용)
+## 4. 프론트 반영 계획 (v50 배포 완료 — 배선 진행)
 
-1. `loadCpoTodayStats()` 옆에 `member_active_summary` 병렬 호출 추가(페이지 init, `membership.html:6656` 부근).
+1. `loadCpoTodayStats()` 옆에 `member_active_summary` 병렬 호출 추가(페이지 init, `membership.html:6749-6750` — `loadCpoTodayStats()`·`loadActiveMembers()` 호출부).
 2. 응답 도착 즉시:
    - `dMemWait` ← `waitingCount` (`membership.html:6496` 대체)
    - `dMemShort` ← `typeCounts['중단기']` (`membership.html:6497` 대체)
@@ -111,7 +116,7 @@ endedTotal = isValid=false인 행 수 (= 기존 cpo_today_stats.memberEnded와 �
 ## 5. 완료 기준 — 교차검증 (요약 카드 숫자 100% 동일)
 
 - [ ] 배포 후 실제 URL로 `?action=member_active_summary` GET 1회 호출 → 5.의 각 필드가 **같은 시각에 뜬 화면의 클라이언트 계산값**과 전부 일치:
-  - `validTotal` == 기존 `cpo_today_stats.memberActive + memberCorp`
+  - `validTotal` == 기존 `cpo_today_stats.memberActive` (법인은 별도 시트라 유효회원 집계에 안 들어간다 — `+memberCorp` 아님. 총 유효회원 헤더 표시값 1,038은 `memberActive+memberCorp`가 맞지만 그건 화면 표시 합산이지 이 필드의 검증식이 아니다)
   - `endedTotal` == 기존 `cpo_today_stats.memberEnded` == LOSS 카드 클릭 시 `_activeBaseRows().length`(scope=ended, 기간=총)
   - `waitingCount` == 대기자 카드 클릭 시 `_activeBaseRows().length`(scope=valid+waiting, 기간=총)
   - `typeCounts` 6종 == 회원관리 탭 진입 후 콘솔에서 `_validTypeCounts` 덤프값

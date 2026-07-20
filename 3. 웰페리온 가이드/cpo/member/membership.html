@@ -6439,25 +6439,30 @@ function _activeHeaderInfo() {
 // §2-A 배선 — 전체 fetch(scope=ended/valid)가 아직 이 뷰에 도착 안 했으면 member_active_summary(잠정, ~2초)
 // 값을 쓰고, 도착하면 _activeBaseRows()(실제 로드된 행 기준)가 항상 최종 진실로 자동 덮어쓴다. 서버 요약이
 // 죽어도(ok:false·_amSummary null) _activeBaseRows() 폴백이 그대로 동작 — 화면이 죽지 않는다.
+// 반환값 null = "아직 뭐로도 모름"(요약 액션도 전체행도 미도착) — 이때 0을 표시하면 "확인된 0건"처럼 보여
+// 거짓말이 된다(2026-07-20 실측: 클릭 직후 렌더가 실제로 'LOSS 회원 0'을 몇 초간 보여주는 버그 재현·수정).
+// null이면 호출부가 '–'(기존 dMemShort 등과 동일한 "미도착" 관례)로 표시한다.
 function _activeHeaderCount(hi) {
   var rowsReady = _activeLoaded && (
     (hi.periodKey === 'lossPeriods' && _activeScope === 'ended') ||
     (hi.periodKey === 'waitPeriods' && _activeScope === 'valid' && _activeStartFilter === 'waiting')
   );
-  if (!rowsReady && _amSummary && _amSummary[hi.periodKey] && typeof _amSummary[hi.periodKey][_actPeriod] === 'number') {
+  if (rowsReady) return _activeBaseRows().length;
+  if (_amSummary && _amSummary[hi.periodKey] && typeof _amSummary[hi.periodKey][_actPeriod] === 'number') {
     return _amSummary[hi.periodKey][_actPeriod];
   }
-  return _activeBaseRows().length;
+  return null;
 }
 function _memberOverviewHtml() {
   var hi = _activeHeaderInfo();
   if (hi) {
     var cnt = _activeHeaderCount(hi);
+    var cntTxt = (cnt == null) ? '–' : cnt.toLocaleString();
     return '<div>' +
         '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">' +
           '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
             '<div style="font-size:10px;font-weight:700;color:' + hi.color + ';letter-spacing:0.08em;margin-bottom:2px">' + esc(hi.label) + '</div>' +
-            '<div style="font-size:34px;font-weight:800;color:' + hi.color + ';line-height:1">' + cnt.toLocaleString() + '</div>' +
+            '<div style="font-size:34px;font-weight:800;color:' + hi.color + ';line-height:1">' + cntTxt + '</div>' +
             '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
           '</div>' +
         '</div>' +
@@ -6767,17 +6772,18 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false, 
   // 기본 랜딩 탭 = 새 문의(pane-db, 정적 active) — 상단 '새 문의' 현황카드도 하이라이트(2026-07-18 GM 지시).
   try { var _dcNew = document.querySelector('#memberTabNav .dash-card[data-kind="inq"]'); if (_dcNew && typeof _memHighlight === 'function') _memHighlight(_dcNew); } catch(e){}
   // §2-A 실측(2026-07-20 시포·GM): 이 페이지가 GAS에 한 번에 5~6개를 동시 발사한다(달력·오늘현황·요약·전체행×2·문의DB).
-  // 실측 결과 가벼운 액션(cpo_today_stats·member_active_summary, 단독 시 ~2초)도 무거운 전체행 fetch와 같은 순간에
-  // 몰리면 GAS 실행 대기열에 밀려 ~9초까지 늦어진다(라이브 대조: node 동시발사 재현, 가벼운 2개만 200ms 먼저 보내면
-  // 그대로 ~2.5초에 확정). 그래서 카드 숫자용 가벼운 두 액션만 최우선 발사하고, 무거운 전체행 프리로드는 200ms
-  // 늦춰 발사한다 — 완료 시점(체감상 무의미한 차이)은 그대로, 발사 순서만 바꿔 카드가 진짜 먼저 뜨게 한다.
+  // 전부 같은 순간에 몰리면 가벼운 액션(cpo_today_stats·member_active_summary, 단독 시 ~2초)까지 GAS 실행
+  // 대기열에 밀려 ~9~10초로 늦어짐을 라이브로 재현 확인 — 200ms 정도의 얕은 지연은 신뢰성이 없었고(재현 시
+  // 여전히 밀림), 500ms 이상을 줘야 매 시도 안정적으로 ~2초 안에 확정됐다(node 반복 재현 3회 전부 확인).
+  // 그래서 카드 숫자용 가벼운 두 액션만 최우선 발사하고, 무거운 전체행 프리로드는 600ms 늦춰 발사한다 —
+  // 완료 시점(원래도 9~11초라 체감상 무의미한 차이)은 그대로, 발사 순서만 벌려 카드가 진짜 먼저 뜨게 한다.
   loadCpoTodayStats();       // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
   loadMemberActiveSummary(); // 대기자·단기·유형별 카드 숫자를 전체 fetch보다 먼저 채움
   setTimeout(function(){
     loadCalendarData();  // 예약 달력 데이터 사전로드(기본 탭은 아래에서 '새 문의'로 지정 — 2026-07-18 GM 변경)
     _tabLoaded.active = true; loadActiveMembers();  // 유효회원 사전로드 — pane 미개방에도 단기권 카드·통합검색 데이터 채움(배299, 2026-07-07 시포·GM)
     _tabLoaded.db = true; loadDbData();  // 문의 DB 사전로드 — 통합검색·이번달 문의 집계 데이터 채움(배3, 2026-07-07 시포·GM)
-  }, 200);
+  }, 600);
   // 신규 문의 & 등록 현황 대시보드 = 🆕 버튼 → 팝업(openInquiryDash) lazy load. 전환율·퍼널·LOSS신호도 각 팝업 오픈 시 lazy fetch(배3, 2026-07-07 시포·GM).
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
 })();
