@@ -1293,7 +1293,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="card">
       <div class="card-title">
         <span class="icon">🎯</span>강습 담당자 배정
-        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">종목별 담당 강사 재배정 · 강사 본인 이름 칩 클릭 = 본인 담당 회원만 소트</span>
+        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">P.T · 필라테스 · 골프 한정 배정 후보 · 강사 이름 칩 클릭 = 본인 담당 회원만 소트</span>
       </div>
 
       <!-- 종목별 배정현황 요약 카드(배정/회원수) — 카드 클릭=해당 종목 서브탭. GM 지시 2026-07-18. -->
@@ -4490,16 +4490,16 @@ function _lessonVisibleRows(t) {
 }
 
 // 강습 종목별 담당(강사) 명단 — status/lesson_instructor_roster.json 내용 그대로 임베드
-// (GitHub Pages는 status/ 미서빙 → 페이지 자체 JS const로 복사. 원본 갱신 시 이 블록도 함께 갱신). 축7, 2026-07-08 시포·GM.
+// (GitHub Pages는 status/ 미서빙 → 페이지 자체 JS const로 복사. 원본 갱신 시 이 블록도 함께 갱신). 축7, 2026-07-08 / SSOT 동기화 2026-07-21 시포·GM.
 var LESSON_INSTRUCTOR_ROSTER = {
-  "P.T": ["김상식", "김종진", "최동오", "김혜진", "김재용", "김지훈", "이형진", "최도희", "양승문"],
+  "P.T": ["김상식", "김종진", "최동오", "김혜진", "김재용", "김지훈", "이형진", "최도희", "양승문", "김광수"],
   "필라테스": ["최은지", "조영은", "황동희"],
-  "골프": ["최현준", "김태엽", "박찬중"],
+  "골프": ["최현준", "김태엽", "박찬중", "김태훈"],
   "스쿼시": ["이상훈", "박상현"],
-  "수영": ["박민서", "송민근", "강대경", "천주희", "구성우", "박주혜", "김성은", "강승구", "김형기"],
+  "수영": ["박민서", "송민근", "강대경", "천주희", "구성우", "박주혜", "김성은", "강승구", "김형기", "아쿠아"],
   "체조&트램폴린": ["이형주", "배자경", "김영운"],
   "뮤지컬팀": ["편한별"],
-  "웰니스": ["루프메소드"]
+  "웰니스": ["루프 매소드"]
 };
 var LESSON_UNASSIGNED_OPTION = '담당자 X';   // 명단 없음/미배정 공통 옵션(전 종목)
 
@@ -4541,7 +4541,7 @@ function _lessonRosterKeyOf(sportKey) {
   if (/스쿼시/.test(s)) return '스쿼시';
   if (/체조|트램폴린|WSC/i.test(s)) return '체조&트램폴린';
   if (/뮤지컬/.test(s)) return '뮤지컬팀';
-  if (/웰니스|wellness|루프/i.test(s)) return '웰니스';   // 웰니스 프로그램=루프메소드 단일 공급자(2026-07-16 GM)
+  if (/웰니스|wellness|루프/i.test(s)) return '웰니스';   // 웰니스 프로그램=루프 매소드 단일 공급자(2026-07-16 GM)
   return null;
 }
 // 종목별 팀장 — 미배정(담당자 X) 건 기본배정 대상·항상 명단(옵션·valid)에 포함. 2026-07-16 GM
@@ -4553,7 +4553,7 @@ function _lessonTeamLeadOf(sportKey) {
   if (/필라/.test(s)) return '최은지';
   if (/골프/.test(s)) return '최현준';
   if (/체조|트램폴린/.test(s)) return '이형주';
-  if (/웰니스|wellness|루프/i.test(s)) return '루프메소드';
+  if (/웰니스|wellness|루프/i.test(s)) return '루프 매소드';
   return '';
 }
 // 종목별 강사 명단 = 종목탭 정본(지정강사 valid) 우선, 미로딩/탭없음이면 하드코딩 명단 폴백 + 팀장 항상 포함. 2026-07-16 GM
@@ -4728,7 +4728,7 @@ var LESSON_SPORT_COLOR_MAP = [
   { re: /골프|golf/i,                                          v: 'green'   },
   { re: /스쿼시|squash/i,                                      v: 'emerald' },
   { re: /체조|트램폴린|gymnas|trampolin/i,                      v: 'indigo'  },   // 체조(남색 대체)
-  { re: /루프메소드|웰니스|바레|발레|wellness|barre|ballet/i,     v: 'purple'  },
+  { re: /루프.?매소드|루프메소드|웰니스|바레|발레|wellness|barre|ballet/i, v: 'purple'  },
   { re: /뮤지컬|musical|star\s*academy/i,                       v: 'musical' }    // 뮤지컬(로즈 별색)
 ];
 function _lessonSportColor(sportStr) {
@@ -5777,17 +5777,19 @@ function _oaSportCfg(key){ for (var i=0;i<OWNER_ASSIGN_SPORTS.length;i++){ if (O
 
 // 배정 가능 종목·제외/보강 단일 정의 — GM 지시 2026-07-20: 회원 종목이 무엇이든 상관없이
 // 담당자 배정 후보는 P.T·필라테스·골프 강사로만 한정(수영·스쿼시 등 5탭 population 표시는 유지, 새 선택지만 제한).
-// 퇴사자(이정한·정시우·김명선·이우성)는 하드코딩·팀시트·회원데이터 세 경로 어디서 유입되든 여기 한 곳에서 제외.
-// 유승용(스쿼시)은 국가대표 활동으로 배정만 제외될 뿐 퇴사자 아님 — 이 종목 제한(스쿼시 자체가 배정 후보 밖)으로 자연히 빠지므로 별도 처리 불필요.
+// 퇴사자(OWNER_ASSIGN_EXCLUDE) ≠ 재직중·배정불가(OWNER_ASSIGN_ACTIVE_NOT_ASSIGNABLE) — 두 집합 분리 관리. 2026-07-21 시포·GM
+// 퇴사자(이정한·정시우·김명선·이우성): 하드코딩·팀시트·회원데이터 세 경로 어디서 유입되든 여기 한 곳에서 제외.
+// 재직중·배정불가(유승용): 국가대표 활동 — 프로필·데이터 유지, 배정 선택지만 미노출. SSOT=lesson_instructor_roster.json active_not_assignable.
 var OWNER_ASSIGN_ROSTER_KEYS = ['PT', '골프', 'P.L'];
-var OWNER_ASSIGN_EXCLUDE = { '이정한': 1, '정시우': 1, '김명선': 1, '이우성': 1 };
-var OWNER_ASSIGN_FORCE_INCLUDE = { 'PT': ['양승문'] };   // 유효회원 116명 실사용 담당자인데 명단(하드코딩/팀시트) 누락분 보강
+var OWNER_ASSIGN_EXCLUDE = { '이정한': 1, '정시우': 1, '김명선': 1, '이우성': 1 };   // 퇴사자
+var OWNER_ASSIGN_ACTIVE_NOT_ASSIGNABLE = { '유승용': 1 };   // 재직중·배정 선택지 제외
+var OWNER_ASSIGN_FORCE_INCLUDE = { 'PT': ['양승문'] };   // 유효회원 실사용 담당자 명단 미반영분 보강
 // 종목 상관없이 통합된 배정 후보 목록(끝=담당자 X). pane-ownerAssign·mreg 담당자 셀 공용.
 function _oaOwnerOptionsCombined(){
   var seen = {}, list = [];
   OWNER_ASSIGN_ROSTER_KEYS.forEach(function(key){
     var cfg = _oaSportCfg(key);
-    _lessonRosterFor(cfg.rosterKey).forEach(function(n){ if (n && !seen[n] && !OWNER_ASSIGN_EXCLUDE[n]) { seen[n] = 1; list.push(n); } });
+    _lessonRosterFor(cfg.rosterKey).forEach(function(n){ if (n && !seen[n] && !OWNER_ASSIGN_EXCLUDE[n] && !OWNER_ASSIGN_ACTIVE_NOT_ASSIGNABLE[n]) { seen[n] = 1; list.push(n); } });
     (OWNER_ASSIGN_FORCE_INCLUDE[key] || []).forEach(function(n){ if (!seen[n]) { seen[n] = 1; list.push(n); } });
   });
   list.push(LESSON_UNASSIGNED_OPTION);
@@ -5924,7 +5926,8 @@ function _oaRender(){
   var optSet = {}; opts.forEach(function(o){ optSet[o] = 1; });
   var present = {}; pop.forEach(function(r){ var v = String(r[cfg.col]||'').trim(); if (v) present[v] = 1; });
   Object.keys(present).forEach(function(v){ if (!optSet[v]){ opts.splice(opts.length - 1, 0, v); optSet[v] = 1; } });
-  Object.keys(OWNER_ASSIGN_EXCLUDE).forEach(function(n){ var idx = opts.indexOf(n); if (idx >= 0) opts.splice(idx, 1); });   // 퇴사자 — 회원데이터 경로 유입분도 최종 제외(현재 배정 0명 확인됨)
+  Object.keys(OWNER_ASSIGN_EXCLUDE).forEach(function(n){ var idx = opts.indexOf(n); if (idx >= 0) opts.splice(idx, 1); });   // 퇴사자 — 회원데이터 경로 유입분도 최종 제외
+  Object.keys(OWNER_ASSIGN_ACTIVE_NOT_ASSIGNABLE).forEach(function(n){ var idx = opts.indexOf(n); if (idx >= 0) opts.splice(idx, 1); });   // 재직중·배정불가 — 선택지 미노출
 
   var shown = rows.slice(0, _oaLimit);
   var html = '';
@@ -6014,6 +6017,7 @@ function _oaRenderSummary(){
   var rows = _ownerAssignRows || [];
   if (!rows.length){ box.innerHTML = ''; return; }
   var LABELS = { 'PT':'P.T', 'P.L':'필라테스' };   // 요약 카드 표기명(GM: P.T·필라테스)
+  var ASSIGN_KEYS = {}; OWNER_ASSIGN_ROSTER_KEYS.forEach(function(k){ ASSIGN_KEYS[k] = 1; });   // 배정가능 종목 집합
   var cards = OWNER_ASSIGN_SPORTS.map(function(s){
     var pop = 0, assigned = 0;
     for (var i=0;i<rows.length;i++){
@@ -6024,10 +6028,16 @@ function _oaRenderSummary(){
     }
     var on = (s.key === _oaSport);
     var disp = LABELS[s.key] || s.label;
+    var canAssign = !!ASSIGN_KEYS[s.key];
+    var lead = _lessonTeamLeadOf(s.rosterKey);
+    var badgeColor = canAssign ? 'var(--teal)' : 'var(--dim)';
+    var badgeBg = canAssign ? 'var(--teal-bg)' : 'rgba(0,0,0,0.04)';
+    var badge = '<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:' + badgeBg + ';color:' + badgeColor + ';margin-bottom:4px">' + (canAssign ? '배정 가능' : '조회 전용') + '</span>';
     return '<div role="button" tabindex="0" onclick="_oaSetSport(\'' + s.key + '\')" style="cursor:pointer;flex:1 1 110px;min-width:100px;padding:10px 12px;border-radius:10px;border:1px solid ' + (on?'var(--teal-border)':'var(--border)') + ';background:' + (on?'var(--teal-bg)':'var(--paper)') + '">' +
-      '<div style="font-size:12px;font-weight:700;color:' + (on?'var(--teal)':'var(--dim)') + ';margin-bottom:4px">' + esc(disp) + '</div>' +
+      '<div style="font-size:12px;font-weight:700;color:' + (on?'var(--teal)':'var(--dim)') + ';margin-bottom:2px">' + esc(disp) + '</div>' +
+      badge +
       '<div style="font-size:20px;font-weight:800;color:var(--text);line-height:1.1"><span style="color:var(--teal)">' + assigned + '</span> <span style="color:var(--dim);font-size:15px">/ ' + pop + '</span></div>' +
-      '<div style="font-size:10px;color:var(--dim);margin-top:2px">배정 / 회원수</div></div>';
+      '<div style="font-size:10px;color:var(--dim);margin-top:2px">배정 / 회원수' + (lead ? ' · 팀장 ' + esc(lead) : '') + '</div></div>';
   }).join('');
   box.innerHTML = cards;
 }
