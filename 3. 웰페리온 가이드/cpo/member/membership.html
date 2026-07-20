@@ -386,6 +386,12 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 /* 검색+필터 묶음 */
 .db-toolbar-search-group{
   display:flex;align-items:center;gap:6px;flex:1;min-width:260px;
+  flex-wrap:wrap;
+  /* flex-wrap 추가(2026-07-20 시포 · GM 지적: 모바일에서 화면이 우측으로 밀림).
+     원인: 자식(검색창·상태필터·"진행중만 보기" 체크박스 라벨)이 nowrap 컨테이너에서 줄바꿈 없이
+     한 줄을 강제해 합계 폭이 좁은 화면 폭을 넘어 페이지 전체가 가로 스크롤됐다. 특히 체크박스 라벨은
+     white-space:nowrap이라 줄어들 수 없는 고정폭(~260px)이었음. wrap을 켜면 넓은 화면(PC)은 한 줄 그대로
+     유지되고(공간 충분), 좁은 화면에서만 라벨이 다음 줄로 자연스럽게 내려간다 — 표시 내용은 그대로. */
 }
 .db-search{
   flex:1;min-width:140px;
