@@ -42,6 +42,15 @@ best-effort 호출(신규 예약작업 미생성 — 매일 09:45 IG 도달 수�
 
 텔레그램: 저조 건 알림·요약 모두 GM 개인 업무보고봇 방(TELEGRAM_CHAT_ID)으로만 발송한다
 (GM 2026-07-20 지시 — 실무진방 금지, 승인 필요한 제안이므로 GM 개인 방이 맞는 경로).
+
+관찰 모드(GM 지시 2026-07-20, "저조 판정은 한달정도는 지켜보고"): 2026-08-20까지는 판정·기록은
+계속하되 저조 건마다 GM께 알림을 쏘지 않는다(알림 피로 방지). 이번 관찰의 목적은 판정 기준
+(최근 5편 중앙값 대비 50%)이 실제로 타당한지 검증하는 것 — 그래서 카드마다 판정 근거 수치
+(pool_median·pool_ratio_pct·compare_pool)를 남겨 나중에 기준을 조정할 수 있게 한다. 축적된
+판정은 M1 페이지(편별 반응 성적표 표)·주간 브리프 §5에서 계속 확인 가능. 관찰 종료일
+(OBSERVATION_MODE_UNTIL)이 되면 "관찰 기간 종료 — 판정 기준 재검토 필요"를 GM께 1회만 알린다
+— 그 이후 알림 재개 여부·기준 조정은 이 코드가 임의로 정하지 않고 GM 재판단 대상으로 남긴다
+(observation 상태는 status/reaction_scorecard_state.json 1개 플래그로 추적, 중복 알림 방지).
 """
 from __future__ import annotations
 
@@ -80,6 +89,7 @@ IG_REACH_LEDGER_PATH = ROOT / "status" / "ig_reach_ledger.json"
 ENGAGEMENT_FEED_PATH = ROOT / "3. 웰페리온 가이드" / "cmo" / "funnel" / "engagement" / "engagement_feed.json"
 OFFICIAL_ROADMAP_PATH = ROOT / "instagram" / "_공식시리즈_로드맵.md"
 SCORECARD_PATH = ROOT / "status" / "cmo_reaction_scorecard.json"
+STATE_PATH = ROOT / "status" / "reaction_scorecard_state.json"
 ENV_PATH = ROOT / "telegram_bot" / ".env"
 
 OFFICIAL_ACCOUNT = "wellperion"
@@ -90,6 +100,12 @@ MIN_AGE_HOURS = 24       # T+24h 미만이면 "판정보류(24시간 미경과)"
 MIN_POOL = 3              # 비교풀 매칭 3건 미만이면 "판정보류(표본부족)"
 POOL_SIZE = 5             # 비교풀 = 최근 발행순 상위 N편(현재 편 제외)
 LOW_RATIO = 0.5           # 현재/중앙값 < 이 비율이면 "저조"
+
+# ── 관찰 모드(GM 지시 2026-07-20 "저조 판정은 한달정도는 지켜보고") ──────────
+# 이 날짜까지는 저조 판정 매 건 GM 알림을 쏘지 않는다(판정·기록은 계속, M1·주간브리프에서 확인).
+# 목적 = 위 LOW_RATIO(50%) 기준이 실제로 타당한지 검증. 종료일 이후 알림 재개·기준 조정은
+# 이 코드가 임의로 정하지 않고 GM 재판단 대상 — 종료일에는 1회성 "재검토 필요" 알림만 보낸다.
+OBSERVATION_MODE_UNTIL = datetime(2026, 8, 20)
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"  # GM 개인 업무보고봇 방(8254867551)
@@ -338,23 +354,32 @@ def _upcoming_roadmap_candidates(limit: int = 2) -> list[dict]:
 
 
 # ── 판정 ──────────────────────────────────────────────────────────
-def judge(current_reach: int | None, pool_reach: list[int], age_hours: float) -> tuple[str, str]:
-    """반환: (verdict, reason). verdict ∈ {"판정보류", "저조", "정상범위"}."""
+def _median(values: list[float]) -> float | None:
+    if not values:
+        return None
+    s = sorted(values)
+    n = len(s)
+    return s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2
+
+
+def judge(current_reach: int | None, pool_reach: list[int], age_hours: float) -> tuple[str, str, float | None, float | None]:
+    """반환: (verdict, reason, pool_median, ratio). verdict ∈ {"판정보류", "저조", "정상범위"}.
+    pool_median·ratio는 관찰 모드(GM 지시 2026-07-20) 판정 근거를 M1·주간브리프에 그대로
+    노출하기 위한 구조화 필드 — verdict_reason 문장 재파싱 없이 표에 바로 꽂는다."""
     if age_hours < MIN_AGE_HOURS:
-        return "판정보류", f"발행 {age_hours:.1f}시간 경과 — {MIN_AGE_HOURS}시간 미경과(측정 시점 아님)"
+        return "판정보류", f"발행 {age_hours:.1f}시간 경과 — {MIN_AGE_HOURS}시간 미경과(측정 시점 아님)", None, None
     if current_reach is None:
-        return "판정보류", "IG 도달 데이터 미매칭(수집 지연 또는 게시물 목록 이탈)"
+        return "판정보류", "IG 도달 데이터 미매칭(수집 지연 또는 게시물 목록 이탈)", None, None
     if len(pool_reach) < MIN_POOL:
-        return "판정보류", f"비교 표본 부족(매칭 {len(pool_reach)}건 < {MIN_POOL}건)"
-    sorted_pool = sorted(pool_reach)
-    n = len(sorted_pool)
-    median = sorted_pool[n // 2] if n % 2 else (sorted_pool[n // 2 - 1] + sorted_pool[n // 2]) / 2
-    if median <= 0:
-        return "판정보류", "비교풀 중앙값 0 — 판정 불가"
+        return "판정보류", f"비교 표본 부족(매칭 {len(pool_reach)}건 < {MIN_POOL}건)", None, None
+    median = _median(pool_reach)
+    n = len(pool_reach)
+    if median is None or median <= 0:
+        return "판정보류", "비교풀 중앙값 0 — 판정 불가", median, None
     ratio = current_reach / median
     if ratio < LOW_RATIO:
-        return "저조", f"현재 도달 {current_reach} / 최근 {n}편 중앙값 {median:.0f} = {ratio*100:.0f}%(<{LOW_RATIO*100:.0f}%)"
-    return "정상범위", f"현재 도달 {current_reach} / 최근 {n}편 중앙값 {median:.0f} = {ratio*100:.0f}%"
+        return "저조", f"현재 도달 {current_reach} / 최근 {n}편 중앙값 {median:.0f} = {ratio*100:.0f}%(<{LOW_RATIO*100:.0f}%)", median, ratio
+    return "정상범위", f"현재 도달 {current_reach} / 최근 {n}편 중앙값 {median:.0f} = {ratio*100:.0f}%", median, ratio
 
 
 def _propose_improvement(cur: dict, pool_items: list[dict]) -> str:
@@ -422,7 +447,7 @@ def build_scorecards(now: datetime | None = None) -> dict[str, dict]:
                 break
         pool_reach = [p2["reach"] for p2 in pool_items]
 
-        verdict, reason = judge(current_reach, pool_reach, age_hours)
+        verdict, reason, pool_median, pool_ratio = judge(current_reach, pool_reach, age_hours)
 
         siblings = _sibling_channel_entries(folder)
         danggn_sig = _danggn_signal(siblings.get("danggn", {}).get("post_url"), events)
@@ -443,6 +468,8 @@ def build_scorecards(now: datetime | None = None) -> dict[str, dict]:
             },
             "verdict": verdict,
             "verdict_reason": reason,
+            "pool_median": pool_median,
+            "pool_ratio_pct": round(pool_ratio * 100, 1) if pool_ratio is not None else None,
             "compare_pool": pool_items,
             "measured_at": now.strftime("%Y-%m-%d %H:%M:%S"),
             "alerted": bool(prior.get("alerted")),
@@ -484,30 +511,48 @@ def _send_gm(text: str) -> bool:
         return False
 
 
+def _notify_observation_end(now: datetime, dry_run: bool) -> None:
+    """관찰 종료일(OBSERVATION_MODE_UNTIL) 도달 시 GM께 1회만 "재검토 필요" 알림.
+    이후 알림 재개 여부·기준 조정은 이 함수가 정하지 않는다(GM 재판단 대상, 2026-07-20 지시)."""
+    state = _load_json(STATE_PATH, {})
+    if not isinstance(state, dict) or state.get("observation_end_notified"):
+        return
+    msg = (
+        "🔔 콘텐츠 반응 성적표 — 관찰 기간 종료(2026-08-20)\n"
+        "판정 기준(최근 5편 중앙값 대비 50%)이 타당한지 확인하려던 관찰 모드가 끝났습니다.\n"
+        "건별 판정 근거(도달값·중앙값·비교 표본)는 status/cmo_reaction_scorecard.json + M1 페이지 "
+        "'편별 반응 성적표' 표에 축적돼 있습니다.\n"
+        "판정 기준 재검토 필요 — 알림 재개 여부·LOW_RATIO 조정을 GM께서 정해 주세요."
+    )
+    if dry_run:
+        print("[DRY-RUN] → GM 업무보고봇 방 대상(관찰 종료 알림, 실전송 없음)")
+        print(msg)
+        return
+    ok = _send_gm(msg)
+    if ok:
+        state["observation_end_notified"] = True
+        state["notified_at"] = now.strftime("%Y-%m-%d %H:%M:%S")
+        _save_json(STATE_PATH, state)
+        print("[INFO] 관찰 기간 종료 알림 발송 완료")
+    else:
+        print("[WARN] 관찰 기간 종료 알림 발송 실패")
+
+
 def scan_and_alert(now: datetime | None = None, dry_run: bool = False) -> dict[str, dict]:
-    """스캔 후 verdict=='저조' & 아직 미알림인 건만 GM 업무보고봇 방에 발송(중복 방지: alerted 플래그).
-    best-effort — 텔레그램 실패해도 스캔 결과 자체는 반환/저장(dry_run 아니면)."""
+    """스캔은 매번 수행(판정·기록은 항상 계속). 알림은 관찰 모드(OBSERVATION_MODE_UNTIL 이전)
+    동안 저조 건마다 쏘지 않는다(GM 2026-07-20 지시 — 알림 피로 방지, M1·주간브리프에서 확인).
+    관찰 종료 후에는 저조 건 자동 알림을 임의로 재개하지 않고, 종료 시점에 1회 "재검토 필요"만
+    보낸다(GM 재판단 대상)."""
+    now = now or datetime.now()
     scorecards = build_scorecards(now)
-    for folder, card in scorecards.items():
-        if card.get("verdict") != "저조" or card.get("alerted"):
-            continue
-        msg = (
-            f"📉 콘텐츠 반응 저조 감지 — {card['title']}\n"
-            f"{card['verdict_reason']}\n\n"
-            f"제안: {card.get('improvement_proposal', '(제안 생성 실패)')}\n\n"
-            f"※ 반무인 — 이 알림은 제안만입니다. 재발행·수정 등 실제 조치는 GM 승인 후 진행됩니다."
-        )
-        if dry_run:
-            print("[DRY-RUN] → GM 업무보고봇 방 대상(실전송 없음)")
-            print(msg)
-            print("-" * 40)
-            continue
-        ok = _send_gm(msg)
-        if ok:
-            card["alerted"] = True
-            print(f"[INFO] 저조 알림 발송 완료: {folder}")
+    if now < OBSERVATION_MODE_UNTIL:
+        if not dry_run:
+            _save_json(SCORECARD_PATH, scorecards)
         else:
-            print(f"[WARN] 저조 알림 발송 실패: {folder}")
+            n_low = sum(1 for c in scorecards.values() if c.get("verdict") == "저조")
+            print(f"[DRY-RUN] 관찰 모드 — 저조 {n_low}건 판정됐으나 알림 없음(기록만)")
+        return scorecards
+    _notify_observation_end(now, dry_run)
     if not dry_run:
         _save_json(SCORECARD_PATH, scorecards)
     return scorecards

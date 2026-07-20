@@ -4068,12 +4068,15 @@ window._regAssign = function(id, category) {
   </div>
 
   <!-- ════════════════════════════════════════════
-       편별 반응 성적표 (2026-07-20 신설) — 정적 안내. 실제 판정·발송은 백엔드 스크립트가 수행하고
-       결과는 주간 마케팅 브리프 §5 + GM 업무보고방으로 전달된다(이 페이지에 별도 위젯 없음).
+       편별 반응 성적표 (2026-07-20 신설 · 2026-07-20 GM 지시로 M1 라이브 표 확장)
+       데이터 원천 = status/cmo_reaction_scorecard.json(reaction_scorecard.py 원장 그대로 재사용,
+       새 파일·새 집계 없음). 판정 기준·측정 정의 정본 = S2 AI-CMO 탭 '반응 루프' — 여기서는
+       재서술하지 않고 데이터 표시 + 포인터만 한다.
        ════════════════════════════════════════════ -->
   <div class="section" style="margin-bottom:0">
     <div class="section-title">편별 반응 성적표</div>
-    <div class="measure-pending">발행 24시간 후 IG 도달·당근 조회/찜·네이버 카페 조회로 편별 반응 저조 여부를 자동 판정합니다. 저조 판정 시 GM 업무보고방으로 개선안을 제안합니다(반무인 — 재발행 등은 GM 승인 후). 매주 마케팅 브리프 §5 "콘텐츠 반응 성적표"에서 확인. <strong>판정 기준·측정 한계 전체 정의 = S2 AI-CMO 탭 '반응 루프' 참고</strong>(재서술 안 함).</div>
+    <div class="measure-pending">2026-07-20~2026-08-20 GM 지시로 <b>관찰 모드</b> — 저조 판정이 나와도 매 건 GM 알림은 쏘지 않고 판정·기록만 축적해 기준(최근 5편 중앙값 대비 50% 미만=저조)이 타당한지 검증합니다. 아래 표는 판정 근거(도달값·중앙값·비교표본)까지 그대로 보여줍니다. 매주 마케팅 브리프 §5 "콘텐츠 반응 성적표"에서도 동일 데이터 확인 가능. <strong>판정 기준·측정 한계 전체 정의 = S2 AI-CMO 탭 '반응 루프' 참고</strong>(재서술 안 함).</div>
+    <div id="reaction-scorecard-wrap"><div class="flow-skeleton sk-pulse" style="height:90px"></div></div>
   </div>
 
 </div>
@@ -4621,6 +4624,66 @@ if (window.matchMedia) {
 }
 })();
     </script>
+<!-- ══ 편별 반응 성적표 라이브 (status/cmo_reaction_scorecard.json · reaction_scorecard.py 원장 재사용
+     — 판정 정의는 S2 AI-CMO 탭 '반응 루프'가 정본, 여기는 데이터 표시만 · 2026-07-20 GM 지시) ══ -->
+<script>
+(function(){
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  var RS_URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/cmo_reaction_scorecard.json';
+  var wrap=document.getElementById('reaction-scorecard-wrap');
+  if(!wrap) return;
+  function fmtBlog(sig){ // 블로그 조회수는 네이버 로그인 필요 — 구조적으로 항상 측정불가(GM 명시 요구)
+    if(sig && sig.status==='detected_no_views') return '발행 감지 · 조회수 측정불가';
+    return '측정불가(로그인 필요)';
+  }
+  function verdictBadge(v){
+    var color = v==='저조' ? '#f44336' : v==='정상범위' ? '#4caf50' : '#888';
+    return '<span style="font-weight:700;color:'+color+'">'+esc(v)+'</span>';
+  }
+  fetch(RS_URL+'?t='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var cards = Object.keys(data||{}).map(function(k){return data[k];});
+      if(!cards.length){
+        wrap.innerHTML='<div class="measure-pending">아직 집계된 편이 없습니다(reaction_scorecard.py --scan 미실행).</div>';
+        return;
+      }
+      cards.sort(function(a,b){return String(b.published_at||'').localeCompare(String(a.published_at||''));});
+      var thead='<thead><tr><th>콘텐츠</th><th>발행일</th>'
+        +'<th style="text-align:right">IG 도달</th><th>IG 좋아요</th>'
+        +'<th>당근 조회/찜</th><th>카페 조회</th><th>블로그</th><th>카카오</th>'
+        +'<th style="text-align:right">중앙값 대비</th><th>판정</th><th>판정 근거</th></tr></thead>';
+      var rows = cards.map(function(c){
+        var ch = c.channels||{};
+        var ig = ch.instagram||{}, dg = ch.danggn||{}, cf = ch.cafe||{}, bl = ch.blog||{};
+        var igCell = ig.status==='measured' ? (ig.latest_reach!=null?ig.latest_reach:'—') : '미측정';
+        var dgCell = dg.status==='measured' ? ('조회 '+(dg.views!=null?dg.views:'—')+' · 찜 '+(dg.bookmarks!=null?dg.bookmarks:'—')) : '미측정';
+        var cfCell = cf.status==='measured' ? ('조회 '+(cf.views!=null?cf.views:'—')) : '미측정';
+        var blCell = fmtBlog(bl);
+        var ratio = (c.pool_ratio_pct!=null) ? (c.pool_ratio_pct+'%') : '—';
+        return '<tr>'
+          +'<td>'+esc(c.title||c.folder)+'</td>'
+          +'<td>'+esc(String(c.published_at||'').slice(0,10))+'</td>'
+          +'<td style="text-align:right">'+esc(igCell)+'</td>'
+          +'<td>측정불가</td>'
+          +'<td>'+esc(dgCell)+'</td>'
+          +'<td>'+esc(cfCell)+'</td>'
+          +'<td>'+esc(blCell)+'</td>'
+          +'<td>측정불가</td>'
+          +'<td style="text-align:right">'+esc(ratio)+'</td>'
+          +'<td>'+verdictBadge(c.verdict)+'</td>'
+          +'<td style="font-size:11px;color:var(--dim)">'+esc(c.verdict_reason||'')+'</td>'
+          +'</tr>';
+      }).join('');
+      wrap.innerHTML = '<div style="overflow-x:auto"><table class="channel-table">'+thead+'<tbody>'+rows+'</tbody></table></div>'
+        + '<div class="measure-pending" style="margin-top:10px;font-size:11px">"IG 좋아요"·"카카오" 열은 비공개 지표라 구조적으로 수집 불가(항상 측정불가). 채널별 문의→가입 전환은 누적 집계라 편별 귀속 불가(본 표에 없음). 판정 기준·측정 정의 전체 = <b>S2 AI-CMO 탭 &#39;반응 루프&#39;</b> 참고(재서술 안 함).</div>';
+    })
+    .catch(function(){
+      wrap.innerHTML='<div class="measure-pending">반응 성적표 데이터를 불러오지 못했습니다(네트워크 또는 아직 파일 미생성 — 새로고침 해보세요).</div>';
+    });
+})();
+</script>
+<!-- ══ /편별 반응 성적표 라이브 ══ -->
     </section>
 
     <!-- ① 기반 — 회사·전략·브랜드 (2026-07-15 GM 설계: 콘텐츠 방향 연료 · m1-foundation) -->
