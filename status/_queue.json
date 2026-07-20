@@ -1465,5 +1465,19 @@
     "ship_no": 9242,
     "artifact": "GM 승인 — 한국어 브라우저가 /en/inquiry/ 첫 진입 시 /ko/inquiry/로 자동 튕기던 문제(ship9231 언어전환버튼을 무력화) 해결. 원인=WPML 전역 설정(WP관리자 > WPML > Languages > 브라우저 언어 리다이렉트, icl_automatic_redirect=1 \"번역이 존재하는 경우에만 리다이렉트\"). Playwright로 관리자 세션 재사용해 값을 0(비활성화)으로 변경·저장·새로고침 후 유지 확인(AJAX 응답 \"데이터 저장됨\"). 적용범위=사이트 전역(문의 페이지 한정 아님 — 모든 페이지의 브라우저언어 자동전환이 꺼짐, 부작용 없음을 /en/ 홈 재확인). 되돌리기=같은 화면에서 라디오를 \"번역이 존재하는 경우에만 리다이렉트\"로 다시 선택 후 저장(1분 내 원복 가능, 코드 변경 아님·순수 WP 관리자 설정). 검증(신규 쿠키없는 크롬 프로필+ko-KR 로케일, 실브라우저): ①/en/inquiry/ 최초진입 EN 유지 PASS ②KOR버튼→/ko/inquiry/ 이동 PASS ③ENG버튼→/en/inquiry/ 복귀·유지 PASS ④/en/ 홈 정상(EN 유지, 부작용 없음) PASS. 스크린샷: scripts/poc-evidence/{wpml_redirect_before_20260720.png, wpml_redirect_after_save_20260720.png, wpml_redirect_after_reload_20260720.png, verify1_en_inquiry_first_visit_20260720.png, verify2_after_kor_click_20260720.png, verify3_after_eng_click_20260720.png, verify4_en_home_20260720.png} (로컬 전용, .gitignore 대상·git 커밋 없음 — 코드 변경 없이 WP 관리자 설정만 변경).",
     "next": "🏁 입항완료(루틴) — 다음 불필요. 트레이드오프: 외국인 방문자가 한글 브라우저로 접속해도 더는 영어로 자동전환되지 않음(GM 승인·인지)."
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-b043daf5",
+    "clevel": "cpo",
+    "title": "[시포] INC-020 복구 전제조건 진단 액션(inc020_diag) 추가 — 읽기 전용",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9243,
+    "artifact": "inc020_restore가 'rows-not-blank'로 멈춘 원인 확인용. gviz 캐시지연 배제하고\nSpreadsheetApp 직독으로 권소현/이동걸 행 위치·주변 8행 상태·빈 행 전수·\n복구대상 전화 기존 존재 여부를 반환. 쓰기 코드 없음(setValue 등 전무).\n실행 후 inc020_restore와 함께 제거 예정. (CLI ad-hoc · 커밋 b043daf5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b043daf5eb034b9ca28b9828fc9028133eab497b"
   }
 ]
