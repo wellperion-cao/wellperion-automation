@@ -2532,5 +2532,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 e4c2b7e6)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e4c2b7e66942bfe32242c731ce57ee28db227098"
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-74a4a230",
+    "clevel": "cpo",
+    "title": "[시포] 신규 문의&등록현황 화면개편 2단계(C/D) — 모달 중복fetch 제거·목록 페이지 나눔",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9317,
+    "artifact": "- C. 신규 문의 & 등록 현황 모달(inquiryDashModalOverlay) 네트워크 대폭 축소:\n  · ①④⑥ 문의 원본 = 문의DB 탭이 이미 로드해둔 dbRows 재사용(중복 member_inquiry_list\n    fetch 제거 — 실측 581KB 절감, 완전 동일 소스라 값 드리프트 없음)\n  · ①⑥ 가입 원본 = 기본 스코프를 \"연초~오늘\"로 축소(⑥ 월별등록이 요구하는 최소 범위).\n    '총' 토글을 실제 선택했을 때만 전체(2022~) 1회 추가 조회, 이후 토글은 재조회 없음.\n    실측: 263, (CLI ad-hoc · 커밋 74a4a230)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "74a4a2304f3da60c5192af1c96463de936fb612b"
   }
 ]
