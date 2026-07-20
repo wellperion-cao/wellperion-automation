@@ -1524,5 +1524,19 @@
     "next": "라이브 검증 후 완료. 후속=나우열M 시트 부서 칸 추가되면 hiring-status.js DEPT_RULES 제거하고 j.dept 직접 매칭.",
     "ship_no": 9182,
     "surface": "g1"
+  },
+  {
+    "task_id": "COO-2026-07-20-ADHOC-8d49a5a5",
+    "clevel": "coo",
+    "title": "[시우] 부서 체계 페이지 ↔ 채용 현황 라이브 연동 (배9182)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9183,
+    "artifact": "- coo/check/hiring-status.js 신규 — CHRO 채용 시트(db:hire) GAS 조회 후 부서별 모집중 자리 렌더\n- 5개 부서 체계 페이지(주차관리부·시설부·운영부·지원부·파트너팀) 배선\n- 값 복사 없음(렌더 전용) · 조회 실패 시 미표시(틀린 정보 노출 방지)\n- 시트에 부서 칸 부재 → 제목 키워드 임시 매칭(DEPT_RULES), dept 칸 생기면 제거 예정\n- 나우열M 인계 프롬프트 추가 (시트 부서 칸·주차 공고 소속 정정·허브 벤토 통일) (CLI ad-hoc · 커밋 8d49a5a5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8d49a5a567c1dfe4e24c4fb902428e4e708cd7da"
   }
 ]
