@@ -3455,6 +3455,52 @@ function _processAction(body) {
     }
   }
 
+  // ─── (일회성 진단) 강습 팀시트 13개 — 각 탭 A~C열 수식 원인분석(왜 P.T 성인만 깨졌는지) ───
+  //   읽기전용. getFormulas()로 IMPORTRANGE/QUERY/FILTER 등 실제 수식 문자열을 그대로 반환.
+  //   2026-07-20 시토(GM 지시, 실행 없음·분석 전용).
+  if (action === 'cpo_lesson_teamsheet_formulas') {
+    try {
+      var tfOut = [];
+      LESSON_TEAM_SHEETS.forEach(function (cfg) {
+        var rec = { ssId: cfg.ssId, gid: cfg.gid, 유형: cfg.유형, 명: cfg.명, row1: [], row2: [], error: null };
+        try {
+          var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+          if (!sh) { rec.error = 'sheet_not_found'; tfOut.push(rec); return; }
+          var lastCol = Math.min(sh.getLastColumn(), 6);  // A~F열만(왼쪽 IMPORTRANGE 구간 확인용)
+          rec.row1 = sh.getRange(1, 1, 1, lastCol).getFormulas()[0];
+          rec.row2 = sh.getRange(2, 1, 1, lastCol).getFormulas()[0];
+          rec.row1Values = sh.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+        } catch (e2) { rec.error = e2.message; }
+        tfOut.push(rec);
+      });
+      return _json({ ok: true, sheets: tfOut });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── (일회성 진단·읽기전용) 임의 gid 탭의 A1 수식 원문 조회 — P.T성인 어긋남 원인의 중간 탭(예: 1b0XU1o
+  //   스프레드시트 안의 'P.T' gid=483045756 등, 팀시트가 직접 참조하는 소스가 아니라 그 사이 중간 종목별
+  //   분류탭) 자체가 어떤 수식(QUERY/FILTER 등)으로 gid111889422를 참조하는지 확인용. 2026-07-20 시토.
+  if (action === 'cpo_diag_gid_formula') {
+    try {
+      var dgSsId = String(body.ssId || '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw');
+      var dgGid = parseInt(body.gid, 10);
+      var dgSh = _sheetByGid_(dgSsId, dgGid);
+      if (!dgSh) return _json({ ok: false, error: 'sheet_not_found' });
+      var dgLastCol = Math.min(dgSh.getLastColumn(), 4);
+      return _json({
+        ok: true, sheetName: dgSh.getName(), lastRow: dgSh.getLastRow(), lastCol: dgSh.getLastColumn(),
+        row1Formulas: dgSh.getRange(1, 1, 1, dgLastCol).getFormulas()[0],
+        row1Values: dgSh.getRange(1, 1, 1, dgLastCol).getDisplayValues()[0],
+        row2Formulas: dgSh.getRange(2, 1, 1, dgLastCol).getFormulas()[0],
+        row2Values: dgSh.getRange(2, 1, 1, dgLastCol).getDisplayValues()[0]
+      });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
   // ─── (일회성 진단) 강습 두 탭(성인·WSC) 자체폼 유입 블록 위치 실측 — 행 재정렬 사전분석 ───
   //   read_rows_by_rownum(FORM_SHEETS 전용)로는 임의 행 범위 원문을 볼 수 있으나 '경계'(자체폼 블록이
   //   어디서 끝나고 레거시 오름차순 블록이 시작되는지)를 자동 판별하진 않는다 — 이 액션은 상단부(자체폼
@@ -4833,6 +4879,157 @@ function _processAction(body) {
   //   ★ 이름 정확일치로만 잡는다. 부분일치 금지 — '5. 시설투어…날짜는…' 같은 칸을 지울 수 있다.
   //   ★ A열(index 0)이 아니면 거부. 타임스탬프 칸이 없어도 거부(유일한 날짜 칸을 지우는 사고 차단).
   //   dryRun=1이면 아무것도 지우지 않고 삭제 대상·표본만 반환.
+  // ─── (일회성) 중복된 '유입경로(자동)' 칸 해소 — 2026-07-20 ───
+  //   중분류를 '유입경로(자동)'으로 개칭한 결과 같은 이름 칸이 둘이 됐다(F=616건 정본 / S=폼 소유 3건).
+  //   S는 우리 코드가 구글폼에 만든 기술용 문항('자동 입력 항목 — 비워두셔도 됩니다')이라 칸만 지우면 되살아난다.
+  //   → ①S의 값을 앞 칸(정본)의 빈 행에 합치고 ②폼 문항 삭제 ③S 칸 삭제. 순서 고정.
+  //   안전장치: S에 값이 6건 이상이면 중단(예상과 다르면 사람이 본다).
+  if (action === 'dedup_autoroute_20260720') {
+    if (String(body.key || '') !== 'wlp_dedup_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var daDry = (String(body.dryRun || '') === '1');
+    var daSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!daSh) return _json({ ok: false, error: '시트 없음' });
+    var daHdr = daSh.getRange(1, 1, 1, daSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var daIdx = [];
+    for (var dai = 0; dai < daHdr.length; dai++) { if (daHdr[dai].replace(/\s+/g, '') === '유입경로(자동)') daIdx.push(dai); }
+    if (daIdx.length < 2) return _json({ ok: true, note: '중복 아님', found: daIdx.length, headers: daHdr });
+    var daKeep = daIdx[0], daDrop = daIdx[daIdx.length - 1];
+    var daLast = daSh.getLastRow();
+    var daAll = daLast >= 2 ? daSh.getRange(2, 1, daLast - 1, daHdr.length).getValues() : [];
+    var daMoves = [], daDropFilled = 0;
+    for (var dar = 0; dar < daAll.length; dar++) {
+      var dv = String(daAll[dar][daDrop] == null ? '' : daAll[dar][daDrop]).trim();
+      if (!dv) continue;
+      daDropFilled++;
+      if (!String(daAll[dar][daKeep] == null ? '' : daAll[dar][daKeep]).trim()) daMoves.push({ row: dar + 2, value: dv });
+    }
+    if (daDropFilled > 5) return _json({ ok: false, error: 'unexpected-volume', detail: '삭제 대상 칸에 값이 ' + daDropFilled + '건 — 6건 이상이면 중단', dropIdx: daDrop });
+    var daFormUrl = '', daItemTitle = '', daHasItem = false;
+    try {
+      daFormUrl = daSh.getFormUrl() || '';
+      if (daFormUrl) {
+        FormApp.openByUrl(daFormUrl).getItems().forEach(function (it) {
+          if (String(it.getTitle() || '').replace(/\s+/g, '') === '유입경로(자동)') { daHasItem = true; daItemTitle = it.getTitle(); }
+        });
+      }
+    } catch (eA) { return _json({ ok: false, error: 'form_open_fail', detail: String(eA.message || eA) }); }
+    if (daDry) return _json({ ok: true, dryRun: true, keepIdx: daKeep, dropIdx: daDrop,
+                              dropFilled: daDropFilled, movesToKeep: daMoves.length, moveSample: daMoves.slice(0, 5),
+                              formItemFound: daHasItem, formItemTitle: daItemTitle, colsBefore: daHdr.length });
+    // ① 값 합치기
+    daMoves.forEach(function (m) { daSh.getRange(m.row, daKeep + 1).setValue(m.value); });
+    SpreadsheetApp.flush();
+    // ② 폼 문항 삭제(되살아남 방지)
+    var daFormDeleted = false;
+    if (daHasItem) {
+      try {
+        var daForm = FormApp.openByUrl(daFormUrl);
+        daForm.getItems().forEach(function (it) { if (String(it.getTitle() || '').replace(/\s+/g, '') === '유입경로(자동)') { daForm.deleteItem(it); daFormDeleted = true; } });
+      } catch (eB) { return _json({ ok: false, error: 'form_item_delete_fail', detail: String(eB.message || eB), movedAlready: daMoves.length }); }
+    }
+    // ③ 칸 삭제(위치 재조회)
+    var daHdr2 = daSh.getRange(1, 1, 1, daSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var daIdx2 = [];
+    for (var db = 0; db < daHdr2.length; db++) { if (daHdr2[db].replace(/\s+/g, '') === '유입경로(자동)') daIdx2.push(db); }
+    var daDeleted = false;
+    if (daIdx2.length >= 2) { daSh.deleteColumn(daIdx2[daIdx2.length - 1] + 1); daDeleted = true; SpreadsheetApp.flush(); }
+    var daAfter = daSh.getRange(1, 1, 1, daSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    return _json({ ok: true, moved: daMoves.length, formDeleted: daFormDeleted, colDeleted: daDeleted,
+                   colsBefore: daHdr.length, colsAfter: daAfter.length, headersAfter: daAfter });
+  }
+
+  // ─── (일회성) 잉여 칸 최종 정리 2차 — 2026-07-20 GM 확정 지시 ───
+  //   GM: "등록일은 그냥 삭제해도 되고 / 등록매칭은 진행상태에 SUC 변경되면 '등록' / 연락이력은 Contact1~3
+  //        / 방문완료일은 체험일·체험시간 / 등록종목은 유효회원시트 / (유입경로는) 소분류가 아니라 중분류야"
+  //   ① 연락이력 → Contact1/2/3 (비어있는 칸에만. 3건 초과분은 남긴다 — 넣을 칸이 없다)
+  //   ② 방문완료일 → 체험1 날짜/확정시간 (비어있을 때만)
+  //   ③ 등록일(자동)·등록매칭(자동) → 삭제(등록매칭은 진행현황 SUC에서 파생 가능하므로 보관 불필요)
+  //   ④ '문의 경로 (중분류)' → '유입경로(자동)'으로 개칭. 기존 유입경로(자동) 칸의 값은 중분류가 빈 행에만 옮긴다.
+  //   ※ 등록종목(유효회원 이관)은 이름+연락처 대조가 필요해 이 액션에 넣지 않는다(별건).
+  if (action === 'finalize_cols_20260720') {
+    if (String(body.key || '') !== 'wlp_final_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var fcDry = (String(body.dryRun || '') === '1');
+    var fcSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!fcSh) return _json({ ok: false, error: '시트 없음' });
+    var fcHdr = fcSh.getRange(1, 1, 1, fcSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var fcNorm = function (s) { return String(s || '').replace(/\s+/g, ''); };
+    var fcFind = function (want) { for (var i = 0; i < fcHdr.length; i++) { if (fcNorm(fcHdr[i]) === fcNorm(want)) return i; } return -1; };
+    var fcStarts = function (want) { for (var i = 0; i < fcHdr.length; i++) { if (fcNorm(fcHdr[i]).indexOf(fcNorm(want)) === 0) return i; } return -1; };
+
+    var iHist2 = fcFind('연락이력'), iC1 = fcFind('Contact1'), iC2 = fcFind('Contact2'), iC3 = fcFind('Contact3');
+    var iVis2  = fcFind('방문완료일'), iExpD = fcStarts('체험1'), iExpT = -1;
+    // 체험1 계열: '체험1 확정시간'이 시간칸. 날짜칸은 '5. 시설투어~'(투어희망일)가 아니라 별도가 없으면 시간칸만 사용.
+    for (var fe = 0; fe < fcHdr.length; fe++) { if (fcNorm(fcHdr[fe]).indexOf('체험1') === 0 && fcNorm(fcHdr[fe]).indexOf('확정시간') >= 0) { iExpT = fe; break; } }
+    var iMid   = fcStarts('문의 경로 (중분류)'), iAuto = fcFind('유입경로(자동)');
+    var fcLast = fcSh.getLastRow();
+    var fcAll  = fcLast >= 2 ? fcSh.getRange(2, 1, fcLast - 1, fcHdr.length).getValues() : [];
+
+    var fcPlan = { histToContact: [], visitToExp: [], autoToMid: [] };
+    for (var fr = 0; fr < fcAll.length; fr++) {
+      var rowN = fr + 2, R = fcAll[fr];
+      // ① 연락이력 → Contact1/2/3
+      if (iHist2 >= 0) {
+        var hv = String(R[iHist2] == null ? '' : R[iHist2]).trim();
+        if (hv) {
+          var arr = _resParse_(hv), slots = [iC1, iC2, iC3], put = [];
+          for (var hi = 0; hi < arr.length && hi < 3; hi++) {
+            var sc = slots[hi];
+            if (sc < 0) continue;
+            if (String(R[sc] == null ? '' : R[sc]).trim()) continue;   // 이미 값 있으면 덮지 않는다
+            var e = arr[hi] || {};
+            var pre = String((e.date || '') + ' ' + (e.time || '')).trim();
+            var txt = pre ? (pre + ' ' + String(e.note || '').trim()).trim() : String(e.note || '').trim();
+            if (txt) put.push({ col: sc, text: txt });
+          }
+          if (put.length) fcPlan.histToContact.push({ row: rowN, put: put, overflow: Math.max(0, arr.length - 3) });
+        }
+      }
+      // ② 방문완료일 → 체험1 확정시간(값이 비어있을 때만)
+      if (iVis2 >= 0 && iExpT >= 0) {
+        var vv = R[iVis2];
+        var vs = (vv instanceof Date) ? Utilities.formatDate(vv, 'Asia/Seoul', 'yyyy-MM-dd') : String(vv == null ? '' : vv).trim();
+        if (vs && !String(R[iExpT] == null ? '' : R[iExpT]).trim()) fcPlan.visitToExp.push({ row: rowN, value: vs });
+      }
+      // ④ 유입경로(자동) → 중분류(빈 행만)
+      if (iAuto >= 0 && iMid >= 0) {
+        var av2 = String(R[iAuto] == null ? '' : R[iAuto]).trim();
+        if (av2 && !String(R[iMid] == null ? '' : R[iMid]).trim()) fcPlan.autoToMid.push({ row: rowN, value: av2 });
+      }
+    }
+
+    if (fcDry) {
+      return _json({ ok: true, dryRun: true, colsBefore: fcHdr.length,
+                     cols: { 연락이력: iHist2, Contact1: iC1, 방문완료일: iVis2, 체험1시간: iExpT, 중분류: iMid, 유입경로자동: iAuto },
+                     plan: { 'histToContact': fcPlan.histToContact.length, 'visitToExp': fcPlan.visitToExp.length, 'autoToMid': fcPlan.autoToMid.length },
+                     samples: { hist: fcPlan.histToContact.slice(0, 2), visit: fcPlan.visitToExp.slice(0, 3), auto: fcPlan.autoToMid.slice(0, 3) },
+                     willDelete: ['등록일(자동)', '등록매칭(자동)', '방문완료일', '연락이력'],
+                     willRename: iMid >= 0 ? (fcHdr[iMid] + ' → 유입경로(자동)') : '중분류 없음',
+                     headers: fcHdr });
+    }
+
+    // 실행 ①②④ 값 이관
+    fcPlan.histToContact.forEach(function (p) { p.put.forEach(function (x) { fcSh.getRange(p.row, x.col + 1).setValue(x.text); }); });
+    fcPlan.visitToExp.forEach(function (p) { fcSh.getRange(p.row, iExpT + 1).setValue(p.value); });
+    fcPlan.autoToMid.forEach(function (p) { fcSh.getRange(p.row, iMid + 1).setValue(p.value); });
+    SpreadsheetApp.flush();
+    // ③ 삭제 — 뒤 인덱스부터
+    var fcDelNames = ['등록일(자동)', '등록매칭(자동)', '방문완료일', '연락이력'];
+    var fcDelIdx = fcDelNames.map(function (n) { return { name: n, idx: fcFind(n) }; }).filter(function (x) { return x.idx >= 0; })
+                     .sort(function (a, b) { return b.idx - a.idx; });
+    fcDelIdx.forEach(function (t) { fcSh.deleteColumn(t.idx + 1); });
+    SpreadsheetApp.flush();
+    // ④ 개칭 — 삭제 후 위치 재조회
+    var fcHdr2 = fcSh.getRange(1, 1, 1, fcSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var iMid2 = -1;
+    for (var fm = 0; fm < fcHdr2.length; fm++) { if (fcNorm(fcHdr2[fm]).indexOf(fcNorm('문의 경로 (중분류)')) === 0) { iMid2 = fm; break; } }
+    var renamed = false;
+    if (iMid2 >= 0) { fcSh.getRange(1, iMid2 + 1).setValue('유입경로(자동)'); renamed = true; SpreadsheetApp.flush(); }
+    var fcAfter = fcSh.getRange(1, 1, 1, fcSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    return _json({ ok: true, moved: { 연락이력: fcPlan.histToContact.length, 방문완료일: fcPlan.visitToExp.length, 자동: fcPlan.autoToMid.length },
+                   deleted: fcDelIdx.map(function(t){ return t.name; }), renamed: renamed,
+                   colsBefore: fcHdr.length, colsAfter: fcAfter.length, headersAfter: fcAfter });
+  }
+
   // ─── (일회성) 뒤에 붙은 잉여 칸 통합 정리 — 2026-07-20 GM 확정 ───
   //   GM: "등록매칭도 R 진행현황에 매핑하면 되는데 이것도 새로 만들고, 등록일은 유효회원 시트에 기록하면 되는데
   //        신규문의시트에 추가해놨네, 다른 항목값들도 다 지맘대로 추가해버렸네"
@@ -4861,7 +5058,8 @@ function _processAction(body) {
       if (av && !mv) ccMoves.push({ row: cr + 2, from: av });
     }
     // ② 삭제 후보 — 값 있으면 거부
-    var ccCandidates = ['당일컨택', '등록매칭(자동)', '등록일(자동)', '방문완료일', '예약목록', '연락이력', '등록종목'];
+    var ccCandidates = ['당일컨택', '등록매칭(자동)', '등록일(자동)', '방문완료일', '예약목록', '연락이력', '등록종목',
+                        '문의 경로 (중분류)', '문의 경로 (소분류)', '유입경로(자동)'];   // 뒤 3개는 점검용(삭제 후보 아님 — 값 있으면 자동으로 유지된다)
     var ccReport = [];
     ccCandidates.forEach(function (nm) {
       var ix = ccFind(nm);
@@ -5301,6 +5499,41 @@ function _processAction(body) {
     });
   }
 
+  // ─── (일회성 진단·읽기전용) DATA 탭 canEditByMe:false 원인 규명 — 실행계정 vs 파일소유자 vs 보호편집자 ───
+  //   naver_split_midcat 진단은 '중분류' 헤더 탐색에 의존해 무관한 동시작업(컬럼 개칭)에 깨지기 쉬움 →
+  //   DATA 시트를 이름으로 직접 열어 독립적으로 확인. 2026-07-20 GM 지시(원인 규명).
+  if (action === 'diag_exec_identity_20260720') {
+    try {
+      var deiOut = { effectiveUser: '', activeUser: '', fileOwner: '', dataSheetProtections: [] };
+      try { deiOut.effectiveUser = Session.getEffectiveUser().getEmail(); } catch (e1) { deiOut.effectiveUser = 'ERR:' + String(e1); }
+      try { deiOut.activeUser = Session.getActiveUser().getEmail(); } catch (e2) { deiOut.activeUser = 'ERR:' + String(e2); }
+      try { deiOut.fileOwner = DriveApp.getFileById(MEMBER_SPREADSHEET_ID).getOwner().getEmail(); } catch (e3) { deiOut.fileOwner = 'ERR:' + String(e3); }
+      var deiSs = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+      var deiDataSheet = deiSs.getSheetByName('DATA');
+      if (deiDataSheet) {
+        var deiSheetProts = deiDataSheet.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+        for (var dsp = 0; dsp < deiSheetProts.length; dsp++) {
+          var sp2 = deiSheetProts[dsp];
+          var ed2 = [];
+          try { ed2 = sp2.getEditors().map(function (u) { return u.getEmail(); }); } catch (ee1) {}
+          deiOut.dataSheetProtections.push({ type: 'SHEET', desc: sp2.getDescription(), editors: ed2, canEditByMe: sp2.canEdit() });
+        }
+        var deiRangeProts = deiDataSheet.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+        for (var drp = 0; drp < deiRangeProts.length; drp++) {
+          var rp2 = deiRangeProts[drp];
+          var ed3 = [];
+          try { ed3 = rp2.getEditors().map(function (u) { return u.getEmail(); }); } catch (ee2) {}
+          deiOut.dataSheetProtections.push({ type: 'RANGE', a1: rp2.getRange().getA1Notation(), desc: rp2.getDescription(), editors: ed3, canEditByMe: rp2.canEdit() });
+        }
+      } else {
+        deiOut.dataSheetError = 'DATA 시트 없음';
+      }
+      return _json({ ok: true, result: deiOut });
+    } catch (e) {
+      return _json({ ok: false, error: String(e) });
+    }
+  }
+
   // ─── 네이버 중분류 'N-플레이스(검색)' 분리 (2026-07-20 GM 승인·배9351) ───
   //   문의 경로(중분류) 드롭다운의 'N-플레이스(검색)' 단일값을 'N-플레이스'·'N-검색' 두 값으로 분리.
   //   기존 셀 데이터는 절대 미변경(과거 197건은 그대로 'N-플레이스(검색)'로 남음) — 드롭다운 "목록"만 갱신.
@@ -5383,9 +5616,17 @@ function _processAction(body) {
           } catch (eprot) { nsmRangeInfo.protectionCheckError = String(eprot); }
         } catch (erx) { nsmRangeInfo = { error: String(erx) }; }
       }
+      // 실행 계정 진단 — GAS 웹앱이 실제로 어느 계정으로 도는지(canEditByMe:false 원인 규명, 2026-07-20 GM 지시)
+      var nsmEffectiveUser = '', nsmActiveUser = '', nsmFileOwner = '';
+      try { nsmEffectiveUser = Session.getEffectiveUser().getEmail(); } catch (eeu) { nsmEffectiveUser = 'ERR:' + String(eeu); }
+      try { nsmActiveUser = Session.getActiveUser().getEmail(); } catch (eau) { nsmActiveUser = 'ERR:' + String(eau); }
+      try { nsmFileOwner = DriveApp.getFileById(MEMBER_SPREADSHEET_ID).getOwner().getEmail(); } catch (efo) { nsmFileOwner = 'ERR:' + String(efo); }
       var nsmDiag = {
         ok: true,
         mode: nsmMode,
+        effectiveUser: nsmEffectiveUser,
+        activeUser: nsmActiveUser,
+        fileOwner: nsmFileOwner,
         headerFound: String(nsmHeaders[nsmColIdx]),
         colIndex: nsmColIdx + 1,
         boundFormUrl: nsmBoundForm,
