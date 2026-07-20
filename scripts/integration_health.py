@@ -226,6 +226,29 @@ def check_unpushed() -> tuple[str, bool, str]:
         return name, False, f"점검 실패({type(e).__name__}): {str(e)[:80]}"
 
 
+def check_kpi_freshness() -> tuple[str, bool, str]:
+    """⑥ KPI 집계 신선도: kpi_values.json generated_at 이 25시간 이내(스케줄=07:50·21:00 일 2회,
+    최대 간격 약 13.2h + 1회 결측 여유분).
+    ⚠️ 배1307 재발방지(INC): kpi_collector 가 6일간 조용히 timeout 실패(scheduler.log ERROR만 남고
+    kpi_values.json 은 갱신 없이 그대로 방치)해도 이 체크가 없으면 아무도 몰랐다 — 측정의 측정.
+    """
+    name = "KPI 집계 신선도"
+    path = ROOT / "status" / "kpi_values.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        ts = data.get("generated_at")
+        if not ts:
+            return name, False, "generated_at 없음(형식 이상)"
+        from datetime import datetime
+        gen = datetime.fromisoformat(ts)
+        age_h = (datetime.now(gen.tzinfo) - gen).total_seconds() / 3600
+        if age_h <= 25:
+            return name, True, f"{age_h:.1f}h 전 갱신 — 정상"
+        return name, False, f"{age_h:.1f}h 전 갱신 — 25h 초과(kpi_collector 결측/timeout 의심)"
+    except Exception as e:
+        return name, False, f"점검 실패({type(e).__name__}): {str(e)[:80]}"
+
+
 def check_bridges() -> list[tuple[str, bool, str]]:
     """모든 연동 다리를 점검해 [(이름, ok, 상세)] 반환. 절대 예외로 죽지 않음."""
     checks = (
@@ -234,6 +257,7 @@ def check_bridges() -> list[tuple[str, bool, str]]:
         check_sheet_gas,
         check_review_live,
         check_unpushed,
+        check_kpi_freshness,
     )
     results: list[tuple[str, bool, str]] = []
     for fn in checks:

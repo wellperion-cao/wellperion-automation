@@ -2974,11 +2974,14 @@ def main():
     logger.info("erp_status_publisher 등록 완료 (30분 주기) — 시스템 현황 ERP 발행")
 
     # ── KPI 자동집계 (매일 07:50·21:00 · 기동 시 1회) — S2 라이브 배지 갱신 — CTO 2026-06-23 ──
+    # 배1307 시토 2026-07-20: 07-14 GAS 호출 확장(비교기준선 2종) 이후 실측 211s 소요 →
+    # 구 timeout=120 이 매 실행 강제종료(SIGTERM)해 kpi_values.json 이 07-14 09:17 이후 6일간
+    # 갱신 정지(scheduler.log 전 회차 timeout ERROR 확인). 실측치+여유분으로 300s 상향.
     def _collect_kpi():
         try:
             subprocess.run(
                 [sys.executable, "scripts/kpi_collector.py"],
-                cwd=str(BASE.parent), timeout=120,
+                cwd=str(BASE.parent), timeout=300,
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             )
             logger.info("kpi_collector 실행 완료 (kpi_values.json 갱신)")

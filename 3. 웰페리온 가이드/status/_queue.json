@@ -1566,5 +1566,32 @@
     "artifact": "멤버십 자체폼(intake_submit) 접수 건이 '26년 신규문의' 시트에서 수동 접수 444건과\n다른 포맷/자리로 기록되던 문제 수정(2026-07-20 라이브 447행 실측 기준). (CLI ad-hoc · 커밋 7ad5dbf2)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "7ad5dbf26751b1419257d8eee2becc47341f6efb"
+  },
+  {
+    "task_id": "CTO-2026-07-20-ADHOC-d9f093f1",
+    "clevel": "cto",
+    "title": "[시토] KPI 집계기 복구 — 6일간 조용히 timeout 죽어있던 측정 되살림 (배1307 2차)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9186,
+    "artifact": "진단: kpi_collector.py 자체는 정상(rc=0) — 07-14경 비교기준선 GAS 호출 추가로 실측 소요시간이 캐시미스 시 최대 211s 로 늘었는데 daily_scheduler.py 의 subprocess timeout=120s 는 그대로라 매 스케줄(07:50·21:00·기동시) 강제종료. 6일간 kpi_values.json 동결(완결률 0.0 표시 — 실적 부재 아닌 측정 실패). 완결률 0.0의 '큐→아카이브 이관' 가설은 부분 반박: queue_archive_sweep.py 는 '오늘 아닌 terminal'만 이관해 완결률이 원래 '오늘-only 스냅샷'이라 이른 아침엔 0이 정상 — 별개로 발견한 진짜 왜곡은 기계 자동발행(문의 스냅샷 3분마다 등)이 오늘자 DONE의 다수(cpo 사례: 68/68=100%)를 차지해 완결률을 실무 신호로 못 씀. 수정(즉시): ①daily_scheduler.py timeout 120→300s ②integration_health.py check_kpi_freshness 신설(25h 초과시 health=warn, 재발 시 침묵 방지) — INC-018 GUARDED 등록. 제안(GM 결재 대기, 코드 미반영): 기계발행/실무 배 KPI 분리 집계. (커밋은 뒤이어 push)",
+    "next": "👉 GM: 오늘 21:00 KPI 자동집계도 새 timeout 적용받게 하려면 ops/restart_daily_scheduler.bat 더블클릭+UAC 승인(선택) — 안 하셔도 익일 자동 로그온 재기동으로 자연 반영됨(위험 없음). + 완결률 정의(기계발행 노이즈 분리) GM 결재 대기."
+  },
+  {
+    "task_id": "CPO-2026-07-20-ADHOC-e1195de9",
+    "clevel": "cpo",
+    "title": "[시포] 웹 자동접수 문의 날짜·유입경로·시설투어일 칸 정합화 (재커밋)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9187,
+    "artifact": "이전 커밋 7ad5dbf2가 동시 커밋 경합으로 엉뚱한 파일(문의회원.html)에 붙어\nSurvey.js 변경분이 실제로는 반영되지 않았음 — 이 커밋으로 정정. (CLI ad-hoc · 커밋 e1195de9)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e1195de9b871f2d06bb4fa7c77bdd8cdb2e35418"
   }
 ]

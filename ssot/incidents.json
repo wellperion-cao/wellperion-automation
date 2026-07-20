@@ -248,7 +248,9 @@
     {
       "id": "INC-015",
       "date": "2026-07-18",
-      "watch_globs": [".deploy-funnel/Survey.js"],
+      "watch_globs": [
+        ".deploy-funnel/Survey.js"
+      ],
       "gate": "warn",
       "요약": "문의 알림 백업(5분 폴러)이 기존 문의를 새 문의로 오인해 실무진 방에 재발송(플러드)한 문제. 인테이크 시트를 '최근 문의 맨 위 삽입'으로 바꾸자 행번호로 '어디까지 알렸나'를 표시하던 마커가 밀려 옛 행을 새 걸로 착각. 삽입 위치와 무관한 타임스탬프 기준으로 바꿔 막음.",
       "증상": "시포가 강습 인테이크 시트를 상단삽입으로 개조한 뒤, _notifyNewInquiries_(5분 트리거)가 물리 행번호(storedRow) 기준으로 신규를 판별하는데 상단삽입으로 realLastRow가 늘고 밀려난 옛 행을 신규로 오인 재발송 → 문의알림방(실무진 포함) 플러드. GM이 실무진 신뢰 저하로 발견. 실시간 onSubmit 알림은 정상.",
@@ -261,7 +263,11 @@
     {
       "id": "INC-016",
       "date": "2026-07-20",
-      "watch_globs": ["scripts/case_series_dispatch.py", "scripts/.review_card_msgids.json", "telegram_bot/bot.py"],
+      "watch_globs": [
+        "scripts/case_series_dispatch.py",
+        "scripts/.review_card_msgids.json",
+        "telegram_bot/bot.py"
+      ],
       "gate": "warn",
       "요약": "실전사례 8편이 재고표 재선정으로 다른 날짜 id로 재등록되며 카드발송 멱등판정이 어긋나 이미 나간 승인카드가 재발송됨. GM 결정으로 8편 취소·9편으로 시리즈 마감, 재발송 가드 + 멱등키를 편 번호(CASE{NN}) 기준으로 전환.",
       "증상": "07:30 실전사례 8·9편 승인카드가 4초 간격으로 2건 발송됨. 9편만 GM 승인되어 07:53 발행 완료. 8편은 검수대기 상태로 남음 — 사실은 7/17에 이미 카드가 나갔던 편이 7/18 재고표 재선정으로 새 id(CMO-2026-07-20-CASE08-데이터현황)로 재등록되며 중복 발송된 것.",
@@ -274,7 +280,11 @@
     {
       "id": "INC-017",
       "date": "2026-07-20",
-      "watch_globs": ["scripts/sync_queue_mirror.py", ".git/hooks/pre-commit", "scripts/pre-commit.hook"],
+      "watch_globs": [
+        "scripts/sync_queue_mirror.py",
+        ".git/hooks/pre-commit",
+        "scripts/pre-commit.hook"
+      ],
       "gate": "warn",
       "요약": "pre-commit 훅의 _queue.json 발행루트 미러 동기화(sync_queue_mirror.py)가 작업트리 디스크를 무조건 직독해, 이번 커밋과 무관한 동시 세션의 스테일 편집까지 미러에 복사·git add 될 수 있었다(커밋 504b6c4f의 원인). --pre-commit 플래그로 '이번 커밋에 실제 staged된 원본'만 인덱스에서 읽도록 전환. 배1307(웰리 무인 러너 working_tree_dirty 70% 헛돎 수리) 실행 중 원인 재확인 과정에서 재발견·수리.",
       "증상": "2026-07-20 08:06 커밋 95941ff0(실전사례 8편 취소)에 status/_queue.json·미러 사본이 92→30건으로 축소된 상태로 함께 실렸다(다른 세션이 작업트리에 남겨둔 스테일 사본을 pre-commit 훅이 자동 git add). GM이 커밋 504b6c4f로 수동 복구. sync_queue_mirror.sync_one()이 원본을 항상 파일시스템에서 직독(read_bytes(path))하고, 그 결과가 HEAD와 다르면 무조건 미러에 쓰고 git add — 이번 커밋이 원본을 실제로 건드리는지(staged 여부)는 전혀 확인하지 않았다.",
@@ -283,6 +293,23 @@
       "차단조치": "sync_one()에 require_staged 인자 추가. pre-commit 훅 호출(python sync_queue_mirror.py --pre-commit)은 require_staged=True로 고정 — git diff --cached --name-only로 원본이 이번 커밋에 실제 staged됐는지 먼저 확인하고, staged가 아니면 그 쌍은 skip(무관 상태 혼입 원천 차단), staged면 디스크가 아닌 인덱스(git show :path, staged blob)에서 읽는다. 커밋과 무관한 명시적 드리프트 자가치유 호출(erp_status_publisher.py·gm_aide_scan.py, main() 무인자)은 require_staged=False 기본값으로 기존 디스크 직독 동작 그대로 유지(그 호출들은 '지금 디스크 상태를 즉시 반영'이 의도된 동작이라 하위호환 보존). 부수: sync_one() 내부 git add 호출에 cwd=root 누락도 함께 수정(비-repo-root cwd에서 호출 시 엉뚱한 워킹트리에 add되는 사고 방지 — 디버깅 중 실제 재현해 발견).",
       "상태": "GUARDED",
       "검증증거": "격리 tmp git repo(실제 레포 무오염 확인 — repo_root() 몽키패치로 완전 분리)로 사고 재현: require_staged=False(구코드 동작)로 커밋과 무관한 unrelated.py만 add했는데도 원본의 스테일 디스크 상태([1,2,3]→[1])가 미러에 그대로 복사됨(FAIL 재현). require_staged=True(신코드)로 동일 시나리오 재실행 시 미러는 [1,2,3] 그대로 유지·무관 커밋에 섞이지 않음(PASS). 실제 이 수정 커밋(75d1d4e9) 자체를 pre-commit 훅 --pre-commit 경로로 실제 실행해 4개 의도 파일만 정상 커밋됨을 실측(라이브 회귀 확인 — 훅 로그에 '미러 동기화' 출력, git show --stat으로 의도 밖 파일 혼입 없음 확인). tests/test_welly_auto_runner.py 114/114 통과(별도 sweep 테스트 포함, sync_queue_mirror 자체는 전용 pytest 스위트 없어 위 격리 스크립트 재현이 검증 근거)."
+    },
+    {
+      "id": "INC-018",
+      "date": "2026-07-20",
+      "watch_globs": [
+        "telegram_bot/daily_scheduler.py",
+        "scripts/kpi_collector.py",
+        "status/kpi_values.json"
+      ],
+      "gate": "warn",
+      "요약": "kpi_collector.py 가 2026-07-14 13:20 이후 daily_scheduler.py 의 subprocess timeout=120s 에 매 실행(07:50·21:00·기동시) 강제종료(TimeoutExpired)당해 status/kpi_values.json 이 6일간(07-14 09:17 → 07-20 09:53) 갱신 정지 — 전 역할 완결률 0.0/완료 0 으로 죽어보였다. scheduler.log 는 매 회 ERROR 를 남겼으나 누구도 인지하지 못함(측정의 측정 부재). 배1307(북극성 브릿지) 2차 실행분, 러너 정지 해결(커밋 75d1d4e9)의 후속 원인 조사에서 발견.",
+      "증상": "status/kpi_values.json generated_at 이 2026-07-14T09:17:02 에 고정, 전 역할 완결률=0.0/완료=0/활성=N 으로 표시(실제로는 같은 기간 _queue_archive.json 에 DONE 1123척 존재 — 측정 실패이지 실적 부재 아님). telegram_bot/scheduler.log.2026-07-14 ~ .2026-07-19 전 파일에서 'kpi_collector 실행 실패: ... timed out after 120 seconds' 가 매 스케줄(07:50·21:00·기동시)마다 반복 기록됨.",
+      "본질": "검증멈춤. kpi_collector.py 가 2026-07-14 경 _cpo_funnel_conversion()·_cfo_sales_month() 에 비교기준선용 GAS 호출 2~3건(개별 timeout=45s)이 추가되며 실제 소요시간이 캐시미스 시 최대 211초까지 늘어났는데, daily_scheduler.py 의 하드코딩 subprocess timeout=120s 는 그대로였다. 매 실행이 SIGTERM 으로 죽어 kpi_values.json 은 그냥 예전 값으로 남았고, 그 '멈춘 값'이 '측정 실패'가 아니라 '완결률 0'이라는 그럴듯한 숫자로 보여 누구도 이상 신호로 못 알아챔 — 측정 파이프라인 자체의 생존을 감시하는 장치가 없었다.",
+      "뿌리분류": "검증멈춤",
+      "차단조치": "① telegram_bot/daily_scheduler.py _collect_kpi() subprocess timeout 을 120s → 300s 로 상향(실측 최대 211s + 여유). ② scripts/integration_health.py 에 check_kpi_freshness() 신설·check_bridges() 에 편입 — kpi_values.json generated_at 이 25h(스케줄 최대간격 13.2h + 1회 결측 허용) 초과 시 global.health='warn' 으로 즉시 드러남 (재발 시 침묵하지 않고 KPI 자체가 자기 신선도를 보고).",
+      "상태": "GUARDED",
+      "검증증거": "kpi_collector.py 를 직접 1회 실행해 rc=0·211s 로 성공 확인(구 120s timeout 초과분 실측 재현) → status/kpi_values.json 이 2026-07-20 09:53 KST 로 갱신되고 cpo 완료=68·cto 완료=10·cmo 완료=8 등 실제 status/_queue.json 의 DONE 건수(clevel별 카운트 대조)와 일치함을 확인. 재실행(09:59) 시 GAS 캐시 히트로 31s 만에 완료 — 300s 상향 여유분 타당성 확인. check_bridges() 단독 실행으로 신설 check_kpi_freshness 가 '0.0h 전 갱신 — 정상' 정상 출력 확인(6/6 OK). ⚠️ daily_scheduler.py 코드 수정은 커밋에 반영했으나, 이미 가동 중인 WellperionDailyScheduler 프로세스(elevated, RunLevel=HighestAvailable)는 재기동 전까지 구 timeout=120s 를 메모리에 그대로 들고 있다 — 재기동은 ops/restart_daily_scheduler.bat(GM UAC 승인 필요) 또는 익일 자동 로그온 재기동으로 라이브 반영."
     }
   ]
 }
