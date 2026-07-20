@@ -316,11 +316,12 @@
     "status": "PENDING",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-20",
-    "note": "2026-07-20 GM 지시. 물리 삭제 금지(인덱스 하드코딩 파손 위험). 조사 진행 중. | [2026-07-20 시모 인계 — 배9358에서 append] ⚠️ 착수 전 확인: '유입경로(자동)' 칸은 시모 소유다. Survey.js:2767이 이 칸에 UTM 3세그먼트(source|medium|content)를 기록하며, utm_content가 인스타 계정 구분(official/namuk)을 담는 유일한 칸이다(커밋 5f716aa6). 시포_배치_20260720_확정스펙 §1-A는 이 칸을 중분류에 병합 후 삭제하고 채널판정을 3단→2단 축소하라고 적고 있으나, 그대로 실행하면 계정별 기여 측정이 불가로 회귀하고 중분류 한 칸에 3세그먼트를 합치는 것은 커밋 5f716aa6가 금지한 방식(채널 버킷 갈라짐)이다. → 삭제·병합은 GM 재확정 후에만. JSON 오염 정리(상담로그가 잘못 들어간 건)는 이 제약과 무관하므로 계속 진행 가능. 기준선 문서: status/briefs/CMO-to-CPO-채널귀속-기준선-20260720.md §5-A | [2026-07-20 GM부재중 보호조치 — append] §1-A 잔여 실행 동결: GM 재확정 전 '유입경로(자동)' 칸(=현 F열, 개칭 후 616건 채널정본 보유) 삭제 금지. 이유: finalize_cols_20260720/dedup_autoroute_20260720 실행으로 이름이 개칭·재사용되며 이름과 내용이 어긋났다(과거 UTM 전용 칸이 아니라 채널 귀속 정본이 이 이름 아래 있음). Survey.js에 내용기반 삭제가드(_guardColDeleteByContent20260720_, 임계10건) 추가 완료. 상세: status/briefs/CMO-to-CPO-채널귀속-기준선-20260720.md 상단 🔴긴급갱신. | [2026-07-20 GM부재중 보호조치 — append2] 내일 07:50 cpo_sheet_contract.py 대조 예고: ssot/sheet_columns.json이 32칸 기준인데 오늘 칸 정리(finalize_cols/dedup_autoroute/consolidate_cols)로 라이브가 22칸 — req:true 칸은 안 건드려 🔴 오탐 가능성은 낮지만 🟡/🟢 드리프트 로그가 대량 발생할 수 있음. 임의 재시드 금지 — 시포가 정리 완료 확정 후 --seed. 상세: ssot/sheet_columns.json _known_drift_20260720.",
+    "note": "2026-07-20 GM 지시. 물리 삭제 금지(인덱스 하드코딩 파손 위험). 조사 진행 중. | [2026-07-20 시모 인계 — 배9358에서 append] ⚠️ 착수 전 확인: '유입경로(자동)' 칸은 시모 소유다. Survey.js:2767이 이 칸에 UTM 3세그먼트(source|medium|content)를 기록하며, utm_content가 인스타 계정 구분(official/namuk)을 담는 유일한 칸이다(커밋 5f716aa6). 시포_배치_20260720_확정스펙 §1-A는 이 칸을 중분류에 병합 후 삭제하고 채널판정을 3단→2단 축소하라고 적고 있으나, 그대로 실행하면 계정별 기여 측정이 불가로 회귀하고 중분류 한 칸에 3세그먼트를 합치는 것은 커밋 5f716aa6가 금지한 방식(채널 버킷 갈라짐)이다. → 삭제·병합은 GM 재확정 후에만. JSON 오염 정리(상담로그가 잘못 들어간 건)는 이 제약과 무관하므로 계속 진행 가능. 기준선 문서: status/briefs/CMO-to-CPO-채널귀속-기준선-20260720.md §5-A | [2026-07-20 GM부재중 보호조치 — append] §1-A 잔여 실행 동결: GM 재확정 전 '유입경로(자동)' 칸(=현 F열, 개칭 후 616건 채널정본 보유) 삭제 금지. 이유: finalize_cols_20260720/dedup_autoroute_20260720 실행으로 이름이 개칭·재사용되며 이름과 내용이 어긋났다(과거 UTM 전용 칸이 아니라 채널 귀속 정본이 이 이름 아래 있음). Survey.js에 내용기반 삭제가드(_guardColDeleteByContent20260720_, 임계10건) 추가 완료. 상세: status/briefs/CMO-to-CPO-채널귀속-기준선-20260720.md 상단 🔴긴급갱신. | [2026-07-20 GM부재중 보호조치 — append2] 내일 07:50 cpo_sheet_contract.py 대조 예고: ssot/sheet_columns.json이 32칸 기준인데 오늘 칸 정리(finalize_cols/dedup_autoroute/consolidate_cols)로 라이브가 22칸 — req:true 칸은 안 건드려 🔴 오탐 가능성은 낮지만 🟡/🟢 드리프트 로그가 대량 발생할 수 있음. 임의 재시드 금지 — 시포가 정리 완료 확정 후 --seed. 상세: ssot/sheet_columns.json _known_drift_20260720. | [2026-07-21 시모→시포 통보] §1-A(유입경로(자동) 병합삭제) GM 재결재로 취소 — \"둘 다 살린다\"(회원작성 중분류칸+유입경로(자동) 자동칸 둘 다 유지, 3단 판정 유지). utm_content=계정 official/namuk 구분 유일칸이라 삭제 시 계정귀속 회귀. 시포 스펙 §1-A에 취소배너 반영. 정본=status/briefs/CMO-to-CPO-채널귀속-기준선-20260720.md §5-A(해소). 시포 액션=§1-A 실행하지 말 것(병합/삭제/2단축소 전부 취소).",
     "next": "조사 후 배선제거+숨김 방식으로 정리 진행 | ⚠️ '유입경로(자동)' 칸 삭제·중분류 병합은 GM 재확정 전 금지(시모 UTM 귀속 유실) — 기준선 §5-A | ⚠️ §1-A 잔여 실행(F열=유입경로(자동) 삭제) 동결 — GM 재확정 전 금지(이름 개칭으로 이름≠내용)",
     "depends_on": "",
     "ship_no": 9203,
-    "module": "cpo"
+    "module": "cpo",
+    "updated_at": "2026-07-21T00:00:00Z"
   },
   {
     "task_id": "CPO-2026-07-20-INSTRUCTOR-ASSIGNMENT-SSOT",
@@ -550,5 +551,34 @@
     "artifact": "성인·유소년 wishTime을 type:text→daytime으로 전환.\n요일(월~일)+시간대(오전/오후/저녁) 복수선택 체크박스, collect에서\n한 칸(wishTime)으로 합쳐 저장('월,수/오전,저녁'). 시트·ERP 페이지\n단일칸 그대로(칸·행 추가 0). 라이브 WP 재주입은 GM 발효 대기. (CLI ad-hoc · 커밋 af27067d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "af27067db4826b8281366d905c92f6af4c85373d"
+  },
+  {
+    "task_id": "AIDE-2026-07-21-LONG-PENDING-9420",
+    "clevel": "cto",
+    "title": "[GM보좌 제안] [CTO-2026-06-18-PII-PROTECTION-REDESIGN] 33일째 PENDING 장기 미착수",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-21",
+    "ship_no": 9420,
+    "note": "[2026-07-21 GM보좌 제안·웰리 포착] 33일 대기 — 우선순위 재확인 또는 폐기(삭제) 판단 필요(GM 결정 게이트) (포착유형=long_pending · 가역성=비가역 · 근거=enqueued_at=2026-06-18 priority=HIGH title=[시토] 회원 개인정보 보호 큰 틀 재설계 — 무인증 노출 근본 차단(인증·접근통제 아키텍). 조치안: GM 결정 필요(착수/우선순위 하향/폐기) — 비가역(폐기) 포함 → 제안만. KPI→북극성: [cto·시토] 현재 KPI(완결률=0.6667, 완료=24, 활성=12, 기계발행_건수=0) → 북극성 '서버·ERP 백엔드(서버+시트)단을 GM이 신경 안 써도 되게' 로 잇는 결정 게이트. GM프로필 근거(자주 놓치는 것): **완료 건의 '다음 한 수'를 자주 놓친다.** 표류 11건이 대표 근거 — 라이브 표류가 0건인 것은 웰리가 그때그때 메워 온 덕분이며, 개입이 없으면 표류로 남을 소지가 크다. ※ phase1=제안(대기)까지만 — 실제 도메인 작업은 GM 결정 후.",
+    "next": "",
+    "depends_on": "",
+    "source": "gm_aide_scan",
+    "reversibility": "비가역",
+    "aide_proposal_key": "gmaide|long_pending|CTO-2026-06-18-PII-PROTECTION-REDESIGN"
+  },
+  {
+    "task_id": "CPO-2026-07-21-ADHOC-ad68d56f",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9421,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 ad68d56f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "ad68d56fe3ab4ff94f20ece40aa9eb1b4846fcb7"
   }
 ]
