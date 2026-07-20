@@ -1732,7 +1732,8 @@ var _LESSON_MGMT_FIELDS = [
   { keys: ['진행상태', '진행현황', '진행상황', '진행 상황', '상태'], canon: '진행 상황' },
   { keys: ['관리담당', '지정 강사'],                                 canon: '지정 강사' },
   { keys: ['상담메모', '메모', '비고'],                             canon: '비고' },
-  { keys: [CONTACT_HIST_COL, 'Contact'],                            canon: 'Contact' }
+  { keys: [CONTACT_HIST_COL, 'Contact'],                            canon: 'Contact' },
+  { keys: ['등록종목'],                                             canon: '등록종목' }        // 등록(SUC) 시 실제 등록한 종목 — 멤버십 member_inquiry_update와 동일 체계. 정확일치 전용 키(부분일치 충돌 방지 — '성인 강습 종목'/'WSC 강습 종목' 등 기존 종목칸과 별개). 2026-07-20 시포(GM요청).
 ];
 
 // gid 매칭 시트 핸들(탭명 변경에 강함).
@@ -1781,6 +1782,7 @@ function _lessonReadRows_(gid) {
   var iVisit = _findCol_(hdr, ['방문상태', '방문']);
   var iHist  = _findCol_(hdr, [CONTACT_HIST_COL, 'Contact']);  // 연락이력(JSON) 우선 → GM flat M컬럼 'Contact'(줄바꿈 포함이라 부분일치). 2026-07-14 시포·GM(배973)
   var iSportMgmt = _findColExact_(hdr, [LESSON_SPORT_MGMT_COL]);  // 종목별관리(JSON) — 축7. 2026-07-08 시포·GM
+  var iRegProgram = _findCol_(hdr, ['등록종목']);  // 등록(SUC) 시 실제 등록한 종목(강습) — 멤버십과 동일 체계. 2026-07-20 시포(GM요청).
   var iLang  = _findCol_(hdr, ['Language']);  // 응답자 기재 언어(영문 탭 실측 헤더) — 영어 문의 뱃지 표시용. 2026-07-09 시포·GM
   // 영문 탭 행키 오프셋(_ROW_OFFSET_EN_) — 한글+영문 병합 시 rowIndex 충돌 방지(위 상수 주석 참고). 2026-07-09 시포·GM.
   var rowOffset = (gid === LESSON_GID_ADULT_EN || gid === LESSON_GID_YOUTH_EN) ? _ROW_OFFSET_EN_ : 0;
@@ -1822,6 +1824,7 @@ function _lessonReadRows_(gid) {
       contacts: _lHistArr,
       // 종목별 독립 관리(축7) — 파싱맵(없으면 {}). 분리 로직은 프론트에서만(GM 결정) — 여기선 원맵만 반환.
       bySport: _lessonSportMgmtParse_(iSportMgmt >= 0 ? row[iSportMgmt] : ''),
+      regProgram: iRegProgram >= 0 ? String(row[iRegProgram] || '') : '',   // 등록 종목(SUC 시 실제 등록한 종목, 강습). 2026-07-20 시포(GM요청).
       // 출처 물리 시트 gid + 기재 언어 — 영문 탭 병합 표시·저장 라우팅용(row.gid 그대로 되돌려 보내면 정확한 탭에 기록). 2026-07-09 시포·GM.
       gid: gid,
       lang: iLang >= 0 ? String(row[iLang] || '').trim() : ''
@@ -3394,6 +3397,7 @@ function _processAction(body) {
       _luSet(['상담메모', '메모', '비고'], body.memo);
       _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
       _luSet(['방문상태', '방문'], body.visited);
+      _luSet(['등록종목'], body.regProgram);        // 강습 등록 종목(SUC 시 실제 등록한 종목) — 멤버십과 동일 체계, 칸 자동생성. 2026-07-20 시포(GM요청).
       // ── 연락이력(가변) — 축2/축4: body.contacts(JSON 문자열/배열) 수신 시 저장. 미전송이면 무영향(기존 필드만 갱신).
       //    상담메모는 위 _luSet으로 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
       var _luHistPrevCount = 0;
