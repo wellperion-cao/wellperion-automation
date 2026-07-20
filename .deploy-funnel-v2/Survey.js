@@ -3157,10 +3157,17 @@ function _processAction(body) {
   }
 
   // ─── 문의회원 페이지(CPO): 익명 문의 목록 (A안 공개·이름/전화/메모 0) ───
+  //   from/to(YYYY-MM-DD, 옵션) — 2026-07-20 시포. 타임스탬프(B열) 기준 필터(row.timestamp=_miToISO_ 결과,
+  //   '타임스탬프' 칼럼을 '날짜'보다 우선탐색하는 _miColIdx_ 순서 그대로 재사용 — A열 '날짜' 문자열 불신 이슈 무관).
+  //   미전달 시 기존과 100% 동일(전체 반환) — 하위호환. 부분 지정(from만/to만)도 허용.
   if (action === 'member_inquiry_list') {
+    var miFrom = String(body.from || '').trim();
+    var miTo   = String(body.to   || '').trim();
+    var miPeriod = !!(miFrom || miTo);
     // 조회 캐시(축1, TTL 60초) — nocache=1 우회. 미스·실패 시 그대로 시트 재조회 폴백. 2026-07-08 시토.
+    //   기간 지정 시 캐시키 분리(micache_from_to) — 무지정 호출의 기존 캐시키('micache')는 그대로 보존(하위호환).
     var miCache = CacheService.getScriptCache();
-    var miCacheKey = 'micache';
+    var miCacheKey = miPeriod ? ('micache_' + miFrom + '_' + miTo) : 'micache';
     if (!_nc) {
       var miHit = _cacheGetJson_(miCache, miCacheKey);
       if (miHit) return _json(miHit);
@@ -3168,10 +3175,128 @@ function _processAction(body) {
     // 한글 '26년 신규문의' + 영문 멤버십 탭 병합 — 영어 문의 누수 수리(2026-07-09 시포·GM). 영문 탭 미존재/에러는 조용히 스킵(무중단).
     var miRows = _miReadRows_(_miSheet_());
     try { miRows = miRows.concat(_miReadRows_(_miSheetEn_())); } catch (eMiEn) {}
+    if (miPeriod) {
+      // 문자열(YYYY-MM-DD) 범위 비교 — timestamp가 이미 _miToISO_로 정규화돼 사전식=시간순 일치. 빈 타임스탬프는
+      // 귀속 불가로 스킵(조용한 오포함 방지) — _lessonScopeFilter_ 의 "파싱 실패는 포함" 정책과 반대 성격
+      // (여기는 스캔 누락 방지가 아니라 특정 구간 조회이므로 귀속 불가 행을 넣으면 구간 밖 값이 섞임).
+      miRows = miRows.filter(function(row) {
+        var ts = row.timestamp;
+        if (!ts) return false;
+        if (miFrom && ts < miFrom) return false;
+        if (miTo   && ts > miTo)   return false;
+        return true;
+      });
+    }
     var _miFull = true;  // 2026-06-25 GM '성함·연락처 다 공개' — 마스킹 해제(무인증 공개 주의·시토 인증게이트 전제)
-    var miResult = { ok: true, count: miRows.length, data: miRows, anon: !_miFull };
+    var miResult = { ok: true, count: miRows.length, data: miRows, anon: !_miFull, period: miPeriod ? { from: miFrom, to: miTo } : null };
     _cachePutJson_(miCache, miCacheKey, miResult, 60);
     return _json(miResult);
+  }
+
+  // ─── 신규 문의 & 등록 현황(CPO): 집계 전용 액션 — 원본 행 미반환, 집계값만 ───
+  //   시우 인계(status/briefs/시포_인계_문의등록현황_개편_20260720.md) 1단계 — 근본원인(집계 엔드포인트 부재)
+  //   해소용 신설. member_inquiry_list(632건/584KB 전량) 대신 이 액션으로 화면 KPI·분포 렌더 가능.
+  //   from/to(YYYY-MM-DD, 옵션) — 둘 다 없으면 전체 누적. 유형 3종(멤버십·성인강습·유소년강습) 개별 집계 + overall 합산.
+  //   2026-07-20 시포.
+  if (action === 'inquiry_stats') {
+    var isFrom = String(body.from || '').trim();
+    var isTo   = String(body.to   || '').trim();
+    var isPeriod = !!(isFrom && isTo);
+
+    var isCache = CacheService.getScriptCache();
+    var isCacheKey = 'is_v1_' + isFrom + '_' + isTo;
+    if (!_nc) {
+      var isHit = _cacheGetJson_(isCache, isCacheKey);
+      if (isHit) return _json(isHit);
+    }
+
+    // 직전 동일 길이 구간(전기 대비) — from/to 둘 다 있을 때만 산출. 하나만 지정된 개방구간은 비교 대상 불명확 → 스킵(null).
+    var isPrevFrom = '', isPrevTo = '';
+    if (isPeriod) {
+      var _isFromDt = new Date(isFrom + 'T00:00:00+09:00');
+      var _isToDt   = new Date(isTo   + 'T00:00:00+09:00');
+      var _isSpanMs = _isToDt.getTime() - _isFromDt.getTime();  // 포함 일수 - 1일치 ms
+      var _isPrevToDt   = new Date(_isFromDt.getTime() - 86400000);
+      var _isPrevFromDt = new Date(_isPrevToDt.getTime() - _isSpanMs);
+      isPrevFrom = Utilities.formatDate(_isPrevFromDt, 'Asia/Seoul', 'yyyy-MM-dd');
+      isPrevTo   = Utilities.formatDate(_isPrevToDt,   'Asia/Seoul', 'yyyy-MM-dd');
+    }
+    // 문자열(YYYY-MM-DD) 범위 판정 — member_inquiry_list from/to 필터와 동일 SSOT 로직(사전식=시간순).
+    function _isInRange(ts, from, to) {
+      if (!ts) return false;
+      if (from && ts < from) return false;
+      if (to   && ts > to)   return false;
+      return true;
+    }
+    var _isSucSet = { 'SUC': 1, '단기SUC': 1 };  // 등록 전환 판정 — 두 시트(멤버십·강습) 진행상태 공통 allowed값(ssot/sheet_columns.json)
+    function _isSortDist(obj) {
+      return Object.keys(obj).map(function(k){ return { label: k, count: obj[k] }; })
+        .sort(function(a, b){ return b.count - a.count; });
+    }
+    // rows[].timestamp(_miToISO_ 결과)·status·channel 셋을 공유하는 멤버십/강습 두 소스에 공통 적용.
+    function _isAggregate(rows) {
+      var curCount = 0, curConv = 0, prevCount = 0;
+      var byStatus = {}, byChannel = {};
+      rows.forEach(function(row) {
+        var inCur = isPeriod ? _isInRange(row.timestamp, isFrom, isTo) : !!row.timestamp;
+        if (inCur) {
+          curCount++;
+          var st = String(row.status || '').trim() || '(미기재)';
+          byStatus[st] = (byStatus[st] || 0) + 1;
+          var ch = _canonicalChannel_(row.channel || '');
+          byChannel[ch] = (byChannel[ch] || 0) + 1;
+          if (_isSucSet[st]) curConv++;
+        }
+        if (isPeriod && _isInRange(row.timestamp, isPrevFrom, isPrevTo)) prevCount++;
+      });
+      var deltaPct = (isPeriod && prevCount > 0) ? Math.round((curCount - prevCount) / prevCount * 1000) / 10 : null;
+      return {
+        count: curCount,
+        prevCount: isPeriod ? prevCount : null,
+        deltaPct: deltaPct,
+        converted: curConv,
+        conversionRate: curCount > 0 ? Math.round(curConv / curCount * 1000) / 10 : 0,
+        byStatus: _isSortDist(byStatus),
+        byChannel: _isSortDist(byChannel)
+      };
+    }
+
+    // 멤버십 — member_inquiry_list와 동일 소스(한글+영문 탭 병합).
+    var isMemberRows = _miReadRows_(_miSheet_());
+    try { isMemberRows = isMemberRows.concat(_miReadRows_(_miSheetEn_())); } catch (eIsEn) {}
+    // 강습(성인/유소년) — lesson_stats와 동일 소스(한글+영문+자체폼 신규문의 병합). scope=all 상당(연도 제한 없음) —
+    //   from/to가 직접 구간을 지정하므로 _lessonScopeFilter_(연도 제한)는 적용하지 않음(과거 연도 조회 시 누락 방지).
+    var isAdultRows = _lessonReadRowsMerged_({ type: '성인강습' });
+    var isYouthRows = _lessonReadRowsMerged_({ type: '유소년강습' });
+
+    var isTypes = {
+      멤버십:   _isAggregate(isMemberRows),
+      성인강습: _isAggregate(isAdultRows),
+      유소년강습: _isAggregate(isYouthRows)
+    };
+    var ovCount = 0, ovConv = 0, ovPrev = 0;
+    Object.keys(isTypes).forEach(function(k) {
+      ovCount += isTypes[k].count;
+      ovConv  += isTypes[k].converted;
+      if (isTypes[k].prevCount != null) ovPrev += isTypes[k].prevCount;
+    });
+    var isResult = {
+      ok: true,
+      generatedAt: _now(),
+      periodMode: isPeriod,
+      period: { from: isFrom, to: isTo },
+      prevPeriod: isPeriod ? { from: isPrevFrom, to: isPrevTo } : null,
+      types: isTypes,
+      overall: {
+        count: ovCount,
+        converted: ovConv,
+        conversionRate: ovCount > 0 ? Math.round(ovConv / ovCount * 1000) / 10 : 0,
+        prevCount: isPeriod ? ovPrev : null,
+        deltaPct: (isPeriod && ovPrev > 0) ? Math.round((ovCount - ovPrev) / ovPrev * 1000) / 10 : null
+      }
+    };
+    try { isCache.put(isCacheKey, JSON.stringify(isResult), isPeriod ? 300 : 60); } catch (eIsCache) { /* 캐시 실패 무시 */ }
+    return _json(isResult);
   }
 
   // ─── 문의회원 페이지(CPO): 행 추가 (전화·직접 문의 수기 입력) ───
