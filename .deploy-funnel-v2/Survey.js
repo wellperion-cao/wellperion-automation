@@ -3119,6 +3119,30 @@ function _processAction(body) {
     var _idBlankRows = [];
     for (var i6 = 0; i6 < _idData.length; i6++) { if (_idIsBlank_(_idData[i6])) _idBlankRows.push(i6 + 2); }
 
+    // ⑦ [2026-07-20 추가·완전성 확인용] 권소현 앵커+1·+2행(복구대상 2건) 전체 칸 덤프 — 헤더-값 쌍 전부.
+    //   타임스탬프가 실제 Date인지(문자열 아님) 구분 위해 typeof/instanceof도 함께 반환. 읽기만(getValues) — 쓰기 없음.
+    function _idFullRow_(physicalRow) {
+      if (physicalRow < 2 || physicalRow > _idLast) return { rowNum: physicalRow, outOfRange: true };
+      var arr = _idData[physicalRow - 2];
+      var cells = {};
+      for (var c = 0; c < _idHdr.length; c++) {
+        var key = _idHdr[c] || ('(빈헤더_' + c + ')');
+        var raw = arr[c];
+        var isDateVal = (raw instanceof Date) && !isNaN(raw.getTime());
+        cells[key] = {
+          value: isDateVal ? Utilities.formatDate(raw, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : (raw === null || raw === undefined ? '' : String(raw)),
+          type: isDateVal ? 'Date' : (typeof raw)
+        };
+      }
+      return { rowNum: physicalRow, isBlank: _idIsBlank_(arr), cells: cells };
+    }
+    var _idFullRows = [];
+    if (_idKwonRows.length > 0) {
+      var _idAnchor2 = _idKwonRows[0];
+      _idFullRows.push(_idFullRow_(_idAnchor2 + 1));
+      _idFullRows.push(_idFullRow_(_idAnchor2 + 2));
+    }
+
     return _json({
       ok: true,
       totalRows: _idLast,   // ⑤ getLastRow()
@@ -3130,7 +3154,8 @@ function _processAction(body) {
         '010-8816-2121': _idNew2Rows
       },
       blankRows: _idBlankRows,
-      blankRowCount: _idBlankRows.length
+      blankRowCount: _idBlankRows.length,
+      fullRows: _idFullRows   // ⑦ 앵커+1·+2행 전체 칸(헤더-값-타입) — 완전성 확인용
     });
   }
 
