@@ -4145,6 +4145,61 @@ function _processAction(body) {
     return _json({ ok: true, phone: mosPhone, field: mosField, value: mosValue, rowIndex: mosRow });
   }
 
+  // ─── [일회성 · GM 직접 지시 · 실행 후 제거] 담당자 일괄 변경(유효회원 시트) — 2026-07-20 시포 ───
+  //   대상 4건 고정 하드코딩(field/oldValue/newValue를 호출부 파라미터로 받지 않음 — 임의값 주입으로
+  //   다른 회원·다른 칸이 덮어써지는 경로 원천 차단. 오늘 INC-020 사고 재발방지 원칙 적용).
+  //   ① 스쿼시 담당자: 최수진→이상훈(178건 실측) ② 스쿼시 담당자: 이우성→이상훈(5건 실측)
+  //   ③ 골프 담당자: 김명선→최현준(2건 실측) ④ 골프 담당자: 정시우→최현준(24건 실측)
+  //   ※ GM 표현은 "OO 팀장"이었으나 시트 기존 표기(이름만)를 그대로 따름 — 직함 병기 시 기존 값과
+  //     표기가 갈려 집계가 깨짐(GM 확인).
+  //   안전장치: 헤더 정확일치(indexOf 부분일치 금지) · 해당 칸 현재값이 정확히 구담당자인 행만 ·
+  //            deleteRow/insertRows/sort 호출 전무(단일셀 setValue만) · dryRun 기본값 true(명시적
+  //            dryRun:false 만 실제 실행) · 실행 직전 셀 재조회로 레이스 방지 · 쓰기 전후 총행수 비교 반환.
+  //   _SURVEY_PUBLIC_ACTIONS 화이트리스트에 넣지 않음(add_utm_field와 동일 원칙 — 폼/데이터 변형 액션).
+  if (action === 'bulk_owner_reassign') {
+    var BOR_PAIRS = [
+      { key: 'squash1', field: '스쿼시 담당자', oldValue: '최수진', newValue: '이상훈' },
+      { key: 'squash2', field: '스쿼시 담당자', oldValue: '이우성', newValue: '이상훈' },
+      { key: 'golf1',   field: '골프 담당자',   oldValue: '김명선', newValue: '최현준' },
+      { key: 'golf2',   field: '골프 담당자',   oldValue: '정시우', newValue: '최현준' }
+    ];
+    var borDry = (body.dryRun !== false);          // 기본 dry-run — 명시적 false 만 실제 실행
+    var borOnly = String(body.pair || '').trim();  // 'squash1'|'squash2'|'golf1'|'golf2'|'' (전부)
+    var borSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    if (!borSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var borLastBefore = borSh.getLastRow();
+    var borCols = borSh.getLastColumn();
+    if (borLastBefore < 2) return _json({ ok: false, error: 'no rows' });
+    var borHdr = borSh.getRange(1, 1, 1, borCols).getValues()[0].map(function(v){ return String(v).trim(); });
+    var borResults = [];
+    for (var bp = 0; bp < BOR_PAIRS.length; bp++) {
+      var borP = BOR_PAIRS[bp];
+      if (borOnly && borOnly !== borP.key) continue;
+      var bFieldIdx = borHdr.indexOf(borP.field);   // 정확일치만
+      if (bFieldIdx < 0) { borResults.push({ pair: borP.key, error: '컬럼 미발견: ' + borP.field }); continue; }
+      var bData = borSh.getRange(2, bFieldIdx + 1, borLastBefore - 1, 1).getValues();
+      var bMatchRows = [];
+      for (var bi = 0; bi < bData.length; bi++) {
+        var bCur = String(bData[bi][0] == null ? '' : bData[bi][0]).trim();
+        if (bCur === borP.oldValue) bMatchRows.push(bi + 2);
+      }
+      if (borDry) {
+        borResults.push({ pair: borP.key, field: borP.field, oldValue: borP.oldValue, newValue: borP.newValue, dryRun: true, matchCount: bMatchRows.length });
+        continue;
+      }
+      var bWritten = 0;
+      for (var bj = 0; bj < bMatchRows.length; bj++) {
+        var bRow = bMatchRows[bj];
+        var bCell = borSh.getRange(bRow, bFieldIdx + 1);
+        var bNow = String(bCell.getValue() == null ? '' : bCell.getValue()).trim();
+        if (bNow === borP.oldValue) { bCell.setValue(borP.newValue); bWritten++; }  // 쓰기 직전 재확인(레이스 방지)
+      }
+      borResults.push({ pair: borP.key, field: borP.field, oldValue: borP.oldValue, newValue: borP.newValue, dryRun: false, matchCount: bMatchRows.length, written: bWritten });
+    }
+    var borLastAfter = borSh.getLastRow();
+    return _json({ ok: true, dryRun: borDry, results: borResults, rowsBefore: borLastBefore, rowsAfter: borLastAfter, rowCountUnchanged: (borLastBefore === borLastAfter) });
+  }
+
   // ─── CPO 오늘 현황(PII 미노출 집계): 오늘/이번달 문의·등록 건수 2026-06-24 GM ───
   if (action === 'cpo_today_stats') {
     var ctCache = CacheService.getScriptCache();
