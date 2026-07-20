@@ -3,6 +3,9 @@
 회원 만료 임박(익월 종료일자 기준 만기자) 텔레그램 알림 — 배9253(시포→시토 인계).
 2026-07-20 GM 확정: 시포 스펙 채택 — 매월 1회(4주차 첫 월요일), 익월(발송월+1)
 종료일자 기준 만기자 전원 대상(잔여일 0~30 주간필터 방식은 폐기).
+2026-07-20 GM 수정 2건: ①강사별 묶음 섹션 삭제(회원별 줄에 이미 종목(강사) 표기 —
+중복) ②초순/중순/하순 분할 폐기, 87명 전원을 종료일자 오름차순 단일 명단으로 —
+4096자 한도 초과 시 여러 메시지로 자동 분할 발송.
 
 기존 인프라 재활용(맨땅 신축 금지):
 - 데이터: GAS action `member_active_list&scope=valid` (구현 .deploy-funnel-v2/Survey.js:3855-3949).
@@ -15,8 +18,10 @@
    GAS 응답 data[] 의 각 행은 시트 원본 헤더 문자열(줄바꿈 포함)을 키로 그대로 반환하므로,
    Survey.js:3904 _aaIdx() 같은 indexOf 부분일치 재구현 없이 리터럴 키로 바로 접근한다.
 ⚠️ 담당자 칸에는 빈 값 외에 '담당자 X' 같은 플레이스홀더 문자열이 실제로 들어있는 행이
-   있다(GM 확인, 2026-07-20). 이를 실제 강사 이름으로 오인하면 강사별 묶음 통계가
-   오염된다 — _normalize_owner() 로 빈값과 동일하게 처리한다.
+   있다(GM 확인, 2026-07-20). 이를 실제 강사 이름으로 오인하면 통계가 오염된다 —
+   _normalize_owner() 로 빈값과 동일하게 처리한다.
+⚠️ 다발 발신 시 텔레그램 429(플러드) 이력 있음(reference_telegram_burst_send_flood) —
+   메시지 사이 최소 2초 간격을 명시적으로 둔다(전역 pace() 1.2초와 별개로 추가 확보).
 
 GM 절대 제약:
 - 연락처(휴대폰) 어떤 필드도 메시지에 포함 금지.
@@ -27,12 +32,12 @@ from __future__ import annotations
 import argparse
 import html
 import re
-from collections import defaultdict
+import time
 from datetime import datetime
 
 import requests
 
-from cpo_report import GM_CHAT_ID, TELEGRAM_TOKEN, _gas_get, render_header, _today_str
+from cpo_report import GM_CHAT_ID, TELEGRAM_TOKEN, _gas_get, _today_str, _WEEKDAY_KOR
 
 try:  # 발신 공용 로깅·페이싱(best-effort) — 임포트 실패해도 발신 무영향
     from tg_outbound_log import log_outbound, pace
@@ -59,7 +64,9 @@ SUBJECT_TEACHER_KEYS = [
 # 담당자 칸에 실제로 들어있는 '미배정' 표기 변형(빈값과 동일 취급).
 _UNASSIGNED_MARKERS = {"", "담당자x", "-", "미정", "미배정", "tbd", "n/a"}
 
-_TG_LIMIT = 4096
+_TITLE_BASE = "🔔 [AI CPO-시포] 회원 만료 임박 알림(익월 만기)"
+_MSG_BUDGET = 3800       # GM 지시: 4096자 한도 대비 안전마진
+_SEND_GAP_SEC = 2        # GM 지시: 연속 발송 429 방지 최소 간격
 _FOOTER = "시포 · 월 1회(4주차 월요일) 정기 발송 예정 · 이번은 테스트"
 
 
@@ -82,8 +89,8 @@ def _next_month_str(today: datetime) -> str:
 
 
 def fetch_next_month_expiring(today: str) -> tuple[str, list[dict]] | None:
-    """익월(발송월+1) 종료일자('종료\\n일자' 정확일치) 시작 문자열과 일치하는 유효회원 전원.
-    조회 실패 시 None(정직 실패 신호)."""
+    """익월(발송월+1) 종료일자('종료\\n일자' 정확일치) 시작 문자열과 일치하는 유효회원 전원,
+    종료일자 오름차순. 조회 실패 시 None(정직 실패 신호)."""
     data = _gas_get("member_active_list", {"scope": "valid"})
     if data is None:
         return None
@@ -91,18 +98,6 @@ def fetch_next_month_expiring(today: str) -> tuple[str, list[dict]] | None:
     rows = [r for r in data.get("data", []) if str(r.get(END_KEY) or "").strip().startswith(next_month)]
     rows.sort(key=lambda r: str(r.get(END_KEY) or ""))
     return next_month, rows
-
-
-def _end_day(row: dict) -> int:
-    """'종료\\n일자'(yyyy-mm-dd) 의 일(day) 부분. 파싱 불가 시 31(하순 버킷으로 안전 폴백)."""
-    v = str(row.get(END_KEY) or "").strip()
-    parts = v.split("-")
-    if len(parts) == 3:
-        try:
-            return int(parts[2])
-        except ValueError:
-            pass
-    return 31
 
 
 def _member_lessons(row: dict) -> list[tuple[str, str]]:
@@ -122,102 +117,116 @@ def _lessons_str(row: dict) -> str:
     return " · ".join(f"{html.escape(subj)}({html.escape(teacher)})" for subj, teacher in lessons)
 
 
-def _teacher_groups(rows: list[dict]) -> dict[str, list[tuple[str, str]]]:
-    """대상 회원을 담당강사별로 묶는다. {강사명: [(회원명, 종목), ...]}"""
-    groups: dict[str, list[tuple[str, str]]] = defaultdict(list)
-    for row in rows:
-        name = str(row.get(NAME_KEY) or "(이름없음)").strip()
-        for subject, teacher in _member_lessons(row):
-            groups[teacher].append((name, subject))
-    return groups
+def _member_line(row: dict) -> str:
+    end_v = str(row.get(END_KEY) or "").strip()
+    day_label = end_v[5:] if len(end_v) == 10 else "?"  # "MM-DD"
+    name = html.escape(str(row.get(NAME_KEY) or "(이름없음)").strip())
+    return f"{day_label} {name} — {_lessons_str(row)}"
 
 
-def _tips_section() -> list[str]:
+def _tips_lines() -> list[str]:
     """컨택 팁 — 유효회원 시트에 실제로 존재하는 필드에만 근거(최근 방문일·결제금액·구조화
-    선호시간대는 시트에 없어 전제하지 않는다)."""
+    선호시간대는 시트에 없어 전제하지 않는다). 강사별 묶음 섹션 삭제에 맞춰 1번째 문구 수정
+    (없는 섹션 참조 금지, 취지=강사를 통한 접점은 유지)."""
     return [
         "<b>💡 컨택 팁</b>",
-        "· 강습 담당강사가 있는 회원은 강사가 수업 중 자연스럽게 재등록을 안내하는 편이 전화보다 응답률이 높습니다 — 강사별 묶음을 활용해 한 번에 요청하세요.",
+        "· 강습 담당강사가 있는 회원은 강사가 수업 중 자연스럽게 재등록을 안내하는 편이 전화보다 응답률이 높습니다 — 각 줄에 표시된 담당강사를 통해 접점을 만드세요.",
         "· 재등록상담 날짜/내용 이력이 있는 회원은 그 내용부터 확인한 뒤 연락하세요(중복질문 방지).",
         "· 비고(운영부 참고사항)·강습팀 참고사항(이용 시간 기록)에 메모가 있으면 컨택 전 먼저 확인하세요.",
         "· 담당자 미배정 회원은 재등록 컨택이 아예 누락될 위험이 가장 크니 최우선으로 처리하세요.",
     ]
 
 
-def build_report(today: str | None = None, abbreviate_teacher_groups: bool = False) -> str:
+def _render(marker: str, date_line: str, include_header: bool, header_lines: list[str],
+            body_lines: list[str], include_footer: bool, footer_lines: list[str]) -> str:
+    parts = [f"{_TITLE_BASE} {marker}", date_line]
+    if include_header:
+        parts.append("")
+        parts.extend(header_lines)
+    if body_lines:
+        parts.append("")
+        parts.extend(body_lines)
+    if include_footer:
+        parts.append("")
+        parts.extend(footer_lines)
+    return "\n".join(parts)
+
+
+def build_messages(today: str | None = None) -> list[str]:
+    """익월 만기자 알림을 4096자 한도 안전마진(3800자) 기준으로 자동 분할한 메시지 목록.
+    회원 줄은 절대 중간에서 자르지 않는다(줄 단위 분할)."""
     today = today or _today_str()
-    header = render_header("🔔", "AI CPO-시포", "회원 만료 임박 알림(익월 만기)", today)
+    weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
+    date_line = f"{today}({weekday})"
 
     fetched = fetch_next_month_expiring(today)
     if fetched is None:
-        return (
-            f"{header}\n\n⚠️ 데이터 없음 — 유효회원 조회 실패(GAS 응답 없음). 잠시 후 재시도 필요.\n\n{_FOOTER}"
+        err = (
+            f"{_TITLE_BASE} (1/1)\n{date_line}\n\n"
+            f"⚠️ 데이터 없음 — 유효회원 조회 실패(GAS 응답 없음). 잠시 후 재시도 필요.\n\n{_FOOTER}"
         )
+        return [err]
+
     next_month, rows = fetched
     total = len(rows)
-
     unassigned = [r for r in rows if not _member_lessons(r)]
-    early = [r for r in rows if _end_day(r) <= 10]      # 초순(1~10일 종료) — 가장 먼저 만기, 최우선 컨택
-    mid = [r for r in rows if 11 <= _end_day(r) <= 20]  # 중순(11~20일 종료)
-    late = [r for r in rows if _end_day(r) >= 21]       # 하순(21일~월말 종료)
 
-    lines = [
-        header,
-        "",
-        f"대상: {next_month} 종료 예정 회원 {total}명",
-        "",
-        "※ 신규·재등록 상담 담당 = 임정은",
-        "",
-    ]
-
-    lines.append(f"<b>⚠️ 담당자 미배정 {len(unassigned)}명</b>")
+    header_lines = [f"대상: {next_month} 종료 예정 회원 {total}명", "", "※ 신규·재등록 상담 담당 = 임정은", ""]
+    header_lines.append(f"<b>⚠️ 담당자 미배정 {len(unassigned)}명</b>")
     if not unassigned:
-        lines.append("없음(전원 강습 담당강사 배정 확인)")
+        header_lines.append("없음(전원 강습 담당강사 배정 확인)")
     else:
         for r in unassigned:
             name = html.escape(str(r.get(NAME_KEY) or "(이름없음)").strip())
             end_v = html.escape(str(r.get(END_KEY) or "").strip())
-            lines.append(f"· {name} ({end_v} 종료)")
+            header_lines.append(f"· {name} ({end_v} 종료)")
 
-    lines.append("")
-    lines.append(f"<b>🔴 초순 만기 (다음달 1~10일 종료) 상세 명단 {len(early)}명</b>")
-    if not early:
-        lines.append("없음")
-    for r in early:
-        end_v = str(r.get(END_KEY) or "").strip()
-        day_label = end_v[5:] if len(end_v) == 10 else "?"  # "MM-DD"
-        name = html.escape(str(r.get(NAME_KEY) or "(이름없음)").strip())
-        lines.append(f"{day_label} {name} — {_lessons_str(r)}")
+    footer_lines = list(_tips_lines())
+    footer_lines.append("")
+    footer_lines.append(_FOOTER)
 
-    lines.append("")
-    lines.append("<b>🏃 강사별 묶음 (초순 만기)</b>")
-    groups = _teacher_groups(early)
-    if not groups:
-        lines.append("없음")
+    member_lines = [_member_line(r) for r in rows]  # 이미 종료일자 오름차순
+
+    # ── 1차 패스: 넉넉한 자리수 마커("(10/10)")로 안전하게 청크 경계 산정 ──
+    _PLACEHOLDER_MARKER = "(10/10)"
+
+    class _Chunk:
+        __slots__ = ("header", "footer", "lines")
+
+        def __init__(self, header: bool):
+            self.header = header
+            self.footer = False
+            self.lines: list[str] = []
+
+    chunks: list[_Chunk] = [_Chunk(header=True)]
+    cur = chunks[0]
+    for line in member_lines:
+        trial = cur.lines + [line]
+        text = _render(_PLACEHOLDER_MARKER, date_line, cur.header, header_lines, trial, False, footer_lines)
+        if len(text) <= _MSG_BUDGET or not cur.lines:
+            cur.lines = trial
+        else:
+            new_chunk = _Chunk(header=False)
+            new_chunk.lines = [line]
+            chunks.append(new_chunk)
+            cur = new_chunk
+
+    # 마지막 청크에 팁+서명(footer) 붙이기 시도. 안 들어가면 footer 전용 메시지 추가.
+    trial_text = _render(_PLACEHOLDER_MARKER, date_line, cur.header, header_lines, cur.lines, True, footer_lines)
+    if len(trial_text) <= _MSG_BUDGET or not cur.lines:
+        cur.footer = True
     else:
-        for teacher, members in sorted(groups.items(), key=lambda kv: -len(kv[1])):
-            t_esc = html.escape(teacher)
-            if abbreviate_teacher_groups:
-                lines.append(f"{t_esc} {len(members)}명")
-            else:
-                names_str = ", ".join(f"{html.escape(n)}({html.escape(s)})" for n, s in members)
-                lines.append(f"{t_esc} {len(members)}명: {names_str}")
+        footer_chunk = _Chunk(header=False)
+        footer_chunk.footer = True
+        chunks.append(footer_chunk)
 
-    lines.append("")
-    lines.append(f"📅 중순(11~20일 종료) {len(mid)}명 · 하순(21일~월말 종료) {len(late)}명 (명단 생략)")
-    lines.append("")
-    lines.extend(_tips_section())
-    lines.append("")
-    lines.append(_FOOTER)
-    return "\n".join(lines)
-
-
-def build_report_within_limit(today: str | None = None) -> str:
-    """4096자 한도 초과 시 초순 상세명단은 유지하고 강사별 묶음을 축약(인원수만)."""
-    text = build_report(today, abbreviate_teacher_groups=False)
-    if len(text) <= _TG_LIMIT:
-        return text
-    return build_report(today, abbreviate_teacher_groups=True)
+    # ── 2차 패스: 실제 (i/N) 마커로 최종 렌더 ──
+    n = len(chunks)
+    messages = []
+    for i, ch in enumerate(chunks, start=1):
+        marker = f"({i}/{n})"
+        messages.append(_render(marker, date_line, ch.header, header_lines, ch.lines, ch.footer, footer_lines))
+    return messages
 
 
 def _send_telegram_html(chat_id: int, text: str) -> tuple[int | None, str | None]:
@@ -250,17 +259,22 @@ if __name__ == "__main__":
     parser.add_argument(
         "--send",
         action="store_true",
-        help="GM 개인방(8254867551)으로 실발신. 다른 chat_id는 받지 않는다(하드코딩 안전장치).",
+        help="GM 개인방(8254867551)으로 실발신(분할 순차 발송, 메시지 간 2초 간격). 다른 chat_id는 받지 않는다.",
     )
     args = parser.parse_args()
 
-    text = build_report_within_limit()
-    print(text)
-    print(f"\n[길이] {len(text)}자")
+    texts = build_messages()
+    for i, t in enumerate(texts, start=1):
+        print(f"===== 메시지 {i}/{len(texts)} ({len(t)}자) =====")
+        print(t)
+        print()
 
     if args.send:
-        msg_id, err = _send_telegram_html(GM_CHAT_ID, text)
-        if msg_id is not None:
-            print(f"\n[발신 성공] message_id={msg_id} chat_id={GM_CHAT_ID}")
-        else:
-            print(f"\n[발신 실패] {err}")
+        for i, t in enumerate(texts, start=1):
+            if i > 1:
+                time.sleep(_SEND_GAP_SEC)
+            msg_id, err = _send_telegram_html(GM_CHAT_ID, t)
+            if msg_id is not None:
+                print(f"[발신 성공] {i}/{len(texts)} message_id={msg_id} chat_id={GM_CHAT_ID}")
+            else:
+                print(f"[발신 실패] {i}/{len(texts)} {err}")
