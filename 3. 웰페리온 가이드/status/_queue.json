@@ -1156,8 +1156,9 @@
     "processed_at": "2026-07-20",
     "ship_no": 9220,
     "artifact": "/en/inquiry/ 가 \"Video coming soon\" 플레이스홀더 상태였던 것을, /ko/inquiry/(8394)와\n완전히 동일한 유튜브 영상(qpPYA3bAO7M)·재생방식(표준 클릭재생, autoplay 없음)·위치\n(소개문 바로 아래, 문의 유형 카드 위)·크기(max-width 640px, 16:9)로 교체. 래퍼 스킨\n(둥근모서리+그림자)은 한글판 전용 .wlp-inq 디자인시스템이 이 파일에 없어 그대로\n유지(이미 이 페이지 카드 그리드와 통일된 톤). iframe title만 영문(\"Wellperion\nInt (CLI ad-hoc · 커밋 d4e13b22)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "d4e13b228981f17956c684c0b577758bda054a64"
+    "next": "🔗 ship 9231(메인 문의 페이지 통합)로 정리 흡수 — 개별 배로 집계 안 함(2026-07-20 큐 정리, GM 지시). 완료 이력·커밋 근거는 그대로 보존.",
+    "adhoc_commit": "d4e13b228981f17956c684c0b577758bda054a64",
+    "merged_into": 9231
   },
   {
     "task_id": "CPO-2026-07-20-ADHOC-543a5e01",
@@ -1184,8 +1185,9 @@
     "processed_at": "2026-07-20",
     "ship_no": 9222,
     "artifact": "/en/inquiry/ 가 \"Video coming soon\" 플레이스홀더 상태였던 것을, /ko/inquiry/(8394)와\n완전히 동일한 유튜브 영상(qpPYA3bAO7M)·재생방식(표준 클릭재생, autoplay 없음)·위치\n(소개문 바로 아래, 문의 유형 카드 위)·크기(max-width 640px, 16:9)로 교체. 래퍼 스킨\n(둥근모서리+그림자)은 한글판 전용 .wlp-inq 디자인시스템이 이 파일에 없어 그대로\n유지(이미 이 페이지 카드 그리드와 통일된 톤). iframe title만 영문(\"Wellperion\nInt (CLI ad-hoc · 커밋 cb9b230b)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "cb9b230b1ce028b4d0b7570fffff3bdb24b7fe90"
+    "next": "🔗 ship 9231(메인 문의 페이지 통합)로 정리 흡수 — 개별 배로 집계 안 함(2026-07-20 큐 정리, GM 지시). 완료 이력·커밋 근거는 그대로 보존.",
+    "adhoc_commit": "cb9b230b1ce028b4d0b7570fffff3bdb24b7fe90",
+    "merged_into": 9231
   },
   {
     "task_id": "CPO-2026-07-20-ADHOC-b7fd9e43",
@@ -1309,7 +1311,7 @@
     "enqueued_at": "2026-07-20",
     "processed_at": "2026-07-20",
     "ship_no": 9231,
-    "artifact": "GM이 실제로 가리킨 대상은 Survey폼(8460)이 아니라 메인 문의 페이지였음(정정 반영, 8460 변경은\n그대로 유지). 원인·처방은 8460과 동일한 WP 테마 래퍼 구조(실측 확인, 8394·8408 모두 고정 75px). (CLI ad-hoc · 커밋 051c8787)",
+    "artifact": "GM이 실제로 가리킨 대상은 Survey폼(8460)이 아니라 메인 문의 페이지였음(정정 반영, 8460 변경은\n그대로 유지). 원인·처방은 8460과 동일한 WP 테마 래퍼 구조(실측 확인, 8394·8408 모두 고정 75px). (CLI ad-hoc · 커밋 051c8787)\n\n[2026-07-20 큐 정리 — 오늘 문의 페이지(8394/8408) 작업이 담당을 거치며 갈라진 하위단계 배 통합, GM 지시] 흡수: ship 9220/9222(영문 8408 영상삽입, 9222는 9220의 완전중복 로그) · ship 9238(영문 8408 상단 흰/회색 띠 재검증) — 전부 이 배가 시작한 8394/8408 리스킨(배경·여백·언어전환버튼) 작업의 하위단계라 이 배로 흡수, 개별 항목은 완료 이력·커밋 그대로 보존(merged_into 필드로 표시). 별개 판단(통합 안 함): ship 9214(문의 Survey폼 8460 — 다른 페이지/URL), ship 9224(미처리 현황 표 — 문의 페이지 아닌 텔레그램 다이제스트 기능), ship 9242(WPML 브라우저 언어 자동 리다이렉트 — 페이지 콘텐츠 아닌 WP 관리자 시스템 설정 변경, 별도 배 유지).\n[2026-07-20 추가 작업 — GM \"KOR 위치를 ENG 배치 위치랑 같게, 로고도 없애줘\"] 영문 문의 페이지(8408) 상단을 한글판(8394)과 실측 기준으로 일치시킴. ①로고 제거: 한글판과 동일한 근본해법 적용 — WP 테마 헤더(#header-outer, 로고 포함) 전체를 body.page-id-8408 스코프로 display:none. ②KOR 버튼: 헤더 숨김으로 같이 사라진 네이티브 버튼을 한글판 .lang-switch와 동일 스타일(2px 잉크색 테두리·24px 라운드 알약·top:16px;right:16px)로 재현, WPML 링크 자동정정 우회(href=\"#\"+onclick 조합)도 동일 적용. ③1차 적용 후 실측(getBoundingClientRect)한 결과 한글판과 위치가 어긋남을 발견 — 한글판 .wlp-inq는 자체 폭제약이 없어 테마 90px 거터에 자연히 맞물리는데, 영문판 #wlp-en-inquiry-root는 자체 max-width:760px+margin:auto가 추가로 걸려 버튼이 훨씬 안쪽(1440px 폭에서 화면 우측끝까지 거리 122px 대 364px)이고 상단도 40px 밀려있었음(테마 컨테이너랩 예약여백 미흡수). 2차 교정: 폭제약 없는 새 #wlp-en-outer 래퍼를 추가해 KOR 버튼을 그 기준으로 옮기고(테마 90px 거터에 자연히 맞춰짐, 하드코딩 없음), margin-top:-40px로 한글판과 동일하게 예약여백 흡수. 본문 폭(760px)은 안쪽 #wlp-en-inquiry-root에 그대로 유지. 검증(실측, 추측 없음): getBoundingClientRect로 두 페이지 버튼 위치 재측정 — 1440px 폭에서 화면우측거리 122px=122px·상단 16px=16px 완전 일치(1920px 폭도 361.5px=361.5px 일치). PC 1440·초광폭 1920·모바일 390 스크린샷 대조, 가로스크롤 0건(scrollWidth==clientWidth 전부 확인). KOR 버튼 실제 클릭→/ko/inquiry/ 이동 확인, 그 상태에서 ENG 버튼 실제 클릭→/en/inquiry/ 복귀 확인(양방향 재검증). 스크린샷: scripts/poc-evidence/{hdr_ko_8394_1440/1920/390, hdr_en_8408_1440/1920/390, hdr_click_kor_result, hdr_click_eng_result}_20260720.png. 백업: scripts/poc-evidence/en_inquiry_8408_content_backup(2)_20260720_*.txt(원본 2단계 전량 보존, 롤백 가능).",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "051c87875517e83cf80560ce93cbb28a5a981e45"
   },
@@ -1408,8 +1410,9 @@
     "processed_at": "2026-07-20",
     "ship_no": 9238,
     "artifact": "team-lead 보고 근거 스크린샷(en_inquiry_8408_bg_after_desktop_20260720.png, 11:46:53)이\n실제 색상 수정 커밋(096d6213, 11:47:06)보다 13초 먼저 찍혀 수정 전 상태를 담고 있었음(오탐).\n라이브 재확인(en-US locale로 WPML 브라우저 자동리다이렉트 우회 후 측정) — #header-outer·\n.container-wrap 배경 rgb(245,240,234)=#f5f0ea로 KO(8394)와 완전 일치, 화면 최상단 y:0부터\n끊김 없이 아이보리. KOR 버튼 표시+실클릭으로 /ko/inquiry/ 정상 이동 재확인. PC 1440·1920·\n모바일 390 가로스크롤 0. 코드 변경 없음(096d6213이 이미 정답). 스크린샷: en_inquiry_8408_\ntop_recheck2_20260720.png · ko_inquiry_8394_top_recheck_20260720.png · en_inquiry_8408_\nuw1920_20260720.png · en_inquiry_8408_mobile390_20260720.png",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "096d62133b4a6e0841298f4d430c21943aa9f052"
+    "next": "🔗 ship 9231(메인 문의 페이지 통합)로 정리 흡수 — 개별 배로 집계 안 함(2026-07-20 큐 정리, GM 지시). 완료 이력·커밋 근거는 그대로 보존.",
+    "adhoc_commit": "096d62133b4a6e0841298f4d430c21943aa9f052",
+    "merged_into": 9231
   },
   {
     "task_id": "CPO-2026-07-20-ADHOC-e10daf08",
