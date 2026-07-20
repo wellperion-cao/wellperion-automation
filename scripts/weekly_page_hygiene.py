@@ -356,8 +356,10 @@ def _git_commit_file(path: str, message_body: str, repo_root: str | None = None,
                 continue
             return None
 
+        # pathspec 강제(2026-07-20 시토·동시커밋 사고대응): path 로 커밋 스코프 —
+        # add~commit 사이 다른 세션이 스테이징해둔 무관 파일이 섞여 들어가지 않는다.
         commit = subprocess.run(
-            ["git", "commit", "-m", msg], cwd=repo_root, capture_output=True, text=True,
+            ["git", "commit", "-m", msg, "--", path], cwd=repo_root, capture_output=True, text=True,
             encoding="utf-8", errors="replace",
         )
         if commit.returncode == 0:

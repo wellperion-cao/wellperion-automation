@@ -40,7 +40,9 @@ def main() -> int:
         print("[commit_engagement] no engagement changes -> skip commit")
         return 0
 
-    commit = _run(["git", "commit", "-m", "auto(cmo): scheduled engagement collect (danggn+blog+ig ledger)"])
+    # pathspec 강제(2026-07-20 시토·동시커밋 사고대응): FILES 로 커밋 스코프 —
+    # add~commit 사이 다른 세션이 스테이징해둔 무관 파일이 섞여 들어가지 않는다.
+    commit = _run(["git", "commit", "-m", "auto(cmo): scheduled engagement collect (danggn+blog+ig ledger)", "--"] + FILES)
     print("[commit_engagement] commit rc=%s %s" % (commit.returncode, ((commit.stdout or commit.stderr) or "").strip()[-200:]))
     if commit.returncode != 0:
         print("[commit_engagement] commit failed -> skip push")

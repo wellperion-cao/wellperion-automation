@@ -36,7 +36,9 @@ def main() -> int:
         print("[commit_ig_reach] no reach changes -> skip commit")
         return 0
 
-    commit = _run(["git", "commit", "-m", "auto(cto): scheduled IG reach collect (ledger+summary, 배588)"])
+    # pathspec 강제(2026-07-20 시토·동시커밋 사고대응): FILES 로 커밋 스코프 —
+    # add~commit 사이 다른 세션이 스테이징해둔 무관 파일이 섞여 들어가지 않는다.
+    commit = _run(["git", "commit", "-m", "auto(cto): scheduled IG reach collect (ledger+summary, 배588)", "--"] + FILES)
     print("[commit_ig_reach] commit rc=%s %s" % (commit.returncode, ((commit.stdout or commit.stderr) or "").strip()[-200:]))
     if commit.returncode != 0:
         print("[commit_ig_reach] commit failed -> skip push")

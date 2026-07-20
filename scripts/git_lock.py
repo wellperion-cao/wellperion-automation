@@ -191,21 +191,37 @@ def git_commit_push(
     """
     root = _repo_root(repo_root)
     work_dir = cwd or root
+    paths = list(paths)
 
     with GitLock(holder, root):
         # git add
-        run_git(["add"] + list(paths), cwd=work_dir)
+        run_git(["add"] + paths, cwd=work_dir)
 
-        # git commit (nothing to commit이면 통과)
+        # git commit (nothing to commit이면 통과) — pathspec 강제(2026-07-20 시토·
+        # 동시커밋 사고대응, P1 설계보완): GitLock 은 이 함수를 호출하는 프로세스끼리만
+        # 직렬화하고, 사람이 터미널에서 치는 bare `git commit`이나 이 락을 안 쓰는 다른
+        # 스크립트의 동시 `git add` 는 못 막는다. paths 로 커밋을 스코프하면, 그 사이
+        # 인덱스에 다른 세션이 무관한 파일을 스테이징해뒀어도 이 커밋엔 안 실린다(그
+        # 파일들은 staged 상태 그대로 남아 자기 커밋을 기다린다) — 락만으론 못 막는
+        # "add~commit 사이 틈" 오염을 pathspec 이 구조적으로 차단.
         result = subprocess.run(
-            ["git", "commit", "-m", message],
+            ["git", "commit", "-m", message, "--"] + paths,
             cwd=work_dir,
             capture_output=True,
             text=True, encoding="utf-8", errors="replace",
         )
         if result.returncode != 0:
             out = (result.stdout + result.stderr).lower()
-            if "nothing to commit" in out or "nothing added to commit" in out:
+            # "no changes added to commit" 추가(2026-07-20 시토 발견·동시커밋 수리 중):
+            # pathspec 유무와 무관하게 git 이 실제로 쓰는 무해 no-op 문구는 이것이다 —
+            # 기존 "nothing to commit"/"nothing added to commit" 은 실제 git 출력과
+            # 안 맞아 이 케이스에서 항상 RuntimeError 로 잘못 격상되고 있었다(latent bug,
+            # pathspec 도입과 무관 — bare commit 에서도 동일하게 재현됨. 격리 테스트로 확인).
+            if (
+                "nothing to commit" in out
+                or "nothing added to commit" in out
+                or "no changes added to commit" in out
+            ):
                 _log(f"COMMIT nothing-to-commit holder={holder}", root)
             else:
                 raise RuntimeError(

@@ -358,6 +358,28 @@
       "차단조치": "① scripts/module_silence_detector.py에 --publish 신설 — 등록부 각 모듈의 로컬 아티팩트 신선도(진짜 결과 유무)를 status/module_silence_snapshot.json으로 발행(로컬 기록 전용, 알림 없음). ② scripts/module_reporter.py 의 daily cadence 실행 종료 시 publish_snapshot() 편승 호출로 매일 자동 갱신(새 Task Scheduler 미등록). ③ 자율현황.html #layer-automation을 \"①예약작업 실행\"(Windows 실행 여부)과 \"②모듈 결과 산출\"(침묵감지기 실측)로 라벨 분리해 두 지표를 병기. 판정불가(로컬 아티팩트 없음/주기 미선언) 모듈은 \"모름\"으로 표기하고 정상 집계·분모에서 제외(억지 초록 금지).",
       "상태": "GUARDED",
       "검증증거": "실측: python scripts/module_silence_detector.py --scan-only → ok 7·silent 0·판정불가 21·대상아님 1(29건). --publish로 status/module_silence_snapshot.json 발행 확인. Node로 실제 렌더 함수 로직을 라이브 GitHub raw JSON(erp_status.json·module_silence_snapshot.json)에 재실행: ①\"예약작업 실행 31/32(97%)\" ②\"확인됨 7/28 · 모름 21건 · 침묵 0건\" — Engagement-Collect에 매핑되는 cmo-eval-feedback-loop 모듈이 이제 화면에 \"모름\"으로 뜬다(과거엔 automation_health만 보면 무조건 정상). module_reporter.py --cadence daily --dry-run 회귀 정상(신규 훅은 dry-run에서 미실행, 부작용 0 계약 보존). 커밋·푸시 후 raw.githubusercontent 라이브 확인 완료."
+    },
+    {
+      "id": "INC-022",
+      "date": "2026-07-20",
+      "watch_globs": [
+        "scripts/git_lock.py",
+        "scripts/auto_log_adhoc_to_queue.py",
+        "scripts/assign_ship_numbers.py",
+        "scripts/commit_ig_reach.py",
+        "scripts/commit_engagement.py",
+        "scripts/weekly_page_hygiene.py",
+        ".git/hooks/pre-commit",
+        "scripts/pre-commit.hook"
+      ],
+      "gate": "warn",
+      "요약": "INC-017 이후에도 같은 본질(공유 워크트리 동시 커밋 시 서로의 변경이 섞이거나 유실)이 하루에 4회 이상 재발 — 오늘(2026-07-20) 실측 사례: (1)훅이 스테일 사본을 자동 add(INC-017, 1차 수리), (2)훅이 무관 파일(PNG 4건)을 도중에 add, (3)한 세션의 staged 4개 파일이 다른 세션의 pathspec 없는 git commit에 통째로 쓸려 들어감, (4)한 세션의 첫 커밋 시도가 자기 파일 없이 남의 파일만 커밋됨, (5)auto_log_adhoc_to_queue.py의 clevel 자동귀속이 제목 속 부수 언급(\"웰리\")을 명시 scope 태그(cto)보다 우선해 오귀속(커밋 75d1d4e9→0cd3042f 수동정정). INC-017은 sync_queue_mirror.py 1곳만 막았을 뿐, 동일 패턴(add~commit 사이 무관 파일 혼입)이 다른 자동 커밋 스크립트 여러 곳에 그대로 남아있었다.",
+      "증상": "assign_ship_numbers.py는 pre-commit 훅에서 매 커밋마다 status/_queue.json을 무조건 디스크 직독→쓰기→'git add -- status/_queue.json'(이번 커밋이 큐를 건드릴 의도인지 확인 안 함) — INC-017이 sync_queue_mirror.py에서 막은 것과 동일한 취약 패턴이 남아있었다. 또한 git_lock.py의 git_commit_push()·auto_log_adhoc_to_queue.py의 _commit_queue()·commit_ig_reach.py·commit_engagement.py·weekly_page_hygiene.py._git_commit_file()이 모두 'git add <자기 파일들>' 후 pathspec 없는 bare 'git commit -m'을 호출 — add와 commit 사이 틈에 다른 세션이 같은 공유 인덱스에 무관 파일을 스테이징해두면, bare commit이 그 파일까지 통째로 쓸어담는다(재현 확인, 아래 검증증거). auto_log_adhoc_to_queue._attribute_clevel()은 닉네임 토큰 매칭이 명시 scope 태그보다 먼저 실행돼, 'fix(cto): 웰리 무인 러너 …'처럼 scope=cto가 명시된 제목도 본문 속 우연한 '웰리' 언급 때문에 ceo로 오귀속됐다(실사례 75d1d4e9, 0cd3042f로 수동정정).",
+      "본질": "INC-017과 동일 본질(정합어긋남 — '이번 커밋이 의도한 것'과 '지금 공유 인덱스/디스크에 있는 것'을 같은 것으로 취급)이 사고 지점 하나만 막고 나머지 커밋 경로에는 구조로 안 막혀 있었다. 공유 워크트리+공유 인덱스 구조에서는 'git add(스코프 정확) → git commit(pathspec 없음)' 조합 자체가 안전하지 않다 — add는 자기 파일만 골랐어도, commit이 인덱스 전체를 커밋하기 때문에 그 사이 다른 프로세스가 얹어둔 것까지 실린다. clevel 오귀속은 별도 본질(신호 우선순위 역전) — 구조화된 명시 태그(scope)보다 자유형 텍스트 언급(닉네임)을 먼저 믿었다.",
+      "뿌리분류": "정합어긋남",
+      "차단조치": "① pathspec 강제 커밋(구조적 근본수리) — git_lock.py git_commit_push()·auto_log_adhoc_to_queue.py _commit_queue()·commit_ig_reach.py·commit_engagement.py·weekly_page_hygiene.py._git_commit_file() 5곳 전부 'git commit -m msg' → 'git commit -m msg -- <자기 파일들>'로 전환. pathspec으로 커밋을 스코프하면 그 순간 인덱스에 다른 세션이 얹어둔 무관 파일이 있어도 이 커밋에는 절대 안 실리고(그 파일들은 staged 상태 그대로 남아 자기 커밋을 기다림), 락(GitLock) 없이도 구조로 섞임을 차단한다 — 대안 (A)전역 커밋 직렬화 락보다 가볍고, 사람이 터미널에서 치는 bare 커밋까지는 못 막지만 모든 자동화 경로는 확실히 막는다. ② assign_ship_numbers.py에 --pre-commit 게이트 추가(INC-017 sync_queue_mirror.py와 동일 패턴) — status/_queue.json이 'git diff --cached --name-only'로 이번 커밋에 실제 staged 확인될 때만 동작·add, 아니면 조용히 skip. 훅 2곳(.git/hooks/pre-commit·scripts/pre-commit.hook) 모두 '--pre-commit' 플래그 전달로 갱신. ③ auto_log_adhoc_to_queue._attribute_clevel() 우선순위 재정렬 — 제목 선두의 명시 conventional-commit scope(예: 'fix(cto):')를 최우선 검사로 승격, 그 다음 닉네임 토큰, 그 다음 본문 전체 역할 토큰, 기본 ceo. 구조화된 태그가 자유형 텍스트 언급을 이기도록. ④ 부수 발견·동시수리: git_lock.py git_commit_push()의 'nothing to commit' 판정 문자열이 실제 git 출력('no changes added to commit')과 안 맞아 무해한 no-op가 RuntimeError로 격상되던 latent bug도 같은 함수 수정 중 발견해 문자열 목록에 추가.",
+      "상태": "GUARDED",
+      "검증증거": "①pathspec 재현: 격리 tmp repo에서 두 세션이 각각 a.txt·b.txt를 add한 뒤, 수정 전 패턴(bare 'git commit -- 없음')으로 세션A가 커밋하면 b.txt가 함께 실리고 인덱스에서 사라짐(FAIL 재현, git show --stat으로 2 files 확인). 동일 시나리오를 수정 후 패턴('git commit -m … -- a.txt')으로 재실행하면 세션A 커밋엔 a.txt 1개만 실리고 b.txt는 인덱스에 그대로 남아 세션B가 이어서 'git commit -m … -- b.txt'로 독립 커밋 성공(PASS, git log에 분리된 두 커밋 확인). ②assign_ship_numbers 재현: 격리 tmp repo에서 status/_queue.json을 staged 안 한 채(다른 세션의 디스크 편집 시뮬레이션) '--pre-commit' 실행 시 skip 로그만 찍고 git add 없음(diff --cached 비어있음, PASS) — status/_queue.json을 실제 staged한 시나리오에서는 정상적으로 ship_no 부여 후 add(PASS, 회귀 확인). ③clevel 귀속: 실제 문제 커밋 3건(75d1d4e9·096d6213·d7c3838e — 전부 과거 ceo로 오귀속됐던 실사례)을 신규 _attribute_clevel()에 직접 입력해 각각 cto·cmo·cmo로 정확히 귀속됨을 확인(PASS). 회귀 6건(진짜 ceo scope+웰리 언급, 순수 닉네임 태그, 대문자 scope, 태그 없음 기본값 등) 전부 기대값과 일치(PASS, 오탐 없음). ④nothing-to-commit 회귀: 격리 repo에서 실제 변경 없는 pathspec 커밋 재호출 시 예외 없이 무해 통과 확인(수리 전엔 RuntimeError로 실패하던 것 확인 후 수리). ⑤ py_compile 전체 통과(7개 수정 파일)·훅 셸 문법(bash -n) 통과. 모든 재현·검증은 격리 tmp git repo(라이브 저장소 무오염)에서만 수행 — 라이브 저장소는 status --short로 의도한 7개 파일 외 무변경 확인."
     }
   ]
 }

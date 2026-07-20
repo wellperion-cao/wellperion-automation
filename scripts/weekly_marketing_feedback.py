@@ -121,7 +121,12 @@ SECTION_4_HEADING = "## 4. 다음 편 제안"
 # "미채움"으로 오판해 재생성해버린다. 그래서 실제 placeholder 문구(▸ (...))만 마커로 쓴다.
 SECTION_3_PLACEHOLDER_MARKERS = ["▸ (시모 정성 판정"]
 SECTION_4_PLACEHOLDER_MARKERS = ["▸ (시모: 통한 패턴"]
-# §4 가 마지막 섹션(2026-07-15 §5 각 스코어카드=클릭 기반 제거·GM 결정) — 추출 시 EOF 까지.
+# 2026-07-15 §5 각 스코어카드(클릭 기반)=GM 결정으로 삭제됐으나, §4 tail 추출용 stop-heading
+# 상수 SECTION_5_HEADING 정의 자체가 함께 유실되어(재사용처 3곳 NameError 잠복) 있었다.
+# 2026-07-20 배834 반응 성적표 §5(IG 도달·당근 조회/찜·카페 조회 실측 — 클릭 아님)를 새로
+# 신설하며 아래에서 다시 정의(버그 수리 겸용). §5는 시스템 자동 계산 전용 — 시모 정성 채움 대상
+# 아니므로 §3/§4 처럼 보존 로직 불필요(매번 최신 스캔 결과로 재생성).
+SECTION_5_HEADING = "## 5. 콘텐츠 반응 성적표"
 
 # ── 텔레그램 주간 요약 발송 (문의알림방 · 2026-07-03 GM go 라이브) ─────
 ENV_PATH = _REPO_ROOT / "telegram_bot" / ".env"
@@ -406,6 +411,50 @@ def _registration_oneliner(mr: dict | None, lr: dict | None) -> str:
     return line1 + "\n" + line2
 
 
+# ── §5 콘텐츠 반응 성적표 (2026-07-20 배834 — reaction_scorecard.py 재사용, 신규 배관 없음) ──
+# 발행 루프를 감싸는 상위 루프: 반응 파악(IG 도달·당근 조회/찜·카페 조회 실측) → 반응 없으면
+# (저조) 개선안 자동 제안(반무인 — 실제 재발행·수정은 GM 승인 후). 2026-07-15 삭제된 클릭 집계를
+# 되살리지 않고 이 실측 신호들로 대체(GM 지시). status/cmo_reaction_scorecard.json 재사용(신규 파일
+# 아님, reaction_scorecard.scan()이 관리) — 이 브리프는 그 결과를 읽기만 한다.
+def _fmt_reaction_scorecard_section() -> str:
+    try:
+        import reaction_scorecard as _rs
+    except Exception as e:
+        return f"_반응 성적표 모듈 로드 실패 — 미측정({e})_"
+    try:
+        cards = _rs._load_json(_rs.SCORECARD_PATH, {})
+    except Exception as e:
+        return f"_반응 성적표 로드 실패 — 미측정({e})_"
+    if not cards:
+        return "_반응 성적표 없음(reaction_scorecard.py --scan 미실행 또는 발행 콘텐츠 없음)._"
+    items = sorted(cards.values(), key=lambda c: c.get("published_at") or "", reverse=True)[:10]
+    lines = [
+        "| 편 | IG 도달 | 판정 | 근거 |",
+        "|---|---|---|---|",
+    ]
+    for c in items:
+        ig = (c.get("channels") or {}).get("instagram", {})
+        reach = ig.get("latest_reach") if ig.get("status") == "measured" else None
+        reach_s = str(reach) if reach is not None else "미측정"
+        title = str(c.get("title", "")).replace("|", "\\|")
+        verdict = c.get("verdict", "판정보류")
+        reason = str(c.get("verdict_reason", "")).replace("|", "\\|")
+        lines.append(f"| {title} | {reach_s} | {verdict} | {reason} |")
+    proposals = [c for c in items if c.get("verdict") == "저조" and c.get("improvement_proposal")]
+    if proposals:
+        lines.append("")
+        lines.append("**저조 편 개선 제안(반무인 — GM 승인 후 실행, 자동 재발행 없음)**")
+        for c in proposals:
+            lines.append(f"- {c['title']}: {c['improvement_proposal']}")
+    lines.append("")
+    lines.append(
+        "_참고: 채널별 문의→가입 전환(§2)은 누적 집계라 편별 귀속 불가 — 본 성적표에는 반영하지 "
+        "않음. IG 좋아요·저장은 비공개 지표라 수집 불가(쓰지 않음). "
+        "측정 대상: `scripts/reaction_scorecard.py`(status/cmo_reaction_scorecard.json)._"
+    )
+    return "\n".join(lines)
+
+
 # ── 마크다운 조립 ──────────────────────────────────────────────────
 def _fmt_content_table(items: list[dict]) -> str:
     if not items:
@@ -569,6 +618,11 @@ def build_brief(items: list[dict], fc: dict | None,
         "}\n"
         "-->"
     )
+    parts.append("")
+
+    parts.append(SECTION_5_HEADING)
+    parts.append("")
+    parts.append(_fmt_reaction_scorecard_section())
     parts.append("")
 
     return "\n".join(parts)

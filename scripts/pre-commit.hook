@@ -67,9 +67,12 @@ fi
 # ── ①-2.5 ship_no 자동 부여 (새 배 고정 식별번호 · 2026-06-19) ───────────────
 # status/_queue.json 에 ship_no 없는 항목에 clevel별 번호 자동 부여 후 git add.
 # assign 실패해도 커밋 차단 안 함(fail-open). 멱등·기존 번호 불변.
+# --pre-commit(2026-07-20 배 시토·동시커밋 사고대응): status/_queue.json 이 이번
+# 커밋에 실제 staged 된 경우에만 동작·git add. 무관한 커밋에 다른 세션의 스테일
+# 디스크 상태가 섞여 들어가는 사고(sync_queue_mirror.py 와 같은 패턴) 재발 방지.
 SHIP_ASSIGN="$REPO_ROOT/scripts/assign_ship_numbers.py"
 if [ -f "$SHIP_ASSIGN" ] && [ -n "$PYBIN" ]; then
-  PYTHONUTF8=1 "$PYBIN" "$SHIP_ASSIGN" || true
+  PYTHONUTF8=1 "$PYBIN" "$SHIP_ASSIGN" --pre-commit || true
   git add -- "status/_queue.json" 2>/dev/null || true
 fi
 

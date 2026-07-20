@@ -2,7 +2,18 @@
 assign_ship_numbers.py
 담당(clevel)별 고정 식별번호(ship_no)를 _queue.json에 1회 부여.
 멱등·append-only — 기존 번호 절대 변경 금지.
+
+--pre-commit 게이트(2026-07-20 시토·동시커밋 사고대응):
+  pre-commit 훅은 매 커밋마다 무조건 이 스크립트를 부르고 결과를
+  `git add -- status/_queue.json` 해왔다 — 이 커밋이 _queue.json 을 전혀 건드릴
+  의도가 없어도, 훅이 "지금 디스크에 있는" 내용을 통째로 스테이징해버린다. 공유
+  워크트리에서 다른 세션이 _queue.json 을 편집 중(아직 add 안 함)이면 그 스테일/
+  미완성 내용이 무관한 커밋에 섞여 들어간다(sync_queue_mirror.py 가 이미 겪은
+  것과 같은 사고 패턴). --pre-commit 플래그가 주어지면, status/_queue.json 이
+  "이번 커밋에 실제로 staged" 된 경우(`git diff --cached --name-only`)에만
+  동작하고, 아니면 조용히 아무 것도 안 하고 종료한다(fail-open).
 """
+import subprocess
 import sys, json, os
 from collections import defaultdict
 from contextlib import nullcontext
@@ -17,6 +28,19 @@ except Exception:
 QUEUE_PATH = os.path.join(os.path.dirname(__file__), '..', 'status', '_queue.json')
 QUEUE_PATH = os.path.normpath(QUEUE_PATH)
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+QUEUE_REL = 'status/_queue.json'
+
+
+def _is_staged_for_commit(root):
+    """status/_queue.json 이 이번 커밋(인덱스, HEAD 대비)에 실제로 staged 됐는지."""
+    try:
+        out = subprocess.run(
+            ['git', 'diff', '--cached', '--name-only', '--', QUEUE_REL],
+            cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        return bool(out.stdout.decode('utf-8', 'replace').strip())
+    except Exception:
+        return False
 
 def load():
     with open(QUEUE_PATH, 'r', encoding='utf-8') as f:
@@ -67,4 +91,8 @@ def main():
         print('[assign_ship_numbers] 새로 부여할 항목 없음 (멱등 확인)')
 
 if __name__ == '__main__':
+    if '--pre-commit' in sys.argv:
+        if not _is_staged_for_commit(REPO_ROOT):
+            print('[assign_ship_numbers] status/_queue.json 이 이번 커밋에 staged 안 됨 — skip(무관 상태 혼입 방지)')
+            sys.exit(0)
     main()

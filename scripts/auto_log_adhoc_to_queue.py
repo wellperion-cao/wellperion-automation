@@ -159,37 +159,58 @@ def _strip_conventional_prefix(subject: str) -> str:
 def _attribute_clevel(root: str, subject: str, body: str) -> str:
     """clevel 귀속 — 커밋 내용 우선(공유 저장소라 세션마커 신뢰 못 함).
 
-    ① 닉네임 토큰(subject+body) ② 역할 토큰(scope/제목, 대소문자무시)
-    ③ 기본 'ceo'(웰리=전사 디스패처).
+    ① 명시 conventional-commit scope(예: fix(cto):) ② 닉네임 토큰(subject+body)
+    ③ 역할 토큰(제목 어디든, 대소문자무시) ④ 기본 'ceo'(웰리=전사 디스패처).
 
     ※ 세션 마커(.omc/state/active_clevel) 폴백은 폐지(2026-06-18). 저장소가
       멀티세션 공유라 한 마커가 타 C-Level 커밋을 오귀속함(예: feat(헌법)
       전사 작업이 coo로 찍힘). 귀속은 반드시 커밋 자체(닉네임·역할 토큰)에서만
       뽑고, 토큰 없으면 전사 소유자 ceo(웰리)로 둔다. → C-Level은 본인 커밋에
       [닉네임] 또는 (scope) 태그를 달아야 정확히 귀속된다.
+
+    ※ scope 우선순위 버그 수정(2026-07-20 시토·INC-017 후속): 예전엔 닉네임 토큰이
+      최우선이라 "fix(cto): 웰리 무인 러너 …" 처럼 scope=cto 가 명시됐는데도 제목
+      안의 부수 언급 "웰리"(설계 배경 서술)가 먼저 매칭돼 ceo 로 오귀속됐다(커밋
+      75d1d4e9 실사례 · 0cd3042f 수동정정). type(scope): 형태로 명시된 scope 는
+      구조화된 신호라 문장 속 우연한 닉네임 언급보다 신뢰도가 높으므로 최우선 검사.
     """
     # 제목만 본다 — 본문 부수 언급(예: 설명에 'ceo(웰리)')이 오귀속을 일으킴.
     # C-Level은 제목에 [닉네임] 또는 (scope) 로 본인을 태그한다.
     text = subject
-    # ① 닉네임 토큰.
+    low = text.lower()
+
+    def _bounded_role(haystack: str):
+        """haystack 안에서 경계 문자(영숫자 아님)로 둘러싸인 role 토큰 첫 매치."""
+        for role in ROLES:
+            idx = 0
+            while True:
+                pos = haystack.find(role, idx)
+                if pos < 0:
+                    break
+                before = haystack[pos - 1] if pos > 0 else ""
+                after = haystack[pos + len(role)] if pos + len(role) < len(haystack) else ""
+                if not before.isalnum() and not after.isalnum():
+                    return role
+                idx = pos + 1
+        return None
+
+    # ① 명시 conventional-commit scope: "type(scope): ..." 선두 패턴에서만 추출.
+    #    (예: "fix(cto): 웰리 …" → scope="cto" → cto. 본문 뒤쪽 우연한 role 단어는
+    #    이 단계에서 안 봄 — 반드시 제목 선두 괄호 구조여야 최우선 신호로 인정.)
+    m = re.match(r"^\s*[A-Za-z][A-Za-z0-9_-]*\(([^)]+)\)\s*:", low)
+    if m:
+        scope_role = _bounded_role(m.group(1))
+        if scope_role:
+            return scope_role
+    # ② 닉네임 토큰.
     for nick, role in NICK_TO_ROLE.items():
         if nick in text:
             return role
-    # ② 역할 토큰 (예: feat(S2-COO) / feat(S2/cto) / "COO" 단어).
-    low = text.lower()
-    for role in ROLES:
-        # 경계 문자(영숫자 아님)로 둘러싸인 role 토큰만 인정 — 오탐 방지.
-        idx = 0
-        while True:
-            pos = low.find(role, idx)
-            if pos < 0:
-                break
-            before = low[pos - 1] if pos > 0 else ""
-            after = low[pos + len(role)] if pos + len(role) < len(low) else ""
-            if not before.isalnum() and not after.isalnum():
-                return role
-            idx = pos + 1
-    # ③ 기본 — 전사 소유자 ceo(웰리). 세션마커 폴백 폐지(멀티세션 오귀속 방지).
+    # ③ 역할 토큰 (예: feat(S2-COO) / feat(S2/cto) / "COO" 단어) — 제목 전체에서.
+    role = _bounded_role(low)
+    if role:
+        return role
+    # ④ 기본 — 전사 소유자 ceo(웰리). 세션마커 폴백 폐지(멀티세션 오귀속 방지).
     return "ceo"
 
 
@@ -337,8 +358,11 @@ def _commit_queue(root: str, sha7: str, clevel: str) -> None:
                 if rc != 0:
                     _log("AUTO_LOG add 실패; 보류", root)
                     return
+                # pathspec 강제(2026-07-20 시토·동시커밋 사고대응): 커밋을 QUEUE_REL 로
+                # 명시 스코프. 인덱스에 동시에 다른 세션이 스테이징해둔 무관 파일이 있어도
+                # 이 커밋에는 절대 안 실린다(그 파일들은 staged 그대로 인덱스에 남음).
                 p = subprocess.run(
-                    ["git", "commit", "-m", msg],
+                    ["git", "commit", "-m", msg, "--", QUEUE_REL],
                     cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 )
                 if p.returncode != 0:

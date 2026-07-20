@@ -274,6 +274,16 @@ def main() -> int:
     if not args.dry_run:
         _save_summary(build_summary(ledger))
     print(f"DONE: 계정 도달 1건 + 게시물 {len(media_results)}건 수집 → {LEDGER_PATH} (요약 → {SUMMARY_PATH})")
+
+    # 반응 성적표 스캔 연계(2026-07-20 배834 — 발행 루프를 감싸는 상위 루프: 반응 파악→개선제안).
+    # 신규 예약작업 미생성 — 매일 09:45 이 수집 직후(방금 갱신한 도달 데이터가 곧바로 반영되도록)
+    # best-effort 편승. 실패해도 위 도달 수집 자체는 이미 완료된 상태이므로 종료코드에 영향 없음.
+    if not args.dry_run:
+        try:
+            import reaction_scorecard
+            reaction_scorecard.scan_and_alert()
+        except Exception as e:
+            print(f"[WARN] 반응 성적표 스캔 연계 실패(IG 도달 수집 자체는 완료): {e}")
     return 0
 
 

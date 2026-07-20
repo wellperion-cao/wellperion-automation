@@ -202,6 +202,21 @@
       "honesty_default": "measured"
     },
     {
+      "id": "cmo-reaction-loop",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "발행 루프를 감싸는 상위 루프 — 콘텐츠 1건=반응 성적표 1장(IG 도달·당근 조회/찜·카페 조회 실측, 클릭 아님) → 최근 발행분 대비 상대 판정(저조/정상범위/판정보류) → 저조 시 로드맵 근거 개선안 GM께 제안(반무인, 자동 재발행 없음). 배834(북극성 제작 루프) 폐루프의 클릭 대체 입력.",
+      "data_source": {"kind": "json", "ref": "status/cmo_reaction_scorecard.json (status/ig_reach_ledger.json + 3. 웰페리온 가이드/cmo/funnel/engagement/engagement_feed.json 재조합, scripts/reaction_scorecard.py)"},
+      "notify_spec": {"daily": false, "weekly": true, "monthly": false, "channel": "telegram", "bot_id": "GM 업무보고봇방(TELEGRAM_CHAT_ID)", "notify_wired": true},
+      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "autonomy": "propose",
+      "ai_free_fallback": "IG 도달(09:45)·당근/블로그 RSS(09:30) 자동수집 결과를 사람이 review_queue.json·engagement_feed.json에서 직접 대조해 저조 편을 눈으로 판별 가능",
+      "feedback": {"enabled": true, "audience": "gm", "entries": []},
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
       "id": "cmo-autonomy-brain",
       "owner_role": "cmo",
       "owner_nick": "시모",
