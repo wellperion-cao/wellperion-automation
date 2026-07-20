@@ -4924,6 +4924,41 @@ function _processAction(body) {
   //   타임스탬프가 같은 정보를 시:분:초까지 담고 있어 중복. 쓰기 경로는 이 액션 배포 전에 먼저 제거했다.
   //   안전장치 4중: ①A열 정확일치 '문의일'만(또는 빈 헤더) ②타임스탬프 칸 존재 필수(날짜 정보 전멸 방지)
   //   ③삭제 전 A열 값 전량 백업 반환 ④dryRun 기본.
+  // ─── (범용) 멤버십 문의 시트 칸 1개 삭제 — 이름 정확일치 + 값 전량 백업 + dryRun ───
+  //   정확일치만(부분일치로 엉뚱한 칸 지우는 사고 방지). 같은 이름이 둘이면 거부.
+  //   반환에 값 전량을 담으므로 호출부가 파일로 저장하면 그것이 유일한 복구 근거다.
+  if (action === 'del_col_by_name_20260720') {
+    if (String(body.key || '') !== 'wlp_delcol_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var dnName = String(body.name || '').trim();
+    if (!dnName) return _json({ ok: false, error: 'name-required' });
+    var dnDry = (String(body.dryRun || '') === '1');
+    var dnSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!dnSh) return _json({ ok: false, error: '시트 없음' });
+    var dnHdr = dnSh.getRange(1, 1, 1, dnSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var dnNorm = function (x) { return String(x || '').replace(/\s+/g, ''); };
+    var dnIdx = -1, dnHits = 0;
+    for (var dni = 0; dni < dnHdr.length; dni++) { if (dnNorm(dnHdr[dni]) === dnNorm(dnName)) { dnHits++; if (dnIdx < 0) dnIdx = dni; } }
+    if (dnIdx < 0) return _json({ ok: false, error: 'no-target', name: dnName, headers: dnHdr });
+    if (dnHits > 1) return _json({ ok: false, error: 'ambiguous', hits: dnHits });
+    var dnLast = dnSh.getLastRow(), dnBackup = [], dnFilled = 0;
+    if (dnLast >= 2) {
+      var dnNameI = dnHdr.indexOf('1. 성함'), dnPhoneI = dnHdr.indexOf('2. 연락처');
+      var dnAll = dnSh.getRange(2, 1, dnLast - 1, dnHdr.length).getValues();
+      for (var dnr = 0; dnr < dnAll.length; dnr++) {
+        var dv = dnAll[dnr][dnIdx];
+        var dvs = (dv instanceof Date) ? Utilities.formatDate(dv, 'Asia/Seoul', 'yyyy-MM-dd') : String(dv == null ? '' : dv).trim();
+        if (!dvs) continue;
+        dnFilled++;
+        dnBackup.push({ row: dnr + 2, name: dnNameI >= 0 ? String(dnAll[dnr][dnNameI] || '') : '', phone: dnPhoneI >= 0 ? String(dnAll[dnr][dnPhoneI] || '') : '', value: dvs });
+      }
+    }
+    if (dnDry) return _json({ ok: true, dryRun: true, name: dnHdr[dnIdx], idx: dnIdx, colsBefore: dnHdr.length, filled: dnFilled, totalRows: Math.max(0, dnLast - 1), sample: dnBackup.slice(0, 5) });
+    dnSh.deleteColumn(dnIdx + 1);
+    SpreadsheetApp.flush();
+    var dnAfter = dnSh.getRange(1, 1, 1, dnSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    return _json({ ok: true, deleted: dnHdr[dnIdx], colsBefore: dnHdr.length, colsAfter: dnAfter.length, backedUp: dnBackup.length, backup: dnBackup, headersAfter: dnAfter });
+  }
+
   if (action === 'del_lesson_datecol_20260720') {
     if (String(body.key || '') !== 'wlp_dellesson_20260720') return _json({ ok: false, error: 'guard-mismatch' });
     var dlDry2 = (String(body.dryRun || '') === '1');
