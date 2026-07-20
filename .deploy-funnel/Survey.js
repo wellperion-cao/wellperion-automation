@@ -3139,11 +3139,21 @@ function _processAction(body) {
     var mdSh = _miResolveSheet_(body.gid, body.rowIndex);  // gid 또는 rowIndex 오프셋으로 물리 시트 라우팅(2026-07-09 시포·GM, 영어 문의 누수 수리)
     if (!mdSh) return _json({ ok: false, error: '시트 없음' });
     if (mdRow >= _ROW_OFFSET_EN_) mdRow -= _ROW_OFFSET_EN_;  // 실제 물리 행으로 디코드. 2026-07-09 시포·GM.
-    if (mdRow > mdSh.getLastRow()) return _json({ ok: false, error: '행 범위 초과' });
-    // ★행키 검증(fail-safe·keyPhone 동봉 권장): keyPhone 동봉 시 대상 행 전화가 비었거나(검증 불가) keyPhone과 다르면
-    //   삭제를 거부한다(구버전은 전화 공백이면 통과시켜 rowIndex 밀림 시 오삭제 위험 — 2026-07-08 시토 안전수리).
-    //   keyPhone 미전송(구 폴백)은 하위호환으로 검증 생략 — 신규 호출부는 keyPhone 동봉 권장.
-    if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
+    // ★행키 검증(필수·예외 없음, INC-020 재발방지 2026-07-20): keyPhone 미전송/빈값이면 대조 없이 무조건 거부.
+    //   구버전은 keyPhone 미전송 시 하위호환으로 검증을 생략해 통과시켰고, 동시접근으로 행이 밀린 상태에서
+    //   그 폴백이 실사용돼 실고객 문의 2건이 삭제되는 사고(INC-020)로 이어짐 — 폴백 완전 제거.
+    //   ★이 파일(.deploy-funnel)은 200버전 상한으로 라이브 배포가 v2로 이관되어 현재 트래픽 없음(9f4ada67)이나,
+    //   INC-020 watch_globs에 여전히 등록돼 있어 landmine 방치 방지 차원에서 v2와 동일 수정 적용. 2026-07-20 시포.
+    if (body.keyPhone === undefined || String(body.keyPhone) === '') {
+      return _json({ ok: false, error: 'keyPhone 필수 — 대조 없이 삭제 불가' });
+    }
+    // ★쓰기 직렬화(INC-020 재발방지 ③, 2026-07-20): 범위확인→전화대조→삭제 사이에 동시 호출이 같은 시트에
+    //   행을 밀어넣으면(삽입·삭제) 검증 통과 후 엉뚱한 행이 지워질 수 있다 — 락을 잡고 검증부터 삭제까지
+    //   한 번의 원자 구간으로 묶는다. 락 획득 실패 시 삭제하지 않고 재시도 요청(무음 스킵 금지).
+    var _mdLock = LockService.getScriptLock();
+    if (!_mdLock.tryLock(8000)) return _json({ ok: false, error: 'locked', detail: '다른 쓰기 작업 진행 중 — 잠시 후 다시 시도' });
+    try {
+      if (mdRow > mdSh.getLastRow()) return _json({ ok: false, error: '행 범위 초과' });
       var _mdHdr = _miHeaders_(mdSh);
       var _mdPhCi = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰']);
       var _mdRowPh = (_mdPhCi >= 0) ? _normPhone_(mdSh.getRange(mdRow, _mdPhCi + 1).getValue()) : '';
@@ -3151,8 +3161,10 @@ function _processAction(body) {
       if (!_mdRowPh || _mdRowPh !== _mdKeyPh) {
         return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 불일치/불명) — 목록 새로고침 후 다시 시도' });
       }
+      mdSh.deleteRow(mdRow);
+    } finally {
+      _mdLock.releaseLock();
     }
-    mdSh.deleteRow(mdRow);
     // 조회 캐시 무효화(축1) — delete 직후 최대 60초 stale 반환 방지(연쇄 오삭제 위험 차단). 2026-07-08 시토 안전수리.
     try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
     try { _notifyTelegram('🗑 문의회원 삭제(공개페이지) — 행 ' + mdRow); } catch (e) {}
