@@ -76,10 +76,29 @@
      (.social-section) + 소셜 링크 4종(reception_block.html L398-401과 동일 URL·이모지·라벨, 그대로 복사)
      추가. 컬러는 reception의 --accent 대신 이 폼의 --beige/--muted/--line/--paper 사용(톤 유지). 기존
      접수번호(#rcptNo)·"새 문의 접수하기" 버튼은 상단 유지, 신규 브랜드+디바이더+소셜은 그 아래 배치.
+     2026-07-20 GM 지시(라이브 실측 후 수정, /ko/inquiry-form/?type=membership): "배경이 화면 전체로
+     안 채워지고 PC에서 좌우가 짤린 느낌(아래도)" + "아래 여백 제거(저번 위 여백 삭제와 같은 방식)".
+     원인(Playwright 실측): .wlp-inq는 WP .container.main-content(padding:0 90px, PC 전용 거터)
+     안에 들어있어 자기 폭(1244px)만큼만 --bg(#f5f0ea) 배경이 칠해지고, 좌우 90px 거터 + 그 바깥
+     .container-wrap 배경(#f6f6f6 회색)이 그대로 드러남(모바일은 거터 0이라 문제 없음 — PC 한정
+     재현). 하단도 동일 회색(#f6f6f6) 배경의 .container-wrap padding-bottom 40px + 부모
+     .wpb_raw_code(Classic 에디터 raw HTML 래퍼) margin-bottom 35px = 고정 75px 여백이 .wlp-inq
+     바닥과 다크 푸터(#footer-outer) 사이에 항상 남음(전 폭 동일 75px, PC·모바일 실측 일치).
+     조치: ①좌우 — .wlp-inq에 50vw 브레이크아웃 ::before(불투명 --bg, z-index:-1)로 뷰포트 끝까지
+     풀블리드(100vw 폭 직접 지정 대신 left/right:50%+margin:-50vw만 사용 — width:100vw는 스크롤바
+     폭만큼 오버플로되어 가로스크롤 생기는 함정이라 회피, GM 지시 함정 동일). ②하단 — .wlp-inq에
+     margin-bottom:-75px(위 여백 삭제 때 .hero-band margin-top:-40px 썼던 것과 동일 원리 — 테마가
+     예약해둔 고정 여백을 음수 마진으로 되돌려 상쇄, "저번처럼"). .wrap 자체의 padding-bottom:70px
+     (본문 카드 안쪽 여백)은 그대로 유지 — 폼 마지막 버튼이 화면 끝에 붙지 않도록 내부 여백은 보존,
+     없앤 것은 순수 낭비였던 바깥 회색 띠뿐.
      수정 시 이 파일을 고치고 WP post 8460(draft-page --page survey) 재주입. -->
 <style>
 /* 문의 Survey 폼 페이지(8460) 한정 — WP 테마 헤더 전체 숨김. 다른 페이지 영향 0(page-id 스코프). */
 body.page-id-8460 #header-outer { display: none !important; }
+/* 하단 여백 제거(2026-07-20 GM 지시) — .wlp-inq{margin-bottom:-75px}만으로는 WPBakery 테마의
+   .wpb_wrapper > div{margin-bottom:24px}류 규칙(특이도 0,1,1)이 우리 규칙(0,1,0)을 이겨 무시됨(실측
+   확인). body.page-id-8460 스코프 + !important로 확실히 승리시킴(#header-outer와 동일 패턴). */
+body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 </style>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
@@ -90,6 +109,13 @@ body.page-id-8460 #header-outer { display: none !important; }
   background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   -webkit-text-size-adjust:100%;box-sizing:border-box;
+  position:relative;
+}
+/* 배경 풀블리드(PC 좌우 짤림 해소, 2026-07-20 GM 지시) — width:100vw 대신 left/right:50%+margin:-50vw만
+   사용해 스크롤바 폭 오버플로(가로스크롤) 함정 회피. 하단 여백 제거는 위 .wlp-inq margin-bottom:-75px. */
+.wlp-inq::before{
+  content:'';position:absolute;top:0;bottom:0;left:50%;right:50%;
+  margin-left:-50vw;margin-right:-50vw;background:var(--bg);z-index:-1;
 }
 .wlp-inq *{box-sizing:border-box;margin:0;padding:0}
 .wlp-inq button{font-family:inherit;-webkit-appearance:none;appearance:none;cursor:pointer}
