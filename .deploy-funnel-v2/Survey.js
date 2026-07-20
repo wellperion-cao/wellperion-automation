@@ -3501,6 +3501,48 @@ function _processAction(body) {
     }
   }
 
+  // ─── (일회성 진단·읽기전용) WSC강습 레거시 구간 — 날짜 문자열 사전식 정렬 결함 범위 실측 ───
+  //   'yyyy. M. d ...' 문자열이 zero-pad 없이 저장돼 있어(예 'M. 19' vs 'M. 2') 문자열 비교 시
+  //   실제 날짜순과 어긋난다("10.19"가 "10.2"보다 앞에 옴). 전체 결함 범위를 숫자로 확정하기 위해
+  //   지정 구간(from~to)을 실제 Date로 파싱해 인접행 역전(뒤 행이 앞 행보다 과거) 건수·위치를 센다.
+  //   쓰기 없음. 2026-07-20 시토(GM 지시).
+  if (action === 'cpo_diag_wsc_legacy_inversions') {
+    try {
+      var wiGid = LESSON_GID_YOUTH;
+      var wiSh = _lessonSheet_(wiGid);
+      if (!wiSh) return _json({ ok: false, error: 'sheet_not_found' });
+      var wiFrom = parseInt(body.from || '16', 10);
+      var wiTo = parseInt(body.to || String(wiSh.getLastRow()), 10);
+      var wiLastCol = wiSh.getLastColumn();
+      var wiHdr = wiSh.getRange(1, 1, 1, wiLastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+      var wiCiTs = _findCol_(wiHdr, ['타임스탬프']);
+      if (wiCiTs < 0) return _json({ ok: false, error: 'ts_col_not_found' });
+      var n = wiTo - wiFrom + 1;
+      if (n <= 0 || n > 5000) return _json({ ok: false, error: 'range_too_large_or_invalid', n: n });
+      var vals = wiSh.getRange(wiFrom, wiCiTs + 1, n, 1).getValues();
+      var prevDate = null, prevRow = null;
+      var inversions = [], scanned = 0, blanks = 0;
+      for (var i = 0; i < vals.length; i++) {
+        var rowNum = wiFrom + i;
+        var raw = vals[i][0];
+        var d = _parseAnyDate_(raw);
+        if (!(d instanceof Date) || isNaN(d.getTime())) { blanks++; continue; }
+        scanned++;
+        if (prevDate && d.getTime() < prevDate.getTime()) {
+          inversions.push({ row: rowNum, thisDate: Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'), prevRow: prevRow, prevDate: Utilities.formatDate(prevDate, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') });
+        }
+        prevDate = d; prevRow = rowNum;
+      }
+      return _json({
+        ok: true, gid: wiGid, from: wiFrom, to: wiTo, scannedRows: scanned, blankOrUnparsed: blanks,
+        inversionCount: inversions.length,
+        firstInversions: inversions.slice(0, 10), lastInversions: inversions.slice(-10)
+      });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
   // ─── (일회성 진단) 강습 두 탭(성인·WSC) 자체폼 유입 블록 위치 실측 — 행 재정렬 사전분석 ───
   //   read_rows_by_rownum(FORM_SHEETS 전용)로는 임의 행 범위 원문을 볼 수 있으나 '경계'(자체폼 블록이
   //   어디서 끝나고 레거시 오름차순 블록이 시작되는지)를 자동 판별하진 않는다 — 이 액션은 상단부(자체폼
