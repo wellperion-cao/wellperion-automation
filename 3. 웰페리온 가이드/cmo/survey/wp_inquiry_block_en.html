@@ -1,7 +1,18 @@
 <!-- Wellperion English Inquiry Block — WordPress '/en/inquiry/' page body injection source (SSOT)
      3 inquiry form buttons (Google Forms → Google Sheets).
      Inline styles only (avoids theme CSS conflicts). No external script dependencies.
-     To update: edit this file and re-inject via draft-inquiry mode. -->
+     2026-07-20 GM instruction: mirror the intro video already live on the Korean inquiry page
+     (/ko/inquiry/, page-id 8394, source wp_inquiry_block.html) — same YouTube video
+     (qpPYA3bAO7M), same embed method (standard click-to-play, no autoplay/mute/loop params),
+     same position (right after the intro text, before the inquiry-type cards), same size
+     (max-width:640px, 16:9 via padding-top:56.25% — the placeholder below already used these
+     exact numbers, so the frame itself needed no change). Kept this page's own rounded-corner/
+     shadow wrapper skin instead of importing the KO page's `.wlp-inq` sharp-corner/border skin —
+     that class doesn't exist here (this file is intentionally plain inline-style, no design-
+     system import) and the rounded style matches this page's own card grid below. iframe
+     title translated to English ("Wellperion Introduction", reusing the placeholder's own
+     existing English label — no new copy invented).
+     To update: edit this file and re-inject via draft-inquiry-en mode. -->
 <style>
 /* English inquiry page (WP page-id 8408) — header logo top-clip fix */
 body.page-id-8408 #header-outer #logo { margin-top: 32px !important; }
@@ -18,28 +29,13 @@ body.page-id-8408 #header-outer #logo { margin-top: 32px !important; }
     </p>
   </div>
 
-  <!-- ============================================================
-       ▼ Video placeholder — replace contents once video is ready
-       Replace the [video placeholder] div below with one of:
-         · Self-hosted: <video src="VIDEO_URL.mp4" controls playsinline poster="THUMBNAIL.jpg"
-                               style="width:100%;height:100%;object-fit:cover;"></video>
-         · YouTube:    <iframe src="https://www.youtube.com/embed/VIDEO_ID" allowfullscreen
-                               style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe>
-       (.wp-inq-video wrapper padding-top:56.25% maintains 16:9 aspect ratio automatically)
-       ============================================================ -->
+  <!-- Intro video — same YouTube embed as /ko/inquiry/ (qpPYA3bAO7M), same size/position/
+       playback method. (.wp-inq-video wrapper padding-top:56.25% maintains 16:9 aspect ratio.) -->
   <div class="wp-inq-video" style="width:100%;max-width:640px;margin:0 auto 28px;">
-    <div style="position:relative;width:100%;padding-top:56.25%;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#2b2b2b,#4a4a4a);box-shadow:0 4px 16px rgba(0,0,0,.12);">
-      <!-- [video placeholder] — replace this block with video/iframe when ready -->
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#cbb189;text-align:center;">
-        <div style="width:62px;height:62px;border-radius:50%;border:2px solid #cbb189;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
-          <span style="font-size:22px;margin-left:4px;line-height:1;">&#9654;</span>
-        </div>
-        <div style="font-size:15px;font-weight:600;letter-spacing:.5px;">Wellperion Introduction</div>
-        <div style="font-size:13px;color:#bbb;margin-top:4px;">Video coming soon</div>
-      </div>
+    <div style="position:relative;width:100%;padding-top:56.25%;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.12);">
+      <iframe src="https://www.youtube.com/embed/qpPYA3bAO7M" title="Wellperion Introduction" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe>
     </div>
   </div>
-  <!-- ▲ Video placeholder end -->
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
 
