@@ -1260,6 +1260,31 @@ function _miColIdx_(headers, names) {
   return -1;
 }
 function _todayKR_() { return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'); }
+// 웹 자동접수(intake_submit) 날짜·시각 → 기존 수기 444건과 동일한 표기로 통일(2026-07-20 시포).
+//   '26년 신규문의' 탭은 A열(날짜)='yy. M. d' / B열(타임스탬프)='yyyy. M. d 오전/오후 h:mm:ss' 두 칸이 별도로 존재.
+//   기존엔 한 번의 _imSet(['타임스탬프','접수일','날짜'], ISO문자열)만 호출해 _miColIdx_ 우선탐색으로 B(타임스탬프)만
+//   채워지고 A(날짜)는 미기재 → 스프레드시트 자동서식/수식이 그 자리를 엉뚱한 포맷(예 '26-07-18')으로 채우던 문제.
+//   Utilities.formatDate의 'a' 토큰은 로케일 무관 항상 영문 AM/PM만 반환(GAS 제약)이라 오전/오후는 직접 조립한다.
+function _korDateOnly_(d) {
+  var tz = 'Asia/Seoul';
+  return Utilities.formatDate(d, tz, 'yy') + '. ' + parseInt(Utilities.formatDate(d, tz, 'M'), 10) + '. ' + parseInt(Utilities.formatDate(d, tz, 'd'), 10);
+}
+function _korDateTime_(d) {
+  var tz = 'Asia/Seoul';
+  var h24 = parseInt(Utilities.formatDate(d, tz, 'H'), 10);
+  var ap = h24 < 12 ? '오전' : '오후';
+  var h12 = h24 % 12; if (h12 === 0) h12 = 12;
+  return Utilities.formatDate(d, tz, 'yyyy') + '. ' + parseInt(Utilities.formatDate(d, tz, 'M'), 10) + '. ' + parseInt(Utilities.formatDate(d, tz, 'd'), 10)
+    + ' ' + ap + ' ' + h12 + ':' + Utilities.formatDate(d, tz, 'mm') + ':' + Utilities.formatDate(d, tz, 'ss');
+}
+// 날짜 전용 칸(시설투어희망일 등)에 시각이 섞여 들어오는 걸 방어 — 'YYYY-MM-DD' 접두만 남기고 절단.
+//   intake_submit 클라이언트 필드(exp1Date 등)는 <input type=date>라 원래 시각이 없어야 하나,
+//   실측(2026-07-20 라이브 447행 점검)에 시각 혼입 사례가 있어 서버측에서도 한 번 더 자른다.
+function _dateOnlyStrip_(v) {
+  var s = String(v == null ? '' : v).trim();
+  var m = s.match(/^\d{4}-\d{2}-\d{2}/);
+  return m ? m[0] : s;
+}
 // 헤더에 name 칸이 없으면 맨 끝에 새 칸으로 생성(비파괴·멱등) 후 0-based 인덱스 반환. 2026-06-29 시포(방문완료일).
 function _miEnsureCol_(sh, hdr, name) {
   var ci = _miColIdx_(hdr, [name]);
@@ -2625,16 +2650,19 @@ function _processAction(body) {
         var _imHdr = _miHeaders_(_imSh);
         var _imRow = new Array(_imHdr.length).fill('');
         function _imSet(names, val) { if (val === undefined || val === null || val === '') return; var ci = _miColIdx_(_imHdr, names); if (ci >= 0) _imRow[ci] = val; }
-        _imSet(['타임스탬프', '접수일', '날짜'], Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));  // 2026-07-18 시간 보존
+        var _imNowDt = new Date();
+        _imSet(['날짜', '접수일'], _korDateOnly_(_imNowDt));       // A열 — 기존 444건 다수 포맷 'yy. M. d' 통일(2026-07-20). '타임스탬프'와 한 호출로 합치면 _miColIdx_가 B만 채우므로 반드시 분리
+        _imSet(['타임스탬프', 'timestamp'], _korDateTime_(_imNowDt));  // B열 — 기존 다수 포맷 'yyyy. M. d 오전/오후 h:mm:ss' 통일
         _imSet(['성함', '이름'], _iName);
         _imSet(['연락처', '전화', '휴대폰'], _fmtPhone_(_iPhone));
         _imSet(['관심 있는 프로그램 종류', '관심 있는 프로그램 종목', '관심프로그램', '프로그램', '종목'], _iProgram);
         _imSet(['진행현황', '진행상황', '진행상태', '상태'], '신규');
         _imSet(['문의채널', '유입채널', '채널', '경로'], _iChannel || _canonicalChannel_(_iUtmSource));
         _imSet(['접수 담당자', '담당'], '웹 자동접수');
-        _imSet(['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담'], body.exp1Date);
+        _imSet(['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담'], _dateOnlyStrip_(body.exp1Date));  // 날짜 전용 칸 — 시각 혼입 방어(2026-07-20)
         _imSet(['기타 웰페리온에 대한 문의 사항', '기타 웰페리온', '자유롭게 적어', '문의 사항', '내용'], _iMessage);
-        _imSet(['비고', '메모', '담당자메모'], WEB_INTAKE_TAG + (_iFastFlag ? ' ⚠️빠른제출' : ''));   // [웹접수] 유지(집계 중복방지)·utm 노이즈 제거
+        _imSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '')) : (_iChannel || ''));  // V열 — utm 원본 제자리 기록(2026-07-20). H/I(중분류·소분류)는 자기신고 분류라 건드리지 않음
+        _imSet(['비고', '메모', '담당자메모'], WEB_INTAKE_TAG + (_iFastFlag ? ' ⚠️빠른제출' : ''));   // [웹접수] 유지(집계 중복방지). utm 원문은 위 유입경로(자동)로 이관 — 비고엔 더 이상 처박지 않음(2026-07-20)
         _imSh.appendRow(_imRow);
         try { _cacheInvalidateJson_(_iCache, 'micache'); } catch (e) {}
       } else if (_iCat === 'adult' || _iCat === 'youth' || _iCat === 'summer') {
