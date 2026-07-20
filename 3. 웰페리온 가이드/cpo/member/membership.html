@@ -2410,7 +2410,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="consult-row"><span class="ck">문의</span><span class="cv" id="rpMemberFixed">—</span></div>
 
     <div class="consult-field-label">등록 종목</div>
-    <select id="rpProgramSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit"></select>
+    <select id="rpProgramSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit" onchange="_regFillCountOptions()"></select>
+
+    <!-- 강습 전용 — 회수·유효기간(멤버십은 숨김). 2026-07-21 시포·GM. -->
+    <div class="consult-field-label" id="regCountLabel" style="display:none">회수</div>
+    <select id="regCountSel" style="display:none;width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit" onchange="_regValidityUpdate()"></select>
+    <div class="consult-row" id="regValidityRow" style="display:none"><span class="ck">유효기간</span><span class="cv" id="regValidityText">—</span></div>
 
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeRegProgramModal()">취소</button>
@@ -4497,6 +4502,34 @@ var LESSON_INSTRUCTOR_ROSTER = {
   "웰니스": ["루프메소드"]
 };
 var LESSON_UNASSIGNED_OPTION = '담당자 X';   // 명단 없음/미배정 공통 옵션(전 종목)
+
+// 강습 종목별 유효기간 규칙 (회수→개월). 정본=상품기획.html 강습 요금표(참조·수기 동기화). 2026-07-21 시포·GM.
+// 명확한 종목만 자동계산. 미등재 종목/회수=수동 입력 폴백(틀린 만료일 방지).
+var LESSON_VALIDITY_ADULT = {
+  'P.T':     {10:2, 20:3, 30:5, 50:8, 100:12},
+  '필라테스': {8:2, 10:2, 20:3, 30:5},
+  '골프':     {1:'1일', 8:1, 10:2, 20:3, 30:5},
+  '스쿼시':   {1:'1일', 8:2, 10:2, 30:5}
+  // 수영(성인)·체조&트램폴린·뮤지컬팀·웰니스(발레·바레 월정기)=규칙 불균일 → 수동
+};
+var LESSON_VALIDITY_YOUTH = { '_any': {1:'1일', 4:2} };  // 유소년 WSC 전 종목 공통: 체험/1회=당일, 4회=2개월
+// (종목,회수,유형)→개월|'1일'|null 반환. null=수동입력 폴백. 2026-07-21 시포·GM.
+function lessonValidityMonths(sportKey, count, isYouth){
+  var c = parseInt(count,10); if(!c) return null;
+  var tbl = isYouth ? (LESSON_VALIDITY_YOUTH['_any']) : (LESSON_VALIDITY_ADULT[sportKey]||null);
+  if(!tbl) return null;
+  return (tbl[c] !== undefined) ? tbl[c] : null;
+}
+// 등록일(Date)+개월 → 만료일 'YYYY-MM-DD'. rule='1일'이면 등록일 당일. null이면 '' (수동).
+// _mdashYmd(기존 YMD 헬퍼, 위쪽 정의)를 그대로 재사용 — 신규 _ymd_ 중복 정의 안 함. 2026-07-21 시포·GM.
+function lessonExpireDate(regDateStr, monthsRule){
+  if(monthsRule===null || monthsRule===undefined) return '';
+  var base = regDateStr ? new Date(regDateStr) : new Date();
+  if(isNaN(base.getTime())) base = new Date();
+  if(monthsRule==='1일'){ return _mdashYmd(base); }
+  var d = new Date(base.getTime()); d.setMonth(d.getMonth()+parseInt(monthsRule,10));
+  return _mdashYmd(d);
+}
 
 // 문의 종목(원문 split 세그먼트) → 담당 명단 키 브릿지(포함매칭, 우선순위 고정). 미매칭=null(담당자 X만·정직표기). 축7, 2026-07-08 시포·GM.
 function _lessonRosterKeyOf(sportKey) {
@@ -7499,7 +7532,55 @@ function _regProgramModalFill(options, current) {
   var blank = document.createElement('option'); blank.value = ''; blank.textContent = '— 선택 —'; sel.appendChild(blank);
   options.forEach(function(opt){ var o = document.createElement('option'); o.value = opt; o.textContent = opt; sel.appendChild(o); });
   sel.value = String(current || '').trim();
+  // 강습 회수·유효기간 UI — 강습 모드에서만 표시(멤버십=관심프로그램만, 회수 개념 없음). 2026-07-21 시포·GM.
+  var _isLessonMode = !!(_regProgramModal && _regProgramModal.mode === 'lesson');
+  var _countLabel = document.getElementById('regCountLabel');
+  var _countSel = document.getElementById('regCountSel');
+  var _validityRow = document.getElementById('regValidityRow');
+  if (_isLessonMode) {
+    _countLabel.style.display = '';
+    _countSel.style.display = '';
+    _validityRow.style.display = '';
+    _regFillCountOptions();
+  } else {
+    _countLabel.style.display = 'none';
+    _countSel.style.display = 'none';
+    _validityRow.style.display = 'none';
+  }
   document.getElementById('regProgramOverlay').classList.add('open');
+}
+// 강습 회수 select 옵션 채우기 — 선택된 종목의 유효기간 규칙 키(+'기타') 기준. 종목 변경 시 재호출. 2026-07-21 시포·GM.
+function _regFillCountOptions() {
+  if (!_regProgramModal || _regProgramModal.mode !== 'lesson') return;
+  var progSel = document.getElementById('rpProgramSel');
+  var countSel = document.getElementById('regCountSel');
+  var isYouth = (_regProgramModal.type === '유소년강습' || _regProgramModal.type === '유소년' || _regProgramModal.t === 'youth');
+  var tbl = isYouth ? LESSON_VALIDITY_YOUTH['_any'] : (LESSON_VALIDITY_ADULT[progSel.value] || null);
+  var prevVal = countSel.value;
+  countSel.innerHTML = '';
+  var blank = document.createElement('option'); blank.value = ''; blank.textContent = '— 회수 선택 —'; countSel.appendChild(blank);
+  if (tbl) {
+    Object.keys(tbl).forEach(function(k){ var o = document.createElement('option'); o.value = k; o.textContent = k + '회'; countSel.appendChild(o); });
+  }
+  var etc = document.createElement('option'); etc.value = '기타'; etc.textContent = '기타(직접입력)'; countSel.appendChild(etc);
+  var _hasPrev = Array.prototype.some.call(countSel.options, function(o){ return o.value === prevVal; });
+  countSel.value = (prevVal && _hasPrev) ? prevVal : '';
+  _regValidityUpdate();
+}
+// 종목·회수 변경 시 유효기간 텍스트 실시간 갱신('자동: N개월 (만료 YYYY-MM-DD)' / '자동: 당일 (만료 ...)' / '수동/해당없음'). 2026-07-21 시포·GM.
+function _regValidityUpdate() {
+  if (!_regProgramModal || _regProgramModal.mode !== 'lesson') return;
+  var progSel = document.getElementById('rpProgramSel');
+  var countSel = document.getElementById('regCountSel');
+  var txt = document.getElementById('regValidityText');
+  var isYouth = (_regProgramModal.type === '유소년강습' || _regProgramModal.type === '유소년' || _regProgramModal.t === 'youth');
+  var rule = (countSel.value && countSel.value !== '기타') ? lessonValidityMonths(progSel.value, countSel.value, isYouth) : null;
+  if (rule === null || rule === undefined) {
+    txt.textContent = '수동/해당없음';
+  } else {
+    var exp = lessonExpireDate(_mdashYmd(new Date()), rule);
+    txt.textContent = (rule === '1일' ? '자동: 당일' : ('자동: ' + rule + '개월')) + (exp ? ' (만료 ' + exp + ')' : '');
+  }
 }
 function openInquiryRegProgramModal(rowIndex) {
   var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
@@ -7517,6 +7598,9 @@ function openLessonRegProgramModal(t, rowIndex, sportKey) {
   document.getElementById('rpMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '') + (sportKey ? ' · ' + sportKey : '');
   var _cur = String(r.regProgram || '').trim() || _lessonRosterKeyOf(sportKey) || '';
   _regProgramModalFill(Object.keys(LESSON_INSTRUCTOR_ROSTER), _cur);
+  // 회수·유효기간 필드는 신규 모달 오픈 시 항상 초기화(이전 건 값 잔류 방지). 2026-07-21 시포·GM.
+  document.getElementById('regCountSel').value = '';
+  _regValidityUpdate();
 }
 function closeRegProgramModal() {
   document.getElementById('regProgramOverlay').classList.remove('open');
@@ -7530,7 +7614,16 @@ function saveRegProgramModal() {
   var saveBtn = document.getElementById('rpSaveBtn'); saveBtn.disabled = true;
   var _isLesson = (_regProgramModal.mode === 'lesson');
   var _payload = _isLesson
-    ? { action: 'lesson_inquiry_update', type: _regProgramModal.type, rowIndex: rowIndex, keyPhone: keyPhone, sport: '', gid: _regProgramModal.gid, regProgram: program }
+    ? { action: 'lesson_inquiry_update', type: _regProgramModal.type, rowIndex: rowIndex, keyPhone: keyPhone, sport: '', gid: _regProgramModal.gid, regProgram: program,
+        // 강습 전용 — 회수·유효기간(자동계산=명확 종목만, 그 외 수동/빈값). 2026-07-21 시포·GM.
+        regCount: document.getElementById('regCountSel').value.trim(),
+        regExpire: (function(){
+          var _cnt = document.getElementById('regCountSel').value.trim();
+          if (!_cnt || _cnt === '기타') return '';
+          var _isYouth = (_regProgramModal.type === '유소년강습' || _regProgramModal.type === '유소년' || _regProgramModal.t === 'youth');
+          var _rule = lessonValidityMonths(program, _cnt, _isYouth);
+          return lessonExpireDate(_mdashYmd(new Date()), _rule);
+        })() }
     : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, regProgram: program };
   var _t = _isLesson ? _regProgramModal.t : null;
   apiPost(_payload)

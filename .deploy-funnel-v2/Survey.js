@@ -1865,7 +1865,9 @@ var _LESSON_MGMT_FIELDS = [
   { keys: [CONTACT_HIST_COL, 'Contact'],                            canon: 'Contact' },
   { keys: ['LOSS사유'],                                             canon: 'LOSS사유' },      // 문의 퍼널 LOSS 사유(강습) — 멤버십과 동일 체계. 2026-07-18 시토(GM요청) 대행.
   { keys: ['LOSS사유메모'],                                         canon: 'LOSS사유메모' },
-  { keys: ['등록종목'],                                             canon: '등록종목' }        // 등록(SUC) 시 실제 등록한 종목 — 멤버십 member_inquiry_update와 동일 체계. LOSS사유와 같은 정확일치 전용 키(부분일치 충돌 방지 — '성인 강습 종목'/'WSC 강습 종목' 등 기존 종목칸과 별개). 2026-07-20 시포(GM요청).
+  { keys: ['등록종목'],                                             canon: '등록종목' },       // 등록(SUC) 시 실제 등록한 종목 — 멤버십 member_inquiry_update와 동일 체계. LOSS사유와 같은 정확일치 전용 키(부분일치 충돌 방지 — '성인 강습 종목'/'WSC 강습 종목' 등 기존 종목칸과 별개). 2026-07-20 시포(GM요청).
+  { keys: ['등록회수'],                                             canon: '등록회수' },       // 강습 등록 회수. _luSet이 자동생성하려면 이 목록 등재가 필요(등록종목과 동일 체계). 2026-07-21 시포·GM.
+  { keys: ['유효기간'],                                             canon: '유효기간' }        // 강습 유효기간(만료일). 위와 동일 사유로 등재. 2026-07-21 시포·GM.
 ];
 
 // gid 매칭 시트 핸들(탭명 변경에 강함).
@@ -4484,7 +4486,9 @@ function _processAction(body) {
     // 등록 종목 — 등록(SUC) 시 실제 등록한 종목(문의 시 관심프로그램과 별개, 수정 가능). 칸 없으면 자동 생성(GM 수작업 0).
     //   GM 요청(2026-07-18, 시토 대행): "등록 시 어떤 종목을 등록했는지" 기록. 2026-07-18 시토·GM.
     if (body.regProgram !== undefined) {
-      var _rpci = _miColIdx_(muHdr, ['등록종목']);   // ★칸 자동생성 금지(2026-07-20 GM) — 없으면 조용히 건너뛴다
+      // 2026-07-21 시포·GM: 멤버십 시트엔 '등록종목' 칸이 없어(자동생성 금지 정책) 조용히 유실되던 문제 수정.
+      //   새 칸을 만들지 않고 기존 '관심 있는 프로그램 종목' 칸을 등록등급으로 갱신(관심프로그램 우선, '등록종목'은 폴백으로 유지).
+      var _rpci = _miColIdx_(muHdr, ['3. 관심 있는 프로그램 종목', '관심 있는 프로그램 종목', '관심프로그램', '관심 프로그램', '등록종목']);   // ★칸 자동생성 금지(2026-07-20 GM) — 없으면 조용히 건너뛴다
       if (_rpci >= 0) muSh.getRange(muRow, _rpci + 1).setValue(body.regProgram);
     }
     // ★LOSS 사유 저장 위치 정정(2026-07-20 GM 지적) — 기존 '미등록 사유' 칸이 정본이다.
@@ -4840,6 +4844,8 @@ function _processAction(body) {
       _luSet(['LOSS사유'], body.lossReason);       // 강습 LOSS 사유(문의 퍼널). 2026-07-18 시토(GM요청) 대행.
       // ★LOSS사유메모 폐기(2026-07-20 GM 확정) — "LOSS사유메모도 필요없어". 화면에서도 메모칸을 없앴다.
       _luSet(['등록종목'], body.regProgram);        // 강습 등록 종목(SUC 시 실제 등록한 종목) — 멤버십과 동일 체계, 칸 자동생성. 2026-07-20 시포(GM요청).
+      if (body.regCount   !== undefined) _luSet(['등록회수'], body.regCount);      // 강습 등록 회수. 2026-07-21 시포·GM.
+      if (body.regExpire  !== undefined) _luSet(['유효기간'], body.regExpire);     // 강습 유효기간(만료일). 자동계산=명확종목만. 2026-07-21 시포·GM.
       // ── 연락이력(가변) — 축2/축4: body.contacts(JSON 문자열/배열) 수신 시 저장. 미전송이면 무영향(기존 필드만 갱신).
       //    상담메모는 위 _luSet으로 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
       var _luHistPrevCount = 0;
@@ -4966,6 +4972,157 @@ function _processAction(body) {
   //   G는 구글폼 문항이라 고객이 날짜 대신 문장을 적은 값이 섞여 있다("일정에 맞춰 예약 도와드리겠습니다" 등).
   //   예약 칸에 문장이 있으면 예약으로 못 쓴다 → 비고로 옮기고 G는 비운다(정보 보존, 칸 용도 정리).
   //   덤: 4슬롯 이관 때 내가 시간을 중복시킨 값('체험1 21:00 21:00')은 뒤 중복분을 떼고 옮긴다.
+  // ─── (일회성) 예약 시각 30분 단위 정규화 — 2026-07-20 GM 지시 ───
+  //   최근 데이터에 12:05 / 10:35 처럼 5분씩 밀린 값이 섞여 있다(예약이 5분 단위로 잡힐 리 없다 = 오염).
+  //   GM 지시: 되돌리지 말고 30분 단위로 정리한다. 가장 가까운 00분/30분으로 반올림.
+  //   대상: 예약1(G)·예약2(H)·예약3(I)·예약4(J) 네 칸의 '날짜 시간' 값. 날짜만 있는 값은 건드리지 않는다.
+  // ─── (일회성) 타임스탬프 서식 표시 + 시각유실 3건 제자리 이동 — 2026-07-20 GM 지시 ───
+  //   ①타임스탬프 칸 서식을 'yyyy-mm-dd hh:mm:ss'로 → 값엔 시각이 있는데 시트에 날짜만 보이던 문제 해소.
+  //   ②Nicole·한혜수·원유선은 타임스탬프 기준 자리가 아니라 시트 끝에 붙어 있다 → 날짜순 제자리로 옮긴다.
+  //   ★행 삭제 없음. moveRows(이동)만 사용 — INC-020(행 삭제 사고) 재발 방지.
+  //   ★대상은 행번호가 아니라 성함+연락처로 특정한다.
+  // ─── (일회성) 시트 꼬리 구간을 타임스탬프 오름차순 정렬 — 2026-07-20 ───
+  //   앞서 moveRows로 3건을 옮기다 서로를 밀어내 순서가 어긋났다(같은 목적지로 순차 이동한 내 로직 오류).
+  //   행 삭제·삽입 없이 지정 구간의 '값'만 정렬한다(Range.sort) — 안전.
+  //   from/to를 명시적으로 받아 전체 시트를 건드리지 않는다.
+  if (action === 'sort_tail_by_ts_20260720') {
+    if (String(body.key || '') !== 'wlp_sorttail_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var stFrom = parseInt(body.from || '0', 10), stTo = parseInt(body.to || '0', 10);
+    if (!(stFrom > 1) || !(stTo > stFrom)) return _json({ ok: false, error: 'range-required', from: stFrom, to: stTo });
+    var stDry = (String(body.dryRun || '') === '1');
+    var stSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!stSh) return _json({ ok: false, error: '시트 없음' });
+    var stHdr = stSh.getRange(1, 1, 1, stSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var iTs = stHdr.indexOf('타임스탬프'), iNm = stHdr.indexOf('1. 성함');
+    if (iTs < 0) return _json({ ok: false, error: 'ts-col-not-found' });
+    if (stTo > stSh.getLastRow()) stTo = stSh.getLastRow();
+    var rng = stSh.getRange(stFrom, 1, stTo - stFrom + 1, stHdr.length);
+    var before = rng.getValues().map(function (r, i) {
+      var v = r[iTs];
+      return { row: stFrom + i, name: iNm >= 0 ? String(r[iNm] || '') : '',
+               ts: (v instanceof Date) ? Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(v || '') };
+    });
+    if (stDry) return _json({ ok: true, dryRun: true, from: stFrom, to: stTo, before: before });
+    rng.sort({ column: iTs + 1, ascending: true });
+    SpreadsheetApp.flush();
+    var after = stSh.getRange(stFrom, 1, stTo - stFrom + 1, stHdr.length).getValues().map(function (r, i) {
+      var v = r[iTs];
+      return { row: stFrom + i, name: iNm >= 0 ? String(r[iNm] || '') : '',
+               ts: (v instanceof Date) ? Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(v || '') };
+    });
+    return _json({ ok: true, sorted: true, from: stFrom, to: stTo, after: after });
+  }
+
+  if (action === 'fix_ts_display_move_20260720') {
+    if (String(body.key || '') !== 'wlp_tsfix_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var tfDry = (String(body.dryRun || '') === '1');
+    var tfSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!tfSh) return _json({ ok: false, error: '시트 없음' });
+    var tfHdr = tfSh.getRange(1, 1, 1, tfSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var iTs = tfHdr.indexOf('타임스탬프'), iNm = tfHdr.indexOf('1. 성함'), iPh = tfHdr.indexOf('2. 연락처');
+    if (iTs < 0 || iNm < 0 || iPh < 0) return _json({ ok: false, error: 'col-not-found' });
+    var tfLast = tfSh.getLastRow();
+    // ① 서식
+    if (!tfDry && tfLast >= 2) { tfSh.getRange(2, iTs + 1, tfLast - 1, 1).setNumberFormat('yyyy-mm-dd hh:mm:ss'); SpreadsheetApp.flush(); }
+    // ② 이동 대상 특정 (성함+연락처)
+    var targets = [
+      // ★날짜까지 대조키에 넣는다 — 한혜수님은 같은 번호로 6/18·7/18 두 건이 있어(재문의) 이름+연락처만으론 특정 불가.
+      //   안전장치가 'not-unique'로 거부한 것이 맞았다. 키를 빼는 게 아니라 더하는 방향으로 해결한다(INC-020 교훈).
+      { name: 'Nicole choi', phone: '010-9119-2494', date: '2026-07-18' },
+      { name: '한혜수',      phone: '010-4108-7735', date: '2026-07-18' },
+      { name: '원유선',      phone: '010-2217-1558', date: '2026-07-18' }
+    ];
+    var norm = function (x) { return String(x || '').replace(/\D/g, ''); };
+    var all = tfLast >= 2 ? tfSh.getRange(2, 1, tfLast - 1, tfHdr.length).getValues() : [];
+    var found = [], notUnique = [];
+    targets.forEach(function (t) {
+      var hits = [];
+      for (var i = 0; i < all.length; i++) {
+        if (String(all[i][iNm] || '').trim() !== t.name) continue;
+        if (norm(all[i][iPh]) !== norm(t.phone)) continue;
+        var tv = all[i][iTs];
+        var tvs = (tv instanceof Date) ? Utilities.formatDate(tv, 'Asia/Seoul', 'yyyy-MM-dd') : String(tv || '').substring(0, 10);
+        if (t.date && tvs !== t.date) continue;
+        hits.push(i + 2);
+      }
+      if (hits.length !== 1) { notUnique.push({ name: t.name, hits: hits.length }); return; }
+      var ts = all[hits[0] - 2][iTs];
+      found.push({ name: t.name, row: hits[0], ts: (ts instanceof Date) ? Utilities.formatDate(ts, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(ts || '') });
+    });
+    if (notUnique.length) return _json({ ok: false, error: 'not-unique', detail: notUnique });
+    // 각 대상이 가야 할 위치 = 자기보다 늦은 타임스탬프가 처음 나오는 행
+    var dests = found.map(function (f) {
+      var myTs = f.ts.substring(0, 10);
+      var dest = -1;
+      for (var i = 0; i < all.length; i++) {
+        var r = i + 2;
+        if (r === f.row) continue;
+        var v = all[i][iTs];
+        var vs = (v instanceof Date) ? Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd') : String(v || '').substring(0, 10);
+        if (!vs) continue;
+        if (vs > myTs) { dest = r; break; }
+      }
+      return { name: f.name, from: f.row, ts: f.ts, moveBefore: dest };
+    });
+    if (tfDry) return _json({ ok: true, dryRun: true, formatWillSet: 'yyyy-mm-dd hh:mm:ss', targets: dests, lastRow: tfLast });
+    // 이동 — 아래 행부터 처리해야 위 행 이동이 인덱스를 흔들지 않는다
+    var moved = [];
+    dests.sort(function (a, b) { return b.from - a.from; }).forEach(function (m) {
+      if (m.moveBefore < 0 || m.moveBefore === m.from) { moved.push({ name: m.name, skipped: '이미 제자리' }); return; }
+      tfSh.moveRows(tfSh.getRange(m.from + ':' + m.from), m.moveBefore);
+      SpreadsheetApp.flush();
+      moved.push({ name: m.name, from: m.from, to: m.moveBefore, ts: m.ts });
+    });
+    return _json({ ok: true, formatSet: true, moved: moved });
+  }
+
+  if (action === 'normalize_slot_time_20260720') {
+    if (String(body.key || '') !== 'wlp_normtime_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var ntDry = (String(body.dryRun || '') === '1');
+    var ntSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!ntSh) return _json({ ok: false, error: '시트 없음' });
+    var ntHdr = ntSh.getRange(1, 1, 1, ntSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var ntN = function (x) { return String(x || '').replace(/\s+/g, ''); };
+    var slots = [];
+    for (var ni = 0; ni < ntHdr.length; ni++) {
+      var hn = ntN(ntHdr[ni]);
+      if (hn.indexOf('5.시설투어') === 0) slots[0] = ni;
+      if (hn === '예약2') slots[1] = ni;
+      if (hn === '예약3') slots[2] = ni;
+      if (hn === '예약4') slots[3] = ni;
+    }
+    var iNm = ntHdr.indexOf('1. 성함');
+    if (slots[0] === undefined || slots[1] === undefined) return _json({ ok: false, error: 'col-not-found', slots: slots });
+    var ntLast = ntSh.getLastRow();
+    var ntAll = ntLast >= 2 ? ntSh.getRange(2, 1, ntLast - 1, ntHdr.length).getValues() : [];
+    var pad = function (n) { return ('0' + n).slice(-2); };
+    var plan = [];
+    for (var nr = 0; nr < ntAll.length; nr++) {
+      var R = ntAll[nr];
+      for (var sl = 0; sl < 4; sl++) {
+        var ci = slots[sl];
+        if (ci === undefined) continue;
+        var raw = R[ci];
+        var d = _miToISO_(raw), t = _miTime_(raw);
+        if (!d || !t) continue;                       // 날짜만이면 대상 아님
+        var mm = t.split(':'); if (mm.length < 2) continue;
+        var H = parseInt(mm[0], 10), M = parseInt(mm[1], 10);
+        if (isNaN(H) || isNaN(M)) continue;
+        var total = H * 60 + M;
+        var rounded = Math.round(total / 30) * 30;    // 가장 가까운 30분
+        if (rounded >= 1440) rounded = 1410;          // 24:00 방지 → 23:30
+        if (rounded === total) continue;              // 이미 정각/30분이면 통과
+        var nh = Math.floor(rounded / 60), nmn = rounded % 60;
+        plan.push({ row: nr + 2, slot: sl + 1, col: ci, name: iNm >= 0 ? String(R[iNm] || '') : '',
+                    from: d + ' ' + t, to: d + ' ' + pad(nh) + ':' + pad(nmn) });
+      }
+    }
+    if (ntDry) return _json({ ok: true, dryRun: true, count: plan.length, plan: plan });
+    plan.forEach(function (p) { ntSh.getRange(p.row, p.col + 1).setValue(p.to); });
+    SpreadsheetApp.flush();
+    return _json({ ok: true, fixed: plan.length, plan: plan });
+  }
+
   if (action === 'move_freetext_g_20260720') {
     if (String(body.key || '') !== 'wlp_freetext_20260720') return _json({ ok: false, error: 'guard-mismatch' });
     var mgDry = (String(body.dryRun || '') === '1');
