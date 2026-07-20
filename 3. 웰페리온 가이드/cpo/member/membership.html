@@ -5660,6 +5660,12 @@ function setActiveScope(scope, btn) {
   });
   if (btn) { btn.style.background = 'var(--teal-bg)'; btn.style.color = 'var(--teal)'; btn.style.borderColor = 'var(--teal-border)'; }
   var si = document.getElementById('activeSearch'); if (si) si.value = '';
+  // §2-A: 새 스코프 전체 fetch가 도착하기 전까지는 "이 스코프 행 미도착" 상태로 — 헤더가 직전 스코프의
+  // stale _activeRows로 잘못 계산되지 않게(_activeHeaderCount의 rowsReady 판정용). 그 상태로 헤더를 먼저
+  // 즉시 다시 그려 LOSS·대기자 카드 숫자가 클릭 즉시(member_active_summary 잠정치로) 뜨게 한다 — 표는
+  // 아래 loadActiveMembers()가 이어서 백그라운드로 채운다.
+  _activeLoaded = false;
+  renderActiveSummary();
   loadActiveMembers();
 }
 
@@ -6421,17 +6427,32 @@ function _memberChip(label, val, kind, onclick) {
     esc(label) + '<span style="font-size:14px;font-weight:800">' + num + '</span></span>';
 }
 // LOSS·대기자 카드 진입 시 헤더 — '보고 있는 집합 이름 + 실측 건수'(GM 지적, 2026-07-20). 두 카드 결함이 같은
-// 뿌리(헤더가 항상 '총 유효회원' 블록 고정)라 여기 한 함수로 같이 고친다. count는 _activeBaseRows()로 표에 실제
-// 뿌려지는 행과 항상 동일값(하드코딩 금지, R9 실측). 그 외 스코프(총 유효회원 등)는 null→기존 블록 그대로.
+// 뿌리(헤더가 항상 '총 유효회원' 블록 고정)라 여기 한 함수로 같이 고친다. count는 _activeHeaderCount()로 표에
+// 실제 뿌려지는 행과 항상 동일값(하드코딩 금지, R9 실측). 그 외 스코프(총 유효회원 등)는 null→기존 블록 그대로.
+// periodKey = member_active_summary 응답의 기간별 필드명(§2-A 계약, lossPeriods/waitPeriods) — 전체 fetch 전
+// 잠정치로 사용.
 function _activeHeaderInfo() {
-  if (_activeScope === 'ended') return { label: 'LOSS 회원', color: '#c8756f' };
-  if (_activeScope === 'valid' && _activeStartFilter === 'waiting') return { label: '대기자 회원', color: 'var(--accent)' };
+  if (_activeScope === 'ended') return { label: 'LOSS 회원', color: '#c8756f', periodKey: 'lossPeriods' };
+  if (_activeScope === 'valid' && _activeStartFilter === 'waiting') return { label: '대기자 회원', color: 'var(--accent)', periodKey: 'waitPeriods' };
   return null;
+}
+// §2-A 배선 — 전체 fetch(scope=ended/valid)가 아직 이 뷰에 도착 안 했으면 member_active_summary(잠정, ~2초)
+// 값을 쓰고, 도착하면 _activeBaseRows()(실제 로드된 행 기준)가 항상 최종 진실로 자동 덮어쓴다. 서버 요약이
+// 죽어도(ok:false·_amSummary null) _activeBaseRows() 폴백이 그대로 동작 — 화면이 죽지 않는다.
+function _activeHeaderCount(hi) {
+  var rowsReady = _activeLoaded && (
+    (hi.periodKey === 'lossPeriods' && _activeScope === 'ended') ||
+    (hi.periodKey === 'waitPeriods' && _activeScope === 'valid' && _activeStartFilter === 'waiting')
+  );
+  if (!rowsReady && _amSummary && _amSummary[hi.periodKey] && typeof _amSummary[hi.periodKey][_actPeriod] === 'number') {
+    return _amSummary[hi.periodKey][_actPeriod];
+  }
+  return _activeBaseRows().length;
 }
 function _memberOverviewHtml() {
   var hi = _activeHeaderInfo();
   if (hi) {
-    var cnt = _activeBaseRows().length;
+    var cnt = _activeHeaderCount(hi);
     return '<div>' +
         '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">' +
           '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
@@ -6743,15 +6764,49 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false, 
   try { var _mp = new URLSearchParams(location.search).get('manage'); if(!_mp){ _mp = sessionStorage.getItem('mi_manage_pending'); } sessionStorage.removeItem('mi_manage_pending'); switchFamily(_mp === 'lesson' ? 'lesson' : 'membership'); }
   catch(e){ switchFamily('membership'); }
   renderCalendarShell();
-  loadCalendarData();  // 예약 달력 데이터 사전로드(기본 탭은 아래에서 '새 문의'로 지정 — 2026-07-18 GM 변경)
   // 기본 랜딩 탭 = 새 문의(pane-db, 정적 active) — 상단 '새 문의' 현황카드도 하이라이트(2026-07-18 GM 지시).
   try { var _dcNew = document.querySelector('#memberTabNav .dash-card[data-kind="inq"]'); if (_dcNew && typeof _memHighlight === 'function') _memHighlight(_dcNew); } catch(e){}
-  loadCpoTodayStats();  // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
-  _tabLoaded.active = true; loadActiveMembers();  // 유효회원 사전로드 — pane 미개방에도 단기권 카드·통합검색 데이터 채움(배299, 2026-07-07 시포·GM)
-  _tabLoaded.db = true; loadDbData();  // 문의 DB 사전로드 — 통합검색·이번달 문의 집계 데이터 채움(배3, 2026-07-07 시포·GM)
+  // §2-A 실측(2026-07-20 시포·GM): 이 페이지가 GAS에 한 번에 5~6개를 동시 발사한다(달력·오늘현황·요약·전체행×2·문의DB).
+  // 실측 결과 가벼운 액션(cpo_today_stats·member_active_summary, 단독 시 ~2초)도 무거운 전체행 fetch와 같은 순간에
+  // 몰리면 GAS 실행 대기열에 밀려 ~9초까지 늦어진다(라이브 대조: node 동시발사 재현, 가벼운 2개만 200ms 먼저 보내면
+  // 그대로 ~2.5초에 확정). 그래서 카드 숫자용 가벼운 두 액션만 최우선 발사하고, 무거운 전체행 프리로드는 200ms
+  // 늦춰 발사한다 — 완료 시점(체감상 무의미한 차이)은 그대로, 발사 순서만 바꿔 카드가 진짜 먼저 뜨게 한다.
+  loadCpoTodayStats();       // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
+  loadMemberActiveSummary(); // 대기자·단기·유형별 카드 숫자를 전체 fetch보다 먼저 채움
+  setTimeout(function(){
+    loadCalendarData();  // 예약 달력 데이터 사전로드(기본 탭은 아래에서 '새 문의'로 지정 — 2026-07-18 GM 변경)
+    _tabLoaded.active = true; loadActiveMembers();  // 유효회원 사전로드 — pane 미개방에도 단기권 카드·통합검색 데이터 채움(배299, 2026-07-07 시포·GM)
+    _tabLoaded.db = true; loadDbData();  // 문의 DB 사전로드 — 통합검색·이번달 문의 집계 데이터 채움(배3, 2026-07-07 시포·GM)
+  }, 200);
   // 신규 문의 & 등록 현황 대시보드 = 🆕 버튼 → 팝업(openInquiryDash) lazy load. 전환율·퍼널·LOSS신호도 각 팝업 오픈 시 lazy fetch(배3, 2026-07-07 시포·GM).
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
 })();
+
+// §2-A 로딩속도 — LOSS·대기자·유형별·대기자 카드 숫자를 member_active_list(콜드 ~11초, 전체 행) 없이 즉시 채운다.
+// 계약서: docs/superpowers/specs/2026-07-20-member-active-summary-contract.md (backend-sheet v50 배포, 327B/~2초 실측).
+// 실패해도 안전 — ok:false·fetch 에러 시 아무것도 안 하고 조용히 무시하면 기존 member_active_list 경로가 그대로
+// 카드를 채운다(회귀 없음, "있으면 빠르고 없어도 안 죽는" 부가 최적화).
+var _amSummary = null;
+function loadMemberActiveSummary() {
+  if (GAS_URL === GAS_PLACEHOLDER) return;
+  fetch(GAS_URL + '?action=member_active_summary')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok) return;
+      _amSummary = d;
+      _setTxt('dMemWait', d.waitingCount);                                    // 상단 대기자 카드
+      _setTxt('dMemShort', (d.typeCounts && d.typeCounts['중단기']) || 0);    // 상단 카드4 단기 서브라인
+      // 전체 fetch(scope=valid)가 이미 끝나 있으면(드묾) 실측 클라 계산값을 잠정치로 덮어쓰지 않는다 —
+      // member_active_list가 도착하면 renderActiveSummary()가 _activeRows 기준으로 재계산해 항상 최종 진실이 된다.
+      if (!_activeLoaded) {
+        _validTypeCounts = d.typeCounts || null;
+        _validTotal = d.validTotal || 0;
+        _validWaitCnt = d.waitingCount || 0;
+      }
+      renderActiveSummary();   // 이미 LOSS·대기자 드릴다운 중이면 헤더도 즉시 갱신
+    })
+    .catch(function(){});
+}
 
 // CPO 오늘 현황 — 오늘/이번달 문의·등록 건수(PII 미노출 집계)
 function loadCpoTodayStats() {
