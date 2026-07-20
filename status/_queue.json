@@ -755,5 +755,19 @@
     "artifact": "#1 자가건강 감시 통합(read-only 애그리게이터)\n- scripts/self_health_watchdog.py 신설: silence/gas-version/erp-status/page-hygiene 4모듈의\n  흩어진 발신을 하루 1통 통합 이상요약으로 묶음(정상=무발신). 게이트 SELF_HEALTH_WATCHDOG_LIVE\n  기본 OFF·dry-run 검증. 소스 4모듈 무변경(산출물 읽기만).\n- telegram_health_check.py: gas 버전경보 발신만 이관(주석·역롤백 즉시), collect·하트비트 유지 (CLI ad-hoc · 커밋 ab06ffa6)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "ab06ffa6685dc365450a7953316ebb777566bbcc"
+  },
+  {
+    "task_id": "CPO-2026-07-21-ADHOC-c84f96b8",
+    "clevel": "cpo",
+    "title": "[시포] 강사 배정 SSOT 일원화 — P.T 김광수·골프 김태훈·재직배정불가 구조·카드 부제",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9431,
+    "artifact": "- lesson_instructor_roster.json: active_not_assignable 신설(유승용=재직중·배정제외)\n  P.T 10명(+김광수), 골프 4명(+김태훈), 수영 아쿠아 반영, 웰니스 키 통일\n- membership.html: LESSON_INSTRUCTOR_ROSTER roster.json 완전 동기화\n- OWNER_ASSIGN_ACTIVE_NOT_ASSIGNABLE 변수 신설(퇴사자 EXCLUDE와 구조 분리)\n- _oaOwnerOptionsCombined·_oaRender 양쪽 배정불가 필터 적용\n-  (CLI ad-hoc · 커밋 c84f96b8)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c84f96b8b39fa666b8135de3befad871d87beb49"
   }
 ]
