@@ -140,6 +140,33 @@ function _canonicalChannel_(raw) {
   return '기타·미상';
 }
 
+// ─── 유입채널 원문 3단 해석 (대분류→중분류→자동UTM 순서로 override) — 채널 집계·표시 전 지점 공용 SSOT ───
+// 2026-07-20 시모(GM 지시): _collectFormInquiries_ 전용이던 로직을 공용 함수로 분리 — 회원관리 화면(_miReadRows_)이
+// 대분류 1칸만 읽어 같은 데이터가 M1과 다르게 집계되던 사고(네이버 21건 vs 203건) 재발방지. 두 호출부 모두 이 함수를
+// 통해 같은 규칙을 적용한다(로직 복붙 금지). 결과는 canonical 채널명이 아니라 '원문'(_canonicalChannel_ 적용 전) —
+// 호출부가 표시용으로 원문을 쓰거나 canonical로 변환하거나 선택 가능.
+// 우선순위: ① 대분류(channelKeys, cfg별 상이) 기본값 → ② '중분류' 칸이 canonical 매핑 가능할 때만 override →
+//   ③ '유입경로(자동)' 칸(WP 프리필 UTM, source 또는 'source|campaign') 값이 canonical 매핑 가능할 때만 최종 override.
+//   매핑 불가(캠페인 슬러그·옥외홍보 등)면 이전 값 유지 — 절대 후퇴 없음(날조 금지).
+function _resolveInquiryChannelRaw_(headers, row, channelKeys) {
+  var idxChan = _findCol_(headers, channelKeys);
+  var idxChanFine = _findCol_(headers, ['중분류']);
+  var idxAuto = _findCol_(headers, ['유입경로(자동)', '유입경로자동', '유입경로_자동']);
+  var chanRaw = (idxChan >= 0 ? String(row[idxChan] || '').trim() : '');
+  if (idxChanFine >= 0) {
+    var midRaw = String(row[idxChanFine] || '').trim();
+    if (midRaw && _canonicalChannel_(midRaw) !== '기타·미상') chanRaw = midRaw;
+  }
+  if (idxAuto >= 0) {
+    var autoRaw = String(row[idxAuto] || '').trim();
+    if (autoRaw) {
+      var autoSrc = autoRaw.split('|')[0].trim();
+      if (_canonicalChannel_(autoSrc) !== '기타·미상') chanRaw = autoSrc;
+    }
+  }
+  return chanRaw;
+}
+
 // ─── 강습 종목 표준 버킷 (시포·GM 2026-06-26) ───
 // 자유라벨('성인 수영 (개인레슨/단체레슨)' 등)을 표준 종목으로 집계한다.
 // 라벨 통째 쪼개기 금지 — 한 응답이 여러 종목 다중체크면 각 버킷 +1(부분문자열 매칭).
@@ -257,9 +284,6 @@ function _collectFormInquiries_() {
       if (last < 2 || lastCol < 1) return;
       var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
       var idxPhone = _findCol_(headers, ['연락처', '휴대폰', '핸드폰', '전화', 'Mobile Phone', 'Phone', "Guardian's Mobile Phone"]);
-      var idxChan  = _findCol_(headers, cfg.channelKeys);          // 대분류(문의 채널) — 폴백 기준
-      var idxChanFine = _findCol_(headers, ['중분류']);             // 문의 경로(중분류) — 정밀(있을 때만, 멤버십 탭)
-      var idxAuto  = _findCol_(headers, ['유입경로(자동)', '유입경로자동', '유입경로_자동']);  // WP 문의폼 프리필 UTM(하드 신호) — 있을 때만, 최우선
       var idxDate  = _findCol_(headers, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '접수', '날짜']);
       if (idxDate < 0) idxDate = 0;  // 못 찾으면 1열(구글폼 기본). 26년신규문의=B칸(타임스탬프) 자동 포착
       var idxMemoCfi = _findCol_(headers, ['비고', '메모']);  // [웹접수] 표식 탐지용
@@ -268,25 +292,8 @@ function _collectFormInquiries_() {
         if (!r[idxDate] && (idxPhone < 0 || !r[idxPhone])) return; // 빈 행 스킵
         // CTA 웹폼 미러 행([웹접수])은 문의접수 시트로 이미 1회 집계됨 → 여기선 제외(이중집계 방지)
         if (idxMemoCfi >= 0 && String(r[idxMemoCfi] || '').indexOf(WEB_INTAKE_TAG) >= 0) return;
-        // 채널 = 대분류 기본, 단 중분류가 '확실한 버킷'으로 표준화될 때만 중분류 우선(회귀 방지).
-        // 예) 대분류 '온라인 (네이버/…/당근)'→기타·미상 이지만 중분류 'N-플레이스(검색)'→네이버 로 정밀화.
-        //     중분류가 매핑 불가('옥외홍보' 등)면 대분류 유지 → 절대 후퇴 없음.
-        var chanRaw = (idxChan >= 0 ? String(r[idxChan] || '').trim() : '');
-        if (idxChanFine >= 0) {
-          var midRaw = String(r[idxChanFine] || '').trim();
-          if (midRaw && _canonicalChannel_(midRaw) !== '기타·미상') chanRaw = midRaw;
-        }
-        // WP 문의폼이 방문자의 클릭 UTM을 '유입경로(자동)'에 프리필 — 자기신고(대분류/중분류)보다 신뢰도 높은
-        // 하드 신호이므로 최우선 override. 단, 매핑 불가(캠페인 슬러그 등)면 자기신고 유지(절대 후퇴 없음).
-        if (idxAuto >= 0) {
-          var autoRaw = String(r[idxAuto] || '').trim();
-          if (autoRaw) {
-            // 프리필 값은 "source" 또는 "source|campaign"(향후) 또는 캠페인 슬러그일 수 있음.
-            var autoSrc = autoRaw.split('|')[0].trim();
-            var autoCh = _canonicalChannel_(autoSrc);
-            if (autoCh !== '기타·미상') chanRaw = autoSrc;  // 하드 UTM 신호가 자기신고를 이김 — 캠페인 슬러그는 그냥 통과(회귀 없음)
-          }
-        }
+        // 채널 = 대분류→중분류→자동UTM 3단 우선순위(공용 SSOT _resolveInquiryChannelRaw_, 회원관리 화면과 동일 규칙).
+        var chanRaw = _resolveInquiryChannelRaw_(headers, r, cfg.channelKeys);
         out.push({
           시각:     _parseAnyDate_(r[idxDate]),  // 타임스탬프(구글폼 A칸 Date / 26년신규문의 B칸 'YYYY. M. D')
           연락처:   idxPhone >= 0 ? r[idxPhone] : '',
@@ -1487,7 +1494,7 @@ function _miReadRows_(sh) {
   var iLossReasonNote = _miColIdx_(hdr, ['LOSS사유메모']);
   var iOwner = _miColIdx_(hdr, ['담당','담당자']);
   var iMemo  = _miColIdx_(hdr, ['메모','비고','담당자메모']);
-  var iChan  = _miColIdx_(hdr, ['문의채널','유입채널','채널','경로','알게','How Did You Hear About Us?']);
+  var _CHAN_KEYS = ['문의채널','유입채널','채널','경로','알게','How Did You Hear About Us?'];  // 대분류 — 3단 우선순위(중분류→자동UTM override)는 _resolveInquiryChannelRaw_ 공용 SSOT 사용(2026-07-20, M1과 동일 규칙)
   var iContent = _miColIdx_(hdr, ['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항','문의사항','Health & Wellness Goals']);  // N열 자유서술 문의내용(#1). 2026-07-02 시포·GM
   var iRes  = _miColIdx_(hdr, [INQ_RES_COL]);  // 예약목록(JSON) — 가변 예약. 없으면 체험1·2 흡수. 2026-07-03 시포·GM
   // 연락기록 3칸 — Contact1·Contact2·Contact3 헤더 이름 탐색만 사용(위치 폴백 17/18/19 제거, 2026-07-20 시포).
@@ -1511,7 +1518,7 @@ function _miReadRows_(sh) {
       phone:    iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',    // 연락처 노출 + 표시 정규화(앞 0 복원·하이픈)
       program:  iProg  >= 0 ? String(row[iProg]  || '') : '',
       status:   iStat  >= 0 ? String(row[iStat]  || '') : '',
-      channel:  (iChan >= 0 && row[iChan]) ? _canonicalChannel_(String(row[iChan])) : '',  // 유입채널 표준 10버킷(빈값은 빈값 유지)
+      channel:  (function(){ var _cr = _resolveInquiryChannelRaw_(hdr, row, _CHAN_KEYS); return _cr ? _canonicalChannel_(_cr) : ''; })(),  // 유입채널 표준 10버킷(대분류→중분류→자동UTM 3단, M1과 동일 SSOT. 빈값은 빈값 유지)
       // ── 체험 일정 분리 저장(#4, 2026-07-02 시포·GM): 체험1 날짜=J(시설투어·상담 예약)/시간=K(체험1 확정시간), 체험2 날짜=L(시설 체험 예약2)/시간=M(체험2 확정시간).
       //    상담=체험1(동일 1차 방문). 하위호환: 분리 날짜칸(J/L)이 비면 옛 결합칸(K/M)의 날짜부로 폴백 → 무손실.
       exp1:     (_miToISO_(iTour >= 0 ? row[iTour] : '') || _miToISO_(iExp1 >= 0 ? row[iExp1] : '')),
