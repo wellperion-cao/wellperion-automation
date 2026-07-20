@@ -161,6 +161,14 @@
       "source": "scripts/cafe_upload_playwright.py",
       "allow_globs": ["scripts/cafe_upload_playwright.py", "ssot/**", ".omc/**"],
       "note": "동부이촌동커뮤니티 카페 클럽ID — 현재 정본 1곳. .omc/research 는 아카이브(FP). 복사 확산 방지용 등록"
+    },
+    {
+      "key": "wpml_browser_auto_redirect",
+      "이름": "언어 자동전환 설정",
+      "value": "브라우저 언어 자동전환 끔(비활성화)",
+      "source": "WordPress 관리자 화면 — WPML > Languages > 브라우저 언어 리다이렉트 (저장소 파일 아님, 관리자 설정값)",
+      "allow_globs": ["ssot/**", "status/_queue.json", "3. 웰페리온 가이드/**", "tmp/**"],
+      "note": "2026-07-20 GM 승인으로 변경 — 이전값: '번역이 존재하는 경우에만 자동전환'. 방문자 브라우저가 한국어일 때 영문 문의 페이지(/en/inquiry/)에 처음 들어가면 자동으로 한글 페이지로 튕겨서, 그날 새로 만든 KOR/ENG 언어전환 버튼이 무력화되는 문제 때문. 사이트 전역 설정(문의 페이지 한정 아님). 되돌리는 법: 워드프레스 관리자 > WPML > Languages > '브라우저 언어 리다이렉트'에서 '번역이 존재하는 경우에만 브라우저 언어에 따라 방문자 리다이렉트'를 다시 선택 후 저장. 상세 경위·검증 스크린샷 = status/_queue.json ship 9242"
     }
   ]
 }
