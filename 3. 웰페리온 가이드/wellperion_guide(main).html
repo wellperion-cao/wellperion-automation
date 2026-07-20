@@ -7840,11 +7840,19 @@ function crTab(btn, panelId) {
   // 옛 주소(#g10 등) → 식별자(#S2) 하위호환 안전망. 표면(메뉴·URL·문서 id)은 전부 식별자로 단일화 (2026-06-13 GM B안)
   const LEGACY_TO_ID = {
     'g9':'S0','update':'S1','g10':'S2','gcoo-todo':'S3','gcfo-expense':'F1','gchro-rules':'H1',
-    'gcoo-check':'O1','gcoo-reenroll':'O3','ghome':'M1','g14':'M1',
+    'gcoo-check':'O1','ghome':'M1','g14':'M1',   // gcoo-reenroll(O3) 제거 → 아래 외부 이관 리다이렉트로 처리
     'gcmo-print':'M1','gcmo-funnel':'M2','cmo-publish':'M1','g16':'T1','g19':'T2',
     'M3':'M1',  // 2026-07-09: M3(검수·발행) → M1로 병합 (죽은 링크 방지 안전망)
     'g15':'T1','T3':'T1','gm1':'G1','O5':'O2','O4':'O2'
   };
+
+  // ── 이관 리다이렉트 — 재등록 대시보드(구 O3)는 2026-07-20 CPO 회원관리 소관으로 이관됐다.
+  //    ERP 내부 문서가 아니라 별도 페이지가 됐으므로, 옛 해시로 들어온 북마크·링크를 새 주소로 보낸다.
+  //    (시우·GM "이관하고 삭제" — 삭제만 하면 이 링크들이 조용히 빈 화면이 된다)
+  (function(){
+    var h = (location.hash || '').replace(/^#/, '').split('/')[0];
+    if (h === 'O3' || h === 'gcoo-reenroll') location.replace('cpo/member/renewal.html');
+  })();
 
   // LEGACY 안전망 — 시모(CMO) M-문서 순차 리넘버(M2→M1·M4→M2·M5→M3, 2026-07-03) 이전
   // 구주소(#M2·#M4·#M5)로 온 외부 북마크·링크를 새 식별자로 재해석. LEGACY_TO_ID와 별도 —

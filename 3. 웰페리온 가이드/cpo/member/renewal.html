@@ -80,7 +80,11 @@ table.roster td{white-space:nowrap}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
 }
 </style>
-<script src="_assets/gate.js" charset="utf-8"></script>
+<!-- 2026-07-20 (시우·GM 결정) 전체 커튼(gate.js) 제거 — 이 화면은 집계 숫자만 보여준다.
+     회원 명단(이름·연락처)은 rosterBlock() 이 AUTHED 아니면 PIN 버튼만 반환하고,
+     reqRoster() PIN 통과 전에는 서버에서 명단을 받아오지도 않는다 → 커튼 없이도 PII 노출 0.
+     ERP O3 자리에서 CPO 회원관리 소관으로 이관하면서, GM이 바로 열람 가능하도록 커튼 해제.
+     ※ 되돌리려면 이 줄을 <script src="../../_assets/gate.js"></script> 로 복구(경로 주의 — 폴더가 2단 깊어졌다). -->
 </head>
 <body>
 <div class="wrap">

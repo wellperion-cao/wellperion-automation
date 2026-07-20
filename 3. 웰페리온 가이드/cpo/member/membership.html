@@ -1142,7 +1142,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
           <div class="hz-zone-label">📊 현황 (라이브)</div>
           <div class="hz-btns">
             <button class="action-btn" id="btnInquiryDash" onclick="openInquiryDash()">📊 문의 & 등록 현황</button>
-            <!-- 재등록 현황 버튼 — 원본 대시보드(wellperion_dashboard_web.html)를 모달 iframe으로 노출. 사본 생성 금지(원본 변경 시
+            <!-- 재등록 현황 버튼 — 원본 대시보드(renewal.html)를 모달 iframe으로 노출. 사본 생성 금지(원본 변경 시
                  어긋남 방지, 2026-07-16 시설부 기준값 사고 재발방지). openInquiryDash 패턴 벤치마킹, 기존 코드 미변경. 2026-07-20 GM 지시 -->
             <button class="action-btn" id="btnRenewDash" onclick="openRenewDash()">🔄 재등록 현황</button>
             <button class="action-btn" id="btnLessonDash" onclick="openLessonDash()" style="display:none">강습 문의 현황</button>
@@ -2529,7 +2529,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 </div>
 
 <!-- ══ 재등록 현황 대시보드 모달 (버튼 🔄 재등록 현황 → openRenewDash). openInquiryDash 모달 패턴 그대로 벤치마킹(신규 디자인 없음).
-     본문 = iframe 1개로 원본 대시보드(../../wellperion_dashboard_web.html)를 그대로 로드 — 사본 생성 금지(원본이 바뀌면 어긋남,
+     본문 = iframe 1개로 원본 대시보드(renewal.html)를 그대로 로드 — 사본 생성 금지(원본이 바뀌면 어긋남,
      2026-07-16 시설부 기준값 사고와 동일 함정). iframe은 모달을 처음 열 때만 로드(data-src→src 승격, 최초 페이지로드 지연 방지).
      로드 실패 시 빈 화면 대신 안내문+직접 링크 표시. 2026-07-20 GM 지시 ══ -->
 <div class="gdoc-overlay" id="renewDashModalOverlay" onclick="if(event.target===this)closeRenewDash()">
@@ -2537,12 +2537,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="gdoc-modal-head">
       <span class="gdoc-modal-title">🔄 재등록 현황</span>
       <span style="display:flex;align-items:center;gap:14px">
-        <a href="../../wellperion_dashboard_web.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:var(--dim);text-decoration:none">전체 화면으로 보기 ↗</a>
+        <a href="renewal.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:var(--dim);text-decoration:none">전체 화면으로 보기 ↗</a>
         <button class="gdoc-close" type="button" onclick="closeRenewDash()" aria-label="닫기">&times;</button>
       </span>
     </div>
     <div id="renewDashModalBody">
-      <iframe id="renewDashIframe" data-src="../../wellperion_dashboard_web.html" title="재등록 현황 대시보드"
+      <iframe id="renewDashIframe" data-src="renewal.html" title="재등록 현황 대시보드"
         style="width:100%;height:80vh;border:1px solid var(--border);border-radius:8px;display:block;background:var(--paper)"></iframe>
     </div>
   </div>
@@ -3287,7 +3287,7 @@ function closeInquiryDash(){
   if (ov) ov.classList.remove('open');
 }
 /* ── 재등록 현황 대시보드 모달 — 진입 버튼(🔄 재등록 현황) → #renewDashModalOverlay. 본문은 원본
-   wellperion_dashboard_web.html을 iframe으로 그대로 로드(사본 금지). 신규 fetch 없음 — iframe 내부가 자체 로드.
+   renewal.html을 iframe으로 그대로 로드(사본 금지). 신규 fetch 없음 — iframe 내부가 자체 로드.
    lazy load(모달 첫 오픈 시 data-src→src 승격). 2026-07-20 GM 지시 ── */
 var _renewDashLoaded = false;
 function openRenewDash(){
@@ -3318,7 +3318,7 @@ function _renewDashFail(){
   if (!body) return;
   body.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--dim);font-size:13px">' +
     '재등록 대시보드를 불러오지 못했습니다.<br><br>' +
-    '<a href="../../wellperion_dashboard_web.html" target="_blank" rel="noopener" style="color:var(--text);font-weight:700">직접 열기 ↗</a>' +
+    '<a href="renewal.html" target="_blank" rel="noopener" style="color:var(--text);font-weight:700">직접 열기 ↗</a>' +
     '</div>';
 }
 function _mdashYmd(dt){ return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0'); }
