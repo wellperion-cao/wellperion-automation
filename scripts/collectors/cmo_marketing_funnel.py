@@ -25,7 +25,10 @@ if _SCRIPTS_DIR not in sys.path:
 
 from collectors.base import make_payload  # noqa: E402
 
-_LINK = "https://wellperion-cao.github.io/wellperion-automation/cmo/funnel/%EB%A7%88%EC%BC%80%ED%8C%85%ED%98%84%ED%99%A9%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html"
+# 2026-07-09 웰리 확정: 마케팅 대시보드 = M1 페이지(#m1-dash)로 통합.
+# 구 cmo/funnel/마케팅현황대시보드.html 링크(URL 인코딩)는 사이트 라우팅상
+# 404 — 정본 M1 앵커로 교체 (2026-07-20 수리).
+_LINK = "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#m1-dash"
 _DEFAULT_REF = "status/kpi_values.json"
 
 
