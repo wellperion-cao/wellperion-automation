@@ -2165,5 +2165,19 @@
     "artifact": "실측(최근 6시간 커밋 91건 전수):\n  실제 화면 변경 16건(18%) / 데이터·기록만 75건(82%)\n원인: 훅이 status/_queue.json 등을 사이트 폴더('3. 웰페리온 가이드/status/')로 미러링.\n     그 폴더가 기존 paths 필터('3. 웰페리온 가이드/**')에 걸려, C-Level이 1분마다\n     큐를 갱신할 때마다 전체 재배포가 트리거됨. 그 헛배포가 진짜 배포를 계속 밀어냄.\n결과: 라이브가 1시간+ 옛 버전(01:21)에 정체 → 전 C-Level \"반영 완료\" 보고가 거짓(약속 L0 (CLI ad-hoc · 커밋 8638f6b7)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8638f6b720c05e7c2798725b1157c2aa0e5a9728"
+  },
+  {
+    "task_id": "CTO-2026-07-20-ADHOC-e139bd4e",
+    "clevel": "cto",
+    "title": "[시토] 배834 note에 배포 문제 시토 이관 1줄 추가",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9228,
+    "artifact": "GM 승인(2026-07-20) — GitHub Pages 배포 큐 적체 문제는 CTO 신규 배(ship 9226)로\n이관 등록. 배834는 이관 사실만 1줄 append(비파괴). (CLI ad-hoc · 커밋 e139bd4e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e139bd4e0441f76b8e726b4990955ef38e51da59"
   }
 ]
