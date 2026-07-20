@@ -3042,6 +3042,89 @@ function _processAction(body) {
     return _json({ ok: false, error: 'unknown_mode' });
   }
 
+  // ─── (일회성) '26년 신규문의' 타임스탬프 시각유실 3건 복구 — 접수ID(WEB-YYYYMMDDHHmmssSSS)로 역산 ───
+  //   배경: 오늘(2026-07-20) 수리 전 코드가 웹 자동접수 타임스탬프를 자정(00:00:00)으로 기록하던 버그
+  //   (위 2678행 주석 참고 — GM 지적: Nicole·한혜수·원유선 건) 탓에 3건 시각유실. 접수ID는 _genId('WEB-')가
+  //   Utilities.formatDate(new Date(),'Asia/Seoul','yyyyMMddHHmmss')로 생성(구 .deploy-funnel/Survey.js
+  //   46af9cc2)했으므로 접수ID 자체에 실제 KST 제출시각이 그대로 인코딩돼 있다. 원유선은 비고에 접수ID가
+  //   없어(구형식 '[웹접수]'만) 복구 불가 — 시각을 지어내지 않고 대상에서 제외.
+  //   매칭은 연락처+비고 내 접수ID 이중확인(한혜수는 동일 연락처 과거 수기건이 별도 존재 — 접수ID로 유일화)
+  //   후 정확히 1건일 때만 진행. 행 삭제·삽입·이동 없음 — 타임스탬프 셀 1칸만 setValue(INC-020 이후 극도 주의).
+  //   mode=dryrun(기본, 미리보기) / execute(실제 기록, 쓰기 직전 자정 재확인 후에만). 2026-07-20 시포(GM 지시).
+  if (action === 'cpo_restore_lost_timestamps_0718') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var rtMode = String(body.mode || 'dryrun');
+    var rtSh = _miSheet_();
+    if (!rtSh) return _json({ ok: false, error: 'sheet_not_found' });
+    var rtLastRowBefore = rtSh.getLastRow();
+    var rtHdr = _miHeaders_(rtSh);
+    var rtCiTs = _miColIdx_(rtHdr, ['타임스탬프']);
+    var rtCiPhone = _miColIdx_(rtHdr, ['연락처']);
+    var rtCiNote = _miColIdx_(rtHdr, ['비고']);
+    if (rtCiTs < 0 || rtCiPhone < 0 || rtCiNote < 0) return _json({ ok: false, error: 'column_not_found', rtCiTs: rtCiTs, rtCiPhone: rtCiPhone, rtCiNote: rtCiNote });
+
+    var rtTargets = [
+      { name: 'Nicole choi', phone: '010-9119-2494', webId: 'WEB-20260718070325812' },
+      { name: '한혜수',      phone: '010-4108-7735', webId: 'WEB-20260718104705638' }
+    ];
+    // 원유선(010-2217-1558)은 접수ID 없음 → 아래 대상 목록에 넣지 않음(시각 미기재 유지).
+
+    var rtFmt = function (v) { return (v instanceof Date) ? Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss.SSS') : String(v == null ? '' : v); };
+    var rtNorm = function (p) { return String(p == null ? '' : p).replace(/\D/g, ''); };
+    var rtLastCol = rtSh.getLastColumn();
+    var rtDataN = Math.max(0, rtLastRowBefore - 1);
+    var rtRows = rtDataN > 0 ? rtSh.getRange(2, 1, rtDataN, rtLastCol).getValues() : [];
+
+    var rtResults = [];
+    var rtAbort = null;
+    rtTargets.forEach(function (t) {
+      if (rtAbort) return;
+      var phoneOnlyMatches = 0, matches = [];
+      for (var i = 0; i < rtRows.length; i++) {
+        var rowPhone = rtNorm(rtRows[i][rtCiPhone]);
+        if (rowPhone !== rtNorm(t.phone)) continue;
+        phoneOnlyMatches++;
+        var rowNote = String(rtRows[i][rtCiNote] == null ? '' : rtRows[i][rtCiNote]);
+        if (rowNote.indexOf(t.webId) >= 0) matches.push(i + 2);
+      }
+      if (matches.length !== 1) { rtAbort = { name: t.name, phone: t.phone, phoneOnlyMatches: phoneOnlyMatches, webIdMatchCount: matches.length, matchedRows: matches }; return; }
+      var m = /^WEB-(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{3})$/.exec(t.webId);
+      if (!m) { rtAbort = { name: t.name, error: 'webId_parse_fail' }; return; }
+      var rtRow = matches[0];
+      var rtDate = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), parseInt(m[4], 10), parseInt(m[5], 10), parseInt(m[6], 10), parseInt(m[7], 10));
+      var rtCur = rtSh.getRange(rtRow, rtCiTs + 1).getValue();
+      rtResults.push({ name: t.name, phone: t.phone, row: rtRow, phoneOnlyMatches: phoneOnlyMatches, before: rtFmt(rtCur), after: rtFmt(rtDate), afterDate: rtDate });
+    });
+
+    if (rtAbort) return _json({ ok: false, error: 'match_not_unique', detail: rtAbort });
+
+    if (rtMode === 'dryrun') {
+      return _json({
+        ok: true, mode: 'dryrun', lastRow: rtLastRowBefore,
+        preview: rtResults.map(function (r) { return { name: r.name, phone: r.phone, row: r.row, phoneOnlyMatches: r.phoneOnlyMatches, before: r.before, after: r.after }; }),
+        skipped: [{ name: '원유선', phone: '010-2217-1558', reason: 'no_web_id_in_note' }]
+      });
+    }
+    if (rtMode === 'execute') {
+      var rtWritten = [], rtSkipRace = [];
+      rtResults.forEach(function (r) {
+        // 쓰기 직전 재확인 — 그 사이 이미 시각이 채워졌으면(자정 아니면) 절대 덮어쓰지 않음
+        var rtCurNow = rtSh.getRange(r.row, rtCiTs + 1).getValue();
+        var rtIsMidnight = (rtCurNow instanceof Date) && rtCurNow.getHours() === 0 && rtCurNow.getMinutes() === 0 && rtCurNow.getSeconds() === 0;
+        if (!rtIsMidnight) { rtSkipRace.push({ name: r.name, row: r.row, reason: 'not_midnight_before_write', currentValue: rtFmt(rtCurNow) }); return; }
+        rtSh.getRange(r.row, rtCiTs + 1).setValue(r.afterDate);
+        rtWritten.push({ name: r.name, phone: r.phone, row: r.row, before: r.before, after: r.after });
+      });
+      var rtLastRowAfter = rtSh.getLastRow();
+      return _json({
+        ok: true, mode: 'execute', writtenCount: rtWritten.length, written: rtWritten, skipRace: rtSkipRace,
+        skipped: [{ name: '원유선', phone: '010-2217-1558', reason: 'no_web_id_in_note' }],
+        lastRowBefore: rtLastRowBefore, lastRowAfter: rtLastRowAfter, rowCountUnchanged: rtLastRowBefore === rtLastRowAfter
+      });
+    }
+    return _json({ ok: false, error: 'unknown_mode' });
+  }
+
   // ─── 문의 목록 ───
   if (action === 'inquiry_list') {
     const sh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
