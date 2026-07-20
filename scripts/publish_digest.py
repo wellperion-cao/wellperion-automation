@@ -116,7 +116,10 @@ def group_published(items: list[dict]) -> dict[str, list[dict]]:
 # 품질 게이트 — folder(그룹키) 완결·표준 판정 (2026-07-18)
 # ---------------------------------------------------------------------------
 _URL_REQUIRED_CHANNEL_RE = re.compile("블로그|카페|당근")
-_COMPLETE_STATUSES = {"발행완료", "발행검증대기"}
+# '확인필요(발행됨·URL미회수)'(블로그·카페, 2026-07-20 배834) = 게시는 진행됐으나 URL 폴링
+# 실패한 상태 — '미발행'이 아니라 published 취급하되, 아래 missing_url 검사가 URL 없으므로
+# 여전히 완결 판정을 막는다(URL 보강 후 자동 통과).
+_COMPLETE_STATUSES = {"발행완료", "발행검증대기", "확인필요(발행됨·URL미회수)"}
 # official(웰페리온 공식) 그룹은 5채널 전부가 표준 — 채널 유형별 엔트리 자체가 있는지 강제.
 # personal(namuk) 계정은 현행대로 IG 단독 허용(강제 미적용).
 _REQUIRED_OFFICIAL_CHANNELS: list[tuple[str, re.Pattern]] = [

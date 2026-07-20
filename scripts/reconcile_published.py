@@ -51,6 +51,10 @@ CHANNEL_MAP: dict[str, str] = {
 # 임시저장완료→손게시 탐지 후보 대상 채널 (블로그·카페만)
 DRAFT_DETECT_CHANNELS = {"blog", "cafe"}
 
+# '확인필요(발행됨·URL미회수)' 상태(2026-07-20 배834) — 게시는 됐으나 URL 폴링 실패한 건.
+# 재발행 대상 아님(워처가 절대 재발행 안 함) — URL만 재회수해 발행완료로 전환.
+STATUS_URL_UNCONFIRMED = "확인필요(발행됨·URL미회수)"
+
 
 # ─────────────────────────────────────────────
 # 내부 헬퍼
@@ -121,6 +125,7 @@ def _iter_targets(items: list[dict], target_channels: set[str]) -> list[tuple[in
     조건:
       A) status=='발행완료' AND post_url 없음
       B) status=='임시저장완료' AND 채널이 blog/cafe (손게시 탐지 후보)
+      C) status==STATUS_URL_UNCONFIRMED AND post_url 없음 (배834 — URL 미회수 재회수 대상)
     """
     result: list[tuple[int, dict]] = []
     for idx, item in enumerate(items):
@@ -133,6 +138,8 @@ def _iter_targets(items: list[dict], target_channels: set[str]) -> list[tuple[in
         if status == "발행완료" and not has_url:
             result.append((idx, item))
         elif status == "임시저장완료" and engine_ch in DRAFT_DETECT_CHANNELS:
+            result.append((idx, item))
+        elif status == STATUS_URL_UNCONFIRMED and not has_url:
             result.append((idx, item))
     return result
 
@@ -248,8 +255,8 @@ def main() -> int:
             entry = modified_items[idx]
             entry["post_url"] = found_url
 
-            # 임시저장완료 → 발행완료 전환
-            if old_status == "임시저장완료":
+            # 임시저장완료 / 확인필요(URL미회수) → 발행완료 전환
+            if old_status in ("임시저장완료", STATUS_URL_UNCONFIRMED):
                 entry["status"] = "발행완료"
                 newly_published.append(entry)
 
@@ -258,6 +265,8 @@ def main() -> int:
             note_new   = f"[자동대조 {date_str}] URL 회수·발행확인"
             if old_status == "임시저장완료":
                 note_new += " (임시저장→발행완료 전환)"
+            elif old_status == STATUS_URL_UNCONFIRMED:
+                note_new += " (확인필요→발행완료 전환)"
             existing_note = (entry.get("note") or "").strip()
             entry["note"] = (existing_note + " | " + note_new).lstrip(" | ")
 

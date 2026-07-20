@@ -6,7 +6,10 @@
 큐 파일(검수 카드와 공유): 3. 웰페리온 가이드/cmo/review/review_queue.json
   각 항목 필수: id, title, folder(콘텐츠 폴더 상대경로), status
   채널 분기용: channel (예: "인스타그램", "블로그", "카페", "카카오", "당근")
-  status: 검수대기 → 승인 → 발행완료 / 발행실패 / 수동발행대기
+  status: 검수대기 → 승인 → 발행완료 / 발행실패 / 수동발행대기 / 확인필요(발행됨·URL미회수)
+  ※ '확인필요(발행됨·URL미회수)'(블로그·카페) = 발행 스크립트가 게시는 진행했으나 공개 URL
+    폴링(12초)에 실패한 경우. '발행실패'와 달리 재발행 대상 아님(중복 게시 방지) — 사람이
+    URL을 수동 보강하거나 scripts/reconcile_published.py 로 URL만 재회수(2026-07-20 배834).
 
 실행:
   단발(Windows 예약작업 권장): python scripts\\ig_review_publish_watcher.py --once
@@ -14,8 +17,8 @@
   발행 없이 로직만(테스트):      python scripts\\ig_review_publish_watcher.py --once --dry-run
 
 채널 분기 정책(GM 승인 2026-07-13 — 전채널 자동 공개발행):
-  블로그 → naver_blog_upload_playwright.py --mode publish (공개발행, exit 0 = 완료)
-  카페   → cafe_upload_playwright.py --mode publish (공개발행, exit 0 = 완료)
+  블로그 → naver_blog_upload_playwright.py --mode publish (exit 0=완료 · exit 8=확인필요[게시됨·URL미회수] · 그외=실패)
+  카페   → cafe_upload_playwright.py --mode publish (exit 0=완료 · exit 8=확인필요[게시됨·URL미회수] · 그외=실패)
   당근   → danggn_upload_playwright.py --mode publish (공개발행, 세션 만료 시 수동 폴백)
   카카오 → kakao_channel_upload_playwright.py --mode publish (공개발행)
   나머지(인스타 등) → instagram_upload_playwright.py --mode publish
@@ -421,11 +424,20 @@ def publish_item(it: dict) -> tuple[str | None, int]:
     return url, proc.returncode
 
 
-def publish_blog(it: dict, public_title: str) -> tuple[bool, str | None]:
+# 블로그·카페 발행 스크립트 결과 3분류 (2026-07-20 배834 — 재발방지):
+#   완료   = exit 0 (공개 URL 실측 회수까지 성공)
+#   확인필요 = exit 8 (게시는 진행됐으나 URL 폴링[12초] 실패 — 발행실패 아님, 재발행 금지)
+#   실패   = 그 외(exit 7 예외 등)
+PUBLISH_RESULT_DONE = "완료"
+PUBLISH_RESULT_UNCONFIRMED = "확인필요"
+PUBLISH_RESULT_FAILED = "실패"
+STATUS_URL_UNCONFIRMED = "확인필요(발행됨·URL미회수)"
+
+
+def publish_blog(it: dict, public_title: str) -> tuple[str, str | None]:
     """블로그 발행 서브프로세스 실행.
-    exit code 0 이면 발행완료로 간주 (네이버 URL 회수 불안정 — feedback_blog_cafe_drafts_terminal).
     public_title: resolve_public_title()로 가드 통과한 공개 게시글 제목(내부 라벨 아님).
-    반환: (성공여부, url|None)
+    반환: (PUBLISH_RESULT_* , url|None)
     """
     cmd = [
         str(PY), str(BLOG_SCRIPT),
@@ -446,16 +458,17 @@ def publish_blog(it: dict, public_title: str) -> tuple[bool, str | None]:
     _safe_print(out)
     m = POST_URL_RE.search(out)
     url = m.group(1).rstrip("/") + "/" if m else None
-    # exit code 0 이면 URL 미회수여도 발행완료
-    success = (proc.returncode == 0)
-    return success, url
+    if proc.returncode == 0:
+        return PUBLISH_RESULT_DONE, url
+    if proc.returncode == 8:
+        return PUBLISH_RESULT_UNCONFIRMED, url
+    return PUBLISH_RESULT_FAILED, url
 
 
-def publish_cafe(it: dict, public_title: str) -> tuple[bool, str | None]:
+def publish_cafe(it: dict, public_title: str) -> tuple[str, str | None]:
     """카페 발행 서브프로세스 실행.
-    exit code 0 이면 발행완료로 간주 (URL 회수 불안정 동일 정책).
     public_title: resolve_public_title()로 가드 통과한 공개 게시글 제목(내부 라벨 아님).
-    반환: (성공여부, url|None)
+    반환: (PUBLISH_RESULT_*, url|None)
     """
     cmd = [
         str(PY), str(CAFE_SCRIPT),
@@ -479,9 +492,11 @@ def publish_cafe(it: dict, public_title: str) -> tuple[bool, str | None]:
     _safe_print(out)
     m = POST_URL_RE.search(out)
     url = m.group(1).rstrip("/") + "/" if m else None
-    # exit code 0 이면 URL 미회수여도 발행완료
-    success = (proc.returncode == 0)
-    return success, url
+    if proc.returncode == 0:
+        return PUBLISH_RESULT_DONE, url
+    if proc.returncode == 8:
+        return PUBLISH_RESULT_UNCONFIRMED, url
+    return PUBLISH_RESULT_FAILED, url
 
 
 def publish_danggn(it: dict) -> tuple[bool, str]:
@@ -574,14 +589,23 @@ def dispatch_publish(it: dict, events: list) -> None:
             telegram(f"🚫 [블로그] 공개 제목 가드 차단 — {title}\n사유: {block_reason}")
             events.append(f"🚫 {title} 블로그 발행 보류(제목확인) — {block_reason}")
         else:
-            success, url = publish_blog(it, public_title)
-            if success:
+            result, url = publish_blog(it, public_title)
+            if result == PUBLISH_RESULT_DONE:
                 it["status"] = "발행완료"
                 if url:
                     it["post_url"] = url
                 it["published_at"] = datetime.now().isoformat(timespec="seconds")
                 it.pop("note", None)
                 events.append(f"✅ {title} 블로그 발행완료" + (f" — {url}" if url else " (URL 회수 불안정·본문 게시됨)"))
+            elif result == PUBLISH_RESULT_UNCONFIRMED:
+                # 게시는 진행됐으나 공개 URL 폴링(12초) 실패 — '발행실패' 아님. 재발행 절대 금지
+                # (중복 게시 방지). URL은 사람이 보강하거나 reconcile_published.py 로 재회수(배834).
+                it["status"] = STATUS_URL_UNCONFIRMED
+                if url:
+                    it["post_url"] = url
+                it["published_at"] = datetime.now().isoformat(timespec="seconds")
+                it["note"] = "[재발방지 2026-07-20] 블로그 게시는 진행됐으나 공개 URL 폴링 실패 — 재발행 금지, URL 수동 보강/재회수 필요"
+                events.append(f"⏳ {title} 블로그 발행됨(URL 미회수) — 확인필요, 재발행 안 함")
             else:
                 it["status"] = "발행실패"
                 it["note"] = "블로그 발행 스크립트 exit≠0(무결성 게이트 차단 가능 — 초안 유지)"
@@ -597,14 +621,23 @@ def dispatch_publish(it: dict, events: list) -> None:
             telegram(f"🚫 [카페] 공개 제목 가드 차단 — {title}\n사유: {block_reason}")
             events.append(f"🚫 {title} 카페 발행 보류(제목확인) — {block_reason}")
         else:
-            success, url = publish_cafe(it, public_title)
-            if success:
+            result, url = publish_cafe(it, public_title)
+            if result == PUBLISH_RESULT_DONE:
                 it["status"] = "발행완료"
                 if url:
                     it["post_url"] = url
                 it["published_at"] = datetime.now().isoformat(timespec="seconds")
                 it.pop("note", None)
                 events.append(f"✅ {title} 카페 발행완료" + (f" — {url}" if url else " (URL 회수 불안정·본문 게시됨)"))
+            elif result == PUBLISH_RESULT_UNCONFIRMED:
+                # 게시는 진행됐으나 공개 URL 폴링(12초) 실패 — '발행실패' 아님. 재발행 절대 금지
+                # (중복 게시 방지). URL은 사람이 보강하거나 reconcile_published.py 로 재회수(배834).
+                it["status"] = STATUS_URL_UNCONFIRMED
+                if url:
+                    it["post_url"] = url
+                it["published_at"] = datetime.now().isoformat(timespec="seconds")
+                it["note"] = "[재발방지 2026-07-20] 카페 게시는 진행됐으나 공개 URL 폴링 실패 — 재발행 금지, URL 수동 보강/재회수 필요"
+                events.append(f"⏳ {title} 카페 발행됨(URL 미회수) — 확인필요, 재발행 안 함")
             else:
                 it["status"] = "발행실패"
                 it["note"] = "카페 발행 스크립트 exit≠0(무결성 게이트 차단 가능 — 초안 유지)"
