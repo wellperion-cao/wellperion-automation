@@ -48,6 +48,12 @@ except Exception:
     def muted(kind: str) -> bool:
         return False
 
+# scripts/ 자기 자신을 sys.path 에 보장(호출부가 이미 넣어둔 경우가 대부분이지만,
+# register_channel_review 재사용 import 가 항상 되게 하는 안전망). (배834-A, 2026-07-20)
+_SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+
 # -----------------------------------------------------------------
 # 콘솔 인코딩 하드닝 — Windows cp949 콘솔에서 대시(—)·이모지 print 시
 # UnicodeEncodeError 로 죽지 않게 stdout/stderr 를 UTF-8(replace)로 강제.
@@ -308,6 +314,93 @@ def _write_curation_md(
     print(f"[INFO] 큐레이션_추천.md 자동 생성/갱신 → {md_path}")
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 채널 형제 자동등록 (배834-A, 2026-07-20 필라테스 L4 사고 재발방지)
+#   IG 엔트리 등록 시, 콘텐츠 폴더에 이미 채널별 본문(블로그·카페·카카오·당근)이 준비돼
+#   있으면 register_channel_review.register_channels() 를 그대로 재사용해 형제 검수
+#   엔트리를 자동 upsert 한다. 본문 파일이 실제로 존재하는 채널만 대상 — 없는 채널은
+#   지어내지 않는다(파일 존재가 유일 트리거). 공식계정(wellperion)만 대상 — 개인계정
+#   (namuk.wellperion 등)은 멀티채널 발행 대상이 아니므로 조용히 건너뜀.
+# ─────────────────────────────────────────────────────────────────────────────
+_SIBLING_CHANNEL_SPECS: list[tuple[str, str, str, str, dict]] = [
+    # (id 접미사, 채널명, 서브폴더, 본문 파일명, 추가 필드)
+    ("BLOG",   "네이버 블로그",           "output(블로그)",       "_blog_body.txt", {}),
+    ("CAFE",   "네이버 카페 (동부이촌동)", "output(카페)",         "_cafe_body.txt", {"menuid": 659}),
+    ("KAKAO",  "카카오 채널",             "output(카카오 채널)",  "kakao_copy.md",  {}),
+    ("DANGGN", "당근채널",                "output(당근)",         "danggn_copy.md", {}),
+]
+
+
+def _sibling_base_id(queue_id: str) -> str:
+    """형제 id 접두사 계산 — 대표 id 끝의 '-OFFICIAL-IG'/'-IG' 접미사를 제거한 베이스."""
+    for suffix in ("-OFFICIAL-IG", "-IG"):
+        if queue_id.endswith(suffix):
+            return queue_id[: -len(suffix)]
+    return queue_id
+
+
+def _auto_register_channel_siblings(
+    content_folder: Path, queue_id: str, title: str, account: str,
+) -> list[str]:
+    """콘텐츠 폴더에 이미 만들어진 채널별 본문이 있으면 형제 검수 엔트리 자동 upsert.
+
+    ★ register_channel_review.register_channels() 를 그대로 재사용 — 등록 로직 중복 작성 금지.
+    실패해도 IG 등록은 이미 끝났으므로 죽지 않는다(호출부에서 예외 격리 — best-effort).
+    반환: 실제 upsert 된 형제 id 리스트(승인 카드 그룹핑용, 비어있으면 형제 없음/해당無).
+    """
+    if account != "wellperion":
+        return []  # 개인계정 — 멀티채널 대상 아님(조용히 건너뜀)
+
+    try:
+        from register_channel_review import register_channels
+    except Exception as exc:
+        print(f"[WARN] register_channel_review import 실패 — 형제 채널 자동등록 생략: {exc}")
+        return []
+
+    try:
+        folder_rel = content_folder.relative_to(ROOT).as_posix()
+    except Exception:
+        folder_rel = content_folder.as_posix()
+
+    base_id = _sibling_base_id(queue_id)
+    channels: list[dict] = []
+    for suffix, ch_label, subdir, body_name, extra in _SIBLING_CHANNEL_SPECS:
+        body_path = content_folder / subdir / body_name
+        if not body_path.exists():
+            continue  # 이 채널 본문 없음 — 생성 안 함(존재하는 채널만 자동 등록)
+        entry = {
+            "id": f"{base_id}-{suffix}",
+            "title": f"{title} — {ch_label}",
+            "channel": ch_label,
+            "account": account,
+            "body_file": f"{folder_rel}/{subdir}/{body_name}",
+            "image_dir": f"{folder_rel}/{subdir}",
+            "image_glob": "*.jpg",
+        }
+        entry.update(extra)
+        channels.append(entry)
+
+    if not channels:
+        return []
+
+    try:
+        register_channels(
+            folder_rel=folder_rel,
+            # folder/output/ 마스터 슬라이드 재복사 없음(채널별 이미지 이미 각 서브폴더에 존재) —
+            # 존재하지 않는 글롭을 줘서 register_channels 의 슬라이드 복사 단계를 안전하게 no-op화.
+            slide_glob="__NO_MASTER_SLIDES_TO_COPY__.jpg",
+            channels=channels,
+            preview_slug=base_id,
+        )
+    except Exception as exc:
+        print(f"[WARN] 형제 채널 register_channels 예외(IG 등록은 유효): {exc}")
+        return []
+
+    ids = [c["id"] for c in channels]
+    print(f"[INFO] 형제 채널 자동등록 — {len(ids)}건: {ids}")
+    return ids
+
+
 def register_publish(
     content_folder: Path,
     slug: str,
@@ -378,6 +471,15 @@ def register_publish(
             print(f"[WARN] review_queue upsert 예외 (제작은 완료): {exc}")
             matched, final_status = (False, "검수대기")
 
+        # (b2) 채널 형제 자동등록 — 콘텐츠 폴더에 블로그·카페·카카오·당근 본문이 이미
+        # 준비돼 있으면 형제 검수 엔트리를 함께 upsert (배834-A, 필라테스 L4 사고 재발방지).
+        # 실패해도 IG 등록은 이미 끝났으므로 죽지 않음(best-effort).
+        try:
+            sibling_ids = _auto_register_channel_siblings(content_folder, queue_id, title, account)
+        except Exception as exc:
+            print(f"[WARN] 형제 채널 자동등록 예외(IG 등록은 유효): {exc}")
+            sibling_ids = []
+
         # (c) 텔레그램 1줄 + montage 발송
         action = "갱신" if matched else "신규 등록"
         msg = (
@@ -397,13 +499,19 @@ def register_publish(
 
         # (d) 수동 경로 승인버튼 카드 — send_card=True 일 때만 (자동생성기는 별도 호출이라 무영향).
         #     montage(버튼 없음) 뒤 [✅승인]/[❌반려] 버튼 카드 1회. 실패해도 등록은 유효(경고만).
+        #     형제 채널이 자동등록됐으면(sibling_ids) --group-ids 로 묶어 GM이 카드 1장을
+        #     [승인]하면 IG+형제 채널이 함께 승인·발행되게 한다(GM 지시 — 발행 로직은 불변,
+        #     기존 워처의 채널별 dispatch_publish 경로를 그대로 탄다).
         if send_card:
             try:
                 import subprocess
 
                 card_script = ROOT / "scripts" / "send_review_card.py"
+                cmd = [sys.executable, str(card_script), "--id", str(queue_id)]
+                if sibling_ids:
+                    cmd += ["--group-ids", ",".join([str(queue_id), *sibling_ids])]
                 proc = subprocess.run(
-                    [sys.executable, str(card_script), "--id", str(queue_id)],
+                    cmd,
                     cwd=str(ROOT), timeout=60,
                     capture_output=True, text=True, encoding="utf-8", errors="replace",
                 )

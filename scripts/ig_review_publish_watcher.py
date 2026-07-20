@@ -57,6 +57,7 @@ DANGGN_SCRIPT = ROOT / "scripts" / "danggn_upload_playwright.py"      # 당근 �
 KAKAO_SCRIPT = ROOT / "scripts" / "kakao_channel_upload_playwright.py"  # 카카오 채널(자동입력, publish 실구현)
 PY = ROOT / ".venv" / "Scripts" / "python.exe"
 NOTIFIED_FILE = ROOT / "scripts" / ".review_notified.json"  # 검수대기 알림 발송 이력
+SIBLING_ALERT_NOTIFIED_FILE = ROOT / "scripts" / ".sibling_alert_notified.json"  # 형제채널 누락 경보 이력
 PUBLISH_LOCK_FILE = ROOT / "scripts" / ".publish.lock"  # 발행 직렬화 락(중복/허위 알림 근본 차단, 2026-06-05)
 PUBLISH_LOCK_STALE_SEC = 1200  # 락 잔존 한계(초) — 비정상 종료 시 자동 회수(발행 timeout 600초의 2배)
 CARD_MSGID_STORE = ROOT / "scripts" / ".review_card_msgids.json"  # send_review_card 가 카드 보낸 id 저장
@@ -244,6 +245,85 @@ def notify_pending_review(items: list) -> None:
     if newly_notified:
         notified.update(newly_notified)
         save_notified(notified)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 형제 채널 누락 경보 (배834-A, 2026-07-20 필라테스 L4 사고 재발방지)
+#   공식계정(wellperion) IG 엔트리인데 블로그·카페·카카오·당근 형제 엔트리가 하나도
+#   없으면 GM 업무보고봇방(TELEGRAM_CHAT_ID)에 1줄 경보. id 당 1회만(파일 dedup) —
+#   같은 누락을 매 사이클 재알림하지 않는다.
+# ─────────────────────────────────────────────────────────────────────────────
+_SIBLING_CHANNEL_KEYWORDS = ("블로그", "카페", "카카오", "당근")
+
+
+def _load_sibling_alert_notified() -> set:
+    if not SIBLING_ALERT_NOTIFIED_FILE.exists():
+        return set()
+    try:
+        data = json.loads(SIBLING_ALERT_NOTIFIED_FILE.read_text(encoding="utf-8"))
+        return set(data) if isinstance(data, list) else set()
+    except Exception:
+        return set()
+
+
+def _save_sibling_alert_notified(notified: set) -> None:
+    try:
+        SIBLING_ALERT_NOTIFIED_FILE.write_text(
+            json.dumps(sorted(notified), ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except Exception as exc:
+        _safe_print(f"[WARN] 형제채널 경보 이력 저장 실패(다음 사이클 재알림 가능): {exc}")
+
+
+def find_missing_channel_siblings(items: list) -> list:
+    """공식계정(wellperion) IG 단독 엔트리 중 블로그·카페·카카오·당근 형제가 하나도
+    없는 항목을 반환(순수 함수 — 부작용 없음, 테스트/검증용으로 직접 호출 가능).
+
+    형제 판정: 같은 콘텐츠 폴더를 가리키며(folder 완전일치 또는 'folder/' 하위 서브폴더)
+    채널명에 블로그/카페/카카오/당근 키워드가 있는 엔트리가 review_queue 에 존재하는지.
+    (두 folder 표기 관례 모두 지원 — register_channels()=베이스 폴더 공유,
+     기존 수동등록 관례=채널별 서브폴더.)
+    """
+    gaps = []
+    for it in items:
+        if it.get("account") != "wellperion":
+            continue
+        channel = it.get("channel", "")
+        if "인스타그램" not in channel:
+            continue
+        item_id = it.get("id", "")
+        folder = it.get("folder", "")
+        if not item_id or not folder:
+            continue
+        has_sibling = any(
+            other is not it
+            and (
+                str(other.get("folder", "")) == folder
+                or str(other.get("folder", "")).startswith(folder + "/")
+            )
+            and any(kw in str(other.get("channel", "")) for kw in _SIBLING_CHANNEL_KEYWORDS)
+            for other in items
+        )
+        if not has_sibling:
+            gaps.append(it)
+    return gaps
+
+
+def check_missing_channel_siblings(items: list) -> None:
+    """find_missing_channel_siblings 결과 중 미경보 건만 GM 채널에 1줄 경보 후 이력 기록."""
+    notified = _load_sibling_alert_notified()
+    gaps = [g for g in find_missing_channel_siblings(items) if g.get("id") not in notified]
+    if not gaps:
+        return
+    ids_label = ", ".join(g.get("id", "") for g in gaps[:8])
+    extra = f" 외 {len(gaps) - 8}건" if len(gaps) > 8 else ""
+    msg = (
+        f"⚠️ IG 단독 등록(형제 4채널 블로그·카페·카카오·당근 없음) {len(gaps)}건 — "
+        f"{ids_label}{extra} · review_channel 형제 등록 확인 요망"
+    )
+    telegram(msg)
+    notified.update(g.get("id", "") for g in gaps)
+    _save_sibling_alert_notified(notified)
 
 
 def git(*args: str, check: bool = False) -> subprocess.CompletedProcess:
@@ -699,6 +779,11 @@ def _run_once_inner(dry_run: bool) -> int:
     items = load_queue()
     # 검수대기 신규 항목 텔레그램 알림 (중복 방지 이력 기반)
     notify_pending_review(items)
+    # 형제 채널 누락 경보 (배834-A) — dry_run 여부와 무관하게 로직만 점검(부작용은 알림 1건뿐).
+    try:
+        check_missing_channel_siblings(items)
+    except Exception as exc:
+        _safe_print(f"[WARN] 형제채널 누락 점검 예외(발행 흐름 무영향): {exc}")
     approved = [it for it in items if it.get("status") in APPROVED_STATES]
     if not approved:
         _safe_print("[INFO] 발행할 승인 건 없음.")
