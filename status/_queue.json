@@ -3373,5 +3373,19 @@
     "ship_no": 9260,
     "note": "GM 지시(시포 업무 밀림 대행). 원인=07-18 intake_submit 응답탭 직접쓰기 전환 시 Utilities.formatDate yyyy-MM-dd 로 날짜만 기록(09452c5b 수리)+문자열 저장 정렬튐(a8830062 수리). 현행 코드 정상, 과거 데이터만 문제. 실측 결손=성인41·WSC13=54건. 접수ID(L{yyMMdd-HHmmss}, inquiry_snapshot_lesson.json git 248커밋에서 회수) 대조로 4건 채움(김주희·서정희·김도연·김세연, 실제 Date). 나머지 43건=접수ID 없어 빈칸 유지(시각 창작 금지). ★행 이동 사고·원복 완료: 성인 18행 이동 → P.T 성인 팀시트 528행 어긋남 → 원본 순서 원복으로 해소(diff 0 실측, 13탭 전량 확인, 행총수 3805 불변). 근본원인=종목별 중간탭이 =FILTER(IMPORTRANGE(1.성인강습)) 라 원본 행순서를 그대로 따름. 안전 이동법=이동 전 해당 팀시트 담당·진행상황을 연락처+타임스탬프 키로 스냅샷→이동 후 키 기준 재기입. 별건 발견=WSC 레거시 시간역전 243건(행16~1694 집중, 날짜 문자열 사전식 정렬). INC-020 상태표 드리프트 정정(정본 GUARDED 반영).",
     "next": "①GM 결정: 안전 이동법(팀시트 키 기준 스냅샷·재기입)으로 성인 18행 재이동 진행 여부 ②WSC 자체폼 유입행 이동 기준 확정(레거시 243건 역전 선처리 여부) ③접수ID 없는 43건 처리 방침"
+  },
+  {
+    "task_id": "CTO-2026-07-20-ADHOC-e66ed96d",
+    "clevel": "cto",
+    "title": "[시토] 배 9260 강습 타임스탬프 복구·행이동 원복 기록",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9382,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01QJCSdWs4PMa8cmPxGe2faJ (CLI ad-hoc · 커밋 e66ed96d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e66ed96d077e44b30bc2790611182ba782e226ce"
   }
 ]
