@@ -121,8 +121,12 @@ function _findRowByPhone_(sh, phCol0, keyPhoneNorm) {
 // 비파괴: 시트 원본은 손대지 않고, 대시보드 집계(byChannel/byChannelMonth) '읽기 시점'에만 적용.
 // ⚠️ 과거 리셉션이 '온라인 (네이버/동커/카카오/인스타)'로 뭉뚱그린 묶음(약 26%)은 단일 채널 귀속이 불가능
 //    → '기타·미상'으로 보존(날조 금지). 채널별 ROI는 구글폼 드롭다운(Layer B) 이후 신규 데이터부터 정확해진다.
+// 2026-07-20 시모: 회원관리 화면 드롭다운(membership.html CHANNEL_OPTIONS)에는 있던 '유선전화'가
+//   이 배열·아래 정규화 함수엔 누락되어 있었다(주석은 "10버킷"인데 실제론 9개 — 정본 불일치).
+//   전화 문의는 실제 발생하는 별도 채널(온라인/오프라인 자기신고도 아님)이라 '기타·미상' 흡수가 아니라
+//   10번째 버킷으로 복원 — CHANNEL_OPTIONS와 동일 10종으로 통일(정본 판단: 드롭다운 쪽이 먼저 옳았음).
 var CANONICAL_CHANNELS = ['네이버', '동부이촌동 커뮤니티', '인스타그램', '카카오톡', '당근마켓',
-                          '소개·지인', '기존·과거 회원', '오프라인', '기타·미상'];
+                          '소개·지인', '기존·과거 회원', '오프라인', '유선전화', '기타·미상'];
 
 function _canonicalChannel_(raw) {
   var s = String(raw == null ? '' : raw).trim();
@@ -137,6 +141,7 @@ function _canonicalChannel_(raw) {
   if (/소개|지인|친구|friend|추천|동기/i.test(s)) return '소개·지인';
   if (/회원|가족|자녀|아이|아들|딸|형|누나|언니|동생|둘째|첫째|보호자|학부모|부모|母|수강|강습|다녔|다니|이용|경험|기존|과거|재수강|정회원|연회원|멤버십회원|멤버쉽|wsc|준회원|수강생/i.test(s)) return '기존·과거 회원';
   if (/간판|현수막|홍보물|우편|워크인|방문|지나가|지나는|집근처|근처|동네|거주|입주|하이페리온|길에|봤|보여서|아파트|오프라인/.test(s)) return '오프라인';
+  if (/^유선\s*전화$|^전화\s*문의$/.test(s)) return '유선전화';  // 회원관리 드롭다운 수기값(정확일치) — '전화'만으로는 오탐 넓어 정확 패턴만
   return '기타·미상';
 }
 
@@ -302,6 +307,48 @@ function _collectFormInquiries_() {
         });
       });
     } catch (e) { /* 폼 시트 접근 실패는 무시(대시보드 무중단) */ }
+  });
+  return out;
+}
+
+// ─── 전체 문의 로우(문의접수 시트 ∪ 구글폼) 단일 수집 — funnel_conversion(집계)·funnel_conversion_detail(명단)
+//   공용 SSOT. 2026-07-20 GM 실사용 제보(M1에서 채널 건수 클릭→명단 건수 어긋남) 재발방지: 과거엔 두 액션이
+//   이 두 소스를 각자 독립 순회·채널판정해 실서비스에서 건수가 갈렸다(로직 두 곳 복사 금지 원칙 재적용).
+//   반환 행: {source:'inq'|'form', name, phone(정규화), channel(canonical), ts(원본 타임스탬프 값), type}.
+//   기간 필터(inPeriodFn)는 원본 ts 값을 그대로 받는다(호출부의 _fcInPeriod/_fdInPeriod_와 동일 계약).
+function _collectAllInquiryRows_(inPeriodFn) {
+  var out = [];
+  var inqSh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
+  var inqLast = inqSh.getLastRow();
+  if (inqLast >= 2) {
+    var inqData = inqSh.getRange(2, 1, inqLast - 1, INQUIRY_HEADERS.length).getValues();
+    var idxName    = INQUIRY_HEADERS.indexOf('이름');
+    var idxPhone   = INQUIRY_HEADERS.indexOf('연락처');
+    var idxChannel = INQUIRY_HEADERS.indexOf('유입채널');
+    var idxDateFc  = INQUIRY_HEADERS.indexOf('시각');
+    var idxType    = INQUIRY_HEADERS.indexOf('문의유형');
+    inqData.forEach(function(row) {
+      if (!inPeriodFn(row[idxDateFc])) return;   // 기간 필터(미지정=전체 누적)
+      out.push({
+        source:  'inq',
+        name:    idxName >= 0 ? String(row[idxName] || '').trim() : '',
+        phone:   normalizePhone_(row[idxPhone]),
+        channel: _canonicalChannel_(row[idxChannel]),
+        ts:      row[idxDateFc],
+        type:    idxType >= 0 ? String(row[idxType] || '') : ''
+      });
+    });
+  }
+  _collectFormInquiries_().forEach(function(f) {
+    if (!inPeriodFn(f.시각)) return;   // 기간 필터(미지정=전체 누적)
+    out.push({
+      source:  'form',
+      name:    '',   // 구글폼 소스는 이름 미수집(원본 폼 구조 한계) — 호출부가 표시 시 구분 문구 사용
+      phone:   normalizePhone_(f.연락처),
+      channel: _canonicalChannel_(f.유입채널),
+      ts:      f.시각,
+      type:    f.문의유형 || ''
+    });
   });
   return out;
 }
@@ -2747,7 +2794,10 @@ function _processAction(body) {
         _lsSet(['접수 담당자', '담당자 혹은', '담당'], '웹 자동접수');
         _lsSet(['개인정보', '동의', '수집·이용'], '동의');
         _lsSet(['진행 상황', '진행상황', '상태'], '신규');
-        _lsSet(['비고', '메모'], _iId);   // 접수ID를 비고에 흘림(기존 탭엔 별도 ID칸 없음)
+        // 비고에 접수ID를 쓰지 않는다(2026-07-20 시포·GM 판정): 접수ID는 타임스탬프 재표현(L+yyMMdd-HHmmss)일 뿐이고
+        //   강습 도메인에서 키로 쓰이는 곳이 0곳(중복방지는 위 submissionId 멱등 캐시가 전담). 비고는 CONTACT(연락이력)
+        //   읽기 폴백 소스라서(_lessonReadRows_ 의 _lMemo 폴백) 접수ID가 마치 "연락 이력"인 것처럼 화면에 떠
+        //   미컨택 집계를 왜곡시켰다 — 그 기록 자체를 중단한다. (렌트·비즈니스 탭의 진짜 '접수ID' 칸은 유지.)
         _lsSh.insertRowAfter(1); _lsSh.getRange(2, 1, 1, _lsRow.length).setValues([_lsRow]);   // 최근일자 상단(2026-07-18 GM 기존 지시 유지)
         try {
           _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|year');
@@ -2836,6 +2886,40 @@ function _processAction(body) {
       _tRep[cfg.n] = del;
     });
     return _json({ ok: true, deleted: _tRep });
+  }
+
+  // ─── (임시) 강습 비고칸 접수ID 오염 정리 — 순수 접수ID 패턴만 빈칸화. 웰리 수동. 2026-07-20 시포 ───
+  //   배경: intake_submit이 접수ID를 비고에 흘려써 CONTACT(연락이력) 읽기 폴백을 오염시켰음(위 수정으로 신규 유입은 중단).
+  //   기존에 이미 쌓인 값만 대상. 값 기준 판정(행번호로 지우지 않음 — INC-020 행 인덱스 삭제 재발방지).
+  //   순수 접수ID 패턴(글자가 조금이라도 더 섞이면 실무진 메모로 간주해 절대 건드리지 않음)만 빈칸화.
+  //   dryRun 기본 true — 반드시 dry-run 결과(건수·샘플) 확인 후 { dryRun:false }로 재호출해야 실제 삭제.
+  if (action === 'cpo_clean_intake_id_memo') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _cimDry = (body.dryRun !== false);   // 명시적으로 false를 보내야만 실제 정리 실행
+    var _cimIdRe = /^\s*L?\d{6}-\d{6}\s*$|^\s*WEB-\d+\s*$/;   // 순수 접수ID 패턴(L+yyMMdd-HHmmss 또는 WEB-숫자)만 매치
+    var _cimRep = {};
+    [ { n: '1. 성인강습', gid: 111889422 }, { n: '2. WSC 강습', gid: 268994754 } ].forEach(function(cfg){
+      var sh = _sheetByGid_(LESSON_SS_ID, cfg.gid);
+      if (!sh) { _cimRep[cfg.n] = { error: '시트 없음' }; return; }
+      var lr = sh.getLastRow(), lc = sh.getLastColumn();
+      if (lr < 2) { _cimRep[cfg.n] = { matched: 0, samples: [] }; return; }
+      var hdr = sh.getRange(1, 1, 1, lc).getValues()[0].map(function(v){ return String(v).trim(); });
+      var memoCi = _findCol_(hdr, ['비고', '메모']);   // intake_submit이 쓰던 것과 동일 키 — 같은 칸을 찾는다
+      if (memoCi < 0) { _cimRep[cfg.n] = { error: '비고/메모 칸 없음' }; return; }
+      var data = sh.getRange(2, 1, lr - 1, lc).getValues();
+      var matched = [];
+      for (var r = 0; r < data.length; r++) {
+        var v = String(data[r][memoCi] || '');
+        if (v && _cimIdRe.test(v)) matched.push({ row: r + 2, value: v });
+      }
+      // 백업(정리 전 대상 행 전체를 로그로 남김) — 실제 실행 시에만
+      if (!_cimDry && matched.length > 0) {
+        Logger.log('[cpo_clean_intake_id_memo] ' + cfg.n + ' 정리 대상 백업(' + matched.length + '건): ' + JSON.stringify(matched));
+        matched.forEach(function(m){ sh.getRange(m.row, memoCi + 1).setValue(''); });
+      }
+      _cimRep[cfg.n] = { matched: matched.length, samples: matched.slice(0, 5) };
+    });
+    return _json({ ok: true, dryRun: _cimDry, result: _cimRep });
   }
 
   // ─── (임시) 강습 신규문의(자체폼 유입, 배1037) 탭 → 기존 폼탭(1.성인강습/2.WSC강습) 일회성 이관 ───
@@ -5037,48 +5121,23 @@ function _processAction(body) {
       return { memberOnly: mOk, any: (mOk || lOk) };
     }
 
-    // ② 문의접수 시트 집계
-    var inqSh   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
-    var inqLast = inqSh.getLastRow();
+    // ②+②-b 문의접수 시트 ∪ 구글폼 — 공용 SSOT(_collectAllInquiryRows_)로 단일 순회.
+    //   funnel_conversion_detail과 동일 함수·동일 로우 집합·동일 채널판정을 써야 "채널 건수 클릭→명단"이
+    //   항상 정합한다(2026-07-20 GM 실사용 제보로 통합 — 과거엔 이 블록이 아래 명단 액션과 각자 따로 순회).
     var totalInq = 0, totalConv = 0, totalConvMemberOnly = 0;  // memberOnly=구버전(멤버십만) 비교용 — 투명성 유지
     var byChannel = {};  // { 채널명: {inquiries, converted} }
-
-    if (inqLast >= 2) {
-      var inqData = inqSh.getRange(2, 1, inqLast - 1, INQUIRY_HEADERS.length).getValues();
-      // 헤더 인덱스
-      var idxPhone   = INQUIRY_HEADERS.indexOf('연락처');   // 3
-      var idxChannel = INQUIRY_HEADERS.indexOf('유입채널'); // 6
-      var idxDateFc  = INQUIRY_HEADERS.indexOf('시각');     // 1
-
-      inqData.forEach(function(row) {
-        if (!_fcInPeriod(row[idxDateFc])) return;   // 기간 필터(미지정=전체 누적)
-        var phone   = normalizePhone_(row[idxPhone]);
-        var channel = _canonicalChannel_(row[idxChannel]);
-
-        totalInq++;
-        if (!byChannel[channel]) byChannel[channel] = { inquiries: 0, converted: 0 };
-        byChannel[channel].inquiries++;
-
-        var fcConv = _fcConverted_(phone);
-        if (fcConv.memberOnly) totalConvMemberOnly++;   // 구버전(멤버십만) 비교용
-        if (fcConv.any) {
-          totalConv++;
-          byChannel[channel].converted++;
-        }
-      });
-    }
-
-    // ②-b 구글폼 응답 문의 합류 (실제 문의 — 자체폼 휴면 대체, 2026-06-05)
-    _collectFormInquiries_().forEach(function(f) {
-      if (!_fcInPeriod(f.시각)) return;   // 기간 필터(미지정=전체 누적)
-      var phone   = normalizePhone_(f.연락처);
-      var channel = _canonicalChannel_(f.유입채널);
+    _collectAllInquiryRows_(_fcInPeriod).forEach(function(row) {
+      var channel = row.channel;
       totalInq++;
       if (!byChannel[channel]) byChannel[channel] = { inquiries: 0, converted: 0 };
       byChannel[channel].inquiries++;
-      var fcConv2 = _fcConverted_(phone);
-      if (fcConv2.memberOnly) totalConvMemberOnly++;   // 구버전(멤버십만) 비교용
-      if (fcConv2.any) { totalConv++; byChannel[channel].converted++; }
+
+      var fcConv = _fcConverted_(row.phone);
+      if (fcConv.memberOnly) totalConvMemberOnly++;   // 구버전(멤버십만) 비교용
+      if (fcConv.any) {
+        totalConv++;
+        byChannel[channel].converted++;
+      }
     });
 
     // ③ 반환 JSON — 집계 수치만, 개인정보 절대 미포함
@@ -5226,47 +5285,17 @@ function _processAction(body) {
       fdByChannel[channel].push(rec);
     }
 
-    // ② 문의접수 시트 — 전환된 행만 명단화(비전환 문의는 상세 미노출, 이미 채널 문의수 합계로 별도 표시됨)
-    var fdInqSh   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
-    var fdInqLast = fdInqSh.getLastRow();
-    if (fdInqLast >= 2) {
-      var fdInqData    = fdInqSh.getRange(2, 1, fdInqLast - 1, INQUIRY_HEADERS.length).getValues();
-      var fdIdxName    = INQUIRY_HEADERS.indexOf('이름');
-      var fdIdxPhone   = INQUIRY_HEADERS.indexOf('연락처');
-      var fdIdxChannel = INQUIRY_HEADERS.indexOf('유입채널');
-      var fdIdxDate    = INQUIRY_HEADERS.indexOf('시각');
-      var fdIdxType    = INQUIRY_HEADERS.indexOf('문의유형');
-      fdInqData.forEach(function(row) {
-        if (!_fdInPeriod_(row[fdIdxDate])) return;   // 기간 필터(미지정=전체 누적)
-        var phone = normalizePhone_(row[fdIdxPhone]);
-        var conv  = _fdConverted_(phone);
-        if (!conv.any) return;
-        var channel = _canonicalChannel_(row[fdIdxChannel]);
-        var regDate = _fdRegDate_(phone);
-        _fdPush_(channel, {
-          name:             fdIdxName >= 0 ? (String(row[fdIdxName] || '').trim() || '확인불가') : '확인불가',
-          phone4:           _fdPhone4_(phone),
-          type:             _fdTypeLabel_(phone, fdIdxType >= 0 ? String(row[fdIdxType] || '') : ''),
-          inquiryDate:      _miToISO_(row[fdIdxDate]) || '확인불가',
-          regDate:          regDate || '확인불가',
-          regDateConfirmed: !!regDate,
-          matchBasis:       _fdBasisLabel_(conv)
-        });
-      });
-    }
-    // ②-b 구글폼 응답 문의 합류 — 이 소스는 이름 필드를 수집하지 않음(원본 폼 구조 한계) → 정직하게 '확인불가' 표기.
-    _collectFormInquiries_().forEach(function(f) {
-      if (!_fdInPeriod_(f.시각)) return;   // 기간 필터(미지정=전체 누적)
-      var phone = normalizePhone_(f.연락처);
-      var conv  = _fdConverted_(phone);
+    // ②+②-b 문의접수 시트 ∪ 구글폼 — 공용 SSOT(_collectAllInquiryRows_)로 단일 순회, funnel_conversion과
+    //   동일 로우 집합·동일 채널판정(2026-07-20 GM 실사용 제보로 통합 — 채널 건수 클릭→명단 정합 보장).
+    _collectAllInquiryRows_(_fdInPeriod_).forEach(function(row) {
+      var conv = _fdConverted_(row.phone);
       if (!conv.any) return;
-      var channel = _canonicalChannel_(f.유입채널);
-      var regDate = _fdRegDate_(phone);
-      _fdPush_(channel, {
-        name:             '확인불가(이름 미수집 폼)',
-        phone4:           _fdPhone4_(phone),
-        type:             _fdTypeLabel_(phone, f.문의유형 || ''),
-        inquiryDate:      _miToISO_(f.시각) || '확인불가',
+      var regDate = _fdRegDate_(row.phone);
+      _fdPush_(row.channel, {
+        name:             row.source === 'form' ? '확인불가(이름 미수집 폼)' : (row.name || '확인불가'),
+        phone4:           _fdPhone4_(row.phone),
+        type:             _fdTypeLabel_(row.phone, row.type),
+        inquiryDate:      _miToISO_(row.ts) || '확인불가',
         regDate:          regDate || '확인불가',
         regDateConfirmed: !!regDate,
         matchBasis:       _fdBasisLabel_(conv)
