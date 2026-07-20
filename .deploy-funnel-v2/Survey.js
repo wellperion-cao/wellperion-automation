@@ -4966,6 +4966,57 @@ function _processAction(body) {
   //   G는 구글폼 문항이라 고객이 날짜 대신 문장을 적은 값이 섞여 있다("일정에 맞춰 예약 도와드리겠습니다" 등).
   //   예약 칸에 문장이 있으면 예약으로 못 쓴다 → 비고로 옮기고 G는 비운다(정보 보존, 칸 용도 정리).
   //   덤: 4슬롯 이관 때 내가 시간을 중복시킨 값('체험1 21:00 21:00')은 뒤 중복분을 떼고 옮긴다.
+  // ─── (일회성) 예약 시각 30분 단위 정규화 — 2026-07-20 GM 지시 ───
+  //   최근 데이터에 12:05 / 10:35 처럼 5분씩 밀린 값이 섞여 있다(예약이 5분 단위로 잡힐 리 없다 = 오염).
+  //   GM 지시: 되돌리지 말고 30분 단위로 정리한다. 가장 가까운 00분/30분으로 반올림.
+  //   대상: 예약1(G)·예약2(H)·예약3(I)·예약4(J) 네 칸의 '날짜 시간' 값. 날짜만 있는 값은 건드리지 않는다.
+  if (action === 'normalize_slot_time_20260720') {
+    if (String(body.key || '') !== 'wlp_normtime_20260720') return _json({ ok: false, error: 'guard-mismatch' });
+    var ntDry = (String(body.dryRun || '') === '1');
+    var ntSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!ntSh) return _json({ ok: false, error: '시트 없음' });
+    var ntHdr = ntSh.getRange(1, 1, 1, ntSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var ntN = function (x) { return String(x || '').replace(/\s+/g, ''); };
+    var slots = [];
+    for (var ni = 0; ni < ntHdr.length; ni++) {
+      var hn = ntN(ntHdr[ni]);
+      if (hn.indexOf('5.시설투어') === 0) slots[0] = ni;
+      if (hn === '예약2') slots[1] = ni;
+      if (hn === '예약3') slots[2] = ni;
+      if (hn === '예약4') slots[3] = ni;
+    }
+    var iNm = ntHdr.indexOf('1. 성함');
+    if (slots[0] === undefined || slots[1] === undefined) return _json({ ok: false, error: 'col-not-found', slots: slots });
+    var ntLast = ntSh.getLastRow();
+    var ntAll = ntLast >= 2 ? ntSh.getRange(2, 1, ntLast - 1, ntHdr.length).getValues() : [];
+    var pad = function (n) { return ('0' + n).slice(-2); };
+    var plan = [];
+    for (var nr = 0; nr < ntAll.length; nr++) {
+      var R = ntAll[nr];
+      for (var sl = 0; sl < 4; sl++) {
+        var ci = slots[sl];
+        if (ci === undefined) continue;
+        var raw = R[ci];
+        var d = _miToISO_(raw), t = _miTime_(raw);
+        if (!d || !t) continue;                       // 날짜만이면 대상 아님
+        var mm = t.split(':'); if (mm.length < 2) continue;
+        var H = parseInt(mm[0], 10), M = parseInt(mm[1], 10);
+        if (isNaN(H) || isNaN(M)) continue;
+        var total = H * 60 + M;
+        var rounded = Math.round(total / 30) * 30;    // 가장 가까운 30분
+        if (rounded >= 1440) rounded = 1410;          // 24:00 방지 → 23:30
+        if (rounded === total) continue;              // 이미 정각/30분이면 통과
+        var nh = Math.floor(rounded / 60), nmn = rounded % 60;
+        plan.push({ row: nr + 2, slot: sl + 1, col: ci, name: iNm >= 0 ? String(R[iNm] || '') : '',
+                    from: d + ' ' + t, to: d + ' ' + pad(nh) + ':' + pad(nmn) });
+      }
+    }
+    if (ntDry) return _json({ ok: true, dryRun: true, count: plan.length, plan: plan });
+    plan.forEach(function (p) { ntSh.getRange(p.row, p.col + 1).setValue(p.to); });
+    SpreadsheetApp.flush();
+    return _json({ ok: true, fixed: plan.length, plan: plan });
+  }
+
   if (action === 'move_freetext_g_20260720') {
     if (String(body.key || '') !== 'wlp_freetext_20260720') return _json({ ok: false, error: 'guard-mismatch' });
     var mgDry = (String(body.dryRun || '') === '1');
