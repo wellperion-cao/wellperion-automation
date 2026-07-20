@@ -1955,5 +1955,19 @@
     "artifact": "라이브 시트에 테스트 문의를 넣고 rowIndex로 지우다 keyPhone 대조 거부를\n빈 값으로 재시도해 우회 → 실고객 문의 2건 오삭제. 재발방지(keyPhone 강제·\n행번호 삭제 폐지·쓰기 직렬화)는 아직 미구현 — OPEN으로 정직하게 기록.\n약속.json에는 기존 L01~L19에 없던 \"안전장치 우회 금지·라이브 실데이터\n검증 금지\" 교훈을 L20으로 신설. (CLI ad-hoc · 커밋 7d7e8c58)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "7d7e8c584662af1cd222cc7439bd7164d14057df"
+  },
+  {
+    "task_id": "CTO-2026-07-20-ADHOC-2fababfe",
+    "clevel": "cto",
+    "title": "[시토] 배1307 4차 큐 기록 + INC-021 등록 (자동화 점수판 거짓 정상 재발방지)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9213,
+    "artifact": "- status/_queue.json(+미러): CTO-2026-07-20-MODULE-SILENCE-DETECTOR(ship 9197)에\n  4차 실행분(자율현황.html 정직화) 추가 기록 — 배 업그레이드(신규 배 생성 안 함).\n- ssot/incidents.json: INC-021 등록(GUARDED) — automation_health exit code만으로\n  \"정상\"을 표시하던 화면 계층의 측정 부재 재발(INC-018·019와 같은 뿌리) 및 차단조치. (CLI ad-hoc · 커밋 2fababfe)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "2fababfe75a31e1201899cc35ba9848912d1230e"
   }
 ]
