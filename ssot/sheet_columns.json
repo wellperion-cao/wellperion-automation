@@ -1,5 +1,6 @@
 {
   "_doc": "시트 칸 계약 SSOT — cpo_sheet_contract.py가 매일 07:50 대조. canon_values.json과 별개(그건 레포 문자열 스캔, 이건 라이브 시트 대조 — 실행 방식이 달라 합치면 divergence_scan.py가 오탐한다). 90%는 --seed 자동생성(라이브 헤더 그대로), 사람은 req(필수여부)·allowed(허용값)·refs(시트 관계)·value_rule(숫자 범위)만 편집한다. 자동 갱신 금지 — 헤더가 바뀌어도 계약서는 따라가지 않는다(사고를 추종하게 됨). 변경 시 알림만, 사람이 --accept로 승인해야 갱신된다.",
+  "_known_drift_20260720": "2026-07-20 시포가 inquiry_2026 칸 정리(finalize_cols_20260720·dedup_autoroute_20260720·consolidate_cols_20260720)를 진행 중 — 이 계약서는 32칸 기준인데 라이브는 22칸(진행중 작업 반영 전). req:true 칸(타임스탬프·1.성함·2.연락처· 진행현황·7.개인정보동의)은 전부 유지돼 🔴(필수칸_사라짐) 오탐은 없을 것으로 예상되나, 삭제된 건 전부 req:false 칸(등록일자동·등록매칭자동·방문완료일·연락이력·당일컨택 등)이라 🟡/🟢 로그성 드리프트가 대량 발생할 수 있다. ★임의 재시드 금지(시포 소관 + 정리 진행 중일 수 있음) — 시포가 정리 완료를 확정한 뒤 --seed로 갱신할 것. 07-20 GM 부재 중 보호조치로 이 메모만 추가, 계약 내용(columns/req 등)은 손대지 않았다.",
   "_schema": {
     "sheets.<key>": "{ss_id, gid, read_via, columns[], refs?, known_collisions?}",
     "columns[]": "{name(리터럴 헤더), req, allowed?, format?, blank_check?, date_col?, value_rule?, front_check?}",
