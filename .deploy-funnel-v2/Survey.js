@@ -66,7 +66,16 @@ function _sheetByGid_(ssId, gid) {
   return null;
 }
 
+// 2026-07-20 시포: 기존엔 헤더를 앞칸부터 훑어 아무 키나 먼저 걸리는 칸을 반환 → '26년 신규문의' 탭처럼
+//   '날짜'(A)·'타임스탬프'(B)가 별도 칸으로 공존하는 시트에서 키리스트에 '날짜'가 섞여 있으면(예:
+//   ['타임스탬프',...,'날짜']) 의도는 B였는데 A가 먼저 걸려 반환되는 버그(_mirrorInquiryToStaffLog_·
+//   diag_inquiry_ts·_collectFormInquiries_ 등 다수 호출부 공용). _miColIdx_와 동일하게 키 우선순위대로
+//   정확일치를 먼저 훑고, 그래도 없으면 기존 부분일치 폴백 — 모호성 있는 시트에서만 결과가 바뀌고
+//   단일 후보뿐인 시트는 기존과 동일하게 동작(회귀 없음).
 function _findCol_(headers, keys) {
+  for (var k = 0; k < keys.length; k++) {
+    for (var i = 0; i < headers.length; i++) { if (String(headers[i] || '') === keys[k]) return i; }
+  }
   for (var i = 0; i < headers.length; i++) {
     var h = String(headers[i] || '');
     for (var k = 0; k < keys.length; k++) { if (h.indexOf(keys[k]) >= 0) return i; }
