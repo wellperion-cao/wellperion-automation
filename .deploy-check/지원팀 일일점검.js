@@ -321,6 +321,7 @@ function doGet(e) {
   if (action === 'setup_issue_tabs') { setupIssueLogSheets(); return jsonRes({ok:true,msg:'이슈대장 탭 생성 완료'}); }
   if (action === 'setup_facility_tabs') { return setupFacilitySheets(); }
   if (action === 'facility_items') { return jsonRes({ ok: true, items: FACILITY_ITEMS }); }   // 시설 측정 항목 마스터(완료율 분모) — 프론트 fcheck 렌더용. 2026-06-17 시우.
+  if (action === 'fcheck_ranges_get') { return handleFcheckRangesGet(); }   // 「점검기준」 시트 조회(공개). 배9199, 2026-07-20 시우.
   if (action === 'setup_dept_tabs') { return setupDeptSheets(e.parameter.dept || 'support'); }
   if (action === 'migrate_item_dept') { return jsonRes(migrateItemDept()); }
   if (action === 'purge_custom') { return purgeCustomItems(e.parameter.dept || 'support'); }
@@ -1365,6 +1366,7 @@ function doPost(e) {
     if (body.action === 'unlock_round')  return handleUnlockRound(body);       // 관리자 PIN 제출잠금 해제. 2026-06-17 시우.
     if (body.action === 'save_facility_measure') return saveFacilityMeasure(body);   // 시설 측정값 저장 → 시설_공용구역 행 기록(입력=완료). weekly&dept=facility 자동집계. 2026-06-17 시우.
     if (body.action === 'save_facility_notes') return saveFacilityNotes(body);   // 금일 작업사항·지시사항만 스냅샷 갱신(측정 미영향·정오 이후 자동저장). GM 2026-07-09 시우.
+    if (body.action === 'fcheck_ranges_save') return handleFcheckRangesSave(body);   // 「점검기준」 시트 전체교체 저장(직원 PIN 게이트). 배9199, 2026-07-20 시우.
     return jsonRes({ error: 'unknown action' });
   } catch (err) {
     return jsonRes({ error: err.message });
@@ -3045,20 +3047,26 @@ function saveFacilityMeasure(body) {
   // 2026-07-18 시토: try 밖에서 미리 선언(기본 0) — 아래 스냅샷 try가 도중에 실패해도 return의
   // abnormalCount는 항상 안전한 값(시설부 per-check 텔레그램 알림 Phase2⑧이 이 반환값을 사용).
   var abnormalCount = 0;
+  var warnCount = 0;   // 🟡 주의(목표이탈) — 배9199 신설. abnormalCount(🔴만)와 합산 금지(계약 §2).
   // 3) 제출 이력 스냅샷 적립(점검일지_facility) — 시설_공용구역 본 저장과 독립, 실패해도 본 저장에 영향 없음.
   try {
     var totalCnt = rows.length;
     var inputRate = totalCnt ? Math.round(doneCnt / totalCnt * 100) : 0;
     // 이상 판정: 프론트는 측정값만 전송(이상 플래그 없음) — monthly report가 쓰는 기존 기준비교
-    // 함수 _facilityRangeHits(FC_MEASURE_RANGES 대조, 라인 ~3226)를 그대로 재사용해 동일 규칙으로
+    // 함수 _facilityRangeHits(「점검기준」 시트 대조, 라인 ~3505)를 그대로 재사용해 동일 규칙으로
     // 계산(신규 기준비교 로직 생성 금지 — 여기서 새로 만들면 monthly와 어긋날 수 있음).
+    // 배9199(2026-07-20): tier로 🔴(red)/🟡(yellow) 분리 — abnormalCount=red만, warnCount=yellow만.
     var abnormalHits = [];
+    var warnHits = [];
     rows.forEach(function (r) {
       _facilityRangeHits(r[12]).forEach(function (h) {
-        abnormalHits.push(r[2] + '(' + h.field + '):' + h.value);
+        var tag = r[2] + '(' + h.field + '):' + h.value;
+        if (h.tier === 'red') abnormalHits.push(tag);
+        else if (h.tier === 'yellow') warnHits.push(tag);
       });
     });
     abnormalCount = abnormalHits.length;
+    warnCount = warnHits.length;
     var abnormalNote = abnormalHits.join(' / ');
     // 점검 내용(항목별 측정값) — GM 2026-07-09: 이상내용만이 아니라 실제 점검 내용을 항목에 기록. 완료 항목의 name: 측정값 나열.
     var contentParts = [];
@@ -3086,8 +3094,9 @@ function saveFacilityMeasure(body) {
     if (fLast > 2) fsheet.getRange(2, 1, fLast - 1, fsheet.getLastColumn()).sort({ column: 1, ascending: false });
   } catch (e) {}
 
-  // abnormalCount: 시설부 per-check 텔레그램 알림(Phase2⑧, 2026-07-18)이 "이상 Y건" 표기에 사용.
-  return jsonRes({ ok: true, dept: 'facility', date: date, round: round, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0, abnormalCount: abnormalCount });
+  // abnormalCount: 시설부 per-check 텔레그램 알림(Phase2⑧, 2026-07-18)이 "이상 Y건" 표기에 사용(🔴만, 불변).
+  // warnCount: 배9199 신설(🟡만) — 기존 소비처는 없음(신규 필드 추가일 뿐, 하위호환).
+  return jsonRes({ ok: true, dept: 'facility', date: date, round: round, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0, abnormalCount: abnormalCount, warnCount: warnCount });
 }
 
 // ─── 금일 작업사항·지시사항만 스냅샷 갱신 (POST {action:'save_facility_notes', date, round, inspector, work, order, oocAction}) ───
@@ -3500,34 +3509,198 @@ function _aggregateMonthly(snapRows, issueRows, month, scheduleTotals) {
 // 측정값 기준이탈을 실측 기반으로 집계(지어낸 기준 아님 — 이미 라이브 UI가 쓰는 값 그대로).
 // ════════════════════════════════════════════
 
-// 프론트 FC_RANGES(시설부 체계.html) 1:1 미러 — 값 변경 시 양쪽 동시 수정 필수.
-// 온수탱크(k2/k3/k4)·공조기(AHU ok/x)·안전점검(AI초안 4종)은 프론트에서도 기준 미설정 → 여기도 미포함(❌ 미측정, 지어내기 금지).
-var FC_MEASURE_RANGES = {
-  fc_sauna_ontang_a: { min: 36, max: 42 }, fc_sauna_ontang_b: { min: 36, max: 42 },
-  fc_sauna_yeoltang_a: { min: 39, max: 45 }, fc_sauna_yeoltang_b: { min: 39, max: 45 },
-  fc_sauna_dry_a: { min: 75, max: 81 }, fc_sauna_dry_b: { min: 75, max: 81 },
-  fc_sauna_wet_a: { min: 45, max: 51 }, fc_sauna_wet_b: { min: 45, max: 51 },
-  fc_sauna_jjim_a: { min: 65, max: 71 }, fc_sauna_jjim_b: { min: 65, max: 71 },
-  fc_pool_ph: { min: 7.0, max: 7.8 },
-  fc_pool_temp: { min: 26, max: 30 },
-  fc_pool_cl: { min: 0.4, max: 1.0 }
-};
-// measure(13열) JSON 문자열({"sauna_ontang_a":"39.5",...}) → 필드id 복원('fc_'+key) 후 범위 판정.
-// 파싱 실패·기준 미설정 필드는 조용히 스킵(경보 아님) — 순수함수(SpreadsheetApp 무의존, Node 단위테스트 가능).
-function _facilityRangeHits(measureStr) {
+// 프론트 FC_RANGES(시설부 체계.html) 1:1 미러였던 하드코딩 — 기준값 불일치 사고(2026-07-20)로
+// 「점검기준」 시트 단일 SSOT로 이관됨(배9199, 계약 docs/superpowers/specs/2026-07-20-fcheck-ranges-contract.md).
+// 롤백 근거 보존 목적 주석처리(삭제 금지) — 재활성 금지, 되살리면 이관 이전 사고 재발.
+// var FC_MEASURE_RANGES = {
+//   fc_sauna_ontang_a: { min: 36, max: 42 }, fc_sauna_ontang_b: { min: 36, max: 42 },
+//   fc_sauna_yeoltang_a: { min: 39, max: 45 }, fc_sauna_yeoltang_b: { min: 39, max: 45 },
+//   fc_sauna_dry_a: { min: 75, max: 81 }, fc_sauna_dry_b: { min: 75, max: 81 },
+//   fc_sauna_wet_a: { min: 45, max: 51 }, fc_sauna_wet_b: { min: 45, max: 51 },
+//   fc_sauna_jjim_a: { min: 65, max: 71 }, fc_sauna_jjim_b: { min: 65, max: 71 },
+//   fc_pool_ph: { min: 7.0, max: 7.8 },
+//   fc_pool_temp: { min: 26, max: 30 },
+//   fc_pool_cl: { min: 0.4, max: 1.0 }
+// };
+
+// ════════════════════════════════════════════
+//  「점검기준」 시트 — 기준값 단일 SSOT (배9199, 2026-07-20 시우)
+//  계약 = docs/superpowers/specs/2026-07-20-fcheck-ranges-contract.md §1~§3.
+//  숫자는 이 파일에 적지 않는다 — 오직 시트에만 존재. 조회 실패 시 판정 자체를 안 함(경보 0, §4 폴백).
+// ════════════════════════════════════════════
+var SHEET_FC_RANGES = '점검기준';
+var RANGE_HEADERS = ['항목id', '이름', '단위', '법정하', '법정상', '목표하', '목표상', '측정주기', '경보', '비고'];
+
+// 시트 없으면 생성 + 초기행 시드(멱등: 데이터 행이 이미 있으면 절대 건드리지 않음).
+function _ensureRangeSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_FC_RANGES);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_FC_RANGES);
+    sheet.getRange(1, 1, 1, RANGE_HEADERS.length).setValues([RANGE_HEADERS]);
+  } else if (sheet.getLastColumn() < RANGE_HEADERS.length) {
+    sheet.getRange(1, 1, 1, RANGE_HEADERS.length).setValues([RANGE_HEADERS]);   // 기존 시트 헤더 보강
+  }
+  _seedRangeSheetDefaults(sheet);
+  return sheet;
+}
+
+// 계약 §1 초기 행 시드. 법정값=체육시설법 시행규칙, 목표값은 2주 관찰 후 확정 전까지 경보 N(수온·사우나).
+function _seedRangeSheetDefaults(sheet) {
+  if (sheet.getLastRow() >= 2) return;   // 멱등: 이미 데이터 있으면 무동작
+  var N = '2주 실측 후 확정(경보 N)';
+  var rows = [
+    ['fc_pool_ph', '수영장 pH', '', 5.8, 8.6, '', '', '일일', 'Y', ''],
+    ['fc_pool_cl', '유리잔류염소', 'ppm', 0.4, 1.0, '', '', '일일', 'Y', ''],
+    ['fc_pool_temp', '수영장 수온', '℃', '', '', '', '', '일일', 'N', N],
+    ['fc_sauna_ontang_a', '사우나 온탕(남)', '℃', '', '', '', '', '일일', 'N', N],
+    ['fc_sauna_ontang_b', '사우나 온탕(여)', '℃', '', '', '', '', '일일', 'N', N],
+    ['fc_sauna_yeoltang_a', '사우나 열탕(남)', '℃', '', '', '', '', '일일', 'N', N],
+    ['fc_sauna_yeoltang_b', '사우나 열탕(여)', '℃', '', '', '', '', '일일', 'N', N],
+    ['fc_sauna_dry_a', '사우나 건식(남)', '℃', '', '', '', '', '일일', 'N', N],
+    ['fc_sauna_dry_b', '사우나 건식(여)', '℃', '', '', '', '', '일일', 'N', N],
+    ['fc_sauna_wet_a', '사우나 습식(남)', '℃', '', '', '', '', '일일', 'N', N],
+    ['fc_sauna_wet_b', '사우나 습식(여)', '℃', '', '', '', '', '일일', 'N', N],
+    ['fc_sauna_jjim_a', '찜질방(A)', '℃', '', '', '', '', '일일', 'N', N],
+    ['fc_sauna_jjim_b', '찜질방(B)', '℃', '', '', '', '', '일일', 'N', N],
+    ['fc_wq_turbidity', '탁도', 'NTU', '', 1.5, '', '', '외부검사', 'Y', ''],
+    ['fc_wq_kmno4', '과망간산칼륨 소비량', 'mg/L', '', 12, '', '', '외부검사', 'Y', ''],
+    ['fc_wq_coliform', '총대장균군', '', '', 2, '', '', '외부검사', 'Y', '']
+  ];
+  sheet.getRange(2, 1, rows.length, RANGE_HEADERS.length).setValues(rows);
+}
+
+function _numOrNull(v) {
+  if (v === '' || v === null || v === undefined) return null;
+  var n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+
+// 함수 스코프 메모 — 같은 실행(요청) 안에서 재조회 방지(saveFacilityMeasure가 항목마다 _facilityRangeHits를
+// 호출해도 시트는 1회만 읽음). 실행마다 전역이 새로 초기화되므로 요청 간 캐시는 CacheService가 담당.
+var _fcRangeMemo = null;
+function _loadRangeConfig() {
+  if (_fcRangeMemo) return _fcRangeMemo;
+  var cache = null;
+  try {
+    cache = CacheService.getScriptCache();
+    var hit = cache.get('FC_RANGE_CFG');
+    if (hit) { _fcRangeMemo = JSON.parse(hit); return _fcRangeMemo; }
+  } catch (e) { cache = null; }
+  var rows = null;
+  try {
+    var sheet = _ensureRangeSheet();
+    var data = sheet.getDataRange().getValues();
+    rows = [];
+    for (var i = 1; i < data.length; i++) {
+      var r = data[i];
+      var id = String(r[0] || '').trim();
+      if (!id) continue;
+      rows.push({
+        id: id, name: String(r[1] || ''), unit: String(r[2] || ''),
+        legalMin: _numOrNull(r[3]), legalMax: _numOrNull(r[4]),
+        targetMin: _numOrNull(r[5]), targetMax: _numOrNull(r[6]),
+        cycle: String(r[7] || ''),
+        alert: (String(r[8] || '').trim().toUpperCase() === 'N') ? 'N' : 'Y',
+        note: String(r[9] || '')
+      });
+    }
+  } catch (e) {
+    rows = null;   // 조회 실패 → 판정 자체를 안 함(경보 0). 옛 하드코딩 폴백 금지(계약 §4 — 이번 사고 원인).
+  }
+  _fcRangeMemo = rows;
+  if (rows && cache) { try { cache.put('FC_RANGE_CFG', JSON.stringify(rows), 300); } catch (e) {} }
+  return _fcRangeMemo;
+}
+function _invalidateRangeCache() {
+  _fcRangeMemo = null;
+  try { CacheService.getScriptCache().remove('FC_RANGE_CFG'); } catch (e) {}
+}
+
+// 순수 판정(값 1개 vs 기준행 1개) — 계약 §2 규칙 그대로. SpreadsheetApp 무의존, Node 단위테스트 가능.
+function _rangeJudge(value, cfg) {
+  if (!cfg) return null;
+  if (cfg.alert === 'N') return null;   // 경보 꺼짐 = 기록만(집계 제외)
+  if (value === null || value === undefined || isNaN(value)) return null;   // 빈칸=판정 없음(미입력, 경보 아님)
+  if (cfg.legalMin !== null || cfg.legalMax !== null) {
+    if ((cfg.legalMin !== null && value < cfg.legalMin) || (cfg.legalMax !== null && value > cfg.legalMax)) {
+      return { tier: 'red', min: cfg.legalMin, max: cfg.legalMax };
+    }
+  }
+  if (cfg.targetMin !== null || cfg.targetMax !== null) {
+    if ((cfg.targetMin !== null && value < cfg.targetMin) || (cfg.targetMax !== null && value > cfg.targetMax)) {
+      return { tier: 'yellow', min: cfg.targetMin, max: cfg.targetMax };
+    }
+  }
+  return null;   // 그 외 = 정상
+}
+
+// 순수 함수 — measure(13열) JSON 문자열 + 기준행 배열(cfgRows)만으로 이탈 목록 계산. SpreadsheetApp 무의존,
+// Node에서 cfgRows를 가짜 배열로 넣어 단위테스트 가능. 기준행 없는 필드 = 판정 없음(조용히 스킵, 지어내지 않는다).
+function _facilityRangeHitsPure(measureStr, cfgRows) {
   var hits = [];
-  if (!measureStr) return hits;
+  if (!measureStr || !cfgRows) return hits;
   var obj = null;
   try { obj = JSON.parse(measureStr); } catch (e) { return hits; }
   if (!obj || typeof obj !== 'object') return hits;
+  var cfgMap = {};
+  cfgRows.forEach(function (c) { cfgMap[c.id] = c; });
   Object.keys(obj).forEach(function (k) {
-    var cfg = FC_MEASURE_RANGES['fc_' + k];
+    var cfg = cfgMap['fc_' + k];
     if (!cfg) return;
     var num = parseFloat(obj[k]);
     if (isNaN(num)) return;
-    if (num < cfg.min || num > cfg.max) hits.push({ field: k, value: num, min: cfg.min, max: cfg.max });
+    var verdict = _rangeJudge(num, cfg);
+    if (verdict) hits.push({ field: k, value: num, min: verdict.min, max: verdict.max, tier: verdict.tier });
   });
   return hits;
+}
+
+// I/O 래퍼 — 기존 호출부(saveFacilityMeasure, _aggregateMonthlyFacility) 시그니처 불변.
+// 조회 실패 시 _loadRangeConfig()가 null → hits 항상 빈 배열(경보 0, 폴백 금지).
+function _facilityRangeHits(measureStr) {
+  var cfgRows = _loadRangeConfig();
+  if (!cfgRows) return [];
+  return _facilityRangeHitsPure(measureStr, cfgRows);
+}
+
+// ─── GAS 액션: fcheck_ranges_get(공개·읽기) / fcheck_ranges_save(직원 게이트) — 계약 §3 ───
+function handleFcheckRangesGet() {
+  try {
+    var rows = _loadRangeConfig();
+    if (!rows) return jsonRes({ ok: false, error: 'range sheet read failed' });
+    return jsonRes({ ok: true, ranges: rows });
+  } catch (err) {
+    return jsonRes({ ok: false, error: err.message });
+  }
+}
+function handleFcheckRangesSave(body) {
+  // 직원 게이트 — handleUnlockRound(관리자 PIN 제출잠금 해제, 라인 ~4345)와 동일 PIN SSOT 재사용.
+  var pin = String((body && body.pin) || '').trim();
+  var props = PropertiesService.getScriptProperties();
+  var correctPin = props.getProperty('CHECK_UNLOCK_PIN') || CHECK_UNLOCK_PIN_DEFAULT;
+  if (pin !== correctPin) return jsonRes({ ok: false, reason: 'PIN' });
+
+  var rows = (body && body.rows) || [];
+  var sheet = _ensureRangeSheet();
+  var last = sheet.getLastRow();
+  if (last > 1) sheet.getRange(2, 1, last - 1, RANGE_HEADERS.length).clearContent();
+  if (rows.length) {
+    var out = rows.map(function (r) {
+      return [
+        String(r.id || ''), String(r.name || ''), String(r.unit || ''),
+        (r.legalMin === '' || r.legalMin === null || r.legalMin === undefined) ? '' : r.legalMin,
+        (r.legalMax === '' || r.legalMax === null || r.legalMax === undefined) ? '' : r.legalMax,
+        (r.targetMin === '' || r.targetMin === null || r.targetMin === undefined) ? '' : r.targetMin,
+        (r.targetMax === '' || r.targetMax === null || r.targetMax === undefined) ? '' : r.targetMax,
+        String(r.cycle || ''), (String(r.alert || 'Y').trim().toUpperCase() === 'N') ? 'N' : 'Y',
+        String(r.note || '')
+      ];
+    });
+    sheet.getRange(2, 1, out.length, RANGE_HEADERS.length).setValues(out);
+  }
+  _invalidateRangeCache();
+  return jsonRes({ ok: true, count: rows.length });
 }
 
 // 순수 집계 함수 — SpreadsheetApp 무호출. rows = 시설_공용구역 헤더 제외 2차원 배열(원본 셀값).
@@ -3554,6 +3727,7 @@ function _aggregateMonthlyFacility(rows, month) {
   var sessionSet = {};     // 'ymd|round' -> true (월 전체 세션 수)
   var outOfRangeList = [];
   var outOfRangeByItem = {}; // itemId -> {itemId,name,count}
+  var outOfRangeWarnList = [];   // 🟡(목표이탈) — 배9199 신설. red(outOfRangeList)와 절대 합산 금지.
 
   filtered.forEach(function (row) {
     var ymd = _ymdOf_(row[0]);
@@ -3582,10 +3756,19 @@ function _aggregateMonthlyFacility(rows, month) {
     byInspectorMap[inspector].total++; if (done) byInspectorMap[inspector].done++;
     byInspectorMap[inspector].sessionSet[sKey] = true;
 
+    // outOfRangeCount(=outOfRangeList.length, monthTotals)=🔴 법정이탈만. 🟡을 여기 합치지 말 것 —
+    // 2026-07-20 배9199 결정, 계약서 docs/superpowers/specs/2026-07-20-fcheck-ranges-contract.md §2 연장.
+    // 기존 소비자(시설부 체계.html·월간운영계획.html·daily_scheduler.py)가 이미 이 값을 "🔴 개수"로
+    // 알고 쓰고 있어(지금까지 목표값 미설정으로 🟡이 한 번도 안 섞였음) 의미를 그대로 고정 — 🟡은 별도 신설 필드로만.
     _facilityRangeHits(measure).forEach(function (h) {
-      outOfRangeList.push({ date: ymd, round: round, itemId: itemId, name: itemName, field: h.field, value: h.value, min: h.min, max: h.max });
-      if (!outOfRangeByItem[itemId]) outOfRangeByItem[itemId] = { itemId: itemId, name: itemName, count: 0 };
-      outOfRangeByItem[itemId].count++;
+      var entry = { date: ymd, round: round, itemId: itemId, name: itemName, field: h.field, value: h.value, min: h.min, max: h.max };
+      if (h.tier === 'red') {
+        outOfRangeList.push(entry);
+        if (!outOfRangeByItem[itemId]) outOfRangeByItem[itemId] = { itemId: itemId, name: itemName, count: 0 };
+        outOfRangeByItem[itemId].count++;
+      } else if (h.tier === 'yellow') {
+        outOfRangeWarnList.push(entry);
+      }
     });
   });
   outOfRangeList.sort(function (a, b) { return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
@@ -3604,7 +3787,8 @@ function _aggregateMonthlyFacility(rows, month) {
     avgPct: monthTotal > 0 ? Math.round(monthDone / monthTotal * 100) : null,
     sessionCount: Object.keys(sessionSet).length,
     activeDays: dailySeries.length,
-    outOfRangeCount: outOfRangeList.length
+    outOfRangeCount: outOfRangeList.length,   // 🔴만(불변, 기존 소비자 무수정). 배9199, 2026-07-20.
+    outOfRangeWarnCount: outOfRangeWarnList.length   // 🟡만(신규 필드). red와 합산 금지.
   };
 
   var byCategory = Object.keys(byCatMap).map(function (c) {
@@ -3652,7 +3836,8 @@ function _aggregateMonthlyFacility(rows, month) {
     byCategory: byCategory,
     byRound: byRound,
     byInspector: byInspector,
-    outOfRange: { total: outOfRangeList.length, byItem: outOfRangeByItemArr, list: outOfRangeList },
+    outOfRange: { total: outOfRangeList.length, byItem: outOfRangeByItemArr, list: outOfRangeList },   // 🔴만(불변)
+    outOfRangeWarn: { total: outOfRangeWarnList.length, list: outOfRangeWarnList },   // 🟡만(신규, 배9199) — 기존 outOfRange와 합산 금지
     // 이슈(사람이 등록하는 정성 이슈)는 시설점검 화면에 등록 UI가 없어 실제 미가동 — 지어내기 금지, 정직 태그.
     issues: { total: 0, note: '❌ 미측정 · 시설점검 이슈 등록 UI 미가동(시설_이슈대장·측정값 6열 모두 실사용 데이터 없음). 측정값 기준이탈(outOfRange)이 가장 가까운 대체 신호 — 원문 이슈와는 다른 지표.' },
     improvements: improvements,

@@ -4358,7 +4358,7 @@ function renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcF
   var body = rows.map(function(r) {
     var convCell = (fcFailed || r.conv === 0)
       ? '<span style="' + (r.conv === 0 ? 'color:var(--dim)' : '') + '">' + (fcFailed ? '<span class="placeholder">준비중</span>' : r.conv.toLocaleString('ko-KR') + '건') + '</span>'
-      : '<button type="button" class="conv-toggle" data-expected="' + r.conv + '" onclick="toggleConvDetail(this,\'' + esc(r.gasCh) + '\')">' + r.conv.toLocaleString('ko-KR') + '건<span class="arrow">▸</span></button>';
+      : '<button type="button" class="conv-toggle" data-expected="' + r.conv + '" onclick="M2DASH.toggleConvDetail(this,\'' + esc(r.gasCh) + '\')">' + r.conv.toLocaleString('ko-KR') + '건<span class="arrow">▸</span></button>';
     return '<tr>' +
       '<td style="min-width:100px;white-space:nowrap">' + chanIconHtml(r.ch, 'chan-icon') + esc(r.ch) + '</td>' +
       '<td style="text-align:right;' + (r.pub === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + r.pub.toLocaleString('ko-KR') + '</td>' +
@@ -4529,7 +4529,7 @@ function _initDash() {
 }
 // ─── 인쇄(임베드 격리) + 인라인 onclick 핸들러 공개 (IIFE 지역화) ───
 function printDash(){ document.body.classList.add('m1dash-print'); window.print(); setTimeout(function(){ document.body.classList.remove('m1dash-print'); }, 400); }
-window.M2DASH = { switchPeriod: switchPeriod, shiftMonth: shiftMonth, toggleCustomRange: toggleCustomRange, runCustomQuery: runCustomQuery, loadYearToDate: loadYearToDate, printDash: printDash };
+window.M2DASH = { switchPeriod: switchPeriod, shiftMonth: shiftMonth, toggleCustomRange: toggleCustomRange, runCustomQuery: runCustomQuery, loadYearToDate: loadYearToDate, printDash: printDash, toggleConvDetail: toggleConvDetail };
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', _initDash); } else { _initDash(); }
 
 // ─── 인쇄 한 장 맞춤(Fit-to-page) — 2026-07-18 GM: "좌우로 나뉘지 말고 한 장에" ───────
@@ -11259,17 +11259,48 @@ function crTab(btn, panelId) {
       {key:'E',label:'⚙️ 기계실',         ids:['fc_eq_night','fc_eq_tank1','fc_eq_gas','fc_eq_hotw','fc_eq_pump','fc_eq_heat','fc_eq_final']},
       {key:'F',label:'🛟 안전',           ids:['fc_ai_fire','fc_ai_elev','fc_ai_water','fc_ai_alarm']}
     ];
-    // GAS FC_MEASURE_RANGES(~3301-3310) 미러 — 사우나·수영장만 기준 존재(온수탱크·공조기·기계실·안전은 서버도 기준 미설정 → 이상건수 판정 제외, 지어내기 금지).
-    var FACILITY_RANGES = {
-      sauna_ontang_a:{min:36,max:42}, sauna_ontang_b:{min:36,max:42},
-      sauna_yeoltang_a:{min:39,max:45}, sauna_yeoltang_b:{min:39,max:45},
-      sauna_dry_a:{min:75,max:81}, sauna_dry_b:{min:75,max:81},
-      sauna_wet_a:{min:45,max:51}, sauna_wet_b:{min:45,max:51},
-      sauna_jjim_a:{min:65,max:71}, sauna_jjim_b:{min:65,max:71},
-      pool_ph:{min:7.0,max:7.8}, pool_temp:{min:26,max:30}, pool_cl:{min:0.4,max:1.0}
-    };
+    // FACILITY_RANGES 하드코딩 삭제 → 계약서로 이관(2026-07-20 배9199). 정본=점검 스프레드시트「점검기준」시트 1장, 세 곳(입력화면·GAS·본 대시보드) 공통 GAS 액션 fcheck_ranges_get로 조회.
+    // 계약서: docs/superpowers/specs/2026-07-20-fcheck-ranges-contract.md — 옛 값(복사본, 사고 원인)은 참고용으로만 아래 주석 보존.
+    // var FACILITY_RANGES_옛값 = {
+    //   sauna_ontang_a:{min:36,max:42}, sauna_ontang_b:{min:36,max:42},
+    //   sauna_yeoltang_a:{min:39,max:45}, sauna_yeoltang_b:{min:39,max:45},
+    //   sauna_dry_a:{min:75,max:81}, sauna_dry_b:{min:75,max:81},
+    //   sauna_wet_a:{min:45,max:51}, sauna_wet_b:{min:45,max:51},
+    //   sauna_jjim_a:{min:65,max:71}, sauna_jjim_b:{min:65,max:71},
+    //   pool_ph:{min:7.0,max:7.8}, pool_temp:{min:26,max:30}, pool_cl:{min:0.4,max:1.0}
+    // };
+
+    // fcheck_ranges_get 응답(ranges:[{id,legalMin,legalMax,targetMin,targetMax,alert,...}])을 로컬 조회맵으로 변환.
+    // 계약 §2: 경보N=판정제외(🟢고정), 법정상/하 이탈=🔴(이 카드가 세는 유일 대상), 목표상/하만 있는 항목(🟡)은 지어내지 않고 맵에서 제외(합산 금지).
+    // id는 'fc_' 접두 + 항목키(예: fc_pool_ph) → 로컬 measure JSON 키(예: pool_ph, sauna_ontang_a)와 맞추려 'fc_' 제거만 수행,
+    // a/b(탱크별 2측정점) 접미는 조회 시 lookupRange가 base로 벗겨 매칭(같은 탱크종류는 같은 기준 공유 — 옛 하드코딩과 동일 관례).
+    function buildRangesMap(list){
+      var m={};
+      (list||[]).forEach(function(r){
+        if(!r||!r.id) return;
+        if(r.alert==='N') return; // 경보 꺼짐 — 판정 대상 아님(계약 §2)
+        var lo=(typeof r.legalMin==='number')?r.legalMin:null;
+        var hi=(typeof r.legalMax==='number')?r.legalMax:null;
+        if(lo===null&&hi===null) return; // 법정기준 없음 → 🔴 판정 불가(목표치뿐인 🟡은 이 카드 미집계)
+        m[String(r.id).replace(/^fc_/,'')]={min:lo,max:hi};
+      });
+      return m;
+    }
+    function lookupRange(map,k){
+      if(!map) return null;
+      if(map[k]) return map[k];
+      return map[k.replace(/_[ab]$/,'')]||null;
+    }
+    // 조회 실패/미로드 시 null 유지 — 이상 0으로 위장하지도, 옛 하드코딩 폴백도 하지 않는다(계약 §4 폴백 규칙, 사고 재발 방지).
+    function fetchFacilityRanges(){
+      return fetch(CHECK_API+'?action=fcheck_ranges_get&_pv='+Date.now(),{redirect:'follow',cache:'no-store'})
+        .then(function(r){return r.json();})
+        .then(function(res){ return (res&&res.ok!==false)?buildRangesMap(res.ranges):null; })
+        .catch(function(){return null;});
+    }
     // weekly&dept=facility 오늘 row(measure=[{itemId,name,measure(JSON문자열)},...] — 제출된 항목만 포함) → 6그룹별 {label,done,total,pct,issues}
-    function parseFacilityGroups(row){
+    // ranges=null(미로드/조회실패) → issues는 항상 0(판정 생략, 위장 금지).
+    function parseFacilityGroups(row,ranges){
       var measure=(row&&row.measure)||[];
       var byId={};
       for(var i=0;i<measure.length;i++){ byId[measure[i].itemId]=measure[i].measure; }
@@ -11280,13 +11311,14 @@ function crTab(btn, panelId) {
           if(mv==null) continue;
           done++;
           var obj=null; try{ obj=JSON.parse(mv); }catch(e){}
-          if(obj&&typeof obj==='object'){
+          if(obj&&typeof obj==='object'&&ranges){
             Object.keys(obj).forEach(function(k){
-              var cfg=FACILITY_RANGES[k];
+              var cfg=lookupRange(ranges,k);
               if(!cfg) return;
               var num=parseFloat(obj[k]);
               if(isNaN(num)) return;
-              if(num<cfg.min||num>cfg.max) issues++;
+              var lo=(cfg.min==null)?-Infinity:cfg.min, hi=(cfg.max==null)?Infinity:cfg.max;
+              if(num<lo||num>hi) issues++;
             });
           }
         }
@@ -11299,7 +11331,8 @@ function crTab(btn, panelId) {
     // GM 정정(2026-07-14): 시설부=이미 다회차(⏱시작→종료→제출 반복, 회차라벨은 통합돼 '1일'이지만 하루 여러 번 제출).
     // submissions.length = 오늘 제출완료 건수(시설부 체계.html 📋회차바 "오늘 N회 점검"과 동일 소스·동일 수치).
     // store.rounds = 아직 미제출인 현재 작성중 값(실측정 draft) — 키가 있으면 실제로 입력 중(추정 아님, 실값).
-    function parseFacilityBoard(board){
+    // ranges=null(미로드/조회실패) → 수치기준 이상은 생략(위장 금지). 자유기록(work/oocAction) 이상은 기준과 무관 — 항상 그대로 표시.
+    function parseFacilityBoard(board,ranges){
       var store=(board&&board.store)||null;
       var subs=(store&&Array.isArray(store.submissions))?store.submissions:[];
       var roundCount=subs.length;
@@ -11316,16 +11349,17 @@ function crTab(btn, panelId) {
         [].concat(sub.items||[],sub.daily||[]).forEach(function(it){
           if(!it||!it.measure) return;
           var obj=null; try{ obj=JSON.parse(it.measure); }catch(e){}
-          if(!obj||typeof obj!=='object') return;
+          if(!obj||typeof obj!=='object'||!ranges) return;
           Object.keys(obj).forEach(function(k){
-            var cfg=FACILITY_RANGES[k];
+            var cfg=lookupRange(ranges,k);
             if(!cfg) return;
             var num=parseFloat(obj[k]);
             if(isNaN(num)) return;
-            if(num<cfg.min||num>cfg.max){
+            var lo=(cfg.min==null)?-Infinity:cfg.min, hi=(cfg.max==null)?Infinity:cfg.max;
+            if(num<lo||num>hi){
               var dk=(it.id||it.name)+'|'+k+'|'+num;
               if(seenNumeric[dk]) return; seenNumeric[dk]=1;
-              issues.push({type:'수치기준 초과',name:(it.name||it.id),text:(it.name||it.id)+' '+num+'(기준 '+cfg.min+'~'+cfg.max+')'});
+              issues.push({type:'수치기준 초과',name:(it.name||it.id),text:(it.name||it.id)+' '+num+'(기준 '+(cfg.min==null?'':cfg.min)+'~'+(cfg.max==null?'':cfg.max)+')'});
             }
           });
         });
@@ -11399,16 +11433,17 @@ function crTab(btn, panelId) {
     }
 
     // 시설부 전용 카드 — 회차 진행+이상(수치+자유기록) 주(主), 그룹별 완료율은 부차(GM 2026-07-14 재구성).
-    function buildFacilityGroupCard(icon, label, fKpi, row, href, boardInfo){
+    function buildFacilityGroupCard(icon, label, fKpi, row, href, boardInfo, ranges){
       if(!fKpi) return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);">'+label+' 점검 — 집계 중</div>';
-      var groups=parseFacilityGroups(row);
+      var groups=parseFacilityGroups(row,ranges);
       var bi=boardInfo||{roundCount:0,draftHasData:false,issues:[]};
       var issueCount=bi.issues.length;
       var topColor=issueCount>0?'#ED5B3F':(fKpi.pct>=90?'#6abf7b':fKpi.pct>=60?'#e6c84e':'#ED5B3F');
       var nextChip=bi.draftHasData?(' · <span style="color:var(--yellow,#e6c84e);">'+(bi.roundCount+1)+'회 작성중</span>'):'';
+      // ranges 미로드(조회 실패)면 수치기준 이상은 판정 자체를 안 했다는 뜻 — "이상 없음"으로 위장하지 않고 정직 표기(계약 §4).
       var issueLine=issueCount>0
         ? '<span style="color:#ED5B3F;font-weight:700;">⚠️ 이상 '+issueCount+'건</span>'
-        : '<span style="color:#6abf7b;font-weight:700;">이상 없음</span>';
+        : (ranges ? '<span style="color:#6abf7b;font-weight:700;">이상 없음</span>' : '<span style="color:var(--dim);">기준 불러오는 중…</span>');
       var issueTitle='';
       if(issueCount>0){
         issueTitle=bi.issues.map(function(x){return '['+x.type+'] '+x.text;}).join(' / ').replace(/"/g,'&quot;');
@@ -11490,11 +11525,11 @@ function crTab(btn, panelId) {
         +'</div>';
     }
 
-    function renderHomeKpi(facilityData, supportData, facilityBoard){
+    function renderHomeKpi(facilityData, supportData, facilityBoard, ranges){
       var el=document.getElementById('home-check-kpi');
       if(!el)return;
       var fKpi=parseKpi(facilityData);
-      var fBoard=parseFacilityBoard(facilityBoard);
+      var fBoard=parseFacilityBoard(facilityBoard,ranges);
       // 지원부 남/여 분리 — byGender 필드 우선 (회차별 rows 포함)
       var raw=(supportData&&supportData.byGender)?supportData:null;
       var sMKpi=raw?parseGenderKpi(raw.byGender,'m'):null;
@@ -11514,7 +11549,7 @@ function crTab(btn, panelId) {
       })();
       var html='';
       // 카드1: 시설부 — 6그룹(사우나/수영장/온수탱크/공조기/기계실/안전) 입력률 카드(GM지시 2026-07-09, 지원부처럼 한눈에)
-      if(fKpi) html+=buildFacilityGroupCard('🏭','시설부',fKpi,facilityData,FACILITY_URL,fBoard);
+      if(fKpi) html+=buildFacilityGroupCard('🏭','시설부',fKpi,facilityData,FACILITY_URL,fBoard,ranges);
       else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">시설부 점검 — 로드 실패</div>';
       // 카드2: 지원부(남) — 회차별 3줄
       if(sMKpi) html+=buildSupportRoundCard('🚹','지원부(남)',sMKpi,SUPPORT_URL,sMIssues);
@@ -11547,7 +11582,9 @@ function crTab(btn, panelId) {
       // facility board blob(action=board&key=FACILITY_CHECK_<date>) — 시설부 체계.html이 제출마다 누적하는 회차 원본(submissions[])·현재 작성중 draft(rounds).
       // GAS 수정 없이 기존 action=board 그대로 재사용(가산만, weekly 집계 무변경 — 완료율/지원부 회귀 0). GM go 2026-07-14 시우.
       var bP=fetch(CHECK_API+'?action=board&key='+encodeURIComponent('FACILITY_CHECK_'+today)+'&_pv='+pv,{redirect:'follow',cache:'no-store'}).then(function(r){return r.json();}).then(function(res){ return (res&&res.ok!==false)?res.board:null; }).catch(function(){return null;});
-      Promise.all([fP,sP,bP]).then(function(res){onSuccess(res[0],res[1],res[2]);});
+      // fcheck_ranges_get(계약서 §3) — 배포 전엔 반드시 실패(catch→null)하는 게 정상. 실패해도 나머지 카드는 그대로 동작해야 한다(계약 §4).
+      var rP=fetchFacilityRanges();
+      Promise.all([fP,sP,bP,rP]).then(function(res){onSuccess(res[0],res[1],res[2],res[3]);});
     }
 
     function loadHomeKpi(){
