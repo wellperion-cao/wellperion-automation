@@ -471,6 +471,18 @@ def register_publish(
             print(f"[WARN] review_queue upsert 예외 (제작은 완료): {exc}")
             matched, final_status = (False, "검수대기")
 
+        # (b1) 채널 원고 자동 생성 — IG 본문은 있는데 블로그·카페·카카오·당근 원고가 아직
+        # 없으면 여기서 채워 넣는다(배834-B, 발행 루프 마지막 구멍 — 2026-07-20 필라테스 L4
+        # 사고: 본문이 없어 (b2) 형제 자동등록이 조용히 건너뛰었던 근본원인 봉합).
+        # ★ 등록 로직은 손대지 않음 — 이 단계는 "본문 파일 생성"만, (b2)가 존재 확인·등록 담당.
+        # 실패해도 IG 등록은 이미 끝났으므로 죽지 않음(best-effort).
+        if account == "wellperion":
+            try:
+                from generate_channel_copy import generate_and_write_channel_copy
+                generate_and_write_channel_copy(content_folder, title, ig_caption_text=caption)
+            except Exception as exc:
+                print(f"[WARN] 채널 원고 자동생성 예외(IG 등록은 유효): {exc}")
+
         # (b2) 채널 형제 자동등록 — 콘텐츠 폴더에 블로그·카페·카카오·당근 본문이 이미
         # 준비돼 있으면 형제 검수 엔트리를 함께 upsert (배834-A, 필라테스 L4 사고 재발방지).
         # 실패해도 IG 등록은 이미 끝났으므로 죽지 않음(best-effort).
