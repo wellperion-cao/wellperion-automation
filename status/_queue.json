@@ -265,13 +265,14 @@
   {
     "task_id": "NEXT-20260718-184810",
     "clevel": "cto",
-    "title": "GM이 3방 가이드 상단 고정(문의·점검·종합접수처) + 제출핸들러 테스트라우팅 운영/exec 반영(200버전 한도 해소 후)",
+    "title": "제출핸들러 테스트라우팅 운영/exec 반영(200버전 한도 해소 후)",
     "status": "PENDING",
     "depends_on": "CTO-2026-07-18-TELEGRAM-INQUIRY-STABILIZATION",
     "from": "cto",
     "origin": "bridge",
     "enqueued_at": "2026-07-18T09:48:10Z",
-    "ship_no": 9010
+    "ship_no": 9010,
+    "note": "[2026-07-20 GM 확인] 3방 가이드 상단 고정=GM이 완료. 남은 절반만 유지. 테스트라우팅 코드는 .deploy-funnel/Survey.js(v1)에만 존재하고 v2에는 없음 — v1이 200버전 한도에 걸려 /exec 미배포 상태. 해소책=v2로 이전 또는 새 스크립트 복사."
   },
   {
     "task_id": "NEXT-20260718-192242",
@@ -1664,5 +1665,18 @@
     "artifact": "- weekly_marketing_feedback.py: daily 카드 '상세=' 각주 제거, 텔레그램 발송 없이\n  카드 본문만 만드는 build_daily_card_text() 신설(run_daily가 이를 재사용하도록 리팩터)\n- daily_scheduler.py: _build_digest_inquiry() 끝에 마케팅 정리 섹션 append + 종목별\n  '진행상태 미정/담당자 미배정' 회원관리 미처리 현황 섹션 신설. run_daily_digest(early)\n  게이트 도입 — close_days 기준 휴일=20:00  (CLI ad-hoc · 커밋 8fdfd5c1)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8fdfd5c19f2b11f6d9217acfe0c8b07611d10051"
+  },
+  {
+    "task_id": "CTO-2026-07-20-DIGEST-MERGE",
+    "clevel": "cto",
+    "title": "[시토] 밤 보고 병합 — 21시 마케팅 + 22:30 문의정리 한 장으로 + 회원관리 미처리(종목별) 신설",
+    "status": "IN_PROGRESS",
+    "from": "cto",
+    "origin": "gm",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-20T10:30:00Z",
+    "ship_no": 9102,
+    "note": "GM 지시 3건: ①상세=일일 마케팅 정리보고(CMO-) 줄 제거 ②21시 마케팅카드를 문의정리에 병합, 평일 22:30/주말·공휴일 20:00 ③멤버십·강습 진행상태 미정·담당자 미배정을 종목별로 보고에 포함. 코드 완료·커밋 8fdfd5c1. GM 개인방 테스트발송 성공(message_id 4840). 미완=스케줄러 프로세스가 관리자권한 기동이라 재기동 불가 → 다음 재부팅 시 신코드 발효. 그때까지 21시 단독카드 재활성 유지(오늘 밤 공백 방지), 발효 확인 후 21시 작업 비활성이 마지막 단계.",
+    "next": "내일 아침 재부팅 후 ①스케줄러 신크론(daily_digest_early/late) 등록 확인 ②Wellperion-CMO-Daily-Marketing-2100 비활성 ③밤 병합카드 실착 확인"
   }
 ]
