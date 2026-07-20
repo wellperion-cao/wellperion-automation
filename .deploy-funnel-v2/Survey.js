@@ -3524,6 +3524,82 @@ function _processAction(body) {
     }
   }
 
+  // ─── (일회성) 강습 탭 — 자체폼(insertRowAfter(1)) 유입 행을 타임스탬프 오름차순 제자리로 이동 ───
+  //   배경: intake_submit이 신규행을 항상 2행(헤더 바로 다음)에 삽입해 '최근일자 상단' 클러스터가 형성됐고,
+  //   그 아래(레거시 오름차순 append 구간)와 시간순이 어긋났다. 전체 재정렬 금지 — 지정된 개별 행만
+  //   sheet.moveRows()로 최소 침습 이동한다. destinationIndex는 "이동 전 좌표" 기준(GAS 공식 문서)이므로,
+  //   python이 넘긴 moves 배열을 boundary 뒤에서부터 순서대로(오래된 것부터) 하나씩 삽입하면서, 매 이동마다
+  //   ①아직 옮기지 않은 대상 행들의 현재 위치를 shift 규칙(이동 소스보다 아래였던 행은 -1)으로 갱신하고
+  //   ②이동 직후 목적지 셀의 연락처가 기대값과 일치하는지 즉시 재검증 — 하나라도 어긋나면 그 즉시 중단하고
+  //   그때까지의 실행 로그만 반환한다(추가 이동 없음, 임의 복구 시도 없음 — GM 판단 대기). 행 삭제·삽입 없음,
+  //   moveRows만 사용 → 총 행수는 이 액션만으로는 절대 변하지 않는다. 2026-07-20 시토(GM 지시).
+  if (action === 'cpo_lesson_row_reorder_0720') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var rrMode = String(body.mode || 'dryrun');
+    var rrGid = parseInt(body.gid, 10);
+    var rrBoundary = parseInt(body.boundary, 10);  // 이 행 바로 뒤부터 삽입(레거시 오름차순 구간의 마지막 실행)
+    var rrMoves;
+    try { rrMoves = JSON.parse(body.moves || '[]'); } catch (e) { return _json({ ok: false, error: 'bad_moves_json' }); }
+    if (!rrGid || !rrBoundary || !rrMoves.length) return _json({ ok: false, error: 'gid/boundary/moves 필수' });
+
+    var sh = _lessonSheet_(rrGid);
+    if (!sh) return _json({ ok: false, error: 'sheet_not_found' });
+    var lastCol = sh.getLastColumn();
+    var rowCountBefore = sh.getLastRow();
+    var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+    var ciPhone = _findCol_(hdr, ['연락처', '핸드폰', '전화', '휴대폰']);
+    if (ciPhone < 0) return _json({ ok: false, error: 'phone_col_not_found' });
+    var normP = function (p) { return String(p == null ? '' : p).replace(/\D/g, ''); };
+
+    // 사전 검증 — 넘겨받은 모든 행번호의 현재 전화번호가 기대값과 일치해야 시작(경합/오탐 방지)
+    for (var pi = 0; pi < rrMoves.length; pi++) {
+      var pm = rrMoves[pi];
+      var pPhone = sh.getRange(pm.row, ciPhone + 1).getValue();
+      if (normP(pPhone) !== normP(pm.phone)) {
+        return _json({ ok: false, error: 'phone_mismatch_precheck', row: pm.row, expectedPhone: pm.phone, actualPhone: String(pPhone) });
+      }
+    }
+
+    if (rrMode === 'dryrun') {
+      return _json({
+        ok: true, mode: 'dryrun', gid: rrGid, boundary: rrBoundary, rowCountBefore: rowCountBefore,
+        plan: rrMoves.map(function (m) { return { row: m.row, name: m.name, phone: m.phone, sortKey: m.sortKey }; })
+      });
+    }
+    if (rrMode === 'execute') {
+      var curPos = {};
+      rrMoves.forEach(function (m) { curPos[m.row] = m.row; });
+      var boundary = rrBoundary;
+      var executed = [];
+      for (var i = 0; i < rrMoves.length; i++) {
+        var m = rrMoves[i];
+        var srcRow = curPos[m.row];
+        var destIndex = boundary + 1;
+        sh.moveRows(sh.getRange(srcRow, 1, 1, lastCol), destIndex);
+        Object.keys(curPos).forEach(function (k) { if (curPos[k] > srcRow) curPos[k] = curPos[k] - 1; });
+        var newPos = destIndex - 1;
+        curPos[m.row] = newPos;
+        // 이동 직후 즉시 재검증 — 어긋나면 그 자리에서 중단(추가 이동 없음)
+        var verifyPhone = sh.getRange(newPos, ciPhone + 1).getValue();
+        if (normP(verifyPhone) !== normP(m.phone)) {
+          return _json({
+            ok: false, error: 'move_verify_failed_ABORTED',
+            failedAt: { row: m.row, name: m.name, phone: m.phone, expectedPos: newPos, actualPhoneThere: String(verifyPhone) },
+            executed: executed, rowCountAtAbort: sh.getLastRow(), rowCountBefore: rowCountBefore
+          });
+        }
+        boundary = newPos;
+        executed.push({ row: m.row, name: m.name, phone: m.phone, movedTo: newPos });
+      }
+      var rowCountAfter = sh.getLastRow();
+      return _json({
+        ok: true, mode: 'execute', gid: rrGid, rowCountBefore: rowCountBefore, rowCountAfter: rowCountAfter,
+        rowCountUnchanged: rowCountBefore === rowCountAfter, executed: executed
+      });
+    }
+    return _json({ ok: false, error: 'unknown_mode' });
+  }
+
   // ─── (일회성) 유소년강습 '유입경로(자동)' 칸 JSON 오염 정리 — 2026-07-20 시포(GM 승인 정리 5건 中 1) ───
   //   배경: cpo_wsc_contact_migrate13(위)로 28건 중 17건은 이미 Contact로 이관 완료. 남은 11건은 애초
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가
