@@ -1969,5 +1969,33 @@
     "artifact": "GM 확정 승인건. ssot/sheet_columns.json(문의·회원·강습 6개 시트 헤더+값\n규칙+시트관계 계약)과 scripts/collectors/cpo_sheet_contract.py(--seed로\n라이브 헤더 자동생성, req/allowed/refs/value_rule만 사람 편집)를 신설해\n매일 07:50 daily_scheduler.py에 직결 등록했다. 값 규칙 없이는 오늘 사고\n9건 중 3건만 잡히던 것을 8건까지 확장 — 실제 1회 실행에서 타임스탬프\n시분초 유실(inquiry_2026)·member_hold  (CLI ad-hoc · 커밋 79f6fe5e)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "79f6fe5e81979bb5477bc64e1c2faa770ec85e0d"
+  },
+  {
+    "task_id": "CTO-2026-07-20-ADHOC-46fe6fdc",
+    "clevel": "cto",
+    "title": "[시토] 만료임박 알림 회원 줄에 종목별 색 동그라미 추가 + sport_colors.py SSOT 신설",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-20",
+    "processed_at": "2026-07-20",
+    "ship_no": 9277,
+    "artifact": "GM 지시: 종목 앞에 사내 표준 색(PT빨강·필라오렌지·골프초록·스쿼시연두·수영파랑 등)을\n붙여 가독성 개선. daily_scheduler.py _DIGEST_SPORT_DOT 하드코딩 복사 대신\nscripts/sport_colors.py 를 단일 출처로 신설(daily_scheduler.py 값 그대로 이식,\n동일 매칭 알고리즘) — member_expiry_alert.py 가 이를 import. daily_scheduler.py는\n동시 편집 중이라 미수정(추후 그 파일도 이 모듈로 수렴 예정). (CLI ad-hoc · 커밋 46fe6fdc)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "46fe6fdcde7c2fc219d2d76d936866e323336ff7"
+  },
+  {
+    "task_id": "CTO-2026-07-20-MODULE-HEARTBEAT-1307-5CHA",
+    "clevel": "cto",
+    "title": "[시토] 모듈 하트비트 배선 — 등록부 판정불가 21개 중 11개 확인됨 전환(배1307 5차)",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-20",
+    "note": "[배1307 5차] 모듈 침묵 감지기(3차)의 \"판정불가\" 21개(등록부 29개 중) 해소 작업. 공통 유틸 신설 scripts/module_heartbeat.py(record_heartbeat) — 모듈이 실제 결과를 낸 시점에 status/heartbeats/{id}.json 1개씩 기록(공유 jsonl 마지막줄 오판정 함정 회피, 파일당 모듈 1개 고정). 4개 실제 산출 지점에 한 줄씩 배선: module_reporter.py(collect() 성공 직후, heartbeat=True 파라미터로 pytest 오염 차단·main()만 opt-in) · coo_report_line.py(GAS fetch 성공 직후, 동일 opt-in 패턴) · telegram_health_check.py (_check_gas_versions 성공 직후) · kakao_daily_check_share.py(카톡 발송 rc==0 직후). 등록부 11개 수정(6개=코드+ref 배선, 5개=이미 있던 로컬 파일에 ref만 정합 또는 실측 확인된 실주기 반영 — cto-weekly-self-review 주간, ceo-gm-aide 일간, cto-inquiry-read-snapshot 일간+ref오류 수정, cmo-eval-feedback-loop 주간+ref수정, cto-kakao-sales-report ref추가). 실측 검증: 6개 전부 실제(읽기전용 GAS 호출 또는 mock 발송) 1회 구동으로 하트비트 파일 생성 확인 → module_silence_detector --scan-only 재실행해 unmeasurable→ok 전환 실측(11/11). 역재현(judge_module now=+40h)으로 daily 모듈 7개 전부 silent 전환 확인, weekly 모듈 3개는 +40h에도 ok 유지 확인(오탐 없음). pytest tests/test_module_reporter.py· test_coo_report_line.py·test_module_registry.py 35건 전부 통과(회귀 0, 테스트 오염 0 — heartbeat 기본 False라 fake id로 status/heartbeats/ 더럽히지 않음 확인). cto-module-silence-detector 자기 자신도 --live 1회(침묵 0건 확인 후 안전하게) 구동해 첫 로그 남김·ok 전환. 최종: 판정불가 21 → 11 확인됨 전환(+자기자신 1 별도) = 판정불가 잔여 9(원 21개 기준) — 저장소 밖 GAS전용(cto-check-gas·chro-gmail-job-title-fetch) · 별도저장소 wellperion-hr 부재(chro-daily-integrity-sweep·onboarding-weekly-watch· weekly-efficiency-report) · 수기도구라 자동주기 없음(coo-notice·coo-schedule-ssot) · 이벤트구동이라 주기선언이 오히려 오탐 유발(cmo-publish-digest, 판정불가가 설계상 정상) · 등록은 됐으나 실제 미발동 확인(coo-monthly-ops, INC-023). 부수 발견 INC-023 등록(관찰만, 미조치) — ops/module_report_*.bat 3개가 --live 없이 항상 드라이런만 돔(발송·로그 0), coo-monthly-ops 유일 자동갱신 트리거가 등록 후 한 번도 미발동(LastTaskResult=267011).",
+    "next": "🌀 표류 방지 — 다음 후보: ①ops/module_report_*.bat --live 여부 GM/시우 확인(INC-023) ②coo-monthly-ops 08-01 첫 발동 재확인 ③cmo-reaction-loop data_source.ref 자기지시적 mtime 오판정(status 디렉터리 전체 fallback) 실측 발견 — 소유 CMO 세션에 별도 전달 필요.",
+    "depends_on": "",
+    "module": "T2",
+    "surface": "autonomy",
+    "ship_no": 9278
   }
 ]

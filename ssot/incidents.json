@@ -380,6 +380,24 @@
       "차단조치": "① pathspec 강제 커밋(구조적 근본수리) — git_lock.py git_commit_push()·auto_log_adhoc_to_queue.py _commit_queue()·commit_ig_reach.py·commit_engagement.py·weekly_page_hygiene.py._git_commit_file() 5곳 전부 'git commit -m msg' → 'git commit -m msg -- <자기 파일들>'로 전환. pathspec으로 커밋을 스코프하면 그 순간 인덱스에 다른 세션이 얹어둔 무관 파일이 있어도 이 커밋에는 절대 안 실리고(그 파일들은 staged 상태 그대로 남아 자기 커밋을 기다림), 락(GitLock) 없이도 구조로 섞임을 차단한다 — 대안 (A)전역 커밋 직렬화 락보다 가볍고, 사람이 터미널에서 치는 bare 커밋까지는 못 막지만 모든 자동화 경로는 확실히 막는다. ② assign_ship_numbers.py에 --pre-commit 게이트 추가(INC-017 sync_queue_mirror.py와 동일 패턴) — status/_queue.json이 'git diff --cached --name-only'로 이번 커밋에 실제 staged 확인될 때만 동작·add, 아니면 조용히 skip. 훅 2곳(.git/hooks/pre-commit·scripts/pre-commit.hook) 모두 '--pre-commit' 플래그 전달로 갱신. ③ auto_log_adhoc_to_queue._attribute_clevel() 우선순위 재정렬 — 제목 선두의 명시 conventional-commit scope(예: 'fix(cto):')를 최우선 검사로 승격, 그 다음 닉네임 토큰, 그 다음 본문 전체 역할 토큰, 기본 ceo. 구조화된 태그가 자유형 텍스트 언급을 이기도록. ④ 부수 발견·동시수리: git_lock.py git_commit_push()의 'nothing to commit' 판정 문자열이 실제 git 출력('no changes added to commit')과 안 맞아 무해한 no-op가 RuntimeError로 격상되던 latent bug도 같은 함수 수정 중 발견해 문자열 목록에 추가.",
       "상태": "GUARDED",
       "검증증거": "①pathspec 재현: 격리 tmp repo에서 두 세션이 각각 a.txt·b.txt를 add한 뒤, 수정 전 패턴(bare 'git commit -- 없음')으로 세션A가 커밋하면 b.txt가 함께 실리고 인덱스에서 사라짐(FAIL 재현, git show --stat으로 2 files 확인). 동일 시나리오를 수정 후 패턴('git commit -m … -- a.txt')으로 재실행하면 세션A 커밋엔 a.txt 1개만 실리고 b.txt는 인덱스에 그대로 남아 세션B가 이어서 'git commit -m … -- b.txt'로 독립 커밋 성공(PASS, git log에 분리된 두 커밋 확인). ②assign_ship_numbers 재현: 격리 tmp repo에서 status/_queue.json을 staged 안 한 채(다른 세션의 디스크 편집 시뮬레이션) '--pre-commit' 실행 시 skip 로그만 찍고 git add 없음(diff --cached 비어있음, PASS) — status/_queue.json을 실제 staged한 시나리오에서는 정상적으로 ship_no 부여 후 add(PASS, 회귀 확인). ③clevel 귀속: 실제 문제 커밋 3건(75d1d4e9·096d6213·d7c3838e — 전부 과거 ceo로 오귀속됐던 실사례)을 신규 _attribute_clevel()에 직접 입력해 각각 cto·cmo·cmo로 정확히 귀속됨을 확인(PASS). 회귀 6건(진짜 ceo scope+웰리 언급, 순수 닉네임 태그, 대문자 scope, 태그 없음 기본값 등) 전부 기대값과 일치(PASS, 오탐 없음). ④nothing-to-commit 회귀: 격리 repo에서 실제 변경 없는 pathspec 커밋 재호출 시 예외 없이 무해 통과 확인(수리 전엔 RuntimeError로 실패하던 것 확인 후 수리). ⑤ py_compile 전체 통과(7개 수정 파일)·훅 셸 문법(bash -n) 통과. 모든 재현·검증은 격리 tmp git repo(라이브 저장소 무오염)에서만 수행 — 라이브 저장소는 status --short로 의도한 7개 파일 외 무변경 확인."
+    },
+    {
+      "id": "INC-023",
+      "date": "2026-07-20",
+      "watch_globs": [
+        "ops/module_report_daily.bat",
+        "ops/module_report_weekly.bat",
+        "ops/module_report_monthly.bat",
+        "scripts/monthly_ops_report.py"
+      ],
+      "gate": "warn",
+      "요약": "모듈 하트비트(배1307 5차) 작업 중 실측 발견 — \"등록됐다/예약됐다\"와 \"실제로 결과를 냈다\"를 혼동한 사각지대 2건. 고치지는 않음(발신·발효 성격이라 GM/담당 판단 필요) — 관찰·보고만.",
+      "증상": "①ops/module_report_daily.bat·weekly.bat·monthly.bat 3개가 모두 --live 플래그 없이 module_reporter.py를 호출한다 → main()의 dry_run = not args.live 가 항상 True → Wellperion-Module-Report-Daily/Weekly/Monthly 예약작업이 실제로는 전부 드라이런으로만 돈다(발송 0·module_report_log.jsonl 기록 0·daily 스냅샷 갱신 로직도 not dry_run 게이트라 미실행). notify_spec.channel=telegram·bot_id=\"자동화현황방\"(실제 해소 가능한 방)로 이미 배선된 모듈(cto-automation-health·cpo-member-rollup·cpo-inquiry-daily-actions 등)조차 실제 텔레그램 발송이 한 번도 일어나지 않는다. ②coo-monthly-ops 의 유일한 자동 갱신 경로인 Wellperion-MonthlyOps-Start-0900 예약작업이 LastTaskResult=267011(=\"작업이 실행된 적 없음\")로 실측 확인 — 등록은 돼 있으나 첫 트리거(매월 1일 09:00)가 한 번도 발동하지 않았다(다음 예정 2026-08-01).",
+      "본질": "INC-018/019 와 동일 계열(\"측정의 측정\" 부재) — 다만 이번엔 산출물이 아니라 \"트리거 자체가 실제로 도는가\"가 검증된 적이 없었다. 예약작업 등록(schtasks) = 코드가 존재한다는 증거일 뿐 실제 발동·발송 증거가 아니라는 걸 이번 하트비트 작업으로 실측 확인.",
+      "뿌리분류": "검증멈춤",
+      "차단조치": "미차단(보고만) — ①.bat에 --live 추가는 곧 실제 텔레그램 발송 개시(외부 전송 시작)라 이번 세션 안전수칙(\"라이브 발효는 GM go\") 위반이라 보류. 후속 결정 필요: 정말 매일 조용히 draft만 만들려던 의도였는지, --live 누락이 단순 실수였는지 GM/시우(coo-monthly-ops 소유) 확인 후 처리. ②coo-monthly-ops 는 08-01 첫 발동 때 실제로 도는지 재확인 필요(캘린더 표식만, 코드 변경 없음).",
+      "상태": "OPEN",
+      "검증증거": "PowerShell Get-ScheduledTaskInfo -TaskName \"Wellperion-MonthlyOps-Start-0900\" → LastRunTime=1999-11-30(미실행 코드)·LastTaskResult=267011·NextRunTime=2026-08-01. ops/*.bat 3개 파일 grep 확인 — --live 문자열 없음(module_reporter.py argparse 기본 args.live=False 확인)."
     }
   ]
 }

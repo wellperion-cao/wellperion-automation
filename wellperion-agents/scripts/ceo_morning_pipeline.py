@@ -1279,7 +1279,7 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
         import sys as _sys, os as _os
         _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "..", "scripts"))
         from coo_report_line import build_coo_daily_lines
-        _coo_lines = build_coo_daily_lines()
+        _coo_lines = build_coo_daily_lines(heartbeat=True)
         if _coo_lines:
             lines.append("")
             lines.append("🏢 <b>운영 점검</b>")

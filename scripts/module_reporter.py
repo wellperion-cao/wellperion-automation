@@ -141,11 +141,15 @@ def _append_log(log_path, record):
 # ── 핵심 실행 ────────────────────────────────────────────────────────────────
 def run_report(cadence, *, dry_run=False, only_module=None,
                registry_path=None, rooms_path=ROOMS_PATH,
-               log_path=REPORT_LOG_PATH, sender=None, now=None):
+               log_path=REPORT_LOG_PATH, sender=None, now=None, heartbeat=False):
     """
     cadence 버킷에서 notify_spec 로 선택된 모듈을 순회·수집·발송(dry_run 시 발송 0).
     registry_path=None → 공유 SSOT(load_registry 기본경로).
     sender: send(chat_id, text)->bool. None이면 notify.telegram_send.send 지연 로드.
+    heartbeat: True 면 collect() 성공 직후 module_heartbeat.record_heartbeat() 호출
+      (배1307 5차 — "실제 결과를 낸 시점" 기록). 기본 False — pytest 가 가짜 id("good" 등)로
+      실제 registry_path·collector 를 우회할 때 status/heartbeats/ 에 테스트 오염 방지.
+      실제 CLI(main())는 항상 True 로 호출한다.
     반환: 실행 결과 dict(테스트·CLI 공용).
     """
     now = now or datetime.now()
@@ -195,6 +199,15 @@ def run_report(cadence, *, dry_run=False, only_module=None,
                 })
             results.append({"module": mid, "action": "error", "error": err})
             continue
+
+        # 하트비트(배1307 5차) — collect() 성공 = "실제 결과를 낸 시점"(발송 여부와 무관).
+        # dry_run 이든 live 든 수집 자체는 동일하게 실제 GAS/시트 조회이므로 여기서 기록.
+        if heartbeat:
+            try:
+                from module_heartbeat import record_heartbeat  # noqa: PLC0415
+                record_heartbeat(mid, detail=str(payload.get("summary_line", ""))[:120])
+            except Exception:
+                pass  # 하트비트 실패가 리포터 본 작업을 막지 않는다(fail-soft)
 
         key = f"{mid}|{date_str}|{cadence}"
         text = format_report(payload, mod.get("feature", mid), cadence,
@@ -267,7 +280,7 @@ def main(argv=None):
     ap.add_argument("--module", default=None)
     args = ap.parse_args(argv)
 
-    out = run_report(args.cadence, dry_run=args.dry_run, only_module=args.module)
+    out = run_report(args.cadence, dry_run=args.dry_run, only_module=args.module, heartbeat=True)
 
     for r in out["results"]:
         if r["action"] == "dry-run":

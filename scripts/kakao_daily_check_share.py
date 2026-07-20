@@ -151,6 +151,11 @@ def main() -> int:
 
     rc = send_via_kakao(body, dry_run=False)
     if rc == 0:
+        try:
+            from module_heartbeat import record_heartbeat  # noqa: PLC0415
+            record_heartbeat("cto-kakao-check-share", detail=f"{TARGET_ROOM} 발송 완료")
+        except Exception:
+            pass  # 하트비트 실패가 발송 결과 보고를 막지 않는다(fail-soft)
         print(f"DONE: 카톡 '{TARGET_ROOM}' 방 발송 완료")
         return 0
     print(f"BLOCKED: 카톡 발송 실패(rc={rc}) — 본문은 위에 렌더됨")

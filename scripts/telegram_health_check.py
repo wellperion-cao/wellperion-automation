@@ -238,6 +238,14 @@ def _check_gas_versions() -> list[str]:
         print(f"[WARN] GAS 버전 조회 예외: {e} — 네트워크 이상(경보 제외)", flush=True)
         return []
 
+    # 하트비트(배1307 5차) — collect() 성공 = 실제 결과 산출 시점(임계 초과 여부와 무관).
+    try:
+        from module_heartbeat import record_heartbeat
+        record_heartbeat("cto-gas-version-monitor",
+                          detail=f"{len(results)}개 프로젝트 조회")
+    except Exception:
+        pass  # 하트비트 실패가 헬스체크 본 작업을 막지 않는다(fail-soft)
+
     issues: list[str] = []
     for r in results:
         count = r.get('version_count')
