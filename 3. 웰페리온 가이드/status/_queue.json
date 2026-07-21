@@ -508,8 +508,8 @@
     "status": "IN_PROGRESS",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-20",
-    "note": "[2026-07-20 GM 지시] 운영 실무=최준용M 소관 → 붙여넣기용 프롬프트로 이관. 문서 status/briefs/최준용M_종합접수처_처리자버그_프롬프트_20260720.md 의 「여기부터 복사」 블록.\n라이브 실측 진단: 처리자 입력칸 33 / 중복표시 24 (처리자 기입 건수와 일치).\n①처리자 중복표시 — _regCard 의 COMMON_KEYS 에 '처리자' 누락\n②★저장 실패해도 저장됨✓ — _regHandlerSave/_regMemoSave/_regSms/_regAssign 4곳 모두 성공표시를 fetch 전에 내고 .catch 로 실패를 삼킴 (INC-011·013 동종)\n③_regAssign 이 HTML 이 넘긴 this(3번째 인자) 미수신, 전역 event.target 의존\n별건: 저장소 apps_script_voc.js 가 라이브보다 구버전(handler·sms 칸 없음) — 시토 정리 대상.\n[2026-07-20 GM] 최준용M 이관 취소 → 시우가 직접 수리. 프롬프트 문서는 참고용으로 유지.",
-    "next": "①처리자 중복표시 ②저장 실패 위장 4곳 ③배정 버튼 인자 — 수리 후 라이브 확인.",
+    "note": "[2026-07-20 GM 지시] 운영 실무=최준용M 소관 → 붙여넣기용 프롬프트로 이관. 문서 status/briefs/최준용M_종합접수처_처리자버그_프롬프트_20260720.md 의 「여기부터 복사」 블록.\n라이브 실측 진단: 처리자 입력칸 33 / 중복표시 24 (처리자 기입 건수와 일치).\n①처리자 중복표시 — _regCard 의 COMMON_KEYS 에 '처리자' 누락\n②★저장 실패해도 저장됨✓ — _regHandlerSave/_regMemoSave/_regSms/_regAssign 4곳 모두 성공표시를 fetch 전에 내고 .catch 로 실패를 삼킴 (INC-011·013 동종)\n③_regAssign 이 HTML 이 넘긴 this(3번째 인자) 미수신, 전역 event.target 의존\n별건: 저장소 apps_script_voc.js 가 라이브보다 구버전(handler·sms 칸 없음) — 시토 정리 대상.\n[2026-07-20 GM] 최준용M 이관 취소 → 시우가 직접 수리. 프롬프트 문서는 참고용으로 유지.\n[2026-07-21 GM 재인계·확정] 운영 실무는 준용M가 직접 운영. GM 방침='시우한테 직접 지시 말고 준용M가 잘 운영하도록 도와줘'. → 시우 역할=수리 실행자 아님, **준용M 지원·검수자**. 시우 조치: ①붙여넣기 프롬프트(status/briefs/최준용M_종합접수처_처리자버그_프롬프트_20260720.md) 정비 완료 — 07-20 GitHub 장애 안내 낡아서 '07-21 배포 정상' 갱신, 준용M가 그대로 복붙 실행 가능 상태. ②준용M가 수리·푸시하면 시우가 라이브 검수(처리자 1회·저장실패시 빨강·배정 정상)만 담당. 코드 직접수정 안 함(준용M 소관).",
+    "next": "⏳ 준용M 실행 대기 — 준용M가 프롬프트로 3버그 수리·푸시 → 시우 라이브 검수. 시우 직접수리 금지(GM 방침).",
     "ship_no": 9334,
     "surface": "g1"
   },
@@ -1195,5 +1195,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Q1D4JQL1dYusa7syt7y4Bw (CLI ad-hoc · 커밋 2b7c30ba)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "2b7c30bac9771ff57387e878496bc56f445e3bde"
+  },
+  {
+    "task_id": "CPO-2026-07-21-ADHOC-f40c07fc",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9461,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 f40c07fc)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f40c07fcb41bd6ff39ac0efea48c6b4fafe54833"
   }
 ]
