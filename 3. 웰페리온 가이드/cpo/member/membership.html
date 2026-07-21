@@ -1204,7 +1204,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
           <div class="hz-zone-label">🔧 도구</div>
           <div class="hz-btns">
             <a class="action-btn" href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">🔗 문의 페이지 →</a>
-            <a class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
+            <a id="miSheetLink" class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
             <a class="action-btn" href="../../wellperion_guide(main).html">ERP 홈</a>
             <button class="action-btn" onclick="window.print()">인쇄</button>
           </div>
@@ -4099,6 +4099,18 @@ function switchType(type) {
   if ((type === 'lessonAdult' || type === 'lessonYouth') && typeof renderSummaryHero === 'function') renderSummaryHero();   // 현황 보드(배944) 강습 타입별 재렌더
   if (type === 'rent') { rentbizInit('rent'); }
   if (type === 'biz')  { rentbizInit('biz'); }
+  // 문의 회원관리 시트 링크 — 활성 탭별 동적(멤버십 SS / 강습 SS 성인·유소년). 2026-07-21 시포·GM.
+  try {
+    var _sl = document.getElementById('miSheetLink');
+    if (_sl) {
+      var _MI_SS = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', _LS_SS = '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw';
+      var _href;
+      if (type === 'lessonAdult')      _href = 'https://docs.google.com/spreadsheets/d/' + _LS_SS + '/edit#gid=111889422';
+      else if (type === 'lessonYouth') _href = 'https://docs.google.com/spreadsheets/d/' + _LS_SS + '/edit#gid=268994754';
+      else                             _href = 'https://docs.google.com/spreadsheets/d/' + _MI_SS + '/edit#gid=1902010032';
+      _sl.href = _href;
+    }
+  } catch(e){}
 }
 
 /* ── 관리 그룹(family) — AI CPO 메뉴 3칸 분리(배6, 2026-07-02 시포·GM). 한 페이지 유지·접수 통합,

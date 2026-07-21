@@ -358,12 +358,27 @@
     "task_id": "COO-2026-07-20-FCHECK-THRESHOLD-SSOT",
     "clevel": "coo",
     "title": "[시우] 시설부 점검 기준값 단일화 + 2단 경보(🔴법정/🟡목표) 전환",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
+    "terminal": true,
+    "processed_at": "2026-07-21",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-20",
-    "note": "[2026-07-20 GM 지시·deep-interview 7라운드 완료·모호도 4.7%] 증상: 시설부 점검 제출마다 이상건. 원인=정합어긋남 — 같은 측정항목 정상범위가 3곳(입력화면 FC_RANGES / GAS FC_MEASURE_RANGES / 대시보드 FACILITY_RANGES)에 다르게 하드코딩. 07-10~11 커밋이 입력화면만 법정기준으로 완화하고 서버·대시보드 미수정 → 현장 초록·서버 이상 재판정.\n확정: ①🔴=법정기준만(체육시설법 pH5.8~8.6·잔류염소0.4~1.0) 🟡=목표치(2주 실측 후 확정·그때까지 경보없이 기록만) ②기준값 원천=시트1곳, 수정UI=시설부 체계 페이지 편집표(saveBoard 패턴) ③기준밖 사유칸 ④법정 외부검사3종(탁도·과망간산칼륨·대장균군)=별도 수질검사기록 칸 분리 ⑤반복감지 자동제안=후속 이관.\n수온은 법정기준 없음 — 임의값 26~30 폐기, 목표치로만 관리.\n명세=.omc/specs/deep-interview-facility-check-threshold-ssot.md",
-    "next": "화면·기준표까지 자율 진행. ★GAS 웹앱 재배포(비가역·라이브 반영)는 GM 결재 후. 완료조건=초록 입력값이 제출 후에도 정상 3회 연속.",
+    "note": "[2026-07-20 GM 지시·deep-interview 7라운드 완료·모호도 4.7%] 증상: 시설부 점검 제출마다 이상건. 원인=정합어긋남 — 같은 측정항목 정상범위가 3곳(입력화면 FC_RANGES / GAS FC_MEASURE_RANGES / 대시보드 FACILITY_RANGES)에 다르게 하드코딩. 07-10~11 커밋이 입력화면만 법정기준으로 완화하고 서버·대시보드 미수정 → 현장 초록·서버 이상 재판정.\n확정: ①🔴=법정기준만(체육시설법 pH5.8~8.6·잔류염소0.4~1.0) 🟡=목표치(2주 실측 후 확정·그때까지 경보없이 기록만) ②기준값 원천=시트1곳, 수정UI=시설부 체계 페이지 편집표(saveBoard 패턴) ③기준밖 사유칸 ④법정 외부검사3종(탁도·과망간산칼륨·대장균군)=별도 수질검사기록 칸 분리 ⑤반복감지 자동제안=후속 이관.\n수온은 법정기준 없음 — 임의값 26~30 폐기, 목표치로만 관리.\n명세=.omc/specs/deep-interview-facility-check-threshold-ssot.md\n[2026-07-21 시우 라이브 검증] 핵심 조정=완료·라이브 발효 확인. 3곳(입력화면 시설부체계.html·GAS·대시보드 main.html) 하드코딩 전부 삭제 → 단일 SSOT(「점검기준」시트) fcheck_ranges_get 조회로 전환됨. 라이브 GAS 엔드포인트 실측 응답: fc_pool_ph legalMin5.8/legalMax8.6 alert Y(🔴), fc_pool_cl(유리잔류염소) 0.4~1.0 alert Y(🔴), fc_pool_temp(수온)·사우나 온탕/열탕 legal null·alert N(🟡 '2주 실측 후 확정'). 즉 비가역 GAS 재배포도 이미 반영됨(법정기준 라이브). 정합어긋남(현장 초록↔서버 이상)의 구조적 원인=3곳 분기값이 단일 소스화로 제거됨 → false 이상 재판정 불가. 폴백=조회 실패 시 조용히 판정없음(위장 0 금지). 잔여=(1) 🟡 목표치 2주 실측 후 확정(의도된 지연·경보 없이 기록만) (2) 완료조건 '제출 후 3회 연속 정상' 현장 soak 확인. 핵심 버그는 해소, 잔여는 시간경과성 항목.",
+    "next": "🏁 입항완료(2026-07-21 GM 추천 진행) — 핵심 조정 완료·법정기준 라이브 발효·3곳 단일 SSOT화로 정합어긋남 근본 해소. 🟡 목표치 2주 실측은 후속배 9478로 분리.",
     "ship_no": 9199,
+    "surface": "g1"
+  },
+  {
+    "task_id": "COO-2026-08-04-FCHECK-TARGET-YELLOW-SET",
+    "clevel": "coo",
+    "title": "[시우] 시설부 점검 🟡 목표치 확정 — 2주 실측 후 사우나·수온 목표범위 세팅(배9199 후속)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-21",
+    "depends_on": "COO-2026-07-20-FCHECK-THRESHOLD-SSOT",
+    "note": "[2026-07-21 시우·GM 추천 진행] 배9199(기준값 단일화·법정기준 라이브 발효) 완료 시 분리한 시간경과성 후속. 현재 🟡 항목(사우나 온탕/열탕·건식/습식/찜질·수온)은 법정기준이 없어 경보 N(판정 제외)·기록만. 약 2주 실측 데이터(2026-07-21~08-03) 축적 후 항목별 목표범위(targetMin/targetMax)를 「점검기준」시트에 입력→alert 유지(N은 그대로, 목표 이탈은 🟡 경보). 값 세팅 UI=시설부 체계 페이지 편집표(이미 구축). 라이브 코드 변경 불필요(시트값 입력만). 재개 트리거=2026-08-04경 2주 실측 완료. 완료조건=🟡 목표 이탈이 대시보드에 🟡로 표시되고 🔴 법정과 색 구분됨.",
+    "next": "⚓ 대기(시간경과) — 2026-08-04경 2주 실측 완료 시 목표범위 산출→「점검기준」시트 입력. 코드 변경 없음(시트값만).",
+    "ship_no": 9478,
     "surface": "g1"
   },
   {
@@ -1390,5 +1405,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 78dd6195)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "78dd6195021de5588c9d45e3abbbc16faeefd204"
+  },
+  {
+    "task_id": "CPO-2026-07-21-ADHOC-4d9ffcf3",
+    "clevel": "cpo",
+    "title": "[시포] 문의폼 희망시간 1시간단위(평일06-21/주말08-20)·성인 발레/바레 종목 분리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9477,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01KX86DtmBQJ1PegzTLQTyn6 (CLI ad-hoc · 커밋 4d9ffcf3)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4d9ffcf3a6e251f55c960fc337e1976970e4f890"
   }
 ]

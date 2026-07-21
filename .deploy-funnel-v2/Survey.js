@@ -2892,7 +2892,12 @@ function _processAction(body) {
         //   강습 도메인에서 키로 쓰이는 곳이 0곳(중복방지는 위 submissionId 멱등 캐시가 전담). 비고는 CONTACT(연락이력)
         //   읽기 폴백 소스라서(_lessonReadRows_ 의 _lMemo 폴백) 접수ID가 마치 "연락 이력"인 것처럼 화면에 떠
         //   미컨택 집계를 왜곡시켰다 — 그 기록 자체를 중단한다. (렌트·비즈니스 탭의 진짜 '접수ID' 칸은 유지.)
-        _lsSh.insertRowAfter(1); _lsSh.getRange(2, 1, 1, _lsRow.length).setValues([_lsRow]);   // 최근일자 상단(2026-07-18 GM 기존 지시 유지)
+        // 2026-07-21 GM: 상단삽입 폐지 → appendRow(맨 아래 시간순 누적). 구글폼 응답도 append라 순서 꼬임 해소. 관리화면은 타임스탬프 desc 정렬.
+        _lsSh.appendRow(_lsRow);
+        try {
+          var _lsLast = _lsSh.getLastRow();
+          if (_lsLast > 1) _lsSh.getRange(2, 1, _lsLast - 1, 1).setNumberFormat('yyyy-mm-dd hh:mm:ss');   // 타임스탬프 열 시:분:초 표시 통일(기존행 포함)
+        } catch (_e) {}
         try {
           _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|year');
           _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|all');
