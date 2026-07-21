@@ -161,6 +161,15 @@ a { color:var(--accent); text-decoration:none; }
 .lf-del{font-size:11px;color:var(--dim);opacity:.75;}
 .lf-del:hover{color:var(--red);opacity:1;}
 .lf-a3{color:var(--dim);}
+
+/* ── 카테고리별 그룹 토글 ── */
+.cat-group{ margin-bottom:8px; }
+.cat-group-head{ width:100%; display:flex; align-items:center; gap:7px; padding:8px 11px; background:var(--paper); border:1px solid var(--border); border-radius:9px; color:var(--text); cursor:pointer; font-family:inherit; font-size:13px; font-weight:700; text-align:left; }
+.cat-group-head:hover{ background:var(--accent-bg); border-color:rgba(183,159,138,0.4); }
+.cat-group-head .cat-arrow{ width:12px; color:var(--dim); flex-shrink:0; }
+.cat-group-head .cat-name{ flex:1; }
+.cat-group-head .cat-n{ font-size:11.5px; font-weight:800; background:var(--bg); color:var(--dim); border-radius:9px; padding:1px 9px; }
+.cat-group-body{ padding-top:8px; }
 </style>
 <!-- 🔒 사내 전용 커튼(GM 승인 2026-07-07) — 접수 회원 성함·연락처·내용(실명 포함) 대외 공개 차단. 인증 후 열람. (진짜 잠금=JWT ≈2026-09) -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
@@ -426,6 +435,36 @@ function _slaBadge(r){
   return '<span class="card-sla" title="기한 ' + _esc(String(r.deadline||'')) + '" style="background:' + bg + ';color:' + color + ';">' + _esc(txt) + '</span>';
 }
 
+/* ── 카테고리별 그룹 토글 상태 (기본 접힘) ── */
+var _openGroups = {};
+window.toggleGroup = function(btn){
+  var key = btn.getAttribute('data-grp');
+  _openGroups[key] = !_openGroups[key];
+  var body = btn.nextElementSibling;
+  var arrow = btn.querySelector('.cat-arrow');
+  if(body) body.style.display = _openGroups[key] ? 'block' : 'none';
+  if(arrow) arrow.textContent = _openGroups[key] ? '▾' : '▸';
+};
+/* 컬럼 본문 = 카테고리별 접이식 그룹 (기본 접힘). 검색 중엔 매칭 카드 전부 펼쳐 노출. */
+function _renderColBody(status, list){
+  if(!list.length) return '<div class="col-empty">없음</div>';
+  if(_curSearch){ var hh=''; list.forEach(function(r){ hh += _card(r); }); return hh; }
+  var h='';
+  CAT_META.forEach(function(m){
+    var sub = list.filter(function(r){ return String(r.category||'')===m.label; });
+    if(!sub.length) return;
+    var gkey = status + '|' + m.label;
+    var open = !!_openGroups[gkey];
+    h += '<div class="cat-group">';
+    h += '<button type="button" class="cat-group-head" data-grp="' + _esc(gkey) + '" onclick="toggleGroup(this)">';
+    h += '<span class="cat-arrow">' + (open?'▾':'▸') + '</span><span class="cat-name">' + m.icon + ' ' + _esc(m.label) + '</span><span class="cat-n">' + sub.length + '</span></button>';
+    h += '<div class="cat-group-body" style="display:' + (open?'block':'none') + ';">';
+    sub.forEach(function(r){ h += _card(r); });
+    h += '</div></div>';
+  });
+  return h;
+}
+
 /* ── 전체 렌더 ── */
 function _render(){
   _renderChips();
@@ -450,16 +489,7 @@ function _render(){
     html += '<span class="t" style="color:' + color + ';">' + _esc(status) + '</span>';
     html += '<span class="c" style="color:' + color + ';">' + list.length + '</span>';
     html += '</div><div class="col-body">';
-    if(!list.length){ html += '<div class="col-empty">없음</div>'; }
-    /* ✅ 완료 컬럼 = 기본 접기(스크롤 단축). 검색 중엔 펼쳐서 결과 노출. */
-    else if(status==='완료' && !_doneExpanded && !_curSearch){
-      html += '<div class="done-collapsed"><div class="dc-n">✅ 완료 ' + list.length + '건</div>';
-      html += '<button type="button" class="dc-btn" onclick="toggleDone()">완료건 모두 보기 ▾</button>';
-      html += '<div class="dc-hint">스크롤을 줄이려 접어뒀어요.<br>특정 건은 위 검색으로 바로 찾을 수 있어요.</div></div>';
-    } else {
-      if(status==='완료' && _doneExpanded && !_curSearch){ html += '<button type="button" class="dc-btn dc-collapse" onclick="toggleDone()">완료건 접기 ▴</button>'; }
-      list.forEach(function(r){ html += _card(r); });
-    }
+    html += _renderColBody(status, list);
     html += '</div></div>';
   });
   board.innerHTML = html;
@@ -536,7 +566,7 @@ function _card(r){
   /* 상태 */
   var opts = STATUS_LIST.map(function(s){ return '<option value="' + _esc(s) + '"' + (s===status?' selected':'') + '>' + _esc(s) + '</option>'; }).join('');
   h += '<div class="field-row"><label>상태</label>';
-  h += '<select data-reg-action="status" data-reg-id="' + _esc(rawId) + '" data-reg-cat="' + _esc(rawCat) + '">' + opts + '</select></div>';
+  h += '<select data-reg-action="status" data-reg-id="' + _esc(rawId) + '" data-reg-cat="' + _esc(rawCat) + '" data-prev-status="' + _esc(status) + '">' + opts + '</select></div>';
 
   /* 담당 */
   h += '<div class="field-row"><label>담당</label>';
@@ -557,7 +587,7 @@ function _card(r){
 }
 
 /* ── 갱신 (reg_update) ── */
-function _update(id, cat, payload, btn){
+function _update(id, cat, payload, btn, statusEl, statusPrev){
   if(!id) return;
   var isStatus = ('status' in payload);
   var oBg='', oColor='', oBorder='';
@@ -584,10 +614,12 @@ function _update(id, cat, payload, btn){
       }
     } else {
       if(btn && !isStatus){ btn.textContent='저장'; btn.style.background=oBg; btn.style.color=oColor; btn.style.borderColor=oBorder; btn.style.pointerEvents='auto'; }
+      if(isStatus && statusEl){ statusEl.value = statusPrev; }
       alert('저장 실패: ' + (d&&d.error?d.error:'알 수 없는 오류'));
     }
   }).catch(function(){
     if(btn && !isStatus){ btn.textContent='저장'; btn.style.background=oBg; btn.style.color=oColor; btn.style.borderColor=oBorder; btn.style.pointerEvents='auto'; }
+    if(isStatus && statusEl){ statusEl.value = statusPrev; }
     alert('네트워크 오류 — 저장되지 않았습니다.');
   });
 }
@@ -716,7 +748,8 @@ function _wireBoard(){
   var board = document.getElementById('board');
   board.addEventListener('change', function(e){
     if(e.target && e.target.dataset && e.target.dataset.regAction==='status'){
-      _update(e.target.dataset.regId, e.target.dataset.regCat, {status:e.target.value});
+      var _sel = e.target;
+      _update(_sel.dataset.regId, _sel.dataset.regCat, {status:_sel.value}, null, _sel, _sel.getAttribute('data-prev-status')||'');
     }
   });
   board.addEventListener('click', function(e){
