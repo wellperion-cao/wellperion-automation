@@ -3939,6 +3939,56 @@ function _processAction(body) {
     return _json({ ok: true, mode: (anExec ? 'execute' : 'dryrun'), changed: anCount, sample: anChanges });
   }
 
+  // ─── (일회성·읽기) 강습 시트 구조 진단 — 행 접힘/공백/숨김 원인 파악. 2026-07-21 시포·GM ───
+  if (action === 'cpo_lesson_sheet_diag_0721') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var sdOut = [];
+    var sdGids = [LESSON_GID, LESSON_GID_YOUTH];
+    for (var sdG = 0; sdG < sdGids.length; sdG++) {
+      var sdSh = _lessonSheet_(sdGids[sdG]);
+      if (!sdSh) { sdOut.push({ gid: sdGids[sdG], error: 'sheet_not_found' }); continue; }
+      var sdMax = sdSh.getMaxRows(), sdLast = sdSh.getLastRow(), sdCol = sdSh.getLastColumn();
+      var sdTsCi = _findColExact_(sdSh.getRange(1, 1, 1, sdCol).getValues()[0].map(function (v) { return String(v || '').trim(); }), ['타임스탬프']); if (sdTsCi < 0) sdTsCi = 0;
+      var sdFirst = -1, sdLastData = -1, sdCount = 0;
+      if (sdLast >= 2) {
+        var sdVals = sdSh.getRange(2, sdTsCi + 1, sdLast - 1, 1).getValues();
+        for (var sdI = 0; sdI < sdVals.length; sdI++) { if (sdVals[sdI][0] instanceof Date) { sdCount++; if (sdFirst < 0) sdFirst = sdI + 2; sdLastData = sdI + 2; } }
+      }
+      var sdHidden = {};
+      [2, 16, 17, 20, 21, 100, 500, 3000, 3062, 3927, sdLast].forEach(function (rn) {
+        if (rn >= 1 && rn <= sdMax) { try { sdHidden[rn] = sdSh.isRowHiddenByUser(rn); } catch (_h) { sdHidden[rn] = 'err'; } }
+      });
+      sdOut.push({ gid: sdGids[sdG], maxRows: sdMax, lastRow: sdLast, dataRows: sdCount, firstDataRow: sdFirst, lastDataRow: sdLastData, hidden: sdHidden });
+    }
+    return _json({ ok: true, sheets: sdOut });
+  }
+
+  // ─── (일회성) 강습 시트 숨김 행 전체 해제(접힘 펴기). dry-run=샘플만·execute=showRows. 2026-07-21 시포·GM ───
+  if (action === 'cpo_lesson_unhide_0721') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var uhExec = (String(body.mode || 'dryrun') === 'execute');
+    var uhOut = [];
+    var uhGids = [LESSON_GID, LESSON_GID_YOUTH];
+    for (var uhG = 0; uhG < uhGids.length; uhG++) {
+      var uhSh = _lessonSheet_(uhGids[uhG]);
+      if (!uhSh) { uhOut.push({ gid: uhGids[uhG], error: 'sheet_not_found' }); continue; }
+      var uhMax = uhSh.getMaxRows(), uhCol = uhSh.getLastColumn();
+      var uhHdr = uhSh.getRange(1, 1, 1, uhCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+      var uhNi = _findColExact_(uhHdr, ['성함(Name)', '유소년 이름', '성함', '이름']);
+      var uhSample = [];
+      [100, 1000, 2000, 3000].forEach(function (rn) {
+        if (rn <= uhSh.getLastRow()) {
+          var ts = uhSh.getRange(rn, 1).getValue();
+          var nm = uhNi >= 0 ? uhSh.getRange(rn, uhNi + 1).getValue() : '';
+          uhSample.push({ row: rn, ts: (ts instanceof Date) ? Utilities.formatDate(ts, 'Asia/Seoul', 'yyyy-MM-dd HH:mm') : String(ts || ''), name: String(nm || '') });
+        }
+      });
+      if (uhExec) uhSh.showRows(1, uhMax);
+      uhOut.push({ gid: uhGids[uhG], maxRows: uhMax, unhidden: uhExec, sample: uhSample });
+    }
+    return _json({ ok: true, mode: (uhExec ? 'execute' : 'dryrun'), sheets: uhOut });
+  }
+
   // ─── (일회성) 유소년강습 '유입경로(자동)' 칸 JSON 오염 정리 — 2026-07-20 시포(GM 승인 정리 5건 中 1) ───
   //   배경: cpo_wsc_contact_migrate13(위)로 28건 중 17건은 이미 Contact로 이관 완료. 남은 11건은 애초
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가
