@@ -42,3 +42,12 @@ REM ============================================================
 echo [case_series_dispatch] %DATE% %TIME% launch >> "%LOGDIR%\case_series_dispatch.log"
 "%PY%" -u "%ROOT%\scripts\case_series_dispatch.py" >> "%LOGDIR%\case_series_dispatch.log" 2>&1
 echo [case_series_dispatch] %DATE% %TIME% exit=%ERRORLEVEL% >> "%LOGDIR%\case_series_dispatch.log"
+
+REM ============================================================
+REM AI daily series (namuk personal, "AIDAY") one-card-a-day drip.
+REM Weekday only, sends at most 1 review card from the AIDAY01~10
+REM pre-registered queue. GM approves manually each morning.
+REM ============================================================
+echo [ai_daily_series_card] %DATE% %TIME% launch >> "%LOGDIR%\ai_daily_series_card.log"
+"%PY%" -u "%ROOT%\scripts\ai_daily_series_card.py" >> "%LOGDIR%\ai_daily_series_card.log" 2>&1
+echo [ai_daily_series_card] %DATE% %TIME% exit=%ERRORLEVEL% >> "%LOGDIR%\ai_daily_series_card.log"
