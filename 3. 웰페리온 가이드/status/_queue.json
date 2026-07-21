@@ -780,5 +780,19 @@
     "artifact": "07-21 실전사례 시리즈 종결 결정이 디스패처 SSOT(_실전사례_2주플랜.md)에\n미반영돼, 07:30 case_series_dispatch.py가 07-20 GM이 취소(폐기)한 CASE08을\n새 id로 재등록+승인카드 재발송한 사고. (CLI ad-hoc · 커밋 cf9bb754)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "cf9bb754ed6f2e046d05d1f9d47b0928a868db36"
+  },
+  {
+    "task_id": "CTO-2026-07-22-ADHOC-08b95c30",
+    "clevel": "cto",
+    "title": "[시토] ops_daily_digest 프롬프트에 GM 정체 정규화 규칙 추가 — 카톡 대표님 오표기 근본수리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9579,
+    "artifact": "★운영부 아침 정리 LLM(scripts/ops_daily_digest.py)이 전날 카톡 원문을 '나온 그대로'\n렌더하는 규칙 때문에, 누군가 김남욱 GM을 대화에서 '대표님'으로 불렀을 때 그대로\n받아써 알림에 노출된 것이 근본 원인(웰리 특정). build_prompt()에 정체 정규화\n규칙을 additive로 추가: 김남욱=GM(김남욱)/GM님으로만 표기, 대표님/대표는 오직\n전응준 지칭, 차의주=회장님, 기존 '나온 그대로' 규칙보다 우선. (CLI ad-hoc · 커밋 08b95c30)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "08b95c30c5fbca0254ffdd9808c2b840cf60b88f"
   }
 ]
