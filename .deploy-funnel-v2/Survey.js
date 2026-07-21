@@ -3989,6 +3989,35 @@ function _processAction(body) {
     return _json({ ok: true, mode: (uhExec ? 'execute' : 'dryrun'), sheets: uhOut });
   }
 
+  // ─── (읽기) 전 행 타임스탬프 오름차순 검증 — gviz가 아닌 GAS로 실제 전 행 순서 확인. 2026-07-21 시포·GM ───
+  if (action === 'cpo_lesson_sort_verify_0721') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var svOut = [];
+    var svGids = [LESSON_GID, LESSON_GID_YOUTH];
+    for (var svG = 0; svG < svGids.length; svG++) {
+      var svSh = _lessonSheet_(svGids[svG]);
+      if (!svSh) { svOut.push({ gid: svGids[svG], error: 'sheet_not_found' }); continue; }
+      var svLast = svSh.getLastRow(); var svCol = svSh.getLastColumn();
+      var svTsCi = _findColExact_(svSh.getRange(1, 1, 1, svCol).getValues()[0].map(function (v) { return String(v || '').trim(); }), ['타임스탬프']); if (svTsCi < 0) svTsCi = 0;
+      var svViol = 0; var svFirst = null; var svPrev = null; var svData = 0;
+      if (svLast >= 2) {
+        var svVals = svSh.getRange(2, svTsCi + 1, svLast - 1, 1).getValues();
+        for (var svI = 0; svI < svVals.length; svI++) {
+          var svV = svVals[svI][0];
+          if (!(svV instanceof Date)) continue;
+          svData++;
+          if (svPrev && svV.getTime() < svPrev.getTime()) {
+            svViol++;
+            if (!svFirst) svFirst = { row: svI + 2, prev: Utilities.formatDate(svPrev, 'Asia/Seoul', 'yyyy-MM-dd'), cur: Utilities.formatDate(svV, 'Asia/Seoul', 'yyyy-MM-dd') };
+          }
+          svPrev = svV;
+        }
+      }
+      svOut.push({ gid: svGids[svG], dataRows: svData, violations: svViol, firstViolation: svFirst });
+    }
+    return _json({ ok: true, sheets: svOut });
+  }
+
   // ─── (일회성) 유소년강습 '유입경로(자동)' 칸 JSON 오염 정리 — 2026-07-20 시포(GM 승인 정리 5건 中 1) ───
   //   배경: cpo_wsc_contact_migrate13(위)로 28건 중 17건은 이미 Contact로 이관 완료. 남은 11건은 애초
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가
