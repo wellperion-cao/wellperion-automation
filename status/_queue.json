@@ -505,11 +505,13 @@
     "task_id": "COO-2026-07-20-O2-HANDLER-BUGS",
     "clevel": "coo",
     "title": "[시우] 종합접수처 O2 보드 버그 3건 수리",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
+    "terminal": true,
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-20",
-    "note": "[2026-07-20 GM 지시] 운영 실무=최준용M 소관 → 붙여넣기용 프롬프트로 이관. 문서 status/briefs/최준용M_종합접수처_처리자버그_프롬프트_20260720.md 의 「여기부터 복사」 블록.\n라이브 실측 진단: 처리자 입력칸 33 / 중복표시 24 (처리자 기입 건수와 일치).\n①처리자 중복표시 — _regCard 의 COMMON_KEYS 에 '처리자' 누락\n②★저장 실패해도 저장됨✓ — _regHandlerSave/_regMemoSave/_regSms/_regAssign 4곳 모두 성공표시를 fetch 전에 내고 .catch 로 실패를 삼킴 (INC-011·013 동종)\n③_regAssign 이 HTML 이 넘긴 this(3번째 인자) 미수신, 전역 event.target 의존\n별건: 저장소 apps_script_voc.js 가 라이브보다 구버전(handler·sms 칸 없음) — 시토 정리 대상.\n[2026-07-20 GM] 최준용M 이관 취소 → 시우가 직접 수리. 프롬프트 문서는 참고용으로 유지.\n[2026-07-21 GM 재인계·확정] 운영 실무는 준용M가 직접 운영. GM 방침='시우한테 직접 지시 말고 준용M가 잘 운영하도록 도와줘'. → 시우 역할=수리 실행자 아님, **준용M 지원·검수자**. 시우 조치: ①붙여넣기 프롬프트(status/briefs/최준용M_종합접수처_처리자버그_프롬프트_20260720.md) 정비 완료 — 07-20 GitHub 장애 안내 낡아서 '07-21 배포 정상' 갱신, 준용M가 그대로 복붙 실행 가능 상태. ②준용M가 수리·푸시하면 시우가 라이브 검수(처리자 1회·저장실패시 빨강·배정 정상)만 담당. 코드 직접수정 안 함(준용M 소관).",
-    "next": "⏳ 준용M 실행 대기 — 준용M가 프롬프트로 3버그 수리·푸시 → 시우 라이브 검수. 시우 직접수리 금지(GM 방침).",
+    "processed_at": "2026-07-21",
+    "note": "[2026-07-20 GM 지시] 운영 실무=최준용M 소관 → 붙여넣기용 프롬프트로 이관. 문서 status/briefs/최준용M_종합접수처_처리자버그_프롬프트_20260720.md 의 「여기부터 복사」 블록.\n라이브 실측 진단: 처리자 입력칸 33 / 중복표시 24 (처리자 기입 건수와 일치).\n①처리자 중복표시 — _regCard 의 COMMON_KEYS 에 '처리자' 누락\n②★저장 실패해도 저장됨✓ — _regHandlerSave/_regMemoSave/_regSms/_regAssign 4곳 모두 성공표시를 fetch 전에 내고 .catch 로 실패를 삼킴 (INC-011·013 동종)\n③_regAssign 이 HTML 이 넘긴 this(3번째 인자) 미수신, 전역 event.target 의존\n별건: 저장소 apps_script_voc.js 가 라이브보다 구버전(handler·sms 칸 없음) — 시토 정리 대상.\n[2026-07-20 GM] 최준용M 이관 취소 → 시우가 직접 수리. 프롬프트 문서는 참고용으로 유지.\n[2026-07-21 GM 재인계·확정] 운영 실무는 준용M가 직접 운영. GM 방침='시우한테 직접 지시 말고 준용M가 잘 운영하도록 도와줘'. → 시우 역할=수리 실행자 아님, **준용M 지원·검수자**. 시우 조치: ①붙여넣기 프롬프트 정비 완료(07-21 배포 정상 갱신) ②라이브 검수.\n[2026-07-21 시우 검수 통과·DONE] 준용M가 어제 3버그 수리·푸시 완료(커밋 666a3cc4·c3ed5ba3, 둘 다 origin/master 포함). 시우 라이브 실측 검수 3/3 PASS: ①COMMON_KEYS에 '처리자' 추가(:1678)로 중복표시 제거 ②4함수(_regMemoSave·_regHandlerSave·_regSms·_regAssign) 전부 '저장 중…'→fetch→res.ok===true 후에만 성공표시, 실패는 빨강 '저장 실패 ✕'(라이브 8곳=4함수×else/catch), _regSms는 실패 시 체크박스 원복 ③_regAssign(id,category,btn) btn 3번째 인자 수신·event.target 의존 제거(HTML :1727 this 전달). 라이브 Pages(https 200)에 '처리자 추가' 주석·'저장 실패 ✕' 반영 확인. INC-011·013 동종 위장저장 근절. 잔여 별건=저장소 apps_script_voc.js 구버전 정합(시토 이관, 준용M 무관).",
+    "next": "🏁 입항완료 — 준용M 수리·시우 검수 3/3 라이브 PASS. 잔여 별건(apps_script_voc.js 구버전 정합)은 시토 이관.",
     "ship_no": 9334,
     "surface": "g1"
   },
@@ -1275,5 +1277,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 47628933)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "476289331cfb3286bb6c9ea12e53c3e02804f6a8"
+  },
+  {
+    "task_id": "CPO-2026-07-21-ADHOC-04556517",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9465,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 04556517)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "0455651783b83f56a3c9bf71d9838eecd0d8a16f"
   }
 ]
