@@ -1863,9 +1863,8 @@ var _LESSON_MGMT_FIELDS = [
   { keys: ['관리담당', '지정 강사'],                                 canon: '지정 강사' },
   { keys: ['상담메모', '메모', '비고'],                             canon: '비고' },
   { keys: [CONTACT_HIST_COL, 'Contact'],                            canon: 'Contact' },
-  { keys: ['LOSS사유'],                                             canon: 'LOSS사유' },      // 문의 퍼널 LOSS 사유(강습) — 멤버십과 동일 체계. 2026-07-18 시토(GM요청) 대행.
-  { keys: ['LOSS사유메모'],                                         canon: 'LOSS사유메모' },
-  { keys: ['등록종목'],                                             canon: '등록종목' },       // 등록(SUC) 시 실제 등록한 종목 — 멤버십 member_inquiry_update와 동일 체계. LOSS사유와 같은 정확일치 전용 키(부분일치 충돌 방지 — '성인 강습 종목'/'WSC 강습 종목' 등 기존 종목칸과 별개). 2026-07-20 시포(GM요청).
+  // ★LOSS사유·LOSS사유메모·등록종목 3항목 재생성 중단(cpo_lesson_col_cleanup_0721로 컬럼 자체 폐기·삭제 — 2026-07-21 시포·GM 3단계).
+  //   등록종목은 강습종목 칸 덮어쓰기(retarget)로 대체. LOSS사유(+메모)는 '미등록 사유' 칸으로 이관.
   { keys: ['등록회수'],                                             canon: '등록회수' },       // 강습 등록 회수. _luSet이 자동생성하려면 이 목록 등재가 필요(등록종목과 동일 체계). 2026-07-21 시포·GM.
   { keys: ['유효기간'],                                             canon: '유효기간' },       // 강습 유효기간(만료일). 위와 동일 사유로 등재. 2026-07-21 시포·GM.
   { keys: ['유입경로(자동)', '유입경로자동', '유입경로'],           canon: '유입경로(자동)' }, // 멤버십식 2경로(문의경로+유입경로자동). 성인엔 없어 생성·유소년은 기존칸 매치. 빈칸 구조만(UTM 채움은 시모). 2026-07-21 GM.
@@ -3726,6 +3725,77 @@ function _processAction(body) {
     return _json({ ok: false, error: 'unknown_mode' });
   }
 
+  // ─── (일회성) 강습 탭(성인/유소년) '등록종목'·'LOSS사유'·'LOSS사유메모' 3칸 정리 — 원장 정비 3단계 ───
+  //   배경: 등록종목은 강습종목 칸 덮어쓰기(retarget)로 대체되어 폐기, LOSS사유메모는 2026-07-20 GM 확정으로
+  //   이미 화면에서 제거됨(멤버십 del_loss_cols_20260720과 동일 취지). 삭제 전 ①행-로컬(같은 행 안에서만,
+  //   교차행 키매칭 절대 없음)로 LOSS사유(+메모)를 '미등록 사유' 칸으로 이관(미등록 사유가 비어있을 때만)
+  //   ②'등록종목' 값이 하나라도 남아있으면 데이터 유실 방지를 위해 그 시트는 삭제 전체를 중단(aborted)하고
+  //   report만 반환 ③ 삭제는 헤더이름으로 인덱스를 재확인해 내림차순(오른쪽→왼쪽)으로 진행(밀림 방지).
+  //   dry-run 기본(쓰기·삭제 0), mode=execute만 실제 반영. 2026-07-21 시포·GM(3단계)
+  if (action === 'cpo_lesson_col_cleanup_0721') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var lccExecute = (String(body.mode || 'dryrun') === 'execute');
+    var lccGids = [LESSON_GID, LESSON_GID_YOUTH];
+    var lccSheets = [];
+    for (var lccG = 0; lccG < lccGids.length; lccG++) {
+      var lccGid = lccGids[lccG];
+      var lccSh = _lessonSheet_(lccGid);
+      if (!lccSh) { lccSheets.push({ gid: lccGid, error: 'sheet_not_found' }); continue; }
+      var lccLastCol = lccSh.getLastColumn();
+      var lccLastRow = lccSh.getLastRow();
+      var lccHdr = lccSh.getRange(1, 1, 1, lccLastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+      var lccCiUnreg = _findColExact_(lccHdr, ['미등록 사유', '미등록사유']);
+      var lccCiLoss  = _findColExact_(lccHdr, ['LOSS사유']);
+      var lccCiLossN = _findColExact_(lccHdr, ['LOSS사유메모']);
+      var lccCiReg   = _findColExact_(lccHdr, ['등록종목']);
+
+      // ① 행-로컬 LOSS 사유(+메모) → 미등록 사유 이관. 같은 행 안에서만(교차행 키매칭 절대 금지). 미등록 사유가 이미 있으면 skip.
+      var lccMigrated = 0;
+      if (lccCiUnreg >= 0 && lccCiLoss >= 0 && lccLastRow >= 2) {
+        var lccDataN = lccLastRow - 1;
+        var lccCols = [lccCiUnreg, lccCiLoss].concat(lccCiLossN >= 0 ? [lccCiLossN] : []);
+        var lccMinCi = Math.min.apply(null, lccCols), lccMaxCi = Math.max.apply(null, lccCols);
+        var lccBlock = lccSh.getRange(2, lccMinCi + 1, lccDataN, lccMaxCi - lccMinCi + 1).getValues();
+        for (var lccR = 0; lccR < lccBlock.length; lccR++) {
+          var lccRowVals = lccBlock[lccR];
+          var lccUnregVal = String(lccRowVals[lccCiUnreg - lccMinCi] || '').trim();
+          var lccLossVal  = String(lccRowVals[lccCiLoss  - lccMinCi] || '').trim();
+          if (lccLossVal !== '' && lccUnregVal === '') {
+            var lccLossMemoVal = (lccCiLossN >= 0) ? String(lccRowVals[lccCiLossN - lccMinCi] || '').trim() : '';
+            var lccNewVal = lccLossVal + (lccLossMemoVal ? ' (' + lccLossMemoVal + ')' : '');
+            if (lccExecute) lccSh.getRange(2 + lccR, lccCiUnreg + 1).setValue(lccNewVal);
+            lccMigrated++;
+          }
+        }
+      }
+
+      // ② 삭제 전 가드 — '등록종목' 값 있는 행 수 확인. 0이 아니면 이 시트는 삭제 전체 중단(등록종목 데이터 유실 방지).
+      var lccRegNonEmpty = 0;
+      if (lccCiReg >= 0 && lccLastRow >= 2) {
+        var lccRegVals = lccSh.getRange(2, lccCiReg + 1, lccLastRow - 1, 1).getValues();
+        for (var lccV = 0; lccV < lccRegVals.length; lccV++) { if (String(lccRegVals[lccV][0] || '').trim() !== '') lccRegNonEmpty++; }
+      }
+      var lccAborted = lccRegNonEmpty > 0;
+
+      // ③ 컬럼 물리삭제(execute만, 미중단 시). 인덱스 큰 것부터(오른쪽→왼쪽) 삭제해 밀림 방지. 없으면 스킵.
+      var lccDeleted = [];
+      if (lccExecute && !lccAborted) {
+        var lccDelTargets = [];
+        if (lccCiReg   >= 0) lccDelTargets.push({ ci: lccCiReg,   name: '등록종목' });
+        if (lccCiLoss  >= 0) lccDelTargets.push({ ci: lccCiLoss,  name: 'LOSS사유' });
+        if (lccCiLossN >= 0) lccDelTargets.push({ ci: lccCiLossN, name: 'LOSS사유메모' });
+        lccDelTargets.sort(function (a, b) { return b.ci - a.ci; });
+        lccDelTargets.forEach(function (t) { lccSh.deleteColumn(t.ci + 1); lccDeleted.push(t.name); });
+      }
+
+      lccSheets.push({
+        gid: lccGid, migrated: lccMigrated, regProgramNonEmpty: lccRegNonEmpty,
+        deleted: lccDeleted, aborted: lccAborted
+      });
+    }
+    return _json({ ok: true, mode: (lccExecute ? 'execute' : 'dryrun'), sheets: lccSheets });
+  }
+
   // ─── (일회성) 유소년강습 '유입경로(자동)' 칸 JSON 오염 정리 — 2026-07-20 시포(GM 승인 정리 5건 中 1) ───
   //   배경: cpo_wsc_contact_migrate13(위)로 28건 중 17건은 이미 Contact로 이관 완료. 남은 11건은 애초
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가
@@ -4851,7 +4921,9 @@ function _processAction(body) {
       _luSet(['방문상태', '방문'], body.visited);
       _luSet(['LOSS사유'], body.lossReason);       // 강습 LOSS 사유(문의 퍼널). 2026-07-18 시토(GM요청) 대행.
       // ★LOSS사유메모 폐기(2026-07-20 GM 확정) — "LOSS사유메모도 필요없어". 화면에서도 메모칸을 없앴다.
-      _luSet(['등록종목'], body.regProgram);        // 강습 등록 종목(SUC 시 실제 등록한 종목) — 멤버십과 동일 체계, 칸 자동생성. 2026-07-20 시포(GM요청).
+      // 등록종목 칸 폐지→강습종목 덮어씀(2026-07-21 시포·GM 3단계) — 별도 '등록종목' 칸 대신 실제 강습종목 칸을
+      // SUC 시 등록값으로 덮어쓴다(멤버십 regProgram→관심프로그램 retarget과 동일 취지, 칸 자동생성 없음).
+      _luSet(['성인 강습 종목', 'WSC 강습 종목', '강습 종목', '종목'], body.regProgram);
       if (body.regCount   !== undefined) _luSet(['등록회수'], body.regCount);      // 강습 등록 회수. 2026-07-21 시포·GM.
       if (body.regExpire  !== undefined) _luSet(['유효기간'], body.regExpire);     // 강습 유효기간(만료일). 자동계산=명확종목만. 2026-07-21 시포·GM.
       // ── 연락이력(가변) — 축2/축4: body.contacts(JSON 문자열/배열) 수신 시 저장. 미전송이면 무영향(기존 필드만 갱신).
