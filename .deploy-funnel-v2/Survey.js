@@ -3796,6 +3796,36 @@ function _processAction(body) {
     return _json({ ok: true, mode: (lccExecute ? 'execute' : 'dryrun'), sheets: lccSheets });
   }
 
+  // ─── (일회성) 시분초확인 테스트행 삭제 — 이름 '시분초확인' 포함 + 전화 01000000000 이중키. dry-run 기본. 2026-07-21 시포·GM(5단계) ───
+  if (action === 'cpo_lesson_delete_testrow_0721') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var dtrExec = (String(body.mode || 'dryrun') === 'execute');
+    var dtrGids = [LESSON_GID, LESSON_GID_YOUTH];
+    var dtrOut = [];
+    for (var dtrG = 0; dtrG < dtrGids.length; dtrG++) {
+      var dtrSh = _lessonSheet_(dtrGids[dtrG]);
+      if (!dtrSh) { dtrOut.push({ gid: dtrGids[dtrG], error: 'sheet_not_found' }); continue; }
+      var dtrLastRow = dtrSh.getLastRow(), dtrLastCol = dtrSh.getLastColumn();
+      if (dtrLastRow < 2) { dtrOut.push({ gid: dtrGids[dtrG], matched: 0, deleted: [] }); continue; }
+      var dtrHdr = dtrSh.getRange(1, 1, 1, dtrLastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+      var dtrCiName = _findColExact_(dtrHdr, ['성함(Name)', '유소년 이름', '성함', '이름']);
+      var dtrCiPh   = _findColExact_(dtrHdr, ['연락처(Phone Number)', '핸드폰 연락처', '연락처']);
+      if (dtrCiName < 0 || dtrCiPh < 0) { dtrOut.push({ gid: dtrGids[dtrG], error: 'name/phone col not found' }); continue; }
+      var dtrVals = dtrSh.getRange(2, 1, dtrLastRow - 1, dtrLastCol).getValues();
+      var dtrHits = [];
+      for (var dtrR = 0; dtrR < dtrVals.length; dtrR++) {
+        var dtrNm = String(dtrVals[dtrR][dtrCiName] || '');
+        var dtrPh = String(dtrVals[dtrR][dtrCiPh] || '').replace(/\D/g, '');
+        if (dtrNm.indexOf('시분초확인') >= 0 && dtrPh === '01000000000') dtrHits.push(dtrR + 2);   // 물리 행번호
+      }
+      dtrHits.sort(function (a, b) { return b - a; });   // 큰 것부터 삭제(밀림 방지)
+      var dtrDeleted = [];
+      if (dtrExec) dtrHits.forEach(function (rn) { dtrSh.deleteRow(rn); dtrDeleted.push(rn); });
+      dtrOut.push({ gid: dtrGids[dtrG], matched: dtrHits.length, rows: dtrHits, deleted: dtrDeleted });
+    }
+    return _json({ ok: true, mode: (dtrExec ? 'execute' : 'dryrun'), sheets: dtrOut });
+  }
+
   // ─── (일회성) 유소년강습 '유입경로(자동)' 칸 JSON 오염 정리 — 2026-07-20 시포(GM 승인 정리 5건 中 1) ───
   //   배경: cpo_wsc_contact_migrate13(위)로 28건 중 17건은 이미 Contact로 이관 완료. 남은 11건은 애초
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가

@@ -2417,6 +2417,14 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <select id="regCountSel" style="display:none;width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit" onchange="_regValidityUpdate()"></select>
     <div class="consult-row" id="regValidityRow" style="display:none"><span class="ck">유효기간</span><span class="cv" id="regValidityText">—</span></div>
 
+    <!-- 강습 전용 — 구분: 개인레슨/단체레슨(멤버십은 숨김). 저장=payload.lessonType 별도 필드(백엔드 미사용 필드는 무해하게 무시). 2026-07-21 시포·GM. -->
+    <div class="consult-field-label" id="regLessonTypeLabel" style="display:none">구분</div>
+    <select id="regLessonType" style="display:none;width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+      <option value="">— 선택 —</option>
+      <option value="개인레슨">개인레슨</option>
+      <option value="단체레슨">단체레슨</option>
+    </select>
+
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeRegProgramModal()">취소</button>
       <button class="consult-btn-save" id="rpSaveBtn" onclick="saveRegProgramModal()">저장</button>
@@ -7549,15 +7557,22 @@ function _regProgramModalFill(options, current) {
   var _countLabel = document.getElementById('regCountLabel');
   var _countSel = document.getElementById('regCountSel');
   var _validityRow = document.getElementById('regValidityRow');
+  // 구분(개인레슨/단체레슨) — 강습 모드에서만 표시(멤버십=해당 없음). 2026-07-21 시포·GM.
+  var _typeLabel = document.getElementById('regLessonTypeLabel');
+  var _typeSel = document.getElementById('regLessonType');
   if (_isLessonMode) {
     _countLabel.style.display = '';
     _countSel.style.display = '';
     _validityRow.style.display = '';
+    _typeLabel.style.display = '';
+    _typeSel.style.display = '';
     _regFillCountOptions();
   } else {
     _countLabel.style.display = 'none';
     _countSel.style.display = 'none';
     _validityRow.style.display = 'none';
+    _typeLabel.style.display = 'none';
+    _typeSel.style.display = 'none';
   }
   document.getElementById('regProgramOverlay').classList.add('open');
 }
@@ -7610,8 +7625,9 @@ function openLessonRegProgramModal(t, rowIndex, sportKey) {
   document.getElementById('rpMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '') + (sportKey ? ' · ' + sportKey : '');
   var _cur = String(r.regProgram || '').trim() || _lessonRosterKeyOf(sportKey) || '';
   _regProgramModalFill(Object.keys(LESSON_INSTRUCTOR_ROSTER), _cur);
-  // 회수·유효기간 필드는 신규 모달 오픈 시 항상 초기화(이전 건 값 잔류 방지). 2026-07-21 시포·GM.
+  // 회수·유효기간·구분 필드는 신규 모달 오픈 시 항상 초기화(이전 건 값 잔류 방지). 2026-07-21 시포·GM.
   document.getElementById('regCountSel').value = '';
+  document.getElementById('regLessonType').value = '';
   _regValidityUpdate();
 }
 function closeRegProgramModal() {
@@ -7627,6 +7643,8 @@ function saveRegProgramModal() {
   var _isLesson = (_regProgramModal.mode === 'lesson');
   var _payload = _isLesson
     ? { action: 'lesson_inquiry_update', type: _regProgramModal.type, rowIndex: rowIndex, keyPhone: keyPhone, sport: '', gid: _regProgramModal.gid, regProgram: program,
+        // 강습 전용 — 구분(개인레슨/단체레슨). 백엔드 미배선 필드 — name-based payload라 무해(저장 배선은 별도 범위). 2026-07-21 시포·GM.
+        lessonType: document.getElementById('regLessonType').value.trim(),
         // 강습 전용 — 회수·유효기간(자동계산=명확 종목만, 그 외 수동/빈값). 2026-07-21 시포·GM.
         regCount: document.getElementById('regCountSel').value.trim(),
         regExpire: (function(){
