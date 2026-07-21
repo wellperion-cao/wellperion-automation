@@ -3881,6 +3881,25 @@ function _processAction(body) {
     return _json({ ok: true, sheets: tdsOut });
   }
 
+  // ─── (일회성) 강습 시트 기본 필터 감지·제거 — 필터의 정렬뷰가 오름차순 데이터를 내림차순으로 덮어보이게 하는 문제. dry-run 기본. 2026-07-21 시포·GM ───
+  if (action === 'cpo_lesson_clear_filter_0721') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var cfExec = (String(body.mode || 'dryrun') === 'execute');
+    var cfOut = [];
+    var cfGids = [LESSON_GID, LESSON_GID_YOUTH];
+    for (var cfG = 0; cfG < cfGids.length; cfG++) {
+      var cfSh = _lessonSheet_(cfGids[cfG]);
+      if (!cfSh) { cfOut.push({ gid: cfGids[cfG], error: 'sheet_not_found' }); continue; }
+      var cfFilter = null;
+      try { cfFilter = cfSh.getFilter(); } catch (_f) {}
+      var cfHad = !!cfFilter;
+      var cfRemoved = false;
+      if (cfHad && cfExec) { try { cfFilter.remove(); cfRemoved = true; } catch (_r) {} }
+      cfOut.push({ gid: cfGids[cfG], hadFilter: cfHad, removed: cfRemoved });
+    }
+    return _json({ ok: true, mode: (cfExec ? 'execute' : 'dryrun'), sheets: cfOut });
+  }
+
   // ─── (일회성) 유소년강습 '유입경로(자동)' 칸 JSON 오염 정리 — 2026-07-20 시포(GM 승인 정리 5건 中 1) ───
   //   배경: cpo_wsc_contact_migrate13(위)로 28건 중 17건은 이미 Contact로 이관 완료. 남은 11건은 애초
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가
