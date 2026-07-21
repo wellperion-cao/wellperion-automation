@@ -3,17 +3,18 @@
     "task_id": "CTO-2026-07-22-KAKAO-GM-TITLE-MISNOMER",
     "clevel": "cto",
     "title": "[시토] 카톡 알림 GM 호칭 오표기 수리 — 대표님→GM님(전응준 결재란 제외)",
-    "status": "BLOCKED",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "from": "gm",
     "origin": "gm",
     "enqueued_at": "2026-07-22",
-    "note": "GM 2026-07-22 지시('카카오톡 알림에서 내가 대표님으로 되어있다. 나는 김남욱 GM인데 이런 실수 반복 안 했으면 좋겠다'). 전수조사(비-worktree 전체): (1) kakao_rooms.json 로컬+라이브 GAS(kakao_rooms_get, T2 카톡전송관리 SSOT) 3방(차의주 회장님=회장님 prefix / 웰페리온 관리부·★운영부=prefix 없음) — GM 대상 대표님 prefix 없음. (2) kakao_report_sender.py·kakao_auto_daily_report.py(build_caption='M.D(요일) 매출 및 운영사항 보고드립니다.'·호칭 자체 없음)·kakao_summary_card.py/_auto.py(HTML카드, 호칭 텍스트 없음)·kakao_daily_check_share.py(마무리='오늘도 수고 많으셨습니다') — GM 대상 호칭 문구 전무. (3) telegram_bot/daily_scheduler.py의 report_stream_1/2/3(★부서장·업무보고방 다이제스트) — 호칭 없음. (4) 저장소 전체 '대표'/'대표님' grep 결과는 전부 정당한 별건: 전응준 결재란(hangro_board.py·ops_mgmt_digest_test.py·.deploy-todo/업무&결재 현황.js의 '대표싸인'·결재role), IG 외부마케팅카피('운동시설 대표님'), telegram_bot/bot.py:236 '✅ 대표님 등록 완료'(텔레그램 owner 최초 /start 1회성 등록 확인문구 — 카카오톡 아님·반복성 없음, 회장님 등록 함정 없이 대표 호환 문구로 존재하나 GM이 지목한 '카카오톡'과 불일치). 결론: 로컬 코드·라이브 GAS 어디서도 GM을 대표님으로 부르는 실제 카카오 알림 문구를 특정하지 못함 — 지어내어 고치지 않고 미특정 보고, GM 확인 질문 준비.",
-    "next": "GM 확인 대기 — 어느 카톡방·어떤 문구였는지 정확히 특정 필요(후보질문: ①9:30 매출보고 3방[회장님/관리부/운영부] 중 어디였나 ②캡션인가 방 이름 표시인가 ③화면 캡처 가능한가 ④혹시 텔레그램(대표님 등록 완료 문구)과 혼동은 아닌지)",
+    "note": "GM 2026-07-22 지시('카카오톡 알림에서 내가 대표님으로 되어있다. 나는 김남욱 GM인데 이런 실수 반복 안 했으면 좋겠다') → 웰리 추가지목('★운영부 카톡 정리'). 1차 전수조사(kakao_rooms.json·kakao_report_sender/auto_daily_report/summary_card/daily_check_share·daily_scheduler 다이제스트 등)로는 미특정. 웰리가 원인 특정: scripts/ops_daily_digest.py(★운영부 아침 정리 LLM) 프롬프트 532번 '이름은 대화에 나온 그대로 사용' 규칙 때문에, 어제 카톡 원문에서 누군가 GM을 '대표님'으로 부르면 LLM이 그대로 👤이름에 렌더 — GM 정체 정규화 층 부재가 근본원인. 수리: build_prompt()에 정체 정규화 규칙 추가('김남욱은 GM이다 → GM(김남욱)/GM님으로만 표기, 대화원문의 대표님/대표 호칭 그대로 쓰지 말 것, 대표님은 오직 전응준 지칭, 차의주=회장님' — 기존 '나온 그대로' 규칙보다 우선 명시). 실측검증: 합성 대화(김남욱=대표님으로 지칭 + 전응준=대표님 지칭 혼재)로 실제 claude CLI(claude-opus-4-8) 호출 — 결과 '이경연 실장' 항목에 'GM(김남욱)님 어제 저녁 프론트 들러 확인'(정규화 성공) / '전응준 대표님 결재 건'(정당 지칭 보존) 둘 다 정확 확인. 나머지 채널(9:30 매출보고 3방·점검공유 등)은 1차 조사에서 이미 호칭문구 자체가 없음을 확인 완료.",
+    "next": "실측 검증 완료 — 내일 이후 ★운영부 실제 자동 발행분에서 재확인(추가 오표기 발견 시 재오픈)",
     "depends_on": "",
     "ship_no": 9573,
     "module": "T1",
-    "surface": "autonomy"
+    "surface": "autonomy",
+    "processed_at": "2026-07-22"
   },
   {
     "task_id": "CTO-2026-07-21-REPORT-UNIFICATION",
@@ -765,5 +766,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01QeEb14y3PN4qgA85twudds (CLI ad-hoc · 커밋 6022c829)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "6022c829e3bbaef5abc33f46a81da513ddea517a"
+  },
+  {
+    "task_id": "CMO-2026-07-22-ADHOC-cf9bb754",
+    "clevel": "cmo",
+    "title": "[시모] 실전사례 CASE08 오발행 긴급차단 + 재발송 버그 근본수리 (배9576)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9578,
+    "artifact": "07-21 실전사례 시리즈 종결 결정이 디스패처 SSOT(_실전사례_2주플랜.md)에\n미반영돼, 07:30 case_series_dispatch.py가 07-20 GM이 취소(폐기)한 CASE08을\n새 id로 재등록+승인카드 재발송한 사고. (CLI ad-hoc · 커밋 cf9bb754)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "cf9bb754ed6f2e046d05d1f9d47b0928a868db36"
   }
 ]
