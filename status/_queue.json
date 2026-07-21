@@ -1,5 +1,21 @@
 [
   {
+    "task_id": "CTO-2026-07-21-KAKAO-TRAY-AUTORESTORE",
+    "clevel": "cto",
+    "title": "[시토] 카톡 매출보고 발송기 하드닝 — 트레이 최소화 메인창 자가복원 + 포그라운드/검색창 견고화 (09:30 무인 자가복구)",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-21",
+    "from": "gm",
+    "origin": "gm",
+    "note": "2026-07-21 GM 확인. 오늘 09:30 카톡 3방(차의주 회장님·웰페리온 관리부·★운영부) 자동발송 전량 실패 — 예약작업 result=0(성공 위장)이나 내부 BLOCKED. watchdog(배9420)가 cto-kakao-sales-report 조용함으로 먼저 포착→GM 확인. 실측 원인체인: ①카톡 채팅목록 메인창(EVA_Window_Dblclk 제목'카카오톡')이 트레이 최소화(visible=0) → find_kakao_main_window()가 _enum_visible_top_level_windows() 즉 '보이는 창'만 뒤져 놓침 ②숨은 메인창 hwnd 강제복원(ShowWindow SW_SHOW+SW_RESTORE)해 visible=1 만들면 메인창은 찾으나, 그다음 '채팅'탭 전환·검색창(돋보기 Edit) 활성화가 백그라운드 창이라 실패('돋보기 클릭 후 Edit 못 찾음'). 로그인은 정상(EVA 메인창 존재). AI C-level 세션과 무관(카톡 창 안 건드림). 오늘분은 GM 수동발송으로 처리. 하드닝 범위=발송기 scripts/kakao_report_sender.py: (a)_find_room_window 실패시 메인창 검색 전에 트레이 최소화 메인창 자가복원(EVA 'カ카오톡' visible=0 → ShowWindow 복원) 편입 (b)복원 후 SetForegroundWindow+포커스 안정화(AttachThreadInput 등)로 검색창 조작 성공률 개선 (c)정직 한계: 백그라운드 UI자동화 태생적 취약 — 대안 주경로=3방 창을 열어두면 _find_room_window 직접탐지로 검색플로우 우회. 참고 메모리 reference_kakao_report_sender·reference_kakao_inapp. 예약작업 Kakao-Sales-Report-0930 Ready·킬스위치 enabled=true 그대로(내일 09:30 동일 자동발송).",
+    "next": "[2026-07-21 구현완료] kakao_report_sender.py 하드닝 additive(+50/-2, 정상경로 무회귀): ①find_kakao_main_window 폴백=트레이 최소화(visible=0) EVA메인창 전체열거→ShowWindow SHOW+RESTORE 자가복원 ②focus_window에 SetForegroundWindow 선행 ③검색창 클릭 직전 focus 재안정화. ★트레이 자가복원 실증: 실 카톡창 강제 SW_HIDE로 사고 재현→함수호출→visible=1 복원+올바른 hwnd 반환 확인. 정직한계=검색창 백그라운드 조작 성공은 라이브 미검증(실방 조작 위험 회피). ▶남은 확인=내일 09:30 무인 실착(트레이 상태에서도 3방 자동발송 완주 여부). 미완주시 주경로=3방 창 상시 열어두기 운영지침. 커밋 예정.",
+    "depends_on": "",
+    "ship_no": 9423,
+    "module": "T1",
+    "surface": "autonomy"
+  },
+  {
     "task_id": "CTO-2026-07-21-MODULE-MERGE",
     "clevel": "cto",
     "title": "[시토] 자율화 모듈 병합 — 비슷한 맥락끼리 확장·통합(감시 4종→하네스1·운영 다이제스트 수집층 공유·타도메인 3건 제기)",

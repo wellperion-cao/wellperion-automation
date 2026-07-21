@@ -297,7 +297,16 @@ def find_room_window(room_name: str, timeout: float = 3.0):
 
 def focus_window(win, room_name: str) -> None:
     """포그라운드 전환. win32gui.SetForegroundWindow는 Windows 포그라운드 잠금으로
-    막힐 수 있어(오류 183) pywinauto set_focus()(내부 AttachThreadInput 등 우회)를 쓴다."""
+    막힐 수 있어(오류 183) pywinauto set_focus()(내부 AttachThreadInput 등 우회)를 쓴다.
+
+    2026-07-21 하드닝(INC — 트레이 최소화 메인창 09:30 3방 전량 BLOCKED): 트레이에서
+    막 복원된 창처럼 포커스가 불안정한 상황에 대비해 SetForegroundWindow를 먼저
+    best-effort로 시도(실패해도 무시)한 뒤 기존 set_focus() 경로를 그대로 쓴다.
+    카톡이 이미 포그라운드에 떠 있는 기존 정상 경로는 사실상 no-op이라 영향 없음."""
+    try:
+        win32gui.SetForegroundWindow(win.handle)
+    except Exception:
+        pass  # 포그라운드 잠금 등으로 실패해도 무시 — set_focus()가 주 경로
     try:
         win.set_focus()
     except Exception as exc:
@@ -307,16 +316,51 @@ def focus_window(win, room_name: str) -> None:
 
 # ── 자동 방 열기(2026-07-06 추가, GM PC 라이브 실측 검증 완료) — 방 창을 못 찾았을 때
 #    카톡 메인창 검색으로 자동으로 방을 연다. §0-4/§0-5 실측 함정 참조.
+def _enum_all_top_level_windows() -> list[tuple[int, str, str]]:
+    """(hwnd, title, class_name) 목록 — 가시성 무관 전체 최상위 창(트레이 최소화 포함).
+
+    2026-07-21 하드닝(INC 실측): 카톡 메인창이 트레이로 최소화(IsWindowVisible=0)돼
+    있으면 _enum_visible_top_level_windows()로는 찾지 못해 09:30 무인 3방 발송이
+    전량 BLOCKED됐다(로그인 자체는 정상 — 그 hwnd는 존재). find_kakao_main_window()의
+    폴백 전용(주 경로인 방-창 탐색·주 경로인 보이는 메인창 탐색은 그대로 둔다)."""
+    result: list[tuple[int, str, str]] = []
+
+    def _cb(hwnd, acc):
+        acc.append((hwnd, win32gui.GetWindowText(hwnd), win32gui.GetClassName(hwnd)))
+
+    win32gui.EnumWindows(_cb, result)
+    return result
+
+
 def find_kakao_main_window() -> int:
     """카카오톡 메인창(친구/채팅 목록) hwnd 탐색. 실행 안 돼 있으면 예외.
 
     창-제목 탐색과 동일한 방식(_enum_visible_top_level_windows)으로 클래스=
     EVA_Window_Dblclk·제목="카카오톡" 완전일치를 찾는다. hwnd(int)를 반환하는 이유:
     검색 Edit 활성화 여부 판정에 win32 EnumChildWindows가 필요해 uia
-    WindowSpecification보다 hwnd가 다루기 쉽다(open_room_via_search 참조)."""
+    WindowSpecification보다 hwnd가 다루기 쉽다(open_room_via_search 참조).
+
+    2026-07-21 하드닝(INC — 09:30 3방 전량 BLOCKED, 실측 재현): 보이는 창에서 못
+    찾으면 가시성 무관 전체 열거(_enum_all_top_level_windows)로 폴백해 같은 클래스·
+    제목의 창을 찾는다. 트레이 최소화 상태였다면 ShowWindow(SW_SHOW)→
+    ShowWindow(SW_RESTORE)로 자가복원한다(실측 확인: 이 두 호출로 IsWindowVisible이
+    다시 1이 됨). 그래도 없으면 기존과 동일하게 RuntimeError로 명확히 실패한다."""
     for hwnd, title, cls in _enum_visible_top_level_windows():
         if cls == KAKAO_ROOM_WINDOW_CLASS and title.strip() == KAKAO_MAIN_WINDOW_TITLE:
             return hwnd
+
+    for hwnd, title, cls in _enum_all_top_level_windows():
+        if cls == KAKAO_ROOM_WINDOW_CLASS and title.strip() == KAKAO_MAIN_WINDOW_TITLE:
+            log(f"[카카오톡(메인창)] 트레이 최소화 메인창 자가복원 시도(hwnd={hwnd})")
+            try:
+                win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+            except Exception as exc:
+                log(f"[카카오톡(메인창)] 자가복원 ShowWindow 실패(계속 진행): {exc}")
+            time.sleep(0.8)
+            log(f"[카카오톡(메인창)] 트레이 최소화 메인창 자가복원 완료(hwnd={hwnd})")
+            return hwnd
+
     raise RuntimeError("카카오톡 메인창을 찾지 못함 — 앱이 실행 중인지 확인 필요")
 
 
@@ -428,6 +472,10 @@ def open_room_via_search(main_hwnd: int, room_name: str, timeout: float = 10.0):
     if edit_hwnd is None:
         raise RuntimeError(f"[{room_name}] 카톡 검색창 활성화 실패(돋보기 아이콘 클릭 후에도 Edit 못 찾음)")
 
+    # 2026-07-21 하드닝: 실제 조작(검색 Edit 클릭) 직전에 메인창 포그라운드를 한 번 더
+    # 확인한다 — 트레이 복원 직후·탭 순환 이후 포커스가 흔들릴 수 있음(이미 포그라운드인
+    # 기존 정상 경로에는 영향 없는 재확인일 뿐).
+    focus_window(main_win, "카카오톡(메인창)")
     edit = Desktop(backend="win32").window(handle=edit_hwnd)
     edit.click_input()
     time.sleep(0.15)
