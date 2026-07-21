@@ -3826,6 +3826,24 @@ function _processAction(body) {
     return _json({ ok: true, mode: (dtrExec ? 'execute' : 'dryrun'), sheets: dtrOut });
   }
 
+  // ─── (일회성) 타임스탬프 열 시:분:초 표시형식 즉시 적용 — 값엔 시분초 있으나 셀 표시가 날짜전용이라. 2026-07-21 시포·GM ───
+  if (action === 'cpo_lesson_ts_format_0721') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var tsfOut = [];
+    var tsfGids = [LESSON_GID, LESSON_GID_YOUTH];
+    for (var tsfG = 0; tsfG < tsfGids.length; tsfG++) {
+      var tsfSh = _lessonSheet_(tsfGids[tsfG]);
+      if (!tsfSh) { tsfOut.push({ gid: tsfGids[tsfG], error: 'sheet_not_found' }); continue; }
+      var tsfLastRow = tsfSh.getLastRow(), tsfLastCol = tsfSh.getLastColumn();
+      var tsfHdr = tsfSh.getRange(1, 1, 1, tsfLastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+      var tsfCi = _findColExact_(tsfHdr, ['타임스탬프']);
+      if (tsfCi < 0) tsfCi = 0;   // 폴백=A열
+      if (tsfLastRow >= 2) tsfSh.getRange(2, tsfCi + 1, tsfLastRow - 1, 1).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+      tsfOut.push({ gid: tsfGids[tsfG], col: tsfCi + 1, rows: Math.max(tsfLastRow - 1, 0) });
+    }
+    return _json({ ok: true, sheets: tsfOut });
+  }
+
   // ─── (일회성) 유소년강습 '유입경로(자동)' 칸 JSON 오염 정리 — 2026-07-20 시포(GM 승인 정리 5건 中 1) ───
   //   배경: cpo_wsc_contact_migrate13(위)로 28건 중 17건은 이미 Contact로 이관 완료. 남은 11건은 애초
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가
