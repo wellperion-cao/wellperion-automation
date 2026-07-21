@@ -992,9 +992,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 /* 강습 문의 테이블 — 제목(헤더)값 가운데 정렬 통일 + 성함칸 폭 확대(나이 병기). 배973 시포·GM 2026-07-14 */
 .lesson-inq-table thead th{text-align:center !important}
 .lesson-inq-table th:nth-child(2),.lesson-inq-table td:nth-child(2){min-width:132px;width:132px}
-/* CONTACT(연락이력·8번째) 폭 고정 — 문의내용 칸 추가로 고정폭 합이 커져 CONTACT가 0폭으로 눌리던 것 방지. 표는 래퍼(reg-table-wrap overflow-x)로 가로스크롤. 2026-07-21 시포·GM */
-.lesson-inq-table th:nth-child(8),.lesson-inq-table td:nth-child(8){width:240px;min-width:240px}
+/* CONTACT(연락이력·희망요일/시간 칸 추가로 9번째) 폭 고정 — 문의내용 칸 추가로 고정폭 합이 커져 CONTACT가 0폭으로 눌리던 것 방지. 표는 래퍼(reg-table-wrap overflow-x)로 가로스크롤. 2026-07-21 시포·GM */
+.lesson-inq-table th:nth-child(9),.lesson-inq-table td:nth-child(9){width:240px;min-width:240px}
 .lesson-inq-table th:nth-child(5),.lesson-inq-table td:nth-child(5){white-space:normal;word-break:break-word}
+/* 희망 요일/시간(6번째) — 줄바꿈 wrap. 2026-07-21 시포·GM */
+.lesson-inq-table th:nth-child(6),.lesson-inq-table td:nth-child(6){white-space:normal;word-break:break-word}
 .status-chip.status-chip-unfilled{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border)}
 .status-unfilled-tag{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-left:5px;white-space:nowrap;vertical-align:middle}
 .unfilled-summary-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);margin-bottom:10px}
@@ -1835,13 +1837,14 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
               <th style="width:122px">연락처</th>
               <th style="width:230px">강습종목</th>
               <th class="left" style="width:150px">문의내용</th>
+              <th class="left" style="width:150px">희망 요일/시간</th>
               <th style="width:92px">진행상태</th>
               <th style="width:112px">담당</th>
               <th class="left">CONTACT (연락 이력)</th>
             </tr>
           </thead>
           <tbody id="lessonBody_adult">
-            <tr><td colspan="8"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+            <tr><td colspan="9"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -1864,12 +1867,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <th style="width:122px">연락처</th>
             <th style="width:230px">강습종목</th>
             <th class="left" style="width:150px">문의내용</th>
+            <th class="left" style="width:150px">희망 요일/시간</th>
             <th style="width:92px">진행상태</th>
             <th style="width:112px">담당</th>
             <th class="left">CONTACT (연락 이력)</th>
           </tr></thead>
           <tbody id="lessonLossBody_adult">
-            <tr><td colspan="8"><div class="empty-state"><div class="empty-state-title">문의 현황을 먼저 불러오세요</div></div></td></tr>
+            <tr><td colspan="9"><div class="empty-state"><div class="empty-state-title">문의 현황을 먼저 불러오세요</div></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -1892,12 +1896,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <th style="width:122px">연락처</th>
             <th id="lessonWaitSportTh_adult" style="width:230px;cursor:pointer;user-select:none" title="클릭하여 종목별 정렬" onclick="_lessonWaitSortToggle('adult')">강습종목</th>
             <th class="left" style="width:150px">문의내용</th>
+            <th class="left" style="width:150px">희망 요일/시간</th>
             <th style="width:92px">진행상태</th>
             <th style="width:112px">담당</th>
             <th class="left">CONTACT (연락 이력)</th>
           </tr></thead>
           <tbody id="lessonWaitBody_adult">
-            <tr><td colspan="8"><div class="empty-state"><div class="empty-state-title">문의 현황을 먼저 불러오세요</div></div></td></tr>
+            <tr><td colspan="9"><div class="empty-state"><div class="empty-state-title">문의 현황을 먼저 불러오세요</div></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -2010,13 +2015,14 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
               <th style="width:122px">연락처</th>
               <th style="width:230px">강습종목</th>
               <th class="left" style="width:150px">문의내용</th>
+              <th class="left" style="width:150px">희망 요일/시간</th>
               <th style="width:92px">진행상태</th>
               <th style="width:112px">담당</th>
               <th class="left">CONTACT (연락 이력)</th>
             </tr>
           </thead>
           <tbody id="lessonBody_youth">
-            <tr><td colspan="8"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+            <tr><td colspan="9"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -2039,12 +2045,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <th style="width:122px">연락처</th>
             <th style="width:230px">강습종목</th>
             <th class="left" style="width:150px">문의내용</th>
+            <th class="left" style="width:150px">희망 요일/시간</th>
             <th style="width:92px">진행상태</th>
             <th style="width:112px">담당</th>
             <th class="left">CONTACT (연락 이력)</th>
           </tr></thead>
           <tbody id="lessonLossBody_youth">
-            <tr><td colspan="8"><div class="empty-state"><div class="empty-state-title">문의 현황을 먼저 불러오세요</div></div></td></tr>
+            <tr><td colspan="9"><div class="empty-state"><div class="empty-state-title">문의 현황을 먼저 불러오세요</div></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -2067,12 +2074,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <th style="width:122px">연락처</th>
             <th id="lessonWaitSportTh_youth" style="width:230px;cursor:pointer;user-select:none" title="클릭하여 종목별 정렬" onclick="_lessonWaitSortToggle('youth')">강습종목</th>
             <th class="left" style="width:150px">문의내용</th>
+            <th class="left" style="width:150px">희망 요일/시간</th>
             <th style="width:92px">진행상태</th>
             <th style="width:112px">담당</th>
             <th class="left">CONTACT (연락 이력)</th>
           </tr></thead>
           <tbody id="lessonWaitBody_youth">
-            <tr><td colspan="8"><div class="empty-state"><div class="empty-state-title">문의 현황을 먼저 불러오세요</div></div></td></tr>
+            <tr><td colspan="9"><div class="empty-state"><div class="empty-state-title">문의 현황을 먼저 불러오세요</div></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -4303,7 +4311,7 @@ function lessonSetScope(scope, btn, t) {
 
 function _lessonEmpty(t, title, desc) {
   var b = document.getElementById('lessonBody_' + t);
-  if (b) b.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
+  if (b) b.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
     '<div class="empty-state-title">' + esc(title) + '</div>' +
     '<div class="empty-state-desc">' + esc(desc) + '</div></div></td></tr>';
 }
@@ -4345,7 +4353,7 @@ function lessonLoad(t) {
     lessonRenderChips(t); lessonRender(t); renderTodayActionPanel(); _lessonInqCardFallback(t);
     _lessonFreshLabel_(t, st.rows.length, _lsCached.ts);
   } else if (b) {
-    b.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="loading-spinner"></div>' +
+    b.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="loading-spinner"></div>' +
       '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
     // 서버 스냅샷 가속(배·2026-07-16) — 캐시 없는 첫 진입 전용, scope='year'만(전체보기는 데이터가 커
     //   스냅샷 대상에서 제외 — 설계문서 참고, 기존처럼 GAS 라이브 유지). 배경 재검증(_lessonPromise, 아래)은
@@ -4804,6 +4812,8 @@ function _lessonRowHtml(t, r, sportKey, sportLabel) {
     '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '"><span style="' + _lessonSportChipStyle(sportLabel) + '">' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '</span></td>' +
     // 문의내용 셀 — r.note(gvizLessonRows_ iNote 배선, 3105행) 그대로 노출. 길면 title 툴팁·빈값 '—'. 2026-07-21 시포·GM.
     '<td class="left" style="font-size:11px;color:var(--dim);white-space:normal;max-width:220px" title="' + esc(r.note || '') + '">' + esc(r.note ? String(r.note).trim() || '—' : '—') + '</td>' +
+    // 희망 요일/시간 셀 — r.wishTime(gvizLessonRows_ iWish 배선, 3115행) 노출. 2026-07-21 시포·GM.
+    '<td class="left" style="white-space:normal;word-break:break-word;font-size:11px;color:var(--dim)" title="' + esc(r.wishTime || '') + '">' + esc(r.wishTime ? String(r.wishTime).trim() || '—' : '—') + '</td>' +
     '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, sportKey, mgmt.status) +
       ((String(r.status || '').trim() === 'LOSS' && String(r.lossReason || '').trim()) ? '<div style="font-size:10px;color:var(--dim);margin-top:3px;line-height:1.3;white-space:normal">사유: ' + esc(String(r.lossReason).trim()) + '</div>' : '') + '</td>' +
     '<td style="font-size:12px">' + _lessonOwnerSelectHtml(t, r.rowIndex, sportKey, mgmt.owner) + '</td>' +
@@ -4817,7 +4827,7 @@ function _lessonBucketRender(t, statusVal, tbodyId, statLineId, emptyTitle, empt
   var rows = _lessonVisibleRows(t).filter(function(r){ return String(r.status || '').trim() === statusVal; });
   var sl = document.getElementById(statLineId);
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-title">' + esc(emptyTitle) + '</div><div class="empty-state-desc">' + esc(emptyDesc) + '</div></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-title">' + esc(emptyTitle) + '</div><div class="empty-state-desc">' + esc(emptyDesc) + '</div></div></td></tr>';
     if (sl) sl.textContent = '0명'; return;
   }
   var lines = [];
@@ -4905,7 +4915,7 @@ function lessonRender(t) {
   var html = '';
   view.forEach(function(ln){ html += _lessonRowHtml(t, ln.row, ln.sportKey, ln.sportLabel); });
   if (lines.length > view.length) {
-    html += '<tr><td colspan="8" style="text-align:center;padding:12px">' +
+    html += '<tr><td colspan="9" style="text-align:center;padding:12px">' +
       '<button type="button" onclick="lessonShowMore(\'' + t + '\')" style="padding:8px 18px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer">＋ ' + (lines.length - view.length).toLocaleString() + '건 더보기</button>' +
       '<div style="font-size:11px;color:var(--dim);margin-top:5px">표시 ' + view.length + ' / 전체 ' + lines.length.toLocaleString() + '건 · 위 🔍 검색으로 빠르게 찾으세요</div></td></tr>';
   }
