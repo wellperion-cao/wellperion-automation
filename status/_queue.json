@@ -738,5 +738,32 @@
     "artifact": "GM 지시(카톡 알림에서 대표님으로 오표기) 전수조사. kakao_rooms.json(로컬+라이브\nGAS)·kakao_report_sender/auto_daily_report/summary_card/daily_check_share·\ntelegram_bot 다이제스트 스트림 전부 확인 — GM 대상 대표님 호칭 문구 없음.\n저장소 내 '대표' 매치는 전부 전응준 결재란·IG 외부카피 등 별건. 지어내지 않고\n미특정 보고 + GM 확인질문 준비, status/_queue.json ship_no 9573 등록. (CLI ad-hoc · 커밋 922ad4a8)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "922ad4a80ed589f4b9a55428498165a8b4e16593"
+  },
+  {
+    "task_id": "CMO-2026-07-22-CASE-SERIES-TERMINATE-BLOCK",
+    "clevel": "cmo",
+    "title": "[시모] 실전사례 8편(CASE08) 오발행 긴급차단 + 재발송 버그 근본수리 + 시리즈 종결 박제",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-22",
+    "ship_no": 9576,
+    "module": "M1",
+    "surface": "content",
+    "note": "[2026-07-22 GM 크리티컬 지적→웰리 긴급위임] 전날(07-21) 실전사례(종합접수처 심화) 시리즈 종결·AI하루 전환 결정이 디스패처 SSOT에 안 박혀, 07:30 case_series_dispatch.py가 이미 07-20 GM이 취소(폐기)한 CASE08을 새 id(CMO-2026-07-22-CASE08)로 재등록+승인카드 재발송. 긴급차단=해당 큐항목 status 폐기 전환(bot.py 1691 폐기가드로 GM 승인탭 무력화, 발행 원천차단). 근본원인=①종결 결정이 큐(ship9457)·폴더에만 남고 편성표 instagram/_실전사례_2주플랜.md(디스패처 유일 실행SSOT)에 미반영 ②_find_queued_item이 폐기 status를 무시→취소편을 매일 재선정(incidents #267 동종3회 미봉합 잔존). 수리=(a)_find_queued_item에 폐기 포함→취소편 재선정 원천차단 (b)시리즈 종결 킬스위치 신설(_SERIES_TERMINATED_RE, 편성표 상단 「시리즈 상태: 종결」 마커시 디스패처 휴면) (c)편성표 종결 배너·행 상태 정합. --plan-only 실측: 종결 감지→휴면 확인. 후속 AI하루 시리즈(ship9457)는 GM 시안 검수 대기·미발행 유지(자동발행 배선 없음).",
+    "next": "⚓ 커밋·푸시 후 웰리 보고. AI하루 신 시리즈는 별도 편성표로 GM 검수 게이트 유지(이 배에서 자동발행 배선 금지)."
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-6022c829",
+    "clevel": "cpo",
+    "title": "[시포] 배1140 강습 6팀시트 은퇴 재배선 입항(GM 결정) — ERP 이전에 수렴",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9577,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01QeEb14y3PN4qgA85twudds (CLI ad-hoc · 커밋 6022c829)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6022c829e3bbaef5abc33f46a81da513ddea517a"
   }
 ]

@@ -187,6 +187,12 @@ def _queue_items() -> list[dict]:
 
 _CASE_MARKER_RE = re.compile(r"-CASE(\d{2})-")
 
+# 시리즈 종결 킬스위치(2026-07-22 신설) — 재고표 어디든 이 마커가 있으면 디스패처는
+# 선정·복구·발송 없이 즉시 휴면한다. "시리즈를 종결한다"는 전날 결정이 큐(ship)·폴더에만
+# 남고 이 표(디스패처 유일 실행 SSOT)에는 안 박혀 옛 편이 재발송되던 사고의 구조적 차단 —
+# 종결 = 표 상단에 한 줄(예: `시리즈 상태: 종결(YYYY-MM-DD)`) 박으면 코드가 강제한다.
+_SERIES_TERMINATED_RE = re.compile(r"시리즈\s*상태\s*[:：]\s*(종결|중단|폐기)")
+
 
 def _extract_case_num(item_id: str) -> int | None:
     """id 문자열에서 편 번호(-CASE{NN}-)를 추출. 마커 없으면 None."""
@@ -195,11 +201,17 @@ def _extract_case_num(item_id: str) -> int | None:
 
 
 def _find_queued_item(num: int) -> dict | None:
-    """같은 편 번호(CASE{NN})의 review_queue 항목(검수대기/발행완료)을 반환. 없으면 None."""
+    """같은 편 번호(CASE{NN})의 review_queue 항목(검수대기/발행완료/폐기)을 반환. 없으면 None.
+
+    ★'폐기' 포함(2026-07-22 재발방지): GM이 취소(폐기)한 편은 '아직 큐에 없는 새 후보'가
+    아니다. 폐기를 빼면 pick_next_case 가 취소된 편을 매일 새 날짜 id로 재선정·재등록하고
+    승인카드까지 재발송한다(CASE08 동종 사고: 2026-06-14 골프 → 07-19 CASE13 → 07-20/22 CASE08).
+    폐기도 '이미 처리된 편'으로 취급해 재선정을 원천 차단한다.
+    """
     marker = f"-CASE{num:02d}-"
     for item in _queue_items():
         item_id = str(item.get("id", ""))
-        if marker in item_id and item.get("status") in ("검수대기", "발행완료"):
+        if marker in item_id and item.get("status") in ("검수대기", "발행완료", "폐기"):
             return item
     return None
 
@@ -525,6 +537,16 @@ def run(dry_run: bool, plan_only: bool) -> int:
         print(f"[ERROR] {msg}")
         telegram(msg)
         return 1
+
+    # 1.4) 시리즈 종결 킬스위치 — 표에 '시리즈 상태: 종결' 마커가 있으면 아무것도 하지 않고
+    #      정상 종료(선정·복구·발송 없음). 텔레그램 스팸 방지 위해 조용히 로그만 남긴다.
+    try:
+        if _SERIES_TERMINATED_RE.search(INVENTORY.read_text(encoding="utf-8")):
+            print("[INFO] 시리즈 종결 마커 감지 — 디스패처 휴면(선정·복구·발송 없음). "
+                  "후속 시리즈는 신규 편성표로 별도 운영.")
+            return 0
+    except Exception:
+        pass
 
     # 1.5) 선등록(카드 보류) 복구 패스 — 요일 게이트·트랙과 무관하게 재고표 전체 대상.
     #      plan_only 는 부작용 없이 상태만 보여주므로 dry_run 취급(2026-07-19 CASE13 재발방지).
