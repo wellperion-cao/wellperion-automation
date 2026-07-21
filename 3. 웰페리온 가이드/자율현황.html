@@ -436,6 +436,10 @@
     <div class="sec-note">시토가 상시 돌리는 자동화 모듈 — 특징기능·자율수준·정직 꼬리표. 카톡·텔레그램 발신 전체 목록은 '📨 통합 알림 보드'(② 돌아가는 자동화). 배선 표는 하단 '📡 모듈 보고 현황'.</div>
     <div id="registry-card-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
     <div class="routines" id="registry-cards"></div>
+    <details class="coo-details" id="registry-cards-dormant-wrap" style="margin-top:10px;">
+      <summary id="registry-cards-dormant-summary">⏸️ GM 결정 대기 (미발효·휴면) — 0개</summary>
+      <div class="routines" id="registry-cards-dormant" style="margin-top:9px;"></div>
+    </details>
     <div class="sec-note" style="margin:8px 0 0;">자율수준: <b>자율ON</b>=무개입 판단·실행 · <b>반자율</b>=일부 확인 · <b>자동집계</b>=기계 집계 · <b>부분</b>=일부 자동 · <b>수동</b>=사람.</div>
   </section>
 
@@ -607,6 +611,10 @@
     <div class="sec-note">인사 데이터 정합성·온보딩 진척·채용 파이프라인을 무인 감시 — 카드는 등록부(<code>chro-*</code>) 실값 렌더. 배선 표는 하단 '📡 모듈 보고 현황'.</div>
     <div id="registry-card-summary-chro" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
     <div class="routines" id="registry-cards-chro"></div>
+    <details class="coo-details" id="registry-cards-chro-dormant-wrap" style="margin-top:10px;">
+      <summary id="registry-cards-chro-dormant-summary">⏸️ GM 결정 대기 (미발효·휴면) — 0개</summary>
+      <div class="routines" id="registry-cards-chro-dormant" style="margin-top:9px;"></div>
+    </details>
     <div class="sec-note" style="margin:8px 0 0;">게이트: 오피스 명령큐=온디맨드(무인 자동실행 금지) · 비가역 쓰기·발송=매니저/GM 승인 · PII 마스킹 유지 · 고위험 4종=A-6 사전 감사.</div>
   </section>
 
@@ -1826,6 +1834,17 @@
     manual:  { label:'수동',     pill:'idle' }
   };
   var REG_HONESTY = { measured:'실측', estimated:'추정', unmeasured:'미측정' };
+  // 미발효(휴면) 판정 — 순수함수. 등록부 실값 기준(하드코딩 금지). GM 지시 2026-07-21.
+  //   ① enabled===false · ② autonomy가 propose/manual 이고 notify_spec.notify_wired===false ·
+  //   ③ feature/ai_free_fallback 텍스트에 '휴면'·'미발효'·'GM go' 포함 — 셋 중 하나면 미발효.
+  function isDormantModule(m){
+    if(!m) return false;
+    if(m.enabled === false) return true;
+    if((m.autonomy === 'propose' || m.autonomy === 'manual') && m.notify_spec && m.notify_spec.notify_wired === false) return true;
+    var txt = (m.feature || '') + ' ' + (m.ai_free_fallback || '');
+    if(txt.indexOf('휴면') >= 0 || txt.indexOf('미발효') >= 0 || txt.indexOf('GM go') >= 0) return true;
+    return false;
+  }
   function registryCadenceTxt(ns){
     if(!ns) return '';
     var parts = [];
@@ -1859,6 +1878,12 @@
     var el = document.getElementById('registry-cards');
     var smChro = document.getElementById('registry-card-summary-chro');
     var elChro = document.getElementById('registry-cards-chro');
+    var elDormant = document.getElementById('registry-cards-dormant');
+    var elDormantWrap = document.getElementById('registry-cards-dormant-wrap');
+    var elDormantSum = document.getElementById('registry-cards-dormant-summary');
+    var elChroDormant = document.getElementById('registry-cards-chro-dormant');
+    var elChroDormantWrap = document.getElementById('registry-cards-chro-dormant-wrap');
+    var elChroDormantSum = document.getElementById('registry-cards-chro-dormant-summary');
     if(!el) return;
     var mods = (reg && Array.isArray(reg.modules)) ? reg.modules : null;
     if(!mods){
@@ -1866,6 +1891,8 @@
       el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부를 불러오지 못했습니다.</div>';
       if(smChro) smChro.textContent = '등록부를 불러오지 못했습니다.';
       if(elChro) elChro.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부를 불러오지 못했습니다.</div>';
+      if(elDormantWrap) elDormantWrap.style.display = 'none';
+      if(elChroDormantWrap) elChroDormantWrap.style.display = 'none';
       return;
     }
     var mine = mods.filter(function(m){
@@ -1874,10 +1901,21 @@
     // 시로(chro) 모듈은 전용 섹션(sec-chro-autonomy)에 분리 렌더(2026-07-16 매니저 지시) — 나머지는 기존 시토 블록 유지.
     var chroMods = mine.filter(function(m){ return m.owner_role === 'chro'; });
     var restMods = mine.filter(function(m){ return m.owner_role !== 'chro'; });
+    // 발효/미발효 분리(GM 지시 2026-07-21) — isDormantModule 판정만으로 두 배열로 나눠 각자 컨테이너에 append.
+    var restActive  = restMods.filter(function(m){ return !isDormantModule(m); });
+    var restDormant = restMods.filter(isDormantModule);
+    var chroActive  = chroMods.filter(function(m){ return !isDormantModule(m); });
+    var chroDormant = chroMods.filter(isDormantModule);
     if(sm) sm.textContent = '이 창 소속 등록 모듈 ' + restMods.length + '건 (전체 등록부 ' + mods.length + '건 중 · owner_role 보유 신규 스키마만 · 시로 모듈은 전용 섹션)';
-    el.innerHTML = restMods.length ? restMods.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 이 창(자율현황) 소속 모듈이 아직 없습니다.</div>';
+    el.innerHTML = restActive.length ? restActive.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 이 창(자율현황) 소속 발효 모듈이 아직 없습니다.</div>';
+    if(elDormant) elDormant.innerHTML = restDormant.length ? restDormant.map(regCardHtml).join('') : '';
+    if(elDormantSum) elDormantSum.textContent = '⏸️ GM 결정 대기 (미발효·휴면) — ' + restDormant.length + '개';
+    if(elDormantWrap) elDormantWrap.style.display = restDormant.length ? '' : 'none';
     if(smChro) smChro.textContent = '등록부 시로(chro) 모듈 ' + chroMods.length + '건 — 상시 루프 3종(Windows 스케줄러) + GAS 트리거';
-    if(elChro) elChro.innerHTML = chroMods.length ? chroMods.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 시로(chro) 모듈이 아직 없습니다.</div>';
+    if(elChro) elChro.innerHTML = chroActive.length ? chroActive.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 시로(chro) 발효 모듈이 아직 없습니다.</div>';
+    if(elChroDormant) elChroDormant.innerHTML = chroDormant.length ? chroDormant.map(regCardHtml).join('') : '';
+    if(elChroDormantSum) elChroDormantSum.textContent = '⏸️ GM 결정 대기 (미발효·휴면) — ' + chroDormant.length + '개';
+    if(elChroDormantWrap) elChroDormantWrap.style.display = chroDormant.length ? '' : 'none';
   }
 
   // ═══════════ ② 돌아가는 자동화: 상시가동 표 펼치기(구 T2 wpAutoToggle 이식) ═══════════
