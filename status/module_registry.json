@@ -19,12 +19,28 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "자동화 건강 점수판 — 예약작업 실행결과 30분 갱신",
-      "data_source": {"kind": "json", "ref": "status/erp_status.json"},
-      "notify_spec": {"daily": false, "weekly": true, "monthly": false, "channel": "telegram", "bot_id": "자동화현황방"},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "json",
+        "ref": "status/erp_status.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "자동화현황방"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "예약작업이 사람 세션 없이 상시 가동·30분 갱신",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true
     },
     {
@@ -32,12 +48,28 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "자율 틈 감지기 — 정체/재개가능 배 감시(재개=자율태그·정체=surface)",
-      "data_source": {"kind": "json", "ref": "status/gm_aide_scan_log.jsonl"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": "자동화현황방"},
-      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "data_source": {
+        "kind": "json",
+        "ref": "status/gm_aide_scan_log.jsonl"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "자동화현황방"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
       "autonomy": "auto",
       "ai_free_fallback": "06:30 예약 스캔이 무인 가동(게이트 AIDE_RESUMABLE_APPLY)",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true
     },
     {
@@ -45,12 +77,28 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "점검 GAS 파이프 — 시설/지원부 점검 today_live·monthly 집계",
-      "data_source": {"kind": "gas", "ref": "CHECK_API weekly/monthly"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": true, "channel": "telegram", "bot_id": "자동화현황방"},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "gas",
+        "ref": "CHECK_API weekly/monthly"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": true,
+        "channel": "telegram",
+        "bot_id": "자동화현황방"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "GAS가 시트에서 자동 집계·12시 점검관리방 발송",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true
     },
     {
@@ -58,12 +106,29 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "GAS 배포 버전 위생 모니터 — 5개 프로젝트(check·funnel·funnel-v2·todo·voc) 버전수 조회, 200 하드리밋 조기경고(funnel 200버전 배포막힘 재발방지)",
-      "data_source": {"kind": "gas", "ref": "Apps Script API projects.versions.list ×5 scriptId (scripts/gas_version_monitor.py) + status/heartbeats/cto-gas-version-monitor.json"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null, "notify_wired": true},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "gas",
+        "ref": "Apps Script API projects.versions.list ×5 scriptId (scripts/gas_version_monitor.py) + status/heartbeats/cto-gas-version-monitor.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null,
+        "notify_wired": true
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "13시 기존 텔레그램 헬스체크(telegram_health_check.py)에 얹어 매일 무인 점검 — collect()·하트비트는 13시 유지. [2026-07-21 병합 배9420] 임계(≥180) 경보 발신은 cto-self-health-watchdog 일일 디제스트로 이관(중복발신 방지, 역롤백=telegram_health_check.py:249 주석해제)",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true
     },
     {
@@ -71,12 +136,28 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "주간 AI 자기정리·학습 — Before/After 카드 자체발신(일요일 10:30)",
-      "data_source": {"kind": "json", "ref": "status/self_review_log.jsonl"},
-      "notify_spec": {"daily": false, "weekly": true, "monthly": false, "channel": "telegram", "bot_id": null},
-      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "data_source": {
+        "kind": "json",
+        "ref": "status/self_review_log.jsonl"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
       "autonomy": "propose",
       "ai_free_fallback": "일 10:30 예약작업이 무인 가동 — 병합·갱신은 자율(스냅샷 가역), 삭제·실발송은 GM 승인 게이트 뒤",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -86,12 +167,28 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "★운영부 아침 운영 다이제스트 — 매일 07:30, 어제 방 내용·오늘 챙길 것·업무·문의·종합접수를 자동 정리해 발송(승인 게이트)",
-      "data_source": {"kind": "json", "ref": "1. AI자료_아카이브/11_카카오톡/★운영부/ (gitignore·비추적: 대화 원문·요약·원장·대기)"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "json",
+        "ref": "1. AI자료_아카이브/11_카카오톡/★운영부/ (gitignore·비추적: 대화 원문·요약·원장·대기)"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "semi",
       "ai_free_fallback": "내보내기(kakao_export_chat)·다이제스트 생성 파이프 무인(예약 07:30 Wellperion-Ops-Morning-Digest-0730). 문의·종합접수·예약·업무 숫자=결정론적 실측, 어제 방 대화 요약만 Claude. 방 전송은 GM 승인 게이트(라이브=GM go+구성원 고지)=오발송 0. [2026-07-21 병합 배9420 #2] 아침/밤 다이제스트 공용 수집층 scripts/collectors/ops_shared.py로 GAS URL·gas_get·시각유틸 단일화(동작보존·라이브 전후 바이트동일 검증). 종합접수 수집 통합은 아침(전체미해결)·밤(당일createdAt) 집합이 실제 달라 보류",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -101,12 +198,28 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "카톡 매출·운영 보고 — 매일 09:30 매출 이미지를 카톡 3방(회장님·관리부·운영부)에 무인 발송(휴관일 인지)",
-      "data_source": {"kind": "sheet", "ref": "매출보고 '보고' 탭 H2:S21 시트 export + status/kakao_last_send.json"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "kakao", "bot_id": null},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "sheet",
+        "ref": "매출보고 '보고' 탭 H2:S21 시트 export + status/kakao_last_send.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "kakao",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "auto",
       "ai_free_fallback": "시트 export→이미지→카톡 PC앱 UI 자동전송, AI 세션 불요. 킬스위치 status/kakao_auto_send.json",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -116,12 +229,28 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "🌙 점검 현황 통일 발송 — 텔레그램 점검관리방(주말 20:00/평일 22:30) + 카톡 23:00 '운영+시설+지원+주차' 방에 시설·지원·주차 3섹션 핵심요약을 공용 모듈(support_check_summary.py)로 동일 포맷 무인 발송. 주말 회차 정합(오후조 유령행 제거)·남녀 구역 분리·미점검 회차 전부 짚기·시설 작업일지·반복이슈 승격. 2026-07-19 GM go 라이브 발효(v3)",
-      "data_source": {"kind": "gas", "ref": "점검 GAS(today_live 지원·board+monthly 시설·weekly 주차) + 공용 렌더 scripts/support_check_summary.py(텔레그램·카톡 단일 진실) + status/heartbeats/cto-kakao-check-share.json"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "kakao+telegram", "bot_id": null},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "gas",
+        "ref": "점검 GAS(today_live 지원·board+monthly 시설·weekly 주차) + 공용 렌더 scripts/support_check_summary.py(텔레그램·카톡 단일 진실) + status/heartbeats/cto-kakao-check-share.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "kakao+telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "auto",
       "ai_free_fallback": "공용 렌더(support_check_summary.py)→ 텔레그램=daily_scheduler 크론(주말 20:00/평일 22:30 점검관리방)·카톡=점검 GAS→텍스트→카톡 PC UI 자동전송(예약 23:00 Wellperion-Kakao-CheckStatus-Share-2300). AI 세션 불요",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -131,12 +260,28 @@
       "owner_role": "cmo",
       "owner_nick": "시모",
       "feature": "콘텐츠 허브 — 기반→제작→검수→발행→성과→환류 한 흐름(M1 단일화). 제작/검수대기/발행완료 카운트 + 콘텐츠→문의 채널별 성과. AI 없이 자체 가동(검수·발행·성과=도구)·제품화(기반 교체)",
-      "data_source": {"kind": "json", "ref": "3. 웰페리온 가이드/cmo/review/review_queue.json"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": "자동화현황방"},
-      "front_card": {"window": "M1", "anchor": "m1-review"},
+      "data_source": {
+        "kind": "json",
+        "ref": "3. 웰페리온 가이드/cmo/review/review_queue.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "자동화현황방"
+      },
+      "front_card": {
+        "window": "M1",
+        "anchor": "m1-review"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "review_queue.json 상태전이를 사람이 직접 조작·집계 가능(AI 불요)",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -146,12 +291,28 @@
       "owner_role": "cmo",
       "owner_nick": "시모",
       "feature": "마케팅 퍼널·채널 성과 — 채널별 문의·전환율(정직 꼬리표)",
-      "data_source": {"kind": "json", "ref": "status/kpi_values.json"},
-      "notify_spec": {"daily": false, "weekly": true, "monthly": true, "channel": "telegram", "bot_id": "자동화현황방"},
-      "front_card": {"window": "M1", "anchor": "m1-dash"},
+      "data_source": {
+        "kind": "json",
+        "ref": "status/kpi_values.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": true,
+        "channel": "telegram",
+        "bot_id": "자동화현황방"
+      },
+      "front_card": {
+        "window": "M1",
+        "anchor": "m1-dash"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "kpi_collector.py가 일2회 자동집계(사람/AI 세션 불요)",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -161,12 +322,28 @@
       "owner_role": "cmo",
       "owner_nick": "시모",
       "feature": "개인계정 실전사례 시리즈 자동 디스패치 — 평일 07:30 재고(06~09) 순차 선정·검수카드 발송, GM 텔레그램 승인 후 자동 발행",
-      "data_source": {"kind": "json", "ref": "instagram/_실전사례_2주플랜.md + 3. 웰페리온 가이드/cmo/review/review_queue.json (case_series_dispatch.py)"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "json",
+        "ref": "instagram/_실전사례_2주플랜.md + 3. 웰페리온 가이드/cmo/review/review_queue.json (case_series_dispatch.py)"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "semi",
       "ai_free_fallback": "예약작업이 평일 07:30 무인 가동 — 재고 대본(instagram/namuk.wellperion/ 06~09 슬라이드+caption) 순차 선정·검수카드 발송은 자동, 실발행은 GM 텔레그램 [✅승인] 게이트 뒤. 재고 소진 시 발송 대상 0으로 자연 종료",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -176,12 +353,28 @@
       "owner_role": "cmo",
       "owner_nick": "시모",
       "feature": "발행완료 → 콘텐츠 1건 통합요약 자동발신 (문의·컨택·등록 알림방) — 채널별 조각 대신 한 장, 5채널 링크 묶음",
-      "data_source": {"kind": "json", "ref": "scripts/publish_digest.py + scripts/.publish_digest_sent.json (ig_review_publish_watcher.py:738 배선)"},
-      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": "문의·컨택·등록 알림"},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "json",
+        "ref": "scripts/publish_digest.py + scripts/.publish_digest_sent.json (ig_review_publish_watcher.py:738 배선)"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "문의·컨택·등록 알림"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "auto",
       "ai_free_fallback": "발행 감시기(--once) 런 종료 시 자동 호출 — 토큰 .env 직접 로드·멱등 원장(.publish_digest_sent.json)으로 1콘텐츠 1회 보장, 토큰 없으면 [ERROR] 로그(조용한 실패 없음). AI 세션 불요",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -191,12 +384,29 @@
       "owner_role": "cmo",
       "owner_nick": "시모",
       "feature": "⑤ 평가 환류 자동화 — 반응 원장(배31·매일 09:30 자동수집)→주간 콘텐츠 Top/Bottom 시그널→다음 기획 반영",
-      "data_source": {"kind": "json", "ref": "status/ig_engagement_ledger.json + scripts/weekly_marketing_feedback.py + status/briefs/CMO-weekly-feedback-{date}.md"},
-      "notify_spec": {"daily": false, "weekly": true, "monthly": false, "channel": null, "bot_id": null, "notify_wired": false},
-      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "data_source": {
+        "kind": "json",
+        "ref": "status/ig_engagement_ledger.json + scripts/weekly_marketing_feedback.py + status/briefs/CMO-weekly-feedback-{date}.md"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": null,
+        "bot_id": null,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
       "autonomy": "propose",
       "ai_free_fallback": "반응 원장 매일 자동수집(09:30)→주간 평가브리프 생성, 실측 데이터 축적 후 v2 자동채점",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -206,12 +416,29 @@
       "owner_role": "cmo",
       "owner_nick": "시모",
       "feature": "발행 루프를 감싸는 상위 루프 — 콘텐츠 1건=반응 성적표 1장(IG 도달·당근 조회/찜·카페 조회 실측, 클릭 아님) → 최근 발행분 대비 상대 판정(저조/정상범위/판정보류) → 저조 시 로드맵 근거 개선안 GM께 제안(반무인, 자동 재발행 없음). 배834(북극성 제작 루프) 폐루프의 클릭 대체 입력.",
-      "data_source": {"kind": "json", "ref": "status/cmo_reaction_scorecard.json (status/ig_reach_ledger.json + 3. 웰페리온 가이드/cmo/funnel/engagement/engagement_feed.json 재조합, scripts/reaction_scorecard.py)"},
-      "notify_spec": {"daily": false, "weekly": true, "monthly": false, "channel": "telegram", "bot_id": "GM 업무보고봇방(TELEGRAM_CHAT_ID)", "notify_wired": true},
-      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "data_source": {
+        "kind": "json",
+        "ref": "status/cmo_reaction_scorecard.json (status/ig_reach_ledger.json + 3. 웰페리온 가이드/cmo/funnel/engagement/engagement_feed.json 재조합, scripts/reaction_scorecard.py)"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "GM 업무보고봇방(TELEGRAM_CHAT_ID)",
+        "notify_wired": true
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
       "autonomy": "propose",
       "ai_free_fallback": "IG 도달(09:45)·당근/블로그 RSS(09:30) 자동수집 결과를 사람이 review_queue.json·engagement_feed.json에서 직접 대조해 저조 편을 눈으로 판별 가능",
-      "feedback": {"enabled": true, "audience": "gm", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -221,12 +448,28 @@
       "owner_role": "cmo",
       "owner_nick": "시모",
       "feature": "CMO 자율화 두뇌(레퍼런스) — M3→M1 병합·모듈별 자동보고 뼈대(채널 자격증명 웹등록·자동로그인 로드맵, 타 C-Level 복제 템플릿)",
-      "data_source": {"kind": "doc", "ref": "docs/superpowers/specs/2026-07-09-clevel-autonomy-shared-platform-design.md"},
-      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
-      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "data_source": {
+        "kind": "doc",
+        "ref": "docs/superpowers/specs/2026-07-09-clevel-autonomy-shared-platform-design.md"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
       "autonomy": "semi",
       "ai_free_fallback": "채널·검수·발행·제작 단일흐름 라이브 가동 중(M1), 모듈별 자동보고는 등록부 배선까지 완료·발효는 웰리 전사 텔레그램 통합정책(방 배정·bot_id) 대기",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -236,12 +479,28 @@
       "owner_role": "coo",
       "owner_nick": "시우",
       "feature": "부서별 점검 완료율·이상 한눈에 (운영 점검 현황)",
-      "data_source": {"kind": "gas", "ref": "CHECK_API weekly&dept=facility / today_live&dept=support + status/heartbeats/coo-check-status.json"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": "자동화현황방"},
-      "front_card": {"window": "O1", "anchor": "o1-module-hub"},
+      "data_source": {
+        "kind": "gas",
+        "ref": "CHECK_API weekly&dept=facility / today_live&dept=support + status/heartbeats/coo-check-status.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "자동화현황방"
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "o1-module-hub"
+      },
       "autonomy": "auto",
       "ai_free_fallback": "GAS가 시트에서 자동 집계, 08시 통합보고 합류·이상 즉시 알림(등록부 구동)",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -251,12 +510,28 @@
       "owner_role": "coo",
       "owner_nick": "시우",
       "feature": "업무·결재 현황 — 활성 업무·결재 대기·마감 초과",
-      "data_source": {"kind": "gas", "ref": "TODO_API action=todo_list (클라 산식) + status/heartbeats/coo-work-approval.json"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": "자동화현황방"},
-      "front_card": {"window": "O1", "anchor": "o1-module-hub"},
+      "data_source": {
+        "kind": "gas",
+        "ref": "TODO_API action=todo_list (클라 산식) + status/heartbeats/coo-work-approval.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "자동화현황방"
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "o1-module-hub"
+      },
       "autonomy": "auto",
       "ai_free_fallback": "GAS 시트가 업무·결재 원장을 상시 보유, 클라이언트가 실시간 집계",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -266,12 +541,28 @@
       "owner_role": "coo",
       "owner_nick": "시우",
       "feature": "전사 일정 SSOT — 반복 의무·법정 점검 단일출처(부서별 필터·기한 도래 선별·업무결재 예행연동)",
-      "data_source": {"kind": "json", "ref": "status/schedule_ssot.json"},
-      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
-      "front_card": {"window": "O1", "anchor": "전사_일정.html"},
+      "data_source": {
+        "kind": "json",
+        "ref": "status/schedule_ssot.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "전사_일정.html"
+      },
       "autonomy": "semi",
       "ai_free_fallback": "schedule_ssot.json을 사람이 전사_일정.html 편집모드로 직접 관리, schedule_ssot.py가 기한 도래분 선별. AI 세션 불요",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "unmeasured"
@@ -281,12 +572,28 @@
       "owner_role": "coo",
       "owner_nick": "시우",
       "feature": "월간운영계획·전사회의 — 부서별 매출목표·이니셔티브·반기 리뷰 SSOT",
-      "data_source": {"kind": "json", "ref": "status/monthly_ops_plan.json"},
-      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
-      "front_card": {"window": "O1", "anchor": "o1-module-hub"},
+      "data_source": {
+        "kind": "json",
+        "ref": "status/monthly_ops_plan.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "o1-module-hub"
+      },
       "autonomy": "semi",
       "ai_free_fallback": "월간운영계획.html·전사회의.html이 monthly_ops_plan.json·sales_targets.json을 직접 렌더 — GM·부서장이 화면서 직접 열람, AI 세션 불요",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -296,12 +603,28 @@
       "owner_role": "coo",
       "owner_nick": "시우",
       "feature": "공지·안내문 서식 생성·저장 — 인쇄용 공지 템플릿(공용 GAS 저장목록)",
-      "data_source": {"kind": "gas", "ref": "TODO_API action=notice_list (저장 공지 목록)"},
-      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
-      "front_card": {"window": "O1", "anchor": "o1-module-hub"},
+      "data_source": {
+        "kind": "gas",
+        "ref": "TODO_API action=notice_list (저장 공지 목록)"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "o1-module-hub"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "실무진이 템플릿 화면서 공지문 직접 작성·저장(공유 GAS), AI 세션 불요",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -311,12 +634,28 @@
       "owner_role": "cpo",
       "owner_nick": "시포",
       "feature": "문의 라이프사이클 일일 액션(미컨택·오늘 상담·이탈위험)",
-      "data_source": {"kind": "gas", "ref": "Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats + status/heartbeats/cpo-inquiry-daily-actions.json"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": "자동화현황방"},
-      "front_card": {"window": "문의회원", "anchor": "cpoReportStatusLine"},
+      "data_source": {
+        "kind": "gas",
+        "ref": "Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats + status/heartbeats/cpo-inquiry-daily-actions.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "자동화현황방"
+      },
+      "front_card": {
+        "window": "문의회원",
+        "anchor": "cpoReportStatusLine"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "상담사가 문의회원 화면서 라이프사이클 CRUD·집계 자동",
-      "feedback": {"enabled": true, "audience": "clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "estimated"
@@ -326,12 +665,28 @@
       "owner_role": "cpo",
       "owner_nick": "시포",
       "feature": "회원 현황 롤업(신규문의·문의→가입 전환율·이탈·예약활성)",
-      "data_source": {"kind": "gas", "ref": "Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats + status/heartbeats/cpo-member-rollup.json"},
-      "notify_spec": {"daily": false, "weekly": true, "monthly": true, "channel": "telegram", "bot_id": "자동화현황방"},
-      "front_card": {"window": "문의회원", "anchor": "cpoReportStatusLine"},
+      "data_source": {
+        "kind": "gas",
+        "ref": "Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats + status/heartbeats/cpo-member-rollup.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": true,
+        "channel": "telegram",
+        "bot_id": "자동화현황방"
+      },
+      "front_card": {
+        "window": "문의회원",
+        "anchor": "cpoReportStatusLine"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "상담사가 문의회원 화면서 라이프사이클 CRUD·집계 자동",
-      "feedback": {"enabled": true, "audience": "clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "estimated"
@@ -341,12 +696,29 @@
       "owner_role": "cpo",
       "owner_nick": "시포",
       "feature": "시트 칸 계약 점검기 — 문의·회원·강습 6개 시트 헤더/값 규칙/시트관계 대조(재발방지 A안 0단계, 2026-07-20 GM 확정)",
-      "data_source": {"kind": "json", "ref": "ssot/sheet_columns.json"},
-      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": 8254867551, "notify_wired": false},
-      "front_card": {"window": "자율현황", "anchor": "sec-cpo-autonomy"},
+      "data_source": {
+        "kind": "json",
+        "ref": "ssot/sheet_columns.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": 8254867551,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "sec-cpo-autonomy"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "매일 07:50 예약작업(daily_scheduler.py 직결, module_reporter 미경유)이 무인 대조 — 정상이면 완전 침묵, 어긋남만 지문(sheet+col+유형) dedup 후 1회 업무보고방 알림",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -356,12 +728,28 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "주간 페이지 위생 자동화 — 하위모델 전수감사→죽은코드(A) grep-0 게이트 통과 시 자동삭제·나머지(B/C/D)는 정리안 제안, 매주 일요일 09:00",
-      "data_source": {"kind": "json", "ref": "status/page_hygiene_proposal_{date}.md"},
-      "notify_spec": {"daily": false, "weekly": true, "monthly": false, "channel": "telegram", "bot_id": "자동화현황방"},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "json",
+        "ref": "status/page_hygiene_proposal_{date}.md"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "자동화현황방"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "semi",
       "ai_free_fallback": "예약 Wellperion-Weekly-Page-Hygiene-Sun-0900이 무인 감사·제안서 생성·텔레그램 요약까지 수행. 카테고리 A 자동삭제만 게이트 PAGE_HYGIENE_APPLY(기본 OFF)+grep-0/snippet고유/파싱무결성 3중 게이트 뒤 — B/C/D는 항상 GM 승인 대기",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -371,12 +759,60 @@
       "owner_role": "ceo",
       "owner_nick": "웰리",
       "feature": "GM 보좌 자율화 두뇌 — GM 성향·놓친 것 학습·선제 포착(재개가능 배 자율태그·정체 surface·프로필 일일갱신)",
-      "data_source": {"kind": "json", "ref": "status/gm_aide_scan_log.jsonl + status/gm_profile.md"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
-      "front_card": {"window": "자율현황", "anchor": "layer-autonomy"},
+      "data_source": {
+        "kind": "json",
+        "ref": "status/gm_aide_scan_log.jsonl + status/gm_profile.md"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
       "autonomy": "auto",
       "ai_free_fallback": "06:30 예약 gm_aide_scan.bat 무인 가동 — 프로필 갱신+포착+3게이트(GM_AIDE_AUTO_EXEC·AIDE_RESUMABLE_APPLY·AIDE_VERIFY_APPLY)",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
+    },
+    {
+      "id": "ceo-hangro-review",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "항로 검수·종착지 두뇌 — 배 상태 정직성 검수(5종: 오완료·정체·표류·오라벨·종착지없음)+종착지(다음 한 수+최종 북극성) LLM 추천→GM 카드 핑(간격제어). 게이트 HANGRO_APPLY OFF=제안만(휴면·라이브 반영 0), 라이브 발효=GM go",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/hangro_pending.json + status/hangro_decisions.jsonl"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
+      "autonomy": "propose",
+      "ai_free_fallback": "규칙 폴백(brain_fallback)으로 claude 없이 종착지 후보 생성·검수는 상수 판정(stall_watch·_classify 재사용)",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -386,12 +822,28 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "문의회원 읽기 서버 스냅샷 — 3분 주기로 멤버십·강습(연간뷰) 문의 목록을 GAS에서 조회해 status/inquiry_snapshot_*.json에 무인 발행, 페이지 첫 진입 0초 렌더용 가속층(진실=여전히 배경 gviz/GAS 재검증, 스냅샷은 콜드 화면 전용)",
-      "data_source": {"kind": "gas", "ref": "member_inquiry_list / lesson_inquiry_list(scope=year) + status/inquiry_snapshot_member.json + status/inquiry_snapshot_lesson.json"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": null, "bot_id": null},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "gas",
+        "ref": "member_inquiry_list / lesson_inquiry_list(scope=year) + status/inquiry_snapshot_member.json + status/inquiry_snapshot_lesson.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": null,
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "예약 Wellperion-CPO-Inquiry-Snapshot-3min(3분 간격) 무인 가동 — 읽기 전용, 실패해도 페이지 실시간 재검증 경로 무영향(fail-soft, 직전 값 carry-forward)",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -401,12 +853,29 @@
       "owner_role": "chro",
       "owner_nick": "시로",
       "feature": "일일 정합성 스윕(설계만·미가동) — HR 허브·라이브 데이터 11항목 자동 점검(사진404·공고·KPI·배지·평점·PII·주경로 하트비트·폴더미등록·나이 교차검증·가산점 클램프) + 이력서 주경로 자가치유",
-      "data_source": {"kind": "json", "ref": "wellperion-hr/drafts/loops/ 스윕 결과(델타 보고) — 실체 없음"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": null, "bot_id": null, "notify_wired": false},
-      "front_card": {"window": "자율현황", "anchor": "sec-chro-autonomy"},
+      "data_source": {
+        "kind": "json",
+        "ref": "wellperion-hr/drafts/loops/ 스윕 결과(델타 보고) — 실체 없음"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": null,
+        "bot_id": null,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "sec-chro-autonomy"
+      },
       "autonomy": "auto",
       "ai_free_fallback": "2026-07-20 정정: 'Windows 예약작업 CHRO_DailyIntegritySweep(매일 09:33) 무인 가동' 이전 표기는 사실 아님으로 확인 — Get-ScheduledTask 전수조회 0건 + TaskScheduler 이벤트로그 0건 + 이 작업을 수행하는 스크립트 자체가 저장소에 존재하지 않음(wellperion-hr 디렉터리도 이 PC 어디에도 없음). 설계만 되고 실제 가동한 적이 없는 것으로 판단. INC-025 참조.",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": false,
       "honesty_default": "measured"
@@ -416,12 +885,29 @@
       "owner_role": "chro",
       "owner_nick": "시로",
       "feature": "온보딩 위클리 워치(주간 자동집계 레이어 미구축) — 하부 HR 백엔드 온보딩 체크인 API는 라이브 확인됨, 30-60-90 진척 주간 관찰·보고 자동화 자체는 없음",
-      "data_source": {"kind": "gas", "ref": "HR 백엔드 db:onbo — exec URL 라이브 확인됨(2026-07-20 read-only 프로브 성공), 주간 집계 레이어 없음"},
-      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": null, "bot_id": null, "notify_wired": false},
-      "front_card": {"window": "자율현황", "anchor": "sec-chro-autonomy"},
+      "data_source": {
+        "kind": "gas",
+        "ref": "HR 백엔드 db:onbo — exec URL 라이브 확인됨(2026-07-20 read-only 프로브 성공), 주간 집계 레이어 없음"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": null,
+        "bot_id": null,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "sec-chro-autonomy"
+      },
       "autonomy": "propose",
       "ai_free_fallback": "2026-07-20 정정: 'Windows 예약작업 OnboardingWeeklyWatch(매주 목 10:03) 무인 가동' 이전 표기는 사실 아님 — Get-ScheduledTask·이벤트로그 0건. 단 하부 인프라는 진짜다: chro/hub/onboarding.html·onboarding-self.html 이 쓰는 GAS 웹앱(AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ, action=onbo-checkin-read/save)을 read-only로 직접 호출해 라이브 확인(pin_invalid 앱레벨 응답 수신, 시스템 오류 아님). 이건 사람이 쓰는 인터랙티브 체크인 도구이지 자동 주간 워치가 아님 — 그 위에 얹을 자동 집계·발신 레이어는 미구축. INC-025 참조.",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": false,
       "honesty_default": "measured"
@@ -431,12 +917,29 @@
       "owner_role": "chro",
       "owner_nick": "시로",
       "feature": "주간 효율 리포트(설계만·미가동) — 위임률·홉 낭비·반복작업 회고(A-7) 구상. '7/17 정기 무인 완주 확증' 표기는 근거 없음으로 확인되어 철회",
-      "data_source": {"kind": "json", "ref": "wellperion-hr/drafts/loops/ 주간 리포트 — 실체 없음"},
-      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": null, "bot_id": null, "notify_wired": false},
-      "front_card": {"window": "자율현황", "anchor": "sec-chro-autonomy"},
+      "data_source": {
+        "kind": "json",
+        "ref": "wellperion-hr/drafts/loops/ 주간 리포트 — 실체 없음"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": null,
+        "bot_id": null,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "sec-chro-autonomy"
+      },
       "autonomy": "propose",
       "ai_free_fallback": "2026-07-20 정정: 47f6b8b1(7/17)이 'Windows 예약작업 WeeklyEfficiencyReport(매주 금 17:07) 무인 가동, 7/17 17:07 정기 무인 완주 확증'이라 기록했으나 — 이 예약작업은 Get-ScheduledTask 전수조회·TaskScheduler 이벤트로그 어디에도 흔적이 0건, 이를 수행할 스크립트도 저장소에 없음. '완주 확증'의 근거를 이 저장소·이 PC 어디서도 재현할 수 없어 허위 표기로 판단, enabled false로 되돌림. INC-025 참조.",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": false,
       "honesty_default": "measured"
@@ -446,12 +949,28 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "🔇 모듈 침묵 감지기 — 등록부 28개 모듈의 로컬 아티팩트 신선도를 감시, notify_spec 예상주기(daily/weekly/monthly) 초과 침묵만 하루 1통 묶어 발신(정상시 무발신). INC-018(KPI 집계기 6일 침묵) 재발방지를 등록부 전체로 확장(배1307 3차, INC-019).",
-      "data_source": {"kind": "json", "ref": "status/module_silence_log.jsonl"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": null},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "json",
+        "ref": "status/module_silence_log.jsonl"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "스캔·판정·묶음발신 전부 결정론적(AI 세션 불요, scripts/module_silence_detector.py 단독 실행). bot_id 는 의도적으로 null — 발신은 module_reporter.py 의 범용 모듈별 파이프라인이 아니라 이 모듈 자체의 run_detector()가 자동화현황방(telegram_rooms.json 기존 배선)으로 직접 하루 1통 묶어 보낸다(module_reporter 이중 트리거 방지). 예약작업 등록은 GM go 대기 — 현재는 CLI 수동/드라이런만 검증 완료, 상시 무인가동 미시작.",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -461,12 +980,29 @@
       "owner_role": "cto",
       "owner_nick": "시토",
       "feature": "🩺 자가건강 감시 하네스 — 4개 감시모듈(automation-health·gas-version-monitor·module-silence-detector·page-hygiene)의 흩어진 발신을 하루 1통 통합 이상요약으로 묶는 read-only 애그리게이터. 정상=무발신, 이상 섹션만 노출(침묵모듈/GAS버전≥180/자동화건강이상/페이지위생 미조치). 발신경로 4·방 3·토큰로더 4를 단일화(notify.telegram_send→자동화현황방). 2026-07-21 GM '모듈 병합' 지시(배9420 #1).",
-      "data_source": {"kind": "json", "ref": "scripts/self_health_watchdog.py (module_silence_detector.scan_registry + gas_version_monitor.collect + status/erp_status.json + status/page_hygiene_proposal_{date}.md 읽기 조합) + status/self_health_watchdog_log.jsonl"},
-      "notify_spec": {"daily": true, "weekly": false, "monthly": false, "channel": "telegram", "bot_id": "자동화현황방", "notify_wired": true},
-      "front_card": {"window": "자율현황", "anchor": "layer-automation"},
+      "data_source": {
+        "kind": "json",
+        "ref": "scripts/self_health_watchdog.py (module_silence_detector.scan_registry + gas_version_monitor.collect + status/erp_status.json + status/page_hygiene_proposal_{date}.md 읽기 조합) + status/self_health_watchdog_log.jsonl"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "자동화현황방",
+        "notify_wired": true
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "소스 4모듈은 각자 그대로 가동·산출물 생성, 하네스는 그 산출물을 읽어 결정론적으로 묶음(AI 세션 불요). 게이트 SELF_HEALTH_WATCHDOG_LIVE 기본 OFF·dry-run 검증 완료(2026-07-21). 상시 무인가동(예약 1슬롯 편승)은 GM go 대기. GAS 버전경보는 telegram_health_check 13시에서 이 하네스로 이관(역롤백=주석해제).",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
@@ -476,12 +1012,29 @@
       "owner_role": "chro",
       "owner_nick": "시로",
       "feature": "Gmail 공고명 자동취득(미확인) — 잡코리아 지원안내 메일에서 공고명 자동 수집→지원자-공고 배정 근거 적재 주장(7/16 가동 주장, 이 저장소에서 실측 불가)",
-      "data_source": {"kind": "gas", "ref": "cao GAS 웰페리온_잡코리아_공고명취득(30분 트리거)→공고명 manifest — 이 저장소에 clasp 배포·코드·산출물 흔적 0건"},
-      "notify_spec": {"daily": false, "weekly": false, "monthly": false, "channel": null, "bot_id": null, "notify_wired": false},
-      "front_card": {"window": "자율현황", "anchor": "sec-chro-autonomy"},
+      "data_source": {
+        "kind": "gas",
+        "ref": "cao GAS 웰페리온_잡코리아_공고명취득(30분 트리거)→공고명 manifest — 이 저장소에 clasp 배포·코드·산출물 흔적 0건"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": null,
+        "bot_id": null,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "sec-chro-autonomy"
+      },
       "autonomy": "mech",
       "ai_free_fallback": "2026-07-20 확인: 다른 3개(스윕·온보딩워치·효율리포트)와 달리 이 모듈은 부정 증거도 긍정 증거도 없음 — cao 개인 Google 계정 소유 GAS 프로젝트로 추정되어 이 저장소에 .clasp.json·코드·매니페스트·manifest 산출물이 전혀 없다(전체 저장소 grep 0건). '진짜 구글 서버 전용이라 이 저장소가 안 닿는 경우'일 수 있으나, 앞선 3개가 근거 없이 '가동 중'이라 표기됐던 전례가 있어 이 표기도 검증 전까지 신뢰도를 낮춰 보아야 함 — 확인은 cao Google 계정에서 Apps Script 트리거 목록 직접 조회 필요(이 세션 권한 밖). enabled는 보수적으로 유지하되 미확인 표기 추가. INC-025 참조.",
-      "feedback": {"enabled": true, "audience": "gm+clevel", "entries": []},
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
