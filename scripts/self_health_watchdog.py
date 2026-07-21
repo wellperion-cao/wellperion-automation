@@ -11,14 +11,25 @@ erp_status_publisher·weekly_page_hygiene)가 각자 흩어진 채널·흩어진
 그대로 재사용해(재수집·복붙 금지) 하루 1통 "🩺 ERP 자가건강" 디제스트로
 묶는다. 4개 소스 모듈의 동작은 전혀 건드리지 않는다.
 
-섹션 4개, 이상 있는 섹션만 노출(전부 정상이면 무발신):
-  §1 🔇 침묵 모듈   — module_silence_detector.scan_registry() 재사용
+2026-07-22(배9420 #5·웰리 제기 배9421) 이 하네스를 CTO 도메인 4종에서
+**전사 무결성 감시 표준**으로 확장한다 — 등록부 전체에서 "정상=침묵, 이상만
+지문 dedup 후 요약"의 동일 감시 패턴을 쓰는 타 도메인 모듈을 read-only로 편입해
+GM이 하루 1통 전사 이상요약 한 판으로 보게 한다. 1차 편입 = 시포(CPO)
+cpo-sheet-contract-check(매일 07:50). 소스 모듈은 존치·회귀 0(그 모듈은 자기
+방·자기 시각에 그대로 가동, 하네스는 산출물만 읽는다).
+
+섹션 5개, 이상 있는 섹션만 노출(전부 정상이면 무발신):
+  §1 🔇 침묵 모듈   — module_silence_detector.scan_registry() 재사용(등록부 전수)
   §2 📦 GAS 버전    — gas_version_monitor.collect() 재사용, 임계(>=180)만
   §3 🩹 자동화 건강 — status/erp_status.json 읽기 전용(재수집 금지).
                       systems/bridges state=="이상" + automation_health
                       items state in (실패·미실행·불명)만 요약.
   §4 🧹 페이지 위생 — 오늘자 status/page_hygiene_proposal_{date}.md 존재 시
                       미조치 항목 건수 한 줄(없으면 스킵).
+  §5 🔐 시트 계약   — [전사 편입·CPO] cpo_sheet_contract 상태파일 읽기 전용.
+                      미해소·미승인(accepted=false) 위반 + 연속조회실패(>=3일)만.
+                      재점검·네트워크 호출 금지(07:50 소스 모듈이 이미 대조·기록).
+                      accepted(시포가 승인해 침묵처리)는 재노출 안 함(계약 존중).
 
 발신: notify.telegram_send.send() → 자동화현황방(기존 채널 재사용).
 게이트: SELF_HEALTH_WATCHDOG_LIVE 환경변수(기본 OFF)일 때만 --live 가 실발신.
@@ -43,6 +54,9 @@ if _SCRIPTS_DIR not in sys.path:
 import module_silence_detector as _silence  # noqa: E402
 import gas_version_monitor as _gasmon  # noqa: E402
 from module_heartbeat import record_heartbeat  # noqa: E402
+# [전사 무결성 표준 편입 2026-07-22] 시포 시트 계약 점검기(07:50)의 상태파일·임계·로더를
+# 재사용해 STATE_PATH/threshold 드리프트 없이 읽기만 한다(재점검·네트워크 호출 없음).
+from collectors import cpo_sheet_contract as _sheet  # noqa: E402
 
 KST = timezone(timedelta(hours=9))  # 이 저장소 관행(module_silence_detector.py 상단 주석과 동일)
 
@@ -147,6 +161,48 @@ def build_section_page_hygiene(now=None):
     return [f"🧹 페이지 위생 — 오늘자 제안서 미조치 {n}건 ({path.name})"]
 
 
+# ── §5 🔐 시트 계약 무결성 (전사 편입·CPO cpo_sheet_contract 상태 읽기 전용) ──────
+def build_section_sheet_contract():
+    """시포 시트 칸 계약 점검기(매일 07:50)의 상태파일을 읽어 미해소·미승인 위반 + 연속
+    조회실패만 → 라인 리스트. 전부 정상/파일 없음 → None(fail-soft).
+
+    read-only 원칙: 소스 모듈(scripts/collectors/cpo_sheet_contract.py)이 이미 07:50에
+    라이브 시트를 대조·기록한다. 여기서는 그 산출물(status/sheet_contract_state.json)만
+    읽는다 — 재점검·네트워크 호출 금지(§3 erp_status·§4 page_hygiene 와 동일 패턴).
+    accepted=true(시포가 승인해 침묵처리한 위반)는 재노출하지 않는다 — 소스 모듈의
+    dedup·accept 계약을 그대로 존중(전사 표준의 핵심: 소유주가 끈 것은 다시 울리지 않음)."""
+    try:
+        state = _sheet.load_state()
+    except Exception:
+        return None
+    if not isinstance(state, dict):
+        return None
+
+    fps = state.get("fingerprints") or {}
+    unresolved = [rec for rec in fps.values()
+                  if isinstance(rec, dict) and not rec.get("accepted")]
+    streaks = state.get("network_fail_streak") or {}
+    stuck = [(k, n) for k, n in streaks.items()
+             if isinstance(n, int) and n >= _sheet._NETWORK_FAIL_ALERT_STREAK]
+
+    if not unresolved and not stuck:
+        return None
+
+    lines = []
+    if unresolved:
+        lines.append(f"🔐 시트 계약 위반 {len(unresolved)}건(미해소·미승인 · 시포/07:50)")
+        for rec in unresolved[:6]:
+            lines.append(f"  · {rec.get('detail', '?')}")
+        if len(unresolved) > 6:
+            lines.append(f"  … 외 {len(unresolved) - 6}건")
+    if stuck:
+        thr = _sheet._NETWORK_FAIL_ALERT_STREAK
+        lines.append(f"🔐 시트 조회 연속실패 {len(stuck)}건(>={thr}일)")
+        for k, n in stuck:
+            lines.append(f"  · {k} — {n}일 연속")
+    return lines
+
+
 # ── 조립·발신 ─────────────────────────────────────────────────────────────
 def build_digest(now=None):
     """4섹션 조립 → (text|None, sections:dict). 전부 정상이면 text=None."""
@@ -156,6 +212,7 @@ def build_digest(now=None):
         "gas_version": build_section_gas_version(),
         "erp_status": build_section_erp_status(),
         "page_hygiene": build_section_page_hygiene(now=now),
+        "sheet_contract": build_section_sheet_contract(),
     }
     active = [v for v in sections.values() if v]
     if not active:

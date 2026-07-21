@@ -1,19 +1,37 @@
 [
   {
+    "task_id": "CTO-2026-07-22-KAKAO-GM-TITLE-MISNOMER",
+    "clevel": "cto",
+    "title": "[시토] 카톡 알림 GM 호칭 오표기 수리 — 대표님→GM님(전응준 결재란 제외)",
+    "status": "BLOCKED",
+    "priority": "⛵돛단배",
+    "from": "gm",
+    "origin": "gm",
+    "enqueued_at": "2026-07-22",
+    "note": "GM 2026-07-22 지시('카카오톡 알림에서 내가 대표님으로 되어있다. 나는 김남욱 GM인데 이런 실수 반복 안 했으면 좋겠다'). 전수조사(비-worktree 전체): (1) kakao_rooms.json 로컬+라이브 GAS(kakao_rooms_get, T2 카톡전송관리 SSOT) 3방(차의주 회장님=회장님 prefix / 웰페리온 관리부·★운영부=prefix 없음) — GM 대상 대표님 prefix 없음. (2) kakao_report_sender.py·kakao_auto_daily_report.py(build_caption='M.D(요일) 매출 및 운영사항 보고드립니다.'·호칭 자체 없음)·kakao_summary_card.py/_auto.py(HTML카드, 호칭 텍스트 없음)·kakao_daily_check_share.py(마무리='오늘도 수고 많으셨습니다') — GM 대상 호칭 문구 전무. (3) telegram_bot/daily_scheduler.py의 report_stream_1/2/3(★부서장·업무보고방 다이제스트) — 호칭 없음. (4) 저장소 전체 '대표'/'대표님' grep 결과는 전부 정당한 별건: 전응준 결재란(hangro_board.py·ops_mgmt_digest_test.py·.deploy-todo/업무&결재 현황.js의 '대표싸인'·결재role), IG 외부마케팅카피('운동시설 대표님'), telegram_bot/bot.py:236 '✅ 대표님 등록 완료'(텔레그램 owner 최초 /start 1회성 등록 확인문구 — 카카오톡 아님·반복성 없음, 회장님 등록 함정 없이 대표 호환 문구로 존재하나 GM이 지목한 '카카오톡'과 불일치). 결론: 로컬 코드·라이브 GAS 어디서도 GM을 대표님으로 부르는 실제 카카오 알림 문구를 특정하지 못함 — 지어내어 고치지 않고 미특정 보고, GM 확인 질문 준비.",
+    "next": "GM 확인 대기 — 어느 카톡방·어떤 문구였는지 정확히 특정 필요(후보질문: ①9:30 매출보고 3방[회장님/관리부/운영부] 중 어디였나 ②캡션인가 방 이름 표시인가 ③화면 캡처 가능한가 ④혹시 텔레그램(대표님 등록 완료 문구)과 혼동은 아닌지)",
+    "depends_on": "",
+    "ship_no": 9573,
+    "module": "T1",
+    "surface": "autonomy"
+  },
+  {
     "task_id": "CTO-2026-07-21-REPORT-UNIFICATION",
     "clevel": "cto",
     "title": "[시토] 정기 자동보고 통일 재편 — 3스트림(문의+컨택&등록 / 점검+이슈+접수 / 매출+운영+인사) 통일 포맷·텔레그램↔카톡 매핑",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "from": "gm",
     "origin": "gm",
     "enqueued_at": "2026-07-21",
     "note": "GM 2026-07-21 지시. 밤/정기 자동보고를 통일 포맷([하루 일과 정리] 날짜+제목 / 결과값먼저 총N·항목별 / 미처리·지연 리스트업 / 당일처리 1회)으로 재편. 3스트림: #1 문의 및 컨택&등록 현황(문의알림방+카톡★부서장 22:30) #2 시설&지원&주차 점검 및 이슈+종합접수 현황(점검현황방+카톡★운영+시설+지원+주차 22:30, 접수는 GM 지시로 점검현황방 병합) #3 매출 및 운영+인사 현황(업무보고방+카톡 회장님·관리부·★운영부 09:30, 업무SSOT 자동조립=GM 수동작업 해소). 시스템감시(자동화현황방 watchdog 배9420)는 별개 유지. 반복 텔레그램 테스트(업무보고방 8254867551)로 포맷 확정: #1=msg5618(멤버십 등급만·컨택&등록[진행상태]·담당미배정 리스트노출+3일+ 촉구👉) / #3=msg5624 v3(1496자·⏰지연17 체크리스트+카테고리 건수요약+⏳임박D7+📋결재대기+🎯분기목표, GM '너무길다'→54%압축 후 ok 확정). 판정 정본 재사용(컨택=contacts≥1·등록=SUC/단기SUC·todo_list 카테고리/종료일 D-day/결재상태·분기목표=monthly_ops_plan strategy_roadmap). 리퍼런스 구현=scripts/ops_inquiry_contact_digest_test.py·scripts/ops_mgmt_digest_test.py. 상위=배9102(밤 병합) 확장. #3 자동조립=시우(COO) 운영 종합 자동보고 최종목표 씨앗→인계 제기 예정.",
-    "next": "프로덕션화 순서: ①#3 업무보고방 일일 스케줄(GM방=안전) ②매출 시트 연동(placeholder 해소) ③#1 daily_scheduler 22:30 이식(옛 종목별 미처리표 A.대체·강력 테스트행필터) ④#2 점검+접수 병합 ⑤카톡 미러(★부서장/★운영+시설+지원+주차/3방)=GM go ⑥3방 매핑 자율현황 board 박제 ⑦시우(COO) 최종목표 인계 제기. 카톡·실무진방 라이브발신=GM go 게이트.",
+    "next": "카카오3채널 GM go 승인 후 kakao_go=True 활성화",
     "depends_on": "",
     "ship_no": 9424,
     "module": "T1",
-    "surface": "autonomy"
+    "surface": "autonomy",
+    "processed_at": "2026-07-22",
+    "artifact": "commit:a81a1d5d"
   },
   {
     "task_id": "CTO-2026-07-21-KAKAO-TRAY-AUTORESTORE",
@@ -302,11 +320,11 @@
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-18",
     "ship_no": 1307,
-    "note": "[웰리 북극성 추천 승인 2026-06-29] / 🌟 북극성: ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자\n📍 지금: 활성 1척 · 완료건 next 12건 · KPI 완결률=0.0, 완료=0, 활성=1\n👉 오늘 한 수: AI CEO 북극성 'ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하' 향한 다음 브릿지 한 칸 설계 (신호①) / 근거: 신호① 북극성 갭 — [ceo] 북극성 서술 대비 비어있는 다음 걸음(소유: home, G1)",
-    "next": "",
+    "note": "[웰리 북극성 추천 승인 2026-06-29] / 🌟 북극성: ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자\n📍 지금: 활성 1척 · 완료건 next 12건 · KPI 완결률=0.0, 완료=0, 활성=1\n👉 오늘 한 수: AI CEO 북극성 'ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하' 향한 다음 브릿지 한 칸 설계 (신호①) / 근거: 신호① 북극성 갭 — [ceo] 북극성 서술 대비 비어있는 다음 걸음(소유: home, G1)\n[GM 인터뷰 답변 2026-07-22] 브릿지 방향 확정: '비슷한 맥락끼리 병합해서 하나의 자동화 모듈이 필요해'. → 북극성 다음 한 칸 = 유사 맥락 자율화 모듈들을 단일 자동화 모듈로 수렴(병합). 이미 진행 중인 시토 배9420(모듈 병합·5클러스터)·웰리 배9421(감시 이중등록 표기정리+전사 무결성 표준화)과 동일 맥락 → 본 북극성 배는 배9421(전사 무결성 감시 단일 하네스 표준화)로 수렴·오케스트레이션. 신규 중복 배 생성 금지. 웰리=두뇌(설계·위임·검증), 엔진=시토.",
+    "next": "웰리: 배9421로 수렴 실행 — 등록부 28모듈 전수 재검토로 '비슷한 맥락' 병합 후보 확정 → 시토 #1 자가건강 하네스를 전사 무결성 표준으로 확장(cpo-sheet-contract·chro 편입, 하루 1통 전사 이상요약 한판). 시토에 설계·구현 위임, 웰리 검증.",
     "depends_on": "",
-    "aide_interview_needed": true,
-    "aide_interview_reason": "난이도 🛳️크루즈(무거움) — 안전 기본 park"
+    "aide_interview_needed": false,
+    "aide_interview_reason": "[해제 2026-07-22] GM 인터뷰 답변 수신 — 방향 확정(모듈 병합→단일 자동화 모듈), 배9421로 수렴"
   },
   {
     "task_id": "NEXT-20260718-125827",
@@ -678,5 +696,30 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 c5e49461)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "c5e49461ac86b40f0fe00fea5926e87f5c5318b0"
+  },
+  {
+    "task_id": "CTO-2026-07-22-ADHOC-a81a1d5d",
+    "clevel": "cto",
+    "title": "[시토] 야간 자동보고 3스트림 통일화 — report_stream_1/2/3 + daily_scheduler 연결 (CTO-2026-07-21-REPORT-UNIFICATION)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9572,
+    "artifact": "Stream #1 문의+컨택&등록 → 문의알림방(-5516675010) · ★부서장 (msg5618 포맷)\nStream #2 점검+이슈+종합접수 병합 → 점검현황방(-5136037543) · ★운영+시설+지원+주차\nStream #3 매출+운영+인사 → 업무보고방(GM) 09:30 · 카카오3방(GM go 게이트)\n종합접수처(-5065206276) 별도 스트림 폐지 — stream #2에 병합 (GM 2026-07-21 지시)\n카카오 전채널 kakao_go=False 기본 게이트 — 실발송 GM go 후속 과제 (CLI ad-hoc · 커밋 a81a1d5d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a81a1d5d9b4183eae955d15b46fdf9120a6fd957"
+  },
+  {
+    "task_id": "NEXT-20260722-075343",
+    "clevel": "cto",
+    "title": "카카오3채널 GM go 승인 후 kakao_go=True 활성화",
+    "status": "PENDING",
+    "depends_on": "CTO-2026-07-21-REPORT-UNIFICATION",
+    "from": "cto",
+    "origin": "bridge",
+    "enqueued_at": "2026-07-21T22:53:43Z",
+    "ship_no": 9574
   }
 ]

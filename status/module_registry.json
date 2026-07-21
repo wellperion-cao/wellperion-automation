@@ -47,7 +47,7 @@
       "id": "cto-aide-gap-detector",
       "owner_role": "cto",
       "owner_nick": "시토",
-      "feature": "자율 틈 감지기 — 정체/재개가능 배 감시(재개=자율태그·정체=surface)",
+      "feature": "자율 틈 감지기 — 정체/재개가능 배 감시(재개=자율태그·정체=surface). [2026-07-22 표기정리 배9421 #3] ceo-gm-aide(웰리) 두뇌의 하위 감지 컴포넌트 — 같은 로그 status/gm_aide_scan_log.jsonl·같은 06:30 gm_aide_scan.bat 한 프로세스에서 함께 돎(엔진=감지 / 두뇌=학습·포착). 등록부상 2개로 보이나 단일 파이프라인. front_card 앵커도 layer-autonomy로 통일. 값만 정리(비파괴, 소비자 무영향)",
       "data_source": {
         "kind": "json",
         "ref": "status/gm_aide_scan_log.jsonl"
@@ -979,7 +979,7 @@
       "id": "cto-self-health-watchdog",
       "owner_role": "cto",
       "owner_nick": "시토",
-      "feature": "🩺 자가건강 감시 하네스 — 4개 감시모듈(automation-health·gas-version-monitor·module-silence-detector·page-hygiene)의 흩어진 발신을 하루 1통 통합 이상요약으로 묶는 read-only 애그리게이터. 정상=무발신, 이상 섹션만 노출(침묵모듈/GAS버전≥180/자동화건강이상/페이지위생 미조치). 발신경로 4·방 3·토큰로더 4를 단일화(notify.telegram_send→자동화현황방). 2026-07-21 GM '모듈 병합' 지시(배9420 #1).",
+      "feature": "🩺 자가건강 감시 하네스 → 전사 무결성 감시 표준 — 흩어진 감시모듈 발신을 하루 1통 통합 이상요약으로 묶는 read-only 애그리게이터. 정상=무발신, 이상 섹션만 노출: §1침묵모듈(등록부 전수)/§2 GAS버전≥180/§3자동화건강이상/§4페이지위생 미조치/§5시트계약 위반(전사 편입·시포 cpo-sheet-contract 07:50, 미해소·미승인만·accepted 존중). 발신경로·방·토큰로더 단일화(notify.telegram_send→자동화현황방). 2026-07-21 GM '모듈 병합'(배9420 #1) → 2026-07-22 전사 무결성 표준 확장(배9420 #5·배9421). 소스 모듈 전부 존치·회귀 0(읽기 전용).",
       "data_source": {
         "kind": "json",
         "ref": "scripts/self_health_watchdog.py (module_silence_detector.scan_registry + gas_version_monitor.collect + status/erp_status.json + status/page_hygiene_proposal_{date}.md 읽기 조합) + status/self_health_watchdog_log.jsonl"
