@@ -516,6 +516,19 @@
     "surface": "g1"
   },
   {
+    "task_id": "CTO-2026-07-21-VOC-REPO-LIVE-SYNC",
+    "clevel": "cto",
+    "title": "[시토] 종합접수처 서버 사본 apps_script_voc.js 라이브 정합 — 저장소가 라이브보다 구버전(handler·sms 칸 없음)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-21",
+    "from": "coo",
+    "note": "[2026-07-21 시우 발견·인계] 배9334(O2 버그3건, 준용M 수리·시우 검수 PASS·DONE) 처리 중 확인된 잔여 별건. 저장소 사본 '3. 웰페리온 가이드/coo/voc/apps_script_voc.js' 가 실제 라이브 GAS 웹앱보다 옛 버전 — 처리자(handler)·문자(sms) 칸이 저장소 코드엔 아예 없음. 위험=저장소만 보고 판단 시 '처리자 기능이 없다'고 오판(시우도 그럴 뻔). 라이브는 정상 작동 중이므로 사용자 영향 없음, 순수 코드 정합(저장소↔라이브 드리프트). 조치=라이브 GAS 스크립트를 저장소에 반영(pull-down)해 SoT 일치. 관련 메모리 reference_wp_reception_inline_copy_drift 계열. 준용M 무관·프론트 무관.",
+    "next": "⚓ 대기 — 시토가 라이브 GAS(reg_update 계열 handler·sms 포함본)를 저장소 apps_script_voc.js에 동기화. 저위험 코드 정합, 라이브 미변경.",
+    "ship_no": 9468,
+    "surface": "autonomy"
+  },
+  {
     "task_id": "CMO-2026-07-20-ADHOC-NAVER-SPLIT-MIDCAT",
     "clevel": "cmo",
     "title": "[시모] 배9351 후속 — 문의 중분류 'N-플레이스(검색)' → 'N-플레이스'·'N-검색' 분리 (GM 승인)",
