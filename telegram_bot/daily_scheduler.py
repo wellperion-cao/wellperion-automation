@@ -3148,44 +3148,42 @@ def run_daily_digest(early: bool = False) -> None:
     label = "[하루 일과 정리]"
     logger.info(f"{label} 시작 — today={today}")
 
-    # 문의알림방만 별도 처리(GM 2026-07-20) — <pre> 고정폭 표를 쓰므로 parse_mode="HTML" 로 발송.
-    # 점검관리방·종합접수처는 기존 그대로(MarkdownV2 기본, 무변경).
-    inquiry_msg = None  # 카카오용 평문(태그·엔티티 없음)
+    # ── 스트림 #1 문의 및 컨택&등록 현황 (통일 포맷 msg5618 · 2026-07-22) ────────────────
+    # 옛 _build_digest_inquiry(종목별 그룹) 대체. 확정 포맷: report_stream_1_inquiry.
+    inquiry_plain = None  # 카카오용 평문(태그·엔티티 없음)
     try:
-        inquiry_logical = _build_digest_inquiry(today)
-        inquiry_html = _digest_finalize_html(inquiry_logical)
-        inquiry_msg = _digest_finalize_plain(inquiry_logical)
+        import report_stream_1_inquiry as _s1
+        import re as _re_s1, html as _html_s1
+        inquiry_html = _s1.build_digest(today)
+        inquiry_plain = _re_s1.sub(r"<[^>]+>", "", _html_s1.unescape(inquiry_html))
         success = send_telegram(DIGEST_INQUIRY_CHAT_ID, inquiry_html, parse_mode="HTML")
         if success:
-            logger.info(f"{label} 문의알림방 발송 완료 chat_id={DIGEST_INQUIRY_CHAT_ID} (HTML)")
+            logger.info(f"{label} 문의알림방 발송 완료 chat_id={DIGEST_INQUIRY_CHAT_ID} (stream1·HTML·msg5618)")
         else:
             logger.error(f"{label} 문의알림방 발송 실패 chat_id={DIGEST_INQUIRY_CHAT_ID}")
     except Exception as e:
-        logger.error(f"{label} 문의알림방 예외: {e}")
+        logger.error(f"{label} 문의알림방(stream1) 예외: {e}")
 
-    targets = [
-        ("점검관리방", DIGEST_CHECK_CHAT_ID,     _build_digest_check),
-        ("종합접수처", DIGEST_RECEPTION_CHAT_ID, _build_digest_reception),
-    ]
-    for room_name, chat_id, builder in targets:
-        try:
-            msg = builder(today)
-            success = send_telegram(chat_id, msg)
-            if success:
-                logger.info(f"{label} {room_name} 발송 완료 chat_id={chat_id}")
-            else:
-                logger.error(f"{label} {room_name} 발송 실패 chat_id={chat_id}")
-        except Exception as e:
-            logger.error(f"{label} {room_name} 예외: {e}")
+    # ── 스트림 #2 점검+이슈+종합접수 현황 (점검현황방 단일 병합 · 2026-07-22) ──────────
+    # 종합접수처(-5065206276) 별도 발송 폐지 — 점검현황방에 병합 (GM 2026-07-21 지시).
+    try:
+        import report_stream_2_check as _s2
+        s2_msg = _s2.build_digest(today)
+        success = send_telegram(DIGEST_CHECK_CHAT_ID, s2_msg)
+        if success:
+            logger.info(f"{label} 점검현황방 발송 완료 chat_id={DIGEST_CHECK_CHAT_ID} (stream2·접수병합)")
+        else:
+            logger.error(f"{label} 점검현황방 발송 실패 chat_id={DIGEST_CHECK_CHAT_ID}")
+    except Exception as e:
+        logger.error(f"{label} 점검현황방(stream2) 예외: {e}")
 
-    # 카카오톡 ★부서장 방에도 '문의 정리'만 발송(GM 2026-07-18). 데스크톱 자동화 — 해당 방 창이 열려 있어야 함.
-    # best-effort: 실패해도(창 미개방 등) 텔레그램 발송에는 무영향, 로그만 남김.
-    if inquiry_msg:
+    # 카카오톡 ★부서장 방에도 문의 정리 발송 (GM 2026-07-18 · best-effort).
+    if inquiry_plain:
         try:
             sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
             env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
             proc = subprocess.run(
-                [sys.executable, str(sender), "--message", inquiry_msg, "--only-room", KAKAO_DEPTHEAD_ROOM],
+                [sys.executable, str(sender), "--message", inquiry_plain, "--only-room", KAKAO_DEPTHEAD_ROOM],
                 cwd=str(REPO_ROOT), capture_output=True, text=True,
                 encoding="utf-8", errors="replace", env=env, timeout=180,
             )
@@ -3193,6 +3191,20 @@ def run_daily_digest(early: bool = False) -> None:
             logger.info(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송: {tail[0]}")
         except Exception as e:
             logger.error(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송 예외: {e}")
+
+
+def run_stream_3_mgmt() -> None:
+    """스트림 #3 매출+운영+인사 현황 보고 (매일 09:30 · 업무보고방) — CTO 2026-07-22.
+    확정 포맷: ops_mgmt_digest_test v3 (54% 압축 · GM ok). 카카오=GM go 후 활성화.
+    시우(COO) 최종목표 씨앗 — 자율화 완성 시 COO 인계 예정."""
+    label = "[스트림 #3 매출+운영+인사]"
+    logger.info(f"{label} 시작")
+    try:
+        import report_stream_3_mgmt as _s3
+        _s3.run(dry_run=False, kakao_go=False)
+        logger.info(f"{label} 완료 (업무보고방 발송 · 카카오=GM go 후속)")
+    except Exception as e:
+        logger.error(f"{label} 예외: {e}")
 
 
 def _build_07_combined_body() -> str:
@@ -3705,6 +3717,19 @@ def main():
             coalesce=True,
         )
         logger.info("daily_digest 등록 완료 — 매일 20:00(휴일 게이트)/22:30(평일 게이트), 하루 일과 정리 3방 발송")
+
+        # ── 스트림 #3 매출+운영+인사 현황 보고 (매일 09:30) — CTO 2026-07-22 ───────────
+        try:
+            scheduler.add_job(
+                run_stream_3_mgmt,
+                trigger=CronTrigger(hour=9, minute=30, timezone="Asia/Seoul"),
+                id="stream_3_mgmt_0930",
+                misfire_grace_time=600,
+                coalesce=True,
+            )
+            logger.info("stream_3_mgmt 등록 완료 — 매일 09:30 업무보고방 발송 (스트림 #3)")
+        except Exception as e:
+            logger.warning(f"stream_3_mgmt 등록 실패: {e}")
 
     logger.info(f"스케줄러 기동 완료. PID={os.getpid()}")
     try:
