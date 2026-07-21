@@ -9,7 +9,7 @@
     "from": "gm",
     "origin": "gm",
     "note": "2026-07-21 GM 지시('자율화 모듈/파이프라인 중 비슷한 맥락끼리 확장 병합할 것 없나'). 등록부 28모듈 전수 스캔 → 5클러스터 발견, GM '전부 다 진행' 결재. #1 자가건강 감시 통합(시토 도메인): automation-health+gas-version-monitor+module-silence-detector+page-hygiene 발신경로 4·방 3·토큰로더 4 흩어짐 → module_silence_detector 승격 하네스 1개+하루1통 이상요약(자동화현황방), 게이트 SELF_HEALTH_WATCHDOG_LIVE 기본OFF·dry-run 검증, 소스모듈 존치·read-only 애그리게이트. #2 운영 다이제스트 수집층 공유(시토 도메인): ops_daily_digest.py(아침 07:30 카톡★운영부)+daily_scheduler.run_daily_digest(밤 20:00/22:30 텔레그램3방)이 GAS URL상수·종합접수 reg_list·member_inquiry_list·_gas_get·테스트행필터를 바이트단위 복제 → scripts/collectors/ 공용 수집층 추출(동작보존, 아침도 테스트행필터 이득). daily_scheduler는 관리자권한 상주라 재부팅 전 휴면=자연 검증창. #3 gap-detector+gm-aide 같은 로그(gm_aide_scan_log.jsonl) 이중등록→웰리 제기. #4 cmo-eval-feedback+cmo-reaction-loop 반응루프 중복→시모 제기. #5 #1 하네스를 전사 무결성표준으로 확장(cpo-sheet-contract·chro)→웰리 제기. 설계=스크래치패드 merge1_watchdog_design.md·merge_proposals_3to5.md.",
-    "next": "#1 하네스 구현·dry-run 검증 → #2 수집층 추출·동작보존 검증 → 등록부 반영 → 원샷 커밋·푸시 → #3~5 소유주 제기. 라이브 발신 발효는 GM go 대기.",
+    "next": "[2026-07-21 GM go '1.진행'] #1 라이브 발효 완료·실증(첫 실발신 자동화현황방 sent:true·하트비트 기록, telegram_health_check.bat 13시 편승=새 예약작업0·게이트 ON·역롤백 2줄삭제, 커밋 ab06ffa6+.bat). #2 커밋완료·상주봇이라 재부팅 발효대기(라이브 전후 바이트동일 검증). #3~5 라우팅완료(브리프+배9421웰리·9422시모). ▶남은 확인: ①내일 13시 첫 자동발신 실착 ②재부팅 후 #2 밤 다이제스트 무결. 미세개선(후속): 침묵감지가 silence-detector 자기모듈을 상시 침묵으로 잡음(watchdog가 scan시 자기 로그 갱신하도록).",
     "depends_on": "",
     "ship_no": 9420,
     "module": "T1",
@@ -216,14 +216,16 @@
     "task_id": "CHRO-2026-08-01-PARK-NAMIL-PROMOTION",
     "clevel": "chro",
     "title": "[시로] 박남일 8/1 진급 반영 + 급여 조정(+15만원)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-15",
     "ship_no": 1122,
     "module": "home",
     "note": "GM 지시(2026-07-15): 박남일 화요일부 호칭 주임→반장(페이지 반영 완료·시우). 8/1부터 정식 진급하여 급여 +15만원 추가. HR·급여 반영은 시로(CHRO)/파트너팀 소관. 8/1 급여 처리 시 반영. 급여 상세는 공개 페이지 미노출(PII).",
-    "next": "8/1 급여 처리에 진급·급여 조정 반영",
-    "depends_on": ""
+    "next": "8/1 급여 처리 시 파트너팀이 반영 — 시로 확인",
+    "depends_on": "",
+    "processed_at": "2026-07-21",
+    "artifact": "status/briefs/CHRO-박남일-진급-급여조정-20260801.md"
   },
   {
     "task_id": "NEXT-20260715-185046",
@@ -284,7 +286,9 @@
     "ship_no": 1307,
     "note": "[웰리 북극성 추천 승인 2026-06-29] / 🌟 북극성: ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자\n📍 지금: 활성 1척 · 완료건 next 12건 · KPI 완결률=0.0, 완료=0, 활성=1\n👉 오늘 한 수: AI CEO 북극성 'ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하' 향한 다음 브릿지 한 칸 설계 (신호①) / 근거: 신호① 북극성 갭 — [ceo] 북극성 서술 대비 비어있는 다음 걸음(소유: home, G1)",
     "next": "",
-    "depends_on": ""
+    "depends_on": "",
+    "aide_interview_needed": true,
+    "aide_interview_reason": "난이도 🛳️크루즈(무거움) — 안전 기본 park"
   },
   {
     "task_id": "NEXT-20260718-125827",
@@ -376,11 +380,13 @@
     "task_id": "CPO-2026-07-20-INSTRUCTOR-ASSIGNMENT-SSOT",
     "clevel": "cpo",
     "title": "[시포] 담당자 배정 정비 — 명단 SSOT 일원화·인사변동 반영·P.T/필라테스/골프 한정·카드 부제",
-    "status": "PENDING",
+    "status": "완료",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-20",
+    "completed_at": "2026-07-21",
+    "artifact_url": "https://wellperion-cao.github.io/wellperion-automation/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/cpo/member/membership.html",
     "note": "2026-07-20 GM 지시. 퇴사자 잔존. 재직≠배정가능 구분 구조 필요(유승용=프로필유지·배정제외). 인사 명부 원본은 시로(CHRO) 소관 가능성 — 출처 확인 중.",
-    "next": "인사 명부 출처 확인 후 SSOT 일원화 착수",
+    "next": "시로(CHRO) 인사 명부 원본 확인 후 active_not_assignable 자동 동기화 연결 검토",
     "depends_on": "",
     "ship_no": 9204,
     "module": "cpo"
@@ -502,7 +508,9 @@
     "processed_at": "2026-07-20",
     "ship_no": 9351,
     "artifact": "정본 확인: 멤버십 문의 시트(12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U) 'DATA' 탭 D2:D30 — '26년 신규문의' 탭(gid 1902010032) G열 '문의 경로(중분류)' 데이터 확인 규칙이 이 범위를 참조(REQUIRE_VALUE_IN_RANGE). WP폼(wp_inquiry_form.html)·membership.html 드롭다운·구글폼은 전부 별개 필드(대분류/채널)라 무관함을 확인. GAS(.deploy-funnel-v2/Survey.js) 액션 naver_split_midcat(mode=diag|apply, 가드 필수) 작성·배포(@57)해 diag로 정확한 옵션 목록 29건 실측 확인(oldValueCellCount=198, 무변경 확인용). apply 시도 → 'DATA' 시트가 시트보호(canEditByMe=false)로 잠겨 있어 자동화로 값 수정 불가(보호편집자 목록에 배포계정 미포함). _canonicalChannel_ 정규식(플레이스|검색 등 부분일치)은 이미 'N-플레이스'·'N-검색' 신규값을 '네이버'로 정상 분류함을 코드 확인 완료 — 3단계는 코드변경 불요.\n[2026-07-20 재확인] GM 방법A 지시로 diag 재호출 → 여전히 protections.canEditByMe:false(잠김). apply 미실행(우회 시도 없음, 데이터 무변경). oldValueCellCount=198 그대로.",
-    "next": "⚓ 대기 — GM이 'DATA' 탭 시트보호를 풀거나(또는 배포계정 편집자 추가), 혹은 GM이 직접 D3셀 'N-플레이스(검색)'→'N-플레이스'로 수정 + D31에 'N-검색' 추가 + G열 데이터확인 참조범위를 D2:D31로 확장. 그 후 GET .../exec?action=naver_split_midcat&mode=apply&key=wp-naver-midcat-split-2026-gm-ok 1회 호출하면 자동 적용·검증까지 마무리됨(기존 198건 셀값은 절대 안 건드림)."
+    "next": "⚓ 대기 — GM이 'DATA' 탭 시트보호를 풀거나(또는 배포계정 편집자 추가), 혹은 GM이 직접 D3셀 'N-플레이스(검색)'→'N-플레이스'로 수정 + D31에 'N-검색' 추가 + G열 데이터확인 참조범위를 D2:D31로 확장. 그 후 GET .../exec?action=naver_split_midcat&mode=apply&key=wp-naver-midcat-split-2026-gm-ok 1회 호출하면 자동 적용·검증까지 마무리됨(기존 198건 셀값은 절대 안 건드림).",
+    "note": "[2026-07-21 시모 실측 재진단] 블로커=계정권한 아님. mode=diag 실호출 결과 error:column-not-found — 액션이 찾는 (중분류) 헤더가 어제 finalize_cols/dedup_autoroute로 유입경로(자동)으로 개칭돼 사라짐(라이브헤더에 중분류 없음). 즉 원래 next의 (cao 편집자추가) 전제는 낡음. 추가 실측(diag_exec_identity_20260720): DATA탭 SHEET보호 canEditByMe=False·editors=[](소유자전용)·웹앱exec는 소유자아님 → 설령 컬럼 고쳐도 DATA탭 쓰기는 여전히 막힘. 결론=(1)split 액션 대상칸을 유입경로(자동)으로 갱신 필요 (2)드롭다운이 DATA탭 range백이면 DATA보호 해제 or inline VALUE_IN_LIST 전환 필요. 게다가 GM 07-21 (둘 다 살린다) 결재로 중분류 자체가 폐지된 마당이라 N-split은 신 컬럼구조 기준 재설계 대상. 시모 후속 세션에서 재설계.",
+    "updated_at": "2026-07-21T00:00:00Z"
   },
   {
     "task_id": "CTO-2026-07-20-LESSON-TIMESTAMP-REPAIR",
@@ -741,5 +749,100 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 19d96582)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "19d9658297c7b5332ad25bc15ffd6ee16247e1d2"
+  },
+  {
+    "task_id": "CTO-2026-07-21-ADHOC-ab06ffa6",
+    "clevel": "cto",
+    "title": "[시토] 자율화 모듈 병합 — 자가건강 감시 하네스 + 운영 다이제스트 수집층 공유 (배9420)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9430,
+    "artifact": "#1 자가건강 감시 통합(read-only 애그리게이터)\n- scripts/self_health_watchdog.py 신설: silence/gas-version/erp-status/page-hygiene 4모듈의\n  흩어진 발신을 하루 1통 통합 이상요약으로 묶음(정상=무발신). 게이트 SELF_HEALTH_WATCHDOG_LIVE\n  기본 OFF·dry-run 검증. 소스 4모듈 무변경(산출물 읽기만).\n- telegram_health_check.py: gas 버전경보 발신만 이관(주석·역롤백 즉시), collect·하트비트 유지 (CLI ad-hoc · 커밋 ab06ffa6)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "ab06ffa6685dc365450a7953316ebb777566bbcc"
+  },
+  {
+    "task_id": "CTO-2026-07-21-ADHOC-c372578c",
+    "clevel": "cto",
+    "title": "[시토] 배9102 밤 보고 병합 DONE — 검증 완료(커밋 3종·msg_id 4848)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9431,
+    "artifact": "커밋 8fdfd5c1·abacdfe6·7949a059 확인, 20:00/22:30 2-gate 정상,\n테스트발송 msg_id 4848 기록. 열정렬 시각확인만 GM 육안 필요(subjective). (CLI ad-hoc · 커밋 c372578c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c372578cf4b6df58caf92a57e348e5f0c417d735"
+  },
+  {
+    "task_id": "CHRO-2026-07-21-ADHOC-d730c152",
+    "clevel": "chro",
+    "title": "[시로] 박남일 8/1 진급 반영 + 급여 조정 지시서 작성",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9432,
+    "artifact": "시로(CHRO) 도메인 - 박남일 주임->반장 진급 확정 기록.\n8/1 급여 +150,000원 파트너팀 실행 지시서(내부 PII 전용).\n공개 페이지 미노출 - status/briefs/ 내부 전용 파일. (CLI ad-hoc · 커밋 d730c152)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d730c1528283a5f83d22550bb4da1c5c63fb8da6"
+  },
+  {
+    "task_id": "NEXT-20260721-082638",
+    "clevel": "chro",
+    "title": "8/1 급여 처리 시 파트너팀이 반영 — 시로 확인",
+    "status": "PENDING",
+    "depends_on": "CHRO-2026-08-01-PARK-NAMIL-PROMOTION",
+    "from": "chro",
+    "origin": "bridge",
+    "enqueued_at": "2026-07-20T23:26:38Z",
+    "ship_no": 9433
+  },
+  {
+    "task_id": "CHRO-2026-07-21-ADHOC-c5b28416",
+    "clevel": "chro",
+    "title": "[시로] 박남일 진급 완료 기록 — queue DONE + chro.json 갱신",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9434,
+    "artifact": "시로(CHRO) post_action: CHRO-2026-08-01-PARK-NAMIL-PROMOTION DONE.\n다음: 8/1 급여 처리 시 파트너팀 반영. (CLI ad-hoc · 커밋 c5b28416)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c5b2841610fed668e2410bfdb7805ed0f91d975d"
+  },
+  {
+    "task_id": "CTO-2026-07-21-ADHOC-8b0591a0",
+    "clevel": "cto",
+    "title": "[시토] 자가건강 감시 하네스 라이브 발효 (배9420 #1, GM go)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9435,
+    "artifact": "- telegram_health_check.bat(13시)에 self_health_watchdog --live 편승 — 새 예약작업 0, 게이트 baked, 역롤백=2줄 삭제.\n- 첫 실발신 실증: 자동화현황방 sent:true·하트비트 기록. 오늘 dedup 잠김→첫 자동발신 내일 13시.\n- 배9420 next 갱신(#1 라이브완료 / #2 재부팅발효대기 / #3~5 라우팅완료). (CLI ad-hoc · 커밋 8b0591a0)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8b0591a09eb5ac4bdb457f34eb8945f2ad803508"
+  },
+  {
+    "task_id": "CEO-2026-07-21-ADHOC-4dcc1671",
+    "clevel": "ceo",
+    "title": "[웰리] 웰리 항로 검수·종착지 두뇌 구현계획 (10태스크 TDD)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9436,
+    "artifact": "- Task0~9: 스캐폴드→dedup원장→검수5종→LLM생성→핑429방어→게이트반영→CLI→런처\n- 시토(배9420) 충돌 방어: gm_aide_scan 무변경, Task9는 병합 후 게이트 (CLI ad-hoc · 커밋 4dcc1671)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4dcc16715532daa693cee77ca8877360f15846d1"
   }
 ]
