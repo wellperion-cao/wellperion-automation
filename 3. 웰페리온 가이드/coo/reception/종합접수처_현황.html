@@ -294,7 +294,7 @@ var CAT_META = [
 var DEPT_LIST = ['운영부','시설부','지원부'];
 
 /* 공통·SLA 키 → 나머지는 extras */
-var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','dept','slaHours','deadline','remainH','slaStatus'];
+var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','handler','dept','slaHours','deadline','remainH','slaStatus'];
 var EXTRA_LABEL = {
   itemName:'분실물품', lostWhen:'분실시점', keepWhere:'보관요청',
   equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
@@ -542,6 +542,10 @@ function _card(r){
   h += '<div class="field-row"><label>담당</label>';
   h += '<input type="text" data-reg-assignee placeholder="담당자" value="' + _esc(String(r.assignee||'')) + '"></div>';
 
+  /* 처리자(실제 처리한) */
+  h += '<div class="field-row"><label>처리자</label>';
+  h += '<input type="text" data-reg-handler placeholder="실제 처리한 사람" value="' + _esc(String(r.handler||'')) + '"></div>';
+
   /* 메모 */
   h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모</label>';
   h += '<textarea data-reg-memo rows="2">' + _esc(String(r.memo||'')) + '</textarea></div>';
@@ -566,6 +570,7 @@ function _update(id, cat, payload, btn){
   if('status' in payload) body.status = payload.status;
   if('assignee' in payload) body.assignee = payload.assignee;
   if('memo' in payload) body.memo = payload.memo;
+  if('handler' in payload) body.handler = payload.handler;
 
   fetch(REG_API, {
     method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
@@ -722,8 +727,10 @@ function _wireBoard(){
       var payload = {};
       var a = card.querySelector('[data-reg-assignee]');
       var m = card.querySelector('[data-reg-memo]');
+      var hd = card.querySelector('[data-reg-handler]');
       if(a) payload.assignee = a.value;
       if(m) payload.memo = m.value;
+      if(hd) payload.handler = hd.value;
       _update(card.dataset.regCard, card.dataset.regCat, payload, saveBtn);
       return;
     }
