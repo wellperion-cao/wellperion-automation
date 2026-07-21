@@ -1,5 +1,21 @@
 [
   {
+    "task_id": "CTO-2026-07-21-REPORT-UNIFICATION",
+    "clevel": "cto",
+    "title": "[시토] 정기 자동보고 통일 재편 — 3스트림(문의+컨택&등록 / 점검+이슈+접수 / 매출+운영+인사) 통일 포맷·텔레그램↔카톡 매핑",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "from": "gm",
+    "origin": "gm",
+    "enqueued_at": "2026-07-21",
+    "note": "GM 2026-07-21 지시. 밤/정기 자동보고를 통일 포맷([하루 일과 정리] 날짜+제목 / 결과값먼저 총N·항목별 / 미처리·지연 리스트업 / 당일처리 1회)으로 재편. 3스트림: #1 문의 및 컨택&등록 현황(문의알림방+카톡★부서장 22:30) #2 시설&지원&주차 점검 및 이슈+종합접수 현황(점검현황방+카톡★운영+시설+지원+주차 22:30, 접수는 GM 지시로 점검현황방 병합) #3 매출 및 운영+인사 현황(업무보고방+카톡 회장님·관리부·★운영부 09:30, 업무SSOT 자동조립=GM 수동작업 해소). 시스템감시(자동화현황방 watchdog 배9420)는 별개 유지. 반복 텔레그램 테스트(업무보고방 8254867551)로 포맷 확정: #1=msg5618(멤버십 등급만·컨택&등록[진행상태]·담당미배정 리스트노출+3일+ 촉구👉) / #3=msg5624 v3(1496자·⏰지연17 체크리스트+카테고리 건수요약+⏳임박D7+📋결재대기+🎯분기목표, GM '너무길다'→54%압축 후 ok 확정). 판정 정본 재사용(컨택=contacts≥1·등록=SUC/단기SUC·todo_list 카테고리/종료일 D-day/결재상태·분기목표=monthly_ops_plan strategy_roadmap). 리퍼런스 구현=scripts/ops_inquiry_contact_digest_test.py·scripts/ops_mgmt_digest_test.py. 상위=배9102(밤 병합) 확장. #3 자동조립=시우(COO) 운영 종합 자동보고 최종목표 씨앗→인계 제기 예정.",
+    "next": "프로덕션화 순서: ①#3 업무보고방 일일 스케줄(GM방=안전) ②매출 시트 연동(placeholder 해소) ③#1 daily_scheduler 22:30 이식(옛 종목별 미처리표 A.대체·강력 테스트행필터) ④#2 점검+접수 병합 ⑤카톡 미러(★부서장/★운영+시설+지원+주차/3방)=GM go ⑥3방 매핑 자율현황 board 박제 ⑦시우(COO) 최종목표 인계 제기. 카톡·실무진방 라이브발신=GM go 게이트.",
+    "depends_on": "",
+    "ship_no": 9424,
+    "module": "T1",
+    "surface": "autonomy"
+  },
+  {
     "task_id": "CTO-2026-07-21-KAKAO-TRAY-AUTORESTORE",
     "clevel": "cto",
     "title": "[시토] 카톡 매출보고 발송기 하드닝 — 트레이 최소화 메인창 자가복원 + 포그라운드/검색창 견고화 (09:30 무인 자가복구)",
@@ -1573,5 +1589,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 8f12afb0)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8f12afb0f21b3a1b37bba56bbbae65ab78fea459"
+  },
+  {
+    "task_id": "CPO-2026-07-21-ADHOC-d043a1bd",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-21",
+    "processed_at": "2026-07-21",
+    "ship_no": 9490,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 d043a1bd)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d043a1bdcdde34de3abc071427b8af4563ed9237"
   }
 ]
