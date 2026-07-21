@@ -3900,6 +3900,45 @@ function _processAction(body) {
     return _json({ ok: true, mode: (cfExec ? 'execute' : 'dryrun'), sheets: cfOut });
   }
 
+  // ─── (일회성) 7월 성인 자체폼 simple 종목 → survey폼 표준 라벨 정규화. 7월 행·정확일치만. dry-run 기본. 2026-07-21 시포·GM ───
+  if (action === 'cpo_lesson_adult_sport_normalize_0721') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var anExec = (String(body.mode || 'dryrun') === 'execute');
+    var anMap = {
+      '수영': '성인 수영 (개인레슨 / 단체레슨)',
+      '스쿼시': '스쿼시 (개인레슨 / 단체레슨)',
+      '필라테스': '필라테스 (개인레슨 / 단체레슨)',
+      '아쿠아로빅': '아쿠아로빅 (화, 목 13:00 클래스)',
+      '발레(루프메소드)': '발레', '발레': '발레',
+      '바레(루프메소드)': '바레', '바레': '바레'
+    };  // P.T·골프는 이미 표준(무변경)
+    var anSh = _lessonSheet_(LESSON_GID);
+    if (!anSh) return _json({ ok: false, error: 'sheet_not_found' });
+    var anLastRow = anSh.getLastRow(), anLastCol = anSh.getLastColumn();
+    var anHdr = anSh.getRange(1, 1, 1, anLastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+    var anTsCi = _findColExact_(anHdr, ['타임스탬프']); if (anTsCi < 0) anTsCi = 0;
+    var anSpCi = _findCol_(anHdr, ['성인 강습 종목', '강습 종목', '종목']);   // 헤더 '성인 강습 종목 (희망종목 모두 체크)' — 부분일치
+    if (anSpCi < 0) return _json({ ok: false, error: 'sport col not found' });
+    var anChanges = []; var anCount = 0;
+    if (anLastRow >= 2) {
+      var anTs = anSh.getRange(2, anTsCi + 1, anLastRow - 1, 1).getValues();
+      var anSp = anSh.getRange(2, anSpCi + 1, anLastRow - 1, 1).getValues();
+      for (var anR = 0; anR < anSp.length; anR++) {
+        var anTv = anTs[anR][0];
+        var anYm = (anTv instanceof Date) ? (anTv.getFullYear() + '-' + ('0' + (anTv.getMonth() + 1)).slice(-2)) : String(anTv || '').slice(0, 7).replace(/\./g, '-').replace(/\s/g, '');
+        var anIsJuly = (anTv instanceof Date) ? (anTv.getFullYear() === 2026 && anTv.getMonth() === 6) : /2026[.\-\s]*0?7/.test(String(anTv || ''));
+        if (!anIsJuly) continue;
+        var anCur = String(anSp[anR][0] || '').trim();
+        if (anMap.hasOwnProperty(anCur) && anMap[anCur] !== anCur) {
+          anCount++;
+          if (anChanges.length < 30) anChanges.push({ row: anR + 2, from: anCur, to: anMap[anCur] });
+          if (anExec) anSh.getRange(anR + 2, anSpCi + 1).setValue(anMap[anCur]);
+        }
+      }
+    }
+    return _json({ ok: true, mode: (anExec ? 'execute' : 'dryrun'), changed: anCount, sample: anChanges });
+  }
+
   // ─── (일회성) 유소년강습 '유입경로(자동)' 칸 JSON 오염 정리 — 2026-07-20 시포(GM 승인 정리 5건 中 1) ───
   //   배경: cpo_wsc_contact_migrate13(위)로 28건 중 17건은 이미 Contact로 이관 완료. 남은 11건은 애초
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가
