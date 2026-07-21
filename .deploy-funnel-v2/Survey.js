@@ -3844,6 +3844,43 @@ function _processAction(body) {
     return _json({ ok: true, sheets: tsfOut });
   }
 
+  // ─── (일회성) 타임스탬프 표시형식+열너비+타임스탬프순 정렬 — 셀 클릭없이 시분초 보이게 + 제자리 정렬(오름차순). 2026-07-21 시포·GM ───
+  if (action === 'cpo_lesson_ts_display_sort_0721') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var tdsDoSort = (String(body.sort || 'yes') !== 'no');   // 기본 정렬 수행. body.sort='no'면 형식·너비만.
+    var tdsOut = [];
+    var tdsGids = [LESSON_GID, LESSON_GID_YOUTH];
+    for (var tdsG = 0; tdsG < tdsGids.length; tdsG++) {
+      var tdsSh = _lessonSheet_(tdsGids[tdsG]);
+      if (!tdsSh) { tdsOut.push({ gid: tdsGids[tdsG], error: 'sheet_not_found' }); continue; }
+      var tdsLastRow = tdsSh.getLastRow(), tdsLastCol = tdsSh.getLastColumn();
+      var tdsHdr = tdsSh.getRange(1, 1, 1, tdsLastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
+      var tdsCi = _findColExact_(tdsHdr, ['타임스탬프']); if (tdsCi < 0) tdsCi = 0;
+      var tdsSorted = false;
+      if (tdsLastRow >= 2) {
+        // ① 표시형식(시:분:초)
+        tdsSh.getRange(2, tdsCi + 1, tdsLastRow - 1, 1).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+        // ② 열 너비 넓히기 — 잘림 없이 시분초 표시
+        try { tdsSh.setColumnWidth(tdsCi + 1, 160); } catch (_w) {}
+        // ③ 데이터행만 타임스탬프 오름차순 정렬(행 단위·셀 동반 이동). getLastRow(잔여행 포함) 아니라 실제 타임스탬프 있는 마지막 행까지만 — 500행 이후 잔여행 미접촉. keyPhone 저장이라 rowIndex 이동 무해.
+        if (tdsDoSort) {
+          var tdsTsCol = tdsSh.getRange(2, tdsCi + 1, tdsLastRow - 1, 1).getValues();
+          var tdsLastData = -1;
+          for (var tdsI = 0; tdsI < tdsTsCol.length; tdsI++) {
+            var tdsV = tdsTsCol[tdsI][0];
+            if (tdsV instanceof Date || String(tdsV || '').trim() !== '') tdsLastData = tdsI;   // 0-based offset(행2 기준)
+          }
+          if (tdsLastData >= 1) {   // 데이터 2행 이상
+            tdsSh.getRange(2, 1, tdsLastData + 1, tdsLastCol).sort({ column: tdsCi + 1, ascending: true });
+            tdsSorted = tdsLastData + 1;
+          }
+        }
+      }
+      tdsOut.push({ gid: tdsGids[tdsG], rows: Math.max(tdsLastRow - 1, 0), sorted: tdsSorted });
+    }
+    return _json({ ok: true, sheets: tdsOut });
+  }
+
   // ─── (일회성) 유소년강습 '유입경로(자동)' 칸 JSON 오염 정리 — 2026-07-20 시포(GM 승인 정리 5건 中 1) ───
   //   배경: cpo_wsc_contact_migrate13(위)로 28건 중 17건은 이미 Contact로 이관 완료. 남은 11건은 애초
   //   Contact에 동일 내용이 있어 이관 스킵됐던 건. 이번엔 이관 여부와 무관하게 '유입경로(자동)' 칸 자체가
