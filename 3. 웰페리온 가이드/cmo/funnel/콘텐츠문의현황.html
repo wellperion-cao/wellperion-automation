@@ -201,6 +201,7 @@ body{background:#1c1a1b;font-family:"Pretendard","Apple SD Gothic Neo","Malgun G
       <button class="period-btn" onclick="M2DASH.loadYearToDate()">올해</button>
       <a href="월간마케팅보고서.html" class="period-btn" style="text-decoration:none">📄 월간 보고서</a>
       <span class="period-status" id="period-status">월간 기준 · 집계 불러오는 중…</span>
+      <span class="period-status" id="cache-badge" style="display:none;color:var(--accent)">💾 저장본 표시 중 · 갱신 중…</span>
     </div>
 
     <div class="custom-range" id="custom-range-row">
@@ -315,6 +316,40 @@ var FUNNEL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g
 function esc(s){
   return String(s == null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── localStorage 캐시(stale-while-revalidate) — 재방문 시 저장본 즉시 렌더 후 백그라운드 갱신
+// (2026-07-22 GM 지시: 첫 로드 GAS ~10초는 불가피 · 재방문 체감속도만 개선). 키=cf_dash_v1::{action}::{from}::{to}.
+// 값=JSON+timestamp, 7일 지난 키는 자동 정리. 정합성: 캐시 렌더는 항상 실제 fetch로 재검증·재렌더된다
+// (캐시가 최종값을 대체하지 않음 — 캐시 실패해도 기존 정직표기 로직 그대로 적용).
+var CACHE_PREFIX = 'cf_dash_v1::';
+var CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7일
+function _cacheKey(action, from, to) { return CACHE_PREFIX + action + '::' + (from || '') + '::' + (to || ''); }
+function _cacheGet(key) {
+  try {
+    var raw = localStorage.getItem(key);
+    if (!raw) return null;
+    var obj = JSON.parse(raw);
+    if (!obj || typeof obj.t !== 'number' || obj.data === undefined) return null;
+    return obj;
+  } catch (e) { return null; }
+}
+function _cacheSet(key, data) {
+  try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), data: data })); } catch (e) { /* 용량 초과 등 무시 — 캐시는 보조 수단 */ }
+}
+function _cachePrune() {
+  try {
+    var now = Date.now();
+    var toRemove = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf(CACHE_PREFIX) === 0) {
+        var v = _cacheGet(k);
+        if (!v || (now - v.t) > CACHE_MAX_AGE_MS) toRemove.push(k);
+      }
+    }
+    toRemove.forEach(function(k) { localStorage.removeItem(k); });
+  } catch (e) { /* localStorage 미지원 환경 등 — 무시 */ }
 }
 
 // ─── 채널 표준화 ──────────────────────────────────────────────
@@ -440,8 +475,13 @@ function loadReviewQueue() {
   if (_rqCache) return Promise.resolve(_rqCache);
   return fetch('../review/review_queue.json', { redirect: 'follow' })
     .then(function(r) { return r.json(); })
-    .then(function(data) { _rqCache = Array.isArray(data) ? data : []; return _rqCache; })
+    .then(function(data) { _rqCache = Array.isArray(data) ? data : []; _cacheSet(_cacheKey('review_queue', '', ''), _rqCache); return _rqCache; })
     .catch(function() { _rqCache = []; return _rqCache; });
+}
+// 저장본(localStorage) review_queue — 즉시 렌더(stale-while-revalidate)용, 없으면 null.
+function _cachedReviewQueue() {
+  var c = _cacheGet(_cacheKey('review_queue', '', ''));
+  return (c && Array.isArray(c.data)) ? c.data : null;
 }
 
 // 발행완료 + 콘텐츠 5채널 + 기간(from~to) 필터 — 콘텐츠(그룹) 대표 날짜 기준(버그 수정 근거는
@@ -466,18 +506,20 @@ function _pubCountByChannel(items) {
 function fetchFunnelConversion(from, to) {
   var url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion';
   if (from && to) url += '&from=' + from + '&to=' + to;
+  var cacheKey = _cacheKey('funnel_conversion', from, to);
   return fetch(url, { redirect: 'follow' })
     .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); _cacheSet(cacheKey, data); return data; })
     .catch(function(e) { console.warn('[funnel_conversion] 실패:', e && e.message); return null; });
 }
 // ─── lesson_breakdown (강습 종목별 문의·등록, 서버 기존 액션) — 2026-07-20 GM 지시 ───
 function fetchLessonBreakdown(from, to) {
   var url = FUNNEL_APPS_SCRIPT_URL + '?action=lesson_breakdown';
   if (from && to) url += '&from=' + from + '&to=' + to;
+  var cacheKey = _cacheKey('lesson_breakdown', from, to);
   return fetch(url, { redirect: 'follow' })
     .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); _cacheSet(cacheKey, data); return data; })
     .catch(function(e) { console.warn('[lesson_breakdown] 실패:', e && e.message); return null; });
 }
 // byChannel 배열 → { GAS채널명: 문의수 } 맵
@@ -508,9 +550,10 @@ function fetchFunnelConversionDetail(from, to) {
   if (_convDetailCache[key]) return _convDetailCache[key];
   var url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion_detail';
   if (from && to) url += '&from=' + from + '&to=' + to;
+  var lsKey = _cacheKey('funnel_conversion_detail', from, to);
   var p = fetch(url, { redirect: 'follow' })
     .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); _cacheSet(lsKey, data); return data; })
     .catch(function(e) { console.warn('[funnel_conversion_detail] 실패:', e && e.message); delete _convDetailCache[key]; return null; });
   _convDetailCache[key] = p;
   return p;
@@ -572,10 +615,25 @@ function _contentInquirySum(fcChannelMap) {
 }
 
 // ─── ② 요약 + ③ 채널별 성과 — 선택 기간 실측 렌더 ─────────────
+// stale-while-revalidate(2026-07-22 GM 지시): localStorage에 이 기간(from/to) 저장본이 다 있으면
+// 먼저 그 값으로 즉시 렌더 + "저장본" 표식을 띄운 뒤, 실제 fetch는 항상 그대로 진행해 새 값으로
+// 다시 렌더하고 표식을 지운다. 캐시가 최종값을 대체하지 않음 — 실패 시 정직표기(집계 실패)는 그대로.
+var _refreshToken = 0;
 function refreshPeriodSections() {
   var from = _rangeFromTo.from, to = _rangeFromTo.to;
   if (!from || !to) return;
   var prev = _prevRange(from, to);
+  var myToken = ++_refreshToken; // 이후 다른 기간 조회가 오면 이 결과는 폐기(레이스 방지)
+
+  var cachedRq = _cachedReviewQueue();
+  var cachedCur = _cacheGet(_cacheKey('funnel_conversion', from, to));
+  var cachedPrev = _cacheGet(_cacheKey('funnel_conversion', prev.from, prev.to));
+  var cachedLb = _cacheGet(_cacheKey('lesson_breakdown', from, to));
+
+  if (cachedRq && cachedCur && cachedPrev && cachedLb) {
+    _setCacheBadge(true);
+    _renderPeriod(cachedRq, cachedCur.data, cachedPrev.data, cachedLb.data, from, to, prev);
+  }
 
   Promise.all([
     loadReviewQueue(),
@@ -583,23 +641,33 @@ function refreshPeriodSections() {
     fetchFunnelConversion(prev.from, prev.to),
     fetchLessonBreakdown(from, to)
   ]).then(function(res) {
-    var rq = res[0], fcCur = res[1], fcPrev = res[2], lb = res[3];
-    var curItems = _pubItemsInRange(rq, from, to);
-    var prevItems = _pubItemsInRange(rq, prev.from, prev.to);
-    var curPubByCh = _pubCountByChannel(curItems);
-    var prevPubByCh = _pubCountByChannel(prevItems);
-    var curInqByCh = _fcChannelMap(fcCur);
-    var prevInqByCh = _fcChannelMap(fcPrev);
-    var curStatsByCh = _fcChannelStatsMap(fcCur);  // {inquiries, converted, rate} — 가입전환 상세 드릴다운용
-
-    renderSummary(curItems.length, _contentInquirySum(curInqByCh), fcCur === null);
-    renderConvBasis(fcCur, fcCur === null);
-    renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcCur === null, curStatsByCh);
-    renderAllChannels(fcCur, fcPrev);
-    renderLessonBreakdown(lb);
-
-    renderInsight(curPubByCh, curInqByCh);
+    if (myToken !== _refreshToken) return; // 그 사이 기간이 바뀜 — 낡은 응답 폐기
+    _setCacheBadge(false);
+    _renderPeriod(res[0], res[1], res[2], res[3], from, to, prev);
   });
+}
+
+function _setCacheBadge(show) {
+  var el = document.getElementById('cache-badge');
+  if (el) el.style.display = show ? '' : 'none';
+}
+
+function _renderPeriod(rq, fcCur, fcPrev, lb, from, to, prev) {
+  var curItems = _pubItemsInRange(rq, from, to);
+  var prevItems = _pubItemsInRange(rq, prev.from, prev.to);
+  var curPubByCh = _pubCountByChannel(curItems);
+  var prevPubByCh = _pubCountByChannel(prevItems);
+  var curInqByCh = _fcChannelMap(fcCur);
+  var prevInqByCh = _fcChannelMap(fcPrev);
+  var curStatsByCh = _fcChannelStatsMap(fcCur);  // {inquiries, converted, rate} — 가입전환 상세 드릴다운용
+
+  renderSummary(curItems.length, _contentInquirySum(curInqByCh), fcCur === null);
+  renderConvBasis(fcCur, fcCur === null);
+  renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcCur === null, curStatsByCh);
+  renderAllChannels(fcCur, fcPrev);
+  renderLessonBreakdown(lb);
+
+  renderInsight(curPubByCh, curInqByCh);
 }
 
 // ─── ②-b 가입전환율 모수 분리(멤버십만 / 강습 포함) — 2026-07-20 GM 지시 ─────
@@ -901,6 +969,7 @@ function _loadMonthRange(year, month) {
 }
 
 function _initDash() {
+  _cachePrune(); // 7일 지난 저장본 정리(용량 관리)
   _updateMonthNav();
   var today = new Date();
   var y = today.getFullYear(), m = ('0' + (today.getMonth() + 1)).slice(-2), d = ('0' + today.getDate()).slice(-2);
