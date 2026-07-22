@@ -327,6 +327,9 @@
   .dg-subgrp-h{font-size:11.5px; font-weight:800; color:var(--gold); border-bottom:1px dashed var(--border-strong); padding-bottom:3px; letter-spacing:-0.01em;}
   @media (max-width:720px){ .dg-subgrid{grid-template-columns:1fr;} }
 
+  /* 🔄 자동 연동 배지 — objectives 진척 옆 병기(실무 SSOT·채용공고·연동 배 자동값 · 배9678) */
+  .auto-badge{display:inline-block;margin-top:5px;font-size:10.5px;font-weight:700;color:#2f6d9e;background:#eaf3fb;border:1px solid #cfe2f4;border-radius:999px;padding:2px 8px;line-height:1.4;white-space:nowrap;}
+  @media print{ .auto-badge{font-size:7px !important;padding:1px 5px !important;margin-top:1px !important;} }
   /* ── 🚀 ERP 월별 진척 타임라인 ── */
   .erp-time{display:flex; gap:10px; align-items:stretch; position:relative;}
   .erp-step{flex:1; min-width:0; background:var(--paper); border:1px solid var(--border); border-radius:12px; padding:13px 14px 12px; position:relative; display:flex; flex-direction:column; gap:7px;}
@@ -945,7 +948,7 @@
 
     <!-- 📋 이달 핵심 과제 상세 (신규/이월 상세표 + 콤팩트 요약 · 舊 sum-hero — 상단 top3 아래 상세) -->
     <section class="blk sum-hero" id="report-hero-wrap" data-blkid="detail">
-      <h2 class="sec">📋 이달 핵심 과제 상세 <span class="lvb lvb-off" title="월간계획 objectives(수동 관리) — 실시간 자동측정 아님">🔴 비라이브</span> <span class="stag">요약 + 신규·이월 상세</span></h2>
+      <h2 class="sec">📋 이달 핵심 과제 상세 <span class="lvb lvb-half" title="일부 목표는 실무 SSOT·채용공고·연동 배 상태에서 자동 연동(🔄 자동 배지 병기·배9678), 나머지는 수동 관리 — 사람 진척은 시우 검수로 보정">🟠 반반</span> <span class="stag">요약 + 신규·이월 상세 · 🔄 자동연동 병기</span></h2>
       <div id="report-area"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
     </section>
@@ -1684,6 +1687,13 @@
       var cur = initTraj(init, _sel);
       var pv = pm ? initTraj(init, pm) : null;
       progCell += deltaBadge((typeof cur === 'number') ? cur : null, (typeof pv === 'number') ? pv : null);
+    }
+    // 🔄 자동 연동 배지(배9678) — objective.sync.auto_value(실무 SSOT·채용공고·연동 배 상태에서 엔진 자동 산출) 병기.
+    //   사람 진척(progCell)과 별개로 '지금 실무/공고 상태'를 보여줌(advisory·수기 미개입·드리프트 0).
+    if(o.sync && typeof o.sync.auto_value === 'number' && !_editMode){
+      var _srcL = ({job_status:'채용공고', todo_ssot:'실무 SSOT', queue:'연동 배', metric_live:'실시간 지표'})[o.sync.source] || String(o.sync.source||'');
+      var _la = o.sync.last_auto ? ' · ' + esc(String(o.sync.last_auto)) : '';
+      progCell += '<div class="auto-badge" title="자동 연동값 — 출처 ' + esc(_srcL) + _la + ' (실무/공고 상태에서 자동 산출 · 수기 진척과 별개)">🔄 자동 ' + o.sync.auto_value + '%</div>';
     }
 
     var nsCell = nsBadge(o);
