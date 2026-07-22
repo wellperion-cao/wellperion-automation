@@ -15,6 +15,21 @@
     "surface": "autonomy"
   },
   {
+    "task_id": "CTO-2026-07-22-RECEPTION-SPLIT-BACKLOG-REMINDER",
+    "clevel": "cto",
+    "title": "[시토] 종합접수 텔레그램 분리(종합접수방) + 미처리 적체 리마인드 + 카톡 ★운영방 점검·접수 각각 발송",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "from": "gm",
+    "origin": "gm",
+    "enqueued_at": "2026-07-22",
+    "note": "GM 2026-07-22 지시. ①종합접수 현황을 점검현황방에서 분리→종합접수방(-5065206276)으로(어제 배9424 '점검현황방 병합' 되돌림, 점검은 점검현황방 유지) ②종합접수 다이제스트에 미처리 적체 리마인드 추가(reg_list status!=완료를 createdAt+카테고리 slaHours로 aging 계산·SLA초과만·담당자별 그룹·미배정 별도·칭찬 제외·한통요약·tg_outbound_log 페이싱, 매일밤 반복노출=방치상기) ③카톡 ★운영+시설+지원+주차 방에 점검현황건·종합접수현황건 각각 따로 2메시지(GM go 지금 활성화). [텔레그램 구현완료·드라이런검증] report_stream_2_check.py=점검전용 원복, report_stream_2b_reception.py 신설(종합접수방), daily_scheduler run_daily_digest에 stream2b 추가. 라이브 reg_list로 미처리24·기한초과22·미배정16·최고령14.9일 렌더 확인. IG리뷰 -5065206276 폴백=죽은코드(실발송은 GM DM)라 무해, 경고주석. 카톡=후속.",
+    "next": "[남음] ①카톡 ★운영방 점검·접수 각각 2메시지 발송 구현·테스트방 시연→GM go 활성화 ②오늘밤 22:30 텔레그램 실발송(점검현황방 점검·종합접수방 접수+리마인드) GM 육안검증.",
+    "ship_no": 9582,
+    "module": "T1",
+    "surface": "autonomy"
+  },
+  {
     "task_id": "CTO-2026-07-22-REPORT-4ROOM-TRUST-FIX",
     "clevel": "cto",
     "title": "[시토] 정기 자동보고 4방 신뢰성·심도 수리 — 방1 데이터정합·방2 회차/일지/이슈 심화·방3 습득물 보관위치·방4 자동화현황 통합",

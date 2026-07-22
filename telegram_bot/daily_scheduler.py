@@ -3164,18 +3164,30 @@ def run_daily_digest(early: bool = False) -> None:
     except Exception as e:
         logger.error(f"{label} 문의알림방(stream1) 예외: {e}")
 
-    # ── 스트림 #2 점검+이슈+종합접수 현황 (점검현황방 단일 병합 · 2026-07-22) ──────────
-    # 종합접수처(-5065206276) 별도 발송 폐지 — 점검현황방에 병합 (GM 2026-07-21 지시).
+    # ── 스트림 #2 점검+이슈 현황 (점검현황방 단독 · 2026-07-22) ─────────────────────
     try:
         import report_stream_2_check as _s2
         s2_msg = _s2.build_digest(today)
         success = send_telegram(DIGEST_CHECK_CHAT_ID, s2_msg)
         if success:
-            logger.info(f"{label} 점검현황방 발송 완료 chat_id={DIGEST_CHECK_CHAT_ID} (stream2·접수병합)")
+            logger.info(f"{label} 점검현황방 발송 완료 chat_id={DIGEST_CHECK_CHAT_ID} (stream2)")
         else:
             logger.error(f"{label} 점검현황방 발송 실패 chat_id={DIGEST_CHECK_CHAT_ID}")
     except Exception as e:
         logger.error(f"{label} 점검현황방(stream2) 예외: {e}")
+
+    # ── 스트림 #2b 종합접수 현황+미처리 적체 리마인드 (종합접수방 단독 복원 · 2026-07-22) ──
+    # 배9424(2026-07-21)의 '점검현황방 병합'을 되돌림 — GM 지시. 접수만 별도 종합접수방으로.
+    try:
+        import report_stream_2b_reception as _s2b
+        s2b_msg = _s2b.build_digest(today)
+        success = send_telegram(DIGEST_RECEPTION_CHAT_ID, s2b_msg)
+        if success:
+            logger.info(f"{label} 종합접수방 발송 완료 chat_id={DIGEST_RECEPTION_CHAT_ID} (stream2b)")
+        else:
+            logger.error(f"{label} 종합접수방 발송 실패 chat_id={DIGEST_RECEPTION_CHAT_ID}")
+    except Exception as e:
+        logger.error(f"{label} 종합접수방(stream2b) 예외: {e}")
 
     # 카카오톡 ★부서장 방에도 문의 정리 발송 (GM 2026-07-18 · best-effort).
     if inquiry_plain:

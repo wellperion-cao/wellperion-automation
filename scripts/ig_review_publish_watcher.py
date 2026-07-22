@@ -91,8 +91,12 @@ def resolve_public_title(it: dict) -> tuple[str | None, str | None]:
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
-# 웰리 검증 큐 채널: 성공 요약·IG 발행검증 알림 수신처.
-# TELEGRAM_WELLY_CHAT_ID 미설정 시 종합 접수처(내부 운영방)로 폴백.
+# 웰리 검증 큐 채널(예정 수신처) — 실제로는 이 파일의 모든 telegram() 호출이 chat_id를
+# 넘기지 않아 전부 TELEGRAM_CHAT_ID(GM DM) 기본값으로 간다(2026-07-22 CTO 확인, 배9424b).
+# 즉 TELEGRAM_WELLY_CHAT_ID/아래 폴백은 현재 미사용(죽은 값) — 종합접수방(-5065206276,
+# 2026-07-22부터 미처리 적체 리마인드 전용)과는 실사용 충돌이 없다. 향후 이 변수를 실제
+# telegram(msg, chat_id=...) 호출에 연결할 때는 종합접수방(-5065206276)을 재사용하지 말 것
+# — 리마인드 다이제스트에 IG 알림이 섞인다. 새 채널을 GM에게 배정받아 쓸 것.
 TELEGRAM_WELLY_CHAT_ID_ENV_KEY = "TELEGRAM_WELLY_CHAT_ID"
 TELEGRAM_CORE_GROUP_CHAT_ID_ENV_KEY = "TELEGRAM_CORE_GROUP_CHAT_ID"
 
