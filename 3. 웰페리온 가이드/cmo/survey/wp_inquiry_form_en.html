@@ -15,9 +15,13 @@
      ★ Design: brand canon (GM-confirmed B안, ivory #f5f0ea) — mirrors the KO Survey form skin exactly.
      To inject into WP: edit this file and re-inject (draft-page pattern, EN post id). -->
 <style>
-/* English Survey form page — hide WP theme header (page-scoped when injected; harmless elsewhere). */
-body.wlp-en-survey #header-outer { display: none !important; }
-body.wlp-en-survey .wlp-inq { margin-bottom: -75px !important; }
+/* WP /en/inquiry (page-id 8408) 한정 — 영문 자체폼 컷오버(배9674, 2026-07-22).
+   ★테마 헤더(로고+우상단 KOR 언어토글)는 유지(숨기지 않음 — 8460 KO 서브폼과 달리 8408은 메인 진입 페이지). */
+/* 하단 회색 여백 제거 — 테마 예약 75px(container-wrap padding-bottom 40 + raw-html margin-bottom 35)을
+   음수마진으로 상쇄. KO 8460·현 EN 8408 구글폼 블록과 동일 처방(실측 동일). */
+body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
+/* 헤더 로고 워드마크와 중복되는 eyebrow 'Wellperion' 숨김(8408 한정 — 로컬 프리뷰·타 컨텍스트 영향 0). */
+body.page-id-8408 .wlp-inq .eyebrow { display: none; }
 </style>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
@@ -144,6 +148,17 @@ body.wlp-en-survey .wlp-inq { margin-bottom: -75px !important; }
 .wlp-inq .done .social-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
 .wlp-inq .done .social-chip{display:inline-flex;align-items:center;gap:5px;padding:9px 15px;background:var(--paper);border:1px solid var(--line);border-radius:20px;color:var(--dim);font-size:13px;font-weight:600;font-family:inherit;text-decoration:none;transition:border-color .15s,color .15s}
 .wlp-inq .done .social-chip:hover{border-color:var(--beige);color:var(--beige)}
+
+/* ===== inline type selector (hub state — shown when no ?type=) ===== */
+.wlp-inq .sel-lead{font-size:13.5px;line-height:1.7;color:var(--ink);margin-bottom:16px;text-align:center}
+.wlp-inq .sel-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.wlp-inq .sel-btn{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);padding:18px 20px;cursor:pointer;transition:border-color .15s,background .15s}
+.wlp-inq .sel-btn:hover{border-color:var(--beige);background:#faf8f5}
+.wlp-inq .sel-btn .sel-ey{display:block;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--beige);text-transform:uppercase;margin-bottom:5px}
+.wlp-inq .sel-btn .sel-t{display:block;font-size:16px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.wlp-inq .sel-btn .sel-d{display:block;font-size:12.5px;color:var(--dim);line-height:1.5}
+.wlp-inq .change-type{display:none;font-size:12px;font-weight:700;color:var(--beige);cursor:pointer;margin:0 auto 12px;text-align:center;letter-spacing:.02em}
+.wlp-inq .change-type:hover{color:var(--coral)}
 </style>
 
 <div class="wlp-inq">
@@ -163,6 +178,16 @@ body.wlp-en-survey .wlp-inq { margin-bottom: -75px !important; }
     </div>
 
     <div class="wrap">
+      <div class="card sel-card" id="typeSelect" style="display:none">
+        <p class="sel-lead">Please choose what you would like to inquire about.</p>
+        <div class="sel-grid">
+          <button type="button" class="sel-btn" data-cat="membership"><span class="sel-ey">Membership</span><span class="sel-t">Membership Inquiry</span><span class="sel-d">Sports club membership &amp; facility tour consultation</span></button>
+          <button type="button" class="sel-btn" data-cat="adult"><span class="sel-ey">Adult Lesson</span><span class="sel-t">Adult Lesson Inquiry</span><span class="sel-d">Swimming, P.T, Pilates, golf, squash &amp; more</span></button>
+          <button type="button" class="sel-btn" data-cat="youth"><span class="sel-ey">Youth Lesson</span><span class="sel-t">Youth Lesson Inquiry</span><span class="sel-d">WSC swimming, golf, squash &amp; youth programs</span></button>
+        </div>
+      </div>
+
+      <div class="change-type" id="changeType">&larr; Choose another inquiry type</div>
       <div class="card guide-card" id="guideBox" style="display:none"></div>
 
       <div class="card" id="formCard">
@@ -599,18 +624,55 @@ body.wlp-en-survey .wlp-inq { margin-bottom: -75px !important; }
     window.scrollTo(0,0);
   }
 
-  // ── fallback (no/unknown ?type=) ──
+  // ── fallback (hard error — kept as a last resort) ──
   function showFallback(){
     selectedCat = '';
     $('guideBox').style.display='none';
     $('formCard').style.display='none';
     $('submitBtn').style.display='none';
+    $('typeSelect').style.display='none';
+    $('changeType').style.display='none';
     clearBanner();
     $('noteText').style.display='none';
     $('fallbackBox').style.display='block';
     $('heroTitle').textContent = 'Inquiry';
     setHeroSub('');
   }
+
+  // ── inline type selector (hub state — no ?type=) ──
+  function showSelector(){
+    selectedCat = '';
+    $('typeSelect').style.display='block';
+    $('changeType').style.display='none';
+    $('guideBox').style.display='none';
+    $('formCard').style.display='none';
+    $('submitBtn').style.display='none';
+    $('fallbackBox').style.display='none';
+    $('noteText').style.display='none';
+    clearBanner();
+    $('heroTitle').textContent = 'Inquiry';
+    setHeroSub('');
+    window.scrollTo(0,0);
+  }
+
+  // ── enter a type's form (from selector click or ?type=) ──
+  function pickCat(cat, pushUrl){
+    selectedCat = cat;
+    $('typeSelect').style.display='none';
+    $('fallbackBox').style.display='none';
+    $('formCard').style.display='block';
+    $('submitBtn').style.display='';
+    $('noteText').style.display='';
+    $('changeType').style.display='block';
+    buildForm(cat);
+    if (pushUrl) { try { history.replaceState(null, '', '?type=' + cat); } catch(e){} }
+    window.scrollTo(0,0);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.wlp-inq .sel-btn'), function(btn){
+    btn.addEventListener('click', function(){ pickCat(this.getAttribute('data-cat'), true); });
+  });
+  $('changeType').addEventListener('click', function(){ showSelector(); });
 
   // ── submit ──
   $('submitBtn').addEventListener('click', function(){
@@ -647,7 +709,7 @@ body.wlp-en-survey .wlp-inq { margin-bottom: -75px !important; }
   $('againBtn').addEventListener('click', function(){
     activeSid='';
     resetSubmitBtn(); clearBanner();
-    if (selectedCat) { buildForm(selectedCat); } else { showFallback(); }
+    if (selectedCat) { buildForm(selectedCat); } else { showSelector(); }
     $('doneWrap').style.display='none'; $('formWrap').style.display='block';
     window.scrollTo(0,0);
   });
@@ -664,8 +726,8 @@ body.wlp-en-survey .wlp-inq { margin-bottom: -75px !important; }
                     adult:'adult', '성인':'adult', '성인강습':'adult',
                     youth:'youth', '유소년':'youth', '유소년강습':'youth' };
       var cat = alias[t];
-      if (cat) { selectedCat = cat; buildForm(cat); } else { showFallback(); }
-    } catch (e) { showFallback(); }
+      if (cat) { pickCat(cat, false); } else { showSelector(); }
+    } catch (e) { showSelector(); }
   })();
 })();
 </script>

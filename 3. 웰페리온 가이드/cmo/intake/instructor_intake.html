@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>웰페리온 강사 콘텐츠 접수</title>
+<title>웰페리온 콘텐츠 접수</title>
 <!--
-  강사 콘텐츠 접수 폼 (P1 — 접수 폼 + 저장 + 알림)
+  콘텐츠 접수 폼 (P1 — 접수 폼 + 저장 + 알림 · 2026-07-22 M1 O1식 허브 단순화로 문구 일반화·강사 한정 해제)
   계획서 정본: docs/superpowers/plans/2026-07-22-강사콘텐츠-접수모듈-P1.md (Task 2)
   스펙: docs/superpowers/specs/2026-07-22-강사콘텐츠-접수시안모듈-design.md (§4-1)
-  백엔드: .deploy-instructor/instructor_intake.js doPost (JSON 계약은 하단 스크립트 주석 참조)
-  GAS_PROD = 배포된 exec URL 연결 완료(2026-07-22). M1 페이지에 iframe 임베드됨(Task 3) — 본 파일은 독립 폼으로도 열람 가능.
+  백엔드: .deploy-instructor/instructor_intake.js doPost (JSON 계약은 하단 스크립트 주석 참조 — id="f_team"·team 키 불변)
+  GAS_PROD = 배포된 exec URL 연결 완료(2026-07-22). M1 페이지에서 박스 링크로 연결(iframe 임베드는 제거됨) — 본 파일은 독립 폼으로도 열람 가능.
 -->
 <style>
 :root{
@@ -88,20 +88,20 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 <div class="wrap">
 
   <div class="brand">
-    <p class="brand-eyebrow">Wellperion · Instructor</p>
-    <h1>🎬 강사 콘텐츠 접수</h1>
+    <p class="brand-eyebrow">Wellperion · Content</p>
+    <h1>🎬 콘텐츠 접수</h1>
     <div class="gold-divider">
       <span class="gd-line left"></span>
       <span class="gd-diamond">&#9670;</span>
       <span class="gd-line right"></span>
     </div>
-    <p>강사님의 사진·영상·한마디를 보내주시면, 웰페리온 공식 채널에 소개해 드립니다.</p>
+    <p>현장의 생생한 사진·영상·한마디를 보내주시면, 웰페리온 공식 채널에 소개해 드립니다.</p>
   </div>
 
   <div class="info">
     <span class="ic">✨</span>
     <span><b>마감 없이 상시 접수</b>합니다 — 준비되실 때 편하게 보내주세요.
-    스포츠클럽 수업을 이끄는 강사님의 전문성과 따뜻함을 회원분들께 전하는 데 쓰입니다.
+    웰페리온 현장의 전문성과 따뜻함을 회원분들께 전하는 데 쓰입니다.
     제출한 자료는 <b>웰페리온 공식 인스타그램(@wellperion)</b> 등 공식 채널 게시에 동의하신 것으로 처리됩니다.</span>
   </div>
 
@@ -111,16 +111,14 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
       <input type="text" id="f_name" placeholder="예: 김OO" autocomplete="off">
     </div>
     <div class="field">
-      <label class="fl" for="f_team">담당 종목·팀</label>
+      <label class="fl" for="f_team">분류 / 카테고리</label>
       <select id="f_team">
         <option value="">선택하세요</option>
-        <option value="PT">PT</option>
-        <option value="골프">골프</option>
-        <option value="스쿼시">스쿼시</option>
-        <option value="필라테스">필라테스</option>
-        <option value="체조">체조</option>
-        <option value="GX">GX</option>
-        <option value="수영">수영</option>
+        <option value="강사소개">강사소개</option>
+        <option value="시설">시설</option>
+        <option value="프로그램·강습">프로그램·강습</option>
+        <option value="이벤트">이벤트</option>
+        <option value="회원후기">회원후기</option>
         <option value="기타">기타</option>
       </select>
     </div>
@@ -149,10 +147,10 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
     </div>
     <div class="field">
       <label class="fl" for="f_intro">한 줄 소개</label>
-      <input type="text" id="f_intro" placeholder="예: 10년차 PT 강사, 회원 맞춤 운동 설계가 전문입니다" autocomplete="off">
+      <input type="text" id="f_intro" placeholder="예: 회원분들께 전하고 싶은 한 줄 소개" autocomplete="off">
     </div>
     <div class="field">
-      <label class="fl" for="f_benefit">제 수업에서 회원이 얻는 것</label>
+      <label class="fl" for="f_benefit">이 콘텐츠에서 회원이 얻는 것</label>
       <input type="text" id="f_benefit" placeholder="예: 부상 없이 꾸준히 하는 습관" autocomplete="off">
     </div>
     <div class="field">

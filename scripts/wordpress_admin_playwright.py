@@ -205,6 +205,9 @@ async def run_inspect() -> int:
 NEW_PAGE_URL = "http://wellperion.com/wp/wp-admin/post-new.php?post_type=page"
 INQUIRY_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cmo" / "survey" / "wp_inquiry_block.html"
 INQUIRY_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "cmo" / "survey" / "wp_inquiry_block_en.html"
+# 영문 자체 Survey 폼(구글폼 대체 컷오버, 배9674 시모 2026-07-22). draft-inquiry-en 은 이 파일을,
+# rollback(draft-inquiry-en 기본)은 위 wp_inquiry_block_en.html(구글폼)을 주입 → 되돌리기 1스텝.
+INQUIRY_FORM_FILE_EN = ROOT / "3. 웰페리온 가이드" / "cmo" / "survey" / "wp_inquiry_form_en.html"
 INQUIRY_PAGE_TITLE = "문의"
 INQUIRY_PAGE_TITLE_EN = "Inquiry"
 KO_INQUIRY_POST_ID = "8394"  # 한국어 문의 페이지 고정 ID
@@ -518,18 +521,20 @@ async def run_wpml_create_en_translation() -> int:
     return 0 if (en_post_id and en_post_id != KO_INQUIRY_POST_ID) else 21
 
 
-async def run_draft_inquiry_en(post_id_arg: str) -> int:
-    """영어 문의 페이지를 비공개 초안으로 생성/갱신.
-    wp_inquiry_block_en.html을 [vc_raw_html]로 주입. &lang=en 컨텍스트 사용."""
+async def run_draft_inquiry_en(post_id_arg: str, block_file: "Path | None" = None) -> int:
+    """영어 문의 페이지 본문 갱신(발행 상태면 발행 유지 = 즉시 라이브 업데이트).
+    block_file 미지정 = wp_inquiry_block_en.html(구글폼, rollback 자산) 주입.
+    block_file = wp_inquiry_form_en.html(자체폼) → 컷오버. 둘 다 [vc_raw_html]·&lang=en 컨텍스트."""
+    block_file = block_file or INQUIRY_BLOCK_FILE_EN
     async_playwright = _import_playwright()
-    print(f"[INFO] === 워드프레스 영어 문의 페이지 — 비공개 초안 생성/갱신 (post={post_id_arg}) ===")
+    print(f"[INFO] === 워드프레스 영어 문의 페이지 본문 주입 (post={post_id_arg}, block={block_file.name}) ===")
     if not PROFILE_DIR.exists():
         print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
         return 3
-    if not INQUIRY_BLOCK_FILE_EN.exists():
-        print(f"[ERROR] 영어 문의 블록 HTML 부재: {INQUIRY_BLOCK_FILE_EN}")
+    if not block_file.exists():
+        print(f"[ERROR] 영어 문의 블록 HTML 부재: {block_file}")
         return 4
-    raw_html = INQUIRY_BLOCK_FILE_EN.read_text(encoding="utf-8")
+    raw_html = block_file.read_text(encoding="utf-8")
     html = _wrap_vc_raw_html(raw_html)
     INSPECT_DIR.mkdir(parents=True, exist_ok=True)
     p, ctx = await _launch(async_playwright)
@@ -1730,7 +1735,7 @@ def main() -> int:
     ap.add_argument("--mode", choices=[
         "setup", "check", "inspect",
         "draft-inquiry", "publish-inquiry", "add-menu", "remove-menu", "swap-href",
-        "wpml-create-en", "draft-inquiry-en", "publish-inquiry-en",
+        "wpml-create-en", "draft-inquiry-en", "publish-inquiry-en", "cutover-inquiry-en",
         "draft-reception", "publish-reception", "swap-reception-text",
         "draft-page", "publish-page",
         "media-check", "media-upload",
@@ -1782,6 +1787,11 @@ def main() -> int:
         if not args.post_id:
             print("[ERROR] --post-id 필요 (영어 페이지 ID)"); return 1
         return asyncio.run(run_draft_inquiry_en(args.post_id))
+    if args.mode == "cutover-inquiry-en":
+        # 영문 구글폼 → 자체폼 컷오버(배9674). 발행 유지 = 즉시 라이브. rollback = draft-inquiry-en(구글폼 재주입).
+        if not args.post_id:
+            print("[ERROR] --post-id 필요 (영어 페이지 ID, 예 8408)"); return 1
+        return asyncio.run(run_draft_inquiry_en(args.post_id, INQUIRY_FORM_FILE_EN))
     if args.mode == "publish-inquiry-en":
         if not args.post_id:
             print("[ERROR] --post-id 필요 (영어 페이지 ID)"); return 1

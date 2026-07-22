@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>콘텐츠 문의 현황</title>
+<!--
+  M1(콘텐츠 제작 프로세스) #m1-dash 인라인 블록 독립 페이지 이관 (2026-07-22 GM: O1식 박스 허브 단순화 Task 2)
+  원본: wellperion_guide(main).html #m1-dash (M2 마케팅 현황 대시보드 인라인 통합분) — 스타일·마크업·스크립트 그대로 이식.
+  상대경로 2건만 조정(리로케이션): review_queue.json → ../review/review_queue.json · 월간마케팅보고서.html → 같은 폴더 상대경로.
+  FUNNEL_APPS_SCRIPT_URL·RS_URL 등 GAS/원격 URL은 절대경로라 원본 그대로.
+-->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1c1a1b;font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;min-height:100vh;padding:18px 16px 40px;}
+#m1-dash-wrap{max-width:1200px;margin:0 auto;}
+/* ── M2 대시보드 스타일 — #m1-dash 스코프(전역 리셋 제거: 가이드 전역 *{box-sizing;margin;padding} 사용) ── */
+#m1-dash{
+  --bg:#1c1a1b;--paper:#252220;--paper2:#2d2a28;--text:#f0ede8;--dim:#7a7870;
+  --accent:#C4A882;--accent-bg:rgba(196,168,130,0.10);--accent-hi:rgba(196,168,130,0.18);--border:#3a3633;
+  --green:#5fb870;--green-bg:rgba(95,184,112,0.11);
+  --red:#e85540;--red-bg:rgba(232,85,64,0.11);
+  --yellow:#d9bb3f;--yellow-bg:rgba(217,187,63,0.11);
+  --blue:#5493c8;--blue-bg:rgba(84,147,200,0.12);
+  --orange:#d98840;--orange-bg:rgba(217,136,64,0.12);
+  --purple:#9b7fcf;--purple-bg:rgba(155,127,207,0.12);
+  --f1:#5493c8;--f1-bg:rgba(84,147,200,0.12);
+  --f2:#9b7fcf;--f2-bg:rgba(155,127,207,0.12);
+  --f3:#d98840;--f3-bg:rgba(217,136,64,0.12);
+  --f4:#d9bb3f;--f4-bg:rgba(217,187,63,0.12);
+  --f5:#5fb870;--f5-bg:rgba(95,184,112,0.12);
+  --radius-sm:8px;--radius-md:12px;--radius-lg:14px;
+  --shadow:0 1px 3px rgba(0,0,0,.35);
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.55;font-size:14px;
+  font-variant-numeric:tabular-nums;
+  border:1px solid var(--border);border-radius:14px;overflow:hidden;
+}
+#m1-dash a{color:var(--accent);text-decoration:none}
+#m1-dash a:hover{color:var(--text)}
+#m1-dash .header{background:var(--paper);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+#m1-dash .header-left{display:flex;align-items:center;gap:10px}
+#m1-dash .header h1{font-size:16px;font-weight:700;letter-spacing:-.01em}
+#m1-dash .header h3{font-size:1.02rem}
+#m1-dash .header-meta{font-size:11px;color:var(--dim)}
+#m1-dash .content{padding:24px 24px 28px;max-width:100%;margin:0}
+#m1-dash .section{margin-bottom:32px}
+#m1-dash .section-title{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.10em;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+#m1-dash .section-title::after{content:"";flex:1;height:1px;background:var(--border)}
+#m1-dash .kpi-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+#m1-dash .kpi-card{flex:1;min-width:100px;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 14px;text-align:center;box-shadow:var(--shadow)}
+#m1-dash .kpi-card .num{font-size:24px;font-weight:700;color:var(--accent);letter-spacing:-.02em;line-height:1.1}
+#m1-dash .kpi-card .unit{font-size:10px;color:var(--dim);margin-left:2px}
+#m1-dash .kpi-card .label{font-size:10px;color:var(--dim);margin-top:5px;letter-spacing:.02em}
+#m1-dash .kpi-card .sub{font-size:10px;color:var(--dim);margin-top:2px}
+#m1-dash .channel-table{width:100%;border-collapse:collapse;font-size:13px}
+#m1-dash .channel-table th{background:var(--paper2);padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--dim);border-bottom:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase}
+#m1-dash .channel-table td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px}
+#m1-dash .channel-table tr:last-child td{border-bottom:none}
+#m1-dash .channel-table tr:hover td{background:var(--accent-bg)}
+#m1-dash .placeholder{color:var(--dim);font-style:italic;font-size:11px}
+#m1-dash .conv-toggle{background:none;border:none;padding:0;font:inherit;font-weight:600;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+#m1-dash .conv-toggle:hover{color:var(--text)}
+#m1-dash .conv-toggle .arrow{display:inline-block;transition:transform .15s;margin-left:3px;font-size:10px}
+#m1-dash .conv-toggle.open .arrow{transform:rotate(90deg)}
+#m1-dash .conv-detail-row td{background:var(--paper2);padding:0;border-bottom:1px solid var(--border)}
+#m1-dash .conv-detail-wrap{padding:12px 14px 16px}
+#m1-dash .conv-detail-meta{font-size:10.5px;color:var(--dim);margin-bottom:8px}
+#m1-dash .conv-detail-meta b{color:var(--text)}
+#m1-dash .conv-detail-meta.mismatch{color:var(--red)}
+#m1-dash .conv-detail-table{width:100%;border-collapse:collapse;font-size:11.5px;background:var(--paper)}
+#m1-dash .conv-detail-table th{text-align:left;padding:6px 8px;font-size:9px;font-weight:700;color:var(--dim);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.04em}
+#m1-dash .conv-detail-table td{padding:6px 8px;border-bottom:1px solid var(--border)}
+#m1-dash .conv-detail-table tr:last-child td{border-bottom:none}
+#m1-dash .conv-unconfirmed{color:var(--dim);font-style:italic}
+#m1-dash .conv-basis{font-size:9.5px;color:var(--dim)}
+#m1-dash .period-bar{display:flex;align-items:center;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+#m1-dash .period-btn{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;transition:background .15s,color .15s,border-color .15s;white-space:nowrap}
+#m1-dash .period-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:rgba(196,168,130,.3)}
+#m1-dash .period-btn.active{background:var(--accent-hi);color:var(--accent);border-color:rgba(196,168,130,.5)}
+#m1-dash .period-status{font-size:11px;color:var(--dim);margin-left:4px}
+#m1-dash .month-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+#m1-dash .month-nav-btn{background:var(--paper);border:1px solid var(--border);color:var(--dim);font-size:13px;font-weight:700;width:30px;height:30px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+#m1-dash .month-nav-btn:hover:not(:disabled){background:var(--accent-bg);color:var(--accent);border-color:rgba(196,168,130,.35)}
+#m1-dash .month-nav-btn:disabled{opacity:.3;cursor:default}
+#m1-dash .month-nav-label{font-size:14px;font-weight:700;color:var(--text);min-width:110px;text-align:center;letter-spacing:-.01em}
+#m1-dash .custom-range{display:none;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding:12px 16px;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md)}
+#m1-dash .custom-range.show{display:flex}
+#m1-dash .custom-range input[type=date]{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:5px 10px;cursor:pointer}
+#m1-dash .custom-range input[type=date]:focus{outline:none;border-color:rgba(196,168,130,.5)}
+#m1-dash .custom-range .sep{color:var(--dim);font-size:12px}
+#m1-dash .custom-query-btn{padding:5px 14px;border-radius:20px;border:1px solid rgba(196,168,130,.4);background:var(--accent-bg);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;transition:background .15s}
+#m1-dash .custom-query-btn:hover{background:var(--accent-hi)}
+#m1-dash .print-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1px solid rgba(196,168,130,.4);background:var(--accent-bg);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;transition:background .15s}
+#m1-dash .print-btn:hover{background:var(--accent-hi)}
+@media(max-width:640px){
+  #m1-dash .content{padding:16px 16px 24px}
+  #m1-dash .kpi-card .num{font-size:20px}
+  #m1-dash .kpi-row{gap:8px}
+  #m1-dash .period-bar{gap:4px}
+  #m1-dash .period-btn{padding:4px 10px;font-size:11px}
+  #m1-dash .month-nav-label{font-size:13px;min-width:90px}
+  #m1-dash .insight-grid{grid-template-columns:1fr !important}
+}
+@media(max-width:430px){
+  #m1-dash .channel-table th{padding:8px 6px;font-size:9px}
+  #m1-dash .channel-table td{padding:7px 6px;font-size:11px}
+}
+@keyframes skPulse{0%,100%{opacity:.35}50%{opacity:.7}}
+#m1-dash .sk-pulse{background:var(--border);border-radius:6px;animation:skPulse 1.4s ease-in-out infinite}
+#m1-dash .flow-skeleton{height:120px;border-radius:var(--radius-md);margin-bottom:8px}
+#m1-dash .chan-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:5px;margin-right:7px;overflow:hidden;vertical-align:middle;flex-shrink:0}
+#m1-dash .chan-icon svg{display:block;width:100%;height:100%}
+#m1-dash .chip-row{display:flex;flex-wrap:wrap;gap:4px}
+#m1-dash .chip{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:var(--paper2);border:1px solid var(--border);overflow:hidden;flex-shrink:0}
+#m1-dash .chip svg{display:block;width:13px;height:13px}
+#m1-dash .post-metric{font-size:10.5px;color:var(--dim);margin-top:2px}
+#m1-dash .post-metric b{color:var(--text);font-weight:600}
+#m1-dash .measure-pending{background:var(--paper2);border:1px solid var(--border);border-left:3px solid var(--dim);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:12px;font-size:12px;color:var(--text);line-height:1.7}
+#m1-dash .measure-pending b{color:var(--accent)}
+#m1-dash .delta{font-weight:700}
+#m1-dash .delta.up{color:var(--green)}
+#m1-dash .delta.down{color:var(--red)}
+#m1-dash .delta.flat{color:var(--dim);font-weight:400}
+#m1-dash .insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#m1-dash .insight-card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 16px 15px}
+#m1-dash .insight-card.good{border-left:3px solid var(--green)}
+#m1-dash .insight-card.weak{border-left:3px solid var(--red)}
+#m1-dash .insight-card h4{font-size:12.5px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+#m1-dash .insight-card p{font-size:12px;color:var(--dim);line-height:1.7}
+#m1-dash .insight-card b{color:var(--text)}
+@media print{
+  #m1-dash .print-btn,#m1-dash .period-btn,#m1-dash .custom-range,#m1-dash .month-nav{display:none !important}
+  @page{ size:A3 portrait; margin:8mm; }
+  #m1-dash{--bg:#ffffff; --paper:#ffffff; --paper2:#f4f2ee; --text:#1a1816; --dim:#5a5850; --accent:#8a6d3f; --accent-bg:#f4ede2; --accent-hi:#ecdfc9; --border:#c9c4bc; --green:#2f7a3d; --green-bg:#eaf5ec; --red:#b23223; --red-bg:#fbeae7; --purple:#5b4a8a;}
+  #m1-dash *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important}
+  #m1-dash{background:#fff !important;color:#1a1816 !important;font-size:9px;line-height:1.25}
+  #m1-dash .header{position:static;box-shadow:none;padding:0 0 5px}
+  #m1-dash .header h1{font-size:15px}
+  #m1-dash .header-meta{color:#5a5850;font-size:9px}
+  #m1-dash .content{max-width:100%;padding:0}
+  #m1-dash .section{margin-bottom:8px;break-inside:avoid}
+  #m1-dash .section-title{font-size:8px;margin-bottom:5px}
+  #m1-dash .kpi-card,#m1-dash .channel-table,#m1-dash .insight-card,#m1-dash .measure-pending{border:1px solid #c9c4bc;box-shadow:none}
+  #m1-dash .kpi-card{padding:7px 6px}
+  #m1-dash .kpi-card .num{font-size:17px}
+  #m1-dash .kpi-card .label,#m1-dash .kpi-card .sub,#m1-dash .kpi-card .unit{font-size:7.5px}
+  #m1-dash .channel-table th,#m1-dash .channel-table td{padding:4px 5px;font-size:7.5px}
+  #m1-dash .chan-icon{width:11px;height:11px;margin-right:4px}
+  #m1-dash .chip{width:14px;height:14px}
+  #m1-dash .chip svg{width:9px;height:9px}
+  #m1-dash .post-metric{font-size:7px}
+  #m1-dash .insight-grid{gap:8px}
+  #m1-dash .insight-card{padding:8px 9px 8px}
+  #m1-dash .insight-card h4{font-size:9px}
+  #m1-dash .insight-card p{font-size:7.5px}
+  #m1-dash .measure-pending{padding:7px 9px;font-size:7.5px}
+  #m1-dash .page-footer{display:none}
+  #m1-dash .flow-skeleton,#m1-dash .sk-pulse{display:none}
+}
+/* ── STEP3: 임베드만 인쇄(래퍼 밖·프리픽스 안 함) ── */
+@media print{
+  body.m1dash-print *{visibility:hidden}
+  body.m1dash-print #m1-dash, body.m1dash-print #m1-dash *{visibility:visible}
+  body.m1dash-print #m1-dash{position:absolute;left:0;top:0;width:100%}
+}
+</style>
+</head>
+<body>
+<div id="m1-dash-wrap">
+<div id="m1-dash">
+<div id="print-fit">
+<div class="header">
+  <div class="header-left">
+    <h3 style="margin:0 0 4px;">📊 콘텐츠 → 문의 성과 <span style="font-size:12px;color:var(--dim);font-weight:400;">· 기간 기준 라이브</span></h3>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <button class="print-btn" onclick="M2DASH.printDash()">🖨 인쇄</button>
+    <span class="header-meta">AI CMO · 실무진: 김남욱 GM</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ════════════════════════════════════════════
+       ① 조회 기간 — 페이지 최상단 단일 필터 (2026-07-18 GM)
+       아래 모든 실측 섹션이 이 기간을 공유합니다.
+       ════════════════════════════════════════════ -->
+  <div class="section" style="margin-bottom:20px">
+    <div class="section-title">조회 기간</div>
+    <div class="month-nav" id="month-nav-row">
+      <button class="month-nav-btn" id="month-nav-prev" onclick="M2DASH.shiftMonth(-1)" title="이전 달">&#9664;</button>
+      <span class="month-nav-label" id="month-nav-label">2026년 6월</span>
+      <button class="month-nav-btn" id="month-nav-next" onclick="M2DASH.shiftMonth(1)" title="다음 달" disabled>&#9654;</button>
+    </div>
+    <div class="period-bar">
+      <button class="period-btn" data-period="day" onclick="M2DASH.switchPeriod('day')">일</button>
+      <button class="period-btn" data-period="week" onclick="M2DASH.switchPeriod('week')">주</button>
+      <button class="period-btn active" data-period="month" onclick="M2DASH.switchPeriod('month')">월</button>
+      <button class="period-btn" data-period="custom" onclick="M2DASH.toggleCustomRange()">기간</button>
+      <button class="period-btn" onclick="M2DASH.loadYearToDate()">올해</button>
+      <a href="월간마케팅보고서.html" class="period-btn" style="text-decoration:none">📄 월간 보고서</a>
+      <span class="period-status" id="period-status">월간 기준 · 집계 불러오는 중…</span>
+    </div>
+
+    <div class="custom-range" id="custom-range-row">
+      <input type="date" id="custom-from" />
+      <span class="sep">~</span>
+      <input type="date" id="custom-to" />
+      <button class="custom-query-btn" onclick="M2DASH.runCustomQuery()">조회</button>
+      <span id="custom-range-hint" style="font-size:12px;color:var(--dim)"></span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ② 요약 — 발행 게시물 · 콘텐츠 경유 문의 · 게시물당 문의 (선택 기간)
+       발행 = review_queue.json 발행완료(5채널: 인스타그램·네이버 블로그·네이버 카페·카카오·당근)
+       경유 문의 = funnel_conversion byChannel 중 위 5채널에 해당하는 문의 합(전화매칭 아님·유입채널 기준, 실측)
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">요약</div>
+    <div class="kpi-row" id="summary-kpi-row">
+      <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">발행 게시물</div></div>
+      <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">콘텐츠 경유 문의</div></div>
+      <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">게시물당 문의</div></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ②-b 가입전환율 — 모수 분리 표시 (2026-07-20 GM 지시)
+       기존엔 "41.3%"가 멤버십만인지 강습 포함인지 화면에 안 드러났다(모수 불명확). 여기서 둘 다 병기한다.
+       분모(문의)는 멤버십+성인강습+유소년강습 통합 문의로 공통 — 분자(가입)만 다르다:
+       멤버십만 = 유효회원 전화매칭 단독 / 강습 포함 = 유효회원∪강습등록 전화매칭 union.
+       데이터 = funnel_conversion total(convertedMemberOnly·converted·lessonAdded, 서버 기존 필드 그대로 — 신규 집계 없음).
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">가입전환율 — 모수 기준</div>
+    <div class="kpi-row" id="conv-basis-kpi-row">
+      <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">전환율(멤버십만)</div></div>
+      <div class="kpi-card"><div class="num sk-pulse" style="height:24px;border-radius:6px"></div><div class="label">전환율(강습 포함)</div></div>
+    </div>
+    <div style="font-size:10.5px;color:var(--dim);margin-top:6px" id="conv-basis-note"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ③ 채널별 성과 — 5채널 × (발행·경유문의·게시물당 문의·증감)
+       증감 = 선택 기간과 동일 길이의 직전 기간 대비(문의 기준). 실측 두 번 조회.
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">채널별 성과</div>
+    <div id="channel-perf-wrap">
+      <div class="flow-skeleton sk-pulse"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ③-a 전 유입채널 실측 (2026-07-20 시모 — 네이버 유입 진단)
+       위 '채널별 성과'는 우리가 발행하는 콘텐츠 5채널만 본다. 그래서 실제 문의를 가장 많이 데려오는
+       경로(네이버·소개·지인·오프라인 등 콘텐츠 밖 채널)가 화면에서 통째로 빠져 있었다.
+       데이터 = 이미 받아둔 funnel_conversion 응답의 byChannel 그대로(추가 조회·신규 집계 없음).
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">전 유입채널 실측 (콘텐츠 밖 포함)</div>
+    <div id="all-channel-wrap">
+      <div class="flow-skeleton sk-pulse"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ③-b 강습 종목별 문의·등록 (2026-07-20 GM 지시 — "강습도 종목별로 나눠 표시")
+       데이터 = lesson_breakdown 액션(팀시트 기반 기존 서버 로직 그대로 재사용 — 신규 집계 없음).
+       문의=선택 기간(팀시트 타임스탬프 기준) · 등록=누적(팀시트에 등록일이 없어 기간분리 불가, 정직 표기).
+       실제 데이터가 있는 종목만 표시 — 시트/상태열 미발견은 '미상'(0으로 날조하지 않음).
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">강습 종목별 문의·등록</div>
+    <div id="lesson-breakdown-wrap">
+      <div class="flow-skeleton sk-pulse"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ⑤ 인사이트 — 채널별 게시물당 문의 비율(③ 실측치)로만 산출. 게시글 단위 인사이트는 ④가 준비중이라 보류.
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">인사이트</div>
+    <div id="insight-wrap">
+      <div class="flow-skeleton sk-pulse" style="height:90px"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       편별 반응 성적표 (2026-07-20 신설 · 2026-07-20 GM 지시로 M1 라이브 표 확장)
+       데이터 원천 = status/cmo_reaction_scorecard.json(reaction_scorecard.py 원장 그대로 재사용,
+       새 파일·새 집계 없음). 판정 기준·측정 정의 정본 = S2 AI-CMO 탭 '반응 루프' — 여기서는
+       재서술하지 않고 데이터 표시 + 포인터만 한다.
+       ════════════════════════════════════════════ -->
+  <div class="section" style="margin-bottom:0">
+    <div class="section-title">편별 반응 성적표</div>
+    <div class="measure-pending">2026-07-20~2026-08-20 GM 지시로 <b>관찰 모드</b> — 저조 판정이 나와도 매 건 GM 알림은 쏘지 않고 판정·기록만 축적해 기준(최근 5편 중앙값 대비 50% 미만=저조)이 타당한지 검증합니다. 아래 표는 판정 근거(도달값·중앙값·비교표본)까지 그대로 보여줍니다. 매주 마케팅 브리프 §5 "콘텐츠 반응 성적표"에서도 동일 데이터 확인 가능. <strong>판정 기준·측정 한계 전체 정의 = S2 AI-CMO 탭 '반응 루프' 참고</strong>(재서술 안 함).</div>
+    <div id="reaction-scorecard-wrap"><div class="flow-skeleton sk-pulse" style="height:90px"></div></div>
+  </div>
+
+</div>
+</div>
+    <script>
+(function(){
+// ─── 마케팅 현황 대시보드 — 콘텐츠 → 문의 성과 전용 재설계 (2026-07-18 GM 확정) ───────
+// 문의 개별 상담·CRM 편집(이름·연락처·상담이력)은 CPO 「문의&등록 현황」소관 — 이 페이지는 다루지 않는다.
+// 단 집계 수치(가입전환율 모수 구분·강습 종목별 문의/등록 건수)는 2026-07-20 GM 지시로 이 페이지에도 병기한다
+// (모수 불명확·종목별 미분리 문제 해소 — 서버 기존 필드/액션 재사용, 신규 집계 로직 없음).
+// 값 지어내기 금지: 실측 안 되는 지표는 '측정 준비중'/'미상'으로 정직 표기.
+
+var FUNNEL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── 채널 표준화 ──────────────────────────────────────────────
+// review_queue.json의 자유텍스트 channel → 콘텐츠 5채널(발행 집계용).
+// GAS _canonicalChannel_()과 동일 원본 코드에서 확인: 인스타그램·카카오톡·당근마켓·네이버(블로그/검색)·
+// 동부이촌동 커뮤니티(카페)를 별도 버킷으로 실제 분리 집계함(.deploy-funnel/Survey.js 112행) — 날조 아님, 실측 매핑.
+var CONTENT_CHANNELS = ['인스타그램', '네이버 블로그', '네이버 카페', '카카오', '당근'];
+function canonPubChannel(raw) {
+  var s = String(raw || '');
+  if (/인스타/.test(s)) return '인스타그램';
+  if (/카카오/.test(s)) return '카카오';
+  if (/당근/.test(s)) return '당근';
+  if (/카페/.test(s)) return '네이버 카페';
+  if (/블로그/.test(s)) return '네이버 블로그';
+  return null; // 매핑 밖 채널 — 집계 제외(추정 금지)
+}
+// 발행 채널(콘텐츠 5채널) → GAS 문의 유입채널 표준 버킷(funnel_conversion byChannel의 channel 값과 정합)
+var PUB_TO_GAS_CHANNEL = {
+  '인스타그램': '인스타그램',
+  '네이버 블로그': '네이버',
+  '네이버 카페': '동부이촌동 커뮤니티',
+  '카카오': '카카오톡',
+  '당근': '당근마켓'
+};
+// ─── 채널 로고(인라인 SVG, CSP상 외부 이미지 금지) — 브랜드색 근사, 접근성은 title/aria-label로 ──
+var _iconSeq = 0;
+function chipIconSvg(ch) {
+  _iconSeq++;
+  var uid = 'ic' + _iconSeq;
+  switch (ch) {
+    case '인스타그램':
+      return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<defs><linearGradient id="' + uid + '" x1="0" y1="1" x2="1" y2="0">' +
+        '<stop offset="0" stop-color="#FEDA75"/><stop offset=".45" stop-color="#D62976"/><stop offset="1" stop-color="#4F5BD5"/>' +
+        '</linearGradient></defs>' +
+        '<rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="url(#' + uid + ')"/>' +
+        '<rect x="6.8" y="6.8" width="10.4" height="10.4" rx="3.2" fill="none" stroke="#fff" stroke-width="1.7"/>' +
+        '<circle cx="12" cy="12" r="3" fill="none" stroke="#fff" stroke-width="1.7"/>' +
+        '<circle cx="17.1" cy="6.9" r="1.1" fill="#fff"/></svg>';
+    case '네이버 블로그':
+      return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="#03C75A"/>' +
+        '<path d="M7 6.5h3.7l4.6 6.8V6.5H19v11h-3.7l-4.6-6.8v6.8H7v-11z" fill="#fff"/></svg>';
+    case '네이버 카페':
+      return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="#03C75A"/>' +
+        '<path d="M6.5 9.5h9v4.2a3 3 0 0 1-3 3h-3a3 3 0 0 1-3-3V9.5z" fill="none" stroke="#fff" stroke-width="1.6"/>' +
+        '<path d="M15.3 10.2h1.4a2 2 0 0 1 0 4h-1.1" fill="none" stroke="#fff" stroke-width="1.6"/>' +
+        '<path d="M8.3 7.3v1.2M11 7.3v1.2M13.7 7.3v1.2" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>';
+    case '카카오':
+      return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="#FEE500"/>' +
+        '<path d="M12 6.4c-4 0-7.2 2.5-7.2 5.6 0 1.9 1.3 3.6 3.2 4.6l-.8 3 3.2-1.9c.5.07 1.05.1 1.6.1 4 0 7.2-2.5 7.2-5.6S16 6.4 12 6.4z" fill="#3C1E1E"/></svg>';
+    case '당근':
+      return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="#FF8A3D"/>' +
+        '<path d="M12.3 8.2c2.4-.3 4.2-2.2 3.9-3.1-.9-.3-2.8.5-3.7 1.9" fill="#4CAF50"/>' +
+        '<path d="M9 9.2c2.6 0 6 1.7 6 4.6 0 3-3.4 5.6-4.7 5.6-1.1 0-1.6-1-1.3-2.1.2-.8-.1-1-.8-.7-1.2.6-2.3-.2-2.1-1.4.1-.8-.2-1-.9-.8-1.1.3-1.9-.6-1.4-1.7C4.4 10.8 6.6 9.2 9 9.2z" fill="#fff"/></svg>';
+    default:
+      return '';
+  }
+}
+function chanIconHtml(ch, cls) {
+  var svg = chipIconSvg(ch);
+  if (!svg) return '';
+  return '<span class="' + cls + '" title="' + esc(ch) + '" role="img" aria-label="' + esc(ch) + '">' + svg + '</span>';
+}
+
+// 폴더 경로에서 채널별 산출물 표시 세그먼트(/output(...)) 제거 → 같은 콘텐츠의 여러 채널 발행을
+// 하나의 그룹 키로 묶는다(값 손실 없음, 표시 전용 그룹핑).
+function _groupKey(it) {
+  return String((it && it.folder) || (it && it.id) || '').replace(/\/output\([^)]*\)/g, '');
+}
+// ★2026-07-18 GM 버그 리포트(7/16 콘텐츠 IG만 표시) 근본 수정 ─────────────
+// 원인 실측: review_queue.json에서 같은 콘텐츠의 채널별 엔트리 중 일부(예: 260716_L2_PT의
+// BLOG/CAFE/DANGGN/KAKAO)는 status='발행완료'인데 published_at 필드가 null인 레코드가 실재함
+// (IG 엔트리만 published_at 보유). 종전 로직은 "그룹핑 전에 개별 항목의 published_at 유무로
+// 필터"했기 때문에 published_at 없는 채널 엔트리가 그룹 결성 전에 통째로 탈락 → IG 1개만 남음.
+// 수정: 먼저 콘텐츠(folder) 단위로 전부 묶고, 그룹의 대표 날짜(그룹 내 published_at 중 최댓값)로
+// "이 콘텐츠가 언제 나갔나"를 판정한 뒤, 그 대표 날짜가 기간에 들면 그룹의 모든 채널 엔트리를
+// (개별 published_at 유무와 무관하게) 채널 카운트에 포함한다 — status='발행완료'가 "실제로 나간
+// 채널"의 유일한 신호이므로(개별 published_at은 기록 누락일 뿐), 추정이 아니라 실제 발행 여부의
+// 올바른 판정 기준. 그룹 전체에 published_at이 하나도 없으면 시점 판단이 불가하므로 그 그룹은
+// 제외한다(추정 금지).
+function _buildContentGroups(rq) {
+  var recognized = (rq || []).filter(function(it) { return it && it.status === '발행완료' && canonPubChannel(it.channel); });
+  var groups = {}, order = [];
+  recognized.forEach(function(it) {
+    var key = _groupKey(it);
+    if (!groups[key]) { groups[key] = []; order.push(key); }
+    groups[key].push(it);
+  });
+  return order.map(function(key) {
+    var arr = groups[key];
+    var dates = arr.map(function(x) { return (typeof x.published_at === 'string') ? x.published_at.slice(0, 10) : ''; }).filter(Boolean);
+    dates.sort();
+    return { key: key, items: arr, date: dates.length ? dates[dates.length - 1] : null };
+  }).filter(function(g) { return g.date; });
+}
+
+
+// ─── 날짜 유틸 ──────────────────────────────────────────────
+function _fmtYMD(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+// 선택 기간과 동일 길이의 직전 기간(증감 비교용) — 실측 재조회 대상 범위 계산일 뿐 값을 만들지 않음.
+function _prevRange(from, to) {
+  var f = new Date(from + 'T00:00:00');
+  var t = new Date(to + 'T00:00:00');
+  var days = Math.round((t - f) / 86400000) + 1;
+  var prevTo = new Date(f); prevTo.setDate(prevTo.getDate() - 1);
+  var prevFrom = new Date(prevTo); prevFrom.setDate(prevFrom.getDate() - (days - 1));
+  return { from: _fmtYMD(prevFrom), to: _fmtYMD(prevTo) };
+}
+
+// ─── 상태 ──────────────────────────────────────────────────
+var _rangeFromTo = { from: '', to: '' };
+var _periodLabel = '이번 달';
+var _rqCache = null;       // review_queue.json 캐시(1회 fetch)
+var _navYear = new Date().getFullYear();
+var _navMonth = new Date().getMonth() + 1;
+
+// ─── review_queue.json (발행 실측) ────────────────────────────
+function loadReviewQueue() {
+  if (_rqCache) return Promise.resolve(_rqCache);
+  return fetch('../review/review_queue.json', { redirect: 'follow' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) { _rqCache = Array.isArray(data) ? data : []; return _rqCache; })
+    .catch(function() { _rqCache = []; return _rqCache; });
+}
+
+// 발행완료 + 콘텐츠 5채널 + 기간(from~to) 필터 — 콘텐츠(그룹) 대표 날짜 기준(버그 수정 근거는
+// _buildContentGroups 주석 참고: 개별 published_at 누락 채널 엔트리도 그룹 대표 날짜로 포함).
+function _pubItemsInRange(rq, from, to) {
+  var groups = _buildContentGroups(rq).filter(function(g) { return g.date >= from && g.date <= to; });
+  var out = [];
+  groups.forEach(function(g) { g.items.forEach(function(it) { out.push(it); }); });
+  return out;
+}
+function _pubCountByChannel(items) {
+  var out = {};
+  CONTENT_CHANNELS.forEach(function(c) { out[c] = 0; });
+  items.forEach(function(it) {
+    var ch = canonPubChannel(it.channel);
+    if (ch) out[ch] = (out[ch] || 0) + 1;
+  });
+  return out;
+}
+
+// ─── funnel_conversion (문의 실측) ────────────────────────────
+function fetchFunnelConversion(from, to) {
+  var url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion';
+  if (from && to) url += '&from=' + from + '&to=' + to;
+  return fetch(url, { redirect: 'follow' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+    .catch(function(e) { console.warn('[funnel_conversion] 실패:', e && e.message); return null; });
+}
+// ─── lesson_breakdown (강습 종목별 문의·등록, 서버 기존 액션) — 2026-07-20 GM 지시 ───
+function fetchLessonBreakdown(from, to) {
+  var url = FUNNEL_APPS_SCRIPT_URL + '?action=lesson_breakdown';
+  if (from && to) url += '&from=' + from + '&to=' + to;
+  return fetch(url, { redirect: 'follow' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+    .catch(function(e) { console.warn('[lesson_breakdown] 실패:', e && e.message); return null; });
+}
+// byChannel 배열 → { GAS채널명: 문의수 } 맵
+function _fcChannelMap(fcData) {
+  var m = {};
+  if (fcData && Array.isArray(fcData.byChannel)) {
+    fcData.byChannel.forEach(function(r) { if (r && r.channel) m[r.channel] = r.inquiries || 0; });
+  }
+  return m;
+}
+// byChannel 배열 → { GAS채널명: {inquiries, converted, rate} } 맵 — 가입전환 상세 드릴다운용(2026-07-20 GM 지시·배834)
+function _fcChannelStatsMap(fcData) {
+  var m = {};
+  if (fcData && Array.isArray(fcData.byChannel)) {
+    fcData.byChannel.forEach(function(r) {
+      if (r && r.channel) m[r.channel] = { inquiries: r.inquiries || 0, converted: r.converted || 0, rate: (r.rate == null ? 0 : r.rate) };
+    });
+  }
+  return m;
+}
+
+// ─── funnel_conversion_detail (가입전환 상세 명단 실측) — 2026-07-20 GM 지시(배834) ─────
+// "전환 N건 = 이 사람들"을 채널 클릭 시 펼쳐 보여준다. 서버가 funnel_conversion과 동일 매칭
+// 규칙으로 산출 → 채널별 명단 건수는 항상 그 액션의 byChannel.converted와 일치(회귀 시 서버 로직 확인).
+var _convDetailCache = {};  // key: from+'|'+to → Promise
+function fetchFunnelConversionDetail(from, to) {
+  var key = (from || '') + '|' + (to || '');
+  if (_convDetailCache[key]) return _convDetailCache[key];
+  var url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion_detail';
+  if (from && to) url += '&from=' + from + '&to=' + to;
+  var p = fetch(url, { redirect: 'follow' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+    .catch(function(e) { console.warn('[funnel_conversion_detail] 실패:', e && e.message); delete _convDetailCache[key]; return null; });
+  _convDetailCache[key] = p;
+  return p;
+}
+function _convRowHtml(rec) {
+  var regCls = rec.regDateConfirmed ? '' : ' class="conv-unconfirmed"';
+  return '<tr>' +
+    '<td>' + esc(rec.name) + '</td>' +
+    '<td>····' + esc(rec.phone4) + '</td>' +
+    '<td>' + esc(rec.type || '—') + '</td>' +
+    '<td>' + esc(rec.inquiryDate || '확인불가') + '</td>' +
+    '<td' + regCls + '>' + esc(rec.regDate) + '</td>' +
+    '<td class="conv-basis">' + esc(rec.matchBasis) + '</td>' +
+    '</tr>';
+}
+// 채널 행의 '가입 N건' 클릭 → 바로 아래 상세행 토글(지연 로드, 기간별 캐시)
+function toggleConvDetail(btn, gasCh) {
+  var tr = btn.closest('tr');
+  var next = tr.nextElementSibling;
+  if (next && next.classList.contains('conv-detail-row')) {
+    var willOpen = next.style.display === 'none';
+    next.style.display = willOpen ? '' : 'none';
+    btn.classList.toggle('open', willOpen);
+    return;
+  }
+  btn.classList.add('open');
+  var detailTr = document.createElement('tr');
+  detailTr.className = 'conv-detail-row';
+  var td = document.createElement('td');
+  td.colSpan = 6;
+  td.innerHTML = '<div class="conv-detail-wrap"><div class="conv-detail-meta">불러오는 중…</div></div>';
+  detailTr.appendChild(td);
+  tr.parentNode.insertBefore(detailTr, tr.nextSibling);
+
+  var from = _rangeFromTo.from, to = _rangeFromTo.to;
+  fetchFunnelConversionDetail(from, to).then(function(fd) {
+    var wrap = td.querySelector('.conv-detail-wrap');
+    if (!fd) { wrap.innerHTML = '<div class="conv-detail-meta mismatch">상세 명단 조회 실패 — 잠시 후 다시 시도해주세요.</div>'; return; }
+    var rows = (fd.byChannel && fd.byChannel[gasCh]) || [];
+    var expected = parseInt(btn.dataset.expected || '0', 10);
+    var metaCls = rows.length === expected ? '' : ' mismatch';
+    var metaTxt = '명단 <b>' + rows.length + '건</b>' + (rows.length === expected ? ' — 집계 숫자와 일치' : ' — 집계(' + expected + '건)와 불일치, 확인 필요') +
+      ' · 연락처는 뒷4자리만 표시 · 정직표기: 등록일 미확인 건은 <span class="conv-unconfirmed">확인불가</span>로 표시(날조 아님)';
+    if (!rows.length) {
+      wrap.innerHTML = '<div class="conv-detail-meta' + metaCls + '">' + metaTxt + '</div>';
+      return;
+    }
+    var thead = '<thead><tr><th>이름</th><th>연락처</th><th>종목/구분</th><th>문의일</th><th>등록일</th><th>매칭근거</th></tr></thead>';
+    var body = rows.map(_convRowHtml).join('');
+    wrap.innerHTML = '<div class="conv-detail-meta' + metaCls + '">' + metaTxt + '</div>' +
+      '<div style="overflow-x:auto"><table class="conv-detail-table">' + thead + '<tbody>' + body + '</tbody></table></div>';
+  });
+}
+// 콘텐츠 5채널에 해당하는 문의만 합산(소개·지인/기존·과거 회원/오프라인/기타·미상 등은 콘텐츠 유입이 아니므로 제외)
+function _contentInquirySum(fcChannelMap) {
+  var sum = 0;
+  CONTENT_CHANNELS.forEach(function(c) { sum += (fcChannelMap[PUB_TO_GAS_CHANNEL[c]] || 0); });
+  return sum;
+}
+
+// ─── ② 요약 + ③ 채널별 성과 — 선택 기간 실측 렌더 ─────────────
+function refreshPeriodSections() {
+  var from = _rangeFromTo.from, to = _rangeFromTo.to;
+  if (!from || !to) return;
+  var prev = _prevRange(from, to);
+
+  Promise.all([
+    loadReviewQueue(),
+    fetchFunnelConversion(from, to),
+    fetchFunnelConversion(prev.from, prev.to),
+    fetchLessonBreakdown(from, to)
+  ]).then(function(res) {
+    var rq = res[0], fcCur = res[1], fcPrev = res[2], lb = res[3];
+    var curItems = _pubItemsInRange(rq, from, to);
+    var prevItems = _pubItemsInRange(rq, prev.from, prev.to);
+    var curPubByCh = _pubCountByChannel(curItems);
+    var prevPubByCh = _pubCountByChannel(prevItems);
+    var curInqByCh = _fcChannelMap(fcCur);
+    var prevInqByCh = _fcChannelMap(fcPrev);
+    var curStatsByCh = _fcChannelStatsMap(fcCur);  // {inquiries, converted, rate} — 가입전환 상세 드릴다운용
+
+    renderSummary(curItems.length, _contentInquirySum(curInqByCh), fcCur === null);
+    renderConvBasis(fcCur, fcCur === null);
+    renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcCur === null, curStatsByCh);
+    renderAllChannels(fcCur, fcPrev);
+    renderLessonBreakdown(lb);
+
+    renderInsight(curPubByCh, curInqByCh);
+  });
+}
+
+// ─── ②-b 가입전환율 모수 분리(멤버십만 / 강습 포함) — 2026-07-20 GM 지시 ─────
+function renderConvBasis(fcCur, fcFailed) {
+  var el = document.getElementById('conv-basis-kpi-row');
+  var noteEl = document.getElementById('conv-basis-note');
+  if (!el) return;
+  if (fcFailed || !fcCur || !fcCur.total) {
+    el.innerHTML =
+      '<div class="kpi-card"><div class="num" style="font-size:14px"><span class="placeholder">집계 실패</span></div><div class="label">전환율(멤버십만)</div></div>' +
+      '<div class="kpi-card"><div class="num" style="font-size:14px"><span class="placeholder">집계 실패</span></div><div class="label">전환율(강습 포함)</div></div>';
+    if (noteEl) noteEl.textContent = '';
+    return;
+  }
+  var t = fcCur.total;
+  var inq = t.inquiries || 0;
+  var convM = t.convertedMemberOnly || 0;
+  var convAll = t.converted || 0;
+  var rateM = inq > 0 ? Math.round((convM / inq) * 1000) / 10 : 0;
+  var rateAll = (t.rate != null) ? t.rate : (inq > 0 ? Math.round((convAll / inq) * 1000) / 10 : 0);
+  el.innerHTML =
+    '<div class="kpi-card"><div class="num">' + rateM + '<span class="unit">%</span></div><div class="label">전환율(멤버십만)</div><div class="sub">가입 ' + convM.toLocaleString('ko-KR') + ' / 문의 ' + inq.toLocaleString('ko-KR') + '</div></div>' +
+    '<div class="kpi-card"><div class="num">' + rateAll + '<span class="unit">%</span></div><div class="label">전환율(강습 포함)</div><div class="sub">가입 ' + convAll.toLocaleString('ko-KR') + ' / 문의 ' + inq.toLocaleString('ko-KR') + ' · 강습등록 +' + (t.lessonAdded || 0) + '건</div></div>';
+  if (noteEl) noteEl.textContent = esc(_periodLabel) + ' 기준 · 분모(문의 ' + inq.toLocaleString('ko-KR') + '건)는 멤버십+성인강습+유소년강습 통합 문의로 공통, 분자(가입)만 다름 — 멤버십만=유효회원 전화매칭 단독 / 강습 포함=유효회원∪강습등록 전화매칭 union. ' + esc(t.convBasis || '');
+}
+
+// ─── ③-b 강습 종목별 문의·등록 — 2026-07-20 GM 지시 ─────
+function _lbCellHtml(v) {
+  return (v == null) ? '<span class="placeholder">미상</span>' : v.toLocaleString('ko-KR');
+}
+function renderLessonBreakdown(lb) {
+  var el = document.getElementById('lesson-breakdown-wrap');
+  if (!el) return;
+  if (!lb || !lb.data) {
+    el.innerHTML = '<div class="measure-pending">강습 종목별 집계 실패 — 잠시 후 다시 시도해주세요.</div>';
+    return;
+  }
+  var html = '';
+  Object.keys(lb.data).forEach(function(grp) {
+    var items = lb.data[grp] || [];
+    if (!items.length) return;
+    var thead = '<thead><tr><th>종목</th><th style="text-align:right">문의(' + esc(_periodLabel) + ')</th><th style="text-align:right">등록(누적)</th></tr></thead>';
+    var body = items.map(function(it) {
+      return '<tr><td>' + esc(it.명) + '</td><td style="text-align:right">' + _lbCellHtml(it.inquiries) + '</td><td style="text-align:right">' + _lbCellHtml(it.registered) + '</td></tr>';
+    }).join('');
+    html += '<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px">' + esc(grp) + '</div>' +
+      '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto"><table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table></div></div>';
+  });
+  if (Array.isArray(lb.others) && lb.others.length) {
+    var othBody = lb.others.map(function(o) {
+      return '<tr><td>' + esc(o.유형) + ' · ' + esc(o.명) + '</td><td style="text-align:right">' + _lbCellHtml(o.inquiries) + '</td><td style="text-align:right">' + _lbCellHtml(o.registered) + '</td></tr>';
+    }).join('');
+    html += '<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px">기타(표준 목록 외 시트 존재)</div>' +
+      '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto"><table class="channel-table"><thead><tr><th>종목</th><th style="text-align:right">문의</th><th style="text-align:right">등록</th></tr></thead><tbody>' + othBody + '</tbody></table></div></div>';
+  }
+  if (!html) html = '<div class="measure-pending">종목별 데이터 없음.</div>';
+  html += '<div style="font-size:10.5px;color:var(--dim)">' + esc(lb.basis || '') +
+    (Array.isArray(lb.unmatched) && lb.unmatched.length ? ' · 데이터 미연결 종목(미상): ' + lb.unmatched.map(function(u){ return esc(u.명); }).join(', ') : '') + '</div>';
+  el.innerHTML = html;
+}
+
+function renderSummary(pubCount, inqSum, fcFailed) {
+  var el = document.getElementById('summary-kpi-row');
+  if (!el) return;
+  var perPost = pubCount > 0 ? (inqSum / pubCount).toFixed(1) : null;
+  el.innerHTML =
+    '<div class="kpi-card"><div class="num">' + pubCount.toLocaleString('ko-KR') + '</div><div class="label">발행 게시물</div><div class="sub">' + esc(_periodLabel) + ' · 콘텐츠 5채널</div></div>' +
+    '<div class="kpi-card"><div class="num">' + (fcFailed ? '<span class="placeholder" style="font-size:14px">집계 실패</span>' : inqSum.toLocaleString('ko-KR')) + '</div><div class="label">콘텐츠 경유 문의</div><div class="sub">' + esc(_periodLabel) + ' · 5채널 유입 합</div></div>' +
+    '<div class="kpi-card"><div class="num">' + (perPost != null ? perPost : '—') + '</div><div class="label">게시물당 문의</div><div class="sub">' + (pubCount > 0 ? '경유문의 ÷ 발행' : '발행 없음') + '</div></div>';
+}
+
+function _deltaHtml(cur, prev) {
+  var diff = cur - prev;
+  if (prev === 0 && cur === 0) return '<span class="delta flat">·</span>';
+  if (diff > 0) return '<span class="delta up">▲' + diff.toLocaleString('ko-KR') + '</span>';
+  if (diff < 0) return '<span class="delta down">▼' + Math.abs(diff).toLocaleString('ko-KR') + '</span>';
+  return '<span class="delta flat">±0</span>';
+}
+
+function renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcFailed, curStatsByCh) {
+  var el = document.getElementById('channel-perf-wrap');
+  if (!el) return;
+  curStatsByCh = curStatsByCh || {};
+
+  var rows = CONTENT_CHANNELS.map(function(ch, i) {
+    var gasCh = PUB_TO_GAS_CHANNEL[ch];
+    var pub = curPubByCh[ch] || 0;
+    var pubPrev = prevPubByCh[ch] || 0;
+    var inq = curInqByCh[gasCh] || 0;
+    var inqPrev = prevInqByCh[gasCh] || 0;
+    var perPost = pub > 0 ? (inq / pub).toFixed(1) : '—';
+    var stats = curStatsByCh[gasCh] || { inquiries: 0, converted: 0, rate: 0 };
+    return { ch: ch, gasCh: gasCh, i: i, pub: pub, pubPrev: pubPrev, inq: inq, inqPrev: inqPrev, perPost: perPost, conv: stats.converted, rate: stats.rate };
+  });
+
+  var thead = '<thead><tr><th>채널</th><th style="text-align:right">발행</th><th style="text-align:right">경유 문의</th><th style="text-align:right">게시물당</th><th style="text-align:right">증감</th><th style="text-align:right">가입(전환)</th><th style="text-align:right">전환율</th></tr></thead>';
+  var body = rows.map(function(r) {
+    var convCell = (fcFailed || r.conv === 0)
+      ? '<span style="' + (r.conv === 0 ? 'color:var(--dim)' : '') + '">' + (fcFailed ? '<span class="placeholder">준비중</span>' : r.conv.toLocaleString('ko-KR') + '건') + '</span>'
+      : '<button type="button" class="conv-toggle" data-expected="' + r.conv + '" onclick="M2DASH.toggleConvDetail(this,\'' + esc(r.gasCh) + '\')">' + r.conv.toLocaleString('ko-KR') + '건<span class="arrow">▸</span></button>';
+    return '<tr>' +
+      '<td style="min-width:100px;white-space:nowrap">' + chanIconHtml(r.ch, 'chan-icon') + esc(r.ch) + '</td>' +
+      '<td style="text-align:right;' + (r.pub === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + r.pub.toLocaleString('ko-KR') + '</td>' +
+      '<td style="text-align:right;' + (r.inq === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + (fcFailed ? '<span class="placeholder">준비중</span>' : r.inq.toLocaleString('ko-KR')) + '</td>' +
+      '<td style="text-align:right">' + r.perPost + '</td>' +
+      '<td style="text-align:right">' + (fcFailed ? '—' : _deltaHtml(r.inq, r.inqPrev)) + '</td>' +
+      '<td style="text-align:right">' + convCell + '</td>' +
+      '<td style="text-align:right;' + (r.rate === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + (fcFailed ? '<span class="placeholder">준비중</span>' : r.rate + '%') + '</td>' +
+      '</tr>';
+  }).join('');
+
+  el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">' +
+    '<table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table></div>' +
+    '<div style="font-size:10.5px;color:var(--dim);margin-top:6px">가입(전환) 숫자를 클릭하면 실제 명단(이름·연락처 뒷4자리·종목·문의일·등록일)이 펼쳐집니다 — GM 지시(2026-07-20, 배834). 전환판정=전화매칭(유효회원∪강습등록), 문의 시점 채널 자기신고 기준이라 오분류 가능성이 있습니다.</div>';
+}
+
+
+// ─── ③-a 전 유입채널 실측 — 2026-07-20 시모(네이버 유입 진단) ─────
+// 콘텐츠 5채널 표만으로는 실제 문의의 대부분을 데려오는 경로가 안 보인다(실측: 네이버가 단일 최대,
+// 인스타·당근은 한 자릿수). 같은 funnel_conversion 응답의 byChannel을 그대로 정렬해 전 채널을 보여준다.
+// 새 집계·새 조회 없음 — fcCur/fcPrev는 refreshPeriodSections가 이미 받아둔 값.
+function renderAllChannels(fcCur, fcPrev) {
+  var el = document.getElementById('all-channel-wrap');
+  if (!el) return;
+  if (!fcCur || !Array.isArray(fcCur.byChannel) || !fcCur.byChannel.length) {
+    el.innerHTML = '<div class="measure-pending">전 유입채널 집계 실패 — 잠시 후 다시 시도해주세요.</div>';
+    return;
+  }
+  var prevMap = _fcChannelMap(fcPrev);
+  var rows = fcCur.byChannel.slice().sort(function(a, b) { return (b.inquiries || 0) - (a.inquiries || 0); });
+  var totalInq = rows.reduce(function(s, r) { return s + (r.inquiries || 0); }, 0);
+
+  var thead = '<thead><tr><th>유입채널</th><th style="text-align:right">문의</th><th style="text-align:right">비중</th><th style="text-align:right">증감</th><th style="text-align:right">가입</th><th style="text-align:right">전환율</th></tr></thead>';
+  var body = rows.map(function(r) {
+    var inq = r.inquiries || 0, conv = r.converted || 0;
+    var rate = (r.rate == null) ? 0 : r.rate;
+    var share = totalInq > 0 ? Math.round(inq / totalInq * 1000) / 10 : 0;
+    return '<tr>' +
+      '<td style="min-width:110px;white-space:nowrap">' + esc(r.channel) + '</td>' +
+      '<td style="text-align:right;font-weight:600">' + inq.toLocaleString('ko-KR') + '</td>' +
+      '<td style="text-align:right;color:var(--dim)">' + share + '%</td>' +
+      '<td style="text-align:right">' + _deltaHtml(inq, prevMap[r.channel] || 0) + '</td>' +
+      '<td style="text-align:right;' + (conv === 0 ? 'color:var(--dim)' : '') + '">' + conv.toLocaleString('ko-KR') + '</td>' +
+      '<td style="text-align:right;' + (rate === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + rate + '%</td>' +
+      '</tr>';
+  }).join('');
+
+  el.innerHTML = '<div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch">' +
+    '<table class="channel-table">' + thead + '<tbody>' + body + '</tbody></table></div>' +
+    '<div style="font-size:10.5px;color:var(--dim);margin-top:6px">' +
+    '채널=문의 시점 자기신고(폼·리셉션 기록) 기준 · 전환판정=전화매칭(유효회원∪강습등록) — 위 표와 같은 규칙. ' +
+    '<b>네이버 세부경로(플레이스/검색/블로그) 분리는 현재 측정불가</b>입니다: 문의시트 중분류 칸이 ' +
+    '\'N-플레이스(검색)\' 한 값으로 플레이스와 검색을 묶어 받고(2026-07-20 실측 네이버 204건 중 197건=96.6%), ' +
+    '소분류 칸은 1.8%·자동 UTM 칸은 0.8%만 채워져 있습니다. 분리 측정이 켜지기 전까지 이 칸을 쪼개 표시하지 않습니다(추정 금지).' +
+    '</div>';
+}
+
+// ─── ⑥ 인사이트 — 채널별 게시물당 문의(③ 실측치) 기준 ─────
+function renderInsight(pubByCh, inqByCh) {
+  var el = document.getElementById('insight-wrap');
+  if (!el) return;
+  var ranked = CONTENT_CHANNELS.map(function(ch) {
+    var pub = pubByCh[ch] || 0;
+    var inq = inqByCh[PUB_TO_GAS_CHANNEL[ch]] || 0;
+    return { ch: ch, pub: pub, inq: inq, ratio: pub > 0 ? inq / pub : null };
+  }).filter(function(r) { return r.ratio !== null; });
+
+  if (!ranked.length) {
+    el.innerHTML = '<div class="measure-pending">' + esc(_periodLabel) + ' 발행이 없어 채널별 비교가 측정 준비중입니다.</div>';
+    return;
+  }
+  ranked.sort(function(a, b) { return b.ratio - a.ratio; });
+  var best = ranked[0];
+  var worst = ranked[ranked.length - 1];
+
+  var html = '<div class="insight-grid">';
+  html += '<div class="insight-card good"><h4>🟢 잘됨 — 더하기</h4><p><b>' + esc(best.ch) + '</b> 채널이 게시물당 <b>' + best.ratio.toFixed(1) + '건</b> 문의로 가장 효율적입니다(발행 ' + best.pub + '건 · 경유문의 ' + best.inq + '건, ' + esc(_periodLabel) + '). 이 채널 발행 비중을 늘려보세요.</p></div>';
+  if (worst.ch !== best.ch) {
+    html += '<div class="insight-card weak"><h4>🔴 약함 — 손보기</h4><p><b>' + esc(worst.ch) + '</b> 채널은 게시물당 <b>' + worst.ratio.toFixed(1) + '건</b>으로 상대적으로 약합니다(발행 ' + worst.pub + '건 · 경유문의 ' + worst.inq + '건, ' + esc(_periodLabel) + '). 콘텐츠 각도·CTA 위치를 점검해보세요.</p></div>';
+  } else {
+    html += '<div class="insight-card weak"><h4>🔴 약함 — 손보기</h4><p>이번 기간엔 발행한 채널이 1곳뿐이라 비교 대상이 없습니다 — 다른 채널도 발행해야 손볼 곳이 보입니다.</p></div>';
+  }
+  var noPub = CONTENT_CHANNELS.filter(function(c) { return !(pubByCh[c] > 0); });
+  if (noPub.length) {
+    html += '</div><div class="measure-pending" style="margin-top:10px">' + esc(_periodLabel) + ' 미발행 채널: <b>' + noPub.map(esc).join(', ') + '</b></div>';
+  } else {
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+
+// ─── 조회 기간 필터 UI 배선 (기존 UX 유지, 렌더 함수만 교체) ─────
+function toggleCustomRange() {
+  var row = document.getElementById('custom-range-row');
+  var isShown = row.classList.contains('show');
+  document.querySelectorAll('.period-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.period === 'custom' && !isShown);
+  });
+  if (isShown) { row.classList.remove('show'); } else { row.classList.add('show'); }
+}
+
+function runCustomQuery() {
+  var fromEl = document.getElementById('custom-from');
+  var toEl = document.getElementById('custom-to');
+  var hintEl = document.getElementById('custom-range-hint');
+  var statusEl = document.getElementById('period-status');
+  var from = fromEl ? fromEl.value : '';
+  var to = toEl ? toEl.value : '';
+  if (!from || !to) { if (hintEl) hintEl.textContent = '시작일과 종료일을 모두 입력해 주세요.'; return; }
+  if (from > to) { if (hintEl) hintEl.textContent = '시작일이 종료일보다 늦습니다.'; return; }
+  if (hintEl) hintEl.textContent = '';
+  _rangeFromTo = { from: from, to: to };
+  _periodLabel = '기간(' + from + '~' + to + ')';
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 불러오는 중…';
+  var navRow = document.getElementById('month-nav-row');
+  if (navRow) navRow.style.display = 'none';
+  refreshPeriodSections();
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
+}
+
+function switchPeriod(period) {
+  document.getElementById('custom-range-row').classList.remove('show');
+  document.querySelectorAll('.period-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.period === period);
+  });
+  var navRow = document.getElementById('month-nav-row');
+  if (navRow) navRow.style.display = (period === 'month') ? 'flex' : 'none';
+
+  var today = new Date();
+  var y = today.getFullYear(), m = ('0' + (today.getMonth() + 1)).slice(-2), d = ('0' + today.getDate()).slice(-2);
+  var statusEl = document.getElementById('period-status');
+
+  if (period === 'day') {
+    _rangeFromTo = { from: y + '-' + m + '-' + d, to: y + '-' + m + '-' + d };
+    _periodLabel = '오늘';
+  } else if (period === 'week') {
+    var w0 = new Date(today); w0.setDate(today.getDate() - 6);
+    _rangeFromTo = { from: _fmtYMD(w0), to: y + '-' + m + '-' + d };
+    _periodLabel = '이번 주(최근 7일)';
+  } else if (period === 'month') {
+    _rangeFromTo = { from: y + '-' + m + '-01', to: y + '-' + m + '-' + d };
+    _periodLabel = '이번 달';
+    _navYear = today.getFullYear(); _navMonth = today.getMonth() + 1;
+    _updateMonthNav();
+  } else {
+    return; // 'custom' — toggleCustomRange가 처리
+  }
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 불러오는 중…';
+  refreshPeriodSections();
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
+}
+
+function loadYearToDate() {
+  var now = new Date();
+  var y = now.getFullYear(), m = ('0' + (now.getMonth() + 1)).slice(-2), d = ('0' + now.getDate()).slice(-2);
+  document.querySelectorAll('.period-btn').forEach(function(b) { b.classList.remove('active'); });
+  var nav = document.getElementById('month-nav-row');
+  if (nav) nav.style.display = 'none';
+  _rangeFromTo = { from: y + '-01-01', to: y + '-' + m + '-' + d };
+  _periodLabel = '올해(연초~오늘)';
+  var statusEl = document.getElementById('period-status');
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 불러오는 중…';
+  refreshPeriodSections();
+  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
+}
+
+// ─── 월 네비게이터 ────────────────────────────────────────────
+function shiftMonth(delta) {
+  _navMonth += delta;
+  if (_navMonth < 1) { _navMonth = 12; _navYear--; }
+  if (_navMonth > 12) { _navMonth = 1; _navYear++; }
+  _updateMonthNav();
+  _loadMonthRange(_navYear, _navMonth);
+}
+function _updateMonthNav() {
+  var labelEl = document.getElementById('month-nav-label');
+  var nextBtn = document.getElementById('month-nav-next');
+  if (labelEl) labelEl.textContent = _navYear + '년 ' + _navMonth + '월';
+  if (nextBtn) {
+    var today = new Date();
+    var isCurrentOrFuture = (_navYear > today.getFullYear()) || (_navYear === today.getFullYear() && _navMonth >= today.getMonth() + 1);
+    nextBtn.disabled = isCurrentOrFuture;
+  }
+}
+function _loadMonthRange(year, month) {
+  var from = year + '-' + String(month).padStart(2, '0') + '-01';
+  var lastDay = new Date(year, month, 0).getDate();
+  var today = new Date();
+  var isThisMonth = (year === today.getFullYear() && month === today.getMonth() + 1);
+  var to = isThisMonth ? _fmtYMD(today) : year + '-' + String(month).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
+  var rangeLabel = year + '년 ' + month + '월';
+  var statusEl = document.getElementById('period-status');
+  if (statusEl) statusEl.textContent = rangeLabel + ' · 불러오는 중…';
+  _rangeFromTo = { from: from, to: to };
+  _periodLabel = rangeLabel;
+  refreshPeriodSections();
+  if (statusEl) statusEl.textContent = rangeLabel + ' · 실측 완료';
+}
+
+function _initDash() {
+  _updateMonthNav();
+  var today = new Date();
+  var y = today.getFullYear(), m = ('0' + (today.getMonth() + 1)).slice(-2), d = ('0' + today.getDate()).slice(-2);
+  _rangeFromTo = { from: y + '-' + m + '-01', to: y + '-' + m + '-' + d };
+  _periodLabel = '이번 달';
+  refreshPeriodSections();
+}
+// ─── 인쇄(임베드 격리) + 인라인 onclick 핸들러 공개 (IIFE 지역화) ───
+function printDash(){ document.body.classList.add('m1dash-print'); window.print(); setTimeout(function(){ document.body.classList.remove('m1dash-print'); }, 400); }
+window.M2DASH = { switchPeriod: switchPeriod, shiftMonth: shiftMonth, toggleCustomRange: toggleCustomRange, runCustomQuery: runCustomQuery, loadYearToDate: loadYearToDate, printDash: printDash, toggleConvDetail: toggleConvDetail };
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', _initDash); } else { _initDash(); }
+
+// ─── 인쇄 한 장 맞춤(Fit-to-page) — 2026-07-18 GM: "좌우로 나뉘지 말고 한 장에" ───────
+// 공용 print_options.js가 용지(A4/A3)·방향(세로/가로)을 선택하면 <html data-print-paper|
+// data-print-orientation>에 반영한다(문서 하단 include, 전 가이드 공통 훅). 여기서는 선택된
+// 용지·방향의 실제 인쇄 가용 영역(px)을 계산해 #print-fit(헤더+본문 전체 래퍼)에 zoom을 적용,
+// 좌우 컬럼 분할·페이지 넘김 없이 한 장에 수렴시킨다. 화면(스크린) 표시는 무관(afterprint에서 리셋).
+function _printPageDims() {
+  var paper = (document.documentElement.getAttribute('data-print-paper') || 'A3').toUpperCase();
+  var orientation = document.documentElement.getAttribute('data-print-orientation') || 'portrait';
+  var mm = (paper === 'A4') ? [210, 297] : [297, 420];
+  var w = mm[0], h = mm[1];
+  if (orientation === 'landscape') { var t = w; w = h; h = t; }
+  var marginMm = 8;
+  var pxPerMm = 96 / 25.4;
+  return { w: (w - marginMm * 2) * pxPerMm, h: (h - marginMm * 2) * pxPerMm };
+}
+// 폭을 인쇄 가용폭(px)으로 먼저 강제해 실제 인쇄 폭 기준으로 자연 높이를 실측한다(스크린 뷰포트
+// 폭에 좌우되지 않게 — 헤드리스/실브라우저 모두 스크린 뷰포트 폭에서 measure하면 가로/세로가
+// 실제 인쇄 폭과 달라 오차 발생, 폭 고정 후 높이만 비율 축소가 유일하게 안전한 방법).
+function _resetPrintFit(wrap) { wrap.style.zoom = ''; wrap.style.width = ''; }
+function fitPrintPage() {
+  var wrap = document.getElementById('print-fit');
+  if (!wrap) return;
+  _resetPrintFit(wrap);
+  var dims = _printPageDims();
+  wrap.style.width = dims.w + 'px';
+  var natH = wrap.scrollHeight || wrap.offsetHeight;
+  if (!natH) { wrap.style.width = ''; return; }
+  var scale = Math.min(dims.h / natH, 1);
+  if (scale > 0 && scale < 0.999) wrap.style.zoom = scale;
+}
+window.addEventListener('beforeprint', fitPrintPage);
+window.addEventListener('afterprint', function() {
+  var wrap = document.getElementById('print-fit');
+  if (wrap) _resetPrintFit(wrap);
+});
+if (window.matchMedia) {
+  var _mqPrint = window.matchMedia('print');
+  var _onPrintMQ = function(mql) {
+    if (mql.matches) { fitPrintPage(); return; }
+    var w = document.getElementById('print-fit');
+    if (w) _resetPrintFit(w);
+  };
+  if (_mqPrint.addEventListener) _mqPrint.addEventListener('change', _onPrintMQ);
+  else if (_mqPrint.addListener) _mqPrint.addListener(_onPrintMQ);
+}
+})();
+    </script>
+<!-- ══ 편별 반응 성적표 라이브 (status/cmo_reaction_scorecard.json · reaction_scorecard.py 원장 재사용
+     — 판정 정의는 S2 AI-CMO 탭 '반응 루프'가 정본, 여기는 데이터 표시만 · 2026-07-20 GM 지시) ══ -->
+<script>
+(function(){
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  var RS_URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/cmo_reaction_scorecard.json';
+  var wrap=document.getElementById('reaction-scorecard-wrap');
+  if(!wrap) return;
+  function fmtBlog(sig){ // 블로그 조회수는 네이버 로그인 필요 — 구조적으로 항상 측정불가(GM 명시 요구)
+    if(sig && sig.status==='detected_no_views') return '발행 감지 · 조회수 측정불가';
+    return '측정불가(로그인 필요)';
+  }
+  function verdictBadge(v){
+    var color = v==='저조' ? '#f44336' : v==='정상범위' ? '#4caf50' : '#888';
+    return '<span style="font-weight:700;color:'+color+'">'+esc(v)+'</span>';
+  }
+  fetch(RS_URL+'?t='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var cards = Object.keys(data||{}).map(function(k){return data[k];});
+      if(!cards.length){
+        wrap.innerHTML='<div class="measure-pending">아직 집계된 편이 없습니다(reaction_scorecard.py --scan 미실행).</div>';
+        return;
+      }
+      cards.sort(function(a,b){return String(b.published_at||'').localeCompare(String(a.published_at||''));});
+      var thead='<thead><tr><th>콘텐츠</th><th>발행일</th>'
+        +'<th style="text-align:right">IG 도달</th><th>IG 좋아요</th>'
+        +'<th>당근 조회/찜</th><th>카페 조회</th><th>블로그</th><th>카카오</th>'
+        +'<th style="text-align:right">중앙값 대비</th><th>판정</th><th>판정 근거</th></tr></thead>';
+      var rows = cards.map(function(c){
+        var ch = c.channels||{};
+        var ig = ch.instagram||{}, dg = ch.danggn||{}, cf = ch.cafe||{}, bl = ch.blog||{};
+        var igCell = ig.status==='measured' ? (ig.latest_reach!=null?ig.latest_reach:'—') : '미측정';
+        var dgCell = dg.status==='measured' ? ('조회 '+(dg.views!=null?dg.views:'—')+' · 찜 '+(dg.bookmarks!=null?dg.bookmarks:'—')) : '미측정';
+        var cfCell = cf.status==='measured' ? ('조회 '+(cf.views!=null?cf.views:'—')) : '미측정';
+        var blCell = fmtBlog(bl);
+        var ratio = (c.pool_ratio_pct!=null) ? (c.pool_ratio_pct+'%') : '—';
+        return '<tr>'
+          +'<td>'+esc(c.title||c.folder)+'</td>'
+          +'<td>'+esc(String(c.published_at||'').slice(0,10))+'</td>'
+          +'<td style="text-align:right">'+esc(igCell)+'</td>'
+          +'<td>측정불가</td>'
+          +'<td>'+esc(dgCell)+'</td>'
+          +'<td>'+esc(cfCell)+'</td>'
+          +'<td>'+esc(blCell)+'</td>'
+          +'<td>측정불가</td>'
+          +'<td style="text-align:right">'+esc(ratio)+'</td>'
+          +'<td>'+verdictBadge(c.verdict)+'</td>'
+          +'<td style="font-size:11px;color:var(--dim)">'+esc(c.verdict_reason||'')+'</td>'
+          +'</tr>';
+      }).join('');
+      wrap.innerHTML = '<div style="overflow-x:auto"><table class="channel-table">'+thead+'<tbody>'+rows+'</tbody></table></div>'
+        + '<div class="measure-pending" style="margin-top:10px;font-size:11px">"IG 좋아요"·"카카오" 열은 비공개 지표라 구조적으로 수집 불가(항상 측정불가). 채널별 문의→가입 전환은 누적 집계라 편별 귀속 불가(본 표에 없음). 판정 기준·측정 정의 전체 = <b>S2 AI-CMO 탭 &#39;반응 루프&#39;</b> 참고(재서술 안 함).</div>';
+    })
+    .catch(function(){
+      wrap.innerHTML='<div class="measure-pending">반응 성적표 데이터를 불러오지 못했습니다(네트워크 또는 아직 파일 미생성 — 새로고침 해보세요).</div>';
+    });
+})();
+</script>
+<!-- ══ /편별 반응 성적표 라이브 ══ -->
+</div>
+</div>
+</body>
+</html>
