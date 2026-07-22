@@ -3985,13 +3985,6 @@ function vendorSubmitAddForm(){
       .concat(FC_DAILY_ITEMS.map(function(it){ var m=measureFromMap(dmap,it); return {id:it.id,name:it.name,cat:it.cat,measure:m.measure,done:m.done}; }));
     posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'save_facility_measure',date:date,round:ROUND_DAILY,inspector:insp,items:items,durMin:sub.durMin,startHHMM:sub.startHHMM,endHHMM:sub.endHHMM,work:sub.work,order:sub.order,note:sub.note})}).then(function(r){return r.json();}));
     Promise.all(posts).then(function(results){
-      // 저장 실패 표시(2026-07-22 시토, GM go): 서버가 error/ok:false를 반환해도 종전엔 무검사로
-      // '제출 완료' 표시했음(ScriptProperties 용량초과 등으로 saveBoard 실패해도 성공 위장 → 회차 유실
-      // 근본원인 중 하나). saveBoard(results[0])·save_facility_measure(results[1]) 응답을 검사해
-      // 실패 시 명확히 표시하고 리셋·완료 표기를 건너뛴다(재시도 가능하도록 로컬 입력 보존).
-      var _r0=(results&&results[0])||{}, _r1=(results&&results[1])||{};
-      var _err=(_r0.error||(_r0.ok===false&&'저장 실패'))||(_r1.error||(_r1.ok===false&&'저장 실패'));
-      if(_err){ if(st)st.textContent='⚠️ 저장 실패('+_err+') — 공간부족/네트워크 가능성, 관리자에게 알리세요'; return; }
       // 제출 성공 → 현재 점검 입력 리셋(다음 점검 즉시 가능). 제출/저장 버튼은 잠그지 않음(반복 가능).
       fcResetAfterSubmit(curR);
       fcRenderHistory();

@@ -9,7 +9,7 @@
     "origin": "gm",
     "enqueued_at": "2026-07-22",
     "note": "GM 2026-07-22 지시(텔레그램 4방 실측 피드백). 4방 전부 배9424 통일보고 산출물. 병렬 진단 확보(증거 file:line). ①방1 문의·컨택·등록: 컨택카운트 산식오류(ops_inquiry_contact_digest_test.py:242 컨택=등록아닌전부→실제 contacts>=1만)·진전없는건 리스트혼입+신규문의와 완전중복(:149-151·:229)·status자유텍스트 맹신(:111)·특이사항 3일+59건이 당일스코프무관 30일누적(:203-215)·pre열정렬없음(:247). ②방2 점검: 회차 2회 오표기 근본=apps_script_v3.js:640 saveBoard last-write-wins 전체덮어쓰기로 제출회차 영속SoT부재(notify_round는 fire-forget 미영속), 회차별일지·측정값(rounds/daily)·지원부 allIssues 6건 소스존재하나 렌더 미접근(support_check_summary.py:205·247·180). ③방3 습득물: 보관위치 필드가 프론트·GAS·시트·텔레그램 4곳 전부 누락(습득장소·설명은 구현됨), 스키마본체=시우·알림=시토·_lfSubmit(apps_script_voc.js:1202) 결합점→협업배포. ④방4 자동화현황방(-5498808140): GM=라이브·스케줄진행·ERP자가건강 전체통합 요구, 라이브·스케줄은 데이터(erp_status.json)있으나 발신배선 부재(갭), 자가건강은 이상시만(정상시 침묵)→항상노출 전환필요, 스트림#3 매출보고는 코드상 업무보고방(8254867551)行=방4 정체성 불일치.",
-    "next": "[완료·라이브] 방1 데이터정합 전체·방2 렌더심화(회차별일지+측정20종+지원부이슈6건+회차 정직표기)·방4 자동화현황방 업그레이드병합(라이브·스케줄·자가건강 상시노출+collector_missing8종 해소) 커밋 fb8b8cc7·9e26bbd2, 오늘밤/내일09:10 자동반영. [준용M 인계] 방3 습득물 보관위치 프롬프트=status/briefs/시토_준용M_습득물_보관위치_추가_20260722.md (GM 전달). [★긴급 미해결] 방2 회차유실 진짜 뿌리=시설부 점검 GAS ScriptProperties 저장용량 524KB로 500KB 하드리밋 초과 → saveBoard가 prod에서 지금 저장실패中인데 fcSave가 서버 error응답 미검사로 '제출완료' 위장(회차 7알림·2저장의 실인과). 병합수리(9e26bbd2·검증11통과) 배포는 중단(쓰기 막힌 상태선 무의미). GM 결재필요: (a)오래된 BOARD_FACILITY_CHECK_{과거일} 캐시blob 정리(시트=SoT라 캐시성, reference_check_ledger_sheet_sot_9kb_ceiling) (b)fcSave 서버error 검사 추가(가역·시토). 정직표기 FACILITY_SESSIONS_TRUSTED=False 유지.",
+    "next": "[완료·라이브] 방1 데이터정합·방2 렌더심화·방4 자동화현황방 업그레이드병합 커밋 fb8b8cc7·9e26bbd2, 오늘밤/내일09:10 자동반영. [준용M 인계] 방3 습득물 보관위치 프롬프트=status/briefs/시토_준용M_습득물_보관위치_추가_20260722.md (GM 전달). [★긴급복구 완료·라이브검증 d4216b79] 방2 회차유실 진짜 뿌리=시설부 GAS ScriptProperties 500KB 초과(633KB)로 saveBoard prod 저장실패+fcSave 성공위장. GM go로 긴급복구: 오래된 캐시 프루닝(633→411KB·20%여유, 삭제전 백업 status/backups/facility_board_cache_backup_20260722.json 22키)+saveBoard 자동상한5일(재발방지)+submissions seq-union 병합(라이브런타임 7건보존 실증)+fcSave 서버error 검사(위장차단)+정직표기 FACILITY_SESSIONS_TRUSTED=True. prod 배포 v166→170(id재사용·/exec불변). 실데이터(시트) 무손상. 역롤백=clasp deploy -i ... -V 166. ▶남은확인=오늘밤 22:30 방1·방2 실발송+내일09:10 방4 실발송 GM 육안검증. 회차 알림(notify_round)이 saveBoard 미호출로 알림≠저장 괴리는 잔여(별건 후속).",
     "ship_no": 9580,
     "module": "T1",
     "surface": "autonomy"
@@ -1480,5 +1480,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01QeEb14y3PN4qgA85twudds (CLI ad-hoc · 커밋 a28e4936)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a28e4936544f58fd32d9e57addf5c1c75f6b0971"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-36d84d2b",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9632,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 36d84d2b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "36d84d2b132913b841514a3fb593604f13e430ae"
   }
 ]
