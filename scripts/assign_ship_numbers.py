@@ -51,42 +51,47 @@ def save(data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 def main():
-    summary = {}
-    max_no = defaultdict(int)
+    # ship_no = 전역 유일 식별번호(2026-07-22 시토·9640/9582 중복 재발 근본수정).
+    # 과거에 담당(clevel)별 max+1로 부여하던 방식은 서로 다른 clevel의 대기열이
+    # 동시에 채워지면 같은 번호를 두 배에 배정하는 충돌을 냈다(약속 L02: 재발방지는
+    # 코드로 박기). 이제 담당 구분 없이 파일 전체의 max(ship_no)+1 단일 카운터를
+    # 공유해 순번을 매긴다 — 기존 번호는 절대 변경하지 않는다(멱등 유지).
+    summary = defaultdict(int)
     with (queue_lock.queue_lock("assign-ships", repo_root=REPO_ROOT) if queue_lock else nullcontext()):
         tasks = load()
 
-        # 담당별 현재 max ship_no 계산
+        # 전역 현재 max ship_no 계산 (clevel 무관)
+        global_max = 0
         for t in tasks:
             if 'ship_no' in t and t['ship_no'] is not None:
-                cl = str(t.get('clevel', '')).lower()
                 try:
-                    max_no[cl] = max(max_no[cl], int(t['ship_no']))
+                    global_max = max(global_max, int(t['ship_no']))
                 except (ValueError, TypeError):
                     pass
 
-        # 담당별 ship_no 없는 작업 수집 → enqueued_at(없으면 task_id) 오름차순 정렬 후 부여
-        pending = defaultdict(list)
+        # ship_no 없는 작업 전체를 enqueued_at(없으면 task_id) 오름차순 정렬 후
+        # 하나의 전역 카운터로 순번 부여 → clevel 섞여도 전역 유니크 보장.
+        pending = []
         for i, t in enumerate(tasks):
             if 'ship_no' not in t or t['ship_no'] is None:
                 cl = str(t.get('clevel', '')).lower()
                 sort_key = str(t.get('enqueued_at') or t.get('task_id') or '')
-                pending[cl].append((sort_key, i))
+                pending.append((sort_key, i, cl))
+        pending.sort(key=lambda x: x[0])
 
-        for cl, entries in pending.items():
-            entries.sort(key=lambda x: x[0])
-            next_no = max_no[cl] + 1
-            for _, idx in entries:
-                tasks[idx]['ship_no'] = next_no
-                next_no += 1
-            summary[cl] = len(entries)
+        next_no = global_max + 1
+        for _, idx, cl in pending:
+            tasks[idx]['ship_no'] = next_no
+            summary[cl] += 1
+            next_no += 1
 
         save(tasks)
 
     if summary:
-        print('[assign_ship_numbers] 새로 부여:')
+        print('[assign_ship_numbers] 새로 부여 (전역 유니크):')
         for cl, cnt in sorted(summary.items()):
-            print(f'  {cl}: {cnt}건 (→ {max_no[cl]+cnt}번까지)')
+            print(f'  {cl}: {cnt}건')
+        print(f'  → 전역 {global_max+1}~{next_no-1}번 배정')
     else:
         print('[assign_ship_numbers] 새로 부여할 항목 없음 (멱등 확인)')
 
