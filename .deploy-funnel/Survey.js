@@ -3302,7 +3302,7 @@ function _processAction(body) {
       var _mdParts = _rowKeyParts_(body);   // {ts, phone} 또는 null
       if (_mdParts) {
         var _mdTsCi = _miColIdx_(_mdHdr, ['타임스탬프','timestamp','Timestamp']);
-        var _mdPhCi2 = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰']);
+        var _mdPhCi2 = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰','Mobile Phone Number','Mobile Phone','Phone']);
         if (_mdTsCi < 0 || _mdPhCi2 < 0) return _json({ ok:false, error:'열 없음(지문키 대조 불가)' });
         var _mdHits = _findRowsByKey_(mdSh, _mdTsCi, _mdPhCi2, _mdParts.ts, _mdParts.phone);
         if (_mdHits.length === 0) return _json({ ok:false, error:'rowkey-not-found', detail:'대상 없음 — 새로고침 후 재시도' });
@@ -3310,7 +3310,7 @@ function _processAction(body) {
         mdRow = _mdHits[0];   // 지문키로 물리행 확정(rowIndex 불신)
       }
       // (else: 기존 전화-only 대조 폴백 그대로 유지 — rowKey 미동봉 구클라)
-      var _mdPhCi = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰']);
+      var _mdPhCi = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰','Mobile Phone Number','Mobile Phone','Phone']);
       var _mdRowPh = (_mdPhCi >= 0) ? _normPhone_(mdSh.getRange(mdRow, _mdPhCi + 1).getValue()) : '';
       var _mdKeyPh = _normPhone_(body.keyPhone);
       if (!_mdRowPh || _mdRowPh !== _mdKeyPh) {
