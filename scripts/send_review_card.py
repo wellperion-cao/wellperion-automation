@@ -36,6 +36,12 @@ ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 M5_URL = "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M5"
 
+# 형제 채널 id 접미사 — publish_register.py _SIBLING_CHANNEL_SPECS 와 동일 규칙(배834 계열).
+# 여기서 재정의(직접 import 안 함)하는 이유: 이 스크립트는 카드 발송 단독 진입점(빈번한
+# subprocess 호출)이라 publish_register 임포트 부담·부작용을 지지 않는다(자기완결 유지).
+_SIBLING_ID_SUFFIXES = ("BLOG", "CAFE", "KAKAO", "DANGGN")
+_SIBLING_MERGEABLE_STATUSES = ("검수대기", "승인")
+
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
 # 건별 마지막 카드 상태 저장 — 같은 건 재발송 시 이전 카드 자동 삭제(카드 1개만 유지)
@@ -364,6 +370,49 @@ def load_queue() -> list:
         return []
 
 
+def _sibling_base_id(queue_id: str) -> str:
+    """대표 id 끝의 '-OFFICIAL-IG'/'-IG' 접미사를 제거한 베이스.
+    publish_register._sibling_base_id 와 동일 규칙(형제 id 접두사 계산)."""
+    for suffix in ("-OFFICIAL-IG", "-IG"):
+        if queue_id.endswith(suffix):
+            return queue_id[: -len(suffix)]
+    return queue_id
+
+
+def _find_sibling_group_ids(item: dict, items: list) -> list:
+    """공식(account=='wellperion') IG 카드에 대해 같은 folder 계열 형제 채널
+    (블로그·카페·카카오·당근) 중 검수대기/승인 상태인 id 를 자동 수집.
+
+    수리 A(2026-07-22, 배9573 계열): 자동생산기(ig_series_producer.py)는
+    `send_review_card.py --id <id>` 단독 호출만 하므로, register_publish 가 자동등록해둔
+    형제(블로그·카페·카카오·당근)가 검수대기로 남아 있어도 그룹카드가 안 나가 GM [승인]이
+    IG 하나만 승인하고 나머지는 검수대기에 방치되던 문제 — 여기서 형제를 스스로 찾아
+    group_ids 를 구성해 자동으로 pub:grp 그룹카드가 나가게 한다.
+
+    가드: account가 'wellperion'이고 channel에 '인스타그램'이 포함된 카드에만 적용.
+    개인계정(namuk.wellperion 등)은 IG 단독이 표준이므로 그룹핑 대상에서 제외
+    (조용히 빈 리스트 반환 — 기존 단일카드 동작 무회귀).
+    형제가 하나도 없으면 빈 리스트 반환 → 호출부가 기존처럼 단일카드로 폴백.
+    """
+    if item.get("account") != "wellperion":
+        return []
+    channel = str(item.get("channel", ""))
+    if "인스타그램" not in channel:
+        return []
+
+    item_id = str(item.get("id", ""))
+    base_id = _sibling_base_id(item_id)
+    sibling_ids: list = []
+    for suffix in _SIBLING_ID_SUFFIXES:
+        sib_id = f"{base_id}-{suffix}"
+        if sib_id == item_id:
+            continue
+        sib = next((it for it in items if it.get("id") == sib_id), None)
+        if sib is not None and sib.get("status") in _SIBLING_MERGEABLE_STATUSES:
+            sibling_ids.append(sib_id)
+    return sibling_ids
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description="콘텐츠 검수 카드 발송기")
     p.add_argument("--id", help="발송할 큐 항목 id (카드 대표 항목 — 미리보기·제목 기준)")
@@ -385,6 +434,12 @@ def main() -> None:
             sys.exit(1)
         group_ids = [x.strip() for x in args.group_ids.split(",") if x.strip()] \
             if args.group_ids else None
+        if group_ids is None:
+            # --group-ids 미지정 시에만 자동 형제그룹핑 시도(명시 지정은 그대로 존중).
+            sibling_ids = _find_sibling_group_ids(target, items)
+            if sibling_ids:
+                group_ids = [args.id, *sibling_ids]
+                print(f"[INFO] 형제 채널 자동그룹핑 — {len(sibling_ids)}건: {sibling_ids}")
         sys.exit(0 if send_card(target, force=args.force, group_ids=group_ids) else 1)
     elif args.all_pending:
         pending = [it for it in items if it.get("status") == "검수대기"]

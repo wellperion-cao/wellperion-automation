@@ -1077,5 +1077,35 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 20d603d8)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "20d603d813e249cff285c50b99d9a01863ea01e8"
+  },
+  {
+    "task_id": "CTO-2026-07-22-ADHOC-b9989fc2",
+    "clevel": "cto",
+    "title": "[시토] hangro_review 종착지 프롬프트에 정체 정규화 규칙 이식 (패턴 N)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9600,
+    "artifact": "- _build_ship_prompt()에 ops_daily_digest.py:533 검증된 규칙 additive 삽입\n  (김남욱=GM(김남욱)/GM님 단일표기·대표님=전응준 전용·차의주=회장님)\n- ssot/decision_contracts.json ceo-hangro-review 블록: 패턴 N 적용 완료 반영\n  (웰리 승인 2026-07-22) (CLI ad-hoc · 커밋 b9989fc2)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b9989fc21fd62f58139151b8bdf0536922f47315"
+  },
+  {
+    "task_id": "CTO-2026-07-22-ASSIGN-SHIP-NUMBERS-GLOBAL-UNIQUE",
+    "clevel": "cto",
+    "title": "[시토] assign_ship_numbers 훅 전역유니크 보장 — clevel별 부여→전역 max+1 교정",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-22",
+    "from": "ceo",
+    "origin": "ceo",
+    "note": "2026-07-22 웰리(CEO) 발견·등록(결정정합 게이트 M2 마일스톤2 작업 중). 근거: scripts/assign_ship_numbers.py main() 이 max_no 를 clevel(cl) 별로 따로 계산(defaultdict) 후 그 담당 안에서만 max+1 을 부여 — 담당을 넘나드는 전역 유니크를 보장하지 않는다. 재현: 실제로 CMO 신규 배가 ship_no=9579 로 부여됐는데 이미 다른 담당(CTO) 배가 9579 를 쓰고 있어 충돌 → 수동으로 9598 로 교정한 사고 발생(커밋 이력 참조: 'fix(cto): 결정정합 도메인배 CMO ship_no 9579→9598 충돌 해소' 02ec3a0b). 수정 방향(후속 착수 시): max_no 계산을 전체 tasks 전역 1개 카운터로 바꾸고(clevel 무관 global max), 담당별 분리 부여 로직 제거 — 기존 부여된 ship_no 는 append-only 원칙상 변경 금지, 신규 부여분부터만 전역 유니크 적용.",
+    "next": "⚓ 정박(대기) — 시토 배정 시 assign_ship_numbers.py max_no 로직을 전역 카운터로 교정 착수",
+    "depends_on": "",
+    "surface": "autonomy",
+    "module": "T1",
+    "ship_no": 9601
   }
 ]

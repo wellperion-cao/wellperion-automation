@@ -448,8 +448,35 @@ def make_queue_id(case: dict, today_iso: str) -> str:
     return f"CMO-{today_iso}-CASE{case['num']:02d}-{make_slug(case)}"
 
 
+def _case_discarded_before_send(queue_id: str) -> bool:
+    """카드 발송 직전 최종 폐기가드(2026-07-22, CASE08 동종 사고 이중방어).
+
+    재선정 가드(pick_next_case의 _find_queued_item)가 폐기편을 이미 걸러내지만, 결정이
+    표에 늦게 박히는 지연 구간(재고표엔 재고 상태로 남았는데 review_queue엔 폐기가 이미
+    올라온 순간)에는 recover_stalled_cards() 경로로 카드 발송까지 도달할 수 있다.
+    발송 직전에 같은 편(CASE{NN})의 review_queue 항목 중 status=='폐기'가 하나라도 있으면
+    True — 그 경우 호출부는 카드를 쏘지 않는다."""
+    num = _extract_case_num(queue_id)
+    if num is None:
+        return False
+    marker = f"-CASE{num:02d}-"
+    for item in _queue_items():
+        if marker in str(item.get("id", "")) and item.get("status") == "폐기":
+            return True
+    return False
+
+
 def send_review_card(queue_id: str) -> bool:
-    """scripts/send_review_card.py --id <queue_id> 호출(무폴링 발행 트리거 카드)."""
+    """scripts/send_review_card.py --id <queue_id> 호출(무폴링 발행 트리거 카드).
+
+    ★ 발송 직전 폐기가드: 같은 편이 review_queue에 이미 status='폐기'로 존재하면 카드
+    자체를 쏘지 않고 True(=스킵을 정상 처리로 간주, 호출부의 실패 경고 텔레그램을
+    유발하지 않음)를 반환한다. 호출부(run()/recover_stalled_cards())는 그대로 정상
+    종료 경로를 탄다(exit 0)."""
+    if _case_discarded_before_send(queue_id):
+        print(f"[INFO] 폐기가드 — 같은 편(폐기) 항목이 review_queue에 존재, 카드 발송 스킵(id={queue_id}).")
+        return True
+
     script = ROOT / "scripts" / "send_review_card.py"
     try:
         env = dict(os.environ, PYTHONIOENCODING="utf-8")
