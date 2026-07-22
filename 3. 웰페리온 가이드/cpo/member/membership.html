@@ -2804,9 +2804,14 @@ var GVIZ_LESSON_GID_YOUTH = 268994754;   // 유소년 강습 응답탭(WSC)
 var GVIZ_MI_GID_EN = 1887747109;          // 멤버십(영문) 응답탭
 var GVIZ_LESSON_GID_ADULT_EN = 311319200; // 성인 강습(영문) 응답탭
 var GVIZ_LESSON_GID_YOUTH_EN = 931249179; // 유소년 강습(영문) 응답탭(WSC)
-// row.gid가 위 3개 영문 gid 중 하나면 영어 문의 — 목록 뱃지 표시용 공용 판별. 2026-07-09 시포·GM.
+// 영어 문의 판별 — 목록 EN 뱃지 표시용 공용. ①영문 응답탭(gid) 출신 ②Preferred Language=English
+// ③비고에 [영어] 표식(영문 문의를 한글 탭으로 통합한 회원 — 탭 위치가 아닌 데이터로 영어 고객 보존). 2026-07-09·2026-07-22 시포·GM.
 function _isEnRow_(row) {
-  return !!(row && (row.gid === GVIZ_MI_GID_EN || row.gid === GVIZ_LESSON_GID_ADULT_EN || row.gid === GVIZ_LESSON_GID_YOUTH_EN));
+  if (!row) return false;
+  if (row.gid === GVIZ_MI_GID_EN || row.gid === GVIZ_LESSON_GID_ADULT_EN || row.gid === GVIZ_LESSON_GID_YOUTH_EN) return true;
+  if (/english/i.test(String(row.lang || ''))) return true;
+  if (String(row.memo || '').indexOf('[영어]') >= 0) return true;
+  return false;
 }
 // ★행키 네임스페이스 오프셋 — Survey.js _ROW_OFFSET_EN_ 1:1 이식(값 반드시 동일하게 유지). 한글+영문 탭을 한 목록에
 //   병합하면 두 시트의 rowIndex(둘 다 2부터 시작)가 충돌해 dbRows.find 등 로컬 조회가 엉뚱한 행을 집을 위험(무결성 사고)
