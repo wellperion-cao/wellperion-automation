@@ -2556,7 +2556,10 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
                   h+='<div style="font-weight:700;color:var(--text);margin-bottom:4px;">'+esc(l['약속'])+'</div>';
                   if(l['id']==='L18'){
                     // L18(GM 문답·작업 보고 표준)만 실제 표 예시로 렌더 — 다른 약속은 그대로 줄글
-                    h+='<div style="overflow-x:auto;margin:6px 0 8px;">';
+                    // 순서: 토글 1개(상세·러닝 내용, 기본 접힘) 위 → 표 예시 아래. GM 눈엔 [표]+[토글 1줄]만.
+                    h+='<div style="margin-bottom:8px;"><button type="button" id="btn-l18-detail" onclick="var el=document.getElementById(\'l18-detail\');var b=document.getElementById(\'btn-l18-detail\');var open=el.style.display!==\'none\';el.style.display=open?\'none\':\'block\';b.textContent=open?\'▸ 상세 규칙·러닝 내용 (평소엔 안 봐도 됨)\':\'▴ 접기\';" style="background:none;border:1px solid var(--border);color:var(--accent);border-radius:4px;padding:3px 10px;font-size:11px;cursor:pointer;">▸ 상세 규칙·러닝 내용 (평소엔 안 봐도 됨)</button></div>';
+                    h+='<div id="l18-detail" style="display:none;color:var(--dim);line-height:1.6;margin-bottom:8px;">'+esc(l['내용'])+'</div>';
+                    h+='<div style="overflow-x:auto;margin:0 0 6px;">';
                     h+='<table style="border-collapse:collapse;width:100%;font-size:12.5px;">';
                     h+='<tr style="background:var(--accent-bg);">'
                       +'<th style="border:1px solid var(--border);padding:5px 8px;text-align:left;color:var(--accent);">요소</th>'
@@ -2577,9 +2580,7 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
                         +'</tr>';
                     });
                     h+='</table></div>';
-                    h+='<div style="font-size:11px;color:var(--dim);margin-bottom:6px;">맨 위 상태 1줄 + 맨 끝 기록위치 붙임</div>';
-                    h+='<div><button type="button" id="btn-l18-detail" onclick="var el=document.getElementById(\'l18-detail\');var b=document.getElementById(\'btn-l18-detail\');var open=el.style.display!==\'none\';el.style.display=open?\'none\':\'block\';b.textContent=open?\'▸ 규칙 전문 보기\':\'▴ 접기\';" style="background:none;border:1px solid var(--border);color:var(--accent);border-radius:4px;padding:3px 10px;font-size:11px;cursor:pointer;">▸ 규칙 전문 보기</button></div>';
-                    h+='<div id="l18-detail" style="display:none;color:var(--dim);line-height:1.6;margin-top:6px;">'+esc(l['내용'])+'</div>';
+                    h+='<div style="font-size:11px;color:var(--dim);">맨 위 상태 1줄 + 맨 끝 기록위치 붙임</div>';
                   } else {
                     h+='<div style="color:var(--dim);line-height:1.6;">'+esc(l['내용'])+'</div>';
                   }
