@@ -2659,12 +2659,13 @@
     "clevel": "cmo",
     "ship_no": 9712,
     "title": "[시모] 방학특강(유소년) 자체폼 — WSC 유소년과 항목 1:1 정합·5종목 유지·희망월→요일/시간",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "from": "ceo",
     "origin": "gm",
     "enqueued_at": "2026-07-22",
-    "note": "GM 지시: 방학특강(유소년) summer 폼을 youth 폼과 항목·내용 1:1 정합(성함(보호자)·자녀나이·요일/시간 위젯·문의경로·안내). 강습종목=방학특강 고유 5종 유지(수영·체조·스쿼시·골프·유소년 성장PT). 희망월(wishMonth·select) 제거→희망 레슨 시간(wishTime·daytime) 교체. 백엔드 intake_submit: summer→유소년강습 탭(기존 라우팅) 유지, 희망칸 write를 wishMonth→(wishTime||wishMonth) 폴백으로 정합(.deploy-funnel + .deploy-funnel-v2 양측). 텔레그램 알림에 희망시간 표시 추가. 산출물: cmo/review/방학특강_유소년_폼_{desktop,mobile}_20260722.png + 방학특강_vs_WSC유소년_대조_20260722.png(youth 1:1 확인). ★라이브 활성=GM go 대기: WP post 8460 draft-page 재주입 + GAS 재배포 미실행(비가역 유입경로). ★확인필요: 라이브 배포 스크립트가 1A77oDR(.deploy-funnel) vs 1BezMSW(.deploy-funnel-v2) 중 무엇인지 — v1은 희망칸 부분일치(희망) 키가 종목칸을 먼저 무는 구버그가 남아있어(v2는 정확헤더로 수리됨) v1이 라이브면 요일/시간 유실 위험 → 시토 확인 후 배포."
+    "note": "GM 지시: 방학특강(유소년) summer 폼을 youth 폼과 항목·내용 1:1 정합(성함(보호자)·자녀나이·요일/시간 위젯·문의경로·안내). 강습종목=방학특강 고유 5종 유지(수영·체조·스쿼시·골프·유소년 성장PT). 희망월(wishMonth·select) 제거→희망 레슨 시간(wishTime·daytime) 교체. 백엔드 intake_submit: summer→유소년강습 탭(기존 라우팅) 유지, 희망칸 write를 wishMonth→(wishTime||wishMonth) 폴백으로 정합(.deploy-funnel + .deploy-funnel-v2 양측). 텔레그램 알림에 희망시간 표시 추가. 산출물: cmo/review/방학특강_유소년_폼_{desktop,mobile}_20260722.png + 방학특강_vs_WSC유소년_대조_20260722.png(youth 1:1 확인). ★라이브 활성=GM go 대기: WP post 8460 draft-page 재주입 + GAS 재배포 미실행(비가역 유입경로). ★확인필요: 라이브 배포 스크립트가 1A77oDR(.deploy-funnel) vs 1BezMSW(.deploy-funnel-v2) 중 무엇인지 — v1은 희망칸 부분일치(희망) 키가 종목칸을 먼저 무는 구버그가 남아있어(v2는 정확헤더로 수리됨) v1이 라이브면 요일/시간 유실 위험 → 시토 확인 후 배포. ★[활성완료 GM go 2026-07-22] ①WP post 8460 draft-page 재주입=발행유지 업데이트(라이브). ②v2 GAS(1BezMSW/prod AKfycbyk) 재배포 @120→@121(롤백=@120 재배포). HOLD_LIVE/HOLD_LIVE_T 게이트 OFF 유지·미변경. ③라이브 e2e(시크릿 chromium /ko/inquiry-form/?type=summer): 새구조 확인(자녀나이·문의경로·요일시간·5종목·희망월 제거), 실제 제출 1건(접수 L260722-165620)→WSC강습(gid268994754) 저장 실측: 강습종목=\"여름방학특강 - 수영\"·희망레슨시간=\"월 / 평일: 07:00\"(요일/시간 정상 기록). 테스트행 cpo_lesson_test_delete(마커 자동검증/010000070·행인덱스 미사용·INC-020 안전)로 삭제 검증(잔존 0·실데이터 보존). 타 type(멤버십·성인·유소년) 무영향(파일 내 summer/GUIDES.summer만 diff).",
+    "completed_at": "2026-07-22"
   },
   {
     "task_id": "CMO-2026-07-22-ADHOC-f05caee7",
