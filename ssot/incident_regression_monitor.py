@@ -44,8 +44,13 @@ GUARD_ASSETS = {
     "캐논 정본": "ssot/canon_values.json",
     "약속 정본": "ssot/약속.json",
     "재발방지 정본": "ssot/incidents.json",
+    # [결정 정합 게이트 연결 2026-07-22 · 스펙 §6.3] INC-016 동종(종결/취소 결정이 실행SSOT에
+    # 안 박혀 옛것 재생) 재발방지 자산 — 유실 시 회귀 경보.
+    "INC-016 결정정합 가드": "scripts/case_series_dispatch.py",
+    "결정계약 정본": "ssot/decision_contracts.json",
 }
 GIT_HOOKS = [".git/hooks/pre-commit", ".git/hooks/post-commit"]
+REPLAY_LOG = _ROOT / "status" / "decision_replay_log.jsonl"
 
 
 def _is_code(f: str) -> bool:
@@ -96,6 +101,32 @@ def _unguarded() -> list[str]:
         return ["incidents.json 읽기 실패"]
 
 
+def _leaked_today() -> list[str]:
+    """decision_replay_log.jsonl 오늘자 action=='leaked'(가드 우회 재발송 흔적) → 요약 리스트.
+    스펙 §6.3: leaked=가드를 우회해 옛 결정이 실제 재발송된 흔적 = 결정정합 회귀(같은 본질
+    2회+ 자동 에스컬레이션 대상). action=='blocked'(정상 차단)는 회귀 아님(제외). 파일 없음·
+    파싱 실패 → [](fail-soft, read-only — 재점검·네트워크 없음)."""
+    if not REPLAY_LOG.exists():
+        return []
+    today = _today()
+    out: list[str] = []
+    try:
+        for line in REPLAY_LOG.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            if (isinstance(rec, dict) and rec.get("date") == today
+                    and rec.get("action") == "leaked"):
+                out.append(f"{rec.get('module_id', '?')}: {rec.get('subject', '')}")
+    except Exception:
+        return out
+    return out
+
+
 def _load_baseline() -> dict | None:
     try:
         return json.loads(BASELINE_FILE.read_text(encoding="utf-8")).get("divergence")
@@ -143,6 +174,7 @@ def run(set_baseline: bool = False) -> int:
     cur = _divergence_map()
     missing = _missing_assets()
     unguarded = _unguarded()
+    leaked = _leaked_today()  # [결정 정합 게이트 §6.3] 가드 우회 재발송 흔적(있으면 회귀)
 
     # 신규 드리프트 = baseline 초과분(파일 단위).
     new_drift = {}
@@ -162,7 +194,7 @@ def run(set_baseline: bool = False) -> int:
                 if extra:
                     new_drift[k] = sorted(extra)
 
-    regression = bool(new_drift) or bool(missing) or bool(unguarded)
+    regression = bool(new_drift) or bool(missing) or bool(unguarded) or bool(leaked)
     verdict = "⚠️ 회귀 감지" if regression else "✅ 정상(회귀 없음)"
 
     # 현재 발산을 코드/문서로 분리(코드=수정 후보).
@@ -178,6 +210,7 @@ def run(set_baseline: bool = False) -> int:
     print(f"  캐논 발산: {scan_state}" + (f" · 신규 {sum(len(v) for v in new_drift.values())}건 {list(new_drift)}" if new_drift else ""))
     print(f"  가드 자산 유실: {len(missing)}건" + (f" {missing}" if missing else ""))
     print(f"  박제 무결: {'깨짐 '+str(unguarded) if unguarded else 'OK(전부 GUARDED)'}")
+    print(f"  결정정합 누출(leaked): {'⚠️ '+str(leaked) if leaked else 'OK(0건)'}")
     print(f"  (참고) 기존 코드 드리프트(수정 후보): {len(code_drift)}건 · 문서 FP {doc_fp}건")
     print(f"  판정: {verdict}" + (" · baseline established" if established else ""))
 
@@ -193,7 +226,11 @@ def run(set_baseline: bool = False) -> int:
         + (f" · {', '.join(new_drift)}" if new_drift else "") + " |",
         f"| 가드 자산 무결 | {'유실 '+str(len(missing))+'건' if missing else 'OK'} |",
         f"| 박제 무결(GUARDED) | {'깨짐: '+', '.join(unguarded) if unguarded else 'OK'} |",
+        f"| 결정정합 누출(leaked · §6.3) | {'⚠️ '+', '.join(leaked) if leaked else 'OK(0건)'} |",
     ]
+    if leaked:
+        lines += ["", "### ⚠️ 결정정합 가드 우회 재발송(leaked · 자동 에스컬레이션 후보)",
+                  *[f"- {x}" for x in leaked]]
     if new_drift:
         lines += ["", "### ⚠️ 신규 드리프트(회귀)"]
         for k, fs in new_drift.items():
@@ -217,6 +254,8 @@ def run(set_baseline: bool = False) -> int:
             det.append(f"가드유실 {len(missing)}건")
         if unguarded:
             det.append(f"박제깨짐 {len(unguarded)}건")
+        if leaked:
+            det.append(f"결정정합 누출(leaked) {len(leaked)}건")
         _alert("🛡️⚠️ 재발방지 회귀 감지 — " + " / ".join(det) + ". status/incident_health.md 확인.")
         return 1
     return 0
