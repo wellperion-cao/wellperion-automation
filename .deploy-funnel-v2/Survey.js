@@ -1353,8 +1353,9 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   member_hold_preview:        true,  // 2026-07-22 휴회 경량안 — 미리보기/검증(read-only, 시트 무변경). 시포·GM
-  member_hold_apply:          true,  // 2026-07-22 휴회 경량안 — 접수 기록(4칸 write). ★HOLD_LIVE 게이트(기본 OFF, GM go). 시포·GM
-  member_hold_transition:     true,  // 2026-07-22 휴회 상태전이(직원 반영: 접수대기→진행중/완료/반려). ★HOLD_LIVE_T 게이트(기본 OFF). 시포·GM
+  member_hold_apply:          true,  // 2026-07-22 휴회 공개접수(쓰기전용 → '휴회접수' 탭·회원 판정 미반환). ★HOLD_LIVE 게이트(OFF). 시포·GM
+  member_hold_intake_list:    true,  // 2026-07-22 휴회 접수관리 리스트(ERP read+서버 자동판정). 게이트 뒤. 시포·GM
+  member_hold_approve:        true,  // 2026-07-22 휴회 승인/반려(직원 → 회원DB '이용일수' 앞 새칸 기록+증분). ★HOLD_LIVE_T 게이트(OFF). 시포·GM
   member_owner_save:          true,  // 2026-07-18 시포 — 종목별 담당자 5칸(화이트리스트) 단일셀 저장(전화 매칭)
   member_owner_bulk_set:      true,  // 2026-07-20 GM 지시 — 멤버십 담당자('담당자'만) 열 일괄 배치 쓰기(setValues 1회)
   member_active_summary:      true,  // 2026-07-20 시포 — 회원관리 카드 요약 집계(§2-A 로딩속도, PII 미노출·숫자만)
@@ -1674,6 +1675,12 @@ function _resStringify_(arr) {
   });
   return clean.length ? JSON.stringify(clean) : '';
 }
+// ═══ 예약목록 평문 저장(JSON→평문) — 2026-07-22 GM(시트 가독성). 강습 Contact 평문(_lessonContactPlain*)과 동일 규칙·로직 재사용(별도 정의 대신 위임 — net-zero). ═══
+//  저장 포맷: 줄바꿈 구분 평문, 한 줄="YYYY-MM-DD HH:MM 노트"(빈 날짜/시간 생략). 읽기(_resCellParse_)는 양포맷 — 레거시 JSON'['·신규 평문·손상 JSON(원문 note 보존).
+//  프론트↔백엔드 계약(reservations 배열/JSON 문자열 송수신)은 불변 — 시트 저장 포맷만 전환. rowKey/keyPhone 행지목 로직과 무관.
+function _resPlainStringify_(arr) { return _lessonContactPlainStringify_(arr); }
+function _resPlainParse_(raw)     { return _lessonContactPlainParse_(raw); }
+function _resCellParse_(raw)      { return _lessonContactCellParse_(raw); }
 
 // 익명 행 배열 반환(이름·전화·메모 비움). 빈 행 스킵.
 // sh 생략 시 하위호환(기존 한글 '26년 신규문의' 탭). 명시 시 그 시트를 그대로 읽는다(영문 탭 병합용). 2026-07-09 시포·GM.
@@ -1763,8 +1770,8 @@ function _miReadRows_(sh) {
       //   (위 timestamp 필드는 _miToISO_로 시각이 잘려있어 지문 재료로 쓰면 안 됨). 둘 중 하나라도 없으면 ''(지문키 미사용 → 프론트가 keyPhone 폴백). 2026-07-22 시포.
       rowKey: (function(){ var _t = _normTsKey_(iTs >= 0 ? row[iTs] : ''), _p = _normPhone_(iPhone >= 0 ? row[iPhone] : ''); return (_t && _p) ? (_t + '|' + _p) : ''; })()
     };
-    // 예약목록(가변): JSON 우선 → 없으면 체험1·2 흡수(하위호환·무손실). 2026-07-03 시포·GM
-    var _resArr = _resParse_(iRes >= 0 ? row[iRes] : '');
+    // 예약목록(가변): 양포맷(레거시 JSON·신규 평문) → 없으면 체험1·2 흡수(하위호환·무손실). 2026-07-03 시포·GM / 2026-07-22 GM(평문 전환)
+    var _resArr = _resCellParse_(iRes >= 0 ? row[iRes] : '');
     if (!_resArr.length) {
       if (_mo.exp1) _resArr.push({ date: _mo.exp1, time: _mo.exp1Time || '', note: '' });
       if (_mo.exp2) _resArr.push({ date: _mo.exp2, time: _mo.exp2Time || '', note: '' });
@@ -5006,23 +5013,24 @@ function _processAction(body) {
     _muSet(['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2'], body.exp2Date);        // L = 체험2 날짜
     _muSet(['체험2 확정시간','체험2'], body.exp2Time);                                          // M = 체험2 시간
     _muSet(['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항'], body.inquiryContent);  // N = 문의내용(#1)
-    // ── 예약 리스트(가변) — JSON 우선 저장 + 체험1·2(J/K/L/M) 미러. 하위호환 편집(exp*)만 오면 JSON 동기화. 2026-07-03 시포·GM
+    // ── 예약 리스트(가변) — 예약목록 셀에 평문 저장 + 날짜를 G·H·I·J 4칸 미러. 하위호환 편집(exp*)만 오면 동기화. 2026-07-03 시포·GM / 2026-07-22 GM(JSON→평문·G~J 미러)
     if (body.reservations !== undefined) {
       var _muRes = _resParse_(body.reservations);
       var _muResCi = _miEnsureCol_(muSh, muHdr, INQ_RES_COL);
       var _muResCell = muSh.getRange(muRow, _muResCi + 1);
       _muResCell.setNumberFormat('@');
-      _muResCell.setValue(_resStringify_(_muRes));
-      // 미러: 예약1→J/K, 예약2→L/M (없으면 클리어). 달력 폴백·하위 소비자 안전망(무손실).
-      _muSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], _muRes[0] ? _muRes[0].date : '');
-      _muSet(['체험1 확정시간','체험1'], _muRes[0] ? _muRes[0].time : '');
-      _muSet(['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2'], _muRes[1] ? _muRes[1].date : '');
-      _muSet(['체험2 확정시간','체험2'], _muRes[1] ? _muRes[1].time : '');
+      _muResCell.setValue(_resPlainStringify_(_muRes));   // JSON→평문(사람이 읽는 시트)
+      // 미러: 예약 날짜를 G(1)·H(2)·I(3)·J(4) 순서대로(최대 4). 시간·메모는 예약목록 평문에만 보존. 빈 슬롯 클리어.
+      //   칸 키는 _miReadRows_ 읽기 슬롯(iTour/iExp1/iV2Dt/iExp2)과 동일 배열 재사용 → 쓰기·읽기 라운드트립 정합.
+      _muSet(['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담'], _muRes[0] ? _muRes[0].date : '');               // G
+      _muSet(['예약2','체험1 확정시간','체험1'], _muRes[1] ? _muRes[1].date : '');                                              // H
+      _muSet(['예약3','시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2'], _muRes[2] ? _muRes[2].date : '');            // I
+      _muSet(['예약4','체험2 확정시간','체험2'], _muRes[3] ? _muRes[3].date : '');                                              // J
     } else if (body.exp1Date !== undefined || body.exp1Time !== undefined || body.exp2Date !== undefined || body.exp2Time !== undefined) {
       // 하위호환 경로(상담 모달·구 인라인)가 체험1·2만 편집 → 예약목록 JSON이 이미 있으면 동기화(스테일 방지). 예약3+ 보존.
       var _rcCi = _miColIdx_(muHdr, [INQ_RES_COL]);
       if (_rcCi >= 0) {
-        var _prev = _resParse_(muSh.getRange(muRow, _rcCi + 1).getValue());
+        var _prev = _resCellParse_(muSh.getRange(muRow, _rcCi + 1).getValue());   // 양포맷(레거시 JSON·신규 평문)
         var _cellISO = function(names){ var c = _miColIdx_(muHdr, names); return c >= 0 ? _miToISO_(muSh.getRange(muRow, c + 1).getValue()) : ''; };
         var _cellTime = function(names){ var c = _miColIdx_(muHdr, names); return c >= 0 ? _miTime_(muSh.getRange(muRow, c + 1).getValue()) : ''; };
         var _rebuilt = [
@@ -5032,7 +5040,7 @@ function _processAction(body) {
         for (var _pi = 2; _pi < _prev.length; _pi++) _rebuilt.push(_prev[_pi]);
         var _rcCell = muSh.getRange(muRow, _rcCi + 1);
         _rcCell.setNumberFormat('@');
-        _rcCell.setValue(_resStringify_(_rebuilt));
+        _rcCell.setValue(_resPlainStringify_(_rebuilt));
       }
     }
     _muSetCol(['Contact1'], _fmtContactOrUndef_(body.contact1));
@@ -5906,6 +5914,73 @@ function _processAction(body) {
     SpreadsheetApp.flush();
     var msAfter = msSh.getRange(1, 1, 1, msSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
     return _json({ ok: true, migratedRows: msChanged, totalRows: msAll.length, headersAfter: msAfter });
+  }
+
+  // ─── 예약목록 JSON → 평문 전환 + G~J 날짜 미러 (2026-07-22 GM) ───
+  //   멤버십 신규문의(gid 1902010032 한글 + 1887747109 영문)의 '예약목록' 셀이 raw JSON([{date,time,note}])으로 보이는 것을
+  //   사람이 읽는 평문(줄바꿈, "YYYY-MM-DD HH:MM 노트")으로 바꾸고, 예약 날짜를 G·H·I·J 4칸에 미러한다(시간·메모는 평문에만).
+  //   JSON('[' 시작) 셀만 변환 — 이미 평문이거나 빈 셀은 완전 미접촉(무손실·멱등). JSON.parse 실패분은 건드리지 않고 보고만.
+  //   body.dry 기본 dry-run(대상 행수·전후 샘플·G~J 채울 값). body.dry==='false'(또는 false)만 실제 기록.
+  //   토큰(_intakeToken_) 게이트 + 비밀 key 가드. _SURVEY_PUBLIC_ACTIONS 미등록. LockService로 동시쓰기 직렬화.
+  //   ★행 지목(rowKey/keyPhone/B1) 로직과 무관 — 셀 저장 포맷(예약목록 + G~J)만 변환한다.
+  if (action === 'migrate_member_reservations_plain_gj') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    if (String(body.key || '') !== 'wlp_res_plain_gj_20260722') return _json({ ok: false, error: 'guard-mismatch' });
+    var rpDry = !(String(body.dry) === 'false' || body.dry === false);   // 기본 dry-run — dry='false'만 실제
+    var rpLock = LockService.getScriptLock();
+    if (!rpLock.tryLock(15000)) return _json({ ok: false, error: 'locked', detail: '다른 쓰기 작업 진행 중 — 잠시 후 다시 시도' });
+    try {
+      var rpGids = [1902010032, 1887747109];   // 멤버십 한글 + 영문 응답탭
+      var rpN = function (x) { return String(x || '').replace(/\s+/g, ''); };
+      var rpReport = [];
+      for (var rpi = 0; rpi < rpGids.length; rpi++) {
+        var rpGid = rpGids[rpi];
+        var rpSh = _sheetByGid_(MEMBER_SPREADSHEET_ID, rpGid);
+        if (!rpSh) { rpReport.push({ gid: rpGid, error: '시트 없음' }); continue; }
+        var rpHdr = rpSh.getRange(1, 1, 1, rpSh.getLastColumn()).getValues()[0].map(function (h) { return String(h == null ? '' : h).trim(); });
+        var iG = -1, iH = -1, iI = -1, iJ = -1, iRs = -1;
+        for (var c = 0; c < rpHdr.length; c++) {
+          var hn = rpN(rpHdr[c]);
+          if (iG < 0 && hn.indexOf('5.시설투어') === 0) iG = c;   // G(원본 폼 '희망 날짜'=예약1 미러) — migrate_slot4/normalize_slot_time와 동일 탐지
+          if (iH < 0 && hn === '예약2') iH = c;                   // H
+          if (iI < 0 && hn === '예약3') iI = c;                   // I
+          if (iJ < 0 && hn === '예약4') iJ = c;                   // J
+          if (iRs < 0 && hn === '예약목록') iRs = c;
+        }
+        if (iRs < 0) { rpReport.push({ gid: rpGid, note: '예약목록 칸 없음(스킵)', headers: rpHdr }); continue; }
+        var rpLast = rpSh.getLastRow();
+        var rpAll = rpLast >= 2 ? rpSh.getRange(2, 1, rpLast - 1, rpHdr.length).getValues() : [];
+        var rpChanged = 0, rpSkip = 0, rpBlank = 0, rpFail = [], rpSample = [], rpWrites = [];
+        for (var r = 0; r < rpAll.length; r++) {
+          var raw = String(rpAll[r][iRs] == null ? '' : rpAll[r][iRs]).trim();
+          if (!raw) { rpBlank++; continue; }
+          if (raw.charAt(0) !== '[') { rpSkip++; continue; }   // 이미 평문/기타 → 완전 미접촉
+          var arr;
+          try { arr = JSON.parse(raw); } catch (e) { rpFail.push({ row: r + 2, head: raw.substring(0, 40) }); continue; }
+          if (!Array.isArray(arr)) { rpFail.push({ row: r + 2, head: raw.substring(0, 40) }); continue; }
+          var norm  = _resParse_(arr);              // [{date,time,note}] 정규화
+          var plain = _resPlainStringify_(norm);    // 평문
+          var gj = [ norm[0] ? norm[0].date : '', norm[1] ? norm[1].date : '', norm[2] ? norm[2].date : '', norm[3] ? norm[3].date : '' ];
+          rpChanged++;
+          if (rpSample.length < 5) rpSample.push({ row: r + 2, before: raw.substring(0, 60), plain: plain, G: gj[0], H: gj[1], I: gj[2], J: gj[3] });
+          rpWrites.push({ row: r + 2, plain: plain, gj: gj });
+        }
+        if (!rpDry) {
+          rpWrites.forEach(function (w) {
+            var cell = rpSh.getRange(w.row, iRs + 1); cell.setNumberFormat('@'); cell.setValue(w.plain);
+            if (iG >= 0) rpSh.getRange(w.row, iG + 1).setValue(w.gj[0]);
+            if (iH >= 0) rpSh.getRange(w.row, iH + 1).setValue(w.gj[1]);
+            if (iI >= 0) rpSh.getRange(w.row, iI + 1).setValue(w.gj[2]);
+            if (iJ >= 0) rpSh.getRange(w.row, iJ + 1).setValue(w.gj[3]);
+          });
+          SpreadsheetApp.flush();
+        }
+        rpReport.push({ gid: rpGid,
+          cols: { G: iG >= 0 ? rpHdr[iG] : null, H: iH >= 0 ? rpHdr[iH] : null, I: iI >= 0 ? rpHdr[iI] : null, J: iJ >= 0 ? rpHdr[iJ] : null, 예약목록: iRs },
+          totalRows: rpAll.length, jsonRows: rpChanged, alreadyPlainOrOther: rpSkip, blank: rpBlank, parseFail: rpFail, sample: rpSample });
+      }
+      return _json({ ok: true, dryRun: rpDry, report: rpReport });
+    } finally { rpLock.releaseLock(); }
   }
 
   if (action === 'del_col_by_name_20260720') {
@@ -7516,179 +7591,152 @@ function _processAction(body) {
     return _json(maRes);
   }
 
-  // ─── 휴회(경량안) — 회원 휴회 미리보기/접수. 3회·총60일·1회 7~60일. 검증 단일 SSOT=서버(여기). 2026-07-22 시포·GM ───
-  //   데이터: 유효회원 탭 additive 4칸(휴회횟수·휴회누적일수·휴회시작일·휴회종료일). 헤더이름 기반 · 행삭제 없음(셀 write만).
-  //   행 해석 가드 = member_active_update와 동일(rowKey[등록일자+전화] 우선 → keyPhone 폴백, fail-closed) — INC 오지목/오삭제 방지.
-  //   ★잔여일 반영 정직표기: 잔여일은 서버계산이 아니라 시트 '잔여일' 컬럼 raw값(member_active_list _aaIdx('잔여일'), 실측 2026-07-22).
-  //   즉 종료일자 가산으로 잔여일이 자동반영되려면 시트에서 잔여일=f(종료일자) 수식이어야 함(원본 미확인) → 본 빌드는 잔여일/종료일자를
-  //   건드리지 않고 휴회 4칸만 기록한다. 종료일자 가산은 시트 잔여일 수식 실측 후 개통(HOLD_EXTEND_GO, getFormula 수식셀 보호).
-  //   ★라이브 게이트: member_hold_apply 실기록은 HOLD_LIVE=true(GM 검증 후)에만. preview는 read-only라 상시 안전.
-  if (action === 'member_hold_preview' || action === 'member_hold_apply') {
-    var HOLD_LIVE = false;          // ★접수 실기록 게이트 — GM 검증 후 true. 역롤백=이 한 줄. (apply 전용; preview 무관)
-    var HOLD_EXTEND_GO = false;     // 종료일자 가산(잔여일 반영) — 시트 잔여일 수식 실측 후 true.
-    var H_COUNT = '휴회횟수', H_DAYS = '휴회누적일수', H_START = '휴회시작일', H_END = '휴회종료일';
-    var H_MAX_COUNT = 3, H_MAX_TOTAL = 60, H_MIN_ONCE = 7, H_MAX_ONCE = 60;
-    var hSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
-    if (!hSh) return _json({ ok: false, error: '유효회원 시트 없음' });
-    var hHdr = hSh.getRange(1, 1, 1, hSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
-    // 전화 컬럼
-    var hPhI = -1;
-    for (var _hp = 0; _hp < hHdr.length; _hp++) { var _hph = hHdr[_hp].replace(/\s/g, ''); if (_hph.indexOf('휴대폰') >= 0 || _hph.indexOf('전화') >= 0 || _hph.indexOf('연락처') >= 0) { hPhI = _hp; break; } }
-    // 행 해석(rowKey 우선 → keyPhone 폴백, fail-closed) — member_active_update 동일 가드
-    var hRow = parseInt(body.rowIndex, 10);
-    // ── self-service 본인조회(전화+이름 동시일치 1행) — 회원 본인이 rowIndex/rowKey를 모르는 self-service 휴회접수 페이지용.
-    //    ★fail-closed(0건·2건+ 거부) + 이름·전화 동시일치 필수(타인 이력 열람·전화 단독 열거 차단). 반환은 횟수/누적/잔여만
-    //    (성명·기타 PII 미반환). ⚠️ 이 분기는 새 public PII 표면(누구나 이름+전화로 그 회원 휴회이력 조회 가능) — 라이브 배포는
-    //    GM go 필요(현재 미배포 초안). 2026-07-22 시포·GM(별도 휴회접수 페이지).
-    if (body.selfPhone !== undefined || body.selfName !== undefined) {
-      var _spN = _normPhone_(body.selfPhone), _snN = String(body.selfName || '').replace(/\s/g, '');
-      if (!_spN || !_snN) return _json({ ok: false, error: 'self-verify-need', detail: '이름과 연락처를 모두 입력하세요' });
-      var _hNmI = -1;
-      for (var _hn = 0; _hn < hHdr.length; _hn++) { if (hHdr[_hn].replace(/\s/g, '').indexOf('회원명') >= 0) { _hNmI = _hn; break; } }
-      if (hPhI < 0 || _hNmI < 0) return _json({ ok: false, error: 'sheet-col-missing', detail: '회원 시트 구성 확인 필요' });
-      var _hLast = hSh.getLastRow(), _hHits = [];
-      if (_hLast >= 2) {
-        var _hScan = hSh.getRange(2, 1, _hLast - 1, hSh.getLastColumn()).getValues();
-        for (var _hi = 0; _hi < _hScan.length; _hi++) {
-          if (_normPhone_(_hScan[_hi][hPhI]) === _spN && String(_hScan[_hi][_hNmI] == null ? '' : _hScan[_hi][_hNmI]).replace(/\s/g, '') === _snN) _hHits.push(_hi + 2);
-        }
-      }
-      if (_hHits.length === 1) hRow = _hHits[0];
-      else if (_hHits.length === 0) return _json({ ok: false, error: 'self-not-found', detail: '일치하는 회원 정보를 찾을 수 없습니다(이름·연락처를 확인하세요)' });
-      else return _json({ ok: false, error: 'self-ambiguous', detail: '동일 정보 회원이 여럿입니다 — 데스크에 문의하세요' });
-    } else {
-    var _hRk = _rowKeyParts_(body);
-    var hTsI = -1;
-    if (_hRk) {
-      var _HK = ['등록일자', '등록 일자', '타임스탬프', '등록일', '가입일'];
-      for (var _ht = 0; _ht < hHdr.length; _ht++) { var _hth = hHdr[_ht].replace(/\s/g, ''); for (var _htk = 0; _htk < _HK.length; _htk++) { if (_hth.indexOf(_HK[_htk].replace(/\s/g, '')) >= 0) { hTsI = _ht; break; } } if (hTsI >= 0) break; }
-    }
-    if (_hRk && hTsI >= 0 && hPhI >= 0) {
-      var _hFp = _findRowsByKey_(hSh, hTsI, hPhI, _hRk.ts, _hRk.phone);
-      if (_hFp.length === 1) hRow = _hFp[0];
-      else if (_hFp.length === 0) return _json({ ok: false, error: 'rowkey-not-found', detail: '회원 행 확인 불가(지문 불일치) — 목록 새로고침 후 다시 시도하세요' });
-      else return _json({ ok: false, error: 'rowkey-ambiguous', detail: '지문키 중복 매칭 — 목록 새로고침 후 다시 시도하세요' });
-    } else if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
-      if (hPhI >= 0 && hRow >= 2 && hRow <= hSh.getLastRow()) {
-        var _hRowPh = _normPhone_(hSh.getRange(hRow, hPhI + 1).getValue()), _hKeyPh = _normPhone_(body.keyPhone);
-        if (_hRowPh && _hKeyPh && _hRowPh !== _hKeyPh) return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
-      } else return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 시도하세요' });
-    } else {
-      return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처/목록 새로고침 후 다시 시도하세요' });
-    }
-    }
-    if (!hRow || hRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
-    // 현재 누적치 읽기(칸 없으면 0 — preview는 칸 생성 안 함 read-only)
-    function _hColIdx(name) { var w = String(name).replace(/\s/g, ''); for (var i = 0; i < hHdr.length; i++) { if (hHdr[i].replace(/\s/g, '') === w) return i; } return -1; }
-    function _hNum(ix) { if (ix < 0 || hRow > hSh.getLastRow()) return 0; var raw = String(hSh.getRange(hRow, ix + 1).getValue() || '').replace(/[^0-9\-]/g, ''); var n = parseInt(raw, 10); return isNaN(n) ? 0 : n; }
-    var curCount = _hNum(_hColIdx(H_COUNT)), curDays = _hNum(_hColIdx(H_DAYS));
-    var remCount = Math.max(0, H_MAX_COUNT - curCount), remDays = Math.max(0, H_MAX_TOTAL - curDays);
-    // 입력 파싱 + 검증(3회/총60일/1회 7~60일)
-    var hStart = String(body.holdStart || '').trim();
-    var hDays = parseInt(body.holdDays, 10);
-    var hEndCalc = '', vErr = '';
-    var _hasReq = (body.holdStart !== undefined || body.holdDays !== undefined);
-    if (_hasReq) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(hStart)) vErr = '휴회 시작일(YYYY-MM-DD)을 입력하세요';
-      else if (isNaN(hDays)) vErr = '휴회 일수를 입력하세요';
-      else if (hDays < H_MIN_ONCE) vErr = '1회 최소 ' + H_MIN_ONCE + '일 이상이어야 합니다';
-      else if (hDays > H_MAX_ONCE) vErr = '1회 최대 ' + H_MAX_ONCE + '일까지 가능합니다';
-      else if (curCount + 1 > H_MAX_COUNT) vErr = '휴회 횟수 한도 초과(최대 ' + H_MAX_COUNT + '회, 현재 ' + curCount + '회 사용)';
-      else if (curDays + hDays > H_MAX_TOTAL) vErr = '누적 휴회일수 한도 초과(최대 ' + H_MAX_TOTAL + '일, 현재 ' + curDays + '일 + 신청 ' + hDays + '일 = ' + (curDays + hDays) + '일)';
-      if (!vErr) {
-        // 휴회종료일 = 마지막 휴회일 = 시작일 + (일수-1). (재개일=종료일 다음날). 텍스트로 저장.
-        var _sd = new Date(hStart + 'T00:00:00+09:00');
-        _sd.setDate(_sd.getDate() + (hDays - 1));
-        hEndCalc = Utilities.formatDate(_sd, 'Asia/Seoul', 'yyyy-MM-dd');
-      }
-    }
-    var preview = { ok: true, rowIndex: hRow, current: { count: curCount, cumDays: curDays },
-      limits: { maxCount: H_MAX_COUNT, maxTotal: H_MAX_TOTAL, minOnce: H_MIN_ONCE, maxOnce: H_MAX_ONCE },
-      remaining: { count: remCount, days: remDays },
-      request: { start: hStart, days: isNaN(hDays) ? null : hDays, end: hEndCalc },
-      valid: !!(_hasReq && !vErr), error: vErr || undefined, live: HOLD_LIVE };
-    if (action === 'member_hold_preview') return _json(preview);
-    // ── apply(실기록) ──
-    if (!_hasReq) return _json({ ok: false, error: 'holdStart·holdDays 필수' });
-    if (vErr) return _json({ ok: false, error: vErr });
+  // ═══ 휴회(재설계 2026-07-22 GM 확정) — 공개 접수=쓰기전용(회원 조회·판정결과 노출 0·PII 창구 안 열림) ═══
+  //   흐름: member_hold_apply(공개 write-only → '휴회접수' 탭 접수대기) → member_hold_intake_list(ERP read+서버 자동판정)
+  //         → member_hold_approve(직원 승인/반려 · 승인=회원DB '이용일수' 앞 새칸 기록+증분+상태 진행중). 검증 3회/총60일/1회 7~60 재사용.
+  //   게이트: 공개 접수 write=HOLD_LIVE, 승인 write=HOLD_LIVE_T (둘 다 GM go). 리스트/자동판정=read(라이브 가능·ERP 게이트 뒤).
+  //   ⚠️ 구 self-service 미리보기(member_hold_preview 이름+전화 본인조회)=GM 지시로 폐기(온라인 조회 금지) → 비활성 스텁.
+  var HOLD_INTAKE_TAB = '휴회접수';
+  var HOLD_INTAKE_HDR = ['접수일시', '성함', '연락처', '휴회시작일', '희망일수', '사유', '상태', '처리일시', '처리메모'];
+  var HLD_MAX_COUNT = 3, HLD_MAX_TOTAL = 60, HLD_MIN_ONCE = 7, HLD_MAX_ONCE = 60;
+  function _holdEndCalc_(start, days) { var d = new Date(start + 'T00:00:00+09:00'); d.setDate(d.getDate() + (days - 1)); return Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd'); }
+
+  // 구 온라인 본인조회 폐기(GM: 회원 데이터 온라인 조회·비교 금지) — 어떤 파라미터로도 회원 이력 미반환.
+  if (action === 'member_hold_preview') return _json({ ok: false, error: 'not-supported', detail: '온라인 조회는 지원하지 않습니다' });
+
+  // 공개 휴회접수(쓰기전용) — 회원 조회·판정 0. '휴회접수' 탭에 접수대기 1행 append만(회원 판정/잔여 미반환). 게이트 HOLD_LIVE.
+  if (action === 'member_hold_apply') {
+    var HOLD_LIVE = false;   // ★공개 접수 실기록 게이트 — GM go 후 true. 역롤백=이 한 줄.
+    var inName = String(body.name || body.selfName || '').trim();
+    var inPhone = String(body.phone || body.selfPhone || '').trim();
+    var inStart = String(body.holdStart || '').trim();
+    var inDays = parseInt(body.holdDays, 10);
+    var inReason = String(body.reason || body.message || '').trim();
+    if (!inName || !inPhone) return _json({ ok: false, error: 'need-name-phone', detail: '성함과 연락처를 입력해 주세요' });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(inStart)) return _json({ ok: false, error: 'need-start', detail: '희망 시작일을 입력해 주세요' });
+    if (isNaN(inDays) || inDays < 1) return _json({ ok: false, error: 'need-days', detail: '희망 일수를 입력해 주세요' });
     if (!HOLD_LIVE) return _json({ ok: false, error: 'hold-gated', detail: '휴회 접수는 GM 검증 후 개통됩니다(현재 미개통)' });
-    // 접수 기록(승인 대기): 요청 기간 + 접수상태='접수대기' + 접수일시. ★잔여(횟수/누적일)는 여기서 소비하지 않는다 —
-    //   직원 '반영/승인'(member_hold_transition→진행중) 시점에 확정·증분(GM 흐름 '잔여 확정 at 진행중', 반려 시 미소비→원복 불필요).
-    //   칸은 additive·헤더이름 기반·행삭제 0(셀 write만). 날짜/일시칸은 텍스트서식(@)으로 자동변환 차단.
-    var H_STATUS = '휴회접수상태', H_APPLIED = '휴회접수일시';
-    var ciStart = _miEnsureCol_(hSh, hHdr, H_START), ciEnd = _miEnsureCol_(hSh, hHdr, H_END);
-    var ciStatus = _miEnsureCol_(hSh, hHdr, H_STATUS), ciApplied = _miEnsureCol_(hSh, hHdr, H_APPLIED);
-    _miEnsureCol_(hSh, hHdr, H_COUNT); _miEnsureCol_(hSh, hHdr, H_DAYS);   // 칸 선점(승인 시 증분 기록)
-    hSh.getRange(hRow, ciStart + 1).setNumberFormat('@'); hSh.getRange(hRow, ciStart + 1).setValue(hStart);
-    hSh.getRange(hRow, ciEnd + 1).setNumberFormat('@');   hSh.getRange(hRow, ciEnd + 1).setValue(hEndCalc);
-    hSh.getRange(hRow, ciStatus + 1).setValue('접수대기');
-    hSh.getRange(hRow, ciApplied + 1).setNumberFormat('@'); hSh.getRange(hRow, ciApplied + 1).setValue(Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
-    return _json({ ok: true, rowIndex: hRow, status: '접수대기', start: hStart, end: hEndCalc, days: hDays });
+    var iss = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+    var iSh = iss.getSheetByName(HOLD_INTAKE_TAB);
+    if (!iSh) { iSh = iss.insertSheet(HOLD_INTAKE_TAB); iSh.getRange(1, 1, 1, HOLD_INTAKE_HDR.length).setValues([HOLD_INTAKE_HDR]); }
+    var iNow = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+    iSh.appendRow([iNow, inName, inPhone, inStart, inDays, inReason, '접수대기', '', '']);
+    return _json({ ok: true, received: true });   // ★회원 판정/잔여 미반환(공개 노출 금지)
   }
 
-  // ─── 휴회 상태 전이(직원 '반영/승인') — 접수대기→진행중(잔여 확정·증분)/완료/반려. 게이트 HOLD_LIVE_T. 검증 재사용. 2026-07-22 시포·GM ───
-  //   ★같은 휴회 백엔드 계열 — 새 시트·새 검증 없음(3회/총60일/1회 7~60일 그대로). 진행중 전이 시에만 잔여 확정(증분).
-  //   행 해석=rowKey/keyPhone fail-closed(직원 카드가 공급). 행삭제 0(셀 write만). 라이브 실기록=HOLD_LIVE_T(GM go).
-  if (action === 'member_hold_transition') {
-    var HOLD_LIVE_T = false;         // ★상태전이 실기록 게이트 — GM 검증 후 true. 역롤백=이 한 줄.
-    var HOLD_EXTEND_GO_T = false;    // 진행중 승인 시 종료일자 가산(잔여일 반영) — 시트 잔여일 수식 실측 후 true.
-    var HT_COUNT = '휴회횟수', HT_DAYS = '휴회누적일수', HT_START = '휴회시작일', HT_END = '휴회종료일', HT_STATUS = '휴회접수상태';
-    var HT_MAX_COUNT = 3, HT_MAX_TOTAL = 60, HT_MIN = 7, HT_MAX = 60;
-    var htNew = String(body.status || '').trim();
-    if (!({ '진행중': 1, '완료': 1, '반려': 1 })[htNew]) return _json({ ok: false, error: 'status 값은 진행중/완료/반려 중 하나' });
-    var htSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
-    if (!htSh) return _json({ ok: false, error: '유효회원 시트 없음' });
-    var htHdr = htSh.getRange(1, 1, 1, htSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
-    var htPhI = -1;
-    for (var _tp = 0; _tp < htHdr.length; _tp++) { var _tph = htHdr[_tp].replace(/\s/g, ''); if (_tph.indexOf('휴대폰') >= 0 || _tph.indexOf('전화') >= 0 || _tph.indexOf('연락처') >= 0) { htPhI = _tp; break; } }
-    // 행 해석(rowKey 우선 → keyPhone 폴백, fail-closed) — member_active_update 동일 가드
-    var htRow = parseInt(body.rowIndex, 10);
-    var _htRk = _rowKeyParts_(body), htTsI = -1;
-    if (_htRk) { var _THK = ['등록일자', '등록 일자', '타임스탬프', '등록일', '가입일']; for (var _tt = 0; _tt < htHdr.length; _tt++) { var _tth = htHdr[_tt].replace(/\s/g, ''); for (var _ttk = 0; _ttk < _THK.length; _ttk++) { if (_tth.indexOf(_THK[_ttk].replace(/\s/g, '')) >= 0) { htTsI = _tt; break; } } if (htTsI >= 0) break; } }
-    if (_htRk && htTsI >= 0 && htPhI >= 0) {
-      var _htFp = _findRowsByKey_(htSh, htTsI, htPhI, _htRk.ts, _htRk.phone);
-      if (_htFp.length === 1) htRow = _htFp[0];
-      else if (_htFp.length === 0) return _json({ ok: false, error: 'rowkey-not-found', detail: '회원 행 확인 불가 — 목록 새로고침 후 다시 시도하세요' });
-      else return _json({ ok: false, error: 'rowkey-ambiguous', detail: '지문키 중복 매칭 — 목록 새로고침 후 다시 시도하세요' });
-    } else if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
-      if (htPhI >= 0 && htRow >= 2 && htRow <= htSh.getLastRow()) {
-        var _htRowPh = _normPhone_(htSh.getRange(htRow, htPhI + 1).getValue()), _htKeyPh = _normPhone_(body.keyPhone);
-        if (_htRowPh && _htKeyPh && _htRowPh !== _htKeyPh) return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록 새로고침 후 다시 시도하세요' });
-      } else return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 시도하세요' });
-    } else {
-      return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처/목록 새로고침 후 다시 시도하세요' });
+  // ERP 휴회 접수 관리 — '휴회접수' 탭 리스트 + 서버 자동판정(회원DB 전화 매칭·3회/총60일/1회 7~60). ERP 게이트 뒤 read 전용.
+  if (action === 'member_hold_intake_list') {
+    var lss = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+    var lSh = lss.getSheetByName(HOLD_INTAKE_TAB);
+    if (!lSh || lSh.getLastRow() < 2) return _json({ ok: true, count: 0, data: [] });
+    var lHdr = lSh.getRange(1, 1, 1, lSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    function _lIdx(n){ var w = String(n).replace(/\s/g, ''); for (var i = 0; i < lHdr.length; i++){ if (lHdr[i].replace(/\s/g,'') === w) return i; } return -1; }
+    var lTs = _lIdx('접수일시'), lNm = _lIdx('성함'), lPh = _lIdx('연락처'), lSt = _lIdx('휴회시작일'), lDy = _lIdx('희망일수'), lRe = _lIdx('사유'), lStat = _lIdx('상태');
+    // 회원DB 전화→{count,cumDays,found} 매핑(자동판정용)
+    var mSh = lss.getSheetByName(MEMBER_SHEET), mMap = {};
+    if (mSh && mSh.getLastRow() >= 2) {
+      var mHdr = mSh.getRange(1, 1, 1, mSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+      function _mIdx(n){ var w = String(n).replace(/\s/g, ''); for (var i = 0; i < mHdr.length; i++){ if (mHdr[i].replace(/\s/g,'').indexOf(w) >= 0) return i; } return -1; }
+      var mPh = _mIdx('휴대폰'), mC = _mIdx('휴회횟수'), mD = _mIdx('휴회누적일수');
+      if (mPh >= 0) { var mAll = mSh.getRange(2, 1, mSh.getLastRow() - 1, mSh.getLastColumn()).getValues();
+        for (var mi = 0; mi < mAll.length; mi++){ var pk = _normPhone_(mAll[mi][mPh]); if (!pk) continue;
+          var cc = mC >= 0 ? parseInt(String(mAll[mi][mC] || '').replace(/[^0-9\-]/g, ''), 10) : 0; if (isNaN(cc)) cc = 0;
+          var dd = mD >= 0 ? parseInt(String(mAll[mi][mD] || '').replace(/[^0-9\-]/g, ''), 10) : 0; if (isNaN(dd)) dd = 0;
+          mMap[pk] = { count: cc, cumDays: dd, found: true }; } } }
+    var lData = lSh.getRange(2, 1, lSh.getLastRow() - 1, lSh.getLastColumn()).getValues();
+    var out = [];
+    for (var li = 0; li < lData.length; li++){
+      var r = lData[li];
+      var days = lDy >= 0 ? parseInt(String(r[lDy] || '').replace(/[^0-9]/g, ''), 10) : NaN;
+      var m = mMap[_normPhone_(lPh >= 0 ? r[lPh] : '')] || { count: 0, cumDays: 0, found: false };
+      var verdict = '가능', vreason = '';
+      if (isNaN(days) || days < HLD_MIN_ONCE) { verdict = '불가'; vreason = '1회 최소 ' + HLD_MIN_ONCE + '일'; }
+      else if (days > HLD_MAX_ONCE) { verdict = '불가'; vreason = '1회 최대 ' + HLD_MAX_ONCE + '일'; }
+      else if (m.count + 1 > HLD_MAX_COUNT) { verdict = '불가'; vreason = '횟수 한도(현재 ' + m.count + '/' + HLD_MAX_COUNT + '회)'; }
+      else if (m.cumDays + days > HLD_MAX_TOTAL) { verdict = '불가'; vreason = '누적일 한도(현재 ' + m.cumDays + '+' + days + '>' + HLD_MAX_TOTAL + '일)'; }
+      if (!m.found) vreason = (vreason ? vreason + ' · ' : '') + '회원 매칭 확인 필요';
+      out.push({ intakeRow: li + 2, status: lStat >= 0 ? String(r[lStat] || '').trim() : '',
+        appliedAt: lTs >= 0 ? String(r[lTs] || '') : '', name: lNm >= 0 ? String(r[lNm] || '') : '', phone: lPh >= 0 ? String(r[lPh] || '') : '',
+        start: lSt >= 0 ? String(r[lSt] || '') : '', wishDays: isNaN(days) ? null : days, end: (!isNaN(days) && lSt >= 0 && /^\d{4}-\d{2}-\d{2}$/.test(String(r[lSt] || '').trim())) ? _holdEndCalc_(String(r[lSt]).trim(), days) : '',
+        reason: lRe >= 0 ? String(r[lRe] || '') : '', member: { found: m.found, count: m.count, cumDays: m.cumDays }, verdict: verdict, verdictReason: vreason });
     }
-    if (!htRow || htRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
-    function _htIdx(n){ var w = String(n).replace(/\s/g, ''); for (var i = 0; i < htHdr.length; i++) { if (htHdr[i].replace(/\s/g, '') === w) return i; } return -1; }
-    function _htNum(ix){ if (ix < 0 || htRow > htSh.getLastRow()) return 0; var raw = String(htSh.getRange(htRow, ix + 1).getValue() || '').replace(/[^0-9\-]/g, ''); var n = parseInt(raw, 10); return isNaN(n) ? 0 : n; }
-    var ciStatusT = _miEnsureCol_(htSh, htHdr, HT_STATUS);
-    if (!HOLD_LIVE_T) return _json({ ok: false, error: 'hold-gated', detail: '휴회 상태 반영은 GM 검증 후 개통됩니다(현재 미개통)' });
-    if (htNew === '진행중') {
-      // 승인 = 잔여 확정·증분. 요청 일수 = 종료일 − 시작일 + 1(포함). 재검증(3회/총60일/1회 7~60일).
-      var siStart = _htIdx(HT_START), siEnd = _htIdx(HT_END);
-      var sStart = siStart >= 0 ? String(htSh.getRange(htRow, siStart + 1).getValue() || '').trim() : '';
-      var sEnd = siEnd >= 0 ? String(htSh.getRange(htRow, siEnd + 1).getValue() || '').trim() : '';
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(sStart) || !/^\d{4}-\d{2}-\d{2}$/.test(sEnd)) return _json({ ok: false, error: 'no-pending', detail: '접수된 휴회 기간이 없습니다 — 접수 내역을 확인하세요' });
-      var reqDays = Math.round((new Date(sEnd + 'T00:00:00+09:00') - new Date(sStart + 'T00:00:00+09:00')) / 86400000) + 1;
-      var curC = _htNum(_htIdx(HT_COUNT)), curD = _htNum(_htIdx(HT_DAYS));
-      if (reqDays < HT_MIN || reqDays > HT_MAX) return _json({ ok: false, error: '휴회 일수 범위(7~60일) 위반: ' + reqDays + '일' });
-      if (curC + 1 > HT_MAX_COUNT) return _json({ ok: false, error: '휴회 횟수 한도 초과(최대 ' + HT_MAX_COUNT + '회, 현재 ' + curC + '회)' });
-      if (curD + reqDays > HT_MAX_TOTAL) return _json({ ok: false, error: '누적 휴회일수 한도 초과(최대 ' + HT_MAX_TOTAL + '일, 현재 ' + curD + '일 + ' + reqDays + '일)' });
-      var ciC = _miEnsureCol_(htSh, htHdr, HT_COUNT), ciD = _miEnsureCol_(htSh, htHdr, HT_DAYS);
-      htSh.getRange(htRow, ciC + 1).setValue(curC + 1);
-      htSh.getRange(htRow, ciD + 1).setValue(curD + reqDays);
-      htSh.getRange(htRow, ciStatusT + 1).setValue('진행중');
-      var extendedT = false;
-      if (HOLD_EXTEND_GO_T) {
-        var ciME = _htIdx('종료일자');
-        if (ciME >= 0 && htRow <= htSh.getLastRow()) { var _ec2 = htSh.getRange(htRow, ciME + 1); if (!_ec2.getFormula()) { var _ev2 = _ec2.getValue(); if (_ev2 instanceof Date && !isNaN(_ev2.getTime())) { _ev2.setDate(_ev2.getDate() + reqDays); _ec2.setValue(_ev2); extendedT = true; } } }
-      }
-      return _json({ ok: true, rowIndex: htRow, status: '진행중', count: curC + 1, cumDays: curD + reqDays, days: reqDays, extended: extendedT });
-    } else {
-      // 완료/반려 = 상태만 기록. 반려는 잔여 미소비(접수대기 단계는 애초 미증분) → 원복 불필요.
-      htSh.getRange(htRow, ciStatusT + 1).setValue(htNew);
-      return _json({ ok: true, rowIndex: htRow, status: htNew });
+    return _json({ ok: true, count: out.length, data: out });
+  }
+
+  // ─── 휴회 승인/반려(직원 클릭) — 승인=회원DB 기록(이용일수 앞 새칸 '휴회기간')+증분(휴회횟수·누적일)+상태 진행중, intake 상태 갱신 ───
+  //   반려=intake 상태만 반려(회원DB 무변경·잔여 미소비). 검증 3회/총60일/1회 7~60 재검증. 게이트 HOLD_LIVE_T(GM go).
+  //   회원 매칭=접수 연락처↔회원DB 전화 1행(fail-closed). 대조키(keyPhone)로 접수행 검증. 행삭제 0(셀 write·칸 insert만). 2026-07-22 시포·GM.
+  if (action === 'member_hold_approve') {
+    var HOLD_LIVE_T = false;         // ★승인/반영 실기록 게이트 — GM 검증 후 true. 역롤백=이 한 줄.
+    var HOLD_EXTEND_GO_T = false;    // 승인 시 종료일자 가산(잔여일 반영) — 시트 잔여일 수식 실측 후 true.
+    var apDecision = String(body.decision || '').trim();
+    if (apDecision !== 'approve' && apDecision !== 'reject') return _json({ ok: false, error: 'decision=approve|reject' });
+    var apIntakeRow = parseInt(body.intakeRow, 10);
+    if (!apIntakeRow || apIntakeRow < 2) return _json({ ok: false, error: 'intakeRow 필수(2 이상)' });
+    var ass = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+    var aiSh = ass.getSheetByName(HOLD_INTAKE_TAB);
+    if (!aiSh || apIntakeRow > aiSh.getLastRow()) return _json({ ok: false, error: '접수 행 없음' });
+    var aiHdr = aiSh.getRange(1, 1, 1, aiSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    function _aiIdx(n){ var w = String(n).replace(/\s/g, ''); for (var i = 0; i < aiHdr.length; i++){ if (aiHdr[i].replace(/\s/g,'') === w) return i; } return -1; }
+    var aiPh = _aiIdx('연락처'), aiSt = _aiIdx('휴회시작일'), aiDy = _aiIdx('희망일수'), aiStat = _aiIdx('상태'), aiProc = _aiIdx('처리일시'), aiMemo = _aiIdx('처리메모');
+    var apRowV = aiSh.getRange(apIntakeRow, 1, 1, aiSh.getLastColumn()).getValues()[0];
+    var apPhone = aiPh >= 0 ? String(apRowV[aiPh] || '').trim() : '';
+    // 대조키(오지목 방지): 클라 keyPhone ↔ 접수행 연락처
+    if (body.keyPhone !== undefined && String(body.keyPhone) !== '' && _normPhone_(body.keyPhone) !== _normPhone_(apPhone)) return _json({ ok: false, error: 'row-key-mismatch', detail: '접수 행 검증 실패 — 새로고침 후 다시 시도하세요' });
+    if (!HOLD_LIVE_T) return _json({ ok: false, error: 'hold-gated', detail: '휴회 승인/반영은 GM 검증 후 개통됩니다(현재 미개통)' });
+    var apNow = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+    if (apDecision === 'reject') {
+      if (aiStat >= 0) aiSh.getRange(apIntakeRow, aiStat + 1).setValue('반려');
+      if (aiProc >= 0) aiSh.getRange(apIntakeRow, aiProc + 1).setValue(apNow);
+      if (aiMemo >= 0 && body.memo) aiSh.getRange(apIntakeRow, aiMemo + 1).setValue(String(body.memo));
+      return _json({ ok: true, decision: 'reject', intakeRow: apIntakeRow });
     }
+    // approve: 회원DB 전화 매칭(1행 fail-closed)
+    var amSh = ass.getSheetByName(MEMBER_SHEET);
+    if (!amSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var amHdr = amSh.getRange(1, 1, 1, amSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    function _amIdx(n){ var w = String(n).replace(/\s/g, ''); for (var i = 0; i < amHdr.length; i++){ if (amHdr[i].replace(/\s/g,'').indexOf(w) >= 0) return i; } return -1; }
+    var amPh = _amIdx('휴대폰'); if (amPh < 0) return _json({ ok: false, error: '회원 전화 칸 없음' });
+    var apPhN = _normPhone_(apPhone), amHits = [];
+    var amAll = amSh.getLastRow() >= 2 ? amSh.getRange(2, 1, amSh.getLastRow() - 1, amSh.getLastColumn()).getValues() : [];
+    for (var ami = 0; ami < amAll.length; ami++){ if (_normPhone_(amAll[ami][amPh]) === apPhN) amHits.push(ami + 2); }
+    if (amHits.length === 0) return _json({ ok: false, error: 'member-not-found', detail: '회원DB에서 일치 회원을 찾을 수 없습니다(전화 확인)' });
+    if (amHits.length > 1) return _json({ ok: false, error: 'member-ambiguous', detail: '동일 전화 회원 다수 — 데스크 확인' });
+    var amRow = amHits[0];
+    var reqStart = aiSt >= 0 ? String(apRowV[aiSt] || '').trim() : '';
+    var reqDays = aiDy >= 0 ? parseInt(String(apRowV[aiDy] || '').replace(/[^0-9]/g, ''), 10) : NaN;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(reqStart) || isNaN(reqDays)) return _json({ ok: false, error: 'bad-request', detail: '접수 기간/일수 불량' });
+    var reqEnd = _holdEndCalc_(reqStart, reqDays);
+    function _amNum(ix){ if (ix < 0) return 0; var raw = String(amSh.getRange(amRow, ix + 1).getValue() || '').replace(/[^0-9\-]/g, ''); var n = parseInt(raw, 10); return isNaN(n) ? 0 : n; }
+    var amC = _amNum(_amIdx('휴회횟수')), amD = _amNum(_amIdx('휴회누적일수'));
+    if (reqDays < HLD_MIN_ONCE || reqDays > HLD_MAX_ONCE) return _json({ ok: false, error: '휴회 일수 범위(7~60일) 위반: ' + reqDays + '일' });
+    if (amC + 1 > HLD_MAX_COUNT) return _json({ ok: false, error: '휴회 횟수 한도 초과(최대 ' + HLD_MAX_COUNT + '회, 현재 ' + amC + '회)' });
+    if (amD + reqDays > HLD_MAX_TOTAL) return _json({ ok: false, error: '누적 휴회일수 한도 초과(최대 ' + HLD_MAX_TOTAL + '일, 현재 ' + amD + '+' + reqDays + '일)' });
+    // ★GM 지정: '이용일수' 바로 앞에 새 칸 '휴회기간' 신설(없으면 insertColumnBefore). 시트에도 실제 칸 추가.
+    var _bw = '이용일수'.replace(/\s/g, ''), _bi = -1;
+    for (var _bj = 0; _bj < amHdr.length; _bj++){ if (amHdr[_bj].replace(/\s/g,'').indexOf(_bw) >= 0) { _bi = _bj; break; } }
+    var _hasPeriod = false; for (var _pj = 0; _pj < amHdr.length; _pj++){ if (amHdr[_pj].replace(/\s/g,'') === '휴회기간') { _hasPeriod = true; break; } }
+    if (!_hasPeriod) {
+      if (_bi >= 0) { amSh.insertColumnBefore(_bi + 1); amSh.getRange(1, _bi + 1).setValue('휴회기간'); }
+      else { amSh.getRange(1, amHdr.length + 1).setValue('휴회기간'); }   // 이용일수 없으면 끝에(정합 유지)
+      amHdr = amSh.getRange(1, 1, 1, amSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });   // insert로 인덱스 이동 → 재조회
+    }
+    function _amIdx2(n){ var w = String(n).replace(/\s/g, ''); for (var i = 0; i < amHdr.length; i++){ if (amHdr[i].replace(/\s/g,'') === w) return i; } return -1; }
+    var ciPeriod = _amIdx2('휴회기간');
+    amSh.getRange(amRow, ciPeriod + 1).setNumberFormat('@'); amSh.getRange(amRow, ciPeriod + 1).setValue(reqStart + ' ~ ' + reqEnd + ' (' + reqDays + '일)');
+    // 기존 4칸 정합 기록 + 증분 + 상태(진행중)
+    var ciC2 = _miEnsureCol_(amSh, amHdr, '휴회횟수'), ciD2 = _miEnsureCol_(amSh, amHdr, '휴회누적일수'), ciS2 = _miEnsureCol_(amSh, amHdr, '휴회시작일'), ciE2 = _miEnsureCol_(amSh, amHdr, '휴회종료일'), ciStat2 = _miEnsureCol_(amSh, amHdr, '휴회접수상태');
+    amSh.getRange(amRow, ciS2 + 1).setNumberFormat('@'); amSh.getRange(amRow, ciS2 + 1).setValue(reqStart);
+    amSh.getRange(amRow, ciE2 + 1).setNumberFormat('@'); amSh.getRange(amRow, ciE2 + 1).setValue(reqEnd);
+    amSh.getRange(amRow, ciC2 + 1).setValue(amC + 1);
+    amSh.getRange(amRow, ciD2 + 1).setValue(amD + reqDays);
+    amSh.getRange(amRow, ciStat2 + 1).setValue('진행중');
+    var extendedA = false;
+    if (HOLD_EXTEND_GO_T) { var ciME2 = _amIdx2('종료일자'); if (ciME2 >= 0) { var _eca = amSh.getRange(amRow, ciME2 + 1); if (!_eca.getFormula()) { var _eva = _eca.getValue(); if (_eva instanceof Date && !isNaN(_eva.getTime())) { _eva.setDate(_eva.getDate() + reqDays); _eca.setValue(_eva); extendedA = true; } } } }
+    // intake 상태 갱신(승인)
+    if (aiStat >= 0) aiSh.getRange(apIntakeRow, aiStat + 1).setValue('승인');
+    if (aiProc >= 0) aiSh.getRange(apIntakeRow, aiProc + 1).setValue(apNow);
+    return _json({ ok: true, decision: 'approve', intakeRow: apIntakeRow, memberRow: amRow, count: amC + 1, cumDays: amD + reqDays, period: reqStart + ' ~ ' + reqEnd, extended: extendedA });
   }
 
   // ─── CPO 오늘 현황(PII 미노출 집계): 오늘/이번달 문의·등록 건수 2026-06-24 GM ───
