@@ -476,7 +476,7 @@
     "status": "PENDING",
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-07-20",
-    "note": "[2026-07-20 시모→시토 이관·GM 승인] 문제: \"Deploy to GitHub Pages\" 워크플로가 저장소의 잦은 자동 커밋(예약러너·자동푸시 등)에 계속 밀려 cancelled·재큐잉을 반복 — 커밋된 프론트엔드 변경이 라이브에 반영되지 않는다. 실측 증거(시모 제공): 2026-07-20, 커밋 6f5d3e14(M1 대시보드 전환 명단 UI)가 푸시 완료됐는데도 라이브 페이지에 미반영, 캐시무효 fetch로 마커 0건 확인, gh run list 최신 run이 계속 pending/cancelled. 영향: 시모뿐 아니라 전 C-Level의 페이지 변경이 라이브에 늦고·불확실하게 반영됨 — 오늘만이 아닌 구조적 반복 문제. 요청: 배포 큐가 자동 커밋에 밀리지 않게 하는 구조적 해결(워크플로 동시성 설정·자동커밋 배치화·배포 트리거 조건 등, 판단은 시토 몫).\n[executor 등록 시 실측 부기 — 정확성 목적] .github/workflows/pages.yml에 같은 날 09-20 11:10 커밋 41dc0856(시우·GM 승인, 주석에 '배9199' 인용)로 이미 1차 구조수정 적용된 상태를 확인함: ①paths 필터에 status/**·*.jsonl·cmo/review/** 등 '데이터성' 경로 제외 추가 ②concurrency.cancel-in-progress를 true→false로 전환(취소 대신 줄세우기). 그러나 등록 시점 실측(gh run list --workflow=pages.yml) 결과 그 커밋 이후 푸시(41dc0856 자신·d4e13b22·cb9b230b·7949a059)도 전부 completed/cancelled로 남아있고 최신 run(0270093c 관련, run 29712590015)도 여전히 pending 상태 — 1차 수정이 실효를 못 낸 것으로 보임(원인 미상: 워크플로 파일이 트리거 시점 커밋 기준으로 평가되는 특성 때문인지, 다른 원인인지는 시토 진단 필요). 즉 시모가 보고한 증상은 오늘 오전 1차 수정 이후에도 라이브로 재현 중.",
+    "note": "[2026-07-20 시모→시토 이관·GM 승인] 문제: \"Deploy to GitHub Pages\" 워크플로가 저장소의 잦은 자동 커밋(예약러너·자동푸시 등)에 계속 밀려 cancelled·재큐잉을 반복 — 커밋된 프론트엔드 변경이 라이브에 반영되지 않는다. 실측 증거(시모 제공): 2026-07-20, 커밋 6f5d3e14(M1 대시보드 전환 명단 UI)가 푸시 완료됐는데도 라이브 페이지에 미반영, 캐시무효 fetch로 마커 0건 확인, gh run list 최신 run이 계속 pending/cancelled. 영향: 시모뿐 아니라 전 C-Level의 페이지 변경이 라이브에 늦고·불확실하게 반영됨 — 오늘만이 아닌 구조적 반복 문제. 요청: 배포 큐가 자동 커밋에 밀리지 않게 하는 구조적 해결(워크플로 동시성 설정·자동커밋 배치화·배포 트리거 조건 등, 판단은 시토 몫).\n[executor 등록 시 실측 부기 — 정확성 목적] .github/workflows/pages.yml에 같은 날 09-20 11:10 커밋 41dc0856(시우·GM 승인, 주석에 '배9199' 인용)로 이미 1차 구조수정 적용된 상태를 확인함: ①paths 필터에 status/**·*.jsonl·cmo/review/** 등 '데이터성' 경로 제외 추가 ②concurrency.cancel-in-progress를 true→false로 전환(취소 대신 줄세우기). 그러나 등록 시점 실측(gh run list --workflow=pages.yml) 결과 그 커밋 이후 푸시(41dc0856 자신·d4e13b22·cb9b230b·7949a059)도 전부 completed/cancelled로 남아있고 최신 run(0270093c 관련, run 29712590015)도 여전히 pending 상태 — 1차 수정이 실효를 못 낸 것으로 보임(원인 미상: 워크플로 파일이 트리거 시점 커밋 기준으로 평가되는 특성 때문인지, 다른 원인인지는 시토 진단 필요). 즉 시모가 보고한 증상은 오늘 오전 1차 수정 이후에도 라이브로 재현 중. [2026-07-22 시모 제기·우선순위] 이 Pages 배포 지연이 오늘 GM 작업을 반복적으로 발목잡음 — L5 처리완료·AI 미리보기·실전사례 정리 등 데이터·커밋을 여러 번 맞췄는데도 GM 화면이 계속 옛날(배포 밀림)이라 \"안됨\" 반복. 캐시버스터로 stale 자체는 근본차단했으나(가이드 fetch ?t= 추가·d5506ce1), 배포가 밀리는 원인(자동커밋 폭주)이 남으면 라이브 반영이 계속 지연됨. GM 체감 직결 이슈로 우선 처리 요청.",
     "next": "[병합 2026-07-22·9332·9315 흡수] 한 뿌리=잦은 자동 커밋. 통합 근본수리 4갈래: ①배포 동시성·트리거·paths negation 미작동 규명(잡레벨 early-exit 대체) ②큐 미러(status/_queue.json 배포루트 미러) 제거=웰리 배9333 raw직독 전환 후 ③자동커밋 자기경로만 add+직렬화(남의 변경 흡수·헛커밋·cannot lock ref 방지, INC-020) ④자동커밋 배치화. 원 9332(과다트리거·시우진단)·9315(커밋안전·시포/시우 보고) 상세는 각 DONE기록·git이력 보존.",
     "depends_on": "",
     "ship_no": 9226,
@@ -2964,5 +2964,19 @@
     "artifact": "- 엔진 job_status 소스 추가(인사허브 public-job-status·open→진행50/closed→완료100)\n- 주차관리인·채용마무리·골프프로 → job_status 배선(현재 전부 채용중=자동 50)\n- 골프 채용 상태 계획0%→진행50 정정(라이브 open 실측)·담당 나우열M(인사) (CLI ad-hoc · 커밋 9cc63d8cb)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9cc63d8cb87cf9574719c6efec1c7ffcab520616"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-adf71eb24",
+    "clevel": "cpo",
+    "title": "[시포] 강습 재문의 이력 시스템 — 멤버십 재문의 1:1 이식(GM 2026-07-22)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9735,
+    "artifact": "- 같은 연락처+같은 이름=재문의(🔁 이전문의 N건 배지+이력팝업), 이전건 LOSS면 강조(⚠️ LOSS후 재문의).\n- 같은 연락처+다른 이름=👥 '같은 번호 다른 문의'(형제·동반, 주우인/주우현 케이스). 병합 없음.\n- 표시 전용(시트 쓰기 0·새 fetch 0, _lessonState.rows 재사용). 멤버십 #repeatInquiryOverlay 모달 재사용.\n- 문의현황·LOSS·대기 뷰 공통(_lessonRowHtml 이름칸 배지). (CLI ad-hoc · 커밋 adf71eb24)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "adf71eb243521f92c34a2f132526518e8035fcda"
   }
 ]
