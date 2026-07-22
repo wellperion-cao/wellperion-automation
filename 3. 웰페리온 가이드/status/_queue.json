@@ -24,7 +24,7 @@
     "origin": "gm",
     "enqueued_at": "2026-07-22",
     "note": "GM 2026-07-22 지시. ①종합접수 현황을 점검현황방에서 분리→종합접수방(-5065206276)으로(어제 배9424 '점검현황방 병합' 되돌림, 점검은 점검현황방 유지) ②종합접수 다이제스트에 미처리 적체 리마인드 추가(reg_list status!=완료를 createdAt+카테고리 slaHours로 aging 계산·SLA초과만·담당자별 그룹·미배정 별도·칭찬 제외·한통요약·tg_outbound_log 페이싱, 매일밤 반복노출=방치상기) ③카톡 ★운영+시설+지원+주차 방에 점검현황건·종합접수현황건 각각 따로 2메시지(GM go 지금 활성화). [텔레그램 구현완료·드라이런검증] report_stream_2_check.py=점검전용 원복, report_stream_2b_reception.py 신설(종합접수방), daily_scheduler run_daily_digest에 stream2b 추가. 라이브 reg_list로 미처리24·기한초과22·미배정16·최고령14.9일 렌더 확인. IG리뷰 -5065206276 폴백=죽은코드(실발송은 GM DM)라 무해, 경고주석. 카톡=후속.",
-    "next": "[남음] ①카톡 ★운영방 점검·접수 각각 2메시지 발송 구현·테스트방 시연→GM go 활성화 ②오늘밤 22:30 텔레그램 실발송(점검현황방 점검·종합접수방 접수+리마인드) GM 육안검증.",
+    "next": "[카톡 구현완료·활성] daily_scheduler run_daily_digest에 ★운영+시설+지원+주차 방으로 점검현황·종합접수현황 각각 별도 2메시지(5초간격·best-effort·kakao_report_sender --only-room 재사용). 게이트 KAKAO_GO_STREAM2=True(역롤백=False 1줄). 카톡 실발송 안 함(예약슬롯에 맡김). ▶남은 확인: 오늘밤 22:30 첫 실발송 GM 육안검증 — 텔레그램(점검현황방=점검 / 종합접수방=접수+미처리리마인드) + 카톡 ★운영방(점검·접수 2메시지). 카톡 취약(배9423)=미완주시 방 열어두기 주경로, 실패해도 텔레그램은 선행발송돼 무영향.",
     "ship_no": 9582,
     "module": "T1",
     "surface": "autonomy"
@@ -1695,5 +1695,19 @@
     "artifact": "- ★웰리 실측확정: 라이브 멤버십/문의폼 정본 = .deploy-funnel-v2(scriptId 1BezMSW, /exec AKfycbyk…).\n  membership.html GAS_URL도 AKfycbyk(v2) 확인. v1(.deploy-funnel, 1A77oDR)은 07-18 200버전 상한 은퇴·백업전용.\n- v2/Survey.js: 휴회 3편집 동일 포팅(화이트리스트 member_hold_preview/apply + 액션 블록).\n  헬퍼(_rowKeyParts_·_findRowsByKey_·_normPhone_·_ (CLI ad-hoc · 커밋 e60fafdb)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e60fafdbac7e0723a3289a0748d2e4b7e931a2b1"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-a9268452",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9645,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 a9268452)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a92684529b783ef1e2ed03e95990be4c9f91071f"
   }
 ]

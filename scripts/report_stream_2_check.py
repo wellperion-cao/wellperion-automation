@@ -9,7 +9,11 @@
 scripts/report_stream_2b_reception.py 참조.
 
 텔레그램: 점검현황방(TELEGRAM_CHECK_CHAT_ID, -5136037543) 단일 발송.
-카카오톡: ★운영+시설+지원+주차 (kakao_go=True 시만 실발송 — GM go 게이트).
+카카오톡: ★운영+시설+지원+주차. 이 파일의 run(kakao_go=True)/--kakao-go는 독립 CLI
+실행·수동 검증 전용 경로다. 프로덕션 자동 발송은 daily_scheduler.py run_daily_digest()가
+이 모듈의 build_digest() 결과를 그대로 재사용해 별도로 처리한다(종합접수현황과 분리된
+메시지 2통 중 하나 — GM 2026-07-22 go, KAKAO_GO_STREAM2 게이트). 두 경로를 동시에 켜면
+중복 발송되므로 daily_scheduler.py 경유 시엔 이 CLI를 --kakao-go로 무인 실행하지 말 것.
 발사 시각: 매일 22:30 (daily_scheduler.py run_daily_digest 경유) / 독립 실행 가능.
 """
 from __future__ import annotations

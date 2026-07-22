@@ -16,7 +16,9 @@ GM 2026-07-22 지시: 배9424(2026-07-21)의 '종합접수 현황 → 점검현�
 
 텔레그램: 종합접수방(TELEGRAM_RECEPTION_CHAT_ID, -5065206276) 단일 발송.
 발사 시각: 매일 22:30 (daily_scheduler.py run_daily_digest 경유) / 독립 실행 가능.
-카카오톡: 이번 배 범위 밖(GM 후속 처리) — 이 모듈은 텔레그램만 다룬다.
+카카오톡: 이 모듈 자체는 텔레그램만 다룬다(build_digest만 노출). ★운영+시설+지원+주차 방
+발송은 daily_scheduler.py run_daily_digest()가 이 모듈의 build_digest() 결과를 그대로
+재사용해 처리한다(점검현황과 별도 메시지로 분리 — GM 2026-07-22 go, KAKAO_GO_STREAM2 게이트).
 """
 from __future__ import annotations
 

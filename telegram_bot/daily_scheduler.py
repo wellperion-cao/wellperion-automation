@@ -3126,6 +3126,12 @@ def _build_digest_reception(today: str) -> str:
 # GM이 2026-07-18 개설. 창 제목이 다르면 이 값을 실제 제목으로 맞출 것.
 KAKAO_DEPTHEAD_ROOM = "★부서장"
 
+# 카카오톡 ★운영+시설+지원+주차 방 — 점검현황·종합접수현황 분리 발송 게이트(GM 2026-07-22 go).
+# --only-room 매칭이라 방 이름은 열린 채팅창 제목과 정확히 일치해야 함(실측 검증됨,
+# scripts/poc-evidence/kakao_send_★운영+시설+지원+주차_*.png). 역롤백(1줄): 아래를 False로.
+KAKAO_GO_STREAM2 = True
+KAKAO_OPS_ROOM = "★운영+시설+지원+주차"
+
 
 def _is_rest_day(d) -> bool:
     """주말(토·일) 또는 휴관·공휴일(close_days) → 20시 발송."""
@@ -3165,6 +3171,7 @@ def run_daily_digest(early: bool = False) -> None:
         logger.error(f"{label} 문의알림방(stream1) 예외: {e}")
 
     # ── 스트림 #2 점검+이슈 현황 (점검현황방 단독 · 2026-07-22) ─────────────────────
+    s2_msg = None  # 카톡 ★운영+시설+지원+주차 재사용(아래) — 빌드 실패 시 None 유지, 카톡 스킵.
     try:
         import report_stream_2_check as _s2
         s2_msg = _s2.build_digest(today)
@@ -3178,6 +3185,7 @@ def run_daily_digest(early: bool = False) -> None:
 
     # ── 스트림 #2b 종합접수 현황+미처리 적체 리마인드 (종합접수방 단독 복원 · 2026-07-22) ──
     # 배9424(2026-07-21)의 '점검현황방 병합'을 되돌림 — GM 지시. 접수만 별도 종합접수방으로.
+    s2b_msg = None  # 카톡 ★운영+시설+지원+주차 재사용(아래) — 빌드 실패 시 None 유지, 카톡 스킵.
     try:
         import report_stream_2b_reception as _s2b
         s2b_msg = _s2b.build_digest(today)
@@ -3188,6 +3196,40 @@ def run_daily_digest(early: bool = False) -> None:
             logger.error(f"{label} 종합접수방 발송 실패 chat_id={DIGEST_RECEPTION_CHAT_ID}")
     except Exception as e:
         logger.error(f"{label} 종합접수방(stream2b) 예외: {e}")
+
+    # ── 카카오톡 ★운영+시설+지원+주차 — 점검현황·종합접수현황 분리 발송 (GM 2026-07-22 go) ──
+    # 텔레그램 본문(s2_msg/s2b_msg) 그대로 재사용(중복 조립 금지) — 결합 아닌 별도 메시지 2통.
+    # ★한계(정직 표기): 카카오 발송은 PC 카톡 앱 UI자동화(kakao_report_sender.py)에 의존해
+    # 트레이 최소화·포커스 경합 등으로 실패할 수 있다(배9423, 07-22 아침 09:30 3방 발송 실패
+    # 전례). 주경로=카톡 창을 미리 열어둔 상태 유지. 실패해도 텔레그램 발송(위)은 이미 완료된
+    # 상태이므로 GM은 텔레그램으로 항상 현황을 받는다. 역롤백(1줄): KAKAO_GO_STREAM2 = False.
+    if KAKAO_GO_STREAM2:
+        _kakao_sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
+        _kakao_env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+
+        def _send_ops_kakao(text: str, tag: str) -> None:
+            try:
+                proc = subprocess.run(
+                    [sys.executable, str(_kakao_sender), "--message", text, "--only-room", KAKAO_OPS_ROOM],
+                    cwd=str(REPO_ROOT), capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", env=_kakao_env, timeout=180,
+                )
+                tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+                logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM}({tag}) 발송: {tail[0]}")
+            except Exception as e:
+                logger.error(f"{label} 카톡 {KAKAO_OPS_ROOM}({tag}) 발송 예외: {e}")
+
+        if s2_msg:
+            _send_ops_kakao(s2_msg, "점검현황")
+            time.sleep(5)  # 두 메시지 사이 간격(플러드·방 창 포커스 경합 방지)
+        else:
+            logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM}(점검현황) SKIP — s2_msg 없음(빌드 실패)")
+        if s2b_msg:
+            _send_ops_kakao(s2b_msg, "종합접수현황")
+        else:
+            logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM}(종합접수현황) SKIP — s2b_msg 없음(빌드 실패)")
+    else:
+        logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP (KAKAO_GO_STREAM2=False)")
 
     # 카카오톡 ★부서장 방에도 문의 정리 발송 (GM 2026-07-18 · best-effort).
     if inquiry_plain:
