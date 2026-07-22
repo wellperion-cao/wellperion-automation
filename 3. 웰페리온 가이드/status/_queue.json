@@ -209,7 +209,7 @@
     "origin": "gm",
     "enqueued_at": "2026-07-22",
     "note": "GM 2026-07-22 지시(시우64 입항 후속). GM 핵심포인트='구조는 좋으나 월간운영계획 내부내용이 계속 진행·자동 반영되고 돌아가는 구조가 되어야 한다 — 실무 및 업무 SSOT 내용 반영이 정말 중요'. 실측 문제=objectives·진척이 수동 PIN 편집이라 정본 파일 2026-07-14 이후 8일 미갱신(정체). 매출 등 라이브 지표는 home_kpi GAS 실시간 fetch로 반영되나, 운영 목표·진척은 사람 손 안 대면 멈춤. 시우 신역할=월간운영계획 페이지 진실검수만(4부서 내부 실무진행=준용M). ▶착수 전 설계·GM 접근 승인 필요.",
-    "next": "[2026-07-22 설계안 완성] docs/superpowers/specs/2026-07-22-monthly-ops-ssot-sync-design.md — 소스4종(metric_live·queue·todo_ssot·manual)·objective에 sync블록 additive·엔진 monthly_ops_sync.py(게이트 MONTHLY_SYNC_APPLY OFF)·시우 검수배지·준용M 단일입력·4단계 롤아웃. ▶GM 접근 승인 시 단계1(스키마+드라이런·라이브0)부터 착수.",
+    "next": "[2026-07-22 단계1 완료·드라이런검증] 설계=docs/superpowers/specs/2026-07-22-monthly-ops-ssot-sync-design.md. 엔진 scripts/monthly_ops_sync.py(게이트 MONTHLY_SYNC_APPLY OFF·기본 드라이런·조회실패=미연동 정직) + 매출 objective sync배선(metric_live). 드라이런 실증=매출 home_kpi 4.0억 자동 당김·나머지17 수동 정직분류·파일 무변경. ▶남은=단계2 소스배선(준용M 업무SSOT todo_ssot·시우 1회)·단계3 게이트 ON(GM go)·페이지 배지. 물리실무 자동반영 전제=준용M 단일입력 습관.",
     "ship_no": 9678,
     "module": "home",
     "surface": "autonomy"
@@ -2583,5 +2583,19 @@
     "artifact": "- monthly_ops_sync.py: objective.sync(metric_live·queue·todo_ssot·manual) 읽어 소스에서 진척 자동 당김. 게이트 MONTHLY_SYNC_APPLY 기본 OFF·기본 드라이런·조회실패=가짜값없이 미연동 정직표기\n- 매출 objective(2026-07-01)에 sync 블록 additive(metric_live:sales.month) — 진척값 무변경\n- 드라이런 실증: 매출 home_kpi 실시간 4.0억 자동 당김 확인·나머지 17건 수동 정직 분류 (CLI ad-hoc · 커밋 43839c1f)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "43839c1f5d34cb3e767c46a74204d530cefe16a3"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-d2766330",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9707,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 d2766330)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d2766330a0b451bd2329a0caaf66d7756623b093"
   }
 ]
