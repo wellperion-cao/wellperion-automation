@@ -57,6 +57,9 @@ from module_heartbeat import record_heartbeat  # noqa: E402
 # [전사 무결성 표준 편입 2026-07-22] 시포 시트 계약 점검기(07:50)의 상태파일·임계·로더를
 # 재사용해 STATE_PATH/threshold 드리프트 없이 읽기만 한다(재점검·네트워크 호출 없음).
 from collectors import cpo_sheet_contract as _sheet  # noqa: E402
+# [결정 정합 게이트 §6 편입 2026-07-22] 가드가 남긴 '옛것 재생 차단' 신호(공용 로그)만
+# 읽는다 — 재점검·차단 없음(surface-only, §3 erp_status·§5 sheet_contract 와 동일 read-only).
+import decision_replay_log as _replay  # noqa: E402
 
 KST = timezone(timedelta(hours=9))  # 이 저장소 관행(module_silence_detector.py 상단 주석과 동일)
 
@@ -64,6 +67,7 @@ PROJECT_ROOT = Path(_PROJECT_ROOT)
 STATUS_DIR = PROJECT_ROOT / "status"
 ERP_STATUS_PATH = STATUS_DIR / "erp_status.json"
 LOG_PATH = STATUS_DIR / "self_health_watchdog_log.jsonl"
+DECISION_CONTRACTS_PATH = PROJECT_ROOT / "ssot" / "decision_contracts.json"
 ROOMS_PATH = STATUS_DIR / "telegram_rooms.json"
 BOT_ROOM = "자동화현황방"  # 기존 채널 재사용(새 봇·새 방 금지)
 LINK = "https://wellperion-cao.github.io/wellperion-automation/자율현황.html#layer-automation"
@@ -203,9 +207,63 @@ def build_section_sheet_contract():
     return lines
 
 
+# ── §6 🔁 결정 정합 (decision_replay_log + decision_contracts 읽기 전용) ────────
+def _load_decision_contracts(path: Path = DECISION_CONTRACTS_PATH):
+    """계약 파일 로드 → contracts 리스트. 파일 없음/파싱 실패 → [](fail-soft)."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    if not isinstance(data, dict):
+        return []
+    contracts = data.get("contracts")
+    return contracts if isinstance(contracts, list) else []
+
+
+def build_section_decision_consistency(now=None):
+    """결정 정합 이상만 → 라인 리스트. 전부 정상(차단 0·미보증 0) → None(무노출).
+
+    스펙 §4·§6. surface-only — 실제 차단은 각 모듈 패턴 K/N 가드가 이미 최전단에서
+    수행하고, 여기서는 그 신호(status/decision_replay_log.jsonl)와 계약(ssot/
+    decision_contracts.json)만 읽는다(재점검·네트워크·차단 없음).
+      (a) 오늘 '옛것 재생 차단' N건 — 가드가 실제로 막은 재선정/재발송(정상 작동 증거).
+          그중 action='leaked'(가드 우회 재발송 흔적)는 별도 강조(회귀 대상, §6.3).
+      (b) 미보증 모듈 M건 — 계약상 결정소멸형인데 status in (unguarded, proposed).
+    """
+    now = _now_utc(now)
+    recs = _replay.read_today(now=now)
+    blocked = [r for r in recs if r.get("action") == "blocked"]
+    leaked = [r for r in recs if r.get("action") == "leaked"]
+
+    contracts = _load_decision_contracts()
+    unguarded = [c for c in contracts
+                 if isinstance(c, dict) and c.get("status") in ("unguarded", "proposed")]
+
+    if not blocked and not leaked and not unguarded:
+        return None
+
+    lines = []
+    if leaked:
+        lines.append(f"🔁 결정 정합 — ⚠️ 가드 우회 재발송(leaked) {len(leaked)}건 (회귀 대상)")
+        for r in leaked[:6]:
+            lines.append(f"  · {r.get('module_id', '?')} — {r.get('subject', '')}: {r.get('detail', '')}")
+    if blocked:
+        lines.append(f"🔁 옛것 재생 차단 {len(blocked)}건(가드 정상 작동 · 결정 미박제 흔적)")
+        for r in blocked[:6]:
+            lines.append(f"  · {r.get('module_id', '?')} — {r.get('subject', '')}: {r.get('detail', '')}")
+        if len(blocked) > 6:
+            lines.append(f"  … 외 {len(blocked) - 6}건")
+    if unguarded:
+        lines.append(f"🔁 결정소멸형 미보증 모듈 {len(unguarded)}건(계약상 가드 보류·로드맵 잔여)")
+        for c in unguarded[:6]:
+            lines.append(f"  · {c.get('module_id', '?')} — status={c.get('status')}"
+                         + (f" · {c.get('domain_review')}" if c.get("domain_review") else ""))
+    return lines
+
+
 # ── 조립·발신 ─────────────────────────────────────────────────────────────
 def build_digest(now=None):
-    """4섹션 조립 → (text|None, sections:dict). 전부 정상이면 text=None."""
+    """섹션 조립 → (text|None, sections:dict). 전부 정상이면 text=None."""
     now = _now_utc(now)
     sections = {
         "silence": build_section_silence(now=now),
@@ -213,6 +271,7 @@ def build_digest(now=None):
         "erp_status": build_section_erp_status(),
         "page_hygiene": build_section_page_hygiene(now=now),
         "sheet_contract": build_section_sheet_contract(),
+        "decision_consistency": build_section_decision_consistency(now=now),
     }
     active = [v for v in sections.values() if v]
     if not active:
