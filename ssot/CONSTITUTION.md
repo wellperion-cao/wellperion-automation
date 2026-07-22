@@ -1,7 +1,8 @@
-# 웰리 헌법 — 진실 단일화 · 재발방지 · 전원 정합 (SSOT)
+# 구조 헌법 — 진실 단일화 · 재발방지 · 전원 정합 (SSOT 메타층)
 
 > 정본 위치(캐논). GM 2026-06-15 지시 박제. 이 파일은 *문서*가 아니라 *구조의 닻*이다 — 여기 적힌 원리는 `/ssot/*.json`(데이터)·코드·훅으로 집행되어야 비로소 '완료'다. 문서에만 있으면 미완.
 > 관계: 운영 원칙 상세 = S2(가이드 ERP) 단일출처. 본 헌법 = 그 원칙을 **데이터·재발방지 구조로 집행**하는 메타층. 충돌 시 더 강한 층(코드>훅>SSOT>본 헌법>메모리)이 이긴다.
+> ※ 명칭 구분: 본 문서(`ssot/CONSTITUTION.md`) = **구조 메타·불변원리**(AI 7주체 부팅 직독). S2 CEO탭 「웰리(AI CEO) 운영 헌법」 = **CEO 운영 7스텝 SOP**(수기 HTML). 이름은 같은 '헌법'이나 내용이 다른 별개 문서 — 혼동 금지.
 
 ## 본질 (이걸 잊으면 또 실패한다)
 - 결정이 '적히는 곳'과 일이 '실제 일어나는 곳'이 분리돼 있고, 결정을 실행층에 강제 반영시키는 단일 지점이 없다 → 진실이 복사되고, 안 고친 옛 복사본이 매번 이긴다.
@@ -18,7 +19,7 @@
 
 | 항목 | 사람이 보는 곳 | AI가 읽는 곳 | 기계가 읽는 곳 | 같은 원천? |
 |---|---|---|---|---|
-| 헌법 | S2 ceo탭(렌더) + `ssot/CONSTITUTION.md` | `ssot/CONSTITUTION.md` 부팅 직독(AI 7주체 = CEO+6 C-Level) | `welly_boot_guard.py` 등 코드가드 | ✅ |
+| 헌법(구조 메타) | `ssot/CONSTITUTION.md`(본 문서, 사람도 직접 열람) — ※S2 ceo탭 「운영 헌법」은 이름만 같은 별개 문서(수기 HTML·7스텝 SOP, 본 문서의 렌더 아님) | `ssot/CONSTITUTION.md` 부팅 직독(AI 7주체 = CEO+6 C-Level) | `welly_boot_guard.py` 등 코드가드 | ✅ |
 | 약속 | S2 공통탭(렌더) | `ssot/약속.json` 부팅 직독 | `hangro_board.py` 등 직독 | ✅ |
 | incidents | S2 + `ssot/dashboard.html` | `ssot/incidents.json` 직독 | `precommit_incident_guard.py` | ✅ |
 | canon_values | S2(렌더) | `ssot/canon_values.json` 직독 | `canon.py`·`divergence_scan.py` | ✅ |
@@ -65,5 +66,4 @@
 - 이건 "GM을 검증자로 만들지 않는다"의 쌍 — GM이 실수해도 일이 커지기 전에 웰리가 잡는다.
 
 ## 실행 규칙
-- 시작 전 모호성 5% 미만까지 좁히고, 파괴적 변경 전 GM 확인.
-- 쉬움·반복 = Sonnet/Haiku / 판단·구조설계 = Opus·Fable5 (등급 판단 자체도 Opus·Fable5).
+- 정본 = 약속 L14(모호성 게이트·파괴적 변경 전 GM 확인) / S2 공통탭 ⑨(모델 등급 매트릭스). 본문 재기술 없음 — 실행 시 두 정본 직독.
