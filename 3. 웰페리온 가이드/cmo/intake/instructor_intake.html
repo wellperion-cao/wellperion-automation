@@ -10,8 +10,7 @@
   계획서 정본: docs/superpowers/plans/2026-07-22-강사콘텐츠-접수모듈-P1.md (Task 2)
   스펙: docs/superpowers/specs/2026-07-22-강사콘텐츠-접수시안모듈-design.md (§4-1)
   백엔드: .deploy-instructor/instructor_intake.js doPost (JSON 계약은 하단 스크립트 주석 참조)
-  ⚠️ GAS_PROD 는 배포 전 플레이스홀더 — Task 1 배포(clasp push + 웹앱 새 배포) 후 exec URL로 교체.
-  M1 페이지 임베드(iframe)는 별도 계획(Task 3, 배포 후 진행) — 본 파일은 독립 폼으로도 열람 가능.
+  GAS_PROD = 배포된 exec URL 연결 완료(2026-07-22). M1 페이지에 iframe 임베드됨(Task 3) — 본 파일은 독립 폼으로도 열람 가능.
 -->
 <style>
 :root{
@@ -173,7 +172,7 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 <script>
 (function(){
   // ── 백엔드 GAS ── Task 1(.deploy-instructor/instructor_intake.js) 배포 후 실제 exec URL로 교체.
-  var GAS_PROD = "__배포후_EXEC_URL__"; // TODO(배포 후 교체): clasp push → 웹앱 새 배포(/exec) → 이 값에 exec URL 삽입
+  var GAS_PROD = "https://script.google.com/macros/s/AKfycbz4wWhqICMQZR3F9bQc-7_LsDDA9Ywb-g-Q-6BNwjvqiw1EwAT_U94nEjUsf-Uor8uH/exec";
 
   function $(id){ return document.getElementById(id); }
   function toast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(function(){ t.className='toast'+(isErr?' err':''); },2600); }
