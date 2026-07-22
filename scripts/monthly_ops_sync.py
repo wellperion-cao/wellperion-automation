@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+"""월간운영계획 내부내용 자동반영 엔진 (monthly_ops_sync.py · 배9678)
+
+목표: objective마다 연결된 '실무·업무 SSOT' 소스에서 진척을 자동으로 당겨 갱신.
+정본=status/monthly_ops_plan.json · 페이지=월간운영계획.html(렌더만).
+설계=docs/superpowers/specs/2026-07-22-monthly-ops-ssot-sync-design.md
+
+소스(objective.sync.source):
+  · metric_live : home_kpi GAS 실시간 지표(매출 등) → metric.current
+  · queue       : status/_queue.json 배 → rule(avg_progress·status_map·count_done)
+  · todo_ssot   : 업무현황 SSOT(GAS todo_list) 실무 항목 → (미연동·정직 표기)
+  · manual/없음 : 손 안 댐(현행 수동 값 보존)
+
+정직(L05): 소스 없음/조회 실패 = 값 무변경 + '미연동' 표기. 가짜 % 금지.
+게이트: 환경변수 MONTHLY_SYNC_APPLY=1 이고 --apply 일 때만 실제 쓰기·커밋.
+기본 = 드라이런(무엇이 바뀔지 표만 출력, 파일 무변경).
+
+사용법:
+  python scripts/monthly_ops_sync.py                 # 드라이런(당월)
+  python scripts/monthly_ops_sync.py --month 2026-07 # 특정월 드라이런
+  MONTHLY_SYNC_APPLY=1 python scripts/monthly_ops_sync.py --apply   # 라이브(게이트)
+"""
+from __future__ import annotations
+
+import argparse
+import io
+import json
+import os
+import sys
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+
+BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
+PLAN_FILE = BASE_DIR / "status" / "monthly_ops_plan.json"
+QUEUE_FILE = BASE_DIR / "status" / "_queue.json"
+
+HOME_KPI_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+)
+
+GATE = os.environ.get("MONTHLY_SYNC_APPLY", "0").strip() == "1"
+
+
+def now_iso() -> str:
+    return datetime.now().strftime("%Y-%m-%dT%H:%M")
+
+
+# ── 소스 로더 ──────────────────────────────
+def load_json(p: Path) -> dict:
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+def fetch_home_kpi() -> dict | None:
+    try:
+        req = urllib.request.Request(HOME_KPI_URL + "?action=home_kpi")
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read())
+        return data if isinstance(data, dict) and data.get("ok") else None
+    except Exception as e:
+        print(f"[WARN] home_kpi 조회 실패: {type(e).__name__}: {e}")
+        return None
+
+
+def dig(d: dict, dotted: str):
+    """'sales.month' → d['sales']['month']. 없으면 None."""
+    cur = d
+    for k in dotted.split("."):
+        if not isinstance(cur, dict) or k not in cur:
+            return None
+        cur = cur[k]
+    return cur
+
+
+def queue_ships_by_ref(refs: list) -> list:
+    """_queue.json에서 task_id 또는 ship_no가 refs에 든 배들."""
+    try:
+        q = load_json(QUEUE_FILE)
+    except Exception:
+        return []
+    rset = {str(r) for r in refs}
+    out = []
+    for s in q if isinstance(q, list) else []:
+        if str(s.get("task_id")) in rset or str(s.get("ship_no")) in rset:
+            out.append(s)
+    return out
+
+
+# ── 규칙 계산 ──────────────────────────────
+_STATUS_MAP = {"DONE": 100, "IN_PROGRESS": 50, "PENDING": 0, "STANDBY": 0}
+
+
+def apply_rule(rule: str, ships: list) -> int | None:
+    if not ships:
+        return None
+    if rule == "count_done":
+        done = sum(1 for s in ships if s.get("status") == "DONE")
+        return round(done / len(ships) * 100)
+    if rule == "status_map":
+        vals = [_STATUS_MAP.get(s.get("status", ""), 0) for s in ships]
+        return round(sum(vals) / len(vals))
+    if rule == "avg_progress":
+        vals = [s["progress"] for s in ships if isinstance(s.get("progress"), (int, float))]
+        return round(sum(vals) / len(vals)) if vals else None
+    return None
+
+
+# ── 엔진 ──────────────────────────────────
+def resolve(obj: dict, kpi: dict | None) -> dict:
+    """objective 하나에 대해 자동값을 계산. 반환=판정 dict(쓰지는 않음)."""
+    sync = obj.get("sync")
+    title = str(obj.get("title", ""))[:34]
+    if not isinstance(sync, dict) or sync.get("source") in (None, "manual"):
+        return {"title": title, "verdict": "MANUAL", "detail": "수동 유지(소스 없음)"}
+
+    src = sync.get("source")
+    if src == "metric_live":
+        if kpi is None:
+            return {"title": title, "verdict": "미연동", "detail": "home_kpi 조회 실패"}
+        val = dig(kpi, str(sync.get("ref", "")))
+        if not isinstance(val, (int, float)):
+            return {"title": title, "verdict": "미연동", "detail": f"지표 없음({sync.get('ref')})"}
+        cur = (obj.get("metric") or {}).get("current")
+        return {"title": title, "verdict": "AUTO", "field": "metric.current",
+                "old": cur, "new": int(val), "src": f"metric_live:{sync.get('ref')}"}
+
+    if src == "queue":
+        refs = sync.get("ref") or []
+        ships = queue_ships_by_ref(refs if isinstance(refs, list) else [refs])
+        val = apply_rule(str(sync.get("rule", "avg_progress")), ships)
+        if val is None:
+            return {"title": title, "verdict": "미연동", "detail": f"연결 배 없음({refs})"}
+        return {"title": title, "verdict": "AUTO", "field": "progress",
+                "old": obj.get("progress"), "new": val,
+                "src": f"queue:{sync.get('rule')}({len(ships)}배)"}
+
+    if src == "todo_ssot":
+        return {"title": title, "verdict": "미연동", "detail": "업무현황 SSOT 배선 전(준용M 단일입력 후)"}
+
+    return {"title": title, "verdict": "미연동", "detail": f"알 수 없는 source={src}"}
+
+
+def write_back(obj: dict, v: dict) -> None:
+    """게이트 ON일 때만 실제 반영. metric.current 또는 progress + sync 메타 갱신."""
+    if v.get("field") == "metric.current":
+        obj.setdefault("metric", {})["current"] = v["new"]
+    elif v.get("field") == "progress":
+        obj["progress"] = v["new"]
+    obj.setdefault("sync", {})["last_auto"] = now_iso()
+    obj["sync"]["auto_value"] = v["new"]
+
+
+def run(month: str | None, apply: bool) -> None:
+    plan = load_json(PLAN_FILE)
+    if not month:
+        month = datetime.now().strftime("%Y-%m")
+    objs = plan.get("months", {}).get(month, {}).get("objectives", []) or []
+
+    live = apply and GATE
+    print(f"[월간 자동반영] {month} · 목표 {len(objs)}건 · "
+          f"{'라이브 반영(게이트 ON)' if live else '드라이런(값 무변경)'}")
+    if apply and not GATE:
+        print("[가드] --apply 지만 MONTHLY_SYNC_APPLY=1 아님 → 드라이런으로 강등")
+
+    kpi = fetch_home_kpi() if any(
+        isinstance(o.get("sync"), dict) and o["sync"].get("source") == "metric_live" for o in objs
+    ) else None
+
+    n_auto = n_manual = n_gap = changed = 0
+    print(f"\n{'상태':<6} {'목표':<36} 내용")
+    print("─" * 72)
+    for o in objs:
+        v = resolve(o, kpi)
+        vd = v["verdict"]
+        if vd == "AUTO":
+            n_auto += 1
+            delta = f"{v['field']} {v['old']} → {v['new']}  [{v['src']}]"
+            mark = "🔄자동"
+            if v["old"] != v["new"]:
+                changed += 1
+            if live:
+                write_back(o, v)
+            print(f"{mark:<6} {v['title']:<36} {delta}")
+        elif vd == "MANUAL":
+            n_manual += 1
+            print(f"{'✋수동':<6} {v['title']:<36} {v['detail']}")
+        else:
+            n_gap += 1
+            print(f"{'⚠️미연동':<6} {v['title']:<36} {v['detail']}")
+    print("─" * 72)
+    print(f"요약: 🔄자동 {n_auto}(변경 {changed}) · ✋수동 {n_manual} · ⚠️미연동 {n_gap}")
+
+    if live and changed:
+        PLAN_FILE.write_text(
+            json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"[반영] {PLAN_FILE.name} 저장 완료 — 커밋은 호출측/워처.")
+    elif live:
+        print("[반영] 변경 없음 — 저장 생략.")
+    else:
+        print("[드라이런] 파일 무변경. 라이브=MONTHLY_SYNC_APPLY=1 + --apply")
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description="월간운영계획 자동반영 엔진")
+    ap.add_argument("--month", help="YYYY-MM (기본=당월)")
+    ap.add_argument("--apply", action="store_true", help="라이브 반영(게이트 동반 필요)")
+    a = ap.parse_args()
+    run(a.month, a.apply)
+
+
+if __name__ == "__main__":
+    main()
