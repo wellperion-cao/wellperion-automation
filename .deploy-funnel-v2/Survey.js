@@ -3120,6 +3120,7 @@ function _processAction(body) {
         _rtSet('개인정보 수집·이용 동의', '동의');
         _rtSet('접수ID', _iId);
         _rtSet('진행 상황', '신규');
+        _rtSet('유입언어', _iLang);   // KO/EN — 영문 자체폼 6종 통합(배9674 시모). 칸 있을 때만 기록(no-op safe).
         if (_iFastFlag) _rtSet('비고', '⚠️ 빠른제출 자동검토');
         _rtSh.appendRow(_rtRow);
       } else {
@@ -3140,6 +3141,7 @@ function _processAction(body) {
         _bzSet('개인정보 수집·이용 동의', '동의');
         _bzSet('접수ID', _iId);
         _bzSet('진행 상황', '신규');
+        _bzSet('유입언어', _iLang);   // KO/EN — 영문 자체폼 6종 통합(배9674 시모). 칸 있을 때만 기록(no-op safe).
         if (_iFastFlag) _bzSet('비고', '⚠️ 빠른제출 자동검토');
         _bzSh.appendRow(_bzRow);
       }
@@ -3177,7 +3179,9 @@ function _processAction(body) {
     var _claTargets = [
       { n: '멤버십 26년 신규문의', sh: _miSheet_() },
       { n: '성인강습 111889422', sh: _lessonSheet_(111889422) },
-      { n: 'WSC강습 268994754', sh: _lessonSheet_(268994754) }
+      { n: 'WSC강습 268994754', sh: _lessonSheet_(268994754) },
+      { n: '공간렌트 문의', sh: _rentalIntakeSheet_(true) },
+      { n: '비즈니스 문의', sh: _businessIntakeSheet_(true) }
     ];
     var _claRep = {};
     if (_claOp === 'addcol') {
@@ -6484,6 +6488,28 @@ function _processAction(body) {
       });
       return _json({ ok: true, ssId: LESSON_SS_ID, sheetCount: llOut.length, sheets: llOut });
     } catch (eLL) { return _json({ ok: false, error: String(eLL.message || eLL) }); }
+  }
+
+  // ─── (일회성) 강습 스프레드시트 잉여 탭 삭제 — 2026-07-22 GM("필요없는 시트는 삭제 검토, 문제없으면 삭제") ───
+  //   안전장치 3중: ①보호목록(활성 소비 탭) 삭제 거부 ②구글폼 연결 탭은 force=1 없으면 거부(폼 파손 방지)
+  //   ③삭제 전 전 행을 백업으로 반환(호출부가 파일 저장). dryRun 기본 미삭제.
+  if (action === 'delete_lesson_sheet_20260722') {
+    if (String(body.key || '') !== 'wlp_delsheet_20260722') return _json({ ok: false, error: 'guard-mismatch' });
+    var dsGid = parseInt(body.gid, 10);
+    var DS_PROTECTED = [111889422, 268994754, 311319200, 931249179, 1270425989, 537942806, 534686684, 1694057341, 1768753460, 2012342185];
+    if (DS_PROTECTED.indexOf(dsGid) >= 0) return _json({ ok: false, error: 'protected-sheet', gid: dsGid, detail: '활성 소비 탭 — 삭제 금지' });
+    var dsSs = SpreadsheetApp.openById(LESSON_SS_ID);
+    var dsSh = null;
+    dsSs.getSheets().forEach(function (s) { if (s.getSheetId() === dsGid) dsSh = s; });
+    if (!dsSh) return _json({ ok: false, error: 'sheet-not-found', gid: dsGid });
+    var dsName = dsSh.getName(), dsLr = dsSh.getLastRow(), dsLc = dsSh.getLastColumn();
+    var dsBackup = (dsLr >= 1 && dsLc >= 1) ? dsSh.getRange(1, 1, dsLr, dsLc).getValues() : [];
+    var dsFormUrl = '';
+    try { dsFormUrl = dsSh.getFormUrl() || ''; } catch (e) {}
+    if (dsFormUrl && String(body.force || '') !== '1') return _json({ ok: false, error: 'form-attached', detail: '구글폼 연결됨 — 삭제하려면 force=1 (폼 파손 주의)', formUrl: dsFormUrl, name: dsName, rows: dsLr });
+    if (String(body.dryRun || '') === '1') return _json({ ok: true, dryRun: true, name: dsName, gid: dsGid, rows: dsLr, cols: dsLc, formUrl: dsFormUrl, backup: dsBackup });
+    dsSs.deleteSheet(dsSh);
+    return _json({ ok: true, deleted: dsName, gid: dsGid, rows: dsLr, formUrl: dsFormUrl, backup: dsBackup });
   }
 
   // ─── (일회성) 거주지 항목 전면 폐기 — 2026-07-20 GM 확정 ("자체폼이랑 구글폼 구글시트 다 삭제하자") ───
