@@ -9,7 +9,7 @@
     "origin": "gm",
     "enqueued_at": "2026-07-22",
     "note": "GM 승인 '휴회 경량안'(웰리 위임). 통합설계 스펙 docs/superpowers/specs/2026-07-22-문의폼-유입-휴회-통합설계.md C절. 범위: ①유효회원 탭 additive 4칸(휴회횟수·휴회누적일수·휴회시작일·휴회종료일, GAS _miEnsureCol_ 자동생성·헤더이름기반) ②GAS 검증 단일SSOT(신규 액션 member_hold_preview[read-only]+member_hold_apply[게이트]): 3회 초과·누적60일 초과·1회 7일미만·60일초과 거부·잔여 자동계산 ③membership.html 휴회 접수폼1개+상태색(⏸휴회중)1개+이력조회. ★실측 핵심발견: 잔여일은 서버계산 아님 — member_active_list가 시트 '잔여일' 컬럼 raw값을 그대로 읽음(_aaIdx('잔여일'), Survey.js:4073·4089). 즉 스펙의 '서버 member_active_list 산출식' 가정은 틀림. 종료일자 가산→잔여일 자동반영은 시트측 잔여일=f(종료일자) 수식일 때만 성립(원본 미확인) → 본 빌드는 종료일자/잔여일 미변경(HOLD_EXTEND_GO 게이트, getFormula 수식셀 보호)로 손상방지. 안전: 행삭제 없음(셀 write만)·대조키=rowKey(등록일자+전화)/keyPhone fail-closed 가드 재사용(member_active_update와 동일)·additive 칸. 라이브 발효=GM go(HOLD_LIVE=false·GAS 미배포·apply 서버차단).",
-    "next": "[2026-07-22 v2 포팅 완료] 웰리 실측확정=라이브 정본은 v2(.deploy-funnel-v2, scriptId 1BezMSW, /exec AKfycbyk…) — membership.html GAS_URL도 AKfycbyk(v2) 확인. 휴회 3편집(화이트리스트+member_hold_preview/apply 액션블록) v2에 동일 포팅(헬퍼 시그니처 v2 실측일치·node --check OK). v1(.deploy-funnel, 1A77oDR)은 200버전 상한 은퇴본→휴회 블록에 '은퇴본·미사용' 주석 존치. 게이트 유지(HOLD_LIVE=false·실접수 차단). [2026-07-22 미리보기 read-only 발효 완료·GM go] GM '미리보기만 먼저(안전)' 결재로 v2 in-place 재배포(@104→@105, /exec AKfycbyk 불변, 버전가드 경유·회귀0). 라이브 실측(node fetch @105): cpo_today_stats·member_active_list(1008명) 정상(회귀0 프록시)/ member_hold_preview 실동작(이력·잔여·종료일 2026-08-30·한도61일 거부)/ member_hold_apply='hold-gated'(시트 write 0=검증흔적 없음)/ live:false 응답 확인. 라이브 페이지(Pages HTTP200)도 openHoldModal·holdOverlay·member_hold_preview·_holdActive 서브 확인 — GM 시크릿크롬 실동작 가능(게이트 비번1200). 로컬 렌더 캡처 3종=cpo/review/휴회_*_after_20260722.png. ★HOLD_LIVE=false·HOLD_EXTEND_GO=false 유지 재확인(실접수·잔여일가산 여전히 OFF). 회귀검증=intake_submit 무변경(additive-only)+읽기헬스, 라이브 문의 test 미제출(INC-020 write+cleanup 회피). 롤백=clasp deploy -i AKfycbyk… -V 104(기존버전 재지정·신규버전 0소비). ▶잔존 GM go: (b)HOLD_LIVE=true(실접수 개통) (c)유효회원 '잔여일' 셀 수식여부 실측→HOLD_EXTEND_GO 결정.",
+    "next": "[2026-07-22 v2 포팅 완료] 웰리 실측확정=라이브 정본은 v2(.deploy-funnel-v2, scriptId 1BezMSW, /exec AKfycbyk…) — membership.html GAS_URL도 AKfycbyk(v2) 확인. 휴회 3편집(화이트리스트+member_hold_preview/apply 액션블록) v2에 동일 포팅(헬퍼 시그니처 v2 실측일치·node --check OK). v1(.deploy-funnel, 1A77oDR)은 200버전 상한 은퇴본→휴회 블록에 '은퇴본·미사용' 주석 존치. 게이트 유지(HOLD_LIVE=false·실접수 차단). [2026-07-22 미리보기 read-only 발효 완료·GM go] GM '미리보기만 먼저(안전)' 결재로 v2 in-place 재배포(@104→@105, /exec AKfycbyk 불변, 버전가드 경유·회귀0). 라이브 실측(node fetch @105): cpo_today_stats·member_active_list(1008명) 정상(회귀0 프록시)/ member_hold_preview 실동작(이력·잔여·종료일 2026-08-30·한도61일 거부)/ member_hold_apply='hold-gated'(시트 write 0=검증흔적 없음)/ live:false 응답 확인. 라이브 페이지(Pages HTTP200)도 openHoldModal·holdOverlay·member_hold_preview·_holdActive 서브 확인 — GM 시크릿크롬 실동작 가능(게이트 비번1200). 로컬 렌더 캡처 3종=cpo/review/휴회_*_after_20260722.png. ★HOLD_LIVE=false·HOLD_EXTEND_GO=false 유지 재확인(실접수·잔여일가산 여전히 OFF). 회귀검증=intake_submit 무변경(additive-only)+읽기헬스, 라이브 문의 test 미제출(INC-020 write+cleanup 회피). 롤백=clasp deploy -i AKfycbyk… -V 104(기존버전 재지정·신규버전 0소비). [2026-07-22 별도 휴회접수 페이지 초안] GM 결정=모달 유지+별도 self-service 페이지 신설. 신규 3. 웰페리온 가이드/cpo/member/휴회접수.html(회원 본인확인 이름+연락처→member_hold_preview로 본인 이력/잔여 표시→시작일·일수→접수). 백엔드 재사용(v2 member_hold_preview/apply·검증 SSOT 서버·중복0). ★실측발견: 기존 preview는 rowIndex/rowKey로만 행해석(직원모달=_activeRows서 공급)이라 회원본인은 조회 불가 → v2에 self-service 리졸버 추가(selfName+selfPhone 동시일치 1행·fail-closed 0/2건+거부·반환은 횟수/누적/잔여만·성명등 미반환). ⚠️이 분기=새 public PII 표면(이름+전화로 그 회원 휴회이력 조회) → 초안 커밋만·미배포(현 @105엔 self리졸버 없음). 렌더검증=Playwright+Chrome 스텁(실PII 0) 캡처 cpo/review/휴회접수페이지_after_20260722.png. 종합접수처 연동=제안만(시우 COO 도메인): coo/reception/reception_block.html 접수유형에 '휴회 신청' 항목1개→휴회접수.html 링크(진입만·처리로직0). 게이트=미리보기 read-only·apply는 HOLD_LIVE=false 차단(hold-gated→회원엔 '데스크 신청 안내'로 매핑). ▶잔존 GM go: (a)self-service 리졸버 read-only 재배포(+public PII 조회 표면 승인) (b)HOLD_LIVE=true(실접수 개통) (c)유효회원 '잔여일' 셀 수식여부 실측→HOLD_EXTEND_GO 결정 (d)종합접수처 링크 실배선(시우).",
     "ship_no": 768,
     "module": "M3",
     "surface": "autonomy"
@@ -1821,5 +1821,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 3d171816)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "3d171816897d38adddd108ef5359f7bbedd33df7"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-e7fd9b6f",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9654,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 e7fd9b6f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e7fd9b6f624389a0623de3c1e1f3b8b307130ecb"
   }
 ]

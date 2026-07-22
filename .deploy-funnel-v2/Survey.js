@@ -3262,6 +3262,67 @@ function _processAction(body) {
     return _json({ ok: true, deleted: true, rows: _oRows });
   }
 
+  // ─── (임시) '종목별관리' 죽은 JSON 잔재 삭제 — 2026-07-14 flat L~P 전환으로 폐기된 컬럼(숨김칸, 표시·갱신 안 됨)
+  //   정리. body.dry(true=dry-run 기본·false=실제 삭제)만 없으면 항상 dry-run(안전 기본). 대상=강습 4개 응답탭
+  //   (_LESSON_KNOWN_GIDS_). '종목별관리' 정확일치 컬럼만 대상 — flat L~P/이름/전화/타임스탬프는 절대 미접촉
+  //   (인덱스 겹침 즉시 abort). 웰리 수동. 2026-07-22 GM지시.
+  if (action === 'clear_lesson_sport_mgmt_residue') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _csmDry = (body.dry !== false);   // 미전송/true = dry-run, false만 live
+    var _csmLock = null;
+    if (!_csmDry) {
+      _csmLock = LockService.getScriptLock();
+      if (!_csmLock.tryLock(8000)) return _json({ ok: false, error: 'lock-timeout' });
+    }
+    try {
+      var _csmPer = [];
+      _LESSON_KNOWN_GIDS_.forEach(function(gid) {
+        var sh = _lessonSheet_(gid);
+        if (!sh) { _csmPer.push({ gid: gid, skip: 'sheet-not-found' }); return; }
+        var lastCol = sh.getLastColumn(), lastRow = sh.getLastRow();
+        if (lastCol < 1 || lastRow < 2) { _csmPer.push({ gid: gid, skip: 'empty' }); return; }
+        var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+        var col = _findColExact_(hdr, [LESSON_SPORT_MGMT_COL]);
+        if (col < 0) { _csmPer.push({ gid: gid, skip: 'no-column' }); return; }  // 컬럼 없음 = 정상(이미 폐기된 시트)
+
+        // ★안전가드 — 종목별관리 컬럼 인덱스가 flat L~P(_LESSON_MGMT_FIELDS)나 이름/전화/타임스탬프 컬럼과
+        //   겹치면(같은 인덱스) 즉시 abort. _findColExact_는 정확일치라 정상적으론 겹칠 수 없지만 방어적으로 확인.
+        var _guardIdx = [];
+        _LESSON_MGMT_FIELDS.forEach(function(f) { var gi = _findCol_(hdr, f.keys); if (gi >= 0) _guardIdx.push(gi); });
+        var _iName  = _findCol_(hdr, ['성함', '이름', 'Full Name']);
+        var _iPhone = _findCol_(hdr, ['연락처', '전화', '휴대폰', 'Mobile Phone Number']);
+        var _iTs    = _findCol_(hdr, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '날짜']);
+        if (_iName >= 0) _guardIdx.push(_iName);
+        if (_iPhone >= 0) _guardIdx.push(_iPhone);
+        if (_iTs >= 0) _guardIdx.push(_iTs);
+        if (_guardIdx.indexOf(col) >= 0) {
+          _csmPer.push({ gid: gid, abort: 'guard-collision', col: col + 1, headerAtCol: hdr[col] });
+          return;
+        }
+
+        var colValues = sh.getRange(2, col + 1, lastRow - 1, 1).getValues();
+        var cellsWithData = 0, samples = [], rowsToClear = [];
+        for (var r = 0; r < colValues.length; r++) {
+          var v = colValues[r][0];
+          if (v !== '' && v !== null && v !== undefined) {
+            cellsWithData++;
+            rowsToClear.push(r + 2);
+            if (samples.length < 5) samples.push({ row: r + 2, preview: String(v).substring(0, 80) });
+          }
+        }
+        if (_csmDry) {
+          _csmPer.push({ gid: gid, col: col + 1, cellsWithData: cellsWithData, samples: samples });
+        } else {
+          rowsToClear.forEach(function(rowNum) { sh.getRange(rowNum, col + 1).setValue(''); });
+          _csmPer.push({ gid: gid, col: col + 1, cleared: rowsToClear.length });
+        }
+      });
+      return _json({ ok: true, dry: _csmDry, perSheet: _csmPer });
+    } finally {
+      if (_csmLock) _csmLock.releaseLock();
+    }
+  }
+
   // ─── (일회성) 유소년강습 문의 시트 — 유입경로(자동)에 잘못 들어간 상담로그 JSON을 Contact로 이관 ───
   //   배경: 2026-06~07 배선오류로 '유입경로(자동)'(idx12) 칸에 상담 로그 JSON([{date,time,note}])이
   //   28건 잘못 기록됨(07-09 이후 재발 없음). 그중 Contact(idx16)이 비어 유일 기록인 건만 note를 이관.
@@ -7371,6 +7432,27 @@ function _processAction(body) {
     for (var _hp = 0; _hp < hHdr.length; _hp++) { var _hph = hHdr[_hp].replace(/\s/g, ''); if (_hph.indexOf('휴대폰') >= 0 || _hph.indexOf('전화') >= 0 || _hph.indexOf('연락처') >= 0) { hPhI = _hp; break; } }
     // 행 해석(rowKey 우선 → keyPhone 폴백, fail-closed) — member_active_update 동일 가드
     var hRow = parseInt(body.rowIndex, 10);
+    // ── self-service 본인조회(전화+이름 동시일치 1행) — 회원 본인이 rowIndex/rowKey를 모르는 self-service 휴회접수 페이지용.
+    //    ★fail-closed(0건·2건+ 거부) + 이름·전화 동시일치 필수(타인 이력 열람·전화 단독 열거 차단). 반환은 횟수/누적/잔여만
+    //    (성명·기타 PII 미반환). ⚠️ 이 분기는 새 public PII 표면(누구나 이름+전화로 그 회원 휴회이력 조회 가능) — 라이브 배포는
+    //    GM go 필요(현재 미배포 초안). 2026-07-22 시포·GM(별도 휴회접수 페이지).
+    if (body.selfPhone !== undefined || body.selfName !== undefined) {
+      var _spN = _normPhone_(body.selfPhone), _snN = String(body.selfName || '').replace(/\s/g, '');
+      if (!_spN || !_snN) return _json({ ok: false, error: 'self-verify-need', detail: '이름과 연락처를 모두 입력하세요' });
+      var _hNmI = -1;
+      for (var _hn = 0; _hn < hHdr.length; _hn++) { if (hHdr[_hn].replace(/\s/g, '').indexOf('회원명') >= 0) { _hNmI = _hn; break; } }
+      if (hPhI < 0 || _hNmI < 0) return _json({ ok: false, error: 'sheet-col-missing', detail: '회원 시트 구성 확인 필요' });
+      var _hLast = hSh.getLastRow(), _hHits = [];
+      if (_hLast >= 2) {
+        var _hScan = hSh.getRange(2, 1, _hLast - 1, hSh.getLastColumn()).getValues();
+        for (var _hi = 0; _hi < _hScan.length; _hi++) {
+          if (_normPhone_(_hScan[_hi][hPhI]) === _spN && String(_hScan[_hi][_hNmI] == null ? '' : _hScan[_hi][_hNmI]).replace(/\s/g, '') === _snN) _hHits.push(_hi + 2);
+        }
+      }
+      if (_hHits.length === 1) hRow = _hHits[0];
+      else if (_hHits.length === 0) return _json({ ok: false, error: 'self-not-found', detail: '일치하는 회원 정보를 찾을 수 없습니다(이름·연락처를 확인하세요)' });
+      else return _json({ ok: false, error: 'self-ambiguous', detail: '동일 정보 회원이 여럿입니다 — 데스크에 문의하세요' });
+    } else {
     var _hRk = _rowKeyParts_(body);
     var hTsI = -1;
     if (_hRk) {
@@ -7389,6 +7471,7 @@ function _processAction(body) {
       } else return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 시도하세요' });
     } else {
       return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처/목록 새로고침 후 다시 시도하세요' });
+    }
     }
     if (!hRow || hRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
     // 현재 누적치 읽기(칸 없으면 0 — preview는 칸 생성 안 함 read-only)
