@@ -62,6 +62,15 @@ DEFAULT_GAS_URL = (
 # 회차 표준(순서 고정) — 라벨은 실제 운영 명칭(오전조/오후조/마감조). 주말은 오후조 미운영(서버가 total=0).
 _SHIFTS = [("am", "오전조"), ("pm", "오후조"), ("close", "마감조")]
 
+# ── 회차수 신뢰 게이트 (2026-07-22 시토) ──
+# 근본원인 수리 완료: saveBoard()가 이제 store.submissions[]를 seq 기준 union 병합한다
+# (.deploy-check/지원팀 일일점검.js) — 코드 수정 + 로컬 단위검증(node)까지만 끝난 상태.
+# ★ 라이브 /exec 재배포는 아직 안 함(GM 검증 후 별도 진행) — 그 전까지 실사용 GAS는 여전히
+# 구버전(무병합 last-write-wins)이라 sessions=len(submissions)를 신뢰할 수 없다.
+# GM이 배포를 확인·검증한 뒤 이 플래그만 True로 바꾸면 '(회차 확인중)' 꼬리표가 사라지고
+# 정확한 회차수로 표기된다. 배포 확인 전 임의로 켜지 말 것(거짓 확정 금지 원칙 — 약속 L 참조).
+FACILITY_SESSIONS_TRUSTED = False
+
 
 
 def _num(n) -> str:
@@ -311,8 +320,8 @@ def facility_measurements(store: dict, today_oor_fields: set[str]) -> list[str]:
 def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list[str], dict]:
     """시설부 핵심요약: 회차별 일지(submissions 전체) + 측정값(rounds·daily) +
     이슈사항(기준이탈·특이사항note). GM 2026-07-22 근본수리(렌더심화·회차수 정직표기).
-    ★ 회차수(sessions=len(submissions))는 GAS saveBoard 전체덮어쓰기 클로버로 실제보다
-    작게 나올 수 있음(신뢰 불가·서버 저장 문제, 렌더로 해결 불가) — '(확인중)' 꼬리표로 정직 표기."""
+    ★ 회차수(sessions=len(submissions))는 GAS saveBoard 코드는 수리됐으나 라이브 재배포 전이라
+    아직 신뢰 불가(FACILITY_SESSIONS_TRUSTED 게이트 참조) — 배포 검증 전까지 '(확인중)' 꼬리표 유지."""
     filled = {"facility_status": False, "facility_outofrange": 0, "facility_worklog": False}
 
     board = fetch_gas({"action": "board", "key": f"FACILITY_CHECK_{today}"}, url)
@@ -333,8 +342,12 @@ def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list
         return (lines, filled)
 
     filled["facility_status"] = True
-    # 회차수 정직 표기 — board 기록 건수일 뿐 실제 회차수 보장 X(GAS 클로버 이슈). 거짓 확정 금지.
-    head = f"🏗 시설부 현황 board 기록 {sessions}건(회차 확인중)"
+    # 회차수 표기 — FACILITY_SESSIONS_TRUSTED=False(기본)면 GAS 재배포 전이라 '(확인중)' 꼬리표
+    # 유지(거짓 확정 금지). GM이 라이브 배포 검증 후 플래그를 True로 바꾸면 정확 회차수로 전환.
+    if FACILITY_SESSIONS_TRUSTED:
+        head = f"🏗 시설부 현황 {sessions}회차"
+    else:
+        head = f"🏗 시설부 현황 board 기록 {sessions}건(회차 확인중)"
     head += f" · 이상 {len(today_oor)}건" if today_oor else " · 이상 없음"
     lines.append(head)
 

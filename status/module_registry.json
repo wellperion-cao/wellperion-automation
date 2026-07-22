@@ -18,13 +18,13 @@
       "id": "cto-automation-health",
       "owner_role": "cto",
       "owner_nick": "시토",
-      "feature": "자동화 건강 점수판 — 예약작업 실행결과 30분 갱신",
+      "feature": "자동화 건강 점수판 — 예약작업 실행결과 30분 갱신. [2026-07-22 GM 지시·방4 승격] daily 추가 —collectors.cto_automation_health 가 라이브 상주 프로세스·오늘 스케줄 성공/실패·self_health_watchdog 자가건강(이상 0건도 상시노출)까지 병합해 자동화현황방(방4) '전체 자동화 현황' 단일 다이제스트로 발신(기존 weekly 유지, 새 모듈/새 방/새 예약작업 없음).",
       "data_source": {
         "kind": "json",
         "ref": "status/erp_status.json"
       },
       "notify_spec": {
-        "daily": false,
+        "daily": true,
         "weekly": true,
         "monthly": false,
         "channel": "telegram",
@@ -76,13 +76,13 @@
       "id": "cto-check-gas",
       "owner_role": "cto",
       "owner_nick": "시토",
-      "feature": "점검 GAS 파이프 — 시설/지원부 점검 today_live·monthly 집계",
+      "feature": "점검 GAS 파이프 — 시설/지원부 점검 today_live·monthly 집계. [2026-07-22 GM 지시·방4 정리] daily collector 미구현으로 매일 스킵되던 중 확인: coo-check-status(같은 CHECK_API·같은 자동화현황방)가 동일 데이터를 이미 daily 발신 — 중복발신 방지 위해 daily는 끔(collector 신설 안 함). monthly는 존치(별도 판단 보류).",
       "data_source": {
         "kind": "gas",
         "ref": "CHECK_API weekly/monthly"
       },
       "notify_spec": {
-        "daily": true,
+        "daily": false,
         "weekly": false,
         "monthly": true,
         "channel": "telegram",
@@ -111,7 +111,7 @@
         "ref": "Apps Script API projects.versions.list ×5 scriptId (scripts/gas_version_monitor.py) + status/heartbeats/cto-gas-version-monitor.json"
       },
       "notify_spec": {
-        "daily": true,
+        "daily": false,
         "weekly": false,
         "monthly": false,
         "channel": "telegram",
@@ -123,7 +123,7 @@
         "anchor": "layer-automation"
       },
       "autonomy": "mech",
-      "ai_free_fallback": "13시 기존 텔레그램 헬스체크(telegram_health_check.py)에 얹어 매일 무인 점검 — collect()·하트비트는 13시 유지. [2026-07-21 병합 배9420] 임계(≥180) 경보 발신은 cto-self-health-watchdog 일일 디제스트로 이관(중복발신 방지, 역롤백=telegram_health_check.py:249 주석해제)",
+      "ai_free_fallback": "13시 기존 텔레그램 헬스체크(telegram_health_check.py)에 얹어 매일 무인 점검 — collect()·하트비트는 13시 유지. [2026-07-21 병합 배9420] 임계(≥180) 경보 발신은 cto-self-health-watchdog 일일 디제스트로 이관(중복발신 방지, 역롤백=telegram_health_check.py:249 주석해제). [2026-07-22 GM 지시·방4 정리] bot_id null이라 module_reporter로는 원래도 미발신 — daily를 꺼서 매일 collector_missing 스킵로그 소음만 제거(collector 신설 안 함, 실측·13시 흐름 불변).",
       "feedback": {
         "enabled": true,
         "audience": "gm+clevel",
@@ -764,7 +764,7 @@
         "ref": "status/gm_aide_scan_log.jsonl + status/gm_profile.md"
       },
       "notify_spec": {
-        "daily": true,
+        "daily": false,
         "weekly": false,
         "monthly": false,
         "channel": "telegram",
@@ -775,7 +775,7 @@
         "anchor": "layer-autonomy"
       },
       "autonomy": "auto",
-      "ai_free_fallback": "06:30 예약 gm_aide_scan.bat 무인 가동 — 프로필 갱신+포착+3게이트(GM_AIDE_AUTO_EXEC·AIDE_RESUMABLE_APPLY·AIDE_VERIFY_APPLY)",
+      "ai_free_fallback": "06:30 예약 gm_aide_scan.bat 무인 가동 — 프로필 갱신+포착+3게이트(GM_AIDE_AUTO_EXEC·AIDE_RESUMABLE_APPLY·AIDE_VERIFY_APPLY). [2026-07-22 GM 지시·방4 정리] bot_id null이라 module_reporter로는 원래도 미발신 — daily를 꺼서 매일 collector_missing 스킵로그 소음만 제거. CEO(웰리) 소유 두뇌 모듈이라 executor(CTO 소관 작업)는 collector 신설 안 함 — 콘텐츠 있는 daily 알림이 필요하면 웰리 승인·설계 필요(보고만, 미실행).",
       "feedback": {
         "enabled": true,
         "audience": "gm+clevel",
@@ -954,7 +954,7 @@
         "ref": "status/module_silence_log.jsonl"
       },
       "notify_spec": {
-        "daily": true,
+        "daily": false,
         "weekly": false,
         "monthly": false,
         "channel": "telegram",
@@ -965,7 +965,7 @@
         "anchor": "layer-automation"
       },
       "autonomy": "mech",
-      "ai_free_fallback": "스캔·판정·묶음발신 전부 결정론적(AI 세션 불요, scripts/module_silence_detector.py 단독 실행). bot_id 는 의도적으로 null — 발신은 module_reporter.py 의 범용 모듈별 파이프라인이 아니라 이 모듈 자체의 run_detector()가 자동화현황방(telegram_rooms.json 기존 배선)으로 직접 하루 1통 묶어 보낸다(module_reporter 이중 트리거 방지). 예약작업 등록은 GM go 대기 — 현재는 CLI 수동/드라이런만 검증 완료, 상시 무인가동 미시작.",
+      "ai_free_fallback": "스캔·판정·묶음발신 전부 결정론적(AI 세션 불요, scripts/module_silence_detector.py 단독 실행). bot_id 는 의도적으로 null — 발신은 module_reporter.py 의 범용 모듈별 파이프라인이 아니라 이 모듈 자체의 run_detector()가 자동화현황방(telegram_rooms.json 기존 배선)으로 직접 하루 1통 묶어 보낸다(module_reporter 이중 트리거 방지). 예약작업 등록은 GM go 대기 — 현재는 CLI 수동/드라이런만 검증 완료, 상시 무인가동 미시작. [2026-07-22 GM 지시·방4 정리] 이 결과는 이제 cto-automation-health 의 §자가건강(self_health_watchdog 재사용)에도 흡수돼 매일 노출된다 — module_reporter 로는 bot_id null이라 원래도 미발신이었으니 daily만 꺼서 영구 collector_missing 소음 제거(집계 로직·run_detector() 자체는 불변).",
       "feedback": {
         "enabled": true,
         "audience": "gm+clevel",
@@ -985,7 +985,7 @@
         "ref": "scripts/self_health_watchdog.py (module_silence_detector.scan_registry + gas_version_monitor.collect + status/erp_status.json + status/page_hygiene_proposal_{date}.md 읽기 조합) + status/self_health_watchdog_log.jsonl"
       },
       "notify_spec": {
-        "daily": true,
+        "daily": false,
         "weekly": false,
         "monthly": false,
         "channel": "telegram",
@@ -997,7 +997,7 @@
         "anchor": "layer-automation"
       },
       "autonomy": "mech",
-      "ai_free_fallback": "소스 4모듈은 각자 그대로 가동·산출물 생성, 하네스는 그 산출물을 읽어 결정론적으로 묶음(AI 세션 불요). 게이트 SELF_HEALTH_WATCHDOG_LIVE 기본 OFF·dry-run 검증 완료(2026-07-21). 상시 무인가동(예약 1슬롯 편승)은 GM go 대기. GAS 버전경보는 telegram_health_check 13시에서 이 하네스로 이관(역롤백=주석해제).",
+      "ai_free_fallback": "소스 4모듈은 각자 그대로 가동·산출물 생성, 하네스는 그 산출물을 읽어 결정론적으로 묶음(AI 세션 불요). 게이트 SELF_HEALTH_WATCHDOG_LIVE 기본 OFF·dry-run 검증 완료(2026-07-21). 상시 무인가동(예약 1슬롯 편승)은 GM go 대기. GAS 버전경보는 telegram_health_check 13시에서 이 하네스로 이관(역롤백=주석해제). [2026-07-22 GM 지시·B→A 병합] 13:00 telegram_health_check.bat 의 --live 직접발신은 cto-automation-health 의 §자가건강(build_digest 재사용, 이상 0건도 상시노출)으로 흡수돼 09:10 하루 1통으로 합쳐짐 — 이 등록부 항목은 daily를 꺼서 module_reporter 이중발신을 막는다(collector 신설 안 함, self_health_watchdog.py 본체·13:00 .bat 호출 라인은 주석으로 보존해 역롤백 가능).",
       "feedback": {
         "enabled": true,
         "audience": "gm+clevel",

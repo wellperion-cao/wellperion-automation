@@ -15,12 +15,28 @@ cto_automation_health.py — 모듈 cto-automation-health 수집기(공유 SSOT 
   (두 함수는 import·호출만 — 수정하지 않음. dry_run/check 는 side-effect 0.)
 
 정직 꼬리표: 실측 = 측정 / 일부 = 부분 / 데이터 없음 = 미측정.
+
+[2026-07-22 업그레이드·GM 지시(방4 승격) — 새 모듈/새 방/새 예약작업 생성 없이 기존
+자산만 병합] 자동화현황방(방4)의 "전체 자동화 현황" 단일 다이제스트로 이 모듈을 daily
+승격(등록부 notify_spec.daily=true 추가, 기존 weekly 유지)하며, 실제 운영중인 erp_status.json
+(self_health_watchdog.ERP_STATUS_PATH와 동일 파일)을 읽을 때만 아래 3섹션을 병합한다:
+  · 라이브·상주 프로세스   — erp_status.json systems 배열(일일 스케줄러·텔레그램 봇 등)
+  · 스케줄·오늘 진행       — automation_health.items 오늘(KST) 실행분 성공/실패/대기
+  · ERP 자가건강           — self_health_watchdog.build_digest() 재사용(재수집 금지).
+    기존 self_health_watchdog 은 "정상=무발신"이라 GM 눈에 안 보였다 — 이 다이제스트는
+    정상이어도 "이상 0건 ✅" 한 줄을 상시 노출한다(§자가건강 상시화, 배9420/9421 후속).
+    13:00 telegram_health_check.bat 의 self_health_watchdog --live 별도발송은 이 병합으로
+    중복이 되어 정리(주석 처리, 역롤백 표시)했다 — 소스 로직(self_health_watchdog.py)은
+    수정 없이 그대로 재사용만 한다.
+가짜/테스트 erp 경로(실제 운영 경로가 아님)로 collect() 를 호출하면 이 3섹션은 건드리지
+않는다 — 기존 테스트(test_module_reporter.py)의 네트워크 0·결정론 계약을 보존하기 위함.
 """
 from __future__ import annotations
 
 import json
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 
 _SCRIPTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # scripts/
 _PROJECT_ROOT = os.path.dirname(_SCRIPTS_DIR)
@@ -28,9 +44,12 @@ if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
 from collectors.base import make_payload  # noqa: E402
+import self_health_watchdog as _self_health  # noqa: E402 — §자가건강 재사용(재수집 금지)
 
 _LINK = "https://wellperion-cao.github.io/wellperion-automation/자율현황.html#health"
 _DEFAULT_REF = "status/erp_status.json"
+_KST = timezone(timedelta(hours=9))
+_LIVE_OK_STATES = ("정상", "정상(건너뜀)")
 
 
 def _load_json(path):
@@ -124,11 +143,86 @@ def _from_functions():
     )
 
 
+def _is_live_erp_path(resolved_path):
+    """resolved_path 가 self_health_watchdog 이 읽는 실제 운영 erp_status.json 과
+    동일 파일인지(테스트용 임시경로가 아닌지) 확인 — 병합 3섹션은 이때만 붙인다."""
+    try:
+        return os.path.abspath(resolved_path) == os.path.abspath(str(_self_health.ERP_STATUS_PATH))
+    except Exception:
+        return False
+
+
+# ── §라이브 상주 프로세스 (erp_status.json systems 배열) ─────────────────────
+def _live_row(erp):
+    systems = erp.get("systems")
+    if not isinstance(systems, list) or not systems:
+        return None
+    total = len(systems)
+    bad = [s for s in systems if isinstance(s, dict) and s.get("state") != "정상"]
+    value = f"{total - len(bad)}/{total} 정상"
+    if bad:
+        value += " · 이상: " + ", ".join(
+            f"{s.get('name', '?')}({s.get('state')})" for s in bad[:5])
+    return {"label": "라이브·상주 프로세스", "value": value}
+
+
+# ── §스케줄·오늘 진행 (automation_health.items 오늘(KST) 실행분) ─────────────
+def _schedule_row(erp, now=None):
+    ah = erp.get("automation_health")
+    items = ah.get("items") if isinstance(ah, dict) else None
+    if not isinstance(items, list) or not items:
+        return None
+    today = (now or datetime.now(_KST)).strftime("%Y-%m-%d")
+    ran_today = [it for it in items
+                 if isinstance(it, dict) and str(it.get("last_run") or "").startswith(today)]
+    fail_today = [it for it in ran_today if it.get("state") not in _LIVE_OK_STATES]
+    ok_today = len(ran_today) - len(fail_today)
+    waiting = [it for it in items if isinstance(it, dict) and it.get("state") == "대기"]
+    value = (f"오늘 실행 {len(ran_today)}건(성공 {ok_today} · 실패 {len(fail_today)}) "
+             f"· 대기(주기 미도래) {len(waiting)}건")
+    if fail_today:
+        value += " · 실패: " + ", ".join(str(it.get("name", "?")) for it in fail_today[:5])
+    return {"label": "스케줄·오늘 진행", "value": value}
+
+
+# ── §ERP 자가건강 (self_health_watchdog.build_digest 재사용, 재수집 금지) ────
+def _self_health_rows():
+    """정상시에도 '이상 0건 ✅' 한 줄을 상시 노출(기존 watchdog은 정상시 무발신이라
+    GM 눈에 안 보였음 — 이 다이제스트가 상시화한다). 이상 섹션은 첫 줄만 요약."""
+    try:
+        _, sections = _self_health.build_digest()
+    except Exception as e:
+        return [{"label": "ERP 자가건강", "value": f"집계 실패({type(e).__name__}: {str(e)[:60]})"}]
+    active = {k: v for k, v in sections.items() if v}
+    if not active:
+        return [{"label": "ERP 자가건강", "value": "이상 0건 ✅"}]
+    return [{"label": f"자가건강·{name}", "value": lines[0]} for name, lines in active.items()]
+
+
+def _enrich_with_live_signals(payload, erp):
+    """payload 를 in-place 로 병합(라이브+스케줄+자가건강) — 실제 운영 erp_status.json
+    일 때만 호출된다(테스트/가짜 경로는 원본 payload 그대로 반환하는 기존 계약 보존)."""
+    payload["title"] = "전체 자동화 현황"
+    for row in (_live_row(erp), _schedule_row(erp)):
+        if row:
+            payload["metrics"].append(row)
+    self_health_rows = _self_health_rows()
+    payload["metrics"].extend(self_health_rows)
+    sh_summary = self_health_rows[0]["value"] if len(self_health_rows) == 1 else \
+        f"이상 {len(self_health_rows)}건"
+    payload["summary_line"] = f"{payload['summary_line']} · 자가건강 {sh_summary}"
+    return payload
+
+
 def collect(module=None) -> dict:
-    """표준 payload 반환. 1차=선언된 data_source(erp_status.json), 보강=함수호출."""
-    erp = _load_json(_resolve_ref(module))
+    """표준 payload 반환. 1차=선언된 data_source(erp_status.json), 보강=함수호출.
+    실제 운영 erp_status.json 을 읽었을 때만 라이브·스케줄·자가건강 3섹션을 병합한다."""
+    ref = _resolve_ref(module)
+    erp = _load_json(ref)
     payload = _from_erp_status(erp)
     if payload is not None:
+        if _is_live_erp_path(ref):
+            _enrich_with_live_signals(payload, erp)
         return payload
     return _from_functions()
 

@@ -2608,13 +2608,60 @@ function getBoard(params) {
   return jsonRes({ ok: true, key: key, board: board });
 }
 
-// ─── 보드 저장 (POST {action:'saveBoard', key, board}) — last-write-wins 전체 덮어쓰기 ───
+// ─── 보드 저장 (POST {action:'saveBoard', key, board}) ───
+// 2026-07-22(시토, GM go): 회차 유실 근본수리. 종전엔 last-write-wins 전체 덮어쓰기라 시설 점검
+// (FACILITY_CHECK_{date} board.store.submissions[])이 나중에 저장된 오래된 브라우저 세션에
+// 클로버당해 이미 쌓인 회차가 사라졌다(07-21 실사고: 7회차 알림 후 board엔 2건만 남음).
+// 저장 전 기존 board를 읽어 store.submissions[]만 seq 기준 union 병합(같은 seq=최신 우선,
+// 없던 seq=보존) 후 저장. submissions 없는 다른 board 종류(rows/cols/mon..sun 등)는 기존과
+// 동일하게 incoming 전체로 덮어쓴다(무손상). LockService로 동시 저장 직렬화(초과 시 best-effort).
 function saveBoard(body) {
   var key = body.key ? String(body.key) : BOARD_DEFAULT_KEY;
-  var board = body.board || {};
-  PropertiesService.getScriptProperties()
-    .setProperty(BOARD_PROP_PREFIX + key, JSON.stringify(board));
+  var incoming = body.board || {};
+  var props = PropertiesService.getScriptProperties();
+  var propKey = BOARD_PROP_PREFIX + key;
+  var lock = LockService.getScriptLock();
+  var locked = false;
+  try { locked = lock.tryLock(10000); } catch (eLock) {}
+  try {
+    var existing = null;
+    try { existing = JSON.parse(props.getProperty(propKey) || 'null'); } catch (eParse) { existing = null; }
+    var merged = _mergeBoardSubmissions(existing, incoming);
+    props.setProperty(propKey, JSON.stringify(merged));
+  } finally {
+    if (locked) { try { lock.releaseLock(); } catch (eRelease) {} }
+  }
   return jsonRes({ ok: true, key: key, savedAt: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') });
+}
+
+// ─── store.submissions[] union 병합 (2026-07-22 시토) ───
+// existing(기존 저장분)·incoming(이번 저장 요청) 둘 다 board.store.submissions 배열을 가질 때만
+// seq 기준으로 합친다. 같은 seq는 incoming(이번 저장, 더 최신 시점 스냅샷)이 우선. 없던 seq는 보존.
+// seq 없는 항목(레거시 방어)은 있는 그대로 이어붙인다(드롭 금지). 그 외 필드는 전부 incoming 그대로 —
+// submissions 없는 board(예: FACILITY_MANUAL_BOARD 등)는 이 함수를 통과해도 원래 동작(전체 덮어쓰기)과 동일.
+function _mergeBoardSubmissions(existing, incoming) {
+  if (!existing || typeof existing !== 'object') return incoming;
+  if (!incoming || typeof incoming !== 'object') return existing;
+  var exSubs = (existing.store && Array.isArray(existing.store.submissions)) ? existing.store.submissions : null;
+  var inSubs = (incoming.store && Array.isArray(incoming.store.submissions)) ? incoming.store.submissions : null;
+  if (!exSubs || !exSubs.length || !inSubs) return incoming;
+
+  var bySeq = {};
+  var noSeq = [];
+  function absorb(list) {
+    list.forEach(function (s) {
+      if (s && s.seq !== undefined && s.seq !== null) { bySeq[s.seq] = s; }
+      else if (s) { noSeq.push(s); }
+    });
+  }
+  absorb(exSubs);
+  absorb(inSubs);   // incoming을 나중에 흡수 → 같은 seq는 incoming(이번 저장분)이 덮어씀
+  var mergedSubs = Object.keys(bySeq).map(function (k) { return bySeq[k]; })
+    .sort(function (a, b) { return (Number(a.seq) || 0) - (Number(b.seq) || 0); })
+    .concat(noSeq);
+
+  incoming.store.submissions = mergedSubs;
+  return incoming;
 }
 
 // ─── 점검항목 마스터 dept 1회 마이그레이션 (S4 갭② · 2026-06-10 시토) ───
