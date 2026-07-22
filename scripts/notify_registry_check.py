@@ -52,6 +52,8 @@ APSCHEDULER_MARKERS = [
     'id="daily_digest_late"',
     'id="pre_task_notifier"',
     'KAKAO_DEPTHEAD_ROOM',
+    'KAKAO_GO_STREAM2',
+    'id="stream_3_mgmt_0930"',
 ]
 
 # automation_health 항목명이 '발신형'인지 판정하는 이름 휴리스틱(오탐 가능)
