@@ -31,6 +31,7 @@ import argparse
 import io
 import json
 import os
+import re
 import sys
 import time
 import urllib.parse
@@ -148,6 +149,39 @@ def recurring_issue_lines(today: str, max_items: int = 3) -> list[str]:
     return lines
 
 
+_MAX_ISSUE_DETAIL = 8   # 이슈 상세 표시 최대 건수(초과 시 '외 N건')
+
+
+def _shift_label_from_roundkey(rk) -> str:
+    """roundKey(예 'pm1'·'close1'·'am1') → 회차 라벨(오전조/오후조/마감조). 미상 접두면 원문 그대로."""
+    m = re.match(r"([a-zA-Z]+)", str(rk or ""))
+    prefix = m.group(1) if m else str(rk or "")
+    return dict(_SHIFTS).get(prefix, prefix or "?")
+
+
+def support_issue_detail_lines(d: dict, max_items: int = _MAX_ISSUE_DETAIL) -> list[str]:
+    """today_live.allIssues → 이슈 상세 라인(구역·회차·내용·작성자). GM 2026-07-22 근본수리.
+    완료율 기반 '짚을 점'(미달 회차 %)과 별개 — 체크리스트에 실제 적힌 이슈 원문을 그대로 보이게
+    (지어내기 금지 — 소스에 없는 필드는 생략)."""
+    items = d.get("allIssues")
+    if not isinstance(items, list) or not items:
+        return []
+    glabel = {"m": "남", "f": "여"}
+    lines = [f"  📝 이슈 상세 {len(items)}건"]
+    for it in items[:max_items]:
+        g = glabel.get(str(it.get("gender")), str(it.get("gender") or "?"))
+        shift = _shift_label_from_roundkey(it.get("roundKey"))
+        text = str(it.get("issue") or "").strip()
+        if len(text) > 40:
+            text = text[:40] + "…"
+        by = str(it.get("by") or "").strip()
+        tag = f" ({by})" if by else ""
+        lines.append(f"    · [{g}/{shift}] {text}{tag}")
+    if len(items) > max_items:
+        lines.append(f"   · 외 {len(items) - max_items}건")
+    return lines
+
+
 def build_support_section(today: str, url: str = DEFAULT_GAS_URL,
                           data: dict | None = None) -> tuple[list[str], dict]:
     """지원부 핵심요약: 종일 완료율 + **남성구역·여성구역 각각**(회차분해 요일반영) +
@@ -186,24 +220,54 @@ def build_support_section(today: str, url: str = DEFAULT_GAS_URL,
     elif not rec:
         lines.append("  ✅ 이상 없음 — 전 회차 완료")
     lines += rec
+
+    # 이슈 상세(체크리스트 원문) — 완료율 짚을 점과 별개, allIssues 그대로 노출. GM 2026-07-22 지시3.
+    lines += support_issue_detail_lines(d)
     return (lines, filled)
 
 
-_MAX_WORKLOG = 8   # 작업일지 표시 최대 항목(초과 시 '외 N')
+_MAX_WORKLOG = 8   # 회차별 일지 표시 최대 회차(초과 시 '외 N회차')
+
+# 시설부 측정값 라벨(store.rounds[*] / store.daily 원본 키 → 한글 표기). GM 2026-07-22 렌더심화.
+_ROUND_LABELS = {
+    "sauna_ontang_a": "온탕A", "sauna_ontang_b": "온탕B",
+    "sauna_yeoltang_a": "열탕A", "sauna_yeoltang_b": "열탕B",
+    "sauna_dry_a": "건식A", "sauna_dry_b": "건식B",
+    "sauna_wet_a": "습식A", "sauna_wet_b": "습식B",
+    "sauna_jjim_a": "찜질A", "sauna_jjim_b": "찜질B",
+    "pool_ph": "수영장pH", "pool_temp": "수영장온도", "pool_cl": "수영장염소",
+    "tank_k2": "탱크K2", "tank_k3": "탱크K3", "tank_k4": "탱크K4",
+    "ahu_AHU1": "AHU1", "ahu_AHU2": "AHU2", "ahu_AHU3": "AHU3", "ahu_AHU4": "AHU4",
+}
+_DAILY_LABELS = {
+    "fc_eq_night": "심야전기", "fc_eq_tank1": "1번탱크", "fc_eq_gas": "가스검침",
+    "fc_eq_hotw": "고온수기", "fc_eq_pump": "연동펌프",
+}
+
+
+def _lines(v) -> list[str]:
+    return [ln.strip() for ln in str(v or "").replace("\r", "").split("\n") if ln.strip()]
 
 
 def facility_worklog(subs: list) -> tuple[list[str], list[str]]:
-    """board submissions → (작업사항 리스트, 특이사항 리스트). GM 2026-07-19 피드백3.
-    work=회차 누적이라 '가장 항목 많은' 제출 1개를 대표로(중복 자동 흡수) · note=전 회차 유니크."""
+    """board submissions → (회차별 일지 라인 리스트, 특이사항 리스트). GM 2026-07-22 근본수리.
+    이전엔 work 최다 '대표 제출 1건'만 썼음(다른 회차 작업내용 유실) — seq 순 전체 회차를 루프해
+    "N회차 HH:MM~HH:MM(소요 M분) · 점검자 · 작업요약" 라인으로 전부 가시화(데이터 없는 회차는 시간만).
+    note=전 회차 유니크(기존 로직 유지 — 이미 전체 순회라 손상 아님)."""
     if not isinstance(subs, list) or not subs:
         return ([], [])
 
-    def _lines(v):
-        return [ln.strip() for ln in str(v or "").replace("\r", "").split("\n") if ln.strip()]
-
-    # 작업사항: 누적 필드라 가장 풍부한(항목 최다) 제출을 대표로 사용
-    best = max(subs, key=lambda s: len(_lines(s.get("work"))), default=None)
-    work_items = _lines(best.get("work")) if best else []
+    ordered = sorted(subs, key=lambda s: s.get("seq") if isinstance(s.get("seq"), (int, float)) else 0)
+    work_items: list[str] = []
+    for i, s in enumerate(ordered, start=1):
+        start, end = s.get("startHHMM"), s.get("endHHMM")
+        time_part = f"{start}~{end}" if start and end else (str(s.get("at") or "").split(" ")[-1] or "?")
+        dur = s.get("durMin")
+        dur_part = f"({dur}분)" if dur not in (None, "") else ""
+        insp = s.get("inspector") or "?"
+        head = f"{i}회차 {time_part}{dur_part} · {insp}"
+        work = " / ".join(_lines(s.get("work")))
+        work_items.append(f"{head} · {work}" if work else head)
 
     # 특이사항(note)·기준이탈조치(oocAction) — 전 회차에서 유니크 수집(순서 보존)
     notes: list[str] = []
@@ -217,14 +281,43 @@ def facility_worklog(subs: list) -> tuple[list[str], list[str]]:
     return (work_items, notes)
 
 
+def facility_measurements(store: dict, today_oor_fields: set[str]) -> list[str]:
+    """store.rounds[*]·store.daily(장비값) → 측정값 요약 라인. GM 2026-07-22 렌더심화 지시2.
+    소스에 있는 값만 그대로 표기(창작 금지) · today_oor_fields에 든 필드는 ❗ 표시(기존 기준이탈 판정 재사용)."""
+    out: list[str] = []
+
+    rounds = store.get("rounds") if isinstance(store.get("rounds"), dict) else {}
+    for rk in sorted(rounds.keys()):
+        vals = rounds.get(rk) or {}
+        if not isinstance(vals, dict) or not vals:
+            continue
+        parts = []
+        for k in sorted(vals.keys()):
+            key = k[3:] if k.startswith("fc_") else k
+            label = _ROUND_LABELS.get(key, key)
+            mark = "❗" if key in today_oor_fields else ""
+            parts.append(f"{mark}{label} {vals[k]}")
+        tag = f" [{rk}]" if len(rounds) > 1 else ""
+        out.append(f"  🌡 측정{tag}: " + " · ".join(parts))
+
+    daily = store.get("daily") if isinstance(store.get("daily"), dict) else {}
+    eq_parts = [f"{_DAILY_LABELS[k]} {daily[k]}" for k in _DAILY_LABELS if daily.get(k) not in (None, "")]
+    if eq_parts:
+        out.append("  ⚙ 설비: " + " · ".join(eq_parts))
+    return out
+
+
 # ── 시설부 ────────────────────────────────────────────────────────────────
 def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list[str], dict]:
-    """시설부 핵심요약: 회수(board.submissions) + **작업일지(work) + 이슈사항(기준이탈·특이사항note)**.
-    회수 = len(board.store.submissions)(정본·페이지 'N회 완료' 일치, GM 2026-07-15). GM 2026-07-19 피드백3."""
+    """시설부 핵심요약: 회차별 일지(submissions 전체) + 측정값(rounds·daily) +
+    이슈사항(기준이탈·특이사항note). GM 2026-07-22 근본수리(렌더심화·회차수 정직표기).
+    ★ 회차수(sessions=len(submissions))는 GAS saveBoard 전체덮어쓰기 클로버로 실제보다
+    작게 나올 수 있음(신뢰 불가·서버 저장 문제, 렌더로 해결 불가) — '(확인중)' 꼬리표로 정직 표기."""
     filled = {"facility_status": False, "facility_outofrange": 0, "facility_worklog": False}
 
     board = fetch_gas({"action": "board", "key": f"FACILITY_CHECK_{today}"}, url)
-    subs = (((board or {}).get("board") or {}).get("store") or {}).get("submissions")
+    store = (((board or {}).get("board") or {}).get("store") or {})
+    subs = store.get("submissions")
     sessions = len(subs) if isinstance(subs, list) else 0
 
     monthly = fetch_gas({"action": "monthly_report", "dept": "facility", "month": today[:7]}, url)
@@ -240,19 +333,29 @@ def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list
         return (lines, filled)
 
     filled["facility_status"] = True
-    head = f"🏗 시설부 현황 {sessions}회 점검"
+    # 회차수 정직 표기 — board 기록 건수일 뿐 실제 회차수 보장 X(GAS 클로버 이슈). 거짓 확정 금지.
+    head = f"🏗 시설부 현황 board 기록 {sessions}건(회차 확인중)"
     head += f" · 이상 {len(today_oor)}건" if today_oor else " · 이상 없음"
     lines.append(head)
 
-    # 작업일지(무슨 점검·작업을 했는지) — 실데이터(work). 없으면 정직히 생략(지어내기 금지).
+    # 회차별 일지(전 회차 개별 라인) — 실데이터(work). 없으면 정직히 시간만(지어내기 금지).
+    today_oor_fields = {str(x.get("field")) for x in today_oor if x.get("field")}
     work_items, notes = facility_worklog(subs)
     if work_items:
         filled["facility_worklog"] = True
         shown = work_items[:_MAX_WORKLOG]
-        tail = f" 외 {len(work_items) - _MAX_WORKLOG}건" if len(work_items) > _MAX_WORKLOG else ""
-        lines.append("  📋 작업일지: " + " · ".join(shown) + tail)
+        tail = f" · 외 {len(work_items) - _MAX_WORKLOG}회차" if len(work_items) > _MAX_WORKLOG else ""
+        lines.append("  📋 회차별 일지")
+        for ln in shown:
+            lines.append(f"    · {ln}")
+        if tail:
+            lines.append(f"   {tail}")
     else:
-        lines.append("  📋 작업일지: 데이터 없음")
+        lines.append("  📋 회차별 일지: 데이터 없음")
+
+    # 측정값(사우나·수영장·탱크·공조기·설비) — store.rounds/store.daily 원본. 기준이탈 필드는 ❗.
+    meas_lines = facility_measurements(store, today_oor_fields)
+    lines += meas_lines
 
     # 이슈사항 = 기준이탈(인라인 압축) + 특이사항(note)
     if today_oor:

@@ -32,6 +32,7 @@ from __future__ import annotations
 import html
 import re
 import sys
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 
@@ -57,6 +58,16 @@ _TEST_EPOCH_RE = re.compile(r"_\d{10,}$")  # 이름 끝 epoch 접미(테스트 �
 # "신규"·"가망"·"대기"는 아직 실제 컨택이 일어나지 않은 접수 직후 placeholder — contacts[]가
 # 없다면 진전으로 보지 않는다(GM 지정: "등록/상담/컨택 등 진행상태 있는 것"만 진전).
 _PRE_CONTACT_STATUSES = {"", "신규", "가망", "대기"}
+
+
+def _disp_width(s: str) -> int:
+    """전각(한글 등 Wide/Fullwidth)=2, 그 외=1 로 계산한 표시폭 — <pre> 표 정렬용."""
+    return sum(2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1 for ch in s)
+
+
+def _pad_disp(s: str, width: int) -> str:
+    pad = width - _disp_width(s)
+    return s + (" " * pad if pad > 0 else "")
 
 
 def _is_test_row(row: dict) -> bool:
@@ -115,6 +126,10 @@ def _progress_label(row: dict, is_lesson: bool) -> str:
         return "이탈"
     status = str(row.get("status", "") or "").strip()
     if status:
+        if status not in _PRE_CONTACT_STATUSES and not _has_contacts(row):
+            # status는 "컨택중" 등 진행 텍스트인데 contacts[] 이력이 비어있음 — 창작 없이
+            # 불일치를 그대로 드러낸다(source of truth = contacts[]).
+            return f"{status}(이력없음)"
         return status  # 실무진이 시트에 남긴 진행 텍스트 그대로(예: 상담중) — 새 어휘 발명 금지
     if _has_contacts(row):
         return "컨택완료"
@@ -146,11 +161,6 @@ def _is_unassigned_active(row: dict, is_lesson: bool) -> bool:
     return not (_is_registered(row, is_lesson) or _is_loss(row))
 
 
-def _include_in_list(row: dict, is_lesson: bool) -> bool:
-    """리스트 포함 기준 — 진전 있는 건 + 담당자 미배정 활성 건(GM 지정: 미배정도 리스트에 노출)."""
-    return _has_progress(row) or _is_unassigned_active(row, is_lesson)
-
-
 def _field_for(kind: str) -> str:
     return "program" if kind == "membership" else "sport"
 
@@ -159,15 +169,11 @@ def _type_label(kind: str) -> str:
     return {"membership": "멤버십", "adult": "성인강습", "youth": "유소년강습"}[kind]
 
 
-def _special_notes(groups: dict[str, list[dict]], stale_unassigned: list[tuple[str, str]]) -> str:
-    """정직한 자동 요약 — 담당배정 3일+ 지연(촉구) + 종목/프로그램 3건+ 쏠림만(과장 없음).
-    담당자 미배정 '건수'는 특이사항에 넣지 않고 아래 리스트에 노출한다(GM 지정). 3일 이상
-    미배정 지연된 것만 특이사항으로 승격해 이름을 짚어 배정을 촉구한다."""
+def _special_notes(groups: dict[str, list[dict]]) -> str:
+    """정직한 자동 요약 — 종목/프로그램 3건+ 쏠림만(과장 없음), 당일(오늘) 스코프 한정.
+    담당배정 3일+ 지연(누적·최근30일)은 스코프가 달라 여기 섞지 않고 build_digest 에서
+    별도 '📌 누적 미배정(참고, 최근30일)' 라인으로 분리 표기한다(당일 특이사항 과장 방지)."""
     notes: list[str] = []
-    if stale_unassigned:
-        head = ", ".join(f"{nm}({tp})" for nm, tp in stale_unassigned[:5])
-        tail = f" 외 {len(stale_unassigned) - 5}건" if len(stale_unassigned) > 5 else ""
-        notes.append(f"⚠️ 담당배정 3일+ 지연 {len(stale_unassigned)}건 — {head}{tail} 👉 배정 필요")
     concentration: dict[str, int] = {}
     for kind, rows in groups.items():
         field = _field_for(kind)
@@ -200,7 +206,7 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
     a, b, c = len(mem_t), len(adult_t), len(youth_t)
     total_new = a + b + c
 
-    # 담당배정 3일+ 지연(최근 30일 내, 전체 리스트 기준) → 특이사항 승격 + 촉구
+    # 담당배정 3일+ 지연(최근 30일 내, 전체 리스트 기준) → 별도 "참고" 라인으로 분리 표기(당일 아님).
     stale_unassigned: list[tuple[str, str]] = []
     for kind, rows in raw_groups.items():
         for r in rows:
@@ -212,7 +218,7 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
                 sp = _short_program(str(r.get(_field_for(kind), "") or "").strip())
                 sub = f"{_type_label(kind)}·{sp}" if sp and sp != "-" else _type_label(kind)
                 stale_unassigned.append((nm, sub))
-    special = _special_notes(groups, stale_unassigned)
+    special = _special_notes(groups)
 
     header = (
         f"📊 [하루 일과 정리] {today}({weekday})\n"
@@ -223,35 +229,62 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
         f"멤버십({a}) + 성인강습({b}) + 유소년강습({c})\n"
         f"특이사항: {html.escape(special)}"
     )
+    if stale_unassigned:
+        head = ", ".join(f"{nm}({tp})" for nm, tp in stale_unassigned[:5])
+        tail = f" 외 {len(stale_unassigned) - 5}건" if len(stale_unassigned) > 5 else ""
+        section_new += (
+            f"\n📌 누적 미배정(참고, 최근30일) {len(stale_unassigned)}건 — {head}{tail} 👉 배정 필요"
+        )
 
-    # 컨택&등록 현황 — 3리스트 통합, 진전 있는 행만.
+    # 컨택&등록 현황 — 3리스트 통합, "실제 진전"(컨택이력≥1 또는 등록판정) 있는 행만.
+    # 담당 미배정 + 진전없음(활성) 건은 이 리스트에서 빼고 아래 별도 라인으로 분리한다
+    # (신규 문의 섹션과 완전 동일 목록이 되는 중복을 방지 — GM 07-21 지적).
     # sample=True: 리스트 형태 확인용으로 당일 대신 최근 진전건(timestamp 내림차순 top N).
     src_groups = raw_groups if sample else groups
     progress_rows: list[tuple[dict, str]] = []
+    unassigned_rows: list[tuple[str, str]] = []
     for kind, rows in src_groups.items():
         for r in rows:
             if _is_test_row(r):
                 continue
-            if _include_in_list(r, kind != "membership"):
+            if _has_progress(r):
                 progress_rows.append((r, kind))
+            elif not sample and _is_unassigned_active(r, kind != "membership"):
+                nm = str(r.get("name", "") or "-").strip() or "-"
+                unassigned_rows.append((nm, _type_label(kind)))
     if sample:
         progress_rows.sort(key=lambda rk: str(rk[0].get("timestamp", "") or ""), reverse=True)
         progress_rows = progress_rows[:sample_n]
 
+    # 정직한 헤더 카운트 — 등록판정과 "실제 컨택이력(contacts[]≥1)"만 센다.
+    # status 자유텍스트(예: 컨택중)만 있고 contacts[] 이력이 없는 건은 어느 쪽에도 세지 않는다
+    # (라벨에서 "(이력없음)"으로 별도 노출 — _progress_label 참조).
     reg_cnt = sum(1 for r, kind in progress_rows if _is_registered(r, kind != "membership"))
-    contact_cnt = len(progress_rows) - reg_cnt
+    contact_cnt = sum(
+        1 for r, kind in progress_rows
+        if _has_contacts(r) and not _is_registered(r, kind != "membership")
+    )
 
     if not progress_rows:
-        contact_body = "오늘 컨택·등록 진전 없음."
+        contact_body = "컨택·등록 진전 0건"
     else:
-        lines = []
+        rows_fmt = []
         for r, kind in progress_rows:
             name = html.escape(str(r.get("name", "") or "-").strip() or "-")
             raw_field = _short_program(str(r.get(_field_for(kind), "") or "").strip())
-            field_val = html.escape(raw_field or "-")
+            type_field = html.escape(f"{_type_label(kind)}({raw_field or '-'})")
             owner = html.escape(str(r.get("owner", "") or "").strip() or "담당미정")
             label = html.escape(_progress_label(r, kind != "membership"))
-            lines.append(f"· {name} · {_type_label(kind)}({field_val}) · {owner}   [{label}]")
+            rows_fmt.append((name, type_field, owner, label))
+        # 전각(한글=2폭) 보정 고정폭 정렬 — 한글/영문 혼재해도 [라벨] 칸이 세로로 맞도록.
+        w_name = max(_disp_width(x[0]) for x in rows_fmt)
+        w_type = max(_disp_width(x[1]) for x in rows_fmt)
+        w_owner = max(_disp_width(x[2]) for x in rows_fmt)
+        lines = [
+            f"· {_pad_disp(name, w_name)} · {_pad_disp(type_field, w_type)} · "
+            f"{_pad_disp(owner, w_owner)}  [{label}]"
+            for name, type_field, owner, label in rows_fmt
+        ]
         contact_body = "<pre>\n" + "\n".join(lines) + "\n</pre>"
 
     if sample:
@@ -262,6 +295,9 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
     else:
         contact_head = f"🤝 컨택 & 등록 현황  총 {len(progress_rows)}건 (컨택 {contact_cnt}·등록 {reg_cnt})"
     section_contact = f"{contact_head}\n{contact_body}"
+    if unassigned_rows:
+        names = " · ".join(f"{nm}({tp})" for nm, tp in unassigned_rows)
+        section_contact += f"\n🆕 담당배정 필요 {len(unassigned_rows)}건: {html.escape(names)}"
 
     return (
         f"{header}\n\n{section_new}\n\n"
