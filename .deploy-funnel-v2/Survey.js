@@ -2001,6 +2001,63 @@ function _lessonEnsureCols_(sh) {
   }
   return hdr;
 }
+// ═══ 강습 Contact(연락이력) 평문 저장 — 2026-07-22 GM(시트 가독성, 멤버십 Contact1/2/3=평문과 정합) ═══
+//  저장 포맷: 줄바꿈 구분 평문, 한 줄 = "YYYY-MM-DD HH:MM 노트"(빈 날짜/시간 생략, 노트만 있으면 노트만).
+//  레거시 JSON 배열('[' 시작) 셀은 읽기에서 계속 파싱(하위호환, 무중단) — 신규 쓰기는 항상 평문.
+//  프론트 계약(contacts 배열 JSON 문자열 송수신)은 불변 — 백엔드 저장 포맷만 전환.
+// 평문 한 줄 → {date,time,note}. 날짜/시간 접두 없으면 전체를 note로.
+function _lessonContactPlainParseLine_(line) {
+  var s = String(line || '').trim();
+  if (!s) return null;
+  var m = s.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}:\d{2}))?\s*(.*)$/);
+  if (m) return { date: m[1], time: m[2] || '', note: (m[3] || '').trim() };
+  var m2 = s.match(/^(\d{1,2}:\d{2})\s+(.*)$/);
+  if (m2) return { date: '', time: m2[1], note: (m2[2] || '').trim() };
+  return { date: '', time: '', note: s };
+}
+// 평문 셀(줄바꿈 구분) → 정규 배열([{date,time,note}]). 빈 줄·완전빈 항목 제거. 빈 셀=[].
+function _lessonContactPlainParse_(raw) {
+  var s = String(raw || '');
+  if (!s.trim()) return [];
+  var lines = s.split('\n');
+  var out = [];
+  for (var i = 0; i < lines.length; i++) {
+    var it = _lessonContactPlainParseLine_(lines[i]);
+    if (it && (it.date || it.time || it.note)) out.push(it);
+  }
+  return out;
+}
+// 정규 배열 → 평문 셀(줄바꿈 구분, 한 줄="YYYY-MM-DD HH:MM 노트" 빈 값 생략). 빈 배열=''(셀 클리어).
+function _lessonContactPlainStringify_(arr) {
+  var lines = [];
+  (arr || []).forEach(function(it){
+    if (!it) return;
+    var d = _miToISO_(it.date || '');
+    var t = it.time ? String(it.time).trim() : '';
+    var n = (it.note == null) ? '' : String(it.note).trim();
+    if (!d && !t && !n) return;
+    var parts = [];
+    if (d) parts.push(d);
+    if (t) parts.push(t);
+    if (n) parts.push(n);
+    lines.push(parts.join(' '));
+  });
+  return lines.join('\n');
+}
+// 셀(레거시 JSON'['·신규 평문·손상 JSON) → 정규 배열. 양쪽 포맷 지원(마이그레이션 중 무중단) + 손상 JSON은
+// 원문을 note로 보존(무손실) — JSON.parse 성공(빈 배열 포함)만 정상 JSON으로 취급, 실패 시에만 폴백.
+function _lessonContactCellParse_(raw) {
+  var s = String(raw || '').trim();
+  if (!s) return [];
+  if (s.charAt(0) === '[') {
+    try {
+      var arr = JSON.parse(s);
+      if (Array.isArray(arr)) return _resParse_(arr);
+    } catch (e) { /* 손상 JSON → 아래 폴백 */ }
+    return [{ date: '', time: '', note: s }];
+  }
+  return _lessonContactPlainParse_(s);
+}
 // 강습 행 배열 — 문의 + 관리 필드 통합. 빈 행(성함·연락처 둘 다 없음) 스킵.
 function _lessonReadRows_(gid) {
   var sh = _lessonSheet_(gid);
@@ -2044,12 +2101,8 @@ function _lessonReadRows_(gid) {
     // 연락이력(가변): JSON 우선 → 없고 기존 상담메모에 값 있으면 {date:'',time:'',note:상담메모}로 합성(비파괴·하위호환).
     //   상담메모 컬럼 자체는 절대 덮어쓰지 않음(읽기 시 합성만) — 연락이력이 있으면 그것을 우선 사용. 2026-07-08 시포·GM.
     var _lHistRaw = iHist >= 0 ? row[iHist] : '';
-    var _lHistArr = _resParse_(_lHistRaw);            // JSON이면 파싱(스태프가 페이지에서 편집한 이력)
-    if (!_lHistArr.length) {
-      var _lHistPlain = String(_lHistRaw || '').trim();
-      if (_lHistPlain) _lHistArr.push({ date: '', time: '', note: _lHistPlain });  // GM Contact 컬럼 plain text 보존(읽기에서 사라지지 않게)
-      else if (_lMemo) _lHistArr.push({ date: '', time: '', note: _lMemo });        // 레거시 상담메모 폴백
-    }
+    var _lHistArr = _lessonContactCellParse_(_lHistRaw);  // 평문(줄바꿈, 신정본) · 레거시 JSON('[') 둘 다 지원. 2026-07-22 GM
+    if (!_lHistArr.length && _lMemo) _lHistArr.push({ date: '', time: '', note: _lMemo });  // 레거시 상담메모 폴백
     out.push({
       rowIndex: r + 2 + rowOffset,
       timestamp: _miToISO_(iTs >= 0 ? row[iTs] : ''),
@@ -3321,6 +3374,56 @@ function _processAction(body) {
       return _json({ ok: true, dry: _csmDry, perSheet: _csmPer });
     } finally {
       if (_csmLock) _csmLock.releaseLock();
+    }
+  }
+
+  // ─── (일회성) 강습 Contact(연락이력) JSON → 평문 이관 — 시트 가독성 통일(멤버십 Contact1/2/3=평문과 정합) ───
+  //   배경: 강습 Contact 칸에 [{date,time,note}] JSON 통짜가 저장돼 raw JSON으로 보임(성인/유소년 응답탭 실측).
+  //   대상=_LESSON_KNOWN_GIDS_(4개 응답탭) Contact/연락이력 칸에서 '['로 시작하는 JSON 셀만
+  //   _lessonContactPlainStringify_(평문, 줄바꿈 구분)로 변환. 이미 평문인 셀·빈 셀은 완전 미접촉(무손실).
+  //   손상 JSON(파싱 실패)은 skip(원문 그대로 유지)+보고. body.dry(true=dry-run 기본·false=실제 변환)만
+  //   없으면 항상 dry-run(안전 기본). 웰리 수동. 2026-07-22 GM지시.
+  if (action === 'migrate_lesson_contact_json_to_plain') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _mcpDry = (body.dry !== false);   // 미전송/true = dry-run, false만 live
+    var _mcpLock = null;
+    if (!_mcpDry) {
+      _mcpLock = LockService.getScriptLock();
+      if (!_mcpLock.tryLock(8000)) return _json({ ok: false, error: 'lock-timeout' });
+    }
+    try {
+      var _mcpPer = [];
+      _LESSON_KNOWN_GIDS_.forEach(function(gid) {
+        var sh = _lessonSheet_(gid);
+        if (!sh) { _mcpPer.push({ gid: gid, skip: 'sheet-not-found' }); return; }
+        var lastRow = sh.getLastRow();
+        if (lastRow < 2) { _mcpPer.push({ gid: gid, skip: 'empty' }); return; }
+        var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+        var col = _findCol_(hdr, [CONTACT_HIST_COL, 'Contact']);
+        if (col < 0) { _mcpPer.push({ gid: gid, skip: 'no-column' }); return; }
+        var colValues = sh.getRange(2, col + 1, lastRow - 1, 1).getValues();
+        var skippedNonJson = 0, skippedParseFail = 0, samples = [], writes = [];
+        for (var r = 0; r < colValues.length; r++) {
+          var raw = colValues[r][0];
+          var s = (raw === '' || raw === null || raw === undefined) ? '' : String(raw).trim();
+          if (!s || s.charAt(0) !== '[') { skippedNonJson++; continue; }  // 이미 평문(또는 빈칸) — 미접촉
+          var arr;
+          try { arr = JSON.parse(s); } catch (e) { skippedParseFail++; continue; }  // 손상 JSON — skip(무손실, 원문 유지)
+          if (!Array.isArray(arr)) { skippedParseFail++; continue; }
+          var plain = _lessonContactPlainStringify_(_resParse_(arr));
+          if (samples.length < 5) samples.push({ row: r + 2, before: s.substring(0, 120), after: plain.substring(0, 120) });
+          writes.push({ row: r + 2, value: plain });
+        }
+        if (_mcpDry) {
+          _mcpPer.push({ gid: gid, col: col + 1, rowsToConvert: writes.length, skippedNonJson: skippedNonJson, skippedParseFail: skippedParseFail, samples: samples });
+        } else {
+          writes.forEach(function(w){ var cell = sh.getRange(w.row, col + 1); cell.setNumberFormat('@'); cell.setValue(w.value); });
+          _mcpPer.push({ gid: gid, col: col + 1, converted: writes.length, skippedNonJson: skippedNonJson, skippedParseFail: skippedParseFail });
+        }
+      });
+      return _json({ ok: true, dry: _mcpDry, perSheet: _mcpPer });
+    } finally {
+      if (_mcpLock) _mcpLock.releaseLock();
     }
   }
 
@@ -5399,14 +5502,14 @@ function _processAction(body) {
       var _luHistNewArr = null;
       if (body.contacts !== undefined) {
         try {
-          var _luHistCi = _findCol_(luHdr, [CONTACT_HIST_COL, 'Contact']);  // 연락이력 우선 → GM flat M컬럼 'Contact'(부분일치). JSON으로 라운드트립 기록
-          var _luPrevHistArr = (_luHistCi >= 0) ? _resParse_(luSh.getRange(luRow, _luHistCi + 1).getValue()) : [];
+          var _luHistCi = _findCol_(luHdr, [CONTACT_HIST_COL, 'Contact']);  // 연락이력 우선 → GM flat M컬럼 'Contact'(부분일치). 평문(줄바꿈)으로 라운드트립 기록. 2026-07-22 GM
+          var _luPrevHistArr = (_luHistCi >= 0) ? _lessonContactCellParse_(luSh.getRange(luRow, _luHistCi + 1).getValue()) : [];  // 평문·레거시JSON 둘 다 인식(마이그레이션 중 카운트 정합)
           _luHistPrevCount = _luPrevHistArr.length;
-          _luHistNewArr = _resParse_(body.contacts);
+          _luHistNewArr = _resParse_(body.contacts);  // 프론트 계약(배열/JSON 문자열) 그대로 수신·정규화 — 불변
           if (_luHistCi >= 0) {
             var _luHistCell = luSh.getRange(luRow, _luHistCi + 1);
             _luHistCell.setNumberFormat('@');
-            _luHistCell.setValue(_resStringify_(_luHistNewArr));
+            _luHistCell.setValue(_lessonContactPlainStringify_(_luHistNewArr));  // 저장 포맷만 평문으로 전환(사람이 읽는 시트 가독성). 2026-07-22 GM
           }
         } catch (eHist) { Logger.log('강습 연락이력 저장 실패: ' + eHist.message); }
       }
