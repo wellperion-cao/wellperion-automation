@@ -194,7 +194,7 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-06-20",
     "note": "[2026-06-20 GM 확정] 4개 부서 체계 페이지 틀(레이아웃·탭·링크)은 완성. 이제 내부 콘텐츠(부서별 보드·매뉴얼·항목·SOP) 채우기·꾸미기·정렬·고도화 = 시우(COO) 상시 소유. 웰리=디스패치·검증·완료도장만. 페이지↔시트 동기·정렬 등 기본 정합도 시우 기본 책임. 자율 발의·착수(승인게이트 유지). 메모리 feedback_coo_owns_ops_4dept_interior.\n[2026-06-24 GM] 상시 자율 '보강·꾸미기' 폐지 → 지시형 강등. 구체 빈칸·지시 있을 때만.\n[2026-07-04 GM] 대기 항로에서 제외(STANDBY) — 상시 자율 배 아님·실무 피드백/구체 지시가 있을 때만 진행하는 조건부 건. 소유(시우=운영 4부서 내부, R/R·메모리 feedback_coo_owns_ops_4dept_interior)는 유지. 트리거(구체 빈칸/지시) 시 신규 구체 배로 착수.",
-    "next": "🔗 [2026-07-22 GM 입항] 운영 4부서 체계 '틀+내부 소유' 배 종결. 이후 4부서 체계+종합접수처 실무 진행=준용M(나우열 실무 라인). 시우(COO)=직접수정 아님·월간운영계획 페이지 진실검수만. 4부서 내부내용은 실무/업무 SSOT에서 자동 반영되는 구조로 전환(신규 배 COO-2026-07-22-MONTHLY-OPS-SSOT-SYNC).",
+    "next": "🔗 [2026-07-22 GM 입항] 운영 4부서 체계 '틀+내부 소유' 배 종결. 이후 4부서 체계+종합접수처 실무 진행=준용M(=최준용M 실무 라인). 시우(COO)=직접수정 아님·월간운영계획 페이지 진실검수만. 4부서 내부내용은 실무/업무 SSOT에서 자동 반영되는 구조로 전환(신규 배 COO-2026-07-22-MONTHLY-OPS-SSOT-SYNC).",
     "processed_at": "2026-07-22",
     "ship_no": 64,
     "surface": "autonomy"
@@ -209,7 +209,7 @@
     "origin": "gm",
     "enqueued_at": "2026-07-22",
     "note": "GM 2026-07-22 지시(시우64 입항 후속). GM 핵심포인트='구조는 좋으나 월간운영계획 내부내용이 계속 진행·자동 반영되고 돌아가는 구조가 되어야 한다 — 실무 및 업무 SSOT 내용 반영이 정말 중요'. 실측 문제=objectives·진척이 수동 PIN 편집이라 정본 파일 2026-07-14 이후 8일 미갱신(정체). 매출 등 라이브 지표는 home_kpi GAS 실시간 fetch로 반영되나, 운영 목표·진척은 사람 손 안 대면 멈춤. 시우 신역할=월간운영계획 페이지 진실검수만(4부서 내부 실무진행=준용M). ▶착수 전 설계·GM 접근 승인 필요.",
-    "next": "[2026-07-22 단계1 완료·드라이런검증] 설계=docs/superpowers/specs/2026-07-22-monthly-ops-ssot-sync-design.md. 엔진 scripts/monthly_ops_sync.py(게이트 MONTHLY_SYNC_APPLY OFF·기본 드라이런·조회실패=미연동 정직) + 매출 objective sync배선(metric_live). 드라이런 실증=매출 home_kpi 4.0억 자동 당김·나머지17 수동 정직분류·파일 무변경. ▶남은=단계2 소스배선(준용M 업무SSOT todo_ssot·시우 1회)·단계3 게이트 ON(GM go)·페이지 배지. 물리실무 자동반영 전제=준용M 단일입력 습관.",
+    "next": "[2026-07-22 단계1·2·3 완료·라이브 가동] GM '1번' 결재로 라이브 ON. 설계=docs/superpowers/specs/2026-07-22-monthly-ops-ssot-sync-design.md. 엔진 scripts/monthly_ops_sync.py(todo_ssot·queue·metric_live 소스 실구현). 연동 배선 6목표: 채용마무리·시설리뉴얼·밸류업·오찬(todo_ssot)·리셉션종합접수(queue 배9582·9580)·주차관리인채용(todo_ssot), 규칙 status_map(진행중=50·완료=100). 게이트 ON 라이브 1회 반영(progress 자동갱신)·★매출은 INC-001로 미저장(라이브 표시 전용). 일일 예약 Wellperion-MonthlyOps-Sync-Daily 07:00(vbs+bat·커밋만·역롤백=작업 비활성화). 커밋 1ca21af0. ▶상시운영: 시우=일일 페이지 진실검수(굵은신호 보정)·수동11건(장마·주차청결 등 SSOT 미등록분)은 준용M 업무기록 정착 시 자동 합류.",
     "ship_no": 9678,
     "module": "home",
     "surface": "autonomy"
@@ -2836,5 +2836,19 @@
     "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01F8C4x6oWHUqQheNMn9NUzN (CLI ad-hoc · 커밋 d8363937)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "d836393700325ae11182cf0f55f3140d6fe6f985"
+  },
+  {
+    "task_id": "COO-2026-07-22-ADHOC-1ca21af00",
+    "clevel": "coo",
+    "title": "[시우] 배9678 단계2·3 — 월간계획 자동반영 라이브 ON + 일일예약 07:00 (INC-001 매출 미저장)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9727,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01XQsgakx6rHxyAhmhquKTA2 (CLI ad-hoc · 커밋 1ca21af00)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "1ca21af0064ce1f453b20946a0e828122effd185"
   }
 ]
