@@ -4070,7 +4070,7 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         renderPanel('cmopub-review-list-namuk',namukItems);
         renderPanel('cmopub-review-list-brand',brandItems);
       }
-      function load(){fetch(URL,{cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(items){if(!Array.isArray(items))items=[];window.__cmopub_rv=items;render(items);}).catch(function(){var l=document.getElementById('cmopub-review-list-namuk');if(l)l.innerHTML='<div style="color:var(--dim);font-size:13px;">검수 큐를 불러오지 못했습니다.</div>';});}
+      function load(){fetch(URL+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(items){if(!Array.isArray(items))items=[];window.__cmopub_rv=items;render(items);}).catch(function(){var l=document.getElementById('cmopub-review-list-namuk');if(l)l.innerHTML='<div style="color:var(--dim);font-size:13px;">검수 큐를 불러오지 못했습니다.</div>';});}
       if(document.readyState!=='loading')load();else document.addEventListener('DOMContentLoaded',load);
     })();
     </script>
