@@ -1382,5 +1382,19 @@
     "artifact": "9071(CMO-2026-07-18-COMPANY-WEB-ECOSYSTEM) 완전 동일 레코드 2개 중 1개 제거.\n충돌 4건은 권위 우선순위(IN_PROGRESS>PENDING>DONE)로 승자 유지, 패자만\n새 ship_no(9617~9620) 재부여(task_id 불변):\n- AIDE-2026-07-21-LONG-PENDING-9420 -> 9617 (중복의심 태그 추가)\n- CPO-2026-07-22-ADHOC-5f2b0850 -> 9618\n- CTO-2026-07-22-FCHECK-EDIT-UI-DEFECTS -> 9619 (CLI ad-hoc · 커밋 ff030751)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "ff030751de99f4c87a3c6d30bee00aad0953830b"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-75b2ba1f",
+    "clevel": "cpo",
+    "title": "[시포] 지문키(시각+전화) 안정타겟팅 + 삭제 시각대조 + EN프로그램 플래티넘 매핑",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9623,
+    "artifact": "- 지문키 rowKey(_normTsKey_·_findRowsByKey_·_rowKeyParts_): update 3종 상위우선 타겟팅(1매칭 확정/0·2+ 거부), keyPhone 폴백 유지\n- member_inquiry_delete: rowKey 시각대조 추가(중복전화 오삭제 원천차단·INC-020 재발경로 봉쇄)\n- _normMembershipProgram_: EN 'Platinum Membership(...)'→'플래티넘'(한글 무변경)\n- 백엔드 선배포용(프론트 rowKey 발신은 parity 검증 후 별도) · 격리테스트 (CLI ad-hoc · 커밋 75b2ba1f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "75b2ba1faa6d63b3e3da72c555b84cb19693abc2"
   }
 ]
