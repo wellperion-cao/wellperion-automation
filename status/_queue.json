@@ -1,5 +1,20 @@
 [
   {
+    "task_id": "CTO-2026-07-22-REPORT-4ROOM-TRUST-FIX",
+    "clevel": "cto",
+    "title": "[시토] 정기 자동보고 4방 신뢰성·심도 수리 — 방1 데이터정합·방2 회차/일지/이슈 심화·방3 습득물 보관위치·방4 자동화현황 통합",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "from": "gm",
+    "origin": "gm",
+    "enqueued_at": "2026-07-22",
+    "note": "GM 2026-07-22 지시(텔레그램 4방 실측 피드백). 4방 전부 배9424 통일보고 산출물. 병렬 진단 확보(증거 file:line). ①방1 문의·컨택·등록: 컨택카운트 산식오류(ops_inquiry_contact_digest_test.py:242 컨택=등록아닌전부→실제 contacts>=1만)·진전없는건 리스트혼입+신규문의와 완전중복(:149-151·:229)·status자유텍스트 맹신(:111)·특이사항 3일+59건이 당일스코프무관 30일누적(:203-215)·pre열정렬없음(:247). ②방2 점검: 회차 2회 오표기 근본=apps_script_v3.js:640 saveBoard last-write-wins 전체덮어쓰기로 제출회차 영속SoT부재(notify_round는 fire-forget 미영속), 회차별일지·측정값(rounds/daily)·지원부 allIssues 6건 소스존재하나 렌더 미접근(support_check_summary.py:205·247·180). ③방3 습득물: 보관위치 필드가 프론트·GAS·시트·텔레그램 4곳 전부 누락(습득장소·설명은 구현됨), 스키마본체=시우·알림=시토·_lfSubmit(apps_script_voc.js:1202) 결합점→협업배포. ④방4 자동화현황방(-5498808140): GM=라이브·스케줄진행·ERP자가건강 전체통합 요구, 라이브·스케줄은 데이터(erp_status.json)있으나 발신배선 부재(갭), 자가건강은 이상시만(정상시 침묵)→항상노출 전환필요, 스트림#3 매출보고는 코드상 업무보고방(8254867551)行=방4 정체성 불일치.",
+    "next": "[가역 즉시수리] 방1 데이터정합 전체 + 방2 렌더심화(회차별일지·측정값·지원부이슈·회차 정직표기) 로컬수리·드라이런 검증. [GM 결재대기] (a)방2 회차SoT=GAS saveBoard merge 재배포 (b)방3 보관위치=시우 협업 GAS재배포 (c)방4 통합발신기 신설+매출보고 방배정 결정.",
+    "ship_no": 9580,
+    "module": "T1",
+    "surface": "autonomy"
+  },
+  {
     "task_id": "CTO-2026-07-22-KAKAO-GM-TITLE-MISNOMER",
     "clevel": "cto",
     "title": "[시토] 카톡 알림 GM 호칭 오표기 수리 — 대표님→GM님(전응준 결재란 제외)",

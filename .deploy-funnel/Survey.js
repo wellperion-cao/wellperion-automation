@@ -110,6 +110,21 @@ function _findRowByPhone_(sh, phCol0, keyPhoneNorm) {
   return -1;
 }
 
+// keyPhone(정규화) 매칭 행 '개수'를 센다 — _findRowByPhone_은 첫매칭만 반환해 중복 전화(동일 번호 2행+)에서
+// 엉뚱한 쪽으로 오지목할 수 있다(실측 7쌍). 2건+ 이면 첫매칭 강제진행 금지·거부해야 한다(fail-closed).
+// 2026-07-22 시포(오지목 근본수리 봉합 B2, GM 지시).
+function _countRowsByPhone_(sh, phCol0, keyPhoneNorm) {
+  if (!sh || phCol0 < 0 || !keyPhoneNorm) return 0;
+  var last = sh.getLastRow();
+  if (last < 2) return 0;
+  var col = sh.getRange(2, phCol0 + 1, last - 1, 1).getValues();
+  var n = 0;
+  for (var i = 0; i < col.length; i++) {
+    if (_normPhone_(col[i][0]) === keyPhoneNorm) n++;
+  }
+  return n;
+}
+
 // ─── 유입채널 표준화 (시모·GM 2026-06-13 확정 — 마케팅용 10버킷) ───
 // 자유텍스트(과거 리셉션 + 구글폼 자유입력)로 300여 개 난립한 채널 원문을 표준 10종으로 정규화한다.
 // 비파괴: 시트 원본은 손대지 않고, 대시보드 집계(byChannel/byChannelMonth) '읽기 시점'에만 적용.
@@ -2988,7 +3003,9 @@ function _processAction(body) {
     if (muRow >= _ROW_OFFSET_EN_) muRow -= _ROW_OFFSET_EN_;  // 실제 물리 행으로 디코드(시트 쓰기는 여기부터 물리 행 사용).
     var muHdr = _miHeaders_(muSh);
     // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행의 현재 전화와 대조 — 삭제/시트편집 후 rowIndex 밀림으로 엉뚱한 회원 덮어쓰기 방지.
-    //   keyPhone=편집 전(로드된) 전화. body.phone(새 값)과 별개. keyPhone 미전송이면 기존 동작 폴백(정상 편집 무중단).
+    //   keyPhone=편집 전(로드된) 전화. body.phone(새 값)과 별개. keyPhone 미전송이면 기존 동작 폴백(정상 편집 무중단) — 단, 예약 쓰기는 예외(B1 아래).
+    //   예약 쓰기 여부(B1 fail-closed 대상 판정) — 예약목록 JSON 또는 체험1·2 날짜/시간 중 하나라도 동봉되면 예약 저장으로 간주. 2026-07-22 시포(오지목 봉합).
+    var _muIsReservationWrite = (body.reservations !== undefined || body.exp1Date !== undefined || body.exp1Time !== undefined || body.exp2Date !== undefined || body.exp2Time !== undefined);
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
       var _muPhCi = _miColIdx_(muHdr, ['연락처','전화','휴대폰']);
       if (_muPhCi >= 0) {
@@ -2996,12 +3013,23 @@ function _processAction(body) {
         var _muKeyPh = _normPhone_(body.keyPhone);
         if (_muKeyPh && _muRowPh !== _muKeyPh) {
           // rowIndex가 대상과 어긋남(gviz 압축 인덱스·시트 편집 밀림·빈행) → keyPhone으로 올바른 물리 행 복구.
-          // 찾으면 그 행으로 재지정(저장 성공), 못 찾으면 거부(오수정 방지·기존 안전동작). 2026-07-13 시포(INC-013 근본수리).
-          var _muFound = _findRowByPhone_(muSh, _muPhCi, _muKeyPh);
-          if (_muFound >= 2) muRow = _muFound;
-          else return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 없음) — 목록을 새로고침 후 다시 시도하세요' });
+          // 매칭 1건=재지정(저장 성공) / 0건=거부(오수정 방지) / 2건+=모호·첫매칭 강제진행 금지·거부(오지목 봉합 B2). 2026-07-13·2026-07-22 시포(INC-013).
+          var _muCount = _countRowsByPhone_(muSh, _muPhCi, _muKeyPh);
+          if (_muCount === 1) {
+            muRow = _findRowByPhone_(muSh, _muPhCi, _muKeyPh);
+          } else if (_muCount >= 2) {
+            return _json({ ok: false, error: 'duplicate-phone-ambiguous', detail: '동일 연락처 여러 건 — 새로고침 후 대상 확인 필요' });
+          } else {
+            return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 없음) — 목록을 새로고침 후 다시 시도하세요' });
+          }
         }
+      } else if (_muIsReservationWrite) {
+        // 전화 칸 자체를 못 찾음 → 대조 불가능. 예약 쓰기면 raw rowIndex 맹목 쓰기 금지(B1). 2026-07-22 시포.
+        return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
       }
+    } else if (_muIsReservationWrite) {
+      // B1: keyPhone 없음 + 예약 쓰기 → raw rowIndex 맹목 쓰기 금지(오지목 방지). 예약이 아닌 순수 필드 편집은 기존 동작 유지. 2026-07-22 시포(GM 지시).
+      return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
     }
     function _muSet(colNames, val) {
       if (val === undefined || val === null) return;
@@ -3343,7 +3371,8 @@ function _processAction(body) {
     if (luRow >= _ROW_OFFSET_INTAKE_) luRow -= _ROW_OFFSET_INTAKE_;   // 강습 신규문의(자체폼 유입, 배1037) 오프셋 우선 디코드(EN보다 큼)
     else if (luRow >= _ROW_OFFSET_EN_) luRow -= _ROW_OFFSET_EN_;      // 영문 탭 오프셋 디코드. 실제 물리 행으로 환원(시트 쓰기는 여기부터 물리 행 사용).
     var luHdr = _lessonEnsureCols_(luSh);
-    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백.
+    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백 — 단, 예약(상담예약) 쓰기는 예외(B1).
+    var _luIsReservationWrite = (body.consult !== undefined);  // 상담예약 쓰기 여부(B1 fail-closed 대상 판정). 2026-07-22 시포(오지목 봉합).
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
       var _luPhCi = _findCol_(luHdr, ['연락처', '전화', '휴대폰']);
       if (_luPhCi >= 0) {
@@ -3351,11 +3380,23 @@ function _processAction(body) {
         var _luKeyPh = _normPhone_(body.keyPhone);
         if (_luKeyPh && _luRowPh !== _luKeyPh) {
           // rowIndex 어긋남(gviz 압축 인덱스·시트 편집 밀림·빈행) → keyPhone으로 올바른 물리 행 복구. 2026-07-13 시포(INC-013).
-          var _luFound = _findRowByPhone_(luSh, _luPhCi, _luKeyPh);
-          if (_luFound >= 2) luRow = _luFound;
-          else return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 없음) — 목록을 새로고침 후 다시 시도하세요' });
+          // 매칭 1건=재지정 / 0건=거부 / 2건+=모호·첫매칭 강제진행 금지·거부(오지목 봉합 B2). 2026-07-22 시포.
+          var _luCount = _countRowsByPhone_(luSh, _luPhCi, _luKeyPh);
+          if (_luCount === 1) {
+            luRow = _findRowByPhone_(luSh, _luPhCi, _luKeyPh);
+          } else if (_luCount >= 2) {
+            return _json({ ok: false, error: 'duplicate-phone-ambiguous', detail: '동일 연락처 여러 건 — 새로고침 후 대상 확인 필요' });
+          } else {
+            return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 없음) — 목록을 새로고침 후 다시 시도하세요' });
+          }
         }
+      } else if (_luIsReservationWrite) {
+        // 전화 칸 자체를 못 찾음 → 대조 불가능. 예약 쓰기면 raw rowIndex 맹목 쓰기 금지(B1). 2026-07-22 시포.
+        return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
       }
+    } else if (_luIsReservationWrite) {
+      // B1: keyPhone 없음 + 예약(상담예약) 쓰기 → raw rowIndex 맹목 쓰기 금지(오지목 방지). 2026-07-22 시포(GM 지시).
+      return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
     }
     function _luSet(colNames, val) {
       if (val === undefined || val === null) return;
@@ -3946,7 +3987,9 @@ function _processAction(body) {
     var auSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
     if (!auSh) return _json({ ok: false, error: '유효회원 시트 없음' });
     var auHdr = auSh.getRange(1, 1, 1, auSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
-    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백.
+    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백 — 단, 예약(재등록예약목록) 쓰기는 예외(B1).
+    //   ※ 이 액션은 애초에 first-match 복구를 하지 않고 불일치 시 무조건 거부(위 __B2__ 중복전화 첫매칭 오지목 버그가 애초에 없음) — B1(빈 keyPhone fail-closed)만 보강.
+    var _auIsReservationWrite = !!(auFields && Object.prototype.hasOwnProperty.call(auFields, ACT_RES_COL));  // 2026-07-22 시포(오지목 봉합).
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
       var _auPhI = -1;
       for (var _ap = 0; _ap < auHdr.length; _ap++) { var _aph = auHdr[_ap].replace(/\s/g, ''); if (_aph.indexOf('휴대폰') >= 0 || _aph.indexOf('전화') >= 0 || _aph.indexOf('연락처') >= 0) { _auPhI = _ap; break; } }
@@ -3956,7 +3999,13 @@ function _processAction(body) {
         if (_auRowPh && _auKeyPh && _auRowPh !== _auKeyPh) {
           return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
         }
+      } else if (_auIsReservationWrite) {
+        // 전화 칸 미발견/행범위초과 → 대조 불가능. 예약 쓰기면 raw rowIndex 맹목 쓰기 금지(B1). 2026-07-22 시포.
+        return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
       }
+    } else if (_auIsReservationWrite) {
+      // B1: keyPhone 없음 + 예약(재등록예약목록) 쓰기 → raw rowIndex 맹목 쓰기 금지(오지목 방지). 2026-07-22 시포(GM 지시).
+      return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
     }
     // 컬럼 찾기(정확→부분). 재등록상담 칸(날짜·시간·내용)은 없으면 시트 끝에 안전 추가(ensure·additive·기존 순서 무손상). 휴대폰=-2(편집 금지).
     function _auFindCol(colName) {

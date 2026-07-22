@@ -9458,6 +9458,18 @@ var WriteBuffer = (function(){
           // 성공 — 단, 전송 후 재편집(coalesce)로 rev가 바뀌었으면 최신 payload 재전송(유실 방지).
           if (item.rev !== sentRev) { item.nextTry = 0; }
           else { _remove(item.id); showToast('저장', 'ok'); }
+        } else if (data && (data.error === 'row-key-unverified' || data.error === 'duplicate-phone-ambiguous')) {
+          // ★오지목 봉합 B3(2026-07-22 시포, GM 지시) — 서버가 대상 행을 확정 못 해 결정적으로 거부(재시도해도
+          //   같은 값이면 결과 동일 · 네트워크 일시장애 아님). 낙관 반영을 성공으로 삼키지 않는다:
+          //   즉시 park(재시도 루프 대상에서 제외·무한재시도 금지) + overlay 해제(다음 재조회부터 가짜 낙관값 미표시)
+          //   + 명확 경고(alert). 큐 자체는 남겨 실패 칩·수동 재시도 경로(기존)로 계속 보인다.
+          item.parked = true;
+          item.overlay = null;
+          var _hfMsg = (data.error === 'duplicate-phone-ambiguous')
+            ? '동일 연락처를 가진 회원이 여러 명이라 어느 행인지 확정할 수 없습니다.'
+            : '대상 행을 확인할 수 없습니다(연락처 정보 없음/불일치).';
+          alert('⚠️ 저장 실패 — ' + (item.who ? item.who + ' ' : '') + (item.label || '') + '\n' + _hfMsg + '\n목록을 새로고침한 뒤 대상을 다시 확인하고 저장하세요.');
+          showToast('저장 거부 — 새로고침 필요', 'err');
         } else {
           _fail(item);
         }
