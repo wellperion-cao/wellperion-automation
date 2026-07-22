@@ -18,7 +18,16 @@ GM이 하루 1통 전사 이상요약 한 판으로 보게 한다. 1차 편입 =
 cpo-sheet-contract-check(매일 07:50). 소스 모듈은 존치·회귀 0(그 모듈은 자기
 방·자기 시각에 그대로 가동, 하네스는 산출물만 읽는다).
 
-섹션 5개, 이상 있는 섹션만 노출(전부 정상이면 무발신):
+2026-07-22(배9420 확장·GM 승인) §7·§8 추가 — 흩어진 텔레그램/연동 헬스체크를
+함수 재사용으로 흡수(탐지 로직 삭제 없음, telegram_health_check.py·
+integration_health.py 는 그대로 존치·13시 자기 알림도 불변). 이 하네스가 이미
+cto-automation-health 의 §자가건강(build_digest 재사용)으로 09:10 하루 1통에
+실리므로, §7·§8 추가만으로 그 1통 안에 텔레그램 채널·연동 다리 상태까지
+자동 포함된다(추가 발신 배선 불필요). ★단 봇 폴링 하트비트 등 즉시성 중요한
+경보는 telegram_health_check.py 자체의 13시 OWNER 즉시경보 경로를 그대로
+남긴다(약화 금지) — §7 은 그 경로를 대체하지 않고 일일 요약 가시성만 더한다.
+
+섹션 8개, 이상 있는 섹션만 노출(전부 정상이면 무발신):
   §1 🔇 침묵 모듈   — module_silence_detector.scan_registry() 재사용(등록부 전수)
   §2 📦 GAS 버전    — gas_version_monitor.collect() 재사용, 임계(>=180)만
   §3 🩹 자동화 건강 — status/erp_status.json 읽기 전용(재수집 금지).
@@ -30,6 +39,13 @@ cpo-sheet-contract-check(매일 07:50). 소스 모듈은 존치·회귀 0(그 �
                       미해소·미승인(accepted=false) 위반 + 연속조회실패(>=3일)만.
                       재점검·네트워크 호출 금지(07:50 소스 모듈이 이미 대조·기록).
                       accepted(시포가 승인해 침묵처리)는 재노출 안 함(계약 존중).
+  §6 🔁 결정 정합   — decision_replay_log + ssot/decision_contracts.json 읽기
+                      전용. 가드 우회 재발송(leaked)·미보증 모듈만 요약(surface-only).
+  §7 📡 텔레그램 채널 — telegram_health_check.py 의 점검 함수 재사용(봇 생존·방
+                      멤버십·발송 리컨실·GAS 진단·폴링 하트비트). 그 스크립트의
+                      13시 OWNER 즉시경보는 그대로 유지(긴급 경로 보존).
+  §8 🌉 연동 다리    — integration_health.check_bridges() 재사용(재점검 없음),
+                      ok=False 인 다리만 요약.
 
 발신: notify.telegram_send.send() → 자동화현황방(기존 채널 재사용).
 게이트: SELF_HEALTH_WATCHDOG_LIVE 환경변수(기본 OFF)일 때만 --live 가 실발신.
@@ -60,6 +76,11 @@ from collectors import cpo_sheet_contract as _sheet  # noqa: E402
 # [결정 정합 게이트 §6 편입 2026-07-22] 가드가 남긴 '옛것 재생 차단' 신호(공용 로그)만
 # 읽는다 — 재점검·차단 없음(surface-only, §3 erp_status·§5 sheet_contract 와 동일 read-only).
 import decision_replay_log as _replay  # noqa: E402
+# [흩어진 헬스 흡수 §7·§8 2026-07-22 배9420 확장] 두 스크립트의 기존 점검 함수를
+# import 만 해서 재사용한다 — 탐지 로직 복붙 금지, 소스 스크립트는 손대지 않음(그
+# 스크립트들의 자체 실행·자체 발신 경로도 그대로 존치).
+import telegram_health_check as _tghealth  # noqa: E402
+import integration_health as _bridges  # noqa: E402
 
 KST = timezone(timedelta(hours=9))  # 이 저장소 관행(module_silence_detector.py 상단 주석과 동일)
 
@@ -261,6 +282,62 @@ def build_section_decision_consistency(now=None):
     return lines
 
 
+# ── §7 📡 텔레그램 채널 (telegram_health_check.py 점검 함수 재사용) ───────────────
+def build_section_telegram():
+    """telegram_health_check.py 의 기존 점검 함수(봇 생존·방 멤버십·발송 리컨실·
+    GAS 진단·폴링 하트비트)를 그대로 호출(재수집 금지)해 문제만 → 라인 리스트.
+    전부 정상 → None. read-only: 이 함수는 발신하지 않는다 — telegram_health_check.py
+    자신의 13시 OWNER 즉시경보(★긴급 경로, 특히 폴링 하트비트 죽음)는 그대로
+    별도 존치된다. 이 섹션은 그 즉시경보를 대체하지 않고 일일 요약 가시성만 더한다.
+    네트워크 예외는 fail-soft(다른 섹션을 막지 않음)."""
+    try:
+        env = _tghealth._load_env(_tghealth._ENV_PATH)
+        token = env.get('TELEGRAM_BOT_TOKEN', '')
+        issues: list[str] = []
+        bot_id = None
+        if not token:
+            issues.append("TELEGRAM_BOT_TOKEN 미설정")
+        else:
+            alive, bot_id, detail = _tghealth._get_bot_info(token)
+            if not alive:
+                issues.append(f"🔴 봇 생존 확인 실패: {detail}")
+        if token and bot_id is not None:
+            issues.extend(_tghealth._check_rooms(token, bot_id, _tghealth._default_rooms(env)))
+        issues.extend(_tghealth._check_log_failures())
+        issues.extend(_tghealth._check_gas_diag())
+        issues.extend(_tghealth._check_heartbeat())  # now 생략 — 로컬 naive datetime 비교(원본과 동일)
+    except Exception as e:
+        return [f"📡 텔레그램 채널 점검 실패({type(e).__name__}: {str(e)[:80]})"]
+    if not issues:
+        return None
+    lines = [f"📡 텔레그램 채널 이상 {len(issues)}건"
+             f"(봇생존·방멤버십·발송리컨실·GAS진단·폴링 · telegram_health_check 재사용)"]
+    lines.extend(f"  · {i}" for i in issues[:10])
+    if len(issues) > 10:
+        lines.append(f"  … 외 {len(issues) - 10}건")
+    return lines
+
+
+# ── §8 🌉 연동 다리 (integration_health.check_bridges() 재사용) ─────────────────
+def build_section_bridges():
+    """integration_health.check_bridges() 재사용(재점검 없음) — ok=False 인
+    다리만 → 라인 리스트. 전부 정상 → None. check_bridges() 는 이미 fail-soft
+    (개별 점검 예외로 전체가 죽지 않음) — 여기서도 호출 자체 예외만 추가 방어."""
+    try:
+        rows = _bridges.check_bridges()
+    except Exception as e:
+        return [f"🌉 연동 다리 점검 실패({type(e).__name__}: {str(e)[:80]})"]
+    bad = [(name, detail) for name, ok, detail in rows if not ok]
+    if not bad:
+        return None
+    lines = [f"🌉 연동 다리 이상 {len(bad)}/{len(rows)}건(integration_health 재사용)"]
+    for name, detail in bad[:10]:
+        lines.append(f"  · {name}: {detail}")
+    if len(bad) > 10:
+        lines.append(f"  … 외 {len(bad) - 10}건")
+    return lines
+
+
 # ── 조립·발신 ─────────────────────────────────────────────────────────────
 def build_digest(now=None):
     """섹션 조립 → (text|None, sections:dict). 전부 정상이면 text=None."""
@@ -272,6 +349,8 @@ def build_digest(now=None):
         "page_hygiene": build_section_page_hygiene(now=now),
         "sheet_contract": build_section_sheet_contract(),
         "decision_consistency": build_section_decision_consistency(now=now),
+        "telegram": build_section_telegram(),
+        "bridges": build_section_bridges(),
     }
     active = [v for v in sections.values() if v]
     if not active:

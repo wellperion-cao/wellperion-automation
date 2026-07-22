@@ -113,6 +113,11 @@ def test_no_issue_is_noop_no_send(monkeypatch, tmp_path):
     monkeypatch.setattr(W, "build_section_gas_version", lambda: None)
     monkeypatch.setattr(W, "build_section_erp_status", lambda: None)
     monkeypatch.setattr(W, "build_section_sheet_contract", lambda: None)
+    # §6/§7/§8 도 전부 눌러야 "전 섹션 정상" 시나리오가 결정론적이다(실 저장소/네트워크
+    # 상태에 좌우되지 않게 — 2026-07-22 배9420 확장, §7·§8 추가로 patch 필요해짐).
+    monkeypatch.setattr(W, "build_section_decision_consistency", lambda now=None: None)
+    monkeypatch.setattr(W, "build_section_telegram", lambda: None)
+    monkeypatch.setattr(W, "build_section_bridges", lambda: None)
     monkeypatch.setenv(W.LIVE_ENV_VAR, "1")   # 게이트 ON이어도 이상 0이면 무발신
     sent = []
     log = tmp_path / "wd_log.jsonl"
@@ -120,3 +125,80 @@ def test_no_issue_is_noop_no_send(monkeypatch, tmp_path):
                          sender=lambda cid, txt: sent.append(1) or True)
     assert out["action"] == "no_op"
     assert sent == []
+
+
+# ── §7 텔레그램 채널 (telegram_health_check.py 함수 재사용 · 2026-07-22 배9420 확장) ──
+def _patch_tg_all_clean(monkeypatch):
+    monkeypatch.setattr(W._tghealth, "_load_env", lambda path: {"TELEGRAM_BOT_TOKEN": "t"})
+    monkeypatch.setattr(W._tghealth, "_get_bot_info", lambda token: (True, 111, "@bot"))
+    monkeypatch.setattr(W._tghealth, "_default_rooms", lambda env: [("점검관리방", -1)])
+    monkeypatch.setattr(W._tghealth, "_check_rooms", lambda token, bot_id, rooms: [])
+    monkeypatch.setattr(W._tghealth, "_check_log_failures", lambda: [])
+    monkeypatch.setattr(W._tghealth, "_check_gas_diag", lambda: [])
+    monkeypatch.setattr(W._tghealth, "_check_heartbeat", lambda: [])
+
+
+def test_telegram_section_none_when_all_clean(monkeypatch):
+    _patch_tg_all_clean(monkeypatch)
+    assert W.build_section_telegram() is None
+
+
+def test_telegram_section_surfaces_heartbeat_death(monkeypatch):
+    """봇 폴링 하트비트 죽음 — telegram_health_check.py 자체 즉시경보와 별개로
+    이 일일 요약 섹션에도 뜨는지(무회귀: 탐지 자체는 telegram_health_check.py 몫,
+    여기선 그 결과를 그대로 실어 보이는지만 확인)."""
+    _patch_tg_all_clean(monkeypatch)
+    monkeypatch.setattr(
+        W._tghealth, "_check_heartbeat",
+        lambda: ["🔴 봇 폴링 의심 정지 — 하트비트 45분째 미갱신 (bot.py 재기동 필요)"],
+    )
+    lines = W.build_section_telegram()
+    assert lines is not None
+    body = "\n".join(lines)
+    assert "봇 폴링 의심 정지" in body
+
+
+def test_telegram_section_surfaces_bot_dead(monkeypatch):
+    _patch_tg_all_clean(monkeypatch)
+    monkeypatch.setattr(W._tghealth, "_get_bot_info", lambda token: (False, None, "status=0"))
+    lines = W.build_section_telegram()
+    assert lines is not None
+    assert "봇 생존 확인 실패" in "\n".join(lines)
+
+
+def test_telegram_section_failsoft_on_exception(monkeypatch):
+    def _boom(path):
+        raise RuntimeError("env read fail")
+    monkeypatch.setattr(W._tghealth, "_load_env", _boom)
+    lines = W.build_section_telegram()
+    assert lines is not None   # 예외여도 크래시 없이 안내 라인(무발신 아님, 가시화)
+    assert "점검 실패" in lines[0]
+
+
+# ── §8 연동 다리 (integration_health.check_bridges() 재사용 · 2026-07-22 배9420 확장) ──
+def test_bridges_section_none_when_all_ok(monkeypatch):
+    monkeypatch.setattr(W._bridges, "check_bridges", lambda: [("A", True, "ok"), ("B", True, "ok")])
+    assert W.build_section_bridges() is None
+
+
+def test_bridges_section_surfaces_failed_bridge(monkeypatch):
+    monkeypatch.setattr(
+        W._bridges, "check_bridges",
+        lambda: [("G1 큐 라이브", True, "ok"), ("큐 미러 동기", False, "미러 드리프트")],
+    )
+    lines = W.build_section_bridges()
+    assert lines is not None
+    body = "\n".join(lines)
+    assert "1/2건" in lines[0]
+    assert "큐 미러 동기" in body
+    assert "미러 드리프트" in body
+    assert "G1 큐 라이브" not in body   # 정상 다리는 노출 안 함
+
+
+def test_bridges_section_failsoft_on_exception(monkeypatch):
+    def _boom():
+        raise RuntimeError("network down")
+    monkeypatch.setattr(W._bridges, "check_bridges", _boom)
+    lines = W.build_section_bridges()
+    assert lines is not None
+    assert "점검 실패" in lines[0]

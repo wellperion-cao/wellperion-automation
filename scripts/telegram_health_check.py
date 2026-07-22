@@ -259,6 +259,19 @@ def _check_gas_versions() -> list[str]:
     return []
 
 
+# ── 기본 점검 방 목록 (self_health_watchdog 재사용용으로 추출 · 동작 불변) ────────
+# [2026-07-22 배9420 확장·CTO] main() 인라인 리스트를 함수로 추출만 함(로직·기본값 불변).
+# self_health_watchdog.py 가 이 함수를 그대로 import 해 봇 폴링/방 멤버십 점검을
+# 재수집 없이 재사용한다(중복 정의 금지).
+def _default_rooms(env: dict) -> list[tuple[str, int]]:
+    """헬스체크 대상 3개 그룹방 목록(env 오버라이드 지원, 기본값은 main()과 동일)."""
+    return [
+        ('점검관리방', int(env.get('TELEGRAM_CHECK_CHAT_ID', '-5136037543'))),
+        ('문의알림방', int(env.get('TELEGRAM_INQUIRY_CHAT_ID', '-5516675010'))),
+        ('종합접수처', int(env.get('TELEGRAM_RECEPTION_CHAT_ID', '-5065206276'))),
+    ]
+
+
 # ── 경보 발송 ─────────────────────────────────────────────────────────────────
 def _send_alert(token: str, owner_id: int, message: str, dry_run: bool) -> None:
     """OWNER DM으로 경보. dry_run=True 면 stdout만."""
@@ -289,11 +302,7 @@ def main() -> None:
     env = _load_env(_ENV_PATH)
     token = env.get('TELEGRAM_BOT_TOKEN', '')
     owner_id_str = env.get('OWNER_ID') or env.get('TELEGRAM_CHAT_ID', '')
-    rooms = [
-        ('점검관리방', int(env.get('TELEGRAM_CHECK_CHAT_ID', '-5136037543'))),
-        ('문의알림방', int(env.get('TELEGRAM_INQUIRY_CHAT_ID', '-5516675010'))),
-        ('종합접수처', int(env.get('TELEGRAM_RECEPTION_CHAT_ID', '-5065206276'))),
-    ]
+    rooms = _default_rooms(env)
 
     all_issues: list[str] = []
 
