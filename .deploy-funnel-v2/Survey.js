@@ -2075,8 +2075,8 @@ function _lessonContactCellParse_(raw) {
 function _lessonContactsBySport_(arr, sportStr) {
   var out = {};
   var _norm = function (s) { return String(s || '').replace(/\s+/g, ''); };
-  // 이 회원의 실제 종목 토큰(콤마 분리, 정규화) — 태그는 이 집합과 '정확일치'할 때만 종목별로 분리한다.
-  var _tokens = String(sportStr || '').split(',').map(function (s) { return _norm(s); }).filter(Boolean);
+  // 이 회원의 실제 종목 토큰(콤마·슬래시 분리, 정규화) — 태그는 이 집합과 '정확일치'할 때만 종목별로 분리(프론트 _lessonSportSplit 정합).
+  var _tokens = String(sportStr || '').split(/[,/]/).map(function (s) { return _norm(s); }).filter(Boolean);
   (arr || []).forEach(function (c) {
     var m = String(c && c.note != null ? c.note : '').match(/^\s*\[([^\]]+)\]\s*([\s\S]*)$/);
     if (!m) return;
@@ -5632,9 +5632,9 @@ function _processAction(body) {
           if (_luHistCi >= 0) {
             var _luHistCell = luSh.getRange(luRow, _luHistCi + 1);
             _luHistCell.setNumberFormat('@');
-            // ★종목별 태그 줄('[종목] …')은 flat 쓰기가 통째 덮어써 유실하지 않도록 보존(sport:'' 경로 방어). 2026-07-22 시포(디버그).
-            var _luKeptTags = _luPrevHistArr.filter(function (c) { return /^\s*\[[^\]]+\]/.test(String(c && c.note != null ? c.note : '')); });
-            _luHistCell.setValue(_lessonContactPlainStringify_(_luKeptTags.concat(_luHistNewArr)));  // 태그줄 보존 + 새 무태그 이력. 평문 저장(가독성). 2026-07-22 GM
+            // flat 경로(sport:'')=단일종목/미기재 회원. 프론트가 모달에 전체 컨택(태그줄 포함)을 담아 왕복하므로
+            //   body.contacts 그대로 기록하면 태그줄도 보존된다 — 별도 keptTags concat은 중복 유발이라 제거. 2026-07-22 디버그.
+            _luHistCell.setValue(_lessonContactPlainStringify_(_luHistNewArr));
           }
         } catch (eHist) { Logger.log('강습 연락이력 저장 실패: ' + eHist.message); }
       }
@@ -6661,7 +6661,8 @@ function _processAction(body) {
     var crHdr = crSh.getRange(1, 1, 1, crSh.getLastColumn()).getValues()[0];
     var crPi = _findCol_(crHdr, ['연락처', '전화', '휴대폰', '핸드폰']);
     var crRowPhone = crPi >= 0 ? _normPhone_(crSh.getRange(crRow, crPi + 1).getValue()) : '';
-    if (crPhone && crRowPhone !== crPhone) return _json({ ok: false, error: 'phone-mismatch', rowPhone: crRowPhone, expect: crPhone });
+    if (!crPhone) return _json({ ok: false, error: 'expectPhone-required', detail: '대조키(expectPhone) 필수 — 행번호만으로 클리어 금지(INC-020 방지)' });
+    if (crRowPhone !== crPhone) return _json({ ok: false, error: 'phone-mismatch', rowPhone: crRowPhone, expect: crPhone });
     var crBackup = crSh.getRange(crRow, 1, 1, crSh.getLastColumn()).getValues()[0];
     if (String(body.dryRun || '') === '1') return _json({ ok: true, dryRun: true, rowPhone: crRowPhone, backup: crBackup });
     crSh.getRange(crRow, 1, 1, crSh.getLastColumn()).clearContent();

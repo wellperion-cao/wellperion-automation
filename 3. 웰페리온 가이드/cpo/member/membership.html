@@ -3206,8 +3206,9 @@ function gvizLessonRows_(headers, rows, gid) {
       consultTmin: _gzTminKR_(consTime),
       visited: iVisit >= 0 ? String(row[iVisit] || '') : '',
       contacts: _lHistArr,
-      // 종목별 독립 관리(축7) — 파싱맵(없으면 {}). 분리 로직은 프론트에서만. Survey.js _lessonSportMgmtParse_ 미러.
-      bySport: _gzLessonSportMgmtParse_(iSportMgmt >= 0 ? row[iSportMgmt] : ''),
+      // 종목별 컨택(GM 2026-07-22): 연락이력 평문 '[종목]' 태그에서 종목별 분리(백엔드 _lessonContactsBySport_ 1:1).
+      //   ★라이브 gviz 경로 정합 수리 — 신모델은 JSON 종목별관리 칸을 안 쓰고 Contact 태그를 정본으로 함(2026-07-22 디버그).
+      bySport: _gzContactsBySport_(_lHistArr, iSport >= 0 ? String(row[iSport] || '') : ''),
       gid: gid,
       lang: iLang >= 0 ? String(row[iLang] || '').trim() : '',
       // 지문키(rowKey, §4 R1) — raw 셀 값(row[iTs]) 사용, 위 timestamp(초 유실)와 별개 재계산. 2026-07-22 시포.
@@ -3225,6 +3226,22 @@ function _gzLessonSportMgmtParse_(raw) {
     var obj = JSON.parse(s);
     return (obj && typeof obj === 'object' && !Array.isArray(obj)) ? obj : {};
   } catch (e) { return {}; }
+}
+// 연락이력 평문 '[종목]' 태그 → 종목별 맵. Survey.js _lessonContactsBySport_ 1:1(라이브 gviz 경로 정합). GM 2026-07-22.
+//   이 회원 실제 종목 토큰(콤마·슬래시 분리)과 정확일치하는 태그만 분리 — 부분일치·비종목 대괄호 오분류 방지.
+function _gzContactsBySport_(arr, sportStr) {
+  var out = {};
+  var _norm = function (s) { return String(s || '').replace(/\s+/g, ''); };
+  var _tokens = String(sportStr || '').split(/[,/]/).map(function (s) { return _norm(s); }).filter(Boolean);
+  (arr || []).forEach(function (c) {
+    var m = String(c && c.note != null ? c.note : '').match(/^\s*\[([^\]]+)\]\s*([\s\S]*)$/);
+    if (!m) return;
+    var sk = m[1].trim();
+    if (!sk || _tokens.indexOf(_norm(sk)) < 0) return;
+    if (!out[sk]) out[sk] = { contacts: [] };
+    out[sk].contacts.push({ date: c.date || '', time: c.time || '', note: (m[2] || '').trim() });
+  });
+  return out;
 }
 // 강습 연간 스코프 필터 — Survey.js _lessonScopeFilter_ 이식(scope=all 아니면 올해만).
 function _gzLessonScopeFilter_(rowsArr, scopeAll) {
