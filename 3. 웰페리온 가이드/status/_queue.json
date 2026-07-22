@@ -2905,7 +2905,7 @@
     "note": "GM 2026-07-22 지시(\"다음에\"). 브랜드 가이드(3.가이드/cmo/brand/브랜드가이드.html)를 웰페리온 브랜드 느낌으로 개선 + A3 인쇄 전용 레이아웃 — 각 섹터가 A3 장당 페이지에 딱 맞게 들어가도록. 후속(급하지 않음).",
     "next": "GM 재개 시 착수 — 브랜드 무드 리디자인 + A3 페이지 분할",
     "depends_on": "",
-    "ship_no": 9579,
+    "ship_no": 9742,
     "module": "M1",
     "surface": "content"
   },
@@ -3062,5 +3062,19 @@
     "artifact": "- HIGH: 라이브 페이지(USE_GVIZ)가 bySport를 빈 JSON칸에서 만들어 다종목 종목별컨택이 안 보이던 회귀 수리.\n  클라이언트 _gzContactsBySport_ 신설(연락이력 [종목] 태그 파싱, 백엔드 1:1). 주우인/주우현 재구성 검증.\n- MEDIUM: flat 쓰기 keptTags concat 제거(프론트가 전체왕복→중복 유발이었음) · clear_orphan_row expectPhone 필수화(INC-020).\n- LOW: 종목 토크나이저 콤마+슬래시 정합(백/프론트). 배포 반영. (CLI ad-hoc · 커밋 894c8c90b)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "894c8c90b7aaa018b6ff2d6b7b8ebfc64b0b0218"
+  },
+  {
+    "task_id": "CMO-2026-07-22-ADHOC-4309bbd1b",
+    "clevel": "cmo",
+    "title": "[시모] 회사소개서 A3 02장 박스 균등 + S0 PDF 다운로드 버튼 (배9732)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9743,
+    "artifact": "- 02장 3박스 높이 균등(align-items:stretch), 12장 그리드 정렬 확인\n- 가이드 S0 원본문서 카드에 A3 인쇄본 PDF 내려받기 버튼 추가\n- PDF를 회사문서/에 배치(Pages 서빙), download 동작 로컬 실측 OK (CLI ad-hoc · 커밋 4309bbd1b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4309bbd1b9b589f3fa75aed9fdfc4334a26ffc76"
   }
 ]
