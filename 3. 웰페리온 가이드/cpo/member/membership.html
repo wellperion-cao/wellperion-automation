@@ -1745,6 +1745,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <!-- 현황 요약 카드 (작업 3) -->
       <div id="activeSummary" class="card" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--teal)"></div>
 
+      <!-- 휴회 현황 카드(2026-07-22 시포·GM) — 접수대기/진행중/완료/반려 상태별 리스트업(고리 닫기).
+           read=라이브 표시(_activeRows 재사용) · write(상태전이=반영/승인)=HOLD_LIVE_T 게이트(GM go). -->
+      <div id="holdStatusCard" class="card" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--orange,#c8912b)"></div>
+
       <!-- 이탈방지 액션 모듈(⏰갱신임박·📉저이용) = 2026-07-15 GM 재지시로 상단 단독 패널 폐지 → 이탈관리 모달(openChurnManage)·
            오늘 할 일(tapBody)로 이관·병합. 여기 없음(중복 아님). -->
 
@@ -6502,6 +6506,7 @@ function _activeRender(rows, isFiltered) {
 
   count.textContent = '총 ' + rows.length + '명' +
     (_activeRows.length !== rows.length ? ' (전체 ' + _activeRows.length + '명 중)' : '');
+  try { _renderHoldStatus(); } catch (e) {}   // 휴회 현황 카드 동기 재렌더(고리 닫기). 2026-07-22 시포·GM
 
   if (rows.length === 0) {
     var span = displayCols.length || 1;
@@ -7687,6 +7692,73 @@ function _holdActive(row) {
   var s = String(row['휴회시작일'] || '').trim();
   var d = new Date(); var t = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
   return (!s || s <= t) && t <= e;
+}
+
+/* ── 휴회 현황 카드(고리 닫기) — 접수대기/진행중/완료/반려 상태별. read=_activeRows 재사용, write(반영)=서버 게이트. 2026-07-22 시포·GM ── */
+var HOLD_STATUS_ORDER = ['접수대기', '진행중', '완료', '반려'];
+var HOLD_STATUS_STYLE = { '접수대기': { c: 'var(--orange,#c8912b)', i: '🕐' }, '진행중': { c: 'var(--teal)', i: '⏸' }, '완료': { c: 'var(--dim-mid,#8a8a8a)', i: '🏁' }, '반려': { c: 'var(--red)', i: '⛔' } };
+function _holdStatusOf(row) {
+  var s = String(row['휴회접수상태'] || '').trim();
+  if (s) return s;
+  var e = String(row['휴회종료일'] || '').trim(); if (!e) return '';   // 상태칸 없던 과거행 폴백
+  return _holdActive(row) ? '진행중' : '완료';
+}
+function _hbtn(color) { return 'padding:4px 9px;border-radius:6px;border:1px solid ' + color + ';background:transparent;color:' + color + ';font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit'; }
+function _renderHoldStatus() {
+  var el = document.getElementById('holdStatusCard'); if (!el) return;
+  if (_activeScope !== 'valid') { el.style.display = 'none'; return; }
+  var rows = (_activeRows || []).filter(function(r){ return _holdStatusOf(r); });
+  if (!rows.length) { el.style.display = 'none'; return; }
+  var byStat = {}; HOLD_STATUS_ORDER.forEach(function(s){ byStat[s] = []; });
+  rows.forEach(function(r){ var s = _holdStatusOf(r); (byStat[s] = byStat[s] || []).push(r); });
+  var remainKey = null; (_activeHeaders || []).forEach(function(h){ if (remainKey === null && /잔여일/.test(h)) remainKey = h; });
+  var html = '<div style="font-weight:800;font-size:14px;margin-bottom:4px">⏸ 휴회 현황</div>'
+    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">접수·진행·완료를 상태별로 관리합니다. 상태 반영(승인/반려)은 GM 검증 후 개통됩니다.</div>';
+  HOLD_STATUS_ORDER.forEach(function(st){
+    var list = byStat[st] || []; if (!list.length) return;
+    var sty = HOLD_STATUS_STYLE[st] || { c: 'var(--text)', i: '•' };
+    html += '<div style="margin:8px 0 4px;font-weight:700;font-size:12.5px;color:' + sty.c + '">' + sty.i + ' ' + st + ' <span style="color:var(--dim);font-weight:400">(' + list.length + ')</span></div>';
+    html += '<div style="display:flex;flex-direction:column;gap:5px">';
+    list.forEach(function(r){
+      var nm = esc(String(r['회원명'] || '—'));
+      var period = esc(String(r['휴회시작일'] || '?') + ' ~ ' + String(r['휴회종료일'] || '?'));
+      var rem = remainKey ? esc(String(r[remainKey] || '-')) : '-';
+      var applied = String(r['휴회접수일시'] || '').trim();
+      var ri = r.rowIndex;
+      var actions = '';
+      if (st === '접수대기') actions = '<button onclick="holdTransition(' + ri + ',\'진행중\')" style="' + _hbtn('var(--teal)') + '">반영(승인)</button><button onclick="holdTransition(' + ri + ',\'반려\')" style="' + _hbtn('var(--red)') + '">반려</button>';
+      else if (st === '진행중') actions = '<button onclick="holdTransition(' + ri + ',\'완료\')" style="' + _hbtn('var(--dim-mid,#8a8a8a)') + '">완료 처리</button>';
+      html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12.5px">'
+        + '<b style="min-width:56px">' + nm + '</b>'
+        + '<span style="color:var(--dim)">' + period + '</span>'
+        + '<span>잔여일 ' + rem + '</span>'
+        + (applied ? '<span style="color:var(--dim);font-size:11px">접수 ' + esc(applied) + '</span>' : '')
+        + (actions ? '<span style="margin-left:auto;display:flex;gap:6px">' + actions + '</span>' : '')
+        + '</div>';
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html; el.style.display = '';
+}
+// 상태 전이(직원 반영) — 서버 member_hold_transition. HOLD_LIVE_T=false면 'hold-gated'→개통 안내. 성공 시 로컬 반영·재렌더.
+function holdTransition(rowIndex, newStatus) {
+  var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; }); if (!r) return;
+  if (newStatus === '반려' && !confirm('이 휴회 접수를 반려하시겠습니까?')) return;
+  var kp = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
+  apiPost({ action: 'member_hold_transition', rowIndex: rowIndex, keyPhone: kp, rowKey: r.rowKey || '', status: newStatus })
+    .then(function(d){
+      if (d && d.ok === false) {
+        if (d.error === 'hold-gated') { showToast('상태 반영은 GM 검증 후 개통됩니다', 'err'); return; }
+        throw new Error(d.detail || d.error || '반영 실패');
+      }
+      r['휴회접수상태'] = d.status;
+      if (d.count != null) r['휴회횟수'] = String(d.count);
+      if (d.cumDays != null) r['휴회누적일수'] = String(d.cumDays);
+      showToast('상태 반영: ' + d.status, 'ok');
+      _renderHoldStatus();
+      if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
+    })
+    .catch(function(e){ showToast('반영 실패: ' + (e.message || ''), 'err'); });
 }
 
 /* ─────────────────────────────────────────────
