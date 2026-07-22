@@ -209,7 +209,7 @@
     "origin": "gm",
     "enqueued_at": "2026-07-22",
     "note": "GM 2026-07-22 지시(시우64 입항 후속). GM 핵심포인트='구조는 좋으나 월간운영계획 내부내용이 계속 진행·자동 반영되고 돌아가는 구조가 되어야 한다 — 실무 및 업무 SSOT 내용 반영이 정말 중요'. 실측 문제=objectives·진척이 수동 PIN 편집이라 정본 파일 2026-07-14 이후 8일 미갱신(정체). 매출 등 라이브 지표는 home_kpi GAS 실시간 fetch로 반영되나, 운영 목표·진척은 사람 손 안 대면 멈춤. 시우 신역할=월간운영계획 페이지 진실검수만(4부서 내부 실무진행=준용M). ▶착수 전 설계·GM 접근 승인 필요.",
-    "next": "설계안 제시 → GM 접근 승인 → 자동반영 엔진 구현. 소스 후보=status/_queue.json(실무 배 진척)·부서 점검보드(GAS 라이브)·G1 항로. objective↔실무배 링크키 신설 검토.",
+    "next": "[2026-07-22 설계안 완성] docs/superpowers/specs/2026-07-22-monthly-ops-ssot-sync-design.md — 소스4종(metric_live·queue·todo_ssot·manual)·objective에 sync블록 additive·엔진 monthly_ops_sync.py(게이트 MONTHLY_SYNC_APPLY OFF)·시우 검수배지·준용M 단일입력·4단계 롤아웃. ▶GM 접근 승인 시 단계1(스키마+드라이런·라이브0)부터 착수.",
     "ship_no": 9678,
     "module": "home",
     "surface": "autonomy"
@@ -2527,5 +2527,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 373806ee)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "373806ee9ee45ce26e5edd907e3f1f80db1117d1"
+  },
+  {
+    "task_id": "CTO-2026-07-22-ADHOC-033a3ea4",
+    "clevel": "cto",
+    "title": "[시토] 헬스 6종 → self_health_watchdog 하네스 흡수 — 텔레그램폴링·연동다리 §7/§8 통합(09:10 자동화현황방 요약 1통에·탐지로직 보존·+7테스트) (배9640)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9703,
+    "artifact": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01L7yoGCXymC7oEiM7zzCehP (CLI ad-hoc · 커밋 033a3ea4)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "033a3ea474ccc22dc5f9631eeed06e650545e702"
   }
 ]
