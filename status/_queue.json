@@ -3048,5 +3048,19 @@
     "artifact": "- 월간운영계획.html objRow에 auto-badge(sync.auto_value 병기)·📋상세 섹션 🔴비라이브→🟠반반\n- Playwright 로컬검증: JS에러0·배지7개(🔄자동50%) 렌더 확인·캡처\n- 일일 런처 .bat force-add 추적(형제 monthly_ops_report.bat 관례) (CLI ad-hoc · 커밋 7da61a2fd)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "7da61a2fd2b888f2708d17572477806750e017da"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-894c8c90b",
+    "clevel": "cpo",
+    "title": "[시포] 디버그2 — 라이브 gviz 종목별컨택 정합(HIGH 회귀 수리) + 부수 수정",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9741,
+    "artifact": "- HIGH: 라이브 페이지(USE_GVIZ)가 bySport를 빈 JSON칸에서 만들어 다종목 종목별컨택이 안 보이던 회귀 수리.\n  클라이언트 _gzContactsBySport_ 신설(연락이력 [종목] 태그 파싱, 백엔드 1:1). 주우인/주우현 재구성 검증.\n- MEDIUM: flat 쓰기 keptTags concat 제거(프론트가 전체왕복→중복 유발이었음) · clear_orphan_row expectPhone 필수화(INC-020).\n- LOW: 종목 토크나이저 콤마+슬래시 정합(백/프론트). 배포 반영. (CLI ad-hoc · 커밋 894c8c90b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "894c8c90b7aaa018b6ff2d6b7b8ebfc64b0b0218"
   }
 ]
