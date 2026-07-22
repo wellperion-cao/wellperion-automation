@@ -2926,13 +2926,13 @@
   {
     "task_id": "CMO-2026-07-22-BROCHURE-A3-SECTOR",
     "clevel": "cmo",
-    "title": "[시모] 회사소개서 A3 섹터별 재편 — 전 12장 완성(가로·글끊김0·지표공개)",
-    "status": "DONE",
+    "title": "[시모] 회사소개서 A3 섹터별 재편 — 장당 1섹터 분할안+샘플 2장",
+    "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "enqueued_at": "2026-07-22",
     "from": "ceo",
-    "note": "GM 확정 전체 제작 완료. 12섹터=A3 12장(전 가로·표지 포함). 자연 줄바꿈(word-break:keep-all·문장별 문단·orphan방지) 적용, 12장 렌더 전수 육안검수(문장·단어 어색끊김 0). 05 사업지표 공개 1벌. 산출=회사문서/회사소개서_A3_전체_20260722.html + cmo/review/회사소개서_A3_p01~p12_20260722.png + _전체_20260722.png + A3print PDF.",
-    "next": "GM 최종 확인 → PDF 배포/인쇄. 후속(선택): 실제 시설 사진 듀오톤 삽입으로 07 Facilities 강화.",
+    "note": "GM 제안. 회사소개서 v2.19(정본) 12섹터를 A3 장당 1섹터로 분할. 실측+분할안 완료, 샘플 2장(01표지 세로/03브랜드철학 가로) 제작. 원본=3.웰페리온가이드/회사문서/1.웰페리온_회사소개서_v2.19.html. 샘플 HTML=회사문서/회사소개서_A3섹터_샘플_20260722.html. 스샷=cmo/review/회사소개서_A3_샘플_*.png+A3print PDF. 나머지 10섹터는 GM 방향확인 후 제작.",
+    "next": "GM 방향 확인 → 나머지 10섹터 A3 제작.",
     "ship_no": 9732,
     "module": "M1",
     "surface": "content"
@@ -2978,33 +2978,5 @@
     "artifact": "- 같은 연락처+같은 이름=재문의(🔁 이전문의 N건 배지+이력팝업), 이전건 LOSS면 강조(⚠️ LOSS후 재문의).\n- 같은 연락처+다른 이름=👥 '같은 번호 다른 문의'(형제·동반, 주우인/주우현 케이스). 병합 없음.\n- 표시 전용(시트 쓰기 0·새 fetch 0, _lessonState.rows 재사용). 멤버십 #repeatInquiryOverlay 모달 재사용.\n- 문의현황·LOSS·대기 뷰 공통(_lessonRowHtml 이름칸 배지). (CLI ad-hoc · 커밋 adf71eb24)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "adf71eb243521f92c34a2f132526518e8035fcda"
-  },
-  {
-    "task_id": "CPO-2026-07-22-ADHOC-ef041f17d",
-    "clevel": "cpo",
-    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
-    "status": "DONE",
-    "terminal": true,
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-22",
-    "processed_at": "2026-07-22",
-    "ship_no": 9736,
-    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 ef041f17d)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "ef041f17da45636e698e8380ba1fcb9c15a64dc4"
-  },
-  {
-    "task_id": "CMO-2026-07-22-ADHOC-0c5ed6886",
-    "clevel": "cmo",
-    "title": "[시모] 회사소개서 A3 전 12장 완성 (배9732)",
-    "status": "DONE",
-    "terminal": true,
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-22",
-    "processed_at": "2026-07-22",
-    "ship_no": 9737,
-    "artifact": "- 12섹터 = A3 12장(전 가로·표지 포함), 브랜드 팔레트·Pretendard·좌측정렬 풀폭\n- 자연 줄바꿈(word-break:keep-all·문장별 문단·orphan 방지) — 문장·단어 어색 끊김 0, 12장 렌더 전수 육안검수\n- 05 사업지표 공개 1벌 반영 (CLI ad-hoc · 커밋 0c5ed6886)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "0c5ed68861a5ca13253ade937004fee97d3ba711"
   }
 ]
