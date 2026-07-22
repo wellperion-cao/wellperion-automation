@@ -2629,7 +2629,7 @@ def run_daily_digest(early: bool = False) -> None:
 
 def run_stream_3_mgmt() -> None:
     """스트림 #3 매출+운영+인사 현황 보고 (매일 09:30 · 업무보고방) — CTO 2026-07-22.
-    확정 포맷: ops_mgmt_digest_test v3 (54% 압축 · GM ok). 카카오=GM go 후 활성화.
+    확정 포맷: report_stream_3_impl v3 (54% 압축 · GM ok). 카카오=GM go 후 활성화.
     시우(COO) 최종목표 씨앗 — 자율화 완성 시 COO 인계 예정."""
     label = "[스트림 #3 매출+운영+인사]"
     logger.info(f"{label} 시작")

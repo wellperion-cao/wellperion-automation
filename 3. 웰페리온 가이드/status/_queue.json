@@ -15,21 +15,6 @@
     "surface": "autonomy"
   },
   {
-    "task_id": "CTO-2026-07-22-SIMPLIFICATION-INITIATIVE",
-    "clevel": "cto",
-    "title": "[시토] 시스템 단순화 이니셔티브 — 저비용 정리·부팅 공통부 스킬화·스케줄링 이중체계 통합 (스킬/플러그인 감사 기반·GM 요청)",
-    "status": "IN_PROGRESS",
-    "priority": "🛳️크루즈",
-    "from": "gm",
-    "origin": "gm",
-    "enqueued_at": "2026-07-22",
-    "note": "GM 2026-07-22 지시('요즘 스킬+플러그인으로 엄청 단순화하던데 우린 안되나'→단순화 감사 요청). 2갈래 감사 완료(정직 결론): 반복 ~90%가 무인 크론이라 스킬 대상 아님·MCP/플러그인번들 대부분 순비용~손해·진짜 레버=①저비용정리 ②에이전트 공통부추출 ③스케줄링 이중체계 통합. module_registry는 이미 플러그인화 모범. GM 3건 전부 진행 승인+'더 없나·비슷한 맥락 통합'. [①완료] 고아 Notion MCP권한13삭제(글로벌 settings.local·백업)·죽은훅 session_start_inbox.py삭제·브랜드스킬 스테일포인터(95줄)수정·오해파일명 리네임(ops_mgmt_digest_test→report_stream_3_impl·ops_inquiry_contact_digest_test→report_stream_1_impl+호출부)·죽은워크트리5정리. [②완료] wellperion-boot 스킬 신설(부팅·연동·자율실행 공통부 SSOT)·6에이전트 포인터화(299→275줄)·크리티컬 직독지시 인라인 방어 유지. [③진행] 스케줄링 SSOT 설계+추가 통합후보 발굴 중.",
-    "next": "③ 스케줄링 이중체계(Windows예약작업33+apscheduler~20·잡당 5파일 의식)를 단일 SSOT 생성기로 통합 설계·가역 phase1 착수 여부 GM 결재 + 추가 통합후보 보고.",
-    "ship_no": 9640,
-    "module": "T1",
-    "surface": "autonomy"
-  },
-  {
     "task_id": "CTO-2026-07-22-RECEPTION-SPLIT-BACKLOG-REMINDER",
     "clevel": "cto",
     "title": "[시토] 종합접수 텔레그램 분리(종합접수방) + 미처리 적체 리마인드 + 카톡 ★운영방 점검·접수 각각 발송",
@@ -2137,7 +2122,7 @@
     "task_id": "CMO-2026-07-22-ADHOC-bd1cbbca",
     "clevel": "cmo",
     "title": "[시모] 영문 3종 자체폼 — v2 통합·한영 6필드 일치·같은 시트(유입언어)",
-    "status": "DONE",
+    "status": "IN_PROGRESS",
     "priority": "NORMAL",
     "from": "ai-ceo",
     "origin": "team",
@@ -2145,10 +2130,7 @@
     "ship_no": 9674,
     "module": "cmo-inquiry-form-en",
     "surface": "wp_inquiry_form_en.html",
-    "note": "영문 3종 자체폼 컷오버 완료(GM go). /en/inquiry(8408)=자체폼 라이브(구글폼 대체). intake_submit lang→유입언어(col21) KO/EN 기록·라이브 e2e 검증(youth EN 실기록→정리 0잔여). v2 @109 배포(롤백=clasp deploy -i AKfycbyk… -V 108). 롤백폼=draft-inquiry-en(구글폼 재주입). 한글폼·휴회게이트 무영향.",
-    "terminal": true,
-    "processed_at": "2026-07-22",
-    "next": "🔗 항로점 — 컷오버 완료. 다음(2단계): document.referrer 캡처·유입 대시보드 EN 세그먼트(GM go 시)"
+    "note": "영문 self-hosted 문의폼(membership·adult·youth) 제작 + intake_submit lang 라우팅(additive). 구글폼 병행 존치, 컷오버 GM go."
   },
   {
     "task_id": "CPO-2026-07-22-ADHOC-b6919639",
@@ -2219,47 +2201,5 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 1a8d5364)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "1a8d5364dce72e6545e5018c96a0bbab84b16f1e"
-  },
-  {
-    "task_id": "CPO-2026-07-22-ADHOC-a07b1766",
-    "clevel": "cpo",
-    "title": "[시포] 멤버십 시트 등록매칭/등록일(자동) 칸 폐지 + autostamp 은퇴",
-    "status": "DONE",
-    "terminal": true,
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-22",
-    "processed_at": "2026-07-22",
-    "ship_no": 9681,
-    "artifact": "- U 등록일(자동) → 비고 '등록일: #날짜' 이관(198행) 후 삭제\n- T 등록매칭(자동) 삭제(리더 0 · 진행현황 SUC 파생)\n- member_match_autostamp_ 중립화(칸 재생성 물리원인 차단)\n- member_col_cleanup_20260722 액션(멱등·dryRun·가드3중)·배포 @108\n- 백업: status/backups/membership_26newinq_pre_colcleanup_20260722.csv (CLI ad-hoc · 커밋 a07b1766)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "a07b1766c2d0cd24057c7663fa52aa896b91f765"
-  },
-  {
-    "task_id": "CMO-2026-07-22-ADHOC-6e5d7bea",
-    "clevel": "cmo",
-    "title": "[시모] M1 콘텐츠 허브 O1식 단순화 — 접수폼 일반화·문의현황 대시보드 독립페이지 이관",
-    "status": "DONE",
-    "terminal": true,
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-22",
-    "processed_at": "2026-07-22",
-    "ship_no": 9682,
-    "artifact": "- cmo/intake/instructor_intake.html: '강사' 한정 표현을 '콘텐츠' 전반으로 일반화\n  (제목·h1·분류 select 옵션·placeholder). id=f_team·GAS_PROD·team 키·백엔드 계약은 불변.\n- cmo/funnel/콘텐츠문의현황.html: M1 #m1-dash 인라인 대시보드(스타일+마크업+스크립트)를\n  독립 페이지로 이관. 상대경로 2건(review_queue.json·월간마케팅보고서.html) 재배치에 맞춰 수정.\n  Playwright 라이브 렌더 검증 완료(콘솔 에러  (CLI ad-hoc · 커밋 6e5d7bea)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "6e5d7beab925760d83d9bba4c3f4678f52e2855f"
-  },
-  {
-    "task_id": "CTO-2026-07-22-ADHOC-28191f12",
-    "clevel": "cto",
-    "title": "[시토] precommit_incident_guard 훅 커밋 파이프라인 무한대기 방지 하드닝",
-    "status": "DONE",
-    "terminal": true,
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-22",
-    "processed_at": "2026-07-22",
-    "ship_no": 9683,
-    "artifact": "증상: 훅이 호출하는 divergence_scan.py/forbidden_scan.py subprocess가\n느려지면(실측 정상 ~2분) .git/index.lock 을 쥔 채 전체 커밋 파이프라인이\n무한정 막힘(보고: pid 3807 8분+ 무응답). subprocess.run 4곳 모두\ntimeout(스캔 180초/git명령 10초) + stdin=DEVNULL(입력대기 원천차단)\n추가 — 타임아웃은 기존 except Exception fail-open 경로로 흡수되어\n커밋을 절대 막지 않는다. (CLI ad-hoc · 커밋 28191f12)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "28191f125c521e48b9e843f7b7b9e3a985375398"
   }
 ]

@@ -92,4 +92,4 @@ description: 웰페리온(Wellperion) 시각물·콘텐츠를 만들거나 검�
 | 손글씨 슬라이드(개인계정) | `scripts/render_hand_slides.py` | 종이질감+나눔손글씨 펜/붓, HTML→PNG |
 | 릴스 영상 제작 | `scripts/make_reel.py` | 1080×1920·Ken Burns·CrossFade 0.4초 |
 
-콘텐츠 작업 폴더 구조(`instagram/{YYMMDD_명}/`, `output(채널)/` 4종)와 발행 파이프라인 상세는 CLAUDE.md §3-2 이하 및 `2. 브랜드_자료/웰페리온_비주얼_스타일_가이드.md` §9~11 참조.
+콘텐츠 작업 폴더 구조(`instagram/{YYMMDD_명}/`, `output(채널)/` 4종)와 발행 파이프라인 상세는 CLAUDE.md §3-2 이하 및 `3. 웰페리온 가이드/cmo/brand/브랜드가이드.html`(정본 ② — 구 비주얼_스타일_가이드.md 흡수) 참조.

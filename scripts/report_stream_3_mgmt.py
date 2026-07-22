@@ -2,7 +2,7 @@
 """[스트림 #3] 매출 및 운영+인사 현황 보고 — 프로덕션 라우터 (CTO 2026-07-22).
 
 확정 포맷(msg5624 v3 · GM '너무길다' 54% 압축 후 ok 확정):
-  ops_mgmt_digest_test.build_digest() 위임 (list[str] — 4096자 분할).
+  report_stream_3_impl.build_digest() 위임 (list[str] — 4096자 분할).
   ⏰지연 체크리스트 + 카테고리 건수요약 + ⏳임박D7 + 📋결재대기 + 🎯분기목표.
 
 텔레그램: GM 업무보고방(8254867551) 발송 — 실무진방 발송은 GM go 후속과제.
@@ -28,7 +28,7 @@ REPO_ROOT = SCRIPTS_DIR.parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from ops_mgmt_digest_test import build_digest  # noqa: E402
+from report_stream_3_impl import build_digest  # noqa: E402
 from publish_digest import _load_env_val  # noqa: E402
 
 TELEGRAM_CHAT_ID = 8254867551  # GM 업무보고방 — 안전 우선 (실무진방 발송=GM go 후속)

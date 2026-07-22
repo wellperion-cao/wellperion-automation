@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """[스트림 #1] 문의 및 컨택&등록 현황 보고 — 프로덕션 라우터 (CTO 2026-07-22).
 
-확정 포맷(msg5618): ops_inquiry_contact_digest_test.build_digest() 위임.
+확정 포맷(msg5618): report_stream_1_impl.build_digest() 위임.
   - 멤버십 등급만 · 컨택&등록[진행상태] · 담당미배정 리스트노출 + 3일+ 촉구👉
 
 텔레그램: 문의알림방(TELEGRAM_INQUIRY_CHAT_ID, -5516675010) HTML 발송.
@@ -25,7 +25,7 @@ REPO_ROOT = SCRIPTS_DIR.parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from ops_inquiry_contact_digest_test import build_digest  # noqa: E402
+from report_stream_1_impl import build_digest  # noqa: E402
 from publish_digest import _load_env_val  # noqa: E402
 
 TELEGRAM_CHAT_ID = int(os.environ.get("TELEGRAM_INQUIRY_CHAT_ID") or -5516675010)  # 문의알림방
