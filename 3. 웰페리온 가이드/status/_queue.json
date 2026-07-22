@@ -1835,5 +1835,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 e7fd9b6f)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e7fd9b6f624389a0623de3c1e1f3b8b307130ecb"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-1e5ff668",
+    "clevel": "cpo",
+    "title": "[시포] 별도 휴회 접수 self-service 페이지 초안 + v2 본인조회 리졸버 (배768)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9655,
+    "artifact": "- 신규 cpo/member/휴회접수.html: 회원 self-service(이름+연락처 본인확인→이력/잔여→시작일·일수→접수).\n  백엔드 재사용(v2 member_hold_preview/apply·검증 SSOT 서버·중복0). 모바일·브랜드 팔레트.\n- v2 Survey.js: 휴회 액션에 self-service 리졸버 추가(selfName+selfPhone 동시일치 1행·fail-closed·\n  반환은 횟수/누적/잔여만). ★새 public PII 표면 → 초안 커밋만·미배포(현 @105엔 없음, 배포=GM go).\n- ap (CLI ad-hoc · 커밋 1e5ff668)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "1e5ff668c4a98655aa7b9beb7ed115245c30bd9d"
   }
 ]
