@@ -1,5 +1,20 @@
 [
   {
+    "task_id": "CTO-2026-07-22-HOME-LOAD-PERF-FIX",
+    "clevel": "cto",
+    "title": "[시토] home 대시보드 로딩 병목 수리 — 히어로 KPI 스냅샷-우선 렌더",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "from": "ceo",
+    "origin": "gm",
+    "enqueued_at": "2026-07-22",
+    "note": "GM 지적 'home 로딩이 느리다'(웰리 위임). [측정] Playwright 실측 워터폴: 근본 병목=home_kpi GAS(?action=home_kpi)가 '26년 매출 분석'·지출 ERP 시트 라이브 집계로 매 호출 7~8.6초(3회 실측 8.6/8.0/7.0s), 캐시버스터 Date.now()로 매번 미스. reg_board(종합접수처) ~2s. 625KB inquiry_snapshot_member.json은 home이 로드 안 함(오해). GitHub raw(sales_targets)=18ms 무해. 부차: ~17 GAS fetch가 파싱시 동시 발사→단일 host(script.google.com) 6커넥션 큐잉(단 히어로 플로어는 단독 8s라 큐잉과 무관). [수리] 순수 프론트·비파괴: home_kpi·reg_board 응답을 localStorage에 write-through, 로드시 캐시 즉시 페인트(renderHomeKpi/renderVoc 리팩터)→라이브 도착시 덮어써 갱신. 정확성 무손상(라이브 항상 최종·동일값 확인). [실측 전후] 히어로 매출 콜드 8086ms→웜(반복로드) 105ms(~77x), VOC 5242ms→105ms, 값=4억80만 동일. 콘솔에러=기존 로컬404/POST엔드포인트뿐(내 코드 무관).",
+    "next": "콜드/시크릿 첫 로드는 여전히 GAS 8s 플로어(localStorage 미존재) — 완전 해소하려면 서버측 스냅샷 발행(home_kpi 결과를 ~30분 주기로 status/home_kpi_snapshot.json에 발행·GitHub raw 18ms를 첫 페인트로) 후속 모듈 필요. GM 결재 대기.",
+    "ship_no": 9660,
+    "module": "T1",
+    "surface": "autonomy"
+  },
+  {
     "task_id": "CPO-2026-07-22-HOLD-LIGHTWEIGHT",
     "clevel": "cpo",
     "title": "[시포] 휴회 경량안 — 회원관리 연동 이력·접수(3회/60일·7~60일)",
@@ -3104,5 +3119,33 @@
     "artifact": "GM 지시(2026-07-22): 이전 문의 이력 배지가 성함 옆에 붙어 있던 것을\n문의 맥락(문의내용 칸)으로 옮김. 성인/유소년 공용 _lessonRowHtml 단일\n수정으로 양쪽 적용. (CLI ad-hoc · 커밋 a3aff225b)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a3aff225b88ed3a19b74e2977b901cfbdd70b0f9"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-bd6a85f44",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9746,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 bd6a85f44)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "bd6a85f44a746ec72968f9ec75320f6d4dfc5233"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-a3aff225b",
+    "clevel": "cpo",
+    "title": "[시포] 강습 새문의 카드 — 재문의 배지 성함칸→문의내용칸 이동 (성인/유소년 공용)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9747,
+    "artifact": "- _lessonRowHtml(성인/유소년 공용) 재문의 배지(_lriBadgeHtml)를 성함 셀에서 문의내용 셀 상단 줄로 이동\n- 라이브 검증: 성인(이수진 이전문의1건)·유소년(노수정15세 이전문의1건, 주우인17년생 같은번호다른문의1건) 스크린샷 확보, 성함칸 배지 0건 확인\n- 커밋 a3aff225b (CLI ad-hoc)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a3aff225b"
   }
 ]

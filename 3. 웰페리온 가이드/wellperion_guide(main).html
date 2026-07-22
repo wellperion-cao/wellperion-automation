@@ -1177,11 +1177,11 @@
       /* 월 목표(절대값) 정본 — status/sales_targets.json (GM 결재 2026-07-03, 매월 동일 고정).
          home_kpi가 s.target 미제공(null) 시 이 값으로 목표·달성률 프론트 계산 fallback. */
       var TARGETS_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/sales_targets.json';
-      Promise.all([
-        fetch(BASE + '?action=home_kpi&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }),
-        fetch(TARGETS_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
-      ])
-        .then(function(results){
+      /* 스냅샷-우선 렌더 (2026-07-22 시토, home 로딩 병목 수리):
+         home_kpi GAS는 '26년 매출 분석'·지출 ERP 시트 라이브 집계로 7~8초 소요 → home 히어로(매출·지출)가
+         그만큼 '—'로 비어 보임. 이전 세션이 저장한 실측 스냅샷을 즉시 페인트(체감 즉시), 라이브 도착 시 덮어써 갱신.
+         정확성 무손상 — 라이브 값이 항상 최종. 첫 콜드 로드는 서버측 스냅샷 발행(후속) 전까진 여전히 라이브 대기. */
+      function renderHomeKpi(results){
           var d = results[0], tgt = results[1];
           if(!d || !d.ok) return;
           var s = d.sales || {}, e = d.expense || {}, v = d.voc || {};
@@ -1348,6 +1348,16 @@
           })();
 
           /* 이슈(VOC) — 이슈 현황 카드는 종합접수처(reg_board) 카드로 흡수 (2026-06-17 GM). home_kpi의 voc는 미사용. */
+      }
+      /* 1) 캐시 즉시 페인트 → 2) 라이브 갱신 + 캐시 write-through */
+      try { var _hkC = localStorage.getItem('wp_home_kpi_cache'); if(_hkC){ renderHomeKpi(JSON.parse(_hkC)); } } catch(_e){}
+      Promise.all([
+        fetch(BASE + '?action=home_kpi&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }),
+        fetch(TARGETS_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
+      ])
+        .then(function(results){
+          if(results && results[0] && results[0].ok){ try { localStorage.setItem('wp_home_kpi_cache', JSON.stringify(results)); } catch(_e){} }
+          renderHomeKpi(results);
         })
         .catch(function(){ /* "—" 유지 */ });
     })();
@@ -1371,9 +1381,8 @@
       {cat:'직원·강사 칭찬합니다',    icon:'⭐', short:'칭찬'},
       {cat:'직원·강사 쓴소리합니다',  icon:'💬', short:'쓴소리'}
     ];
-    fetch(VOC_GAS + '?action=reg_board&_=' + Date.now(), { redirect: 'follow' })
-      .then(function(r){ return r.json(); })
-      .then(function(d){
+    /* 스냅샷-우선 (2026-07-22 시토): reg_board(종합접수처) GAS ~2초 → 캐시 즉시 페인트 후 라이브 갱신. 정확성=라이브 최종. */
+    function renderVoc(d){
         if(_wpGate(d)) return;
         if(!d || !d.ok) return;
         var rows = Array.isArray(d.data) ? d.data : [];
@@ -1404,6 +1413,13 @@
           });
           grid.innerHTML = html;
         }
+    }
+    try { var _rbC = localStorage.getItem('wp_reg_board_cache'); if(_rbC){ renderVoc(JSON.parse(_rbC)); } } catch(_e){}
+    fetch(VOC_GAS + '?action=reg_board&_=' + Date.now(), { redirect: 'follow' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d && d.ok){ try { localStorage.setItem('wp_reg_board_cache', JSON.stringify(d)); } catch(_e){} }
+        renderVoc(d);
       })
       .catch(function(){ /* "—" 유지 */ });
   })();
