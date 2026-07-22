@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 강사 콘텐츠 접수</title>
+<!--
+  강사 콘텐츠 접수 폼 (P1 — 접수 폼 + 저장 + 알림)
+  계획서 정본: docs/superpowers/plans/2026-07-22-강사콘텐츠-접수모듈-P1.md (Task 2)
+  스펙: docs/superpowers/specs/2026-07-22-강사콘텐츠-접수시안모듈-design.md (§4-1)
+  백엔드: .deploy-instructor/instructor_intake.js doPost (JSON 계약은 하단 스크립트 주석 참조)
+  ⚠️ GAS_PROD 는 배포 전 플레이스홀더 — Task 1 배포(clasp push + 웹앱 새 배포) 후 exec URL로 교체.
+  M1 페이지 임베드(iframe)는 별도 계획(Task 3, 배포 후 진행) — 본 파일은 독립 폼으로도 열람 가능.
+-->
+<style>
+:root{
+  --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
+  --accent:#b08d57;--accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;
+  --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);--red:#c0392b;--red-bg:rgba(192,57,43,0.09);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%;
+}
+a{color:var(--accent);text-decoration:none}
+.wrap{max-width:640px;margin:0 auto;padding:26px 18px 44px}
+
+.brand{text-align:center;margin-bottom:22px}
+.brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:10px}
+.brand h1{font-size:clamp(20px,5vw,26px);font-weight:800;letter-spacing:-.5px;margin-bottom:0}
+.brand p{font-size:13.5px;color:#777;margin-top:6px}
+.gold-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:14px auto 16px;max-width:260px}
+.gd-line{flex:1;height:1px}
+.gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
+.gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
+.gd-diamond{color:var(--accent);font-size:9px;line-height:1}
+
+.info{
+  display:flex;gap:10px;align-items:flex-start;
+  background:var(--accent-bg);border:1px solid rgba(176,141,87,0.28);
+  border-radius:12px;padding:13px 15px;margin-bottom:18px;font-size:13px;line-height:1.7;color:#5c4a2e
+}
+.info .ic{font-size:18px;line-height:1.3}
+.info b{color:var(--accent)}
+
+.card{background:var(--paper);border:1px solid var(--border);border-radius:18px;padding:20px 18px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+label.fl{display:block;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;letter-spacing:.3px;text-transform:uppercase}
+label.fl .opt{font-size:12px;font-weight:500;color:var(--dim);margin-left:4px;text-transform:none}
+.fl-help{font-size:12px;color:var(--dim);margin-top:7px;line-height:1.6}
+input[type=text],textarea,select{
+  width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);
+  padding:13px 14px;border-radius:12px;font-size:15px;font-family:inherit;line-height:1.5;-webkit-appearance:none;appearance:none
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
+textarea{min-height:78px;resize:vertical}
+select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23888' d='M1 1l5 5 5-5'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
+
+.file-zone{border:1.5px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);display:block}
+.file-zone:hover{border-color:var(--accent)}
+.file-zone .fz-icon{font-size:26px;margin-bottom:6px}
+.file-zone .fz-text{font-size:13.5px;color:var(--dim)}
+.file-zone input[type=file]{display:none}
+.file-list{margin-top:10px;font-size:12.5px;color:var(--text);text-align:left}
+.file-list div{padding:3px 0}
+
+.consent{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.consent input{width:auto;margin-top:3px;flex-shrink:0}
+.consent span{font-size:13px;color:var(--text);line-height:1.6}
+
+.submit-wrap{position:relative;margin-top:4px}
+.submit{width:100%;padding:17px;background:linear-gradient(135deg,var(--accent),#8f6f3f);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:.3px;box-shadow:0 4px 14px rgba(176,141,87,.28);transition:opacity .18s,transform .12s}
+.submit:hover{opacity:.92}
+.submit:active{transform:scale(.99)}
+.submit:disabled{opacity:.45;cursor:not-allowed}
+
+.toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.15);max-width:90%;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}
+
+.note{font-size:12.5px;color:var(--dim);text-align:center;margin-top:14px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="wrap">
+
+  <div class="brand">
+    <p class="brand-eyebrow">Wellperion · Instructor</p>
+    <h1>🎬 강사 콘텐츠 접수</h1>
+    <div class="gold-divider">
+      <span class="gd-line left"></span>
+      <span class="gd-diamond">&#9670;</span>
+      <span class="gd-line right"></span>
+    </div>
+    <p>강사님의 사진·영상·한마디를 보내주시면, 웰페리온 공식 채널에 소개해 드립니다.</p>
+  </div>
+
+  <div class="info">
+    <span class="ic">✨</span>
+    <span><b>마감 없이 상시 접수</b>합니다 — 준비되실 때 편하게 보내주세요.
+    스포츠클럽 수업을 이끄는 강사님의 전문성과 따뜻함을 회원분들께 전하는 데 쓰입니다.
+    제출한 자료는 <b>웰페리온 공식 인스타그램(@wellperion)</b> 등 공식 채널 게시에 동의하신 것으로 처리됩니다.</span>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label class="fl" for="f_name">성함</label>
+      <input type="text" id="f_name" placeholder="예: 김OO" autocomplete="off">
+    </div>
+    <div class="field">
+      <label class="fl" for="f_team">담당 종목·팀</label>
+      <select id="f_team">
+        <option value="">선택하세요</option>
+        <option value="PT">PT</option>
+        <option value="골프">골프</option>
+        <option value="스쿼시">스쿼시</option>
+        <option value="필라테스">필라테스</option>
+        <option value="체조">체조</option>
+        <option value="GX">GX</option>
+        <option value="수영">수영</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="fl">사진 <span class="opt">(3~5장 권장)</span></label>
+      <label class="file-zone" for="f_photos">
+        <div class="fz-icon">📷</div>
+        <div class="fz-text">수업·프로필 사진을 선택하세요 (여러 장 가능)</div>
+        <input type="file" id="f_photos" accept="image/*" multiple>
+      </label>
+      <div class="file-list" id="f_photosList"></div>
+    </div>
+    <div class="field">
+      <label class="fl">영상 <span class="opt">(선택 · 15~30초 · 50MB 이하)</span></label>
+      <label class="file-zone" for="f_video">
+        <div class="fz-icon">🎥</div>
+        <div class="fz-text">짧은 소개·수업 영상을 선택하세요</div>
+        <input type="file" id="f_video" accept="video/mp4">
+      </label>
+      <div class="file-list" id="f_videoList"></div>
+      <div class="fl-help">50MB를 넘으면 자동으로 제외됩니다 — 아래 링크 칸에 드라이브 등 공유 링크를 붙여넣어 주세요.</div>
+    </div>
+    <div class="field">
+      <label class="fl" for="f_videoLink">대용량 영상 링크 <span class="opt">(선택)</span></label>
+      <input type="text" id="f_videoLink" placeholder="드라이브 등 공유 링크 (영상이 50MB를 넘을 때만)" autocomplete="off">
+    </div>
+    <div class="field">
+      <label class="fl" for="f_intro">한 줄 소개</label>
+      <input type="text" id="f_intro" placeholder="예: 10년차 PT 강사, 회원 맞춤 운동 설계가 전문입니다" autocomplete="off">
+    </div>
+    <div class="field">
+      <label class="fl" for="f_benefit">제 수업에서 회원이 얻는 것</label>
+      <input type="text" id="f_benefit" placeholder="예: 부상 없이 꾸준히 하는 습관" autocomplete="off">
+    </div>
+    <div class="field">
+      <label class="consent" for="f_agree">
+        <input type="checkbox" id="f_agree">
+        <span>제출한 사진·영상·소개 내용이 웰페리온 공식 채널(@wellperion 등)에 게시되는 것에 동의합니다.</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="submit-wrap">
+    <button class="submit" id="submitBtn" type="button">🎬 콘텐츠 접수하기</button>
+  </div>
+  <p class="note" id="msgEl">접수하시면 담당 마케팅 팀(시모)이 확인 후 공식 톤으로 제작해 발행합니다.</p>
+</div>
+
+<script>
+(function(){
+  // ── 백엔드 GAS ── Task 1(.deploy-instructor/instructor_intake.js) 배포 후 실제 exec URL로 교체.
+  var GAS_PROD = "__배포후_EXEC_URL__"; // TODO(배포 후 교체): clasp push → 웹앱 새 배포(/exec) → 이 값에 exec URL 삽입
+
+  function $(id){ return document.getElementById(id); }
+  function toast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(function(){ t.className='toast'+(isErr?' err':''); },2600); }
+
+  // ── 파일 → base64 (doPost 계약: {b64, mime, fname}) ──
+  function toB64(file){
+    return new Promise(function(res){
+      var r = new FileReader();
+      r.onload = function(){ res({ b64:r.result, mime:file.type, fname:file.name }); };
+      r.readAsDataURL(file);
+    });
+  }
+
+  // ── 선택 파일 목록 표시 ──
+  $('f_photos').addEventListener('change', function(){
+    var files = [].slice.call(this.files).slice(0,5);
+    $('f_photosList').innerHTML = files.map(function(f){ return '<div>📷 '+f.name+'</div>'; }).join('');
+    if (this.files.length > 5) toast('사진은 최대 5장까지만 사용됩니다', true);
+  });
+  $('f_video').addEventListener('change', function(){
+    var f = this.files[0];
+    if (!f){ $('f_videoList').innerHTML = ''; return; }
+    var mb = (f.size/1024/1024).toFixed(1);
+    $('f_videoList').innerHTML = '<div>🎥 '+f.name+' ('+mb+'MB)'+(f.size > 50*1024*1024 ? ' — 50MB 초과, 위 링크 칸을 이용해 주세요' : '')+'</div>';
+  });
+
+  // ── 접수 제출 ──
+  $('submitBtn').addEventListener('click', function(){ submit(); });
+
+  async function submit(){
+    var name = $('f_name').value.trim();
+    var team = $('f_team').value;
+    var agree = $('f_agree').checked;
+    if (!name){ toast('성함을 입력해 주세요', true); return; }
+    if (!team){ toast('담당 종목·팀을 선택해 주세요', true); return; }
+    if (!agree){ toast('공식 채널 게시 동의가 필요합니다', true); return; }
+
+    var btn = $('submitBtn'); btn.disabled = true; btn.textContent = '접수 중…';
+    try {
+      var photoFiles = [].slice.call($('f_photos').files).slice(0,5);
+      var photos = await Promise.all(photoFiles.map(toB64));
+
+      var videoFile = $('f_video').files[0];
+      var video = null;
+      if (videoFile) {
+        if (videoFile.size <= 50*1024*1024) {
+          video = await toB64(videoFile);
+        } else {
+          toast('영상이 50MB를 넘어요. 아래 링크 칸에 공유 링크를 붙여넣어 주세요.', true);
+          btn.disabled = false; btn.textContent = '🎬 콘텐츠 접수하기';
+          return;
+        }
+      }
+
+      var body = {
+        name: name, team: team,
+        intro: $('f_intro').value.trim(), benefit: $('f_benefit').value.trim(),
+        agree: agree, photos: photos, video: video, videoLink: $('f_videoLink').value.trim()
+      };
+
+      var r = await fetch(GAS_PROD, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // preflight 회피 — wp_inquiry_form.html 패턴
+        body: JSON.stringify(body)
+      });
+      var j = await r.json();
+      if (j && j.ok) {
+        toast('접수 완료! 감사합니다 🙏');
+        $('msgEl').textContent = '접수 완료! 감사합니다 🙏 담당 마케팅 팀이 확인 후 연락드릴게요.';
+        resetForm();
+      } else {
+        toast('오류: '+((j && j.err) || '알 수 없는 오류'), true);
+      }
+    } catch (e) {
+      toast('네트워크 오류 — 다시 시도해 주세요', true);
+    } finally {
+      btn.disabled = false; btn.textContent = '🎬 콘텐츠 접수하기';
+    }
+  }
+
+  function resetForm(){
+    $('f_name').value=''; $('f_team').value=''; $('f_intro').value=''; $('f_benefit').value='';
+    $('f_videoLink').value=''; $('f_agree').checked=false;
+    $('f_photos').value=''; $('f_video').value='';
+    $('f_photosList').innerHTML=''; $('f_videoList').innerHTML='';
+  }
+})();
+</script>
+</body>
+</html>
