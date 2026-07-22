@@ -386,10 +386,26 @@
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-21",
     "depends_on": "COO-2026-07-20-FCHECK-THRESHOLD-SSOT",
-    "note": "[2026-07-21 시우·GM 추천 진행] 배9199(기준값 단일화·법정기준 라이브 발효) 완료 시 분리한 시간경과성 후속. 현재 🟡 항목(사우나 온탕/열탕·건식/습식/찜질·수온)은 법정기준이 없어 경보 N(판정 제외)·기록만. 약 2주 실측 데이터(2026-07-21~08-03) 축적 후 항목별 목표범위(targetMin/targetMax)를 「점검기준」시트에 입력→alert 유지(N은 그대로, 목표 이탈은 🟡 경보). 값 세팅 UI=시설부 체계 페이지 편집표(이미 구축). 라이브 코드 변경 불필요(시트값 입력만). 재개 트리거=2026-08-04경 2주 실측 완료. 완료조건=🟡 목표 이탈이 대시보드에 🟡로 표시되고 🔴 법정과 색 구분됨.",
-    "next": "⚓ 대기(시간경과) — 2026-08-04경 2주 실측 완료 시 목표범위 산출→「점검기준」시트 입력. 코드 변경 없음(시트값만).",
+    "note": "[2026-07-21 시우·GM 추천 진행] 배9199(기준값 단일화·법정기준 라이브 발효) 완료 시 분리한 시간경과성 후속. 현재 🟡 항목(사우나 온탕/열탕·건식/습식/찜질·수온)은 법정기준이 없어 경보 N(판정 제외)·기록만. 약 2주 실측 데이터(2026-07-21~08-03) 축적 후 항목별 목표범위(targetMin/targetMax)를 「점검기준」시트에 입력→alert 유지(N은 그대로, 목표 이탈은 🟡 경보). 값 세팅 UI=시설부 체계 페이지 편집표(이미 구축). 라이브 코드 변경 불필요(시트값 입력만). 재개 트리거=2026-08-04경 2주 실측 완료. 완료조건=🟡 목표 이탈이 대시보드에 🟡로 표시되고 🔴 법정과 색 구분됨. [2026-07-22 시우 GM지시 '현재 데이터로 마무리'] 사우나 4종 8행(온탕/열탕/건식/습식 남녀) 목표범위 라이브 세팅·검증 완료: 온탕38~44·열탕38~43·건식73~88·습식43~52℃, 경보 N→Y. 128~129건 실측(chk_support_ledger, 소수점오타 정제) 최소~최대 기반. fcheck_ranges_save(pin) 저장 ok count16, get 재조회로 8행 반영+전체16행 유실0 검증. 잔여 3행(수온 3건·찜질방A 2건·찜질방B 0건)=데이터 얇아 미세팅(경보 N 유지), 08-04 축적 후 세팅 또는 GM 지시로 provisional. ★실측 발견 결함2건 시토 라우팅(CTO-2026-07-22-FCHECK-EDIT-UI-DEFECTS): (1)찜질방 측정 UI가 A값만 기록→fc_sauna_jjim_b 상시 0건 (2)편집표 fcRangeSave가 PIN 서버 미전송→직원 UI 저장 실패 소지.",
+    "next": "사우나 8행 🟡 목표범위 라이브 발효·검증 완료. GM 결정 대기=잔여 수온·찜질방 3행 (1)08-04 2주 축적 후 세팅 (2)지금 얇은 데이터로 provisional 세팅 택1. 결함 2건은 시토 배(9581)로 분리.",
     "ship_no": 9478,
     "surface": "g1"
+  },
+  {
+    "task_id": "CTO-2026-07-22-FCHECK-EDIT-UI-DEFECTS",
+    "clevel": "cto",
+    "title": "[시토] 시설부 점검 편집표 결함 2건 — 찜질방B 측정 미기록 + 편집표 PIN 서버 미전송",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "from": "coo",
+    "origin": "coo",
+    "enqueued_at": "2026-07-22",
+    "note": "2026-07-22 시우 배9478(사우나 목표범위 세팅) 중 실측 발견, 시토 라우팅. (1)찜질방 측정 UI가 A값만 기록해 fc_sauna_jjim_b가 상시 0건(데이터 수집 결함) — A/B(또는 남/여) 양쪽 입력칸 필요. (2)시설부 체계.html 편집표 fcRangeSave(:4063)가 저장 POST에 pin을 담지 않아(:4069) GAS handleFcheckRangesSave의 PIN 게이트(CHECK_UNLOCK_PIN, 기본 '1234')에서 reason:PIN 거절 → 직원이 UI로 점검기준을 저장하면 실패할 소지. requireEditAuth 통과한 편집비번을 POST body.pin으로 전달하도록 수리. 시우는 이번 목표범위 세팅을 pin 직접 포함으로 우회 완료(라이브 발효됨).",
+    "next": "시토 수리 — 편집표 pin 전달 배선 + 찜질방 A/B 입력칸. 저위험·프론트/GAS 시트값 경로.",
+    "depends_on": "",
+    "ship_no": 9581,
+    "module": "cto",
+    "surface": "autonomy"
   },
   {
     "task_id": "CTO-2026-07-20-MEMBER-TELEGRAM-ASSIGNMENT-NUDGE",
@@ -1178,5 +1194,19 @@
     "artifact": "- Survey.js(x2 동기): member_inquiry_update·lesson_inquiry_update·member_active_update\n  · B1 keyPhone 빈값+예약쓰기 → row-key-unverified 거부(raw rowIndex 맹목쓰기 금지)\n  · B2 중복전화 _countRowsByPhone_ → 2건+ duplicate-phone-ambiguous 거부(첫매칭 금지)\n- membership.html WriteBuffer: 거부 표면화(park+경고+오버레이해제, 낙관성공 삼킴 금지)\n- 격리  (CLI ad-hoc · 커밋 17ee417f)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "17ee417fb469a8b760ee4028fe2ff9f8733259e1"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-39e7e239",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9606,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 39e7e239)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "39e7e239ee37fde2d6eebf68acad99cee7dbf780"
   }
 ]
