@@ -3148,6 +3148,54 @@ function _processAction(body) {
     return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
   }
 
+  // ─── (관리) 유입언어(KO/EN) 칸 생성 + 검증 프로브 — 영문 자체폼 컷오버(배9674 시모, 2026-07-22). 토큰 게이트. ───
+  //   op='addcol': 멤버십 '26년 신규문의' + 강습 응답탭(성인 111889422 · WSC 268994754)에 '유입언어' 헤더가 없으면
+  //     맨 끝칸에 additive 추가(이름기반·행/기존칸 무변경). 이 칸이 생기면 intake_submit 의 _imSet/_lsSet(['유입언어'])가 기록 시작.
+  //   op='probe': body.phone 매칭 행의 성함·유입언어 값을 시트별 반환(라이브 e2e 검증용, 읽기전용).
+  if (action === 'cmo_lang_admin') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _claOp = String(body.op || 'addcol');
+    var _claTargets = [
+      { n: '멤버십 26년 신규문의', sh: _miSheet_() },
+      { n: '성인강습 111889422', sh: _lessonSheet_(111889422) },
+      { n: 'WSC강습 268994754', sh: _lessonSheet_(268994754) }
+    ];
+    var _claRep = {};
+    if (_claOp === 'addcol') {
+      _claTargets.forEach(function(t){
+        if (!t.sh) { _claRep[t.n] = { error: '시트 없음' }; return; }
+        var lc = t.sh.getLastColumn();
+        var hdr = t.sh.getRange(1, 1, 1, lc).getValues()[0].map(function(v){ return String(v).trim(); });
+        var idx = _findColExact_(hdr, ['유입언어']);
+        if (idx >= 0) { _claRep[t.n] = { had: true, added: false, col: idx + 1 }; return; }
+        t.sh.getRange(1, lc + 1).setValue('유입언어');   // 맨 끝 새칸 헤더만 추가(additive·행 무변경)
+        SpreadsheetApp.flush();
+        _claRep[t.n] = { had: false, added: true, col: lc + 1 };
+      });
+    } else if (_claOp === 'probe') {
+      var _claPhone = String(body.phone || '').replace(/[^0-9]/g, '');
+      _claTargets.forEach(function(t){
+        if (!t.sh) { _claRep[t.n] = { error: '시트 없음' }; return; }
+        var lr = t.sh.getLastRow(), lc = t.sh.getLastColumn();
+        if (lr < 2) { _claRep[t.n] = { rows: 0 }; return; }
+        var hdr = t.sh.getRange(1, 1, 1, lc).getValues()[0].map(function(v){ return String(v).trim(); });
+        var phI = _findCol_(hdr, ['연락처', '핸드폰', '전화', '휴대폰']);
+        var nmI = _findCol_(hdr, ['성함', '이름']);
+        var lgI = _findColExact_(hdr, ['유입언어']);
+        var data = t.sh.getRange(2, 1, lr - 1, lc).getValues();
+        var hits = [];
+        for (var r = 0; r < data.length; r++) {
+          var ph = phI >= 0 ? String(data[r][phI] || '').replace(/[^0-9]/g, '') : '';
+          if (_claPhone && ph === _claPhone) hits.push({ row: r + 2, name: nmI >= 0 ? String(data[r][nmI] || '') : '', lang: lgI >= 0 ? String(data[r][lgI] || '') : '(칸없음)' });
+        }
+        _claRep[t.n] = { langCol: lgI >= 0 ? lgI + 1 : -1, matches: hits };
+      });
+    } else {
+      return _json({ ok: false, error: 'unknown op: ' + _claOp });
+    }
+    return _json({ ok: true, op: _claOp, report: _claRep });
+  }
+
   // ─── (임시) 강습 폼탭 테스트행 삭제 — 증분1 검증 정리용. 웰리 수동. 2026-07-18 ───
   if (action === 'cpo_lesson_test_delete') {
     if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
@@ -6312,6 +6360,85 @@ function _processAction(body) {
                    colsBefore: ccHdr.length, colsAfter: ccAfter.length, headersAfter: ccAfter });
   }
 
+  // ─── (일회성) 멤버십 시트 잉여 자동칸 정리 — 2026-07-22 GM 확정 ───
+  //   GM: "등록매칭(자동)이랑 등록일(자동) 없애도 되지 않아? 차라리 등록일은 비고란에 '등록일: #날짜'로 기록"
+  //   T 등록매칭(자동) → 삭제(리더 0 · 진행현황 P의 SUC/등록에서 파생) / U 등록일(자동) → 비고 S에 이관 후 삭제
+  //   ★autostamp 트리거(memberMatchAutostamp)도 제거 — 안 지우면 다음 02:00에 두 칸 재생성(9234·9246).
+  //   순서: ①U→비고 이관(멱등: 이미 '등록일:' 있으면 스킵) ②T·U 값 클리어 ③가드 통과 후 칸 삭제 ④트리거 제거.
+  if (action === 'member_col_cleanup_20260722') {
+    if (String(body.key || '') !== 'wlp_mcln_20260722') return _json({ ok: false, error: 'guard-mismatch' });
+    var mcDry = (String(body.dryRun || '') === '1');
+    var mcSh = _sheetByGid_(FORM_SHEETS[0].ssId, FORM_SHEETS[0].gid);
+    if (!mcSh) return _json({ ok: false, error: '시트 없음' });
+    var mcHdr = mcSh.getRange(1, 1, 1, mcSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var mcNorm = function (s) { return String(s || '').replace(/\s+/g, ''); };
+    var mcFind = function (want) { for (var i = 0; i < mcHdr.length; i++) { if (mcNorm(mcHdr[i]) === mcNorm(want)) return i; } return -1; };
+    var iReg  = mcFind('등록매칭(자동)');
+    var iDate = mcFind('등록일(자동)');
+    var iMemo = mcFind('비고'); if (iMemo < 0) iMemo = mcFind('메모');
+    if (iMemo < 0) return _json({ ok: false, error: 'no-memo-col', headers: mcHdr });
+    var mcLast = mcSh.getLastRow();
+    var mcAll = mcLast >= 2 ? mcSh.getRange(2, 1, mcLast - 1, mcHdr.length).getValues() : [];
+    // 현재 autostamp 트리거 존재 여부
+    var mcTrigCount = 0;
+    try { ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'memberMatchAutostamp') mcTrigCount++; }); } catch (eT) {}
+
+    // ① U 등록일 → 비고 이관 계획(멱등)
+    var mcMoves = [];
+    if (iDate >= 0) {
+      for (var mr = 0; mr < mcAll.length; mr++) {
+        var dv = mcAll[mr][iDate];
+        var ds = (dv instanceof Date) ? Utilities.formatDate(dv, 'Asia/Seoul', 'yyyy-MM-dd')
+               : String(dv == null ? '' : dv).trim();
+        if (!ds) continue;
+        var memo = String(mcAll[mr][iMemo] == null ? '' : mcAll[mr][iMemo]);
+        if (memo.indexOf('등록일:') >= 0) continue;
+        var tag = '등록일: ' + ds;
+        mcMoves.push({ row: mr + 2, memo: (memo.trim() ? (memo.trim() + '\n' + tag) : tag), date: ds });
+      }
+    }
+
+    if (mcDry) {
+      return _json({ ok: true, dryRun: true,
+                     cols: { 등록매칭: iReg, 등록일: iDate, 비고: iMemo },
+                     dateToMemo: mcMoves.length, sample: mcMoves.slice(0, 3),
+                     autostampTriggers: mcTrigCount,
+                     willClearThenDelete: [iReg >= 0 ? '등록매칭(자동)' : null, iDate >= 0 ? '등록일(자동)' : null].filter(Boolean),
+                     colsBefore: mcHdr.length, headers: mcHdr });
+    }
+
+    // 실행 ① 비고 이관
+    mcMoves.forEach(function (m) { mcSh.getRange(m.row, iMemo + 1).setValue(m.memo); });
+    SpreadsheetApp.flush();
+    // 실행 ② 값 클리어(삭제 가드 통과 목적)
+    if (iReg >= 0 && mcLast >= 2)  mcSh.getRange(2, iReg + 1,  mcLast - 1, 1).clearContent();
+    if (iDate >= 0 && mcLast >= 2) mcSh.getRange(2, iDate + 1, mcLast - 1, 1).clearContent();
+    SpreadsheetApp.flush();
+    // 실행 ③ 칸 삭제(뒤 인덱스부터) — 위치 재조회
+    var mcHdr2 = mcSh.getRange(1, 1, 1, mcSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    var mcTargets = ['등록매칭(자동)', '등록일(자동)'].map(function (n) {
+      for (var i = 0; i < mcHdr2.length; i++) { if (mcNorm(mcHdr2[i]) === mcNorm(n)) return { name: n, idx: i }; }
+      return { name: n, idx: -1 };
+    }).filter(function (t) { return t.idx >= 0; }).sort(function (a, b) { return b.idx - a.idx; });
+    var mcDeleted = [], mcBlocked = [];
+    mcTargets.forEach(function (t) {
+      if (_guardColDeleteByContent20260720_(mcSh, t.idx + 1, t.name)) { mcSh.deleteColumn(t.idx + 1); mcDeleted.push(t.name); }
+      else { mcBlocked.push(t.name); }
+    });
+    SpreadsheetApp.flush();
+    // 실행 ④ autostamp 트리거 제거(칸 재생성 방지)
+    var mcTrigRemoved = 0;
+    try {
+      ScriptApp.getProjectTriggers().forEach(function (t) {
+        if (t.getHandlerFunction() === 'memberMatchAutostamp') { ScriptApp.deleteTrigger(t); mcTrigRemoved++; }
+      });
+    } catch (eTr) {}
+    var mcAfter = mcSh.getRange(1, 1, 1, mcSh.getLastColumn()).getValues()[0].map(function(h){ return String(h == null ? '' : h).trim(); });
+    return _json({ ok: true, dateMovedToMemo: mcMoves.length, deleted: mcDeleted, blocked: mcBlocked,
+                   triggersRemoved: mcTrigRemoved,
+                   colsBefore: mcHdr.length, colsAfter: mcAfter.length, headersAfter: mcAfter });
+  }
+
   // ─── (일회성) 거주지 항목 전면 폐기 — 2026-07-20 GM 확정 ("자체폼이랑 구글폼 구글시트 다 삭제하자") ───
   //   근거: 구글폼이 4,759건 받는 동안 계속 수집했으나 ERP 어디에서도 읽지 않는다(Survey.js 0곳·회원관리 화면 0곳).
   //   즉 고객은 채우는데 아무도 안 보는 칸이었다.
@@ -9170,6 +9297,12 @@ var MATCH_DATE_COL   = '등록일(자동)';
  * 반환: { matched, total }
  */
 function member_match_autostamp_() {
+  // ★ 은퇴(2026-07-22 GM 확정): '등록매칭(자동)'·'등록일(자동)' 칸 폐지. 이 함수가 그 두 칸의 유일한
+  //   라이터였고, 칸을 삭제해도 다음 02:00에 재생성하던 물리 원인(9234·9246 자동생성)이다. no-op로 중립화 —
+  //   실제 트리거 제거는 member_col_cleanup_20260722 액션이 수행. 등록일 정본=유효회원 시트 등록일자,
+  //   등록매칭=진행현황 SUC에서 파생. 되살리려면 이 return 한 줄만 제거하면 원복된다.
+  return { matched: 0, total: 0, retired: true };
+  // ── 이하 원복용 보존(도달하지 않음) ──
   // ① 유효회원 시트 → (정규화전화 → 등록일) 맵
   var memberMap = {};
   try {
