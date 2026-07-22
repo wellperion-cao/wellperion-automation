@@ -63,13 +63,14 @@ DEFAULT_GAS_URL = (
 _SHIFTS = [("am", "오전조"), ("pm", "오후조"), ("close", "마감조")]
 
 # ── 회차수 신뢰 게이트 (2026-07-22 시토) ──
-# 근본원인 수리 완료: saveBoard()가 이제 store.submissions[]를 seq 기준 union 병합한다
-# (.deploy-check/지원팀 일일점검.js) — 코드 수정 + 로컬 단위검증(node)까지만 끝난 상태.
-# ★ 라이브 /exec 재배포는 아직 안 함(GM 검증 후 별도 진행) — 그 전까지 실사용 GAS는 여전히
-# 구버전(무병합 last-write-wins)이라 sessions=len(submissions)를 신뢰할 수 없다.
-# GM이 배포를 확인·검증한 뒤 이 플래그만 True로 바꾸면 '(회차 확인중)' 꼬리표가 사라지고
-# 정확한 회차수로 표기된다. 배포 확인 전 임의로 켜지 말 것(거짓 확정 금지 원칙 — 약속 L 참조).
-FACILITY_SESSIONS_TRUSTED = False
+# 근본원인 수리 완료: saveBoard()가 store.submissions[]를 seq 기준 union 병합한다
+# (.deploy-check/지원팀 일일점검.js). ★ 라이브 /exec 재배포 완료·검증됨(2026-07-22, deployment
+# AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1 @170) —
+# 테스트 키(FACILITY_CHECK_TEST_MERGE_20260722)로 7건 저장 후 2건 재저장해도 7건 보존됨을
+# 라이브 런타임에서 실증(테스트 키는 검증 후 자가청소함). ScriptProperties 500KB 하드리밋
+# 초과분(캐시 프루닝, 5일 유지)도 해소 확인(410,732B, 하드리밋 512,000B 대비 여유 확보).
+# sessions=len(submissions) 신뢰 가능 → 게이트 True 전환.
+FACILITY_SESSIONS_TRUSTED = True
 
 
 
@@ -320,8 +321,8 @@ def facility_measurements(store: dict, today_oor_fields: set[str]) -> list[str]:
 def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list[str], dict]:
     """시설부 핵심요약: 회차별 일지(submissions 전체) + 측정값(rounds·daily) +
     이슈사항(기준이탈·특이사항note). GM 2026-07-22 근본수리(렌더심화·회차수 정직표기).
-    ★ 회차수(sessions=len(submissions))는 GAS saveBoard 코드는 수리됐으나 라이브 재배포 전이라
-    아직 신뢰 불가(FACILITY_SESSIONS_TRUSTED 게이트 참조) — 배포 검증 전까지 '(확인중)' 꼬리표 유지."""
+    회차수(sessions=len(submissions))는 GAS saveBoard union 병합 수리·라이브 배포·런타임 검증
+    완료(FACILITY_SESSIONS_TRUSTED=True) — 신뢰 가능."""
     filled = {"facility_status": False, "facility_outofrange": 0, "facility_worklog": False}
 
     board = fetch_gas({"action": "board", "key": f"FACILITY_CHECK_{today}"}, url)
