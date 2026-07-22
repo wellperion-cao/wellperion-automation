@@ -4885,7 +4885,13 @@ var LESSON_SPORT_DISPLAY_MAP = {
   'WSC수영':'WSC 수영','WSC 수영':'WSC 수영',
   '뮤지컬':'뮤지컬 (Brad Little Star Academy)',
   'Swimming':'WSC 수영','swimming':'WSC 수영',
-  'Squash':'WSC 스쿼시','squash':'WSC 스쿼시'
+  'Squash':'WSC 스쿼시','squash':'WSC 스쿼시',
+  // 영문 유소년(WSC) 폼 종목 → 한글 표시(GM 2026-07-22). 표시 전용 — 저장값·필터키·컨택태그는 원본(영문) 그대로.
+  'Gymnastics':'WSC 체조 & 트램폴린','gymnastics':'WSC 체조 & 트램폴린',
+  'Gymnastics & Trampoline':'WSC 체조 & 트램폴린',
+  'Pilates':'WSC 필라테스','pilates':'WSC 필라테스',
+  'Golf':'WSC 골프','golf':'WSC 골프',
+  'Musical':'뮤지컬 (Brad Little Star Academy)','musical':'뮤지컬 (Brad Little Star Academy)'
 };
 // isYouth=true면 '수영'을 성인 라벨('성인 수영 (개인레슨 / 단체레슨)')로 확장하지 않고 원문 유지 — 유소년 '수영'은
 // 별도 'WSC수영/WSC 수영' 표기와 구분되는 원본 라벨이라 '성인' 접두가 붙으면 오표기(2026-07-18 GM).
@@ -4904,9 +4910,9 @@ function _lessonRowHtml(t, r, sportKey, sportLabel) {
     '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
     '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '"><span style="' + _lessonSportChipStyle(sportLabel) + '">' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '</span></td>' +
     // 문의내용 셀 — r.note(gvizLessonRows_ iNote 배선, 3105행) 그대로 노출. 길면 title 툴팁·빈값 '—'. 2026-07-21 시포·GM.
-    '<td class="left" style="font-size:11px;color:var(--dim);white-space:normal;max-width:220px" title="' + esc(r.note || '') + '">' + esc(r.note ? String(r.note).trim() || '—' : '—') + '</td>' +
-    // 희망 요일/시간 셀 — r.wishTime(gvizLessonRows_ iWish 배선, 3115행) 노출. 2026-07-21 시포·GM.
-    '<td class="left" style="white-space:normal;word-break:break-word;font-size:11px;color:var(--dim)" title="' + esc(r.wishTime || '') + '">' + esc(r.wishTime ? String(r.wishTime).trim() || '—' : '—') + '</td>' +
+    '<td class="left" style="font-size:12.5px;color:var(--text);white-space:normal;max-width:220px" title="' + esc(r.note || '') + '">' + esc(r.note ? String(r.note).trim() || '—' : '—') + '</td>' +
+    // 희망 요일/시간 셀 — r.wishTime(gvizLessonRows_ iWish 배선, 3115행) 노출. 흰색·확대(성함/연락처 가독성 정합) GM 2026-07-22.
+    '<td class="left" style="white-space:normal;word-break:break-word;font-size:12.5px;color:var(--text)" title="' + esc(r.wishTime || '') + '">' + esc(r.wishTime ? String(r.wishTime).trim() || '—' : '—') + '</td>' +
     '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, sportKey, mgmt.status) +
       ((String(r.status || '').trim() === 'LOSS' && String(r.lossReason || '').trim()) ? '<div style="font-size:10px;color:var(--dim);margin-top:3px;line-height:1.3;white-space:normal">사유: ' + esc(String(r.lossReason).trim()) + '</div>' : '') + '</td>' +
     '<td style="font-size:12px">' + _lessonOwnerSelectHtml(t, r.rowIndex, sportKey, mgmt.owner) + '</td>' +

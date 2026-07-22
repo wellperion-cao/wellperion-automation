@@ -2110,7 +2110,7 @@ function _lessonReadRows_(gid) {
   var iVisit = _findCol_(hdr, ['방문상태', '방문']);
   var iHist  = _findCol_(hdr, [CONTACT_HIST_COL, 'Contact']);  // 연락이력(JSON) 우선 → GM flat M컬럼 'Contact'(줄바꿈 포함이라 부분일치). 2026-07-14 시포·GM(배973)
   var iSportMgmt = _findColExact_(hdr, [LESSON_SPORT_MGMT_COL]);  // 종목별관리(JSON) — 축7. 2026-07-08 시포·GM
-  var iLossR  = _findCol_(hdr, ['LOSS사유']);      // 문의 퍼널 LOSS 사유(강습) — 멤버십과 동일 체계. 2026-07-18 시토(GM요청) 대행.
+  var iLossR  = _findCol_(hdr, ['LOSS사유', '미등록 사유', '미등록사유']);   // LOSS 사유(강습) — 실제 시트 칸='미등록 사유'(멤버십과 동일). 'LOSS사유' 칸은 미존재라 별칭 추가(불일치 수리). 2026-07-22 시포·GM.
   var iLossRN = _findCol_(hdr, ['LOSS사유메모']);
   var iRegProgram = _findCol_(hdr, ['등록종목']);  // 등록(SUC) 시 실제 등록한 종목(강습) — 멤버십과 동일 체계. 2026-07-20 시포(GM요청).
   var iLang  = _findCol_(hdr, ['Language']);  // 응답자 기재 언어(영문 탭 실측 헤더) — 영어 문의 뱃지 표시용. 2026-07-09 시포·GM
@@ -3083,7 +3083,7 @@ function _processAction(body) {
         //   idx5 종목칸("...강습 종목 (희망종목 모두 체크)")에 먼저 걸려 정답칸(idx9)에 도달 못하고 조용히 스킵됨
         //   (idx5가 이미 채워져 있어 _lsSet 가드가 막음). 정답 헤더 전문을 정확일치 1순위로, 폴백은 다른 헤더와
         //   충돌 없는 '레슨 시간'만 남김(성인·WSC 양쪽 실제 헤더 대조 검증 완료 — 둘 다 idx9 정확 반환).
-        _lsSet(['희망하시는 레슨 시간을 체크해주세요', '레슨 시간'], _isSummer ? _iWishMonth : _iWish);
+        _lsSet(['희망하시는 레슨 시간을 체크해주세요', '레슨 시간'], _isSummer ? (_iWish || _iWishMonth) : _iWish);   // 여름방학특강(유소년) 폼이 wishMonth→wishTime(요일/시간)으로 교체됨(2026-07-22 시모). 구 wishMonth는 폴백 유지(하위호환).
         _lsSet(['접수 담당자', '담당자 혹은', '담당'], '웹 자동접수');
         _lsSet(['개인정보', '동의', '수집·이용'], '동의');
         _lsSet(['유입언어'], _iLang);   // KO/EN — 영문 자체폼 통합(배9674 시모). '유입언어' 칸 있을 때만 기록(컷오버 전엔 no-op·현행 무영향).
@@ -3160,7 +3160,7 @@ function _processAction(body) {
       var _iCatLabel = _iCatLabelMap[_iCat] || _iCat;
       var _iDisplayName = (_iCat === 'business') ? (_iCompany + ' / ' + _iContactName) : _iName;
       var _iExtra = '';
-      if (_iCat === 'summer') _iExtra = (_iTarget ? ('\n대상: ' + _iTarget) : '') + (_iWishMonth ? ('\n희망월: ' + _iWishMonth) : '');
+      if (_iCat === 'summer') _iExtra = (_iWish ? ('\n희망시간: ' + _iWish) : '') + (_iWishMonth ? ('\n희망월: ' + _iWishMonth) : '') + (_iTarget ? ('\n대상: ' + _iTarget) : '');
       if (_iCat === 'rental') _iExtra = (_iSpace ? ('\n공간: ' + _iSpace) : '') + (_iPurpose ? ('\n용도: ' + _iPurpose) : '');
       if (_iCat === 'business') _iExtra = (_iPartnerType ? ('\n제휴유형: ' + _iPartnerType) : '');
       _notifyTelegram('🔔 <b>[웹 문의 접수]</b> (자체폼)\n유형: ' + _iCatLabel + '\n이름: ' + _iDisplayName + '\n연락처: ' + _fmtPhone_(_iPhone)
@@ -5582,7 +5582,7 @@ function _processAction(body) {
       _luSet(['상담메모', '메모', '비고'], body.memo);
       _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
       _luSet(['방문상태', '방문'], body.visited);
-      _luSet(['LOSS사유'], body.lossReason);       // 강습 LOSS 사유(문의 퍼널). 2026-07-18 시토(GM요청) 대행.
+      _luSet(['LOSS사유', '미등록 사유', '미등록사유'], body.lossReason);   // LOSS 사유 → 실제 칸 '미등록 사유'(LOSS사유 칸 미존재 불일치 수리). 2026-07-22 시포·GM.
       // ★LOSS사유메모 폐기(2026-07-20 GM 확정) — "LOSS사유메모도 필요없어". 화면에서도 메모칸을 없앴다.
       // 등록종목 칸 폐지→강습종목 덮어씀(2026-07-21 시포·GM 3단계) — 별도 '등록종목' 칸 대신 실제 강습종목 칸을
       // SUC 시 등록값으로 덮어쓴다(멤버십 regProgram→관심프로그램 retarget과 동일 취지, 칸 자동생성 없음).
@@ -6467,6 +6467,65 @@ function _processAction(body) {
     return _json({ ok: true, dateMovedToMemo: mcMoves.length, deleted: mcDeleted, blocked: mcBlocked,
                    triggersRemoved: mcTrigRemoved,
                    colsBefore: mcHdr.length, colsAfter: mcAfter.length, headersAfter: mcAfter });
+  }
+
+  // ─── (일회성) 강습 '미등록 사유' 칸 옛 드롭다운 검증 제거 — 2026-07-22 GM(LOSS 사유 저장 불가 수리) ───
+  //   원인: 이 칸에 옛 택소노미(스케줄X·거주지변경 등) VALUE_IN_RANGE 검증이 걸려, ERP 모달의 funnel 표준
+  //   사유(가격·거리·시간대 등, 멤버십과 공유)를 넣으면 검증 위반으로 저장 거부. 검증만 제거(값·헤더 불변) →
+  //   모달 표준 사유가 그대로 저장·표시된다. 멤버십 미등록사유엔 이 제약 없음(정합).
+  if (action === 'clear_loss_validation_20260722') {
+    if (String(body.key || '') !== 'wlp_lossval_20260722') return _json({ ok: false, error: 'guard-mismatch' });
+    var clvOut = [];
+    [111889422, 268994754].forEach(function (g) {
+      try {
+        var sh = _sheetByGid_(LESSON_SS_ID, g);
+        if (!sh) { clvOut.push({ gid: g, error: 'no-sheet' }); return; }
+        var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (h) { return String(h == null ? '' : h).trim(); });
+        var clvNorm = function (s) { return String(s || '').replace(/\s+/g, ''); };
+        var ci = -1;
+        for (var i = 0; i < hdr.length; i++) { if (clvNorm(hdr[i]) === clvNorm('미등록 사유')) { ci = i; break; } }
+        if (ci < 0) { clvOut.push({ gid: g, error: 'no-col' }); return; }
+        var lr = sh.getLastRow();
+        var before = sh.getRange(2, ci + 1).getDataValidation() ? true : false;
+        if (lr >= 2) sh.getRange(2, ci + 1, lr - 1, 1).clearDataValidations();
+        clvOut.push({ gid: g, colName: hdr[ci], colIdx: ci, hadRule: before, cleared: true, rows: Math.max(0, lr - 1) });
+      } catch (e) { clvOut.push({ gid: g, error: String(e.message || e) }); }
+    });
+    return _json({ ok: true, sheets: clvOut });
+  }
+
+  // ─── (진단·읽기전용) 강습 시트 특정 칸의 데이터검증(드롭다운) 목록 조회 — LOSS사유 모달 정합용(2026-07-22) ───
+  if (action === 'read_col_validation') {
+    try {
+      var rvColName = String(body.col || '미등록 사유');
+      var rvGids = [111889422, 268994754];
+      var rvOut = [];
+      rvGids.forEach(function (g) {
+        var sh = _sheetByGid_(LESSON_SS_ID, g);
+        if (!sh) { rvOut.push({ gid: g, error: 'no-sheet' }); return; }
+        var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (h) { return String(h == null ? '' : h).trim(); });
+        var ci = -1, rvNorm = function (s) { return String(s || '').replace(/\s+/g, ''); };
+        for (var i = 0; i < hdr.length; i++) { if (rvNorm(hdr[i]) === rvNorm(rvColName)) { ci = i; break; } }
+        if (ci < 0) { rvOut.push({ gid: g, error: 'no-col', headers: hdr }); return; }
+        var rule = sh.getRange(2, ci + 1).getDataValidation();
+        var vals = null, vType = null, rngA1 = null;
+        if (rule) {
+          vType = String(rule.getCriteriaType());
+          try {
+            var args = rule.getCriteriaValues();
+            var a0 = args && args[0];
+            if (a0 && typeof a0.getValues === 'function') {        // VALUE_IN_RANGE → Range
+              rngA1 = a0.getA1Notation();
+              vals = a0.getValues().map(function (r) { return String(r[0] == null ? '' : r[0]).trim(); }).filter(function (x) { return x; });
+            } else if (a0 && a0.length !== undefined) {            // VALUE_IN_LIST → array
+              vals = a0;
+            } else { vals = a0 != null ? String(a0) : null; }
+          } catch (e) { vals = 'unreadable:' + e.message; }
+        }
+        rvOut.push({ gid: g, colName: hdr[ci], colIdx: ci, hasRule: !!rule, criteriaType: vType, rangeA1: rngA1, values: vals });
+      });
+      return _json({ ok: true, col: rvColName, sheets: rvOut });
+    } catch (eRV) { return _json({ ok: false, error: String(eRV.message || eRV) }); }
   }
 
   // ─── (진단·읽기전용) 강습 스프레드시트 탭 목록 + 행수 — 시트 삭제 안전성 판단용(2026-07-22 GM) ───
