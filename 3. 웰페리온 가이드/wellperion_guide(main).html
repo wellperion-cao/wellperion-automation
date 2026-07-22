@@ -2554,7 +2554,35 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
                 groups[gname].forEach(function(l){
                   h+='<div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:6px;">';
                   h+='<div style="font-weight:700;color:var(--text);margin-bottom:4px;">'+esc(l['약속'])+'</div>';
-                  h+='<div style="color:var(--dim);line-height:1.6;">'+esc(l['내용'])+'</div>';
+                  if(l['id']==='L18'){
+                    // L18(GM 문답·작업 보고 표준)만 실제 표 예시로 렌더 — 다른 약속은 그대로 줄글
+                    h+='<div style="overflow-x:auto;margin:6px 0 8px;">';
+                    h+='<table style="border-collapse:collapse;width:100%;font-size:12.5px;">';
+                    h+='<tr style="background:var(--accent-bg);">'
+                      +'<th style="border:1px solid var(--border);padding:5px 8px;text-align:left;color:var(--accent);">요소</th>'
+                      +'<th style="border:1px solid var(--border);padding:5px 8px;text-align:left;color:var(--accent);">뜻</th>'
+                      +'<th style="border:1px solid var(--border);padding:5px 8px;text-align:left;color:var(--accent);">예시</th></tr>';
+                    var l18rows=[
+                      ['📌 GM 지시','GM이 시킨 것 한 줄 되짚기','"반복 실수 근절해라"'],
+                      ['🔍 실측','실제 확인, 쉬운 말','결정이 큐에 안 박혀 재발동'],
+                      ['✅ 반영','한 것·커밋·배포','종결마커+가드 박제'],
+                      ['🔎 웰리 검수','라이브 시크릿크롬 실측','확인 OK'],
+                      ['👉 GM 액션','GM이 정할 것(필요 시만)','라이브 발효 1개']
+                    ];
+                    l18rows.forEach(function(r){
+                      h+='<tr>'
+                        +'<td style="border:1px solid var(--border);padding:5px 8px;color:var(--text);white-space:nowrap;">'+esc(r[0])+'</td>'
+                        +'<td style="border:1px solid var(--border);padding:5px 8px;color:var(--dim);">'+esc(r[1])+'</td>'
+                        +'<td style="border:1px solid var(--border);padding:5px 8px;color:var(--dim);">'+esc(r[2])+'</td>'
+                        +'</tr>';
+                    });
+                    h+='</table></div>';
+                    h+='<div style="font-size:11px;color:var(--dim);margin-bottom:6px;">맨 위 상태 1줄 + 맨 끝 기록위치 붙임</div>';
+                    h+='<div><button type="button" id="btn-l18-detail" onclick="var el=document.getElementById(\'l18-detail\');var b=document.getElementById(\'btn-l18-detail\');var open=el.style.display!==\'none\';el.style.display=open?\'none\':\'block\';b.textContent=open?\'▸ 규칙 전문 보기\':\'▴ 접기\';" style="background:none;border:1px solid var(--border);color:var(--accent);border-radius:4px;padding:3px 10px;font-size:11px;cursor:pointer;">▸ 규칙 전문 보기</button></div>';
+                    h+='<div id="l18-detail" style="display:none;color:var(--dim);line-height:1.6;margin-top:6px;">'+esc(l['내용'])+'</div>';
+                  } else {
+                    h+='<div style="color:var(--dim);line-height:1.6;">'+esc(l['내용'])+'</div>';
+                  }
                   h+='</div>';
                 });
                 h+='</div>';
