@@ -3880,38 +3880,22 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
 
     <!-- 📦 콘텐츠 허브 — O1식 박스 링크 그리드 (2026-07-22 GM 지시: M1 단순화 · #m1-dash 인라인 대시보드는 cmo/funnel/콘텐츠문의현황.html로 이관, 강사접수 iframe은 링크 박스로 대체) -->
     <section id="m1-hub" style="margin:18px 0;">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
-        <a href="cmo/intake/instructor_intake.html" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--paper);">
-          <div style="font-size:1.4rem;margin-bottom:8px;">🎬</div>
-          <div style="font-size:1rem;font-weight:800;color:var(--text);">콘텐츠 접수</div>
-          <div style="font-size:.8rem;color:var(--dim);margin-top:6px;">강사·현장에서 사진·영상 직접 접수</div>
-        </a>
-        <a href="cmo/funnel/콘텐츠문의현황.html" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--paper);">
-          <div style="font-size:1.4rem;margin-bottom:8px;">📊</div>
-          <div style="font-size:1rem;font-weight:800;color:var(--text);">콘텐츠 문의 현황</div>
-          <div style="font-size:.8rem;color:var(--dim);margin-top:6px;">채널별 발행·문의·전환 라이브 대시보드</div>
-        </a>
-        <a href="#m1-foundation" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--paper);">
-          <div style="font-size:1.4rem;margin-bottom:8px;">🧭</div>
-          <div style="font-size:1rem;font-weight:800;color:var(--text);">기반</div>
-          <div style="font-size:.8rem;color:var(--dim);margin-top:6px;">회사소개서·전략 로드맵·브랜드 가이드</div>
-        </a>
-        <a href="#m1-review" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--paper);">
-          <div style="font-size:1.4rem;margin-bottom:8px;">🔍</div>
-          <div style="font-size:1rem;font-weight:800;color:var(--text);">콘텐츠 검수 대기</div>
-          <div style="font-size:.8rem;color:var(--dim);margin-top:6px;">승인/반려 큐 — 발행 트리거</div>
-        </a>
-        <a href="#m1-publish-scripts" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--paper);">
-          <div style="font-size:1.4rem;margin-bottom:8px;">🚀</div>
-          <div style="font-size:1rem;font-weight:800;color:var(--text);">자동 발행</div>
-          <div style="font-size:.8rem;color:var(--dim);margin-top:6px;">5채널 동시 발행 · 스크립트 레퍼런스</div>
-        </a>
-        <a href="#m1-inquiry-entry" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--paper);">
-          <div style="font-size:1.4rem;margin-bottom:8px;">🔗</div>
-          <div style="font-size:1rem;font-weight:800;color:var(--text);">문의 진입점</div>
-          <div style="font-size:.8rem;color:var(--dim);margin-top:6px;">한국어·영어 공식 문의 페이지</div>
-        </a>
-      </div>
+      <a href="cmo/intake/instructor_intake.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:14px 0 12px;padding:16px 20px;background:linear-gradient(135deg,#14352a,#1a1a2a);border:1px solid #2fa37a;border-radius:14px;text-decoration:none;color:#fff;">
+        <span style="font-size:28px;flex-shrink:0;">🎬</span>
+        <span style="flex:1;">
+          <span style="display:block;font-size:16px;font-weight:800;">콘텐츠 접수 — 사진·영상·소개 직접 받기</span>
+          <span style="display:block;font-size:12.5px;color:#a8e0c9;margin-top:3px;line-height:1.5;">강사·현장 콘텐츠를 폼으로 접수 → 공식 톤으로 제작·검수·발행. 마감 없이 상시.</span>
+        </span>
+        <span style="font-size:13px;font-weight:800;color:#fff;background:#2fa37a;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
+      </a>
+      <a href="cmo/funnel/콘텐츠문의현황.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:-2px 0 6px;padding:16px 20px;background:linear-gradient(135deg,#2a2416,#1a1a2a);border:1px solid #c9a24a;border-radius:14px;text-decoration:none;color:#fff;">
+        <span style="font-size:28px;flex-shrink:0;">📊</span>
+        <span style="flex:1;">
+          <span style="display:block;font-size:16px;font-weight:800;">콘텐츠 문의 현황 — 채널별 발행·문의·전환</span>
+          <span style="display:block;font-size:12.5px;color:#e6d29a;margin-top:3px;line-height:1.5;">라이브 대시보드 · 기간 필터 · 채널별 성과 · 인사이트.</span>
+        </span>
+        <span style="font-size:13px;font-weight:800;color:#221F20;background:#c9a24a;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
+      </a>
     </section>
 
     <!-- ① 기반 — 회사·전략·브랜드 (2026-07-15 GM 설계: 콘텐츠 방향 연료 · m1-foundation) -->
