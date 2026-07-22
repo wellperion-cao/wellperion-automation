@@ -47,6 +47,12 @@ try:  # 전역 발송 페이싱(프로세스 간 429 방지) — best-effort
 except Exception:
     def _tg_pace(*_a, **_k):
         return None
+
+try:  # 결정 정합 게이트 공용 신호(§4) — dedup 이 재발송을 막을 때 1줄 남긴다(best-effort)
+    from decision_replay_log import append as _replay_append
+except Exception:
+    def _replay_append(*_a, **_k):
+        return False
 from pathlib import Path
 
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
@@ -492,7 +498,16 @@ def send_publish_digest(
     dirty = False
     for key, group in groups.items():
         if key in ledger:
-            continue  # 이미 발신된 콘텐츠(그룹키 존재) — 항목 부분집합·해시 변동 무관 재스팸 방지
+            # 이미 발신된 콘텐츠(그룹키 존재) — 항목 부분집합·해시 변동 무관 재스팸 방지.
+            # 결정 정합 신호(§4): 이미 요약 발신된 콘텐츠가 재유입돼 재발송을 막은 순간을
+            # 공용 로그에 1줄 남긴다(옛것 재생 차단 증거). dry-run 은 로그를 더럽히지 않는다.
+            if not dry_run:
+                _replay_append(
+                    "cmo-publish-digest",
+                    subject=str(key),
+                    detail="이미 요약 발신된 콘텐츠 재유입 — 통합요약 재발송 차단(멱등)",
+                )
+            continue
 
         complete, reason = _group_is_complete(key, all_review_items)
 
