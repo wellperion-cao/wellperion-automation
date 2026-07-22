@@ -156,6 +156,14 @@
   .coo-tag{display:inline-block; font-size:9.5px; font-weight:700; border-radius:8px; padding:1px 7px; margin-left:5px; vertical-align:1px;}
   .coo-tag.wait{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
 
+  /* ── 🚢 진행·정박 미션 표뷰(카드 나열 → 표 전환 · GM 지시 2026-07-22) ── */
+  .gtbl-wrap{overflow-x:auto; margin:2px 0 4px;}
+  .gtbl{border-collapse:collapse; width:100%; min-width:520px; font-size:12.5px; background:var(--surface); border-radius:8px; overflow:hidden;}
+  .gtbl th, .gtbl td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top; color:var(--text-soft);}
+  .gtbl th{background:var(--paper); font-weight:700; color:var(--text); font-size:11.5px;}
+  .gtbl tr:hover td{background:rgba(124,58,237,0.07);}
+  .gtbl td strong{color:var(--text);}
+
   footer.foot{margin-top:22px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:11px; line-height:1.6;}
   footer.foot b{color:var(--text-soft);}
   code{background:rgba(255,255,255,0.07); color:#e6d9ff; border-radius:4px; padding:1px 5px; font-size:11px;}
@@ -661,10 +669,13 @@
       <div id="erp-ah-body" class="autopanel-body"></div>
       <div id="erp-ah-time" class="autopanel-time"></div>
 
-      <h3 style="margin:20px 0 4px;">② 모듈 결과 산출 <span style="font-size:12px;font-weight:400;color:var(--dim);">떠서 진짜 결과물을 냈는지 — 침묵 감지기 실측</span></h3>
-      <div id="erp-ah-silence-headline" class="autopanel-headline health">집계 중…</div>
-      <div id="erp-ah-silence-body" class="autopanel-body"></div>
-      <div id="erp-ah-silence-time" class="autopanel-time"></div>
+      <h3 style="margin:20px 0 4px;">② 모듈 결과 산출 <span style="font-size:12px;font-weight:400;color:var(--dim);">떠서 진짜 결과물을 냈는지 — 침묵 감지기 실측(눌러서 펼치기)</span></h3>
+      <details class="coo-details" id="module-silence-toggle">
+        <summary id="erp-ah-silence-headline" style="font-size:14px;">집계 중…</summary>
+        <div id="erp-ah-silence-body" class="autopanel-body" style="margin-top:9px;"></div>
+        <div class="sec-note" style="margin-top:8px;">확인됨=결과 실측 확인 · 결과 확인 안 됨=판정 자료 없음(모름) · 멈춤(신호 끊김)=최근 결과가 끊김 · 돌고 있음(주기 미설정)=활동은 있으나 주기 미등록 · 꺼둠=GM이 끈 모듈(enabled:false)</div>
+        <div id="erp-ah-silence-time" class="autopanel-time"></div>
+      </details>
     </div>
     <!-- ══ /자동화 건강 점수판 ══ -->
 
@@ -686,13 +697,14 @@
       <div class="tbl-wrap" id="notify-board-wrap">
         <table>
           <thead>
-            <tr><th style="width:120px">시각</th><th style="width:70px">채널</th><th style="width:150px">방</th><th>내용</th><th style="width:70px">담당</th><th style="width:150px">상태</th></tr>
+            <tr><th style="width:120px">시각</th><th style="width:44px">채널</th><th style="width:150px">방</th><th>내용</th><th style="width:70px">담당</th><th style="width:150px">상태</th></tr>
           </thead>
           <tbody id="notify-board-tbody">
             <tr><td colspan="6" style="color:var(--dim);">불러오는 중…</td></tr>
           </tbody>
         </table>
       </div>
+      <div class="sec-note" style="margin:6px 0 0;">📨 텔레그램 · 💛 카카오톡 (채널 칸=이모지)</div>
     </div>
     <!-- ══ /통합 알림 보드 ══ -->
 
@@ -852,6 +864,24 @@
     return t.length > 170 ? t.slice(0, 170) + '…' : t;
   }
   function missionCleanTitle(t){ return String(t || '').replace(/^\[[^\]]+\]\s*/, ''); }
+  // 진행중·정박 공용 표 렌더(GM 지시 2026-07-22 — 카드 나열 대신 표로 한눈 스캔). 컬럼: 배|담당|미션|상태|재개조건·다음.
+  function missionTableHtml(list, statusFn, contentFn){
+    var rows = list.map(function(s){
+      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
+      var owner = esc(nick + (s.ship_no != null ? ' ' + s.ship_no : ''));
+      var content = missionSummary(contentFn(s));
+      return '<tr>' +
+        '<td style="text-align:center;">' + missionBoat(s.priority) + '</td>' +
+        '<td>' + owner + '</td>' +
+        '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong></td>' +
+        '<td>' + esc(statusFn(s)) + '</td>' +
+        '<td>' + (content ? esc(content) : '<span style="color:var(--dim);">—</span>') + '</td>' +
+      '</tr>';
+    }).join('');
+    return '<div class="gtbl-wrap"><table class="gtbl">' +
+      '<tr><th style="width:36px">배</th><th style="width:88px">담당</th><th>미션</th><th style="width:96px">상태</th><th>재개조건 · 다음</th></tr>' +
+      rows + '</table></div>';
+  }
   function renderActiveMissions(queue){
     var el = document.getElementById('active-missions');
     if(!el) return;
@@ -862,24 +892,7 @@
       return;
     }
     list.sort(function(a, b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); });
-    el.innerHTML = list.map(function(s){
-      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
-      var owner = esc(nick + (s.ship_no != null ? ' ' + s.ship_no : ''));
-      var sum = missionSummary(s.next || s.note);
-      return '<div class="rcard" style="--rc:var(--accent-soft);">' +
-        '<div class="rcard-top">' +
-          '<span class="rcard-ico">' + missionBoat(s.priority) + '</span>' +
-          '<div class="rcard-tt">' +
-            '<div class="rcard-nm">' + esc(missionCleanTitle(s.title)) + '</div>' +
-            '<div class="rcard-meta">' +
-              '<span class="rcard-cy">담당 <b style="color:var(--text-soft);">' + owner + '</b></span>' +
-              '<span class="pill on">진행중</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-        (sum ? '<div class="rrow" style="border-top:none;"><span class="rv">' + esc(sum) + '</span></div>' : '') +
-      '</div>';
-    }).join('');
+    el.innerHTML = missionTableHtml(list, function(){ return '🚢 진행중'; }, function(s){ return s.next || s.note; });
   }
 
   // ═══════════ ⚓ 정박·대기 (status/_queue.json surface==autonomy · 조건/시각 트리거 대기 · 항로 이관 2026-07-15 · 배237) ═══════════
@@ -894,24 +907,7 @@
       return;
     }
     list.sort(function(a, b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); });
-    el.innerHTML = list.map(function(s){
-      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
-      var owner = esc(nick + (s.ship_no != null ? ' ' + s.ship_no : ''));
-      var cond = missionSummary(s.next || s.depends_on);   // 재개 조건 = next 우선, 없으면 depends_on 요약
-      return '<div class="rcard" style="--rc:#8ca6d6;">' +
-        '<div class="rcard-top">' +
-          '<span class="rcard-ico">' + missionBoat(s.priority) + '</span>' +
-          '<div class="rcard-tt">' +
-            '<div class="rcard-nm">' + esc(missionCleanTitle(s.title)) + '</div>' +
-            '<div class="rcard-meta">' +
-              '<span class="rcard-cy">담당 <b style="color:var(--text-soft);">' + owner + '</b></span>' +
-              '<span class="pill idle">⚓ 정박</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-        (cond ? '<div class="rrow"><span class="rk">재개 조건</span><span class="rv">' + esc(cond) + '</span></div>' : '') +
-      '</div>';
-    }).join('');
+    el.innerHTML = missionTableHtml(list, function(s){ return s.status === 'STANDBY' ? '⚓ 보류' : '⚓ 정박'; }, function(s){ return s.next || s.depends_on; });
   }
 
   // ═══════════ 🤖 히어로: 결과물 중심 한 줄 요약(배237) ═══════════
@@ -1292,17 +1288,16 @@
     var el = document.getElementById('stats');
     var cards = [];
 
-    // 1) 포착 적중률 — observation_ledger hit_rate 항목의 기록값(N/M)만 표시. 없으면 미측정.
+    // 1) 포착 적중률 — observation_ledger hit_rate 항목의 기록값(N/M)만 표시. %·게이지 대신 원값+표본 한계 꼬리표(GM 지적 2026-07-22).
     (function(){
       var hr = d.obsLedger.filter(function(o){ return o.signal_type === 'hit_rate'; });
       var h = last(hr), ratio = null;
       if(h){ var m = String(h.summary || '').match(/(\d+)\s*\/\s*(\d+)/); if(m) ratio = [+m[1], +m[2]]; }
       if(ratio && ratio[1] > 0){
-        var pct = Math.round(ratio[0] / ratio[1] * 100);
+        var tiny = ratio[1] < 10;
         cards.push('<div class="scard" style="--sc:var(--gold)"><div class="sh">🎯 포착 적중률</div>' +
-          '<div class="sbig">' + pct + '<small>%</small></div>' +
-          '<div class="sbar gold"><i style="width:' + pct + '%"></i></div>' +
-          '<div class="ssub">GM 승인 <b>' + ratio[0] + '</b> / 포착 제안 <b>' + ratio[1] + '</b> — 로그 기록값</div></div>');
+          '<div class="sbig">' + ratio[0] + '/' + ratio[1] + '<small>건</small></div>' +
+          '<div class="ssub">GM 승인 <b>' + ratio[0] + '</b> / 포착 제안 <b>' + ratio[1] + '</b> — 로그 기록값' + (tiny ? ' · <b>표본 ' + ratio[1] + '건 — 통계 무의미</b>' : '') + '</div></div>');
       } else {
         cards.push('<div class="scard unmeasured"><div class="sh">🎯 포착 적중률</div>' +
           '<div class="sbig">미측정</div>' +
@@ -1337,53 +1332,39 @@
         '<div class="ssub">진짜 자율 판단·실행(포착·추천·학습·관찰) · 오늘 <b>' + todayN + '</b>건</div></div>');
     })();
 
-    // 4) 누적 포착(등록) — scan_log registered 합
+    // 4) 누적 포착(등록) — scan_log registered 합. ※ 아래 '틈 감지기' 카드와 숫자가 다를 수 있음(정의 다름·GM 지적 2026-07-22).
     (function(){
       var reg = (d.scanLog || []).reduce(function(a, s){ return a + (s.registered|0); }, 0);
-      cards.push('<div class="scard" style="--sc:var(--pink)"><div class="sh">🔎 누적 자율 포착</div>' +
+      cards.push('<div class="scard" style="--sc:var(--pink)"><div class="sh">🔎 누적 자율 포착(등록)</div>' +
         '<div class="sbig">' + reg + '<small>건</small></div>' +
-        '<div class="ssub">06:30 스캔이 신규 등록한 배(중복 제외 누적).</div></div>');
+        '<div class="ssub">06:30 스캔이 신규 등록한 배(중복 제외 누적) — 아래 <b>틈 감지기</b> 자율 처리와는 다른 집계(등록 수 ≠ 재개가능 처리 수).</div></div>');
     })();
 
-    // 5) 차등 점검 절감 — audit_registry.json 안정 비율(구조적 설명, 가짜 수치 금지)
+    // 5) 차등 점검 절감 — audit_registry.json 안정 비율. %·게이지 대신 원값(안정/전체)+한계 꼬리표(GM 지적 2026-07-22).
     (function(){
       var reg = d.auditReg;
       var pages = (reg && reg.pages) || [];
       var stable = pages.filter(function(p){ return p.status === 'stable'; }).length;
       var total = pages.length;
       if(total){
-        var pct = Math.round(stable / total * 100);
+        var changed = total - stable;
         cards.push('<div class="scard" style="--sc:var(--blue)"><div class="sh">🔬 차등 점검 스킵률</div>' +
-          '<div class="sbig">' + pct + '<small>%</small></div>' +
-          '<div class="sbar"><i style="width:' + pct + '%"></i></div>' +
-          '<div class="ssub">안정 <b>' + stable + '</b> / 전체 <b>' + total + '</b>개 가이드 페이지가 재점검 대상에서 제외 — 자율 점검이 구조상 <b>전수→신규/변경분만</b>으로 좁아짐(회차별 실측 로그는 별도).</div></div>');
+          '<div class="sbig">' + stable + '/' + total + '<small>안정</small></div>' +
+          '<div class="ssub">안정(재점검 제외) <b>' + stable + '</b> / 전체 <b>' + total + '</b>개 가이드 페이지 — ' +
+          (changed === 0 ? '<b>변경분 없어 재점검 0건</b>(아직 실제 스킵을 검증할 회차가 없었다는 뜻)' : '변경분 <b>' + changed + '</b>건은 재점검 대상') + '</div></div>');
       } else {
         cards.push('<div class="scard unmeasured"><div class="sh">🔬 차등 점검 스킵률</div><div class="sbig">미측정</div><div class="ssub">안정 대장(audit_registry.json) 없음.</div></div>');
       }
     })();
 
-    // 6) 자율 틈 감지기(배237(b) 반반) 재개가능 자율 처리율 — auto/(auto+propose), scan_log 누적.
-    //    정체(stalled)는 surface-only(자율 write 0)라 이 분모에 안 들어감(정체 의심 패널은 오탐으로 제거, 2026-07-14 GM).
+    // 6) 자율 틈 감지기(배237(b) 반반) — 재개가능 처리율(#구6)·되돌림률(#구7) 병합, %·게이지 걷어내고 원값 한 줄로(GM 지적 2026-07-22).
+    //    정체(stalled)는 surface-only(자율 write 0)라 자율/제안 분모에 안 들어감(정체 의심 패널은 오탐으로 제거, 2026-07-14 GM).
     (function(){
       var autoN = 0, proposeN = 0;
       (d.scanLog || []).forEach(function(s){
         autoN += (s.gap_auto_applied | 0);
         proposeN += (s.gap_proposed | 0);
       });
-      var total = autoN + proposeN;
-      if(total){
-        var pct = Math.round(autoN / total * 100);
-        cards.push('<div class="scard" style="--sc:var(--pink)"><div class="sh">🔀 틈 감지기 재개가능 처리율</div>' +
-          '<div class="sbig">' + pct + '<small>%</small></div>' +
-          '<div class="sbar"><i style="width:' + pct + '%"></i></div>' +
-          '<div class="ssub">자율 처리 <b>' + autoN + '</b> / (자율 <b>' + autoN + '</b> + 제안 <b>' + proposeN + '</b>) — 재개가능 감지 결과(gm_aide_scan_log 누적). 정체는 surface-only(자율 처리 제외).</div></div>');
-      } else {
-        cards.push('<div class="scard unmeasured"><div class="sh">🔀 틈 감지기 재개가능 처리율</div><div class="sbig">미측정</div><div class="ssub">재개가능 자율 처리 이력 없음(게이트 AIDE_RESUMABLE_APPLY OFF 또는 아직 미포착).</div></div>');
-      }
-    })();
-
-    // 7) 자율 틈 감지기 되돌림률 — reverted/auto, 관찰원장 auto_exec dedup_key 재적용(2회+) = 외부에서 되돌린 뒤 재감지
-    (function(){
       var re = /^gmaide_autoexec\|(stall_tag|resumable_tag|nudge|depends_resolved)\|/;
       var counts = {};
       (d.obsLedger || []).forEach(function(o){
@@ -1393,14 +1374,12 @@
       var keys = Object.keys(counts);
       var autoTotal = keys.length;
       var reverted = keys.filter(function(k){ return counts[k] > 1; }).length;
-      if(autoTotal){
-        var pct = Math.round(reverted / autoTotal * 100);
-        cards.push('<div class="scard" style="--sc:var(--gold)"><div class="sh">🔁 틈 감지기 되돌림률</div>' +
-          '<div class="sbig">' + pct + '<small>%</small></div>' +
-          '<div class="sbar gold"><i style="width:' + pct + '%"></i></div>' +
-          '<div class="ssub">되돌림(재적용) <b>' + reverted + '</b> / 자율 조치 <b>' + autoTotal + '</b>건 — 동일 태그가 원장에 2회+ 기록되면 외부에서 되돌린 뒤 재감지된 것(멱등 위반 없음 확인용)</div></div>');
+      if(autoN || proposeN || autoTotal){
+        cards.push('<div class="scard" style="--sc:var(--pink)"><div class="sh">🔀 틈 감지기</div>' +
+          '<div class="sbig" style="font-size:17px;">자율 ' + autoN + ' · 제안 ' + proposeN + ' · 되돌림 ' + reverted + '/' + autoTotal + '</div>' +
+          '<div class="ssub"><b>자율/제안</b>=재개가능 감지 결과(gm_aide_scan_log 누적) · <b>되돌림</b>=자율 조치 ' + autoTotal + '건(관찰원장 dedup) 중 동일 태그 재적용 감지 건 — 0이면 멱등 위반 없음</div></div>');
       } else {
-        cards.push('<div class="scard unmeasured"><div class="sh">🔁 틈 감지기 되돌림률</div><div class="sbig">미측정</div><div class="ssub">자율 틈 감지기 조치 이력 없음(신규 게이트 OFF).</div></div>');
+        cards.push('<div class="scard unmeasured"><div class="sh">🔀 틈 감지기</div><div class="sbig">미측정</div><div class="ssub">자율 틈 감지기 조치 이력 없음(게이트 OFF 또는 아직 미포착).</div></div>');
       }
     })();
 
@@ -1434,12 +1413,14 @@
 
   // ═══════════ ② 돌아가는 자동화: 🤖 자동화 건강 점수판 (구 T2 이식 · renderAutomationHealth) ═══════════
   function erpAhBadge(st){
-    if(st === '정상') return '<span class="statchip ok">🟢 정상</span>';
-    if(st === '실패') return '<span class="statchip bad">🔴 실패</span>';
-    if(st === '미실행') return '<span class="statchip idle">⚪ 미실행</span>';
-    // '대기' = 월간·주간 예정 작업의 첫 실행일 전(정상). 실패로 오해 없게 '예정'으로 표기.
-    if(st === '대기') return '<span class="statchip ok" style="opacity:.75;">⏳ 예정</span>';
-    return '<span class="statchip warn">❓ ' + esc(st) + '</span>';
+    var s = String(st == null ? '' : st);
+    // '정상'으로 시작하면(예 "정상(건너뜀)") 전부 🟢 — 접두만 보고 '❓'로 오표시하던 버그 수정(GM 지적 2026-07-22).
+    if(s.indexOf('정상') === 0) return '<span class="statchip ok">🟢 ' + esc(s) + '</span>';
+    if(s === '실패') return '<span class="statchip bad">🔴 실패</span>';
+    if(s === '미실행') return '<span class="statchip idle">⚪ 미실행</span>';
+    // '대기' = 월간·주간 예정 작업의 첫 실행일 전(정상). 실패로 오해 없게 '첫 실행 대기'로 표기(용어 통일 2026-07-22).
+    if(s === '대기') return '<span class="statchip ok" style="opacity:.75;">⏳ 첫 실행 대기</span>';
+    return '<span class="statchip warn">❓ ' + esc(s) + '</span>';
   }
   function renderAutomationHealth(d){
     var hl   = document.getElementById('erp-ah-headline');
@@ -1450,12 +1431,18 @@
       return;
     }
     var ah = d.automation_health || {};
+    // 런타임 이상 = erp_status.systems 중 state!=='정상'(예: 봇 프로세스는 죽었는데 예약작업은 '떴다'로만 판정되는 경우 포착).
+    // ①(예약작업 실행) %만으로는 "떴다≠살아있다"를 못 걸러낸다는 GM 지적(2026-07-22) — 헤드라인에 편입.
+    var sysAnom = (d.systems || []).filter(function(s){ return s && s.state !== '정상'; });
     if(hl){
       var rate  = ah.rate || 0;
-      var color = rate === 100 ? 'var(--green)' : (rate >= 80 ? 'var(--gold)' : '#ff8a80');
+      var color = sysAnom.length ? '#ff8a80' : (rate === 100 ? 'var(--green)' : (rate >= 80 ? 'var(--gold)' : '#ff8a80'));
       hl.style.color = color;
       // ah.summary 원문("자동화 X/Y 정상")은 "모듈이 다 돈다"로 오해되기 쉬워 여기서 직접 문구를 짠다(②와 혼동 방지).
-      hl.textContent = ah.total ? '예약작업 실행 ' + ah.healthy + '/' + ah.total + ' (' + rate + '%)' : '집계 중';
+      var anomTxt = sysAnom.length
+        ? ('런타임 이상 ' + sysAnom.length + '(' + sysAnom.map(function(s){ return s.name; }).join('·') + ')')
+        : '런타임 이상 0';
+      hl.textContent = ah.total ? ('예약작업 ' + ah.healthy + '/' + ah.total + ' 정상 · ' + anomTxt) : '집계 중';
     }
     if(body){
       // 실패를 맨 위로(눈에 띄게) · 예정/정상은 아래. 원본 순서는 동률 유지.
@@ -1494,13 +1481,14 @@
   // Wellperion-Module-Report-Daily 예약작업에 편승해 매일 갱신). ①(예약작업 실행)과 다른 것을
   // 잰다 — "떴다"가 아니라 "로컬 아티팩트 기준 진짜 결과가 나왔다". 판정불가(모름)는 절대 정상으로
   // 세지 않는다(억지 초록 금지 — 이 화면 전체의 설계 원칙).
+  // 라벨 = GM이 바로 아는 쉬운 말로(GM 지적 2026-07-22 — "측정불가/미가동/주기미선언 뭐지").
   function silenceBadge(status, dormant){
     if(status === 'ok') return '<span class="statchip ok">🟢 정상(결과 확인)</span>';
-    if(status === 'silent') return '<span class="statchip bad">🔴 침묵(결과 없음)</span>';
+    if(status === 'silent') return '<span class="statchip bad">🔴 멈춤(신호 끊김)</span>';
     if(status === 'not_applicable') return '<span class="statchip idle">📄 대상아님(문서)</span>';
-    if(status === 'active_no_cadence') return '<span class="statchip idle">🟡 활동(주기미선언)</span>';
-    if(dormant) return '<span class="statchip idle">💤 휴면(미가동)</span>';
-    return '<span class="statchip idle">⚪ 모름(측정 불가)</span>';
+    if(status === 'active_no_cadence') return '<span class="statchip idle">🟡 돌고 있음(주기 미설정)</span>';
+    if(dormant) return '<span class="statchip idle">💤 꺼둠</span>';
+    return '<span class="statchip idle">⚪ 결과 확인 안 됨</span>';
   }
   // module_registry.json에서 enabled===false인 모듈은 '모름'(진짜 미확인)이 아니라 '휴면(미가동)'
   // 으로 재라벨(표시만 — 스냅샷 데이터·판정 스크립트 무변경). hangro·gmail 등 enabled===true인
@@ -1515,7 +1503,7 @@
     var body = document.getElementById('erp-ah-silence-body');
     var t    = document.getElementById('erp-ah-silence-time');
     if(!snap || !snap.summary){
-      if(hl) hl.innerHTML = '<span style="color:var(--dim);font-weight:400;">아직 발행되지 않음 — 스냅샷 파일 없음(집계 0건, 정상 아님)</span>';
+      if(hl) hl.innerHTML = '📶 모듈 결과 — <span style="color:var(--dim);font-weight:400;">아직 발행되지 않음(스냅샷 파일 없음, 집계 0건·정상 아님)</span>';
       if(body) body.innerHTML = '';
       if(t) t.textContent = '';
       return;
@@ -1534,9 +1522,9 @@
     if(hl){
       var color = silent > 0 ? '#ff8a80' : (unmeas > 0 ? 'var(--gold)' : 'var(--green)');
       hl.style.color = color;
-      hl.textContent = '확인됨 ' + ok + '/' + applicable + ' · 모름 ' + unmeas + '건 · 침묵 ' + silent + '건' +
-        (activeNoCadence ? ' · 활동(주기미선언) ' + activeNoCadence + '건' : '') +
-        (dormantCnt ? ' · 휴면 ' + dormantCnt + '건' : '');
+      // 제목 한 줄 요약(토글 접힌 상태에서도 항상 보임) — 쉬운 말 라벨로 5범주 고정 표시(GM 지적 2026-07-22).
+      hl.textContent = '📶 모듈 결과 — 확인됨 ' + ok + '/' + applicable + ' · 결과 확인 안 됨 ' + unmeas +
+        ' · 멈춤 ' + silent + ' · 돌고 있음 ' + activeNoCadence + ' · 꺼둠 ' + dormantCnt;
     }
     if(body){
       var mods = modsAll.slice();
@@ -1659,7 +1647,7 @@
         else if(okSend){ statusCell = '<span class="statchip ok">🟢 발효</span>' + SUB + '정상</div>'; okN++; }
         else { statusCell = '<span class="statchip bad">🔴 발효·실패</span>'; badN++; }
       } else if(!ah){
-        lastCell = '<span style="color:var(--dim)">측정불가</span>';
+        lastCell = '<span style="color:var(--dim)">결과 확인 안 됨</span>';
         statusCell = '<span class="statchip ok">🟢 발효</span>' + SUB + '발송이력 미측정</div>'; okN++;
       } else if(ah.state && ah.state.indexOf('실패') === 0){
         lastCell = '<span style="font-variant-numeric:tabular-nums;">' + esc(fmtKAmPm(ah.last_run)) + '</span>';
@@ -1694,7 +1682,8 @@
   // item(state·freq) + erp automation_health + kakao_last_send 실측을 병합해 표시용 판정(ok|warn|bad|dead) 산출.
   function notifySeverity(item, ahMap, schedAlive, kakaoLast){
     if(item.state === 'dead') return { sev:'dead', label:'⚫ 죽은 배선' };
-    if(item.state === 'off')  return { sev:'bad',  label:'🔴 꺼짐' };
+    // state==='off' = GM이 의도적으로 끈 것(킬스위치 ENABLED=False 등) — 진짜 실패(🔴)와 구분해 ⚪로(GM 지적 2026-07-22).
+    if(item.state === 'off')  return { sev:'idle', label:'⚪ 꺼둠(의도적)' };
     // state === 'live' 이후 — 런타임 실측으로 강등 여부 확인
     if(item.trigger === 'apscheduler' && !schedAlive){
       return { sev:'bad', label:'🔴 스케줄러 정지' };
@@ -1715,9 +1704,12 @@
     return { sev:'ok', label:'🟢 가동' };
   }
 
+  // 채널 칸 = 이모지만(글자가 칸을 넘쳐 짤리는 문제 해소 · GM 지시 2026-07-22). 방 이름은 별도 칸에 그대로 표시.
+  var NOTIFY_CH_EMOJI = { telegram:'📨', kakao:'💛' };
   function notifyChannelCell(item){
-    var logo = item.channel === 'telegram' ? TG_LOGO : (item.channel === 'kakao' ? KT_LOGO : '');
-    return logo + '<span class="chroom">' + esc(item.channel === 'telegram' ? '텔레그램' : (item.channel === 'kakao' ? '카카오톡' : item.channel)) + '</span>';
+    var chName = item.channel === 'telegram' ? '텔레그램' : (item.channel === 'kakao' ? '카카오톡' : (item.channel || '—'));
+    var emo = NOTIFY_CH_EMOJI[item.channel] || '❔';
+    return '<span title="' + esc(chName) + '" style="font-size:15px;">' + emo + '</span>';
   }
 
   function notifyRowHtml(item, sevInfo){
@@ -1820,7 +1812,7 @@
       return sx < sy ? -1 : (sx > sy ? 1 : 0);
     });
 
-    var counts = { ok:0, warn:0, bad:0, dead:0 };
+    var counts = { ok:0, warn:0, bad:0, dead:0, idle:0 };
     _notifyRowsCache = items.map(function(item){
       var sevInfo = notifySeverity(item, ahMap, schedAlive, kakaoLast);
       counts[sevInfo.sev]++;
@@ -1828,7 +1820,7 @@
     });
 
     if(summaryEl){
-      summaryEl.innerHTML = '총 <b>' + items.length + '건</b> · 🟢 가동 ' + counts.ok + ' · 🟡 조건부 ' + counts.warn + ' · 🔴 꺼짐 ' + counts.bad + ' · ⚫ 죽은배선 ' + counts.dead;
+      summaryEl.innerHTML = '총 <b>' + items.length + '건</b> · 🟢 가동 ' + counts.ok + ' · 🟡 조건부 ' + counts.warn + ' · 🔴 실패 ' + counts.bad + ' · ⚪ 꺼둠(의도적) ' + counts.idle + ' · ⚫ 죽은배선 ' + counts.dead;
     }
 
     // 담당자 필터 버튼(동적)

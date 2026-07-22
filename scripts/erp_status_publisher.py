@@ -83,14 +83,32 @@ def collect_processes():
     items = []
     sched_log = ROOT / "telegram_bot" / "scheduler.log"
     bot_log = ROOT / "telegram_bot" / "bot.log"
+    bot_heartbeat = ROOT / "telegram_bot" / "bot_heartbeat.txt"
 
     s_state, s_detail = _state_from_minutes(_minutes_since(sched_log))
     items.append({"name": "일일 스케줄러", "state": s_state,
                   "detail": s_detail, "note": "정각 보고를 쏘는 시계"})
 
-    b_mins = _minutes_since(bot_log)
-    # 봇 로그는 스케줄러보다 한산할 수 있어 여유 둠
-    b_state, b_detail = _state_from_minutes(b_mins, warn_after=180)
+    # 봇 생존 판정 = 하트비트(bot_heartbeat.txt) 신선도 단일 기준(2026-07-22 수정).
+    # 이전엔 bot.log mtime(outbound 발신)으로 판정해 정기 발신 없는 낮 시간대
+    # 정상 무발신을 '이상(🔴)'으로 오탐(510분째 조용함 → 점검 필요). '조용함≠죽음' —
+    # 폴링 생존은 bot.py 가 5분마다 갱신하는 하트비트로만 확인 가능(getMe는
+    # API 도달성만 봄, 폴링 생존은 못 봄). 기준(20분=4회 미갱신 → 폴링 정지
+    # 의심)은 telegram_health_check.py _HEARTBEAT_STALE_MIN 과 동일 재사용
+    # (배102, 2026-07-03 CTO).
+    hb_mins = _minutes_since(bot_heartbeat)
+    if hb_mins is None:
+        b_state, b_detail = "불명", "하트비트 파일 없음(봇 미재기동)"
+    elif hb_mins <= 20:
+        b_state, b_detail = "정상", f"하트비트 {int(hb_mins)}분 전(생존)"
+    else:
+        b_state, b_detail = "이상", f"하트비트 {int(hb_mins)}분째 미갱신(폴링 정지 의심)"
+
+    # outbound 무발신(bot.log)은 참고 정보로만 붙인다 — 단독으로 이상 승격 금지.
+    out_mins = _minutes_since(bot_log)
+    if out_mins is not None:
+        b_detail += f" · 최근 발신 {int(out_mins)}분 전"
+
     items.append({"name": "텔레그램 봇", "state": b_state,
                   "detail": b_detail, "note": "보고·승인 중계"})
     return items
