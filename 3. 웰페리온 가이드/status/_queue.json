@@ -3133,5 +3133,33 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 bd6a85f44)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "bd6a85f44a746ec72968f9ec75320f6d4dfc5233"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-a3aff225b",
+    "clevel": "cpo",
+    "title": "[시포] 강습 새문의 카드 — 재문의 배지 성함칸→문의내용칸 이동 (성인/유소년 공용)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9747,
+    "artifact": "- _lessonRowHtml(성인/유소년 공용) 재문의 배지(_lriBadgeHtml)를 성함 셀에서 문의내용 셀 상단 줄로 이동\n- 라이브 검증: 성인(이수진 이전문의1건)·유소년(노수정15세 이전문의1건, 주우인17년생 같은번호다른문의1건) 스크린샷 확보, 성함칸 배지 0건 확인\n- 커밋 a3aff225b (CLI ad-hoc)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "a3aff225b"
+  },
+  {
+    "task_id": "CEO-2026-07-22-ADHOC-6f1e9eed9",
+    "clevel": "ceo",
+    "title": "[웰리] 히어로 KPI 스냅샷-우선 렌더로 로딩 병목 수리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9748,
+    "artifact": "home_kpi GAS(라이브 시트 집계)가 매 호출 7~8s 소요돼 home 히어로(매출·지출)가\n그만큼 '—'로 비어 보이던 문제. home_kpi·reg_board 응답을 localStorage write-through로\n캐시해 로드시 즉시 페인트 후 라이브로 갱신. 정확성 무손상(라이브 항상 최종).\n실측: 히어로 매출 콜드 8086ms→웜 105ms(~77x), 동일값 확인. (배9660) (CLI ad-hoc · 커밋 6f1e9eed9)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6f1e9eed9f4cf72e8a173674cde4aeaca82f491f"
   }
 ]
