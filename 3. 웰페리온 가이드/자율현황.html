@@ -1498,6 +1498,7 @@
     if(status === 'ok') return '<span class="statchip ok">🟢 정상(결과 확인)</span>';
     if(status === 'silent') return '<span class="statchip bad">🔴 침묵(결과 없음)</span>';
     if(status === 'not_applicable') return '<span class="statchip idle">📄 대상아님(문서)</span>';
+    if(status === 'active_no_cadence') return '<span class="statchip idle">🟡 활동(주기미선언)</span>';
     if(dormant) return '<span class="statchip idle">💤 휴면(미가동)</span>';
     return '<span class="statchip idle">⚪ 모름(측정 불가)</span>';
   }
@@ -1527,17 +1528,20 @@
     var dormantCnt = modsAll.filter(function(m){ return silenceIsDormant(m, regModsById); }).length;
     var c = snap.summary || {};
     var ok = c.ok || 0, silent = c.silent || 0, unmeasTotal = c.unmeasurable || 0, na = c.not_applicable || 0;
+    var activeNoCadence = c.active_no_cadence || 0;  // 최근 활동 있으나 notify_spec 주기 미선언(모름과 구분)
     var unmeas = unmeasTotal - dormantCnt;  // 표시용 '모름' — 휴면 재분류분 제외(분모는 원본 유지)
     var applicable = ok + silent + unmeasTotal;  // 대상아님(문서) 제외한 분모 — 데이터 그대로
     if(hl){
       var color = silent > 0 ? '#ff8a80' : (unmeas > 0 ? 'var(--gold)' : 'var(--green)');
       hl.style.color = color;
-      hl.textContent = '확인됨 ' + ok + '/' + applicable + ' · 모름 ' + unmeas + '건 · 침묵 ' + silent + '건' + (dormantCnt ? ' · 휴면 ' + dormantCnt + '건' : '');
+      hl.textContent = '확인됨 ' + ok + '/' + applicable + ' · 모름 ' + unmeas + '건 · 침묵 ' + silent + '건' +
+        (activeNoCadence ? ' · 활동(주기미선언) ' + activeNoCadence + '건' : '') +
+        (dormantCnt ? ' · 휴면 ' + dormantCnt + '건' : '');
     }
     if(body){
       var mods = modsAll.slice();
-      // 침묵을 맨 위(가장 급함) → 모름 → 정상 → 대상아님
-      var rank = { silent:0, unmeasurable:1, ok:2, not_applicable:3 };
+      // 침묵을 맨 위(가장 급함) → 모름 → 활동(주기미선언) → 정상 → 대상아님
+      var rank = { silent:0, unmeasurable:1, active_no_cadence:2, ok:3, not_applicable:4 };
       mods.sort(function(a, b){ return (rank[a.status] || 9) - (rank[b.status] || 9); });
       if(!mods.length){
         body.innerHTML = '<span style="color:var(--dim);">항목 없음</span>';
@@ -1560,7 +1564,7 @@
         body.innerHTML = h;
       }
     }
-    if(t) t.textContent = '기준: ' + esc(snap.generated_at_kst || '') + '  |  ※ 로컬 아티팩트 없거나 갱신주기 미선언인 모듈은 "모름"으로 표기(정상 아님) · 등록부 enabled:false 모듈은 "휴면(미가동)"으로 구분';
+    if(t) t.textContent = '기준: ' + esc(snap.generated_at_kst || '') + '  |  ※ 로컬 아티팩트를 못 찾은 모듈은 "모름"으로 표기(정상 아님) · 아티팩트는 최근인데 갱신주기 미선언인 모듈은 "활동(주기미선언)"으로 구분(모름과 다름) · 등록부 enabled:false 모듈은 "휴면(미가동)"으로 구분';
   }
 
   // ═══════════ ② 돌아가는 자동화: 📡 모듈 보고 현황 (status/module_registry.json 실값 렌더 · 2026-07-09) ═══════════

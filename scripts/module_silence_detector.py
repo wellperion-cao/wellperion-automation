@@ -69,6 +69,19 @@ DAILY_MAX_H = 30
 WEEKLY_MAX_H = 24 * 9   # 216
 MONTHLY_MAX_H = 24 * 35  # 840
 
+# notify_spec.daily/weekly/monthly 가 전부 false(주기 미선언)라도, 로컬 아티팩트가
+# 이 시간 내에 갱신됐으면 "모름(판정불가)"이 아니라 "활동(주기미선언)"으로 정직
+# 분리한다(감사 확정 2026-07-22 — cmo-publish-digest·coo-schedule-ssot·
+# coo-monthly-ops·cpo-sheet-contract-check 4건이 실제로는 최근에 가동했는데
+# 주기 미선언 한 가지 이유로 '모름'에 뭉뚱그려져 있었음). 새 임계를 만드는 대신
+# 등록부에 이미 있는 가장 넉넉한 선언 주기 MONTHLY_MAX_H(840h=35d)를 그대로
+# 재사용 — 주기 미선언 모듈이라도 월간 모듈보다 오래 조용할 이유는 없다는
+# 판단(coo-monthly-ops처럼 이름은 월간인데 notify_spec 미선언인 사례 포함).
+# 이 임계를 넘긴 채 주기 미선언인 모듈은 그대로 "모름" 유지(억지 활동 판정 금지).
+# silent 판정(watchdog)은 max_h(선언된 주기)가 있는 모듈에만 적용되므로 이
+# 임계는 그 로직과 무관 — 침묵 경보를 약화시키지 않는다.
+NO_CADENCE_ACTIVE_MAX_H = MONTHLY_MAX_H  # 840h(35d) — 기존 상수 재사용
+
 # json/jsonl 내부에서 찾을 timestamp 키(우선순위 순, 실측 확인한 키들)
 TS_KEYS = ("generated_at", "updated_at", "last_run", "logged_at", "ts", "timestamp", "at", "date")
 
@@ -283,7 +296,7 @@ def expected_max_silence_hours(notify_spec):
 
 def judge_module(module: dict, root: Path = PROJECT_ROOT, now=None):
     """모듈 1개 판정 → dict(id, owner_role, owner_nick, feature, status, ...).
-    status: silent | ok | unmeasurable | not_applicable"""
+    status: silent | ok | active_no_cadence | unmeasurable | not_applicable"""
     now = _now_utc(now)
     mid = module.get("id")
     base = {
@@ -306,6 +319,12 @@ def judge_module(module: dict, root: Path = PROJECT_ROOT, now=None):
 
     if max_h is None:
         silence_h = (now - last_dt).total_seconds() / 3600
+        if silence_h <= NO_CADENCE_ACTIVE_MAX_H:
+            return {**base, "status": "active_no_cadence",
+                    "detail": f"최근 활동 감지({silence_h:.1f}h 전, {method}) — "
+                              f"notify_spec 주기 미선언(침묵 아님·기대주기 판정 보류)",
+                    "last_activity": last_dt.isoformat(), "method": method,
+                    "silence_hours": round(silence_h, 1)}
         return {**base, "status": "unmeasurable",
                 "detail": f"주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
                 "last_activity": last_dt.isoformat(), "method": method,
@@ -340,7 +359,7 @@ def silent_modules(scan_result):
 def build_snapshot(scan, now=None):
     """전체 스캔 결과 → 화면(자율현황.html)이 읽을 스냅샷 dict."""
     now = _now_utc(now)
-    counts = {"ok": 0, "silent": 0, "unmeasurable": 0, "not_applicable": 0}
+    counts = {"ok": 0, "silent": 0, "unmeasurable": 0, "active_no_cadence": 0, "not_applicable": 0}
     for r in scan:
         st = r.get("status")
         if st in counts:
@@ -496,7 +515,8 @@ def main(argv=None):
         snap = publish_snapshot()
         c = snap["summary"]
         print(f"[published] {SNAPSHOT_PATH} — 총 {snap['total']}건 "
-              f"(정상 {c['ok']} · 침묵 {c['silent']} · 모름 {c['unmeasurable']} · 대상아님 {c['not_applicable']})")
+              f"(정상 {c['ok']} · 침묵 {c['silent']} · 모름 {c['unmeasurable']} · "
+              f"활동(주기미선언) {c.get('active_no_cadence', 0)} · 대상아님 {c['not_applicable']})")
         return 0
 
     if args.scan_only:
@@ -505,10 +525,11 @@ def main(argv=None):
             print(f"[{r['status']:>13}] {r['id']:<32} {r.get('detail', '')}")
         n_silent = sum(1 for r in scan if r["status"] == "silent")
         n_unmeas = sum(1 for r in scan if r["status"] == "unmeasurable")
+        n_active = sum(1 for r in scan if r["status"] == "active_no_cadence")
         n_na = sum(1 for r in scan if r["status"] == "not_applicable")
         n_ok = sum(1 for r in scan if r["status"] == "ok")
         print(f"\n총 {len(scan)}건 — ok {n_ok} · silent {n_silent} · "
-              f"판정불가 {n_unmeas} · 대상아님 {n_na}")
+              f"판정불가 {n_unmeas} · 활동(주기미선언) {n_active} · 대상아님 {n_na}")
         return 0
 
     out = run_detector(dry_run=not args.live)
