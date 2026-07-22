@@ -7719,17 +7719,19 @@ function _processAction(body) {
     if (reqDays < HLD_MIN_ONCE || reqDays > HLD_MAX_ONCE) return _json({ ok: false, error: '휴회 일수 범위(7~60일) 위반: ' + reqDays + '일' });
     if (amC + 1 > HLD_MAX_COUNT) return _json({ ok: false, error: '휴회 횟수 한도 초과(최대 ' + HLD_MAX_COUNT + '회, 현재 ' + amC + '회)' });
     if (amD + reqDays > HLD_MAX_TOTAL) return _json({ ok: false, error: '누적 휴회일수 한도 초과(최대 ' + HLD_MAX_TOTAL + '일, 현재 ' + amD + '+' + reqDays + '일)' });
-    // ★GM 지정: '이용일수' 바로 앞에 새 칸 '휴회기간' 신설(없으면 insertColumnBefore). 시트에도 실제 칸 추가.
+    // ★GM 지정: '이용일수' 바로 앞에 새 칸 '휴회기간(휴회일수)' 신설(없으면 insertColumnBefore). 값=기간+일수 병기(예 '2026-08-01 ~ 2026-08-30 (30일)'). 시트에도 실제 칸 추가.
+    var HOLD_PERIOD_COL = '휴회기간(휴회일수)';
     var _bw = '이용일수'.replace(/\s/g, ''), _bi = -1;
     for (var _bj = 0; _bj < amHdr.length; _bj++){ if (amHdr[_bj].replace(/\s/g,'').indexOf(_bw) >= 0) { _bi = _bj; break; } }
-    var _hasPeriod = false; for (var _pj = 0; _pj < amHdr.length; _pj++){ if (amHdr[_pj].replace(/\s/g,'') === '휴회기간') { _hasPeriod = true; break; } }
+    var _pwN = HOLD_PERIOD_COL.replace(/\s/g, ''), _hasPeriod = false;
+    for (var _pj = 0; _pj < amHdr.length; _pj++){ if (amHdr[_pj].replace(/\s/g,'') === _pwN) { _hasPeriod = true; break; } }
     if (!_hasPeriod) {
-      if (_bi >= 0) { amSh.insertColumnBefore(_bi + 1); amSh.getRange(1, _bi + 1).setValue('휴회기간'); }
-      else { amSh.getRange(1, amHdr.length + 1).setValue('휴회기간'); }   // 이용일수 없으면 끝에(정합 유지)
+      if (_bi >= 0) { amSh.insertColumnBefore(_bi + 1); amSh.getRange(1, _bi + 1).setValue(HOLD_PERIOD_COL); }
+      else { amSh.getRange(1, amHdr.length + 1).setValue(HOLD_PERIOD_COL); }   // 이용일수 없으면 끝에(정합 유지)
       amHdr = amSh.getRange(1, 1, 1, amSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });   // insert로 인덱스 이동 → 재조회
     }
     function _amIdx2(n){ var w = String(n).replace(/\s/g, ''); for (var i = 0; i < amHdr.length; i++){ if (amHdr[i].replace(/\s/g,'') === w) return i; } return -1; }
-    var ciPeriod = _amIdx2('휴회기간');
+    var ciPeriod = _amIdx2(HOLD_PERIOD_COL);
     amSh.getRange(amRow, ciPeriod + 1).setNumberFormat('@'); amSh.getRange(amRow, ciPeriod + 1).setValue(reqStart + ' ~ ' + reqEnd + ' (' + reqDays + '일)');
     // 기존 4칸 정합 기록 + 증분 + 상태(진행중)
     var ciC2 = _miEnsureCol_(amSh, amHdr, '휴회횟수'), ciD2 = _miEnsureCol_(amSh, amHdr, '휴회누적일수'), ciS2 = _miEnsureCol_(amSh, amHdr, '휴회시작일'), ciE2 = _miEnsureCol_(amSh, amHdr, '휴회종료일'), ciStat2 = _miEnsureCol_(amSh, amHdr, '휴회접수상태');
