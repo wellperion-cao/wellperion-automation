@@ -4233,6 +4233,9 @@ function _processAction(body) {
     return _json({ ok: true, rowIndex: auRow, col: auCol });
   }
 
+  // ★★ 은퇴본·미사용 — 이 프로젝트(.deploy-funnel, scriptId 1A77oDR)는 07-18 200버전 상한으로 은퇴·백업전용.
+  //   라이브 정본 = .deploy-funnel-v2(scriptId 1BezMSW, /exec AKfycbyk…). 휴회 코드 발효는 v2에서만 이뤄진다.
+  //   본 v1 사본은 히스토리·parity 기록 목적 존치(호출되지 않음). 2026-07-22 시포·웰리 확정.
   // ─── 휴회(경량안) — 회원 휴회 미리보기/접수. 3회·총60일·1회 7~60일. 검증 단일 SSOT=서버(여기). 2026-07-22 시포·GM ───
   //   데이터: 유효회원 탭 additive 4칸(휴회횟수·휴회누적일수·휴회시작일·휴회종료일). 헤더이름 기반 · 행삭제 없음(셀 write만).
   //   행 해석 가드 = member_active_update와 동일(rowKey[등록일자+전화] 우선 → keyPhone 폴백, fail-closed) — INC 오지목/오삭제 방지.
