@@ -893,5 +893,19 @@
     "artifact": "- ssot/decision_contracts.json 신규(스펙 §2.3): A1·B1 exemplar + A2·A3·A4 등재(5블록)\n- scripts/decision_replay_log.py 신규(§4): 가드 재생차단 신호 1줄 append/read_today\n- 등록부 스키마 무변경(module_id 조인). additive·surface-only. (CLI ad-hoc · 커밋 a469876b)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a469876b6e4d58588b2f44ecd8cdf037a1044a8a"
+  },
+  {
+    "task_id": "CTO-2026-07-22-ADHOC-57e1da9b",
+    "clevel": "cto",
+    "title": "[시토] 자가건강 하네스 §6 결정정합 섹션 추가 (surface-only)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9587,
+    "artifact": "- build_section_decision_consistency(): decision_replay_log(오늘 blocked/leaked)\n  + decision_contracts(unguarded/proposed) 읽기전용 집계 → 이상만 노출\n- build_digest 섹션 dict 에 decision_consistency 편입 · scan-only 반영\n- 게이트=SELF_HEALTH_WATCHDOG_LIVE(기본 OFF) 상속 · 발신/차단 0 · dedup 재사용 (CLI ad-hoc · 커밋 57e1da9b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "57e1da9b107f83d0c00aadbf6add7a0f5352a0b9"
   }
 ]
