@@ -124,16 +124,16 @@
       "decision_events": ["종착지결정", "오라벨정정", "배종결"],
       "guard": {
         "pattern": "N",
-        "impl_ref": "scripts/hangro_review.py:already_decided(ledger_key, decisions) — run()·ping_gm() 최전단 dedup",
+        "impl_ref": "scripts/hangro_review.py:already_decided(ledger_key, decisions) — run()·ping_gm() 최전단 dedup + scripts/hangro_review.py:_build_ship_prompt() ★정체 정규화 규칙(2026-07-22 적용)",
         "marker": null,
-        "effect": "제외",
-        "note": "결정론적 가드(명문화): GM 이 이미 결정(hangro_decisions.jsonl)한 배는 재검수·재종착지생성·재핑을 최전단에서 제외(결정 존중·오라벨 재생 금지). 게이트 HANGRO_APPLY OFF=dry-run(라이브 델타 0). 이 dedup 은 이미 결정론적이라 명문화만. ★패턴 N 캐논렌더(_build_ship_prompt 에 인명·직함·브랜드금지어 캐논 직독 정규화 주입)는 웰리(CEO) 두뇌 프롬프트 변경이라 CTO 가 임의 배선하지 않는다 — proposed·domain_review=웰리. replay_log 는 dedup 이 매 스캔 정상 경로라 배선 시 노이즈 → 미배선."
+        "effect": "제외+정규화",
+        "note": "결정론적 가드(명문화): GM 이 이미 결정(hangro_decisions.jsonl)한 배는 재검수·재종착지생성·재핑을 최전단에서 제외(결정 존중·오라벨 재생 금지). 게이트 HANGRO_APPLY OFF=dry-run(라이브 델타 0). 이 dedup 은 이미 결정론적이라 명문화만. ★패턴 N 캐논렌더: _build_ship_prompt 에 정체 정규화 규칙(김남욱=GM(김남욱)/GM님 단일표기·'대표님'/'대표'=전응준 전용·차의주=회장님) additive 삽입 — 2026-07-22 웰리(CEO) 승인으로 적용 완료(guarded, cto-ops-morning-digest:build_prompt() 라인533 규칙 이식). replay_log 는 dedup 이 매 스캔 정상 경로라 배선 시 노이즈 → 미배선."
       },
       "replay_log": "status/decision_replay_log.jsonl",
-      "verify": "python scripts/hangro_review.py --audit-only  # 검수 판정만(발신·큐쓰기 0). 결정된 배는 카드 0 재현.",
-      "rollback": "해당 없음(dedup 는 기존 결정론 코드 · 신규 가드 미장착)",
+      "verify": "python scripts/hangro_review.py --audit-only  # 검수 판정만(발신·큐쓰기 0). 결정된 배는 카드 0 재현. + 프롬프트 삽입 확인: python -c \"import sys; sys.path.insert(0,'scripts'); from hangro_review import _build_ship_prompt; assert '정체 정규화' in _build_ship_prompt({'title':'t'})\"",
+      "rollback": "패턴 N 정규화 규칙 줄 revert(additive 1블록) · dedup 은 해당 없음(기존 결정론 코드)",
       "status": "guarded",
-      "domain_review": "웰리(CEO) — 종착지 프롬프트 패턴 N 캐논 정규화 주입 여부는 CEO 두뇌 도메인 판단. 결정 존중 dedup 자체는 이미 결정론적(guarded)."
+      "domain_review": "웰리(CEO) — 2026-07-22 종착지 프롬프트 패턴 N 캐논 정규화 주입 승인·적용 완료. 결정 존중 dedup 자체도 이미 결정론적(guarded)."
     },
     {
       "module_id": "cmo-eval-feedback-loop",

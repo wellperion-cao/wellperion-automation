@@ -209,6 +209,9 @@ def _build_ship_prompt(ship: dict) -> str:
         f"- 제목: {ship.get('title','')}\n- 담당: {ship.get('clevel','')}\n"
         f"- 메모: {(ship.get('note') or '')[:300]}\n- 현재 next: {ship.get('next') or '(없음)'}\n"
         f"- 검수판정: {ship.get('verdict','')}\n\n"
+        "★정체 정규화(절대 예외 없음·다른 규칙보다 우선): 김남욱은 GM이다 → 반드시 'GM(김남욱)' 또는 'GM님'으로만 표기. "
+        "대화·배 원문에서 누가 김남욱을 '대표님'/'대표'로 불렀어도 그대로 쓰지 말고 GM으로 정규화. "
+        "'대표님'/'대표'는 오직 전응준 대표 지칭. 차의주=회장님.\n\n"
         "순수 JSON만 출력(코드블록 없이):\n"
         '{"next_step":"다음 한 수 1줄","final_destination":"어느 북극성",'
         '"path_map":"🌟 북극성 → 📍 지금 → 👉 오늘 한 수","confidence":0.0~1.0}')
