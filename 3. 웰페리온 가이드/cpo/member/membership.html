@@ -1562,9 +1562,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
                  (table-layout:fixed의 표준 동작). 한 칸만 비우면 그 칸이 폭을 독식해 빈 띠가 그대로 옮겨간다
                  — 1600px에서 CONTACT 528px가 되는 것을 렌더로 확인하고 두 칸으로 정정했다. -->
             <tr>
-              <th style="width:110px">문의일시</th>
+              <th style="width:152px">문의일시</th>
               <th style="width:92px">성함</th>
-              <th style="width:120px">연락처</th>
+              <th style="width:134px">연락처</th>
               <th style="width:100px">관심 프로그램</th>
               <th style="width:108px">진행상황</th>
               <th style="width:104px">유입채널</th>
@@ -1832,9 +1832,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <table class="reg-table lesson-inq-table">
           <thead>
             <tr>
-              <th class="left" style="width:112px">문의일시</th>
+              <th class="left" style="width:142px">문의일시</th>
               <th class="left" style="width:100px">성함</th>
-              <th style="width:122px">연락처</th>
+              <th style="width:136px">연락처</th>
               <th style="width:230px">강습종목</th>
               <th class="left" style="width:150px">문의내용</th>
               <th class="left" style="width:150px">희망 요일/시간</th>
@@ -1862,9 +1862,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="reg-table-wrap">
         <table class="reg-table lesson-inq-table">
           <thead><tr>
-            <th class="left" style="width:112px">문의일시</th>
+            <th class="left" style="width:142px">문의일시</th>
             <th class="left" style="width:100px">성함</th>
-            <th style="width:122px">연락처</th>
+            <th style="width:136px">연락처</th>
             <th style="width:230px">강습종목</th>
             <th class="left" style="width:150px">문의내용</th>
             <th class="left" style="width:150px">희망 요일/시간</th>
@@ -1891,9 +1891,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="reg-table-wrap">
         <table class="reg-table lesson-inq-table">
           <thead><tr>
-            <th class="left" style="width:112px">문의일시</th>
+            <th class="left" style="width:142px">문의일시</th>
             <th class="left" style="width:100px">성함</th>
-            <th style="width:122px">연락처</th>
+            <th style="width:136px">연락처</th>
             <th id="lessonWaitSportTh_adult" style="width:230px;cursor:pointer;user-select:none" title="클릭하여 종목별 정렬" onclick="_lessonWaitSortToggle('adult')">강습종목</th>
             <th class="left" style="width:150px">문의내용</th>
             <th class="left" style="width:150px">희망 요일/시간</th>
@@ -2010,9 +2010,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <table class="reg-table lesson-inq-table">
           <thead>
             <tr>
-              <th class="left" style="width:112px">문의일시</th>
+              <th class="left" style="width:142px">문의일시</th>
               <th class="left" style="width:150px">성함</th>
-              <th style="width:122px">연락처</th>
+              <th style="width:136px">연락처</th>
               <th style="width:230px">강습종목</th>
               <th class="left" style="width:150px">문의내용</th>
               <th class="left" style="width:150px">희망 요일/시간</th>
@@ -2040,9 +2040,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="reg-table-wrap">
         <table class="reg-table lesson-inq-table">
           <thead><tr>
-            <th class="left" style="width:112px">문의일시</th>
+            <th class="left" style="width:142px">문의일시</th>
             <th class="left" style="width:100px">성함</th>
-            <th style="width:122px">연락처</th>
+            <th style="width:136px">연락처</th>
             <th style="width:230px">강습종목</th>
             <th class="left" style="width:150px">문의내용</th>
             <th class="left" style="width:150px">희망 요일/시간</th>
@@ -2069,9 +2069,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="reg-table-wrap">
         <table class="reg-table lesson-inq-table">
           <thead><tr>
-            <th class="left" style="width:112px">문의일시</th>
+            <th class="left" style="width:142px">문의일시</th>
             <th class="left" style="width:100px">성함</th>
-            <th style="width:122px">연락처</th>
+            <th style="width:136px">연락처</th>
             <th id="lessonWaitSportTh_youth" style="width:230px;cursor:pointer;user-select:none" title="클릭하여 종목별 정렬" onclick="_lessonWaitSortToggle('youth')">강습종목</th>
             <th class="left" style="width:150px">문의내용</th>
             <th class="left" style="width:150px">희망 요일/시간</th>
@@ -2844,6 +2844,41 @@ function _gzColIdx_(headers, names) {
   for (var k = 0; k < arr.length; k++) { for (var j = 0; j < headers.length; j++) { if (headers[j].indexOf(arr[k]) >= 0) return j; } }
   return -1;
 }
+// ═══ 지문키(rowKey) — 안정 고유키 R1 프론트측 (2026-07-22 시포, 오지목 근본수리 설계 §4) ═══
+// ★Survey.js _normTsKey_/_normPhone_와 바이트 동일 규칙 유지 필수 — 알고리즘(정규식·분기)을 그대로 미러링.
+//   gviz Date(y,m,d,h,mi,s) 생성자로 복원된 Date 객체는 브라우저 타임존과 무관하게 getFullYear()~getSeconds()가
+//   생성 시 넘긴 숫자를 그대로 되돌려주므로(자기왕복), GAS getValue() Date를 Asia/Seoul로 포맷한 값과 바이트 동일하다
+//   (전제: 스프레드시트·GAS 스크립트 timezone=Asia/Seoul — 본 프로젝트 고정).
+function _gzNormTsKey_(v) {
+  function pad(n, len) { var s = String(Math.abs(Math.trunc(Number(n) || 0))); while (s.length < len) s = '0' + s; return s; }
+  if (v === null || v === undefined || v === '') return '';
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return '';
+    return pad(v.getFullYear(), 4) + pad(v.getMonth() + 1, 2) + pad(v.getDate(), 2) + pad(v.getHours(), 2) + pad(v.getMinutes(), 2) + pad(v.getSeconds(), 2);
+  }
+  var s = String(v).trim();
+  if (!s) return '';
+  // ISO형: 'YYYY-MM-DD[ T]HH:mm[:ss]' (시분초 없으면 0으로 채움)
+  var m1 = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (m1) return pad(m1[1], 4) + pad(m1[2], 2) + pad(m1[3], 2) + pad(m1[4] || 0, 2) + pad(m1[5] || 0, 2) + pad(m1[6] || 0, 2);
+  // 한글형: 'YYYY. M. D [오전/오후 H:MM[:SS]]' (예: '2026. 7. 21 오후 2:17:08')
+  var m2 = s.match(/^(\d{4})[.\s]+(\d{1,2})[.\s]+(\d{1,2})(?:\s*(오전|오후)?\s*(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (m2) {
+    var hh = parseInt(m2[5] || '0', 10);
+    if (m2[4] === '오전') { if (hh === 12) hh = 0; }
+    else if (m2[4] === '오후') { if (hh !== 12) hh += 12; }
+    return pad(m2[1], 4) + pad(m2[2], 2) + pad(m2[3], 2) + pad(hh, 2) + pad(m2[6] || 0, 2) + pad(m2[7] || 0, 2);
+  }
+  // 미지 포맷 최후 폴백: 숫자만 추출(설계 원칙 기본형 · 무손실 시도 — 완전 매칭 실패보단 낫다)
+  return s.replace(/[^0-9]/g, '');
+}
+function _gzNormPhone_(v) { return String(v == null ? '' : v).replace(/[^0-9]/g, ''); }
+// tsRaw/phoneRaw(둘 다 로드된 행의 원본 값) → 'tsNorm|phoneNorm' 조립. 하나라도 정규화 실패(빈값)면 ''(지문키 미사용
+// → 저장 시 서버가 기존 keyPhone 경로로 자동 폴백). 2026-07-22 시포.
+function _gzRowKey_(tsRaw, phoneRaw) {
+  var t = _gzNormTsKey_(tsRaw), p = _gzNormPhone_(phoneRaw);
+  return (t && p) ? (t + '|' + p) : '';
+}
 function _gzFmtPhone_(v) {
   var src = String(v == null ? '' : v);
   var digits = src.replace(/\D/g, '');
@@ -3053,7 +3088,10 @@ function gvizMiRows_(headers, rows, gid) {
       contact2: (iC2 >= 0 && iC2 < row.length) ? _gzFmtContact_(row[iC2]) : '',
       contact3: (iC3 >= 0 && iC3 < row.length) ? _gzFmtContact_(row[iC3]) : '',
       gid: gid,
-      lang: iLang >= 0 ? String(row[iLang] || '').trim() : ''
+      lang: iLang >= 0 ? String(row[iLang] || '').trim() : '',
+      // 지문키(rowKey, §4 R1) — 위 timestamp는 시:분까지만 보존(_gzToISODateTime_, 초 유실)이라 지문 재료로 쓰면
+      //   Survey.js(_normTsKey_, 초까지 보존)와 어긋난다. 반드시 raw 셀 값(row[iTs])으로 재계산. 2026-07-22 시포.
+      rowKey: _gzRowKey_(iTs >= 0 ? row[iTs] : '', iPhone >= 0 ? row[iPhone] : '')
     };
     var _resArr = _gzResParse_(iRes >= 0 ? row[iRes] : '');
     if (!_resArr.length) {
@@ -3132,7 +3170,9 @@ function gvizLessonRows_(headers, rows, gid) {
       // 종목별 독립 관리(축7) — 파싱맵(없으면 {}). 분리 로직은 프론트에서만. Survey.js _lessonSportMgmtParse_ 미러.
       bySport: _gzLessonSportMgmtParse_(iSportMgmt >= 0 ? row[iSportMgmt] : ''),
       gid: gid,
-      lang: iLang >= 0 ? String(row[iLang] || '').trim() : ''
+      lang: iLang >= 0 ? String(row[iLang] || '').trim() : '',
+      // 지문키(rowKey, §4 R1) — raw 셀 값(row[iTs]) 사용, 위 timestamp(초 유실)와 별개 재계산. 2026-07-22 시포.
+      rowKey: _gzRowKey_(iTs >= 0 ? row[iTs] : '', iPhone >= 0 ? row[iPhone] : '')
     });
   }
   return out;
@@ -4984,7 +5024,7 @@ function lessonOwnerChange(sel, t, rowIndex, sportKeyEnc) {
   var st = _lessonState[t];
   var row = _lessonFindRow(t, rowIndex);
   var newVal = sel.value;
-  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: '', owner: newVal, gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
+  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: '', owner: newVal, gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
   // 배1037: 낙관 즉시 반영(원복 없음) → 버퍼 enqueue(백그라운드 flush·실패 표면화).
   _lessonApplyLocalMgmt(row, sportKey, { owner: newVal });
   WriteBuffer.enqueue(payload, { scope: 'lesson', phoneKey: (row && row.phone) || '', fieldset: 'owner', label: '담당', who: (row && row.name) || '', overlay: { owner: newVal } });
@@ -5031,7 +5071,7 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
   var mgmt = _lessonSportMgmt(row, sportKey);
   var newVal = sel.value;
   var prevVal = mgmt.status || '';
-  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: '', status: newVal, gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
+  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: '', status: newVal, gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
   // 배1037: 낙관 즉시 반영(원복 없음) → 버퍼 enqueue. 상태색·버킷 재렌더는 로컬반영 기준 즉시 수행.
   _lessonApplyLocalMgmt(row, sportKey, { status: newVal });
   sel.classList.remove('st-consult', 'st-registered', 'st-hold', 'st-cancel', 'st-wait');   // 기존 상태색 전부 제거 후 재설정
@@ -5720,7 +5760,7 @@ function openReconForMember(rowIndex) {
   var name    = String(r['회원명'] || '').trim();
   var phone   = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
   var program = String(r['회원\n구분'] || r['회원구분'] || '').trim();
-  _openResModal({ source: 'active', rowIndex: r.rowIndex, keyPhone: phone, name: name, phone: phone, program: program, reservations: _rowReservations(r, 'active') });
+  _openResModal({ source: 'active', rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name, phone: phone, program: program, reservations: _rowReservations(r, 'active') });
 }
 
 // LOSS 회원관리(이탈 요약 모달, openChurnManage) → 종료회원 목록 바로가기. 정보 보존된 종료회원 표(scope=ended, 종료일 내림차순)로
@@ -6787,7 +6827,7 @@ function _wireActiveDblclick(){
       var r = _activeRows.find(function(x){ return x.rowIndex == rowIndex; });
       if (r) r[col] = newVal;
       var _keyPhone = (r && (r['휴대폰 번호'] || r['휴대폰'])) || '';   // 행키(서버 rowIndex 밀림 검증용)
-      apiPost({ action: 'member_active_update', rowIndex: rowIndex, col: col, value: newVal, keyPhone: _keyPhone })
+      apiPost({ action: 'member_active_update', rowIndex: rowIndex, col: col, value: newVal, keyPhone: _keyPhone, rowKey: (r && r.rowKey) || '' })
         .then(function(){ showToast('저장', 'ok'); })
         .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); });
     }
@@ -7293,7 +7333,7 @@ function saveConsultModal() {
   var regProgramChanged = registered && (regProgram !== origRegProgram);
   if (!visitedChanged && !regChanged && !input && !c1Changed && !c2Changed && !c3Changed && !timeChanged && !dateChanged && !regProgramChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
 
-  var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex, keyPhone: _consultEv.phone || '' };
+  var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex, keyPhone: _consultEv.phone || '', rowKey: _consultEv.rowKey || '' };
   if (c1Changed) payload.contact1 = c1;
   if (c2Changed) payload.contact2 = c2;
   if (c3Changed) payload.contact3 = c3;
@@ -7445,7 +7485,7 @@ function openChurnReasonModal(rowIndex) {
   if (!r) { showToast('회원 정보를 찾을 수 없습니다', 'err'); return; }
   var name = String(r['회원명'] || '').trim();
   var phone = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
-  _churnModal = { rowIndex: r.rowIndex, keyPhone: phone, name: name };
+  _churnModal = { rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name };
   document.getElementById('crMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '');
   var sel = document.getElementById('crReasonSel');
   sel.innerHTML = '';
@@ -7478,7 +7518,7 @@ function saveChurnModal() {
   var rowIndex = _churnModal.rowIndex, keyPhone = _churnModal.keyPhone;
   var fields = {}; fields[CHURN_REASON_COL] = reason; fields[CHURN_REASON_NOTE_COL] = note;
   var saveBtn = document.getElementById('crSaveBtn'); saveBtn.disabled = true;
-  apiPost({ action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, fields: fields })
+  apiPost({ action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: _churnModal.rowKey || '', fields: fields })
     .then(function(data){
       if (data && data.ok === false) throw new Error(data.error || '저장 실패');
       showToast('종료사유 저장', 'ok');
@@ -7510,7 +7550,7 @@ function _lossModalFill(reason) {
 function openInquiryLossModal(rowIndex) {
   var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
   if (!r) { showToast('문의 정보를 찾을 수 없습니다', 'err'); return; }
-  _lossModal = { mode: 'member', rowIndex: r.rowIndex, keyPhone: r.phone || '', name: r.name || '' };
+  _lossModal = { mode: 'member', rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', name: r.name || '' };
   document.getElementById('lrMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '');
   _lossModalFill(r.lossReason);
 }
@@ -7519,7 +7559,7 @@ function openLessonLossModal(t, rowIndex) {
   var r = _lessonFindRow(t, rowIndex);
   if (!r) { showToast('강습 문의 정보를 찾을 수 없습니다', 'err'); return; }
   var st = _lessonState[t];
-  _lossModal = { mode: 'lesson', t: t, rowIndex: r.rowIndex, keyPhone: r.phone || '', name: r.name || '', type: (st && st.type) || '', gid: r.gid };
+  _lossModal = { mode: 'lesson', t: t, rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', name: r.name || '', type: (st && st.type) || '', gid: r.gid };
   document.getElementById('lrMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '') + (r.sport ? ' · ' + r.sport : '');
   _lossModalFill(r.lossReason);
 }
@@ -7532,13 +7572,13 @@ function saveLossReasonModal() {
   // ★메모 폐기(2026-07-20 GM 확정) — "LOSS사유메모도 필요없어". 사유는 기존 '미등록 사유' 칸 하나에만 저장한다.
   //   '기타' 선택 시 메모 필수 규칙도 함께 폐기(메모칸 자체가 없어졌으므로).
   var reason = document.getElementById('lrReasonSel').value.trim();
-  var rowIndex = _lossModal.rowIndex, keyPhone = _lossModal.keyPhone;
+  var rowIndex = _lossModal.rowIndex, keyPhone = _lossModal.keyPhone, rowKey = _lossModal.rowKey || '';
   var saveBtn = document.getElementById('lrSaveBtn'); saveBtn.disabled = true;
   // 강습(mode='lesson')=lesson_inquiry_update row-level 경로(sport:'' → flat 컬럼) / 멤버십=member_inquiry_update. 2026-07-18 시토(GM요청) 대행.
   var _isLesson = (_lossModal.mode === 'lesson');
   var _payload = _isLesson
-    ? { action: 'lesson_inquiry_update', type: _lossModal.type, rowIndex: rowIndex, keyPhone: keyPhone, sport: '', gid: _lossModal.gid, lossReason: reason }
-    : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, lossReason: reason };
+    ? { action: 'lesson_inquiry_update', type: _lossModal.type, rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, sport: '', gid: _lossModal.gid, lossReason: reason }
+    : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, lossReason: reason };
   var _t = _isLesson ? _lossModal.t : null;
   apiPost(_payload)
     .then(function(data){
@@ -7634,7 +7674,7 @@ function _regValidityUpdate() {
 function openInquiryRegProgramModal(rowIndex) {
   var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
   if (!r) { showToast('문의 정보를 찾을 수 없습니다', 'err'); return; }
-  _regProgramModal = { mode: 'member', rowIndex: r.rowIndex, keyPhone: r.phone || '', name: r.name || '' };
+  _regProgramModal = { mode: 'member', rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', name: r.name || '' };
   document.getElementById('rpMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '');
   _regProgramModalFill(PROGRAM_OPTIONS, r.regProgram || r.program);
 }
@@ -7643,7 +7683,7 @@ function openLessonRegProgramModal(t, rowIndex, sportKey) {
   var r = _lessonFindRow(t, rowIndex);
   if (!r) { showToast('강습 문의 정보를 찾을 수 없습니다', 'err'); return; }
   var st = _lessonState[t];
-  _regProgramModal = { mode: 'lesson', t: t, rowIndex: r.rowIndex, keyPhone: r.phone || '', name: r.name || '', type: (st && st.type) || '', gid: r.gid };
+  _regProgramModal = { mode: 'lesson', t: t, rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', name: r.name || '', type: (st && st.type) || '', gid: r.gid };
   document.getElementById('rpMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '') + (sportKey ? ' · ' + sportKey : '');
   var _cur = String(r.regProgram || '').trim() || _lessonRosterKeyOf(sportKey) || '';
   _regProgramModalFill(Object.keys(LESSON_INSTRUCTOR_ROSTER), _cur);
@@ -7660,11 +7700,11 @@ function saveRegProgramModal() {
   if (!_regProgramModal) return;
   var program = document.getElementById('rpProgramSel').value.trim();
   if (!program) { showToast('등록 종목을 선택해 주세요', 'err'); return; }
-  var rowIndex = _regProgramModal.rowIndex, keyPhone = _regProgramModal.keyPhone;
+  var rowIndex = _regProgramModal.rowIndex, keyPhone = _regProgramModal.keyPhone, rowKey = _regProgramModal.rowKey || '';
   var saveBtn = document.getElementById('rpSaveBtn'); saveBtn.disabled = true;
   var _isLesson = (_regProgramModal.mode === 'lesson');
   var _payload = _isLesson
-    ? { action: 'lesson_inquiry_update', type: _regProgramModal.type, rowIndex: rowIndex, keyPhone: keyPhone, sport: '', gid: _regProgramModal.gid, regProgram: program,
+    ? { action: 'lesson_inquiry_update', type: _regProgramModal.type, rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, sport: '', gid: _regProgramModal.gid, regProgram: program,
         // 강습 전용 — 구분(개인레슨/단체레슨). 백엔드 미배선 필드 — name-based payload라 무해(저장 배선은 별도 범위). 2026-07-21 시포·GM.
         lessonType: document.getElementById('regLessonType').value.trim(),
         // 강습 전용 — 회수·유효기간(자동계산=명확 종목만, 그 외 수동/빈값). 2026-07-21 시포·GM.
@@ -7676,7 +7716,7 @@ function saveRegProgramModal() {
           var _rule = lessonValidityMonths(program, _cnt, _isYouth);
           return lessonExpireDate(_mdashYmd(new Date()), _rule);
         })() }
-    : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, regProgram: program };
+    : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, regProgram: program };
   var _t = _isLesson ? _regProgramModal.t : null;
   apiPost(_payload)
     .then(function(data){
@@ -7834,7 +7874,7 @@ function _reconPopulateMembers() {
     var ph = String(row['휴대폰 번호'] || row['휴대폰'] || '').trim();
     var label = nm + (ph ? ' · ' + ph : '');
     if (_reconPickMap[label]) return;   // 동명이인 라벨 충돌 방지(전화 포함이라 대개 유일)
-    _reconPickMap[label] = { rowIndex: row.rowIndex, phone: ph, name: nm, program: String(row['회원\n구분'] || row['회원구분'] || '').trim() };
+    _reconPickMap[label] = { rowIndex: row.rowIndex, phone: ph, rowKey: row.rowKey || '', name: nm, program: String(row['회원\n구분'] || row['회원구분'] || '').trim() };
     var op = document.createElement('option'); op.value = label; dl.appendChild(op);
   });
 }
@@ -7891,7 +7931,7 @@ function _resCollect() {
 
 // 범용 오픈. cfg={source, rowIndex, keyPhone, name, phone, program, reservations, presetDate, pick}
 function _openResModal(cfg) {
-  _resModal = { source: cfg.source, rowIndex: cfg.rowIndex || 0, keyPhone: cfg.keyPhone || '', name: cfg.name || '', phone: cfg.phone || '', program: cfg.program || '' };
+  _resModal = { source: cfg.source, rowIndex: cfg.rowIndex || 0, keyPhone: cfg.keyPhone || '', rowKey: cfg.rowKey || '', name: cfg.name || '', phone: cfg.phone || '', program: cfg.program || '' };
   var pickRow = document.getElementById('rcMemberPickRow');
   var fixedRow = document.getElementById('rcMemberFixedRow');
   document.getElementById('rcKind').textContent = (cfg.source === 'active') ? '재등록' : '예약';
@@ -7926,7 +7966,7 @@ function openReconModal(ev, date) {
     ensureActiveMembers(function(){
       var res = _activeReservationsFor(ev.rowIndex);
       if (!res || !res.length) res = [{ date: ev.date || date || '', time: ev.time || '', note: noteText(ev) || '' }];
-      _openResModal({ source: 'active', rowIndex: ev.rowIndex, keyPhone: ev.phone || '', name: ev.name || '', phone: ev.phone || '', program: ev.program || '', reservations: res });
+      _openResModal({ source: 'active', rowIndex: ev.rowIndex, keyPhone: ev.phone || '', rowKey: ev.rowKey || '', name: ev.name || '', phone: ev.phone || '', program: ev.program || '', reservations: res });
     });
   } else {
     _openResModal({ source: 'active', pick: true, presetDate: date || '' });
@@ -7940,7 +7980,7 @@ function _activeReservationsFor(rowIndex) {
 // 문의(신규) 예약 — 문의현황 일정칸 클릭.
 function openInquiryResModal(row) {
   if (!row) return;
-  _openResModal({ source: 'inquiry', rowIndex: row.rowIndex, keyPhone: row.phone || '', name: row.name || '', phone: row.phone || '', program: row.program || '', reservations: _rowReservations(row, 'inquiry') });
+  _openResModal({ source: 'inquiry', rowIndex: row.rowIndex, keyPhone: row.phone || '', rowKey: row.rowKey || '', name: row.name || '', phone: row.phone || '', program: row.program || '', reservations: _rowReservations(row, 'inquiry') });
 }
 
 function closeReconModal() {
@@ -7965,7 +8005,8 @@ function _syncCalendarForRow(source, rowIndex, reservations, meta) {
       name: meta.name || '', phone: meta.phone || '', program: meta.program || '',
       status: dr ? (dr.status || '') : '', rowIndex: rowIndex, memo: dr ? (dr.memo || '') : (res.note || ''), note: res.note || '',
       owner: dr ? (dr.owner || '') : '', contact1: dr ? (dr.contact1 || '') : '', contact2: dr ? (dr.contact2 || '') : '', contact3: dr ? (dr.contact3 || '') : '',
-      visited: dr ? !!dr.visited : false, visitDate: dr ? (dr.visitDate || '') : ''
+      visited: dr ? !!dr.visited : false, visitDate: dr ? (dr.visitDate || '') : '',
+      rowKey: (dr && dr.rowKey) || meta.rowKey || ''   // 지문키(§4 R1) — 로컬 재생성 이벤트도 유지(재조회 없이도 다음 저장에 사용). 2026-07-22 시포.
     };
     if (!calEvents[res.date]) calEvents[res.date] = [];
     calEvents[res.date].push(ev);
@@ -7976,23 +8017,23 @@ function _syncCalendarForRow(source, rowIndex, reservations, meta) {
 function saveReconModal() {
   if (!_resModal) return;
   var reservations = _resCollect();
-  var rowIndex = _resModal.rowIndex, keyPhone = _resModal.keyPhone, name = _resModal.name, phone = _resModal.phone, program = _resModal.program;
+  var rowIndex = _resModal.rowIndex, keyPhone = _resModal.keyPhone, rowKey = _resModal.rowKey || '', name = _resModal.name, phone = _resModal.phone, program = _resModal.program;
   if (_resModal.source === 'active' && !rowIndex) {
     var label = document.getElementById('rcMemberInput').value.trim();
     var m = _reconPickMap[label];
     if (!m) { var keys = Object.keys(_reconPickMap); for (var i = 0; i < keys.length; i++) { if (label && keys[i].indexOf(label) === 0) { m = _reconPickMap[keys[i]]; break; } } }
     if (!m) { showToast('목록에서 회원을 선택하세요', 'err'); return; }
-    rowIndex = m.rowIndex; keyPhone = m.phone || ''; name = m.name; phone = m.phone || ''; program = m.program || '';
+    rowIndex = m.rowIndex; keyPhone = m.phone || ''; rowKey = m.rowKey || ''; name = m.name; phone = m.phone || ''; program = m.program || '';
   }
   if (!rowIndex) { showToast('대상 행을 찾을 수 없습니다', 'err'); return; }
 
   var jsonStr = reservations.length ? JSON.stringify(reservations) : '';
   var payload;
   if (_resModal.source === 'inquiry') {
-    payload = { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, reservations: jsonStr };
+    payload = { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, reservations: jsonStr };
   } else {
     var fields = {}; fields[ACT_RES_KEY] = jsonStr;
-    payload = { action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, fields: fields };
+    payload = { action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, fields: fields };
   }
   var saveBtn = document.getElementById('rcSaveBtn'); saveBtn.disabled = true;
   var src = _resModal.source, firstDate = reservations.length ? reservations[0].date : '';
@@ -8010,12 +8051,12 @@ function saveReconModal() {
       exp1: reservations[0] ? reservations[0].date : '', exp1Time: reservations[0] ? reservations[0].time : '',
       exp2: reservations[1] ? reservations[1].date : '', exp2Time: reservations[1] ? reservations[1].time : ''
     };
-    _syncCalendarForRow('inquiry', rowIndex, reservations, { name: name, phone: phone, program: program, dr: dr });
+    _syncCalendarForRow('inquiry', rowIndex, reservations, { name: name, phone: phone, program: program, dr: dr, rowKey: rowKey });
     if (_tabLoaded.db) renderDbTable();
   } else {
     var ar = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
     if (ar) { ar[ACT_RES_KEY] = jsonStr; ar[RECON_COLS.date] = reservations[0] ? reservations[0].date : ''; ar[RECON_COLS.time] = reservations[0] ? reservations[0].time : ''; ar[RECON_COLS.note] = reservations[0] ? reservations[0].note : ''; }
-    _syncCalendarForRow('active', rowIndex, reservations, { name: name, phone: phone, program: program });
+    _syncCalendarForRow('active', rowIndex, reservations, { name: name, phone: phone, program: program, rowKey: rowKey });
     if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
   }
   closeReconModal();
@@ -8128,7 +8169,7 @@ function saveContactModal() {
   var saveBtn = document.getElementById('ctSaveBtn'); saveBtn.disabled = true;
   if (ctx.source === 'lesson') {
     var row = _lessonFindRow(ctx.t, rowIndex);
-    var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', sport: '', contacts: JSON.stringify(contacts), gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
+    var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: '', contacts: JSON.stringify(contacts), gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
     // 배1037: 낙관 즉시 반영 + 버퍼 enqueue(fieldset='contacts' → 상태·담당과 독립 큐).
     _lessonApplyLocalMgmt(row, '', { contacts: contacts });
     closeContactModal();
@@ -8809,6 +8850,7 @@ function _saveCell(rowIndex, patch) {
   var idx = dbRows.findIndex(function(r){ return r.rowIndex === rowIndex; });
   if (idx < 0) return;
   var keyPhone = dbRows[idx].phone || '';   // 편집 전(로드된) 전화 = 행키. body.phone(새 값)과 별개 — 전화 수정 시에도 안전.
+  var rowKey = dbRows[idx].rowKey || '';    // 지문키(§4 R1) — 편집 전 로드값 그대로(패치 전 캡처). 2026-07-22 시포.
   Object.assign(dbRows[idx], patch);
   if (_tapReady) renderTodayActionPanel();   // 상태·CONTACT 저장 즉시 오늘 할 일 패널 재계산(배754) — 컨택 기록하면 바로 미컨택에서 빠짐
   var r = dbRows[idx];
@@ -8816,6 +8858,7 @@ function _saveCell(rowIndex, patch) {
     action:   'member_inquiry_update',
     rowIndex: rowIndex,
     keyPhone: keyPhone,
+    rowKey:   rowKey,
     name:     r.name    || '',
     phone:    r.phone   || '',
     program:  r.program || '',
@@ -9458,16 +9501,19 @@ var WriteBuffer = (function(){
           // 성공 — 단, 전송 후 재편집(coalesce)로 rev가 바뀌었으면 최신 payload 재전송(유실 방지).
           if (item.rev !== sentRev) { item.nextTry = 0; }
           else { _remove(item.id); showToast('저장', 'ok'); }
-        } else if (data && (data.error === 'row-key-unverified' || data.error === 'duplicate-phone-ambiguous')) {
+        } else if (data && (data.error === 'row-key-unverified' || data.error === 'duplicate-phone-ambiguous' || data.error === 'rowkey-not-found' || data.error === 'rowkey-ambiguous')) {
           // ★오지목 봉합 B3(2026-07-22 시포, GM 지시) — 서버가 대상 행을 확정 못 해 결정적으로 거부(재시도해도
           //   같은 값이면 결과 동일 · 네트워크 일시장애 아님). 낙관 반영을 성공으로 삼키지 않는다:
           //   즉시 park(재시도 루프 대상에서 제외·무한재시도 금지) + overlay 해제(다음 재조회부터 가짜 낙관값 미표시)
           //   + 명확 경고(alert). 큐 자체는 남겨 실패 칩·수동 재시도 경로(기존)로 계속 보인다.
+          //   rowkey-not-found/rowkey-ambiguous = 지문키(§4 R2) 경로 거부코드(2026-07-22 시포, 오지목 근본수리) — 동일 취급.
           item.parked = true;
           item.overlay = null;
-          var _hfMsg = (data.error === 'duplicate-phone-ambiguous')
+          var _hfMsg = (data.error === 'duplicate-phone-ambiguous' || data.error === 'rowkey-ambiguous')
             ? '동일 연락처를 가진 회원이 여러 명이라 어느 행인지 확정할 수 없습니다.'
-            : '대상 행을 확인할 수 없습니다(연락처 정보 없음/불일치).';
+            : (data.error === 'rowkey-not-found'
+              ? '대상 행을 찾을 수 없습니다(지문 불일치) — 데이터가 편집되었을 수 있습니다.'
+              : '대상 행을 확인할 수 없습니다(연락처 정보 없음/불일치).');
           alert('⚠️ 저장 실패 — ' + (item.who ? item.who + ' ' : '') + (item.label || '') + '\n' + _hfMsg + '\n목록을 새로고침한 뒤 대상을 다시 확인하고 저장하세요.');
           showToast('저장 거부 — 새로고침 필요', 'err');
         } else {
