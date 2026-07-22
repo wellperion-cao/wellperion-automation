@@ -1,0 +1,117 @@
+{
+  "_schema": "docs/superpowers/specs/2026-07-22-결정정합게이트-전사-design.md §2.3",
+  "_purpose": "결정(종결·취소·전환)→실행SSOT 박제 계약. 각 자동 루틴이 '무엇을 발행/발송/선정할지' 읽는 유일한 원천(execution_ssot)과, 그 결정이 코드로 강제되는 장치(guard)를 명시한다. 소비자=self_health_watchdog §6·incident_regression_monitor. 등록부(status/module_registry.json) 스키마 무변경, module_id 로 조인.",
+  "_gate": "surface-only. 각 모듈 guard 는 로컬·결정론적 차단(발신 아님)만 수행. 하네스 노출은 SELF_HEALTH_WATCHDOG_LIVE(기본 OFF) 상속. 라이브 발효=GM go.",
+  "_replay_log": "status/decision_replay_log.jsonl (가드가 재생을 막을 때 1줄 append · scripts/decision_replay_log.py)",
+  "updated": "2026-07-22",
+  "contracts": [
+    {
+      "module_id": "cmo-case-series-dispatch",
+      "class": "select-dispatch",
+      "execution_ssot": {
+        "kind": "md",
+        "ref": "instagram/_실전사례_2주플랜.md",
+        "note": "'## 재고' 표 — 디스패처(case_series_dispatch.py)가 다음 편을 고르는 유일 원천(L01)."
+      },
+      "decision_events": ["종결", "취소", "전환", "폐기"],
+      "guard": {
+        "pattern": "K",
+        "impl_ref": "scripts/case_series_dispatch.py:_SERIES_TERMINATED_RE / _find_queued_item(폐기 포함)",
+        "marker": "시리즈\\s*상태\\s*[:：]\\s*(종결|중단|폐기)",
+        "effect": "휴면",
+        "note": "① 표에 '시리즈 상태: 종결' 마커 → 디스패처 즉시 휴면. ② 항목 status='폐기' → 재선정 후보 제외(CASE08 동종 3회 사고 원천차단). 재생 차단 시 decision_replay_log.jsonl 에 blocked 1줄."
+      },
+      "replay_log": "status/decision_replay_log.jsonl",
+      "verify": "python scripts/case_series_dispatch.py --plan-only  # 종결 마커·폐기편 → 선정 0 재현",
+      "rollback": "편성표의 '시리즈 상태: 종결' 줄 삭제(즉시 정상 복귀) · or 가드 커밋 revert",
+      "status": "guarded"
+    },
+    {
+      "module_id": "cto-ops-morning-digest",
+      "class": "verbatim-render",
+      "execution_ssot": {
+        "kind": "prompt",
+        "ref": "scripts/ops_daily_digest.py:build_prompt()",
+        "note": "LLM 이 어제 카톡 원문을 렌더할 때 읽는 프롬프트."
+      },
+      "decision_events": ["정체정규화", "호칭정규화", "금지어정규화"],
+      "guard": {
+        "pattern": "N",
+        "impl_ref": "scripts/ops_daily_digest.py:build_prompt() ★정체 정규화 규칙(라인 533)",
+        "marker": null,
+        "effect": "정규화",
+        "note": "김남욱=GM 로만·'대표님'=전응준 전용·차의주=회장님. '나온 그대로'보다 절대 우선. 권장 진화: 캐논 직독(ssot/canon_values.json)으로 하드코딩 제거(도메인 검수 요망)."
+      },
+      "replay_log": "status/decision_replay_log.jsonl",
+      "verify": "합성 오호칭 입력으로 실제 claude CLI 호출 → 정규화 성공 + 정당 보존(08b95c30 방식)",
+      "rollback": "정규화 규칙 줄 revert(프롬프트 additive 1블록)",
+      "status": "guarded"
+    },
+    {
+      "module_id": "cmo-content-pipeline",
+      "class": "state-honor",
+      "execution_ssot": {
+        "kind": "json",
+        "ref": "3. 웰페리온 가이드/cmo/review/review_queue.json",
+        "note": "실측 확인(2026-07-22): 이 모듈의 collectors/cmo_content_pipeline.py 는 status 값별 건수를 세는 read-only 집계기 — 재선정·발행을 하지 않는다(폐기도 별도 카운트로 이미 존중). 실제 발행 선정·재발행 가드는 ig_review_publish_watcher.py(GM 승인 게이트)에 있다."
+      },
+      "decision_events": ["폐기", "취소"],
+      "guard": {
+        "pattern": "K",
+        "impl_ref": null,
+        "marker": null,
+        "effect": "제외",
+        "note": "가드 보류 — 이 모듈 자체는 결정소멸 위험이 없다(집계기). 발행 선정 재생 위험의 실제 소유처는 watcher(GM 게이트)로, 별도 계약 후보. 억지 배선 금지."
+      },
+      "replay_log": "status/decision_replay_log.jsonl",
+      "verify": "python scripts/collectors/cmo_content_pipeline.py  # status 집계만(발신 없음) 확인",
+      "rollback": "해당 없음(가드 미장착)",
+      "status": "proposed",
+      "domain_review": "시모(CMO) — 발행 선정 재생 가드를 watcher 로 명문화할지 도메인 판단 필요"
+    },
+    {
+      "module_id": "cmo-publish-digest",
+      "class": "state-honor",
+      "execution_ssot": {
+        "kind": "json",
+        "ref": "scripts/publish_digest.py(review_queue.json 그룹 판정) + scripts/.publish_digest_sent.json(그룹키 dedup 원장)",
+        "note": "실측 확인(2026-07-22): 발신 판정은 review_queue.json 을 folder 그룹키로 묶어 _group_is_complete() + SENT_LEDGER(그룹키 존재=평생 1회) 로 한다. dedup(재발송 차단)은 이미 pattern K state-honor 로 존재(2026-07-18 시토 수리)."
+      },
+      "decision_events": ["폐기", "취소", "발행완료"],
+      "guard": {
+        "pattern": "K",
+        "impl_ref": "scripts/publish_digest.py:send_publish_digest(그룹키 SENT_LEDGER dedup) — 재발송 차단 시 decision_replay_log.jsonl blocked 1줄",
+        "marker": null,
+        "effect": "제외",
+        "note": "① 그룹키 이미 발신(SENT_LEDGER) → 재발송 차단(멱등, send-neutral). 차단 순간 replay_log blocked. ② 취소편(폐기/취소 status) 요약 원천 제외는 send 판정 변경(델타≠0) 위험이 있어 완결게이트 미변경 — 도메인 검수 후 별도 착수(가드 보류)."
+      },
+      "replay_log": "status/decision_replay_log.jsonl",
+      "verify": "python scripts/publish_digest.py --self-test 류 없음 — ig_review_publish_watcher 발행완료 전환 시 호출. dedup 스킵 시 replay_log 기록 확인.",
+      "rollback": "replay_log append 호출 1줄 제거(발신 로직 무영향)",
+      "status": "guarded",
+      "domain_review": "시모(CMO) — 취소편 요약 제외(완결게이트 변경)는 발신 델타 발생 가능 → 도메인 검수 후 착수"
+    },
+    {
+      "module_id": "cpo-inquiry-daily-actions",
+      "class": "state-honor",
+      "execution_ssot": {
+        "kind": "gas",
+        "ref": "Survey.js member_inquiry_list (+ cpo_report.py fetch_member_inquiries / uncontacted·todays_reservations·churn_risk 분류기)",
+        "note": "실측 확인(2026-07-22): collectors/cpo_inquiry_daily_actions.py 는 cpo_report.py 분류기를 재사용해 액션 카운트를 만든다. 문의 원천은 GAS Survey.js(시포 도메인)."
+      },
+      "decision_events": ["해소", "취소"],
+      "guard": {
+        "pattern": "K",
+        "impl_ref": null,
+        "marker": null,
+        "effect": "제외",
+        "note": "가드 보류 — 해소/취소 문의를 액션카드에서 제외하려면 '대조키' 기반이어야 한다(행번호 금지·INC-021 row-delete race). 이는 시포 도메인 GAS/분류기 소유 영역으로, CTO 가 억지 배선하지 않는다."
+      },
+      "replay_log": "status/decision_replay_log.jsonl",
+      "verify": "python scripts/collectors/cpo_inquiry_daily_actions.py  # 카운트만(발신 없음)",
+      "rollback": "해당 없음(가드 미장착)",
+      "status": "proposed",
+      "domain_review": "시포(CPO) — 해소/취소 문의 제외 가드는 대조키 기반 필수(행번호 금지). 도메인 소유자 착수 요망."
+    }
+  ]
+}
