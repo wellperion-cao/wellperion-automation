@@ -2560,7 +2560,7 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
               order.forEach(function(gname){
                 h+='<div style="margin-bottom:16px;">';
                 h+='<div style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:4px;display:inline-block;padding:2px 10px;margin-bottom:8px;letter-spacing:0.05em;">'+esc(gname)+'</div>';
-                h+='<div style="overflow-x:auto;"><table style="margin:0 0 4px;font-size:13px;"><tr><th style="width:52px;">번호</th><th style="width:170px;">약속</th><th>요지</th></tr>';
+                h+='<div style="overflow-x:auto;"><table style="margin:0 0 4px;font-size:13px;"><tr><th style="width:60px;white-space:nowrap;">번호</th><th style="width:170px;">약속</th><th>요지</th></tr>';
                 groups[gname].forEach(function(l){
                   var s=summarize(l['내용']);
                   var did='pr-'+(++dc);
