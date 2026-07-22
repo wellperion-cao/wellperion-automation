@@ -89,21 +89,55 @@ def queue_ships_by_ref(refs: list) -> list:
     return out
 
 
+# ── 업무현황 SSOT(todo_list · GAS 공용 웹앱) ──
+TODO_URL = HOME_KPI_URL  # todo_list·home_kpi 동일 GAS 웹앱
+_TODO_CACHE: list | None = None
+
+
+def fetch_todo() -> list:
+    """업무현황 SSOT 항목(진행중·완료 등). 실패 시 빈 리스트(정직)."""
+    global _TODO_CACHE
+    if _TODO_CACHE is not None:
+        return _TODO_CACHE
+    try:
+        req = urllib.request.Request(TODO_URL + "?action=todo_list")
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = json.loads(r.read())
+        _TODO_CACHE = data.get("data", []) if isinstance(data, dict) else []
+    except Exception as e:
+        print(f"[WARN] todo_list 조회 실패: {type(e).__name__}: {e}")
+        _TODO_CACHE = []
+    return _TODO_CACHE
+
+
+def todo_by_ref(refs: list) -> list:
+    rset = {str(r) for r in refs}
+    return [t for t in fetch_todo() if str(t.get("id")) in rset]
+
+
 # ── 규칙 계산 ──────────────────────────────
-_STATUS_MAP = {"DONE": 100, "IN_PROGRESS": 50, "PENDING": 0, "STANDBY": 0}
+_STATUS_MAP = {
+    "DONE": 100, "IN_PROGRESS": 50, "PENDING": 0, "STANDBY": 0,
+    "완료": 100, "진행중": 50, "이월": 50, "보류": 0, "계획": 0,
+}
 
 
-def apply_rule(rule: str, ships: list) -> int | None:
-    if not ships:
+def _stat(item: dict) -> str:
+    """배(status) 또는 실무항목(상태) 공통 상태 읽기."""
+    return str(item.get("status") or item.get("상태") or "")
+
+
+def apply_rule(rule: str, items: list) -> int | None:
+    if not items:
         return None
     if rule == "count_done":
-        done = sum(1 for s in ships if s.get("status") == "DONE")
-        return round(done / len(ships) * 100)
+        done = sum(1 for s in items if _stat(s) in ("DONE", "완료"))
+        return round(done / len(items) * 100)
     if rule == "status_map":
-        vals = [_STATUS_MAP.get(s.get("status", ""), 0) for s in ships]
+        vals = [_STATUS_MAP.get(_stat(s), 0) for s in items]
         return round(sum(vals) / len(vals))
     if rule == "avg_progress":
-        vals = [s["progress"] for s in ships if isinstance(s.get("progress"), (int, float))]
+        vals = [s["progress"] for s in items if isinstance(s.get("progress"), (int, float))]
         return round(sum(vals) / len(vals)) if vals else None
     return None
 
@@ -138,17 +172,25 @@ def resolve(obj: dict, kpi: dict | None) -> dict:
                 "src": f"queue:{sync.get('rule')}({len(ships)}배)"}
 
     if src == "todo_ssot":
-        return {"title": title, "verdict": "미연동", "detail": "업무현황 SSOT 배선 전(준용M 단일입력 후)"}
+        refs = sync.get("ref") or []
+        items = todo_by_ref(refs if isinstance(refs, list) else [refs])
+        val = apply_rule(str(sync.get("rule", "count_done")), items)
+        if val is None:
+            return {"title": title, "verdict": "미연동", "detail": f"연결 실무항목 없음({refs})"}
+        return {"title": title, "verdict": "AUTO", "field": "progress",
+                "old": obj.get("progress"), "new": val,
+                "src": f"todo_ssot:{sync.get('rule')}({len(items)}건)"}
 
     return {"title": title, "verdict": "미연동", "detail": f"알 수 없는 source={src}"}
 
 
 def write_back(obj: dict, v: dict) -> None:
-    """게이트 ON일 때만 실제 반영. metric.current 또는 progress + sync 메타 갱신."""
-    if v.get("field") == "metric.current":
-        obj.setdefault("metric", {})["current"] = v["new"]
-    elif v.get("field") == "progress":
-        obj["progress"] = v["new"]
+    """게이트 ON일 때만 실제 반영 — progress만 영속.
+    ★INC-001: 매출·지출 등 지표값(metric.current·metric_live)은 이 파일에 저장 금지.
+    페이지가 cfo 소스에서 라이브 렌더하므로 표시 전용(persist 안 함)."""
+    if v.get("field") != "progress":
+        return  # metric_live(매출 등)는 미저장·라이브 표시 전용(INC-001)
+    obj["progress"] = v["new"]
     obj.setdefault("sync", {})["last_auto"] = now_iso()
     obj["sync"]["auto_value"] = v["new"]
 

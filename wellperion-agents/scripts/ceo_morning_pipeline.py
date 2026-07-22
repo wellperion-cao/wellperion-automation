@@ -580,6 +580,20 @@ from ship_classify import (  # noqa: E402
     classify_ship, has_clevel_id, render_ship_line,
 )
 
+# ── 항로 보드 — G1과 동일 엔진 소비 (2026-07-22 GM 지시: 항로↔G1 정합) ─────────
+# SSOT: scripts/hangro_board.py build_board() — 08:00 항로 블록의 자체 재구현 금지.
+# 08:00 build_telegram_report()가 이 함수 결과를 그대로 렌더해, G1 웹보드와
+# 동일 출처·동일 3섹터 분류(🚢진행중/⚓대기중/🏁입항완료)·동일 결재판정을 쓴다.
+# _md_table/_item_to_row 는 '입항완료' 접기(텔레그램 길이 제약)에도 동일 행 포맷을
+# 쓰기 위한 재사용 — 새 표 렌더러 중복 구현 금지.
+from hangro_board import (  # noqa: E402
+    fetch_gas_items as hangro_fetch_gas_items,
+    fetch_queue_items as hangro_fetch_queue_items,
+    build_board as hangro_build_board,
+    _md_table as hangro_md_table,
+    _item_to_row as hangro_item_to_row,
+)
+
 
 def stage1_collect_classify() -> dict:
     """
@@ -1170,109 +1184,120 @@ def build_yesterday_done_line(yday_items: list[dict]) -> list[str]:
     return out
 
 
+# ── 텔레그램 길이 제약 (2026-07-22 GM 지시: 항로↔G1 정합 검증 중 실측 발견) ────
+# G1 항로 보드 전량 텍스트는 하루 완료가 많은 날(실측 2026-07-22 84건) 14KB+로,
+# 텔레그램 sendMessage 4096자 한도를 진행중·대기중 구간만으로도 넘는다(실측 6.7KB).
+# ① 입항완료 표만 상위 N건+건수 요약으로 접고(3섹터 분류·건수 자체는 불변),
+# ② 그래도 넘치면 문단 경계에서 여러 메시지로 분할 발송한다(표 행 안 끊김).
+TELEGRAM_MSG_LIMIT = 4096
+_DONE_SECTION_HEADER = "### 🏁 입항 완료 (오늘)"
+_DONE_FOLD_MAX_ROWS = 10
+
+
+def _fold_board_done_section(board_text: str, secs: dict, max_rows: int = _DONE_FOLD_MAX_ROWS) -> str:
+    """
+    hangro_board.build_board() 결과의 '🏁 입항 완료 (오늘)' 표만 상위 max_rows건 +
+    '총 N건' 요약으로 접는다. 3섹터 분류·건수(상단 요약 표)·진행중/대기중/결재판정은
+    100% 그대로 — G1 웹보드는 전량, 08:00 텔레그램은 요약(둘 다 secs 동일 출처).
+    """
+    done_all = secs.get("done", []) + secs.get("drift", [])
+    if len(done_all) <= max_rows:
+        return board_text  # 접을 필요 없음 — 원문 그대로
+
+    head, sep, _rest = board_text.partition(_DONE_SECTION_HEADER)
+    if not sep:
+        return board_text  # 마커 미검출 — 크래시 방지, 원문 유지(fallback)
+
+    rows = [
+        hangro_item_to_row(it, ship_col_extra="🔗" if str(it.get("next") or "").strip() else "")
+        for it in secs.get("done", [])[:max_rows]
+    ]
+    n_appr = len(secs.get("appr", []))
+    n_inflight = len(secs.get("appr_inflight", []))
+
+    tail_lines = [
+        sep,
+        f"총 {len(done_all)}건 — 상위 {len(rows)}건만 표시(전량은 G1 웹보드/`hangro_board.py`)",
+        hangro_md_table(rows) if rows else "_(없음)_\n",
+    ]
+    if n_appr:
+        tail_lines.append(f"🔴 GM 결재 {n_appr}건 — 결재 현황 SSOT에서 확인·결재")
+    if n_inflight:
+        tail_lines.append(f"⏳ 결재 진행 중 {n_inflight}건 (타 결재자 대기) — 결재 현황 SSOT")
+    tail_lines.append("")
+    tail_lines.append("━" * 36)
+    tail_lines.append("_본 보드는 자동 생성입니다._")
+
+    return head + "\n".join(tail_lines)
+
+
+def split_for_telegram(text: str, limit: int = TELEGRAM_MSG_LIMIT) -> list[str]:
+    """
+    긴 보고를 텔레그램 4096자 한도에 맞춰 문단(빈 줄) 경계에서 분할.
+    (scripts/report_stream_3_impl.py _chunk_blocks 와 동일 원리 — 표 행 중간에서
+    끊기지 않게 문단 단위로 자르고, 문단 자체가 한도를 넘으면 줄 단위로 추가 분할.)
+    """
+    blocks = text.split("\n\n")
+    messages: list[str] = []
+    current = ""
+    for b in blocks:
+        candidate = f"{current}\n\n{b}" if current else b
+        if len(candidate) <= limit:
+            current = candidate
+            continue
+        if current:
+            messages.append(current)
+            current = ""
+        if len(b) <= limit:
+            current = b
+            continue
+        # 문단 자체가 한도 초과 — 줄 단위로 추가 분할
+        sub = ""
+        for line in b.split("\n"):
+            cand2 = f"{sub}\n{line}" if sub else line
+            if len(cand2) <= limit:
+                sub = cand2
+            else:
+                if sub:
+                    messages.append(sub)
+                sub = line[:limit]
+        current = sub
+    if current:
+        messages.append(current)
+    return messages
+
+
 def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     """
-    GM 아침 보고 — '오늘의 항로' 레이아웃 (2026-06-05 GM 재설계).
-    항해 세계관(아이콘 표준 A안): 🌟북극성=목적지 · 🚢배=할일 · ⚓닻=대기/정박 · 🏁완료 · 🔗항로점=완료하며 남긴 다음 · 🌀표류=완료인데 다음없음.
-    무게(priority)=배종류(🛳️크루즈/⛴️여객선/⛵돛단배) · 🔴마감임박 · 🌟북극성직결.
-    ※ 데이터 수집·집계 변수(today_tasks/assigned/done_*/gm_decision/urgent)는 그대로 재사용.
+    GM 아침 보고 — '오늘의 항로' 레이아웃.
 
-    G1 SSOT 경로: s1["_g1_done_yesterday"] 를 '지나온 항로'로 사용.
-    fallback 경로: yesterday_done() 큐 기반 유지.
+    2026-07-22 GM 지시(항로 ↔ G1 정합): 항로 블록은 더 이상 이 함수가 자체
+    재구현하지 않는다. scripts/hangro_board.py의 build_board() 결과를 그대로
+    소비해 렌더한다 — 08:00과 G1 웹보드가 동일 출처(GAS todo_list + _queue.json)·
+    동일 3섹터 분류(🚢진행중/⚓대기중/🏁입항완료)·동일 결재판정(_next_approver)을
+    쓴다. 기존에는 이 함수가 fetch_g1_ssot 결과를 flat 리스트로 재분류하고
+    SECURITY_SIGNALS 키워드('토큰'·'PIN' 등)로 GM결재를 오탐(6건)했으며
+    입항완료 섹션도 없었다 — 그 자체 재구현을 폐기한다.
+
+    s1/assigned/orch(3분류·배정·오케스트레이션 계획)는 stage1~3의 산출물로
+    save_plan()의 로컬 감사 JSON에는 계속 쓰이지만, 이 렌더 함수에는 더 이상
+    관여하지 않는다(시그니처는 run_pipeline 호출부 호환을 위해 유지).
+
+    부가내용(매출·운영점검·북극성 한 수·직원카드)은 삭제하지 않고 항로 블록
+    뒤 '── 부록 ──' 아래로 명확히 분리해 GM이 항로/부가를 혼동하지 않게 한다.
     """
-    gm_dec = s1["gm_decision"]
-    auto = s1["autonomous"]
-    deep = s1["deep_interview"]
+    gas_items = hangro_fetch_gas_items()
+    queue_items = hangro_fetch_queue_items()
+    board_text, _secs = hangro_build_board(gas_items, queue_items)
+    board_text = _fold_board_done_section(board_text, _secs)
 
-    # 어제 마무리 — G1 SSOT(시트) 완료 + 큐 완료를 합산(둘 중 한쪽만 잡혀 '완료 없음'으로
-    # 잘못 보이던 문제 해결). task_id/제목으로 중복 제거.
-    if s1.get("_source") == "g1_ssot":
-        yday_items = list(s1.get("_g1_done_yesterday", []))
-        _yg, yday_queue = yesterday_done()
-        seen = {(d.get("task_id") or d.get("title")) for d in yday_items}
-        for q in yday_queue:
-            k = q.get("task_id") or q.get("title")
-            if k and k not in seen:
-                yday_items.append(q)
-                seen.add(k)
-        followups = extract_followups([
-            {"title": d.get("title", ""), "note": d.get("note", ""), "clevel": d.get("clevel", ""),
-             "task_id": d.get("task_id", "")}
-            for d in yday_items
-        ])
-    else:
-        _yday_git, yday_queue = yesterday_done()
-        yday_items = yday_queue
-        followups = extract_followups(yday_queue)
-
-    # ── 항해 분류 준비 — 임박 마감 제목 셋(🔴 판정용) ──
-    urg = urgent_deadlines()
-    urgent_titles = {u.get("title", "") for u in urg if u.get("title")}
-
-    # 오늘의 항로 = 배정된 today 항목을 classify_ship 으로 분류
-    today_ships: list[dict] = []
-    for a in assigned:
-        ship = classify_ship(a, urgent_titles)
-        today_ships.append({**a, "_ship": ship})
-
-    # 🌟 북극성 침로 = today 중 northstar 인 것
-    northstar_today = [s for s in today_ships if s["_ship"]["northstar"]]
-
-    # 🌀 표류 = 어제/오늘 완료 중 다음 항로점도 종결 표시도 없는 진짜 끊긴 건
-    #   terminal=True / next 종결·후속 마커 있으면 표류 아님 (_is_settled_or_bridged).
-    #   note 만 보던 기존 로직이 next·terminal을 무시해 ADHOC 배 82건 오분류 → 수정(2026-06-30).
-    drift_pool = list(yday_items) + list(s1.get("_g1_done_today", []))
-    drift_seen: set = set()
-    drift: list[dict] = []
-    for d in drift_pool:
-        k = d.get("task_id") or d.get("title")
-        if k in drift_seen:
-            continue
-        drift_seen.add(k)
-        if _is_settled_or_bridged(d):   # 명시적 종결·항로점 → 표류 아님
-            continue
-        if _next_waypoint(d) == "입항(종결)" and not str(d.get("note") or "").strip():
-            drift.append(d)
-
-    lines = []
-    lines.append(f"🧭 오늘의 항로 — {today_kr()}")
-    lines.append("   북극성을 향해, 어제 항로에서 이어서")
-    lines.append("")
-
-    # ── 상단: 한눈 표 (선장 결정 · 오늘 항로 · 표류) ──
-    lines += count_table([
-        ("선장 결정", len(gm_dec)),
-        ("오늘 항로", len(today_ships)),
-        ("표류", len(drift)),
-    ])
-    lines.append("")
+    lines = [board_text, "", "━" * 14 + " 부록 " + "━" * 14]
 
     # ── 💰 매출·지출 1줄 (구 09시 GM DM 흡수 · 상세는 카톡 09:30) ──
     _sales_line = fetch_sales_oneline()
     if _sales_line:
         lines.append(_sales_line)
         lines.append("")
-
-    # ── 🔗 지나온 항로 (어제 완료 1~2줄, 구 07시 결산 흡수) ──
-    _yday_lines = build_yesterday_done_line(yday_items)
-    if _yday_lines:
-        lines += _yday_lines
-        lines.append("")
-
-    # 항로 정합경고 — 큐↔시트 불일치(유령·중복·상태·형식) 있으면 08:00 보고 상단에 1줄(다같이 봄). fail-open.
-    try:
-        import sys as _sys
-        from pathlib import Path as _P
-        _sc = _P(__file__).resolve().parent.parent.parent / "scripts"
-        if str(_sc) not in _sys.path:
-            _sys.path.insert(0, str(_sc))
-        from queue_integrity_check import board_banner as _bb
-        _bn = _bb()
-        if _bn:
-            lines.append(_bn)
-            lines.append("")
-    except Exception:
-        pass
 
     # COO 모듈 자동보고 합류 (레지스트리 구동 — 점검현황 등 daily_join 모듈)
     try:
@@ -1281,96 +1306,20 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
         from coo_report_line import build_coo_daily_lines
         _coo_lines = build_coo_daily_lines(heartbeat=True)
         if _coo_lines:
-            lines.append("")
             lines.append("🏢 <b>운영 점검</b>")
             lines.extend(_coo_lines)
+            lines.append("")
     except Exception as _e:
         lines.append(f"🏢 운영 점검: (합류 실패 — {type(_e).__name__})")
-
-    # ── 🔴 급한 입항 (마감 임박 — 큐 deadline 기반, 항상 표 바로 아래 고정) ──
-    if urg:
-        lines.append("🔴 급한 입항  (마감 임박)")
-        for u in urg:
-            mmdd = u["deadline"][5:].replace("-", "/")
-            who = f" [{u['owner']}]" if u.get("owner") else ""
-            lines.append(f" · {plainify(summarize_title(u['title']))} ({mmdd} 마감){who}")
         lines.append("")
-
-    # ── '지나온 항로(어제 완료)'는 상단에 1~2줄로 흡수(구 07시 결산 폐지, GM 2026-07-18) ──
-
-    # ── 🧭 오늘의 항로 (배 종류로 묶음: 크루즈→여객선→돛단배) ──
-    lines.append("🧭 오늘의 항로  (무거운 배부터 · 🔴급함 🌟북극성)")
-    if today_ships:
-        # 배 무게(tier rank) 큰 순, 같은 무게 내 급함🔴 먼저
-        tier_rank = {"크루즈": 0, "여객선": 1, "돛단배": 2}
-        ordered = sorted(
-            today_ships,
-            key=lambda s: (
-                tier_rank.get(s["_ship"]["tier"], 1),
-                0 if s["_ship"]["urgent"] else 1,
-            ),
-        )
-        for s in ordered:
-            ship = s["_ship"]
-            cl = s.get("assigned_clevel", "")
-            who = CLEVEL_NICK.get(cl, cl) if cl else ""
-            # 약속 L16: 담당=닉네임+ship_no(_queue 배만 보유·배마다 고정). ship_no 없으면 닉네임만.
-            _sn = str(s.get("ship_no") or "").strip()
-            if who and _sn:
-                who = f"{who} {_sn}"
-            who_s = f" [{who}]" if who else ""
-            flags = ("🔴" if ship["urgent"] else "") + ("🌟" if ship["northstar"] else "")
-            title = plainify(summarize_title(s.get("title", "")))
-            lines.append(f" {ship['icon']} {title}{who_s} {flags}".rstrip())
-    else:
-        lines.append(" · 오늘 띄울 배 없음")
-    if deep:
-        lines.append(f" ⚓ 명확화 대기 {len(deep)}건 — 항로 확정 후 출항")
 
     # ── 🧭 웰리의 북극성 한 수 (구 06:30 추천 카드 흡수 · northstar_pending.json) ──
     _ns_top = fetch_northstar_top()
     if _ns_top:
-        lines.append("")
         lines.append(_ns_top)
-
-    # ── 🌟 북극성 침로 (없으면 섹션 생략) ──
-    if northstar_today:
         lines.append("")
-        lines.append("🌟 북극성 침로  (오늘 별에 가까워지는 일)")
-        for s in northstar_today:
-            lines.append(f" · {plainify(summarize_title(s.get('title', '')))}")
 
-    # ── 🌀 표류 주의 (완료했는데 다음 항로점 없음) ──
-    lines.append("")
-    lines.append("🌀 표류 주의  (입항 완료인데 다음 항로점 없음)")
-    if drift:
-        for d in drift[:5]:
-            lines.append(f" · {plainify(summarize_title(d.get('title', '')))}")
-            # 핵심조언: note 또는 summary 중 채워진 것 (A안 — 표류는 핵심조언+다음정하기 둘 다)
-            _advice = str(d.get("note") or d.get("summary") or "").strip()
-            if _advice:
-                lines.append(f"   💡 핵심조언: {plainify(_advice[:80])}")
-            lines.append("   👉 다음 뭐 할지 정하세요")
-    else:
-        lines.append(" 없음 ✓")
-
-    # ── 🔴 선장(GM) 결정 (제목 + 카테고리 한 줄 — 순환사유 제거) ──
-    lines.append("")
-    if gm_dec:
-        lines.append("🔴 선장(GM) 결정")
-        for i, a in enumerate(gm_dec, 1):
-            title_clean = plainify(summarize_title(a.get("title", "")))
-            # 카테고리를 사유에서 추출 — "X · 결재 첫 단계…" 형태면 X만 취함
-            raw_reason = a.get("disposition_reason", "")
-            # "카테고리 · 결재 단계" 에서 카테고리만 추출 (뒤 결재 설명 제거)
-            cat = raw_reason.split("·")[0].strip() if "·" in raw_reason else ""
-            suffix = f" — {cat}" if cat else ""
-            lines.append(f"{_circled(i)} {title_clean}{suffix}")
-    else:
-        lines.append("🔴 선장(GM) 결정: 없음")
-
-    # ── 직원 공유용 복붙 카드 (구 07시 직원카드 흡수) — 맨 아래 배치 ──
-    lines.append("")
+    # ── 직원 공유용 복붙 카드 (구 07시 직원카드 흡수) — 부록 맨 아래 배치 ──
     lines.append(build_staff_share_card())
 
     return "\n".join(lines)
@@ -1435,9 +1384,15 @@ def save_plan(s1: dict, assigned: list[dict], orch: dict, dry_run: bool) -> Path
 
 
 def send_reports(report: str, question_card: str, dry_run: bool) -> bool:
+    # 항로 블록(hangro_board)이 커지면 본 보고가 텔레그램 4096자 한도를 넘는 날이
+    # 있다(실측 2026-07-22) — 문단 경계에서 여러 메시지로 분할 발송(표 안 끊김).
+    report_chunks = split_for_telegram(report)
     if dry_run:
-        print("\n========== [DRY-RUN] 텔레그램 본 보고 (발송 안 함) ==========")
-        print(report)
+        print(f"\n========== [DRY-RUN] 텔레그램 본 보고 "
+              f"({len(report_chunks)}통, 발송 안 함) ==========")
+        for i, chunk in enumerate(report_chunks, 1):
+            print(f"---------- 메시지 {i}/{len(report_chunks)} ({len(chunk)}자) ----------")
+            print(chunk)
         if question_card:
             print("\n---------- [DRY-RUN] 질문 카드 (발송 안 함) ----------")
             print(question_card)
@@ -1446,13 +1401,15 @@ def send_reports(report: str, question_card: str, dry_run: bool) -> bool:
     try:
         from telegram_notifier import TelegramNotifier
         tg = TelegramNotifier()
-        r1 = tg.send(report)
-        ok1 = bool(r1.get("ok")) if isinstance(r1, dict) else False
+        ok1 = True
+        for chunk in report_chunks:
+            r1 = tg.send(chunk)
+            ok1 = ok1 and (bool(r1.get("ok")) if isinstance(r1, dict) else False)
         ok2 = True
         if question_card:
             r2 = tg.send(question_card)
             ok2 = bool(r2.get("ok")) if isinstance(r2, dict) else False
-        print(f"[OK] 텔레그램 발송 — 본보고={ok1} 질문카드={ok2}")
+        print(f"[OK] 텔레그램 발송 — 본보고={ok1}({len(report_chunks)}통) 질문카드={ok2}")
         return ok1 and ok2
     except Exception as exc:
         print(f"[FAIL] 텔레그램 발송 실패: {exc}", file=sys.stderr)

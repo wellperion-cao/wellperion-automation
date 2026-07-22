@@ -6633,6 +6633,23 @@ function _processAction(body) {
     return _json({ ok: true, migrated: emMig.length, rows: emMig });
   }
 
+  // ─── (진단/일회성) 칸 숨김·표시 토글 — 2026-07-22 GM(유입경로자동 칸 정리 검토) ───
+  //   숨김=hideColumns / 표시=showColumns. gviz 숨김칸 제외 여부 실측 후 적용 판단용(되돌림 안전).
+  if (action === 'set_col_hidden_20260722') {
+    if (String(body.key || '') !== 'wlp_colhide_20260722') return _json({ ok: false, error: 'guard-mismatch' });
+    var chSh = _sheetByGid_(String(body.ssId || LESSON_SS_ID), parseInt(body.gid, 10));
+    if (!chSh) return _json({ ok: false, error: 'no-sheet' });
+    var chHdr = chSh.getRange(1, 1, 1, chSh.getLastColumn()).getValues()[0];
+    var chNorm = function (s) { return String(s || '').replace(/\s+/g, ''); };
+    var chCi = -1;
+    for (var chi = 0; chi < chHdr.length; chi++) { if (chNorm(chHdr[chi]) === chNorm(body.col)) { chCi = chi; break; } }
+    if (chCi < 0) return _json({ ok: false, error: 'no-col', headers: chHdr });
+    var chHidden = String(body.hidden || '') === '1';
+    if (chHidden) chSh.hideColumns(chCi + 1); else chSh.showColumns(chCi + 1);
+    SpreadsheetApp.flush();
+    return _json({ ok: true, col: String(chHdr[chCi]), colIdx: chCi, hidden: chHidden });
+  }
+
   // ─── (일회성) 강습 메인탭 고아 행 내용 클리어 — 2026-07-22 시포(이관 부분기록 정리) ───
   //   행 삭제 아님(IMPORTRANGE 원본 보존) · 내용만 비움 · 전화 대조키 필수(오삭제 방지, INC-020 교훈).
   if (action === 'clear_orphan_row_20260722') {
