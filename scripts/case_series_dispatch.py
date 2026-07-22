@@ -56,6 +56,12 @@ except Exception:
     def pace(*a, **k):
         return None
 
+try:  # 결정 정합 게이트 공용 신호(§4) — 가드가 재생을 막을 때 1줄 남긴다(best-effort)
+    from decision_replay_log import append as _replay_append
+except Exception:
+    def _replay_append(*a, **k):
+        return False
+
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
 
@@ -323,10 +329,11 @@ def recover_stalled_cards(rows: list[dict], today_iso: str, dry_run: bool) -> No
             )
 
 
-def pick_next_case(rows: list[dict], track: str) -> dict | None:
+def pick_next_case(rows: list[dict], track: str, log_replay: bool = False) -> dict | None:
     """지정 트랙에서 '재고(대본완료)' 중 편 번호가 가장 빠른 1건 반환. 없으면 None(소진).
 
     3중 가드: ①상태 완전일치 ②안전망 키워드 미포함 ③review_queue 중복 없음.
+    log_replay=True(실가동)면 '폐기'편 재선정 차단 시 공용 로그(§4)에 1줄 남긴다.
     """
     candidates: list[dict] = []
     for r in rows:
@@ -336,8 +343,17 @@ def pick_next_case(rows: list[dict], track: str) -> dict | None:
             continue
         if any(kw in r["status"] for kw in _DONE_STATUS_KW):
             continue
-        if _case_already_queued(r["num"]):
+        queued = _find_queued_item(r["num"])
+        if queued is not None:
             print(f"[INFO] #{r['num']} 은 '{STOCK_STATUS}'이나 review_queue에 이미 존재 — 재선정 스킵(중복 차단).")
+            # 결정 정합 신호(§4): '폐기'(GM이 취소한 편)를 재선정 후보에서 차단한 경우만
+            # 로그(CASE08 동종 사고 원천차단 증거). 검수대기/발행완료는 정상 dedup — 미로그.
+            if log_replay and queued.get("status") == "폐기":
+                _replay_append(
+                    "cmo-case-series-dispatch",
+                    subject=f"CASE{r['num']:02d}",
+                    detail=f"GM 폐기편 재선정 차단(id={queued.get('id', '?')}) — 재발송 원천차단",
+                )
             continue
         candidates.append(r)
     if not candidates:
@@ -544,6 +560,17 @@ def run(dry_run: bool, plan_only: bool) -> int:
         if _SERIES_TERMINATED_RE.search(INVENTORY.read_text(encoding="utf-8")):
             print("[INFO] 시리즈 종결 마커 감지 — 디스패처 휴면(선정·복구·발송 없음). "
                   "후속 시리즈는 신규 편성표로 별도 운영.")
+            # 결정 정합 신호(§4): 종결 마커에도 아직 '재고(대본완료)' 편이 표에 남아
+            # 있으면(휴면이 없었다면 재선정·재발송됐을 편) 실제 재생 차단으로 1줄 남긴다.
+            #   plan-only/dry-run(검사 모드)은 공용 로그를 더럽히지 않도록 제외.
+            if not (dry_run or plan_only):
+                pending = [r["num_raw"] for r in rows if r.get("status") == STOCK_STATUS]
+                if pending:
+                    _replay_append(
+                        "cmo-case-series-dispatch",
+                        subject="실전사례 시리즈(종결)",
+                        detail=f"종결 마커로 디스패처 휴면 — 재선정 차단된 잔여 재고편: {pending}",
+                    )
             return 0
     except Exception:
         pass
@@ -553,7 +580,7 @@ def run(dry_run: bool, plan_only: bool) -> int:
     recover_stalled_cards(rows, today_iso, dry_run=(dry_run or plan_only))
 
     # 2) 다음 편 선정 (소진 시 생성 금지)
-    nxt = pick_next_case(rows, track)
+    nxt = pick_next_case(rows, track, log_replay=not (dry_run or plan_only))
     if nxt is None:
         if is_weekend:
             print(f"[INFO] 주말({track}) 재고 없음 — 조용히 종료(알림 스팸 금지).")
