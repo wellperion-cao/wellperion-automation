@@ -1610,5 +1610,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 dd7e5760)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "dd7e57606ebea7f9aa4b315c49a4d445945590c9"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-b4d7c533",
+    "clevel": "cpo",
+    "title": "[시포] 휴회 경량안 — 회원DB 4칸·GAS 검증·membership 접수폼 (배768)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9640,
+    "artifact": "- Survey.js: member_hold_preview(read-only)+member_hold_apply(HOLD_LIVE 게이트) 신규 액션.\n  3회/총60일/1회 7~60일 검증 단일 SSOT(서버). 유효회원 탭 additive 4칸(휴회횟수·누적일수·시작일·종료일)\n  _miEnsureCol_ 자동생성. 행 해석=rowKey(등록일자+전화)/keyPhone fail-closed 가드 재사용(INC 오지목 방지).\n- membership.html: 휴회 접수 모달1개+이력조회+⏸휴회중 상태색1개.\n- ★잔여일=서버계산  (CLI ad-hoc · 커밋 b4d7c533)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b4d7c533ceabc0c8f838476e2f4f27f8df0344b2"
   }
 ]
