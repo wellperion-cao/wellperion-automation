@@ -235,27 +235,6 @@ body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
           <span class="tc-kr">Youth Lesson Inquiry<span class="arrow">&rarr;</span></span>
           <span class="tc-desc">Swimming &middot; Gymnastics &middot; Golf &middot; Squash &middot; Musical</span>
         </a>
-
-        <a class="type-card" href="#" data-cat="summer">
-          <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="4.2" y1="4.2" x2="6" y2="6"/><line x1="18" y1="18" x2="19.8" y2="19.8"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="4.2" y1="19.8" x2="6" y2="18"/><line x1="18" y1="6" x2="19.8" y2="4.2"/></svg></span>
-          <span class="tc-en">Summer Special</span>
-          <span class="tc-kr">Summer Program Inquiry<span class="arrow">&rarr;</span></span>
-          <span class="tc-desc">Short, intensive summer break programs</span>
-        </a>
-
-        <a class="type-card" href="#" data-cat="rental">
-          <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16"/><line x1="12" y1="4" x2="12" y2="13"/><line x1="3" y1="13" x2="21" y2="13"/><line x1="12" y1="13" x2="12" y2="20"/></svg></span>
-          <span class="tc-en">Space Rental</span>
-          <span class="tc-kr">Space Rental Inquiry<span class="arrow">&rarr;</span></span>
-          <span class="tc-desc">Space rental for events, filming, seminars &amp; tailored quotes</span>
-        </a>
-
-        <a class="type-card" href="#" data-cat="business">
-          <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 7.8 6.6c.7-.6 1.7-.6 2.4 0l1.9 1.6"/><path d="M21 10.5 16.2 6.6c-.7-.6-1.7-.6-2.4 0l-.9.75"/><path d="M6.8 11l4.2 3.6a1.65 1.65 0 0 0 2.2-2.45L9.8 8.9"/><path d="M10 12.3l2.5 2.2a1.65 1.65 0 0 0 2.2-2.45l-.9-.85"/><path d="M13.2 12.3l1.9 1.6a1.65 1.65 0 0 0 2.2-2.45"/><line x1="3" y1="10.5" x2="3" y2="16.5"/><line x1="21" y1="10.5" x2="21" y2="16.5"/></svg></span>
-          <span class="tc-en">Business Partnership</span>
-          <span class="tc-kr">Business Partnership Inquiry<span class="arrow">&rarr;</span></span>
-          <span class="tc-desc">Partnership, tenancy, collaboration &amp; B2B proposals</span>
-        </a>
       </div>
 
       <!-- Bottom shortcut links — Home (English home) · Instagram · Naver Blog · Naver Map -->
@@ -429,39 +408,6 @@ body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
         { key:'channel', label:'How Did You Hear About Us?', type:'select', ph:'Please select', opts:CHANNELS },
         { key:'message', label:'Additional Comments', type:'textarea', opt:true, ph:'Feel free to share anything you would like to ask.' }
       ]
-    },
-    summer: {
-      purpose: 'Summer intensive program inquiry and consultation',
-      fields: [
-        { key:'name',    label:'Full Name',   type:'text', ph:'Please enter your full name', req:true },
-        { key:'phone',   label:'Mobile Phone', type:'tel', ph:'010-1234-5678', req:true },
-        { key:'program', label:'Focus Program', type:'radio', hint:'Select one · for multiple programs, please submit separately', opts:['Swimming','Gymnastics','Squash','Golf','Youth Growth PT'] },
-        { key:'wishMonth', label:'Preferred Month', type:'select', ph:'Please select', opts:['July','August','Undecided'] },
-        { key:'message', label:'Additional Comments', type:'textarea', opt:true, ph:'Feel free to share anything you would like to ask.' }
-      ]
-    },
-    rental: {
-      purpose: 'Space rental inquiry and quote',
-      fields: [
-        { key:'name',    label:'Full Name',   type:'text', ph:'Please enter your full name', req:true },
-        { key:'phone',   label:'Mobile Phone', type:'tel', ph:'010-1234-5678', req:true },
-        { key:'space',   label:'Space to Rent', type:'multi', opts:['Swimming Pool','Studio','Lounge','Golf Zone','Squash Court','Sauna','Entire Venue'] },
-        { key:'purpose', label:'Purpose', type:'select', ph:'Please select', opts:['Event','Filming','Seminar','Workshop','Gathering'] },
-        { key:'wishDate',label:'Preferred Date', type:'date', opt:true },
-        { key:'headcount',label:'Expected Headcount', type:'text', opt:true, ph:'e.g. 30 people' },
-        { key:'message', label:'Additional Comments', type:'textarea', opt:true, ph:'Feel free to share the details of your event.' }
-      ]
-    },
-    business: {
-      purpose: 'Business partnership inquiry and review',
-      fields: [
-        { key:'company',     label:'Company Name',   type:'text', ph:'Please enter your company name', req:true },
-        { key:'contactName', label:'Contact Person', type:'text', ph:'Contact name', req:true },
-        { key:'phone',       label:'Mobile Phone',   type:'tel',  ph:'010-1234-5678', req:true },
-        { key:'partnerType', label:'Partnership Type', type:'select', ph:'Please select', opts:['Collaboration','Tenancy','B2B Benefits','Content Partnership','Product Supply','Investment Partnership'] },
-        { key:'docLink',     label:'Company Deck / Link', type:'text', opt:true, ph:'https://…' },
-        { key:'proposal',    label:'Proposal', type:'textarea', req:true, ph:'Please share your partnership proposal.' }
-      ]
     }
   };
 
@@ -479,23 +425,10 @@ body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
       lead:"Professional lessons for your child's first steps — from swimming, golf and squash to gymnastics, parent-child swimming and English musical.",
       tags:['WSC Swimming','WSC Golf','WSC Squash','WSC Gymnastics & Trampoline','WSC P.T','WSC Pilates','Parent-Child Swimming','English Musical'],
       note:'A range of specialized programs rarely found elsewhere are also available.'
-    },
-    summer: {
-      lead:'A summer-only intensive program. Swimming, gymnastics, squash, golf and Youth Growth PT — open to both adults and youth.',
-      badges:['Held in July · August','Limited spots','By appointment'],
-      note:'Spots may fill early during the season.'
-    },
-    rental: {
-      lead:'From the swimming pool to the studio, lounge and golf zone — a range of spaces for events, filming, seminars, workshops and gatherings.',
-      note:'Pricing is tailored to the scale, duration and setup of your event.'
-    },
-    business: {
-      lead:'We welcome partners to grow with Wellperion — from collaborations to tenancy, B2B benefits and content partnerships.',
-      note:'Our team will review your proposal and reply.'
     }
   };
 
-  var CAT_TITLES = { membership:'Membership Inquiry', adult:'Adult Lesson Inquiry', youth:'Youth Lesson Inquiry', summer:'Summer Program Inquiry', rental:'Space Rental Inquiry', business:'Business Partnership Inquiry' };
+  var CAT_TITLES = { membership:'Membership Inquiry', adult:'Adult Lesson Inquiry', youth:'Youth Lesson Inquiry' };
 
   var AGE_POLICY_HTML =
     '<details class="g-age-policy"><summary>Enrollment age guide</summary>' +
@@ -510,10 +443,7 @@ body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
   var HERO_SUB = {
     membership: "We'll guide you through membership and facility tours.",
     adult: 'Explore our adult lesson programs.',
-    youth: 'Explore our youth lesson programs.',
-    summer: 'Discover our summer intensive programs.',
-    rental: 'Rent our spaces for events, filming and gatherings.',
-    business: 'We welcome partnership and business proposals.'
+    youth: 'Explore our youth lesson programs.'
   };
   function setHeroSub(cat){ $('heroSubLine1').textContent = HERO_SUB[cat] || HERO_SUB_DEFAULT; }
 
@@ -832,9 +762,6 @@ body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
       category:vals.category, name:vals.name, phone:vals.phone,
       program:vals.program||'', channel:vals.channel||'', message:vals.message||'',
       wishTime:vals.wishTime||'', age:vals.age||'', exp1Date:vals.exp1Date||'',
-      target:vals.target||'', wishMonth:vals.wishMonth||'',
-      space:vals.space||'', purpose:vals.purpose||'', wishDate:vals.wishDate||'', headcount:vals.headcount||'',
-      company:vals.company||'', contactName:vals.contactName||'', partnerType:vals.partnerType||'', docLink:vals.docLink||'', proposal:vals.proposal||'',
       consent:true, hp:vals.hp||'', fillMs:(formShownAt? (Date.now()-formShownAt) : 0),
       utmSource:UTM_SOURCE, utmContent:UTM_CONTENT, utmMedium:UTM_MEDIUM
     };
@@ -864,10 +791,7 @@ body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
       var t = (qp('type') || '').toLowerCase();
       var alias = { membership:'membership', '멤버십':'membership',
                     adult:'adult', '성인':'adult', '성인강습':'adult',
-                    youth:'youth', '유소년':'youth', '유소년강습':'youth',
-                    summer:'summer', '여름':'summer', '여름특강':'summer',
-                    rental:'rental', '렌트':'rental', '대관':'rental', '공간렌트':'rental',
-                    business:'business', '비즈니스':'business', '제휴':'business' };
+                    youth:'youth', '유소년':'youth', '유소년강습':'youth' };
       var cat = alias[t];
       if (cat) { pickCat(cat, false); } else { showHub(); }
     } catch (e) { showHub(); }
