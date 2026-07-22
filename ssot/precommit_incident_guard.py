@@ -28,6 +28,13 @@ from pathlib import Path
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
+# 2026-07-22 커밋 파이프라인 8분+ 정지 사고 복구 후 하드닝:
+# 하위 스캔(divergence_scan.py/forbidden_scan.py)이 느려지거나 멈추면
+# 이 프로세스가 .git/index.lock 을 쥔 채 커밋 전체를 무한정 막는다.
+# 실측 정상 소요 ~2분 → 3배 여유의 하드 타임아웃으로 상한을 못박는다.
+# stdin=DEVNULL 로 자식이 표준입력을 기다릴 여지 자체를 원천 차단(비대화형 가드).
+SUBPROCESS_TIMEOUT_SEC = 180
+
 
 def staged_files():
     """staged 파일 경로 목록(str). 실패 시 빈 리스트."""
@@ -36,6 +43,8 @@ def staged_files():
             ["git", "diff", "--cached", "--name-only", "-z"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            timeout=10,
         )
         if proc.returncode != 0:
             return []
@@ -97,7 +106,9 @@ def run_forbidden_scan(repo_root):
             [pybin, str(scan_path), "--json"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
             cwd=str(repo_root),
+            timeout=SUBPROCESS_TIMEOUT_SEC,
         )
         try:
             data = json.loads(proc.stdout.decode("utf-8", "replace"))
@@ -145,7 +156,9 @@ def run_divergence_scan(repo_root):
             [pybin, str(scan_path)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
             cwd=str(repo_root),
+            timeout=SUBPROCESS_TIMEOUT_SEC,
         )
         output = proc.stdout.decode("utf-8", "replace")
         # 복사본 감지 시에만 출력 (✅ 전체 통과라면 출력 생략)
@@ -169,6 +182,8 @@ def main():
             ["git", "rev-parse", "--show-toplevel"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            timeout=10,
         )
         if proc.returncode != 0:
             return 0  # fail-open
