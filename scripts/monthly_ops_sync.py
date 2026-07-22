@@ -115,6 +115,44 @@ def todo_by_ref(refs: list) -> list:
     return [t for t in fetch_todo() if str(t.get("id")) in rset]
 
 
+# ── 채용 공고 상태(인사허브 GAS · public-job-status) ──
+RECRUIT_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec"
+)
+_JOBS_CACHE: list | None = None
+
+
+def fetch_jobs() -> list:
+    """라이브 채용 공고(공개 상태 open/closed). 실패 시 빈 리스트(정직)."""
+    global _JOBS_CACHE
+    if _JOBS_CACHE is not None:
+        return _JOBS_CACHE
+    try:
+        body = json.dumps({"action": "public-job-status"}).encode("utf-8")
+        req = urllib.request.Request(
+            RECRUIT_URL, data=body,
+            headers={"Content-Type": "text/plain;charset=utf-8"}, method="POST")
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = json.loads(r.read())
+        _JOBS_CACHE = data.get("jobs", []) if isinstance(data, dict) and data.get("ok") else []
+    except Exception as e:
+        print(f"[WARN] 채용 상태 조회 실패: {type(e).__name__}: {e}")
+        _JOBS_CACHE = []
+    return _JOBS_CACHE
+
+
+def jobs_by_ref(refs: list) -> list:
+    """공고 position에 ref 문자열이 든 공고 → {상태: 완료/진행중}로 정규화(closed→완료)."""
+    out = []
+    for j in fetch_jobs():
+        pos = str(j.get("position", ""))
+        if any(str(rf) in pos for rf in refs):
+            out.append({"상태": "완료" if j.get("closed") else "진행중",
+                        "position": pos, "closed": bool(j.get("closed"))})
+    return out
+
+
 # ── 규칙 계산 ──────────────────────────────
 _STATUS_MAP = {
     "DONE": 100, "IN_PROGRESS": 50, "PENDING": 0, "STANDBY": 0,
@@ -180,6 +218,17 @@ def resolve(obj: dict, kpi: dict | None) -> dict:
         return {"title": title, "verdict": "AUTO", "field": "progress",
                 "old": obj.get("progress"), "new": val,
                 "src": f"todo_ssot:{sync.get('rule')}({len(items)}건)"}
+
+    if src == "job_status":
+        refs = sync.get("ref") or []
+        jobs = jobs_by_ref(refs if isinstance(refs, list) else [refs])
+        val = apply_rule(str(sync.get("rule", "status_map")), jobs)
+        if val is None:
+            return {"title": title, "verdict": "미연동", "detail": f"연결 공고 없음({refs})"}
+        closed = sum(1 for j in jobs if j["closed"])
+        return {"title": title, "verdict": "AUTO", "field": "progress",
+                "old": obj.get("progress"), "new": val,
+                "src": f"job_status:{closed}/{len(jobs)}마감"}
 
     return {"title": title, "verdict": "미연동", "detail": f"알 수 없는 source={src}"}
 
