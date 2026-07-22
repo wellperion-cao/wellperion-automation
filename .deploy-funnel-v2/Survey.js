@@ -131,6 +131,88 @@ function _countRowsByPhone_(sh, phCol0, keyPhoneNorm) {
   return n;
 }
 
+// ═══ 지문키(rowKey) — 안정 고유키 R1/R2 (2026-07-22 시포, 오지목 근본수리 설계 §4) ═══
+// 정규화(타임스탬프)+정규화(연락처) 조합으로 물리행을 지목 — rowIndex·keyPhone(봉합 B1/B2)보다 상위 진실.
+// 실측(멤버십 '26년 신규문의' 631행, 2026-07-22): [타임스탬프+연락처] 조합 충돌 0(전원 유일). 새 칸 신설 없음(GM 확정) —
+// 기존 값 조합을 자연키(지문)로 사용.
+// ★이름 주의: 기존 _normTs_(위, 타임스탬프→Date 변환 SSOT — _countByPeriod_ 등 집계 다수가 의존)와 역할이 다르다.
+//   이름 충돌 시 그 SSOT를 덮어써 집계 전체가 깨지므로 절대 재사용 금지 — 신규 헬퍼는 _normTsKey_로 명명(반환값도 Date가
+//   아니라 비교용 정규화 '문자열').
+// _normTsKey_: Date/구글시리얼(Date 객체)·'yyyy-MM-dd HH:mm:ss'·'YYYY. M. D 오전/오후 H:MM:SS' 한글형식 모두 흡수해
+//   'YYYYMMDDHHMMSS'(14자리 숫자열)로 정규화. 프론트(membership.html _gzNormTsKey_)와 바이트 동일 규칙 유지 필수 —
+//   연/월/일/시/분/초 숫자를 뽑아 이어붙이는 방식으로 구현(Date.toString() 등 런타임별 표기 차이 회피). gviz Date 객체
+//   vs GAS getValue() Date 객체 모두 동일 결과를 내려면 스프레드시트·스크립트 timezone이 둘 다 Asia/Seoul이어야 함
+//   (본 프로젝트 전제 — 어긋나면 Utilities.formatDate 명시 지정으로 흡수).
+function _normTsKey_(v) {
+  function pad(n, len) { var s = String(Math.abs(Math.trunc(Number(n) || 0))); while (s.length < len) s = '0' + s; return s; }
+  if (v === null || v === undefined || v === '') return '';
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return '';
+    return Utilities.formatDate(v, 'Asia/Seoul', 'yyyyMMddHHmmss');
+  }
+  var s = String(v).trim();
+  if (!s) return '';
+  // ISO형: 'YYYY-MM-DD[ T]HH:mm[:ss]' (시분초 없으면 0으로 채움)
+  var m1 = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (m1) return pad(m1[1], 4) + pad(m1[2], 2) + pad(m1[3], 2) + pad(m1[4] || 0, 2) + pad(m1[5] || 0, 2) + pad(m1[6] || 0, 2);
+  // 한글형: 'YYYY. M. D [오전/오후 H:MM[:SS]]' (예: '2026. 7. 21 오후 2:17:08')
+  var m2 = s.match(/^(\d{4})[.\s]+(\d{1,2})[.\s]+(\d{1,2})(?:\s*(오전|오후)?\s*(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (m2) {
+    var hh = parseInt(m2[5] || '0', 10);
+    if (m2[4] === '오전') { if (hh === 12) hh = 0; }
+    else if (m2[4] === '오후') { if (hh !== 12) hh += 12; }
+    return pad(m2[1], 4) + pad(m2[2], 2) + pad(m2[3], 2) + pad(hh, 2) + pad(m2[6] || 0, 2) + pad(m2[7] || 0, 2);
+  }
+  // 미지 포맷 최후 폴백: 숫자만 추출(설계 원칙 기본형 · 무손실 시도 — 완전 매칭 실패보단 낫다)
+  return s.replace(/[^0-9]/g, '');
+}
+
+// 영문 멤버십 응답탭(gid 1887747109) program 원문 → 한글 표준 매핑(GM 지시, 2026-07-22 시포).
+// "Platinum Membership (Access to Gym + Group Exercise Classes + Sauna)" 같은 영문 원문이 관심프로그램 칸에
+// 그대로 병합돼 지저분하게 뜨는 문제 — 영문으로 오면 표준 한글값("플래티넘"/"노블레스" [+골프])으로 정규화한다.
+// 비파괴: 한글 원문·기타값은 무변경 그대로 통과(국문 탭 데이터 절대 손대지 않음).
+function _normMembershipProgram_(v){
+  var s = String(v==null?'':v).trim(); if(!s) return s;
+  var low = s.toLowerCase();
+  var golf = (low.indexOf('golf')>=0 || s.indexOf('골프')>=0);
+  if (low.indexOf('platinum')>=0) return golf ? '플래티넘+골프' : '플래티넘';
+  if (low.indexOf('noblesse')>=0 || low.indexOf('noble')>=0) return golf ? '노블레스+골프' : '노블레스';
+  return s;   // 한글 원문·기타는 무변경(비파괴 — 국문 탭 데이터 절대 손대지 않음)
+}
+
+// 지문키(정규화 타임스탬프+정규화 전화) 동시일치 물리행 전부 탐색 — 안정 고유키(§4 R2). tsCol0/phCol0=0-based 컬럼.
+// 반환=물리행 배열(1-based,≥2, 보통 0~1건). 매칭 1건=진행/0건·2건+=거부(fail-closed) — 판단은 호출부 책임.
+// 2026-07-22 시포(오지목 근본수리 R2).
+function _findRowsByKey_(sh, tsCol0, phCol0, keyTsNorm, keyPhoneNorm) {
+  var out = [];
+  if (!sh || tsCol0 < 0 || phCol0 < 0 || !keyTsNorm || !keyPhoneNorm) return out;
+  var last = sh.getLastRow();
+  if (last < 2) return out;
+  var minCol = Math.min(tsCol0, phCol0), width = Math.max(tsCol0, phCol0) - minCol + 1;
+  var data = sh.getRange(2, minCol + 1, last - 1, width).getValues();
+  var tsIdx = tsCol0 - minCol, phIdx = phCol0 - minCol;
+  for (var i = 0; i < data.length; i++) {
+    if (_normTsKey_(data[i][tsIdx]) === keyTsNorm && _normPhone_(data[i][phIdx]) === keyPhoneNorm) out.push(i + 2);
+  }
+  return out;
+}
+
+// body.rowKey('tsNorm|phoneNorm', 프론트가 이미 정규화해 조립) 또는 body.keyTs+body.keyPhone(원시값, 서버가 정규화)
+// → {ts, phone} 파츠. 정규화 후 둘 다 있어야 유효(하나라도 없으면 null=지문키 미사용→기존 keyPhone 경로로 폴백).
+// 2026-07-22 시포(오지목 근본수리 R2).
+function _rowKeyParts_(body) {
+  var ts = '', ph = '';
+  if (body.rowKey !== undefined && body.rowKey !== null && String(body.rowKey) !== '') {
+    var parts = String(body.rowKey).split('|');
+    ts = parts[0] || ''; ph = parts[1] || '';
+  } else {
+    if (body.keyTs !== undefined && body.keyTs !== null && String(body.keyTs) !== '') ts = _normTsKey_(body.keyTs);
+    if (body.keyPhone !== undefined && body.keyPhone !== null && String(body.keyPhone) !== '') ph = _normPhone_(body.keyPhone);
+  }
+  if (!ts || !ph) return null;
+  return { ts: ts, phone: ph };
+}
+
 // ─── 유입채널 표준화 (시모·GM 2026-06-13 확정 — 마케팅용 10버킷) ───
 // 자유텍스트(과거 리셉션 + 구글폼 자유입력)로 300여 개 난립한 채널 원문을 표준 10종으로 정규화한다.
 // 비파괴: 시트 원본은 손대지 않고, 대시보드 집계(byChannel/byChannelMonth) '읽기 시점'에만 적용.
@@ -1643,7 +1725,7 @@ function _miReadRows_(sh) {
       rowIndex: r + 2 + rowOffset,
       name:     iName  >= 0 ? String(row[iName]  || '') : '',  // 2026-06-22 GM '전체 공개' — 실명 노출
       phone:    iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',    // 연락처 노출 + 표시 정규화(앞 0 복원·하이픈)
-      program:  iProg  >= 0 ? String(row[iProg]  || '') : '',
+      program:  iProg  >= 0 ? _normMembershipProgram_(String(row[iProg]  || '')) : '',
       status:   iStat  >= 0 ? String(row[iStat]  || '') : '',
       channel:  (function(){ var _cr = _resolveInquiryChannelRaw_(hdr, row, _CHAN_KEYS); return _cr ? _canonicalChannel_(_cr) : ''; })(),  // 유입채널 표준 10버킷(대분류→중분류→자동UTM 3단, M1과 동일 SSOT. 빈값은 빈값 유지)
       // ── 체험 일정 분리 저장(#4, 2026-07-02 시포·GM): 체험1 날짜=J(시설투어·상담 예약)/시간=K(체험1 확정시간), 체험2 날짜=L(시설 체험 예약2)/시간=M(체험2 확정시간).
@@ -1673,7 +1755,10 @@ function _miReadRows_(sh) {
       contact3: (iC3 >= 0 && iC3 < row.length) ? _fmtContact_(row[iC3]) : '',
       // 출처 물리 시트 gid + 기재 언어 — 영문 탭 병합 표시·저장 라우팅용(row.gid 그대로 되돌려 보내면 정확한 탭에 기록). 2026-07-09 시포·GM.
       gid: gid,
-      lang: iLang >= 0 ? String(row[iLang] || '').trim() : ''
+      lang: iLang >= 0 ? String(row[iLang] || '').trim() : '',
+      // 지문키(rowKey, §4 R1) — 정규화 타임스탬프+정규화 전화. raw 셀 값(_normTsKey_ 입력)을 그대로 써야 함
+      //   (위 timestamp 필드는 _miToISO_로 시각이 잘려있어 지문 재료로 쓰면 안 됨). 둘 중 하나라도 없으면 ''(지문키 미사용 → 프론트가 keyPhone 폴백). 2026-07-22 시포.
+      rowKey: (function(){ var _t = _normTsKey_(iTs >= 0 ? row[iTs] : ''), _p = _normPhone_(iPhone >= 0 ? row[iPhone] : ''); return (_t && _p) ? (_t + '|' + _p) : ''; })()
     };
     // 예약목록(가변): JSON 우선 → 없으면 체험1·2 흡수(하위호환·무손실). 2026-07-03 시포·GM
     var _resArr = _resParse_(iRes >= 0 ? row[iRes] : '');
@@ -1728,6 +1813,8 @@ function _memberReconEvents_(month) {
   var iProg = idx('회원구분');
   var iPhone = -1;
   for (var p = 0; p < hdr.length; p++){ var ph = hdr[p].replace(/\s/g, ''); if (ph.indexOf('휴대폰') >= 0 || ph.indexOf('전화') >= 0 || ph.indexOf('연락처') >= 0){ iPhone = p; break; } }
+  // 지문키(rowKey) 재료 — member_active_update 가드와 동일 재료(등록일자+전화)로 정합. 2026-07-22 시포.
+  var iTsRk = idx('등록일자'); if (iTsRk < 0) iTsRk = idx('타임스탬프');
   var data = sh.getRange(2, 1, last - 1, cols).getValues();
   var out = [];
   for (var r = 0; r < data.length; r++) {
@@ -1746,6 +1833,8 @@ function _memberReconEvents_(month) {
     var _nm = iName >= 0 ? String(row[iName] == null ? '' : row[iName]).trim() : '';
     var _ph = iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '';
     var _pg = iProg >= 0 ? String(row[iProg] == null ? '' : row[iProg]).trim() : '';
+    var _rkTsN = _normTsKey_(iTsRk >= 0 ? row[iTsRk] : ''), _rkPhN = _normPhone_(iPhone >= 0 ? row[iPhone] : '');
+    var _rk = (_rkTsN && _rkPhN) ? (_rkTsN + '|' + _rkPhN) : '';
     for (var ri = 0; ri < resArr.length; ri++) {
       var res = resArr[ri];
       if (!res.date) continue;                               // 날짜 없는 항목 스킵
@@ -1754,7 +1843,8 @@ function _memberReconEvents_(month) {
         date: res.date, kind: '재등록상담', source: 'active', time: res.time || '', tmin: _miTminKR_(res.time), slot: (ri === 0 ? 'recon' : 'r' + ri), resIdx: ri,
         name: _nm, phone: _ph, program: _pg,
         status: '', rowIndex: r + 2, memo: res.note, note: res.note,
-        owner: '', contact1: '', contact2: '', contact3: '', visited: false, visitDate: ''
+        owner: '', contact1: '', contact2: '', contact3: '', visited: false, visitDate: '',
+        rowKey: _rk   // 2026-07-22 시포(오지목 근본수리 R1)
       });
     }
   }
@@ -1982,7 +2072,9 @@ function _lessonReadRows_(gid) {
       regProgram: iRegProgram >= 0 ? String(row[iRegProgram] || '') : '',   // 등록 종목(SUC 시 실제 등록한 종목, 강습). 2026-07-20 시포(GM요청).
       // 출처 물리 시트 gid + 기재 언어 — 영문 탭 병합 표시·저장 라우팅용(row.gid 그대로 되돌려 보내면 정확한 탭에 기록). 2026-07-09 시포·GM.
       gid: gid,
-      lang: iLang >= 0 ? String(row[iLang] || '').trim() : ''
+      lang: iLang >= 0 ? String(row[iLang] || '').trim() : '',
+      // 지문키(rowKey, §4 R1) — 정규화 타임스탬프+정규화 전화(raw 셀 값). 2026-07-22 시포(오지목 근본수리).
+      rowKey: (function(){ var _t = _normTsKey_(iTs >= 0 ? row[iTs] : ''), _p = _normPhone_(iPhone >= 0 ? row[iPhone] : ''); return (_t && _p) ? (_t + '|' + _p) : ''; })()
     });
   }
   return out;
@@ -2119,7 +2211,9 @@ function _lessonIntakeReadRows_(body) {
       memo:    iMemo  >= 0 ? String(row[iMemo]  || '') : '',
       consult: '', consultTime: '', consultTmin: null, visited: '',
       contacts: histArr, bySport: {},
-      gid: gid, lang: '', intake: true
+      gid: gid, lang: '', intake: true,
+      // 지문키(rowKey, §4 R1) — 정규화 타임스탬프+정규화 전화(raw 셀 값). 2026-07-22 시포(오지목 근본수리).
+      rowKey: (function(){ var _t = _normTsKey_(iTs >= 0 ? row[iTs] : ''), _p = _normPhone_(iPhone >= 0 ? row[iPhone] : ''); return (_t && _p) ? (_t + '|' + _p) : ''; })()
     });
   }
   return out;
@@ -4649,7 +4743,7 @@ function _processAction(body) {
         // slot = 예약1→exp1(J/K)·예약2→exp2(L/M) 미러 슬롯, 3번째+는 r{i}. resIdx=예약 배열 인덱스(리스트 모달 편집 대상). 2026-07-03 시포·GM.
         // source='inquiry' — 문의(신규 예약) 이벤트. 유효회원 재등록상담(source='active')과 구분.
         // note=예약별 내용(칩/패널 표시), memo=행 누적 상담메모(폴백).
-        mcEvents.push({ date: dateStr, kind: kind, source: 'inquiry', time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', resIdx: (resIdx == null ? '' : resIdx), name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', note: noteStr || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '', visited: row.visited, visitDate: row.visitDate || '', gid: row.gid });
+        mcEvents.push({ date: dateStr, kind: kind, source: 'inquiry', time: timeStr || '', tmin: _miTminKR_(timeStr), slot: slot || '', resIdx: (resIdx == null ? '' : resIdx), name: row.name || '', phone: row.phone || '', program: row.program, status: row.status, rowIndex: row.rowIndex, memo: row.memo || '', note: noteStr || '', owner: row.owner || '', contact1: row.contact1 || '', contact2: row.contact2 || '', contact3: row.contact3 || '', visited: row.visited, visitDate: row.visitDate || '', gid: row.gid, rowKey: row.rowKey || '' });
       }
       // 예약 리스트(가변) — 각 예약이 독립 이벤트. 예약1·2는 exp1/exp2 미러 슬롯(하위 소비자 안전망). 라벨=예약. 2026-07-03 시포·GM.
       (row.reservations || []).forEach(function(res, ri){
@@ -4671,12 +4765,27 @@ function _processAction(body) {
     var muRowRaw = muRow;  // 응답용 원본(오프셋 유지) — 프론트 로컬 매칭 정합. 2026-07-09 시포·GM.
     if (muRow >= _ROW_OFFSET_EN_) muRow -= _ROW_OFFSET_EN_;  // 실제 물리 행으로 디코드(시트 쓰기는 여기부터 물리 행 사용).
     var muHdr = _miHeaders_(muSh);
-    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행의 현재 전화와 대조 — 삭제/시트편집 후 rowIndex 밀림으로 엉뚱한 회원 덮어쓰기 방지.
+    var _muPhCi = _miColIdx_(muHdr, ['연락처','전화','휴대폰']);
+    // ★★ 지문키(rowKey) 우선 경로(§4 R2) — 타임스탬프+연락처 조합, rowIndex/keyPhone보다 상위 진실.
+    //   매칭 1건=그 행으로 확정(아래 keyPhone 검증 스킵) / 0건·2건+=거부(fail-closed). rowKey 미동봉(구클라)이거나
+    //   타임스탬프 칸 미탐지 시 아래 기존 keyPhone 경로(봉합 B1/B2 포함)로 그대로 폴백. 2026-07-22 시포(오지목 근본수리).
+    var _muRk = _rowKeyParts_(body);
+    var _muTsCi = _muRk ? _miColIdx_(muHdr, ['타임스탬프','접수일','날짜']) : -1;
+    if (_muRk && _muTsCi >= 0 && _muPhCi >= 0) {
+      var _muFpRows = _findRowsByKey_(muSh, _muTsCi, _muPhCi, _muRk.ts, _muRk.phone);
+      if (_muFpRows.length === 1) {
+        muRow = _muFpRows[0];
+      } else if (_muFpRows.length === 0) {
+        return _json({ ok: false, error: 'rowkey-not-found', detail: '행 확인 불가(지문 불일치) — 목록 새로고침 후 다시 시도하세요' });
+      } else {
+        return _json({ ok: false, error: 'rowkey-ambiguous', detail: '지문키 중복 매칭 — 목록 새로고침 후 다시 시도하세요' });
+      }
+    } else {
+    // ★행키 검증(비파괴·하위호환, 지문키 미동봉/칸 미탐지 시 폴백): keyPhone 동봉 시 대상 행의 현재 전화와 대조 — 삭제/시트편집 후 rowIndex 밀림으로 엉뚱한 회원 덮어쓰기 방지.
     //   keyPhone=편집 전(로드된) 전화. body.phone(새 값)과 별개. keyPhone 미전송이면 기존 동작 폴백(정상 편집 무중단) — 단, 예약 쓰기는 예외(B1 아래).
     //   예약 쓰기 여부(B1 fail-closed 대상 판정) — 예약목록 JSON 또는 체험1·2 날짜/시간 중 하나라도 동봉되면 예약 저장으로 간주. 2026-07-22 시포(오지목 봉합).
     var _muIsReservationWrite = (body.reservations !== undefined || body.exp1Date !== undefined || body.exp1Time !== undefined || body.exp2Date !== undefined || body.exp2Time !== undefined);
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
-      var _muPhCi = _miColIdx_(muHdr, ['연락처','전화','휴대폰']);
       if (_muPhCi >= 0) {
         var _muRowPh = _normPhone_(muSh.getRange(muRow, _muPhCi + 1).getValue());
         var _muKeyPh = _normPhone_(body.keyPhone);
@@ -4699,6 +4808,7 @@ function _processAction(body) {
     } else if (_muIsReservationWrite) {
       // B1: keyPhone 없음 + 예약 쓰기 → raw rowIndex 맹목 쓰기 금지(오지목 방지). 예약이 아닌 순수 필드 편집은 기존 동작 유지. 2026-07-22 시포(GM 지시).
       return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
+    }
     }
     function _muSet(colNames, val) {
       if (val === undefined || val === null) return;
@@ -4902,6 +5012,21 @@ function _processAction(body) {
     try {
       if (mdRow > mdSh.getLastRow()) return _json({ ok: false, error: '행 범위 초과' });
       var _mdHdr = _miHeaders_(mdSh);
+      // ★지문키(rowKey) 대조 — 중복전화(동일 번호 다수행)면 전화만으론 행을 구분 못해 인접 실고객 오삭제
+      //   위험이 남는다(INC-020 재발경로). rowKey 있으면 시각+전화 동시일치 물리행을 확정해 mdRow를 덮어쓴다
+      //   (rowIndex 불신). 없으면(rowKey 미동봉 구클라) 아래 기존 전화-only 폴백 대조로 그대로 진행(비파괴·하위호환).
+      //   2026-07-22 시포(오지목 근본수리 R2).
+      var _mdParts = _rowKeyParts_(body);   // {ts, phone} 또는 null
+      if (_mdParts) {
+        var _mdTsCi = _miColIdx_(_mdHdr, ['타임스탬프','timestamp','Timestamp']);
+        var _mdPhCi2 = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰']);
+        if (_mdTsCi < 0 || _mdPhCi2 < 0) return _json({ ok:false, error:'열 없음(지문키 대조 불가)' });
+        var _mdHits = _findRowsByKey_(mdSh, _mdTsCi, _mdPhCi2, _mdParts.ts, _mdParts.phone);
+        if (_mdHits.length === 0) return _json({ ok:false, error:'rowkey-not-found', detail:'대상 없음 — 새로고침 후 재시도' });
+        if (_mdHits.length > 1) return _json({ ok:false, error:'rowkey-ambiguous', detail:'동일 시각+전화 다수 — 확인 필요' });
+        mdRow = _mdHits[0];   // 지문키로 물리행 확정(rowIndex 불신)
+      }
+      // (else: 기존 전화-only 대조 폴백 그대로 유지 — rowKey 미동봉 구클라)
       var _mdPhCi = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰']);
       var _mdRowPh = (_mdPhCi >= 0) ? _normPhone_(mdSh.getRange(mdRow, _mdPhCi + 1).getValue()) : '';
       var _mdKeyPh = _normPhone_(body.keyPhone);
@@ -5101,10 +5226,24 @@ function _processAction(body) {
     if (luRow >= _ROW_OFFSET_INTAKE_) luRow -= _ROW_OFFSET_INTAKE_;   // 강습 신규문의(자체폼 유입, 배1037) 오프셋 우선 디코드(EN보다 큼)
     else if (luRow >= _ROW_OFFSET_EN_) luRow -= _ROW_OFFSET_EN_;      // 영문 탭 오프셋 디코드. 실제 물리 행으로 환원(시트 쓰기는 여기부터 물리 행 사용).
     var luHdr = _lessonEnsureCols_(luSh);
-    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백 — 단, 예약(상담예약) 쓰기는 예외(B1).
+    var _luPhCi = _findCol_(luHdr, ['연락처', '전화', '휴대폰']);
+    // ★★ 지문키(rowKey) 우선 경로(§4 R2) — 타임스탬프+연락처 조합. 매칭 1건=확정(아래 keyPhone 검증 스킵) /
+    //   0건·2건+=거부(fail-closed). rowKey 미동봉(구클라)이거나 타임스탬프 칸 미탐지 시 기존 keyPhone 경로로 폴백. 2026-07-22 시포(오지목 근본수리).
+    var _luRk = _rowKeyParts_(body);
+    var _luTsCi = _luRk ? _findCol_(luHdr, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '날짜']) : -1;
+    if (_luRk && _luTsCi >= 0 && _luPhCi >= 0) {
+      var _luFpRows = _findRowsByKey_(luSh, _luTsCi, _luPhCi, _luRk.ts, _luRk.phone);
+      if (_luFpRows.length === 1) {
+        luRow = _luFpRows[0];
+      } else if (_luFpRows.length === 0) {
+        return _json({ ok: false, error: 'rowkey-not-found', detail: '행 확인 불가(지문 불일치) — 목록 새로고침 후 다시 시도하세요' });
+      } else {
+        return _json({ ok: false, error: 'rowkey-ambiguous', detail: '지문키 중복 매칭 — 목록 새로고침 후 다시 시도하세요' });
+      }
+    } else {
+    // ★행키 검증(비파괴·하위호환, 지문키 미동봉/칸 미탐지 시 폴백): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백 — 단, 예약(상담예약) 쓰기는 예외(B1).
     var _luIsReservationWrite = (body.consult !== undefined);  // 상담예약 쓰기 여부(B1 fail-closed 대상 판정). 2026-07-22 시포(오지목 봉합).
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
-      var _luPhCi = _findCol_(luHdr, ['연락처', '전화', '휴대폰']);
       if (_luPhCi >= 0) {
         var _luRowPh = _normPhone_(luSh.getRange(luRow, _luPhCi + 1).getValue());
         var _luKeyPh = _normPhone_(body.keyPhone);
@@ -5127,6 +5266,7 @@ function _processAction(body) {
     } else if (_luIsReservationWrite) {
       // B1: keyPhone 없음 + 예약(상담예약) 쓰기 → raw rowIndex 맹목 쓰기 금지(오지목 방지). 2026-07-22 시포(GM 지시).
       return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
+    }
     }
     function _luSet(colNames, val) {
       if (val === undefined || val === null) return;
@@ -6878,6 +7018,10 @@ function _processAction(body) {
     function _aaIdx(want){ var w = String(want).replace(/\s/g,''); for (var i=0;i<aaHdrRaw.length;i++){ if (aaHdrRaw[i].replace(/\s/g,'').indexOf(w) >= 0) return i; } return -1; }
     var aiName = _aaIdx('회원명'), aiRem = _aaIdx('잔여일'), aiRe = _aaIdx('재등록분류');
     var aiCha = _aaIdx('등록회차'), aiCls = _aaIdx('등록분류');  // 등록회차>=2 → 등록분류 '재등록' 표시규칙용
+    // 지문키(rowKey, §4 R1) 재료 — ⚠️정직한계: 이 시트('유효회원')는 구글폼 응답탭이 아니라 수기 관리 명단이라
+    //   '타임스탬프'(시분초) 칸이 없다. 최근접 대체값='등록일자'(날짜만) — member_active_update 가드와 동일 재료로 정합. 2026-07-22 시포.
+    var aiTsRk = _aaIdx('등록일자'); if (aiTsRk < 0) aiTsRk = _aaIdx('타임스탬프');
+    var aiPhRk = aaHdrRaw.indexOf(MEMBER_PHONE_COL);
     var _AA_LOSS = { 'LOSS':1, '환불':1, '양도LOSS':1 };
     var aaRows = [];
     var aaFull = true;                                         // 2026-06-25 GM 전체공개 — 회원명도 평문(페이지 전체 PII 공개 정책 통일·전화도 평문)
@@ -6910,6 +7054,9 @@ function _processAction(body) {
           if (_chaM && parseInt(_chaM[0], 10) >= 2) obj[aaHdrRaw[aiCls]] = '재등록';
         }
         if (!aaFull && aaNameKey) obj[aaNameKey] = _svMaskName_(obj[aaNameKey]);
+        // 지문키(rowKey) — raw 셀 값(포맷 전) 사용. 2026-07-22 시포(오지목 근본수리).
+        var _aaTsN = _normTsKey_(aiTsRk >= 0 ? arow[aiTsRk] : ''), _aaPhN = _normPhone_(aiPhRk >= 0 ? arow[aiPhRk] : '');
+        obj.rowKey = (_aaTsN && _aaPhN) ? (_aaTsN + '|' + _aaPhN) : '';
         aaRows.push(obj);
       }
     }
@@ -6933,12 +7080,39 @@ function _processAction(body) {
     var auSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
     if (!auSh) return _json({ ok: false, error: '유효회원 시트 없음' });
     var auHdr = auSh.getRange(1, 1, 1, auSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
-    // ★행키 검증(비파괴·하위호환): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백 — 단, 예약(재등록예약목록) 쓰기는 예외(B1).
+    var _auPhI = -1;
+    for (var _ap = 0; _ap < auHdr.length; _ap++) { var _aph = auHdr[_ap].replace(/\s/g, ''); if (_aph.indexOf('휴대폰') >= 0 || _aph.indexOf('전화') >= 0 || _aph.indexOf('연락처') >= 0) { _auPhI = _ap; break; } }
+    // ★★ 지문키(rowKey) 우선 경로(§4 R2) — ⚠️정직한계: 유효회원(MEMBER_SHEET='유효회원') 시트는 구글폼 응답탭이 아니라
+    //   수기 관리 명단이라 '타임스탬프'(시분초) 칸이 없다(실측 2026-07-22). 최근접 대체값 = '등록\n일자'(날짜만, 시각정보
+    //   없음) — 문의/강습 탭 대비 판별력이 약함(같은 날 등록자가 겹치면 지문 충돌 가능성 있음)을 정직히 인지하고 사용한다.
+    //   그래도 매칭 0건/2건+는 그대로 거부(fail-closed)이므로 rowIndex 단독 신뢰보다는 항상 더 안전한 쪽으로 치우친다.
+    //   매칭 1건=그 행 확정(아래 keyPhone 대조 스킵) / 0건·2건+=거부. rowKey 미동봉(구클라)이거나 등록일자 칸 미탐지 시
+    //   기존 keyPhone 경로로 폴백. 2026-07-22 시포(오지목 근본수리).
+    var _auRk = _rowKeyParts_(body);
+    var _auTsI = -1;
+    if (_auRk) {
+      var _AU_TS_KEYS = ['타임스탬프', '등록일자', '등록 일자', '등록일', '가입일'];
+      for (var _at = 0; _at < auHdr.length; _at++) {
+        var _ath = auHdr[_at].replace(/\s/g, '');
+        var _atHit = false;
+        for (var _atk = 0; _atk < _AU_TS_KEYS.length; _atk++) { if (_ath.indexOf(_AU_TS_KEYS[_atk].replace(/\s/g, '')) >= 0) { _atHit = true; break; } }
+        if (_atHit) { _auTsI = _at; break; }
+      }
+    }
+    if (_auRk && _auTsI >= 0 && _auPhI >= 0) {
+      var _auFpRows = _findRowsByKey_(auSh, _auTsI, _auPhI, _auRk.ts, _auRk.phone);
+      if (_auFpRows.length === 1) {
+        auRow = _auFpRows[0];
+      } else if (_auFpRows.length === 0) {
+        return _json({ ok: false, error: 'rowkey-not-found', detail: '행 확인 불가(지문 불일치) — 목록 새로고침 후 다시 시도하세요' });
+      } else {
+        return _json({ ok: false, error: 'rowkey-ambiguous', detail: '지문키 중복 매칭 — 목록 새로고침 후 다시 시도하세요' });
+      }
+    } else {
+    // ★행키 검증(비파괴·하위호환, 지문키 미동봉/칸 미탐지 시 폴백): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백 — 단, 예약(재등록예약목록) 쓰기는 예외(B1).
     //   ※ 이 액션은 애초에 first-match 복구를 하지 않고 불일치 시 무조건 거부(위 __B2__ 중복전화 첫매칭 오지목 버그가 애초에 없음) — B1(빈 keyPhone fail-closed)만 보강.
     var _auIsReservationWrite = !!(auFields && Object.prototype.hasOwnProperty.call(auFields, ACT_RES_COL));  // 2026-07-22 시포(오지목 봉합).
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
-      var _auPhI = -1;
-      for (var _ap = 0; _ap < auHdr.length; _ap++) { var _aph = auHdr[_ap].replace(/\s/g, ''); if (_aph.indexOf('휴대폰') >= 0 || _aph.indexOf('전화') >= 0 || _aph.indexOf('연락처') >= 0) { _auPhI = _ap; break; } }
       if (_auPhI >= 0 && auRow <= auSh.getLastRow()) {
         var _auRowPh = _normPhone_(auSh.getRange(auRow, _auPhI + 1).getValue());
         var _auKeyPh = _normPhone_(body.keyPhone);
@@ -6952,6 +7126,7 @@ function _processAction(body) {
     } else if (_auIsReservationWrite) {
       // B1: keyPhone 없음 + 예약(재등록예약목록) 쓰기 → raw rowIndex 맹목 쓰기 금지(오지목 방지). 2026-07-22 시포(GM 지시).
       return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
+    }
     }
     // 컬럼 찾기(정확→부분). 재등록상담 칸(날짜·시간·내용)은 없으면 시트 끝에 안전 추가(ensure·additive·기존 순서 무손상). 휴대폰=-2(편집 금지).
     function _auFindCol(colName) {
