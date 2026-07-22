@@ -513,33 +513,6 @@
     "module": "cto"
   },
   {
-    "task_id": "CTO-2026-07-20-SHARED-WORKTREE-COMMIT-SAFETY",
-    "clevel": "cto",
-    "title": "[시토] 공유 워크트리 동시 커밋 정비 — 자동 커밋 스크립트가 남의 변경까지 쓸어담는 구조",
-    "status": "DONE",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-20",
-    "from": "cpo",
-    "note": "2026-07-20 시포 라인에서 실측 보고. 문제: 여러 AI 세션이 같은 워크트리에서 동시 작업하는데 자동 커밋 스크립트가 커밋 시점 작업트리 전체를 add해 무관한 변경까지 함께 실린다. 실측 — ① 시포의 Survey.js 수정이 6회 이상 다른 작업 커밋(예: chore(cpo) 문의 스냅샷 자동 발행 / feat(cto) 모듈 침묵 감지기 신설 / chore(erp) 시스템 현황 자동 발행 / revert(infra) cancel-in-progress 원복 / feat(cpo) 신규 문의·등록 현황 재구성)에 실려 나감. ② 커밋 3055c416(\"chore(cpo): 문의 스냅샷 자동 발행\")에 화면 파일명 변경 2건+브랜드 가이드 문서 신규 95줄이 함께 실림 — 스냅샷 스크립트와 무관. ③ git commit이 cannot lock ref 'HEAD'로 실패하는 경합이 오늘 5회 이상 반복, 실패했는데도 스테이징분이 다른 커밋에 흡수돼 \"성공한 것처럼\" 보이는 사례 다수. ④ git stash autostash 24건 누적. 영향(정직히): 작업물 유실 확인된 바 없음(매번 내용 대조로 확인) — 그러나 커밋 메시지와 실제 내용 불일치로 추적 불가·부분 되돌리기 불가·사고 조사 원인 추적 막힘(오늘 INC-020 조사 중 \"누가 이 파일명을 바꿨는지\" 특정 불가, 전 커밋 author가 단일계정 Wellperion GM). 시우도 독립적으로 같은 문제 보고: status/briefs/시포_인계_문의등록현황_개편_20260720.md §4 \"커밋 경합 주의 — 여러 세션이 동시에 커밋한다. git add 후 실제로 스테이지됐는지 확인하고 커밋할 것, 오늘 시우가 두 번 헛커밋했다\" → 시포·시우 두 라인 독립 보고. 관련기록: ssot/incidents.json INC-020, 메모리 reference_guidehub_concurrent_commit_corruption·feedback_git_commit_atomic_vs_watcher_reset·feedback_no_destructive_git_in_shared_worktree. 시포 제안(참고용, 강제 아님) — 자동 커밋 스크립트가 자기 산출물 경로만 명시 git add(작업트리 전체 add 금지) / 커밋 전 스테이징 내용이 자기 것인지 검증하는 가드 / 동시 커밋 직렬화(락 또는 큐) / cannot lock ref 'HEAD' 실패 시 명확한 실패 신호(현재는 실패해도 남의 커밋에 흡수돼 성공처럼 보임). R/R: 시포 소관=문제 보고·사례 제공, 시토 소관=원인 분석·설계·구현·우선순위 판단. 기존 시토 배 9206(회원 텔레그램 알림방 담당자 미배정 독려)·9253(회원 만료임박 알림 자동화)과는 성격이 다른 별개 건(그쪽은 회원 알림 콘텐츠·배선, 본 배는 git 인프라 동시성) — 혼동 방지 위해 별도 배로 신규 등록. AI 세션이 동시에 늘어날수록 악화되는 구조라는 점만 명시.",
-    "next": "[9226 병합·2026-07-22] 자동 커밋 폭주 통합 근본수리(배9226)로 흡수 — 커밋 안전(자기경로 add·직렬화)은 9226 ③갈래로 진행. 본 배 종료.",
-    "depends_on": "",
-    "ship_no": 9315,
-    "module": "T1",
-    "surface": "autonomy"
-  },
-  {
-    "task_id": "CTO-2026-07-20-PAGES-DEPLOY-BACKLOG",
-    "clevel": "cto",
-    "title": "[시토] GitHub Pages 배포 과다 트리거 개선 (시우 진단 인계)",
-    "status": "DONE",
-    "priority": "⛴️여객선",
-    "enqueued_at": "2026-07-20",
-    "note": "[2026-07-20 시우→시토 인계] 진단서 status/briefs/시토_배포적체_진단_20260720.md — ★맨 앞 「저녁 정정」 먼저 읽을 것.\n오늘 라이브 정지의 진짜 원인은 GitHub Actions 장애였고(실패로그 No server is currently available·githubstatus partial_outage), 원 진단서 일부는 이를 구조문제로 오진했다. 복구 후 배포 3연속 성공 확인.\n단, 커밋 과다 트리거 자체는 실측 사실 — 6시간 91커밋 중 82%가 화면 무관(큐 미러 status/_queue.json이 배포루트에 미러링돼 매번 배포를 깨움).\n★시우가 시도했다 되돌린 것(재시도 금지): ①cancel-in-progress:false→장애중 실패메일 폭탄 위험으로 true 원복 ②paths negative pattern→실측상 필터링 안 됨(반증 커밋 663def74·6a9e0f98).",
-    "next": "[9226 병합·2026-07-22] 자동 커밋 폭주 통합 근본수리(배9226)로 흡수 — 과다트리거·미러제거·배치화는 9226 ①②④갈래로 진행. 본 배 종료.",
-    "ship_no": 9332,
-    "surface": "g1"
-  },
-  {
     "task_id": "CEO-2026-07-20-G1-QUEUE-RAW-FETCH",
     "clevel": "ceo",
     "title": "[웰리] G1 항로 보드 큐 직독 전환 (배포 의존 제거)",
@@ -2672,19 +2645,6 @@
     "adhoc_commit": "ea7ea0213cdb27e3801988f49d262468c97a5b06"
   },
   {
-    "task_id": "CMO-2026-07-22-BREAK-FORM",
-    "clevel": "cmo",
-    "ship_no": 9712,
-    "title": "[시모] 방학특강(유소년) 자체폼 — WSC 유소년과 항목 1:1 정합·5종목 유지·희망월→요일/시간",
-    "status": "DONE",
-    "priority": "⛵돛단배",
-    "from": "ceo",
-    "origin": "gm",
-    "enqueued_at": "2026-07-22",
-    "note": "GM 지시: 방학특강(유소년) summer 폼을 youth 폼과 항목·내용 1:1 정합(성함(보호자)·자녀나이·요일/시간 위젯·문의경로·안내). 강습종목=방학특강 고유 5종 유지(수영·체조·스쿼시·골프·유소년 성장PT). 희망월(wishMonth·select) 제거→희망 레슨 시간(wishTime·daytime) 교체. 백엔드 intake_submit: summer→유소년강습 탭(기존 라우팅) 유지, 희망칸 write를 wishMonth→(wishTime||wishMonth) 폴백으로 정합(.deploy-funnel + .deploy-funnel-v2 양측). 텔레그램 알림에 희망시간 표시 추가. 산출물: cmo/review/방학특강_유소년_폼_{desktop,mobile}_20260722.png + 방학특강_vs_WSC유소년_대조_20260722.png(youth 1:1 확인). ★라이브 활성=GM go 대기: WP post 8460 draft-page 재주입 + GAS 재배포 미실행(비가역 유입경로). ★확인필요: 라이브 배포 스크립트가 1A77oDR(.deploy-funnel) vs 1BezMSW(.deploy-funnel-v2) 중 무엇인지 — v1은 희망칸 부분일치(희망) 키가 종목칸을 먼저 무는 구버그가 남아있어(v2는 정확헤더로 수리됨) v1이 라이브면 요일/시간 유실 위험 → 시토 확인 후 배포. ★[활성완료 GM go 2026-07-22] ①WP post 8460 draft-page 재주입=발행유지 업데이트(라이브). ②v2 GAS(1BezMSW/prod AKfycbyk) 재배포 @120→@121(롤백=@120 재배포). HOLD_LIVE/HOLD_LIVE_T 게이트 OFF 유지·미변경. ③라이브 e2e(시크릿 chromium /ko/inquiry-form/?type=summer): 새구조 확인(자녀나이·문의경로·요일시간·5종목·희망월 제거), 실제 제출 1건(접수 L260722-165620)→WSC강습(gid268994754) 저장 실측: 강습종목=\"여름방학특강 - 수영\"·희망레슨시간=\"월 / 평일: 07:00\"(요일/시간 정상 기록). 테스트행 cpo_lesson_test_delete(마커 자동검증/010000070·행인덱스 미사용·INC-020 안전)로 삭제 검증(잔존 0·실데이터 보존). 타 type(멤버십·성인·유소년) 무영향(파일 내 summer/GUIDES.summer만 diff).",
-    "completed_at": "2026-07-22"
-  },
-  {
     "task_id": "CMO-2026-07-22-ADHOC-f05caee7",
     "clevel": "cmo",
     "title": "[시모] 방학특강(유소년) 자체폼 WSC유소년 항목정합 + 희망월→요일/시간 (배9712)",
@@ -2937,20 +2897,6 @@
     "artifact": "GM 지시: 스캔되는 표로 정리. 분류별 그룹 유지 + 표(번호|약속|요지) +\n전문은 행 클릭 펼치기 토글로 보존(정보손실 0). 약속.json(SSOT) 무변경,\n렌더 스크립트만 교체. L18 전용 예시 표 특례 제거(전 항목 동일 표 형식). (CLI ad-hoc · 커밋 2d7bea247)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "2d7bea247cc92ef6130cdd65f2a48f9f5e557c99"
-  },
-  {
-    "task_id": "CMO-2026-07-22-BROCHURE-A3-SECTOR",
-    "clevel": "cmo",
-    "title": "[시모] 회사소개서 A3 섹터별 재편 — 전 12장 완성(가로·글끊김0·지표공개)",
-    "status": "DONE",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-22",
-    "from": "ceo",
-    "note": "GM 확정 전체 제작 완료. 12섹터=A3 12장(전 가로·표지 포함). 자연 줄바꿈(word-break:keep-all·문장별 문단·orphan방지) 적용, 12장 렌더 전수 육안검수(문장·단어 어색끊김 0). 05 사업지표 공개 1벌. 산출=회사문서/회사소개서_A3_전체_20260722.html + cmo/review/회사소개서_A3_p01~p12_20260722.png + _전체_20260722.png + A3print PDF. [갱신2] 02장 3박스 높이 균등(align-items:stretch)·12장 그리드 정렬 전수확인. S0(회사소개·전략 로드맵)에 A3 인쇄본 PDF 내려받기 버튼 추가(회사문서/회사소개서_A3_전체_A3print_20260722.pdf 서빙)·다운로드 동작 실측(Playwright expect_download OK, suggested=회사소개서_A3_전체_A3print_20260722.pdf).",
-    "next": "GM 라이브 확인(Pages 배포 후 시크릿크롬 클릭→PDF). 후속(선택): 07 Facilities 실사진 듀오톤.",
-    "ship_no": 9732,
-    "module": "M1",
-    "surface": "content"
   },
   {
     "task_id": "CMO-2026-07-22-ADHOC-803e3220c",
@@ -3301,5 +3247,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 e9061d03f)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "e9061d03f48abf4677f6cd69b02e53df0a02fca9"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-8c930061e",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9759,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 8c930061e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8c930061e1df4f4b5f394975b57f3d9cdad3e309"
   }
 ]
