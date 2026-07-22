@@ -1164,5 +1164,19 @@
     "artifact": "auto(cmo): 검수 승인 건 발행 4건 / 수동대기 0건 (CLI ad-hoc · 커밋 a40b2e96)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "a40b2e96a75c2e19a35f58a8fb554752ae66691c"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-17ee417f",
+    "clevel": "cpo",
+    "title": "[시포] 예약 오지목 봉합 fail-closed — 빈전화/중복전화 예약저장 거부 (오지목 근본수리 B1·B2·B3)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9605,
+    "artifact": "- Survey.js(x2 동기): member_inquiry_update·lesson_inquiry_update·member_active_update\n  · B1 keyPhone 빈값+예약쓰기 → row-key-unverified 거부(raw rowIndex 맹목쓰기 금지)\n  · B2 중복전화 _countRowsByPhone_ → 2건+ duplicate-phone-ambiguous 거부(첫매칭 금지)\n- membership.html WriteBuffer: 거부 표면화(park+경고+오버레이해제, 낙관성공 삼킴 금지)\n- 격리  (CLI ad-hoc · 커밋 17ee417f)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "17ee417fb469a8b760ee4028fe2ff9f8733259e1"
   }
 ]
