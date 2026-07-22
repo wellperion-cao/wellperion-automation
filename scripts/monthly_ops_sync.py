@@ -185,14 +185,18 @@ def resolve(obj: dict, kpi: dict | None) -> dict:
 
 
 def write_back(obj: dict, v: dict) -> None:
-    """게이트 ON일 때만 실제 반영 — progress만 영속.
-    ★INC-001: 매출·지출 등 지표값(metric.current·metric_live)은 이 파일에 저장 금지.
-    페이지가 cfo 소스에서 라이브 렌더하므로 표시 전용(persist 안 함)."""
+    """게이트 ON일 때만 반영 — ★자문(advisory) 전용: progress(사람 소유) 미변경.
+    자동값은 sync.auto_value·last_auto 에만 기록 → 페이지가 '🔄 자동 N%' 배지로 병기.
+    수기 진실 보존 최우선·드리프트 0(GM 2026-07-22): 자동이 사람 PIN 편집값을 덮지 않는다.
+    (구현 이전 버전이 status_map 평탄값 50으로 '계획 0%' 목표를 '50%'로 덮어 상태 모순
+     발생 → 자문 전용으로 정정. 사람 progress ↔ 자동 auto_value 를 페이지가 나란히 노출.)
+    ★INC-001: 매출·지출 등 지표값(metric.current·metric_live)은 이 파일에 저장 금지."""
     if v.get("field") != "progress":
         return  # metric_live(매출 등)는 미저장·라이브 표시 전용(INC-001)
-    obj["progress"] = v["new"]
-    obj.setdefault("sync", {})["last_auto"] = now_iso()
-    obj["sync"]["auto_value"] = v["new"]
+    s = obj.setdefault("sync", {})
+    s["last_auto"] = now_iso()
+    s["auto_value"] = v["new"]
+    # obj["progress"] 는 사람(시우 PIN 검수) 소유 — 자동 미개입. 페이지 배지로 auto_value 병기.
 
 
 def run(month: str | None, apply: bool) -> None:
@@ -219,9 +223,11 @@ def run(month: str | None, apply: bool) -> None:
         vd = v["verdict"]
         if vd == "AUTO":
             n_auto += 1
-            delta = f"{v['field']} {v['old']} → {v['new']}  [{v['src']}]"
+            prior_av = (o.get("sync") or {}).get("auto_value")
+            delta = f"{v['field']} 수기 {v['old']} · 자동 {v['new']}  [{v['src']}]"
             mark = "🔄자동"
-            if v["old"] != v["new"]:
+            # 저장 트리거 = 자동값이 직전 기록과 달라졌을 때만(사람 progress 덮지 않음).
+            if v.get("field") == "progress" and prior_av != v["new"]:
                 changed += 1
             if live:
                 write_back(o, v)
