@@ -1,26 +1,19 @@
-<!-- Wellperion English self-hosted Survey form — /en/ inquiry (data-driven ?type=) · 배9674 (시모 CMO, 2026-07-22)
-     English counterpart of the Korean self-hosted form (cmo/survey/wp_inquiry_form.html).
-     ★ Purpose: replace the 3 Google Forms on http://wellperion.com/en/inquiry/ (WP post 8408) with a
-        self-hosted form that posts to the SAME GAS intake_submit (v2) and the SAME sheets as the Korean form.
-     ★ Scope (2026-07-22 GM go: 3종 우선): membership · adult · youth. summer/rental/business EN = phase 2.
-     ★ Parallel (병행): the English Google Forms stay live as rollback assets. This page is a draft/verification
-        asset — WP embed / Google-form cutover on wellperion.com = GM go (irreversible traffic change).
-     ★ Backend contract: identical payload keys as the KO form + one field `lang:'en'`. intake_submit records
-        it into the '유입언어' column (KO/EN) so English inquiries land in the SAME tab, distinguished by language.
-     ★ Channel option VALUES are the Korean canonical strings (display text is English) so _canonicalChannel_ and
-        the M1 funnel attribution keep working with ZERO backend change (additive-only).
-     ★ Same collection-loss-0 engine as KO: redirect-follow + r.json(), localStorage retry queue, exponential
-        backoff, honeypot(hp) + timing gate(fillMs) + hidden token(t) + server re-validation/rate-limit.
-     ★ CSS scoped under .wlp-inq to avoid Salient/WPBakery theme bleed. Test: append ?gas=head for @HEAD deploy.
-     ★ Design: brand canon (GM-confirmed B안, ivory #f5f0ea) — mirrors the KO Survey form skin exactly.
-     To inject into WP: edit this file and re-inject (draft-page pattern, EN post id). -->
+<!-- Wellperion English inquiry page — /en/inquiry (WP post 8408) · 배9674 (시모 CMO, 2026-07-22)
+     ★ 1:1 English clone of the Korean inquiry page (wp_inquiry_block.html / /ko/inquiry, page 8394) — TEXT-ONLY
+        translated. Same structure/elements/order: hero + capacity, reserve note, intro VIDEO, section label,
+        type CARDS (SVG icons), bottom SOCIAL BAR — plus the self-hosted form (mirrors wp_inquiry_form.html) rendered
+        inline when a card is chosen (KO uses a separate form page /ko/inquiry-form; here it's merged into one page).
+     ★ Scope: 3 types (membership·adult·youth) — matches the EN google-form scope. summer/rental/business = KO-only.
+     ★ Backend: posts to the SAME GAS intake_submit (v2), payload keys identical to KO + lang:'en' → same sheet,
+        '유입언어'=EN. Channel option VALUES stay Korean-canonical (display text English) so funnel attribution is unchanged.
+     ★ Home link → wellperion.com/en/ (English home, GM). Instagram/Naver Blog/Naver Map have no separate EN versions → as-is.
+     ★ Collection-loss-0 engine: redirect-follow + r.json(), localStorage retry queue, backoff, honeypot + timing gate +
+        hidden token + server re-validation. CSS scoped under .wlp-inq. Rollback asset = wp_inquiry_block_en.html (google forms).
+     To update: edit this file and re-inject via cutover-inquiry-en mode. -->
 <style>
-/* WP /en/inquiry (page-id 8408) 한정 — 영문 자체폼 컷오버(배9674, 2026-07-22).
-   ★테마 헤더(로고+우상단 KOR 언어토글)는 유지(숨기지 않음 — 8460 KO 서브폼과 달리 8408은 메인 진입 페이지). */
-/* 하단 회색 여백 제거 — 테마 예약 75px(container-wrap padding-bottom 40 + raw-html margin-bottom 35)을
-   음수마진으로 상쇄. KO 8460·현 EN 8408 구글폼 블록과 동일 처방(실측 동일). */
+/* WP /en/inquiry (page-id 8408) 한정 — 하단 회색 여백 제거(테마 예약 75px 음수마진 상쇄, KO 8394와 동일 처방). */
 body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
-/* 헤더 로고 워드마크와 중복되는 eyebrow 'Wellperion' 숨김(8408 한정 — 로컬 프리뷰·타 컨텍스트 영향 0). */
+/* 헤더 로고 워드마크와 중복되는 hero eyebrow 'Wellperion' 숨김(8408 한정 — 로컬 프리뷰·타 컨텍스트 영향 0). */
 body.page-id-8408 .wlp-inq .eyebrow { display: none; }
 </style>
 <style>
@@ -31,8 +24,7 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
   --dim:#8a7f72;--muted:#6b6258;--green:#2e7d5b;--red:#c0392b;
   background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-  -webkit-text-size-adjust:100%;box-sizing:border-box;
-  position:relative;
+  -webkit-text-size-adjust:100%;box-sizing:border-box;position:relative;
 }
 .wlp-inq::before{
   content:'';position:absolute;top:0;bottom:0;left:50%;right:50%;
@@ -42,36 +34,70 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
 .wlp-inq button{font-family:inherit;-webkit-appearance:none;appearance:none;cursor:pointer}
 .wlp-inq a{text-decoration:none;color:inherit}
 
-/* ===== HERO — ivory (mirrors KO Survey form) ===== */
-.wlp-inq .hero-band{background:var(--bg);max-width:540px;margin:-40px auto 0;padding:64px 20px 14px}
-@media (max-width:1000px){
-  .wlp-inq .hero-band{padding-top:56px}
-}
-.wlp-inq .hero-inner{max-width:480px;margin:0 auto;text-align:center}
+/* ===== HERO (ivory) ===== */
+.wlp-inq .hero-band{background:var(--bg);max-width:720px;margin:-40px auto 0;padding:64px 20px 14px;position:relative}
+@media (max-width:1000px){ .wlp-inq .hero-band{padding-top:56px} }
+.wlp-inq #formView .hero-band{max-width:540px}
+.wlp-inq .hero-inner{max-width:540px;margin:0 auto;text-align:center}
 .wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin-bottom:14px}
 .wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-bottom:6px}
 .wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--muted);letter-spacing:.02em;margin-bottom:18px}
 .wlp-inq .divider-coral{width:36px;height:2px;background:var(--beige);margin:0 auto 18px}
 .wlp-inq .hero-inner h1{display:none}
-.wlp-inq .hero-desc{font-size:13.5px;color:var(--muted);line-height:1.75;max-width:360px;margin:0 auto;word-break:keep-all}
+.wlp-inq .hero-desc{font-size:13.5px;color:var(--muted);line-height:1.8;max-width:400px;margin:0 auto;text-wrap:balance}
+.wlp-inq .hero-capacity{font-size:14px;font-weight:700;color:var(--ink);line-height:1.7;max-width:400px;margin:20px auto 0;text-wrap:balance}
+.wlp-inq .hero-capacity b{color:var(--beige);font-weight:800}
 .wlp-inq .hero-note{font-size:12px;font-weight:700;color:var(--beige);letter-spacing:.02em;margin-top:12px}
 
-/* ===== BODY WRAP ===== */
-.wlp-inq .wrap{max-width:540px;margin:0 auto;padding:16px 18px 70px}
+/* ===== WRAP ===== */
+.wlp-inq .wrap{max-width:720px;margin:0 auto;padding:18px 18px 72px}
+.wlp-inq #formView .wrap{max-width:540px;padding:16px 18px 70px}
+
+/* reserve note */
+.wlp-inq .reserve-note{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 32px;font-size:12.5px;font-weight:700;color:var(--beige);letter-spacing:.02em;text-align:center}
+.wlp-inq .reserve-note .dot{width:5px;height:5px;background:var(--beige);flex-shrink:0}
+
+/* video */
+.wlp-inq .video-frame{max-width:640px;margin:0 auto 44px;position:relative;width:100%;padding-top:56.25%;background:var(--ink);border:1px solid var(--line)}
+.wlp-inq .video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+/* section label */
+.wlp-inq .sec-label{display:flex;align-items:center;justify-content:center;gap:14px;margin:0 0 26px}
+.wlp-inq .sec-label .ln{flex:1;max-width:56px;height:1px;background:var(--line)}
+.wlp-inq .sec-label .tx{font-size:12.5px;color:var(--dim);font-weight:600;white-space:nowrap}
+
+/* type cards */
+.wlp-inq .type-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin:0 0 50px}
+.wlp-inq .type-card{display:flex;flex-direction:column;align-items:flex-start;border:1px solid var(--line);background:#fff;padding:26px 24px;transition:border-color .18s,transform .18s;cursor:pointer;text-align:left;width:100%}
+.wlp-inq .type-card:hover{border-color:var(--ink);transform:translateY(-2px)}
+.wlp-inq .type-card .cat-icon{color:var(--ink);margin-bottom:16px;transition:color .18s}
+.wlp-inq .type-card .cat-icon svg{width:26px;height:26px;display:block}
+.wlp-inq .type-card:hover .cat-icon{color:var(--coral)}
+.wlp-inq .type-card .tc-en{font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--beige);text-transform:uppercase;margin-bottom:8px}
+.wlp-inq .type-card .tc-kr{display:flex;align-items:center;width:100%;gap:8px;font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin-bottom:9px}
+.wlp-inq .type-card .tc-kr .arrow{margin-left:auto;font-size:15px;color:var(--beige);transition:transform .18s,color .18s}
+.wlp-inq .type-card:hover .tc-kr .arrow{color:var(--coral);transform:translateX(3px)}
+.wlp-inq .type-card .tc-desc{font-size:13px;color:var(--dim);line-height:1.65;text-wrap:balance}
+
+/* social bar */
+.wlp-inq .social-bar{display:flex;justify-content:center;gap:26px;flex-wrap:wrap;margin:0 0 48px}
+.wlp-inq .social-icon{display:flex;flex-direction:column;align-items:center;gap:9px;transition:transform .18s,opacity .18s}
+.wlp-inq .social-icon:hover{transform:translateY(-3px)}
+.wlp-inq .social-btn{display:flex;align-items:center;justify-content:center;width:48px;height:48px;transition:opacity .18s}
+.wlp-inq .social-icon:hover .social-btn{opacity:.85}
+.wlp-inq .social-label{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dim)}
+@media (max-width:520px){ .wlp-inq .type-grid{grid-template-columns:1fr} }
+
+/* ===== FORM ===== */
 .wlp-inq .card{background:var(--paper);border:1px solid var(--line);padding:22px 20px;margin-bottom:14px}
 .wlp-inq label.fl{display:block;font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:12px;letter-spacing:.04em;text-transform:uppercase}
 .wlp-inq label.fl .opt{font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;text-transform:none;letter-spacing:0}
 .wlp-inq label.fl .hint{display:block;font-size:11px;font-weight:500;color:var(--dim);text-transform:none;letter-spacing:0;margin-top:4px}
+.wlp-inq .change-type{font-size:12px;font-weight:700;color:var(--beige);cursor:pointer;margin:0 auto 12px;text-align:center;letter-spacing:.02em}
+.wlp-inq .change-type:hover{color:var(--coral)}
 
-/* ===== fallback ===== */
-.wlp-inq .fallback-card{text-align:center}
-.wlp-inq .fallback-msg{font-size:14px;color:var(--ink);line-height:1.7;margin-bottom:18px}
-.wlp-inq .fallback-btn{display:inline-block;padding:13px 26px;background:var(--ink);color:#fff;font-size:13.5px;font-weight:700;letter-spacing:.02em;transition:opacity .18s}
-.wlp-inq .fallback-btn:hover{opacity:.85}
-
-/* ===== guide card ===== */
 .wlp-inq .guide-card{background:var(--paper)}
-.wlp-inq .g-lead{font-size:13.5px;line-height:1.75;color:var(--ink)}
+.wlp-inq .g-lead{font-size:13.5px;line-height:1.75;color:var(--ink);text-wrap:balance}
 .wlp-inq .g-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .wlp-inq .g-badge{font-size:11.5px;font-weight:600;padding:8px 12px;border:1px solid var(--line);background:#fff;color:var(--ink)}
 .wlp-inq .g-badge b{color:var(--beige);font-weight:800}
@@ -79,7 +105,6 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
 .wlp-inq .g-tag{font-size:11px;font-weight:600;padding:6px 10px;background:rgba(183,159,138,.15);color:var(--ink)}
 .wlp-inq .g-note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 
-/* ===== enrollment age policy (collapsible) — membership/adult only ===== */
 .wlp-inq .g-age-policy{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .wlp-inq .g-age-policy summary{font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px}
 .wlp-inq .g-age-policy summary::-webkit-details-marker{display:none}
@@ -89,7 +114,6 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
 .wlp-inq .g-age-policy .g-age-body p{margin-top:8px}
 .wlp-inq .g-age-policy .g-age-body p:first-child{margin-top:0}
 
-/* ===== inputs (underline · sharp corners) ===== */
 .wlp-inq .field{margin-bottom:20px}
 .wlp-inq .field:last-child{margin-bottom:0}
 .wlp-inq input[type=text],.wlp-inq input[type=tel],.wlp-inq input[type=date],.wlp-inq textarea,.wlp-inq select{
@@ -110,14 +134,13 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
 .wlp-inq .chk-row{display:flex;align-items:center;gap:10px;padding:2px 0}
 .wlp-inq .chk-row input[type=checkbox]{width:19px;height:19px;accent-color:var(--ink);cursor:pointer;flex-shrink:0}
 .wlp-inq .chk-row span{font-size:13.5px;color:var(--ink);font-weight:600}
-
 .wlp-inq .hp-field{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0}
 
 .wlp-inq .submit{width:100%;padding:17px;background:var(--coral);color:#fff;border:none;border-radius:0;font-size:15.5px;font-weight:700;cursor:pointer;margin-top:6px;transition:opacity .18s,transform .12s;letter-spacing:.02em;line-height:1.2}
 .wlp-inq .submit:hover{opacity:.9}
 .wlp-inq .submit:active{transform:scale(.99)}
 .wlp-inq .submit:disabled{opacity:.4;cursor:not-allowed}
-.wlp-inq .note{font-size:12px;color:var(--dim);text-align:center;margin-top:16px;line-height:1.75}
+.wlp-inq .note{font-size:12px;color:var(--dim);text-align:center;margin-top:16px;line-height:1.75;text-wrap:balance}
 .wlp-inq .hint-empty{font-size:13px;color:var(--dim);text-align:center;padding:8px 0 2px}
 
 .wlp-inq .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--ink);color:#fff;padding:12px 22px;font-size:13.5px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.18);max-width:90%;text-align:center}
@@ -130,7 +153,7 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
 .wlp-inq .retry-banner a{color:var(--ink);font-weight:700;text-decoration:underline}
 .wlp-inq .retry-banner .again2{display:inline-block;margin-top:8px;padding:9px 18px;background:var(--ink);color:#fff;border:none;border-radius:0;font-size:12.5px;font-weight:700}
 
-.wlp-inq .done{display:none;text-align:center;padding:60px 20px 40px}
+.wlp-inq .done{display:none;text-align:center;padding:60px 20px 40px;max-width:540px;margin:0 auto}
 .wlp-inq .done .dot{width:52px;height:52px;line-height:49px;margin:0 auto 20px;border:1.5px solid var(--ink);color:var(--ink);font-size:22px;font-weight:700}
 .wlp-inq .done h2{font-size:20px;font-weight:800;margin-bottom:10px;color:var(--ink)}
 .wlp-inq .done p{font-size:14px;color:var(--dim);line-height:1.75;margin-bottom:10px}
@@ -148,23 +171,103 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
 .wlp-inq .done .social-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
 .wlp-inq .done .social-chip{display:inline-flex;align-items:center;gap:5px;padding:9px 15px;background:var(--paper);border:1px solid var(--line);border-radius:20px;color:var(--dim);font-size:13px;font-weight:600;font-family:inherit;text-decoration:none;transition:border-color .15s,color .15s}
 .wlp-inq .done .social-chip:hover{border-color:var(--beige);color:var(--beige)}
-
-/* ===== inline type selector (hub state — shown when no ?type=) ===== */
-.wlp-inq .sel-lead{font-size:13.5px;line-height:1.7;color:var(--ink);margin-bottom:16px;text-align:center}
-.wlp-inq .sel-grid{display:grid;grid-template-columns:1fr;gap:12px}
-.wlp-inq .sel-btn{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);padding:18px 20px;cursor:pointer;transition:border-color .15s,background .15s}
-.wlp-inq .sel-btn:hover{border-color:var(--beige);background:#faf8f5}
-.wlp-inq .sel-btn .sel-ey{display:block;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--beige);text-transform:uppercase;margin-bottom:5px}
-.wlp-inq .sel-btn .sel-t{display:block;font-size:16px;font-weight:800;color:var(--ink);margin-bottom:4px}
-.wlp-inq .sel-btn .sel-d{display:block;font-size:12.5px;color:var(--dim);line-height:1.5}
-.wlp-inq .change-type{display:none;font-size:12px;font-weight:700;color:var(--beige);cursor:pointer;margin:0 auto 12px;text-align:center;letter-spacing:.02em}
-.wlp-inq .change-type:hover{color:var(--coral)}
 </style>
 
 <div class="wlp-inq">
   <div class="toast" id="toast"></div>
 
-  <div id="formWrap">
+  <!-- ===== HUB VIEW (landing, no ?type=) — English clone of /ko/inquiry ===== -->
+  <div id="hubView">
+    <div class="hero-band">
+      <div class="hero-inner">
+        <p class="eyebrow">Wellperion</p>
+        <p class="slogan-en">A Day, Well Completed.</p>
+        <p class="slogan-kr">A premium lifestyle sports club in Hannam</p>
+        <div class="divider-coral"></div>
+        <p class="hero-desc">More than a place to work out.<br>A space that becomes part of your daily routine &mdash;<br>setting the standard for your health and completing your day.</p>
+        <p class="hero-capacity">Wellperion is limited to <b>1,000 members</b><br>to keep the space calm and uncrowded.</p>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <p class="reserve-note"><span class="dot"></span>All consultations and tours are by appointment only</p>
+
+      <div class="video-frame">
+        <iframe src="https://www.youtube.com/embed/qpPYA3bAO7M" title="Wellperion Introduction" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+
+      <div class="sec-label"><span class="ln"></span><span class="tx">Please select the option you&rsquo;re interested in</span><span class="ln"></span></div>
+
+      <div class="type-grid">
+        <button type="button" class="type-card" data-cat="membership">
+          <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 12 3l9 6"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="5" y1="9" x2="5" y2="19"/><line x1="9" y1="9" x2="9" y2="19"/><line x1="15" y1="9" x2="15" y2="19"/><line x1="19" y1="9" x2="19" y2="19"/><line x1="3" y1="19" x2="21" y2="19"/><line x1="3" y1="21.5" x2="21" y2="21.5"/></svg></span>
+          <span class="tc-en">Membership</span>
+          <span class="tc-kr">Membership Inquiry<span class="arrow">&rarr;</span></span>
+          <span class="tc-desc">Sports club membership &amp; facility tour consultation</span>
+        </button>
+
+        <button type="button" class="type-card" data-cat="adult">
+          <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0"/><path d="M2 15c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0" opacity=".55"/></svg></span>
+          <span class="tc-en">Adult Lesson</span>
+          <span class="tc-kr">Adult Lesson Inquiry<span class="arrow">&rarr;</span></span>
+          <span class="tc-desc">Swimming &middot; P.T &middot; Pilates &middot; Golf &middot; Squash &middot; Ballet &middot; Barre</span>
+        </button>
+
+        <button type="button" class="type-card" data-cat="youth">
+          <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.4 5.1 5.6.6-4.2 3.8 1.2 5.5L12 15.8l-5 2.7 1.2-5.5-4.2-3.8 5.6-.6z"/></svg></span>
+          <span class="tc-en">Youth Lesson</span>
+          <span class="tc-kr">Youth Lesson Inquiry<span class="arrow">&rarr;</span></span>
+          <span class="tc-desc">Swimming &middot; Gymnastics &middot; Golf &middot; Squash &middot; Musical</span>
+        </button>
+      </div>
+
+      <!-- Bottom shortcut links — Home (English home) · Instagram · Naver Blog · Naver Map -->
+      <div class="social-bar">
+        <a href="http://wellperion.com/en/" target="_blank" rel="noopener" class="social-icon">
+          <span class="social-btn" style="background:#221F20;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Home">
+              <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" fill="#fff" fill-opacity=".15" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M9 22V12h6v10" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="social-label">Home</span>
+        </a>
+
+        <a href="https://www.instagram.com/wellperion/" target="_blank" rel="noopener" class="social-icon">
+          <span class="social-btn" style="background:linear-gradient(135deg,#feda75 0%,#fa7e1e 25%,#d62976 55%,#962fbf 80%,#4f5bd5 100%);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Instagram">
+              <rect x="2" y="2" width="20" height="20" rx="5.5" stroke="#fff" stroke-width="1.8"/>
+              <circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/>
+              <circle cx="17.5" cy="6.5" r="1.1" fill="#fff"/>
+            </svg>
+          </span>
+          <span class="social-label">Instagram</span>
+        </a>
+
+        <a href="https://blog.naver.com/wellperion" target="_blank" rel="noopener" class="social-icon">
+          <span class="social-btn" style="background:#03C75A;">
+            <svg width="34" height="28" viewBox="0 0 36 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Naver Blog">
+              <text x="18" y="21" text-anchor="middle" dominant-baseline="auto" font-family="Arial,Helvetica,sans-serif" font-size="18" font-weight="700" fill="#fff" letter-spacing="0">blog</text>
+            </svg>
+          </span>
+          <span class="social-label">Naver Blog</span>
+        </a>
+
+        <a href="https://map.naver.com/p/search/%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8/place/1048457693" target="_blank" rel="noopener" class="social-icon">
+          <span class="social-btn" style="background:#00963C;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Naver Map">
+              <path d="M12 2C8.686 2 6 4.686 6 8c0 4.5 6 12 6 12s6-7.5 6-12c0-3.314-2.686-6-6-6z" fill="#fff" fill-opacity=".25" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+              <circle cx="12" cy="8" r="2.5" fill="#fff"/>
+            </svg>
+          </span>
+          <span class="social-label">Naver Map</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FORM VIEW (?type= or after a card is chosen) — mirrors /ko/inquiry-form ===== -->
+  <div id="formView" style="display:none">
     <div class="hero-band">
       <div class="hero-inner">
         <p class="eyebrow">Wellperion</p>
@@ -172,21 +275,12 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
         <p class="slogan-kr">A premium lifestyle sports club in Hannam</p>
         <div class="divider-coral"></div>
         <h1 id="heroTitle">Inquiry</h1>
-        <p class="hero-desc"><span id="heroSubLine1">We'll help you with membership, tours, and lesson consultations.</span><br>Leave your details and our team will reach out to you shortly.</p>
+        <p class="hero-desc"><span id="heroSubLine1">We&rsquo;ll help you with membership, tours, and lessons.</span><br>Leave your details and our team will reach out to you shortly.</p>
         <p class="hero-note">All consultations and tours are by appointment only.</p>
       </div>
     </div>
 
     <div class="wrap">
-      <div class="card sel-card" id="typeSelect" style="display:none">
-        <p class="sel-lead">Please choose what you would like to inquire about.</p>
-        <div class="sel-grid">
-          <button type="button" class="sel-btn" data-cat="membership"><span class="sel-ey">Membership</span><span class="sel-t">Membership Inquiry</span><span class="sel-d">Sports club membership &amp; facility tour consultation</span></button>
-          <button type="button" class="sel-btn" data-cat="adult"><span class="sel-ey">Adult Lesson</span><span class="sel-t">Adult Lesson Inquiry</span><span class="sel-d">Swimming, P.T, Pilates, golf, squash &amp; more</span></button>
-          <button type="button" class="sel-btn" data-cat="youth"><span class="sel-ey">Youth Lesson</span><span class="sel-t">Youth Lesson Inquiry</span><span class="sel-d">WSC swimming, golf, squash &amp; youth programs</span></button>
-        </div>
-      </div>
-
       <div class="change-type" id="changeType">&larr; Choose another inquiry type</div>
       <div class="card guide-card" id="guideBox" style="display:none"></div>
 
@@ -198,15 +292,11 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
       <button class="submit" id="submitBtn">Submit Inquiry</button>
       <div class="retry-banner" id="retryBanner"></div>
       <p class="note" id="noteText">Our team will contact you at the number you provide.<br>A Day, Well Completed. &middot; Wellperion</p>
-
-      <div class="card fallback-card" id="fallbackBox" style="display:none">
-        <p class="fallback-msg">Please select an inquiry type on the inquiry page.</p>
-        <a class="fallback-btn" href="http://wellperion.com/en/inquiry/">Go to inquiry page</a>
-      </div>
     </div>
   </div>
 
-  <div class="wrap done" id="doneWrap">
+  <!-- ===== DONE ===== -->
+  <div class="done" id="doneWrap">
     <div class="dot">✓</div>
     <h2>Your inquiry has been received</h2>
     <p>Thank you for your inquiry.<br>We will contact you at the number you provided.</p>
@@ -222,7 +312,7 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
     <div class="social-section">
       <p class="social-title">Take a look at Wellperion</p>
       <div class="social-links">
-        <a class="social-chip" href="http://wellperion.com/" target="_blank" rel="noopener">🌐 Website</a>
+        <a class="social-chip" href="http://wellperion.com/en/" target="_blank" rel="noopener">🌐 Home</a>
         <a class="social-chip" href="https://www.instagram.com/wellperion/" target="_blank" rel="noopener">📷 Instagram</a>
         <a class="social-chip" href="https://blog.naver.com/wellperion" target="_blank" rel="noopener">📝 Naver Blog</a>
         <a class="social-chip" href="https://map.naver.com/p/search/웰페리온/place/1048457693" target="_blank" rel="noopener">📍 Naver Map</a>
@@ -238,13 +328,12 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
   var GAS_HEAD = 'https://script.google.com/macros/s/AKfycbzeGDag3XgoSn6A4UIGdsBCkR3v-joepgRYfW3MWzi9/exec';
   var GAS_URL = GAS_PROD;
   try { if ((new URLSearchParams(location.search).get('gas')||'') === 'head') GAS_URL = GAS_HEAD; } catch(e){}
-  var INTAKE_TOKEN = 'wlp_intake_9f4c1b7e2a63';   // matches backend INTAKE_SUBMIT_TOKEN
+  var INTAKE_TOKEN = 'wlp_intake_9f4c1b7e2a63';
   var QUEUE_KEY = 'wlp_intake_queue_en_v1';
   var CONTACT_PHONE = '02-6261-1200';
   var CONTACT_EMAIL = 'info@wellperion.com';
   var LANG = 'en';   // ★ marks English submissions → backend records '유입언어'=EN in the same sheet
 
-  // ── Privacy consent (PIPA) — English rendering of the Korean form's notice ──
   function pipa(purpose){
     return 'Under the Personal Information Protection Act, Wellperion Co., Ltd. collects and uses your personal information as follows.\n\n'
       + 'Purpose of collection: ' + purpose + '\n'
@@ -254,9 +343,7 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
       + 'You may decline consent; however, declining may limit our ability to respond to your inquiry.';
   }
 
-  // ── "How Did You Hear About Us?" options ──
-  //   ★ value = Korean canonical bucket (kept identical to the KO form) so _canonicalChannel_ / M1 funnel
-  //     attribution work with ZERO backend change. Display text is English. [v, label] pairs.
+  // ── "How Did You Hear About Us?" — value = Korean canonical bucket (funnel attribution unchanged), label = English ──
   var CHANNELS = [
     ['네이버 검색·플레이스','Naver Search / Place'],
     ['네이버 블로그','Naver Blog'],
@@ -270,8 +357,7 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
     ['기타','Other']
   ];
 
-  // ── Form definitions (3 types) — field keys & payload contract IDENTICAL to the KO form ──
-  // type: text|tel|date|textarea|select|multi|radio|daytime|consent
+  // ── Form definitions — field keys & payload contract IDENTICAL to the KO form (wp_inquiry_form.html) ──
   var FORMS = {
     membership: {
       purpose: 'Membership enrollment and facility tour consultation',
@@ -309,10 +395,9 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
     }
   };
 
-  // ── Per-type guide (brief intro) — shown above the form ──
   var GUIDES = {
     membership: {
-      badges:['<b>1,000</b>-member limit','Annual membership · No deposit','3,000-pyeong single facility in Hannam'],
+      badges:['<b>1,000</b>-member limit','Annual membership · No deposit','A 3,000-pyeong single facility in Hannam'],
       tags:['Swimming','Squash','Golf','Pilates · PT','Sauna · Recovery','CUPS Lounge','Cinq Mondes Spa','beautévu Hair & Makeup']
     },
     adult: {
@@ -321,7 +406,7 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
       note:'Private and group lessons are available, assigned after an initial consultation.'
     },
     youth: {
-      lead:"Professional lessons for your child's first steps — swimming, golf and squash through gymnastics, parent-child swimming and English musical.",
+      lead:"Professional lessons for your child's first steps — from swimming, golf and squash to gymnastics, parent-child swimming and English musical.",
       tags:['WSC Swimming','WSC Golf','WSC Squash','WSC Gymnastics & Trampoline','WSC P.T','WSC Pilates','Parent-Child Swimming','English Musical'],
       note:'A range of specialized programs rarely found elsewhere are also available.'
     }
@@ -329,7 +414,6 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
 
   var CAT_TITLES = { membership:'Membership Inquiry', adult:'Adult Lesson Inquiry', youth:'Youth Lesson Inquiry' };
 
-  // ── Enrollment age policy (collapsible; membership & adult only) ──
   var AGE_POLICY_HTML =
     '<details class="g-age-policy"><summary>Enrollment age guide</summary>' +
     '<div class="g-age-body">' +
@@ -339,8 +423,7 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
     '<p>Existing members may re-enroll without the above; however, when enrolling more than 1 year after expiry, the above applies.</p>' +
     '</div></details>';
 
-  // ── Hero subline (line 1) per type; line 2 is fixed ──
-  var HERO_SUB_DEFAULT = "We'll help you with membership, tours, and lesson consultations.";
+  var HERO_SUB_DEFAULT = "We'll help you with membership, tours, and lessons.";
   var HERO_SUB = {
     membership: "We'll guide you through membership and facility tours.",
     adult: 'Explore our adult lesson programs.',
@@ -369,11 +452,9 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
   }
   function qp(k){ try { return (new URLSearchParams(location.search).get(k)||'').slice(0,60); } catch(e){ return ''; } }
 
-  // ── UTM capture (channel attribution) ──
   var UTM_SOURCE = qp('utm_source') || '';
   var UTM_MEDIUM = qp('utm_medium') || '', UTM_CONTENT = qp('utm_content') || '';
 
-  // ── Guide render ──
   function renderGuide(cat){
     var box = $('guideBox');
     var g = GUIDES[cat];
@@ -392,7 +473,6 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
     box.style.display = 'block';
   }
 
-  // ── Form render ──
   function buildForm(cat){
     var box = $('formFields'); box.innerHTML = '';
     var def = FORMS[cat];
@@ -420,7 +500,6 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
         var sel = document.createElement('select'); sel.id='f_'+f.key;
         if (f.ph) { var o0=document.createElement('option'); o0.value=''; o0.textContent=f.ph; sel.appendChild(o0); }
         (f.opts||[]).forEach(function(o){
-          // channel opts are [value, label] pairs; others are plain strings
           var ov = Array.isArray(o) ? o[0] : o, ot = Array.isArray(o) ? o[1] : o;
           var op=document.createElement('option'); op.value=ov; op.textContent=ot; sel.appendChild(op);
         });
@@ -476,7 +555,6 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
       box.appendChild(field);
     });
 
-    // Privacy consent (required)
     var cField = document.createElement('div'); cField.className='field';
     var cLab = document.createElement('label'); cLab.className='fl'; cLab.textContent='Collection & Use of Personal Information'; cField.appendChild(cLab);
     var cBox = document.createElement('div'); cBox.className='consent-box'; cBox.textContent = pipa(def.purpose); cField.appendChild(cBox);
@@ -485,7 +563,6 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
     cField.appendChild(cRow);
     box.appendChild(cField);
 
-    // Honeypot (bot trap) — off-screen
     var hp = document.createElement('div'); hp.className='hp-field'; hp.setAttribute('aria-hidden','true');
     hp.innerHTML = '<label>Leave this field empty<input type="text" id="f_hp" tabindex="-1" autocomplete="off"></label>';
     box.appendChild(hp);
@@ -542,11 +619,7 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
 
   var activeSid = '';
   var flushTimer = null;
-
-  function scheduleFlush(delay){
-    if (flushTimer) clearTimeout(flushTimer);
-    flushTimer = setTimeout(flushQueue, delay || 1000);
-  }
+  function scheduleFlush(delay){ if (flushTimer) clearTimeout(flushTimer); flushTimer = setTimeout(flushQueue, delay || 1000); }
 
   function send(item){
     return fetch(GAS_URL, {
@@ -601,7 +674,6 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
     })(0);
   }
 
-  // ── banner/button UX ──
   function resetSubmitBtn(){ var b=$('submitBtn'); b.disabled=false; b.textContent='Submit Inquiry'; }
   function showPendingBanner(){
     var el = $('retryBanner'); el.className='retry-banner pending';
@@ -619,60 +691,40 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
   function showDone(id){
     clearBanner();
     $('rcptNo').textContent = id ? ('Reference No.: ' + id) : '';
-    $('formWrap').style.display='none';
+    $('hubView').style.display='none';
+    $('formView').style.display='none';
     $('doneWrap').style.display='block';
     window.scrollTo(0,0);
   }
 
-  // ── fallback (hard error — kept as a last resort) ──
-  function showFallback(){
+  // ── view switching: hub (landing) ↔ form (type chosen) ──
+  function showHub(){
     selectedCat = '';
-    $('guideBox').style.display='none';
-    $('formCard').style.display='none';
-    $('submitBtn').style.display='none';
-    $('typeSelect').style.display='none';
-    $('changeType').style.display='none';
+    $('hubView').style.display='block';
+    $('formView').style.display='none';
+    $('doneWrap').style.display='none';
     clearBanner();
-    $('noteText').style.display='none';
-    $('fallbackBox').style.display='block';
-    $('heroTitle').textContent = 'Inquiry';
-    setHeroSub('');
-  }
-
-  // ── inline type selector (hub state — no ?type=) ──
-  function showSelector(){
-    selectedCat = '';
-    $('typeSelect').style.display='block';
-    $('changeType').style.display='none';
-    $('guideBox').style.display='none';
-    $('formCard').style.display='none';
-    $('submitBtn').style.display='none';
-    $('fallbackBox').style.display='none';
-    $('noteText').style.display='none';
-    clearBanner();
-    $('heroTitle').textContent = 'Inquiry';
-    setHeroSub('');
     window.scrollTo(0,0);
   }
-
-  // ── enter a type's form (from selector click or ?type=) ──
   function pickCat(cat, pushUrl){
+    if (!FORMS[cat]) { showHub(); return; }
     selectedCat = cat;
-    $('typeSelect').style.display='none';
-    $('fallbackBox').style.display='none';
-    $('formCard').style.display='block';
-    $('submitBtn').style.display='';
-    $('noteText').style.display='';
-    $('changeType').style.display='block';
+    $('hubView').style.display='none';
+    $('doneWrap').style.display='none';
+    $('formView').style.display='block';
+    resetSubmitBtn(); clearBanner();
     buildForm(cat);
     if (pushUrl) { try { history.replaceState(null, '', '?type=' + cat); } catch(e){} }
     window.scrollTo(0,0);
   }
 
-  Array.prototype.forEach.call(document.querySelectorAll('.wlp-inq .sel-btn'), function(btn){
+  Array.prototype.forEach.call(document.querySelectorAll('.wlp-inq .type-card'), function(btn){
     btn.addEventListener('click', function(){ pickCat(this.getAttribute('data-cat'), true); });
   });
-  $('changeType').addEventListener('click', function(){ showSelector(); });
+  $('changeType').addEventListener('click', function(){
+    try { history.replaceState(null, '', location.pathname); } catch(e){}
+    showHub();
+  });
 
   // ── submit ──
   $('submitBtn').addEventListener('click', function(){
@@ -705,20 +757,19 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
     send(item);
   });
 
-  // ── new inquiry (same type) ──
   $('againBtn').addEventListener('click', function(){
     activeSid='';
     resetSubmitBtn(); clearBanner();
-    if (selectedCat) { buildForm(selectedCat); } else { showSelector(); }
-    $('doneWrap').style.display='none'; $('formWrap').style.display='block';
+    $('doneWrap').style.display='none';
+    if (selectedCat) { buildForm(selectedCat); $('formView').style.display='block'; }
+    else { showHub(); }
     window.scrollTo(0,0);
   });
 
-  // ── retry queue flush on load / online ──
   window.addEventListener('online', function(){ scheduleFlush(300); });
   if (qRead().length) scheduleFlush(800);
 
-  // ── type deep-link (?type=) — membership|adult|youth (KO/EN aliases). Others → fallback. ──
+  // ── type deep-link (?type=) — membership|adult|youth (KO/EN aliases). Otherwise → hub landing. ──
   (function(){
     try {
       var t = (qp('type') || '').toLowerCase();
@@ -726,8 +777,8 @@ body.page-id-8408 .wlp-inq .eyebrow { display: none; }
                     adult:'adult', '성인':'adult', '성인강습':'adult',
                     youth:'youth', '유소년':'youth', '유소년강습':'youth' };
       var cat = alias[t];
-      if (cat) { pickCat(cat, false); } else { showSelector(); }
-    } catch (e) { showSelector(); }
+      if (cat) { pickCat(cat, false); } else { showHub(); }
+    } catch (e) { showHub(); }
   })();
 })();
 </script>
