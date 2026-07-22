@@ -331,3 +331,132 @@ def test_watcher_dispatch_no_newly_published_skips_digest(monkeypatch):
 
     assert sent == 0
     assert called["n"] == 0
+
+
+# ---------------------------------------------------------------------------
+# ⑥ 게이트 완화 (2026-07-22) — URL 미회수(카카오·블로그)여도 상태만 완료면 그룹 완결
+#    + 홈 URL 폴백으로 '1이미지+5링크' 표준 유지. 회귀: 개인 IG단독·미완료그룹은 그대로.
+# ---------------------------------------------------------------------------
+def _official_group_entries_url_gaps() -> list[dict]:
+    """공식(wellperion) 5채널 전부 발행완료이나 카카오·블로그 post_url이 빈 픽스처."""
+    return [
+        {
+            "id": "CMO-TEST-URLGAP-IG", "account": "wellperion",
+            "folder": "instagram/260722_URL갭테스트", "channel": "인스타그램 (wellperion 공식)",
+            "status": "발행완료", "post_url": "https://www.instagram.com/p/urlgapTest/",
+            "published_at": "2026-07-22T10:00:00",
+        },
+        {
+            "id": "CMO-TEST-URLGAP-BLOG", "account": "wellperion",
+            "folder": "instagram/260722_URL갭테스트/output(블로그)", "channel": "네이버 블로그",
+            "status": "발행완료", "post_url": "",  # ★ URL 미회수
+            "published_at": "2026-07-22T10:05:00",
+        },
+        {
+            "id": "CMO-TEST-URLGAP-CAFE", "account": "wellperion",
+            "folder": "instagram/260722_URL갭테스트/output(카페)", "channel": "네이버 카페 (동부이촌동)",
+            "status": "발행완료", "post_url": "https://cafe.naver.com/ichon1dong?iframe_url_utf8=x",
+            "published_at": "2026-07-22T10:06:00",
+        },
+        {
+            "id": "CMO-TEST-URLGAP-KAKAO", "account": "wellperion",
+            "folder": "instagram/260722_URL갭테스트/output(카카오 채널)", "channel": "카카오 채널",
+            "status": "발행완료", "post_url": "",  # ★ 카카오 = 편별 공개 URL 원래 없음
+            "published_at": "2026-07-22T10:07:00",
+        },
+        {
+            "id": "CMO-TEST-URLGAP-DANGGN", "account": "wellperion",
+            "folder": "instagram/260722_URL갭테스트/output(당근)", "channel": "당근채널",
+            "status": "발행완료", "post_url": "https://www.daangn.com/kr/business-posts/testpost",
+            "published_at": "2026-07-22T10:08:00",
+        },
+    ]
+
+
+def test_group_is_complete_true_when_kakao_and_blog_url_blank():
+    """5채널 전부 발행완료면 카카오·블로그 post_url이 비어 있어도 완결(True) —
+    게이트 완화 핵심 단언(2026-07-22). 실 review_queue.json은 건드리지 않고 픽스처만 사용."""
+    entries = _official_group_entries_url_gaps()
+    key = pd._base_key(entries[0])
+
+    complete, reason = pd._group_is_complete(key, entries)
+
+    assert complete is True, f"URL 미회수여도 상태 전부 완료면 True여야 함 (사유: {reason})"
+    assert reason == ""
+
+
+def test_build_digest_falls_back_to_channel_home_when_url_missing():
+    """URL 미회수 채널(카카오·블로그)은 링크 목록에서 정본 채널 홈 URL로 폴백 —
+    '1이미지+5링크' 표준 유지 + 게시글 링크와 헷갈리지 않게 표기 구분."""
+    entries = _official_group_entries_url_gaps()
+    dedup = pd._dedup_channel_entries(entries)
+    assert len(dedup) == 5, "채널 5종 전부 링크 조립 대상이어야 함"
+
+    msg = pd.build_digest(dedup)
+
+    # 실제 URL이 있는 채널은 그대로 노출
+    assert "https://www.instagram.com/p/urlgapTest/" in msg
+    assert "https://cafe.naver.com/ichon1dong" in msg
+    assert "https://www.daangn.com/kr/business-posts/testpost" in msg
+    # URL 미회수 채널(블로그·카카오)은 채널 홈으로 폴백 + 게시글 링크와 구분 표기
+    assert "https://blog.naver.com/wellperion (채널 홈 · 게시글 링크 미확정)" in msg
+    assert "https://pf.kakao.com/_cgxiKj (채널 홈 · 게시글 링크 미확정)" in msg
+    # 채널 이모지 라벨 5종 전부 여전히 포함(누락 없음)
+    for label in ["📷 인스타그램", "📝 네이버 블로그", "☕ 네이버 카페", "💬 카카오채널", "🥕 당근"]:
+        assert label in msg
+
+
+def test_send_publish_digest_sends_with_url_gaps_via_fixture(monkeypatch):
+    """send_publish_digest() 전체 경로 — 픽스처로 _load_review_queue를 격리해 실제
+    review_queue.json은 절대 건드리지 않고, URL 갭이 있어도 실무진 방 발신(sent==1)까지 확인."""
+    entries = _official_group_entries_url_gaps()
+
+    monkeypatch.setattr(pd, "_load_review_queue", lambda: entries)
+    monkeypatch.setattr(pd, "_first_slide_image", lambda group: "")  # 실제 이미지 첨부 경로 차단
+
+    captured = {}
+
+    def fake_send(token, chat_id, text, preview_url=""):
+        captured["text"] = text
+        return True
+
+    monkeypatch.setattr(pd, "_send", fake_send)
+
+    ledger_path = _tmp_ledger_path()
+    try:
+        sent = pd.send_publish_digest(entries, dry_run=False, ledger_path=ledger_path)
+        assert sent == 1
+        assert "https://pf.kakao.com/_cgxiKj (채널 홈 · 게시글 링크 미확정)" in captured["text"]
+    finally:
+        if ledger_path.exists():
+            ledger_path.unlink()
+
+
+def test_group_is_complete_personal_ig_solo_still_true_no_url_required():
+    """회귀: 개인(namuk) IG 단독 그룹은 5채널 강제 미적용 — URL 게이트 완화 이후에도
+    여전히 완결(True) 판정돼야 한다."""
+    entries = [
+        {
+            "id": "CMO-TEST-PERSONAL-IG", "account": "namuk.wellperion",
+            "folder": "instagram/260722_개인단독", "channel": "인스타그램 (namuk 개인)",
+            "status": "발행완료", "post_url": "https://www.instagram.com/p/personalSolo/",
+            "published_at": "2026-07-22T09:00:00",
+        },
+    ]
+    key = pd._base_key(entries[0])
+
+    complete, reason = pd._group_is_complete(key, entries)
+
+    assert complete is True, f"개인 IG단독 그룹은 여전히 True여야 함 (사유: {reason})"
+
+
+def test_group_is_complete_still_false_when_channel_pending_review():
+    """회귀: 일부 채널이 검수대기(미발행 상태)면 URL 게이트 완화와 무관하게 여전히 False."""
+    entries = _official_group_entries_url_gaps()
+    entries[1] = {**entries[1], "status": "검수대기", "post_url": ""}  # 블로그만 아직 검수대기
+    key = pd._base_key(entries[0])
+
+    complete, reason = pd._group_is_complete(key, entries)
+
+    assert complete is False, "일부 채널 미발행이면 여전히 False여야 함"
+    assert "미발행" in reason

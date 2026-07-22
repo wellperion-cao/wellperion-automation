@@ -29,6 +29,12 @@
 - 미충족 → 실무진 방엔 발송하지 않고 GM 개인 업무보고봇 방(TELEGRAM_CHAT_ID)에 사유와
   함께 보류 1줄만 발송(같은 folder는 SENT_LEDGER[f"{folder}:held"] 로 1회만 — 완결되면
   자동으로 표준 디제스트가 나간다).
+
+★ 게이트 완화 (2026-07-22 시토): 완결 판정(_group_is_complete)에서 채널별 게시 URL 회수
+  요건을 제거했다 — 카카오는 편별 공개 URL이 원래 없고 네이버 블로그는 URL 회수가 불안정해
+  5채널 전부 실제 '발행완료'여도 다이제스트가 영구 보류되던 구조적 결함 수리. 이제 완결은
+  상태(_COMPLETE_STATUSES)만으로 판정하고, URL 없는 채널은 build_digest()가 정본 채널
+  홈 URL(_CHANNEL_HOME_URLS)로 폴백해 '1이미지+5링크' 표준을 유지한다.
 """
 from __future__ import annotations
 
@@ -78,6 +84,30 @@ _CHANNEL_LABEL_ORDER: list[tuple[re.Pattern, str]] = [
 ]
 _DEFAULT_DIGEST_INTRO = "여러 채널에 새 소식을 올렸어요."
 
+# 채널별 정본 홈 URL(게시글 URL 미회수 시 폴백) — 저장소 기존 설정에서 취득, 추정·날조 금지.
+# 인스타그램: 3. 웰페리온 가이드/coo/reception/reception_block.html:399 (공식 인스타그램 링크)
+# 네이버 블로그: scripts/naver_blog_upload_playwright.py DEFAULT_BLOG_ID="wellperion"
+#   (blog.naver.com/{blog_id} 패턴)
+# 네이버 카페: scripts/retrieve_post_url.py CAFE_NAME="ichon1dong" (동부이촌동 커뮤니티)
+# 카카오채널: scripts/kakao_channel_upload_playwright.py / retrieve_post_url.py
+#   KAKAO_CHANNEL_ID="_cgxiKj" (pf.kakao.com/{channel_id} 공개 홈)
+# 당근: bizprofile.daangn.com/... 은 로그인 필요한 관리자 홈이라 공개 소비자 홈 URL이
+#   저장소에 없음 — 하드코딩하지 않고 미발견으로 남긴다(폴백은 기존 플레이스홀더 문구).
+_CHANNEL_HOME_URLS: list[tuple[re.Pattern, str]] = [
+    (re.compile("인스타"), "https://www.instagram.com/wellperion/"),
+    (re.compile("블로그"), "https://blog.naver.com/wellperion"),
+    (re.compile("카페"), "https://cafe.naver.com/ichon1dong"),
+    (re.compile("카카오"), "https://pf.kakao.com/_cgxiKj"),
+]
+
+
+def _channel_home_url(channel: str) -> str:
+    """채널 문자열 → 정본 홈 URL. 매핑에 없으면 ''(당근 등 미발견 채널)."""
+    for pattern, home_url in _CHANNEL_HOME_URLS:
+        if pattern.search(channel):
+            return home_url
+    return ""
+
 
 # ---------------------------------------------------------------------------
 # .env 로더 (python-dotenv 불필요, KEY=VALUE / # 주석) — os.environ 우선.
@@ -121,7 +151,6 @@ def group_published(items: list[dict]) -> dict[str, list[dict]]:
 # ---------------------------------------------------------------------------
 # 품질 게이트 — folder(그룹키) 완결·표준 판정 (2026-07-18)
 # ---------------------------------------------------------------------------
-_URL_REQUIRED_CHANNEL_RE = re.compile("블로그|카페|당근")
 # '확인필요(발행됨·URL미회수)'(블로그·카페, 2026-07-20 배834) = 게시는 진행됐으나 URL 폴링
 # 실패한 상태 — '미발행'이 아니라 published 취급하되, 아래 missing_url 검사가 URL 없으므로
 # 여전히 완결 판정을 막는다(URL 보강 후 자동 통과).
@@ -168,8 +197,9 @@ def _group_is_official(entries: list[dict]) -> bool:
 
 def _group_is_complete(folder: str, all_review_items: list[dict]) -> tuple[bool, str]:
     """folder(그룹키) 완결·표준 판정 — review_queue.json 전체에서 해당 그룹 엔트리를 모아
-    (C) official 그룹은 5채널 유형 전부 엔트리 존재 강제, (A) 전 채널 발행 여부,
-    (B) URL 회수 가능 채널(블로그·카페·당근)의 URL 회수 여부를 검사.
+    (C) official 그룹은 5채널 유형 전부 엔트리 존재 강제, (A) 전 채널 발행 상태(_COMPLETE_STATUSES)
+    여부를 검사. URL 회수 여부는 더 이상 완결 판정 기준이 아니다(2026-07-22 게이트 완화 —
+    URL 미회수는 build_digest()의 채널 홈 폴백으로 흡수).
     True → 실무진 문의알림방 표준 디제스트 발신 대상. False → 사유와 함께 GM 개인 방 보류 대상."""
     entries = _group_all_entries(folder, all_review_items)
     if not entries:
@@ -192,15 +222,11 @@ def _group_is_complete(folder: str, all_review_items: list[dict]) -> tuple[bool,
     if not_published:
         return False, "미발행: " + ", ".join(not_published)
 
-    missing_url = [
-        it.get("channel") or "채널 미지정"
-        for it in entries
-        if _URL_REQUIRED_CHANNEL_RE.search(it.get("channel") or "")
-        and not (it.get("post_url") or "").strip()
-    ]
-    if missing_url:
-        return False, "URL 미회수: " + ", ".join(missing_url)
-
+    # ★ 2026-07-22 시토: URL 회수 요건 제거(게이트 완화) — 카카오는 편별 공개 URL이
+    # 원래 없고, 네이버 블로그는 URL 회수가 불안정해 5채널 전부 실제 '발행완료'여도
+    # 게이트가 다이제스트를 영구 보류시키던 구조적 결함 수리. 완료 판정은 이제
+    # 상태(_COMPLETE_STATUSES)만으로 하고, URL 유무는 build_digest()의 홈 URL
+    # 폴백(_CHANNEL_HOME_URLS)으로 흡수한다.
     return True, ""
 
 
@@ -225,11 +251,11 @@ def _dedup_channel_entries(entries: list[dict]) -> list[dict]:
 
 
 def _held_notice(folder: str, reason: str, entries: list[dict]) -> str:
-    """GM 개인 방 보류 알림 1줄 — 완결·URL 회수되면 자동으로 표준 디제스트가 나간다는 안내 포함."""
+    """GM 개인 방 보류 알림 1줄 — 전 채널 발행완료되면 자동으로 표준 디제스트가 나간다는 안내 포함."""
     title = _digest_title(entries) if entries else folder
     return (
         f"⚠️ 발행 디제스트 기준 미달로 실무진 방 발송 보류 — {folder} / {title}: {reason}. "
-        "전 채널 완결·URL 회수되면 자동 발송."
+        "전 채널 발행완료되면 자동 발송."
     )
 
 
@@ -292,11 +318,17 @@ def build_digest(group: list[dict]) -> str:
         url = (it.get("post_url") or "").strip()
         ch = it.get("channel") or "채널 미지정"
         order, label = _channel_label(ch)
-        entries.append((order, label, url))
+        entries.append((order, label, url, ch))
     entries.sort(key=lambda e: e[0])
-    for _, label, url in entries:
+    for _, label, url, ch in entries:
         lines.append(label)
-        lines.append(url if url else "게시됨 · 채널에서 확인")
+        if url:
+            lines.append(url)  # 게시글 링크(실제 URL)
+        else:
+            home_url = _channel_home_url(ch)
+            # ★ 2026-07-22 시토: URL 미회수 채널(카카오·블로그 등)도 '1이미지+5링크' 표준
+            # 유지를 위해 채널 정본 홈으로 폴백. 게시글 링크와 헷갈리지 않게 표기 구분.
+            lines.append(f"{home_url} (채널 홈 · 게시글 링크 미확정)" if home_url else "게시됨 · 채널에서 확인")
     lines.append("")
     lines.append("좋아요·댓글로 응원 부탁드립니다 🙏")
     return "\n".join(lines)
@@ -461,7 +493,9 @@ def send_publish_digest(
     보낸다(2026-07-18 GM 지시 — 품질 게이트 + 라우팅).
 
     품질 게이트(_group_is_complete): review_queue.json 전체에서 folder 그룹의 모든 엔트리를
-    모아 (A) 전 채널 발행 여부 (B) 블로그·카페·당근 URL 회수 여부를 검사한다.
+    모아 (A) official 그룹 5채널 유형 전부 등록 여부 (B) 전 채널 발행 상태를 검사한다
+    (2026-07-22 게이트 완화 — URL 회수 여부는 더 이상 완결 판정 기준이 아니다. URL 없는
+    채널은 build_digest()가 채널 정본 홈으로 폴백).
     - 충족 → 실무진 문의알림방. 디제스트는 이번 사이클 부분집합이 아니라 review_queue.json의
       해당 folder 전체 채널 엔트리(5채널)로 구성 — 누락 0. SENT_LEDGER[folder]에 기록(평생 1회).
     - 미충족 → 실무진 방엔 미발송. GM 개인 방(TELEGRAM_CHAT_ID)에 사유 포함 보류 1줄만 —
