@@ -771,7 +771,7 @@
     <!-- ══ 📡 모듈 보고 현황 (status/module_registry.json 실값 렌더 · additive · 2026-07-09) ══ -->
     <h3 id="sec-module-registry" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📡 모듈 보고 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">— 모듈 등록부 관점(누가 만들었나·자율수준). 카톡·텔레그램 발신 전체는 위 '📨 통합 알림 보드'</span></h3>
     <p class="sec-note" style="margin:0 0 6px;">모듈이 봇ID·주기 등록 시 자동 보고. 아래=등록 현황 + 마지막 발송·건강 실측.</p>
-    <p class="sec-note" style="margin:0 0 10px;">🟢 <b>발효·정상</b> = 방 배정돼 실제 보고 발송·최근 정상 · 🔴 <b>발효·실패/지연</b> = 발효인데 실행 실패 · ⚪ <b>미발효(휴면)</b> = 방 미배정 · ⚪ <b>측정불가/예정</b> = 발송 로그 없음(억지 초록 금지)</p>
+    <p class="sec-note" style="margin:0 0 10px;">🟢 <b>발효</b> = 방 배정 완료(배지 아래 부기로 정상/첫 실행 대기/발송이력 미측정 구분) · 🔴 <b>발효·실패/지연</b> = 발효인데 실행 실패 · ⚪ <b>미발효</b> = 방 미배정(억지 초록 금지)</p>
     <div class="tbl-wrap" id="module-registry-wrap">
       <table>
         <thead>
@@ -855,8 +855,8 @@
   function renderActiveMissions(queue){
     var el = document.getElementById('active-missions');
     if(!el) return;
-    // surface==='autonomy'(정박·대기 이관 배)는 아래 정박 패널 전용 → 진행중이어도 여기 중복 표시 안 함 (2026-07-15 배237)
-    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.status === 'IN_PROGRESS' && s.surface !== 'autonomy'; }) : [];
+    // IN_PROGRESS는 surface 무관 전부 여기(진행) 표시 — 정박 패널은 대기(PENDING·STANDBY)만 전담(GM 지적 2026-07-22, 정박 과다 근본수리).
+    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.status === 'IN_PROGRESS'; }) : [];
     if(!list.length){
       el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">진행·상시 미션 없음 — 지금 굴러가는 진행중(IN_PROGRESS) 배가 없습니다.</div>';
       return;
@@ -883,11 +883,12 @@
   }
 
   // ═══════════ ⚓ 정박·대기 (status/_queue.json surface==autonomy · 조건/시각 트리거 대기 · 항로 이관 2026-07-15 · 배237) ═══════════
-  //   명시 플래그(surface==='autonomy')로만 판정 — 퍼지 규칙 없음. status 무관(PENDING·STANDBY·IN_PROGRESS·DONE 모두 흡수).
+  //   명시 플래그(surface==='autonomy')로 1차 판정 + status로 2차 거름 — IN_PROGRESS(진행중이라 위 진행 패널로)·
+  //   DONE(입항 완료라 대기 아님)은 제외, PENDING·STANDBY(보류)만 정박(GM 지적 2026-07-22, 정박 과다 근본수리).
   function renderParkedMissions(queue){
     var el = document.getElementById('parked-missions');
     if(!el) return;
-    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.surface === 'autonomy'; }) : [];
+    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.surface === 'autonomy' && s.status !== 'DONE' && s.status !== 'IN_PROGRESS'; }) : [];
     if(!list.length){
       el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">정박·대기 배 없음 — 조건/시각 트리거 대기 배가 없습니다.</div>';
       return;
@@ -1493,13 +1494,22 @@
   // Wellperion-Module-Report-Daily 예약작업에 편승해 매일 갱신). ①(예약작업 실행)과 다른 것을
   // 잰다 — "떴다"가 아니라 "로컬 아티팩트 기준 진짜 결과가 나왔다". 판정불가(모름)는 절대 정상으로
   // 세지 않는다(억지 초록 금지 — 이 화면 전체의 설계 원칙).
-  function silenceBadge(status){
+  function silenceBadge(status, dormant){
     if(status === 'ok') return '<span class="statchip ok">🟢 정상(결과 확인)</span>';
     if(status === 'silent') return '<span class="statchip bad">🔴 침묵(결과 없음)</span>';
     if(status === 'not_applicable') return '<span class="statchip idle">📄 대상아님(문서)</span>';
+    if(dormant) return '<span class="statchip idle">💤 휴면(미가동)</span>';
     return '<span class="statchip idle">⚪ 모름(측정 불가)</span>';
   }
-  function renderModuleSilence(snap){
+  // module_registry.json에서 enabled===false인 모듈은 '모름'(진짜 미확인)이 아니라 '휴면(미가동)'
+  // 으로 재라벨(표시만 — 스냅샷 데이터·판정 스크립트 무변경). hangro·gmail 등 enabled===true인
+  // unmeasurable은 진짜 미확인이라 '모름' 그대로 유지(GM 지적 2026-07-22, 억지 정직표기 훼손 금지).
+  function silenceIsDormant(m, regModsById){
+    if(!m || m.status !== 'unmeasurable') return false;
+    var rm = regModsById[m.id];
+    return !!(rm && rm.enabled === false);
+  }
+  function renderModuleSilence(snap, reg){
     var hl   = document.getElementById('erp-ah-silence-headline');
     var body = document.getElementById('erp-ah-silence-body');
     var t    = document.getElementById('erp-ah-silence-time');
@@ -1509,16 +1519,23 @@
       if(t) t.textContent = '';
       return;
     }
+    var regModsById = {};
+    if(reg && Array.isArray(reg.modules)){
+      reg.modules.forEach(function(rm){ if(rm && rm.id) regModsById[rm.id] = rm; });
+    }
+    var modsAll = Array.isArray(snap.modules) ? snap.modules : [];
+    var dormantCnt = modsAll.filter(function(m){ return silenceIsDormant(m, regModsById); }).length;
     var c = snap.summary || {};
-    var ok = c.ok || 0, silent = c.silent || 0, unmeas = c.unmeasurable || 0, na = c.not_applicable || 0;
-    var applicable = ok + silent + unmeas;  // 대상아님(문서) 제외한 분모
+    var ok = c.ok || 0, silent = c.silent || 0, unmeasTotal = c.unmeasurable || 0, na = c.not_applicable || 0;
+    var unmeas = unmeasTotal - dormantCnt;  // 표시용 '모름' — 휴면 재분류분 제외(분모는 원본 유지)
+    var applicable = ok + silent + unmeasTotal;  // 대상아님(문서) 제외한 분모 — 데이터 그대로
     if(hl){
       var color = silent > 0 ? '#ff8a80' : (unmeas > 0 ? 'var(--gold)' : 'var(--green)');
       hl.style.color = color;
-      hl.textContent = '확인됨 ' + ok + '/' + applicable + ' · 모름 ' + unmeas + '건 · 침묵 ' + silent + '건';
+      hl.textContent = '확인됨 ' + ok + '/' + applicable + ' · 모름 ' + unmeas + '건 · 침묵 ' + silent + '건' + (dormantCnt ? ' · 휴면 ' + dormantCnt + '건' : '');
     }
     if(body){
-      var mods = Array.isArray(snap.modules) ? snap.modules.slice() : [];
+      var mods = modsAll.slice();
       // 침묵을 맨 위(가장 급함) → 모름 → 정상 → 대상아님
       var rank = { silent:0, unmeasurable:1, ok:2, not_applicable:3 };
       mods.sort(function(a, b){ return (rank[a.status] || 9) - (rank[b.status] || 9); });
@@ -1528,9 +1545,10 @@
         var h = '<div style="display:grid;gap:6px;">';
         mods.forEach(function(m){
           if(m.status === 'not_applicable') return;  // 문서형은 목록에서 생략(요약 배지에만 반영)
+          var dormant = silenceIsDormant(m, regModsById);
           var flagged = m.status === 'silent';
           h += '<div class="ahrow' + (flagged ? ' failed' : '') + '">';
-          h += silenceBadge(m.status);
+          h += silenceBadge(m.status, dormant);
           h += '<div class="ahname">' + esc(m.feature || m.id || '') + '</div>';
           h += '<div class="ahmeta">' + esc(m.detail || '') + '</div>';
           h += '</div>';
@@ -1542,7 +1560,7 @@
         body.innerHTML = h;
       }
     }
-    if(t) t.textContent = '기준: ' + esc(snap.generated_at_kst || '') + '  |  ※ 로컬 아티팩트 없거나 갱신주기 미선언인 모듈은 "모름"으로 표기(정상 아님)';
+    if(t) t.textContent = '기준: ' + esc(snap.generated_at_kst || '') + '  |  ※ 로컬 아티팩트 없거나 갱신주기 미선언인 모듈은 "모름"으로 표기(정상 아님) · 등록부 enabled:false 모듈은 "휴면(미가동)"으로 구분';
   }
 
   // ═══════════ ② 돌아가는 자동화: 📡 모듈 보고 현황 (status/module_registry.json 실값 렌더 · 2026-07-09) ═══════════
@@ -1590,7 +1608,7 @@
     var ahMap = {};
     var ahItems = (erp && erp.automation_health && Array.isArray(erp.automation_health.items)) ? erp.automation_health.items : [];
     ahItems.forEach(function(it){ if(it && it.name) ahMap[it.name] = it; });
-    var okN = 0, badN = 0, naN = 0, idleN = 0;
+    var okN = 0, badN = 0, idleN = 0;
     var rows = mods.map(function(m){
       m = m || {};
       var name  = esc(m.name || m.feature || m.id || '—');
@@ -1622,6 +1640,9 @@
       var ahName = ovr && ovr.ah ? ovr.ah : (active ? (ns && ns.daily ? CADENCE_AH.daily : (ns && ns.weekly ? CADENCE_AH.weekly : (ns && ns.monthly ? CADENCE_AH.monthly : null))) : null);
       var ah = ahName ? ahMap[ahName] : null;
 
+      // 발효 하위 3종(정상/측정불가/예정)은 전부 "배선 완료" 상태라 상위 🟢 발효 배지 하나로 통합,
+      // 세부는 배지 아래 회색 부기로 구분(GM 지적 2026-07-22 — 발효 표기 3분열 혼란 근본수리). 실패(🔴)만 별도 유지.
+      var SUB = '<div style="font-size:10px;color:var(--dim);margin-top:2px;">';
       var lastCell, statusCell;
       if(!active){
         lastCell = '<span style="color:var(--dim)">—</span>';
@@ -1631,21 +1652,21 @@
         var okSend = kakaoLast.ok !== false;
         lastCell = '<span style="font-variant-numeric:tabular-nums;">' + esc(fmtWhen(kakaoLast.at)) + (okSend ? ' <span style="color:var(--green)">✓</span>' : ' <span style="color:#ff8a80">⚠</span>') + '</span>';
         if(ah && ah.state === '실패'){ statusCell = '<span class="statchip bad">🔴 발효·실패</span>'; badN++; }
-        else if(okSend){ statusCell = '<span class="statchip ok">🟢 발효·정상</span>'; okN++; }
+        else if(okSend){ statusCell = '<span class="statchip ok">🟢 발효</span>' + SUB + '정상</div>'; okN++; }
         else { statusCell = '<span class="statchip bad">🔴 발효·실패</span>'; badN++; }
       } else if(!ah){
         lastCell = '<span style="color:var(--dim)">측정불가</span>';
-        statusCell = '<span class="statchip idle">⚪ 발효·측정불가</span>'; naN++;
+        statusCell = '<span class="statchip ok">🟢 발효</span>' + SUB + '발송이력 미측정</div>'; okN++;
       } else if(ah.state && ah.state.indexOf('실패') === 0){
         lastCell = '<span style="font-variant-numeric:tabular-nums;">' + esc(fmtKAmPm(ah.last_run)) + '</span>';
         statusCell = '<span class="statchip bad">🔴 발효·실패</span>'; badN++;
       } else if(ah.state && ah.state.indexOf('정상') === 0){
         lastCell = '<span style="font-variant-numeric:tabular-nums;">' + esc(fmtKAmPm(ah.last_run)) + '</span>';
-        statusCell = '<span class="statchip ok">🟢 발효·정상</span>'; okN++;
+        statusCell = '<span class="statchip ok">🟢 발효</span>' + SUB + '정상</div>'; okN++;
       } else {
-        // 대기(첫 실행 전) 등 — 억지 초록 금지
+        // 대기(첫 실행 전) 등 — 억지 초록 금지, 다만 배선은 정상 완료라 발효로 집계
         lastCell = '<span style="color:var(--dim);font-variant-numeric:tabular-nums;">예정 ' + esc(fmtKAmPm(ah.next_run)) + '</span>';
-        statusCell = '<span class="statchip idle">⚪ 발효·예정</span>'; naN++;
+        statusCell = '<span class="statchip ok">🟢 발효</span>' + SUB + '첫 실행 대기</div>'; okN++;
       }
 
       return '<tr><td><strong>' + name + '</strong></td><td>' + owner + '</td><td>' + cycleTxt + '</td><td>' + channelCell + '</td><td>' + lastCell + '</td><td>' + statusCell + '</td></tr>';
@@ -1657,6 +1678,8 @@
   // 구 카톡 3종 표·통합보고 10슬롯 표·조건부·상주 알림 3건을 여기로 통합. 발송 로직 무변경 — 표시만.
   var NOTIFY_FREQ_RANK = { daily:0, weekly:1, monthly:2, conditional:3, event:4 };
   var NOTIFY_FREQ_LABEL = { daily:'매일', weekly:'매주', monthly:'매월', conditional:'조건부', event:'이벤트' };
+  var NOTIFY_GRP_LABEL = { daily:'🟦 매일', weekly:'🟩 매주', monthly:'🟪 매월', conditional:'🟨 조건부', event:'⚡ 이벤트' };
+  var NOTIFY_NIGHT_DIGEST_SORT = '2030';  // 20:00/22:30 동일 잡 5발신 묶음(휴일20:00·평일22:30 중 하나) — 시각 그룹핑 전용(발신 통합 아님)
   var _notifyState = { channel:'all', owner:'all', problemOnly:false };
 
   function _notifySchtasksName(source){
@@ -1709,6 +1732,51 @@
 
   var _notifyRowsCache = []; // [{item, sevInfo, html}]
 
+  // 주기(freq) 그룹 소제목 행 삽입 + 22:30 동시발신 5건 시각 하위그룹 + 죽은배선 접힘(GM 지시 2026-07-22).
+  // items는 이미 NOTIFY_FREQ_RANK → when_sort 순 정렬 상태로 들어온다(호출부 renderNotifyBoard) — 그 순서를 그대로 신뢰.
+  function notifyGroupedHtml(rows){
+    var alive = rows.filter(function(r){ return r.sevInfo.sev !== 'dead'; });
+    var dead  = rows.filter(function(r){ return r.sevInfo.sev === 'dead'; });
+    var html = '';
+    var curFreq = null, prevWhenSort = null;
+    alive.forEach(function(r){
+      var freq = r.item.freq;
+      if(freq !== curFreq){
+        curFreq = freq;
+        prevWhenSort = null;
+        var cnt = alive.filter(function(x){ return x.item.freq === freq; }).length;
+        html += '<tr class="notify-grp-row"><td colspan="6" style="background:var(--surface);color:var(--text-soft);font-weight:700;font-size:11.5px;padding:6px 10px;border-top:1px solid var(--border-strong);">' +
+          esc(NOTIFY_GRP_LABEL[freq] || freq) + ' <span style="color:var(--dim);font-weight:400;">(' + cnt + '건)</span></td></tr>';
+      }
+      if(r.item.when_sort === NOTIFY_NIGHT_DIGEST_SORT && prevWhenSort !== NOTIFY_NIGHT_DIGEST_SORT){
+        var nightCnt = alive.filter(function(x){ return x.item.freq === freq && x.item.when_sort === NOTIFY_NIGHT_DIGEST_SORT; }).length;
+        if(nightCnt > 1){
+          html += '<tr class="notify-subgrp-row"><td colspan="6" style="color:var(--dim);font-size:10.5px;padding:4px 10px 4px 22px;">🌙 밤 일과정리(같은 잡 ' + nightCnt + '발신 — 발신 통합 아님, 표시만 묶음)</td></tr>';
+        }
+      }
+      prevWhenSort = r.item.when_sort;
+      html += r.html;
+    });
+    if(dead.length){
+      html += '<tr class="notify-grp-row notify-grp-dead" style="background:var(--surface);color:var(--dim);font-weight:700;font-size:11.5px;padding:6px 10px;border-top:1px solid var(--border-strong);cursor:pointer;" data-expanded="0">' +
+        '<td colspan="6">⚫ 죽은 배선 (' + dead.length + '건) — 눌러서 펼치기 ▸</td></tr>';
+      html += dead.map(function(r){ return r.html.replace('<tr ', '<tr class="notify-dead-row" style="display:none;" '); }).join('');
+    }
+    return html;
+  }
+
+  function notifyWireDeadToggle(tbody){
+    var header = tbody.querySelector('.notify-grp-dead');
+    if(!header) return;
+    header.addEventListener('click', function(){
+      var expand = header.getAttribute('data-expanded') !== '1';
+      header.setAttribute('data-expanded', expand ? '1' : '0');
+      tbody.querySelectorAll('.notify-dead-row').forEach(function(tr){ tr.style.display = expand ? '' : 'none'; });
+      var td = header.querySelector('td');
+      td.textContent = td.textContent.replace(expand ? '▸' : '▾', expand ? '▾' : '▸').replace(expand ? '펼치기' : '접기', expand ? '접기' : '펼치기');
+    });
+  }
+
   function notifyApplyFilters(){
     var tbody = document.getElementById('notify-board-tbody');
     if(!tbody) return;
@@ -1718,7 +1786,8 @@
       if(_notifyState.problemOnly && r.sevInfo.sev !== 'bad' && r.sevInfo.sev !== 'dead') return false;
       return true;
     });
-    tbody.innerHTML = shown.length ? shown.map(function(r){ return r.html; }).join('') : '<tr><td colspan="6" style="color:var(--dim);">조건에 맞는 알림이 없습니다.</td></tr>';
+    tbody.innerHTML = shown.length ? notifyGroupedHtml(shown) : '<tr><td colspan="6" style="color:var(--dim);">조건에 맞는 알림이 없습니다.</td></tr>';
+    notifyWireDeadToggle(tbody);
   }
 
   function renderNotifyBoard(reg, drift, erp, kakaoLast){
@@ -1981,8 +2050,8 @@
     try{ renderStats(d, feedItems); }catch(e){ document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">성과 지표 계산 오류.</div>'; }
     try{ renderErpStatus(erpStatus); }catch(e){ document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">시스템 현황 표시 오류.</span>'; }
     try{ renderAutomationHealth(erpStatus); }catch(e){ document.getElementById('erp-ah-headline').innerHTML = '<span style="color:var(--dim);">건강 점수판 표시 오류.</span>'; }
-    try{ renderModuleSilence(parseJson(a[15])); }catch(e){ document.getElementById('erp-ah-silence-headline').innerHTML = '<span style="color:var(--dim);">모듈 결과 산출 표시 오류.</span>'; }
     var moduleRegistry = parseJson(a[12]);
+    try{ renderModuleSilence(parseJson(a[15]), moduleRegistry); }catch(e){ document.getElementById('erp-ah-silence-headline').innerHTML = '<span style="color:var(--dim);">모듈 결과 산출 표시 오류.</span>'; }
     try{ renderModuleRegistry(moduleRegistry, erpStatus, parseJson(a[13])); }catch(e){
       var mrt = document.getElementById('module-registry-tbody');
       if(mrt) mrt.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
