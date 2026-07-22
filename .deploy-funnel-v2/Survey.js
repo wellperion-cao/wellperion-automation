@@ -37,8 +37,10 @@ const FORM_SHEETS = [
   , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1356708303, type: '비즈니스파트너', channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 멤버십 시트로 통합
   // ─── 영문 문의 3종 (시모 2026-06-24) ───
   , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1887747109, type: '멤버십(영문)',    channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['Programs of Interest', '종목', '프로그램'] }
-  , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 311319200,  type: '성인강습(영문)',  channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['Program of Interest', '종목', '과목'] }
-  , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 931249179,  type: '유소년강습(영문)', channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['WSC Program of Interest', '종목', '과목'] }
+  // 영문 강습폼 2종 폐기(GM 2026-07-22): 1-1 성인강습(영) 접수 0건 → 삭제 / 2-1 WSC강습(영) 4건 → 메인 WSC탭 이관 후 삭제.
+  //   재개 시 새 폼 gid로 두 줄 복원. (멤버십 영문 gid 1887747109은 유지 — 위 줄.)
+  // , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 311319200,  type: '성인강습(영문)',  channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['Program of Interest', '종목', '과목'] }
+  // , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 931249179,  type: '유소년강습(영문)', channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['WSC Program of Interest', '종목', '과목'] }
 ];
 
 // 강습 '팀 정리' 스프레드시트 (통합본 → 팀별 별도 시트로 재취합, 팀장이 등록/실패/컨택중 처리). 수강등록 전환 정본.
@@ -2073,14 +2075,15 @@ function _lessonContactCellParse_(raw) {
 function _lessonContactsBySport_(arr, sportStr) {
   var out = {};
   var _norm = function (s) { return String(s || '').replace(/\s+/g, ''); };
-  var _sp = _norm(sportStr);
+  // 이 회원의 실제 종목 토큰(콤마 분리, 정규화) — 태그는 이 집합과 '정확일치'할 때만 종목별로 분리한다.
+  var _tokens = String(sportStr || '').split(',').map(function (s) { return _norm(s); }).filter(Boolean);
   (arr || []).forEach(function (c) {
     var m = String(c && c.note != null ? c.note : '').match(/^\s*\[([^\]]+)\]\s*([\s\S]*)$/);
     if (!m) return;
     var sk = m[1].trim();
-    // 인식된 종목 태그만 종목별로 분리 — 이 회원의 실제 종목 문자열에 없는 대괄호 메모('[식]'·'[급]' 등)는
-    //   종목이 아니므로 분리하지 않고 flat(공통)로 남긴다(오분류→컨택 숨김 방지). 2026-07-22 시포.
-    if (!sk || !_sp || _sp.indexOf(_norm(sk)) < 0) return;
+    // 실제 종목 토큰과 정확일치하는 태그만 분리 — 부분일치('[수영]' vs '모자수영') 오귀속·대괄호 메모('[식]') 오분류 방지.
+    //   미일치 태그 줄은 flat(공통)로 남아 화면에 계속 노출(숨김 없음). 2026-07-22 시포(디버그).
+    if (!sk || _tokens.indexOf(_norm(sk)) < 0) return;
     if (!out[sk]) out[sk] = { contacts: [] };
     out[sk].contacts.push({ date: c.date || '', time: c.time || '', note: (m[2] || '').trim() });
   });
@@ -5569,7 +5572,7 @@ function _processAction(body) {
       var _spExisting = (_spCi >= 0) ? _lessonContactCellParse_(luSh.getRange(luRow, _spCi + 1).getValue()) : [];
       var _spPrevCount = _spExisting.filter(_spIsThisSport).length;
       if (body.status !== undefined && body.status !== null) _luSet(['진행상태', '진행현황', '진행상황', '진행 상황', '상태'], body.status);
-      if (body.owner  !== undefined && body.owner  !== null) _luSet(['관리담당', '지정 강사'], body.owner);
+      if (body.owner  !== undefined && body.owner  !== null) _luSet(['지정 강사', '관리담당'], body.owner);
       var _spNewHistArr = null;
       if (body.contacts !== undefined) {
         _spNewHistArr = _resParse_(body.contacts);
@@ -5605,7 +5608,7 @@ function _processAction(body) {
       var _luStatusCi  = _findCol_(luHdr, ['진행상태', '진행현황', '진행상황', '진행 상황', '상태']);
       var _luOldStatus = (_luStatusCi >= 0) ? String(luSh.getRange(luRow, _luStatusCi + 1).getValue() || '').trim() : '';
       _luSet(['진행상태', '진행현황', '진행상황', '진행 상황', '상태'], body.status);  // '진행 상황'=GM flat O컬럼
-      _luSet(['관리담당', '지정 강사'], body.owner);  // ★관리 담당 컬럼만. '지정 강사'=GM flat L컬럼(폼 원본 '접수담당자' 안 건드림)
+      _luSet(['지정 강사', '관리담당'], body.owner);  // ★관리 담당 컬럼만. '지정 강사'=GM flat L컬럼(폼 원본 '접수담당자' 안 건드림)
       _luSet(['상담메모', '메모', '비고'], body.memo);
       _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
       _luSet(['방문상태', '방문'], body.visited);
@@ -5629,7 +5632,9 @@ function _processAction(body) {
           if (_luHistCi >= 0) {
             var _luHistCell = luSh.getRange(luRow, _luHistCi + 1);
             _luHistCell.setNumberFormat('@');
-            _luHistCell.setValue(_lessonContactPlainStringify_(_luHistNewArr));  // 저장 포맷만 평문으로 전환(사람이 읽는 시트 가독성). 2026-07-22 GM
+            // ★종목별 태그 줄('[종목] …')은 flat 쓰기가 통째 덮어써 유실하지 않도록 보존(sport:'' 경로 방어). 2026-07-22 시포(디버그).
+            var _luKeptTags = _luPrevHistArr.filter(function (c) { return /^\s*\[[^\]]+\]/.test(String(c && c.note != null ? c.note : '')); });
+            _luHistCell.setValue(_lessonContactPlainStringify_(_luKeptTags.concat(_luHistNewArr)));  // 태그줄 보존 + 새 무태그 이력. 평문 저장(가독성). 2026-07-22 GM
           }
         } catch (eHist) { Logger.log('강습 연락이력 저장 실패: ' + eHist.message); }
       }
@@ -6576,13 +6581,83 @@ function _processAction(body) {
     } catch (eLL) { return _json({ ok: false, error: String(eLL.message || eLL) }); }
   }
 
+  // ─── (일회성) 영문 유소년(2-1 WSC강습 영) 4건 → 메인 WSC강습 탭 이관 — 2026-07-22 GM("이관 후 시트 삭제") ───
+  //   append만(행삭제·삽입 0, IMPORTRANGE 원본 무손상). 종목값=영문 원본 유지(화면 표시맵이 한글화). 유입언어=English(EN 배지 유지).
+  //   보호자 정보는 비고에 합침. 이관 후 delete_lesson_sheet_20260722로 원탭 삭제(그때 EN 병합이 null→중복표시 해소).
+  if (action === 'migrate_en_youth_to_main_20260722') {
+    if (String(body.key || '') !== 'wlp_enmig_20260722') return _json({ ok: false, error: 'guard-mismatch' });
+    var emDry = (String(body.dryRun || '') === '1');
+    var emSrc = _sheetByGid_(LESSON_SS_ID, 931249179), emDst = _sheetByGid_(LESSON_SS_ID, 268994754);
+    if (!emSrc || !emDst) return _json({ ok: false, error: '시트 없음', src: !!emSrc, dst: !!emDst });
+    var emSh = emSrc.getRange(1, 1, 1, emSrc.getLastColumn()).getValues()[0];
+    var emS = function (names) { return _findCol_(emSh, names); };
+    var eiTs = emS(['타임스탬프']), eiName = emS(["Child's Full Name", '성함', '이름']), eiPhone = emS(["Guardian's Mobile Phone Number", 'Mobile Phone Number', '연락처']),
+        eiAge = emS(["Child's Age", '나이', 'Age']), eiSport = emS(['WSC Program of Interest', 'WSC 강습 종목', '종목']), eiChan = emS(['How Did You Hear About Us?', '문의 경로', '경로']),
+        eiGuard = emS(["Guardian's Full Name"]), eiRel = emS(["Guardian's Relationship to Child"]), eiReq = emS(['Additional Requests or Comments', '문의 사항']),
+        eiOwner = emS(['지정 강사']), eiContact = emS(['Contact', '연락이력']), eiStat = emS(['진행 상황', '진행상황']), eiLoss = emS(['미등록 사유', 'LOSS사유']), eiMemo = emS(['비고']);
+    var emSl = emSrc.getLastRow();
+    var emData = emSl >= 2 ? emSrc.getRange(2, 1, emSl - 1, emSrc.getLastColumn()).getValues() : [];
+    var emDh = emDst.getRange(1, 1, 1, emDst.getLastColumn()).getValues()[0];
+    var emD = function (names) { return _findCol_(emDh, names); };
+    var edTs = emD(['타임스탬프']), edName = emD(['유소년 이름', '성함', '이름']), edPhone = emD(['핸드폰 연락처', '연락처', '전화']), edAge = emD(['나이']),
+        edSport = emD(['WSC 강습 종목', '종목']), edChan = emD(['문의 경로', '경로']), edNote = emD(['문의 사항', '기타']), edOwner = emD(['지정 강사']),
+        edContact = emD(['Contact', '연락이력']), edStat = emD(['진행 상황', '진행상황', '상태']), edLoss = emD(['미등록 사유']), edMemo = emD(['비고']), edLang = emD(['유입언어', 'Language']);
+    var emApp = [], emMig = [];
+    for (var ei = 0; ei < emData.length; ei++) {
+      var er = emData[ei];
+      var enm = eiName >= 0 ? String(er[eiName] || '').trim() : '', eph = eiPhone >= 0 ? String(er[eiPhone] || '').trim() : '';
+      if (!enm && !eph) continue;
+      var nr = new Array(emDh.length).fill('');
+      var eput = function (ci, v) { if (ci >= 0 && v !== undefined && v !== null && String(v) !== '') nr[ci] = v; };
+      eput(edTs, eiTs >= 0 ? er[eiTs] : ''); eput(edName, enm); eput(edPhone, eph);
+      eput(edAge, eiAge >= 0 ? er[eiAge] : ''); eput(edSport, eiSport >= 0 ? er[eiSport] : '');
+      eput(edChan, eiChan >= 0 ? er[eiChan] : ''); eput(edNote, eiReq >= 0 ? er[eiReq] : '');
+      eput(edOwner, eiOwner >= 0 ? er[eiOwner] : ''); eput(edContact, eiContact >= 0 ? er[eiContact] : '');
+      eput(edStat, eiStat >= 0 ? er[eiStat] : ''); eput(edLoss, eiLoss >= 0 ? er[eiLoss] : '');
+      eput(edLang, 'English');
+      var eg = eiGuard >= 0 ? String(er[eiGuard] || '').trim() : '', erl = eiRel >= 0 ? String(er[eiRel] || '').trim() : '';
+      var egt = eg ? ('보호자: ' + eg + (erl ? '(' + erl + ')' : '')) : '';
+      var eom = eiMemo >= 0 ? String(er[eiMemo] || '').trim() : '';
+      eput(edMemo, [egt, eom, '[영문폼 이관 2026-07-22]'].filter(Boolean).join(' / '));
+      emApp.push(nr); emMig.push({ name: enm, phone: eph, sport: eiSport >= 0 ? String(er[eiSport] || '') : '' });
+    }
+    if (emDry) return _json({ ok: true, dryRun: true, count: emApp.length, migrated: emMig, dstCols: emDh.length, dstHeaders: emDh });
+    if (emApp.length) {
+      // 신규 append 행에만 데이터검증 제거 후 기록 — 영문 경로/종목값이 한글 드롭다운을 위반해 setValues가 거부되는 문제 회피.
+      //   기존 행 검증은 불변(신규 행만 자유입력). 2026-07-22 시포.
+      var emRange = emDst.getRange(emDst.getLastRow() + 1, 1, emApp.length, emDh.length);
+      emRange.clearDataValidations();
+      emRange.setValues(emApp);
+      SpreadsheetApp.flush();
+    }
+    return _json({ ok: true, migrated: emMig.length, rows: emMig });
+  }
+
+  // ─── (일회성) 강습 메인탭 고아 행 내용 클리어 — 2026-07-22 시포(이관 부분기록 정리) ───
+  //   행 삭제 아님(IMPORTRANGE 원본 보존) · 내용만 비움 · 전화 대조키 필수(오삭제 방지, INC-020 교훈).
+  if (action === 'clear_orphan_row_20260722') {
+    if (String(body.key || '') !== 'wlp_clrrow_20260722') return _json({ ok: false, error: 'guard-mismatch' });
+    var crGid = parseInt(body.gid, 10), crRow = parseInt(body.rowIndex, 10), crPhone = _normPhone_(body.expectPhone || '');
+    if (!crRow || crRow < 2) return _json({ ok: false, error: 'bad-row' });
+    var crSh = _sheetByGid_(LESSON_SS_ID, crGid);
+    if (!crSh) return _json({ ok: false, error: 'no-sheet' });
+    var crHdr = crSh.getRange(1, 1, 1, crSh.getLastColumn()).getValues()[0];
+    var crPi = _findCol_(crHdr, ['연락처', '전화', '휴대폰', '핸드폰']);
+    var crRowPhone = crPi >= 0 ? _normPhone_(crSh.getRange(crRow, crPi + 1).getValue()) : '';
+    if (crPhone && crRowPhone !== crPhone) return _json({ ok: false, error: 'phone-mismatch', rowPhone: crRowPhone, expect: crPhone });
+    var crBackup = crSh.getRange(crRow, 1, 1, crSh.getLastColumn()).getValues()[0];
+    if (String(body.dryRun || '') === '1') return _json({ ok: true, dryRun: true, rowPhone: crRowPhone, backup: crBackup });
+    crSh.getRange(crRow, 1, 1, crSh.getLastColumn()).clearContent();
+    return _json({ ok: true, cleared: crRow, rowPhone: crRowPhone, backup: crBackup });
+  }
+
   // ─── (일회성) 강습 스프레드시트 잉여 탭 삭제 — 2026-07-22 GM("필요없는 시트는 삭제 검토, 문제없으면 삭제") ───
   //   안전장치 3중: ①보호목록(활성 소비 탭) 삭제 거부 ②구글폼 연결 탭은 force=1 없으면 거부(폼 파손 방지)
   //   ③삭제 전 전 행을 백업으로 반환(호출부가 파일 저장). dryRun 기본 미삭제.
   if (action === 'delete_lesson_sheet_20260722') {
     if (String(body.key || '') !== 'wlp_delsheet_20260722') return _json({ ok: false, error: 'guard-mismatch' });
     var dsGid = parseInt(body.gid, 10);
-    var DS_PROTECTED = [111889422, 268994754, 311319200, 931249179, 1270425989, 537942806, 534686684, 1694057341, 1768753460, 2012342185];
+    var DS_PROTECTED = [111889422, 268994754, 1270425989, 537942806, 534686684, 1694057341, 1768753460, 2012342185];   // 311319200(1-1 성인영·0건)·931249179(2-1 WSC영·이관후)=GM 폐기 승인으로 보호 해제. 2026-07-22.
     if (DS_PROTECTED.indexOf(dsGid) >= 0) return _json({ ok: false, error: 'protected-sheet', gid: dsGid, detail: '활성 소비 탭 — 삭제 금지' });
     var dsSs = SpreadsheetApp.openById(LESSON_SS_ID);
     var dsSh = null;
@@ -6594,8 +6669,19 @@ function _processAction(body) {
     try { dsFormUrl = dsSh.getFormUrl() || ''; } catch (e) {}
     if (dsFormUrl && String(body.force || '') !== '1') return _json({ ok: false, error: 'form-attached', detail: '구글폼 연결됨 — 삭제하려면 force=1 (폼 파손 주의)', formUrl: dsFormUrl, name: dsName, rows: dsLr });
     if (String(body.dryRun || '') === '1') return _json({ ok: true, dryRun: true, name: dsName, gid: dsGid, rows: dsLr, cols: dsLc, formUrl: dsFormUrl, backup: dsBackup });
+    // force로 폼 연결 탭을 지울 땐: ①응답접수 중단(고아 제출 방지) ②폼-시트 연결 해제(removeDestination) —
+    //   구글은 폼 연결된 응답탭 삭제를 막으므로 연결 해제가 선행 필수. GM '폐기' 지시. 2026-07-22.
+    var dsFormClosed = false, dsFormUnlinked = false;
+    if (dsFormUrl && String(body.force || '') === '1') {
+      try {
+        var dsForm = FormApp.openByUrl(dsFormUrl);
+        try { dsForm.setAcceptingResponses(false); dsFormClosed = true; } catch (eC) {}
+        dsForm.removeDestination(); dsFormUnlinked = true;
+        SpreadsheetApp.flush();
+      } catch (eF) { return _json({ ok: false, error: 'form-unlink-fail', detail: String(eF.message || eF), formUrl: dsFormUrl, formClosed: dsFormClosed }); }
+    }
     dsSs.deleteSheet(dsSh);
-    return _json({ ok: true, deleted: dsName, gid: dsGid, rows: dsLr, formUrl: dsFormUrl, backup: dsBackup });
+    return _json({ ok: true, deleted: dsName, gid: dsGid, rows: dsLr, formUrl: dsFormUrl, formClosed: dsFormClosed, formUnlinked: dsFormUnlinked, backup: dsBackup });
   }
 
   // ─── (일회성) 거주지 항목 전면 폐기 — 2026-07-20 GM 확정 ("자체폼이랑 구글폼 구글시트 다 삭제하자") ───

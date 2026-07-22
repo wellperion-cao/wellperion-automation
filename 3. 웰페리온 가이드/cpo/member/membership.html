@@ -1936,7 +1936,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
               <th style="min-width:96px">유효기간</th>
             </tr></thead>
             <tbody id="lessonMemBody_adult">
-              <tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+              <tr><td colspan="6"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -2116,7 +2116,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
               <th style="min-width:96px">유효기간</th>
             </tr></thead>
             <tbody id="lessonMemBody_youth">
-              <tr><td colspan="4"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+              <tr><td colspan="6"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -4796,14 +4796,19 @@ function _lessonSportMgmt(row, sportKey) {
     var _isNewInq = (!_st || _st === '미정' || _st === '신규' || _st === '미컨택');
     if (!_isNewInq) owner = _lessonTeamLeadOf(sportKey) || '';
   }
-  // 종목별 컨택 분리(GM 2026-07-22): 이 종목(bySport[sportKey]) 컨택 우선. 종목별 데이터가 하나라도 있으면
-  //   flat(공유) 컨택은 이관된 것으로 보고 숨김(다종목 중복표시=오지목 방지). 종목별 전무 시 flat 폴백(레거시 무회귀).
+  // 종목별 컨택 분리(GM 2026-07-22 · 디버그 보강): 다종목 회원만 종목별 분리(단일종목=flat 공유 그대로 — 태깅·중복 없음).
+  //   다종목: 이 종목 태그 컨택 + 무태그(공통) 컨택 함께 표시(공통 숨기지 않음). 단일종목/미기재: flat 전체 노출.
   var _bs = (row.bySport && typeof row.bySport === 'object') ? row.bySport : {};
-  var _bsE = sportKey ? _bs[sportKey] : null;
-  var _bsC = (_bsE && Array.isArray(_bsE.contacts)) ? _bsE.contacts : null;
-  var _anyBs = false;
-  for (var _bk in _bs) { if (_bs[_bk] && Array.isArray(_bs[_bk].contacts) && _bs[_bk].contacts.length) { _anyBs = true; break; } }
-  var _mgmtContacts = (_bsC && _bsC.length) ? _bsC : (_anyBs ? [] : (row.contacts || []));
+  var _isMulti = (typeof _lessonSportSplit === 'function') ? (_lessonSportSplit(row.sport).length > 1) : false;
+  var _mgmtContacts;
+  if (_isMulti && sportKey) {
+    var _bsE = _bs[sportKey];
+    var _bsC = (_bsE && Array.isArray(_bsE.contacts)) ? _bsE.contacts : [];
+    var _untagged = (row.contacts || []).filter(function (c) { return !/^\s*\[[^\]]+\]/.test(String(c && c.note != null ? c.note : '')); });
+    _mgmtContacts = _bsC.concat(_untagged);
+  } else {
+    _mgmtContacts = row.contacts || [];
+  }
   return { status: row.status || '', owner: owner, contacts: _mgmtContacts };
 }
 // 저장 성공 후 로컬 반영. 종목별 경로(sportKey 있음)=bySport[sportKey].contacts 갱신 / 레거시 flat(sportKey='')=row.contacts.
@@ -5063,8 +5068,21 @@ function _lessonContactClick(t, rowIndex, sportKeyEnc) {
   var st = _lessonState[t];
   var row = _lessonFindRow(t, rowIndex);
   if (!st || !row) return;
-  var mgmt = _lessonSportMgmt(row, sportKey);
-  openContactModal({ rowIndex: row.rowIndex, name: row.name, contacts: mgmt.contacts }, { source: 'lesson', type: st.type, t: t, sport: sportKey });
+  // 다종목 회원만 종목별(sport 동봉) 저장 — 모달엔 이 종목 태그 컨택만 담아 무태그 공통이 재태깅(중복)되지 않게.
+  //   단일종목/미기재 = flat(sport='') 저장 — 전체 컨택 편집. 디버그 보강 2026-07-22.
+  var _sports = (typeof _lessonSportSplit === 'function') ? _lessonSportSplit(row.sport) : [];
+  var _isMulti = _sports.length > 1;
+  var _editContacts, _ctxSport;
+  if (_isMulti && sportKey) {
+    var _bs = (row.bySport && typeof row.bySport === 'object') ? row.bySport : {};
+    var _bsE = _bs[sportKey];
+    _editContacts = (_bsE && Array.isArray(_bsE.contacts)) ? _bsE.contacts.slice() : [];
+    _ctxSport = sportKey;
+  } else {
+    _editContacts = (row.contacts || []).slice();
+    _ctxSport = '';
+  }
+  openContactModal({ rowIndex: row.rowIndex, name: row.name, contacts: _editContacts }, { source: 'lesson', type: st.type, t: t, sport: _ctxSport });
 }
 
 // 담당 = 종목별 명단(status/lesson_instructor_roster.json 임베드) 드롭다운 — 축7, 2026-07-08 시포·GM.
