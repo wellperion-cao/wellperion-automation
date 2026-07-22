@@ -1356,6 +1356,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_hold_apply:          true,  // 2026-07-22 휴회 공개접수(쓰기전용 → '휴회접수' 탭·회원 판정 미반환). ★HOLD_LIVE 게이트(OFF). 시포·GM
   member_hold_intake_list:    true,  // 2026-07-22 휴회 접수관리 리스트(ERP read+서버 자동판정). 게이트 뒤. 시포·GM
   member_hold_approve:        true,  // 2026-07-22 휴회 승인/반려(직원 → 회원DB '이용일수' 앞 새칸 기록+증분). ★HOLD_LIVE_T 게이트(OFF). 시포·GM
+  member_hold_transition:     true,  // 2026-07-22 휴회 회원 라이프사이클 전이(진행중↔완료). ★HOLD_LIVE_T 게이트(OFF). 시포·GM
   member_owner_save:          true,  // 2026-07-18 시포 — 종목별 담당자 5칸(화이트리스트) 단일셀 저장(전화 매칭)
   member_owner_bulk_set:      true,  // 2026-07-20 GM 지시 — 멤버십 담당자('담당자'만) 열 일괄 배치 쓰기(setValues 1회)
   member_active_summary:      true,  // 2026-07-20 시포 — 회원관리 카드 요약 집계(§2-A 로딩속도, PII 미노출·숫자만)
@@ -2975,6 +2976,10 @@ function _processAction(body) {
     //   V열 3번째 세그먼트로 기록 → 'instagram|bio|official'. 채널 판정은 split('|')[0]만 보므로 영향 없음.
     //   2026-07-20 시모: 이 값을 안 받아 적으면 '인스타 1건'이 어느 계정 기여인지 영영 알 수 없다.
     var _iUtmContent = String(body.utmContent || '').trim();
+    // 유입언어(KO/EN) — 영문 자체폼(wp_inquiry_form_en.html)이 payload.lang:'en' 을 보낸다. 없으면 KO(한글폼·기존).
+    //   영문 문의도 같은 category(membership/adult/youth)·같은 시트에 append 되므로, 이 값으로 KO/EN 을 구분한다(배9674 시모).
+    //   아래 _imSet/_lsSet 은 '유입언어' 칸이 있을 때만 기록 → 칸 없으면 무기록(현행 KO 트래픽 무영향, 컷오버 시 칸 추가로 활성).
+    var _iLang = (String(body.lang || '').trim().toLowerCase() === 'en') ? 'EN' : 'KO';
     // 신규 3종 전용 필드(2026-07-16 시토) — wp_inquiry_form.html payload 계약과 1:1
     var _iTarget = String(body.target || '').trim();           // summer: 성인/유소년
     var _iWishMonth = String(body.wishMonth || '').trim();     // summer: 희망 월
@@ -3017,6 +3022,7 @@ function _processAction(body) {
         _imSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '') + (_iUtmContent ? '|' + _iUtmContent : '')) : (_iChannel || ''));  // V열 — utm 원본 제자리 기록(2026-07-20, content 세그먼트 추가). H/I(중분류·소분류)는 자기신고 분류라 건드리지 않음
         _imSet(['비고', '메모', '담당자메모'], WEB_INTAKE_TAG + (_iFastFlag ? ' ⚠️빠른제출' : ''));   // [웹접수] 유지(집계 중복방지). utm 원문은 위 유입경로(자동)로 이관 — 비고엔 더 이상 처박지 않음(2026-07-20)
         _imSet(['개인정보 수집·이용 동의'], '동의');   // U열 — 검증만 하고 미기록이던 버그 수리(2026-07-20 시포). 강습·공간렌트·비즈니스 분기와 동일 표기 '동의' 통일. 헤더가 매우 긴 문장이라 짧은 키(동의·개인정보)는 다른 칸과 충돌 위험 있어 실헤더 대조로 확인한 고유 서두 구절만 사용. 과거 행은 무변경(신규 append만).
+        _imSet(['유입언어'], _iLang);   // KO/EN — 영문 자체폼 통합(배9674 시모). 정확일치 우선(_miColIdx_) + '유입언어'는 부분일치 충돌 없음. 칸 없으면 무기록(컷오버 전엔 no-op).
         _imSh.appendRow(_imRow);
         try { _cacheInvalidateJson_(_iCache, 'micache'); } catch (e) {}
       } else if (_iCat === 'adult' || _iCat === 'youth' || _iCat === 'summer') {
@@ -3061,6 +3067,7 @@ function _processAction(body) {
         _lsSet(['희망하시는 레슨 시간을 체크해주세요', '레슨 시간'], _isSummer ? _iWishMonth : _iWish);
         _lsSet(['접수 담당자', '담당자 혹은', '담당'], '웹 자동접수');
         _lsSet(['개인정보', '동의', '수집·이용'], '동의');
+        _lsSet(['유입언어'], _iLang);   // KO/EN — 영문 자체폼 통합(배9674 시모). '유입언어' 칸 있을 때만 기록(컷오버 전엔 no-op·현행 무영향).
         _lsSet(['진행 상황', '진행상황', '상태'], '신규');
         // 비고에 접수ID를 쓰지 않는다(2026-07-20 시포·GM 판정): 접수ID는 타임스탬프 재표현(L+yyMMdd-HHmmss)일 뿐이고
         //   강습 도메인에서 키로 쓰이는 곳이 0곳(중복방지는 위 submissionId 멱등 캐시가 전담). 비고는 CONTACT(연락이력)
@@ -7737,6 +7744,40 @@ function _processAction(body) {
     if (aiStat >= 0) aiSh.getRange(apIntakeRow, aiStat + 1).setValue('승인');
     if (aiProc >= 0) aiSh.getRange(apIntakeRow, aiProc + 1).setValue(apNow);
     return _json({ ok: true, decision: 'approve', intakeRow: apIntakeRow, memberRow: amRow, count: amC + 1, cumDays: amD + reqDays, period: reqStart + ' ~ ' + reqEnd, extended: extendedA });
+  }
+
+  // ─── 휴회 회원 상태전이(직원) — 승인 후 회원 라이프사이클: 진행중(휴회중)→완료(휴회 종료). 회원DB '휴회접수상태'만 갱신(잔여 재소비 없음).
+  //   접수대기→진행중 확정·증분은 member_hold_approve가 담당. 이 액션은 그 이후 진행중↔완료 라벨 전이 전용. 게이트 HOLD_LIVE_T. 2026-07-22 시포·GM.
+  if (action === 'member_hold_transition') {
+    var HOLD_LIVE_T2 = false;   // ★상태전이 실기록 게이트 — GM go 후 true. 역롤백=이 한 줄.
+    var htN = String(body.status || '').trim();
+    if (htN !== '완료' && htN !== '진행중') return _json({ ok: false, error: 'status=완료|진행중 중 하나' });
+    var tSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    if (!tSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var tHdr = tSh.getRange(1, 1, 1, tSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    var tPhI = -1;
+    for (var _up = 0; _up < tHdr.length; _up++) { var _uph = tHdr[_up].replace(/\s/g, ''); if (_uph.indexOf('휴대폰') >= 0 || _uph.indexOf('전화') >= 0 || _uph.indexOf('연락처') >= 0) { tPhI = _up; break; } }
+    var tRow = parseInt(body.rowIndex, 10);
+    var _tRk = _rowKeyParts_(body), tTsI = -1;
+    if (_tRk) { var _UK = ['등록일자', '등록 일자', '타임스탬프', '등록일', '가입일']; for (var _ut = 0; _ut < tHdr.length; _ut++) { var _uth = tHdr[_ut].replace(/\s/g, ''); for (var _utk = 0; _utk < _UK.length; _utk++) { if (_uth.indexOf(_UK[_utk].replace(/\s/g, '')) >= 0) { tTsI = _ut; break; } } if (tTsI >= 0) break; } }
+    if (_tRk && tTsI >= 0 && tPhI >= 0) {
+      var _tFp = _findRowsByKey_(tSh, tTsI, tPhI, _tRk.ts, _tRk.phone);
+      if (_tFp.length === 1) tRow = _tFp[0];
+      else if (_tFp.length === 0) return _json({ ok: false, error: 'rowkey-not-found', detail: '회원 행 확인 불가 — 목록 새로고침 후 다시 시도하세요' });
+      else return _json({ ok: false, error: 'rowkey-ambiguous', detail: '지문키 중복 매칭 — 목록 새로고침 후 다시 시도하세요' });
+    } else if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
+      if (tPhI >= 0 && tRow >= 2 && tRow <= tSh.getLastRow()) {
+        var _tRowPh = _normPhone_(tSh.getRange(tRow, tPhI + 1).getValue()), _tKeyPh = _normPhone_(body.keyPhone);
+        if (_tRowPh && _tKeyPh && _tRowPh !== _tKeyPh) return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록 새로고침 후 다시 시도하세요' });
+      } else return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 시도하세요' });
+    } else {
+      return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처/목록 새로고침 후 다시 시도하세요' });
+    }
+    if (!tRow || tRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
+    var ciStatU = _miEnsureCol_(tSh, tHdr, '휴회접수상태');
+    if (!HOLD_LIVE_T2) return _json({ ok: false, error: 'hold-gated', detail: '휴회 상태 반영은 GM 검증 후 개통됩니다(현재 미개통)' });
+    tSh.getRange(tRow, ciStatU + 1).setValue(htN);
+    return _json({ ok: true, rowIndex: tRow, status: htN });
   }
 
   // ─── CPO 오늘 현황(PII 미노출 집계): 오늘/이번달 문의·등록 건수 2026-06-24 GM ───

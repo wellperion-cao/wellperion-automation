@@ -1,0 +1,671 @@
+<!-- Wellperion English self-hosted Survey form — /en/ inquiry (data-driven ?type=) · 배9674 (시모 CMO, 2026-07-22)
+     English counterpart of the Korean self-hosted form (cmo/survey/wp_inquiry_form.html).
+     ★ Purpose: replace the 3 Google Forms on http://wellperion.com/en/inquiry/ (WP post 8408) with a
+        self-hosted form that posts to the SAME GAS intake_submit (v2) and the SAME sheets as the Korean form.
+     ★ Scope (2026-07-22 GM go: 3종 우선): membership · adult · youth. summer/rental/business EN = phase 2.
+     ★ Parallel (병행): the English Google Forms stay live as rollback assets. This page is a draft/verification
+        asset — WP embed / Google-form cutover on wellperion.com = GM go (irreversible traffic change).
+     ★ Backend contract: identical payload keys as the KO form + one field `lang:'en'`. intake_submit records
+        it into the '유입언어' column (KO/EN) so English inquiries land in the SAME tab, distinguished by language.
+     ★ Channel option VALUES are the Korean canonical strings (display text is English) so _canonicalChannel_ and
+        the M1 funnel attribution keep working with ZERO backend change (additive-only).
+     ★ Same collection-loss-0 engine as KO: redirect-follow + r.json(), localStorage retry queue, exponential
+        backoff, honeypot(hp) + timing gate(fillMs) + hidden token(t) + server re-validation/rate-limit.
+     ★ CSS scoped under .wlp-inq to avoid Salient/WPBakery theme bleed. Test: append ?gas=head for @HEAD deploy.
+     ★ Design: brand canon (GM-confirmed B안, ivory #f5f0ea) — mirrors the KO Survey form skin exactly.
+     To inject into WP: edit this file and re-inject (draft-page pattern, EN post id). -->
+<style>
+/* English Survey form page — hide WP theme header (page-scoped when injected; harmless elsewhere). */
+body.wlp-en-survey #header-outer { display: none !important; }
+body.wlp-en-survey .wlp-inq { margin-bottom: -75px !important; }
+</style>
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+.wlp-inq{
+  --bg:#f5f0ea;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;
+  --dim:#8a7f72;--muted:#6b6258;--green:#2e7d5b;--red:#c0392b;
+  background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  -webkit-text-size-adjust:100%;box-sizing:border-box;
+  position:relative;
+}
+.wlp-inq::before{
+  content:'';position:absolute;top:0;bottom:0;left:50%;right:50%;
+  margin-left:-50vw;margin-right:-50vw;background:var(--bg);z-index:-1;
+}
+.wlp-inq *{box-sizing:border-box;margin:0;padding:0}
+.wlp-inq button{font-family:inherit;-webkit-appearance:none;appearance:none;cursor:pointer}
+.wlp-inq a{text-decoration:none;color:inherit}
+
+/* ===== HERO — ivory (mirrors KO Survey form) ===== */
+.wlp-inq .hero-band{background:var(--bg);max-width:540px;margin:-40px auto 0;padding:64px 20px 14px}
+@media (max-width:1000px){
+  .wlp-inq .hero-band{padding-top:56px}
+}
+.wlp-inq .hero-inner{max-width:480px;margin:0 auto;text-align:center}
+.wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin-bottom:14px}
+.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-bottom:6px}
+.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--muted);letter-spacing:.02em;margin-bottom:18px}
+.wlp-inq .divider-coral{width:36px;height:2px;background:var(--beige);margin:0 auto 18px}
+.wlp-inq .hero-inner h1{display:none}
+.wlp-inq .hero-desc{font-size:13.5px;color:var(--muted);line-height:1.75;max-width:360px;margin:0 auto;word-break:keep-all}
+.wlp-inq .hero-note{font-size:12px;font-weight:700;color:var(--beige);letter-spacing:.02em;margin-top:12px}
+
+/* ===== BODY WRAP ===== */
+.wlp-inq .wrap{max-width:540px;margin:0 auto;padding:16px 18px 70px}
+.wlp-inq .card{background:var(--paper);border:1px solid var(--line);padding:22px 20px;margin-bottom:14px}
+.wlp-inq label.fl{display:block;font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:12px;letter-spacing:.04em;text-transform:uppercase}
+.wlp-inq label.fl .opt{font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;text-transform:none;letter-spacing:0}
+.wlp-inq label.fl .hint{display:block;font-size:11px;font-weight:500;color:var(--dim);text-transform:none;letter-spacing:0;margin-top:4px}
+
+/* ===== fallback ===== */
+.wlp-inq .fallback-card{text-align:center}
+.wlp-inq .fallback-msg{font-size:14px;color:var(--ink);line-height:1.7;margin-bottom:18px}
+.wlp-inq .fallback-btn{display:inline-block;padding:13px 26px;background:var(--ink);color:#fff;font-size:13.5px;font-weight:700;letter-spacing:.02em;transition:opacity .18s}
+.wlp-inq .fallback-btn:hover{opacity:.85}
+
+/* ===== guide card ===== */
+.wlp-inq .guide-card{background:var(--paper)}
+.wlp-inq .g-lead{font-size:13.5px;line-height:1.75;color:var(--ink)}
+.wlp-inq .g-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.wlp-inq .g-badge{font-size:11.5px;font-weight:600;padding:8px 12px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.wlp-inq .g-badge b{color:var(--beige);font-weight:800}
+.wlp-inq .g-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.wlp-inq .g-tag{font-size:11px;font-weight:600;padding:6px 10px;background:rgba(183,159,138,.15);color:var(--ink)}
+.wlp-inq .g-note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+
+/* ===== enrollment age policy (collapsible) — membership/adult only ===== */
+.wlp-inq .g-age-policy{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.wlp-inq .g-age-policy summary{font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px}
+.wlp-inq .g-age-policy summary::-webkit-details-marker{display:none}
+.wlp-inq .g-age-policy summary::before{content:'＋';color:var(--beige);font-weight:800}
+.wlp-inq .g-age-policy[open] summary::before{content:'－'}
+.wlp-inq .g-age-policy .g-age-body{font-size:11.5px;color:var(--dim);line-height:1.85;margin-top:10px}
+.wlp-inq .g-age-policy .g-age-body p{margin-top:8px}
+.wlp-inq .g-age-policy .g-age-body p:first-child{margin-top:0}
+
+/* ===== inputs (underline · sharp corners) ===== */
+.wlp-inq .field{margin-bottom:20px}
+.wlp-inq .field:last-child{margin-bottom:0}
+.wlp-inq input[type=text],.wlp-inq input[type=tel],.wlp-inq input[type=date],.wlp-inq textarea,.wlp-inq select{
+  width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--ink);color:var(--ink);padding:11px 2px;border-radius:0;font-size:15px;font-family:inherit;line-height:1.5;transition:border-color .15s;-webkit-appearance:none;appearance:none;margin:0}
+.wlp-inq input:focus,.wlp-inq textarea:focus,.wlp-inq select:focus{outline:none;border-color:var(--ink);border-bottom-width:2px}
+.wlp-inq input::placeholder,.wlp-inq textarea::placeholder{color:#b8afa5}
+.wlp-inq input[type=date]{color-scheme:light}
+.wlp-inq textarea{min-height:96px;resize:vertical}
+.wlp-inq select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'><path fill='%23221F20' d='M1 1l4 4 4-4'/></svg>");background-repeat:no-repeat;background-position:right 4px center;padding-right:18px}
+
+.wlp-inq .multi{display:flex;flex-wrap:wrap;gap:8px}
+.wlp-inq .multi label{position:relative;display:inline-flex;align-items:center;padding:9px 14px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.wlp-inq .multi label input{position:absolute;opacity:0;width:1px;height:1px}
+.wlp-inq .multi label:focus-within{outline:1.5px solid var(--ink);outline-offset:2px}
+.wlp-inq .multi label.on{border-color:var(--coral);background:var(--coral);color:#fff}
+
+.wlp-inq .consent-box{border:1px solid var(--line);background:#faf8f5;padding:14px;max-height:150px;overflow-y:auto;font-size:12px;color:#6b6259;line-height:1.7;white-space:pre-wrap;margin-bottom:12px}
+.wlp-inq .chk-row{display:flex;align-items:center;gap:10px;padding:2px 0}
+.wlp-inq .chk-row input[type=checkbox]{width:19px;height:19px;accent-color:var(--ink);cursor:pointer;flex-shrink:0}
+.wlp-inq .chk-row span{font-size:13.5px;color:var(--ink);font-weight:600}
+
+.wlp-inq .hp-field{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0}
+
+.wlp-inq .submit{width:100%;padding:17px;background:var(--coral);color:#fff;border:none;border-radius:0;font-size:15.5px;font-weight:700;cursor:pointer;margin-top:6px;transition:opacity .18s,transform .12s;letter-spacing:.02em;line-height:1.2}
+.wlp-inq .submit:hover{opacity:.9}
+.wlp-inq .submit:active{transform:scale(.99)}
+.wlp-inq .submit:disabled{opacity:.4;cursor:not-allowed}
+.wlp-inq .note{font-size:12px;color:var(--dim);text-align:center;margin-top:16px;line-height:1.75}
+.wlp-inq .hint-empty{font-size:13px;color:var(--dim);text-align:center;padding:8px 0 2px}
+
+.wlp-inq .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--ink);color:#fff;padding:12px 22px;font-size:13.5px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.18);max-width:90%;text-align:center}
+.wlp-inq .toast.show{transform:translateX(-50%) translateY(0)}
+.wlp-inq .toast.err{background:var(--red)}
+
+.wlp-inq .retry-banner{display:none;margin:12px 0 0;padding:12px 14px;font-size:12.5px;line-height:1.6;text-align:center;border:1px solid var(--line)}
+.wlp-inq .retry-banner.pending{display:block;background:#faf4e8;border-color:#d68910;color:#8a5c0a}
+.wlp-inq .retry-banner.failed{display:block;background:#fbeceb;border-color:var(--red);color:var(--red)}
+.wlp-inq .retry-banner a{color:var(--ink);font-weight:700;text-decoration:underline}
+.wlp-inq .retry-banner .again2{display:inline-block;margin-top:8px;padding:9px 18px;background:var(--ink);color:#fff;border:none;border-radius:0;font-size:12.5px;font-weight:700}
+
+.wlp-inq .done{display:none;text-align:center;padding:60px 20px 40px}
+.wlp-inq .done .dot{width:52px;height:52px;line-height:49px;margin:0 auto 20px;border:1.5px solid var(--ink);color:var(--ink);font-size:22px;font-weight:700}
+.wlp-inq .done h2{font-size:20px;font-weight:800;margin-bottom:10px;color:var(--ink)}
+.wlp-inq .done p{font-size:14px;color:var(--dim);line-height:1.75;margin-bottom:10px}
+.wlp-inq .done .rcpt{font-size:12px;color:var(--ink);font-weight:700;margin-bottom:26px;letter-spacing:.02em}
+.wlp-inq .done .again{padding:13px 28px;background:#fff;color:var(--ink);border:1.5px solid var(--ink);border-radius:0;font-size:13.5px;font-weight:700;cursor:pointer;transition:background .18s}
+.wlp-inq .done .again:hover{background:#f5f2ee}
+.wlp-inq .done .done-brand{font-size:13px;color:var(--muted);margin-top:28px;margin-bottom:0;letter-spacing:.02em}
+.wlp-inq .done .footer-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:16px auto 20px;max-width:220px}
+.wlp-inq .done .gd-line{flex:1;height:1px}
+.wlp-inq .done .gd-line.left{background:linear-gradient(90deg,transparent,var(--beige))}
+.wlp-inq .done .gd-line.right{background:linear-gradient(90deg,var(--beige),transparent)}
+.wlp-inq .done .gd-diamond{color:var(--beige);font-size:10px;line-height:1}
+.wlp-inq .done .social-section{text-align:center}
+.wlp-inq .done .social-title{font-size:13px;color:var(--muted);margin-bottom:12px;letter-spacing:-.1px}
+.wlp-inq .done .social-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.wlp-inq .done .social-chip{display:inline-flex;align-items:center;gap:5px;padding:9px 15px;background:var(--paper);border:1px solid var(--line);border-radius:20px;color:var(--dim);font-size:13px;font-weight:600;font-family:inherit;text-decoration:none;transition:border-color .15s,color .15s}
+.wlp-inq .done .social-chip:hover{border-color:var(--beige);color:var(--beige)}
+</style>
+
+<div class="wlp-inq">
+  <div class="toast" id="toast"></div>
+
+  <div id="formWrap">
+    <div class="hero-band">
+      <div class="hero-inner">
+        <p class="eyebrow">Wellperion</p>
+        <p class="slogan-en">A Day, Well Completed.</p>
+        <p class="slogan-kr">High-end Private Sports Club</p>
+        <div class="divider-coral"></div>
+        <h1 id="heroTitle">Inquiry</h1>
+        <p class="hero-desc"><span id="heroSubLine1">We'll help you with membership, tours, and lesson consultations.</span><br>Leave your details and our team will reach out to you shortly.</p>
+        <p class="hero-note">All consultations and tours are by appointment only.</p>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div class="card guide-card" id="guideBox" style="display:none"></div>
+
+      <div class="card" id="formCard">
+        <div id="formFields"></div>
+        <div class="hint-empty" id="emptyHint" style="display:none">Please select an inquiry type first.</div>
+      </div>
+
+      <button class="submit" id="submitBtn">Submit Inquiry</button>
+      <div class="retry-banner" id="retryBanner"></div>
+      <p class="note" id="noteText">Our team will contact you at the number you provide.<br>A Day, Well Completed. &middot; Wellperion</p>
+
+      <div class="card fallback-card" id="fallbackBox" style="display:none">
+        <p class="fallback-msg">Please select an inquiry type on the inquiry page.</p>
+        <a class="fallback-btn" href="http://wellperion.com/en/inquiry/">Go to inquiry page</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap done" id="doneWrap">
+    <div class="dot">✓</div>
+    <h2>Your inquiry has been received</h2>
+    <p>Thank you for your inquiry.<br>We will contact you at the number you provided.</p>
+    <div class="rcpt" id="rcptNo"></div>
+    <button class="again" id="againBtn">Submit another inquiry</button>
+
+    <p class="done-brand">A Day, Well Completed. &middot; Wellperion</p>
+    <div class="footer-divider">
+      <span class="gd-line left"></span>
+      <span class="gd-diamond">&#9670;</span>
+      <span class="gd-line right"></span>
+    </div>
+    <div class="social-section">
+      <p class="social-title">Explore Wellperion</p>
+      <div class="social-links">
+        <a class="social-chip" href="http://wellperion.com/" target="_blank" rel="noopener">🌐 Website</a>
+        <a class="social-chip" href="https://www.instagram.com/wellperion/" target="_blank" rel="noopener">📷 Instagram</a>
+        <a class="social-chip" href="https://blog.naver.com/wellperion" target="_blank" rel="noopener">📝 Naver Blog</a>
+        <a class="social-chip" href="https://map.naver.com/p/search/웰페리온/place/1048457693" target="_blank" rel="noopener">📍 Naver Map</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ── Backend GAS (same v2 endpoint as the Korean self-hosted form) ──
+  var GAS_PROD = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+  var GAS_HEAD = 'https://script.google.com/macros/s/AKfycbzeGDag3XgoSn6A4UIGdsBCkR3v-joepgRYfW3MWzi9/exec';
+  var GAS_URL = GAS_PROD;
+  try { if ((new URLSearchParams(location.search).get('gas')||'') === 'head') GAS_URL = GAS_HEAD; } catch(e){}
+  var INTAKE_TOKEN = 'wlp_intake_9f4c1b7e2a63';   // matches backend INTAKE_SUBMIT_TOKEN
+  var QUEUE_KEY = 'wlp_intake_queue_en_v1';
+  var CONTACT_PHONE = '02-6261-1200';
+  var CONTACT_EMAIL = 'info@wellperion.com';
+  var LANG = 'en';   // ★ marks English submissions → backend records '유입언어'=EN in the same sheet
+
+  // ── Privacy consent (PIPA) — English rendering of the Korean form's notice ──
+  function pipa(purpose){
+    return 'Under the Personal Information Protection Act, Wellperion Co., Ltd. collects and uses your personal information as follows.\n\n'
+      + 'Purpose of collection: ' + purpose + '\n'
+      + 'Items collected: Name (or contact person), phone number, inquiry details\n'
+      + 'Retention period: 1 year from collection, or until the purpose is fulfilled (whichever is earlier)\n'
+      + 'Third-party provision: Not provided without separate consent (except where required by law)\n\n'
+      + 'You may decline consent; however, declining may limit our ability to respond to your inquiry.';
+  }
+
+  // ── "How Did You Hear About Us?" options ──
+  //   ★ value = Korean canonical bucket (kept identical to the KO form) so _canonicalChannel_ / M1 funnel
+  //     attribution work with ZERO backend change. Display text is English. [v, label] pairs.
+  var CHANNELS = [
+    ['네이버 검색·플레이스','Naver Search / Place'],
+    ['네이버 블로그','Naver Blog'],
+    ['인스타그램','Instagram'],
+    ['당근마켓','Danggn (Karrot)'],
+    ['동부이촌동 커뮤니티','Dongbu-Ichon Community'],
+    ['카카오톡','KakaoTalk'],
+    ['소개·지인','Referral / Acquaintance'],
+    ['기존·과거 회원','Current / Former Member'],
+    ['오프라인(간판·방문)','Offline (Signage / Visit)'],
+    ['기타','Other']
+  ];
+
+  // ── Form definitions (3 types) — field keys & payload contract IDENTICAL to the KO form ──
+  // type: text|tel|date|textarea|select|multi|radio|daytime|consent
+  var FORMS = {
+    membership: {
+      purpose: 'Membership enrollment and facility tour consultation',
+      fields: [
+        { key:'name',    label:'Full Name',   type:'text', ph:'Please enter your full name', req:true },
+        { key:'phone',   label:'Mobile Phone', type:'tel', ph:'010-1234-5678', req:true },
+        { key:'program', label:'Membership of Interest', type:'radio', opt:true, hint:'Please select one', opts:['Platinum (Gym + G.X + Sauna)','Platinum + Golf (Gym + Golf + G.X + Sauna)','Noblesse (Gym + G.X + Swimming + Sauna)','Noblesse + Golf (Gym + Golf + G.X + Swimming + Sauna)'] },
+        { key:'channel', label:'How Did You Hear About Us?', type:'select', ph:'Please select', opts:CHANNELS },
+        { key:'exp1Date',label:'Preferred Tour / Consultation Date', type:'date', opt:true },
+        { key:'message', label:'Additional Comments', type:'textarea', opt:true, ph:'Feel free to share anything you would like to ask.' }
+      ]
+    },
+    adult: {
+      purpose: 'Adult lesson inquiry response and consultation',
+      fields: [
+        { key:'name',    label:'Full Name',   type:'text', ph:'Please enter your full name', req:true },
+        { key:'phone',   label:'Mobile Phone', type:'tel', ph:'010-1234-5678', req:true },
+        { key:'program', label:'Program of Interest', type:'radio', hint:'Select one · for multiple programs, please submit separately', opts:['Adult Swimming (Private / Group)','P.T','Pilates (Private / Group)','Golf','Squash (Private / Group)','Aquarobics (Tue, Thu 13:00 class)','Ballet','Barre','Other'] },
+        { key:'wishTime',label:'Preferred Lesson Time', type:'daytime', opt:true, days:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], weekdayTimes:['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'], weekendTimes:['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'] },
+        { key:'channel', label:'How Did You Hear About Us?', type:'select', ph:'Please select', opts:CHANNELS },
+        { key:'message', label:'Additional Comments', type:'textarea', opt:true, ph:'Feel free to share anything you would like to ask.' }
+      ]
+    },
+    youth: {
+      purpose: 'Youth lesson inquiry response and consultation',
+      fields: [
+        { key:'name',    label:"Guardian's Full Name", type:'text', ph:"Please enter the guardian's full name", req:true },
+        { key:'phone',   label:'Mobile Phone', type:'tel', ph:'010-1234-5678', req:true },
+        { key:'age',     label:"Child's Age", type:'text', opt:true, ph:'e.g. age 8 / grade 2' },
+        { key:'program', label:'Lesson Program', type:'radio', hint:'Select one · for multiple programs, please submit separately', opts:['WSC Swimming','WSC Golf','WSC Squash','WSC Gymnastics & Trampoline','WSC P.T','WSC Pilates','Parent-Child Swimming','English Musical','Other'] },
+        { key:'wishTime',label:'Preferred Lesson Time', type:'daytime', opt:true, days:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], weekdayTimes:['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'], weekendTimes:['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'] },
+        { key:'channel', label:'How Did You Hear About Us?', type:'select', ph:'Please select', opts:CHANNELS },
+        { key:'message', label:'Additional Comments', type:'textarea', opt:true, ph:'Feel free to share anything you would like to ask.' }
+      ]
+    }
+  };
+
+  // ── Per-type guide (brief intro) — shown above the form ──
+  var GUIDES = {
+    membership: {
+      badges:['<b>1,000</b>-member limit','Annual membership · No deposit','3,000-pyeong single facility in Hannam'],
+      tags:['Swimming','Squash','Golf','Pilates · PT','Sauna · Recovery','CUPS Lounge','Cinq Mondes Spa','Bt.Beaute Hair & Makeup']
+    },
+    adult: {
+      lead:'From swimming, P.T, Pilates, golf and squash to aquarobics, ballet and barre — professional lessons in Hannam.',
+      tags:['Swimming','P.T','Pilates','Golf','Squash','Aquarobics','Ballet','Barre','Other'],
+      note:'Private and group lessons are available, assigned after an initial consultation.'
+    },
+    youth: {
+      lead:"Professional lessons for your child's first steps — swimming, golf and squash through gymnastics, parent-child swimming and English musical.",
+      tags:['WSC Swimming','WSC Golf','WSC Squash','WSC Gymnastics & Trampoline','WSC P.T','WSC Pilates','Parent-Child Swimming','English Musical'],
+      note:'A range of specialized programs rarely found elsewhere are also available.'
+    }
+  };
+
+  var CAT_TITLES = { membership:'Membership Inquiry', adult:'Adult Lesson Inquiry', youth:'Youth Lesson Inquiry' };
+
+  // ── Enrollment age policy (collapsible; membership & adult only) ──
+  var AGE_POLICY_HTML =
+    '<details class="g-age-policy"><summary>Enrollment age guide</summary>' +
+    '<div class="g-age-body">' +
+    '<p>Enrollment is available for ages 17–69 (Korean age).</p>' +
+    '<p>Ages 70–75: ① a copy of a health check-up within the past year (designated hospital) ② a signed safety-rules pledge for members aged 70+.</p>' +
+    '<p>Ages 76+: ① health check-up documents ② signed pledge ③ swimming not available ④ enrollment with a concierge companion.</p>' +
+    '<p>Existing members may re-enroll without the above; however, when enrolling more than 1 year after expiry, the above applies.</p>' +
+    '</div></details>';
+
+  // ── Hero subline (line 1) per type; line 2 is fixed ──
+  var HERO_SUB_DEFAULT = "We'll help you with membership, tours, and lesson consultations.";
+  var HERO_SUB = {
+    membership: "We'll guide you through membership and facility tours.",
+    adult: 'Explore our adult lesson programs.',
+    youth: 'Explore our youth lesson programs.'
+  };
+  function setHeroSub(cat){ $('heroSubLine1').textContent = HERO_SUB[cat] || HERO_SUB_DEFAULT; }
+
+  var selectedCat = '';
+  var formShownAt = 0;
+
+  function $(id){ return document.getElementById(id); }
+  function toast(msg, isErr){
+    var t = $('toast'); t.textContent = msg;
+    t.className = 'toast show' + (isErr ? ' err' : '');
+    setTimeout(function(){ t.className = 'toast' + (isErr ? ' err' : ''); }, 3000);
+  }
+  function uuid(){
+    try { if (crypto && crypto.randomUUID) return crypto.randomUUID(); } catch(e){}
+    return 'sid-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10);
+  }
+  function formatPhone(v){
+    var d = String(v||'').replace(/\D/g,'').slice(0,11);
+    if (d.length < 4) return d;
+    if (d.length < 8) return d.slice(0,3)+'-'+d.slice(3);
+    return d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
+  }
+  function qp(k){ try { return (new URLSearchParams(location.search).get(k)||'').slice(0,60); } catch(e){ return ''; } }
+
+  // ── UTM capture (channel attribution) ──
+  var UTM_SOURCE = qp('utm_source') || '';
+  var UTM_MEDIUM = qp('utm_medium') || '', UTM_CONTENT = qp('utm_content') || '';
+
+  // ── Guide render ──
+  function renderGuide(cat){
+    var box = $('guideBox');
+    var g = GUIDES[cat];
+    if (!g) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    var html = '';
+    if (g.lead) { html += '<p class="g-lead">' + g.lead + '</p>'; }
+    if (g.badges && g.badges.length) {
+      html += '<div class="g-badges">' + g.badges.map(function(b){ return '<span class="g-badge">'+b+'</span>'; }).join('') + '</div>';
+    }
+    if (g.tags && g.tags.length) {
+      html += '<div class="g-tags">' + g.tags.map(function(t){ return '<span class="g-tag">'+t+'</span>'; }).join('') + '</div>';
+    }
+    if (g.note) { html += '<p class="g-note">' + g.note + '</p>'; }
+    if (cat === 'membership' || cat === 'adult') { html += AGE_POLICY_HTML; }
+    box.innerHTML = html;
+    box.style.display = 'block';
+  }
+
+  // ── Form render ──
+  function buildForm(cat){
+    var box = $('formFields'); box.innerHTML = '';
+    var def = FORMS[cat];
+    if (!def) { $('emptyHint').style.display = 'block'; renderGuide(null); $('heroTitle').textContent = 'Inquiry'; setHeroSub(''); return; }
+    $('emptyHint').style.display = 'none';
+    $('heroTitle').textContent = CAT_TITLES[cat] || 'Inquiry';
+    setHeroSub(cat);
+    renderGuide(cat);
+
+    def.fields.forEach(function(f){
+      var field = document.createElement('div'); field.className = 'field';
+      var lab = document.createElement('label'); lab.className = 'fl'; lab.setAttribute('for','f_'+f.key);
+      lab.innerHTML = f.label + (f.opt ? ' <span class="opt">(optional)</span>' : '') + (f.hint ? ' <span class="hint">'+f.hint+'</span>' : '');
+      field.appendChild(lab);
+
+      if (f.type === 'text' || f.type === 'tel') {
+        var inp = document.createElement('input'); inp.type='text'; inp.id='f_'+f.key; inp.placeholder=f.ph||''; inp.autocomplete='off';
+        if (f.type === 'tel') { inp.inputMode='tel'; inp.addEventListener('input', function(){ this.value = formatPhone(this.value); }); }
+        field.appendChild(inp);
+      } else if (f.type === 'date') {
+        var d = document.createElement('input'); d.type='date'; d.id='f_'+f.key; field.appendChild(d);
+      } else if (f.type === 'textarea') {
+        var ta = document.createElement('textarea'); ta.id='f_'+f.key; ta.placeholder=f.ph||''; field.appendChild(ta);
+      } else if (f.type === 'select') {
+        var sel = document.createElement('select'); sel.id='f_'+f.key;
+        if (f.ph) { var o0=document.createElement('option'); o0.value=''; o0.textContent=f.ph; sel.appendChild(o0); }
+        (f.opts||[]).forEach(function(o){
+          // channel opts are [value, label] pairs; others are plain strings
+          var ov = Array.isArray(o) ? o[0] : o, ot = Array.isArray(o) ? o[1] : o;
+          var op=document.createElement('option'); op.value=ov; op.textContent=ot; sel.appendChild(op);
+        });
+        field.appendChild(sel);
+      } else if (f.type === 'multi') {
+        var grid = document.createElement('div'); grid.className='multi'; grid.id='f_'+f.key;
+        (f.opts||[]).forEach(function(o){
+          var ov = Array.isArray(o) ? o[0] : o, ot = Array.isArray(o) ? o[1] : o;
+          var l=document.createElement('label');
+          var cb=document.createElement('input'); cb.type='checkbox'; cb.value=ov;
+          cb.addEventListener('change', function(){ l.className = this.checked ? 'on' : ''; });
+          l.appendChild(cb); var sp=document.createElement('span'); sp.textContent=ot; l.appendChild(sp);
+          grid.appendChild(l);
+        });
+        field.appendChild(grid);
+      } else if (f.type === 'daytime') {
+        var _dtGroups = [['Day', f.days, '_days', '0']];
+        if (f.weekdayTimes) _dtGroups.push(['Weekday (06:00–21:00)', f.weekdayTimes, '_wtimes', '12px']);
+        if (f.weekendTimes) _dtGroups.push(['Weekend (08:00–20:00)', f.weekendTimes, '_etimes', '12px']);
+        if (f.times) _dtGroups.push(['Time', f.times, '_times', '12px']);
+        _dtGroups.forEach(function(grp){
+          var cap=document.createElement('div'); cap.textContent=grp[0];
+          cap.style.cssText='font-size:11.5px;font-weight:600;color:#8a8178;margin:'+grp[3]+' 0 6px';
+          field.appendChild(cap);
+          var g=document.createElement('div'); g.className='multi'; g.id='f_'+f.key+grp[2];
+          (grp[1]||[]).forEach(function(o){
+            var l=document.createElement('label');
+            var cb=document.createElement('input'); cb.type='checkbox'; cb.value=o;
+            cb.addEventListener('change', function(){ l.className=this.checked?'on':''; });
+            l.appendChild(cb); var sp=document.createElement('span'); sp.textContent=o; l.appendChild(sp);
+            g.appendChild(l);
+          });
+          field.appendChild(g);
+        });
+      } else if (f.type === 'radio') {
+        var rgrid = document.createElement('div'); rgrid.className='multi'; rgrid.id='f_'+f.key;
+        var rName = 'f_'+f.key+'_radio';
+        (f.opts||[]).forEach(function(o){
+          var ov = Array.isArray(o) ? o[0] : o, ot = Array.isArray(o) ? o[1] : o;
+          var l=document.createElement('label');
+          var rb=document.createElement('input'); rb.type='radio'; rb.name=rName; rb.value=ov;
+          rb.addEventListener('change', function(){
+            Array.prototype.forEach.call(rgrid.querySelectorAll('label'), function(lbl){
+              var inp = lbl.querySelector('input[type=radio]');
+              lbl.className = inp.checked ? 'on' : '';
+            });
+          });
+          l.appendChild(rb); var sp=document.createElement('span'); sp.textContent=ot; l.appendChild(sp);
+          rgrid.appendChild(l);
+        });
+        field.appendChild(rgrid);
+      }
+      box.appendChild(field);
+    });
+
+    // Privacy consent (required)
+    var cField = document.createElement('div'); cField.className='field';
+    var cLab = document.createElement('label'); cLab.className='fl'; cLab.textContent='Collection & Use of Personal Information'; cField.appendChild(cLab);
+    var cBox = document.createElement('div'); cBox.className='consent-box'; cBox.textContent = pipa(def.purpose); cField.appendChild(cBox);
+    var cRow = document.createElement('div'); cRow.className='chk-row';
+    cRow.innerHTML = '<input type="checkbox" id="f_consent"><span>I agree to the collection and use of my personal information above.</span>';
+    cField.appendChild(cRow);
+    box.appendChild(cField);
+
+    // Honeypot (bot trap) — off-screen
+    var hp = document.createElement('div'); hp.className='hp-field'; hp.setAttribute('aria-hidden','true');
+    hp.innerHTML = '<label>Leave this field empty<input type="text" id="f_hp" tabindex="-1" autocomplete="off"></label>';
+    box.appendChild(hp);
+
+    formShownAt = Date.now();
+  }
+
+  function collect(){
+    var def = FORMS[selectedCat]; if (!def) return null;
+    var out = { category: selectedCat };
+    def.fields.forEach(function(f){
+      if (f.type === 'multi') {
+        var picks = [];
+        var grid = $('f_'+f.key);
+        if (grid) Array.prototype.forEach.call(grid.querySelectorAll('input[type=checkbox]'), function(cb){ if (cb.checked) picks.push(cb.value); });
+        out[f.key] = picks.join(', ');
+      } else if (f.type === 'daytime') {
+        function _dtPick(suf){
+          var g = $('f_'+f.key+suf); var ps = [];
+          if (g) Array.prototype.forEach.call(g.querySelectorAll('input[type=checkbox]'), function(cb){ if (cb.checked) ps.push(cb.value); });
+          return ps;
+        }
+        var parts = [];
+        var _d = _dtPick('_days');    if (_d.length) parts.push(_d.join(', '));
+        var _wd = _dtPick('_wtimes'); if (_wd.length) parts.push('Weekday: ' + _wd.join(', '));
+        var _we = _dtPick('_etimes'); if (_we.length) parts.push('Weekend: ' + _we.join(', '));
+        var _t = _dtPick('_times');   if (_t.length) parts.push(_t.join(', '));
+        out[f.key] = parts.join(' / ');
+      } else if (f.type === 'radio') {
+        var rgrid = $('f_'+f.key);
+        var checked = rgrid ? rgrid.querySelector('input[type=radio]:checked') : null;
+        out[f.key] = checked ? checked.value : '';
+      } else {
+        var el = $('f_'+f.key);
+        out[f.key] = el ? (el.value||'').trim() : '';
+      }
+    });
+    out.consent = !!($('f_consent') && $('f_consent').checked);
+    out.hp = ($('f_hp') && $('f_hp').value) || '';
+    return out;
+  }
+
+  // ════════ retry queue (localStorage) — collection-loss-0 ════════
+  function qRead(){ try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch(e){ return []; } }
+  function qWrite(arr){ try { localStorage.setItem(QUEUE_KEY, JSON.stringify(arr)); } catch(e){} }
+  function qUpsert(item){
+    var arr = qRead(); var found = false;
+    for (var i=0;i<arr.length;i++){ if (arr[i].payload.submissionId === item.payload.submissionId){ arr[i]=item; found=true; break; } }
+    if (!found) arr.push(item);
+    qWrite(arr);
+  }
+  function qRemove(sid){ qWrite(qRead().filter(function(x){ return x.payload.submissionId !== sid; })); }
+  function backoffMs(attempts){ return Math.min(30000, 1000 * Math.pow(2, Math.max(0, attempts-1))); }
+
+  var activeSid = '';
+  var flushTimer = null;
+
+  function scheduleFlush(delay){
+    if (flushTimer) clearTimeout(flushTimer);
+    flushTimer = setTimeout(flushQueue, delay || 1000);
+  }
+
+  function send(item){
+    return fetch(GAS_URL, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(item.payload)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res && res.ok) { onSent(item, res); return true; }
+      if (res && res.noRetry) { onRejected(item, res); return true; }
+      return onSoftFail(item);
+    })
+    .catch(function(){ return onSoftFail(item); });
+  }
+
+  function onSent(item, res){
+    qRemove(item.payload.submissionId);
+    if (item.payload.submissionId === activeSid) showDone(res.id || item.payload.submissionId);
+  }
+  function onRejected(item, res){
+    qRemove(item.payload.submissionId);
+    if (item.payload.submissionId === activeSid) {
+      resetSubmitBtn();
+      toast((res && res.error) || 'Submission failed. Please check your input.', true);
+    }
+  }
+  function onSoftFail(item){
+    item.attempts = (item.attempts||0) + 1;
+    item.nextAt = Date.now() + backoffMs(item.attempts);
+    qUpsert(item);
+    if (item.payload.submissionId === activeSid) {
+      resetSubmitBtn();
+      if (item.attempts >= 3) showFailBanner(); else showPendingBanner();
+    }
+    scheduleFlush(backoffMs(item.attempts));
+    return false;
+  }
+
+  function flushQueue(){
+    var arr = qRead(); if (!arr.length) { return; }
+    var now = Date.now();
+    var due = arr.filter(function(x){ return !x.nextAt || x.nextAt <= now; });
+    if (!due.length) {
+      var soonest = Math.min.apply(null, arr.map(function(x){ return x.nextAt || now; }));
+      scheduleFlush(Math.max(500, soonest - now));
+      return;
+    }
+    (function next(i){
+      if (i >= due.length) return;
+      send(due[i]).then(function(){ next(i+1); });
+    })(0);
+  }
+
+  // ── banner/button UX ──
+  function resetSubmitBtn(){ var b=$('submitBtn'); b.disabled=false; b.textContent='Submit Inquiry'; }
+  function showPendingBanner(){
+    var el = $('retryBanner'); el.className='retry-banner pending';
+    el.innerHTML = 'Submission is delayed. Retrying automatically… You may close this window; it will resend on your next visit.';
+  }
+  function showFailBanner(){
+    var el = $('retryBanner'); el.className='retry-banner failed';
+    el.innerHTML = 'Submission is delayed. Your entry has been saved and will be resent automatically.<br>' +
+      'If urgent, please contact <a href="tel:'+CONTACT_PHONE+'">'+CONTACT_PHONE+'</a> or <a href="mailto:'+CONTACT_EMAIL+'">'+CONTACT_EMAIL+'</a>.<br>' +
+      '<button type="button" class="again2" id="retryNow">Retry now</button>';
+    var rn = $('retryNow'); if (rn) rn.addEventListener('click', function(){ showPendingBanner(); flushQueue(); });
+  }
+  function clearBanner(){ var el=$('retryBanner'); el.className='retry-banner'; el.innerHTML=''; }
+
+  function showDone(id){
+    clearBanner();
+    $('rcptNo').textContent = id ? ('Reference No.: ' + id) : '';
+    $('formWrap').style.display='none';
+    $('doneWrap').style.display='block';
+    window.scrollTo(0,0);
+  }
+
+  // ── fallback (no/unknown ?type=) ──
+  function showFallback(){
+    selectedCat = '';
+    $('guideBox').style.display='none';
+    $('formCard').style.display='none';
+    $('submitBtn').style.display='none';
+    clearBanner();
+    $('noteText').style.display='none';
+    $('fallbackBox').style.display='block';
+    $('heroTitle').textContent = 'Inquiry';
+    setHeroSub('');
+  }
+
+  // ── submit ──
+  $('submitBtn').addEventListener('click', function(){
+    if (!selectedCat) { toast('Please select an inquiry type', true); return; }
+    var vals = collect(); if (!vals) return;
+    var def = FORMS[selectedCat];
+
+    for (var i=0;i<def.fields.length;i++){
+      var f = def.fields[i];
+      if (f.req && !vals[f.key]) { toast('Please enter your ' + f.label, true); return; }
+    }
+    var pd = String(vals.phone||'').replace(/\D/g,'');
+    if (pd.length < 9 || pd.length > 11) { toast('Please enter a valid phone number', true); return; }
+    if (!vals.consent) { toast('Please agree to the collection and use of personal information', true); return; }
+
+    var sid = uuid();
+    var payload = {
+      action:'intake_submit', t:INTAKE_TOKEN, submissionId:sid, lang:LANG,
+      category:vals.category, name:vals.name, phone:vals.phone,
+      program:vals.program||'', channel:vals.channel||'', message:vals.message||'',
+      wishTime:vals.wishTime||'', age:vals.age||'', exp1Date:vals.exp1Date||'',
+      consent:true, hp:vals.hp||'', fillMs:(formShownAt? (Date.now()-formShownAt) : 0),
+      utmSource:UTM_SOURCE, utmContent:UTM_CONTENT, utmMedium:UTM_MEDIUM
+    };
+    activeSid = sid;
+    var item = { payload:payload, attempts:0, nextAt:0 };
+    qUpsert(item);
+
+    var b=this; b.disabled=true; b.textContent='Submitting…'; clearBanner();
+    send(item);
+  });
+
+  // ── new inquiry (same type) ──
+  $('againBtn').addEventListener('click', function(){
+    activeSid='';
+    resetSubmitBtn(); clearBanner();
+    if (selectedCat) { buildForm(selectedCat); } else { showFallback(); }
+    $('doneWrap').style.display='none'; $('formWrap').style.display='block';
+    window.scrollTo(0,0);
+  });
+
+  // ── retry queue flush on load / online ──
+  window.addEventListener('online', function(){ scheduleFlush(300); });
+  if (qRead().length) scheduleFlush(800);
+
+  // ── type deep-link (?type=) — membership|adult|youth (KO/EN aliases). Others → fallback. ──
+  (function(){
+    try {
+      var t = (qp('type') || '').toLowerCase();
+      var alias = { membership:'membership', '멤버십':'membership',
+                    adult:'adult', '성인':'adult', '성인강습':'adult',
+                    youth:'youth', '유소년':'youth', '유소년강습':'youth' };
+      var cat = alias[t];
+      if (cat) { selectedCat = cat; buildForm(cat); } else { showFallback(); }
+    } catch (e) { showFallback(); }
+  })();
+})();
+</script>

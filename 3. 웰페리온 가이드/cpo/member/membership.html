@@ -7587,8 +7587,9 @@ function _holdActive(row) {
 /* ── 휴회 접수 관리 카드(고리 닫기·재설계 2026-07-22 GM) — 공개 '휴회접수' 탭 접수건 리스트 + 서버 자동판정 + 승인/반려.
      데이터=member_hold_intake_list(ERP read·게이트 뒤). write(승인/반려)=member_hold_approve(HOLD_LIVE_T 게이트). ── */
 var _holdIntake = null, _holdIntakeLoading = false, _holdIntakeLoaded = false;
-var HOLD_INTAKE_ORDER = ['접수대기', '승인', '반려'];
-var HOLD_INTAKE_STYLE = { '접수대기': { c: 'var(--orange,#c8912b)', i: '🕐' }, '승인': { c: 'var(--teal)', i: '✅' }, '반려': { c: 'var(--red)', i: '⛔' } };
+// 라이프사이클 4상태 — 접수대기/반려=intake 탭, 진행중/완료=회원DB(승인 후). GM '상태별' 통합 뷰.
+var HOLD_INTAKE_ORDER = ['접수대기', '진행중', '완료', '반려'];
+var HOLD_INTAKE_STYLE = { '접수대기': { c: 'var(--orange,#c8912b)', i: '🕐' }, '진행중': { c: 'var(--teal)', i: '⏸' }, '완료': { c: 'var(--dim-mid,#8a8a8a)', i: '🏁' }, '반려': { c: 'var(--red)', i: '⛔' } };
 function _hbtn(color) { return 'padding:4px 9px;border-radius:6px;border:1px solid ' + color + ';background:transparent;color:' + color + ';font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit'; }
 function _loadHoldIntake(force) {
   if (typeof GAS_URL === 'undefined' || GAS_URL === GAS_PLACEHOLDER) { _renderHoldIntake(); return; }
@@ -7601,41 +7602,53 @@ function _loadHoldIntake(force) {
     .catch(function(){})
     .then(function(){ _holdIntakeLoading = false; _renderHoldIntake(); });
 }
+function _hRowBox(inner) { return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12.5px">' + inner + '</div>'; }
 function _renderHoldIntake() {
   var el = document.getElementById('holdStatusCard'); if (!el) return;
   if (_activeScope !== 'valid') { el.style.display = 'none'; return; }
-  var rows = _holdIntake || [];
-  if (!rows.length) { el.style.display = 'none'; return; }
-  var byStat = {}; HOLD_INTAKE_ORDER.forEach(function(s){ byStat[s] = []; });
-  rows.forEach(function(r){ var s = r.status || '접수대기'; (byStat[s] = byStat[s] || []).push(r); });
+  // 접수대기·반려 = intake 탭(_holdIntake) / 진행중·완료 = 회원DB(_activeRows 휴회접수상태). 승인 완료된 intake는 회원 진행중으로 승계되므로 중복 표시 안 함.
+  var intake = _holdIntake || [];
+  var pending = intake.filter(function(r){ return (r.status || '접수대기') === '접수대기'; });
+  var rejected = intake.filter(function(r){ return r.status === '반려'; });
+  var ongoing = (_activeRows || []).filter(function(r){ return String(r['휴회접수상태'] || '').trim() === '진행중'; });
+  var done = (_activeRows || []).filter(function(r){ return String(r['휴회접수상태'] || '').trim() === '완료'; });
+  if (!pending.length && !ongoing.length && !done.length && !rejected.length) { el.style.display = 'none'; return; }
+  var groups = { '접수대기': pending, '진행중': ongoing, '완료': done, '반려': rejected };
   var html = '<div style="font-weight:800;font-size:14px;margin-bottom:4px">⏸ 휴회 접수 관리</div>'
-    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">공개 페이지 휴회 접수 건입니다. 서버 자동판정(가능/불가) 확인 후 승인하세요. 승인/반려 반영은 GM 검증 후 개통됩니다.</div>';
+    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">공개 페이지 접수 건은 서버 자동판정(가능/불가) 확인 후 승인하세요. 승인 시 회원 기록(이용일수 앞 \'휴회기간\')에 반영됩니다. 승인·반려·완료 반영은 GM 검증 후 개통됩니다.</div>';
   HOLD_INTAKE_ORDER.forEach(function(st){
-    var list = byStat[st] || []; if (!list.length) return;
+    var list = groups[st] || []; if (!list.length) return;
     var sty = HOLD_INTAKE_STYLE[st] || { c: 'var(--text)', i: '•' };
     html += '<div style="margin:8px 0 4px;font-weight:700;font-size:12.5px;color:' + sty.c + '">' + sty.i + ' ' + st + ' <span style="color:var(--dim);font-weight:400">(' + list.length + ')</span></div>';
     html += '<div style="display:flex;flex-direction:column;gap:5px">';
-    list.forEach(function(r){
-      var nm = esc(String(r.name || '—')), ph = esc(String(r.phone || ''));
-      var period = esc(String(r.start || '?') + (r.end ? ' ~ ' + r.end : '') + (r.wishDays != null ? ' (' + r.wishDays + '일)' : ''));
-      var reason = r.reason ? '<span style="color:var(--dim)">· ' + esc(String(r.reason)) + '</span>' : '';
-      var ok = (r.verdict === '가능');
-      var verdict = '<span style="color:' + (ok ? 'var(--green)' : 'var(--red)') + ';font-weight:700">' + (ok ? '가능' : '불가') + (r.verdictReason ? ' <span style="color:var(--dim);font-weight:400">(' + esc(String(r.verdictReason)) + ')</span>' : '') + '</span>';
-      var actions = '';
-      if (st === '접수대기') {
-        var approveBtn = ok ? '<button onclick="holdApprove(' + r.intakeRow + ',\'approve\',\'' + ph + '\')" style="' + _hbtn('var(--teal)') + '">승인</button>'
-          : '<button disabled title="자동판정 불가" style="' + _hbtn('var(--dim-mid,#8a8a8a)') + ';opacity:.5;cursor:default">승인</button>';
-        actions = approveBtn + '<button onclick="holdApprove(' + r.intakeRow + ',\'reject\',\'' + ph + '\')" style="' + _hbtn('var(--red)') + '">반려</button>';
-      }
-      html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12.5px">'
-        + '<b style="min-width:56px">' + nm + '</b>'
-        + '<span style="color:var(--dim)">' + ph + '</span>'
-        + '<span>' + period + '</span>' + reason
-        + '<span>' + verdict + '</span>'
-        + (r.appliedAt ? '<span style="color:var(--dim);font-size:11px">접수 ' + esc(String(r.appliedAt)) + '</span>' : '')
-        + (actions ? '<span style="margin-left:auto;display:flex;gap:6px">' + actions + '</span>' : '')
-        + '</div>';
-    });
+    if (st === '접수대기' || st === '반려') {
+      list.forEach(function(r){
+        var nm = esc(String(r.name || '—')), ph = esc(String(r.phone || ''));
+        var period = esc(String(r.start || '?') + (r.end ? ' ~ ' + r.end : '') + (r.wishDays != null ? ' (' + r.wishDays + '일)' : ''));
+        var reason = r.reason ? '<span style="color:var(--dim)">· ' + esc(String(r.reason)) + '</span>' : '';
+        var ok = (r.verdict === '가능');
+        var verdict = '<span style="color:' + (ok ? 'var(--green)' : 'var(--red)') + ';font-weight:700">' + (ok ? '가능' : '불가') + (r.verdictReason ? ' <span style="color:var(--dim);font-weight:400">(' + esc(String(r.verdictReason)) + ')</span>' : '') + '</span>';
+        var actions = '';
+        if (st === '접수대기') {
+          var approveBtn = ok ? '<button onclick="holdApprove(' + r.intakeRow + ',\'approve\',\'' + ph + '\')" style="' + _hbtn('var(--teal)') + '">승인</button>'
+            : '<button disabled title="자동판정 불가" style="' + _hbtn('var(--dim-mid,#8a8a8a)') + ';opacity:.5;cursor:default">승인</button>';
+          actions = approveBtn + '<button onclick="holdApprove(' + r.intakeRow + ',\'reject\',\'' + ph + '\')" style="' + _hbtn('var(--red)') + '">반려</button>';
+        }
+        html += _hRowBox('<b style="min-width:56px">' + nm + '</b><span style="color:var(--dim)">' + ph + '</span><span>' + period + '</span>' + reason + '<span>' + verdict + '</span>'
+          + (r.appliedAt ? '<span style="color:var(--dim);font-size:11px">접수 ' + esc(String(r.appliedAt)) + '</span>' : '')
+          + (actions ? '<span style="margin-left:auto;display:flex;gap:6px">' + actions + '</span>' : ''));
+      });
+    } else {   // 진행중 / 완료 — 회원DB 기준(회원명·휴회기간·잔여일)
+      var remainKey = null; (_activeHeaders || []).forEach(function(h){ if (remainKey === null && /잔여일/.test(h)) remainKey = h; });
+      list.forEach(function(r){
+        var nm = esc(String(r['회원명'] || '—'));
+        var period = esc(String(r['휴회시작일'] || '?') + ' ~ ' + String(r['휴회종료일'] || '?'));
+        var rem = remainKey ? esc(String(r[remainKey] || '-')) : '-';
+        var actions = (st === '진행중') ? '<button onclick="holdComplete(' + r.rowIndex + ')" style="' + _hbtn('var(--dim-mid,#8a8a8a)') + '">완료 처리</button>' : '';
+        html += _hRowBox('<b style="min-width:56px">' + nm + '</b><span style="color:var(--dim)">' + period + '</span><span>잔여일 ' + rem + '</span>'
+          + (actions ? '<span style="margin-left:auto;display:flex;gap:6px">' + actions + '</span>' : ''));
+      });
+    }
     html += '</div>';
   });
   el.innerHTML = html; el.style.display = '';
@@ -7652,6 +7665,24 @@ function holdApprove(intakeRow, decision, phone) {
       showToast(decision === 'approve' ? '승인 완료' : '반려 완료', 'ok');
       _loadHoldIntake(true);
       if (decision === 'approve' && typeof loadActiveMembers === 'function') loadActiveMembers();   // 회원DB 갱신 반영
+    })
+    .catch(function(e){ showToast('처리 실패: ' + (e.message || ''), 'err'); });
+}
+// 완료 처리(진행중→완료) — 회원DB 라이프사이클 전이. 서버 member_hold_transition(HOLD_LIVE_T 게이트).
+function holdComplete(rowIndex) {
+  var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; }); if (!r) return;
+  if (!confirm('이 회원의 휴회를 완료 처리하시겠습니까?')) return;
+  var kp = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
+  apiPost({ action: 'member_hold_transition', rowIndex: rowIndex, keyPhone: kp, rowKey: r.rowKey || '', status: '완료' })
+    .then(function(d){
+      if (d && d.ok === false) {
+        if (d.error === 'hold-gated') { showToast('완료 처리는 GM 검증 후 개통됩니다', 'err'); return; }
+        throw new Error(d.detail || d.error || '처리 실패');
+      }
+      r['휴회접수상태'] = '완료';
+      showToast('완료 처리', 'ok');
+      _renderHoldIntake();
+      if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
     })
     .catch(function(e){ showToast('처리 실패: ' + (e.message || ''), 'err'); });
 }
