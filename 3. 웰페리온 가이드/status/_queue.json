@@ -324,14 +324,17 @@
     "task_id": "CMO-2026-07-16-TELEGRAM-GLOBAL-PACING",
     "clevel": "cmo",
     "title": "[시모] 텔레그램 전역 발송 페이싱 — 429 플러드 근본차단(프로세스간 초당1건)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-16",
+    "done_at": "2026-07-23",
     "ship_no": 1211,
     "module": "M3",
     "note": "[2026-07-16 GM 지시·시모] 다이제스트가 07-15 셋업 후 한번도 도착못한 근본원인=여러 루틴이 한 봇토큰 버스트발송→429(연장페널티). 시모 전역 페이싱: tg_outbound_log.py pace()(파일락+마지막발송시각 프로세스간 최소간격)+send()(페이싱+429자가재시도+로깅) 코어 구현·검증PASS. publish_digest 페이싱 물림.",
     "next": "발행런 버스트 발송원(ig_review_publish_watcher·send_review_card·publish_4channel·daily_scheduler) pace() 배선 후 실발행 e2e 429무발생 검증.",
-    "depends_on": ""
+    "depends_on": "",
+    "artifact_url": "commit:12ec96a0f5e458dff01b82e5f589994f80e9e21f",
+    "summary": "tg_outbound_log.py pace()+send() 전역 페이싱 코어 구현 완료(커밋 12ec96a0f). publish_digest _tg_pace() 2곳 배선. 코드 검증 PASS."
   },
   {
     "task_id": "CHRO-2026-07-16-AUTONOMY-STANDING-LOOPS",
@@ -798,5 +801,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 d8add5d12)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "d8add5d1244b4691ac8a7d87bebce931516afaf4"
+  },
+  {
+    "task_id": "CPO-2026-07-23-ADHOC-786261cf8",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9804,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 786261cf8)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "786261cf8ce4de698a85db92a899561df7b25b63"
   }
 ]
