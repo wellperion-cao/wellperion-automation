@@ -357,13 +357,18 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
       ]
     },
     summer: {
-      purpose: '여름 특강 문의 응대 및 상담 안내',
+      purpose: '여름방학 특강(유소년) 문의 응대 및 상담 안내',
+      // 2026-07-22 GM 지시: 방학특강(유소년) 폼을 유소년(youth) 폼과 항목·내용 1:1 정합 — 보호자 성함·자녀 나이·
+      //   요일/시간 위젯(daytime)·문의 경로 동일. 강습 종목만 방학특강 고유 5종 유지(수영·체조·스쿼시·골프·유소년 성장PT).
+      //   기존 '희망 월'(wishMonth·select) → '희망 레슨 시간'(wishTime·daytime, youth와 동일 위젯)으로 교체.
       fields: [
-        { key:'name',    label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
+        { key:'name',    label:'성함(보호자)', type:'text', ph:'보호자 성함을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
-        { key:'program', label:'집중 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['수영','체조','스쿼시','골프','유소년 성장PT'] },
-        { key:'wishMonth', label:'희망 월', type:'select', ph:'선택해 주세요', opts:['7월','8월','미정'] },
-        { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'궁금하신 점을 자유롭게 적어주세요.' }
+        { key:'age',     label:'자녀 나이', type:'text', opt:true, ph:'예: 8세 / 초2' },
+        { key:'program', label:'강습 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['수영','체조','스쿼시','골프','유소년 성장PT'] },
+        { key:'wishTime',label:'희망 레슨 시간', type:'daytime', opt:true, days:['월','화','수','목','금','토','일'], weekdayTimes:['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'], weekendTimes:['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'] },
+        { key:'channel', label:'문의 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
+        { key:'message', label:'문의 사항', type:'textarea', opt:true, ph:'문의하실 내용을 자유롭게 적어주세요.' }
       ]
     },
     rental: {
@@ -409,9 +414,9 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
       note:'국내에서 흔치 않은 다양한 전문 프로그램도 만나보실 수 있습니다.'
     },
     summer: {
-      lead:'여름 한정 집중 강습입니다. 수영·체조·스쿼시·골프·유소년 성장PT — 성인과 유소년 모두 참여하실 수 있습니다.',
-      badges:['7월 · 8월 진행','정원 한정','사전 예약제'],
-      note:'시즌 특성상 정원이 조기 마감될 수 있습니다.'
+      lead:'여름방학 한정 단기 집중 특강입니다. 수영·체조·스쿼시·골프·유소년 성장PT로 자녀의 방학을 알차게 채워드립니다.',
+      tags:['수영','체조','스쿼시','골프','유소년 성장PT'],
+      note:'7월·8월 진행 · 사전 예약제로 운영되며, 시즌 특성상 정원이 조기 마감될 수 있습니다.'
     },
     rental: {
       lead:'수영장부터 스튜디오·라운지·골프존까지, 다양한 공간을 대관해 드립니다. 행사·촬영·세미나·워크숍·모임에 맞춰 준비합니다.',

@@ -5379,6 +5379,33 @@ function _processAction(body) {
       } catch (e) { rec.error = String(e); }  // 접근 실패 → registered=null 유지
       lrrBySport.push(rec);
     });
+    // 횟수·유효기간 조인(GM 2026-07-22): 로스터(팀시트)는 종목·이름·전화·상태만 담는다. SUC 시 문의행에 기록된
+    //   등록회수/유효기간을 전화 매칭으로 붙여 '강습 회원 관리'에 표시(GM이 SUC 모달에 입력한 추가내용 반영).
+    try {
+      var lrrMainGid = (lrrType === '유소년강습' || lrrType === '유소년' || lrrType === 'youth') ? 268994754 : 111889422;
+      var lrrMainSh = _lessonSheet_(lrrMainGid);
+      if (lrrMainSh) {
+        var lrrMh = lrrMainSh.getRange(1, 1, 1, lrrMainSh.getLastColumn()).getValues()[0];
+        var lrrPi = _findCol_(lrrMh, ['연락처', '전화', '휴대폰']);
+        var lrrCi = _findCol_(lrrMh, ['등록회수']);
+        var lrrEi = _findCol_(lrrMh, ['유효기간']);
+        var lrrLast2 = lrrMainSh.getLastRow();
+        if (lrrPi >= 0 && (lrrCi >= 0 || lrrEi >= 0) && lrrLast2 >= 2) {
+          var lrrMd = lrrMainSh.getRange(2, 1, lrrLast2 - 1, lrrMainSh.getLastColumn()).getValues();
+          var lrrRegMap = {};
+          for (var lm = 0; lm < lrrMd.length; lm++) {
+            var lp = _normPhone_(lrrMd[lm][lrrPi]); if (!lp) continue;
+            var lc = lrrCi >= 0 ? String(lrrMd[lm][lrrCi] == null ? '' : lrrMd[lm][lrrCi]).trim() : '';
+            var le = lrrEi >= 0 ? (lrrMd[lm][lrrEi] instanceof Date ? Utilities.formatDate(lrrMd[lm][lrrEi], 'Asia/Seoul', 'yyyy-MM-dd') : String(lrrMd[lm][lrrEi] == null ? '' : lrrMd[lm][lrrEi]).trim()) : '';
+            if (lc || le) lrrRegMap[lp] = { regCount: lc, regExpire: le };   // 최근 행(뒤) 우선
+          }
+          lrrRoster.forEach(function (m) {
+            var mp = _normPhone_(m.phone);
+            if (mp && lrrRegMap[mp]) { m.regCount = lrrRegMap[mp].regCount; m.regExpire = lrrRegMap[mp].regExpire; }
+          });
+        }
+      }
+    } catch (eJoin) { /* 조인 실패 → 횟수/유효기간 미표기(무중단) */ }
     return _json({ ok: true, type: lrrType, total: lrrRoster.length, bySport: lrrBySport, roster: lrrRoster });
   }
 

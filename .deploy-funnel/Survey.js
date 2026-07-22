@@ -2834,7 +2834,7 @@ function _processAction(body) {
         _lsSet(['강습 종목', '종목', '과목'], _isSummer ? ('여름방학특강 - ' + _iProgram) : _iProgram);
         _lsSet(['문의 경로', '경로', '채널'], _iChannel || _canonicalChannel_(_iUtmSource));
         _lsSet(['문의 사항', '문의사항', '내용'], _iMessage);
-        _lsSet(['희망', '레슨 시간', '시간'], _isSummer ? _iWishMonth : _iWish);
+        _lsSet(['희망', '레슨 시간', '시간'], _isSummer ? (_iWish || _iWishMonth) : _iWish);   // 여름방학특강(유소년) 폼이 wishMonth→wishTime(요일/시간)으로 교체됨(2026-07-22 시모). 구 wishMonth는 폴백 유지(하위호환).
         _lsSet(['접수 담당자', '담당자 혹은', '담당'], '웹 자동접수');
         _lsSet(['개인정보', '동의', '수집·이용'], '동의');
         _lsSet(['진행 상황', '진행상황', '상태'], '신규');
@@ -2900,7 +2900,7 @@ function _processAction(body) {
       var _iCatLabel = _iCatLabelMap[_iCat] || _iCat;
       var _iDisplayName = (_iCat === 'business') ? (_iCompany + ' / ' + _iContactName) : _iName;
       var _iExtra = '';
-      if (_iCat === 'summer') _iExtra = (_iTarget ? ('\n대상: ' + _iTarget) : '') + (_iWishMonth ? ('\n희망월: ' + _iWishMonth) : '');
+      if (_iCat === 'summer') _iExtra = (_iWish ? ('\n희망시간: ' + _iWish) : '') + (_iWishMonth ? ('\n희망월: ' + _iWishMonth) : '') + (_iTarget ? ('\n대상: ' + _iTarget) : '');
       if (_iCat === 'rental') _iExtra = (_iSpace ? ('\n공간: ' + _iSpace) : '') + (_iPurpose ? ('\n용도: ' + _iPurpose) : '');
       if (_iCat === 'business') _iExtra = (_iPartnerType ? ('\n제휴유형: ' + _iPartnerType) : '');
       _notifyTelegram('🔔 <b>[웹 문의 접수]</b> (자체폼)\n유형: ' + _iCatLabel + '\n이름: ' + _iDisplayName + '\n연락처: ' + _fmtPhone_(_iPhone)
@@ -2956,6 +2956,67 @@ function _processAction(body) {
     var _oRows = _oSh.getLastRow();
     _oSs.deleteSheet(_oSh);
     return _json({ ok: true, deleted: true, rows: _oRows });
+  }
+
+  // ─── (임시) '종목별관리' 죽은 JSON 잔재 삭제 — 2026-07-14 flat L~P 전환으로 폐기된 컬럼(숨김칸, 표시·갱신 안 됨)
+  //   정리. body.dry(true=dry-run 기본·false=실제 삭제)만 없으면 항상 dry-run(안전 기본). 대상=강습 4개 응답탭
+  //   (_LESSON_KNOWN_GIDS_). '종목별관리' 정확일치 컬럼만 대상 — flat L~P/이름/전화/타임스탬프는 절대 미접촉
+  //   (인덱스 겹침 즉시 abort). 웰리 수동. 2026-07-22 GM지시.
+  if (action === 'clear_lesson_sport_mgmt_residue') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _csmDry = (body.dry !== false);   // 미전송/true = dry-run, false만 live
+    var _csmLock = null;
+    if (!_csmDry) {
+      _csmLock = LockService.getScriptLock();
+      if (!_csmLock.tryLock(8000)) return _json({ ok: false, error: 'lock-timeout' });
+    }
+    try {
+      var _csmPer = [];
+      _LESSON_KNOWN_GIDS_.forEach(function(gid) {
+        var sh = _lessonSheet_(gid);
+        if (!sh) { _csmPer.push({ gid: gid, skip: 'sheet-not-found' }); return; }
+        var lastCol = sh.getLastColumn(), lastRow = sh.getLastRow();
+        if (lastCol < 1 || lastRow < 2) { _csmPer.push({ gid: gid, skip: 'empty' }); return; }
+        var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+        var col = _findColExact_(hdr, [LESSON_SPORT_MGMT_COL]);
+        if (col < 0) { _csmPer.push({ gid: gid, skip: 'no-column' }); return; }  // 컬럼 없음 = 정상(이미 폐기된 시트)
+
+        // ★안전가드 — 종목별관리 컬럼 인덱스가 flat L~P(_LESSON_MGMT_FIELDS)나 이름/전화/타임스탬프 컬럼과
+        //   겹치면(같은 인덱스) 즉시 abort. _findColExact_는 정확일치라 정상적으론 겹칠 수 없지만 방어적으로 확인.
+        var _guardIdx = [];
+        _LESSON_MGMT_FIELDS.forEach(function(f) { var gi = _findCol_(hdr, f.keys); if (gi >= 0) _guardIdx.push(gi); });
+        var _iName  = _findCol_(hdr, ['성함', '이름', 'Full Name']);
+        var _iPhone = _findCol_(hdr, ['연락처', '전화', '휴대폰', 'Mobile Phone Number']);
+        var _iTs    = _findCol_(hdr, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '날짜']);
+        if (_iName >= 0) _guardIdx.push(_iName);
+        if (_iPhone >= 0) _guardIdx.push(_iPhone);
+        if (_iTs >= 0) _guardIdx.push(_iTs);
+        if (_guardIdx.indexOf(col) >= 0) {
+          _csmPer.push({ gid: gid, abort: 'guard-collision', col: col + 1, headerAtCol: hdr[col] });
+          return;
+        }
+
+        var colValues = sh.getRange(2, col + 1, lastRow - 1, 1).getValues();
+        var cellsWithData = 0, samples = [], rowsToClear = [];
+        for (var r = 0; r < colValues.length; r++) {
+          var v = colValues[r][0];
+          if (v !== '' && v !== null && v !== undefined) {
+            cellsWithData++;
+            rowsToClear.push(r + 2);
+            if (samples.length < 5) samples.push({ row: r + 2, preview: String(v).substring(0, 80) });
+          }
+        }
+        if (_csmDry) {
+          _csmPer.push({ gid: gid, col: col + 1, cellsWithData: cellsWithData, samples: samples });
+        } else {
+          rowsToClear.forEach(function(rowNum) { sh.getRange(rowNum, col + 1).setValue(''); });
+          _csmPer.push({ gid: gid, col: col + 1, cleared: rowsToClear.length });
+        }
+      });
+      return _json({ ok: true, dry: _csmDry, perSheet: _csmPer });
+    } finally {
+      if (_csmLock) _csmLock.releaseLock();
+    }
   }
 
   // ─── 문의 목록 ───

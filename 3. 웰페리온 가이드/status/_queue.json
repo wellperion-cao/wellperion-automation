@@ -2653,5 +2653,17 @@
     "artifact": "- #1 문의내용·희망시간 칸 흰색·12.5px 확대(성함/연락처 정합).\n- #2 영문 종목 한글표시: Gymnastics→WSC 체조&트램폴린 등. 저장값 영문 원본 유지.\n- #4 LOSS 사유 수리: '미등록 사유' 칸 별칭 + 옛 드롭다운 검증 제거(모달 표준 사유 저장 차단 해소). 라운드트립 검증. 배포 @117. (CLI ad-hoc · 커밋 ea7ea021)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "ea7ea0213cdb27e3801988f49d262468c97a5b06"
+  },
+  {
+    "task_id": "CMO-2026-07-22-BREAK-FORM",
+    "clevel": "cmo",
+    "ship_no": 9712,
+    "title": "[시모] 방학특강(유소년) 자체폼 — WSC 유소년과 항목 1:1 정합·5종목 유지·희망월→요일/시간",
+    "status": "IN_PROGRESS",
+    "priority": "⛵돛단배",
+    "from": "ceo",
+    "origin": "gm",
+    "enqueued_at": "2026-07-22",
+    "note": "GM 지시: 방학특강(유소년) summer 폼을 youth 폼과 항목·내용 1:1 정합(성함(보호자)·자녀나이·요일/시간 위젯·문의경로·안내). 강습종목=방학특강 고유 5종 유지(수영·체조·스쿼시·골프·유소년 성장PT). 희망월(wishMonth·select) 제거→희망 레슨 시간(wishTime·daytime) 교체. 백엔드 intake_submit: summer→유소년강습 탭(기존 라우팅) 유지, 희망칸 write를 wishMonth→(wishTime||wishMonth) 폴백으로 정합(.deploy-funnel + .deploy-funnel-v2 양측). 텔레그램 알림에 희망시간 표시 추가. 산출물: cmo/review/방학특강_유소년_폼_{desktop,mobile}_20260722.png + 방학특강_vs_WSC유소년_대조_20260722.png(youth 1:1 확인). ★라이브 활성=GM go 대기: WP post 8460 draft-page 재주입 + GAS 재배포 미실행(비가역 유입경로). ★확인필요: 라이브 배포 스크립트가 1A77oDR(.deploy-funnel) vs 1BezMSW(.deploy-funnel-v2) 중 무엇인지 — v1은 희망칸 부분일치(희망) 키가 종목칸을 먼저 무는 구버그가 남아있어(v2는 정확헤더로 수리됨) v1이 라이브면 요일/시간 유실 위험 → 시토 확인 후 배포."
   }
 ]
