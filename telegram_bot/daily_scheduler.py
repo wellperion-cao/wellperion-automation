@@ -16,7 +16,7 @@
 ※ 08시(오늘의 항로)는 ceo_morning_pipeline.py 별도 Task Scheduler 담당 — 여기서 중복 발송 없음
 
 운영 원칙:
-- 기존 워처 3종 (archive_result_watcher·planning_to_archive_watcher·permission_watcher) 유지
+- 워처 3종 (archive_result_watcher·planning_to_archive_watcher·permission_watcher)은 2026-05-31 제거·파일부재(하단 주석 참조)
 - 데이터 소스 조회 실패(quotes.json 부재·git log 실패 등) 시 Claude 연동 없이 자동화 실패 경보만 송신
 - PC 정각 오프 후 복구 시 misfire_grace_time(600초) 내 catch-up 자동 실행
 - 로그: scheduler.log (RotatingFileHandler, 7일 보존)
@@ -2828,7 +2828,7 @@ def main():
     # [2026-05-31 CTO 제거] archive_result_watcher · planning_to_archive_watcher
     #   두 노션 추종 감지기는 노션 결과물DB·Start기획DB 폐기(2026-05-29)로 상시 0건·
     #   알림 0건 확정 → if False 사문(死文) 블록 삭제. 파일(archive_result_watcher.py·
-    #   planning_to_archive_watcher.py)은 디스크 보존(가역적). 참조: docs/노션_웰페리온 ERP_리뉴얼_계획.md.
+    #   planning_to_archive_watcher.py)은 제거·파일부재(2026-07-22 확인).
 
     # [2026-06-01 CTO 공식 폐지] auto_task_watcher(노션 업무자동화DB 폴링→Claude CLI
     #   자동실행)는 노션 업무자동화DB '[폐기]'(2026-06-01)로 방식 자체가 구식.
@@ -2853,7 +2853,7 @@ def main():
 
     # [2026-05-31 CTO 제거] permission_watcher(노션 통합 권한 감시)는 노션 미사용
     #   확정으로 감시 가치 0·알림 0건 → if False 사문 블록 삭제. permission_watcher.py는
-    #   디스크 보존(가역적). 참조: docs/노션_웰페리온 ERP_리뉴얼_계획.md.
+    #   제거·파일부재(2026-07-22 확인).
 
     # [2026-06-02 CTO 제거] status_change_watcher(C-Level 상태변경 1분주기 자동발송)는
     #   status_change_watcher.py가 미구현(git 이력·디스크 0)으로 매 부팅 ImportError만
