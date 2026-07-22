@@ -1305,6 +1305,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_add:      true,  // 2026-06-29 등록현황 직접 추가(페이지 수기 등록)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
+  member_hold_preview:        true,  // 2026-07-22 휴회 경량안 — 미리보기/검증(read-only, 시트 무변경). 시포·GM
+  member_hold_apply:          true,  // 2026-07-22 휴회 경량안 — 접수 기록(4칸 write). ★HOLD_LIVE 게이트(기본 OFF, GM go). 시포·GM
   cpo_today_stats:            true,  // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
   cpo_churn_stats:            true,  // 2026-07-02 이탈 현황 실측(유효·이탈·이탈율·갱신임박 리스트) — 페이지 게이트 뒤(전체공개 정책과 동일)
   // 강습문의 페이지(CPO) — 멤버십 member_* 와 동일 정책(2026-06-26)
@@ -4229,6 +4231,101 @@ function _processAction(body) {
     if (auIdx < 0) return _json({ ok: false, error: '컬럼 미발견: ' + auCol });
     _auWriteCell(auIdx, auCol, body.value);
     return _json({ ok: true, rowIndex: auRow, col: auCol });
+  }
+
+  // ─── 휴회(경량안) — 회원 휴회 미리보기/접수. 3회·총60일·1회 7~60일. 검증 단일 SSOT=서버(여기). 2026-07-22 시포·GM ───
+  //   데이터: 유효회원 탭 additive 4칸(휴회횟수·휴회누적일수·휴회시작일·휴회종료일). 헤더이름 기반 · 행삭제 없음(셀 write만).
+  //   행 해석 가드 = member_active_update와 동일(rowKey[등록일자+전화] 우선 → keyPhone 폴백, fail-closed) — INC 오지목/오삭제 방지.
+  //   ★잔여일 반영 정직표기: 잔여일은 서버계산이 아니라 시트 '잔여일' 컬럼 raw값(member_active_list _aaIdx('잔여일'), 실측 2026-07-22).
+  //   즉 종료일자 가산으로 잔여일이 자동반영되려면 시트에서 잔여일=f(종료일자) 수식이어야 함(원본 미확인) → 본 빌드는 잔여일/종료일자를
+  //   건드리지 않고 휴회 4칸만 기록한다. 종료일자 가산은 시트 잔여일 수식 실측 후 개통(HOLD_EXTEND_GO, getFormula 수식셀 보호).
+  //   ★라이브 게이트: member_hold_apply 실기록은 HOLD_LIVE=true(GM 검증 후)에만. preview는 read-only라 상시 안전.
+  if (action === 'member_hold_preview' || action === 'member_hold_apply') {
+    var HOLD_LIVE = false;          // ★접수 실기록 게이트 — GM 검증 후 true. 역롤백=이 한 줄. (apply 전용; preview 무관)
+    var HOLD_EXTEND_GO = false;     // 종료일자 가산(잔여일 반영) — 시트 잔여일 수식 실측 후 true.
+    var H_COUNT = '휴회횟수', H_DAYS = '휴회누적일수', H_START = '휴회시작일', H_END = '휴회종료일';
+    var H_MAX_COUNT = 3, H_MAX_TOTAL = 60, H_MIN_ONCE = 7, H_MAX_ONCE = 60;
+    var hSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    if (!hSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var hHdr = hSh.getRange(1, 1, 1, hSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    // 전화 컬럼
+    var hPhI = -1;
+    for (var _hp = 0; _hp < hHdr.length; _hp++) { var _hph = hHdr[_hp].replace(/\s/g, ''); if (_hph.indexOf('휴대폰') >= 0 || _hph.indexOf('전화') >= 0 || _hph.indexOf('연락처') >= 0) { hPhI = _hp; break; } }
+    // 행 해석(rowKey 우선 → keyPhone 폴백, fail-closed) — member_active_update:4145~4184 동일 가드
+    var hRow = parseInt(body.rowIndex, 10);
+    var _hRk = _rowKeyParts_(body);
+    var hTsI = -1;
+    if (_hRk) {
+      var _HK = ['등록일자', '등록 일자', '타임스탬프', '등록일', '가입일'];
+      for (var _ht = 0; _ht < hHdr.length; _ht++) { var _hth = hHdr[_ht].replace(/\s/g, ''); for (var _htk = 0; _htk < _HK.length; _htk++) { if (_hth.indexOf(_HK[_htk].replace(/\s/g, '')) >= 0) { hTsI = _ht; break; } } if (hTsI >= 0) break; }
+    }
+    if (_hRk && hTsI >= 0 && hPhI >= 0) {
+      var _hFp = _findRowsByKey_(hSh, hTsI, hPhI, _hRk.ts, _hRk.phone);
+      if (_hFp.length === 1) hRow = _hFp[0];
+      else if (_hFp.length === 0) return _json({ ok: false, error: 'rowkey-not-found', detail: '회원 행 확인 불가(지문 불일치) — 목록 새로고침 후 다시 시도하세요' });
+      else return _json({ ok: false, error: 'rowkey-ambiguous', detail: '지문키 중복 매칭 — 목록 새로고침 후 다시 시도하세요' });
+    } else if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
+      if (hPhI >= 0 && hRow >= 2 && hRow <= hSh.getLastRow()) {
+        var _hRowPh = _normPhone_(hSh.getRange(hRow, hPhI + 1).getValue()), _hKeyPh = _normPhone_(body.keyPhone);
+        if (_hRowPh && _hKeyPh && _hRowPh !== _hKeyPh) return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
+      } else return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 시도하세요' });
+    } else {
+      return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처/목록 새로고침 후 다시 시도하세요' });
+    }
+    if (!hRow || hRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
+    // 현재 누적치 읽기(칸 없으면 0 — preview는 칸 생성 안 함 read-only)
+    function _hColIdx(name) { var w = String(name).replace(/\s/g, ''); for (var i = 0; i < hHdr.length; i++) { if (hHdr[i].replace(/\s/g, '') === w) return i; } return -1; }
+    function _hNum(ix) { if (ix < 0 || hRow > hSh.getLastRow()) return 0; var raw = String(hSh.getRange(hRow, ix + 1).getValue() || '').replace(/[^0-9\-]/g, ''); var n = parseInt(raw, 10); return isNaN(n) ? 0 : n; }
+    var curCount = _hNum(_hColIdx(H_COUNT)), curDays = _hNum(_hColIdx(H_DAYS));
+    var remCount = Math.max(0, H_MAX_COUNT - curCount), remDays = Math.max(0, H_MAX_TOTAL - curDays);
+    // 입력 파싱 + 검증(3회/총60일/1회 7~60일)
+    var hStart = String(body.holdStart || '').trim();
+    var hDays = parseInt(body.holdDays, 10);
+    var hEndCalc = '', vErr = '';
+    var _hasReq = (body.holdStart !== undefined || body.holdDays !== undefined);
+    if (_hasReq) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(hStart)) vErr = '휴회 시작일(YYYY-MM-DD)을 입력하세요';
+      else if (isNaN(hDays)) vErr = '휴회 일수를 입력하세요';
+      else if (hDays < H_MIN_ONCE) vErr = '1회 최소 ' + H_MIN_ONCE + '일 이상이어야 합니다';
+      else if (hDays > H_MAX_ONCE) vErr = '1회 최대 ' + H_MAX_ONCE + '일까지 가능합니다';
+      else if (curCount + 1 > H_MAX_COUNT) vErr = '휴회 횟수 한도 초과(최대 ' + H_MAX_COUNT + '회, 현재 ' + curCount + '회 사용)';
+      else if (curDays + hDays > H_MAX_TOTAL) vErr = '누적 휴회일수 한도 초과(최대 ' + H_MAX_TOTAL + '일, 현재 ' + curDays + '일 + 신청 ' + hDays + '일 = ' + (curDays + hDays) + '일)';
+      if (!vErr) {
+        // 휴회종료일 = 마지막 휴회일 = 시작일 + (일수-1). (재개일=종료일 다음날). 텍스트로 저장.
+        var _sd = new Date(hStart + 'T00:00:00+09:00');
+        _sd.setDate(_sd.getDate() + (hDays - 1));
+        hEndCalc = Utilities.formatDate(_sd, 'Asia/Seoul', 'yyyy-MM-dd');
+      }
+    }
+    var preview = { ok: true, rowIndex: hRow, current: { count: curCount, cumDays: curDays },
+      limits: { maxCount: H_MAX_COUNT, maxTotal: H_MAX_TOTAL, minOnce: H_MIN_ONCE, maxOnce: H_MAX_ONCE },
+      remaining: { count: remCount, days: remDays },
+      request: { start: hStart, days: isNaN(hDays) ? null : hDays, end: hEndCalc },
+      valid: !!(_hasReq && !vErr), error: vErr || undefined, live: HOLD_LIVE };
+    if (action === 'member_hold_preview') return _json(preview);
+    // ── apply(실기록) ──
+    if (!_hasReq) return _json({ ok: false, error: 'holdStart·holdDays 필수' });
+    if (vErr) return _json({ ok: false, error: vErr });
+    if (!HOLD_LIVE) return _json({ ok: false, error: 'hold-gated', detail: '휴회 접수는 GM 검증 후 개통됩니다(현재 미개통)' });
+    // 4칸 ensure(additive) + 기록. 날짜칸은 텍스트서식(@)으로 자동 날짜/시간 변환 차단.
+    var ciCount = _miEnsureCol_(hSh, hHdr, H_COUNT), ciDays = _miEnsureCol_(hSh, hHdr, H_DAYS), ciStart = _miEnsureCol_(hSh, hHdr, H_START), ciEnd = _miEnsureCol_(hSh, hHdr, H_END);
+    hSh.getRange(hRow, ciStart + 1).setNumberFormat('@'); hSh.getRange(hRow, ciStart + 1).setValue(hStart);
+    hSh.getRange(hRow, ciEnd + 1).setNumberFormat('@');   hSh.getRange(hRow, ciEnd + 1).setValue(hEndCalc);
+    hSh.getRange(hRow, ciCount + 1).setValue(curCount + 1);
+    hSh.getRange(hRow, ciDays + 1).setValue(curDays + hDays);
+    // 종료일자 가산(잔여일 반영) — 시트 잔여일 수식 실측 후 개통. 수식셀(getFormula)이면 미변경(손상 방지).
+    var extended = false;
+    if (HOLD_EXTEND_GO) {
+      var ciMemEnd = _hColIdx('종료일자');
+      if (ciMemEnd >= 0 && hRow <= hSh.getLastRow()) {
+        var _ec = hSh.getRange(hRow, ciMemEnd + 1);
+        if (!_ec.getFormula()) {
+          var _ev = _ec.getValue();
+          if (_ev instanceof Date && !isNaN(_ev.getTime())) { _ev.setDate(_ev.getDate() + hDays); _ec.setValue(_ev); extended = true; }
+        }
+      }
+    }
+    return _json({ ok: true, rowIndex: hRow, count: curCount + 1, cumDays: curDays + hDays, start: hStart, end: hEndCalc, extended: extended });
   }
 
   // ─── CPO 오늘 현황(PII 미노출 집계): 오늘/이번달 문의·등록 건수 2026-06-24 GM ───

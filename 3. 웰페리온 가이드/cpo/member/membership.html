@@ -1757,6 +1757,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
           placeholder="이름·전화·프로그램 검색…"
           autocomplete="off">
         <button class="btn-refresh" onclick="loadActiveMembers()">새로고침</button>
+        <!-- 휴회 경량안(2026-07-22 시포·GM) — 접수폼. 실기록은 GM 검증 후 개통(서버 HOLD_LIVE 게이트). -->
+        <button class="btn-refresh" onclick="openHoldModal()" style="border-color:var(--orange-border,var(--border));color:var(--orange,var(--text))">⏸ 휴회 신청</button>
       </div>
 
       <div class="active-count" id="activeCount"></div>
@@ -2389,6 +2391,42 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeChurnModal()">취소</button>
       <button class="consult-btn-save" id="crSaveBtn" onclick="saveChurnModal()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 휴회 접수 모달 — 유효회원 휴회 신청(3회/총60일·1회 7~60일). 검증 단일SSOT=서버(member_hold_preview/apply).
+     이력(횟수·누적·잔여) 조회 + 접수. ★실기록은 GM 검증 후 개통(서버 HOLD_LIVE 게이트) — 그 전까지 '미개통' 안내. 2026-07-22 시포·GM ══ -->
+<div class="consult-overlay" id="holdOverlay" onclick="if(event.target===this)closeHoldModal()">
+  <div class="consult-modal" role="dialog" aria-modal="true">
+    <div class="consult-modal-head">
+      <span class="consult-modal-kind experience" style="background:var(--orange-bg,transparent);color:var(--orange,var(--text))">휴회</span>
+      <span class="consult-modal-title">휴회 신청</span>
+    </div>
+
+    <!-- 회원 선택(유효회원 검색) -->
+    <div class="consult-row" id="hdMemberPickRow"><span class="ck">회원 선택</span><span class="cv" style="display:flex;flex-direction:column;gap:4px;width:100%">
+      <input type="text" id="hdMemberInput" list="hdMemberList" placeholder="유효회원 이름·전화 검색" autocomplete="off"
+        style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+      <datalist id="hdMemberList"></datalist>
+      <span style="font-size:11px;color:var(--dim)">— 목록에서 회원을 선택하세요(유효회원 시트)</span>
+    </span></div>
+    <div class="consult-row" id="hdMemberFixedRow" style="display:none"><span class="ck">회원</span><span class="cv" id="hdMemberFixed">—</span></div>
+
+    <!-- 이력(횟수·누적·잔여) — 회원 선택 시 서버 조회(member_hold_preview) 표시 -->
+    <div class="info-box" id="hdHistory" style="margin:10px 0;font-size:12px;color:var(--dim);padding:9px 12px;display:none"></div>
+
+    <div class="consult-field-label">휴회 시작일</div>
+    <input type="date" id="hdStart" onchange="_hdRefreshPreview()" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+
+    <div class="consult-field-label">휴회 일수 <span style="color:var(--dim);font-weight:400">(1회 7~60일)</span></div>
+    <input type="number" id="hdDays" min="7" max="60" step="1" placeholder="예: 30" oninput="_hdRefreshPreview()" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+
+    <div id="hdPreviewMsg" style="margin-top:10px;font-size:12.5px;font-weight:700;min-height:18px"></div>
+
+    <div class="consult-actions">
+      <button class="consult-btn-cancel" onclick="closeHoldModal()">취소</button>
+      <button class="consult-btn-save" id="hdSaveBtn" onclick="saveHoldModal()">접수</button>
     </div>
   </div>
 </div>
@@ -6493,6 +6531,10 @@ function _activeRender(rows, isFiltered) {
         var rc = _remainColorInfo(_cv);
         if (rc) { html += '<td style="white-space:nowrap"' + editAttr + '><span style="color:' + rc.color + ';font-weight:' + rc.weight + '">' + rc.icon + esc(_cv) + '</span></td>'; return; }
       }
+      // 휴회중 상태색(2026-07-22 시포·GM) — 오늘이 휴회기간 내면 회원명 셀에 배지.
+      if (h === '회원명' && _holdActive(row)) {
+        html += '<td style="white-space:nowrap"' + editAttr + '><span style="color:var(--orange,#c80);font-weight:800">⏸ 휴회중</span> ' + esc(_cv) + '</td>'; return;
+      }
       html += '<td style="white-space:nowrap;' + leftStyle + '"' + editAttr + titleAttr + '>' + esc(_cv) + '</td>';
     });
     html += '</tr>';
@@ -7527,6 +7569,119 @@ function saveChurnModal() {
     })
     .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
     .then(function(){ saveBtn.disabled = false; });
+}
+
+/* ─────────────────────────────────────────────
+   휴회 경량안 — 유효회원 휴회 접수/이력(3회/총60일·1회 7~60일). 검증 단일SSOT=서버(member_hold_preview/apply).
+   ★실기록은 GM 검증 후 개통(서버 HOLD_LIVE 게이트) — 그 전엔 접수 시 '미개통' 안내(폼·이력·검증은 상시 동작). 2026-07-22 시포·GM
+   ───────────────────────────────────────────── */
+var _holdSel = null;   // { rowIndex, keyPhone, rowKey, name }
+
+// 휴회 신청 모달 열기 — 유효회원 datalist 채우고 회원 선택 대기. 유효회원 미로드 시 로드 유도.
+function openHoldModal() {
+  _holdSel = null;
+  var inp = document.getElementById('hdMemberInput'); if (inp) inp.value = '';
+  document.getElementById('hdMemberPickRow').style.display = '';
+  document.getElementById('hdMemberFixedRow').style.display = 'none';
+  document.getElementById('hdHistory').style.display = 'none';
+  document.getElementById('hdStart').value = '';
+  document.getElementById('hdDays').value = '';
+  document.getElementById('hdPreviewMsg').textContent = '';
+  var dl = document.getElementById('hdMemberList'); if (dl) dl.innerHTML = '';
+  if (!(_activeRows && _activeRows.length)) {
+    showToast('회원 명단을 먼저 불러옵니다', 'ok');
+    if (typeof loadActiveMembers === 'function') loadActiveMembers();
+  } else if (dl) {
+    _activeRows.forEach(function(r){
+      var nm = String(r['회원명'] || '').trim(); var ph = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
+      if (!nm) return;
+      var o = document.createElement('option'); o.value = nm + (ph ? ' · ' + ph : ''); dl.appendChild(o);
+    });
+  }
+  // 회원 선택 리스너(중복 방지 1회 배선)
+  if (inp && !inp.dataset.hdwired) {
+    inp.dataset.hdwired = '1';
+    inp.addEventListener('change', _hdOnPickMember);
+  }
+  document.getElementById('holdOverlay').classList.add('open');
+}
+function closeHoldModal() { document.getElementById('holdOverlay').classList.remove('open'); _holdSel = null; }
+
+// datalist 입력값('이름 · 전화')→_activeRows 행 해석 후 선택 확정.
+function _hdOnPickMember() {
+  var val = String(document.getElementById('hdMemberInput').value || '').trim();
+  if (!val) return;
+  var parts = val.split('·');
+  var nm = (parts[0] || '').trim();
+  var ph = (parts[1] || '').replace(/[^0-9]/g, '');
+  var row = (_activeRows || []).find(function(r){
+    var rn = String(r['회원명'] || '').trim();
+    var rp = String(r['휴대폰 번호'] || r['휴대폰'] || '').replace(/[^0-9]/g, '');
+    return rn === nm && (!ph || rp === ph);
+  });
+  if (!row) { showToast('회원을 목록에서 선택하세요', 'err'); return; }
+  _holdSel = { rowIndex: row.rowIndex, keyPhone: String(row['휴대폰 번호'] || row['휴대폰'] || '').trim(), rowKey: row.rowKey || '', name: String(row['회원명'] || '').trim() };
+  document.getElementById('hdMemberPickRow').style.display = 'none';
+  document.getElementById('hdMemberFixedRow').style.display = '';
+  document.getElementById('hdMemberFixed').textContent = _holdSel.name + (_holdSel.keyPhone ? ' · ' + _holdSel.keyPhone : '');
+  _hdRefreshPreview();
+}
+
+// 서버 미리보기(read-only) — 이력(횟수·누적·잔여) + 입력 검증 실시간 반영.
+function _hdRefreshPreview() {
+  if (!_holdSel) return;
+  var start = String(document.getElementById('hdStart').value || '').trim();
+  var days = parseInt(document.getElementById('hdDays').value, 10);
+  var payload = { action: 'member_hold_preview', rowIndex: _holdSel.rowIndex, keyPhone: _holdSel.keyPhone, rowKey: _holdSel.rowKey };
+  if (start) payload.holdStart = start;
+  if (!isNaN(days)) payload.holdDays = days;
+  apiPost(payload).then(function(d){
+    var msg = document.getElementById('hdPreviewMsg');
+    if (!d || d.ok === false) { msg.style.color = 'var(--red)'; msg.textContent = '조회 실패: ' + ((d && (d.detail || d.error)) || ''); return; }
+    var hb = document.getElementById('hdHistory'); hb.style.display = '';
+    hb.innerHTML = '📋 휴회 이력 — 사용 <strong style="color:var(--text)">' + d.current.count + '회</strong> / 누적 <strong style="color:var(--text)">' + d.current.cumDays + '일</strong> · 잔여 <strong style="color:var(--text)">' + d.remaining.count + '회 · ' + d.remaining.days + '일</strong> <span style="color:var(--dim)">(한도 ' + d.limits.maxCount + '회 · ' + d.limits.maxTotal + '일)</span>';
+    if (!start || isNaN(days)) { msg.textContent = ''; return; }
+    if (d.valid) {
+      msg.style.color = 'var(--green)';
+      msg.textContent = '✅ 접수 가능 — 휴회 ' + d.request.start + ' ~ ' + d.request.end + ' (' + d.request.days + '일)';
+      if (d.live === false) msg.innerHTML = msg.textContent + ' <span style="color:var(--orange,#c80)">· ⚠️ 실접수는 GM 검증 후 개통</span>';
+    } else {
+      msg.style.color = 'var(--red)';
+      msg.textContent = '⛔ ' + (d.error || '접수 불가');
+    }
+  }).catch(function(){ document.getElementById('hdPreviewMsg').textContent = '조회 오류'; });
+}
+
+// 휴회 접수(실기록) — 서버 검증 재수행 후 4칸 기록(HOLD_LIVE 게이트). 성공 시 로컬 반영·재렌더.
+function saveHoldModal() {
+  if (!_holdSel) { showToast('회원을 선택하세요', 'err'); return; }
+  var start = String(document.getElementById('hdStart').value || '').trim();
+  var days = parseInt(document.getElementById('hdDays').value, 10);
+  if (!start) { showToast('휴회 시작일을 입력하세요', 'err'); return; }
+  if (isNaN(days)) { showToast('휴회 일수를 입력하세요', 'err'); return; }
+  var btn = document.getElementById('hdSaveBtn'); btn.disabled = true;
+  apiPost({ action: 'member_hold_apply', rowIndex: _holdSel.rowIndex, keyPhone: _holdSel.keyPhone, rowKey: _holdSel.rowKey, holdStart: start, holdDays: days })
+    .then(function(d){
+      if (d && d.ok === false) {
+        if (d.error === 'hold-gated') { showToast('휴회 접수는 GM 검증 후 개통됩니다', 'err'); return; }
+        throw new Error(d.detail || d.error || '접수 실패');
+      }
+      showToast('휴회 접수 완료', 'ok');
+      var r = (_activeRows || []).find(function(x){ return x.rowIndex == _holdSel.rowIndex; });
+      if (r) { r['휴회횟수'] = d.count; r['휴회누적일수'] = d.cumDays; r['휴회시작일'] = d.start; r['휴회종료일'] = d.end; }
+      if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
+      closeHoldModal();
+    })
+    .catch(function(err){ showToast('접수 실패: ' + (err.message || ''), 'err'); })
+    .then(function(){ btn.disabled = false; });
+}
+
+// 상태색 — 오늘이 휴회시작일~휴회종료일 사이면 '휴회중'(회원명 셀 배지). 2026-07-22 시포·GM
+function _holdActive(row) {
+  var e = String(row['휴회종료일'] || '').trim(); if (!e) return false;
+  var s = String(row['휴회시작일'] || '').trim();
+  var d = new Date(); var t = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  return (!s || s <= t) && t <= e;
 }
 
 /* ─────────────────────────────────────────────

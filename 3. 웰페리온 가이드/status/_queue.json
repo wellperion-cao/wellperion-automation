@@ -1,5 +1,20 @@
 [
   {
+    "task_id": "CPO-2026-07-22-HOLD-LIGHTWEIGHT",
+    "clevel": "cpo",
+    "title": "[시포] 휴회 경량안 — 회원관리 연동 이력·접수(3회/60일·7~60일)",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "from": "ceo",
+    "origin": "gm",
+    "enqueued_at": "2026-07-22",
+    "note": "GM 승인 '휴회 경량안'(웰리 위임). 통합설계 스펙 docs/superpowers/specs/2026-07-22-문의폼-유입-휴회-통합설계.md C절. 범위: ①유효회원 탭 additive 4칸(휴회횟수·휴회누적일수·휴회시작일·휴회종료일, GAS _miEnsureCol_ 자동생성·헤더이름기반) ②GAS 검증 단일SSOT(신규 액션 member_hold_preview[read-only]+member_hold_apply[게이트]): 3회 초과·누적60일 초과·1회 7일미만·60일초과 거부·잔여 자동계산 ③membership.html 휴회 접수폼1개+상태색(⏸휴회중)1개+이력조회. ★실측 핵심발견: 잔여일은 서버계산 아님 — member_active_list가 시트 '잔여일' 컬럼 raw값을 그대로 읽음(_aaIdx('잔여일'), Survey.js:4073·4089). 즉 스펙의 '서버 member_active_list 산출식' 가정은 틀림. 종료일자 가산→잔여일 자동반영은 시트측 잔여일=f(종료일자) 수식일 때만 성립(원본 미확인) → 본 빌드는 종료일자/잔여일 미변경(HOLD_EXTEND_GO 게이트, getFormula 수식셀 보호)로 손상방지. 안전: 행삭제 없음(셀 write만)·대조키=rowKey(등록일자+전화)/keyPhone fail-closed 가드 재사용(member_active_update와 동일)·additive 칸. 라이브 발효=GM go(HOLD_LIVE=false·GAS 미배포·apply 서버차단).",
+    "next": "GM 검증(시크릿크롬 모달 렌더 확인) 후 개통: GAS /exec 배포 + HOLD_LIVE=true + 잔여일 시트수식 실측 후 HOLD_EXTEND_GO 결정",
+    "ship_no": 768,
+    "module": "M3",
+    "surface": "autonomy"
+  },
+  {
     "task_id": "CTO-2026-07-22-REPORT-4ROOM-TRUST-FIX",
     "clevel": "cto",
     "title": "[시토] 정기 자동보고 4방 신뢰성·심도 수리 — 방1 데이터정합·방2 회차/일지/이슈 심화·방3 습득물 보관위치·방4 자동화현황 통합",
@@ -1550,5 +1565,50 @@
     "artifact": "- rowKey 발신 활성: gviz 원시 Date값 초단위 정확 복원 → 백엔드 rowKey와 실데이터 MATCH 검증(윤은혜 20260719171434|01064016471). 오지목 근본수리 프론트 완성(저장이 위치 아닌 지문키로 정확 회원 지목)\n- 문의일시 110→152px·112→142px, 연락처 120→134px·122→136px (표시 '2026-07-22 10:20' 16자 2줄 래핑 해소, 남는 폭은 가변칸 흡수) (CLI ad-hoc · 커밋 4093bd9f)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4093bd9fb8e150920e1e52ffe25043924f2caae1"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-34f433c3",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9637,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 34f433c3)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "34f433c3515b6438f1afe0979da160635ae056cd"
+  },
+  {
+    "task_id": "CTO-2026-07-22-UTM-CONTENT-BUGFIX-VERIFY",
+    "clevel": "cto",
+    "title": "[시토] 유입경로 utm_content 유실버그 수정 — IG 공식/개인 구분 복구",
+    "status": "DONE",
+    "priority": "⛵돛단배",
+    "from": "ceo",
+    "origin": "ceo",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "note": "웰리 위임·GM 승인 '버그수정 먼저'(스펙 docs/superpowers/specs/2026-07-22-문의폼-유입-휴회-통합설계.md §B-2/로드맵 단계0). 실측 결과 버그가 이미 해소돼 있었음 — 스펙이 근거로 든 Survey.js:2775는 구프로젝트(1A77oDR, .deploy-funnel/Survey.js·버전200상한으로 2026-07-18 은퇴·백업전용, reference_gas_funnel_version_limit_200)였고, 라이브는 2026-07-18 이관된 v2(scriptId 1BezMSW…, .deploy-funnel-v2/Survey.js, prod /exec AKfycbykgMyFc…)다. v2의 intake_submit 멤버십 분기(Survey.js:2909-2914·2954)는 2026-07-20 commit 5f716aa6(시모 '인스타 유입 기여 측정화')에서 이미 utmContent를 읽어 '유입경로(자동)' 칸에 source|medium|content 3세그먼트로 기록하도록 수정·배포돼 있었다. 코드 변경 0(추가 배포 불필요 — GAS 200버전 상한 재발 회피). 라이브 실측 검증: intake_submit(membership) POST에 utmSource=qa_test/utmMedium=qa_test/utmContent=utm_content_verify_0722 주입 → 시트(12AWcAlg…, gid1902010032) '유입경로(자동)' 칸에 정확히 \"qa_test|qa_test|utm_content_verify_0722\" 기록 확인(공개 gviz CSV로 직접 대조). 검증 후 member_inquiry_delete(rowKey+keyPhone 대조, INC-020 재발방지 규약 준수)로 테스트행(rowIndex 634, [자동검증]UTM테스트/010-0000-8801) 즉시 삭제·흔적 정리 완료. 강습(adult/youth/summer) 분기는 '유입경로(자동)' 전용 칸이 애초에 없어(문의 경로 칸에 채널만 폴백 병합) 본 버그 범위 밖 — 스펙에도 명시된 별건(범위 밖 확인, 별도 지시 시 착수).",
+    "next": "🏁 입항완료 — 코드변경 없음(기배포 확인)·재배포 불필요. 강습 분기 UTM 전용칸 신설은 GM/웰리 별도 지시 시.",
+    "depends_on": "",
+    "ship_no": 9638,
+    "module": "T1",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "CPO-2026-07-22-ADHOC-dd7e5760",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9639,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 dd7e5760)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "dd7e57606ebea7f9aa4b315c49a4d445945590c9"
   }
 ]
