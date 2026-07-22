@@ -2247,5 +2247,19 @@
     "artifact": "- cmo/intake/instructor_intake.html: '강사' 한정 표현을 '콘텐츠' 전반으로 일반화\n  (제목·h1·분류 select 옵션·placeholder). id=f_team·GAS_PROD·team 키·백엔드 계약은 불변.\n- cmo/funnel/콘텐츠문의현황.html: M1 #m1-dash 인라인 대시보드(스타일+마크업+스크립트)를\n  독립 페이지로 이관. 상대경로 2건(review_queue.json·월간마케팅보고서.html) 재배치에 맞춰 수정.\n  Playwright 라이브 렌더 검증 완료(콘솔 에러  (CLI ad-hoc · 커밋 6e5d7bea)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "6e5d7beab925760d83d9bba4c3f4678f52e2855f"
+  },
+  {
+    "task_id": "CTO-2026-07-22-ADHOC-28191f12",
+    "clevel": "cto",
+    "title": "[시토] precommit_incident_guard 훅 커밋 파이프라인 무한대기 방지 하드닝",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9683,
+    "artifact": "증상: 훅이 호출하는 divergence_scan.py/forbidden_scan.py subprocess가\n느려지면(실측 정상 ~2분) .git/index.lock 을 쥔 채 전체 커밋 파이프라인이\n무한정 막힘(보고: pid 3807 8분+ 무응답). subprocess.run 4곳 모두\ntimeout(스캔 180초/git명령 10초) + stdin=DEVNULL(입력대기 원천차단)\n추가 — 타임아웃은 기존 except Exception fail-open 경로로 흡수되어\n커밋을 절대 막지 않는다. (CLI ad-hoc · 커밋 28191f12)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "28191f125c521e48b9e843f7b7b9e3a985375398"
   }
 ]
