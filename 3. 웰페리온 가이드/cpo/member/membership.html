@@ -4909,13 +4909,96 @@ function _lessonSportDisplay(v, isYouth){
   if (isYouth && k === '수영') return k;
   return LESSON_SPORT_DISPLAY_MAP[k] || k;
 }
+/* ── 강습 재문의 이력(같은 연락처) — 멤버십 _ri* 시스템 이식(GM 2026-07-22). 표시 전용·시트 쓰기 0·새 fetch 0.
+   이름 완전일치=재문의(🔁·이전건 LOSS면 강조) / 이름 다르면 '같은 번호 다른 문의'(👥 형제·동반, 주우인/주우현 케이스). 병합 없음. ── */
+var _lriIdxCache = { adult: null, youth: null };
+function _lriIndex(t) {
+  if (!_lriIdxCache[t]) {
+    var idx = {};
+    ((_lessonState[t] && _lessonState[t].rows) || []).forEach(function (r) {
+      var p = _mregNormPhone(r.phone); if (!p) return;
+      (idx[p] = idx[p] || []).push(r);
+    });
+    _lriIdxCache[t] = idx;
+  }
+  return _lriIdxCache[t];
+}
+function _lriIsLoss(r) { return String(r.status || '').trim() === 'LOSS'; }
+function _lriGroupFor(row, t) {
+  var p = _mregNormPhone(row.phone); if (!p) return null;
+  var group = _lriIndex(t)[p];
+  if (!group || group.length < 2) return null;
+  var name = String(row.name || '').trim();
+  var others = group.filter(function (r) { return r.rowIndex !== row.rowIndex; });
+  var sameName = name ? others.filter(function (r) { return String(r.name || '').trim() === name; }) : [];
+  var diffName = others.filter(function (r) { return sameName.indexOf(r) < 0; });
+  var ts = String(row.timestamp || '');
+  var priorSameName = sameName.filter(function (r) { return String(r.timestamp || '') < ts; })
+    .sort(function (a, b) { return String(a.timestamp || '').localeCompare(String(b.timestamp || '')); });
+  if (!priorSameName.length && !diffName.length) return null;
+  return { sameName: sameName, diffName: diffName, priorSameName: priorSameName };
+}
+function _lriBadgeHtml(row, t) {
+  var g = _lriGroupFor(row, t); if (!g) return '';
+  if (g.priorSameName.length) {
+    var hasLoss = g.priorSameName.some(_lriIsLoss);
+    return '<span class="ri-badge ' + (hasLoss ? 'ri-badge-loss' : 'ri-badge-repeat') + '" onclick="event.stopPropagation();openLessonRepeatModal(\'' + t + '\',' + row.rowIndex + ')" title="이전 문의 이력 보기">🔁 이전 문의 ' + g.priorSameName.length + '건</span>';
+  }
+  return '<span class="ri-badge ri-badge-family" onclick="event.stopPropagation();openLessonRepeatModal(\'' + t + '\',' + row.rowIndex + ')" title="같은 번호로 접수된 다른 문의(형제·동반 추정)">👥 같은 번호 다른 문의 ' + g.diffName.length + '건</span>';
+}
+function _lriEntryHtml(r, t) {
+  var contactList = _ctSort(_rowContacts(r));
+  var contactTxt = contactList.length
+    ? contactList.slice().reverse().map(function (c) { var d = c.date ? c.date.slice(5).replace('-', '/') : ''; return ((d || c.time) ? (d + ' ' + (c.time || '')).trim() + ' — ' : '') + (c.note || ''); }).join(' / ')
+    : '—';
+  var stCls = (String(r.status || '').trim() === 'LOSS') ? 'loss' : 'new';
+  return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--bg)">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+      '<span style="font-size:12px;color:var(--dim-mid);font-weight:700">' + esc(_fmtInqDateTime(r.timestamp)) + '</span>' +
+      '<span class="status-chip ' + stCls + '" style="font-size:10.5px">' + esc(String(r.status || '—')) + '</span>' +
+    '</div>' +
+    '<div class="consult-row" style="margin-bottom:4px"><span class="ck">이름</span><span class="cv">' + esc(r.name || '—') + '</span></div>' +
+    '<div class="consult-row" style="margin-bottom:4px"><span class="ck">종목</span><span class="cv">' + esc(_lessonSportDisplay(r.sport, t === 'youth') || '—') + '</span></div>' +
+    '<div class="consult-row" style="margin-bottom:4px"><span class="ck">경로</span><span class="cv">' + esc(r.channel || '—') + '</span></div>' +
+    '<div class="consult-row" style="margin-bottom:4px"><span class="ck">문의사항</span><span class="cv" style="font-weight:400">' + esc(r.note || '—') + '</span></div>' +
+    '<div class="consult-row" style="margin-bottom:0"><span class="ck">Contact</span><span class="cv" style="font-weight:400">' + esc(contactTxt) + '</span></div>' +
+  '</div>';
+}
+function openLessonRepeatModal(t, rowIndex) {
+  var row = ((_lessonState[t] && _lessonState[t].rows) || []).find(function (x) { return x.rowIndex === rowIndex; });
+  if (!row) { showToast('문의 정보를 찾을 수 없습니다', 'err'); return; }
+  var g = _lriGroupFor(row, t);
+  if (!g) { showToast('이력 정보를 찾을 수 없습니다', 'err'); return; }
+  document.getElementById('riMemberFixed').textContent = (row.name || '—') + (row.phone ? ' · ' + row.phone : '');
+  var hasLoss = g.priorSameName.some(_lriIsLoss);
+  document.getElementById('riLossBanner').style.display = hasLoss ? '' : 'none';
+  var kindEl = document.getElementById('riKind');
+  kindEl.className = 'consult-modal-kind ' + (hasLoss ? '' : 'experience');
+  kindEl.style.cssText = hasLoss ? 'background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)' : '';
+  kindEl.textContent = hasLoss ? '⚠️ LOSS 재문의' : (g.priorSameName.length ? '재문의' : '동일번호');
+  var repeatSec = document.getElementById('riRepeatSection');
+  document.getElementById('riRepeatList').innerHTML = g.priorSameName.length ? g.priorSameName.map(function (r) { return _lriEntryHtml(r, t); }).join('') : '';
+  repeatSec.style.display = g.priorSameName.length ? '' : 'none';
+  var famSec = document.getElementById('riFamilySection');
+  var famSorted = g.diffName.slice().sort(function (a, b) { return String(a.timestamp || '').localeCompare(String(b.timestamp || '')); });
+  document.getElementById('riFamilyList').innerHTML = famSorted.length ? famSorted.map(function (r) { return _lriEntryHtml(r, t); }).join('') : '';
+  famSec.style.display = famSorted.length ? '' : 'none';
+  var summaryEl = document.getElementById('riSummary');
+  if (g.priorSameName.length) {
+    var lastPrior = g.priorSameName[g.priorSameName.length - 1];
+    var days = _riDaysBetween(lastPrior.timestamp, row.timestamp);
+    summaryEl.textContent = '이번이 ' + (g.priorSameName.length + 1) + '번째 · 이전 문의로부터 ' + (days == null ? '알 수 없는' : days) + '일 만에 재문의';
+    summaryEl.style.display = '';
+  } else { summaryEl.textContent = ''; summaryEl.style.display = 'none'; }
+  document.getElementById('repeatInquiryOverlay').classList.add('open');
+}
 // 강습 문의 행 HTML(문의 현황·LOSS 회원 관리 공용) — 상태/담당 편집 셀렉트·CONTACT 편집. 배973.
 function _lessonRowHtml(t, r, sportKey, sportLabel) {
   var mgmt = _lessonSportMgmt(r, sportKey), argSport = encodeURIComponent(sportKey);
   return '<tr data-row-index="' + r.rowIndex + '">' +
     '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(_fmtInqDateTime(r.timestamp)) + '</td>' +
     // 나이 배지 — 성인·유소년 모두 표시(기존 유소년 전용 조건 제거, 값 있으면 노출). 2026-07-21 시포·GM.
-    '<td class="left lesson-inq-cell-name" style="font-weight:700" title="' + esc(r.name || '') + '">' + esc(r.name || '—') + (String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
+    '<td class="left lesson-inq-cell-name" style="font-weight:700" title="' + esc(r.name || '') + '">' + esc(r.name || '—') + (String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + _lriBadgeHtml(r, t) + '</td>' +
     '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
     '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '"><span style="' + _lessonSportChipStyle(sportLabel) + '">' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '</span></td>' +
     // 문의내용 셀 — r.note(gvizLessonRows_ iNote 배선, 3105행) 그대로 노출. 길면 title 툴팁·빈값 '—'. 2026-07-21 시포·GM.
@@ -5015,6 +5098,7 @@ function _lessonMemStatus(t) {
 function lessonRender(t) {
   var tbody = document.getElementById('lessonBody_' + t);
   if (!tbody) return;
+  _lriIdxCache[t] = null;   // 재문의 인덱스 재빌드(이 렌더 기준 최신 rows). GM 2026-07-22.
   _lessonUpdateBucketCounts(t);
   var lines = _lessonVisibleLines(t);
   if (lines.length === 0) { _lessonEmpty(t, '강습 문의 없음', '해당 조건의 강습 문의가 없습니다.'); return; }
