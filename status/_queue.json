@@ -2665,5 +2665,19 @@
     "origin": "gm",
     "enqueued_at": "2026-07-22",
     "note": "GM 지시: 방학특강(유소년) summer 폼을 youth 폼과 항목·내용 1:1 정합(성함(보호자)·자녀나이·요일/시간 위젯·문의경로·안내). 강습종목=방학특강 고유 5종 유지(수영·체조·스쿼시·골프·유소년 성장PT). 희망월(wishMonth·select) 제거→희망 레슨 시간(wishTime·daytime) 교체. 백엔드 intake_submit: summer→유소년강습 탭(기존 라우팅) 유지, 희망칸 write를 wishMonth→(wishTime||wishMonth) 폴백으로 정합(.deploy-funnel + .deploy-funnel-v2 양측). 텔레그램 알림에 희망시간 표시 추가. 산출물: cmo/review/방학특강_유소년_폼_{desktop,mobile}_20260722.png + 방학특강_vs_WSC유소년_대조_20260722.png(youth 1:1 확인). ★라이브 활성=GM go 대기: WP post 8460 draft-page 재주입 + GAS 재배포 미실행(비가역 유입경로). ★확인필요: 라이브 배포 스크립트가 1A77oDR(.deploy-funnel) vs 1BezMSW(.deploy-funnel-v2) 중 무엇인지 — v1은 희망칸 부분일치(희망) 키가 종목칸을 먼저 무는 구버그가 남아있어(v2는 정확헤더로 수리됨) v1이 라이브면 요일/시간 유실 위험 → 시토 확인 후 배포."
+  },
+  {
+    "task_id": "CMO-2026-07-22-ADHOC-f05caee7",
+    "clevel": "cmo",
+    "title": "[시모] 방학특강(유소년) 자체폼 WSC유소년 항목정합 + 희망월→요일/시간 (배9712)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-22",
+    "processed_at": "2026-07-22",
+    "ship_no": 9713,
+    "artifact": "- summer 폼 필드를 youth와 1:1 정합: 성함(보호자)·자녀나이·요일/시간(daytime)·문의경로·안내\n- 강습종목=방학특강 고유 5종 유지(수영·체조·스쿼시·골프·유소년 성장PT)\n- wishMonth(select) 제거 → wishTime(daytime) 교체\n- backend intake_submit: summer 희망칸 write wishMonth→(wishTime||wishMonth) 폴백(양 Survey.js) + 텔레그램 희망시간 표시\n- 산출물: cmo/review 스크린샷 3종(desktop/mobil (CLI ad-hoc · 커밋 f05caee7)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f05caee79b0ff56c82ff769086cdba7e88504ce9"
   }
 ]
