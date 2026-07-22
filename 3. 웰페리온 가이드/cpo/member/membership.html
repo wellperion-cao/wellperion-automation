@@ -1304,9 +1304,6 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <!-- 종목별 배정현황 요약 카드(배정/회원수) — 카드 클릭=해당 종목 서브탭. GM 지시 2026-07-18. -->
       <div id="oaSummary" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
 
-      <!-- 종목 서브탭(PT·골프·P.L·스쿼시·수영) -->
-      <div id="oaSportBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
-
       <div class="active-search-wrap">
         <input type="text" id="oaSearch" class="active-search" placeholder="이름·전화 검색…" autocomplete="off">
         <button class="btn-refresh" onclick="ownerAssignReload()">새로고침</button>
@@ -4795,14 +4792,32 @@ function _lessonSportMgmt(row, sportKey) {
     var _isNewInq = (!_st || _st === '미정' || _st === '신규' || _st === '미컨택');
     if (!_isNewInq) owner = _lessonTeamLeadOf(sportKey) || '';
   }
-  return { status: row.status || '', owner: owner, contacts: row.contacts || [] };
+  // 종목별 컨택 분리(GM 2026-07-22): 이 종목(bySport[sportKey]) 컨택 우선. 종목별 데이터가 하나라도 있으면
+  //   flat(공유) 컨택은 이관된 것으로 보고 숨김(다종목 중복표시=오지목 방지). 종목별 전무 시 flat 폴백(레거시 무회귀).
+  var _bs = (row.bySport && typeof row.bySport === 'object') ? row.bySport : {};
+  var _bsE = sportKey ? _bs[sportKey] : null;
+  var _bsC = (_bsE && Array.isArray(_bsE.contacts)) ? _bsE.contacts : null;
+  var _anyBs = false;
+  for (var _bk in _bs) { if (_bs[_bk] && Array.isArray(_bs[_bk].contacts) && _bs[_bk].contacts.length) { _anyBs = true; break; } }
+  var _mgmtContacts = (_bsC && _bsC.length) ? _bsC : (_anyBs ? [] : (row.contacts || []));
+  return { status: row.status || '', owner: owner, contacts: _mgmtContacts };
 }
-// 저장 성공 후 로컬 반영 — 항상 행단일 필드(flat 모델). 백엔드 lesson_inquiry_update가 body.sport='' → row-level(flat L~P) 경로로 저장. 배973 시포·GM 2026-07-14.
+// 저장 성공 후 로컬 반영. 종목별 경로(sportKey 있음)=bySport[sportKey].contacts 갱신 / 레거시 flat(sportKey='')=row.contacts.
+//   백엔드 lesson_inquiry_update와 정합(sport 동봉=종목별관리, 미동봉=flat L~P). 배973→종목별 전환 GM 2026-07-22.
 function _lessonApplyLocalMgmt(row, sportKey, patch) {
   if (!row) return;
   if (patch.status !== undefined) row.status = patch.status;
   if (patch.owner !== undefined) row.owner = patch.owner;
-  if (patch.contacts !== undefined) row.contacts = patch.contacts;
+  if (patch.contacts !== undefined) {
+    if (sportKey) {
+      if (!row.bySport || typeof row.bySport !== 'object') row.bySport = {};
+      var _e = row.bySport[sportKey] || { status: '', owner: '', contacts: [] };
+      _e.contacts = patch.contacts;
+      row.bySport[sportKey] = _e;
+    } else {
+      row.contacts = patch.contacts;
+    }
+  }
 }
 // 필터 반영 후 화면에 보이는 '종목별 줄' — 문의 1행에 종목이 여러 개면 종목마다 별도 줄로 분리(축7, GM 확정).
 // 종목 미기재 행은 sportKey=''(레거시 단일 경로)로 줄 1개 유지(데이터 손실 방지).
@@ -5925,7 +5940,6 @@ function _oaMaskPhone(p){
 }
 
 function ownerAssignInit(){
-  _oaRenderSportBar();
   _oaWireSearch();
   if (_activeLoaded && _activeScope === 'valid' && _activeRows && _activeRows.length){
     _ownerAssignRows = _activeRows;   // 유효회원 사전로드분 재사용(중복 fetch 0)
@@ -5969,14 +5983,9 @@ function _oaFetch(){
     });
 }
 
-function _oaRenderSportBar(){
-  var bar = document.getElementById('oaSportBar'); if (!bar) return;
-  bar.innerHTML = OWNER_ASSIGN_SPORTS.map(function(s){
-    var on = (s.key === _oaSport);
-    return '<button type="button" onclick="_oaSetSport(\'' + s.key + '\')" style="padding:7px 14px;border-radius:8px;border:1px solid ' + (on?'var(--teal-border)':'var(--border)') + ';background:' + (on?'var(--teal-bg)':'var(--bg)') + ';color:' + (on?'var(--teal)':'var(--dim)') + ';font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">' + esc(s.label) + '</button>';
-  }).join('');
-}
-function _oaSetSport(key){ _oaSport = key; _oaTrainer = ''; _oaLimit = 200; _oaRenderSportBar(); _oaRender(); }
+// (중복 제거 2026-07-22 GM) 종목 서브탭(#oaSportBar)은 위 요약카드(#oaSummary·_oaRenderSummary)와 동일 5종목 전환 중복 →
+//   요약카드가 배정/회원수까지 담은 상위 컨트롤이라 하위 서브탭 바를 제거. 종목 전환=요약카드 클릭(_oaSetSport)으로 그대로 동작.
+function _oaSetSport(key){ _oaSport = key; _oaTrainer = ''; _oaLimit = 200; _oaRender(); }
 function _oaSetTrainer(val){ _oaTrainer = (_oaTrainer === val ? '' : val); _oaLimit = 200; _oaRender(); }
 function _oaShowMore(){ _oaLimit += 200; _oaRender(); }
 
@@ -6355,6 +6364,11 @@ function _mregOwnerCell(m, membersReady){
   sports.forEach(function(key){
     var cfg = _oaSportCfg(key);
     var cur = String(member[cfg.col] || '').trim();
+    // 골프 담당자 배정은 골프 종목 회원에게만 활성화(GM 2026-07-22). 이미 배정값이 있으면 정정 위해 유지.
+    if (key === '골프') {
+      var _prog = String(m.program || '');
+      if (_prog.indexOf('골프') < 0 && !/golf/i.test(_prog) && !cur) return;   // 골프 미신청 + 미배정 → 골프 셀 생략
+    }
     var selVal = cur || LESSON_UNASSIGNED_OPTION;   // 빈칸=미배정(담당자 X)로 표시
     var opts = _oaOwnerOptionsCombined();   // 종목 상관없이 P.T·필라테스·골프 통합(GM 2026-07-20) — 새 배열(끝=담당자 X)
     var optSet = {}; opts.forEach(function(o){ optSet[o] = 1; });
@@ -8327,12 +8341,13 @@ function saveContactModal() {
   var saveBtn = document.getElementById('ctSaveBtn'); saveBtn.disabled = true;
   if (ctx.source === 'lesson') {
     var row = _lessonFindRow(ctx.t, rowIndex);
-    var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: '', contacts: JSON.stringify(contacts), gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
-    // 배1037: 낙관 즉시 반영 + 버퍼 enqueue(fieldset='contacts' → 상태·담당과 독립 큐).
-    _lessonApplyLocalMgmt(row, '', { contacts: contacts });
+    var _ctSport = ctx.sport || '';   // 종목별 컨택 분리(GM 2026-07-22): 클릭한 종목 줄 sportKey → 백엔드 종목별관리 경로. 미기재행은 ''(flat 유지)
+    var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: _ctSport, contacts: JSON.stringify(contacts), gid: (row && row.gid) || undefined };
+    // 배1037: 낙관 즉시 반영 + 버퍼 enqueue(fieldset=종목별 독립 → 종목 간·상태·담당과 독립 큐).
+    _lessonApplyLocalMgmt(row, _ctSport, { contacts: contacts });
     closeContactModal();
     lessonRender(ctx.t);
-    WriteBuffer.enqueue(payload, { scope: 'lesson', phoneKey: (row && row.phone) || '', fieldset: 'contacts', label: '연락이력', who: (row && row.name) || '', overlay: { contacts: contacts } });
+    WriteBuffer.enqueue(payload, { scope: 'lesson', phoneKey: (row && row.phone) || '', fieldset: 'contacts:' + _ctSport, label: '연락이력', who: (row && row.name) || '', overlay: { contacts: contacts } });
     saveBtn.disabled = false;
   } else {
     _saveCell(rowIndex, { contacts: contacts });   // _saveCell이 로컬반영+디바운스 저장(member_inquiry_update) 처리
