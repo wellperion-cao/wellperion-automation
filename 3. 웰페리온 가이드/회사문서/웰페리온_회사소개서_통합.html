@@ -189,14 +189,14 @@ h2.title .b{color:var(--beige)}
 
 /* ===== 통합판 추가 (2026-07-23) ===== */
 /* 사진 갤러리 — 「한 공간, 열여섯 가지 경험」 전용. 다른 장에는 사진 없음 */
-.ptour{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:14px;flex:1;min-height:0;margin-top:26px}
+.ptour{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:11px;flex:1;min-height:0;margin-top:26px}
 .ptour .pcell{position:relative;overflow:hidden;margin:0;background:#191615;border-radius:2px}
 .ptour .pcell img{width:100%;height:100%;object-fit:cover;display:block}
-.ptour figcaption{position:absolute;left:0;right:0;bottom:0;padding:44px 16px 13px;
+.ptour figcaption{position:absolute;left:0;right:0;bottom:0;padding:34px 12px 10px;
   background:linear-gradient(transparent,rgba(15,13,12,.88));color:var(--white);display:block}
-.ptour .pno{display:block;font-size:11px;letter-spacing:.22em;color:var(--beige);font-weight:700;margin-bottom:4px}
-.ptour .pnm{display:block;font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.3}
-.ptour .pen{display:block;font-size:12px;color:rgba(255,255,255,.66);margin-top:3px;letter-spacing:.02em}
+.ptour .pno{display:block;font-size:10px;letter-spacing:.22em;color:var(--beige);font-weight:700;margin-bottom:4px}
+.ptour .pnm{display:block;font-size:14px;font-weight:700;letter-spacing:-.01em;line-height:1.3}
+.ptour .pen{display:block;font-size:11px;color:rgba(255,255,255,.66);margin-top:3px;letter-spacing:.02em}
 
 /* 브랜드 확장 */
 .bx{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:34px}
@@ -218,7 +218,7 @@ h2.title .b{color:var(--beige)}
 
 /* ===== 세로형(책처럼 넘기기) ===== */
 body[data-fmt="portrait"] .a3{width:1123px;height:1587px}
-body[data-fmt="portrait"] .ptour{grid-template-columns:repeat(3,1fr)}
+body[data-fmt="portrait"] .ptour{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr)}
 body[data-fmt="portrait"] .bx{grid-template-columns:1fr;gap:16px}
 body[data-fmt="portrait"] .bxc{padding:22px 26px}
 body[data-fmt="portrait"] .bxn{font-size:27px}
@@ -445,18 +445,22 @@ body[data-fmt="portrait"] .mgrid,body[data-fmt="portrait"] .moments{grid-templat
     <h2 class="title">한 공간, <span class="b">열여섯 가지 경험.</span></h2>
     <p class="lead">헬스 · 수영 · 골프 · 스쿼시부터 스파 · 필라테스 · 생크몽드 · 부티부까지 — 하루의 모든 루틴이 한곳에 있습니다.</p>
     <div class="ptour">
-      <figure class="pcell"><img src="assets/facility/gym-cardio.jpg" alt="헬스 · 트레드밀 라인"><figcaption><span class="pno">01</span><span class="pnm">헬스 · 트레드밀 라인</span><span class="pen">Gym · Cardio · 야외 전경</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/lobby.jpg" alt="메인 로비 · 갤러리"><figcaption><span class="pno">01</span><span class="pnm">메인 로비 · 갤러리</span><span class="pen">Lobby &amp; Gallery</span></figcaption></figure>
       <figure class="pcell"><img src="assets/facility/pool.jpg" alt="수영 · 25m 메인 풀"><figcaption><span class="pno">02</span><span class="pnm">수영 · 25m 메인 풀</span><span class="pen">Swimming · 7m 층고</span></figcaption></figure>
-      <figure class="pcell"><img src="assets/facility/golf.jpg" alt="골프 · GDR 시스템"><figcaption><span class="pno">03</span><span class="pnm">골프 · GDR 시스템</span><span class="pen">15 오토티업 + 스크린</span></figcaption></figure>
-      <figure class="pcell"><img src="assets/facility/squash.jpg" alt="스쿼시 · 매치 코트"><figcaption><span class="pno">04</span><span class="pnm">스쿼시 · 매치 코트</span><span class="pen">국제 규격 코트</span></figcaption></figure>
-      <figure class="pcell"><img src="assets/facility/gym-weight.jpg" alt="머신 · TechnoGym"><figcaption><span class="pno">05</span><span class="pnm">머신 · TechnoGym</span><span class="pen">Strength · 풀라인업</span></figcaption></figure>
-      <figure class="pcell"><img src="assets/facility/bath.jpg" alt="사우나 · 온탕"><figcaption><span class="pno">06</span><span class="pnm">사우나 · 온탕</span><span class="pen">360평 스파 · 자쿠지</span></figcaption></figure>
-      <figure class="pcell"><img src="assets/facility/pilates.jpg" alt="필라테스 · STOTT"><figcaption><span class="pno">07</span><span class="pnm">필라테스 · STOTT</span><span class="pen">Stability · Ladder Barrel</span></figcaption></figure>
-      <figure class="pcell"><img src="assets/facility/lounge.jpg" alt="라운지 · 갤러리"><figcaption><span class="pno">08</span><span class="pnm">라운지 · 갤러리</span><span class="pen">Lounge &amp; Gallery</span></figcaption></figure>
-      <figure class="pcell"><img src="assets/facility/spa-entrance.jpg" alt="생크몽드 · 입구"><figcaption><span class="pno">09</span><span class="pnm">생크몽드 · 입구</span><span class="pen">Cinq Mondes · Entrance</span></figcaption></figure>
-      <figure class="pcell"><img src="assets/facility/spa-treatment.jpg" alt="생크몽드 · 트리트먼트"><figcaption><span class="pno">10</span><span class="pnm">생크몽드 · 트리트먼트</span><span class="pen">Cinq Mondes · Treatment</span></figcaption></figure>
-      <figure class="pcell"><img src="assets/facility/spa-relax.jpg" alt="생크몽드 · 릴랙스 라운지"><figcaption><span class="pno">11</span><span class="pnm">생크몽드 · 릴랙스 라운지</span><span class="pen">Cinq Mondes · Relax</span></figcaption></figure>
-      <figure class="pcell"><img src="assets/facility/salon.jpg" alt="부티부 · 헤어살롱"><figcaption><span class="pno">12</span><span class="pnm">부티부 · 헤어살롱</span><span class="pen">beautevu · Hair</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/gym-cardio.jpg" alt="헬스 · 트레드밀 라인"><figcaption><span class="pno">03</span><span class="pnm">헬스 · 트레드밀 라인</span><span class="pen">Gym · Cardio</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/gym-weight.jpg" alt="머신 · TechnoGym"><figcaption><span class="pno">04</span><span class="pnm">머신 · TechnoGym</span><span class="pen">Strength · 풀라인업</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/golf.jpg" alt="골프 · GDR 시스템"><figcaption><span class="pno">05</span><span class="pnm">골프 · GDR 시스템</span><span class="pen">15 오토티업 + 스크린</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/squash.jpg" alt="스쿼시 · 매치 코트"><figcaption><span class="pno">06</span><span class="pnm">스쿼시 · 매치 코트</span><span class="pen">국제 규격 코트</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/pilates.jpg" alt="필라테스 · STOTT"><figcaption><span class="pno">07</span><span class="pnm">필라테스 · STOTT</span><span class="pen">Reformer · Ladder Barrel</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/bath.jpg" alt="스파 · 온탕 / 냉탕"><figcaption><span class="pno">08</span><span class="pnm">스파 · 온탕 / 냉탕</span><span class="pen">Bath · 360평 스파</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/sauna-dry.jpg" alt="건식 사우나"><figcaption><span class="pno">09</span><span class="pnm">건식 사우나</span><span class="pen">Dry Sauna · 히노키</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/sauna-wet.jpg" alt="찜질방 · 습식"><figcaption><span class="pno">10</span><span class="pnm">찜질방 · 습식</span><span class="pen">Wet Sauna</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/powder.jpg" alt="파우더룸"><figcaption><span class="pno">11</span><span class="pnm">파우더룸</span><span class="pen">Powder Room</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/lounge.jpg" alt="라운지 · 휴게공간"><figcaption><span class="pno">12</span><span class="pnm">라운지 · 휴게공간</span><span class="pen">Lounge</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/cafe.jpg" alt="컵스 · 카페"><figcaption><span class="pno">13</span><span class="pnm">컵스 · 카페</span><span class="pen">Cafe</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/terrace.jpg" alt="컵스 · 야외 테라스"><figcaption><span class="pno">14</span><span class="pnm">컵스 · 야외 테라스</span><span class="pen">Outdoor Terrace</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/spa-treatment.jpg" alt="생크몽드 · 트리트먼트"><figcaption><span class="pno">15</span><span class="pnm">생크몽드 · 트리트먼트</span><span class="pen">Cinq Mondes</span></figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/salon.jpg" alt="부티부 · 헤어살롱"><figcaption><span class="pno">16</span><span class="pnm">부티부 · 헤어살롱</span><span class="pen">beaut&eacute;vu · Hair</span></figcaption></figure>
     </div>
     <div class="pf"><b>WELLPERION</b><span class="tag">A Day, Well Completed. · 하루의 완성, 웰페리온</span><span>07</span></div>
   </div>
@@ -486,9 +490,9 @@ body[data-fmt="portrait"] .mgrid,body[data-fmt="portrait"] .moments{grid-templat
       <div class="bxc">
         <div class="bxk">Rest &middot; F&amp;B</div>
         <div class="bxn">컵스</div>
-        <div class="bxe">CUPS</div>
-        <p class="bxd">머무름의 자리. 운동 전후의 대기와 회원 간의 만남이 일어나는 <b>라운지 &middot; 카페</b> 축을 담당합니다.</p>
-        <div class="bxm bxq"><span>GM 확인 필요</span><span>브랜드 표기 &middot; 영역 확정 전</span></div>
+        <div class="bxe">Caf&eacute; &middot; Outdoor Terrace</div>
+        <p class="bxd">머무름의 자리. 카페와 <b>야외 테라스</b>로 운동 전후의 대기와 회원 간의 만남을 받아냅니다. 하루가 끝나는 곳이자 다시 시작되는 곳.</p>
+        <div class="bxm"><span>카페 &middot; 라운지</span><span>야외 테라스</span></div>
       </div>
     </div>
     <div class="bxnote">
