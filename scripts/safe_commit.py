@@ -11,10 +11,18 @@
 #      그 임시 인덱스는 라이브 index 복사가 아니라 `read-tree HEAD` 로 시작한다
 #      (라이브 index 를 cp 하면 남의 staged 파일이 전부 딸려온다 — 기억 박제 2건).
 #   2) 지정 경로만 stage → write-tree.
+#   2-b) ★선검증(2026-07-24, 배10009) — commit-tree/update-ref *이전*, 트리 대 트리
+#      비교로 무관 경로 혼입·유령 삭제(디스크엔 있는데 삭제로 staged)를 판정한다.
+#      걸리면 커밋 자체를 만들지 않고 그 자리에서 중단한다. (구 결함: 이 판정이
+#      update-ref *이후*에 돌아 탐지는 해도 이미 만들어진 나쁜 커밋이 그대로 origin
+#      까지 push 됐다 — scripts/precommit_phantom_delete_guard.py 의 디스크 존재
+#      판정 방식을 재사용해 앞당김. safe_commit 은 commit-tree/update-ref 라 git
+#      훅이 안 걸려 그 가드가 원래 이 경로에선 발화하지 않는다.)
 #   3) commit-tree 직전 HEAD 재검증 — 트리 읽은 뒤 HEAD 가 움직였으면 폐기하고 재시도.
 #   4) `git update-ref HEAD <new> <old>` CAS 로 원자 갱신 — 경쟁 커밋이 끼어들면
 #      update-ref 자체가 실패하고 재시도(락만으로는 못 막는 틈을 git 이 막아준다).
-#   5) 커밋 후 실제로 내 경로가 커밋에 들어갔는지 + 무관 경로 혼입이 없는지 검증.
+#   5) 커밋 후 사후 재확인(방어적) — 선검증과 같은 트리라 정상 상황엔 항상 통과.
+#      push 게이트는 committed 가 아니라 ok 를 본다(혼입 감지 시 push 도 막힘).
 #
 # 직렬화 락은 기존 scripts/git_lock.py 의 GitLock 을 그대로 재사용한다(중복 구현 금지).
 # push 도 기존 scripts/post_commit_push.py 를 그대로 호출한다 — update-ref 는 post-commit
@@ -117,6 +125,51 @@ def _index_entries(rel_paths: list[str], root: Path) -> dict[str, tuple[str, str
         if len(parts) >= 3 and parts[2] == "0":
             entries[path.strip()] = (parts[0], parts[1])
     return entries
+
+
+def _tree_diff_status(tree_a: str, tree_b: str, root: Path) -> list[tuple[str, str]]:
+    """두 트리 객체를 직접 비교(커밋 없이도 가능) — [(status, path), ...].
+
+    diff-tree 는 커밋 없이 트리-트리 비교를 지원하므로 commit-tree/update-ref
+    *이전*에도 검증할 수 있다(배10009 선검증의 핵심 — rename/copy 감지(-M/-C)는
+    안 켜므로 status 는 항상 단일 문자 + 경로 1개 쌍으로만 나온다).
+    """
+    out = _git(["diff-tree", "--no-commit-id", "--name-status", "-r", "-z",
+                tree_a, tree_b], root)
+    if out.returncode != 0:
+        raise RuntimeError(f"git diff-tree 실패(rc={out.returncode}): {out.stderr.strip()}")
+    tokens = [t for t in out.stdout.split("\x00") if t]
+    pairs: list[tuple[str, str]] = []
+    for i in range(0, len(tokens) - 1, 2):
+        pairs.append((tokens[i][:1], tokens[i + 1]))
+    return pairs
+
+
+def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: Path) -> list[str]:
+    """commit-tree/update-ref *이전* 선검증(배10009) — 무관 경로 혼입 + 유령 삭제 판정.
+
+    ★기존 결함: 이 판정이 update-ref 이후에 돌아 탐지는 해도 이미 만들어진
+      나쁜 커밋을 origin 까지 그대로 push 해버렸다(감지는 정확, 차단 실패).
+      이 함수를 write-tree 직후·commit-tree 이전에 호출해 문제가 있으면
+      커밋 자체를 만들지 않고 중단하도록 바로잡는다.
+    ★판정 로직은 새로 짜지 않고 scripts/precommit_phantom_delete_guard.py 의
+      "삭제로 표시됐는데 디스크엔 실존" 판정 방식을 그대로 재사용한다 — 그
+      가드는 git 훅(pre-commit)에서만 발화하는데 safe_commit 은 commit-tree
+      /update-ref 라 훅이 아예 안 걸린다(가드 사각지대).
+    - 무관 경로 혼입: rel_paths 밖의 경로가 조금이라도 바뀌면 위반(추가·수정·
+      삭제 무관 — safe_commit 계약상 지정 경로 밖은 절대 손대면 안 됨).
+    - 유령 삭제: rel_paths 안이라도 삭제(D)로 표시됐는데 작업트리(디스크)에
+      파일이 실존하면 위반. 디스크에도 없으면 의도된 정당한 삭제 — 통과.
+    """
+    violations: list[str] = []
+    for status, path in _tree_diff_status(head_tree, tree, root):
+        in_scope = any(path == rp or path.startswith(rp + "/") for rp in rel_paths)
+        if not in_scope:
+            violations.append(f"무관 경로 혼입: {status} {path}")
+            continue
+        if status == "D" and (root / path).exists():
+            violations.append(f"유령 삭제(디스크엔 실존): {path}")
+    return violations
 
 
 def _sync_live_index(rel_paths: list[str], root: Path, old_head: str, new_sha: str) -> list[str]:
@@ -225,10 +278,23 @@ def safe_commit(
                 _stage_with_retry(rel_paths, root, env)
                 tree = _git_out(["write-tree"], root, env)
 
-                head_tree = _git_out(["rev-parse", "HEAD^{tree}"], root)
+                head_tree = _git_out(["rev-parse", f"{head}^{{tree}}"], root)
                 if tree == head_tree:
                     result["ok"] = True
                     result["reason"] = "변경 없음(nothing to commit)"
+                    return result
+
+                # ②-b 선검증(배10009) — commit-tree/update-ref *이전* 트리-트리 비교로
+                # 무관 경로 혼입·유령 삭제를 판정한다. 걸리면 커밋 자체를 만들지 않고
+                # 즉시 중단(재시도 안 함 — HEAD 레이스가 아니라 스테이징 내용 자체의
+                # 문제라 재시도해도 그대로 재현된다).
+                violations = _precheck_violations(head_tree, tree, rel_paths, root)
+                if violations:
+                    result["foreign"] = violations
+                    result["reason"] = (
+                        f"선검증 실패(커밋 생성 안 함) — {violations[0]}"
+                        + (f" 외 {len(violations) - 1}건" if len(violations) > 1 else "")
+                    )
                     return result
 
                 # ③ commit-tree 직전 HEAD 재검증 — 움직였으면 통째로 재시도(스테일 트리 차단)
@@ -251,18 +317,21 @@ def safe_commit(
                 # ④-b 라이브 인덱스 동기화(임시 인덱스 커밋의 필수 후처리 — 위 주석 참조)
                 result["index_synced"] = _sync_live_index(rel_paths, root, head, new_sha)
 
-                # ⑤ 사후 검증 — 내 경로가 실제로 들어갔는가 + 무관 경로 혼입 0인가
+                # ⑤ 사후 재확인(방어적 — 선검증②-b 와 같은 트리라 정상 상황에선 항상 통과.
+                # commit-tree/update-ref 가 그 사이 트리를 바꿀 수는 없으니 여기서 다시
+                # 걸리는 건 이례적이지만, 걸리면 여전히 ok=False 로 push 를 막는다)
                 changed = [ln for ln in _git_out(
                     ["diff-tree", "--no-commit-id", "--name-only", "-r", new_sha], root
                 ).splitlines() if ln.strip()]
                 result["changed"] = changed
                 foreign = [c for c in changed
                            if not any(c == rp or c.startswith(rp + "/") for rp in rel_paths)]
-                result["foreign"] = foreign
                 if not changed:
+                    result["foreign"] = foreign
                     result["reason"] = "커밋에 변경 파일 0건(검증 실패)"
                 elif foreign:
-                    result["reason"] = f"무관 경로 혼입 {len(foreign)}건(검증 실패)"
+                    result["foreign"] = foreign
+                    result["reason"] = f"무관 경로 혼입 {len(foreign)}건(사후 재확인 — 이례적)"
                 else:
                     result["ok"] = True
                     result["reason"] = f"커밋 완료 {len(changed)}건"
@@ -277,7 +346,9 @@ def safe_commit(
         except Exception:
             pass
 
-    if result["committed"] and push:
+    # ★배10009: committed 만 보면 혼입이 감지돼(ok=False) 이미 만들어진 나쁜 커밋이
+    # 그대로 push 될 수 있었다 — 검증 통과 여부(ok)를 게이트로 쓴다.
+    if result["ok"] and push:
         try:
             subprocess.run(
                 [sys.executable, str(_SCRIPTS_DIR / "post_commit_push.py")],
