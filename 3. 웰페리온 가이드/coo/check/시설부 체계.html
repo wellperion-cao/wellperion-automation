@@ -2768,14 +2768,20 @@ const MGMT_STORAGE_KEY = 'fcheck_custom_items';
 let mgmtEditingId = null; // null = 추가 모드, string = 편집 중인 ID
 
 /* ── 관리자 편집 게이트 (비밀번호 1234, 세션당 1회) ──
-   조회·열람은 게이트 없음. 추가/편집저장/삭제 등 변경 시에만 호출. */
+   조회·열람은 게이트 없음. 추가/편집저장/삭제 등 변경 시에만 호출.
+   입력된 pin은 sessionStorage에도 보존 — fcRangeSave 등 서버 PIN 검증이 필요한
+   저장 호출이 재사용(getEditAuthPin). 배9619 시토: 기존엔 로컬 확인용으로만 쓰고
+   버렸음(서버로 미전송) → fcheck_ranges_save가 매번 PIN 불일치로 저장 실패. */
 function requireEditAuth(){
   if(sessionStorage.getItem('editAuth')==='1') return true;
   var pw = prompt('항목 편집 비밀번호를 입력하세요');
   if(pw !== '1234'){ if(pw !== null) alert('비밀번호가 틀립니다.'); return false; }
   sessionStorage.setItem('editAuth','1');
+  sessionStorage.setItem('editAuthPin', pw);
   return true;
 }
+// 서버 PIN 게이트(fcheck_ranges_save 등) 전송용 — 세션에 없으면 로컬 게이트 기본값(1234)로 폴백.
+function getEditAuthPin(){ return sessionStorage.getItem('editAuthPin') || '1234'; }
 
 function escapeHTML(s){
   if(!s) return '';
@@ -3985,6 +3991,13 @@ function vendorSubmitAddForm(){
       .concat(FC_DAILY_ITEMS.map(function(it){ var m=measureFromMap(dmap,it); return {id:it.id,name:it.name,cat:it.cat,measure:m.measure,done:m.done}; }));
     posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'save_facility_measure',date:date,round:ROUND_DAILY,inspector:insp,items:items,durMin:sub.durMin,startHHMM:sub.startHHMM,endHHMM:sub.endHHMM,work:sub.work,order:sub.order,note:sub.note})}).then(function(r){return r.json();}));
     Promise.all(posts).then(function(results){
+      // 저장 실패 표시(2026-07-22 시토, GM go): 서버가 error/ok:false를 반환해도 종전엔 무검사로
+      // '제출 완료' 표시했음(ScriptProperties 용량초과 등으로 saveBoard 실패해도 성공 위장 → 회차 유실
+      // 근본원인 중 하나). saveBoard(results[0])·save_facility_measure(results[1]) 응답을 검사해
+      // 실패 시 명확히 표시하고 리셋·완료 표기를 건너뛴다(재시도 가능하도록 로컬 입력 보존).
+      var _r0=(results&&results[0])||{}, _r1=(results&&results[1])||{};
+      var _err=(_r0.error||(_r0.ok===false&&'저장 실패'))||(_r1.error||(_r1.ok===false&&'저장 실패'));
+      if(_err){ if(st)st.textContent='⚠️ 저장 실패('+_err+') — 공간부족/네트워크 가능성, 관리자에게 알리세요'; return; }
       // 제출 성공 → 현재 점검 입력 리셋(다음 점검 즉시 가능). 제출/저장 버튼은 잠그지 않음(반복 가능).
       fcResetAfterSubmit(curR);
       fcRenderHistory();
@@ -4066,7 +4079,7 @@ function vendorSubmitAddForm(){
     var rows=FC_RANGE_ROWS.map(function(r){
       return {id:r.id,name:r.name,unit:r.unit,legalMin:r.legalMin,legalMax:r.legalMax,targetMin:r.targetMin,targetMax:r.targetMax,cycle:r.cycle,alert:r.alert,note:r.note};
     });
-    fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'fcheck_ranges_save',rows:rows})})
+    fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'fcheck_ranges_save',rows:rows,pin:getEditAuthPin()})})
       .then(function(r){return r.json();})
       .then(function(j){
         if(st)st.textContent=(j&&j.ok)?('저장 완료 · '+(j.count!=null?j.count:rows.length)+'행'):'저장 실패';
