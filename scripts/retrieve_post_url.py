@@ -54,7 +54,7 @@ DANGGN_BIZ_ACCOUNT_ID = "2769927"  # danggn_upload_playwright.py 실측
 
 LOGIN_SIGNALS_NAVER  = ("nid.naver.com/nidlogin", "nid.naver.com/login")
 LOGIN_SIGNALS_KAKAO  = ("accounts.kakao.com", "/login", "logon")
-LOGIN_SIGNALS_DANGGN = ("login", "signin", "auth")
+LOGIN_SIGNALS_DANGGN = ("login", "signin", "sign-in", "auth", "accounts.daangn.com")
 
 VALID_CHANNELS = {"blog", "cafe", "kakao", "danggn"}
 
@@ -129,21 +129,40 @@ async def _retrieve_blog(page, keyword: str, account: str) -> tuple[str | None, 
     """
     blog_main = f"https://blog.naver.com/{account}"
     kw_lower  = keyword.lower()
-    # 블로그 포스트 URL 패턴: /{account}/숫자(logNo)
-    post_re = re.compile(rf"/{re.escape(account)}/(\d{{5,}})", re.IGNORECASE)
 
     async def _links_from_frame(frame) -> list[dict]:
-        """프레임에서 블로그 포스트 링크 + 주변 텍스트 수집."""
+        """
+        프레임에서 블로그 포스트 링크 + 주변 텍스트 수집.
+        두 URL 형식 모두 수용:
+          - 구/단축형  https://blog.naver.com/{account}/{logNo}
+          - PostView형 https://blog.naver.com/PostView.naver?blogId={account}&logNo={logNo}
+        ★2026-07-23 배9578 실측: 목록 위젯 프레임 링크가 전부 PostView.naver?logNo=
+        형식이라 옛 경로형 정규식만 쓰면 611개 중 매치 0건이었다(9건 전건 미회수 원인).
+        """
         try:
             return await frame.evaluate(
                 """(account) => {
-                    const pat = new RegExp('\\/' + account + '\\/(\\d{5,})', 'i');
-                    return [...document.querySelectorAll('a[href]')]
-                        .filter(a => pat.test(a.href))
-                        .map(a => ({
-                            href: a.href,
+                    const pathPat  = new RegExp('\\/' + account + '\\/(\\d{5,})', 'i');
+                    const blogIdPat = new RegExp('[?&]blogId=' + account + '(?:&|$)', 'i');
+                    const logNoPat  = /[?&]logNo=(\\d{5,})/i;
+                    const out = [];
+                    for (const a of document.querySelectorAll('a[href]')) {
+                        const href = a.href;
+                        let id = null;
+                        const pm = pathPat.exec(href);
+                        if (pm) {
+                            id = pm[1];
+                        } else if (blogIdPat.test(href)) {
+                            const lm = logNoPat.exec(href);
+                            if (lm) id = lm[1];
+                        }
+                        if (!id) continue;
+                        out.push({
+                            href, id,
                             text: (a.innerText || a.title || a.getAttribute('aria-label') || '').trim().substring(0, 300)
-                        }));
+                        });
+                    }
+                    return out;
                 }""",
                 account,
             )
@@ -178,14 +197,14 @@ async def _retrieve_blog(page, keyword: str, account: str) -> tuple[str | None, 
                 continue
             all_links.extend(await _links_from_frame(frame))
 
-        # 중복 제거 (logNo 기준)
+        # 중복 제거 (logNo 기준) — canonical 은 단축형으로 통일
         seen: set[str] = set()
         unique: list[dict] = []
         for lnk in all_links:
-            m = post_re.search(lnk["href"])
-            if not m:
+            log_no = lnk.get("id")
+            if not log_no:
                 continue
-            canonical = f"https://blog.naver.com/{account}/{m.group(1)}"
+            canonical = f"https://blog.naver.com/{account}/{log_no}"
             if canonical in seen:
                 continue
             seen.add(canonical)
@@ -464,17 +483,56 @@ async def _retrieve_kakao(page, keyword: str, account: str,
     )
 
 
+# 당근 소식 목록 API — 관리자 화면이 실제로 호출하는 엔드포인트(2026-07-23 배9578 실측).
+# 화면 DOM 은 글 행이 <button role="row"> 이라 daangn.com 앵커가 아예 없고,
+# 페이지 번호 버튼도 5개까지만 보여 옛 글(6~8페이지)엔 스크롤로 절대 닿지 못한다.
+# → 목록은 API 로 전량 받고, 공개 URL 은 post_id 로 조립한다.
+DANGGN_POSTS_API = "https://business-gateway.daangn.com/business-post/api/v1/posts/offset"
+
+_DANGGN_FETCH_JS = """async ([api, bizId, maxPages]) => {
+  const out = [];
+  let page = 1, total = 1;
+  while (page <= total && page <= maxPages) {
+    const u = `${api}?bizId=${bizId}&business_account_id=${bizId}&page=${page}&size=10`;
+    const r = await fetch(u, { credentials: 'include' });
+    if (!r.ok) return { error: `HTTP ${r.status} (page ${page})`, posts: out };
+    const j = await r.json();
+    const d = (j && j.data) || {};
+    total = d.total_pages || 1;
+    for (const it of (d.data || [])) {
+      // content 는 [{type,value}, ...] 구조 — 텍스트만 이어붙여 대조용으로 쓴다
+      let body = '';
+      if (typeof it.content === 'string') body = it.content;
+      else if (Array.isArray(it.content)) body = it.content.map(c => (c && c.value) || '').join(' ');
+      out.push({
+        post_id: it.post_id, title: it.title || '', body: body.substring(0, 2000),
+        created_at: it.created_at || '', deleted: !!it.deleted, hidden: !!it.hidden
+      });
+    }
+    page++;
+  }
+  return { total_pages: total, posts: out };
+}"""
+
+
+async def _danggn_all_posts(page, max_pages: int = 30) -> tuple[list[dict], str | None]:
+    """당근 소식 목록 전량(모든 페이지) 수집. 반환: (posts, error)"""
+    res = await page.evaluate(
+        _DANGGN_FETCH_JS, [DANGGN_POSTS_API, DANGGN_BIZ_ACCOUNT_ID, max_pages]
+    )
+    return res.get("posts") or [], res.get("error")
+
+
 async def _retrieve_danggn(page, keyword: str, account: str,
                            max_scrolls: int = 30) -> tuple[str | None, str]:
     """
     당근 비즈프로필 게시 목록에서 keyword 포함 글 URL 반환.
     세션 만료 시 NOT_FOUND 반환 (추측 URL 생성 금지).
-    공개 URL 형식: daangn.com/kr/business-posts/{id}
+    공개 URL 형식: daangn.com/kr/business-posts/{post_id}
     """
     posts_url = (
         f"https://bizprofile.daangn.com/biz_accounts/{DANGGN_BIZ_ACCOUNT_ID}/manager/posts/"
     )
-    kw_lower = keyword.lower()
 
     try:
         await page.goto(posts_url, wait_until="domcontentloaded", timeout=25000)
@@ -487,70 +545,52 @@ async def _retrieve_danggn(page, keyword: str, account: str,
     if any(sig in current_url.lower() for sig in LOGIN_SIGNALS_DANGGN):
         return None, "세션 만료 — 당근 로그인 페이지로 리다이렉트"
 
-    # 옛 글까지 닿도록 목록을 끝까지 스크롤(2026-07-23 배9578 — 종전엔 1화면만 봤다)
-    for _ in range(max_scrolls):
-        h = await page.evaluate("() => document.body.scrollHeight")
-        await page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
-        await page.wait_for_timeout(1800)
-        if await page.evaluate("() => document.body.scrollHeight") == h:
-            break
+    try:
+        posts, err = await _danggn_all_posts(page)
+    except Exception as e:
+        return None, f"당근 소식 목록 API 호출 실패: {type(e).__name__}: {e}"
+    if err and not posts:
+        return None, f"당근 소식 목록 API 오류: {err}"
+    if not posts:
+        return None, "당근 소식 목록이 비어 있음"
 
-    # daangn.com business-posts URL 패턴으로 글 링크 수집
-    post_items = await page.evaluate(
-        """() => {
-            return [...document.querySelectorAll('a[href]')]
-                .filter(a => a.href.includes('daangn.com'))
-                .map(a => ({
-                    href: a.href,
-                    text: (a.innerText || a.textContent || '').trim().substring(0, 300)
-                }));
-        }"""
-    )
-    for item in post_items:
-        if _text_hit(keyword, item["text"]):
-            m = re.search(r"daangn\.com.*?business-posts/([^/?#]+)", item["href"])
-            if m:
-                canonical = f"https://www.daangn.com/kr/business-posts/{m.group(1)}"
-                _log(f"  [MATCH] {canonical} | text: {item['text'][:80]!r}")
-                return canonical, None
-
-    # 소식 카드 컨테이너에서 탐색
-    result = await page.evaluate(
-        """(kw) => {
-            const sq = s => (s||'').normalize('NFKC').toLowerCase()
-                              .replace(/[^0-9a-z가-힣]/g, '');
-            const probe = sq(kw).substring(0, 12);
-            const containers = [
-                ...document.querySelectorAll(
-                    '[class*="post"], [class*="Post"], article, li, [class*="item"]'
-                )
-            ];
-            for (const c of containers) {
-                const text = sq(c.innerText || c.textContent || '');
-                if (probe.length >= 4 && text.includes(probe)) {
-                    const a = c.querySelector('a[href]');
-                    if (a && a.href.includes('daangn.com')) {
-                        return { href: a.href, text: c.innerText.trim().substring(0, 200) };
-                    }
-                }
-            }
-            return null;
-        }""",
-        keyword,
-    )
-    if result:
-        m = re.search(r"daangn\.com.*?business-posts/([^/?#]+)", result["href"])
-        if m:
-            canonical = f"https://www.daangn.com/kr/business-posts/{m.group(1)}"
-            _log(f"  [MATCH] {canonical} | text: {result['text'][:80]!r}")
+    live = [p for p in posts if not p["deleted"]]
+    for p in live:
+        if _text_hit(keyword, p["title"]) or _text_hit(keyword, p["body"]):
+            canonical = f"https://www.daangn.com/kr/business-posts/{p['post_id']}"
+            _log(f"  [MATCH] {canonical} | {p['created_at'][:10]} | {p['title'][:60]!r}")
             return canonical, None
 
-    return None, f"keyword '{keyword}' 일치 글 미발견 (당근 계정 {DANGGN_BIZ_ACCOUNT_ID})"
+    return None, (
+        f"keyword '{keyword}' 일치 글 미발견 "
+        f"(당근 계정 {DANGGN_BIZ_ACCOUNT_ID} · 소식 {len(live)}건 전수 대조)"
+    )
 
 
 # ─────────────────────────────────────────────
 # 브라우저 컨텍스트 공통 런처
 # ─────────────────────────────────────────────
+
+async def _launch_danggn_context():
+    """당근 전용 컨텍스트 — danggn_upload_playwright 의 세션 확립 헬퍼를 그대로 재사용.
+
+    2026-07-23 배9578 실측: profiles/danggn 을 launch_persistent_context 로 여는 경로는
+    점유 프로세스가 없는데도 즉시 'Target page, context or browser has been closed'
+    (chrome exitCode 2147483651) 로 죽는다 — 프로필 자체가 손상됐다.
+    같은 시각 danggn_upload_playwright.py --mode setup 은 정상 동작했고,
+    그 경로는 storage_state(profiles/danggn_state.json) 주입 방식이었다.
+    → 새 로그인 로직을 짜지 않고, 되는 쪽 함수를 import 해서 쓴다.
+    반환: (playwright, context)
+    """
+    try:
+        from danggn_upload_playwright import _launch_context as _danggn_launch_context
+    except ImportError:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from danggn_upload_playwright import _launch_context as _danggn_launch_context
+
+    async_playwright = _import_playwright()
+    return await _danggn_launch_context(async_playwright)
+
 
 async def _retrieve_url_async(
     channel: str,
@@ -569,6 +609,25 @@ async def _retrieve_url_async(
             f"세션 프로파일 없음: {profile_dir} "
             f"(해당 upload 스크립트 --mode setup 먼저 실행 필요)",
         )
+
+    # 당근만 별도 경로(쿠키 storage_state). blog·cafe·kakao 는 오늘 정상 동작 → 무회귀.
+    if channel == "danggn":
+        p, context = await _launch_danggn_context()
+        page = context.pages[0] if context.pages else await context.new_page()
+        try:
+            url, reason = await _retrieve_danggn(page, keyword, account, max_scrolls)
+        except Exception as e:
+            url, reason = None, f"예외 발생: {e}"
+        finally:
+            try:
+                await context.close()
+            except Exception:
+                pass
+            try:
+                await p.stop()
+            except Exception:
+                pass
+        return url, reason
 
     async_playwright = _import_playwright()
 
@@ -593,9 +652,7 @@ async def _retrieve_url_async(
                 url, reason = await _retrieve_cafe(page, keyword, account, max_pages)
             elif channel == "kakao":
                 url, reason = await _retrieve_kakao(page, keyword, account, max_scrolls)
-            elif channel == "danggn":
-                url, reason = await _retrieve_danggn(page, keyword, account, max_scrolls)
-            else:
+            else:  # danggn 은 위에서 이미 처리(쿠키 경로)
                 url, reason = None, f"지원하지 않는 채널: {channel!r}"
         except Exception as e:
             url, reason = None, f"예외 발생: {e}"
