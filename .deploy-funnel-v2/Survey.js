@@ -1376,6 +1376,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   lesson_registered_roster:   true,  // 강습 등록현황·회원 명단(팀시트 상태열 _isLessonReg_) — PII 노출(전체공개 2026-06-22) 2026-06-27 시포
   lesson_registry_list:       true,  // 강습 금일 등록현황(원장 sync-on-load) — PII 노출(전체공개) 2026-06-27 시포
   lesson_team_sheet_diag:     true,  // [진단] 강습 팀시트 구조(헤더·상태열·빈칸 수) — 셀 값 미반환·토큰 필요. 2026-07-23 시포·GM
+  member_hold_intake_migrate: true,  // 휴회 접수 탭 이관(회원DB→종합접수처) — 대조키 복사·원본 보존·기본 예행·토큰 필요. 배9948
   // 공간렌트·비즈니스 문의 패널(CPO) — lesson_inquiry_list/lesson_stats 와 동일 취급(PII 노출·전체공개). 2026-07-04 시포.
   rentbiz_inquiry_list:       true,  // 공간렌트·비즈니스 문의 목록(성함/단체명·연락처 등 원시 필드 포함)
   rentbiz_stats:              true,  // 공간렌트·비즈니스 통계(총·이번달·경로 분포·상태별 — 상태컬럼 없으면 상태 집계 생략)
@@ -8239,8 +8240,32 @@ function _processAction(body) {
   //         → member_hold_approve(직원 승인/반려 · 승인=회원DB '이용일수' 앞 새칸 기록+증분+상태 진행중). 검증 3회/총60일/1회 7~60 재사용.
   //   게이트: 공개 접수 write=HOLD_LIVE, 승인 write=HOLD_LIVE_T (둘 다 GM go). 리스트/자동판정=read(라이브 가능·ERP 게이트 뒤).
   //   ⚠️ 구 self-service 미리보기(member_hold_preview 이름+전화 본인조회)=GM 지시로 폐기(온라인 조회 금지) → 비활성 스텁.
+  // ★저장 위치 이전(배9948 · GM A안 2026-07-23) — '접수는 종합접수처 시트로 통합, 관리는 멤버십 회원관리에서'.
+  //   전: 회원 DB(MEMBER_SPREADSHEET_ID)의 '휴회접수' 탭 → 다른 접수(VOC·분실물 등)와 따로 놀았다.
+  //   후: 종합접수처 데이터 시트로 통합. 회원 DB 쪽 옛 탭은 지우지 않는다(원본 보존 · 이관은 대조키로만).
+  //   ⚠️ 이 스크립트(cao 실행)가 해당 시트에 편집 권한이 없으면 열 수 없다 → 열기 실패 시 옛 위치로
+  //      자동 폴백해 접수를 떨어뜨리지 않는다(회원 접수가 조용히 유실되는 것보다 낫다).
+  var HOLD_INTAKE_SS_ID = '17ly-_udUYgOoPZnv6FFV9vq_R2D41q4ZYrGaGYt9rto';   // 종합접수처 데이터 시트
   var HOLD_INTAKE_TAB = '휴회접수';
-  var HOLD_INTAKE_HDR = ['접수일시', '성함', '연락처', '구분', '휴회시작일', '희망일수', '사유', '상태', '처리일시', '처리메모'];
+  // '휴회종료일' 신설(배9948 ②) — 회원 화면이 holdEnd 를 보내는데 받을 칸이 없어 유실되고 있었다.
+  //   기간이 안 남으면 직원이 시작일+일수로 매번 역산해야 한다.
+  var HOLD_INTAKE_HDR = ['접수일시', '성함', '연락처', '구분', '휴회시작일', '휴회종료일', '희망일수', '사유', '상태', '처리일시', '처리메모'];
+  // 접수 탭 열기 — 종합접수처 우선, 실패 시 회원 DB(옛 위치)로 폴백. create=true 면 없을 때 만든다.
+  function _holdIntakeSheet_(create) {
+    var order = [HOLD_INTAKE_SS_ID, MEMBER_SPREADSHEET_ID];
+    for (var oi = 0; oi < order.length; oi++) {
+      try {
+        var ss = SpreadsheetApp.openById(order[oi]);
+        var sh = ss.getSheetByName(HOLD_INTAKE_TAB);
+        if (!sh && create && oi === 0) {   // 새 위치에만 자동 생성(옛 위치에 새로 만들지 않는다)
+          sh = ss.insertSheet(HOLD_INTAKE_TAB);
+          sh.getRange(1, 1, 1, HOLD_INTAKE_HDR.length).setValues([HOLD_INTAKE_HDR]);
+        }
+        if (sh) return sh;
+      } catch (e) { /* 권한 없음·시트 없음 → 다음 후보 */ }
+    }
+    return null;
+  }
   var HLD_MAX_COUNT = 3, HLD_MAX_TOTAL = 60, HLD_MIN_ONCE = 7, HLD_MAX_ONCE = 60;
   // ★신규/연장 구분(2026-07-23 GM 확정) — 실측 근거: 휴회신청 응답 시트에 '1회차 연장' 5일 건(김호선) 존재.
   //   최소 7일 규칙을 연장에도 적용하면 실제 운영되던 짧은 연장이 전부 거부된다 → 연장은 하한 면제(1일~).
@@ -8282,17 +8307,20 @@ function _processAction(body) {
     if (!inName || !inPhone) return _json({ ok: false, error: 'need-name-phone', detail: '성함과 연락처를 입력해 주세요' });
     if (!/^\d{4}-\d{2}-\d{2}$/.test(inStart)) return _json({ ok: false, error: 'need-start', detail: '희망 시작일을 입력해 주세요' });
     if (isNaN(inDays) || inDays < 1) return _json({ ok: false, error: 'need-days', detail: '희망 일수를 입력해 주세요' });
-    var inMin = _holdMinOnce_(inKind);
-    if (inDays < inMin) return _json({ ok: false, error: 'days-too-short', detail: (inKind === HLD_KIND_EXTEND ? '휴회 연장은' : '새 휴회 신청은') + ' 최소 ' + inMin + '일부터 신청 가능합니다' });
-    if (inDays > HLD_MAX_ONCE) return _json({ ok: false, error: 'days-too-long', detail: '1회 최대 ' + HLD_MAX_ONCE + '일까지 신청 가능합니다' });
+    // ★일수 적정성 판정을 공개 접수에서 제거(배9948 ③ · GM A안) — 회원 화면에서 '구분(신규·연장)'이
+    //   빠지면서 모든 접수가 '신규'로 오고, 서버 하한(7일)이 회원에게 거부 메시지로 그대로 노출됐다.
+    //   GM 방침 = "일수 적정성은 접수 시트에서 직원이 확인". 접수는 일단 받고, 판정은 승인 단계에서 한다.
+    //   (member_hold_intake_list 의 자동판정과 member_hold_approve 의 재검증은 그대로 남아 있다.)
     if (!HOLD_LIVE) return _json({ ok: false, error: 'hold-gated', detail: '휴회 접수는 GM 검증 후 개통됩니다(현재 미개통)' });
-    var iss = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
-    var iSh = iss.getSheetByName(HOLD_INTAKE_TAB);
-    if (!iSh) { iSh = iss.insertSheet(HOLD_INTAKE_TAB); iSh.getRange(1, 1, 1, HOLD_INTAKE_HDR.length).setValues([HOLD_INTAKE_HDR]); }
-    var iHdr = _holdIntakeHdr_(iSh);   // 기존 탭에 '구분'이 없어도 비파괴 보강
+    var iSh = _holdIntakeSheet_(true);
+    if (!iSh) return _json({ ok: false, error: 'intake-sheet-unavailable', detail: '접수 시트를 열 수 없습니다 — 데스크로 문의해 주세요' });
+    var iHdr = _holdIntakeHdr_(iSh);   // 기존 탭에 '구분'·'휴회종료일'이 없어도 비파괴 보강
     var iNow = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+    // 종료일 = 회원 화면이 보낸 holdEnd 우선(직접 고른 값), 없으면 시작일+일수로 계산.
+    var inEnd = String(body.holdEnd || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(inEnd)) inEnd = _holdEndCalc_(inStart, inDays);
     var iVal = { '접수일시': iNow, '성함': inName, '연락처': inPhone, '구분': inKind, '휴회시작일': inStart,
-                 '희망일수': inDays, '사유': inReason, '상태': '접수대기', '처리일시': '', '처리메모': '' };
+                 '휴회종료일': inEnd, '희망일수': inDays, '사유': inReason, '상태': '접수대기', '처리일시': '', '처리메모': '' };
     var iRow = [];   // 헤더 순서에 맞춰 조립(고정 위치 append 금지 — 칸 순서가 바뀌어도 안전)
     for (var ic = 0; ic < iHdr.length; ic++) { var kk = iHdr[ic].replace(/\s/g, ''); var hit = '';
       for (var kn in iVal) { if (kn.replace(/\s/g, '') === kk) { hit = iVal[kn]; break; } } iRow.push(hit); }
@@ -8300,10 +8328,77 @@ function _processAction(body) {
     return _json({ ok: true, received: true });   // ★회원 판정/잔여 미반환(공개 노출 금지)
   }
 
+  // ─── 휴회 접수 이관(회원DB 옛 탭 → 종합접수처 새 탭) — 배9948 ① · 2026-07-23 시포·GM ───
+  //   ★행 번호로 옮기지 않는다. 대조키(접수일시+성함+연락처)로만 대조한다 — 2026-07-20 행번호 삭제로
+  //     실제 고객 문의 2건이 지워진 사고(INC-020)의 재발 방지. 원본은 절대 지우지 않는다(복사만).
+  //   기본은 예행(dry). 실제 이관은 dry=false 를 명시해야 한다. 여러 번 돌려도 안전(이미 있으면 건너뜀).
+  if (action === 'member_hold_intake_migrate') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var mgDry = !(String(body.dry) === 'false' || body.dry === false);
+    var mgSrc = null, mgDst = null;
+    try { mgSrc = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(HOLD_INTAKE_TAB); } catch (e1) {}
+    try {
+      var mgDstSs = SpreadsheetApp.openById(HOLD_INTAKE_SS_ID);
+      mgDst = mgDstSs.getSheetByName(HOLD_INTAKE_TAB);
+      if (!mgDst && !mgDry) { mgDst = mgDstSs.insertSheet(HOLD_INTAKE_TAB); mgDst.getRange(1, 1, 1, HOLD_INTAKE_HDR.length).setValues([HOLD_INTAKE_HDR]); }
+    } catch (e2) { return _json({ ok: false, error: 'dst-unavailable', detail: '종합접수처 시트를 열 수 없습니다(편집 권한 확인 필요): ' + String(e2).slice(0, 80) }); }
+    if (!mgSrc) return _json({ ok: true, moved: 0, note: '옮길 옛 접수 탭이 없습니다(이미 이전 완료이거나 접수 0건)' });
+    if (!mgDst) return _json({ ok: true, dry: true, note: '예행 — 대상 탭이 아직 없습니다. dry=false 로 실행하면 만듭니다.' });
+    var mgSrcLast = mgSrc.getLastRow();
+    if (mgSrcLast < 2) return _json({ ok: true, moved: 0, note: '옛 탭에 접수 행이 없습니다' });
+    var mgSH = mgSrc.getRange(1, 1, 1, mgSrc.getLastColumn()).getValues()[0].map(function (v) { return String(v).trim(); });
+    var mgDH = _holdIntakeHdr_(mgDst);
+    function _mgIdx(hdr, n) { var w = String(n).replace(/\s/g, ''); for (var i = 0; i < hdr.length; i++) { if (String(hdr[i]).replace(/\s/g, '') === w) return i; } return -1; }
+    function _mgKey(vals, hdr) {
+      var ts = _holdDateStr_(vals[_mgIdx(hdr, '접수일시')], true);
+      var nm = String(vals[_mgIdx(hdr, '성함')] == null ? '' : vals[_mgIdx(hdr, '성함')]).trim();
+      var ph = _normPhone_(vals[_mgIdx(hdr, '연락처')]);
+      return ts + '|' + nm + '|' + ph;
+    }
+    var mgExist = {};
+    if (mgDst.getLastRow() >= 2) {
+      var mgDD = mgDst.getRange(2, 1, mgDst.getLastRow() - 1, mgDst.getLastColumn()).getValues();
+      for (var m1 = 0; m1 < mgDD.length; m1++) mgExist[_mgKey(mgDD[m1], mgDH)] = true;
+    }
+    var mgSD = mgSrc.getRange(2, 1, mgSrcLast - 1, mgSrc.getLastColumn()).getValues();
+    var mgRows = [], mgSkip = 0, mgBlank = 0;
+    for (var m2 = 0; m2 < mgSD.length; m2++) {
+      var sv = mgSD[m2];
+      var anyv = false;
+      for (var m3 = 0; m3 < sv.length; m3++) { if (String(sv[m3] == null ? '' : sv[m3]).trim()) { anyv = true; break; } }
+      if (!anyv) { mgBlank++; continue; }
+      var k = _mgKey(sv, mgSH);
+      if (mgExist[k]) { mgSkip++; continue; }
+      var out = [];
+      for (var m4 = 0; m4 < mgDH.length; m4++) {
+        var si = _mgIdx(mgSH, mgDH[m4]);
+        var val = si >= 0 ? sv[si] : '';
+        if (val instanceof Date && !isNaN(val.getTime())) val = _holdDateStr_(val, String(mgDH[m4]).indexOf('일시') >= 0);
+        out.push(val == null ? '' : val);
+      }
+      // 옛 탭엔 '휴회종료일'이 없다 → 시작일+일수로 채워 넣는다(비어 있는 채로 옮기지 않는다).
+      var ei = _mgIdx(mgDH, '휴회종료일'), si2 = _mgIdx(mgDH, '휴회시작일'), di = _mgIdx(mgDH, '희망일수');
+      if (ei >= 0 && !String(out[ei] || '').trim() && si2 >= 0 && di >= 0) {
+        var st2 = _holdDateStr_(out[si2]);
+        var dn2 = parseInt(String(out[di] || '').replace(/[^0-9]/g, ''), 10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(st2) && !isNaN(dn2) && dn2 > 0) out[ei] = _holdEndCalc_(st2, dn2);
+      }
+      mgRows.push(out);
+      mgExist[k] = true;
+    }
+    if (!mgDry && mgRows.length) mgDst.getRange(mgDst.getLastRow() + 1, 1, mgRows.length, mgDH.length).setValues(mgRows);
+    return _json({
+      ok: true, dry: mgDry, moved: mgRows.length, skippedExisting: mgSkip, skippedBlank: mgBlank,
+      srcRows: mgSrcLast - 1, note: mgDry ? '예행입니다 — 실제 이관은 dry=false. 원본은 어떤 경우에도 지우지 않습니다.' : '이관 완료(원본 보존).'
+    });
+  }
+
   // ERP 휴회 접수 관리 — '휴회접수' 탭 리스트 + 서버 자동판정(회원DB 전화 매칭·3회/총60일/1회 7~60). ERP 게이트 뒤 read 전용.
   if (action === 'member_hold_intake_list') {
+    // 접수 탭은 종합접수처(이전 후) / 회원 DB(옛 위치) 어느 쪽이든 같은 함수로 연다(배9948).
+    //   회원 매칭용 유효회원 시트는 계속 회원 DB에서 읽는다 — 두 시트를 섞지 않는다.
     var lss = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
-    var lSh = lss.getSheetByName(HOLD_INTAKE_TAB);
+    var lSh = _holdIntakeSheet_(false);
     if (!lSh || lSh.getLastRow() < 2) return _json({ ok: true, count: 0, data: [] });
     var lHdr = lSh.getRange(1, 1, 1, lSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
     function _lIdx(n){ var w = String(n).replace(/\s/g, ''); for (var i = 0; i < lHdr.length; i++){ if (lHdr[i].replace(/\s/g,'') === w) return i; } return -1; }
@@ -8356,8 +8451,8 @@ function _processAction(body) {
     if (apDecision !== 'approve' && apDecision !== 'reject') return _json({ ok: false, error: 'decision=approve|reject' });
     var apIntakeRow = parseInt(body.intakeRow, 10);
     if (!apIntakeRow || apIntakeRow < 2) return _json({ ok: false, error: 'intakeRow 필수(2 이상)' });
-    var ass = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
-    var aiSh = ass.getSheetByName(HOLD_INTAKE_TAB);
+    var ass = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);   // 유효회원 시트(승인 시 기록 대상)
+    var aiSh = _holdIntakeSheet_(false);                        // 접수 탭(이전 후 종합접수처 · 배9948)
     if (!aiSh || apIntakeRow > aiSh.getLastRow()) return _json({ ok: false, error: '접수 행 없음' });
     var aiHdr = aiSh.getRange(1, 1, 1, aiSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
     function _aiIdx(n){ var w = String(n).replace(/\s/g, ''); for (var i = 0; i < aiHdr.length; i++){ if (aiHdr[i].replace(/\s/g,'') === w) return i; } return -1; }

@@ -195,6 +195,43 @@ body,p,li,td,th,h1,h2,h3,.lead,.sub,.title,.d,.bxd,.why,.warn,.note{
 }
 h1,h2,.title{ text-wrap:balance; }
 .nb{ white-space:nowrap; }
+
+/* ===== 인쇄 바탕색 (2026-07-23 GM 지적) =====
+   화면의 베이지 종이색이 그대로 인쇄돼 글자마다 바탕색이 깔린 것처럼 보였다.
+   기본값을 '잉크 절약'으로 바꾸고, 필요하면 화면 상단에서 되돌릴 수 있게 한다.
+   ink   = 밝은 장은 흰 바탕 (기본 · 권장)
+   plain = 어두운 장까지 전부 흰 바탕·검은 글씨
+   full  = 화면 그대로 (색 전부 인쇄)                                   */
+@media print{
+  /* 잉크 절약 — 밝은 장의 종이색·카드색을 흰색으로 */
+  body[data-ink="ink"] .a3:not(.dark){ background:#fff !important; }
+  body[data-ink="ink"] .a3:not(.dark) .card,
+  body[data-ink="ink"] .a3:not(.dark) .sc,
+  body[data-ink="ink"] .a3:not(.dark) .fe,
+  body[data-ink="ink"] .a3:not(.dark) .cmp,
+  body[data-ink="ink"] .a3:not(.dark) table{ background:#fff !important; }
+  body[data-ink="ink"] .a3:not(.dark) .cmp th,
+  body[data-ink="ink"] .a3:not(.dark) th{ background:#fff !important; }
+
+  /* 전부 흰 바탕 — 어두운 장까지 반전 */
+  body[data-ink="plain"] .a3, body[data-ink="plain"] .a3.dark{
+    background:#fff !important; color:#221F20 !important;
+  }
+  body[data-ink="plain"] .a3 *:not(.kick):not(.b):not(.tag){ color:#221F20 !important; }
+  body[data-ink="plain"] .a3 .card, body[data-ink="plain"] .a3 .sc,
+  body[data-ink="plain"] .a3 .fe, body[data-ink="plain"] .a3 .st,
+  body[data-ink="plain"] .a3 .rc, body[data-ink="plain"] .a3 .gv,
+  body[data-ink="plain"] .a3 .cost, body[data-ink="plain"] .a3 .ex,
+  body[data-ink="plain"] .a3 table, body[data-ink="plain"] .a3 th,
+  body[data-ink="plain"] .a3 td, body[data-ink="plain"] .a3 .warn,
+  body[data-ink="plain"] .a3 .note, body[data-ink="plain"] .a3 .bxnote{
+    background:#fff !important; border-color:#CFC7BB !important;
+  }
+  body[data-ink="plain"] .a3 .st, body[data-ink="plain"] .a3 .fstep{ border:1px solid #CFC7BB !important; }
+  body[data-ink="plain"] .a3 figure, body[data-ink="plain"] .a3 .pcell{ background:#fff !important; }
+  /* 사진은 그대로 살린다 */
+  body[data-ink="plain"] .a3 img{ filter:none !important; }
+}
 @page{size:A3 landscape;margin:0}
 @media print{
   html,body{background:#fff}
@@ -265,6 +302,12 @@ body[data-fmt="portrait"] .mgrid,body[data-fmt="portrait"] .moments{grid-templat
   <span class="sp"></span>
   <button id="b-ls" aria-pressed="true" onclick="setFmt('landscape')">A3 가로</button>
   <button id="b-pt" aria-pressed="false" onclick="setFmt('portrait')">세로형 (책처럼)</button>
+  <span style="width:1px;height:20px;background:rgba(255,255,255,.25);margin:0 2px"></span>
+  <span class="h" style="margin-right:-4px">인쇄 바탕</span>
+  <button id="ink-ink" onclick="setInk('ink')">잉크 절약</button>
+  <button id="ink-plain" onclick="setInk('plain')">전부 흰 바탕</button>
+  <button id="ink-full" onclick="setInk('full')">화면 그대로</button>
+
   <button onclick="window.print()">인쇄 / PDF 저장</button>
 </div>
 
@@ -684,4 +727,16 @@ function setFmt(f){
   try{ localStorage.setItem('wp_intro_fmt', f); }catch(e){}
 }
 setFmt((function(){ try{ return localStorage.getItem('wp_intro_fmt')||'landscape'; }catch(e){ return 'landscape'; } })());
+</script>
+
+<script>
+function setInk(v){
+  document.body.dataset.ink=v;
+  ['ink','plain','full'].forEach(function(k){
+    var el=document.getElementById('ink-'+k);
+    if(el) el.setAttribute('aria-pressed', k===v);
+  });
+  try{ localStorage.setItem('wp_ink', v); }catch(e){}
+}
+setInk((function(){ try{ return localStorage.getItem('wp_ink')||'ink'; }catch(e){ return 'ink'; } })());
 </script>
