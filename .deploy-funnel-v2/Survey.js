@@ -1371,6 +1371,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   lesson_inquiry_update:      true,  // 진행상태·담당·상담메모·상담예약·방문상태 수정
   lesson_registered_roster:   true,  // 강습 등록현황·회원 명단(팀시트 상태열 _isLessonReg_) — PII 노출(전체공개 2026-06-22) 2026-06-27 시포
   lesson_registry_list:       true,  // 강습 금일 등록현황(원장 sync-on-load) — PII 노출(전체공개) 2026-06-27 시포
+  lesson_team_sheet_diag:     true,  // [진단] 강습 팀시트 구조(헤더·상태열·빈칸 수) — 셀 값 미반환·토큰 필요. 2026-07-23 시포·GM
   // 공간렌트·비즈니스 문의 패널(CPO) — lesson_inquiry_list/lesson_stats 와 동일 취급(PII 노출·전체공개). 2026-07-04 시포.
   rentbiz_inquiry_list:       true,  // 공간렌트·비즈니스 문의 목록(성함/단체명·연락처 등 원시 필드 포함)
   rentbiz_stats:              true,  // 공간렌트·비즈니스 통계(총·이번달·경로 분포·상태별 — 상태컬럼 없으면 상태 집계 생략)
@@ -7510,6 +7511,97 @@ function _processAction(body) {
   // ─── 휴회 시트 구조 조사 (읽기 전용·일회성·내부토큰) ───
   //   휴회는 별도 전용 시트에서 관리됨(2026-07-20 GM). 연동 설계를 위한 구조 파악용.
   //   gviz로는 401(비공개)이라 GAS 계정 권한으로만 읽힌다. 쓰기 코드 없음. 조사 완료 후 제거 예정.
+  // ─── 강습 팀시트 구조 진단(읽기 전용 · 개인정보 0) — 2026-07-23 시포·GM ───
+  //   왜: 강습 회원 명단 1,742명 중 수영(1,007명)만 이름이 나오고 나머지 735명은 이름·연락처가 빈칸이다.
+  //   헤더('성함'·'휴대폰 번호')는 정상 탐지되므로 "칸을 못 찾는" 문제가 아니라 "등록으로 세는 행에
+  //   애초에 이름이 없다"는 뜻 — 등록 판정(상태열 자동탐지)이 회원 행이 아닌 행을 세고 있을 가능성.
+  //   회원 수 KPI 직결이라 확정이 필요하고, 팀시트는 비공개라 서버에서만 볼 수 있다.
+  //   ★반환하는 것: 헤더 이름·열 위치·상태값 종류와 건수·빈칸 수·행번호. 셀 값(이름·전화)은 반환하지 않는다.
+  if (action === 'lesson_team_sheet_diag') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var dgType = String(body.type || '');
+    var dgOut = [];
+    LESSON_TEAM_SHEETS.forEach(function (cfg) {
+      if (dgType && cfg.유형 !== dgType) return;
+      var rec = { 명: cfg.명, 유형: cfg.유형, gid: cfg.gid };
+      try {
+        var dsh = _sheetByGid_(cfg.ssId, cfg.gid);
+        if (!dsh) { rec.error = '시트 없음'; dgOut.push(rec); return; }
+        var dLast = dsh.getLastRow(), dCol = dsh.getLastColumn();
+        rec.rows = dLast; rec.cols = dCol;
+        if (dLast < 2 || dCol < 1) { dgOut.push(rec); return; }
+        var dData = dsh.getRange(1, 1, dLast, dCol).getValues();
+        var dHdr = dData[0];
+        rec.headers = dHdr.map(function (h) { return String(h == null ? '' : h).replace(/\s+/g, ' ').trim().slice(0, 18); });
+        // 상태열 자동탐지 재현(roster와 동일 로직) + 후보들도 같이 보여 준다(왜 그 열이 뽑혔는지 보이게)
+        var dBest = -1, dBestCnt = 0, dCand = [];
+        for (var dc = 0; dc < dCol; dc++) {
+          var dcnt = 0, ddist = {}, ddn = 0;
+          for (var dr = 1; dr < dData.length; dr++) {
+            var dv = String(dData[dr][dc] == null ? '' : dData[dr][dc]).trim();
+            if (!dv) continue;
+            if (!ddist[dv]) { ddist[dv] = 1; ddn++; }
+            if (_isLessonStatusVal_(dv)) dcnt++;
+          }
+          if (ddn >= 2 && ddn <= 30 && dcnt > dBestCnt) { dBestCnt = dcnt; dBest = dc; }
+          if (dcnt > 0) dCand.push({ 열: _colLetter_(dc), 헤더: String(dHdr[dc] == null ? '' : dHdr[dc]).trim().slice(0, 16), 상태형값: dcnt, 고유값수: ddn });
+        }
+        rec.상태열후보 = dCand.slice(0, 8);
+        rec.선택된상태열 = dBest >= 0 ? { 열: _colLetter_(dBest), 헤더: String(dHdr[dBest] == null ? '' : dHdr[dBest]).trim().slice(0, 18) } : null;
+        var dName = _findCol_(dHdr, ['성함', '이름', '성명']);
+        var dPhone = _findCol_(dHdr, ['연락처', '전화', '휴대폰']);
+        rec.이름열 = dName >= 0 ? { 열: _colLetter_(dName), 헤더: String(dHdr[dName] == null ? '' : dHdr[dName]).trim().slice(0, 18) } : null;
+        rec.연락처열 = dPhone >= 0 ? { 열: _colLetter_(dPhone), 헤더: String(dHdr[dPhone] == null ? '' : dHdr[dPhone]).trim().slice(0, 18) } : null;
+        // 이름 칸이 전체 몇 행에 차 있는지(등록 여부와 무관) — 시트 자체가 비어 있는 건지 판별용
+        var dNameFilled = 0;
+        if (dName >= 0) { for (var d5 = 1; d5 < dData.length; d5++) { if (String(dData[d5][dName] == null ? '' : dData[d5][dName]).trim()) dNameFilled++; } }
+        rec.이름칸_채워진행 = dNameFilled;
+        // ★비어 있는 이유를 가른다 — '사람이 안 적었다'와 '수식이 깨졌다'는 조치가 완전히 다르다.
+        //   수식이면 종류(IMPORTRANGE 등)만 보고, 오류값(#REF!·#N/A)이면 그 개수를 센다. 셀 값은 반환하지 않는다.
+        //   주변 칸(거주지·강습 종목) 채움률도 같이 봐서 '그 블록 전체가 빈 것'인지 '이름만 빈 것'인지 구분한다.
+        if (dName >= 0) {
+          var dFx = 0, dErr = 0, dKind = '';
+          var dProbeN = Math.min(dLast, 60);
+          for (var d6 = 2; d6 <= dProbeN; d6++) {
+            var fx = String(dsh.getRange(d6, dName + 1).getFormula() || '');
+            if (fx) { dFx++; if (!dKind) dKind = fx.replace(/\s+/g, ' ').slice(0, 40); }
+            var vv = String(dData[d6 - 1][dName] == null ? '' : dData[d6 - 1][dName]);
+            if (vv.indexOf('#REF') >= 0 || vv.indexOf('#N/A') >= 0 || vv.indexOf('#ERROR') >= 0) dErr++;
+          }
+          rec.이름칸_진단 = { 표본행: dProbeN - 1, 수식셀: dFx, 수식예: dKind, 오류값셀: dErr };
+        }
+        var dNeighbor = {};
+        [['거주지', 4], ['강습 종목', 5], ['문의경로', 6], ['타임스탬프', 1]].forEach(function (pair) {
+          var ci = pair[1];
+          if (ci >= dCol) return;
+          var f = 0;
+          for (var d7 = 1; d7 < dData.length; d7++) { if (String(dData[d7][ci] == null ? '' : dData[d7][ci]).trim()) f++; }
+          dNeighbor[pair[0]] = f;
+        });
+        rec.주변칸_채워진행 = dNeighbor;
+        if (dBest < 0) { dgOut.push(rec); return; }
+        var dvc = {};
+        for (var d3 = 1; d3 < dData.length; d3++) {
+          var dv3 = String(dData[d3][dBest] == null ? '' : dData[d3][dBest]).trim();
+          if (dv3) dvc[dv3.slice(0, 14)] = (dvc[dv3.slice(0, 14)] || 0) + 1;
+        }
+        rec.상태값분포 = dvc;
+        var dReg = 0, dNameless = 0, dSample = [];
+        for (var d4 = 1; d4 < dData.length; d4++) {
+          if (!_isLessonReg_(dData[d4][dBest])) continue;
+          dReg++;
+          var dnm = dName >= 0 ? String(dData[d4][dName] == null ? '' : dData[d4][dName]).trim() : '';
+          if (!dnm) { dNameless++; if (dSample.length < 5) dSample.push(d4 + 1); }
+        }
+        rec.등록으로센행 = dReg;
+        rec.그중_이름없음 = dNameless;
+        rec.이름없는행_행번호샘플 = dSample;
+      } catch (eDg) { rec.error = String(eDg).slice(0, 120); }
+      dgOut.push(rec);
+    });
+    return _json({ ok: true, count: dgOut.length, data: dgOut });
+  }
+
   if (action === 'hold_sheet_probe') {
     if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
     var hpSs = SpreadsheetApp.openById('1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ');
