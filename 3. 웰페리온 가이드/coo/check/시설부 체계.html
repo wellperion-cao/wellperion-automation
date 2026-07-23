@@ -3870,6 +3870,20 @@ function vendorSubmitAddForm(){
       oocAction:(dmap['fc_ooc_action']||'')
     };
   }
+  // 작업일지 델타(GM 2026-07-23 "회차 제출 텔레그램에 작업일지도 — 누적 반복 금지") —
+  // 22:30 보고 support_check_summary.py facility_worklog()와 동일 규칙: work 는 현장에서
+  // '그 회차까지의 누적 텍스트'로 입력되므로 그대로 붙이면 뒤 회차일수록 앞 내용을 통째로
+  // 반복한다. 앞 회차(들)에 이미 있던 줄은 빼고 이번 회차에서 새로 늘어난 줄만 남긴다.
+  function fcWorkDelta(allSubs,curWork){
+    var seen={};
+    var prev=(allSubs||[]).slice(0,-1);   // 마지막(이번 회차 자신) 제외 — 앞 회차만
+    prev.forEach(function(s){
+      String((s&&s.work)||'').replace(/\r/g,'').split('\n').forEach(function(ln){ ln=ln.trim(); if(ln)seen[ln]=true; });
+    });
+    var fresh=[];
+    String(curWork||'').replace(/\r/g,'').split('\n').forEach(function(ln){ ln=ln.trim(); if(ln&&!seen[ln])fresh.push(ln); });
+    return fresh;
+  }
   // 제출 후 현재 회차 입력·draft·타이머 리셋 — 값-only(DOM 재생성 금지, IME 안전).
   function fcResetAfterSubmit(curR){
     if(curR){
@@ -4009,7 +4023,12 @@ function vendorSubmitAddForm(){
       try{
         var _measureRes=(results&&results[1])||{};
         var _ab=Number(_measureRes.abnormalCount||0);
-        var _fcMsg='🏗 시설부 '+subCount+'회차 제출 · 점검자 '+(insp||'-')+' · '+(_ab?('이상 '+_ab+'건'):'이상 없음');
+        // 작업일지 줄 — 이번 회차에서 새로 늘어난 항목만(fcWorkDelta), 6개 넘으면 "외 N"(GM 2026-07-23).
+        var _fresh=fcWorkDelta(fcStore.submissions,sub.work);
+        var _workLine=_fresh.length
+          ? '작업일지: '+_fresh.slice(0,6).map(escapeHTML).join(' / ')+(_fresh.length>6?' 외 '+(_fresh.length-6):'')
+          : '작업일지: (추가 작업 없음)';
+        var _fcMsg='🏗 시설부 '+subCount+'회차 제출 · 점검자 '+(insp||'-')+' · '+(_ab?('이상 '+_ab+'건'):'이상 없음')+'\n'+_workLine;
         fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
           body:JSON.stringify({action:'notify_round',dept:'facility',date:date,round:curR,message:_fcMsg})}).catch(function(){});
       }catch(e){}
