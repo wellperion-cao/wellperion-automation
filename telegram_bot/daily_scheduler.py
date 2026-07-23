@@ -126,6 +126,20 @@ except Exception:
     _CID_OK = False
     _cid = None  # type: ignore[assignment]
 
+# 미체크 항목명 병합(scripts/support_check_summary.py) — 정본 위임. GM 2026-07-23(시토).
+#   22:30 보고와 17시·22시 독려가 같은 로직을 쓰게 단일화. import 실패해도 발신 무영향
+#   (이 파일은 상주 봇이라 기동 실패를 절대 허용하지 않는다 — 아래 로컬 폴백 유지).
+try:
+    import os as _os3b, sys as _sys3b
+    _scr3b = _os3b.path.abspath(_os3b.path.join(_os3b.path.dirname(_os3b.path.abspath(__file__)), "..", "scripts"))
+    if _scr3b not in _sys3b.path:
+        _sys3b.path.insert(0, _scr3b)
+    from support_check_summary import merged_unchecked_names as _scs_merged_unchecked_names
+    _SCS_OK = True
+except Exception:
+    _SCS_OK = False
+    _scs_merged_unchecked_names = None  # type: ignore[assignment]
+
 # 운영 다이제스트 공용 수집층 (scripts/collectors/ops_shared.py) — GAS URL 상수 3종
 # (FUNNEL_EXEC_URL·VOC_EXEC_URL·SSOT_API_URL)·재시도 GET 래퍼·UTC→KST 변환·업무완료
 # 상태셋. scripts/ops_daily_digest.py(아침)와의 중복 정의를 여기로 수렴한다
@@ -2385,7 +2399,15 @@ DIGEST_RECEPTION_CHAT_ID = int(ENV.get("TELEGRAM_RECEPTION_CHAT_ID") or -5065206
 
 def _merged_unchecked_names(live: dict, shift: str) -> list[str]:
     """today_live 응답의 uncheckedByShift[shift] — m+f 미체크 항목명 병합.
-    필드 없음/빈값 → 빈 리스트(호출부가 안전하게 줄 생략). GM go 2026-07-09, 배선: 지원팀 일일점검.js handleTodayLive."""
+    필드 없음/빈값 → 빈 리스트(호출부가 안전하게 줄 생략). GM go 2026-07-09, 배선: 지원팀 일일점검.js handleTodayLive.
+    정본은 scripts/support_check_summary.merged_unchecked_names — 여기선 위임(soft import,
+    상단에서 _SCS_OK 판정). import 실패 시에만 아래 로컬 구현으로 폴백(봇 기동 실패 방지,
+    GM 2026-07-23 시토 — 22:30 보고와 로직 단일화)."""
+    if _SCS_OK and _scs_merged_unchecked_names is not None:
+        try:
+            return _scs_merged_unchecked_names(live, shift)
+        except Exception:
+            pass  # 폴백으로 계속
     bucket = (live.get("uncheckedByShift") or {}).get(shift) or {}
     names = list(bucket.get("m") or []) + list(bucket.get("f") or [])
     return [str(n).strip() for n in names if str(n or "").strip()]

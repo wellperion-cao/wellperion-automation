@@ -121,6 +121,49 @@ def support_issues(d: dict) -> list[str]:
     return out
 
 
+def merged_unchecked_names(live: dict, shift: str) -> list[str]:
+    """today_live 응답의 uncheckedByShift[shift] — m+f 미체크 항목명 병합. **정본**.
+    daily_scheduler.py._merged_unchecked_names 이 이 함수를 위임(soft import) 사용한다 —
+    두 곳에서 갈라지지 않도록 여기가 단일 출처. 필드 없음/빈값 → 빈 리스트(호출부가 안전하게
+    줄 생략). GM go 2026-07-09(배선: 지원팀 일일점검.js handleTodayLive) ·
+    22:30 보고 통합 GM 2026-07-23(시토)."""
+    bucket = (live.get("uncheckedByShift") or {}).get(shift) or {}
+    names = list(bucket.get("m") or []) + list(bucket.get("f") or [])
+    return [str(n).strip() for n in names if str(n or "").strip()]
+
+
+_MAX_UNCHECKED_NAMES = 8  # 회차당 미체크 항목명 표시 최대 개수(초과 시 '외 N')
+
+
+def support_nudge_lines(d: dict) -> list[str]:
+    """🔔 독려 대상 — **아직 미완인 회차만** 회차별 남/여 진행 + 미체크 항목명(있으면).
+    GM 2026-07-23 지시(시토): 17시·22시 개별 독려 알림에만 있던 미체크 항목명을
+    22:30 하루정리 보고에도 상시 반영(두 채널이 같은 정보를 보게). 미완 회차가 하나도
+    없으면 빈 리스트(블록 자체 생략). uncheckedByShift 없음/빈값이면 그 회차는
+    '— 미체크:' 부분만 조용히 생략(지어내기 금지)."""
+    g = d.get("byGender", {}) or {}
+    m = g.get("m", {}) or {}
+    f = g.get("f", {}) or {}
+    out: list[str] = []
+    for key, label in _SHIFTS:
+        mT, mD = int(m.get(key + "Total", 0) or 0), int(m.get(key, 0) or 0)
+        fT, fD = int(f.get(key + "Total", 0) or 0), int(f.get(key, 0) or 0)
+        total, done = mT + fT, mD + fD
+        if total <= 0 or done >= total:
+            continue
+        line = f"    · {label} 남 {mD}/{mT} · 여 {fD}/{fT}"
+        names = merged_unchecked_names(d, key)
+        if names:
+            shown = names[:_MAX_UNCHECKED_NAMES]
+            extra = len(names) - len(shown)
+            tail = f" 외 {extra}" if extra > 0 else ""
+            line += " — 미체크: " + ", ".join(shown) + tail
+        out.append(line)
+    if not out:
+        return []
+    return ["  🔔 독려 대상 — 아직 안 된 항목"] + out
+
+
 def _pct_str(done: int, total: int) -> str:
     return f"{round(done / total * 100)}%" if total else "-"
 
@@ -230,6 +273,10 @@ def build_support_section(today: str, url: str = DEFAULT_GAS_URL,
     elif not rec:
         lines.append("  ✅ 이상 없음 — 전 회차 완료")
     lines += rec
+
+    # 독려 대상(미체크 항목명) — 17·22시 개별 독려에만 있던 정보를 22:30 보고에도 상시 반영.
+    # GM 2026-07-23 지시(시토). 미완 회차 없으면 support_nudge_lines가 빈 리스트 반환(생략).
+    lines += support_nudge_lines(d)
 
     # 이슈 상세(체크리스트 원문) — 완료율 짚을 점과 별개, allIssues 그대로 노출. GM 2026-07-22 지시3.
     lines += support_issue_detail_lines(d)

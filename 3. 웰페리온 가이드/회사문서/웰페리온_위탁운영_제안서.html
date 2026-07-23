@@ -111,6 +111,25 @@ b{font-weight:700}
 .tbar button{font:inherit;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.34);
   background:transparent;color:#fff;border-radius:3px;padding:6px 14px}
 .tbar button:hover{background:rgba(255,255,255,.14)}
+
+/* 금액 표 */
+table.ft{width:100%;border-collapse:collapse;font-size:15px;background:transparent}
+table.ft th,table.ft td{border:1px solid rgba(183,159,138,.28);padding:10px 14px;text-align:right}
+table.ft th{background:rgba(183,159,138,.14);color:var(--beige);font-size:12.5px;font-weight:700;line-height:1.4}
+table.ft th small{display:block;font-size:10.5px;font-weight:400;color:rgba(255,255,255,.45);margin-top:2px}
+table.ft th:first-child,table.ft td:first-child{text-align:left}
+table.ft td{color:rgba(255,255,255,.82);font-variant-numeric:tabular-nums}
+table.ft td b{color:#fff}
+table.ft td.hi{color:#fff;font-weight:700;background:rgba(183,159,138,.10)}
+table.ft tr.own td{background:rgba(237,91,63,.13)}
+/* 예시 */
+.ex{border:1px solid rgba(183,159,138,.3)}
+.ex .er{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:10px 16px;
+  border-bottom:1px solid rgba(183,159,138,.18);font-size:13.5px}
+.ex .er span{color:rgba(255,255,255,.62)}
+.ex .er b{color:#fff;font-variant-numeric:tabular-nums}
+.ex .er.tot{background:rgba(237,91,63,.14);border-bottom:none}
+.ex .er.tot b{color:var(--highlight);font-size:16.5px}
 @page{size:A3 landscape;margin:0}
 @media print{ html,body{background:#fff} .tbar{display:none!important}
   .a3{margin:0;box-shadow:none;page-break-after:always;break-after:page}
@@ -122,7 +141,7 @@ b{font-weight:700}
 
 <div class="tbar">
   <b>웰페리온 · 위탁운영 제안서 (초안)</b>
-  <span class="h">8장 · A3 가로 · 수수료와 계약 조항은 법률 검토 전 초안입니다</span>
+  <span class="h">9장 · A3 가로 · 금액은 웰페리온 실측 기준 계산값 · 수수료와 계약 조항은 법률 검토 전 초안</span>
   <span class="sp"></span>
   <button onclick="window.print()">인쇄 / PDF</button>
 </div>
@@ -131,6 +150,7 @@ b{font-weight:700}
 <section class="a3 cv">
   <div>
     <div class="en">Managed Operation Proposal</div>
+    <div style="font-size:17px;letter-spacing:.30em;text-transform:uppercase;color:rgba(255,255,255,.55);font-weight:600;margin:-18px 0 26px;">A Day, Well Completed. &nbsp;·&nbsp; 하루의 완성, 웰페리온</div>
     <h1>운영을 맡긴다는 것은,<br><span class="b">기준을 옮기는 일입니다.</span></h1>
     <p class="sub">웰페리온은 컨설팅 회사가 아닙니다. 한남동 3,000평을 2017년부터 <b style="color:#fff">직접 운영해 온 사업자</b>입니다.
       매일 돌아가는 점검 · 회원 응대 · 시설 관리 · 결재가 이미 체계로 굳어 있고, 위탁은 그 체계를 그대로 옮겨 심는 일입니다.</p>
@@ -148,7 +168,7 @@ b{font-weight:700}
   <div class="pad">
     <div class="kick">01 · Why Wellperion</div>
     <h2 class="title">해본 사람이 옮기는 것과,<br><span class="b">해본 적 없는 사람이 설계하는 것은 다릅니다.</span></h2>
-    <p class="lead">아래 숫자는 저희가 지금 실제로 돌리고 있는 시설의 값입니다. 좋아 보이게 고르지 않고, 측정하고 있는 그대로 적었습니다.</p>
+    <p class="lead">아래 숫자는 지금 실제로 돌리고 있는 시설의 값입니다. 좋아 보이게 고르지 않고 측정하는 그대로 적었습니다.</p>
 
     <div class="sec">
       <h3>운영 실적 — 실측값</h3>
@@ -161,6 +181,24 @@ b{font-weight:700}
       </div>
       <div class="warn"><b>있는 그대로 적습니다 —</b> 점검 완료율 78%는 <b>지원부 한 부서의 측정값</b>이며, 나머지 부서는 아직 자동 집계가 붙지 않았습니다.
         그리고 웰페리온은 <b>외부 시설 위탁운영 실적이 아직 없습니다.</b> 이 제안서는 위탁 경력이 아니라, <b>9년간 직접 운영하며 만든 체계와 그것이 실제로 돌아가는 정도</b>로 증명합니다.</div>
+    </div>
+
+    <div class="sec">
+      <h3>우리가 지키는 것</h3>
+      <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:26px;align-items:stretch">
+        <div style="background:var(--white);border-left:3px solid var(--highlight);padding:22px 26px">
+          <div style="font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--highlight);font-weight:700;margin-bottom:10px">Mission</div>
+          <div style="font-size:27px;font-weight:800;letter-spacing:-.03em;line-height:1.25;margin-bottom:10px">회원 한 사람의<br>건강한 하루를 완성한다.</div>
+          <div style="font-size:14px;line-height:1.72;color:#3a352f">이 한 문장이 저희의 모든 판단 기준입니다. 위탁 현장에서도 같습니다 —
+            매출보다 <b>오늘 온 회원이 내일도 오는가</b>를 먼저 봅니다. 이탈률을 핵심 지표로 두는 이유입니다.</div>
+        </div>
+        <div style="background:var(--white);border-left:3px solid var(--beige);padding:22px 26px">
+          <div style="font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--beige);font-weight:700;margin-bottom:10px">Slogan</div>
+          <div style="font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.3;margin-bottom:8px">A Day, Well Completed.<br><span style="color:var(--beige)">하루의 완성, 웰페리온</span></div>
+          <div style="font-size:14px;line-height:1.72;color:#3a352f">운동만 잘 되는 곳이 아니라 <b>하루가 완성되는 곳</b>.
+            운동 · 회복 · 머무름이 끊기지 않게 잇는 것이 저희가 운영에서 가장 신경 쓰는 부분입니다.</div>
+        </div>
+      </div>
     </div>
 
     <div class="sec">
@@ -267,7 +305,7 @@ b{font-weight:700}
     <div class="fees sec">
       <div class="fe">
         <div class="tag">TYPE A</div><div class="h">정액</div>
-        <div class="f">월 고정 위탁료</div>
+        <div class="f">3,000평 기준 월 <b>3,100만원</b><span style="font-weight:600;font-size:12px;display:block;margin-top:3px;">규모별 금액 = 다음 장</span></div>
         <ul>
           <li>매달 같은 금액. 예산 계획이 쉽습니다.</li>
           <li>매출이 늘어도 수수료는 그대로</li>
@@ -277,7 +315,7 @@ b{font-weight:700}
       </div>
       <div class="fe rec2">
         <div class="tag">TYPE C · 권장</div><div class="h">혼합</div>
-        <div class="f">기본 정액 + 성과 연동</div>
+        <div class="f">3,000평 기준 기본 <b>1,868만원</b> + 초과분 20%<span style="font-weight:600;font-size:12px;display:block;margin-top:3px;">규모별 금액 = 다음 장</span></div>
         <ul>
           <li><b>기본료</b> — 최소 운영에 필요한 고정 인건·관리비</li>
           <li><b>성과료</b> — 사전 합의한 목표 초과분에 대해서만</li>
@@ -287,7 +325,7 @@ b{font-weight:700}
       </div>
       <div class="fe">
         <div class="tag">TYPE B</div><div class="h">매출 연동</div>
-        <div class="f">매출의 일정 비율</div>
+        <div class="f">매출의 <b>3 · 5 · 7%</b><span style="font-weight:600;font-size:12px;display:block;margin-top:3px;">3,000평 5% = 월 3,114만원</span></div>
         <ul>
           <li>매출이 늘면 함께 늘고, 줄면 함께 줍니다</li>
           <li>초기 매출이 낮으면 운영 인력 유지가 어렵습니다</li>
@@ -305,8 +343,64 @@ b{font-weight:700}
         <div class="r"><span class="k">성과료 산정 기준</span><span class="v">무엇을 기준으로 · 언제 정산 (6장)</span></div>
       </div>
     </div>
-    <div class="warn"><b>금액은 아직 넣지 않았습니다.</b> 시설 규모 · 위탁 범위 · 현재 인력 구성에 따라 크게 달라지므로, 진단(STEP 01) 이후 제시하는 것이 맞습니다. 여기서는 <b>방식</b>만 합의합니다.</div>
+    <div class="warn"><b>위 금액은 웰페리온이 실제로 운영 중인 시설의 실측값에서 계산한 기준선입니다.</b> 산출 근거와 규모별 금액은 다음 장에 그대로 펼쳐 두었습니다 — 확정 금액은 진단(STEP 01) 이후 제시합니다.</div>
     <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>05</span></div>
+  </div>
+</section>
+
+<!-- 05-B 금액 산출 -->
+<section class="a3 dark">
+  <div class="pad">
+    <div class="kick">04-B · Numbers</div>
+    <h2 class="title">숫자는 <span class="b">우리 시설에서 계산했습니다.</span></h2>
+    <p class="lead">시세를 인용하지 않았습니다. 지금 웰페리온이 돌리고 있는 3,000평 시설의 <b>2026년 6월 마감 실적</b>에서 단위값을 뽑고, 그 단위로 규모별 금액을 계산했습니다.</p>
+    <div class="sec">
+      <h3>산출 기준 — 웰페리온 실측</h3>
+      <div class="rec" style="grid-template-columns:repeat(4,1fr)">
+        <div class="rc"><div class="k">기준 월매출</div><div class="v">6.23억</div><div class="n">2026-06 마감 실적</div></div>
+        <div class="rc"><div class="k">기준 면적</div><div class="v">3,000평</div><div class="n">단일 시설</div></div>
+        <div class="rc"><div class="k">평당 월매출</div><div class="v">20.8만원</div><div class="n">6.23억 ÷ 3,000평</div></div>
+        <div class="rc"><div class="k">회원 1인 월매출</div><div class="v">60.5만원</div><div class="n">6.23억 ÷ 1,030명</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <h3>규모별 금액 (월 · 만원)</h3>
+      <table class="ft">
+        <thead><tr><th>시설 규모</th><th>예상 월매출<br><small>평당 20.8만 기준</small></th>
+          <th>연동 3%</th><th>연동 5%<br><small>기준선</small></th><th>연동 7%</th>
+          <th>혼합 기본료<br><small>5%의 60%</small></th><th>초기 셋업비<br><small>일회성</small></th></tr></thead>
+        <tbody>
+        <tr><td><b>1,000평</b></td><td>20,760만원</td><td>623만원</td><td class="hi">1,038만원</td><td>1,453만원</td><td class="hi">623만원</td><td>1,868만원</td></tr>
+        <tr><td><b>1,500평</b></td><td>31,140만원</td><td>934만원</td><td class="hi">1,557만원</td><td>2,180만원</td><td class="hi">934만원</td><td>2,803만원</td></tr>
+        <tr><td><b>2,000평</b></td><td>41,520만원</td><td>1,246만원</td><td class="hi">2,076만원</td><td>2,906만원</td><td class="hi">1,246만원</td><td>3,737만원</td></tr>
+        <tr class="own"><td><b>3,000평</b></td><td>62,281만원</td><td>1,868만원</td><td class="hi">3,114만원</td><td>4,360만원</td><td class="hi">1,868만원</td><td>5,605만원</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="sec" style="display:grid;grid-template-columns:1.12fr 1fr;gap:26px">
+      <div>
+        <h3>왜 이 숫자인가</h3>
+        <div style="font-size:14px;line-height:1.78;color:rgba(255,255,255,.76)">
+          <b style="color:#fff">연동 5%가 기준선인 이유</b> — 3%로는 총괄·부문 담당을 상주시키기 어렵고, 7%면 위탁자 입장에서 직접 운영 대비 이점이 옅어집니다. 5%가 <b style="color:#fff">양쪽이 버티는 지점</b>입니다.<br><br>
+          <b style="color:#fff">혼합 기본료 = 5%의 60%</b> — 매출이 낮아도 최소 운영 인력은 유지돼야 합니다. 나머지 40%는 <b style="color:#fff">합의 목표를 넘긴 매출의 20%</b>로 회수합니다. 못 넘기면 받지 않습니다.<br><br>
+          <b style="color:#fff">셋업비 = 기본료 3개월분</b> — 진단·이관·안정화 3개월간 웰페리온 인력이 현장에 투입되는 몫입니다.
+        </div>
+      </div>
+      <div>
+        <h3>예시 — 2,000평 · 혼합안</h3>
+        <div class="ex">
+          <div class="er"><span>예상 월매출</span><b>4억 1,520만원</b></div>
+          <div class="er"><span>월 기본료</span><b>1,246만원</b></div>
+          <div class="er"><span>합의 목표 매출</span><b>4억 1,520만원</b></div>
+          <div class="er"><span>실제 4.5억 달성 시</span><b>초과 3,480만 × 20% = 696만원</b></div>
+          <div class="er tot"><span>그 달 총 수수료</span><b>1,942만원</b></div>
+          <div class="er"><span>초기 셋업비(일회성)</span><b>3,737만원</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="warn"><b>확정 금액이 아닙니다.</b> 위 표는 <b>웰페리온 시설의 평당 매출을 그대로 적용</b>한 값이라 대상 시설의 입지·회원 단가·현 인력 구성에 따라 달라집니다.
+      진단(STEP 01) 후 실제 숫자로 다시 드리며, 매출 정의(회원권 / 부대 / 외부매출 포함 여부)는 계약서에 명시합니다.</div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>06</span></div>
   </div>
 </section>
 
@@ -342,7 +436,7 @@ b{font-weight:700}
     </div>
     <div class="warn"><b>이 조항들은 웰페리온을 지키려는 것이 아니라, 위탁을 성공시키려는 것입니다.</b>
       경계가 흐리면 책임도 흐려집니다. 책임이 흐려지면 결국 위탁자가 손해를 봅니다.</div>
-    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>06</span></div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>07</span></div>
   </div>
 </section>
 
@@ -375,7 +469,7 @@ b{font-weight:700}
       </div>
     </div>
     <div class="warn"><b>법률 검토 전 초안입니다.</b> 위 조항과 수수료 구조는 실제 계약서 작성 시 법무 검토를 거쳐 확정해야 합니다.</div>
-    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>07</span></div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>08</span></div>
   </div>
 </section>
 
