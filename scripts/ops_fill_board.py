@@ -359,10 +359,85 @@ footer{font-size:12.5px;color:var(--ink-faint);border-top:1px solid var(--line);
 """
 
 
+def make_card(png_path: str) -> bool:
+    """보드 상단(제목+기간 카드)을 잘라 카톡용 카드 이미지로 만든다. 실패해도 보드 생성은 유효."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except Exception as ex:
+        print(f"[WARN] playwright 없음 — 카드 생략: {ex}")
+        return False
+    src = "file:///" + OUTS[0].replace("\\", "/").replace(" ", "%20")
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            pg = b.new_context(viewport={"width": 1200, "height": 1000},
+                               device_scale_factor=2).new_page()
+            pg.goto(src, wait_until="load", timeout=60000)
+            pg.wait_for_timeout(1500)
+            h = pg.evaluate("(function(){var s=document.querySelector('.period');"
+                            "var r=s.getBoundingClientRect();"
+                            "return Math.ceil(r.bottom+window.scrollY+20)})()")
+            pg.set_viewport_size({"width": 1200, "height": int(h)})
+            pg.wait_for_timeout(500)
+            pg.screenshot(path=png_path, clip={"x": 0, "y": 0, "width": 1200, "height": h})
+            b.close()
+        return os.path.exists(png_path)
+    except Exception as ex:
+        print(f"[WARN] 카드 생성 실패 — 발송 생략: {type(ex).__name__}: {ex}")
+        return False
+
+
+def build_caption(S) -> str:
+    """카톡 본문. 질책 어휘 없이 '이번 주에 이것만' 톤. 링크는 실무진이 열 수 있는 공개 주소."""
+    return (
+        "[웰페리온 운영] 이번 주 업무판 채움 보드\n\n"
+        "안녕하세요, 운영을 돕는 AI COO 시우입니다.\n"
+        "이번 주에 '조금만 채우면 끝나는 것'을 한 장에 모았습니다.\n\n"
+        f"· 지금 진행 중 {S['act']}건 · 빈칸 없이 완비 {S['complete']}건\n"
+        f"· 마감일 {S['need_sched']}건 미기재\n"
+        f"· 점수(난이도) {S['need_score']}건 미기재\n"
+        f"· 30일 넘게 쉬는 중 {S['rest']}건\n\n"
+        "점수는 그대로 인사평가 가중점수로 이어집니다.\n"
+        "멈춘 일은 업무판에서 「보류」를 누르면 이유와 다시 볼 시점을 물어봅니다. "
+        "한 줄만 남겨두시면 때가 됐을 때 자동으로 다시 올라옵니다.\n\n"
+        "보드 위쪽 「업무판 열기」를 누르면 바로 채우실 수 있습니다.\n\n"
+        "보드 보기\n"
+        "https://wellperion-cao.github.io/wellperion-automation/coo/todo/"
+        "%EC%97%85%EB%AC%B4%ED%8C%90%20%EC%B1%84%EC%9B%80%20%EB%B3%B4%EB%93%9C.html"
+    )
+
+
+def send_kakao(S) -> None:
+    """카톡 ★운영부 방 1개에만 발송. 회장님·관리부 방 오발송 방지를 위해 --only-room 고정.
+
+    ★빈칸이 하나도 없으면 보내지 않는다 — 채울 게 없는데 매주 보내면 잔소리가 된다.
+    """
+    import subprocess
+    need = S["need_sched"] + S["need_score"] + S["rest"] + S["unlinked"]
+    if need == 0:
+        print("[발송 생략] 채울 빈칸·쉬는 건이 0 — 보낼 이유가 없습니다(잔소리 방지).")
+        return
+    png = os.path.join(BASE, "status", "boards", "ops_fill_board_card.png")
+    if not make_card(png):
+        return
+    cmd = [sys.executable, os.path.join(BASE, "scripts", "kakao_report_sender.py"),
+           "--image", png, "--caption", build_caption(S), "--only-room", "★ 운영부"]
+    print("[발송] 카톡 ★운영부 —", need, "건 남음")
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    tail = (r.stdout or "").strip().splitlines()[-3:]
+    for t in tail:
+        print("   ", t)
+    if r.returncode != 0:
+        print("[WARN] 카톡 발송 실패(코드 %s) — 보드는 정상 생성됨. GM PC 잠금·카톡 로그인 확인 필요."
+              % r.returncode)
+
+
 def main():
     ap = argparse.ArgumentParser(description="실무진 업무판 채움 보드 생성기")
     ap.add_argument("--json", action="store_true", help="수치만 JSON 출력(파일도 생성)")
     ap.add_argument("--date", help="기준일 YYYY-MM-DD (기본=오늘)")
+    ap.add_argument("--send", action="store_true",
+                    help="카톡 ★운영부 방에 카드+안내 발송(빈칸 0이면 자동 생략)")
     a = ap.parse_args()
     today = (datetime.datetime.strptime(a.date, "%Y-%m-%d").date() if a.date
              else datetime.date.today())
@@ -382,6 +457,8 @@ def main():
     print(f"진행 {S['act']} · 완비 {S['complete']} · 미등록 {S['unlinked']} · "
           f"쉬는중 {S['rest']} · 마감일 {S['need_sched']} · 점수 {S['need_score']} "
           f"· 제외(경영진) {S['excluded']}")
+    if a.send:
+        send_kakao(S)
 
 
 if __name__ == "__main__":
