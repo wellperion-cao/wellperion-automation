@@ -89,6 +89,11 @@ def audit(check_http: bool = True, max_seconds: float | None = None) -> list[dic
             continue  # 공개 URL 불필요 채널(있으면)은 스킵
         item_id = str(item.get("id", ""))
         url = _url_of(item)
+        if not url and str(item.get("url_unrecoverable", "")).strip():
+            # 회수 불가가 실측으로 확정된 건(예: 게시물이 삭제됨)은 매일 다시 경고하지 않는다.
+            # 사유는 항목 note 에 남아 있고, 이 필드는 그 확정 사실의 표식이다
+            # (2026-07-23 배9578 · GM "매일 다시 경고되지 않게").
+            continue
         if not url:
             suspects.append({
                 "id": item_id, "channel": channel, "level": "🔴 URL_MISSING",

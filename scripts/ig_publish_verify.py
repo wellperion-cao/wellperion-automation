@@ -22,7 +22,8 @@ import io
 import json
 import re
 import sys
-from datetime import datetime
+import unicodedata
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -46,10 +47,90 @@ URL_BACKFILL_STATUS = "발행완료"
 LOGIN_SIGNALS = ("instagram.com/accounts/login", "instagram.com/accounts/onetap", "/challenge/")
 POST_HREF_RE = re.compile(r"/(p|reel)/([A-Za-z0-9_-]+)/")
 
+KST = timezone(timedelta(hours=9))
+# 그리드 썸네일 alt 의 게시일("Photo by ... on June 04, 2026"). ★UTC 기준이라 KST 와 하루
+# 어긋날 수 있다(실측: alt 'June 03' = 게시물 time 2026-06-03T23:55Z = KST 06-04 08:55).
+# 그래서 alt 날짜는 '후보 좁히기'에만 쓰고, 최종 날짜 근거는 게시물 time[datetime] 로 판정한다.
+ALT_DATE_RE = re.compile(r"\bon ([A-Z][a-z]+) (\d{1,2}), (\d{4})")
+MONTHS = {m: i + 1 for i, m in enumerate(
+    ["January", "February", "March", "April", "May", "June", "July",
+     "August", "September", "October", "November", "December"])}
+# 제목 꼬리의 채널 표식 — 핵심어 추출 전에 떼어낸다.
+TITLE_CHANNEL_TAIL_RE = re.compile(
+    r"\s*[—\-]?\s*\((?:개인계정|공식|공식계정)\)\s*$|"
+    r"\s*[—\-]\s*(?:인스타그램|네이버\s*블로그|네이버\s*카페|카카오|당근)[^—]*$")
+TIME_IN_TEXT_RE = re.compile(r"\b([01]?\d|2[0-3]):([0-5]\d)\b")
+DATE_IN_TEXT_RE = re.compile(r"\b(20\d{2})-(\d{2})-(\d{2})\b")
+TIME_TOLERANCE_SEC = 900  # ±15분 — 발행 콜백 기록 시각과 실제 게시 시각의 관측 편차(실측 ≤2분)
+
 
 def _norm(t: str) -> str:
     """공백·개행 정규화(대조 비교용)."""
     return re.sub(r"\s+", " ", (t or "")).strip()
+
+
+def _squash(t: str) -> str:
+    """공백·특수문자·따옴표 제거 + 소문자 — 표기 변형에 강한 대조 키."""
+    return re.sub(r"[^0-9a-z가-힣]", "", unicodedata.normalize("NFKC", t or "").lower())
+
+
+def _alt_date(alt: str) -> str | None:
+    m = ALT_DATE_RE.search(alt or "")
+    if not m or m.group(1) not in MONTHS:
+        return None
+    return f"{m.group(3)}-{MONTHS[m.group(1)]:02d}-{int(m.group(2)):02d}"
+
+
+def _item_dates(item: dict) -> set[str]:
+    """항목이 주장하는 게시일(KST) 후보 — published_at · id · folder 접두 · note 안 날짜."""
+    out: set[str] = set()
+    pub = (item.get("published_at") or "").strip()
+    if len(pub) >= 10:
+        out.add(pub[:10])
+    m = re.search(r"\b(20\d{2})-(\d{2})-(\d{2})\b", item.get("id") or "")
+    if m:
+        out.add(f"{m.group(1)}-{m.group(2)}-{m.group(3)}")
+    m = re.search(r"(?:^|/)(\d{2})(\d{2})(\d{2})_", (item.get("folder") or "") + "_")
+    if m:
+        out.add(f"20{m.group(1)}-{m.group(2)}-{m.group(3)}")
+    for d in DATE_IN_TEXT_RE.finditer(item.get("note") or ""):
+        out.add(f"{d.group(1)}-{d.group(2)}-{d.group(3)}")
+    return out
+
+
+def _item_times(item: dict) -> list[datetime]:
+    """항목이 주장하는 게시 시각(KST) 후보 — published_at 의 시각 + note 안 HH:MM × 날짜후보."""
+    out: list[datetime] = []
+    pub = (item.get("published_at") or "").strip()
+    if "T" in pub:
+        try:
+            out.append(datetime.fromisoformat(pub).replace(tzinfo=KST))
+        except ValueError:
+            pass
+    dates = _item_dates(item)
+    for tm in TIME_IN_TEXT_RE.finditer(item.get("note") or ""):
+        for d in dates:
+            try:
+                out.append(datetime.fromisoformat(
+                    f"{d}T{int(tm.group(1)):02d}:{tm.group(2)}:00").replace(tzinfo=KST))
+            except ValueError:
+                continue
+    return out
+
+
+def _title_core(item: dict) -> str:
+    """제목에서 채널 표식·시리즈 번호를 떼어낸 핵심 구절(대조용).
+    'AI #8편 (일요일 특별편) — GM의 일요일(개인계정)' → 'GM의 일요일'.
+    '[필라테스편] 민소매가 잘 어울리는 어깨만들기 — 인스타그램(공식)' → '민소매가 잘 어울리는 어깨만들기'
+    (앞머리 대괄호는 시리즈 표식이라 실제 게시 캡션엔 안 들어간다 — 떼지 않으면 대조가 통째로 빗나간다)."""
+    title = (item.get("title") or "").strip()
+    prev = None
+    while prev != title:
+        prev = title
+        title = TITLE_CHANNEL_TAIL_RE.sub("", title).strip()
+    title = re.sub(r"^(?:\s*\[[^\]]*\])+\s*", "", title).strip()
+    parts = [p.strip() for p in re.split(r"\s+—\s+", title) if p.strip()]
+    return parts[-1] if parts else title
 
 
 def _profile_dir(account: str) -> Path:
@@ -85,8 +166,8 @@ def _match_snippets(caption: str) -> list[str]:
     return [p[:30] for p in picks if p][:3]
 
 
-async def _read_caption_text(page) -> str:
-    """현재 IG 게시물 페이지에서 캡션 텍스트 후보를 최대한 모아 반환."""
+async def _read_post(page) -> tuple[str, datetime | None]:
+    """현재 IG 게시물 페이지에서 (캡션 텍스트, 게시일시 KST) 반환."""
     chunks: list[str] = []
     try:
         meta = await page.locator('meta[property="og:description"]').first.get_attribute(
@@ -102,79 +183,140 @@ async def _read_caption_text(page) -> str:
                 chunks.append(txt)
         except Exception:
             continue
-    return _norm(" ".join(chunks))
+    posted = None
+    try:
+        raw = await page.locator('time[datetime]').first.get_attribute("datetime", timeout=3000)
+        if raw:
+            posted = datetime.fromisoformat(raw.replace("Z", "+00:00")).astimezone(KST)
+    except Exception:
+        posted = None
+    return _norm(" ".join(chunks)), posted
+
+
+async def _collect_grid(page, account: str, scrolls: int, max_posts: int) -> list[dict]:
+    """프로필 그리드를 스크롤하며 게시물 URL + 썸네일 alt(게시일 포함) 수집.
+    ★읽기 전용 — goto·evaluate(스크롤/DOM 읽기)만. 클릭·입력·업로드 호출 없음."""
+    order: list[str] = []
+    alts: dict[str, str] = {}
+    for _ in range(max(1, scrolls)):
+        try:
+            rows = await page.evaluate(
+                """() => [...document.querySelectorAll('a[href*="/p/"], a[href*="/reel/"]')]
+                     .map(a => ({href: a.getAttribute('href'),
+                                 alt: (a.querySelector('img')?.getAttribute('alt') || '')}))"""
+            )
+        except Exception:
+            rows = []
+        for r in rows or []:
+            m = POST_HREF_RE.search(r.get("href") or "")
+            if not m:
+                continue
+            u = f"https://www.instagram.com/{m.group(1)}/{m.group(2)}/"
+            if u not in alts:
+                order.append(u)
+                alts[u] = r.get("alt") or ""
+            elif r.get("alt") and not alts[u]:
+                alts[u] = r.get("alt")
+        if len(order) >= max_posts:
+            break
+        prev = await page.evaluate("() => document.body.scrollHeight")
+        await page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+        await asyncio.sleep(2.5)
+        if await page.evaluate("() => document.body.scrollHeight") == prev:
+            await asyncio.sleep(2.5)
+            if await page.evaluate("() => document.body.scrollHeight") == prev:
+                break
+    grid = [{"url": u, "alt": alts[u], "alt_date": _alt_date(alts[u])} for u in order[:max_posts]]
+    per_date: dict[str, int] = {}
+    for g in grid:
+        if g["alt_date"]:
+            per_date[g["alt_date"]] = per_date.get(g["alt_date"], 0) + 1
+    for g in grid:
+        g["date_unique"] = per_date.get(g["alt_date"] or "", 0) == 1
+    return grid
 
 
 def _login_required(url: str) -> bool:
     return any(sig in (url or "") for sig in LOGIN_SIGNALS)
 
 
-async def _verify_one(context, item: dict) -> tuple[str, str, str | None]:
+def _evidence(item: dict, live: str, posted: datetime | None, date_unique: bool,
+              snippets: list[str]) -> list[str]:
+    """근거 목록 — ①캡션 스니펫 ②게시일 ③게시시각 ④제목 핵심어. 최소 2개 일치해야 채택.
+    ★근거 없이 느슨하게 하지 않는다 — 틀린 주소를 붙이는 게 빈 칸보다 나쁘다(배9578)."""
+    ev: list[str] = []
+    for sn in snippets:
+        if sn and (sn in live or (len(sn) >= 14 and sn[:14] in live)):
+            ev.append(f"캡션 '{sn[:20]}'")
+            break
+    if posted:
+        if posted.strftime("%Y-%m-%d") in _item_dates(item):
+            ev.append(f"게시일 {posted:%Y-%m-%d}" + ("(당일 유일)" if date_unique else ""))
+        for t in _item_times(item):
+            gap = abs((posted - t).total_seconds())
+            if gap <= TIME_TOLERANCE_SEC:
+                ev.append(f"게시시각 {posted:%H:%M} (기록 {t:%H:%M}, {int(gap)}초 차)")
+                break
+    core = _squash(_title_core(item))
+    if len(core) >= 5 and core[:12] in _squash(live):
+        ev.append(f"제목 핵심어 '{_title_core(item)[:20]}'")
+    return ev
+
+
+async def _verify_one(context, item: dict, grid: list[dict],
+                      used_urls: set[str]) -> tuple[str, str, str | None]:
     """단일 항목 대조. 반환 (verdict, reason, post_url).
     verdict ∈ {'match','nomatch','login','notfound','error'}"""
     account = (item.get("account") or DEFAULT_ACCOUNT).strip()
-    caption = item.get("caption") or item.get("title") or ""
-    snippets = _match_snippets(caption)
-    if not snippets:
-        return "error", "대조 스니펫 추출 실패(캡션 없음)", None
+    snippets = _match_snippets(item.get("caption") or "")
 
-    def _hit(live: str) -> str | None:
-        for sn in snippets:
-            if sn and sn in live:
-                return sn
-            if len(sn) >= 14 and sn[:14] in live:
-                return sn[:14]
-        return None
+    post_url = (item.get("post_url") or "").strip()
+    if post_url:
+        candidates = [{"url": post_url, "alt_date": None, "date_unique": False}]
+    else:
+        if not grid:
+            return "notfound", "프로필에서 게시물 링크 미발견", None
+        # 날짜로 후보를 좁힌다 — alt 날짜는 UTC 기준이라 ±1일 여유를 둔다.
+        want = _item_dates(item)
+        wide: set[str] = set()
+        for d in want:
+            try:
+                base = datetime.fromisoformat(d)
+            except ValueError:
+                continue
+            for off in (-1, 0, 1):
+                wide.add((base + timedelta(days=off)).strftime("%Y-%m-%d"))
+        candidates = [g for g in grid if g["alt_date"] and g["alt_date"] in wide]
+        if not candidates:
+            # 날짜 근거가 없거나 그리드에 해당 날짜가 없으면 최신 앞쪽만 훑는다(종전 동작).
+            candidates = grid[:6]
+        candidates = [g for g in candidates if g["url"] not in used_urls]
+        if not candidates:
+            return "nomatch", "날짜 후보 게시물이 모두 다른 항목에 이미 배정됨", None
 
     page = await context.new_page()
     try:
-        # 대조 대상 게시물 URL 목록 — post_url 있으면 그것만, 없으면 프로필 앞쪽 N개
-        # (공식 계정은 고정/핀 게시물이 맨 앞일 수 있어 최신 1개만 보면 놓친다)
-        candidates: list[str] = []
-        post_url = (item.get("post_url") or "").strip()
-        if post_url:
-            candidates = [post_url]
-        else:
-            await page.goto(f"https://www.instagram.com/{account}/",
-                            wait_until="domcontentloaded", timeout=45000)
-            await asyncio.sleep(4)
-            if _login_required(page.url):
-                return "login", f"세션 만료/로그인 필요(account={account})", None
-            try:
-                hrefs = await page.locator(
-                    'a[href*="/p/"], a[href*="/reel/"]').evaluate_all(
-                    "els => els.map(e => e.getAttribute('href'))")
-            except Exception:
-                hrefs = []
-            seen = set()
-            for h in hrefs or []:
-                m = POST_HREF_RE.search(h or "")
-                if not m:
-                    continue
-                u = f"https://www.instagram.com/{m.group(1)}/{m.group(2)}/"
-                if u not in seen:
-                    seen.add(u)
-                    candidates.append(u)
-                if len(candidates) >= 6:
-                    break
-            if not candidates:
-                return "notfound", "프로필에서 게시물 링크 미발견", None
-
-        last_live_empty = True
-        for url in candidates:
-            await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        best: tuple[list[str], str] | None = None
+        live_seen = False
+        for cand in candidates:
+            await page.goto(cand["url"], wait_until="domcontentloaded", timeout=45000)
             await asyncio.sleep(3)
             if _login_required(page.url):
                 return "login", f"세션 만료/로그인 필요(account={account})", None
-            live = await _read_caption_text(page)
+            live, posted = await _read_post(page)
             if live:
-                last_live_empty = False
-            hit = _hit(live)
-            if hit:
-                return "match", f"대조 일치: '{hit}'", url
-        if last_live_empty:
-            return "notfound", "게시물 캡션 텍스트 미회수", (candidates[0] if candidates else None)
-        return "nomatch", (f"앞쪽 {len(candidates)}개 게시물에서 스니펫 {snippets} 미검출"), None
+                live_seen = True
+            ev = _evidence(item, live, posted, cand.get("date_unique", False), snippets)
+            if len(ev) >= 2 and (best is None or len(ev) > len(best[0])):
+                best = (ev, cand["url"])
+                if len(ev) >= 3:
+                    break
+        if best:
+            return "match", "근거 " + str(len(best[0])) + "개 — " + " · ".join(best[0]), best[1]
+        if not live_seen:
+            return "notfound", "게시물 캡션 텍스트 미회수", None
+        return "nomatch", (f"후보 {len(candidates)}건 대조했으나 근거 2개 미달"
+                           f"(날짜후보={sorted(_item_dates(item))})"), None
     except Exception as exc:
         return "error", f"대조 예외: {type(exc).__name__}: {exc}", None
     finally:
@@ -208,8 +350,12 @@ def _is_target(it: dict) -> bool:
     return False
 
 
-async def run(target_id: str | None, dry_run: bool) -> int:
+async def run(target_id: str | None, dry_run: bool,
+              scrolls: int = 3, max_posts: int = 18) -> int:
     queue: list[dict] = json.loads(QUEUE.read_text(encoding="utf-8"))
+    # 이미 다른 항목이 쓰고 있는 주소는 재배정 금지(중복 배정 방지).
+    used_urls = {(it.get("post_url") or "").strip() for it in queue
+                 if (it.get("post_url") or "").strip()}
     targets = [
         it for it in queue
         if _is_target(it) and (target_id is None or it.get("id") == target_id)
@@ -236,11 +382,31 @@ async def run(target_id: str | None, dry_run: bool) -> int:
         p = context = None
         try:
             p, context = await _launch(account)
+            # 계정당 그리드 1회만 수집해 항목들이 공유한다(항목마다 재수집하면 크롤이 N배).
+            grid: list[dict] = []
+            gpage = await context.new_page()
+            try:
+                await gpage.goto(f"https://www.instagram.com/{account}/",
+                                 wait_until="domcontentloaded", timeout=60000)
+                await asyncio.sleep(4)
+                if _login_required(gpage.url):
+                    print(f"🔒 [{account}] 세션 만료/로그인 필요 — {len(items)}건 건너뜀")
+                    continue
+                grid = await _collect_grid(gpage, account, scrolls, max_posts)
+                print(f"[grid] {account}: 게시물 {len(grid)}건 수집"
+                      f"(스크롤 {scrolls} · 상한 {max_posts})")
+            finally:
+                try:
+                    await gpage.close()
+                except Exception:
+                    pass
             for it in items:
-                verdict, reason, post_url = await _verify_one(context, it)
+                verdict, reason, post_url = await _verify_one(context, it, grid, used_urls)
                 tag = {"match": "✅", "nomatch": "⚠️", "login": "🔒",
                        "notfound": "❓", "error": "💥"}.get(verdict, "?")
                 print(f"{tag} [{it.get('id')}] {verdict} — {reason}")
+                if verdict == "match" and post_url:
+                    used_urls.add(post_url)
                 if verdict == "match" and not dry_run:
                     was_backfill = it.get("status") == URL_BACKFILL_STATUS
                     it["status"] = "발행완료"
@@ -281,8 +447,12 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="도장 없이 대조 결과만")
     ap.add_argument("--commit", action="store_true",
                     help="도장 후 review_queue 를 GitLock으로 커밋·푸시(스케줄러용)")
+    ap.add_argument("--scrolls", type=int, default=3,
+                    help="프로필 그리드 스크롤 횟수(기본 3 ≈ 최근 36건). 옛 게시물 회수 시 늘린다")
+    ap.add_argument("--max-posts", type=int, default=18,
+                    help="그리드에서 수집할 게시물 상한(기본 18)")
     args = ap.parse_args()
-    stamped = asyncio.run(run(args.id, args.dry_run))
+    stamped = asyncio.run(run(args.id, args.dry_run, args.scrolls, args.max_posts))
     if args.commit and not args.dry_run and stamped > 0:
         try:
             sys.path.insert(0, str(Path(__file__).parent))

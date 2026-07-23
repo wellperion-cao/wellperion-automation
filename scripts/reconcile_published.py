@@ -109,7 +109,10 @@ def _extract_keyword(item: dict) -> str:
             if len(cleaned) >= 6:
                 # 첫 문장부호 전까지 또는 16자
                 snippet = re.split(r"[.!?。\n]", cleaned)[0].strip()
-                return snippet[:16] if len(snippet) >= 6 else cleaned[:16]
+                out = snippet[:16] if len(snippet) >= 6 else cleaned[:16]
+                # 16자 컷이 '— '·', ' 같은 연결부에서 끊기면 꼬리가 대조를 방해한다
+                # (2026-07-23 배9578 실측: '운동과 회복이 한 곳에서 — ').
+                return out.rstrip(" ,·—-–~:;")
 
     title = item.get("title", "").strip()
     if title:
@@ -119,6 +122,9 @@ def _extract_keyword(item: dict) -> str:
             "",
             title,
         ).strip()
+        # Step 1-b: 앞머리 시리즈 표식 "[필라테스편] " 제거 — 실제 게시 제목·본문엔 안 들어간다
+        # (2026-07-23 배9578: 이 대괄호 때문에 카페·카카오·당근 3건이 통째로 빗나갔다)
+        title = re.sub(r"^(?:\s*\[[^\]]*\])+\s*", "", title).strip()
         # Step 2: em-dash(—) 또는 hyphen(-)으로 분리 → 첫 부분이 핵심 키워드
         parts = re.split(r"\s*[—\-]\s*", title)
         base  = parts[0].strip()

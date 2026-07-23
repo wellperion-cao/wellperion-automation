@@ -26,6 +26,7 @@ import argparse
 import asyncio
 import re
 import sys
+import unicodedata
 import urllib.parse
 from pathlib import Path
 
@@ -86,6 +87,34 @@ def _profile_for(channel: str) -> Path:
 
 def _log(msg: str) -> None:
     print(msg, file=sys.stderr)
+
+
+# ─── 키워드 대조 정규화 (2026-07-23 배9578) ────────────────────────────
+# 실측한 미회수 24건의 원인은 '스크롤이 모자라서'가 아니라 표기 변형이었다:
+#   · 띄어쓰기 차이   큐 '여름방학특강 Ep3'      ↔ 채널 '2026 여름방학 특강 Ep3 지도자편'
+#   · 어미 차이       큐 '…한 곳에서 완성되다'    ↔ 채널 '…한 곳에서 완성됩니다'
+#   · 제목 접두 표식  큐 '[필라테스편] 민소매가…' ↔ 채널 '민소매가 잘 어울리는 어깨…'
+#   · 잘린 꼬리       큐 '운동과 회복이 한 곳에서 — ' (16자 컷 + em-dash 잔여)
+# → 공백·특수문자를 지운 뒤 '앞부분 일치'로 본다. 느슨하게 푸는 게 아니라
+#   변형에 안 흔들리는 부분만 비교하는 것 — 오탐을 늘리지 않도록 최소 길이를 강제한다.
+_SQUASH_RE = re.compile(r"[^0-9a-z가-힣]")
+KEYWORD_MIN_LEN = 8   # 이보다 짧은 키워드는 전체 일치를 요구(짧은 조각의 오탐 방지)
+KEYWORD_PROBE = 12    # 긴 키워드는 앞 12자만 본다(어미·꼬리 변형 흡수)
+
+
+def _squash(text: str) -> str:
+    """공백·기호·대소문자를 지운 대조 키."""
+    return _SQUASH_RE.sub("", unicodedata.normalize("NFKC", text or "").lower())
+
+
+def _text_hit(keyword: str, text: str) -> bool:
+    """keyword 가 text 안에 (표기 변형을 흡수해) 들어있는가."""
+    k, t = _squash(keyword), _squash(text)
+    if not k or not t:
+        return False
+    if len(k) < KEYWORD_MIN_LEN:
+        return len(k) >= 4 and k in t
+    return k[:KEYWORD_PROBE] in t
 
 
 # ─────────────────────────────────────────────
@@ -166,95 +195,167 @@ async def _retrieve_blog(page, keyword: str, account: str) -> tuple[str | None, 
             return None, f"블로그 글 링크 미발견 (세션 또는 구조 변경 확인 필요) / URL={page.url}"
 
         for lnk in unique:
-            if kw_lower in lnk["text"].lower():
+            if _text_hit(keyword, lnk["text"]):
                 _log(f"  [MATCH] {lnk['href']} | text: {lnk['text'][:80]!r}")
                 return lnk["href"], None
 
     return None, f"keyword '{keyword}' 일치 글 미발견 (블로그 {account}, 3페이지 탐색)"
 
 
-async def _retrieve_cafe(page, keyword: str, account: str) -> tuple[str | None, str]:
+# 카페 글 링크 — 구 형식(/ichon1dong/123, articleid=123)과 신 SPA 형식(.../articles/123) 모두 수용.
+# ★2026-07-23 배9578 실측: 구 ArticleList.nhn/ArticleSearchList.nhn 은 이제
+#   /f-e/cafes/{clubid}/menus/{menuid} 로 리다이렉트되고 링크가 .../articles/{id} 로 바뀌었다.
+#   기존 정규식이 /ichon1dong/\d+ 만 봤기 때문에 목록에서 0건이 잡혔다 —
+#   카페 7건 미회수의 진짜 원인은 키워드가 아니라 이 구조 변경이었다.
+CAFE_ARTICLE_JS = r"""
+() => {
+  const out = [];
+  for (const a of document.querySelectorAll('a[href]')) {
+    const m = a.href.match(/\/articles\/(\d+)|articleid=(\d+)|\/ichon1dong\/(\d+)/i);
+    if (!m) continue;
+    const id = m[1] || m[2] || m[3];
+    let node = a, best = (a.innerText || a.title || '').trim();
+    for (let i = 0; i < 5 && node; i++) {
+      const t = (node.innerText || '').trim();
+      if (t.length > best.length && t.length < 400) best = t;
+      node = node.parentElement;
+    }
+    out.push({ id, text: best.substring(0, 300) });
+  }
+  return out;
+}
+"""
+
+
+async def _retrieve_cafe(page, keyword: str, account: str,
+                         max_pages: int = 5) -> tuple[str | None, str]:
     """
-    네이버 카페(ichon1dong) ArticleSearchList 에서 keyword 포함 글 URL 반환.
-    iframe#cafe_main 내부에서 탐색.
+    네이버 카페(ichon1dong) 게시판 목록에서 keyword 포함 글 URL 반환.
+    신 SPA 목록(/f-e/cafes/{clubid}/menus/{menuid})을 페이지 단위로 훑는다.
     """
-    kw_encoded = urllib.parse.quote(keyword)
-    search_url = (
-        f"https://cafe.naver.com/ArticleSearchList.nhn"
-        f"?search.clubid={CAFE_CLUB_ID}"
-        f"&search.searchBy=0"
-        f"&search.query={kw_encoded}"
-        f"&search.menuid={CAFE_MENU_ID}"
-    )
-    kw_lower = keyword.lower()
-    article_re = re.compile(rf"/{re.escape(CAFE_NAME)}/(\d+)")
-
-    try:
-        await page.goto(search_url, wait_until="domcontentloaded", timeout=25000)
-        await page.wait_for_timeout(3000)
-    except Exception as e:
-        return None, f"카페 검색 페이지 로드 실패: {e}"
-
-    if any(sig in page.url for sig in LOGIN_SIGNALS_NAVER):
-        return None, "세션 만료 — 로그인 페이지로 리다이렉트"
-
-    async def _search_frame(frame) -> str | None:
+    scanned = 0
+    for pno in range(1, max_pages + 1):
+        list_url = (f"https://cafe.naver.com/f-e/cafes/{CAFE_CLUB_ID}"
+                    f"/menus/{CAFE_MENU_ID}?viewType=L&page={pno}")
         try:
-            links = await frame.evaluate(
-                """(cafeName) => {
-                    const pat = new RegExp('\\/' + cafeName + '\\/(\\d+)', 'i');
-                    return [...document.querySelectorAll('a[href]')]
-                        .filter(a => pat.test(a.href))
-                        .map(a => ({
-                            href: a.href,
-                            text: (a.innerText || a.title || '').trim().substring(0, 300)
-                        }));
-                }""",
-                CAFE_NAME,
-            )
-            for lnk in links:
-                if kw_lower in lnk["text"].lower():
-                    m = article_re.search(lnk["href"])
-                    if m:
-                        canonical = f"https://cafe.naver.com/{CAFE_NAME}/{m.group(1)}"
-                        _log(f"  [MATCH] {canonical} | text: {lnk['text'][:80]!r}")
-                        return canonical
+            await page.goto(list_url, wait_until="domcontentloaded", timeout=30000)
+            await page.wait_for_timeout(4000)
+        except Exception as e:
+            if pno == 1:
+                return None, f"카페 목록 페이지 로드 실패: {e}"
+            break
+
+        if any(sig in page.url for sig in LOGIN_SIGNALS_NAVER):
+            return None, "세션 만료 — 로그인 페이지로 리다이렉트"
+
+        rows: list[dict] = []
+        for frame in [page] + [f for f in page.frames if f is not page.main_frame]:
+            try:
+                rows.extend(await frame.evaluate(CAFE_ARTICLE_JS))
+            except Exception:
+                continue
+        if not rows:
+            if pno == 1:
+                return None, f"카페 글 링크 미발견(구조 변경 확인 필요) / URL={page.url}"
+            break
+        scanned += len(rows)
+
+        for lnk in rows:
+            if _text_hit(keyword, lnk["text"]):
+                canonical = f"https://cafe.naver.com/{CAFE_NAME}/{lnk['id']}"
+                _log(f"  [MATCH] {canonical} | text: {lnk['text'][:80]!r}")
+                return canonical, None
+
+    return None, (f"keyword '{keyword}' 일치 글 미발견 "
+                  f"(카페 {CAFE_NAME} · {max_pages}페이지 · 링크 {scanned}건 대조)")
+
+
+# 카카오 관리자 '발행한 글' 목록 — 각 글의 postId + 발행일시 + 본문 미리보기.
+# ★2026-07-23 배9578 실측: 공개 채널홈(pf.kakao.com/{ch})은 최신 5건 안팎만 렌더하고
+#   스크롤해도 body.scrollHeight 가 자라지 않는다(과거 글 도달 불가) — 카카오 9건이
+#   '스크롤 범위 밖'이었던 진짜 이유. 반면 관리자 목록은 전량(실측 140건) 나온다.
+#   여기서 postId 를 얻고, 저장은 공개 permalink pf.kakao.com/{ch}/{postId} 로 한다
+#   (읽기 전용 — goto·스크롤·DOM 읽기만. 발행·수정·삭제 호출 없음).
+KAKAO_ADMIN_LIST_JS = r"""
+() => {
+  const out = [], seen = new Set();
+  for (const a of document.querySelectorAll('a[href]')) {
+    const m = a.href.match(/\/posts\/(\d+)/);
+    if (!m) continue;
+    const pid = m[1];
+    let node = a, best = '';
+    for (let i = 0; i < 8 && node; i++) {
+      const t = (node.innerText || '').trim();
+      if (t.length > best.length) best = t;
+      if (best.length > 120) break;
+      node = node.parentElement;
+    }
+    if (seen.has(pid)) {
+      const prev = out.find(o => o.pid === pid);
+      if (prev && best.length > prev.text.length) prev.text = best.substring(0, 800);
+      continue;
+    }
+    seen.add(pid);
+    out.push({ pid, text: best.substring(0, 800) });
+  }
+  return out;
+}
+"""
+
+
+async def _retrieve_kakao_admin(page, keyword: str, max_scrolls: int) -> tuple[str | None, str]:
+    """관리자 발행글 목록에서 대조 → 공개 permalink 반환."""
+    try:
+        await page.goto(f"https://business.kakao.com/{KAKAO_CHANNEL_ID}/posts",
+                        wait_until="domcontentloaded", timeout=40000)
+        await page.wait_for_timeout(6000)
+    except Exception as e:
+        return None, f"카카오 관리자 목록 로드 실패: {e}"
+    if any(sig in page.url.lower() for sig in ("accounts.kakao.com", "/login")):
+        return None, "카카오 관리자 세션 만료 — 로그인 필요"
+
+    rows: list[dict] = []
+    prev_n = -1
+    for _ in range(max_scrolls):
+        try:
+            rows = await page.evaluate(KAKAO_ADMIN_LIST_JS)
         except Exception:
-            pass
-        return None
-
-    # 메인 프레임 시도
-    result = await _search_frame(page)
-    if result:
-        return result, None
-
-    # iframe#cafe_main 시도 (카페는 iframe 구조 사용)
-    iframe_handle = await page.query_selector("iframe#cafe_main")
-    if iframe_handle:
-        frame = await iframe_handle.content_frame()
-        if frame:
-            await frame.wait_for_load_state("domcontentloaded")
+            rows = []
+        if len(rows) == prev_n:
+            break
+        prev_n = len(rows)
+        h = await page.evaluate("() => document.body.scrollHeight")
+        await page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+        await page.wait_for_timeout(2200)
+        if await page.evaluate("() => document.body.scrollHeight") == h:
             await page.wait_for_timeout(2000)
-            result = await _search_frame(frame)
-            if result:
-                return result, None
 
-    return None, f"keyword '{keyword}' 일치 글 미발견 (카페 {CAFE_NAME} 검색)"
+    if not rows:
+        return None, "카카오 관리자 목록에서 글 링크 미발견"
+    for r in rows:
+        if _text_hit(keyword, r["text"]):
+            canonical = f"https://pf.kakao.com/{KAKAO_CHANNEL_ID}/{r['pid']}"
+            _log(f"  [MATCH·admin] {canonical} | text: {r['text'][:80]!r}")
+            return canonical, None
+    return None, (f"keyword '{keyword}' 일치 글 미발견 "
+                  f"(카카오 관리자 목록 {len(rows)}건 대조)")
 
 
-async def _retrieve_kakao(page, keyword: str, account: str) -> tuple[str | None, str]:
+async def _retrieve_kakao(page, keyword: str, account: str,
+                          max_scrolls: int = 30) -> tuple[str | None, str]:
     """
-    카카오 채널 공개 페이지(pf.kakao.com/_cgxiKj)를 무로그인으로 탐색.
-    글 목록을 끝까지 스크롤해 keyword 포함 포스트를 찾아 URL 반환.
+    카카오 채널 글 URL 회수. 관리자 발행글 목록(전량)을 먼저 보고,
+    실패 시 공개 채널홈(최신 몇 건만 렌더됨)으로 폴백한다.
     공개 URL 형식: pf.kakao.com/{channel_id}/{postId} (숫자 ID)
-
-    오늘 실증 경로(2026-06-26):
-      '진짜 대회'→113739016, '시상대에 올랐'→113752558, '그 뒤엔, 한 사람'→113761120
     """
+    url, reason = await _retrieve_kakao_admin(page, keyword, max_scrolls)
+    if url:
+        return url, None
+    _log(f"  [INFO] 관리자 목록 미회수({reason}) → 공개 채널홈 폴백")
+
     channel_url = f"https://pf.kakao.com/{KAKAO_CHANNEL_ID}"
-    kw_lower    = MAX_SCROLLS = None  # 타입 힌트용
     kw_lower    = keyword.lower()
-    MAX_SCROLLS = 20  # 글이 많지 않으므로 20회 스크롤로 충분
+    MAX_SCROLLS = max_scrolls
 
     try:
         await page.goto(channel_url, wait_until="domcontentloaded", timeout=30000)
@@ -275,12 +376,15 @@ async def _retrieve_kakao(page, keyword: str, account: str) -> tuple[str | None,
         # 현재 화면 포스트에서 keyword 탐색
         matched = await page.evaluate(
             """([kw, cardSel]) => {
-                const kw_lower = kw.toLowerCase();
+                const sq = s => (s||'').normalize('NFKC').toLowerCase()
+                                  .replace(/[^0-9a-z가-힣]/g, '');
+                const probe = sq(kw).substring(0, 12);
                 const cards = [...document.querySelectorAll(cardSel)];
                 for (const c of cards) {
-                    const text = (c.innerText || c.textContent || '').toLowerCase();
-                    if (text.length < 5) continue;
-                    if (!text.includes(kw_lower)) continue;
+                    const raw = (c.innerText || c.textContent || '');
+                    const text = sq(raw);
+                    if (text.length < 5 || probe.length < 4) continue;
+                    if (!text.includes(probe)) continue;
                     // 해당 카드의 링크(pf.kakao.com/{id} 또는 /{숫자}) 추출
                     const anchors = [c, ...c.querySelectorAll('a[href]')];
                     for (const a of anchors) {
@@ -332,8 +436,8 @@ async def _retrieve_kakao(page, keyword: str, account: str) -> tuple[str | None,
             try:
                 cards = await page.query_selector_all(CARD_SEL)
                 for card in cards:
-                    t = (await card.inner_text()).lower()
-                    if kw_lower in t:
+                    t = await card.inner_text()
+                    if _text_hit(keyword, t):
                         async with page.expect_navigation(timeout=15000):
                             await card.click()
                         final = page.url
@@ -360,7 +464,8 @@ async def _retrieve_kakao(page, keyword: str, account: str) -> tuple[str | None,
     )
 
 
-async def _retrieve_danggn(page, keyword: str, account: str) -> tuple[str | None, str]:
+async def _retrieve_danggn(page, keyword: str, account: str,
+                           max_scrolls: int = 30) -> tuple[str | None, str]:
     """
     당근 비즈프로필 게시 목록에서 keyword 포함 글 URL 반환.
     세션 만료 시 NOT_FOUND 반환 (추측 URL 생성 금지).
@@ -382,6 +487,14 @@ async def _retrieve_danggn(page, keyword: str, account: str) -> tuple[str | None
     if any(sig in current_url.lower() for sig in LOGIN_SIGNALS_DANGGN):
         return None, "세션 만료 — 당근 로그인 페이지로 리다이렉트"
 
+    # 옛 글까지 닿도록 목록을 끝까지 스크롤(2026-07-23 배9578 — 종전엔 1화면만 봤다)
+    for _ in range(max_scrolls):
+        h = await page.evaluate("() => document.body.scrollHeight")
+        await page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+        await page.wait_for_timeout(1800)
+        if await page.evaluate("() => document.body.scrollHeight") == h:
+            break
+
     # daangn.com business-posts URL 패턴으로 글 링크 수집
     post_items = await page.evaluate(
         """() => {
@@ -394,7 +507,7 @@ async def _retrieve_danggn(page, keyword: str, account: str) -> tuple[str | None
         }"""
     )
     for item in post_items:
-        if kw_lower in item["text"].lower():
+        if _text_hit(keyword, item["text"]):
             m = re.search(r"daangn\.com.*?business-posts/([^/?#]+)", item["href"])
             if m:
                 canonical = f"https://www.daangn.com/kr/business-posts/{m.group(1)}"
@@ -404,15 +517,17 @@ async def _retrieve_danggn(page, keyword: str, account: str) -> tuple[str | None
     # 소식 카드 컨테이너에서 탐색
     result = await page.evaluate(
         """(kw) => {
-            const kw_lower = kw.toLowerCase();
+            const sq = s => (s||'').normalize('NFKC').toLowerCase()
+                              .replace(/[^0-9a-z가-힣]/g, '');
+            const probe = sq(kw).substring(0, 12);
             const containers = [
                 ...document.querySelectorAll(
                     '[class*="post"], [class*="Post"], article, li, [class*="item"]'
                 )
             ];
             for (const c of containers) {
-                const text = (c.innerText || c.textContent || '').toLowerCase();
-                if (text.includes(kw_lower)) {
+                const text = sq(c.innerText || c.textContent || '');
+                if (probe.length >= 4 && text.includes(probe)) {
                     const a = c.querySelector('a[href]');
                     if (a && a.href.includes('daangn.com')) {
                         return { href: a.href, text: c.innerText.trim().substring(0, 200) };
@@ -442,6 +557,8 @@ async def _retrieve_url_async(
     keyword: str,
     account: str,
     headful: bool,
+    max_pages: int = 5,
+    max_scrolls: int = 30,
 ) -> tuple[str | None, str]:
     """내부 비동기 구현. 브라우저 기동→탐색→종료."""
     profile_dir = _profile_for(channel)
@@ -473,11 +590,11 @@ async def _retrieve_url_async(
             if channel == "blog":
                 url, reason = await _retrieve_blog(page, keyword, account)
             elif channel == "cafe":
-                url, reason = await _retrieve_cafe(page, keyword, account)
+                url, reason = await _retrieve_cafe(page, keyword, account, max_pages)
             elif channel == "kakao":
-                url, reason = await _retrieve_kakao(page, keyword, account)
+                url, reason = await _retrieve_kakao(page, keyword, account, max_scrolls)
             elif channel == "danggn":
-                url, reason = await _retrieve_danggn(page, keyword, account)
+                url, reason = await _retrieve_danggn(page, keyword, account, max_scrolls)
             else:
                 url, reason = None, f"지원하지 않는 채널: {channel!r}"
         except Exception as e:
@@ -529,10 +646,15 @@ def main() -> int:
     parser.add_argument("--keyword", required=True, help="글 식별용 핵심 구절")
     parser.add_argument("--account", default="wellperion", help="계정 ID (기본: wellperion)")
     parser.add_argument("--headful", action="store_true", help="브라우저 창 표시 (디버그)")
+    parser.add_argument("--max-pages", type=int, default=5,
+                        help="카페 등 페이지 목록 탐색 상한(기본 5). 옛 글은 넉넉히")
+    parser.add_argument("--max-scrolls", type=int, default=30,
+                        help="카카오·당근 목록 스크롤 상한(기본 30)")
     args = parser.parse_args()
 
     url, reason = asyncio.run(
-        _retrieve_url_async(args.channel, args.keyword, args.account, args.headful)
+        _retrieve_url_async(args.channel, args.keyword, args.account, args.headful,
+                            args.max_pages, args.max_scrolls)
     )
 
     if url:
