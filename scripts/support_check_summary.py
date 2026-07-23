@@ -63,13 +63,14 @@ DEFAULT_GAS_URL = (
 _SHIFTS = [("am", "오전조"), ("pm", "오후조"), ("close", "마감조")]
 
 # ── 회차수 신뢰 게이트 (2026-07-22 시토) ──
-# 근본원인 수리 완료: saveBoard()가 이제 store.submissions[]를 seq 기준 union 병합한다
-# (.deploy-check/지원팀 일일점검.js) — 코드 수정 + 로컬 단위검증(node)까지만 끝난 상태.
-# ★ 라이브 /exec 재배포는 아직 안 함(GM 검증 후 별도 진행) — 그 전까지 실사용 GAS는 여전히
-# 구버전(무병합 last-write-wins)이라 sessions=len(submissions)를 신뢰할 수 없다.
-# GM이 배포를 확인·검증한 뒤 이 플래그만 True로 바꾸면 '(회차 확인중)' 꼬리표가 사라지고
-# 정확한 회차수로 표기된다. 배포 확인 전 임의로 켜지 말 것(거짓 확정 금지 원칙 — 약속 L 참조).
-FACILITY_SESSIONS_TRUSTED = False
+# 근본원인 수리 완료: saveBoard()가 store.submissions[]를 seq 기준 union 병합한다
+# (.deploy-check/지원팀 일일점검.js). ★ 라이브 /exec 재배포 완료·검증됨(2026-07-22, deployment
+# AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1 @170) —
+# 테스트 키(FACILITY_CHECK_TEST_MERGE_20260722)로 7건 저장 후 2건 재저장해도 7건 보존됨을
+# 라이브 런타임에서 실증(테스트 키는 검증 후 자가청소함). ScriptProperties 500KB 하드리밋
+# 초과분(캐시 프루닝, 5일 유지)도 해소 확인(410,732B, 하드리밋 512,000B 대비 여유 확보).
+# sessions=len(submissions) 신뢰 가능 → 게이트 True 전환.
+FACILITY_SESSIONS_TRUSTED = True
 
 
 
@@ -235,7 +236,9 @@ def build_support_section(today: str, url: str = DEFAULT_GAS_URL,
     return (lines, filled)
 
 
-_MAX_WORKLOG = 8   # 회차별 일지 표시 최대 회차(초과 시 '외 N회차')
+_MAX_WORKLOG = 12  # 회차별 일지 표시 최대 회차(초과 시 '외 N회차').
+                   # 누적 반복을 걷어내 회차당 1줄로 짧아졌으므로 전 회차가 다 보이도록 상향
+                   # (기존 8이면 9회차 날 마지막 회차가 잘려 '외 1회차'로 숨었다 — GM 2026-07-23).
 
 # 시설부 측정값 라벨(store.rounds[*] / store.daily 원본 키 → 한글 표기). GM 2026-07-22 렌더심화.
 _ROUND_LABELS = {
@@ -268,6 +271,7 @@ def facility_worklog(subs: list) -> tuple[list[str], list[str]]:
 
     ordered = sorted(subs, key=lambda s: s.get("seq") if isinstance(s.get("seq"), (int, float)) else 0)
     work_items: list[str] = []
+    seen_work: set[str] = set()   # 앞 회차에 이미 나온 작업 — 반복 출력 차단
     for i, s in enumerate(ordered, start=1):
         start, end = s.get("startHHMM"), s.get("endHHMM")
         time_part = f"{start}~{end}" if start and end else (str(s.get("at") or "").split(" ")[-1] or "?")
@@ -275,8 +279,18 @@ def facility_worklog(subs: list) -> tuple[list[str], list[str]]:
         dur_part = f"({dur}분)" if dur not in (None, "") else ""
         insp = s.get("inspector") or "?"
         head = f"{i}회차 {time_part}{dur_part} · {insp}"
-        work = " / ".join(_lines(s.get("work")))
-        work_items.append(f"{head} · {work}" if work else head)
+
+        # work 는 '그 회차까지의 누적 작업목록'으로 들어온다(현장 입력 방식).
+        # 그대로 찍으면 뒤 회차일수록 앞 내용을 통째로 반복해 8회차엔 9줄이 겹쳤다
+        # → 화면이 길어져 정작 '오늘 새로 한 일'이 안 보인다(GM 2026-07-23 지적).
+        # 그래서 앞 회차에 없던 항목만 남긴다. 데이터는 손대지 않고 표시만 줄인다.
+        fresh = [w for w in _lines(s.get("work")) if w not in seen_work]
+        seen_work.update(fresh)
+        if fresh:
+            marker = "" if i == 1 else "+ "
+            work_items.append(f"{head} · {marker}{' / '.join(fresh)}")
+        else:
+            work_items.append(f"{head} · (추가 작업 없음)")
 
     # 특이사항(note)·기준이탈조치(oocAction) — 전 회차에서 유니크 수집(순서 보존)
     notes: list[str] = []
@@ -320,8 +334,8 @@ def facility_measurements(store: dict, today_oor_fields: set[str]) -> list[str]:
 def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list[str], dict]:
     """시설부 핵심요약: 회차별 일지(submissions 전체) + 측정값(rounds·daily) +
     이슈사항(기준이탈·특이사항note). GM 2026-07-22 근본수리(렌더심화·회차수 정직표기).
-    ★ 회차수(sessions=len(submissions))는 GAS saveBoard 코드는 수리됐으나 라이브 재배포 전이라
-    아직 신뢰 불가(FACILITY_SESSIONS_TRUSTED 게이트 참조) — 배포 검증 전까지 '(확인중)' 꼬리표 유지."""
+    회차수(sessions=len(submissions))는 GAS saveBoard union 병합 수리·라이브 배포·런타임 검증
+    완료(FACILITY_SESSIONS_TRUSTED=True) — 신뢰 가능."""
     filled = {"facility_status": False, "facility_outofrange": 0, "facility_worklog": False}
 
     board = fetch_gas({"action": "board", "key": f"FACILITY_CHECK_{today}"}, url)
@@ -358,7 +372,7 @@ def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list
         filled["facility_worklog"] = True
         shown = work_items[:_MAX_WORKLOG]
         tail = f" · 외 {len(work_items) - _MAX_WORKLOG}회차" if len(work_items) > _MAX_WORKLOG else ""
-        lines.append("  📋 회차별 일지")
+        lines.append("  📋 회차별 일지 (새로 추가된 작업만 · 앞 회차 반복 생략)")
         for ln in shown:
             lines.append(f"    · {ln}")
         if tail:
