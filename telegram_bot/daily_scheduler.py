@@ -2413,148 +2413,14 @@ def _merged_unchecked_names(live: dict, shift: str) -> list[str]:
     return [str(n).strip() for n in names if str(n or "").strip()]
 
 
-def _support_sheet_activity_today(today: str) -> tuple[int, int]:
-    """영속 시트(monthly_report·dailySeries) 기준 '오늘' 실완료 수·제출 세션 수. (sumDone, sessionCount).
-    today_live(ScriptProperties 원장)가 실제 제출과 어긋나 0으로 비는 글리치를 판별하는 크로스체크용.
-    조회 실패=(0,0)(가드 미발동=기존 동작 유지). 2026-07-16 시토(잘못된 미완 독려 방지)."""
-    try:
-        resp = requests.get(
-            f"{SUPPORT_CHECK_API_URL}?action=monthly_report&dept=support&date={today}&_pv={int(time.time())}",
-            timeout=20, allow_redirects=True,
-        )
-        if resp.status_code == 200:
-            d = resp.json()
-            if d.get("ok"):
-                for row in (d.get("dailySeries") or []):
-                    if isinstance(row, dict) and str(row.get("date")) == today:
-                        return int(row.get("sumDone") or 0), int(row.get("sessionCount") or 0)
-    except Exception as e:
-        logger.warning(f"독려 글리치판별 monthly 조회 실패: {e}")
-    return 0, 0
-
+# ── 지원부 점검 미완 독려 경로 = 폐지 (GM 2026-07-23) ──
+#   17:00·22:00 슬롯 제거와 함께 전용 함수(run_nudge·_build_nudge_body·
+#   _notify_nudge_suppressed·_support_sheet_activity_today)도 호출부 0 이 되어 삭제.
+#   독려 정보는 22:30 하루 일과 정리가 담당한다(support_check_summary '🔔 독려 대상').
+#   되살리려면 git 이력에서 이 커밋 직전 버전 참조.
 
 # GM 보고봇방 — 억제 알림 전용(실무진 방으로 보내면 소음). canon: telegram_chat_id.
 _GM_REPORT_CHAT_ID = int(ENV.get("TELEGRAM_CHAT_ID") or 8254867551)
-
-
-def _notify_nudge_suppressed(shift: str, sheet_done: int, sheet_sessions: int) -> None:
-    """독려를 글리치 가드로 억제했을 때 GM 보고봇방에 한 줄 알린다(억제의 가시화).
-
-    조용한 억제는 '알림이 없다 = 문제가 없다'로 오독된다 — 실제로 그렇게 이틀치가
-    사라졌다. 발송 실패해도 독려 본체 흐름을 막지 않는다(best-effort)."""
-    label = {"pm": "오후조", "close": "마감조"}.get(shift, shift)
-    text = (
-        f"🔕 지원부 {label} 독려 보류 — 점검 현황 값이 0으로 오는데 "
-        f"시트에는 오늘 활동(완료 {sheet_done}·제출 {sheet_sessions}회)이 있어 "
-        f"값이 어긋난 것으로 보고 실무진 방 발송을 멈췄습니다. 실제 미완이면 확인이 필요합니다."
-    )
-    try:
-        # parse_mode="" = 서식 없이 평문(본문에 특수문자가 있어도 이스케이프 불필요)
-        send_telegram(_GM_REPORT_CHAT_ID, text, parse_mode="")
-    except Exception as exc:
-        logger.warning(f"[독려:{shift}] 억제 알림 발송 실패(무시하고 계속): {exc}")
-
-
-def _build_nudge_body(shift: str) -> str | None:
-    """지원부 점검 회차(shift) 미완 시 독려 1줄 생성. shift ∈ {'pm','close'}.
-
-    today_live(support) 조회 → 해당 회차만 done/total·성별 분리.
-    조회 실패/None → None(발송 스킵). 완료(done>=total 또는 total==0) → None(침묵).
-    미완이면 독려 문자열 반환(지어내기 금지 — 라이브 GAS 실값만).
-    """
-    if shift not in ("pm", "close"):
-        return None
-    today = datetime.now().strftime("%Y-%m-%d")
-    live = _fetch_support_today_live(today)
-    if live is None:
-        return None  # 조회 실패 → 침묵
-
-    total = live.get(shift + "Total", 0)
-    done = live.get(shift, 0)
-    if total == 0 or done >= total:
-        return None  # 완료/분모없음 → 침묵
-
-    # [2026-07-16 시토] today_live 글리치 가드 — today_live(ScriptProperties 원장)가 실제 제출과 어긋나 done=0으로
-    #   비는 사례 확인(영속 시트엔 실데이터 존재: 예 55/108·제출3). 이때 "미완 0/N" 독려는 거짓 → '점검 했는데?' 혼란.
-    #   회차 done==0인데 영속 시트(monthly)에 오늘 실완료·제출이 있으면 today_live 글리치로 보고 침묵(잘못된 독려 방지).
-    #   근본(today_live 원장 정합)은 시우 점검 GAS 영역 — 별도. 여기선 거짓 독려만 안전 차단.
-    # [2026-07-23 시토 · GM 지적] 위 가드가 너무 넓어 **진짜 미완료까지 삼키고 있었다.**
-    #   2026-07-22 실측: 마감조 0/27(진짜 미완)인데 그날 오전조가 일해 시트 활동이 있었고,
-    #   가드가 "today_live 글리치"로 오판해 침묵 → 마감조 독려가 아예 안 나감(GM이 못 받음).
-    #   글리치의 진짜 신호는 "today_live 가 통째로 죽어 전 회차 0"이다. 한 회차라도 살아
-    #   있으면(예: 오전조 46/49) today_live 는 정상이므로 가드를 적용하지 않는다.
-    live_elsewhere = any(int(live.get(k, 0) or 0) > 0 for k in ("am", "pm", "close", "night"))
-    if done == 0 and not live_elsewhere:
-        _sheet_done, _sheet_sessions = _support_sheet_activity_today(today)
-        if _sheet_done > 0 or _sheet_sessions > 0:
-            logger.info(
-                f"[독려:{shift}] today_live done=0 이나 영속시트 활동(완료 {_sheet_done}·제출 {_sheet_sessions}회) "
-                f"→ today_live 글리치 판단, 거짓 미완 독려 침묵"
-            )
-            # [2026-07-23 시토] 침묵을 로그에만 남기면 **아무도 모른다.**
-            # 실제로 07-17·07-22 이틀치 독려가 이렇게 조용히 사라졌고, GM 이 직접
-            # 묻기 전까지 드러나지 않았다. 억제할 때는 반드시 한 줄 알린다
-            # (실무진 방이 아니라 GM 보고봇방 — 실무진에겐 소음이므로).
-            _notify_nudge_suppressed(shift, _sheet_done, _sheet_sessions)
-            return None
-
-    g = live.get("byGender", {})
-    m = g.get("m", {})
-    f = g.get("f", {})
-    mT, m_done = m.get(shift + "Total", 0), m.get(shift, 0)
-    fT, f_done = f.get(shift + "Total", 0), f.get(shift, 0)
-
-    if shift == "pm":
-        label, action = "오후조", "마감 전 점검 부탁드립니다"
-    else:
-        label, action = "마감조", "마감 점검 부탁드립니다"
-
-    # 미체크 항목명(GM go 2026-07-09) — uncheckedByShift 없거나 빈 값이면 조용히 줄 생략(안전, 지어내기 금지).
-    unchecked_names = _merged_unchecked_names(live, shift)
-    unchecked_line = ""
-    if unchecked_names:
-        shown = unchecked_names[:8]
-        extra = len(unchecked_names) - len(shown)
-        tail = f" 외 {extra}" if extra > 0 else ""
-        unchecked_line = f"\n미체크: {', '.join(shown)}{tail}"
-
-    return (
-        f"⚠️ [{label}] 지원부 점검 미완 — "
-        f"남 {m_done}/{mT} · 여 {f_done}/{fT} (합 {done}/{total}). {action}."
-        f"{unchecked_line}"
-    )
-
-
-def run_nudge(shift: str) -> None:
-    """독려 디스패치 — 핵심멤버방으로만 발송. 빌더 None이면 침묵(완료/조회실패).
-    하루·shift당 1회(state.json nudge_sent[date] 마커로 dedup). 기존 슬롯 동작 불변."""
-    today = datetime.now().strftime("%Y-%m-%d")
-    label = f"[지원부 독려:{shift}]"
-
-    # dedup — 같은 날·같은 shift 1회만
-    state = read_state()
-    sent_map = state.get("nudge_sent", {})
-    sent_today = sent_map.get(today, [])
-    if shift in sent_today:
-        logger.info(f"{label} 오늘 이미 발송됨 — skip")
-        return
-
-    body = _build_nudge_body(shift)
-    if body is None:
-        logger.info(f"{label} 미완 아님/조회실패 — 침묵(발송 스킵)")
-        return
-
-    success = send_telegram(CHECK_NUDGE_CHAT_ID, body)
-    if success:
-        sent_today.append(shift)
-        sent_map[today] = sent_today
-        # 오래된 날짜 정리(최근 7일만 유지) — state 비대화 방지
-        recent = sorted(sent_map.keys())[-7:]
-        state["nudge_sent"] = {k: sent_map[k] for k in recent}
-        write_state(state)
-        logger.info(f"{label} 점검관리방 발송 완료 chat_id={CHECK_NUDGE_CHAT_ID}")
-    else:
-        logger.error(f"{label} 핵심멤버방 발송 실패 — dedup 미기록(다음 트리거 재시도)")
 
 
 # 카카오톡 ★부서장 방 이름 — kakao_report_sender.py --only-room 매칭(열린 채팅창 제목과 정확히 일치해야 함).
@@ -2977,16 +2843,45 @@ def main():
     # 배1307 시토 2026-07-20: 07-14 GAS 호출 확장(비교기준선 2종) 이후 실측 211s 소요 →
     # 구 timeout=120 이 매 실행 강제종료(SIGTERM)해 kpi_values.json 이 07-14 09:17 이후 6일간
     # 갱신 정지(scheduler.log 전 회차 timeout ERROR 확인). 실측치+여유분으로 300s 상향.
+    # [2026-07-23 시토] '실행 완료' 로그가 성공을 위장하던 문제 수리.
+    #   기존: subprocess.run 을 check 없이 호출하고 stdout/stderr 를 DEVNULL 로 버린 뒤
+    #   무조건 "실행 완료 (kpi_values.json 갱신)" 을 남겼다. 그래서 수집기가 죽어도
+    #   로그는 초록불이었고, kpi_values.json 이 07-20 10:14 이후 3일간 멈춰 있었는데도
+    #   scheduler.log 만 보면 정상으로 보였다(무결성 경보가 먼저 잡아냄).
+    #   수리: ①종료코드 확인 ②실패 시 stderr 꼬리를 로그에 남김 ③**generated_at 이
+    #   실제로 앞으로 갔는지 대조** — 로그가 아니라 산출물로 성공을 판정한다.
     def _collect_kpi():
+        kpi_path = BASE.parent / "status" / "kpi_values.json"
+
+        def _stamp():
+            try:
+                return json.loads(kpi_path.read_text(encoding="utf-8")).get("generated_at")
+            except Exception:
+                return None
+
+        before = _stamp()
         try:
-            subprocess.run(
+            proc = subprocess.run(
                 [sys.executable, "scripts/kpi_collector.py"],
                 cwd=str(BASE.parent), timeout=300,
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
-            logger.info("kpi_collector 실행 완료 (kpi_values.json 갱신)")
         except Exception as e:
-            logger.error(f"kpi_collector 실행 실패: {e}")
+            logger.error(f"kpi_collector 실행 실패(예외): {type(e).__name__}: {e}")
+            return
+        if proc.returncode != 0:
+            tail = (proc.stderr or b"").decode("utf-8", "replace").strip()[-400:]
+            logger.error(f"kpi_collector 종료코드 {proc.returncode} — stderr: {tail}")
+            return
+        after = _stamp()
+        if after and after != before:
+            logger.info(f"kpi_collector 실행 완료 — kpi_values.json 갱신 확인 ({after})")
+        else:
+            tail = (proc.stderr or b"").decode("utf-8", "replace").strip()[-400:]
+            logger.error(
+                "kpi_collector 가 0으로 끝났으나 kpi_values.json 이 갱신되지 않음 "
+                f"(generated_at 그대로: {before}) — stderr: {tail}"
+            )
 
     scheduler.add_job(
         _collect_kpi,
@@ -3167,23 +3062,13 @@ def main():
             )
             logger.info(f"  등록: {slot}시 정각 (misfire_grace_time=600s)")
 
-        # ── 지원부 점검 미완 자동 독려 (시우 2026-06-18) ─────────────────────
-        #   nudge_pm=17:00(오후조)·nudge_close=22:00(마감조 — 23시 요약 전 1시간 여유).
-        #   미완일 때만 핵심멤버방 발송·하루 회차당 1회. 빌더 None이면 침묵.
-        nudge_map = {
-            "nudge_pm": (17, 0, "pm"),
-            "nudge_close": (22, 0, "close"),
-        }
-        for slot, (hour, minute, shift) in nudge_map.items():
-            scheduler.add_job(
-                run_nudge,
-                trigger=CronTrigger(hour=hour, minute=minute, timezone="Asia/Seoul"),
-                args=[shift],
-                id=f"report_{slot}",
-                misfire_grace_time=600,
-                coalesce=True,
-            )
-            logger.info(f"  등록: {slot} {hour:02d}:{minute:02d} 지원부 점검 미완 독려")
+        # ── 지원부 점검 미완 독려 17:00·22:00 슬롯 = 폐지 (GM 2026-07-23) ──
+        #   GM 판단: "알림·현황 보고가 너무 많다" → 22:30 하루 일과 정리 하나로 통합.
+        #   독려 내용(미완 회차 + 미체크 항목명)은 22:30 지원부 섹션이 상시 포함한다
+        #   (support_check_summary.build_support_section 의 '🔔 독려 대상' 블록).
+        #   덤: 옛 독려 경로에 있던 today_live 글리치 가드가 진짜 미완을 삼키던 문제
+        #   (07-17·07-22 총 4건 소실)도 경로 자체가 사라져 원천 해소된다 — 22:30 은
+        #   그런 억제 장치 없이 실측 숫자를 그대로 낸다.
 
         # ── 하루 일과 정리 — 문의·점검·접수 3방 핵심+상세 — CTO 2026-06-29 ──
         #   마감시간 연동: 휴일(주말·close_days 공휴일)=20:00 / 평일=22:30 (GM 2026-07-20,
