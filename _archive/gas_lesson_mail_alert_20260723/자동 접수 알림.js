@@ -100,7 +100,7 @@ function onFormSubmit(e) {
 
   // ② 핵심멤버방 텔레그램에도 동일 내용 전달 (2026-06-23 GM)
   try {
-    var TG_TOKEN = "8297784147:AAFxi1HGVYfqn4EuVtO3pgpaqbNdiVGiUh4";        // @namuki_report_bot (출처 telegram_bot/.env)
+    var TG_TOKEN = "__REDACTED_2026-07-23__";        // ★원본에는 @namuki_report_bot 봇 토큰이 평문 하드코딩돼 있었다. 아카이브 이관(2026-07-23) 시 토큰 값만 마스킹함 — 이 파일 재사용 금지(폐기본). 상세=_폐기_DEPRECATED.md
     var CORE_CHAT_ID = "-5065206276";      // 웰페리온 핵심멤버방 (group)
     UrlFetchApp.fetch("https://api.telegram.org/bot" + TG_TOKEN + "/sendMessage", {
       method: "post",
