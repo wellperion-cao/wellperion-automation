@@ -41,6 +41,8 @@ WORKLOG_PATH = ROOT / "status" / "worklog.jsonl"
 GAPS_PATH = ROOT / "status" / "worklog_gaps.json"
 GAPS_STATE_PATH = ROOT / "status" / "worklog_gaps_state.json"
 INSTAGRAM_DIR = ROOT / "instagram"
+INQUIRY_SNAPSHOT_MEMBER_PATH = ROOT / "status" / "inquiry_snapshot_member.json"
+INQUIRY_SNAPSHOT_LESSON_PATH = ROOT / "status" / "inquiry_snapshot_lesson.json"
 
 KST = timezone(timedelta(hours=9))
 _NEW_AGE_DAYS = 14  # 대상 날짜가 이 안이면 "신규", 넘으면 "누적"(배9578 백로그 판정 기준)
@@ -881,6 +883,168 @@ def rule_voc_stale_unresolved() -> list[dict]:
     return gaps
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# CPO 규칙 v1 — 2026-07-23 시포, 배9960(GM 지시 "타 C-Level 확장" → 웰리 배정).
+# CMO(시모)가 먼저 적용·검증한 틀을 회원 도메인에 확장. 신규 판정 로직 최소화 원칙에 따라
+# 가능한 곳은 기존 감사기(cpo_report.py 의 unassigned_lesson_candidates·_SUCCESS_STATUSES)
+# 그대로 재사용한다(중복 로직 새로 안 만든다).
+#
+# ★전부 로컬 스냅샷 파일만 읽는다 — status/inquiry_snapshot_member.json ·
+#   status/inquiry_snapshot_lesson.json (cpo_inquiry_snapshot.py 가 주기 갱신하는 캐시).
+#   COO 규칙 3종과 달리 네트워크(GAS) 직접 조회 없음.
+#
+# ★검토했지만 만들지 않은 후보(오탐 위험·데이터 부재 — 시우 4종 중 2개 포기 사례와 동일 원칙):
+#   - "만료 임박인데 갱신 컨택 기록 없음"(member_expiry_summary.json) — 그 파일은 월 1회
+#     (4주차 월요일) 생성 시점의 스냅샷이라 애초에 "미컨택 다수"가 정상 초기값이고, 이후
+#     실제 컨택 진행을 반영하지 않는다(재생성 전까진 숫자가 고정) — 지금 만들면 항상 울린다.
+#   - "상담 예약일 지났는데 결과 미기록" — visited/visitDate 필드를 실측(638행 전수)했더니
+#     항상 false/공백이었다(운영에서 이 필드 자체를 안 씀) — 이 필드로 판정하면 전건이 걸려
+#     정상상태 오탐이 된다.
+#   - "휴회 종료일 지났는데 복귀 처리 없음" — 로컬 스냅샷 자체가 없음(휴회접수.html 은
+#     폼 접수 전용, 상태 원장 캐시가 없다).
+#   - "등록됐는데 회원 원장 누락"(문의↔등록 짝 불일치) — 로컬엔 회원 원장 전체 스냅샷이 없고
+#     월 1회 집계(member_expiry_summary.json)뿐이라 대조 불가. GAS(member_active_list)
+#     직접 조회가 필요해 이번(로컬 우선) 범위에서는 만들지 않음.
+# ─────────────────────────────────────────────────────────────────────────
+
+
+def _load_member_inquiry_rows() -> list[dict]:
+    """status/inquiry_snapshot_member.json 캐시에서 문의 행 리스트만 평탄화."""
+    data = _load_json(INQUIRY_SNAPSHOT_MEMBER_PATH, {})
+    rows = data.get("rows", []) if isinstance(data, dict) else []
+    return rows if isinstance(rows, list) else []
+
+
+_LESSON_LABEL = {"adult": "성인강습", "youth": "유소년강습"}
+
+
+def _load_lesson_inquiry_rows() -> dict[str, list[dict]]:
+    """status/inquiry_snapshot_lesson.json 캐시 — {'adult': rows, 'youth': rows}로 평탄화
+    (원본 구조가 {adult:{year:{rows:[...]}}, youth:{...}} 라 한 단계 파고들어야 함)."""
+    data = _load_json(INQUIRY_SNAPSHOT_LESSON_PATH, {})
+    out: dict[str, list[dict]] = {}
+    for key in ("adult", "youth"):
+        sec = data.get(key, {}) if isinstance(data, dict) else {}
+        year = sec.get("year", {}) if isinstance(sec, dict) else {}
+        rows = year.get("rows", []) if isinstance(year, dict) else []
+        out[key] = rows if isinstance(rows, list) else []
+    return out
+
+
+# LOSS 사유 모달 실제 배선일(멤버십·강습 공용, GM 요청 사양 2026-07-18·시토 대행). 이 날짜
+# 이전 LOSS 는 애초에 사유를 기록할 UI 자체가 없었다 — "미기록"이 아니라 "그 시점엔 기록할
+# 수단이 없었다"이므로 판정 대상에서 제외한다(실측: 제외 전엔 멤버십 4건·강습 168건이 전부
+# 걸려 배선일 이전 구버전 데이터로 오탐 — 제외 후 0건, 기능이 정상 작동 중임을 확인).
+_LOSS_REASON_FEATURE_DATE = "2026-07-18"
+
+
+def rule_inquiry_loss_no_reason() -> list[dict]:
+    """문의 단계 LOSS(등록 무산)인데 사유 미기록 적발 — 멤버십·강습(성인·유소년) 공용.
+    ★기존 회원 종료(scope=ended)의 '종료사유 미기록'과는 별개 체계(문의 단계 전용, 등록
+    자체가 무산된 건) — 그 쪽은 이미 '오늘 할 일' 액션 패널이 상시 표시 중이므로 중복 아님.
+    LOSS 사유 모달 배선일(2026-07-18) 이후 발생분만 대상으로 한다."""
+    today = datetime.now(tz=KST).date()
+    gaps: list[dict] = []
+
+    def _scan(rows: list[dict], source_label: str, ref_prefix: str) -> None:
+        for r in rows:
+            if str(r.get("status", "")).strip() != "LOSS":
+                continue
+            ts = str(r.get("timestamp", ""))[:10]
+            if not ts or ts < _LOSS_REASON_FEATURE_DATE:
+                continue  # 배선일 이전 — 기록 수단 자체가 없었음(오탐 방지)
+            if str(r.get("lossReason") or "").strip():
+                continue
+            target_date = _parse_iso_date(ts)
+            gaps.append({
+                "role": "cpo",
+                "severity": "low",
+                "title": f"{source_label} · LOSS(미등록) 처리인데 사유 미기록",
+                "detail": f"진행상태=LOSS · 접수일={ts} · '미등록 사유' 칸 공란",
+                "hint": "문의 현황 표에서 진행상황 LOSS 재클릭 → 사유 입력",
+                "ref": f"{ref_prefix}::{r.get('rowIndex', ts)}::lossreason",
+                "age": _classify_age(target_date, today),
+            })
+
+    _scan(_load_member_inquiry_rows(), "멤버십 문의", "member")
+    for key, rows in _load_lesson_inquiry_rows().items():
+        _scan(rows, f"강습({_LESSON_LABEL[key]}) 문의", f"lesson-{key}")
+    return gaps
+
+
+def rule_lesson_owner_unassigned() -> list[dict]:
+    """강습 문의 담당자 미배정(흔적 0건) 적발 — 신규 판정 로직 없음,
+    cpo_report.unassigned_lesson_candidates() 그대로 재사용(2026-07-23 시포 실측 근거:
+    상태·담당자·메모·연락이력이 전부 공란인 건은 상태 미입력이 아니라 '담당자 미배정'이
+    원인 — 배정이 안 되면 아무도 안 잡고 고객이 유실된다). 로컬 스냅샷만 읽는다
+    (cpo_report.fetch_lesson_inquiries 의 GAS 직접호출 대신 캐시 파일 사용 — 신규 네트워크 호출 없음)."""
+    from cpo_report import unassigned_lesson_candidates  # noqa: PLC0415
+
+    today = datetime.now(tz=KST).date()
+    gaps: list[dict] = []
+    for key, rows in _load_lesson_inquiry_rows().items():
+        for r in unassigned_lesson_candidates(rows):
+            ts = str(r.get("timestamp", ""))[:10]
+            target_date = _parse_iso_date(ts)
+            sport = str(r.get("sport") or r.get("bucket") or "종목미상").strip()
+            gaps.append({
+                "role": "cpo",
+                "severity": "mid",
+                "title": f"강습({_LESSON_LABEL[key]}) 문의 — 담당자 미배정(흔적 0건)",
+                "detail": f"종목={sport or '종목미상'} · 접수일={ts or '?'} · 상태·담당자·메모·연락이력 전부 공란",
+                "hint": "담당 강사 배정 필요(배정 안 되면 고객이 연락을 못 받는다)",
+                "ref": f"lesson-{key}::{r.get('rowIndex', ts)}::unassigned",
+                "age": _classify_age(target_date, today),
+            })
+    return gaps
+
+
+def _has_registration_trace(row: dict) -> bool:
+    """등록 흔적 판정 — memo 또는 연락이력(contacts) 어디든 '등록' 문자열이 있으면 기록된
+    것으로 본다(실측 함정: 등록완료 메모가 memo 칸이 아니라 연락이력 마지막 줄에 적히는
+    사례가 실존해 memo 만 보면 오탐이 난다). 넓게 잡아 과소적발(false negative)만 허용한다
+    — "회원권 등록부터 도와드려야" 같은 진행중 멘션까지 걸러 안전 쪽으로 치우친다."""
+    if "등록" in str(row.get("memo") or ""):
+        return True
+    for c in (row.get("contacts") or []):
+        if "등록" in str(c.get("note") or ""):
+            return True
+    return False
+
+
+def rule_registration_no_trace() -> list[dict]:
+    """등록완료(cpo_report._SUCCESS_STATUSES) 처리인데 등록 기록(메모·연락이력) 흔적이
+    전혀 없는 건 적발 — 멤버십·강습(성인·유소년) 공용. age(신규/누적) 자동 분류로 오래된
+    건(실측상 대부분 1~3월 과거 건)은 접힌 누적 줄로만, 최근 14일 내 건만 눈에 띄게 표시."""
+    from cpo_report import _SUCCESS_STATUSES  # noqa: PLC0415
+
+    today = datetime.now(tz=KST).date()
+    gaps: list[dict] = []
+
+    def _scan(rows: list[dict], source_label: str, ref_prefix: str) -> None:
+        for r in rows:
+            if str(r.get("status", "")).strip() not in _SUCCESS_STATUSES:
+                continue
+            if _has_registration_trace(r):
+                continue
+            ts = str(r.get("timestamp", ""))[:10]
+            target_date = _parse_iso_date(ts)
+            gaps.append({
+                "role": "cpo",
+                "severity": "low",
+                "title": f"{source_label} · 등록완료 처리인데 기록 흔적 없음",
+                "detail": f"진행상태={r.get('status')} · 접수일={ts or '?'} · 메모·연락이력 모두 등록 흔적 없음",
+                "hint": "실제 등록 여부 확인 후 메모 보강(오기재 가능성도 확인)",
+                "ref": f"{ref_prefix}::{r.get('rowIndex', ts)}::regtrace",
+                "age": _classify_age(target_date, today),
+            })
+
+    _scan(_load_member_inquiry_rows(), "멤버십 문의", "member")
+    for key, rows in _load_lesson_inquiry_rows().items():
+        _scan(rows, f"강습({_LESSON_LABEL[key]}) 문의", f"lesson-{key}")
+    return gaps
+
+
 # role 별 규칙 등록부 — 다른 C-Level 은 자기 role 리스트에 함수만 추가하면 됨(공용 스캔 재사용).
 _RULES: dict[str, list] = {
     "ceo": [],
@@ -902,7 +1066,11 @@ _RULES: dict[str, list] = {
         rule_task_deadline_passed_active,  # 2026-07-23 신설 — 업무 마감(종료일) 경과인데 방치
         rule_voc_stale_unresolved,         # 2026-07-23 신설 — VOC 접수 후 N일 미처리(분실물 제외)
     ],
-    "cpo": [],
+    "cpo": [
+        rule_inquiry_loss_no_reason,     # 2026-07-23 신설 — 문의 LOSS(미등록)인데 사유 미기록
+        rule_lesson_owner_unassigned,    # 2026-07-23 신설 — 강습 문의 담당자 미배정(흔적 0건)
+        rule_registration_no_trace,      # 2026-07-23 신설 — 등록완료 처리인데 기록 흔적 없음
+    ],
     "cto": [],
 }
 
