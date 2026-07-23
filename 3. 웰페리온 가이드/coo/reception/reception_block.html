@@ -316,6 +316,8 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
   text-align:center;font-size:12.5px;color:var(--dim);line-height:2;margin-top:10px
 }
 .wlp-recept .footer-links a{color:var(--accent);text-decoration:none}
+
+/*[GM 20260720] mobile spacing*/@media (max-width:600px){.wlp-recept .wrap{padding-top:26px;padding-bottom:30px}.wlp-recept .brand{margin-bottom:16px}.wlp-recept .footer-divider{margin:18px auto 14px}.container-wrap{padding-top:18px!important;padding-bottom:18px!important}}</style>
 </style>
 
 <div class="wlp-recept">
@@ -337,27 +339,13 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
       <div class="loc-chip" id="locChip" style="display:none"></div>
     </div>
 
-    <!-- ── 회원 진입 링크 3종 — 휴회 신청 / 습득 분실물 접수(직원·gate 커튼) / 습득 분실물 보기(공개 갤러리) : 각각 자체 페이지 ── -->
-    <!-- 휴회 신청 진입 (배9910 · 시포 인계 2026-07-23) — 링크 1개만. 이 페이지는 처리 로직 0.
-         저장·검증·승인은 전부 시포 백엔드(휴회접수.html → GAS member_hold_apply)에서 끝나며,
-         종합접수처 시트에는 아무것도 쌓이지 않는다(중복 저장 금지). 기존 6종 접수유형 배선 무변경.
-         스타일은 이미 정의돼 있으나 쓰이지 않던 .lf-link 를 재사용(새 CSS 추가 0). -->
-    <a class="lf-link" href="https://wellperion-cao.github.io/wellperion-automation/cpo/member/%ED%9C%B4%ED%9A%8C%EC%A0%91%EC%88%98.html" rel="noopener">
-      <span class="lf-ico">🗓️</span>
-      <span class="lf-txt"><b>휴회 신청</b><span>회원 휴회를 온라인으로 신청합니다 · 접수 후 담당자가 확인해 안내드립니다</span></span>
+    <!-- ── 습득물 보기(공개 갤러리) — GM 지시 2026-07-23: 휴회 접수와 같은 풀폭 크기로 통일.
+         접수 성격(휴회 접수·습득물 접수)은 아래 접수유형 칸으로 내려가고, 여기는 '보기'만 남긴다. ── -->
+    <a class="lf-link" href="http://wellperion.com/ko/lost-found/" rel="noopener">
+      <span class="lf-ico">🔍</span>
+      <span class="lf-txt"><b>습득물 보기</b><span>보관 중인 습득물을 확인합니다 · 잃어버린 물건이 있는지 먼저 살펴보세요</span></span>
       <span class="lf-arrow">›</span>
     </a>
-
-    <div class="lf-btns">
-      <a class="lf-btn" href="http://wellperion.com/ko/lost-found-register/" rel="noopener">
-        <span class="lf-ico">🧳</span>
-        <span class="lf-txt"><b>습득물 접수</b><span>직원용 · 주운 물건 등록</span></span>
-      </a>
-      <a class="lf-btn" href="http://wellperion.com/ko/lost-found/" rel="noopener">
-        <span class="lf-ico">🔍</span>
-        <span class="lf-txt"><b>습득물 보기</b><span>보관 중인 습득물 확인</span></span>
-      </a>
-    </div>
 
     <!-- ── Form card ── -->
     <div class="card">
@@ -388,6 +376,18 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
             <span class="cat-icon">🗣️</span>
             <span class="cat-label">직원·강사 쓴소리합니다</span>
           </button>
+          <!-- 휴회 접수 (배9910 후속 · GM 지시 2026-07-23) — 별도 페이지로 넘기지 않고 다른 접수처럼 바로 아래 폼이 열린다.
+               ★제출만 시포(회원) 백엔드 HOLD_API 로 직행 — 종합접수처 시트에는 아무것도 쌓이지 않는다(배9910 원칙 유지). -->
+          <button type="button" class="type-btn" data-cat="hold">
+            <span class="cat-icon">🗓️</span>
+            <span class="cat-label">휴회 접수</span>
+          </button>
+          <!-- 습득물 접수는 직원용 별도 페이지(gate 커튼)라 폼이 아니라 이동 — 칸 모양만 맞춘다 -->
+          <a class="type-btn" href="http://wellperion.com/ko/lost-found-register/" rel="noopener"
+             style="text-decoration:none;">
+            <span class="cat-icon">🧳</span>
+            <span class="cat-label">습득물 접수<br><span style="font-size:10.5px;font-weight:500;color:var(--dim)">직원용</span></span>
+          </a>
         </div>
       </div>
       <!-- 카테고리 선택 시 폼 전체가 여기 렌더됨 -->
@@ -430,6 +430,19 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
   var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
   // 백엔드 위조방지 게이트용 숨김토큰 — ScriptProperties VOC_SUBMIT_TOKEN 값과 일치해야 함(없으면 코드 기본값).
   var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+
+  /* 휴회 접수 전용 백엔드 (배9910 후속 · 2026-07-23) — 시포(회원) GAS.
+     ★위 VOC_API 와 다른 곳으로 보낸다: 휴회는 종합접수처 시트에 쌓지 않고 회원 쪽에서만 처리한다(배9910 원칙).
+     규약: action=member_hold_apply · name/phone/holdKind/holdStart/holdDays/reason.
+     서버가 'hold-gated' 를 주면 아직 온라인 접수 개통 전이라는 뜻 → 데스크 안내로 대체한다. */
+  var HOLD_API = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+  // 오늘 날짜(YYYY-MM-DD) — 휴회 시작일 과거 선택 차단용
+  function _todayStr(){
+    var d = new Date(), m = String(d.getMonth() + 1), day = String(d.getDate());
+    return d.getFullYear() + '-' + (m.length < 2 ? '0' + m : m) + '-' + (day.length < 2 ? '0' + day : day);
+  }
+  // 휴회 일수 하한 — 신규 7일 / 연장 1일 (2026-07-23 GM 확정 · 시포 화면과 동일 규칙)
+  function _holdMinDays(kind){ return (kind === '연장') ? 1 : 7; }
 
   // 분실위치 드롭다운 항목 — 필요 시 이 배열만 수정.
   var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
@@ -492,6 +505,20 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
       { key:'occurredAt', label:'발생 시점',  type:'date' },
       { key:'content',    label:'내용',       type:'textarea', ph:'불편하셨던 상황을 편하게 들려주세요. 자세히 적어주실수록 더 정확히 도와드릴 수 있어요.' },
       { key:'photo',      label:'사진 첨부',  type:'photo',    opt:true }
+    ],
+    /* 휴회 접수 (배9910 후속 · GM 지시 2026-07-23 '별도 페이지 말고 바로 아래 폼')
+       ★필드·검증 규약은 시포(회원) 휴회 접수 화면과 동일해야 한다 —
+         action=member_hold_apply · name/phone/holdKind/holdStart/holdDays/reason.
+         하한은 구분에 따라 다름(신규 7일 / 연장 1일), 상한 60일, 과거 시작일 불가. (2026-07-23 GM 확정)
+       ⚠️ 지금은 같은 폼이 두 곳(여기 · cpo/member/휴회접수.html)에 존재한다 = 사본 2벌.
+          규칙이 바뀌면 한쪽만 고쳐질 위험이 있어, 시포와 단일화(한쪽을 다른 쪽으로 보내기) 협의 대상. */
+    hold: [
+      { key:'name',      label:'이름',          type:'text',     ph:'실명을 입력해 주세요', req:true },
+      { key:'contact',   label:'연락처',        type:'tel',      ph:'010-1234-5678', req:true },
+      { key:'holdKind',  label:'구분',          type:'select',   opts:['신규','연장'] },
+      { key:'holdStart', label:'휴회 시작일',   type:'date',     req:true },
+      { key:'holdDays',  label:'휴회 일수',     type:'number',   ph:'신규 7~60일 · 연장 1~60일', req:true },
+      { key:'reason',    label:'사유',          type:'textarea', opt:true, ph:'휴회 사유를 적어주세요(선택).' }
     ]
   };
   // 백엔드로 보낼 추가 필드 키 (없으면 빈값)
@@ -562,7 +589,17 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
         var d = document.createElement('input');
         d.type = def.type;   // 'date'(날짜만) 또는 'datetime-local'(날짜+시간)
         d.id = 'f_' + def.key;
+        // 휴회 시작일은 과거를 못 고르게 막는다(시포 규약과 동일 — 서버에서도 재검증)
+        if (def.key === 'holdStart') { d.min = _todayStr(); }
         field.appendChild(d);
+      } else if (def.type === 'number') {
+        // 숫자 입력(휴회 일수) — 모바일에서 숫자 키패드가 뜨도록 inputmode 지정
+        var nb = document.createElement('input');
+        nb.type = 'number'; nb.id = 'f_' + def.key;
+        nb.setAttribute('inputmode', 'numeric');
+        nb.min = '1'; nb.max = '60';
+        nb.placeholder = def.ph || '';
+        field.appendChild(nb);
       } else if (def.type === 'textarea') {
         var ta = document.createElement('textarea');
         ta.id = 'f_' + def.key;
@@ -685,6 +722,50 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
     }
 
     var btn = this;
+
+    /* ── 휴회 접수는 회원(시포) 백엔드로 직행 ── (배9910 후속 · 2026-07-23)
+       종합접수처 시트에는 쓰지 않는다. 검증 규칙은 시포 화면과 동일하게 유지할 것. */
+    if (selectedCategory === 'hold') {
+      var _kind = vals.holdKind || '신규';
+      var _days = parseInt(vals.holdDays, 10);
+      var _min = _holdMinDays(_kind);
+      if (vals.holdStart < _todayStr()) { toast('휴회 시작일은 오늘 이후로 선택해 주세요', true); return; }
+      if (isNaN(_days) || _days < _min || _days > 60) {
+        toast('휴회 일수는 ' + _min + '~60일 사이로 입력해 주세요 (' + _kind + ')', true); return;
+      }
+      btn.disabled = true; btn.textContent = '접수 중…';
+      fetch(HOLD_API, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'member_hold_apply',
+          name: vals.name || '', phone: vals.contact || '',
+          holdKind: _kind, holdStart: vals.holdStart || '',
+          holdDays: _days, reason: vals.reason || ''
+        })
+      })
+      .then(function(r){ return r.text(); })
+      .then(function(t){ try { return JSON.parse(t); } catch (e) { return { ok:false, error:'응답 파싱 실패' }; } })
+      .then(function(res){
+        if (res && res.ok === false) {
+          if (res.error === 'hold-gated') {
+            toast('현재 온라인 휴회 접수는 준비 중입니다. 데스크로 연락 주시면 바로 처리해 드립니다.', true);
+          } else {
+            toast(res.detail || res.error || '접수에 실패했습니다. 다시 시도해 주세요.', true);
+          }
+          btn.disabled = false; btn.textContent = '접수하기'; return;
+        }
+        $('formWrap').style.display = 'none';
+        $('doneWrap').style.display = 'block';
+        window.scrollTo(0, 0);
+      })
+      .catch(function(){
+        toast('네트워크 오류 — 다시 시도해 주세요.', true);
+        btn.disabled = false; btn.textContent = '접수하기';
+      });
+      return;
+    }
+
     btn.disabled = true;
     btn.textContent = '접수 중…';
 
@@ -735,5 +816,21 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
     $('formWrap').style.display = 'block';
     window.scrollTo(0, 0);
   });
+})();
+</script>
+
+<!-- [2026-07-20 GM] 종합접수처 페이지 로고 링크 → /ko/reception/ 변경 -->
+<script>
+(function(){
+  function fixLogoHref(){
+    // Salient 테마: #logo 자체가 <a> 태그
+    var a=document.getElementById('logo');
+    if(a && a.tagName==='A'){ a.href='/ko/reception/'; }
+    else { var a2=document.querySelector('#header-outer #logo a, #header-outer a#logo');
+      if(a2) a2.href='/ko/reception/';
+    }
+  }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',fixLogoHref); }
+  else { fixLogoHref(); }
 })();
 </script>
