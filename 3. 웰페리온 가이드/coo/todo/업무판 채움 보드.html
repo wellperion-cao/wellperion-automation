@@ -32,6 +32,15 @@ h1{font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Malgun Gothic",se
 .lede{margin:10px 0 0;color:var(--ink-soft);max-width:64ch}
 .stamp{margin-top:12px;font-size:12.5px;color:var(--ink-faint);
   font-family:ui-monospace,"Cascadia Mono",Consolas,monospace}
+.cta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);
+  border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:3px;padding:14px 18px}
+.cta .lbl{font-size:13.5px;color:var(--ink-soft);flex:1;min-width:220px}
+.cta .lbl b{color:var(--ink)}
+.cta a{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:3px;
+  font-size:13.5px;font-weight:700;text-decoration:none;white-space:nowrap;
+  background:var(--accent);color:var(--surface)}
+.cta a.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.cta a:hover{opacity:.9}
 .period{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px}
 .p-card{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:14px 16px;
   display:grid;grid-template-columns:auto auto;gap:0 7px;align-items:baseline}
@@ -125,6 +134,13 @@ footer{font-size:12.5px;color:var(--ink-faint);border-top:1px solid var(--line);
   <div class="p-card"><span class="k">지금 진행 중</span>
     <span class="v">43</span><span class="n">건</span>
     <span class="hint">빈칸 없이 완비 12건 · 시작일은 전부 기록됨</span></div>
+</div>
+
+<div class="cta">
+  <span class="lbl"><b>채우는 곳은 업무판입니다.</b> 아래에서 본인 업무를 열어 마감일·점수를 넣거나,
+    멈춘 일은 「보류」를 눌러 이유와 다시 볼 시점을 남겨주세요.</span>
+  <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html">📋 업무판 열기</a>
+  <a class="ghost" href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%C2%B7%EA%B2%B0%EC%9E%AC%20%EC%9A%B4%EC%98%81%20%EA%B8%B0%EC%A4%80.html">📖 적는 기준 보기</a>
 </div>
 
 <section>
