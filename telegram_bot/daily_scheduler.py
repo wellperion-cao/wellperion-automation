@@ -2434,7 +2434,13 @@ def _build_nudge_body(shift: str) -> str | None:
     #   비는 사례 확인(영속 시트엔 실데이터 존재: 예 55/108·제출3). 이때 "미완 0/N" 독려는 거짓 → '점검 했는데?' 혼란.
     #   회차 done==0인데 영속 시트(monthly)에 오늘 실완료·제출이 있으면 today_live 글리치로 보고 침묵(잘못된 독려 방지).
     #   근본(today_live 원장 정합)은 시우 점검 GAS 영역 — 별도. 여기선 거짓 독려만 안전 차단.
-    if done == 0:
+    # [2026-07-23 시토 · GM 지적] 위 가드가 너무 넓어 **진짜 미완료까지 삼키고 있었다.**
+    #   2026-07-22 실측: 마감조 0/27(진짜 미완)인데 그날 오전조가 일해 시트 활동이 있었고,
+    #   가드가 "today_live 글리치"로 오판해 침묵 → 마감조 독려가 아예 안 나감(GM이 못 받음).
+    #   글리치의 진짜 신호는 "today_live 가 통째로 죽어 전 회차 0"이다. 한 회차라도 살아
+    #   있으면(예: 오전조 46/49) today_live 는 정상이므로 가드를 적용하지 않는다.
+    live_elsewhere = any(int(live.get(k, 0) or 0) > 0 for k in ("am", "pm", "close", "night"))
+    if done == 0 and not live_elsewhere:
         _sheet_done, _sheet_sessions = _support_sheet_activity_today(today)
         if _sheet_done > 0 or _sheet_sessions > 0:
             logger.info(
