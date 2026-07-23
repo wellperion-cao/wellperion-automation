@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>업무·결재 운영 기준 — 웰페리온 ERP</title>
+<!-- 업무·결재 현황 SSOT 운영 기준 (정본) — 시우(AI COO) 2026-07-23 작성.
+     배9819 후속. 오늘 실측한 결함 7건이 "기준이 없어서" 쌓인 것이라, 증상 수리와 별개로
+     등록·결재·점수·일정·보류·정체·담당표기 기준을 한 장에 못 박는다.
+     ★수치는 전부 2026-07-23 라이브 실측값. 추정·예시값 없음(약속 L05).
+     ★같은 규칙을 다른 곳에 다시 서술하지 않는다(약속 L01) — 여기가 정본, 다른 화면은 링크로 가리킨다. -->
+<style>
+:root{--bg:#1a1815;--paper:#221F1B;--text:#E8E2D8;--dim:#8C7E6D;--dim-soft:#564a3d;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3D3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.14);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.14);--yellow:#E0B341;--yellow-bg:rgba(224,179,65,0.14);--blue:#5B9FD5;--blue-bg:rgba(91,159,213,0.14);--orange:#E6944E;--orange-bg:rgba(230,148,78,0.14)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-size:15px;line-height:1.62;word-break:keep-all;
+  font-family:-apple-system,"Segoe UI Variable Text","Segoe UI","Malgun Gothic",sans-serif;-webkit-text-size-adjust:100%}
+.header{background:var(--paper);padding:14px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.header h1{font-size:18px;font-weight:800;margin:0;letter-spacing:-.02em}
+.header .sub{font-size:12px;color:var(--dim)}
+.header-right{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.lnk{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;font-size:12.5px;font-weight:700;
+  background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);text-decoration:none}
+.lnk:hover{border-color:var(--accent)}
+.wrap{padding:26px 24px 80px;display:flex;flex-direction:column;gap:26px}
+.lede{color:var(--dim);max-width:74ch;font-size:14px}
+.lede b{color:var(--text)}
+
+.sum{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--paper)}
+.sum-h{padding:11px 16px;font-size:13px;font-weight:800;color:var(--accent);border-bottom:1px solid var(--border);letter-spacing:.02em}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--border);font-size:13.5px}
+th{font-size:11.5px;font-weight:800;color:var(--dim);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td b{color:var(--text)}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:700}
+.ok{color:var(--green);font-weight:700}
+.warn{color:var(--orange);font-weight:700}
+.bad{color:var(--red);font-weight:700}
+.mut{color:var(--dim)}
+
+section{border:1px solid var(--border);border-radius:10px;background:var(--paper);overflow:hidden}
+.sec-h{display:flex;align-items:baseline;gap:11px;padding:13px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.sec-n{font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap}
+.sec-h h2{font-size:16px;font-weight:800;margin:0;letter-spacing:-.01em}
+.sec-h .why{font-size:12px;color:var(--dim);flex-basis:100%;line-height:1.5}
+.sec-b{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.rule{display:flex;gap:11px;align-items:baseline}
+.rule .k{min-width:1.5em;color:var(--accent);font-weight:800}
+.rule .t{flex:1}
+.fact{border-left:3px solid var(--yellow);background:var(--yellow-bg);padding:9px 13px;border-radius:0 6px 6px 0;font-size:13px}
+.fact b{color:var(--yellow)}
+.dont{border-left:3px solid var(--red);background:var(--red-bg);padding:9px 13px;border-radius:0 6px 6px 0;font-size:13px}
+.dont b{color:var(--red)}
+code{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:12.5px;background:var(--accent-bg);
+  padding:1px 6px;border-radius:3px;color:var(--accent)}
+footer{color:var(--dim);font-size:12.5px;border-top:1px solid var(--border);padding-top:14px}
+
+@media (max-width:640px){
+  .wrap{padding:18px 14px 60px}
+  th,td{padding:8px 10px;font-size:12.5px}
+  .header{padding:12px 14px}
+}
+/* A3 인쇄 — 흑백 종이에서도 그대로 읽히게 */
+@media print{
+  :root{--bg:#fff;--paper:#fff;--text:#111;--dim:#555;--dim-soft:#888;--accent:#7a5c30;--border:#bbb;
+    --green:#1c6b38;--red:#9c2b1c;--yellow:#7a5c10;--orange:#8a4b12;--blue:#1b4f7a;
+    --accent-bg:#f4f0ea;--green-bg:#eef6f0;--red-bg:#fbeeec;--yellow-bg:#f8f3e4;--orange-bg:#faf0e6}
+  body{background:#fff;color:#111;font-size:10.5pt;line-height:1.45}
+  .header-right,.lnk{display:none!important}
+  .wrap{padding:0;gap:14px}
+  section,.sum{break-inside:avoid;border:1px solid #bbb}
+  @page{size:A3;margin:12mm}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>업무 · 결재 운영 기준</h1>
+    <div class="sub">웰페리온 ERP · 업무 현황 SSOT / 결재 현황 SSOT 공통 · 시우(AI COO) 관리</div>
+  </div>
+  <div class="header-right">
+    <a class="lnk" href="업무 현황 SSOT.html">📋 업무 현황 SSOT</a>
+    <a class="lnk" href="결재 현황 SSOT.html">📁 결재 현황 SSOT</a>
+    <a class="lnk" href="doc_guide.html">📄 기획안·결과보고 서식</a>
+    <a class="lnk" href="../../wellperion_guide(main).html">🏠 웰페리온 ERP</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+<p class="lede">업무판에 <b>무엇을 · 어떻게 적는지</b>를 정한 한 장입니다.
+지금까지 이 기준이 글로 없어서 사람마다 다르게 적었고, 그래서 빈칸과 멈춘 일이 쌓였습니다.
+아래 수치는 전부 <b>2026년 7월 23일 실제 업무판을 세어본 값</b>입니다 — 예시나 추정이 아닙니다.</p>
+
+<div class="sum">
+  <div class="sum-h">한 장 요약 — 지금 어디가 비어 있나</div>
+  <table>
+    <thead><tr><th>항목</th><th>기준</th><th>지금 상태 (7/23 실측)</th></tr></thead>
+    <tbody>
+      <tr><td><b>업무판 등록</b></td><td>사소해도 다 올린다</td>
+        <td><span class="warn">10건</span> 이 7월 운영계획엔 있는데 업무판엔 없음</td></tr>
+      <tr><td><b>마감일</b></td><td>등록할 때 반드시</td>
+        <td><span class="warn">25건</span> 비어 있음 (진행 중 50건 기준)</td></tr>
+      <tr><td><b>점수(난이도)</b></td><td>담당자 제안 → 부서장 확정</td>
+        <td><span class="warn">15건</span> 비어 있음 — 그만큼 인사평가에서 빠짐</td></tr>
+      <tr><td><b>멈출 때</b></td><td>이유 + 다시 볼 시점 필수</td>
+        <td><span class="bad">보류 4건 전부</span> 미기재 <span class="mut">(입력 칸은 7/23 신설)</span></td></tr>
+      <tr><td><b>결재</b></td><td>요청하면 부서장 → GM</td>
+        <td><span class="ok">22건 ↔ 22건</span> 짝이 정확히 맞음 — 흐름은 건강</td></tr>
+      <tr><td><b>빈칸 없이 완비</b></td><td>—</td>
+        <td><span class="num">17건 / 50건</span> (34%)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<section>
+  <div class="sec-h"><span class="sec-n">기준 1</span><h2>무엇을 업무판에 올리나</h2>
+    <span class="why">업무판에 없으면 어디에도 없습니다. 오늘의 항로에도, 월간 운영계획에도 안 뜹니다.</span></div>
+  <div class="sec-b">
+    <div class="rule"><span class="k">·</span><span class="t"><b>사소해도 올립니다.</b> "이 정도는 굳이"가 쌓이면 나중에 아무도 그 일이 있었는지 모릅니다.</span></div>
+    <div class="rule"><span class="k">·</span><span class="t"><b>실무진 업무만</b> 이 판에 올립니다. GM·AI 담당 건은 <b>오늘의 항로(G1)</b>에서 관리합니다 — 판이 다릅니다.</span></div>
+    <div class="rule"><span class="k">·</span><span class="t"><b>시작하면 바로</b> 올립니다. 끝나고 몰아서 적으면 그 사이 진척이 통째로 비어 보입니다.</span></div>
+    <div class="fact"><b>실측</b> — 7월 운영계획 18개 목표 중 <b>10개</b>가 업무판에 연결돼 있지 않습니다(장마철 시설 점검·주차장 청결 체계·회원 관리프로그램 변경 등).
+      하고 있는데 <b>기록될 자리가 없어</b> 계획서에서는 멈춰 보입니다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">기준 2</span><h2>무엇이 결재를 타나</h2>
+    <span class="why">결재 흐름 자체는 건강한데, "무엇이 결재 대상인지"가 글로 정해져 있지 않았습니다.</span></div>
+  <div class="sec-b">
+    <div class="rule"><span class="k">·</span><span class="t"><b>돈이 나가는 일</b> — 구매·계약·비용이 발생하면 결재</span></div>
+    <div class="rule"><span class="k">·</span><span class="t"><b>밖으로 나가는 일</b> — 회원·외부 업체·홈페이지에 보이는 것</span></div>
+    <div class="rule"><span class="k">·</span><span class="t"><b>되돌리기 어려운 일</b> — 공사·해지·폐기처럼 한 번 하면 못 무르는 것</span></div>
+    <div class="rule"><span class="k">·</span><span class="t"><b>두 팀 이상 얽히는 일</b> — 한 부서에서 안 끝나는 것</span></div>
+    <div class="rule"><span class="k">·</span><span class="t">넷 중 <b>하나도 해당 없으면 결재 없이</b> 진행하고 완료 처리합니다. 모든 일에 결재를 걸 필요는 없습니다.</span></div>
+    <div class="rule"><span class="k">·</span><span class="t"><b>결재선 = 부서장 → GM 종착.</b> 대표님 보고는 시스템 밖 종이 절차라 화면 결재와 무관합니다.</span></div>
+    <div class="fact"><b>실측</b> — 결재요청 <b>22건</b>에 결재상태 <b>22건</b>으로 짝이 정확히 맞습니다(끊긴 곳 0).
+      다만 완료된 64건 중 결재를 탄 것은 17건이라, <b>나머지가 "기준상 결재 대상이 아니어서"인지 "빠뜨린 것"인지</b> 지금은 구분되지 않습니다. 위 4가지 기준이 그 구분선입니다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">기준 3</span><h2>점수(난이도) 매기기</h2>
+    <span class="why">이 점수가 그대로 인사평가 가중점수가 됩니다. 비워두면 한 일이 평가에서 그만큼 빠집니다.</span></div>
+  <div class="sec-b">
+    <table>
+      <thead><tr><th>등급</th><th>점수</th><th>기준 — 몇 개 팀이 얽히는가</th><th>예</th></tr></thead>
+      <tbody>
+        <tr><td><b>하</b></td><td class="num">1점</td><td>본인 또는 <b>1개 팀</b>에서 끝남</td><td>일일 점검 보고</td></tr>
+        <tr><td><b>중</b></td><td class="num">5점</td><td><b>2개 팀</b>이 얽힘</td><td>리셉션 매뉴얼 구축</td></tr>
+        <tr><td><b>상</b></td><td class="num">10점</td><td><b>전사·여러 부서</b>가 얽힘</td><td>4부서 통합 체계 셋업</td></tr>
+      </tbody>
+    </table>
+    <div class="rule"><span class="k">·</span><span class="t"><b>담당자가 제안</b>하고 <b>부서장이 결재 단계에서 확정</b>합니다. 혼자 정하는 값이 아닙니다.</span></div>
+    <div class="fact"><b>실측</b> — 진행 중 50건 가운데 <b>15건</b>이 비어 있습니다(이경연 실장 8 · 최준용M 3 · 나우열M 2 등).
+      완료된 건 중에도 미입력이 남아 있어 <b>지난 실적까지 평가에서 누락</b>됩니다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">기준 4</span><h2>일정(마감일) 적기</h2>
+    <span class="why">마감일이 있어야 언제 도와드릴지 알 수 있습니다. 감시가 아니라 지원을 위한 칸입니다.</span></div>
+  <div class="sec-b">
+    <div class="rule"><span class="k">·</span><span class="t"><b>등록할 때 같이</b> 적습니다. 나중에 채우면 대부분 안 채워집니다.</span></div>
+    <div class="rule"><span class="k">·</span><span class="t"><b>끝이 없는 상시 업무</b>(예: 기구 A/S)는 마감일 대신 <b>이번 달 처리 건수</b>로 봅니다 — 이런 일에 퍼센트는 성립하지 않습니다.</span></div>
+    <div class="rule"><span class="k">·</span><span class="t">날짜가 바뀌면 <b>바꿔 적습니다.</b> 지난 날짜를 그대로 두면 정체로 잡힙니다.</span></div>
+    <div class="fact"><b>실측</b> — 진행 중 50건 중 <b>25건</b>에 마감일이 없습니다. 반면 <b>시작일은 50건 전부</b> 기록돼 있습니다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">기준 5</span><h2>멈출 때 (보류)</h2>
+    <span class="why">멈추는 건 문제가 아닙니다. 왜 멈췄는지 안 적히는 게 문제입니다 — 그러면 아무도 다시 안 봅니다.</span></div>
+  <div class="sec-b">
+    <div class="rule"><span class="k">·</span><span class="t">업무판에서 <b>보류</b>를 누르면 <b>멈춘 이유</b>와 <b>다시 볼 시점</b>을 묻습니다. 둘 다 없으면 보류가 되지 않습니다.</span></div>
+    <div class="rule"><span class="k">·</span><span class="t"><b>다시 볼 시점은 두 가지 형식만</b> 받습니다 —
+      <code>2026-09</code> 처럼 <b>연월</b>(그 달이 되면) 또는 <code>9678</code> 처럼 <b>배 번호</b>(그 일이 끝나면).</span></div>
+    <div class="rule"><span class="k">·</span><span class="t">"나중에"·"상황 보고" 같은 말은 <b>받지 않습니다.</b> 사람은 알아듣지만 시스템이 못 읽어서 다시 못 올려드립니다.</span></div>
+    <div class="rule"><span class="k">·</span><span class="t">조건이 채워지면 <b>알아서 다시 올라옵니다.</b> 조건과 무관하게 오래 묵으면 "아직도 보류인가요?"를 묻습니다.</span></div>
+    <div class="fact"><b>실측</b> — 현재 보류 4건 <b>전부</b> 이유가 비어 있습니다. 입력 칸은 2026-07-23에 새로 만들었으니, 담당자가 한 줄씩만 채우면 됩니다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">기준 6</span><h2>언제부터 "멈춘 일"로 보나</h2>
+    <span class="why">감이 아니라 실제 데이터로 선을 그었습니다.</span></div>
+  <div class="sec-b">
+    <div class="rule"><span class="k">·</span><span class="t"><b>30일 넘게 손이 안 닿으면</b> "잠시 쉬는 중"으로 봅니다.</span></div>
+    <div class="rule"><span class="k">·</span><span class="t">쉬는 일로 잡히면 셋 중 하나를 정합니다 —
+      <b>다시 진행</b>(내용 갱신) · <b>보류 전환</b>(이유·재개 시점 기재) · <b>완료 처리</b>(이미 끝났는데 상태만 안 바뀐 경우).</span></div>
+    <div class="fact"><b>왜 30일인가</b> — 실제로 끝난 일들을 세어보니 <b>완료까지 중앙값 12일, 95%가 30일 안</b>에 끝났습니다.
+      30일을 넘겼다는 건 평소 흐름을 벗어났다는 뜻입니다. 현재 <b>26건</b>이 여기 해당하고 최장은 <b>51일</b>입니다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">기준 7</span><h2>담당자 적기</h2>
+    <span class="why">지금은 자유롭게 적혀 있어 집계와 필터가 어긋납니다.</span></div>
+  <div class="sec-b">
+    <div class="rule"><span class="k">·</span><span class="t"><b>담당은 한 명</b>이 원칙입니다. 책임이 흩어지면 아무도 안 챙깁니다.</span></div>
+    <div class="rule"><span class="k">·</span><span class="t">여럿이 하는 일은 <b>대표 한 명</b>만 담당 칸에 적고, 나머지는 <b>내용에</b> 적습니다.</span></div>
+    <div class="rule"><span class="k">·</span><span class="t"><b>퇴사·이동 시 담당을 넘깁니다.</b> 안 넘기면 그 일은 화면에서 사라진 채로 남습니다.</span></div>
+    <div class="fact"><b>실측</b> — 담당 칸에 5명이 나열된 건, 두 명이 쉼표로 적힌 건이 섞여 있습니다.
+      실제로 <b>퇴사자에게 배정된 업무 1건이 43일 동안 화면에 안 보인 채</b> 남아 있었고 7월 23일에 정리했습니다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">기준 8</span><h2>월간 운영계획과 어떻게 이어지나</h2>
+    <span class="why">업무판을 잘 적으면 계획서는 저절로 채워집니다. 따로 보고할 필요가 없습니다.</span></div>
+  <div class="sec-b">
+    <table>
+      <thead><tr><th>층</th><th>주기</th><th>누가</th><th>내용</th></tr></thead>
+      <tbody>
+        <tr><td><b>🎯 부서 목표</b></td><td>분기 1개</td><td>GM 결재</td><td>이번 분기 이 부서가 이룰 것</td></tr>
+        <tr><td><b>📅 월 도달점</b></td><td>월</td><td>부서장</td><td>이번 달엔 어디까지</td></tr>
+        <tr><td><b>🔧 작업</b></td><td>수시</td><td>담당자</td><td>업무판 항목 — 목표에 매달림</td></tr>
+        <tr><td><b>📊 진척율</b></td><td>월 자동</td><td class="mut">자동</td><td>작업들에서 계산 — <b>손으로 안 적습니다</b></td></tr>
+        <tr><td><b>📊 목표율</b></td><td>분기 누적</td><td class="mut">자동</td><td>부서 점검 실측치 — 없으면 <b>비워둡니다</b></td></tr>
+      </tbody>
+    </table>
+    <div class="rule"><span class="k">·</span><span class="t"><b>안 하면 안 올라갑니다.</b> 그게 이 구조의 핵심입니다 — 숫자를 채워 넣어 좋아 보이게 만들 수 없습니다.</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">주의</span><h2>이것만은 하지 마세요</h2></div>
+  <div class="sec-b">
+    <div class="dont"><b>행 번호로 지우지 않습니다.</b> 목록을 보면서 "몇 번째 줄"로 지우면, 그사이 순서가 바뀌어 <b>엉뚱한 사람의 기록이 사라집니다.</b>
+      실제로 2026년 7월에 이 방식으로 실제 고객 정보가 지워진 적이 있습니다. 지울 땐 반드시 <b>그 항목의 고유 번호</b>로 지웁니다.</div>
+    <div class="dont"><b>테스트로 만든 항목을 그대로 두지 않습니다.</b> 라이브에 남으면 집계가 흐려집니다.
+      실제로 글자가 깨진 테스트 항목 하나가 완료·진행·보류 <b>어디에도 안 잡힌 채</b> 오래 남아 있었습니다.</div>
+    <div class="dont"><b>모르는 진척률을 지어내지 않습니다.</b> 근거가 없으면 낮게 두고 <b>"근거 없음"이라고 적습니다.</b>
+      좋아 보이는 숫자보다 정직한 빈칸이 낫습니다.</div>
+  </div>
+</section>
+
+<footer>
+  정본 = 이 페이지 하나입니다. 같은 규칙을 다른 화면에 다시 적지 않고 <b>여기로 링크</b>합니다 —
+  두 곳에 적으면 한쪽이 옛 내용으로 남습니다.<br>
+  관리 = 시우(AI COO) · 최초 작성 2026-07-23 · 수치는 작성일 기준 실측값이며 갱신 시 함께 고칩니다.
+</footer>
+
+</div>
+</body>
+</html>
