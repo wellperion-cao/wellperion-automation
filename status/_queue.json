@@ -110,16 +110,18 @@
     "task_id": "CMO-2026-07-21-REACTION-LOOP-DEDUP",
     "clevel": "cmo",
     "title": "[시모] 모듈 병합 제기(시토) — cmo-eval-feedback-loop ↔ cmo-reaction-loop 반응루프 중복 정리",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "NORMAL",
     "enqueued_at": "2026-07-21",
     "from": "cto",
-    "note": "2026-07-21 시토 배9420 스캔 제기. 상세=status/briefs/시토_모듈병합_제기_20260721.md #4. 두 모듈 다 weekly·propose·반응기반 — eval-feedback(반응원장→주간 Top/Bottom→기획반영) vs reaction-loop(콘텐츠1건 반응성적표→저조시 개선제안). 입력·출력·주기 거의 동일, 데이터소스만 다름(ig_engagement_ledger vs cmo_reaction_scorecard). 통합 or 명확한 층분리(건별/주간)를 시모가 판단. 둘 다 STANDBY/propose라 라이브 충돌 없음. 콘텐츠 도메인이라 시토는 제기만.",
-    "next": "시모 판단 — 반응→평가→개선제안 단일루프 통합 vs 층분리 결정.",
+    "note": "2026-07-21 시토 배9420 스캔 제기. 상세=status/briefs/시토_모듈병합_제기_20260721.md #4. 두 모듈 다 weekly·propose·반응기반 — eval-feedback(반응원장→주간 Top/Bottom→기획반영) vs reaction-loop(콘텐츠1건 반응성적표→저조시 개선제안). 입력·출력·주기 거의 동일, 데이터소스만 다름(ig_engagement_ledger vs cmo_reaction_scorecard). 통합 or 명확한 층분리(건별/주간)를 시모가 판단. 둘 다 STANDBY/propose라 라이브 충돌 없음. 콘텐츠 도메인이라 시토는 제기만. ▶[2026-07-23 시모 결론 — 층분리 확정(통합 안 함)] 실측: 두 모듈 다 실행 코드·예약작업 실재 — 층1=scripts/reaction_scorecard.py(607줄, Wellperion-IG-Reach-Collect-0945 편승 매일 09:45, Ready) / 층2=scripts/weekly_marketing_feedback.py(881줄, Wellperion-CMO-Weekly-Marketing-Feedback 월 09:00, Ready). 폐기 대상 없음. 근거: ①층1이 생산자·층2가 소비자(weekly_marketing_feedback.py:419가 층1 산출 cmo_reaction_scorecard.json을 §5로 렌더) — 병합 시 '편별 측정'과 '주간 기획 결정'이 한 파일에 섞여 퇴행 ②겹쳐 보인 진짜 원인은 코드가 아니라 등록부 오표기: 층2 data_source가 ig_engagement_ledger.json을 주 데이터원으로 적었으나 실제 코드는 그 원장을 의도적 배제(개인 namuk 전용, weekly_marketing_feedback.py:494) → 등록부 값 정정으로 해소. [반영] status/module_registry.json cmo-* 2건만 값 수정 — feature에 【반응루프 층1/층2】 라벨+'중복 아님' 명시, 층2 data_source·ai_free_fallback 코드와 일치하게 정정, 두 엔트리 feedback.entries[]에 결정 근거 박제(3개월 뒤 재제기 방지). 스키마·타 role 항목 무변경(계약서 준수). [회신] status/briefs/시모_반응루프_층분리_회신_20260723.md — 시토 원 브리프 #4 응답. [회귀] weekly_marketing_feedback.py --mode weekly --dry-run 정상(§5 10편 렌더·저조 1편 제안·실발송 0).",
+    "next": "🏁 입항완료 — 층분리 확정·등록부 반영·시토 회신 완료. 🔗다음: 관찰 모드 종료일(2026-08-20) 층1 판정 기준(최근 5편 중앙값 대비 50%) 타당성 재검토 — 그때 층2 §5 누적 판정으로 검증.",
     "depends_on": "",
     "ship_no": 9422,
     "module": "M1",
-    "surface": "autonomy"
+    "surface": "autonomy",
+    "terminal": true,
+    "processed_at": "2026-07-23"
   },
   {
     "task_id": "CTO-2026-06-23-SELF-HOSTED-SERVER-SETUP",

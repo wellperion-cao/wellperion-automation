@@ -383,10 +383,10 @@
       "id": "cmo-eval-feedback-loop",
       "owner_role": "cmo",
       "owner_nick": "시모",
-      "feature": "⑤ 평가 환류 자동화 — 반응 원장(배31·매일 09:30 자동수집)→주간 콘텐츠 Top/Bottom 시그널→다음 기획 반영",
+      "feature": "【반응루프 층2 — 주간 종합·기획 반영】⑤ 평가 환류 자동화. 층1(cmo-reaction-loop)이 만든 편별 판정을 §5로 받아, 이번 주 공식 발행분·문의→전환(funnel GAS)·신규 등록과 함께 한 장으로 묶어 Top/Bottom 정성 판정 + 다음 편 제안을 낸다. 실행체=scripts/weekly_marketing_feedback.py(예약작업 Wellperion-CMO-Weekly-Marketing-Feedback, 월 09:00 라이브 · --mode daily 일일카드는 Wellperion-CMO-Daily-Marketing-2100). ※층1과 중복 아님 — 층1=편별 측정·판정 생산, 층2=주간 종합·기획 결정(2026-07-23 배9422 확정).",
       "data_source": {
         "kind": "json",
-        "ref": "status/ig_engagement_ledger.json + scripts/weekly_marketing_feedback.py + status/briefs/CMO-weekly-feedback-{date}.md"
+        "ref": "3. 웰페리온 가이드/cmo/review/review_queue.json(공식 발행분) + 문의Survey GAS funnel_conversion·member_registered_list·lesson_registry_list + status/cmo_reaction_scorecard.json(층1 산출·§5 소비) → scripts/weekly_marketing_feedback.py → status/briefs/CMO-weekly-feedback-{date}.md"
       },
       "notify_spec": {
         "daily": false,
@@ -401,11 +401,19 @@
         "anchor": "layer-autonomy"
       },
       "autonomy": "propose",
-      "ai_free_fallback": "반응 원장 매일 자동수집(09:30)→주간 평가브리프 생성, 실측 데이터 축적 후 v2 자동채점",
+      "ai_free_fallback": "발행 원장(review_queue.json)·문의 전환 GAS·층1 성적표 JSON을 그대로 표로 렌더 — 판정 슬롯은 사람이 채우는 빈칸(자동 채움 금지). AI 없이도 브리프 생성됨. 실측 축적 후 v2 자동채점.",
       "feedback": {
         "enabled": true,
         "audience": "gm+clevel",
-        "entries": []
+        "entries": [
+          {
+            "date": "2026-07-23",
+            "by": "시모",
+            "kind": "decision",
+            "ref": "ship 9422 / status/briefs/시토_모듈병합_제기_20260721.md #4 / status/briefs/시모_반응루프_층분리_회신_20260723.md",
+            "text": "시토 중복 제기(#4)에 대한 결론 = 통합 아님, 층분리 확정. 근거: ①두 모듈 모두 실행 코드·예약작업이 실재(층2=weekly_marketing_feedback.py/Wellperion-CMO-Weekly-Marketing-Feedback, 층1=reaction_scorecard.py/IG-Reach-Collect-0945 편승) ②층1이 생산자·층2가 소비자(weekly_marketing_feedback.py:419 _fmt_reaction_scorecard_section이 층1 산출 JSON을 §5로 읽음) — 병합하면 '편별 측정'과 '주간 기획 결정'이 한 파일에 섞여 되레 퇴행 ③중복처럼 보인 진짜 원인은 코드가 아니라 본 등록부의 잘못된 data_source였음(ig_engagement_ledger.json은 개인 namuk 계정 전용이라 weekly_marketing_feedback.py:494에서 의도적으로 제외 중인데 등록부는 그걸 주 데이터원으로 표기) → 등록부 값 정정으로 해소. 스키마 무변경."
+          }
+        ]
       },
       "reversible": true,
       "enabled": true,
@@ -415,7 +423,7 @@
       "id": "cmo-reaction-loop",
       "owner_role": "cmo",
       "owner_nick": "시모",
-      "feature": "발행 루프를 감싸는 상위 루프 — 콘텐츠 1건=반응 성적표 1장(IG 도달·당근 조회/찜·카페 조회 실측, 클릭 아님) → 최근 발행분 대비 상대 판정(저조/정상범위/판정보류) → 저조 시 로드맵 근거 개선안 GM께 제안(반무인, 자동 재발행 없음). 배834(북극성 제작 루프) 폐루프의 클릭 대체 입력.",
+      "feature": "【반응루프 층1 — 편별 측정·판정】발행 루프를 감싸는 상위 루프 — 콘텐츠 1건=반응 성적표 1장(IG 도달·당근 조회/찜·카페 조회 실측, 클릭 아님) → 최근 발행분 대비 상대 판정(저조/정상범위/판정보류) → 저조 시 로드맵 근거 개선안 GM께 제안(반무인, 자동 재발행 없음). 배834(북극성 제작 루프) 폐루프의 클릭 대체 입력. 매일 09:45 IG 도달 수집(예약작업 Wellperion-IG-Reach-Collect-0945)에 편승 실행 · 관찰 모드 2026-08-20까지(판정·기록은 하되 알림 억제). 산출 성적표는 층2(cmo-eval-feedback-loop) 주간 브리프 §5와 M1 페이지가 소비한다. ※층2와 중복 아님 — 층1=측정·판정 생산, 층2=주간 종합·기획 결정(2026-07-23 배9422 확정).",
       "data_source": {
         "kind": "json",
         "ref": "status/cmo_reaction_scorecard.json (status/ig_reach_ledger.json + 3. 웰페리온 가이드/cmo/funnel/engagement/engagement_feed.json 재조합, scripts/reaction_scorecard.py)"
@@ -437,7 +445,15 @@
       "feedback": {
         "enabled": true,
         "audience": "gm",
-        "entries": []
+        "entries": [
+          {
+            "date": "2026-07-23",
+            "by": "시모",
+            "kind": "decision",
+            "ref": "ship 9422 / status/briefs/시토_모듈병합_제기_20260721.md #4 / status/briefs/시모_반응루프_층분리_회신_20260723.md",
+            "text": "시토 중복 제기(#4) 결론 = 층분리 확정(통합 아님). 본 모듈은 층1(편별 측정·판정) 정본이며 cmo-eval-feedback-loop(층2)는 본 모듈 산출을 §5로 소비하는 주간 종합·기획 층이다. 둘 다 실행 코드·예약작업 실재 — 폐기 대상 없음. 상세 근거는 층2 엔트리 feedback.entries 동일 일자 기록 참조. 스키마 무변경."
+          }
+        ]
       },
       "reversible": true,
       "enabled": true,
@@ -1050,7 +1066,7 @@
       },
       "notify_spec": {
         "daily": false,
-        "weekly": false,
+        "weekly": true,
         "monthly": false,
         "channel": "kakao",
         "bot_id": "★ 운영부"
@@ -1059,7 +1075,7 @@
         "window": "O1",
         "anchor": "o1-module-hub"
       },
-      "autonomy": "manual",
+      "autonomy": "auto",
       "ai_free_fallback": "스크립트 1회 실행이면 보드 2곳(공개·아티팩트) 재생성 — AI 없이도 동작",
       "feedback": {
         "enabled": true,
@@ -1067,7 +1083,7 @@
         "entries": []
       },
       "reversible": true,
-      "note": "생성=scripts/ops_fill_board.py (--json 으로 수치만 출력 가능). 출력 2곳: 3. 웰페리온 가이드/coo/todo/업무판 채움 보드.html(실무진 공개) · status/boards/s3_cleanup_board.html(GM 아티팩트 소스) — 같은 실행에서 함께 써서 드리프트 0. 발신은 아직 수동(카톡 ★운영부 kakao_report_sender --only-room). 정례 주기·자동 발신은 GM 결재 후 전환 예정(배9836 보고 카드화와 합류). 경영진(김남욱GM·이정헌 소장) 건은 월간 운영계획에서 관리하므로 보드에서 제외하고 사유를 화면에 명시. 완료 신호=완비 N/N 도달 시 보드 역할 축소(상시 위생 점검으로 전환)."
+      "note": "생성=scripts/ops_fill_board.py (--json 수치만 · --send 카톡 발송 · --date 기준일 지정). 예약=Wellperion-COO-FillBoard-Mon-1000 (매주 월 10:00 · launchers/ops_fill_board_weekly_hidden.vbs → scripts/ops_fill_board_weekly.bat · 로그 logs/ops_fill_board.log · 역롤백=작업 비활성화). ★시각 선정 근거(2026-07-23 실측): 07:30은 이미 3개 예약이 겹쳐 git 락 경합 위험, 09:30은 카톡 매출보고가 카톡 창을 점유해 오발송 위험 → 그 뒤인 10:00. 실무진 착석 후라 실제로 읽힘. 출력 2곳: 3. 웰페리온 가이드/coo/todo/업무판 채움 보드.html(실무진 공개) · status/boards/s3_cleanup_board.html(GM 아티팩트 소스) — 같은 실행에서 함께 써 드리프트 0. ★빈칸·정체 합계가 0이면 발송을 자동 생략한다(채울 게 없는데 매주 보내면 잔소리가 된다). 발송은 --only-room '★ 운영부' 고정 — 회장님·관리부 방 오발송 차단. 경영진(김남욱GM·이정헌 소장) 건은 월간 운영계획 소관이라 보드에서 제외하고 사유를 화면에 명시. 완료 신호=완비 N/N 도달 시 보드 역할 축소(상시 위생 점검 전환)."
     }
   ]
 }
