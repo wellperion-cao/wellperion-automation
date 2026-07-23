@@ -170,6 +170,20 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
   color:var(--accent);
   box-shadow:0 2px 10px rgba(176,141,87,.18)
 }
+/* 세로 크기 통일 (GM 지시 2026-07-23) — 8칸이 같은 높이로 보이게.
+   grid 기본 stretch 에 더해 라벨을 1줄로 고정하고 높이를 못 박는다(줄바꿈으로 한 칸만 커지던 문제 차단). */
+.wlp-recept .type-btn{height:78px;min-height:78px}
+.wlp-recept .type-btn .cat-label{white-space:nowrap}
+/* 직원용 칸(습득물 접수)만 연하게 — 회원이 누를 칸과 구분되게 채도를 낮춘다 */
+.wlp-recept .type-btn.staff{
+  background:var(--bg);
+  border-color:#efeae0;
+  color:var(--dim);
+  box-shadow:none
+}
+.wlp-recept .type-btn.staff:hover{border-color:#ddd4c4;box-shadow:none}
+.wlp-recept .type-btn.staff .cat-icon{opacity:.5}
+.wlp-recept .cat-sub{font-size:11px;font-weight:600;opacity:.85}
 
 /* ── Inputs ── */
 .wlp-recept input[type=text],
@@ -383,10 +397,9 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
             <span class="cat-label">휴회 접수</span>
           </button>
           <!-- 습득물 접수는 직원용 별도 페이지(gate 커튼)라 폼이 아니라 이동 — 칸 모양만 맞춘다 -->
-          <a class="type-btn" href="http://wellperion.com/ko/lost-found-register/" rel="noopener"
-             style="text-decoration:none;">
+          <a class="type-btn staff" href="http://wellperion.com/ko/lost-found-register/" rel="noopener">
             <span class="cat-icon">🧳</span>
-            <span class="cat-label">습득물 접수<br><span style="font-size:10.5px;font-weight:500;color:var(--dim)">직원용</span></span>
+            <span class="cat-label">습득물 접수 <span class="cat-sub">[직원용]</span></span>
           </a>
         </div>
       </div>
