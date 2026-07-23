@@ -85,60 +85,109 @@ def _backup_path() -> Path:
     return QUEUE_PATH.with_suffix(f".json.bak_{ts}")
 
 
-def _extract_keyword(item: dict) -> str:
-    """
-    title에서 채널 접미사를 제거한 핵심 구절을 추출한다.
+# 제목 끝에 붙는 '글 내용이 아닌' 괄호 접미사 — 채널명 + 발행상태.
+# (2026-07-23 배9578 실측: '(임시저장)'·'(발행완료)'가 이 목록에 없어 안 떨어졌다.
+#  큐 실제 사용 접미사 전수: 개인계정·개인계정·공식디자인·카카오 채널·네이버 블로그·
+#  네이버 카페·동부이촌동·당근채널·당근·회사공식·공식·임시저장·발행완료.)
+# ⚠ '(수영장)'·'(디지털 디톡스)'처럼 제목의 일부인 괄호는 절대 지우면 안 되므로
+#   아래 열거된 표식이 들어있는 괄호만 지운다.
+_TITLE_SUFFIX_RE = re.compile(
+    r"\s*\([^)]*(?:채널|블로그|카페|계정|인스타|IG|동부이촌동|당근|공식디자인"
+    r"|임시저장|발행완료|발행대기|미발행|초안|예약)[^)]*\)\s*$"
+)
 
-    처리 순서:
-    1) 끝 '(채널명)' 괄호 제거: "... (카카오 채널)" → "..."
-    2) em-dash(—)로 분리해 첫 부분 사용: "바레 런칭 — 네이버 블로그" → "바레 런칭"
-       "생크몽드 Ep.3 — 운동과 회복..." → "생크몽드 Ep.3"
-    3) 폴백: folder 이름에서 날짜 접두사 제거
+
+def _title_keyword(item: dict) -> str:
+    """
+    title에서 채널·상태 접미사를 제거한 핵심 구절을 추출한다.
+
+    1) 끝 '(…)' 접미사 제거 — 두 개 이상 겹쳐 붙어도 전부(=반복) 제거
+       "… — 네이버 블로그 (임시저장)" → "… — 네이버 블로그"
+    2) 앞머리 시리즈 표식 "[필라테스편] " 제거 — 실제 게시 제목엔 안 들어간다
+    3) em-dash(—)/hyphen(-)으로 분리해 첫 부분 사용
+       "바레 런칭 — 네이버 블로그" → "바레 런칭"
 
     최대 28자 (검색 노이즈 방지).
     """
-    # 0) 본문(body) 우선 — 카카오·당근은 게시 본문이 제목과 달라(제목 'Ep.3'가 본문엔 없음),
-    #    실제 게시글 텍스트와 대조하려면 body 첫 핵심구절이 맞다(오늘 회수 성공 패턴).
+    title = (item.get("title") or "").strip()
+    if not title:
+        return ""
+    # Step 1: 끝 괄호 접미사 반복 제거
+    for _ in range(4):
+        stripped = _TITLE_SUFFIX_RE.sub("", title).strip()
+        if stripped == title:
+            break
+        title = stripped
+    # Step 2: 앞머리 시리즈 표식 제거
+    # (2026-07-23 배9578: 이 대괄호 때문에 카페·카카오·당근 3건이 통째로 빗나갔다)
+    title = re.sub(r"^(?:\s*\[[^\]]*\])+\s*", "", title).strip()
+    # Step 3: em-dash(—) 또는 hyphen(-)으로 분리 → 첫 부분이 핵심 키워드
+    base = re.split(r"\s*[—\-]\s*", title)[0].strip()
+    return base[:28] if len(base) >= 4 else ""
+
+
+def _body_keyword(item: dict) -> str:
+    """
+    body 첫 핵심 구절 — 채널이 제목을 바꿔 단 경우(카카오 등)의 폴백 키워드.
+    제목 기반이 실패했을 때만 쓴다.
+    """
     body = item.get("body", "")
-    if isinstance(body, str) and body.strip():
-        for line in body.splitlines():
-            cleaned = line.strip().lstrip("▍•·-—□■◆▶👉📌💬👀 ").strip()
-            # 해시태그·CTA·링크 줄은 키워드로 부적합 → 건너뜀
-            if not cleaned or cleaned.startswith("#") or "wellperion.com" in cleaned or "http" in cleaned:
-                continue
-            if len(cleaned) >= 6:
-                # 첫 문장부호 전까지 또는 16자
-                snippet = re.split(r"[.!?。\n]", cleaned)[0].strip()
-                out = snippet[:16] if len(snippet) >= 6 else cleaned[:16]
-                # 16자 컷이 '— '·', ' 같은 연결부에서 끊기면 꼬리가 대조를 방해한다
-                # (2026-07-23 배9578 실측: '운동과 회복이 한 곳에서 — ').
-                return out.rstrip(" ,·—-–~:;")
+    if not isinstance(body, str) or not body.strip():
+        return ""
+    for line in body.splitlines():
+        cleaned = line.strip().lstrip("▍•·-—□■◆▶👉📌💬👀 ").strip()
+        # 해시태그·CTA·링크 줄은 키워드로 부적합 → 건너뜀
+        if not cleaned or cleaned.startswith("#") or "wellperion.com" in cleaned or "http" in cleaned:
+            continue
+        if len(cleaned) >= 6:
+            # 첫 문장부호 전까지 또는 16자
+            snippet = re.split(r"[.!?。\n]", cleaned)[0].strip()
+            out = snippet[:16] if len(snippet) >= 6 else cleaned[:16]
+            # 16자 컷이 '— '·', ' 같은 연결부에서 끊기면 꼬리가 대조를 방해한다
+            # (2026-07-23 배9578 실측: '운동과 회복이 한 곳에서 — ').
+            return out.rstrip(" ,·—-–~:;")
+    return ""
 
-    title = item.get("title", "").strip()
-    if title:
-        # Step 1: 끝 괄호 채널명 제거 "(카카오 채널)", "(개인계정)" 등
-        title = re.sub(
-            r"\s*\([^)]*(?:채널|블로그|카페|계정|인스타|IG)[^)]*\)\s*$",
-            "",
-            title,
-        ).strip()
-        # Step 1-b: 앞머리 시리즈 표식 "[필라테스편] " 제거 — 실제 게시 제목·본문엔 안 들어간다
-        # (2026-07-23 배9578: 이 대괄호 때문에 카페·카카오·당근 3건이 통째로 빗나갔다)
-        title = re.sub(r"^(?:\s*\[[^\]]*\])+\s*", "", title).strip()
-        # Step 2: em-dash(—) 또는 hyphen(-)으로 분리 → 첫 부분이 핵심 키워드
-        parts = re.split(r"\s*[—\-]\s*", title)
-        base  = parts[0].strip()
-        if len(base) >= 4:
-            return base[:28]
 
-    # 폴백: folder 이름에서 날짜 접두사 제거
+def _folder_keyword(item: dict) -> str:
+    """최종 폴백: folder 이름에서 날짜 접두사 제거."""
     folder      = item.get("folder", "")
     folder_name = Path(folder).name if folder else ""
     m           = re.match(r"^\d{6}_(.+)", folder_name)
     if m:
         return m.group(1)[:28].replace("_", " ")
-
     return folder_name[:28] if folder_name else ""
+
+
+def _keyword_candidates(item: dict) -> list[str]:
+    """
+    대조 키워드 후보 — 시도 순서대로.
+
+    ★제목이 1순위다. 목록(블로그 글목록·카페 게시판·카카오 발행목록)에 뜨는 건 제목이고,
+      본문 소제목에서 뽑은 키워드는 목록의 제목과 구조적으로 안 맞는다.
+      (2026-07-23 배9578 실측: CINQ-EP1 이 body 소제목 '운동 다음의 시간 — 파리의'로
+       뽑혀 실제 블로그 제목 '생크몽드 Ep.1 — 파리의 회복 의식이…'과 빗나갔다.)
+    본문 기반은 채널이 제목을 바꿔 단 경우(카카오)의 폴백으로 뒤에 남긴다 —
+    후보마다 여전히 '긍정 일치'를 요구하므로 대조가 느슨해지지는 않는다.
+    """
+    out: list[str] = []
+    for kw in (_title_keyword(item), _body_keyword(item)):
+        kw = (kw or "").strip()
+        if kw and kw not in out:
+            out.append(kw)
+    if not out:
+        # folder 는 'output(블로그)' 같은 비콘텐츠 이름이 섞여 대조 키워드로 약하다.
+        # 제목·본문이 모두 없을 때만 쓰는 최종 폴백으로 남긴다(기존 동작 유지).
+        fallback = _folder_keyword(item).strip()
+        if fallback:
+            out.append(fallback)
+    return out
+
+
+def _extract_keyword(item: dict) -> str:
+    """1순위 키워드(하위호환 단일값)."""
+    cands = _keyword_candidates(item)
+    return cands[0] if cands else ""
 
 
 def _iter_targets(items: list[dict], target_channels: set[str]) -> list[tuple[int, dict]]:
@@ -258,21 +307,26 @@ def main() -> int:
         if engine_ch in ("blog", "cafe"):
             account = "wellperion"
 
-        keyword = _extract_keyword(item)
-        if not keyword:
+        candidates = _keyword_candidates(item)
+        if not candidates:
             print(f"  [SKIP] keyword 추출 실패: {item_id}", file=sys.stderr)
             failed_count += 1
             continue
 
-        print(f"  [시도] {item_id} | ch={engine_ch} | kw={keyword!r}")
-
-        # URL 회수 시도
-        try:
-            found_url, reason = asyncio.run(
-                _retrieve_url_async(engine_ch, keyword, account, args.headful)
-            )
-        except Exception as exc:
-            found_url, reason = None, f"예외: {exc}"
+        # 제목 → 본문 → 폴더 순으로 시도. 후보마다 긍정 일치를 요구하므로
+        # 후보가 늘어도 대조가 느슨해지지 않는다(못 찾으면 그대로 무변경).
+        found_url, reason, keyword = None, "", candidates[0]
+        for kw in candidates:
+            keyword = kw
+            print(f"  [시도] {item_id} | ch={engine_ch} | kw={kw!r}")
+            try:
+                found_url, reason = asyncio.run(
+                    _retrieve_url_async(engine_ch, kw, account, args.headful)
+                )
+            except Exception as exc:
+                found_url, reason = None, f"예외: {exc}"
+            if found_url:
+                break
 
         if not found_url:
             # 못 찾음 → 무변경, stderr에 사유만 기록
