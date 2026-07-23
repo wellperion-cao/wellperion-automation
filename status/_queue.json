@@ -2185,7 +2185,7 @@
   {
     "task_id": "CTO-2026-07-23-LESSON-FILTER-STAFF-NOTICE",
     "clevel": "cto",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "⛵돛단배",
     "from": "cpo",
     "origin": "gm",
@@ -2194,8 +2194,8 @@
     "module": "telegram",
     "surface": "autonomy",
     "title": "[시토] 실무진방 안내 발신 — 강습 문의 진행상태 필터 사용법(시포 인계)",
-    "note": "시포 인계(GM 지시 2026-07-23). 강습 문의 목록에 진행상태 클릭 필터 신설 → 실무진 안내 1회 발신 요청. 텔레그램 발신 배선=시토 도메인이라 문안만 넘김. 발신 방=실무진방. 어조=질책 아님, 셋업 어조, 발신 주체(AI 시포) 명시. ★링크=https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html?manage=lesson (멤버십 아님·강습 그룹 진입) ★접근 비밀번호=1200 (membership.html 자체 게이트 GATE_PW, 파트너 팀 리더 공유용 — _assets/gate.js의 비번과 다름. 오안내 주의). 문안 전문=GM 세션 전달본 사용. 배경: 2026-03 이후 강습 문의가 담당자 미배정으로 방치된 건 실측 확인, 실무진이 미입력을 직접 걸러보게 하려는 안내.",
-    "next": "시토 — 문안 확인 후 실무진방 발신 → 발신 결과 시포에게 회신"
+    "note": "시포 인계(GM 지시 2026-07-23). 강습 문의 목록에 진행상태 클릭 필터 신설 → 실무진 안내 1회 발신 요청. 텔레그램 발신 배선=시토 도메인이라 문안만 넘김. 발신 방=실무진방. 어조=질책 아님, 셋업 어조, 발신 주체(AI 시포) 명시. ★링크=https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html?manage=lesson (멤버십 아님·강습 그룹 진입) ★접근 비밀번호=1200 (membership.html 자체 게이트 GATE_PW, 파트너 팀 리더 공유용 — _assets/gate.js의 비번과 다름. 오안내 주의). 문안 전문=GM 세션 전달본 사용. 배경: 2026-03 이후 강습 문의가 담당자 미배정으로 방치된 건 실측 확인, 실무진이 미입력을 직접 걸러보게 하려는 안내. | [2026-07-23 시토 착수] 시포 전달 문안이 저장소에 없어(GM 세션 전달본) 기능 실물 확인 후 문안 작성 — aa1cac26c 구현 대조: 문의 목록의 종목 칩 옆에 진행상태 칩 신설, 두 축 교차 필터, 상태가 1종뿐이면 칩 숨김. 안내문에 이 동작 그대로 반영(누르면 걸러짐·겹쳐보기·재클릭 해제·1종이면 미표시). 발신 주체=AI 시포 명시, 셋업 어조(질책 아님), 링크=membership.html?manage=lesson(라이브 200 확인)+입장코드 1200. ★GM 지시로 실무진방 미발송 — GM 개인 업무보고봇에만 테스트 발송(msg 5796).",
+    "next": "GM 문안 확인·수정 지시 → 반영 후 재확인 → 실무진방 발송 → 시포에게 발신 결과 회신."
   },
   {
     "task_id": "COO-2026-07-23-RECEPTION-HOLD-LINK",
@@ -2351,5 +2351,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 54a84a7bf)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "54a84a7bf25eac0cb051110c568ea5d43f72d096"
+  },
+  {
+    "task_id": "CPO-2026-07-23-ADHOC-6822c6ad6",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9921,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 6822c6ad6)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6822c6ad63a78479edeae29ebd3585467e545738"
   }
 ]
