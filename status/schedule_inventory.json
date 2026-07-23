@@ -921,6 +921,42 @@
       "run_on_start": false
     },
     {
+      "func": "run_nudge",
+      "id": "report_nudge_close",
+      "trigger": {
+        "type": "CronTrigger",
+        "params": {
+          "hour": 22,
+          "minute": 0,
+          "timezone": "Asia/Seoul"
+        }
+      },
+      "call_args": [
+        "close"
+      ],
+      "misfire_grace_time": 600,
+      "coalesce": true,
+      "run_on_start": false
+    },
+    {
+      "func": "run_nudge",
+      "id": "report_nudge_pm",
+      "trigger": {
+        "type": "CronTrigger",
+        "params": {
+          "hour": 17,
+          "minute": 0,
+          "timezone": "Asia/Seoul"
+        }
+      },
+      "call_args": [
+        "pm"
+      ],
+      "misfire_grace_time": 600,
+      "coalesce": true,
+      "run_on_start": false
+    },
+    {
       "func": "run_stream_3_mgmt",
       "id": "stream_3_mgmt_0930",
       "trigger": {
@@ -938,6 +974,6 @@
   ],
   "counts": {
     "windows": 33,
-    "apscheduler": 20
+    "apscheduler": 22
   }
 }
