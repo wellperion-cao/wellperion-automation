@@ -1,5 +1,9 @@
 // 강사 콘텐츠 접수 전용 Apps Script (P1 — 접수 폼 + 저장 + 알림)
-// ⚠️ VOC(.deploy-voc)·문의(Survey.js)·점검·업무 GAS와 완전 독립 — 신규 전용 GAS 프로젝트로 배포한다.
+// ⚠️ VOC(.deploy-voc)·문의(Survey.js)·점검·업무 GAS와는 별개 프로젝트지만 "완전 독립"은 아니다.
+//    이 스크립트가 배포된 GAS 프로젝트(scriptId 1Q5Riwzq…yta4PhGP0)에는
+//    「웰페리온 | 강습 문의 알림」(자동 접수 알림.js · onFormSubmit 폼 트리거)이 함께 살아 있다.
+//    ★clasp push 시 자동 접수 알림.js 가 로컬에 없으면 원격에서 삭제된다 — 반드시 동반 push 할 것.
+//    (2026-07-23 확인 — 종전 주석의 "완전 독립 신규 전용 프로젝트" 서술은 사실이 아니었다)
 // 계획서 정본: docs/superpowers/plans/2026-07-22-강사콘텐츠-접수모듈-P1.md (Task 1)
 // 스펙: docs/superpowers/specs/2026-07-22-강사콘텐츠-접수시안모듈-design.md (§4-1·§5)
 //
