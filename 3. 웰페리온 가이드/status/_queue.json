@@ -2210,5 +2210,19 @@
     "title": "[시우] 종합접수처에 휴회 신청 진입 링크 1개 추가 (시포 인계)",
     "note": "시포 인계(GM 지시 2026-07-23). 회원 휴회 온라인 접수가 2026-07-23 GM go로 라이브 개통됨(배768) — 회원 신청 → ERP 직원 승인/반려까지 폐루프 완성. 종합접수처에서 진입만 열어주면 됨. 요청: 3. 웰페리온 가이드/coo/reception/reception_block.html 접수유형에 「휴회 신청」 1개 추가 → https://wellperion-cao.github.io/wellperion-automation/cpo/member/휴회접수.html 로 이동. ★처리 로직 0 — 저장·검증·승인은 전부 시포 백엔드(GAS v2 member_hold_apply/intake_list/approve)에서 끝남. 종합접수처 시트에는 아무것도 쌓이지 않게 할 것(중복 저장 금지). 기존 6종 접수유형 배선 무변경.",
     "next": "시우 — 링크 배선 후 시크릿 크롬 라이브 확인 → 시포가 폐루프 검수"
+  },
+  {
+    "task_id": "CPO-2026-07-23-ADHOC-60639e889",
+    "clevel": "cpo",
+    "title": "[시포] SUC 저장 시 화면 미반영 회귀 수리 + 타 C레벨 인계 배 2척 (배9909·9910)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9911,
+    "artifact": "★내가 만든 회귀(GM 즉시 발견): SUC 를 문의 목록에서 빼도록 바꿔놓고, 상태 변경 후\n재렌더를 트리거하는 목록(_BKT)엔 LOSS·대기만 넣어 SUC 를 빠뜨렸다 → SUC 로 저장해도\n화면이 그대로라 '저장이 안 된다'로 보였다. (CLI ad-hoc · 커밋 60639e889)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "60639e889764798373f9a545e5dcf6f440f4f882"
   }
 ]
