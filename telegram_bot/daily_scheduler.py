@@ -3105,6 +3105,25 @@ def main():
         except Exception as e:
             logger.warning(f"stream_3_mgmt 등록 실패: {e}")
 
+    # ── git 죽은 잠금 청소 (배9889 · 2026-07-23 시토) ──────────────────────
+    #   `git commit -- <경로>` 가 쓰는 임시 인덱스(next-index-<PID>.lock)는 그 프로세스가
+    #   중간에 죽으면 잔해로 남는다. 2026-07-23 실측 22개(07-20부터 누적) — 동시 커밋
+    #   경합으로 중단된 커밋들이 쌓인 것이다. 죽은 index.lock 이 남으면 그 뒤 **전
+    #   C-Level 커밋이 전부 실패**하므로(시우 발견), 기동할 때 한 번 치우고 시작한다.
+    #   새 예약 슬롯을 만들지 않는 이유 = 기동은 어차피 매일 일어나고, 알림도 안 낸다.
+    #   ★안전은 청소기 쪽이 책임진다: 살아있는 git 프로세스가 있거나 파일이 점유 중이면
+    #   아무것도 건드리지 않는다(오판 시 인덱스 손상). 실패해도 기동을 막지 않는다.
+    try:
+        _janitor = subprocess.run(
+            [sys.executable, "scripts/git_lock_janitor.py", "--apply"],
+            cwd=str(BASE.parent), timeout=120,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        _tail = (_janitor.stdout or b"").decode("utf-8", "replace").strip().splitlines()
+        logger.info("git 잠금 청소: " + (" | ".join(_tail[-2:]) if _tail else "출력 없음"))
+    except Exception as _exc:
+        logger.warning(f"git 잠금 청소 건너뜀(기동은 계속): {type(_exc).__name__}: {_exc}")
+
     logger.info(f"스케줄러 기동 완료. PID={os.getpid()}")
     try:
         scheduler.start()
