@@ -379,7 +379,7 @@ body[data-fmt="portrait"] .mgrid,body[data-fmt="portrait"] .moments{grid-templat
   <span style="width:1px;height:20px;background:rgba(255,255,255,.25);margin:0 2px"></span>
   <span class="h" style="margin-right:-4px">인쇄 바탕</span>
   <button id="ink-ink" onclick="setInk('ink')">잉크 절약</button>
-  <button id="ink-plain" onclick="setInk('plain')">전부 흰 바탕</button>
+  <button id="ink-plain" onclick="setInk('plain')">전부 흰 바탕 (기본)</button>
   <button id="ink-full" onclick="setInk('full')">화면 그대로</button>
 
   <button onclick="window.print()">인쇄 / PDF 저장</button>
@@ -810,7 +810,7 @@ function setInk(v){
     var el=document.getElementById('ink-'+k);
     if(el) el.setAttribute('aria-pressed', k===v);
   });
-  try{ localStorage.setItem('wp_ink', v); }catch(e){}
+  try{ localStorage.setItem('wp_ink2', v); }catch(e){}
 }
-setInk((function(){ try{ return localStorage.getItem('wp_ink')||'ink'; }catch(e){ return 'ink'; } })());
+setInk((function(){ try{ return localStorage.getItem('wp_ink2')||'plain'; }catch(e){ return 'plain'; } })());
 </script>
