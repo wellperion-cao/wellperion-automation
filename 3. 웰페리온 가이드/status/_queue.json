@@ -1312,33 +1312,5 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 242bc959d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "242bc959d3ac5fdef02030348d008c4bf550e14c"
-  },
-  {
-    "task_id": "CTO-2026-07-23-ADHOC-0afbc9a0d",
-    "clevel": "cto",
-    "title": "[시토] 점검 회차별 일지 가시성 개선 + 문의 담당 배정 독려 안내",
-    "status": "DONE",
-    "terminal": true,
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-23",
-    "processed_at": "2026-07-23",
-    "ship_no": 9840,
-    "artifact": "- support_check_summary.facility_worklog: work 필드가 '그 회차까지의 누적'\n  으로 들어와 뒤 회차일수록 앞 내용을 통째로 반복(8회차에 9줄 중복) → 앞\n  회차에 없던 항목만 표시(데이터 무변경·표시만). 신규 없으면 '(추가 작업 없음)'.\n  _MAX_WORKLOG 8→12 (9회차 날 마지막 회차가 '외 1회차'로 숨던 문제). GM 07-23 지적.\n  실측: 1,738자 → 1,260자, 9회차 전부 노출.\n- FACILITY_SESSIONS_TRUSTED False→True 커 (CLI ad-hoc · 커밋 0afbc9a0d)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "0afbc9a0d966724561a3bf728fe4fb9ab8cef5c5"
-  },
-  {
-    "task_id": "COO-2026-07-23-ADHOC-253cf716e",
-    "clevel": "coo",
-    "title": "[시우] 보류 사유·재개조건 2칸 신설 — 보류가 조용히 사라지지 않게 (배9836)",
-    "status": "DONE",
-    "terminal": true,
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-23",
-    "processed_at": "2026-07-23",
-    "ship_no": 9841,
-    "artifact": "GM 2026-07-23 지시: '보류로 넣어두는 경우 이유를 확인해서 넣고, 나중에 진행 업무가\n정립되면 계속 푸시해줄 수 있는 방식'. 1단계 = 적을 칸부터.\n- GAS(.deploy-todo 정본): TODO_HEADERS 맨 끝 append-only 2칸 — 보류사유·재개조건.\n  기존 컬럼 인덱스 불변, initTodoSheet 자동 마이그레이션. 배포 @117, 시트 칸 라이브 확인.\n- 업무 현황 SSOT: 보류 전환 시 두 칸 필수 입력 게이트. 재개조건은 2형식만 허용\n  (DATE:YYYY-MM / AFTER:배 (CLI ad-hoc · 커밋 253cf716e)",
-    "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "253cf716e630d8a6e3235bdd870b180c90525cff"
   }
 ]

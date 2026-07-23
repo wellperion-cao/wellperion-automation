@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>웰페리온 회사소개서 (통합판) · A3 가로 / A4 세로 인쇄</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📘%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --paper:#F4F0EB;      /* 브랜드 페이퍼 */
+  --ink:#221F20;        /* 브랜드 잉크 */
+  --ink2:#2A2622;
+  --dim:#6E655C;
+  --line:#DCD3C7;
+  --accent:#B79F8A;     /* 브랜드 토프 */
+  --accent-d:#8E7862;
+  --hot:#ED5B3F;        /* 포인트 */
+  --white:#FFFFFF;
+  --sans:'Pretendard','Pretendard Variable',-apple-system,'Segoe UI','Malgun Gothic','맑은 고딕',sans-serif;
+  --serif:'Nanum Myeongjo','Batang','바탕',serif;
+  --mono:ui-monospace,'Cascadia Mono',Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:#8E8579;font-family:var(--sans);color:var(--ink);
+     -webkit-font-smoothing:antialiased;word-break:keep-all;line-height:1.62}
+
+/* ── 화면 조작 바 (인쇄 시 사라짐) ── */
+.bar{position:sticky;top:0;z-index:99;background:var(--ink);color:#fff;
+     display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 18px;
+     font-size:13px;box-shadow:0 2px 14px rgba(0,0,0,.28)}
+.bar b{font-size:14px;letter-spacing:-.01em}
+.bar .sp{flex:1}
+.bar button{font:inherit;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.34);
+     background:transparent;color:#fff;border-radius:3px;padding:6px 13px;transition:.14s}
+.bar button:hover{background:rgba(255,255,255,.14)}
+.bar button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+.bar button:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+.bar .hint{color:#C9C0B4;font-size:12px}
+
+/* ── 페이지 ── */
+.doc{display:flex;flex-direction:column;align-items:center;gap:18px;padding:22px 12px 60px}
+.pg{background:var(--paper);position:relative;overflow:hidden;
+    box-shadow:0 6px 30px rgba(0,0,0,.3);flex-shrink:0}
+/* A3 가로 (기본) */
+body[data-fmt="a3"] .pg{width:420mm;height:297mm;padding:17mm 19mm}
+/* A4 세로 */
+body[data-fmt="a4"] .pg{width:210mm;height:297mm;padding:15mm 15mm}
+
+.pg::after{content:attr(data-no);position:absolute;right:14mm;bottom:8mm;
+    font-family:var(--mono);font-size:9.5pt;color:var(--dim);letter-spacing:.1em}
+.pg::before{content:"WELLPERION";position:absolute;left:14mm;bottom:8mm;
+    font-family:var(--mono);font-size:8.5pt;letter-spacing:.24em;color:var(--accent)}
+.pg.cover::before,.pg.cover::after{display:none}
+
+/* ── 타이포 ── */
+.eyebrow{font-family:var(--mono);font-size:9pt;letter-spacing:.22em;color:var(--accent-d);
+   text-transform:uppercase;margin:0 0 8px}
+h1{font-size:34pt;line-height:1.12;letter-spacing:-.035em;font-weight:800;margin:0;text-wrap:balance}
+h2{font-size:22pt;line-height:1.2;letter-spacing:-.028em;font-weight:800;margin:0 0 5mm;text-wrap:balance}
+h3{font-size:12pt;font-weight:800;letter-spacing:-.01em;margin:0 0 2mm}
+p{margin:0;font-size:10.5pt}
+.lead{font-size:12.5pt;line-height:1.66;color:var(--ink2);max-width:62ch}
+.dim{color:var(--dim)}
+.sm{font-size:9.5pt}
+.rule{height:2px;background:var(--ink);width:56px;margin:0 0 6mm}
+
+/* ── 레이아웃 유틸 ── */
+.row{display:flex;gap:9mm}
+.col{display:flex;flex-direction:column;gap:5mm}
+.grow{flex:1;min-width:0}
+body[data-fmt="a4"] .row.stackA4{flex-direction:column;gap:6mm}
+
+/* ── 사진 ── */
+figure{margin:0;position:relative;overflow:hidden;background:#ddd7cf}
+figure img{width:100%;height:100%;object-fit:cover;display:block}
+figcaption{position:absolute;left:0;bottom:0;right:0;
+   background:linear-gradient(transparent,rgba(20,17,16,.82));
+   color:#fff;font-size:8.5pt;letter-spacing:.02em;padding:14mm 4mm 2.6mm}
+.ph-hero{height:118mm}
+body[data-fmt="a4"] .ph-hero{height:84mm}
+.ph-lg{height:92mm}
+body[data-fmt="a4"] .ph-lg{height:62mm}
+.ph-md{height:56mm}
+body[data-fmt="a4"] .ph-md{height:44mm}
+.ph-sm{height:40mm}
+body[data-fmt="a4"] .ph-sm{height:34mm}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm}
+body[data-fmt="a4"] .grid3{grid-template-columns:1fr 1fr}
+
+/* ── 카드/표 ── */
+.card{background:var(--white);border:1px solid var(--line);padding:6mm 7mm}
+.card.tone{background:#EFE9E1;border-color:#DFD5C8}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);background:var(--line)}
+body[data-fmt="a4"] .stats{grid-template-columns:repeat(2,1fr)}
+.stat{background:var(--white);padding:5mm 5mm}
+.stat .k{font-family:var(--mono);font-size:8pt;letter-spacing:.16em;color:var(--accent-d);text-transform:uppercase}
+.stat .v{font-size:19pt;font-weight:800;letter-spacing:-.03em;line-height:1.15;margin-top:1.5mm;font-variant-numeric:tabular-nums}
+.stat .n{font-size:9pt;color:var(--dim);margin-top:1mm}
+
+table{border-collapse:collapse;width:100%;font-size:10pt;background:var(--white)}
+th,td{border:1px solid var(--line);padding:2.8mm 3.4mm;text-align:left;vertical-align:top}
+th{background:#EFE9E1;font-size:9pt;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+td b{font-weight:800}
+
+ul.clean{margin:0;padding-left:5mm;font-size:10.5pt}
+ul.clean li{margin-bottom:1.6mm}
+ul.clean li::marker{color:var(--accent-d)}
+
+.chips{display:flex;flex-wrap:wrap;gap:2mm}
+.chip{border:1px solid var(--accent);color:var(--accent-d);background:var(--white);
+   border-radius:999px;padding:1.6mm 4mm;font-size:9.5pt;font-weight:700}
+
+/* ── 표지 ── */
+.cover{display:flex;flex-direction:column;justify-content:space-between;
+   background:var(--ink);color:#F4F0EB}
+.cover h1{font-size:52pt;letter-spacing:-.045em}
+body[data-fmt="a4"] .cover h1{font-size:36pt}
+.cover .kr{font-family:var(--serif);font-size:19pt;letter-spacing:.02em;color:var(--accent);margin-top:4mm}
+.cover figure{position:absolute;inset:0;opacity:.30}
+.cover figure img{filter:grayscale(.25) contrast(1.05)}
+.cover .z{position:relative;z-index:2}
+.cover .meta{display:flex;gap:9mm;flex-wrap:wrap;font-family:var(--mono);
+   font-size:9pt;letter-spacing:.14em;color:#C9BCA9;text-transform:uppercase}
+
+/* ── 동선 다이어그램 ── */
+.flow{display:flex;align-items:stretch;gap:0;border:1px solid var(--line);background:var(--line)}
+body[data-fmt="a4"] .flow{flex-direction:column}
+.fstep{background:var(--white);padding:5mm;flex:1;display:flex;flex-direction:column;gap:2mm}
+.fstep .t{font-family:var(--mono);font-size:8pt;letter-spacing:.16em;color:var(--accent-d)}
+.fstep .h{font-size:11.5pt;font-weight:800;letter-spacing:-.01em}
+.fstep .d{font-size:9.5pt;color:var(--dim)}
+.fstep.hi{background:#EFE9E1}
+
+/* ── 인쇄 ── */
+@media print{
+  body{background:#fff}
+  .bar{display:none !important}
+  .doc{padding:0;gap:0}
+  .pg{box-shadow:none;margin:0;break-after:page;page-break-after:always}
+  .pg:last-child{break-after:auto;page-break-after:auto}
+  figure img{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@page{margin:0}
+body[data-fmt="a3"]{--pg:A3 landscape}
+body[data-fmt="a4"]{--pg:A4 portrait}
+</style>
+</head>
+<body data-fmt="a3">
+
+<div class="bar">
+  <b>웰페리온 회사소개서 (통합판)</b>
+  <span class="hint">회사소개서 + 브랜드확장(Cinq Mondes) 합본 · 13장</span>
+  <span class="sp"></span>
+  <button id="b-a3" aria-pressed="true" onclick="setFmt('a3')">A3 가로</button>
+  <button id="b-a4" aria-pressed="false" onclick="setFmt('a4')">A4 세로</button>
+  <button onclick="window.print()">인쇄 / PDF 저장</button>
+</div>
+
+<div class="doc">
+
+<!-- 01 표지 -->
+<section class="pg cover" data-no="01">
+  <figure><img src="assets/facility/pool.jpg" alt="웰페리온 25m 실내 수영장"></figure>
+  <div class="z">
+    <p class="eyebrow" style="color:var(--accent)">Wellperion · Company Introduction</p>
+    <p class="meta">Premium Lifestyle Club &nbsp;·&nbsp; Since 2017 &nbsp;·&nbsp; 한남동 Seoul</p>
+  </div>
+  <div class="z">
+    <h1>A Day,<br>Well Completed.</h1>
+    <p class="kr">하루의 완성, 웰페리온</p>
+  </div>
+  <div class="z">
+    <p class="meta">주식회사 웰페리온 &nbsp;·&nbsp; 2026 &nbsp;·&nbsp; For Members · Team · Partners</p>
+  </div>
+</section>
+
+<!-- 02 세 관점 -->
+<section class="pg" data-no="02">
+  <p class="eyebrow">How to read this</p>
+  <h2>같은 회사를, 세 독자가 다르게 읽습니다.</h2>
+  <div class="rule"></div>
+  <p class="lead">이 문서는 회원·직원·파트너 세 관점을 함께 담았습니다. 어느 자리에서 읽든 결론은 하나입니다 — <b>웰페리온은 하루의 품질을 설계하는 곳</b>입니다.</p>
+  <div class="row" style="margin-top:7mm">
+    <div class="card grow">
+      <p class="eyebrow">For Members</p>
+      <h3>회원 관점</h3>
+      <p class="sm dim">운동부터 회복까지, 하루의 완성도를 한 공간·한 멤버십 안에서 설계합니다. 오늘 온 사람이 내일도 오게 만드는 것이 목표입니다.</p>
+    </div>
+    <div class="card grow">
+      <p class="eyebrow">For Team</p>
+      <h3>직원 관점</h3>
+      <p class="sm dim">사람이 바뀌어도 품질이 흔들리지 않도록, 운영을 시스템으로 만듭니다. 체크리스트·자동화·AI가 반복을 맡고 사람은 회원을 봅니다.</p>
+    </div>
+    <div class="card grow">
+      <p class="eyebrow">For Partners</p>
+      <h3>파트너 관점</h3>
+      <p class="sm dim">9년간 검증된 운영 자산 위에 브랜드를 함께 확장합니다. 공간·회원·운영 노하우가 파트너의 진입 비용을 낮춥니다.</p>
+    </div>
+  </div>
+  <div class="row" style="margin-top:7mm">
+    <figure class="ph-md grow"><img src="assets/facility/lounge.jpg" alt="회원 라운지"><figcaption>회원 라운지</figcaption></figure>
+    <figure class="ph-md grow"><img src="assets/facility/gym-cardio.jpg" alt="유산소 존"><figcaption>유산소 존</figcaption></figure>
+    <figure class="ph-md grow"><img src="assets/facility/spa-treatment.jpg" alt="Cinq Mondes 트리트먼트룸"><figcaption>Cinq Mondes 트리트먼트룸</figcaption></figure>
+  </div>
+</section>
+
+<!-- 03 Who we are -->
+<section class="pg" data-no="03">
+  <p class="eyebrow">01 · Who We Are</p>
+  <h2>한남동에서 시작된<br>프리미엄 라이프스타일의 새 기준.</h2>
+  <div class="rule"></div>
+  <div class="row stackA4">
+    <div class="col grow">
+      <p class="lead">웰페리온은 2017년 한남동에서 시작한 <b>3,000평 규모의 프리미엄 라이프스타일 클럽</b>입니다. 우리는 건강을 일회성 이벤트가 아니라 <b>매일의 루틴</b>으로 자리 잡게 만드는 일을 합니다.</p>
+      <div class="card tone">
+        <h3>우리의 미션</h3>
+        <p style="font-size:13pt;font-weight:800;letter-spacing:-.02em;margin-bottom:2mm">회원 한 사람의 건강한 하루를 완성한다.</p>
+        <p class="sm dim">운동은 시작보다 지속이 어렵고, 회복은 늘 뒤로 미뤄집니다. 웰페리온은 운동과 회복을 <b>한 공간 · 한 멤버십 · 한 동선</b> 안에 담아, 하루하루의 건강이 자연스럽게 평생으로 이어지도록 설계합니다.</p>
+      </div>
+      <div>
+        <h3>포지셔닝</h3>
+        <p class="sm dim">한남동이라는 동네의 결을 따라 지어진 <b>프리미엄 라이프스타일 클럽</b>. 운동 코어를 중심에 두고 회복·힐링을 같은 공간에서 제공하며, 세계적인 파트너 브랜드와의 협업으로 경험의 폭을 넓혀갑니다.</p>
+      </div>
+    </div>
+    <figure class="ph-lg grow"><img src="assets/facility/lounge.jpg" alt="회원 라운지"><figcaption>회원 라운지 — 운동 전후의 머무름까지 설계한 공간</figcaption></figure>
+  </div>
+  <div class="stats" style="margin-top:7mm">
+    <div class="stat"><div class="k">Established</div><div class="v">2017</div><div class="n">한남동 오픈 · 9년차</div></div>
+    <div class="stat"><div class="k">Scale</div><div class="v">3,000평</div><div class="n">종합 스포츠클럽</div></div>
+    <div class="stat"><div class="k">Core</div><div class="v">Train + Restore</div><div class="n">운동과 회복 통합</div></div>
+    <div class="stat"><div class="k">Partner</div><div class="v">Cinq Mondes</div><div class="n">Paris · 럭셔리 스파</div></div>
+  </div>
+</section>
+
+<!-- 04 9년의 궤적 -->
+<section class="pg" data-no="04">
+  <p class="eyebrow">02 · Track Record</p>
+  <h2>9년의 궤적, 그리고 다음 10년.</h2>
+  <div class="rule"></div>
+  <p class="lead">2017년 이래 웰페리온은 멤버십 운영·회원 경험·시설 관리의 노하우를 축적해 왔습니다. 이 <b>검증된 운영 자산</b>이 회복과 파트너십을 더해 브랜드를 확장하는 토대가 됩니다.</p>
+  <div class="flow" style="margin-top:7mm">
+    <div class="fstep"><div class="t">Phase 1</div><div class="h">운영의 확립</div><div class="d">한남동 3,000평 종합 스포츠클럽 오픈. 멤버십 · 시설 운영 체계 구축.</div></div>
+    <div class="fstep"><div class="t">Phase 2</div><div class="h">경험의 확장</div><div class="d">그룹 클래스 · 퍼포먼스 · 웰니스로 프로그램 라인업 확대. 한 멤버십 안의 경험 다각화.</div></div>
+    <div class="fstep hi"><div class="t">Phase 3 · 현재</div><div class="h">회복의 통합</div><div class="d">파리 럭셔리 스파 <b>Cinq Mondes</b> 입점. 운동과 회복을 한 동선 안에서 완성.</div></div>
+    <div class="fstep"><div class="t">Phase 4 · 다음</div><div class="h">시스템의 확장</div><div class="d">운영 자동화·AI 고도화 위에서 위탁운영·모델 복제로 확장.</div></div>
+  </div>
+  <div class="row" style="margin-top:7mm">
+    <div class="card grow">
+      <h3>축적된 운영 자산</h3>
+      <ul class="clean">
+        <li>대규모 회원 멤버십 운영 경험</li>
+        <li>16개 카테고리 프로그램 동시 운영</li>
+        <li>시설·안전·법정점검 관리 체계</li>
+        <li>파트너 강사·팀 운영 구조</li>
+      </ul>
+    </div>
+    <div class="card grow">
+      <h3>다음 10년의 방향</h3>
+      <ul class="clean">
+        <li>수익화 구조 고도화 — 기존 수익 극대화 + 신규 수익원</li>
+        <li>공간 밸류업 — 시설·인테리어·서비스 품질 격상</li>
+        <li>운영 자동화 — AI·시스템 기반 효율 극대화</li>
+        <li>브랜드 확장 — 위탁운영 · 모델 복제</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 05 운동 코어 -->
+<section class="pg" data-no="05">
+  <p class="eyebrow">03 · The Movement Core</p>
+  <h2>운동의 코어.<br>하루를 깨우는 자리.</h2>
+  <div class="rule"></div>
+  <p class="lead">웰페리온의 중심에는 종합 스포츠클럽이 있습니다. 헬스부터 수영·골프·스쿼시·그룹 클래스까지 — <b>한 멤버십 안에서 매일의 운동이 완결</b>됩니다.</p>
+  <div class="grid2" style="margin-top:6mm">
+    <figure class="ph-lg"><img src="assets/facility/pool.jpg" alt="25m 실내 수영장"><figcaption>25m 실내 수영장</figcaption></figure>
+    <figure class="ph-lg"><img src="assets/facility/gym-cardio.jpg" alt="유산소 존"><figcaption>유산소 존 — 창 너머 한남동</figcaption></figure>
+  </div>
+  <div class="grid3" style="margin-top:4mm">
+    <figure class="ph-md"><img src="assets/facility/gym-weight.jpg" alt="웨이트 존"><figcaption>웨이트 존 · TechnoGym</figcaption></figure>
+    <figure class="ph-md"><img src="assets/facility/golf.jpg" alt="실내 골프"><figcaption>실내 골프 · GDR</figcaption></figure>
+    <figure class="ph-md"><img src="assets/facility/squash.jpg" alt="스쿼시 코트"><figcaption>스쿼시 코트</figcaption></figure>
+  </div>
+</section>
+
+<!-- 06 프로그램 -->
+<section class="pg" data-no="06">
+  <p class="eyebrow">04 · Programs</p>
+  <h2>한 공간, 열여섯 가지 경험.</h2>
+  <div class="rule"></div>
+  <div class="row stackA4">
+    <div class="grow">
+      <table>
+        <thead><tr><th style="width:26%">카테고리</th><th>프로그램</th></tr></thead>
+        <tbody>
+          <tr><td><b>핵심 스포츠</b></td><td>헬스(TechnoGym) · 수영(25m) · 골프(GDR) · 스쿼시</td></tr>
+          <tr><td><b>그룹 운동</b></td><td>G.X. · 요가 · 필라테스(STOTT) · 바레 · 발레</td></tr>
+          <tr><td><b>퍼포먼스</b></td><td>뮤지컬 · 줌바 · 라인댄스</td></tr>
+          <tr><td><b>웰니스 · 회복</b></td><td>명상 · 스파·사우나 · 헤어살롱 · 라운지·카페</td></tr>
+        </tbody>
+      </table>
+      <div class="card tone" style="margin-top:5mm">
+        <h3>왜 한 곳에 모으는가</h3>
+        <p class="sm dim">운동·회복·휴식이 각각 다른 장소에 있으면 하루가 끊깁니다. 웰페리온은 이동 없이 이어지는 <b>한 동선</b>을 만들어, 지속이 어려운 습관을 지속 가능하게 만듭니다.</p>
+      </div>
+    </div>
+    <figure class="ph-lg grow"><img src="assets/facility/pilates.jpg" alt="필라테스 스튜디오"><figcaption>필라테스 스튜디오 · STOTT 기구</figcaption></figure>
+  </div>
+  <div class="chips" style="margin-top:6mm">
+    <span class="chip">헬스</span><span class="chip">수영 25m</span><span class="chip">골프 GDR</span><span class="chip">스쿼시</span>
+    <span class="chip">G.X.</span><span class="chip">요가</span><span class="chip">필라테스</span><span class="chip">바레</span>
+    <span class="chip">발레</span><span class="chip">뮤지컬</span><span class="chip">줌바</span><span class="chip">라인댄스</span>
+    <span class="chip">명상</span><span class="chip">스파·사우나</span><span class="chip">헤어살롱</span><span class="chip">라운지·카페</span>
+  </div>
+</section>
+
+<!-- 07 회복 파트너십 -->
+<section class="pg" data-no="07">
+  <p class="eyebrow">05 · The Restore Partnership</p>
+  <h2>회복의 깊이를 더하다 —<br>Cinq Mondes.</h2>
+  <div class="rule"></div>
+  <div class="row stackA4">
+    <div class="col grow">
+      <p class="lead">운동이 하루를 깨운다면, <b>회복은 하루를 정리</b>합니다. 웰페리온은 회복의 격을 높이기 위해 파리의 럭셔리 스파 브랜드 <b>Cinq Mondes(생크몽드)</b>를 외부 파트너 시설로 맞이했습니다.</p>
+      <div class="card">
+        <h3>파트너십의 형태</h3>
+        <table style="margin-top:3mm">
+          <tr><th style="width:34%">구분</th><td>외부 파트너 시설 · 웰페리온 내 입점</td></tr>
+          <tr><th>브랜드</th><td>Cinq Mondes · Paris</td></tr>
+          <tr><th>영역</th><td>스파 트리트먼트 · 페이셜 · 보디</td></tr>
+          <tr><th>회원 경험</th><td>운동 후 같은 동선에서 회복까지 연결</td></tr>
+        </table>
+      </div>
+      <p class="sm dim">검증된 운영 자산 위에 세계적인 파트너십을 더해, 브랜드를 한 단계 더 넓혀갑니다. 파트너에게는 <b>이미 모인 회원과 검증된 공간</b>이, 회원에게는 <b>이동 없는 회복</b>이 남습니다.</p>
+    </div>
+    <div class="col grow">
+      <figure class="ph-lg"><img src="assets/facility/spa-entrance.jpg" alt="Cinq Mondes 입구"><figcaption>Cinq Mondes 입구</figcaption></figure>
+      <figure class="ph-md"><img src="assets/facility/spa-treatment.jpg" alt="트리트먼트룸"><figcaption>트리트먼트룸</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- 08 회복 라인업 -->
+<section class="pg" data-no="08">
+  <p class="eyebrow">06 · Restore Lineup</p>
+  <h2>운동 다음의 시간까지,<br>같은 공간 안에서.</h2>
+  <div class="rule"></div>
+  <p class="lead">스파·사우나·살롱·라운지 — 회복은 부가 서비스가 아니라 <b>하루를 완성하는 마지막 조각</b>입니다.</p>
+  <div class="grid3" style="margin-top:6mm">
+    <figure class="ph-lg"><img src="assets/facility/bath.jpg" alt="스파·사우나 욕장"><figcaption>스파 · 사우나 욕장</figcaption></figure>
+    <figure class="ph-lg"><img src="assets/facility/spa-relax.jpg" alt="릴랙스 라운지"><figcaption>릴랙스 라운지</figcaption></figure>
+    <figure class="ph-lg"><img src="assets/facility/salon.jpg" alt="헤어살롱"><figcaption>헤어살롱</figcaption></figure>
+  </div>
+  <div class="row" style="margin-top:6mm">
+    <div class="card grow"><h3>스파 · 사우나</h3><p class="sm dim">운동 직후의 이완. 회원 누구나 같은 동선에서 이용합니다.</p></div>
+    <div class="card grow"><h3>Cinq Mondes</h3><p class="sm dim">전문 트리트먼트로 회복의 깊이를 더하는 파트너 시설.</p></div>
+    <div class="card grow"><h3>살롱 · 라운지</h3><p class="sm dim">헤어살롱과 라운지·카페까지 — 다음 일정으로 그대로 이어집니다.</p></div>
+  </div>
+</section>
+
+<!-- 09 하루 동선 -->
+<section class="pg" data-no="09">
+  <p class="eyebrow">07 · One Flow</p>
+  <h2>운동과 회복이<br>한 동선 안에서 이어진다.</h2>
+  <div class="rule"></div>
+  <p class="lead">웰페리온의 차별점은 시설의 개수가 아니라 <b>끊기지 않는 순서</b>입니다. 이동·예약·결제가 하나로 묶여 하루가 끊기지 않습니다.</p>
+  <div class="flow" style="margin-top:8mm">
+    <div class="fstep"><div class="t">Step 1</div><div class="h">도착 · 준비</div><div class="d">라운지에서 시작. 라커·샤워까지 한 층 안에서.</div></div>
+    <div class="fstep hi"><div class="t">Step 2</div><div class="h">운동</div><div class="d">헬스 · 수영 · 골프 · 스쿼시 · 그룹 클래스</div></div>
+    <div class="fstep hi"><div class="t">Step 3</div><div class="h">회복</div><div class="d">사우나 · 스파 · Cinq Mondes 트리트먼트</div></div>
+    <div class="fstep"><div class="t">Step 4</div><div class="h">정돈 · 이동</div><div class="d">헤어살롱 · 라운지 · 카페 — 다음 일정으로</div></div>
+  </div>
+  <div class="row" style="margin-top:8mm">
+    <figure class="ph-md grow"><img src="assets/facility/gym-weight.jpg" alt="웨이트 존"><figcaption>운동</figcaption></figure>
+    <figure class="ph-md grow"><img src="assets/facility/bath.jpg" alt="사우나"><figcaption>회복</figcaption></figure>
+    <figure class="ph-md grow"><img src="assets/facility/salon.jpg" alt="살롱"><figcaption>정돈</figcaption></figure>
+  </div>
+</section>
+
+<!-- 10 확장 -->
+<section class="pg" data-no="10">
+  <p class="eyebrow">08 · Expansion</p>
+  <h2>검증된 자산 위에,<br>브랜드를 넓혀간다.</h2>
+  <div class="rule"></div>
+  <div class="row stackA4">
+    <div class="col grow">
+      <p class="lead">웰페리온의 확장은 새 건물을 짓는 일이 아니라 <b>검증된 운영을 옮기는 일</b>입니다. 9년의 운영 체계·매뉴얼·자동화가 그대로 이식됩니다.</p>
+      <table>
+        <thead><tr><th style="width:30%">확장 축</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td><b>파트너 브랜드</b></td><td>Cinq Mondes처럼 검증된 외부 브랜드를 공간 안으로 — 회원 경험을 넓히고 파트너는 회원 기반을 얻는다</td></tr>
+          <tr><td><b>위탁 운영</b></td><td>웰페리온의 운영 체계를 다른 시설에 적용 — 사람이 아니라 시스템이 품질을 보증</td></tr>
+          <tr><td><b>모델 복제</b></td><td>한남동에서 검증한 모델을 다른 지역·다른 규모로</td></tr>
+          <tr><td><b>공간 자산 수익화</b></td><td>유휴 공간·콘텐츠·광고 등 보유 자산의 수익 전환</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col grow">
+      <div class="card tone">
+        <h3>확장의 전제 — 시스템</h3>
+        <p class="sm dim">확장은 운영이 흔들리지 않을 때만 가능합니다. 그래서 웰페리온은 <b>사람이 바뀌어도 품질이 유지되는 구조</b>를 먼저 만듭니다 — 체크리스트 경영, 매뉴얼 정비, AI 기반 운영 자동화.</p>
+      </div>
+      <figure class="ph-lg"><img src="assets/facility/spa-relax.jpg" alt="릴랙스 라운지"><figcaption>검증된 공간 경험이 확장의 자산이 된다</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- 11 포지셔닝 -->
+<section class="pg" data-no="11">
+  <p class="eyebrow">09 · Positioning</p>
+  <h2>웰페리온이 서 있는 자리.</h2>
+  <div class="rule"></div>
+  <p class="lead">웰페리온은 <b>운동 시설</b>도, <b>스파</b>도, <b>사교 클럽</b>도 아닙니다. 그 사이에 있는 <b>하루의 인프라</b>입니다.</p>
+  <div class="row" style="margin-top:7mm">
+    <div class="card grow">
+      <p class="eyebrow">일반 스포츠센터</p>
+      <h3>운동만 해결</h3>
+      <p class="sm dim">시설과 가격 중심. 회복·머무름은 각자 알아서.</p>
+    </div>
+    <div class="card grow" style="border-color:var(--accent);border-width:2px;background:#EFE9E1">
+      <p class="eyebrow" style="color:var(--hot)">웰페리온</p>
+      <h3>하루 전체를 설계</h3>
+      <p class="sm dim">운동 + 회복 + 머무름을 한 동선에. 매일 오는 이유를 만든다.</p>
+    </div>
+    <div class="card grow">
+      <p class="eyebrow">럭셔리 스파 · 클럽</p>
+      <h3>회복·사교만 해결</h3>
+      <p class="sm dim">특별한 날의 방문. 일상의 루틴은 되지 못한다.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:7mm">
+    <h3>브랜드 언어</h3>
+    <div class="row" style="margin-top:3mm">
+      <div class="grow"><p class="sm"><b>쓰는 말</b></p><p class="sm dim">스포츠클럽 · 프리미엄 라이프스타일 클럽 · 하루의 완성 · 루틴 · 회복</p></div>
+      <div class="grow"><p class="sm"><b>쓰지 않는 말</b></p><p class="sm dim">피트니스 · 헬스장 · 하이엔드 프라이빗 · 사교</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 철학 -->
+<section class="pg" data-no="12">
+  <p class="eyebrow">10 · Brand</p>
+  <h2>하나의 철학,<br>아홉 개의 얼굴.</h2>
+  <div class="rule"></div>
+  <p class="lead">프로그램은 열여섯 가지지만 철학은 하나입니다 — <b>회원 한 사람의 건강한 하루를 완성한다.</b> 모든 공간과 서비스는 그 문장에서 나옵니다.</p>
+  <div class="grid3" style="margin-top:7mm">
+    <div class="card"><h3>일상성</h3><p class="sm dim">특별한 날이 아니라 매일. 지속을 설계한다.</p></div>
+    <div class="card"><h3>연결성</h3><p class="sm dim">운동과 회복이 끊기지 않는다. 한 동선.</p></div>
+    <div class="card"><h3>절제된 고급감</h3><p class="sm dim">과시하지 않는다. 결로 드러낸다.</p></div>
+    <div class="card"><h3>동네의 결</h3><p class="sm dim">한남동이라는 맥락 위에 지어졌다.</p></div>
+    <div class="card"><h3>시스템</h3><p class="sm dim">사람이 바뀌어도 품질이 유지된다.</p></div>
+    <div class="card"><h3>파트너십</h3><p class="sm dim">잘하는 곳과 함께 경험을 넓힌다.</p></div>
+  </div>
+  <div class="card tone" style="margin-top:7mm">
+    <h3>컬러 &amp; 타이포그래피</h3>
+    <div class="chips" style="margin-top:3mm">
+      <span class="chip" style="background:#221F20;color:#F4F0EB;border-color:#221F20">잉크 #221F20</span>
+      <span class="chip" style="background:#B79F8A;color:#221F20;border-color:#B79F8A">토프 #B79F8A</span>
+      <span class="chip" style="background:#F4F0EB">페이퍼 #F4F0EB</span>
+      <span class="chip" style="background:#ED5B3F;color:#fff;border-color:#ED5B3F">포인트 #ED5B3F</span>
+    </div>
+  </div>
+</section>
+
+<!-- 13 마무리 -->
+<section class="pg cover" data-no="13">
+  <figure><img src="assets/facility/spa-entrance.jpg" alt="Cinq Mondes 입구"></figure>
+  <div class="z">
+    <p class="eyebrow" style="color:var(--accent)">Contact</p>
+  </div>
+  <div class="z">
+    <h1>하루의 완성,<br>여기서 시작하세요.</h1>
+    <p class="kr">A Day, Well Completed.</p>
+  </div>
+  <div class="z">
+    <table style="background:transparent;color:#F4F0EB;max-width:170mm">
+      <tr><th style="width:26%;background:rgba(244,240,235,.10);color:#F4F0EB;border-color:rgba(244,240,235,.22)">상호</th>
+          <td style="border-color:rgba(244,240,235,.22)">주식회사 웰페리온 (Wellperion)</td></tr>
+      <tr><th style="background:rgba(244,240,235,.10);color:#F4F0EB;border-color:rgba(244,240,235,.22)">주소</th>
+          <td style="border-color:rgba(244,240,235,.22)">서울특별시 용산구 서빙고로 413, 101동 지1층 101호외 2 (한남동)</td></tr>
+      <tr><th style="background:rgba(244,240,235,.10);color:#F4F0EB;border-color:rgba(244,240,235,.22)">대표 전화</th>
+          <td style="border-color:rgba(244,240,235,.22)">02-6261-1200</td></tr>
+      <tr><th style="background:rgba(244,240,235,.10);color:#F4F0EB;border-color:rgba(244,240,235,.22)">문의</th>
+          <td style="border-color:rgba(244,240,235,.22)">wellperion.com/ko/inquiry &nbsp;·&nbsp; 투어·상담은 사전 예약제</td></tr>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<script>
+function setFmt(f){
+  document.body.dataset.fmt=f;
+  document.getElementById('b-a3').setAttribute('aria-pressed', f==='a3');
+  document.getElementById('b-a4').setAttribute('aria-pressed', f==='a4');
+  // 인쇄 용지 규격을 함께 바꾼다(브라우저 인쇄창 기본값과 일치시키기 위함)
+  var s=document.getElementById('pagerule');
+  if(!s){ s=document.createElement('style'); s.id='pagerule'; document.head.appendChild(s); }
+  s.textContent='@page{size:'+(f==='a3'?'A3 landscape':'A4 portrait')+';margin:0}';
+  try{ localStorage.setItem('wp_intro_fmt', f); }catch(e){}
+}
+setFmt((function(){ try{ return localStorage.getItem('wp_intro_fmt')||'a3'; }catch(e){ return 'a3'; } })());
+</script>
+</body>
+</html>
