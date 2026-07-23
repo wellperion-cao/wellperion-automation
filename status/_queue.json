@@ -1312,5 +1312,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 242bc959d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "242bc959d3ac5fdef02030348d008c4bf550e14c"
+  },
+  {
+    "task_id": "CTO-2026-07-23-ADHOC-0afbc9a0d",
+    "clevel": "cto",
+    "title": "[시토] 점검 회차별 일지 가시성 개선 + 문의 담당 배정 독려 안내",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9840,
+    "artifact": "- support_check_summary.facility_worklog: work 필드가 '그 회차까지의 누적'\n  으로 들어와 뒤 회차일수록 앞 내용을 통째로 반복(8회차에 9줄 중복) → 앞\n  회차에 없던 항목만 표시(데이터 무변경·표시만). 신규 없으면 '(추가 작업 없음)'.\n  _MAX_WORKLOG 8→12 (9회차 날 마지막 회차가 '외 1회차'로 숨던 문제). GM 07-23 지적.\n  실측: 1,738자 → 1,260자, 9회차 전부 노출.\n- FACILITY_SESSIONS_TRUSTED False→True 커 (CLI ad-hoc · 커밋 0afbc9a0d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "0afbc9a0d966724561a3bf728fe4fb9ab8cef5c5"
   }
 ]
