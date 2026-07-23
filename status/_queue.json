@@ -2737,14 +2737,14 @@
     "task_id": "CTO-2026-07-23-BOT-TOKEN-ROTATION",
     "clevel": "cto",
     "title": "[시토] 텔레그램 봇 토큰 재발급 — 공개 저장소에 평문 노출(2026-06-24부터·시모 발견)",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "🛳️크루즈",
     "from": "cmo",
     "origin": "cmo",
     "enqueued_at": "2026-07-23",
     "ship_no": 9952,
-    "note": "시모 발견·보고(텔레그램=시토 도메인이라 인계). 2026-07-23 실측 — `.deploy-instructor/자동 접수 알림.js:103` 에 @namuki_report_bot 봇 토큰이 평문 하드코딩돼 있었다(라이브 GAS 에서는 07-23 파일 폐기·제거 완료 → 버전5 배포). 동일 토큰이 `_archive/status_backups_2026-06-24/check_props_backup_2026-06-24.json` 에도 커밋돼 있어 2026-06-24 부터 저장소 이력에 남아 있다. 이 저장소는 GitHub Pages 로 공개된다. ★필요 조치 = ①토큰 재발급 ②ScriptProperties(또는 .env) 이전 — 코드 하드코딩 금지 ③저장소 이력 정리. 재발급 시 봇 알림이 일시 중단될 수 있어 GM 결재 필요. (보안상 note 에 토큰 값은 적지 않는다 — 위 두 파일 경로에서 확인.)",
-    "next": "GM 결재 후 시토 — 토큰 재발급·이전·이력 정리"
+    "note": "시모 발견·보고(텔레그램=시토 도메인이라 인계). 2026-07-23 실측 — `.deploy-instructor/자동 접수 알림.js:103` 에 @namuki_report_bot 봇 토큰이 평문 하드코딩돼 있었다(라이브 GAS 에서는 07-23 파일 폐기·제거 완료 → 버전5 배포). 동일 토큰이 `_archive/status_backups_2026-06-24/check_props_backup_2026-06-24.json` 에도 커밋돼 있어 2026-06-24 부터 저장소 이력에 남아 있다. 이 저장소는 GitHub Pages 로 공개된다. ★필요 조치 = ①토큰 재발급 ②ScriptProperties(또는 .env) 이전 — 코드 하드코딩 금지 ③저장소 이력 정리. 재발급 시 봇 알림이 일시 중단될 수 있어 GM 결재 필요. (보안상 note 에 토큰 값은 적지 않는다 — 위 두 파일 경로에서 확인.) | [2026-07-23 GM go·A안 확정] GM 결정: 이력 재작성 없이 재발급만(A안) — 커밋 해시 전면 변경 위험 회피, 재발급이 실질 해결. [1차 차단 완료] 작업트리 평문 토큰 제거: _archive/status_backups_2026-06-24/check_props_backup_2026-06-24.json 1곳 가림(다른 항목 무손상), 숨김 폴더 .deploy-* 7종 포함 전수 재확인 0건, HEAD 반영 확인(커밋 82ce30b49). [재발급 준비] 토큰 소비처 전수: 파이썬 104곳=telegram_bot/.env 한 줄 / GAS 6개 프로젝트 스크립트 속성(check·funnel·funnel-v2·voc·todo=TELEGRAM_BOT_TOKEN 또는 BOT_TOKEN, procurement=TG_BOT_TOKEN). 속성은 코드 아닌 프로젝트 설정이라 GM 화면 작업 필요. 런북=status/briefs/시토_봇토큰_재발급_런북_20260723.md. [도구] scripts/rotate_bot_token.py 신설 — 새 토큰 getMe 생존 확인 후에만 .env 교체, 타임스탬프 백업, 한 줄만 교체, 기록 후 재확인, 토큰 값 미출력. --verify-only 로 현재 토큰 생존 확인 통과(@namuki_report_bot).",
+    "next": "GM 액션 대기: @BotFather 에서 Revoke current token → 새 토큰을 시토에게 전달 → 시토가 rotate_bot_token.py 로 .env 교체 + 봇·스케줄러 재기동(파이썬 알림 복구) → GM 이 GAS 6곳 속성 교체 → 시토가 telegram_health_check.py 로 전 채널 실발신 실측. 후속=비밀값 커밋 차단 가드 신설."
   },
   {
     "task_id": "CPO-2026-07-23-ADHOC-be339771a",
