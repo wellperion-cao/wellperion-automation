@@ -154,8 +154,8 @@
   .b-gray{--bm:#a09b8e;color:var(--ink-soft)}
   .b-gold{--bm:var(--gold);background:#f6efdd;border-color:#dcc89a;color:#7d6434}
 
-  /* 채용 탭 — 채용공고 카드 지원자 펼침 목록에서 전형 단계 "불합격" 행 배경 표시
-     (행 인라인 background:var(--surface-2)를 덮어야 하므로 !important — 2026-07-23 매니저 지시) */
+  /* 채용 탭 — 채용공고 카드 지원자 펼침 목록에서 전형 단계 "불합격"·"탈락" 행 배경 표시
+     (행 인라인 background:var(--surface-2)를 덮어야 하므로 !important — 2026-07-23 매니저 지시, 탈락 확장 동일자 확정) */
   .appl-rejected{background:var(--red-bg) !important}
 
   /* 채널 게시 칩 — 라커 태그 문법으로 재문법화.
@@ -1394,7 +1394,8 @@ function applicantRow(a){
       actions+='<a href="'+esc(origUrl)+'" target="_blank" class="btn-sm">원본 ↗</a>';
     }
   }
-  var rejCls=String(stage).trim()==="불합격"?' class="appl-rejected"':'';
+  var rejStage=String(stage).trim();
+  var rejCls=(rejStage==="불합격"||rejStage==="탈락")?' class="appl-rejected"':'';
   return '<div'+rejCls+' data-applicant="'+esc(pageId)+'" data-applname="'+esc(a["지원자명"]||"")+'" data-apppid="'+apppid+'" title="클릭: 단계·면접일정 변경 / 불합격 처리" style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'+
       '<div style="display:flex;align-items:center;gap:8px">'+
