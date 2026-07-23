@@ -336,7 +336,12 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
             name = html.escape(str(r.get("name", "") or "-").strip() or "-")
             raw_field = _short_program(str(r.get(_field_for(kind), "") or "").strip())
             type_field = html.escape(f"{_type_label(kind)}({raw_field or '-'})")
-            owner = html.escape(str(r.get("owner", "") or "").strip() or "담당미정")
+            # 표시도 판정과 같은 기준 — "웹 자동접수" 등 자동 입력값은 실담당자가 아니므로
+            # 사람 이름처럼 보이지 않게 '담당미정'으로 통일한다(_is_unassigned_active 와 동일 규약).
+            owner_raw = str(r.get("owner", "") or "").strip()
+            if owner_raw in _AUTO_OWNER_VALUES:
+                owner_raw = ""
+            owner = html.escape(owner_raw or "담당미정")
             label = html.escape(_progress_label(r, kind != "membership"))
             rows_fmt.append((name, type_field, owner, label))
         # 전각(한글=2폭) 보정 고정폭 정렬 — 한글/영문 혼재해도 [라벨] 칸이 세로로 맞도록.
