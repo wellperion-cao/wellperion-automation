@@ -5,333 +5,701 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
 <title>웰페리온 브랜드 가이드 — Brand Guidelines</title>
-<style>
-  :root{
-    --paper:#f3efe7; --paper2:#ece6da; --card:#fbf8f2; --ink:#221f20; --ink2:#544b41; --dim:#8c8375;
-    --line:#e2dacd; --beige:#b79f8a; --beige-deep:#8f7659; --coral:#ed5b3f; --black:#221f20;
-    --maxw:1020px;
-  }
-  @media (prefers-color-scheme:dark){:root{--paper:#171513;--paper2:#1f1c19;--card:#221f1c;--ink:#f2ede4;--ink2:#c5bbae;--dim:#948a7c;--line:#332e28;--beige:#c8b199;--beige-deep:#b79f8a;--coral:#ff6f52}}
-  :root[data-theme="dark"]{--paper:#171513;--paper2:#1f1c19;--card:#221f1c;--ink:#f2ede4;--ink2:#c5bbae;--dim:#948a7c;--line:#332e28;--beige:#c8b199;--beige-deep:#b79f8a;--coral:#ff6f52}
-  :root[data-theme="light"]{--paper:#f3efe7;--paper2:#ece6da;--card:#fbf8f2;--ink:#221f20;--ink2:#544b41;--dim:#8c8375;--line:#e2dacd;--beige:#b79f8a;--beige-deep:#8f7659;--coral:#ed5b3f}
-  *{box-sizing:border-box}
-  body{margin:0}
-  .doc{font-family:-apple-system,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-    background:var(--paper); color:var(--ink); -webkit-font-smoothing:antialiased; line-height:1.62}
-  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 30px}
-  .eyebrow{font-size:11.5px; font-weight:800; letter-spacing:.24em; text-transform:uppercase; color:var(--beige-deep)}
-  h2{font-size:clamp(25px,3.6vw,36px); font-weight:900; letter-spacing:-.02em; margin:12px 0 6px; text-wrap:balance}
-  .sec-sub{font-size:14.5px; color:var(--ink2); max-width:56ch; margin:0 0 30px}
-  section{padding:64px 0; border-top:1px solid var(--line)}
-  .num{font-size:12px; font-weight:800; color:var(--beige-deep); letter-spacing:.1em}
-
-  /* 표지 */
-  .cover{background:linear-gradient(160deg, var(--black), #2c2825 70%, var(--beige-deep)); color:#f3efe7; padding:96px 0 84px; border-top:none}
-  .cover .wrap{position:relative}
-  .cover .eyebrow{color:var(--beige)}
-  .cover h1{font-size:clamp(40px,8vw,80px); line-height:1; letter-spacing:-.03em; font-weight:900; margin:20px 0 8px}
-  .cover .slo{font-size:clamp(16px,2.4vw,22px); color:var(--beige); font-style:italic; margin:0 0 26px}
-  .cover .pos{font-size:15px; color:rgba(243,239,231,.82); max-width:48ch; margin:0}
-  .cover .meta{display:flex; gap:38px; flex-wrap:wrap; margin-top:52px; padding-top:26px; border-top:1px solid rgba(183,159,138,.32)}
-  .cover .meta .n{font-size:24px; font-weight:900; color:#fff} .cover .meta .l{font-size:11px; color:var(--beige); letter-spacing:.12em; text-transform:uppercase; margin-top:3px}
-
-  /* 목차 */
-  .toc{display:flex; flex-wrap:wrap; gap:8px; margin-top:30px}
-  .toc a{font-size:12.5px; font-weight:700; color:var(--ink2); text-decoration:none; border:1px solid var(--line); border-radius:999px; padding:6px 13px; background:var(--card)}
-
-  .lead-card{background:var(--card); border:1px solid var(--line); border-left:4px solid var(--beige); border-radius:14px; padding:20px 22px; margin:0 0 24px}
-  .lead-card .m{font-size:19px; font-weight:800; letter-spacing:-.01em}
-  .lead-card .s{font-size:13.5px; color:var(--ink2); margin-top:6px}
-
-  .grid{display:grid; gap:14px}
-  .g2{grid-template-columns:1fr 1fr} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
-  @media(max-width:780px){.g3,.g4{grid-template-columns:1fr 1fr}} @media(max-width:520px){.g2,.g3,.g4{grid-template-columns:1fr}}
-
-  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 18px}
-  .card h4{margin:0 0 6px; font-size:15px; font-weight:800} .card p{margin:0; font-size:13px; color:var(--ink2)}
-
-  /* 컬러 스와치 */
-  .sw{border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--card)}
-  .sw .chip{height:96px} .sw .meta{padding:12px 14px}
-  .sw .nm{font-size:14px; font-weight:800} .sw .hex{font-size:12.5px; font-weight:700; color:var(--beige-deep); font-variant-numeric:tabular-nums; letter-spacing:.02em}
-  .sw .use{font-size:11.5px; color:var(--dim); margin-top:4px}
-
-  /* 사업부 팔레트 */
-  .pal{border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--card)}
-  .pal .bar{height:54px; display:flex}
-  .pal .bar span{flex:1}
-  .pal .meta{padding:9px 12px}
-  .pal .k{font-size:12.5px; font-weight:800} .pal .h{font-size:10.5px; color:var(--dim); font-variant-numeric:tabular-nums; margin-top:2px}
-
-  table{width:100%; border-collapse:collapse; font-size:13px; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-top:6px}
-  th{background:var(--paper2); text-align:left; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink2); padding:10px 13px; border-bottom:1px solid var(--line)}
-  td{padding:11px 13px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink)}
-  tr:last-child td{border-bottom:none}
-  td b{font-weight:800}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; background:var(--paper2); padding:1px 6px; border-radius:5px}
-
-  /* do / dont */
-  .dd{display:grid; grid-template-columns:1fr 1fr; gap:14px}
-  @media(max-width:640px){.dd{grid-template-columns:1fr}}
-  .dd .col{border:1px solid var(--line); border-radius:14px; padding:18px; background:var(--card)}
-  .dd .do{border-top:3px solid #4f8a5b} .dd .dont{border-top:3px solid var(--coral)}
-  .dd h4{margin:0 0 12px; font-size:14px; font-weight:800}
-  .dd li{list-style:none; font-size:13px; margin:0 0 9px; padding-left:22px; position:relative; color:var(--ink)}
-  .dd .do li::before{content:"✓"; position:absolute; left:0; color:#4f8a5b; font-weight:900}
-  .dd .dont li::before{content:"✕"; position:absolute; left:0; color:var(--coral); font-weight:900}
-
-  .tag{display:inline-block; font-size:11px; font-weight:800; letter-spacing:.04em; padding:3px 10px; border-radius:999px; background:color-mix(in srgb,var(--beige) 22%, transparent); color:var(--beige-deep)}
-  .callout{background:color-mix(in srgb,var(--coral) 8%, var(--card)); border:1px solid color-mix(in srgb,var(--coral) 30%, var(--line)); border-radius:12px; padding:13px 16px; font-size:12.5px; color:var(--ink2); margin-top:14px}
-  .callout b{color:var(--ink)}
-
-  footer{padding:44px 0 60px; color:var(--dim); font-size:12px; border-top:1px solid var(--line)}
-  .sian{background:var(--coral); color:#fff; text-align:center; font-size:12px; font-weight:800; letter-spacing:.03em; padding:8px 12px}
-</style>
-
 <link rel="stylesheet" href="../../assets/wp-typography.css">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   웰페리온 브랜드 가이드 — A3 인쇄 정본
+   · 값 SSOT = scripts/brand_constants.py (여기서 새 값 만들지 않는다)
+   · A3 페이지 분할 방식 = 회사문서/회사소개서_A3섹터_샘플_20260722.html 선례 그대로
+     (고정 크기 .sheet 프레임 + @page{size:A3 portrait;margin:0} + page-break-after)
+     → 화면에서 보이는 '장' 단위 = 인쇄되는 '장' 단위 (WYSIWYG 인쇄 단위 일치)
+   · 외부 CDN·라이브러리 0. 순수 HTML/CSS/바닐라 JS.
+   ══════════════════════════════════════════════════════════════ */
+
+:root{
+  /* 브랜드 값 — brand_constants.py 그대로 */
+  --beige:#B79F8A;
+  --beige-deep:#8F7659;
+  --black:#221F20;
+  --highlight:#ED5B3F;
+  --white:#FFFFFF;
+  --gray:#AAA098;          /* GRAY — 날짜·메타 */
+  --chip-beige:#BAA28C;    /* CHIP_BEIGE */
+  --sep:#ABA197;           /* SEP_LINE */
+  /* 지면 */
+  --paper:#F4F0EB;
+  --ink:#221F20;
+  --ink-soft:#6E655C;
+  --rule:rgba(34,31,32,.13);
+  --rule-beige:rgba(183,159,138,.42);
+  --stage:#4A4541;
+  /* A3 297×420mm @96dpi */
+  --w:1123px;
+  --h:1587px;
+  --pad:88px;
+  --z:1;
+}
+@media (prefers-color-scheme:dark){ :root{ --stage:#1B1917; } }
+:root[data-theme="dark"]{ --stage:#1B1917; }
+:root[data-theme="light"]{ --stage:#4A4541; }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--stage)}
+body{
+  background:var(--stage);
+  font-family:"Pretendard Variable","Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ── 화면: A3 지면 축소 미리보기 (모바일 가로 스크롤 0) ───────── */
+.stage{ padding:34px 0 60px; }
+.holder{ width:calc(var(--w) * var(--z)); height:calc(var(--h) * var(--z)); margin:0 auto 30px; }
+.sheet{
+  position:relative; overflow:hidden;
+  width:var(--w); height:var(--h);
+  background:var(--paper); color:var(--ink);
+  transform:scale(var(--z)); transform-origin:top left;
+  box-shadow:0 20px 64px rgba(0,0,0,.34);
+}
+/* 좁은 화면: 지면을 통째로 축소해 가로 스크롤을 0으로 만든다.
+   CSS calc()는 길이÷길이를 무단위 비율로 못 만들므로 구간 폴백(각 구간의 하한 폭 기준,
+   즉 절대 넘치지 않는 값)을 두고, 아래 스크립트가 실제 폭에 맞춰 정밀값으로 덮어쓴다.
+   스크립트가 안 돌아도 가로 스크롤 0은 이 구간값만으로 보장된다. */
+@media (max-width:1219px){ :root{ --z:.87 } }
+@media (max-width:1023px){ :root{ --z:.65 } }
+@media (max-width:767px) { :root{ --z:.50 } }
+@media (max-width:599px) { :root{ --z:.39 } }
+@media (max-width:479px) { :root{ --z:.33 } }
+@media (max-width:413px) { :root{ --z:.30 } }
+@media (max-width:374px) { :root{ --z:.25 } }
+
+/* ── 지면 공통 골격 ─────────────────────────────────────────── */
+.pg{ position:absolute; inset:0; padding:var(--pad) var(--pad) 74px; display:flex; flex-direction:column; }
+.pg-head{ display:flex; align-items:baseline; gap:18px; }
+.pg-num{ font-size:15px; font-weight:800; letter-spacing:.16em; color:var(--highlight); }
+.pg-kicker{ font-size:15px; font-weight:700; letter-spacing:.34em; text-transform:uppercase; color:var(--beige-deep); }
+h2{ font-size:58px; line-height:1.15; font-weight:800; letter-spacing:-.028em; margin:20px 0 0; max-width:22ch; }
+h2 .b{ color:var(--beige-deep); }
+.intro{ margin-top:26px; font-size:21px; line-height:1.82; color:var(--ink-soft); max-width:74ch; }
+.intro b{ color:var(--ink); font-weight:700; }
+.rule{ height:1px; background:var(--rule-beige); margin:34px 0 0; }
+.body{ flex:1; padding-top:34px; }
+.pgfoot{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:auto; padding-top:22px; border-top:2px solid var(--black);
+  font-size:14px; letter-spacing:.12em; color:var(--ink-soft);
+}
+.pgfoot b{ color:var(--black); font-weight:800; letter-spacing:.26em; }
+
+/* ── 소제목 ───────────────────────────────────────────────── */
+h3{
+  font-size:15px; font-weight:800; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--beige-deep); padding-bottom:11px; margin:0 0 20px;
+  border-bottom:2px solid var(--rule-beige);
+  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+}
+h3 .ko{ letter-spacing:.02em; text-transform:none; font-size:19px; color:var(--ink); font-weight:800; }
+.mt{ margin-top:38px; }
+
+/* ── 격자 ─────────────────────────────────────────────────── */
+.grid{ display:grid; gap:0 44px; }
+.g2{ grid-template-columns:1fr 1fr } .g3{ grid-template-columns:repeat(3,1fr) } .g4{ grid-template-columns:repeat(4,1fr) }
+.gap{ gap:26px 44px }
+
+/* ── 항목 블록: 상자 대신 가는 괘선 (차분한 프리미엄) ────────── */
+.item{ border-top:1px solid var(--black); padding:15px 0 4px; }
+.item .t{ font-size:19px; font-weight:800; letter-spacing:-.01em; }
+.item .d{ font-size:17px; line-height:1.66; color:var(--ink-soft); margin-top:7px; }
+.item .d b{ color:var(--ink); font-weight:700 }
+
+/* ── 미션 ─────────────────────────────────────────────────── */
+.mission{ border-left:3px solid var(--beige); padding:6px 0 6px 26px; margin-bottom:34px; }
+.mission .m{ font-size:33px; font-weight:800; letter-spacing:-.02em; line-height:1.32; }
+.mission .s{ font-size:17px; color:var(--ink-soft); margin-top:11px; }
+
+/* ── 표 ───────────────────────────────────────────────────── */
+table{ width:100%; border-collapse:collapse; }
+th{
+  text-align:left; font-size:13.5px; font-weight:800; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--beige-deep); padding:0 16px 11px 0; border-bottom:2px solid var(--black);
+}
+th:last-child, td:last-child{ padding-right:0 }
+td{ font-size:18px; line-height:1.6; padding:13px 16px 13px 0; border-bottom:1px solid var(--rule); vertical-align:top; }
+tr:last-child td{ border-bottom:none }
+td b{ font-weight:800 }
+td.k{ font-weight:800; white-space:nowrap; }
+td.no{ color:var(--highlight); font-weight:800; white-space:nowrap; width:1%; }
+.tnum td:first-child{ color:var(--beige-deep); font-weight:800; width:1%; white-space:nowrap; }
+.mono{ font-family:ui-monospace,SFMono-Regular,"Consolas",Menlo,monospace; font-size:16px; letter-spacing:-.01em; color:var(--beige-deep); font-weight:600; }
+
+/* ── 컬러 스와치 ──────────────────────────────────────────── */
+.sw .chip{ height:120px; border:1px solid var(--rule); }
+.sw .nm{ font-size:18px; font-weight:800; margin-top:12px; }
+.sw .hex{ font-size:16px; font-weight:700; color:var(--beige-deep); font-variant-numeric:tabular-nums; letter-spacing:.02em; margin-top:3px; }
+.sw .use{ font-size:15px; line-height:1.5; color:var(--ink-soft); margin-top:6px; }
+.pal .swbar{ height:62px; display:flex; border:1px solid var(--rule); }
+.pal .swbar span{ flex:1 }
+.pal .k{ font-size:17px; font-weight:800; margin-top:10px }
+.pal .h{ font-size:14px; color:var(--ink-soft); font-variant-numeric:tabular-nums; margin-top:3px }
+.tone{ display:flex; gap:0 }
+.tone .t{ flex:1 }
+.tone .t i{ display:block; height:44px; border:1px solid var(--rule); border-right:none }
+.tone .t:last-child i{ border-right:1px solid var(--rule) }
+.tone .t span{ display:block; font-size:14px; color:var(--ink-soft); margin-top:8px; font-variant-numeric:tabular-nums }
+.tone .t b{ display:block; font-size:15px; font-weight:800; color:var(--ink) }
+
+/* ── 해도/금지 2열 ────────────────────────────────────────── */
+.dd .col h4{ font-size:19px; font-weight:800; padding-bottom:11px; border-bottom:2px solid var(--black); margin-bottom:14px; }
+.dd .dont h4{ border-bottom-color:var(--highlight); color:var(--highlight) }
+.dd li{ list-style:none; font-size:18px; line-height:1.62; margin-bottom:12px; padding-left:28px; position:relative; }
+.dd li b{ font-weight:800 }
+.dd .do li::before{ content:"—"; position:absolute; left:0; color:var(--beige-deep); font-weight:800 }
+.dd .dont li::before{ content:"×"; position:absolute; left:2px; color:var(--highlight); font-weight:800; font-size:20px; line-height:1.5 }
+
+/* ── 부가 ─────────────────────────────────────────────────── */
+.note{ border-top:2px solid var(--black); margin-top:30px; padding-top:15px; font-size:16.5px; line-height:1.72; color:var(--ink-soft); }
+.note b{ color:var(--ink); font-weight:800 }
+.note.warn{ border-top-color:var(--highlight) }
+.tag{ display:inline-block; font-size:13px; font-weight:800; letter-spacing:.06em; padding:4px 11px; background:rgba(183,159,138,.22); color:var(--beige-deep); vertical-align:middle; }
+.tag.no{ background:rgba(237,91,63,.13); color:var(--highlight) }
+.plate{ background:var(--black); color:var(--white); padding:40px 26px; text-align:center;
+  min-height:158px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.plate .lg{ font-size:31px; font-weight:800; letter-spacing:.05em; color:var(--beige) }
+.plate .lg.em{ color:#63BBA0; font-size:42px; letter-spacing:0 }
+.plate .cap{ font-size:14px; letter-spacing:.11em; margin-top:13px; color:rgba(255,255,255,.62) }
+.cta-line{ font-size:25px; font-weight:800; padding:15px 20px; background:rgba(183,159,138,.20); border-left:3px solid var(--beige); margin-top:6px; }
+.spec{ font-size:17px; line-height:1.7; color:var(--ink-soft) }
+.spec b{ color:var(--ink); font-weight:700 }
+
+/* ── 표지 ─────────────────────────────────────────────────── */
+.cover{ background:var(--black); color:var(--white); }
+.cover .pg{ padding:96px var(--pad) 78px }
+.cover .top{ display:flex; justify-content:space-between; align-items:flex-start }
+.cover .mark{ font-size:26px; font-weight:800; letter-spacing:.2em; color:var(--beige) }
+.cover .eyebrow{ font-size:14px; letter-spacing:.38em; text-transform:uppercase; color:var(--beige); font-weight:600; text-align:right; line-height:2 }
+.cover h1{ font-size:96px; line-height:1.12; font-weight:800; letter-spacing:-.03em; margin-top:150px }
+.cover h1 .a{ color:var(--beige) }
+.cover .slo{ font-size:29px; letter-spacing:.24em; text-transform:uppercase; color:var(--beige); font-weight:600; margin-top:42px }
+.cover .lede{ margin-top:34px; font-size:22px; line-height:1.85; color:rgba(255,255,255,.80); max-width:66ch }
+.cover .lede b{ color:var(--white); font-weight:700 }
+.cover .hr{ height:1px; background:rgba(183,159,138,.34); margin:auto 0 34px }  /* margin-top:auto — 메타·목차를 지면 하단에 고정 */
+.cover .meta{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px }
+.cover .meta .k{ font-size:13px; letter-spacing:.24em; text-transform:uppercase; color:var(--beige); font-weight:600; margin-bottom:11px }
+.cover .meta .v{ font-size:26px; font-weight:800; line-height:1.3 }
+.cover .meta .v small{ display:block; font-size:15px; font-weight:400; color:rgba(255,255,255,.60); margin-top:5px; letter-spacing:0 }
+.toc{ margin-top:44px; padding-top:26px; border-top:1px solid rgba(183,159,138,.34); columns:2; column-gap:56px }
+.toc a{
+  display:flex; align-items:baseline; gap:14px; text-decoration:none; color:rgba(255,255,255,.86);
+  font-size:18px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.09); break-inside:avoid;
+}
+.toc a .n{ color:var(--beige); font-weight:800; font-size:14px; letter-spacing:.1em; min-width:26px }
+.toc a .p{ margin-left:auto; color:rgba(255,255,255,.45); font-size:14px; font-variant-numeric:tabular-nums }
+.cover .foot{ display:flex; justify-content:space-between; align-items:center; margin-top:38px; padding-top:24px; border-top:1px solid rgba(183,159,138,.2); font-size:14px; letter-spacing:.1em; color:rgba(255,255,255,.5) }
+
+/* ── 인쇄 조작부 (인쇄물엔 안 나감) ───────────────────────── */
+.toolbar{
+  position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:12px 20px; background:rgba(34,31,32,.92); color:#EFE9E0;
+  border-bottom:1px solid rgba(183,159,138,.3); backdrop-filter:blur(6px);
+}
+.toolbar .ttl{ font-size:14px; font-weight:800; letter-spacing:.13em; color:var(--beige) }
+.toolbar .hint{ font-size:13px; color:rgba(239,233,224,.62) }
+.toolbar button{
+  font:inherit; font-size:14px; font-weight:800; letter-spacing:.04em; cursor:pointer;
+  margin-left:auto; padding:9px 18px; color:var(--black); background:var(--beige); border:none;
+}
+.toolbar button:hover{ background:#c8b199 }
+.toolbar button:focus-visible{ outline:2px solid var(--highlight); outline-offset:2px }
+@media (max-width:640px){ .toolbar{ padding:10px 14px } .toolbar .hint{ display:none } }
+
+/* ══ 인쇄: 실제 A3 세로 · 섹터 1개 = 용지 1장 ══════════════ */
+@page{ size:A3 portrait; margin:0; }
+@media print{
+  :root{ --z:1 }
+  html,body{ background:#fff; overflow:visible }
+  .toolbar{ display:none !important }
+  .stage{ padding:0 }
+  .holder{ width:auto; height:auto; margin:0 }
+  /* 지면 크기는 실측 A3(297×420mm)로 못박는다.
+     height:100%로 두면 부모 높이가 auto라 0으로 접혀 백지 11장이 나온다(실측 확인). */
+  .sheet{
+    width:297mm; height:420mm; margin:0; box-shadow:none; transform:none;
+    page-break-after:always; break-after:page; page-break-inside:avoid; break-inside:avoid;
+  }
+  .holder:last-child .sheet{ page-break-after:auto; break-after:auto }
+  .cover{ -webkit-print-color-adjust:exact; print-color-adjust:exact }
+  *{ -webkit-print-color-adjust:exact; print-color-adjust:exact }
+}
+</style>
 </head>
 <body>
-<div class="doc">
-  <div class="sian">웰페리온 브랜드 가이드 · 값 SSOT = scripts/brand_constants.py · 벤치마킹 환영</div>
 
-  <!-- 표지 -->
-  <header class="cover"><div class="wrap">
-    <span class="eyebrow">Wellperion · Brand Guidelines</span>
-    <h1>웰페리온<br>브랜드 가이드</h1>
-    <p class="slo">"A Day, Well Completed." — 하루의 완성, 웰페리온</p>
-    <p class="pos">스포츠·스파·웰니스가 한 공간에 통합된 <strong>프리미엄 라이프스타일 클럽</strong>. 이 가이드는 웰페리온이 세상에 보이는 방식 — 목소리, 색, 타이포, 사진, 로고 — 의 단일 기준입니다.</p>
-    <div class="meta">
-      <div><div class="n">한남동 3,000평</div><div class="l">단일 프라이빗 시설</div></div>
-      <div><div class="n">9년</div><div class="l">2017 설립 · 운영 노하우</div></div>
-      <div><div class="n">6개 종목</div><div class="l">전용 브랜드 팔레트</div></div>
-    </div>
-    <nav class="toc">
-      <a href="#essence">01 본질</a><a href="#voice">02 톤 & 보이스</a><a href="#color">03 컬러</a><a href="#type">04 타이포</a>
-      <a href="#logo">05 로고</a><a href="#photo">06 사진</a><a href="#caption">07 캡션·CTA</a><a href="#accounts">08 두 계정</a>
-      <a href="#forbidden">09 금지 규칙</a><a href="#angle">10 콘텐츠 각</a>
-    </nav>
-  </div></header>
-
-  <!-- 01 본질 -->
-  <section id="essence"><div class="wrap">
-    <span class="num">01</span><span class="eyebrow"> · Essence</span>
-    <h2>우리는 무엇인가</h2>
-    <p class="sec-sub">규모가 아니라 하루의 품질로 승부합니다. 운동(Train)과 회복(Restore)을 한 동선 안에서 완성하는 원스톱 라이프스타일 인프라.</p>
-    <div class="lead-card"><div class="m">회원 한 사람의 건강한 하루를 완성한다.</div><div class="s">— 미션 (내부 SSOT). 모든 콘텐츠·서비스·결정의 기준점.</div></div>
-    <div class="grid g2">
-      <div class="card"><h4>외부 포지셔닝 <span class="tag">콘텐츠 정본</span></h4><p>“프리미엄 라이프스타일 클럽” · “스포츠·스파·웰니스가 한 공간에” · “하루의 품질을 설계하는 곳”.</p></div>
-      <div class="card"><h4>내부 포지셔닝 <span class="tag" style="background:color-mix(in srgb,var(--coral) 16%,transparent);color:var(--coral)">외부 노출 금지</span></h4><p>“하이엔드 프라이빗 스포츠클럽 멤버십 커뮤니티” — 내부 SSOT. 외부 콘텐츠엔 <b>‘프리미엄 라이프스타일’</b>로 순화.</p></div>
-    </div>
-    <div class="callout"><b>외부 노출 규칙</b> — 규모·연차(2017 설립·9년·3,000평·정원 1,000·일 방문 600)는 신뢰 신호로 노출 OK. 매출·ARPU·영업이익률 등 돈 지표는 외부 비공개. 전화·주소도 콘텐츠 비노출(문의 링크만).</div>
-  </div></section>
-
-  <!-- 02 톤 & 보이스 -->
-  <section id="voice"><div class="wrap">
-    <span class="num">02</span><span class="eyebrow"> · Voice & Tone</span>
-    <h2>어떻게 말하는가</h2>
-    <p class="sec-sub">간판이 아니라 공간이 말하는 브랜드. 압박 없이, 담담한 통찰까지만.</p>
-    <div class="grid g3" style="margin-bottom:20px">
-      <div class="card"><h4>① 절제된 고급감</h4><p>과시하지 않는 럭셔리. 여백과 정돈으로 격을 드러낸다.</p></div>
-      <div class="card"><h4>② 경험 중심</h4><p>기능·스펙이 아니라 회원이 겪는 하루의 감각을 말한다.</p></div>
-      <div class="card"><h4>③ 일관된 호칭</h4><p>언제나 “스포츠클럽”. ‘피트니스’는 쓰지 않는다.</p></div>
-    </div>
-    <div class="dd" style="margin-bottom:22px">
-      <div class="col do"><h4>이렇게</h4><ul>
-        <li>“한남동에 성인을 위한 전문 강습이 있다” 정도로 <b>알리는 선</b>까지만</li>
-        <li>천천히 루틴을 만드는 결 — 서두르지 않고 꾸준함을 말함</li>
-        <li>전문성은 은근히. 실제 한 일만 서술</li>
-      </ul></div>
-      <div class="col dont"><h4>이건 금지</h4><ul>
-        <li>“지금 등록!” 식 강한 후킹·세일즈 압박</li>
-        <li>무분별한 가격 할인 소구</li>
-        <li>과장·미사여구·설교조</li>
-      </ul></div>
-    </div>
-    <h4 style="font-size:15px;margin:6px 0 8px">콘텐츠의 ‘각’ — 운동 ↔ 마음</h4>
-    <p class="sec-sub" style="margin-bottom:12px">참신함의 핵심 = 운동을 마음·정신건강·현대인의 삶과 연결. 기능 클리셰(1:1 맞춤·전신 운동)는 반려. 기획 첫 질문: <b>“이걸 삶의 어떤 진실과 연결하나?”</b></p>
-    <table>
-      <tr><th>종목</th><th>마음의 각</th><th>종목</th><th>마음의 각</th></tr>
-      <tr><td><b>수영</b></td><td>디지털 디톡스</td><td><b>골프</b></td><td>조급함·힘 빼기</td></tr>
-      <tr><td><b>스쿼시</b></td><td>잡생각 제로</td><td><b>필라테스</b></td><td>몸과 화해</td></tr>
-      <tr><td><b>PT</b></td><td>자기 직면</td><td><b>그룹강습</b></td><td>어른의 외로움</td></tr>
-    </table>
-  </div></section>
-
-  <!-- 03 컬러 -->
-  <section id="color"><div class="wrap">
-    <span class="num">03</span><span class="eyebrow"> · Color</span>
-    <h2>컬러 팔레트</h2>
-    <p class="sec-sub">값의 단일 출처 = <span class="mono">scripts/brand_constants.py</span>. 새 값 도입 금지. 모든 서브 브랜드의 액센트는 베이지 고정.</p>
-    <div class="grid g4" style="margin-bottom:22px">
-      <div class="sw"><div class="chip" style="background:#B79F8A"></div><div class="meta"><div class="nm">BEIGE</div><div class="hex">#B79F8A</div><div class="use">브랜드 1차색 · 로고·강조·분리선</div></div></div>
-      <div class="sw"><div class="chip" style="background:#221F20"></div><div class="meta"><div class="nm">BLACK</div><div class="hex">#221F20</div><div class="use">배경·다크 오버레이</div></div></div>
-      <div class="sw"><div class="chip" style="background:#ED5B3F"></div><div class="meta"><div class="nm">HIGHLIGHT</div><div class="hex">#ED5B3F</div><div class="use">액센트·CTA 포인트에만 소량</div></div></div>
-      <div class="sw"><div class="chip" style="background:#FFFFFF;border-bottom:1px solid var(--line)"></div><div class="meta"><div class="nm">WHITE</div><div class="hex">#FFFFFF</div><div class="use">다크 배경 위 본문</div></div></div>
-    </div>
-    <h4 style="font-size:15px;margin:6px 0 10px">개인 계정 · 에메랄드 <span class="tag">메인 팔레트와 별개 트랙 · 혼용 금지</span></h4>
-    <div class="grid g4" style="margin-bottom:24px">
-      <div class="sw"><div class="chip" style="background:#63BBA0"></div><div class="meta"><div class="nm">에메랄드 (다크)</div><div class="hex">#63BBA0</div><div class="use">@namuk 마커 강조 원</div></div></div>
-      <div class="sw"><div class="chip" style="background:#2E6E5B"></div><div class="meta"><div class="nm">에메랄드 (라이트)</div><div class="hex">#2E6E5B</div><div class="use">개인 계정 라이트 변형</div></div></div>
-    </div>
-    <h4 style="font-size:15px;margin:6px 0 10px">사업부별 팔레트 (BRAND_PRESETS) <span class="tag">액센트=베이지 고정</span></h4>
-    <div class="grid g4">
-      <div class="pal"><div class="bar"><span style="background:#3F71B0"></span><span style="background:#253B6C"></span></div><div class="meta"><div class="k">스포츠클럽</div><div class="h">#3F71B0 · #253B6C</div></div></div>
-      <div class="pal"><div class="bar"><span style="background:#D2D2D2"></span><span style="background:#77968E"></span></div><div class="meta"><div class="k">스쿼시</div><div class="h">#D2D2D2 · #77968E</div></div></div>
-      <div class="pal"><div class="bar"><span style="background:#B54840"></span><span style="background:#512B32"></span></div><div class="meta"><div class="k">PT</div><div class="h">#B54840 · #512B32</div></div></div>
-      <div class="pal"><div class="bar"><span style="background:#337342"></span><span style="background:#132117"></span></div><div class="meta"><div class="k">골프</div><div class="h">#337342 · #132117</div></div></div>
-      <div class="pal"><div class="bar"><span style="background:#215768"></span><span style="background:#172C42"></span></div><div class="meta"><div class="k">수영</div><div class="h">#215768 · #172C42</div></div></div>
-      <div class="pal"><div class="bar"><span style="background:#C44558"></span><span style="background:#822A37"></span></div><div class="meta"><div class="k">필라테스</div><div class="h">#C44558 · #822A37</div></div></div>
-      <div class="pal"><div class="bar"><span style="background:#C2BAD6"></span><span style="background:#563A61"></span></div><div class="meta"><div class="k">체조</div><div class="h">#C2BAD6 · #563A61</div></div></div>
-      <div class="pal"><div class="bar"><span style="background:#8B1A2F"></span><span style="background:#C9A96E"></span><span style="background:#FAF7F2"></span></div><div class="meta"><div class="k">생크몽드 스파</div><div class="h">버건디·골드·크림</div></div></div>
-    </div>
-    <div class="callout"><b>정본 주의</b> — 공식 가이드 PDF의 <span class="mono">BLACK #B79F8A</span>는 오타. <b>BLACK = #221F20</b>이 정본(코드 프리셋 (34,31,32) 근거). 스파 팔레트만 유일하게 액센트가 베이지가 아닌 와인 버건디 #8B1A2F.</div>
-  </div></section>
-
-  <!-- 04 타이포 -->
-  <section id="type"><div class="wrap">
-    <span class="num">04</span><span class="eyebrow"> · Typography</span>
-    <h2>타이포그래피</h2>
-    <p class="sec-sub">실사용 표준 = <b>Pretendard</b>(무료·동봉). 공식 가이드의 유료 지정 폰트는 자동화 파이프라인에서 Pretendard로 대체(승인된 대체).</p>
-    <div class="grid g3" style="margin-bottom:18px">
-      <div class="card"><div style="font-size:30px;font-weight:900;letter-spacing:-.01em">한글 헤딩</div><h4 style="margin-top:10px">Pretendard Bold</h4><p>한글 제목·강조</p></div>
-      <div class="card"><div style="font-size:22px;font-weight:600">본문 텍스트</div><h4 style="margin-top:10px">Pretendard SemiBold</h4><p>본문·부제</p></div>
-      <div class="card"><div style="font-size:18px;font-weight:500;color:var(--ink2)">부가 정보</div><h4 style="margin-top:10px">Pretendard Medium</h4><p>메타·캡션·풋터</p></div>
-    </div>
-    <table>
-      <tr><th>구분</th><th>공식 지정(유료)</th><th>실사용 정본</th></tr>
-      <tr><td>영문 대제목</td><td>ITC Avant Garde / Hudson NY Serif</td><td><b>Pretendard Bold</b> (대문자 + 자간)</td></tr>
-      <tr><td>본문(한/영)</td><td>Pretendard Medium·SemiBold</td><td><b>Pretendard</b> Medium·SemiBold · 줄간 1.45~1.55</td></tr>
-    </table>
-    <div class="callout">폰트 경로 정본 = <span class="mono">2. 브랜드_자료/02_로고&워터마크&FONT/font/</span> (Pretendard-Bold·SemiBold·Medium.otf). 비주얼가이드의 옛 <span class="mono">font/</span> 경로는 폐기.</div>
-  </div></section>
-
-  <!-- 05 로고 -->
-  <section id="logo"><div class="wrap">
-    <span class="num">05</span><span class="eyebrow"> · Logo</span>
-    <h2>로고</h2>
-    <p class="sec-sub">W 심볼 + WELLPERION 워드마크. 다크 배경엔 베이지, 사진/밝은 배경엔 화이트.</p>
-    <div class="grid g2" style="margin-bottom:18px">
-      <div class="card" style="background:var(--black);text-align:center;padding:34px 18px"><div style="font-size:30px;font-weight:900;color:var(--beige);letter-spacing:.04em">W · WELLPERION</div><div style="font-size:12px;color:var(--beige);margin-top:10px;letter-spacing:.1em">공식 @wellperion · 풀 로고 (logo_style="full")</div></div>
-      <div class="card" style="background:var(--black);text-align:center;padding:34px 18px"><div style="font-size:36px;font-weight:900;color:#63BBA0">W</div><div style="font-size:12px;color:#63BBA0;margin-top:10px;letter-spacing:.1em">개인 @namuk · W 심볼만 (logo_style="symbol")</div></div>
-    </div>
-    <table>
-      <tr><th>자산</th><th>용도</th></tr>
-      <tr><td class="mono">wellperion_white_alpha.png</td><td>사진 위(밝은 배경) — 반투명 다크 박스와 함께</td></tr>
-      <tr><td class="mono">wellperion_beige_alpha.png</td><td>다크 배경(텍스트 슬라이드) — 박스 없이</td></tr>
-    </table>
-    <div class="callout">경로 = <span class="mono">instagram/_assets/logo/</span>. 풀 로고 락업의 “SPA & FITNESS” 표기는 <b>현상 유지 확정</b>(GM 결재 2026-06-04) — 락업 변경·재합성 안 함. 재플래그 금지.</div>
-  </div></section>
-
-  <!-- 06 사진 -->
-  <section id="photo"><div class="wrap">
-    <span class="num">06</span><span class="eyebrow"> · Photography & Video</span>
-    <h2>사진 · 영상</h2>
-    <p class="sec-sub">모든 메인 슬라이드 사진은 <b>BLACK↔BEIGE 듀오톤</b> 필수(#221F20↔#B79F8A) — 어떤 사진이든 동일한 럭셔리 매거진 톤으로.</p>
-    <div class="grid g3">
-      <div class="card"><h4>색감</h4><p>따뜻한 뉴트럴 — 베이지 대리석·우드·아이보리. 차가운 형광 회피</p></div>
-      <div class="card"><h4>광원</h4><p>밝은 자연광 + 균일한 다운라이트. 그림자 적고 깨끗</p></div>
-      <div class="card"><h4>구도</h4><p>와이드 건축 구도 — 수평·대칭, 1점 투시 깊이감</p></div>
-      <div class="card"><h4>피사체</h4><p>인물 없음(공간 위주). 시설·마감재가 주인공</p></div>
-      <div class="card"><h4>레이아웃</h4><p>상단 65% 사진(듀오톤) + 하단 35% 정보 영역</p></div>
-      <div class="card"><h4>아이콘</h4><p>선(line)으로만. <b>면 칠 아이콘 절대 금지</b></p></div>
-    </div>
-
-    <h4 style="font-size:15px;margin:28px 0 10px">슬라이드 자막·레이아웃 스타일 <span class="tag">슬라이드/영상 공통</span></h4>
-    <table>
-      <tr><th>요소</th><th>규칙</th></tr>
-      <tr><td><b>헤더</b></td><td>좌측 로고 + 우측 사업부 컬러 칩</td></tr>
-      <tr><td><b>액센트 바</b></td><td>HIGHLIGHT #ED5B3F 또는 베이지 가는 바</td></tr>
-      <tr><td><b>영문 라벨</b></td><td>대문자 + 자간(letter-spacing), 베이지 작게</td></tr>
-      <tr><td><b>풋터</b></td><td>하단 중앙 WELLPERION (베이지)</td></tr>
-      <tr><td><b>정렬</b></td><td>여백 중심 · 수직 중앙 · 럭셔리 매거진</td></tr>
-      <tr><td><b>위치 표기</b></td><td>"한남동"만 (건물명 "현대하이페리온" 금지)</td></tr>
-    </table>
-
-    <h4 style="font-size:15px;margin:28px 0 10px">릴스 · 영상 기준 <span class="tag">scripts/make_reel.py</span></h4>
-    <div class="grid g3">
-      <div class="card"><h4>포맷</h4><p>1080×1920 세로 · H.264/libx264 · 30fps · 레터박스 배경 BLACK #221F20</p></div>
-      <div class="card"><h4>모션</h4><p>Ken Burns 줌 1.0~1.12 (정적 슬라이드쇼 금지) · 장당 2.5초 · CrossFade 0.4초</p></div>
-      <div class="card"><h4>길이 · 훅</h4><p>15~25초 (이미지 6~9장) · <b>첫 3초</b>에 가장 강한 장면 + 한 줄 훅 텍스트</p></div>
-      <div class="card"><h4>자막</h4><p>PIL + Pretendard 직접 렌더 · 하단 18% + 반투명 띠 + 외곽선 · 핵심 문구만</p></div>
-      <div class="card"><h4>음악</h4><p>사람이 받은 <b>무료 음원만</b>(instagram/_assets/music/) · 자동 다운로드 금지 · 끝 0.5초 페이드아웃</p></div>
-      <div class="card"><h4>출력 · A/B</h4><p>instagram/Movie/{name}_{ts}.mp4 · 폴더에 영상 있으면 B(영상 릴스)/없으면 A(이미지 릴스) 자동</p></div>
-    </div>
-  </div></section>
-
-  <!-- 07 캡션·CTA -->
-  <section id="caption"><div class="wrap">
-    <span class="num">07</span><span class="eyebrow"> · Caption & CTA</span>
-    <h2>캡션 · 해시태그 · CTA</h2>
-    <p class="sec-sub">캡션은 <b>평문 전용</b> — 마크다운(###, **) 절대 금지(인스타 미렌더). 본문 → 다음 편 떡밥 → CTA → 해시태그 순.</p>
-    <div class="grid g2" style="margin-bottom:18px">
-      <div class="card"><h4>해시태그 순서 (3규칙)</h4><p>① 지역+종목(#한남동골프) → ② 종목·주제·타깃 → ③ <b>#웰페리온 #WELLPERION 맨 끝 2개 고정</b></p><p style="margin-top:8px;color:var(--dim);font-size:12px">예: #한남동골프 #유소년골프 #KPGA #스포츠클럽 #웰페리온 #WELLPERION</p></div>
-      <div class="card"><h4>CTA 표준 <span class="tag">한 줄 · 한국어만</span></h4><p style="font-size:15px;font-weight:800;color:var(--ink);background:var(--paper2);padding:10px 12px;border-radius:8px;margin-top:2px">문의 : wellperion.com/ko/inquiry</p><p style="margin-top:8px;color:var(--coral);font-size:12px">영문 줄(/en/inquiry)·litt.ly = 폐기(2026-06-08). 개인 010 번호 절대 금지.</p></div>
-    </div>
-    <div class="card"><b>채널별 CTA 삽입 규칙 정본 = <span class="mono">scripts/cta_utm.py</span></b>(파일 상단 "CTA 단일화 설계" 주석, 2026-07-20 GM 승인). 실행되는 코드가 곧 규칙이라 여기서 다시 표로 옮기지 않는다 — 바뀌면 그 파일만 고친다.</div>
-    <div class="callout" style="border-color:var(--line);background:var(--card)"><b>위치·멘션</b> — 위치는 인스타 자체 위치태그 기능(캡션에 "위치: ○○" 텍스트 안 넣음). 멘션은 캡션 본문 <span class="mono">@핸들</span> 평문으로만. &nbsp;·&nbsp; <b>개인 계정(@namuk) CTA는 별개</b> — 인라인 문의 URL·litt.ly 금지, 📌저장·💬댓글(편별 질문)·👀팔로우 도달 유도형.</div>
-  </div></section>
-
-  <!-- 08 두 계정 -->
-  <section id="accounts"><div class="wrap">
-    <span class="num">08</span><span class="eyebrow"> · Two Accounts</span>
-    <h2>두 계정, 두 목소리</h2>
-    <p class="sec-sub">공식은 브랜드, 개인은 사람. 색·로고·톤을 절대 혼용하지 않는다.</p>
-    <table>
-      <tr><th>구분</th><th>개인 @namuk.wellperion</th><th>공식 @wellperion</th></tr>
-      <tr><td><b>로고</b></td><td>W 심볼만 (미니멀)</td><td>풀 로고 (W + WELLPERION)</td></tr>
-      <tr><td><b>시그니처 색</b></td><td>에메랄드 #2E6E5B / #63BBA0</td><td>베이지 #B79F8A · 블랙 #221F20</td></tr>
-      <tr><td><b>콘텐츠</b></td><td>운영자 1인칭 실전·성찰·AI 자동화 스토리</td><td>시설·프로그램·공식 안내</td></tr>
-      <tr><td><b>디자인</b></td><td>종이 질감 + 손그림 마커 원 + 여백(손글씨)</td><td>럭셔리 매거진 · 사진 중심</td></tr>
-      <tr><td><b>채널 배분</b></td><td>보조</td><td><b>우선</b> (브랜드 힘 집중)</td></tr>
-      <tr><td><b>GUIDE 카드</b></td><td>자동 첨부 금지</td><td>마지막 슬라이드 자동 첨부</td></tr>
-    </table>
-  </div></section>
-
-  <!-- 09 금지 규칙 -->
-  <section id="forbidden"><div class="wrap">
-    <span class="num">09</span><span class="eyebrow"> · Never</span>
-    <h2>금지어 · 절대 규칙</h2>
-    <p class="sec-sub">브랜드를 지키는 최소한의 선. 대체어까지 정해져 있다.</p>
-    <table>
-      <tr><th>금지</th><th>대체</th></tr>
-      <tr><td>“피트니스”</td><td><b>“스포츠클럽 / 스포츠”</b></td></tr>
-      <tr><td>“현대하이페리온”(건물명)</td><td><b>“웰페리온 / 한남동”</b></td></tr>
-      <tr><td>“하이엔드 프라이빗”(외부 노출)</td><td><b>“프리미엄 라이프스타일”</b> 톤으로 은근히</td></tr>
-      <tr><td>“사교”·“동네·이웃” 톤</td><td>격조 있는 톤만</td></tr>
-      <tr><td>세일즈 압박 후킹(“지금 등록!”)</td><td>부드러운 안내</td></tr>
-      <tr><td>면 칠(fill) 아이콘</td><td>선(line) 아이콘</td></tr>
-      <tr><td>정적 슬라이드쇼 영상</td><td>Ken Burns 줌 인/아웃</td></tr>
-      <tr><td>개인 전화번호(010) 노출</td><td>문의 링크만</td></tr>
-    </table>
-    <div class="callout">개인 계정 추가 금지 프레임 — ‘혼자·작은가게·1인기업·소상공인’ 전면 금지(실체 왜곡). <span class="mono">#소상공인 #1인기업 #작은가게</span> 해시태그 금지.</div>
-  </div></section>
-
-  <!-- 10 콘텐츠 각 -->
-  <section id="angle"><div class="wrap">
-    <span class="num">10</span><span class="eyebrow"> · Making</span>
-    <h2>콘텐츠 제작 원칙</h2>
-    <p class="sec-sub">①회사·②전략이 ‘각’의 재료, ③브랜드가 표현의 형식, ④체크리스트가 출고 전 게이트. 어느 콘텐츠도 이 흐름을 벗어나지 않는다.</p>
-    <div class="grid g2" style="margin-bottom:18px">
-      <div class="card"><h4>1p 메인 슬라이드 = 영구 템플릿</h4><p>65/35 분할 · W로고 · 사업부 컬러칩 · 영문 대제목 · 한글 부제목 · 일자·장소 · 풋터. 마지막 슬라이드엔 WELLPERION GUIDE 카드.</p></div>
-      <div class="card"><h4>제작 엔진</h4><p><span class="mono">compose_barre.py</span>(듀오톤 사진형) · <span class="mono">slide_compositor.py</span>(텍스트형·프리셋) · <span class="mono">make_reel.py</span>(릴스) · 값 = <span class="mono">brand_constants.py</span></p></div>
-    </div>
-    <h4 style="font-size:15px;margin:6px 0 10px">출고 전 자문 7항</h4>
-    <table>
-      <tr><td>①</td><td>외부 표현이 “프리미엄 라이프스타일 클럽” 결과 일치 · 금지 표현 미혼입</td></tr>
-      <tr><td>②</td><td>안내가 압박이 아닌 “알리는 정도”</td></tr>
-      <tr><td>③</td><td>기능 클리셰 아닌 마음/삶 연결 각</td></tr>
-      <tr><td>④</td><td>장면이 현실적(비현실·과장 없음)</td></tr>
-      <tr><td>⑤</td><td>계정별 로고·컬러·톤 준수</td></tr>
-      <tr><td>⑥</td><td>CTA 채널 규칙(정본 <span class="mono">scripts/cta_utm.py</span>) · 해시태그 순서</td></tr>
-      <tr><td>⑦</td><td>금지어(“피트니스”·“현대하이페리온”) 미혼입</td></tr>
-    </table>
-  </div></section>
-
-  <footer><div class="wrap">
-    웰페리온 브랜드 가이드 (통합 정본) · 값 SSOT = <span class="mono">scripts/brand_constants.py</span> · 공식 원본 = 241030 브랜드 가이드 PDF · 이 페이지 = 인간용 브랜드 SSOT (구 비주얼 스타일 가이드 흡수)<br>
-    © Wellperion · 한남동 · 프리미엄 라이프스타일 클럽
-  </div></footer>
+<div class="toolbar">
+  <span class="ttl">웰페리온 브랜드 가이드</span>
+  <span class="hint">A3 세로 11장&nbsp;· 한 섹터 = 한 장&nbsp;· 인쇄 시 용지 A3 / 배율 100% / 여백 없음</span>
+  <button type="button" onclick="window.print()" aria-label="A3 세로로 인쇄">🖨 A3 인쇄</button>
 </div>
+
+<div class="stage">
+
+<!-- ═══ 01 / 11&nbsp;· 표지 ═══════════════════════════════════════ -->
+<div class="holder"><section class="sheet cover"><div class="pg">
+  <div class="top">
+    <div class="mark">W&nbsp;· WELLPERION</div>
+    <div class="eyebrow">Brand Guidelines<br>Premium Lifestyle Club</div>
+  </div>
+  <h1>웰페리온<br><span class="a">브랜드 가이드.</span></h1>
+  <div class="slo">A Day, Well Completed.</div>
+  <p class="lede">스포츠·스파·웰니스가 한 공간에 통합된 <b>프리미엄 라이프스타일 클럽</b>.<br>
+  이 가이드는 웰페리온이 세상에 보이는 방식을 정하는 단일 기준입니다.<br>
+  목소리, 색, 타이포그래피, 로고, 사진&nbsp;— 여기 적힌 것만 쓴다.</p>
+  <div class="hr"></div>
+  <div class="meta">
+    <div><div class="k">Location</div><div class="v">한남동 3,000평<small>단일 통합 시설</small></div></div>
+    <div><div class="k">Since</div><div class="v">9년<small>2017 설립&nbsp;· 운영 노하우</small></div></div>
+    <div><div class="k">Palettes</div><div class="v">6개 종목<small>전용 브랜드 팔레트</small></div></div>
+  </div>
+  <nav class="toc" aria-label="목차">
+    <a href="#essence"><span class="n">01</span><span>본질&nbsp;· Essence</span><span class="p">02</span></a>
+    <a href="#voice"><span class="n">02</span><span>톤 &amp; 보이스</span><span class="p">03</span></a>
+    <a href="#color"><span class="n">03</span><span>컬러 팔레트</span><span class="p">04</span></a>
+    <a href="#type"><span class="n">04</span><span>타이포그래피</span><span class="p">05</span></a>
+    <a href="#logo"><span class="n">05</span><span>로고</span><span class="p">06</span></a>
+    <a href="#photo"><span class="n">06</span><span>사진&nbsp;· 영상</span><span class="p">07</span></a>
+    <a href="#caption"><span class="n">07</span><span>캡션&nbsp;· 해시태그&nbsp;· CTA</span><span class="p">08</span></a>
+    <a href="#accounts"><span class="n">08</span><span>두 계정, 두 목소리</span><span class="p">09</span></a>
+    <a href="#forbidden"><span class="n">09</span><span>금지어&nbsp;· 절대 규칙</span><span class="p">10</span></a>
+    <a href="#making"><span class="n">10</span><span>콘텐츠 제작 원칙</span><span class="p">11</span></a>
+  </nav>
+  <div class="foot">
+    <span>값 SSOT&nbsp;· scripts/brand_constants.py</span>
+    <span>서울 용산구 서빙고로 413&nbsp;· 한남동</span>
+  </div>
+</div></section></div>
+
+<!-- ═══ 02 / 11&nbsp;· 01 본질 ═════════════════════════════════════ -->
+<div class="holder"><section class="sheet" id="essence"><div class="pg">
+  <div class="pg-head"><span class="pg-num">01</span><span class="pg-kicker">Essence</span></div>
+  <h2>우리는<br><span class="b">무엇인가.</span></h2>
+  <p class="intro">규모가 아니라 하루의 품질로 승부합니다.<br>
+  운동(Train)과 회복(Restore)을 한 동선 안에서 완성하는 원스톱 라이프스타일 인프라.</p>
+  <div class="rule"></div>
+
+  <div class="body">
+    <div class="mission">
+      <div class="m">회원 한 사람의 건강한 하루를 완성한다.</div>
+      <div class="s">— 미션 (내부 SSOT). 모든 콘텐츠&nbsp;· 서비스&nbsp;· 결정의 기준점.</div>
+    </div>
+
+    <h3>Positioning <span class="ko">포지셔닝&nbsp;— 밖과 안을 나눠 쓴다</span></h3>
+    <div class="grid g2 gap">
+      <div class="item">
+        <div class="t">외부 포지셔닝 <span class="tag">콘텐츠 정본</span></div>
+        <div class="d">“프리미엄 라이프스타일 클럽”&nbsp;· “스포츠·스파·웰니스가 한 공간에” ·<br>
+        “하루의 품질을 설계하는 곳”. 외부에 나가는 모든 문장은 이 결을 따른다.</div>
+      </div>
+      <div class="item">
+        <div class="t">내부 포지셔닝 <span class="tag no">외부 노출 금지</span></div>
+        <div class="d">내부 SSOT 문구(멤버십 커뮤니티 정의)는 사내 문서에만 둔다.<br>
+        외부 콘텐츠에서는 <b>‘프리미엄 라이프스타일’</b> 톤으로 순화해 표현한다. 원문 대조 = 9번 금지어 표.</div>
+      </div>
+    </div>
+
+    <h3 class="mt">Disclosure <span class="ko">외부에 꺼내도 되는 것 / 안 되는 것</span></h3>
+    <table>
+      <tr><th style="width:16%">구분</th><th style="width:44%">내용</th><th>취급</th></tr>
+      <tr><td class="k">규모&nbsp;· 연차</td><td>2017 설립&nbsp;· 9년&nbsp;· 3,000평&nbsp;· 정원 1,000&nbsp;· 일 방문 600</td><td><b>노출 OK</b>&nbsp;— 신뢰 신호로 사용</td></tr>
+      <tr><td class="k">돈 지표</td><td>매출&nbsp;· ARPU&nbsp;· 영업이익률</td><td><b>외부 비공개</b></td></tr>
+      <tr><td class="k">연락 수단</td><td>전화번호&nbsp;· 주소</td><td>콘텐츠 비노출&nbsp;— <b>문의 링크만</b></td></tr>
+    </table>
+
+    <div class="note"><b>기준</b>&nbsp;— 밖으로 나가는 한 문장이 애매하면 미션으로 되돌아온다. “이 문장이 회원의 하루를 완성하는 데 무슨 도움이 되나?”에 답하지 못하면 쓰지 않는다.</div>
+  </div>
+
+  <div class="pgfoot"><span><b>WELLPERION</b>&nbsp;· BRAND GUIDELINES</span><span>01&nbsp;· Essence</span><span>02 / 11</span></div>
+</div></section></div>
+
+<!-- ═══ 03 / 11&nbsp;· 02 톤 & 보이스 ══════════════════════════════ -->
+<div class="holder"><section class="sheet" id="voice"><div class="pg">
+  <div class="pg-head"><span class="pg-num">02</span><span class="pg-kicker">Voice &amp; Tone</span></div>
+  <h2>어떻게<br><span class="b">말하는가.</span></h2>
+  <p class="intro">간판이 아니라 공간이 말하는 브랜드.<br>압박 없이, 담담한 통찰까지만.</p>
+  <div class="rule"></div>
+
+  <div class="body">
+    <div class="grid g3 gap">
+      <div class="item"><div class="t">① 절제된 고급감</div><div class="d">과시하지 않는 럭셔리.<br>여백과 정돈으로 격을 드러낸다.</div></div>
+      <div class="item"><div class="t">② 경험 중심</div><div class="d">기능·스펙이 아니라 회원이<br>겪는 하루의 감각을 말한다.</div></div>
+      <div class="item"><div class="t">③ 일관된 호칭</div><div class="d">언제나 “스포츠클럽”.<br>대체 금지어는 9번 표에서 확인.</div></div>
+    </div>
+
+    <div class="grid g2 dd mt" style="gap:0 44px">
+      <div class="col do">
+        <h4>이렇게 쓴다</h4>
+        <ul>
+          <li>“한남동에 성인을 위한 전문 강습이 있다” 정도로 <b>알리는 선</b>까지만</li>
+          <li>천천히 루틴을 만드는 결&nbsp;— 서두르지 않고 꾸준함을 말함</li>
+          <li>전문성은 은근히. 실제 한 일만 서술</li>
+        </ul>
+      </div>
+      <div class="col dont">
+        <h4>이건 금지</h4>
+        <ul>
+          <li>“지금 등록!” 식 강한 후킹&nbsp;· 세일즈 압박</li>
+          <li>무분별한 가격 할인 소구</li>
+          <li>과장&nbsp;· 미사여구&nbsp;· 설교조</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="mt">The Angle <span class="ko">콘텐츠의 ‘각’&nbsp;— 운동 ↔ 마음</span></h3>
+    <p class="spec" style="margin:-6px 0 20px">참신함의 핵심 = 운동을 마음&nbsp;· 정신건강&nbsp;· 현대인의 삶과 연결한다. 기능 클리셰(1:1 맞춤&nbsp;· 전신 운동)는 반려.<br>
+    기획의 첫 질문은 언제나 하나&nbsp;— <b>“이걸 삶의 어떤 진실과 연결하나?”</b></p>
+    <table>
+      <tr><th style="width:14%">종목</th><th style="width:36%">마음의 각</th><th style="width:14%">종목</th><th>마음의 각</th></tr>
+      <tr><td class="k">수영</td><td>디지털 디톡스</td><td class="k">골프</td><td>조급함&nbsp;· 힘 빼기</td></tr>
+      <tr><td class="k">스쿼시</td><td>잡생각 제로</td><td class="k">필라테스</td><td>몸과 화해</td></tr>
+      <tr><td class="k">PT</td><td>자기 직면</td><td class="k">그룹강습</td><td>어른의 외로움</td></tr>
+    </table>
+  </div>
+
+  <div class="pgfoot"><span><b>WELLPERION</b>&nbsp;· BRAND GUIDELINES</span><span>02&nbsp;· Voice &amp; Tone</span><span>03 / 11</span></div>
+</div></section></div>
+
+<!-- ═══ 04 / 11&nbsp;· 03 컬러 ═════════════════════════════════════ -->
+<div class="holder"><section class="sheet" id="color"><div class="pg">
+  <div class="pg-head"><span class="pg-num">03</span><span class="pg-kicker">Color</span></div>
+  <h2>컬러 <span class="b">팔레트.</span></h2>
+  <p class="intro">값의 단일 출처 = <span class="mono">scripts/brand_constants.py</span>. 새 값 도입 금지.<br>
+  모든 서브 브랜드의 액센트는 <b>베이지 고정</b>&nbsp;— 종목이 달라도 웰페리온으로 읽히는 이유다.</p>
+  <div class="rule"></div>
+
+  <div class="body">
+    <h3>Core <span class="ko">기본 4색</span></h3>
+    <div class="grid g4 sw" style="gap:0 34px">
+      <div><div class="chip" style="background:#B79F8A"></div><div class="nm">BEIGE</div><div class="hex">#B79F8A</div><div class="use">브랜드 1차색&nbsp;· 로고&nbsp;· 강조&nbsp;· 분리선</div></div>
+      <div><div class="chip" style="background:#221F20"></div><div class="nm">BLACK</div><div class="hex">#221F20</div><div class="use">배경&nbsp;· 다크 오버레이</div></div>
+      <div><div class="chip" style="background:#ED5B3F"></div><div class="nm">HIGHLIGHT</div><div class="hex">#ED5B3F</div><div class="use">액센트&nbsp;· CTA 포인트에만 소량</div></div>
+      <div><div class="chip" style="background:#FFFFFF"></div><div class="nm">WHITE</div><div class="hex">#FFFFFF</div><div class="use">다크 배경 위 본문</div></div>
+    </div>
+
+    <h3 class="mt">Support <span class="ko">보조 톤&nbsp;· 개인 계정</span></h3>
+    <div class="grid g2" style="gap:0 44px">
+      <div class="tone">
+        <div class="t"><i style="background:#AAA098"></i><b>GRAY</b><span>#AAA098&nbsp;· 날짜&nbsp;· 메타</span></div>
+        <div class="t"><i style="background:#BAA28C"></i><b>CHIP</b><span>#BAA28C&nbsp;· 우상단 칩</span></div>
+        <div class="t"><i style="background:#ABA197"></i><b>SEP</b><span>#ABA197&nbsp;· 표지 분리선</span></div>
+      </div>
+      <div class="tone">
+        <div class="t"><i style="background:#63BBA0"></i><b>에메랄드 (다크)</b><span>#63BBA0&nbsp;· @namuk 마커 원</span></div>
+        <div class="t"><i style="background:#2E6E5B"></i><b>에메랄드 (라이트)</b><span>#2E6E5B&nbsp;· 개인 계정 변형</span></div>
+      </div>
+    </div>
+    <p class="spec" style="margin-top:14px">개인 계정 에메랄드는 <b>메인 팔레트와 별개 트랙&nbsp;— 혼용 금지</b>. 공식 계정 시각물에 에메랄드를 쓰지 않는다.</p>
+
+    <h3 class="mt">Divisions <span class="ko">사업부별 팔레트 (BRAND_PRESETS)&nbsp;— 액센트=베이지 고정</span></h3>
+    <div class="grid g4 pal" style="gap:20px 34px">
+      <div><div class="swbar"><span style="background:#3F71B0"></span><span style="background:#253B6C"></span></div><div class="k">스포츠클럽</div><div class="h">#3F71B0&nbsp;· #253B6C</div></div>
+      <div><div class="swbar"><span style="background:#D2D2D2"></span><span style="background:#77968E"></span></div><div class="k">스쿼시</div><div class="h">#D2D2D2&nbsp;· #77968E</div></div>
+      <div><div class="swbar"><span style="background:#B54840"></span><span style="background:#512B32"></span></div><div class="k">PT</div><div class="h">#B54840&nbsp;· #512B32</div></div>
+      <div><div class="swbar"><span style="background:#337342"></span><span style="background:#132117"></span></div><div class="k">골프</div><div class="h">#337342&nbsp;· #132117</div></div>
+      <div><div class="swbar"><span style="background:#215768"></span><span style="background:#172C42"></span></div><div class="k">수영</div><div class="h">#215768&nbsp;· #172C42</div></div>
+      <div><div class="swbar"><span style="background:#C44558"></span><span style="background:#822A37"></span></div><div class="k">필라테스</div><div class="h">#C44558&nbsp;· #822A37</div></div>
+      <div><div class="swbar"><span style="background:#C2BAD6"></span><span style="background:#563A61"></span></div><div class="k">체조</div><div class="h">#C2BAD6&nbsp;· #563A61</div></div>
+      <div><div class="swbar"><span style="background:#8B1A2F"></span><span style="background:#C9A96E"></span><span style="background:#FAF7F2"></span></div><div class="k">생크몽드 스파</div><div class="h">#8B1A2F&nbsp;· #C9A96E&nbsp;· #FAF7F2</div></div>
+    </div>
+
+    <div class="note warn"><b>정본 주의</b>&nbsp;— 공식 가이드 PDF의 <span class="mono">BLACK #B79F8A</span>는 오타다. <b>BLACK = #221F20</b>이 정본(코드 프리셋 (34,31,32) 근거).<br>
+    스파 팔레트만 유일하게 액센트가 베이지가 아닌 와인 버건디 <b>#8B1A2F</b>&nbsp;— 생크몽드 파트너 브랜드 전용 예외(2026-06-11 GM 결재). 듀오톤 기본 쌍 = <b>#221F20 ↔ #B79F8A</b>.</div>
+  </div>
+
+  <div class="pgfoot"><span><b>WELLPERION</b>&nbsp;· BRAND GUIDELINES</span><span>03&nbsp;· Color</span><span>04 / 11</span></div>
+</div></section></div>
+
+<!-- ═══ 05 / 11&nbsp;· 04 타이포그래피 ═════════════════════════════ -->
+<div class="holder"><section class="sheet" id="type"><div class="pg">
+  <div class="pg-head"><span class="pg-num">04</span><span class="pg-kicker">Typography</span></div>
+  <h2>타이포<span class="b">그래피.</span></h2>
+  <p class="intro">실사용 표준 = <b>Pretendard</b>(무료&nbsp;· 동봉).<br>
+  공식 가이드의 유료 지정 폰트는 자동화 파이프라인에서 Pretendard로 대체한다(승인된 대체).</p>
+  <div class="rule"></div>
+
+  <div class="body">
+    <h3>Weights <span class="ko">쓰는 굵기는 셋뿐</span></h3>
+    <div class="grid g3 gap">
+      <div class="item" style="border-top-width:3px"><div style="font-size:46px;font-weight:800;letter-spacing:-.025em;line-height:1.2">한글 헤딩</div><div class="t" style="margin-top:16px">Pretendard Bold</div><div class="d">한글 제목&nbsp;· 강조</div></div>
+      <div class="item" style="border-top-width:2px"><div style="font-size:34px;font-weight:600;line-height:1.3">본문 텍스트</div><div class="t" style="margin-top:16px">Pretendard SemiBold</div><div class="d">본문&nbsp;· 부제</div></div>
+      <div class="item"><div style="font-size:27px;font-weight:500;color:var(--ink-soft);line-height:1.4">부가 정보</div><div class="t" style="margin-top:16px">Pretendard Medium</div><div class="d">메타&nbsp;· 캡션&nbsp;· 풋터</div></div>
+    </div>
+
+    <h3 class="mt">Substitution <span class="ko">공식 지정 → 실사용 정본</span></h3>
+    <table>
+      <tr><th style="width:20%">구분</th><th style="width:36%">공식 지정 (유료)</th><th>실사용 정본</th></tr>
+      <tr><td class="k">영문 대제목</td><td>ITC Avant Garde / Hudson NY Serif</td><td><b>Pretendard Bold</b>&nbsp;— 대문자 + 자간</td></tr>
+      <tr><td class="k">본문 (한/영)</td><td>Pretendard Medium&nbsp;· SemiBold</td><td><b>Pretendard</b> Medium&nbsp;· SemiBold&nbsp;· 줄간 1.45~1.55</td></tr>
+    </table>
+
+    <h3 class="mt">Line Break <span class="ko">한글 줄바꿈 품질 (전 페이지 공통 규칙)</span></h3>
+    <table>
+      <tr><th style="width:26%">규칙</th><th>이유</th></tr>
+      <tr><td class="k">word-break: keep-all</td><td>한국어 낱말이 음절 단위로 쪼개지지 않게</td></tr>
+      <tr><td class="k">overflow-wrap: break-word</td><td>그래도 넘치는 긴 영문&nbsp;· URL은 끊어서 넘침 방지</td></tr>
+      <tr><td class="k">text-wrap: pretty</td><td>마지막 줄에 낱말 하나만 남는 ‘고아’ 방지</td></tr>
+      <tr><td class="k">text-wrap: balance</td><td>제목 줄 길이를 고르게&nbsp;— 어색한 한 줄 제목 방지</td></tr>
+    </table>
+
+    <div class="note"><b>경로 정본</b> = <span class="mono">2. 브랜드_자료/02_로고&amp;워터마크&amp;FONT/font/</span> (Pretendard-Bold&nbsp;· SemiBold&nbsp;· Medium.otf). 비주얼가이드의 옛 <span class="mono">font/</span> 경로는 폐기.<br>
+    줄바꿈 규칙 정본 = <span class="mono">3. 웰페리온 가이드/assets/wp-typography.css</span> 한 파일. 페이지마다 복사하지 않고 <span class="mono">&lt;link&gt;</span>로 가리킨다.</div>
+  </div>
+
+  <div class="pgfoot"><span><b>WELLPERION</b>&nbsp;· BRAND GUIDELINES</span><span>04&nbsp;· Typography</span><span>05 / 11</span></div>
+</div></section></div>
+
+<!-- ═══ 06 / 11&nbsp;· 05 로고 ═════════════════════════════════════ -->
+<div class="holder"><section class="sheet" id="logo"><div class="pg">
+  <div class="pg-head"><span class="pg-num">05</span><span class="pg-kicker">Logo</span></div>
+  <h2>로고<span class="b">.</span></h2>
+  <p class="intro">W 심볼 + WELLPERION 워드마크.<br>
+  다크 배경엔 베이지, 사진&nbsp;· 밝은 배경엔 화이트. 계정에 따라 락업이 달라진다.</p>
+  <div class="rule"></div>
+
+  <div class="body">
+    <h3>Lockups <span class="ko">계정별 락업</span></h3>
+    <div class="grid g2" style="gap:0 44px">
+      <div>
+        <div class="plate"><div class="lg">W&nbsp;· WELLPERION</div><div class="cap">공식 @wellperion&nbsp;· 풀 로고</div></div>
+        <div class="item" style="border-top:none;padding-top:12px"><div class="d">코드 값 <span class="mono">logo_style="full"</span>&nbsp;· 브랜드 시각물 전체의 기본값.</div></div>
+      </div>
+      <div>
+        <div class="plate"><div class="lg em">W</div><div class="cap">개인 @namuk.wellperion&nbsp;· W 심볼만</div></div>
+        <div class="item" style="border-top:none;padding-top:12px"><div class="d">코드 값 <span class="mono">logo_style="symbol"</span>&nbsp;· 미니멀&nbsp;· 에메랄드 트랙 전용.</div></div>
+      </div>
+    </div>
+
+    <h3 class="mt">Assets <span class="ko">파일 자산&nbsp;· 배경별 선택</span></h3>
+    <table>
+      <tr><th style="width:38%">자산</th><th>용도</th></tr>
+      <tr><td><span class="mono">wellperion_white_alpha.png</span></td><td>사진 위(밝은 배경)&nbsp;— 반투명 다크 박스와 함께</td></tr>
+      <tr><td><span class="mono">wellperion_beige_alpha.png</span></td><td>다크 배경(텍스트 슬라이드)&nbsp;— 박스 없이</td></tr>
+    </table>
+
+    <h3 class="mt">Clear <span class="ko">지켜야 할 선</span></h3>
+    <div class="grid g3 gap">
+      <div class="item"><div class="t">색</div><div class="d">다크 위 = 베이지 <b>#B79F8A</b><br>사진&nbsp;· 밝은 배경 위 = 화이트</div></div>
+      <div class="item"><div class="t">여백</div><div class="d">로고 주변 여백은 넉넉히.<br>다른 요소와 붙이지 않는다.</div></div>
+      <div class="item"><div class="t">변형</div><div class="d">비율 왜곡&nbsp;· 임의 재조합&nbsp;· 그림자&nbsp;· 그라데이션 금지.</div></div>
+    </div>
+
+    <div class="note"><b>경로</b> = <span class="mono">instagram/_assets/logo/</span>.<br>
+    풀 로고 락업에 새겨진 영문 병기(<span class="mono">SPA &amp; FITNESS</span>)는 <b>현상 유지 확정</b>(GM 결재 2026-06-04)&nbsp;— 기존 자산의 사실 기록이며 카피가 아니다. 락업 변경&nbsp;· 재합성하지 않는다. <b>재플래그 금지.</b></div>
+  </div>
+
+  <div class="pgfoot"><span><b>WELLPERION</b>&nbsp;· BRAND GUIDELINES</span><span>05&nbsp;· Logo</span><span>06 / 11</span></div>
+</div></section></div>
+
+<!-- ═══ 07 / 11&nbsp;· 06 사진&nbsp;· 영상 ══════════════════════════════ -->
+<div class="holder"><section class="sheet" id="photo"><div class="pg">
+  <div class="pg-head"><span class="pg-num">06</span><span class="pg-kicker">Photography &amp; Motion</span></div>
+  <h2>사진&nbsp;· <span class="b">영상.</span></h2>
+  <p class="intro">모든 메인 슬라이드 사진은 <b>BLACK ↔ BEIGE 듀오톤</b> 필수(#221F20 ↔ #B79F8A).<br>
+  어떤 사진이 들어와도 같은 럭셔리 매거진 톤으로 통일된다.</p>
+  <div class="rule"></div>
+
+  <div class="body">
+    <h3>Look <span class="ko">사진의 조건</span></h3>
+    <div class="grid g3 gap">
+      <div class="item"><div class="t">색감</div><div class="d">따뜻한 뉴트럴&nbsp;— 베이지 대리석&nbsp;· 우드&nbsp;· 아이보리. 차가운 형광 회피</div></div>
+      <div class="item"><div class="t">광원</div><div class="d">밝은 자연광 + 균일한 다운라이트. 그림자 적고 깨끗</div></div>
+      <div class="item"><div class="t">구도</div><div class="d">와이드 건축 구도&nbsp;— 수평&nbsp;· 대칭, 1점 투시 깊이감</div></div>
+      <div class="item"><div class="t">피사체</div><div class="d">인물 없음(공간 위주). 시설&nbsp;· 마감재가 주인공</div></div>
+      <div class="item"><div class="t">레이아웃</div><div class="d">상단 65% 사진(듀오톤) + 하단 35% 정보 영역</div></div>
+      <div class="item"><div class="t">아이콘</div><div class="d">선(line)으로만. <b>면 칠 아이콘 절대 금지</b></div></div>
+    </div>
+
+    <h3 class="mt">Slide <span class="ko">슬라이드 자막&nbsp;· 레이아웃 (슬라이드/영상 공통)</span></h3>
+    <table>
+      <tr><th style="width:20%">요소</th><th>규칙</th></tr>
+      <tr><td class="k">헤더</td><td>좌측 로고 + 우측 사업부 컬러 칩</td></tr>
+      <tr><td class="k">액센트 바</td><td>HIGHLIGHT #ED5B3F 또는 베이지 가는 바</td></tr>
+      <tr><td class="k">영문 라벨</td><td>대문자 + 자간(letter-spacing), 베이지 작게</td></tr>
+      <tr><td class="k">풋터</td><td>하단 중앙 WELLPERION (베이지)</td></tr>
+      <tr><td class="k">정렬</td><td>여백 중심&nbsp;· 수직 중앙&nbsp;· 럭셔리 매거진</td></tr>
+      <tr><td class="k">위치 표기</td><td>“한남동”만&nbsp;— 건물명 표기는 9번 금지어 표 참조</td></tr>
+    </table>
+
+    <h3 class="mt">Reels <span class="ko">릴스&nbsp;· 영상 기준 (scripts/make_reel.py)</span></h3>
+    <div class="grid g3 gap">
+      <div class="item"><div class="t">포맷</div><div class="d">1080×1920 세로&nbsp;· H.264/libx264&nbsp;· 30fps&nbsp;· 레터박스 배경 BLACK #221F20</div></div>
+      <div class="item"><div class="t">모션</div><div class="d">Ken Burns 줌 1.0~1.12(정적 슬라이드쇼 금지)&nbsp;· 장당 2.5초&nbsp;· CrossFade 0.4초</div></div>
+      <div class="item"><div class="t">길이&nbsp;· 훅</div><div class="d">15~25초(이미지 6~9장)&nbsp;· <b>첫 3초</b>에 가장 강한 장면 + 한 줄 훅</div></div>
+      <div class="item"><div class="t">자막</div><div class="d">PIL + Pretendard 직접 렌더&nbsp;· 하단 18% + 반투명 띠 + 외곽선&nbsp;· 핵심 문구만</div></div>
+      <div class="item"><div class="t">음악</div><div class="d">사람이 받은 <b>무료 음원만</b>(instagram/_assets/music/)&nbsp;· 자동 다운로드 금지&nbsp;· 끝 0.5초 페이드아웃</div></div>
+      <div class="item"><div class="t">출력&nbsp;· A/B</div><div class="d">instagram/Movie/{name}_{ts}.mp4&nbsp;· 폴더에 영상 있으면 B(영상)/없으면 A(이미지) 자동</div></div>
+    </div>
+  </div>
+
+  <div class="pgfoot"><span><b>WELLPERION</b>&nbsp;· BRAND GUIDELINES</span><span>06&nbsp;· Photography &amp; Motion</span><span>07 / 11</span></div>
+</div></section></div>
+
+<!-- ═══ 08 / 11&nbsp;· 07 캡션&nbsp;· CTA ═══════════════════════════════ -->
+<div class="holder"><section class="sheet" id="caption"><div class="pg">
+  <div class="pg-head"><span class="pg-num">07</span><span class="pg-kicker">Caption &amp; CTA</span></div>
+  <h2>캡션&nbsp;· 해시태그<br><span class="b">· CTA.</span></h2>
+  <p class="intro">캡션은 <b>평문 전용</b>&nbsp;— 마크다운(###, **)은 인스타에서 렌더되지 않으므로 절대 금지.<br>
+  순서는 언제나 하나&nbsp;— 본문 → 다음 편 떡밥 → CTA → 해시태그.</p>
+  <div class="rule"></div>
+
+  <div class="body">
+    <h3>Hashtag <span class="ko">해시태그 3규칙</span></h3>
+    <table class="tnum">
+      <tr><td>①</td><td>지역 + 종목&nbsp;— <b>#한남동골프</b> 처럼 앞 3개 안에 지역이 붙는다</td></tr>
+      <tr><td>②</td><td>종목&nbsp;· 주제&nbsp;· 타깃</td></tr>
+      <tr><td>③</td><td><b>#웰페리온 #WELLPERION 맨 끝 2개 고정</b></td></tr>
+    </table>
+    <p class="spec" style="margin-top:14px">예시 &nbsp;<span class="mono">#한남동골프 #유소년골프 #KPGA #스포츠클럽 #웰페리온 #WELLPERION</span></p>
+
+    <h3 class="mt">CTA <span class="ko">공식 계정&nbsp;— 한 줄&nbsp;· 한국어만</span></h3>
+    <div class="cta-line">문의 : wellperion.com/ko/inquiry</div>
+    <p class="spec" style="margin-top:14px">영문 줄(/en/inquiry)&nbsp;· litt.ly = <b style="color:var(--highlight)">폐기</b>(2026-06-08). 개인 010 번호 절대 금지.<br>
+    채널별 CTA 삽입 규칙 정본 = <span class="mono">scripts/cta_utm.py</span> (파일 상단 “CTA 단일화 설계” 주석, 2026-07-20 GM 승인).<br>
+    실행되는 코드가 곧 규칙이라 여기서 다시 표로 옮기지 않는다&nbsp;— 바뀌면 그 파일만 고친다.</p>
+
+    <h3 class="mt">Rules <span class="ko">위치&nbsp;· 멘션&nbsp;· 개인 계정 예외</span></h3>
+    <table>
+      <tr><th style="width:22%">항목</th><th>규칙</th></tr>
+      <tr><td class="k">위치</td><td>인스타 자체 위치태그 기능으로만. 캡션 본문에 “위치: ○○” 텍스트를 넣지 않는다</td></tr>
+      <tr><td class="k">멘션</td><td>캡션 본문에 <span class="mono">@핸들</span> 평문으로만</td></tr>
+      <tr><td class="k">개인 계정 CTA</td><td>인라인 문의 URL&nbsp;· litt.ly 금지 → 📌저장&nbsp;· 💬댓글(편별 질문)&nbsp;· 👀팔로우 <b>도달 유도형</b></td></tr>
+    </table>
+
+    <div class="note"><b>왜 이렇게까지 고정하나</b>&nbsp;— 채널이 늘어날수록 CTA가 조금씩 달라지고, 그 차이가 문의 유입 집계를 흐린다. 문구 하나를 고정해두면 어느 채널에서 온 문의인지 끝까지 추적된다.</div>
+  </div>
+
+  <div class="pgfoot"><span><b>WELLPERION</b>&nbsp;· BRAND GUIDELINES</span><span>07&nbsp;· Caption &amp; CTA</span><span>08 / 11</span></div>
+</div></section></div>
+
+<!-- ═══ 09 / 11&nbsp;· 08 두 계정 ══════════════════════════════════ -->
+<div class="holder"><section class="sheet" id="accounts"><div class="pg">
+  <div class="pg-head"><span class="pg-num">08</span><span class="pg-kicker">Two Accounts</span></div>
+  <h2>두 계정,<br><span class="b">두 목소리.</span></h2>
+  <p class="intro">공식은 브랜드, 개인은 사람.<br>색&nbsp;· 로고&nbsp;· 톤을 절대 혼용하지 않는다. 섞이는 순간 둘 다 힘을 잃는다.</p>
+  <div class="rule"></div>
+
+  <div class="body">
+    <table>
+      <tr><th style="width:18%">구분</th><th style="width:41%">개인 @namuk.wellperion</th><th>공식 @wellperion</th></tr>
+      <tr><td class="k">로고</td><td>W 심볼만 (미니멀)</td><td>풀 로고 (W + WELLPERION)</td></tr>
+      <tr><td class="k">시그니처 색</td><td>에메랄드 #2E6E5B / #63BBA0</td><td>베이지 #B79F8A&nbsp;· 블랙 #221F20</td></tr>
+      <tr><td class="k">콘텐츠</td><td>운영자 1인칭 실전&nbsp;· 성찰&nbsp;· AI 자동화 스토리</td><td>시설&nbsp;· 프로그램&nbsp;· 공식 안내</td></tr>
+      <tr><td class="k">디자인</td><td>종이 질감 + 손그림 마커 원 + 여백 (손글씨)</td><td>럭셔리 매거진&nbsp;· 사진 중심</td></tr>
+      <tr><td class="k">채널 배분</td><td>보조</td><td><b>우선</b>&nbsp;— 브랜드 힘을 여기에 집중</td></tr>
+      <tr><td class="k">GUIDE 카드</td><td>자동 첨부 금지</td><td>마지막 슬라이드 자동 첨부</td></tr>
+      <tr><td class="k">CTA</td><td>도달 유도형(저장&nbsp;· 댓글&nbsp;· 팔로우)&nbsp;· 문의 URL 금지</td><td>문의 : wellperion.com/ko/inquiry 한 줄</td></tr>
+    </table>
+
+    <h3 class="mt">Never Mix <span class="ko">혼용 금지 3가지</span></h3>
+    <div class="grid g3 gap">
+      <div class="item"><div class="t">색을 섞지 않는다</div><div class="d">공식 시각물에 에메랄드를, 개인 시각물에 베이지 브랜드 락업을 쓰지 않는다.</div></div>
+      <div class="item"><div class="t">목소리를 섞지 않는다</div><div class="d">공식은 3인칭 안내, 개인은 1인칭 기록. 한 게시물에 둘이 섞이면 신뢰가 흔들린다.</div></div>
+      <div class="item"><div class="t">프레임을 섞지 않는다</div><div class="d">개인 계정이라도 ‘혼자&nbsp;· 작은가게’ 프레임은 실체 왜곡&nbsp;— 9번 표 참조.</div></div>
+    </div>
+  </div>
+
+  <div class="pgfoot"><span><b>WELLPERION</b>&nbsp;· BRAND GUIDELINES</span><span>08&nbsp;· Two Accounts</span><span>09 / 11</span></div>
+</div></section></div>
+
+<!-- ═══ 10 / 11&nbsp;· 09 금지어 ═══════════════════════════════════ -->
+<div class="holder"><section class="sheet" id="forbidden"><div class="pg">
+  <div class="pg-head"><span class="pg-num">09</span><span class="pg-kicker">Never</span></div>
+  <h2>금지어 ·<br><span class="b">절대 규칙.</span></h2>
+  <p class="intro">브랜드를 지키는 최소한의 선. 대체어까지 정해져 있다.<br>
+  이 표는 <b>금지어 등록부</b>다&nbsp;— 왼쪽 칸의 표현은 이 표 밖에서 쓰지 않는다.</p>
+  <div class="rule"></div>
+
+  <div class="body">
+    <table>
+      <tr><th style="width:44%">쓰지 않는다</th><th>대신 이렇게</th></tr>
+      <tr><td>“피트니스”</td><td><b>“스포츠클럽 / 스포츠”</b></td></tr>
+      <tr><td>“현대하이페리온” (건물명)</td><td><b>“웰페리온 / 한남동”</b></td></tr>
+      <tr><td>“하이엔드 프라이빗” (외부 노출)</td><td><b>“프리미엄 라이프스타일”</b> 톤으로 은근히</td></tr>
+      <tr><td>“사교”&nbsp;· “동네&nbsp;· 이웃” 톤</td><td>격조 있는 톤만</td></tr>
+      <tr><td>세일즈 압박 후킹 (“지금 등록!”)</td><td>부드러운 안내</td></tr>
+      <tr><td>면 칠(fill) 아이콘</td><td>선(line) 아이콘</td></tr>
+      <tr><td>정적 슬라이드쇼 영상</td><td>Ken Burns 줌 인 / 아웃</td></tr>
+      <tr><td>개인 전화번호(010) 노출</td><td>문의 링크만</td></tr>
+      <tr><td>캡션 안 마크다운 (###, **)</td><td>평문만&nbsp;— 인스타는 마크다운을 렌더하지 않는다</td></tr>
+    </table>
+
+    <div class="note warn"><b>개인 계정 추가 금지 프레임</b>&nbsp;— ‘혼자&nbsp;· 작은가게&nbsp;· 1인기업&nbsp;· 소상공인’ 전면 금지(실체 왜곡).<br>
+    해시태그 <span class="mono">#소상공인 #1인기업 #작은가게</span> 금지.</div>
+
+    <div class="note"><b>왜 단어 하나까지 정하나</b>&nbsp;— 브랜드는 큰 결정이 아니라 반복되는 작은 단어에서 무너진다. 한 사람이 한 번 위 표 왼쪽 칸의 표현을 쓰면, 그 문장은 검색&nbsp;· 캡션&nbsp;· 카페 글로 복제되어 오래 남는다. 그래서 대체어까지 미리 정해둔다.<br>
+    <b>이 표 왼쪽 칸은 이 페이지 밖에서 한 번도 등장하지 않아야 한다</b> — 자동 점검 시 이 표만 예외로 둔다.</div>
+  </div>
+
+  <div class="pgfoot"><span><b>WELLPERION</b>&nbsp;· BRAND GUIDELINES</span><span>09&nbsp;· Never</span><span>10 / 11</span></div>
+</div></section></div>
+
+<!-- ═══ 11 / 11&nbsp;· 10 콘텐츠 제작 원칙 ═════════════════════════ -->
+<div class="holder"><section class="sheet" id="making"><div class="pg">
+  <div class="pg-head"><span class="pg-num">10</span><span class="pg-kicker">Making</span></div>
+  <h2>콘텐츠<br><span class="b">제작 원칙.</span></h2>
+  <p class="intro">① 회사&nbsp;· ② 전략이 ‘각’의 재료, ③ 브랜드가 표현의 형식, ④ 체크리스트가 출고 전 게이트.<br>
+  어느 콘텐츠도 이 흐름을 벗어나지 않는다.</p>
+  <div class="rule"></div>
+
+  <div class="body">
+    <div class="grid g2 gap">
+      <div class="item"><div class="t">1p 메인 슬라이드 = 영구 템플릿</div><div class="d">65/35 분할&nbsp;· W 로고&nbsp;· 사업부 컬러칩&nbsp;· 영문 대제목&nbsp;· 한글 부제목&nbsp;· 일자&nbsp;· 장소&nbsp;· 풋터.<br>마지막 슬라이드엔 WELLPERION GUIDE 카드.</div></div>
+      <div class="item"><div class="t">제작 엔진</div><div class="d"><span class="mono">compose_barre.py</span> 듀오톤 사진형&nbsp;· <span class="mono">slide_compositor.py</span> 텍스트형&nbsp;· 프리셋&nbsp;· <span class="mono">make_reel.py</span> 릴스<br>값 = <span class="mono">brand_constants.py</span></div></div>
+    </div>
+
+    <h3 class="mt">Gate <span class="ko">출고 전 자문 7항&nbsp;— 하나라도 ‘아니오’면 내보내지 않는다</span></h3>
+    <table class="tnum">
+      <tr><td>①</td><td>외부 표현이 “프리미엄 라이프스타일 클럽” 결과 일치하는가&nbsp;· 금지 표현이 섞이지 않았는가</td></tr>
+      <tr><td>②</td><td>안내가 압박이 아니라 “알리는 정도”인가</td></tr>
+      <tr><td>③</td><td>기능 클리셰가 아니라 마음 / 삶으로 연결되는 각인가</td></tr>
+      <tr><td>④</td><td>장면이 현실적인가 (비현실&nbsp;· 과장 없음)</td></tr>
+      <tr><td>⑤</td><td>계정별 로고&nbsp;· 컬러&nbsp;· 톤을 지켰는가</td></tr>
+      <tr><td>⑥</td><td>CTA 채널 규칙(정본 <span class="mono">scripts/cta_utm.py</span>)과 해시태그 순서를 지켰는가</td></tr>
+      <tr><td>⑦</td><td>금지어 등록부(09번 표)의 표현이 하나도 섞이지 않았는가</td></tr>
+    </table>
+
+    <h3 class="mt">Colophon <span class="ko">이 문서에 대하여</span></h3>
+    <table>
+      <tr><th style="width:26%">항목</th><th>내용</th></tr>
+      <tr><td class="k">이 페이지</td><td>인간용 브랜드 SSOT (구 <span class="mono">웰페리온_비주얼_스타일_가이드.md</span> 흡수&nbsp;· 통합 정본)</td></tr>
+      <tr><td class="k">값 SSOT</td><td><span class="mono">scripts/brand_constants.py</span>&nbsp;— 색&nbsp;· 폰트 경로&nbsp;· 프리셋의 단일 출처. 화면에서 새 값을 만들지 않는다</td></tr>
+      <tr><td class="k">공식 원본</td><td>241030 브랜드 가이드 PDF</td></tr>
+      <tr><td class="k">인쇄 규격</td><td>A3 세로 11장&nbsp;· 한 섹터 = 한 장&nbsp;· 배율 100%&nbsp;· 여백 없음</td></tr>
+    </table>
+
+    <div class="note">© Wellperion&nbsp;· 한남동&nbsp;· 프리미엄 라이프스타일 클럽&nbsp;· 벤치마킹 환영</div>
+  </div>
+
+  <div class="pgfoot"><span><b>WELLPERION</b>&nbsp;· BRAND GUIDELINES</span><span>10&nbsp;· Making</span><span>11 / 11</span></div>
+</div></section></div>
+
+</div><!-- /stage -->
+
+<script>
+/* 화면 미리보기 배율만 조정한다(인쇄 결과에는 관여하지 않음).
+   A3 지면(1123px)을 창 폭에 딱 맞춰 축소 → 어떤 폭에서도 가로 스크롤 0.
+   인쇄 시에는 @media print가 --z:1로 되돌리고 transform을 끈다. */
+(function(){
+  var SHEET_W = 1123, GUTTER = 36, root = document.documentElement;
+  function fit(){
+    var z = Math.min(1, (root.clientWidth - GUTTER) / SHEET_W);
+    root.style.setProperty('--z', (Math.floor(z * 1000) / 1000) || 1);
+  }
+  fit();
+  window.addEventListener('resize', fit, {passive:true});
+  window.addEventListener('orientationchange', fit);
+  window.addEventListener('beforeprint', function(){ root.style.removeProperty('--z'); });
+  window.addEventListener('afterprint', fit);
+})();
+</script>
 
 </body>
 </html>
