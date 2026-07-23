@@ -2411,6 +2411,28 @@ def _support_sheet_activity_today(today: str) -> tuple[int, int]:
     return 0, 0
 
 
+# GM 보고봇방 — 억제 알림 전용(실무진 방으로 보내면 소음). canon: telegram_chat_id.
+_GM_REPORT_CHAT_ID = int(ENV.get("TELEGRAM_CHAT_ID") or 8254867551)
+
+
+def _notify_nudge_suppressed(shift: str, sheet_done: int, sheet_sessions: int) -> None:
+    """독려를 글리치 가드로 억제했을 때 GM 보고봇방에 한 줄 알린다(억제의 가시화).
+
+    조용한 억제는 '알림이 없다 = 문제가 없다'로 오독된다 — 실제로 그렇게 이틀치가
+    사라졌다. 발송 실패해도 독려 본체 흐름을 막지 않는다(best-effort)."""
+    label = {"pm": "오후조", "close": "마감조"}.get(shift, shift)
+    text = (
+        f"🔕 지원부 {label} 독려 보류 — 점검 현황 값이 0으로 오는데 "
+        f"시트에는 오늘 활동(완료 {sheet_done}·제출 {sheet_sessions}회)이 있어 "
+        f"값이 어긋난 것으로 보고 실무진 방 발송을 멈췄습니다. 실제 미완이면 확인이 필요합니다."
+    )
+    try:
+        # parse_mode="" = 서식 없이 평문(본문에 특수문자가 있어도 이스케이프 불필요)
+        send_telegram(_GM_REPORT_CHAT_ID, text, parse_mode="")
+    except Exception as exc:
+        logger.warning(f"[독려:{shift}] 억제 알림 발송 실패(무시하고 계속): {exc}")
+
+
 def _build_nudge_body(shift: str) -> str | None:
     """지원부 점검 회차(shift) 미완 시 독려 1줄 생성. shift ∈ {'pm','close'}.
 
@@ -2447,6 +2469,11 @@ def _build_nudge_body(shift: str) -> str | None:
                 f"[독려:{shift}] today_live done=0 이나 영속시트 활동(완료 {_sheet_done}·제출 {_sheet_sessions}회) "
                 f"→ today_live 글리치 판단, 거짓 미완 독려 침묵"
             )
+            # [2026-07-23 시토] 침묵을 로그에만 남기면 **아무도 모른다.**
+            # 실제로 07-17·07-22 이틀치 독려가 이렇게 조용히 사라졌고, GM 이 직접
+            # 묻기 전까지 드러나지 않았다. 억제할 때는 반드시 한 줄 알린다
+            # (실무진 방이 아니라 GM 보고봇방 — 실무진에겐 소음이므로).
+            _notify_nudge_suppressed(shift, _sheet_done, _sheet_sessions)
             return None
 
     g = live.get("byGender", {})
