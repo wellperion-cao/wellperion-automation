@@ -5312,12 +5312,24 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
   var stCls = _lessonStatusClass(newVal);
   if (stCls) sel.classList.add(stCls);
   WriteBuffer.enqueue(payload, { scope: 'lesson', phoneKey: (row && row.phone) || '', fieldset: 'status', label: '상태', who: (row && row.name) || '', overlay: { status: newVal } });
-  // 활성↔버킷(LOSS·대기) 경계를 넘으면 문의 현황·LOSS·대기 목록 재렌더로 행 이동 반영. 배973.
+  // 활성↔이관(LOSS·SUC·대기) 경계를 넘으면 문의 현황·LOSS·대기 목록 재렌더로 행 이동 반영. 배973.
+  // ★SUC 포함(2026-07-23) — SUC를 문의 목록에서 빼도록 바꿔놓고 이 갱신 목록엔 안 넣어서,
+  //   SUC로 저장해도 화면이 그대로라 '저장이 안 된다'로 보였다(GM 지적). 판정은 _lessonIsArchived 한 곳만 쓴다.
   _lessonUpdateBucketCounts(t);
-  var _BKT = { 'LOSS': 1, '대기': 1 };
-  var _wasB = !!_BKT[String(prevVal || '').trim()];
-  var _isB = !!_BKT[String(newVal || '').trim()];
-  if (_wasB || _isB) { lessonRender(t); lessonLossRender(t); lessonWaitRender(t); }
+  var _wasB = _lessonIsArchived({ status: prevVal });
+  var _isB = _lessonIsArchived({ status: newVal });
+  if (_wasB || _isB) {
+    lessonRenderChips(t);   // 칩 숫자도 같이 갱신(안 하면 목록만 줄고 칩은 옛 수치로 남는다)
+    lessonRender(t); lessonLossRender(t); lessonWaitRender(t);
+  }
+  // SUC 전환 = 등록 명단(강습 회원 관리)에 새로 합류 → 서버 명단 캐시를 무효화한다.
+  //   캐시(memLoaded)를 안 지우면 카드로 넘어가도 옛 명단이 그대로 떠서 '반영이 안 됐다'로 보인다.
+  //   재조회는 카드 진입 시점에 한다(저장 직후엔 서버 반영 전일 수 있어 지금 당기면 옛 값을 굳힌다).
+  if (String(newVal || '').trim() === 'SUC') {
+    _lessonState[t].memLoaded = false;
+    // 목록에서 사라지기만 하면 '저장이 안 됐다'로 읽힌다 → 어디로 갔는지 말해 준다(GM 지적 2026-07-23).
+    try { showToast('등록 처리 — 이 문의는 [강습 회원 관리]로 이동했습니다', 'ok'); } catch (e) {}
+  }
   // 진행상태를 LOSS로 바꾸면 사유 모달 자동 발동(멤버십과 동일 — 사유 미기록 방지). 이미 사유 있으면 재촉발 안 함. 2026-07-18 시토(GM요청) 대행.
   if (newVal === 'LOSS' && (prevVal !== 'LOSS' || !String((row && row.lossReason) || '').trim())) {
     try { openLessonLossModal(t, rowIndex); } catch (e) {}
@@ -8125,7 +8137,10 @@ function saveRegProgramModal() {
       if (_isLesson) {
         var lr = _lessonFindRow(_t, rowIndex);
         if (lr) { lr.regProgram = program; }
-        try { lessonRender(_t); } catch (e) {}
+        // 등록종목은 SUC 직후에 넣는다 → 그 회원은 등록 명단에 합류한다. 명단 캐시를 지워
+        // [강습 회원 관리] 카드로 갔을 때 새 명단을 다시 받게 한다(안 지우면 옛 명단이 그대로 뜬다).
+        if (_lessonState[_t]) _lessonState[_t].memLoaded = false;
+        try { lessonRenderChips(_t); lessonRender(_t); } catch (e) {}
       } else {
         var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
         if (r) { r.regProgram = program; }

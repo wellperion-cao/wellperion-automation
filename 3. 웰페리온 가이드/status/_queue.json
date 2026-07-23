@@ -2166,5 +2166,49 @@
     "artifact": "경위: f36d56393 으로 폐지했으나 이후 3cb2acbc1(fix(erp) …)이 옛 사본으로\ndaily_scheduler.py·test_nudge_glitch_guard.py 를 덮어써 슬롯·죽은 함수 4개가\n그대로 되살아났다. 같은 패치를 재적용해 복구. (CLI ad-hoc · 커밋 5777fa393)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "5777fa39315fdbeb3998dc5518429f3fd9a7aca0"
+  },
+  {
+    "task_id": "CPO-2026-07-23-ADHOC-6b28a40f2",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9908,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 6b28a40f2)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6b28a40f2d84b19f3a9538684a0e9f3171d8607d"
+  },
+  {
+    "task_id": "CTO-2026-07-23-LESSON-FILTER-STAFF-NOTICE",
+    "clevel": "cto",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "from": "cpo",
+    "origin": "gm",
+    "enqueued_at": "2026-07-23",
+    "ship_no": 9909,
+    "module": "telegram",
+    "surface": "autonomy",
+    "title": "[시토] 실무진방 안내 발신 — 강습 문의 진행상태 필터 사용법(시포 인계)",
+    "note": "시포 인계(GM 지시 2026-07-23). 강습 문의 목록에 진행상태 클릭 필터 신설 → 실무진 안내 1회 발신 요청. 텔레그램 발신 배선=시토 도메인이라 문안만 넘김. 발신 방=실무진방. 어조=질책 아님, 셋업 어조, 발신 주체(AI 시포) 명시. ★링크=https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html?manage=lesson (멤버십 아님·강습 그룹 진입) ★접근 비밀번호=1200 (membership.html 자체 게이트 GATE_PW, 파트너 팀 리더 공유용 — _assets/gate.js의 비번과 다름. 오안내 주의). 문안 전문=GM 세션 전달본 사용. 배경: 2026-03 이후 강습 문의가 담당자 미배정으로 방치된 건 실측 확인, 실무진이 미입력을 직접 걸러보게 하려는 안내.",
+    "next": "시토 — 문안 확인 후 실무진방 발신 → 발신 결과 시포에게 회신"
+  },
+  {
+    "task_id": "COO-2026-07-23-RECEPTION-HOLD-LINK",
+    "clevel": "coo",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "from": "cpo",
+    "origin": "gm",
+    "enqueued_at": "2026-07-23",
+    "ship_no": 9910,
+    "module": "reception",
+    "surface": "autonomy",
+    "title": "[시우] 종합접수처에 휴회 신청 진입 링크 1개 추가 (시포 인계)",
+    "note": "시포 인계(GM 지시 2026-07-23). 회원 휴회 온라인 접수가 2026-07-23 GM go로 라이브 개통됨(배768) — 회원 신청 → ERP 직원 승인/반려까지 폐루프 완성. 종합접수처에서 진입만 열어주면 됨. 요청: 3. 웰페리온 가이드/coo/reception/reception_block.html 접수유형에 「휴회 신청」 1개 추가 → https://wellperion-cao.github.io/wellperion-automation/cpo/member/휴회접수.html 로 이동. ★처리 로직 0 — 저장·검증·승인은 전부 시포 백엔드(GAS v2 member_hold_apply/intake_list/approve)에서 끝남. 종합접수처 시트에는 아무것도 쌓이지 않게 할 것(중복 저장 금지). 기존 6종 접수유형 배선 무변경.",
+    "next": "시우 — 링크 배선 후 시크릿 크롬 라이브 확인 → 시포가 폐루프 검수"
   }
 ]
