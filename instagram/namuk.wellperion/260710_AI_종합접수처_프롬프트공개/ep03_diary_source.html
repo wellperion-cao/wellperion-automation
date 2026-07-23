@@ -1,0 +1,148 @@
+<style>
+  :root{
+    --paper:#e6e1d5; --sheet:#efeae0; --sheet-2:#f0ebe1; --sheet-3:#ede8dd;
+    --ink:#26221c; --ink-soft:#514c41; --ink-faint:#938d7e; --edge:#d7d1c3;
+    --serif:'Nanum Myeongjo','AppleMyungjo','바탕','Batang','Apple SD Gothic Neo',serif;
+  }
+  *{box-sizing:border-box} body{margin:0}
+  .wrap{background:var(--paper); color:var(--ink); font-family:var(--serif);
+        padding:52px 22px 96px; position:relative;}
+  .wrap::before{content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/></svg>");
+    mix-blend-mode:multiply;}
+  .inner{max-width:1000px; margin:0 auto; position:relative; z-index:1;}
+
+  .head{margin-bottom:40px;}
+  .kicker{font-size:12.5px; letter-spacing:.24em; color:var(--ink-soft);}
+  .head h1{font-size:clamp(21px,2.9vw,29px); font-weight:800; letter-spacing:-.01em; line-height:1.26; margin:.5em 0 .3em;}
+  .head p{font-size:14.5px; color:var(--ink-soft); line-height:1.66; max-width:62ch; margin:0;}
+  .head p b{color:var(--ink);}
+
+  .strip{display:grid; grid-template-columns:repeat(auto-fill,minmax(236px,1fr)); gap:30px 28px;}
+  .cell .cap{font-size:11.5px; letter-spacing:.2em; color:var(--ink-faint); margin-bottom:12px;}
+  .cell.cover{grid-column:1 / -1;}
+  @media(min-width:740px){ .cell.cover{grid-column:span 2; max-width:404px;} }
+
+  .sheet{aspect-ratio:4/5; position:relative; overflow:hidden; background:var(--sheet);
+    box-shadow:inset 0 0 60px -30px rgba(60,50,30,.45), 0 2px 0 var(--edge), 0 22px 42px -26px rgba(40,34,22,.5);}
+  .sheet::after{content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='170' height='170'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23p)' opacity='0.06'/></svg>");
+    mix-blend-mode:multiply;}
+  .cell:nth-child(2) .sheet{background:var(--sheet-2); transform:rotate(-.5deg);}
+  .cell:nth-child(3) .sheet{background:var(--sheet-3); transform:rotate(.4deg);}
+  .cell:nth-child(4) .sheet{background:var(--sheet-2); transform:rotate(-.3deg);}
+  .cell:nth-child(5) .sheet{background:var(--sheet-3); transform:rotate(.5deg);}
+  .cell:nth-child(6) .sheet{background:var(--sheet);   transform:rotate(-.4deg);}
+
+  .pad{position:absolute; inset:0; padding:34px 32px 28px; display:flex; flex-direction:column; z-index:2;}
+  .date{font-size:12.5px; letter-spacing:.05em; color:var(--ink-soft); margin-bottom:22px; display:flex; gap:14px; align-items:baseline;}
+  .date .d{font-weight:800;} .date .w{font-size:11px; color:var(--ink-faint);}
+
+  .body{flex:1; display:flex; flex-direction:column;}
+  .top .body{justify-content:flex-start;}
+  .mid .body{justify-content:center;}
+  .low .body{justify-content:flex-end; padding-bottom:6px;}
+
+  .entry{font-size:17.5px; line-height:1.95; color:var(--ink); font-weight:400; letter-spacing:-.004em;
+    text-shadow:0 0 .55px rgba(38,34,28,.4);}
+  .entry.lead{font-size:19.5px; line-height:1.86;}
+  .entry.small{font-size:16.5px; line-height:1.94;}
+  .soft{color:var(--ink-soft);}
+  .list{margin-top:6px; line-height:2.05;}
+  .url{color:var(--ink-soft); letter-spacing:.01em;}
+
+  .u{position:relative; padding-bottom:.08em;
+    background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'><path d='M3 6.5 C40 2, 78 10.5, 118 6 S188 3.2, 197 7.8' stroke='%2326221c' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>");
+    background-repeat:no-repeat; background-position:0 100%; background-size:100% .42em;}
+
+  .foot{margin-top:20px; display:flex; justify-content:space-between; align-items:flex-end;}
+  .sign{font-size:14px; color:var(--ink-soft); font-weight:800;}
+  .aside{font-size:12px; color:var(--ink-faint); transform:rotate(-2.5deg); max-width:48%; line-height:1.5;}
+
+  .note{margin-top:44px; font-size:13.5px; color:var(--ink-soft); line-height:1.72; max-width:76ch;}
+  .note b{color:var(--ink);}
+</style>
+
+<div class="wrap"><div class="inner">
+
+  <div class="head">
+    <div class="kicker">@namuk.wellperion · 실전 사례 · 종합접수처 프롬프트 공개</div>
+    <h1>손글씨 일기로 쓰는 프롬프트 공개 — 종합접수처</h1>
+    <p>지난 두 편(도입기·만드는 법)을 보고 <b>"그래서 정확히 뭐라고 시켰어요?"</b> 라는 질문이 많아서, 오늘은 실제로 AI에 입력한 문장 그대로를 공개합니다. 라이브: wellperion.com/ko/reception · 실제 4:5.</p>
+  </div>
+
+  <div class="strip">
+
+    <!-- 1 표지 -->
+    <div class="cell cover">
+      <div class="cap">1 · 표지</div>
+      <div class="sheet"><div class="pad top">
+        <div class="date"><span class="d">7월 10일</span><span class="w">맑음</span></div>
+        <div class="body"><div class="entry lead">
+          "그거 프롬프트가<br>정확히 뭐였어요?"<br>제일 많이 받은 질문,<br><span class="hit u">오늘 그대로 공개.</span>
+        </div></div>
+        <div class="foot"><span class="sign">— 남욱</span><span></span></div>
+      </div></div>
+    </div>
+
+    <!-- 2 실제 시킨 문장 -->
+    <div class="cell">
+      <div class="cap">2 · 이렇게 시켰다</div>
+      <div class="sheet"><div class="pad mid">
+        <div class="body"><div class="entry small">
+          <span class="hit">"회원이 불편한 걸</span><br>직접 남기는 창구 하나<br>만들어줘.
+          <div class="list soft">항목은 청결·시설고장·<br>분실물·컴플레인·칭찬·<br>쓴소리 여섯 가지로.<br>남기면 시트에 순서대로<br>기록되고, 우리 팀 알림방에도<br>바로 뜨게."</div>
+        </div></div>
+        <div class="foot"><span></span><span></span></div>
+      </div></div>
+    </div>
+
+    <!-- 3 풀이 -->
+    <div class="cell">
+      <div class="cap">3 · 풀어보면</div>
+      <div class="sheet"><div class="pad mid">
+        <div class="body"><div class="entry">
+          <span class="hit">항목을 미리 짚어준 건</span><br>회원이 고르기 쉽게.<br>기록과 알림, 둘 다<br>같이 시킨 건 —<br>기록은 남고 팀은<br>바로 알아야 해서.
+        </div></div>
+        <div class="foot"><span></span><span></span></div>
+      </div></div>
+    </div>
+
+    <!-- 4 주의점 -->
+    <div class="cell">
+      <div class="cap">4 · 주의점</div>
+      <div class="sheet"><div class="pad mid">
+        <div class="body"><div class="entry">
+          처음엔 <span class="hit">두루뭉술하게만</span><br>말했더니 애매하게 나왔다.<br>항목을 구체적으로<br>짚어줘야 정확했다.<br><span class="soft">담당자에게 자동으로<br>넘어가는 건 아니에요 —<br>시트·팀방까지가 지금이에요.</span>
+        </div></div>
+        <div class="foot"><span></span><span></span></div>
+      </div></div>
+    </div>
+
+    <!-- 5 결과 -->
+    <div class="cell">
+      <div class="cap">5 · 결과</div>
+      <div class="sheet"><div class="pad mid">
+        <div class="body"><div class="entry">
+          그렇게 나온 게<br>지금 쓰는 <span class="hit">종합접수처.</span><br>여섯 항목 폼,<br>순번 붙는 시트 기록,<br>실시간 팀 알림까지.
+        </div></div>
+        <div class="foot"><span></span><span></span></div>
+      </div></div>
+    </div>
+
+    <!-- 6 실행 방법 -->
+    <div class="cell">
+      <div class="cap">6 · 이렇게 써요</div>
+      <div class="sheet"><div class="pad mid">
+        <div class="body"><div class="entry small">
+          이 프롬프트, 실제로 이렇게 씁니다.<br><span class="hit">① 클로드 코드</span>를 켠다.<br><span class="hit">② 2번 장 문장</span> 그대로 붙여넣는다.<br><span class="hit">③ 엔터</span> — 그럼 만들어진다.
+        </div></div>
+        <div class="foot"><span class="aside">어렵게 보여도, 붙여넣기 한 번이에요.</span><span class="sign">— 남욱</span></div>
+      </div></div>
+    </div>
+
+  </div>
+
+  <p class="note"><b>내용 축</b>: 후킹(질문 재환기) → 실제 프롬프트 공개 → 풀이(항목 미리 짚기+기록·알림 동시 요청 이유) → 주의점(두루뭉술하면 애매함·담당자 자동전달 아님 — 시트+팀방까지가 실제) → 결과(여섯 항목·시트 순번·팀 알림) → 마무리(그대로 저장해 써보기). 전부 <b>라이브 실제</b> 기능 기반(지어냄 없음 — 자동 담당부서 배정 등 안 한 기능 언급 금지). 저장·팔로우 CTA는 슬라이드 대신 <b>캡션</b>에. EP01(도입기)·EP02(만드는 법)에 이은 세 번째 실전 사례편(프롬프트 공개).</p>
+
+</div></div>

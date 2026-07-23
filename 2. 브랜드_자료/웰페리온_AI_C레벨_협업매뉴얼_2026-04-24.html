@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+      (function() {
+        const originalConsole = window.console;
+        window.console = {
+          log: (...args) => {
+            originalConsole.log(...args);
+            window.parent.postMessage({ type: 'console', message: args.join(' ') }, '*');
+          },
+          error: (...args) => {
+            originalConsole.error(...args);
+            window.parent.postMessage({ type: 'console', message: 'Error: ' + args.join(' ') }, '*');
+          },
+          warn: (...args) => {
+            originalConsole.warn(...args);
+            window.parent.postMessage({ type: 'console', message: 'Warning: ' + args.join(' ') }, '*');
+          }
+        };
+
+        let requestId = 0;
+        let callbacksMap = new Map();
+        let streamControllers = new Map();
+        
+        window.claude = {
+          complete: (prompt) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'claudeComplete', id, prompt }, '*');
+            });
+          }
+        };
+
+        window.storage = {
+          get: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageGet', id, key, shared }, '*');
+            });
+          },
+          set: (key, value, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageSet', id, key, value, shared }, '*');
+            });
+          },
+          delete: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageDelete', id, key, shared }, '*');
+            });
+          },
+          list: (prefix, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageList', id, prefix, shared }, '*');
+            });
+          }
+        };
+
+        let pendingBlobs = new Map();
+        URL.createObjectURL = (blob) => {
+          // Store the blob and create an ID and URL for it
+          const blobId = `blob-${Date.now()}-${Math.random()}`;
+          pendingBlobs.set(blobId, blob);
+          return `blob-request://${blobId}`;
+        };
+
+        URL.revokeObjectURL = (url) => {
+          // Remove the blob from our store
+          const blobId = url.replace("blob-request://", "");
+          pendingBlobs.delete(blobId);
+        };
+
+        const getBlobFromURL = (url) => {
+          const blobId = url.replace("blob-request://", "");
+          return pendingBlobs.get(blobId);
+        };
+
+        // Override global fetch with streaming support
+        window.fetch = (url, init = {}) => {
+          return new Promise((resolve, reject) => {
+            const id = requestId++;
+            const channelId = `fetch-${id}-${Date.now()}`;
+            
+            callbacksMap.set(id, { 
+              resolve: (response) => {
+                // Create a ReadableStream for the response body
+                const stream = new ReadableStream({
+                  start(controller) {
+                    streamControllers.set(channelId, controller);
+                  },
+                  cancel() {
+                    streamControllers.delete(channelId);
+                  }
+                });
+                
+                // Create and return the Response with the stream
+                resolve(new Response(stream, {
+                  status: response.status,
+                  statusText: response.statusText,
+                  headers: response.headers
+                }));
+              },
+              reject,
+              channelId
+            });
+            
+            window.parent.postMessage({
+              type: 'proxyFetch',
+              id,
+              url,
+              init,
+              channelId
+            }, '*');
+          });
+        };
+
+        window.addEventListener('message', async (event) => {
+          if (event.data.type === 'takeScreenshot') {
+            const rootElement = document.getElementById('artifacts-component-root-html');
+            if (!rootElement) {
+              window.parent.postMessage({
+                type: 'screenshotError',
+                error: new Error('Root element not found'),
+              }, '*');
+            }
+            const screenshot = await htmlToImage.toPng(rootElement, {
+              imagePlaceholder:
+                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjePDgwX8ACOQDoNsk0PMAAAAASUVORK5CYII=",
+            });
+            window.parent.postMessage({
+              type: 'screenshotData',
+              data: screenshot,
+            }, '*');
+          } else if (event.data.type === 'claudeComplete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.completion);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'proxyFetchResponse') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+              callbacksMap.delete(event.data.id);
+            } else {
+              // Initial response with headers, status, etc.
+              callback.resolve({
+                status: event.data.status,
+                statusText: event.data.statusText,
+                headers: event.data.headers
+              });
+              // Don't delete the callback yet if streaming
+              if (!event.data.body) {
+                callbacksMap.delete(event.data.id);
+              }
+            }
+          } else if (event.data.type === 'proxyFetchStream') {
+            // Handle streaming data chunks
+            const controller = streamControllers.get(event.data.channelId);
+            if (controller) {
+              if (event.data.error) {
+                controller.error(new Error(event.data.error));
+                streamControllers.delete(event.data.channelId);
+              } else if (event.data.done) {
+                controller.close();
+                streamControllers.delete(event.data.channelId);
+                // Clean up the callback
+                const callback = Array.from(callbacksMap.entries()).find(
+                  ([_, value]) => value.channelId === event.data.channelId
+                );
+                if (callback) {
+                  callbacksMap.delete(callback[0]);
+                }
+              } else if (event.data.chunk) {
+                controller.enqueue(new Uint8Array(event.data.chunk));
+              }
+            }
+          } else if (event.data.type === 'storageGet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageSet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageDelete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageList') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          }
+        });
+
+        window.addEventListener('click', (event) => {
+          const isEl = event.target instanceof HTMLElement;
+          if (!isEl) return;
+    
+          // find ancestor links
+          const linkEl = event.target.closest("a");
+          if (!linkEl || !linkEl.href) return;
+    
+          event.preventDefault();
+          event.stopImmediatePropagation();
+    
+          if (linkEl.href.startsWith("blob-request:")) {
+            const blob = getBlobFromURL(linkEl.href);
+            if (!blob) return;
+            void blob.arrayBuffer().then((data) => {
+              window.parent.postMessage({
+                type: "downloadFile",
+                filename: linkEl.download,
+                data,
+                mimeType: blob.type || "application/octet-stream",
+              });
+            });
+          } else if (linkEl.href.startsWith("data:")) {
+            const [header, base64Data] = linkEl.href.split(",");
+            const mimeMatch = header.match(/data:([^;]+)/);
+            const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+            const binaryString = atob(base64Data);
+            const data = Uint8Array.from(binaryString, (c) =>
+              c.charCodeAt(0),
+            ).buffer;
+            window.parent.postMessage({
+              type: "downloadFile",
+              filename: linkEl.download,
+              data,
+              mimeType,
+            });
+          } else {
+            let linkUrl;
+            try {
+              linkUrl = new URL(linkEl.href);
+            } catch (error) {
+              return;
+            }
+    
+            if (linkUrl.hostname === window.location.hostname) return;
+      
+            window.parent.postMessage({
+              type: 'openExternal',
+              href: linkEl.href,
+            }, '*');
+          }
+      });
+
+        const originalOpen = window.open;
+        window.open = function (url) {
+          window.parent.postMessage({
+            type: "openExternal",
+            href: url,
+          }, "*");
+        };
+
+        window.addEventListener('error', (event) => {
+          window.parent.postMessage({ type: 'console', message: 'Uncaught Error: ' + event.message }, '*');
+        });
+      })();
+    </script>
+  
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 AI C-Level 협업 매뉴얼 · 매니저용 v1.0</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;family=Jost:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+
+<style>
+  :root {
+    --ink:        #1a1614;
+    --ink-soft:   #3a3330;
+    --paper:      #fdfcf9;
+    --paper-soft: #f5f1ea;
+    --line:       #e3ddd3;
+    --line-soft:  #efe9df;
+    --muted:      #7a736d;
+
+    --accent-ceo:  #2f3b33;
+    --accent-coo:  #3b4350;
+    --accent-cfo:  #2d3a4a;
+    --accent-cmo:  #822a37;
+    --accent-cto:  #2a3830;
+    --accent-chro: #6b553b;
+    --accent-cpo:  #563a61;
+
+    --ok:    #2a5f3f;
+    --warn:  #b0772b;
+    --stop:  #822a37;
+
+    --serif: 'Playfair Display', 'Noto Serif KR', serif;
+    --sans:  'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --mark:  'Jost', 'Pretendard Variable', sans-serif;
+    --mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    font-weight: 400;
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.7;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== Edit Panel ===== */
+  .edit-panel {
+    position: fixed;
+    top: 16px; right: 16px; z-index: 9999;
+    display: flex; gap: 8px;
+    background: rgba(26,22,20,0.94);
+    padding: 8px; border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.18);
+    backdrop-filter: blur(10px);
+  }
+  .edit-panel button {
+    font-family: var(--mark);
+    font-size: 12px; letter-spacing: 0.06em;
+    text-transform: uppercase; font-weight: 500;
+    color: #fff; background: transparent;
+    border: 1px solid rgba(255,255,255,0.18);
+    padding: 8px 14px; border-radius: 6px;
+    cursor: pointer; transition: all .2s ease;
+  }
+  .edit-panel button:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.35); }
+  .edit-panel button.is-active { background: #fdfcf9; color: var(--ink); }
+  body.is-editing [contenteditable="true"]:hover { outline: 1px dashed rgba(86,58,97,0.5); outline-offset: 4px; }
+  body.is-editing [contenteditable="true"]:focus { outline: 2px solid var(--accent-cpo); outline-offset: 4px; background: rgba(255,249,220,0.4); }
+
+  /* ===== Layout ===== */
+  .sheet { max-width: 1180px; margin: 0 auto; padding: 80px 64px 120px; }
+
+  /* ===== Header ===== */
+  .doc-header { border-bottom: 1px solid var(--line); padding-bottom: 40px; margin-bottom: 56px; }
+  .brand-mark {
+    font-family: var(--mark); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 28px;
+  }
+  .doc-title {
+    font-family: var(--serif); font-size: 52px; font-weight: 500;
+    line-height: 1.15; letter-spacing: -0.02em;
+    margin: 0 0 20px; color: var(--ink);
+  }
+  .doc-subtitle {
+    font-size: 17px; color: var(--ink-soft);
+    max-width: 720px; line-height: 1.7; margin: 0;
+  }
+  .doc-meta {
+    display: flex; gap: 32px; flex-wrap: wrap; margin-top: 28px;
+    font-family: var(--mark); font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .doc-meta strong { color: var(--ink); font-weight: 500; margin-left: 8px; }
+
+  /* ===== Preamble ===== */
+  .preamble {
+    background: var(--paper-soft);
+    border-left: 3px solid var(--ink);
+    padding: 32px 36px; margin: 0 0 56px;
+  }
+  .preamble-label {
+    font-family: var(--mark); font-size: 10px; letter-spacing: 0.32em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+  }
+  .preamble p {
+    font-family: var(--serif); font-size: 19px; font-style: italic;
+    font-weight: 400; line-height: 1.65; color: var(--ink); margin: 0 0 12px;
+  }
+  .preamble p:last-child { margin-bottom: 0; }
+
+  /* ===== Common Section (before tabs) ===== */
+  .common-block {
+    margin: 0 0 64px;
+    padding: 40px 44px 32px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+  }
+  .common-block-label {
+    font-family: var(--mark); font-size: 10px; letter-spacing: 0.32em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 18px;
+  }
+  .common-block h2 {
+    font-family: var(--serif); font-size: 28px; font-weight: 500;
+    line-height: 1.25; margin: 0 0 24px; letter-spacing: -0.015em;
+  }
+
+  .common-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin: 24px 0 8px;
+  }
+  .common-grid .cell {
+    background: var(--paper);
+    padding: 20px 20px 22px;
+  }
+  .common-grid .cell-label {
+    font-family: var(--mark); font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  .common-grid .cell-time {
+    font-family: var(--serif); font-size: 24px; font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .common-grid .cell-body {
+    font-size: 13.5px; color: var(--ink-soft); line-height: 1.6;
+  }
+
+  /* ===== Tab Nav ===== */
+  .cxo-nav {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px; background: var(--line);
+    border: 1px solid var(--line); margin-bottom: 64px;
+  }
+  .cxo-nav button {
+    font-family: var(--mark);
+    font-size: 12px; font-weight: 500; letter-spacing: 0.16em;
+    color: var(--muted); background: var(--paper);
+    border: none; padding: 20px 8px 18px;
+    cursor: pointer; transition: all .2s ease;
+    display: flex; flex-direction: column; gap: 6px; align-items: center;
+  }
+  .cxo-nav button:hover { background: var(--paper-soft); color: var(--ink); }
+  .cxo-nav button .tab-num { font-size: 10px; opacity: 0.55; letter-spacing: 0.2em; }
+  .cxo-nav button.is-active { background: var(--ink); color: #fff; }
+  .cxo-nav button.is-active .tab-num { opacity: 0.7; color: #fff; }
+
+  /* ===== Pane ===== */
+  .cxo-pane { display: none; }
+  .cxo-pane.is-active { display: block; animation: fadeIn .35s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .pane-header {
+    display: grid; grid-template-columns: 160px 1fr; gap: 40px;
+    padding-bottom: 36px; margin-bottom: 40px;
+    border-bottom: 1px solid var(--line);
+  }
+  .pane-label {
+    font-family: var(--mark); font-size: 11px; letter-spacing: 0.32em;
+    text-transform: uppercase; color: var(--muted); padding-top: 6px;
+  }
+  .pane-title {
+    font-family: var(--serif); font-size: 34px; font-weight: 500;
+    line-height: 1.2; letter-spacing: -0.015em; margin: 0 0 14px;
+  }
+  .pane-lede {
+    font-size: 16px; color: var(--ink-soft); line-height: 1.75;
+    margin: 0; max-width: 680px;
+  }
+  .pane-accent { display: inline-block; width: 48px; height: 2px; margin-bottom: 24px; }
+  #ceo .pane-accent  { background: var(--accent-ceo); }
+  #coo .pane-accent  { background: var(--accent-coo); }
+  #cfo .pane-accent  { background: var(--accent-cfo); }
+  #cmo .pane-accent  { background: var(--accent-cmo); }
+  #cto .pane-accent  { background: var(--accent-cto); }
+  #chro .pane-accent { background: var(--accent-chro); }
+  #cpo .pane-accent  { background: var(--accent-cpo); }
+
+  /* ===== Fact Strip (역할·산출물·주기 요약) ===== */
+  .fact-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin: 0 0 40px;
+  }
+  .fact {
+    background: var(--paper-soft);
+    padding: 22px 24px;
+  }
+  .fact-label {
+    font-family: var(--mark); font-size: 10px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+  }
+  .fact-value {
+    font-size: 15px; color: var(--ink); line-height: 1.55; font-weight: 500;
+  }
+  .fact-value small {
+    display: block; margin-top: 4px;
+    font-size: 12.5px; color: var(--muted); font-weight: 400;
+  }
+
+  /* ===== Section Title ===== */
+  .sec-title {
+    font-family: var(--serif); font-size: 22px; font-weight: 500;
+    letter-spacing: -0.01em; margin: 52px 0 14px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--line-soft);
+  }
+  .sec-num {
+    font-family: var(--mark); font-size: 10px; letter-spacing: 0.32em;
+    color: var(--muted); margin-right: 14px; vertical-align: 3px;
+  }
+  .sec-lede {
+    font-size: 14.5px; color: var(--muted); margin: 0 0 20px;
+    line-height: 1.7; max-width: 680px;
+  }
+
+  /* ===== Checklist (fixed from v1.0) ===== */
+  .checklist { list-style: none; padding: 0; margin: 20px 0 0; }
+  .checklist li {
+    position: relative;
+    padding: 14px 0 14px 30px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 15px; color: var(--ink-soft); line-height: 1.75;
+  }
+  .checklist li::before {
+    content: ''; position: absolute; left: 0; top: 20px;
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--ink-soft); border-radius: 2px;
+    opacity: 0.65;
+  }
+  .checklist strong { color: var(--ink); font-weight: 600; margin-right: 4px; }
+
+  /* ===== Prompt Card ===== */
+  .prompt-list { margin: 24px 0; }
+  .prompt-card {
+    border: 1px solid var(--line);
+    background: var(--paper);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .prompt-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; background: var(--paper-soft);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .prompt-label {
+    font-family: var(--mark); font-size: 11px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--muted); font-weight: 500;
+  }
+  .prompt-when {
+    font-family: var(--mark); font-size: 11px; letter-spacing: 0.1em;
+    color: var(--ink-soft); font-weight: 500;
+  }
+  .prompt-body {
+    font-family: var(--mono); font-size: 13.5px;
+    line-height: 1.75; color: var(--ink);
+    padding: 18px 20px; white-space: pre-wrap;
+    background: #fbf8f2;
+  }
+
+  /* ===== Matrix Table ===== */
+  .matrix {
+    width: 100%; border-collapse: collapse;
+    margin: 20px 0; font-size: 14px;
+  }
+  .matrix th, .matrix td {
+    text-align: left; padding: 14px 16px;
+    border-bottom: 1px solid var(--line-soft); vertical-align: top;
+  }
+  .matrix th {
+    font-family: var(--mark); font-size: 11px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--muted); font-weight: 500;
+    background: var(--paper-soft); border-bottom: 1px solid var(--line);
+  }
+  .matrix td strong { color: var(--ink); font-weight: 600; }
+  .matrix td.num {
+    font-family: var(--mark); font-variant-numeric: tabular-nums;
+    color: var(--ink); font-weight: 500;
+  }
+
+  /* ===== Escalation Flow ===== */
+  .escalation {
+    background: var(--ink); color: #fff;
+    padding: 32px 36px; margin: 32px 0;
+  }
+  .escalation-label {
+    font-family: var(--mark); font-size: 10px; letter-spacing: 0.32em;
+    text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 14px;
+  }
+  .escalation h3 {
+    font-family: var(--serif); font-size: 20px; font-weight: 500;
+    margin: 0 0 18px; line-height: 1.35;
+  }
+  .escalation-rows {
+    display: grid; grid-template-columns: auto 1fr auto;
+    gap: 10px 20px; align-items: center;
+  }
+  .escalation-rows .level {
+    font-family: var(--mark); font-size: 10px; letter-spacing: 0.2em;
+    padding: 4px 10px; border-radius: 2px; font-weight: 500;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .escalation-rows .level.ok   { background: var(--ok); }
+  .escalation-rows .level.warn { background: var(--warn); }
+  .escalation-rows .level.stop { background: var(--stop); }
+  .escalation-rows .situation { color: rgba(255,255,255,0.88); font-size: 14.5px; line-height: 1.55; }
+  .escalation-rows .owner {
+    font-family: var(--mark); font-size: 11px; letter-spacing: 0.14em;
+    color: rgba(255,255,255,0.7); font-weight: 500;
+  }
+
+  /* ===== Callout ===== */
+  .callout {
+    background: #f9f6ef; border: 1px solid var(--line);
+    padding: 22px 26px; margin: 22px 0;
+    font-size: 14px; color: var(--ink-soft); line-height: 1.75;
+  }
+  .callout strong {
+    color: var(--ink); display: block; margin-bottom: 6px;
+    font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    font-family: var(--mark); font-weight: 500;
+  }
+  .callout.warn { background: #fdf4ec; border-color: #ecd5b8; }
+  .callout.warn strong { color: var(--warn); }
+  .callout.stop { background: #fbeeee; border-color: #e8c5c5; }
+  .callout.stop strong { color: var(--stop); }
+
+  /* ===== Notion tag ===== */
+  .notion-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 12.5px;
+    background: var(--paper-soft); padding: 4px 10px;
+    border: 1px solid var(--line); color: var(--ink);
+    border-radius: 3px;
+  }
+  .notion-link::before {
+    content: '◇'; font-size: 10px; color: var(--muted);
+  }
+
+  /* ===== Footer ===== */
+  .doc-footer {
+    margin-top: 120px; padding-top: 36px;
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between;
+    align-items: flex-end; flex-wrap: wrap; gap: 24px;
+    font-family: var(--mark); font-size: 11px;
+    letter-spacing: 0.16em; color: var(--muted);
+  }
+  .doc-footer .sig {
+    font-family: var(--serif); font-style: italic; font-size: 15px;
+    color: var(--ink-soft); letter-spacing: 0;
+    max-width: 440px; line-height: 1.6;
+  }
+
+  /* ===== Print ===== */
+  @media print {
+    .edit-panel { display: none !important; }
+    .cxo-nav { display: none !important; }
+    .cxo-pane { display: block !important; page-break-before: always; }
+    .cxo-pane:first-of-type { page-break-before: auto; }
+    .sheet { padding: 20px 0; max-width: 100%; }
+    body { font-size: 11pt; }
+    .pane-title { font-size: 22pt; }
+    .doc-title { font-size: 28pt; }
+    .common-block { page-break-after: always; }
+  }
+
+  @media (max-width: 980px) {
+    .sheet { padding: 48px 24px; }
+    .doc-title { font-size: 36px; }
+    .pane-header { grid-template-columns: 1fr; gap: 12px; }
+    .cxo-nav { grid-template-columns: repeat(4, 1fr); }
+    .common-grid { grid-template-columns: repeat(2, 1fr); }
+    .fact-strip { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body id="artifacts-component-root-html">
+
+<div class="edit-panel" id="editPanel">
+  <button id="btnEdit">✎ 편집 시작</button>
+  <button id="btnSave">💾 수정본 저장</button>
+  <button id="btnPrint">🖨 PDF / 인쇄</button>
+</div>
+
+<div class="sheet">
+
+  <!-- HEADER -->
+  <header class="doc-header">
+    <div class="brand-mark" contenteditable="false">Wellperion — AI Operations Manual · For Managers</div>
+    <h1 class="doc-title" contenteditable="false">AI C-Level 협업 매뉴얼</h1>
+    <p class="doc-subtitle" contenteditable="false">
+      웰페리온의 AI C-Level(CEO · COO · CFO · CMO · CTO · CHRO · CPO)은 매일·매주 자동으로 돌아가며
+      Notion에 리포트와 데이터베이스를 갱신합니다. 이 매뉴얼은 매니저가 각 AI C-Level의 산출물을 어디서 보고,
+      어떻게 질의하고, 어떻게 검수하고, 언제 사람 의사결정자에게 가져갈지를 정리한 실사용 가이드입니다.
+    </p>
+    <div class="doc-meta">
+      <span>Document <strong>v1.0</strong></span>
+      <span>Audience <strong>Manager</strong></span>
+      <span>Channel <strong>Notion</strong></span>
+      <span>Updated <strong>2026.04</strong></span>
+    </div>
+  </header>
+
+  <!-- PREAMBLE -->
+  <div class="preamble">
+    <div class="preamble-label">The Principle</div>
+    <p contenteditable="false">
+      AI C-Level은 매니저를 대체하는 존재가 아니라, 매니저의 시야를 넓혀주는 초안 작성자입니다.
+    </p>
+    <p contenteditable="false">
+      AI가 데이터를 모으고 패턴을 제시하면, 매니저가 맥락을 더해 결정을 완성합니다.
+      이 매뉴얼은 그 협업의 리듬을 정리합니다.
+    </p>
+  </div>
+
+  <!-- COMMON: Daily Rhythm -->
+  <section class="common-block">
+    <div class="common-block-label">Common · Daily Rhythm</div>
+    <h2 contenteditable="false">매니저의 하루 — AI와 함께 흘러가는 리듬</h2>
+    <p class="sec-lede" contenteditable="false">
+      아침에 확인 · 낮에 질의 · 저녁에 피드백 · 주간에 회고. 네 박자의 루틴만 지키면 AI C-Level이 제 속도로 작동합니다.
+    </p>
+    <div class="common-grid">
+      <div class="cell">
+        <div class="cell-label">Morning</div>
+        <div class="cell-time" contenteditable="false">08:30 – 09:00</div>
+        <div class="cell-body" contenteditable="false">
+          Notion의 <strong>AI Daily Digest</strong> 페이지 열기.
+          각 C-Level이 올린 리포트 훑어보고, 플래그 항목만 따로 표시.
+        </div>
+      </div>
+      <div class="cell">
+        <div class="cell-label">Daytime</div>
+        <div class="cell-time" contenteditable="false">수시</div>
+        <div class="cell-body" contenteditable="false">
+          필요한 C-Level 세션을 열어 질의.
+          프롬프트 템플릿(각 탭 04번)을 참고해 구체적 컨텍스트와 함께 질문.
+        </div>
+      </div>
+      <div class="cell">
+        <div class="cell-label">Evening</div>
+        <div class="cell-time" contenteditable="false">18:00 – 18:30</div>
+        <div class="cell-body" contenteditable="false">
+          오늘 AI 산출물 중 <strong>실제로 쓴 것 / 버린 것 / 수정한 것</strong>을 Notion
+          <em>Feedback Log</em>에 2줄 기록. 다음날 AI 품질이 개선됩니다.
+        </div>
+      </div>
+      <div class="cell">
+        <div class="cell-label">Weekly</div>
+        <div class="cell-time" contenteditable="false">금 16:00</div>
+        <div class="cell-body" contenteditable="false">
+          <strong>GM Weekly Executive Summary</strong>를 기준으로 팀 주간 회고 15분.
+          다음 주 AI에게 맡길 일·사람이 맡을 일을 구분해 배분.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMON: Do Not Input -->
+  <section class="common-block">
+    <div class="common-block-label">Common · Do Not Input</div>
+    <h2 contenteditable="false">AI에 절대 입력하지 않는 정보</h2>
+    <p class="sec-lede" contenteditable="false">
+      AI 세션과 Notion DB에는 다음 정보를 직접 입력하지 않습니다. 꼭 필요한 경우 해시·마스킹·코드로 대체합니다.
+    </p>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>회원 개인정보</strong> 주민등록번호, 실제 생년월일, 주소, 여권번호. 대신 회원 ID 또는 이름+연락처 뒷자리.</li>
+      <li contenteditable="false"><strong>금융정보</strong> 카드번호, 계좌번호, CVC. 결제 관련은 벤더 관리 코드만 기록.</li>
+      <li contenteditable="false"><strong>건강 상세정보</strong> 진단명·처방·수술이력. 필요시 "건강 고지 있음 (레벨 1–3)" 수준으로 요약.</li>
+      <li contenteditable="false"><strong>직원 개인정보</strong> 급여 상세, 고용계약 조항, 징계 이력. HR AI에게도 코드화된 레퍼런스만.</li>
+      <li contenteditable="false"><strong>법적 분쟁 진행중 내용</strong> 사실관계·상대방 식별정보 금지. 반드시 오프라인으로 처리.</li>
+    </ul>
+    <div class="callout stop">
+      <strong>Violation Rule</strong>
+      위 항목이 이미 AI 세션에 들어간 것을 발견하면 즉시 해당 대화를 종료하고 CTO/GM에 공유. 세션 히스토리는 보관 주기 내 파기 요청.
+    </div>
+  </section>
+
+  <!-- TAB NAV -->
+  <nav class="cxo-nav" id="cxoNav">
+    <button class="" data-tab="ceo"><span class="tab-num">Ⅰ</span><span>CEO</span></button>
+    <button data-tab="coo" class="is-active"><span class="tab-num">Ⅱ</span><span>COO</span></button>
+    <button data-tab="cfo"><span class="tab-num">Ⅲ</span><span>CFO</span></button>
+    <button data-tab="cmo"><span class="tab-num">Ⅳ</span><span>CMO</span></button>
+    <button data-tab="cto"><span class="tab-num">Ⅴ</span><span>CTO</span></button>
+    <button data-tab="chro"><span class="tab-num">Ⅵ</span><span>CHRO</span></button>
+    <button data-tab="cpo"><span class="tab-num">Ⅶ</span><span>CPO</span></button>
+  </nav>
+
+  <!-- ============ CEO ============ -->
+  <section class="cxo-pane" id="ceo">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅰ · CEO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">전사 주간 총괄 보고</h2>
+        <p class="pane-lede" contenteditable="false">
+          모든 C-Level 리포트를 통합해 주간 하이라이트·로우라이트·리스크·다음 주 우선순위를 한 장으로 묶어주는 AI.
+          매주 금요일 오후 Notion에 자동 게시되며, 매니저는 월요일 팀 회의 전 이를 기준으로 대화를 엽니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="fact-strip">
+      <div class="fact">
+        <div class="fact-label">Role</div>
+        <div class="fact-value" contenteditable="false">전사 주간 Executive Summary 작성<small>모든 C-Level 리포트 통합 · Top 3 하이라이트/로우라이트/리스크</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Schedule</div>
+        <div class="fact-value" contenteditable="false">매주 금 16:00 자동 실행<small>주중 주요 이벤트 발생 시 수동 재실행 가능</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Notion Location</div>
+        <div class="fact-value" contenteditable="false"><span class="notion-link">Weekly Executive Summary</span><small>상위 페이지: Wellperion HQ / Executive</small></div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>산출물 구성</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>Top 3 하이라이트</strong> 이번 주 가장 잘 된 일 3가지 · 재현 가능한 요인 포함</li>
+      <li contenteditable="false"><strong>Top 3 로우라이트</strong> 가장 아쉬운 일 3가지 · 원인 가설 + 다음 주 조치 제안</li>
+      <li contenteditable="false"><strong>주간 리스크 맵</strong> 발생 가능성 × 영향도 2×2 · 상위 5개 리스크 항목</li>
+      <li contenteditable="false"><strong>다음 주 전사 우선순위</strong> 3개 이내 핵심 과제 + 담당 C-Level + 기한</li>
+      <li contenteditable="false"><strong>C-Level별 1줄 요약</strong> 6개 C-Level의 주요 지표 1문장 요약</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>결과 검수 체크리스트</h3>
+    <p class="sec-lede" contenteditable="false">AI 리포트를 그대로 본부장·대표에게 올리기 전에 매니저가 확인할 6가지.</p>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>숫자 정합성</strong> 인용된 지표가 원본 C-Level 리포트와 일치하는가. 수치 반올림 오차 확인.</li>
+      <li contenteditable="false"><strong>맥락 누락</strong> AI가 놓친 이번 주 특수 상황(휴일·이벤트·사고 등)이 있는지 직접 추가.</li>
+      <li contenteditable="false"><strong>중복 제거</strong> 두 C-Level 리포트에 같은 이슈가 중복되어 올라왔는지 확인.</li>
+      <li contenteditable="false"><strong>톤 조정</strong> 대표 보고용이므로 추정·단정 표현 → 가능성 표현으로 조정.</li>
+      <li contenteditable="false"><strong>실행 주체</strong> 제안된 조치에 실제 담당자가 배정되어 있는지 확인. 배정 없으면 반려.</li>
+      <li contenteditable="false"><strong>민감 정보</strong> 개인정보·재무 상세·법적 분쟁 관련 문구가 남아있는지 최종 스캔.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>자주 쓰는 질의 템플릿</h3>
+    <div class="prompt-list">
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CEO-01</span><span class="prompt-when">금요일 보고 초안 리뷰 후</span></div>
+        <div class="prompt-body" contenteditable="false">이번 주 Executive Summary에서 로우라이트 3개의 원인 가설을 각각 2개 이상으로 늘려줘. 단, 추정 표현은 "~일 가능성이 있다" 수준으로 조정.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CEO-02</span><span class="prompt-when">월요일 팀 회의 전</span></div>
+        <div class="prompt-body" contenteditable="false">이번 주 Summary에서 우리 팀([팀명])이 직접 실행해야 할 항목만 뽑아 체크리스트로 정리해줘. 각 항목에 예상 소요시간과 선행 조건을 달아줘.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CEO-03</span><span class="prompt-when">리스크 재평가 필요할 때</span></div>
+        <div class="prompt-body" contenteditable="false">현재 리스크 맵에서 "[리스크 항목]"의 영향도를 재평가해줘. 근거: [최근 발생한 이벤트/데이터]. 재평가 후 변경된 2×2 맵을 보여줘.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CEO-04</span><span class="prompt-when">과거 주와 비교하고 싶을 때</span></div>
+        <div class="prompt-body" contenteditable="false">지난 4주 Executive Summary를 비교해 반복되는 패턴 3가지를 알려줘. 구조적 이슈로 보이는 것과 일회성 이슈를 구분.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CEO-05</span><span class="prompt-when">대표 보고 직전 최종 정리</span></div>
+        <div class="prompt-body" contenteditable="false">이 보고서를 대표님 관점에서 가장 중요한 순서로 재정렬해줘. 결정이 필요한 항목과 단순 공유 항목을 분리해서 표시.</div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>에스컬레이션 기준</h3>
+    <div class="escalation">
+      <div class="escalation-label">When to Escalate</div>
+      <h3>AI가 답할 수 있는 영역과 사람에게 가져가야 할 영역을 구분합니다.</h3>
+      <div class="escalation-rows">
+        <span class="level ok">AI</span>
+        <span class="situation" contenteditable="false">주간 지표 요약, 과거 데이터 비교, 리포트 재구성, 실행 리스트 생성</span>
+        <span class="owner">Self-serve</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level warn">Human</span>
+        <span class="situation" contenteditable="false">전사 우선순위 변경, 조직 구조 관련 의사결정, 외부 파트너 교체</span>
+        <span class="owner">GM · 대표</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level stop">Stop</span>
+        <span class="situation" contenteditable="false">법적 이슈, 언론 노출, 안전사고, 이사회 사안 — AI 판단에 의존 금지</span>
+        <span class="owner">대표 직보</span>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <strong>Troubleshooting</strong>
+      ① 리포트가 금요일 17:00까지 생성되지 않은 경우 — 각 C-Level 세션이 정상 종료됐는지 확인 후 수동 재실행.
+      ② 숫자가 다른 C-Level 리포트와 어긋나는 경우 — 원본 리포트의 Snapshot 시각 확인 (AI가 이전 스냅샷을 참조했을 가능성).
+      ③ 같은 질문에 다른 답이 나오는 경우 — 컨텍스트 차이 가능성. 동일 질문을 하나의 세션에서 연속으로 재시도.
+    </div>
+  </section>
+
+  <!-- ============ COO ============ -->
+  <section class="cxo-pane is-active" id="coo">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅱ · COO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">일일 운영 모니터링</h2>
+        <p class="pane-lede" contenteditable="false">
+          매일 오픈 전 시설·예약·컴플레인 상태를 요약해 Notion에 올려주는 AI. 매니저의 플로어 워크 직전 15분을 대시보드 점검으로 쓰면, 공간이 보내는 신호를 놓치지 않습니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="fact-strip">
+      <div class="fact">
+        <div class="fact-label">Role</div>
+        <div class="fact-value" contenteditable="false">시설·예약·컴플레인 통합 대시보드<small>전일 이상 로그 · 오늘 예약률 · 컴플레인 Top 3</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Schedule</div>
+        <div class="fact-value" contenteditable="false">매일 05:30 자동 실행<small>피크 시간 전 13:30 2차 업데이트</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Notion Location</div>
+        <div class="fact-value" contenteditable="false"><span class="notion-link">Ops Dashboard (Daily)</span><small>DB View · 일자별 카드</small></div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>산출물 구성</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>시설 이상 로그</strong> 온도·습도·수질·음향 기준 이탈 기록 + 발생 시각 + 조치 여부</li>
+      <li contenteditable="false"><strong>오늘 예약 현황</strong> 시간대별 예약률 · 피크 예상 시간 · 대기 회원 리스트</li>
+      <li contenteditable="false"><strong>컴플레인 Top 3</strong> 전일 접수된 컴플레인 중 중요도 순 3건 + 반복 여부 표시</li>
+      <li contenteditable="false"><strong>근무표 · 인원 상태</strong> 오늘 근무자 · 결근·지각 · 스페셜 케어 필요 회원의 담당 트레이너</li>
+      <li contenteditable="false"><strong>오픈 체크리스트 완료율</strong> 전일 마감 · 오늘 오픈 준비 작업 진행 상태</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>결과 검수 체크리스트</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>현장 대조</strong> 대시보드 숫자와 플로어 워크에서 실제 관찰한 상태가 일치하는지.</li>
+      <li contenteditable="false"><strong>컴플레인 반복</strong> AI가 "반복"으로 표시하지 않았지만 내 기억에 있는 반복 이슈가 있는지.</li>
+      <li contenteditable="false"><strong>예약 이상치</strong> 평소와 다른 예약 패턴(급증·급감)이 있으면 원인 질의.</li>
+      <li contenteditable="false"><strong>인원 공백</strong> 피크 시간대에 인원이 부족한 섹션이 없는지 확인.</li>
+      <li contenteditable="false"><strong>누락 장비</strong> 장비 가동률 100% 표시여도 실제 고장 신호가 있었는지 트레이너에게 더블체크.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>자주 쓰는 질의 템플릿</h3>
+    <div class="prompt-list">
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-COO-01</span><span class="prompt-when">오픈 전 15분</span></div>
+        <div class="prompt-body" contenteditable="false">오늘 대시보드에서 "전일과 다른 패턴" 3가지만 뽑아서 한 줄씩 알려줘. 단, 수치 변동 5% 미만은 제외.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-COO-02</span><span class="prompt-when">반복 컴플레인 감지 시</span></div>
+        <div class="prompt-body" contenteditable="false">지난 4주간 "[컴플레인 주제]"와 관련된 접수 건을 시간대·요일·해당 직원 기준으로 분석해 패턴 있는지 알려줘.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-COO-03</span><span class="prompt-when">피크 대응 계획</span></div>
+        <div class="prompt-body" contenteditable="false">오늘 [시간대] 예약률 상위 3개 섹션에 추가 인력 배치가 필요한지 판단해줘. 기준: 회원 1인당 스태프 비율.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-COO-04</span><span class="prompt-when">사고·이슈 보고서 작성 시</span></div>
+        <div class="prompt-body" contenteditable="false">오늘 [사건] 관련 사실 관계를 시간순으로 정리해줘. 회원 식별 정보는 코드로 표기. 원인·대응·예방 3단 구조로 작성.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-COO-05</span><span class="prompt-when">주간 회고 전</span></div>
+        <div class="prompt-body" contenteditable="false">이번 주 Ops Dashboard를 요약해 "개선된 지표 2개 / 악화된 지표 2개 / 변화 없는 핵심 지표 3개" 포맷으로 정리해줘.</div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>에스컬레이션 기준</h3>
+    <div class="escalation">
+      <div class="escalation-label">When to Escalate</div>
+      <h3>운영 대시보드의 신호를 단계별로 구분합니다.</h3>
+      <div class="escalation-rows">
+        <span class="level ok">AI</span>
+        <span class="situation" contenteditable="false">일상 지표 조회, 과거 비교, 보고서 초안, 근무 배치 제안</span>
+        <span class="owner">Self-serve</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level warn">Human</span>
+        <span class="situation" contenteditable="false">반복 컴플레인, 동일 장비 3회 이상 고장, VIP 이슈 발생</span>
+        <span class="owner">COO · 본부장</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level stop">Stop</span>
+        <span class="situation" contenteditable="false">안전사고, 의료 응급, 장비 파손 후 회원 부상 — 즉시 전화 보고</span>
+        <span class="owner">대표 직보</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CFO ============ -->
+  <section class="cxo-pane" id="cfo">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅲ · CFO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">일일 비용 모니터링</h2>
+        <p class="pane-lede" contenteditable="false">
+          전일 지출을 카테고리별로 분해하고, 월 예산 대비 소진률과 이상 지출을 플래그로 표시하는 AI. 매니저는 플래그된 항목의 해명만 달아도 월말 리포팅 시간이 크게 줄어듭니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="fact-strip">
+      <div class="fact">
+        <div class="fact-label">Role</div>
+        <div class="fact-value" contenteditable="false">전일 지출 분석 · 예산 소진률 · 이상치 플래그<small>벤더별 · 카테고리별 · 담당자별 3축 분해</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Schedule</div>
+        <div class="fact-value" contenteditable="false">매일 07:00 자동 실행<small>월 마감 주간은 1일 2회로 증편</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Notion Location</div>
+        <div class="fact-value" contenteditable="false"><span class="notion-link">Expense Monitor</span><small>DB + 월별 대시보드 뷰</small></div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>산출물 구성</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>전일 지출 요약</strong> 총액 · Top 5 카테고리 · Top 5 벤더</li>
+      <li contenteditable="false"><strong>예산 소진률</strong> 카테고리별 월 예산 대비 진행률 · 선형 기대치 대비 편차</li>
+      <li contenteditable="false"><strong>이상치 플래그</strong> 전월 평균 ±30% 이탈 항목에 자동 ⚠️ 표시</li>
+      <li contenteditable="false"><strong>미처리 품의</strong> 48시간 이상 결재 지연 건 + 담당자</li>
+      <li contenteditable="false"><strong>벤더 계약 갱신 알림</strong> 30일 이내 갱신 예정 계약서 리스트</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>결과 검수 체크리스트</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>플래그 해명</strong> ⚠️ 표시된 항목에 24시간 내 1줄 해명 메모 추가.</li>
+      <li contenteditable="false"><strong>카테고리 오분류</strong> AI가 잘못 분류한 지출이 있으면 즉시 수정. 반복 오류는 CTO에 공유.</li>
+      <li contenteditable="false"><strong>중복 결제</strong> 같은 벤더·같은 금액이 7일 내 반복됐는지 수동 확인.</li>
+      <li contenteditable="false"><strong>증빙 첨부</strong> 전일 지출의 세금계산서·현금영수증 연결 상태 점검.</li>
+      <li contenteditable="false"><strong>환율 변동</strong> 해외 벤더 결제가 있다면 환율 기준일 확인 (AI가 당일 환율로 계산했는지).</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>자주 쓰는 질의 템플릿</h3>
+    <div class="prompt-list">
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CFO-01</span><span class="prompt-when">매일 아침</span></div>
+        <div class="prompt-body" contenteditable="false">오늘 플래그된 이상 지출 3건을 벤더명·금액·전월 평균 대비 변화율 표로 정리해줘. 해명이 필요한 담당자도 옆에 표시.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CFO-02</span><span class="prompt-when">월 중간 점검</span></div>
+        <div class="prompt-body" contenteditable="false">이번 달 카테고리별 예산 소진률을 보여줘. 남은 일수 대비 초과 위험이 있는 카테고리 3개를 빨간색으로 표시.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CFO-03</span><span class="prompt-when">벤더 재검토</span></div>
+        <div class="prompt-body" contenteditable="false">[벤더명]의 지난 6개월 지출 추이를 월별로 보여주고, 동일 서비스 대체 벤더 후보가 있는지 제안해줘.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CFO-04</span><span class="prompt-when">품의 승인 전</span></div>
+        <div class="prompt-body" contenteditable="false">"[품의 제목] · [금액]" 건이 이번 달 예산 내 감당 가능한지 판단해줘. 대체안 2개도 함께 제시.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CFO-05</span><span class="prompt-when">월말 리포트 준비</span></div>
+        <div class="prompt-body" contenteditable="false">이번 달 지출 리포트 초안을 <em>매출 · 고정비 · 변동비 · Top 5 · 예산 편차</em> 5섹션 포맷으로 작성해줘.</div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>에스컬레이션 기준</h3>
+    <div class="escalation">
+      <div class="escalation-label">When to Escalate</div>
+      <h3>숫자의 해석은 AI가, 지출 승인은 사람이.</h3>
+      <div class="escalation-rows">
+        <span class="level ok">AI</span>
+        <span class="situation" contenteditable="false">지출 분석·추이·예산 시뮬레이션·벤더 비교</span>
+        <span class="owner">Self-serve</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level warn">Human</span>
+        <span class="situation" contenteditable="false">한도 초과 지출, 신규 벤더 계약, 월 예산 10% 이상 편차</span>
+        <span class="owner">CFO · 본부장</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level stop">Stop</span>
+        <span class="situation" contenteditable="false">회계 부정 의심, 이중 결제, 벤더 리베이트 의혹 — AI에 상세 입력 금지</span>
+        <span class="owner">대표·감사 라인</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CMO ============ -->
+  <section class="cxo-pane" id="cmo">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅳ · CMO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">일일 콘텐츠 캘린더</h2>
+        <p class="pane-lede" contenteditable="false">
+          매일 오전 SNS·채널별 콘텐츠 아이디어를 3–5개 초안으로 생성하는 AI. 매니저는 초안 카드를 빠르게 검수해 승인·반려·수정 중 하나로 판정하고, 반영된 피드백이 내일 AI 품질로 돌아옵니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="fact-strip">
+      <div class="fact">
+        <div class="fact-label">Role</div>
+        <div class="fact-value" contenteditable="false">SNS·뉴스레터·내부 공지 초안 생성<small>채널별 톤 조정 · 이미지 방향 · 업로드 시간 제안</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Schedule</div>
+        <div class="fact-value" contenteditable="false">매일 09:00 자동 실행<small>주 1회 월요일 주간 테마 리셋</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Notion Location</div>
+        <div class="fact-value" contenteditable="false"><span class="notion-link">Content Calendar</span><small>DB · Status: Draft / Approved / Published</small></div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>산출물 구성</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>콘텐츠 카드 3–5개</strong> 채널 · 테마 · 캡션 초안 · 비주얼 방향 · 권장 업로드 시간</li>
+      <li contenteditable="false"><strong>주간 테마</strong> 그 주를 관통하는 키 메시지 1줄 + 서브 테마 3개</li>
+      <li contenteditable="false"><strong>회원 피드백 요약</strong> 전일 댓글·DM·후기 중 브랜드에 인용 가능한 발언 (동의 필요 표시)</li>
+      <li contenteditable="false"><strong>경쟁 브랜드 노트</strong> 벤치마크 3곳의 최근 24시간 주요 포스팅 요약</li>
+      <li contenteditable="false"><strong>브랜드 톤 체크</strong> 초안 카드가 브랜드 가이드 톤 앤 보이스 3기준을 통과했는지 자체 점수</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>결과 검수 체크리스트</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>수식어 점검</strong> "프리미엄·최고·완벽" 같은 포괄 수식이 남아있지 않은지.</li>
+      <li contenteditable="false"><strong>회원 개인 노출</strong> AI가 제안한 회원 후기 인용에 서면 동의가 있는지 확인.</li>
+      <li contenteditable="false"><strong>사실 검증</strong> 수치·일정·장소가 실제 운영 데이터와 일치하는지.</li>
+      <li contenteditable="false"><strong>이미지 방향 일관성</strong> 자연광·보정 ±5%·공간 우선 3기준 위반 여부.</li>
+      <li contenteditable="false"><strong>채널별 톤</strong> 인스타그램 · 뉴스레터 · 내부 공지의 톤 구분이 살아있는지.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>자주 쓰는 질의 템플릿</h3>
+    <div class="prompt-list">
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CMO-01</span><span class="prompt-when">매일 아침</span></div>
+        <div class="prompt-body" contenteditable="false">오늘 캘린더의 카드 중 "즉시 승인 가능"과 "수정 필요"를 구분해줘. 수정 필요 카드는 어떤 부분을 고쳐야 할지 1문장 코멘트.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CMO-02</span><span class="prompt-when">테마 전환</span></div>
+        <div class="prompt-body" contenteditable="false">이번 주 테마를 "[새 테마]"로 바꾸고, 앞으로 3일치 콘텐츠 카드를 새 테마에 맞춰 재작성해줘. 과거 유사 톤 포스트 참조.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CMO-03</span><span class="prompt-when">성과 분석</span></div>
+        <div class="prompt-body" contenteditable="false">지난 30일 포스팅 중 참여율 상위 5개와 하위 5개의 공통점을 각각 분석해줘. 캡션 길이·해시태그 수·이미지 유형 기준.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CMO-04</span><span class="prompt-when">캠페인 기획</span></div>
+        <div class="prompt-body" contenteditable="false">"[이벤트명]" 관련 2주짜리 콘텐츠 캘린더를 짜줘. D-14부터 D+3까지 채널·테마·포맷 구분.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CMO-05</span><span class="prompt-when">위기 대응</span></div>
+        <div class="prompt-body" contenteditable="false">"[이슈]"에 대한 공식 응대 초안을 톤 3가지(사실 중심 / 사과 중심 / 조치 중심)로 각각 써줘. 30자 / 100자 / 300자 세 버전.</div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>에스컬레이션 기준</h3>
+    <div class="escalation">
+      <div class="escalation-label">When to Escalate</div>
+      <h3>초안은 AI가, 브랜드의 목소리는 사람이.</h3>
+      <div class="escalation-rows">
+        <span class="level ok">AI</span>
+        <span class="situation" contenteditable="false">일상 포스팅 초안 · 캡션 변형 · 성과 분석 · 경쟁사 비교</span>
+        <span class="owner">Self-serve</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level warn">Human</span>
+        <span class="situation" contenteditable="false">신규 캠페인 기획, 외부 협업, 브랜드 아이덴티티 변경</span>
+        <span class="owner">CMO · GM</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level stop">Stop</span>
+        <span class="situation" contenteditable="false">이슈 관련 공식 입장, 언론 대응, 법적 분쟁 관련 콘텐츠 — AI 초안 게시 금지</span>
+        <span class="owner">CMO + CEO</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTO ============ -->
+  <section class="cxo-pane" id="cto">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅴ · CTO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">주간 시스템 점검</h2>
+        <p class="pane-lede" contenteditable="false">
+          회원관리(브로제이) · 예약 · 결제 · 출입 시스템의 상태를 주간 단위로 진단하고, 장애 이력·정합성·백업 상태를 한 페이지로 올려주는 AI. 매니저는 Severity 등급만 보면 무엇을 먼저 처리할지 결정할 수 있습니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="fact-strip">
+      <div class="fact">
+        <div class="fact-label">Role</div>
+        <div class="fact-value" contenteditable="false">시스템 헬스 리포트 · 데이터 정합성 감사<small>Severity 1–4 분류 · 백업 복원 훈련 결과</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Schedule</div>
+        <div class="fact-value" contenteditable="false">매주 월 07:00 자동 실행<small>Severity 1 발생 시 즉시 추가 업데이트</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Notion Location</div>
+        <div class="fact-value" contenteditable="false"><span class="notion-link">System Report (Weekly)</span><small>상위: Wellperion HQ / Tech</small></div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>산출물 구성</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>주간 장애 이력</strong> Severity · 발생 시각 · 복구 시각 · 원인 · 재발 방지 조치</li>
+      <li contenteditable="false"><strong>데이터 정합성</strong> 회원 중복 레코드 · 보호자 미연결 유소년 · 결제 실패 미처리 건수</li>
+      <li contenteditable="false"><strong>성능 지표</strong> 주요 화면 로딩 시간 · 예약 성공률 · 결제 성공률 주간 평균</li>
+      <li contenteditable="false"><strong>보안 알람</strong> 비정상 접근 · 권한 초과 · 대량 다운로드 시도 로그</li>
+      <li contenteditable="false"><strong>백업 상태</strong> 일일 백업 성공률 + 분기 복원 훈련 결과</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>결과 검수 체크리스트</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>Severity 분류 확인</strong> AI가 Sev 1로 분류한 건이 실제 회원 영향이 있었는지 더블체크.</li>
+      <li contenteditable="false"><strong>원인 가설의 깊이</strong> "원인 미상"으로 끝난 건은 반드시 후속 조사 티켓 생성.</li>
+      <li contenteditable="false"><strong>백업 복원 실제 시험</strong> AI의 "백업 성공" 지표가 복원까지 검증된 것인지 분기 1회 직접 실행.</li>
+      <li contenteditable="false"><strong>외주 벤더 영향</strong> 브로제이 장애인지 자체 인프라 장애인지 구분 확인.</li>
+      <li contenteditable="false"><strong>보안 알람 후속</strong> 비정상 접근 로그가 있으면 해당 계정·IP 차단 여부 확인.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>자주 쓰는 질의 템플릿</h3>
+    <div class="prompt-list">
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CTO-01</span><span class="prompt-when">월요일 리포트 확인 후</span></div>
+        <div class="prompt-body" contenteditable="false">이번 주 Severity 1–2 장애의 공통 원인이 있는지 분석해줘. 있다면 구조적 원인과 일회성 원인을 구분.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CTO-02</span><span class="prompt-when">데이터 품질 우려 시</span></div>
+        <div class="prompt-body" contenteditable="false">회원 DB에서 "중복 의심" 레코드 Top 20을 뽑아줘. 매칭 기준: 이름 + 전화 뒷자리 + 생년.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CTO-03</span><span class="prompt-when">성능 저하 체감 시</span></div>
+        <div class="prompt-body" contenteditable="false">지난 7일간 [화면/기능]의 로딩 시간 추이를 보여줘. 기준치(예: 예약 2초) 초과 건수와 시간대를 함께 표시.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CTO-04</span><span class="prompt-when">신규 도구 도입 전</span></div>
+        <div class="prompt-body" contenteditable="false">"[도구명]" 도입 시 고려해야 할 보안·통합·데이터 이관 포인트를 체크리스트 형태로 정리해줘.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CTO-05</span><span class="prompt-when">사고 사후 보고</span></div>
+        <div class="prompt-body" contenteditable="false">"[장애명]"에 대한 RCA(Root Cause Analysis) 초안을 써줘. 타임라인 · 원인 · 영향 · 조치 · 재발 방지 5섹션.</div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>에스컬레이션 기준</h3>
+    <div class="escalation">
+      <div class="escalation-label">When to Escalate</div>
+      <h3>시스템은 AI가 살피고, 보안 판단은 사람이 내립니다.</h3>
+      <div class="escalation-rows">
+        <span class="level ok">AI</span>
+        <span class="situation" contenteditable="false">정기 헬스체크, 데이터 정합성 감사, 성능 추이 분석, RCA 초안</span>
+        <span class="owner">Self-serve</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level warn">Human</span>
+        <span class="situation" contenteditable="false">Severity 2 이상 장애, 구조적 원인으로 의심되는 패턴, 신규 도구 승인</span>
+        <span class="owner">CTO · GM</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level stop">Stop</span>
+        <span class="situation" contenteditable="false">회원 데이터 유출 징후, 보안 침해, Severity 1 결제·출입 중단 — 전화 즉시</span>
+        <span class="owner">CTO + 대표</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHRO ============ -->
+  <section class="cxo-pane" id="chro">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅵ · CHRO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">일일 HR 모니터링</h2>
+        <p class="pane-lede" contenteditable="false">
+          출결·근태·1:1 일정·기념일을 매일 아침 Notion에 정리해주는 AI. 매니저는 팀원의 컨디션 신호를 조기에 잡고, 1:1 전에 맥락을 한 번에 훑을 수 있습니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="fact-strip">
+      <div class="fact">
+        <div class="fact-label">Role</div>
+        <div class="fact-value" contenteditable="false">출결·근태·1:1·기념일 통합 브리프<small>개인 데이터는 코드화된 형태만 저장</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Schedule</div>
+        <div class="fact-value" contenteditable="false">매일 08:00 자동 실행<small>월요일 주간 플래너 통합 발송</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Notion Location</div>
+        <div class="fact-value" contenteditable="false"><span class="notion-link">HR Pulse</span><small>본인 팀원 필터 뷰로 접근</small></div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>산출물 구성</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>오늘 근태 요약</strong> 출근 · 지각 · 결근 · 휴가 · 외근</li>
+      <li contenteditable="false"><strong>연차 잔여</strong> 분기 소진률 하위 3인 + 소진률 상위 3인</li>
+      <li contenteditable="false"><strong>이번 주 1:1 스케줄</strong> 예정 대화 + 지난 1:1 메모 요약</li>
+      <li contenteditable="false"><strong>기념일·생일</strong> 이번 주 축하 대상자 + 팀 내 축하 방식 제안</li>
+      <li contenteditable="false"><strong>컨디션 신호</strong> 최근 3주간 근태·피드백 패턴에서 AI가 읽은 변화 (주의 → 확인 권유)</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>결과 검수 체크리스트</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>개인정보 최소화</strong> AI 답변에 주민번호·주소·계좌가 포함되면 즉시 세션 종료.</li>
+      <li contenteditable="false"><strong>추정 주의</strong> "컨디션 신호"는 사실이 아니라 추정치. 본인과 대화로만 확인.</li>
+      <li contenteditable="false"><strong>1:1 메모 일관성</strong> 지난 메모의 약속 사항이 이번 주에 이어지고 있는지.</li>
+      <li contenteditable="false"><strong>편향 확인</strong> AI가 특정 팀원에게 반복적으로 부정 신호를 주는지 — 팀원 간 형평성 체크.</li>
+      <li contenteditable="false"><strong>근태 데이터 원본</strong> 출근 시스템 원본과 AI 요약이 일치하는지 주 1회 샘플링.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>자주 쓰는 질의 템플릿</h3>
+    <div class="prompt-list">
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CHRO-01</span><span class="prompt-when">1:1 10분 전</span></div>
+        <div class="prompt-body" contenteditable="false">[팀원명]과의 지난 3회 1:1 메모를 요약하고, 이번에 이어서 물어봐야 할 질문 3개를 제안해줘.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CHRO-02</span><span class="prompt-when">분기 초</span></div>
+        <div class="prompt-body" contenteditable="false">우리 팀 [N명]의 연차 사용 패턴을 분기별로 비교해줘. 소진률 편차가 큰 사유를 가설로 제시.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CHRO-03</span><span class="prompt-when">평가 전</span></div>
+        <div class="prompt-body" contenteditable="false">[팀원명]의 분기 리뷰 초안을 <em>성과 · 행동 · 성장</em> 3축 포맷으로 써줘. 숫자·에피소드가 부족한 축은 표시.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CHRO-04</span><span class="prompt-when">온보딩 중</span></div>
+        <div class="prompt-body" contenteditable="false">신입 [이름]의 D+30 체크포인트를 이번 주 안에 실행할 수 있는 단위 과제 5개로 쪼개줘.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CHRO-05</span><span class="prompt-when">팀 분위기 점검</span></div>
+        <div class="prompt-body" contenteditable="false">지난 달 팀 1:1 기록에서 반복적으로 언급된 주제 3가지를 뽑아줘. 개인 식별 정보 제거.</div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>에스컬레이션 기준</h3>
+    <div class="escalation">
+      <div class="escalation-label">When to Escalate</div>
+      <h3>사람에 관한 판단은 반드시 사람으로 마무리합니다.</h3>
+      <div class="escalation-rows">
+        <span class="level ok">AI</span>
+        <span class="situation" contenteditable="false">근태 요약 · 1:1 준비 · 평가 초안 · 온보딩 플랜</span>
+        <span class="owner">Self-serve</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level warn">Human</span>
+        <span class="situation" contenteditable="false">장기 결근, 반복 지각, 번아웃 의심 신호 — 본인 대화 + CHRO 상담</span>
+        <span class="owner">CHRO · 본부장</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level stop">Stop</span>
+        <span class="situation" contenteditable="false">징계·해고·법적 분쟁 관련 사실관계 — AI에 상세 기록 금지</span>
+        <span class="owner">CHRO + 대표</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CPO ============ -->
+  <section class="cxo-pane" id="cpo">
+    <div class="pane-header">
+      <div class="pane-label">Chapter Ⅶ · CPO</div>
+      <div>
+        <span class="pane-accent"></span>
+        <h2 class="pane-title" contenteditable="false">일일 회원 모니터링</h2>
+        <p class="pane-lede" contenteditable="false">
+          방문 리듬·이용 종목·결제 수단 변화를 읽어 이탈 신호를 감지하고, VIP 기념일과 신규 회원 웰컴 상태를 매일 알려주는 AI. 매니저는 리스트만 따라가면 선제 케어를 놓치지 않습니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="fact-strip">
+      <div class="fact">
+        <div class="fact-label">Role</div>
+        <div class="fact-value" contenteditable="false">이탈 신호 감지 · VIP 케어 · 신규 회원 웰컴<small>회원 데이터는 ID 기반 · 실명은 매니저만 열람</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Schedule</div>
+        <div class="fact-value" contenteditable="false">매일 08:30 자동 실행<small>월 1회 Cohort Retention 심층 리포트 추가</small></div>
+      </div>
+      <div class="fact">
+        <div class="fact-label">Notion Location</div>
+        <div class="fact-value" contenteditable="false"><span class="notion-link">Member Pulse</span><small>담당 매니저 필터 뷰</small></div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">01</span>산출물 구성</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>이탈 신호 Top 10</strong> 방문 감소 · 이용 종목 축소 · 결제 수단 변경 등 복합 신호 기반 스코어링</li>
+      <li contenteditable="false"><strong>오늘의 VIP 방문</strong> 예약 확인된 Founding · Premium 회원 + 담당자</li>
+      <li contenteditable="false"><strong>신규 회원 현황</strong> D+1 · D+7 · D+30 온보딩 체크포인트 진행도</li>
+      <li contenteditable="false"><strong>기념일 알림</strong> 가입일 · 생일 · 가족 회원 기념일</li>
+      <li contenteditable="false"><strong>컴플레인 연계 알림</strong> 최근 컴플레인이 있었던 회원의 오늘 방문 여부</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">02</span>결과 검수 체크리스트</h3>
+    <ul class="checklist">
+      <li contenteditable="false"><strong>이탈 신호 타당성</strong> AI 스코어링이 단순한 휴가·출장 때문인지 실제 이탈 신호인지 구분.</li>
+      <li contenteditable="false"><strong>개인정보 노출</strong> Member Pulse 내부에서 실명·연락처가 외부 공유 가능한 포맷으로 새어나가지 않는지.</li>
+      <li contenteditable="false"><strong>VIP 사전 준비</strong> 오늘 VIP 방문 리스트가 어제 저녁에도 파악되었는지 (당일 아침 인지는 지각).</li>
+      <li contenteditable="false"><strong>중복 연락 방지</strong> 동일 회원에게 다른 매니저가 이미 연락했는지 CRM 히스토리 확인.</li>
+      <li contenteditable="false"><strong>신규 회원 갭</strong> D+7 체크포인트 미이행 회원이 누락되지 않았는지 주 1회 감사.</li>
+    </ul>
+
+    <h3 class="sec-title"><span class="sec-num">03</span>자주 쓰는 질의 템플릿</h3>
+    <div class="prompt-list">
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CPO-01</span><span class="prompt-when">매일 아침</span></div>
+        <div class="prompt-body" contenteditable="false">오늘 이탈 신호 Top 5 회원의 스코어링 근거를 각 3줄씩 설명해줘. 휴가·출장 가능성도 함께 표시.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CPO-02</span><span class="prompt-when">VIP 방문 예정</span></div>
+        <div class="prompt-body" contenteditable="false">[VIP 회원 ID]의 최근 3개월 이용 패턴, 지난 접점 기록, 선호 공간을 한 페이지로 정리해줘.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CPO-03</span><span class="prompt-when">리텐션 기획</span></div>
+        <div class="prompt-body" contenteditable="false">지난 90일 이탈 회원의 공통 특성을 가입 시점·이용 패턴·결제 수단 기준으로 분석해줘.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CPO-04</span><span class="prompt-when">선제 연락 전</span></div>
+        <div class="prompt-body" contenteditable="false">[회원 ID]에게 보낼 선제 연락 메시지를 3버전으로 써줘: 공식 / 친근 / 최소 개입. 각 30자·80자·150자.</div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-head"><span class="prompt-label">Q-CPO-05</span><span class="prompt-when">월간 리뷰</span></div>
+        <div class="prompt-body" contenteditable="false">지난 달 우리 회원 N=[숫자]에 대해 <em>신규 · 갱신 · 이탈 · 휴면</em> 코호트로 쪼개고 핵심 지표 요약.</div>
+      </div>
+    </div>
+
+    <h3 class="sec-title"><span class="sec-num">04</span>에스컬레이션 기준</h3>
+    <div class="escalation">
+      <div class="escalation-label">When to Escalate</div>
+      <h3>숫자는 AI가 읽고, 관계는 사람이 만듭니다.</h3>
+      <div class="escalation-rows">
+        <span class="level ok">AI</span>
+        <span class="situation" contenteditable="false">이탈 신호 스코어링, 코호트 분석, 메시지 초안, VIP 브리프</span>
+        <span class="owner">Self-serve</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level warn">Human</span>
+        <span class="situation" contenteditable="false">Founding·Premium 이탈 징후, 반복 컴플레인, 가족 회원 이슈</span>
+        <span class="owner">CPO · 팀장</span>
+      </div>
+      <div class="escalation-rows" style="margin-top:14px;">
+        <span class="level stop">Stop</span>
+        <span class="situation" contenteditable="false">회원 건강·안전 사고, 법적 분쟁, 언론 제보 가능성 — AI 기록 중단</span>
+        <span class="owner">CPO + 대표</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="doc-footer">
+    <div class="sig" contenteditable="false">
+      이 매뉴얼은 AI와 사람의 협업 방식을 실제 운영에 맞춰 계속 다듬어가기 위한 문서입니다. 현장에서 발견되는 더 나은 프롬프트·검수 기준·에스컬레이션 사례는 분기 업데이트에 반영합니다.
+    </div>
+    <div>
+      <div contenteditable="false">Wellperion · Hannam-dong</div>
+      <div contenteditable="false" style="margin-top: 4px;">v1.0 · 2026.04</div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  const nav = document.getElementById('cxoNav');
+  const panes = document.querySelectorAll('.cxo-pane');
+  nav.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-tab]');
+    if (!btn) return;
+    nav.querySelectorAll('button').forEach(b => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    const target = btn.dataset.tab;
+    panes.forEach(p => p.classList.toggle('is-active', p.id === target));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  const btnEdit = document.getElementById('btnEdit');
+  const btnSave = document.getElementById('btnSave');
+  const btnPrint = document.getElementById('btnPrint');
+
+  let editing = false;
+  function setEditable(on) {
+    editing = on;
+    document.body.classList.toggle('is-editing', on);
+    document.querySelectorAll('[contenteditable]').forEach(el => {
+      el.setAttribute('contenteditable', on ? 'true' : 'false');
+    });
+    btnEdit.textContent = on ? '✓ 편집 종료' : '✎ 편집 시작';
+    btnEdit.classList.toggle('is-active', on);
+  }
+  setEditable(false);
+  btnEdit.addEventListener('click', () => setEditable(!editing));
+
+  btnSave.addEventListener('click', () => {
+    setEditable(false);
+    const doctype = '<!DOCTYPE html>';
+    const html = document.documentElement.outerHTML;
+    const blob = new Blob([doctype + '\n' + html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `웰페리온_AI_C레벨_협업매뉴얼_${ts}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  btnPrint.addEventListener('click', () => {
+    const activeId = document.querySelector('.cxo-pane.is-active')?.id;
+    panes.forEach(p => p.classList.add('is-active'));
+    window.print();
+    setTimeout(() => {
+      panes.forEach(p => p.classList.toggle('is-active', p.id === activeId));
+    }, 500);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
+      e.preventDefault();
+      setEditable(!editing);
+    }
+  });
+</script>
+
+
+</body></html>

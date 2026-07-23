@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>강습 회원관리</title>
+<!-- 강습 회원관리 진입 스텁(2026-07-15 시토) — 카카오톡 인앱브라우저가 ?manage=lesson 쿼리를
+     떨어뜨려 멤버십으로 열리는 문제 해결. 이 스텁은 쿼리·한글 없는 깨끗한 ASCII URL이라
+     카톡 전송에서 안 깨지고, 브라우저 내부에서 membership.html?manage=lesson 로 이동시킨다. -->
+<script>
+  // 브라우저 내부 이동이라 쿼리가 그대로 전달됨(카톡 전송단계에서 안 잃음). 해시가 있으면 함께 전달.
+  location.replace('membership.html?manage=lesson' + (location.hash || ''));
+</script>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body style="font-family:'Apple SD Gothic Neo',sans-serif;text-align:center;padding:64px 20px;color:#555;background:#faf8f5;">
+  <p style="font-size:15px;">🏊 강습 회원관리로 이동 중…</p>
+  <p style="margin-top:16px;"><a href="membership.html?manage=lesson" style="color:#c48f7c;font-weight:700;">이동이 안 되면 여기를 누르세요</a></p>
+</body>
+</html>

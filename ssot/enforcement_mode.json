@@ -1,0 +1,9 @@
+{
+  "mode": "warn",
+  "_doc": "화이트리스트 코드강제 1-스위치. off|warn|block. 기본=warn(감지·로그만, 절대 비차단). block=GM 명시 go 후에만(실제 차단). off=완전 무동작. 라이브엔 반드시 warn 유지. block 전환 절차: ① 며칠 warn 관찰해 오탐0 확인 ② GM 명시 go ③ 이 값을 block 으로.",
+  "telegram_warn_notify": false,
+  "_telegram_doc": "warn 모드에서 위반 감지 시 텔레그램 1줄 관찰 보고 여부(선택). 기본 false(로그만). true 로 켜면 logs/enforcement.log + 텔레그램.",
+  "bypass_token": "[GM-approved]",
+  "bypass_flag_file": "ssot/.enforcement_bypass",
+  "_bypass_doc": "정당 변경 우회: 커밋 메시지에 bypass_token 이 있거나 bypass_flag_file 이 존재하면 위반이어도 통과(로그 남김)."
+}

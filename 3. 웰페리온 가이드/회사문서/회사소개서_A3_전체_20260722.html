@@ -1,0 +1,549 @@
+<meta charset="utf-8">
+<link rel="stylesheet" href="../assets/wp-typography.css">
+<title>웰페리온 회사소개서 · A3 (전 12장)</title>
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+
+:root{
+  --beige:#B79F8A;
+  --beige-lo:rgba(183,159,138,.34);
+  --black:#221F20;
+  --highlight:#ED5B3F;
+  --white:#FFFFFF;
+  --paper:#F4F0EB;
+  --ink:#2A2622;
+  --ink-soft:#6E655C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#8b8b8b;font-family:"Pretendard",-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+
+/* ===== 자연 줄바꿈 규칙 (전 텍스트 공통) ===== */
+h1,h2,h3,h4,p,li,span,div{
+  word-break:keep-all;          /* 한국어 어절 통째로 — 단어 중간 잘림 0 */
+  overflow-wrap:break-word;
+  text-wrap:pretty;             /* orphan 방지 */
+}
+
+/* ---- A3 sheet (landscape 420x297mm @96dpi) ---- */
+.a3{
+  position:relative;overflow:hidden;
+  width:1587px;height:1123px;
+  margin:26px auto;
+  box-shadow:0 18px 60px rgba(0,0,0,.32);
+  background:var(--paper);color:var(--ink);
+}
+.a3.dark{background:var(--black);color:var(--white)}
+.pad{position:absolute;inset:0;padding:92px 104px 78px;display:flex;flex-direction:column}
+
+/* kickers / headings */
+.kick{font-size:16px;letter-spacing:.34em;text-transform:uppercase;font-weight:700;color:var(--highlight);margin-bottom:20px}
+.dark .kick{color:var(--beige)}
+h2.title{font-size:56px;line-height:1.18;font-weight:800;letter-spacing:-.025em;color:var(--ink)}
+.dark h2.title{color:var(--white)}
+h2.title .b{color:var(--beige)}
+.lead{margin-top:26px;font-size:20px;line-height:1.85;color:var(--ink-soft);max-width:1180px;font-weight:400}
+.dark .lead{color:rgba(255,255,255,.72)}
+.lead + .lead{margin-top:16px}   /* 문장 끝 → 한 칸 내려 새 문장 */
+
+/* section label */
+.slabel{font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:var(--beige);font-weight:700;padding-bottom:12px;border-bottom:2px solid var(--beige-lo);margin-bottom:20px}
+
+/* page footer */
+.pf{position:absolute;left:104px;right:104px;bottom:52px;display:flex;justify-content:space-between;align-items:center;
+   font-size:14px;letter-spacing:.12em;color:var(--ink-soft);border-top:2px solid var(--ink);padding-top:18px}
+.dark .pf{color:rgba(255,255,255,.5);border-top-color:var(--beige-lo)}
+.pf b{font-weight:800;letter-spacing:.24em;color:var(--ink)}
+.dark .pf b{color:var(--white)}
+.pf .tag{letter-spacing:.06em}
+
+/* ============ 01 COVER (landscape) ============ */
+.cov .top{display:flex;justify-content:space-between;align-items:flex-start}
+.cov .logo{width:232px;height:auto;display:block}
+.cov .eyebrow{font-size:15px;letter-spacing:.4em;text-transform:uppercase;color:var(--beige);font-weight:600;text-align:right;line-height:2}
+.cov .mid{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:1180px}
+.cov .en{font-size:30px;letter-spacing:.3em;text-transform:uppercase;color:var(--beige);font-weight:600;margin-bottom:30px}
+.cov h1{font-size:96px;line-height:1.14;font-weight:800;letter-spacing:-.02em;color:var(--white)}
+.cov h1 .ac{color:var(--beige)}
+.cov .desc{margin-top:38px;font-size:22px;line-height:1.8;color:rgba(255,255,255,.82);max-width:960px}
+.cov .desc b{color:#fff;font-weight:600}
+.cov .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;border-top:1px solid var(--beige-lo);padding-top:34px;margin-top:12px}
+.cov .meta .k{font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--beige);font-weight:600;margin-bottom:12px}
+.cov .meta .v{font-size:30px;font-weight:700;color:#fff;line-height:1.25}
+.cov .meta .v small{display:block;font-size:14px;font-weight:400;color:rgba(255,255,255,.6);margin-top:5px;letter-spacing:0}
+
+/* generic two-col body */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:64px;margin-top:38px;flex:1;min-height:0}
+.col p.tx{font-size:19px;line-height:1.9;color:#3a352f;margin-bottom:20px}
+.dark .col p.tx{color:rgba(255,255,255,.8)}
+.col p.tx b{color:var(--ink);font-weight:700}.dark .col p.tx b{color:#fff}
+.col p.tx .em{color:var(--highlight);font-weight:600}.dark .col p.tx .em{color:var(--beige)}
+
+/* three cards (audiences) */
+.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:34px;margin-top:40px;flex:1;align-content:center;align-items:stretch}
+.card{background:#fff;border:1px solid rgba(34,31,32,.10);border-radius:4px;padding:38px 34px;display:flex;flex-direction:column}
+.dark .card{background:rgba(255,255,255,.04);border-color:var(--beige-lo)}
+.card .rn{font-size:15px;letter-spacing:.2em;color:var(--highlight);font-weight:700;margin-bottom:6px}
+.dark .card .rn{color:var(--beige)}
+.card .ct{font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:var(--beige);font-weight:700;margin-bottom:18px}
+.card h3{font-size:26px;font-weight:800;color:var(--ink);line-height:1.32;margin-bottom:20px}
+.dark .card h3{color:#fff}
+.card ul{list-style:none;margin-top:24px}
+.card li{position:relative;padding-left:20px;font-size:16.5px;line-height:1.6;color:#4a443d;margin-bottom:14px}
+.dark .card li{color:rgba(255,255,255,.76)}
+.card li::before{content:"";position:absolute;left:0;top:11px;width:7px;height:7px;background:var(--beige);border-radius:50%}
+
+/* facility index (ch1) */
+.facil{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
+.facil .f{display:flex;align-items:baseline;gap:14px;padding:12px 0;border-bottom:1px solid rgba(34,31,32,.1)}
+.facil .f .num{font-size:13px;font-weight:700;color:var(--beige);min-width:26px}
+.facil .f .nm{font-size:17.5px;font-weight:600;color:var(--ink)}
+.facil .f .en{font-size:12.5px;color:var(--ink-soft);margin-left:auto}
+
+/* timeline (journey) */
+.tl{margin-top:34px;flex:1;display:grid;grid-template-columns:repeat(2,1fr);gap:6px 66px;align-content:start}
+.tl .row{display:grid;grid-template-columns:118px 34px 1fr;align-items:baseline;gap:14px;padding:11px 0;border-bottom:1px solid var(--beige-lo)}
+.tl .yr{font-size:16px;font-weight:800;color:var(--beige);letter-spacing:.02em}
+.tl .rn{font-size:13px;font-weight:700;color:var(--highlight);text-align:center}
+.dark .tl .rn{color:var(--beige)}
+.tl .tt{font-size:16.5px;line-height:1.5;color:#3a352f}
+.dark .tl .tt{color:rgba(255,255,255,.8)}
+.tl .tt b{color:var(--ink);font-weight:700}.dark .tl .tt b{color:#fff}
+
+/* KPI grid (ch2) */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--beige-lo);border:1px solid var(--beige-lo);margin-top:30px}
+.kpi{background:var(--paper);padding:22px 22px}
+.kpi .kk{font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--beige);font-weight:700;margin-bottom:10px}
+.kpi .kv{font-size:30px;font-weight:800;color:var(--ink);line-height:1.1}
+.kpi .kd{font-size:13px;color:var(--ink-soft);margin-top:7px;line-height:1.4}
+.moments{margin-top:26px}
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:16px;margin-top:16px}
+.mm{border-top:2px solid var(--beige)}
+.mm .mn{font-size:13px;font-weight:800;color:var(--highlight);margin:12px 0 6px}
+.mm .mt{font-size:15px;font-weight:700;color:var(--ink);line-height:1.35}
+.mm .md{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* program chips (ch2b) */
+.progs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:34px;flex:1;align-content:start}
+.prog{background:#fff;border:1px solid rgba(34,31,32,.1);border-radius:4px;padding:22px 24px}
+.prog .pn{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--beige);font-weight:700}
+.prog .pt{font-size:21px;font-weight:800;color:var(--ink);margin-top:8px}
+.prog .pd{font-size:14px;color:var(--ink-soft);margin-top:5px;line-height:1.5}
+
+/* facilities tour (dark, tag grid) */
+.tour{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:34px;flex:1;align-content:start}
+.tcell{border:1px solid var(--beige-lo);border-radius:4px;padding:26px 24px;background:rgba(255,255,255,.03);display:flex;flex-direction:column;min-height:150px}
+.tcell .tno{font-size:13px;font-weight:800;color:var(--beige);letter-spacing:.1em}
+.tcell .tnm{font-size:20px;font-weight:800;color:#fff;margin-top:auto}
+.tcell .ten{font-size:13px;color:rgba(255,255,255,.6);margin-top:7px;letter-spacing:.04em}
+
+/* tiers (ch3) */
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:20px}
+.tier{border:1px solid rgba(34,31,32,.12);border-radius:4px;padding:28px 26px;background:#fff}
+.dark .tier{background:rgba(255,255,255,.04);border-color:var(--beige-lo)}
+.tier .th{font-size:20px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.dark .tier .th{color:#fff}
+.tier .ts{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--highlight);font-weight:700;margin-bottom:18px}
+.dark .tier .ts{color:var(--beige)}
+.tier dl{display:grid;grid-template-columns:66px 1fr;gap:9px 12px}
+.tier dt{font-size:13px;color:var(--beige);font-weight:700}
+.tier dd{font-size:15px;color:#3a352f;line-height:1.45}
+.dark .tier dd{color:rgba(255,255,255,.8)}
+.phases{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:28px}
+.phase{border-top:2px solid var(--beige);padding-top:14px}
+.phase .pp{font-size:13px;font-weight:800;color:var(--highlight);letter-spacing:.1em}
+.dark .phase .pp{color:var(--beige)}
+.phase .pttl{font-size:17px;font-weight:700;color:var(--ink);margin:7px 0 6px}
+.dark .phase .pttl{color:#fff}
+.phase .pdc{font-size:14.5px;color:var(--ink-soft);line-height:1.55}
+.dark .phase .pdc{color:rgba(255,255,255,.7)}
+
+/* brand architecture chips */
+.barch{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:38px;flex:1;align-content:start}
+.chip{border:1px solid var(--beige-lo);border-radius:4px;padding:22px 24px;display:flex;align-items:center;gap:18px;background:rgba(255,255,255,.03)}
+.chip .sw{width:52px;height:52px;border-radius:50%;flex:none;border:1px solid rgba(255,255,255,.2)}
+.chip .bn{font-size:19px;font-weight:800;color:#fff}
+.chip .bc{font-size:13.5px;color:var(--beige);margin-top:4px;letter-spacing:.04em}
+
+/* design system + CTA (closing) */
+.ds{display:grid;grid-template-columns:1.1fr 1fr;gap:60px;margin-top:34px;flex:1}
+.swatches{display:flex;gap:18px;margin-bottom:30px}
+.sc{flex:1}
+.sc .box{height:120px;border-radius:4px;border:1px solid rgba(255,255,255,.14)}
+.sc .nm{font-size:15px;font-weight:700;color:#fff;margin-top:12px}
+.sc .hx{font-size:13px;color:var(--beige);margin-top:4px;letter-spacing:.05em}
+.typ p{font-size:16px;line-height:1.9;color:rgba(255,255,255,.78);margin-bottom:8px}
+.typ b{color:#fff}
+.contact{border-left:1px solid var(--beige-lo);padding-left:56px}
+.contact h3{font-size:38px;font-weight:800;color:#fff;line-height:1.25;margin-bottom:26px}
+.contact h3 .ac{color:var(--beige)}
+.contact .row{padding:14px 0;border-bottom:1px solid var(--beige-lo)}
+.contact .cl{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--beige);font-weight:700;margin-bottom:6px}
+.contact .cv{font-size:18px;color:#fff;font-weight:500;line-height:1.5}
+.contact .note{font-size:15px;color:rgba(255,255,255,.66);margin-top:22px;line-height:1.7}
+
+/* ---- print: real A3 landscape, one sheet per section ---- */
+@page{size:A3 landscape;margin:0}
+@media print{
+  html,body{background:#fff}
+  .a3{margin:0;box-shadow:none;page-break-after:always;break-after:page}
+}
+</style>
+
+<!-- ========== 01 · 표지 (가로) ========== -->
+<section class="a3 dark">
+  <div class="pad cov">
+    <div class="top">
+      <img class="logo" alt="WELLPERION" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANEAAACBCAYAAABetF8YAAANE0lEQVR4nO2dz28URxbH2xCbYAdbaCcggxfEoEheJAsJiXDxHiJLkRIuzim33Djl78mJW245hQtEWinaw/oCSJGQJdbSCkcgiIUzCNm7hoBFevUdzxvKNdXVVf26e359P5IFHnf3dHXXt17Vq1evJtI0TQghxTmiOJcQQhERoociIkQJRUSIEoqIECUUESFKKCJClFBEhCihiAhRQhERooQiIkQJRUSIEoqIECUUESFKPtBeYNzZaz3rWUsy0zg7Ufd17POL3EOZ1xknKCIlzzfuJXut3w59dmrxanp68dOoyvfyyUb7p8h1Ht6+mb7bf9v9faZxJmkuf5XEsn7rux4hL1xZSU+eW6SQPLA7p6S5/FVPBdveuB99nYUrKz3XefHoQe55T3/5+ZCAwOnFT6O/H9exP4MYKaB8KKISOHluMahSxl4H4ni+cc97Hdt6oeIX6YLZ1ykqxnGEIioBlxVxVcqyrZFLqGVaIY6HwqCIBswaNS5e7rFGW+trzuvQCg0GFFFJwIocnZxSW6P5peWe67Qc1mhz7cfKrBAaBFqhcCiiEvmLZUWKWqO868ANbXsEy7RCrm4lyYYiKhG4o8uwRnnXgVvdcU709zy+e8dphUgcFNGQWaPdrc1SrBCs2e7Wrz2f0wrFQxGVDKzI5PSJyqzRb+trrmOjr++yZqcWr0Zfh1BEleCq1C5HQBFrtP/qv6VYIduaQbCxURbkAIqoAjDLb1sjVFpXfFysNXIcU4oVcgmWhEERVYSrcrsqbx7zS3/P/But0GBAEVVojT6ca6itkcuqlT8W4sSqBoqoQs4sLZdijebmmz2fwXqUYYUg0MbFy7RCCiiiCkElR5dLa41ePvl3z2chwak2Zc0vkcNQRAM+NkLcnL3UIWapRJ4V4lIHPRTRgFsjV9xcEWvkEu5fr6yEnEpyoIj6tHDPNWlaJNIhxBqVGWtHeqGIasKOSftjp4UIhKgFd+h+2VEFvqUSAsdC1UIR1YQrJs03NspacOcKK/J1+WiFqoci6qM1QghPljWyrRDmnMQJ4LIiWV0/V7fR1b0kxaGI+rxwz2WNXIIw55xcE7CuIFcIFN1GEy51KB+KqGbsGDWXNQpZ9u2yRvb6IJdAudShfCiimnEFlZqVPTT5CKyR7TrH+iBxnUOYdsQ3rVA1UEQDZo1iko/4JnJtKwTh0gpVA0U0QNYoNgVW1kQurmNbIS51qA6KqE/YSxw61ijaFe0SmX0dLnWoFoqoT/iWOMRMiEJkeWMdWqFqoYj6iE8kMbnffGMdCJVWqFooogG1RrFOgCxrxPCe6qGI+owrkrqIK9olOi51qAeKqM+4PGxFXdF2cCqtUD1QRAOAWdk1E6Km69yMtSPVQhENmDXSToiKJ86V34FUA0U0ICCyuoywHFij2fkLXOpQIxNpGp2YkxBiQEtEiBKKiBAlFBEhSigiQpRQRIQooYgIUUIREaKEIiJECUVEiBKKiBAlFBEhSigiQpRQRIQooYgIUUIREaKEIiJEyQdJTcjeoqE50GKORxL3/7WeJebxyG399tVu0L1NTc8eykcQe69FzzHPy+Lo5LGkcfFy5jXLKKePvPI8jyw37nev9SzBPWPbF+z0h6xEU9MnkuNzHyehq3LNch+faySz883K31XfRbS9cb/979HJY6mvUgDkkpZUuMfnGmneA8JOcdgRwcyag23r7R3issB55tJsudePGmfT0GXWRc6B+OU8H9hOEolHTi9e7aksZZTTx/bG/RTJT5C7wVXptgPLjTLgXl07oSOFMn5QDrzLyekTKXJE+N67Xe7m8mrQczefeVnZkGoTEVoYVHSIo5GT1lasCsA5s/NN7/E45uA7eo9DpcnLXTAI+Qiay6s9n71tV6xnye7WZrvVfnz3JyQySV1ZfDTldJ2L78Z37mxttis4Kt7u1q/pJ599Hf2sNv7xfTfBPqwO3j+sh3k/u1ubKd4jyopjUdbZ+Qvp+WtfBn3f47t3kkvXbyT9oEYRNduV3d65zYW5owEeapJkbxVvbpDlsnB4aYMgkjxc9zjTTaG1kmyu/djee/XpLz87xaIpp+tcfDeYX1ru9gzw7mBR5peWg7/n4e2bKawPrBmS+Gel8YLVOWgEV9rfIb2L//zzB69wYaH3X+22LVzesUPvWDAfnm/XbNkJGw8H4OHIxlUuDkT2/vhRzgYkOeVCxjJlgjRe6EnkbbKcJSC8m0vXbyCbUVAFh0gXOplhIVw0IFnH4pmcv/Zl99i8ndSH3jsnL0Iqvgt0HwBaWxGGdNdcyN/GYRc4eR723kN1YHbBfY2agIovFqiIdYDgREiwwL6GF1ZUsr8eWLDNdIRF1MwVhVQQdM1EGCIsG/Nh5TkrRgGMU8RjVzexXcW9zqD/lGLwbm6pmWcBJd8eQJd3ZEWU16VrPXrQ/kx2ShBhZLW8IsZR78oJ5uC8buTdhAiqZRyrbdzEAoaMpeGEwLOR8VEyao4FAS0LWil06ewumLi15wwvGx4KKo9rQCvdQl9XDt6tvDHEoO/fA4srrSu6R66KGVLOjxpnCzsftjt7wIYIeL8jdjtRfxE6bu5UupF597/4+TcTGItBdHCI1LFPbe0iQpfuQES9XTppbcQsi6Bgyk23t1QsmXPwtXb4rrx5lJi5napwCQDP4/VOq1spISAM0IuWM1lsW5Go+4JV2Vpfe3+Jz7/JfU6vd35P+gm8gGh00Ch/ONfInZccOhGhQOJBgRBkQk26AKgoZoWG9cHfbHMe2pUblnki38SnzK34KkMZ5cRzFutuC9L0guVxfO7j4AngqoYNsFoQERqAvHnJoRORVHyIwpxIRXcka8IULxBWBy9ZKlJIV26Y5olck60g9N7LKCeeLcaq0mBJOA7eSUxrPtnp8pUhJHPsHFM+dONe77TaZcFkb4gFHaoAVKn4pqtbLIuruyHCkjETWpmQrtzwba/S+1P3fcAdLfNRf+6/ac9PxT7jhnG86WQognjlioyvpCzoDvvmmoZSRPKQIQR06czWxjUhJ2MkaSHHzStXNxh3ifUv6uU62WkoxSFRdJwo77xonJs511TVJHXflkKYE6likUyHgokZiAjBybwRvE2kGsyIgcd370RXvoUrK10hwlsWez7es4wTY3ZSd9UdmYjtxP8lIyMis0sn4yGf50gE9nzjXtdbFRPDReIrnwgJFQ/uYo1Fe3j7ZhpqCSBacemjsdW6qTGFETppOzSOBdNLZ4bG+/reEsAaO+F4EGLvD1PJauXgXpY5itDzipxTBppyhni5irqLL12/MYEuISwaLAEsDKYtUKnNyAuJWJdxb+f71QISMLYzo8lHQkSml07+n/dCzdbQnJD1IRXAx0zjTIqHbH9uzo+EnlfknDLQlNMHKvG7/TftZQooG9aDxW6o/MlnX0/ACr149KAtdlgDn0WAwDAGKrvBgYdu/dZ36UiJCAuvZBI1ZHyDsPx3+2+CogxOnvtb8MQiVnz6trIPOa/IOZ3ASdVLLaOcec8e4TTSFZPnb19jJqfC431BGHAkYZDvmpBFOUKjR6TcdpnyOH/tC+ktlAb3bCVECROVEKKEIiJECUVEiBKKiBAlFBEhSigiQpRQRIQooYgIUUIRETLMYT+DAMJZshKim4nygS8kBdfx/R3hLgiyjElO70osgu/J+tz8PesYM+E//rXj4Owy20nw7cV2DU958H1Z548SYysiVJbNtVve4ExUJjP3wYtHD1JXohBJezs1PZsZnInc0uCPnVZmBpqe5PSOxCLt+7E+dybGzzgG349YOHyXa3m9XWY7CT6QlMZS9ubyao9gJfupiKnK5dn9ZmxFJEGIrgpgs7T6bTsAE5XLlbZJFgm60oCZIFI9L7c4Km1spDXuZ2n12+4SaN/5nUWQuQGTKHPW3yAg333udZbvIzh10NORlcHYjomkGwJrhPUuvjS1qJwI4we2gFAhEd4vu15kgcVpWPaBLUrQFcpa+yO5p6vMCYAFb64tTkywZAA/roV0aCggJFibp47FenhGKC8aHTzbunOH183YikhaWyyvAFvr//IeCyuCMPq8XOCuxBxSiXANiBHrcuwlBcKRyWPtblhsfrhQYB0goLyMojgOP65lEuiOYtUrliO8fLLhLDO6vXi2yBYUsg/SMDO23TlZhiyV1dcy+7tHm4fGPK79l96nA7vQrVBZG1ih0lXZBYIo/rzYTj+WexxwdXUxDjoyOZXgB7gECQuFZyuNRUj20mFlbEUk4wJZiVokwR+6gBCfjKvwuyuZOlpsfA4BYSwhyT9CN7AqG+Sm2MkZF4nTJWs1LCyqbBW54HCUQDzyLFDmURUQ4KI8QpSM9ZiIkDKgiAhRQhERooQiIkQJRUSIEoqIECUUESFKKCJClFBEhCihiAhRQhERooQiIkQJRUSIEoqIECUUESFKKCJClFBEhCihiAhRQhERooQiIkQJRUSIEoqIECUUESGJjv8DSwKNjrQVaR0AAAAASUVORK5CYII=">
+      <div class="eyebrow">Premium Lifestyle Club<br>Since 2017</div>
+    </div>
+    <div class="mid">
+      <div class="en">A Day, Well Completed.</div>
+      <h1>하루의 완성,<br><span class="ac">웰페리온.</span></h1>
+      <p class="desc">웰페리온은 단순한 운동 시설이 아닙니다.</p>
+      <p class="desc" style="margin-top:12px">하루 루틴의 일부로 자연스럽게 자리 잡아, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간 — <b>한남동이라는 동네의 결을 따라 지어진, 리더들을 위한 건강 &amp; 힐링 커뮤니티</b>입니다.</p>
+    </div>
+    <div class="meta">
+      <div><div class="k">Established</div><div class="v">2017</div></div>
+      <div><div class="k">Location</div><div class="v">한남동<small>Seoul</small></div></div>
+      <div><div class="k">Scale</div><div class="v">3,000<small>평 · 단일 시설</small></div></div>
+      <div><div class="k">Members</div><div class="v">1,000<small>정원 · 대기 중</small></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 02 · 세 관점 개요 ========== -->
+<section class="a3">
+  <div class="pad">
+    <div class="kick">Overview · Three Perspectives</div>
+    <h2 class="title">세 관점에서 읽는 <span class="b">웰페리온.</span></h2>
+    <p class="lead">이 문서는 세 독자를 위해 작성되었습니다.</p>
+    <p class="lead">회원은 하루의 완성도를 경험으로, 직원은 성장의 무대로, 파트너사는 함께 확장하는 자산으로 웰페리온을 읽습니다.</p>
+    <div class="cards3">
+      <div class="card">
+        <div class="ct">For Members</div>
+        <h3>회원 관점</h3>
+        <ul>
+          <li>하루의 완성도를 설계하는, 리더들의 건강 &amp; 힐링 커뮤니티.</li>
+          <li>스포츠 · 스파 · 커뮤니티 · 공간이 하나로 통합된 원스톱 경험.</li>
+          <li>유소년부터 시니어까지 가족 전 연령을 아우릅니다.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="ct">For Team</div>
+        <h3>직원 관점</h3>
+        <ul>
+          <li>AI가 반복 업무를 덜고, 팀은 회원의 본질에 집중합니다.</li>
+          <li>9개 서브브랜드가 열어주는 폭넓은 커리어 트랙.</li>
+          <li>멤버십 매출과 연동된 보상, 그리고 교육 지원.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="ct">For Partners</div>
+        <h3>파트너사 관점</h3>
+        <ul>
+          <li>9년간 검증된 운영 자산을 함께 확산하는 파트너십.</li>
+          <li>SOP · 인력 · 콘텐츠를 그대로 옮길 수 있는 위탁운영 모델.</li>
+          <li>검증된 회원 풀과 운영 데이터를 공유합니다.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span class="tag">A Day, Well Completed. · 하루의 완성, 웰페리온</span><span>02</span></div>
+  </div>
+</section>
+
+<!-- ========== 03 · Chapter Ⅰ 브랜드 철학 ========== -->
+<section class="a3">
+  <div class="pad">
+    <div class="kick">Chapter Ⅰ · Origin · 2017</div>
+    <h2 class="title">한남동에서 시작된<br><span class="b">프리미엄 라이프스타일</span>의 새 기준.</h2>
+    <p class="lead">세계적인 도시들에서 경험한 프리미엄 클럽 문화 — 웰페리온은 그 이상을 한국의 맥락에 맞게 재해석하며 시작됐습니다.</p>
+    <p class="lead">2017년, 한남동이 그 출발점이 되었습니다.</p>
+    <div class="two">
+      <div class="col">
+        <div class="slabel">창업 철학 · The Philosophy</div>
+        <p class="tx">단순한 운동이 아닌, 하루 루틴에 자연스럽게 녹아들어 건강의 기준을 세우고 그날의 완성도를 채워주는 공간 — 그것이 웰페리온이 태어난 이유입니다.</p>
+        <p class="tx">웰페리온은 <span class="em">‘운동하러 가는 곳’이 아니라 ‘하루의 품질을 설계하는 곳’</span>입니다.</p>
+        <p class="tx">스포츠 · 스파 · 커뮤니티 · 공간이 하나로 통합된 라이프스타일 인프라 — 이것이 지난 9년간 지켜온 방향입니다.</p>
+        <div class="slabel" style="margin-top:30px">공간의 철학 · The Place</div>
+        <p class="tx">웰페리온은 시설이 아니라 <b>장소</b>입니다. 3,000평의 면적을 단순히 분할하지 않고, 하루의 리듬에 맞춰 읽히는 <b>시퀀스</b>로 구성했습니다.</p>
+      </div>
+      <div class="col">
+        <div class="slabel">한 공간, 열여섯 가지 경험</div>
+        <div class="facil">
+          <div class="f"><span class="num">01</span><span class="nm">라운지 · 갤러리</span><span class="en">Lounge</span></div>
+          <div class="f"><span class="num">02</span><span class="nm">메인 풀 · 25m</span><span class="en">Pool</span></div>
+          <div class="f"><span class="num">03</span><span class="nm">모자이크 탕</span><span class="en">Bath</span></div>
+          <div class="f"><span class="num">04</span><span class="nm">스파 · 마블</span><span class="en">Spa</span></div>
+          <div class="f"><span class="num">05</span><span class="nm">트레드밀 라인</span><span class="en">Cardio</span></div>
+          <div class="f"><span class="num">06</span><span class="nm">머신 풀라인</span><span class="en">TechnoGym</span></div>
+          <div class="f"><span class="num">07</span><span class="nm">골프 · 15 오토티업</span><span class="en">GDR</span></div>
+          <div class="f"><span class="num">08</span><span class="nm">스쿼시 · 정식 코트</span><span class="en">Squash</span></div>
+          <div class="f"><span class="num">09</span><span class="nm">체조 · 트램폴린</span><span class="en">WSC</span></div>
+          <div class="f"><span class="num">10</span><span class="nm">필라테스 · STOTT</span><span class="en">Pilates</span></div>
+          <div class="f"><span class="num">11</span><span class="nm">생크몽드 트리트먼트</span><span class="en">Cinq Mondes</span></div>
+          <div class="f"><span class="num">12</span><span class="nm">부티부 · 헤어 · 네일</span><span class="en">beautévu</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span class="tag">A Day, Well Completed. · 하루의 완성, 웰페리온</span><span>03</span></div>
+  </div>
+</section>
+
+<!-- ========== 04 · Journey 9년의 궤적 ========== -->
+<section class="a3 dark">
+  <div class="pad">
+    <div class="kick">Journey · 2017 → 2027</div>
+    <h2 class="title">9년의 궤적, <span class="b">그리고 다음 10년.</span></h2>
+    <p class="lead">한남동 오픈에서 유소년 확장, 팬데믹 극복, 성숙, 그리고 AI 전환까지 — 각 전환점이 웰페리온을 지금의 모습으로 만들었습니다.</p>
+    <div class="tl">
+      <div class="row"><span class="yr">2017 · 03</span><span class="rn">Ⅰ</span><span class="tt"><b>Origin</b> — 한남동 웰페리온 오픈. 3,000평 프리미엄 스파 &amp; 스포츠클럽으로 출발.</span></div>
+      <div class="row"><span class="yr">2019 · 06</span><span class="rn">Ⅱ</span><span class="tt"><b>Expansion</b> — WSC 유소년 클래스 런칭. 체조 · 스쿼시 · 골프.</span></div>
+      <div class="row"><span class="yr">2019 · 10</span><span class="rn">Ⅲ</span><span class="tt"><b>Scale</b> — 멤버십 빠르게 형성. 핵심 운영 KPI 안착.</span></div>
+      <div class="row"><span class="yr">2019 말</span><span class="rn">Ⅳ</span><span class="tt"><b>Legacy</b> — Brad Little’s Star Academy 설립. 브로드웨이 배우와 공동 창립.</span></div>
+      <div class="row"><span class="yr">2020 — 2021</span><span class="rn">Ⅴ</span><span class="tt"><b>Resilience</b> — 팬데믹 위기를 임직원과 함께 극복. 멤버십 · 서비스 재설계.</span></div>
+      <div class="row"><span class="yr">2022 — 2023</span><span class="rn">Ⅵ</span><span class="tt"><b>Recovery</b> — 운영 정상화 · 회원 회복 · 멤버십 정책 재정비.</span></div>
+      <div class="row"><span class="yr">2024 · 10</span><span class="rn">Ⅶ</span><span class="tt"><b>Refresh</b> — 브랜드 가이드 최종 개편. 9개 서브브랜드 시스템 정립.</span></div>
+      <div class="row"><span class="yr">2025</span><span class="rn">Ⅷ</span><span class="tt"><b>Density</b> — 정원 1,000명 조정 · 대기자 멤버십 가동 · AI 설계 착수.</span></div>
+      <div class="row"><span class="yr">2026 · 01</span><span class="rn">Ⅸ</span><span class="tt"><b>Maturity</b> — 프리미엄 밀도 유지 · 일 방문 600명 안정 · 대기자 멤버십 가동.</span></div>
+      <div class="row"><span class="yr">2026 · 05</span><span class="rn">Ⅹ</span><span class="tt"><b>Transformation</b> — AI &amp; 시스템 기반 서비스 재설계 착수.</span></div>
+      <div class="row"><span class="yr">2027 →</span><span class="rn">ⅩⅠ</span><span class="tt"><b>Frontier</b> — 국내 직영 확장 시작 · 위탁운영 사업 본격화.</span></div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span class="tag">A Day, Well Completed. · 하루의 완성, 웰페리온</span><span>04</span></div>
+  </div>
+</section>
+
+<!-- ========== 05 · Chapter Ⅱ Now (지표 공개) ========== -->
+<section class="a3">
+  <div class="pad">
+    <div class="kick">Chapter Ⅱ · Now</div>
+    <h2 class="title">검증된 운영 위에, <span class="b">AI로 고도화하는 서비스.</span></h2>
+    <p class="lead">웰페리온의 지금은 ‘검증된 운영’과 ‘다음 도약’이 만나는 지점입니다. 아래 지표는 한남동 9년의 실측 값입니다.</p>
+    <div class="kpis">
+      <div class="kpi"><div class="kk">Annual Revenue</div><div class="kv">61.6억</div><div class="kd">연 매출 · 최근 회계연도</div></div>
+      <div class="kpi"><div class="kk">YoY Growth</div><div class="kv">18.4%</div><div class="kd">전년 대비 매출 성장률</div></div>
+      <div class="kpi"><div class="kk">ARPU</div><div class="kv">418만원</div><div class="kd">회원 1인당 연 평균 매출</div></div>
+      <div class="kpi"><div class="kk">Op. Margin</div><div class="kv">11.2%</div><div class="kd">영업이익률</div></div>
+      <div class="kpi"><div class="kk">Members</div><div class="kv">1,000</div><div class="kd">정원 · 대기자 모집 중</div></div>
+      <div class="kpi"><div class="kk">Retention</div><div class="kv">61%</div><div class="kd">연 갱신율 · LTV 3년 4개월</div></div>
+      <div class="kpi"><div class="kk">Daily Visits</div><div class="kv">600</div><div class="kd">일 평균 방문 · 출석률 60%</div></div>
+      <div class="kpi"><div class="kk">Rev / 평</div><div class="kv">205만원</div><div class="kd">평당 연 매출 · Team 25 + 50</div></div>
+    </div>
+    <div class="moments">
+      <div class="slabel">공간의 시그니처 · 일곱 개의 건축적 순간</div>
+      <div class="mgrid">
+        <div class="mm"><div class="mn">Ⅰ</div><div class="mt">Arrival</div><div class="md">라운지 &amp; 갤러리. 전이의 공간.</div></div>
+        <div class="mm"><div class="mn">Ⅱ</div><div class="mt">Water</div><div class="md">25m 풀 · 7m 층고.</div></div>
+        <div class="mm"><div class="mn">Ⅲ</div><div class="mt">Heat</div><div class="md">히노키 사우나. 감각의 회복.</div></div>
+        <div class="mm"><div class="mn">Ⅳ</div><div class="mt">Strike</div><div class="md">국제 규격 스쿼시 코트.</div></div>
+        <div class="mm"><div class="mn">Ⅴ</div><div class="mt">Swing</div><div class="md">GDR 골프 · 15 오토티업.</div></div>
+        <div class="mm"><div class="mn">Ⅵ</div><div class="mt">Balance</div><div class="md">STOTT 필라테스 풀라인.</div></div>
+        <div class="mm"><div class="mn">Ⅶ</div><div class="mt">Growth</div><div class="md">유소년 체조 · 트램폴린.</div></div>
+      </div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span class="tag">A Day, Well Completed. · 하루의 완성, 웰페리온</span><span>05</span></div>
+  </div>
+</section>
+
+<!-- ========== 06 · 성인 프로그램 포트폴리오 ========== -->
+<section class="a3">
+  <div class="pad">
+    <div class="kick">Programs · For Adults</div>
+    <h2 class="title">하루 루틴의 모든 조각을, <span class="b">한 공간 안에.</span></h2>
+    <p class="lead">코어 스포츠에서 마인드 · 웰니스 프로그램까지 — 웰페리온은 하루의 리듬을 채우는 열여섯 갈래의 프로그램을 한 공간에서 운영합니다.</p>
+    <div class="progs">
+      <div class="prog"><div class="pn">Core</div><div class="pt">헬스</div><div class="pd">TechnoGym 풀라인</div></div>
+      <div class="prog"><div class="pn">Core</div><div class="pt">수영</div><div class="pd">25m 메인 풀</div></div>
+      <div class="prog"><div class="pn">Core</div><div class="pt">골프</div><div class="pd">GDR · 15 오토티업</div></div>
+      <div class="prog"><div class="pn">Core</div><div class="pt">스쿼시</div><div class="pd">국제 규격 코트</div></div>
+      <div class="prog"><div class="pn">Group</div><div class="pt">G.X.</div><div class="pd">그룹 엑서사이즈</div></div>
+      <div class="prog"><div class="pn">Group</div><div class="pt">요가</div><div class="pd">Yoga</div></div>
+      <div class="prog"><div class="pn">Group</div><div class="pt">필라테스</div><div class="pd">STOTT</div></div>
+      <div class="prog"><div class="pn">Group</div><div class="pt">바레</div><div class="pd">Barre</div></div>
+      <div class="prog"><div class="pn">Art</div><div class="pt">발레</div><div class="pd">Ballet</div></div>
+      <div class="prog"><div class="pn">Art</div><div class="pt">뮤지컬</div><div class="pd">Musical</div></div>
+      <div class="prog"><div class="pn">Art</div><div class="pt">줌바</div><div class="pd">Zumba</div></div>
+      <div class="prog"><div class="pn">Art</div><div class="pt">라인댄스</div><div class="pd">Line Dance</div></div>
+      <div class="prog"><div class="pn">Mind</div><div class="pt">명상</div><div class="pd">Meditation</div></div>
+      <div class="prog"><div class="pn">Wellness</div><div class="pt">스파 · 사우나</div><div class="pd">Spa</div></div>
+      <div class="prog"><div class="pn">Wellness</div><div class="pt">헤어살롱</div><div class="pd">Hair Salon</div></div>
+      <div class="prog"><div class="pn">Rest</div><div class="pt">라운지 · 카페</div><div class="pd">Lounge</div></div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span class="tag">A Day, Well Completed. · 하루의 완성, 웰페리온</span><span>06</span></div>
+  </div>
+</section>
+
+<!-- ========== 07 · Facilities Tour ========== -->
+<section class="a3 dark">
+  <div class="pad">
+    <div class="kick">Facilities · Tour</div>
+    <h2 class="title">한 공간, <span class="b">열여섯 가지 경험.</span></h2>
+    <p class="lead">헬스 · 수영 · 골프 · 스쿼시부터 스파 · 필라테스 · 유소년 체조까지 — 하루의 모든 루틴이 한곳에 있습니다.</p>
+    <div class="tour">
+      <div class="tcell"><div class="tno">01</div><div class="tnm">헬스 · 트레드밀 라인</div><div class="ten">Gym · Cardio · 야외 전경</div></div>
+      <div class="tcell"><div class="tno">02</div><div class="tnm">수영 · 25m 메인 풀</div><div class="ten">Swimming · 7m 층고</div></div>
+      <div class="tcell"><div class="tno">03</div><div class="tnm">골프 · GDR 시스템</div><div class="ten">15 오토티업 + 스크린</div></div>
+      <div class="tcell"><div class="tno">04</div><div class="tnm">스쿼시 · 매치 코트</div><div class="ten">국제 규격 · 관람석</div></div>
+      <div class="tcell"><div class="tno">05</div><div class="tnm">머신 · TechnoGym</div><div class="ten">Strength · 풀라인업</div></div>
+      <div class="tcell"><div class="tno">06</div><div class="tnm">사우나 · 온탕</div><div class="ten">360평 스파 · 자쿠지</div></div>
+      <div class="tcell"><div class="tno">07</div><div class="tnm">냉탕 · 모자이크 타일</div><div class="ten">Cold Bath</div></div>
+      <div class="tcell"><div class="tno">08</div><div class="tnm">필라테스 · STOTT</div><div class="ten">Stability Chair</div></div>
+      <div class="tcell"><div class="tno">09</div><div class="tnm">필라테스 · 래더 배럴</div><div class="ten">Ladder Barrel</div></div>
+      <div class="tcell"><div class="tno">10</div><div class="tnm">체조 · 유소년 스튜디오</div><div class="ten">WSC · 올림픽 규격 트램폴린</div></div>
+      <div class="tcell"><div class="tno">11</div><div class="tnm">생크몽드 트리트먼트</div><div class="ten">Cinq Mondes</div></div>
+      <div class="tcell"><div class="tno">12</div><div class="tnm">라운지 · 카페 · 갤러리</div><div class="ten">Lounge &amp; Gallery</div></div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span class="tag">A Day, Well Completed. · 하루의 완성, 웰페리온</span><span>07</span></div>
+  </div>
+</section>
+
+<!-- ========== 08 · Chapter Ⅲ Next ========== -->
+<section class="a3">
+  <div class="pad">
+    <div class="kick">Chapter Ⅲ · Next</div>
+    <h2 class="title">한남동에서 전국으로, <span class="b">그리고 위탁운영으로.</span></h2>
+    <p class="lead">한 공간에서 검증된 웰페리온의 운영을 국내 직영 확장과 위탁운영(Managed Operations) 두 축으로 확산합니다.</p>
+    <div class="phases">
+      <div class="phase"><div class="pp">Phase 1 · Now</div><div class="pttl">한남동 고도화</div><div class="pdc">직영 운영 고도화와 AI · 시스템화로 브랜드 자산을 정제합니다.</div></div>
+      <div class="phase"><div class="pp">Phase 2 · Next</div><div class="pttl">국내 직영 확장</div><div class="pdc">주요 프리미엄 상권으로 직영 모델을 확산합니다.</div></div>
+      <div class="phase"><div class="pp">Phase 3 · Beyond</div><div class="pttl">위탁운영</div><div class="pdc">레지던스 · 호텔 · 복합단지의 시설을 웰페리온이 운영합니다.</div></div>
+    </div>
+    <div class="slabel" style="margin-top:30px">국내 직영 확장 · 후보 상권 3단계</div>
+    <div class="tiers">
+      <div class="tier"><div class="th">Tier A · Flagship</div><div class="ts">서울권</div>
+        <dl><dt>면적</dt><dd>2,000 — 3,000평</dd><dt>종목</dt><dd>풀라인 (한남동 모델)</dd><dt>형식</dt><dd>직영 또는 JV</dd><dt>시기</dt><dd>2027 H2</dd></dl></div>
+      <div class="tier"><div class="th">Tier B · Compact</div><div class="ts">경기권</div>
+        <dl><dt>면적</dt><dd>800 — 1,500평</dd><dt>종목</dt><dd>핵심 코어 + WSC</dd><dt>형식</dt><dd>직영</dd><dt>시기</dt><dd>2028 — 2029</dd></dl></div>
+      <div class="tier"><div class="th">Tier C · Studio</div><div class="ts">프리미엄 레지던스</div>
+        <dl><dt>면적</dt><dd>300 — 600평</dd><dt>종목</dt><dd>스포츠클럽 + 스파 중심</dd><dt>형식</dt><dd>직영 / 위탁 혼합</dd><dt>시기</dt><dd>2027 — 2030</dd></dl></div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span class="tag">A Day, Well Completed. · 하루의 완성, 웰페리온</span><span>08</span></div>
+  </div>
+</section>
+
+<!-- ========== 09 · Global Coordinates ========== -->
+<section class="a3 dark">
+  <div class="pad">
+    <div class="kick">Global Coordinates</div>
+    <h2 class="title">웰페리온이 <span class="b">서 있는 자리.</span></h2>
+    <p class="lead">세계의 프리미엄 라이프스타일 클럽들은 보통 한 축 — 운동 · 커뮤니티 · 웰니스 — 에 집중합니다.</p>
+    <p class="lead">웰페리온은 그 셋을 한 공간에 통합하고, 가족 · 생애주기까지 더한 한국형 모델로 자리 잡았습니다.</p>
+    <div class="cards3">
+      <div class="card">
+        <div class="ct">Sports-led</div>
+        <h3>운동 중심 클럽</h3>
+        <ul>
+          <li>고강도 운동 인프라와 다지점 멤버십 기반의 모델.</li>
+          <li>웰페리온도 같은 인프라(수영 · 스쿼시 · 골프 · STOTT)를 갖되, ‘하루 루틴’으로 확장합니다.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="ct">Community-led</div>
+        <h3>커뮤니티 중심 클럽</h3>
+        <ul>
+          <li>멤버 큐레이션과 라운지 중심의 도시형 클럽 모델.</li>
+          <li>웰페리온은 한 공간에 커뮤니티 · 가족 · 유소년이 함께하는 ‘생활형 커뮤니티’입니다.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="ct">Wellness-led</div>
+        <h3>프리미엄 웰니스</h3>
+        <ul>
+          <li>정밀한 웰니스와 회복 중심의 럭셔리 모델.</li>
+          <li>사우나 · 라운지 · Cinq Mondes 트리트먼트가 그 결을 한국 도심에 옮겨 옵니다.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span class="tag">스포츠 · 커뮤니티 · 웰니스 · 가족(WSC)을 한 공간에 통합한 한국형 프리미엄</span><span>09</span></div>
+  </div>
+</section>
+
+<!-- ========== 10 · For Three Audiences (상세) ========== -->
+<section class="a3">
+  <div class="pad">
+    <div class="kick">For Three Audiences</div>
+    <h2 class="title">같은 회사를, <span class="b">세 독자가 다르게 읽습니다.</span></h2>
+    <div class="cards3" style="margin-top:34px">
+      <div class="card">
+        <div class="rn">Ⅰ</div><div class="ct">For Members</div>
+        <h3>하루의 완성도를<br>설계하는 공간</h3>
+        <ul>
+          <li>한남동 3,000평, 접근 가능한 프리미엄 라이프스타일.</li>
+          <li>유소년(WSC 7종)부터 시니어까지 가족 전 연령 커버.</li>
+          <li>연회비제 · 보증금 없음. 리더들의 건강 &amp; 힐링 커뮤니티.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="rn">Ⅱ</div><div class="ct">For Team</div>
+        <h3>서비스의 본질에<br>집중하는 조직</h3>
+        <ul>
+          <li>AI가 프론트 응대 · 동선 분석 · 스케줄을 돕습니다.</li>
+          <li>직원 25명 · 파트너 강사 50명. 평균 근속 4.2년.</li>
+          <li>멤버십 매출 연동 인센티브와 교육 · 자격증 지원.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="rn">Ⅲ</div><div class="ct">For Partners</div>
+        <h3>9년의 운영 자산을<br>함께 확장</h3>
+        <ul>
+          <li>디벨로퍼 · 호텔 · 레지던스의 위탁운영 파트너.</li>
+          <li>Cinq Mondes · STOTT · TechnoGym 등 글로벌 브랜드 운영.</li>
+          <li>1,000명 정원 · 출석률 60%의 검증된 회원 풀과 데이터 공유.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span class="tag">A Day, Well Completed. · 하루의 완성, 웰페리온</span><span>10</span></div>
+  </div>
+</section>
+
+<!-- ========== 11 · Brand Architecture ========== -->
+<section class="a3 dark">
+  <div class="pad">
+    <div class="kick">Brand Architecture · 2024 Final</div>
+    <h2 class="title">하나의 철학, <span class="b">아홉 개의 얼굴.</span></h2>
+    <p class="lead">웰페리온의 통합 철학 아래, 각 전문 영역은 고유한 컬러와 개성을 갖고 있습니다. (2024.10 브랜드 가이드 최종 반영)</p>
+    <div class="barch">
+      <div class="chip"><span class="sw" style="background:linear-gradient(135deg,#221F20 50%,#B79F8A 50%)"></span><div><div class="bn">WELLPERION</div><div class="bc">Master · Black &amp; Beige</div></div></div>
+      <div class="chip"><span class="sw" style="background:linear-gradient(135deg,#C0392B 50%,#7B1E2B 50%)"></span><div><div class="bn">PT</div><div class="bc">Red &amp; Wine</div></div></div>
+      <div class="chip"><span class="sw" style="background:linear-gradient(135deg,#7EC8E3 50%,#2E5FA3 50%)"></span><div><div class="bn">Sports Club · WSC</div><div class="bc">Sky Blue &amp; Blue</div></div></div>
+      <div class="chip"><span class="sw" style="background:linear-gradient(135deg,#D64550 50%,#E89BB0 50%)"></span><div><div class="bn">Pilates</div><div class="bc">Red &amp; Pink</div></div></div>
+      <div class="chip"><span class="sw" style="background:linear-gradient(135deg,#2F6FB3 50%,#1B2E5B 50%)"></span><div><div class="bn">Swimming</div><div class="bc">Blue &amp; Navy</div></div></div>
+      <div class="chip"><span class="sw" style="background:linear-gradient(135deg,#8A8F94 50%,#6FBFA8 50%)"></span><div><div class="bn">Squash</div><div class="bc">Grey &amp; Mint</div></div></div>
+      <div class="chip"><span class="sw" style="background:linear-gradient(135deg,#7A5AA6 50%,#3E2A63 50%)"></span><div><div class="bn">Golf</div><div class="bc">Purple &amp; Dark Purple</div></div></div>
+      <div class="chip"><span class="sw" style="background:linear-gradient(135deg,#7A5AA6 50%,#B9A3DC 50%)"></span><div><div class="bn">Gymnastic</div><div class="bc">Purple &amp; Light Purple</div></div></div>
+      <div class="chip"><span class="sw" style="background:linear-gradient(135deg,#111 50%,#f4f4f4 50%)"></span><div><div class="bn">Brad Little’s Academy</div><div class="bc">Black &amp; White</div></div></div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span class="tag">A Day, Well Completed. · 하루의 완성, 웰페리온</span><span>11</span></div>
+  </div>
+</section>
+
+<!-- ========== 12 · Design System + Contact (closing) ========== -->
+<section class="a3 dark">
+  <div class="pad">
+    <div class="kick">Design System &amp; Contact</div>
+    <h2 class="title">하루의 완성, <span class="b">여기서 시작하세요.</span></h2>
+    <div class="ds">
+      <div>
+        <div class="slabel" style="color:var(--beige);border-color:var(--beige-lo)">컬러 &amp; 타이포그래피</div>
+        <div class="swatches">
+          <div class="sc"><div class="box" style="background:#B79F8A"></div><div class="nm">BEIGE</div><div class="hx">#B79F8A · Pantone 4735 C</div></div>
+          <div class="sc"><div class="box" style="background:#221F20"></div><div class="nm">BLACK</div><div class="hx">#221F20</div></div>
+          <div class="sc"><div class="box" style="background:#ED5B3F"></div><div class="nm">HIGHLIGHT</div><div class="hx">#ED5B3F</div></div>
+        </div>
+        <div class="typ">
+          <p><b>Heading</b> — Pretendard Bold / SemiBold</p>
+          <p><b>Body</b> — Pretendard Medium · SemiBold</p>
+          <p style="margin-top:14px;color:rgba(255,255,255,.6)">모든 서브브랜드의 액센트는 베이지로 고정됩니다.</p>
+        </div>
+      </div>
+      <div class="contact">
+        <h3>투어 · 상담은<br><span class="ac">사전 예약제</span>입니다.</h3>
+        <div class="row"><div class="cl">Membership</div><div class="cv">02-6261-1201</div></div>
+        <div class="row"><div class="cl">Youth · WSC</div><div class="cv">02-6261-1203</div></div>
+        <div class="row"><div class="cl">E-mail</div><div class="cv">ask@wellperion.com</div></div>
+        <div class="row"><div class="cl">Address</div><div class="cv">서울특별시 용산구 서빙고로 413 · 한남동</div></div>
+        <p class="note">회원 · 파트너 문의와, 함께할 동료(강사 · 팀)의 합류까지 — 웰페리온에서 이어집니다.</p>
+      </div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span class="tag">© WELLPERION · Brand system applied from Brand Guide (2024.10 Final)</span><span>12</span></div>
+  </div>
+</section>

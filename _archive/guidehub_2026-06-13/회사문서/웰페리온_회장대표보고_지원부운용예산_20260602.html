@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<title>WELLPERION · 지원부 운용 예산 보고서 — 회장님·대표님</title>
+<style>
+  :root {
+    --beige:#B79F8A; --beige-soft:#E8DFD4; --beige-pale:#F7F2EC;
+    --black:#221F20; --black-soft:#3A3536; --coral:#ED5B3F;
+    --gray:#8A8587; --line:#D9CFC3; --white:#FBF9F6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#E7E2DA;font-family:"Pretendard Variable","Pretendard",-apple-system,"Malgun Gothic",system-ui,sans-serif;font-weight:400;line-height:1.5;color:var(--black);-webkit-font-smoothing:antialiased;}
+  .page{width:420mm;min-height:297mm;background:var(--white);margin:14px auto;padding:14mm 14mm 22mm;position:relative;overflow:visible;}
+
+  .cover{background:var(--black);color:var(--beige);margin:-14mm -14mm 12px;padding:18mm 14mm 14mm;position:relative;overflow:hidden;}
+  .cover::after{content:"";position:absolute;bottom:-90px;right:-90px;width:280px;height:280px;background:radial-gradient(circle,rgba(237,91,63,0.12) 0%,transparent 70%);}
+  .cover-inner{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;}
+  .cover-l{flex:1;min-width:280px;}
+  .era{font-family:"Playfair Display",Georgia,serif;font-size:11px;color:var(--coral);letter-spacing:0.3em;text-transform:uppercase;}
+  .cover h1{font-family:"Playfair Display",Georgia,serif;font-weight:400;font-size:32px;line-height:1.18;color:var(--white);margin-top:8px;letter-spacing:-0.01em;}
+  .cover .sub{margin-top:7px;font-size:13px;color:var(--beige-soft);letter-spacing:0.04em;}
+  .cover-r{text-align:right;font-size:10px;letter-spacing:0.04em;color:rgba(232,223,212,0.85);line-height:1.85;}
+  .cover-r b{color:var(--white);}
+
+  .purpose{background:var(--beige-pale);border-left:3px solid var(--coral);padding:12px 18px;margin-top:0;}
+  .purpose .pl{font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--coral);font-weight:700;}
+  .purpose .pt{margin-top:6px;font-size:12px;color:var(--black-soft);line-height:1.7;}
+  .purpose .pt b{color:var(--black);font-weight:600;}
+
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px;}
+  .col{display:flex;flex-direction:column;gap:6px;}
+
+  h2.sec{font-family:"Playfair Display",Georgia,serif;font-weight:400;font-size:16px;color:var(--black);margin:5px 0 3px;display:flex;align-items:baseline;gap:8px;border-top:1.5px solid var(--black);padding-top:6px;}
+  h2.sec:first-of-type{margin-top:0;}
+  h2.sec .num{font-size:13px;color:var(--coral);letter-spacing:0.18em;}
+  h2.sec .tag{font-size:8.5px;letter-spacing:0.2em;text-transform:uppercase;background:var(--coral);color:var(--white);padding:2px 7px;font-weight:700;margin-left:4px;}
+  h3.sub{font-size:11px;color:var(--black-soft);font-weight:600;margin:6px 0 3px;letter-spacing:0.01em;}
+
+  table{width:100%;border-collapse:collapse;font-size:10.5px;border:1px solid var(--line);margin:4px 0;}
+  th,td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top;line-height:1.4;}
+  thead th{background:var(--black);color:var(--beige);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;font-weight:600;}
+  td{background:var(--white);color:var(--black-soft);}
+  td b{color:var(--black);font-weight:600;}
+  tr.total td{background:var(--beige-pale);color:var(--black);font-weight:600;}
+  td.r,th.r{text-align:right;}
+
+  ul{padding-left:0;list-style:none;margin:4px 0;}
+  ul li{position:relative;padding:2px 0 2px 12px;font-size:10.5px;color:var(--black-soft);line-height:1.5;}
+  ul li::before{content:"—";position:absolute;left:0;color:var(--coral);font-weight:600;}
+
+  .note{font-size:9.5px;color:var(--gray);margin-top:3px;}
+
+  .total-box{background:var(--black);color:var(--beige);padding:14px 18px;margin-top:10px;}
+  .total-box .tl{font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--coral);font-weight:700;}
+  .total-box table{margin-top:8px;border:1px solid rgba(183,159,138,0.25);}
+  .total-box th,.total-box td{border:1px solid rgba(183,159,138,0.18);}
+  .total-box thead th{background:transparent;color:var(--coral);}
+  .total-box td{background:transparent;color:var(--beige-soft);}
+  .total-box tr.total td{background:var(--coral) !important;color:var(--white) !important;font-weight:700;}
+
+  .pf{margin-top:14px;border-top:1px solid var(--line);padding-top:7px;display:flex;justify-content:space-between;font-size:8.5px;letter-spacing:0.06em;color:var(--gray);}
+
+  [contenteditable="true"]:hover{background:rgba(237,91,63,0.04);outline:1px dashed rgba(237,91,63,0.3);outline-offset:2px;}
+  [contenteditable="true"]:focus{background:rgba(237,91,63,0.08);outline:1px solid var(--coral);outline-offset:2px;}
+  .edit-banner{position:fixed;top:10px;right:10px;background:var(--black);color:var(--beige);font-size:10px;letter-spacing:0.18em;padding:6px 12px;z-index:999;}
+  .edit-banner .dot{display:inline-block;width:6px;height:6px;background:var(--coral);border-radius:50%;margin-right:6px;vertical-align:middle;}
+
+  /* 결재 box */
+  .approval{display:grid;grid-template-columns:64px repeat(4,1fr);border:1px solid var(--black);margin-top:0;background:var(--white);}
+  .approval > div{border-right:1px solid var(--line);padding:0;text-align:center;}
+  .approval > div:last-child{border-right:none;}
+  .approval > div:first-child{background:var(--black);color:var(--beige);display:flex;align-items:center;justify-content:center;font-family:"Jost",system-ui,sans-serif;font-size:10px;letter-spacing:0.22em;font-weight:700;}
+  .approval .ap-cell{display:flex;flex-direction:column;}
+  .approval .ap-head{background:var(--beige-pale);color:var(--black);font-size:10px;font-weight:600;letter-spacing:0.04em;padding:5px 0;border-bottom:1px solid var(--line);}
+  .approval .ap-sign{min-height:28px;padding:4px;font-size:10px;color:var(--gray);}
+
+  @media print{
+    @page{size:A3 landscape;margin:0;}
+    .page{zoom:0.95;}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+    html,body{background:var(--white);}
+    .page{margin:0;width:420mm;min-height:297mm;}
+    [contenteditable="true"]:hover,[contenteditable="true"]:focus{background:transparent !important;outline:none !important;}
+    .edit-banner{display:none !important;}
+    table tr,h2.sec,.purpose,.total-box{break-inside:avoid;}
+  }
+  @media (max-width:1100px){
+    .page{width:100%;min-height:auto;padding:18px 14px;}
+    .cover{margin:-18px -14px 12px;padding:28px 14px 22px;}
+    .twocol{grid-template-columns:1fr;}
+    .pf{position:static;margin-top:22px;}
+  }
+</style>
+</head>
+<body>
+<div class="edit-banner"><span class="dot"></span>편집 모드 — 텍스트 클릭 → 수정</div>
+
+<div class="page">
+
+  <div class="cover">
+    <div class="cover-inner">
+      <div class="cover-l">
+        <div class="era">Board Report · Support Team Budget</div>
+        <h1 contenteditable="true">지원부 운용 예산 보고서</h1>
+        <div class="sub" contenteditable="true">운용 인력 · 간식 · 회식 · 칭찬 사원 · 복장 — 예산 포함</div>
+      </div>
+      <div class="cover-r" contenteditable="true">
+        <b>보고자</b> &nbsp; 김남욱 GM<br>
+        <b>보고일</b> &nbsp; 2026. 6. 2<br>
+        <b>대상</b> &nbsp; 회장님 · 대표님<br>
+        <b>구분</b> &nbsp; Internal · Confidential
+      </div>
+    </div>
+  </div>
+
+  <div class="approval">
+    <div>결재</div>
+    <div class="ap-cell"><div class="ap-head">GM</div><div class="ap-sign" contenteditable="true">김남욱</div></div>
+    <div class="ap-cell"><div class="ap-head">이사</div><div class="ap-sign" contenteditable="true"></div></div>
+    <div class="ap-cell"><div class="ap-head">대표</div><div class="ap-sign" contenteditable="true"></div></div>
+    <div class="ap-cell"><div class="ap-head">회장</div><div class="ap-sign" contenteditable="true"></div></div>
+  </div>
+
+  <div class="purpose">
+    <div class="pl">보고 목적</div>
+    <div class="pt" contenteditable="true">
+      6/1 GM미팅에서 확정된 지원부 운영 변경(3교대 · 점검자 배정 · FM 체계)을 바탕으로,
+      <b>지원부 운영을 안정화하고 직원이 긍정적으로 일할 수 있는 환경</b>을 갖추기 위한 예산을 보고드립니다.
+      운용 인력 · 간식 · 회식 · 칭찬 사원 제도 · 복장 5개 항목입니다.
+    </div>
+  </div>
+
+  <div class="twocol">
+
+    <!-- LEFT: 운용 인력 + 복장 -->
+    <div class="col">
+
+      <h2 class="sec" contenteditable="true"><span class="num">①</span>운용 인력</h2>
+      <h3 class="sub" contenteditable="true">직급별 역할 및 급여 체계 (월 기준)</h3>
+      <table>
+        <thead>
+          <tr><th>직급</th><th>역할</th><th class="r">인원</th><th class="r">1인 월급여</th><th class="r">월 합계</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td contenteditable="true"><b>반장</b></td>
+            <td contenteditable="true">현장 운영 책임자 · 일일 점검 · 인력 배분 · 이슈 1차 대응 · <b>비품 관리</b></td>
+            <td class="r" contenteditable="true">[입력]</td>
+            <td class="r" contenteditable="true">[내일 확정]</td>
+            <td class="r" contenteditable="true">[내일 확정]</td>
+          </tr>
+          <tr>
+            <td contenteditable="true"><b>주임</b></td>
+            <td contenteditable="true">현장 실무 · 청결 · 회원 응대 · 구역 관리 직접 수행</td>
+            <td class="r" contenteditable="true">[입력]</td>
+            <td class="r" contenteditable="true">[내일 확정]</td>
+            <td class="r" contenteditable="true">[내일 확정]</td>
+          </tr>
+          <tr class="total">
+            <td colspan="4"><b>합계 (현재 운용 기준)</b></td>
+            <td class="r" contenteditable="true"><b>약 2,400만원 / 월</b></td>
+          </tr>
+        </tbody>
+      </table>
+      <ul contenteditable="true">
+        <li>현재 운용 비용 기준 — 6/1 미팅에서 확인한 약 2,400만원/월</li>
+        <li>구체적 급여 체계는 <b>관리이사님과 협의 후 확정 (6/3 예정)</b></li>
+        <li>6/10 대체자 입사(외곽 · 미화 · 골프 · 헬스장) 반영 시 인원·금액 조정 예정</li>
+        <li><b>비품 관리 이관</b> — 현재 고문님 진행 → 지원부(반장)로 이관 예정</li>
+      </ul>
+
+      <h2 class="sec" contenteditable="true"><span class="num">②</span>복장 (유니폼)</h2>
+      <table>
+        <thead><tr><th>항목</th><th class="r">단가</th><th class="r">인원</th><th class="r">연 합계</th></tr></thead>
+        <tbody>
+          <tr><td contenteditable="true">하계 유니폼</td><td class="r" contenteditable="true">5만원</td><td class="r" contenteditable="true">10</td><td class="r" contenteditable="true">50만원</td></tr>
+          <tr><td contenteditable="true">동계 유니폼</td><td class="r" contenteditable="true">10만원</td><td class="r" contenteditable="true">10</td><td class="r" contenteditable="true">100만원</td></tr>
+          <tr><td contenteditable="true">소모품 (장갑·작업화 등)</td><td class="r" contenteditable="true">3만원</td><td class="r" contenteditable="true">10</td><td class="r" contenteditable="true">30만원</td></tr>
+          <tr class="total"><td><b>복장 연 합계</b></td><td class="r">—</td><td class="r">—</td><td class="r" contenteditable="true"><b>약 180만원 / 년</b></td></tr>
+        </tbody>
+      </table>
+      <div style="background:var(--beige-pale);border-left:3px solid var(--coral);padding:8px 12px;margin-top:6px;font-size:10.5px;color:var(--black-soft);line-height:1.6;" contenteditable="true">
+        <b style="color:var(--coral);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;">컨셉</b> 단정 · 격식 + 활동성 / <b>깃 있는 상의 필수</b> (셔츠 또는 카라 폴로)
+      </div>
+      <ul contenteditable="true">
+        <li>입사 시 1회 지급 + 환절기 교체 주기</li>
+        <li>사우나 환경 고려 — 자주 세탁해도 형태 유지되는 소재</li>
+      </ul>
+      <h2 class="sec" contenteditable="true"><span class="num">③</span>GM 현장 투입<span class="tag">다음주 1주일</span></h2>
+      <p style="font-size:11px;color:var(--black-soft);line-height:1.6;margin:4px 0 6px;" contenteditable="true">
+        예산 제안과 함께, GM이 직접 1주일간 지원팀 현장에 투입됩니다.
+      </p>
+      <ul contenteditable="true">
+        <li><b>일정</b> — 다음 주 월~일</li>
+        <li><b>범위</b> — 외곽 청소 → 내부 시설 → 사우나 관리</li>
+        <li><b>시간</b> — 새벽 오전조(05:20~) 포함 전 시간대</li>
+        <li><b>목적</b> — 현장 실측 · 솔선수범 · FM 작동 점검</li>
+      </ul>
+
+    </div>
+
+    <!-- RIGHT: 간식 + 회식 + 칭찬 + 합계 -->
+    <div class="col">
+
+      <h2 class="sec" contenteditable="true"><span class="num">④</span>간식 · 회식 운영</h2>
+      <table>
+        <thead><tr><th>구분</th><th>항목</th><th class="r">단가 / 빈도</th><th class="r">연 합계</th></tr></thead>
+        <tbody>
+          <tr><td contenteditable="true"><b>간식 — 상시</b></td><td contenteditable="true">음료 · 간식 비치</td><td class="r" contenteditable="true">40만원 / 월</td><td class="r" contenteditable="true">480만원</td></tr>
+          <tr><td contenteditable="true"><b>간식 — 특별</b></td><td contenteditable="true">계절 보충 · 특별</td><td class="r" contenteditable="true">10만원 / 월</td><td class="r" contenteditable="true">120만원</td></tr>
+          <tr><td contenteditable="true"><b>회식 — 정기</b></td><td contenteditable="true">분기 회식</td><td class="r" contenteditable="true">50만원 × 4회</td><td class="r" contenteditable="true">200만원</td></tr>
+          <tr><td contenteditable="true"><b>회식 — 특별</b></td><td contenteditable="true">성과 · 종무 등</td><td class="r" contenteditable="true">100만원 × 2회</td><td class="r" contenteditable="true">200만원</td></tr>
+          <tr class="total"><td colspan="3"><b>간식 · 회식 합계</b></td><td class="r" contenteditable="true"><b>약 1,000만원 / 년</b></td></tr>
+        </tbody>
+      </table>
+      <ul contenteditable="true">
+        <li>품목 · 빈도 · 한도 · 진행 방식은 지원부 미팅에서 합의 후 확정</li>
+      </ul>
+
+      <h2 class="sec" contenteditable="true"><span class="num">⑤</span>칭찬 사원 제도 (월간)</h2>
+      <table>
+        <thead><tr><th>항목</th><th class="r">단가</th><th class="r">월 빈도</th><th class="r">연 합계</th></tr></thead>
+        <tbody>
+          <tr><td contenteditable="true">월간 우수 주임 1인 포상</td><td class="r" contenteditable="true">10만원</td><td class="r" contenteditable="true">1회 / 월</td><td class="r" contenteditable="true">120만원</td></tr>
+          <tr><td contenteditable="true">연말 우수 사원 (확장)</td><td class="r" contenteditable="true">50만원</td><td class="r" contenteditable="true">1회 / 년</td><td class="r" contenteditable="true">50만원</td></tr>
+          <tr class="total"><td><b>칭찬 사원 합계</b></td><td class="r">—</td><td class="r">—</td><td class="r" contenteditable="true"><b>약 170만원 / 년</b></td></tr>
+        </tbody>
+      </table>
+      <ul contenteditable="true">
+        <li>선정 기준 · 발표 방식은 지원부 미팅에서 합의 후 확정</li>
+        <li>"회원도 왕, 우리도 왕" 운영 철학을 실제 인정으로 구현</li>
+      </ul>
+
+    </div>
+  </div>
+
+  <!-- 총 예산 합계 — 양쪽 컬럼 아래 전체 너비 -->
+  <div class="total-box" style="margin-top:14px;">
+    <div class="tl">총 예산 합계 — Total</div>
+    <table>
+      <thead><tr><th>항목</th><th class="r">월 예산</th><th class="r">연 예산</th></tr></thead>
+      <tbody>
+        <tr><td>운용 인력</td><td class="r" contenteditable="true">약 2,400만원</td><td class="r" contenteditable="true">약 28,800만원</td></tr>
+        <tr><td>복장 (유니폼)</td><td class="r" contenteditable="true">약 15만원</td><td class="r" contenteditable="true">약 180만원</td></tr>
+        <tr><td>간식 · 회식</td><td class="r" contenteditable="true">약 83만원</td><td class="r" contenteditable="true">약 1,000만원</td></tr>
+        <tr><td>칭찬 사원</td><td class="r" contenteditable="true">약 14만원</td><td class="r" contenteditable="true">약 170만원</td></tr>
+        <tr class="total"><td><b>합계 (운용 인력 제외 부가)</b></td><td class="r" contenteditable="true"><b>약 112만원 / 월</b></td><td class="r" contenteditable="true"><b>약 1,350만원 / 년</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pf">
+    <span>WELLPERION SPORTS CLUB · 지원부 운용 예산 보고서 · 회장님 · 대표님 · 2026.06.02</span>
+    <span>Internal · Confidential</span>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 CHRO 기능 구조도</title>
+<style>
+  :root{
+    --ink:#1E2B26;          /* 딥 파인 잉크 */
+    --paper:#F3F2EC;        /* 포슬린 지면 */
+    --card:#FBFAF6;         /* 카드 지면 */
+    --line:#D8D4C8;         /* 헤어라인 */
+    --brass:#A08339;        /* 브라스 포인트 */
+    --brass-soft:#EFE8D5;   /* 브라스 연한 배경 */
+    --muted:#5C665F;        /* 보조 텍스트 */
+    --a1:#3E4C7A;  /* 이력서 — 딥 인디고 */
+    --a2:#2E6B5E;  /* 채용 — 파인 그린 */
+    --a3:#9A6B2F;  /* 온보딩 — 오커 */
+    --a4:#6E4260;  /* 평가 — 플럼 */
+    --a5:#45607A;  /* 배포 — 슬레이트 */
+    --a6:#8A3B3B;  /* 감사 — 버건디 */
+    --a7:#5E6B34;  /* 시스템효율 — 올리브 */
+    --chro:#1E2B26;
+    --db-bg:#2A3A34;        /* DB 태그 — 다크 칩 */
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+    font-size:15px; line-height:1.65;
+  }
+  .serif{font-family:'Nanum Myeongjo','Batang','바탕',Georgia,serif}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+  /* ── 헤더 ─────────────────────────── */
+  header{
+    background:var(--ink); color:#EDEBE2;
+    padding:52px 0 44px; border-bottom:4px solid var(--brass);
+  }
+  .eyebrow{
+    font-size:11px; letter-spacing:.42em; text-transform:uppercase;
+    color:var(--brass); margin-bottom:16px; font-weight:700;
+  }
+  h1{
+    font-family:'Nanum Myeongjo','Batang','바탕',Georgia,serif;
+    font-size:clamp(28px,4.4vw,44px); font-weight:800; letter-spacing:.01em;
+    line-height:1.25;
+  }
+  .header-sub{color:#B9C0B6;margin-top:14px;font-size:14.5px;max-width:640px}
+  .header-meta{
+    margin-top:26px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    font-size:12px;color:#DCD8C8;
+  }
+  .header-meta .pill{
+    border:1px solid rgba(233,226,204,.35);border-radius:2px;
+    padding:4px 12px;letter-spacing:.06em;
+  }
+  .header-meta .pill b{color:var(--brass);font-weight:700}
+
+  /* ── 섹션 공통 ─────────────────────── */
+  section{padding:44px 0 8px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:22px}
+  .sec-letter{
+    font-family:'Nanum Myeongjo','Batang',Georgia,serif;
+    font-size:30px;font-weight:800;color:var(--brass);line-height:1;
+  }
+  .sec-head h2{font-size:21px;font-weight:800;letter-spacing:.01em}
+  .sec-head .sec-note{margin-left:auto;font-size:12px;color:var(--muted);letter-spacing:.04em}
+
+  /* ── 라우팅 계보도 ─────────────────── */
+  .org{padding:46px 0 10px}
+  .org-title{
+    text-align:center;font-size:11px;letter-spacing:.4em;color:var(--muted);
+    text-transform:uppercase;font-weight:700;margin-bottom:22px;
+  }
+  .node{
+    background:var(--card);border:1px solid var(--line);border-radius:3px;
+    padding:14px 22px;text-align:center;
+  }
+  .node-mgr{width:min(300px,90%);margin:0 auto;border-top:3px solid var(--brass)}
+  .node-mgr .nm{font-weight:800;font-size:16px}
+  .node-mgr .rl{font-size:12px;color:var(--muted);margin-top:2px}
+  .node-chro{
+    width:min(560px,96%);margin:0 auto;background:var(--ink);color:#EDEBE2;
+    border:none;border-radius:3px;padding:18px 24px;
+  }
+  .node-chro .nm{font-family:'Nanum Myeongjo','Batang',Georgia,serif;font-size:19px;font-weight:800}
+  .node-chro .rl{font-size:12.5px;color:#B9C0B6;margin-top:6px;line-height:1.6}
+  .node-chro .rl b{color:var(--brass)}
+  .vline{width:1px;height:26px;background:var(--brass);margin:0 auto}
+  .agents{
+    display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:0;
+    position:relative;padding-top:26px;
+  }
+  .agents::before{ /* 수평 연결선 */
+    content:"";position:absolute;top:0;left:calc(50% / 7);right:calc(50% / 7);
+    height:1px;background:var(--brass);
+  }
+  .agents::after{ /* 중앙 수직선 */
+    content:"";position:absolute;top:-26px;left:50%;width:1px;height:26px;background:var(--brass);
+  }
+  .agent-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:3px;padding:12px 10px 12px;text-align:center}
+  .agent-card::before{ /* 각 카드로 내려오는 선 */
+    content:"";position:absolute;top:-26px;left:50%;width:1px;height:26px;background:var(--brass);
+  }
+  .agent-card .seal{
+    display:inline-block;color:#fff;font-weight:800;font-size:11px;
+    padding:3px 9px;border-radius:2px;letter-spacing:.08em;margin-bottom:8px;
+  }
+  .agent-card .anm{font-weight:800;font-size:13.5px;line-height:1.3}
+  .agent-card .amodel{font-size:10.5px;color:var(--brass);letter-spacing:.14em;text-transform:uppercase;margin-top:3px;font-weight:700}
+  .agent-card .aduty{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+  .s-a1{background:var(--a1)} .s-a2{background:var(--a2)} .s-a3{background:var(--a3)}
+  .s-a4{background:var(--a4)} .s-a5{background:var(--a5)} .s-a6{background:var(--a6)} .s-a7{background:var(--a7)}
+  .b-a1{border-top:3px solid var(--a1)} .b-a2{border-top:3px solid var(--a2)} .b-a3{border-top:3px solid var(--a3)}
+  .b-a4{border-top:3px solid var(--a4)} .b-a5{border-top:3px solid var(--a5)} .b-a6{border-top:3px solid var(--a6)} .b-a7{border-top:3px solid var(--a7)}
+  .foundation{
+    margin-top:24px;background:var(--brass-soft);border:1px solid var(--line);border-radius:3px;
+    padding:12px 18px;text-align:center;font-size:12.5px;color:var(--ink);letter-spacing:.03em;
+  }
+  .foundation b{color:var(--brass)}
+  .foundation .sep{color:var(--brass);margin:0 8px}
+
+  /* ── 범례 ─────────────────────────── */
+  .legend{
+    display:flex;gap:18px;flex-wrap:wrap;align-items:center;
+    background:var(--card);border:1px solid var(--line);border-radius:3px;
+    padding:12px 18px;margin-top:26px;font-size:12px;color:var(--muted);
+  }
+  .legend .lg-t{font-weight:800;color:var(--ink);letter-spacing:.08em;font-size:11px}
+
+  /* ── 배지·태그 ────────────────────── */
+  .badge{
+    display:inline-block;color:#fff;font-size:10.5px;font-weight:800;
+    padding:2.5px 9px;border-radius:2px;letter-spacing:.05em;vertical-align:middle;
+    white-space:nowrap;
+  }
+  .bg-a1{background:var(--a1)} .bg-a2{background:var(--a2)} .bg-a3{background:var(--a3)}
+  .bg-a4{background:var(--a4)} .bg-a5{background:var(--a5)} .bg-a6{background:var(--a6)}
+  .bg-a7{background:var(--a7)} .bg-chro{background:var(--chro)}
+  .bg-auto{background:#7A7A6E}
+  .tag{
+    display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:2px;
+    letter-spacing:.03em;vertical-align:middle;white-space:nowrap;
+    font-family:Consolas,'Courier New',monospace;
+  }
+  .tag.act{background:var(--brass-soft);color:#6B5620;border:1px solid #D9CCA4;font-weight:700}
+  .tag.db{background:var(--db-bg);color:#D9E2DA;font-weight:700}
+  .tag.tool{background:transparent;color:var(--muted);border:1px dashed #A9A695;font-family:'Malgun Gothic','맑은 고딕',sans-serif}
+
+  /* ── 기능 카드 ────────────────────── */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+  .item{
+    background:var(--card);border:1px solid var(--line);border-radius:3px;
+    padding:16px 18px 14px;display:flex;flex-direction:column;
+    break-inside:avoid;
+  }
+  .item-head{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .item-head h3{font-size:15px;font-weight:800;line-height:1.4;flex:1 1 auto}
+  .item p{font-size:13px;color:#3D473F;line-height:1.7;flex:1 1 auto}
+  .item p b{color:var(--ink)}
+  .item .warn{color:var(--a6);font-weight:700}
+  .tags{margin-top:12px;display:flex;flex-wrap:wrap;gap:5px}
+
+  /* ── 정직 배지(실가동 상태) ────────── */
+  .hbar{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:var(--card);border:1px solid var(--line);border-radius:3px;
+    padding:9px 16px;margin-bottom:14px;font-size:12px;color:var(--muted);
+  }
+  .hbar .hbar-label{font-weight:800;color:var(--ink);letter-spacing:.05em;font-size:11px;text-transform:uppercase}
+  .hbar .hbar-note{margin-left:auto;font-size:10.5px;color:var(--muted)}
+  .hbadge-row{display:flex;flex-wrap:wrap;gap:6px 14px;margin:2px 0 10px;font-size:11.5px}
+  .hbadge-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+  .hbadge-item .hb-name{color:var(--muted)}
+  .hbadge{
+    display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:2px;
+    letter-spacing:.02em;color:#fff;white-space:nowrap;
+  }
+  .hb-live{background:#2E6B5E}
+  .hb-delayed{background:#9A6B2F}
+  .hb-none{background:transparent;color:var(--muted);border:1px dashed #A9A695;font-weight:700}
+  .hb-ondemand{background:#45607A}
+  .hbadge-time{font-size:10.5px;color:var(--muted)}
+
+  /* ── 표 ──────────────────────────── */
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--card);margin-bottom:14px}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:640px}
+  th{
+    background:var(--ink);color:#EDEBE2;text-align:left;padding:9px 12px;
+    font-weight:700;letter-spacing:.05em;font-size:11.5px;white-space:nowrap;
+  }
+  td{padding:8px 12px;border-top:1px solid var(--line);vertical-align:top}
+  tbody tr:nth-child(even){background:#F5F4EE}
+  td .tag{margin:1px 2px 1px 0}
+  .mono{font-family:Consolas,'Courier New',monospace;font-size:12px}
+
+  /* ── 안전 배너 ────────────────────── */
+  .safety{
+    margin:50px 0 0;background:var(--ink);color:#EDEBE2;border-radius:3px;
+    border-top:4px solid var(--brass);padding:34px 34px 30px;
+  }
+  .safety h2{
+    font-family:'Nanum Myeongjo','Batang',Georgia,serif;
+    font-size:20px;font-weight:800;margin-bottom:6px;
+  }
+  .safety .safety-sub{font-size:12.5px;color:#B9C0B6;margin-bottom:22px}
+  .safety-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:8px 26px}
+  .safety-grid .sitem{display:flex;gap:10px;font-size:13px;line-height:1.6;padding:7px 0;border-bottom:1px solid rgba(233,226,204,.14)}
+  .safety-grid .sitem .no{color:var(--brass);font-weight:800;font-family:'Nanum Myeongjo','Batang',Georgia,serif;min-width:20px}
+  .safety-grid .sitem b{color:#F0E9D2}
+
+  footer{padding:30px 0 44px;text-align:center;font-size:11.5px;color:var(--muted);letter-spacing:.06em}
+  footer .brand{color:var(--brass);font-weight:800;letter-spacing:.3em}
+
+  /* ── 반응형 ──────────────────────── */
+  @media (max-width:960px){
+    .agents{grid-template-columns:repeat(4,1fr)}
+    .agents::before{display:none}
+    .agent-card::before{display:none}
+    .agents{padding-top:12px}
+  }
+  @media (max-width:640px){
+    body{font-size:14px}
+    .agents{grid-template-columns:repeat(2,1fr)}
+    .grid{grid-template-columns:1fr}
+    header{padding:40px 0 32px}
+    .safety{padding:26px 20px}
+    .sec-head .sec-note{display:none}
+  }
+  /* ── 인쇄 ────────────────────────── */
+  @media print{
+    body{background:#fff;font-size:12px}
+    header,.safety{background:#fff !important;color:var(--ink) !important;border:2px solid var(--ink)}
+    header .header-sub,.node-chro .rl,.safety .safety-sub{color:#444 !important}
+    .node-chro{background:#fff;color:var(--ink);border:2px solid var(--ink)}
+    .safety-grid .sitem{border-bottom-color:#ccc}
+    .safety-grid .sitem b{color:var(--ink)}
+    th{background:#fff;color:var(--ink);border-bottom:2px solid var(--ink)}
+    .item,.tbl-wrap,.agent-card,.node{border-color:#999}
+    section{padding:22px 0 4px}
+    .badge,.seal,.tag.db{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Wellperion &middot; HR Operations Hub</div>
+    <h1>웰페리온 CHRO 기능 구조도</h1>
+    <p class="header-sub">인사 운영 허브가 할 수 있는 일의 총람 — 각 기능을 어떤 에이전트가, 어떤 도구로, 어떤 데이터·액션을 거쳐 수행하는지 한 장에 담았습니다.</p>
+    <div class="header-meta">
+      <span class="pill">갱신일 <b>2026-07-14</b></span>
+      <span class="pill">전담 에이전트 <b>7종</b> (A-1 ~ A-7)</span>
+      <span class="pill">읽기 DB <b>7종</b> + 휴무·자동화로그·업무평가·자기평가·리더십평가 탭</span>
+      <span class="pill">쓰기 액션 <b>39종</b></span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════ 라우팅 계보도 ═══════════ -->
+<div class="org">
+  <div class="wrap">
+    <div class="org-title">Routing &middot; 요청이 흐르는 길</div>
+
+    <div class="node node-mgr">
+      <div class="nm">매니저님</div>
+      <div class="rl">지시 · 승인 · 최종 확정</div>
+    </div>
+    <div class="vline"></div>
+
+    <div class="node-chro">
+      <div class="nm">CHRO 오케스트레이터 (메인 세션)</div>
+      <div class="rl">요청을 판별해 전담 에이전트로 <b>위임(delegate-first)</b> · 결과 취합 보고 · 자동화로그 기록<br>
+      직접 처리는 예외 3종만 — ①단순 단건 조회 ②라우팅·하네스 메타작업 ③위임 대상이 없는 요청</div>
+    </div>
+    <div class="agents">
+      <div class="agent-card b-a1">
+        <span class="seal s-a1">A-1</span>
+        <div class="anm">이력서담당자</div>
+        <div class="amodel">Opus</div>
+        <div class="aduty">이력서 판독 → 5축 평가 → 등록 → 사진</div>
+      </div>
+      <div class="agent-card b-a2">
+        <span class="seal s-a2">A-2</span>
+        <div class="anm">채용담당자</div>
+        <div class="amodel">Sonnet</div>
+        <div class="aduty">전형 단계 · 면접 일정 · 공고 운영</div>
+      </div>
+      <div class="agent-card b-a3">
+        <span class="seal s-a3">A-3</span>
+        <div class="anm">직원담당자</div>
+        <div class="amodel">Sonnet</div>
+        <div class="aduty">직원 여정 전체 — 입사확정 · 12주 온보딩 · 체크인 + 재직자 케어 · 마일스톤 · 퇴사 시그널</div>
+      </div>
+      <div class="agent-card b-a4">
+        <span class="seal s-a4">A-4</span>
+        <div class="anm">평가담당자</div>
+        <div class="amodel">Opus</div>
+        <div class="aduty">인사평가 저장 · 평가지 렌더</div>
+      </div>
+      <div class="agent-card b-a5">
+        <span class="seal s-a5">A-5</span>
+        <div class="anm">배포담당자</div>
+        <div class="amodel">Sonnet</div>
+        <div class="aduty">Pages 커밋·배포 · 백엔드 새 버전</div>
+      </div>
+      <div class="agent-card b-a6">
+        <span class="seal s-a6">A-6</span>
+        <div class="anm">감사자</div>
+        <div class="amodel">Opus</div>
+        <div class="aduty">확정 전 검증 · 허브 자가점검</div>
+      </div>
+      <div class="agent-card b-a7">
+        <span class="seal s-a7">A-7</span>
+        <div class="anm">시스템효율담당</div>
+        <div class="amodel">Opus</div>
+        <div class="aduty">효율 최적화 · 회고 박제 · 자동화 인프라 진단·수리·정직 배지 추적(3모드)</div>
+      </div>
+    </div>
+
+    <div class="foundation">
+      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@49, /exec)<span class="sep">|</span><b>구글시트 10탭</b>(데이터 7 + 휴무 + 자동화로그 + 업무평가)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
+    </div>
+
+    <div class="legend">
+      <span class="lg-t">읽는 법</span>
+      <span><span class="badge bg-a2">A-2 채용담당자</span> 담당 에이전트</span>
+      <span><span class="tag act">set-stage</span> 백엔드 쓰기 액션</span>
+      <span><span class="tag db">db:appl</span> 읽기 DB(시트 탭)</span>
+      <span><span class="tag tool">비전 판독</span> 스킬 · 도구</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ═══════════ A. 채용 파이프라인 ═══════════ -->
+<section id="sec-a">
+  <div class="sec-head">
+    <span class="sec-letter">A</span><h2>채용 파이프라인</h2>
+    <span class="sec-note">이력서 접수부터 합격까지</span>
+  </div>
+  <div class="grid">
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a1">A-1 이력서담당자</span><h3>이력서 판독 (PDF · 이미지)</h3></div>
+      <p>업로드 폴더의 PDF/PNG에서 텍스트와 증명사진을 추출합니다. 한글 PDF(잡코리아 등)는 폰트 인코딩 문제로 텍스트 추출이 안 되므로 <b>비전(AI 육안 판독)으로 직접 읽는 것이 정석</b>이며, 암호 걸린 PDF는 복호화 후 처리합니다. 판독·평가는 병렬, 쓰기는 직렬로 처리해 속도와 안전을 동시에 확보합니다.</p>
+      <div class="tags"><span class="tag db">db:appl</span><span class="tag tool">비전 판독</span><span class="tag tool">PowerShell</span><span class="tag tool">병렬 서브에이전트</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a1">A-1 이력서담당자</span><h3>중복 · 재지원 판별</h3></div>
+      <p>지원자 DB를 1회 읽어 <b>이름+포지션</b>으로 기존 등록과 대조, 중복 등록을 차단하고 재지원자를 식별합니다. 채용블랙리스트와도 대조해 해당자는 <b>자동 경고 배지</b>로 표시합니다.</p>
+      <div class="tags"><span class="tag db">db:appl</span><span class="tag db">db:blacklist</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a1">A-1 이력서담당자</span><h3>AI 5축 서류평가</h3></div>
+      <p>웰페리온 <b>4대 인재상(문제해결 · 팀워크 · 주도성 · 프로세스) + 서비스마인드</b> 5축을 각각 A~F로 평가하고 종합등급을 산출합니다. 강점 · 우려 · 면접 확인 포인트를 메모 표준양식으로 정리하며, 자료에 없는 항목은 지어내지 않고 "미기재"로 둡니다. 평가 확정 전 A-6 감사를 거칩니다.</p>
+      <div class="tags"><span class="tag tool">Opus 판단(다운 금지)</span><span class="tag tool">메모 표준양식</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a1">A-1 이력서담당자</span><h3>지원자 등록</h3></div>
+      <p>평가를 마친 지원자를 백엔드에 등록합니다. <b>필수 필드 계약</b>: 이름 · 포지션 · 연결공고 · 단계("서류 검토") · 지원경로 · 지원일 · 연락처 · 이메일 · 메모 + <b>종합등급(grade)까지 전부 포함</b>(누락 시 ERP에 "미평가"로 표시). 지원경로는 출처가 명확할 때만 기입, 불명이면 "미기재". 등록 후 필드 단위 라운드트립 대조로 검증합니다.</p>
+      <p style="margin-top:8px">(2026-07-15 신설) 인사카드 팝업에서 지원자 주소 옆에 <b>웰페리온(서빙고로 413)까지 직선거리(km)</b>를 표시합니다 — 카드가 열릴 때 <span class="tag act">geo-distance</span> 액션을 비동기 호출해 지오코딩 + 하버사인 계산(기준점 좌표는 Script Properties에 1회 고정, 주소별 결과는 해시 캐시). 주소 미기재 · 조회 실패 시 표시를 생략합니다(비파괴, 좌표는 응답에 미포함).</p>
+      <div class="tags"><span class="tag act">register-applicant</span><span class="tag act">geo-distance</span><span class="tag db">db:appl</span><span class="tag tool">1.5초 간격</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a1">A-1 이력서담당자</span><span class="badge bg-a5">A-5 배포담당자</span><h3>증명사진 연결</h3></div>
+      <p>이력서에서 증명사진(세로형)을 추출해 <b>300px 이하 JPG로 크롭</b> → <span class="mono">photos/r&lt;행&gt;.jpg</span> 경로로 A-5가 묶음 커밋(1사이클) → 사진 URL을 지원자 행에 연결합니다. 사진이 없거나 이름 불일치면 추측하지 않고 보류, 실제 화면 로딩까지 확인합니다.</p>
+      <div class="tags"><span class="tag act">set-photo</span><span class="tag tool">이미지 리사이즈</span><span class="tag tool">GitHub Pages</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a2">A-2 채용담당자</span><h3>전형 단계 관리 (7단계)</h3></div>
+      <p><b>서류 검토 → 1차 면접 → 2차 면접 → 최종 합격 / 보류 / 불합격 / 탈락</b> 7단계를 관리합니다. 단계 변경은 매니저님 지시가 있을 때만 수행하고, 변경 후 라운드트립으로 반영을 확인합니다. 면접 일시는 분 단위("YYYY-MM-DD HH:MM")까지 저장됩니다.</p>
+      <div class="tags"><span class="tag act">set-stage</span><span class="tag db">db:appl</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a2">A-2 채용담당자</span><h3>면접 일정 잡기 · 변경</h3></div>
+      <p>"면접 잡아줘" 한 마디면 대상자 확인(동명이인 주의) → 일정 등록 → 반영 검증 → 요약 보고까지 처리합니다. 면접관 · 일시 변경도 동일하게 지원합니다.</p>
+      <div class="tags"><span class="tag act">schedule-interview</span><span class="tag act">update-interview</span><span class="tag db">db:appl</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a2">A-2 채용담당자</span><h3>지원자 정보 갱신</h3></div>
+      <p>연락처 · 이메일 · 포지션 · 지원경로 · 메모 · 평점을 갱신합니다. <b>필드별 보존 규칙</b>: 보낸 필드만 덮어쓰고 나머지는 원본 그대로 보존 — 특히 전형 단계는 미전달 시 절대 바뀌지 않아 안전합니다. 단계 변경 사유 메모도 이 액션으로 기록합니다(set-stage의 memo는 무시됨).</p>
+      <div class="tags"><span class="tag act">update-applicant</span><span class="tag db">db:appl</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a2">A-2 채용담당자</span><span class="badge bg-a5">A-5 배포담당자</span><h3>채용공고 등록 · 운영</h3></div>
+      <p>공고 신규 등록(<b>title 필수</b>, 부서·유형·채널·우선순위·기간·급여 등 12칸 매핑), 상태 전환(공고중↔<b>마감은 update-hire 전용</b>), 모집인원 변경(전용 액션), 채널 설정을 수행합니다. 공개 페이지는 <b>리크루팅 사이트 4페이지</b>(index · operations · parking · chauffeur)로 A-5가 반영하며, 공고 문안은 확정 전 A-6 사실 대조를 거칩니다. 주요업무·자격요건 칸은 API 미지원으로 시트 직접 입력.</p>
+      <div class="tags"><span class="tag act">add-job</span><span class="tag act">update-job</span><span class="tag act">update-hire</span><span class="tag act">update-headcount</span><span class="tag act">set-channels</span><span class="tag db">db:hire</span><span class="tag tool">공고 스타일가이드</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a5">A-5 배포담당자</span><h3>채널 배포 센터 (허브 "채널 배포" 탭)</h3></div>
+      <p>선택한 공고를 <b>잡코리아(에디터 호환 HTML)·알바몬(안전판 HTML)·다음카페(스포드림 · 텍스트+이미지 안내)·당근알바(간결 텍스트)</b> 4채널 게시 재료로 준비하는 <b>준비 도구</b>입니다. 외부 채널 접속·자동 게시는 하지 않으며, 채널별 "복사" 버튼으로 내용을 복사해 매니저님이 직접 해당 채널에 로그인해 붙여넣습니다. 이미지는 리크루팅 페이지의 JPG 다운로드 버튼과 인재상 도표 링크로 안내합니다. 데이터·템플릿은 <span class="tag tool">channel-data.js</span>(로컬 job-post-formatter.js 이식)에 포지션별로 보관하며, 현재 사우나 주임·골프 프로·주차관리·운영부(오후) 4개 공고가 준비되어 있습니다(신규 공고는 실데이터 확인 후 추가). 관리자 전용(뷰어 모드 숨김).</p>
+      <div class="tags"><span class="tag db">db:hire</span><span class="tag tool">channel-data.js</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a1">A-1</span><span class="badge bg-a2">A-2</span><h3>채용 블랙리스트</h3></div>
+      <p>재지원 차단 대상자를 등록 · 해제합니다. <b>PII 최소화 원칙</b>: 성명 · 생년 · 연락처 뒤 4자리 · 지원경로 · 사유만 보관(주민번호 금지). 동명이인 오차단 방지를 위한 식별키(생년 · 연락처 뒤4)를 포함하며, 이력서 접수 시 자동 대조됩니다.</p>
+      <div class="tags"><span class="tag act">add-blacklist</span><span class="tag act">remove-blacklist</span><span class="tag db">db:blacklist</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>채용취소 · 입사무산 정리</h3></div>
+      <p>합격 후 입사하지 않은 인원의 현재근무자 행을 정리합니다(행 유지 · 값만 비움 · 수식 보존). <span class="warn">실제 퇴사(resign, 퇴사기록 생성)와 반드시 구분</span> — 이 액션은 퇴사자 기록을 만들지 않습니다.</p>
+      <div class="tags"><span class="tag act">vacate-current</span><span class="tag db">db:emp</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════ B. 온보딩·재직 관리 ═══════════ -->
+<section id="sec-b">
+  <div class="sec-head">
+    <span class="sec-letter">B</span><h2>온보딩 · 재직 관리</h2>
+    <span class="sec-note">입사 확정부터 평가 · 휴무까지</span>
+  </div>
+  <div class="grid">
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a3">A-3 직원담당자</span><h3>입사 확정</h3></div>
+      <p>"입사 확정" 지시 시 최종 합격 단계의 지원자에 한해 처리하며, <b>12주차 체크인 일정이 자동 생성</b>됩니다. 확정 후 온보딩 DB를 읽어 체크인이 실제 생성됐는지 검증하고 대상자 · 입사일 · 일정을 요약 보고합니다.</p>
+      <div class="tags"><span class="tag act">hire-complete</span><span class="tag db">db:onbo</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a3">A-3 직원담당자</span><h3>온보딩 체크리스트 관리</h3></div>
+      <p>체크 항목 · 카테고리 · 담당자 · 완료 기한 · 완료 여부로 구성된 온보딩 항목을 추가 · 갱신 · 삭제합니다. 주차별(1~12주) 체크인과 멘토 면담 진행을 추적하고, 대상자별 진척은 '대상 신입 직원'+'완료 여부' 기준으로 1회 호출 집계합니다.</p>
+      <div class="tags"><span class="tag act">add-onboarding</span><span class="tag act">update-onboarding</span><span class="tag act">delete-onboarding</span><span class="tag db">db:onbo</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a3">A-3 직원담당자</span><h3>신입 성찰 시스템</h3></div>
+      <p>신입이 온보딩 기간 동안 스스로 기록하는 성찰 항목을 관리합니다. <b>24개 항목이 모두 완료되면 CHRO가 인사이트를 종합</b>해 적응 상태 · 강점 · 관찰 포인트를 보고합니다.</p>
+      <div class="tags"><span class="tag act">onboarding-self</span><span class="tag db">db:onbo</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>직원 등록 · 퇴사 처리</h3></div>
+      <p>직원 입사 등록과 퇴사 처리를 수행합니다. <span class="warn">인사현황 시트 행 고정 계약(매니저 확정)</span>: 행 삽입 · 삭제 절대 금지 — 신규 입사는 해당 부서 <b>빈 슬롯 행에 값만 기입</b>, 퇴사는 <b>행 유지 · 값만 비움</b>(수식 셀 보존). 빈 슬롯이 없으면 중단하고 매니저님이 행을 확보합니다.</p>
+      <div class="tags"><span class="tag act">register</span><span class="tag act">resign</span><span class="tag db">db:emp</span><span class="tag db">db:exit</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a4">A-4 평가담당자</span><h3>인사평가 저장 · 평가지 렌더</h3></div>
+      <p>웰페리온 공식 기준 — <b>A/B/C 3등급 · 부서별 정원 사전 배분 · 다면평가 4종</b> + 4대 인재상 5축(A~F)으로 평가를 저장합니다. 평가지(openPrintView)는 메모를 키-값/불릿으로 렌더하므로 표준 양식으로 정리하며, 등급 분포가 정원을 벗어나면 알립니다. 근거 없는 점수는 만들지 않고, 저장 확정 전 A-6 감사를 거칩니다.</p>
+      <p style="margin-top:8px"><b>정기 성과평가(2026 신설)</b> — 3기둥(직무성과 KPI · 공통역량 5축 BARS · 태도·가치) 가중합 → 100점 → A~F 6등급, 5직군별 KPI·가중 프로파일, 정직성 게이트(허위 기록 시 태도 블록 상한). 평가지(<span class="tag tool">openPerfEval</span>)에서 입력하면 프론트가 실시간 미리보기를 산출하고, <b>백엔드(save-eval)가 종합점수 · 등급을 서버에서 결정적으로 재계산</b>해 저장 — 클라이언트 값 신뢰 대신 서버가 최종 검산합니다. 구 3등급 체계는 "전환 검토 대상"으로 병존(폐지 여부 매니저 결정 대기).</p>
+      <p style="margin-top:8px"><b>웨이브1 정정(2026-07-14)</b> — <b>직무성과 KPI(50%)는 전 직군 평가자 주관 채점으로 원복</b>(자동 대체 폐기). <b>운영부(업무카드 보유자)</b>는 관리자 업무평가 산출값이 별도의 <b>가산점(최대 +10)</b>으로 반영 — 최종점수 = 기본 3기둥(≤100) + 가산점(≤10) → 등급 재산정(상향 가능, 오버플로 없음). 비운영부는 가산점 0.</p>
+      <div class="tags"><span class="tag act">save-eval</span><span class="tag db">db:eval</span><span class="tag tool">openPrintView</span><span class="tag tool">openPerfEval</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a4">A-4 평가담당자</span><h3>관리자 업무평가 · 운영부 가산점 산출 (2026-07 신설, 07-14 정정)</h3></div>
+      <p>COO 업무보드(읽기전용 소스)에서 대상자 업무를 불러와 관리자가 <b>완성도(%) · 성과점수(1~5)</b>를 입력하면, 정규화 직무성과 = 중요도가중 성취도 평균(0~100)을 서버가 재계산하고 이를 ÷10 하여 <b>운영부 가산점(최대 +10)</b>으로 저장합니다(클라이언트 값 불신 · 이중 결정화, 행 삽입 · 삭제 없이 대상자+기간 단위 in-place upsert). 담당자 정확일치 버킷 필터로 겸직 중복집계를 구조적으로 차단하고, 중요도 미책정 업무는 계산에서 제외 후 경고합니다. 정기평가지(<span class="tag tool">openPerfEval</span>) 대상자 선택 시 산출 가산점을 참고창에 표시해 확정값(0~10) 입력을 돕고, 확정값이 산출값과 0.05 넘게 다르면 보정사유를 요구합니다. <b>직무성과 KPI(50%) 자체는 평가지에서 평가자가 직접 주관 채점</b>합니다(자동 프리필 없음, 2026-07-14 정정). 관리자 인증 전용 — 공개 read 경로 없음(PII 아님).</p>
+      <div class="tags"><span class="tag act">save-work-eval</span><span class="tag act">get-work-eval</span><span class="tag db">업무평가 탭</span><span class="tag tool">openWorkEval</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a4">A-4 평가담당자</span><h3>자기평가 · 리더십평가(상향, 익명) — 웨이브2 신설</h3></div>
+      <p><b>자기평가</b> — 본인이 공통역량 5축 · 태도 5항목(1~5) + 자유서술(성과 · 성장영역 · 필요지원 · 강점 · 개발영역)을 작성합니다. <b>총점 · 등급을 산출하지 않고</b> 팀장 평가지(<span class="tag tool">openPerfEval</span>)에 갭 비교용 배지로만 병렬 표시됩니다(종합 합산 미참여).</p>
+      <p style="margin-top:8px"><b>리더십평가(상향)</b> — 부서원이 소속 팀장을 6개 항목(1~5)으로 <b>익명 제출</b>합니다(제출자 실명 · 식별정보 미저장, 자가인증은 검증 후 폐기). <b>k-익명 게이트(응답 3명 미만은 평균 · 정확 응답수까지 전면 비공개)</b>로 소규모 팀 역추적을 차단하며, 원자료는 매니저 전용 · 팀장 개인 공유 금지 배너로 방어합니다.</p>
+      <div class="tags"><span class="tag act">save-self-eval</span><span class="tag act">get-self-eval</span><span class="tag act">leadership-submit</span><span class="tag act">get-leadership-eval</span><span class="tag db">자기평가 탭</span><span class="tag db">리더십평가 탭</span><span class="tag tool">openSelfEval</span><span class="tag tool">openLeaderEval</span><span class="tag tool">openLeaderReview</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>휴무 관리</h3></div>
+      <p>월 단위 휴무를 병합 방식(full-sync)으로 일괄 반영합니다. 기준은 <b>월 6회 + 법정공휴일</b>. 휴무 데이터는 인사현황 시트의 휴무 탭에 기록됩니다.</p>
+      <div class="tags"><span class="tag act">set-leave-bulk</span><span class="tag db">휴무 탭</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════ C. 품질·감사 ═══════════ -->
+<section id="sec-c">
+  <div class="sec-head">
+    <span class="sec-letter">C</span><h2>품질 · 감사</h2>
+    <span class="sec-note">A-6 감사자 — 의심이 기본값, 근거 없는 통과 금지</span>
+  </div>
+  <div class="grid">
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a6">A-6 감사자</span><h3>사전 감사 게이트 (검증 모드)</h3></div>
+      <p><b>고위험 5종은 확정 직전 반드시 감사</b>: 공고 문안 확정 · 이력서 평가 확정 · 대량 데이터 쓰기 · 백엔드 코드 배포 · 평가 저장 · PII 구조 변경. 고정 체크리스트로 범위를 한정한 <b>경량 감사</b>로 속도를 확보하고, 배포(A-5)와 <b>동기 병렬</b>로 돌려 지연을 줄입니다. 판정은 ✅통과 / ⚠️수정 필요 / ⛔반려 — 반려 시 고치고 재감사. 저위험 단건은 사전 감사 생략 후 매일 사후 스윕으로 검증.</p>
+      <div class="tags"><span class="tag db">db:emp~exit 전체</span><span class="tag tool">ERP 지식맵 대조</span><span class="tag tool">브랜드 WELLPERION</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a6">A-6 감사자</span><h3>허브 자가점검 (능동 발견)</h3></div>
+      <p>"허브 점검해줘" 또는 주기 점검 시 운영허브 · 리크루팅 · ERP 화면과 라이브 데이터를 스스로 훑어 이상을 먼저 찾아 보고합니다. <b>점검 8카테고리</b>: 탭 간 정합성 · 공고 상태/만료 · 화면 표시 오류 · KPI 계산 · 중복/오염 · PII/권한 · 브랜드 표기 · 위임률. 발견 0건이어도 무엇을 봤는지 근거를 남깁니다(근거 없는 "이상 없음" 금지).</p>
+      <div class="tags"><span class="tag db">db 6탭 일괄</span><span class="tag tool">라이브 URL 조회</span><span class="tag tool">세션로그 집계</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-auto">자동 루틴</span><span class="badge bg-a6">A-6</span><h3>매일 09:33 정합성 스윕</h3></div>
+      <p>매일 아침 <b>6개 항목을 자동 점검</b>: 사진 404 · 공고 상태 · KPI 수치 · 블랙리스트 배지 · 평점 공란 · PII 노출. 전일 대비 <b>델타(신규/해소)만 보고</b>해 알림 피로를 줄이고, 저위험 작업의 사후 검증망 역할을 합니다.</p>
+      <div class="tags"><span class="tag act">log-add</span><span class="tag db">db 전체</span><span class="tag tool">Windows 주기 루프</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a6">A-6 감사자</span><h3>불필요한 질문 차단</h3></div>
+      <p>다른 에이전트가 매니저님께 사실을 묻기 전, <b>그 답이 ERP에 이미 있는지 먼저 확인</b>합니다(부서 체계 문서 · 채용공고 원본 · 라이브 DB · 브랜드 문서). 있으면 출처와 함께 제공해 중복 질문을 막습니다.</p>
+      <div class="tags"><span class="tag tool">coo/check 부서체계</span><span class="tag tool">공고 원본 문서</span><span class="tag db">db:hire</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════ D. 효율화 ═══════════ -->
+<section id="sec-d">
+  <div class="sec-head">
+    <span class="sec-letter">D</span><h2>효율화</h2>
+    <span class="sec-note">A-7 시스템효율담당 — 효율 &lt; 정확성 · 안전이 절대 전제</span>
+  </div>
+  <div class="grid">
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a7">A-7 시스템효율담당</span><h3>사전 최적화 (착수 전 설계)</h3></div>
+      <p>다단계 작업 착수 전 계획을 받아 <b>중복 읽기 제거 · 불필요 단계 생략 · 병렬화 · 배치 묶기 · 캐시 활용</b>으로 재설계한 단계안을 돌려줍니다. 단, 안전장치(1.5초 간격 · 라운드트립 검증 · 감사 게이트 · 전형단계 보존)는 생략 대상이 아니며, 생략 제안 시 리스크를 함께 명시합니다.</p>
+      <div class="tags"><span class="tag tool">7렌즈 체크리스트</span><span class="tag tool">함정노트 선확인</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a7">A-7 시스템효율담당</span><h3>회고 · 박제 (재발 방지)</h3></div>
+      <p>끝난 작업 흐름의 비효율을 짚어 <b>다음엔 반복되지 않도록 박제안</b>을 도출합니다 — 절차 실수는 함정노트, 작업원칙은 CLAUDE.md, 에이전트 역량은 해당 정의 파일에. 새 규칙을 더하면 낡은 규칙을 함께 정리하는 <b>net-zero 원칙</b>으로 문서 비대화를 막습니다.</p>
+      <div class="tags"><span class="tag tool">함정노트 박제</span><span class="tag tool">CLAUDE.md 갱신</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-auto">자동 루틴</span><span class="badge bg-a7">A-7</span><h3>금요일 주간 효율 리포트</h3></div>
+      <p>매주 금 17:07, 하네스 전체를 훑어 <b>반복 수작업 후보 · 위임률 격차 · 함정노트 미반영 실수 · 낡은 중복 규칙</b>을 표로 보고합니다. 모델 라우팅(기계작업=Haiku · 정형=Sonnet · 판단=Opus)으로 비용 절감도 관리합니다.</p>
+      <div class="tags"><span class="tag act">log-add</span><span class="tag tool">Windows 주기 루프</span><span class="tag tool">세션로그 집계</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════ E. 배포·인프라 ═══════════ -->
+<section id="sec-e">
+  <div class="sec-head">
+    <span class="sec-letter">E</span><h2>배포 · 인프라</h2>
+    <span class="sec-note">A-5 배포담당자 — 경로 · 절차를 한 글자도 틀리지 않게</span>
+  </div>
+  <div class="grid">
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a5">A-5 배포담당자</span><h3>GitHub Pages 배포</h3></div>
+      <p>허브 · 리크루팅 · 사진 수정을 저장소에 커밋해 라이브 반영합니다. <b>서비스 루트는 <span class="mono">3. 웰페리온 가이드/</span></b>(루트 chro/hub 커밋은 서빙 안 됨). 다수 에이전트가 상시 push하는 저장소라 <b>push 전 fetch → 필요 시 rebase</b>가 표준이며, 배포 후 실제 라이브 URL 로딩까지 확인합니다.</p>
+      <div class="tags"><span class="tag tool">git 커밋·push</span><span class="tag tool">Pages 워크플로우</span><span class="tag tool">라이브 200 검증</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a5">A-5 배포담당자</span><h3>Apps Script "새 버전" 배포</h3></div>
+      <p>백엔드(Code.gs) 수정 후 <b>"새 버전" 배포까지 해야 /exec에 반영</b>됩니다(저장만으론 미반영). 배포 전 <span class="mono">node --check</span> 구문검사로 문법 오류를 차단하고, 배포 후 액션 호출로 동작을 검증합니다. clasp 재인증이 필요하면 CHRO가 명령을 먼저 실행하고 매니저님은 OAuth "허용" 클릭만.</p>
+      <div class="tags"><span class="tag tool">clasp</span><span class="tag tool">node --check</span><span class="tag tool">브라우저 자동화</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a5">A-5 배포담당자</span><h3>사진 · 자산 배치 커밋</h3></div>
+      <p>지원자 사진(<span class="mono">photos/r&lt;행&gt;.jpg</span>, 300px 이하) 등 여러 파일을 <b>한 번에 묶어 커밋(1사이클)</b>해 배포 횟수를 줄입니다. 배포 후 해당 이미지가 실제로 뜨는지 개별 확인합니다.</p>
+      <div class="tags"><span class="tag act">set-photo</span><span class="tag tool">배치 커밋</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════ F. 자동화·루틴 ═══════════ -->
+<section id="sec-f">
+  <div class="sec-head">
+    <span class="sec-letter">F</span><h2>자동화 · 루틴</h2>
+    <span class="sec-note">무인 · 반자동으로 도는 것들</span>
+  </div>
+
+  <div class="hbar" id="hbSummaryBar">
+    <span class="hbar-label">🩺 실가동 정직 배지</span>
+    <span id="hbSummary">자동화로그 확인 중…</span>
+    <span class="hbar-note">자동화로그 실측(공개 열람) 기준 · 페이지 로드 시 1회 계산</span>
+  </div>
+
+  <div class="grid">
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-auto">자동 루틴</span><h3>Windows 주기 루프 3종</h3></div>
+      <p>PC에서 자동 실행되는 정기 점검 3종 — <b>매일 09:33</b> 정합성 스윕(A-6, 6항목 델타 보고) · <b>목 10:03</b> 온보딩 주간 워치(A-3, 지연/도래 체크인 감시) · <b>금 17:07</b> 주간 효율 리포트(A-7). 매회 자동화로그 1건씩 남겨 이력이 추적됩니다.</p>
+      <div class="hbadge-row">
+        <span class="hbadge-item"><span class="hb-name">정합성 스윕</span><span id="hb-sweep" class="hbadge hb-loading">확인 중…</span><span id="hb-sweep-t" class="hbadge-time"></span></span>
+        <span class="hbadge-item"><span class="hb-name">온보딩 워치</span><span id="hb-onbowatch" class="hbadge hb-loading">확인 중…</span><span id="hb-onbowatch-t" class="hbadge-time"></span></span>
+        <span class="hbadge-item"><span class="hb-name">효율 리포트</span><span id="hb-effreport" class="hbadge hb-loading">확인 중…</span><span id="hb-effreport-t" class="hbadge-time"></span></span>
+      </div>
+      <div class="tags"><span class="tag act">log-add</span><span class="tag db">자동화로그 탭</span><span class="tag tool">loop 스킬</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-auto">클라우드 루틴</span><span class="badge bg-a1">A-1</span><h3>아침 이력서 자동 처리</h3></div>
+      <p>Drive <b>이력서 자동수신 폴더</b>에 들어온 이력서를 아침에 자동 처리하고 처리 리포트를 남깁니다. <b>아침 브리핑</b>은 등록 메모 맨 앞의 <span class="mono">[자동 수집 날짜]</span> 마커를 집계해 "오늘 정리된 이력서"와 신규 지원자 행 포인터를 알려줍니다.</p>
+      <div class="hbadge-row">
+        <span class="hbadge-item"><span class="hb-name">아침 이력서 루틴</span><span id="hb-resume" class="hbadge hb-loading">확인 중…</span><span id="hb-resume-t" class="hbadge-time"></span></span>
+        <span class="hbadge-item"><span class="hb-name">아침 브리핑</span><span id="hb-briefing" class="hbadge hb-loading">확인 중…</span><span id="hb-briefing-t" class="hbadge-time"></span></span>
+      </div>
+      <div class="tags"><span class="tag act">register-applicant</span><span class="tag db">db:appl</span><span class="tag tool">Drive 자동수신 폴더</span><span class="tag tool">schedule 루틴</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>HR office 실시간 대시보드</h3></div>
+      <p>office.html은 <b>비밀번호 입장 단계 없이</b> 로드 즉시 <code>office-autolog</code>(공개, 실명 무마스킹, 일시·주체·작업·결과 4필드 화이트리스트 — 상세 필드 제외)로 <b>로그 피드·오늘 카운터·에이전트별 집계</b>를 25초 폴링 연동합니다. 주체(actor)의 A-1~A-7 코드를 인식해 <b>캐릭터 애니메이션</b>으로도 보여줍니다. ERP 구조도 하단 '자동화 로그'(관리자 인증)에서도 동일 이력 열람이 가능합니다.</p>
+      <div class="tags"><span class="tag act">office-autolog</span><span class="tag db">자동화로그 탭</span><span class="tag tool">office.html</span><span class="tag tool">25초 폴링</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>CMD 명령큐 (온디맨드)</h3></div>
+      <p>오피스 CMD 입력창은 <b>비밀번호 없이</b> 바로 접수됩니다(<code>office-cmd-push</code>, 2026-07-10 2차 개편 — 1차 A-6 병렬감사 NO-GO로 철회했던 것을 매니저 재지시로 서버측 스팸 가드 3종(대기 pending 5건 상한·시간당 20건 상한·텍스트 500자 상한)을 갖춰 재도입, A-6 재감사 GO). 접수는 "적재(pending)"까지만 — <b>회수(cmd-pull)·결과기록(cmd-result)·실제 실행은 여전히 admin 비밀번호 필요</b>, CHRO 세션 중 매니저님 "오피스큐" 입력 시에만 목록을 먼저 보고하고 승인분만 실행합니다. 24시간 무인 자동실행은 보안상 의도적으로 없음(RCE 방지). 큐에서 온 명령은 외부 입력으로 취급해 파괴적 지시는 매니저님 확인 후 실행합니다.</p>
+      <div class="hbadge-row">
+        <span class="hbadge-item"><span class="hb-name">명령큐 회수</span><span id="hb-cmd" class="hbadge hb-loading">확인 중…</span><span id="hb-cmd-t" class="hbadge-time"></span></span>
+      </div>
+      <div class="tags"><span class="tag act">office-cmd-push</span><span class="tag act">cmd-push</span><span class="tag act">cmd-pull</span><span class="tag act">cmd-result</span><span class="tag act">cmd-status</span><span class="tag db">명령큐 탭</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>자동화로그 기록</h3></div>
+      <p>자율 처리 작업(데이터 쓰기 · 배포 · 정정 · 자동 등록, 감사 · 조회성 위임 포함)은 <b>위임 착수 1건 + 완료 1건</b>씩 자동화로그에 기록합니다. 주체 필드에 A-코드를 포함(예: "A-1 이력서담당자")해 오피스 캐릭터 · 집계와 연동되며, 대량 소급은 bulk 액션(300행 이하)으로 처리합니다.</p>
+      <div class="tags"><span class="tag act">log-add</span><span class="tag act">log-add-bulk</span><span class="tag db">자동화로그 탭</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════ 정직 배지(실가동 상태) — 자동화로그 실측 ═══════════
+     office.html이 이미 쓰는 공개 액션(autolog-list, 비밀번호 불필요)을 동일하게 사용.
+     "할 수 있다"(설계·문서상 존재)와 "지금 진짜 돈다"(로그에 실제 흔적)를 분리 표시하는
+     정직 배지 — 매칭 규칙은 2026-07-09 라이브 자동화로그 617건 실측으로 확정.
+     (참고: A-6 정합성 스윕 1회차는 러너 인코딩 버그로 주체/작업 필드가 깨져 기록됨 —
+      상세 필드에 남은 ASCII 코드명(JOB_DEADLINE_STATE 등)으로 폴백 매칭.) -->
+<script>
+(function(){
+  var EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+
+  function parseKST(s){
+    var m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(:\d{2})?/.exec(String(s || ""));
+    if(!m) return NaN;
+    return new Date(m[1] + "T" + m[2] + (m[3] || ":00") + "+09:00").getTime();
+  }
+  function fmtLast(s){
+    var m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}:\d{2})/.exec(String(s || ""));
+    return m ? (m[2] + "-" + m[3] + " " + m[4]) : "";
+  }
+
+  // 자동화 6종 매칭 규칙 — 실측(2026-07-09) 기반. 각 함수는 (actor, work, detail) → bool.
+  var ITEMS = [
+    { id: "sweep", label: "정합성 스윕", kind: "daily", hours: 25,
+      match: function(a, w, d){
+        return (/루프/.test(a) && /A-?6/.test(a)) ||
+               /정합성\s*스윕|일일\s*정합성/.test(w) ||
+               /JOB_DEADLINE_STATE|PHOTO_MISSING_ACTIVE|PHOTO_OFFBYONE/.test(w + d) ||
+               (/�/.test(a) && /A-6$/.test(a));
+      } },
+    { id: "onbowatch", label: "온보딩 워치", kind: "weekly", days: 8,
+      match: function(a, w, d){
+        return (/루프/.test(a) && /A-?3/.test(a) && /감시|워치/.test(w)) ||
+               /온보딩\s*주간\s*감시|온보딩\s*워치/.test(w) ||
+               (/�/.test(a) && /A-3$/.test(a));
+      } },
+    { id: "effreport", label: "효율 리포트", kind: "weekly", days: 8,
+      match: function(a, w, d){
+        return (/루프/.test(a) && /A-?7/.test(a)) ||
+               /주간\s*효율\s*리포트/.test(w) ||
+               (/�/.test(a) && /A-7$/.test(a));
+      } },
+    { id: "resume", label: "아침 이력서 루틴", kind: "daily", hours: 30,
+      match: function(a, w, d){
+        return a === "클라우드 루틴(이력서)" || /아침\s*이력서\s*자동\s*처리/.test(w);
+      } },
+    { id: "briefing", label: "아침 브리핑", kind: "daily", hours: 25,
+      match: function(a, w, d){
+        return a === "리마인드 루틴" && /아침\s*(브리핑|리마인드)\s*발송/.test(w);
+      } },
+    { id: "cmd", label: "CMD 명령큐", kind: "ondemand",
+      match: function(a, w, d){
+        return /CMD|명령큐/.test(a + w);
+      } }
+  ];
+
+  function computeStatus(item, rows){
+    for(var i = 0; i < rows.length; i++){
+      var r = rows[i];
+      var a = String(r["주체"] || ""), w = String(r["작업"] || ""), d = String(r["상세"] || "");
+      if(item.match(a, w, d)){
+        var ts = r["일시"];
+        var epoch = parseKST(ts);
+        if(item.kind === "ondemand") return { state: "ondemand", last: ts };
+        var thresholdH = item.kind === "weekly" ? item.days * 24 : item.hours;
+        var hoursSince = (Date.now() - epoch) / 3600000;
+        return { state: (hoursSince <= thresholdH ? "live" : "delayed"), last: ts };
+      }
+    }
+    return item.kind === "ondemand" ? { state: "ondemand", last: null } : { state: "none" };
+  }
+
+  function renderBadge(item, status){
+    var el = document.getElementById("hb-" + item.id);
+    var tEl = document.getElementById("hb-" + item.id + "-t");
+    if(!el) return;
+    el.classList.remove("hb-loading");
+    if(status.state === "none"){
+      el.textContent = "⬜ 기록 없음";
+      el.className = "hbadge hb-none";
+      if(tEl) tEl.textContent = "";
+    } else if(status.state === "ondemand"){
+      el.textContent = "🔵 온디맨드";
+      el.className = "hbadge hb-ondemand";
+      if(tEl) tEl.textContent = status.last ? ("· 최근 회수 " + fmtLast(status.last)) : "";
+    } else if(status.state === "live"){
+      el.textContent = "🟢 LIVE";
+      el.className = "hbadge hb-live";
+      if(tEl) tEl.textContent = "· 최근 " + fmtLast(status.last);
+    } else {
+      el.textContent = "⚠️ 지연";
+      el.className = "hbadge hb-delayed";
+      if(tEl) tEl.textContent = "· 최근 " + fmtLast(status.last);
+    }
+  }
+
+  async function loadHonestyBadges(){
+    var summaryEl = document.getElementById("hbSummary");
+    try{
+      var res = await fetch(EXEC_URL, { method: "POST", body: JSON.stringify({ action: "autolog-list", limit: 600, offset: 0 }) });
+      var j = await res.json();
+      if(!j || !j.ok || !Array.isArray(j.results)) throw new Error((j && j.error) || "응답 오류");
+      var rows = j.results; // 최신순 정렬 상태로 반환됨
+      var counts = { live: 0, delayed: 0, none: 0, ondemand: 0 };
+      ITEMS.forEach(function(item){
+        var status = computeStatus(item, rows);
+        renderBadge(item, status);
+        counts[status.state]++;
+      });
+      if(summaryEl){
+        summaryEl.textContent = "🟢 LIVE " + counts.live + " · ⚠️ 지연 " + counts.delayed +
+          " · ⬜ 기록없음 " + counts.none + " · 🔵 온디맨드 " + counts.ondemand;
+      }
+    }catch(e){
+      if(summaryEl) summaryEl.textContent = "불러오기 실패 — 새로고침 해주세요";
+      ITEMS.forEach(function(item){
+        var el = document.getElementById("hb-" + item.id);
+        if(el){ el.textContent = "확인 불가"; el.className = "hbadge hb-none"; }
+      });
+    }
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", loadHonestyBadges);
+  } else {
+    loadHonestyBadges();
+  }
+})();
+</script>
+
+<!-- ═══════════ G. 데이터 기반 ═══════════ -->
+<section id="sec-g">
+  <div class="sec-head">
+    <span class="sec-letter">G</span><h2>데이터 기반 (구글시트 10탭 + 백엔드)</h2>
+    <span class="sec-note">모든 기능이 딛고 서는 데이터 층</span>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:800;margin:4px 0 10px">읽기 DB — 7종 + 운영 탭 2종 + 관리자 전용 탭 3종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(읽기 캐시 45~60초 · 쓰기 시 자동 무효화)</span></h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>DB 코드</th><th>시트 탭</th><th>담긴 것</th><th>주 사용처</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag db">db:emp</span></td><td>현재근무자</td><td>재직자 · 부서 · 입사일 (행 고정 계약)</td><td>등록/퇴사 · 감사 · KPI</td></tr>
+        <tr><td><span class="tag db">db:exit</span></td><td>퇴사자</td><td>퇴사 기록</td><td>퇴사 처리 · 감사</td></tr>
+        <tr><td><span class="tag db">db:appl</span></td><td>지원자</td><td>지원자 전체(단계 · 평점 · 일정 · 사진 · 메모)</td><td>채용 파이프라인 전 과정</td></tr>
+        <tr><td><span class="tag db">db:hire</span></td><td>채용공고</td><td>공고 상태 · 채널 · 모집인원 · 기간</td><td>공고 운영 · 리크루팅</td></tr>
+        <tr><td><span class="tag db">db:eval</span></td><td>인사평가</td><td>평가 기록(3등급 · 다면평가)</td><td>평가 저장 · 평가지</td></tr>
+        <tr><td><span class="tag db">db:onbo</span></td><td>입사 · 온보딩</td><td>체크 항목 · 주차 체크인 · 완료 여부</td><td>온보딩 · 성찰 · 워치</td></tr>
+        <tr><td><span class="tag db">db:blacklist</span></td><td>채용블랙리스트</td><td>차단 대상(PII 최소화: 생년 · 연락처 뒤4)</td><td>재지원 자동 경고</td></tr>
+        <tr><td><span class="tag db">휴무 탭</span></td><td>휴무</td><td>월별 휴무(월 6회 + 법정공휴일)</td><td>휴무 관리</td></tr>
+        <tr><td><span class="tag db">자동화로그 탭</span></td><td>자동화로그</td><td>주체 · 작업 · 상세 · 결과 · 일시</td><td>오피스 대시보드 · 이력 추적</td></tr>
+        <tr><td><span class="tag db">업무평가 탭</span></td><td>업무평가</td><td>대상자 · 평가기간별 직무성과 · 업무목록JSON(관리자 전용, 공개 read 없음)</td><td>관리자 업무평가 · 정기평가지 가산점(≤+10) 프리필</td></tr>
+        <tr><td><span class="tag db">자기평가 탭</span></td><td>자기평가</td><td>대상자 · 기간별 공통역량 5축 · 태도 · 자유서술(총점 · 등급 미산출, 관리자 전용)</td><td>정기평가지 갭 병렬표시</td></tr>
+        <tr><td><span class="tag db">리더십평가 탭</span></td><td>리더십평가</td><td>팀장별 항목점수 · 개선서술(제출자 식별정보 미저장, append-only)</td><td>리더십 집계 · 열람(k-익명)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">쓰기 액션 전체 — 39종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증)</span></h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>영역</th><th>액션</th><th>하는 일</th><th>주 담당</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="2">직원</td><td><span class="tag act">register</span></td><td>직원 입사 등록(부서 빈 슬롯 행 기입)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td><span class="tag act">resign</span></td><td>퇴사 처리(행 유지 · 값만 비움 + 퇴사 기록)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td rowspan="4">지원자</td><td><span class="tag act">register-applicant</span></td><td>지원자 신규 등록(grade 포함 필수필드 계약)</td><td><span class="badge bg-a1">A-1</span></td></tr>
+        <tr><td><span class="tag act">update-applicant</span></td><td>지원자 정보 갱신(보낸 필드만 덮음 · 단계 보존)</td><td><span class="badge bg-a2">A-2</span></td></tr>
+        <tr><td><span class="tag act">set-stage</span></td><td>전형 단계 · 면접 일시 변경</td><td><span class="badge bg-a2">A-2</span></td></tr>
+        <tr><td><span class="tag act">set-photo</span></td><td>지원자 사진 URL 연결</td><td><span class="badge bg-a1">A-1</span></td></tr>
+        <tr><td rowspan="2">면접</td><td><span class="tag act">schedule-interview</span></td><td>면접 일정 등록</td><td><span class="badge bg-a2">A-2</span></td></tr>
+        <tr><td><span class="tag act">update-interview</span></td><td>면접 일정 변경</td><td><span class="badge bg-a2">A-2</span></td></tr>
+        <tr><td rowspan="6">채용공고 · 운영</td><td><span class="tag act">add-job</span></td><td>공고 신규 등록(title 필수 · 12칸 매핑)</td><td><span class="badge bg-a2">A-2</span></td></tr>
+        <tr><td><span class="tag act">update-job</span></td><td>공고 갱신(상태 · 업무 · 요건 변경 불가 — 사용 지양)</td><td><span class="badge bg-a2">A-2</span></td></tr>
+        <tr><td><span class="tag act">update-hire</span></td><td>공고 상태 전환(공고중 ↔ 마감)</td><td><span class="badge bg-a2">A-2</span></td></tr>
+        <tr><td><span class="tag act">set-channels</span></td><td>채용 채널 설정</td><td><span class="badge bg-a2">A-2</span></td></tr>
+        <tr><td><span class="tag act">update-headcount</span></td><td>모집인원 변경(전용 액션 · 0 이상 정수 검증)</td><td><span class="badge bg-a2">A-2</span></td></tr>
+        <tr><td><span class="tag act">vacate-current</span></td><td>채용취소 정리(퇴사 기록 없이 행 값만 비움)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td rowspan="5">온보딩 · 입사</td><td><span class="tag act">hire-complete</span></td><td>입사 확정 → 12주 체크인 자동 생성</td><td><span class="badge bg-a3">A-3</span></td></tr>
+        <tr><td><span class="tag act">add-onboarding</span></td><td>온보딩 항목 추가</td><td><span class="badge bg-a3">A-3</span></td></tr>
+        <tr><td><span class="tag act">update-onboarding</span></td><td>온보딩 항목 갱신(완료 체크 등)</td><td><span class="badge bg-a3">A-3</span></td></tr>
+        <tr><td><span class="tag act">delete-onboarding</span></td><td>온보딩 항목 삭제</td><td><span class="badge bg-a3">A-3</span></td></tr>
+        <tr><td><span class="tag act">onboarding-self</span></td><td>신입 성찰 기록(24항목 완료 시 인사이트 종합)</td><td><span class="badge bg-a3">A-3</span></td></tr>
+        <tr><td>평가</td><td><span class="tag act">save-eval</span></td><td>인사평가 저장(정기 성과평가는 3기둥 점수 수신 시 서버가 종합 재계산 + 운영부 가산점(≤+10) 반영해 최종점수 · 등급 재산정)</td><td><span class="badge bg-a4">A-4</span></td></tr>
+        <tr><td rowspan="2">업무평가</td><td><span class="tag act">save-work-eval</span></td><td>대상자 · 기간별 완성도 · 성과점수 저장(서버가 직무성과 재계산 → 운영부 가산점(≤+10) 파생 · in-place upsert)</td><td><span class="badge bg-a4">A-4</span></td></tr>
+        <tr><td><span class="tag act">get-work-eval</span></td><td>저장된 직무성과에서 가산점(≤+10) 파생 조회(정기평가지 참고창 · 프리필 연동, 관리자 전용)</td><td><span class="badge bg-a4">A-4</span></td></tr>
+        <tr><td rowspan="2">자기평가</td><td><span class="tag act">save-self-eval</span></td><td>자기평가 저장(axes/attitudes 1~5 clamp, 대상자+기간 upsert, 총점 · 등급 미산출)</td><td><span class="badge bg-a4">A-4</span></td></tr>
+        <tr><td><span class="tag act">get-self-eval</span></td><td>최신 자기평가 조회(정기평가지 갭 병렬표시 연동, 관리자 전용)</td><td><span class="badge bg-a4">A-4</span></td></tr>
+        <tr><td rowspan="2">리더십평가</td><td><span class="tag act">leadership-submit</span></td><td>부서원 익명 제출(성명+연락처뒤4 자가인증 후 폐기, append-only, 신원 미저장)</td><td><span class="badge bg-a4">A-4</span></td></tr>
+        <tr><td><span class="tag act">get-leadership-eval</span></td><td>집계 조회(index/summary/raw, k=3 미만 비공개 게이트, 관리자 전용)</td><td><span class="badge bg-a4">A-4</span></td></tr>
+        <tr><td>휴무</td><td><span class="tag act">set-leave-bulk</span></td><td>월 휴무 일괄 반영(병합 full-sync)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td rowspan="2">블랙리스트</td><td><span class="tag act">add-blacklist</span></td><td>차단 대상 등록(PII 최소화)</td><td><span class="badge bg-a1">A-1</span></td></tr>
+        <tr><td><span class="tag act">remove-blacklist</span></td><td>차단 해제</td><td><span class="badge bg-a2">A-2</span></td></tr>
+        <tr><td rowspan="5">명령큐</td><td><span class="tag act">office-cmd-push</span></td><td>오피스 → 명령 적재(비밀번호 불필요, 스팸가드 3종: 대기5·시간당20·500자)</td><td><span class="badge bg-a5">A-5</span></td></tr>
+        <tr><td><span class="tag act">cmd-push</span></td><td>오피스 → 명령 적재(저권한 가능, 구 경로)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td><span class="tag act">cmd-pull</span></td><td>대기 명령 일괄 회수(관리자 전용)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td><span class="tag act">cmd-result</span></td><td>처리 결과 회신(1000자 이내)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td><span class="tag act">cmd-status</span></td><td>명령 상태 조회</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td>오피스 공개</td><td><span class="tag act">office-autolog</span></td><td>오피스 로그 피드(비밀번호 불필요, 실명 무마스킹, 4필드)</td><td><span class="badge bg-a5">A-5</span></td></tr>
+        <tr><td rowspan="3">로그</td><td><span class="tag act">log-add</span></td><td>자동화로그 1건 기록(발생일시 지정 가능)</td><td>전 에이전트</td></tr>
+        <tr><td><span class="tag act">log-add-bulk</span></td><td>자동화로그 일괄 기록(300행 이하)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td><span class="tag act">log-fix</span></td><td>기존 로그 행 정정(인코딩 복구 등 사후 정정 한정, 자동화로그 탭만)</td><td><span class="badge bg-a5">A-5</span></td></tr>
+        <tr><td>운영</td><td><span class="tag act">migrate</span></td><td>데이터 이관(기타 운영)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">인프라</h3>
+  <div class="grid">
+    <div class="item">
+      <div class="item-head"><h3>Apps Script 백엔드 (@49)</h3></div>
+      <p>단일 Code.gs가 모든 읽기 · 쓰기 API를 제공합니다. 코드 수정 후 <b>"새 버전" 배포</b>해야 반영되며, 호출은 검증된 패턴을 고정한 <b>백엔드 러너(hr-backend.ps1)</b>를 경유해 화면에 코드가 노출되지 않게 합니다.</p>
+      <div class="tags"><span class="tag tool">백엔드 러너</span><span class="tag tool">clasp</span></div>
+    </div>
+    <div class="item">
+      <div class="item-head"><h3>GitHub Pages 4사이트</h3></div>
+      <p><b>운영허브</b>(chro/hub) · <b>리크루팅</b>(chro/recruiting 4페이지) · <b>ERP 메인</b>(wellperion_guide) · <b>HR office</b>(office.html)가 하나의 저장소에서 서비스됩니다. 서비스 루트는 <span class="mono">3. 웰페리온 가이드/</span>.</p>
+      <div class="tags"><span class="tag tool">GitHub Pages</span><span class="tag tool">Deploy 워크플로우</span></div>
+    </div>
+    <div class="item">
+      <div class="item-head"><h3>Drive chro 폴더</h3></div>
+      <p>CHRO의 모든 산출물(보고서 · 공고문 · 시안 · 자동화 폴더)은 <b>Drive chro 폴더</b>에 저장되고 링크로 안내됩니다. 로컬 마운트 <span class="mono">H:\내 드라이브\chro</span>로 파일을 복사하면 자동 동기화됩니다.</p>
+      <div class="tags"><span class="tag tool">Google Drive MCP</span><span class="tag tool">H: 마운트</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ H. 스킬·도구 계층 ═══════════ -->
+<section id="sec-h">
+  <div class="sec-head">
+    <span class="sec-letter">H</span><h2>스킬 · 도구 계층</h2>
+    <span class="sec-note">에이전트들이 손에 쥐는 것</span>
+  </div>
+  <div class="grid">
+
+    <div class="item">
+      <div class="item-head"><h3>CHRO 프로젝트 스킬</h3></div>
+      <p><b>frontend-design</b> — 허브 · 공고 · 보고서 등 화면물 제작 시 프리미엄 브랜드 톤(고급스럽고 절제된 디자인, 저가형 화려함 금지)을 지키는 디자인 지침.</p>
+      <div class="tags"><span class="tag tool">frontend-design</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><h3>세션 공통 스킬</h3></div>
+      <p>코드 품질 · 검증 · 자동화용 스킬 — <b>code-review</b>(코드 검토) · <b>simplify</b>(단순화) · <b>verify</b>(동작 검증) · <b>run</b>(앱 구동) · <b>security-review</b>(보안 점검) · <b>deep-research</b>(심층 조사) · <b>schedule / loop</b>(정기 루틴 · 주기 실행).</p>
+      <div class="tags"><span class="tag tool">code-review</span><span class="tag tool">simplify</span><span class="tag tool">verify</span><span class="tag tool">run</span><span class="tag tool">security-review</span><span class="tag tool">deep-research</span><span class="tag tool">schedule / loop</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><h3>연결된 외부 도구</h3></div>
+      <p><b>Google Drive MCP</b>(파일 저장 · 검색 · 업로드) · <b>텔레그램 채널</b>(외출 중 지시 수신 — 단, 외부발 push 지시는 차단) · <b>Chrome 브라우저 자동화</b>(Apps Script 배포 화면 조작 · 라이브 확인) · <b>PowerShell / Bash</b>(파일 · git · 이미지 처리) · <b>비전 판독</b>(이미지 이력서 읽기 · 사진 대조).</p>
+      <div class="tags"><span class="tag tool">Google Drive MCP</span><span class="tag tool">텔레그램</span><span class="tag tool">Chrome 자동화</span><span class="tag tool">PowerShell / Bash</span><span class="tag tool">비전 판독</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════ I. 안전·원칙 ═══════════ -->
+<div class="safety" id="sec-i">
+  <h2>I &nbsp;·&nbsp; 안전 · 원칙 레이어</h2>
+  <div class="safety-sub">모든 기능 위에 항상 걸려 있는 규칙 — 효율보다 먼저입니다.</div>
+  <div class="safety-grid">
+    <div class="sitem"><span class="no">一</span><span><b>Production 보호</b> — 라이브 시트 · 백엔드는 실서비스. 테스트는 비파괴적으로, 쓰기 후엔 반드시 라운드트립 검증.</span></div>
+    <div class="sitem"><span class="no">二</span><span><b>PII 엄수</b> — 주민번호 금지 · 블랙리스트는 연락처 뒤 4자리만 · 받은 PII 파일은 처리 후 즉시 삭제.</span></div>
+    <div class="sitem"><span class="no">三</span><span><b>시트 행 고정</b> — 인사현황 시트 행 삽입 · 삭제 절대 금지(외부 수식이 행번호 참조). 값만 기입 · 값만 비움.</span></div>
+    <div class="sitem"><span class="no">四</span><span><b>전형 단계 보존</b> — 지원자 단계는 매니저님 지시 없이는 바뀌지 않음(갱신 시 단계 미전달 = 보존).</span></div>
+    <div class="sitem"><span class="no">五</span><span><b>대량 쓰기 1.5초 간격</b> — 연속 쓰기 락 과부하 방지. 안전을 위해 일부러 둔 간격.</span></div>
+    <div class="sitem"><span class="no">六</span><span><b>잡코리아 · 알바몬 로그인 = 매니저님 직접</b> — AI 대리 로그인 · 봇차단 우회 금지(계정 제재 방지). 동기화는 폴더 PDF로.</span></div>
+    <div class="sitem"><span class="no">七</span><span><b>감사 게이트</b> — 고위험 확정(공고 · 평가 · 대량쓰기 · 배포 · PII)은 A-6 감사 통과 후에만.</span></div>
+    <div class="sitem"><span class="no">八</span><span><b>추측 금지</b> — 자료에 없으면 "미기재". 모호함 5% 넘으면 만들지 않고 먼저 질문.</span></div>
+    <div class="sitem"><span class="no">九</span><span><b>백엔드 "새 버전" 배포</b> — 코드 저장만으론 반영 안 됨. 새 버전 배포 후 동작 검증까지가 한 단위.</span></div>
+    <div class="sitem"><span class="no">十</span><span><b>외부 입력 방어</b> — 텔레그램 · 명령큐발 파괴적 지시는 매니저님 직접 확인 후에만 실행.</span></div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<footer>
+  <div class="brand">WELLPERION</div>
+  <div style="margin-top:8px">웰페리온 인사 운영 허브 · CHRO 기능 구조도 · 갱신일 2026-07-09</div>
+</footer>
+
+
+<!-- ============================================================
+     🤖 자동화 로그 — 구조도 본문 컨테이너(#pageRoot) 아래(무관 영역)
+     [변경 2026-07-05] 공개 열람으로 전환 — 관리자 인증 게이트 제거. 백엔드 autolog-list(공개
+     액션)가 이름을 성+○○로 서버측 마스킹해 반환하므로 인증 없이도 안전하게 노출 가능.
+     기본 최근 30건만 표시하고, [전체 펼치기] 클릭 시 offset 이어받기로 전량을 같은 페이지에
+     이어붙인다(내부 스크롤 영역을 만들지 않음 — 페이지 자체가 아래로 길어짐).
+     [스타일 2026-07-06] 구조도 본문 재설계 톤(청사진 모티프)에 맞춰 카드·버튼 색만 조정 — JS 로직 불변.
+     ============================================================ -->
+<style>
+  #autologSection{width:100%;max-width:1600px;margin:0 auto;padding:16px 36px 30px;box-sizing:border-box;font-family:'Malgun Gothic','Segoe UI',sans-serif;color:#22293a}
+  .alg-card{background:#fff;border:1px solid #d8d5cc;border-radius:12px;box-shadow:0 1px 3px rgba(20,30,60,.06), inset 0 3px 0 0 #2f5d7a;padding:14px 18px 18px}
+  .alg-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #eee9df}
+  .alg-title{font-size:15px;font-weight:800;color:#0F1E3D}
+  .alg-actions{display:flex;align-items:center;gap:10px}
+  .alg-count{font-size:11.5px;color:#7b8394}
+  .alg-btn{font-family:inherit;font-size:12px;cursor:pointer;border:1px solid #d8d5cc;background:#f7f6f1;color:#1c2440;border-radius:7px;padding:6px 12px;transition:.15s}
+  .alg-btn:hover{border-color:#B88A44;color:#8a6d2f}
+  .alg-btn.primary{background:#1F3864;color:#fff;border-color:#1F3864}
+  .alg-btn.primary:hover{background:#16294a;color:#fff}
+  .alg-btn:disabled{opacity:.6;cursor:default}
+  .alg-summary{font-size:12px;color:#4a5266;margin:0 0 10px}
+  .alg-searchrow{margin:0 0 10px}
+  .alg-searchrow input{width:100%;max-width:320px;font-family:inherit;font-size:12.5px;padding:8px 10px;border:1px solid #d8d5cc;border-radius:7px;color:#22293a;background:#faf9f5;box-sizing:border-box}
+  .alg-searchrow input:focus{outline:none;border-color:#B88A44}
+  .alg-tablewrap{overflow-x:auto;border:1px solid #e3e0d6;border-radius:8px}
+  #algTable{width:100%;border-collapse:collapse;font-size:11.8px;white-space:nowrap}
+  #algTable th,#algTable td{border-bottom:1px solid #eee9df;padding:7px 10px;text-align:left}
+  #algTable td:nth-child(4){white-space:normal;min-width:220px}
+  #algTable thead th{background:#f7f6f1;color:#4a5266;font-weight:700}
+  #algTable tbody tr:hover{background:#faf9f5}
+  .alg-empty{padding:20px;text-align:center;color:#7b8394;font-size:12.5px}
+  .alg-expandrow{text-align:center;margin-top:12px}
+  @media (max-width:700px){ #autologSection{padding:14px 14px 24px} }
+</style>
+<div id="autologSection">
+  <div class="alg-card">
+    <div class="alg-head">
+      <div class="alg-title">🤖 자동화 로그</div>
+      <div class="alg-actions" id="algActions">
+        <span class="alg-count" id="algCount"></span>
+        <button class="alg-btn" id="algRefreshBtn" type="button">↻ 새로고침</button>
+      </div>
+    </div>
+    <div class="alg-summary" id="algSummary"></div>
+    <div class="alg-searchrow">
+      <input type="text" id="algSearch" placeholder="이름·작업 검색">
+    </div>
+    <div class="alg-tablewrap">
+      <table id="algTable">
+        <thead><tr><th>일시</th><th>주체</th><th>작업</th><th>상세</th><th>결과</th></tr></thead>
+        <tbody id="algBody"></tbody>
+      </table>
+    </div>
+    <div class="alg-empty" id="algEmpty" style="display:none">기록 없음</div>
+    <div class="alg-expandrow" id="algExpandRow" style="display:none">
+      <button class="alg-btn primary" id="algExpandBtn" type="button">전체 펼치기</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+  var ALG_DEFAULT_LIMIT = 30; // 기본 노출 — 최근 30건
+  var ALG_PAGE_SIZE = 200;    // [전체 펼치기] 이어받기 페이지 크기
+
+  var allRows = [];     // 현재 메모리에 로드된 로그(최신순), 검색은 이 배열 위에서만 필터링
+  var totalCount = 0;   // 서버 전체 건수(autolog-list 응답의 total)
+  var expanded = false; // true면 전량 로드 완료 상태(펼치기 버튼 숨김)
+
+  function esc_(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // 공개 액션 — 비밀번호 전송 없음(관리자 인증 게이트 완전 제거)
+  async function algPost_(payload){
+    var body = Object.assign({ action: "autolog-list" }, payload);
+    var res = await fetch(EXEC_URL, { method: "POST", body: JSON.stringify(body) });
+    return await res.json();
+  }
+
+  function fmtAlgDate_(s){
+    s = String(s || "");
+    return s.slice(0, 10);
+  }
+
+  function currentRows_(){
+    var q = (document.getElementById('algSearch').value || "").trim().toLowerCase();
+    if(!q) return allRows;
+    return allRows.filter(function(r){
+      return String(r["주체"] || "").toLowerCase().indexOf(q) >= 0 ||
+             String(r["작업"] || "").toLowerCase().indexOf(q) >= 0;
+    });
+  }
+
+  function renderRows_(){
+    var rows = currentRows_();
+    var body = document.getElementById('algBody');
+    var empty = document.getElementById('algEmpty');
+    var table = document.getElementById('algTable');
+    var count = document.getElementById('algCount');
+    if(!rows.length){
+      body.innerHTML = "";
+      table.style.display = "none";
+      empty.textContent = "기록 없음";
+      empty.style.display = "block";
+      count.textContent = "0건";
+      return;
+    }
+    table.style.display = "table";
+    empty.style.display = "none";
+    body.innerHTML = rows.map(function(r){
+      return "<tr><td>" + esc_(r["일시"]) + "</td><td>" + esc_(r["주체"]) + "</td><td>" + esc_(r["작업"]) + "</td><td>" + esc_(r["상세"]) + "</td><td>" + esc_(r["결과"]) + "</td></tr>";
+    }).join("");
+    count.textContent = rows.length + "건";
+  }
+
+  // 요약 라인은 검색과 무관하게 항상 "지금까지 로드된" 전체(allRows) 기준으로 표시
+  function renderSummary_(){
+    var summary = document.getElementById('algSummary');
+    if(!allRows.length){ summary.textContent = ""; return; }
+    var newest = fmtAlgDate_(allRows[0]["일시"]);
+    var oldest = fmtAlgDate_(allRows[allRows.length - 1]["일시"]);
+    summary.textContent = "총 " + totalCount + "건 · 기간 " + oldest + " ~ " + newest;
+  }
+
+  function updateExpandUI_(){
+    var row = document.getElementById('algExpandRow');
+    var btn = document.getElementById('algExpandBtn');
+    if(expanded || totalCount <= allRows.length){
+      row.style.display = "none";
+    } else {
+      row.style.display = "block";
+      btn.disabled = false;
+      btn.textContent = "전체 펼치기 (총 " + totalCount + "건)";
+    }
+  }
+
+  // 최초 로드 / 새로고침 — 항상 기본 30건으로 리셋(펼침 상태 초기화)
+  async function loadFirstPage_(){
+    var btn = document.getElementById('algRefreshBtn');
+    if(btn){ btn.disabled = true; btn.textContent = "불러오는 중…"; }
+    expanded = false;
+    try{
+      var r = await algPost_({ limit: ALG_DEFAULT_LIMIT, offset: 0 });
+      if(!r || !r.ok || !Array.isArray(r.results)) throw new Error((r && r.error) || "응답 오류");
+      allRows = r.results.slice();
+      totalCount = (typeof r.total === "number") ? r.total : allRows.length;
+      renderRows_();
+      renderSummary_();
+      updateExpandUI_();
+    }catch(e){
+      var empty = document.getElementById('algEmpty');
+      document.getElementById('algTable').style.display = "none";
+      empty.textContent = "불러오기 실패 — 잠시 후 새로고침 해주세요.";
+      empty.style.display = "block";
+      document.getElementById('algExpandRow').style.display = "none";
+    }finally{
+      if(btn){ btn.disabled = false; btn.textContent = "↻ 새로고침"; }
+    }
+  }
+
+  // [전체 펼치기] — offset을 이어가며 나머지 전량을 같은 배열/같은 페이지에 이어붙인다.
+  // (내부 스크롤 영역이 아니라 테이블 행이 그대로 늘어나는 방식 — 페이지 자체가 길어짐)
+  async function expandAll_(){
+    var btn = document.getElementById('algExpandBtn');
+    if(btn){ btn.disabled = true; btn.textContent = "불러오는 중…"; }
+    try{
+      var offset = allRows.length;
+      while(true){
+        var r = await algPost_({ limit: ALG_PAGE_SIZE, offset: offset });
+        if(!r || !r.ok || !Array.isArray(r.results) || r.results.length === 0) break;
+        allRows = allRows.concat(r.results);
+        offset += r.results.length;
+        if(typeof r.total === "number") totalCount = r.total;
+        if(r.results.length < ALG_PAGE_SIZE) break; // 마지막 페이지
+        if(offset >= totalCount) break;
+      }
+      expanded = true;
+      renderRows_();
+      renderSummary_();
+    }catch(e2){
+      // 실패해도 이미 로드된 부분은 유지 — 버튼만 원복해 재시도 가능하게
+    }finally{
+      updateExpandUI_();
+    }
+  }
+
+  document.getElementById('algRefreshBtn').addEventListener('click', loadFirstPage_);
+  document.getElementById('algExpandBtn').addEventListener('click', expandAll_);
+  document.getElementById('algSearch').addEventListener('input', renderRows_);
+
+  loadFirstPage_();
+})();
+</script>
+
+</body>
+</html>

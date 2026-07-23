@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 · 휴회 신청</title>
+<!-- ══════════════════════════════════════════════════════════════════════════
+  휴회 신청 (회원 접수) — 별도 휴회 접수 페이지. 2026-07-22 GM 확정 설계.
+  ★쓰기 전용(write-only): 회원 이력·잔여·가능여부 등 어떤 회원 데이터도 화면에 조회·표시하지 않는다(PII 창구 안 열림).
+    = 휴회 규칙 안내 + 접수 폼만. 제출 = 접수 기록(member_hold_apply → '휴회접수' 탭 접수대기). 판정·승인은 ERP(직원)에서.
+  · 백엔드: v2 GAS(/exec AKfycbyk) member_hold_apply. 게이트 HOLD_LIVE=false(초안) → 제출 시 '데스크 안내'로 매핑.
+═══════════════════════════════════════════════════════════════════════════ -->
+<style>
+  :root{ --bg:#1a1918; --card:#2f2d2b; --card2:#262524; --line:#45423f;
+    --text:#f3efe9; --dim:#a8a39c; --gold:#c9a24b; --red:#e06a5a; --green:#7bb872; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:linear-gradient(180deg,#262524,#1a1918);color:var(--text);
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    min-height:100vh;padding:24px 16px;display:flex;justify-content:center;align-items:flex-start}
+  .wrap{width:100%;max-width:460px}
+  .brand{text-align:center;margin-bottom:18px}
+  .brand .mk{font-size:11px;letter-spacing:.28em;color:var(--gold);font-weight:700}
+  .brand h1{font-size:22px;margin-top:6px;font-weight:800}
+  .brand p{font-size:12.5px;color:var(--dim);margin-top:6px;line-height:1.5}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 20px;
+    box-shadow:0 18px 50px rgba(0,0,0,.4);margin-bottom:14px}
+  .guide{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:13px 15px;
+    font-size:12.5px;line-height:1.75;color:var(--dim);margin-bottom:16px}
+  .guide b{color:var(--text)}
+  .guide ul{margin:6px 0 0;padding-left:16px}
+  .label{font-size:12.5px;color:var(--dim);font-weight:700;margin:14px 0 6px}
+  .label:first-child{margin-top:0}
+  input,textarea,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;
+    background:var(--card2);color:var(--text);font:14px inherit;outline:none;resize:vertical}
+  input:focus,textarea:focus,select:focus{border-color:var(--gold)}
+  .btn{width:100%;margin-top:18px;padding:12px;border:0;border-radius:9px;cursor:pointer;
+    background:var(--gold);color:#1a1918;font:700 14px inherit}
+  .btn:disabled{opacity:.55;cursor:default}
+  .msg{font-size:13px;font-weight:700;margin-top:12px;min-height:18px;line-height:1.5}
+  .msg.ok{color:var(--green)} .msg.err{color:var(--red)}
+  .hint{font-size:11px;color:var(--dim);margin-top:6px}
+  .done{text-align:center;padding:10px 0}
+  .done .ic{font-size:40px}
+  .done h2{font-size:18px;margin:10px 0 6px}
+  .done p{font-size:13px;color:var(--dim);line-height:1.6}
+  .hidden{display:none}
+  .foot{text-align:center;font-size:11.5px;color:var(--dim);margin-top:6px;line-height:1.7}
+  .foot a{color:var(--gold);text-decoration:none}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="mk">WELLPERION</div>
+    <h1>휴회 신청</h1>
+    <p>멤버십 이용을 잠시 멈추실 수 있습니다.<br>아래 안내를 확인하고 신청해 주세요.</p>
+  </div>
+
+  <!-- 접수 폼(쓰기 전용) -->
+  <div class="card" id="cardForm">
+    <div class="guide">
+      <b>휴회 안내</b>
+      <ul>
+        <li>휴회는 <b>총 3회 · 누적 60일</b>까지 신청할 수 있습니다.</li>
+        <li>새로 신청하실 때는 <b>최소 7일 ~ 최대 60일</b>입니다.</li>
+        <li>이미 휴회 중이신 분의 <b>기간 연장</b>은 <b>일수 제한 없이</b> 신청하실 수 있습니다(최대 60일).</li>
+        <li>신청 후 <b>담당자 확인</b>을 거쳐 확정되며, 확정 시 개별 안내드립니다.</li>
+      </ul>
+    </div>
+
+    <div class="label">성함</div>
+    <input type="text" id="fName" placeholder="회원 성함" autocomplete="name" oninput="_hdValidate()">
+    <div class="label">연락처</div>
+    <input type="tel" id="fPhone" placeholder="010-0000-0000" autocomplete="tel" inputmode="numeric" oninput="_hdValidate()">
+    <div class="label">신청 구분</div>
+    <select id="fKind" onchange="_hdValidate()">
+      <option value="신규">새 휴회 신청 (최소 7일)</option>
+      <option value="연장">휴회 중 — 기간 연장 (일수 제한 없음)</option>
+    </select>
+    <div class="label">휴회 희망 시작일</div>
+    <input type="date" id="fStart" onchange="_hdValidate()">
+    <div class="label">휴회 희망 일수 <span style="color:var(--dim);font-weight:400" id="fDaysHint">(7~60일)</span></div>
+    <input type="number" id="fDays" min="7" max="60" step="1" placeholder="예: 30" oninput="_hdValidate()">
+    <div class="label">사유 <span style="color:var(--dim);font-weight:400">(선택)</span></div>
+    <textarea id="fReason" rows="2" placeholder="휴회 사유를 적어주시면 참고하겠습니다."></textarea>
+
+    <div class="msg" id="guide2" style="color:var(--dim)"></div>
+    <button class="btn" id="btnSubmit" onclick="submitHold()" disabled>휴회 신청하기</button>
+    <div class="msg" id="msg"></div>
+    <div class="hint">신청 내용은 담당자에게 전달되며, 가능 여부는 확인 후 안내드립니다.</div>
+  </div>
+
+  <!-- 접수 완료 -->
+  <div class="card hidden done" id="cardDone">
+    <div class="ic">✅</div>
+    <h2>접수되었습니다</h2>
+    <p>휴회 신청이 정상 접수되었습니다.<br>담당자 확인 후 확정 결과를 안내드리겠습니다.</p>
+  </div>
+
+  <div class="foot">
+    문의: <a href="http://wellperion.com/ko/inquiry/">wellperion.com</a> · 대표전화로도 신청하실 수 있습니다.
+  </div>
+</div>
+
+<script>
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+
+  function post(payload){
+    return fetch(GAS_URL, { method:'POST', redirect:'follow',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+      .then(function(r){ return r.text(); })
+      .then(function(t){ try{ return JSON.parse(t); }catch(e){ return { ok:false, error:'응답 파싱 실패' }; } });
+  }
+
+  // 휴회 신청 = 쓰기 전용 접수(회원 조회·판정 0). 제출만 하고, 회원 화면엔 가능여부/잔여를 절대 표시하지 않는다.
+  function submitHold(){
+    var name = (document.getElementById('fName').value||'').trim();
+    var phone = (document.getElementById('fPhone').value||'').trim();
+    var start = (document.getElementById('fStart').value||'').trim();
+    var days = parseInt(document.getElementById('fDays').value,10);
+    var kind = (document.getElementById('fKind').value||'신규');
+    var reason = (document.getElementById('fReason').value||'').trim();
+    var msg = document.getElementById('msg'); msg.className='msg'; msg.style.color='';
+    if(!name || !phone){ msg.className='msg err'; msg.textContent='성함과 연락처를 입력해 주세요.'; return; }
+    if(!start){ msg.className='msg err'; msg.textContent='휴회 희망 시작일을 선택해 주세요.'; return; }
+    if(isNaN(days) || days<_hdMin() || days>60){ msg.className='msg err'; msg.textContent='휴회 희망 일수는 '+_hdMin()+'~60일 사이로 입력해 주세요.'; return; }
+    var btn = document.getElementById('btnSubmit'); btn.disabled=true; msg.textContent='접수 중…';
+    post({ action:'member_hold_apply', name:name, phone:phone, holdKind:kind, holdStart:start, holdDays:days, reason:reason })
+      .then(function(d){
+        if(d && d.ok===false){
+          if(d.error==='hold-gated'){ msg.className='msg'; msg.style.color='var(--gold)';
+            msg.textContent='현재 온라인 휴회 신청은 준비 중입니다. 데스크(대표전화)로 신청해 주시면 바로 처리해 드립니다.'; return; }
+          msg.className='msg err'; msg.textContent=(d.detail||d.error||'접수에 실패했습니다.'); return;
+        }
+        document.getElementById('cardForm').classList.add('hidden');
+        document.getElementById('cardDone').classList.remove('hidden');
+      })
+      .catch(function(){ msg.className='msg err'; msg.textContent='네트워크 오류. 잠시 후 다시 시도해 주세요.'; })
+      .then(function(){ _hdValidate(); });   // 재검증(성공 시 폼 숨김·실패 시 유효하면 재활성)
+  }
+
+  // ★프론트 사전 차단(GM: '기본적으로 접수 자체가 안되게') — 하한 미만·60일 초과·과거 시작일이면 신청 버튼 비활성 + 안내.
+  //   서버(member_hold_apply)도 동일 검증 병존(2중 방어). 필수항목 미완이면 버튼 비활성.
+  //   하한은 구분에 따라 다름 — 신규 7일 / 연장 1일(제한 없음). 2026-07-23 GM 확정(실제 5일 연장 사례 존재).
+  function _todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+  function _hdMin(){ return (document.getElementById('fKind').value==='연장') ? 1 : 7; }
+  function _hdValidate(){
+    var name=(document.getElementById('fName').value||'').trim();
+    var phone=(document.getElementById('fPhone').value||'').trim();
+    var start=(document.getElementById('fStart').value||'').trim();
+    var dv=document.getElementById('fDays').value;
+    var days=parseInt(dv,10);
+    var min=_hdMin();
+    var g=document.getElementById('guide2'), btn=document.getElementById('btnSubmit');
+    // 일수 입력칸·안내문을 구분에 맞춰 갱신(입력 중 재렌더 없음 — 속성만 변경)
+    var fd=document.getElementById('fDays'); if(fd.min!==String(min)) fd.min=String(min);
+    var fh=document.getElementById('fDaysHint'); if(fh) fh.textContent='('+min+'~60일)';
+    var block='';
+    if(dv!=='' && (isNaN(days)||days<min)) block=(min===1?'휴회 연장은 1일부터 60일까지 신청 가능합니다.':'새 휴회 신청은 최소 7일부터, 최대 60일까지 가능합니다.');
+    else if(dv!=='' && days>60) block='휴회는 1회 최대 60일까지 신청 가능합니다.';
+    else if(start && start<_todayStr()) block='휴회 시작일은 오늘 이후 날짜로 선택해 주세요.';
+    var complete = !!(name && phone && start && dv!=='' && !isNaN(days) && days>=min && days<=60 && start>=_todayStr());
+    if(block){ g.className='msg err'; g.textContent='⛔ '+block; }
+    else if(!complete){ g.className='msg'; g.style.color='var(--dim)'; g.textContent='모든 필수 항목을 입력하면 신청할 수 있습니다.'; }
+    else { g.className='msg'; g.style.color='var(--dim)'; g.textContent=''; }
+    btn.disabled = !complete;
+  }
+  _hdValidate();
+</script>
+</body>
+</html>

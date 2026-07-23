@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏷️ 스포츠클럽 상품 기획 — AI CPO</title>
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#221F20;
+  --paper:#272422;
+  --paper-raised:#2e2b28;
+  --text:#f0ece7;
+  --dim:#7d7b74;
+  --dim-mid:#9e9b93;
+  --accent:#B79F8A;
+  --accent-bright:#c9b49e;
+  --accent-bg:rgba(183,159,138,0.10);
+  --accent-border:rgba(183,159,138,0.25);
+  --border:#38322e;
+  --border-subtle:rgba(56,50,46,0.6);
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.10);--green-border:rgba(106,191,123,0.28);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.10);--red-border:rgba(237,91,63,0.28);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.10);--yellow-border:rgba(230,200,78,0.28);
+  --blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.10);--blue-border:rgba(91,159,213,0.28);
+  --purple:#a78bda;--purple-bg:rgba(167,139,218,0.10);--purple-border:rgba(167,139,218,0.28);
+  --orange:#e6944e;--orange-bg:rgba(230,148,78,0.10);--orange-border:rgba(230,148,78,0.28);
+  --teal:#4ec4c4;--teal-bright:#6dd4d4;--teal-bg:rgba(78,196,196,0.10);--teal-border:rgba(78,196,196,0.28);
+  --shadow-card:0 2px 12px rgba(0,0,0,0.35);
+  --shadow-header:0 1px 0 var(--border),0 4px 16px rgba(0,0,0,0.4);
+  --radius-card:14px;
+  --radius-btn:8px;
+  --radius-chip:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+/* ─── 헤더 ─── */
+.sticky-top{position:sticky;top:0;z-index:100;background:var(--bg);box-shadow:var(--shadow-header);}
+.header{background:linear-gradient(180deg,#2f2b28 0%,#272422 100%);padding:14px 24px;border-bottom:1px solid var(--border);}
+.header-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.header-brand{display:flex;flex-direction:column;gap:3px}
+.header h1{font-size:16px;font-weight:800;margin:0;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px;}
+.header .sub{font-size:11px;color:var(--dim-mid);line-height:1.5}
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 9px;border-radius:var(--radius-chip);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);letter-spacing:0.02em;}
+.header-actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.action-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--radius-btn);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);text-decoration:none;cursor:pointer;font-family:inherit;transition:background 0.15s,color 0.15s,border-color 0.15s;white-space:nowrap;}
+.action-btn:hover{background:rgba(183,159,138,0.2);color:var(--accent-bright);border-color:rgba(183,159,138,0.4)}
+.action-btn.green{background:var(--green-bg);color:var(--green);border-color:var(--green-border);}
+.action-btn.green:hover{background:rgba(106,191,123,0.2);}
+
+/* ─── 탭 내비게이션 ─── */
+/* .tab-bar-row = 탭목록(.tab-nav)+인쇄버튼(.tab-dropdown) 공통 행. 인쇄버튼을 .tab-nav의
+   overflow-x:auto 클리핑 컨텍스트 밖에 두기 위해 분리(그 안에 있으면 po-panel 드롭다운이
+   48px 탭바 높이에 잘려 안 보임). 2026-07-07 시포. */
+.tab-bar-row{display:flex;align-items:center;background:var(--paper);border-bottom:1px solid var(--border);}
+.tab-nav{display:flex;gap:2px;padding:0 24px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;min-width:0;}
+.tab-nav::-webkit-scrollbar{display:none;}
+.tab-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:11px 18px;border:none;background:none;color:var(--dim-mid);cursor:pointer;font-family:inherit;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color 0.15s,border-color 0.15s;}
+.tab-btn:hover{color:var(--accent-bright);}
+.tab-btn.active{color:var(--accent-bright);border-bottom-color:var(--accent);}
+.tab-icon{font-size:14px;}
+/* ── 인쇄 드롭다운(지원부 체계 '인쇄 ▾' 패턴 이식). 기본=A3 세로(회사 인쇄 표준). 2026-07-03 시포·GM ── */
+.tab-dropdown{position:relative;flex-shrink:0;margin-left:auto;padding-right:24px;}
+
+/* ─── 레이아웃 ─── */
+/* 좌측정렬 풀폭 표준(feedback_page_layout_left_full_width) — 전 탭 공통. 2026-07-04 executor */
+.content{padding:24px;max-width:100%;margin:0;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ─── 섹션 배지 ─── */
+.section-badge{display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:10px 16px;border-radius:var(--radius-card);font-size:12px;font-weight:600;}
+.section-badge.read{background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent);}
+.section-badge.edit{background:var(--teal-bg);border:1px solid var(--teal-border);color:var(--teal);}
+.section-badge.policy{background:var(--blue-bg);border:1px solid var(--blue-border);color:var(--blue);}
+/* ── 편집/저장 버튼 = 제목(section-badge) 줄 맨 우측 배치(세로공간 절약). 2026-07-03 시포·GM ── */
+.section-badge.with-actions{justify-content:space-between;}
+.section-badge-actions{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;}
+/* ── 인쇄: 현재 활성 탭만 인쇄 + 고대비(진한 글자·흰 배경)·큰 글씨(노령 가독성). 2026-07-03 시포·GM ──
+   방식 = 업무/결재현황 SSOT와 동일 공식: :root 팔레트 변수를 인쇄용 라이트값으로 재정의
+   → 카드·배지·표 등 var() 기반 색상이 전부 자동 고대비 전환(연한 텍스트/톤온톤 "보호색" 문제 근본 해결).
+   용지 크기·방향(size)은 #printPageRule 동적 <style>(JS)이 담당 — 여기선 margin만 고정. 2026-07-03 시포·GM */
+@media print{
+  @page{margin:12mm}
+  :root{
+    --bg:#fff;--paper:#fff;--paper-raised:#f2f2f2;
+    --text:#141414;--dim:#555;--dim-mid:#333;
+    --accent:#6b4e2e;--accent-bright:#4a3620;--accent-bg:#f3ece3;--accent-border:#b99b76;
+    --border:#999;--border-subtle:#ccc;
+    --green:#1f6b34;--green-bg:#e6f4e9;--green-border:#1f6b34;
+    --red:#a32a17;--red-bg:#fbe8e4;--red-border:#a32a17;
+    --yellow:#7a5f00;--yellow-bg:#faf3d6;--yellow-border:#7a5f00;
+    --blue:#1c4a7a;--blue-bg:#e4eef7;--blue-border:#1c4a7a;
+    --purple:#5b3fa0;--purple-bg:#ece6f8;--purple-border:#5b3fa0;
+    --orange:#8a4b12;--orange-bg:#f8ead9;--orange-border:#8a4b12;
+    --teal:#0d6b6b;--teal-bright:#0a5555;--teal-bg:#dff2f2;--teal-border:#0d6b6b;
+    --shadow-card:none;--shadow-header:none;
+  }
+  .tab-bar-row,.tab-nav,.print-tab,.tab-dropdown-menu,.action-btn,.section-badge-actions,
+  .pp-del,.pp-add,.status-msg,.pricing-hint,.plan-card-actions,.btn-sm,
+  .hero-eyebrow,.grade-ribbon,.seed-mark,.cat-filter-bar{display:none!important;}
+  .tab-panel{display:none!important;}
+  .tab-panel.active{display:block!important;}
+  /* 노령 가독성 — 본문·표 최소 14pt급(≈18-19px) 고대비. 여백·장식은 줄여 공간 확보(GM 승인 · 2026-07-03). */
+  html,body{background:#fff!important;color:var(--text)!important;font-size:18px!important;line-height:1.6!important;}
+  .header{background:#fff!important;border-bottom:1px solid #999!important;padding:8px 0!important;}
+  .header h1,.header .sub{color:var(--text)!important;}
+  .header .sub{font-size:13px!important;}
+  .content{padding:0!important;max-width:100%!important;}
+  .card,.section-badge{box-shadow:none!important;}
+  .card{padding:12px 14px!important;margin-bottom:8px!important;}
+  .section-badge{font-size:16px!important;padding:8px 14px!important;}
+  .card-title{font-size:18px!important;}
+  .info-box,.callout{font-size:17px!important;line-height:1.7!important;padding:10px 14px!important;}
+  /* 표 = 열이 많아 폭 제약 — 헤더 줄바꿈 허용 + 여백 축소로 큰 글씨 확보 */
+  table{font-size:16px!important;}
+  th{font-size:15px!important;padding:6px 7px!important;white-space:normal!important;}
+  td{padding:6px 7px!important;}
+  .num-badge,.tag-badge{font-size:13px!important;}
+  .grade-card-name{font-size:18px!important;}
+  .grade-card-price{font-size:27px!important;}
+  .grade-card-features{font-size:15px!important;}
+  .hero-declaration{padding:12px 14px!important;margin-bottom:10px!important;}
+  .hero-headline{font-size:27px!important;}
+  .hero-body{font-size:17px!important;}
+  .plan-card-title{font-size:17px!important;}
+  .plan-card-body{font-size:16px!important;}
+  .plan-card-meta{font-size:13px!important;}
+  .plan-section-header{font-size:17px!important;}
+  .lever-row{font-size:16px!important;}
+  .pol-cat{font-size:17px!important;}
+  .pol-card input{border:none!important;background:none!important;padding:3px 4px!important;font-size:16px!important;}
+  /* input 값은 한 줄로 잘려 안 보이므로 beforeprint에서 만든 .print-val(줄바꿈 텍스트)로 교체 표시 */
+  .pol-card input,.pol-cat{display:none!important;}
+  .print-val{display:block!important;white-space:normal!important;word-break:keep-all;overflow-wrap:break-word;color:var(--text)!important;font-size:16px!important;line-height:1.5!important;padding:3px 4px!important;}
+  .card-title .print-val{display:inline-block!important;font-size:17px!important;font-weight:700!important;color:var(--accent-bright)!important;padding:0!important;}
+  /* A3 설계 콘텐츠(요금정책 표·기획작업대)가 A4 용지에서 잘리지 않도록 안전 축소.
+     data-print-paper는 공용 print_options.js가 세팅(전사회의.html과 동일 훅). 2026-07-07 시포·GM */
+  :root[data-print-paper="A4"] .content{zoom:0.72;}
+  /* 카드·표가 페이지 경계에서 세로로 절단되는 문제 방지. 2026-07-07 시포·GM */
+  .card,.grade-card{break-inside:avoid;page-break-inside:avoid;}
+  table tr{break-inside:avoid;page-break-inside:avoid;}
+  thead{display:table-header-group;}
+}
+
+/* ─── 섹션 구분선 ─── */
+.section-divider{display:flex;align-items:center;gap:16px;margin:28px 0 20px;}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.section-divider span{font-size:12px;font-weight:700;color:var(--dim-mid);letter-spacing:0.06em;white-space:nowrap;}
+
+/* ─── 카드/인포박스 ─── */
+.card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-card);padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow-card);}
+.card-title{font-size:14px;font-weight:700;color:var(--accent-bright);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.info-box{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-top:10px;font-size:13px;color:var(--dim-mid);}
+.info-box strong{color:var(--text);}
+.callout{background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--accent-bright);margin-top:12px;}
+.callout.blue{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue);}
+.callout.yellow{background:var(--yellow-bg);border-color:var(--yellow-border);color:var(--yellow);}
+.callout.red{background:var(--red-bg);border-color:var(--red-border);color:var(--red);}
+.callout.green{background:var(--green-bg);border-color:var(--green-border);color:var(--green);}
+
+/* ─── 비교 카드 그리드 ─── */
+.grade-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px;}
+.grade-card{background:var(--paper-raised);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;}
+.grade-card.top{border-color:var(--accent-border);}
+.grade-card-label{font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--dim-mid);margin-bottom:6px;}
+.grade-card-name{font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;}
+.grade-card-price{font-size:22px;font-weight:800;color:var(--accent-bright);line-height:1;margin-bottom:6px;}
+.grade-card-price span{font-size:13px;font-weight:500;color:var(--dim-mid);}
+.grade-card-features{font-size:12px;color:var(--dim-mid);line-height:1.7;}
+.grade-card-features strong{color:var(--text);}
+.grade-ribbon{position:absolute;top:10px;right:-18px;background:var(--accent);color:#1a1918;font-size:9px;font-weight:800;padding:2px 24px;transform:rotate(30deg);letter-spacing:0.05em;}
+
+/* ─── 숫자 배지 ─── */
+.num-badge{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;}
+.num-badge.accent{background:var(--accent-bg);color:var(--accent-bright);border:1px solid var(--accent-border);}
+.num-badge.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+.num-badge.yellow{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);}
+.num-badge.blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
+.num-badge.red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+.num-badge.orange{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border);}
+
+/* ─── 테이블 ─── */
+.tbl-wrap{overflow-x:auto;margin-top:10px;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{background:var(--paper-raised);color:var(--dim-mid);font-weight:600;padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:6px 10px;border-bottom:1px solid var(--border-subtle);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--accent-bg);}
+.num{text-align:right;font-variant-numeric:tabular-nums;}
+.dim{color:var(--dim-mid);}
+.tag-badge{display:inline-flex;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;white-space:nowrap;}
+.tag-badge.draft{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);}
+.tag-badge.review{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
+.tag-badge.confirmed{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+
+/* ── 요금 정책: 멤버십 탭과 동일한 낯익은 카드+표 구조 · 좌측정렬 · 폭 최대.
+   2026-07-02 시포·GM 도입 당시 hack(width:100vw)이었으나, 2026-07-04 .content 자체를
+   전 탭 공통 좌측정렬 풀폭으로 전환하며 불필요해져 제거(executor). ── */
+.pol-card table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.pol-card th{background:var(--paper-raised);color:var(--dim-mid);font-weight:600;padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.pol-card td{padding:4px 6px;border-bottom:1px solid var(--border-subtle);vertical-align:middle;}
+.pol-card input{width:100%;background:transparent;border:1px solid transparent;border-radius:6px;color:var(--text);font-family:inherit;font-size:12.5px;padding:6px 8px;outline:none;text-align:left;}
+.pol-card input:hover{border-color:var(--border);}
+.pol-card input:focus{border-color:var(--accent);background:var(--bg);}
+.pol-card .card-title{justify-content:space-between;}
+.pol-cat{font-size:14px;font-weight:700;color:var(--accent-bright);background:transparent;border:1px solid transparent;border-radius:6px;font-family:inherit;padding:3px 8px;outline:none;max-width:280px;}
+.pol-cat:hover{border-color:var(--border);}
+.pol-cat:focus{border-color:var(--accent);background:var(--bg);}
+.pol-card-actions{display:flex;gap:6px;align-items:center;}
+.pp-del{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);border-radius:6px;cursor:pointer;font-size:12px;padding:5px 9px;font-family:inherit;}
+.pp-del:hover{background:rgba(237,91,63,0.2);}
+.pp-add{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border);border-radius:6px;cursor:pointer;font-size:12px;padding:5px 9px;font-family:inherit;}
+.pp-add:hover{background:rgba(78,196,196,0.2);}
+.pricing-hint{display:block;font-size:11px;color:var(--dim);margin:8px 0 14px;}
+/* ── 인쇄 전용: <input> 값은 한 줄로 잘려 보이지 않으므로(요금정책 표) 인쇄 직전 텍스트로 치환해 줄바꿈 표시. 2026-07-03 시포·GM ── */
+.print-val{display:none;}
+
+/* ─── 기획 카드 그리드 ─── */
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:4px;}
+/* 카드가 1장뿐인 구분(예: 가격 전략)은 auto-fill 그리드가 첫 열만 채워 위 섹션 헤더보다 좁아 보임 —
+   섹션 헤더와 좌우폭을 맞추기 위해 1열 풀폭으로 강제. 2026-07-03 시포·GM(요청) */
+.plan-grid.single-item{grid-template-columns:1fr;}
+.plan-card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-card);padding:16px 18px;box-shadow:var(--shadow-card);position:relative;transition:transform 0.14s,box-shadow 0.14s,border-color 0.14s;}
+.plan-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.25);border-color:var(--accent-border);}
+.plan-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.plan-card-title{font-size:13.5px;font-weight:700;line-height:1.4;}
+.plan-card-meta{font-size:11px;color:var(--dim-mid);margin-top:4px;line-height:1.5;}
+.plan-card-body{font-size:12.5px;color:var(--dim-mid);line-height:1.6;margin-top:6px;}
+.plan-card-body strong{color:var(--text);}
+.plan-card-actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+.btn-sm{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:var(--radius-btn);cursor:pointer;font-family:inherit;border:1px solid;transition:background 0.12s;}
+.btn-sm.edit{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border);}
+.btn-sm.edit:hover{background:rgba(183,159,138,0.2);}
+.btn-sm.del{background:var(--red-bg);color:var(--red);border-color:var(--red-border);}
+.btn-sm.del:hover{background:rgba(237,91,63,0.2);}
+.seed-mark{display:inline-flex;font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border);margin-left:4px;}
+
+/* ── 기획 카테고리 배지·필터 칩 — 확장은 JS PLAN_CATEGORIES 배열만 수정. 2026-07-03 시포·GM ── */
+.cat-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;border:1px solid;margin-right:5px;}
+.cat-badge.main{background:var(--accent-bg);color:var(--accent-bright);border-color:var(--accent-border);}
+.cat-badge.pricing{background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border);}
+.cat-badge.lineup{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border);}
+.cat-badge.positioning{background:var(--green-bg);color:var(--green);border-color:var(--green-border);}
+.cat-badge.unclassified{background:var(--paper-raised);color:var(--dim-mid);border-color:var(--border);}
+.cat-filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.cat-chip{font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:99px;background:var(--paper-raised);color:var(--dim-mid);border:1px solid var(--border);cursor:pointer;font-family:inherit;transition:background 0.12s,color 0.12s,border-color 0.12s;}
+.cat-chip:hover{color:var(--text);border-color:var(--accent-border);}
+.cat-chip.active{background:var(--accent-bg);color:var(--accent-bright);border-color:var(--accent-border);}
+.cat-custom-input{margin-top:6px;}
+
+/* ─── 모달 ─── */
+.modal-bg{position:fixed;inset:0;background:rgba(20,18,17,0.78);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.18s;}
+.modal-bg.open{opacity:1;pointer-events:auto;}
+.modal{background:var(--paper);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:540px;box-shadow:0 20px 60px rgba(0,0,0,0.55);max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:15px;font-weight:800;margin-bottom:18px;}
+.form-row{margin-bottom:14px;}
+.form-row label{display:block;font-size:11px;font-weight:600;color:var(--dim-mid);margin-bottom:5px;letter-spacing:0.04em;}
+.form-row input,.form-row textarea,.form-row select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font:13px/1.5 inherit;outline:none;resize:vertical;}
+.form-row input:focus,.form-row textarea:focus,.form-row select:focus{border-color:var(--accent);}
+.form-row textarea{min-height:80px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;}
+.btn-primary{background:var(--accent);color:#1a1918;border:none;border-radius:var(--radius-btn);padding:9px 18px;font:600 13px/1 inherit;cursor:pointer;}
+.btn-primary:hover{background:var(--accent-bright);}
+.btn-cancel{background:none;color:var(--dim-mid);border:1px solid var(--border);border-radius:var(--radius-btn);padding:9px 18px;font:600 13px/1 inherit;cursor:pointer;}
+.btn-cancel:hover{color:var(--text);}
+
+/* ─── 상태 표시 ─── */
+.status-msg{font-size:12px;color:var(--dim-mid);padding:6px 0;min-height:22px;}
+.status-msg.err{color:var(--red);}
+
+/* ─── 히어로 선언 블록 ─── */
+.hero-declaration{background:linear-gradient(135deg,rgba(183,159,138,0.18) 0%,rgba(183,159,138,0.07) 100%);border:1.5px solid var(--accent-border);border-radius:16px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden;}
+.hero-declaration::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent) 0%,transparent 80%);border-radius:16px 16px 0 0;}
+.hero-eyebrow{font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--accent);text-transform:uppercase;margin-bottom:10px;opacity:0.85;}
+.hero-headline{font-size:26px;font-weight:800;color:var(--text);line-height:1.2;letter-spacing:-0.02em;margin-bottom:12px;}
+.hero-body{font-size:13.5px;color:var(--dim-mid);line-height:1.85;}
+.hero-body strong{color:var(--accent-bright);}
+@media(max-width:600px){.hero-headline{font-size:20px;}.hero-declaration{padding:18px 18px;}}
+
+/* ─── 작업대 섹션 그룹 ─── */
+.plan-sections{display:block;}
+.plan-section{margin-bottom:28px;}
+.plan-section-header{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:10px 16px;border-radius:10px;margin-bottom:12px;border:1px solid var(--border);background:var(--paper-raised);color:var(--text);}
+.plan-section-header.positioning{background:var(--green-bg);border-color:var(--green-border);color:var(--green);}
+.plan-section-header.main{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent-bright);font-size:14px;padding:12px 18px;}
+.plan-section-header.pricing{background:var(--teal-bg);border-color:var(--teal-border);color:var(--teal);}
+.plan-section-header.lineup{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue);}
+
+/* ─── 차별화 레버 카드 현재/목표/우선 라벨 ─── */
+.lever-row{display:flex;align-items:baseline;gap:6px;margin-bottom:5px;font-size:12.5px;color:var(--dim-mid);line-height:1.5;}
+.lever-row:last-child{margin-bottom:0;}
+.lever-label{display:inline-flex;font-size:9px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--paper-raised);color:var(--dim-mid);border:1px solid var(--border);white-space:nowrap;flex-shrink:0;letter-spacing:0.03em;}
+.lever-label.goal{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border);}
+.lever-label.prio{background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border);}
+
+/* ─── 반응형 ─── */
+@media(max-width:720px){
+  .tab-btn{padding:10px 12px;font-size:12px;}
+  .grade-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:480px){
+  .content{padding:14px;}
+  .plan-grid{grid-template-columns:1fr;}
+  .modal{padding:18px;}
+  .grade-grid{grid-template-columns:1fr;}
+  .tab-btn{padding:9px 10px;font-size:11px;gap:4px;}
+}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+
+<div class="sticky-top">
+  <div class="header">
+    <div class="header-top">
+      <div class="header-brand">
+        <h1>🏷️ 스포츠클럽 상품 기획 <span class="badge">AI CPO v1.0</span></h1>
+        <div class="sub">AI CPO (시포) · 현행 상품 정리 + 요금 정책 + 신규 기획 작업대</div>
+      </div>
+      <div class="header-actions">
+        <a href="../../wellperion_guide(main).html" class="action-btn">← ERP 홈</a>
+        <button class="action-btn green" onclick="openModal(null)">+ 새 기획 추가</button>
+      </div>
+    </div>
+  </div>
+  <div class="tab-bar-row">
+    <nav class="tab-nav" role="tablist">
+      <button class="tab-btn active" role="tab" onclick="switchTab('membership',this)"><span class="tab-icon">🏅</span>멤버십</button>
+      <button class="tab-btn" role="tab" onclick="switchTab('adult',this)"><span class="tab-icon">🏊</span>성인강습</button>
+      <button class="tab-btn" role="tab" onclick="switchTab('youth',this)"><span class="tab-icon">👦</span>유소년강습</button>
+      <button class="tab-btn" role="tab" onclick="switchTab('policy',this)"><span class="tab-icon">💳</span>요금 정책</button>
+      <button class="tab-btn" role="tab" onclick="switchTab('workshop',this)"><span class="tab-icon">✏️</span>기획 작업대</button>
+    </nav>
+    <div class="tab-dropdown">
+      <button class="tab-btn print-tab" title="현재 탭 인쇄" style="color:var(--accent)">🖨️ 인쇄</button>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ══════════════════════════════════════
+       TAB 1: 멤버십
+  ══════════════════════════════════════ -->
+  <div id="tab-membership" class="tab-panel active">
+    <div class="section-badge read">📌 현행 멤버십 상품 — 읽기 참조 · 정적 박제 · 기획 참고용</div>
+
+    <!-- 등급 카드 비교 -->
+    <div class="card">
+      <div class="card-title">🏅 멤버십 등급 한눈 비교 (연 12개월)</div>
+      <div class="grade-grid">
+        <div class="grade-card">
+          <div class="grade-card-label">PLATINUM</div>
+          <div class="grade-card-name">플래티넘</div>
+          <div class="grade-card-price">300<span>만원/년</span></div>
+          <div class="grade-card-features">
+            <strong>헬스 + 사우나</strong><br>
+            월 환산 250,000원
+          </div>
+        </div>
+        <div class="grade-card">
+          <div class="grade-card-label">PLATINUM + GOLF</div>
+          <div class="grade-card-name">플래티넘+골프</div>
+          <div class="grade-card-price">340<span>만원/년</span></div>
+          <div class="grade-card-features">
+            <strong>헬스 + 골프 + 사우나</strong><br>
+            월 환산 283,333원
+          </div>
+        </div>
+        <div class="grade-card">
+          <div class="grade-card-label">NOBLESSE</div>
+          <div class="grade-card-name">노블레스</div>
+          <div class="grade-card-price">360<span>만원/년</span></div>
+          <div class="grade-card-features">
+            <strong>헬스 + 수영 + 사우나</strong><br>
+            월 환산 300,000원
+          </div>
+        </div>
+        <div class="grade-card top">
+          <div class="grade-ribbon">최상위</div>
+          <div class="grade-card-label">NOBLESSE + GOLF</div>
+          <div class="grade-card-name">노블레스+골프</div>
+          <div class="grade-card-price">400<span>만원/년</span></div>
+          <div class="grade-card-features">
+            <strong>헬스 + 골프 + 수영 + 사우나</strong><br>
+            월 환산 333,333원
+          </div>
+        </div>
+      </div>
+      <div class="callout">💡 마스터 앵커 논리 — 월 정상 510,000 × 4종목 × 12개월 = 연 6,120,000 → 연간권 노블레스+골프 4,000,000으로 인하. 연간 절약 2,120,000 (35%↓). ※ 전 등급 웰컴팩 제공.</div>
+    </div>
+
+    <!-- 가족/단체/법인 -->
+    <div class="card">
+      <div class="card-title">👨‍👩‍👧‍👦 가족·단체·법인 (플래티넘 기준)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>구분</th><th class="num">요금</th><th class="num">정상 대비</th><th>조건</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>가족 1인</td><td class="num">3,000,000</td><td class="num dim">기준</td><td>직계가족 한정</td></tr>
+            <tr><td>가족 2인</td><td class="num">5,700,000</td><td class="num"><span class="num-badge green">5.3%↓</span></td><td>정상 6,000,000</td></tr>
+            <tr><td>가족 3인</td><td class="num">8,400,000</td><td class="num"><span class="num-badge green">7.1%↓</span></td><td>정상 9,000,000</td></tr>
+            <tr><td>가족 4인</td><td class="num">11,100,000</td><td class="num"><span class="num-badge green">8.1%↓</span></td><td>정상 12,000,000</td></tr>
+            <tr><td>단체 5인</td><td class="num">13,500,000</td><td class="num"><span class="num-badge green">10%↓</span></td><td>사업자등록증 · 휴회불가 · 양도 1회 5만</td></tr>
+            <tr><td>단체 10인</td><td class="num">25,500,000</td><td class="num"><span class="num-badge green">15%↓</span></td><td>사업자등록증 · 휴회불가 · 양도 1회 5만</td></tr>
+            <tr><td>법인 11인+</td><td class="num">63,000,000</td><td class="num"><span class="num-badge green">30%↓</span></td><td>법인 계약</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 일일권 -->
+    <div class="card">
+      <div class="card-title">🎟️ 일일권 · 입주민 · 패키지</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>구분</th><th class="num">1회</th><th>비고</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>입주민 1회권</td><td class="num">47,000</td><td>등급 구분 없음</td></tr>
+            <tr><td>일반 1회권</td><td class="num">55,000</td><td>유효기간 당일</td></tr>
+            <tr><td>10매 바우처</td><td class="num">500,000</td><td>입주민 420,000 / 유효 2개월<br><span class="dim" style="font-size:12px;">※ 판매한 바우처에 한해서는 유효기간 연장 가능</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 업그레이드 -->
+    <div class="card">
+      <div class="card-title">⬆️ 업그레이드 옵션 (플래티넘 기준 · 연)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>추가 옵션</th><th class="num">연 추가금</th><th class="num">일 환산</th><th>비고</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>골프 추가</td><td class="num">+400,000</td><td class="num dim">일 1,096</td><td></td></tr>
+            <tr><td>수영 추가</td><td class="num">+600,000</td><td class="num dim">일 1,644</td><td></td></tr>
+            <tr><td>골프+수영 추가</td><td class="num">+1,000,000</td><td class="num dim">일 2,740</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-box">⚠️ <strong>다운그레이드 불가.</strong> 등급 업그레이드만 가능.</div>
+    </div>
+
+    <!-- 재등록 -->
+    <div class="card">
+      <div class="card-title">🔄 재등록 혜택 · 부가 서비스</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>구분</th><th>내용</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>재등록 기본</strong></td><td>5% 할인 + 일일입장권 3매</td></tr>
+            <tr><td><strong>저이용 특별선택권</strong></td><td>연 90일 미만 이용 시 → 2개월 연장 + 일일입장권 3매</td></tr>
+            <tr><td><strong>풀데이 옵션</strong></td><td>재등록 시 선택 가능 (추가요금 기준 240일)</td></tr>
+            <tr><td>개인 락커</td><td>월 10,000</td></tr>
+            <tr><td>골프 락커 (윗층)</td><td>월 15,000</td></tr>
+            <tr><td>골프 락커 (아랫층)</td><td>월 20,000</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TAB 2: 성인강습
+  ══════════════════════════════════════ -->
+  <div id="tab-adult" class="tab-panel">
+    <div class="section-badge read">📌 현행 성인 강습 요금 — 읽기 참조 · 정적 박제</div>
+
+    <div class="card">
+      <div class="card-title">🏊 성인 수영</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>강습명</th><th class="num">회수</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>수영 1:1 강습</td><td class="num">4회</td><td class="num">374,000</td><td class="num">434,000</td><td>노블레스 유지</td></tr>
+            <tr><td>수영 1:2 강습</td><td class="num">4회</td><td class="num">308,000</td><td class="num">368,000</td><td></td></tr>
+            <tr><td>수영 단체반 (남)</td><td class="num">8회</td><td class="num">144,000</td><td class="num">330,000</td><td rowspan="2">준회원 +66,000</td></tr>
+            <tr><td>수영 단체반 (여, 10%↓)</td><td class="num">8회</td><td class="num dim">—</td><td class="num">297,000</td></tr>
+            <tr><td>아쿠아로빅</td><td class="num">8회</td><td class="num">132,000</td><td class="num">242,000</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💪 P.T (50분)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>패시브 스트레칭 (25분)</td><td class="num">10회</td><td class="num dim">—</td><td class="num">550,000</td><td class="num dim">정회원전용</td><td>2개월</td></tr>
+            <tr><td>P.T</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
+            <tr><td>P.T</td><td class="num">20회</td><td class="num"><span class="num-badge green">5%↓</span></td><td class="num">2,069,100</td><td class="num">2,369,100</td><td>3개월</td></tr>
+            <tr><td>P.T</td><td class="num">30회</td><td class="num"><span class="num-badge green">10%↓</span></td><td class="num">2,940,300</td><td class="num">3,390,300</td><td>5개월</td></tr>
+            <tr><td>P.T</td><td class="num">50회</td><td class="num"><span class="num-badge green">15%↓</span></td><td class="num">4,628,250</td><td class="num">5,378,250</td><td>8개월</td></tr>
+            <tr><td>P.T</td><td class="num">100회</td><td class="num"><span class="num-badge green">25%↓</span></td><td class="num">8,167,500</td><td class="num">9,667,500</td><td>12개월</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧘 필라테스 (50분)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>필라테스</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
+            <tr><td>필라테스</td><td class="num">20회</td><td class="num"><span class="num-badge green">5%↓</span></td><td class="num">2,069,100</td><td class="num">2,369,100</td><td>3개월</td></tr>
+            <tr><td>필라테스</td><td class="num">30회</td><td class="num"><span class="num-badge green">10%↓</span></td><td class="num">2,940,300</td><td class="num">3,390,300</td><td>5개월</td></tr>
+            <tr><td>단체반 1:3</td><td class="num">8회</td><td class="num dim">—</td><td class="num">220,000</td><td class="num">340,000</td><td>2개월</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎾 스쿼시</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>강습명</th><th class="num">회수</th><th>타임</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>원포인트</td><td class="num">1회</td><td>50분</td><td class="num">130,000</td><td class="num">145,000</td><td>1일</td></tr>
+            <tr><td>강습</td><td class="num">10회</td><td>30분</td><td class="num">594,000</td><td class="num">744,000</td><td>2개월</td></tr>
+            <tr><td>강습</td><td class="num">10회</td><td>50분</td><td class="num">792,000</td><td class="num">942,000</td><td>2개월</td></tr>
+            <tr><td>강습</td><td class="num">30회</td><td>30분</td><td class="num">1,692,900</td><td class="num">2,142,900</td><td>5개월</td></tr>
+            <tr><td>강습</td><td class="num">30회</td><td>50분</td><td class="num">2,257,200</td><td class="num">2,707,200</td><td>5개월</td></tr>
+            <tr><td>국대코치 강습</td><td class="num">10회</td><td>30분</td><td class="num">770,000</td><td class="num">920,000</td><td>2개월</td></tr>
+            <tr><td>국대코치 강습</td><td class="num">10회</td><td>50분</td><td class="num">1,089,000</td><td class="num">1,239,000</td><td>2개월</td></tr>
+            <tr><td>단체반 1:4</td><td class="num">8회</td><td>50분</td><td class="num">198,000</td><td class="num">318,000</td><td>2개월</td></tr>
+            <tr><td>WSC 박스래더/성인동호회</td><td class="num">1회</td><td>2시간</td><td class="num">55,000</td><td class="num dim">—</td><td>1일</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⛳ 골프 (25분)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>강습명</th><th class="num">회수</th><th class="num">할인율</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>원포인트</td><td class="num">1회</td><td class="num dim">—</td><td class="num">130,000</td><td class="num">145,000</td><td>1일</td></tr>
+            <tr><td>15분 레슨</td><td class="num">8회</td><td class="num dim">—</td><td class="num">330,000</td><td class="num dim">—</td><td>1개월</td></tr>
+            <tr><td>골프강습</td><td class="num">10회</td><td class="num dim">0%</td><td class="num">650,000</td><td class="num">800,000</td><td>2개월</td></tr>
+            <tr><td>골프강습</td><td class="num">20회</td><td class="num"><span class="num-badge green">5%↓</span></td><td class="num">1,235,000</td><td class="num">1,535,000</td><td>3개월</td></tr>
+            <tr><td>골프강습</td><td class="num">30회</td><td class="num"><span class="num-badge green">10%↓</span></td><td class="num">1,755,000</td><td class="num">2,205,000</td><td>5개월</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🩰 루프메소드 (발레·바레)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>강습명</th><th class="num">회수</th><th class="num">요금</th><th>일정</th><th>비고</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>발레</td><td class="num">월 2회</td><td class="num">66,000</td><td>매주 금 10:00 / 11:00</td><td rowspan="4">외부 파트너(루프메소드) 운영<br>강사: 발레 이수지 / 바레 박상아<br>장소: 웰니스 스튜디오 (여성 락커룸 맞은편)</td></tr>
+            <tr><td>발레</td><td class="num">월 4회</td><td class="num">132,000 (VAT포함)</td><td class="num dim">—</td></tr>
+            <tr><td>바레</td><td class="num">월 2회</td><td class="num">66,000</td><td class="num dim">—</td></tr>
+            <tr><td>바레</td><td class="num">월 4회</td><td class="num">132,000 (VAT포함)</td><td>매주 화 10:00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TAB 3: 유소년강습
+  ══════════════════════════════════════ -->
+  <div id="tab-youth" class="tab-panel">
+    <div class="section-badge read">📌 WSC 유소년 강습 요금 — 읽기 참조 · 정적 박제</div>
+
+    <div class="info-box" style="margin-bottom:16px;">
+      📋 <strong>나이 기준 안내</strong> — WSC 대상: <strong>5~16세</strong> (만 나이 기준, 모자수영 12~60개월 별도).
+      한국 나이 17세 = 2010년생 기준 · <strong>2026.3 이전 등록 건에 한해 기존 조건 유지</strong> 적용.
+      스쿼시는 <strong>10~16세</strong>부터 가능.
+    </div>
+
+    <div class="card">
+      <div class="card-title">👦 WSC 유소년 강습 (수영·골프·스쿼시·체조)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>종목</th><th>강습명</th><th class="num">회수</th><th class="num">1:1</th><th class="num">1:2</th><th class="num">그룹</th><th>나이</th><th>유효기간</th></tr>
+          </thead>
+          <tbody>
+            <tr><td rowspan="3">수영</td><td>모자수영 강습</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">66,000</td><td>12~60개월</td><td>1일</td></tr>
+            <tr><td>WSC수영 강습</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">55,000</td><td>5~16세</td><td>1일</td></tr>
+            <tr><td>WSC수영 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:5)</span></td><td>5~16세</td><td>2개월</td></tr>
+            <tr><td rowspan="2">골프</td><td>WSC골프 체험</td><td class="num">1회</td><td class="num dim">—</td><td class="num">55,000</td><td class="num dim">—</td><td>5~16세</td><td>1일</td></tr>
+            <tr><td>WSC골프 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">616,000<span class="dim">(패밀리)</span></td><td>5~16세</td><td>2개월</td></tr>
+            <tr><td>스쿼시</td><td>WSC스쿼시 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:6)</span> / 220,000<span class="dim">(엘리트)</span></td><td>10~16세</td><td>2개월</td></tr>
+            <tr><td rowspan="2">체조</td><td>WSC체조 체험</td><td class="num">1회</td><td class="num dim">—</td><td class="num dim">—</td><td class="num">44,000</td><td>5~16세</td><td>1일</td></tr>
+            <tr><td>WSC체조 강습</td><td class="num">4회</td><td class="num">407,000</td><td class="num">308,000</td><td class="num">209,000<span class="dim">(1:5)</span></td><td>5~16세</td><td>2개월</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TAB 4: 요금 정책
+  ══════════════════════════════════════ -->
+  <div id="tab-policy" class="tab-panel">
+    <!-- 요금 정책 — 구분별 카드+표(멤버십 탭과 동일 낯익은 구조) · GM 인라인 편집·저장(POLICY-TABLE).
+         편집/저장 버튼 = 제목(section-badge) 줄 맨 우측 배치. 2026-07-02/07-03 시포·GM -->
+    <div class="section-badge policy with-actions">
+      <span>💳 요금 정책 — 현행 운영 규정 · 26년 적용 기준</span>
+      <div class="section-badge-actions">
+        <button class="action-btn green" onclick="savePolicyTable()">💾 요금 정책 저장</button>
+        <button class="action-btn" onclick="addGroup()">➕ 새 구분</button>
+        <button class="action-btn" onclick="loadPolicyTable(true)">↺ 새로고침</button>
+      </div>
+    </div>
+    <span class="pricing-hint" id="policyStatus">GM이 셀을 직접 수정 → 저장하면 시트에 반영됩니다</span>
+
+    <!-- 무할인 원칙 배너 -->
+    <div class="callout red" style="margin-bottom:20px;font-size:13.5px;line-height:1.7;border-radius:12px;padding:16px 20px;">
+      🚫 <strong>무할인 원칙 (2026 전환)</strong> — 웰페리온은 가격 할인 정책을 폐지합니다.<br>
+      할인 대신 <strong>정가 + 비가격 혜택</strong>(서비스·웰컴팩·등급 혜택)으로 가치를 제공합니다.<br>
+      <span style="font-size:12px;opacity:0.85;">계약 중 기존요금 보장 · 재등록 시 새 정가 적용 · 2년 주기 인상 유지(26.10 / 28.10)</span>
+    </div>
+
+    <div id="policyCards"><div class="card"><div style="color:var(--dim);font-size:12px;">불러오는 중…</div></div></div>
+
+  </div><!-- /tab-policy -->
+
+  <!-- ══════════════════════════════════════
+       TAB 5: 기획 작업대
+  ══════════════════════════════════════ -->
+  <div id="tab-workshop" class="tab-panel">
+    <!-- 편집/저장 버튼 = 제목(section-badge) 줄 맨 우측 배치. 2026-07-03 시포·GM -->
+    <div class="section-badge edit with-actions">
+      <span>✏️ 신규 기획 작업대 — 편집·저장 가능 · 시트 공유</span>
+      <div class="section-badge-actions">
+        <button class="action-btn" onclick="loadPlans()">↺ 새로고침</button>
+        <button class="action-btn green" onclick="openModal(null)">+ 새 기획 추가</button>
+      </div>
+    </div>
+
+    <div class="hero-declaration">
+      <div class="hero-eyebrow">🏛️ 포지셔닝 선언 · 확정</div>
+      <div class="hero-headline">가성비가 아니라, 프리미엄.</div>
+      <div class="hero-body">웰페리온은 할인으로 경쟁하지 않습니다. 회원이 정가를 기꺼이 내는 이유 = 내부 시설·비품·어메니티가 만드는 압도적 경험.<br>할인 대신 차별화, 가격 대신 가치 — <strong>1순위는 시설·어메니티 차별화</strong>입니다.</div>
+    </div>
+
+    <div class="status-msg" id="statusMsg" style="margin-bottom:12px;">불러오는 중…</div>
+    <div class="cat-filter-bar" id="planCategoryFilter"></div>
+
+    <div class="plan-sections" id="planGrid">
+      <!-- 카드 동적 렌더 -->
+    </div>
+  </div><!-- /tab-workshop -->
+
+</div><!-- /content -->
+
+<!-- ══════════════════════════════════════
+     편집 모달
+══════════════════════════════════════ -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3 id="modalTitle">기획 추가</h3>
+    <input type="hidden" id="editId">
+    <div class="form-row">
+      <label>카테고리</label>
+      <select id="editGubun" onchange="onCategoryChange(this.value)"></select>
+      <input type="text" id="editGubunCustom" class="cat-custom-input" placeholder="카테고리명 직접 입력" style="display:none;" oninput="updateModalLabels(this.value)">
+    </div>
+    <div class="form-row">
+      <label>제안명</label>
+      <input type="text" id="editName" placeholder="한 줄 제안 이름">
+    </div>
+    <div class="form-row">
+      <label id="labelComp">구성</label>
+      <textarea id="editComp" placeholder="상품 구성 상세 설명"></textarea>
+    </div>
+    <div class="form-row">
+      <label id="labelPrice">가격 가설</label>
+      <input type="text" id="editPrice" placeholder="예: 3,500,000 / 번들 5% 추가">
+    </div>
+    <div class="form-row">
+      <label id="labelBase">근거</label>
+      <textarea id="editBase" placeholder="기획 근거 · 연계 데이터 · 목표"></textarea>
+    </div>
+    <div class="form-row">
+      <label>상태</label>
+      <select id="editStatus">
+        <option value="초안">초안</option>
+        <option value="검토중">검토중</option>
+        <option value="확정">확정</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>작성자</label>
+      <input type="text" id="editAuthor" placeholder="닉네임 또는 이름">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-primary" onclick="submitPlan()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 탭 전환 ──────────────────────────────────────────────────────────
+function switchTab(id, btn) {
+  var panels = document.querySelectorAll('.tab-panel');
+  var btns = document.querySelectorAll('.tab-btn');
+  for (var i = 0; i < panels.length; i++) panels[i].classList.remove('active');
+  for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'workshop') loadPlans();
+  if (id === 'policy') loadPolicyTable();
+}
+
+// ── 요금 정책: 전체를 한눈에 편집 가능한 표로. 예약 레코드(id=POLICY-TABLE, '상품기획저장' 시트 재사용·새 배포 불필요). 2026-07-02 시포·GM ──
+var POLICY_TABLE_ID = 'POLICY-TABLE';
+var POLICY_TABLE_DEFAULT = [{"cat": "요금체계","item": "플래티넘","val": "3,000,000","note": "연간"},{"cat": "요금체계","item": "플래티넘+골프","val": "3,400,000","note": "연간"},{"cat": "요금체계","item": "노블레스","val": "3,600,000","note": "연간"},{"cat": "요금체계","item": "노블레스+골프","val": "4,000,000","note": "연간·최상위"},{"cat": "요금체계","item": "가족(2번째부터)","val": "각 2,700,000","note": "가족증명 필수·할인 아닌 정가"},{"cat": "요금체계","item": "법인 5인","val": "현행 13,500,000","note": "정가 전환·사업자등록·휴회불가·양도1회 5만"},{"cat": "요금체계","item": "법인 10인","val": "현행 25,500,000","note": "정가 전환·동일 조건"},{"cat": "요금체계","item": "인상 계획","val": "2년 주기(26.10 / 28.10)","note": "인상폭 상향"},{"cat": "신규·웰컴","item": "분기 기획","val": "1~3 / 4~6 / 7~9 / 10~12월 단위","note": "회장 보고 체계"},{"cat": "신규·웰컴","item": "웰컴패키지","val": "일일입장권 3매·손톱깍이 1·강습 3회(PT/필라/골프/스쿼시 택1)","note": "강습 3회 대신 생크몽드 100회 대체 가능·가격할인 아님"},{"cat": "신규·웰컴","item": "환불 공제금","val": "PT 326,700 · 필라테스 326,700 · 스쿼시 237,600 · 골프 195,000","note": "강습 진행 확인 시·일일입장권/손톱깍이 제외"},{"cat": "회원소개","item": "소개 혜택","val": "이용권 5매 + 선물 15만원 상당","note": "비가격 혜택·유지"},{"cat": "재등록","item": "가격 할인","val": "폐지(현행 5%)","note": "비가격 혜택으로 전환"},{"cat": "재등록","item": "바우처","val": "일일입장권 3매","note": "유지"},{"cat": "재등록","item": "90일 미만 이용","val": "2개월 연장 + 일일입장권 3매","note": "저이용 특별선택권"},{"cat": "재등록","item": "만기 후 1년내","val": "재등록 혜택 / 1년 경과=신규 혜택","note": ""},{"cat": "재등록","item": "풀데이 추가 기준","val": "240일","note": "사은품 별도 제공"},{"cat": "등급제(FAN)","item": "단계","val": "26년 4→3단계 축소","note": ""},{"cat": "등급제(FAN)","item": "FAN VIP","val": "누적 1,700만원↑","note": ""},{"cat": "등급제(FAN)","item": "VIP","val": "누적 1,200만원↑","note": ""},{"cat": "등급제(FAN)","item": "M","val": "누적 800만원↑","note": ""},{"cat": "등급제(FAN)","item": "FAN 혜택","val": "전용락커·주차연장·일일입장·카페 크레딧","note": "평가=이용금액·출석·에티켓·경영진 지정"},{"cat": "서비스","item": "입장","val": "1일 1회·풀데이 추가 480,000","note": "책임자 컨펌"},{"cat": "서비스","item": "휴회","val": "연 3회 / 총 60일","note": "특이사항 시 최대 90일"},{"cat": "서비스","item": "양도","val": "1회 한정·양도비 50,000","note": "직계/비가족·단기권 양도 가능"},{"cat": "서비스","item": "환불","val": "위약금 10%·24h내 무위약","note": "일일요금 플래티넘 14,000~노블+골프 17,000"},{"cat": "서비스","item": "일일입장권","val": "1회 55,000(입주민 47,000)·10회 500,000(입주민 420,000)","note": "유효 2개월"},{"cat": "입회나이","item": "17~69세","val": "가능","note": "일반 절차"},{"cat": "입회나이","item": "70~75세","val": "조건부","note": "건강검진+서약서"},{"cat": "입회나이","item": "76세 이상","val": "조건부","note": "건강검진+서약서+수영불가+컨시어지 동반"},{"cat": "입회나이","item": "기존회원 재등록","val": "무조건","note": "나이 제한 미적용·만료 1개월 초과시 시니어정책"},{"cat": "시설운영","item": "휴일","val": "신정·설·추석·둘째넷째 일요일","note": ""},{"cat": "시설운영","item": "주차","val": "기본 4시간 무료·발렛=FAN VIP","note": "1인 1차량 등록제"},{"cat": "시설운영","item": "비치타올","val": "클럽 내 제공","note": ""},{"cat": "시설운영","item": "여자 세신","val": "제공(사우나)","note": ""},{"cat": "시설운영","item": "세미나실","val": "대관 가능","note": ""},{"cat": "시설운영","item": "노블레스 수영복 거치대","val": "노블레스 전용","note": ""},{"cat": "시설운영","item": "강습 할인","val": "정회원 전용 요금","note": ""}];
+var _policyLoaded = false;
+function _policyStatus(m){ var el=document.getElementById('policyStatus'); if(el) el.textContent=m; }
+function _polItemRow(r){ r=r||{}; var tr=document.createElement('tr'); tr.className='pol-item';
+  tr.innerHTML='<td><input type="text" data-k="item" value="'+esc(r.item||'')+'"></td>'+
+               '<td><input type="text" data-k="val" value="'+esc(r.val||'')+'"></td>'+
+               '<td><input type="text" data-k="note" value="'+esc(r.note||'')+'"></td>'+
+               '<td style="text-align:center;width:30px"><button class="pp-del" title="행 삭제" onclick="this.closest(\'tr\').remove()">✕</button></td>';
+  return tr; }
+function _polCard(cat, items){
+  var card=document.createElement('div'); card.className='card pol-card';
+  var head=document.createElement('div'); head.className='card-title';
+  head.innerHTML='<input class="pol-cat" type="text" value="'+esc(cat||'')+'">'+
+    '<span class="pol-card-actions"><button class="pp-add" onclick="addItemToCard(this)">➕ 항목</button>'+
+    '<button class="pp-del" title="이 구분 삭제" onclick="delCard(this)">구분 삭제</button></span>';
+  card.appendChild(head);
+  var wrap=document.createElement('div'); wrap.className='tbl-wrap';
+  var tbl=document.createElement('table');
+  tbl.innerHTML='<thead><tr><th style="width:18%">항목</th><th>내용</th><th style="width:26%">비고</th><th style="width:30px"></th></tr></thead>';
+  var tb=document.createElement('tbody');
+  (items&&items.length?items:[{}]).forEach(function(r){ tb.appendChild(_polItemRow(r)); });
+  tbl.appendChild(tb); wrap.appendChild(tbl); card.appendChild(wrap);
+  return card;
+}
+function renderPolicyTable(rows){
+  var box=document.getElementById('policyCards'); if(!box) return;
+  box.innerHTML='';
+  var src=(rows&&rows.length?rows:POLICY_TABLE_DEFAULT);
+  var order=[], map={};
+  src.forEach(function(r){ var c=(r.cat||'구분없음'); if(!map[c]){ map[c]=[]; order.push(c); } map[c].push(r); });
+  order.forEach(function(c){ box.appendChild(_polCard(c, map[c])); });
+}
+function addItemToCard(btn){ var card=btn.closest('.pol-card'); if(!card) return; var tb=card.querySelector('tbody'); var tr=_polItemRow({}); tb.appendChild(tr); var f=tr.querySelector('input'); if(f) f.focus(); }
+function delCard(btn){ var card=btn.closest('.pol-card'); if(card) card.remove(); }
+function addGroup(){ var box=document.getElementById('policyCards'); if(!box) return; var card=_polCard('새 구분',[{}]); box.appendChild(card); var f=card.querySelector('.pol-cat'); if(f) f.focus(); }
+function _collectPolicy(){
+  var rows=[];
+  document.querySelectorAll('#policyCards .pol-card').forEach(function(card){
+    var catEl=card.querySelector('.pol-cat'); var cat=catEl?catEl.value.trim():'';
+    card.querySelectorAll('tr.pol-item').forEach(function(tr){
+      var r={cat:cat}; tr.querySelectorAll('input[data-k]').forEach(function(i){ r[i.dataset.k]=i.value.trim(); });
+      if(r.item||r.val||r.note) rows.push(r);
+    });
+  });
+  return rows;
+}
+function loadPolicyTable(force){
+  if(_policyLoaded && !force) return; _policyLoaded=true;
+  _policyStatus('불러오는 중…');
+  fetch(TODO_API_URL + '?action=product_plan_list', {redirect:'follow'})
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      var found=null;
+      if(res.ok && res.data) found=res.data.find(function(x){ return String(x.id)===POLICY_TABLE_ID; });
+      var rows=POLICY_TABLE_DEFAULT;
+      if(found && found['\uad6c\ubd84']!==undefined && found['\uad6c\uc131']){ try{ var p=JSON.parse(found['\uad6c\uc131']); if(p&&p.length) rows=p; }catch(e){} }
+      renderPolicyTable(rows);
+      _policyStatus(found?'시트 저장본 표시 중 · GM 수정 가능':'기본값 표시 중 · 저장하면 시트에 영속');
+    })
+    .catch(function(){ renderPolicyTable(POLICY_TABLE_DEFAULT); _policyStatus('네트워크 오류 — 기본값 표시'); });
+}
+function savePolicyTable(){
+  var rows=_collectPolicy();
+  _policyStatus('저장 중…');
+  var item={ id:POLICY_TABLE_ID, '\uad6c\ubd84':'_policy', '\uc81c\uc548\uba85':'요금 정책 표', '\uad6c\uc131':JSON.stringify(rows), '\uac00\uaca9\uac00\uc124':'', '\uadfc\uac70':'', '\uc0c1\ud0dc':'', '\uc791\uc131\uc790':'GM' };
+  fetch(TODO_API_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action:'product_plan_save', item:item}) })
+    .then(function(){ _policyStatus('저장 완료 · 시트 반영됨'); })
+    .catch(function(){ _policyStatus('저장 완료(응답 확인 불가) · 새로고침 시 반영'); });
+}
+
+// ── 인쇄 직전: 요금 정책 표의 <input> 값은 한 줄 밖 내용이 잘려 안 보이므로
+//    인쇄용 텍스트(.print-val, 줄바꿈 허용)로 미리보기 없이 즉시 교체. 값·저장 로직은 손대지 않음(표시만). 2026-07-03 시포·GM
+function _printValSync() {
+  document.querySelectorAll('.print-val').forEach(function(s){ s.remove(); });
+  document.querySelectorAll('.pol-card input, .pol-cat').forEach(function(el){
+    var span = document.createElement('span');
+    span.className = 'print-val';
+    span.textContent = el.value;
+    el.insertAdjacentElement('afterend', span);
+  });
+}
+function _printValClear() {
+  document.querySelectorAll('.print-val').forEach(function(s){ s.remove(); });
+}
+window.addEventListener('beforeprint', _printValSync);
+window.addEventListener('afterprint', _printValClear);
+
+// ── 상수 ──────────────────────────────────────────────────────────
+var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+
+// ── 시드 기획안 (서버가 비었을 때만 표시) ─────────────────────────
+var SEEDS = [
+  // ── 차별화레버 (7장, 초안 — 구성=현재, 가격가설=목표, 근거=우선) ──
+  {
+    id:'SEED-L1', 구분:'차별화레버', 제안명:'🚿 라커·샤워·세면 어메니티',
+    구성:'[실사 필요]',
+    가격가설:'호텔급 가운·타월, 고급 브랜드 스킨케어·바디, 스타일링 바',
+    근거:'상 — 회원 체감 1순위',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-L2', 구분:'차별화레버', 제안명:'💆 회복·웰니스',
+    구성:'[실사 필요]',
+    가격가설:'사우나(건·습·소금)·냉온탕·생크몽드 바디케어·회복 라운지·스트레칭존',
+    근거:'상',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-L3', 구분:'차별화레버', 제안명:'☕ 라운지·F&B',
+    구성:'[실사 필요]',
+    가격가설:'멤버 라운지·충전형 카페·헬시스낵·프로틴/스무디 바',
+    근거:'중',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-L4', 구분:'차별화레버', 제안명:'🕯️ 감각·앰비언스',
+    구성:'[실사 필요]',
+    가격가설:'시그니처 향·음악·조도·온습도·청결 5성 표준',
+    근거:'중 — 저비용 고효과',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-L5', 구분:'차별화레버', 제안명:'🛎️ 서비스·컨시어지',
+    구성:'[실사 필요]',
+    가격가설:'발렛·1:1 컨시어지(FAN VIP)·세신·개인 라커 셋업·예약 우선',
+    근거:'중',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-L6', 구분:'차별화레버', 제안명:'👦 유소년·가족 존',
+    구성:'[실사 필요]',
+    가격가설:'WSC 전용 공간·키즈 어메니티·가족 라운지·안전 설계',
+    근거:'중',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-L7', 구분:'차별화레버', 제안명:'📦 비품 표준·브랜딩',
+    구성:'[실사 필요]',
+    가격가설:'타월·생수·소독·정수·운동기구 소모비품 프리미엄 일관 브랜딩',
+    근거:'상 — 디테일이 프리미엄 완성',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  // ── 가격전략 (1장, 초안) ──────────────────────────────────────────
+  {
+    id:'SEED-G1', 구분:'가격전략', 제안명:'💹 무할인 + 2년주기 인상폭 상향 기준안',
+    구성:'할인 폐지·정가 일원화 / 짝수해 10월(26.10·28.10) / 계약 중 기존요금 보장·재등록 시 새 정가',
+    가격가설:'인상폭 시나리오(경영 결재 택1) ①등급 정률 +10~15%/주기 ②종목 정액 +50~100만/주기 ③정원 충족률 연동',
+    근거:'멤버십 시트 1,000~1,500명 정원충족·종목별 100만 인상 시뮬 + 할인 소멸분 실질 가산',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  // ── 라인업 (3장, 초안) ────────────────────────────────────────────
+  {
+    id:'SEED-LA1', 구분:'라인업', 제안명:'등급 간소화 2축',
+    구성:'4종목조합→베이스(헬스+사우나)+옵션 토글(수영·골프)',
+    가격가설:'선택 피로↓·정가 명료',
+    근거:'시트도 단일/2종목 간소화 방향 명시',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-LA2', 구분:'라인업', 제안명:'멤버십×강습 정가 묶음',
+    구성:'예) 노블레스+PT10회 정가 패키지',
+    가격가설:'할인 아닌 통합 편의·LTV↑',
+    근거:'강습 월 3억 목표 연계',
+    상태:'초안', 작성자:'시포', isSeed:true
+  },
+  {
+    id:'SEED-LA3', 구분:'라인업', 제안명:'시간대 정가 차등',
+    구성:'데이타임·얼리버드 한정 등급',
+    가격가설:'저가 아닌 비혼잡 가치',
+    근거:'유휴 시간 활용',
+    상태:'초안', 작성자:'시포', isSeed:true
+  }
+];
+
+// ── 기획 카테고리 — 신규 기획 추가 시 선택하는 단일 출처. 확장은 이 배열만 수정. 2026-07-03 시포·GM(요청) ──
+//    key = 저장값(기존 '구분' 칼럼 재사용 · GAS 스키마 변경 없음), label = 섹션 헤더, badge = 카드/필터 짧은 표시.
+var PLAN_CATEGORIES = [
+  { key:'차별화레버', label:'🏛️ 차별화 레버 — 시설·비품·어메니티 (메인)', badge:'🏛️ 차별화 레버', cls:'main' },
+  { key:'가격전략',  label:'💹 가격 전략',                                badge:'💹 가격 전략',  cls:'pricing' },
+  { key:'라인업',   label:'🧱 상품 라인업',                               badge:'🧱 상품 라인업', cls:'lineup' },
+  { key:'포지셔닝',  label:'🎯 포지셔닝',                                 badge:'🎯 포지셔닝',   cls:'positioning' }
+];
+var _activeCategoryFilter = 'all';
+var _lastPlanItems = [];
+function _catInfo(key) { return PLAN_CATEGORIES.filter(function(c){ return c.key === key; })[0] || null; }
+function categoryBadgeHtml(key) {
+  var found = _catInfo(key);
+  var label = found ? found.badge : (key ? esc(key) : '📋 미분류');
+  var cls = found ? found.cls : 'unclassified';
+  return '<span class="cat-badge ' + cls + '">' + label + '</span>';
+}
+function buildCategorySelectOptions() {
+  var sel = document.getElementById('editGubun');
+  if (!sel) return;
+  var html = '<option value="">미분류</option>';
+  PLAN_CATEGORIES.forEach(function(c){ html += '<option value="' + esc(c.key) + '">' + c.badge + '</option>'; });
+  html += '<option value="__custom__">✏️ 기타(직접 입력)</option>';
+  sel.innerHTML = html;
+}
+function onCategoryChange(value) {
+  var custom = document.getElementById('editGubunCustom');
+  var isCustom = (value === '__custom__');
+  custom.style.display = isCustom ? 'block' : 'none';
+  updateModalLabels(isCustom ? custom.value : value);
+}
+function setCategoryFilter(key) {
+  _activeCategoryFilter = key;
+  renderCards(_lastPlanItems);
+}
+function renderCategoryFilterBar() {
+  var bar = document.getElementById('planCategoryFilter');
+  if (!bar) return;
+  var chips = [{ key:'all', badge:'전체' }].concat(PLAN_CATEGORIES).concat([{ key:'__unclassified__', badge:'📋 미분류' }]);
+  bar.innerHTML = chips.map(function(c){
+    var active = (_activeCategoryFilter === c.key) ? ' active' : '';
+    return '<button type="button" class="cat-chip' + active + '" onclick="setCategoryFilter(\'' + c.key + '\')">' + c.badge + '</button>';
+  }).join('');
+}
+
+// ── 카드 렌더 ──────────────────────────────────────────────────────────
+function statusBadge(s) {
+  var map = {초안:'draft',검토중:'review',확정:'confirmed'};
+  var cls = map[s] || 'draft';
+  return '<span class="tag-badge ' + cls + '">' + (s||'초안') + '</span>';
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderCard(it) {
+  var isLever = (it.구분||'').indexOf('차별화') === 0;
+  var seedMark = it.isSeed ? '<span class="seed-mark">시드</span>' : '';
+  var updAt = it.updated_at ? '<span style="color:var(--dim);font-size:10px;"> · ' + String(it.updated_at).slice(0,10) + '</span>' : '';
+  var bodyHtml;
+  if (isLever) {
+    bodyHtml =
+      '<div class="lever-row"><span class="lever-label">현재</span> ' + esc(it.구성||'') + '</div>' +
+      '<div class="lever-row"><span class="lever-label goal">목표</span> ' + esc(it.가격가설||'') + '</div>' +
+      '<div class="lever-row"><span class="lever-label prio">우선</span> ' + esc(it.근거||'') + '</div>';
+  } else {
+    bodyHtml =
+      '<strong>구성</strong> ' + esc(it.구성||'') + '<br>' +
+      '<strong>가격가설</strong> ' + esc(it.가격가설||'') + '<br>' +
+      '<strong>근거</strong> ' + esc(it.근거||'');
+  }
+  var safeIt = JSON.stringify(it).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026');
+  return '<div class="plan-card" data-id="' + esc(it.id) + '">' +
+    '<div class="plan-card-head"><div>' +
+      '<div class="plan-card-title">' + esc(it.제안명||'') + seedMark + '</div>' +
+      '<div class="plan-card-meta">' + categoryBadgeHtml(it.구분) + statusBadge(it.상태) + updAt + '</div>' +
+    '</div></div>' +
+    '<div class="plan-card-body">' + bodyHtml + '</div>' +
+    '<div class="plan-card-actions">' +
+      '<button class="btn-sm edit" onclick=\'openModal(' + safeIt + ')\'>✎ 편집</button>' +
+      (it.isSeed
+        ? '<button class="btn-sm edit" style="background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border);" onclick=\'saveSeed(' + safeIt + ')\'>↑ 시트 저장</button>'
+        : '<button class="btn-sm del" onclick="deletePlan(\'' + esc(it.id) + '\')">✕ 삭제</button>') +
+    '</div>' +
+  '</div>';
+}
+
+function renderCards(items) {
+  _lastPlanItems = items || [];
+  renderCategoryFilterBar();
+  var grid = document.getElementById('planGrid');
+  if (!_lastPlanItems.length) {
+    grid.innerHTML = '<div class="info-box" style="text-align:center;padding:24px;">기획안이 없습니다. "새 기획 추가"로 시작하세요.</div>';
+    return;
+  }
+  var knownKeys = PLAN_CATEGORIES.map(function(c){ return c.key; });
+  var filtered = _lastPlanItems.filter(function(it) {
+    if (_activeCategoryFilter === 'all') return true;
+    var k = it.구분 || '';
+    if (_activeCategoryFilter === '__unclassified__') return !k || knownKeys.indexOf(k) < 0;
+    return k === _activeCategoryFilter;
+  });
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="info-box" style="text-align:center;padding:24px;">이 카테고리에 해당하는 기획안이 없습니다.</div>';
+    return;
+  }
+  var groups = {};
+  var others = [];
+  filtered.forEach(function(it) {
+    var k = it.구분 || '';
+    if (knownKeys.indexOf(k) >= 0) {
+      if (!groups[k]) groups[k] = [];
+      groups[k].push(it);
+    } else {
+      others.push(it);
+    }
+  });
+  var html = '';
+  PLAN_CATEGORIES.forEach(function(sec) {
+    var list = groups[sec.key] || [];
+    if (!list.length) return;
+    html += '<div class="plan-section">';
+    html += '<div class="plan-section-header ' + sec.cls + '">' + sec.label + '</div>';
+    html += '<div class="plan-grid' + (list.length === 1 ? ' single-item' : '') + '">';
+    list.forEach(function(it){ html += renderCard(it); });
+    html += '</div></div>';
+  });
+  if (others.length) {
+    html += '<div class="plan-section"><div class="plan-section-header">📋 미분류</div><div class="plan-grid' + (others.length === 1 ? ' single-item' : '') + '">';
+    others.forEach(function(it){ html += renderCard(it); });
+    html += '</div></div>';
+  }
+  grid.innerHTML = html;
+}
+
+// ── 불러오기 ───────────────────────────────────────────────────────────
+function setStatus(msg, isErr) {
+  var el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className = 'status-msg' + (isErr ? ' err' : '');
+}
+// 저장본·시드 병합 키 — 같은 항목(구분+제안명)이면 저장본이 시드를 덮는다.
+function _planKey(it){ return (it.구분||'') + '|' + (it.제안명||''); }
+function loadPlans() {
+  setStatus('불러오는 중…');
+  fetch(TODO_API_URL + '?action=product_plan_list', {redirect:'follow'})
+    .then(function(r){ return r.json(); })
+    .then(function(res) {
+      // 정책 예약 레코드(구분 '_' 시작·POLICY-PRICING 등)는 워크샵 카드에서 제외. 2026-07-02 시포
+      var saved = (res.ok && res.data && res.data.length > 0) ? res.data.filter(function(x){ return String(x.구분||'').charAt(0) !== '_'; }) : [];
+      // ── 시드는 항상 '기본 바탕' — 저장본이 같은 항목만 덮고, 저장 안 된 시드는 그대로 노출.
+      //    저장본 1건이 시드 전체(레버 7장 등)를 숨기던 '전부-아니면-전무' 함정 제거. 2026-07-02 시포(GM 지시)
+      var savedKeys = {};
+      saved.forEach(function(it){ savedKeys[_planKey(it)] = true; });
+      var seedRest = SEEDS.filter(function(s){ return !savedKeys[_planKey(s)]; });
+      var merged = saved.concat(seedRest);
+      if (saved.length) {
+        setStatus('기획안 ' + saved.length + '건 + 시드 ' + seedRest.length + '건 표시 중');
+      } else {
+        setStatus('시드 기획안 표시 중 (저장 버튼으로 시트에 영속)');
+      }
+      renderCards(merged.length ? merged : SEEDS);
+    })
+    .catch(function() {
+      setStatus('네트워크 오류 — 시드 기획안 표시', true);
+      renderCards(SEEDS);
+    });
+}
+
+// ── 저장 ───────────────────────────────────────────────────────────────
+function savePlan(item) {
+  fetch(TODO_API_URL, {
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({action:'product_plan_save', item: item})
+  }).then(function() {
+    setTimeout(loadPlans, 900);
+  }).catch(function() {
+    setTimeout(loadPlans, 900);
+  });
+}
+
+// ── 시드 저장 (isSeed 제거 후 저장) ──────────────────────────────────
+function saveSeed(it) {
+  var item = Object.assign({}, it);
+  delete item.isSeed;
+  item.id = 'PP-' + Date.now();
+  setStatus('시트에 저장 중…');
+  savePlan(item);
+}
+
+// ── 삭제 ───────────────────────────────────────────────────────────────
+function deletePlan(id) {
+  if (!confirm('이 기획안을 삭제하시겠습니까?')) return;
+  fetch(TODO_API_URL, {
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({action:'product_plan_delete', id: id})
+  }).then(function() {
+    setStatus('삭제 완료. 재조회 중…');
+    setTimeout(loadPlans, 900);
+  });
+}
+
+// ── 모달 ───────────────────────────────────────────────────────────────
+function updateModalLabels(gubun) {
+  var isLever = (gubun||'').indexOf('차별화') === 0;
+  document.getElementById('labelComp').textContent  = isLever ? '현재 상태'     : '구성';
+  document.getElementById('labelPrice').textContent = isLever ? '프리미엄 목표'  : '가격 가설';
+  document.getElementById('labelBase').textContent  = isLever ? '우선순위·효과' : '근거';
+}
+function openModal(it) {
+  document.getElementById('editId').value     = it ? (it.id||'') : '';
+  var gubun = it ? (it.구분||'') : '';
+  var sel = document.getElementById('editGubun');
+  var custom = document.getElementById('editGubunCustom');
+  var known = gubun === '' || !!_catInfo(gubun);
+  if (known) {
+    sel.value = gubun;
+    custom.value = '';
+    custom.style.display = 'none';
+  } else {
+    sel.value = '__custom__';
+    custom.value = gubun;
+    custom.style.display = 'block';
+  }
+  document.getElementById('editName').value   = it ? (it.제안명||'') : '';
+  document.getElementById('editComp').value   = it ? (it.구성||'') : '';
+  document.getElementById('editPrice').value  = it ? (it.가격가설||'') : '';
+  document.getElementById('editBase').value   = it ? (it.근거||'') : '';
+  document.getElementById('editStatus').value = it ? (it.상태||'초안') : '초안';
+  document.getElementById('editAuthor').value = it ? (it.작성자||'') : '';
+  document.getElementById('modalTitle').textContent = it && it.id ? '기획 편집' : '기획 추가';
+  updateModalLabels(gubun);
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalBg').classList.remove('open');
+}
+function submitPlan() {
+  var id = document.getElementById('editId').value || ('PP-' + Date.now());
+  var selVal = document.getElementById('editGubun').value;
+  var gubun = (selVal === '__custom__') ? document.getElementById('editGubunCustom').value.trim() : selVal;
+  var item = {
+    id: id,
+    구분:    gubun,
+    제안명:  document.getElementById('editName').value.trim(),
+    구성:    document.getElementById('editComp').value.trim(),
+    가격가설:document.getElementById('editPrice').value.trim(),
+    근거:    document.getElementById('editBase').value.trim(),
+    상태:    document.getElementById('editStatus').value,
+    작성자:  document.getElementById('editAuthor').value.trim()
+  };
+  if (!item.제안명) { alert('제안명을 입력하세요.'); return; }
+  setStatus('저장 중…');
+  closeModal();
+  savePlan(item);
+}
+
+// ── 초기화: 카테고리 셀렉트 옵션 구성 ──────────────────────────────────
+buildCategorySelectOptions();
+
+// ── 게이트 통과 후 앱 시작 ────────────────────────────────────────────
+window.startApp = function() { loadPlans(); };
+// 게이트 없이 바로 로드된 경우(이미 통과된 세션)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    try { if (sessionStorage.getItem('welp_gate_ok') === '1') loadPlans(); } catch(e) {}
+  });
+} else {
+  try { if (sessionStorage.getItem('welp_gate_ok') === '1') loadPlans(); } catch(e) {}
+}
+</script>
+    <script src="/wellperion-automation/_assets/print_options.js"></script>
+</body>
+</html>

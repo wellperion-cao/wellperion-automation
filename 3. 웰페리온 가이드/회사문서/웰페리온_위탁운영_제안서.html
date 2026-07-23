@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>웰페리온 · 위탁운영 제안서 (초안)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🤝%3C/text%3E%3C/svg%3E">
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+:root{
+  --beige:#B79F8A; --beige-lo:rgba(183,159,138,.34);
+  --black:#221F20; --highlight:#ED5B3F; --white:#FFFFFF;
+  --paper:#F4F0EB; --ink:#2A2622; --ink-soft:#6E655C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#8b8b8b;font-family:"Pretendard",-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;word-break:keep-all}
+.a3{position:relative;overflow:hidden;width:1587px;height:1123px;margin:26px auto;
+  box-shadow:0 18px 60px rgba(0,0,0,.32);background:var(--paper);color:var(--ink)}
+.a3.dark{background:var(--black);color:var(--white)}
+.pad{padding:64px 92px 50px;height:100%;display:flex;flex-direction:column}
+.kick{font-size:14px;letter-spacing:.30em;text-transform:uppercase;color:var(--highlight);
+  font-weight:700;margin-bottom:16px}
+.a3.dark .kick{color:var(--beige)}
+.title{font-size:46px;line-height:1.16;font-weight:800;letter-spacing:-.028em;max-width:1200px}
+.title .b{color:var(--beige)}
+.lead{margin-top:20px;font-size:18.5px;line-height:1.76;color:var(--ink-soft);max-width:1180px}
+.a3.dark .lead{color:rgba(255,255,255,.74)}
+h3{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--beige);
+  font-weight:700;margin-bottom:12px;padding-bottom:9px;border-bottom:2px solid var(--beige-lo)}
+.pf{display:flex;justify-content:space-between;align-items:center;margin-top:auto;
+  padding-top:16px;border-top:2px solid var(--black);font-size:12.5px;letter-spacing:.10em;color:var(--ink-soft)}
+.a3.dark .pf{border-top-color:var(--beige-lo);color:rgba(255,255,255,.55)}
+.pf b{letter-spacing:.24em;color:var(--black)}
+.a3.dark .pf b{color:var(--beige)}
+b{font-weight:700}
+.sec{margin-top:24px}
+
+/* 표지 */
+.cv{background:var(--black);color:var(--paper);display:flex;flex-direction:column;justify-content:space-between;padding:96px 92px 72px}
+.cv h1{font-size:78px;line-height:1.12;font-weight:800;letter-spacing:-.04em}
+.cv h1 .b{color:var(--beige)}
+.cv .en{font-size:26px;letter-spacing:.28em;text-transform:uppercase;color:var(--beige);font-weight:600;margin-bottom:30px}
+.cv .sub{margin-top:34px;font-size:21px;line-height:1.8;color:rgba(255,255,255,.76);max-width:900px}
+.cv .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-top:52px;padding-top:34px;border-top:1px solid var(--beige-lo)}
+.cv .meta .k{font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--beige);font-weight:700;margin-bottom:10px}
+.cv .meta .v{font-size:24px;font-weight:800;color:#fff;line-height:1.25}
+.cv .meta .v small{display:block;font-size:13px;font-weight:400;color:rgba(255,255,255,.55);margin-top:4px;letter-spacing:0}
+
+/* 실적 */
+.rec{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--beige-lo);border:1px solid var(--beige-lo)}
+.rc{background:var(--white);padding:22px 20px}
+.a3.dark .rc{background:var(--black)}
+.rc .k{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--beige);font-weight:700}
+.rc .v{font-size:30px;font-weight:800;letter-spacing:-.035em;margin-top:7px;line-height:1.1;font-variant-numeric:tabular-nums}
+.rc .n{font-size:12px;color:var(--ink-soft);margin-top:5px;line-height:1.5}
+.a3.dark .rc .n{color:rgba(255,255,255,.52)}
+
+/* 범위 */
+.scope{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.sc{background:var(--white);border:1px solid rgba(34,31,32,.10);border-top:3px solid var(--beige);
+  padding:26px 24px;display:flex;flex-direction:column;gap:9px}
+.sc .n{font-size:11.5px;letter-spacing:.2em;color:var(--highlight);font-weight:700}
+.sc .h{font-size:23px;font-weight:800;letter-spacing:-.025em;line-height:1.2}
+.sc .d{font-size:14.5px;line-height:1.72;color:#3a352f}
+.sc .t{margin-top:auto;padding-top:11px;border-top:1px solid rgba(34,31,32,.10);font-size:12px;color:var(--ink-soft);font-weight:600}
+
+/* 갖춘 것 */
+.have{display:grid;grid-template-columns:repeat(3,1fr);gap:0 40px}
+.have .r{display:flex;align-items:baseline;gap:12px;padding:13px 0;border-bottom:1px solid rgba(34,31,32,.10)}
+.have .r .k{font-size:16.5px;font-weight:700;color:var(--black)}
+.have .r .v{font-size:13px;color:var(--ink-soft);margin-left:auto;text-align:right}
+
+/* 절차 */
+.steps{display:flex;border:1px solid var(--beige-lo);background:var(--beige-lo);gap:1px}
+.st{background:var(--black);flex:1;padding:22px 20px;display:flex;flex-direction:column;gap:7px}
+.st .n{font-size:11.5px;letter-spacing:.2em;color:var(--beige);font-weight:700}
+.st .h{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--white)}
+.st .d{font-size:13.5px;line-height:1.66;color:rgba(255,255,255,.7)}
+.st .w{font-size:12px;color:var(--beige);font-weight:600;margin-top:auto;padding-top:9px}
+
+/* 수수료 */
+.fees{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.fe{background:var(--white);border:1px solid rgba(34,31,32,.12);padding:26px 24px;display:flex;flex-direction:column;gap:10px}
+.fe.rec2{border:2px solid var(--highlight);background:#fff}
+.fe .tag{font-size:11.5px;letter-spacing:.2em;font-weight:700;color:var(--ink-soft)}
+.fe.rec2 .tag{color:var(--highlight)}
+.fe .h{font-size:24px;font-weight:800;letter-spacing:-.025em}
+.fe .f{font-size:15px;font-weight:700;color:var(--highlight);background:rgba(237,91,63,.09);padding:9px 12px;border-radius:4px}
+.fe ul{margin:0;padding-left:17px}
+.fe li{font-size:14px;line-height:1.68;color:#3a352f;margin-bottom:5px}
+.fe .why{margin-top:auto;padding-top:11px;border-top:1px solid rgba(34,31,32,.10);font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+
+/* 조항 */
+.arts{display:grid;grid-template-columns:1fr 1fr;gap:14px 26px}
+.ar{display:flex;gap:14px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.11)}
+.ar .no{font-size:12px;font-weight:800;color:var(--beige);letter-spacing:.1em;min-width:26px;padding-top:3px}
+.ar .bd .h{font-size:16.5px;font-weight:800;color:var(--white);margin-bottom:3px}
+.ar .bd .d{font-size:13.5px;line-height:1.66;color:rgba(255,255,255,.68)}
+.ar.key{background:rgba(237,91,63,.10);border-left:3px solid var(--highlight);padding:13px 16px;border-bottom:none}
+
+.warn{margin-top:18px;background:rgba(237,91,63,.12);border-left:3px solid var(--highlight);
+  padding:15px 22px;font-size:13.5px;line-height:1.7;color:rgba(255,255,255,.85)}
+.warn b{color:#fff}
+.a3:not(.dark) .warn{background:rgba(237,91,63,.10);color:#3a352f}
+.a3:not(.dark) .warn b{color:var(--black)}
+
+.tbar{position:sticky;top:0;z-index:9;background:var(--black);color:#fff;display:flex;
+  align-items:center;gap:12px;padding:12px 22px;font-size:13px;flex-wrap:wrap}
+.tbar .sp{flex:1}
+.tbar .h{color:#c9c0b4;font-size:12px}
+.tbar button{font:inherit;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.34);
+  background:transparent;color:#fff;border-radius:3px;padding:6px 14px}
+.tbar button:hover{background:rgba(255,255,255,.14)}
+
+/* 금액 표 */
+table.ft{width:100%;border-collapse:collapse;font-size:15px;background:transparent}
+table.ft th,table.ft td{border:1px solid rgba(183,159,138,.28);padding:10px 14px;text-align:right}
+table.ft th{background:rgba(183,159,138,.14);color:var(--beige);font-size:12.5px;font-weight:700;line-height:1.4}
+table.ft th small{display:block;font-size:10.5px;font-weight:400;color:rgba(255,255,255,.45);margin-top:2px}
+table.ft th:first-child,table.ft td:first-child{text-align:left}
+table.ft td{color:rgba(255,255,255,.82);font-variant-numeric:tabular-nums}
+table.ft td b{color:#fff}
+table.ft td.hi{color:#fff;font-weight:700;background:rgba(183,159,138,.10)}
+table.ft tr.own td{background:rgba(237,91,63,.13)}
+/* 예시 */
+.ex{border:1px solid rgba(183,159,138,.3)}
+.ex .er{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:10px 16px;
+  border-bottom:1px solid rgba(183,159,138,.18);font-size:13.5px}
+.ex .er span{color:rgba(255,255,255,.62)}
+.ex .er b{color:#fff;font-variant-numeric:tabular-nums}
+.ex .er.tot{background:rgba(237,91,63,.14);border-bottom:none}
+.ex .er.tot b{color:var(--highlight);font-size:16.5px}
+
+/* 비교표 */
+table.cmp{width:100%;border-collapse:collapse;font-size:14.5px;background:var(--white)}
+table.cmp th,table.cmp td{border:1px solid rgba(34,31,32,.14);padding:11px 15px;text-align:left;vertical-align:top;line-height:1.65}
+table.cmp th{background:#EFE9E1;font-size:12.5px;font-weight:800;letter-spacing:.03em}
+table.cmp td b{font-weight:800;color:var(--black)}
+table.cmp.num th,table.cmp.num td{text-align:right}
+table.cmp.num th:first-child,table.cmp.num td:first-child{text-align:left}
+table.cmp.num td{font-variant-numeric:tabular-nums}
+table.cmp.num td.hi{background:rgba(183,159,138,.18);font-weight:800;color:var(--black)}
+table.cmp.num tr.own td{background:rgba(237,91,63,.10)}
+/* 비용 목록 */
+.cost{border:1px solid rgba(255,255,255,.14)}
+.cost .ci{display:flex;flex-direction:column;gap:2px;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.09)}
+.cost .ci:last-child{border-bottom:none}
+.cost .ci b{font-size:15px;font-weight:700;color:#fff}
+.cost .ci span{font-size:12.5px;color:rgba(255,255,255,.6);line-height:1.5}
+.cost .ci u{text-decoration:none;color:var(--beige);font-weight:600}
+.cost.ok{border-left:3px solid #7BC49A}
+.cost.no{border-left:3px solid #E8836B}
+
+/* ===== 줄바꿈 품질 (2026-07-23 GM 지시) =====
+   문장 중간에서 어색하게 끊기는 것을 구조로 막는다.
+   1) keep-all      — 한국어 낱말이 쪼개지지 않게
+   2) text-wrap:pretty — 마지막 줄에 한 낱말만 남는 고아 방지
+   3) balance       — 제목은 줄 길이를 고르게
+   4) 본문은 저작 단계에서 문장마다 <br>를 넣어, 줄이 문장 경계에서만 바뀌게 한다
+   5) .nb           — 붙어 있어야 뜻이 사는 구절 보호                     */
+body,p,li,td,th,h1,h2,h3,.lead,.sub,.title,.d,.bxd,.why,.warn,.note{
+  word-break:keep-all; overflow-wrap:break-word; text-wrap:pretty;
+}
+h1,h2,.title{ text-wrap:balance; }
+.nb{ white-space:nowrap; }
+
+/* 04-C · 04-D 밀도 (문장 줄바꿈으로 늘어난 만큼 회수) */
+.a3 .cmp th,.a3 .cmp td{padding:8px 13px;line-height:1.55;font-size:13.5px}
+.a3 .cmp th{font-size:12px}
+.a3 .fees .fe{padding:20px 20px;gap:8px}
+.a3 .fees .fe .h{font-size:21px}
+.a3 .fees .fe li{font-size:13px;line-height:1.6;margin-bottom:3px}
+.a3 .fees .fe .why{font-size:12px;padding-top:9px}
+.a3 .fees .fe .f{font-size:14px;padding:8px 11px}
+.cost .ci{padding:7px 15px}
+.cost .ci b{font-size:14px}
+.cost .ci span{font-size:12px;line-height:1.45}
+.sec{margin-top:18px}
+.warn{margin-top:14px;padding:13px 20px;font-size:13px;line-height:1.62}
+
+/* 04-C 추가 회수 */
+.a3 .cmp td,.a3 .cmp th{padding:7px 12px;font-size:13px;line-height:1.5}
+.a3 .fees .fe ul{padding-left:15px}
+.a3 .fees .fe li{font-size:12.5px;line-height:1.55}
+.a3 .fees .fe .why{font-size:11.5px;line-height:1.5}
+.a3 .fees .fe .h{font-size:19px}
+.a3 .fees .fe .f{font-size:13px;padding:7px 10px}
+.a3 .fees .fe .tag{font-size:10.5px}
+
+/* 04-C 최종 회수 */
+.a3 .cmp tbody td{padding:6px 12px;font-size:12.5px;line-height:1.45}
+.a3 h3{margin-bottom:9px;padding-bottom:7px}
+
+/* ===== 인쇄 바탕색 (2026-07-23 GM 지적) =====
+   화면의 베이지 종이색이 그대로 인쇄돼 글자마다 바탕색이 깔린 것처럼 보였다.
+   기본값을 '잉크 절약'으로 바꾸고, 필요하면 화면 상단에서 되돌릴 수 있게 한다.
+   ink   = 밝은 장은 흰 바탕 (기본 · 권장)
+   plain = 어두운 장까지 전부 흰 바탕·검은 글씨
+   full  = 화면 그대로 (색 전부 인쇄)                                   */
+@media print{
+  /* 잉크 절약 — 밝은 장의 종이색·카드색을 흰색으로 */
+  body[data-ink="ink"] .a3:not(.dark){ background:#fff !important; }
+  body[data-ink="ink"] .a3:not(.dark) .card,
+  body[data-ink="ink"] .a3:not(.dark) .sc,
+  body[data-ink="ink"] .a3:not(.dark) .fe,
+  body[data-ink="ink"] .a3:not(.dark) .cmp,
+  body[data-ink="ink"] .a3:not(.dark) table{ background:#fff !important; }
+  body[data-ink="ink"] .a3:not(.dark) .cmp th,
+  body[data-ink="ink"] .a3:not(.dark) th{ background:#fff !important; }
+
+  /* 전부 흰 바탕 — 어두운 장까지 반전 */
+  body[data-ink="plain"] .a3, body[data-ink="plain"] .a3.dark{
+    background:#fff !important; color:#221F20 !important;
+  }
+  body[data-ink="plain"] .a3 *:not(.kick):not(.b):not(.tag){ color:#221F20 !important; }
+  body[data-ink="plain"] .a3 .card, body[data-ink="plain"] .a3 .sc,
+  body[data-ink="plain"] .a3 .fe, body[data-ink="plain"] .a3 .st,
+  body[data-ink="plain"] .a3 .rc, body[data-ink="plain"] .a3 .gv,
+  body[data-ink="plain"] .a3 .cost, body[data-ink="plain"] .a3 .ex,
+  body[data-ink="plain"] .a3 table, body[data-ink="plain"] .a3 th,
+  body[data-ink="plain"] .a3 td, body[data-ink="plain"] .a3 .warn,
+  body[data-ink="plain"] .a3 .note, body[data-ink="plain"] .a3 .bxnote{
+    background:#fff !important; border-color:#CFC7BB !important;
+  }
+  body[data-ink="plain"] .a3 .st, body[data-ink="plain"] .a3 .fstep{ border:1px solid #CFC7BB !important; }
+  body[data-ink="plain"] .a3 figure, body[data-ink="plain"] .a3 .pcell{ background:#fff !important; }
+  /* 사진은 그대로 살린다 */
+  body[data-ink="plain"] .a3 img{ filter:none !important; }
+}
+@page{size:A3 landscape;margin:0}
+@media print{ html,body{background:#fff} .tbar{display:none!important}
+  .a3{margin:0;box-shadow:none;page-break-after:always;break-after:page}
+  .a3:last-of-type{page-break-after:auto;break-after:auto}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact} }
+</style>
+<link rel="stylesheet" href="../assets/wp-typography.css">
+</head>
+<body>
+
+<div class="tbar">
+  <b>웰페리온 · 위탁운영 제안서 (초안)</b>
+  <span class="h">11장 · A3 가로 · 금액은 웰페리온 실측 기준 계산값 · 수수료와 계약 조항은 법률 검토 전 초안</span>
+  <span class="sp"></span>
+  <span style="width:1px;height:20px;background:rgba(255,255,255,.25);margin:0 2px"></span>
+  <span class="h" style="margin-right:-4px">인쇄 바탕</span>
+  <button id="ink-ink" onclick="setInk('ink')">잉크 절약</button>
+  <button id="ink-plain" onclick="setInk('plain')">전부 흰 바탕</button>
+  <button id="ink-full" onclick="setInk('full')">화면 그대로</button>
+
+  <button onclick="window.print()">인쇄 / PDF</button>
+</div>
+
+<!-- 01 표지 -->
+<section class="a3 cv">
+  <div>
+    <div class="en">Managed Operation Proposal</div>
+    <div style="font-size:17px;letter-spacing:.30em;text-transform:uppercase;color:rgba(255,255,255,.55);font-weight:600;margin:-18px 0 26px;">A Day, Well Completed. &nbsp;·&nbsp; 하루의 완성, 웰페리온</div>
+    <h1>운영을 맡긴다는 것은,<br><span class="b">기준을 옮기는 일입니다.</span></h1>
+    <p class="sub">웰페리온은 컨설팅 회사가 아닙니다.<br>한남동 3,000평을 2017년부터 <b style="color:#fff">직접 운영해 온 사업자</b>입니다.<br>매일 돌아가는 점검 · 회원 응대 · 시설 관리 · 결재가 이미 체계로 굳어 있고, 위탁은 그 체계를 그대로 옮겨 심는 일입니다.</p>
+  </div>
+  <div class="meta">
+    <div><div class="k">직접 운영</div><div class="v">9년<small>2017 ~ 현재 · 한남동</small></div></div>
+    <div><div class="k">운영 규모</div><div class="v">3,000평<small>단일 시설 · 16개 프로그램</small></div></div>
+    <div><div class="k">유효 회원</div><div class="v">1,030명<small>2026-07 실측</small></div></div>
+    <div><div class="k">월 매출</div><div class="v">6.2억<small>2026-06 마감 실적</small></div></div>
+  </div>
+</section>
+
+<!-- 02 왜 웰페리온인가 -->
+<section class="a3">
+  <div class="pad">
+    <div class="kick">01 · Why Wellperion</div>
+    <h2 class="title">해본 사람이 옮기는 것과,<br><span class="b">해본 적 없는 사람이 설계하는 것은 다릅니다.</span></h2>
+    <p class="lead">아래 숫자는 지금 실제로 돌리고 있는 시설의 값입니다.<br>좋아 보이게 고르지 않고 측정하는 그대로 적었습니다.</p>
+
+    <div class="sec">
+      <h3>운영 실적 — 실측값</h3>
+      <div class="rec">
+        <div class="rc"><div class="k">유효 회원</div><div class="v">1,030명</div><div class="n">2026-07 실측<br>회원 원장 집계</div></div>
+        <div class="rc"><div class="k">월 이탈률</div><div class="v">1.9%</div><div class="n">월 20명 · 유지 98.1%<br>낮을수록 좋음</div></div>
+        <div class="rc"><div class="k">월 매출</div><div class="v">6.23억</div><div class="n">2026-06 마감<br>목표 대비 102%</div></div>
+        <div class="rc"><div class="k">문의→가입</div><div class="v">31.8%</div><div class="n">누적 문의 8,778건<br>→ 가입 2,795명</div></div>
+        <div class="rc"><div class="k">일일 점검</div><div class="v">78%</div><div class="n">2026-07 누적 1,654/2,126<br>지원부 기준 · 개선 중</div></div>
+      </div>
+      <div class="warn"><b>있는 그대로 적습니다 —</b> 점검 완료율 78%는 <b>지원부 한 부서의 측정값</b>이며, 나머지 부서는 아직 자동 집계가 붙지 않았습니다.<br>그리고 웰페리온은 <b>외부 시설 위탁운영 실적이 아직 없습니다.</b> 이 제안서는 위탁 경력이 아니라, <b>9년간 직접 운영하며 만든 체계와 그것이 실제로 돌아가는 정도</b>로 증명합니다.</div>
+    </div>
+
+    <div class="sec">
+      <h3>우리가 지키는 것</h3>
+      <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:26px;align-items:stretch">
+        <div style="background:var(--white);border-left:3px solid var(--highlight);padding:22px 26px">
+          <div style="font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--highlight);font-weight:700;margin-bottom:10px">Mission</div>
+          <div style="font-size:27px;font-weight:800;letter-spacing:-.03em;line-height:1.25;margin-bottom:10px">회원 한 사람의<br>건강한 하루를 완성한다.</div>
+          <div style="font-size:14px;line-height:1.72;color:#3a352f">이 한 문장이 저희의 모든 판단 기준입니다. 위탁 현장에서도 같습니다 —
+            매출보다 <b>오늘 온 회원이 내일도 오는가</b>를 먼저 봅니다. 이탈률을 핵심 지표로 두는 이유입니다.</div>
+        </div>
+        <div style="background:var(--white);border-left:3px solid var(--beige);padding:22px 26px">
+          <div style="font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--beige);font-weight:700;margin-bottom:10px">Slogan</div>
+          <div style="font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.3;margin-bottom:8px">A Day, Well Completed.<br><span style="color:var(--beige)">하루의 완성, 웰페리온</span></div>
+          <div style="font-size:14px;line-height:1.72;color:#3a352f">운동만 잘 되는 곳이 아니라 <b>하루가 완성되는 곳</b>.
+            운동 · 회복 · 머무름이 끊기지 않게 잇는 것이 저희가 운영에서 가장 신경 쓰는 부분입니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>세 가지 차이</h3>
+      <div class="scope">
+        <div class="sc" style="grid-column:span 2">
+          <div class="n">DIFFERENCE 01</div><div class="h">우리가 매일 쓰는 것을 드립니다</div>
+          <div class="d">문서로만 있는 매뉴얼이 아니라, 오늘도 한남동에서 돌아가고 있는 점검표 · 응대 절차 · 결재 흐름을 그대로 이식합니다.<br>안 쓰이는 규정은 애초에 만들지 않습니다.</div>
+        </div>
+        <div class="sc"><div class="n">DIFFERENCE 02</div><div class="h">사람이 아니라 구조</div>
+          <div class="d">담당자가 바뀌어도 품질이 유지되도록 체크리스트와 자동화가 기준을 지킵니다.</div></div>
+        <div class="sc"><div class="n">DIFFERENCE 03</div><div class="h">보이는 운영</div>
+          <div class="d">점검 · 회원 · 결재 · 안전이 한 화면에. 매달 같은 형식으로 보고드립니다.</div></div>
+      </div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>02</span></div>
+  </div>
+</section>
+
+<!-- 03 범위 -->
+<section class="a3">
+  <div class="pad">
+    <div class="kick">02 · Scope</div>
+    <h2 class="title">전부 맡기실 수도, <span class="b">한 부분만 맡기실 수도 있습니다.</span></h2>
+    <p class="lead">시설의 상태와 조직 구성에 따라 네 가지 중에서 고르시면 됩니다.<br>범위가 좁을수록 시작이 빠르고, 넓을수록 책임 경계가 또렷해집니다.</p>
+    <div class="scope sec">
+      <div class="sc"><div class="n">SCOPE 01</div><div class="h">전체 위탁</div>
+        <div class="d">시설 운영 전반.<br>인력 배치 · 프로그램 · 회원 관리 · 시설 유지까지 한 묶음으로 맡습니다.</div>
+        <div class="t">대상 — 운영 조직을 새로 꾸려야 하는 신규 시설</div></div>
+      <div class="sc"><div class="n">SCOPE 02</div><div class="h">운영만 위탁</div>
+        <div class="d">시설·자산은 그대로 두고 <b>운영 체계와 인력 관리</b>만 맡습니다.<br>현 조직을 유지하며 기준을 올리는 방식.</div>
+        <div class="t">대상 — 시설은 있으나 운영 품질이 흔들리는 곳</div></div>
+      <div class="sc"><div class="n">SCOPE 03</div><div class="h">프로그램 위탁</div>
+        <div class="d">수영 · 골프 · 필라테스 · 그룹 클래스 등 <b>프로그램과 강사 운영</b>만 맡습니다.</div>
+        <div class="t">대상 — 공간은 있으나 콘텐츠가 비어 있는 곳</div></div>
+      <div class="sc"><div class="n">SCOPE 04</div><div class="h">브랜드 입점</div>
+        <div class="d">위탁이 아니라 <b>파트너 브랜드로 들어가는</b> 방식.<br>외부 브랜드 3사를 들여 운영해 본 경험을 반대로 적용합니다.</div>
+        <div class="t">대상 — 특정 영역만 채우고 싶은 곳</div></div>
+    </div>
+    <div class="sec">
+      <h3>이미 굳어 있는 것 — 새로 만들 필요가 없습니다</h3>
+      <div class="have">
+        <div class="r"><span class="k">4개 부서 운영 체계</span><span class="v">시설 · 지원 · 주차 · 운영 + 파트너팀</span></div>
+        <div class="r"><span class="k">일일 점검 체계</span><span class="v">부서별 매일 점검 · 미입력 자동 감지</span></div>
+        <div class="r"><span class="k">법정 안전 일정</span><span class="v">소방 · 전기 · 승강기 · 수질 · 교육</span></div>
+        <div class="r"><span class="k">회원 응대 체계</span><span class="v">문의 · 상담 · 등록 · 불편 접수</span></div>
+        <div class="r"><span class="k">결재 · 승인 흐름</span><span class="v">부서 기안 → 최종 결재까지 한 화면</span></div>
+        <div class="r"><span class="k">운영 매뉴얼</span><span class="v">직무별 · 신규 입사 30분 교육</span></div>
+        <div class="r"><span class="k">파트너 강사 운영</span><span class="v">레벨 · 정산 · 계약 구조</span></div>
+        <div class="r"><span class="k">AI 운영 자동화</span><span class="v">점검 · 보고 · 이상 감지 무인화</span></div>
+        <div class="r"><span class="k">브랜드 입점 운영</span><span class="v">외부 파트너 3사 동시 운영 중</span></div>
+      </div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>03</span></div>
+  </div>
+</section>
+
+<!-- 04 절차 · 받으시는 것 -->
+<section class="a3 dark">
+  <div class="pad">
+    <div class="kick">03 · Process</div>
+    <h2 class="title">맡기시면,<br><span class="b">무엇이 달라지나.</span></h2>
+    <p class="lead">위탁의 핵심은 사람을 파견하는 것이 아니라 <b>기준을 옮기는 것</b>입니다.<br>네 단계로 들어가고, 그 다음부터는 매달 같은 형식의 보고로 확인하십니다.</p>
+    <div class="sec">
+      <h3>도입 절차</h3>
+      <div class="steps">
+        <div class="st"><div class="n">STEP 01</div><div class="h">진단</div>
+          <div class="d">현 운영 실태 · 인력 · 시설 상태를 실측하고 위탁 범위를 확정합니다.</div>
+          <div class="w">산출 — 진단 보고서 · 범위 합의서</div></div>
+        <div class="st"><div class="n">STEP 02</div><div class="h">이관</div>
+          <div class="d">운영 체계 · 매뉴얼 · 점검 항목을 현장에 맞게 이식하고 담당을 배정합니다.</div>
+          <div class="w">산출 — 부서별 매뉴얼 · 점검표 · 조직도</div></div>
+        <div class="st"><div class="n">STEP 03</div><div class="h">안정화</div>
+          <div class="d">실제로 돌려보며 빠진 곳을 메웁니다. 이 구간에 웰페리온 인력이 상주합니다.</div>
+          <div class="w">산출 — 주간 점검 리포트</div></div>
+        <div class="st"><div class="n">STEP 04</div><div class="h">정상 운영</div>
+          <div class="d">현장이 스스로 돌아갑니다. 웰페리온은 감독과 월간 보고를 맡습니다.</div>
+          <div class="w">산출 — 월간 운영 보고</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <h3>받으시는 것</h3>
+      <div class="arts">
+        <div class="ar"><div class="no">01</div><div class="bd"><div class="h">흔들리지 않는 운영</div>
+          <div class="d">담당자가 바뀌어도 같은 품질.<br>사람이 아니라 체크리스트와 시스템이 기준을 지킵니다.</div></div></div>
+        <div class="ar"><div class="no">02</div><div class="bd"><div class="h">보이는 현황</div>
+          <div class="d">점검 · 회원 · 결재 · 안전이 한 화면에.<br>매달 같은 형식의 보고로 판단하실 수 있습니다.</div></div></div>
+        <div class="ar"><div class="no">03</div><div class="bd"><div class="h">리스크 관리</div>
+          <div class="d">법정 안전 점검과 기한을 일정으로 관리합니다.<br>놓쳐서 생기는 사고를 구조로 막습니다.</div></div></div>
+        <div class="ar"><div class="no">04</div><div class="bd"><div class="h">콘텐츠와 파트너</div>
+          <div class="d">16가지 프로그램 운영 노하우와 외부 브랜드 유치 경험을 그대로 씁니다.</div></div></div>
+      </div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>04</span></div>
+  </div>
+</section>
+
+<!-- 05 수수료 -->
+<section class="a3">
+  <div class="pad">
+    <div class="kick">04 · Fee Structure</div>
+    <h2 class="title">수수료는 <span class="b">세 가지 방식</span> 중에서.</h2>
+    <p class="lead">범위와 시설 상태에 따라 다릅니다.<br>어느 방식이든 <b>초기 셋업비</b>(진단 · 이관 · 매뉴얼 구축)는 별도이며, 안정화 이후부터 운영 수수료가 시작됩니다.</p>
+    <div class="fees sec">
+      <div class="fe">
+        <div class="tag">TYPE A</div><div class="h">정액</div>
+        <div class="f">3,000평 기준 월 <b>3,100만원</b><span style="font-weight:600;font-size:12px;display:block;margin-top:3px;">규모별 금액 = 다음 장</span></div>
+        <ul>
+          <li>매달 같은 금액. 예산 계획이 쉽습니다.</li>
+          <li>매출이 늘어도 수수료는 그대로</li>
+          <li>수탁자에게 성과 동기가 약합니다</li>
+        </ul>
+        <div class="why">시설 규모·업무량이 명확하고, 매출 변동이 크지 않은 곳에 맞습니다.</div>
+      </div>
+      <div class="fe rec2">
+        <div class="tag">TYPE C · 권장</div><div class="h">혼합</div>
+        <div class="f">3,000평 기준 기본 <b>1,868만원</b> + 초과분 20%<span style="font-weight:600;font-size:12px;display:block;margin-top:3px;">규모별 금액 = 다음 장</span></div>
+        <ul>
+          <li><b>기본료</b> — 최소 운영에 필요한 고정 인건·관리비</li>
+          <li><b>성과료</b> — 사전 합의한 목표 초과분에 대해서만</li>
+          <li>목표는 계약 시 숫자로 못 박습니다(6장 참조)</li>
+        </ul>
+        <div class="why">위탁자는 하한이 보이고, 수탁자는 올릴 이유가 생깁니다.<br>양쪽 이해가 같은 방향을 봅니다.</div>
+      </div>
+      <div class="fe">
+        <div class="tag">TYPE B</div><div class="h">매출 연동</div>
+        <div class="f">매출의 <b>3 · 5 · 7%</b><span style="font-weight:600;font-size:12px;display:block;margin-top:3px;">3,000평 5% = 월 3,114만원</span></div>
+        <ul>
+          <li>매출이 늘면 함께 늘고, 줄면 함께 줍니다</li>
+          <li>초기 매출이 낮으면 운영 인력 유지가 어렵습니다</li>
+          <li>매출 정의(회원권/부대/외부매출)를 계약에 명시해야 합니다</li>
+        </ul>
+        <div class="why">이미 매출이 안정적으로 나오는 시설에 맞습니다.</div>
+      </div>
+    </div>
+    <div class="sec">
+      <h3>수수료와 함께 정해야 할 것</h3>
+      <div class="have" style="grid-template-columns:repeat(2,1fr);gap:0 40px">
+        <div class="r"><span class="k">초기 셋업비</span><span class="v">진단 · 이관 · 매뉴얼 구축 (일회성)</span></div>
+        <div class="r"><span class="k">정산 주기</span><span class="v">월 단위 · 익월 지급 기준일 명시</span></div>
+        <div class="r"><span class="k">비용 부담 경계</span><span class="v">인건비 · 소모품 · 시설 수선 각각 누구 몫인지</span></div>
+        <div class="r"><span class="k">성과료 산정 기준</span><span class="v">무엇을 기준으로 · 언제 정산 (6장)</span></div>
+      </div>
+    </div>
+    <div class="warn"><b>위 금액은 웰페리온이 실제로 운영 중인 시설의 실측값에서 계산한 기준선입니다.</b> 산출 근거와 규모별 금액은 다음 장에, <b>매출 대비와 수익 대비 비교</b>는 그 다음 두 장에 펼쳐 두었습니다 — 확정 금액은 진단(STEP 01) 이후 제시합니다.</div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>05</span></div>
+  </div>
+</section>
+
+<!-- 05-B 금액 산출 -->
+<section class="a3 dark">
+  <div class="pad">
+    <div class="kick">04-B · Numbers</div>
+    <h2 class="title">숫자는 <span class="b">우리 시설에서 계산했습니다.</span></h2>
+    <p class="lead">시세를 인용하지 않았습니다.<br>지금 웰페리온이 돌리고 있는 3,000평 시설의 <b>2026년 6월 마감 실적</b>에서 단위값을 뽑고, 그 단위로 규모별 금액을 계산했습니다.</p>
+    <div class="sec">
+      <h3>산출 기준 — 웰페리온 실측</h3>
+      <div class="rec" style="grid-template-columns:repeat(4,1fr)">
+        <div class="rc"><div class="k">기준 월매출</div><div class="v">6.23억</div><div class="n">2026-06 마감 실적</div></div>
+        <div class="rc"><div class="k">기준 면적</div><div class="v">3,000평</div><div class="n">단일 시설</div></div>
+        <div class="rc"><div class="k">평당 월매출</div><div class="v">20.8만원</div><div class="n">6.23억 ÷ 3,000평</div></div>
+        <div class="rc"><div class="k">회원 1인 월매출</div><div class="v">60.5만원</div><div class="n">6.23억 ÷ 1,030명</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <h3>규모별 금액 (월 · 만원)</h3>
+      <table class="ft">
+        <thead><tr><th>시설 규모</th><th>예상 월매출<br><small>평당 20.8만 기준</small></th>
+          <th>연동 3%</th><th>연동 5%<br><small>기준선</small></th><th>연동 7%</th>
+          <th>혼합 기본료<br><small>5%의 60%</small></th><th>초기 셋업비<br><small>일회성</small></th></tr></thead>
+        <tbody>
+        <tr><td><b>1,000평</b></td><td>20,760만원</td><td>623만원</td><td class="hi">1,038만원</td><td>1,453만원</td><td class="hi">623만원</td><td>1,868만원</td></tr>
+        <tr><td><b>1,500평</b></td><td>31,140만원</td><td>934만원</td><td class="hi">1,557만원</td><td>2,180만원</td><td class="hi">934만원</td><td>2,803만원</td></tr>
+        <tr><td><b>2,000평</b></td><td>41,520만원</td><td>1,246만원</td><td class="hi">2,076만원</td><td>2,906만원</td><td class="hi">1,246만원</td><td>3,737만원</td></tr>
+        <tr class="own"><td><b>3,000평</b></td><td>62,281만원</td><td>1,868만원</td><td class="hi">3,114만원</td><td>4,360만원</td><td class="hi">1,868만원</td><td>5,605만원</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="sec" style="display:grid;grid-template-columns:1.12fr 1fr;gap:26px">
+      <div>
+        <h3>왜 이 숫자인가</h3>
+        <div style="font-size:14px;line-height:1.78;color:rgba(255,255,255,.76)">
+          <b style="color:#fff">연동 5%가 기준선인 이유</b> — 3%로는 총괄·부문 담당을 상주시키기 어렵고, 7%면 위탁자 입장에서 직접 운영 대비 이점이 옅어집니다. 5%가 <b style="color:#fff">양쪽이 버티는 지점</b>입니다.<br><br>
+          <b style="color:#fff">혼합 기본료 = 5%의 60%</b> — 매출이 낮아도 최소 운영 인력은 유지돼야 합니다. 나머지 40%는 <b style="color:#fff">합의 목표를 넘긴 매출의 20%</b>로 회수합니다. 못 넘기면 받지 않습니다.<br><br>
+          <b style="color:#fff">셋업비 = 기본료 3개월분</b> — 진단·이관·안정화 3개월간 웰페리온 인력이 현장에 투입되는 몫입니다.
+        </div>
+      </div>
+      <div>
+        <h3>예시 — 2,000평 · 혼합안</h3>
+        <div class="ex">
+          <div class="er"><span>예상 월매출</span><b>4억 1,520만원</b></div>
+          <div class="er"><span>월 기본료</span><b>1,246만원</b></div>
+          <div class="er"><span>합의 목표 매출</span><b>4억 1,520만원</b></div>
+          <div class="er"><span>실제 4.5억 달성 시</span><b>초과 3,480만 × 20% = 696만원</b></div>
+          <div class="er tot"><span>그 달 총 수수료</span><b>1,942만원</b></div>
+          <div class="er"><span>초기 셋업비(일회성)</span><b>3,737만원</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="warn"><b>확정 금액이 아닙니다.</b> 위 표는 <b>웰페리온 시설의 평당 매출을 그대로 적용</b>한 값이라 대상 시설의 입지·회원 단가·현 인력 구성에 따라 달라집니다.<br>진단(STEP 01) 후 실제 숫자로 다시 드리며, 매출 정의(회원권 / 부대 / 외부매출 포함 여부)는 계약서에 명시합니다.</div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>06</span></div>
+  </div>
+</section>
+
+<!-- 05-C 매출 대비 vs 수익 대비 -->
+<section class="a3">
+  <div class="pad">
+    <div class="kick">04-C · Revenue vs Profit</div>
+    <h2 class="title">매출에 걸 것인가, <span class="b">수익에 걸 것인가.</span></h2>
+    <p class="lead">같은 수수료라도 <b>무엇에 곱하느냐</b>에 따라 성격이 완전히 달라집니다.<br>매출 기준은 단순하고, 수익 기준은 이해관계가 일치하는 대신 <b>회계를 함께 열어야</b> 합니다.</p>
+
+    <div class="sec">
+      <h3>두 방식 비교</h3>
+      <table class="cmp">
+        <thead><tr><th style="width:15%">항목</th><th style="width:42.5%">매출 대비 (Revenue)</th><th style="width:42.5%">수익 대비 (GOP)</th></tr></thead>
+        <tbody>
+          <tr><td><b>계산식</b></td><td>총매출 &times; 요율</td><td>(총매출 &minus; <b>인정 비용</b>) &times; 요율</td></tr>
+          <tr><td><b>좋은 점</b></td><td>계산이 단순하고 매달 바로 확정됩니다. 회계를 열지 않아도 됩니다.</td><td>수탁자가 <b>비용을 아낄 이유</b>가 생깁니다. 위탁자 이익과 방향이 같아집니다.</td></tr>
+          <tr><td><b>어려운 점</b></td><td>적자여도 수수료가 나갑니다. 수탁자에게 비용 절감 동기가 약합니다.</td><td><b>무엇을 비용으로 인정하느냐</b>로 다툼이 납니다. 월 결산·회계 공개가 전제입니다.</td></tr>
+          <tr><td><b>필요 조건</b></td><td>매출 정의 합의(회원권 / 부대 / 외부매출)</td><td>매출 정의 + <b>지출 인정분 목록</b> + 월 결산 기한 + 회계 열람권</td></tr>
+          <tr><td><b>맞는 상황</b></td><td>계약 초기 · 회계 체계가 아직 정비되지 않은 시설</td><td>회계가 투명하고, 비용 개선 여지가 큰 시설</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sec">
+      <h3>같은 금액을 만들려면 — 3,000평 기준 환산</h3>
+      <p style="font-size:14px;color:var(--ink-soft);margin-bottom:10px">매출연동 5%(월 3,114만원)와 <b>같은 수수료</b>가 되는 수익연동 요율입니다. 시설의 수익률에 따라 달라집니다.</p>
+      <table class="cmp num">
+        <thead><tr><th>시설 수익률(GOP율)</th><th>월 수익(GOP)</th><th>매출 5%와 같아지는 요율</th><th>수익 20% 적용 시</th><th>수익 25% 적용 시</th></tr></thead>
+        <tbody>
+        <tr><td><b>15%</b></td><td>9,342만원</td><td class="hi">33%</td><td>1,868만원</td><td>2,336만원</td></tr>
+        <tr class="own"><td><b>20%</b></td><td>12,456만원</td><td class="hi">25%</td><td>2,491만원</td><td>3,114만원</td></tr>
+        <tr class="own"><td><b>25%</b></td><td>15,570만원</td><td class="hi">20%</td><td>3,114만원</td><td>3,893만원</td></tr>
+        <tr><td><b>30%</b></td><td>18,684만원</td><td class="hi">17%</td><td>3,737만원</td><td>4,671만원</td></tr>
+        </tbody>
+      </table>
+      <div class="warn"><b>결론 — 매출 5% ≒ 수익 20~25%</b> (시설 수익률 20~25% 구간 기준).<br>수익률이 낮은 시설일수록 수익연동이 수탁자에게 불리하고, 높은 시설일수록 위탁자에게 불리해집니다.<br>그래서 <b>수익률을 모른 채 요율부터 정하면 안 됩니다.</b></div>
+    </div>
+
+    <div class="sec">
+      <h3>웰페리온 제안</h3>
+      <div class="fees" style="grid-template-columns:repeat(3,1fr);gap:18px">
+        <div class="fe"><div class="tag">1년차</div><div class="h">매출 대비</div>
+          <div class="f">매출 5% 또는 혼합안</div>
+          <ul><li>회계·결산 체계를 먼저 세웁니다</li><li>비용 구조를 실측합니다</li></ul>
+          <div class="why">아직 수익률을 모르는 상태에서 수익연동을 하면 양쪽 다 손해 볼 수 있습니다.</div></div>
+        <div class="fe rec2"><div class="tag">2년차 &middot; 권장</div><div class="h">수익 대비 전환</div>
+          <div class="f">GOP의 20~25%</div>
+          <ul><li>1년치 실측 수익률로 요율 확정</li><li>지출 인정분은 계약 부록으로 고정</li></ul>
+          <div class="why">이때부터 수탁자도 비용을 아낄수록 이익입니다. 이해관계가 같아집니다.</div></div>
+        <div class="fe"><div class="tag">대안</div><div class="h">처음부터 수익 대비</div>
+          <div class="f">GOP 20~25% + 최소 보장액</div>
+          <ul><li>회계가 이미 투명한 시설에 한함</li><li>최소 보장액으로 인력 유지 담보</li></ul>
+          <div class="why">수익률 자료를 미리 주실 수 있으면 1년차부터 가능합니다.</div></div>
+      </div>
+    </div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>07</span></div>
+  </div>
+</section>
+
+<!-- 05-D 지출 인정분 -->
+<section class="a3 dark">
+  <div class="pad">
+    <div class="kick">04-D · Recognized Costs</div>
+    <h2 class="title">수익 대비로 간다면,<br><span class="b">이 목록부터 합의해야 합니다.</span></h2>
+    <p class="lead">수익연동 계약이 깨지는 이유는 대부분 요율이 아니라 <b>"이건 비용으로 쳐주느냐"</b>입니다.<br>계약서 부록에 아래 목록을 그대로 붙여 두면 매달 다툴 일이 없습니다.</p>
+
+    <div class="sec" style="display:grid;grid-template-columns:1fr 1fr;gap:26px">
+      <div>
+        <h3 style="color:#7BC49A;border-bottom-color:rgba(123,196,154,.35)">인정 — 수익 계산에서 차감</h3>
+        <div class="cost ok">
+          <div class="ci"><b>현장 인건비</b><span>급여 · 4대보험 · 퇴직충당 · 연차수당</span></div>
+          <div class="ci"><b>수도광열비</b><span>전기 · 가스 · 수도 · 냉난방</span></div>
+          <div class="ci"><b>프로그램 · 강사비</b><span>파트너 강사 정산 포함</span></div>
+          <div class="ci"><b>외주 용역</b><span>청소 · 경비 · 방역 · 세탁</span></div>
+          <div class="ci"><b>소모품 · 비품</b><span>운영 소모품 · 어메니티 · 소액 비품</span></div>
+          <div class="ci"><b>경상 수선비</b><span>월 한도 내 · 한도 초과분은 위탁자 승인</span></div>
+          <div class="ci"><b>마케팅비</b><span>사전 합의된 연간 예산 범위 내</span></div>
+          <div class="ci"><b>보험 · 결제 수수료</b><span>영업배상책임 · 카드/PG 수수료</span></div>
+        </div>
+      </div>
+      <div>
+        <h3 style="color:#E8836B;border-bottom-color:rgba(232,131,107,.35)">불인정 — 차감하지 않음</h3>
+        <div class="cost no">
+          <div class="ci"><b>자본적 지출(CAPEX)</b><span>자산 취득 · 증설 &rarr; <u>위탁자 부담</u></span></div>
+          <div class="ci"><b>대규모 개보수 · 교체</b><span>설비 교체 · 리뉴얼 &rarr; <u>위탁자 부담</u></span></div>
+          <div class="ci"><b>임차료 · 감가상각 · 금융비용</b><span>자산 소유에서 오는 비용 &rarr; <u>위탁자</u></span></div>
+          <div class="ci"><b>소유 관련 제세공과</b><span>재산세 등 &rarr; <u>위탁자</u></span></div>
+          <div class="ci"><b>수탁자 본사 관리비</b><span>감독 · 시스템 운영 &rarr; <u>수수료에 포함, 별도 청구 없음</u></span></div>
+          <div class="ci"><b>위탁자 요청 특별비용</b><span>절차상 합의 후 별도 정산</span></div>
+          <div class="ci"><b>계약 이전 발생 채무</b><span>인수 시점 이전 미지급금 &rarr; <u>위탁자</u></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>수익 대비를 하려면 함께 정해야 하는 것</h3>
+      <div class="arts" style="grid-template-columns:repeat(2,1fr);gap:8px 26px">
+        <div class="ar"><div class="no">01</div><div class="bd"><div class="h">월 결산 기한</div><div class="d">익월 10일까지 마감 · 15일까지 수수료 확정.<br>늦어지면 전월 기준 잠정 지급 후 정산.</div></div></div>
+        <div class="ar"><div class="no">02</div><div class="bd"><div class="h">회계 열람권</div><div class="d">양측이 같은 장부를 봅니다.<br>매출·비용 원장 열람은 서로에게 열려 있어야 합니다.</div></div></div>
+        <div class="ar"><div class="no">03</div><div class="bd"><div class="h">예산 승인 절차</div><div class="d">연간 예산을 사전 합의하고, 항목별 한도 초과 시에만 위탁자 승인을 받습니다.</div></div></div>
+        <div class="ar"><div class="no">04</div><div class="bd"><div class="h">이견 시 제3자 검증</div><div class="d">비용 인정 여부에 다툼이 생기면 양측이 합의한 회계법인 판단을 따릅니다.</div></div></div>
+      </div>
+    </div>
+    <div class="warn"><b>이 목록은 초안입니다.</b> 실제 계약에서는 세무·회계 검토를 거쳐 항목과 한도를 확정해야 하며, 특히 <b>경상 수선비 한도</b>와 <b>마케팅 예산</b>은 시설 상태에 따라 크게 달라집니다.</div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>08</span></div>
+  </div>
+</section>
+
+<!-- 06 계약 조항 — 권한 경계 -->
+<section class="a3 dark">
+  <div class="pad">
+    <div class="kick">05 · Terms · 가장 중요한 장</div>
+    <h2 class="title">잘 되는 위탁과 망가지는 위탁의 차이는<br><span class="b">권한 경계가 적혀 있느냐입니다.</span></h2>
+    <p class="lead">현장에서 위탁이 어그러지는 이유는 대개 실력이 아닙니다. <b>운영 권한이 어디까지인지 안 적어 두었기 때문</b>입니다.<br>아래 조항은 그 경계를 계약서에 미리 못 박기 위한 것입니다.</p>
+    <div class="sec">
+      <h3>권한 경계 — 핵심 조항</h3>
+      <div class="arts">
+        <div class="ar key"><div class="no">01</div><div class="bd"><div class="h">일상 운영은 수탁자 단독 결정</div>
+          <div class="d">인력 배치 · 근무 편성 · 업무 지시 · 프로그램 구성 · 응대 방식은 수탁자가 정합니다.
+            <b>위탁자는 현장 직원에게 직접 지시하지 않습니다</b> — 요청은 지정된 창구로만.</div></div></div>
+        <div class="ar key"><div class="no">02</div><div class="bd"><div class="h">위탁자 승인 영역은 '열거된 것만'</div>
+          <div class="d">예산 초과 지출 · 회원 요금 변경 · 자산 처분 · 브랜드 변경 — <b>계약서에 적힌 항목만</b> 승인 대상입니다.<br>적히지 않은 것은 수탁자 자율입니다(포괄 승인권 없음).</div></div></div>
+        <div class="ar"><div class="no">03</div><div class="bd"><div class="h">변경 요청은 서면 · 영향 검토 후 반영</div>
+          <div class="d">구두 지시는 효력이 없습니다.<br>요청 → 비용·기간 영향 검토 → 합의 → 반영.<br>이 순서를 건너뛴 요청은 이행 의무가 없습니다.</div></div></div>
+        <div class="ar"><div class="no">04</div><div class="bd"><div class="h">절차 밖 지시에 대한 면책</div>
+          <div class="d">위탁자가 절차를 건너뛴 지시를 강행할 경우, 그로 인한 <b>성과 미달 · 비용 증가는 성과 보증 대상에서 제외</b>됩니다.</div></div></div>
+        <div class="ar"><div class="no">05</div><div class="bd"><div class="h">보고 리듬 고정</div>
+          <div class="d">월간 정기 보고 1회 + 사고·이상 시 즉시 보고.<br>그 외 수시 자료 요구는 별도 협의 사항입니다.</div></div></div>
+        <div class="ar"><div class="no">06</div><div class="bd"><div class="h">인력은 수탁자가 배치·평가</div>
+          <div class="d">교체를 원하실 경우 <b>사유를 서면으로</b> 주시면 검토합니다.<br>특정 개인에 대한 직접 인사 개입은 하지 않습니다.</div></div></div>
+        <div class="ar"><div class="no">07</div><div class="bd"><div class="h">평가 지표 사전 합의</div>
+          <div class="d">무엇으로 평가받을지 계약 시 숫자로 정합니다(점검 완료율 · 회원 유지율 · 매출 등).<br>계약 후 지표를 바꾸지 않습니다.</div></div></div>
+        <div class="ar"><div class="no">08</div><div class="bd"><div class="h">최소 기간과 해지</div>
+          <div class="d">체계가 자리 잡는 데 시간이 걸립니다. <b>최소 12개월</b>, 해지는 <b>3개월 전 서면 통보</b>.<br>안정화 구간 중 해지 시 셋업비 정산 조건 별도.</div></div></div>
+      </div>
+    </div>
+    <div class="warn"><b>이 조항들은 웰페리온을 지키려는 것이 아니라, 위탁을 성공시키려는 것입니다.</b>
+      경계가 흐리면 책임도 흐려집니다.<br>책임이 흐려지면 결국 위탁자가 손해를 봅니다.</div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>09</span></div>
+  </div>
+</section>
+
+<!-- 07 위험과 대비 -->
+<section class="a3">
+  <div class="pad">
+    <div class="kick">06 · Risk</div>
+    <h2 class="title">미리 말씀드리는 <span class="b">위험과 대비.</span></h2>
+    <p class="lead">좋은 이야기만 적은 제안서는 계약 후에 문제가 됩니다.<br>실제로 생길 수 있는 일과 그때 어떻게 하는지를 먼저 적습니다.</p>
+    <div class="sec">
+      <div class="arts" style="grid-template-columns:1fr 1fr;gap:0 34px">
+        <div class="r" style="display:flex;gap:14px;padding:15px 0;border-bottom:1px solid rgba(34,31,32,.10)">
+          <div style="min-width:200px"><b style="font-size:16.5px">위탁 실적이 없다</b></div>
+          <div style="font-size:14px;line-height:1.7;color:#3a352f">첫 위탁이라는 점을 숨기지 않습니다. 대신 <b>안정화 구간 인력 상주</b>와 <b>성과 지표 사전 합의</b>로 위험을 나눕니다.</div></div>
+        <div class="r" style="display:flex;gap:14px;padding:15px 0;border-bottom:1px solid rgba(34,31,32,.10)">
+          <div style="min-width:200px"><b style="font-size:16.5px">기존 직원의 반발</b></div>
+          <div style="font-size:14px;line-height:1.7;color:#3a352f">체계가 바뀌면 현장은 저항합니다. 이관 단계에서 <b>기존 인력을 배제하지 않고</b> 역할을 다시 배정합니다.</div></div>
+        <div class="r" style="display:flex;gap:14px;padding:15px 0;border-bottom:1px solid rgba(34,31,32,.10)">
+          <div style="min-width:200px"><b style="font-size:16.5px">기대 성과가 늦다</b></div>
+          <div style="font-size:14px;line-height:1.7;color:#3a352f">점검·응대 품질은 1~2개월, 회원·매출 지표는 <b>보통 2~3분기</b>가 걸립니다. 성과료 시작 시점을 여기에 맞춥니다.</div></div>
+        <div class="r" style="display:flex;gap:14px;padding:15px 0;border-bottom:1px solid rgba(34,31,32,.10)">
+          <div style="min-width:200px"><b style="font-size:16.5px">운영 간섭</b></div>
+          <div style="font-size:14px;line-height:1.7;color:#3a352f">가장 흔한 실패 원인입니다. 5장 권한 경계 조항 <b>01 · 02 · 03</b>으로 사전에 막습니다.</div></div>
+        <div class="r" style="display:flex;gap:14px;padding:15px 0;border-bottom:1px solid rgba(34,31,32,.10)">
+          <div style="min-width:200px"><b style="font-size:16.5px">시설 노후·안전 사고</b></div>
+          <div style="font-size:14px;line-height:1.7;color:#3a352f">시설 하자에서 비롯된 사고는 <b>자산 소유자 책임</b>입니다. 점검·기록·보고는 저희가 맡습니다.</div></div>
+        <div class="r" style="display:flex;gap:14px;padding:15px 0;border-bottom:1px solid rgba(34,31,32,.10)">
+          <div style="min-width:200px"><b style="font-size:16.5px">중도 해지</b></div>
+          <div style="font-size:14px;line-height:1.7;color:#3a352f">셋업비는 초기에 집중 투입됩니다. 안정화 전 해지 시 <b>미상각분 정산</b> 조건을 계약에 둡니다.</div></div>
+      </div>
+    </div>
+    <div class="warn"><b>법률 검토 전 초안입니다.</b> 위 조항과 수수료 구조는 실제 계약서 작성 시 법무 검토를 거쳐 확정해야 합니다.</div>
+    <div class="pf"><b>WELLPERION</b><span>위탁운영 제안서</span><span>10</span></div>
+  </div>
+</section>
+
+<!-- 08 마무리 -->
+<section class="a3 cv">
+  <div>
+    <div class="en">Next Step</div>
+    <h1>먼저 <span class="b">진단부터</span> 시작합니다.</h1>
+    <p class="sub">금액과 조건은 시설을 보고 나서 말씀드리는 것이 맞습니다.<br>현 운영 실태를 함께 확인하고, 무엇을 어디까지 맡길지 정하는 <b style="color:#fff">진단(STEP 01)</b>이 첫 걸음입니다.</p>
+  </div>
+  <div>
+    <div class="meta" style="grid-template-columns:repeat(3,1fr)">
+      <div><div class="k">상호</div><div class="v" style="font-size:20px">주식회사 웰페리온<small>Wellperion</small></div></div>
+      <div><div class="k">대표 전화</div><div class="v" style="font-size:20px">02-6261-1200</div></div>
+      <div><div class="k">문의</div><div class="v" style="font-size:20px">wellperion.com/ko/inquiry<small>서울 용산구 서빙고로 413 · 한남동</small></div></div>
+    </div>
+  </div>
+</section>
+
+
+<script>
+function setInk(v){
+  document.body.dataset.ink=v;
+  ['ink','plain','full'].forEach(function(k){
+    var el=document.getElementById('ink-'+k);
+    if(el) el.setAttribute('aria-pressed', k===v);
+  });
+  try{ localStorage.setItem('wp_ink', v); }catch(e){}
+}
+setInk((function(){ try{ return localStorage.getItem('wp_ink')||'ink'; }catch(e){ return 'ink'; } })());
+</script>
+</body>
+</html>

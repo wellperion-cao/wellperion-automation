@@ -1,0 +1,49 @@
+{
+  "_comment": "AI 학습 자료 자동 수집 소스 레지스트리 (SSOT 설정). ai_education_auto_learner.py 가 이 파일을 읽어 수집한다. 파일이 없거나 깨지면 스크립트 내장 기본 3개로 폴백. parser 값은 현재 'html_title_extract' 단일.",
+  "version": "2.0",
+  "updated_at": "2026-05-29",
+  "sources": [
+    {
+      "id": "anthropic_news",
+      "label": "Anthropic 공식 뉴스",
+      "url": "https://www.anthropic.com/news",
+      "parser": "html_title_extract"
+    },
+    {
+      "id": "anthropic_research",
+      "label": "Anthropic 리서치",
+      "url": "https://www.anthropic.com/research",
+      "parser": "html_title_extract"
+    },
+    {
+      "id": "claude_docs_changelog",
+      "label": "Claude 문서 변경사항",
+      "url": "https://docs.anthropic.com/en/docs/about-claude/models",
+      "parser": "html_title_extract"
+    },
+    {
+      "id": "claude_code_docs",
+      "label": "Claude Code 문서",
+      "url": "https://docs.anthropic.com/en/docs/claude-code/overview",
+      "parser": "html_title_extract"
+    },
+    {
+      "id": "anthropic_engineering",
+      "label": "Anthropic 엔지니어링 블로그",
+      "url": "https://www.anthropic.com/engineering",
+      "parser": "html_title_extract"
+    },
+    {
+      "id": "api_release_notes",
+      "label": "API 릴리스 노트",
+      "url": "https://docs.anthropic.com/en/release-notes/api",
+      "parser": "html_title_extract"
+    },
+    {
+      "id": "claude_apps_release_notes",
+      "label": "Claude 앱 릴리스 노트",
+      "url": "https://docs.anthropic.com/en/release-notes/claude-apps",
+      "parser": "html_title_extract"
+    }
+  ]
+}

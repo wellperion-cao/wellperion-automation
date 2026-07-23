@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>재등록 대시보드 — 주소가 바뀌었습니다</title>
+<!-- 2026-07-20 (시우·GM "이관하고 삭제") 재등록 대시보드가 CPO 회원관리 소관으로 이관됨.
+     원본 위치: 3. 웰페리온 가이드/wellperion_dashboard_web.html
+     새 위치  : 3. 웰페리온 가이드/cpo/member/renewal.html
+     이 스텁을 남기는 이유 — GM·실무진 즐겨찾기와 외부 링크는 grep 으로 찾을 수 없다.
+     삭제만 하면 그 링크들이 아무 안내 없이 빈 화면이 된다. -->
+<meta http-equiv="refresh" content="0; url=cpo/member/renewal.html">
+<script>location.replace('cpo/member/renewal.html' + location.search + location.hash);</script>
+<style>
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#FAF8F5;color:#2b2b2b;
+       display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;line-height:1.7}
+  .box{max-width:460px;text-align:center;background:#fff;border:1px solid #e5ded3;border-radius:16px;padding:32px 28px;
+       box-shadow:0 4px 20px rgba(0,0,0,.06)}
+  h1{font-size:19px;margin:0 0 10px}
+  p{font-size:14px;color:#6b6357;margin:0 0 20px}
+  a.btn{display:inline-block;background:#2b2b2b;color:#fff;text-decoration:none;font-weight:700;font-size:14px;
+        padding:11px 22px;border-radius:10px}
+  .hint{margin-top:16px;font-size:12.5px;color:#9a9186}
+</style>
+<link rel="stylesheet" href="assets/wp-typography.css">
+</head>
+<body>
+  <div class="box">
+    <h1>📊 재등록 대시보드 주소가 바뀌었습니다</h1>
+    <p>회원관리 쪽으로 자리를 옮겼습니다.<br>잠시 후 새 주소로 자동 이동합니다.</p>
+    <a class="btn" href="cpo/member/renewal.html">지금 이동하기</a>
+    <div class="hint">즐겨찾기를 새 주소로 바꿔 주세요.<br>멤버십 회원관리 페이지 상단 <b>🔄 재등록 현황</b> 버튼으로도 열 수 있습니다.</div>
+  </div>
+</body>
+</html>

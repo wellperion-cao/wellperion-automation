@@ -1,0 +1,361 @@
+{
+  "generated_at": "2026-06-06T23:00:04.945603+00:00",
+  "date": "2026-06-07 (일)",
+  "stage1_collect_classify": {
+    "collected": 15,
+    "gm_decision_count": 4,
+    "autonomous_count": 11,
+    "deep_interview_count": 0,
+    "gm_decision": [
+      {
+        "task_id": "TODO-20260526173308627",
+        "title": "브로제이 시스템 도입",
+        "reason": "결재 첫 단계 → GM 승인 필요"
+      },
+      {
+        "task_id": "TODO-20260526173336073",
+        "title": "리셉션 상담실 리뉴얼",
+        "reason": "시설 및 환경 · 결재 첫 단계 → GM 승인 필요"
+      },
+      {
+        "task_id": "TODO-20260601145731901",
+        "title": "여자 개인락커 정리",
+        "reason": "시설 및 환경 · 결재 첫 단계 → GM 승인 필요"
+      },
+      {
+        "task_id": "TODO-20260601160012462",
+        "title": "데일리락커 분실키 교체",
+        "reason": "시설 및 환경 · 결재 첫 단계 → GM 승인 필요"
+      }
+    ],
+    "deep_interview": [],
+    "git_done_excluded": []
+  },
+  "stage2_assign": [
+    {
+      "task_id": "TODO-20260531111105225",
+      "clevel": "CHRO",
+      "owner": "나우열M",
+      "domain": "인사",
+      "priority": "NORMAL",
+      "title": "[결재] CHRO 허브 GAS Notion 쓰기 → Google Sheets 단일화 (외부 GAS 재배포)"
+    },
+    {
+      "task_id": "TODO-20260601135851080",
+      "clevel": "CHRO",
+      "owner": "나우열M",
+      "domain": "인사",
+      "priority": "NORMAL",
+      "title": "운영부 직원 교육(30분)"
+    },
+    {
+      "task_id": "TODO-20260602194914227",
+      "clevel": "CMO",
+      "owner": "김남욱 GM",
+      "domain": "마케팅",
+      "priority": "NORMAL",
+      "title": "[시모-08] 카카오채널 발행 방식 확정·자동화 R&D"
+    },
+    {
+      "task_id": "TODO-20260602194917329",
+      "clevel": "CMO",
+      "owner": "김남욱 GM",
+      "domain": "마케팅",
+      "priority": "NORMAL",
+      "title": "[시모-09] 미발행 콘텐츠 정리 — 발레·스쿼시 발행 결정 + 바레 git 정리"
+    },
+    {
+      "task_id": "TODO-20260602194920193",
+      "clevel": "CMO",
+      "owner": "김남욱 GM",
+      "domain": "마케팅",
+      "priority": "NORMAL",
+      "title": "[시모-10] 마케팅 대시보드 상단 퍼널 데이터 연동"
+    },
+    {
+      "task_id": "TODO-20260602194922795",
+      "clevel": "CMO",
+      "owner": "김남욱 GM",
+      "domain": "마케팅",
+      "priority": "NORMAL",
+      "title": "[시모-11] 안내가이드 요금·주차 확정값 반영"
+    },
+    {
+      "task_id": "TODO-20260526173316959",
+      "clevel": "COO",
+      "owner": "최준용M",
+      "domain": "운영",
+      "priority": "NORMAL",
+      "title": "운영 가이드라인 정립"
+    },
+    {
+      "task_id": "TODO-20260526173215570",
+      "clevel": "GM1",
+      "owner": "?",
+      "domain": "?",
+      "priority": "NORMAL",
+      "title": "다이슨 방향 전환 대안 제품군 재검토"
+    },
+    {
+      "task_id": "TODO-20260526173233153",
+      "clevel": "GM1",
+      "owner": "?",
+      "domain": "?",
+      "priority": "NORMAL",
+      "title": "쓰쿠루 파트너 정기 계약 해지 진행"
+    },
+    {
+      "task_id": "TODO-20260526173246953",
+      "clevel": "GM1",
+      "owner": "?",
+      "domain": "?",
+      "priority": "NORMAL",
+      "title": "운영 통합 체계 4부서 셋업 프로젝트"
+    },
+    {
+      "task_id": "TODO-20260526173331522",
+      "clevel": "GM1",
+      "owner": "?",
+      "domain": "?",
+      "priority": "NORMAL",
+      "title": "기구 A/S 및 유지보수"
+    }
+  ],
+  "stage3_orchestrate": {
+    "parallel_chains": 11,
+    "serialized_conflicts": 0,
+    "chains": [
+      {
+        "lock_key": "업무현황 SSOT / 결재 현황 SSOT (웰페리온 ERP + Apps Script)",
+        "is_solo": false,
+        "tasks": [
+          {
+            "task_id": "TODO-20260531111105225",
+            "clevel": "CHRO",
+            "owner": "나우열M",
+            "title": "[결재] CHRO 허브 GAS Notion 쓰기 → Google Sheets 단일화 (외부 GAS 재배포)",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260601135851080",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260601135851080",
+            "clevel": "CHRO",
+            "owner": "나우열M",
+            "title": "운영부 직원 교육(30분)",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260602194914227",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260602194914227",
+            "clevel": "CMO",
+            "owner": "김남욱 GM",
+            "title": "[시모-08] 카카오채널 발행 방식 확정·자동화 R&D",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260602194917329",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260602194917329",
+            "clevel": "CMO",
+            "owner": "김남욱 GM",
+            "title": "[시모-09] 미발행 콘텐츠 정리 — 발레·스쿼시 발행 결정 + 바레 git 정리",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260602194920193",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260602194920193",
+            "clevel": "CMO",
+            "owner": "김남욱 GM",
+            "title": "[시모-10] 마케팅 대시보드 상단 퍼널 데이터 연동",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260602194922795",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260602194922795",
+            "clevel": "CMO",
+            "owner": "김남욱 GM",
+            "title": "[시모-11] 안내가이드 요금·주차 확정값 반영",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260526173316959",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260526173316959",
+            "clevel": "COO",
+            "owner": "최준용M",
+            "title": "운영 가이드라인 정립",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260526173215570",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260526173215570",
+            "clevel": "GM1",
+            "owner": "?",
+            "title": "다이슨 방향 전환 대안 제품군 재검토",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260526173233153",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260526173233153",
+            "clevel": "GM1",
+            "owner": "?",
+            "title": "쓰쿠루 파트너 정기 계약 해지 진행",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260526173246953",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260526173246953",
+            "clevel": "GM1",
+            "owner": "?",
+            "title": "운영 통합 체계 4부서 셋업 프로젝트",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      },
+      {
+        "lock_key": "__solo__:TODO-20260526173331522",
+        "is_solo": true,
+        "tasks": [
+          {
+            "task_id": "TODO-20260526173331522",
+            "clevel": "GM1",
+            "owner": "?",
+            "title": "기구 A/S 및 유지보수",
+            "depends_on": null,
+            "write_step": {
+              "executor": "claude 서브에이전트(executor) 위임 — dry-run에서는 호출 안 함",
+              "instruction_ref": "status/_queue.json note"
+            },
+            "verify_step": {
+              "by": "ceo_verify_watcher.py (push 신호 수신 후 LAYER1+LAYER2)",
+              "signal": "커밋 [DONE][CL][task_id] + status/{cl}.json status=DONE (이중 신호)"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

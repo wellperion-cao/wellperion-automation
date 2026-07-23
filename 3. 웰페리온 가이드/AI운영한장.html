@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI C-Level 운영 한 장 — 웰페리온</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📋%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#221F20; --paper:#2a2725; --surface:#1a1817;
+    --text:#f5f2ef; --text-soft:#d4d0cc; --dim:#8c8b83;
+    --accent:#7C3AED; --accent-soft:#a875f5;
+    --border:#3d3835; --border-strong:#4d4845;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:13px; -webkit-font-smoothing:antialiased; padding:18px 18px 32px;}
+  .wrap{max-width:100%; margin:0;}
+
+  header.page-head{margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 16px;}
+  header.page-head h1{font-size:22px; font-weight:800; letter-spacing:-0.02em;}
+  header.page-head .sub{font-size:12px; color:var(--dim); line-height:1.45; flex:1; min-width:240px;}
+  header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
+  header.page-head .back:hover{background:var(--surface);}
+  h2.sec{font-size:15px; font-weight:700; margin:16px 0 2px; display:flex; align-items:center; gap:7px;}
+  .sec-note{font-size:11px; color:var(--dim); margin-bottom:8px;}
+
+  /* ── 매트릭스 ── */
+  .matrix-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:11px; background:var(--paper);}
+  table.matrix{border-collapse:collapse; width:100%; min-width:995px; font-size:13px; table-layout:fixed;}
+  table.matrix th, table.matrix td{border:1px solid var(--border); padding:7px 9px; text-align:left; vertical-align:top; line-height:1.42; white-space:pre-wrap; word-break:break-word;}
+  table.matrix thead th{background:var(--surface); font-weight:700; font-size:12px; position:sticky; top:0; z-index:2;}
+  table.matrix thead th.grp-np{color:#f0c674;}
+  table.matrix thead th.grp-boot{color:#7ac4f0;}
+  table.matrix thead th.grp-guard{color:#6abf7b;}
+  table.matrix th.role-col, table.matrix col.role-col{width:95px; min-width:90px;}
+  td.role-cell{background:var(--surface);}
+  td.role-cell .ricon{font-size:16px;}
+  td.role-cell .rname{font-weight:800; font-size:14px;}
+  td.role-cell .rtitle{font-size:11px; color:var(--dim); margin-top:1px;}
+  td.role-cell .rowner{font-size:11px; color:var(--accent-soft); margin-top:2px;}
+  .rdraft{font-size:9px;color:#e0a;background:rgba(238,0,170,0.12);border-radius:3px;padding:1px 4px;font-weight:600;vertical-align:middle;margin-left:4px;}
+  tr.role-gm td{background:rgba(184,134,11,0.10);}
+  tr.role-gm td.role-cell{background:rgba(184,134,11,0.18);}
+  .dim-label{font-size:10.5px; font-weight:700; letter-spacing:0.02em; color:var(--dim); display:block; margin-bottom:1px; text-transform:uppercase;}
+  .dim-val{display:block; margin-bottom:8px; white-space:pre-wrap;}
+  .dim-val:last-child{margin-bottom:0;}
+  .dim-bul{list-style:none; margin:3px 0 0 0; padding:0;}
+  .dim-bul li{font-size:12.5px; line-height:1.45; margin-bottom:3px;}
+  .dim-empty{list-style:none; color:var(--dim); margin-left:0;}
+  /* 채널 로고(인라인 SVG · 하루 루틴 시각표 · JSON [텔레그램]/[카톡] 토큰 치환) */
+  .chlogo{width:15px; height:15px; vertical-align:-3px; margin:0 2px 0 0; flex:none;}
+  /* 🗓️ 하루 루틴/스케줄 표 (dims[1] · 시간|내용 · scheduleTable 렌더) */
+  .rtbl{width:100%; border-collapse:collapse; margin-top:4px; font-size:12px;}
+  /* 부모 table.matrix td(명시도 0,1,2)가 white-space:pre-wrap·word-break:break-word를 걸어 시간이 세로 쪼개짐 → table.matrix 접두사로 명시도 올려 덮어씀 */
+  table.matrix .rtbl td{border:1px solid var(--border); padding:3px 7px; vertical-align:top; line-height:1.42; white-space:normal; word-break:keep-all; overflow-wrap:break-word;}
+  table.matrix .rtbl td.rtbl-t{white-space:nowrap; overflow-wrap:normal; color:var(--accent-soft); font-weight:700; font-variant-numeric:tabular-nums;}
+  .rtbl-dur{color:var(--dim); font-weight:400; font-size:10.5px;}
+  table.matrix .rtbl td.rtbl-c{color:var(--text-soft);}
+  table.matrix .rtbl tr.rtbl-sec td{background:var(--surface); color:var(--dim); font-weight:800; font-size:10.5px; text-align:center; letter-spacing:0.04em;}
+  table.matrix .rtbl tr.rtbl-cap td{background:rgba(124,58,237,0.05); color:var(--dim); font-size:11px;}
+  table.matrix th.grp-np, table.matrix col.grp-np{width:300px;}
+  table.matrix th.grp-boot, table.matrix col.grp-boot{width:300px;}
+  .col-own{width:300px;}
+  .own-chip{display:inline-block; font-size:11px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:2px 8px; margin:0 4px 4px 0;}
+  .own-chip:hover{background:var(--surface); border-color:var(--accent);}
+  /* ── 소유 페이지 1줄 설명 + 발행 채널 블록(선택 필드 · role.owns[].desc·role.channels — 없으면 기존과 동일 렌더) ──
+     .own-item = inline-block 유지(칩 없이 desc만 없는 기존 역할은 원래처럼 좌→우 인라인 흐름·자동줄바꿈 유지). desc 있으면 칩 아래 붙는 캡션. */
+  .own-item{display:inline-block; vertical-align:top; margin:0 6px 6px 0; max-width:100%;}
+  .own-item .own-chip{margin:0 0 2px 0;}
+  .own-desc{display:block; font-size:10px; color:var(--dim); line-height:1.4; max-width:190px;}
+  .chan-block{margin-top:6px; padding-top:5px; border-top:1px dashed var(--border);}
+  .chan-h{font-size:10px; font-weight:800; color:var(--accent-soft); letter-spacing:0.02em; margin-bottom:3px;}
+  .chan-item{font-size:10.5px; color:var(--text-soft); line-height:1.45; margin-bottom:2px;}
+  .chan-item b{color:var(--text); margin-right:5px;}
+  .matrix-status{padding:14px; font-size:12px; color:var(--dim);}
+  /* ── 살아있는 지휘판: KPI 실측 막대 · 진행현황 · 오늘 추천 (2026-06-29) ── */
+  .kbar{height:6px; border-radius:4px; background:var(--surface); border:1px solid var(--border); overflow:hidden; margin-bottom:2px;}
+  .kbar>i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-soft)); border-radius:4px;}
+  .kbar.alt>i{background:linear-gradient(90deg,#3f8f4f,#6abf7b);}
+  .pstat{font-size:12px; color:var(--text-soft); margin-bottom:5px;}
+  .pstat b{color:var(--accent-soft);}
+  .todaychip{display:inline-block; font-size:11.5px; color:#f0c674; background:rgba(240,198,116,0.10); border:1px solid rgba(240,198,116,0.35); border-radius:7px; padding:3px 9px; margin-bottom:4px; line-height:1.35; white-space:normal;}
+  /* ── 🌟 북극성 도달율 (궁극 목표 · 전면 · 골드) vs 작업 처리율 (보조 · 강등) — 2026-06-30 ── */
+  .nsreach-note{font-size:9.5px; color:var(--dim); font-weight:400;}
+  .kbar.gold{height:9px; border-color:rgba(240,198,116,0.45);}
+  .kbar.gold>i{background:linear-gradient(90deg,#b8860b,#f0c674);}
+  .nsreach-meta{font-size:13px; color:#f0c674; font-weight:700; margin-top:2px;}
+  .nsreach-meta b{color:#ffd97a; font-size:14px;}
+  /* 작업 처리율 — 보조 지표(활동량) · 강등(작게·dim·중립색). 칸1 밸런스(2026-07-18): 더 작게·더 흐리게 */
+  .workrate{margin:1px 0 5px; opacity:0.62;}
+  .workrate-h{display:block; font-size:8.5px; color:var(--dim); text-transform:none; letter-spacing:0; margin-bottom:1px;}
+  .kbar.neutral{height:3px;}
+  .kbar.neutral>i{background:var(--dim);}
+  .workrate-meta{font-size:10px; color:var(--dim);}
+  .workrate-meta b{color:var(--text-soft);}
+  /* ── 🛡️ 재발방지 GUARDED (ssot/incidents.json 직독 · 역할 연관) — 2026-07-02 ── */
+  .incd{margin:6px 0 4px; padding:6px 8px; border:1px solid rgba(106,191,123,0.28); border-left:3px solid #6abf7b; border-radius:8px; background:rgba(106,191,123,0.06);}
+  .incd-h{display:block; font-size:10px; font-weight:800; color:#6abf7b; margin-bottom:3px;}
+  .incd-meta{font-size:12px; color:var(--text-soft);}
+  .incd-meta b{color:#8fd89e;}
+  .incd-recent{display:block; font-size:11px; color:var(--dim); margin-top:2px; line-height:1.35;}
+  /* ── 🎛️ 필터·폴침 컨트롤바 (역할·칸 토글 + 간략/펼침) — 2026-07-02 ── */
+  .mx-controls{display:flex; flex-wrap:wrap; gap:6px 8px; align-items:center; margin:6px 0 8px; padding:8px 10px; background:var(--paper); border:1px solid var(--border); border-radius:9px;}
+  .mx-controls .grp{display:flex; flex-wrap:wrap; gap:5px; align-items:center;}
+  .mx-controls .glab{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.03em; margin-right:2px;}
+  .mx-chip{font-size:11px; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:3px 10px; cursor:pointer; user-select:none; line-height:1.3; white-space:nowrap;}
+  .mx-chip:hover{border-color:var(--accent);}
+  .mx-chip.on{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .mx-chip.col.on{background:var(--surface); color:var(--accent-soft); border-color:var(--accent);}
+  .mx-sep{width:1px; align-self:stretch; min-height:20px; background:var(--border-strong); margin:0 2px;}
+  /* 첫 칸(주체) 고정 — 가로 스크롤 시에도 항상 보이게(모바일 스캔성) */
+  table.matrix td.role-cell{position:sticky; left:0; z-index:1;}
+  table.matrix thead th.role-col{position:sticky; left:0; z-index:3;}
+  /* 칸 숨김(차원 토글) */
+  table.matrix.hide-c0 th:nth-child(2), table.matrix.hide-c0 td:nth-child(2),
+  table.matrix.hide-c1 th:nth-child(3), table.matrix.hide-c1 td:nth-child(3),
+  table.matrix.hide-c2 th:nth-child(4), table.matrix.hide-c2 td:nth-child(4){display:none;}
+  /* 간략(폴침) — 긴 dims 클램프(편집 중엔 미적용) */
+  table.matrix.compact td .dim-bul, table.matrix.compact td .dim-val{max-height:62px; overflow:hidden;}
+  @media (max-width:640px){
+    table.matrix{min-width:760px;}
+    td.role-cell .rname{font-size:13px;}
+    table.matrix th, table.matrix td{padding:6px 7px;}
+  }
+  /* ── ▶ C레벨 행 접기/펼치기 (progressive disclosure · 기본 접힘 · 요약 줄만 · 2026-07-18) ── */
+  .crow-toggle{background:var(--surface); color:var(--accent-soft); border:1px solid var(--border-strong); border-radius:6px; font-size:11px; line-height:1; padding:3px 7px; cursor:pointer; flex:none;}
+  .crow-toggle:hover{border-color:var(--accent); color:var(--text);}
+  .crow-toggle.open{color:var(--dim); margin-bottom:5px;}
+  td.role-summary-cell{cursor:pointer; padding:9px 12px !important; white-space:normal !important; position:sticky; left:0;}
+  td.role-summary-cell:hover{background:var(--surface);}
+  tr.role-gm td.role-summary-cell:hover{background:rgba(184,134,11,0.22);}
+  .role-summary-line{display:flex; flex-wrap:wrap; align-items:center; gap:5px 9px;}
+  .role-summary-cell .crow-toggle{color:var(--dim);}
+  .role-summary-cell .ricon{font-size:16px;}
+  .role-summary-cell .rname{font-weight:800; font-size:14px;}
+  .role-summary-cell .rtitle{font-size:11px; color:var(--dim);}
+  .crow-role{font-size:12px; color:var(--text-soft); max-width:44ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .crow-prod{font-size:11px; color:var(--dim); display:inline-flex; flex-wrap:wrap; align-items:center; gap:4px;}
+  .crow-prodseg{font-size:10px; font-weight:700; border-radius:20px; padding:1px 7px; white-space:nowrap;}
+  .crow-prodseg.auto{color:#8fd89e; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
+  .crow-prodseg.mech{color:var(--accent-soft); background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.32);}
+  .crow-prodseg.semi{color:#7ac4f0; background:rgba(122,196,240,0.14); border:1px solid rgba(122,196,240,0.35);}
+  .crow-prodseg.propose{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
+  .crow-prodseg.manual{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  .crow-metric{font-size:10px; font-weight:700; border-radius:20px; padding:1px 7px; white-space:nowrap; color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  .crow-metric.reach{color:#d4af37; background:rgba(184,134,11,0.14); border:1px solid rgba(184,134,11,0.35);}
+  .crow-metric.queue{color:var(--accent-soft); background:rgba(124,58,237,0.10); border:1px solid rgba(124,58,237,0.28);}
+  @media (max-width:640px){ .crow-role{max-width:26ch;} }
+  @media print{
+    td.role-summary-cell{position:static !important; background:#f4f4f4 !important; color:#111 !important;}
+    .crow-toggle{display:none !important;}
+    .role-summary-cell .rname, .role-summary-cell .rtitle, .crow-role{color:#111 !important;}
+    .crow-prod{color:#333 !important;}
+    .crow-prodseg{border-width:1px !important;}
+    .crow-prodseg.auto{color:#1a6b34 !important; background:#e8f6ec !important;}
+    .crow-prodseg.mech{color:#4a2a91 !important; background:#efe8fb !important;}
+    .crow-prodseg.semi{color:#1b4f72 !important; background:#e8f3fb !important;}
+    .crow-prodseg.propose{color:#9c1c74 !important; background:#fbe6f3 !important;}
+    .crow-metric{border-width:1px !important;}
+    .crow-metric.reach{color:#8a6d1a !important; background:#f7f0dc !important;}
+    .crow-metric.queue{color:#4a2a91 !important; background:#efe8fb !important;}
+  }
+
+  /* ── 편집 모드 ── */
+  .ebtn{font-size:11px; padding:3px 11px; border-radius:7px; cursor:pointer; margin-left:6px;}
+  .ebtn.edit{background:var(--surface); color:var(--accent-soft); border:1px solid var(--accent);}
+  .ebtn.save{background:var(--accent); color:#fff; border:none;}
+  .ebtn.cancel{background:var(--surface); color:var(--dim); border:1px solid var(--border-strong);}
+  .cell-edit{outline:2px dashed var(--accent); outline-offset:-3px; background:rgba(124,58,237,0.06); cursor:text; white-space:pre-wrap;}
+  .cell-edit:focus{outline-color:var(--accent-soft); background:rgba(124,58,237,0.12);}
+  /* 열 너비 드래그 조정 핸들 — 편집 모드에서만 노출 */
+  .col-resizer{position:absolute; top:0; right:0; width:8px; height:100%; cursor:col-resize; display:none; z-index:5; user-select:none;}
+  table.matrix.editing .col-resizer{display:block;}
+  table.matrix.editing .col-resizer:hover{background:var(--accent-soft);}
+
+  /* ── 🌟 회사 비전 배너 (헌법 맨 위 · 골드) — 2026-07-02 ── */
+  .vision{display:flex; gap:12px; align-items:flex-start; margin:2px 0 14px; padding:12px 15px; border:1px solid rgba(240,198,116,0.32); border-left:4px solid #f0c674; border-radius:11px; background:rgba(240,198,116,0.06);}
+  .vision-star{font-size:26px; line-height:1;}
+  .vision-h{font-size:11px; font-weight:800; color:#f0c674; letter-spacing:0.02em; text-transform:uppercase; margin-bottom:3px;}
+  .vision-txt{font-size:14px; color:var(--text); line-height:1.5;}
+  .vision-txt b{color:#ffd97a;}
+  /* AI CEO 북극성 한 줄 — 정본 coo/bootsetup_matrix.json ceo.dims[0] 직독(JS 삽입·2026-07-04). 빈 값이면 숨김. */
+  .vision-ceo-ns{font-size:11.5px; color:var(--text-soft); margin-top:5px; line-height:1.45;}
+  .vision-ceo-ns b{color:var(--accent-soft); font-weight:600;}
+  .vision-note{font-size:11px; color:var(--dim); margin-top:5px; line-height:1.45;}
+  /* ── 🗺️ 북극성 지도: 대표 KPI 1개 + 측정 tier + 현재값 + 목표 + 경로 한 줄 (정직·2026-07-02) ── */
+  .nsmap{margin:4px 0 6px; padding:6px 8px; border:1px solid var(--border-strong); border-left:3px solid var(--accent-soft); border-radius:8px; background:var(--surface);}
+  .nsmap-h{display:block; font-size:10px; font-weight:800; color:var(--accent-soft); letter-spacing:0.01em; margin-bottom:4px;}
+  .nsmap-row{font-size:12px; color:var(--text-soft); line-height:1.45; margin-bottom:2px;}
+  .nsmap-row .nsmap-k{display:inline-block; min-width:58px; font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.02em;}
+  .nsmap-row b{color:var(--text);}
+  .nsmap-path{font-size:11.5px; color:#f0c674; margin-top:4px; line-height:1.4;}
+  /* ── 복합 축 리스트(측정 축=라이브값 · 미측정 축=회색) — 2026-07-02 ── */
+  .nsax-list{margin:3px 0 2px;}
+  .nsax{font-size:11.5px; line-height:1.5; color:var(--text-soft); margin-bottom:1px;}
+  .nsax .nsax-name{color:var(--dim);}
+  .nsax.nsax-live b{color:#8fd89e;}
+  .nsax.nsax-none{opacity:0.72;}
+  .nsax.nsax-none b{color:var(--dim); font-weight:600;}
+  .nsax-goal{font-size:10px; color:var(--dim);}
+  .nsax-note{font-size:10px; color:var(--dim);}
+
+  /* ── 🗺️🎛️ 북극성 지도 · 살아있는 지휘판 한눈에(요약 스트립 · 측정 개통분만) — 2026-07-03 ── */
+  /* ── A3 인쇄 주인공 승격(2026-07-04): 카드 위계 강화(북극성 한줄 + 정직 배지 + 범례) ── */
+  .ns-role-h .ns-badge{margin-left:auto;}
+  .ns-line{font-size:11.5px; color:var(--text-soft); line-height:1.42; margin:0 0 6px; padding-bottom:6px; border-bottom:1px dashed var(--border);}
+  /* 정직 상태 배지 3종 — 단일 판정(reachStatus): measured/draft/unmeasured */
+  .ns-badge{display:inline-block; font-size:10px; font-weight:700; border-radius:20px; padding:2px 8px; white-space:nowrap; line-height:1.5;}
+  .ns-badge.measured{color:#8fd89e; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
+  .ns-badge.draft{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
+  .ns-badge.unmeasured{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+
+  /* ── 🌟 북극성 목표 카드 (GM 승인 시안 반영 · 순수 신규 삽입 · 2026-07-09) ── */
+  .ns-goal-sub{font-size:11.5px; color:var(--text-soft); line-height:1.5; margin-top:7px;}
+  .ns-goal-chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px;}
+  .ns-goal-chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:999px; padding:4px 11px;}
+  .ns-goal-chip em{font-style:normal; color:var(--dim); font-weight:400;}
+
+  /* ── 공통 4섹션 카드 ── */
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:4px;}
+  .ccard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:11px 13px;}
+  .ccard h3{font-size:13px; font-weight:700; margin-bottom:2px;}
+  .ccard .desc{font-size:11px; color:var(--dim); margin-bottom:8px; line-height:1.4;}
+  .ccard a.lk{display:inline-block; font-size:11.5px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:3px 9px; margin:0 5px 5px 0;}
+  .ccard a.lk:hover{background:var(--surface); border-color:var(--accent);}
+  .const-more{margin-top:8px; font-size:11.5px; color:var(--dim);}
+  .const-more a.lk{display:inline-block; font-size:11.5px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:6px; padding:3px 9px; margin-left:4px;}
+  .const-more a.lk:hover{background:var(--surface); border-color:var(--accent);}
+
+  /* ── 📜🛡️🏛️ 공통헌법 3종 접이식 인라인 (ssot/약속·incidents·canon_values.json 직독 단일소스 · 기본 접힘 · 2026-07-18) ── */
+  .const-wrap{margin-top:10px; display:flex; flex-direction:column; gap:8px;}
+  .const-sec{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; overflow:hidden;}
+  .const-h{display:flex; align-items:center; gap:8px; padding:10px 13px; cursor:pointer; font-size:13px; font-weight:700; user-select:none;}
+  .const-h:hover{background:var(--surface);}
+  .const-h .const-arrow{margin-left:auto; font-size:11px; color:var(--dim); transition:transform .15s;}
+  .const-sec.open .const-h .const-arrow{transform:rotate(90deg);}
+  .const-h .const-count{font-size:11px; font-weight:400; color:var(--dim); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:1px 8px;}
+  .const-body{display:none; padding:0 13px 13px; font-size:12px; overflow-x:auto;}
+  .const-sec.open .const-body{display:block;}
+  .const-status{font-size:11px; color:var(--dim); padding:2px 0;}
+  table.const-tbl{width:100%; border-collapse:collapse; font-size:11.5px; min-width:520px;}
+  table.const-tbl th, table.const-tbl td{border:1px solid var(--border); padding:5px 7px; text-align:left; vertical-align:top; line-height:1.4;}
+  table.const-tbl thead th{background:var(--surface); font-weight:700; font-size:10.5px; color:var(--dim);}
+  table.const-tbl td.const-cat{white-space:nowrap; font-weight:700; color:var(--accent-soft); font-size:10.5px;}
+  .const-badge{display:inline-block; font-size:9.5px; font-weight:700; border-radius:20px; padding:1px 7px; white-space:nowrap;}
+  .const-badge.guarded{color:#8fd89e; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
+  .const-badge.open{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
+  @media print{
+    .const-h .const-arrow{display:none;}
+    .const-sec{break-inside:avoid; background:#fff !important; border-color:#999 !important;}
+    .const-body{display:block !important;}
+    .const-h{background:#f4f4f4 !important; color:#111 !important;}
+    .const-h .const-count{background:#ececec !important; color:#333 !important; border-color:#999 !important;}
+    table.const-tbl, table.const-tbl th, table.const-tbl td{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    table.const-tbl thead th{background:#ececec !important; color:#000 !important;}
+    table.const-tbl td.const-cat{color:#4a2a91 !important;}
+    .const-badge.guarded{color:#1a6b34 !important; background:#e8f6ec !important; border-color:#7fbd91 !important;}
+    .const-badge.open{color:#9c1c74 !important; background:#fbe6f3 !important; border-color:#e0a0c8 !important;}
+    .const-more, .const-more a.lk{color:#111 !important; border-color:#666 !important;}
+  }
+
+  /* ── 🔧 칸2(일하는 법) 카드화 — 2블록 빈약 완화(억지 콘텐츠 추가 없이 시각 무게만 · 2026-07-18) ── */
+  .c2-card{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:8px;}
+  .c2-card:last-child{margin-bottom:0;}
+  .c2-card .dim-label{color:var(--accent-soft);}
+  @media print{
+    .c2-card{background:#fff !important; border-color:#ccc !important;}
+    .c2-card .dim-label{color:#4a2a91 !important;}
+  }
+
+  footer.foot{margin-top:16px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; line-height:1.55;}
+
+  @media print{
+    @page{size:A3 portrait; margin:8mm;}
+    body{background:#fff; color:#111; padding:0; font-size:9px;}
+    header.page-head{margin-bottom:8px; padding-bottom:6px;}
+    header.page-head h1{font-size:16px;}
+    h2.sec{margin:9px 0 2px; font-size:12px;}
+    table.matrix{min-width:0; font-size:8px;}
+    table.matrix th, table.matrix td{padding:3px 4px;}
+    .matrix-scroll, table.matrix tr, .ccard{break-inside:avoid;}
+    .cards{grid-template-columns:repeat(2,1fr); gap:6px;}
+    header.page-head .back, .ccard a.lk, .ebtn{display:none;}
+    .ccard a.lk{display:none;}
+    /* 인쇄 색상 강제 라이트 — 다크배경/밝은글자 충돌(보호색) 방지 */
+    table.matrix, table.matrix tr, table.matrix th, table.matrix td{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    table.matrix thead th{background:#ececec !important; color:#000 !important;}
+    td.role-cell{background:#f4f4f4 !important;}
+    tr.role-gm td, tr.role-gm td.role-cell{background:#f8f2dc !important;}
+    td.role-cell .rname, td.role-cell .rtitle, td.role-cell .rowner, .dim-label, .dim-val{color:#111 !important;}
+    .dim-bul li{color:#111 !important;}
+    .own-chip{color:#000 !important; border-color:#666 !important; background:#fff !important;}
+    .own-desc, .chan-item, .chan-item b{color:#111 !important;}
+    .chan-h{color:#333 !important;}
+    .chan-block{border-color:#999 !important;}
+    .matrix-scroll{background:#fff !important; border-color:#999 !important;}
+    .ccard, .ccard h3, .ccard .desc{background:#fff !important; color:#111 !important; border-color:#999 !important;}
+    h2.sec, header.page-head h1{color:#111 !important;}
+    /* 신규 지휘판 요소도 인쇄 시 라이트색·검정글자 강제 */
+    .kbar{background:#eee !important; border-color:#999 !important;}
+    .kbar>i, .kbar.alt>i, .kbar.gold>i, .kbar.neutral>i{background:#666 !important;}
+    .pstat, .pstat b{color:#111 !important;}
+    .todaychip{color:#111 !important; background:#f8f2dc !important; border-color:#999 !important;}
+    .nsreach-meta, .nsreach-meta b, .nsreach-note, .workrate-h, .workrate-meta, .workrate-meta b{color:#111 !important;}
+    /* 신규(2026-07-02): 컨트롤바 숨김 · 첫칸고정/폴침 해제 · 재발방지 라이트 */
+    .mx-controls{display:none !important;}
+    table.matrix td.role-cell, table.matrix thead th.role-col{position:static !important;}
+    table.matrix.compact td .dim-bul, table.matrix.compact td .dim-val{max-height:none !important; overflow:visible !important;}
+    .incd{background:#eef7ef !important; border-color:#8ab894 !important;}
+    .incd-h, .incd-meta, .incd-meta b, .incd-recent{color:#111 !important;}
+    /* 신규(2026-07-02): 회사 비전 배너 · 북극성 지도 라이트 강제 */
+    .vision{background:#f8f2dc !important; border-color:#caa84a !important;}
+    .vision-h, .vision-txt, .vision-txt b, .vision-ceo-ns, .vision-ceo-ns b, .vision-note{color:#111 !important;}
+    .nsmap{background:#f6f6f6 !important; border-color:#999 !important;}
+    .nsmap-h, .nsmap-row, .nsmap-row b, .nsmap-row .nsmap-k, .nsmap-path{color:#111 !important;}
+    .nsax, .nsax b, .nsax .nsax-name, .nsax-goal, .nsax-note{color:#111 !important;}
+    /* 신규(2026-07-04): 정직 배지·북극성 한줄 라이트 강제(색은 유지·명도만 인쇄용) */
+    .ns-line{color:#222 !important; border-color:#ccc !important;}
+    .ns-badge{border-width:1px !important;}
+    .ns-badge.measured{color:#1a6b34 !important; background:#e8f6ec !important; border-color:#7fbd91 !important;}
+    .ns-badge.draft{color:#9c1c74 !important; background:#fbe6f3 !important; border-color:#e0a0c8 !important;}
+    .ns-badge.unmeasured{color:#555 !important; background:#f0f0f0 !important; border-color:#bbb !important;}
+    /* 신규(2026-07-09): 북극성 목표 카드 인쇄 라이트 강제 */
+    .ns-goal-card{background:#f8f2dc !important; border-color:#caa84a !important;}
+    .ns-goal-h, .ns-goal-txt, .ns-goal-txt b, .ns-goal-sub{color:#111 !important;}
+    .ns-goal-chip{color:#111 !important; border-color:#666 !important; background:#fff !important;}
+    /* 🗓️ 하루 루틴 표 인쇄 라이트 강제 */
+    .rtbl td{border-color:#999 !important; color:#111 !important; background:#fff !important;}
+    .rtbl-t{color:#333 !important;}
+    .rtbl-sec td{background:#ececec !important; color:#000 !important;}
+    .rtbl-cap td{background:#f4f4f4 !important; color:#333 !important;}
+  }
+
+  /* ── 🏭 모듈 제품화 지도 (module_registry 직독 · 2026-07-15) ── */
+  .prod-legend{display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; margin:4px 0 10px; font-size:11px; color:var(--dim);}
+  .prod-legtxt{margin-right:6px;}
+  .prod-mat{display:inline-block; font-size:10px; font-weight:700; border-radius:20px; padding:1px 8px; white-space:nowrap;}
+  .prod-mat.auto{color:#8fd89e; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
+  .prod-mat.mech{color:var(--accent-soft); background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.32);}
+  .prod-mat.semi{color:#7ac4f0; background:rgba(122,196,240,0.14); border:1px solid rgba(122,196,240,0.35);}
+  .prod-mat.propose{color:#e79ad1; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
+  /* 🏭 제품화 블록 — C레벨 카드(매트릭스 소유·제품화 칸) 안에 인라인 삽입(구 별도 .prod-strip 지도 흡수 · 2026-07-18) */
+  .prod-cell{margin-top:8px; padding-top:7px; border-top:1px dashed var(--border);}
+  .prod-mod{margin-top:5px;}
+  .prod-mod:first-of-type{margin-top:3px;}
+  .prod-mod:last-child{margin-bottom:0; padding-bottom:0; border-bottom:none;}
+  .prod-feat{font-size:12px; color:var(--text-soft); line-height:1.42; margin-bottom:3px;}
+  .prod-free{font-size:10.5px; color:var(--dim); line-height:1.4;}
+  .prod-free b{color:#8fd89e; font-weight:600;}
+  @media print{
+    .prod-cell{border-color:#ccc !important;}
+    .prod-feat{color:#111 !important;}
+    .prod-free{color:#333 !important;} .prod-free b{color:#1a6b34 !important;}
+    .prod-mat{border-width:1px !important;}
+    .prod-mat.auto{color:#1a6b34 !important; background:#e8f6ec !important;}
+    .prod-mat.mech{color:#4a2a91 !important; background:#efe8fb !important;}
+    .prod-mat.semi{color:#1b4f72 !important; background:#e8f3fb !important;}
+    .prod-mat.propose{color:#9c1c74 !important; background:#fbe6f3 !important;}
+    .prod-legend, .prod-legtxt{color:#333 !important;}
+  }
+</style>
+<link rel="stylesheet" href="assets/wp-typography.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-head">
+    <h1>AI C-Level 운영 한 장</h1>
+    <a class="back" href="wellperion_guide(main).html#S2">← 웰페리온 ERP 운영 가이드(S2)로</a>
+    <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
+    <script src="/wellperion-automation/_assets/print_options.js"></script>
+  </header>
+
+  <!-- ════ 🌟 회사 비전 · 북극성 (헌법 맨 위 · 전사 정본 · 구 '북극성 목표' 카드 병합 2026-07-15) ════ -->
+  <div class="vision">
+    <span class="vision-star">🌟</span>
+    <div class="vision-body">
+      <div class="vision-h">회사 비전 · 북극성 (전사 정본)</div>
+      <!-- 규모(3,000평)=JS가 ssot/canon_values.json(company_scale) 직독 후 #vision-scale 반영 · 실패 시 정적 폴백. 미션 문장 정본=CLAUDE.md §0. -->
+      <div class="vision-txt">회원 한 사람의 <b>건강한 하루를 완성</b>한다 — 그 하루를 짓는 실무진이 <b>본질에 집중</b>하도록, 반복은 <span id="vision-scale">3,000평</span> 종합 스포츠클럽 ERP가 대신한다.</div>
+      <div class="ns-goal-sub" style="margin-top:6px;">자율화는 목적이 아니라 수단 — 기계가 잘 도는 것으로 완성을 재지 않는다. 결과물이 회원·실무진에게 맞을 때 비로소 완성.</div>
+      <div class="ns-goal-chips" style="margin-top:9px;">
+        <span class="ns-goal-chip">👤 회원 <em>· 경험의 주인</em></span>
+        <span class="ns-goal-chip">🧑‍💼 실무진 <em>· 결과물의 사용자이자 기준</em></span>
+        <span class="ns-goal-chip">🎖️ GM <em>· 최종 판단</em></span>
+      </div>
+      <div class="vision-ceo-ns" id="vision-ceo-ns"><!-- JS: AI CEO 북극성 한 줄(coo/bootsetup_matrix.json ceo.dims[0]) --></div>
+      <div class="vision-note" title="GM = G1(오케스트레이션)만 · 실무 북극성은 아래 7역할이 나눠 진다. 개인 삶 북극성은 헌법에서 제외.">GM=G1(오케스트레이션)만 · 북극성은 7역할 분담(개인 삶 제외)</div>
+    </div>
+  </div>
+
+  <!-- ════ 📜 공통 헌법 핵심 (전 C레벨 공유 원칙 · 약속·재발방지·공식값 JSON 인라인 단일소스 · 2026-07-18 인라인 승격) ════ -->
+  <h2 class="sec">📜 공통 헌법 핵심 <span style="font-size:11px;font-weight:400;color:var(--dim);">전 C레벨 공유 원칙 — 약속·다시는 안 그러기·공식 숫자·정보는 아래 인라인(단일소스), 나머지는 S2</span></h2>
+  <div class="cards" id="common-cards"><!-- JS가 라이브 URL로 채움 --></div>
+  <div class="const-wrap" id="const-wrap"><!-- JS: 📜약속·🛡️재발방지·🏛️공식값 접이식 인라인(ssot/*.json 직독 · 단일소스 · 복사 아님) --></div>
+
+  <!-- ════ 👤 C레벨별 카드 (매트릭스 R/R + 🏭 제품화 성숙도 통합 · 구 '모듈 제품화 지도' 흡수 · 2026-07-18) ════ -->
+  <div id="matrix-section">
+  <h2 class="sec">👤 C레벨별 카드 <span style="font-size:11px;font-weight:400;color:var(--dim);">R/R + 완성 정도</span> <span id="matrix-edit-wrap" style="font-size:11px;font-weight:400;"></span></h2>
+  <div class="sec-note" title="다시는 안 그러기·결재선·소유침범·보고협업 4개 차원은 S2 본인탭 참조. 📊 KPI = ssot/kpi.json 정본 직독(읽기전용 · 편집 제외). 🛡️ 다시는 안 그러기 GUARDED = ssot/incidents.json 직독. 🏭 제품화 = status/module_registry.json 직독.">각 C레벨을 한 행에 — 🌟 북극성·지표 / 🔧 일하는 법 / 🚧 맡은 것. 상세 4차원은 S2 본인탭.</div>
+  <div class="prod-legend" title="완성 정도 — status/module_registry.json autonomy">
+    <span class="prod-legtxt" style="font-weight:700;color:var(--accent-soft);">🏭 완성 정도</span>
+    <span class="prod-mat auto">🟢 완전무인</span><span class="prod-legtxt">예약/GAS 상시 — 졸업 근접</span>
+    <span class="prod-mat mech">⚙️ 기계화</span><span class="prod-legtxt">사람이 화면서 대신 가능</span>
+    <span class="prod-mat semi">🔵 반자동</span><span class="prod-legtxt">무인 + GM 승인 게이트</span>
+    <span class="prod-mat propose">🟣 제안</span><span class="prod-legtxt">아직 AI 판단 필요</span>
+  </div>
+  <div class="mx-controls" id="mx-controls"><!-- JS: 역할·칸 필터 + 폴침 --></div>
+  <div class="matrix-scroll">
+    <table class="matrix">
+      <colgroup>
+        <col class="role-col">
+        <col class="grp-np">
+        <col class="grp-boot">
+        <col class="grp-guard col-own">
+      </colgroup>
+      <tbody id="matrix-body">
+        <tr><td colspan="4" class="matrix-status">매트릭스 정본을 불러오는 중…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  </div><!-- /matrix-section -->
+
+</div>
+
+<script>
+(function(){
+  // S2 라이브 URL 기준 (GitHub Pages 루트 = "3. 웰페리온 가이드/" → 접두사 없음)
+  var S2 = 'wellperion_guide(main).html';
+
+  // ── B. 공통 4섹션 카드 (S2 정본 없는 원칙만 발췌 — 실데이터 3종은 아래 인라인으로 이관 · 2026-07-18) ──
+  //   con-absolute/con-done4/con-unified/con-gm5/con-input5/con-token 개별 링크 22줄(헤더 back 링크와 동일 S2 패턴)은
+  //   전부 제거 → 카드는 desc 발췌문만 유지, 이동 대상 링크는 아래 단일 .const-more 1개로 수렴(Part3).
+  var cards = [
+    {
+      h:'⚖️ 절대기준 2종',
+      d:'절대원칙 3: ①SSOT=웰페리온 ERP(Notion 아님) ②중복 금지(기존 업데이트만·신규는 진짜 신규일 때만) ③현황파악=GitHub commit·PR. 완료=4요건(①커밋 ②상태 ③다음 ④증거) 모두 충족해야 완료 — 증거 없으면 자동 거부.'
+    },
+    {
+      h:'🔗 통합원칙 10',
+      d:'기존건 마무리 우선(병행 시 결과보고) · 반복질문 금지 · 결재부하 제로(GM 결재 5종 외 항상 바로 진행) · 위임=R/R 위탁만(방향설정은 "지시") · 과거 회수 금지 등 9테마'
+    },
+    {
+      h:'📌 정본데이터 4 (약속·다시는 안 그러기·공식 숫자·정보·KPI)',
+      d:'약속 · 🛡️ 다시는 안 그러기 · 🏛️ 공식 숫자·정보는 아래 📜 공통 헌법 인라인에서 실데이터 그대로 펼쳐 볼 수 있다(단일소스 · 복사 아님). 📊 KPI(ssot/kpi.json 정본)는 아래 C레벨별 카드의 📊칸에 라이브 표시된다.'
+    },
+    {
+      h:'🔌 운영 SOP 5',
+      d:'GM 결재 5종(이 5종 외 전부 자율 진행 후 보고): 💰결제(1원 이상) · 🔒보안(비밀번호·결제·키값) · 🚫금지 항목 변경 · 📐전략·방향·포지셔닝 · 🏷️브랜드·공식 숫자·정보 변경'
+    },
+    {
+      h:'⚖️ 자율화 전제 3',
+      // 구 독립 '불변원리 3' 섹션 흡수(2026-07-15) — 위 4섹션을 자율 루프에 적용한 파생 3원칙. 별도 헌법 조항 아님(중복 제거).
+      d:'위 4섹션을 자율 루프에 적용한 3원칙 — ① 등록부 단일 SSOT(모든 화면·알림·루프는 module_registry.json 한 곳·복사 금지) · ② 가역만 자율(비가역=발행·배포·삭제·외부전송·결제·보안·전략·공식 숫자·정보는 GM 결재) · ③ 웰리는 위임·검증만(직접 도메인 실행 금지).'
+    }
+  ];
+  var cc = document.getElementById('common-cards');
+  cc.innerHTML = cards.map(function(c){
+    return '<div class="ccard"><h3>' + c.h + '</h3><div class="desc">' + c.d + '</div></div>';
+  }).join('');
+  // Part3: S2 정본 없는 원칙(절대원칙3·통합원칙10·금지5·토큰라우팅·업무처리3·검증표준) 전용 — 링크는 전 카드 통틀어 이 1개만.
+  cc.insertAdjacentHTML('afterend',
+    '<div class="const-more">⚖️ 자세한 운영 규칙 전체 보기' +
+    '<a class="lk" href="' + S2 + '#S2/common/con-absolute">운영 가이드로 ↗</a></div>'
+  );
+
+  // ── A. 매트릭스 정본 직독 렌더 + GM 3칸 병합 인라인 편집 (2026-06-29) ──
+  //   읽기=RAW_URL(raw GitHub) → _matrixData에 8 dims 전체 보유.
+  //   저장=GAS commit_file(coo/bootsetup_matrix.json). 편집칸(dims 0,2,1)만 반영, 나머지(3,4,5,6,7) 원본 보존.
+  //   3칸 병합: 목표·지표=[🌟0(편집) · 📊KPI(ssot/kpi.json 직독·읽기전용)] / 일하는 법=[📚2,🔧1] / 소유 관리=role.owns 링크칩(편집 대상 아님).
+  //   ※ KPI 복사발산 차단(INC-001류): KPI 정본=ssot/kpi.json. dims[3]은 KPI 표시에서 미사용(kpi.json 없는 주체=GM만 dims[3] 폴백).
+  var RAW_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/coo/bootsetup_matrix.json';
+  var KPI_RAW_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/ssot/kpi.json';
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+  var _matrixData = null;
+  var _kpiData = null;
+  var _kpiValues = null;      // status/kpi_values.json roles{} — 현재 실측값(없으면 null)
+  var _kpiGlobal = null;      // status/kpi_values.json global{} — 전역 실측값(unpushed·mirror_ok·health 등)
+  var _queueCounts = null;    // status/_queue.json 집계 → role.id별 {active, doneToday}
+  var _pendingByRole = null;  // status/northstar_pending.json → role.id별 후보 1개
+  var _incidents = null;      // ssot/incidents.json → role.id별 {guarded, recent}
+  var _reachData = null;      // status/northstar_reach.json → role.id별 {reach_pct|null, mode, basis, milestones_done?, milestones_total?}
+  var _ownershipData = null;  // ssot/ownership_map.json → role.id(title lowercase)별 {primary_surface, domain, executor} — GM확정 소유·역할 단일출처(2026-07-18)
+  var _prodByRole = null;     // status/module_registry.json → owner_role별 모듈[] (구 renderProdStrip 그룹핑 재활용 · C레벨 카드 흡수 2026-07-18)
+  // 📜🛡️🏛️ 공통헌법 3종 인라인(2026-07-18) — 정본 ssot/약속.json·incidents.json·canon_values.json 직독 원본 배열(복사 아님).
+  var _promisesData = null;        // ssot/약속.json lessons[]
+  var _incidentsFullData = null;   // ssot/incidents.json incidents[] 전체(role 집계용 _incidents와 별개 · 인라인 표용)
+  var _canonValuesFullData = null; // ssot/canon_values.json values[]
+  var _constOpen = {};              // sectionId(promises/incidents/canon) → true(펼침). 기본 미지정=접힘.
+  var _editMode = false;
+  // 뷰 상태(GM PC 세션 한정 · 정본 아님): 역할 필터 · 칸 숨김 · 폴침
+  var _roleFilter = null;     // null=전체, 아니면 role.id
+  var _colHidden = [false, false, false];
+  var _compact = false;
+  var _ctrlBound = false;
+  var _collapsed = {};          // role.id → true(접힘)/false(펼침). 기본(미지정)=접힘. progressive disclosure(2026-07-18)
+  var _forcePrintExpand = false; // 인쇄 시엔 전체 펼침(A3 인쇄 가독 보존) — beforeprint/afterprint 토글
+
+  // 뷰어 로컬(=GM 기준 KST) 오늘 날짜 YYYY-MM-DD
+  function localToday(){
+    var d = new Date(), p = function(n){ return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  // _queue 직독 집계: 활성(PENDING+IN_PROGRESS) · 오늘 완료(DONE & processed_at=오늘)
+  function computeQueueCounts(arr){
+    var m = {}, today = localToday();
+    (Array.isArray(arr) ? arr : []).forEach(function(t){
+      var role = t && t.clevel; if(!role) return;
+      var o = m[role] || (m[role] = { active:0, doneToday:0 });
+      var st = t.status;
+      if(st === 'PENDING' || st === 'IN_PROGRESS') o.active++;
+      else if(st === 'DONE' && String(t.processed_at || '').slice(0,10) === today) o.doneToday++;
+    });
+    return m;
+  }
+  // northstar_pending.candidates → role별 첫 후보
+  function computePending(d){
+    var m = {}, arr = (d && d.candidates) || [];
+    arr.forEach(function(c){ if(c && c.role && !m[c.role]) m[c.role] = c; });
+    return m;
+  }
+  // incidents.json → 역할 추론(명시 role 필드 없음 → watch_globs/본문 키워드).
+  //   판정은 watch_globs(사건의 도메인 앵커)만 사용 — 본문 자유서술은 우발 언급(예: 소실 파일명)이 섞여 오분류하므로 제외.
+  //   cmo=콘텐츠/IG/슬라이드/검수큐, 그 외 거버넌스·인프라 재발방지는 cto(기술 소유) 귀속.
+  function incidentRole(inc){
+    var g = ((inc.watch_globs || []).join(' ')).toLowerCase();
+    if(/instagram|cmo\/|compose_|ig_series|review_queue|slide|ballet|spa_/.test(g)) return 'cmo';
+    return 'cto';
+  }
+  // GUARDED만 집계 → role.id별 {guarded 건수, recent(최신 date)}
+  function computeIncidents(d){
+    var m = {}, arr = (d && d.incidents) || [];
+    arr.forEach(function(inc){
+      if(String(inc.상태 || '') !== 'GUARDED') return;
+      var rid = incidentRole(inc);
+      var o = m[rid] || (m[rid] = { guarded:0, recent:null });
+      o.guarded++;
+      if(!o.recent || String(inc.date || '') >= String(o.recent.date || '')) o.recent = inc;
+    });
+    return m;
+  }
+
+  // 🏭 모듈 제품화 — status/module_registry.json → owner_role별 그룹(구 renderProdStrip 그룹핑 재활용). autonomy=제품화 성숙도 배지.
+  var PROD_MAT = { auto:['auto','🟢 완전무인'], mech:['mech','⚙️ 기계화'], semi:['semi','🔵 반자동'], propose:['propose','🟣 제안'], manual:['manual','⚪ 수동'] };
+  function computeProdByRole(reg){
+    var m = {}, mods = (reg && reg.modules) || [];
+    mods.forEach(function(x){ var r = x.owner_role || '?'; (m[r] || (m[r] = [])).push(x); });
+    return m;
+  }
+
+  var esc = function(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  };
+
+  // ── 📜🛡️🏛️ 공통헌법 3종 인라인(접이식 · 기본 접힘 · 2026-07-18) ──
+  //   ssot/약속.json·incidents.json·canon_values.json 직독 원본을 그대로 표로 렌더(복사 아님 · S2가 렌더하는 동일 JSON · 단일소스).
+  function constHeader(id, icon, title, count){
+    return '<div class="const-h" onclick="window._toggleConst(\'' + id + '\')">' +
+      '<span>' + icon + ' ' + esc(title) + '</span>' +
+      (count != null ? '<span class="const-count">' + count + '</span>' : '') +
+      '<span class="const-arrow">▶</span></div>';
+  }
+  function renderPromisesBody(){
+    if(_promisesData == null) return '<div class="const-status">불러오는 중…</div>';
+    if(!_promisesData.length) return '<div class="const-status">불러오지 못했습니다(ssot/약속.json).</div>';
+    var rows = _promisesData.map(function(l){
+      return '<tr><td class="const-cat">' + esc(l.분류 || '') + '</td><td><b>' + esc(l.약속 || '') + '</b></td><td>' + esc(l.내용 || '') + '</td></tr>';
+    }).join('');
+    return '<table class="const-tbl"><thead><tr><th>분류</th><th>약속</th><th>내용</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  function renderIncidentsInlineBody(){
+    if(_incidentsFullData == null) return '<div class="const-status">불러오는 중…</div>';
+    if(!_incidentsFullData.length) return '<div class="const-status">불러오지 못했습니다(ssot/incidents.json).</div>';
+    var rows = _incidentsFullData.map(function(inc){
+      var st = String(inc.상태 || '');
+      var badge = /GUARDED/.test(st) ? '<span class="const-badge guarded">🛡️ ' + esc(st) + '</span>'
+                : /OPEN/.test(st) ? '<span class="const-badge open">🔓 ' + esc(st) + '</span>'
+                : esc(st);
+      return '<tr><td class="const-cat">' + esc(inc.id || '') + '</td><td style="white-space:nowrap;">' + esc(inc.date || '') + '</td>' +
+             '<td>' + esc(inc.요약 || '') + '</td><td>' + badge + '</td></tr>';
+    }).join('');
+    return '<table class="const-tbl"><thead><tr><th>ID</th><th>날짜</th><th>요약</th><th>상태</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  function renderCanonBody(){
+    if(_canonValuesFullData == null) return '<div class="const-status">불러오는 중…</div>';
+    if(!_canonValuesFullData.length) return '<div class="const-status">불러오지 못했습니다(ssot/canon_values.json).</div>';
+    var rows = _canonValuesFullData.map(function(v){
+      return '<tr><td class="const-cat">' + esc(v.이름 || v.key || '') + '</td><td><b>' + esc(v.value || '') + '</b></td>' +
+             '<td style="color:var(--dim);font-size:10.5px;">' + esc(v.source || '') + '</td></tr>';
+    }).join('');
+    return '<table class="const-tbl"><thead><tr><th>이름</th><th>값</th><th>출처</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  function renderCommonInline(){
+    var el = document.getElementById('const-wrap');
+    if(!el) return;
+    var sections = [
+      { id:'promises',  icon:'📜', title:'우리의 약속', count:(_promisesData ? _promisesData.length : null), body: renderPromisesBody() },
+      { id:'incidents', icon:'🛡️', title:'다시는 안 그러기', count:(_incidentsFullData ? _incidentsFullData.length : null), body: renderIncidentsInlineBody() },
+      { id:'canon',     icon:'🏛️', title:'공식 숫자·정보',   count:(_canonValuesFullData ? _canonValuesFullData.length : null), body: renderCanonBody() }
+    ];
+    el.innerHTML = sections.map(function(s){
+      var open = !!_constOpen[s.id];
+      return '<div class="const-sec' + (open ? ' open' : '') + '" id="const-sec-' + s.id + '">' +
+        constHeader(s.id, s.icon, s.title, s.count) +
+        '<div class="const-body">' + s.body + '</div>' +
+      '</div>';
+    }).join('');
+  }
+  window._toggleConst = function(id){
+    _constOpen[id] = !_constOpen[id];
+    renderCommonInline();
+  };
+  renderCommonInline(); // 초기(fetch 전) 접힌 상태 + '불러오는 중…' 표시
+
+  // ── 채널 로고(인라인 SVG · 렌더 전용) — JSON엔 [텔레그램]/[카톡] 텍스트 토큰만(편집·S2 안전). esc() 후 치환. ──
+  var TG_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="텔레그램"><title>텔레그램</title><rect width="24" height="24" rx="7" fill="#229ED9"/><path transform="translate(3.2 3.6) scale(0.72)" d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.9-.75 1.12-1.52.7L11.6 16.8l-1.65 1.6c-.19.19-.35.29-.56.29z" fill="#fff"/></svg>';
+  var KT_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="카카오톡"><title>카카오톡</title><rect width="24" height="24" rx="7" fill="#FEE500"/><path d="M12 6c-3.6 0-6.5 2.28-6.5 5.09 0 1.82 1.22 3.42 3.06 4.32-.13.47-.49 1.78-.56 2.06-.09.35.13.34.27.25.11-.07 1.75-1.19 2.46-1.68.41.06.83.09 1.27.09 3.6 0 6.5-2.28 6.5-5.09S15.6 6 12 6z" fill="#3C1E1E"/></svg>';
+  function chanLogo(s){ return s.replace(/\[텔레그램\]/g, TG_LOGO).replace(/\[카톡\]/g, KT_LOGO); }
+
+  // 🗓️ 하루 루틴/스케줄 표 — dims[1]이 시간行(HH:MM)을 포함하면 [시간|내용] 표로 렌더.
+  //   ━ 소제목 ━ = 섹션行 · HH:MM 시작 = [시간|내용]行 · 그 외(제목·주석) = 캡션行. 시간行 없으면 null → 불릿 폴백.
+  function scheduleTable(raw){
+    var lines = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
+    // 시간칸 = 단일 시각(6:30) 또는 범위+소요(5:00~6:30 (1h 30m)). 소요 괄호는 숫자로 시작(내용 괄호와 구분).
+    var timeRe = /^(\d{1,2}:\d{2}(?:\s*~\s*\d{1,2}:\d{2})?(?:\s*\(\d[^)]*\))?)\s+(.*)$/;
+    if(!lines.some(function(l){ return timeRe.test(l); })) return null;
+    var rows = lines.map(function(l){
+      var sec = l.match(/^━+\s*(.+?)\s*━+$/);
+      if(sec) return '<tr class="rtbl-sec"><td colspan="2">' + chanLogo(esc(sec[1])) + '</td></tr>';
+      var m = l.match(timeRe);
+      if(m){
+        var tcell = esc(m[1]).replace(/(\([^)]*\))\s*$/, ' <span class="rtbl-dur">$1</span>');
+        return '<tr><td class="rtbl-t">' + tcell + '</td><td class="rtbl-c">' + chanLogo(esc(m[2])) + '</td></tr>';
+      }
+      return '<tr class="rtbl-cap"><td colspan="2">' + chanLogo(esc(l)) + '</td></tr>';
+    }).join('');
+    return '<table class="rtbl">' + rows + '</table>';
+  }
+
+  var body = document.getElementById('matrix-body');
+
+  // 라벨 블록: 작은 라벨(.dim-label) + 값.
+  //   비편집 = 원문을 ·/줄바꿈으로 split → 불릿 목록(.dim-bul). 빈 항목 제거. 없으면 '—'.
+  //   편집 = 기존처럼 원문 그대로(.cell-edit · 개별 contenteditable · IME 핸들러). 저장은 원문.
+  function dimBlock(role, di, label){
+    var d = (role.dims) || [];
+    var raw = (d[di] == null ? '' : String(d[di]));
+    var lab = '<span class="dim-label">' + label + '</span>';
+    if(_editMode){
+      return lab + '<div class="dim-val cell-edit" contenteditable="true" data-role="' + esc(role.id) + '" data-dim="' + di + '" ' +
+             'oncompositionstart="window._compOn()" oncompositionend="window._compOff()" ' +
+             'onblur="window._cellBlur(this)">' + esc(raw) + '</div>';
+    }
+    if(di === 1){ var st = scheduleTable(raw); if(st) return lab + st; }
+    var items = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
+    var lis = items.length
+      ? items.map(function(s){ return '<li>' + chanLogo(esc(s)) + '</li>'; }).join('')
+      : '<li class="dim-empty">—</li>';
+    return lab + '<ul class="dim-bul">' + lis + '</ul>';
+  }
+
+  // 🗺️ 소유·모듈 — 정본 ssot/ownership_map.json 직독(읽기전용 · GM확정 7역할 소유맵 단일출처 · 2026-07-18).
+  //   role.id(=title.toLowerCase())로 매칭. 화면소유=primary_surface 강조 · 도메인소유=domain. 복사 금지(약속 L01 '한 곳만 본다').
+  function ownershipBlock(role){
+    var o = (_ownershipData && _ownershipData[role.id]) || null;
+    if(!o) return '';
+    var lab = '<span class="dim-label">🗺️ 맡은 것 <span style="font-weight:400;text-transform:none;font-size:9px;color:var(--dim);">(정본 ssot/ownership_map.json)</span></span>';
+    var lis = [];
+    if(o.primary_surface) lis.push('<li>🖥️ 화면소유 · <b>' + esc(o.primary_surface) + '</b></li>');
+    if(o.domain) lis.push('<li>🗂️ 도메인 · ' + esc(o.domain) + (o.executor ? ' <span style="color:var(--dim);">(실무 ' + esc(o.executor) + ')</span>' : '') + '</li>');
+    var out = lis.length ? lab + '<ul class="dim-bul">' + lis.join('') + '</ul>' : '';
+    out += moduleLinksBlock(role);
+    out += northstarBlock(o);
+    return out;
+  }
+
+  // 🗺️ 소유·모듈 서술형 클릭 링크 — role.id → 실제 존재 확인된 href만(GM 지시 · 2026-07-18).
+  //   ownership_map.json/bootsetup_matrix.json 데이터는 수정하지 않고 이 렌더 상수만 사용.
+  //   href:null = 현재 페이지 자기 자신(비링크·현재 표시). cmo는 top-level 대표페이지가 아직 없어 M1 앵커로 임시 연결
+  //   — GM 확인 대기(추후 마케팅 자동화 전용 페이지 생기면 교체).
+  var MODULE_LINKS = {
+    ceo: [
+      { label: '북극성 (AI C-Level 운영 한 장)', href: null },
+      { label: '오늘의 항로 (G1)', href: 'wellperion_guide(main).html#G1' }
+    ],
+    cto: [
+      { label: '자율 작업 현황', href: '자율현황.html' }
+    ],
+    coo: [
+      { label: '월간운영계획', href: '월간운영계획.html' },
+      { label: '전사회의', href: '전사회의.html' },
+      { label: '종합접수처', href: 'coo/reception/종합접수처_현황.html' }
+    ],
+    cmo: [
+      { label: '마케팅 자동화', href: 'wellperion_guide(main).html#M1' } // 임시 · GM 확인 대기(전용 top-level 페이지 없음)
+    ],
+    cpo: [
+      { label: '문의·회원 관리', href: 'cpo/member/membership.html' }
+    ],
+    chro: [
+      { label: '업무·결재 현황 SSOT', href: 'wellperion_guide(main).html#S3' }
+    ],
+    cfo: [
+      { label: '매출·지출 현황', href: 'cfo/finance/매출지출현황.html' }
+    ]
+  };
+  // 소유·모듈 중복판정 — owns[].href가 해당 role의 MODULE_LINKS href와 정규화(trim) 후 정확 일치하면 true(제거 대상).
+  //   href:null(현재 페이지 자기자신)은 비교 대상 아님. 데이터(ssot/owns) 수정 없이 렌더에서만 필터.
+  function ownsIsDupOfModuleLink(roleId, href){
+    var links = MODULE_LINKS[roleId];
+    if(!links || !href) return false;
+    var norm = String(href).trim();
+    return links.some(function(l){ return l.href && String(l.href).trim() === norm; });
+  }
+  function moduleLinksBlock(role){
+    var links = MODULE_LINKS[role.id];
+    if(!links || !links.length) return '';
+    var items = links.map(function(l){
+      if(!l.href) return '<span class="own-chip" style="opacity:0.65;cursor:default;" title="현재 페이지">' + esc(l.label) + ' · 현재</span>';
+      return '<a class="own-chip" href="' + esc(l.href) + '">' + esc(l.label) + '</a>';
+    }).join('');
+    return '<div class="own-item" style="display:block;margin-top:2px;">' + items + '</div>';
+  }
+
+  // 🌟 북극성(장기 비전) — ownership_map.json 각 role의 "northstar" 필드(GM확정 2026-07-18). 미확정=placeholder 텍스트를 흐리게(dim) 표기.
+  function northstarBlock(o){
+    var raw = o && o.northstar;
+    if(!raw) return '';
+    var isPlaceholder = /^\[북극성/.test(raw);
+    // 칸 밸런스(2026-07-18 GM확정): 미확정 6역할=큰 블록 대신 정직 한 줄로 축약(강조·높이 축소).
+    // 확정 role(cmo 등)은 기존 라벨+본문 렌더 그대로 유지.
+    if(isPlaceholder){
+      return '<div class="dim-val" style="color:var(--dim);font-size:10.5px;margin:1px 0 5px;">🌟 북극성 미확정 <span style="font-style:italic;">(웰리 확정 대기)</span></div>';
+    }
+    var lab = '<span class="dim-label">🌟 북극성 <span style="font-weight:400;text-transform:none;font-size:9px;color:var(--dim);">(장기 비전)</span></span>';
+    return lab + '<div class="dim-val">' + esc(raw) + '</div>';
+  }
+
+  function ideasBlock(role){
+    var raw = (role.ideas == null ? '' : String(role.ideas));
+    var lab = '<span class="dim-label">💡 확장 아이디어</span>';
+    if(_editMode){
+      return lab + '<div class="dim-val cell-edit" contenteditable="true" data-role="' + esc(role.id) + '" data-field="ideas" ' +
+             'oncompositionstart="window._compOn()" oncompositionend="window._compOff()" ' +
+             'onblur="window._cellBlur(this)">' + esc(raw) + '</div>';
+    }
+    var items = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
+    var lis = items.length
+      ? items.map(function(s){ return '<li>' + chanLogo(esc(s)) + '</li>'; }).join('')
+      : '<li class="dim-empty">—</li>';
+    return lab + '<ul class="dim-bul">' + lis + '</ul>';
+  }
+
+  // 📊 KPI 블록 — 정본=ssot/kpi.json 직독(읽기전용 · 복사발산 차단). 편집 모드와 무관하게 항상 읽기전용.
+  //   kpi.json roles[id].kpi_html = 렌더 셀(이미 HTML이므로 escape 금지). kpi.json에 없는 주체(GM)는 dims[3] 폴백.
+  function kpiBlock(role){
+    var note = ''; // 2026-07-07 GM승인: '· 정본 ssot/kpi.json' 역할별 반복 안내 제거(출처는 위 sec-note title에 이미 명시)
+    var lab = '<span class="dim-label">📊 목표 숫자' + note + '</span>';
+    var kd = (_kpiData && _kpiData[role.id]) || null;
+    if(kd && kd.kpi_html){
+      return lab + '<div class="dim-val" style="white-space:normal;">' + kd.kpi_html + '</div>';
+    }
+    // kpi.json 미등록 주체(예: GM) — dims[3] 폴백(읽기전용)
+    var d = (role.dims) || [];
+    var raw = (d[3] == null ? '' : String(d[3]));
+    var items = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
+    var lis = items.length
+      ? items.map(function(s){ return '<li>' + chanLogo(esc(s)) + '</li>'; }).join('')
+      : '<li class="dim-empty">—</li>';
+    return lab + '<ul class="dim-bul">' + lis + '</ul>';
+  }
+
+  // 🗺️ 북극성 지도 — 대표 KPI 1개 + 측정 tier + 현재값 + 목표 + 경로 한 줄(정직 정식화 · 2026-07-02).
+  //   정본 = bootsetup_matrix.json role.nsmap {kpi,tier,goal,path,현재,value_key}. 가짜 숫자·진척바 금지(약속 L05 · M4-METRIC-HONESTY).
+  //   현재값: value_key가 kpi_values에 실측 숫자로 있으면 우선 표시, 없으면 nsmap.현재(정직 서술)·그것도 없으면 '미측정'.
+  //   draft 역할(cpo·cfo·chro)은 '제안본 · GM 결재 대기'(kpi.json 정의 변경 게이트).
+  // 실측값 직독: value_key를 kpi_values.roles[id] → kpi_values.global 순으로 조회.
+  //   숫자(율→%·그외 그대로)·문자(예: "ok")는 표시. 없음/null=미측정(정직) → null 반환.
+  function liveVal(role, value_key){
+    if(!value_key) return null;
+    var v = (_kpiValues && _kpiValues[role.id]) || null;
+    var raw = (v && (value_key in v)) ? v[value_key]
+            : (_kpiGlobal && (value_key in _kpiGlobal)) ? _kpiGlobal[value_key] : undefined;
+    if(raw === undefined || raw === null) return null;   // 미측정 → 정직
+    if(typeof raw === 'number'){
+      if(/율$/.test(value_key)) return (raw <= 1 ? Math.round(raw * 100) : Math.round(raw)) + '%';
+      return String(raw);
+    }
+    return String(raw);                                   // 문자 상태(예: ok)
+  }
+  // 축 1개 렌더. measured=true → 라이브 값(없으면 note로 상태 표기·회색 아님) / measured=false → 회색 '미측정'.
+  function axisRow(role, ax){
+    var measured = !!(ax && ax.measured);
+    var live = measured ? liveVal(role, ax.value_key) : null;
+    var goal = ax.goal ? ' <span class="nsax-goal">→ ' + esc(ax.goal) + '</span>' : '';
+    var tip = ax.note ? ' title="' + esc(ax.note) + '"' : '';
+    if(measured){
+      var body = (live != null) ? esc(live) : '측정중';
+      return '<div class="nsax nsax-live"' + tip + '><span class="nsax-name">' + esc(ax.name) + '</span> <b>' + body + '</b>' + goal + '</div>';
+    }
+    return '<div class="nsax nsax-none"' + tip + '><span class="nsax-name">' + esc(ax.name) + '</span> <b>미측정</b>' + goal + '</div>';
+  }
+  // 복합 축 커버리지: measured 개수 M / 전체 K + 측정 축의 표시값 목록(정직 병기용).
+  function axesCoverage(role){
+    var ax = (role.nsmap && role.nsmap.axes) || [];
+    var M = 0, vals = [];
+    ax.forEach(function(a){
+      if(a && a.measured){
+        M++;
+        var v = liveVal(role, a.value_key);
+        vals.push(esc(a.name) + ' ' + (v != null ? esc(v) : esc(a.note || '측정중')));
+      }
+    });
+    return { K: ax.length, M: M, vals: vals };
+  }
+  // 🌟 북극성 지도·도달율 (병합 2026-07-07 GM승인) — 지도(KPI명·축별 실측·경로) + 도달율(커버리지 바·마일스톤)을
+  //   한 블록으로. 축 값 이중나열 제거. 정직측정(가짜 %·진척바 금지 · 약속 L05 · M4-METRIC-HONESTY) 그대로 보존.
+  function northStarBlock(role){
+    var m = role.nsmap;
+    if(!m) return '';
+    var out = '<div class="nsmap"><span class="nsmap-h">🌟 북극성 지도·도달율</span>';
+    if(m.kpi) out += '<div class="nsmap-row"><span class="nsmap-k">복합 KPI</span> <b>' + esc(m.kpi) + '</b></div>';
+    if(Array.isArray(m.axes) && m.axes.length){
+      var cov = axesCoverage(role);
+      var pct = cov.K ? Math.round(cov.M / cov.K * 100) : 0;   // 측정 커버리지(도달율 아님·좁은 프록시 100% 방지)
+      out += '<div class="kbar gold" title="측정 커버리지 — 전체 축 중 실측된 비율(도달율 아님)"><i style="width:' + pct + '%"></i></div>';
+      out += '<div class="nsreach-meta" style="font-size:11.5px;" title="복합 축 종합 — 좁은 프록시 하나로 &lsquo;북극성 도달&rsquo; 단정 금지(L05)">측정 <b>' + cov.M + '/' + cov.K + '축</b></div>';
+      out += '<div class="nsax-list">' + m.axes.map(function(a){ return axisRow(role, a); }).join('') + '</div>';
+      var dM = (_reachData && _reachData[role.id]) || null;
+      if(dM && dM.mode === 'milestone' && typeof dM.milestones_done === 'number'){
+        out += '<div class="nsreach-meta" style="margin-top:2px;" title="북극성 마일스톤(GM 조정)">🏁 마일스톤 <b>' + dM.milestones_done + '/' + dM.milestones_total + '</b> <span class="nsreach-note">· ' + Math.round((dM.reach_pct || 0)) + '%</span></div>';
+      }
+    } else {
+      var d = (_reachData && _reachData[role.id]) || null;
+      if(d && typeof d.reach_pct === 'number'){
+        var rpct = Math.max(0, Math.min(100, Math.round(d.reach_pct)));
+        var meta = (d.mode === 'milestone' && typeof d.milestones_done === 'number')
+          ? ('마일스톤 ' + d.milestones_done + '/' + d.milestones_total + (d.milestones_done === 0 ? ' · 제안본' : ''))
+          : (d.basis || '');
+        out += '<div class="kbar gold" title="북극성 도달율(목표 대비 현재)"><i style="width:' + rpct + '%"></i></div>';
+        out += '<div class="nsreach-meta">🌟 도달율 <b>' + rpct + '%</b> <span class="nsreach-note">· ' + esc(meta) + '</span></div>';
+      } else {
+        var live = liveVal(role, m.value_key);
+        var cur = (live != null) ? live : (m['현재'] || '미측정');
+        if(m.tier) out += '<div class="nsmap-row"><span class="nsmap-k">측정</span> ' + esc(m.tier) + ' · 현재 <b>' + esc(cur) + '</b></div>';
+        if(m.goal) out += '<div class="nsmap-row"><span class="nsmap-k">목표</span> ' + esc(m.goal) + '</div>';
+      }
+    }
+    if(m.path) out += '<div class="nsmap-path">🧭 ' + esc(m.path) + '</div>';
+    return out + '</div>';
+  }
+
+  // 작업 처리율 — 보조 지표(활동량) · 강등. 구 "완결률" = 할당 작업 처리량이지 북극성 도달과 다름.
+  //   status/kpi_values.json 완결률(0~1) → 중립색 작은 막대 + 누적 완료 수 병기. 값 없으면 빈 문자열(graceful).
+  //   coo 지원부_점검완료율은 #1 북극성 도달율로 승격 → 여기서 중복 표시하지 않음.
+  function workRateBlock(role){
+    var v = (_kpiValues && _kpiValues[role.id]) || null;
+    if(!v || typeof v['완결률'] !== 'number') return '';
+    var pct = Math.max(0, Math.min(100, Math.round(v['완결률'] * 100)));
+    var done = (typeof v['완료'] === 'number') ? v['완료'] : null;
+    var act  = (typeof v['활성'] === 'number') ? v['활성'] : null;
+    var frac = (done != null && act != null)
+        ? ('완료 <b>' + done + '</b> / 진행중 <b>' + act + '</b> → 처리율 <b>' + pct + '%</b>')
+        : (done != null ? ('누적 완료 <b>' + done + '</b> · 처리율 <b>' + pct + '%</b>')
+                        : ('처리율 <b>' + pct + '%</b>'));
+    return '<div class="workrate"><span class="workrate-h">작업 처리율 <span class="nsreach-note">· 활동량(≠ 북극성 도달)</span></span>' +
+      '<div class="kbar neutral" title="작업 처리율 = 완료 ÷ (완료+진행중). 활동량 지표 — 낮으면 진행중 배가 많다는 뜻이지 북극성 미달이 아님"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="workrate-meta">' + frac + '</div>' +
+    '</div>';
+  }
+
+  // 📍 진행현황 — status/_queue.json 직독 집계(활성 N · 오늘 완료 M). 데이터 없으면 줄 생략.
+  function progressBlock(role){
+    var c = (_queueCounts && _queueCounts[role.id]) || null;
+    if(!c) return '';
+    var lab = '<span class="dim-label">📍 지금 하는 일</span>';
+    return lab + '<div class="pstat">📍 활성 <b>' + c.active + '</b> · 오늘 완료 <b>' + c.doneToday + '</b></div>';
+  }
+
+  // 🌅 오늘 추천 — status/northstar_pending.json 후보 1개. 없으면 숨김.
+  function recommendBlock(role){
+    var cand = (_pendingByRole && _pendingByRole[role.id]) || null;
+    if(!cand || !cand.title) return '';
+    var lab = '<span class="dim-label">🌅 오늘 추천</span>';
+    return lab + '<div class="todaychip" title="' + esc(cand.rationale || '') + '">🌅 ' + esc(cand.title) + '</div>';
+  }
+
+  // 🛡️ 재발방지 GUARDED — ssot/incidents.json 직독 집계. 역할 연관 봉인 건수 + 최근 1건. 없으면 숨김.
+  function incidentsBlock(role){
+    var c = (_incidents && _incidents[role.id]) || null;
+    if(!c || !c.guarded) return '';
+    var r = c.recent;
+    var rc = r ? ('<span class="incd-recent" title="' + esc(r.요약 || '') + '">최근 ' + esc(r.id) +
+                  ' · ' + esc(String(r.요약 || '').slice(0, 44)) + (String(r.요약 || '').length > 44 ? '…' : '') + '</span>') : '';
+    return '<div class="incd"><span class="incd-h">🛡️ 다시는 안 그러기 GUARDED</span>' +
+      '<div class="incd-meta">🛡️ 봉인 <b>' + c.guarded + '</b>건</div>' + rc + '</div>';
+  }
+
+  // 🏭 모듈 & 제품화 성숙도 — _prodByRole[role.id] 렌더(구 별도 '모듈 제품화 지도' 섹션 흡수 · 2026-07-18).
+  //   구 renderProdStrip 렌더 로직 그대로 재활용: autonomy 배지 + ai_free_fallback. 모듈 없는 역할(gm·cfo)은 숨김.
+  function prodBlock(role){
+    var arr = (_prodByRole && _prodByRole[role.id]) || null;
+    if(!arr || !arr.length) return '';
+    var lab = '<span class="dim-label">🏭 모듈 & 제품화 ' + arr.length + '</span>';
+    var items = arr.map(function(m){
+      var mt = PROD_MAT[m.autonomy] || ['manual','⚪ ' + (m.autonomy || '?')];
+      var free = m.ai_free_fallback ? '<div class="prod-free"><b>AI 없이:</b> ' + esc(m.ai_free_fallback) + '</div>' : '';
+      return '<div class="prod-mod"><div class="prod-feat"><span class="prod-mat ' + mt[0] + '">' + mt[1] + '</span> ' + esc(m.feature || m.id) + '</div>' + free + '</div>';
+    }).join('');
+    return '<div class="prod-cell">' + lab + items + '</div>';
+  }
+
+  // ── ▶ progressive disclosure: 접힘 판정 · 요약 줄 조립(신규 fetch 없음 · 이미 로드된 데이터만) ──
+  //   기본 접힘 · 편집 모드/인쇄 시엔 전체 펼침.
+  function isCollapsed(role){
+    if(_editMode || _forcePrintExpand) return false;
+    return _collapsed[role.id] !== false;
+  }
+  // 역할 한 줄(짧게) — ownership_map.domain 우선, 없으면 북극성(dims[0]) 첫 줄.
+  function roleOneLiner(role){
+    var o = (_ownershipData && _ownershipData[role.id]) || null;
+    if(o && o.domain) return o.domain;
+    var d = (role.dims) || [];
+    var raw = String(d[0] == null ? '' : d[0]);
+    return (raw.split(/\n+/)[0] || '').trim();
+  }
+  // 🏭 제품화 요약 배지 — 이미 로드된 _prodByRole 그룹에서 autonomy 집계(새 fetch 금지). 모듈 없으면 빈 문자열.
+  function prodSummary(role){
+    var arr = (_prodByRole && _prodByRole[role.id]) || null;
+    if(!arr || !arr.length) return '';
+    var order = ['auto','mech','semi','propose','manual'];
+    var cnt = {};
+    arr.forEach(function(m){ var k = m.autonomy || 'manual'; cnt[k] = (cnt[k] || 0) + 1; });
+    var segs = order.filter(function(k){ return cnt[k]; }).map(function(k){
+      var mt = PROD_MAT[k] || ['manual','⚪ ' + k];
+      return '<span class="crow-prodseg ' + k + '">' + mt[1].replace(/\s/, '') + ' ' + cnt[k] + '</span>';
+    });
+    return '<span class="crow-prod" title="완성 정도 집계 · status/module_registry.json">🏭 모듈 ' + arr.length + '개 · ' + segs.join('') + '</span>';
+  }
+  // 🎯도달·📍완료·진행 컴팩트 칩 — 접힘 요약 전용. 신규 fetch 없음: 펼침이 쓰는 동일 소스(_reachData·_queueCounts)만 재사용.
+  //   🎯 도달N% = northStarBlock()의 비-axes 분기와 동일 값(_reachData[role].reach_pct, mode 무관·측정+마일스톤 공통 실값).
+  //   axes형 역할(측정 커버리지만 있고 reach_pct 없음)은 커버리지≠도달이라 칩 생략(가짜 % 금지 · 약속 L05).
+  //   📍 완료·진행 = progressBlock()과 동일 _queueCounts[role.id]{active, doneToday}. 데이터 없는 role은 각 칩 자연 생략.
+  function crowMetrics(role){
+    var out = '';
+    var d = (_reachData && _reachData[role.id]) || null;
+    if(d && typeof d.reach_pct === 'number'){
+      var rpct = Math.max(0, Math.min(100, Math.round(d.reach_pct)));
+      out += '<span class="crow-metric reach" title="북극성 도달율(펼침 동일값) · status/northstar_reach.json">🎯 도달 ' + rpct + '%</span>';
+    }
+    var c = (_queueCounts && _queueCounts[role.id]) || null;
+    if(c){
+      out += '<span class="crow-metric queue" title="완료(오늘)·진행중 배 수(펼침 📍 지금 하는 일과 동일 집계) · status/_queue.json">📍 완료 ' + c.doneToday + ' · 진행 ' + c.active + '</span>';
+    }
+    return out;
+  }
+  // 접힌 행 = colspan 4 요약 줄 하나(항상 보임). 셀 전체 클릭 = 펼치기.
+  function summaryCell(role, ac){
+    var oneL = roleOneLiner(role);
+    return '<td colspan="4" class="role-summary-cell" style="border-left:4px solid ' + esc(ac) + ';" ' +
+             'onclick="window._toggleRole(\'' + esc(role.id) + '\')" title="펼치기">' +
+      '<div class="role-summary-line">' +
+        '<span class="crow-toggle" aria-hidden="true">▶</span>' +
+        '<span class="ricon">' + esc(role.icon) + '</span>' +
+        '<span class="rname" style="color:' + esc(ac) + ';">' + esc(role.name) + '</span>' +
+        '<span class="rtitle">' + esc(role.title) + '</span>' +
+        (role.draft ? '<span class="rdraft">🔖 초안</span>' : '') +
+        (oneL ? '<span class="crow-role">— ' + esc(oneL) + '</span>' : '') +
+        prodSummary(role) +
+        crowMetrics(role) +
+        statusBadge(reachStatus(role)) +
+      '</div>' +
+    '</td>';
+  }
+
+  // 🏷️ 정직 상태 배지(3종 단일 판정 · A3 인쇄 카드용 · 2026-07-04) — 신규 fetch 없음, 기존 _reachData만 사용.
+  //   ✅measured = reach 실측(mode=measured & reach_pct 숫자) · 🔖draft = 마일스톤/제안본(mode=milestone, role.draft 있으면 우선) ·
+  //   🔧unmeasured = 그 외(reach null·미설정). 가짜 숫자 금지(약속 L05) — 판정 자체가 정직 표기 그대로.
+  function reachStatus(role){
+    if(role.draft) return 'draft';
+    var d = (_reachData && _reachData[role.id]) || null;
+    if(d && d.mode === 'measured' && typeof d.reach_pct === 'number') return 'measured';
+    if(d && d.mode === 'milestone') return 'draft';
+    return 'unmeasured';
+  }
+  var STATUS_META = {
+    measured:   { badge: '✅ 측정개통',   cls: 'measured' },
+    draft:      { badge: '🔖 제안본',     cls: 'draft' },
+    unmeasured: { badge: '🔧 측정개통전', cls: 'unmeasured' }
+  };
+  function statusBadge(status){
+    var meta = STATUS_META[status] || STATUS_META.unmeasured;
+    return '<span class="ns-badge ' + meta.cls + '">' + meta.badge + '</span>';
+  }
+  function renderMatrix(){
+    var roles = (_matrixData && _matrixData.roles) || [];
+    if(!roles.length){
+      body.innerHTML = '<tr><td colspan="4" class="matrix-status">roles 비어 있음. 정본: <code>coo/bootsetup_matrix.json</code></td></tr>';
+      return;
+    }
+    body.innerHTML = roles.map(function(role){
+      var ac = role.accent || 'var(--accent)';
+      var gm = role.id === 'gm';
+      // 접힘(기본) = 요약 줄 하나만. 펼침 = 기존 3칸 상세.
+      if(isCollapsed(role)){
+        return '<tr data-role="' + esc(role.id) + '" class="' + (gm ? 'role-gm ' : '') + 'crow-collapsed">' +
+          summaryCell(role, ac) + '</tr>';
+      }
+      // 칸1 목표·지표 = 🌟북극성(dims[0]·편집) → 🌟북극성 지도·도달율(축별 실측+커버리지, 병합) → 📊담당 KPI 지표 정의(읽기전용)
+      //   → 작업 처리율(보조·강등) → 📍진행현황 → 🌅오늘 추천.
+      // 2026-07-07 GM승인: 🗺️북극성 지도 + 🌟북극성 도달율 두 블록을 northStarBlock() 하나로 병합(축 값 이중나열 제거).
+      var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + northStarBlock(role) +
+               kpiBlock(role) + workRateBlock(role) + progressBlock(role) + recommendBlock(role) + '</td>';
+      // 칸2 일하는 법 = 📚읽는 정본(2) + 🗓️하루 루틴(1) — 카드화로 시각 빈약 완화(칸 밸런스 2026-07-18 · 콘텐츠 추가 없음)
+      var c2 = '<td><div class="c2-card">' + dimBlock(role, 2, '📚 읽는 정본') + '</div>' +
+               '<div class="c2-card">' + dimBlock(role, 1, '🗓️ 하루 루틴') + '</div></td>';
+      // 칸3 소유 관리 = role.owns 링크칩(+선택 desc 1줄) + role.channels(선택·발행채널) — 둘 다 없으면 기존과 동일 렌더(하위호환)
+      //   MODULE_LINKS[role.id] 중 href가 동일 대상인 owns 칩은 중복이라 제거(서술형 MODULE_LINK만 남김 · GM지시 2026-07-18).
+      //   href 비교는 정규화(trim, 앵커 포함) 후 정확 일치만 중복 판정 — 세부항목(예: chro H1~H4)은 앵커가 서로 달라 유지됨.
+      var ownsFiltered = (role.owns || []).filter(function(o){ return !ownsIsDupOfModuleLink(role.id, o.href); });
+      var ownsLabel = (MODULE_LINKS[role.id] && ownsFiltered.length) ? '<span class="dim-label" style="margin-top:6px;">🔗 세부</span>' : '';
+      var owns = ownsLabel + ownsFiltered.map(function(o){
+        var desc = o.desc ? '<div class="own-desc">' + esc(o.desc) + '</div>' : '';
+        return '<div class="own-item"><a class="own-chip" href="' + esc(o.href) + '">' + esc(o.label) + '</a>' + desc + '</div>';
+      }).join('');
+      var chans = '';
+      if(role.channels && role.channels.length){
+        chans = '<div class="chan-block"><div class="chan-h">📡 발행 채널 ' + role.channels.length + '</div>' +
+          role.channels.map(function(c){
+            return '<div class="chan-item"><b>' + esc(c.label) + '</b><span>' + esc(c.desc) + '</span></div>';
+          }).join('') + '</div>';
+      }
+      var c3 = '<td>' + ownershipBlock(role) + owns + chans + prodBlock(role) + incidentsBlock(role) + ideasBlock(role) + '</td>';
+      // 펼침 행: 역할 셀 상단에 접기 토글(▼). 편집 모드에선 토글 숨김(전체 펼침 고정).
+      var toggleBtn = _editMode ? '' : '<button class="crow-toggle open" onclick="window._toggleRole(\'' + esc(role.id) + '\')" title="접기" aria-label="접기">▼ 접기</button>';
+      return '<tr data-role="' + esc(role.id) + '" class="' + (gm ? 'role-gm ' : '') + 'crow-open">' +
+        '<td class="role-cell" style="border-left:4px solid ' + esc(ac) + ';">' +
+          toggleBtn +
+          '<div class="ricon">' + esc(role.icon) + '</div>' +
+          '<div class="rname" style="color:' + esc(ac) + ';">' + esc(role.name) + (role.draft ? '<span class="rdraft">🔖 초안</span>' : '') + '</div>' +
+          '<div class="rtitle">' + esc(role.title) + '</div>' +
+          (role.owner ? '<div class="rowner">담당 · ' + esc(role.owner) + '</div>' : '') +
+          statusBadge(reachStatus(role)) +
+        '</td>' + c1 + c2 + c3 +
+      '</tr>';
+    }).join('');
+  }
+
+  // ── 🎛️ 컨트롤바(역할·칸 필터 + 폴침) — 편집/저장 로직과 독립 ──
+  function buildControlBar(){
+    var el = document.getElementById('mx-controls');
+    if(!el) return;
+    var roles = (_matrixData && _matrixData.roles) || [];
+    var roleChips = '<span class="mx-chip' + (!_roleFilter ? ' on' : '') + '" data-act="role" data-val="">전체</span>' +
+      roles.map(function(r){
+        return '<span class="mx-chip' + (_roleFilter === r.id ? ' on' : '') + '" data-act="role" data-val="' + esc(r.id) + '">' +
+               esc(r.icon || '') + ' ' + esc(r.name) + '</span>';
+      }).join('');
+    var colNames = ['🌟 가는 곳·목표', '🔧 일하는 법', '🚧 맡은 것'];
+    var colChips = colNames.map(function(n, i){
+      return '<span class="mx-chip col' + (!_colHidden[i] ? ' on' : '') + '" data-act="col" data-val="' + i + '">' + esc(n) + '</span>';
+    }).join('');
+    var foldChip = '<span class="mx-chip' + (_compact ? ' on' : '') + '" data-act="fold" data-val="">' +
+                   (_compact ? '📑 간략히' : '📖 펼침') + '</span>';
+    el.innerHTML =
+      '<div class="grp"><span class="glab">주체</span>' + roleChips + '</div>' +
+      '<span class="mx-sep"></span>' +
+      '<div class="grp"><span class="glab">칸</span>' + colChips + '</div>' +
+      '<span class="mx-sep"></span>' +
+      '<div class="grp"><span class="glab">보기</span>' + foldChip + '</div>';
+    if(!_ctrlBound){
+      _ctrlBound = true;
+      el.addEventListener('click', function(e){
+        var c = e.target.closest ? e.target.closest('.mx-chip') : null;
+        if(!c) return;
+        var act = c.getAttribute('data-act'), val = c.getAttribute('data-val');
+        if(act === 'role'){ _roleFilter = val || null; }
+        else if(act === 'col'){ var i = parseInt(val, 10); if(i >= 0 && i < 3) _colHidden[i] = !_colHidden[i]; }
+        else if(act === 'fold'){ _compact = !_compact; }
+        buildControlBar();
+        applyViewState();
+      });
+    }
+  }
+  // 뷰 상태를 렌더 후 매트릭스에 반영(행 필터·칸 숨김·폴침). renderMatrix 뒤 항상 호출.
+  function applyViewState(){
+    var t = document.querySelector('table.matrix');
+    if(!t) return;
+    t.classList.toggle('compact', _compact && !_editMode);
+    t.classList.toggle('hide-c0', _colHidden[0]);
+    t.classList.toggle('hide-c1', _colHidden[1]);
+    t.classList.toggle('hide-c2', _colHidden[2]);
+    Array.prototype.forEach.call(body.querySelectorAll('tr[data-role]'), function(tr){
+      var rid = tr.getAttribute('data-role');
+      tr.style.display = (!_roleFilter || _roleFilter === rid) ? '' : 'none';
+    });
+  }
+
+  // IME 안전: 조합 중 blur 반영 차단
+  window._compOn  = function(){ window._composing = true; };
+  window._compOff = function(){ window._composing = false; };
+  window._cellBlur = function(el){
+    if(window._composing) return;
+    var role  = el.getAttribute('data-role');
+    var field = el.getAttribute('data-field');
+    var val   = el.innerText || el.textContent || '';
+    if(!_matrixData) return;
+    if(field === 'ideas'){
+      (_matrixData.roles || []).forEach(function(r){
+        if(r.id === role) r.ideas = val;
+      });
+    } else {
+      var dim = parseInt(el.getAttribute('data-dim'), 10);
+      (_matrixData.roles || []).forEach(function(r){
+        if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length){
+          r.dims[dim] = val;   // 편집칸 인덱스(0,3,2,1)만 갱신 — 나머지 dims는 손대지 않음
+        }
+      });
+    }
+  };
+
+  function renderEditBtn(){
+    var wrap = document.getElementById('matrix-edit-wrap');
+    if(!wrap) return;
+    if(_editMode){
+      wrap.innerHTML = '<button class="ebtn save" id="matrix-save-btn" onclick="window._matrixSave()">저장</button>' +
+                       '<button class="ebtn cancel" onclick="window._matrixCancel()">취소</button>';
+    } else {
+      wrap.innerHTML = '<button class="ebtn edit" onclick="window._matrixEdit()">✏️ GM 편집</button>';
+    }
+  }
+
+  function setEdit(on){
+    _editMode = !!on;
+    var t = document.querySelector('table.matrix');
+    if(t) t.classList.toggle('editing', _editMode);
+    renderMatrix();
+    renderEditBtn();
+    applyViewState();
+  }
+
+  // 편집 모드에서 열 너비 드래그 조정 (GM PC localStorage 저장 · 정본 아님)
+  function initColResizers(){
+    var table = document.querySelector('table.matrix');
+    if(!table) return;
+    var ths = table.querySelectorAll('thead th');
+    var KEY = 'hunjang-colw-v3', saved = {};
+    try{ saved = JSON.parse(localStorage.getItem(KEY) || '{}'); }catch(e){}
+    Array.prototype.forEach.call(ths, function(th, i){
+      if(saved[i]) th.style.width = saved[i] + 'px';
+      var rz = document.createElement('div');
+      rz.className = 'col-resizer';
+      rz.addEventListener('mousedown', function(e){
+        e.preventDefault(); e.stopPropagation();
+        var startX = e.clientX, startW = th.offsetWidth;
+        function mv(ev){ th.style.width = Math.max(40, startW + (ev.clientX - startX)) + 'px'; }
+        function up(){ document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
+          saved[i] = th.offsetWidth; try{ localStorage.setItem(KEY, JSON.stringify(saved)); }catch(e){} }
+        document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+      });
+      th.appendChild(rz);
+    });
+  }
+
+  window._matrixEdit = function(){ setEdit(true); };
+  // ▶ 개별 C레벨 접기/펼치기 토글(아코디언 아님 · 각자 독립). 데이터 무변경 · 표현만 재렌더.
+  window._toggleRole = function(id){
+    _collapsed[id] = !(_collapsed[id] !== false);
+    renderMatrix();
+    applyViewState();
+  };
+  // 인쇄 시엔 전체 펼침 → A3 인쇄 가독 보존(화면 접힘과 무관).
+  window.addEventListener('beforeprint', function(){ _forcePrintExpand = true; renderMatrix(); applyViewState(); });
+  window.addEventListener('afterprint',  function(){ _forcePrintExpand = false; renderMatrix(); applyViewState(); });
+  function fetchMatrix(){
+    // 최신 보장: GAS read_file(GitHub API 직독·CDN 캐시 없음) → 실패 시 Pages 폴백
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:'3. 웰페리온 가이드/coo/bootsetup_matrix.json'})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'read 실패'); })
+      .catch(function(){ return fetch('coo/bootsetup_matrix.json?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
+  }
+  // KPI 정본 직독 — GAS read_file(ssot/kpi.json) → 실패 시 raw GitHub 폴백.
+  //   (ssot/는 GitHub Pages 발행루트 밖이라 Pages 폴백 불가 → raw 사용.)
+  function fetchKpi(){
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:'ssot/kpi.json'})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'kpi read 실패'); })
+      .catch(function(){ return fetch(KPI_RAW_URL + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
+  }
+  // 범용 직독: GAS read_file(최신·캐시없음) → 실패 시 raw GitHub 폴백. 실패해도 호출부에서 .catch(null) 처리.
+  function gasRead(path, rawUrl){
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'read_file', path:path})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'read 실패'); })
+      .catch(function(){ return fetch(rawUrl + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); });
+  }
+  window._matrixCancel = function(){
+    fetchMatrix().then(function(d){ _matrixData = d; setEdit(false); });
+  };
+  window._matrixSave = function(){
+    var pin = prompt('GM 편집 저장 — 비밀번호를 입력하세요:');
+    if(pin === null || pin === '') return;
+    if(!_matrixData) return;
+    // 저장 직전 편집칸 전체를 모델에 반영 — blur/IME 누락 방지(원상복귀 버그 차단)
+    Array.prototype.forEach.call(body.querySelectorAll('.cell-edit[contenteditable]'), function(el){
+      var role = el.getAttribute('data-role'), field = el.getAttribute('data-field'), val = el.innerText || el.textContent || '';
+      if(field === 'ideas'){
+        (_matrixData.roles || []).forEach(function(r){ if(r.id === role) r.ideas = val; });
+      } else {
+        var dim = parseInt(el.getAttribute('data-dim'), 10);
+        (_matrixData.roles || []).forEach(function(r){ if(r.id === role && Array.isArray(r.dims) && dim < r.dims.length) r.dims[dim] = val; });
+      }
+    });
+    _matrixData.updated_at = new Date().toISOString().slice(0,10);
+    var content = JSON.stringify(_matrixData, null, 2);
+    var btn = document.getElementById('matrix-save-btn');
+    if(btn){ btn.textContent = '저장 중…'; btn.disabled = true; }
+    fetch(GAS_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        action: 'commit_file',
+        path: '3. 웰페리온 가이드/coo/bootsetup_matrix.json',
+        content: content,
+        message: '[GM] AI C-Level 운영 한 장 3칸 편집 ' + _matrixData.updated_at,
+        key: pin
+      })
+    })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res && res.ok){
+          alert('저장 완료. (커밋: ' + ((res.commit||'') + '').slice(0,7) + ')');
+          setEdit(false);
+        } else {
+          alert('저장 실패: ' + ((res && res.error) || '알 수 없는 오류'));
+          if(btn){ btn.textContent = '저장'; btn.disabled = false; }
+        }
+      })
+      .catch(function(e){
+        alert('저장 오류: ' + e.message);
+        if(btn){ btn.textContent = '저장'; btn.disabled = false; }
+      });
+  };
+
+  // 🌟 비전 배너 정본화(부차·2026-07-04) — ssot/canon_values.json 직독(신규 fetch 1개, 기존 gasRead 패턴 재사용).
+  //   company_scale만 대체(가짜 창작 금지 · 나머지 문장은 정적 문서 출처라 하드코딩 유지·주석 명시).
+  //   AI CEO 북극성 줄은 신규 fetch 없이 기존 _matrixData(ceo.dims[0])만 사용.
+  function renderVisionDynamic(canonMap){
+    try{
+      var scaleEl = document.getElementById('vision-scale');
+      if(scaleEl && canonMap && canonMap.company_scale) scaleEl.textContent = canonMap.company_scale;
+    }catch(e){}
+    try{
+      var nsEl = document.getElementById('vision-ceo-ns');
+      var ceoRole = ((_matrixData && _matrixData.roles) || []).filter(function(r){ return r.id === 'ceo'; })[0];
+      if(nsEl && ceoRole){
+        var raw = ((ceoRole.dims || [])[0] == null) ? '' : String(ceoRole.dims[0]);
+        var first = (raw.split(/\n+/)[0] || '').trim();
+        if(first) nsEl.innerHTML = '🧭 <b>AI CEO 북극성</b> <span style="color:var(--dim);">(정본 coo/bootsetup_matrix.json)</span> ' + esc(first);
+        var yr=(ceoRole.year_northstar_2026==null)?'':String(ceoRole.year_northstar_2026); if(nsEl && yr){ nsEl.innerHTML += '<br>🎯 <b>2026 북극성<\/b> <span style="color:var(--dim);">(웰리·올해)<\/span> ' + esc(yr); }
+      }
+    }catch(e){}
+  }
+
+  Promise.all([
+    fetchMatrix(),
+    fetchKpi().catch(function(){ return null; }),
+    gasRead('status/kpi_values.json',     RAW_BASE + 'status/kpi_values.json').catch(function(){ return null; }),
+    gasRead('status/_queue.json',         RAW_BASE + 'status/_queue.json').catch(function(){ return null; }),
+    gasRead('status/northstar_pending.json', RAW_BASE + 'status/northstar_pending.json').catch(function(){ return null; }),
+    gasRead('ssot/incidents.json',        RAW_BASE + 'ssot/incidents.json').catch(function(){ return null; }),
+    gasRead('status/northstar_reach.json', RAW_BASE + 'status/northstar_reach.json').catch(function(){ return null; }),
+    gasRead('ssot/canon_values.json',      RAW_BASE + 'ssot/canon_values.json').catch(function(){ return null; }),
+    gasRead('ssot/ownership_map.json',     RAW_BASE + 'ssot/ownership_map.json').catch(function(){ return null; }),
+    gasRead('status/module_registry.json', RAW_BASE + 'status/module_registry.json').catch(function(){ return null; }),
+    gasRead('ssot/약속.json',               RAW_BASE + 'ssot/약속.json').catch(function(){ return null; })
+  ])
+    .then(function(arr){
+      _matrixData = arr[0];
+      _kpiData = (arr[1] && arr[1].roles) || {};
+      _kpiValues = (arr[2] && arr[2].roles) || {};
+      _kpiGlobal = (arr[2] && arr[2].global) || {};
+      _queueCounts = computeQueueCounts(arr[3]);
+      _pendingByRole = computePending(arr[4]);
+      _incidents = computeIncidents(arr[5]);
+      _reachData = (arr[6] && arr[6].roles) || {};
+      var canonMap = {};
+      ((arr[7] && arr[7].values) || []).forEach(function(v){ if(v && v.key) canonMap[v.key] = v.value; });
+      _ownershipData = {};
+      ((arr[8] && arr[8].roles) || []).forEach(function(o){ if(o && o.title) _ownershipData[String(o.title).toLowerCase()] = o; });
+      _prodByRole = computeProdByRole(arr[9]);
+      // 📜🛡️🏛️ 공통헌법 3종 인라인 — arr[5]/arr[7]은 이미 위에서 fetch된 원본(incidents 전체·canon 전체) 재사용, 약속만 신규 arr[10].
+      _incidentsFullData = (arr[5] && arr[5].incidents) || [];
+      _canonValuesFullData = (arr[7] && arr[7].values) || [];
+      _promisesData = (arr[10] && arr[10].lessons) || [];
+      renderMatrix();
+      renderVisionDynamic(canonMap);
+      renderCommonInline();
+      renderEditBtn();
+      initColResizers();
+      buildControlBar();
+      applyViewState();
+    })
+    .catch(function(e){
+      body.innerHTML = '<tr><td colspan="4" class="matrix-status">매트릭스 정본을 불러오지 못했습니다 (' + esc(e.message) +
+        '). 정본: <code>coo/bootsetup_matrix.json</code></td></tr>';
+    });
+
+})();
+</script>
+</body>
+</html>

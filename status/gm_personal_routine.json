@@ -1,0 +1,46 @@
+{
+  "_doc": "GM(김남욱) 개인 북극성 도달율 — 하루 루틴 트래커. 개인 북극성 = '사랑하는 단순한 하루 루틴 하나, 나·아빠·남편·일이 다 담겨 돌아가는 것(일은 한 토막·중심 아님·단순함 필수)'. 매일 5토막이 하루에 담겼는지 살짝 체크 → 도달율(지킨 토막/5)+주간 추세. GM 전용 retrievable 저장소(그동안 localStorage에만 갇혔던 개인 항목 한계 해소). 정본=이 파일, 페이지(G1 개인영역 루틴 트래커)는 렌더·체크만. 점수·심판 아님, 가벼운 거울.",
+  "정본": "status/gm_personal_routine.json",
+  "북극성": "사랑하는 단순한 하루 루틴 하나 — 나·아빠·남편·일이 다 담겨 돌아가는 것 (일은 한 토막, 중심 아님)",
+  "updated_at": "2026-07-02",
+  "principle": "점수 아닌 거울 · 못 지켜도 혼내지 않음 · 일이 제일 많이 나오는 건 현실(북극성이 조용히 삶 쪽으로 당김)",
+  "toroks": [
+    {"id": "self",     "icon": "🌱", "label": "나",     "meaning": "어제보다 유능해지는 나 (몸·배움)", "examples": ["몸 깨우기/운동", "배움 한 조각"], "axes": ["morning_ex", "self_dev"]},
+    {"id": "dad",      "icon": "👨‍👧", "label": "아빠",   "meaning": "안전기지·정서적 교감",              "examples": ["아이와 온전한 시간", "아이와 러닝"], "axes": ["evening_run"]},
+    {"id": "husband",  "icon": "💑", "label": "남편",   "meaning": "관계·함께",                          "examples": ["아내와 함께한 시간"], "axes": ["family_time"]},
+    {"id": "work",     "icon": "💼", "label": "일(GM)", "meaning": "몰입 한 토막 (중심 아님)",           "examples": ["판단·결재 몰입 1블록"], "axes": ["work_focus"]},
+    {"id": "simple",   "icon": "⚖️", "label": "단순함", "meaning": "하루가 단순했나 (루틴대로·과부하 없이)", "examples": ["과부하 없이 루틴대로"], "axes": ["principle"]}
+  ],
+  "axes": [
+    {"id": "morning_ex",  "label": "아침운동",  "group": "루틴", "torok": "self"},
+    {"id": "evening_run", "label": "저녁러닝",  "group": "루틴", "torok": "dad"},
+    {"id": "self_dev",    "label": "자기계발",  "group": "루틴", "torok": "self"},
+    {"id": "family_time", "label": "가족시간",  "group": "루틴", "torok": "husband"},
+    {"id": "work_focus",  "label": "업무몰입",  "group": "루틴", "torok": "work"},
+    {"id": "principle",   "label": "원칙·루틴", "group": "루틴", "torok": "simple"},
+    {"id": "supplement",  "label": "보충제",    "group": "영양", "torok": null},
+    {"id": "meals3",      "label": "식사3끼",   "group": "영양", "torok": null},
+    {"id": "water",       "label": "수분1.5L",  "group": "영양", "torok": null}
+  ],
+  "_axes_doc": "값: O=완수 △=일부 X=미실시 (빈칸=미기록). 토막 도달=매핑된 축 중 하나라도 O. 영양 축(supplement·meals3·water)은 몸 지지 지표로 기록만 하고 5토막 도달율엔 넣지 않음.",
+  "days": {
+    "2026-05-26": {
+      "weight": "95.9kg",
+      "sleep": "23시→07시 · 중간각성",
+      "axes": {"morning_ex": "△", "evening_run": "", "self_dev": "", "family_time": "", "work_focus": "", "principle": "", "supplement": "O", "meals3": "O", "water": ""},
+      "note": "푸시업40·크로스50·스쿼트100·냉샤워",
+      "reach": 1,
+      "toroks": {"self": true, "dad": false, "husband": false, "work": false, "simple": false},
+      "updated_at": "2026-05-26"
+    },
+    "2026-05-27": {
+      "weight": "95.2kg",
+      "sleep": "00시→07:40 · 7h40m",
+      "axes": {"morning_ex": "X", "evening_run": "X", "self_dev": "X", "family_time": "", "work_focus": "", "principle": "", "supplement": "O", "meals3": "O", "water": ""},
+      "note": "목기침·콧물 심함",
+      "reach": 0,
+      "toroks": {"self": false, "dad": false, "husband": false, "work": false, "simple": false},
+      "updated_at": "2026-05-27"
+    }
+  }
+}

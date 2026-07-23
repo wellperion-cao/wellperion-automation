@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 주차관리부 체계</title>
+<style>
+:root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.12);--purple:#a78bda;--purple-bg:rgba(167,139,218,0.12);--orange:#e6944e;--orange-bg:rgba(230,148,78,0.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;overflow-x:hidden}
+.sticky-top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);}
+.header{background:var(--paper);padding:10px 20px}
+.header-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header h1{font-size:17px;font-weight:700;margin:0}
+.header .sub{font-size:12px;color:var(--dim);margin-top:2px}
+.sheet-links{display:flex;gap:6px;margin-left:auto}
+.sheet-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);text-decoration:none;white-space:nowrap;cursor:pointer;transition:background 0.15s}
+.sheet-link:hover{background:rgba(183,159,138,0.22)}
+.sheet-link svg{width:12px;height:12px;fill:currentColor;flex-shrink:0}
+.day-type{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;margin-left:8px}
+.day-type.weekday{background:var(--blue-bg);color:var(--blue)}
+.day-type.weekend{background:var(--accent-bg);color:var(--accent)}
+.day-type.closed{background:var(--red-bg);color:var(--red)}
+.mode-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;background:var(--green-bg);color:var(--green)}
+.tabs{display:flex;gap:4px;background:var(--bg);padding:8px 20px;z-index:9;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.tab.active{background:var(--accent-bg);color:var(--accent)}
+.content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
+#tab-guide,#tab-policy,#tab-mplan,#tab-schedule,#tab-vendorboard{max-width:none;margin-left:0;margin-right:0}
+/* ── 월 선택 바(월간운영계획.html 룩 통일 · 2026-07-07) ── */
+.month-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
+.month-bar label{font-size:12px;color:var(--dim)}
+.month-bar select{font-size:14px;font-weight:700;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer}
+.btn{padding:8px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.submitter-bar{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
+.submitter-bar select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600}
+.progress{background:var(--paper);border-radius:12px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--border)}
+.progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width 0.3s}
+.progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
+.time-slot{margin-bottom:16px}
+.slot-header{font-size:13px;font-weight:700;color:var(--accent);padding:8px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.slot-time{background:var(--accent-bg);padding:2px 10px;border-radius:10px;font-size:12px}
+.slot-time.night{background:var(--orange-bg);color:var(--orange)}
+.category{background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.cat-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.cat-header:hover{background:var(--accent-bg)}
+.cat-title{font-size:14px;font-weight:700}
+.cat-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.cat-badge.done{background:var(--green-bg);color:var(--green)}
+.cat-badge.pending{background:var(--yellow-bg);color:var(--yellow)}
+.cat-body{border-top:1px solid var(--border);display:none}
+.cat-body.open{display:block}
+.item{padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.4)}
+.item:last-child{border-bottom:none}
+.item-row{display:flex;align-items:flex-start;gap:10px}
+.item input[type=checkbox]{width:22px;height:22px;margin-top:2px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+.item label{flex:1;min-width:0;word-break:break-word;cursor:pointer;font-size:14px;font-weight:600}
+.item.checked label{color:var(--dim);text-decoration:line-through}
+.item-detail{font-size:12px;color:var(--dim);margin:4px 0 0 32px;line-height:1.5}
+.item-btns{display:flex;gap:6px;flex-shrink:0}
+.tiny-btn{font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid;font-weight:600;min-width:52px;text-align:center}
+.tiny-btn.issue{background:var(--red-bg);color:var(--red);border-color:rgba(237,91,63,0.3)}
+.tiny-btn.tip{background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3)}
+.extra-input{width:calc(100% - 32px);padding:8px 12px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:13px;font-family:inherit;margin:6px 0 0 32px;display:none}
+.extra-input.show{display:block}
+.extra-input.issue-field{border-color:rgba(237,91,63,0.3)}
+.extra-input.tip-field{border-color:rgba(167,139,218,0.3)}
+.submit-bar{position:fixed;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:10px;justify-content:center;z-index:10}
+.submit-btn{padding:12px 24px;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;font-family:inherit;flex:1;max-width:220px}
+.submit-btn.primary{background:var(--accent);color:#fff}
+.submit-btn.primary:disabled{opacity:0.4;cursor:not-allowed}
+.submit-btn.night-btn{background:var(--orange);color:#fff}
+.submit-btn.night-btn:disabled{opacity:0.4;cursor:not-allowed}
+.submit-btn.submitted{background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.3)}
+.group-submit-bar{display:flex;justify-content:flex-end;align-items:center;padding:8px 14px 4px;border-top:1px dashed var(--border);margin-top:6px}
+.group-submit-btn{padding:7px 16px;font-size:12.5px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:8px;cursor:pointer;font-family:inherit}
+.group-submit-btn:hover{background:var(--accent);color:#fff}
+.group-submitted{font-size:12px;font-weight:700;color:var(--green)}
+.saving{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;display:none;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
+.admin-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.admin-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
+.admin-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid rgba(61,56,53,0.3)}
+.admin-row:last-child{border-bottom:none}
+.admin-row .admin-row-right{text-align:right;font-size:13px}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.status-dot.green{background:var(--green)}.status-dot.yellow{background:var(--yellow)}.status-dot.red{background:var(--red)}
+.tip-card{background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.tip-card h3{color:var(--purple);font-size:15px;font-weight:700;margin-bottom:10px}
+.hidden{display:none}
+.loading{text-align:center;padding:40px;color:var(--dim)}
+/* Manual tab styles */
+.manual-section{background:var(--paper);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.manual-header{padding:14px 18px;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between}
+.manual-header:hover{background:var(--accent-bg)}
+.manual-header h3{font-size:15px;font-weight:700;margin:0}
+.manual-header .arrow{font-size:12px;color:var(--dim);transition:transform 0.2s}
+.manual-header .arrow.open{transform:rotate(90deg)}
+.manual-body{border-top:1px solid var(--border);padding:14px 18px;display:none;font-size:13px;line-height:1.8;color:var(--text)}
+.manual-body.open{display:block}
+.manual-body ul{margin:6px 0 6px 18px;list-style:disc}
+.manual-body li{margin-bottom:4px}
+.manual-body .manual-label{font-weight:700;color:var(--accent);display:block;margin-top:10px;margin-bottom:4px}
+.manual-body .manual-label:first-child{margin-top:0}
+.manual-body .highlight{color:var(--red);font-weight:600}
+.manual-body .schedule-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
+.manual-body .schedule-table td,.manual-body .schedule-table th{padding:6px 10px;border:1px solid var(--border);text-align:left}
+.manual-body .schedule-table th{background:var(--accent-bg);color:var(--accent);font-weight:700}
+/* ── 요일별 트렐로 칸반 보드 (매뉴얼 탭 주 콘텐츠 · 요일 다중선택) ── */
+.board-intro{font-size:12px;color:var(--dim);margin:2px 0 12px;line-height:1.5}
+/* 보드 풀폭 탈출(엣지투엣지): .content(720px·중앙) 제약을 벗어나 화면 좌측 끝~우측 끝까지 꽉 채움.
+   기준 = 업무 현황 SSOT.html 풀폭 방식(좌우 여백 최소 20px). 이 래퍼 안 보드에만 적용 → 다른 탭·헤더 영향 0. */
+.board-fullwidth{width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);padding:0;box-sizing:border-box}
+/* 칸반 스크롤 컨테이너 — 켠 요일 개수만큼 컬럼이 가로로. 컬럼 많으면 가로 스크롤·스냅 */
+.board-scroll{display:flex;gap:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding:2px 2px 16px;scrollbar-width:thin;align-items:flex-start}
+.board-scroll::-webkit-scrollbar{height:8px}
+.board-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.board-scroll.is-empty{display:block}
+/* 트렐로 컬럼 = 요일 1개. 헤더(요일)+남/여/외곽 카드그룹 세로 */
+.board-col{flex:0 0 410px;min-width:410px;max-width:410px;scroll-snap-align:start;background:var(--paper);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.board-col.is-weekend{border-color:rgba(230,148,78,0.45)}
+.board-col-head{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:var(--bg)}
+.board-col-head .bday{font-size:20px;font-weight:800}
+.board-col.is-weekend .board-col-head .bday{color:var(--orange)}
+.board-col-body{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+/* 보드 빈 상태(아무 요일도 안 켰을 때) */
+.board-empty{padding:34px 18px;text-align:center;color:var(--dim);font-size:14px;line-height:1.6;background:var(--paper);border:1px dashed var(--border);border-radius:14px}
+
+/* ── 요일 툴바 (매뉴얼 탭 상단 · 다중선택 toggle) ── */
+.day-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 16px}
+.day-tab{flex:1 1 0;min-width:54px;padding:11px 6px;border-radius:12px;border:1.5px solid var(--border);
+  background:var(--bg);color:var(--text);font-family:inherit;font-size:17px;font-weight:700;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.1;transition:all .12s}
+.day-tab .dt-sub{font-size:10px;font-weight:600;opacity:.7}
+.day-tab:hover{border-color:var(--accent)}
+.day-tab.is-weekend{background:var(--accent-bg)}
+.day-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.day-tab.active.is-weekend{background:var(--orange);border-color:var(--orange)}
+.day-tab.active .dt-sub{opacity:.9}
+/* 전체 선택/해제 토글 */
+.day-tab.day-all{flex:0 0 auto;min-width:70px;font-size:13px;font-weight:700;border-style:dashed;color:var(--accent)}
+.day-tab.day-all.active{background:var(--accent-bg);color:var(--accent);border-color:var(--accent);border-style:solid}
+
+/* ── 카드그룹(남/여/외곽) — 컬럼 안 카드리스트. 기존 dv-* 스타일 재사용(소형화) ── */
+.dv-cell{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:13px 14px}
+.dv-cell.male{border-left:4px solid var(--blue)}
+.dv-cell.female{border-left:4px solid var(--orange)}
+.dv-cell.outer{border-left:4px solid var(--green)}
+.dv-cell-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.dv-cell-label{font-size:16px;font-weight:800;display:inline-flex;align-items:center;gap:6px}
+.dv-cell-label.male{color:var(--blue)}
+.dv-cell-label.female{color:var(--orange)}
+.dv-cell-label.outer{color:var(--green)}
+.dv-edit-btn{font-size:12px;font-weight:700;padding:5px 13px;border-radius:8px;cursor:pointer;font-family:inherit;
+  border:1.5px solid;background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.4)}
+.dv-edit-btn:hover{background:rgba(183,159,138,0.22)}
+.dv-edit-btn.save{background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.4)}
+.dv-edit-btn.cancel{background:var(--paper);color:var(--dim);border-color:rgba(140,139,131,0.4);margin-left:6px}
+.dv-edit-btn.cancel:hover{background:rgba(140,139,131,0.15)}
+/* 시간대 그룹 */
+.dv-timeblock{margin:0 0 10px}
+.dv-timeblock:last-child{margin-bottom:0}
+.dv-tb-label{display:inline-block;font-size:12.5px;font-weight:800;color:var(--accent);
+  background:var(--accent-bg);padding:3px 10px;border-radius:7px;margin-bottom:6px}
+.dv-list{margin:0;padding-left:20px;list-style:disc;font-size:14px;line-height:1.6}
+.dv-list li{margin-bottom:5px;word-break:break-word}
+.dv-empty{font-size:13px;color:var(--dim);font-style:italic;padding:4px 0}
+/* 2열 시간표 테이블 (boardCellBodyHTML) */
+.dv-timetable{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.5;margin:0}
+.dv-timetable col.dv-tt-timecol{width:38%}
+.dv-timetable td{padding:5px 8px;border:1px solid var(--border);vertical-align:middle;word-break:break-word}
+.dv-timetable tr:first-child td{border-top-color:var(--border)}
+.dv-tt-time{color:var(--accent);font-weight:700;font-size:12px;background:var(--accent-bg);white-space:nowrap}
+.dv-tt-task{color:var(--text)}
+.dv-timetable tr:hover td{background:rgba(183,159,138,0.07)}
+.dv-cell.male .dv-tt-time{color:var(--blue);background:var(--blue-bg)}
+.dv-cell.female .dv-tt-time{color:var(--orange);background:var(--orange-bg)}
+.dv-cell.outer .dv-tt-time{color:var(--green);background:var(--green-bg)}
+.dv-edit{display:none;width:100%;min-height:170px;background:var(--paper);border:1.5px solid var(--accent);color:var(--text);
+  border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit;line-height:1.55;resize:vertical;box-sizing:border-box}
+.dv-cell.editing .dv-edit{display:block}
+.dv-cell.editing .dv-body{display:none}
+.dv-edit-hint{font-size:12px;color:var(--dim);margin-top:7px;display:none;line-height:1.5}
+.dv-cell.editing .dv-edit-hint{display:block}
+/* 시간대 빠른 지정 칩 (편집 모드에서만 노출) */
+.dv-ts-chips{display:none;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;font-size:12px;color:var(--dim)}
+.dv-cell.editing .dv-ts-chips{display:flex}
+.dv-ts-chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;font-family:inherit;
+  border:1.5px solid rgba(183,159,138,0.4);background:var(--accent-bg);color:var(--accent);transition:background .12s}
+.dv-ts-chip:hover{background:rgba(183,159,138,0.22)}
+/* ── 표 직접 편집 그리드 (편집 모드에서만 노출 · 행 단위 [시간 | 내용 | 삭제]) ── */
+.dv-grid{display:none;margin:0}
+.dv-cell.editing .dv-grid{display:block}
+.dv-grid-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+.dv-grid-table col.dv-g-timecol{width:40%}
+.dv-grid-table col.dv-g-delcol{width:34px}
+.dv-grid-table td{border:1px solid var(--border);padding:0;vertical-align:top}
+.dv-grid-th{background:var(--accent-bg);color:var(--accent);font-weight:700;font-size:11px;text-align:left;padding:5px 7px;border:1px solid var(--border)}
+.dv-g-time,.dv-g-task{width:100%;background:var(--bg);border:none;color:var(--text);
+  padding:8px 7px;font-size:13px;font-family:inherit;line-height:1.5;box-sizing:border-box;resize:none}
+.dv-g-time:focus,.dv-g-task:focus{outline:none;background:rgba(183,159,138,0.10)}
+.dv-g-task{overflow:hidden;word-break:break-word;min-height:38px;display:block}
+.dv-cell.male .dv-g-time:focus{background:var(--blue-bg)}
+.dv-cell.female .dv-g-time:focus{background:var(--orange-bg)}
+.dv-cell.outer .dv-g-time:focus{background:var(--green-bg)}
+.dv-g-del{width:100%;height:100%;min-height:38px;background:transparent;border:none;color:var(--red);
+  font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;padding:4px}
+.dv-g-del:hover{background:var(--red-bg)}
+.dv-g-addrow{margin-top:8px;font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;
+  font-family:inherit;border:1.5px dashed rgba(106,191,123,0.5);background:var(--green-bg);color:var(--green);width:100%}
+.dv-g-addrow:hover{background:rgba(106,191,123,0.2)}
+
+/* ── 규정 트렐로 보드 (규정 탭) — 카드 본문/편집 폼. dv-cell·board-col 재사용 ── */
+.pol-line{font-size:14px;line-height:1.6;color:var(--text);padding:3px 0;word-break:break-word}
+.pol-line+.pol-line{border-top:1px solid var(--border)}
+.pol-edit{display:none;margin-top:4px}
+.dv-cell.editing .pol-edit{display:block}
+.dv-cell.editing .dv-body{display:none}
+.pol-edit-lab{display:block;font-size:11.5px;font-weight:700;color:var(--accent);margin:8px 0 4px}
+.pol-edit-title,.pol-edit-body{width:100%;background:var(--paper);border:1.5px solid var(--accent);color:var(--text);
+  border-radius:9px;padding:9px 11px;font-size:14px;font-family:inherit;line-height:1.55;box-sizing:border-box}
+.pol-edit-body{resize:vertical;min-height:96px}
+.pol-edit-title:focus,.pol-edit-body:focus{outline:none;background:rgba(183,159,138,0.10)}
+.pol-del-btn{margin-top:10px;font-size:12px;font-weight:700;padding:6px 13px;border-radius:8px;cursor:pointer;
+  font-family:inherit;border:1.5px solid rgba(224,108,90,0.45);background:var(--red-bg);color:var(--red)}
+.pol-del-btn:hover{background:rgba(224,108,90,0.18)}
+
+/* 모바일: 요일 탭 폭 축소 + 컬럼 폭 화면맞춤(가로 스크롤·스냅) */
+@media(max-width:560px){
+  .day-tab{min-width:40px;font-size:15px;padding:9px 3px}
+  .day-tab .dt-sub{font-size:9px}
+  .day-tab.day-all{min-width:58px;font-size:12px}
+  .board-col{flex:0 0 86vw;min-width:86vw;max-width:86vw;scroll-snap-align:center}
+  .board-scroll{scroll-snap-type:x mandatory}
+  .dv-list{font-size:13.5px}
+}
+.mgmt-badge-custom{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;background:var(--yellow-bg);color:var(--yellow);margin-left:6px}
+/* ── 점검 화면 빠른 항목 추가 (quickadd) — 셋업 편집기 제거 후 유일 항목추가 경로 ── */
+.quickadd-bar{padding:8px 16px 12px;border-top:1px dashed var(--border)}
+.quickadd-btn{width:100%;padding:8px 10px;font-size:12px;font-weight:700;border-radius:7px;cursor:pointer;font-family:inherit;border:1px dashed var(--border);background:transparent;color:var(--dim)}
+.quickadd-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
+.quickadd-form{display:flex;flex-direction:column;gap:7px}
+.quickadd-form input{width:100%;background:var(--bg);border:1px solid var(--accent);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box}
+.quickadd-actions{display:flex;gap:7px}
+.quickadd-actions button{flex:1;padding:8px 10px;font-size:12px;font-weight:700;border-radius:7px;cursor:pointer;font-family:inherit;border:1px solid var(--border)}
+.quickadd-save{background:var(--accent);color:#fff;border-color:var(--accent)!important}
+.quickadd-cancel{background:var(--bg);color:var(--dim)}
+/* ── PARKING_* 편집형 행 표 (직원구성·응대상황표·장비비품 공용 · 2026-07-03) ── */
+.rt-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:4px}
+.rt-table th{background:var(--accent-bg);color:var(--accent);font-weight:700;padding:8px 10px;border:1px solid var(--border);text-align:left;font-size:12px}
+.rt-table td{padding:0;border:1px solid var(--border);vertical-align:middle}
+.rt-input{width:100%;background:var(--bg);border:none;color:var(--text);padding:8px 10px;font-size:13px;font-family:inherit;box-sizing:border-box}
+.rt-input:focus{outline:none;background:rgba(183,159,138,0.10)}
+.rt-del-btn{width:100%;height:100%;min-height:36px;background:transparent;border:none;color:var(--red);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.rt-del-btn:hover{background:var(--red-bg)}
+.rt-table tr.rt-short td{background:rgba(237,91,63,0.08)}
+.rt-short-tag-row td{padding:4px 10px!important;border-top:none!important}
+.rt-shortage-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--red-bg);color:var(--red)}
+/* ── Dashboard ── */
+.dash-stat-row{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 16px}
+.dash-stat-card{flex:1;min-width:80px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center}
+.dash-stat-card .num{font-size:24px;font-weight:700;color:var(--accent)}
+.dash-stat-card .label{font-size:11px;color:var(--dim);margin-top:2px}
+.dash-section-title{font-size:15px;font-weight:700;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+/* ── Header utility buttons ── */
+.header-util-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.util-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background 0.15s}
+.util-btn.print-btn{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3)}
+.util-btn.print-btn:hover{background:rgba(183,159,138,0.22)}
+.tab-dropdown{position:relative;flex-shrink:0}
+.tab-dropdown-menu{display:none;position:fixed;background:var(--bg);border:1px solid rgba(183,159,138,0.25);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:1000;min-width:130px;padding:4px 0}
+.tab-dropdown-menu.open{display:block}
+.tab-dropdown-menu button{display:block;width:100%;padding:9px 16px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;cursor:pointer;font-family:inherit;white-space:nowrap;text-align:left;border-radius:0}
+.tab-dropdown-menu button:hover{background:var(--accent-bg);color:var(--accent)}
+.tab-dropdown-menu button.active{background:var(--accent-bg);color:var(--accent)}
+.util-btn.report-btn{background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3)}
+.util-btn.report-btn:hover{background:rgba(167,139,218,0.22)}
+.util-btn.share-btn{background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3)}
+.util-btn.share-btn:hover{background:rgba(91,159,213,0.22)}
+/* ── Toast ── */
+.toast-msg{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;display:none;z-index:300;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
+/* ── Print ── */
+@media print{
+  @page{margin:10mm;size:A4}
+  /* 다크 테마 변수 → 인쇄용 밝은 값 (어두운 배경·흰 글씨로 안 보이던 문제 해결) */
+  :root{--bg:#fff;--paper:#fff;--text:#222;--dim:#555;--border:#ccc;--accent-bg:#f3ede7;--green-bg:#eef7f0;--red-bg:#fdeeeb;--yellow-bg:#fbf6e2;--blue-bg:#eaf3fb;--purple-bg:#f1edfa;--orange-bg:#fbf0e6}
+  body{background:#fff!important;color:#222!important;font-size:11px;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* 가이드 등 본문 박스·표 강제 밝게 */
+  #tab-guide div,#tab-guide td,#tab-guide th,#tab-guide p{color:#222!important}
+  #tab-guide table th{background:#f0ece8!important;color:#222!important}
+  .header,.tabs,.submit-bar,.saving,.toast-msg,.header-util-btns,.util-btn,.sheet-links{display:none!important}
+  .content{padding:0!important;max-width:100%!important}
+  .content.hidden{display:none!important}
+  /* 인쇄 시 보드 풀폭 탈출 해제(페이지 폭 안에 정렬) */
+  .board-fullwidth{width:auto!important;max-width:100%!important;margin:0!important;padding:0!important}
+  /* 활성 탭만 표시 */
+  .content[data-print-active="true"]{display:block!important}
+  .category{border:1px solid #ccc;break-inside:avoid;margin-bottom:6px}
+  .cat-body{display:block!important}
+  .cat-header{padding:6px 12px}
+  .item{border-bottom:1px solid #eee;padding:6px 12px;break-inside:avoid}
+  .extra-input{display:none!important}
+  .extra-input.show{display:block!important;border:1px solid #ccc}
+  .submitter-bar{display:none!important}
+  /* 대시보드 인쇄 */
+  .admin-card{border:1px solid #ccc!important;break-inside:avoid;margin-bottom:8px}
+  .dash-stat-card{border:1px solid #ccc!important;background:#f9f9f9!important;break-inside:avoid}
+  .dash-stat-card .num{color:#333!important}
+  [style*="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:60px"]{display:none!important}
+  .progress-fill,.progress-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media(max-width:720px){
+  .dash-stat-card{min-width:70px;padding:8px 6px}
+  .dash-stat-card .num{font-size:18px}
+}
+/* 규정 탭 — 정기회의+근무휴게 같은 행: 좁은 화면에서 세로 전환 */
+@media(max-width:860px){
+  #tab-policy .board-fullwidth{flex-direction:column!important;}
+  #tab-policy .board-fullwidth .manual-section{flex:none!important;width:100%!important;}
+}
+/* ── A3 매뉴얼 인쇄 전용 컨테이너 (화면 숨김) ── */
+#a3-manual-print{display:none}
+/* ── A3 매뉴얼 인쇄 모드 (@page A3 landscape, 구역별 2열 그리드) — 가이드라인 A3와 완전 분리 ── */
+@media print{
+  body.a3-manual-mode{font-size:9px;line-height:1.25;color:#111;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.a3-manual-mode .header,
+  body.a3-manual-mode .tabs,
+  body.a3-manual-mode .submit-bar,
+  body.a3-manual-mode .saving,
+  body.a3-manual-mode .toast-msg,
+  body.a3-manual-mode .header-util-btns,
+  body.a3-manual-mode .util-btn,
+  body.a3-manual-mode .sheet-links,
+  body.a3-manual-mode #tab-policy,
+  body.a3-manual-mode #tab-guide,
+  body.a3-manual-mode #tab-manual,
+  body.a3-manual-mode #a3-guideline-print{display:none!important}
+  body.a3-manual-mode #a3-manual-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3m-header{text-align:center;font-size:15px;font-weight:800;letter-spacing:0.05em;padding:2px 0 4px;border-bottom:2.5px solid #4a3a2e;margin-bottom:2px;color:#2a2018}
+  .a3m-sub{text-align:center;font-size:8.5px;color:#8a7a6c;margin-bottom:6px;letter-spacing:0.02em}
+  .a3m-grid2{display:grid;grid-template-columns:1fr 1fr;gap:5mm;width:100%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3m-zone{break-inside:avoid-column}
+  .a3m-zone-head{font-size:11px;font-weight:800;padding:3px 8px;margin-bottom:4px;border-radius:4px;background:#f3ede7;color:#4a3a2e;border-left:4px solid #B79F8A;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3m-zone-head.safety{background:#fdeeeb!important;border-left-color:#ED5B3F!important;color:#7a1a0a!important}
+  .a3m-zone-head.weekly{background:#eaf3fb!important;border-left-color:#5b9fd5!important;color:#1a3a5a!important}
+  .a3m-block{border:1px solid #d0c8c0;border-radius:5px;padding:5px 7px;margin-bottom:4px;break-inside:avoid;background:#fff}
+  .a3m-block-title{font-size:10px;font-weight:800;color:#2a2018;margin-bottom:3px;padding-bottom:2px;border-bottom:1px solid #e8e3de}
+  .a3m-line{font-size:8.5px;color:#222;padding:1px 0 1px 9px;position:relative;line-height:1.3;break-inside:avoid}
+  .a3m-line::before{content:"•";position:absolute;left:1px;top:0.5px;color:#B79F8A;font-size:8px}
+  .a3m-line.hl{color:#c0392b;font-weight:700}
+  .a3m-note{font-size:8px;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:3px;padding:2px 5px;margin:3px 0 3px;break-inside:avoid;display:block}
+  .a3m-weekly-table{width:100%;border-collapse:collapse;font-size:8px;margin-top:4px}
+  .a3m-weekly-table th,.a3m-weekly-table td{border:0.5px solid #ccc;padding:2px 4px;vertical-align:top}
+  .a3m-weekly-table th{background:#f0ece8!important;color:#4a3a2e!important;font-weight:800;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3m-weekly-table td:first-child{font-weight:800;color:#4a3a2e;text-align:center;background:#faf8f5!important;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+/* ── A3 가이드라인 인쇄 전용 컨테이너 (화면에선 숨김) ── */
+#a3-guideline-print{display:none}
+/* ── A3 인쇄 모드 (@page A3 portrait, 좌우 2단) ── */
+@media print{
+  body.a3-print-mode{font-size:10px;line-height:1.4;color:#111;background:#fff}
+  body.a3-print-mode .header,
+  body.a3-print-mode .tabs,
+  body.a3-print-mode .submit-bar,
+  body.a3-print-mode .saving,
+  body.a3-print-mode .toast-msg,
+  body.a3-print-mode .header-util-btns,
+  body.a3-print-mode .util-btn,
+  body.a3-print-mode .sheet-links,
+  body.a3-print-mode #tab-policy,
+  body.a3-print-mode #tab-guide,
+  body.a3-print-mode #tab-manual{display:none!important}
+  body.a3-print-mode #a3-guideline-print{display:block!important}
+  .a3-print-header{text-align:center;font-size:13px;font-weight:800;letter-spacing:0.04em;padding:3px 0 6px;border-bottom:2px solid #333;margin-bottom:6px;color:#111}
+  .a3-print-cols{display:grid;grid-template-columns:1fr 1fr;gap:6mm;width:100%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a3-col-head{font-size:11px;font-weight:800;padding:3px 7px;margin-bottom:4px;border-radius:4px;border-left:4px solid #B79F8A;background:#f3ede7;color:#4a3a2e}
+  .a3-card{border:1px solid #ccc;border-radius:5px;padding:5px 7px;margin-bottom:4px;break-inside:avoid;background:#fff}
+  .a3-card-title{font-size:11px;font-weight:800;color:#2a2a2a;margin-bottom:3px;padding-bottom:2px;border-bottom:1px solid #e8e3de}
+  .a3-card-line{font-size:9.5px;color:#333;padding:1px 0 1px 10px;position:relative;line-height:1.3}
+  .a3-card-line::before{content:"·";position:absolute;left:2px;color:#888}
+  .a3-card-unconfirmed{font-size:9px;font-weight:700;color:#b45309;background:#fef3c7;padding:1px 5px;border-radius:3px;margin-left:4px}
+  .a3-guide-clone{font-size:9.5px;color:#222;line-height:1.45}
+  .a3-guide-clone h2{display:none}
+  .a3-guide-clone h3{font-size:10.5px;font-weight:800;margin:7px 0 3px;color:#2a2a2a;border-bottom:1px solid #e0dbd5;padding-bottom:2px}
+  .a3-guide-clone table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:9px}
+  .a3-guide-clone table th{background:#f0ece8!important;color:#222!important;padding:3px 5px;border:1px solid #ccc;font-size:9px}
+  .a3-guide-clone table td{padding:3px 5px;border:1px solid #ccc;font-size:9px;color:#222!important}
+  .a3-guide-clone ul{margin:3px 0 5px 12px;padding:0}
+  .a3-guide-clone li{font-size:9px;color:#333;line-height:1.4;margin-bottom:1px}
+  .a3-guide-clone .manual-section{margin-bottom:5px;break-inside:avoid}
+  .a3-guide-clone .manual-header{background:#f3ede7!important;padding:4px 8px;border-radius:4px;cursor:default}
+  .a3-guide-clone .manual-header h3{font-size:10px;font-weight:700;margin:0;color:#4a3a2e!important}
+  .a3-guide-clone .manual-body{display:block!important;padding:4px 0 0 6px}
+  .a3-guide-clone .manual-label{font-size:9.5px;font-weight:700;display:block;margin:4px 0 2px;color:#4a3a2e}
+  .a3-guide-clone .arrow{display:none}
+  .a3-guide-clone div[style*="background:rgba(183,159,138"]{background:#f5f0eb!important;border-left:3px solid #B79F8A;padding:5px 7px;margin:4px 0;break-inside:avoid}
+  .a3-guide-clone div[style*="background:var(--paper)"]{background:#faf8f5!important;border-left:3px solid #B79F8A;padding:5px 7px;margin-bottom:4px;break-inside:avoid}
+  .a3-guide-clone .manual-section .manual-body{padding-left:8px}
+  /* 미확정 표시 강조 */
+  .a3-unconfirmed-note{font-size:8.5px;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:3px;padding:2px 5px;margin-bottom:4px;break-inside:avoid}
+}
+/* ── A3 응대 상황표 · 장비비품 · 온보딩 인쇄 전용 컨테이너 (화면 숨김 · 인쇄 기계장치 구조=printA3Guideline/Manual 복제, 콘텐츠는 주차 네이티브) ── */
+#a3-pcs-print,#a3-psup-print,#a3-ponb-print,#a3-pchk-print{display:none}
+@media print{
+  body.a3-pcs-mode .header,body.a3-pcs-mode .tabs,body.a3-pcs-mode .submit-bar,body.a3-pcs-mode .saving,
+  body.a3-pcs-mode .toast-msg,body.a3-pcs-mode .header-util-btns,body.a3-pcs-mode .util-btn,body.a3-pcs-mode .sheet-links,
+  body.a3-pcs-mode #tab-policy,body.a3-pcs-mode #tab-guide,body.a3-pcs-mode #tab-manual,body.a3-pcs-mode #tab-valet,
+  body.a3-pcs-mode #a3-guideline-print,body.a3-pcs-mode #a3-manual-print,body.a3-pcs-mode #a3-psup-print,body.a3-pcs-mode #a3-ponb-print{display:none!important}
+  body.a3-pcs-mode #a3-pcs-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+  body.a3-psup-mode .header,body.a3-psup-mode .tabs,body.a3-psup-mode .submit-bar,body.a3-psup-mode .saving,
+  body.a3-psup-mode .toast-msg,body.a3-psup-mode .header-util-btns,body.a3-psup-mode .util-btn,body.a3-psup-mode .sheet-links,
+  body.a3-psup-mode #tab-policy,body.a3-psup-mode #tab-guide,body.a3-psup-mode #tab-manual,body.a3-psup-mode #tab-valet,
+  body.a3-psup-mode #a3-guideline-print,body.a3-psup-mode #a3-manual-print,body.a3-psup-mode #a3-pcs-print,body.a3-psup-mode #a3-ponb-print{display:none!important}
+  body.a3-psup-mode #a3-psup-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+  body.a3-ponb-mode .header,body.a3-ponb-mode .tabs,body.a3-ponb-mode .submit-bar,body.a3-ponb-mode .saving,
+  body.a3-ponb-mode .toast-msg,body.a3-ponb-mode .header-util-btns,body.a3-ponb-mode .util-btn,body.a3-ponb-mode .sheet-links,
+  body.a3-ponb-mode #tab-policy,body.a3-ponb-mode #tab-guide,body.a3-ponb-mode #tab-manual,body.a3-ponb-mode #tab-valet,
+  body.a3-ponb-mode #a3-guideline-print,body.a3-ponb-mode #a3-manual-print,body.a3-ponb-mode #a3-pcs-print,body.a3-ponb-mode #a3-psup-print,body.a3-ponb-mode #a3-pchk-print{display:none!important}
+  body.a3-ponb-mode #a3-ponb-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+  body.a3-pchk-mode .header,body.a3-pchk-mode .tabs,body.a3-pchk-mode .submit-bar,body.a3-pchk-mode .saving,
+  body.a3-pchk-mode .toast-msg,body.a3-pchk-mode .header-util-btns,body.a3-pchk-mode .util-btn,body.a3-pchk-mode .sheet-links,
+  body.a3-pchk-mode #tab-policy,body.a3-pchk-mode #tab-guide,body.a3-pchk-mode #tab-manual,body.a3-pchk-mode #tab-valet,
+  body.a3-pchk-mode #a3-guideline-print,body.a3-pchk-mode #a3-manual-print,body.a3-pchk-mode #a3-pcs-print,body.a3-pchk-mode #a3-psup-print,body.a3-pchk-mode #a3-ponb-print{display:none!important}
+  body.a3-pchk-mode #a3-pchk-print{display:block!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+
+<div class="sticky-top">
+<div class="header">
+  <div class="header-top">
+    <h1>주차관리부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.0 · 2026-07-14</span> <span id="dayType"></span></h1>
+    <div class="sheet-links">
+      <a class="sheet-link" href="전사_일정.html?dept=주차관리부" style="color:var(--accent);border-color:rgba(183,159,138,0.35);">
+        <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zM7 12h5v5H7z"/></svg>
+        전사 일정
+      </a>
+      <a class="sheet-link" href="../../wellperion_guide(main).html">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        웰페리온 ERP
+      </a>
+    </div>
+  </div>
+  <div class="sub" id="headerSub"></div>
+
+</div>
+<div class="toast-msg" id="toastMsg"></div>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('policy')">📋 주차관리부 규정</button>
+  <button class="tab" onclick="switchTab('guide')">📘 가이드</button>
+  <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
+  <button class="tab" onclick="switchTab('manual')">📖 매뉴얼</button>
+  <button class="tab" onclick="switchTab('valet')">🚗 발렛 시스템</button>
+  <button class="tab" onclick="switchTab('mplan')">📊 월간 주차관리부 현황·계획·보고</button>
+  <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
+  <button class="tab" onclick="switchTab('vendorboard')">🏢 거래업체</button>
+  <div style="display:flex;gap:4px;margin-left:auto;">
+    <!-- 인쇄 버튼 통합 드롭다운 (지원부·운영부·시설부 체계 동일 패턴 · 버튼 난립 해소) -->
+    <div class="tab-dropdown" id="printDropdown">
+      <button class="util-btn print-btn" id="printDropdownBtn" onclick="openTabDropdown(this,document.getElementById('printDropdownMenu'),event)">🖨 인쇄 ▾</button>
+      <div class="tab-dropdown-menu" id="printDropdownMenu">
+        <button onclick="printA3Guideline();closeAllDropdowns()">A3 가이드라인 (규정+가이드)</button>
+        <button onclick="printA3Manual();closeAllDropdowns()">A3 매뉴얼</button>
+        <button onclick="printA3ParkingOnboarding();closeAllDropdowns()">A3 온보딩</button>
+        <button onclick="printA3ParkingCS();closeAllDropdowns()">A3 응대 상황표</button>
+        <button onclick="printA3ParkingSupply();closeAllDropdowns()">A3 비품 현황</button>
+        <button onclick="printA3ParkingChecklist();closeAllDropdowns()">A3 주차장 청결·점검표</button>
+        <hr style="border:none;border-top:1px dashed rgba(183,159,138,0.3);margin:4px 8px;">
+        <button onclick="window.print();closeAllDropdowns()">현재 화면 그대로 인쇄</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /sticky-top -->
+<div class="saving" id="saveIndicator">저장 중...</div>
+
+<div id="tab-policy" class="content">
+  <h2 style="font-size:20px;margin-bottom:6px;">주차관리부 규정</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 칸(컬럼)에 운영 기준·정기 회의 규정을 카드로 정리했습니다. 각 카드의 <b>편집</b> 버튼으로 내용을 바로 수정·저장하면 모든 기기에 반영됩니다. <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:8px;background:var(--yellow-bg);color:var(--yellow);font-weight:700;font-size:11px;">[편집 가능 — GM 검토]</span></p>
+
+  <div class="board-fullwidth">
+    <!-- 규정 보드: renderPolicyBoard()가 #policy-board(display:contents)에 .board-col 주입. 운영 기준·정기 회의 컬럼. (발렛은 별도 탭) -->
+    <div class="board-scroll" id="policy-flow">
+      <div id="policy-board" style="display:contents"></div>
+      <!-- ── 근무·휴게 시간 (정기회의 카드 우측 · 같은 행) ── -->
+      <div class="manual-section" style="flex:0 0 620px;max-width:620px;border-left:4px solid var(--red);align-self:flex-start;">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3 style="color:var(--red);">⏱ 근무·휴게 시간</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+
+  <!-- 핵심 원칙 강조 박스 -->
+  <div style="background:var(--red-bg);border:2px solid rgba(237,91,63,0.5);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
+    <p style="font-size:16px;font-weight:800;color:var(--red);margin:0 0 6px;">⚠ 업장을 절대 비우지 않는다</p>
+    <p style="font-size:14px;font-weight:600;color:var(--text);margin:0;line-height:1.7;">담당 구역(업장)에는 항상 최소 1명이 자리를 지킵니다.<br>
+    2인 이상 근무 시 <strong>휴게를 반드시 엇갈려</strong> 진행하고, 한 명이 쉬는 동안 나머지 한 명은 업장을 지킵니다.</p>
+  </div>
+
+  <!-- 2인 동시 근무 소제목 -->
+  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:0 0 8px;">2인 동시 근무 — 교대 휴게 규칙</p>
+
+  <!-- 타임라인 도식 -->
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+    <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">매 시간(정시~정시) 기준 — 10분 단위 엇갈림</p>
+    <!-- A 라인 -->
+    <div style="margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">근무자 A</div>
+      <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;font-size:11px;font-weight:700;">
+        <div style="flex:5;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;">근무 (정시~50분)</div>
+        <div style="flex:1;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;">휴게</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);font-size:10px;color:var(--dim);margin-top:2px;">
+        <span>:00</span><span>:10</span><span>:20</span><span>:30</span><span>:40</span><span style="display:flex;justify-content:space-between;"><span>:50</span><span>:00</span></span>
+      </div>
+    </div>
+    <!-- B 라인 -->
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;">근무자 B</div>
+      <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;font-size:11px;font-weight:700;">
+        <div style="flex:1;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;">휴게</div>
+        <div style="flex:5;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;">근무 (10분~정시)</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);font-size:10px;color:var(--dim);margin-top:2px;">
+        <span>:00</span><span>:10</span><span>:20</span><span>:30</span><span>:40</span><span style="display:flex;justify-content:space-between;"><span>:50</span><span>:00</span></span>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin:10px 0 0;">→ A·B 휴게가 겹치지 않아 업장이 항상 1명 이상 커버됩니다.</p>
+  </div>
+
+  <!-- 표 -->
+  <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-size:13px;">
+    <tr style="background:var(--paper);">
+      <th style="padding:10px;border:1px solid var(--border);width:90px;">구분</th>
+      <th style="padding:10px;border:1px solid var(--border);">근무</th>
+      <th style="padding:10px;border:1px solid var(--border);">휴게</th>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">근무자 A</td>
+      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 50분</td>
+      <td style="padding:8px;border:1px solid var(--border);">50분 ~ 정시 <span style="font-size:11px;color:var(--dim);">(매시 끝 10분)</span></td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">근무자 B</td>
+      <td style="padding:8px;border:1px solid var(--border);">10분 ~ 정시</td>
+      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 10분 <span style="font-size:11px;color:var(--dim);">(매시 처음 10분)</span></td>
+    </tr>
+  </table>
+
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 위는 2인 동시 근무 시 적용하는 <strong>원칙(예시)</strong>입니다 · 기본 2인 교대 유지. 1인 근무 불가피 시 휴게는 한산시간에 분할하고 비상연락 상시 유지. 3인 이상은 조장이 시차 배치.</p>
+
+  <!-- ── 실제 운영 근무조 ── -->
+  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:18px 0 8px;">실제 운영 근무조</p>
+  <p style="font-size:13px;color:var(--text);margin:0 0 10px;line-height:1.7;">근무조는 <strong>오전조·오후조 2개조</strong>로 운영하며 <strong>야간조는 없습니다</strong>. 2인 이상 동시 근무 시에는 위 <strong>교대 휴게 규칙</strong>(근무자 A=50분~정시 / 근무자 B=정시~10분)을 적용해 정산 부스·주차장을 비우지 않습니다.</p>
+  <!-- ── PARKING_STAFF 편집형 표 (정적 표 → 편집형 전환 2026-07-03 · 구조=카드보드 saveBoard 벤치마킹) ── -->
+  <div id="parking-staff-body"></div>
+  <button type="button" class="quickadd-btn" style="width:auto;padding:8px 14px;margin:10px 0;" onclick="parkingAddRow('staff')">＋ 직원 추가</button>
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;line-height:1.6;">※ 야간조 없음. 오후조 담당자는 충원 진행 중 — 확정 시 본 표 갱신 (현황 기준 운영).</p>
+
+    </div>
+      </div>
+    </div><!-- /board-scroll -->
+  </div><!-- /board-fullwidth · 근무·휴게=정기회의 우측 -->
+
+  <!-- 고도화 정의·개선 로드맵은 관리자 영역(웰페리온 ERP O1 운영 통합 체계 '구축 가이드')으로 이관 (2026-06-06 GM: 현장 규정 탭엔 뜬금없음) -->
+</div>
+
+<div id="tab-valet" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:6px;">발렛 시스템 (직영)</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">직영 발렛 운영 체계 — <b>유료 5,000원(회원 포함)</b> · 차량 배상 보험 가입 · 셋업 진행 중(주차관리인 겸직 운영). <span style="color:var(--dim);font-size:12px;">(카드 편집 방법은 규정 탭 안내 참조)</span></p>
+  <div class="board-fullwidth">
+    <div class="board-scroll"><div id="valet-board" style="display:contents"></div></div>
+  </div>
+</div>
+
+<!-- ══ 이달 부서 현황 탭 — monthly_ops_plan.json 실무·AI 도달율 + 월목표 진척 읽기전용 렌더 (지원부 파일럿과 동일 패턴 · PAGE CONFIG만 다름) ══ -->
+<div id="tab-mplan" class="content hidden">
+  <div id="mpStatus" style="color:var(--dim);font-size:13px;padding:20px 0;text-align:center;">불러오는 중...</div>
+  <div id="mpHeader" style="display:none;margin-bottom:16px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:18px;font-weight:700;" id="mpMonthLabel"></span>
+          <span id="mpStatusBadge"></span>
+        </div>
+        <div style="font-size:13px;color:var(--dim);margin-top:4px;" id="mpTheme"></div>
+      </div>
+      <a href="/wellperion-automation/월간운영계획.html" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;">▸ 전체 월간운영계획 보기</a>
+    </div>
+  </div>
+  <div id="mpMonthBar" class="month-bar" style="display:none;">
+    <label for="mpMonthSelect">월 선택</label>
+    <select id="mpMonthSelect" onchange="mpOnMonthChange()"></select>
+  </div>
+  <div class="dash-section-title" style="font-size:17px;font-weight:800;margin-top:2px;">🎯 이달 핵심과제</div>
+  <div id="mpCards"></div>
+  <div style="font-size:11px;color:var(--dim);margin:4px 0 20px;">정본 = 월간운영계획 · 이 화면은 자동 반영(읽기 전용)</div>
+
+  <div class="dash-section-title">📊 도달율</div>
+  <div id="mpReachHeader" style="display:none;margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">실무 도달율</div>
+        <div style="font-size:24px;font-weight:800;" id="mpPracVal">—</div>
+        <div id="mpPracBarWrap"></div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpPracGoal"></div>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;">AI 활용 도달율</div>
+        <div style="font-size:24px;font-weight:800;" id="mpAiVal">—</div>
+        <div id="mpAiBarWrap"></div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="mpAiGoal"></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--text);margin-top:10px;" id="mpOwnerLine"></div>
+  </div>
+
+  <div class="dash-section-title">✅ 주차 실적 (월간)</div>
+  <div id="pkStatus" style="color:var(--dim);font-size:13px;padding:6px 0;"></div>
+  <div id="pkKpiRow"></div>
+  <div style="font-size:11px;color:var(--dim);margin:-6px 0 4px;" id="pkSubline"></div>
+  <div style="font-size:11px;color:var(--dim);margin:0 0 20px;">※ 매출=카드 실결제(payAmt).</div>
+</div>
+
+<div id="tab-guide" class="content hidden">
+  <h2 style="font-size:20px;margin-bottom:6px;">가이드</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">주제별 카드에 에티켓·응대·복장·구역 관리·시간대 절차를 정리했습니다. <span style="color:var(--accent);">발렛 = 직영·유료(5,000원)·보험 운영 체계(셋업 진행, 주차관리인 겸직 운영).</span></p>
+  <!-- 가이드 트렐로 보드: renderGuideBoard()가 #guide-board(display:contents)에 .board-col 주입 -->
+  <div class="board-fullwidth">
+    <div class="board-scroll" id="guide-flow">
+      <div id="guide-board" style="display:contents"></div>
+    </div>
+  </div>
+
+  <!-- ── 🗣 차량·이용객 응대 상황표 (PARKING_CS_GUIDE 편집형 표 · 구조=카드보드 편집·saveBoard·A3 벤치마킹, 콘텐츠 주차 네이티브·예시 최소) ── -->
+  <div class="manual-section" style="margin-top:16px;">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3>🗣 차량·이용객 응대 상황표</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">현장에서 자주 발생하는 상황을 직접 추가·수정하세요 (예시 최소 제공).</p>
+      <div id="parking-cs-body"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button type="button" class="quickadd-btn" style="width:auto;padding:8px 14px;" onclick="parkingAddRow('cs')">＋ 상황 추가</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-manual" class="content hidden">
+
+  <h2 style="font-size:20px;margin-bottom:6px;">매뉴얼</h2>
+  <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">구역별 상세 절차와 요일별 집중 점검을 카드로 정리했습니다. <span style="color:var(--dim);font-size:12px;">(발렛 안내는 가이드 탭 참조)</span></p>
+  <!-- 매뉴얼 트렐로 보드: renderManualBoard()가 #manual-board(display:contents)에 구역별 .board-col 주입 -->
+  <div class="board-fullwidth">
+    <div class="board-scroll" id="manual-flow">
+      <div id="manual-board" style="display:contents"></div>
+    </div>
+  </div>
+
+  <!-- ── 🅿️ 장비·비품 관리 (PARKING_SUPPLY 편집형 표·발주점 부족 알림 · 점검 아님·'관리' · 구조=카드보드/응대표 벤치마킹, 콘텐츠 주차 네이티브·예시 최소) ── -->
+  <div class="manual-section" style="margin-top:16px;">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3>🅿️ 장비·비품 관리</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">발주점 이하로 수량이 떨어지면 자동으로 부족 표시됩니다 (예시 최소 제공).</p>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <span id="parking-supply-shortage-chip" class="mgmt-badge-custom" style="display:none;background:var(--red-bg);color:var(--red);">🔴 발주 필요 0건</span>
+        <button type="button" id="parking-supply-toggle-btn" class="util-btn print-btn" onclick="parkingToggleShortage('supply')">부족만 보기</button>
+      </div>
+      <div id="parking-supply-body"></div>
+      <button type="button" class="quickadd-btn" style="width:auto;padding:8px 14px;margin-top:10px;" onclick="parkingAddRow('supply')">＋ 품목 추가</button>
+    </div>
+  </div>
+
+  <!-- ── 🧹 주차장 청결·점검 체크리스트 (GM 2026-07-07 주차부 자체 점검. 지원부 점검 GAS와 별개·독립·정적 — 제출/저장/API 연동 없음, 인쇄·육안 체크 전용) ── -->
+  <div class="manual-section" style="margin-top:16px;">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3>🧹 주차장 청결·점검 체크리스트</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
+        <span style="display:inline-block;margin-right:6px;padding:1px 8px;border-radius:8px;background:var(--purple-bg);color:var(--purple);font-weight:700;font-size:11px;">[AI 초안 — GM 검토]</span>
+        지원부 점검 시스템과 별개·독립 운영 — 제출·저장·API 연동 없는 정적 점검표(인쇄 후 육안 체크 전용). 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
+      </p>
+      <table class="schedule-table">
+        <colgroup><col style="width:64px;"><col><col style="width:56px;"></colgroup>
+        <thead><tr><th>주기</th><th>점검 항목</th><th>체크</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="8">일일</td><td>지상·지하 바닥 청결 — 오염·기름때 제거</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>통행로 적치물 정리 / 쓰레기 수거</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>배수구 막힘·이물질 제거</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>주차장 화장실 청결·비품(화장지·손세정제)·악취·조명</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>주차선·표시선 식별 상태</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>조명 점등·사각지대 조도</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>차단기·정산기 정상 작동</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>CCTV 화면 이상·녹화 정상</td><td style="text-align:center;">☐</td></tr>
+          <tr><td rowspan="4">주간</td><td>소화기·소화전 위치·수량·압력게이지 / 통로 가림 여부</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>비상구 유도등 점등·피난통로 적치물·비상벨</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>발렛 동선·안전표지 점검</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>계절 대비(여름 배수·겨울 제설)</td><td style="text-align:center;">☐</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.6;"><b style="color:var(--accent);">운영 원칙</b> — 주차관리인이 청결관리(청소)를 겸임합니다. 청소 시 고무장갑·마스크 착용, 환기 후 작업합니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 「🗓️ 일정」 탭 — 전사_일정(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. 편집·저장 시 전사 일정에 즉시 합류. (배1042 시우 2026-07-15) ══ -->
+<div id="tab-schedule" class="content hidden">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
+    <span>🗓️ <b style="color:var(--text)">주차관리부 일정</b> — 행사·납품·교육 등 주요 일정과 정기점검. <b>✏️ 편집</b>으로 추가하고 <b>반복(매주·매월·매년)</b>을 정하면 달력에 계속 뜹니다. 저장하면 <b>전사 일정</b>에 바로 모입니다.</span>
+    <a href="전사_일정.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 일정 전체 보기 ↗</a>
+  </div>
+  <iframe id="scheduleFrame" data-src="전사_일정.html?dept=주차관리부&embed=1" title="주차관리부 일정" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
+</div>
+
+<!-- ══ 「🏢 거래업체」 탭 — 전사_거래업체(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. (배1074 시우 2026-07-15) ══ -->
+<div id="tab-vendorboard" class="content hidden">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
+    <span>🏢 <b style="color:var(--text)">주차관리부 거래업체</b> — 우리 부서 거래처. <b>＋업체 등록</b>·카드 <b>편집</b>으로 관리하고, 부서 체크박스로 <b>여러 부서 공유</b> 지정. 저장하면 <b>전사 거래업체</b>에 바로 모입니다.</span>
+    <a href="전사_거래업체.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 거래업체 전체 보기 ↗</a>
+  </div>
+  <iframe id="vendorboardFrame" data-src="전사_거래업체.html?dept=주차관리부&embed=1" title="주차관리부 거래업체" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
+</div>
+
+<!-- ══ 「🧑‍💼 채용 현황」 탭 — CHRO 채용 시트(db:hire) 라이브 연동. 값은 여기 없음(렌더만) · 실패 시 미표시.
+     클릭 없이 탭을 열면 바로 원본 공고 본문이 그 자리에 펼쳐진다(다른 페이지로 나가지 않음 · 사본 아님).
+     .board-fullwidth로 720px 중앙정렬(.content) 제약을 벗어나 좌측정렬·폭 최대 활용(GM 지시).
+     (배9182 3차 개정 · GM 지시로 링크→본문 인라인 렌더 전환, 좌측정렬·풀폭 · 시우 2026-07-20) ══ -->
+<div id="tab-hiring" class="content hidden">
+  <div class="board-fullwidth" style="padding:0 20px 40px;">
+    <div id="hiring-host"></div>
+    <script src="hiring-status.js"></script>
+    <script>renderHiringStatus('hiring-host','주차관리부');</script>
+  </div>
+</div>
+
+<!-- 점검(지상)·점검(지하)·현황 대시보드 탭 전면 제거 (GM 2026-06-12). 점검은 지원부 점검 시스템과 충돌·동기화 문제로 제거.
+     2026-06-23: 규정·가이드·매뉴얼 3보드 전체 카드 편집형 전환 (운영부 카드 시스템 이식 · saveBoard GAS 공유 저장 · requireEditAuth 1234). -->
+
+<!-- ══ A3 매뉴얼 인쇄 전용 컨테이너 — A3 가로 1장, 구역별 절차 2열 ══ -->
+<div id="a3-manual-print">
+  <div class="a3m-header">주차관리부 매뉴얼</div>
+  <div class="a3m-sub" id="a3m-manual-sub"></div>
+  <!-- JS(printA3Manual)가 A3_MANUAL 상수 읽어 구역별 2열 그리드 주입 -->
+  <div id="a3m-manual-host"></div>
+</div>
+
+<!-- ══ A3 가이드라인 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시) ══ -->
+<div id="a3-guideline-print">
+  <div class="a3-print-header">주차관리부 운영 가이드라인</div>
+  <div class="a3-print-cols">
+    <div id="a3-col-policy">
+      <div class="a3-col-head">규정 (정책)</div>
+    </div>
+    <div id="a3-col-guide">
+      <div class="a3-col-head">가이드</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ A3 차량·이용객 응대 상황표 인쇄 전용 컨테이너 (화면 숨김) ══ -->
+<div id="a3-pcs-print">
+  <div id="a3-pcs-host"></div>
+</div>
+
+<!-- ══ A3 장비·비품 관리 인쇄 전용 컨테이너 (화면 숨김) ══ -->
+<div id="a3-psup-print">
+  <div id="a3-psup-host"></div>
+</div>
+
+<!-- ══ A3 신입 온보딩 인쇄팩 — 직원구성·발렛동선·응대상황표·가이드요지 라이브 통합 (화면 숨김) ══ -->
+<div id="a3-ponb-print">
+  <div class="a3m-header">주차관리부 신입 교육 자료</div>
+  <div class="a3m-sub" id="a3ponb-sub"></div>
+  <div id="a3ponb-host"></div>
+</div>
+
+<!-- ══ A3 주차장 청결·점검표 인쇄 전용 컨테이너 (화면 숨김 · 정적 체크리스트 — 지원부 점검 GAS 미연동) ══ -->
+<div id="a3-pchk-print">
+  <div id="a3-pchk-host"></div>
+</div>
+
+<!-- ── 정적 프레젠테이션 전용 미니 스크립트 (탭 전환 + 접이식 토글만) ── -->
+<script>
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(function(t){
+    var oc=t.getAttribute('onclick')||'';
+    t.classList.toggle('active', oc.indexOf("'"+tab+"'")>=0);
+  });
+  ['policy','guide','manual','valet','mplan','schedule','vendorboard','hiring'].forEach(function(id){
+    var el=document.getElementById('tab-'+id);
+    if(el) el.classList.toggle('hidden', id!==tab);
+  });
+  if(tab==='schedule'){ var _f=document.getElementById('scheduleFrame'); if(_f && !_f.src && _f.getAttribute('data-src')) _f.src=_f.getAttribute('data-src'); }
+  if(tab==='vendorboard'){ var _vf=document.getElementById('vendorboardFrame'); if(_vf && !_vf.src && _vf.getAttribute('data-src')) _vf.src=_vf.getAttribute('data-src'); }
+  if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); if(typeof loadParkingRevenue==='function') loadParkingRevenue(); }
+}
+/* ── 인쇄 통합 드롭다운 헬퍼 (지원부·운영부·시설부 체계와 동일 패턴) ── */
+function openTabDropdown(btnEl, menuEl, e){
+  e.stopPropagation();
+  var isOpen = menuEl.classList.contains('open');
+  closeAllDropdowns();
+  if(!isOpen){
+    var rect = btnEl.getBoundingClientRect();
+    menuEl.style.top = (rect.bottom + 2) + 'px';
+    menuEl.classList.add('open');            // 폭 측정 위해 먼저 표시
+    var _m = 8;                               // 화면 가장자리 여백
+    var _mw = menuEl.offsetWidth;
+    var _left = rect.left;
+    if(_left + _mw > window.innerWidth - _m){ _left = Math.max(_m, window.innerWidth - _mw - _m); }
+    menuEl.style.left = _left + 'px';
+  }
+}
+function closeAllDropdowns(){
+  document.querySelectorAll('.tab-dropdown-menu').forEach(function(m){ m.classList.remove('open'); });
+}
+document.addEventListener('click', function(){ closeAllDropdowns(); });
+window.addEventListener('scroll', function(){ closeAllDropdowns(); }, true);
+window.addEventListener('resize', function(){ closeAllDropdowns(); });
+function togManual(h){
+  var body=h.nextElementSibling;
+  if(body) body.classList.toggle('open');
+  var arrow=h.querySelector('.arrow');
+  if(arrow) arrow.classList.toggle('open');
+}
+function tog(h){ if(h&&h.nextElementSibling) h.nextElementSibling.classList.toggle('open'); }
+
+/* ═══════════════════════════════════════════════
+   주차관리부 카드 편집 시스템 (2026-06-23 · 운영부 카드 시스템 이식)
+   규정·가이드·매뉴얼 3보드 = {id,title,body} 카드. 보드별 localStorage + 공용 GAS saveBoard.
+   편집 인증 requireEditAuth(1234 · 세션당 1회). 조회는 게이트 없음.
+   ═══════════════════════════════════════════════ */
+const API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
+const ONLINE = API_URL.length > 0;
+
+/* ── 편집 게이트 (비밀번호 1234, 세션당 1회) ── */
+function requireEditAuth(){
+  if(sessionStorage.getItem('editAuth')==='1') return true;
+  var pw = prompt('카드 편집 비밀번호를 입력하세요');
+  if(pw !== '1234'){ if(pw !== null) alert('비밀번호가 틀립니다.'); return false; }
+  sessionStorage.setItem('editAuth','1');
+  return true;
+}
+
+/* 카드 본문(줄바꿈) → 표시 HTML (3보드 공용) */
+function cardBodyHTML(body){
+  const lines=(body||'').split('\n').map(l=>l.replace(/\s+$/,'')).filter(l=>l.trim().length);
+  if(!lines.length) return '<div class="dv-empty">내용 없음 — 편집으로 추가</div>';
+  return lines.map(l=>'<div class="pol-line">'+escapeHTML(l)+'</div>').join('');
+}
+
+/* ═══════════════════════════════════════════════
+   규정 보드 (PARK_POLICY_BOARD) — 운영 기준·정기 회의·발렛 시스템 컬럼
+   ═══════════════════════════════════════════════ */
+const PARK_POLICY_KEY = 'PARK_POLICY_BOARD';
+const PARK_POLICY_COLS = [
+  {key:'ops',   label:'운영 기준', cls:'male'},
+  {key:'meet',  label:'정기 회의', cls:'female'}
+];
+const PARK_POLICY_SEED = {
+  ops:[
+    {id:'pp_hours', title:'운영시간', body:'주차장 운영시간은 웰페리온 운영시간과 동일.\n평일(월~금) 06:00~22:30 / 주말·공휴일 08:00~20:00.\n휴관: 신정·설·추석 명절연휴 / 매월 둘째·넷째 주 일요일.'},
+    {id:'pp_shift', title:'근무조 편성', body:'오전조: 양상규 고문 — 평일 08:30~17:30 / 주말 09:00~16:00.\n오후조: 충원 진행 중 — 평일 10:00~19:00 / 주말 09:00~16:00. 확정 시 본 표 갱신 (현황 기준 운영).\n야간조 없음.\n기본 2인 교대 유지. 1인 근무 불가피 시 휴게는 한산시간에 분할하고 비상연락 상시 유지. 3인 이상은 조장이 시차 배치.\n2인 이상 동시 근무 시 교대 휴게 적용 — 정산 부스·주차장 비우지 않음.'},
+    {id:'pp_zone',  title:'담당 구역', body:'지상 주차장 / 지하 주차장(층별) / 출입·정산 / 우선구역(장애인·여성우선·전기차)'},
+    {id:'pp_report',title:'안전 보고', body:'차량 접촉/파손·차단기 고장·누수·화재 위험 발견 시 즉시 조치 후 팀장·소장 보고.\n자의 판단 금지.'},
+    {id:'pp_cash',  title:'정산·시재 관리', body:'정산기 현금 시재는 교대 시 인수인계·기록 의무.\n미정산/미수 건은 즉시 공유.'},
+    {id:'pp_priv',  title:'개인정보·CCTV', body:'차량번호·CCTV 영상은 회원 개인정보. 외부 유출·임의 열람 금지.\n열람은 사고·민원 처리 목적+책임자 승인 한정.'},
+    {id:'pp_user',  title:'이용 대상 및 구분', body:'■ 회원\n웰페리온 정회원 — 차량 등록 후 LPR(번호인식) 자동 개방.\n주차 요금: 정액 기본 + 쿠폰제(쿠폰으로 추가 정산·할인 적용).\n■ 방문객(투어·상담·내방)\n사전 예약 필수(무조건 예약제). 워크인 방문객 주차 불허.\n방문 목적·예약 확인 후 방문증/등록 완료된 차량 한해 출입 허용.\n입차 시 정산 부스 또는 프론트 확인 절차 경유.\n■ 외부 배달·용역\n주차 미허용. 클럽 주차장 이용 불가.'},
+    {id:'pp_fee',   title:'주차 요금 체계', body:'■ 회원 (자주식)\n정액 기본 + 쿠폰제. 쿠폰으로 추가 정산·할인 적용.\n■ 방문객 (자주식)\n최초 10분 무료(회차), 이후 10분당 1,500원.\n※ 요율 변경 시 이 값(10분 무료 / 10분당 1,500원) 수정.\n■ 발렛(직영)\n5,000원 — 회원 포함 전 이용자 유료·출차 시 결제.\n■ 장기 주차\n해당 없음 — 장기 주차 운영 안 함.\n■ 유형별 무료(검증) 주차 시간\n※ 기준 시간 초과분은 10분당 1,500원 적용. 시간 변경 시 아래 값 수정.\n멤버십 회원: 4시간\nFAN VIP: 5시간\n유소년 1강습: 100분\n유소년 2강습: 150분\n뮤지컬: 150분'},
+    {id:'pp_viol',  title:'위반·견인 절차', body:'■ 위반 유형\n우선구역(장애인·여성우선·전기차) 불법 점유 / 이중주차·통행 방해.\n※ 장기 주차 위반 해당 없음 — 장기 주차 운영 안 함.\n■ 1단계 계도\n안내문 부착 + 사진 기록. 차량번호·시각 기록 의무.\n■ 견인\n계약 견인업체 없음 — 견인 미운영, 계도·안내 중심 처리.\n반복 위반·심각한 통행 방해 시 팀장 보고 후 방침 결정.\n■ 사후 처리\n위반 기록(일시·차량번호·사유·조치) 대장 작성 → 소장 보고.'},
+    {id:'pp_accident',title:'사고·파손 처리', body:'■ 1단계 현장 보존\n사진 촬영(차량 전후좌우·파손 부위) / CCTV 시각 기록 / 현장 이동 금지.\n■ 2단계 즉시 보고\n팀장·소장에게 즉시 보고. 자의 판단·합의 시도 금지.\n■ 3단계 보험 처리\n차량 배상 보험 적용(발렛 차량). 자주식 차량 간 접촉 → 양측 당사자 연결 + 보험 안내.\n■ 4단계 기록 완결\n사고 대장 작성(일시·차량번호·경위·조치·담당자) → 소장 서명.\n■ 언더라인 원칙\n직원이 현장에서 배상액·과실 판단 절대 금지. 전액 보험·법적 절차로만 처리.'},
+    {id:'pp_reserve',title:'예약 연계', body:'■ 방문객 주차 연계\n투어·상담 예약 시 프론트가 차량번호 사전 등록(수기) → 주차 부스에 사전 공유.\n■ 당일 확인 절차\n예약 확인되지 않은 방문 차량은 프론트 재확인 후 입차 허용.\n■ 클럽 이벤트·단체 방문\n사전 공지(전날까지) + 임시 주차 구역 배정 + 담당자 배치.\n■ 현 운영 방식\n현재 수기 운영 (프론트↔주차 부스 직접 전달·기록). 시스템 연동은 향후 도입 시 갱신.'},
+    {id:'pp_note',  title:'※ 규정 확정 안내', body:'본 규정은 운영 기본값이며, 세부 절차는 운영 경과·GM 검토로 갱신됩니다.\n모든 항목 확정 완료(2026-06-24). 변경 필요 시 해당 카드를 직접 편집합니다.'}
+  ],
+  meet:[
+    {id:'pm_week',  title:'주간 회의', body:'주기: 매주 (정기)\n참석: 근무조 + 팀장\n안건: 지난주 이슈 / 이번주 집중 구역 / 설비 현황 / 노하우·매뉴얼 개정 여부'},
+    {id:'pm_urgent',title:'긴급 회의', body:'주기: 사고·고장 등 이슈 발생 즉시\n참석: 해당 담당자+팀장\n안건: 원인 분석 / 즉시 조치'}
+  ]
+};
+let PARK_POLICY_DATA = {};
+
+/* 발렛 보드 (PARK_VALET_BOARD) — 독립 탭 (직영 발렛 운영체계) */
+const PARK_VALET_KEY = 'PARK_VALET_BOARD';
+const PARK_VALET_COLS = [
+  {key:'valet', label:'발렛 시스템 (직영)', cls:'outer'}
+];
+const PARK_VALET_SEED = {
+  valet:[
+    {id:'pv_intro', title:'발렛 시스템 개요(직영)', body:'웰페리온 직영 발렛 주차 서비스 — 도착 즉시 차량 위탁, 회원은 바로 입장(프리미엄 도착 의전).\n요금: 5,000원(회원 포함 전 이용자 유료). 운영: 운영시간 내. 보험: 차량 배상 보험 가입 완료.\n※ 운영 체계 셋업 후 발렛 인력 채용 → 정식 운영 개시 (현 단계: 셋업 진행, 주차관리인 겸직 운영).'},
+    {id:'pv_ops',   title:'운영 방식 — 직영', body:'외주 아닌 자체 직영 운영(시우 주관 셋업).\n발렛 데스크: 정문(차량 인수·반납 지점).\n인력: 셋업 진행 중 — 전담 채용 확정 시 갱신. 현재 주차관리인 겸직 운영.'},
+    {id:'pv_scope', title:'대상·시간', body:'대상: 운영시간 내 회원·예약 방문객.\n시간: 오전/저녁 피크타임 집중 운영.'},
+    {id:'pv_fee',   title:'요금·정산', body:'발렛 요금 5,000원 — 회원 포함 전 이용자 유료.\n정산: 출차 시 결제(카드/현금/정산기), 영수증·정산 기록.'},
+    {id:'pv_key',   title:'키 관리', body:'번호 보관함 1:1 관리.\n입·출차 로그 기록(시각·담당자).\nCCTV 사각지대 최소화.'},
+    {id:'pv_liab',  title:'책임·배상', body:'차량 배상 보험 가입 완료.\n차량 인수 시 외관 사진 점검 → 사고 발생 시 보험 절차.\n분실·손상 대응 기록 의무.'}
+  ]
+};
+let PARK_VALET_DATA = {};
+
+/* 가이드 보드 (PARK_GUIDE_BOARD) */
+const PARK_GUIDE_KEY = 'PARK_GUIDE_BOARD';
+const PARK_GUIDE_COLS = [
+  {key:'guide', label:'주차관리부 가이드', cls:'outer'}
+];
+const PARK_GUIDE_SEED = {
+  guide:[
+    {id:'pg_etiquette', title:'직원&파트너 기본 에티켓', body:'"내가 지나간 자리는 항상 깨끗하게 정리정돈하자"\n1. 회원이 먼저 — 회원이 보이면 하던 일을 멈추고 먼저 인사\n2. 한 발 앞서 행동 — 요청받기 전에 불편사항 발견·조치\n3. 모르면 바로 연결 — "확인 후 안내드리겠습니다" → 담당자 즉시 연결\n4. 끝까지 책임 — 내가 접수한 건은 끝까지 추적\n5. 프리미엄 격조 — 말투·행동·복장 모두 스포츠클럽 수준'},
+    {id:'pg_pride', title:'회원도 왕이지만, 우리도 품격 있는 프로다', body:'회원을 최고로 모시는 것이 우리의 자부심입니다. 그러나 그것은 굴종이 아니라 당당한 프로페셔널의 서비스입니다.\n직원·파트너 한 사람의 품격이 곧 웰페리온의 품격이며, 스스로를 존중하는 사람만이 회원을 진심으로 존중할 수 있습니다.\n무례·폭언에는 정중하되 단호하게 선을 지키고(반복 시 팀장 보고), 회원과 직원이 서로 존중하는 프리미엄 커뮤니티 문화를 함께 지켜갑니다.'},
+    {id:'pg_attitude', title:'응대 태도', body:'회원 첫 인사 → 눈 맞춤 + 미소 필수 / 먼저 인사 / 이름 알면 호칭 사용\n불편사항 접수 → 끝까지 경청 → 즉시 해결 가능 여부 판단 → 처리 결과 반드시 고지\n에티켓 위반 → 정중하되 단호하게 안내 / 반복 위반 시 팀장 보고\n긴급·안전 → 즉시 팀장·소장 보고 → 지시 후 조치 / 자의 판단 금지'},
+    {id:'pg_dress', title:'복장·용모', body:'유니폼 → 웰페리온 지급 유니폼 착용 / 청결 유지\n명찰 → 항상 패용 / 좌측 가슴\n신발 → 미끄럼 방지 안전화 / 실외화 구역 내 착용 금지\n청소 구역 → 고무장갑·마스크 필수 / 환기 후 작업'},
+    {id:'pg_zone', title:'구역별 관리 기준', body:'출입·차단기 → 입·출차 차단기 정상 작동 / LPR(번호인식) 카메라 청결·인식 / 오작동 시 수동 개방 + 즉시 보고\n정산·요금기 → 화면·카드리더·지폐/동전부·영수증 정상 / 현금 시재 인수인계 / 미정산 건 즉시 공유\n지상 주차장 → 불법·이중·장기 주차 계도 / 통행로 확보 / 조명·배수·바닥 표시선 점검\n지하 주차장 → 층별 순찰 / 환기·제연 가동 / 누수·고임물·결빙 / 빈자리 안내\n우선·지정 구역 → 장애인·여성우선·전기차 구역 불법 점유 단속 / 표지·도색 식별\n안전·소방 → 소화기·소화전·비상구·피난통로 / CCTV 사각지대 / 주차장 화장실 청결'},
+    {id:'pg_clean', title:'주차관리인 청결관리', body:'주차관리인은 주차장 청결관리(청소 업무)도 담당합니다.\n지상·지하 바닥 청소 / 오염·기름때 제거 / 통행로 적치물 정리\n쓰레기 수거 / 배수구 막힘·이물질 제거\n주차장 화장실 청결·비품(화장지·손세정제) 점검\n바닥 주차선·표시선 식별 점검 / 안내·규정 게시물 정리\n청소 작업 시 고무장갑·마스크 착용·환기 후 작업.'},
+    {id:'pg_valet', title:'발렛 응대 가이드(직영)', body:'동선: 정문 차량 인수 → 키 수령·번호태그 발급 → 지정구역 주차 → 출차 콜(프론트/전화) → 회차.\n응대: 도착 의전 인사 / 차량 인수 시 외관 확인 안내 / 요금(5,000원) 안내 / 출차 대기 최소화 / 프리미엄 격조 유지.'},
+    {id:'pg_flow_member', title:'회원 동선 안내', body:'① 정문 진입 → LPR 자동 인식·차단기 자동 개방\n② 지상·지하 배정 구역 주차\n③ 클럽 이용 후 출차 → LPR 자동 인식 개방 (요금 자동 처리)\n④ 발렛 이용 시: 정문 정차 → 직원 차량 인수 → 바로 입장 → 출차 콜(프론트·전화) → 5,000원 정산\n\n[안내 멘트 예시]\n입차: "안녕하세요, 웰페리온입니다. 차량 등록이 확인되었습니다. ○층으로 안내해 드리겠습니다."\n발렛 인수: "도착하셨군요. 차량 맡겨주시면 바로 모셔드리겠습니다. 외관 상태 확인 후 입장하시면 됩니다."'},
+    {id:'pg_flow_visitor', title:'방문객 동선 안내', body:'① 정문 진입 → 정산 부스·직원 안내 → 예약 확인\n② 예약 확인 완료 → 방문증·임시 출입 처리 → 지정 구역 안내\n③ 이용 완료 후 출차 → 요금 정산(최초 10분 무료, 이후 10분당 1,500원) → 차단기 개방\n※ 요율 변경 시 위 금액(10분 무료 / 10분당 1,500원) 수정.\n\n[안내 멘트 예시]\n입차: "안녕하세요, 웰페리온입니다. 예약자 성함과 방문 목적을 확인해 드리겠습니다."\n예약 미확인: "죄송합니다, 잠시만 기다려 주시면 프론트에 확인 후 안내해 드리겠습니다."\n출차: "감사합니다. 또 방문해 주세요."'},
+    {id:'pg_viol_guide', title:'위반 차량 안내 멘트 & 절차', body:'■ 경미한 위반 (이중주차·통행 방해)\n멘트: "안전한 이용을 위해 주차 위치 이동을 부탁드립니다. 지정 구역으로 안내해 드리겠습니다."\n조치: 자진 이동 유도 → 미응 시 안내문 부착·사진 기록 → 팀장 보고\n■ 우선구역 불법 점유\n멘트: "해당 구역은 ○○(장애인·여성우선·전기차) 전용 구역입니다. 즉시 이동 부탁드립니다."\n조치: 계도 후 사진 기록 → 반복 시 팀장 보고\n■ 장기 주차 — 해당 없음 (장기 주차 운영 안 함)\n■ 견인 — 미운영 (계약 견인업체 없음). 계도·안내 중심 처리. 심각한 방해 시 팀장 보고 후 방침 결정.\n■ 핵심 원칙: 직원 단독으로 어떠한 강제 조치도 결정 금지. 반드시 팀장 보고 후 진행.'},
+    {id:'pg_morning', title:'시간대별 절차 — 오전조 (오픈~인수인계)', body:'[오픈 점검]\n입·출차 차단기 작동 / LPR 카메라 인식 확인\n무인 정산기 화면·시재·영수증 용지 점검\n회원/방문 차량 구분 운영 점검\n[오전 순찰]\n지상 구역 순찰: 불법/이중/장기 주차, 통행로, 바닥 표시선\n지하 층별 순찰: 빈자리 현황, 누수·배수, 조명·환기\n장애인·여성우선·전기차 구역 불법 점유 단속\n주차유도·만차 표시기, 안내 표지 점검\n[인수인계]\n정산기 현금 시재 확인 후 인계\n오전조 → 오후조 이상 차량·고장·미결 사항 공유(기록)'},
+    {id:'pg_afternoon', title:'시간대별 절차 — 오후조 (오후~마감)', body:'[오후 순찰]\n지상·지하 재순찰: 혼잡 유도, 통행로 확보, 빈자리 안내\n소화기·소화전·비상구·피난통로 점검\n주차장 화장실 청결·비품 점검\n[저녁 대비]\n전 구역 조명 전면 점등 / 사각지대 보완\nCCTV 모니터링: 화면 이상·녹화 정상 확인\n저녁 순찰: 의심 차량·장기 미출차 차량 기록\n[마감]\n정산기 현금 시재 정산·마감 기록\n차단기 운영 모드 점검 / 비상 개방 절차 확인\n잔류 차량·조명·이상 유무 최종 확인 후 마감 보고'}
+  ]
+};
+let PARK_GUIDE_DATA = {};
+
+/* 매뉴얼 보드 (PARK_MANUAL_BOARD) — 구역별 카드 */
+const PARK_MANUAL_KEY = 'PARK_MANUAL_BOARD';
+const PARK_MANUAL_COLS = [
+  {key:'manual', label:'주차 매뉴얼 (구역별)', cls:'male'}
+];
+const PARK_MANUAL_SEED = {
+  manual:[
+    {id:'pm_common', title:'공통 유의사항', body:'차량 접촉/파손·차단기 고장·화재 위험은 즉시 조치 후 팀장·소장 보고 (자의 판단 금지)\n차량번호·CCTV 영상은 회원 개인정보 — 외부 유출·임의 열람 금지\n순찰 시 야광 조끼·안전화 착용 / 차량 이동 동선 주의\n사고·민원 발생 시 현장 보존 + 사진 + CCTV 시각 기록 의무'},
+    {id:'pm_gate', title:'출입통제 · 차단기', body:'[차단기]\n입·출차 차단기 바(barrier) 작동·손상 여부 확인\n센서·리모컨 반응 점검 / 오작동 시 즉시 수동 개방 후 보고\n[LPR(번호인식) 카메라]\n렌즈 청결 / 번호 인식 정상 / 표시판 점등 확인\n[회원/방문 운영]\n회원 차량 자동개방 / 방문 차량 안내·등록 절차 준수'},
+    {id:'pm_pay', title:'정산 · 요금기', body:'[무인 정산기]\n화면·버튼·카드리더 정상 / 지폐·동전 투입구 막힘 여부\n잔돈 보유량 / 영수증 용지 잔량 확인\n[현금 시재]\n교대 시 현금 시재 인수인계·기록 의무\n미정산/미수 건 즉시 공유'},
+    {id:'pm_ground', title:'지상 주차장', body:'[순찰]\n불법·이중주차 계도 및 기록 (장기 주차 운영 안 함)\n통행로 적치물 / 바닥 주차선·번호 식별\n[설비]\n조명 점등 불량·깜빡임 구역 기록 (야간 대비)\n배수구 막힘 / 천장·벽면 누수 / 결빙 위험(동절기)'},
+    {id:'pm_under', title:'지하 주차장 (층별)', body:'[층별 순찰]\nB1·B2 등 층별 순회 / 불법·이중 주차 / 적치물\n층별 빈자리 현황 파악 및 안내\n[환기·누수]\n조명 점등 / 환기·제연 팬 가동음·매연·악취\n천장·벽면 누수 / 바닥 고임물 / 차수판(우수기) 상태'},
+    {id:'pm_priority', title:'우선 · 지정 구역', body:'[장애인 전용구역]\n불법 점유 단속 / 표지·바닥도색 식별 / 비정상 주차 계도·기록\n[여성우선 구역]\n위치·조명 양호 / 표지 식별 / 불법 점유 점검\n[전기차 충전구역]\n충전기 작동 / 비충전 차량 점유 점검 / 케이블 정리'},
+    {id:'pm_safety', title:'안전 · 소방 · CCTV', body:'[소방]\n소화기·소화전 비치 위치·수량 / 압력게이지 / 통로 가림 여부\n비상구 유도등 점등 / 피난통로 적치물 제거 / 비상벨 위치\n[CCTV]\n주차구역 CCTV 화면 이상 / 사각지대 / 녹화 정상 여부\n영상 열람은 사고·민원 처리 목적 + 책임자 승인 한정\n[주차장 화장실]\n청결 / 비품(화장지·손세정제) / 악취·조명'},
+    {id:'pm_clean', title:'주차관리인 청결관리', body:'주차관리인이 주차장 청결관리(청소 업무)도 담당.\n지상·지하 바닥 청소 / 오염·기름때 제거 / 통행로 적치물 정리\n쓰레기 수거 / 배수구 막힘·이물질 제거\n주차장 화장실 청결·비품 점검\n바닥 주차선·표시선 식별 점검\n청소 작업 시 고무장갑·마스크 착용·환기 후 작업.'},
+    {id:'pm_valet', title:'발렛 절차(직영)', body:'[입차] 차량 인수 → 외관 사진 점검 → 키 번호태그 → 요금(5,000원) 안내 → 지정구역 주차 → 로그 기록(시각·담당).\n[출차] 콜 접수 → 차량 회차 → 회원 확인 → 5,000원 정산 → 키 인계 → 로그 마감.\n[키 관리] 번호 보관함 1:1 / 입·출차 로그.\n[사고] 차량 손상·분실 시 보험 절차(외관 사진 대조).\n[청결 연계] 발렛 대기 시간에 주차장 청결관리 병행.'},
+    {id:'pm_weekly', title:'요일별 집중 점검', body:'월 → 바닥 주차선·표시 / 차단기 정밀 점검 / 장애인·여성우선 구역 집중\n화 → 배수구·차수판 / 조명 전수 점검 / 안내·규정 게시물\n수 → CCTV 사각지대 / 환기·제연 설비 점검\n목 → 바닥 청소·오염 제거 / 소화기·소화전 / 주차장 화장실 집중\n금 → 정산기 정밀 점검 / 전기차 충전구역 / 비상구·피난통로 집중\n토 → 천장·벽면 누수 전수 / 주차유도·만차 표시기 / 혼잡 대응\n일 → 전 구역 대청소 / 불법·이중주차 최종 확인 / 미비 부분 보완'}
+  ]
+};
+let PARK_MANUAL_DATA = {};
+
+/* ── 보드 공용 엔진 (config 객체 1개로 3보드 구동) ── */
+const PARK_BOARDS = {
+  pol: {prefix:'pol', wrapId:'policy-board', key:PARK_POLICY_KEY, cols:PARK_POLICY_COLS, seed:PARK_POLICY_SEED, idp:'pp', label:'규정', get data(){return PARK_POLICY_DATA;}, set data(v){PARK_POLICY_DATA=v;}},
+  gd:  {prefix:'gd',  wrapId:'guide-board',  key:PARK_GUIDE_KEY,  cols:PARK_GUIDE_COLS,  seed:PARK_GUIDE_SEED,  idp:'pg', label:'가이드', get data(){return PARK_GUIDE_DATA;}, set data(v){PARK_GUIDE_DATA=v;}},
+  mn:  {prefix:'mn',  wrapId:'manual-board', key:PARK_MANUAL_KEY, cols:PARK_MANUAL_COLS, seed:PARK_MANUAL_SEED, idp:'pm', label:'매뉴얼', get data(){return PARK_MANUAL_DATA;}, set data(v){PARK_MANUAL_DATA=v;}},
+  vl:  {prefix:'vl',  wrapId:'valet-board',  key:PARK_VALET_KEY,  cols:PARK_VALET_COLS,  seed:PARK_VALET_SEED,  idp:'pv', label:'발렛', get data(){return PARK_VALET_DATA;}, set data(v){PARK_VALET_DATA=v;}}
+};
+function boardGenId(cfg){ return cfg.idp+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+function applyBoardStored(cfg, stored){
+  const out={};
+  cfg.cols.forEach(c=>{
+    const arr=(stored&&Array.isArray(stored[c.key]))?stored[c.key]:null;
+    if(arr){
+      out[c.key]=arr.map(card=>({
+        id:card&&card.id?String(card.id):boardGenId(cfg),
+        title:card&&card.title!=null?String(card.title):'',
+        body:card&&card.body!=null?String(card.body):''
+      }));
+    }else{
+      out[c.key]=(cfg.seed[c.key]||[]).map(card=>({id:card.id,title:card.title,body:card.body}));
+    }
+  });
+  cfg.data=out;
+}
+function loadBoardLocal(cfg){
+  let stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(cfg.key)); }catch(e){ stored=null; }
+  applyBoardStored(cfg, stored);
+}
+async function loadBoardBackend(cfg){
+  loadBoardLocal(cfg);
+  if(!ONLINE) return;
+  try{
+    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(cfg.key),{method:'GET',redirect:'follow'});
+    const data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      applyBoardStored(cfg, data.board);
+      localStorage.setItem(cfg.key, JSON.stringify(cfg.data));
+    }
+  }catch(e){ /* 네트워크 실패 → 로컬/시드 유지 */ }
+  const wrap=document.getElementById(cfg.wrapId);
+  if(wrap && !wrap.querySelector('.dv-cell.editing')) renderBoardCfg(cfg);
+}
+function persistBoard(cfg){
+  localStorage.setItem(cfg.key, JSON.stringify(cfg.data));
+  if(!ONLINE) return;
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent=cfg.label+' 저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:cfg.key,board:cfg.data})
+  }).then(()=>{if(ind){ind.textContent=cfg.label+' 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
+    .catch(()=>{if(ind){ind.textContent=cfg.label+' 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+}
+
+function renderBoardCfg(cfg){
+  const wrap=document.getElementById(cfg.wrapId);
+  if(!wrap)return;
+  const P=cfg.prefix;
+  let html='';
+  cfg.cols.forEach(col=>{
+    const cards=cfg.data[col.key]||[];
+    html+='<div class="board-col">';
+    html+='<div class="board-col-head"><span class="bday" style="font-size:17px;">'+escapeHTML(col.label)+'</span>'
+        +'<span class="day-type weekday">'+cards.length+'개</span></div>';
+    html+='<div class="board-col-body">';
+    cards.forEach(card=>{
+      const cid=col.key+'__'+card.id;
+      html+='<div class="dv-cell '+col.cls+'" id="'+P+'cell_'+cid+'">';
+      html+='<div class="dv-cell-head"><span class="dv-cell-label '+col.cls+'">'+escapeHTML(card.title||'(제목 없음)')+'</span>'
+          +'<div style="display:flex;align-items:center;gap:4px">'
+          +'<button type="button" class="dv-edit-btn" id="'+P+'btn_'+cid+'" onclick="boardToggleEdit(\''+P+'\',\''+col.key+'\',\''+card.id+'\')">편집</button>'
+          +'<button type="button" class="dv-edit-btn cancel" id="'+P+'cancel_'+cid+'" style="display:none" onclick="boardCancelEdit(\''+P+'\',\''+col.key+'\',\''+card.id+'\')">취소</button>'
+          +'</div></div>';
+      html+='<div class="dv-body">'+cardBodyHTML(card.body)+'</div>';
+      html+='<div class="pol-edit" id="'+P+'edit_'+cid+'">'
+          +'<label class="pol-edit-lab">제목</label>'
+          +'<input type="text" class="pol-edit-title" id="'+P+'title_'+cid+'" placeholder="카드 제목">'
+          +'<label class="pol-edit-lab">내용 (줄바꿈으로 항목 구분)</label>'
+          +'<textarea class="pol-edit-body" id="'+P+'body_'+cid+'" rows="4" placeholder="내용을 입력하세요"></textarea>'
+          +'<button type="button" class="pol-del-btn" onclick="boardDeleteCard(\''+P+'\',\''+col.key+'\',\''+card.id+'\')">이 카드 삭제</button>'
+          +'</div>';
+      html+='<div class="dv-edit-hint">제목·내용을 수정하고 <b>저장</b>을 누르면 모든 기기에 반영됩니다. 내용은 실제 운영 기준으로 작성·저장하세요.</div>';
+      html+='</div>';
+    });
+    html+='<button type="button" class="dv-g-addrow" onclick="boardAddCard(\''+P+'\',\''+col.key+'\')">＋ 카드 추가</button>';
+    html+='</div></div>';
+  });
+  wrap.innerHTML=html;
+}
+
+function boardFindCard(cfg,colKey,id){
+  const arr=cfg.data[colKey]||[];
+  for(let i=0;i<arr.length;i++){ if(arr[i].id===id) return {arr:arr,idx:i,card:arr[i]}; }
+  return null;
+}
+function boardHasEditing(cfg){
+  const wrap=document.getElementById(cfg.wrapId);
+  return !!(wrap && wrap.querySelector('.dv-cell.editing'));
+}
+function boardToggleEdit(prefix,colKey,id){
+  const cfg=PARK_BOARDS[prefix]; if(!cfg)return;
+  const P=prefix, cid=colKey+'__'+id;
+  const cell=document.getElementById(P+'cell_'+cid);
+  const btn=document.getElementById(P+'btn_'+cid);
+  const cancelbtn=document.getElementById(P+'cancel_'+cid);
+  const found=boardFindCard(cfg,colKey,id);
+  if(!cell||!btn||!found)return;
+  const editing=cell.classList.contains('editing');
+  if(!editing){
+    if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+    cell.classList.add('editing');
+    const ti=document.getElementById(P+'title_'+cid);
+    const bo=document.getElementById(P+'body_'+cid);
+    if(ti) ti.value=found.card.title||'';
+    if(bo) bo.value=found.card.body||'';
+    btn.textContent='저장';
+    btn.classList.add('save');
+    if(cancelbtn) cancelbtn.style.display='';
+    if(ti) ti.focus();
+  }else{
+    const ti=document.getElementById(P+'title_'+cid);
+    const bo=document.getElementById(P+'body_'+cid);
+    found.card.title=ti?ti.value.trim():found.card.title;
+    found.card.body=bo?bo.value:found.card.body;
+    cell.classList.remove('editing');
+    btn.textContent='편집';
+    btn.classList.remove('save');
+    if(cancelbtn) cancelbtn.style.display='none';
+    const labEl=cell.querySelector('.dv-cell-label');
+    if(labEl) labEl.textContent=found.card.title||'(제목 없음)';
+    const bodyEl=cell.querySelector('.dv-body');
+    if(bodyEl) bodyEl.innerHTML=cardBodyHTML(found.card.body);
+    persistBoard(cfg);
+  }
+}
+function boardCancelEdit(prefix,colKey,id){
+  const P=prefix, cid=colKey+'__'+id;
+  const cell=document.getElementById(P+'cell_'+cid);
+  const btn=document.getElementById(P+'btn_'+cid);
+  const cancelbtn=document.getElementById(P+'cancel_'+cid);
+  if(!cell||!btn)return;
+  cell.classList.remove('editing');
+  btn.textContent='편집';
+  btn.classList.remove('save');
+  if(cancelbtn) cancelbtn.style.display='none';
+}
+function boardAddCard(prefix,colKey){
+  const cfg=PARK_BOARDS[prefix]; if(!cfg)return;
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  if(boardHasEditing(cfg)){ alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.'); return; }
+  if(!Array.isArray(cfg.data[colKey])) cfg.data[colKey]=[];
+  const nid=boardGenId(cfg);
+  cfg.data[colKey].push({id:nid,title:'새 카드',body:''});
+  persistBoard(cfg);
+  renderBoardCfg(cfg);
+  boardToggleEdit(prefix,colKey,nid);
+}
+function boardDeleteCard(prefix,colKey,id){
+  const cfg=PARK_BOARDS[prefix]; if(!cfg)return;
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  if(!confirm('이 카드를 삭제할까요?')) return;
+  const found=boardFindCard(cfg,colKey,id);
+  if(!found) return;
+  found.arr.splice(found.idx,1);
+  persistBoard(cfg);
+  renderBoardCfg(cfg);
+}
+
+/* ── Init: 3보드 로컬 즉시 렌더 후 백엔드 동기화 ── */
+function initParkBoards(){
+  ['pol','gd','mn','vl'].forEach(function(p){
+    const cfg=PARK_BOARDS[p];
+    loadBoardLocal(cfg);
+    renderBoardCfg(cfg);
+    loadBoardBackend(cfg);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   A3 가이드라인 — '핵심 1장 압축본' 데이터 (시우 작성, GM 편집 가능)
+   ─ A3 인쇄(printA3Guideline)는 화면의 규정·가이드 상세 카드 전체를 덤프하지 않고
+     아래 A3_GUIDELINE만 읽어 좌(규정 핵심)·우(가이드 핵심) 2단으로 압축 인쇄한다.
+   ─ 내용 = 화면 규정 카드·가이드 탭에 이미 있는 실제 내용에서 핵심만 발췌·간결화.
+     없는 규칙 신설 금지. 항목별 1~3줄. A3 1장에 들어갈 분량만 선별.
+   ─ 3부서 전파 표준: title / policy(좌·규정핵심) / guide(우·가이드핵심) 구조 고정.
+     각 항목 { h:'제목', lines:['줄1','줄2',...] }. 항목 추가·삭제·수정은 이 상수만 손대면 됨.
+   ─ 미확정 항목은 lines에 '미정(GM 확인)'으로 명확히 표기.
+   ═══════════════════════════════════════════ */
+const A3_GUIDELINE = {
+  title: '주차관리부 운영 가이드라인',
+  policy: [
+    { h:'운영시간·근무조', lines:[
+      '운영시간(클럽과 동일): 평일 06:00~22:30 / 주말·공휴일 08:00~20:00.',
+      '휴관: 신정·설·추석 명절연휴 / 매월 둘째·넷째 주 일요일.',
+      '오전조: 양상규 고문 — 평일 08:30~17:30 / 주말 09:00~16:00.',
+      '오후조: 충원 진행 중 — 평일 10:00~19:00 / 주말 09:00~16:00. 야간조 없음.',
+      '2인 이상 동시 근무 시 교대 휴게 적용 — 주차장·정산 부스 비우지 않음.'
+    ]},
+    { h:'담당 구역', lines:[
+      '지상 주차장 / 지하 주차장(층별) / 출입·차단기·LPR / 무인 정산기.',
+      '우선·지정 구역(장애인·여성우선·전기차) 불법 점유 단속 포함.'
+    ]},
+    { h:'안전 보고', lines:[
+      '차량 접촉·파손, 차단기 고장, 누수, 화재 위험 발견 시 즉시 조치 후 팀장·소장 보고.',
+      '자의 판단 금지 / 사고·민원 발생 시 현장 보존 + 사진 + CCTV 시각 기록 의무.'
+    ]},
+    { h:'정산·시재 관리', lines:[
+      '교대 시 현금 시재 인수인계·기록 의무.',
+      '미정산·미수 건 발생 즉시 팀장 공유.'
+    ]},
+    { h:'개인정보·CCTV', lines:[
+      '차량번호·CCTV 영상은 회원 개인정보 — 외부 유출·임의 열람 금지.',
+      '열람은 사고·민원 처리 목적 + 책임자 승인 한정.'
+    ]},
+    { h:'정기 회의', lines:[
+      '주간 회의(정기): 매주 / 근무조+팀장 / 지난주 이슈·이번주 집중 구역·설비 현황·매뉴얼 개정.',
+      '긴급 회의: 사고·고장 등 이슈 발생 즉시 / 해당 담당자+팀장.'
+    ]},
+    { h:'발렛 시스템(직영)', lines:[
+      '직영 발렛 · 요금 5,000원(회원 포함) · 차량 배상 보험 가입 · 운영시간 내.',
+      '셋업 완료 후 발렛 전담 채용 → 정식 운영. 입출차 외관 점검·키 번호태그·로그.'
+    ]}
+  ],
+  guide: [
+    { h:'기본 에티켓', lines:[
+      '"내가 지나간 자리는 항상 깨끗하게 정리정돈하자".',
+      '회원이 보이면 하던 일 멈추고 먼저 인사.',
+      '한 발 앞서 행동 · 모르면 바로 담당자 연결 · 접수 건 끝까지 책임.',
+      '말투·행동·복장 모두 스포츠클럽 격조 유지.'
+    ]},
+    { h:'응대 태도', lines:[
+      '눈 맞춤+미소 필수 / 먼저 인사 / 이름 알면 호칭 사용.',
+      '불편사항: 끝까지 경청 → 처리 결과 반드시 고지.',
+      '에티켓 위반: 정중하되 단호하게 / 반복 시 팀장 보고.',
+      '긴급·안전: 즉시 보고 후 지시대로 조치 / 자의 판단 금지.'
+    ]},
+    { h:'구역별 관리', lines:[
+      '출입·차단기: 차단기 바·센서·LPR 점검 / 오작동 시 수동 개방 후 즉시 보고.',
+      '정산·요금기: 화면·카드리더·시재 점검 / 미정산 즉시 공유.',
+      '지상: 불법·이중·장기 주차 계도 / 통행로 확보 / 조명·배수 점검.',
+      '지하: 층별 순찰 / 환기·제연 / 누수·결빙 / 빈자리 안내.',
+      '우선 구역: 장애인·여성우선·전기차 불법 점유 단속.'
+    ]},
+    { h:'오전조 (오픈~인수인계)', lines:[
+      '오픈: 차단기·LPR·정산기 화면·시재·영수증 용지 점검.',
+      '오전 순찰: 지상·지하 순찰 / 우선 구역 단속 / 안내 표지 점검.',
+      '인계: 정산기 시재 확인 + 오전 이상 사항 오후조에 기록 공유.'
+    ]},
+    { h:'오후조 (오후~마감)', lines:[
+      '오후 순찰: 지상·지하 혼잡 유도 / 소화기·비상구·화장실 점검.',
+      '저녁 대비: 전 구역 조명 전면 점등 / CCTV 화면·녹화 확인.',
+      '마감: 정산기 시재 마감 / 차단기 운영 모드 점검 / 잔류 차량 최종 확인 후 보고.'
+    ]},
+    { h:'주차관리인 청결관리', lines:[
+      '주차관리인이 주차장 청결관리(청소)도 담당.',
+      '지상·지하 바닥·통행로·쓰레기·배수구 / 주차장 화장실 청결 / 표시선 점검.'
+    ]},
+    { h:'발렛(직영)', lines:[
+      '직영·요금 5,000원(회원 포함)·보험 가입. 입차(외관점검·키태그·요금안내) / 출차(정산·키인계·로그).'
+    ]}
+  ]
+};
+
+/* A3_GUIDELINE → .a3-card 구조 HTML (좌/우 공용 렌더) */
+function renderA3Section(items){
+  var html='';
+  (items||[]).forEach(function(it){
+    if(!it || (!it.h && !(it.lines&&it.lines.length))) return;
+    html += '<div class="a3-card">';
+    html += '<div class="a3-card-title">'+ escapeHTML(it.h||'') +'</div>';
+    (it.lines||[]).forEach(function(l){
+      var t=(l||'').trim(); if(!t) return;
+      html += '<div class="a3-card-line">'+ escapeHTML(t) +'</div>';
+    });
+    html += '</div>';
+  });
+  return html;
+}
+
+/* ═══════════════════════════════════════════
+   A3 가이드라인 인쇄 — '핵심 1장 압축본'(A3_GUIDELINE 기반)
+   - body에 .a3-print-mode 클래스로 @media print 분기
+   - 화면 규정·가이드 상세 카드는 그대로 보존(미변경), A3 인쇄물만 압축본
+   - 기존 printCurrentTab() 경로와 완전 분리
+   ═══════════════════════════════════════════ */
+function printA3Guideline(){
+  // ── 좌열: 규정 핵심(A3_GUIDELINE.policy) ──
+  var colPolicy = document.getElementById('a3-col-policy');
+  if(colPolicy){
+    colPolicy.innerHTML = '<div class="a3-col-head">규정 핵심</div>'
+      + renderA3Section(A3_GUIDELINE.policy);
+  }
+
+  // ── 우열: 가이드 핵심(A3_GUIDELINE.guide) ──
+  var colGuide = document.getElementById('a3-col-guide');
+  if(colGuide){
+    colGuide.innerHTML = '<div class="a3-col-head">가이드 핵심</div>'
+      + renderA3Section(A3_GUIDELINE.guide);
+  }
+
+  // ── 상단 제목 (A3_GUIDELINE.title) ──
+  var a3Head = document.querySelector('#a3-guideline-print .a3-print-header');
+  if(a3Head) a3Head.textContent = A3_GUIDELINE.title;
+
+  // ── A3 모드 활성화 → 인쇄 → 복원 ──
+  document.body.classList.add('a3-print-mode');
+  var styleTag = document.getElementById('a3-page-style');
+  if(!styleTag){
+    styleTag = document.createElement('style');
+    styleTag.id = 'a3-page-style';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent = '@media print{ @page{ size:A3 portrait; margin:10mm; } }';
+
+  window.print();
+
+  // 복원
+  document.body.classList.remove('a3-print-mode');
+  styleTag.textContent = '';
+}
+
+/* ═══════════════════════════════════════════
+   A3 매뉴얼 인쇄 — 구역별 절차 A3 가로 1장
+   소스: A3_MANUAL 정적 상수 (매뉴얼 탭 실제 내용 기반).
+   레이아웃: 좌열(공통+출입+정산+지상+지하) / 우열(우선구역+안전·소방+요일별 집중점검).
+   가이드라인 A3(printA3Guideline)와 함수·클래스·@page 전부 분리(상호 무간섭).
+   ═══════════════════════════════════════════ */
+const A3_MANUAL = {
+  left: [
+    { zone: '공통 유의사항', head: '', lines: [
+      { t: '차량 접촉·파손·차단기 고장·화재 위험 발견 시 즉시 조치 후 팀장·소장 보고 (자의 판단 금지)', hl: true },
+      { t: '차량번호·CCTV 영상은 회원 개인정보 — 외부 유출·임의 열람 금지' },
+      { t: '순찰 시 야광 조끼·안전화 착용 / 차량 이동 동선 주의' },
+      { t: '사고·민원 발생 시 현장 보존 + 사진 + CCTV 시각 기록 의무' }
+    ]},
+    { zone: '출입통제 · 차단기', head: '', subs: [
+      { title: '차단기', lines: [
+        { t: '입·출차 차단기 바(barrier) 작동·손상 여부 확인' },
+        { t: '센서·리모컨 반응 점검 / 오작동 시 즉시 수동 개방 후 보고' }
+      ]},
+      { title: 'LPR(번호인식) 카메라', lines: [
+        { t: '렌즈 청결 / 번호 인식 정상 / 표시판 점등 확인' }
+      ]},
+      { title: '회원/방문 운영', lines: [
+        { t: '회원 차량 자동개방 / 방문 차량 안내·등록 절차 준수' }
+      ]}
+    ]},
+    { zone: '정산 · 요금기', head: '', subs: [
+      { title: '무인 정산기', lines: [
+        { t: '화면·버튼·카드리더 정상 / 지폐·동전 투입구 막힘 여부' },
+        { t: '잔돈 보유량 / 영수증 용지 잔량 확인' }
+      ]},
+      { title: '현금 시재', lines: [
+        { t: '교대 시 현금 시재 인수인계·기록 의무' },
+        { t: '미정산·미수 건 발생 즉시 팀장 공유', hl: true }
+      ]}
+    ]},
+    { zone: '지상 주차장', head: '', subs: [
+      { title: '순찰', lines: [
+        { t: '불법·이중·무단 장기 주차 계도 및 기록' },
+        { t: '통행로 적치물 / 바닥 주차선·번호 식별' }
+      ]},
+      { title: '설비', lines: [
+        { t: '조명 점등 불량·깜빡임 구역 기록 (야간 대비)' },
+        { t: '배수구 막힘 / 천장·벽면 누수 / 결빙 위험(동절기)' }
+      ]}
+    ]},
+    { zone: '지하 주차장 (층별)', head: '', subs: [
+      { title: '층별 순찰', lines: [
+        { t: 'B1·B2 등 층별 순회 / 불법·이중 주차 / 적치물' },
+        { t: '층별 빈자리 현황 파악 및 안내' }
+      ]},
+      { title: '환기·누수', lines: [
+        { t: '조명 점등 / 환기·제연 팬 가동음·매연·악취' },
+        { t: '천장·벽면 누수 / 바닥 고임물 / 차수판(우수기) 상태' }
+      ]}
+    ]}
+  ],
+  right: [
+    { zone: '우선 · 지정 구역', head: '', subs: [
+      { title: '장애인 전용구역', lines: [
+        { t: '불법 점유 단속 / 표지·바닥도색 식별 / 비정상 주차 계도·기록' }
+      ]},
+      { title: '여성우선 구역', lines: [
+        { t: '위치·조명 양호 / 표지 식별 / 불법 점유 점검' }
+      ]},
+      { title: '전기차 충전구역', lines: [
+        { t: '충전기 작동 / 비충전 차량 점유 점검 / 케이블 정리' }
+      ]}
+    ]},
+    { zone: '안전 · 소방 · CCTV', head: 'safety', subs: [
+      { title: '소방', lines: [
+        { t: '소화기·소화전 비치 위치·수량 / 압력게이지 / 통로 가림 여부' },
+        { t: '비상구 유도등 점등 / 피난통로 적치물 제거 / 비상벨 위치' }
+      ]},
+      { title: 'CCTV', lines: [
+        { t: '주차구역 CCTV 화면 이상 / 사각지대 / 녹화 정상 여부' },
+        { t: '영상 열람은 사고·민원 처리 목적 + 책임자 승인 한정', hl: true }
+      ]},
+      { title: '주차장 화장실', lines: [
+        { t: '청결 / 비품(화장지·손세정제) / 악취·조명' }
+      ]}
+    ]},
+    { zone: '요일별 집중 점검', head: 'weekly', weekly: [
+      { day: '월', items: '바닥 주차선·표시 / 차단기 정밀 점검 / 장애인·여성우선 구역 집중' },
+      { day: '화', items: '배수구·차수판 / 조명 전수 점검 / 안내·규정 게시물' },
+      { day: '수', items: 'CCTV 사각지대 / 환기·제연 설비 점검' },
+      { day: '목', items: '바닥 청소·오염 제거 / 소화기·소화전 / 주차장 화장실 집중' },
+      { day: '금', items: '정산기 정밀 점검 / 전기차 충전구역 / 비상구·피난통로 집중' },
+      { day: '토', items: '천장·벽면 누수 전수 / 주차유도·만차 표시기 / 혼잡 대응' },
+      { day: '일', items: '전 구역 대청소 / 장기 미출차 차량 정리 / 미비 부분 보완' }
+    ]},
+    { zone: '주차관리인 청결관리', head: '', subs: [
+      { title: '청소 담당', lines: [
+        { t: '주차관리인이 주차장 청결관리(청소)도 담당' },
+        { t: '지상·지하 바닥·통행로 / 쓰레기 수거 / 배수구 이물질 제거' },
+        { t: '주차장 화장실 청결·비품 / 바닥 표시선 식별 점검' },
+        { t: '청소 시 고무장갑·마스크 착용·환기 후 작업' }
+      ]}
+    ]},
+    { zone: '근무조 (오전·오후 2개조 · 야간조 없음)', head: '', subs: [
+      { title: '오전조', lines: [
+        { t: '담당: 양상규 고문 / 평일 08:30~17:30 · 주말 09:00~16:00' },
+        { t: '오픈·순찰·인수인계 — 가이드 탭 참조' }
+      ]},
+      { title: '오후조', lines: [
+        { t: '담당: 충원 진행 중 / 평일 10:00~19:00 · 주말 09:00~16:00' }
+      ]}
+    ]},
+    { zone: '발렛 시스템(직영)', head: '', note: '직영·5,000원·보험', subs: [
+      { title: '발렛 절차', lines: [
+        { t: '입차: 인수 → 외관 사진 → 키 번호태그 → 요금(5,000원) 안내 → 주차 → 로그' },
+        { t: '출차: 콜 → 회차 → 회원 확인 → 5,000원 정산 → 키 인계 → 로그 마감' },
+        { t: '직영 운영 · 차량 배상 보험 가입 · 셋업 진행 중 (주차관리인 겸직 운영)', hl: true }
+      ]}
+    ]}
+  ]
+};
+
+function a3mZoneHTML(zone){
+  var E=escapeHTML;
+  var headCls='a3m-zone-head'+(zone.head?' '+E(zone.head):'');
+  var html='<div class="a3m-zone">';
+  html+='<div class="'+headCls+'">'+E(zone.zone)+'</div>';
+  if(zone.note){
+    html+='<div class="a3m-note">'+E(zone.note)+'</div>';
+  }
+  if(zone.weekly){
+    // 요일별 집중점검: 표 형식
+    html+='<div class="a3m-block">';
+    html+='<table class="a3m-weekly-table"><tr><th>요일</th><th>집중 점검 항목</th></tr>';
+    zone.weekly.forEach(function(r){
+      html+='<tr><td>'+E(r.day)+'</td><td>'+E(r.items)+'</td></tr>';
+    });
+    html+='</table></div>';
+  } else if(zone.subs){
+    zone.subs.forEach(function(sub){
+      html+='<div class="a3m-block">';
+      html+='<div class="a3m-block-title">'+E(sub.title)+'</div>';
+      (sub.lines||[]).forEach(function(l){
+        html+='<div class="a3m-line'+(l.hl?' hl':'')+'">'+E(l.t)+'</div>';
+      });
+      html+='</div>';
+    });
+  } else if(zone.lines){
+    html+='<div class="a3m-block">';
+    (zone.lines||[]).forEach(function(l){
+      html+='<div class="a3m-line'+(l.hl?' hl':'')+'">'+E(l.t)+'</div>';
+    });
+    html+='</div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function printA3Manual(){
+  // 좌열
+  var leftHTML='';
+  A3_MANUAL.left.forEach(function(z){ leftHTML+=a3mZoneHTML(z); });
+  // 우열
+  var rightHTML='';
+  A3_MANUAL.right.forEach(function(z){ rightHTML+=a3mZoneHTML(z); });
+
+  var host=document.getElementById('a3m-manual-host');
+  if(host){
+    host.innerHTML='<div class="a3m-grid2"><div>'+leftHTML+'</div><div>'+rightHTML+'</div></div>';
+  }
+  var sub=document.getElementById('a3m-manual-sub');
+  if(sub){
+    var today=new Date();
+    var ymd=today.getFullYear()+'-'
+      +String(today.getMonth()+1).padStart(2,'0')+'-'
+      +String(today.getDate()).padStart(2,'0');
+    sub.textContent='구역별 상세 절차 · 요일별 집중 점검  ·  출력일 '+ymd;
+  }
+
+  // A3 가로 모드 활성화 → @page 동적 주입 → 인쇄 → 복원
+  document.body.classList.add('a3-manual-mode');
+  var styleTag=document.getElementById('a3-manual-page-style');
+  if(!styleTag){
+    styleTag=document.createElement('style');
+    styleTag.id='a3-manual-page-style';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent='@media print{ @page{ size:A3 landscape; margin:8mm; } }';
+
+  window.print();
+
+  // 복원
+  document.body.classList.remove('a3-manual-mode');
+  styleTag.textContent='';
+}
+
+function escapeHTML(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ═══════════════════════════════════════════════
+   주차관리부 편집형 행 표 엔진 (board={rows:[...]}) — 직원구성·응대상황표·장비비품 3표 공용
+   구조 = 위 PARK_BOARDS 카드보드(saveBoard 공유 저장·requireEditAuth) 벤치마킹, 행(row) 단위로 단순화.
+   IME 안전: 셀 입력은 onchange(포커스 이탈 후 커밋)에서만 데이터 갱신+재렌더 → 조합 중 재렌더 없음.
+   지원부 체계.html 콘텐츠 복사 아님 — 편집·저장 메커니즘만 이식, 콘텐츠는 주차 네이티브(2026-07-03).
+   ═══════════════════════════════════════════════ */
+const PARKING_TABLES = {
+  staff: {
+    key:'PARKING_STAFF', wrapId:'parking-staff-body', idp:'pst',
+    cols:[
+      {k:'group', label:'조', w:'70px'},
+      {k:'name',  label:'성명', w:'150px'},
+      {k:'hours', label:'근무시간'},
+      {k:'note',  label:'비고', w:'110px'}
+    ],
+    seedRows:[
+      {group:'오전조', name:'양상규(고문)', hours:'평일 08:30~17:30 / 주말 09:00~16:00', note:'—'},
+      {group:'오후조', name:'(충원 진행 중)', hours:'평일 10:00~19:00 / 주말 09:00~16:00', note:'충원 진행 중'}
+    ],
+    addLabel:'＋ 직원 추가', emptyMsg:'＋로 직원을 추가하세요', data:{rows:[]}
+  },
+  cs: {
+    key:'PARKING_CS_GUIDE', wrapId:'parking-cs-body', idp:'pcs',
+    cols:[
+      {k:'sit',  label:'상황', w:'170px'},
+      {k:'resp', label:'응대·조치'},
+      {k:'note', label:'주의점', w:'150px'}
+    ],
+    seedRows:[
+      {sit:'입·출차 문의', resp:'위치·경로 안내, 만차 시 대안 안내', note:'친절·신속'},
+      {sit:'정산 오류·기기 고장', resp:'즉시 확인·수동 정산·팀장 보고', note:'시재 기록 의무'}
+    ],
+    addLabel:'＋ 상황 추가', emptyMsg:'＋로 상황을 추가하세요', data:{rows:[]}
+  },
+  supply: {
+    key:'PARKING_SUPPLY', wrapId:'parking-supply-body', idp:'psup',
+    cols:[
+      {k:'cat',     label:'분류', w:'90px'},
+      {k:'name',    label:'품목'},
+      {k:'qty',     label:'수량', w:'70px', type:'number'},
+      {k:'reorder', label:'발주점', w:'70px', type:'number'},
+      {k:'loc',     label:'보관위치', w:'110px'},
+      {k:'note',    label:'비고', w:'110px'}
+    ],
+    seedRows:[
+      {cat:'출입·차단', name:'차단기 리모컨', qty:0, reorder:0, loc:'관리실', note:'—'},
+      {cat:'정산',     name:'영수증 용지',   qty:0, reorder:0, loc:'정산기함', note:'—'},
+      {cat:'운영',     name:'무전기',       qty:0, reorder:0, loc:'관리실', note:'—'}
+    ],
+    addLabel:'＋ 품목 추가', emptyMsg:'＋로 품목을 추가하세요', data:{rows:[]},
+    reorderCheck:true, showShortageOnly:false
+  }
+};
+
+function parkingRowGenId(cfg){ return cfg.idp+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+function parkingApplyStored(cfg, stored){
+  const src=(stored && Array.isArray(stored.rows)) ? stored.rows : null;
+  const base = src || cfg.seedRows;
+  cfg.data.rows = base.map(function(r){
+    const o={id:(src && r.id)?String(r.id):parkingRowGenId(cfg)};
+    cfg.cols.forEach(function(c){ o[c.k]= r[c.k]!=null ? r[c.k] : (c.type==='number'?0:''); });
+    return o;
+  });
+}
+function parkingLoadLocal(cfg){
+  let stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(cfg.key)); }catch(e){ stored=null; }
+  parkingApplyStored(cfg, stored);
+}
+async function parkingLoadBackend(cfg){
+  parkingLoadLocal(cfg);
+  if(!ONLINE) return;
+  try{
+    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(cfg.key),{method:'GET',redirect:'follow'});
+    const data=await res.json();
+    if(data && data.ok && data.board && typeof data.board==='object'){
+      parkingApplyStored(cfg, data.board);
+      localStorage.setItem(cfg.key, JSON.stringify(cfg.data));
+    }
+  }catch(e){ /* 네트워크 실패 → 로컬/시드 유지 */ }
+  const wrap=document.getElementById(cfg.wrapId);
+  if(wrap && !wrap.querySelector('input:focus')) parkingRenderTable(cfg);
+}
+function parkingPersist(cfg){
+  localStorage.setItem(cfg.key, JSON.stringify(cfg.data));
+  if(!ONLINE) return;
+  const ind=document.getElementById('saveIndicator');
+  if(ind){ind.style.display='block';ind.textContent='저장 중...';}
+  fetch(API_URL,{method:'POST',redirect:'follow',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'saveBoard',key:cfg.key,board:cfg.data})
+  }).then(function(){ if(ind){ind.textContent='저장 완료';setTimeout(function(){ind.style.display='none';},1500);} })
+    .catch(function(){ if(ind){ind.textContent='저장 (로컬 보관됨)';setTimeout(function(){ind.style.display='none';},1500);} });
+}
+function parkingIsShort(cfg,row){
+  return !!cfg.reorderCheck && Number(row.reorder)>0 && Number(row.qty)<=Number(row.reorder);
+}
+function parkingCellInput(name,rowId,colKey,value){
+  const cfg=PARKING_TABLES[name]; if(!cfg) return;
+  const row=cfg.data.rows.find(function(r){return r.id===rowId;});
+  if(!row) return;
+  const col=cfg.cols.find(function(c){return c.k===colKey;});
+  row[colKey] = (col && col.type==='number') ? (value===''?0:Number(value)) : value;
+  parkingPersist(cfg);
+  parkingRenderTable(cfg);
+}
+function parkingAddRow(name){
+  const cfg=PARKING_TABLES[name]; if(!cfg) return;
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  const o={id:parkingRowGenId(cfg)};
+  cfg.cols.forEach(function(c){ o[c.k]= c.type==='number'?0:''; });
+  cfg.data.rows.push(o);
+  parkingPersist(cfg);
+  parkingRenderTable(cfg);
+}
+function parkingDeleteRow(name,rowId){
+  const cfg=PARKING_TABLES[name]; if(!cfg) return;
+  if(typeof requireEditAuth==='function' && !requireEditAuth()) return;
+  if(!confirm('이 행을 삭제할까요?')) return;
+  cfg.data.rows = cfg.data.rows.filter(function(r){ return r.id!==rowId; });
+  parkingPersist(cfg);
+  parkingRenderTable(cfg);
+}
+function parkingToggleShortage(name){
+  const cfg=PARKING_TABLES[name]; if(!cfg) return;
+  cfg.showShortageOnly = !cfg.showShortageOnly;
+  const btn=document.getElementById('parking-supply-toggle-btn');
+  if(btn) btn.textContent = cfg.showShortageOnly ? '전체 보기' : '부족만 보기';
+  parkingRenderTable(cfg);
+}
+function parkingRenderTable(cfg){
+  const wrap=document.getElementById(cfg.wrapId);
+  if(!wrap) return;
+  let rows=cfg.data.rows||[];
+  if(cfg.reorderCheck){
+    const chip=document.getElementById('parking-supply-shortage-chip');
+    const n=rows.filter(function(r){return parkingIsShort(cfg,r);}).length;
+    if(chip){
+      if(n>0){ chip.style.display=''; chip.textContent='🔴 발주 필요 '+n+'건'; }
+      else{ chip.style.display='none'; }
+    }
+    if(cfg.showShortageOnly) rows=rows.filter(function(r){return parkingIsShort(cfg,r);});
+  }
+  const name = Object.keys(PARKING_TABLES).find(function(k){return PARKING_TABLES[k]===cfg;});
+  if(!rows.length){
+    wrap.innerHTML='<div class="dv-empty" style="padding:14px 4px;">'+cfg.emptyMsg+'</div>';
+    return;
+  }
+  let html='<table class="rt-table"><colgroup>';
+  cfg.cols.forEach(function(c){ html+='<col'+(c.w?' style="width:'+c.w+'"':'')+'>'; });
+  html+='<col style="width:38px">';
+  html+='</colgroup><thead><tr>';
+  cfg.cols.forEach(function(c){ html+='<th>'+escapeHTML(c.label)+'</th>'; });
+  html+='<th></th></tr></thead><tbody>';
+  rows.forEach(function(row){
+    const short=parkingIsShort(cfg,row);
+    html+='<tr'+(short?' class="rt-short"':'')+'>';
+    cfg.cols.forEach(function(c){
+      const v=row[c.k]!=null?row[c.k]:'';
+      const type=c.type==='number'?'number':'text';
+      html+='<td><input type="'+type+'" class="rt-input" value="'+escapeHTML(String(v))+'" '
+          +'onchange="parkingCellInput(\''+name+'\',\''+row.id+'\',\''+c.k+'\',this.value)"></td>';
+    });
+    html+='<td><button type="button" class="rt-del-btn" onclick="parkingDeleteRow(\''+name+'\',\''+row.id+'\')">✕</button></td>';
+    html+='</tr>';
+    if(short){
+      html+='<tr class="rt-short-tag-row"><td colspan="'+(cfg.cols.length+1)+'"><span class="rt-shortage-badge">발주 필요</span></td></tr>';
+    }
+  });
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
+}
+function initParkingTables(){
+  Object.keys(PARKING_TABLES).forEach(function(name){
+    const cfg=PARKING_TABLES[name];
+    parkingLoadLocal(cfg);
+    parkingRenderTable(cfg);
+    parkingLoadBackend(cfg);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   A3 차량·이용객 응대 상황표 인쇄 — printA3Guideline 인쇄 기계장치 구조 복제(주차 네이티브 데이터)
+   ═══════════════════════════════════════════ */
+function printA3ParkingCS(){
+  const cfg=PARKING_TABLES.cs;
+  const host=document.getElementById('a3-pcs-host');
+  if(host){
+    let html='<div class="a3-print-header">차량·이용객 응대 상황표</div>';
+    (cfg.data.rows||[]).forEach(function(r){
+      html+='<div class="a3-card"><div class="a3-card-title">'+escapeHTML(r.sit||'(상황 미입력)')+'</div>';
+      html+='<div class="a3-card-line">응대·조치: '+escapeHTML(r.resp||'-')+'</div>';
+      html+='<div class="a3-card-line">주의점: '+escapeHTML(r.note||'-')+'</div>';
+      html+='</div>';
+    });
+    host.innerHTML=html;
+  }
+  document.body.classList.add('a3-pcs-mode');
+  window.print();
+  document.body.classList.remove('a3-pcs-mode');
+}
+
+/* ═══════════════════════════════════════════
+   A3 장비·비품 관리 인쇄 — 동일 구조 복제, 발주 필요 항목 강조 표기
+   ═══════════════════════════════════════════ */
+function printA3ParkingSupply(){
+  const cfg=PARKING_TABLES.supply;
+  const host=document.getElementById('a3-psup-host');
+  if(host){
+    let html='<div class="a3-print-header">주차 장비·비품 관리</div>';
+    (cfg.data.rows||[]).forEach(function(r){
+      const short=parkingIsShort(cfg,r);
+      html+='<div class="a3-card"><div class="a3-card-title">'+escapeHTML(r.name||'(품목 미입력)')
+          +(short?'<span class="a3-card-unconfirmed">발주 필요</span>':'')+'</div>';
+      html+='<div class="a3-card-line">분류: '+escapeHTML(r.cat||'-')+'</div>';
+      html+='<div class="a3-card-line">수량: '+escapeHTML(String(r.qty!=null?r.qty:'-'))+' / 발주점: '+escapeHTML(String(r.reorder!=null?r.reorder:'-'))+'</div>';
+      html+='<div class="a3-card-line">보관위치: '+escapeHTML(r.loc||'-')+'</div>';
+      if(r.note) html+='<div class="a3-card-line">비고: '+escapeHTML(r.note)+'</div>';
+      html+='</div>';
+    });
+    host.innerHTML=html;
+  }
+  document.body.classList.add('a3-psup-mode');
+  window.print();
+  document.body.classList.remove('a3-psup-mode');
+}
+
+/* ═══════════════════════════════════════════
+   A3 주차장 청결·점검표 인쇄 — 정적 체크리스트(GM 2026-07-07 주차부 자체 점검).
+   지원부 점검 GAS 미연동 · 제출/저장/API 없음 · 화면 매뉴얼 탭 표와 동일 내용 하드코딩.
+   ═══════════════════════════════════════════ */
+const PARK_CHECKLIST = {
+  daily: [
+    '지상·지하 바닥 청결 — 오염·기름때 제거',
+    '통행로 적치물 정리 / 쓰레기 수거',
+    '배수구 막힘·이물질 제거',
+    '주차장 화장실 청결·비품(화장지·손세정제)·악취·조명',
+    '주차선·표시선 식별 상태',
+    '조명 점등·사각지대 조도',
+    '차단기·정산기 정상 작동',
+    'CCTV 화면 이상·녹화 정상'
+  ],
+  weekly: [
+    '소화기·소화전 위치·수량·압력게이지 / 통로 가림 여부',
+    '비상구 유도등 점등·피난통로 적치물·비상벨',
+    '발렛 동선·안전표지 점검',
+    '계절 대비(여름 배수·겨울 제설)'
+  ]
+};
+function printA3ParkingChecklist(){
+  const host=document.getElementById('a3-pchk-host');
+  if(host){
+    let html='<div class="a3-print-header">주차장 청결·점검 체크리스트 <span style="font-size:9px;font-weight:600;color:#8a7a6c;">[AI 초안 — GM 검토]</span></div>';
+    html+='<div class="a3-col-head">일일 점검</div>';
+    PARK_CHECKLIST.daily.forEach(function(t){
+      html+='<div class="a3-card"><div class="a3-card-title">☐ '+escapeHTML(t)+'</div></div>';
+    });
+    html+='<div class="a3-col-head" style="margin-top:6px;">주간 점검</div>';
+    PARK_CHECKLIST.weekly.forEach(function(t){
+      html+='<div class="a3-card"><div class="a3-card-title">☐ '+escapeHTML(t)+'</div></div>';
+    });
+    html+='<div class="a3m-note">운영 원칙 — 주차관리인이 청결관리(청소)를 겸임합니다. 청소 시 고무장갑·마스크 착용, 환기 후 작업합니다.</div>';
+    host.innerHTML=html;
+  }
+  document.body.classList.add('a3-pchk-mode');
+  window.print();
+  document.body.classList.remove('a3-pchk-mode');
+}
+
+/* ═══════════════════════════════════════════
+   A3 신입 온보딩 인쇄팩 — 직원구성·발렛동선·응대상황표·가이드요지 라이브 통합
+   printA3Manual 인쇄 기계장치(a3m-* 구조) 재사용. 데이터는 PARKING_TABLES·PARK_GUIDE_DATA·A3_GUIDELINE
+   라이브 값을 참조(중복 하드코딩 없음).
+   ═══════════════════════════════════════════ */
+function printA3ParkingOnboarding(){
+  const staffRows=(PARKING_TABLES.staff.data.rows||[]);
+  const csRows=(PARKING_TABLES.cs.data.rows||[]);
+
+  const staffZone={ zone:'직원 구성·역할', lines: staffRows.map(function(r){
+    return {t:(r.group||'-')+' — '+(r.name||'-')+' · '+(r.hours||'-')+(r.note&&r.note!=='—'?(' ('+r.note+')'):'')};
+  })};
+  const csZone={ zone:'차량·이용객 응대 상황표', subs: csRows.map(function(r){
+    return {title:r.sit||'(상황)', lines:[{t:'응대·조치: '+(r.resp||'-')},{t:'주의점: '+(r.note||'-')}]};
+  })};
+
+  let leftHTML=a3mZoneHTML(staffZone);
+  const valetCard=(PARK_GUIDE_DATA.guide||[]).find(function(c){return c.id==='pg_valet';});
+  if(valetCard && valetCard.body && valetCard.body.trim()){
+    const valetZone={ zone:'발렛 동선(가이드 발췌)', lines: valetCard.body.split('\n').filter(function(l){return l.trim();}).map(function(l){return {t:l.trim()};}) };
+    leftHTML += a3mZoneHTML(valetZone);
+  }
+  const guideZone={ zone:'가이드 요지', subs:(A3_GUIDELINE.guide||[]).slice(0,3).map(function(it){
+    return {title:it.h, lines:(it.lines||[]).map(function(l){return {t:l};})};
+  })};
+  const rightHTML=a3mZoneHTML(csZone)+a3mZoneHTML(guideZone);
+
+  const host=document.getElementById('a3ponb-host');
+  if(host){ host.innerHTML='<div class="a3m-grid2"><div>'+leftHTML+'</div><div>'+rightHTML+'</div></div>'; }
+  const sub=document.getElementById('a3ponb-sub');
+  if(sub){
+    const today=new Date();
+    const ymd=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+    sub.textContent='직원 구성·발렛 동선·응대 상황표·가이드 요지 통합  ·  출력일 '+ymd;
+  }
+
+  document.body.classList.add('a3-ponb-mode');
+  let styleTag=document.getElementById('a3-ponb-page-style');
+  if(!styleTag){ styleTag=document.createElement('style'); styleTag.id='a3-ponb-page-style'; document.head.appendChild(styleTag); }
+  styleTag.textContent='@media print{ @page{ size:A3 landscape; margin:8mm; } }';
+
+  window.print();
+
+  document.body.classList.remove('a3-ponb-mode');
+  styleTag.textContent='';
+}
+
+/* 카드 보드 가동 (escapeHTML 정의 이후 호출) */
+initParkBoards();
+initParkingTables();
+
+/* ═══════════════════════════════════════════
+   이달 부서 현황 탭 — monthly_ops_plan.json 실무·AI 도달율 + 월목표 진척 읽기전용 렌더
+   SSOT = 월간운영계획(status/monthly_ops_plan.json). 4부서(운영·시설·지원·주차) 공통 패턴 —
+   PAGE CONFIG(PRAC_ID/OWNER_LABEL/MP_DEPT)만 다르고 렌더 함수 본문은 동일 복제(룩 수정 시 4곳 동일 적용).
+   ═══════════════════════════════════════════ */
+var MP_DEPT = '주차';
+var PRAC_ID = 'lee-jh';
+var OWNER_LABEL = '이정헌 소장 (통합관리)';
+var PLAN_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_ops_plan.json';
+var MP_LOADED = false;
+var MP_PLAN_DATA = null;
+var MP_CURRENT_KEY = null;
+var MP_STATUS_STYLE = {
+  '계획': {color:'var(--dim)', bg:'rgba(140,139,131,0.14)'},
+  '진행': {color:'var(--blue)', bg:'var(--blue-bg)'},
+  '완료': {color:'var(--green)', bg:'var(--green-bg)'},
+  '이월': {color:'var(--yellow)', bg:'var(--yellow-bg)'}
+};
+function mpEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function mpMonthLabel(key){
+  var m=String(key||'').match(/^(\d{4})-(\d{2})$/);
+  if(!m) return key||'';
+  return m[1]+'년 '+parseInt(m[2],10)+'월';
+}
+function mpCurrentMonthKey(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function mpStatusBadgeHtml(status){
+  var st=MP_STATUS_STYLE[status]||MP_STATUS_STYLE['계획'];
+  return '<span style="display:inline-block;font-size:11px;font-weight:700;color:'+st.color+';background:'+st.bg+';border-radius:10px;padding:3px 10px;">'+mpEsc(status||'계획')+'</span>';
+}
+function mpObjectiveCard(o){
+  var pct=Math.max(0,Math.min(100,Number(o.progress)||0));
+  var st=MP_STATUS_STYLE[o.status]||MP_STATUS_STYLE['계획'];
+  var html='<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;">';
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">';
+  html+='<div style="font-weight:700;font-size:14px;">'+mpEsc(o.title)+'</div>';
+  html+=mpStatusBadgeHtml(o.status);
+  html+='</div>';
+  html+='<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%;background:'+st.color+';"></div></div>';
+  html+='<div style="font-size:12px;color:var(--dim);margin-top:4px;">진척 '+pct+'%</div>';
+  if(o.target) html+='<div style="font-size:12px;color:var(--dim);margin-top:6px;">목표: '+mpEsc(o.target)+'</div>';
+  if(o.progress_note) html+='<div style="font-size:12px;color:var(--dim);margin-top:2px;">'+mpEsc(o.progress_note)+'</div>';
+  html+='</div>';
+  return html;
+}
+function mpReachBarHtml(pct, colorVar){
+  var p=Math.max(0,Math.min(100,Number(pct)||0));
+  return '<div class="progress-bar"><div class="progress-fill" style="width:'+p+'%;background:'+colorVar+';"></div></div>';
+}
+function mpRenderReachHeader(planData, monthData){
+  var prac=(planData.practitioners||[]).filter(function(p){return p.id===PRAC_ID;})[0];
+  var aiItem=(planData.ai_utilization&&planData.ai_utilization.items||[]).filter(function(a){return a.id===PRAC_ID;})[0];
+  var pg=(monthData.practitioner_progress||{})[PRAC_ID];
+  var goal=(monthData.practitioner_goals||{})[PRAC_ID];
+  var pracValEl=document.getElementById('mpPracVal');
+  var pracBarWrap=document.getElementById('mpPracBarWrap');
+  var pracGoalEl=document.getElementById('mpPracGoal');
+  if(pracValEl){
+    if(pg!=null){ pracValEl.textContent=pg+'%'; pracBarWrap.innerHTML=mpReachBarHtml(pg,'var(--green)'); }
+    else { pracValEl.textContent='미입력'; pracBarWrap.innerHTML=mpReachBarHtml(0,'var(--green)'); }
+    pracGoalEl.textContent=goal?('목표: '+goal):'';
+  }
+  var aiValEl=document.getElementById('mpAiVal');
+  var aiBarWrap=document.getElementById('mpAiBarWrap');
+  var aiGoalEl=document.getElementById('mpAiGoal');
+  if(aiValEl){
+    if(aiItem){ aiValEl.textContent=aiItem.pct+'%'; aiBarWrap.innerHTML=mpReachBarHtml(aiItem.pct,'var(--blue)'); aiGoalEl.textContent='목표 '+aiItem.target_pct+'% · '+(aiItem.direction||''); }
+    else { aiValEl.textContent='미입력'; aiBarWrap.innerHTML=mpReachBarHtml(0,'var(--blue)'); aiGoalEl.textContent=''; }
+  }
+  var ownerEl=document.getElementById('mpOwnerLine');
+  if(ownerEl) ownerEl.textContent=OWNER_LABEL+(prac&&prac.northstar?(' · 🌟 '+prac.northstar):'');
+}
+function mpRender(planData, monthKey, monthData){
+  var statusEl=document.getElementById('mpStatus');
+  var headerEl=document.getElementById('mpHeader');
+  var reachEl=document.getElementById('mpReachHeader');
+  var cardsEl=document.getElementById('mpCards');
+  if(statusEl) statusEl.style.display='none';
+  if(headerEl) headerEl.style.display='block';
+  if(reachEl) reachEl.style.display='block';
+  document.getElementById('mpMonthLabel').textContent=mpMonthLabel(monthKey);
+  var theme=(monthData.report&&monthData.report.theme)||monthData.theme||'';
+  document.getElementById('mpTheme').textContent=theme;
+  var badgeEl=document.getElementById('mpStatusBadge');
+  if(badgeEl) badgeEl.innerHTML=monthData.month_status?mpStatusBadgeHtml(monthData.month_status):'';
+  mpRenderReachHeader(planData, monthData);
+  var objectives=(monthData.objectives||[]).filter(function(o){ return (o.dept||'').indexOf(MP_DEPT)>=0; });
+  if(!objectives.length){
+    cardsEl.innerHTML='<div style="color:var(--dim);font-size:13px;padding:12px 0;">이번 달 '+mpEsc(MP_DEPT)+' 핵심과제가 없습니다.</div>';
+    return;
+  }
+  cardsEl.innerHTML=objectives.map(mpObjectiveCard).join('');
+}
+function mpBuildMonthSelect(planData){
+  var selEl=document.getElementById('mpMonthSelect');
+  if(!selEl) return;
+  var keys=Object.keys(planData.months||{}).sort().reverse();
+  selEl.innerHTML=keys.map(function(k){ return '<option value="'+k+'">'+mpMonthLabel(k)+'</option>'; }).join('');
+}
+function mpOnMonthChange(){
+  var selEl=document.getElementById('mpMonthSelect');
+  if(selEl && selEl.value) loadMonthlyPlanTab(selEl.value);
+}
+async function loadMonthlyPlanTab(monthKey){
+  var statusEl=document.getElementById('mpStatus');
+  try{
+    if(!MP_PLAN_DATA){
+      var r=await fetch(PLAN_URL,{cache:'no-store'});
+      var j=await r.json();
+      if(!(j&&j.months)) throw new Error('no months');
+      MP_PLAN_DATA=j;
+      mpBuildMonthSelect(j);
+    }
+    var months=MP_PLAN_DATA.months;
+    var curKey=mpCurrentMonthKey();
+    var keys=Object.keys(months).sort();
+    var key=(monthKey&&months[monthKey])?monthKey:((MP_CURRENT_KEY&&months[MP_CURRENT_KEY])?MP_CURRENT_KEY:(months[curKey]?curKey:keys[keys.length-1]));
+    MP_CURRENT_KEY=key;
+    MP_LOADED=true;
+    mpRender(MP_PLAN_DATA, key, months[key]);
+    var selEl=document.getElementById('mpMonthSelect');
+    if(selEl) selEl.value=key;
+    var barEl=document.getElementById('mpMonthBar');
+    if(barEl) barEl.style.display='flex';
+  }catch(e){
+    if(statusEl){ statusEl.style.display='block'; statusEl.textContent='월간 계획을 불러오지 못했습니다 — 새로고침'; statusEl.style.color='var(--red)'; }
+  }
+}
+
+/* ── ✅ 주차 실적(월간) — status/parking_revenue.json 직독 (크롤러 매일 07:00 발행 · 실결제 payAmt 기준) ── */
+var PARKING_REVENUE_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/parking_revenue.json';
+var PK_LOADED = false;
+function pkWon(n){ return '₩'+Number(n||0).toLocaleString('ko-KR'); }
+function pkFmtDate(ymd){
+  var s=String(ymd||'');
+  return s.length===8 ? (s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8)) : s;
+}
+async function loadParkingRevenue(){
+  if(PK_LOADED) return;
+  var statusEl=document.getElementById('pkStatus');
+  var kpiEl=document.getElementById('pkKpiRow');
+  var subEl=document.getElementById('pkSubline');
+  try{
+    var r=await fetch(PARKING_REVENUE_URL+'?t='+Date.now(),{cache:'no-store'});
+    var d=await r.json();
+    if(!d || d.status!=='정상') throw new Error('not normal');
+    PK_LOADED=true;
+    if(statusEl) statusEl.textContent='';
+    if(kpiEl) kpiEl.innerHTML =
+      '<div class="dash-stat-row">'
+      +'<div class="dash-stat-card"><div class="num" style="color:var(--green)">'+pkWon(d.매출금액)+'</div><div class="label">실결제 매출</div></div>'
+      +'<div class="dash-stat-card"><div class="num">'+Number(d.결제건수||0).toLocaleString('ko-KR')+'건</div><div class="label">결제 건수</div></div>'
+      +'<div class="dash-stat-card"><div class="num">'+pkWon(d.취소금액)+'</div><div class="label">취소</div></div>'
+      +'</div>';
+    var period=String(d.기간||'').split('~');
+    var periodLabel=period.length===2?(pkFmtDate(period[0])+'~'+pkFmtDate(period[1]).slice(5)):(d.기간||'');
+    if(subEl) subEl.textContent='기간 '+periodLabel+' · 갱신 '+(d.갱신시각||'')+' · 수집 '+(d.수집일수||0)+'일';
+  }catch(e){
+    PK_LOADED=false;
+    if(statusEl){ statusEl.textContent='주차 매출 데이터 없음/수집 실패'; statusEl.style.color='var(--dim)'; }
+    if(kpiEl) kpiEl.innerHTML='';
+    if(subEl) subEl.textContent='';
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,206 @@
+{
+  "_doc": "캐논 값 단일출처 레지스트리. divergence_scan.py가 읽어 하드코딩 복사본을 탐지한다. 새 캐논값 = 여기 1줄 append. value=찾을 문자열, source=정본 위치, allow_globs=복사 허용(정본·설정) 경로.",
+  "_rules_doc": "규칙(값이 아니라 '서술형 절차·구분 규칙') 단일출처 레지스트리 (2026-07-20 GM 지시 — 채널별 CTA 규칙 5곳 중복·불일치 사고 재발방지). 값과 달리 규칙은 매번 다른 문장으로 재서술되므로 리터럴 문자열 매칭이 아니라 신호 동시등장(예: 채널명 2개+ & CTA 신호가 같은 근접 구간에 함께 등장)으로 탐지한다. divergence_scan.run_rule_scan()이 읽는다. 새 규칙 = 여기 1줄 append(새 레지스트리 파일 신설 금지 — CLAUDE.md §3-2 단일등록부 정신).",
+  "rules": [
+    {
+      "key": "cta_channel_rules",
+      "이름": "채널별 CTA(문의 링크) 규칙",
+      "source": "scripts/cta_utm.py",
+      "fingerprint_channels": ["블로그", "카페", "당근", "카카오", "인스타그램", "페이스북", "IG"],
+      "fingerprint_cta": ["CTA", "cta"],
+      "min_channels": 2,
+      "window_lines": 5,
+      "allow_globs": [
+        "scripts/cta_utm.py",
+        "ssot/**",
+        "status/_queue.json",
+        "status/_queue_archive.json",
+        "3. 웰페리온 가이드/status/_queue.json",
+        "3. 웰페리온 가이드/status/_queue_archive.json",
+        "3. 웰페리온 가이드/cmo/review/review_queue.json",
+        "status/briefs/**",
+        "3. 웰페리온 가이드/cmo/brand/브랜드가이드.html",
+        "3. 웰페리온 가이드/cmo/expansion_plan.md",
+        "2. 브랜드_자료/웰페리온_기반_FOUNDATION.md",
+        ".claude/skills/wellperion-brand/SKILL.md",
+        "scripts/generate_channel_copy.py",
+        "instagram/**",
+        "docs/**",
+        "tmp/**",
+        ".omc/**"
+      ],
+      "note": "2026-07-20 GM 승인으로 정본=scripts/cta_utm.py 파일 상단 'CTA 단일화 설계' 주석 1곳으로 확정(약속 L01). 이전엔 채널별 CTA 삽입 규칙이 5곳에 각각 서술돼 서로 어긋났고(폐기된 3번째 버전까지 살아있었음), 값 계층(canon_values)만 감시돼 '규칙' 계층은 조용히 번졌다. 브랜드가이드.html·FOUNDATION.md·SKILL.md는 오늘 정본을 가리키는 포인터로 교체 완료(재서술 아님, FP 허용). generate_channel_copy.py는 cta_utm.CLEAN_CTA_TEXT를 실제 import해 쓰는 소비자(재구현 아님). instagram/**·docs/**는 콘텐츠 소재·날짜박제 설계문서(살아있는 규정 아님, 재동기화 대상 아님). 새로운 곳에 규칙이 다시 서술되면 탐지 대상 — 실측 결과 wellperion_guide(main).html '채널별 CTA' 표(line 3536 부근)가 cta_utm.py 현행 규칙과 어긋난 채 남은 진짜 재서술로 확인됨(당근을 URL 미기재로 오기재·카카오 누락 등) — 후속 정리 대상, 이 감시장치는 발견만 하고 자동 수정하지 않는다."
+    }
+  ],
+  "values": [
+    {
+      "key": "official_phone",
+      "이름": "대표 전화",
+      "value": "02-6261-1200",
+      "source": "ssot/canon_values.json",
+      "allow_globs": ["ssot/**", "3. 웰페리온 가이드/**", "status/briefs/**", "Tempguide_check.html", "tmp/**"],
+      "note": "대표 전화 공식값 — 가이드·브리프·Tempguide 본문은 FP(정상사용)"
+    },
+    {
+      "key": "inquiry_path",
+      "이름": "문의 주소",
+      "value": "wellperion.com/ko/inquiry",
+      "source": "ssot/canon_values.json",
+      "allow_globs": [
+        "ssot/**",
+        "instagram/**",
+        "3. 웰페리온 가이드/**",
+        "status/briefs/**",
+        "status/_queue.json",
+        "scripts/cta_utm.py",
+        "scripts/naver_blog_upload_playwright.py",
+        "scripts/slide_compositor.py",
+        "CLAUDE.md",
+        "Tempguide_check.html",
+        "tmp/**",
+        "docs/**",
+        ".omc/**",
+        ".deploy-funnel/**",
+        ".deploy-voc/**"
+      ],
+      "note": "단일 문의 진입점. 코드 하드코딩 복사 탐지 대상: compose_ballet.py·compose_spa_cinqmondes.py(INC-005). 나머지는 FP(주석·콘텐츠·가이드)"
+    },
+    {
+      "key": "telegram_chat_id",
+      "이름": "보고용 번호",
+      "value": "8254867551",
+      "source": "telegram_bot/.env",
+      "allow_globs": ["telegram_bot/**", "ssot/**", "CLAUDE.md", "INDEX.md", "Tempguide_check.html", "tmp/**", "3. 웰페리온 가이드/**", ".omc/**"],
+      "note": "업무보고봇 Chat ID — env 단일출처. INC-004 GUARDED(2026-06-15). 잔여 문서류 6건은 FP"
+    },
+    {
+      "key": "bot_token_key",
+      "이름": "보고봇 비밀키 이름",
+      "value": "TELEGRAM_BOT_TOKEN",
+      "source": "telegram_bot/.env",
+      "allow_globs": [
+        "telegram_bot/**",
+        "ssot/**",
+        "scripts/**",
+        "wellperion-agents/**",
+        "3. 웰페리온 가이드/**",
+        ".deploy-check/**",
+        ".deploy-todo/**",
+        "ig/**",
+        ".omc/**",
+        ".deploy-funnel/**",
+        ".deploy-voc/**",
+        "tmp/**"
+      ],
+      "note": "봇 토큰 env 키명 — 코드에서 키명을 문자열로 참조하는 것은 정상(env 직독 패턴). 모든 출현이 정상 참조 패턴 확인됨"
+    },
+    {
+      "key": "company_scale",
+      "이름": "회사 규모",
+      "value": "3,000평",
+      "source": "ssot/canon_values.json",
+      "allow_globs": ["ssot/**", "3. 웰페리온 가이드/**", "tmp/**", "status/briefs/**", "instagram/**", "Tempguide_check.html"],
+      "note": "시설 규모 공식값 — 가이드·콘텐츠·Tempguide 본문은 FP. 코드/설정 내 출현만 복사 후보"
+    },
+    {
+      "key": "company_address",
+      "이름": "회사 주소",
+      "value": "서빙고로 413",
+      "source": "ssot/canon_values.json",
+      "allow_globs": ["ssot/**", "3. 웰페리온 가이드/**", "tmp/**", "CLAUDE.md", "INDEX.md", "instagram/**", "Tempguide_check.html", "status/briefs/**", ".omc/**"],
+      "note": "본사 주소 공식값 — .omc/research/*.json 은 연구 아카이브(FP)"
+    },
+    {
+      "key": "report_bot_handle",
+      "이름": "보고봇 아이디",
+      "value": "@namuki_report_bot",
+      "source": "ssot/canon_values.json",
+      "allow_globs": [
+        "ssot/**",
+        "CLAUDE.md",
+        "INDEX.md",
+        "3. 웰페리온 가이드/**",
+        "tmp/**",
+        "Tempguide_check.html",
+        "wellperion-agents/**",
+        "docs/**",
+        "status/briefs/**",
+        "status/_queue.json",
+        ".omc/**"
+      ],
+      "note": "업무보고봇 핸들 — wellperion-agents 출현은 주석·docstring(FP). 실질 코드 복사 없음 확인"
+    },
+    {
+      "key": "slogan_en",
+      "이름": "공식 슬로건 (영문)",
+      "value": "A Day, Well Completed.",
+      "source": "ssot/canon_values.json",
+      "allow_globs": [
+        "ssot/**",
+        "3. 웰페리온 가이드/**",
+        "instagram/**",
+        "scripts/**",
+        "CLAUDE.md",
+        "INDEX.md",
+        "docs/**",
+        "status/briefs/**",
+        "Tempguide_check.html",
+        "tmp/**",
+        ".omc/**"
+      ],
+      "note": "전사 공식 슬로건 영문 — GM 결재 2026-06-24. hero·소개·푸터·가이드카드 등 슬로건 슬롯에만 사용. 가이드·콘텐츠·문서 본문은 FP(정상 브랜딩 사용)"
+    },
+    {
+      "key": "slogan_kr",
+      "이름": "공식 슬로건 (국문)",
+      "value": "하루의 완성, 웰페리온",
+      "source": "ssot/canon_values.json",
+      "allow_globs": [
+        "ssot/**",
+        "3. 웰페리온 가이드/**",
+        "instagram/**",
+        "scripts/**",
+        "CLAUDE.md",
+        "INDEX.md",
+        "docs/**",
+        "status/briefs/**",
+        "Tempguide_check.html",
+        "tmp/**",
+        ".omc/**"
+      ],
+      "note": "전사 공식 슬로건 국문 — GM 결재 2026-06-24. 토씨 고정(쉼표 포함). 옛 슬로건 'Train. Restore. In One Place. / 운동과 회복을, 한 곳에서'은 폐기·교체 완료(브랜드확장 회사소개서 v1·v1.2 hero)"
+    },
+    {
+      "key": "brand_tagline",
+      "이름": "브랜드 태그라인 (짧은)",
+      "value": "단순한 운동 시설이 아닙니다. 하루 루틴의 일부로, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간.",
+      "source": "ssot/canon_values.json",
+      "allow_globs": [
+        "ssot/**",
+        "3. 웰페리온 가이드/**",
+        "instagram/**",
+        "docs/**",
+        "status/briefs/**",
+        "tmp/**",
+        ".omc/**"
+      ],
+      "note": "공식 태그라인(짧은) — GM 결재 2026-06-24. 소개·hero 보조문구 슬롯에만. 회사소개서의 긴 about 문단(…리더들을 위한 건강&힐링 커뮤니티)은 확장 버전 별개"
+    },
+    {
+      "key": "naver_cafe_club_id",
+      "이름": "네이버 카페 번호",
+      "value": "11948735",
+      "source": "scripts/cafe_upload_playwright.py",
+      "allow_globs": ["scripts/cafe_upload_playwright.py", "ssot/**", ".omc/**"],
+      "note": "동부이촌동커뮤니티 카페 클럽ID — 현재 정본 1곳. .omc/research 는 아카이브(FP). 복사 확산 방지용 등록"
+    },
+    {
+      "key": "wpml_browser_auto_redirect",
+      "이름": "언어 자동전환 설정",
+      "value": "브라우저 언어 자동전환 끔(비활성화)",
+      "source": "WordPress 관리자 화면 — WPML > Languages > 브라우저 언어 리다이렉트 (저장소 파일 아님, 관리자 설정값)",
+      "allow_globs": ["ssot/**", "status/_queue.json", "3. 웰페리온 가이드/**", "tmp/**"],
+      "note": "2026-07-20 GM 승인으로 변경 — 이전값: '번역이 존재하는 경우에만 자동전환'. 방문자 브라우저가 한국어일 때 영문 문의 페이지(/en/inquiry/)에 처음 들어가면 자동으로 한글 페이지로 튕겨서, 그날 새로 만든 KOR/ENG 언어전환 버튼이 무력화되는 문제 때문. 사이트 전역 설정(문의 페이지 한정 아님). 되돌리는 법: 워드프레스 관리자 > WPML > Languages > '브라우저 언어 리다이렉트'에서 '번역이 존재하는 경우에만 브라우저 언어에 따라 방문자 리다이렉트'를 다시 선택 후 저장. 상세 경위·검증 스크린샷 = status/_queue.json ship 9242"
+    }
+  ]
+}

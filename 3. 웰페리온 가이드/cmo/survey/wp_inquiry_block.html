@@ -1,0 +1,319 @@
+<!-- 웰페리온 문의 블록 — 워드프레스 '문의' 페이지(8394) 본문 주입 소스 (SSOT)
+     2026-07-16 B안 프리미엄 리스킨 + 6버튼 전부 자체 Survey 폼(wp_inquiry_form.html) 연결 완료(GM 발효 승인).
+     ★ 구글폼(forms.gle·docs.google.com/forms) 완전 탈피 — 6종 전부 /ko/inquiry-form/?type=… 로 귀속.
+     디자인: wp_inquiry_form.html 과 동일한 B안 토큰(팔레트 4색 BLACK #221F20·WHITE·BEIGE #B79F8A·CORAL #ED5B3F,
+     Pretendard, 다크 풀블리드 히어로 + 화이트 에디토리얼 본문, 샤프 모서리, 선(line) SVG 아이콘 재사용).
+     CSS 스코프 .wlp-inq 래퍼(Salient/WPBakery 테마 오염 차단). 외부 스크립트 의존 없음(폰트 CDN 1개 제외).
+     2026-07-16 GM 피드백①: 헤더 로고(검정)가 폭>1000px에서 margin-top 32px 때문에 다크 히어로 상단
+     61px 안으로 흘러들어가 히어로 eyebrow "WELLPERION"과 겹치고 검정이라 안 보이던 문제 수정 —
+     eyebrow 삭제 + 헤더 로고를 그 구간(폭>1000px)만 베이지(#B79F8A 근사, invert/sepia/hue-rotate
+     필터로 실측 산출)로 전환해 다크 배경 위에서 브랜드 배지처럼 보이게 함. 히어로 padding도 컴팩트화.
+     2026-07-16 GM 피드백②: 로고 위로 WP 테마 헤더의 흰 바(#header-outer, 데스크톱 29px/모바일 78px)
+     + container-wrap padding-top(40px, 회색 #f6f6f6)이 남아 로고가 흰/회색↔다크 경계에 걸쳐 보이던 문제 수정 —
+     ①#header-outer 배경을 페이지 최상단(0px)부터 다크(#221F20)로, ②.container.main-content를 정확히
+     container-wrap의 padding-top(40px)만큼 위로 끌어올려(margin-top:-40px) 히어로가 #header-outer 박스
+     하단(데스크톱29px/모바일78px)에 바로 이어붙게 함(실측 기반 정밀값, 임의 여백 아님). 로고는 이제
+     첫 픽셀부터 다크 배경 안에 온전히 앉음.
+     2026-07-16 GM 피드백③(웰리 검수 발견): 위 ②의 margin-top:-40px로 히어로 콘텐츠(슬로건 등)도 같이
+     40px 위로 밀려 로고(top~60·bottom~130)와 세로로 겹치는 부작용 수정 — .hero-band padding-top을
+     60px→110px(+40 원복 보정 + 여유 10px)로 늘려 배경 박스는 그대로 상단 확장 유지하되 콘텐츠 시작
+     위치는 로고 하단보다 확실히 아래(실측 gap 양수 확보)로 재조정. 동시에 히어로 소개문 줄바꿈 개선 — "세우고"의 '고'만 다음 줄로 넘어가던
+     어색한 끊김을 의미 단위 수동 <br> 3줄 분리 + word-break:keep-all(한글 어절 단위 줄바꿈)로 해소.
+     2026-07-16 GM 방향전환(다크 히어로 폐기·근본 해결): WP 테마 헤더(로고·메뉴·ENG버튼, 전 페이지 공통)와
+     다크 히어로 밴드가 계속 충돌(로고 안보임·겹침·위치어긋남)해 위 ①②③ 다크 관련 수정 전부 원복 —
+     #header-outer 다크 배경·헤더 로고 베이지 filter·margin-top push·container.main-content의
+     margin-top:-40px 전부 제거(밝은 기본 WP 헤더 복귀, 충돌 원천 차단). 히어로 자체도 다크(#221F20)→
+     밝은 배경으로 교체하고 "문의하기" 큰 제목 삭제(6버튼이 이미 각자 'OO 문의' 라벨이라 중복).
+     문구·글자 크기는 B안 리스킨 이전 원본 wp_inquiry_form.html(커밋 46af9cc2, 밝은 배경·심플 버전)의
+     사이즈 위계(큰 영문 슬로건→작은 국문 부제→코럴 디바이더→작은 소개문)를 참고하되 컬러는 브랜드
+     정본색(BLACK #221F20·BEIGE #B79F8A·CORAL #ED5B3F)만 사용. 카드형(네모) 6버튼 레이아웃은 그대로 유지.
+     2026-07-16 웰리 검수(재발, 이후 GM이 아래 방향전환으로 흡수·정정): 슬로건 위 작은 eyebrow
+     "WELLPERION"이 헤더 로고 워드마크와 중복이라 일시 삭제했었음.
+     2026-07-16 GM 방향전환②(헤더 자체 숨김 — 충돌 근본 해결): WP 테마 헤더(#header-outer, 로고·메뉴·
+     ENG버튼)를 page-id-8394 한정으로 display:none — 로고 찝힘·겹침·위치어긋남 문제의 근원 자체를 제거.
+     헤더가 사라지며 로고도 함께 사라지므로 히어로에 브랜드 표시를 되살림 — eyebrow "WELLPERION" 복원
+     (이제 헤더 로고가 없어 중복 아님). 홈 이동은 하단 소셜바 '홈페이지' 아이콘이 대체.
+     히어로 배경을 흰색→연한 브랜드 베이지(#f5f0ea)로 전환. ★함정: 헤더를 display:none하면 테마 JS가
+     헤더 실측높이(0)에 맞춰 container-wrap의 상단 오프셋도 0으로 재계산(기존 29px데스크톱/78px모바일→
+     0으로 축소, 실측 확인) — 남는 예약 여백은 container-wrap 자체 padding-top 40px 뿐(양 브레이크포인트
+     동일). .hero-band에 margin-top:-40px(단일값, 미디어쿼리 불필요)를 줘 베이지가 페이지 최상단(0px)
+     까지 이어지게 함(다른 페이지 영향 0 — page-id-8394 스코프). 본문 카드(.type-card 등)는 흰색 유지해 대비.
+     "1,000명 정원제" 안내를 하단→히어로 안(슬로건 바로 아래)으로 이관(중복 생성 아님 — 기존 하단
+     .capacity 블록 삭제 후 이동).
+     2026-07-16 GM 피드백(색상 재변경): 베이지(#f5f0ea)→다크(#221F20)로 재전환("찐한 회색"). 헤더를 이미
+     display:none 처리해 로고 자체가 없으므로 예전 다크 시절의 로고 겹침·헤더 충돌 문제는 원천적으로
+     재발하지 않음(heroTop:0 유지, 실측 재확인). 히어로 텍스트를 다크 배경용으로 반전 — eyebrow=베이지,
+     슬로건 영문=흰색, 국문 부제·소개문=연회색(rgba(255,255,255,.7) 계열), "1,000명 정원제" 문장=흰색
+     본문+숫자만 코럴 강조, 코럴 디바이더 유지. 본문 카드(.type-card 등)는 흰색 그대로(다크 히어로+흰
+     본문 대비).
+     2026-07-16 GM 피드백(폭 축소): 다크 히어로가 좌우 풀블리드라 과하게 넓다는 지적 — .hero-band에
+     max-width:720px(.wrap과 동일 폭, 통일감) + margin:auto로 가운데 정렬해 데스크톱에서 다크 박스가
+     본문 콘텐츠 폭 안에 카드처럼 앉게 함(좌우 여백 생김). 모바일은 뷰포트가 720px보다 좁아 자동으로
+     꽉 차 보임(별도 미디어쿼리 불필요). margin-top:-40px(상단 확장)는 auto 정렬과 함께 유지.
+     2026-07-16 GM 최종확정(시안F 밝은 베이지 우아, 전체 통일): "상단만 색 넣으면 위아래 따로 논다"
+     피드백 반영 — 다크(#221F20) 히어로 폐기, .wlp-inq 전체(히어로+본문 배경)를 동일한 연한 베이지
+     #f5f0ea(--bg 변수)로 통일해 하나의 연속된 면처럼 보이게 함(부분 색 아님). 텍스트: 헤드라인=검정
+     (--ink), 부제·소개문=새 --muted #6b6258, eyebrow·디바이더·"1,000명 정원제"강조·예약안내=베이지
+     (--beige, 코럴 대신 — "코럴 최소" 방침, 제출버튼·체크박스 선택 등 기능적 CTA색만 코럴 유지).
+     본문 카드(.type-card 등)는 흰색+기존 베이지톤 보더 그대로(대비 유지). 문구 정정: "그날의"→
+     "그 날의"(띄어쓰기), "1,000명 정원제(멤버십)로"→"1,000명 정원제(멤버십) 운영으로".
+     2026-07-16 GM 미세조정: 히어로 세로 여백 과다("정원제" 문구와 "상담 및 투어는 사전예약제" 사이) —
+     .hero-band padding-bottom 30→14, .wrap padding-top 34→18(합계 64px→32px)로 축소. 허브 맨 아래
+     (social-bar 이후)는 실측 결과 중복/잉여 줄 없음 확인(별도 삭제 대상 없음).
+     2026-07-20 GM 지시: Survey폼(8460)에 적용한 배경 풀블리드+하단여백 제거를 이 페이지(메인 문의,
+     GM이 실제로 가리킨 대상)에도 동일 적용. 원인·처방 동일(같은 WP 테마 래퍼 구조 — .container.main-
+     content padding:0 90px 거터 + .container-wrap padding-bottom 40px + wpb_raw_code margin-bottom
+     35px=고정 75px, 8460과 실측 일치). ::before 50vw 브레이크아웃 + .wlp-inq margin-bottom:-75px로
+     동일 처리(8460과 같은 코드 패턴, 자체선택 사이드바 없음).
+     2026-07-20 GM 지시(언어전환): 영문판(/en/inquiry/, 8408)엔 WP 테마 네이티브 언어전환 버튼
+     (a.lang-header, "KOR")이 보이는데, 이 페이지는 위 #header-outer를 통째로 숨겨놔서 그 안에 같이
+     있는 네이티브 "ENG" 버튼도 함께 숨어버려 안 보였음(DOM엔 있으나 0×0, 실측 확인). 헤더를 다시 켜면
+     예전에 몇 차례 고생해서 잡은 로고·히어로 겹침 문제가 재발하므로(위 이력 참고) 헤더는 계속 숨김
+     유지 — 대신 .hero-band 안에 새 .lang-switch 링크를 직접 추가(네이티브 버튼과 동일한 알약형·2px
+     테두리·24px 라운드·"ENG" 대문자 표기 계승, 색만 이 페이지 베이지 배경에 맞게 반전 — 네이티브는
+     흰 배경 위 흰색이라 이 베이지 배경에선 그대로 못 씀). .hero-band(720px 가운데정렬 컬럼) 안이 아닌
+     .wlp-inq 최상위 직계로 배치 — 컨텐츠 영역(WP 90px 거터 안쪽) 우상단에 앉아 영문판 네이티브 버튼의
+     "화면 진짜 모서리" 위치와는 살짝(≈120px) 다르지만, 이 페이지 다른 요소(카드 등)도 전부 같은 90px
+     거터 안에서 끝나므로 이 페이지 자체 기준으론 일관됨 — position:fixed로 픽셀 일치시키는 안은
+     영문판에 없는 "항상 고정" 동작을 새로 만드는 것이라 보류(GM 확인 필요시 후속).
+     ★함정(실측 발견): href="http://wellperion.com/en/inquiry/" 리터럴을 그대로 쓰면 WPML이 본문
+     콘텐츠 안의 내부링크를 "현재 보고 있는 언어로" 자동 교정하는 필터가 서버단에서 이를 감지해
+     href를 조용히 /ko/inquiry/(자기 자신)로 되돌려버림(라이브 HTML 소스 직접 확인 — 렌더 후 DOM이
+     아니라 서버가 이미 고친 원본 자체가 틀어짐, 네이티브 a.lang-header는 WPML 자체 함수 출력이라
+     이 필터를 안 타서 멀쩡함). 우회: href="#" + onclick으로 location.href를 JS 문자열로 나눠서
+     대입(리터럴 URL 문자열이 페이지 소스 어디에도 "href=..." 형태로 등장하지 않게)해 WPML의 href
+     패턴매칭을 회피. 이 페이지의 다른 href(예: /ko/inquiry-form/?type=...)는 같은 언어(ko) 내
+     이동이라 이 필터에 안 걸림 — 문제는 "다른 언어로 나가는 링크"에서만 발생.
+     수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+<style>
+/* 문의 페이지(8394) 한정 — WP 테마 헤더 전체 숨김(로고·메뉴·네이티브 ENG버튼 포함). 다른 페이지
+   영향 0(page-id 스코프). 네이티브 언어전환 버튼이 같이 숨는 문제는 .lang-switch로 별도 대체(하단). */
+body.page-id-8394 #header-outer { display: none !important; }
+/* 하단 여백 제거(2026-07-20 GM 지시) — .wlp-inq{margin-bottom:-75px}만으로는 WPBakery 테마
+   기본 마진(특이도 0,1,1)이 우리 규칙(0,1,0)을 이겨 무시됨(8460 실측으로 확인된 함정, 동일 적용). */
+body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
+</style>
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+.wlp-inq{
+  --bg:#f5f0ea;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;--dim:#8a7f72;--muted:#6b6258;
+  background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  -webkit-text-size-adjust:100%;box-sizing:border-box;
+  position:relative;
+}
+.wlp-inq *{box-sizing:border-box}
+.wlp-inq a{text-decoration:none;color:inherit}
+/* 배경 풀블리드(PC 좌우 짤림 해소, 2026-07-20 GM 지시) — width:100vw 대신 left/right:50%+margin:-50vw만
+   사용해 스크롤바 폭 오버플로(가로스크롤) 함정 회피(8460과 동일 기법). */
+.wlp-inq::before{
+  content:'';position:absolute;top:0;bottom:0;left:50%;right:50%;
+  margin-left:-50vw;margin-right:-50vw;background:var(--bg);z-index:-1;
+}
+
+/* 언어 전환(2026-07-20 GM 지시) — 네이티브 a.lang-header("ENG", 흰 배경용 흰 알약)가 헤더 숨김으로
+   같이 숨어 이 페이지엔 안 보이던 것을, 같은 모양(2px 테두리·24px 라운드·대문자 표기)으로 베이지
+   배경에 맞게 색만 반전해 히어로 우측 상단에 재현. 모바일도 같은 자리(터치 44px 이상 확보). */
+.wlp-inq .lang-switch{position:absolute;top:16px;right:16px;z-index:5;display:inline-flex;align-items:center;justify-content:center;
+  padding:10px 18px;min-height:44px;min-width:44px;border:2px solid var(--ink);border-radius:24px;color:var(--ink);
+  font-size:13px;font-weight:700;letter-spacing:.02em;background:transparent}
+@media (max-width:520px){
+  .wlp-inq .lang-switch{top:10px;right:10px;padding:9px 16px;font-size:12.5px}
+}
+
+/* ===== HERO — 밝은 베이지 우아(시안F, 2026-07-16 GM 최종확정: 히어로·본문 전체 동일 베이지로 통일) ===== */
+.wlp-inq .hero-band{background:var(--bg);max-width:720px;margin:-40px auto 0;padding:64px 20px 14px;position:relative}
+@media (max-width:1000px){
+  .wlp-inq .hero-band{padding-top:56px}
+}
+.wlp-inq .hero-inner{max-width:520px;margin:0 auto;text-align:center}
+.wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin:0 0 14px}
+.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin:0 0 6px}
+.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--muted);letter-spacing:.02em;margin:0 0 18px}
+.wlp-inq .divider-coral{width:36px;height:2px;background:var(--beige);margin:0 auto 18px}
+.wlp-inq .hero-desc{font-size:13.5px;color:var(--muted);line-height:1.8;max-width:380px;margin:0 auto;word-break:keep-all}
+.wlp-inq .hero-capacity{font-size:14px;font-weight:700;color:var(--ink);line-height:1.7;max-width:380px;margin:20px auto 0}
+.wlp-inq .hero-capacity b{color:var(--beige);font-weight:800}
+
+/* ===== BODY WRAP — 같은 베이지 배경 + 흰 카드 대비 ===== */
+.wlp-inq .wrap{max-width:720px;margin:0 auto;padding:18px 18px 72px}
+
+/* 사전예약제 안내 */
+.wlp-inq .reserve-note{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 32px;font-size:12.5px;font-weight:700;color:var(--beige);letter-spacing:.02em;text-align:center}
+.wlp-inq .reserve-note .dot{width:5px;height:5px;background:var(--beige);flex-shrink:0}
+
+/* 영상 */
+.wlp-inq .video-frame{max-width:640px;margin:0 auto 44px;position:relative;width:100%;padding-top:56.25%;background:var(--ink);border:1px solid var(--line)}
+.wlp-inq .video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+/* 섹션 라벨 */
+.wlp-inq .sec-label{display:flex;align-items:center;justify-content:center;gap:14px;margin:0 0 26px}
+.wlp-inq .sec-label .ln{flex:1;max-width:56px;height:1px;background:var(--line)}
+.wlp-inq .sec-label .tx{font-size:12.5px;color:var(--dim);font-weight:600;white-space:nowrap}
+
+/* 6 유형 카드 */
+.wlp-inq .type-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin:0 0 50px}
+.wlp-inq .type-card{display:flex;flex-direction:column;align-items:flex-start;border:1px solid var(--line);background:#fff;padding:26px 24px;transition:border-color .18s,transform .18s}
+.wlp-inq .type-card:hover{border-color:var(--ink);transform:translateY(-2px)}
+.wlp-inq .type-card .cat-icon{color:var(--ink);margin-bottom:16px;transition:color .18s}
+.wlp-inq .type-card .cat-icon svg{width:26px;height:26px;display:block}
+.wlp-inq .type-card:hover .cat-icon{color:var(--coral)}
+.wlp-inq .type-card .tc-en{font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--beige);text-transform:uppercase;margin:0 0 8px}
+.wlp-inq .type-card .tc-kr{display:flex;align-items:center;width:100%;gap:8px;font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin:0 0 9px}
+.wlp-inq .type-card .tc-kr .arrow{margin-left:auto;font-size:15px;color:var(--beige);transition:transform .18s,color .18s}
+.wlp-inq .type-card:hover .tc-kr .arrow{color:var(--coral);transform:translateX(3px)}
+.wlp-inq .type-card .tc-desc{font-size:13px;color:var(--dim);line-height:1.65}
+
+/* 소셜/링크 아이콘 바 */
+.wlp-inq .social-bar{display:flex;justify-content:center;gap:26px;flex-wrap:wrap;margin:0 0 48px}
+.wlp-inq .social-icon{display:flex;flex-direction:column;align-items:center;gap:9px;transition:transform .18s,opacity .18s}
+.wlp-inq .social-icon:hover{transform:translateY(-3px)}
+.wlp-inq .social-btn{display:flex;align-items:center;justify-content:center;width:48px;height:48px;transition:opacity .18s}
+.wlp-inq .social-icon:hover .social-btn{opacity:.85}
+.wlp-inq .social-label{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dim)}
+
+@media (max-width:520px){
+  .wlp-inq .type-grid{grid-template-columns:1fr}
+}
+</style>
+
+<div class="wlp-inq">
+
+  <a class="lang-switch" href="#" onclick="location.href='http://wellperion.com/'+'en/inquiry/';return false;">ENG</a>
+  <div class="hero-band">
+    <div class="hero-inner">
+      <p class="eyebrow">Wellperion</p>
+      <p class="slogan-en">A Day, Well Completed.</p>
+      <p class="slogan-kr">하루의 완성, 웰페리온</p>
+      <div class="divider-coral"></div>
+      <p class="hero-desc">단순한 운동 시설이 아닙니다.<br>하루 루틴의 일부로, 건강의 기준을 세우고<br>그 날의 완성도를 채워주는 공간입니다.</p>
+      <p class="hero-capacity">웰페리온은 <b>1,000명 정원제</b>(멤버십) 운영으로<br>쾌적한 공간을 제공합니다.</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <p class="reserve-note"><span class="dot"></span>상담 및 투어는 사전 예약제로 운영됩니다</p>
+
+    <!-- 영상 자리 -->
+    <div class="video-frame">
+      <iframe src="https://www.youtube.com/embed/qpPYA3bAO7M" title="웰페리온 소개 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+
+    <div class="sec-label"><span class="ln"></span><span class="tx">원하시는 항목을 선택해 주세요</span><span class="ln"></span></div>
+
+    <!-- 6종 문의 유형 — 전부 자체 Survey 폼(/ko/inquiry-form/?type=…) 연결. 구글폼 링크 없음. -->
+    <div class="type-grid">
+
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=membership" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 12 3l9 6"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="5" y1="9" x2="5" y2="19"/><line x1="9" y1="9" x2="9" y2="19"/><line x1="15" y1="9" x2="15" y2="19"/><line x1="19" y1="9" x2="19" y2="19"/><line x1="3" y1="19" x2="21" y2="19"/><line x1="3" y1="21.5" x2="21" y2="21.5"/></svg></span>
+        <span class="tc-en">Membership</span>
+        <span class="tc-kr">멤버십 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">스포츠클럽 멤버십 가입 · 시설 투어 상담</span>
+      </a>
+
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=adult" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0"/><path d="M2 15c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0" opacity=".55"/></svg></span>
+        <span class="tc-en">Adult Lesson</span>
+        <span class="tc-kr">성인 강습 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">수영 · P.T · 필라테스 · 골프 · 스쿼시 · 발레 · 바레</span>
+      </a>
+
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=youth" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.4 5.1 5.6.6-4.2 3.8 1.2 5.5L12 15.8l-5 2.7 1.2-5.5-4.2-3.8 5.6-.6z"/></svg></span>
+        <span class="tc-en">Youth Lesson</span>
+        <span class="tc-kr">유소년 강습 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">수영 · 체조 · 골프 · 스쿼시 · 뮤지컬</span>
+      </a>
+
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=summer" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="4.2" y1="4.2" x2="6" y2="6"/><line x1="18" y1="18" x2="19.8" y2="19.8"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="4.2" y1="19.8" x2="6" y2="18"/><line x1="18" y1="6" x2="19.8" y2="4.2"/></svg></span>
+        <span class="tc-en">Summer Special</span>
+        <span class="tc-kr">여름방학 특강 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">여름방학 단기 집중 특강 프로그램</span>
+      </a>
+
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=rental" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16"/><line x1="12" y1="4" x2="12" y2="13"/><line x1="3" y1="13" x2="21" y2="13"/><line x1="12" y1="13" x2="12" y2="20"/></svg></span>
+        <span class="tc-en">Space Rental</span>
+        <span class="tc-kr">공간 렌트 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">행사 · 촬영 · 세미나 등 공간 대관 · 맞춤 견적 안내</span>
+      </a>
+
+      <a class="type-card" href="http://wellperion.com/ko/inquiry-form/?type=business" rel="noopener" onclick="wpToSurvey(this)">
+        <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 7.8 6.6c.7-.6 1.7-.6 2.4 0l1.9 1.6"/><path d="M21 10.5 16.2 6.6c-.7-.6-1.7-.6-2.4 0l-.9.75"/><path d="M6.8 11l4.2 3.6a1.65 1.65 0 0 0 2.2-2.45L9.8 8.9"/><path d="M10 12.3l2.5 2.2a1.65 1.65 0 0 0 2.2-2.45l-.9-.85"/><path d="M13.2 12.3l1.9 1.6a1.65 1.65 0 0 0 2.2-2.45"/><line x1="3" y1="10.5" x2="3" y2="16.5"/><line x1="21" y1="10.5" x2="21" y2="16.5"/></svg></span>
+        <span class="tc-en">Business Partnership</span>
+        <span class="tc-kr">비즈니스 파트너 문의<span class="arrow">→</span></span>
+        <span class="tc-desc">제휴 · 입점 · 콜라보 · B2B 복지 등 사업 협업 제안</span>
+      </a>
+
+    </div>
+
+    <!-- 소셜/링크 아이콘 바 — 4개 채널: 홈페이지·인스타그램·네이버블로그·네이버지도 (인라인 SVG, 외부 의존 없음) -->
+    <div class="social-bar">
+
+      <a href="http://wellperion.com/ko/" target="_blank" rel="noopener" class="social-icon">
+        <span class="social-btn" style="background:#221F20;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="홈페이지">
+            <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" fill="#fff" fill-opacity=".15" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/>
+            <path d="M9 22V12h6v10" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="social-label">홈페이지</span>
+      </a>
+
+      <a href="https://www.instagram.com/wellperion/" target="_blank" rel="noopener" class="social-icon">
+        <span class="social-btn" style="background:linear-gradient(135deg,#feda75 0%,#fa7e1e 25%,#d62976 55%,#962fbf 80%,#4f5bd5 100%);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="인스타그램">
+            <rect x="2" y="2" width="20" height="20" rx="5.5" stroke="#fff" stroke-width="1.8"/>
+            <circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/>
+            <circle cx="17.5" cy="6.5" r="1.1" fill="#fff"/>
+          </svg>
+        </span>
+        <span class="social-label">인스타그램</span>
+      </a>
+
+      <a href="https://blog.naver.com/wellperion" target="_blank" rel="noopener" class="social-icon">
+        <span class="social-btn" style="background:#03C75A;">
+          <svg width="34" height="28" viewBox="0 0 36 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="네이버 블로그">
+            <text x="18" y="21" text-anchor="middle" dominant-baseline="auto" font-family="Arial,Helvetica,sans-serif" font-size="18" font-weight="700" fill="#fff" letter-spacing="0">blog</text>
+          </svg>
+        </span>
+        <span class="social-label">네이버블로그</span>
+      </a>
+
+      <a href="https://map.naver.com/p/search/%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8/place/1048457693" target="_blank" rel="noopener" class="social-icon">
+        <span class="social-btn" style="background:#00963C;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="네이버 지도">
+            <path d="M12 2C8.686 2 6 4.686 6 8c0 4.5 6 12 6 12s6-7.5 6-12c0-3.314-2.686-6-6-6z" fill="#fff" fill-opacity=".25" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+            <circle cx="12" cy="8" r="2.5" fill="#fff"/>
+          </svg>
+        </span>
+        <span class="social-label">네이버지도</span>
+      </a>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- UTM 귀속 프리필 — 채널 콘텐츠 링크가 ?utm_source=instagram|naver_blog|naver_cafe|kakao|danggn 부착 시
+     그 출처를 자체 Survey 폼(/ko/inquiry-form/) 이동 시 그대로 승계해 폼의 utmSource 로 전달(채널 귀속 유지). -->
+<script>
+(function(){
+  // ── 자체 Survey(WP /ko/inquiry-form/) 이동 시 현재 페이지 UTM 승계 → 폼이 채널귀속 유지 ──
+  //   6버튼(멤버십·성인강습·유소년강습·여름특강·공간렌트·비즈니스) 전부 이 함수를 호출(2026-07-16 구글폼 완전 탈피).
+  //   현재 inquiry 페이지 URL의 utm_source/medium/campaign 을 survey 페이지 링크에 이어붙인다.
+  window.wpToSurvey=function(a){
+    try{
+      var u=new URLSearchParams(location.search);
+      var url=new URL(a.href, location.href);
+      // utm_content = IG 계정 구분(official|namuk) — 빠뜨리면 '어느 계정이 데려왔나'가 여기서 소실된다(2026-07-20 시모)
+      ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(function(k){ var val=u.get(k); if(val) url.searchParams.set(k,val); });
+      a.href=url.href;
+    }catch(e){}
+  };
+})();
+</script>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>웰페리온 회원권 중도해지 환불 운영 기준</title>
+<style>
+  :root{
+    --green:#2f5d50; --green-d:#244a40; --green-soft:#e9f1ed;
+    --gold:#b88a4a; --gold-d:#9a6f33; --gold-soft:#f7f0e4;
+    --wine:#8c3b3b; --wine-soft:#f6e7e6;
+    --ink:#2b2b2b; --muted:#6f6f6f; --line:#ddd7cb;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;color:var(--ink);background:#cfcfcf;
+       -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .page{width:297mm;min-height:420mm;margin:0 auto;background:#fff;padding:17mm 17mm;}
+
+  .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid var(--green);padding-bottom:11px;}
+  .brand{font-size:14px;letter-spacing:5px;color:var(--gold);font-weight:700;}
+  .title{font-size:29px;font-weight:800;color:var(--green);margin-top:4px;}
+  .meta-inline{font-size:11.5px;color:var(--muted);line-height:1.75;margin-top:9px;}
+
+  /* 결재란 */
+  .approval{display:flex;border:1.5px solid var(--green);border-radius:6px;overflow:hidden;flex:0 0 auto;}
+  .ap-label{background:var(--green);color:#fff;font-weight:800;font-size:13.5px;letter-spacing:2px;
+            display:flex;align-items:center;justify-content:center;padding:0 12px;line-height:1.25;text-align:center;}
+  .approval table{border-collapse:collapse;}
+  .approval th{background:var(--green-soft);color:var(--green);font-size:12.5px;font-weight:700;
+               padding:7px 4px;border-left:1px solid #cdd9d3;width:80px;}
+  .approval td{height:64px;border-left:1px solid var(--line);border-top:1px solid var(--line);}
+
+  h2{font-size:17px;color:var(--green);margin:18px 0 9px;display:flex;align-items:center;gap:8px;}
+  h2 .n{display:inline-flex;width:24px;height:24px;border-radius:6px;background:var(--green);color:#fff;
+        font-size:14px;align-items:center;justify-content:center;font-weight:800;}
+
+  /* 운영 원칙 (3 케이스) */
+  .principle{margin-top:16px;border:2px solid var(--green);border-radius:12px;overflow:hidden;}
+  .principle .cap{background:var(--green);color:#fff;font-size:17px;font-weight:800;padding:11px 18px;letter-spacing:1px;}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr 1fr;}
+  .pcell{padding:15px 17px;border-right:1px solid #e4ddd0;}
+  .pcell:last-child{border-right:none;}
+  .pbadge{display:inline-block;color:#fff;font-weight:800;font-size:12.5px;padding:3px 12px;border-radius:14px;margin-bottom:8px;}
+  .b-std{background:var(--green);} .b-exc{background:var(--gold-d);} .b-out{background:var(--wine);}
+  .pcell h3{font-size:15px;margin-bottom:5px;color:#222;}
+  .pcell p{font-size:13px;line-height:1.55;color:#3a3a3a;}
+  .pcell .way{font-weight:800;}
+  .w-b{color:var(--green);} .w-a{color:var(--gold-d);}
+
+  /* 방식 정의 */
+  .def{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+  .dbox{border:1px solid var(--line);border-radius:10px;padding:13px 16px;font-size:13.5px;line-height:1.55;}
+  .dbox.a{background:var(--gold-soft);border-color:#e7d2ad;}
+  .dbox.b{background:var(--green-soft);border-color:#c2d8cf;}
+  .dbox .dt{font-weight:800;font-size:14.5px;margin-bottom:5px;}
+  .dbox.a .dt{color:var(--gold-d);} .dbox.b .dt{color:var(--green);}
+  .dbox .calc{font-weight:700;color:#222;}
+  .formula{margin-top:10px;background:#fff;border:1px dashed var(--gold);border-radius:8px;
+           padding:11px 14px;text-align:center;font-size:13.5px;font-weight:700;color:#5a4528;}
+  .formula span{color:var(--gold-d);}
+
+  /* 표 */
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:14px;}
+  th,td{border:1px solid var(--line);padding:10px 6px;text-align:center;}
+  thead th{color:#fff;font-weight:700;font-size:13.5px;line-height:1.4;}
+  th.h-base{background:var(--green-d);}
+  th.h-b{background:var(--green);} th.h-a{background:var(--gold-d);} th.h-o{background:var(--wine);}
+  th .s{display:block;font-size:10.5px;font-weight:500;opacity:.92;margin-top:3px;}
+  td.name{text-align:left;font-weight:700;padding-left:14px;background:#faf8f3;}
+  .num{font-variant-numeric:tabular-nums;}
+  .cB{background:#eef4f1;} .cA{background:#faf3e6;} .cO{background:#f8ecec;}
+  caption{caption-side:bottom;font-size:11.5px;color:var(--muted);text-align:right;padding-top:7px;}
+
+  /* 유의사항 */
+  .notes{background:var(--gold-soft);border:1px solid #e7d2ad;border-radius:10px;padding:14px 18px;}
+  .notes .rt{font-weight:800;color:var(--gold-d);font-size:14px;margin-bottom:8px;}
+  .notes ul{margin:0;list-style:none;}
+  .notes li{font-size:13.3px;line-height:1.6;margin-bottom:7px;padding-left:20px;position:relative;}
+  .notes li:last-child{margin-bottom:0;}
+  .notes li::before{content:"\2714";position:absolute;left:0;color:var(--gold-d);font-weight:800;}
+  .notes b{color:#000;}
+
+  .foot{margin-top:15px;border-top:1px solid var(--line);padding-top:9px;
+        display:flex;justify-content:space-between;font-size:10.8px;color:var(--muted);line-height:1.6;}
+
+  @page{size:A3 portrait;margin:0;}
+  @media print{body{background:#fff;}.page{margin:0;}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION &#127807;</div>
+      <div class="title">회원권 중도해지 환불 운영 기준</div>
+      <div class="meta-inline">구분 : 내부 운영기준 (운영부) &nbsp;|&nbsp; 작성일 : 2026. 6. 4. &nbsp;|&nbsp; 문의 : 운영부 이경연 실장 (내선 1201)</div>
+    </div>
+    <div class="approval">
+      <div class="ap-label">결<br>재</div>
+      <table>
+        <tr><th>운영부<br>실장</th><th>GM</th><th>대표</th><th>회장</th></tr>
+        <tr><td></td><td></td><td></td><td></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 운영 원칙 -->
+  <div class="principle">
+    <div class="cap">&#128221; 환불 운영 원칙 — 3가지 경우</div>
+    <div class="pgrid">
+      <div class="pcell">
+        <span class="pbadge b-std">기본 (표준)</span>
+        <h3>일반 중도해지</h3>
+        <p>회원 본인 사정으로 해지 시 <span class="way w-b">방식 B</span> 적용.<br>위약금 10% + 등급별 월회비 기준 공제.</p>
+      </div>
+      <div class="pcell">
+        <span class="pbadge b-exc">예외 · 대표 컨펌</span>
+        <h3>부득이한 사정</h3>
+        <p>불가피한 사유로 기준 조정이 필요할 때, <b>대표님 컨펌</b>을 거쳐 <span class="way w-a">방식 A</span>로 환불 진행.</p>
+      </div>
+      <div class="pcell">
+        <span class="pbadge b-out">회사 조치</span>
+        <h3>강제 탈회</h3>
+        <p>에티켓 미준수·비협조 회원은 탈회 조치 가능. 이 경우 <b>위약금 면제</b> + <span class="way w-a">방식 A</span> 환불.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 방식 정의 -->
+  <h2><span class="n">1</span> 두 가지 환불 산정 방식</h2>
+  <div class="def">
+    <div class="dbox b">
+      <div class="dt">방식 B — 기본 표준</div>
+      하루요금 = <span class="calc">등급별 월회비 &divide; 30일</span><br>
+      (예: 플래티넘 420,000÷30 = 14,000원/일) · 정상가 기준이라 공제가 크고 환불액이 작음.
+    </div>
+    <div class="dbox a">
+      <div class="dt">방식 A — 예외 / 강제탈회</div>
+      하루요금 = <span class="calc">연 결제금액 &divide; 365일</span><br>
+      (예: 플래티넘 3,000,000÷365 = 8,219원/일) · 규정 기본 방식이라 공제가 작고 환불액이 큼.
+    </div>
+  </div>
+  <div class="formula">
+    환불액 = 결제금액 &minus; <span>(하루요금 &times; 이용일수)</span> &minus; 위약금(결제금액의 10%)
+    &nbsp;&nbsp;|&nbsp;&nbsp; <b>강제 탈회 시 위약금 면제</b>
+  </div>
+
+  <!-- 예시 표 -->
+  <h2><span class="n">2</span> 경우별 환불액 예시 <span style="font-size:12.5px;color:var(--muted);font-weight:400;">(이용 90일 후 해지 기준)</span></h2>
+  <table>
+    <caption>※ 1원 미만 절사. 실제는 해지일까지 실이용일수로 산정.</caption>
+    <thead>
+      <tr>
+        <th class="h-base">회원권 등급</th>
+        <th class="h-base">연 결제금액</th>
+        <th class="h-b">① 일반 해지<span class="s">방식 B · 위약금 O</span></th>
+        <th class="h-a">② 대표 컨펌<span class="s">방식 A · 위약금 O</span></th>
+        <th class="h-o">③ 강제 탈회<span class="s">방식 A · 위약금 면제</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="name">플래티넘</td><td class="num">3,000,000</td>
+        <td class="num cB">1,440,000</td><td class="num cA">1,960,274</td><td class="num cO">2,260,274</td></tr>
+      <tr><td class="name">플래티넘+골프</td><td class="num">3,400,000</td>
+        <td class="num cB">1,710,000</td><td class="num cA">2,221,644</td><td class="num cO">2,561,644</td></tr>
+      <tr><td class="name">노블레스</td><td class="num">3,600,000</td>
+        <td class="num cB">1,800,000</td><td class="num cA">2,352,329</td><td class="num cO">2,712,329</td></tr>
+      <tr><td class="name">노블레스+골프</td><td class="num">4,000,000</td>
+        <td class="num cB">2,070,000</td><td class="num cA">2,613,699</td><td class="num cO">3,013,699</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 유의사항 -->
+  <h2><span class="n">3</span> 운영 시 유의사항</h2>
+  <div class="notes">
+    <div class="rt">기준을 안전하게 운영하기 위한 필수 조건</div>
+    <ul>
+      <li><b>계약서·약관 명문화</b> : 방식 B를 표준으로 적용하려면 회원 계약서에 ‘중도해지 시 월회비 기준 일할공제 + 위약금 10%’를 명확히 기재해야 합니다. (미기재 시 분쟁에서 방식 A로 환급될 수 있음)</li>
+      <li><b>환불 자체는 거부 불가</b> : 방문판매법상 회원은 언제든 중도해지·환불이 가능합니다. ‘환불 불가’ 조항은 무효이므로, 기준은 ‘공제 방식’의 문제일 뿐 환불을 막는 용도가 아님에 유의.</li>
+      <li><b>대표 컨펌은 기록으로</b> : 방식 A 예외 적용 시 사유와 대표 승인 내역을 문서로 남겨 형평성·이력 관리.</li>
+      <li><b>강제 탈회는 근거 명확히</b> : 에티켓 미준수·비협조 사유를 객관적으로 기록·통지하고, 약관에 ‘강제 탈회 시 위약금 면제 + 방식 A 환불’ 조항을 반영.</li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    <div>본 자료는 공개된 법령·고시·공정위 심결 및 소비자분쟁해결기준에 근거한 내부 운영기준 요약입니다.<br>
+    약관·계약서 최종 문구는 시행 전 법무·소비자원 검토를 권장합니다.</div>
+    <div style="text-align:right;">WELLPERION 운영부 · 이경연 실장(내선 1201)<br>2026. 6. 4.</div>
+  </div>
+
+</div>
+</body>
+</html>

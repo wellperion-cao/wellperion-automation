@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기획안·결과보고 작성 가이드 — 웰페리온 ERP</title>
+<style>
+  :root{
+    --ink:#1a1815; --gold:#B79F8A; --paper:#fbfaf8; --panel:#f5f2ee;
+    --border:#e5ded6; --dim:#8a8378; --blue:#4a7fb5; --purple:#8a6fc0;
+    --green:#3e8e5a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+    background:var(--paper);color:var(--ink);line-height:1.7;font-size:16px}
+  .wrap{max-width:860px;margin:0 auto;padding:0 20px 80px}
+
+  /* 헤더 */
+  .hero{background:var(--ink);color:#fff;padding:46px 20px 40px;text-align:center}
+  .hero .brand{color:var(--gold);font-size:13px;letter-spacing:4px;font-weight:700}
+  .hero .sub-brand{color:#8d857b;font-size:12px;margin-top:4px}
+  .hero h1{font-size:30px;margin:18px 0 10px;font-weight:800;letter-spacing:-0.5px}
+  .hero .diamond{color:var(--gold);font-size:13px;margin:6px 0}
+  .hero p.desc{color:#c9c2b8;font-size:15px;max-width:560px;margin:10px auto 0}
+  @media (max-width:600px){.hero h1{font-size:24px}}
+
+  /* 섹션 제목 — SSOT 서식과 동일한 스타일 */
+  h2.sec{background:var(--panel);border-left:6px solid var(--gold);
+    padding:10px 16px;font-size:19px;margin:52px 0 18px;color:var(--ink)}
+  h3.sub{font-size:16px;margin:26px 0 10px;color:var(--ink)}
+
+  p{margin:0 0 12px}
+  .muted{color:var(--dim);font-size:14px}
+
+  /* 카드/박스 */
+  .box{background:#fff;border:1px solid var(--border);border-radius:12px;
+    padding:18px 20px;margin:14px 0}
+  .box.tone{background:var(--panel)}
+  .callout{background:#fff;border:1px dashed var(--gold);border-radius:12px;
+    padding:14px 18px;margin:16px 0;font-size:15px}
+  .callout .tag{color:var(--gold);font-weight:800;margin-right:6px}
+
+  /* 3탭 소개 카드 */
+  .tabs3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+  @media (max-width:640px){.tabs3{grid-template-columns:1fr}}
+  .tab-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px}
+  .tab-card .tt{font-weight:800;font-size:16px;margin-bottom:6px}
+  .tab-card.t-plain .tt{color:var(--ink)}
+  .tab-card.t-plan{border-color:rgba(74,127,181,0.45)}
+  .tab-card.t-plan .tt{color:var(--blue)}
+  .tab-card.t-result{border-color:rgba(138,111,192,0.45)}
+  .tab-card.t-result .tt{color:var(--purple)}
+  .tab-card .dd{font-size:14px;color:#5c564d}
+
+  /* 단계 리스트 */
+  ol.steps{counter-reset:st;list-style:none;margin:16px 0}
+  ol.steps li{position:relative;padding:0 0 22px 52px}
+  ol.steps li::before{counter-increment:st;content:counter(st);
+    position:absolute;left:0;top:1px;width:34px;height:34px;border-radius:50%;
+    background:var(--ink);color:var(--gold);font-weight:800;font-size:15px;
+    display:flex;align-items:center;justify-content:center}
+  ol.steps li::after{content:'';position:absolute;left:16px;top:40px;bottom:4px;
+    width:2px;background:var(--border)}
+  ol.steps li:last-child::after{display:none}
+  ol.steps li b.st-t{display:block;font-size:16px;margin-bottom:3px}
+  ol.steps li .st-d{font-size:14.5px;color:#5c564d}
+
+  /* 표 */
+  table{width:100%;border-collapse:collapse;margin:14px 0;background:#fff;font-size:14.5px}
+  th,td{border:1px solid var(--border);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--ink);color:#fff;font-size:13.5px;text-align:center;white-space:nowrap}
+  td.lbl{background:var(--panel);font-weight:700;white-space:nowrap;width:150px}
+  @media (max-width:640px){td.lbl{width:auto}}
+  .t-scroll{overflow-x:auto}
+
+  /* 버튼 흉내(UI 안내용) */
+  .ui-btn{display:inline-block;background:#fff;border:1px solid var(--border);
+    border-radius:8px;padding:2px 10px;font-size:13.5px;font-weight:700;white-space:nowrap}
+  .ui-btn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* FAQ */
+  details{background:#fff;border:1px solid var(--border);border-radius:10px;
+    margin:10px 0;padding:0}
+  details summary{cursor:pointer;padding:13px 16px;font-weight:700;font-size:15px;
+    list-style:none;display:flex;gap:8px;align-items:baseline}
+  details summary::before{content:'Q.';color:var(--gold);font-weight:800}
+  details[open] summary{border-bottom:1px solid var(--border)}
+  details .a{padding:12px 16px 14px;font-size:14.5px;color:#454039}
+
+  /* 바로가기 */
+  .links{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+  @media (max-width:640px){.links{grid-template-columns:1fr}}
+  .link-card{display:block;background:var(--ink);color:#fff;text-decoration:none;
+    border-radius:12px;padding:18px 20px;transition:opacity .15s}
+  .link-card:hover{opacity:0.88}
+  .link-card .lt{display:block;font-weight:800;font-size:16px}
+  .link-card .ld{display:block;color:#b5ada2;font-size:13px;margin-top:4px}
+  .link-card .go{color:var(--gold);font-size:13px;font-weight:700;margin-top:8px;display:block}
+
+  footer{margin-top:70px;border-top:1px solid var(--border);padding-top:16px;
+    text-align:center;color:#a39b8f;font-size:12px}
+
+  /* 실제 화면 캡처 */
+  figure.shot{margin:16px 0 22px}
+  figure.shot img{display:block;width:100%;max-width:100%;height:auto;
+    border:1px solid var(--border);border-radius:12px;
+    box-shadow:0 4px 18px rgba(26,24,21,0.10)}
+  figure.shot.narrow img{max-width:560px;margin:0 auto}
+  figure.shot figcaption{text-align:center;font-size:13px;color:var(--dim);
+    margin-top:8px}
+  figure.shot figcaption b{color:#7a6a56}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+
+<div class="hero">
+  <div class="brand">WELLPERION</div>
+  <div class="sub-brand">주식회사 웰페리온 · 하이엔드 프라이빗 스포츠클럽</div>
+  <h1>기획안 · 결과보고 작성 가이드</h1>
+  <div class="diamond">◆</div>
+  <p class="desc">이제 한글·워드 파일 없이, 웰페리온 ERP 업무 카드 안에서<br>
+  정식 서식으로 기획안과 결과보고서를 작성합니다.</p>
+</div>
+
+<div class="wrap">
+
+  <h2 class="sec">1. 무엇이 달라졌나요?</h2>
+  <p>업무 현황 페이지의 <b>업무 추가·편집 화면</b>에 문서 편집기가 들어갔습니다.
+  업무마다 <b>📄 기획안</b>과 <b>🎯 결과보고서</b>를 회사 공식 서식으로 바로 작성할 수 있고,
+  작성한 문서는 업무 카드와 결재 화면에 자동으로 연결됩니다.</p>
+  <div class="box tone">
+    <b>핵심 변화 3가지</b>
+    <ul style="margin:8px 0 0 20px">
+      <li>별도 파일 작성·첨부 불필요 — 업무 카드 안에서 작성하고 저장하면 끝</li>
+      <li>탭 한 번 클릭으로 <b>공식 서식이 자동으로 깔립니다</b> (업무명·작성자·날짜 자동 기입)</li>
+      <li>작성된 문서는 결재 화면·인쇄(보고서)까지 자동 연동</li>
+    </ul>
+  </div>
+
+  <h2 class="sec">2. 문서 양식 3종</h2>
+  <p>업무 추가·편집 화면의 <b>📝 문서</b> 칸 위에 탭 3개가 있습니다. 필요한 탭을 누르면 됩니다.</p>
+  <div class="tabs3">
+    <div class="tab-card t-plain">
+      <div class="tt">⬜ 일반양식</div>
+      <div class="dd">서식 없는 빈 흰 문서. 간단한 메모·자유 형식 내용을 적을 때 사용합니다.</div>
+    </div>
+    <div class="tab-card t-plan">
+      <div class="tt">📄 기획안</div>
+      <div class="dd">업무를 <b>시작하기 전</b> 계획을 세울 때. 목적·범위·전략·일정·예산 서식이 자동으로 깔립니다.</div>
+    </div>
+    <div class="tab-card t-result">
+      <div class="tt">🎯 결과보고</div>
+      <div class="dd">업무를 <b>마친 후</b> 결과를 보고할 때. 핵심 요약·경과·성과·교훈 서식이 자동으로 깔립니다.</div>
+    </div>
+  </div>
+  <figure class="shot">
+    <img src="guide_img/03_doc_tabs.png" alt="문서 칸의 양식 탭 3종 — 일반양식·기획안·결과보고">
+    <figcaption>▲ 실제 화면 — <b>📝 문서</b> 칸 위의 양식 탭 3종. 원하는 탭을 누르면 아래 편집기에 서식이 깔립니다.</figcaption>
+  </figure>
+  <div class="callout"><span class="tag">TIP</span>같은 탭을 한 번 더 누르면 "서식으로 새로 시작할까요?" 확인 후 서식을 새로 깔 수 있습니다.</div>
+
+  <h2 class="sec">3. 작성 방법 (기획안 기준)</h2>
+  <ol class="steps">
+    <li><b class="st-t">업무 현황 페이지에서 <span class="ui-btn dark">+ 업무 추가</span> 또는 기존 업무 카드의 편집을 엽니다</b>
+      <span class="st-d">업무명·담당자·기간을 먼저 입력해 두면 서식에 자동으로 채워집니다.</span>
+      <figure class="shot narrow">
+        <img src="guide_img/01_add_btn.png" alt="화면 하단의 + 업무 추가 버튼">
+        <figcaption>▲ 화면 하단에 항상 떠 있는 <b>[+ 업무 추가]</b> 버튼</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="guide_img/02_modal_top.jpg" alt="업무 추가 화면 — 업무명·카테고리·담당자·일정 입력">
+        <figcaption>▲ 실제 화면 — 버튼을 누르면 열리는 입력 화면. 업무명·담당자·일정부터 입력하세요.</figcaption>
+      </figure></li>
+    <li><b class="st-t">📝 문서 칸에서 <span class="ui-btn" style="color:var(--blue)">📄 기획안</span> 탭을 클릭합니다</b>
+      <span class="st-d">웰페리온 공식 서식이 자동으로 깔리고, 업무명·작성자·작성일·기간이 자동 기입됩니다.</span>
+      <figure class="shot">
+        <img src="guide_img/04_plan_top.png" alt="기획안 탭 클릭 시 자동 삽입되는 공식 서식 — 업무명·작성자·작성일 자동 기입">
+        <figcaption>▲ 실제 화면 — 탭 한 번에 서식이 깔리고, 위에서 입력한 <b>업무명·작성자·날짜가 자동으로 채워진</b> 모습.</figcaption>
+      </figure></li>
+    <li><b class="st-t">각 항목의 "내용을 입력하세요." 자리를 지우고 내용을 채웁니다</b>
+      <span class="st-d">표에 줄이 더 필요하면 편집기 메뉴의 표 기능으로 행을 추가할 수 있습니다.</span></li>
+    <li><b class="st-t">사진·캡처는 복사해서 그대로 붙여넣기(Ctrl+V) 하세요</b>
+      <span class="st-d">이미지가 자동으로 업로드되어 문서에 들어갑니다. 파일 첨부 과정이 따로 없습니다.</span></li>
+    <li><b class="st-t">저장 버튼을 누르면 완료</b>
+      <span class="st-d">화면 맨 아래의 저장 버튼을 누르면 업무 카드에 <span class="ui-btn">📄 기획안 문서 열기 — A4 크게 보기 ▸</span> 버튼이 생깁니다.</span>
+      <figure class="shot">
+        <img src="guide_img/08_modal_bottom.jpg" alt="화면 하단 — 진척 로그·첨부파일·결재요청 체크·인쇄/PDF·취소·저장 버튼">
+        <figcaption>▲ 실제 화면 — 화면 하단. 결재가 필요하면 <b>결재요청</b>에 체크하고, 오른쪽 아래 <b>[저장]</b>을 누릅니다.</figcaption>
+      </figure></li>
+  </ol>
+  <p class="muted">🎯 결과보고도 같은 방법입니다 — 탭만 <b>🎯 결과보고</b>를 누르면 됩니다.</p>
+
+  <h2 class="sec">4. 서식 구성 미리보기</h2>
+
+  <h3 class="sub">📄 기획안 서식</h3>
+  <div class="t-scroll"><table>
+    <tr><th style="width:170px">항목</th><th>작성할 내용</th></tr>
+    <tr><td class="lbl">기본 정보</td><td>업무명 · 작성자 · 작성일 · 기간 — <b>자동 기입</b>됩니다</td></tr>
+    <tr><td class="lbl">1. 목적</td><td>이 업무를 왜 하는지, 무엇을 이루려는지</td></tr>
+    <tr><td class="lbl">2. 범위</td><td>어디까지 다루는 업무인지 (대상·시설·기간 등)</td></tr>
+    <tr><td class="lbl">3. 해결 전략</td><td>어떤 방식·순서로 진행할 것인지</td></tr>
+    <tr><td class="lbl">4. 실행 계획</td><td>일정 · 내용 · 담당을 표로 정리 (마일스톤)</td></tr>
+    <tr><td class="lbl">5. 예산</td><td>항목 · 금액 · 비고 표 — 예산이 있으면 결재 라인과 연동됩니다</td></tr>
+  </table></div>
+  <figure class="shot">
+    <img src="guide_img/05_plan_tables.png" alt="기획안 서식의 실행 계획·예산 표 부분">
+    <figcaption>▲ 실제 화면 — 기획안 서식 아랫부분. <b>실행 계획·예산 표</b>가 미리 그려져 있어 칸만 채우면 됩니다.</figcaption>
+  </figure>
+
+  <h3 class="sub">🎯 결과보고 서식</h3>
+  <div class="t-scroll"><table>
+    <tr><th style="width:170px">항목</th><th>작성할 내용</th></tr>
+    <tr><td class="lbl">기본 정보</td><td>업무명 · 작성자 · 보고일 · 수행 기간 — <b>자동 기입</b>됩니다</td></tr>
+    <tr><td class="lbl">핵심 요약</td><td>결과를 한두 문장으로 — <b>GM·대표님이 가장 먼저 읽는 칸</b>입니다</td></tr>
+    <tr><td class="lbl">1. 개요</td><td>무슨 업무였는지 간단히</td></tr>
+    <tr><td class="lbl">2. 진행 경과</td><td>날짜별로 무엇을 했는지 표로 정리</td></tr>
+    <tr><td class="lbl">3. 결과·성과</td><td>지표 · 목표 · 실적 · 달성률 표 + 성과 사진 붙여넣기</td></tr>
+    <tr><td class="lbl">4. 교훈 및 후속 계획</td><td>배운 점과 다음에 이어갈 일</td></tr>
+  </table></div>
+  <figure class="shot">
+    <img src="guide_img/06_result_top.png" alt="결과보고 서식 상단 — 핵심 요약 칸과 개요">
+    <figcaption>▲ 실제 화면 — 결과보고 서식 윗부분. 검은 <b>핵심 요약</b> 칸이 이 서식의 얼굴입니다.</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="guide_img/07_result_bottom.png" alt="결과보고 서식 하단 — 진행 경과·결과 성과 표와 사진 붙여넣기 자리">
+    <figcaption>▲ 실제 화면 — 결과보고 서식 아랫부분. 성과 표 아래 점선 칸에 <b>사진을 그대로 붙여넣기(Ctrl+V)</b> 하면 됩니다.</figcaption>
+  </figure>
+
+  <h2 class="sec">5. 열람과 인쇄</h2>
+  <div class="t-scroll"><table>
+    <tr><th style="width:180px">하고 싶은 일</th><th>방법</th></tr>
+    <tr><td class="lbl">문서 크게 보기</td>
+      <td>업무 카드의 <span class="ui-btn">문서 열기 — A4 크게 보기 ▸</span> 버튼 클릭 → A4 종이 화면으로 열립니다 (배경 클릭 또는 ✕로 닫기)</td></tr>
+    <tr><td class="lbl">인쇄 · PDF 저장</td>
+      <td>업무 현황 페이지의 A4 화면에서 <span class="ui-btn dark">🖨 인쇄 / PDF</span> 버튼 클릭</td></tr>
+    <tr><td class="lbl">결재란 포함 공식 출력</td>
+      <td>결재 현황 페이지의 해당 카드에서 <span class="ui-btn dark">🖨 업무보고서 인쇄</span> 클릭 — 결재란과 기획안·결과보고가 함께 실린 공식 문서로 출력됩니다</td></tr>
+  </table></div>
+  <figure class="shot narrow">
+    <img src="guide_img/09_viewer_a4.png" alt="A4 크게 보기 화면 — 흰 종이 위 문서와 인쇄/PDF·닫기 버튼">
+    <figcaption>▲ 실제 화면 — <b>A4 크게 보기</b>. 종이 그대로 보이고, 오른쪽 위 <b>[🖨 인쇄 / PDF]</b>로 바로 출력·저장할 수 있습니다.</figcaption>
+  </figure>
+
+  <h2 class="sec">6. 자주 묻는 질문</h2>
+  <details>
+    <summary>서식만 깔아두고 아직 내용을 못 썼는데, 빈 서식이 보고서에 나가나요?</summary>
+    <div class="a">아닙니다. 서식만 깔고 내용을 쓰지 않은 문서는 <b>저장·카드·인쇄에서 자동으로 제외</b>됩니다. 안심하고 서식을 깔아두셔도 됩니다.</div>
+  </details>
+  <details>
+    <summary>저장한 문서를 나중에 수정할 수 있나요?</summary>
+    <div class="a">네. 업무 카드를 열어 편집하면 됩니다. 다만 <b>결재가 진행 중인 업무는 기획안이 잠기며</b>, 🎯 결과보고는 결재 상태와 관계없이 언제든 작성·수정할 수 있습니다.</div>
+  </details>
+  <details>
+    <summary>회의 업무에는 기획안 탭이 안 보여요.</summary>
+    <div class="a">회의 카테고리는 참석자별 회의 칸을 사용하므로 일반양식·기획안 탭이 숨겨지고 <b>🎯 결과보고만</b> 사용합니다. 정상 동작입니다.</div>
+  </details>
+  <details>
+    <summary>기획안을 쓰다가 일반양식으로 바꾸면 내용이 사라지나요?</summary>
+    <div class="a">바로 지워지지 않습니다. "서식 내용을 지우고 빈 문서로 시작할까요?" <b>확인창이 먼저 뜨고</b>, 취소하면 기획안 내용이 그대로 유지됩니다.</div>
+  </details>
+  <details>
+    <summary>업무명이나 담당자를 나중에 바꾸면 서식 안의 값도 바뀌나요?</summary>
+    <div class="a">네. 편집 화면 상단의 업무명·담당자 입력값이 서식 안의 업무명·작성자 칸과 <b>실시간으로 동기화</b>됩니다.</div>
+  </details>
+
+  <h2 class="sec">7. 바로가기</h2>
+  <div class="links">
+    <a class="link-card" href="업무 현황 SSOT.html">
+      <span class="lt">📋 업무 현황</span>
+      <span class="ld">업무 추가 · 기획안/결과보고 작성 · A4 열람·인쇄</span>
+      <span class="go">바로가기 ▸</span>
+    </a>
+    <a class="link-card" href="결재 현황 SSOT.html">
+      <span class="lt">✅ 결재 현황</span>
+      <span class="ld">결재 진행 확인 · 결재란 포함 공식 보고서 인쇄</span>
+      <span class="go">바로가기 ▸</span>
+    </a>
+  </div>
+  <p class="muted">문의: 경영지원부 나우열 매니저</p>
+
+  <footer>WELLPERION · 서울특별시 용산구 서빙고로 413 · 웰페리온 ERP 내부 안내 문서</footer>
+</div>
+
+</body>
+</html>

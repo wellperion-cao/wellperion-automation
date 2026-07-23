@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WELLPERION · 휴무 · 근무 스케줄 관리</title>
+<style>
+  :root{
+    --bg:#221F20; --paper:#2a2725; --ink:#f5f2ef; --dim:#8c8b83;
+    --line:#3d3835; --accent:#B79F8A; --accent2:#6e6052;
+    --green:#5fbf8a; --red:#e0726a; --amber:#e0b15c; --blue:#7fa8d8;
+    --wk:#322e2b; --sun:#392b2b; --sat:#2a3038; --hol:#3a3327;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Pretendard",'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.5}
+  header{background:var(--paper);border-bottom:1px solid var(--line);padding:16px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .brand{font-size:18px;font-weight:800;letter-spacing:1px}
+  .brand span{color:var(--accent)}
+  .brand small{display:block;font-size:11px;font-weight:500;color:var(--dim);letter-spacing:0}
+  .wrap{max-width:100%;margin:12px auto;padding:0 10px}
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .monthnav{display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+  .monthnav b{font-size:15px;min-width:130px;text-align:center}
+  button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:7px 13px;font-size:13px;transition:.15s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent);color:#221F20;border-color:var(--accent)}
+  button.primary:hover{background:#d4b89e;color:#221F20}
+  button.ghost{background:transparent}
+  .spacer{flex:1}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim)}
+  .legend{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .lg{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:3px 10px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .covpanel{border-radius:12px;padding:11px 16px;margin-bottom:14px;font-size:12.5px}
+  .cov-ok{background:rgba(95,191,138,.14);border:1px solid rgba(95,191,138,.4);color:#7fd3a3}
+  .cov-bad{background:rgba(224,114,106,.14);border:1px solid rgba(224,114,106,.45);color:#e8908a}
+  .covpanel b{font-weight:800}
+  .cov-list{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+  .cov-chip{background:var(--paper);border:1px solid rgba(224,114,106,.4);border-radius:7px;padding:4px 9px;font-size:11.5px;color:#e8908a}
+  .tablecard{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:auto;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  table{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
+  th,td{border:1px solid var(--line);padding:0;text-align:center;height:30px}
+  thead th{background:var(--wk);position:sticky;top:0;z-index:3;font-weight:700;color:var(--dim);font-size:11px}
+  .colDept,.colName{position:sticky;z-index:2;background:var(--paper)}
+  .colDept{left:0;min-width:88px;width:88px;font-weight:700;color:var(--accent);font-size:11px}
+  .colName{left:88px;min-width:80px;text-align:left;padding:0 8px;font-weight:600}
+  .colName.emp-link{cursor:pointer}
+  .colName.emp-link:hover{color:var(--accent);text-decoration:underline}
+  .tablecard .colName.emp-link:hover{color:#9a7b4f}
+  thead .colDept{left:0;z-index:5}thead .colName{left:88px;z-index:5}
+  /* 부서명+기준 병합셀 (구분 열) */
+  .deptcell{background:#34302d!important;color:var(--accent);text-align:center;vertical-align:middle;white-space:normal;line-height:1.25;padding:5px 3px;border-right:2px solid var(--accent2)}
+  .dept-nm{font-weight:800;font-size:11.5px}
+  .dept-crit{font-weight:600;font-size:9px;color:var(--dim);margin-top:3px}
+  .deptfirst td{border-top:2px solid #4d4845}
+  td.day{min-width:34px;cursor:default}
+  th.day{min-width:34px}
+  /* 행 hover 강조 — 마우스 올린 가로열 부각 */
+  #boardBody tr:hover td{background:#3a352e!important}
+  #boardBody tr:hover td.colName{background:#454036!important}
+  /* 오늘 열 — 굵은 바깥 테두리로 강조 */
+  th.today,td.today{border-left:3px solid #f0766c!important;border-right:3px solid #f0766c!important}
+  thead th.today{border-top:3px solid #f0766c!important}
+  #boardBody tr:last-child td.today{border-bottom:3px solid #f0766c!important}
+  th.today{color:#f0766c}
+  td.day.edit{cursor:text}
+  td.day.edit:hover{outline:2px solid var(--accent);outline-offset:-2px}
+  th.sun,td.sun{background:var(--sun)} th.sat,td.sat{background:var(--sat)}
+  th.hol,td.hol{background:var(--hol)}
+  .deptband td{background:#34302d;font-weight:700;color:var(--accent);text-align:left;padding:4px 10px;font-size:11px;position:sticky;left:0}
+  .cell-tag{font-weight:700;font-size:11px;display:block;width:100%;height:100%;line-height:30px}
+  /* 근무(출근시간) = 주인공: 진한 글씨·굵게·약간 크게 */
+  .sh-work,.sh-open,.sh-close,.sh-mid{color:var(--ink);font-weight:800;font-size:12.5px}
+  /* 휴무 = 옅게 처리해 근무가 도드라지도록 (글씨 가늘게·연한 색) */
+  .cell-tag.t-휴,.cell-tag.t-연차,.cell-tag.t-반차,.cell-tag.t-공휴,.cell-tag.t-대휴,.cell-tag.t-휴관{font-weight:600;font-size:10.5px}
+  .t-휴{background:rgba(224,150,180,.15);color:#e0a0bd} .t-연차{background:rgba(224,150,180,.15);color:#e0a0bd}
+  .t-반차{background:rgba(170,150,220,.15);color:#c3aee8} .t-공휴{background:rgba(224,177,92,.15);color:#e0b15c}
+  .t-대휴{background:rgba(95,191,138,.15);color:#7fd3a3} .t-휴관{background:rgba(224,114,106,.15);color:#e8908a}
+  .sumcol{min-width:46px;width:46px;font-weight:700;background:var(--wk)}
+  /* 오른쪽 요약 3칸 = 오른쪽에 고정(항상 보이게) */
+  .sc-u,.sc-r,.sc-q{position:sticky;z-index:2}
+  thead .sc-u,thead .sc-r,thead .sc-q{z-index:5}
+  .sc-q{right:0;font-size:13px;border-left:2px solid var(--accent)} .sc-r{right:46px} .sc-u{right:92px}
+  .sum-warn{color:var(--red)}
+  /* 휴무 개수 배지 — 한눈에: 충족=초록 / 불일치=빨강 */
+  .q-ok{background:rgba(95,191,138,.18);color:#7fd3a3;font-weight:800} .q-bad{background:#c0463d;color:#fff;font-weight:800}
+  /* 배치(커버리지) 행 */
+  .covrow td{height:20px;font-size:10px;font-weight:700}
+  .covrow .colName{background:#322e2b;color:var(--dim);font-weight:700;font-size:10px}
+  .covrow .colDept{background:#322e2b}
+  .cc-ok{background:rgba(95,191,138,.2);color:#7fd3a3} .cc-gap{background:#b3463d;color:#fff} .cc-none{background:var(--paper);color:#5a554f}
+  /* 인라인 입력 */
+  .celledit{width:100%;height:28px;border:2px solid var(--accent);border-radius:4px;text-align:center;font-size:11px;font-family:inherit;background:#1f1c1a;color:var(--ink);padding:0 2px}
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .ov.on{display:flex}
+  .modal{background:var(--paper);border-radius:14px;width:100%;max-width:440px;padding:22px;box-shadow:0 18px 50px rgba(0,0,0,.25);max-height:90vh;overflow:auto}
+  .modal h3{font-size:16px;margin-bottom:4px}
+  .modal p.sub{color:var(--dim);font-size:12px;margin-bottom:16px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--dim);margin:12px 0 5px}
+  select,input,textarea{width:100%;font-family:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#1f1c1a;color:var(--ink)}
+  select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  textarea{resize:vertical;min-height:60px}
+  .row2{display:flex;gap:10px}.row2>div{flex:1}
+  .modal-actions{display:flex;gap:10px;margin-top:20px}
+  .modal-actions button{flex:1;padding:11px}
+  .tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+  .tab{padding:9px 16px;border:none;border-bottom:2px solid transparent;background:none;border-radius:0;color:var(--dim);font-weight:600}
+  .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+  .reqlist{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .reqlist table{white-space:normal}
+  .reqlist th{background:var(--wk);padding:10px;font-size:12px}
+  .reqlist td{padding:10px;text-align:left;font-size:12.5px}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px}
+  .b-대기{background:rgba(224,177,92,.18);color:#e0b15c} .b-승인{background:rgba(95,191,138,.18);color:#7fd3a3} .b-반려{background:rgba(224,114,106,.18);color:#e8908a}
+  .mini{font-size:11px;padding:4px 9px;border-radius:6px}
+  .empty{padding:40px;text-align:center;color:var(--dim)}
+  .hint{background:#322e2b;border:1px dashed var(--accent2);border-radius:10px;padding:10px 14px;font-size:12px;color:#bdb3a6;margin-bottom:14px}
+  .editing-on{box-shadow:inset 0 0 0 2px var(--amber)}
+  @media(max-width:640px){.colName{min-width:64px}.brand small{display:none}}
+  /* ===== 표는 밝게 — 다크 ERP 위에 올라간 밝은 카드(가독성 우선) ===== */
+  .tablecard{background:#fbf8f2;border:1px solid #cdbfa8;box-shadow:0 2px 14px rgba(0,0,0,.32)}
+  .tablecard table,.tablecard th,.tablecard td{border-color:#e3dccf;color:#2b2622}
+  .tablecard thead th{background:#efe7d8;color:#7a6f5f}
+  .tablecard .colDept,.tablecard .colName{background:#fbf8f2}
+  .tablecard .colDept{color:#9a7b4f}
+  .tablecard .deptcell{background:#efe7d8!important;color:#8a6a3a;border-right:2px solid #cdbfa8}
+  .tablecard .dept-crit{color:#8a8178}
+  .tablecard .deptfirst td{border-top:2px solid #cdbfa8}
+  .tablecard .sumcol{background:#efe7d8}
+  .tablecard .sh-work,.tablecard .sh-open,.tablecard .sh-close,.tablecard .sh-mid{color:#17130f}
+  .tablecard .t-휴,.tablecard .t-연차{background:#f7eef1;color:#b5577f}
+  .tablecard .t-반차{background:#efeaf7;color:#7a5cae}
+  .tablecard .t-공휴{background:#f7f1e3;color:#a9842f}
+  .tablecard .t-대휴{background:#e6f4ee;color:#2f8a68}
+  .tablecard .t-휴관{background:#fbeceb;color:#c0463d}
+  .tablecard .cc-ok{background:#e3f1e9;color:#2f8a5a}
+  .tablecard .cc-gap{background:#eeb6af;color:#8a2a22}
+  .tablecard .cc-none{background:#f3eee4;color:#b8ad9c}
+  .tablecard .covrow .colName{background:#f3eee4;color:#9b8e7c}
+  .tablecard .covrow .colDept{background:#f3eee4}
+  .tablecard .q-ok{background:#dcefe4;color:#1f6b42}
+  .tablecard .q-bad{background:#c0463d;color:#fff}
+  .tablecard .sum-warn{color:#c0463d}
+  .tablecard th.sun,.tablecard td.sun{background:#fbeceb}
+  .tablecard th.sat,.tablecard td.sat{background:#eef3fa}
+  .tablecard th.hol,.tablecard td.hol{background:#f6ecd8}
+  .tablecard th.today,.tablecard td.today{border-left-color:#c0392b!important;border-right-color:#c0392b!important}
+  .tablecard thead th.today{border-top-color:#c0392b!important}
+  #boardBody tr:last-child td.today{border-bottom-color:#c0392b!important}
+  .tablecard th.today{color:#c0392b}
+  #boardBody tr:hover td{background:#f3e7cf!important}
+  #boardBody tr:hover td.colName{background:#ece0c2!important}
+  .celledit{background:#fffdf9;color:#2b2622}
+  /* 신청내역 표도 밝게 */
+  .reqlist{background:#fbf8f2;border:1px solid #cdbfa8}
+  .reqlist th{background:#efe7d8;color:#7a6f5f}
+  .reqlist td{color:#2b2622;border-color:#e3dccf}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+<header>
+  <div class="brand">WELL<span>PERION</span> · 휴무 · 근무 스케줄
+    <small>한남점 · 출근시간 스케줄 / 오픈·마감 배치 경고 / 연차·반차·근무변경 신청</small>
+  </div>
+  <div class="pill"><span id="erpBadge">ERP 연동(전 직원 공유)</span> <span id="erpStatus" style="margin-left:6px;font-weight:700"></span></div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab on" data-tab="board">📅 월별 스케줄/휴무표</button>
+    <button class="tab" data-tab="reqs">📝 신청 내역</button>
+  </div>
+
+  <div id="tab-board">
+    <div class="toolbar">
+      <div class="monthnav">
+        <button class="ghost" onclick="moveMonth(-1)">‹</button>
+        <b id="monthLabel"></b>
+        <button class="ghost" onclick="moveMonth(1)">›</button>
+      </div>
+      <button class="ghost" onclick="goToday()">오늘</button>
+      <div class="spacer"></div>
+      <button class="primary" onclick="openApply()">＋ 연차/반차 신청</button>
+      <button onclick="openShift()">🔁 근무변경 신청</button>
+      <button id="editBtn" onclick="toggleEdit()">✏️ 스케줄 수정</button>
+      <button class="ghost" onclick="loadSample()">📥 6월 실제 스케줄 불러오기</button>
+      <button class="ghost" onclick="window.print()">🖨️ 인쇄</button>
+    </div>
+
+    <div id="covPanel" class="covpanel"></div>
+
+    <div class="legend">
+      <span class="lg"><i class="dot" style="background:#17130f"></i><b>출근시간(근무)</b></span>
+      <span style="width:6px"></span>
+      <span class="lg"><i class="dot" style="background:#d8709a"></i>연차·휴(정기)</span>
+      <span class="lg"><i class="dot" style="background:#9a6fd0"></i>반차</span>
+      <span class="lg"><i class="dot" style="background:#d39a3c"></i>공휴</span>
+      <span class="lg"><i class="dot" style="background:#3fa589"></i>대휴</span>
+      <span class="lg"><i class="dot" style="background:#e89b95"></i>휴관</span>
+      <span style="width:6px"></span>
+      <span class="lg"><i class="dot cc-ok" style="background:#3f9b6d"></i>배치OK</span>
+      <span class="lg"><i class="dot cc-gap" style="background:#d05a52"></i>배치공백</span>
+    </div>
+
+    <div id="editHint" class="hint" style="display:none">✏️ <b>수정 모드</b> — 셀을 클릭해 바로 입력하세요. <b>출근시간</b>: <code>0540</code> · <code>9</code> · <code>1330</code> · <code>07 20:30</code>(출근~퇴근). <b>휴무</b>: <code>휴</code> <code>연차</code> <code>반오</code> <code>반후</code> <code>공휴</code> <code>대휴</code> <code>휴관</code>. Enter로 저장 · 빈칸으로 두면 삭제. 부서별 <b>'배치' 행</b>이 오픈/마감/2인 공백을 색으로 알려줍니다.</div>
+
+    <div class="tablecard">
+      <table id="board">
+        <thead id="boardHead"></thead>
+        <tbody id="boardBody"></tbody>
+      </table>
+    </div>
+    <p style="color:var(--dim);font-size:11px;margin-top:8px">※ 셀=출근시간(수기 입력) · '배치' 행=오픈/마감 커버리지 · 지원부 일·공휴는 2인 필수 · 연차=1·반차=0.5 차감 · 총 연차=입사일 기준 회사 연차표 산정 · <b>성명 클릭</b>=개인 연차현황</p>
+  </div>
+
+  <div id="tab-reqs" style="display:none">
+    <div class="reqlist">
+      <table>
+        <thead><tr><th>구분</th><th>성명</th><th>일자</th><th>내용</th><th>상태</th><th>처리</th></tr></thead>
+        <tbody id="reqBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ovApply">
+  <div class="modal">
+    <h3>연차 / 반차 신청</h3>
+    <p class="sub">신청 후 [승인 대기] 등록 → 승인 시 휴무표에 자동 반영.</p>
+    <label>성명</label><select id="ap_emp"></select>
+    <div class="row2">
+      <div><label>구분</label>
+        <select id="ap_type">
+          <option value="연차">연차 (1일)</option>
+          <option value="반차오전">반차 · 오전 (0.5일)</option>
+          <option value="반차오후">반차 · 오후 (0.5일)</option>
+        </select>
+      </div>
+      <div><label>일자</label><input type="date" id="ap_date"></div>
+    </div>
+    <label>사유 (선택)</label>
+    <textarea id="ap_reason" placeholder="예: 개인 사정 / 병원 / 경조사"></textarea>
+    <div id="ap_remain" class="hint" style="margin-top:14px"></div>
+    <div class="modal-actions">
+      <button class="ghost" onclick="closeOv('ovApply')">취소</button>
+      <button class="primary" onclick="submitApply()">신청</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ovShift">
+  <div class="modal">
+    <h3>근무 변경 신청</h3>
+    <p class="sub">근무 변경 신청서 작성(→ 이경연 실장 제출 절차 디지털화).</p>
+    <label>성명</label><select id="sh_emp"></select>
+    <label>대상 일자</label><input type="date" id="sh_date">
+    <div class="row2">
+      <div><label>변경 전 근무</label><input id="sh_from" placeholder="예: 09:00~18:00"></div>
+      <div><label>변경 후 근무</label><input id="sh_to" placeholder="예: 13:30~22:30"></div>
+    </div>
+    <label>대체자 (선택)</label><select id="sh_swap"></select>
+    <label>사유</label><textarea id="sh_reason" placeholder="변경 사유"></textarea>
+    <div class="modal-actions">
+      <button class="ghost" onclick="closeOv('ovShift')">취소</button>
+      <button class="primary" onclick="submitShift()">신청</button>
+    </div>
+  </div>
+</div>
+
+<!-- 직원별 연차 현황 상세 (성명 클릭) -->
+<div class="ov" id="ovEmp">
+  <div class="modal" style="max-width:380px">
+    <h3 id="ve_name">연차 현황</h3>
+    <p class="sub" id="ve_sub"></p>
+    <div id="ve_body"></div>
+    <div class="modal-actions">
+      <button class="ghost" onclick="closeOv('ovEmp')" style="flex:1">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 자체 로그인 게이트 (허브 iframe 밖·새 탭에서 단독으로 열렸을 때) -->
+<div class="ov" id="ovLogin">
+  <div class="modal" style="max-width:380px">
+    <h3>🔒 WELLPERION 관리자 인증</h3>
+    <p class="sub">휴무·근무 스케줄에는 직원 개인정보가 포함되어 있어 관리자 비밀번호가 필요합니다.</p>
+    <label>웰페리온 관리자 비밀번호</label>
+    <input type="password" id="lg_pw" autocomplete="current-password" placeholder="비밀번호 입력">
+    <div id="lg_err" style="display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:8px"></div>
+    <div class="modal-actions">
+      <button class="primary" id="lg_btn" onclick="submitLogin()">확인</button>
+    </div>
+  </div>
+</div>
+
+<script src="june_data.js"></script>
+<script>
+const DEPTS = [
+  ["운영", ["김남욱","이경연","임정은","나우열","최준용","윤병현","이지영","백승화"]],
+  ["뮤지컬", ["편한별"]],
+  ["시설", ["이정헌","김종현","박호균"]],
+  ["지원(남)", ["황용석","박남일","김유정","천진석"]],
+  ["지원(여)", ["우춘화","김미영","이경미","이연희"]],
+  ["지원·주차", ["양상규"]],
+  ["지원·탕청소", ["한두희(외주)"]],
+  ["수영", ["주민환","박민서","송민근","강대경","천주희","구성우","박주혜","김성은","강승구","김형기","박지은","진승현","황윤진","김민선"]],
+  ["PT", ["김상식","김혜진S","김종진M","김재용","양승문","최동오S","이형진M","김지훈","최도희"]],
+  ["PL", ["최은지","조영은","황동희"]],
+  ["골프", ["최현준","김태엽","박찬중","김명선","정시우"]],
+  ["체조", ["이형주","배자경","김영운"]],
+  ["스쿼시", ["이상훈","박상현","최수진"]],
+];
+const EMP_DEPT={}; DEPTS.forEach(([d,ns])=>ns.forEach(n=>EMP_DEPT[n]=d));
+const ALL_EMP=DEPTS.flatMap(d=>d[1]);
+/* 연차 현황 (db:emp 입사일 기준 · 읽기 전용) */
+let EMP_JOIN={};      // 보드 성명 → 입사일("YYYY-MM-DD")
+let EMP_TYPE={};      // 보드 성명 → 고용형태(원문, 표시 시 프리랜서→파트너)
+let empLoaded=false;  // db:emp 로드 완료 여부
+
+/* 부서별 오픈/마감 표준 (시트 실측 근거)
+   open=오픈 출근, close=마감조 출근, closeEnd=마감 퇴근, sun2=일·공휴 2인 필수 */
+const SHIFTS = {
+  "운영":     {wd:{open:"05:40",close:"13:30",closeEnd:"22:30"}, we:{open:"07:40",close:"13:00",closeEnd:"20:00"}},
+  "시설":     {wd:{open:"05:00",close:"13:00",closeEnd:"22:00"}, we:{open:"07:00",close:"13:00",closeEnd:"20:30"}},
+  "지원(남)": {wd:{open:"06:00",close:"14:00",closeEnd:"22:40"}, we:{open:"08:00",close:"14:00",closeEnd:"22:40"}, sun2:true},
+  "지원(여)": {wd:{open:"06:00",close:"14:00",closeEnd:"22:40"}, we:{open:"08:00",close:"14:00",closeEnd:"22:40"}, sun2:true},
+};
+
+const HOLIDAYS = {
+  "2026-01-01":"신정","2026-02-16":"설날","2026-02-17":"설날","2026-02-18":"설날",
+  "2026-03-01":"삼일절","2026-03-02":"대체","2026-05-05":"어린이날","2026-05-24":"석가탄신",
+  "2026-05-25":"대체","2026-06-03":"지방선거","2026-06-06":"현충일","2026-07-17":"제헌절","2026-08-15":"광복절","2026-08-17":"대체",
+  "2026-09-24":"추석","2026-09-25":"추석","2026-09-26":"추석","2026-10-03":"개천절",
+  "2026-10-05":"대체","2026-10-09":"한글날","2026-12-25":"성탄절"
+};
+
+const LS_LEAVE="wp_sched_v3", LS_REQ="wp_req_v3";
+let leave = JSON.parse(localStorage.getItem(LS_LEAVE)||"{}");  // {emp:{date:"휴무코드"|"HH:MM"|"HH:MM HH:MM"}}
+let reqs  = JSON.parse(localStorage.getItem(LS_REQ)||"[]");
+let cur = new Date(2026,5,1);
+let editMode=false;
+const save=()=>{localStorage.setItem(LS_LEAVE,JSON.stringify(leave));localStorage.setItem(LS_REQ,JSON.stringify(reqs));};
+
+/* ===== ERP 백엔드 연동 ===== */
+const EXEC_URL="https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+let WP_PW=null;            // 부모 허브가 postMessage로 전달하는 관리자 비번
+let erpReady=false;        // db:leave 로드 성공 여부
+/* CORS: Content-Type 헤더 설정 금지(simple request로 preflight 회피) */
+async function erpPost(payload){
+  const res=await fetch(EXEC_URL,{method:"POST",body:JSON.stringify(payload)});
+  return await res.json();
+}
+function setErpStatus(txt,color){
+  const el=document.getElementById("erpStatus"); if(!el)return;
+  el.textContent=txt||""; el.style.color=color||"var(--green)";
+}
+function setOfflineBadge(on){
+  const b=document.getElementById("erpBadge"); if(!b)return;
+  if(on){ b.textContent="오프라인(허브에서 열면 ERP 연동)"; b.style.color="var(--amber)"; }
+  else  { b.textContent="ERP 연동(전 직원 공유)"; b.style.color="var(--dim)"; }
+}
+/* 부모 허브로부터 비번 수신 → 자동 로드 */
+window.addEventListener("message", e=>{
+  if(e.origin!==location.origin) return;          // 동일 오리진만 신뢰
+  if(e.data && e.data.type==="wp-pass" && e.data.pw){
+    WP_PW=e.data.pw; setOfflineBadge(false); erpLoad();
+  }
+});
+/* 서버(db:leave) → {emp:{date:값}} 재구성 후 render + 로컬 캐시 */
+async function erpLoad(){
+  if(!WP_PW){ setOfflineBadge(true); setErpStatus("오프라인",""); return; }
+  setErpStatus("불러오는 중…","var(--blue)");
+  try{
+    const r=await erpPost({db:"leave",password:WP_PW});
+    if(!r||!r.ok||!Array.isArray(r.results)) throw new Error((r&&r.error)||"응답 오류");
+    const next={};
+    r.results.forEach(row=>{
+      const nm=row["성명"], dt=row["날짜"], val=row["값"];
+      if(!nm||!dt) return;
+      (next[nm]=next[nm]||{})[dt]=val;
+    });
+    leave=next; save();           // 로컬에도 캐시
+    erpReady=true; setOfflineBadge(false); setErpStatus("ERP 동기화됨 ✓","var(--green)");
+    render(); empLoad();          // 휴무표 렌더 후 db:emp(입사일·고용형태) 비동기 로드
+  }catch(err){
+    erpReady=false; setErpStatus("⚠ ERP 불러오기 실패(로컬 표시)","var(--red)");
+    render();
+  }
+}
+/* db:emp 읽기(전용) → 보드 성명별 입사일·고용형태 맵 구축 후 재렌더. 실패해도 휴무표는 정상. */
+async function empLoad(){
+  if(!WP_PW) return;
+  try{
+    const r=await erpPost({db:"emp",password:WP_PW});
+    if(!r||!r.ok||!Array.isArray(r.results)) return;
+    const byName={};
+    r.results.forEach(row=>{
+      const nm=(row["성명"]||row["이름"]||"").toString().trim(); if(!nm) return;
+      const jd=(row["date:입사일:start"]||row["입사일"]||"").toString().trim();
+      const tp=(row["고용 형태"]||row["고용형태"]||"").toString().trim();
+      byName[nm]={jd,tp};
+    });
+    /* 보드 성명 정규화: (외주)·후행 영문(S/M) 제거 후 emp 성명과 매칭 */
+    const strip=n=>String(n).replace(/\([^)]*\)/g,"").replace(/[A-Za-z]+$/,"").trim();
+    const J={}, T={};
+    ALL_EMP.forEach(n=>{
+      let rec=byName[n]||byName[strip(n)];
+      if(!rec){ const s=strip(n); const k=Object.keys(byName).find(x=>strip(x)===s); if(k)rec=byName[k]; }
+      if(rec){ if(rec.jd)J[n]=rec.jd; if(rec.tp)T[n]=rec.tp; }
+    });
+    EMP_JOIN=J; EMP_TYPE=T; empLoaded=true; render();
+  }catch(_){ /* emp 실패 — 연차열 '–' 유지 */ }
+}
+/* 단일 셀 서버 반영 (value 빈문자=삭제) */
+async function erpSet(emp,date,value){
+  if(!WP_PW||!erpReady) return;   // 오프라인/미로드 시 로컬만
+  setErpStatus("저장 중…","var(--blue)");
+  try{
+    const r=await erpPost({action:"set-leave",adminPassword:WP_PW,emp,date,value:value||"",dept:EMP_DEPT[emp]||""});
+    if(!r||!r.ok) throw new Error((r&&r.error)||"저장 실패");
+    setErpStatus("ERP 저장됨 ✓","var(--green)");
+  }catch(err){ setErpStatus("⚠ 저장 실패","var(--red)"); }
+}
+/* 일괄 동기화 (샘플 로드 등) */
+async function erpBulk(){
+  if(!WP_PW||!erpReady) return;
+  setErpStatus("전체 동기화 중…","var(--blue)");
+  try{
+    const deptMap={}; ALL_EMP.forEach(n=>deptMap[n]=EMP_DEPT[n]||"");
+    const r=await erpPost({action:"set-leave-bulk",adminPassword:WP_PW,data:leave,deptMap});
+    if(!r||!r.ok) throw new Error((r&&r.error)||"동기화 실패");
+    setErpStatus("ERP 전체 동기화됨 ✓","var(--green)");
+  }catch(err){ setErpStatus("⚠ 동기화 실패","var(--red)"); }
+}
+const pad=n=>String(n).padStart(2,"0");
+const ymd=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
+const _TD=new Date(); const TODAY_STR=ymd(_TD.getFullYear(),_TD.getMonth(),_TD.getDate());
+const NOW_D=new Date(_TD.getFullYear(),_TD.getMonth(),_TD.getDate());  // 시각 제거(날짜만) — 근속 계산용
+const DOW=["일","월","화","수","목","금","토"];
+const mins=t=>(+t.slice(0,2))*60+(+t.slice(3,5));
+const LEAVE_LABEL={"휴":"휴","연차":"연차","반차오전":"반午","반차오후":"반後","공휴":"공휴","대휴":"대휴","휴관":"휴관"};
+const LEAVE_SYN={"휴":"휴","휴무":"휴","연차":"연차","연":"연차","반차오전":"반차오전","반오":"반차오전","반차오후":"반차오후","반후":"반차오후","반차":"반차오전","공휴":"공휴","대휴":"대휴","휴관":"휴관","휴 관":"휴관"};
+const isLeave=v=>Object.prototype.hasOwnProperty.call(LEAVE_LABEL,v);
+const leaveClass=c=>c.startsWith("반차")?"t-반차":("t-"+c);
+/* 휴관 = 매월 2·4번째 일요일만 (나머지 일요일은 정상 오픈) */
+const isClosedSun=(y,m,d)=>{if(new Date(y,m,d).getDay()!==0)return false;const n=Math.floor((d-1)/7)+1;return n===2||n===4;};
+/* 지원부 2인 규칙 = (휴관 아닌)일요일 또는 공휴일 */
+const isSun=(y,m,d)=>(new Date(y,m,d).getDay()===0&&!isClosedSun(y,m,d))||HOLIDAYS[ymd(y,m,d)];
+const isWE=(y,m,d)=>{const dow=new Date(y,m,d).getDay();return dow===0||dow===6||HOLIDAYS[ymd(y,m,d)];};
+function cfgOf(dept,we){const s=SHIFTS[dept];return s?(we?s.we:s.wd):null;}
+
+/* 출근시간 정규화: 0540/540/9/13:30 → "HH:MM" */
+function normTime(s){
+  s=String(s).trim(); if(!s)return"";
+  if(s.includes(":")){const[a,b]=s.split(":");if(isNaN(+a))return"";return pad(+a)+":"+pad(+(b||0));}
+  if(!/^\d+$/.test(s))return"";
+  if(s.length<=2)return pad(+s)+":00";
+  if(s.length===3)return pad(+s.slice(0,1))+":"+s.slice(1);
+  return pad(+s.slice(0,2))+":"+s.slice(2,4);
+}
+/* 표시용: 단일 05:40→5:40·09:00→9 / 범위 "13:30 18:00"→"13:30~18:00" */
+function fmt(v){
+  // 출근시간(HH:MM 또는 HH:MM HH:MM)만 정규화 표시, 그 외(오픈/마감/쇼/- 등)는 원문 그대로
+  if(/^\d{2}:\d{2}( \d{2}:\d{2})?$/.test(v)){
+    const p=v.split(" ");
+    if(p.length>1) return p.map(t=>(+t.slice(0,2))+":"+t.slice(3)).join("~");
+    const h=+v.slice(0,2),m=+v.slice(3,5); return m?h+":"+pad(m):""+h;
+  }
+  return v;
+}
+/* 한 사람 셀 → {start,end} (분) */
+function parseShift(v){const ts=v.split(" ");return{start:mins(ts[0]),end:ts[1]?mins(ts[1]):null};}
+function isOpener(dept,we,v){const c=cfgOf(dept,we);if(!c)return false;return parseShift(v).start<=mins(c.open)+30;}
+function isCloser(dept,we,v){const c=cfgOf(dept,we);if(!c)return false;const s=parseShift(v);return(s.end!==null&&s.end>=19*60)||(s.end===null&&s.start>=mins(c.close)-30);}
+function shiftKind(dept,we,v){
+  if(isOpener(dept,we,v))return"sh-open"; if(isCloser(dept,we,v))return"sh-close";
+  return cfgOf(dept,we)?"sh-mid":"sh-work";
+}
+
+/* 부서·날짜 배치 상태 */
+function covStatus(dept,y,m,d){
+  const c=cfgOf(dept,isWE(y,m,d)); if(!c)return{state:"none"};
+  if(isClosedSun(y,m,d))return{state:"closed"};
+  const dt=ymd(y,m,d), we=isWE(y,m,d), members=DEPTS.find(x=>x[0]===dept)[1];
+  let work=0,opener=false,closer=false;
+  for(const nm of members){const v=(leave[nm]||{})[dt];if(!v||isLeave(v))continue;work++;if(isOpener(dept,we,v))opener=true;if(isCloser(dept,we,v))closer=true;}
+  if(work===0)return{state:"none"};
+  const miss=[]; if(!opener)miss.push("오"); if(!closer)miss.push("마");
+  if(SHIFTS[dept].sun2&&isSun(y,m,d)&&work<2)miss.push("2인");
+  return miss.length?{state:"gap",miss}:{state:"ok"};
+}
+function gapsFor(y,m){
+  const days=new Date(y,m+1,0).getDate(),out=[];
+  for(let d=1;d<=days;d++)for(const dept of Object.keys(SHIFTS)){
+    const s=covStatus(dept,y,m,d);
+    if(s.state==="gap")out.push({d,dow:new Date(y,m,d).getDay(),dept,miss:s.miss});
+  }
+  return out;
+}
+function renderCov(){
+  const y=cur.getFullYear(),m=cur.getMonth(),g=gapsFor(y,m),q=quotaIssues(y,m),p=document.getElementById("covPanel");
+  const parts=[];
+  if(g.length){const lbl={"오":"오픈","마":"마감","2인":"2인미달"};
+    parts.push(`🔴 <b>배치 공백 ${g.length}건</b> — '배치' 행 빨간 칸`+
+      `<div class="cov-list">`+g.map(x=>`<span class="cov-chip">${x.d}일(${DOW[x.dow]})·${x.dept}—${x.miss.map(z=>lbl[z]).join(",")}</span>`).join("")+`</div>`);}
+  if(q.length){parts.push(`🟠 <b>휴무 개수 불일치 ${q.length}명</b> (필요 ${monthMeta(y,m).req}일)`+
+      `<div class="cov-list">`+q.map(x=>`<span class="cov-chip">${x.nm} ${x.total}/${x.req}</span>`).join("")+`</div>`);}
+  if(!parts.length){p.className="covpanel cov-ok";p.innerHTML="✅ <b>배치·휴무 정상</b> — 오픈/마감 공백 없음 · 전원 휴무 개수 충족.";return;}
+  p.className="covpanel cov-bad";
+  p.innerHTML=parts.join("<hr style='border:none;border-top:1px solid #f0c4c0;margin:8px 0'>");
+}
+
+/* 월 정보: 필요 휴무(기본6 + 평일 공휴) · 휴관일수(2·4째 일요일) */
+const BASIC_OFF=6;
+function monthMeta(y,m){
+  const days=new Date(y,m+1,0).getDate(); let hol=0,closed=0;
+  for(let d=1;d<=days;d++){const dt=ymd(y,m,d),dow=new Date(y,m,d).getDay();
+    if(HOLIDAYS[dt]&&dow>=1&&dow<=5)hol++; if(isClosedSun(y,m,d))closed++;}
+  return {days, req:BASIC_OFF+hol, closed};
+}
+/* 작성한 휴무 수(정기휴+공휴+대휴) — 휴관·연차·반차 제외 */
+function personOff(emp,y,m){const days=new Date(y,m+1,0).getDate();let n=0;
+  for(let d=1;d<=days;d++){const v=(leave[emp]||{})[ymd(y,m,d)];if(v==="휴"||v==="공휴"||v==="대휴")n++;}return n;}
+function hasAny(emp,y,m){const days=new Date(y,m+1,0).getDate();
+  for(let d=1;d<=days;d++)if((leave[emp]||{})[ymd(y,m,d)])return true;return false;}
+function quotaIssues(y,m){const meta=monthMeta(y,m),out=[];
+  for(const nm of ALL_EMP){if(!hasAny(nm,y,m))continue;const total=personOff(nm,y,m)+meta.closed;if(total!==meta.req)out.push({nm,total,req:meta.req});}
+  return out;}
+
+/* ===== 직원별 연차 현황 (db:emp 입사일 기준 · 회사 연차표) ===== */
+function joinDateOf(nm){
+  const raw=EMP_JOIN[nm]; if(!raw) return null;
+  const s=String(raw).slice(0,10), mm=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const d = mm ? new Date(+mm[1],+mm[2]-1,+mm[3]) : new Date(s);  // 로컬 자정 파싱(NOW_D와 동일 기준)
+  return isNaN(d.getTime())?null:d;
+}
+/* 입사일~오늘 만 근속 개월수(미달월 절사) */
+function monthsServed(jd){
+  let m=(NOW_D.getFullYear()-jd.getFullYear())*12+(NOW_D.getMonth()-jd.getMonth());
+  if(NOW_D.getDate()<jd.getDate()) m--; return m<0?0:m;
+}
+/* 회사 실제 연차표 (근속 만년수 n 기준 룩업 · n≥1) */
+function annualGrantByYears(n){
+  if(n>=21) return 25;   // 21~25년: 25일 (25년 초과도 상한 25)
+  if(n===20) return 24;  // 20년: 24일
+  if(n>=15) return 22;   // 15~19년: 22일
+  if(n>=10) return 19;   // 10~14년: 19일
+  if(n>=5)  return 17;   // 5~9년: 17일
+  if(n>=3)  return 16;   // 3~4년: 16일
+  return 15;             // 1~2년: 15일
+}
+/* {matched, pre(미입사), grant(총연차), jd, months} — 매칭 실패 시 {matched:false} */
+function annInfo(nm){
+  const jd=joinDateOf(nm);
+  if(!jd) return {matched:false};
+  if(jd>NOW_D) return {matched:true,pre:true,grant:0,jd,months:0};   // 미입사
+  const m=monthsServed(jd); let grant;
+  if(m<12) grant=Math.min(11,m);                                     // 근속<1년: 만근속개월수(≤11)
+  else grant=annualGrantByYears(Math.floor(m/12));                   // 1년 이상: 회사 실제 연차표 룩업
+  return {matched:true,pre:false,grant,jd,months:m};
+}
+/* 2026년 날짜의 연차=1·반차=0.5 합 */
+function usedAnnual2026(nm){
+  let u=0; const o=leave[nm]||{};
+  for(const dt in o){ if(String(dt).slice(0,4)!=="2026") continue; const c=o[dt];
+    if(c==="연차") u+=1; else if(typeof c==="string"&&c.startsWith("반차")) u+=0.5; }
+  return u;
+}
+function empTypeOf(nm){ const t=EMP_TYPE[nm]||""; return t==="프리랜서"?"파트너":t; }   // 표기: 프리랜서→파트너
+/* 성명 클릭 → 개인 연차현황 상세 패널 */
+function showEmpDetail(nm){
+  const ai=annInfo(nm), used=usedAnnual2026(nm);
+  const type=empTypeOf(nm)||"—", dept=EMP_DEPT[nm]||"—", us=used%1?used.toFixed(1):used;
+  let joinStr,tenureStr,totalStr,remainStr,note="";
+  if(!empLoaded){ joinStr="불러오는 중…"; tenureStr="—"; totalStr="—"; remainStr="—"; note="emp 명부 로딩 후 표시됩니다."; }
+  else if(!ai.matched){ joinStr="미확인"; tenureStr="—"; totalStr="–"; remainStr="–"; note="emp 명부에서 입사일을 찾지 못했습니다(미매칭)."; }
+  else if(ai.pre){ joinStr=`${ai.jd.getFullYear()}-${pad(ai.jd.getMonth()+1)}-${pad(ai.jd.getDate())}`; tenureStr="미입사 예정"; totalStr="0일 (미입사)"; remainStr="0일"; }
+  else { joinStr=`${ai.jd.getFullYear()}-${pad(ai.jd.getMonth()+1)}-${pad(ai.jd.getDate())}`;
+    tenureStr=`${Math.floor(ai.months/12)}년 ${ai.months%12}개월`; totalStr=`${ai.grant}일`;
+    const r=ai.grant-used; remainStr=`${r%1?r.toFixed(1):r}일`+(r<0?" (초과)":""); }
+  document.getElementById("ve_name").textContent=`${nm} · 연차 현황`;
+  document.getElementById("ve_sub").textContent=`${dept} · ${type}`;
+  const rows=[["입사일",joinStr],["근속",tenureStr],["고용형태",type],["총 연차",totalStr],["2026 사용",`${us}일`],["잔여",remainStr]];
+  document.getElementById("ve_body").innerHTML=
+    `<table style="width:100%;border-collapse:collapse;font-size:13px">`+
+    rows.map(([k,v])=>`<tr><th style="text-align:left;color:var(--dim);font-weight:600;padding:7px 10px;border-bottom:1px solid var(--line);width:88px">${k}</th><td style="padding:7px 10px;border-bottom:1px solid var(--line);font-weight:700">${v}</td></tr>`).join("")+
+    `</table>`+(note?`<p class="sub" style="margin-top:12px">${note}</p>`:"");
+  openOv("ovEmp");
+}
+
+function render(){
+  const y=cur.getFullYear(), m=cur.getMonth();
+  document.getElementById("monthLabel").textContent=`${y}년 ${m+1}월`;
+  applyEditLock();   // 마감월이면 수정버튼 잠금 + 편집모드 해제 (셀 렌더 전에 적용)
+  const days=new Date(y,m+1,0).getDate();
+  const meta=monthMeta(y,m);
+  let h="<tr><th class='colDept'>구분</th><th class='colName'>성명</th>";
+  for(let d=1;d<=days;d++){
+    const dt=ymd(y,m,d), dow=new Date(y,m,d).getDay();
+    const cls=HOLIDAYS[dt]?"hol":(dow===0?"sun":dow===6?"sat":"");
+    h+=`<th class='day ${cls}${dt===TODAY_STR?' today':''}'>${d}<br><span style='font-weight:400'>${DOW[dow]}</span></th>`;
+  }
+  h+="<th class='sumcol sc-u' title='2026년 사용 연차'>사용<br>연차</th><th class='sumcol sc-r' title='총 연차 − 2026 사용 (입사일 기준 자동산정)'>잔여<br>연차</th><th class='sumcol sc-q'>휴무<br>/"+meta.req+"</th></tr>";
+  document.getElementById("boardHead").innerHTML=h;
+  let b="";
+  for(const [dept,names] of DEPTS){
+    const sh=SHIFTS[dept];
+    const _rc=(sh?1:0)+names.length;
+    const _crit=sh?`오픈 ${sh.wd.open}<br>마감 →${sh.wd.closeEnd}${sh.sun2?"<br>일·공휴 2인":""}`:"";
+    const _deptCell=`<td class='colDept deptcell' rowspan='${_rc}'><div class='dept-nm'>${dept}</div>${_crit?`<div class='dept-crit'>${_crit}</div>`:""}</td>`;
+    let _placed=false;
+    // 배치 행 (커버리지 색상)
+    if(sh){
+      let cr=`<tr class='covrow deptfirst'>${_deptCell}<td class='colName'>배치 ✓/✕</td>`; _placed=true;
+      for(let d=1;d<=days;d++){
+        const dt=ymd(y,m,d), dow=new Date(y,m,d).getDay();
+        const base=HOLIDAYS[dt]?"hol":(dow===0?"sun":dow===6?"sat":"");
+        const s=covStatus(dept,y,m,d);
+        let cc,txt;
+        if(s.state==="ok"){cc="cc-ok";txt="✓";}
+        else if(s.state==="gap"){cc="cc-gap";txt=s.miss.join("");}
+        else if(s.state==="closed"){cc="cc-none";txt="휴관";}
+        else {cc="cc-none";txt="";}
+        cr+=`<td class='day ${base} ${cc}${dt===TODAY_STR?' today':''}'>${txt}</td>`;
+      }
+      cr+=`<td class='sumcol sc-u'></td><td class='sumcol sc-r'></td><td class='sumcol sc-q'></td></tr>`;
+      b+=cr;
+    }
+    for(const nm of names){
+      let used=0, off=0, huN=0;
+      let row=`<tr${_placed?'':" class='deptfirst'"}>${_placed?'':_deptCell}<td class='colName emp-link' onclick="showEmpDetail('${nm}')" title='연차 현황 보기'>${nm}</td>`; _placed=true;
+      for(let d=1;d<=days;d++){
+        const dt=ymd(y,m,d), dow=new Date(y,m,d).getDay();
+        const base=HOLIDAYS[dt]?"hol":(dow===0?"sun":dow===6?"sat":"");
+        const v=(leave[nm]||{})[dt]||"";
+        let tag="";
+        if(v){
+          if(isLeave(v)){
+            if(v==="연차")used+=1; if(v.startsWith("반차"))used+=0.5;
+            if(v==="휴"||v==="공휴"||v==="대휴")off++;
+            if(v==="휴"){huN++; tag=`<span class='cell-tag t-휴'>휴${huN}</span>`;}
+            else tag=`<span class='cell-tag ${leaveClass(v)}'>${LEAVE_LABEL[v]}</span>`;
+          } else { tag=`<span class='cell-tag sh-work'>${fmt(v)}</span>`; }
+        }
+        row+=`<td class='day ${base}${editMode?' edit':''}${dt===TODAY_STR?' today':''}' data-emp='${nm}' data-date='${dt}'>${tag}</td>`;
+      }
+      const offTotal=off+meta.closed, has=hasAny(nm,y,m), qcls=has?(offTotal!==meta.req?'q-bad':'q-ok'):'';
+      const ai=annInfo(nm), aUsed=usedAnnual2026(nm), uCell=aUsed%1?aUsed.toFixed(1):aUsed;
+      let rCell='–', rWarn='';
+      if(ai.matched){ const rem=ai.grant-aUsed; if(rem<0)rWarn='sum-warn'; rCell=rem%1?rem.toFixed(1):rem; }
+      row+=`<td class='sumcol sc-u'>${uCell}</td><td class='sumcol sc-r ${rWarn}'>${rCell}</td>`+
+        `<td class='sumcol sc-q ${qcls}' title='작성휴무 ${off} + 휴관 ${meta.closed} = ${offTotal} / 필요 ${meta.req}'>${offTotal}/${meta.req}</td></tr>`;
+      b+=row;
+    }
+  }
+  document.getElementById("boardBody").innerHTML=b;
+  if(editMode) document.querySelectorAll("td.day.edit[data-emp]").forEach(td=>{ td.onclick=()=>inlineEdit(td); });
+  renderCov();
+  /* 현재 보는 월(cur)에 오늘이 포함될 때만 오늘 열을 가로 가운데로 자동 스크롤(세로 위치는 유지) */
+  if(y===_TD.getFullYear() && m===_TD.getMonth()){
+    const cont=document.querySelector(".tablecard"), th=document.querySelector("#boardHead th.today");
+    if(cont && th){
+      const cr=cont.getBoundingClientRect(), tr=th.getBoundingClientRect();
+      if(cr.width && tr.width){ cont.scrollLeft += (tr.left+tr.width/2)-(cr.left+cr.width/2); }
+    }
+  }
+}
+
+function moveMonth(n){cur=new Date(cur.getFullYear(),cur.getMonth()+n,1);render();}
+function goToday(){cur=new Date(2026,5,1);render();}
+
+/* 마감월 = 이미 끝난(말일 자정 지난) 월 = 현재 실제 월보다 이전. 매월 말일 24:00에 해당 월 수정 잠금, 다음 달 자동 해제 */
+function isLockedMonth(y,m){ const n=new Date(); return (y<n.getFullYear())||(y===n.getFullYear()&&m<n.getMonth()); }
+/* 보는 월이 마감월이면 '스케줄 수정' 버튼 비활성화 + 편집모드 강제 해제 (셀 렌더 전에 호출) */
+function applyEditLock(){
+  const locked=isLockedMonth(cur.getFullYear(),cur.getMonth());
+  const btn=document.getElementById("editBtn");
+  if(btn){
+    btn.disabled=locked;
+    btn.title=locked?"마감된 월입니다 — 말일 자정 이후 수정 잠금":"";
+    btn.style.opacity=locked?"0.45":""; btn.style.cursor=locked?"not-allowed":"";
+  }
+  if(locked && editMode){
+    editMode=false;
+    if(btn){ btn.classList.remove("primary"); btn.textContent="✏️ 스케줄 수정"; }
+    const eh=document.getElementById("editHint"); if(eh)eh.style.display="none";
+    const bd=document.getElementById("board"); if(bd)bd.classList.remove("editing-on");
+  }
+  return locked;
+}
+function toggleEdit(){
+  if(isLockedMonth(cur.getFullYear(),cur.getMonth())){ alert("마감된 월입니다.\n말일 자정 이후에는 해당 월 스케줄을 수정할 수 없습니다."); return; }
+  editMode=!editMode;
+  const btn=document.getElementById("editBtn");
+  btn.classList.toggle("primary",editMode);
+  btn.textContent=editMode?"✏️ 수정 종료":"✏️ 스케줄 수정";
+  document.getElementById("editHint").style.display=editMode?"block":"none";
+  document.getElementById("board").classList.toggle("editing-on",editMode);
+  render();
+}
+/* 인라인 수기 입력 */
+function inlineEdit(td){
+  if(td.querySelector("input"))return;
+  const emp=td.dataset.emp, date=td.dataset.date, cur=(leave[emp]||{})[date]||"";
+  td.innerHTML=`<input class="celledit" value="${isLeave(cur)?cur:fmt(cur)}">`;
+  const inp=td.querySelector("input"); inp.focus(); inp.select();
+  let done=false;
+  const commit=()=>{ if(done)return; done=true; setCell(emp,date,inp.value); render(); };
+  inp.onblur=commit;
+  inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();commit();} else if(e.key==="Escape"){done=true;render();} };
+}
+function setCell(emp,date,val){
+  let v=val.trim(); leave[emp]=leave[emp]||{};
+  let stored="";   // 서버/로컬에 저장될 최종 값("" = 삭제)
+  if(!v){ delete leave[emp][date]; stored=""; }
+  else if((v=(/^휴\s*\d+$/.test(v)?"휴":v), LEAVE_SYN[v])){ stored=LEAVE_SYN[v]; leave[emp][date]=stored; }
+  else{
+    // 8자리(HHMMHHMM)·6자리(HMMHMM)는 두 시간으로 분리 (반차 13301800 등)
+    const toks=v.split(/\s+/)
+      .flatMap(t=>/^\d{8}$/.test(t)?[t.slice(0,4),t.slice(4)]:/^\d{6}$/.test(t)?[t.slice(0,3),t.slice(3)]:[t])
+      .map(normTime).filter(Boolean);
+    if(toks.length){ stored=toks.join(" "); leave[emp][date]=stored; }
+    else { delete leave[emp][date]; stored=""; }
+  }
+  save();
+  erpSet(emp,date,stored);   // ERP 즉시 반영(오프라인 시 no-op)
+}
+
+/* 연차/반차 신청 */
+function openApply(){
+  fillEmp("ap_emp");
+  document.getElementById("ap_date").value=ymd(cur.getFullYear(),cur.getMonth(),1);
+  updateRemain(); document.getElementById("ap_emp").onchange=updateRemain;
+  openOv("ovApply");
+}
+function usedOf(emp){let u=0;Object.values(leave[emp]||{}).forEach(c=>{if(c==="연차")u+=1;if(typeof c==="string"&&c.startsWith("반차"))u+=0.5;});return u;}
+function updateRemain(){
+  const emp=document.getElementById("ap_emp").value, ai=annInfo(emp), u=usedAnnual2026(emp), us=u%1?u.toFixed(1):u;
+  const el=document.getElementById("ap_remain");
+  if(!ai.matched){ el.innerHTML=`📊 <b>${emp}</b> · 2026 사용 ${us}일 / 총 연차 <b>미확인</b> (입사일 미확인)`; }
+  else if(ai.pre){ el.innerHTML=`📊 <b>${emp}</b> · <b>미입사</b> (총 연차 0일)`; }
+  else { const r=ai.grant-u; el.innerHTML=`📊 <b>${emp}</b> · 2026 사용 ${us}일 / 잔여 <b>${r%1?r.toFixed(1):r}일</b> (총 ${ai.grant}일)`; }
+}
+function submitApply(){
+  const emp=document.getElementById("ap_emp").value,type=document.getElementById("ap_type").value;
+  const date=document.getElementById("ap_date").value,reason=document.getElementById("ap_reason").value.trim();
+  if(!date){alert("일자를 선택하세요");return;}
+  const label=type==="연차"?"연차":(type==="반차오전"?"반차(오전)":"반차(오후)");
+  reqs.unshift({id:"R"+Date.now(),kind:"연차/반차",emp,date,type,detail:label+(reason?` · ${reason}`:""),status:"대기"});
+  save();closeOv("ovApply");document.getElementById("ap_reason").value="";
+  alert(`${emp}님 ${label} 신청 완료 (승인 대기)`);switchTab("reqs");
+}
+
+/* 근무변경 신청 */
+function openShift(){
+  fillEmp("sh_emp"); fillEmp("sh_swap",true);
+  document.getElementById("sh_date").value=ymd(cur.getFullYear(),cur.getMonth(),1);
+  openOv("ovShift");
+}
+function submitShift(){
+  const emp=document.getElementById("sh_emp").value,date=document.getElementById("sh_date").value;
+  const from=document.getElementById("sh_from").value.trim(),to=document.getElementById("sh_to").value.trim();
+  const swap=document.getElementById("sh_swap").value,reason=document.getElementById("sh_reason").value.trim();
+  if(!date||!to){alert("일자와 변경 후 근무를 입력하세요");return;}
+  const detail=`${from||"?"} → ${to}`+(swap?` · 대체:${swap}`:"")+(reason?` · ${reason}`:"");
+  reqs.unshift({id:"R"+Date.now(),kind:"근무변경",emp,date,type:"근무변경",detail,status:"대기"});
+  save();closeOv("ovShift");["sh_from","sh_to","sh_reason"].forEach(i=>document.getElementById(i).value="");
+  alert(`${emp}님 근무변경 신청 완료 (승인 대기)`);switchTab("reqs");
+}
+
+/* 신청 내역 */
+function renderReqs(){
+  const tb=document.getElementById("reqBody");
+  if(!reqs.length){tb.innerHTML=`<tr><td colspan="6" class="empty">신청 내역이 없습니다</td></tr>`;return;}
+  tb.innerHTML=reqs.map(r=>`<tr>
+    <td><b>${r.kind}</b></td><td>${r.emp}</td><td>${r.date}</td><td>${r.detail}</td>
+    <td><span class="badge b-${r.status}">${r.status==="대기"?"승인 대기":r.status}</span></td>
+    <td>${r.status==="대기"
+      ? `<button class="mini primary" onclick="approve('${r.id}')">승인</button> <button class="mini" onclick="reject('${r.id}')">반려</button>`
+      : `<button class="mini ghost" onclick="delReq('${r.id}')">삭제</button>`}</td></tr>`).join("");
+}
+function approve(id){const r=reqs.find(x=>x.id===id);if(!r)return;r.status="승인";
+  if(r.kind==="연차/반차"){leave[r.emp]=leave[r.emp]||{};leave[r.emp][r.date]=r.type;erpSet(r.emp,r.date,r.type);}
+  save();renderReqs();render();}
+function reject(id){const r=reqs.find(x=>x.id===id);if(r){r.status="반려";save();renderReqs();}}
+function delReq(id){reqs=reqs.filter(x=>x.id!==id);save();renderReqs();}
+
+/* 실제 6월 스케줄 불러오기 (원본 시트 그대로 — june_data.js의 SAMPLE_JUNE) */
+function loadSample(){
+  if(typeof SAMPLE_JUNE==="undefined"){ alert("6월 데이터(june_data.js)를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요."); return; }
+  if(!confirm("원본 시트의 실제 6월 스케줄을 불러옵니다.\n현재 입력값을 덮어쓰고 ERP에 저장됩니다. 진행할까요?"))return;
+  leave={};
+  for(const nm in SAMPLE_JUNE){ leave[nm]=Object.assign({}, SAMPLE_JUNE[nm]); }
+  save(); cur=new Date(2026,5,1); render(); erpBulk();   // ERP 전체 동기화(오프라인 시 no-op)
+  alert("실제 6월 스케줄을 불러왔습니다. (ERP 저장 완료 시 상단에 표시)");
+}
+
+function fillEmp(id,blank){
+  document.getElementById(id).innerHTML=(blank?`<option value="">— 없음 —</option>`:"")+
+    DEPTS.map(([d,ns])=>`<optgroup label="${d}">`+ns.map(n=>`<option>${n}</option>`).join("")+`</optgroup>`).join("");
+}
+function openOv(id){document.getElementById(id).classList.add("on");}
+function closeOv(id){document.getElementById(id).classList.remove("on");}
+function switchTab(t){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
+  document.getElementById("tab-board").style.display=t==="board"?"":"none";
+  document.getElementById("tab-reqs").style.display=t==="reqs"?"":"none";
+  if(t==="reqs")renderReqs();
+}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+document.querySelectorAll(".ov").forEach(o=>o.onclick=e=>{if(e.target===o)o.classList.remove("on");});
+
+/* ===== 자체 로그인 게이트 =====
+   우선순위: ① 부모 허브 postMessage(wp-pass) 1.2초 대기 → ② sessionStorage("wp_pw")
+   둘 다 없으면 비밀번호 입력 오버레이. 검증은 db:leave 응답(ok:true/unauthorized)으로. */
+const SS_PW_KEY="wp_pw";
+let _gateResolved=false;   // 부모 비번 또는 세션 비번으로 이미 로드 착수했는지
+function resolveGate(pw){
+  if(_gateResolved) return;
+  _gateResolved=true;
+  WP_PW=pw; setOfflineBadge(false);
+  closeOv("ovLogin");
+  erpLoad();
+}
+/* 부모 postMessage 경로(기존 유지)도 게이트를 해제하도록 래핑 */
+const _origMsgLoad=erpLoad;
+window.addEventListener("message", e=>{
+  if(e.origin!==location.origin) return;
+  if(e.data && e.data.type==="wp-pass" && e.data.pw){
+    try{ sessionStorage.setItem(SS_PW_KEY,e.data.pw); }catch(_){}
+    resolveGate(e.data.pw);
+  }
+});
+/* 입력 오버레이 제출 → db:leave로 비번 검증 */
+async function submitLogin(){
+  const inp=document.getElementById("lg_pw"), err=document.getElementById("lg_err"), btn=document.getElementById("lg_btn");
+  const pw=(inp.value||"").trim();
+  err.style.display="none";
+  if(!pw){ err.textContent="비밀번호를 입력하세요"; err.style.display="block"; return; }
+  btn.disabled=true; btn.textContent="확인 중…";
+  try{
+    const r=await erpPost({db:"leave",password:pw});
+    if(r && r.ok && Array.isArray(r.results)){
+      try{ sessionStorage.setItem(SS_PW_KEY,pw); }catch(_){}
+      // erpLoad가 다시 호출하지 않도록, 받은 결과를 직접 반영
+      WP_PW=pw; erpReady=true; _gateResolved=true;
+      const next={};
+      r.results.forEach(row=>{ const nm=row["성명"],dt=row["날짜"],val=row["값"]; if(!nm||!dt)return; (next[nm]=next[nm]||{})[dt]=val; });
+      leave=next; save();
+      setOfflineBadge(false); setErpStatus("ERP 동기화됨 ✓","var(--green)");
+      closeOv("ovLogin"); render(); empLoad();
+    } else {
+      err.textContent="비밀번호가 올바르지 않습니다"; err.style.display="block";
+    }
+  }catch(e2){
+    err.textContent="서버 연결 실패 — 잠시 후 다시 시도하세요"; err.style.display="block";
+  }finally{
+    btn.disabled=false; btn.textContent="확인";
+  }
+}
+document.getElementById("lg_pw").addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();submitLogin();} });
+
+setOfflineBadge(true);   // 초기엔 오프라인 표기(인증 성공 시 해제)
+render();                // 데이터 없이 빈 표 먼저 그림
+
+/* 게이트 진입: 부모 비번 1.2초 대기 → 세션 비번 → 오버레이 */
+(function gateInit(){
+  let sess=null; try{ sess=sessionStorage.getItem(SS_PW_KEY); }catch(_){}
+  if(sess){ resolveGate(sess); return; }   // 세션 비번 있으면 즉시 로드(부모 메시지도 위에서 처리)
+  setTimeout(()=>{
+    if(_gateResolved) return;              // 그 사이 부모 postMessage 수신됨
+    let s2=null; try{ s2=sessionStorage.getItem(SS_PW_KEY); }catch(_){}
+    if(s2){ resolveGate(s2); return; }
+    openOv("ovLogin");                      // 어디서도 비번 못 받음 → 입력 요구
+    setTimeout(()=>{ const i=document.getElementById("lg_pw"); if(i)i.focus(); },50);
+  },1200);
+})();
+</script>
+    <script src="/wellperion-automation/_assets/print_options.js"></script>
+</body>
+</html>

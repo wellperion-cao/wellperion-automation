@@ -1,0 +1,801 @@
+<!-- Wellperion English inquiry page — /en/inquiry (WP post 8408) · 배9674 (시모 CMO, 2026-07-22)
+     ★ 1:1 English clone of the Korean inquiry page (wp_inquiry_block.html / /ko/inquiry, page 8394) — TEXT-ONLY
+        translated. Same structure/elements/order: hero + capacity, reserve note, intro VIDEO, section label,
+        type CARDS (SVG icons), bottom SOCIAL BAR — plus the self-hosted form (mirrors wp_inquiry_form.html) rendered
+        inline when a card is chosen (KO uses a separate form page /ko/inquiry-form; here it's merged into one page).
+     ★ Scope: 3 types (membership·adult·youth) — matches the EN google-form scope. summer/rental/business = KO-only.
+     ★ Backend: posts to the SAME GAS intake_submit (v2), payload keys identical to KO + lang:'en' → same sheet,
+        '유입언어'=EN. Channel option VALUES stay Korean-canonical (display text English) so funnel attribution is unchanged.
+     ★ Home link → wellperion.com/en/ (English home, GM). Instagram/Naver Blog/Naver Map have no separate EN versions → as-is.
+     ★ Collection-loss-0 engine: redirect-follow + r.json(), localStorage retry queue, backoff, honeypot + timing gate +
+        hidden token + server re-validation. CSS scoped under .wlp-inq. Rollback asset = wp_inquiry_block_en.html (google forms).
+     To update: edit this file and re-inject via cutover-inquiry-en mode. -->
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+<style>
+/* WP /en/inquiry (page-id 8408) 한정 — 한글 /ko/inquiry(8394)와 동일 상단 구조:
+   ① WP 테마 헤더(로고·메뉴·네이티브 KOR 토글) 숨김 → 상단 빈틈/로고겹침 제거(KO 8394와 동일).
+   ② 브랜드 마크 = 히어로 eyebrow 'WELLPERION'(테마 로고 숨겨 중복 아님, KO와 동일).
+   ③ 언어 토글 = .lang-switch 'KOR'(KO의 'ENG' 토글과 동일 위치 top16/right16).
+   상단 빈틈 제거는 .hero-band margin-top:-40px(테마가 헤더숨김 시 상단오프셋 0 재계산 → 남는 40px 상쇄, KO와 동일). */
+body.page-id-8408 #header-outer { display: none !important; }
+body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
+</style>
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+.wlp-inq{
+  --bg:#f5f0ea;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;
+  --dim:#8a7f72;--muted:#6b6258;--green:#2e7d5b;--red:#c0392b;
+  background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  -webkit-text-size-adjust:100%;box-sizing:border-box;position:relative;
+}
+.wlp-inq::before{
+  content:'';position:absolute;top:0;bottom:0;left:50%;right:50%;
+  margin-left:-50vw;margin-right:-50vw;background:var(--bg);z-index:-1;
+}
+.wlp-inq *{box-sizing:border-box;margin:0;padding:0}
+.wlp-inq button{font-family:inherit;-webkit-appearance:none;appearance:none;cursor:pointer}
+.wlp-inq a{text-decoration:none;color:inherit}
+
+/* 언어 전환 토글 — KO /ko/inquiry(8394)의 .lang-switch와 동일 위치·모양(알약형·2px 테두리·24px 라운드).
+   테마 헤더를 숨겨 네이티브 토글이 안 보이므로 동일 스펙으로 재현. 우상단 top16/right16(모바일 top10/right10). */
+.wlp-inq .lang-switch{position:absolute;top:16px;right:16px;z-index:5;display:inline-flex;align-items:center;justify-content:center;
+  padding:10px 18px;min-height:44px;min-width:44px;border:2px solid var(--ink);border-radius:24px;color:var(--ink);
+  font-size:13px;font-weight:700;letter-spacing:.02em;background:transparent}
+@media (max-width:520px){
+  .wlp-inq .lang-switch{top:10px;right:10px;padding:9px 16px;font-size:12.5px}
+}
+
+/* ===== HERO (ivory) ===== */
+.wlp-inq .hero-band{background:var(--bg);max-width:720px;margin:-40px auto 0;padding:64px 20px 14px;position:relative}
+@media (max-width:1000px){ .wlp-inq .hero-band{padding-top:56px} }
+.wlp-inq #formView .hero-band{max-width:540px}
+.wlp-inq .hero-inner{max-width:540px;margin:0 auto;text-align:center}
+.wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin-bottom:14px}
+.wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-bottom:6px}
+.wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--muted);letter-spacing:.02em;margin-bottom:18px}
+.wlp-inq .divider-coral{width:36px;height:2px;background:var(--beige);margin:0 auto 18px}
+.wlp-inq .hero-inner h1{display:none}
+.wlp-inq .hero-desc{font-size:13.5px;color:var(--muted);line-height:1.8;max-width:400px;margin:0 auto;text-wrap:balance}
+.wlp-inq .hero-capacity{font-size:14px;font-weight:700;color:var(--ink);line-height:1.7;max-width:400px;margin:20px auto 0;text-wrap:balance}
+.wlp-inq .hero-capacity b{color:var(--beige);font-weight:800}
+.wlp-inq .hero-note{font-size:12px;font-weight:700;color:var(--beige);letter-spacing:.02em;margin-top:12px}
+
+/* ===== WRAP ===== */
+.wlp-inq .wrap{max-width:720px;margin:0 auto;padding:18px 18px 72px}
+.wlp-inq #formView .wrap{max-width:540px;padding:16px 18px 70px}
+
+/* reserve note */
+.wlp-inq .reserve-note{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 32px;font-size:12.5px;font-weight:700;color:var(--beige);letter-spacing:.02em;text-align:center}
+.wlp-inq .reserve-note .dot{width:5px;height:5px;background:var(--beige);flex-shrink:0}
+
+/* video */
+.wlp-inq .video-frame{max-width:640px;margin:0 auto 44px;position:relative;width:100%;padding-top:56.25%;background:var(--ink);border:1px solid var(--line)}
+.wlp-inq .video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+/* section label */
+.wlp-inq .sec-label{display:flex;align-items:center;justify-content:center;gap:14px;margin:0 0 26px}
+.wlp-inq .sec-label .ln{flex:1;max-width:56px;height:1px;background:var(--line)}
+.wlp-inq .sec-label .tx{font-size:12.5px;color:var(--dim);font-weight:600;white-space:nowrap}
+
+/* type cards */
+.wlp-inq .type-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin:0 0 50px}
+.wlp-inq .type-card{display:flex;flex-direction:column;align-items:flex-start;border:1px solid var(--line);border-radius:0;background:#fff;padding:26px 24px;transition:border-color .18s,transform .18s;cursor:pointer;text-align:left;width:100%;-webkit-appearance:none;appearance:none;box-shadow:none;font-family:inherit}
+.wlp-inq .type-card:hover{border-color:var(--ink);transform:translateY(-2px)}
+.wlp-inq .type-card .cat-icon{color:var(--ink);margin-bottom:16px;transition:color .18s}
+.wlp-inq .type-card .cat-icon svg{width:26px;height:26px;display:block}
+.wlp-inq .type-card:hover .cat-icon{color:var(--coral)}
+.wlp-inq .type-card .tc-en{font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--beige);text-transform:uppercase;margin-bottom:8px}
+.wlp-inq .type-card .tc-kr{display:flex;align-items:center;width:100%;gap:8px;font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin-bottom:9px}
+.wlp-inq .type-card .tc-kr .arrow{margin-left:auto;font-size:15px;color:var(--beige);transition:transform .18s,color .18s}
+.wlp-inq .type-card:hover .tc-kr .arrow{color:var(--coral);transform:translateX(3px)}
+.wlp-inq .type-card .tc-desc{font-size:13px;color:var(--dim);line-height:1.65;text-wrap:balance}
+
+/* social bar */
+.wlp-inq .social-bar{display:flex;justify-content:center;gap:26px;flex-wrap:wrap;margin:0 0 48px}
+.wlp-inq .social-icon{display:flex;flex-direction:column;align-items:center;gap:9px;transition:transform .18s,opacity .18s}
+.wlp-inq .social-icon:hover{transform:translateY(-3px)}
+.wlp-inq .social-btn{display:flex;align-items:center;justify-content:center;width:48px;height:48px;transition:opacity .18s}
+.wlp-inq .social-icon:hover .social-btn{opacity:.85}
+.wlp-inq .social-label{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dim)}
+@media (max-width:520px){ .wlp-inq .type-grid{grid-template-columns:1fr} }
+
+/* ===== FORM ===== */
+.wlp-inq .card{background:var(--paper);border:1px solid var(--line);padding:22px 20px;margin-bottom:14px}
+.wlp-inq label.fl{display:block;font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:12px;letter-spacing:.04em;text-transform:uppercase}
+.wlp-inq label.fl .opt{font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;text-transform:none;letter-spacing:0}
+.wlp-inq label.fl .hint{display:block;font-size:11px;font-weight:500;color:var(--dim);text-transform:none;letter-spacing:0;margin-top:4px}
+.wlp-inq .change-type{font-size:12px;font-weight:700;color:var(--beige);cursor:pointer;margin:0 auto 12px;text-align:center;letter-spacing:.02em}
+.wlp-inq .change-type:hover{color:var(--coral)}
+
+.wlp-inq .guide-card{background:var(--paper)}
+.wlp-inq .g-lead{font-size:13.5px;line-height:1.75;color:var(--ink);text-wrap:balance}
+.wlp-inq .g-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.wlp-inq .g-badge{font-size:11.5px;font-weight:600;padding:8px 12px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.wlp-inq .g-badge b{color:var(--beige);font-weight:800}
+.wlp-inq .g-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.wlp-inq .g-tag{font-size:11px;font-weight:600;padding:6px 10px;background:rgba(183,159,138,.15);color:var(--ink)}
+.wlp-inq .g-note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+
+.wlp-inq .g-age-policy{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.wlp-inq .g-age-policy summary{font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px}
+.wlp-inq .g-age-policy summary::-webkit-details-marker{display:none}
+.wlp-inq .g-age-policy summary::before{content:'＋';color:var(--beige);font-weight:800}
+.wlp-inq .g-age-policy[open] summary::before{content:'－'}
+.wlp-inq .g-age-policy .g-age-body{font-size:11.5px;color:var(--dim);line-height:1.85;margin-top:10px}
+.wlp-inq .g-age-policy .g-age-body p{margin-top:8px}
+.wlp-inq .g-age-policy .g-age-body p:first-child{margin-top:0}
+
+.wlp-inq .field{margin-bottom:20px}
+.wlp-inq .field:last-child{margin-bottom:0}
+.wlp-inq input[type=text],.wlp-inq input[type=tel],.wlp-inq input[type=date],.wlp-inq textarea,.wlp-inq select{
+  width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--ink);color:var(--ink);padding:11px 2px;border-radius:0;font-size:15px;font-family:inherit;line-height:1.5;transition:border-color .15s;-webkit-appearance:none;appearance:none;margin:0}
+.wlp-inq input:focus,.wlp-inq textarea:focus,.wlp-inq select:focus{outline:none;border-color:var(--ink);border-bottom-width:2px}
+.wlp-inq input::placeholder,.wlp-inq textarea::placeholder{color:#b8afa5}
+.wlp-inq input[type=date]{color-scheme:light}
+.wlp-inq textarea{min-height:96px;resize:vertical}
+.wlp-inq select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'><path fill='%23221F20' d='M1 1l4 4 4-4'/></svg>");background-repeat:no-repeat;background-position:right 4px center;padding-right:18px}
+
+.wlp-inq .multi{display:flex;flex-wrap:wrap;gap:8px}
+.wlp-inq .multi label{position:relative;display:inline-flex;align-items:center;padding:9px 14px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.wlp-inq .multi label input{position:absolute;opacity:0;width:1px;height:1px}
+.wlp-inq .multi label:focus-within{outline:1.5px solid var(--ink);outline-offset:2px}
+.wlp-inq .multi label.on{border-color:var(--coral);background:var(--coral);color:#fff}
+
+.wlp-inq .consent-box{border:1px solid var(--line);background:#faf8f5;padding:14px;max-height:150px;overflow-y:auto;font-size:12px;color:#6b6259;line-height:1.7;white-space:pre-wrap;margin-bottom:12px}
+.wlp-inq .chk-row{display:flex;align-items:center;gap:10px;padding:2px 0}
+.wlp-inq .chk-row input[type=checkbox]{width:19px;height:19px;accent-color:var(--ink);cursor:pointer;flex-shrink:0}
+.wlp-inq .chk-row span{font-size:13.5px;color:var(--ink);font-weight:600}
+.wlp-inq .hp-field{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0}
+
+.wlp-inq .submit{width:100%;padding:17px;background:var(--coral);color:#fff;border:none;border-radius:0;font-size:15.5px;font-weight:700;cursor:pointer;margin-top:6px;transition:opacity .18s,transform .12s;letter-spacing:.02em;line-height:1.2}
+.wlp-inq .submit:hover{opacity:.9}
+.wlp-inq .submit:active{transform:scale(.99)}
+.wlp-inq .submit:disabled{opacity:.4;cursor:not-allowed}
+.wlp-inq .note{font-size:12px;color:var(--dim);text-align:center;margin-top:16px;line-height:1.75;text-wrap:balance}
+.wlp-inq .hint-empty{font-size:13px;color:var(--dim);text-align:center;padding:8px 0 2px}
+
+.wlp-inq .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--ink);color:#fff;padding:12px 22px;font-size:13.5px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.18);max-width:90%;text-align:center}
+.wlp-inq .toast.show{transform:translateX(-50%) translateY(0)}
+.wlp-inq .toast.err{background:var(--red)}
+
+.wlp-inq .retry-banner{display:none;margin:12px 0 0;padding:12px 14px;font-size:12.5px;line-height:1.6;text-align:center;border:1px solid var(--line)}
+.wlp-inq .retry-banner.pending{display:block;background:#faf4e8;border-color:#d68910;color:#8a5c0a}
+.wlp-inq .retry-banner.failed{display:block;background:#fbeceb;border-color:var(--red);color:var(--red)}
+.wlp-inq .retry-banner a{color:var(--ink);font-weight:700;text-decoration:underline}
+.wlp-inq .retry-banner .again2{display:inline-block;margin-top:8px;padding:9px 18px;background:var(--ink);color:#fff;border:none;border-radius:0;font-size:12.5px;font-weight:700}
+
+.wlp-inq .done{display:none;text-align:center;padding:60px 20px 40px;max-width:540px;margin:0 auto}
+.wlp-inq .done .dot{width:52px;height:52px;line-height:49px;margin:0 auto 20px;border:1.5px solid var(--ink);color:var(--ink);font-size:22px;font-weight:700}
+.wlp-inq .done h2{font-size:20px;font-weight:800;margin-bottom:10px;color:var(--ink)}
+.wlp-inq .done p{font-size:14px;color:var(--dim);line-height:1.75;margin-bottom:10px}
+.wlp-inq .done .rcpt{font-size:12px;color:var(--ink);font-weight:700;margin-bottom:26px;letter-spacing:.02em}
+.wlp-inq .done .again{padding:13px 28px;background:#fff;color:var(--ink);border:1.5px solid var(--ink);border-radius:0;font-size:13.5px;font-weight:700;cursor:pointer;transition:background .18s}
+.wlp-inq .done .again:hover{background:#f5f2ee}
+.wlp-inq .done .done-brand{font-size:13px;color:var(--muted);margin-top:28px;margin-bottom:0;letter-spacing:.02em}
+.wlp-inq .done .footer-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:16px auto 20px;max-width:220px}
+.wlp-inq .done .gd-line{flex:1;height:1px}
+.wlp-inq .done .gd-line.left{background:linear-gradient(90deg,transparent,var(--beige))}
+.wlp-inq .done .gd-line.right{background:linear-gradient(90deg,var(--beige),transparent)}
+.wlp-inq .done .gd-diamond{color:var(--beige);font-size:10px;line-height:1}
+.wlp-inq .done .social-section{text-align:center}
+.wlp-inq .done .social-title{font-size:13px;color:var(--muted);margin-bottom:12px;letter-spacing:-.1px}
+.wlp-inq .done .social-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.wlp-inq .done .social-chip{display:inline-flex;align-items:center;gap:5px;padding:9px 15px;background:var(--paper);border:1px solid var(--line);border-radius:20px;color:var(--dim);font-size:13px;font-weight:600;font-family:inherit;text-decoration:none;transition:border-color .15s,color .15s}
+.wlp-inq .done .social-chip:hover{border-color:var(--beige);color:var(--beige)}
+</style>
+
+<div class="wlp-inq">
+  <div class="toast" id="toast"></div>
+
+  <!-- 언어 토글(KOR) — KO 페이지의 ENG 토글과 동일 위치. WPML이 본문 내 /ko/ 링크를 현재언어(en)로 되돌리는
+       필터를 회피하기 위해 리터럴 href 대신 onclick에서 URL을 문자열로 나눠 대입(KO 8394와 동일 우회 기법). -->
+  <a class="lang-switch" href="#" onclick="location.href='http://wellperion.com/'+'ko/inquiry/';return false;">KOR</a>
+
+  <!-- ===== HUB VIEW (landing, no ?type=) — English clone of /ko/inquiry ===== -->
+  <div id="hubView">
+    <div class="hero-band">
+      <div class="hero-inner">
+        <p class="eyebrow">Wellperion</p>
+        <p class="slogan-en">A Day, Well Completed.</p>
+        <p class="slogan-kr">A premium lifestyle sports club in Hannam</p>
+        <div class="divider-coral"></div>
+        <p class="hero-desc">More than a place to work out.<br>A space that becomes part of your daily routine &mdash;<br>setting the standard for your health and completing your day.</p>
+        <p class="hero-capacity">Wellperion is limited to <b>1,000 members</b><br>to keep the space calm and uncrowded.</p>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <p class="reserve-note"><span class="dot"></span>All consultations and tours are by appointment only</p>
+
+      <div class="video-frame">
+        <iframe src="https://www.youtube.com/embed/qpPYA3bAO7M" title="Wellperion Introduction" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+
+      <div class="sec-label"><span class="ln"></span><span class="tx">Please select the option you&rsquo;re interested in</span><span class="ln"></span></div>
+
+      <div class="type-grid">
+        <a class="type-card" href="#" data-cat="membership">
+          <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 12 3l9 6"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="5" y1="9" x2="5" y2="19"/><line x1="9" y1="9" x2="9" y2="19"/><line x1="15" y1="9" x2="15" y2="19"/><line x1="19" y1="9" x2="19" y2="19"/><line x1="3" y1="19" x2="21" y2="19"/><line x1="3" y1="21.5" x2="21" y2="21.5"/></svg></span>
+          <span class="tc-en">Membership</span>
+          <span class="tc-kr">Membership Inquiry<span class="arrow">&rarr;</span></span>
+          <span class="tc-desc">Sports club membership &amp; facility tour consultation</span>
+        </a>
+
+        <a class="type-card" href="#" data-cat="adult">
+          <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0"/><path d="M2 15c1.6-1.8 3.2-1.8 4.8 0s3.2 1.8 4.8 0 3.2-1.8 4.8 0 3.2 1.8 4.8 0" opacity=".55"/></svg></span>
+          <span class="tc-en">Adult Lesson</span>
+          <span class="tc-kr">Adult Lesson Inquiry<span class="arrow">&rarr;</span></span>
+          <span class="tc-desc">Swimming &middot; P.T &middot; Pilates &middot; Golf &middot; Squash &middot; Ballet &middot; Barre</span>
+        </a>
+
+        <a class="type-card" href="#" data-cat="youth">
+          <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.4 5.1 5.6.6-4.2 3.8 1.2 5.5L12 15.8l-5 2.7 1.2-5.5-4.2-3.8 5.6-.6z"/></svg></span>
+          <span class="tc-en">Youth Lesson</span>
+          <span class="tc-kr">Youth Lesson Inquiry<span class="arrow">&rarr;</span></span>
+          <span class="tc-desc">Swimming &middot; Gymnastics &middot; Golf &middot; Squash &middot; Musical</span>
+        </a>
+      </div>
+
+      <!-- Bottom shortcut links — Home (English home) · Instagram · Naver Blog · Naver Map -->
+      <div class="social-bar">
+        <a href="http://wellperion.com/en/" target="_blank" rel="noopener" class="social-icon">
+          <span class="social-btn" style="background:#221F20;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Home">
+              <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" fill="#fff" fill-opacity=".15" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M9 22V12h6v10" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="social-label">Home</span>
+        </a>
+
+        <a href="https://www.instagram.com/wellperion/" target="_blank" rel="noopener" class="social-icon">
+          <span class="social-btn" style="background:linear-gradient(135deg,#feda75 0%,#fa7e1e 25%,#d62976 55%,#962fbf 80%,#4f5bd5 100%);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Instagram">
+              <rect x="2" y="2" width="20" height="20" rx="5.5" stroke="#fff" stroke-width="1.8"/>
+              <circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/>
+              <circle cx="17.5" cy="6.5" r="1.1" fill="#fff"/>
+            </svg>
+          </span>
+          <span class="social-label">Instagram</span>
+        </a>
+
+        <a href="https://blog.naver.com/wellperion" target="_blank" rel="noopener" class="social-icon">
+          <span class="social-btn" style="background:#03C75A;">
+            <svg width="34" height="28" viewBox="0 0 36 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Naver Blog">
+              <text x="18" y="21" text-anchor="middle" dominant-baseline="auto" font-family="Arial,Helvetica,sans-serif" font-size="18" font-weight="700" fill="#fff" letter-spacing="0">blog</text>
+            </svg>
+          </span>
+          <span class="social-label">Naver Blog</span>
+        </a>
+
+        <a href="https://map.naver.com/p/search/%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8/place/1048457693" target="_blank" rel="noopener" class="social-icon">
+          <span class="social-btn" style="background:#00963C;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Naver Map">
+              <path d="M12 2C8.686 2 6 4.686 6 8c0 4.5 6 12 6 12s6-7.5 6-12c0-3.314-2.686-6-6-6z" fill="#fff" fill-opacity=".25" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+              <circle cx="12" cy="8" r="2.5" fill="#fff"/>
+            </svg>
+          </span>
+          <span class="social-label">Naver Map</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FORM VIEW (?type= or after a card is chosen) — mirrors /ko/inquiry-form ===== -->
+  <div id="formView" style="display:none">
+    <div class="hero-band">
+      <div class="hero-inner">
+        <p class="eyebrow">Wellperion</p>
+        <p class="slogan-en">A Day, Well Completed.</p>
+        <p class="slogan-kr">A premium lifestyle sports club in Hannam</p>
+        <div class="divider-coral"></div>
+        <h1 id="heroTitle">Inquiry</h1>
+        <p class="hero-desc"><span id="heroSubLine1">We&rsquo;ll help you with membership, tours, and lessons.</span><br>Leave your details and our team will reach out to you shortly.</p>
+        <p class="hero-note">All consultations and tours are by appointment only.</p>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div class="change-type" id="changeType">&larr; Choose another inquiry type</div>
+      <div class="card guide-card" id="guideBox" style="display:none"></div>
+
+      <div class="card" id="formCard">
+        <div id="formFields"></div>
+        <div class="hint-empty" id="emptyHint" style="display:none">Please select an inquiry type first.</div>
+      </div>
+
+      <button class="submit" id="submitBtn">Submit Inquiry</button>
+      <div class="retry-banner" id="retryBanner"></div>
+      <p class="note" id="noteText">Our team will contact you at the number you provide.<br>A Day, Well Completed. &middot; Wellperion</p>
+    </div>
+  </div>
+
+  <!-- ===== DONE ===== -->
+  <div class="done" id="doneWrap">
+    <div class="dot">✓</div>
+    <h2>Your inquiry has been received</h2>
+    <p>Thank you for your inquiry.<br>We will contact you at the number you provided.</p>
+    <div class="rcpt" id="rcptNo"></div>
+    <button class="again" id="againBtn">Submit another inquiry</button>
+
+    <p class="done-brand">A Day, Well Completed. &middot; Wellperion</p>
+    <div class="footer-divider">
+      <span class="gd-line left"></span>
+      <span class="gd-diamond">&#9670;</span>
+      <span class="gd-line right"></span>
+    </div>
+    <div class="social-section">
+      <p class="social-title">Take a look at Wellperion</p>
+      <div class="social-links">
+        <a class="social-chip" href="http://wellperion.com/en/" target="_blank" rel="noopener">🌐 Home</a>
+        <a class="social-chip" href="https://www.instagram.com/wellperion/" target="_blank" rel="noopener">📷 Instagram</a>
+        <a class="social-chip" href="https://blog.naver.com/wellperion" target="_blank" rel="noopener">📝 Naver Blog</a>
+        <a class="social-chip" href="https://map.naver.com/p/search/웰페리온/place/1048457693" target="_blank" rel="noopener">📍 Naver Map</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ── Backend GAS (same v2 endpoint as the Korean self-hosted form) ──
+  var GAS_PROD = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+  var GAS_HEAD = 'https://script.google.com/macros/s/AKfycbzeGDag3XgoSn6A4UIGdsBCkR3v-joepgRYfW3MWzi9/exec';
+  var GAS_URL = GAS_PROD;
+  try { if ((new URLSearchParams(location.search).get('gas')||'') === 'head') GAS_URL = GAS_HEAD; } catch(e){}
+  var INTAKE_TOKEN = 'wlp_intake_9f4c1b7e2a63';
+  var QUEUE_KEY = 'wlp_intake_queue_en_v1';
+  var CONTACT_PHONE = '02-6261-1200';
+  var CONTACT_EMAIL = 'info@wellperion.com';
+  var LANG = 'en';   // ★ marks English submissions → backend records '유입언어'=EN in the same sheet
+
+  function pipa(purpose){
+    return 'Under the Personal Information Protection Act, Wellperion Co., Ltd. collects and uses your personal information as follows.\n\n'
+      + 'Purpose of collection: ' + purpose + '\n'
+      + 'Items collected: Name (or contact person), phone number, inquiry details\n'
+      + 'Retention period: 1 year from collection, or until the purpose is fulfilled (whichever is earlier)\n'
+      + 'Third-party provision: Not provided without separate consent (except where required by law)\n\n'
+      + 'You may decline consent; however, declining may limit our ability to respond to your inquiry.';
+  }
+
+  // ── "How Did You Hear About Us?" — value = Korean canonical bucket (funnel attribution unchanged), label = English ──
+  var CHANNELS = [
+    ['네이버 검색·플레이스','Naver Search / Place'],
+    ['네이버 블로그','Naver Blog'],
+    ['인스타그램','Instagram'],
+    ['당근마켓','Danggn (Karrot)'],
+    ['동부이촌동 커뮤니티','Dongbu-Ichon Community'],
+    ['카카오톡','KakaoTalk'],
+    ['소개·지인','Referral / Acquaintance'],
+    ['기존·과거 회원','Current / Former Member'],
+    ['오프라인(간판·방문)','Offline (Signage / Visit)'],
+    ['기타','Other']
+  ];
+
+  // ── Form definitions — field keys & payload contract IDENTICAL to the KO form (wp_inquiry_form.html) ──
+  var FORMS = {
+    membership: {
+      purpose: 'Membership enrollment and facility tour consultation',
+      fields: [
+        { key:'name',    label:'Full Name',   type:'text', ph:'Please enter your full name', req:true },
+        { key:'phone',   label:'Mobile Phone', type:'tel', ph:'010-1234-5678', req:true },
+        { key:'program', label:'Membership of Interest', type:'radio', opt:true, hint:'Please select one', opts:['Platinum (Gym + G.X + Sauna)','Platinum + Golf (Gym + Golf + G.X + Sauna)','Noblesse (Gym + G.X + Swimming + Sauna)','Noblesse + Golf (Gym + Golf + G.X + Swimming + Sauna)'] },
+        { key:'channel', label:'How Did You Hear About Us?', type:'select', ph:'Please select', opts:CHANNELS },
+        { key:'exp1Date',label:'Preferred Tour / Consultation Date', type:'date', opt:true },
+        { key:'message', label:'Additional Comments', type:'textarea', opt:true, ph:'Feel free to share anything you would like to ask.' }
+      ]
+    },
+    adult: {
+      purpose: 'Adult lesson inquiry response and consultation',
+      fields: [
+        { key:'name',    label:'Full Name',   type:'text', ph:'Please enter your full name', req:true },
+        { key:'phone',   label:'Mobile Phone', type:'tel', ph:'010-1234-5678', req:true },
+        { key:'program', label:'Program of Interest', type:'radio', hint:'Select one · for multiple programs, please submit separately', opts:['Adult Swimming (Private / Group)','P.T','Pilates (Private / Group)','Golf','Squash (Private / Group)','Aquarobics (Tue, Thu 13:00 class)','Ballet','Barre','Other'] },
+        { key:'wishTime',label:'Preferred Lesson Time', type:'daytime', opt:true, days:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], weekdayTimes:['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'], weekendTimes:['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'] },
+        { key:'channel', label:'How Did You Hear About Us?', type:'select', ph:'Please select', opts:CHANNELS },
+        { key:'message', label:'Additional Comments', type:'textarea', opt:true, ph:'Feel free to share anything you would like to ask.' }
+      ]
+    },
+    youth: {
+      purpose: 'Youth lesson inquiry response and consultation',
+      fields: [
+        { key:'name',    label:"Guardian's Full Name", type:'text', ph:"Please enter the guardian's full name", req:true },
+        { key:'phone',   label:'Mobile Phone', type:'tel', ph:'010-1234-5678', req:true },
+        { key:'age',     label:"Child's Age", type:'text', opt:true, ph:'e.g. age 8 / grade 2' },
+        { key:'program', label:'Lesson Program', type:'radio', hint:'Select one · for multiple programs, please submit separately', opts:['WSC Swimming','WSC Golf','WSC Squash','WSC Gymnastics & Trampoline','WSC P.T','WSC Pilates','Parent-Child Swimming','English Musical','Other'] },
+        { key:'wishTime',label:'Preferred Lesson Time', type:'daytime', opt:true, days:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], weekdayTimes:['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'], weekendTimes:['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'] },
+        { key:'channel', label:'How Did You Hear About Us?', type:'select', ph:'Please select', opts:CHANNELS },
+        { key:'message', label:'Additional Comments', type:'textarea', opt:true, ph:'Feel free to share anything you would like to ask.' }
+      ]
+    }
+  };
+
+  var GUIDES = {
+    membership: {
+      badges:['<b>1,000</b>-member limit','Annual membership · No deposit','A 3,000-pyeong single facility in Hannam'],
+      tags:['Swimming','Squash','Golf','Pilates · PT','Sauna · Recovery','CUPS Lounge','Cinq Mondes Spa','beautévu Hair & Makeup']
+    },
+    adult: {
+      lead:'From swimming, P.T, Pilates, golf and squash to aquarobics, ballet and barre — professional lessons in Hannam.',
+      tags:['Swimming','P.T','Pilates','Golf','Squash','Aquarobics','Ballet','Barre','Other'],
+      note:'Private and group lessons are available, assigned after an initial consultation.'
+    },
+    youth: {
+      lead:"Professional lessons for your child's first steps — from swimming, golf and squash to gymnastics, parent-child swimming and English musical.",
+      tags:['WSC Swimming','WSC Golf','WSC Squash','WSC Gymnastics & Trampoline','WSC P.T','WSC Pilates','Parent-Child Swimming','English Musical'],
+      note:'A range of specialized programs rarely found elsewhere are also available.'
+    }
+  };
+
+  var CAT_TITLES = { membership:'Membership Inquiry', adult:'Adult Lesson Inquiry', youth:'Youth Lesson Inquiry' };
+
+  var AGE_POLICY_HTML =
+    '<details class="g-age-policy"><summary>Enrollment age guide</summary>' +
+    '<div class="g-age-body">' +
+    '<p>Enrollment is available for ages 17–69 (Korean age).</p>' +
+    '<p>Ages 70–75: ① a copy of a health check-up within the past year (designated hospital) ② a signed safety-rules pledge for members aged 70+.</p>' +
+    '<p>Ages 76+: ① health check-up documents ② signed pledge ③ swimming not available ④ enrollment with a concierge companion.</p>' +
+    '<p>Existing members may re-enroll without the above; however, when enrolling more than 1 year after expiry, the above applies.</p>' +
+    '</div></details>';
+
+  var HERO_SUB_DEFAULT = "We'll help you with membership, tours, and lessons.";
+  var HERO_SUB = {
+    membership: "We'll guide you through membership and facility tours.",
+    adult: 'Explore our adult lesson programs.',
+    youth: 'Explore our youth lesson programs.'
+  };
+  function setHeroSub(cat){ $('heroSubLine1').textContent = HERO_SUB[cat] || HERO_SUB_DEFAULT; }
+
+  var selectedCat = '';
+  var formShownAt = 0;
+
+  function $(id){ return document.getElementById(id); }
+  function toast(msg, isErr){
+    var t = $('toast'); t.textContent = msg;
+    t.className = 'toast show' + (isErr ? ' err' : '');
+    setTimeout(function(){ t.className = 'toast' + (isErr ? ' err' : ''); }, 3000);
+  }
+  function uuid(){
+    try { if (crypto && crypto.randomUUID) return crypto.randomUUID(); } catch(e){}
+    return 'sid-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10);
+  }
+  function formatPhone(v){
+    var d = String(v||'').replace(/\D/g,'').slice(0,11);
+    if (d.length < 4) return d;
+    if (d.length < 8) return d.slice(0,3)+'-'+d.slice(3);
+    return d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
+  }
+  function qp(k){ try { return (new URLSearchParams(location.search).get(k)||'').slice(0,60); } catch(e){ return ''; } }
+
+  var UTM_SOURCE = qp('utm_source') || '';
+  var UTM_MEDIUM = qp('utm_medium') || '', UTM_CONTENT = qp('utm_content') || '';
+
+  function renderGuide(cat){
+    var box = $('guideBox');
+    var g = GUIDES[cat];
+    if (!g) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    var html = '';
+    if (g.lead) { html += '<p class="g-lead">' + g.lead + '</p>'; }
+    if (g.badges && g.badges.length) {
+      html += '<div class="g-badges">' + g.badges.map(function(b){ return '<span class="g-badge">'+b+'</span>'; }).join('') + '</div>';
+    }
+    if (g.tags && g.tags.length) {
+      html += '<div class="g-tags">' + g.tags.map(function(t){ return '<span class="g-tag">'+t+'</span>'; }).join('') + '</div>';
+    }
+    if (g.note) { html += '<p class="g-note">' + g.note + '</p>'; }
+    if (cat === 'membership' || cat === 'adult') { html += AGE_POLICY_HTML; }
+    box.innerHTML = html;
+    box.style.display = 'block';
+  }
+
+  function buildForm(cat){
+    var box = $('formFields'); box.innerHTML = '';
+    var def = FORMS[cat];
+    if (!def) { $('emptyHint').style.display = 'block'; renderGuide(null); $('heroTitle').textContent = 'Inquiry'; setHeroSub(''); return; }
+    $('emptyHint').style.display = 'none';
+    $('heroTitle').textContent = CAT_TITLES[cat] || 'Inquiry';
+    setHeroSub(cat);
+    renderGuide(cat);
+
+    def.fields.forEach(function(f){
+      var field = document.createElement('div'); field.className = 'field';
+      var lab = document.createElement('label'); lab.className = 'fl'; lab.setAttribute('for','f_'+f.key);
+      lab.innerHTML = f.label + (f.opt ? ' <span class="opt">(optional)</span>' : '') + (f.hint ? ' <span class="hint">'+f.hint+'</span>' : '');
+      field.appendChild(lab);
+
+      if (f.type === 'text' || f.type === 'tel') {
+        var inp = document.createElement('input'); inp.type='text'; inp.id='f_'+f.key; inp.placeholder=f.ph||''; inp.autocomplete='off';
+        if (f.type === 'tel') { inp.inputMode='tel'; inp.addEventListener('input', function(){ this.value = formatPhone(this.value); }); }
+        field.appendChild(inp);
+      } else if (f.type === 'date') {
+        var d = document.createElement('input'); d.type='date'; d.id='f_'+f.key; field.appendChild(d);
+      } else if (f.type === 'textarea') {
+        var ta = document.createElement('textarea'); ta.id='f_'+f.key; ta.placeholder=f.ph||''; field.appendChild(ta);
+      } else if (f.type === 'select') {
+        var sel = document.createElement('select'); sel.id='f_'+f.key;
+        if (f.ph) { var o0=document.createElement('option'); o0.value=''; o0.textContent=f.ph; sel.appendChild(o0); }
+        (f.opts||[]).forEach(function(o){
+          var ov = Array.isArray(o) ? o[0] : o, ot = Array.isArray(o) ? o[1] : o;
+          var op=document.createElement('option'); op.value=ov; op.textContent=ot; sel.appendChild(op);
+        });
+        field.appendChild(sel);
+      } else if (f.type === 'multi') {
+        var grid = document.createElement('div'); grid.className='multi'; grid.id='f_'+f.key;
+        (f.opts||[]).forEach(function(o){
+          var ov = Array.isArray(o) ? o[0] : o, ot = Array.isArray(o) ? o[1] : o;
+          var l=document.createElement('label');
+          var cb=document.createElement('input'); cb.type='checkbox'; cb.value=ov;
+          cb.addEventListener('change', function(){ l.className = this.checked ? 'on' : ''; });
+          l.appendChild(cb); var sp=document.createElement('span'); sp.textContent=ot; l.appendChild(sp);
+          grid.appendChild(l);
+        });
+        field.appendChild(grid);
+      } else if (f.type === 'daytime') {
+        var _dtGroups = [['Day', f.days, '_days', '0']];
+        if (f.weekdayTimes) _dtGroups.push(['Weekday (06:00–21:00)', f.weekdayTimes, '_wtimes', '12px']);
+        if (f.weekendTimes) _dtGroups.push(['Weekend (08:00–20:00)', f.weekendTimes, '_etimes', '12px']);
+        if (f.times) _dtGroups.push(['Time', f.times, '_times', '12px']);
+        _dtGroups.forEach(function(grp){
+          var cap=document.createElement('div'); cap.textContent=grp[0];
+          cap.style.cssText='font-size:11.5px;font-weight:600;color:#8a8178;margin:'+grp[3]+' 0 6px';
+          field.appendChild(cap);
+          var g=document.createElement('div'); g.className='multi'; g.id='f_'+f.key+grp[2];
+          (grp[1]||[]).forEach(function(o){
+            var l=document.createElement('label');
+            var cb=document.createElement('input'); cb.type='checkbox'; cb.value=o;
+            cb.addEventListener('change', function(){ l.className=this.checked?'on':''; });
+            l.appendChild(cb); var sp=document.createElement('span'); sp.textContent=o; l.appendChild(sp);
+            g.appendChild(l);
+          });
+          field.appendChild(g);
+        });
+      } else if (f.type === 'radio') {
+        var rgrid = document.createElement('div'); rgrid.className='multi'; rgrid.id='f_'+f.key;
+        var rName = 'f_'+f.key+'_radio';
+        (f.opts||[]).forEach(function(o){
+          var ov = Array.isArray(o) ? o[0] : o, ot = Array.isArray(o) ? o[1] : o;
+          var l=document.createElement('label');
+          var rb=document.createElement('input'); rb.type='radio'; rb.name=rName; rb.value=ov;
+          rb.addEventListener('change', function(){
+            Array.prototype.forEach.call(rgrid.querySelectorAll('label'), function(lbl){
+              var inp = lbl.querySelector('input[type=radio]');
+              lbl.className = inp.checked ? 'on' : '';
+            });
+          });
+          l.appendChild(rb); var sp=document.createElement('span'); sp.textContent=ot; l.appendChild(sp);
+          rgrid.appendChild(l);
+        });
+        field.appendChild(rgrid);
+      }
+      box.appendChild(field);
+    });
+
+    var cField = document.createElement('div'); cField.className='field';
+    var cLab = document.createElement('label'); cLab.className='fl'; cLab.textContent='Collection & Use of Personal Information'; cField.appendChild(cLab);
+    var cBox = document.createElement('div'); cBox.className='consent-box'; cBox.textContent = pipa(def.purpose); cField.appendChild(cBox);
+    var cRow = document.createElement('div'); cRow.className='chk-row';
+    cRow.innerHTML = '<input type="checkbox" id="f_consent"><span>I agree to the collection and use of my personal information above.</span>';
+    cField.appendChild(cRow);
+    box.appendChild(cField);
+
+    var hp = document.createElement('div'); hp.className='hp-field'; hp.setAttribute('aria-hidden','true');
+    hp.innerHTML = '<label>Leave this field empty<input type="text" id="f_hp" tabindex="-1" autocomplete="off"></label>';
+    box.appendChild(hp);
+
+    formShownAt = Date.now();
+  }
+
+  function collect(){
+    var def = FORMS[selectedCat]; if (!def) return null;
+    var out = { category: selectedCat };
+    def.fields.forEach(function(f){
+      if (f.type === 'multi') {
+        var picks = [];
+        var grid = $('f_'+f.key);
+        if (grid) Array.prototype.forEach.call(grid.querySelectorAll('input[type=checkbox]'), function(cb){ if (cb.checked) picks.push(cb.value); });
+        out[f.key] = picks.join(', ');
+      } else if (f.type === 'daytime') {
+        function _dtPick(suf){
+          var g = $('f_'+f.key+suf); var ps = [];
+          if (g) Array.prototype.forEach.call(g.querySelectorAll('input[type=checkbox]'), function(cb){ if (cb.checked) ps.push(cb.value); });
+          return ps;
+        }
+        var parts = [];
+        var _d = _dtPick('_days');    if (_d.length) parts.push(_d.join(', '));
+        var _wd = _dtPick('_wtimes'); if (_wd.length) parts.push('Weekday: ' + _wd.join(', '));
+        var _we = _dtPick('_etimes'); if (_we.length) parts.push('Weekend: ' + _we.join(', '));
+        var _t = _dtPick('_times');   if (_t.length) parts.push(_t.join(', '));
+        out[f.key] = parts.join(' / ');
+      } else if (f.type === 'radio') {
+        var rgrid = $('f_'+f.key);
+        var checked = rgrid ? rgrid.querySelector('input[type=radio]:checked') : null;
+        out[f.key] = checked ? checked.value : '';
+      } else {
+        var el = $('f_'+f.key);
+        out[f.key] = el ? (el.value||'').trim() : '';
+      }
+    });
+    out.consent = !!($('f_consent') && $('f_consent').checked);
+    out.hp = ($('f_hp') && $('f_hp').value) || '';
+    return out;
+  }
+
+  // ════════ retry queue (localStorage) — collection-loss-0 ════════
+  function qRead(){ try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch(e){ return []; } }
+  function qWrite(arr){ try { localStorage.setItem(QUEUE_KEY, JSON.stringify(arr)); } catch(e){} }
+  function qUpsert(item){
+    var arr = qRead(); var found = false;
+    for (var i=0;i<arr.length;i++){ if (arr[i].payload.submissionId === item.payload.submissionId){ arr[i]=item; found=true; break; } }
+    if (!found) arr.push(item);
+    qWrite(arr);
+  }
+  function qRemove(sid){ qWrite(qRead().filter(function(x){ return x.payload.submissionId !== sid; })); }
+  function backoffMs(attempts){ return Math.min(30000, 1000 * Math.pow(2, Math.max(0, attempts-1))); }
+
+  var activeSid = '';
+  var flushTimer = null;
+  function scheduleFlush(delay){ if (flushTimer) clearTimeout(flushTimer); flushTimer = setTimeout(flushQueue, delay || 1000); }
+
+  function send(item){
+    return fetch(GAS_URL, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(item.payload)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res && res.ok) { onSent(item, res); return true; }
+      if (res && res.noRetry) { onRejected(item, res); return true; }
+      return onSoftFail(item);
+    })
+    .catch(function(){ return onSoftFail(item); });
+  }
+
+  function onSent(item, res){
+    qRemove(item.payload.submissionId);
+    if (item.payload.submissionId === activeSid) showDone(res.id || item.payload.submissionId);
+  }
+  function onRejected(item, res){
+    qRemove(item.payload.submissionId);
+    if (item.payload.submissionId === activeSid) {
+      resetSubmitBtn();
+      toast((res && res.error) || 'Submission failed. Please check your input.', true);
+    }
+  }
+  function onSoftFail(item){
+    item.attempts = (item.attempts||0) + 1;
+    item.nextAt = Date.now() + backoffMs(item.attempts);
+    qUpsert(item);
+    if (item.payload.submissionId === activeSid) {
+      resetSubmitBtn();
+      if (item.attempts >= 3) showFailBanner(); else showPendingBanner();
+    }
+    scheduleFlush(backoffMs(item.attempts));
+    return false;
+  }
+
+  function flushQueue(){
+    var arr = qRead(); if (!arr.length) { return; }
+    var now = Date.now();
+    var due = arr.filter(function(x){ return !x.nextAt || x.nextAt <= now; });
+    if (!due.length) {
+      var soonest = Math.min.apply(null, arr.map(function(x){ return x.nextAt || now; }));
+      scheduleFlush(Math.max(500, soonest - now));
+      return;
+    }
+    (function next(i){
+      if (i >= due.length) return;
+      send(due[i]).then(function(){ next(i+1); });
+    })(0);
+  }
+
+  function resetSubmitBtn(){ var b=$('submitBtn'); b.disabled=false; b.textContent='Submit Inquiry'; }
+  function showPendingBanner(){
+    var el = $('retryBanner'); el.className='retry-banner pending';
+    el.innerHTML = 'Submission is delayed. Retrying automatically… You may close this window; it will resend on your next visit.';
+  }
+  function showFailBanner(){
+    var el = $('retryBanner'); el.className='retry-banner failed';
+    el.innerHTML = 'Submission is delayed. Your entry has been saved and will be resent automatically.<br>' +
+      'If urgent, please contact <a href="tel:'+CONTACT_PHONE+'">'+CONTACT_PHONE+'</a> or <a href="mailto:'+CONTACT_EMAIL+'">'+CONTACT_EMAIL+'</a>.<br>' +
+      '<button type="button" class="again2" id="retryNow">Retry now</button>';
+    var rn = $('retryNow'); if (rn) rn.addEventListener('click', function(){ showPendingBanner(); flushQueue(); });
+  }
+  function clearBanner(){ var el=$('retryBanner'); el.className='retry-banner'; el.innerHTML=''; }
+
+  function showDone(id){
+    clearBanner();
+    $('rcptNo').textContent = id ? ('Reference No.: ' + id) : '';
+    $('hubView').style.display='none';
+    $('formView').style.display='none';
+    $('doneWrap').style.display='block';
+    window.scrollTo(0,0);
+  }
+
+  // ── view switching: hub (landing) ↔ form (type chosen) ──
+  function showHub(){
+    selectedCat = '';
+    $('hubView').style.display='block';
+    $('formView').style.display='none';
+    $('doneWrap').style.display='none';
+    clearBanner();
+    window.scrollTo(0,0);
+  }
+  function pickCat(cat, pushUrl){
+    if (!FORMS[cat]) { showHub(); return; }
+    selectedCat = cat;
+    $('hubView').style.display='none';
+    $('doneWrap').style.display='none';
+    $('formView').style.display='block';
+    resetSubmitBtn(); clearBanner();
+    buildForm(cat);
+    if (pushUrl) { try { history.replaceState(null, '', '?type=' + cat); } catch(e){} }
+    window.scrollTo(0,0);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.wlp-inq .type-card'), function(btn){
+    btn.addEventListener('click', function(e){ if (e && e.preventDefault) e.preventDefault(); pickCat(this.getAttribute('data-cat'), true); });
+  });
+  $('changeType').addEventListener('click', function(){
+    try { history.replaceState(null, '', location.pathname); } catch(e){}
+    showHub();
+  });
+
+  // ── submit ──
+  $('submitBtn').addEventListener('click', function(){
+    if (!selectedCat) { toast('Please select an inquiry type', true); return; }
+    var vals = collect(); if (!vals) return;
+    var def = FORMS[selectedCat];
+
+    for (var i=0;i<def.fields.length;i++){
+      var f = def.fields[i];
+      if (f.req && !vals[f.key]) { toast('Please enter your ' + f.label, true); return; }
+    }
+    var pd = String(vals.phone||'').replace(/\D/g,'');
+    if (pd.length < 9 || pd.length > 11) { toast('Please enter a valid phone number', true); return; }
+    if (!vals.consent) { toast('Please agree to the collection and use of personal information', true); return; }
+
+    var sid = uuid();
+    var payload = {
+      action:'intake_submit', t:INTAKE_TOKEN, submissionId:sid, lang:LANG,
+      category:vals.category, name:vals.name, phone:vals.phone,
+      program:vals.program||'', channel:vals.channel||'', message:vals.message||'',
+      wishTime:vals.wishTime||'', age:vals.age||'', exp1Date:vals.exp1Date||'',
+      consent:true, hp:vals.hp||'', fillMs:(formShownAt? (Date.now()-formShownAt) : 0),
+      utmSource:UTM_SOURCE, utmContent:UTM_CONTENT, utmMedium:UTM_MEDIUM
+    };
+    activeSid = sid;
+    var item = { payload:payload, attempts:0, nextAt:0 };
+    qUpsert(item);
+
+    var b=this; b.disabled=true; b.textContent='Submitting…'; clearBanner();
+    send(item);
+  });
+
+  $('againBtn').addEventListener('click', function(){
+    activeSid='';
+    resetSubmitBtn(); clearBanner();
+    $('doneWrap').style.display='none';
+    if (selectedCat) { buildForm(selectedCat); $('formView').style.display='block'; }
+    else { showHub(); }
+    window.scrollTo(0,0);
+  });
+
+  window.addEventListener('online', function(){ scheduleFlush(300); });
+  if (qRead().length) scheduleFlush(800);
+
+  // ── type deep-link (?type=) — membership|adult|youth (KO/EN aliases). Otherwise → hub landing. ──
+  (function(){
+    try {
+      var t = (qp('type') || '').toLowerCase();
+      var alias = { membership:'membership', '멤버십':'membership',
+                    adult:'adult', '성인':'adult', '성인강습':'adult',
+                    youth:'youth', '유소년':'youth', '유소년강습':'youth' };
+      var cat = alias[t];
+      if (cat) { pickCat(cat, false); } else { showHub(); }
+    } catch (e) { showHub(); }
+  })();
+})();
+</script>
