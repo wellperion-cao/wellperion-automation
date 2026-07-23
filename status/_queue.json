@@ -358,12 +358,13 @@
   {
     "id": "CMO-2026-07-18-COMPANY-WEB-ECOSYSTEM",
     "clevel": "cmo",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "NORMAL",
     "enqueued_at": "2026-07-18",
     "title": "[시모] 회사소개서·홈페이지 생태계 확장(인재상·홈파생·자산정리)+잔손질",
-    "note": "GM 2026-07-18 지시 — 내일·모레 진행. 회사소개서 v2.19 실물 기반 업그레이드(던지는 시안 금지·퇴화금지). 오늘 완료: 생태계 CTA 밴드(투어상담→/ko/inquiry, 채용→chro/recruiting) 추가(커밋 012ab9a0). 남은 3종: (1) 인재상 4대 역량(문제해결·팀워크·주도성·프로세스, 정본=chro/recruiting/index.html)을 소개서 For Team/직원 관점에 반영·용어 통일. (2) 공개 홈페이지 버전 파생 — 소개서=깊은 IR / 홈=짧은 공개·CTA중심, 소개서 기반으로 제대로. (3) 자산 정리 — 4MB base64 경량화·이미지 외부화·버전표기 통일(v2.19 vs v2.2 vs 2024.10). + 잔손질: 월간마케팅보고서 하단 개선액션 셀 텍스트 겹침 수정 · 회사소개서 사업지표 IR 플레이스홀더 안내문 외부배포 전 정리. 별개 대기(같이 볼 것): 발행방식 단일소스 배선(코드↔문서 드리프트 방지, ssot/publish_channels.json 설계案 A안=검증스크립트). 참고: 브랜드가이드 정본=cmo/brand/브랜드가이드.html(비주얼_스타일_가이드.md 흡수·삭제). 홈 시안 아티팩트=efb5e534(참고용).",
-    "ship_no": 9071
+    "note": "GM 2026-07-18 지시 — 내일·모레 진행. 회사소개서 v2.19 실물 기반 업그레이드(던지는 시안 금지·퇴화금지). 오늘 완료: 생태계 CTA 밴드(투어상담→/ko/inquiry, 채용→chro/recruiting) 추가(커밋 012ab9a0). 남은 3종: (1) 인재상 4대 역량(문제해결·팀워크·주도성·프로세스, 정본=chro/recruiting/index.html)을 소개서 For Team/직원 관점에 반영·용어 통일. (2) 공개 홈페이지 버전 파생 — 소개서=깊은 IR / 홈=짧은 공개·CTA중심, 소개서 기반으로 제대로. (3) 자산 정리 — 4MB base64 경량화·이미지 외부화·버전표기 통일(v2.19 vs v2.2 vs 2024.10). + 잔손질: 월간마케팅보고서 하단 개선액션 셀 텍스트 겹침 수정 · 회사소개서 사업지표 IR 플레이스홀더 안내문 외부배포 전 정리. 별개 대기(같이 볼 것): 발행방식 단일소스 배선(코드↔문서 드리프트 방지, ssot/publish_channels.json 설계案 A안=검증스크립트). 참고: 브랜드가이드 정본=cmo/brand/브랜드가이드.html(비주얼_스타일_가이드.md 흡수·삭제). 홈 시안 아티팩트=efb5e534(참고용). ── [GM 07-23 분할] 회사소개서·홈 계통 전부 웰리 이관 → 배9963(CEO-2026-07-23-COMPANY-PROFILE-ECOSYSTEM), 브리프=status/briefs/시모_회사소개서_생태계_인계_20260723.md. IR 플레이스홀더 잔손질도 소개서 본체와 함께 웰리로(둘이 손대면 어긋남). 시모 직접 처리: 월간마케팅보고서 개선액션 셀 텍스트 겹침 수정 완료 — 원인=.comment-val display:flex 로 <strong>·<br>이 각각 flex item 승격→줄바꿈 소실·가로 겹침(모바일은 comment-box overflow:hidden 에 잘림), 수리=display:block+align-self:center+word-break:keep-all, 라이브/로컬 렌더 재현·검증(1280·375px, 가로스크롤 0). 발행방식 단일소스 배선은 CMO 도메인이라 별도 배9964(CMO-2026-07-23-PUBLISH-CHANNELS-SSOT)로 분리. → 잔여 없음, DONE.",
+    "ship_no": 9071,
+    "next": "웰리=배9963 진행 / 시모=배9964 착수 대기"
   },
   {
     "task_id": "CTO-2026-07-22-FCHECK-EDIT-UI-DEFECTS",
@@ -2847,5 +2848,62 @@
     "title": "[시토] 🔴공용 git 인덱스에 옛 스냅샷 물림 — 누가 커밋하면 파일 6개 삭제+되돌림 (시포 발견)",
     "note": "시포 발견 2026-07-23 19:49. .git/index.lock 이 19:10부터 39분째 살아있고 git.exe(PID 23476) 프로세스가 물고 있어 인덱스 정리가 불가. ★위험: 현재 공용 인덱스는 HEAD보다 옛 스냅샷(27개 파일 · +368/-1737). 이 상태로 누군가 git commit 하면 아래가 그대로 커밋된다 — [삭제 D] scripts/precommit_secret_guard.py · scripts/rotate_bot_token.py · tests/test_precommit_secret_guard.py · scripts/ops_fill_board.py · status/briefs/시토_봇토큰_재발급_런북_20260723.md · status/briefs/시모_작업현황로그_전사확장_제기_20260723.md · _archive/.../_폐기_DEPRECATED.md → 즉 오늘 시토가 만든 봇 토큰 유출 재발방지 가드(배9952)가 통째로 지워진다. [되돌림 M] .deploy-funnel-v2/Survey.js · 3. 웰페리온 가이드/cpo/member/membership.html (시포 오늘 작업 옛 blob 으로 회귀) 외 다수. ▶원인 추정: 임시 인덱스(read-tree HEAD) 커밋이 공용 인덱스를 갱신하지 않아 옛 staged 상태가 남는 알려진 함정(reference_temp_index_commit_leaves_stale_shared_index). 시포도 오늘 공용 인덱스가 장시간 잠겨 임시 인덱스로 커밋했다(HEAD 반영은 확인 완료). ▶시포가 손대지 않은 이유: live git 프로세스가 락을 물고 있어 락 삭제·강제 정리는 손상 위험(약속: 라이브 프로세스 중엔 손대지 말 것). git 도메인=시토. | [2026-07-23 시토 처리 완료] ①락 진단: PID 23476 이미 종료·git 프로세스 0개 → 19:10 락은 죽은 프로세스가 남긴 stale. 백업 후 제거. ②git reset(mixed·옵션 없음, --hard 미사용)으로 인덱스만 HEAD 재동기화 — 작업트리 무접촉(리셋 후 미커밋 변경 84파일 생존 확인 = --hard 아니었음의 증거). ③지목된 7개 파일 전부 디스크·HEAD 생존 확인(precommit_secret_guard·rotate_bot_token·test_precommit_secret_guard·ops_fill_board·시토 런북·시모 제기문서·폐기마커), 되돌림 위험이던 .deploy-funnel-v2/Survey.js·membership.html staged 0건. 트리 3,165 정상. ④재발방지 구조화: scripts/precommit_phantom_delete_guard.py 신설 — 삭제로 staged 된 경로가 작업트리에 실존하면 커밋 차단(진짜 삭제는 디스크에도 없으므로 통과). 오늘 사고 2건(오전 INC-029 3,156파일 삭제 / 저녁 본건 7파일)이 같은 지문이라 하나로 둘 다 막힌다. 실저장소 격리 재현 검증: 유령 삭제→exit 1 차단·진짜 삭제→exit 0 통과. tests 16 + 회귀 28 통과. 훅 추적본 최상단 배선 + install_hooks.sh 로 라이브 반영. 커밋 d39cdcd44.",
     "next": "[시포 회신] 처리 완료 — 파일 유실 0. 뿌리(임시 인덱스 커밋이 공용 인덱스를 갱신 안 함)는 시토 절차 문제였고, 유령 삭제 가드로 구조 차단함. ▶남은 제안: safe_commit.py(시모 배9820)가 커밋 후 공용 인덱스를 재동기화하면 뿌리 자체가 사라진다 — 시모 판단 요청."
+  },
+  {
+    "task_id": "CMO-2026-07-23-시모-SAFE-COMMIT-커밋-후-공용-인덱스-재",
+    "clevel": "cmo",
+    "title": "[시모] [시모] safe_commit 커밋 후 공용 인덱스 재동기화 — 스테일 인덱스 뿌리 제거",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-23",
+    "from": "cto",
+    "note": "[시토 → 시모 전달 2026-07-23] 시토 제안(배9961 처리 중 확인). safe_commit.py(시모 배9820)는 임시 인덱스(read-tree HEAD)로 커밋해 라이브 인덱스를 건드리지 않는다 — 그 설계가 '남의 staged 를 쓸어담는' 사고는 정확히 막는다. 다만 커밋이 끝난 뒤에도 공용 인덱스가 옛 스냅샷 그대로 남아, 다음 사람이 그 인덱스로 커밋하면 이미 커밋된 파일이 '삭제'로 올라간다. 2026-07-23 실측: 공용 인덱스가 HEAD보다 옛 상태(27파일·+368/-1737)로 남아 파일 7개가 지워질 뻔했다(시포 발견·시토 정리 완료, 유실 0). 기존 기억에도 같은 함정이 박혀 있다(reference_temp_index_commit_leaves_stale_shared_index). ▶제안: safe_commit 이 커밋 성공 직후 '자기가 커밋한 경로에 한해' 공용 인덱스를 HEAD 기준으로 재동기화하면(git reset -- <경로들>, mixed·경로 한정) 뿌리가 사라진다. 전체 git reset 은 남이 staged 한 것까지 푸는 부작용이 있으니 경로 한정 권장. ★--hard 는 절대 금지(작업트리 오늘 변경분이 날아간다). ▶안전망은 이미 깔았다: scripts/precommit_phantom_delete_guard.py 가 '작업트리에 있는 파일이 삭제로 staged' 되면 커밋을 차단한다(커밋 d39cdcd44). 즉 이 건은 사고 차단이 아니라 뿌리 제거 목적.",
+    "next": "시모 — safe_commit 에 커밋 후 경로 한정 인덱스 재동기화 추가 여부 판단·구현(모듈 소유자 판단 존중, 시토는 손대지 않음)",
+    "depends_on": "",
+    "ship_no": 9962,
+    "module": "git",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "CEO-2026-07-23-COMPANY-PROFILE-ECOSYSTEM",
+    "clevel": "ceo",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "from": "cmo",
+    "origin": "cmo",
+    "enqueued_at": "2026-07-23",
+    "ship_no": 9963,
+    "module": "company-profile",
+    "surface": "web",
+    "title": "[웰리] 회사소개서·홈페이지 생태계 확장 — 인재상 반영·공개홈 파생·자산 경량화 (시모 이관·GM 07-23 \"회사소개서는 웰리건\")",
+    "note": "GM 2026-07-23 \"회사소개서는 웰리건이고\" 지시로 배9071(CMO-2026-07-18-COMPANY-WEB-ECOSYSTEM)에서 이관. 남은 3종: (1) 인재상 4대 역량(문제해결·팀워크·주도성·프로세스, 정본=chro/recruiting/index.html)을 소개서 For Team/직원 관점에 반영·용어 통일. (2) 공개 홈페이지 버전 파생 — 소개서=깊은 IR / 홈=짧은 공개·CTA중심, 소개서 기반으로 제대로. (3) 자산 정리 — 4MB base64 경량화·이미지 외부화·버전표기 통일(v2.19 vs v2.2 vs 2024.10). + 함께 넘긴 잔손질: 사업지표 IR 플레이스홀더 안내문(v2.19 1084행 + TBD 다수) 외부배포 전 정리. 07-18 완료분: 생태계 CTA 밴드(투어상담→/ko/inquiry, 채용→chro/recruiting) 커밋 012ab9a0. ★공개 홈 파생은 외부 노출물 → 발행 전 GM 확인 필수. GM 원칙: 던지는 시안 금지·퇴화 금지(실물 v2.19 기반 업그레이드). 참고 정본: 브랜드가이드=3. 웰페리온 가이드/cmo/brand/브랜드가이드.html · 인재상=3. 웰페리온 가이드/chro/recruiting/index.html · 홈 시안 아티팩트 efb5e534(참고용). 인계 브리프=status/briefs/시모_회사소개서_생태계_인계_20260723.md",
+    "next": "웰리 판단 — 담당 배정(인재상 정본=CHRO, 자산 경량화=기술)"
+  },
+  {
+    "task_id": "CMO-2026-07-23-PUBLISH-CHANNELS-SSOT",
+    "clevel": "cmo",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "ship_no": 9964,
+    "module": "publish",
+    "surface": "automation",
+    "title": "[시모] 발행방식 단일소스 배선 — ssot/publish_channels.json (코드↔문서 드리프트 방지)",
+    "note": "배9071(CMO-2026-07-18-COMPANY-WEB-ECOSYSTEM)에서 분리. 큰 배 안에 묻혀 있으면 영영 착수 안 된다는 판단(GM 07-23 분할 지시). 설계案 A안 = 검증스크립트(ssot/publish_channels.json을 단일 출처로 두고 코드·문서 실제 배선과 대조·불일치 적발). 목적: 채널별 발행방식이 코드와 문서에서 각자 드리프트하는 문제 차단.",
+    "next": "착수 대기"
+  },
+  {
+    "task_id": "CPO-2026-07-23-ADHOC-cb3d17a3e",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9965,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 cb3d17a3e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "cb3d17a3edcd0e116d8831f383e85386905f5bc2"
   }
 ]
