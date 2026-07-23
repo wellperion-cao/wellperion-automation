@@ -28,6 +28,9 @@ from collectors.base import make_payload  # noqa: E402
 import cpo_report  # noqa: E402 — 기존 fetch·분류 로직 재사용(중복 복사 금지)
 
 _LINK = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html"
+# 강습은 같은 페이지의 다른 관리 그룹(?manage=lesson)으로 들어가야 한다 — 기본 링크는 멤버십으로 열려서
+# 강습 미응대를 안내하면서 멤버십 화면을 띄우는 어긋남이 있었다(2026-07-23 GM 지적).
+_LINK_LESSON = _LINK + "?manage=lesson"
 
 
 def collect(module=None) -> dict:
@@ -75,6 +78,7 @@ def collect(module=None) -> dict:
             summary += f" · ⚠️ 강습 미응대 30일 {lesson_un['total']}건"
             if detail:
                 summary += f"({detail})"
+            summary += f" → {_LINK_LESSON}"   # 강습 건은 강습 화면으로(멤버십 링크로 보내지 않는다)
         else:
             summary += " · 강습 미응대 0건"
     else:

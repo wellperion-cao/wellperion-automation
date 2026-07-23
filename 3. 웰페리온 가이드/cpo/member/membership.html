@@ -4544,6 +4544,14 @@ function _lessonStatusChipHtml(t, val, label, n) {
     'color:' + (active ? 'var(--orange,#c8912b)' : 'var(--dim)') + '">' + esc(label) + ' ' + n + '</button>';
 }
 function _lessonRowStatus(r) { return String(r.status || '').trim() || _LESSON_STATUS_BLANK; }
+// ★문의 목록에서 빠지는 '끝난·이관된' 건 — 각각 전용 카드가 따로 있다.
+//   LOSS→LOSS 회원 관리 / SUC→강습 회원 관리(등록 명단) / 대기→대기자 관리.
+//   목록과 칩이 반드시 같은 판정을 써야 한다. 2026-07-23 GM 지적으로 발견한 버그:
+//   목록은 LOSS를 빼는데 칩은 전체를 세고 있어 'LOSS 84'를 누르면 0건이 나왔다.
+var _LESSON_ARCHIVED_STATUSES = ['LOSS', 'SUC', '대기'];
+function _lessonIsArchived(r) {
+  return _LESSON_ARCHIVED_STATUSES.indexOf(String(r.status || '').trim()) >= 0;
+}
 
 // 종목 세그먼트 → 표시 버킷(칩·필터 그룹키). 명단키 매칭 우선, 없으면 괄호 앞 라벨. gviz엔 r.bucket 없어 클라 계산. 축7, 2026-07-08 시포·GM.
 function _lessonSegmentBucket(seg) {
@@ -4561,7 +4569,10 @@ function lessonRenderChips(t) {
   // 종목칩 = 종목별 줄 기준(문의 1건에 종목 여러 개면 각 종목 카운트). 축7 종목분리 정합. 2026-07-08 시포·GM.
   // 진행상태칩 = 문의 '건' 기준(1건 1상태). 두 축은 서로의 현재 선택을 반영해 교차 집계한다 →
   // 칩에 보이는 숫자 = 실제로 걸러져 나올 수. 눌렀는데 0건인 헛클릭이 없다. 2026-07-23 GM.
+  var archived = 0;
   rows.forEach(function(r){
+    // 목록에 안 나오는 건(LOSS·SUC·대기)은 칩에서도 세지 않는다 — 안 그러면 눌러도 0건인 칩이 생긴다.
+    if (_lessonIsArchived(r)) { archived++; return; }
     var segs = _lessonSportSplit(r.sport); if (!segs.length) segs = [''];
     var vs = _lessonRowStatus(r);
     if (!curStatus || vs === curStatus) {
@@ -4579,8 +4590,14 @@ function lessonRenderChips(t) {
   statuses.forEach(function(v){ vHtml += _lessonStatusChipHtml(t, v, v, statusCounts[v]); });
 
   // 상태가 한 종류뿐이면 진행상태 박스는 숨긴다(고를 게 없는데 자리만 먹는 걸 막는다).
+  // 이관된 건수는 한 줄로 밝힌다 — 숫자가 줄어든 이유와 어디로 갔는지를 모르면 '누락'으로 오해한다.
+  var note = archived
+    ? '<div style="font-size:11px;color:var(--dim);margin-top:5px">' +
+      '끝난 문의 ' + archived + '건은 이 목록에서 빠집니다 — 등록(SUC)은 <b>강습 회원 관리</b>, ' +
+      '무산(LOSS)은 <b>LOSS 회원 관리</b>, 대기는 <b>대기자 관리</b> 카드에서 보세요.</div>'
+    : '';
   bar.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start">' +
-    _lessonChipBox('종목', sHtml) + (statuses.length > 1 ? _lessonChipBox('진행상태', vHtml) : '') + '</div>';
+    _lessonChipBox('종목', sHtml) + (statuses.length > 1 ? _lessonChipBox('진행상태', vHtml) : '') + '</div>' + note;
   _lessonOwnerSummaryRender(t);
 }
 
@@ -4887,8 +4904,7 @@ function _lessonVisibleLines(t) {
   var qd = q.replace(/[^0-9]/g, '');
   var lines = [];
   rows.forEach(function(r){
-    var _rs = String(r.status || '').trim();
-    if (_rs === 'LOSS' || _rs === '대기') return;   // 문의 현황=활성만. LOSS·대기는 각 전용 탭으로 분리(배973)
+    if (_lessonIsArchived(r)) return;   // 문의 현황=활성만. LOSS·SUC·대기는 각 전용 탭으로 분리(배973 · SUC 2026-07-23 GM)
     if (q) {   // 검색: 성함(부분) 또는 연락처(숫자) 매칭 — 팀 리더 빠른 찾기(배944 후속)
       var nm = String(r.name || '').toLowerCase();
       var ph = String(r.phone || '').replace(/[^0-9]/g, '');
