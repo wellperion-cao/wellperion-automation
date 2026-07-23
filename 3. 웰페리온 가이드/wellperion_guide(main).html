@@ -370,7 +370,7 @@
     <div class="sub-nav" data-parent="chro-nav2">
       <a data-id="H1">📋 취업규칙</a>
       <a data-id="H2">🧑‍💼 인사 운영 허브</a>
-      <a data-id="H3">🗓️ 휴무·근무 스케줄</a>
+      <a data-id="H3">🗓️ 근무 스케줄 보드</a>
       <a data-id="H4">🗺 구조도</a>
       <a href="https://wellperion-cao.github.io/wellperion-automation/chro/recruiting/" target="_blank">📢 Recruiting</a>
       <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%ED%8C%8C%ED%8A%B8%EB%84%88%ED%8C%80%20%EC%B2%B4%EA%B3%84.html" target="_blank">📊 파트너팀 체계</a>
@@ -7120,35 +7120,33 @@ function crTab(btn, panelId) {
     </script>
   </article>
 
-  <!-- ── H3: 휴무·근무 스케줄 (신규 근무 스케줄 보드 + 기존 휴무표 전환 · 2026-07-23) ── -->
+  <!-- ── H3: 근무 스케줄 보드 (기존 휴무표 임베드 제거 · 전체 페이지 자동 확장 — 내부 스크롤 없음 · 2026-07-23) ── -->
   <article class="doc" id="H3">
-    <div class="doc-header"><h2>🗓️ 휴무·근무 스케줄</h2><div class="meta">CHRO 관할 · 나우열M · 🤖 AI CHRO (시로)</div></div>
-    <p class="lead"><strong>근무 스케줄 보드(신규)</strong> — 월간/일별/주간 배치, 칸 클릭 즉시 입력, 연차·반차 신청/결재(결재라인), 개인별 연차 현황(1~7월 시트 실측 반영). 기존 휴무표는 아래 버튼으로 전환하며, 휴무표의 직원 데이터(PII)는 <strong>관리자 비밀번호 입력 후</strong>에만 표시됩니다.</p>
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-      <button id="h3BtnSched" onclick="swH3('sched')" style="font-family:inherit;cursor:pointer;padding:8px 16px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#221F20;font-weight:700;font-size:13px">🗓 근무 스케줄 보드 (신규)</button>
-      <button id="h3BtnLeave" onclick="swH3('leave')" style="font-family:inherit;cursor:pointer;padding:8px 16px;border-radius:10px;border:1px solid var(--border);background:var(--paper);color:var(--text);font-weight:600;font-size:13px">📋 기존 휴무표 (ERP 연동)</button>
-    </div>
-    <div id="h3Sched" style="margin-top:10px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--paper)">
-      <iframe id="schedFrame" src="chro/hub/schedule.html" title="근무 스케줄 보드" loading="lazy" style="width:100%;height:84vh;min-height:620px;border:0;display:block"></iframe>
-    </div>
-    <div id="h3Leave" style="display:none;margin-top:10px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--paper)">
-      <iframe id="leaveFrame" data-src="chro/hub/leave.html" title="휴무·근무 스케줄" loading="lazy" onload="window.sendLeavePass&&window.sendLeavePass()" style="width:100%;height:80vh;min-height:560px;border:0;display:block"></iframe>
+    <div class="doc-header"><h2>🗓️ 근무 스케줄 보드</h2><div class="meta">CHRO 관할 · 나우열M · 🤖 AI CHRO (시로) · 26.1~7월 휴무표 실측 반영</div></div>
+    <p class="lead">월간/일별/주간 배치 · 칸 클릭 즉시 입력 · 연차·반차·근무변경 신청/결재(결재라인) · 개인별 연차 현황. 보드가 내용 높이만큼 자동 확장되어 <strong>페이지 스크롤 하나로</strong> 전체를 봅니다.</p>
+    <div style="margin-top:14px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--paper)">
+      <iframe id="schedFrame" src="chro/hub/schedule.html" title="근무 스케줄 보드" loading="lazy" scrolling="no" style="width:100%;height:900px;border:0;display:block;overflow:hidden"></iframe>
     </div>
     <script>
-    function swH3(which){
-      var s=document.getElementById('h3Sched'), l=document.getElementById('h3Leave');
-      var bs=document.getElementById('h3BtnSched'), bl=document.getElementById('h3BtnLeave');
-      var lf=document.getElementById('leaveFrame');
-      var on='1px solid var(--accent)', off='1px solid var(--border)';
-      if(which==='sched'){ s.style.display='block'; l.style.display='none';
-        bs.style.background='var(--accent)'; bs.style.color='#221F20'; bs.style.border=on;
-        bl.style.background='var(--paper)'; bl.style.color='var(--text)'; bl.style.border=off;
-      } else { s.style.display='none'; l.style.display='block';
-        if(lf&&!lf.src&&lf.getAttribute('data-src'))lf.src=lf.getAttribute('data-src');   // 휴무표는 열 때 로드(비번 게이트 유지)
-        bl.style.background='var(--accent)'; bl.style.color='#221F20'; bl.style.border=on;
-        bs.style.background='var(--paper)'; bs.style.color='var(--text)'; bs.style.border=off;
+    (function(){
+      /* 보드 iframe 자동 높이 — 내용(월간 59명 표 등) 실제 높이로 확장해 내부 스크롤 제거.
+         동일 출처라 contentWindow.document 접근 가능. 로드 직후 + ResizeObserver(탭 전환·필터로
+         높이 변할 때) + 저빈도 폴백 폴링으로 재측정. */
+      var f=document.getElementById('schedFrame'); if(!f)return;
+      var last=0;
+      function m(){
+        try{
+          var d=f.contentWindow&&f.contentWindow.document; if(!d)return;
+          var h=Math.max(d.documentElement?d.documentElement.scrollHeight:0, d.body?d.body.scrollHeight:0);
+          if(h&&h!==last){last=h;f.style.height=(h+20)+'px';}
+        }catch(_){}
       }
-    }
+      f.addEventListener('load',function(){
+        m();
+        try{ new ResizeObserver(m).observe(f.contentWindow.document.documentElement); }catch(_){}
+      });
+      setInterval(m,1500);
+    })();
     </script>
   </article>
 
