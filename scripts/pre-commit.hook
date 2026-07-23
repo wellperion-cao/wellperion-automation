@@ -135,4 +135,31 @@ if [ -f "$RECEPTION_DRIFT_GUARD" ] && [ -n "$PYBIN" ]; then
   PYTHONUTF8=1 "$PYBIN" "$RECEPTION_DRIFT_GUARD" || true
 fi
 
+# ── ⑤ 죽은 ERP 문서 앵커 가드 (M5 20일 무자각 사고 재발 방지 · 2026-07-23 시토) ──
+# staged *.py·*.js·*.md 안의 wellperion_guide(main).html#<ID> 참조가 가이드의
+# id/data-id/data-doc 정본 집합에 없으면(레거시 M_LEGACY 구주소 포함) 커밋 차단(exit 1).
+# 가이드 없음/파이썬 없음/내부오류 = fail-open(통과). 우회: git commit --no-verify
+# 또는 env SKIP_ERP_ANCHOR_GUARD=1
+ERP_ANCHOR_GUARD="$REPO_ROOT/scripts/precommit_erp_anchor_guard.py"
+if [ -f "$ERP_ANCHOR_GUARD" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$ERP_ANCHOR_GUARD"
+  if [ "$?" -eq 1 ]; then
+    exit 1
+  fi
+fi
+
+# ── ⑥ 알림 문구 내 원본 시트(DB) 링크 가드 (GM 지적 재발 방지 · 2026-07-23 시토) ──
+# staged *.py·*.js 의 추가된 줄(diff +)에 docs.google.com/spreadsheets 링크가
+# 알림 신호(sendMessage·send_telegram·chat_id 등) 근처에 있으면 커밋 차단(exit 1).
+# 원본 시트 링크가 알림에 노출되면 누구나 직접 수정·삭제 가능 + 개인정보 통째 노출.
+# 가드 오류/파이썬 없음 = fail-open(통과). 우회: git commit --no-verify
+# 또는 env SKIP_SHEET_LINK_GUARD=1
+SHEET_LINK_GUARD="$REPO_ROOT/scripts/precommit_sheet_link_guard.py"
+if [ -f "$SHEET_LINK_GUARD" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$SHEET_LINK_GUARD"
+  if [ "$?" -eq 1 ]; then
+    exit 1
+  fi
+fi
+
 exit 0
