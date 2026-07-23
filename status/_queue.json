@@ -1042,7 +1042,7 @@
     "origin": "gm",
     "enqueued_at": "2026-07-23",
     "ship_no": 9820,
-    "note": "GM 2026-07-23 지시·승인(공통 틀 선택). 계기=AI하루 EP10 검수큐 등록 누락을 아무도 못 봄. 핵심=로그는 '한 일'만 보여주므로 '빠진 것'(짝 불일치) 자동 적발을 같이 얹음. 구성=scripts/worklog.py(공용 기록)+scripts/worklog_gaps.py(공용 감지, role별 규칙 등록부)+`3. 웰페리온 가이드/_assets/worklog_panel.js`(공용 화면 조각, 기존 gate.js·print_options.js 관례). 최초 적용=M1. 타 C-Level은 자기 규칙만 등록하고 페이지에 조각 1줄 붙이면 됨. 기록은 손이 아니라 코드가 자동으로 남긴다(약속 L02).",
+    "note": "GM 2026-07-23 지시·승인(공통 틀 선택). 계기=AI하루 EP10 검수큐 등록 누락을 아무도 못 봄. 핵심=로그는 '한 일'만 보여주므로 '빠진 것'(짝 불일치) 자동 적발을 같이 얹음. 구성=scripts/worklog.py(공용 기록)+scripts/worklog_gaps.py(공용 감지, role별 규칙 등록부)+`3. 웰페리온 가이드/_assets/worklog_panel.js`(공용 화면 조각, 기존 gate.js·print_options.js 관례). 최초 적용=M1. 타 C-Level은 자기 규칙만 등록하고 페이지에 조각 1줄 붙이면 됨. 기록은 손이 아니라 코드가 자동으로 남긴다(약속 L02). | [2026-07-23 보강] 첫 스캔 55건 실사용성 문제(GM 지적: 첫날 55건 뜨면 무시됨) 3건 보강. ①오탐 제거: series_queue_parity 를 폴더명 대신 구조적 신호(output*/이미지 실존 + 폐기마커 부재)로 좁혀 웰페리온_프리미엄공간_(목업) 오탐 제거·실측 확인(高3건 중 AI16-휴관이벤트공지문은 _폐기_DEPRECATED.md 존재로 GM 폐기결정 확인=정상 제외, AI27-260627·실전사례08-데이터현황은 진짜 미등록 실측 확인=큐 등록은 하지 않고 그대로 보고). ②각 gap에 first_seen(상태파일 status/worklog_gaps_state.json, role|rule|ref 키로 스캔간 유지) ③age(신규=대상 14일 이내/누적) + summary 신규·누적 집계 추가 — 기존 6필드(role·severity·title·detail·hint·ref) 불변, 신규 2필드만 추가. 재검증: --scan 재실행 54건(신규4/누적50), 스키마 실측 확인 완료.",
     "next": "M1 라이브 확인 후 타 C-Level 확장 안내 — 시우(O1)·시포(회원)부터"
   },
   {
@@ -1086,5 +1086,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 120b19bbc)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "120b19bbcc48756bcb5603d858ca513d0d405111"
+  },
+  {
+    "task_id": "CTO-2026-07-23-ADHOC-88d6293da",
+    "clevel": "cto",
+    "title": "[시토] 22:30 문의보고 정합 3건 — 웹자동접수=미배정·쏠림 기준선·담당배정줄 위치 (GM 07-23 지적)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9824,
+    "artifact": "fix(cto): 22:30 문의보고 정합 3건 — 웹자동접수=미배정·쏠림 기준선·담당배정줄 위치 (GM 07-23 지적) (CLI ad-hoc · 커밋 88d6293da)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "88d6293daa0a6f8507cb6c62836724fb30d02776"
   }
 ]
