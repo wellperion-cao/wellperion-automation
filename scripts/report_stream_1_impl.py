@@ -58,6 +58,9 @@ _TEST_EPOCH_RE = re.compile(r"_\d{10,}$")  # 이름 끝 epoch 접미(테스트 �
 # "신규"·"가망"·"대기"는 아직 실제 컨택이 일어나지 않은 접수 직후 placeholder — contacts[]가
 # 없다면 진전으로 보지 않는다(GM 지정: "등록/상담/컨택 등 진행상태 있는 것"만 진전).
 _PRE_CONTACT_STATUSES = {"", "신규", "가망", "대기"}
+# owner 칸에 값이 있어도 실담당자가 아닌 자동 입력값(웹 접수 시 시스템이 채움) —
+# 이 값들은 '배정됨'으로 오판하면 안 되고 미배정으로 취급한다(GM 07-23 지적: 서혜진·임동균 증발).
+_AUTO_OWNER_VALUES = ("웹 자동접수", "자동접수", "-")
 
 
 def _disp_width(s: str) -> int:
@@ -155,8 +158,10 @@ def _days_since(timestamp: str, today: str) -> int:
 
 
 def _is_unassigned_active(row: dict, is_lesson: bool) -> bool:
-    """담당자 미배정 + 활성(등록/이탈 종결 아님)."""
-    if str(row.get("owner", "") or "").strip():
+    """담당자 미배정 + 활성(등록/이탈 종결 아님).
+    owner 가 비어있거나 _AUTO_OWNER_VALUES(웹 자동접수 등 실담당자 아닌 자동값)면 미배정으로 본다."""
+    owner = str(row.get("owner", "") or "").strip()
+    if owner and owner not in _AUTO_OWNER_VALUES:
         return False
     return not (_is_registered(row, is_lesson) or _is_loss(row))
 
@@ -169,22 +174,55 @@ def _type_label(kind: str) -> str:
     return {"membership": "멤버십", "adult": "성인강습", "youth": "유소년강습"}[kind]
 
 
-def _special_notes(groups: dict[str, list[dict]]) -> str:
-    """정직한 자동 요약 — 종목/프로그램 3건+ 쏠림만(과장 없음), 당일(오늘) 스코프 한정.
-    담당배정 3일+ 지연(누적·최근30일)은 스코프가 달라 여기 섞지 않고 build_digest 에서
-    별도 '📌 누적 미배정(참고, 최근30일)' 라인으로 분리 표기한다(당일 특이사항 과장 방지)."""
-    notes: list[str] = []
+def _concentration_map(groups: dict[str, list[dict]]) -> tuple[dict[str, int], dict[str, int]]:
+    """{유형 종목/프로그램: 건수}, {유형: 유형 전체 건수} 집계 헬퍼."""
     concentration: dict[str, int] = {}
+    type_total: dict[str, int] = {}
     for kind, rows in groups.items():
         field = _field_for(kind)
+        type_label = _type_label(kind)
         for r in rows:
+            type_total[type_label] = type_total.get(type_label, 0) + 1
             sp = str(r.get(field, "") or "").strip() or "미분류"
             if kind == "membership":
                 sp = _short_program(sp)
-            key = f"{_type_label(kind)} {sp}"
+            key = f"{type_label} {sp}"
             concentration[key] = concentration.get(key, 0) + 1
-    for key, cnt in concentration.items():
-        if cnt >= 3:
+    return concentration, type_total
+
+
+def _special_notes(
+    groups: dict[str, list[dict]], raw_groups: dict[str, list[dict]], today: str
+) -> str:
+    """정직한 자동 요약 — 종목/프로그램 쏠림, 당일(오늘) 스코프 한정.
+    단순 "당일 3건+"가 아니라 최근 30일 기준선 대비 비중 1.5배 이상일 때만 쏠림으로 적는다
+    (예: 멤버십 플래티넘은 평소에도 최다 상품이라 매일 3건+ 떠서 노이즈였음 — GM 07-23 지적).
+    기준선 표본(해당 유형 최근 30일 실건수)이 10건 미만이면 기준선을 불신하고 쏠림 판정을 보류한다.
+    담당배정 3일+ 지연(누적·최근30일)은 스코프가 달라 여기 섞지 않고 build_digest 에서
+    별도 '📌 누적 미배정(참고, 최근30일)' 라인으로 분리 표기한다(당일 특이사항 과장 방지)."""
+    today_conc, today_type_total = _concentration_map(groups)
+
+    base_groups: dict[str, list[dict]] = {}
+    for kind, rows in raw_groups.items():
+        base_groups[kind] = [
+            r for r in rows
+            if not _is_test_row(r) and 0 <= _days_since(str(r.get("timestamp", "") or ""), today) <= 30
+        ]
+    base_conc, base_type_total = _concentration_map(base_groups)
+
+    notes: list[str] = []
+    for key, cnt in today_conc.items():
+        if cnt < 3:
+            continue
+        type_label = key.split(" ", 1)[0]
+        today_total = today_type_total.get(type_label, 0)
+        base_total = base_type_total.get(type_label, 0)
+        if today_total <= 0 or base_total < 10:
+            continue  # 표본 부족(해당 유형 최근30일 10건 미만) → 기준선 불신, 쏠림 판정 보류
+        today_ratio = cnt / today_total
+        base_ratio = base_conc.get(key, 0) / base_total
+        is_spike = (today_ratio >= base_ratio * 1.5) if base_ratio > 0 else today_ratio > 0
+        if is_spike:
             notes.append(f"{key} {cnt}건 쏠림")
     return " · ".join(notes) if notes else "없음"
 
@@ -206,6 +244,21 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
     a, b, c = len(mem_t), len(adult_t), len(youth_t)
     total_new = a + b + c
 
+    # 당일 신규 3분류(정합 확인용) — 항상 today rows(groups, 테스트행 이미 제외) 기준,
+    # sample 여부와 무관하게 always 계산한다(GM 07-23 지적: 서혜진·임동균 2건 증발 방지).
+    # 진전(p) / 담당배정 필요(u, owner 미배정·자동값) / 기타(o, 배정됐지만 아직 진전없음).
+    progress_today = 0
+    unassigned_today: list[tuple[str, str]] = []
+    for kind, rows in groups.items():
+        is_lesson = kind != "membership"
+        for r in rows:
+            if _has_progress(r):
+                progress_today += 1
+            elif _is_unassigned_active(r, is_lesson):
+                nm = str(r.get("name", "") or "-").strip() or "-"
+                unassigned_today.append((nm, _type_label(kind)))
+    other_today = total_new - progress_today - len(unassigned_today)
+
     # 담당배정 3일+ 지연(최근 30일 내, 전체 리스트 기준) → 별도 "참고" 라인으로 분리 표기(당일 아님).
     stale_unassigned: list[tuple[str, str]] = []
     for kind, rows in raw_groups.items():
@@ -218,7 +271,7 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
                 sp = _short_program(str(r.get(_field_for(kind), "") or "").strip())
                 sub = f"{_type_label(kind)}·{sp}" if sp and sp != "-" else _type_label(kind)
                 stale_unassigned.append((nm, sub))
-    special = _special_notes(groups)
+    special = _special_notes(groups, raw_groups, today)
 
     header = (
         f"📊 [하루 일과 정리] {today}({weekday})\n"
@@ -229,6 +282,15 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
         f"멤버십({a}) + 성인강습({b}) + 유소년강습({c})\n"
         f"특이사항: {html.escape(special)}"
     )
+    recon_parts = [f"진전 {progress_today}건", f"담당배정 필요 {len(unassigned_today)}건"]
+    if other_today:
+        recon_parts.append(f"기타 {other_today}건")
+    section_new += "\n└ " + " · ".join(recon_parts)
+    if unassigned_today:
+        names = " · ".join(f"{nm}({tp})" for nm, tp in unassigned_today)
+        section_new += (
+            f"\n🆕 담당배정 필요 {len(unassigned_today)}건 — {html.escape(names)} 👉 배정 필요"
+        )
     if stale_unassigned:
         head = ", ".join(f"{nm}({tp})" for nm, tp in stale_unassigned[:5])
         tail = f" 외 {len(stale_unassigned) - 5}건" if len(stale_unassigned) > 5 else ""
@@ -237,32 +299,33 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
         )
 
     # 컨택&등록 현황 — 3리스트 통합, "실제 진전"(컨택이력≥1 또는 등록판정) 있는 행만.
-    # 담당 미배정 + 진전없음(활성) 건은 이 리스트에서 빼고 아래 별도 라인으로 분리한다
-    # (신규 문의 섹션과 완전 동일 목록이 되는 중복을 방지 — GM 07-21 지적).
+    # 담당배정 필요 건은 위 신규 문의 섹션(🆕)으로 이전했다 — 정의상 진전이 없는 건이라
+    # 컨택&등록 목록에는 애초에 나오지 않으므로 여기서는 더 이상 분리 수집하지 않는다
+    # (GM 07-23 지적: "10건 목록 안에 없는 사람이 왜 여기 있냐").
     # sample=True: 리스트 형태 확인용으로 당일 대신 최근 진전건(timestamp 내림차순 top N).
     src_groups = raw_groups if sample else groups
     progress_rows: list[tuple[dict, str]] = []
-    unassigned_rows: list[tuple[str, str]] = []
     for kind, rows in src_groups.items():
         for r in rows:
             if _is_test_row(r):
                 continue
             if _has_progress(r):
                 progress_rows.append((r, kind))
-            elif not sample and _is_unassigned_active(r, kind != "membership"):
-                nm = str(r.get("name", "") or "-").strip() or "-"
-                unassigned_rows.append((nm, _type_label(kind)))
     if sample:
         progress_rows.sort(key=lambda rk: str(rk[0].get("timestamp", "") or ""), reverse=True)
         progress_rows = progress_rows[:sample_n]
 
-    # 정직한 헤더 카운트 — 등록판정과 "실제 컨택이력(contacts[]≥1)"만 센다.
-    # status 자유텍스트(예: 컨택중)만 있고 contacts[] 이력이 없는 건은 어느 쪽에도 세지 않는다
-    # (라벨에서 "(이력없음)"으로 별도 노출 — _progress_label 참조).
+    # 정직한 헤더 카운트 — 등록판정 / 실제 컨택이력(contacts[]≥1) / 이력없음(둘 다 아님, status
+    # 자유텍스트만 있는 건 — 라벨에서 "(이력없음)"으로 별도 노출, _progress_label 참조)
+    # 3분류 합이 반드시 총건수와 일치하도록 서로 배타적으로 계산한다(GM 07-23 지적: 10≠8+0).
     reg_cnt = sum(1 for r, kind in progress_rows if _is_registered(r, kind != "membership"))
     contact_cnt = sum(
         1 for r, kind in progress_rows
         if _has_contacts(r) and not _is_registered(r, kind != "membership")
+    )
+    no_history_cnt = sum(
+        1 for r, kind in progress_rows
+        if not _is_registered(r, kind != "membership") and not _has_contacts(r)
     )
 
     if not progress_rows:
@@ -293,11 +356,11 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
             f"※ 실제 일일보고는 '당일' 컨택·등록 건만 표시됩니다."
         )
     else:
-        contact_head = f"🤝 컨택 & 등록 현황  총 {len(progress_rows)}건 (컨택 {contact_cnt}·등록 {reg_cnt})"
+        contact_head = (
+            f"🤝 컨택 & 등록 현황  총 {len(progress_rows)}건 "
+            f"(컨택 {contact_cnt}·등록 {reg_cnt}·이력없음 {no_history_cnt})"
+        )
     section_contact = f"{contact_head}\n{contact_body}"
-    if unassigned_rows:
-        names = " · ".join(f"{nm}({tp})" for nm, tp in unassigned_rows)
-        section_contact += f"\n🆕 담당배정 필요 {len(unassigned_rows)}건: {html.escape(names)}"
 
     return (
         f"{header}\n\n{section_new}\n\n"
