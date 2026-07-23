@@ -198,7 +198,9 @@ b,strong{font-weight:700}
 .comment-row:nth-child(2) .comment-lbl::before{background:var(--red)}
 .comment-row:nth-child(3) .comment-lbl::before{background:var(--highlight)}
 .comment-row:last-child .comment-lbl::before{background:var(--dim)}
-.comment-val{padding:14px 18px;font-size:13.5px;color:var(--dim);line-height:1.65;display:flex;align-items:center}
+/* display:flex 금지 — 자식 <strong>·<br>이 각각 flex item으로 승격돼 줄바꿈이 사라지고
+   텍스트가 옆으로 겹쳐 보였다(2026-07-23 수리). 블록 유지 + grid item 세로중앙정렬로 대체. */
+.comment-val{padding:14px 18px;font-size:13.5px;color:var(--dim);line-height:1.65;display:block;align-self:center;min-width:0;word-break:keep-all;overflow-wrap:anywhere}
 .comment-val strong{color:var(--text)}
 
 /* 오류 배너 */
