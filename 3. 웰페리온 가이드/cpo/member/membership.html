@@ -1925,6 +1925,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
           <span id="lessonMemStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
           <button class="btn-refresh" onclick="lessonRegLoad('adult')" style="margin-left:auto">새로고침</button>
         </div>
+        <div style="margin-bottom:10px">
+          <input type="search" id="lessonMemQ_adult" placeholder="🔍 이름 또는 연락처로 찾기"
+            oninput="lessonMemSetQuery('adult', this.value)" autocomplete="off"
+            style="width:100%;max-width:320px;padding:7px 11px;border:1px solid var(--border);border-radius:8px;background:var(--paper);color:var(--text);font:13px inherit;outline:none">
+        </div>
         <div id="lessonMemChips_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
         <div class="reg-table-wrap">
           <table class="reg-table">
@@ -2108,6 +2113,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="card-title"><span class="icon">🧑‍🏫</span>수강 회원 명단
           <span id="lessonMemStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
           <button class="btn-refresh" onclick="lessonRegLoad('youth')" style="margin-left:auto">새로고침</button>
+        </div>
+        <div style="margin-bottom:10px">
+          <input type="search" id="lessonMemQ_youth" placeholder="🔍 이름 또는 연락처로 찾기"
+            oninput="lessonMemSetQuery('youth', this.value)" autocomplete="off"
+            style="width:100%;max-width:320px;padding:7px 11px;border:1px solid var(--border);border-radius:8px;background:var(--paper);color:var(--text);font:13px inherit;outline:none">
         </div>
         <div id="lessonMemChips_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
         <div class="reg-table-wrap">
@@ -5572,6 +5582,25 @@ function _lessonRosterChips(t, kind) {
     _lessonChipBox('종목', sHtml) + (statuses.length > 1 ? _lessonChipBox('진행상태', vHtml) : '') + '</div>' + unkNote;
 }
 
+// 수강 회원 명단 검색(2026-07-23 GM) — SUC 처리한 회원을 명단에서 못 찾겠다는 지적.
+//   문의 목록에만 검색이 있어서 등록된 뒤에는 이름으로 찾을 방법이 없었다. 이름 부분일치 + 연락처 숫자 일치.
+//   ★검색 중에는 종목·진행상태 칩 필터를 무시한다 — "분명 등록했는데 안 보인다"의 대부분이
+//   다른 종목칩이 눌려 있어서다. 찾을 땐 전체에서 찾는 게 맞다.
+function lessonMemSetQuery(t, v) {
+  _lessonState[t].memQ = String(v || '');
+  _lessonRosterRender(t, 'mem');
+}
+function _lessonRosterFilterQ(t, rows) {
+  var q = String(_lessonState[t].memQ || '').trim().toLowerCase();
+  if (!q) return null;
+  var qd = q.replace(/[^0-9]/g, '');
+  return rows.filter(function(r){
+    var nm = String(r.name || '').toLowerCase();
+    var ph = String(r.phone || '').replace(/[^0-9]/g, '');
+    return (nm.indexOf(q) >= 0) || (qd && ph.indexOf(qd) >= 0);
+  });
+}
+
 function lessonRosterFilter(t, kind, btn) {
   var v = btn.getAttribute('data-sport') || '';
   var g = btn.getAttribute('data-group') || 'sport';
@@ -5589,6 +5618,9 @@ function _lessonRosterRender(t, kind) {
   var filter = (kind === 'reg') ? st.regSport : st.memSport;
   var vFilter = (kind === 'reg') ? st.regStatus : st.memStatus;   // 진행상태 축(2026-07-23 GM)
   var rows = st.roster || [];
+  // 검색어가 있으면 칩 필터를 건너뛰고 전체에서 찾는다(종목칩이 눌려 있어 안 보이는 함정 차단). 2026-07-23 GM
+  var qRows = (kind === 'mem') ? _lessonRosterFilterQ(t, rows) : null;
+  if (qRows) { rows = qRows; filter = ''; vFilter = ''; }
   if (filter) rows = rows.filter(function(r){ return String(r.sport || '기타').trim() === filter; });
   if (vFilter) rows = rows.filter(function(r){ return (String(r.status || '').trim() || _LESSON_STATUS_BLANK) === vFilter; });
   // 외부관리 프로그램(루프메소드 등) 정직 안내 — mem 뷰·두 필터 모두 없을 때만. 명단 시트 없음 → 등록 명단 미표시.
@@ -5605,11 +5637,23 @@ function _lessonRosterRender(t, kind) {
   }
   var _cs = (kind === 'mem') ? 10 : 4;   // 칸 수 = 표 헤더와 일치(안 맞으면 안내문이 표를 뚫고 나온다)
   if (!rows.length) {
+    var _emptyDesc = (kind === 'mem' && String(st.memQ || '').trim())
+      ? '\'' + esc(String(st.memQ).trim()) + '\' 로 찾은 등록 회원이 없습니다. 아직 등록(SUC) 처리 전이면 [강습 문의 목록]에서 찾아보세요.'
+      : '해당 조건의 등록 회원이 없습니다.';
     tbody.innerHTML = extNote + '<tr><td colspan="' + _cs + '"><div class="empty-state"><div class="empty-state-icon">📭</div>' +
       '<div class="empty-state-title">등록 회원 없음</div>' +
-      '<div class="empty-state-desc">해당 조건의 등록 회원이 없습니다.</div></div></td></tr>';
+      '<div class="empty-state-desc">' + _emptyDesc + '</div></div></td></tr>';
     return;
   }
+  // 정렬 고정(2026-07-23 GM '정렬 정리 좀') — 서버가 주는 순서는 팀시트·문의 소스가 섞여 뒤죽박죽이다.
+  //   ①종목 가나다 ②이름 가나다. 이름 없는 '정보 없음' 행은 각 종목 맨 뒤로 몰아 실명 회원이 먼저 보이게.
+  rows = rows.slice().sort(function(a, b){
+    var sa = String(a.sport || '').trim(), sb = String(b.sport || '').trim();
+    if (sa !== sb) return sa.localeCompare(sb, 'ko');
+    var na = String(a.name || '').trim(), nb = String(b.name || '').trim();
+    if (!na !== !nb) return na ? -1 : 1;          // 이름 있는 쪽 먼저
+    return na.localeCompare(nb, 'ko');
+  });
   var html = extNote;
   rows.forEach(function(r){
     html += '<tr>' +

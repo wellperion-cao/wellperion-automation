@@ -35,10 +35,14 @@ const FORM_SHEETS = [
   //   ⚠️ clasp push ≠ 웹앱 배포 — gid 교체 후 새 버전 웹앱 재배포 1회(GM/CTO) 필요. (명세: 문의_신규유형_폼설계_260612.md §5)
   , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 2014877540, type: '공간렌트',       channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 멤버십 시트로 통합
   , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1356708303, type: '비즈니스파트너', channelKeys: ['경로', '채널', '알게'] }  // 2026-06-15 멤버십 시트로 통합
-  // ─── 영문 문의 3종 (시모 2026-06-24) ───
-  , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1887747109, type: '멤버십(영문)',    channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['Programs of Interest', '종목', '프로그램'] }
+  // ─── 영문 문의 3종 (시모 2026-06-24) — 3종 모두 폐기 ───
+  // 멤버십 영문폼 폐기(GM 2026-07-23): '26년 신규문의(영)' 탭 접수 0건(전 기간) → 시트 삭제 예정.
+  //   영어 문의는 자체 폼으로 전환돼 한글 탭에 '유입언어'·[영어] 표식으로 함께 쌓인다(탭 분리 불필요).
+  //   ★삭제 순서 = 폼 응답 받기 중지 → 이 참조 제거(지금) → 시트 삭제. 순서를 바꾸면 구글이 새 응답탭을
+  //   만들어 영어 문의가 아무도 안 보는 곳에 쌓인다(2026-07-09 CRM 누락 사고와 동일 함정).
+  // , { ssId: '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U', gid: 1887747109, type: '멤버십(영문)',    channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['Programs of Interest', '종목', '프로그램'] }
   // 영문 강습폼 2종 폐기(GM 2026-07-22): 1-1 성인강습(영) 접수 0건 → 삭제 / 2-1 WSC강습(영) 4건 → 메인 WSC탭 이관 후 삭제.
-  //   재개 시 새 폼 gid로 두 줄 복원. (멤버십 영문 gid 1887747109은 유지 — 위 줄.)
+  //   재개 시 새 폼 gid로 세 줄 복원.
   // , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 311319200,  type: '성인강습(영문)',  channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['Program of Interest', '종목', '과목'] }
   // , { ssId: '1b0XU1oTHlXzBhEzUOar5GEm44vjopdO25qfsh-awDXw', gid: 931249179,  type: '유소년강습(영문)', channelKeys: ['How Did You Hear About Us?', '경로', '채널'], programKeys: ['WSC Program of Interest', '종목', '과목'] }
 ];
@@ -1434,7 +1438,10 @@ var _MI_SS_ID = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
 var _MI_SHEET = '26년 신규문의';
 var _MI_GID_EN = 1887747109;   // 멤버십(영문) 응답탭 — 영어 문의가 별도 탭에 쌓여 CRM에서 누락되던 누수 수리(2026-07-09 시포·GM)
 function _miSheet_() { return SpreadsheetApp.openById(_MI_SS_ID).getSheetByName(_MI_SHEET); }
-function _miSheetEn_() { return _sheetByGid_(_MI_SS_ID, _MI_GID_EN); }
+// 영문 응답탭 은퇴(GM 2026-07-23) — 탭이 삭제돼도 null 을 돌려 조용히 건너뛴다(호출부는 전부 try/catch·null 가드).
+//   영어 문의는 한글 탭에 '유입언어'·[영어] 표식으로 함께 쌓이므로 읽을 곳이 사라지는 게 아니다.
+//   재개 시 = _MI_GID_EN 을 새 응답탭 gid 로 바꾸면 그대로 되살아난다.
+function _miSheetEn_() { try { return _MI_GID_EN ? _sheetByGid_(_MI_SS_ID, _MI_GID_EN) : null; } catch (e) { return null; } }
 // gid 명시(영문 탭 gid) 시 그 물리 시트로 라우팅. 없으면 rowIndex의 오프셋 여부(_ROW_OFFSET_EN_)로 자동 판별 —
 //   목록에서 병합된 영문 행을 다시 저장할 때 정확한 탭에 기록. 둘 다 없으면 하위호환(기존 한글 '26년 신규문의' 탭). 2026-07-09 시포·GM.
 function _miResolveSheet_(gid, rowIndex) {
@@ -5474,6 +5481,27 @@ function _processAction(body) {
     //   등록회수·유효기간을 이미 기록하고 있다).
     //   ★옛 팀시트 기록은 지우지 않는다(과거 흔적 보존) — 대신 출처(src)를 붙여 화면이 구분하게 한다.
     //   ★중복 방지 = 전화 정규화 키. 같은 사람이면 새로 추가하지 않고 빈 칸만 채워 넣는다.
+    // ★종목명 표준화(2026-07-23 GM: '종목명 통일 좀') — 문의 시트의 종목은 폼 원문이라 길고 제각각이다
+    //   ('골프 레슨 (투어프로와 …)', 'WSC 체조 & 트램폴린', '스쿼시 (개인레슨 / 단체레슨)' …).
+    //   그대로 명단에 섞으면 같은 종목이 여러 이름으로 갈라져 성인 20종·유소년 22종이 된다(실측).
+    //   팀시트 표준명(LESSON_DISPLAY 명)으로 접어 넣는다 — 괄호·'WSC'·'레슨' 같은 수식어를 떼고
+    //   표준명이 포함되면 그 종목으로 본다. 못 알아보면 원문을 그대로 둔다(임의로 '기타'에 버리지 않는다).
+    function _lrrNormSport_(raw) {
+      var s = String(raw == null ? '' : raw).replace(/\(.*$/, '').replace(/\s+/g, ' ').trim();
+      if (!s) return '';
+      var bare = s.replace(/^WSC\s*/i, '').replace(/^(성인|유소년)\s*/, '').replace(/\s*(레슨|클래스|단체|개인)\s*$/, '').trim();
+      var keyed = bare.replace(/\s|&|＆/g, '');
+      var names = (LESSON_DISPLAY[lrrType] || []).map(function (it) { return it.명; });
+      for (var ni = 0; ni < names.length; ni++) {
+        if (names[ni].replace(/\s|&|＆/g, '') === keyed) return names[ni];
+      }
+      // 부분일치 — 긴 표준명부터 본다('수영'이 '모자수영'을 가로채지 않게)
+      var sorted = names.slice().sort(function (a, b) { return b.length - a.length; });
+      for (var nj = 0; nj < sorted.length; nj++) {
+        if (keyed.indexOf(sorted[nj].replace(/\s|&|＆/g, '')) >= 0) return sorted[nj];
+      }
+      return bare || s;
+    }
     var lrrByPhone = {};
     lrrRoster.forEach(function (m) {
       m.src = 'team';
@@ -5484,7 +5512,7 @@ function _processAction(body) {
       _lessonReadRowsMerged_({ type: lrrType }).forEach(function (r) {
         if (String(r.status == null ? '' : r.status).trim() !== 'SUC') return;
         var rp = _normPhone_(r.phone);
-        var rSport = String(r.regProgram || r.sport || '').trim() || '기타';
+        var rSport = _lrrNormSport_(r.regProgram || r.sport) || '기타';
         var hit = rp ? lrrByPhone[rp] : null;
         if (hit) {   // 이미 명단에 있는 사람 → 빈 칸만 보강(중복 행 만들지 않는다)
           if (!String(hit.name || '').trim())  hit.name = String(r.name || '');

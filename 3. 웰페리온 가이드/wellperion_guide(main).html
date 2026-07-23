@@ -1080,15 +1080,16 @@
         }
         return { total: total, month: month };
       }
+      // 영문 응답탭(GID_EN) 조회 제거(GM 2026-07-23) — 접수 0건(전 기간)으로 폐기 확정, 시트 삭제 예정.
+      //   영어 문의는 자체 폼으로 전환돼 한글 탭에 '유입언어'·[영어] 표식으로 함께 쌓이므로 합산이 필요 없다.
+      //   ★재개 시 = 아래 p2/en 두 줄과 합산만 되살리면 된다(GID_EN 상수는 남겨 둠).
       var p1 = fetch(BASE + GID_KO + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
-      var p2 = fetch(BASE + GID_EN + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
-      Promise.all([p1, p2]).then(function(results){
-        var koRows = parseCSV(results[0]), enRows = parseCSV(results[1]);
+      Promise.all([p1]).then(function(results){
+        var koRows = parseCSV(results[0]);
         // 한국어 탭은 A열'날짜'+B열'타임스탬프'가 별도로 존재 → '타임스탬프' 우선 매칭('날짜'는 뒤 후보).
         var ko = countRows(koRows, tsColOf(koRows, ['타임스탬프', '접수일', '날짜'], 1));
-        var en = countRows(enRows, tsColOf(enRows, ['타임스탬프', 'Timestamp', '접수일', '날짜'], 0));
-        set('kpiMiInqTotal', (ko.total + en.total).toLocaleString()); // 올해 누적
-        set('kpiMiInqMonth', ko.month + en.month); // 이번달
+        set('kpiMiInqTotal', ko.total.toLocaleString()); // 올해 누적
+        set('kpiMiInqMonth', ko.month); // 이번달
       }).catch(function(){ /* "—" 유지 */ });
     })();
 
