@@ -1312,5 +1312,61 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 242bc959d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "242bc959d3ac5fdef02030348d008c4bf550e14c"
+  },
+  {
+    "task_id": "CTO-2026-07-23-ADHOC-0afbc9a0d",
+    "clevel": "cto",
+    "title": "[시토] 점검 회차별 일지 가시성 개선 + 문의 담당 배정 독려 안내",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9840,
+    "artifact": "- support_check_summary.facility_worklog: work 필드가 '그 회차까지의 누적'\n  으로 들어와 뒤 회차일수록 앞 내용을 통째로 반복(8회차에 9줄 중복) → 앞\n  회차에 없던 항목만 표시(데이터 무변경·표시만). 신규 없으면 '(추가 작업 없음)'.\n  _MAX_WORKLOG 8→12 (9회차 날 마지막 회차가 '외 1회차'로 숨던 문제). GM 07-23 지적.\n  실측: 1,738자 → 1,260자, 9회차 전부 노출.\n- FACILITY_SESSIONS_TRUSTED False→True 커 (CLI ad-hoc · 커밋 0afbc9a0d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "0afbc9a0d966724561a3bf728fe4fb9ab8cef5c5"
+  },
+  {
+    "task_id": "COO-2026-07-23-ADHOC-253cf716e",
+    "clevel": "coo",
+    "title": "[시우] 보류 사유·재개조건 2칸 신설 — 보류가 조용히 사라지지 않게 (배9836)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9841,
+    "artifact": "GM 2026-07-23 지시: '보류로 넣어두는 경우 이유를 확인해서 넣고, 나중에 진행 업무가\n정립되면 계속 푸시해줄 수 있는 방식'. 1단계 = 적을 칸부터.\n- GAS(.deploy-todo 정본): TODO_HEADERS 맨 끝 append-only 2칸 — 보류사유·재개조건.\n  기존 컬럼 인덱스 불변, initTodoSheet 자동 마이그레이션. 배포 @117, 시트 칸 라이브 확인.\n- 업무 현황 SSOT: 보류 전환 시 두 칸 필수 입력 게이트. 재개조건은 2형식만 허용\n  (DATE:YYYY-MM / AFTER:배 (CLI ad-hoc · 커밋 253cf716e)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "253cf716e630d8a6e3235bdd870b180c90525cff"
+  },
+  {
+    "task_id": "CEO-2026-07-23-ADHOC-aa0b4dbbe",
+    "clevel": "ceo",
+    "title": "[웰리] 회사소개서 + 브랜드확장 합본 신설 — A3 가로 / A4 세로 인쇄 대응, 시설 사진 12장",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9842,
+    "artifact": "회사소개서(v2.19)와 브랜드확장 소개서(Cinq Mondes)가 따로 있어\n같은 회사 이야기가 두 벌로 갈라져 있었다. 하나로 합치고 인쇄까지 붙인다. (CLI ad-hoc · 커밋 aa0b4dbbe)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "aa0b4dbbe7c4354aa2f549781d75fca236df1f3f"
+  },
+  {
+    "task_id": "CTO-2026-07-23-ADHOC-d96c637fc",
+    "clevel": "cto",
+    "title": "[시토] 점검 측정값 설비별 묶음 표시 + 배정 링크 강습/멤버십 분리 (GM 07-23)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9843,
+    "artifact": "- support_check_summary: 측정값 19개가 한 줄에 나열돼 어느 설비 값인지 안 보이던\n  문제 → 필드 접두(ahu_/pool_/sauna_/tank_)로만 묶어 설비별 한 줄씩, A/B 짝은\n  '건식 A 80.0 / B 82.0' 한 덩어리로. 값·단위 신설 없음(지어내기 금지),\n  기준이탈 ❗ 표시·회차 태그 유지. 현장 호칭 순서 고정(건식·습식·찜질).\n- unassigned_nudge: 배정 화면이 멤버십/강습으로 갈려 있어 멤버십 링크만 주면\n  강습은 못 감(GM 지적) → 강습(lesson.ht (CLI ad-hoc · 커밋 d96c637fc)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d96c637fc80f2f575746dd2b88bc79457a358953"
   }
 ]
