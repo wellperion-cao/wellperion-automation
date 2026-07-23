@@ -204,9 +204,41 @@ def rule_series_queue_parity() -> list[dict]:
 
 _URL_REQUIRED_STATUSES = {"발행완료", "발행검증대기"}
 
+# 실측(review_queue.json) 상 실제 등장하는 channel 원문 7종을 실무진이 읽는 짧은 이름으로 정리.
+# 키워드 포함 매칭 — 특정 문자열 하드코딩 블랙리스트가 아니라 채널 실명 축약(2026-07-23 보강,
+# 같은 콘텐츠가 채널별로 여러 줄 뜰 때 제목만으론 구분 안 되던 문제 수정).
+_CHANNEL_LABEL_KEYWORDS = (
+    ("블로그", "블로그"),
+    ("카페", "카페"),
+    ("카카오", "카카오"),
+    ("당근", "당근"),
+    ("인스타그램", "인스타그램"),
+)
+_TITLE_TRUNC_LEN = 24  # 이 길이를 넘으면 말줄임(…) — 화면 잘림 방지, 채널명은 항상 앞에 두어 보존
+
+
+def _short_channel_label(channel: str) -> str:
+    """channel 원문(예 '인스타그램 (namuk.wellperion)')을 짧은 이름으로. 알려진 채널 키워드가
+    없으면 원문 그대로 반환(지어내지 않음)."""
+    ch = (channel or "").strip()
+    for keyword, label in _CHANNEL_LABEL_KEYWORDS:
+        if keyword in ch:
+            return label
+    return ch or "채널미상"
+
+
+def _truncate_title(text: str, limit: int = _TITLE_TRUNC_LEN) -> str:
+    text = (text or "").strip()
+    if len(text) <= limit:
+        return text
+    return text[:limit].rstrip() + "…"
+
 
 def rule_published_without_url() -> list[dict]:
     """status='발행완료'/'발행검증대기' 인데 url·post_url 둘 다 빈 항목 적발.
+    같은 콘텐츠가 채널별(블로그·카페·카카오·당근 등)로 여러 엔트리 존재할 수 있어 title 에
+    채널명을 앞세우고 ref 도 채널까지 포함해 항목마다 고유하게 만든다(2026-07-23 보강 —
+    화면에 동일 제목이 중복으로 보이던 문제·first_seen 키 충돌 위험 방지).
     age 판정 = published_at(콘텐츠가 실제 발행된 시점) 기준 — 없으면 보수적으로 '누적'
     (배9578 발행 주소 회수 정착 백로그, 지금 당장 손댈 일 아님)."""
     queue = _load_review_queue()
@@ -220,14 +252,17 @@ def rule_published_without_url() -> list[dict]:
         if url:
             continue
         title = it.get("title", it.get("id", "?"))
+        item_id = it.get("id", "")
+        channel_label = _short_channel_label(it.get("channel", ""))
+        short_title = _truncate_title(title)
         target_date = _parse_iso_date(it.get("published_at", ""))
         gaps.append({
             "role": "cmo",
             "severity": "mid",
-            "title": f"{title} — {status}인데 URL 없음",
-            "detail": f"status={status} · url/post_url 필드 모두 비어있음",
+            "title": f"{channel_label} · {short_title} — {status}인데 URL 없음",
+            "detail": f"status={status} · url/post_url 필드 모두 비어있음 · 콘텐츠={title}",
             "hint": "게시 URL 수동 보강 또는 scripts/reconcile_published.py 로 재회수",
-            "ref": it.get("id", ""),
+            "ref": f"{item_id}::{channel_label}" if item_id else f"{title}::{channel_label}",
             "age": _classify_age(target_date, today),
         })
     return gaps
