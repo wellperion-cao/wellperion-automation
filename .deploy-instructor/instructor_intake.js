@@ -24,6 +24,44 @@
 
 var ALLOW_MIME = { 'image/jpeg': 1, 'image/png': 1, 'image/webp': 1, 'video/mp4': 1 };
 
+// ─── 시트 헤더 계약 (2026-07-23 수리) ───
+// doPost 가 append 하는 row 배열(아래 `var row = [...]`)과 1:1 동일 순서다. 순서 변경 금지.
+//   [new Date(), d.name, d.team, d.intro, d.benefit, urls.join, vurl, folder.getUrl(), '접수']
+var INTAKE_HEADER = ['접수일시', '성함', '분류', '한줄소개', '회원이얻는것', '사진링크', '영상링크', '드라이브폴더', '상태'];
+
+// 1행이 헤더인가? — 오판이 안전한 쪽(= 데이터로 간주 → 헤더 삽입)으로 판정한다.
+// 데이터로 보는 신호: 1열이 Date · 날짜/타임스탬프 문자열 · 숫자 · 빈칸.
+// 그 외(사람이 붙인 어떤 제목이든)는 헤더로 인정 → 중복 삽입 없음.
+function _looksLikeHeader_(vals) {
+  if (!vals || !vals.length) return false;
+  var a = vals[0];
+  if (a instanceof Date) return false;                             // 접수일시 값 = 데이터
+  var s = String(a === null || a === undefined ? '' : a).trim();
+  if (!s) return false;                                            // 빈칸 = 헤더 아님
+  if (/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(s)) return false;      // "2026-07-22T05:22:35Z" = 데이터
+  if (/^\d+(\.\d+)?$/.test(s)) return false;                       // 숫자 = 데이터
+  return true;
+}
+
+function _fallbackHeader_(width) {
+  var h = [];
+  for (var i = 0; i < width; i++) h.push('col' + (i + 1));
+  return h;
+}
+
+// 헤더 보장 — 기존 데이터 행은 절대 덮어쓰지·지우지 않는다(삽입만).
+function _ensureIntakeHeader_(sh) {
+  var last = sh.getLastRow(), width = sh.getLastColumn();
+  if (last < 1 || width < 1) {                                     // 완전 빈 시트 → 헤더만 기록
+    sh.getRange(1, 1, 1, INTAKE_HEADER.length).setValues([INTAKE_HEADER]);
+    return true;
+  }
+  if (_looksLikeHeader_(sh.getRange(1, 1, 1, width).getValues()[0])) return true;
+  sh.insertRowBefore(1);                                           // 데이터 보존 — 앞에 한 줄 삽입
+  sh.getRange(1, 1, 1, INTAKE_HEADER.length).setValues([INTAKE_HEADER]);
+  return true;
+}
+
 // ─── 파일 저장 (base64 → Drive, 공개 링크) — VOC _vUploadPhoto 패턴 복제 ───
 function _saveFile_(b64, mime, fname, folder) {
   if (!ALLOW_MIME[mime]) throw new Error('허용되지 않은 형식: ' + mime);
@@ -45,6 +83,7 @@ function doPost(e) {
     var vurl = d.video ? _saveFile_(d.video.b64, d.video.mime, d.video.fname, folder) : (d.videoLink || '');
     var sh = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('INTAKE_SHEET_ID')).getSheets()[0];
     var row = [new Date(), d.name, d.team, d.intro || '', d.benefit || '', urls.join('\n'), vurl, folder.getUrl(), '접수'];
+    try { _ensureIntakeHeader_(sh); } catch (hErr) { }             // 헤더 보장 실패해도 접수 저장은 계속
     sh.appendRow(row);
     _notifyTelegram('🎬 새 강사 콘텐츠 접수: ' + d.name + ' / ' + d.team + ' (사진 ' + urls.length + '장' + (vurl ? '·영상' : '') + ')');
     return _json({ ok: true, drive_folder: folder.getUrl(), sheet_row: sh.getLastRow() });
@@ -92,10 +131,14 @@ function _intakeDiag_() {
   if (!out.sheet_id_set) { out.sheet_error = 'INTAKE_SHEET_ID 미설정'; return out; }
   try {
     var sh = SpreadsheetApp.openById(sheetId).getSheets()[0];
-    var last = sh.getLastRow();
+    var last = sh.getLastRow(), width = sh.getLastColumn();
+    var first = (last > 0 && width > 0) ? sh.getRange(1, 1, 1, width).getValues()[0] : [];
+    var hasHeader = _looksLikeHeader_(first);
     out.sheet_name = sh.getName();
-    out.row_count = Math.max(0, last - 1);            // 헤더 1행 제외한 접수 건수
-    out.header = last > 0 ? sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0] : [];
+    out.header_ok = hasHeader;                        // false = 1행이 데이터(헤더 없음)
+    out.row_count = hasHeader ? Math.max(0, last - 1) : last;   // 헤더 없으면 1행도 접수 건
+    out.header = hasHeader ? first : _fallbackHeader_(width);
+    if (!hasHeader && last > 0) out.first_row = first;           // 헤더 오인되던 실제 1행 노출
   } catch (err) {
     out.ok = false;
     out.sheet_error = String(err);                     // 시트 없음·권한 없음을 그대로 노출
@@ -103,29 +146,39 @@ function _intakeDiag_() {
   return out;
 }
 
-// 접수 행 조회 — 필드명은 시트 실제 헤더를 그대로 사용. limit(기본 100·최대 500)·since(ISO) 지원.
+// 접수 행 조회 — 필드명은 시트 실제 헤더 사용, 헤더가 없으면 col1..colN 폴백(1행도 데이터로 반환).
+// limit(기본 100·최대 500)·since(ISO) 지원.
 function _intakeRows_(p) {
   var sheetId = PropertiesService.getScriptProperties().getProperty('INTAKE_SHEET_ID');
   if (!sheetId) return { ok: false, error: 'INTAKE_SHEET_ID 미설정' };
   var sh = SpreadsheetApp.openById(sheetId).getSheets()[0];
   var last = sh.getLastRow(), width = sh.getLastColumn();
-  if (last < 2 || width < 1) {
-    return { ok: true, sheet_name: sh.getName(), count: 0, total_rows: 0, rows: [] };
+  if (last < 1 || width < 1) {
+    return { ok: true, sheet_name: sh.getName(), header_ok: false, count: 0, total_rows: 0, rows: [] };
   }
-  var header = sh.getRange(1, 1, 1, width).getValues()[0].map(function (h, i) {
-    return String(h).trim() || ('col' + (i + 1));
-  });
+  var first = sh.getRange(1, 1, 1, width).getValues()[0];
+  var hasHeader = _looksLikeHeader_(first);
+  // 헤더가 없거나 깨졌으면 col1..colN 폴백 — 1행도 데이터로 전부 반환(행 손실 0)
+  var header = hasHeader
+    ? first.map(function (h, i) { return String(h).trim() || ('col' + (i + 1)); })
+    : _fallbackHeader_(width);
+  var dataStart = hasHeader ? 2 : 1;
+  var total = last - dataStart + 1;
+  if (total < 1) {
+    return { ok: true, sheet_name: sh.getName(), header_ok: hasHeader, count: 0, total_rows: 0, rows: [] };
+  }
   var limit = parseInt(p.limit, 10);
   limit = (isNaN(limit) || limit < 1) ? 100 : Math.min(limit, 500);
   var since = p.since ? new Date(p.since) : null;
   if (since && isNaN(since.getTime())) since = null;
 
-  var start = Math.max(2, last - limit + 1);           // 최근 limit건
+  var start = Math.max(dataStart, last - limit + 1);   // 최근 limit건
   var values = sh.getRange(start, 1, last - start + 1, width).getValues();
   var rows = [];
   for (var i = 0; i < values.length; i++) {
     var ts = values[i][0];
-    if (since && !(ts instanceof Date && ts >= since)) continue;
+    var tsd = (ts instanceof Date) ? ts : (ts ? new Date(ts) : null);   // 문자열 타임스탬프도 인정
+    if (since && !(tsd && !isNaN(tsd.getTime()) && tsd >= since)) continue;
     var o = { _row: start + i };
     for (var c = 0; c < width; c++) {
       var v = values[i][c];
@@ -135,7 +188,7 @@ function _intakeRows_(p) {
     }
     rows.push(o);
   }
-  return { ok: true, sheet_name: sh.getName(), count: rows.length, total_rows: last - 1, rows: rows };
+  return { ok: true, sheet_name: sh.getName(), header_ok: hasHeader, count: rows.length, total_rows: total, rows: rows };
 }
 
 function _json(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
