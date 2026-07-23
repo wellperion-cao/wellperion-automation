@@ -7120,19 +7120,19 @@ function crTab(btn, panelId) {
     </script>
   </article>
 
-  <!-- ── H3: 근무 스케줄 보드 (기존 휴무표 임베드 제거 · 전체 페이지 자동 확장 — 내부 스크롤 없음 · 2026-07-23) ── -->
+  <!-- ── H3: 근무 스케줄 보드 (전체 화면 · ERP 다크 템플릿 미적용 — 왼쪽 메뉴만 유지 · 2026-07-23) ── -->
   <article class="doc" id="H3">
-    <div class="doc-header"><h2>🗓️ 근무 스케줄 보드</h2><div class="meta">CHRO 관할 · 나우열M · 🤖 AI CHRO (시로) · 26.1~7월 휴무표 실측 반영</div></div>
-    <p class="lead">월간/일별/주간 배치 · 칸 클릭 즉시 입력 · 연차·반차·근무변경 신청/결재(결재라인) · 개인별 연차 현황. 보드가 내용 높이만큼 자동 확장되어 <strong>페이지 스크롤 하나로</strong> 전체를 봅니다.</p>
-    <div style="margin-top:14px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--paper)">
+    <div class="doc-header"><h2>🗓️ 근무 스케줄 보드</h2><div class="meta">CHRO 관할 · 나우열M · 🤖 AI CHRO (시로)</div></div>
+    <div id="schedWrap" style="margin-top:14px;overflow:hidden;background:#f3f0ea">
       <iframe id="schedFrame" src="chro/hub/schedule.html" title="근무 스케줄 보드" loading="lazy" scrolling="no" style="width:100%;height:900px;border:0;display:block;overflow:hidden"></iframe>
     </div>
     <script>
     (function(){
-      /* 보드 iframe 자동 높이 — 내용(월간 59명 표 등) 실제 높이로 확장해 내부 스크롤 제거.
-         동일 출처라 contentWindow.document 접근 가능. 로드 직후 + ResizeObserver(탭 전환·필터로
-         높이 변할 때) + 저빈도 폴백 폴링으로 재측정. */
+      /* ① iframe 자동 높이 — 내용 실제 높이로 확장해 내부 스크롤 제거 (동일 출처).
+         ② H3 활성화 시 .main의 980px 제한·여백·헤더를 걷어 전체 화면(왼쪽 메뉴만 유지),
+            비활성화 시 원복 — 다른 섹션 레이아웃엔 영향 없음. */
       var f=document.getElementById('schedFrame'); if(!f)return;
+      var art=document.getElementById('H3'), mainEl=document.querySelector('.main'), wrap=document.getElementById('schedWrap');
       var last=0;
       function m(){
         try{
@@ -7141,10 +7141,20 @@ function crTab(btn, panelId) {
           if(h&&h!==last){last=h;f.style.height=(h+20)+'px';}
         }catch(_){}
       }
+      function fit(){
+        var on=art.classList.contains('active');
+        if(mainEl){ mainEl.style.maxWidth=on?'none':''; mainEl.style.padding=on?'0':''; }
+        var hd=art.querySelector('.doc-header');
+        if(hd)hd.style.display=on?'none':'';
+        wrap.style.marginTop=on?'0':'14px';
+        m();
+      }
       f.addEventListener('load',function(){
         m();
         try{ new ResizeObserver(m).observe(f.contentWindow.document.documentElement); }catch(_){}
       });
+      try{ new MutationObserver(fit).observe(art,{attributes:true,attributeFilter:['class']}); }catch(_){}
+      fit();
       setInterval(m,1500);
     })();
     </script>
