@@ -800,6 +800,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .dash-card[data-kind="mem"]::before{background:var(--accent)}
 .dash-card[data-kind="loss"]::before{background:#c8756f}
 .dash-card[data-kind="wait"]::before{background:var(--accent)}
+/* 휴회(2026-07-23) — 카드를 추가하면서 색 규칙을 안 넣어 윗줄 색띠가 통째로 비어 있었다(GM 지적).
+   휴회 관련 표기(현황 카드 테두리·연장 배지)와 같은 주황으로 맞춘다. */
+.dash-card[data-kind="hold"]::before{background:var(--orange,#c8912b)}
 .dash-card:hover{border-color:var(--accent-border);transform:translateY(-1px)}
 .dash-card.active{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal) inset}
 .dash-head{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700}
@@ -821,11 +824,20 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .dash-card[data-kind="mem"] .dash-v b.lead{color:var(--accent)}
 .dash-card[data-kind="loss"] .dash-v b.lead{color:#c8756f}
 .dash-card[data-kind="wait"] .dash-v b.lead{color:var(--accent)}
+.dash-card[data-kind="hold"] .dash-v b.lead{color:var(--orange,#c8912b)}
 @media(max-width:900px){.dash-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr}}
 /* 현황카드 일원화(한 줄) — 2026-07-15 GM 지시. 전환보드 삭제 후 멤버십 6카드·강습 6카드(2026-07-18 담당자 배정 카드를 멤버십→강습 family로 이동)를 각각 한 줄로. */
-#memberTabNav{grid-template-columns:repeat(6,1fr)}
+/* 멤버십 카드 7장(휴회 추가 2026-07-23) — 6칸으로 두면 마지막 장이 다음 줄로 떨어진다(GM 지적).
+   칸수를 카드 수에 맞추고, 카드가 늘어도 한 줄을 유지하도록 최소폭 기반 auto-fit 으로 둔다. */
+#memberTabNav{grid-template-columns:repeat(7,minmax(0,1fr))}
+/* 7장을 한 줄에 넣으면 칸이 좁아진다 → 여백을 조이고 제목이 길면 말줄임(줄바꿈으로 카드 높이가
+   들쭉날쭉해지는 것 방지). 숫자는 그대로 크게 유지 — 한눈에 봐야 하는 건 숫자다. */
+#memberTabNav .dash-card{padding:13px 11px 13px}
+#memberTabNav .dash-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#memberTabNav .dash-line{white-space:nowrap}
 #lessonComboBoard{grid-template-columns:repeat(6,1fr)}
+@media(max-width:1400px){#memberTabNav{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:1100px){#memberTabNav,#lessonComboBoard{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){#memberTabNav,#lessonComboBoard{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){#memberTabNav,#lessonComboBoard{grid-template-columns:1fr}}
@@ -5087,12 +5099,41 @@ function openLessonRepeatModal(t, rowIndex) {
   } else { summaryEl.textContent = ''; summaryEl.style.display = 'none'; }
   document.getElementById('repeatInquiryOverlay').classList.add('open');
 }
+/* 문의일시 칸(2026-07-23 GM 지시) — '최근 문의 시각'을 보여주고 최초 접수일은 이전문의건으로 남긴다.
+ *   왜: 1/24 접수 건에 7/23 재컨택을 적어도 목록엔 계속 1/24 로만 떠서, 최근에 움직인 건인지
+ *   반년 방치된 건인지 구분이 안 됐다(GM: 권은우/권세아 건).
+ *   ★시트의 타임스탬프(최초 접수 시각)는 건드리지 않는다 — 덮어쓰면 '언제 처음 문의했나'가 영구히
+ *     사라지고 문의→등록 소요 분석이 불가능해진다. 화면에서 최근일을 위로 올리고 최초일을 아래 병기한다.
+ *   최근 접점 = 연락 이력 중 날짜가 있는 것들의 최대값. 없으면 기존처럼 접수일만 보여준다.
+ */
+function _lessonLastContactDate(r) {
+  var list = (r && r.contacts) || [];
+  var mx = '';
+  for (var i = 0; i < list.length; i++) {
+    var d = String((list[i] && list[i].date) || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(d) && d > mx) mx = d.slice(0, 10);
+  }
+  return mx;
+}
+function _lessonInqDateCell(r) {
+  var first = _fmtInqDateTime(r.timestamp);
+  var last = _lessonLastContactDate(r);
+  var firstDay = String(r.timestamp || '').slice(0, 10);
+  if (!last || last <= firstDay) {   // 재컨택 없음(또는 접수 당일) → 기존 표시 그대로
+    return '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(first) + '</td>';
+  }
+  return '<td class="left" style="font-size:12px;color:var(--dim)" title="최근 접점 ' + esc(last) + ' · 최초 문의 ' + esc(first) + '">' +
+    '<div style="color:var(--text);font-weight:700">' + esc(last) + '</div>' +
+    '<div style="font-size:10.5px;color:var(--dim);margin-top:1px">🔁 최초 ' + esc(firstDay || first) + '</div>' +
+    '</td>';
+}
+
 // 강습 문의 행 HTML(문의 현황·LOSS 회원 관리 공용) — 상태/담당 편집 셀렉트·CONTACT 편집. 배973.
 function _lessonRowHtml(t, r, sportKey, sportLabel) {
   var mgmt = _lessonSportMgmt(r, sportKey), argSport = encodeURIComponent(sportKey);
   var riHtml = _lriBadgeHtml(r, t);   // 재문의 배지 — 성함 옆이 아니라 문의내용 칸에 얹는다(GM 지시 2026-07-22). 이전 문의는 이름의 속성이 아니라 문의 맥락이라 문의내용과 같이 봐야 함.
   return '<tr data-row-index="' + r.rowIndex + '">' +
-    '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(_fmtInqDateTime(r.timestamp)) + '</td>' +
+    _lessonInqDateCell(r) +
     // 나이 배지 — 성인·유소년 모두 표시(기존 유소년 전용 조건 제거, 값 있으면 노출). 2026-07-21 시포·GM.
     '<td class="left lesson-inq-cell-name" style="font-weight:700" title="' + esc(r.name || '') + '">' + esc(r.name || '—') + (String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
     '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
