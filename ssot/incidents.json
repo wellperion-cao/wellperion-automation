@@ -479,6 +479,19 @@
       "차단조치": "① 모든 IG 등록의 단일 관문인 scripts/publish_register.py register_publish() 에 (b3) 단계 신설 — _autocommit_content_sources() 가 콘텐츠 폴더의 미추적·변경 소스를 scripts/safe_commit.py 경유로 자동 커밋(커밋 메시지에 콘텐츠 id·제목 포함). 채널 원고 생성(b1)·형제 등록(b2) 뒤에 호출해 전 채널 원고까지 포함. 미추적·변경이 없으면 락도 잡지 않고 통과(멱등). best-effort — 커밋 실패가 발행을 막지 않고 worklog result=\"warn\" 로 남긴다. .gitignore 관례(*.mp4 등)는 git add -f 미사용으로 그대로 존중, 새 제외 규칙 없음. ② 재현 중 발견된 safe_commit 결함 동시 수정 — git 기본 core.quotepath 가 한글 경로를 인용 출력해 사후검증이 정상 커밋을 '혼입'으로 오판하고 _sync_live_index 대조까지 깨지던 것을 -c core.quotepath=false 고정으로 차단(한글 폴더 표준 저장소에서 임시 인덱스 후처리 무력화 = 2026-07-21 삭제 사고 경로 재개통 위험이었음). ③ 적발 규칙 = scripts/worklog_gaps.py rule_content_folder_vanished (이 사고를 첫 적발).",
       "상태": "GUARDED",
       "검증증거": "격리 임시 저장소(실 저장소·실발행·텔레그램 무관, 검증 후 삭제)에서 2회 재현. (1) 헬퍼 단독: 미추적 콘텐츠 폴더 → 자동 커밋 2파일(output/01.jpg·큐레이션_추천.md), big_video.mp4 는 .gitignore 로 제외 확인, 2회차 HEAD 불변(중복 커밋 0). (2) 배선 통과: register_publish() 를 큐 쓰기·텔레그램 스텁 상태로 실제 호출 → (b3)에서 자동 커밋 4파일(build_slides.py 등 재편집용 빌드 소스 포함) 커밋 d7653ff08(임시 저장소), 2회차 '변경 없음(이미 커밋됨)' 로 HEAD 불변. quotepath 수정 전에는 같은 시나리오가 '무관 경로 혼입 1건'으로 오판돼 실패했음(수정 실효 실측)."
+    },
+    {
+      "id": "INC-029",
+      "date": "2026-07-23",
+      "요약": "시토 커밋이 저장소 트리 전체(3,156파일)를 삭제로 기록 — origin 까지 전파, 당일 복구",
+      "증상": "커밋 b7d4f3817 이후 HEAD 트리에 파일 2개만 남음. 이후 커밋 2건이 그 위에 쌓이고 origin/master 까지 push 됨(원격 파일 5개). 작업트리(디스크) 파일은 무손상.",
+      "본질": "임시 인덱스 커밋 절차에서 git read-tree HEAD 가 index.lock 경합으로 실패했는데 명령에 2>/dev/null 을 붙여 오류를 삼켰다. 빈 인덱스 위에 파일 2개만 add 한 채 commit 되어 나머지 전부가 삭제로 기록됨. 실패를 보이지 않게 만든 것이 직접 원인.",
+      "뿌리분류": "검증멈춤",
+      "차단조치": "①세션 커밋을 scripts/safe_commit.py 로 일원화(부팅 스킬 §5-2 · 락+임시인덱스 read-tree+지정경로만+HEAD 재검증 update-ref CAS+혼입 검증) ②git 절차에서 오류 억제(2>/dev/null) 금지 — 실패 시 즉시 중단 ③커밋 후 git show HEAD:<경로> 로 실제 반영 확인 의무화. ★자동 차단 코드는 미구현 — 현재는 절차 규정 단계라 상태 OPEN 유지.",
+      "상태": "OPEN",
+      "검증증거": "복구 커밋 d591c95f8(마지막 정상 트리 6b4c07c22 + 이후 실작업 5파일 재조립). 복구 후 HEAD·origin 파일 수 3,158 실측, 핵심 파일 6종 개별 확인, 당일 작업(독려 슬롯 폐지·22:30 독려 블록·가드 3종) 보존 확인.",
+      "gate": "",
+      "watch_globs": []
     }
   ]
 }
