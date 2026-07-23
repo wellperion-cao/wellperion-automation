@@ -3059,5 +3059,16 @@
     "artifact": "GM: '이 내용도 수정할 수 있게 해주면 안되?'\n회원 관리 명단이 읽기 전용이라 등록된 뒤에는 옛 메모를 고칠 방법이 없었다.\n연락 이력 모달 자체는 원래 옛 기록까지 편집되는데, 그 모달로 갈 길이 없었던 것. (CLI ad-hoc · 커밋 62b896f37)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "62b896f37c25491910d9a7ee33cbe0cdca750fde"
+  },
+  {
+    "id": "CMO-2026-07-18-COMPANY-WEB-ECOSYSTEM",
+    "clevel": "cmo",
+    "status": "DONE",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-18",
+    "title": "[시모] 회사소개서·홈페이지 생태계 확장(인재상·홈파생·자산정리)+잔손질",
+    "note": "GM 2026-07-18 지시 — 내일·모레 진행. 회사소개서 v2.19 실물 기반 업그레이드(던지는 시안 금지·퇴화금지). 오늘 완료: 생태계 CTA 밴드(투어상담→/ko/inquiry, 채용→chro/recruiting) 추가(커밋 012ab9a0). 남은 3종: (1) 인재상 4대 역량(문제해결·팀워크·주도성·프로세스, 정본=chro/recruiting/index.html)을 소개서 For Team/직원 관점에 반영·용어 통일. (2) 공개 홈페이지 버전 파생 — 소개서=깊은 IR / 홈=짧은 공개·CTA중심, 소개서 기반으로 제대로. (3) 자산 정리 — 4MB base64 경량화·이미지 외부화·버전표기 통일(v2.19 vs v2.2 vs 2024.10). + 잔손질: 월간마케팅보고서 하단 개선액션 셀 텍스트 겹침 수정 · 회사소개서 사업지표 IR 플레이스홀더 안내문 외부배포 전 정리. 별개 대기(같이 볼 것): 발행방식 단일소스 배선(코드↔문서 드리프트 방지, ssot/publish_channels.json 설계案 A안=검증스크립트). 참고: 브랜드가이드 정본=cmo/brand/브랜드가이드.html(비주얼_스타일_가이드.md 흡수·삭제). 홈 시안 아티팩트=efb5e534(참고용). ── [GM 07-23 분할] 회사소개서·홈 계통 전부 웰리 이관 → 배9963(CEO-2026-07-23-COMPANY-PROFILE-ECOSYSTEM), 브리프=status/briefs/시모_회사소개서_생태계_인계_20260723.md. IR 플레이스홀더 잔손질도 소개서 본체와 함께 웰리로(둘이 손대면 어긋남). 시모 직접 처리: 월간마케팅보고서 개선액션 셀 텍스트 겹침 수정 완료 — 원인=.comment-val display:flex 로 <strong>·<br>이 각각 flex item 승격→줄바꿈 소실·가로 겹침(모바일은 comment-box overflow:hidden 에 잘림), 수리=display:block+align-self:center+word-break:keep-all, 라이브/로컬 렌더 재현·검증(1280·375px, 가로스크롤 0). 발행방식 단일소스 배선은 CMO 도메인이라 별도 배9964(CMO-2026-07-23-PUBLISH-CHANNELS-SSOT)로 분리. → 잔여 없음, DONE.",
+    "ship_no": 9071,
+    "next": "웰리=배9963 진행 / 시모=배9964 착수 대기"
   }
 ]
