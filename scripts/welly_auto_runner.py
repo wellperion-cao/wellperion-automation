@@ -254,6 +254,64 @@ def print_interview_worklist(queue_path: str | None = None) -> None:
         )
 
 
+# ── 부팅 자율 진행 후보(읽기전용) ──────────────────────────────────────────────
+# 배경: GM 2026-07-23 "부팅되자마자 항로 확인해서 웰리 판단하에 자율 진행".
+# 예약 러너(headless 07:30)와 **완전히 같은** 선별·모호성 게이트를 쓰되, 어떤 파일도
+# 쓰지 않는다(큐 park 미기록·쿨다운 미기록·로그 미기록·claude 미호출). 실제 실행은
+# 이 함수를 부른 대화형 C-Level 세션이 자기 손으로 한다 — 그래서 게이트는 한 곳(러너)
+# 뿐이고, 부팅 경로가 우회로가 되지 않는다(헌법 불변원리 1: 한 진실 = 한 곳).
+def boot_candidate(
+    clevel: str = "cto",
+    queue_path: str | None = None,
+    registry_path: str | None = None,
+    state_path: str | None = None,
+) -> dict:
+    """
+    부팅 직후 자율 진행할 배 1척을 판정한다(읽기전용).
+    반환: {clevel, ship(dict|None), verdict("go"|"park"|"none"), reasons(list[str])}
+      - go   : 가역·저위험·모호성 없음 → 세션이 되묻지 말고 바로 착수
+      - park : 후보는 있으나 모호 → 착수 금지, GM 인터뷰 대상으로 보고만
+      - none : 후보 0건 → 대기
+    """
+    queue = _load_queue(queue_path or DEFAULT_QUEUE_PATH)
+    registry = load_registry(registry_path)
+    state = _load_state(state_path or DEFAULT_STATE_PATH)
+    ship = select_one_low_risk_ship(
+        clevel, queue, registry=registry, cooldown_task_ids=_active_cooldown_ids(state)
+    )
+    if ship is None:
+        return {
+            "clevel": clevel, "ship": None, "verdict": "none",
+            "reasons": ["가역·저위험 후보 0건(비가역·타clevel·완료·쿨다운·모호park 제외 후)"],
+        }
+    ambiguity = is_ambiguous(ship)
+    return {
+        "clevel": clevel,
+        "ship": ship,
+        "verdict": "park" if ambiguity["ambiguous"] else "go",
+        "reasons": ambiguity["reasons"],
+    }
+
+
+def print_boot_candidate(clevel: str = "cto") -> None:
+    """CLI 진입점(--boot-candidate) — 부팅 세션이 읽고 바로 행동할 수 있게 마크다운으로 출력."""
+    result = boot_candidate(clevel)
+    ship = result["ship"]
+    print(f"## 🚀 부팅 자율 진행 후보 — {clevel.upper()}\n")
+    if ship is None:
+        print(f"판정: **대기** — {result['reasons'][0]}")
+        return
+    print("| 항목 | 값 |")
+    print("|---|---|")
+    print(f"| 배 | `{ship.get('task_id')}` (ship_no {ship.get('ship_no')}) |")
+    print(f"| 난이도 | {ship.get('priority')} |")
+    print(f"| 제목 | {ship.get('title', '')} |")
+    verdict_label = {"go": "✅ 착수(되묻지 말 것)", "park": "⚓ 착수 금지 — GM 인터뷰 필요"}
+    print(f"| 판정 | {verdict_label.get(result['verdict'], result['verdict'])} |")
+    if result["reasons"]:
+        print(f"| 사유 | {'; '.join(result['reasons'])} |")
+
+
 def _collect_parked_task_ids(queue_path: str) -> list[str]:
     queue = _load_queue(queue_path)
     return [s.get("task_id") for s in parked_interview_worklist(queue) if s.get("task_id")]
@@ -1277,6 +1335,11 @@ def main() -> int:
              "run_once()와 독립 경로 · 큐 읽기전용(웰리 부팅·수동 확인용)",
     )
     parser.add_argument(
+        "--boot-candidate", action="store_true",
+        help="부팅 자율 진행 후보 1척만 판정해 마크다운으로 출력(읽기전용 — 큐·상태·로그 미기록, "
+             "claude 미호출). 대화형 C-Level 세션이 부팅 직후 호출하고, 실행은 세션이 직접 한다.",
+    )
+    parser.add_argument(
         "--render-verify-url", default=None,
         help="주어진 URL을 render_verify_url로 단독 헤드리스 렌더해 결과만 출력(run_once 미가동). "
              "실제 ERP 페이지 수동 실측용.",
@@ -1285,6 +1348,10 @@ def main() -> int:
 
     if args.interview_worklist:
         print_interview_worklist()
+        return 0
+
+    if args.boot_candidate:
+        print_boot_candidate(clevel=args.clevel)
         return 0
 
     if args.render_verify_url:
