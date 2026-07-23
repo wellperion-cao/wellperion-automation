@@ -232,6 +232,80 @@ h1,h2,.title{ text-wrap:balance; }
   /* 사진은 그대로 살린다 */
   body[data-ink="plain"] .a3 img{ filter:none !important; }
 }
+
+/* ===== 흰 바탕에서 글자 진하게 (2026-07-23 GM 2차 지적) =====
+   바탕만 희게 하고 글자색을 그대로 뒀더니 연한 갈색 글자가 날아갔다.
+   흰 바탕이 되는 장에서는 색 변수 자체를 진한 값으로 바꿔 한 번에 내린다. */
+@media print{
+  body[data-ink="ink"] .a3:not(.dark),
+  body[data-ink="plain"] .a3,
+  body[data-ink="plain"] .a3.dark{
+    --beige:#6F5A40;
+    --beige-lo:rgba(111,90,64,.45);
+    --ink-soft:#3B3630;
+    --ink:#171412;
+    --highlight:#B3341C;
+    color:#171412 !important;
+  }
+  /* 하드코딩된 옅은 색 보정 */
+  body[data-ink="ink"] .a3:not(.dark) .sc .d,
+  body[data-ink="ink"] .a3:not(.dark) .bxd,
+  body[data-ink="ink"] .a3:not(.dark) .bxng span,
+  body[data-ink="ink"] .a3:not(.dark) .fe li,
+  body[data-ink="ink"] .a3:not(.dark) .cmp td,
+  body[data-ink="plain"] .a3 .sc .d,
+  body[data-ink="plain"] .a3 .fe li,
+  body[data-ink="plain"] .a3 .cmp td{ color:#231F1C !important; }
+
+  body[data-ink="ink"] .a3:not(.dark) .lead,
+  body[data-ink="plain"] .a3 .lead,
+  body[data-ink="ink"] .a3:not(.dark) .have .r .v,
+  body[data-ink="plain"] .a3 .have .r .v,
+  body[data-ink="ink"] .a3:not(.dark) .sc .t,
+  body[data-ink="plain"] .a3 .sc .t,
+  body[data-ink="ink"] .a3:not(.dark) .fe .why,
+  body[data-ink="plain"] .a3 .fe .why,
+  body[data-ink="ink"] .a3:not(.dark) .pf,
+  body[data-ink="plain"] .a3 .pf{ color:#3B3630 !important; }
+
+  /* 라벨·눈썹글씨는 갈색을 유지하되 진하게 */
+  body[data-ink="ink"] .a3:not(.dark) .kick, body[data-ink="plain"] .a3 .kick,
+  body[data-ink="ink"] .a3:not(.dark) h3,   body[data-ink="plain"] .a3 h3,
+  body[data-ink="ink"] .a3:not(.dark) .rc .k, body[data-ink="plain"] .a3 .rc .k,
+  body[data-ink="ink"] .a3:not(.dark) .st .n, body[data-ink="plain"] .a3 .st .n,
+  body[data-ink="ink"] .a3:not(.dark) .sc .n, body[data-ink="plain"] .a3 .sc .n,
+  body[data-ink="ink"] .a3:not(.dark) .bxk,  body[data-ink="plain"] .a3 .bxk,
+  body[data-ink="ink"] .a3:not(.dark) .eyebrow, body[data-ink="plain"] .a3 .eyebrow{
+    color:#6F5A40 !important;
+  }
+  /* 제목 안 강조(.b)는 갈색 대신 먹색 계열로 — 흰 바탕에서 가장 잘 읽힌다 */
+  body[data-ink="ink"] .a3:not(.dark) .title .b, body[data-ink="plain"] .a3 .title .b,
+  body[data-ink="ink"] .a3:not(.dark) h1 .b,     body[data-ink="plain"] .a3 h1 .b,
+  body[data-ink="ink"] .a3:not(.dark) .kr,       body[data-ink="plain"] .a3 .kr{
+    color:#5C4A34 !important;
+  }
+  /* 본문·표 글씨 기본 먹색 */
+  body[data-ink="ink"] .a3:not(.dark) p,  body[data-ink="plain"] .a3 p,
+  body[data-ink="ink"] .a3:not(.dark) li, body[data-ink="plain"] .a3 li,
+  body[data-ink="ink"] .a3:not(.dark) td, body[data-ink="plain"] .a3 td,
+  body[data-ink="ink"] .a3:not(.dark) th, body[data-ink="plain"] .a3 th,
+  body[data-ink="ink"] .a3:not(.dark) .d, body[data-ink="plain"] .a3 .d,
+  body[data-ink="ink"] .a3:not(.dark) .ci span, body[data-ink="plain"] .a3 .ci span,
+  body[data-ink="ink"] .a3:not(.dark) .er span, body[data-ink="plain"] .a3 .er span{
+    color:#231F1C !important;
+  }
+  body[data-ink="ink"] .a3:not(.dark) b, body[data-ink="plain"] .a3 b,
+  body[data-ink="ink"] .a3:not(.dark) strong, body[data-ink="plain"] .a3 strong,
+  body[data-ink="ink"] .a3:not(.dark) h1, body[data-ink="plain"] .a3 h1,
+  body[data-ink="ink"] .a3:not(.dark) h2, body[data-ink="plain"] .a3 h2,
+  body[data-ink="ink"] .a3:not(.dark) .title, body[data-ink="plain"] .a3 .title{
+    color:#120F0E !important;
+  }
+  /* 경계선도 흰 바탕에서 보이게 */
+  body[data-ink="ink"] .a3:not(.dark) *, body[data-ink="plain"] .a3 *{
+    border-color:#C6BCAE !important;
+  }
+}
 @page{size:A3 landscape;margin:0}
 @media print{
   html,body{background:#fff}
