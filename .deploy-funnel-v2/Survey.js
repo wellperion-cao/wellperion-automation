@@ -5542,6 +5542,13 @@ function _processAction(body) {
         var rp = _normPhone_(r.phone);
         var rSport = _lrrNormSport_(r.regProgram || r.sport) || '기타';
         var hit = rp ? lrrByPhone[rp] : null;
+        // ★편집에 필요한 원본 행 좌표를 같이 싣는다(2026-07-23 GM: 회원 관리에서도 연락 이력 수정).
+        //   rowIndex·gid·rowKey 가 없으면 어느 행을 고칠지 특정할 수 없어 화면에서 편집을 열 수 없다.
+        //   contacts 도 함께 보내 모달이 옛 기록까지 그대로 펼치게 한다(문의 목록과 같은 모달·같은 동작).
+        var _srcMeta = {
+          rowIndex: r.rowIndex, gid: r.gid, rowKey: r.rowKey || '',
+          contacts: r.contacts || [], memo: String(r.memo || ''), inqType: lrrType
+        };
         if (hit) {   // 이미 명단에 있는 사람 → 빈 칸만 보강(중복 행 만들지 않는다)
           if (!String(hit.name || '').trim())  hit.name = String(r.name || '');
           if (!String(hit.phone || '').trim()) hit.phone = String(r.phone || '');
@@ -5549,13 +5556,19 @@ function _processAction(body) {
           if (!String(hit.owner || '').trim())    hit.owner = String(r.owner || '');
           if (!String(hit.inqDate || '').trim())  hit.inqDate = String(r.timestamp || '').slice(0, 10);
           if (!String(hit.wishTime || '').trim()) hit.wishTime = String(r.wishTime || '');
+          if (hit.rowIndex === undefined) {   // 팀시트 유래 행에 원본 좌표를 얹어 편집 가능하게
+            hit.rowIndex = _srcMeta.rowIndex; hit.gid = _srcMeta.gid; hit.rowKey = _srcMeta.rowKey;
+            hit.contacts = _srcMeta.contacts; hit.memo = _srcMeta.memo; hit.inqType = _srcMeta.inqType;
+          }
           return;
         }
         lrrRoster.push({
           sport: rSport, name: String(r.name || ''), phone: String(r.phone || ''), status: 'SUC',
           age: String(r.age || ''), owner: String(r.owner || ''),
           inqDate: String(r.timestamp || '').slice(0, 10), wishTime: String(r.wishTime || ''),
-          src: 'inquiry'
+          src: 'inquiry',
+          rowIndex: _srcMeta.rowIndex, gid: _srcMeta.gid, rowKey: _srcMeta.rowKey,
+          contacts: _srcMeta.contacts, memo: _srcMeta.memo, inqType: _srcMeta.inqType
         });
         if (rp) lrrByPhone[rp] = lrrRoster[lrrRoster.length - 1];
       });
