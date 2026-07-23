@@ -60,6 +60,12 @@ from publish_digest import send_publish_digest  # 발행완료→문의방 통�
 # review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
 from review_queue_util import merge_save_review_queue
 
+try:  # 결정 정합 게이트 공용 신호(§4) — 가드가 옛 결정 재생을 막을 때 1줄 남긴다(best-effort)
+    from decision_replay_log import append as _replay_append
+except Exception:  # 로거 부재가 발행 파이프라인을 죽이면 안 된다
+    def _replay_append(*_a, **_k):
+        return False
+
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 PUBLISH_SCRIPT = ROOT / "scripts" / "instagram_upload_playwright.py"
@@ -76,6 +82,87 @@ CARD_MSGID_STORE = ROOT / "scripts" / ".review_card_msgids.json"  # send_review_
 
 APPROVED_STATES = {"승인", "승인발행대기", "approved"}
 POST_URL_RE = re.compile(r"post\s+[A-C]:\s*(https?://\S+)", re.IGNORECASE)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 종결(폐기·취소) 결정 명문 배제 — 결정정합 게이트 A2 (배9598 · 2026-07-23)
+#   계약 정본: ssot/decision_contracts.json ▸ cmo-content-pipeline (pattern K · effect=제외)
+#
+#   [실측 출발점] 폐기·취소는 APPROVED_STATES 에 없어서 '우연히' 발행 후보가 아니었을 뿐이다.
+#   승인 상태값이 하나 추가되는 순간 뚫린다 → 여기서 명시적으로 못 박는다.
+#
+#   종결 신호 3종(review_queue.json 전수 실측 근거, 추측 아님):
+#     ① status ∈ TERMINAL_STATES — 실측 사용값은 '폐기'(라이브 1건·아카이브 2건).
+#        '취소'는 계약(decision_contracts.json decision_events)에 선언된 동급 종결어라 함께 정의.
+#     ② terminal 필드 truthy — 실측 1건 존재(CMO-2026-07-14-LSERIES-L3-GOLF,
+#        status='발행완료' + terminal=True 인 스테일 엔트리). ★status 만 보면 이건 못 잡는다.
+#        누가 이 엔트리를 다시 [승인]하면 같은 폴더가 IG 에 중복 발행된다(07-18 사고 재현).
+#     ③ folder 안에 폐기 마커 .md 실존 — worklog_gaps._is_deprecated_folder 와 같은 규칙.
+#        (07-20 취소편 종결에 쓰인 킬스위치가 이 형태다.)
+#   ※ 종결 상태값을 새로 만들면 반드시 TERMINAL_STATES 에 추가할 것.
+# ─────────────────────────────────────────────────────────────────────────────
+# 인스타 발행 경로로 보낼 채널 판정 — 실측 채널값 3종 모두 '인스타그램 (…)' 접두
+# ('인스타그램 (namuk.wellperion)' · '(wellperion 공식)' · '(wellperion)').
+# 이 패턴에 안 맞는 채널은 dispatch_publish 의 else 에서 발행 차단(구 폴백 구멍 수리).
+_IG_CHANNEL_RE = re.compile(r"인스타|instagram", re.IGNORECASE)
+
+TERMINAL_STATES = {"폐기", "취소"}
+_DEPRECATED_MARKER_RE = re.compile(r"폐기|DEPRECATED", re.IGNORECASE)
+# 같은 실행(run) 안에서 같은 항목을 여러 배제 지점이 중복 기록하지 않도록 하는 프로세스 로컬 dedup.
+_TERMINAL_BLOCK_LOGGED: set[str] = set()
+
+
+def _has_deprecated_marker(folder: str) -> bool:
+    """콘텐츠 폴더에 폐기 마커 .md 가 실존하는가(worklog_gaps._is_deprecated_folder 동일 규칙)."""
+    folder = (folder or "").strip()
+    if not folder:
+        return False
+    try:
+        path = ROOT / folder
+        if not path.is_dir():
+            return False
+        return any(_DEPRECATED_MARKER_RE.search(p.name) for p in path.glob("*.md"))
+    except Exception:
+        return False
+
+
+def terminal_reason(it: dict) -> str | None:
+    """종결(폐기·취소) 항목이면 사유 문자열, 아니면 None (순수 함수 — 부작용 없음)."""
+    status = str(it.get("status", "")).strip()
+    if status in TERMINAL_STATES:
+        return f"status='{status}'"
+    if it.get("terminal"):
+        return "terminal 필드=True(스테일·종결 엔트리)"
+    folder = str(it.get("folder", "")).strip()
+    if _has_deprecated_marker(folder):
+        return f"폴더 폐기 마커 실존({folder})"
+    return None
+
+
+def is_terminated(it: dict) -> bool:
+    """폐기·취소로 종결된 항목인가 — 발행 후보·카드 발송·dispatch 모든 지점의 단일 판정."""
+    return terminal_reason(it) is not None
+
+
+def block_if_terminated(it: dict, stage: str) -> bool:
+    """종결 항목이면 True(=차단) + 1줄 로그 · 결정재생 차단 신호 기록.
+
+    stage = 어느 지점에서 막았나('발행후보선정' · '카드발송' · 'dispatch진입').
+    발신하지 않는다(로그·jsonl append 만) — 가드는 조용하고 결정론적이어야 한다.
+    """
+    reason = terminal_reason(it)
+    if reason is None:
+        return False
+    item_id = str(it.get("id", "")) or str(it.get("folder", "")) or "(id 없음)"
+    key = f"{item_id}|{stage}"
+    if key not in _TERMINAL_BLOCK_LOGGED:
+        _TERMINAL_BLOCK_LOGGED.add(key)
+        _safe_print(f"[GUARD] 종결 항목 배제({stage}): {item_id} — {reason}")
+        _replay_append(
+            "cmo-content-pipeline",
+            subject=item_id,
+            detail=f"종결(폐기·취소) 항목 {stage} 배제 — {reason}",
+        )
+    return True
 
 # 블로그·카페 공개 제목 가드 — GM 발견(2026-07-15): title='...[네이버 블로그]' 같은
 # 내부 추적 라벨이 그대로 공개 게시글 제목으로 발행됨. 대괄호 채널 태그를 담은 제목은
@@ -248,6 +335,12 @@ def notify_pending_review(items: list) -> None:
         item_id = it.get("id", "")
         if not item_id or item_id in notified or item_id in carded:
             continue
+        # [A2 명문 배제] 종결(폐기·취소) 항목은 승인 카드/알림 자체를 보내지 않는다 —
+        # 07-20 취소편이 승인카드 재발송으로 되살아난 사고의 구조적 차단선.
+        # 차단한 id 는 notified 에 넣어 매 사이클 재로깅하지 않는다(1회만).
+        if block_if_terminated(it, "카드발송"):
+            newly_notified.append(item_id)
+            continue
         title = it.get("title", item_id)
         channel = it.get("channel", "")
         msg = (
@@ -303,6 +396,9 @@ def find_missing_channel_siblings(items: list) -> list:
     gaps = []
     for it in items:
         if it.get("account") != "wellperion":
+            continue
+        # [A2 명문 배제] 종결(폐기·취소) 엔트리는 '형제 채널 누락'이 아니다 — 경보 대상 제외.
+        if is_terminated(it):
             continue
         channel = it.get("channel", "")
         if "인스타그램" not in channel:
@@ -589,13 +685,21 @@ def dispatch_publish(it: dict, events: list) -> None:
       블로그 → publish_blog (exit 0 = 완료, URL 있으면 기록)
       카페   → publish_cafe (exit 0 = 완료, URL 있으면 기록)
       카카오·당근 → 자동발행 안 함, 텔레그램 수동 알림 + status='수동발행대기'
-      나머지(인스타 등) → 기존 publish_item (URL 회수 필수)
+      인스타그램 → 기존 publish_item (URL 회수 필수)
+      그 외(알 수 없는 채널) → 발행하지 않고 경고 (2026-07-23 배9598)
 
     it 딕셔너리를 직접 변경(status, post_url, published_at, note).
     events 리스트에 결과 문자열 추가.
     """
     title = it.get("title", it.get("id", "?"))
     ch = it.get("channel", "")
+
+    # [A2 명문 배제 · 최종 방어선] 앞단 필터가 뚫려도 여기서 발행을 막는다.
+    # 종결 결정(status 폐기·취소 / terminal / 폴더 폐기 마커)은 status 를 덮어쓰지 않고
+    # 그대로 보존한 채 조용히 반환한다(결정 원문 훼손 금지).
+    if block_if_terminated(it, "dispatch진입"):
+        events.append(f"🛑 {title}: 종결(폐기·취소) 항목 — 발행 안 함")
+        return
 
     if "블로그" in ch:
         # 블로그 자동 공개발행 (GM 승인 2026-07-13 — 전채널 자동발행 표준·요새화 안전망 라이브 후 활성)
@@ -723,7 +827,7 @@ def dispatch_publish(it: dict, events: list) -> None:
             worklog_log("cmo", "발행", f"{title} 카카오 수동 업로드 대기", result="warn",
                         detail=reason, ref=it.get("id", ""))
 
-    else:
+    elif _IG_CHANNEL_RE.search(ch):
         # [계정 가드 2026-06-16] IG 교차발행 차단 — 공식 콘텐츠가 account 누락으로 개인계정에
         # (또는 그 반대로) 잘못 발행되는 것을 구조적으로 막는다. 발행기 기본 폴백=namuk.wellperion(개인)이라
         # 공식 채널은 account='wellperion'을 명시해야만 발행. (GM 지시 박제)
@@ -775,12 +879,33 @@ def dispatch_publish(it: dict, events: list) -> None:
             worklog_log("cmo", "발행", f"{title} 인스타 발행 실패", result="fail",
                         detail="게시 URL 미회수", ref=it.get("id", ""))
 
+    else:
+        # [채널 가드 2026-07-23 배9598] 구 코드의 else 폴백은 '나머지 전부'를 IG 발행기로
+        # 보냈다 — 콘텐츠 접수 등 비발행 항목이나 오타 채널명이 승인되면 그대로 인스타에
+        # 발행된다. 예상 채널(블로그·카페·당근·카카오·인스타) 밖이면 발행하지 않고 경고만.
+        unknown = ch.strip() or "(채널 미지정)"
+        it["status"] = "발행보류(채널확인)"
+        it["note"] = (
+            f"[채널 가드] 알 수 없는 채널 '{unknown}' — 자동 발행 경로 없음. "
+            "review_queue 의 channel 을 블로그·카페·당근·카카오·인스타그램 중 하나로 바로잡고 재승인."
+        )
+        telegram(
+            f"⛔ [채널 가드] {title}\n알 수 없는 채널: {unknown}\n"
+            f"발행 경로가 없어 발행을 막았습니다. review_queue 의 channel 을 확인하세요."
+        )
+        events.append(f"⛔ {title}: 채널 가드 발동 — 알 수 없는 채널 '{unknown}'")
+        worklog_log("cmo", "발행", f"{title} 채널 가드 발동(발행 차단)", result="fail",
+                    detail=f"알 수 없는 채널 '{unknown}'", ref=it.get("id", ""))
+
 
 def process_queue(items: list, dry_run: bool) -> tuple[list, list]:
     """승인 건 처리. (변경된 items, 이벤트 로그) 반환. dry_run이면 발행 안 함."""
     events: list[str] = []
     for it in items:
         if it.get("status") not in APPROVED_STATES:
+            continue
+        # [A2 명문 배제] 승인 목록에 들어왔더라도 종결(폐기·취소) 신호가 있으면 발행하지 않는다.
+        if block_if_terminated(it, "발행후보선정"):
             continue
         title = it.get("title", it.get("id", "?"))
         folder = it.get("folder")
@@ -865,7 +990,11 @@ def _run_once_inner(dry_run: bool) -> int:
         check_missing_channel_siblings(items)
     except Exception as exc:
         _safe_print(f"[WARN] 형제채널 누락 점검 예외(발행 흐름 무영향): {exc}")
-    approved = [it for it in items if it.get("status") in APPROVED_STATES]
+    # [A2 명문 배제] 발행 후보 선정 = 승인 상태 AND 종결(폐기·취소) 아님. 두 조건 모두 명시.
+    approved = [
+        it for it in items
+        if it.get("status") in APPROVED_STATES and not block_if_terminated(it, "발행후보선정")
+    ]
     if not approved:
         _safe_print("[INFO] 발행할 승인 건 없음.")
         return 0
