@@ -47,27 +47,26 @@ logs/telegram_sent-*.log
 *.bat
 # 예외: 8 .bat 진입점 = SSOT 자산 (2026-05-29 GM 옵션 A)
 !Start-AI*.bat
-# 예외: 예약작업 런처 = 저장소에 있어야 PC 교체·재설치 때 복원된다 (2026-07-23 시우)
-!scripts/ops_fill_board_weekly.bat
+# 예외: 런처 폴더는 통째로 추적 — 새 .bat 가 자동 편입된다 (2026-07-23 시토 · 배9889)
+#   왜 바꿨나: 예전엔 파일마다 '!경로/이름.bat' 를 손으로 추가하는 방식이라,
+#   새 런처를 만들며 예외를 잊으면 **조용히 빠졌다**. 2026-07-23 실측으로 예약 런처 4개가
+#   저장소 밖에만 있는 것이 확인됐다(ig_token_refresh · kakao_daily_check_share ·
+#   ops_morning_digest · ops_morning_pipeline). 이 PC가 바뀌면 그 예약들이 통째로 죽는다.
+#   폴더 단위로 열어 '잊으면 빠지는' 구조 자체를 없앤다. 루트의 일회성 .bat 는 계속 무시된다.
+!scripts/*.bat
+!launchers/*.bat
+!ops/*.bat
+!ig/*.bat
 # 예외: IG 발행 디스패처 등록·런처 = GM admin 실행 SSOT 자산 (2026-06-04 AI CTO)
 !register_ig_publish_dispatcher_0730.bat
 !start_ig_publish_dispatcher.bat
 # 예외: AI 시리즈 제작기 등록·런처 = GM admin 실행 SSOT 자산 (2026-06-04 AI CTO)
 !register_ig_series_produce_2100.bat
 # 예외: 07:30 제작+검수카드 재구성 등록기 = GM admin 실행 SSOT (2026-06-04 GM 정정, 2100 대체)
-!ig/register_ig_series_produce_0730.bat
-!ig/start_ig_series_producer.bat
 # 예외: ops 재편 .bat = SSOT 자산 (2026-06-15 AI CTO)
-!ops/morning_update.bat
-!ops/fix_task_windows.bat
-!ops/reorg_tasks_admin.bat
 # 예외: 주간 자기정리 proposer 트리거 이동 = GM admin 실행 SSOT (2026-07-10 AI CTO, ACL 잠김 우회)
-!ops/move_proposer_trigger_admin.bat
 # 예외: 당근·블로그 정기 무인 수집 러너·등록기 = SSOT 자산 (2026-06-15 AI CMO)
-!ops/start_engagement_collect.bat
-!ops/register_engagement_collect.bat
 # 예외: ccusage 라이브 토큰·캐시 대시보드 런처 = GM 상시 모니터링 SSOT (2026-06-10 AI CTO)
-!launchers/ccusage_dashboard.bat
 # 예외: 일일 북극성 추천기 06:30 런너 = SSOT 자산 (2026-06-29 AI CTO)
 !scripts/northstar_recommender.bat
 # 예외: 텔레그램 헬스체크 13:00 런너 = SSOT 자산 (2026-06-30 AI CTO)
