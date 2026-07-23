@@ -4290,9 +4290,9 @@ function switchFamily(fam) {
 // target='adult'(성인강습) | 'youth'(유소년강습). DOM id 접미사 + GAS type 파라미터로 분기.
 var _lessonState = {
   adult: { rows: [], scope: 'year', sport: '', loaded: false, type: '성인강습',
-           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regRange: 'month', regLoaded: false, memLoaded: false },
+           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regStatus: '', memStatus: '', regRange: 'month', regLoaded: false, memLoaded: false },
   youth: { rows: [], scope: 'year', sport: '', loaded: false, type: '유소년강습',
-           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regRange: 'month', regLoaded: false, memLoaded: false }
+           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regStatus: '', memStatus: '', regRange: 'month', regLoaded: false, memLoaded: false }
 };
 
 // 강습 현황카드(성인+유소년, CPO-2026-07-14-LESSON-4CARD → 2026-07-15 GM 지시로 5카드 재구성) 값 미러 — 기존
@@ -5425,32 +5425,67 @@ function lessonRegSetRange(t, mode) {
   });
 }
 
-// 종목 버킷 필터칩(roster.sport=표준 종목명) — reg·mem 공용(kind로 필터 상태·컨테이너 분기).
-function _lessonRosterChipHtml(t, kind, val, label, n) {
-  var cur = (kind === 'reg') ? _lessonState[t].regSport : _lessonState[t].memSport;
-  var active = (val === cur);
-  return '<button type="button" data-sport="' + esc(val) + '" onclick="lessonRosterFilter(\'' + t + '\',\'' + kind + '\',this)" ' +
-    'style="padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;' +
-    'border:1px solid ' + (active ? 'var(--teal-border)' : 'var(--border)') + ';' +
-    'background:' + (active ? 'var(--teal-bg)' : 'var(--paper)') + ';' +
-    'color:' + (active ? 'var(--teal)' : 'var(--dim)') + '">' + esc(label) + ' ' + n + '</button>';
+// 종목·진행상태 버킷 필터칩 — reg·mem 공용(kind로 필터 상태·컨테이너 분기).
+// 2026-07-23 GM: 종목처럼 진행상태도 클릭 정렬. 종목 칸 '옆'에 박스로 나란히 — 세로 스크롤 증가 최소화.
+var _LESSON_STATUS_BLANK = '미입력';
+function _lessonRosterCur(t, kind, group) {
+  var st = _lessonState[t];
+  if (group === 'status') return (kind === 'reg') ? st.regStatus : st.memStatus;
+  return (kind === 'reg') ? st.regSport : st.memSport;
+}
+function _lessonRosterChipHtml(t, kind, val, label, n, group) {
+  var active = (val === _lessonRosterCur(t, kind, group));
+  // 두 축을 색으로 구분 — 종목=청록, 진행상태=골드. 어느 축을 누른 건지 한눈에 보이게.
+  // ★이 페이지엔 --gold 변수가 없다(실측) → 반드시 폴백 동반. 없으면 활성 색이 통째로 날아간다.
+  var onBd = (group === 'status') ? 'var(--orange,#c8912b)' : 'var(--teal-border)';
+  var onBg = (group === 'status') ? 'rgba(200,145,43,.12)' : 'var(--teal-bg)';
+  var onFg = (group === 'status') ? 'var(--orange,#c8912b)' : 'var(--teal)';
+  return '<button type="button" data-sport="' + esc(val) + '" data-group="' + esc(group) + '" ' +
+    'onclick="lessonRosterFilter(\'' + t + '\',\'' + kind + '\',this)" ' +
+    'style="padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;' +
+    'border:1px solid ' + (active ? onBd : 'var(--border)') + ';' +
+    'background:' + (active ? onBg : 'var(--paper)') + ';' +
+    'color:' + (active ? onFg : 'var(--dim)') + '">' + esc(label) + ' ' + n + '</button>';
+}
+function _lessonChipBox(label, inner) {
+  return '<div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:5px 8px;' +
+    'border:1px solid var(--border);border-radius:10px;background:var(--bg)">' +
+    '<span style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.02em;margin-right:1px">' + label + '</span>' +
+    inner + '</div>';
 }
 
 function _lessonRosterChips(t, kind) {
   var bar = document.getElementById((kind === 'reg' ? 'lessonRegChips_' : 'lessonMemChips_') + t);
   if (!bar) return;
   var roster = _lessonState[t].roster || [];
-  var counts = {};
-  roster.forEach(function(r){ var s = String(r.sport || '기타').trim() || '기타'; counts[s] = (counts[s] || 0) + 1; });
-  var sports = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
-  var html = _lessonRosterChipHtml(t, kind, '', '전체', roster.length);
-  sports.forEach(function(s){ html += _lessonRosterChipHtml(t, kind, s, s, counts[s]); });
-  bar.innerHTML = html;
+  var curSport = _lessonRosterCur(t, kind, 'sport'), curStatus = _lessonRosterCur(t, kind, 'status');
+  // 교차 집계 — 종목 개수는 '현재 진행상태 필터'를, 진행상태 개수는 '현재 종목 필터'를 반영한다.
+  // 그래야 눌렀을 때 0건이 뜨는 함정이 없다(보이는 숫자 = 실제로 나올 줄 수).
+  var bySport = {}, byStatus = {}, nSportAll = 0, nStatusAll = 0;
+  roster.forEach(function(r){
+    var s = String(r.sport || '기타').trim() || '기타';
+    var v = String(r.status || '').trim() || _LESSON_STATUS_BLANK;
+    if (!curStatus || v === curStatus) { bySport[s] = (bySport[s] || 0) + 1; nSportAll++; }
+    if (!curSport || s === curSport) { byStatus[v] = (byStatus[v] || 0) + 1; nStatusAll++; }
+  });
+  var sports = Object.keys(bySport).sort(function(a, b){ return bySport[b] - bySport[a]; });
+  var sHtml = _lessonRosterChipHtml(t, kind, '', '전체', nSportAll, 'sport');
+  sports.forEach(function(s){ sHtml += _lessonRosterChipHtml(t, kind, s, s, bySport[s], 'sport'); });
+
+  var statuses = Object.keys(byStatus).sort(function(a, b){ return byStatus[b] - byStatus[a]; });
+  var vHtml = _lessonRosterChipHtml(t, kind, '', '전체', nStatusAll, 'status');
+  statuses.forEach(function(v){ vHtml += _lessonRosterChipHtml(t, kind, v, v, byStatus[v], 'status'); });
+
+  bar.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start">' +
+    _lessonChipBox('종목', sHtml) + _lessonChipBox('진행상태', vHtml) + '</div>';
 }
 
 function lessonRosterFilter(t, kind, btn) {
   var v = btn.getAttribute('data-sport') || '';
-  if (kind === 'reg') _lessonState[t].regSport = v; else _lessonState[t].memSport = v;
+  var g = btn.getAttribute('data-group') || 'sport';
+  var st = _lessonState[t];
+  if (g === 'status') { if (kind === 'reg') st.regStatus = v; else st.memStatus = v; }
+  else { if (kind === 'reg') st.regSport = v; else st.memSport = v; }
   _lessonRosterChips(t, kind);
   _lessonRosterRender(t, kind);
 }
@@ -5460,11 +5495,13 @@ function _lessonRosterRender(t, kind) {
   if (!tbody) return;
   var st = _lessonState[t];
   var filter = (kind === 'reg') ? st.regSport : st.memSport;
+  var vFilter = (kind === 'reg') ? st.regStatus : st.memStatus;   // 진행상태 축(2026-07-23 GM)
   var rows = st.roster || [];
   if (filter) rows = rows.filter(function(r){ return String(r.sport || '기타').trim() === filter; });
-  // 외부관리 프로그램(루프메소드 등) 정직 안내 — mem 뷰·필터 없을 때만. 명단 시트 없음 → 등록 명단 미표시.
+  if (vFilter) rows = rows.filter(function(r){ return (String(r.status || '').trim() || _LESSON_STATUS_BLANK) === vFilter; });
+  // 외부관리 프로그램(루프메소드 등) 정직 안내 — mem 뷰·두 필터 모두 없을 때만. 명단 시트 없음 → 등록 명단 미표시.
   var extNote = '';
-  if (kind === 'mem' && !filter) {
+  if (kind === 'mem' && !filter && !vFilter) {
     (st.bySport || []).forEach(function(b){
       if (b && b.external) {
         extNote += '<tr><td colspan="6" style="font-size:12px;color:var(--dim);background:var(--paper);' +
