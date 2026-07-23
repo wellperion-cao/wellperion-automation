@@ -7143,10 +7143,12 @@ function crTab(btn, panelId) {
       }
       function fit(){
         var on=art.classList.contains('active');
-        if(mainEl){ mainEl.style.maxWidth=on?'none':''; mainEl.style.padding=on?'0':''; }
+        /* 전체 화면이되 사이드바·스크롤바와 달라붙지 않게 소폭 여백 유지 */
+        if(mainEl){ mainEl.style.maxWidth=on?'none':''; mainEl.style.padding=on?'18px 22px 30px':''; }
         var hd=art.querySelector('.doc-header');
         if(hd)hd.style.display=on?'none':'';
         wrap.style.marginTop=on?'0':'14px';
+        if(on){ wrap.style.borderRadius='14px'; }
         m();
       }
       f.addEventListener('load',function(){
