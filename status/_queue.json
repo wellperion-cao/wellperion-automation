@@ -932,5 +932,19 @@
     "artifact": "- 시설 리뉴얼(07-08): 계획/0% → 진행/15% (업무현황 SSOT '야외 테라스 활용 방안' 진행중 실측 · 3항목 중 1착수 근거값)\n- 회장님·파트너팀 오찬(07-14): 계획/0% → 진행/20% (SSOT '파트너팀 부서별 오찬' 진행중 · 담당 나우열M · 8/1~9/30 · 실행 미도래로 정직 하향)\n  ※ 자동 status_map 50(평탄값) 미채택 — 근거 있는 값만 기록(L05)\n- monthly_ops_sync.bat: 실행 로그(logs/monthly_ops_sync.log) 추가 — 기존엔 07:0 (CLI ad-hoc · 커밋 68ee57f8d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "68ee57f8dc43b427a61a418cfc49261eb0940d83"
+  },
+  {
+    "task_id": "CTO-2026-07-23-ADHOC-aa09ebdb5",
+    "clevel": "cto",
+    "title": "[시토] 시설부 점검 편집표 PIN 전달 배선 (배9619)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9813,
+    "artifact": "편집표(fcRangeSave)가 requireEditAuth()로 로컬 PIN(기본 1234)만 확인하고\n서버 fcheck_ranges_save 요청에는 pin을 실어보내지 않아, 서버(handleFcheckRangesSave,\nCHECK_UNLOCK_PIN 대조)가 항상 PIN 불일치로 저장을 거부하고 있었다(.deploy-check/지원팀\n일일점검.js:3815-3820). requireEditAuth가 입력받은 pin을 sessionStorage(editAuthPin)에\n보존하고 getEditAuthPin()으로 재사용해 fc (CLI ad-hoc · 커밋 aa09ebdb5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "aa09ebdb5b5c3d920c83e80b3aa3e50cc667e67c"
   }
 ]

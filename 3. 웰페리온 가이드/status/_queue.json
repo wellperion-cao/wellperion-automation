@@ -903,5 +903,48 @@
     "artifact": "chore(cmo): AI하루 EP10 검수큐 등록 누락 보정 + EP01 발행 URL 실측 정정(배9457) (CLI ad-hoc · 커밋 862593e12)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "862593e12146068f310521554c5591acd8169d45"
+  },
+  {
+    "task_id": "CPO-2026-07-23-SHEET-CONTRACT-TRUEUP",
+    "clevel": "cpo",
+    "title": "[시포] 시트 칸 계약 정합 복구 — 알림 12건 해소 + 휴회 신규/연장 규칙 확정",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "from": "gm",
+    "origin": "gm",
+    "enqueued_at": "2026-07-23",
+    "note": "GM 텔레그램 알림 12건(cpo_sheet_contract) 진단·해소. 실측: 고객 접수 정상(문의636·성인502·유소년692 라이브 확인, 이름·연락처 정상 저장). 원인=9건은 7/21 GM승인 칸정리(LOSS사유·LOSS사유메모·등록종목 폐지→미등록사유 통합)와 이름칸 통일이 계약서(7/20 시드)에 미반영된 잔상. 진짜 3건=①휴회 최소7일 규칙이 실제 5일 연장사례(김호선 1회차연장)와 충돌 ②휴회시트 빈줄8개 공란율 오탐 ③문의시트 칸4개 소실. GM 결정: ①신규7일·연장 하한없음 ②과거기록 복구 안함(앞으로만). 반영: Survey.js v2 휴회 신규/연장 구분(_holdMinOnce_·구분칸·헤더맵 append·공백행 skip·승인시 동일규칙) / 휴회접수.html 구분 선택+동적 하한 / membership.html 접수관리 신규·연장 배지 / cpo_sheet_contract.py 공백행 제외·GAS timeout 30→60·이름연락처 룰을 신표준(성함·연락처 부분일치)으로 갱신+진행현황 허용값(신규·재문의로 종결) 보강. ★회귀 발견·수리: 1차 재시드에서 필수칸 5→3 축소(이름·연락처 감시 실종) → 룰 갱신으로 5 복원 확인. 검증: --dry-run 6시트 전부 위반 0건(inquiry636·adult502·wsc692·register2504·active1007·hold20). node --check OK.",
+    "next": "휴회 라이브 개통(GAS v2 재배포+HOLD_LIVE·HOLD_LIVE_T ON) — 배768에서 이어감",
+    "ship_no": 9811,
+    "module": "문의회원",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "COO-2026-07-23-ADHOC-68ee57f8d",
+    "clevel": "coo",
+    "title": "[시우] 배9678 월간운영계획 진실검수 — 계획/0% 정체 2건 정정 + 자동동기화 증거·커밋 안전화",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9812,
+    "artifact": "- 시설 리뉴얼(07-08): 계획/0% → 진행/15% (업무현황 SSOT '야외 테라스 활용 방안' 진행중 실측 · 3항목 중 1착수 근거값)\n- 회장님·파트너팀 오찬(07-14): 계획/0% → 진행/20% (SSOT '파트너팀 부서별 오찬' 진행중 · 담당 나우열M · 8/1~9/30 · 실행 미도래로 정직 하향)\n  ※ 자동 status_map 50(평탄값) 미채택 — 근거 있는 값만 기록(L05)\n- monthly_ops_sync.bat: 실행 로그(logs/monthly_ops_sync.log) 추가 — 기존엔 07:0 (CLI ad-hoc · 커밋 68ee57f8d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "68ee57f8dc43b427a61a418cfc49261eb0940d83"
+  },
+  {
+    "task_id": "CTO-2026-07-23-ADHOC-aa09ebdb5",
+    "clevel": "cto",
+    "title": "[시토] 시설부 점검 편집표 PIN 전달 배선 (배9619)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9813,
+    "artifact": "편집표(fcRangeSave)가 requireEditAuth()로 로컬 PIN(기본 1234)만 확인하고\n서버 fcheck_ranges_save 요청에는 pin을 실어보내지 않아, 서버(handleFcheckRangesSave,\nCHECK_UNLOCK_PIN 대조)가 항상 PIN 불일치로 저장을 거부하고 있었다(.deploy-check/지원팀\n일일점검.js:3815-3820). requireEditAuth가 입력받은 pin을 sessionStorage(editAuthPin)에\n보존하고 getEditAuthPin()으로 재사용해 fc (CLI ad-hoc · 커밋 aa09ebdb5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "aa09ebdb5b5c3d920c83e80b3aa3e50cc667e67c"
   }
 ]
