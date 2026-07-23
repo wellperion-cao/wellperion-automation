@@ -1,6 +1,13 @@
 """
 archive_review_queue.py — review_queue.json 죽은 이력 stub화 + 아카이브 이관 (멱등)
 
+[수동 실행 전용] 사람 판단 하에 돌리는 유지보수 스윕 — 무인 배선 대상 아님.
+  근거: 이 도구는 CMO 단일 SSOT(review_queue.json)의 항목을 제자리에서 stub 으로 '치환'한다
+  (아래 _sweep 의 save_json(QUEUE_PATH, new_queue)). 2026-07-21 AI하루 10편 소실 사고 이후
+  이 SSOT 에 대한 파괴적 정리를 무인 주기 실행에 맡기지 않는다 — 큐가 커져 비용이 문제될 때
+  담당이 상태를 확인하고 1회 돌린다(멱등이라 반복 실행은 안전).
+  ※ 최근 실행: 2026-06-13(시토). 락(review_queue_lock)은 그때도 지금도 그대로 건다.
+
 동작:
   1. review_queue.json 로드 (utf-8)
   2. TERMINAL 항목(발행완료·폐기·반려·rejected) → stub 대상

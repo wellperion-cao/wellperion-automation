@@ -470,6 +470,42 @@ def rule_claimed_but_missing() -> list[dict]:
     return gaps
 
 
+PUBLISH_AUDIT_STATE_PATH = ROOT / "status" / "publish_audit_state.json"
+
+
+def rule_publish_overclaim() -> list[dict]:
+    """발행완료 과대보고 감사기(publish_status_audit)가 실측한 '주소는 있는데 죽은' 항목 적발.
+
+    감사기는 09:45 IG 도달 수집에 편승해 HTTP 실측을 하고 결과를 상태파일에 남긴다 —
+    이 규칙은 그 결과를 읽기만 한다(스캔이 매번 수십 개 URL 을 크롤하면 07:30 카드 발송이
+    느려진다). 상태파일이 없으면 gap 0건(아직 안 돌았을 뿐 — 지어내지 않는다).
+
+    ★URL_MISSING 은 위 rule_published_without_url 이 이미 같은 사실을 표면화하므로 여기선
+      제외한다(같은 항목이 화면에 두 줄로 뜨는 것 방지). 이 규칙의 고유 가치는 라이브 실측
+      결과(URL_DEAD) — 주소가 적혀 있어서 아무 규칙에도 안 걸리는데 실제로는 안 열리는 건."""
+    state = _load_json(PUBLISH_AUDIT_STATE_PATH, {})
+    if not isinstance(state, dict):
+        return []
+    today = datetime.now(tz=KST).date()
+    measured_date = _parse_iso_date(str(state.get("generated_at", "")))
+    gaps: list[dict] = []
+    for s in state.get("suspects", []) or []:
+        if not isinstance(s, dict) or "URL_DEAD" not in str(s.get("level", "")):
+            continue
+        item_id = str(s.get("id", "")).strip()
+        channel = _short_channel_label(str(s.get("channel", "")))
+        gaps.append({
+            "role": "cmo",
+            "severity": "high",
+            "title": f"{channel} · {_truncate_title(item_id or '?')} — 발행완료인데 주소가 안 열림",
+            "detail": f"{s.get('detail', '')} · {s.get('url', '')}".strip(" ·"),
+            "hint": "실제 게시 여부 확인 후 주소 정정 또는 status 되돌리기(과대보고 재발방지 감사기 적발)",
+            "ref": f"{item_id}::{channel}::dead" if item_id else f"{s.get('url', '')}::dead",
+            "age": _classify_age(measured_date, today),
+        })
+    return gaps
+
+
 _NOTE_DATE_RE = re.compile(r"\[(\d{4}-\d{2}-\d{2})")
 _STALE_DAYS = 7
 
@@ -546,6 +582,15 @@ _MEDIA_TOOL_IMPORT_RE = re.compile(r"^\s*(?:from|import)\s+(?:PIL|cv2|moviepy|nu
 # 주기 실행 의도가 파일 머리에 적혀 있으면 "돌아야 하는데 안 돈다"가 확실 → mid.
 _SCHEDULE_INTENT_WORDS = ("매일", "매주", "매월", "정기", "예약", "스윕", "주기")
 _HEAD_LINES = 40
+# 무인 배선 대상이 아니라고 파일 머리에 '선언'된 스크립트는 제외한다.
+# 근거: 이 파일이 이미 쓰는 것과 같은 원리 — 폴더 폐기 판정을 폴더명 블랙리스트가 아니라
+#   "폐기 기록 파일 실존"이라는 구조적 신호로 하듯(_is_deprecated_folder), 여기서도
+#   파일명 하드코딩 대신 "담당이 남긴 선언이 소스에 실존하는가"로 판정한다.
+# 선언 형식(둘 중 하나를 파일 머리 40줄 안에, 사유와 함께 한 줄로):
+#   [폐기] …사유…            → 대체된 레거시. 되살리려면 결재 필요.
+#   [수동 실행 전용] …사유…   → 사람이 필요할 때 직접 돌리는 도구(조회 리포트·파괴적 정리 등).
+# 선언 없이 방치된 것만 고아로 남는다 = 결정을 미룰 수 없게 만드는 게 이 규칙의 목적.
+_NOT_UNMANNED_DECL_RE = re.compile(r"\[\s*(?:폐기|DEPRECATED|수동 실행 전용)\s*\]", re.IGNORECASE)
 
 
 def _wiring_files() -> list[Path]:
@@ -654,6 +699,8 @@ def rule_orphan_automation() -> list[dict]:
         if "required=True" in src:
             continue  # 실행 때마다 사람 입력이 필요 — 무인 배선 대상 아님
         head = "\n".join(src.splitlines()[:_HEAD_LINES])
+        if _NOT_UNMANNED_DECL_RE.search(head):
+            continue  # [폐기]·[수동 실행 전용] 선언 실존 — 무인 배선 대상 아님(결정이 이미 남아있음)
         has_intent = any(w in head for w in _SCHEDULE_INTENT_WORDS)
         try:
             target_date = datetime.fromtimestamp(path.stat().st_mtime, tz=KST).date()
@@ -686,6 +733,7 @@ _RULES: dict[str, list] = {
         rule_claimed_but_missing,      # 2026-07-23 신설 — 만들었다고 하고 실물 없는 것
         rule_content_folder_vanished,  # 2026-07-23 신설 — 콘텐츠 폴더·슬라이드 소실
         rule_orphan_automation,        # 2026-07-23 신설 — 만들고 아무 실행 경로에도 안 이은 것
+        rule_publish_overclaim,        # 2026-07-23 신설 — 감사기 실측 '주소 죽음'(과대보고 재발방지)
     ],
     "coo": [],
     "cpo": [],

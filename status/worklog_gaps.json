@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-23T13:41:50+09:00",
+  "generated_at": "2026-07-23T13:54:11+09:00",
   "gaps": [
     {
       "role": "cmo",
@@ -570,46 +570,6 @@
       "ref": "instagram/namuk.wellperion/260704_AI32_나는방향만잡는다자율챕터피날",
       "age": "누적",
       "first_seen": "2026-07-23"
-    },
-    {
-      "role": "cmo",
-      "severity": "low",
-      "title": "archive_review_queue.py — 만들어놓고 아무 데도 안 붙임",
-      "detail": "다른 스크립트·배치파일·git훅·예약작업 어디에서도 호출되지 않음 · 주기 실행 의도 불명(수동 도구일 수 있음)",
-      "hint": "기존 예약작업에 best-effort 편승(신규 예약작업 금지) 또는 폐기 결정 필요",
-      "ref": "scripts/archive_review_queue.py",
-      "age": "신규",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "cmo",
-      "severity": "low",
-      "title": "cmo_kpi_collector.py — 만들어놓고 아무 데도 안 붙임",
-      "detail": "다른 스크립트·배치파일·git훅·예약작업 어디에서도 호출되지 않음 · 주기 실행 의도 불명(수동 도구일 수 있음)",
-      "hint": "기존 예약작업에 best-effort 편승(신규 예약작업 금지) 또는 폐기 결정 필요",
-      "ref": "scripts/cmo_kpi_collector.py",
-      "age": "신규",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "cmo",
-      "severity": "mid",
-      "title": "ig_publish_dispatcher.py — 만들어놓고 아무 데도 안 붙임",
-      "detail": "다른 스크립트·배치파일·git훅·예약작업 어디에서도 호출되지 않음 · 파일 머리에 주기 실행 의도 명시",
-      "hint": "기존 예약작업에 best-effort 편승(신규 예약작업 금지) 또는 폐기 결정 필요",
-      "ref": "scripts/ig_publish_dispatcher.py",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "cmo",
-      "severity": "low",
-      "title": "publish_status_audit.py — 만들어놓고 아무 데도 안 붙임",
-      "detail": "다른 스크립트·배치파일·git훅·예약작업 어디에서도 호출되지 않음 · 주기 실행 의도 불명(수동 도구일 수 있음)",
-      "hint": "기존 예약작업에 best-effort 편승(신규 예약작업 금지) 또는 폐기 결정 필요",
-      "ref": "scripts/publish_status_audit.py",
-      "age": "신규",
-      "first_seen": "2026-07-23"
     }
   ],
   "rules_run": [
@@ -654,10 +614,16 @@
       "rule": "orphan_automation",
       "ok": true,
       "error": ""
+    },
+    {
+      "role": "cmo",
+      "rule": "publish_overclaim",
+      "ok": true,
+      "error": ""
     }
   ],
   "summary": {
-    "신규": 5,
-    "누적": 56
+    "신규": 2,
+    "누적": 55
   }
 }

@@ -262,6 +262,25 @@ def _run_reconcile_published() -> None:
         print(f"[WARN] 발행 주소 회수 종료코드 {proc.returncode}(무해 — 다음 회차 재시도)")
 
 
+PUBLISH_AUDIT_MAX_SECONDS = 240  # 감사기 HTTP 실측 상한 — 넘으면 남은 건 다음 회차로
+
+
+def _run_publish_status_audit() -> None:
+    """scripts/publish_status_audit.py 를 1회 실행(읽기 전용 감사 → 상태파일·worklog 기록).
+
+    2026-07-23: 이 감사기는 GM 이 '발행 안 했는데 발행완료로 보고' 재발방지로 만들게 한 것인데
+    어느 주기 실행에도 안 붙어 한 번도 안 돌았다. 위 회수기와 같은 방식의 best-effort 편승 —
+    신규 예약작업 없음. 발행·삭제·텔레그램 발송 0(감사기는 큐를 읽기만 한다).
+    """
+    import publish_status_audit  # noqa: PLC0415 — best-effort 경로에서만 필요
+
+    res = publish_status_audit.audit_and_record(
+        check_http=True, max_seconds=PUBLISH_AUDIT_MAX_SECONDS)
+    n = len(res.get("suspects", []))
+    print(f"  [감사] 발행완료 과대보고 의심 {n}건 — status/publish_audit_state.json 기록"
+          + (" (빠진 것 화면에 표면화)" if n else " · 깨끗"))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="@wellperion IG 노출·도달 수집기 (배#546, 미검증 골격)")
     parser.add_argument("--dry-run", action="store_true", help="파일 저장 없이 결과만 출력")
@@ -289,6 +308,11 @@ def main() -> int:
                 _run_reconcile_published()
             except Exception as e:
                 print(f"[WARN] 발행 주소 회수 대조 연계 실패(IG 도달 수집 자체는 완료): {e}")
+            # 회수 '뒤'에 감사 — 방금 백필된 주소가 감사 결과에 반영되도록 순서를 지킨다.
+            try:
+                _run_publish_status_audit()
+            except Exception as e:
+                print(f"[WARN] 발행완료 과대보고 감사 연계 실패(IG 도달 수집 자체는 완료): {e}")
 
 
 def _collect_reach(args) -> int:

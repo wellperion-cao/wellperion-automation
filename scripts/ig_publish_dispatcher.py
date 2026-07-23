@@ -1,5 +1,17 @@
 """M5 승인 → 로컬 발행 디스패처 (인터랙티브 데스크톱 세션 전용, 2026-06-04 AI CTO)
 
+[폐기] 2026-06-13 대체됨 — 07:30 배치 발행 → '승인 즉시 발행'으로 전환.
+  근거: `_archive/ig_legacy/README.md` — 이 파일의 런처 두 개
+  (`start_ig_publish_dispatcher.bat` · `register_ig_publish_dispatcher_0730.bat`)가
+  "07:30 배치 발행 → 승인 즉시 발행으로 대체" 사유로 아카이브됨(예약작업 미등록 실측 확인).
+  현행 발행 경로 = `telegram_bot/bot.py` 의 승인 콜백 → `ig_review_publish_watcher.py --once`
+  (bot.py `_PUBLISH_ENGINE`). 이 디스패처는 그 watcher.run_once 를 07:30 에 한 번 더
+  돌리는 얇은 래퍼일 뿐이라 새로 하는 일이 없다.
+  ★되살리지 말 것: 켜면 그 시각까지 '승인' 상태로 남아있던 과거 건까지 소급 일괄 발행된다
+  (동시 실행 중복은 .publish.lock 이 막지만, 소급 발행 자체는 아무도 안 막는다).
+  재가동은 GM 결재 사항 — 아래 헤더의 '실행' 안내는 폐기 전 원문 보존용이다.
+  ※ 헤더의 이 선언 실존이 곧 worklog_gaps 고아 규칙 제외 근거(파일명 하드코딩 아님).
+
 배경(오늘 실패 원인 #2): IG 발행기는 headless=False(headful)라 데스크톱이 없는
 백그라운드/세션0 에서 못 뜬다. 텔레그램 pub: 콜백이 백그라운드 subprocess 로 발행기를
 띄우는 경로가 이래서 실패했다. → 발행은 '로그온 사용자 데스크톱 세션'에서만 성공한다.
