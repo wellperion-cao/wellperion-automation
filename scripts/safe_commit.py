@@ -58,7 +58,12 @@ def _git(args: list[str], root: Path, env: dict | None = None,
     if env:
         run_env.update(env)
     return subprocess.run(
-        ["git", "-C", str(root), *args],
+        # core.quotepath=false — git 기본값은 한글 등 비ASCII 경로를 "\355\201..." 로 인용해
+        # 출력한다. 그러면 ⑤ 사후검증의 경로 비교가 전부 어긋나 정상 커밋도 '혼입'으로 오판하고,
+        # _sync_live_index 의 ls-tree/ls-files 대조도 깨진다(=임시 인덱스 후처리 무력화 →
+        # 2026-07-21 삭제 사고 경로 재개통). 한글 폴더가 표준인 저장소라 전 호출에 고정한다.
+        # (2026-07-23 격리 재현으로 실측 — instagram/.../큐레이션_추천.md 가 혼입으로 오판됨)
+        ["git", "-C", str(root), "-c", "core.quotepath=false", *args],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         env=run_env, check=check,
     )

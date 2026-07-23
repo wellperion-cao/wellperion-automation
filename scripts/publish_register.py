@@ -414,6 +414,65 @@ def _auto_register_channel_siblings(
     return ids
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 콘텐츠 원본 자동 커밋 (INC-028 구조 차단, 2026-07-23 AI CMO)
+#   계기: 개인계정 7편(AI24·25·26·29·30·31·32)의 원본 폴더가 영구 소실. 삭제 커밋 0건 —
+#   애초에 커밋이 안 됐다(같은 시기 발행 10건 중 커밋 3건 = 30%). "제작 즉시 커밋"이
+#   문서·습관에만 있고 코드로 강제되지 않았던 게 본질.
+#   → 모든 IG 등록의 단일 관문인 register_publish() 가 지날 때 코드가 알아서 커밋한다.
+#   ★.gitignore 관례는 그대로 존중(-f 미사용 → *.mp4 등 기존 제외 규칙 유지). 새 제외 규칙 없음.
+# ─────────────────────────────────────────────────────────────────────────────
+def _autocommit_content_sources(folder_rel: str, queue_id: str, title: str) -> None:
+    """콘텐츠 폴더의 미추적·변경 소스를 safe_commit 으로 자동 커밋(best-effort · 멱등).
+
+    - 미추적/변경이 없으면 락도 잡지 않고 조용히 통과 → 2회 실행해도 중복 커밋 0.
+    - 커밋 실패가 발행·등록을 막지 않는다(예외 삼킴). 다만 실패 사실은 worklog result="warn"
+      으로 남겨 조용히 넘어가지 않게 한다.
+    """
+    try:
+        if not folder_rel or Path(folder_rel).is_absolute() or folder_rel.startswith(".."):
+            print(f"[WARN] 콘텐츠 자동커밋 스킵 — 저장소 밖 경로: {folder_rel}")
+            return
+        if not (ROOT / folder_rel).is_dir():
+            print(f"[WARN] 콘텐츠 자동커밋 스킵 — 폴더 없음: {folder_rel}")
+            return
+
+        import subprocess
+
+        st = subprocess.run(
+            ["git", "-C", str(ROOT), "status", "--porcelain",
+             "--untracked-files=all", "--", folder_rel],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+        )
+        if st.returncode != 0:
+            raise RuntimeError(f"git status 실패(rc={st.returncode}): {(st.stderr or '').strip()}")
+        if not st.stdout.strip():
+            print(f"[INFO] 콘텐츠 원본 자동커밋 — 변경 없음(이미 커밋됨) · {folder_rel}")
+            return
+
+        from safe_commit import safe_commit
+
+        res = safe_commit(
+            [folder_rel],
+            f"chore(cmo): 콘텐츠 원본 자동 커밋 — {queue_id} {title}",
+            holder="publish_register:autocommit",
+        )
+        if res.get("ok") and res.get("committed"):
+            print(f"[OK] 콘텐츠 원본 자동커밋 — {len(res.get('changed') or [])}파일 · "
+                  f"sha={res.get('sha', '')[:9]} · {folder_rel}")
+            return
+        if res.get("ok"):
+            print(f"[INFO] 콘텐츠 원본 자동커밋 — {res.get('reason', '')} · {folder_rel}")
+            return
+        raise RuntimeError(res.get("reason", "safe_commit 실패"))
+    except Exception as exc:
+        print(f"[WARN] 콘텐츠 원본 자동커밋 실패(등록·발행은 유효): {exc}")
+        worklog_log(
+            "cmo", "커밋", f"콘텐츠 원본 자동커밋 실패 — {title}",
+            result="warn", detail=f"{folder_rel} · {type(exc).__name__}: {exc}", ref=queue_id,
+        )
+
+
 def register_publish(
     content_folder: Path,
     slug: str,
@@ -507,6 +566,11 @@ def register_publish(
         except Exception as exc:
             print(f"[WARN] 형제 채널 자동등록 예외(IG 등록은 유효): {exc}")
             sibling_ids = []
+
+        # (b3) 콘텐츠 원본 자동 커밋 — 습관에 맡기지 않고 등록 관문이 지날 때 코드가 커밋한다
+        # (INC-028 구조 차단 · 개인계정 7편 원본 영구 소실 재발방지). (b1)(b2)가 만든 채널
+        # 원고까지 포함되도록 이 위치에서 호출. best-effort — 실패해도 발행은 계속된다.
+        _autocommit_content_sources(folder_rel, queue_id, title)
 
         # (c) 텔레그램 1줄 + montage 발송
         action = "갱신" if matched else "신규 등록"
