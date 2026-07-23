@@ -162,4 +162,17 @@ if [ -f "$SHEET_LINK_GUARD" ] && [ -n "$PYBIN" ]; then
   fi
 fi
 
+# ── ⑦ 비밀값(자격증명) 평문 커밋 차단 가드 (텔레그램 봇 토큰 유출 재발방지 · 2026-07-23 시토 · 배9952) ──
+# staged 텍스트 파일의 추가된 줄(diff +)에 텔레그램 봇 토큰·Google API 키·AWS
+# 액세스 키·Slack 토큰·개인키 헤더 형태가 있으면 커밋 차단(exit 1). 값 자체는
+# 출력하지 않는다(마스킹). 가드 오류/파이썬 없음 = fail-open(통과).
+# 우회: git commit --no-verify 또는 env SKIP_SECRET_GUARD=1
+SECRET_GUARD="$REPO_ROOT/scripts/precommit_secret_guard.py"
+if [ -f "$SECRET_GUARD" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$SECRET_GUARD"
+  if [ "$?" -eq 1 ]; then
+    exit 1
+  fi
+fi
+
 exit 0
