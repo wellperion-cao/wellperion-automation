@@ -161,16 +161,28 @@
 
   // ── 데이터 로드(공유, 1회 — 실패해도 다른 소스는 살려서 부분 렌더 가능하게 각각 catch) ──
   var dataPromise = null;
+  var WL_NOT_STARTED = '__wl_not_started__'; // worklog.jsonl 이 아직 없음(404)/비어있음 — "고장"이 아니라 "아직 안 쌓임"
   function fetchOk(url){
     return fetch(url + '?t=' + Date.now(), { cache: 'no-store' }).then(function(r){
       if(!r.ok) throw new Error('http ' + r.status);
       return r;
     });
   }
+  // worklog.jsonl 전용 로더 — 404/빈 응답(아직 자동화가 한 번도 안 돌아 파일이 없는 정상 초기 상태)과
+  // 그 외 실제 실패(네트워크 오류·5xx 등)를 구분해서 각기 다른 안내를 낼 수 있게 한다.
+  function fetchWorklog(){
+    return fetch(WORKLOG_URL + '?t=' + Date.now(), { cache: 'no-store' }).then(function(r){
+      if(r.status === 404) return WL_NOT_STARTED;
+      if(!r.ok) throw new Error('http ' + r.status);
+      return r.text().then(function(t){
+        return String(t || '').trim() ? parseJsonl(t) : WL_NOT_STARTED;
+      });
+    }).catch(function(){ return null; }); // 진짜 실패만 null(불러오지 못함)
+  }
   function loadData(){
     if(dataPromise) return dataPromise;
     dataPromise = Promise.all([
-      fetchOk(WORKLOG_URL).then(function(r){ return r.text(); }).then(parseJsonl).catch(function(){ return null; }),
+      fetchWorklog(),
       fetchOk(GAPS_URL).then(function(r){ return r.json(); }).catch(function(){ return null; })
     ]).then(function(res){ return { logs: res[0], gaps: res[1] }; });
     return dataPromise;
@@ -235,6 +247,11 @@
     var html = '<div class="wl-section"><div class="wl-section-title">📋 한 일</div>';
     if(logsAll === null){
       return html + '<div class="wl-error">작업 로그를 불러오지 못했습니다</div></div>';
+    }
+    // worklog.jsonl 자체가 아직 없거나(404) 비어있음 — 고장이 아니라 "자동화가 아직 한 번도 안 돎"의
+    // 정상 초기 상태이므로 경고 톤이 아닌 담백한 안내로 구분.
+    if(logsAll === WL_NOT_STARTED){
+      return html + '<div class="wl-empty">아직 기록된 작업이 없습니다. 다음 작업부터 자동으로 쌓입니다.</div></div>';
     }
     var roleLogs = logsAll.filter(function(l){ return l && (l.role === role) && l.ts; });
     if(!roleLogs.length){
