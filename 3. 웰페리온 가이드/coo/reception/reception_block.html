@@ -455,7 +455,8 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
     return d.getFullYear() + '-' + (m.length < 2 ? '0' + m : m) + '-' + (day.length < 2 ? '0' + day : day);
   }
   // 휴회 일수 하한 — 신규 7일 / 연장 1일 (2026-07-23 GM 확정 · 시포 화면과 동일 규칙)
-  function _holdMinDays(kind){ return (kind === '연장') ? 1 : 7; }
+  // (2026-07-23) 신규/연장 하한 판정 함수는 제거 — 회원 화면에서 '구분'을 없애 호출부가 사라졌다.
+  //   일수 적정성은 접수 시트에서 직원이 확인한다(GM 지시).
 
   // 분실위치 드롭다운 항목 — 필요 시 이 배열만 수정.
   var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
@@ -526,12 +527,12 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
        ⚠️ 지금은 같은 폼이 두 곳(여기 · cpo/member/휴회접수.html)에 존재한다 = 사본 2벌.
           규칙이 바뀌면 한쪽만 고쳐질 위험이 있어, 시포와 단일화(한쪽을 다른 쪽으로 보내기) 협의 대상. */
     hold: [
-      { key:'name',      label:'이름',          type:'text',     ph:'실명을 입력해 주세요', req:true },
-      { key:'contact',   label:'연락처',        type:'tel',      ph:'010-1234-5678', req:true },
-      { key:'holdKind',  label:'구분',          type:'select',   opts:['신규','연장'] },
-      { key:'holdStart', label:'휴회 시작일',   type:'date',     req:true },
-      { key:'holdDays',  label:'휴회 일수',     type:'number',   ph:'신규 7~60일 · 연장 1~60일', req:true },
-      { key:'reason',    label:'사유',          type:'textarea', opt:true, ph:'휴회 사유를 적어주세요(선택).' }
+      { key:'name',      label:'이름',          type:'text',   ph:'실명을 입력해 주세요', req:true },
+      { key:'contact',   label:'연락처',        type:'tel',    ph:'010-1234-5678', req:true },
+      { key:'holdStart', label:'휴회 시작일',   type:'date',   req:true },
+      { key:'holdEnd',   label:'휴회 종료일',   type:'date',   req:true },
+      { key:'reason',    label:'사유',          type:'select', ph:'사유를 선택하세요',
+        opts:['여행','출장','병가·치료','임신·육아','개인 사정','기타'] }
     ]
   };
   // 백엔드로 보낼 추가 필드 키 (없으면 빈값)
@@ -603,7 +604,14 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
         d.type = def.type;   // 'date'(날짜만) 또는 'datetime-local'(날짜+시간)
         d.id = 'f_' + def.key;
         // 휴회 시작일은 과거를 못 고르게 막는다(시포 규약과 동일 — 서버에서도 재검증)
-        if (def.key === 'holdStart') { d.min = _todayStr(); }
+        // 휴회 날짜는 과거를 못 고르게 막고, 종료일은 시작일 이전을 못 고르게 연동한다
+        if (def.key === 'holdStart' || def.key === 'holdEnd') { d.min = _todayStr(); }
+        if (def.key === 'holdStart') {
+          d.addEventListener('change', function(){
+            var e = document.getElementById('f_holdEnd');
+            if (e) { e.min = this.value || _todayStr(); if (e.value && e.value < e.min) e.value = ''; }
+          });
+        }
         field.appendChild(d);
       } else if (def.type === 'number') {
         // 숫자 입력(휴회 일수) — 모바일에서 숫자 키패드가 뜨도록 inputmode 지정
@@ -739,13 +747,13 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
     /* ── 휴회 접수는 회원(시포) 백엔드로 직행 ── (배9910 후속 · 2026-07-23)
        종합접수처 시트에는 쓰지 않는다. 검증 규칙은 시포 화면과 동일하게 유지할 것. */
     if (selectedCategory === 'hold') {
-      var _kind = vals.holdKind || '신규';
-      var _days = parseInt(vals.holdDays, 10);
-      var _min = _holdMinDays(_kind);
+      /* 회원 화면에서는 '구분(신규·연장)'과 '휴회 일수'를 묻지 않는다 (GM 지시 2026-07-23)
+         — 회원이 모르는 개념이라 뺐고, 일수 적정성은 접수 시트에서 직원이 확인한다.
+         일수는 시작일~종료일로 자동 계산해 백엔드에 함께 보낸다(직원이 시트에서 바로 보게). */
       if (vals.holdStart < _todayStr()) { toast('휴회 시작일은 오늘 이후로 선택해 주세요', true); return; }
-      if (isNaN(_days) || _days < _min || _days > 60) {
-        toast('휴회 일수는 ' + _min + '~60일 사이로 입력해 주세요 (' + _kind + ')', true); return;
-      }
+      if (!vals.holdEnd) { toast('휴회 종료일을 선택해 주세요', true); return; }
+      if (vals.holdEnd < vals.holdStart) { toast('휴회 종료일은 시작일 이후로 선택해 주세요', true); return; }
+      var _days = Math.round((new Date(vals.holdEnd) - new Date(vals.holdStart)) / 86400000) + 1;
       btn.disabled = true; btn.textContent = '접수 중…';
       fetch(HOLD_API, {
         method: 'POST', redirect: 'follow',
@@ -753,8 +761,11 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
         body: JSON.stringify({
           action: 'member_hold_apply',
           name: vals.name || '', phone: vals.contact || '',
-          holdKind: _kind, holdStart: vals.holdStart || '',
-          holdDays: _days, reason: vals.reason || ''
+          holdKind: '신규',                    // 회원 화면에서 구분을 없앴으므로 기본값 전송 — 실제 신규/연장 판정은 직원이 시트에서
+          holdStart: vals.holdStart || '',
+          holdEnd: vals.holdEnd || '',        // 신규 칸 — 시트에서 기간을 그대로 보게
+          holdDays: _days,                    // 시작~종료로 자동 계산(양끝 포함)
+          reason: vals.reason || ''
         })
       })
       .then(function(r){ return r.text(); })
