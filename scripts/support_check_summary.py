@@ -351,31 +351,17 @@ def facility_worklog(subs: list, oor_fields: set[str] | None = None) -> tuple[li
         # 그대로 찍으면 뒤 회차일수록 앞 내용을 통째로 반복해 8회차엔 9줄이 겹쳤다
         # → 화면이 길어져 정작 '오늘 새로 한 일'이 안 보인다(GM 2026-07-23 지적).
         # 그래서 앞 회차에 없던 항목만 남긴다. 데이터는 손대지 않고 표시만 줄인다.
-        items = s.get("items") or []
-        if items:
-            head += f" · 점검 {sum(1 for it in items if it.get('done'))}/{len(items)}"
-
         fresh = [w for w in _lines(s.get("work")) if w not in seen_work]
         seen_work.update(fresh)
         marker = "" if i == 1 else "+ "
         block = [f"{head} · {marker}{' / '.join(fresh)}" if fresh
                  else f"{head} · (추가 작업 없음)"]
 
-        # 그 회차에서 실제로 잰 값 — 회차마다 다르므로 회차 줄 바로 아래 붙인다.
-        measures = submission_measures(s)
-        measure_line = compact_measures(measures)
-        if measure_line:
-            # 그 회차 값 중 기준을 벗어난 게 있으면 회차 줄에서 바로 눈에 띄게 한다
-            # (상세 항목·조치는 아래 이슈사항 섹션이 계속 담당).
-            hit = bool((oor_fields or set()) & set(measures))
-            block.append(f"🌡{'❗' if hit else ''} {measure_line}")
-        # 그 회차에만 적힌 특이사항·기준이탈 조치도 회차 자리에서 보이게 한다
-        # (전체 묶음으로만 보여주면 '언제 있었던 일'인지 사라진다).
-        round_notes: list[str] = []
-        for f in ("note", "oocAction"):
-            round_notes += _lines(s.get(f))
-        if round_notes:
-            block.append(f"📌 {' / '.join(round_notes)}")
+        # ※ 2026-07-23: 회차 줄 아래에 그 회차 측정값·특이사항을 붙여 봤으나(개선본4)
+        # GM 이 묶음 표시(개선본3)를 더 낫다고 판단 — 회차 줄은 '언제·누가·무슨 작업'만
+        # 담고, 측정은 아래 🌡 묶음 블록이 담당한다. 회차별 측정 조립 함수
+        # (submission_measures/compact_measures)는 지우지 않고 남겨 둔다 — 필요할 때
+        # 다시 붙일 수 있고, 지웠다 다시 쓰는 왕복이 더 비싸다.
         work_items.append(block)
 
     # 특이사항(note)·기준이탈조치(oocAction) — 전 회차에서 유니크 수집(순서 보존)
@@ -470,11 +456,17 @@ def facility_measurements(store: dict, today_oor_fields: set[str]) -> list[str]:
     소스에 있는 값만 그대로 표기(창작 금지) · today_oor_fields에 든 필드는 ❗ 표시(기존 기준이탈 판정 재사용)."""
     out: list[str] = []
 
-    # ※ store.rounds 기반 '🌡 측정' 묶음 블록은 2026-07-23 제거했다.
-    # 회차별 일지에 그 회차에서 실제로 잰 값을 붙이면서, 이 블록은 마지막 회차 값과
-    # 글자 하나까지 같은 완전 중복이 됐다(실측). 같은 값을 두 번 보여주면 어느 쪽이
-    # 진짜인지 헷갈린다 — 회차별 표시가 정보량이 더 많으므로 그쪽만 남긴다.
-    # (_measure_group_lines 는 다른 화면에서 재사용 가능하도록 함수는 유지)
+    rounds = store.get("rounds") if isinstance(store.get("rounds"), dict) else {}
+    for rk in sorted(rounds.keys()):
+        vals = rounds.get(rk) or {}
+        if not isinstance(vals, dict) or not vals:
+            continue
+        tag = f" [{rk}]" if len(rounds) > 1 else ""
+        group_lines = _measure_group_lines(vals, today_oor_fields)
+        if not group_lines:
+            continue
+        out.append(f"  🌡 측정{tag}")
+        out += group_lines
 
     daily = store.get("daily") if isinstance(store.get("daily"), dict) else {}
 
@@ -540,7 +532,7 @@ def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list
     work_items, notes = facility_worklog(subs, today_oor_fields)
     if work_items:
         filled["facility_worklog"] = True
-        lines.append("  📋 회차별 일지 (회차마다 잰 값·특이사항 함께 · 작업은 새로 추가된 것만)")
+        lines.append("  📋 회차별 일지 (새로 추가된 작업만 · 앞 회차 반복 생략)")
         for block in work_items[:_MAX_WORKLOG]:
             lines.append(f"    · {block[0]}")
             for extra in block[1:]:
