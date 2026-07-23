@@ -2478,5 +2478,19 @@
     "artifact": "GM 지시 4건 반영\n  ① 휴회 접수·습득물 접수를 '쓴소리합니다' 아래 접수유형 칸으로 이동(그리드 6→8칸)\n  ② 습득물 보기를 휴회 접수와 같은 풀폭 크기(.lf-link)로 통일 · 반폭 2버튼(.lf-btns) 제거\n  ③ 휴회는 별도 페이지 이동이 아니라 다른 접수처럼 바로 아래 인라인 폼이 열리도록 전환\n  ④ 단어 '휴회 신청' → '휴회 접수'(안내 문구 포함) (CLI ad-hoc · 커밋 f808bf5ef)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f808bf5ef82df3fe6af40dcacec89efe0b4094ad"
+  },
+  {
+    "task_id": "COO-2026-07-23-ADHOC-8ea7e26f3",
+    "clevel": "coo",
+    "title": "[시우] 접수유형 8칸 높이 통일 + 직원용 칸 연한 색 (GM 지시 2026-07-23)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9930,
+    "artifact": "- 습득물 접수 라벨: 줄바꿈+작은글씨 → 한 줄 '습득물 접수 [직원용]'\n  (줄바꿈 때문에 그 칸만 세로로 커져 8칸 정렬이 깨지던 원인)\n- .type-btn 높이 78px 고정 + 라벨 nowrap → 8칸 전부 동일 높이\n- 직원용 칸(.staff)만 채도 낮춤: 배경 var(--bg) · 글자 var(--dim) · 아이콘 opacity .5\n  → 회원이 누를 칸과 시각적으로 구분\n- 리포·WP 동시 반영. 라이브 실측: 8칸 전부 78px(높이 종류 1개) · 직원용 색 적용 확인 · JS 에러 0\n  · 라이브 전 (CLI ad-hoc · 커밋 8ea7e26f3)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "8ea7e26f3500116708a63986606556d5e7ae7fcd"
   }
 ]
