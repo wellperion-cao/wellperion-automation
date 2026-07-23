@@ -531,7 +531,10 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
       { key:'contact',   label:'연락처',        type:'tel',    ph:'010-1234-5678', req:true },
       { key:'holdStart', label:'휴회 시작일',   type:'date',   req:true },
       { key:'holdEnd',   label:'휴회 종료일',   type:'date',   req:true },
-      { key:'reason',    label:'사유',          type:'select', ph:'사유를 선택하세요',
+      /* 라벨은 '사유' 대신 '휴회 유형' (GM 확정 2026-07-23) — 선택지가 여행·출장처럼 '상황'이라
+         이유를 캐묻는 인상을 없애고, 앞 칸(휴회 시작일·종료일)과 '휴회 OO' 리듬을 맞춘다.
+         ★백엔드로 보내는 키는 reason 유지 — 시포 규약(member_hold_apply)이 그대로다. */
+      { key:'reason',    label:'휴회 유형',     type:'select', ph:'유형을 선택하세요',
         opts:['여행','출장','병가·치료','임신·육아','개인 사정','기타'] }
     ]
   };
