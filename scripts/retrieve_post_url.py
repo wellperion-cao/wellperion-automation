@@ -54,7 +54,7 @@ DANGGN_BIZ_ACCOUNT_ID = "2769927"  # danggn_upload_playwright.py 실측
 
 LOGIN_SIGNALS_NAVER  = ("nid.naver.com/nidlogin", "nid.naver.com/login")
 LOGIN_SIGNALS_KAKAO  = ("accounts.kakao.com", "/login", "logon")
-LOGIN_SIGNALS_DANGGN = ("login", "signin", "auth")
+LOGIN_SIGNALS_DANGGN = ("login", "signin", "sign-in", "auth", "accounts.daangn.com")
 
 VALID_CHANNELS = {"blog", "cafe", "kakao", "danggn"}
 
@@ -129,21 +129,40 @@ async def _retrieve_blog(page, keyword: str, account: str) -> tuple[str | None, 
     """
     blog_main = f"https://blog.naver.com/{account}"
     kw_lower  = keyword.lower()
-    # 블로그 포스트 URL 패턴: /{account}/숫자(logNo)
-    post_re = re.compile(rf"/{re.escape(account)}/(\d{{5,}})", re.IGNORECASE)
 
     async def _links_from_frame(frame) -> list[dict]:
-        """프레임에서 블로그 포스트 링크 + 주변 텍스트 수집."""
+        """
+        프레임에서 블로그 포스트 링크 + 주변 텍스트 수집.
+        두 URL 형식 모두 수용:
+          - 구/단축형  https://blog.naver.com/{account}/{logNo}
+          - PostView형 https://blog.naver.com/PostView.naver?blogId={account}&logNo={logNo}
+        ★2026-07-23 배9578 실측: 목록 위젯 프레임 링크가 전부 PostView.naver?logNo=
+        형식이라 옛 경로형 정규식만 쓰면 611개 중 매치 0건이었다(9건 전건 미회수 원인).
+        """
         try:
             return await frame.evaluate(
                 """(account) => {
-                    const pat = new RegExp('\\/' + account + '\\/(\\d{5,})', 'i');
-                    return [...document.querySelectorAll('a[href]')]
-                        .filter(a => pat.test(a.href))
-                        .map(a => ({
-                            href: a.href,
+                    const pathPat  = new RegExp('\\/' + account + '\\/(\\d{5,})', 'i');
+                    const blogIdPat = new RegExp('[?&]blogId=' + account + '(?:&|$)', 'i');
+                    const logNoPat  = /[?&]logNo=(\\d{5,})/i;
+                    const out = [];
+                    for (const a of document.querySelectorAll('a[href]')) {
+                        const href = a.href;
+                        let id = null;
+                        const pm = pathPat.exec(href);
+                        if (pm) {
+                            id = pm[1];
+                        } else if (blogIdPat.test(href)) {
+                            const lm = logNoPat.exec(href);
+                            if (lm) id = lm[1];
+                        }
+                        if (!id) continue;
+                        out.push({
+                            href, id,
                             text: (a.innerText || a.title || a.getAttribute('aria-label') || '').trim().substring(0, 300)
-                        }));
+                        });
+                    }
+                    return out;
                 }""",
                 account,
             )
@@ -178,14 +197,14 @@ async def _retrieve_blog(page, keyword: str, account: str) -> tuple[str | None, 
                 continue
             all_links.extend(await _links_from_frame(frame))
 
-        # 중복 제거 (logNo 기준)
+        # 중복 제거 (logNo 기준) — canonical 은 단축형으로 통일
         seen: set[str] = set()
         unique: list[dict] = []
         for lnk in all_links:
-            m = post_re.search(lnk["href"])
-            if not m:
+            log_no = lnk.get("id")
+            if not log_no:
                 continue
-            canonical = f"https://blog.naver.com/{account}/{m.group(1)}"
+            canonical = f"https://blog.naver.com/{account}/{log_no}"
             if canonical in seen:
                 continue
             seen.add(canonical)
