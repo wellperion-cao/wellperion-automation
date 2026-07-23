@@ -2253,8 +2253,15 @@
     var prHtml = (pr == null)
       ? '<span class="q-none">작업 없음</span>'
       : (qBar(pr.pct) + '<b>' + pr.pct + '%</b><span class="q-sub">작업 ' + pr.n + '건 평균</span>');
+    /* 값이 없을 때 이유를 구분해 말한다 — '측정 준비 중'과 '아직 못 불러옴'은 다른 상태다.
+       (2026-07-23: 지원부가 측정되는데도 '측정 준비 중'으로 뜨던 오표기 정정) */
+    var mSrc = dd.metric && dd.metric.source;
+    var mTgt = dd.metric && dd.metric.target;
+    var noneLabel = !mSrc ? '측정 준비 중'
+                  : (mTgt == null ? '목표치 미확정'
+                  : (!_kpiValues ? '불러오는 중' : '측정값 없음'));
     var mtHtml = (mt == null)
-      ? '<span class="q-none">측정 준비 중</span><span class="q-sub">' + esc((dd.metric && dd.metric.note) || '') + '</span>'
+      ? '<span class="q-none">' + noneLabel + '</span><span class="q-sub">' + esc((dd.metric && dd.metric.note) || '') + '</span>'
       : (qBar(mt.pct, 'good') + '<b>' + mt.pct + '%</b><span class="q-sub">실측 ' +
          (mt.raw <= 1 ? Math.round(mt.raw * 100) + '%' : mt.raw) + ' / 목표 ' +
          (mt.target <= 1 ? Math.round(mt.target * 100) + '%' : mt.target) + '</span>');
@@ -3047,7 +3054,9 @@
       // 습득물(lf) 병합 — VOC 보드가 정상 로드됐을 때만 덧붙인다(VOC 실패 시 습득물만 부분표시=오해 방지, ④ 카드 '측정 개통 전' 유지).
       if(_vocBoard && Array.isArray(a[2]) && a[2].length){ _vocBoard = _vocBoard.concat(a[2]); }
       _checkReady = true;
-      if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); renderSummaryStrip(); }
+      /* 부서 카드도 다시 그린다 (2026-07-23 시우) — 분기 목표의 '목표율'이 kpi_values 실측이라
+         이 시점 전에 그려진 카드는 값을 못 받아 '측정 준비 중'으로 굳어 있었다(지원부 오표기 원인). */
+      if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); renderSummaryStrip(); renderDeptTable(); }
     });
   }
 
