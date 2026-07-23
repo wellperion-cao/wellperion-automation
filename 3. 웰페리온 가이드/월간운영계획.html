@@ -960,7 +960,7 @@
 
 <script>
 (function(){
-  // ── 설정: 라이브 URL(헌법한장.html 동일 GAS·raw 폴백 패턴) ──
+  // ── 설정: 라이브 URL(AI운영한장.html 동일 GAS·raw 폴백 패턴) ──
   var GAS_URL  = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
   var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
   var PLAN_PATH = 'status/monthly_ops_plan.json';
@@ -1021,7 +1021,7 @@
       .then(function(res){ return (res && res.ok && res.dept) ? res.dept : null; })
       .catch(function(){ return null; });
   }
-  // 🗺️ 북극성 지도 정본(헌법한장.html과 동일 raw) — 목표→북극성 뱃지용 role.dims[0](북극성 문구) 조회.
+  // 🗺️ 북극성 지도 정본(AI운영한장.html과 동일 raw) — 목표→북극성 뱃지용 role.dims[0](북극성 문구) 조회.
   var NS_MATRIX_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/coo/bootsetup_matrix.json';
   function readNsMap(){
     return fetch(NS_MATRIX_URL, {cache:'no-store'})
@@ -1620,14 +1620,14 @@
   }
 
   // ── 목표 = 표의 행(보고서형) ──
-  // 목표→북극성 경로 뱃지: o.northstar(role 코드) → 헌법한장 북극성 지도(bootsetup_matrix.json dims[0]) 문구.
+  // 목표→북극성 경로 뱃지: o.northstar(role 코드) → AI운영한장 북극성 지도(bootsetup_matrix.json dims[0]) 문구.
   //   조회 실패·role 미기재·문구 없음 = 전부 '미지정'(가짜 문구 생성 금지).
   function nsBadge(o){
     var role = o.northstar;
     var txt = (role && _nsMap && _nsMap[role]) ? _nsMap[role] : '';
     var short = txt ? (txt.length > 26 ? txt.slice(0, 26) + '…' : txt) : '미지정';
     var title = txt ? ('북극성(' + nickOf(role) + ') → ' + txt) : '북극성 미지정(role 미기재 또는 지도에 없음)';
-    return '<a class="chip ns" href="헌법한장.html" title="' + esc(title) + '">🌟 → ' + esc(short) + '</a>';
+    return '<a class="chip ns" href="AI운영한장.html" title="' + esc(title) + '">🌟 → ' + esc(short) + '</a>';
   }
 
   // 🔄 4부서 4단계 구축 사이클 콤팩트 렌더(핵심만 · 부모%는 sub 평균 유지 · GM 지시 2026-07-06 4차)

@@ -1013,7 +1013,7 @@
     "enqueued_at": "2026-07-23",
     "processed_at": "2026-07-23",
     "ship_no": 9818,
-    "artifact": "직전 커밋에서 ssot/kpi.json에 northstar 필드를 새로 만든 것은 잘못이었다.\n북극성 정본은 이미 3. 웰페리온 가이드/coo/bootsetup_matrix.json roles[].dims[0]에\n7역할 전부 존재하며(헌법한장·S2 공통탭 카드가 렌더·GM 인라인 편집 지점),\nkpi.json에 사본을 만든 탓에 5역할이 '미정'으로 잘못 표기됐다(약속 L01·INC-001 동류). (CLI ad-hoc · 커밋 2276a1b0d)",
+    "artifact": "직전 커밋에서 ssot/kpi.json에 northstar 필드를 새로 만든 것은 잘못이었다.\n북극성 정본은 이미 3. 웰페리온 가이드/coo/bootsetup_matrix.json roles[].dims[0]에\n7역할 전부 존재하며(AI운영한장·S2 공통탭 카드가 렌더·GM 인라인 편집 지점),\nkpi.json에 사본을 만든 탓에 5역할이 '미정'으로 잘못 표기됐다(약속 L01·INC-001 동류). (CLI ad-hoc · 커밋 2276a1b0d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "2276a1b0d24659b3adaf59c0601a785d9fe7174e"
   },
@@ -1031,5 +1031,18 @@
     "module": "home",
     "surface": "autonomy",
     "ship_no": 9819
+  },
+  {
+    "task_id": "CMO-2026-07-23-WORKLOG-PANEL",
+    "clevel": "cmo",
+    "title": "[시모] 작업 현황 로그 — 전 C-Level 공통 틀(한 일 + 빠진 것) · M1 최초 적용",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "from": "gm",
+    "origin": "gm",
+    "enqueued_at": "2026-07-23",
+    "ship_no": 9820,
+    "note": "GM 2026-07-23 지시·승인(공통 틀 선택). 계기=AI하루 EP10 검수큐 등록 누락을 아무도 못 봄. 핵심=로그는 '한 일'만 보여주므로 '빠진 것'(짝 불일치) 자동 적발을 같이 얹음. 구성=scripts/worklog.py(공용 기록)+scripts/worklog_gaps.py(공용 감지, role별 규칙 등록부)+`3. 웰페리온 가이드/_assets/worklog_panel.js`(공용 화면 조각, 기존 gate.js·print_options.js 관례). 최초 적용=M1. 타 C-Level은 자기 규칙만 등록하고 페이지에 조각 1줄 붙이면 됨. 기록은 손이 아니라 코드가 자동으로 남긴다(약속 L02).",
+    "next": "M1 라이브 확인 후 타 C-Level 확장 안내 — 시우(O1)·시포(회원)부터"
   }
 ]

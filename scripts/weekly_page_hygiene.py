@@ -106,7 +106,7 @@ PAGE_TARGETS: list[dict] = [
     {"clevel": "chro", "label": "채용-주차", "path": "3. 웰페리온 가이드/chro/recruiting/parking.html"},
     {"clevel": "chro", "label": "채용-사우나", "path": "3. 웰페리온 가이드/chro/recruiting/sauna.html"},
     # ── shared 3 — 공용 (2026-07-14 추가) ──
-    {"clevel": "shared", "label": "헌법한장", "path": "3. 웰페리온 가이드/헌법한장.html"},
+    {"clevel": "shared", "label": "AI운영한장", "path": "3. 웰페리온 가이드/AI운영한장.html"},
     {"clevel": "shared", "label": "전사회의", "path": "3. 웰페리온 가이드/전사회의.html"},
     {"clevel": "shared", "label": "웰페리온 대시보드(웹)", "path": "3. 웰페리온 가이드/wellperion_dashboard_web.html"},
     # ── shared 3 — 리다이렉트 스텁(감사 가치 낮으나 GM 지시로 포함) ──

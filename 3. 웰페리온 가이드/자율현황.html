@@ -168,7 +168,7 @@
   footer.foot b{color:var(--text-soft);}
   code{background:rgba(255,255,255,0.07); color:#e6d9ff; border-radius:4px; padding:1px 5px; font-size:11px;}
 
-  /* ── ⚙️ 자동화→자율화 4층 개요 다이어그램 (헌법한장.html 병합 · 2026-07-03) ── */
+  /* ── ⚙️ 자동화→자율화 4층 개요 다이어그램 (AI운영한장.html 병합 · 2026-07-03) ── */
   .autoflow{display:flex; flex-wrap:wrap; align-items:stretch; gap:6px; margin:4px 0 10px;}
   .autolayer{flex:1 1 190px; min-width:170px; background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent-soft); border-radius:10px; padding:9px 11px; display:flex; flex-direction:column; gap:2px;}
   .autolayer .al-n{font-size:10px; font-weight:800; color:var(--accent-soft); text-transform:uppercase; letter-spacing:0.02em;}
@@ -293,7 +293,7 @@
     .routines{grid-template-columns:1fr;}
   }
 
-  /* ── 🔁 자율화 루프 5단계 (헌법한장에서 이관 · 2026-07-15) ── */
+  /* ── 🔁 자율화 루프 5단계 (AI운영한장에서 이관 · 2026-07-15) ── */
   .loop-strip{display:flex; flex-wrap:wrap; align-items:stretch; gap:8px; margin:4px 0 8px;}
   .loop-step{flex:1 1 150px; background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
   .loop-step .lsnum{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--accent); color:#fff; font-size:11px; font-weight:800; margin-bottom:5px;}
@@ -313,7 +313,7 @@
     <h1>자율 작업 현황</h1>
     <span class="sub"><b>시토 · T2 자동화</b> — 웰리·C-Level이 스스로 돌린 일(로그 실재분만).</span>
     <a class="back" href="wellperion_guide(main).html#T2">← T2 업무자동화SSOT</a>
-    <a class="back" href="헌법한장.html">🏛️ 헌법 한 장</a>
+    <a class="back" href="AI운영한장.html">🏛️ 헌법 한 장</a>
   </header>
 
   <section id="hero-autonomy" class="hero">
@@ -345,7 +345,7 @@
     <div class="feed-status" style="grid-column:1/-1;">정박·대기 배를 불러오는 중…</div>
   </div>
 
-  <!-- ════ ⚙️ 자동화→자율화 4층 구조 (헌법한장.html 병합 · 2026-07-03 · 개요를 라이브 데이터보다 앞으로 재배치 · 배339) ════ -->
+  <!-- ════ ⚙️ 자동화→자율화 4층 구조 (AI운영한장.html 병합 · 2026-07-03 · 개요를 라이브 데이터보다 앞으로 재배치 · 배339) ════ -->
   <h2 class="sec" style="margin-top:2px;">🏛️ 자율화를 떠받치는 4대 축</h2>
   <div class="sec-note">나란히 작동하는 4개 축 — 코드·훅 자동화 위에서 AI가 판단·완결.</div>
   <div class="autoflow">
@@ -716,13 +716,13 @@
       <strong>📄 설계 문서(정적)</strong> — 🟢=설계상 상시가동, 실측 아님. 실제 가동은 위 🤖 건강 점수판.
     </div>
 
-    <!-- ════ 🔁 자율화 루프 5단계 + 환류 (헌법한장에서 이관 · 닫힌 고리 · 2026-07-15) ════ -->
+    <!-- ════ 🔁 자율화 루프 5단계 + 환류 (AI운영한장에서 이관 · 닫힌 고리 · 2026-07-15) ════ -->
     <h3 style="margin-top:20px;">🔁 자율화 루프 5단계 <span style="font-size:12px;font-weight:400;color:var(--dim);">닫힌 고리(환류 → 다음 루프 입력)</span></h3>
-    <p class="sec-note" style="margin:2px 0 8px;">근거: docs/superpowers/plans/2026-07-09-clevel-autonomous-execution-loop.md · 불변 전제는 <a href="헌법한장.html" style="color:var(--accent-soft);">🌟 헌법 › 공통 헌법</a> 참조</p>
+    <p class="sec-note" style="margin:2px 0 8px;">근거: docs/superpowers/plans/2026-07-09-clevel-autonomous-execution-loop.md · 불변 전제는 <a href="AI운영한장.html" style="color:var(--accent-soft);">🌟 헌법 › 공통 헌법</a> 참조</p>
     <div class="loop-strip">
       <div class="loop-step"><span class="lsnum">1</span><h4>모듈 등록부</h4><p>status/module_registry.json — 화면·알림·자율 루프의 단일 출처</p></div>
       <div class="loop-arrow">→</div>
-      <div class="loop-step"><span class="lsnum">2</span><h4>프론트 카드</h4><p>헌법한장·자율현황 창이 등록부를 읽어 렌더(하드코딩 금지)</p></div>
+      <div class="loop-step"><span class="lsnum">2</span><h4>프론트 카드</h4><p>AI운영한장·자율현황 창이 등록부를 읽어 렌더(하드코딩 금지)</p></div>
       <div class="loop-arrow">→</div>
       <div class="loop-step"><span class="lsnum">3</span><h4>웰리 오케스트레이션</h4><p>가역 배 선별 → 담당 C레벨에 위임 → 실행(웰리 직접 실행 금지)</p></div>
       <div class="loop-arrow">→</div>
