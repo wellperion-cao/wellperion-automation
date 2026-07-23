@@ -6458,16 +6458,14 @@ function _oaSaveOwner(sel){
   var prev = r ? String(r[cfg.col]||'') : '';
   if (!phone){ showToast('전화번호 없음 — 저장 불가', 'err'); sel.value = prev; return; }
   if (r) r[cfg.col] = newVal;   // 낙관적(캐시=_activeRows 공유 시 회원관리 요약셀도 동기 반영)
-  apiPost({ action: 'member_owner_save', phone: phone, field: cfg.col, value: newVal })
-    .then(function(data){
-      if (data && data.ok){ showToast('담당자 저장됨', 'ok'); }
-      else { throw new Error((data && data.error) || '저장 실패'); }
-    })
-    .catch(function(err){
-      if (r) r[cfg.col] = prev;
-      sel.value = prev;
-      showToast('저장 실패: ' + (err.message || ''), 'err');
-    });
+  // 버퍼 경유(2026-07-23) — 강습 쪽 담당 변경은 이미 버퍼를 타는데 멤버십만 서버 응답을 기다렸다.
+  //   실패 시 되돌리는 대신 대기큐에 남겨 재시도한다 — 드롭다운이 되돌아가면 사용자는 '안 눌렸나' 하고 또 누른다.
+  var _ovO = {}; _ovO[cfg.col] = newVal;
+  WriteBuffer.enqueue(
+    { action: 'member_owner_save', phone: phone, field: cfg.col, value: newVal },
+    { scope: 'active', phoneKey: phone, fieldset: 'owner:' + cfg.col, label: '담당', who: (r && (r['회원명'] || r['성함'])) || '', overlay: _ovO }
+  );
+  showToast('담당자 저장', 'ok');
 }
 
 function _oaRenderState(msg){
@@ -6740,16 +6738,13 @@ function _mregSaveOwner(sel){
   var member = _mregFindMember(phone);
   var prev = member ? String(member[field] || '') : '';
   if (member) member[field] = newVal;   // 낙관적 — _ownerAssignRows(=_activeRows 공유 가능) 즉시 반영 → 담당자 배정 pane 동기
-  apiPost({ action: 'member_owner_save', phone: phone, field: field, value: newVal })
-    .then(function(data){
-      if (data && data.ok){ showToast('담당자 저장됨 · ' + String(field).replace(' 담당자','') + ' → ' + (newVal || '미배정'), 'ok'); }
-      else { throw new Error((data && data.error) || '저장 실패'); }
-    })
-    .catch(function(err){
-      if (member) member[field] = prev;
-      sel.value = prev || LESSON_UNASSIGNED_OPTION;
-      showToast('저장 실패: ' + (err.message || ''), 'err');
-    });
+  // 버퍼 경유(2026-07-23) — 위 _oaSaveOwner 와 동일 이유. 실패는 되돌리지 않고 재시도 대상으로 남긴다.
+  var _ovM = {}; _ovM[field] = newVal;
+  WriteBuffer.enqueue(
+    { action: 'member_owner_save', phone: phone, field: field, value: newVal },
+    { scope: 'active', phoneKey: phone, fieldset: 'owner:' + field, label: '담당', who: (member && (member['회원명'] || member['성함'])) || '', overlay: _ovM }
+  );
+  showToast('담당자 저장 · ' + String(field).replace(' 담당자', '') + ' → ' + (newVal || '미배정'), 'ok');
 }
 
 // 대기자(미래시작) 카드 클릭 → 멤버십 회원 관리 탭으로 전환·대기자만 표시(2026-07-16 GM 지시). 신규 fetch 없음(_activeRows 재사용).
@@ -7234,9 +7229,14 @@ function _wireActiveDblclick(){
       var r = _activeRows.find(function(x){ return x.rowIndex == rowIndex; });
       if (r) r[col] = newVal;
       var _keyPhone = (r && (r['휴대폰 번호'] || r['휴대폰'])) || '';   // 행키(서버 rowIndex 밀림 검증용)
-      apiPost({ action: 'member_active_update', rowIndex: rowIndex, col: col, value: newVal, keyPhone: _keyPhone, rowKey: (r && r.rowKey) || '' })
-        .then(function(){ showToast('저장', 'ok'); })
-        .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); });
+      // 버퍼 경유(2026-07-23) — 화면은 이미 새 값으로 바뀐 뒤라 체감은 같지만, 실패했을 때가 다르다.
+      //   전: 토스트 한 번 띄우고 끝 → 놓치면 그대로 유실. 후: 대기큐에 남아 재시도 + 헤더 배지로 표면화.
+      var _who = (r && (r['회원명'] || r['성함'] || r['이름'])) || '';
+      var _ov = {}; _ov[col] = newVal;
+      WriteBuffer.enqueue(
+        { action: 'member_active_update', rowIndex: rowIndex, col: col, value: newVal, keyPhone: _keyPhone, rowKey: (r && r.rowKey) || '' },
+        { scope: 'active', phoneKey: _keyPhone, fieldset: 'cell:' + col, label: col, who: _who, overlay: _ov }
+      );
     }
 
     inp.addEventListener('keydown', function(e){
@@ -7773,8 +7773,10 @@ function saveConsultModal() {
   var _unregistered = (!registered && origReg && regChanged);   // 등록 해제(되돌리기)
   var evRef = _consultEv;   // 낙관적 업데이트용 — closeConsultModal이 _consultEv=null 해도 calEvents 내 객체 참조 유지
   saveBtn.disabled = true;
-  apiPost(payload)
-    .then(function(){
+  // 버퍼 경유(2026-07-23 GM '저장 누른 속도') — 아래 로컬 반영 블록이 서버 응답을 기다린 뒤에야
+  //   실행돼 상담 모달이 몇 초씩 열려 있었다. 같은 블록을 먼저 돌리고 기록은 뒤로 넘긴다.
+  //   실패는 WriteBuffer 가 대기큐+배지로 표면화하고 재시도한다(조용한 유실 없음).
+  (function(){
       showToast(_celebrateReg ? ('🎉 등록 완료 · ' + (_regName ? _regName + '님 환영합니다' : '환영합니다')) : (_unregistered ? '등록 취소 · 진행상황 강등' : '저장'), 'ok');
       // 낙관적 업데이트 — 서버 전체 재조회(GAS 왕복) 없이 바뀐 부분만 로컬 반영(버벅임 제거). 2026-06-29 시포
       if (evRef) {
@@ -7812,11 +7814,12 @@ function saveConsultModal() {
       renderCalendarChips();                     // 로컬 재렌더(GAS 재조회 없음 — 즉시 반영)
       if (_tabLoaded.db) renderDbTable();        // 그리드도 로컬 재렌더
       if ((_celebrateReg || _unregistered) && _tabLoaded.registered) loadRegistered();  // 등록/해제 시 등록현황 재조회
-    })
-    .catch(function(err){
-      showToast('저장 실패: ' + (err.message || ''), 'err');
-    })
-    .then(function(){ saveBtn.disabled = false; });
+  })();
+  WriteBuffer.enqueue(payload, {
+    scope: 'member', phoneKey: (evRef && evRef.phone) || '', fieldset: 'consult',
+    label: '상담 저장', who: (evRef && evRef.name) || '', overlay: {}
+  });
+  saveBtn.disabled = false;
 }
 
 /* ─────────────────────────────────────────────
@@ -7925,15 +7928,16 @@ function saveChurnModal() {
   var rowIndex = _churnModal.rowIndex, keyPhone = _churnModal.keyPhone;
   var fields = {}; fields[CHURN_REASON_COL] = reason; fields[CHURN_REASON_NOTE_COL] = note;
   var saveBtn = document.getElementById('crSaveBtn'); saveBtn.disabled = true;
-  apiPost({ action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: _churnModal.rowKey || '', fields: fields })
-    .then(function(data){
-      if (data && data.ok === false) throw new Error(data.error || '저장 실패');
-      showToast('종료사유 저장', 'ok');
-      _churnPatchLocal(rowIndex, reason, note);
-      closeChurnModal();
-    })
-    .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
-    .then(function(){ saveBtn.disabled = false; });
+  // 버퍼 경유(2026-07-23) — 이탈관리 모달도 저장 응답을 기다렸다. 화면 먼저, 기록은 뒤에서.
+  var _ovC = {}; _ovC[CHURN_REASON_COL] = reason; _ovC[CHURN_REASON_NOTE_COL] = note;
+  _churnPatchLocal(rowIndex, reason, note);
+  WriteBuffer.enqueue(
+    { action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: _churnModal.rowKey || '', fields: fields },
+    { scope: 'active', phoneKey: keyPhone, fieldset: 'churnReason', label: '종료사유', who: (_churnModal && _churnModal.name) || '', overlay: _ovC }
+  );
+  showToast('종료사유 저장', 'ok');
+  closeChurnModal();
+  saveBtn.disabled = false;
 }
 
 /* ── 휴회(2026-07-22 GM 재설계) — 직원 직접-신청 모달(openHoldModal/member_hold_preview 조회) 폐기.
