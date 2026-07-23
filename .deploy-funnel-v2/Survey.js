@@ -8003,6 +8003,13 @@ function _processAction(body) {
   function _holdKindNorm_(v) { return String(v || '').indexOf(HLD_KIND_EXTEND) >= 0 ? HLD_KIND_EXTEND : HLD_KIND_NEW; }
   function _holdMinOnce_(kind) { return _holdKindNorm_(kind) === HLD_KIND_EXTEND ? 1 : HLD_MIN_ONCE; }
   function _holdEndCalc_(start, days) { var d = new Date(start + 'T00:00:00+09:00'); d.setDate(d.getDate() + (days - 1)); return Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd'); }
+  // 시트가 'yyyy-MM-dd' 문자열을 Date 객체로 자동 변환해 저장한다 → 그대로 읽으면
+  // 'Thu Jul 24 2026 00:00:00 GMT+0900' 같은 값이 직원 화면에 뜨고, 날짜 정규식도 어긋나 종료일이 안 잡힌다.
+  // 읽는 쪽에서 항상 정규화한다(기존 행·신규 행 모두 안전). 2026-07-23 시포 — 라이브 실측으로 발견.
+  function _holdDateStr_(v, withTime) {
+    if (v instanceof Date && !isNaN(v.getTime())) return Utilities.formatDate(v, 'Asia/Seoul', withTime ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd');
+    return String(v === null || v === undefined ? '' : v).trim();
+  }
   // 접수 탭 헤더 보장(추가칸 비파괴 append) — 이미 있는 탭에 '구분'이 없으면 끝에 만든다. 행 삭제·이동 0.
   function _holdIntakeHdr_(sh) {
     var h = sh.getLastRow() >= 1 ? sh.getRange(1, 1, 1, Math.max(1, sh.getLastColumn())).getValues()[0].map(function(v){ return String(v).trim(); }) : [];
@@ -8019,7 +8026,7 @@ function _processAction(body) {
 
   // 공개 휴회접수(쓰기전용) — 회원 조회·판정 0. '휴회접수' 탭에 접수대기 1행 append만(회원 판정/잔여 미반환). 게이트 HOLD_LIVE.
   if (action === 'member_hold_apply') {
-    var HOLD_LIVE = false;   // ★공개 접수 실기록 게이트 — GM go 후 true. 역롤백=이 한 줄.
+    var HOLD_LIVE = true;    // ★공개 접수 실기록 게이트 — GM go(2026-07-23) 개통. 역롤백=이 한 줄 false.
     var inName = String(body.name || body.selfName || '').trim();
     var inPhone = String(body.phone || body.selfPhone || '').trim();
     var inStart = String(body.holdStart || '').trim();
@@ -8030,7 +8037,7 @@ function _processAction(body) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(inStart)) return _json({ ok: false, error: 'need-start', detail: '희망 시작일을 입력해 주세요' });
     if (isNaN(inDays) || inDays < 1) return _json({ ok: false, error: 'need-days', detail: '희망 일수를 입력해 주세요' });
     var inMin = _holdMinOnce_(inKind);
-    if (inDays < inMin) return _json({ ok: false, error: 'days-too-short', detail: (inKind === HLD_KIND_EXTEND ? '연장' : '신규 휴회') + '은(는) 최소 ' + inMin + '일부터 신청 가능합니다' });
+    if (inDays < inMin) return _json({ ok: false, error: 'days-too-short', detail: (inKind === HLD_KIND_EXTEND ? '휴회 연장은' : '새 휴회 신청은') + ' 최소 ' + inMin + '일부터 신청 가능합니다' });
     if (inDays > HLD_MAX_ONCE) return _json({ ok: false, error: 'days-too-long', detail: '1회 최대 ' + HLD_MAX_ONCE + '일까지 신청 가능합니다' });
     if (!HOLD_LIVE) return _json({ ok: false, error: 'hold-gated', detail: '휴회 접수는 GM 검증 후 개통됩니다(현재 미개통)' });
     var iss = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
@@ -8084,9 +8091,10 @@ function _processAction(body) {
       else if (m.count + 1 > HLD_MAX_COUNT) { verdict = '불가'; vreason = '횟수 한도(현재 ' + m.count + '/' + HLD_MAX_COUNT + '회)'; }
       else if (m.cumDays + days > HLD_MAX_TOTAL) { verdict = '불가'; vreason = '누적일 한도(현재 ' + m.cumDays + '+' + days + '>' + HLD_MAX_TOTAL + '일)'; }
       if (!m.found) vreason = (vreason ? vreason + ' · ' : '') + '회원 매칭 확인 필요';
+      var startStr = lSt >= 0 ? _holdDateStr_(r[lSt]) : '';
       out.push({ intakeRow: li + 2, status: lStat >= 0 ? String(r[lStat] || '').trim() : '', kind: kind,
-        appliedAt: lTs >= 0 ? String(r[lTs] || '') : '', name: lNm >= 0 ? String(r[lNm] || '') : '', phone: lPh >= 0 ? String(r[lPh] || '') : '',
-        start: lSt >= 0 ? String(r[lSt] || '') : '', wishDays: isNaN(days) ? null : days, end: (!isNaN(days) && lSt >= 0 && /^\d{4}-\d{2}-\d{2}$/.test(String(r[lSt] || '').trim())) ? _holdEndCalc_(String(r[lSt]).trim(), days) : '',
+        appliedAt: lTs >= 0 ? _holdDateStr_(r[lTs], true) : '', name: lNm >= 0 ? String(r[lNm] || '') : '', phone: lPh >= 0 ? String(r[lPh] || '') : '',
+        start: startStr, wishDays: isNaN(days) ? null : days, end: (!isNaN(days) && /^\d{4}-\d{2}-\d{2}$/.test(startStr)) ? _holdEndCalc_(startStr, days) : '',
         reason: lRe >= 0 ? String(r[lRe] || '') : '', member: { found: m.found, count: m.count, cumDays: m.cumDays }, verdict: verdict, verdictReason: vreason });
     }
     return _json({ ok: true, count: out.length, data: out });
@@ -8096,7 +8104,7 @@ function _processAction(body) {
   //   반려=intake 상태만 반려(회원DB 무변경·잔여 미소비). 검증 3회/총60일/1회 7~60 재검증. 게이트 HOLD_LIVE_T(GM go).
   //   회원 매칭=접수 연락처↔회원DB 전화 1행(fail-closed). 대조키(keyPhone)로 접수행 검증. 행삭제 0(셀 write·칸 insert만). 2026-07-22 시포·GM.
   if (action === 'member_hold_approve') {
-    var HOLD_LIVE_T = false;         // ★승인/반영 실기록 게이트 — GM 검증 후 true. 역롤백=이 한 줄.
+    var HOLD_LIVE_T = true;          // ★승인/반영 실기록 게이트 — GM go(2026-07-23) 개통. 역롤백=이 한 줄 false.
     var HOLD_EXTEND_GO_T = false;    // 승인 시 종료일자 가산(잔여일 반영) — 시트 잔여일 수식 실측 후 true.
     var apDecision = String(body.decision || '').trim();
     if (apDecision !== 'approve' && apDecision !== 'reject') return _json({ ok: false, error: 'decision=approve|reject' });
@@ -8132,7 +8140,7 @@ function _processAction(body) {
     if (amHits.length === 0) return _json({ ok: false, error: 'member-not-found', detail: '회원DB에서 일치 회원을 찾을 수 없습니다(전화 확인)' });
     if (amHits.length > 1) return _json({ ok: false, error: 'member-ambiguous', detail: '동일 전화 회원 다수 — 데스크 확인' });
     var amRow = amHits[0];
-    var reqStart = aiSt >= 0 ? String(apRowV[aiSt] || '').trim() : '';
+    var reqStart = aiSt >= 0 ? _holdDateStr_(apRowV[aiSt]) : '';   // 시트 Date 자동변환 정규화(2026-07-23)
     var reqDays = aiDy >= 0 ? parseInt(String(apRowV[aiDy] || '').replace(/[^0-9]/g, ''), 10) : NaN;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(reqStart) || isNaN(reqDays)) return _json({ ok: false, error: 'bad-request', detail: '접수 기간/일수 불량' });
     var reqEnd = _holdEndCalc_(reqStart, reqDays);
@@ -8175,7 +8183,7 @@ function _processAction(body) {
   // ─── 휴회 회원 상태전이(직원) — 승인 후 회원 라이프사이클: 진행중(휴회중)→완료(휴회 종료). 회원DB '휴회접수상태'만 갱신(잔여 재소비 없음).
   //   접수대기→진행중 확정·증분은 member_hold_approve가 담당. 이 액션은 그 이후 진행중↔완료 라벨 전이 전용. 게이트 HOLD_LIVE_T. 2026-07-22 시포·GM.
   if (action === 'member_hold_transition') {
-    var HOLD_LIVE_T2 = false;   // ★상태전이 실기록 게이트 — GM go 후 true. 역롤백=이 한 줄.
+    var HOLD_LIVE_T2 = true;    // ★상태전이 실기록 게이트 — GM go(2026-07-23) 개통. 역롤백=이 한 줄 false.
     var htN = String(body.status || '').trim();
     if (htN !== '완료' && htN !== '진행중') return _json({ ok: false, error: 'status=완료|진행중 중 하나' });
     var tSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
