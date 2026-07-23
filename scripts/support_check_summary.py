@@ -276,7 +276,59 @@ def _lines(v) -> list[str]:
     return [ln.strip() for ln in str(v or "").replace("\r", "").split("\n") if ln.strip()]
 
 
-def facility_worklog(subs: list) -> tuple[list[str], list[str]]:
+# ── 회차별 측정값 한 줄 요약 (GM 2026-07-23 "회차별 일지도 같이") ──────────────
+# 제출 1건(=1회차)마다 items[].measure 에 그 회차에서 실제로 잰 값이 들어 있다
+# (온탕 38.4 → 39.0 → 38.2 처럼 회차마다 다르다). 그런데 보고는 store.rounds 의
+# 한 벌만 보여줘 나머지 8회차 측정이 통째로 안 보였다 — 회차 줄에 붙여 되살린다.
+_INLINE_PAIRS = (
+    ("sauna_ontang", "온탕"), ("sauna_yeoltang", "열탕"), ("sauna_dry", "건식"),
+    ("sauna_wet", "습식"), ("sauna_jjim", "찜질"),
+)
+_INLINE_POOL = (("pool_ph", "pH"), ("pool_temp", "수온"), ("pool_cl", "염소"))
+
+
+def submission_measures(sub: dict) -> dict:
+    """제출 1건의 items[].measure(JSON 문자열)들을 하나의 {필드: 값} 으로 펼친다."""
+    out: dict = {}
+    for it in sub.get("items") or []:
+        raw = it.get("measure")
+        if not raw:
+            continue
+        try:
+            parsed = json.loads(raw) if isinstance(raw, str) else raw
+        except Exception:
+            continue
+        if isinstance(parsed, dict):
+            for k, v in parsed.items():
+                if str(v).strip():
+                    out[k[3:] if k.startswith("fc_") else k] = v
+    return out
+
+
+def compact_measures(m: dict) -> str:
+    """회차 줄에 붙일 한 줄 요약. 값은 그대로, 없는 항목은 건너뛴다(지어내기 금지)."""
+    if not m:
+        return ""
+    parts: list[str] = []
+    for base, label in _INLINE_PAIRS:
+        ab = [m[f"{base}_{s}"] for s in ("a", "b") if f"{base}_{s}" in m]
+        if ab:
+            parts.append(f"{label} {'/'.join(str(v) for v in ab)}")
+    pool = [f"{lbl} {m[k]}" for k, lbl in _INLINE_POOL if k in m]
+    if pool:
+        parts.append("수영장 " + "·".join(pool))
+    tanks = [f"{k.replace('tank_', '').upper()} {m[k]}" for k in sorted(m) if k.startswith("tank_")]
+    if tanks:
+        parts.append("탱크 " + "·".join(tanks))
+    ahu = [k for k in sorted(m) if k.startswith("ahu_")]
+    if ahu:
+        vals = {str(m[k]) for k in ahu}
+        parts.append(f"공조기 전부 {vals.pop()}" if len(vals) == 1
+                     else "공조기 " + "·".join(f"{k.replace('ahu_', '')} {m[k]}" for k in ahu))
+    return " · ".join(parts)
+
+
+def facility_worklog(subs: list, oor_fields: set[str] | None = None) -> tuple[list[list[str]], list[str]]:
     """board submissions → (회차별 일지 라인 리스트, 특이사항 리스트). GM 2026-07-22 근본수리.
     이전엔 work 최다 '대표 제출 1건'만 썼음(다른 회차 작업내용 유실) — seq 순 전체 회차를 루프해
     "N회차 HH:MM~HH:MM(소요 M분) · 점검자 · 작업요약" 라인으로 전부 가시화(데이터 없는 회차는 시간만).
@@ -299,13 +351,32 @@ def facility_worklog(subs: list) -> tuple[list[str], list[str]]:
         # 그대로 찍으면 뒤 회차일수록 앞 내용을 통째로 반복해 8회차엔 9줄이 겹쳤다
         # → 화면이 길어져 정작 '오늘 새로 한 일'이 안 보인다(GM 2026-07-23 지적).
         # 그래서 앞 회차에 없던 항목만 남긴다. 데이터는 손대지 않고 표시만 줄인다.
+        items = s.get("items") or []
+        if items:
+            head += f" · 점검 {sum(1 for it in items if it.get('done'))}/{len(items)}"
+
         fresh = [w for w in _lines(s.get("work")) if w not in seen_work]
         seen_work.update(fresh)
-        if fresh:
-            marker = "" if i == 1 else "+ "
-            work_items.append(f"{head} · {marker}{' / '.join(fresh)}")
-        else:
-            work_items.append(f"{head} · (추가 작업 없음)")
+        marker = "" if i == 1 else "+ "
+        block = [f"{head} · {marker}{' / '.join(fresh)}" if fresh
+                 else f"{head} · (추가 작업 없음)"]
+
+        # 그 회차에서 실제로 잰 값 — 회차마다 다르므로 회차 줄 바로 아래 붙인다.
+        measures = submission_measures(s)
+        measure_line = compact_measures(measures)
+        if measure_line:
+            # 그 회차 값 중 기준을 벗어난 게 있으면 회차 줄에서 바로 눈에 띄게 한다
+            # (상세 항목·조치는 아래 이슈사항 섹션이 계속 담당).
+            hit = bool((oor_fields or set()) & set(measures))
+            block.append(f"🌡{'❗' if hit else ''} {measure_line}")
+        # 그 회차에만 적힌 특이사항·기준이탈 조치도 회차 자리에서 보이게 한다
+        # (전체 묶음으로만 보여주면 '언제 있었던 일'인지 사라진다).
+        round_notes: list[str] = []
+        for f in ("note", "oocAction"):
+            round_notes += _lines(s.get(f))
+        if round_notes:
+            block.append(f"📌 {' / '.join(round_notes)}")
+        work_items.append(block)
 
     # 특이사항(note)·기준이탈조치(oocAction) — 전 회차에서 유니크 수집(순서 보존)
     notes: list[str] = []
@@ -399,17 +470,11 @@ def facility_measurements(store: dict, today_oor_fields: set[str]) -> list[str]:
     소스에 있는 값만 그대로 표기(창작 금지) · today_oor_fields에 든 필드는 ❗ 표시(기존 기준이탈 판정 재사용)."""
     out: list[str] = []
 
-    rounds = store.get("rounds") if isinstance(store.get("rounds"), dict) else {}
-    for rk in sorted(rounds.keys()):
-        vals = rounds.get(rk) or {}
-        if not isinstance(vals, dict) or not vals:
-            continue
-        tag = f" [{rk}]" if len(rounds) > 1 else ""
-        group_lines = _measure_group_lines(vals, today_oor_fields)
-        if not group_lines:
-            continue
-        out.append(f"  🌡 측정{tag}")
-        out += group_lines
+    # ※ store.rounds 기반 '🌡 측정' 묶음 블록은 2026-07-23 제거했다.
+    # 회차별 일지에 그 회차에서 실제로 잰 값을 붙이면서, 이 블록은 마지막 회차 값과
+    # 글자 하나까지 같은 완전 중복이 됐다(실측). 같은 값을 두 번 보여주면 어느 쪽이
+    # 진짜인지 헷갈린다 — 회차별 표시가 정보량이 더 많으므로 그쪽만 남긴다.
+    # (_measure_group_lines 는 다른 화면에서 재사용 가능하도록 함수는 유지)
 
     daily = store.get("daily") if isinstance(store.get("daily"), dict) else {}
 
@@ -472,16 +537,16 @@ def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list
 
     # 회차별 일지(전 회차 개별 라인) — 실데이터(work). 없으면 정직히 시간만(지어내기 금지).
     today_oor_fields = {str(x.get("field")) for x in today_oor if x.get("field")}
-    work_items, notes = facility_worklog(subs)
+    work_items, notes = facility_worklog(subs, today_oor_fields)
     if work_items:
         filled["facility_worklog"] = True
-        shown = work_items[:_MAX_WORKLOG]
-        tail = f" · 외 {len(work_items) - _MAX_WORKLOG}회차" if len(work_items) > _MAX_WORKLOG else ""
-        lines.append("  📋 회차별 일지 (새로 추가된 작업만 · 앞 회차 반복 생략)")
-        for ln in shown:
-            lines.append(f"    · {ln}")
-        if tail:
-            lines.append(f"   {tail}")
+        lines.append("  📋 회차별 일지 (회차마다 잰 값·특이사항 함께 · 작업은 새로 추가된 것만)")
+        for block in work_items[:_MAX_WORKLOG]:
+            lines.append(f"    · {block[0]}")
+            for extra in block[1:]:
+                lines.append(f"       {extra}")
+        if len(work_items) > _MAX_WORKLOG:
+            lines.append(f"    · 외 {len(work_items) - _MAX_WORKLOG}회차")
     else:
         lines.append("  📋 회차별 일지: 데이터 없음")
 

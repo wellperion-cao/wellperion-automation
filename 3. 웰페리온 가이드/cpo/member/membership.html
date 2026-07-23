@@ -4289,9 +4289,9 @@ function switchFamily(fam) {
 /* ── 강습 문의 목록(inline) — 성인/유소년 독립 상태. lesson_inquiry_list·lesson_stats 재사용 ── */
 // target='adult'(성인강습) | 'youth'(유소년강습). DOM id 접미사 + GAS type 파라미터로 분기.
 var _lessonState = {
-  adult: { rows: [], scope: 'year', sport: '', loaded: false, type: '성인강습',
+  adult: { rows: [], scope: 'year', sport: '', statusF: '', loaded: false, type: '성인강습',
            card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regStatus: '', memStatus: '', regRange: 'month', regLoaded: false, memLoaded: false },
-  youth: { rows: [], scope: 'year', sport: '', loaded: false, type: '유소년강습',
+  youth: { rows: [], scope: 'year', sport: '', statusF: '', loaded: false, type: '유소년강습',
            card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regStatus: '', memStatus: '', regRange: 'month', regLoaded: false, memLoaded: false }
 };
 
@@ -4527,11 +4527,23 @@ function lessonLoadStats(t) {
 function _lessonChipHtml(t, val, label, n) {
   var active = (val === _lessonState[t].sport);
   return '<button type="button" data-sport="' + esc(val) + '" onclick="lessonFilterSport(this, \'' + t + '\')" ' +
-    'style="padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;' +
+    'style="padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;' +
     'border:1px solid ' + (active ? 'var(--teal-border)' : 'var(--border)') + ';' +
     'background:' + (active ? 'var(--teal-bg)' : 'var(--paper)') + ';' +
     'color:' + (active ? 'var(--teal)' : 'var(--dim)') + '">' + esc(label) + ' ' + n + '</button>';
 }
+// 진행상태 칩(문의 목록) — 2026-07-23 GM: 종목처럼 진행상태도 클릭 정렬. 종목 박스 옆에 나란히.
+// ★여기가 맞는 자리다: 강습 '회원 관리' 명단은 전원 SUC(실측 성인 815/815·유소년 927/927)라 상태축이
+//   무의미하고, 상태가 실제로 갈리는 곳은 문의 목록(컨택중·빈칸·LOSS·SUC·가망·신규)이다.
+function _lessonStatusChipHtml(t, val, label, n) {
+  var active = (val === (_lessonState[t].statusF || ''));
+  return '<button type="button" data-status="' + esc(val) + '" onclick="lessonFilterStatus(this, \'' + t + '\')" ' +
+    'style="padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;' +
+    'border:1px solid ' + (active ? 'var(--orange,#c8912b)' : 'var(--border)') + ';' +
+    'background:' + (active ? 'rgba(200,145,43,.12)' : 'var(--paper)') + ';' +
+    'color:' + (active ? 'var(--orange,#c8912b)' : 'var(--dim)') + '">' + esc(label) + ' ' + n + '</button>';
+}
+function _lessonRowStatus(r) { return String(r.status || '').trim() || _LESSON_STATUS_BLANK; }
 
 // 종목 세그먼트 → 표시 버킷(칩·필터 그룹키). 명단키 매칭 우선, 없으면 괄호 앞 라벨. gviz엔 r.bucket 없어 클라 계산. 축7, 2026-07-08 시포·GM.
 function _lessonSegmentBucket(seg) {
@@ -4544,16 +4556,31 @@ function lessonRenderChips(t) {
   var bar = document.getElementById('lessonSportBar_' + t);
   if (!bar) return;
   var rows = _lessonState[t].rows;
-  var counts = {}, totalLines = 0;
+  var curSport = _lessonState[t].sport || '', curStatus = _lessonState[t].statusF || '';
+  var counts = {}, totalLines = 0, statusCounts = {}, totalRows = 0;
   // 종목칩 = 종목별 줄 기준(문의 1건에 종목 여러 개면 각 종목 카운트). 축7 종목분리 정합. 2026-07-08 시포·GM.
+  // 진행상태칩 = 문의 '건' 기준(1건 1상태). 두 축은 서로의 현재 선택을 반영해 교차 집계한다 →
+  // 칩에 보이는 숫자 = 실제로 걸러져 나올 수. 눌렀는데 0건인 헛클릭이 없다. 2026-07-23 GM.
   rows.forEach(function(r){
     var segs = _lessonSportSplit(r.sport); if (!segs.length) segs = [''];
-    segs.forEach(function(seg){ var b = _lessonSegmentBucket(seg); counts[b] = (counts[b] || 0) + 1; totalLines++; });
+    var vs = _lessonRowStatus(r);
+    if (!curStatus || vs === curStatus) {
+      segs.forEach(function(seg){ var b = _lessonSegmentBucket(seg); counts[b] = (counts[b] || 0) + 1; totalLines++; });
+    }
+    var hitSport = !curSport || segs.some(function(seg){ return _lessonSegmentBucket(seg) === curSport; });
+    if (hitSport) { statusCounts[vs] = (statusCounts[vs] || 0) + 1; totalRows++; }
   });
   var sports = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
-  var html = _lessonChipHtml(t, '', '전체', totalLines);
-  sports.forEach(function(s){ html += _lessonChipHtml(t, s, s, counts[s]); });
-  bar.innerHTML = html;
+  var sHtml = _lessonChipHtml(t, '', '전체', totalLines);
+  sports.forEach(function(s){ sHtml += _lessonChipHtml(t, s, s, counts[s]); });
+
+  var statuses = Object.keys(statusCounts).sort(function(a, b){ return statusCounts[b] - statusCounts[a]; });
+  var vHtml = _lessonStatusChipHtml(t, '', '전체', totalRows);
+  statuses.forEach(function(v){ vHtml += _lessonStatusChipHtml(t, v, v, statusCounts[v]); });
+
+  // 상태가 한 종류뿐이면 진행상태 박스는 숨긴다(고를 게 없는데 자리만 먹는 걸 막는다).
+  bar.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start">' +
+    _lessonChipBox('종목', sHtml) + (statuses.length > 1 ? _lessonChipBox('진행상태', vHtml) : '') + '</div>';
   _lessonOwnerSummaryRender(t);
 }
 
@@ -4612,6 +4639,12 @@ function _lessonOwnerSummaryRender(t) {
 function lessonFilterSport(btn, t) {
   _lessonState[t].sport = btn.getAttribute('data-sport') || '';
   _lessonState[t].shown = LESSON_PAGE_SIZE;   // 종목 전환 시 페이지 리셋(배944 후속)
+  lessonRenderChips(t);
+  lessonRender(t);
+}
+function lessonFilterStatus(btn, t) {
+  _lessonState[t].statusF = btn.getAttribute('data-status') || '';
+  _lessonState[t].shown = LESSON_PAGE_SIZE;   // 상태 전환 시에도 페이지 리셋(종목과 동일)
   lessonRenderChips(t);
   lessonRender(t);
 }
@@ -4861,6 +4894,7 @@ function _lessonVisibleLines(t) {
       var ph = String(r.phone || '').replace(/[^0-9]/g, '');
       if (nm.indexOf(q) < 0 && !(qd && ph.indexOf(qd) >= 0)) return;
     }
+    if (st.statusF && _lessonRowStatus(r) !== st.statusF) return;   // 진행상태칩 필터(건 기준). 2026-07-23 GM
     var sports = _lessonSportSplit(r.sport);
     if (!sports.length) sports = [''];
     sports.forEach(function(sportKey){
@@ -5476,8 +5510,10 @@ function _lessonRosterChips(t, kind) {
   var vHtml = _lessonRosterChipHtml(t, kind, '', '전체', nStatusAll, 'status');
   statuses.forEach(function(v){ vHtml += _lessonRosterChipHtml(t, kind, v, v, byStatus[v], 'status'); });
 
+  // 강습 '회원 관리' 명단은 원래 전원 SUC(등록 완료자만 올라온다) → 상태축이 한 종류면 박스를 숨긴다.
+  // 고를 게 없는 칩이 자리만 먹는 걸 막는다(GM: 세로 스크롤 늘리지 말 것). 2026-07-23 실측 반영.
   bar.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start">' +
-    _lessonChipBox('종목', sHtml) + _lessonChipBox('진행상태', vHtml) + '</div>';
+    _lessonChipBox('종목', sHtml) + (statuses.length > 1 ? _lessonChipBox('진행상태', vHtml) : '') + '</div>';
 }
 
 function lessonRosterFilter(t, kind, btn) {
