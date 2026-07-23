@@ -1,0 +1,171 @@
+<title>[운영] S3 업무 정리 요청 보드</title>
+<style>
+:root{
+  --ground:#F5F7F8; --surface:#FFFFFF; --surface-2:#FBFCFC;
+  --ink:#171B1F; --ink-soft:#5A656D; --ink-faint:#8B959C;
+  --line:#DDE2E5; --line-soft:#EAEEF0;
+  --accent:#8A6A21;
+  --sev-hi:#A63D33; --sev-mid:#AC7524; --sev-lo:#5E6E78;
+  --hold:#7A5EA8; --run:#2E6E63;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ground:#131619; --surface:#1A1E22; --surface-2:#1E2328;
+    --ink:#E6E9EA; --ink-soft:#98A3AA; --ink-faint:#6E7982;
+    --line:#292F35; --line-soft:#232930;
+    --accent:#C7A353;
+    --sev-hi:#D9715F; --sev-mid:#CFA055; --sev-lo:#7C8A94;
+    --hold:#A78BD4; --run:#57A493;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#131619; --surface:#1A1E22; --surface-2:#1E2328;
+  --ink:#E6E9EA; --ink-soft:#98A3AA; --ink-faint:#6E7982;
+  --line:#292F35; --line-soft:#232930;
+  --accent:#C7A353;
+  --sev-hi:#D9715F; --sev-mid:#CFA055; --sev-lo:#7C8A94;
+  --hold:#A78BD4; --run:#57A493;
+}
+:root[data-theme="light"]{
+  --ground:#F5F7F8; --surface:#FFFFFF; --surface-2:#FBFCFC;
+  --ink:#171B1F; --ink-soft:#5A656D; --ink-faint:#8B959C;
+  --line:#DDE2E5; --line-soft:#EAEEF0;
+  --accent:#8A6A21;
+  --sev-hi:#A63D33; --sev-mid:#AC7524; --sev-lo:#5E6E78;
+  --hold:#7A5EA8; --run:#2E6E63;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:-apple-system,"Segoe UI Variable Text","Segoe UI","Malgun Gothic","맑은 고딕",sans-serif;
+  font-size:15px; line-height:1.55; word-break:keep-all;
+}
+.wrap{padding:36px 40px 72px; display:flex; flex-direction:column; gap:34px;}
+.serif{font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Malgun Gothic",serif;}
+
+.eyebrow{font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--accent); font-weight:700;}
+h1{font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Malgun Gothic",serif;
+  font-size:clamp(27px,3.1vw,40px); line-height:1.2; margin:6px 0 0; font-weight:600;
+  text-wrap:balance; letter-spacing:-.01em;}
+.lede{margin:10px 0 0; color:var(--ink-soft); max-width:62ch;}
+.stamp{margin-top:14px; font-size:12.5px; color:var(--ink-faint);
+  font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;}
+
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px;}
+.tile{background:var(--surface); border:1px solid var(--line); border-radius:3px;
+  padding:16px 18px; display:flex; flex-direction:column; gap:4px;}
+.tile .k{font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); font-weight:700;}
+.tile .v{font-family:"Iowan Old Style","Palatino Linotype",Palatino,serif;
+  font-size:34px; line-height:1; font-variant-numeric:tabular-nums;}
+.tile .n{font-size:12.5px; color:var(--ink-soft);}
+.tile.warn .v{color:var(--sev-hi);}
+
+h2{font-size:16px; margin:0; font-weight:700; letter-spacing:-.005em;}
+.sec-h{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  border-bottom:2px solid var(--ink); padding-bottom:9px; margin-bottom:18px;}
+.sec-h .sub{font-size:13px; color:var(--ink-soft);}
+.ask{margin:0 0 18px; padding:12px 15px; background:var(--surface-2);
+  border-left:3px solid var(--accent); font-size:13.5px; color:var(--ink-soft); max-width:70ch;}
+.ask b{color:var(--ink);}
+
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(430px,1fr)); gap:16px;}
+.owner{background:var(--surface); border:1px solid var(--line); border-radius:3px; overflow:hidden;}
+.owner-h{display:flex; align-items:center; gap:10px; padding:12px 16px;
+  border-bottom:1px solid var(--line-soft); flex-wrap:wrap;}
+.owner-h h3{margin:0; font-size:14.5px; font-weight:700;}
+.owner-h .meta{font-size:11.5px; color:var(--ink-faint); letter-spacing:.06em;}
+.owner-h .count{margin-left:auto; font-size:12px; color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;}
+.owner-h .worst{font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:2px;
+  font-variant-numeric:tabular-nums;}
+.tasks{list-style:none; margin:0; padding:0;}
+.task{display:flex; align-items:baseline; gap:11px; padding:9px 16px;
+  border-bottom:1px solid var(--line-soft);}
+.task:last-child{border-bottom:0;}
+.days{font-family:"Iowan Old Style","Palatino Linotype",Palatino,serif;
+  font-size:19px; font-variant-numeric:tabular-nums; min-width:2.4ch; text-align:right; font-weight:600;}
+.days::after{content:"일"; font-size:10.5px; font-family:inherit; margin-left:1px; opacity:.6;}
+.s-hi{color:var(--sev-hi);} .s-mid{color:var(--sev-mid);} .s-lo{color:var(--sev-lo);}
+.worst.s-hi{background:color-mix(in srgb,var(--sev-hi) 13%,transparent);}
+.worst.s-mid{background:color-mix(in srgb,var(--sev-mid) 15%,transparent);}
+.worst.s-lo{background:color-mix(in srgb,var(--sev-lo) 13%,transparent);}
+.cat{font-size:11px; color:var(--ink-faint); white-space:nowrap; min-width:11ch;}
+.tname{font-size:13.5px; flex:1;}
+.statechip{font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:2px; white-space:nowrap;}
+.statechip.run{color:var(--run); background:color-mix(in srgb,var(--run) 12%,transparent);}
+.statechip.hold{color:var(--hold); background:color-mix(in srgb,var(--hold) 14%,transparent);}
+.slim .task{padding:7px 16px;}
+
+.log{background:var(--surface); border:1px solid var(--line); border-radius:3px; padding:18px 20px;}
+.log ul{margin:0; padding-left:18px; display:flex; flex-direction:column; gap:8px; font-size:13.5px; color:var(--ink-soft);}
+.log b{color:var(--ink);}
+.log code{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace; font-size:12px;
+  background:var(--surface-2); padding:1px 5px; border-radius:2px; color:var(--ink-soft);}
+footer{font-size:12.5px; color:var(--ink-faint); border-top:1px solid var(--line); padding-top:16px;}
+
+@media (max-width:640px){ .wrap{padding:24px 18px 56px;} .grid{grid-template-columns:1fr;}
+  .cat{display:none;} }
+@media print{
+  body{background:#fff; font-size:11pt;} .wrap{padding:0; gap:20px;}
+  .grid{grid-template-columns:1fr 1fr;} .owner{break-inside:avoid;}
+}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">운영 · 시우 (AI COO)</div>
+  <h1>세워둔 배 23척 — 재개조건을 알려주세요</h1>
+  <p class="lede">업무 현황 SSOT에서 <b>30일 넘게 손이 닿지 않은 진행중 업무</b>만 추렸습니다.
+  끝난 일도, 안 할 일도 아닌 채로 '진행중' 라벨만 남아 있는 것들입니다.
+  각자 담당 줄을 보고 <b>다시 움직일 조건</b>이나 <b>보류 전환</b> 중 하나만 정해 주세요.</p>
+  <div class="stamp">실측 2026-07-23 · 원천 = 업무 현황 SSOT(전체 115건) · 기준일 2026-07-23</div>
+</header>
+
+<div class="tiles">
+  <div class="tile warn"><span class="k">30일+ 정체</span><span class="v">23</span>
+    <span class="n">진행중 46건 중 절반</span></div>
+  <div class="tile"><span class="k">최장 방치</span><span class="v">51</span>
+    <span class="n">3분기 예상 매출 및 목표</span></div>
+  <div class="tile"><span class="k">관련 담당</span><span class="v">6</span>
+    <span class="n">공동 담당 2건 포함</span></div>
+  <div class="tile"><span class="k">난이도 미입력</span><span class="v">16</span>
+    <span class="n">활성 기준 · 완료건 15건 별도</span></div>
+</div>
+
+<section>
+  <div class="sec-h"><h2>① 30일 넘게 멈춘 업무</h2>
+    <span class="sub">숫자 = 마지막 손댄 날로부터 지난 일수 · 45일 넘으면 붉게 표시</span></div>
+  <p class="ask"><b>부탁드리는 것</b> — 줄마다 셋 중 하나만 골라 주세요.
+  <b>재개조건</b>(무엇이 있어야 다시 움직이는지) · <b>보류 전환</b>(지금은 못 함, 이유 한 줄) ·
+  <b>완료 처리</b>(이미 끝났는데 상태만 안 바뀐 경우).</p>
+  <div class="grid"><section class="owner"><header class="owner-h"><h3>최준용M</h3><span class="meta">운영부</span><span class="count">7건</span><span class="worst s-mid">최장 43일</span></header><ul class="tasks"><li class="task"><span class="days s-mid">43</span><span class="cat">[4] 운영 정책</span><span class="tname">리셉션 무인화(반자동화) 전환을 위한 리셉·운영 업무 통합 및 프로세스 개편안</span></li><li class="task"><span class="days s-mid">43</span><span class="cat">[5] 시설 및 환경</span><span class="tname">야외 테라스 활용 방안</span></li><li class="task"><span class="days s-mid">41</span><span class="cat">[7] IT·시스템·자동화</span><span class="tname">이슈 응답↔텔레그램 양방향 연결(자동화 지향)</span></li><li class="task"><span class="days s-mid">41</span><span class="cat">[4] 운영 정책</span><span class="tname">[모두사인] 계약서 약관 검토 및 수정</span></li><li class="task"><span class="days s-mid">38</span><span class="cat">[4] 운영 정책</span><span class="tname">생크몽드 미사용분(25년도) 재발급 요청</span></li><li class="task"><span class="days s-lo">37</span><span class="cat">[6] 회원·CS</span><span class="tname">웰컴 에티켓 북(가안)</span></li><li class="task"><span class="days s-lo">31</span><span class="cat">[8] 교육·조직문화</span><span class="tname">각 부서 희망 간식 리스트 받기</span></li></ul></section><section class="owner"><header class="owner-h"><h3>나우열M</h3><span class="meta">파트너·인사</span><span class="count">6건</span><span class="worst s-mid">최장 44일</span></header><ul class="tasks"><li class="task"><span class="days s-mid">44</span><span class="cat">[1] 매출 및 영업</span><span class="tname">추가 팝업 진행 (거울 작품, 신발)</span></li><li class="task"><span class="days s-mid">43</span><span class="cat">[3] 파트너팀</span><span class="tname">강습부서 월1회 콘텐츠 (사진5장 + 내용)</span></li><li class="task"><span class="days s-mid">41</span><span class="cat">[3] 파트너팀</span><span class="tname">생크몽드 x PT&amp;PL 프로그램 기획(W 김상식팀장&amp;최은지원장)</span></li><li class="task"><span class="days s-mid">41</span><span class="cat">[3] 파트너팀</span><span class="tname">헬스장 로잉머신 점검(w 김상식팀장님)</span></li><li class="task"><span class="days s-mid">38</span><span class="cat">[2] 인사</span><span class="tname">운영부 사원 채용</span></li><li class="task"><span class="days s-lo">37</span><span class="cat">[2] 인사</span><span class="tname">지원부서 칭찬사원제도 기획 및 운영</span></li></ul></section><section class="owner"><header class="owner-h"><h3>이경연 실장</h3><span class="meta">운영부</span><span class="count">4건</span><span class="worst s-hi">최장 51일</span></header><ul class="tasks"><li class="task"><span class="days s-hi">51</span><span class="cat">[1] 매출 및 영업</span><span class="tname">3분기 예상 매출 및 목표</span></li><li class="task"><span class="days s-hi">48</span><span class="cat">[1] 매출 및 영업</span><span class="tname">멤버십 매출정책 및 방향성</span></li><li class="task"><span class="days s-mid">43</span><span class="cat">[6] 회원·CS</span><span class="tname">회원 모니터링 (심사대상회원)</span></li><li class="task"><span class="days s-lo">35</span><span class="cat">[1] 매출 및 영업</span><span class="tname">요금 인상 라인업 공지 준비</span></li></ul></section><section class="owner"><header class="owner-h"><h3>윤병현AM</h3><span class="meta">운영부</span><span class="count">4건</span><span class="worst s-lo">최장 36일</span></header><ul class="tasks"><li class="task"><span class="days s-lo">36</span><span class="cat">[4] 운영 정책</span><span class="tname">운영부 체계 (세부내용 수정 및 추가 내용 작성)</span></li><li class="task"><span class="days s-lo">36</span><span class="cat">[5] 시설 및 환경</span><span class="tname">男/女 탈의실 입출입 방향 안내문 부착</span></li><li class="task"><span class="days s-lo">36</span><span class="cat">[4] 운영 정책</span><span class="tname">리셉션 매뉴얼 작성 및 자동화</span></li><li class="task"><span class="days s-lo">35</span><span class="cat">[5] 시설 및 환경</span><span class="tname">주차 차단기 핫라인 변경 및 연결 방법</span></li></ul></section><section class="owner"><header class="owner-h"><h3>김남욱GM,이경연 실장,최준용M,임정은M,윤병현AM</h3><span class="meta">운영부</span><span class="count">1건</span><span class="worst s-mid">최장 43일</span></header><ul class="tasks"><li class="task"><span class="days s-mid">43</span><span class="cat">[5] 시설 및 환경</span><span class="tname">리셉션 상담실 리뉴얼</span></li></ul></section><section class="owner"><header class="owner-h"><h3>이경연 실장, 최준용M</h3><span class="meta">운영부</span><span class="count">1건</span><span class="worst s-mid">최장 43일</span></header><ul class="tasks"><li class="task"><span class="days s-mid">43</span><span class="cat">[4] 운영 정책</span><span class="tname">리셉션 매뉴얼 구축</span></li></ul></section></div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>② 난이도가 비어 있는 업무</h2>
+    <span class="sub">난이도는 인사평가 가중점수로 연결됩니다 — 비어 있으면 그만큼 평가에서 빠집니다</span></div>
+  <p class="ask"><b>부탁드리는 것</b> — 담당자가 <b>하 / 중 / 상</b> 중 하나를 제안하면 부서장 결재로 확정됩니다.
+  기준은 <b>몇 개 팀이 얽히는가</b>입니다 — 본인·1개 팀에서 끝나면 <b>하</b>,
+  2개 팀이 얽히면 <b>중</b>, 전사·다부서면 <b>상</b>.</p>
+  <div class="grid"><section class="owner slim"><header class="owner-h"><h3>이경연 실장</h3><span class="count">8건</span></header><ul class="tasks"><li class="task"><span class="statechip run">진행중</span><span class="cat">[4] 운영 정책</span><span class="tname">정회원 대기자 모집 프로세스</span></li><li class="task"><span class="statechip run">진행중</span><span class="cat">[9] 회의</span><span class="tname">7월 4주차 회의</span></li><li class="task"><span class="statechip run">진행중</span><span class="cat">[9] 회의</span><span class="tname">7월 3주차 회의</span></li><li class="task"><span class="statechip run">진행중</span><span class="cat">[4] 운영 정책</span><span class="tname">환불사유에 따른  분석 및 운영 반영 프로세스 구축</span></li><li class="task"><span class="statechip run">진행중</span><span class="cat">[4] 운영 정책</span><span class="tname">기타사항</span></li><li class="task"><span class="statechip run">진행중</span><span class="cat">[6] 회원·CS</span><span class="tname">회원 모니터링 (심사대상회원)</span></li><li class="task"><span class="statechip run">진행중</span><span class="cat">[1] 매출 및 영업</span><span class="tname">3분기 예상 매출 및 목표</span></li><li class="task"><span class="statechip run">진행중</span><span class="cat">[5] 시설 및 환경</span><span class="tname">벽체 사이 시트지 들뜸 보수</span></li></ul></section><section class="owner slim"><header class="owner-h"><h3>최준용M</h3><span class="count">3건</span></header><ul class="tasks"><li class="task"><span class="statechip run">진행중</span><span class="cat">[4] 운영 정책</span><span class="tname">[모두사인] 계약서 약관 검토 및 수정</span></li><li class="task"><span class="statechip run">진행중</span><span class="cat">[4] 운영 정책</span><span class="tname">리셉션 무인화(반자동화) 전환을 위한 리셉·운영 업무 통합 및 프로세스 개편안</span></li><li class="task"><span class="statechip run">진행중</span><span class="cat">[5] 시설 및 환경</span><span class="tname">야외 테라스 활용 방안</span></li></ul></section><section class="owner slim"><header class="owner-h"><h3>나우열M</h3><span class="count">2건</span></header><ul class="tasks"><li class="task"><span class="statechip run">진행중</span><span class="cat">[3] 파트너팀</span><span class="tname">베네뎀 국제학교 수영연계(정규수업 8시)</span></li><li class="task"><span class="statechip run">진행중</span><span class="cat">[7] IT·시스템·자동화</span><span class="tname">휴무표 조건부 자동화(자동점검) -&gt; ERP 삽입</span></li></ul></section><section class="owner slim"><header class="owner-h"><h3>김남욱GM</h3><span class="count">1건</span></header><ul class="tasks"><li class="task"><span class="statechip hold">보류</span><span class="cat">[4] 운영 정책</span><span class="tname">(GM 직접) Notion 통합 토큰 revoke — 보안</span></li></ul></section><section class="owner slim"><header class="owner-h"><h3>이정헌 소장</h3><span class="count">1건</span></header><ul class="tasks"><li class="task"><span class="statechip hold">보류</span><span class="cat">[5] 시설 및 환경</span><span class="tname">목욕탕 허가건 진행</span></li></ul></section><section class="owner slim"><header class="owner-h"><h3>이경연 실장, 최준용M</h3><span class="count">1건</span></header><ul class="tasks"><li class="task"><span class="statechip run">진행중</span><span class="cat">[4] 운영 정책</span><span class="tname">리셉션 매뉴얼 구축</span></li></ul></section></div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>③ 오늘 정리한 것</h2>
+    <span class="sub">GM 결재 후 실행 · 원본은 되살릴 수 있게 보관</span></div>
+  <div class="log"><ul>
+    <li><b>테스트 찌꺼기 1건 삭제</b> — 상태·담당자·카테고리·업무명 네 칸이 모두 깨진 채 남아 있어
+      완료·진행중·보류 어디에도 안 잡히고 집계만 흐리던 항목입니다.</li>
+    <li><b>퇴사자 배정 업무 1건 삭제</b> — 6월 12일 퇴사한 사원 앞으로 '분실물 관리'가 진행중으로 43일 남아 있었고,
+      화면에는 보이지 않아 아무도 모르는 상태였습니다.
+      <b>분실물 관리 자체는 살아 있는 운영 업무</b>라 후임에게 다시 등록하실지 알려주세요.</li>
+    <li>두 건 모두 <b>고유 번호를 맞춰서만</b> 지웠고 원본 전문을 <code>status/backups/s3_deleted_20260723.json</code>에
+      남겼습니다 — 되돌리기 가능합니다. 삭제 후 115건, 깨진 값 0건으로 확인했습니다.</li>
+    <li><b>업무 현황 화면 공개 유지</b> — GM 결정에 따라 그대로 두고,
+      재발방지 원장에 <b>의식적 예외(INC-027)</b>로 남겨 계속 추적합니다.</li>
+  </ul></div>
+</section>
+
+<footer>기록 위치 — 업무 현황 SSOT(라이브) · <code>status/_queue.json</code> 배 9819 ·
+<code>ssot/incidents.json</code> INC-027 · 삭제 백업 <code>status/backups/s3_deleted_20260723.json</code></footer>
+</div>
