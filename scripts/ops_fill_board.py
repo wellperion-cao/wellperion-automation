@@ -1,0 +1,388 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""ops_fill_board.py — 실무진 업무판 '채움 보드' 생성기 (시우/COO · 2026-07-23 신설)
+
+무엇을 만드나
+  업무 현황 SSOT(GAS todo_list) + 월간 운영계획(status/monthly_ops_plan.json)을 읽어
+  실무진이 '조금만 채우면 끝나는 것'을 한 장으로 보여주는 HTML 보드를 만든다.
+
+왜 있나 (GM 2026-07-23 지시)
+  두 포인트로 본다 — ①업무판에 아직 안 올라온 일 ②올라왔는데 잠시 쉬고 있는 일.
+  세부는 마감일·점수(난이도) 미기재. 톤은 '기분 좋게' — 질책 어휘를 쓰지 않는다.
+
+정직 원칙
+  · 모든 수치는 실행 시점 실측. 추정·예시값 0 (약속 L05).
+  · 경영진(김남욱GM·이정헌 소장) 담당 건은 월간 운영계획에서 부서 목표로 관리하므로 제외하고,
+    '왜 없는지'를 보드 머리에 밝힌다(숨기지 않는다).
+
+출력 2곳 — 같은 실행에서 함께 쓰므로 손사본이 아니다(드리프트 0)
+  ① 3. 웰페리온 가이드/coo/todo/업무판 채움 보드.html  = 실무진 공개 주소(GitHub Pages)
+  ② status/boards/s3_cleanup_board.html                = GM 아티팩트 소스
+
+사용
+  python scripts/ops_fill_board.py            # 보드 생성 + 요약 출력
+  python scripts/ops_fill_board.py --json     # 수치만 JSON 으로(발신 스크립트에서 사용)
+
+관련: 배9819(S3 소유·위생) · 배9836(보류 재부상·보고 카드화) · coo/todo/업무·결재 운영 기준.html
+"""
+from __future__ import annotations
+
+import argparse
+import collections
+import datetime
+import html as html_mod
+import io
+import json
+import os
+import sys
+import urllib.request
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+
+BASE = r"C:\Users\jjky0\welperion-automation"
+PLAN = os.path.join(BASE, "status", "monthly_ops_plan.json")
+TODO_URL = ("https://script.google.com/macros/s/"
+            "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+            "?action=todo_list")
+OUTS = [
+    os.path.join(BASE, "3. 웰페리온 가이드", "coo", "todo", "업무판 채움 보드.html"),
+    os.path.join(BASE, "status", "boards", "s3_cleanup_board.html"),
+]
+PAGES = "https://wellperion-cao.github.io/wellperion-automation/coo/todo/"
+LINK_TODO = PAGES + "%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html"
+LINK_RULE = PAGES + "%EC%97%85%EB%AC%B4%C2%B7%EA%B2%B0%EC%9E%AC%20%EC%9A%B4%EC%98%81%20%EA%B8%B0%EC%A4%80.html"
+
+# 경영진 — 월간 운영계획에서 부서 목표로 관리하므로 이 보드에서 제외
+EXEC_OWNERS = ("김남욱GM", "이정헌 소장")
+DEPT_OF = {"최준용M": "운영부", "나우열M": "파트너·인사", "윤병현AM": "운영부",
+           "이경연 실장": "운영부", "이정헌 소장": "시설부", "김남욱GM": "GM"}
+STALE_DAYS = 30          # 이 일수를 넘겨 손이 안 닿으면 '잠시 쉬는 중'
+e = html_mod.escape
+
+
+def g(x, k):
+    return str(x.get(k, "") or "").strip()
+
+
+def is_exec(x):
+    return any(n in g(x, "담당자") for n in EXEC_OWNERS)
+
+
+def dept_of(owner):
+    for k, v in DEPT_OF.items():
+        if k in owner:
+            return v
+    return "공동"
+
+
+def fetch_todo():
+    with urllib.request.urlopen(TODO_URL, timeout=120) as r:
+        return json.loads(r.read()).get("data", [])
+
+
+def collect(today: datetime.date):
+    rows = fetch_todo()
+    mon = today.strftime("%Y-%m")
+    prev = (today.replace(day=1) - datetime.timedelta(days=1)).strftime("%Y-%m")
+    now = datetime.datetime(today.year, today.month, today.day)
+
+    def days(x):
+        v = g(x, "수정일") or g(x, "생성일")
+        try:
+            return (now - datetime.datetime.strptime(v[:10], "%Y-%m-%d")).days
+        except Exception:
+            return 0
+
+    def miss(x):
+        m = []
+        if not g(x, "시작일"):
+            m.append("시작일")
+        if not g(x, "종료일"):
+            m.append("종료일")
+        if not g(x, "난이도"):
+            m.append("난이도")
+        return m
+
+    all_act = [x for x in rows if g(x, "상태") in ("진행중", "보류")]
+    act = [x for x in all_act if not is_exec(x)]
+    done = [x for x in rows if g(x, "상태") == "완료" and not is_exec(x)]
+    cur = [x for x in done if g(x, "완료일")[:7] == mon]
+    byday = collections.Counter(g(x, "완료일")[:10] for x in cur)
+    best = byday.most_common(1)[0] if byday else ("", 0)
+
+    items = [{"id": g(x, "id"), "o": g(x, "담당자"), "t": g(x, "업무명"),
+              "c": g(x, "카테고리"), "s": g(x, "상태"), "miss": miss(x), "d": days(x)}
+             for x in act]
+
+    plan = json.load(open(PLAN, encoding="utf-8"))
+    objs = plan.get("months", {}).get(mon, {}).get("objectives", []) or []
+    unlinked = []
+    for o in objs:
+        s = o.get("sync") or {}
+        if not s.get("source") or s.get("source") == "manual":
+            pg = o.get("progress")
+            unlinked.append({"t": o.get("title"), "dept": o.get("dept"),
+                             "pg": (pg if isinstance(pg, int) else "—")})
+
+    stats = {
+        "date": today.strftime("%Y-%m-%d"), "month": mon,
+        "act": len(act), "excluded": len(all_act) - len(act),
+        "done_month": len(cur), "done_today": byday.get(today.strftime("%Y-%m-%d"), 0),
+        "done_prev": sum(1 for x in done if g(x, "완료일")[:7] == prev),
+        "new_month": sum(1 for x in rows if g(x, "생성일")[:7] == mon and not is_exec(x)),
+        "appr_month": sum(1 for x in rows if g(x, "결재상태") == "결재완료"
+                          and g(x, "결재완료시각")[:7] == mon and not is_exec(x)),
+        "best_day": best[0], "best_n": best[1],
+        "complete": sum(1 for i in items if not i["miss"]),
+        "need_sched": sum(1 for i in items if "종료일" in i["miss"]),
+        "need_score": sum(1 for i in items if "난이도" in i["miss"]),
+        "rest": sum(1 for i in items if i["d"] >= STALE_DAYS),
+        "unlinked": len(unlinked),
+    }
+    return stats, items, unlinked
+
+
+def build_html(S, items, unlinked):
+    rest = [x for x in items if x["d"] >= STALE_DAYS]
+    own = {}
+    for x in items:
+        o = x["o"] or "(미지정)"
+        own.setdefault(o, []).append(x)
+    order = sorted(own, key=lambda k: -len(own[k]))
+
+    cards = []
+    for who in order:
+        lst = own[who]
+        done_n = sum(1 for x in lst if not x["miss"])
+        pct = round(done_n / len(lst) * 100) if lst else 0
+        tone = "full" if pct == 100 else ("high" if pct >= 60 else ("mid" if pct >= 30 else "low"))
+        need = sum(len(x["miss"]) for x in lst)
+        rows = "".join(
+            f'<li><span class="tn">{e(x["t"][:40])}</span>'
+            + "".join(f'<span class="tag {"sc" if m == "난이도" else "dt"}">'
+                      f'{"점수" if m == "난이도" else "마감일"}</span>'
+                      for m in x["miss"] if m != "시작일")
+            + (f'<span class="tag rest">{x["d"]}일째 쉬는 중</span>' if x["d"] >= STALE_DAYS else "")
+            + "</li>"
+            for x in sorted(lst, key=lambda y: (-len(y["miss"]), -y["d"]))
+            if x["miss"] or x["d"] >= STALE_DAYS)
+        msg = "빈칸 없이 완벽합니다 👏" if need == 0 else f"<b>{need}칸</b>만 채우면 완성이에요"
+        cards.append(
+            f'<section class="owner"><header class="owner-h">'
+            f'<h3>{e(who if len(who) < 20 else who[:18] + "…")}</h3>'
+            f'<span class="meta">{e(dept_of(who))}</span>'
+            f'<span class="count">{len(lst)}건 진행 중</span></header>'
+            f'<div class="prog"><div class="bar"><span class="fill {tone}" style="width:{pct}%"></span></div>'
+            f'<span class="pct {tone}">{pct}%</span><span class="msg">{msg}</span></div>'
+            f'<ul class="list">{rows or "<li class=ok>채울 것도, 쉬는 것도 없습니다 — 그대로 쭉 가시면 됩니다 ✨</li>"}</ul>'
+            f'</section>')
+
+    unlink_rows = "".join(
+        f'<li><span class="dept">{e(x["dept"] or "-")}</span>'
+        f'<span class="tn">{e(x["t"])}</span>'
+        f'<span class="tag plan">계획엔 {x["pg"]}</span></li>' for x in unlinked)
+    rest_rows = "".join(
+        f'<li><span class="dd">{x["d"]}</span><span class="own">{e(x["o"][:12])}</span>'
+        f'<span class="tn">{e(x["t"][:44])}</span></li>'
+        for x in sorted(rest, key=lambda y: -y["d"]))
+
+    hint = "오늘 첫 입항을 기다립니다 🚢" if S["done_today"] == 0 else "오늘도 들어왔습니다 🎉"
+    best = S["best_day"][5:].replace("-", "/") if S["best_day"] else "-"
+    mm = int(S["month"].split("-")[1])
+    dd = S["date"][5:].replace("-", "월 ") + "일"
+
+    return f"""<title>[운영] 업무판 채움 보드</title>
+<style>{CSS}</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">운영 · 시우 (AI COO)</div>
+  <h1>업무판을 같이 채워요 — 두 칸이면 끝나는 것들</h1>
+  <p class="lede">혼내려고 만든 표가 아닙니다. 지금 <b>{S['act']}건</b>이 살아 움직이고 있는데,
+  그중 몇 개는 <b>업무판에 아직 안 올라와 있고</b> 몇 개는 <b>잠시 쉬는 중</b>입니다.
+  칸만 채워지면 각자 한 일이 <b>제대로 남고 평가에도 그대로 반영</b>됩니다.</p>
+  <div class="stamp">실측 {S['date']} · 원천 = 업무 현황 SSOT + {mm}월 운영계획 · 실무진 기준</div>
+  <p class="lede" style="margin-top:10px;font-size:13px">※ 경영진 담당 <b>{S['excluded']}건</b>은
+  <b>월간 운영계획에서 부서 목표로 관리</b>하므로 이 보드에서 제외했습니다 —
+  같은 일을 두 곳에서 챙기지 않기 위해서입니다.</p>
+</header>
+
+<div class="cta">
+  <span class="lbl"><b>채우는 곳은 업무판입니다.</b> 아래에서 본인 업무를 열어 마감일·점수를 넣거나,
+    멈춘 일은 「보류」를 눌러 이유와 다시 볼 시점을 남겨주세요.</span>
+  <a href="{LINK_TODO}">📋 업무판 열기</a>
+  <a class="ghost" href="{LINK_RULE}">📖 적는 기준 보기</a>
+</div>
+
+<div class="period">
+  <div class="p-card today"><span class="k">오늘 · {dd}</span>
+    <span class="v">{S['done_today']}</span><span class="n">건 끝냄</span>
+    <span class="hint">{hint}</span></div>
+  <div class="p-card"><span class="k">이번 달 · {mm}월</span>
+    <span class="v good">{S['done_month']}</span><span class="n">건 끝냄</span>
+    <span class="hint">가장 많이 끝낸 날 {best} · {S['best_n']}건 · 지난달 {S['done_prev']}건</span></div>
+  <div class="p-card"><span class="k">{mm}월에 새로 올린 일</span>
+    <span class="v">{S['new_month']}</span><span class="n">건</span>
+    <span class="hint">업무판에 새로 등록된 수</span></div>
+  <div class="p-card"><span class="k">{mm}월 결재 완료</span>
+    <span class="v">{S['appr_month']}</span><span class="n">건</span>
+    <span class="hint">요청·처리 짝 100% 일치 👏</span></div>
+  <div class="p-card"><span class="k">지금 진행 중</span>
+    <span class="v">{S['act']}</span><span class="n">건</span>
+    <span class="hint">빈칸 없이 완비 {S['complete']}건 · 시작일은 전부 기록됨</span></div>
+</div>
+
+<section>
+  <div class="sec-h"><span class="num">포인트 1</span><h2>업무판에 아직 안 올라온 일</h2>
+    <span class="sub">{mm}월 운영계획에는 있는데 업무판에서는 안 보이는 {S['unlinked']}건</span></div>
+  <p class="ask">이건 <b>안 하고 있다는 뜻이 아닙니다</b> — 하고 있는데 기록될 자리가 없는 것뿐입니다.
+  업무판에 올려두면 <b>진척이 자동으로 운영계획에 반영</b>되고, 매번 따로 보고하지 않아도 됩니다.</p>
+  <div class="panel"><ul>{unlink_rows}</ul></div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="num">포인트 2</span><h2>올라왔는데 잠시 쉬고 있는 일</h2>
+    <span class="sub">{S['rest']}건 · 숫자는 마지막으로 손댄 뒤 지난 날</span></div>
+  <p class="ask">쉬는 게 문제가 아니라 <b>왜 쉬는지가 안 적혀 있는 게</b> 문제입니다.
+  이유가 적혀 있으면 조건이 갖춰졌을 때 <b>시스템이 알아서 다시 올려드립니다.</b>
+  업무판에서 <b>보류</b>를 누르면 <b>이유</b>와 <b>다시 볼 시점</b>을 물어봅니다.
+  이미 끝난 건 <b>완료</b>로 바꿔 주시면 됩니다.</p>
+  <div class="panel"><ul>{rest_rows}</ul></div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="num">두 칸</span><h2>마감일과 점수만 채우면 완성</h2>
+    <span class="sub">마감일 {S['need_sched']}건 · 점수 {S['need_score']}건 남았습니다</span></div>
+  <p class="ask"><b>마감일</b>이 있어야 언제 도와드릴지 알 수 있고,
+  <b>점수</b>(하·중·상)는 <b>그대로 인사평가 가중점수</b>가 됩니다 —
+  비워두면 <b>애써 한 일이 평가에서 그만큼 빠집니다.</b> 기준은 간단합니다:
+  혼자·한 팀에서 끝나면 <b>하</b>, 두 팀이 얽히면 <b>중</b>, 전사·여러 부서면 <b>상</b>.</p>
+  <div class="grid">{''.join(cards)}</div>
+</section>
+
+<footer>이 보드는 실행할 때마다 업무판을 다시 세어 만듭니다 —
+<code>scripts/ops_fill_board.py</code> · 기준 = <code>coo/todo/업무·결재 운영 기준.html</code></footer>
+</div>
+"""
+
+
+CSS = """
+:root{--ground:#F5F7F8;--surface:#FFFFFF;--surface-2:#FAFBFC;--ink:#171B1F;--ink-soft:#5A656D;
+  --ink-faint:#8B959C;--line:#DDE2E5;--line-soft:#EAEEF0;--accent:#8A6A21;
+  --good:#2F7A63;--mid:#AC7524;--low:#A6603A;--cool:#3A6B96}
+@media (prefers-color-scheme:dark){:root{--ground:#131619;--surface:#1A1E22;--surface-2:#1E2328;
+  --ink:#E6E9EA;--ink-soft:#98A3AA;--ink-faint:#6E7982;--line:#292F35;--line-soft:#232930;
+  --accent:#C7A353;--good:#5CB39A;--mid:#CFA055;--low:#D08A62;--cool:#7FAFD6}}
+:root[data-theme="dark"]{--ground:#131619;--surface:#1A1E22;--surface-2:#1E2328;--ink:#E6E9EA;
+  --ink-soft:#98A3AA;--ink-faint:#6E7982;--line:#292F35;--line-soft:#232930;--accent:#C7A353;
+  --good:#5CB39A;--mid:#CFA055;--low:#D08A62;--cool:#7FAFD6}
+:root[data-theme="light"]{--ground:#F5F7F8;--surface:#FFFFFF;--surface-2:#FAFBFC;--ink:#171B1F;
+  --ink-soft:#5A656D;--ink-faint:#8B959C;--line:#DDE2E5;--line-soft:#EAEEF0;--accent:#8A6A21;
+  --good:#2F7A63;--mid:#AC7524;--low:#A6603A;--cool:#3A6B96}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-size:15px;line-height:1.55;
+  word-break:keep-all;font-family:-apple-system,"Segoe UI Variable Text","Segoe UI","Malgun Gothic",sans-serif}
+.wrap{padding:36px 40px 72px;display:flex;flex-direction:column;gap:32px}
+.eyebrow{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Malgun Gothic",serif;
+  font-size:clamp(26px,3vw,38px);line-height:1.22;margin:6px 0 0;font-weight:600;text-wrap:balance}
+.lede{margin:10px 0 0;color:var(--ink-soft);max-width:64ch}
+.stamp{margin-top:12px;font-size:12.5px;color:var(--ink-faint);
+  font-family:ui-monospace,"Cascadia Mono",Consolas,monospace}
+.cta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);
+  border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:3px;padding:14px 18px}
+.cta .lbl{font-size:13.5px;color:var(--ink-soft);flex:1;min-width:220px}
+.cta .lbl b{color:var(--ink)}
+.cta a{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:3px;
+  font-size:13.5px;font-weight:700;text-decoration:none;white-space:nowrap;
+  background:var(--accent);color:var(--surface)}
+.cta a.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.cta a:hover{opacity:.9}
+.period{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px}
+.p-card{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:14px 16px;
+  display:grid;grid-template-columns:auto auto;gap:0 7px;align-items:baseline}
+.p-card.today{border-left:3px solid var(--accent)}
+.p-card .k{grid-column:1/-1;font-size:11px;letter-spacing:.09em;color:var(--ink-faint);font-weight:700;margin-bottom:4px}
+.p-card .v{font-family:"Iowan Old Style",Palatino,serif;font-size:32px;line-height:1;font-variant-numeric:tabular-nums}
+.p-card .v.good{color:var(--good)}
+.p-card .n{font-size:12.5px;color:var(--ink-soft)}
+.p-card .hint{grid-column:1/-1;font-size:11.5px;color:var(--ink-faint);margin-top:7px;line-height:1.45}
+h2{font-size:17px;margin:0;font-weight:700}
+.sec-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--ink);
+  padding-bottom:9px;margin-bottom:16px}
+.sec-h .num{font-family:"Iowan Old Style",Palatino,serif;font-size:15px;color:var(--accent);font-weight:700}
+.sec-h .sub{font-size:13px;color:var(--ink-soft)}
+.ask{margin:0 0 16px;padding:12px 15px;background:var(--surface-2);border-left:3px solid var(--accent);
+  font-size:13.5px;color:var(--ink-soft);max-width:74ch}
+.ask b{color:var(--ink)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.panel ul{list-style:none;margin:0;padding:0}
+.panel li{display:flex;align-items:baseline;gap:11px;padding:9px 16px;border-bottom:1px solid var(--line-soft)}
+.panel li:last-child{border-bottom:0}
+.dept{font-size:11px;color:var(--ink-faint);min-width:8ch;white-space:nowrap}
+.own{font-size:11.5px;color:var(--ink-faint);min-width:8ch;white-space:nowrap}
+.tn{flex:1;font-size:13.5px}
+.dd{font-family:"Iowan Old Style",Palatino,serif;font-size:18px;min-width:2.6ch;text-align:right;
+  font-variant-numeric:tabular-nums;color:var(--cool);font-weight:600}
+.dd::after{content:"일";font-size:10px;margin-left:1px;opacity:.6}
+.tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:2px;white-space:nowrap}
+.tag.dt{color:var(--cool);background:color-mix(in srgb,var(--cool) 13%,transparent)}
+.tag.sc{color:var(--mid);background:color-mix(in srgb,var(--mid) 15%,transparent)}
+.tag.rest{color:var(--low);background:color-mix(in srgb,var(--low) 13%,transparent)}
+.tag.plan{color:var(--good);background:color-mix(in srgb,var(--good) 13%,transparent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:16px}
+.owner{background:var(--surface);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.owner-h{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.owner-h h3{margin:0;font-size:14.5px;font-weight:700}
+.owner-h .meta{font-size:11.5px;color:var(--ink-faint)}
+.owner-h .count{margin-left:auto;font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.prog{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--surface-2);
+  border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.bar{flex:1;min-width:110px;height:7px;background:var(--line);border-radius:99px;overflow:hidden}
+.fill{display:block;height:100%;border-radius:99px}
+.fill.full,.fill.high{background:var(--good)} .pct.full,.pct.high{color:var(--good)}
+.fill.mid{background:var(--mid)} .pct.mid{color:var(--mid)}
+.fill.low{background:var(--low)} .pct.low{color:var(--low)}
+.pct{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;min-width:4ch;text-align:right}
+.prog .msg{font-size:12.5px;color:var(--ink-soft);width:100%}
+.prog .msg b{color:var(--ink)}
+.owner .list{list-style:none;margin:0;padding:0}
+.owner .list li{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:8px 16px;
+  border-bottom:1px solid var(--line-soft);font-size:13px}
+.owner .list li:last-child{border-bottom:0}
+.owner .list li.ok{color:var(--good);font-weight:600}
+code{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:12px;
+  background:var(--surface-2);padding:1px 5px;border-radius:2px}
+footer{font-size:12.5px;color:var(--ink-faint);border-top:1px solid var(--line);padding-top:16px}
+@media (max-width:640px){.wrap{padding:24px 18px 56px}.grid{grid-template-columns:1fr}.dept,.own{display:none}}
+@media print{body{background:#fff;font-size:11pt}.wrap{padding:0;gap:20px}
+  .grid{grid-template-columns:1fr 1fr}.owner,.panel{break-inside:avoid}.cta{display:none}}
+"""
+
+
+def main():
+    ap = argparse.ArgumentParser(description="실무진 업무판 채움 보드 생성기")
+    ap.add_argument("--json", action="store_true", help="수치만 JSON 출력(파일도 생성)")
+    ap.add_argument("--date", help="기준일 YYYY-MM-DD (기본=오늘)")
+    a = ap.parse_args()
+    today = (datetime.datetime.strptime(a.date, "%Y-%m-%d").date() if a.date
+             else datetime.date.today())
+
+    S, items, unlinked = collect(today)
+    html = build_html(S, items, unlinked)
+    for out in OUTS:
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        with open(out, "w", encoding="utf-8") as f:
+            f.write(html)
+
+    if a.json:
+        print(json.dumps(S, ensure_ascii=False))
+        return
+    for out in OUTS:
+        print("생성:", out)
+    print(f"진행 {S['act']} · 완비 {S['complete']} · 미등록 {S['unlinked']} · "
+          f"쉬는중 {S['rest']} · 마감일 {S['need_sched']} · 점수 {S['need_score']} "
+          f"· 제외(경영진) {S['excluded']}")
+
+
+if __name__ == "__main__":
+    main()

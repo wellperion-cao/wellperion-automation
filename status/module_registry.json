@@ -1038,6 +1038,36 @@
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
+    },
+    {
+      "id": "coo-ops-fill-board",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "실무진 업무판 '채움 보드' — 미등록·정체·마감일/점수 빈칸을 담당자별 완성도로 (GM 2026-07-23 지시)",
+      "data_source": {
+        "kind": "gas+file",
+        "ref": "업무 현황 SSOT todo_list + status/monthly_ops_plan.json → scripts/ops_fill_board.py"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "kakao",
+        "bot_id": "★ 운영부"
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "o1-module-hub"
+      },
+      "autonomy": "manual",
+      "ai_free_fallback": "스크립트 1회 실행이면 보드 2곳(공개·아티팩트) 재생성 — AI 없이도 동작",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "note": "생성=scripts/ops_fill_board.py (--json 으로 수치만 출력 가능). 출력 2곳: 3. 웰페리온 가이드/coo/todo/업무판 채움 보드.html(실무진 공개) · status/boards/s3_cleanup_board.html(GM 아티팩트 소스) — 같은 실행에서 함께 써서 드리프트 0. 발신은 아직 수동(카톡 ★운영부 kakao_report_sender --only-room). 정례 주기·자동 발신은 GM 결재 후 전환 예정(배9836 보고 카드화와 합류). 경영진(김남욱GM·이정헌 소장) 건은 월간 운영계획에서 관리하므로 보드에서 제외하고 사유를 화면에 명시. 완료 신호=완비 N/N 도달 시 보드 역할 축소(상시 위생 점검으로 전환)."
     }
   ]
 }
