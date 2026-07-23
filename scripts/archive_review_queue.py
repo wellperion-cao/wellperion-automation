@@ -22,6 +22,10 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+# review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
+from review_queue_util import review_queue_lock  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 QUEUE_PATH = BASE / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 ARCHIVE_PATH = BASE / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue_archive.json"
@@ -52,6 +56,13 @@ def count_lines(path: Path) -> int:
 
 
 def main():
+    # load→stub화→save 전 구간을 락 임계구역으로. 다른 writer 와 직렬화되어
+    # stub 스윕이 그 사이 등록된 신규 검수건을 덮어쓰는 일이 없다.
+    with review_queue_lock("archive_review_queue"):
+        return _sweep()
+
+
+def _sweep():
     # --- 로드 ---
     queue: list = load_json(QUEUE_PATH)
     archive: list = load_json(ARCHIVE_PATH) if ARCHIVE_PATH.exists() else []

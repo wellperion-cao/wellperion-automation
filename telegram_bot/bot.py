@@ -1451,6 +1451,74 @@ def _rq_apply_url(it: dict, url: str) -> None:
     it["note"] = (old_note + " / " + suffix) if old_note else suffix
 
 
+# ── review_queue.json 쓰기 = 단일 관문 경유 (2026-07-23 · 07-21 AI하루 10편 소실 재발방지) ──
+# 봇도 read→modify→write 를 직접 하다가 스테일 사본으로 덮어쓸 수 있었다. scripts/
+# review_queue_util.py 의 락(review_queue.lock)을 경유해 모든 writer 와 직렬화한다.
+# 아래 두 함수는 동기·블로킹 → 반드시 asyncio.to_thread 로 호출(봇 루프 비차단).
+def _rq_util():
+    # scripts/ 경로는 상단 임포트 블록에서 이미 sys.path 에 삽입돼 있다(git_lock·queue_lock 동일).
+    import review_queue_util as _u
+    return _u
+
+
+def _rq_record_url_locked(item_id: str, url: str) -> tuple[str, dict | None]:
+    """락 임계구역에서 load→검사→URL기록→save.
+
+    반환 code: 'ok' | 'missing' | 'dup' | 'error:<메시지>'
+    """
+    u = _rq_util()
+    box: dict = {}
+
+    def _apply(items: list):
+        t = next((it for it in items if it.get("id") == item_id), None)
+        if t is None:
+            box["r"] = ("missing", None)
+            raise u.SkipSave
+        if t.get("post_url"):
+            box["r"] = ("dup", t)
+            raise u.SkipSave
+        _rq_apply_url(t, url)
+        box["r"] = ("ok", t)
+        return items
+
+    try:
+        u.mutate_review_queue(_apply, holder="bot:naver_url")
+    except Exception as exc:
+        # 저장 단계에서 터졌다면 'ok' 로 보고하면 안 된다(기록 안 된 걸 됐다고 말하는 꼴).
+        return (f"error:{exc}", None)
+    return box.get("r", ("error:판정 결과 없음", None))
+
+
+def _rq_set_status_locked(item_ids: list, new_status: str) -> tuple:
+    """락 임계구역에서 load→status 일괄 기록→save.
+
+    반환: (targets, missing, cancelled, error|None). '폐기' 항목은 절대 안 건드림.
+    """
+    u = _rq_util()
+    box: dict = {"targets": [], "missing": [], "cancelled": []}
+
+    def _apply(items: list):
+        for iid in item_ids:
+            t = next((it for it in items if it.get("id") == iid), None)
+            if t is None:
+                box["missing"].append(iid)
+            elif t.get("status") == "폐기":
+                # 2026-07-20 8편 취소 사고 재발방지: 취소된 항목은 status 덮어쓰기·발행 금지.
+                box["cancelled"].append(t)
+            else:
+                t["status"] = new_status
+                box["targets"].append(t)
+        if not box["targets"]:
+            raise u.SkipSave   # 바꿀 게 없으면 파일 무변경
+        return items
+
+    try:
+        u.mutate_review_queue(_apply, holder="bot:review_decision")
+    except Exception as exc:
+        return ([], [], [], str(exc))
+    return (box["targets"], box["missing"], box["cancelled"], None)
+
+
 def _try_notify_links(item: dict) -> None:
     """notify_published_links.py --folder 비차단 호출(best-effort)."""
     folder = item.get("folder", "")
@@ -1495,30 +1563,26 @@ async def _handle_naver_url_record(
                 chosen_id = candidates[idx]["id"]
                 url = pending["url"]
                 channel = pending["channel"]
-                try:
-                    items = json.loads(REVIEW_QUEUE.read_text(encoding="utf-8"))
-                except Exception as exc:
-                    await update.message.reply_text(f"⚠️ 큐 로드 실패: {exc}")
+                code, target = await asyncio.to_thread(
+                    _rq_record_url_locked, chosen_id, url
+                )
+                if code.startswith("error:"):
+                    await update.message.reply_text(f"⚠️ 큐 기록 실패: {code[6:]}")
                     ctx.user_data.pop(_NAVER_PENDING_KEY, None)
                     return True
-                target = next((it for it in items if it.get("id") == chosen_id), None)
-                if target is None:
+                if code == "missing":
                     await update.message.reply_text(
                         f"⚠️ 큐에서 항목을 찾지 못했습니다 (id={chosen_id})."
                     )
                     ctx.user_data.pop(_NAVER_PENDING_KEY, None)
                     return True
-                if target.get("post_url"):
+                if code == "dup":
                     await update.message.reply_text(
                         f"⚠️ 이미 URL이 기록된 항목입니다: {target.get('title')}\n"
                         f"기존 URL: {target['post_url']}\n덮어쓰지 않습니다."
                     )
                     ctx.user_data.pop(_NAVER_PENDING_KEY, None)
                     return True
-                _rq_apply_url(target, url)
-                REVIEW_QUEUE.write_text(
-                    json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8"
-                )
                 commit_msg = (
                     f"auto(cmo): GM 텔레그램 URL 기록 — {target.get('title', '?')} [{channel}]"
                 )
@@ -1553,17 +1617,23 @@ async def _handle_naver_url_record(
 
     # ── 3-A) 정확히 1건 ─────────────────────────────────────────────────────
     if len(candidates) == 1:
-        target = candidates[0]
-        if target.get("post_url"):
+        code, target = await asyncio.to_thread(
+            _rq_record_url_locked, candidates[0].get("id"), url
+        )
+        if code.startswith("error:"):
+            await update.message.reply_text(f"⚠️ 큐 기록 실패: {code[6:]}")
+            return True
+        if code == "missing":
+            await update.message.reply_text(
+                f"⚠️ 큐에서 항목을 찾지 못했습니다 (id={candidates[0].get('id')})."
+            )
+            return True
+        if code == "dup":
             await update.message.reply_text(
                 f"⚠️ 이미 URL이 기록된 항목입니다: {target.get('title')}\n"
                 f"기존 URL: {target['post_url']}\n덮어쓰지 않습니다."
             )
             return True
-        _rq_apply_url(target, url)
-        REVIEW_QUEUE.write_text(
-            json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
         commit_msg = (
             f"auto(cmo): GM 텔레그램 URL 기록 — {target.get('title', '?')} [{channel}]"
         )
@@ -1673,28 +1743,15 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         decision = parts[2]
         item_ids = [x.strip() for x in id_field.split(",") if x.strip()]
 
-    try:
-        items = json.loads(REVIEW_QUEUE.read_text(encoding="utf-8"))
-    except Exception as exc:
-        await ctx.bot.send_message(chat_id=q.message.chat_id,
-            text=f"⚠️ 발행 큐 로드 실패: {exc}\n🆔 {id_field}")
-        return
-
     new_status = "승인" if decision == "approve" else "반려"
-    targets = []
-    missing = []
-    cancelled = []
-    for iid in item_ids:
-        t = next((it for it in items if it.get("id") == iid), None)
-        if t is None:
-            missing.append(iid)
-        elif t.get("status") == "폐기":
-            # 2026-07-20 8편 취소 사고 재발방지: 이미 나가있던 승인카드를 GM이 실수로
-            # 눌러도 취소된 항목은 status 덮어쓰기·발행 절대 금지. 안내만 회신.
-            cancelled.append(t)
-        else:
-            t["status"] = new_status
-            targets.append(t)
+    # 락 임계구역에서 load→status 기록→save 를 한 번에 (스테일 덮어쓰기 차단)
+    targets, missing, cancelled, rq_err = await asyncio.to_thread(
+        _rq_set_status_locked, item_ids, new_status
+    )
+    if rq_err:
+        await ctx.bot.send_message(chat_id=q.message.chat_id,
+            text=f"⚠️ 발행 큐 처리 실패: {rq_err}\n🆔 {id_field}")
+        return
 
     if missing:
         await ctx.bot.send_message(chat_id=q.message.chat_id,
@@ -1709,13 +1766,7 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         if not targets:
             return
 
-    try:
-        REVIEW_QUEUE.write_text(
-            json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
-    except Exception as exc:
-        await ctx.bot.send_message(chat_id=q.message.chat_id,
-            text=f"⚠️ 큐 저장 실패: {exc}")
-        return
+    # 저장은 위 _rq_set_status_locked 안(락 임계구역)에서 이미 원자적으로 끝났다.
 
     # 대표 타이틀·채널 (복수면 첫 항목 + 건수 표시)
     first = targets[0] if targets else {}

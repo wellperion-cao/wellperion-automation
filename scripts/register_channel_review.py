@@ -31,6 +31,10 @@ for _s in ("stdout", "stderr"):
         except Exception:
             pass
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+# review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
+from review_queue_util import mutate_review_queue  # noqa: E402
+
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 GUIDE_ROOT = ROOT / "3. 웰페리온 가이드"
 REVIEW_DIR = GUIDE_ROOT / "cmo" / "review"
@@ -124,38 +128,39 @@ def register_channels(folder_rel: str, slide_glob: str, channels: list[dict],
         preview_rel = preview_dest.relative_to(GUIDE_ROOT).as_posix()  # cmo/review/... (M5 호환)
 
     # 3) 각 채널 폴더에 슬라이드 채우기 (image_glob=ig_*.jpg 로 stale 대표이미지 회피)
-    queue = _load_queue()
-    for ch in channels:
-        ch_dir = ROOT / ch["image_dir"]
-        ch_dir.mkdir(parents=True, exist_ok=True)
-        for sp in slides:
-            try:
-                shutil.copyfile(str(sp), str(ch_dir / sp.name))
-            except Exception as exc:
-                print(f"[WARN] 슬라이드 복사 실패 {sp.name}→{ch['image_dir']}: {exc}")
-        # 본문 인라인(M5 표시용) — 파일에서 읽기
-        body_path = ROOT / ch["body_file"]
-        body_text = body_path.read_text(encoding="utf-8") if body_path.exists() else ""
+    #    load→upsert→save 전 구간을 락 임계구역으로 (2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
+    def _apply(queue: list):
+        for ch in channels:
+            ch_dir = ROOT / ch["image_dir"]
+            ch_dir.mkdir(parents=True, exist_ok=True)
+            for sp in slides:
+                try:
+                    shutil.copyfile(str(sp), str(ch_dir / sp.name))
+                except Exception as exc:
+                    print(f"[WARN] 슬라이드 복사 실패 {sp.name}→{ch['image_dir']}: {exc}")
+            # 본문 인라인(M5 표시용) — 파일에서 읽기
+            body_path = ROOT / ch["body_file"]
+            body_text = body_path.read_text(encoding="utf-8") if body_path.exists() else ""
 
-        fields = {
-            "title": ch["title"],
-            "channel": ch["channel"],
-            "account": ch.get("account", "wellperion"),
-            "folder": folder_rel,
-            "body_file": ch["body_file"],
-            "image_dir": ch["image_dir"],
-            "image_glob": ch.get("image_glob", "ig_*.jpg"),
-            "body": body_text,
-            "status": "검수대기",
-        }
-        if "menuid" in ch:
-            fields["menuid"] = ch["menuid"]
-        if preview_rel:
-            fields["preview"] = preview_rel
-        _upsert(queue, ch["id"], fields)
+            fields = {
+                "title": ch["title"],
+                "channel": ch["channel"],
+                "account": ch.get("account", "wellperion"),
+                "folder": folder_rel,
+                "body_file": ch["body_file"],
+                "image_dir": ch["image_dir"],
+                "image_glob": ch.get("image_glob", "ig_*.jpg"),
+                "body": body_text,
+                "status": "검수대기",
+            }
+            if "menuid" in ch:
+                fields["menuid"] = ch["menuid"]
+            if preview_rel:
+                fields["preview"] = preview_rel
+            _upsert(queue, ch["id"], fields)
+        return queue
 
-    REVIEW_QUEUE_PATH.write_text(
-        json.dumps(queue, ensure_ascii=False, indent=2), encoding="utf-8")
+    mutate_review_queue(_apply, holder="register_channel_review")
     print(f"[OK] review_queue 등록 완료 — {len(channels)}개 채널 / preview={preview_rel}")
 
 

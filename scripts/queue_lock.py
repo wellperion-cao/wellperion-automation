@@ -71,10 +71,15 @@ class QueueLockTimeout(Exception):
     pass
 
 
-def _lock_file(root):
+# 기본 락 이름 = status/_queue.json 전용. 다른 배열 JSON(review_queue.json 등)은
+# lock_name 을 달리 줘서 서로 막지 않게 한다(파일별 독립 임계구역).
+DEFAULT_LOCK_NAME = "queue.lock"
+
+
+def _lock_file(root, lock_name=DEFAULT_LOCK_NAME):
     parent = os.path.join(root, ".locks")
     os.makedirs(parent, exist_ok=True)
-    return os.path.join(parent, "queue.lock")
+    return os.path.join(parent, lock_name)
 
 
 def _log(msg, root):
@@ -99,10 +104,11 @@ class QueueLock:
     with QueueLock(holder, repo_root): <load→modify→save>
     QUEUE_LOCK_DISABLED=1 이면 no-op(역롤백)."""
 
-    def __init__(self, holder="?", repo_root=None):
+    def __init__(self, holder="?", repo_root=None, lock_name=DEFAULT_LOCK_NAME):
         self.holder = holder
+        self.lock_name = lock_name
         self._root = _repo_root(repo_root)
-        self._lockfile = _lock_file(self._root)
+        self._lockfile = _lock_file(self._root, lock_name)
         self._disabled = os.environ.get("QUEUE_LOCK_DISABLED") == "1"
         self._fd = None
 
@@ -126,14 +132,19 @@ class QueueLock:
         waited = 0.0
         while True:
             if self._try_lock():
-                _log(f"ACQUIRED holder={self.holder}", self._root)
+                _log(f"ACQUIRED lock={self.lock_name} holder={self.holder}", self._root)
                 return self
             if waited >= ACQUIRE_TIMEOUT:
                 os.close(self._fd)
                 self._fd = None
-                _log(f"TIMEOUT holder={self.holder} waited={waited:.1f}s", self._root)
+                _log(
+                    f"TIMEOUT lock={self.lock_name} holder={self.holder} "
+                    f"waited={waited:.1f}s",
+                    self._root,
+                )
                 raise QueueLockTimeout(
-                    f"queue lock 획득 실패: {ACQUIRE_TIMEOUT}s 초과 (holder={self.holder})"
+                    f"{self.lock_name} 획득 실패: {ACQUIRE_TIMEOUT}s 초과 "
+                    f"(holder={self.holder})"
                 )
             time.sleep(POLL)
             waited += POLL
@@ -154,14 +165,14 @@ class QueueLock:
                 os.close(self._fd)  # 핸들 닫힘 = OS 잠금 확실 해제
             finally:
                 self._fd = None
-            _log(f"RELEASED holder={self.holder}", self._root)
+            _log(f"RELEASED lock={self.lock_name} holder={self.holder}", self._root)
         return False  # 예외 전파
 
 
 @contextmanager
-def queue_lock(holder="?", repo_root=None):
+def queue_lock(holder="?", repo_root=None, lock_name=DEFAULT_LOCK_NAME):
     """with queue_lock('holder'): <load→modify→save> 편의 래퍼."""
-    with QueueLock(holder, repo_root):
+    with QueueLock(holder, repo_root, lock_name):
         yield
 
 

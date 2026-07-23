@@ -27,6 +27,10 @@ from pathlib import Path
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+# review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
+from review_queue_util import merge_save_review_queue  # noqa: E402
+
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 PROFILE_BASE = ROOT / "profiles" / "instagram"
@@ -234,7 +238,8 @@ async def run(target_id: str | None, dry_run: bool) -> int:
                 pass
 
     if changed:
-        QUEUE.write_text(json.dumps(queue, ensure_ascii=False, indent=2), encoding="utf-8")
+        # 락 안에서 최신본 재로드 후 id 병합 저장 — 대조(수 분) 사이 추가된 신규 항목 보존.
+        merge_save_review_queue(queue, holder="ig_publish_verify")
     print(f"\n→ 대조 {len(targets)}건 / 발행완료 도장 {stamped}건"
           + (" (dry-run, 미반영)" if dry_run else ""))
     return stamped

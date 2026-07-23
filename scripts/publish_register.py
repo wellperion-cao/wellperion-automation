@@ -31,6 +31,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+# review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
+from review_queue_util import mutate_review_queue  # noqa: E402
+
 try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
     from tg_outbound_log import log_outbound, pace
 except Exception:
@@ -230,52 +234,55 @@ def _upsert_queue(
     """
     if not REVIEW_QUEUE_PATH.exists():
         print(f"[WARN] review_queue.json 미존재 — 신규 생성: {REVIEW_QUEUE_PATH}")
-        queue: list[dict] = []
-    else:
-        try:
-            loaded = json.loads(REVIEW_QUEUE_PATH.read_text(encoding="utf-8"))
-            queue = loaded if isinstance(loaded, list) else []
-        except Exception as exc:
-            print(f"[ERROR] review_queue 파싱 실패 — 등록 중단(파일 보존): {exc}")
-            raise
 
-    matched_item: dict | None = None
-    for item in queue:
-        if item.get("id") == queue_id:
-            matched_item = item
-            break
+    # 락 임계구역 = load→modify→save 전 구간 (2026-07-23 · 07-21 AI하루 10편 소실 재발방지).
+    # 파싱 실패 시 load_review_queue 가 예외 → 저장 없이 중단(파일 보존).
+    holder: list = []
 
-    if matched_item is not None:
-        prev_status = matched_item.get("status", "")
-        # 본문 필드 갱신 (status 제외)
-        for k, v in fields.items():
-            if k == "status":
-                continue
-            matched_item[k] = v
-        # status 강등 가드 — 발행완료는 검수대기로 내리지 않음
-        if prev_status == _TERMINAL_PUBLISHED:
-            print(
-                f"[INFO] id={queue_id} 는 이미 '발행완료' — status 강등 금지(유지). "
-                f"본문 필드만 갱신."
-            )
-            final_status = _TERMINAL_PUBLISHED
+    def _apply(queue: list):
+        matched_item: dict | None = None
+        for item in queue:
+            if item.get("id") == queue_id:
+                matched_item = item
+                break
+
+        if matched_item is not None:
+            prev_status = matched_item.get("status", "")
+            # 본문 필드 갱신 (status 제외)
+            for k, v in fields.items():
+                if k == "status":
+                    continue
+                matched_item[k] = v
+            # status 강등 가드 — 발행완료는 검수대기로 내리지 않음
+            if prev_status == _TERMINAL_PUBLISHED:
+                print(
+                    f"[INFO] id={queue_id} 는 이미 '발행완료' — status 강등 금지(유지). "
+                    f"본문 필드만 갱신."
+                )
+                final_status = _TERMINAL_PUBLISHED
+            else:
+                final_status = fields.get("status", prev_status or "검수대기")
+                matched_item["status"] = final_status
+            print(f"[INFO] review_queue update — id={queue_id} / status={final_status}")
+            holder.append((True, final_status))
         else:
-            final_status = fields.get("status", prev_status or "검수대기")
-            matched_item["status"] = final_status
-        print(f"[INFO] review_queue update — id={queue_id} / status={final_status}")
-        result = (True, final_status)
-    else:
-        new_item = dict(fields)
-        new_item["id"] = queue_id
-        new_item.setdefault("status", "검수대기")
-        queue.append(new_item)
-        print(f"[INFO] review_queue append(신규) — id={queue_id} / status={new_item['status']}")
-        result = (False, new_item["status"])
+            new_item = dict(fields)
+            new_item["id"] = queue_id
+            new_item.setdefault("status", "검수대기")
+            queue.append(new_item)
+            print(
+                f"[INFO] review_queue append(신규) — id={queue_id} / "
+                f"status={new_item['status']}"
+            )
+            holder.append((False, new_item["status"]))
+        return queue
 
-    REVIEW_QUEUE_PATH.write_text(
-        json.dumps(queue, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    return result
+    try:
+        mutate_review_queue(_apply, holder="publish_register:_upsert_queue")
+    except Exception as exc:
+        print(f"[ERROR] review_queue 저장 실패 — 등록 중단(파일 보존): {exc}")
+        raise
+    return holder[0]
 
 
 def _write_curation_md(

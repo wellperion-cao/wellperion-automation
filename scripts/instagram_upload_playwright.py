@@ -802,13 +802,17 @@ def update_review_queue(content_folder: Path, published: dict[str, str]) -> None
     큐 파일 git commit 은 하지 않음(파일만 갱신).
     """
     try:
-        import json as _json
+        # review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 소실 재발방지)
+        import sys as _sys
+        from pathlib import Path as _Path
+
+        _sys.path.insert(0, str(_Path(__file__).resolve().parent))
+        from review_queue_util import SkipSave, mutate_review_queue
 
         if not _REVIEW_QUEUE_PATH.exists():
             print(f"[INFO] review_queue.json 미존재 — 후처리 건너뜀 ({_REVIEW_QUEUE_PATH})")
             return
 
-        queue: list[dict] = _json.loads(_REVIEW_QUEUE_PATH.read_text(encoding="utf-8"))
         folder_name = content_folder.name  # 예: "260529_AI직원효율_핵심집중"
         # content_folder 를 정방향 슬래시 상대경로로도 비교
         cf_str = content_folder.as_posix()
@@ -816,26 +820,29 @@ def update_review_queue(content_folder: Path, published: dict[str, str]) -> None
         first_url = next(iter(published.values()), "") if published else ""
         now_iso = datetime.now().isoformat(timespec="seconds")
 
-        matched = False
-        for item in queue:
-            item_folder: str = item.get("folder", "")
-            # 큐 folder 필드 예: "instagram/260529_AI직원효율_핵심집중"
-            item_folder_name = item_folder.split("/")[-1].split("\\")[-1]
-            if item_folder_name == folder_name or cf_str.endswith(item_folder.replace("\\", "/")):
-                item["status"] = "발행완료"
-                item["post_url"] = first_url
-                item["published_at"] = now_iso
-                matched = True
-                print(f"[INFO] review_queue 갱신 완료 — id={item.get('id', '?')} → 발행완료 / {first_url}")
+        def _apply(queue: list):
+            matched = False
+            for item in queue:
+                item_folder: str = item.get("folder", "")
+                # 큐 folder 필드 예: "instagram/260529_AI직원효율_핵심집중"
+                item_folder_name = item_folder.split("/")[-1].split("\\")[-1]
+                if item_folder_name == folder_name or cf_str.endswith(
+                    item_folder.replace("\\", "/")
+                ):
+                    item["status"] = "발행완료"
+                    item["post_url"] = first_url
+                    item["published_at"] = now_iso
+                    matched = True
+                    print(
+                        f"[INFO] review_queue 갱신 완료 — id={item.get('id', '?')} "
+                        f"→ 발행완료 / {first_url}"
+                    )
+            if not matched:
+                print(f"[INFO] review_queue 매칭 항목 없음 (folder={folder_name}) — 후처리 건너뜀")
+                raise SkipSave
+            return queue
 
-        if not matched:
-            print(f"[INFO] review_queue 매칭 항목 없음 (folder={folder_name}) — 후처리 건너뜀")
-            return
-
-        _REVIEW_QUEUE_PATH.write_text(
-            _json.dumps(queue, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+        mutate_review_queue(_apply, holder="instagram_upload:update_review_queue")
     except Exception as exc:
         print(f"[WARN] review_queue 후처리 예외 (발행 영향 없음): {exc}")
 

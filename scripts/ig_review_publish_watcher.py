@@ -56,6 +56,8 @@ except Exception:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from git_lock import GitLock
 from publish_digest import send_publish_digest  # 발행완료→문의방 통합요약 자동발신(2026-07-15)
+# review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
+from review_queue_util import merge_save_review_queue
 
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
@@ -365,7 +367,12 @@ def load_queue() -> list:
 
 
 def save_queue(items: list) -> None:
-    QUEUE.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+    """락 임계구역에서 디스크 최신본과 id 병합 저장.
+
+    load_queue() → 발행(수 분) → save_queue() 사이에 다른 프로세스가 큐에 추가한
+    신규 항목을 스테일 사본으로 덮어써 지우는 사고(2026-07-21 AI하루 10편) 차단.
+    """
+    merge_save_review_queue(items, holder="ig_review_publish_watcher")
 
 
 def publish_item(it: dict) -> tuple[str | None, int]:

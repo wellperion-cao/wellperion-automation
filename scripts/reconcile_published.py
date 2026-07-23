@@ -43,6 +43,10 @@ except Exception:
     def worklog_log(*a, **k):
         return False
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+# review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
+from review_queue_util import merge_save_review_queue  # noqa: E402
+
 ROOT        = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE_PATH  = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 SCRIPTS_DIR = ROOT / "scripts"
@@ -309,11 +313,9 @@ def main() -> int:
     bak.write_bytes(QUEUE_PATH.read_bytes())
     print(f"[INFO] 백업: {bak.name}")
 
-    # 갱신 쓰기 (들여쓰기 2칸, ensure_ascii=False, 개행 마무리)
-    QUEUE_PATH.write_text(
-        json.dumps(modified_items, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    # 갱신 쓰기 — 락 안에서 디스크 최신본 재로드 후 id 병합 저장
+    # (2026-07-23 · 07-21 AI하루 10편 소실 재발방지: 네트워크 대조 중 추가된 신규 항목 보존)
+    merge_save_review_queue(modified_items, holder="reconcile_published")
     print(f"[INFO] 갱신 완료: {updated_count}건 → {QUEUE_PATH.name}")
 
     # 임시저장→발행완료 전환된 건 텔레그램 통지
