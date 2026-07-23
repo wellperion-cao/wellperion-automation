@@ -1923,7 +1923,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="card">
         <div class="card-title"><span class="icon">🧑‍🏫</span>수강 회원 명단
           <span id="lessonMemStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
-          <button class="btn-refresh" onclick="lessonRegLoad('adult')" style="margin-left:auto">새로고침</button>
+          <button class="btn-refresh" onclick="lessonRegLoad('adult', true)" style="margin-left:auto">새로고침</button>
         </div>
         <div style="margin-bottom:10px">
           <input type="search" id="lessonMemQ_adult" placeholder="🔍 이름 또는 연락처로 찾기"
@@ -2112,7 +2112,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="card">
         <div class="card-title"><span class="icon">🧑‍🏫</span>수강 회원 명단
           <span id="lessonMemStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
-          <button class="btn-refresh" onclick="lessonRegLoad('youth')" style="margin-left:auto">새로고침</button>
+          <button class="btn-refresh" onclick="lessonRegLoad('youth', true)" style="margin-left:auto">새로고침</button>
         </div>
         <div style="margin-bottom:10px">
           <input type="search" id="lessonMemQ_youth" placeholder="🔍 이름 또는 연락처로 찾기"
@@ -5364,14 +5364,16 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
    mem(강습 회원 관리): 전체 roster 명단(lesson_registered_roster).
 ───────────────────────────────────────────── */
 // 강습 회원 관리(mem) — 전체 roster 명단(lesson_registered_roster).
-function lessonRegLoad(t) {
+// force=true(새로고침 버튼·SUC 직후) → 서버 캐시를 건너뛰고 새로 만든다.
+//   서버가 명단을 10분 캐시하므로(2026-07-23 속도 개선), 방금 등록한 회원이 안 보이는 일이 없게 한다.
+function lessonRegLoad(t, force) {
   var st = _lessonState[t];
   st.memLoaded = true;
   var b = document.getElementById('lessonMemBody_' + t);
   if (GAS_URL === GAS_PLACEHOLDER) { if (b) b.innerHTML = _lessonRegRow('미연동', 'GAS URL이 교체되면 자동으로 등록 회원이 표시됩니다.'); return; }
   if (b) b.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(st.type) + _wpKeyParam())
+  fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(st.type) + (force ? '&fresh=1' : '') + _wpKeyParam())
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && d.error) || 'GAS 응답 오류');
@@ -8096,23 +8098,26 @@ function saveLossReasonModal() {
     ? { action: 'lesson_inquiry_update', type: _lossModal.type, rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, sport: '', gid: _lossModal.gid, lossReason: reason }
     : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, lossReason: reason };
   var _t = _isLesson ? _lossModal.t : null;
-  apiPost(_payload)
-    .then(function(data){
-      if (data && data.ok === false) throw new Error(data.error || '저장 실패');
-      showToast('LOSS 사유 저장', 'ok');
-      if (_isLesson) {
-        var lr = _lessonFindRow(_t, rowIndex);
-        if (lr) { lr.lossReason = reason; }
-        try { lessonLossRender(_t); } catch (e) {}
-      } else {
-        var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
-        if (r) { r.lossReason = reason; }
-        if (_tabLoaded.db) renderDbTable();
-      }
-      closeLossReasonModal();
-    })
-    .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
-    .then(function(){ saveBtn.disabled = false; });
+  // ★서버 왕복 대기 제거(2026-07-23 GM '저장 누른 속도') — 상태·담당·연락이력은 이미 버퍼를 타는데
+  //   이 모달만 apiPost 로 응답을 기다려 저장 버튼이 몇 초씩 멈춰 있었다. 화면 먼저 반영하고
+  //   실제 기록은 뒤에서 처리한다(실패하면 WriteBuffer 가 배지로 표면화 + 재시도 — 조용한 유실 없음).
+  var _who = _lossModal.name || '';
+  if (_isLesson) {
+    var lr = _lessonFindRow(_t, rowIndex);
+    if (lr) { lr.lossReason = reason; }
+  } else {
+    var r0 = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
+    if (r0) { r0.lossReason = reason; }
+  }
+  WriteBuffer.enqueue(_payload, {
+    scope: _isLesson ? 'lesson' : 'member', phoneKey: keyPhone, fieldset: 'lossReason',
+    label: 'LOSS 사유', who: _who, overlay: { lossReason: reason }
+  });
+  showToast('LOSS 사유 저장', 'ok');
+  closeLossReasonModal();
+  saveBtn.disabled = false;
+  if (_isLesson) { try { lessonLossRender(_t); } catch (e) {} }
+  else if (_tabLoaded.db) { renderDbTable(); }
 }
 
 /* ─────────────────────────────────────────────
@@ -8234,26 +8239,28 @@ function saveRegProgramModal() {
         })() }
     : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, regProgram: program };
   var _t = _isLesson ? _regProgramModal.t : null;
-  apiPost(_payload)
-    .then(function(data){
-      if (data && data.ok === false) throw new Error(data.error || '저장 실패');
-      showToast('등록 종목 저장', 'ok');
-      if (_isLesson) {
-        var lr = _lessonFindRow(_t, rowIndex);
-        if (lr) { lr.regProgram = program; }
-        // 등록종목은 SUC 직후에 넣는다 → 그 회원은 등록 명단에 합류한다. 명단 캐시를 지워
-        // [강습 회원 관리] 카드로 갔을 때 새 명단을 다시 받게 한다(안 지우면 옛 명단이 그대로 뜬다).
-        if (_lessonState[_t]) _lessonState[_t].memLoaded = false;
-        try { lessonRenderChips(_t); lessonRender(_t); } catch (e) {}
-      } else {
-        var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
-        if (r) { r.regProgram = program; }
-        if (_tabLoaded.db) renderDbTable();
-      }
-      closeRegProgramModal();
-    })
-    .catch(function(err){ showToast('저장 실패: ' + (err.message || ''), 'err'); })
-    .then(function(){ saveBtn.disabled = false; });
+  // ★서버 왕복 대기 제거(2026-07-23 GM) — LOSS 모달과 동일. 화면 먼저, 기록은 뒤에서.
+  //   SUC 처리 직후 연달아 뜨는 모달이라 여기서 몇 초 멈추면 등록 작업 전체가 느리게 느껴진다.
+  var _who = _regProgramModal.name || '';
+  if (_isLesson) {
+    var lr2 = _lessonFindRow(_t, rowIndex);
+    if (lr2) { lr2.regProgram = program; }
+    // 등록종목은 SUC 직후에 넣는다 → 그 회원은 등록 명단에 합류한다. 명단 캐시를 지워
+    // [강습 회원 관리] 카드로 갔을 때 새 명단을 다시 받게 한다(안 지우면 옛 명단이 그대로 뜬다).
+    if (_lessonState[_t]) _lessonState[_t].memLoaded = false;
+  } else {
+    var r2 = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
+    if (r2) { r2.regProgram = program; }
+  }
+  WriteBuffer.enqueue(_payload, {
+    scope: _isLesson ? 'lesson' : 'member', phoneKey: keyPhone, fieldset: 'regProgram',
+    label: '등록 종목', who: _who, overlay: { regProgram: program }
+  });
+  showToast('등록 종목 저장', 'ok');
+  closeRegProgramModal();
+  saveBtn.disabled = false;
+  if (_isLesson) { try { lessonRenderChips(_t); lessonRender(_t); } catch (e) {} }
+  else if (_tabLoaded.db) { renderDbTable(); }
 }
 
 /* ─────────────────────────────────────────────

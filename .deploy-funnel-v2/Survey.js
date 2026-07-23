@@ -1377,6 +1377,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   lesson_registry_list:       true,  // 강습 금일 등록현황(원장 sync-on-load) — PII 노출(전체공개) 2026-06-27 시포
   lesson_team_sheet_diag:     true,  // [진단] 강습 팀시트 구조(헤더·상태열·빈칸 수) — 셀 값 미반환·토큰 필요. 2026-07-23 시포·GM
   member_hold_intake_migrate: true,  // 휴회 접수 탭 이관(회원DB→종합접수처) — 대조키 복사·원본 보존·기본 예행·토큰 필요. 배9948
+  warm_cache_trigger:         true,  // 명단 캐시 워머 트리거 설치/해제/상태 — 읽기 전용 워밍·토큰 필요. 2026-07-23 시포·GM
   // 공간렌트·비즈니스 문의 패널(CPO) — lesson_inquiry_list/lesson_stats 와 동일 취급(PII 노출·전체공개). 2026-07-04 시포.
   rentbiz_inquiry_list:       true,  // 공간렌트·비즈니스 문의 목록(성함/단체명·연락처 등 원시 필드 포함)
   rentbiz_stats:              true,  // 공간렌트·비즈니스 통계(총·이번달·경로 분포·상태별 — 상태컬럼 없으면 상태 집계 생략)
@@ -5333,6 +5334,32 @@ function _processAction(body) {
   //   시트 미연결/상태열 미발견 종목은 registered=null(0 날조 금지). PII 노출 OK(전체공개 2026-06-22). 2026-06-27 시포.
   if (action === 'lesson_registered_roster') {
     var lrrType = String(body.type || '성인강습');
+    // ★서버 캐시(2026-07-23 GM '속도만 좀 빨랐으면') — 이 액션은 팀시트 13개를 전부 열고 문의 시트를
+    //   병합·조인하느라 실측 17~24초가 걸린다. 명단은 초 단위로 바뀌는 값이 아니라 캐시가 맞다.
+    //   ⚠️ CacheService 는 한 칸 100KB 한계라 명단(1,100건 ≈ 170KB)이 안 들어간다 → 나눠 담는다.
+    //   fresh=1(화면 '새로고침' 버튼)이면 캐시를 건너뛰고 새로 만든다 — 방금 SUC 한 회원이 안 보이는 일 없게.
+    var LRR_CACHE_TTL = 600;   // 10분
+    var lrrCacheKey = 'lesson_roster_v3_' + lrrType;
+    var lrrFresh = (String(body.fresh || '') === '1' || String(body.fresh || '') === 'true');
+    if (!lrrFresh) {
+      try {
+        var cch = CacheService.getScriptCache();
+        var meta = cch.get(lrrCacheKey + '_n');
+        if (meta) {
+          var parts = [], nP = parseInt(meta, 10), okAll = true;
+          for (var cp = 0; cp < nP; cp++) {
+            var seg = cch.get(lrrCacheKey + '_' + cp);
+            if (seg === null) { okAll = false; break; }
+            parts.push(seg);
+          }
+          if (okAll && parts.length) {
+            var hit = JSON.parse(parts.join(''));
+            hit.cached = true;
+            return _json(hit);
+          }
+        }
+      } catch (eC) { /* 캐시 사고는 무시하고 정상 계산으로 */ }
+    }
     var lrrDisplay = LESSON_DISPLAY[lrrType] || [];
     var lrrCfgByName = {};
     LESSON_TEAM_SHEETS.forEach(function(c){ lrrCfgByName[c.명] = c; });
@@ -5561,11 +5588,24 @@ function _processAction(body) {
     //   합계만 보내면 735명이 정상 회원인 것처럼 읽힌다(GM 2026-07-23 A안: 숨기지도 부풀리지도 않는다).
     var lrrIdent = 0, lrrUnknown = 0;
     lrrRoster.forEach(function (m) { if (String(m.name || '').trim()) lrrIdent++; else lrrUnknown++; });
-    return _json({
+    var lrrPayload = {
       ok: true, type: lrrType, total: lrrRoster.length, bySport: lrrBySport, roster: lrrRoster,
       identified: lrrIdent, unknown: lrrUnknown,
       unknownNote: lrrUnknown ? '옛 팀시트에 진행 상황 값만 남고 이름·연락처가 비어 있는 기록입니다(실체 확인 불가).' : ''
-    });
+    };
+    // 캐시에 나눠 담기 — 조각 하나라도 사라지면 읽는 쪽이 통째로 무시하므로(위 okAll) 반쪽 데이터가 나올 일은 없다.
+    try {
+      var putStr = JSON.stringify(lrrPayload);
+      var CH = 90000, segs = [];
+      for (var sp = 0; sp < putStr.length; sp += CH) segs.push(putStr.substring(sp, sp + CH));
+      if (segs.length <= 12) {   // 너무 크면 캐시 포기(정상 계산 경로는 그대로 동작)
+        var cch2 = CacheService.getScriptCache(), bag = {};
+        for (var sq = 0; sq < segs.length; sq++) bag[lrrCacheKey + '_' + sq] = segs[sq];
+        bag[lrrCacheKey + '_n'] = String(segs.length);
+        cch2.putAll(bag, LRR_CACHE_TTL);
+      }
+    } catch (ePut) { /* 캐시 실패는 무시 — 응답은 정상 반환 */ }
+    return _json(lrrPayload);
   }
 
   // ─── 강습 등록 원장 명단 (금일 등록현황) — sync-on-load. 2026-06-27 시포 ───
@@ -8328,6 +8368,37 @@ function _processAction(body) {
     return _json({ ok: true, received: true });   // ★회원 판정/잔여 미반환(공개 노출 금지)
   }
 
+  // ─── 명단 캐시 워머 트리거 설치/해제/상태 — 2026-07-23 시포·GM ───
+  //   ★멱등: 설치 전에 같은 핸들러 트리거를 전부 지운다(여러 번 눌러도 워머가 겹쳐 돌지 않게).
+  //   ★주기는 5분 — GAS everyMinutes 는 1·5·10·15·30 만 받는다(8 을 넣으면 생성 시점에 예외).
+  //     캐시 TTL 10분보다 짧게 잡아 만료와 갱신 사이에 빈 구간이 생기지 않게 겹쳐 둔다.
+  if (action === 'warm_cache_trigger') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var wcMode = String(body.mode || 'status');   // status | install | remove
+    var wcFn = 'warmLessonRosterCache';
+    function _wcList() {
+      var out = [];
+      try {
+        ScriptApp.getProjectTriggers().forEach(function (t) {
+          if (t.getHandlerFunction() === wcFn) out.push({ id: t.getUniqueId(), type: String(t.getEventType()) });
+        });
+      } catch (e) {}
+      return out;
+    }
+    if (wcMode === 'status') return _json({ ok: true, mode: 'status', installed: _wcList().length, triggers: _wcList() });
+    var wcRemoved = 0;
+    try {
+      ScriptApp.getProjectTriggers().forEach(function (t) {
+        if (t.getHandlerFunction() === wcFn) { ScriptApp.deleteTrigger(t); wcRemoved++; }
+      });
+    } catch (eDel) { return _json({ ok: false, error: 'trigger-delete-failed', detail: String(eDel).slice(0, 100) }); }
+    if (wcMode === 'remove') return _json({ ok: true, mode: 'remove', removed: wcRemoved, installed: _wcList().length });
+    try {
+      ScriptApp.newTrigger(wcFn).timeBased().everyMinutes(_WARM_EVERY_MIN).create();
+    } catch (eNew) { return _json({ ok: false, error: 'trigger-create-failed', detail: String(eNew).slice(0, 120) }); }
+    return _json({ ok: true, mode: 'install', removedBefore: wcRemoved, everyMinutes: _WARM_EVERY_MIN, installed: _wcList().length });
+  }
+
   // ─── 휴회 접수 이관(회원DB 옛 탭 → 종합접수처 새 탭) — 배9948 ① · 2026-07-23 시포·GM ───
   //   ★행 번호로 옮기지 않는다. 대조키(접수일시+성함+연락처)로만 대조한다 — 2026-07-20 행번호 삭제로
   //     실제 고객 문의 2건이 지워진 사고(INC-020)의 재발 방지. 원본은 절대 지우지 않는다(복사만).
@@ -10099,6 +10170,27 @@ function installMemberMatchTrigger() {
 // ═══════════════════════════════════════════
 //  doGet / doPost
 // ═══════════════════════════════════════════
+/* ═══ 강습 회원 명단 캐시 워머 (2026-07-23 시포·GM) ═══════════════════════════
+ *  왜: lesson_registered_roster 는 팀시트 13개 + 문의 시트 병합·조인이라 20초쯤 걸린다.
+ *      10분 캐시를 걸어 두 번째부터는 2~3초로 줄었지만, 캐시가 비는 순간 처음 여는 사람이
+ *      그 20초를 그대로 뒤집어쓴다. 미리 데워 두면 그 사람도 안 겪는다.
+ *  방법: 자기 자신에게 HTTP 를 쏘지 않는다(인증·URL 의존·중복 과금 없음).
+ *      _processAction 을 그대로 호출해 fresh=1 로 다시 만들면 캐시가 갱신된다.
+ *  안전: 읽기 전용 액션만 부른다(시트 쓰기 0). 실패해도 조용히 넘어간다 — 워머가 죽어도
+ *      화면은 느려질 뿐 고장 나지 않는다.
+ */
+var _WARM_EVERY_MIN = 5;   // GAS everyMinutes 허용값 = 1·5·10·15·30. 캐시 TTL(600초)보다 짧게.
+function warmLessonRosterCache() {
+  var types = ['성인강습', '유소년강습'], done = [];
+  for (var i = 0; i < types.length; i++) {
+    try {
+      _processAction({ action: 'lesson_registered_roster', type: types[i], fresh: '1' });
+      done.push(types[i]);
+    } catch (e) { /* 한쪽 실패가 다른 쪽을 막지 않게 */ }
+  }
+  return done;
+}
+
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || '';
