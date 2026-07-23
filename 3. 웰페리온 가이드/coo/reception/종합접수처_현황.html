@@ -332,6 +332,7 @@ function toggleDone(){ _doneExpanded = !_doneExpanded; _render(); }
 function _hay(r){ var s=''; for(var k in r){ if(r.hasOwnProperty(k) && k.charAt(0)!=='_' && r[k]!=null) s += ' ' + r[k]; } return s.toLowerCase(); }
 
 function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function _fmtTel(v){ var d=String(v||'').replace(/\D/g,''); if(d.length===10 && d.charAt(0)==='1') d='0'+d; if(d.length===11) return d.replace(/(\d{3})(\d{4})(\d{4})/,'$1-$2-$3'); if(d.length===10) return d.charAt(1)==='2'?d.replace(/(\d{2})(\d{4})(\d{4})/,'$1-$2-$3'):d.replace(/(\d{3})(\d{3})(\d{4})/,'$1-$2-$3'); return String(v||''); }
 function _catMeta(label){ for(var i=0;i<CAT_META.length;i++){ if(CAT_META[i].label===label) return CAT_META[i]; } return null; }
 function $(id){ return document.getElementById(id); }
 function toast(msg, isErr){ var t=$('toast'); if(!t) return; t.textContent = msg; t.className = 'toast show' + (isErr?' err':''); setTimeout(function(){ t.className = 'toast' + (isErr?' err':''); }, 2600); }
@@ -514,6 +515,9 @@ function _card(r){
     if(lwhen) lh += '<div class="card-loc" style="margin-bottom:6px;">🕒 ' + lwhen + '</div>';
     if(r.content) lh += '<div class="card-content">' + _esc(String(r.content)) + '</div>';
     if(r.loc) lh += '<div class="card-loc">습득장소: ' + _esc(String(r.loc)) + '</div>';
+    if(r.keepLoc) lh += '<div class="card-loc">📦 보관위치: ' + _esc(String(r.keepLoc)) + '</div>';
+    if(r.memo) lh += '<div class="card-loc">🔒 메모: ' + _esc(String(r.memo)) + '</div>';
+    if(r.ownerName || r.ownerContact) lh += '<div class="card-loc">👤 주인: ' + _esc(String((r.ownerName || '') + (r.ownerContact ? ' · ' + _fmtTel(r.ownerContact) : ''))) + '</div>';
     lh += '<div class="divider"></div>';
     lh += '<div class="lf-note">습득 다음 달 공지 → 그다음 달 폐기(월 사이클). <a href="http://wellperion.com/ko/lost-found-register/" target="_blank" rel="noopener">습득물 접수</a> · <a href="http://wellperion.com/ko/lost-found/" target="_blank" rel="noopener">습득물 보기</a> · <a href="lost_found_guide.html" target="_blank" rel="noopener">운영 가이드</a></div>';
     lh += '<div class="lf-ctrl-row">';
@@ -657,7 +661,11 @@ function lfLoad(){
           loc:      r.foundLoc || '',
           foundWhen:r.foundWhen|| '',
           createdAt:r.createdAt|| '',
-          photoUrl: r.photoUrl || ''
+          photoUrl: r.photoUrl || '',
+          keepLoc:      r.keepLoc      || '',
+          memo:         r.memo         || '',
+          ownerName:    r.ownerName    || '',
+          ownerContact: r.ownerContact || ''
         };
       });
       _merge();
