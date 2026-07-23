@@ -37,10 +37,14 @@ import report_stream_1_impl as R  # noqa: E402  (미배정 판정 단일 출처)
 GM_CHAT_ID = 8254867551
 STAFF_CHAT_ID = int(os.environ.get("TELEGRAM_INQUIRY_CHAT_ID") or -5516675010)
 
-ASSIGN_URL = (
-    "https://wellperion-cao.github.io/wellperion-automation/"
-    "cpo/member/%EB%AC%B8%EC%9D%98%ED%9A%8C%EC%9B%90.html"
-)
+# 배정 화면 — 멤버십과 강습이 화면이 갈린다(GM 2026-07-23 지적: 멤버십 링크만 주면 강습은 못 간다).
+# lesson.html 은 membership.html?manage=lesson 으로 넘겨주는 정식 강습 진입 주소다.
+_BASE = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/"
+ASSIGN_URL_LESSON = _BASE + "lesson.html"
+ASSIGN_URL_MEMBERSHIP = _BASE + "membership.html"
+
+# 화면 입장 코드 — GM 2026-07-23 제공. 실무진이 코드를 몰라 못 들어가는 일이 없게 안내에 포함.
+ENTRY_CODE = "1200"
 
 # 오래 기다린 순 상위 몇 명까지 이름을 적을지 — 너무 길면 안 읽는다.
 TOP_N = 6
@@ -137,7 +141,10 @@ def build_message(today: str | None = None) -> str:
         + " · ".join(f"{k} {buckets[k]}건" for k in ("3~7일", "8~14일", "15일 이상") if buckets[k])
     )
     lines.append("")
-    lines.append(f"👉 배정하기: {ASSIGN_URL}")
+    lines.append("👉 배정하기 (화면이 갈려 있어 주소를 따로 드립니다)")
+    lines.append(f"  · 강습: {ASSIGN_URL_LESSON}")
+    lines.append(f"  · 멤버십: {ASSIGN_URL_MEMBERSHIP}")
+    lines.append(f"  🔑 입장 코드 {ENTRY_CODE}")
     lines.append("   이름 옆 담당자 칸에서 고르시면 바로 반영됩니다.")
     lines.append("")
     lines.append("한 분씩만 맡아주셔도 금방 정리됩니다. 늘 감사합니다 🙏")

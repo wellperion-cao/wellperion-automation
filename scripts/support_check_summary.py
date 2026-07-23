@@ -304,6 +304,81 @@ def facility_worklog(subs: list) -> tuple[list[str], list[str]]:
     return (work_items, notes)
 
 
+# ── 측정값 묶음 표시 (GM 2026-07-23 "측정 부분 가독성 살려줘") ──────────────
+# 이전엔 19개 값이 한 줄에 쭉 나열돼 무엇이 어느 설비 값인지 눈으로 못 좇았다.
+# 필드 이름이 이미 설비별로 접두가 나뉘어 있으므로(ahu_/pool_/sauna_/tank_)
+# 그 접두로만 묶는다 — 값·단위를 새로 만들어 붙이지 않는다(지어내기 금지).
+_MEASURE_GROUPS = (
+    ("공조기", ("ahu_",)),
+    ("수영장", ("pool_",)),
+    ("사우나", ("sauna_dry", "sauna_wet", "sauna_jjim")),
+    ("탕", ("sauna_ontang", "sauna_yeoltang")),
+    ("탱크", ("tank_",)),
+)
+# 묶음 안에서 쓸 짧은 이름(앞에 붙은 설비명은 묶음 제목이 대신하므로 뗀다)
+_MEASURE_SUBLABEL = {
+    "sauna_dry": "건식", "sauna_wet": "습식", "sauna_jjim": "찜질",
+    "sauna_ontang": "온탕", "sauna_yeoltang": "열탕",
+    "pool_cl": "염소", "pool_ph": "pH", "pool_temp": "온도",
+}
+_POOL_ORDER = ("pool_cl", "pool_ph", "pool_temp")
+
+
+def _measure_group_lines(vals: dict, oor: set[str]) -> list[str]:
+    """측정값 dict → 설비 묶음별 한 줄씩. A/B 짝은 '건식 A 80.0 / B 82.0' 으로 합친다."""
+    norm = {(k[3:] if k.startswith("fc_") else k): v for k, v in vals.items()}
+
+    def cell(key: str, label: str) -> str:
+        mark = "❗" if key in oor else ""
+        return f"{mark}{label} {norm[key]}"
+
+    used: set[str] = set()
+    lines: list[str] = []
+    for title, prefixes in _MEASURE_GROUPS:
+        keys = [k for k in norm if any(k.startswith(p) for p in prefixes)]
+        if not keys:
+            continue
+        used.update(keys)
+        parts: list[str] = []
+        if title == "수영장":
+            for k in _POOL_ORDER:
+                if k in norm:
+                    parts.append(cell(k, _MEASURE_SUBLABEL.get(k, k)))
+        elif title == "탱크":
+            for k in sorted(keys):
+                parts.append(cell(k, k.replace("tank_", "").upper()))
+        elif title == "공조기":
+            for k in sorted(keys):
+                parts.append(cell(k, _ROUND_LABELS.get(k, k)))
+        else:
+            # 사우나·탕 — 같은 설비의 A/B 를 한 덩어리로 묶어 줄 수를 줄인다.
+            # 현장에서 부르는 순서로 고정(알파벳순이면 건식·찜질·습식처럼 뒤섞인다)
+            order = [p for p in prefixes]
+            bases: list[str] = []
+            for k in sorted(keys, key=lambda x: order.index(
+                    next((p for p in order if x.startswith(p)), order[0]))):
+                base = k[:-2] if k.endswith(("_a", "_b")) else k
+                if base not in bases:
+                    bases.append(base)
+            for base in bases:
+                sub = _MEASURE_SUBLABEL.get(base, _ROUND_LABELS.get(base, base))
+                ab = [(suffix.upper(), f"{base}_{suffix}")
+                      for suffix in ("a", "b") if f"{base}_{suffix}" in norm]
+                if ab:
+                    inner = " / ".join(cell(k, s) for s, k in ab)
+                    parts.append(f"{sub} {inner}")
+                elif base in norm:
+                    parts.append(cell(base, sub))
+        if parts:
+            lines.append(f"    · {title}  " + " · ".join(parts))
+
+    leftovers = [k for k in sorted(norm) if k not in used]
+    if leftovers:
+        lines.append("    · 기타  " + " · ".join(
+            cell(k, _ROUND_LABELS.get(k, k)) for k in leftovers))
+    return lines
+
+
 def facility_measurements(store: dict, today_oor_fields: set[str]) -> list[str]:
     """store.rounds[*]·store.daily(장비값) → 측정값 요약 라인. GM 2026-07-22 렌더심화 지시2.
     소스에 있는 값만 그대로 표기(창작 금지) · today_oor_fields에 든 필드는 ❗ 표시(기존 기준이탈 판정 재사용)."""
@@ -314,14 +389,12 @@ def facility_measurements(store: dict, today_oor_fields: set[str]) -> list[str]:
         vals = rounds.get(rk) or {}
         if not isinstance(vals, dict) or not vals:
             continue
-        parts = []
-        for k in sorted(vals.keys()):
-            key = k[3:] if k.startswith("fc_") else k
-            label = _ROUND_LABELS.get(key, key)
-            mark = "❗" if key in today_oor_fields else ""
-            parts.append(f"{mark}{label} {vals[k]}")
         tag = f" [{rk}]" if len(rounds) > 1 else ""
-        out.append(f"  🌡 측정{tag}: " + " · ".join(parts))
+        group_lines = _measure_group_lines(vals, today_oor_fields)
+        if not group_lines:
+            continue
+        out.append(f"  🌡 측정{tag}")
+        out += group_lines
 
     daily = store.get("daily") if isinstance(store.get("daily"), dict) else {}
     eq_parts = [f"{_DAILY_LABELS[k]} {daily[k]}" for k in _DAILY_LABELS if daily.get(k) not in (None, "")]
