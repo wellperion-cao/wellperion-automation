@@ -575,7 +575,7 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
         var zone = document.createElement('label');
         zone.className = 'photo-zone';
         zone.setAttribute('for', 'f_photo');
-        zone.innerHTML = '<div class="ph-icon">📷</div><div class="ph-text">분실 물품의 이미지를 담아주세요. 좀 더 쉽고 빠르게 찾을 수 있어요.</div>'
+        zone.innerHTML = '<div class="ph-icon">📷</div><div class="ph-text">' + ({lost:'분실 물품의 이미지를 담아주세요. 좀 더 쉽고 빠르게 찾을 수 있어요.',facility:'고장 시설물의 이미지를 담아주세요. 좀 더 쉽고 빠르게 A/S 진행하겠습니다.',clean:'청결이 필요한 곳의 이미지를 담아주세요. 좀 더 쉽고 빠르게 조치하겠습니다.',complaint:'상황이 담긴 이미지가 있으면 함께 올려주세요. 상황을 더 정확히 파악할 수 있어요.'}[selectedCategory] || '관련 이미지를 담아주세요.') + '</div>'
           + '<input type="file" id="f_photo" accept="image/*" capture="environment">';
         field.appendChild(zone);
         var prev = document.createElement('div');
