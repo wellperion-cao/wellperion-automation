@@ -358,8 +358,8 @@
     "note": "[웰리 북극성 추천 승인 2026-06-29] / 🌟 북극성: ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자\n📍 지금: 활성 1척 · 완료건 next 12건 · KPI 완결률=0.0, 완료=0, 활성=1\n👉 오늘 한 수: AI CEO 북극성 'ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하' 향한 다음 브릿지 한 칸 설계 (신호①) / 근거: 신호① 북극성 갭 — [ceo] 북극성 서술 대비 비어있는 다음 걸음(소유: home, G1)\n[GM 인터뷰 답변 2026-07-22] 브릿지 방향 확정: '비슷한 맥락끼리 병합해서 하나의 자동화 모듈이 필요해'. → 북극성 다음 한 칸 = 유사 맥락 자율화 모듈들을 단일 자동화 모듈로 수렴(병합). 이미 진행 중인 시토 배9420(모듈 병합·5클러스터)·웰리 배9421(감시 이중등록 표기정리+전사 무결성 표준화)과 동일 맥락 → 본 북극성 배는 배9421(전사 무결성 감시 단일 하네스 표준화)로 수렴·오케스트레이션. 신규 중복 배 생성 금지. 웰리=두뇌(설계·위임·검증), 엔진=시토.",
     "next": "웰리: 배9421로 수렴 실행 — 등록부 28모듈 전수 재검토로 '비슷한 맥락' 병합 후보 확정 → 시토 #1 자가건강 하네스를 전사 무결성 표준으로 확장(cpo-sheet-contract·chro 편입, 하루 1통 전사 이상요약 한판). 시토에 설계·구현 위임, 웰리 검증.",
     "depends_on": "",
-    "aide_interview_needed": false,
-    "aide_interview_reason": "[해제 2026-07-22] GM 인터뷰 답변 수신 — 방향 확정(모듈 병합→단일 자동화 모듈), 배9421로 수렴"
+    "aide_interview_needed": true,
+    "aide_interview_reason": "난이도 🛳️크루즈(무거움) — 안전 기본 park"
   },
   {
     "task_id": "NEXT-20260718-125827",
@@ -574,17 +574,19 @@
     "task_id": "CTO-2026-07-22-ASSIGN-SHIP-NUMBERS-GLOBAL-UNIQUE",
     "clevel": "cto",
     "title": "[시토] assign_ship_numbers 훅 전역유니크 보장 — clevel별 부여→전역 max+1 교정",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-22",
     "from": "ceo",
     "origin": "ceo",
-    "note": "2026-07-22 웰리(CEO) 발견·등록(결정정합 게이트 M2 마일스톤2 작업 중). 근거: scripts/assign_ship_numbers.py main() 이 max_no 를 clevel(cl) 별로 따로 계산(defaultdict) 후 그 담당 안에서만 max+1 을 부여 — 담당을 넘나드는 전역 유니크를 보장하지 않는다. 재현: 실제로 CMO 신규 배가 ship_no=9579 로 부여됐는데 이미 다른 담당(CTO) 배가 9579 를 쓰고 있어 충돌 → 수동으로 9598 로 교정한 사고 발생(커밋 이력 참조: 'fix(cto): 결정정합 도메인배 CMO ship_no 9579→9598 충돌 해소' 02ec3a0b). 수정 방향(후속 착수 시): max_no 계산을 전체 tasks 전역 1개 카운터로 바꾸고(clevel 무관 global max), 담당별 분리 부여 로직 제거 — 기존 부여된 ship_no 는 append-only 원칙상 변경 금지, 신규 부여분부터만 전역 유니크 적용. [2026-07-22 executor 위생정리] 데이터측 중복 5건 정리 완료(9071 실중복 제거·4건 번호재부여)·훅 근본수정은 본 배에서 후속.",
-    "next": "⚓ 정박(대기) — 시토 배정 시 assign_ship_numbers.py max_no 로직을 전역 카운터로 교정 착수",
+    "note": "2026-07-22 웰리(CEO) 발견·등록(결정정합 게이트 M2 마일스톤2 작업 중). 근거: scripts/assign_ship_numbers.py main() 이 max_no 를 clevel(cl) 별로 따로 계산(defaultdict) 후 그 담당 안에서만 max+1 을 부여 — 담당을 넘나드는 전역 유니크를 보장하지 않는다. 재현: 실제로 CMO 신규 배가 ship_no=9579 로 부여됐는데 이미 다른 담당(CTO) 배가 9579 를 쓰고 있어 충돌 → 수동으로 9598 로 교정한 사고 발생(커밋 이력 참조: 'fix(cto): 결정정합 도메인배 CMO ship_no 9579→9598 충돌 해소' 02ec3a0b). 수정 방향(후속 착수 시): max_no 계산을 전체 tasks 전역 1개 카운터로 바꾸고(clevel 무관 global max), 담당별 분리 부여 로직 제거 — 기존 부여된 ship_no 는 append-only 원칙상 변경 금지, 신규 부여분부터만 전역 유니크 적용. [2026-07-22 executor 위생정리] 데이터측 중복 5건 정리 완료(9071 실중복 제거·4건 번호재부여)·훅 근본수정은 본 배에서 후속. | [완료 2026-07-23] assign_ship_numbers.py 전역 max+1 단일카운터 수정 확인(커밋 8d3ebaeb9). _queue.json 중복 0건, 전역 max=9805 검증.",
+    "next": "--terminal",
     "depends_on": "",
     "surface": "autonomy",
     "module": "T1",
-    "ship_no": 9601
+    "ship_no": 9601,
+    "completed_at": "2026-07-23",
+    "artifact_url": "commit:8d3ebaeb9"
   },
   {
     "task_id": "CMO-2026-07-22-PUBLISH-URL-RECOVERY-3CH",
@@ -815,5 +817,63 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 786261cf8)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "786261cf8ce4de698a85db92a899561df7b25b63"
+  },
+  {
+    "task_id": "CMO-2026-07-23-ADHOC-c7ac66849",
+    "clevel": "cmo",
+    "title": "[시모] CMO-2026-07-16-TELEGRAM-GLOBAL-PACING 완료 처리 — 전역 페이싱 코어 검증PASS",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9805,
+    "artifact": "tg_outbound_log.py pace()+send() 구현(커밋 12ec96a0f) 코드 검증 완료.\npublish_digest _tg_pace() 2곳(_send+_send_photo) 배선 확인.\n_queue.json DONE 전환 + cmo.json 갱신. (CLI ad-hoc · 커밋 c7ac66849)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c7ac66849333259a65689f8a89b8da0e3af61626"
+  },
+  {
+    "task_id": "CEO-2026-07-23-ERP-FEEDBACK-CIRCUIT",
+    "clevel": "ceo",
+    "title": "[웰리] ERP 방향성 — 끊긴 회로 잇기(현장 한마디·사용측정·텔레그램 현실화 3축)",
+    "status": "PENDING",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-23",
+    "from": "gm",
+    "note": "2026-07-23 GM 제기: ERP가 실무진 피드백 없이 GM 독단으로만 커져 현실과 동떨어진다. 실측(저장소 직접 카운트) = ERP 화면 76개·자동화 모듈 33개·메인 ERP 단일파일 90만자·실무진 피드백 창구 0개·화면 열람기록 0. 접수폼 6종은 전부 회원용. 본질=피드백 루프가 한 방향(GM→화면, 되돌아오는 신호 없음)이라 틀려도 알 수 없고 줄이는 힘이 없음. 방향 3축: A 현장 한마디(모든 화면 하단 1탭 버튼→자동 배 생성→고치면 신청자 회신) / B 화면 열람기록→주간 미사용 화면 자동 지목→2주 0회=통합·삭제 후보 / C 텔레그램을 AI 업무목록에서 현장 이벤트+오늘 손댈 것으로 전환, 33개 모듈 개별발신→하루 2통+예외 즉시 1통. 실행순서 4주=C(1주)→A(2주)→B(3주)→첫 정리(4주). 방향성 시안 아티팩트=https://claude.ai/code/artifact/f8514033-885a-4078-a165-57cd87683eea",
+    "next": "GM 결정 3건 대기 — ①C축 선행 여부 ②현장 한마디 익명 허용 여부 ③열람기록 부서단위 허용 여부. 결정 즉시 1주차(C축) 착수.",
+    "depends_on": "",
+    "ship_no": 9806,
+    "module": "home",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "CEO-2026-07-23-BOOT-DECLARATION-STANDARD",
+    "clevel": "ceo",
+    "title": "[웰리] 부팅 선언 표 7역할 표준화 + 배치 옛 보고양식·원격제어 누락 정리",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-23",
+    "from": "gm",
+    "note": "2026-07-23 GM 지적: AI C-Level 창을 켤 때마다 페르소나·KPI·권한 선언 표가 역할마다 다름(칼럼명·행 구성·이모지 제각각). 원인=Start-AI *.bat 7개가 마크다운 표 선언이라고만 지시하고 양식을 정의하지 않음. 조치 ①wellperion-boot 스킬 §6 부팅 선언 표 표준 신설(7역할 공통·2열 구분/내용·8행 고정·구분칸 이모지 금지·없는 값은 미정 표기) ②7개 .bat (5)단계를 §6 포인터로 교체 ③7개 .bat (7)단계에 하드카피된 폐기 L18 요소(🔴이슈·🔧해결)를 wellperion-gm-report 스킬 §4 포인터로 교체 ④추가발견: CFO·CHRO 배치만 --remote-control 누락(모바일 접속 불가) → 보강. 실측대조: S2 역할탭 칼럼명이 항목|기본값(ceo)·항목|정의(coo)·구분|처리주체(cfo)·묶음|정의(cto)로 전부 달랐음. 탭 분량 격차도 확인(cmo 13507자 vs chro 2227자).",
+    "next": "각 C-Level 창 재기동 시 선언 표 8행 동일 출력 실측 확인(웰리 검수). S2 역할탭 본문 구조 격차(chro·cfo 탭 빈약)는 별도 배로 후속.",
+    "depends_on": "",
+    "ship_no": 9807,
+    "module": "home",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "CTO-2026-07-23-ADHOC-9b87a7461",
+    "clevel": "cto",
+    "title": "[시토] 부팅 직후 자율 진행 기계화 — --boot-candidate 게이트 재사용 + 7역할 .bat (8)단계",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9808,
+    "artifact": "GM 지시(2026-07-23) '부팅되자마자 항로 확인해서 웰리 판단하에 자율 진행'을 문서가 아닌\n코드 진입점으로 박음(헌법: 문서는 기계를 못 막는다). (CLI ad-hoc · 커밋 9b87a7461)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "9b87a74613fc00b5ddc0c894eea7990822f90f1f"
   }
 ]
