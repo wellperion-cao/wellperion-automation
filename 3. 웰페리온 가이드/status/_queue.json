@@ -1916,5 +1916,30 @@
     "module": "home",
     "surface": "autonomy",
     "ship_no": 9889
+  },
+  {
+    "task_id": "CMO-2026-07-23-LOST-ORIGINALS-7",
+    "clevel": "cmo",
+    "title": "[시모] 개인계정 원본 7편 영구 소실 — 복구 범위 GM 판단 대기(캡션 생존·이미지 IG회수가능·빌드소스 소실)",
+    "status": "PENDING",
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "ship_no": 9890,
+    "note": "2026-07-23 실측 확정. 개인계정 콘텐츠 7편의 원본 폴더가 영구 소실 — AI24(260625)·AI25(260626)·AI26(260627)·AI29(260630)·AI30(260702)·AI31(260703)·AI32(260704), 전부 instagram/namuk.wellperion/ 하위이며 review_queue.json 상 '발행완료', 인스타 게시물은 생존. 원인=레이스·삭제가 아니라 애초에 커밋 안 됨(같은 시기 06-25~07-05 발행 10건 중 커밋 3건=30%, --diff-filter=D 전수 확인 결과 삭제 커밋 0건). 복원 가능 범위 — 캡션: review_queue.json 에 원문 100% 생존 / 이미지: 인스타 게시물에서 재다운로드 가능 / 재편집용 빌드 소스: 7건 전부 영구 소실(복구 불가). 구조 차단은 완료(INC-028 GUARDED — register_publish() (b3) 콘텐츠 원본 자동커밋 배선). 본 배는 '복구를 어디까지 할지' GM 판단만 남은 건이며, 판단 전 복구 작업은 착수하지 않음.",
+    "next": "GM 판단 — ①그대로 둠 ②이미지만 IG에서 회수해 보관 ③재편집 가능하게 소스 재생성"
+  },
+  {
+    "task_id": "CPO-2026-07-23-ADHOC-c67a21b33",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9891,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 c67a21b33)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c67a21b33d9752da8724704862dd5908c04d18cb"
   }
 ]
