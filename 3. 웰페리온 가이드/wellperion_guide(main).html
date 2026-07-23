@@ -7120,13 +7120,36 @@ function crTab(btn, panelId) {
     </script>
   </article>
 
-  <!-- ── H3: 휴무·근무 스케줄 (ERP db:leave 연동 · leave.html 자체 로그인 게이트) ── -->
+  <!-- ── H3: 휴무·근무 스케줄 (신규 근무 스케줄 보드 + 기존 휴무표 전환 · 2026-07-23) ── -->
   <article class="doc" id="H3">
-    <div class="doc-header"><h2>🗓️ 휴무·근무 스케줄</h2><div class="meta">CHRO 관할 · 나우열M · 🤖 AI CHRO (시로) · ERP 백엔드 연동(전 직원 공유)</div></div>
-    <p class="lead">월별 출근시간 스케줄·오픈/마감 배치 경고·연차/반차/근무변경 신청을 관리합니다. 직원 휴무 데이터(PII)는 보안상 <strong>관리자 비밀번호 입력 후</strong>에만 표시됩니다.</p>
-    <div style="margin-top:14px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--paper)">
-      <iframe id="leaveFrame" src="chro/hub/leave.html" title="휴무·근무 스케줄" loading="lazy" onload="window.sendLeavePass&&window.sendLeavePass()" style="width:100%;height:80vh;min-height:560px;border:0;display:block"></iframe>
+    <div class="doc-header"><h2>🗓️ 휴무·근무 스케줄</h2><div class="meta">CHRO 관할 · 나우열M · 🤖 AI CHRO (시로)</div></div>
+    <p class="lead"><strong>근무 스케줄 보드(신규)</strong> — 월간/일별/주간 배치, 칸 클릭 즉시 입력, 연차·반차 신청/결재(결재라인), 개인별 연차 현황(1~7월 시트 실측 반영). 기존 휴무표는 아래 버튼으로 전환하며, 휴무표의 직원 데이터(PII)는 <strong>관리자 비밀번호 입력 후</strong>에만 표시됩니다.</p>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button id="h3BtnSched" onclick="swH3('sched')" style="font-family:inherit;cursor:pointer;padding:8px 16px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#221F20;font-weight:700;font-size:13px">🗓 근무 스케줄 보드 (신규)</button>
+      <button id="h3BtnLeave" onclick="swH3('leave')" style="font-family:inherit;cursor:pointer;padding:8px 16px;border-radius:10px;border:1px solid var(--border);background:var(--paper);color:var(--text);font-weight:600;font-size:13px">📋 기존 휴무표 (ERP 연동)</button>
     </div>
+    <div id="h3Sched" style="margin-top:10px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--paper)">
+      <iframe id="schedFrame" src="chro/hub/schedule.html" title="근무 스케줄 보드" loading="lazy" style="width:100%;height:84vh;min-height:620px;border:0;display:block"></iframe>
+    </div>
+    <div id="h3Leave" style="display:none;margin-top:10px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--paper)">
+      <iframe id="leaveFrame" data-src="chro/hub/leave.html" title="휴무·근무 스케줄" loading="lazy" onload="window.sendLeavePass&&window.sendLeavePass()" style="width:100%;height:80vh;min-height:560px;border:0;display:block"></iframe>
+    </div>
+    <script>
+    function swH3(which){
+      var s=document.getElementById('h3Sched'), l=document.getElementById('h3Leave');
+      var bs=document.getElementById('h3BtnSched'), bl=document.getElementById('h3BtnLeave');
+      var lf=document.getElementById('leaveFrame');
+      var on='1px solid var(--accent)', off='1px solid var(--border)';
+      if(which==='sched'){ s.style.display='block'; l.style.display='none';
+        bs.style.background='var(--accent)'; bs.style.color='#221F20'; bs.style.border=on;
+        bl.style.background='var(--paper)'; bl.style.color='var(--text)'; bl.style.border=off;
+      } else { s.style.display='none'; l.style.display='block';
+        if(lf&&!lf.src&&lf.getAttribute('data-src'))lf.src=lf.getAttribute('data-src');   // 휴무표는 열 때 로드(비번 게이트 유지)
+        bl.style.background='var(--accent)'; bl.style.color='#221F20'; bl.style.border=on;
+        bs.style.background='var(--paper)'; bs.style.color='var(--text)'; bs.style.border=off;
+      }
+    }
+    </script>
   </article>
 
   <!-- ── H4: 구조도 (AI CHRO 모듈·파이프라인 구조도, 컨테이너 폭 자동 축소) ── -->

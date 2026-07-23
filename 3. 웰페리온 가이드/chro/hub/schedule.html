@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WELLPERION · 근무 스케줄 보드 (시뮬레이션)</title>
+<style>
+  :root{
+    --bg:#f3f0ea; --surface:#ffffff; --surface2:#f7f4ee; --raise:#efeae1;
+    --ink:#26211d; --dim:#7a7468; --faint:#a29b8e;
+    --line:rgba(60,50,40,.28); --line2:rgba(60,50,40,.16);
+    --bronze:#9a7b4f; --bronze2:#7c6034;
+    --green:#2f8a5a; --blue:#3b6ea8; --amber:#a9842f; --rose:#b5577f; --red:#c0463d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Pretendard",'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+  button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:7px 13px;font-size:13px;transition:.15s}
+  button:hover{border-color:var(--bronze);color:var(--bronze2)}
+  button:focus-visible{outline:2px solid var(--bronze);outline-offset:2px}
+  button.primary{background:var(--bronze);color:#fff;border-color:var(--bronze);font-weight:700}
+  button.primary:hover{background:var(--bronze2);color:#fff}
+  button.ghost{background:transparent}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+  header.top{background:var(--surface);border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .brand{font-size:18px;font-weight:800;letter-spacing:1px}
+  .brand span{color:var(--bronze)}
+  .brand small{display:block;font-size:11px;font-weight:500;color:var(--dim);letter-spacing:0}
+  .simbadge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#8a6a1f;background:rgba(176,138,46,.1);border:1px solid rgba(176,138,46,.35);border-radius:20px;padding:5px 13px}
+
+  .wrap{max-width:1800px;margin:16px auto;padding:0 14px}
+  .tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .tab{padding:9px 16px;border:none;border-bottom:2px solid transparent;background:none;border-radius:0;color:var(--dim);font-weight:600;font-size:14.5px}
+  .tab.on{color:var(--bronze2);border-bottom-color:var(--bronze);font-weight:800}
+
+  .filterrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+  .filterrow .flabel{font-size:11px;color:var(--faint);font-weight:700;margin-right:2px}
+  .fchip{font-size:13px;padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:var(--surface);color:var(--dim)}
+  .fchip.on{background:var(--bronze);color:#fff;border-color:var(--bronze);font-weight:700}
+
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .nav{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:6px 10px}
+  .nav b{font-size:16px;min-width:210px;text-align:center;font-weight:800}
+  .nav b em{font-style:normal;color:var(--bronze2)}
+  .spacer{flex:1}
+  input[type=date]{font-family:inherit;font-size:13px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink)}
+
+  .sumchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .sumchip{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:9px 18px;font-size:12.5px;color:var(--dim)}
+  .sumchip b{display:block;font-size:22px;margin-top:0;color:var(--ink);font-weight:800}
+  .sumchip.g b{color:var(--green)}.sumchip.r b{color:var(--red)}
+  .warnrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .warnchip{display:inline-flex;align-items:center;gap:6px;background:rgba(192,70,61,.08);border:1px solid rgba(192,70,61,.35);color:var(--red);border-radius:9px;padding:6px 13px;font-size:12.5px;font-weight:700}
+  .okpanel{background:rgba(47,138,90,.08);border:1px solid rgba(47,138,90,.3);color:var(--green);border-radius:9px;padding:6px 14px;font-size:12.5px;font-weight:700}
+  .hint{background:var(--surface);border:1px dashed rgba(154,123,79,.45);border-radius:11px;padding:10px 15px;font-size:12px;color:var(--dim);margin-bottom:14px}
+  .hint b{color:var(--ink)}
+
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0;align-items:center}
+  .lg{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--dim)}
+  .dot{width:11px;height:11px;border-radius:4px;display:inline-block;border:1px solid rgba(0,0,0,.12)}
+
+  /* ===== 근무(단일색) · 휴무(종류별 색) 공통 칩 ===== */
+  .o-work{background:#f0e9da;color:#241d15;border:1px solid #d3c7ae}
+  /* 휴 · 연차 · 휴관 · 공휴 = 웜 그레이(토프) */
+  .o-hu,.o-yc,.o-hg,.o-gh{background:#e3ddd3;color:#6b6156;border:1px solid #cfc6b8}
+  .o-bc{background:#e2eef9;color:#3b6ea8;border:1px solid #bcd6ec}
+  .o-dh{background:#e3f2ea;color:#2f8a68;border:1px solid #b4dcc9}
+
+  /* ===== 일별 타임라인 ===== */
+  .plotscroll{overflow:visible}
+  .plotinner{min-width:880px}
+  .axiscard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 20px 8px;margin-bottom:12px}
+  .axiscard .axtitle{font-size:11px;font-weight:700;color:var(--faint);letter-spacing:.5px;margin-bottom:4px}
+  .axiscard .axtitle b{color:var(--bronze2);font-weight:800}
+  .curvewrap{position:relative;height:60px}
+  .curvewrap svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .hstrip{position:absolute;top:0;bottom:0}
+  .hourlabels{position:relative;height:18px;margin-top:2px}
+  .hourlabels span{position:absolute;transform:translateX(-50%);font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums}
+  .nowline{position:absolute;top:0;bottom:0;width:2px;background:var(--red);z-index:6;border-radius:2px}
+  .nowline::after{content:"";position:absolute;top:-3px;left:-2.5px;width:7px;height:7px;border-radius:50%;background:var(--red)}
+
+  .deptcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 20px;margin-bottom:12px}
+  .dhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .dname{font-size:16.5px;font-weight:800;color:var(--bronze2);letter-spacing:.3px}
+  .dcrit{font-size:12px;color:var(--faint)}
+  .doffs{margin-left:auto;display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .offchip{font-size:12.5px;font-weight:700;border-radius:20px;padding:3px 11px}
+  .addbtn{font-size:11px;padding:3px 11px;border-radius:20px;background:transparent;border:1px solid var(--line);color:var(--dim)}
+  .addbtn:hover{border-color:var(--bronze);color:var(--bronze2)}
+  .plot{position:relative;background-image:repeating-linear-gradient(to right,var(--line2) 0 1px,transparent 1px 5.5556%)}
+  .lane{position:relative;height:38px}
+  .bar{position:absolute;top:3px;height:32px;border-radius:999px;font-size:13.5px;font-weight:800;line-height:30px;padding:0 14px;white-space:nowrap;overflow:hidden;cursor:pointer;background:#f0e9da;border:1px solid #d3c7ae;color:#241d15}
+  .bar:hover{filter:brightness(.96);box-shadow:0 1px 5px rgba(0,0,0,.12)}
+  .bar:focus-visible{outline:2px solid var(--bronze)}
+  .bar-off{background:#e2eef9;border-color:#bcd6ec;color:#3b6ea8}
+  .emptylane{color:var(--faint);font-size:12px;padding:6px 2px}
+  .closedbanner{background:#fbeceb;border:1px solid #e5b5b0;color:var(--red);border-radius:16px;padding:28px;text-align:center;font-weight:800;font-size:15px}
+  .emptystate{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:46px 20px;text-align:center}
+  .emptystate .big{font-size:15px;font-weight:800;margin-bottom:6px}
+  .emptystate p{color:var(--dim);font-size:12.5px;margin-bottom:18px}
+
+  /* ===== 월간 스케줄 ===== */
+  /* 화면 폭 자동 맞춤 — 31일이 한 화면에 들어오도록 칸이 유연하게 줄어듦 (좁은 창에서만 페이지 가로 스크롤) */
+  .mthscroll{overflow:visible;border:1px solid var(--line);border-radius:16px;background:var(--surface);width:100%;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+  .mrow{display:grid;align-items:stretch;border-bottom:1px solid var(--line2)}
+  .mrow:last-child{border-bottom:none}
+  .mhead{position:sticky;top:0;z-index:6;background:var(--surface2);border-bottom:1px solid var(--line)}
+  .mday{text-align:center;padding:8px 0 6px;font-variant-numeric:tabular-nums}
+  .mday b{display:block;font-size:18px;font-weight:800;line-height:1.1}
+  .mday span{font-size:12px;color:var(--dim);font-weight:700}
+  .mday.sat b{color:var(--blue)} .mday.sun b,.mday.hol b{color:var(--red)}
+  /* 오늘 = 배경·글자색 그대로, 붉은 테두리 세로 스트라이프 */
+  .mday.today{border-left:2.5px solid #c0463d;border-right:2.5px solid #c0463d;border-top:2.5px solid #c0463d}
+  .mcov.today{border-left:2.5px solid #c0463d;border-right:2.5px solid #c0463d}
+  .mname{position:sticky;left:0;z-index:3;background:var(--surface);padding:4px 14px;font-weight:800;font-size:15.5px;white-space:nowrap;display:flex;flex-direction:column;justify-content:center}
+  .mname small{font-size:11.5px;font-weight:700}
+  .mname small.q-ok{color:var(--green)} .mname small.q-bad{color:var(--red)} .mname small.q-none{color:var(--faint);font-weight:500}
+  .mhead .mname{background:var(--surface2)}
+  .mdeptrow{background:var(--surface2)}
+  .mdeptrow .mname{background:var(--surface2);color:var(--bronze2);font-size:12px;font-weight:800;letter-spacing:.3px;padding:5px 14px}
+  .mcov{display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800}
+  .mcov i{font-style:normal;color:var(--green)}
+  .mcov b{color:#fff;background:var(--red);border-radius:6px;padding:0 7px;line-height:19px;font-size:11.5px}
+  .mcov s{text-decoration:none;color:var(--faint);font-weight:600}
+  .mcell{display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:46px;font-variant-numeric:tabular-nums}
+  .mcell:hover{background:var(--raise);box-shadow:inset 0 0 0 1px rgba(154,123,79,.5)}
+  /* 일자별 세로 구분선 */
+  .mday,.mcov,.mcell{border-right:1px solid var(--line2)}
+  .mname{border-right:1px solid var(--line)}
+  .celledit{width:100%;height:38px;border:2px solid var(--bronze);border-radius:6px;text-align:center;font-size:13.5px;font-family:inherit;background:#fff;color:var(--ink);padding:0 2px}
+  .mcell.sat{background:#f0f4f9} .mcell.sun{background:#faf0ee} .mcell.hol{background:#f8f2e2}
+  .mcell.today{border-left:2.5px solid #c0463d;border-right:2.5px solid #c0463d}
+  .mrow:last-child .mcell.today{border-bottom:2.5px solid #c0463d}
+  .mo-closed{color:#6b6156;font-weight:800;font-size:13.5px}
+  /* 칸 직접 표기 — 근무=박스 없는 진한 글씨 / 휴무=칸 전체 옅은 색 + 글자색 */
+  .tx-work{font-size:14.5px;font-weight:800;color:#241d15;font-variant-numeric:tabular-nums}
+  .tx-off{font-size:13.5px;font-weight:800}
+  .tx-hu,.tx-yc,.tx-hg,.tx-gh{color:#6b6156}.tx-bc{color:#3b6ea8}.tx-dh{color:#2f8a68}
+
+  /* ===== 주간 보드 ===== */
+  .weekscroll{overflow:visible;border:1px solid var(--line);border-radius:16px;background:var(--surface);width:max-content;min-width:100%;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+  .weekinner{min-width:1020px}
+  .wrow{display:grid;grid-template-columns:180px repeat(7,minmax(120px,1fr));border-bottom:1px solid var(--line2);align-items:center}
+  .wrow:last-child{border-bottom:none}
+  .whead{position:sticky;top:0;z-index:5;background:var(--surface2);border-bottom:1px solid var(--line)}
+  .wday{text-align:center;padding:10px 4px 8px}
+  .wday b{display:block;font-size:22px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+  .wday span{font-size:12.5px;color:var(--dim);font-weight:600}
+  .wday small{display:block;font-size:10.5px;color:var(--amber);font-weight:700}
+  .wday.sat b{color:var(--blue)} .wday.sun b,.wday.hol b{color:var(--red)}
+  .wday.today{position:relative;border-left:2.5px solid #c0463d;border-right:2.5px solid #c0463d;border-top:2.5px solid #c0463d}
+  .wday.today::after{content:"오늘";position:absolute;top:4px;right:8px;font-size:9.5px;font-weight:800;color:#fff;background:#c0463d;border-radius:8px;padding:0 6px}
+  .wname{position:sticky;left:0;z-index:2;background:var(--surface);padding:7px 14px;font-weight:700;font-size:14.5px;white-space:nowrap;align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+  .wname small{font-size:11px;color:var(--faint);font-weight:600}
+  .whead .wname{background:var(--surface2)}
+  .wdeptrow{background:var(--surface2)}
+  .wdeptrow .wname{background:var(--surface2);color:var(--bronze2);font-size:12.5px;font-weight:800;letter-spacing:.3px}
+  .wdeptrow .wname small{color:var(--faint);font-weight:500}
+  .wcov{text-align:center;padding:5px 2px}
+  .covdot{display:inline-block;font-size:11.5px;font-weight:800;border-radius:20px;padding:2px 10px}
+  .cov-ok{color:var(--green);background:#e3f1e9}
+  .cov-gap{color:#fff;background:var(--red)}
+  .cov-none{color:var(--faint)}
+  .wslot{padding:5px 6px;text-align:center;cursor:pointer;align-self:stretch;display:flex;align-items:center;justify-content:center;min-height:50px}
+  .wday,.wcov,.wslot{border-right:1px solid var(--line2)}
+  .wname{border-right:1px solid var(--line)}
+  .wslot:hover{background:var(--raise)}
+  .wslot.sat{background:#f0f4f9} .wslot.sun{background:#faf0ee} .wslot.hol{background:#f8f2e2}
+  .wslot.sat:hover,.wslot.sun:hover,.wslot.hol:hover{background:var(--raise)}
+  .wslot.today{border-left:2.5px solid #c0463d;border-right:2.5px solid #c0463d}
+  .wrow:last-child .wslot.today{border-bottom:2.5px solid #c0463d}
+  .plus{opacity:0;color:var(--faint);font-size:16px;font-weight:400;transition:.15s}
+  .wslot:hover .plus{opacity:.8}
+  /* 휴무 = 칸 전체 옅은 배경 (요일 색·오늘 강조보다 우선 — 뒤에 선언) */
+  .mcell.c-hu,.wslot.c-hu,.mcell.c-yc,.wslot.c-yc,.mcell.c-hg,.wslot.c-hg,.mcell.c-gh,.wslot.c-gh{background:#e3ddd3}
+  .mcell.c-bc,.wslot.c-bc{background:#e2eef9}
+  .mcell.c-dh,.wslot.c-dh{background:#e3f2ea}
+
+  /* ===== 모달 ===== */
+  .ov{position:fixed;inset:0;background:rgba(30,25,20,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .ov.on{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--line);border-radius:18px;width:100%;max-width:470px;padding:24px;box-shadow:0 18px 50px rgba(0,0,0,.25);max-height:88vh;overflow:auto}
+  .modal h3{font-size:16px;margin-bottom:3px}
+  .modal p.sub{color:var(--dim);font-size:12px;margin-bottom:14px}
+  label{display:block;font-size:11px;font-weight:700;color:var(--faint);margin:14px 0 6px;letter-spacing:.4px}
+  input[type=time],select{width:100%;font-family:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+  input:focus,select:focus{outline:none;border-color:var(--bronze)}
+  .row2{display:flex;gap:10px}.row2>div{flex:1}
+  .modal-actions{display:flex;gap:10px;margin-top:20px}
+  .modal-actions button{flex:1;padding:11px}
+  .danger{border-color:rgba(192,70,61,.45);color:var(--red)}
+  .danger:hover{border-color:var(--red);color:var(--red)}
+  .quickgrid{display:flex;gap:7px;flex-wrap:wrap}
+  .quickgrid button{border-radius:999px;padding:8px 15px;font-size:12.5px;font-weight:700}
+  .qk-shift{background:#f0e9da;border:1px solid #d3c7ae;color:#241d15}
+  .qk-shift:hover{filter:brightness(.96)}
+  .qk-shift small{font-weight:600;font-size:10.5px;opacity:.7;margin-left:4px}
+  .quickgrid button.o-hu:hover,.quickgrid button.o-yc:hover,.quickgrid button.o-bc:hover,.quickgrid button.o-gh:hover,.quickgrid button.o-dh:hover,.quickgrid button.o-hg:hover{filter:brightness(.95)}
+
+  /* ===== 직원 명단 패널 · 이름 클릭 ===== */
+  .empname{cursor:pointer;border-bottom:1px dashed transparent}
+  .empname:hover{color:var(--bronze2);border-bottom-color:var(--bronze)}
+  .roster{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:16px}
+  .roster h4{font-size:13px;font-weight:800;color:var(--bronze2);margin-bottom:2px}
+  .roster .rsub{font-size:11px;color:var(--dim);margin-bottom:10px}
+  .rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+  .rrow{display:flex;gap:6px;align-items:center;background:var(--surface2);border:1px solid var(--line2);border-radius:10px;padding:6px 8px}
+  .rrow input.rname{flex:1;font-family:inherit;font-size:13px;font-weight:700;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:0}
+  .rrow input.rann{width:56px;font-family:inherit;font-size:12px;padding:6px 4px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-align:center}
+  .rrow .rlbl{font-size:10px;color:var(--faint);white-space:nowrap}
+  .rdel{width:24px;height:24px;padding:0;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--faint);font-size:12px;line-height:1;flex-shrink:0}
+  .rdel:hover{border-color:var(--red);color:var(--red);background:rgba(192,70,61,.06)}
+  .radd{display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed rgba(154,123,79,.45);border-radius:10px;padding:6px 8px;min-height:42px;background:transparent;color:var(--bronze2);font-weight:700;font-size:12.5px;cursor:pointer}
+  .radd:hover{background:rgba(154,123,79,.07);border-color:var(--bronze)}
+  .an-stats{display:flex;gap:8px;margin-bottom:14px}
+  .an-stat{flex:1;background:var(--surface2);border:1px solid var(--line2);border-radius:11px;padding:10px 12px;text-align:center}
+  .an-stat .k{font-size:11px;color:var(--dim);font-weight:700}
+  .an-stat .v{font-size:19px;font-weight:800;margin-top:2px}
+  .an-dates{display:flex;gap:6px;flex-wrap:wrap}
+  .an-date{font-size:12px;font-weight:700;border-radius:8px;padding:4px 10px}
+
+  /* ===== 신청·결재 ===== */
+  .reqitem{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--line2);border-radius:11px;padding:10px 13px;margin-bottom:8px;background:var(--surface2)}
+  .reqitem.done{opacity:.62}
+  .reqitem .ri-main{flex:1;min-width:180px}
+  .reqitem .ri-title{font-size:13px;font-weight:800}
+  .reqitem .ri-sub{font-size:11.5px;color:var(--dim);margin-top:1px}
+  .rbadge{font-size:11px;font-weight:800;border-radius:20px;padding:2px 10px;white-space:nowrap}
+  .rb-대기{background:#f7f0dc;color:#a9842f;border:1px solid #e2d3a4}
+  .rb-승인{background:#e3f2ea;color:#2f8a68;border:1px solid #b4dcc9}
+  .rb-반려{background:#fbeceb;color:var(--red);border:1px solid #e5b5b0}
+  .rbtn{font-size:11.5px;padding:5px 12px;border-radius:8px}
+  .reqempty{color:var(--faint);font-size:12.5px;text-align:center;padding:24px 0}
+
+  /* ===== 설정 ===== */
+  .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.setgrid{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .card h3{font-size:14px;margin-bottom:4px}
+  .card p.sub{color:var(--dim);font-size:12px;margin-bottom:12px;line-height:1.7}
+  .inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">WELL<span>PERION</span> · 근무 스케줄 보드
+    <small>한남점 · 월간 스케줄 / 오늘의 배치 타임라인 / 주간 편집 / 오픈·마감 공백 경고</small>
+  </div>
+  <div class="simbadge">🧪 시뮬레이션 — 이 브라우저에만 저장</div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab on" data-tab="month">월간 스케줄</button>
+    <button class="tab" data-tab="day">오늘의 배치</button>
+    <button class="tab" data-tab="week">주간 보드</button>
+    <button class="tab" data-tab="req" id="reqTab">📝 신청·결재</button>
+    <button class="tab" data-tab="set">설정 · 데모</button>
+  </div>
+
+  <div class="filterrow" id="filterRow"></div>
+  <div id="rosterPanel" style="display:none"></div>
+
+  <!-- ============ ⓪ 월간 스케줄 (메인) ============ -->
+  <div id="tab-month">
+    <div class="toolbar">
+      <div class="nav">
+        <button class="ghost" onclick="moveMonth(-1)">‹</button>
+        <b id="monthLabel"></b>
+        <button class="ghost" onclick="moveMonth(1)">›</button>
+      </div>
+      <button class="ghost" onclick="goToday('month')">이번 달</button>
+      <div class="spacer"></div>
+      <button class="ghost" onclick="window.print()">인쇄</button>
+    </div>
+    <div class="sumchips" id="mthSum"></div>
+    <div id="mthWrap"></div>
+    <div class="legend">
+      <span class="lg"><b style="font-weight:800;color:#241d15">5:40</b>&nbsp;= 출근시간(근무)</span>
+      <span class="lg"><i class="dot" style="background:#e3ddd3"></i>휴 · 연차 · 공휴 · 휴관(관)</span>
+      <span class="lg"><i class="dot" style="background:#e2eef9"></i>반차</span>
+      <span class="lg"><i class="dot" style="background:#e3f2ea"></i>대휴</span>
+      <span class="lg"><i class="dot" style="background:transparent;border:2px solid #c0463d"></i>오늘 (붉은 테두리)</span>
+      <span class="lg">✏️ 칸 클릭 → 바로 입력: <b>540</b>·<b>1330 2230</b>(출근 퇴근)·<b>휴</b>·<b>연</b>·<b>반오/반후</b>·<b>공</b>·<b>대</b>·<b>관</b> · Enter 저장 · 빈칸=삭제</span>
+    </div>
+  </div>
+
+  <!-- ============ ① 일별 타임라인 ============ -->
+  <div id="tab-day" style="display:none">
+    <div class="toolbar">
+      <div class="nav">
+        <button class="ghost" onclick="moveDay(-1)">‹</button>
+        <b id="dayLabel"></b>
+        <button class="ghost" onclick="moveDay(1)">›</button>
+      </div>
+      <button class="ghost" onclick="goToday('day')">오늘</button>
+      <input type="date" id="dayPick" onchange="pickDay(this.value)">
+      <div class="spacer"></div>
+      <button class="ghost" onclick="window.print()">인쇄</button>
+    </div>
+    <div class="sumchips" id="daySum"></div>
+    <div class="warnrow" id="dayWarn"></div>
+    <div class="plotscroll"><div class="plotinner" id="tlWrap"></div></div>
+    <div class="legend">
+      <span class="lg"><i class="dot" style="background:#f0e9da"></i>근무</span>
+      <span class="lg"><i class="dot" style="background:#e3ddd3"></i>휴 · 연차 · 공휴 · 휴관</span>
+      <span class="lg"><i class="dot" style="background:#e2eef9"></i>반차</span>
+      <span class="lg"><i class="dot" style="background:var(--red);width:4px;border-radius:2px;border:none"></i>현재 시각</span>
+    </div>
+  </div>
+
+  <!-- ============ ② 주간 보드 ============ -->
+  <div id="tab-week" style="display:none">
+    <div class="toolbar">
+      <div class="nav">
+        <button class="ghost" onclick="moveWeek(-1)">‹</button>
+        <b id="weekLabel"></b>
+        <button class="ghost" onclick="moveWeek(1)">›</button>
+      </div>
+      <button class="ghost" onclick="goToday('week')">이번 주</button>
+      <div class="spacer"></div>
+      <button class="ghost" onclick="window.print()">인쇄</button>
+    </div>
+    <div class="hint">✏️ 칸을 누르면 <b>그 자리에서 바로 입력</b>합니다 — <b>540</b>(출근만)·<b>1330 2230</b>(출근 퇴근)·<b>휴·연·반오·반후·공·대·관</b> · Enter 저장 · 빈칸=삭제. 부서 줄의 <b style="color:var(--green)">✓</b>·<b style="color:var(--red)">경고</b>는 그날 오픈·마감 커버 상태입니다.</div>
+    <div id="wkWrap"></div>
+  </div>
+
+  <!-- ============ ②-1 신청·결재 ============ -->
+  <div id="tab-req" style="display:none">
+    <div class="setgrid">
+      <div class="card">
+        <h3>📝 근무변경 신청</h3>
+        <p class="sub">연차·반차는 <b>잔여 연차가 있어야</b> 신청할 수 있습니다. 결재(승인) 완료 시 보드에 자동 반영됩니다.</p>
+        <label>신청자</label>
+        <select id="rq_emp" onchange="rqRemainInfo()"></select>
+        <label>신청 종류</label>
+        <select id="rq_type" onchange="rqTypeChange()">
+          <option value="연차">연차 (1일)</option>
+          <option value="반차오전">반차 · 오전 (0.5일)</option>
+          <option value="반차오후">반차 · 오후 (0.5일)</option>
+          <option value="근무변경">근무변경 (시간 변경)</option>
+        </select>
+        <label>대상 일자</label>
+        <input type="date" id="rq_date">
+        <div id="rq_apprwrap">
+          <label>결재자 (연차·반차 결재라인)</label>
+          <select id="rq_appr">
+            <option>이경연실장</option>
+            <option>김남욱GM</option>
+            <option>이정헌소장</option>
+          </select>
+        </div>
+        <div id="rq_timewrap" style="display:none">
+          <label id="rq_timelabel">변경 후 근무 (출근 ~ 퇴근)</label>
+          <div class="row2">
+            <div><input type="time" id="rq_s"></div>
+            <div><input type="time" id="rq_e"></div>
+          </div>
+        </div>
+        <label>사유 (선택)</label>
+        <input type="text" id="rq_reason" placeholder="예: 개인 사정 / 병원 / 경조사" style="width:100%;font-family:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)">
+        <div class="hint" id="rq_remain" style="margin-top:14px;margin-bottom:0"></div>
+        <div class="modal-actions" style="margin-top:14px">
+          <button class="primary" onclick="submitReq()" style="flex:1">신청하기</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>✅ 결재함 <span id="rq_cnt" style="font-size:11px;color:var(--dim);font-weight:600"></span></h3>
+        <p class="sub">대기 건을 승인하면 보드에 즉시 적용됩니다. 반려 건은 적용되지 않습니다.</p>
+        <div id="reqList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ③ 설정 ============ -->
+  <div id="tab-set" style="display:none">
+    <div class="setgrid">
+      <div class="card">
+        <h3>🎲 데모 스케줄</h3>
+        <p class="sub">이번 달 전 직원 스케줄(부서별 오픈/마감 교대 + 휴무 + 공휴 + 2·4주 일요일 휴관)을 자동 생성합니다. 근태 시뮬레이터와 같은 데이터를 공유합니다.</p>
+        <div class="inline">
+          <button class="primary" onclick="reimportJuly()">7월 실측 스케줄 불러오기</button>
+          <button onclick="genDemo()">데모 스케줄 생성</button>
+          <button class="danger" onclick="clearAll()">전체 초기화</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🏢 부서별 오픈·마감 표준 (판정 기준)</h3>
+        <p class="sub" style="margin-bottom:0">
+          운영 — 평일 오픈 05:40 · 마감조 13:30→22:30 (주말 07:40 / →20:00)<br>
+          시설 — 평일 오픈 05:00 · 마감조 13:00→22:00 (주말 07:00 / →20:30)<br>
+          지원(남/여) — 오픈 06:00(주말 08:00) · 마감조 14:00→22:40 · <b>일·공휴 2인 필수</b><br>
+          그 외 부서 — 표준 없음 (기본 09:00~18:00 템플릿 제공)
+        </p>
+      </div>
+      <div class="card">
+        <h3>🧭 휴무표와의 역할 분담</h3>
+        <p class="sub" style="margin-bottom:0">
+          <b>휴무표(leave)</b> = 월 단위 계획 원장 — 휴무 개수·연차 차감·마감 잠금<br>
+          <b>이 보드</b> = 월·일·주 운영 뷰 — 배치 시각화·빠른 편집·공백 경고<br>
+          실배포 시 두 화면이 같은 ERP 데이터(db:leave)를 읽고 씁니다.
+        </p>
+      </div>
+      <div class="card">
+        <h3>🔗 실배포 시 연동 계획</h3>
+        <p class="sub" style="margin-bottom:0">
+          ① 읽기/쓰기를 휴무표와 동일한 GAS 액션에 연결<br>
+          ② 허브 비밀번호 인증 게이트 적용<br>
+          ③ 매일 아침 텔레그램 "오늘의 배치 + 공백 경고" 자동 발송<br>
+          ④ 검증 완료 후 허브 메뉴 정식 등록
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 연차 현황 모달 (이름 클릭) -->
+<div class="ov" id="ovAnn">
+  <div class="modal" style="max-width:430px">
+    <h3 id="an_title"></h3>
+    <p class="sub" id="an_sub"></p>
+    <div id="an_body"></div>
+    <div class="modal-actions">
+      <button class="ghost" onclick="closeOv('ovAnn')" style="flex:1">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 배정/수정 모달 -->
+<div class="ov" id="ovEdit">
+  <div class="modal">
+    <h3 id="ed_title">스케줄 배정</h3>
+    <p class="sub" id="ed_sub"></p>
+    <div id="ed_empwrap" style="display:none">
+      <label>직원 선택</label>
+      <select id="ed_emp"></select>
+    </div>
+    <label>근무 배정</label>
+    <div class="quickgrid" id="ed_quick_work"></div>
+    <label>휴무 배정</label>
+    <div class="quickgrid" id="ed_quick_off"></div>
+    <label>직접 입력 (출근 ~ 퇴근)</label>
+    <div class="row2">
+      <div><input type="time" id="ed_s"></div>
+      <div><input type="time" id="ed_e"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" onclick="closeOv('ovEdit')">취소</button>
+      <button class="danger" onclick="edClear()">지우기</button>
+      <button class="primary" onclick="edSaveCustom()">직접입력 저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 명단·기준 (휴무표와 동일 · 이름 수정 가능 — localStorage 보존) ===== */
+const DEFAULT_DEPTS = [
+  ["운영", ["김남욱","이경연","임정은","나우열","최준용","윤병현","이지영","백승화"]],
+  ["뮤지컬", ["편한별"]],
+  ["시설", ["이정헌","김종현","박호균"]],
+  ["지원(남)", ["황용석","박남일","김유정","천진석"]],
+  ["지원(여)", ["우춘화","김미영","이경미","이연희"]],
+  ["지원·주차", ["양상규"]],
+  ["지원·탕청소", ["한두희(외주)"]],
+  ["수영", ["주민환","박민서","송민근","강대경","천주희","구성우","박주혜","김성은","강승구","김형기","박지은","진승현","황윤진","김민선"]],
+  ["PT", ["김상식","김혜진S","김종진M","김재용","양승문","최동오S","이형진M","김지훈","최도희"]],
+  ["PL", ["최은지","조영은","황동희"]],
+  ["골프", ["최현준","김태엽","박찬중","김명선","정시우"]],
+  ["체조", ["이형주","배자경","김영운"]],
+  ["스쿼시", ["이상훈","박상현","최수진"]],
+];
+const LS_R="wp_att_roster_v1";
+let DEPTS=null, EMP_DEPT={}, ALL_EMP=[], ANN={};   // ANN = 성명→총연차(기본 15)
+function rebuildRoster(){EMP_DEPT={};DEPTS.forEach(([d,ns])=>ns.forEach(n=>EMP_DEPT[n]=d));ALL_EMP=DEPTS.flatMap(d=>d[1]);}
+function loadRoster(){
+  let r=null; try{r=JSON.parse(localStorage.getItem(LS_R)||"null");}catch(_){}
+  DEPTS=(r&&Array.isArray(r.depts)&&r.depts.length)?r.depts:JSON.parse(JSON.stringify(DEFAULT_DEPTS));
+  ANN=(r&&r.ann)||{};
+  rebuildRoster();
+}
+function saveRoster(){localStorage.setItem(LS_R,JSON.stringify({depts:DEPTS,ann:ANN}));}
+loadRoster();
+const SHIFTS = {
+  "운영":     {wd:{open:"05:40",close:"13:30",closeEnd:"22:30"}, we:{open:"07:40",close:"13:00",closeEnd:"20:00"}},
+  "시설":     {wd:{open:"05:00",close:"13:00",closeEnd:"22:00"}, we:{open:"07:00",close:"13:00",closeEnd:"20:30"}},
+  "지원(남)": {wd:{open:"06:00",close:"14:00",closeEnd:"22:40"}, we:{open:"08:00",close:"14:00",closeEnd:"22:40"}, sun2:true},
+  "지원(여)": {wd:{open:"06:00",close:"14:00",closeEnd:"22:40"}, we:{open:"08:00",close:"14:00",closeEnd:"22:40"}, sun2:true},
+};
+const HOLIDAYS = {
+  "2026-01-01":"신정","2026-02-16":"설날","2026-02-17":"설날","2026-02-18":"설날",
+  "2026-03-01":"삼일절","2026-03-02":"대체","2026-05-05":"어린이날","2026-05-24":"석가탄신",
+  "2026-05-25":"대체","2026-06-03":"지방선거","2026-06-06":"현충일","2026-07-17":"제헌절","2026-08-15":"광복절","2026-08-17":"대체",
+  "2026-09-24":"추석","2026-09-25":"추석","2026-09-26":"추석","2026-10-03":"개천절",
+  "2026-10-05":"대체","2026-10-09":"한글날","2026-12-25":"성탄절"
+};
+const LEAVE_LABEL={"휴":"휴","연차":"연차","반차오전":"반차(오전)","반차오후":"반차(오후)","공휴":"공휴","대휴":"대휴","휴관":"휴관"};
+/* 휴무 종류별 색 클래스 — 근무는 전부 단일 표기 */
+const OFF_CLS={"휴":"o-hu","연차":"o-yc","반차오전":"o-bc","반차오후":"o-bc","공휴":"o-gh","대휴":"o-dh","휴관":"o-hg"};
+const OFF_KEY={"휴":"hu","연차":"yc","반차오전":"bc","반차오후":"bc","공휴":"gh","대휴":"dh","휴관":"hg"};
+
+/* ===== 2026년 1~7월 연차·반차 사용 실측 (정본: 휴무표 시트 26.1월~26.7월 탭 · 2026-07-23 추출) =====
+   연차="연" 표기 96건 + 반차 19건(시트 수식 COUNTIFS("*단축근무패턴*")/2 로직 복원).
+   연차 현황 팝업의 1~7월 구간은 이 데이터를 사용(보드 입력과 무관), 8월부터는 보드 입력분 합산. */
+const IMPORT_LEAVE={
+"임정은":{"2026-03-23":"연차","2026-04-06":"반차오후","2026-04-27":"반차오후","2026-05-27":"연차","2026-06-12":"연차","2026-07-02":"연차","2026-07-27":"연차"},
+"최준용":{"2026-01-09":"연차","2026-01-10":"연차","2026-01-12":"연차","2026-01-13":"연차","2026-04-13":"연차","2026-04-20":"연차","2026-06-02":"연차","2026-07-08":"연차","2026-07-24":"연차"},
+"나우열":{"2026-01-16":"연차","2026-02-02":"연차","2026-02-25":"연차","2026-03-03":"연차","2026-04-19":"반차오후","2026-04-20":"연차","2026-04-22":"연차","2026-05-30":"반차오전","2026-06-01":"연차","2026-06-08":"연차","2026-06-18":"연차","2026-07-10":"반차오후"},
+"황용석":{"2026-06-13":"연차"},
+"박남일":{"2026-04-22":"연차","2026-06-29":"연차"},
+"김유정":{"2026-03-07":"연차","2026-04-08":"연차","2026-06-25":"연차","2026-06-27":"연차"},
+"이연희":{"2026-01-28":"반차오후","2026-01-30":"연차","2026-02-27":"반차오후","2026-03-29":"연차","2026-03-30":"연차","2026-03-31":"연차","2026-04-01":"연차","2026-04-02":"연차","2026-04-04":"연차","2026-04-05":"연차","2026-04-30":"연차","2026-06-12":"연차"},
+"주민환":{"2026-02-06":"반차오후","2026-03-03":"연차","2026-04-24":"반차오후","2026-05-04":"연차","2026-06-05":"연차","2026-06-08":"연차","2026-06-09":"연차","2026-06-10":"연차"},
+"편한별":{"2026-02-19":"연차","2026-02-20":"연차","2026-03-13":"반차오후","2026-03-16":"연차","2026-03-17":"연차","2026-04-08":"연차","2026-04-09":"연차","2026-05-12":"연차","2026-05-13":"연차","2026-05-31":"연차"},
+"천진석":{"2026-01-07":"연차","2026-04-05":"연차","2026-04-20":"연차","2026-05-02":"연차"},
+"이명희":{"2026-05-07":"연차","2026-05-14":"연차"},
+"이경연":{"2026-01-23":"연차","2026-02-14":"반차오후","2026-04-01":"반차오전","2026-04-27":"연차","2026-07-03":"반차오전"},
+"윤병현":{"2026-01-30":"연차","2026-02-21":"연차","2026-04-29":"연차"},
+"이지영":{"2026-03-18":"반차오후","2026-04-07":"반차오후","2026-04-23":"연차","2026-05-15":"반차오후","2026-05-28":"반차오후"},
+"우춘화":{"2026-01-20":"연차","2026-02-05":"연차","2026-02-13":"연차","2026-02-14":"연차","2026-02-15":"연차","2026-02-19":"연차","2026-02-20":"연차","2026-02-21":"연차","2026-02-23":"연차","2026-02-24":"연차","2026-02-25":"연차","2026-02-27":"연차","2026-02-28":"연차","2026-03-01":"연차","2026-03-02":"연차","2026-03-03":"연차","2026-03-04":"연차","2026-03-05":"연차","2026-03-06":"연차","2026-03-07":"연차","2026-03-09":"연차","2026-04-07":"연차"},
+"강경희":{"2026-01-28":"연차","2026-01-29":"연차","2026-03-06":"연차"},
+"김용환":{"2026-02-24":"연차","2026-02-25":"연차","2026-03-09":"연차"},
+"김남욱":{"2026-01-03":"연차","2026-02-23":"반차오후","2026-07-16":"반차오후"}
+};
+/* 직원별 보유 연차 총량 실측 (정본: 26.1월휴무표 AI열 "전월 월차 연차" = 2026년 시작 보유량 · 22명) — 명단 패널에서 개인 수정 시 수정값 우선 */
+const IMPORT_ANN={"김남욱":15,"이경연":18,"임정은":14,"나우열":15,"최준용":15,"윤병현":15,"강경희":14,"이지영":12,"편한별":16,"이정헌":18,"김종현":18,"박호균":13,"황용석":16,"천진석":16,"박남일":13,"김유정":13,"이연희":14,"우춘화":15,"김남영":12,"이주은":12,"김용환":12,"주민환":10};
+/* 보드 성명 → 시트 성명 매칭 (접미 영문·괄호 제거 후 재시도) */
+function stripNm(nm){return String(nm).replace(/\([^)]*\)/g,"").replace(/[A-Za-z]+$/,"").trim();}
+function importOf(nm){return IMPORT_LEAVE[nm]||IMPORT_LEAVE[stripNm(nm)]||null;}
+function importAnnOf(nm){
+  if(IMPORT_ANN[nm]!=null)return IMPORT_ANN[nm];
+  const s=stripNm(nm);
+  return IMPORT_ANN[s]!=null?IMPORT_ANN[s]:null;
+}
+/* 총연차 우선순위: 개인 수정값(ANN) > 시트 실측(IMPORT_ANN) > 기본 15 */
+function annTotalOf(nm){
+  if(ANN[nm]!=null)return ANN[nm];
+  const v=importAnnOf(nm);
+  return v!=null?v:15;
+}
+
+/* ===== 2026년 7월 실제 스케줄 (정본: 26.7월휴무표 탭) — 최초 1회 자동 반영 ===== */
+const IMPORT_SCHED={"김남욱":{"2026-07-01":"05:40","2026-07-02":"09:00","2026-07-03":"09:00","2026-07-04":"10:00","2026-07-05":"휴","2026-07-06":"09:00","2026-07-07":"09:00","2026-07-08":"09:00","2026-07-09":"09:00","2026-07-10":"05:40","2026-07-11":"휴","2026-07-12":"휴관","2026-07-13":"09:00","2026-07-14":"09:00","2026-07-15":"09:00","2026-07-16":"09:00 13:30","2026-07-17":"공휴","2026-07-18":"10:00","2026-07-19":"휴","2026-07-20":"09:00","2026-07-21":"09:00","2026-07-22":"09:00","2026-07-23":"09:00","2026-07-24":"09:00","2026-07-25":"07:40","2026-07-26":"휴관","2026-07-27":"09:00","2026-07-28":"09:00","2026-07-29":"09:00","2026-07-30":"09:00","2026-07-31":"09:00"},"이경연":{"2026-07-01":"대휴","2026-07-02":"05:40","2026-07-03":"11:30","2026-07-04":"07:40","2026-07-05":"휴","2026-07-06":"05:40","2026-07-07":"05:40","2026-07-08":"05:40","2026-07-09":"05:40","2026-07-10":"휴","2026-07-11":"07:40","2026-07-13":"05:40","2026-07-14":"05:40","2026-07-15":"05:40","2026-07-16":"05:40","2026-07-17":"07:40","2026-07-18":"07:40","2026-07-19":"휴","2026-07-20":"05:40","2026-07-21":"05:40","2026-07-22":"05:40","2026-07-23":"05:40","2026-07-24":"05:40","2026-07-25":"휴","2026-07-27":"05:40","2026-07-28":"05:40","2026-07-29":"05:40","2026-07-30":"05:40","2026-07-31":"05:40"},"임정은":{"2026-07-01":"10:00","2026-07-02":"연차","2026-07-03":"10:00","2026-07-04":"휴","2026-07-05":"07:40","2026-07-06":"10:00","2026-07-07":"10:00","2026-07-08":"10:00","2026-07-09":"10:00","2026-07-10":"10:00","2026-07-11":"휴","2026-07-13":"10:00","2026-07-14":"10:00","2026-07-15":"10:00","2026-07-16":"휴","2026-07-17":"공휴","2026-07-18":"휴","2026-07-19":"07:40","2026-07-20":"10:00","2026-07-21":"07:00","2026-07-22":"10:00","2026-07-23":"10:00","2026-07-24":"10:00","2026-07-25":"10:00","2026-07-27":"연차","2026-07-28":"10:00","2026-07-29":"10:00","2026-07-30":"10:00","2026-07-31":"10:00"},"나우열":{"2026-07-01":"13:40","2026-07-02":"13:40","2026-07-03":"휴","2026-07-04":"13:10","2026-07-05":"10:00","2026-07-06":"13:40","2026-07-07":"13:40","2026-07-08":"13:40","2026-07-09":"13:40","2026-07-10":"13:40 18:10","2026-07-11":"휴","2026-07-13":"13:40","2026-07-14":"13:40","2026-07-15":"13:40","2026-07-16":"13:40","2026-07-17":"공휴","2026-07-18":"13:10","2026-07-19":"10:00","2026-07-20":"13:40","2026-07-21":"휴","2026-07-22":"휴","2026-07-23":"13:40","2026-07-24":"12:00","2026-07-25":"11:00","2026-07-27":"13:40","2026-07-28":"13:40","2026-07-29":"13:40","2026-07-30":"13:40","2026-07-31":"13:40"},"최준용":{"2026-07-01":"12:00","2026-07-02":"12:00","2026-07-03":"휴","2026-07-04":"휴","2026-07-05":"13:10","2026-07-06":"12:00","2026-07-07":"12:00","2026-07-08":"연차","2026-07-09":"휴","2026-07-10":"12:00","2026-07-11":"10:00","2026-07-13":"12:00","2026-07-14":"12:00","2026-07-15":"12:00","2026-07-16":"12:00","2026-07-17":"10:00","2026-07-18":"대휴","2026-07-19":"13:10","2026-07-20":"12:00","2026-07-21":"09:30","2026-07-22":"12:00","2026-07-23":"12:00","2026-07-24":"연차","2026-07-25":"휴","2026-07-27":"12:00","2026-07-28":"12:00","2026-07-29":"12:00","2026-07-30":"12:00","2026-07-31":"12:00"},"윤병현":{"2026-07-01":"13:40","2026-07-02":"13:40","2026-07-03":"13:40 02:00","2026-07-04":"13:10","2026-07-05":"휴","2026-07-06":"휴","2026-07-07":"13:40","2026-07-08":"13:40","2026-07-09":"13:40","2026-07-10":"13:40","2026-07-11":"13:10","2026-07-13":"휴","2026-07-14":"13:40","2026-07-15":"13:40 02:00","2026-07-16":"13:40","2026-07-17":"13:10","2026-07-18":"13:10 02:00","2026-07-19":"휴","2026-07-20":"13:40 02:00","2026-07-21":"13:40","2026-07-22":"13:40","2026-07-23":"13:40","2026-07-24":"13:40","2026-07-25":"13:10","2026-07-27":"대휴","2026-07-28":"13:40","2026-07-29":"13:40","2026-07-30":"13:40","2026-07-31":"13:40"},"백승화":{"2026-07-01":"대휴","2026-07-02":"13:40","2026-07-03":"13:40","2026-07-04":"휴","2026-07-05":"휴","2026-07-06":"13:40","2026-07-07":"13:40","2026-07-08":"13:40","2026-07-09":"13:40","2026-07-10":"13:40","2026-07-11":"13:10","2026-07-13":"13:40","2026-07-14":"13:40","2026-07-15":"13:40","2026-07-16":"13:40","2026-07-17":"13:10","2026-07-18":"휴","2026-07-19":"휴","2026-07-20":"13:40","2026-07-21":"13:40","2026-07-22":"13:40","2026-07-23":"13:40","2026-07-24":"13:40","2026-07-25":"13:10","2026-07-27":"13:40","2026-07-28":"13:40","2026-07-29":"13:40","2026-07-30":"13:40","2026-07-31":"13:40"},"이정헌":{"2026-07-01":"08:00","2026-07-02":"08:00","2026-07-03":"08:00","2026-07-04":"휴","2026-07-05":"휴","2026-07-06":"08:00","2026-07-07":"08:00 02:00","2026-07-08":"08:00","2026-07-09":"08:00 02:00","2026-07-10":"12:00","2026-07-11":"07:00 20:30","2026-07-12":"08:00 03:00","2026-07-13":"12:00 02:00","2026-07-14":"08:00","2026-07-15":"08:00","2026-07-16":"12:00","2026-07-17":"휴","2026-07-18":"07:00 20:30","2026-07-19":"휴","2026-07-20":"08:00","2026-07-21":"08:00","2026-07-22":"08:00","2026-07-23":"12:00","2026-07-24":"05:00","2026-07-25":"휴","2026-07-26":"휴관","2026-07-27":"08:00","2026-07-28":"08:00","2026-07-29":"08:00","2026-07-30":"휴","2026-07-31":"휴"},"김종현":{"2026-07-01":"05:00","2026-07-02":"13:00","2026-07-03":"05:00","2026-07-04":"휴","2026-07-05":"07:00 20:30","2026-07-06":"05:00","2026-07-07":"13:00","2026-07-08":"05:00","2026-07-09":"13:00","2026-07-10":"05:00","2026-07-11":"휴","2026-07-12":"08:00","2026-07-13":"05:00","2026-07-14":"13:00","2026-07-15":"05:00","2026-07-16":"휴","2026-07-17":"07:00 20:30","2026-07-18":"휴","2026-07-19":"07:00 20:30","2026-07-20":"05:00","2026-07-21":"13:00","2026-07-22":"05:00","2026-07-23":"휴","2026-07-24":"휴","2026-07-25":"휴","2026-07-27":"05:00","2026-07-28":"13:00","2026-07-29":"05:00","2026-07-30":"13:00","2026-07-31":"05:00"},"박호균":{"2026-07-01":"13:00","2026-07-02":"05:00","2026-07-03":"13:00","2026-07-04":"07:00 20:30","2026-07-05":"휴","2026-07-06":"13:00","2026-07-07":"05:00","2026-07-08":"13:00","2026-07-09":"05:00","2026-07-10":"휴","2026-07-11":"휴","2026-07-12":"08:00","2026-07-13":"휴","2026-07-14":"05:00","2026-07-15":"13:00","2026-07-16":"05:00","2026-07-17":"휴","2026-07-18":"휴","2026-07-19":"휴","2026-07-20":"13:00","2026-07-21":"05:00","2026-07-22":"13:00","2026-07-23":"05:00","2026-07-24":"13:00","2026-07-25":"07:00 20:30","2026-07-27":"13:00","2026-07-28":"05:00","2026-07-29":"13:00","2026-07-30":"05:00","2026-07-31":"13:00"},"천진석":{"2026-07-01":"휴","2026-07-02":"06:00","2026-07-03":"06:00","2026-07-04":"08:00","2026-07-05":"휴","2026-07-06":"06:00","2026-07-07":"06:00","2026-07-08":"06:00","2026-07-09":"06:00","2026-07-10":"06:00","2026-07-11":"휴","2026-07-12":"휴관","2026-07-13":"06:00","2026-07-14":"06:00","2026-07-15":"06:00","2026-07-16":"06:00","2026-07-17":"08:00","2026-07-18":"휴","2026-07-19":"08:00","2026-07-20":"06:00","2026-07-21":"06:00","2026-07-22":"06:00","2026-07-23":"06:00","2026-07-24":"06:00","2026-07-25":"휴","2026-07-26":"휴관","2026-07-27":"06:00","2026-07-28":"06:00","2026-07-29":"06:00","2026-07-30":"06:00","2026-07-31":"06:00"},"김유정":{"2026-07-01":"06:00","2026-07-02":"휴"},"박남일":{"2026-07-01":"14:00","2026-07-02":"14:00","2026-07-03":"14:00","2026-07-04":"휴","2026-07-05":"14:00","2026-07-06":"14:00","2026-07-07":"14:00","2026-07-08":"휴","2026-07-09":"14:00","2026-07-10":"14:00","2026-07-11":"14:00","2026-07-12":"휴관","2026-07-13":"14:00","2026-07-14":"14:00","2026-07-15":"14:00","2026-07-16":"14:00","2026-07-17":"휴","2026-07-18":"14:00","2026-07-19":"14:00","2026-07-20":"14:00","2026-07-21":"14:00","2026-07-22":"휴","2026-07-23":"14:00","2026-07-24":"14:00","2026-07-25":"14:00","2026-07-27":"14:00","2026-07-28":"14:00","2026-07-29":"14:00","2026-07-30":"휴","2026-07-31":"14:00"},"강성민":{"2026-07-09":"14:00","2026-07-10":"14:00","2026-07-11":"12:50","2026-07-12":"휴관","2026-07-13":"14:00"},"우춘화":{"2026-07-01":"05:20","2026-07-02":"휴","2026-07-03":"05:20","2026-07-04":"08:00","2026-07-05":"휴","2026-07-06":"05:20","2026-07-07":"05:20","2026-07-08":"05:20","2026-07-09":"휴","2026-07-11":"08:00","2026-07-12":"휴관","2026-07-13":"05:20","2026-07-14":"05:20","2026-07-15":"05:20","2026-07-16":"05:20","2026-07-17":"08:00","2026-07-18":"휴","2026-07-19":"08:00","2026-07-20":"05:20","2026-07-21":"05:20","2026-07-22":"05:20","2026-07-23":"휴","2026-07-24":"05:20","2026-07-25":"08:00","2026-07-26":"휴관","2026-07-27":"05:20","2026-07-28":"05:20","2026-07-29":"05:20","2026-07-30":"05:20","2026-07-31":"05:20"},"이연희":{"2026-07-01":"11:00","2026-07-02":"05:20","2026-07-03":"휴","2026-07-04":"11:00","2026-07-05":"08:00","2026-07-06":"11:00","2026-07-07":"휴","2026-07-08":"11:00","2026-07-09":"11:00","2026-07-10":"11:00","2026-07-11":"11:00","2026-07-12":"09:00","2026-07-13":"11:00","2026-07-14":"휴","2026-07-15":"11:00","2026-07-16":"11:00","2026-07-17":"11:00","2026-07-18":"08:00","2026-07-19":"휴","2026-07-20":"11:00","2026-07-21":"11:00","2026-07-22":"휴","2026-07-23":"05:40","2026-07-24":"11:00","2026-07-25":"11:00","2026-07-27":"11:00","2026-07-28":"11:00","2026-07-29":"11:00","2026-07-30":"휴","2026-07-31":"11:00"},"이경미":{"2026-07-01":"14:00","2026-07-02":"14:00","2026-07-03":"휴","2026-07-04":"13:00","2026-07-05":"13:00","2026-07-06":"14:00","2026-07-07":"14:00","2026-07-08":"14:00","2026-07-09":"14:00","2026-07-10":"휴","2026-07-11":"13:00","2026-07-12":"휴","2026-07-13":"14:00","2026-07-14":"14:00","2026-07-15":"14:00","2026-07-16":"14:00","2026-07-17":"13:00","2026-07-18":"휴","2026-07-19":"13:00","2026-07-20":"14:00","2026-07-21":"14:00","2026-07-22":"14:00","2026-07-23":"대휴","2026-07-24":"14:00","2026-07-25":"13:00","2026-07-27":"14:00","2026-07-28":"14:00","2026-07-29":"14:00","2026-07-30":"14:00","2026-07-31":"14:00"},"김미영":{"2026-07-01":"14:00","2026-07-02":"14:00","2026-07-03":"14:00","2026-07-04":"13:00","2026-07-05":"휴","2026-07-06":"14:00","2026-07-07":"14:00","2026-07-08":"휴","2026-07-09":"05:40","2026-07-10":"14:00","2026-07-11":"13:00","2026-07-12":"09:00","2026-07-13":"14:00","2026-07-14":"휴","2026-07-15":"14:00","2026-07-16":"14:00","2026-07-17":"13:00","2026-07-18":"13:00","2026-07-19":"휴","2026-07-20":"14:00","2026-07-21":"14:00","2026-07-22":"휴","2026-07-23":"14:00","2026-07-24":"14:00","2026-07-25":"13:00","2026-07-27":"14:00","2026-07-28":"14:00","2026-07-29":"14:00","2026-07-30":"휴","2026-07-31":"14:00"},"양상규":{"2026-07-01":"휴","2026-07-02":"08:40","2026-07-03":"08:40","2026-07-04":"08:40","2026-07-05":"휴","2026-07-06":"휴","2026-07-07":"08:40","2026-07-08":"08:40","2026-07-09":"08:40","2026-07-10":"08:40","2026-07-11":"08:40","2026-07-12":"휴관","2026-07-13":"08:40","2026-07-14":"08:40","2026-07-15":"08:40","2026-07-16":"08:40","2026-07-17":"휴","2026-07-18":"08:40","2026-07-19":"휴","2026-07-20":"08:40","2026-07-21":"08:40","2026-07-22":"08:40","2026-07-23":"08:40","2026-07-24":"08:40","2026-07-25":"08:40","2026-07-26":"휴관","2026-07-27":"08:40","2026-07-28":"08:40","2026-07-29":"08:40","2026-07-30":"08:40"},"레이인더스트리 한두희 대표":{"2026-07-01":"22:30","2026-07-02":"22:30","2026-07-03":"20:30","2026-07-04":"20:30","2026-07-05":"20:30","2026-07-06":"22:30","2026-07-07":"22:30","2026-07-08":"20:30","2026-07-09":"22:30","2026-07-10":"22:30","2026-07-11":"20:30","2026-07-12":"20:30","2026-07-13":"22:30","2026-07-14":"22:30","2026-07-15":"22:30","2026-07-16":"22:30","2026-07-17":"22:30","2026-07-18":"20:30","2026-07-19":"22:30","2026-07-20":"22:30","2026-07-21":"22:30","2026-07-22":"20:30","2026-07-23":"22:30","2026-07-24":"22:30","2026-07-25":"20:30","2026-07-26":"20:30","2026-07-27":"22:30","2026-07-28":"22:30","2026-07-29":"22:30","2026-07-30":"22:30"},"주민환":{"2026-07-01":"05:30","2026-07-02":"05:30","2026-07-03":"05:30","2026-07-04":"휴","2026-07-05":"휴","2026-07-06":"05:30","2026-07-07":"05:30","2026-07-08":"05:30","2026-07-09":"05:30","2026-07-10":"05:30","2026-07-11":"휴","2026-07-12":"휴관","2026-07-13":"05:30","2026-07-14":"05:30","2026-07-15":"05:30","2026-07-16":"05:30","2026-07-17":"공휴","2026-07-18":"휴","2026-07-19":"휴","2026-07-20":"05:30","2026-07-21":"05:30","2026-07-22":"05:30","2026-07-23":"05:30","2026-07-24":"05:30","2026-07-25":"휴","2026-07-26":"휴관","2026-07-27":"05:30","2026-07-28":"05:30","2026-07-29":"05:30","2026-07-30":"05:30","2026-07-31":"05:30"},"박지은":{"2026-07-05":"14:00","2026-07-19":"14:00"},"진승현":{"2026-07-04":"14:00","2026-07-11":"14:00","2026-07-17":"14:00","2026-07-25":"14:00"},"황윤진":{"2026-07-04":"08:00","2026-07-05":"08:00","2026-07-11":"08:00","2026-07-17":"08:00","2026-07-18":"08:00","2026-07-19":"08:00","2026-07-25":"08:00"},"김민선":{"2026-07-18":"14:00"},"김상식":{"2026-07-01":"09:00","2026-07-02":"06:00","2026-07-03":"휴","2026-07-04":"08:00","2026-07-05":"휴","2026-07-06":"09:00","2026-07-07":"06:00","2026-07-08":"09:00","2026-07-09":"06:00","2026-07-10":"09:00 02:00","2026-07-11":"휴","2026-07-12":"휴관","2026-07-13":"09:00","2026-07-14":"06:00","2026-07-15":"09:00","2026-07-16":"06:00","2026-07-17":"08:00","2026-07-18":"휴","2026-07-19":"휴","2026-07-20":"09:00","2026-07-21":"06:00","2026-07-22":"09:00","2026-07-23":"06:00","2026-07-24":"09:00","2026-07-25":"08:00","2026-07-26":"휴관","2026-07-27":"09:00","2026-07-28":"06:00","2026-07-29":"09:00","2026-07-30":"06:00","2026-07-31":"09:00"},"김혜진S":{"2026-07-01":"08:00","2026-07-02":"08:00","2026-07-03":"08:00","2026-07-04":"휴","2026-07-06":"08:00","2026-07-07":"08:00","2026-07-08":"08:00","2026-07-09":"08:00","2026-07-10":"08:00","2026-07-11":"휴","2026-07-13":"08:00","2026-07-14":"휴","2026-07-15":"08:00","2026-07-16":"08:00","2026-07-17":"08:00","2026-07-18":"휴","2026-07-19":"휴","2026-07-20":"08:00","2026-07-21":"08:00","2026-07-22":"08:00","2026-07-23":"08:00","2026-07-24":"08:00","2026-07-27":"08:00","2026-07-28":"휴","2026-07-29":"08:00","2026-07-30":"08:00","2026-07-31":"08:00"},"김종진M":{"2026-07-01":"06:00","2026-07-02":"06:00","2026-07-03":"06:00","2026-07-05":"휴","2026-07-06":"06:00","2026-07-07":"06:00","2026-07-08":"06:00","2026-07-09":"06:00","2026-07-10":"06:00","2026-07-11":"휴","2026-07-13":"06:00","2026-07-14":"06:00","2026-07-15":"06:00","2026-07-16":"06:00","2026-07-17":"06:00","2026-07-18":"휴","2026-07-19":"휴","2026-07-20":"06:00","2026-07-21":"06:00","2026-07-22":"06:00","2026-07-23":"06:00","2026-07-24":"06:00","2026-07-25":"휴","2026-07-27":"06:00","2026-07-28":"06:00","2026-07-29":"06:00","2026-07-30":"06:00","2026-07-31":"휴"},"김재용":{"2026-07-01":"08:00","2026-07-02":"08:00","2026-07-03":"08:00","2026-07-04":"휴","2026-07-05":"휴","2026-07-06":"08:00","2026-07-07":"08:00","2026-07-08":"08:00","2026-07-09":"08:00","2026-07-10":"휴","2026-07-13":"08:00","2026-07-14":"08:00","2026-07-15":"08:00","2026-07-16":"08:00","2026-07-17":"휴","2026-07-18":"휴","2026-07-20":"08:00","2026-07-21":"08:00","2026-07-22":"08:00","2026-07-23":"08:00","2026-07-24":"08:00","2026-07-25":"휴","2026-07-27":"08:00","2026-07-28":"08:00","2026-07-29":"08:00","2026-07-30":"08:00","2026-07-31":"08:00"},"양승문":{"2026-07-01":"08:00","2026-07-02":"08:00","2026-07-03":"08:00","2026-07-04":"08:00","2026-07-05":"휴","2026-07-06":"08:00","2026-07-07":"08:00","2026-07-08":"08:00","2026-07-09":"08:00","2026-07-10":"08:00","2026-07-11":"08:00","2026-07-13":"08:00","2026-07-14":"08:00","2026-07-15":"휴","2026-07-16":"08:00","2026-07-17":"08:00","2026-07-19":"휴","2026-07-20":"08:00","2026-07-21":"08:00","2026-07-22":"08:00","2026-07-23":"08:00","2026-07-24":"08:00","2026-07-25":"08:00","2026-07-27":"08:00","2026-07-28":"08:00","2026-07-29":"휴","2026-07-30":"08:00","2026-07-31":"08:00"},"최동오S":{"2026-07-01":"14:00","2026-07-02":"14:00","2026-07-03":"14:00","2026-07-04":"휴","2026-07-05":"휴","2026-07-06":"14:00","2026-07-07":"14:00","2026-07-08":"14:00","2026-07-09":"14:00","2026-07-10":"휴","2026-07-11":"휴","2026-07-13":"14:00","2026-07-14":"14:00","2026-07-15":"14:00","2026-07-16":"14:00","2026-07-17":"14:00","2026-07-18":"휴","2026-07-19":"휴","2026-07-20":"14:00","2026-07-21":"14:00","2026-07-22":"14:00","2026-07-23":"09:00","2026-07-24":"14:00","2026-07-27":"14:00","2026-07-28":"14:00","2026-07-29":"14:00","2026-07-30":"14:00","2026-07-31":"14:00"},"이형진M":{"2026-07-01":"14:00","2026-07-02":"14:00","2026-07-03":"14:00","2026-07-04":"14:00","2026-07-05":"휴","2026-07-06":"14:00","2026-07-07":"14:00","2026-07-08":"14:00","2026-07-09":"14:00","2026-07-10":"14:00","2026-07-13":"14:00","2026-07-14":"14:00","2026-07-15":"14:00","2026-07-16":"14:00","2026-07-17":"14:00","2026-07-18":"휴","2026-07-19":"휴","2026-07-20":"휴","2026-07-21":"휴","2026-07-22":"휴","2026-07-23":"14:00","2026-07-24":"14:00","2026-07-25":"14:00","2026-07-27":"14:00","2026-07-28":"14:00","2026-07-29":"14:00","2026-07-30":"14:00","2026-07-31":"14:00"},"김지훈":{"2026-07-01":"14:00","2026-07-02":"14:00","2026-07-03":"14:00","2026-07-04":"휴","2026-07-06":"14:00","2026-07-07":"14:00","2026-07-08":"휴","2026-07-09":"14:00","2026-07-10":"14:00","2026-07-11":"휴","2026-07-13":"14:00","2026-07-14":"14:00","2026-07-15":"14:00","2026-07-16":"14:00","2026-07-17":"휴","2026-07-19":"휴","2026-07-20":"14:00","2026-07-21":"14:00","2026-07-22":"14:00","2026-07-23":"14:00","2026-07-24":"14:00","2026-07-25":"휴","2026-07-27":"14:00","2026-07-28":"14:00","2026-07-29":"14:00","2026-07-30":"14:00","2026-07-31":"14:00"},"최도희":{"2026-07-01":"16:00","2026-07-02":"16:00","2026-07-03":"16:00","2026-07-05":"휴","2026-07-06":"휴","2026-07-07":"16:00","2026-07-08":"16:00","2026-07-09":"16:00","2026-07-10":"16:00","2026-07-11":"휴","2026-07-13":"16:00","2026-07-14":"16:00","2026-07-15":"16:00","2026-07-16":"16:00","2026-07-17":"휴","2026-07-18":"휴","2026-07-20":"16:00","2026-07-21":"16:00","2026-07-22":"16:00","2026-07-23":"16:00","2026-07-24":"16:00","2026-07-25":"휴","2026-07-27":"16:00","2026-07-28":"16:00","2026-07-29":"16:00","2026-07-30":"16:00","2026-07-31":"16:00"},"최은지":{"2026-07-01":"10:00","2026-07-02":"휴","2026-07-03":"10:00","2026-07-04":"10:00","2026-07-05":"휴","2026-07-06":"휴","2026-07-07":"10:00","2026-07-08":"10:00","2026-07-09":"10:00","2026-07-10":"10:00","2026-07-11":"10:00","2026-07-12":"휴관","2026-07-13":"10:00","2026-07-14":"휴","2026-07-15":"10:00","2026-07-16":"10:00","2026-07-17":"10:00","2026-07-18":"10:00","2026-07-19":"10:00","2026-07-20":"10:00","2026-07-21":"10:00","2026-07-22":"10:00","2026-07-23":"10:00","2026-07-24":"휴","2026-07-25":"10:00","2026-07-26":"휴관","2026-07-27":"10:00","2026-07-28":"휴","2026-07-29":"10:00","2026-07-30":"10:00"},"조영은":{"2026-07-01":"08:00","2026-07-02":"08:00","2026-07-03":"08:00","2026-07-04":"08:00","2026-07-05":"휴","2026-07-06":"08:00","2026-07-07":"휴","2026-07-08":"08:00","2026-07-09":"08:00","2026-07-10":"08:00","2026-07-11":"08:00","2026-07-13":"08:00","2026-07-14":"08:00","2026-07-15":"08:00","2026-07-16":"08:00","2026-07-17":"08:00","2026-07-18":"08:00","2026-07-19":"휴","2026-07-20":"08:00","2026-07-21":"휴","2026-07-22":"08:00","2026-07-23":"08:00","2026-07-24":"08:00","2026-07-25":"08:00","2026-07-27":"08:00","2026-07-28":"08:00","2026-07-29":"휴","2026-07-30":"08:00"},"황동희":{"2026-07-01":"14:00","2026-07-02":"14:00","2026-07-03":"14:00","2026-07-04":"휴","2026-07-05":"14:00","2026-07-06":"14:00","2026-07-07":"14:00","2026-07-08":"14:00","2026-07-09":"14:00","2026-07-10":"휴","2026-07-11":"휴","2026-07-13":"14:00","2026-07-14":"14:00","2026-07-15":"14:00","2026-07-16":"14:00","2026-07-17":"휴","2026-07-18":"14:00","2026-07-19":"휴","2026-07-20":"14:00","2026-07-21":"14:00","2026-07-22":"14:00","2026-07-23":"14:00","2026-07-24":"14:00","2026-07-25":"14:00","2026-07-27":"14:00","2026-07-28":"14:00","2026-07-29":"14:00","2026-07-30":"14:00"},"최현준":{"2026-07-01":"09:00","2026-07-02":"09:00","2026-07-03":"09:00","2026-07-04":"09:00","2026-07-05":"휴","2026-07-06":"휴","2026-07-07":"09:00","2026-07-08":"09:00","2026-07-09":"09:00","2026-07-10":"06:00","2026-07-11":"09:00","2026-07-12":"휴관","2026-07-13":"휴","2026-07-14":"09:00","2026-07-15":"09:00","2026-07-16":"09:00","2026-07-17":"06:00","2026-07-18":"09:00","2026-07-19":"휴","2026-07-20":"휴","2026-07-21":"09:00","2026-07-22":"09:00","2026-07-23":"09:00","2026-07-24":"09:00","2026-07-25":"09:00","2026-07-26":"휴관","2026-07-27":"휴","2026-07-28":"휴","2026-07-29":"휴","2026-07-30":"09:00","2026-07-31":"09:00"},"김태엽":{"2026-07-01":"09:00","2026-07-02":"14:00","2026-07-03":"14:00","2026-07-04":"09:00","2026-07-05":"휴","2026-07-06":"14:00","2026-07-07":"14:00","2026-07-08":"14:00","2026-07-09":"14:00","2026-07-10":"휴","2026-07-11":"09:00","2026-07-13":"09:00","2026-07-14":"14:00","2026-07-15":"휴","2026-07-16":"14:00","2026-07-17":"14:00","2026-07-18":"09:00","2026-07-19":"휴","2026-07-20":"09:00","2026-07-21":"휴","2026-07-22":"14:00","2026-07-23":"14:00","2026-07-24":"휴","2026-07-25":"09:00","2026-07-27":"09:00","2026-07-28":"14:00","2026-07-29":"14:00","2026-07-30":"14:00","2026-07-31":"휴"},"박찬중":{"2026-07-01":"14:00","2026-07-02":"휴","2026-07-03":"14:00","2026-07-04":"휴","2026-07-05":"14:00","2026-07-06":"14:00","2026-07-07":"14:00","2026-07-08":"14:00","2026-07-09":"휴","2026-07-10":"14:00","2026-07-11":"14:00","2026-07-13":"14:00","2026-07-14":"14:00","2026-07-15":"14:00","2026-07-16":"휴","2026-07-17":"14:00","2026-07-18":"휴","2026-07-19":"14:00","2026-07-20":"14:00","2026-07-21":"14:00","2026-07-22":"휴","2026-07-23":"휴","2026-07-24":"14:00","2026-07-25":"휴","2026-07-27":"14:00","2026-07-28":"14:00","2026-07-29":"14:00","2026-07-30":"휴","2026-07-31":"14:00"},"이형주":{"2026-07-12":"휴관","2026-07-26":"휴관"},"이상훈":{"2026-07-12":"휴관","2026-07-26":"휴관"}};
+function matchRosterName(sn){
+  if(ALL_EMP.includes(sn))return sn;
+  const ss=stripNm(sn);
+  return ALL_EMP.find(x=>x===ss||stripNm(x)===sn||stripNm(x)===ss)||null;
+}
+function applyImportSched(force){
+  if(!Object.keys(IMPORT_SCHED).length)return 0;
+  const FLAG="wp_july_import_v1";
+  if(!force&&localStorage.getItem(FLAG))return 0;
+  /* 7월 전체를 시트 기준으로 재설정 — 기존(데모 포함) 7월 데이터 제거 후 실측만 기입 */
+  Object.keys(schedD).forEach(nm=>{
+    Object.keys(schedD[nm]).forEach(dt=>{if(dt.startsWith("2026-07"))delete schedD[nm][dt];});
+  });
+  let n=0;
+  Object.keys(IMPORT_SCHED).forEach(sn=>{
+    const nm=matchRosterName(sn);
+    if(!nm)return;
+    schedD[nm]=schedD[nm]||{};
+    Object.assign(schedD[nm],IMPORT_SCHED[sn]); n++;
+  });
+  saveS(); localStorage.setItem(FLAG,"1");
+  return n;
+}
+function reimportJuly(){
+  if(!confirm("26.7월휴무표 실측 스케줄로 7월 데이터를 덮어쓸까요?\n(7월 외 다른 달 데이터는 그대로 둡니다)"))return;
+  const n=applyImportSched(true);
+  renderMonth();renderDay();renderWeek();
+  alert("7월 실측 스케줄 반영 완료 — "+n+"명");
+}
+
+/* ===== 저장소 (근태 시뮬레이터와 공유) ===== */
+const LS_S="wp_att_sched_v1";
+let schedD=JSON.parse(localStorage.getItem(LS_S)||"{}");
+const saveS=()=>localStorage.setItem(LS_S,JSON.stringify(schedD));
+
+/* ===== 유틸 ===== */
+const pad=n=>String(n).padStart(2,"0");
+const ymdOf=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const ymd=(y,m,d)=>y+"-"+pad(m+1)+"-"+pad(d);
+const mins=t=>(+t.slice(0,2))*60+(+t.slice(3,5));
+const mm2t=m=>pad(Math.floor(m/60)%24)+":"+pad(((m%60)+60)%60);
+const DOW=["일","월","화","수","목","금","토"];
+const isClosedSun=(y,m,d)=>{if(new Date(y,m,d).getDay()!==0)return false;const n=Math.floor((d-1)/7)+1;return n===2||n===4;};
+const isWE=(y,m,d)=>{const dow=new Date(y,m,d).getDay();return dow===0||dow===6||!!HOLIDAYS[ymd(y,m,d)];};
+const isSunHol=(y,m,d)=>(new Date(y,m,d).getDay()===0&&!isClosedSun(y,m,d))||!!HOLIDAYS[ymd(y,m,d)];
+const fmtT=t=>{const h=+t.slice(0,2),m=+t.slice(3,5);return m?h+":"+t.slice(3):""+h;};
+const cfgOf=(dept,we)=>{const s=SHIFTS[dept];return s?(we?s.we:s.wd):null;};
+const hasData=()=>Object.keys(schedD).length>0;
+
+function parseCell(v){
+  if(!v)return null;
+  const p=String(v).split(" ");
+  if(LEAVE_LABEL[p[0]]){
+    const r={leave:p[0]};
+    /* 반차 등 휴무코드 + 근무시간 병기 지원: "반차오전 13:30 22:30" */
+    if(p[1]&&/^\d{2}:\d{2}$/.test(p[1])){r.s=p[1];if(p[2]&&/^\d{2}:\d{2}$/.test(p[2]))r.e=p[2];}
+    return r;
+  }
+  if(!/^\d{2}:\d{2}$/.test(p[0]))return null;
+  return{s:p[0],e:(p[1]&&/^\d{2}:\d{2}$/.test(p[1]))?p[1]:null};
+}
+function isOpener(dept,we,sh){const c=cfgOf(dept,we);if(!c)return false;return mins(sh.s)<=mins(c.open)+30;}
+function isCloser(dept,we,sh){const c=cfgOf(dept,we);if(!c)return false;return(sh.e!==null&&mins(sh.e)>=19*60)||(sh.e===null&&mins(sh.s)>=mins(c.close)-30);}
+
+function covStatus(dept,y,m,d){
+  const c=cfgOf(dept,isWE(y,m,d)); if(!c)return{state:"none"};
+  if(isClosedSun(y,m,d))return{state:"closed"};
+  const dt=ymd(y,m,d), we=isWE(y,m,d), members=DEPTS.find(x=>x[0]===dept)[1];
+  let work=0,opener=false,closer=false;
+  for(const nm of members){
+    const sh=parseCell((schedD[nm]||{})[dt]);
+    if(!sh||sh.leave)continue;
+    work++; if(isOpener(dept,we,sh))opener=true; if(isCloser(dept,we,sh))closer=true;
+  }
+  if(work===0)return{state:"none"};
+  const miss=[]; if(!opener)miss.push("오픈"); if(!closer)miss.push("마감");
+  if(SHIFTS[dept].sun2&&isSunHol(y,m,d)&&work<2)miss.push("2인");
+  return miss.length?{state:"gap",miss}:{state:"ok"};
+}
+
+/* ===== 부서 필터 ===== */
+let filterDept=null;
+function renderFilter(){
+  document.getElementById("filterRow").innerHTML=
+    `<span class="flabel">부서</span>`+
+    `<button class="fchip${filterDept===null?' on':''}" onclick="setFilter(null)">전체</button>`+
+    DEPTS.map(([d])=>`<button class="fchip${filterDept===d?' on':''}" onclick="setFilter('${d}')">${d}</button>`).join("");
+}
+function setFilter(d){filterDept=d;renderFilter();renderRoster();renderMonth();renderDay();renderWeek();}
+const visDepts=()=>filterDept?DEPTS.filter(x=>x[0]===filterDept):DEPTS;
+
+/* ===== 부서 클릭 → 직원 명단 패널 (이름·총연차 수정) ===== */
+function renderRoster(){
+  const p=document.getElementById("rosterPanel");
+  const onTab=document.querySelector(".tab.on");
+  if(!filterDept||(onTab&&onTab.dataset.tab==="set")){p.style.display="none";p.innerHTML="";return;}
+  const grp=DEPTS.find(x=>x[0]===filterDept);
+  if(!grp){p.style.display="none";return;}
+  const members=grp[1];
+  p.style.display="block";
+  p.innerHTML=`<div class="roster"><h4>👥 ${filterDept} 직원 명단 (${members.length}명)</h4>`+
+    `<div class="rsub">이름을 고치고 Enter — 스케줄 데이터도 새 이름으로 함께 이동합니다 · 총연차 기본 15일(개인별 수정) · ✕=삭제 · 보드의 성명 클릭 = 연차 현황</div>`+
+    `<div class="rgrid">`+members.map((nm,i)=>
+      `<div class="rrow"><input class="rname" value="${nm}" onchange="renameEmp('${filterDept}',${i},this)">`+
+      `<span class="rlbl">총연차</span><input class="rann" type="number" min="0" max="40" step="0.5" value="${annTotalOf(nm)}" onchange="setAnnTotal(${i},this)" title="${ANN[nm]!=null?'개인 수정값':(importAnnOf(nm)!=null?'시트 실측(1월 AI열)':'기본 15일')}">`+
+      `<button class="rdel" onclick="delEmp('${filterDept}',${i})" title="명단에서 삭제">✕</button></div>`).join("")+
+    `<button class="radd" onclick="addEmp('${filterDept}')">＋ 직원 추가</button>`+
+    `</div></div>`;
+}
+function addEmp(dept){
+  const members=DEPTS.find(x=>x[0]===dept)[1];
+  let n=1, nm;
+  do{nm="새직원"+n; n++;}while(ALL_EMP.includes(nm));
+  members.push(nm);
+  rebuildRoster();saveRoster();
+  renderRoster();renderMonth();renderDay();renderWeek();
+  /* 새 블럭의 이름 입력칸에 바로 포커스 */
+  const inputs=document.querySelectorAll("#rosterPanel .rname");
+  const last=inputs[inputs.length-1];
+  if(last){last.focus();last.select();}
+}
+function delEmp(dept,idx){
+  const members=DEPTS.find(x=>x[0]===dept)[1];
+  const nm=members[idx];
+  if(!confirm(nm+" 님을 명단에서 삭제할까요?\n이 사람의 스케줄 기록도 함께 삭제됩니다."))return;
+  members.splice(idx,1);
+  delete schedD[nm]; saveS();
+  delete ANN[nm];
+  rebuildRoster();saveRoster();
+  renderRoster();renderMonth();renderDay();renderWeek();
+}
+function renameEmp(dept,idx,inp){
+  const members=DEPTS.find(x=>x[0]===dept)[1];
+  const old=members[idx], nu=inp.value.trim();
+  if(!nu){inp.value=old;return;}
+  if(nu===old)return;
+  if(ALL_EMP.includes(nu)){alert("이미 존재하는 이름입니다: "+nu);inp.value=old;return;}
+  members[idx]=nu;
+  if(schedD[old]!==undefined){schedD[nu]=schedD[old];delete schedD[old];saveS();}
+  if(ANN[old]!=null){ANN[nu]=ANN[old];delete ANN[old];}
+  rebuildRoster();saveRoster();
+  renderRoster();renderMonth();renderDay();renderWeek();
+}
+function setAnnTotal(idx,inp){
+  const members=DEPTS.find(x=>x[0]===filterDept)[1];
+  const nm=members[idx];
+  const v=parseFloat(inp.value);
+  ANN[nm]=isNaN(v)?15:Math.max(0,v);
+  saveRoster();
+}
+
+/* ===== 이름 클릭 → 26년 연차 현황 ===== */
+/* 연차 사용 집계 — 1~7월=시트 실측 정본, 그 외=보드 입력(시트와 같은 날짜는 시트 우선 중복 제거) */
+function annualUsage(nm){
+  const list=[]; let used=0; const seen=new Set();
+  const imp=importOf(nm)||{};
+  Object.keys(imp).forEach(dt=>{
+    const v=imp[dt]; seen.add(dt);
+    if(v==="연차"){used+=1;list.push({dt,lbl:"연차",cls:"o-yc"});}
+    else if(typeof v==="string"&&v.startsWith("반차")){used+=0.5;list.push({dt,lbl:LEAVE_LABEL[v],cls:"o-bc"});}
+  });
+  const o=schedD[nm]||{};
+  Object.keys(o).forEach(dt=>{
+    if(!dt.startsWith("2026")||seen.has(dt))return;
+    const v=o[dt];
+    if(v==="연차"){used+=1;list.push({dt,lbl:"연차",cls:"o-yc"});}
+    else if(typeof v==="string"&&v.startsWith("반차")){used+=0.5;list.push({dt,lbl:LEAVE_LABEL[v],cls:"o-bc"});}
+  });
+  list.sort((a,b)=>a.dt<b.dt?-1:1);
+  const total=annTotalOf(nm);
+  return {list,used,total,rem:total-used};
+}
+function showAnnual(nm){
+  const u=annualUsage(nm);
+  const list=u.list, used=u.used, total=u.total, rem=u.rem;
+  const f=n=>n%1?n.toFixed(1):n;
+  document.getElementById("an_title").textContent=`${nm} · 2026 연차 현황`;
+  document.getElementById("an_sub").textContent=(EMP_DEPT[nm]||"")+" · 1~7월=휴무표 시트 실측 · 8월부터=보드 입력"+(ANN[nm]!=null?" · 총연차=개인 수정값":(importAnnOf(nm)!=null?" · 총연차=시트 실측(1월 AI열)":" · 총연차=기본 15일"));
+  const md=dt=>{const[,m,d]=dt.split("-");return (+m)+"/"+(+d);};
+  document.getElementById("an_body").innerHTML=
+    `<div class="an-stats">`+
+      `<div class="an-stat"><div class="k">총 연차</div><div class="v">${f(total)}일</div></div>`+
+      `<div class="an-stat"><div class="k">사용</div><div class="v" style="color:var(--rose)">${f(used)}일</div></div>`+
+      `<div class="an-stat"><div class="k">잔여</div><div class="v" style="color:${rem<0?'var(--red)':'var(--green)'}">${f(rem)}일${rem<0?' (초과)':''}</div></div>`+
+    `</div>`+
+    (list.length
+      ?`<label style="margin-top:0">사용 내역 (${list.length}건)</label><div class="an-dates">`+
+        list.map(x=>`<span class="an-date ${x.cls}">${md(x.dt)} ${x.lbl}</span>`).join("")+`</div>`
+      :`<div style="color:var(--faint);font-size:12.5px">2026년 사용한 연차·반차가 없습니다.</div>`);
+  openOv("ovAnn");
+}
+
+/* ===== 공통 빈 상태 ===== */
+function emptyStateHTML(){
+  return `<div class="emptystate"><div class="big">아직 스케줄 데이터가 없습니다</div>`+
+    `<p>데모 스케줄을 생성하면 이번 달 전 직원 배치가 채워집니다.</p>`+
+    `<button class="primary" onclick="genDemo()">데모 스케줄 생성</button></div>`;
+}
+
+/* ===== ⓪ 월간 스케줄 (메인) ===== */
+let curMon=(()=>{const N=new Date();return new Date(N.getFullYear(),N.getMonth(),1);})();
+function moveMonth(n){curMon=new Date(curMon.getFullYear(),curMon.getMonth()+n,1);renderMonth();}
+const BASIC_OFF=6;
+function monthMeta(y,m){
+  const days=new Date(y,m+1,0).getDate(); let hol=0,closed=0;
+  for(let d=1;d<=days;d++){const dt=ymd(y,m,d),dow=new Date(y,m,d).getDay();
+    if(HOLIDAYS[dt]&&dow>=1&&dow<=5)hol++; if(isClosedSun(y,m,d))closed++;}
+  return {days, req:BASIC_OFF+hol, closed};
+}
+const OFF_SHORT={"휴":"휴","연차":"연","반차오전":"반","반차오후":"반","공휴":"공","대휴":"대"};
+function renderMonth(){
+  const y=curMon.getFullYear(), m=curMon.getMonth();
+  document.getElementById("monthLabel").innerHTML=`${y}년 <em>${m+1}월</em>`;
+  const wrap=document.getElementById("mthWrap"), sumEl=document.getElementById("mthSum");
+  if(!hasData()){sumEl.innerHTML="";wrap.innerHTML=emptyStateHTML();return;}
+  const meta=monthMeta(y,m), T=ymdOf(new Date());
+  const cols=`grid-template-columns:150px repeat(${meta.days},minmax(43px,1fr))`;
+  const dcls=(d)=>{const dt=ymd(y,m,d),dow=new Date(y,m,d).getDay();
+    return(HOLIDAYS[dt]?"hol":(dow===0?"sun":dow===6?"sat":""))+(dt===T?" today":"");};
+
+  let gapDays=0;
+  const gapByDept={};
+  Object.keys(SHIFTS).filter(dp=>!filterDept||dp===filterDept).forEach(dept=>{
+    for(let d=1;d<=meta.days;d++){
+      const s=covStatus(dept,y,m,d);
+      if(s.state==="gap"){gapDays++;gapByDept[dept]=(gapByDept[dept]||0)+1;}
+    }
+  });
+  let quotaBad=0, workEmp=0;
+  visDepts().flatMap(x=>x[1]).forEach(nm=>{
+    let off=0,any=false;
+    for(let d=1;d<=meta.days;d++){
+      const v=(schedD[nm]||{})[ymd(y,m,d)];
+      if(v)any=true;
+      if(v==="휴"||v==="공휴"||v==="대휴")off++;
+    }
+    if(any){workEmp++;if(off+meta.closed!==meta.req)quotaBad++;}
+  });
+  sumEl.innerHTML=
+    `<div class="sumchip">인원<b>${workEmp}</b></div>`+
+    `<div class="sumchip">필요 휴무<b>${meta.req}일</b></div>`+
+    `<div class="sumchip ${gapDays?'r':'g'}">배치 공백<b>${gapDays}일</b></div>`+
+    `<div class="sumchip ${quotaBad?'r':'g'}">휴무 불일치<b>${quotaBad}명</b></div>`+
+    (gapDays?`<div class="sumchip" style="align-self:center;border-color:rgba(192,70,61,.35)"><span style="font-size:11px;color:var(--red)">${Object.entries(gapByDept).map(([k,v])=>k+" "+v+"일").join(" · ")}</span></div>`:"");
+
+  let h=`<div class="mthscroll"><div style="min-width:${150+meta.days*43}px">`;
+  h+=`<div class="mrow mhead" style="${cols}"><div class="mname"></div>`;
+  for(let d=1;d<=meta.days;d++){
+    const dow=new Date(y,m,d).getDay();
+    h+=`<div class="mday ${dcls(d)}"><b>${d}</b><span>${DOW[dow]}</span></div>`;
+  }
+  h+=`</div>`;
+
+  for(const [dept,names] of visDepts()){
+    const sh=SHIFTS[dept];
+    h+=`<div class="mrow mdeptrow" style="${cols}"><div class="mname">${dept}</div>`;
+    for(let d=1;d<=meta.days;d++){
+      let inner="";
+      if(sh){
+        const s=covStatus(dept,y,m,d);
+        if(s.state==="ok")inner=`<i>✓</i>`;
+        else if(s.state==="gap")inner=`<b title="${s.miss.join("·")} 공백">${s.miss.map(x=>x[0]).join("")}</b>`;
+        else if(s.state==="closed")inner=`<s>관</s>`;
+      }
+      h+=`<div class="mcov ${dcls(d)}">${inner}</div>`;
+    }
+    h+=`</div>`;
+    names.forEach(nm=>{
+      let off=0,any=false,cells="";
+      for(let d=1;d<=meta.days;d++){
+        const dt=ymd(y,m,d);
+        const c=parseCell((schedD[nm]||{})[dt]);
+        let inner="", extra="";
+        if(c){
+          any=true;
+          if(c.leave){
+            const k=OFF_KEY[c.leave]; extra=" c-"+k;
+            if(c.leave==="휴관")inner=`<span class="tx-off tx-hg">관</span>`;
+            else{inner=`<span class="tx-off tx-${k}" title="${LEAVE_LABEL[c.leave]}${c.s?` · ${fmtT(c.s)}${c.e?"–"+fmtT(c.e):""} 근무`:""}">${OFF_SHORT[c.leave]||c.leave[0]}${c.s?`<br><span style="font-size:11px;font-weight:700">${fmtT(c.s)}</span>`:""}</span>`;
+              if(c.leave==="휴"||c.leave==="공휴"||c.leave==="대휴")off++;}
+          }else{
+            inner=`<span class="tx-work" title="${c.s}~${c.e||"?"}">${fmtT(c.s)}</span>`;
+          }
+        }
+        cells+=`<div class="mcell ${dcls(d)}${extra}" onclick="inlineEdit(this,'${nm}','${dt}')" title="${nm} · ${dt} — 클릭 후 바로 입력">${inner}</div>`;
+      }
+      const total=off+meta.closed;
+      const badge=any?`<small class="${total===meta.req?'q-ok':'q-bad'}">휴무 ${total}/${meta.req}</small>`:`<small class="q-none">미작성</small>`;
+      h+=`<div class="mrow" style="${cols}"><div class="mname"><span class="empname" onclick="showAnnual('${nm}')" title="클릭 = 연차 현황">${nm}</span>${badge}</div>${cells}</div>`;
+    });
+  }
+  h+=`</div></div>`;
+  wrap.innerHTML=h;
+}
+
+/* ===== ① 일별 타임라인 ===== */
+const T0=300, T1=1380, SPAN=T1-T0;
+const X=m=>((Math.max(T0,Math.min(T1,m))-T0)/SPAN*100);
+let curDay=ymdOf(new Date());
+function moveDay(n){const[y,m,d]=curDay.split("-").map(Number);curDay=ymdOf(new Date(y,m-1,d+n));renderDay();}
+function pickDay(v){if(v){curDay=v;renderDay();}}
+function goToday(which){
+  if(which==="day"){curDay=ymdOf(new Date());renderDay();}
+  else if(which==="month"){const N=new Date();curMon=new Date(N.getFullYear(),N.getMonth(),1);renderMonth();}
+  else{curWeek=weekStart(new Date());renderWeek();}
+}
+function renderDay(){
+  const[y,m,d]=curDay.split("-").map(Number);
+  const dow=new Date(y,m-1,d).getDay();
+  const isToday=curDay===ymdOf(new Date());
+  document.getElementById("dayLabel").innerHTML=`${m}월 ${d}일 <em>${DOW[dow]}</em>`+(HOLIDAYS[curDay]?` <em>· ${HOLIDAYS[curDay]}</em>`:"");
+  document.getElementById("dayPick").value=curDay;
+  const wrap=document.getElementById("tlWrap");
+
+  if(!hasData()){
+    document.getElementById("daySum").innerHTML=""; document.getElementById("dayWarn").innerHTML="";
+    wrap.innerHTML=emptyStateHTML(); return;
+  }
+  if(isClosedSun(y,m-1,d)){
+    document.getElementById("daySum").innerHTML=""; document.getElementById("dayWarn").innerHTML="";
+    wrap.innerHTML=`<div class="closedbanner">🚪 휴관일 — ${Math.floor((d-1)/7)+1}번째 일요일 (매월 2·4번째 일요일 휴관)</div>`;
+    return;
+  }
+  let workN=0, offN=0, noneN=0;
+  visDepts().flatMap(x=>x[1]).forEach(nm=>{
+    const sh=parseCell((schedD[nm]||{})[curDay]);
+    if(!sh)noneN++; else if(sh.leave)offN++; else workN++;
+  });
+  const warns=[];
+  Object.keys(SHIFTS).filter(dp=>!filterDept||dp===filterDept).forEach(dept=>{
+    const s=covStatus(dept,y,m-1,d);
+    if(s.state==="gap")warns.push(`<span class="warnchip">⚠ ${dept} — ${s.miss.join(" · ")} 공백</span>`);
+  });
+  document.getElementById("daySum").innerHTML=
+    `<div class="sumchip g">근무<b>${workN}</b></div>`+
+    `<div class="sumchip">휴무<b>${offN}</b></div>`+
+    `<div class="sumchip">미배정<b>${noneN}</b></div>`+
+    `<div class="sumchip ${warns.length?'r':'g'}">배치 경고<b>${warns.length}</b></div>`;
+  document.getElementById("dayWarn").innerHTML=warns.length?warns.join(""):`<span class="okpanel">✓ 배치 정상 — 오픈·마감 공백 없음</span>`;
+
+  const buckets=[];
+  for(let t=T0;t<T1;t+=30){
+    let c=0;
+    visDepts().flatMap(x=>x[1]).forEach(nm=>{
+      const sh=parseCell((schedD[nm]||{})[curDay]);
+      if(!sh||!sh.s)return;   // 휴무여도 반차처럼 근무시간이 있으면 인원에 포함
+      const s=mins(sh.s), e=sh.e?mins(sh.e):mins(sh.s)+540;
+      if(s<t+30&&e>t)c++;
+    });
+    buckets.push(c);
+  }
+  const mx=Math.max(1,...buckets);
+  const H=60, TOPPAD=8, BOT=H-4;
+  const pt=i=>{
+    const x=((i+0.5)/buckets.length)*100;
+    const yv=BOT-(buckets[i]/mx)*(BOT-TOPPAD);
+    return [x,yv];
+  };
+  let path="M "+pt(0)[0]+" "+pt(0)[1];
+  for(let i=0;i<buckets.length-1;i++){
+    const [x1,y1]=pt(i), [x2,y2]=pt(i+1);
+    path+=` Q ${x1+(x2-x1)/2} ${y1} ${x2} ${y2}`;
+  }
+  const area=path+` L 100 ${H} L 0 ${H} Z`;
+  let strips="";
+  buckets.forEach((c,i)=>{
+    const t=T0+i*30;
+    strips+=`<div class="hstrip" style="left:${X(t)}%;width:${100/buckets.length}%" title="${mm2t(t)}~${mm2t(t+30)} · ${c}명"></div>`;
+  });
+  const nowM=(()=>{const N=new Date();return N.getHours()*60+N.getMinutes();})();
+  const nowLine=(isToday&&nowM>=T0&&nowM<=T1)?`<div class="nowline" style="left:${X(nowM)}%"></div>`:"";
+  const nowCount=(isToday&&nowM>=T0&&nowM<T1)?buckets[Math.floor((nowM-T0)/30)]:null;
+
+  let h=`<div class="axiscard">
+    <div class="axtitle">시간대 인원 곡선 · 최대 <b>${Math.max(...buckets)}명</b>${nowCount!==null?` · 지금 <b>${nowCount}명 근무중</b>`:""}</div>
+    <div class="curvewrap">
+      <svg viewBox="0 0 100 ${H}" preserveAspectRatio="none">
+        <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#B79F8A" stop-opacity=".4"/>
+          <stop offset="1" stop-color="#B79F8A" stop-opacity=".04"/>
+        </linearGradient></defs>
+        <path d="${area}" fill="url(#ag)"/>
+        <path d="${path}" fill="none" stroke="#9a7b4f" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+      </svg>
+      ${strips}${nowLine}
+    </div>
+    <div class="hourlabels">`;
+  for(let t=T0;t<=T1;t+=120)h+=`<span style="left:${X(t)}%">${Math.floor(t/60)}시</span>`;
+  h+=`</div></div>`;
+
+  for(const [dept,names] of visDepts()){
+    const rows=[],offs=[];
+    names.forEach(nm=>{
+      const sh=parseCell((schedD[nm]||{})[curDay]);
+      if(sh&&sh.s)rows.push({nm,sh});                       // 반차+근무시간도 막대로 표시
+      else if(sh&&sh.leave)offs.push({nm,lv:sh.leave});
+    });
+    rows.sort((a,b)=>mins(a.sh.s)-mins(b.sh.s));
+    const c=cfgOf(dept,isWE(y,m-1,d));
+    h+=`<section class="deptcard"><div class="dhead">
+        <span class="dname">${dept}</span>`+
+        (c?`<span class="dcrit">오픈 ${c.open} · 마감 →${c.closeEnd}${SHIFTS[dept].sun2?" · 일공휴 2인":""}</span>`:"")+
+        `<button class="addbtn" onclick="openAssign('${dept}','${curDay}')">＋ 배치</button>`+
+        `<span class="doffs">${offs.map(o=>`<span class="offchip ${OFF_CLS[o.lv]}">${o.nm} · ${LEAVE_LABEL[o.lv]}</span>`).join("")}</span>`+
+      `</div>`;
+    if(!rows.length){h+=`<div class="emptylane">근무 배정 없음</div></section>`;continue;}
+    h+=`<div class="plot">${(isToday&&nowM>=T0&&nowM<=T1)?`<div class="nowline" style="left:${X(nowM)}%"></div>`:""}`;
+    rows.forEach(r=>{
+      const s=mins(r.sh.s), e=r.sh.e?mins(r.sh.e):s+540;
+      const lv=r.sh.leave?` · ${LEAVE_LABEL[r.sh.leave]}`:"";
+      h+=`<div class="lane"><div class="bar${r.sh.leave?" bar-off":""}" tabindex="0" style="left:${X(s)}%;width:${Math.max(4,X(e)-X(s))}%" `+
+         `onclick="openEdit('${r.nm}','${curDay}')" title="${r.nm}${lv} · ${r.sh.s}~${r.sh.e||"?"} — 클릭하면 수정">`+
+         `${r.nm}${lv} · ${fmtT(r.sh.s)}–${r.sh.e?fmtT(r.sh.e):""}</div></div>`;
+    });
+    h+=`</div></section>`;
+  }
+  wrap.innerHTML=h;
+}
+
+/* ===== ② 주간 보드 ===== */
+function weekStart(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
+let curWeek=weekStart(new Date());
+function moveWeek(n){curWeek=new Date(curWeek.getFullYear(),curWeek.getMonth(),curWeek.getDate()+7*n);renderWeek();}
+function renderWeek(){
+  const dates=[];
+  for(let i=0;i<7;i++)dates.push(new Date(curWeek.getFullYear(),curWeek.getMonth(),curWeek.getDate()+i));
+  const f=dates[0],l=dates[6];
+  document.getElementById("weekLabel").innerHTML=`${f.getMonth()+1}/${f.getDate()} <em>월</em> – ${l.getMonth()+1}/${l.getDate()} <em>일</em>`;
+  const wrap=document.getElementById("wkWrap");
+  if(!hasData()){wrap.innerHTML=emptyStateHTML();return;}
+  const T=ymdOf(new Date());
+  const dayCls=d=>{const dt=ymdOf(d),dow=d.getDay();return(HOLIDAYS[dt]?"hol":(dow===0?"sun":dow===6?"sat":""))+(dt===T?" today":"");};
+
+  let h=`<div class="weekscroll"><div class="weekinner">`;
+  h+=`<div class="wrow whead"><div class="wname"></div>`;
+  dates.forEach(d=>{
+    const dt=ymdOf(d);
+    h+=`<div class="wday ${dayCls(d)}"><b>${d.getDate()}</b><span>${DOW[d.getDay()]}</span>${HOLIDAYS[dt]?`<small>${HOLIDAYS[dt]}</small>`:""}</div>`;
+  });
+  h+=`</div>`;
+
+  for(const [dept,names] of visDepts()){
+    const sh=SHIFTS[dept];
+    h+=`<div class="wrow wdeptrow"><div class="wname">${dept}${sh?`<small>오픈 ${sh.wd.open} · 마감 →${sh.wd.closeEnd}</small>`:""}</div>`;
+    dates.forEach(d=>{
+      if(!sh){h+=`<div class="wcov"></div>`;return;}
+      const s=covStatus(dept,d.getFullYear(),d.getMonth(),d.getDate());
+      let inner="";
+      if(s.state==="ok")inner=`<span class="covdot cov-ok">✓</span>`;
+      else if(s.state==="gap")inner=`<span class="covdot cov-gap">${s.miss.join("·")}</span>`;
+      else if(s.state==="closed")inner=`<span class="covdot cov-none">휴관</span>`;
+      h+=`<div class="wcov">${inner}</div>`;
+    });
+    h+=`</div>`;
+    names.forEach(nm=>{
+      let work=0,off=0,cells="";
+      dates.forEach(d=>{
+        const dt=ymdOf(d);
+        const c=parseCell((schedD[nm]||{})[dt]);
+        let inner=`<span class="plus">＋</span>`, extra="";
+        if(c){
+          if(c.leave){off++;
+            const k=OFF_KEY[c.leave]; extra=" c-"+k;
+            inner=`<span class="tx-off tx-${k}">${LEAVE_LABEL[c.leave]}${c.s?`<br><span style="font-size:11.5px;font-weight:700">${fmtT(c.s)}–${c.e?fmtT(c.e):""}</span>`:""}</span>`;}
+          else{work++;
+            inner=`<span class="tx-work">${fmtT(c.s)}–${c.e?fmtT(c.e):""}</span>`;}
+        }
+        cells+=`<div class="wslot ${dayCls(d)}${extra}" onclick="inlineEdit(this,'${nm}','${dt}')" title="${nm} · ${dt} — 클릭 후 바로 입력">${inner}</div>`;
+      });
+      h+=`<div class="wrow"><div class="wname"><span class="empname" onclick="showAnnual('${nm}')" title="클릭 = 연차 현황">${nm}</span><small>근무 ${work} · 휴무 ${off}</small></div>${cells}</div>`;
+    });
+  }
+  h+=`</div></div>`;
+  wrap.innerHTML=h;
+}
+
+/* ===== 인라인 직접 입력 (칸 클릭 → 바로 타이핑) ===== */
+function normTime(s){
+  s=String(s).trim(); if(!s)return"";
+  if(s.includes(":")){const[a,b]=s.split(":");if(isNaN(+a))return"";return pad(+a)+":"+pad(+(b||0));}
+  if(!/^\d+$/.test(s))return"";
+  if(s.length<=2)return pad(+s)+":00";
+  if(s.length===3)return pad(+s.slice(0,1))+":"+s.slice(1);
+  return pad(+s.slice(0,2))+":"+s.slice(2,4);
+}
+const IN_SYN={"휴":"휴","휴무":"휴","연":"연차","연차":"연차","반":"반차오전","반오":"반차오전","반차오전":"반차오전","반후":"반차오후","반차오후":"반차오후","공":"공휴","공휴":"공휴","대":"대휴","대휴":"대휴","관":"휴관","휴관":"휴관"};
+function parseInput(v){
+  v=v.trim();
+  if(!v)return"";
+  if(IN_SYN[v])return IN_SYN[v];
+  const raw=v.split(/[\s~,\-]+/).filter(Boolean);
+  const timeToks=a=>a.flatMap(t=>/^\d{8}$/.test(t)?[t.slice(0,4),t.slice(4)]:/^\d{6}$/.test(t)?[t.slice(0,3),t.slice(3)]:[t]).map(normTime).filter(Boolean);
+  /* "반오 1330 2230"처럼 반차 + 근무시간 병기 입력 지원 */
+  if(IN_SYN[raw[0]]){
+    const code=IN_SYN[raw[0]];
+    if(code.startsWith("반차")&&raw.length>1){
+      const ts=timeToks(raw.slice(1));
+      if(ts.length)return code+" "+ts.slice(0,2).join(" ");
+    }
+    return code;
+  }
+  const toks=timeToks(raw);
+  if(toks.length)return toks.slice(0,2).join(" ");
+  return null;   // 해석 불가
+}
+function inlineEdit(el,nm,dt){
+  if(el.querySelector("input"))return;
+  const c=parseCell((schedD[nm]||{})[dt]);
+  const cur=c?(c.leave?c.leave:(fmtT(c.s)+(c.e?" "+fmtT(c.e):""))):"";
+  el.innerHTML=`<input class="celledit" value="${cur}">`;
+  const inp=el.querySelector("input"); inp.focus(); inp.select();
+  let done=false;
+  const commit=()=>{
+    if(done)return;
+    const val=parseInput(inp.value);
+    if(val===null){inp.style.borderColor="var(--red)";inp.focus();return;}
+    done=true;
+    schedD[nm]=schedD[nm]||{};
+    if(val)schedD[nm][dt]=val; else delete schedD[nm][dt];
+    saveS(); renderMonth(); renderDay(); renderWeek();
+  };
+  inp.onblur=()=>{ if(done)return; if(parseInput(inp.value)===null){done=true;renderMonth();renderWeek();} else commit(); };
+  inp.onkeydown=e=>{
+    if(e.key==="Enter"){e.preventDefault();commit();}
+    else if(e.key==="Escape"){done=true;renderMonth();renderWeek();}
+  };
+}
+
+/* ===== 배정/수정 모달 ===== */
+let edEmp=null, edDate=null, edDept=null, edPick=false;
+function quickBtnsFor(dept,dt){
+  const[y,m,d]=dt.split("-").map(Number);
+  const we=isWE(y,m-1,d), c=cfgOf(dept,we);
+  const work=[];
+  if(c){
+    work.push({k:"오픈조",t:fmtT(c.open)+"–"+fmtT(mm2t(mins(c.open)+540)),v:c.open+" "+mm2t(mins(c.open)+540)});
+    work.push({k:"마감조",t:fmtT(c.close)+"–"+fmtT(c.closeEnd),v:c.close+" "+c.closeEnd});
+  } else {
+    work.push({k:"기본조",t:"9–18",v:"09:00 18:00"});
+  }
+  const off=["휴","연차","반차오전","반차오후","공휴","대휴","휴관"].map(code=>({k:LEAVE_LABEL[code],v:code,cls:OFF_CLS[code]}));
+  return {work,off};
+}
+function fillModal(dt){
+  const[y,m,d]=dt.split("-").map(Number);
+  document.getElementById("ed_sub").textContent=`${y}년 ${m}월 ${d}일 (${DOW[new Date(y,m-1,d).getDay()]})${HOLIDAYS[dt]?" · "+HOLIDAYS[dt]:""}`;
+  const q=quickBtnsFor(edDept,dt);
+  document.getElementById("ed_quick_work").innerHTML=q.work.map((b,i)=>
+    `<button class="qk-shift" onclick="edApplyWork(${i})">${b.k}<small>${b.t}</small></button>`).join("");
+  document.getElementById("ed_quick_off").innerHTML=q.off.map((b,i)=>
+    `<button class="${b.cls}" onclick="edApplyOff(${i})">${b.k}</button>`).join("");
+}
+function openEdit(nm,dt){
+  edEmp=nm; edDate=dt; edDept=EMP_DEPT[nm]; edPick=false;
+  document.getElementById("ed_title").textContent=`${nm} (${edDept})`;
+  document.getElementById("ed_empwrap").style.display="none";
+  const c=parseCell((schedD[nm]||{})[dt]);
+  document.getElementById("ed_s").value=c&&!c.leave?c.s:"";
+  document.getElementById("ed_e").value=c&&!c.leave&&c.e?c.e:"";
+  fillModal(dt);
+  openOv("ovEdit");
+}
+function openAssign(dept,dt){
+  edEmp=null; edDate=dt; edDept=dept; edPick=true;
+  document.getElementById("ed_title").textContent=`${dept} · 배치 추가`;
+  const members=DEPTS.find(x=>x[0]===dept)[1];
+  const free=members.filter(nm=>!((schedD[nm]||{})[dt]));
+  const list=free.length?free:members;
+  document.getElementById("ed_emp").innerHTML=list.map(n=>`<option>${n}</option>`).join("");
+  document.getElementById("ed_empwrap").style.display="block";
+  document.getElementById("ed_s").value=""; document.getElementById("ed_e").value="";
+  fillModal(dt);
+  openOv("ovEdit");
+}
+function edTarget(){return edPick?document.getElementById("ed_emp").value:edEmp;}
+function edSet(val){
+  const nm=edTarget(); if(!nm)return;
+  schedD[nm]=schedD[nm]||{};
+  if(val)schedD[nm][edDate]=val; else delete schedD[nm][edDate];
+  saveS(); closeOv("ovEdit"); renderMonth(); renderDay(); renderWeek();
+}
+function edApplyWork(i){edSet(quickBtnsFor(edDept,edDate).work[i].v);}
+function edApplyOff(i){edSet(quickBtnsFor(edDept,edDate).off[i].v);}
+function edSaveCustom(){
+  const s=document.getElementById("ed_s").value, e=document.getElementById("ed_e").value;
+  if(!s){alert("출근 시각을 입력하세요");return;}
+  edSet(e?s+" "+e:s);
+}
+function edClear(){edSet("");}
+
+/* ===== 신청·결재 시스템 ===== */
+const LS_Q="wp_att_req_v1";
+let REQS=JSON.parse(localStorage.getItem(LS_Q)||"[]");
+const saveQ=()=>localStorage.setItem(LS_Q,JSON.stringify(REQS));
+const REQ_W={"연차":1,"반차오전":0.5,"반차오후":0.5};
+function pendingUseOf(nm){return REQS.filter(r=>r.emp===nm&&r.status==="대기").reduce((a,r)=>a+(REQ_W[r.type]||0),0);}
+function fillReqEmp(){
+  document.getElementById("rq_emp").innerHTML=
+    DEPTS.map(([d,ns])=>`<optgroup label="${d}">`+ns.map(n=>`<option>${n}</option>`).join("")+`</optgroup>`).join("");
+}
+function rqTypeChange(){
+  const t=document.getElementById("rq_type").value;
+  const showTime=t==="근무변경"||t.startsWith("반차");
+  document.getElementById("rq_timewrap").style.display=showTime?"block":"none";
+  document.getElementById("rq_timelabel").textContent=
+    t==="근무변경"?"변경 후 근무 (출근 ~ 퇴근)":"반차일 근무 시간 (출근 ~ 퇴근 · 선택)";
+  /* 결재라인 = 연차·반차 전용 */
+  document.getElementById("rq_apprwrap").style.display=t==="근무변경"?"none":"block";
+  rqRemainInfo();
+}
+function rqRemainInfo(){
+  const nm=document.getElementById("rq_emp").value, t=document.getElementById("rq_type").value;
+  const el=document.getElementById("rq_remain");
+  if(!nm){el.innerHTML="";return;}
+  if(t==="근무변경"){el.innerHTML=`🔁 <b>${nm}</b> · 근무변경은 연차를 차감하지 않습니다.`;return;}
+  const u=annualUsage(nm), pend=pendingUseOf(nm), eff=u.rem-pend;
+  const f=n=>n%1?n.toFixed(1):n;
+  el.innerHTML=`📊 <b>${nm}</b> · 사용 ${f(u.used)}일 / 잔여 <b>${f(u.rem)}일</b>`+
+    (pend?` · 결재 대기 중 ${f(pend)}일 → 신청 가능 <b style="color:${eff>0?'var(--green)':'var(--red)'}">${f(eff)}일</b>`:"")+
+    (eff<(REQ_W[t]||0)?` — <b style="color:var(--red)">잔여 부족으로 ${t==="연차"?"연차":"반차"} 신청 불가</b>`:"");
+}
+function submitReq(){
+  const nm=document.getElementById("rq_emp").value;
+  const t=document.getElementById("rq_type").value;
+  const dt=document.getElementById("rq_date").value;
+  const reason=document.getElementById("rq_reason").value.trim();
+  if(!nm){alert("신청자를 선택하세요");return;}
+  if(!dt){alert("대상 일자를 선택하세요");return;}
+  if(dt<ymdOf(new Date())){alert("지난 날짜에는 신청할 수 없습니다");return;}
+  let s="",e="";
+  if(t==="근무변경"||t.startsWith("반차")){
+    s=document.getElementById("rq_s").value; e=document.getElementById("rq_e").value;
+    if(t==="근무변경"&&!s){alert("변경 후 출근 시각을 입력하세요");return;}
+  }
+  if(t!=="근무변경"){
+    const u=annualUsage(nm), eff=u.rem-pendingUseOf(nm);
+    if(eff<REQ_W[t]){
+      const f=n=>n%1?n.toFixed(1):n;
+      alert(`${nm}님은 잔여 연차가 부족해 신청할 수 없습니다.\n잔여 ${f(u.rem)}일`+(pendingUseOf(nm)?` (결재 대기 ${f(pendingUseOf(nm))}일 포함 시 ${f(eff)}일)`:"")+` · 필요 ${REQ_W[t]}일`);
+      return;
+    }
+  }
+  const appr=t==="근무변경"?"":document.getElementById("rq_appr").value;
+  REQS.unshift({id:"R"+Date.now(),emp:nm,type:t,date:dt,s,e,reason,appr,status:"대기"});
+  saveQ(); renderReq(); rqRemainInfo();
+  document.getElementById("rq_reason").value="";
+  alert(`${nm}님 ${t} 신청 완료 — 결재 대기로 등록되었습니다.`);
+}
+function approveReq(id){
+  const r=REQS.find(x=>x.id===id); if(!r||r.status!=="대기")return;
+  /* 결재라인 건 = 결재자 비밀번호(이름) 확인 */
+  if(r.appr){
+    const pw=prompt(r.appr+" 결재 비밀번호를 입력하세요");
+    if(pw===null)return;
+    const base=r.appr.replace(/(실장|소장|GM)$/,"");   // 직함 없이 이름만 입력해도 허용
+    if(pw.trim()!==r.appr&&pw.trim()!==base){alert("비밀번호가 올바르지 않습니다.");return;}
+  }
+  /* 연차·반차는 승인 시점에 잔여 재검증 */
+  if(REQ_W[r.type]){
+    const u=annualUsage(r.emp);
+    if(u.rem<REQ_W[r.type]){alert(`${r.emp}님 잔여 연차 부족(${u.rem%1?u.rem.toFixed(1):u.rem}일)으로 승인할 수 없습니다.`);return;}
+  }
+  schedD[r.emp]=schedD[r.emp]||{};
+  if(r.type==="근무변경")schedD[r.emp][r.date]=r.e?(r.s+" "+r.e):r.s;
+  else if(r.type.startsWith("반차")&&r.s)schedD[r.emp][r.date]=r.type+" "+r.s+(r.e?" "+r.e:"");   // 반차 + 근무시간 병기
+  else schedD[r.emp][r.date]=r.type;
+  saveS();
+  r.status="승인"; saveQ();
+  renderReq(); renderMonth(); renderDay(); renderWeek(); rqRemainInfo();
+}
+function rejectReq(id){const r=REQS.find(x=>x.id===id);if(r&&r.status==="대기"){r.status="반려";saveQ();renderReq();rqRemainInfo();}}
+function delReq(id){REQS=REQS.filter(x=>x.id!==id);saveQ();renderReq();}
+function renderReq(){
+  const el=document.getElementById("reqList");
+  const pending=REQS.filter(r=>r.status==="대기").length;
+  document.getElementById("rq_cnt").textContent=`대기 ${pending} · 전체 ${REQS.length}`;
+  const tab=document.getElementById("reqTab");
+  if(tab)tab.textContent="📝 신청·결재"+(pending?` (${pending})`:"");
+  if(!REQS.length){el.innerHTML=`<div class="reqempty">신청 내역이 없습니다</div>`;return;}
+  const md=dt=>{const[,m,d]=dt.split("-");return (+m)+"/"+(+d);};
+  el.innerHTML=REQS.map(r=>{
+    const detail=r.type==="근무변경"?`근무변경 → ${fmtT(r.s)}${r.e?"–"+fmtT(r.e):""}`
+      :LEAVE_LABEL[r.type]+(r.s?` · ${fmtT(r.s)}${r.e?"–"+fmtT(r.e):""} 근무`:"");
+    return `<div class="reqitem${r.status!=="대기"?" done":""}">`+
+      `<div class="ri-main"><div class="ri-title">${r.emp} · ${detail}</div>`+
+      `<div class="ri-sub">${md(r.date)} (${DOW[new Date(r.date).getDay()]})${r.reason?` · ${r.reason}`:""} · ${EMP_DEPT[r.emp]||""}${r.appr?` · <b style="color:var(--bronze2)">결재자 ${r.appr}</b>`:""}</div></div>`+
+      `<span class="rbadge rb-${r.status}">${r.status==="대기"?(r.appr?r.appr+" 결재 대기":"승인 대기"):r.status+(r.appr&&r.status==="승인"?" · "+r.appr:"")}</span>`+
+      (r.status==="대기"
+        ?`<button class="rbtn primary" onclick="approveReq('${r.id}')">${r.appr?"결재(승인)":"승인"}</button><button class="rbtn danger" onclick="rejectReq('${r.id}')">반려</button>`
+        :`<button class="rbtn ghost" onclick="delReq('${r.id}')">삭제</button>`)+
+      `</div>`;
+  }).join("");
+}
+
+/* ===== 데모 생성 ===== */
+const rnd=n=>Math.floor(Math.random()*n);
+function genDemo(){
+  if(hasData()&&!confirm("기존 시뮬레이션 스케줄을 덮어쓰고 새로 생성할까요?\n(근태 시뮬레이터와 공유되는 데이터입니다)"))return;
+  const N=new Date(), y=N.getFullYear(), m=N.getMonth(), days=new Date(y,m+1,0).getDate();
+  const meta=monthMeta(y,m);
+  let holWd=0; for(let d=1;d<=days;d++){const dt=ymd(y,m,d),dow=new Date(y,m,d).getDay();if(HOLIDAYS[dt]&&dow>=1&&dow<=5)holWd++;}
+  const offNeed=Math.max(0,meta.req-meta.closed-holWd);
+  schedD={};
+  ALL_EMP.forEach((nm,ei)=>{
+    const S={}, rest=[];
+    for(let d=1;d<=days;d++){
+      const dt=ymd(y,m,d), dow=new Date(y,m,d).getDay();
+      if(isClosedSun(y,m,d)){S[dt]="휴관";continue;}
+      if(HOLIDAYS[dt]&&dow>=1&&dow<=5){S[dt]="공휴";continue;}
+      rest.push(d);
+    }
+    const pool=rest.slice();
+    for(let k=0;k<offNeed&&pool.length;k++){const i=rnd(pool.length);S[ymd(y,m,pool[i])]="휴";pool.splice(i,1);}
+    /* 연차는 데모로 만들지 않음 — 연차 집계 정본(시트 실측 + 신청·결재)과 섞이지 않게 */
+    rest.forEach(d=>{
+      const dt=ymd(y,m,d); if(S[dt])return;
+      const sc=SHIFTS[EMP_DEPT[nm]]; let s,e;
+      if(sc){
+        const c=isWE(y,m,d)?sc.we:sc.wd;
+        if((ei+d)%2===0){s=c.open;e=mm2t(mins(c.open)+540);}
+        else{s=c.close;e=c.closeEnd;}
+      } else {s="09:00";e="18:00";}
+      S[dt]=s+" "+e;
+    });
+    schedD[nm]=S;
+  });
+  saveS(); renderMonth(); renderDay(); renderWeek();
+  alert(`데모 스케줄 생성 완료 — ${y}년 ${m+1}월 전 직원 ${ALL_EMP.length}명.\n[월간 스케줄] 탭에서 확인하세요.`);
+}
+function clearAll(){
+  if(!confirm("시뮬레이션 스케줄을 전부 삭제할까요?"))return;
+  schedD={}; saveS(); renderMonth(); renderDay(); renderWeek();
+}
+
+/* ===== 공통 ===== */
+function openOv(id){document.getElementById(id).classList.add("on");}
+function closeOv(id){document.getElementById(id).classList.remove("on");}
+document.querySelectorAll(".ov").forEach(o=>o.onclick=e=>{if(e.target===o)o.classList.remove("on");});
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));
+  ["month","day","week","req","set"].forEach(t=>document.getElementById("tab-"+t).style.display=b.dataset.tab===t?"":"none");
+  document.getElementById("filterRow").style.display=(b.dataset.tab==="set"||b.dataset.tab==="req")?"none":"flex";
+  renderRoster();
+  if(b.dataset.tab==="month")renderMonth();
+  if(b.dataset.tab==="day")renderDay();
+  if(b.dataset.tab==="week")renderWeek();
+  if(b.dataset.tab==="req"){fillReqEmp();rqRemainInfo();renderReq();}
+});
+applyImportSched(false);   // 7월 실측 스케줄 최초 1회 자동 반영
+renderFilter(); renderRoster(); renderMonth(); renderDay(); renderWeek(); fillReqEmp(); rqTypeChange(); renderReq();
+document.getElementById("rq_date").value=ymdOf(new Date());
+</script>
+</body>
+</html>
