@@ -1889,5 +1889,17 @@
     "artifact": "GM 판단: '알림 및 현황 보고가 너무 많다' → 독려 경로를 22:30 하나로 통합. (CLI ad-hoc · 커밋 f36d56393)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f36d56393bfe7751763a79cedecd6bc0d984af62"
+  },
+  {
+    "task_id": "CMO-2026-07-23-INTAKE-TO-REVIEW-FLOW",
+    "clevel": "cmo",
+    "title": "[시모] 콘텐츠 접수건 → 검수대기 카드 흐름 편입 (별도 화면 없이 GM께 찾아오게)",
+    "status": "IN_PROGRESS",
+    "priority": "⛴️여객선",
+    "from": "gm",
+    "origin": "gm",
+    "enqueued_at": "2026-07-23",
+    "ship_no": 9888,
+    "note": "GM 2026-07-23 지시: 콘텐츠 접수건을 별도 화면이 아니라 IG 검수대기 카드 흐름으로 GM께 찾아오게 만든다. [1단계 판정=차단] .deploy-instructor/instructor_intake.js:46 의 INTAKE_SHEET_ID 는 GAS ScriptProperties 값이라 repo 어디에도 없음(전수 grep 0건). 배포된 exec 는 doGet 이 존재하나 고정 헬스체크 {ok:true,msg:\"마케팅 접수 GAS 정상 (POST로 접수)\"} 만 반환(action/mode/list 파라미터 4종 실측 동일 응답) — 데이터 조회 불가. CSV/gviz 무인증 읽기는 시트가 링크공개여야 하는데 동일 계열 시트 실측 HTTP 401. → 시트ID 확보+링크공개 또는 doGet 데이터 액션 재배포(=GM 결재) 없이는 접수건을 읽을 수 없어 2~4단계 착수 불가. [실측] 접수 Drive 루트 folderId=1ZvUrmWDemRELA_4Vm5t6RDLJ48EIlfZU(\"마케팅 접수\") 하위 = 07-22 테스트 2건뿐 (__TEST_____배포검증___20260722_142234 · PT___폼검증___20260722_142512) → 실제 접수건 0건. [안전검증 완료·발행 무위험] 접수건을 channel=\"콘텐츠 접수\"/status=\"접수검토\" 로 넣어도 발행 경로에 안 걸림: ig_review_publish_watcher.py:783 는 APPROVED_STATES={승인,승인발행대기,approved}(:77) 외 전부 continue, :246 카드발송도 status!=\"검수대기\" continue; ai_daily_series_card.py:70,76 는 status==검수대기 AND id 에 -AIDAY(:29) 포함건만; publish_digest.py 그룹핑은 발행완료 계열(_COMPLETE_STATUSES :157)만 완결판정; worklog_gaps.py:239 rule_published_without_url 은 _URL_REQUIRED_STATUSES(발행완료/발행검증대기)만 검사(:251) → 오탐 없음, 형제채널 규칙은 account==wellperion AND channel 에 \"인스타\" 포함건만(:305-308); reaction_scorecard.py:188-190 은 인스타 AND 발행완료만. ★단 잔여 위험 1건: 승인 후 status 가 \"승인\"으로 바뀌면 dispatch_publish 의 else 폴백(ig_review_publish_watcher.py:726)이 콘텐츠 접수건도 IG 발행기로 보낸다 → 구현 시 dispatch_publish 진입 전 channel==\"콘텐츠 접수\" 명시 배제 필수. [다음] GM 결재 대기 — ①INTAKE_SHEET_ID 공유+링크공개(무배포) 또는 ②doGet 데이터 액션 추가 재배포 중 택1."
   }
 ]
