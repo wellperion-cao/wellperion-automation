@@ -7771,6 +7771,11 @@ function _renderHoldIntake() {
     if (st === '접수대기' || st === '반려') {
       list.forEach(function(r){
         var nm = esc(String(r.name || '—')), ph = esc(String(r.phone || ''));
+        // 신규/연장 배지 — 연장은 최소일수 면제라 직원이 한눈에 구분해야 오판이 없다(2026-07-23 GM 확정)
+        var isExt = (String(r.kind || '') === '연장');
+        var kindTag = '<span style="font-size:11px;font-weight:700;padding:1px 6px;border-radius:99px;'
+          + (isExt ? 'color:var(--gold);border:1px solid var(--gold)' : 'color:var(--dim);border:1px solid var(--line)') + '">'
+          + (isExt ? '연장' : '신규') + '</span>';
         var period = esc(String(r.start || '?') + (r.end ? ' ~ ' + r.end : '') + (r.wishDays != null ? ' (' + r.wishDays + '일)' : ''));
         var reason = r.reason ? '<span style="color:var(--dim)">· ' + esc(String(r.reason)) + '</span>' : '';
         var ok = (r.verdict === '가능');
@@ -7781,7 +7786,7 @@ function _renderHoldIntake() {
             : '<button disabled title="자동판정 불가" style="' + _hbtn('var(--dim-mid,#8a8a8a)') + ';opacity:.5;cursor:default">승인</button>';
           actions = approveBtn + '<button onclick="holdApprove(' + r.intakeRow + ',\'reject\',\'' + ph + '\')" style="' + _hbtn('var(--red)') + '">반려</button>';
         }
-        html += _hRowBox('<b style="min-width:56px">' + nm + '</b><span style="color:var(--dim)">' + ph + '</span><span>' + period + '</span>' + reason + '<span>' + verdict + '</span>'
+        html += _hRowBox('<b style="min-width:56px">' + nm + '</b>' + kindTag + '<span style="color:var(--dim)">' + ph + '</span><span>' + period + '</span>' + reason + '<span>' + verdict + '</span>'
           + (r.appliedAt ? '<span style="color:var(--dim);font-size:11px">접수 ' + esc(String(r.appliedAt)) + '</span>' : '')
           + (actions ? '<span style="margin-left:auto;display:flex;gap:6px">' + actions + '</span>' : ''));
       });

@@ -124,23 +124,29 @@ SHEET_SOURCES = {
 # 매번 이 규칙으로 재enrich하므로 여기만 고치면 됨(새 레지스트리 파일 신설 금지).
 ENRICHMENT_RULES = [
     # (sheet, 헤더에 포함되면 매칭되는 부분문자열, overrides)
+    # ★이름·연락처 칸 이름 통일(2026-07-23 실측): 세 시트 모두 '성함\n(Name)'·'연락처\n(Phone Number)'로
+    #   표준화됐다(옛 '1. 성함'·'유소년 이름'·'핸드폰 연락처'는 라이브에 없음). 부분일치 '성함'·'연락처'로
+    #   잡되, '접수 담당자 혹은 본인/보호자 이름'은 '성함'을 포함하지 않아 오매칭되지 않는다(3시트 실측 확인).
+    #   ※ 이 두 칸이 req에서 빠지면 이름·연락처가 사라져도 아무도 못 잡는다 — 감시의 핵심이라 반드시 유지.
     ("inquiry_2026", "타임스탬프", {"req": True, "format": "datetime_hms", "date_col": True}),
-    ("inquiry_2026", "1. 성함", {"req": True}),
-    ("inquiry_2026", "2. 연락처", {"req": True}),
+    ("inquiry_2026", "성함", {"req": True}),
+    ("inquiry_2026", "연락처", {"req": True}),
     ("inquiry_2026", "개인정보", {"req": True, "blank_check": True}),
-    ("inquiry_2026", "진행현황", {"req": True, "blank_check": False, "allowed": ["LOSS", "SUC", "컨택중", "가망", "단기SUC"]}),
+    ("inquiry_2026", "진행현황", {"req": True, "blank_check": False,
+                                  # '신규'=미착수 기본값, '재문의로 종결'=2026-07-20 GM 확정 상태. 둘 다 정상값.
+                                  "allowed": ["LOSS", "SUC", "컨택중", "가망", "단기SUC", "신규", "재문의로 종결"]}),
     ("inquiry_2026", "LOSS사유", {"allowed": list(_LOSS_OPTIONS_FALLBACK), "front_check": True}),
 
     ("lesson_adult", "타임스탬프", {"req": True, "format": "datetime_hms", "date_col": True}),
-    ("lesson_adult", "성함(Name)", {"req": True}),
-    ("lesson_adult", "연락처(Phone Number)", {"req": True}),
+    ("lesson_adult", "성함", {"req": True}),
+    ("lesson_adult", "연락처", {"req": True}),
     ("lesson_adult", "개인정보", {"req": True, "blank_check": True}),
     ("lesson_adult", "진행 상황", {"req": True, "blank_check": False, "allowed": ["컨택중", "LOSS", "SUC", "신규", "가망"]}),
     ("lesson_adult", "LOSS사유", {"allowed": list(_LOSS_OPTIONS_FALLBACK), "front_check": True}),
 
     ("lesson_wsc", "타임스탬프", {"req": True, "format": "datetime_hms", "date_col": True}),
-    ("lesson_wsc", "유소년 이름", {"req": True}),
-    ("lesson_wsc", "핸드폰 연락처", {"req": True}),
+    ("lesson_wsc", "성함", {"req": True}),
+    ("lesson_wsc", "연락처", {"req": True}),
     ("lesson_wsc", "개인정보", {"req": True, "blank_check": True}),
     ("lesson_wsc", "진행 상황", {"req": True, "blank_check": False, "allowed": ["컨택중", "LOSS", "SUC", "신규", "가망", "대기"]}),
     ("lesson_wsc", "LOSS사유", {"allowed": list(_LOSS_OPTIONS_FALLBACK), "front_check": True}),
@@ -154,7 +160,10 @@ ENRICHMENT_RULES = [
     ("member_hold", "휴회 시작일", {"req": True, "date_col": True}),
     ("member_hold", "진행 상황", {"req": True, "blank_check": False}),
     ("member_hold", "휴회 차수", {"value_rule": {"max": 3}}),
-    ("member_hold", "휴회 일수", {"value_rule": {"min": 7, "max": 60}}),
+    # 하한 7→1 (2026-07-23 GM 확정): 신규 휴회만 최소 7일, '연장'은 일수 제한 없음. 실측 근거=이 시트의
+    # '1회차 연장' 5일 건(김호선). 7일 하한을 연장에도 걸면 실제 운영되던 건이 전부 위반으로 잡힌다.
+    # 신규/연장 구분 판정은 Survey.js(_holdMinOnce_)가 단일 출처 — 여기선 상한만 계약으로 지킨다.
+    ("member_hold", "휴회 일수", {"value_rule": {"min": 1, "max": 60}}),
 
     ("lesson_register", "이름", {"req": True}),
     ("lesson_register", "전화", {"req": True}),
@@ -227,7 +236,9 @@ def fetch_sheet(key):
         headers = [c for c in cols if c]
         return headers, rows, None
     if cfg["read_via"] == "gas":
-        data = cpo_report._gas_get(cfg["gas_action"], cfg.get("gas_params"), timeout=30, attempts=2)
+        # timeout 30→60·attempts 2→3 (2026-07-23 시포): hold_sheet_probe는 스프레드시트 전 탭을 훑어
+        # 30초를 자주 넘긴다. 짧은 timeout이 '네트워크 실패'로 집계돼 3일이면 헛경보가 뜬다(실측 재현).
+        data = cpo_report._gas_get(cfg["gas_action"], cfg.get("gas_params"), timeout=60, attempts=3)
         if data is None:
             return None, None, "GAS 응답 없음"
         headers = data.get("headers")
@@ -420,6 +431,13 @@ def check_sheet(key, contract_sheet, headers, rows, front_loss_options, warnings
     violations = []
     contract_cols = {c["name"]: c for c in contract_sheet.get("columns", [])}
     live_set = set(headers)
+
+    # 완전 공백행 제외(2026-07-23 시포) — 시트 하단의 빈 줄은 데이터가 아니다. 이걸 표본에 넣으면
+    # 공란율이 실제와 무관하게 치솟는다(member_hold: 20행 중 8행이 빈 줄 → '공란 40%' 오탐 3건 발생).
+    # 삭제가 아니라 '세지 않기'다 — 시트는 손대지 않는다(읽기 전용 원칙).
+    if isinstance(rows, list):
+        rows = [r for r in rows
+                if isinstance(r, dict) and any(str(v or "").strip() for v in r.values())]
 
     # 1) 필수 칸 사라짐/이름변경
     for name, col in contract_cols.items():
