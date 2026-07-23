@@ -49,16 +49,36 @@ def collect(module=None) -> dict:
     todays_res = cpo_report.todays_reservations(rows, today)
     churn_cands = cpo_report.churn_risk_candidates(rows, today)
 
+    # 강습 미응대(흔적 0) — 2026-07-23 GM 지침. 건별 반복 알림은 혼란스러워 금지하고,
+    # 하루 일과 정리에만 '최근 30일 누적' 한 줄로 모아 보여준다(같은 문의가 여러 번 안 튀게).
+    # 이 칸이 없어서 강습 166건(2026-03~)이 아무 화면에도 안 잡히고 방치됐다.
+    lesson_un = cpo_report.lesson_unassigned_summary(days=30)
+
     metrics = [
         {"label": "오늘 신규 문의", "value": len(today_new)},
         {"label": "미컨택(연락기록 0건)", "value": len(uncontacted)},
         {"label": "오늘 상담·체험 예약", "value": len(todays_res)},
         {"label": "이탈위험 후보(추정)", "value": len(churn_cands)},
+        {"label": "강습 미응대 30일(담당자 미배정)",
+         "value": lesson_un["total"] if lesson_un else "미측정"},
     ]
     summary = (
         f"신규 {len(today_new)}건 · 미컨택 {len(uncontacted)}건 · "
         f"오늘예약 {len(todays_res)}건 · 이탈위험(추정) {len(churn_cands)}건"
     )
+    if lesson_un:
+        bt = lesson_un.get("by_type") or {}
+        detail = " / ".join(
+            f"{k} {v}" for k, v in bt.items() if isinstance(v, int)
+        )
+        if lesson_un["total"]:
+            summary += f" · ⚠️ 강습 미응대 30일 {lesson_un['total']}건"
+            if detail:
+                summary += f"({detail})"
+        else:
+            summary += " · 강습 미응대 0건"
+    else:
+        summary += " · 강습 미응대 미측정(조회 실패)"
 
     return make_payload(
         title="문의 라이프사이클 일일 액션",

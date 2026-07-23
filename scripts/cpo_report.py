@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -108,6 +109,76 @@ def fetch_member_inquiries() -> list[dict] | None:
     if data is None:
         return None
     return data.get("data", [])
+
+
+_LESSON_TYPES = ("성인강습", "유소년강습")
+
+
+def fetch_lesson_inquiries(lesson_type: str, scope: str = "all") -> list[dict] | None:
+    """강습(성인·유소년) 문의 원본 행. 실패 시 None(정직 '데이터 없음' 표기용).
+    멤버십(member_inquiry_list)과 별개 원천이라 별도 fetch — 화면과 같은 액션을 쓴다."""
+    data = _gas_get("lesson_inquiry_list", {"type": lesson_type, "scope": scope}, timeout=60)
+    if data is None:
+        return None
+    return data.get("data", [])
+
+
+def unassigned_lesson_candidates(rows: list[dict]) -> list[dict]:
+    """★아무도 손대지 않은 강습 문의 — 진행상태·담당자·메모·컨택 흔적이 '전부' 비어 있는 건.
+
+    2026-07-23 시포 실측으로 드러난 구멍: 2026-03 이후 166건(성인 78·유소년 88)이 이 상태였다.
+    상태 미입력이 원인이 아니라 '담당자 미배정'이 원인이다 — 빈칸 136건 중 132건(97%)이
+    담당자도 없었고, 담당자가 붙은 건은 상태가 대부분 채워져 있었다. 즉 배정이 안 되면
+    아무도 안 잡고, 고객은 연락을 못 받는다(지표 문제가 아니라 고객 유실).
+
+    판정은 '흔적 없음' 하나로만 한다 — 상태만 비었고 상담 메모가 있는 건은 응대는 된 것이라
+    여기서 제외한다(과잉 경보 금지). GM 지침(2026-07-23): 건별 반복 알림 금지, 하루 일과
+    정리에만 모아서 1회 표시."""
+    out = []
+    for r in rows:
+        def _blank(k: str) -> bool:
+            return not str(r.get(k) or "").strip()
+        if _blank("status") and _blank("owner") and _blank("memo") and _blank("note") and not r.get("contacts"):
+            out.append(r)
+    return out
+
+
+def lesson_unassigned_summary(days: int = 30) -> dict | None:
+    """최근 N일 강습 미응대(흔적 0) 집계 — 일과 정리용. 전 기간이 아니라 '지금 손쓸 수 있는'
+    최근분만 센다(3~4개월 전 건까지 매일 세면 숫자가 굳어 무감각해진다).
+    실패 시 None(미측정 — 0으로 날조하지 않는다)."""
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    total, by_type, ok_any = 0, {}, False
+    for t in _LESSON_TYPES:
+        rows = fetch_lesson_inquiries(t)
+        if rows is None:
+            by_type[t] = None
+            continue
+        ok_any = True
+        recent = [r for r in unassigned_lesson_candidates(rows)
+                  if _lesson_date_str(r.get("timestamp")) >= cutoff]
+        by_type[t] = len(recent)
+        total += len(recent)
+    if not ok_any:
+        return None
+    return {"days": days, "total": total, "by_type": by_type}
+
+
+_MONTH_ABBR = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
+               "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12}
+
+
+def _lesson_date_str(v) -> str:
+    """강습 timestamp를 'YYYY-MM-DD'로. 시트가 값을 Date로 자동 변환해 두 포맷이 섞여 들어온다
+    ('2026-07-23 …' / 'Wed Jul 23 2026 …') — 둘 다 인식. 못 읽으면 '' (비교에서 자동 탈락)."""
+    s = str(v or "").strip()
+    m = re.search(r"(\d{4})[-./]\s*(\d{1,2})[-./]\s*(\d{1,2})", s)
+    if m:
+        return "%s-%02d-%02d" % (m.group(1), int(m.group(2)), int(m.group(3)))
+    m = re.search(r"\w{3} (\w{3}) (\d{1,2}) (\d{4})", s)
+    if m:
+        return "%s-%02d-%02d" % (m.group(3), _MONTH_ABBR.get(m.group(1), 0), int(m.group(2)))
+    return ""
 
 
 def fetch_cpo_today_stats() -> dict | None:
