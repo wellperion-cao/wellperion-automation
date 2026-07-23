@@ -75,10 +75,13 @@
   @media (max-width:560px){ .hbstrip .hb-title{display:none} .hbchip{padding:3px 7px; font-size:10px} }
 
   .bottom-row{display:flex; justify-content:space-between; align-items:flex-end; gap:14px}
+  .counters{display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap; pointer-events:none}
   .counter{pointer-events:none}
   .counter .lbl{font-size:11px; letter-spacing:.22em; color:var(--muted); text-transform:uppercase}
   .counter .num{font-family:var(--serif); font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; font-weight:700; font-size:clamp(40px,7vw,68px); line-height:.9; color:var(--ink)}
   .counter .num .today-unit{font-size:.34em; letter-spacing:.1em; color:var(--muted); margin-left:8px; font-family:var(--ui); font-weight:600}
+  /* 2026-07-23: 팀 처리업무(중복제거) 옆 보조지표 — 원지표보다 한 단계 작게, 색은 동일 톤 유지 */
+  .counter-sub .num{font-size:clamp(24px,4.2vw,40px)}
   .tally{display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; max-width:min(62%,440px); pointer-events:none}
   .chip{display:flex; align-items:center; gap:6px; background:var(--panel); border:1px solid var(--panel-brd); border-radius:9px; padding:5px 9px; font-size:11px; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
   .chip .sw{width:9px;height:9px;border-radius:3px}
@@ -261,9 +264,15 @@
       </div>
 
       <div class="bottom-row">
-        <div class="counter">
-          <div class="lbl">오늘 처리</div>
-          <div class="num"><span id="today">0</span><span class="today-unit">건</span></div>
+        <div class="counters">
+          <div class="counter" title="팀 단위로 중복 제거한 처리 건수 — 같은 대상(지원자 등)을 여러 에이전트가 나눠 처리해도 1건으로 집계(작업 로그에 공통 식별자가 없으면 개별 집계, 2026-07-23 신설)">
+            <div class="lbl">팀 처리업무</div>
+            <div class="num"><span id="todayTeam">0</span><span class="today-unit">건</span></div>
+          </div>
+          <div class="counter counter-sub" title="A-1~A-7 에이전트가 오늘 처리한 건수의 합계 — 자동화로그 실측(공개 열람) 기준, 2026-07-23 신설">
+            <div class="lbl">오늘 처리업무</div>
+            <div class="num"><span id="todayAgent">0</span><span class="today-unit">건</span></div>
+          </div>
         </div>
         <div class="tally" id="tally"></div>
       </div>
@@ -2307,6 +2316,29 @@
   const todayStr=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
   const dateStr=d=>{ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
   const weekStartStr=()=>{ const d=new Date(); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return dateStr(d); };
+  // ── 오늘 처리업무(에이전트 합계) / 팀 처리업무(팀 단위 중복제거) — 2026-07-23 매니저 지시 신설.
+  // "오늘 처리업무" = 오늘자 로그 중 actor가 A-1~A-7에 매칭되는 건수의 합계 = tally 전 에이전트 합.
+  // 기존 캐릭터 매칭(actorToAgent)·todayCount/tally 애니메이션 파이프라인은 그대로 두고, 그 tally를
+  // 읽어서 별도 표시칸에 반영만 한다(기존 로직 무변경 — 애니메이션 회귀 방지).
+  function agentSum(){ let s=0; agents.forEach(a=>{ s+=tally[a.id]||0; }); return s; }
+  function renderTodayAgent(){ const el=document.getElementById('todayAgent'); if(el) el.textContent=agentSum(); }
+  // "팀 처리업무" = 팀 단위(같은 대상)로 묶은 처리 건수. 로그 스키마에 업무그룹ID가 없어 결정적 그루핑 규칙을
+  // 채택: 오늘자 에이전트-매칭 행의 '작업' 문구에서 지원자 행번호 식별자(r숫자, 예 r96·r112·r97~99)를
+  // 추출해 같은 식별자를 공유하는 행들을 1건으로 묶는다. 식별자가 없는 행(대다수의 배포·감사·시스템 작업 등
+  // 대상 특정이 안 되는 로그)은 각각 1건으로 개별 집계(안전측 — 임의 병합 금지, 목업 금지 원칙과 동일하게
+  // 근거 없는 통합을 하지 않음). 결과적으로 팀 처리업무 ≤ 오늘 처리업무 항상 성립.
+  function extractTargetKey(work){ const m=String(work||'').match(/r\d{1,4}(~\d{1,4})?/); return m?m[0]:null; }
+  function computeTeamCount(rows){
+    const td=todayStr(); const seen={}; let n=0;
+    (rows||[]).forEach(r=>{
+      if(String(r['일시']).slice(0,10)!==td) return;
+      if(!actorToAgent(r['주체'])) return;   // 팀 처리업무도 에이전트 매칭 행만 대상(오늘 처리업무와 동일 모집단)
+      const key=extractTargetKey(r['작업']);
+      if(key){ if(!seen[key]){ seen[key]=true; n++; } } else { n++; }
+    });
+    return n;
+  }
+  function renderTodayTeam(rows){ const el=document.getElementById('todayTeam'); if(el) el.textContent=computeTeamCount(rows); }
   // 금주 처리 통계 — 조회된 rows(office-autolog, 브리핑 피드와 동일 실데이터) 중 이번 주(월~오늘) 분만 에이전트별 집계.
   // 목업 금지 원칙 — 데이터가 없으면 0으로 정직하게 표시(가짜 수치 생성 안 함).
   function renderWeekStats(rows){
@@ -2347,7 +2379,8 @@
     agents.forEach(a=>{ a.status='idle'; a.task=''; a.sticky=false; a._count=false; });
     agents.forEach(a=>tally[a.id]=0); todayCount=0;
     logFeed.length=0;
-    const te=document.getElementById('today'); if(te) te.textContent='0';
+    renderTodayAgent();
+    const tte=document.getElementById('todayTeam'); if(tte) tte.textContent='0';
     agents.forEach(a=>{ const el=document.getElementById('cn-'+a.id); if(el) el.textContent='0'; });
   }
   function enableSampleFallback(){
@@ -2356,7 +2389,8 @@
     const now=termNow();
     const ST={'A-1':4,'A-2':3,'A-3':5,'A-4':2,'A-5':3,'A-6':6,'A-7':2};   // 대표 오늘 처리 건수
     let sum=0; agents.forEach(a=>{ tally[a.id]=ST[a.id]||0; sum+=tally[a.id]; const el=document.getElementById('cn-'+a.id); if(el) el.textContent=tally[a.id]; });
-    todayCount=sum; const te=document.getElementById('today'); if(te) te.textContent=todayCount;
+    todayCount=sum; renderTodayAgent();
+    const tte=document.getElementById('todayTeam'); if(tte) tte.textContent=sum;   // 샘플 폴백은 실 대상식별자가 없어 편의상 동일값 표시(실데이터 도착 시 즉시 정리됨)
     // 금주 통계 — 샘플 rows(오늘자 · 주체별)로 렌더
     const srows=[]; const td=todayStr(); agents.forEach(a=>{ for(let i=0;i<(ST[a.id]||0);i++) srows.push({'일시':td+'T10:00','주체':a.id}); });
     renderWeekStats(srows);
@@ -2386,7 +2420,8 @@
     const todays=rows.filter(r=>String(r['일시']).slice(0,10)===td);   // rows와 동일 순서(최신→과거) 유지
     todayCount=todays.length;
     todays.forEach(r=>{ const a=actorToAgent(r['주체']); if(a&&tally[a]!=null) tally[a]++; });
-    const te=document.getElementById('today'); if(te) te.textContent=todayCount;
+    renderTodayAgent();
+    renderTodayTeam(rows);
     agents.forEach(a=>{ const el=document.getElementById('cn-'+a.id); if(el) el.textContent=tally[a.id]; });
     renderWeekStats(rows);
     // 초기 로드 복원 — 오늘자 로그에서 에이전트별 '최신' 행이 진행중이면 즉시 busy로 시작(중간 진입 대응)
@@ -2416,13 +2451,14 @@
     REAL_SEEN=true; clearSampleFallback();
     autologMaxRow = rows.reduce((m,r)=>Math.max(m,Number(r['_sheet_row'])||0),autologMaxRow);
     renderWeekStats(rows);
+    renderTodayTeam(rows);   // 팀 처리업무는 전체 rows 재집계(그루핑이라 증분 불가) — 폴링 주기(25초)마다 갱신
     enqueueLog(fresh.reverse(), {count:true});
   }
 
   // 오늘 집계(today/tally) 반영 — 실제 신규 행(count:true) 소진 시점마다 즉시 1 증가
   function bumpCount(c){
     todayCount++; tally[c.id]++;
-    const _te=document.getElementById('today'); if(_te)_te.textContent=todayCount;
+    renderTodayAgent();
     const _ce=document.getElementById('cn-'+c.id); if(_ce)_ce.textContent=tally[c.id];
   }
   // busy 애니메이션을 완료 상태로 마무리(체크마크 + 브리핑 라인) — 일반 완료·sticky 해소 공통 경로
@@ -2440,7 +2476,7 @@
       realQueue.shift();
       pushLog({ time:new Date().toTimeString().slice(0,8), id:'팀장', tag:'', text:ev.text, kind:'브리핑', color:null });
       lead.nod=1; lead._nodStart=now;
-      if(ev.count){ todayCount++; const te=document.getElementById('today'); if(te) te.textContent=todayCount; }
+      if(ev.count){ todayCount++; }   // 미매칭(리드) 로그는 오늘/팀 처리업무 모두 대상 아님(에이전트 매칭 행만 집계) — todayCount는 내부 참고값으로만 유지
       return true;
     }
     const c=byId[ev.agent];
@@ -2776,7 +2812,7 @@
     },
     status:function(){
       const busy=agents.filter(a=>a.status==='busy');
-      tLine('시뮬 현황 — 근무중 '+busy.length+'명 · 대기/완료 '+(agents.length-busy.length)+'명 · 오늘 처리 '+todayCount+'건','tl-h');
+      tLine('시뮬 현황 — 근무중 '+busy.length+'명 · 대기/완료 '+(agents.length-busy.length)+'명 · 오늘 처리업무 '+agentSum()+'건','tl-h');
       agents.forEach(a=>{ tLine('  '+a.id+' '+TERM_ROLES[a.id].name+' — '+termLiveLine(a)+' · 오늘 '+(tally[a.id]||0)+'건'); });
     },
     motto:function(){ tLine('매출! 긍정! 협동! 사랑!','tl-h'); },
