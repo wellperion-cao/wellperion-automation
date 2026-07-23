@@ -51,6 +51,93 @@ function doPost(e) {
   } catch (err) { return _json({ ok: false, err: String(err) }); }
 }
 
+// ─── 조회 액션 (읽기 전용 · 토큰 가드) — 2026-07-23 GM 승인 ───
+// 목적: INTAKE_SHEET_ID 가 ScriptProperties 전용이라 접수 데이터를 볼 방법이 없어
+//   시트 배선 여부조차 확인 불가 → 토큰 가드형 조회 액션 추가.
+// ★기존 배포본 호환: action 파라미터가 없으면 종전 헬스체크 응답을 그대로 반환한다
+//   (구 배포본은 파라미터를 전부 무시하고 이 응답만 냈다 — 기존 호출부 무손상).
+// ★읽기 전용: 아래 경로에는 시트·드라이브 쓰기/삭제 코드가 없다(get 계열만 사용).
+// ★토큰은 코드에 하드코딩하지 않는다 — ScriptProperties INTAKE_READ_TOKEN.
+var _HEALTH_MSG = '마케팅 접수 GAS 정상 (POST로 접수)';
+
+function doGet(e) {
+  var p = (e && e.parameter) || {};
+  var action = p.action || '';
+  // 액션 미지정 = 종전 배포본과 동일한 헬스체크 응답(회귀 0)
+  if (!action) return _json({ ok: true, msg: _HEALTH_MSG });
+
+  var expected = PropertiesService.getScriptProperties().getProperty('INTAKE_READ_TOKEN');
+  // 토큰 미설정·미제출·불일치 → 데이터 반환 금지
+  if (!expected || !p.token || String(p.token) !== String(expected)) {
+    return _json({ ok: false, error: 'unauthorized' });
+  }
+  try {
+    if (action === 'diag') return _json(_intakeDiag_());
+    if (action === 'rows') return _json(_intakeRows_(p));
+    return _json({ ok: false, error: 'unknown_action' });
+  } catch (err) { return _json({ ok: false, error: String(err) }); }
+}
+
+// 배선 진단 — 시트 ID 값 자체는 응답에 넣지 않는다(노출 최소화). 설정 여부만 노출.
+function _intakeDiag_() {
+  var sp = PropertiesService.getScriptProperties();
+  var sheetId = sp.getProperty('INTAKE_SHEET_ID');
+  var out = {
+    ok: true,
+    sheet_id_set: !!(sheetId && String(sheetId).trim()),
+    sheet_name: '',
+    row_count: 0,
+    drive_folder_id: sp.getProperty('INTAKE_DRIVE_FOLDER_ID') || ''
+  };
+  if (!out.sheet_id_set) { out.sheet_error = 'INTAKE_SHEET_ID 미설정'; return out; }
+  try {
+    var sh = SpreadsheetApp.openById(sheetId).getSheets()[0];
+    var last = sh.getLastRow();
+    out.sheet_name = sh.getName();
+    out.row_count = Math.max(0, last - 1);            // 헤더 1행 제외한 접수 건수
+    out.header = last > 0 ? sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0] : [];
+  } catch (err) {
+    out.ok = false;
+    out.sheet_error = String(err);                     // 시트 없음·권한 없음을 그대로 노출
+  }
+  return out;
+}
+
+// 접수 행 조회 — 필드명은 시트 실제 헤더를 그대로 사용. limit(기본 100·최대 500)·since(ISO) 지원.
+function _intakeRows_(p) {
+  var sheetId = PropertiesService.getScriptProperties().getProperty('INTAKE_SHEET_ID');
+  if (!sheetId) return { ok: false, error: 'INTAKE_SHEET_ID 미설정' };
+  var sh = SpreadsheetApp.openById(sheetId).getSheets()[0];
+  var last = sh.getLastRow(), width = sh.getLastColumn();
+  if (last < 2 || width < 1) {
+    return { ok: true, sheet_name: sh.getName(), count: 0, total_rows: 0, rows: [] };
+  }
+  var header = sh.getRange(1, 1, 1, width).getValues()[0].map(function (h, i) {
+    return String(h).trim() || ('col' + (i + 1));
+  });
+  var limit = parseInt(p.limit, 10);
+  limit = (isNaN(limit) || limit < 1) ? 100 : Math.min(limit, 500);
+  var since = p.since ? new Date(p.since) : null;
+  if (since && isNaN(since.getTime())) since = null;
+
+  var start = Math.max(2, last - limit + 1);           // 최근 limit건
+  var values = sh.getRange(start, 1, last - start + 1, width).getValues();
+  var rows = [];
+  for (var i = 0; i < values.length; i++) {
+    var ts = values[i][0];
+    if (since && !(ts instanceof Date && ts >= since)) continue;
+    var o = { _row: start + i };
+    for (var c = 0; c < width; c++) {
+      var v = values[i][c];
+      o[header[c]] = (v instanceof Date)
+        ? Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')
+        : v;
+    }
+    rows.push(o);
+  }
+  return { ok: true, sheet_name: sh.getName(), count: rows.length, total_rows: last - 1, rows: rows };
+}
+
 function _json(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 function _stamp() { return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMdd_HHmmss'); }
 
