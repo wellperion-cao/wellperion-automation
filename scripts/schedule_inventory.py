@@ -179,10 +179,12 @@ def parse_windows_tasks_json(raw_json: str) -> list[dict]:
             "enabled": xml_enabled,
             "triggers": parsed.get("triggers", []),
             "actions": parsed.get("actions", []),
-            "last_run": item.get("last_run"),
-            "last_result": item.get("last_result"),
-            "next_run": item.get("next_run"),
         }
+        # ★ last_run·last_result·next_run 은 **일부러 저장하지 않는다.**
+        # 이 파일의 목적은 "무엇이 몇 시에 도는가"(정의)를 저장소에 박아 PC 사고 시
+        # 복원 가능하게 하는 것이다. 실행 시각은 매 순간 바뀌므로 넣으면 파일이 계속
+        # 달라져 자동 커밋 소음이 된다(3분 주기 작업 하나만 있어도 즉시 깨짐 — 실측).
+        # 실행 상태는 예약작업 화면·러너 로그에서 보면 되고, 여기선 정의만 다룬다.
         if parsed.get("xml_parse_failed"):
             entry["parse_failed"] = True
         tasks.append(entry)

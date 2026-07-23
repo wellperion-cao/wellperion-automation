@@ -256,6 +256,21 @@ _DAILY_LABELS = {
     "fc_eq_hotw": "고온수기", "fc_eq_pump": "연동펌프",
 }
 
+# 설비(기계실 가동값) 표시 보강 — GM 2026-07-23 "설비도 가독성 + 무얼 목표하는지".
+# 이름·단위·기준 시각은 전부 시설부 체계 페이지의 EQUIP 정의에서 그대로 가져왔다
+# (3. 웰페리온 가이드/coo/check/시설부 체계.html — 심야전기 A · 1번 탱크온도 ℃ ·
+#  가스검침 ㎥ · 고온수기 ok/x · 연동펌프 ok/x, 전부 05:00 · 분류 'E 기계실 가동값').
+# 값·단위를 새로 지어내지 않는다. 목표 문구도 같은 페이지의 '표준 가동 시각(작업일지
+# 기준) · 일일 가동·정지 기록'에서 벗어나지 않게 적는다.
+_DAILY_UNITS = {
+    "fc_eq_night": "A", "fc_eq_tank1": "℃", "fc_eq_gas": "㎥",
+}
+_DAILY_DISPLAY = {"fc_eq_tank1": "1번 탱크온도"}
+# 가동 여부(ok/x)와 계측값(수치)은 성격이 달라 줄을 나눈다 — 한 줄에 섞이면 안 읽힌다.
+_DAILY_STATE_KEYS = ("fc_eq_hotw", "fc_eq_pump")
+_DAILY_METER_KEYS = ("fc_eq_night", "fc_eq_tank1", "fc_eq_gas")
+_DAILY_PURPOSE = "매일 05:00 기계실 가동값 — 급탕이 끊기지 않는지 · 사용량이 튀지 않는지"
+
 
 def _lines(v) -> list[str]:
     return [ln.strip() for ln in str(v or "").replace("\r", "").split("\n") if ln.strip()]
@@ -397,9 +412,26 @@ def facility_measurements(store: dict, today_oor_fields: set[str]) -> list[str]:
         out += group_lines
 
     daily = store.get("daily") if isinstance(store.get("daily"), dict) else {}
-    eq_parts = [f"{_DAILY_LABELS[k]} {daily[k]}" for k in _DAILY_LABELS if daily.get(k) not in (None, "")]
-    if eq_parts:
-        out.append("  ⚙ 설비: " + " · ".join(eq_parts))
+
+    def eq_cell(k: str) -> str:
+        label = _DAILY_DISPLAY.get(k, _DAILY_LABELS[k])
+        return f"{label} {daily[k]}{_DAILY_UNITS.get(k, '')}"
+
+    state_parts = [eq_cell(k) for k in _DAILY_STATE_KEYS if daily.get(k) not in (None, "")]
+    meter_parts = [eq_cell(k) for k in _DAILY_METER_KEYS if daily.get(k) not in (None, "")]
+    # 위 두 묶음에 안 든 항목(나중에 늘어난 칸)도 빠뜨리지 않는다.
+    known = set(_DAILY_STATE_KEYS) | set(_DAILY_METER_KEYS)
+    etc_parts = [eq_cell(k) for k in _DAILY_LABELS
+                 if k not in known and daily.get(k) not in (None, "")]
+
+    if state_parts or meter_parts or etc_parts:
+        out.append(f"  ⚙ 설비  ({_DAILY_PURPOSE})")
+        if state_parts:
+            out.append("    · 가동  " + " · ".join(state_parts))
+        if meter_parts:
+            out.append("    · 계측  " + " · ".join(meter_parts))
+        if etc_parts:
+            out.append("    · 기타  " + " · ".join(etc_parts))
     return out
 
 

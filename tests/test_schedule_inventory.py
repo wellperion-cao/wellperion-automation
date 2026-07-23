@@ -51,7 +51,11 @@ def test_parse_windows_tasks_json_single_task():
     assert t["name"] == "Wellperion-CPO-Inquiry-Snapshot-3min"
     assert t["state"] == "Ready"
     assert t["enabled"] is True
-    assert t["last_result"] == 0
+    # last_run·last_result·next_run 은 매 실행마다 바뀌어 파일을 계속 흔들므로
+    # 일부러 저장하지 않는다(멱등 보장). 정의 필드만 남는다.
+    assert "last_result" not in t
+    assert "last_run" not in t
+    assert "next_run" not in t
     assert t["triggers"] == [{
         "type": "TimeTrigger",
         "start_boundary": "2026-07-24T09:30:00",
