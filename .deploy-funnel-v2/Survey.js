@@ -5366,6 +5366,38 @@ function _processAction(body) {
         if (best < 0) { lrrBySport.push(rec); return; }  // 상태열 못 찾음 → null 유지(0 날조 금지)
         var iName  = _findCol_(headers, ['성함', '이름', '성명']);
         var iPhone = _findCol_(headers, ['연락처', '전화', '휴대폰']);
+        // ★헤더 이름으로 못 찾으면 값 모양으로 찾는다(2026-07-23 시포 · GM 지적으로 발견).
+        //   실측: 수영 팀시트만 헤더가 맞아 이름·연락처가 나오고, 골프·P.T·필라테스·스쿼시·
+        //   아쿠아로빅·체조 등 나머지 팀시트는 전부 미매칭 → 등록 명단 735건이 '누구인지 모름'
+        //   상태로 떠 있었다(성인 372 · 유소년 363). 팀시트는 강사팀이 각자 만들어 헤더가 제각각이라
+        //   이름 목록을 늘리는 방식으론 또 새는다 → 상태열을 이미 값으로 자동 탐지하는 것과 같은 방식.
+        //   전화=010 형태 비율, 이름=2~4자 한글 비율로 판정하고, 둘 다 상태열은 제외한다.
+        var _lrrColVals = function(ci) {
+          var out = [];
+          for (var rv = 1; rv < data.length; rv++) {
+            var s = String(data[rv][ci] == null ? '' : data[rv][ci]).trim();
+            if (s) out.push(s);
+          }
+          return out;
+        };
+        var _lrrPickCol = function(test) {
+          var pick = -1, pickRate = 0;
+          for (var cc = 0; cc < lastCol; cc++) {
+            if (cc === best) continue;                 // 상태열 제외
+            var vals = _lrrColVals(cc);
+            if (vals.length < 3) continue;             // 표본 부족 → 판정 안 함
+            var hit = 0;
+            for (var vi = 0; vi < vals.length; vi++) { if (test(vals[vi])) hit++; }
+            var rate = hit / vals.length;
+            if (rate >= 0.6 && rate > pickRate) { pickRate = rate; pick = cc; }
+          }
+          return pick;
+        };
+        if (iPhone < 0) iPhone = _lrrPickCol(function(v){ return /01[016-9][-.\s]?\d{3,4}[-.\s]?\d{4}/.test(v.replace(/\s/g, '')); });
+        if (iName < 0)  iName  = _lrrPickCol(function(v){ return /^[가-힣]{2,4}$/.test(v); });
+        if (iName >= 0 && iName === iPhone) iName = -1;   // 같은 칸이면 이름 판정 포기(오표시 금지)
+        rec.nameCol = iName >= 0 ? String(headers[iName] || ('열' + _colLetter_(iName))) : null;   // 진단용
+        rec.phoneCol = iPhone >= 0 ? String(headers[iPhone] || ('열' + _colLetter_(iPhone))) : null;
         var reg = 0;
         for (var r2 = 1; r2 < data.length; r2++) {
           var sv = data[r2][best];
@@ -5392,19 +5424,42 @@ function _processAction(body) {
         var lrrPi = _findCol_(lrrMh, ['연락처', '전화', '휴대폰']);
         var lrrCi = _findCol_(lrrMh, ['등록회수']);
         var lrrEi = _findCol_(lrrMh, ['유효기간']);
+        // ★조인 확장(2026-07-23 GM: '정보가 너무 단출하다') — 팀시트는 종목·이름·전화·상태 4칸뿐이라
+        //   문의 시트에 이미 있는 내용을 전화 매칭으로 더 붙인다. 새 시트·새 칸 0(읽기만).
+        var lrrTi = _findCol_(lrrMh, ['타임스탬프', '문의일']);        // 문의일(등록 전 최초 접점)
+        var lrrAi = _findCol_(lrrMh, ['나이', '연령']);                 // 나이(연령대)
+        var lrrOi = _findCol_(lrrMh, ['지정 강사', '지정강사', '관리담당']);  // 담당 강사
+        var lrrWi = _findCol_(lrrMh, ['희망하시는 레슨 시간', '희망 시간', '레슨 시간']);
         var lrrLast2 = lrrMainSh.getLastRow();
-        if (lrrPi >= 0 && (lrrCi >= 0 || lrrEi >= 0) && lrrLast2 >= 2) {
+        if (lrrPi >= 0 && lrrLast2 >= 2) {
           var lrrMd = lrrMainSh.getRange(2, 1, lrrLast2 - 1, lrrMainSh.getLastColumn()).getValues();
+          var _lrrCell = function(row, ci) {
+            if (ci < 0) return '';
+            var v = row[ci];
+            if (v instanceof Date && !isNaN(v.getTime())) return Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd');
+            return String(v == null ? '' : v).trim();
+          };
           var lrrRegMap = {};
           for (var lm = 0; lm < lrrMd.length; lm++) {
             var lp = _normPhone_(lrrMd[lm][lrrPi]); if (!lp) continue;
-            var lc = lrrCi >= 0 ? String(lrrMd[lm][lrrCi] == null ? '' : lrrMd[lm][lrrCi]).trim() : '';
-            var le = lrrEi >= 0 ? (lrrMd[lm][lrrEi] instanceof Date ? Utilities.formatDate(lrrMd[lm][lrrEi], 'Asia/Seoul', 'yyyy-MM-dd') : String(lrrMd[lm][lrrEi] == null ? '' : lrrMd[lm][lrrEi]).trim()) : '';
-            if (lc || le) lrrRegMap[lp] = { regCount: lc, regExpire: le };   // 최근 행(뒤) 우선
+            var ent = {
+              regCount:  _lrrCell(lrrMd[lm], lrrCi),
+              regExpire: _lrrCell(lrrMd[lm], lrrEi),
+              inqDate:   _lrrCell(lrrMd[lm], lrrTi),
+              age:       _lrrCell(lrrMd[lm], lrrAi),
+              owner:     _lrrCell(lrrMd[lm], lrrOi),
+              wishTime:  _lrrCell(lrrMd[lm], lrrWi)
+            };
+            var any = false;
+            for (var ek in ent) { if (ent[ek]) { any = true; break; } }
+            if (any) lrrRegMap[lp] = ent;   // 최근 행(뒤) 우선
           }
           lrrRoster.forEach(function (m) {
             var mp = _normPhone_(m.phone);
-            if (mp && lrrRegMap[mp]) { m.regCount = lrrRegMap[mp].regCount; m.regExpire = lrrRegMap[mp].regExpire; }
+            var e = mp && lrrRegMap[mp];
+            if (!e) return;
+            m.regCount = e.regCount; m.regExpire = e.regExpire;
+            m.inqDate = e.inqDate; m.age = e.age; m.owner = e.owner; m.wishTime = e.wishTime;
           });
         }
       }
