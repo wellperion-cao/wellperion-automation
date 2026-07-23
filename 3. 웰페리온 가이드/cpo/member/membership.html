@@ -1435,6 +1435,15 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
       </div>
     </a>
+    <!-- 휴회 회원 관리(2026-07-23 GM) — 기능은 있었는데 유효회원 목록 안 카드로만 존재해 진입점이 없었다
+         ('휴회 회원 관리 페이지는 안 만들었네?'). 다른 관리와 같은 층위의 카드로 올린다. -->
+    <a class="dash-card" data-kind="hold" href="javascript:void(0)" onclick="openHoldManage();_memHighlight(this)">
+      <div class="dash-head"><span class="dash-dot" style="background:var(--orange,#c8912b)"></span><span class="dash-title">휴회 회원 관리</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">접수대기</span><span class="dash-v"><b class="lead" id="dHoldPending">–</b> 건</span></div>
+        <div class="dash-line" style="font-size:10.5px"><span class="dash-k">진행중</span><span class="dash-v"><b id="dHoldOngoing" style="font-size:13px">–</b>명</span></div>
+      </div>
+    </a>
     <!-- 카드5: 대기자 회원 관리 (유효 스코프 미래시작 분리 — showWaitMembers). 2026-07-18 GM 지시로 재복원.
          대기 수=renderActiveSummary가 dMemWait에 기록(_waitMembers 재사용, 신규 fetch 없음). -->
     <a class="dash-card" data-kind="wait" href="javascript:void(0)" onclick="showWaitMembers();_memHighlight(this)">
@@ -7946,6 +7955,17 @@ var _holdIntake = null, _holdIntakeLoading = false, _holdIntakeLoaded = false;
 var HOLD_INTAKE_ORDER = ['접수대기', '진행중', '완료', '반려'];
 var HOLD_INTAKE_STYLE = { '접수대기': { c: 'var(--orange,#c8912b)', i: '🕐' }, '진행중': { c: 'var(--teal)', i: '⏸' }, '완료': { c: 'var(--dim-mid,#8a8a8a)', i: '🏁' }, '반려': { c: 'var(--red)', i: '⛔' } };
 function _hbtn(color) { return 'padding:4px 9px;border-radius:6px;border:1px solid ' + color + ';background:transparent;color:' + color + ';font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit'; }
+// 휴회 회원 관리 진입(2026-07-23 GM) — 유효회원 화면으로 이동한 뒤 카드를 최신으로 불러오고 그 자리로 스크롤.
+//   카드가 목록 안에 묻혀 있어 '만들지 않은 것'으로 보였다. 카드에서 한 번에 닿게 한다.
+function openHoldManage() {
+  try { switchTab('active'); setActiveSeg('valid'); } catch (e) {}
+  _loadHoldIntake(true);
+  setTimeout(function(){
+    var el = document.getElementById('holdStatusCard');
+    if (el) { el.style.display = ''; try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e2) { el.scrollIntoView(); } }
+  }, 250);
+}
+
 function _loadHoldIntake(force) {
   if (typeof GAS_URL === 'undefined' || GAS_URL === GAS_PLACEHOLDER) { _renderHoldIntake(); return; }
   if (_holdIntakeLoading) return;
@@ -7967,10 +7987,27 @@ function _renderHoldIntake() {
   var rejected = intake.filter(function(r){ return r.status === '반려'; });
   var ongoing = (_activeRows || []).filter(function(r){ return String(r['휴회접수상태'] || '').trim() === '진행중'; });
   var done = (_activeRows || []).filter(function(r){ return String(r['휴회접수상태'] || '').trim() === '완료'; });
-  if (!pending.length && !ongoing.length && !done.length && !rejected.length) { el.style.display = 'none'; return; }
   var groups = { '접수대기': pending, '진행중': ongoing, '완료': done, '반려': rejected };
-  var html = '<div style="font-weight:800;font-size:14px;margin-bottom:4px">⏸ 휴회 접수 관리</div>'
-    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">공개 페이지 접수 건은 서버 자동판정(가능/불가) 확인 후 승인하세요. 승인 시 회원 기록(이용일수 앞 \'휴회기간\')에 반영됩니다. 승인·반려·완료 반영은 GM 검증 후 개통됩니다.</div>';
+  var _hTot = pending.length + ongoing.length + done.length + rejected.length;
+  // 상단 '휴회 회원 관리' 카드 숫자 배선 — 여기가 유일한 집계 지점이라 여기서 같이 채운다(중복 계산 없음).
+  var _dp = document.getElementById('dHoldPending'); if (_dp) _dp.textContent = pending.length;
+  var _do = document.getElementById('dHoldOngoing'); if (_do) _do.textContent = ongoing.length;
+  // ★접수가 0건이면 카드를 통째로 감추던 것을 중단(2026-07-23 GM '휴회 회원 관리 페이지는 안 만들었네?').
+  //   기능은 있는데 화면에서 사라지니 '안 만든 것'으로 보였다. 비어 있어도 자리를 지키고 '0건'이라고 말한다
+  //   — 없는 것과 아직 안 들어온 것은 다르다.
+  el.style.display = '';
+  var html = '<div style="font-weight:800;font-size:14px;margin-bottom:4px">⏸ 휴회 회원 관리'
+    + '<span style="font-size:11px;font-weight:600;color:var(--dim);margin-left:6px">접수대기 ' + pending.length
+    + ' · 진행중 ' + ongoing.length + ' · 완료 ' + done.length + ' · 반려 ' + rejected.length + '</span>'
+    + '<button type="button" onclick="_loadHoldIntake(true)" style="float:right;padding:3px 10px;border-radius:7px;border:1px solid var(--border);background:var(--paper);color:var(--dim);font:600 11px inherit;cursor:pointer">새로고침</button></div>'
+    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">회원이 <b>휴회 신청 페이지</b>에서 접수하면 여기에 뜹니다. 서버 자동판정(가능/불가)을 확인하고 승인·반려하세요. 승인하면 회원 기록(이용일수 앞 \'휴회기간\')에 반영됩니다.</div>';
+  if (!_hTot) {
+    el.innerHTML = html + '<div style="font-size:12px;color:var(--dim);padding:10px 0;line-height:1.7">'
+      + '아직 접수된 휴회 신청이 없습니다.<br>'
+      + '<a href="휴회접수.html" target="_blank" style="color:var(--teal);font-weight:700;text-decoration:none">회원용 휴회 신청 페이지 열기 →</a>'
+      + '</div>';
+    return;
+  }
   HOLD_INTAKE_ORDER.forEach(function(st){
     var list = groups[st] || []; if (!list.length) return;
     var sty = HOLD_INTAKE_STYLE[st] || { c: 'var(--text)', i: '•' };
