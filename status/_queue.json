@@ -517,8 +517,8 @@
     "priority": "NORMAL",
     "enqueued_at": "2026-07-22",
     "from": "cto",
-    "note": "결정정합 게이트(배9581) 도메인 라우팅. A2: cmo-content-pipeline 의 실제 발행 선정·재발행 가드는 집계기가 아니라 ig_review_publish_watcher.py(GM 승인 게이트)에 있음 — item status='폐기/취소'를 발행 후보에서 제외하는 가드를 watcher 에 명문화할지 시모 판단. A3: cmo-publish-digest 취소편 요약 제외는 완결게이트(_group_is_complete) 발신 판정을 바꿔 발신 델타≠0 위험 → 도메인 검수 후 착수. 근거=ssot/decision_contracts.json(cmo-content-pipeline·cmo-publish-digest 블록). domain_review=시모.",
-    "next": "시모 검수 → A2 watcher 가드 명문화 / A3 델타 위험 판정 후 착수 여부 결정",
+    "note": "결정정합 게이트(배9581) 도메인 라우팅. A2: cmo-content-pipeline 의 실제 발행 선정·재발행 가드는 집계기가 아니라 ig_review_publish_watcher.py(GM 승인 게이트)에 있음 — item status='폐기/취소'를 발행 후보에서 제외하는 가드를 watcher 에 명문화할지 시모 판단. A3: cmo-publish-digest 취소편 요약 제외는 완결게이트(_group_is_complete) 발신 판정을 바꿔 발신 델타≠0 위험 → 도메인 검수 후 착수. 근거=ssot/decision_contracts.json(cmo-content-pipeline·cmo-publish-digest 블록). domain_review=시모. || [2026-07-23 A2 완료 · A3 판정만] A2=명문화 완료(커밋 b6369cedc): ig_review_publish_watcher.py 에 TERMINAL_STATES{폐기,취소} + terminal_reason()/block_if_terminated() 단일 판정 신설, 배제 4지점(카드발송·발행후보선정 2곳·dispatch진입)에 명시 배선. ★실측 전제 정정: 폐기·취소는 APPROVED_STATES 에 없어 '우연히' 안 걸렸을 뿐 — 없는 가드를 만든 게 아니라 암묵적 안전을 못 박은 것. status 만 보던 구조로는 못 잡던 구멍 2개(status='발행완료'+terminal=True 스테일 엔트리 재승인 시 중복발행 · 폴더 폐기 마커 킬스위치)도 함께 차단. 추가로 dispatch_publish 의 else 폴백('나머지 전부→IG 발행기') 수리 — 예상 채널(블로그·카페·당근·카카오·인스타) 밖이면 발행 안 하고 status='발행보류(채널확인)' + 경고만. 회귀 3종 격리 재현 ALL PASS(승인건 정상 발행경로 유지 / 종결 4케이스 발행 0회·status 원문 보존 / 미지 채널 5종 차단+경고). 실발행·실텔레그램 발송 0. A3=착수 안 함(판정만). 라이브 81그룹 전수 대조는 오늘 델타 0이나, 합성 재현으로 델타≠0 구조 확인 — ①공식 5채널 완결+스테일 중복 '폐기' 1건 ②개인 그룹 발행완료1+폐기1 → 둘 다 현행 False(GM 보류)에서 True(실무진방 신규 발신)로 뒤집힘. 안전착수 요건: 게이트뿐 아니라 디제스트 본문 구성에서도 종결 엔트리 제외 + 사전 dry-run 델타 목록 GM 확인 필요. 상세=ssot/decision_contracts.json 두 블록에 반영.",
+    "next": "A3(취소편 요약 제외) 미착수 — 델타≠0 확인됨. 착수 전 ①본문 구성까지 종결 제외 설계 ②전 그룹 dry-run 델타 목록 산출 → GM 확인. A2 는 완료.",
     "depends_on": "CEO-2026-07-22-DECISION-CONSISTENCY-GATE",
     "module": "M1",
     "surface": "autonomy",
@@ -2677,21 +2677,6 @@
     "adhoc_commit": "13c418cacccdf44761e2bcffaa7bc4d9f3248259"
   },
   {
-    "task_id": "CPO-2026-07-23-HOLD-INTAKE-RELOCATE",
-    "clevel": "cpo",
-    "title": "[시포] 휴회 접수 저장 위치 이전(회원DB → 종합접수처 시트) + 종료일 칸 + 최소일수 규칙 정리 (GM A안·시우 인계)",
-    "status": "DONE",
-    "priority": "⛴️여객선",
-    "from": "gm",
-    "origin": "gm",
-    "enqueued_at": "2026-07-23",
-    "note": "GM 2026-07-23 A안 확정 — '접수는 종합접수처 시트로 통합 관리, 관리는 멤버십 회원관리에서'. 시우가 종합접수처(WP 8434) 쪽 회원 입력 화면은 이미 라이브 완료했고, 백엔드 3건이 시포 소관으로 남는다. ▶현재 실측 상태: 종합접수처 휴회 폼 → HOLD_API(member_hold_apply) → MEMBER_SPREADSHEET_ID '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U'(회원 DB)의 '휴회접수' 탭에 append. HOLD_LIVE=true(2026-07-23 GM go)로 실기록 개통 상태. 탭 칸 10개 = 접수일시·성함·연락처·구분·휴회시작일·희망일수·사유·상태·처리일시·처리메모. ▶GM 지시로 회원 화면이 바뀐 결과 생긴 불일치 3건: ①저장 위치 — 접수 데이터는 종합접수처 데이터 시트(17ly-_udUYgOoPZnv6FFV9vq_R2D41q4ZYrGaGYt9rto)로 통합해 관리하고 싶다는 GM 방침. 현재는 회원 DB에 쌓여 다른 접수(VOC·분실물 등)와 따로 논다. ②'휴회종료일' 칸 없음 — 회원 화면에 종료일을 신설했고 payload 에 holdEnd 를 함께 보내지만 탭에 받을 칸이 없어 유실된다(희망일수는 시작~종료 자동계산으로 들어가나 기간 자체가 안 남아 직원이 역산해야 함). ③서버 최소일수 규칙 충돌 — member_hold_apply 가 holdKind 로 하한을 검증해 'days-too-short' 를 반환한다(신규 최소 7일). GM 지시로 회원 화면에서 '구분(신규·연장)'을 삭제했기 때문에 항상 '신규'로 전송되며, 회원이 짧은 기간을 넣으면 서버가 막고 그 메시지가 회원에게 그대로 보인다. GM 방침은 '일수 적정성은 접수 시트에서 직원이 확인'이므로 판정을 직원 검토 단계로 옮겨야 한다. ▶확인된 것(추가 작업 불필요): 종합접수처에는 휴회 현황 화면을 만들지 않는다(GM: 접수만 받아 시트에 쌓으면 됨) — 시우도 화면을 만들지 않았고 앞으로도 안 만든다. 직원 관리 화면은 이미 존재 — cpo/member/membership.html 의 '휴회 접수 관리' 카드(2026-07-22 시포·GM 재설계, LOSS 회원관리와 같은 페이지). GM이 말한 '어제 정리해준 휴회 회원 관리'가 이것. ▶참고 자료(GM 제공): 기존 구글폼 휴회 접수 데이터 = 1akZLs7ITs3FZWFIzMQvSYrdRucGQglmerOvTC2TLEcQ (gid 514238773) — 칸 구성 대조용. ▶[시우 추가 실측] 종합접수처 시트 ID(17ly-…)는 저장소 코드 어디에도 하드코딩돼 있지 않다 — VOC GAS(coo/voc/apps_script_voc.js)가 ScriptProperties 의 'SPREADSHEET_ID' 를 읽어 openById 한다(:194·:199·:1467). 그래서 리포를 grep 해도 안 나온다. 이전 작업 시 대상 시트 지정은 코드 상수가 아니라 해당 GAS 프로젝트의 스크립트 속성에서 확인·설정할 것.",
-    "next": "[2026-07-23 완료] 3건 전부 반영·라이브 실측. GAS v2 @136. ①저장위치 이전: 휴회접수 탭을 종합접수처 시트(17ly-…)로 이전. _holdIntakeSheet_() 단일 진입점으로 apply·intake_list·approve 동시 배선(권한 실패 시 옛 위치 자동 폴백 — 접수 유실 방지). 이관은 신규 액션 member_hold_intake_migrate: ★행번호 금지·대조키(접수일시+성함+연락처)만 사용·원본 무삭제·기본 예행. 실행 1건 이관, 재실행 시 skippedExisting=1 로 멱등 확인. ②휴회종료일 칸 신설(휴회시작일 뒤). 회원 화면 holdEnd 우선, 없으면 시작일+일수 계산. 이관 행도 종료일 자동 채움. 실측 2026-08-01~2026-08-03 기록 확인. ③공개 접수 일수 판정 제거: 신규 3일 접수 → ok:true(회원에게 거부 메시지 없음), 접수관리 화면에서 판정 '불가 · 1회 최소 7일'로 직원에게 표출 확인. GM 방침(직원이 시트에서 확인) 정합. 검증 테스트 2건은 반려 처리로 정리(행 삭제 0). ▶잔여: 시우가 종합접수처에서 실접수 1건 넣어 종단 확인. ▶[2026-07-23 시우 처리] GM 지적으로 구 공개페이지 cpo/member/휴회접수.html 의 폼을 걷어내고 종합접수처로 보내는 안내 페이지로 전환했다(3초 자동 이동). 휴회 폼 정본은 이제 종합접수처 한 곳뿐(약속 L01). 저장소에 이 페이지를 거는 링크는 0건이었고(membership.html 언급은 전부 주석) 원본 폼은 git 이력에 남아 복원 가능. 커밋 0d21785a. ★파일 소유는 시포 — 완전 삭제할지 안내 페이지로 둘지는 시포 판단.",
-    "module": "member",
-    "surface": "autonomy",
-    "ship_no": 9948
-  },
-  {
     "task_id": "CPO-2026-07-23-ADHOC-1b4e976e8",
     "clevel": "cpo",
     "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
@@ -2815,19 +2800,6 @@
     "artifact": "GM: '멤버십 회원관리에 휴회 회원 관리 페이지는 안 만들었네?'\n확인 결과 기능은 7/22에 만들어 두었으나 화면에서 사실상 존재하지 않았다. (CLI ad-hoc · 커밋 b9cc19a5e)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "b9cc19a5e1f20135816f37713410fc439721afb1"
-  },
-  {
-    "task_id": "CEO-2026-07-23-WORKLOG-PANEL-ROLLOUT",
-    "clevel": "ceo",
-    "title": "[웰리] 작업 현황 로그 전사 확장 배정 — 시모 M1 검증 완료, 시우·시포부터(시모 제기·GM 07-23 지시)",
-    "status": "DONE",
-    "priority": "NORMAL",
-    "from": "gm",
-    "origin": "gm",
-    "enqueued_at": "2026-07-23",
-    "ship_no": 9958,
-    "note": "GM 2026-07-23 \"타 C-Level 확장 안내면 웰리 시키면 되는거 아냐?\" 지시로 시모(CMO)가 제기. 브리프: status/briefs/시모_작업현황로그_전사확장_제기_20260723.md. 배9820(CMO, 작업 현황 로그 신설)에서 M1(마케팅) 최초 적용·라이브 검증 완료. 두 구획(📋 한 일=자동 기록 + ⚠️ 빠진 것=짝 불일치 자동 적발)이 반드시 같이 있어야 함(계기=AI하루 EP10 검수큐 등록 누락을 아무도 못 봄). 구성 파일: scripts/worklog.py(공용 기록)·scripts/worklog_gaps.py(role별 규칙 등록부)·3. 웰페리온 가이드/_assets/worklog_panel.js(공용 화면 조각, 기존 gate.js·print_options.js 관례). 붙이는 법: ①자기 페이지에 data-worklog=\"{role}\" div + 스크립트 1줄 ②worklog_gaps.py 에 자기 도메인 규칙만 추가 ③자동화 코드에 worklog.log(role=...) best-effort 호출. 새 화면·새 파일·새 예약작업 불필요. 설계 원칙: 평상시 조용해야(신규 0건=배지 없음) + 0건일 때도 '빠진 것 없음 ✅' 숨기지 않음(정상/고장 구분). CMO 실적: 규칙 8종 가동, 첫 스캔에서 콘텐츠 원본 폴더 소실 7건·발행완료인데 주소 없음 47건(46건 회수)·아무도 호출 않는 자동화 4건(재발방지 감사기 삭제 방치 포함) 적발. 시모는 규격 제공·질문 응대만, 타 도메인 규칙은 각자 작성(도메인 모르는 사람이 만든 규칙은 오탐만 냄). || [웰리 배정 완료 2026-07-23] 구성물 실물 검증(worklog.py 3.9KB · worklog_gaps.py 41.9KB · worklog_panel.js 21.1KB · 참조 적용=ERP 메인 · 규칙 8종 전부 ok · 첫 스캔 57건 적발) 후 배정. 시우=배9959(O1 운영), 시포=배9960(회원). 각 도메인 규칙은 담당이 작성(도메인 모르는 사람이 만들면 오탐), 시모는 규격 제공·질문 응대만. 시로·시뽀·시토는 시우·시포 첫 스캔 결과 본 뒤 2차 배정.",
-    "next": "시우·시포 첫 스캔 결과 회신 수신 → 오탐률 보고 2차 확장(시로·시뽀·시토) 배정 판단"
   },
   {
     "task_id": "COO-2026-07-23-작업-현황-로그-O1-적용-한-일-기록-빠진-것-자",
