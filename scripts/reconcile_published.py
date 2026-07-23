@@ -14,6 +14,7 @@
 #   --dry-run                  변경 없이 '채울 수 있는 URL 목록' 출력
 #   --channels blog,cafe,kakao 대상 채널 쉼표 구분 (기본: 전체)
 #   --limit N                  처리 건수 제한
+#   --max-seconds N            1회 실행 시간 상한 — 넘으면 남은 건은 다음 회차로 (무인 편승용)
 #   --headful                  브라우저 창 표시 (디버그)
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -179,6 +181,10 @@ def main() -> int:
         help="처리 건수 제한",
     )
     parser.add_argument(
+        "--max-seconds", type=int, default=None,
+        help="1회 실행 시간 상한(초) — 넘으면 남은 건은 다음 회차로 (무인 편승용)",
+    )
+    parser.add_argument(
         "--headful", action="store_true",
         help="브라우저 창 표시 (디버그)",
     )
@@ -219,9 +225,23 @@ def main() -> int:
     modified_items  = [dict(it) for it in items]  # 원본 보존용 복사
     recovered_log: list[dict] = []                # dry-run 결과 수집
     updated_count   = 0
+    failed_count    = 0                           # 시도했으나 미회수(세션만료·글 없음 등)
+    deferred_count  = 0                           # 시간 상한으로 이번 회차 미처리 → 다음 회차
     newly_published: list[dict] = []              # 임시저장→발행완료 전환 건
+    # ★저장 시 '이번에 실제로 바꾼 항목'만 넘긴다 — 큐 전체를 넘기면 merge 저장이 id 마다
+    #   이 프로세스의 스테일 사본으로 덮어써, 크롤이 도는 몇 분 사이 다른 프로세스가 채운
+    #   값이 지워진다(2026-07-23 배9578 실측: 회수기가 채운 URL 을 IG 대조 스윕이 되돌림).
+    changed_entries: list[dict] = []
+    started_at      = time.monotonic()
 
-    for idx, item in targets:
+    for pos, (idx, item) in enumerate(targets):
+        # 시간 상한 — 크롤이 오래 걸려도 예약작업 본체를 붙잡지 않는다.
+        # 남은 건은 다음 회차가 다시 대상으로 잡는다(멱등이라 중복 처리 무해).
+        if args.max_seconds and (time.monotonic() - started_at) >= args.max_seconds:
+            deferred_count = len(targets) - pos
+            print(f"[INFO] 시간 상한 {args.max_seconds}초 도달 — 남은 {deferred_count}건은 다음 회차로")
+            break
+
         channel_name = item.get("channel", "")
         engine_ch    = CHANNEL_MAP.get(channel_name, "")
         item_id      = item.get("id") or item.get("title") or f"idx={idx}"
@@ -235,6 +255,7 @@ def main() -> int:
         keyword = _extract_keyword(item)
         if not keyword:
             print(f"  [SKIP] keyword 추출 실패: {item_id}", file=sys.stderr)
+            failed_count += 1
             continue
 
         print(f"  [시도] {item_id} | ch={engine_ch} | kw={keyword!r}")
@@ -250,6 +271,7 @@ def main() -> int:
         if not found_url:
             # 못 찾음 → 무변경, stderr에 사유만 기록
             print(f"  [미회수] {item_id} | {reason}", file=sys.stderr)
+            failed_count += 1
             continue
 
         print(f"  [회수] {found_url}")
@@ -285,6 +307,7 @@ def main() -> int:
             entry["note"] = (existing_note + " | " + note_new).lstrip(" | ")
 
             modified_items[idx] = entry
+            changed_entries.append(entry)
             updated_count += 1
 
             worklog_log("cmo", "발행", f"{item_id} 주소 회수·발행완료", result="ok",
@@ -303,6 +326,16 @@ def main() -> int:
         print("\n[INFO] dry-run: 실제 파일 변경 없음")
         return 0
 
+    # ── 1회 실행 요약 1줄 기록 (성공/미회수 건수) ──────────
+    worklog_log(
+        "cmo", "발행",
+        f"발행 주소 자동 회수 — 성공 {updated_count}건 / 미회수 {failed_count}건",
+        result=("ok" if updated_count else "warn"),
+        detail=f"대상 {len(targets)}건 · 채널={args.channels}"
+               + (f" · 다음 회차 이월 {deferred_count}건" if deferred_count else ""),
+        ref="CMO-2026-07-22-PUBLISH-URL-RECOVERY-3CH",
+    )
+
     # ── 실제 갱신 ─────────────────────────────────────
     if updated_count == 0:
         print("[INFO] 회수된 URL 없음 — 파일 무변경")
@@ -315,7 +348,8 @@ def main() -> int:
 
     # 갱신 쓰기 — 락 안에서 디스크 최신본 재로드 후 id 병합 저장
     # (2026-07-23 · 07-21 AI하루 10편 소실 재발방지: 네트워크 대조 중 추가된 신규 항목 보존)
-    merge_save_review_queue(modified_items, holder="reconcile_published")
+    payload = changed_entries if all(e.get("id") for e in changed_entries) else modified_items
+    merge_save_review_queue(payload, holder="reconcile_published")
     print(f"[INFO] 갱신 완료: {updated_count}건 → {QUEUE_PATH.name}")
 
     # 임시저장→발행완료 전환된 건 텔레그램 통지

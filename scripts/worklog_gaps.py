@@ -507,6 +507,172 @@ def rule_stale_ship_note() -> list[dict]:
     return gaps
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# CMO 규칙 v3 — 2026-07-23. "만들기는 하고 잇기를 안 한다"를 구조로 막는다.
+# 계기: 같은 실패가 하루에 3번 나왔다 — AI하루 EP10(만들고 검수큐 등록 안 함) ·
+#   원본 7편(만들고 커밋 안 함) · 발행주소 회수기(만들고 어떤 실행 경로에도 연결 안 함).
+#   앞의 둘은 위 규칙들이 잡지만, 세 번째("코드는 있는데 아무도 안 부른다")는 사각지대였다.
+# ─────────────────────────────────────────────────────────────────────────
+
+# 배선(호출자)이 존재할 수 있는 파일 확장자. .bat·.vbs 는 예약작업이 실제로 실행하는 진입점이라
+# 반드시 포함해야 한다(실측: ig/start_ig_series_producer.bat 이 ai_daily_series_card.py 를 호출 —
+# .py 만 훑으면 멀쩡한 스크립트를 고아로 오탐한다).
+_WIRING_EXTS = {".py", ".bat", ".vbs", ".ps1", ".cmd", ".sh"}
+# 스캔 제외 — 남의 저장소 사본·산출물 더미(여기서 나온 언급은 이 저장소의 배선이 아니다).
+_WIRING_SKIP_PARTS = {
+    ".git", "node_modules", "__pycache__", ".venv", "venv", "profiles", "_archive",
+    "worktrees", ".deploy-check", ".deploy-instructor", "qa_screenshots", "tmp",
+    "scratchpad", "site-packages",
+}
+_SCHEDULE_INVENTORY_PATH = ROOT / "status" / "schedule_inventory.json"
+
+_HANGUL_RE = re.compile(r"[가-힣]")
+_PY_MENTION_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\.py\b")
+_PY_IMPORT_RE = re.compile(
+    r"^\s*(?:from\s+([A-Za-z_][A-Za-z0-9_]*)\s+import|import\s+([A-Za-z_][A-Za-z0-9_]*))"
+)
+
+# CMO 소관 판정(다른 role 소관은 대상 밖 — 이건 시모 규칙이다).
+# 근거: 파일이 CMO 단일 SSOT(review_queue.json)를 다루거나, 파일명이 CMO 도메인 접두를 가진다.
+# 접두만으로는 부족하고 본문 근거만으로도 부족해 둘 중 하나면 소관으로 본다(실측 조정 결과 —
+# 'status/'·'가이드/cmo' 같은 흔한 문자열을 근거에 넣으면 CEO 도구 delegation_state_check 까지
+# 딸려 들어와 오탐이 된다).
+_CMO_SCRIPT_PREFIXES = (
+    "cmo_", "ig_", "publish_", "compose_", "naver_", "danggn_", "kakao_channel_", "instagram_",
+)
+# 이미지·영상 합성 라이브러리를 쓰는 파일 = 사람이 필요할 때 직접 돌리는 제작 도구(고아 아님).
+# 실측: compose_* 12개·mosaic_* 2개가 전부 여기 걸린다 — 이 제외가 없으면 규칙이 오탐에 묻힌다.
+_MEDIA_TOOL_IMPORT_RE = re.compile(r"^\s*(?:from|import)\s+(?:PIL|cv2|moviepy|numpy)\b", re.M)
+# 주기 실행 의도가 파일 머리에 적혀 있으면 "돌아야 하는데 안 돈다"가 확실 → mid.
+_SCHEDULE_INTENT_WORDS = ("매일", "매주", "매월", "정기", "예약", "스윕", "주기")
+_HEAD_LINES = 40
+
+
+def _wiring_files() -> list[Path]:
+    """호출자가 있을 수 있는 파일 목록(저장소 전체 · 사본·산출물 더미 제외) + git 훅."""
+    files: list[Path] = []
+    try:
+        for f in ROOT.rglob("*"):
+            if not f.is_file():
+                continue
+            if any(part in _WIRING_SKIP_PARTS for part in f.parts):
+                continue
+            if f.suffix.lower() in _WIRING_EXTS:
+                files.append(f)
+    except Exception:
+        pass
+    hooks_dir = ROOT / ".git" / "hooks"
+    if hooks_dir.is_dir():
+        try:
+            files += [f for f in hooks_dir.iterdir() if f.is_file() and f.suffix != ".sample"]
+        except Exception:
+            pass
+    return files
+
+
+def _build_caller_index(stems: set[str]) -> dict[str, set[str]]:
+    """스크립트별 '실제 배선으로 볼 수 있는 언급' 색인.
+
+    .py 에서는 ① import 문 ② 한글이 없는 줄의 'X.py' 언급만 배선으로 센다.
+    한글이 섞인 줄은 사람이 읽는 설명·힌트다(실측: 이 규칙 파일 자신의 hint 문구
+    "scripts/reconcile_published.py 로 재회수"를 배선으로 세면, 정작 잡아야 할 진짜 고아를
+    놓친다 — 이 한 줄 때문에 규칙이 죽을 뻔했다).
+    """
+    refs: dict[str, set[str]] = {s: set() for s in stems}
+    for f in _wiring_files():
+        try:
+            text = f.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        try:
+            rel = str(f.relative_to(ROOT))
+        except Exception:
+            rel = str(f)
+        is_py = f.suffix.lower() == ".py"
+        self_stem = f.stem if is_py and f.parent == _SCRIPTS_DIR else None
+        for line in text.splitlines():
+            if is_py:
+                m = _PY_IMPORT_RE.match(line)
+                if m:
+                    name = m.group(1) or m.group(2)
+                    if name in refs and name != self_stem:
+                        refs[name].add(rel)
+                if _HANGUL_RE.search(line):
+                    continue
+            for name in _PY_MENTION_RE.findall(line):
+                if name in refs and name != self_stem:
+                    refs[name].add(rel)
+    return refs
+
+
+def _scheduled_script_stems() -> set[str]:
+    """예약작업(Windows Task Scheduler) 등록부에 등장하는 스크립트 이름.
+    status/schedule_inventory.json(멱등 생성 SSOT)을 읽는다 — 스캔 때마다 schtasks 를
+    호출하지 않는다(느리고 권한 의존)."""
+    data = _load_json(_SCHEDULE_INVENTORY_PATH, {})
+    try:
+        blob = json.dumps(data, ensure_ascii=False)
+    except Exception:
+        return set()
+    return set(_PY_MENTION_RE.findall(blob))
+
+
+def rule_orphan_automation() -> list[dict]:
+    """CMO 소관 자동화 스크립트 중 '어디서도 안 불리는' 것 적발(만들고 안 이은 것).
+
+    고아 = 호출자 0(다른 파일 import·subprocess 배선 없음) + .bat/.vbs/git훅 등록 없음 +
+           예약작업 등록 없음.
+    오탐 제외(실측으로 정한 기준 — 저장소 실제 파일 55개 무호출 목록을 눈으로 검토해 조정):
+      · 라이브러리성 모듈(`if __name__ == "__main__"` 없음) — 애초에 단독 실행 대상 아님.
+      · 이미지·영상 합성 도구(PIL·cv2·moviepy·numpy 사용) — 사람이 제작할 때 직접 돌린다.
+      · argparse 에 required=True 인자가 있는 것 — 매 실행 사람이 값을 넣어야 하므로 무인 배선 불가.
+    """
+    scripts = sorted(_SCRIPTS_DIR.glob("*.py")) if _SCRIPTS_DIR.is_dir() else []
+    if not scripts:
+        return []
+    stems = {p.stem for p in scripts}
+    refs = _build_caller_index(stems)
+    scheduled = _scheduled_script_stems()
+    today = datetime.now(tz=KST).date()
+
+    gaps: list[dict] = []
+    for path in scripts:
+        stem = path.stem
+        if refs.get(stem) or stem in scheduled:
+            continue
+        try:
+            src = path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        is_cmo = ("review_queue" in src) or stem.startswith(_CMO_SCRIPT_PREFIXES)
+        if not is_cmo:
+            continue  # 다른 role 소관은 대상 밖(이건 시모 규칙)
+        if 'if __name__ ==' not in src:
+            continue  # 라이브러리성 모듈
+        if _MEDIA_TOOL_IMPORT_RE.search(src):
+            continue  # 제작 도구(사람이 직접 실행)
+        if "required=True" in src:
+            continue  # 실행 때마다 사람 입력이 필요 — 무인 배선 대상 아님
+        head = "\n".join(src.splitlines()[:_HEAD_LINES])
+        has_intent = any(w in head for w in _SCHEDULE_INTENT_WORDS)
+        try:
+            target_date = datetime.fromtimestamp(path.stat().st_mtime, tz=KST).date()
+        except Exception:
+            target_date = None
+        gaps.append({
+            "role": "cmo",
+            "severity": "mid" if has_intent else "low",
+            "title": f"{stem}.py — 만들어놓고 아무 데도 안 붙임",
+            "detail": "다른 스크립트·배치파일·git훅·예약작업 어디에서도 호출되지 않음"
+                      + (" · 파일 머리에 주기 실행 의도 명시" if has_intent
+                         else " · 주기 실행 의도 불명(수동 도구일 수 있음)"),
+            "hint": "기존 예약작업에 best-effort 편승(신규 예약작업 금지) 또는 폐기 결정 필요",
+            "ref": f"scripts/{stem}.py",
+            "age": _classify_age(target_date, today),
+        })
+    return gaps
+
+
 # role 별 규칙 등록부 — 다른 C-Level 은 자기 role 리스트에 함수만 추가하면 됨(공용 스캔 재사용).
 _RULES: dict[str, list] = {
     "ceo": [],
@@ -519,6 +685,7 @@ _RULES: dict[str, list] = {
         rule_stale_ship_note,
         rule_claimed_but_missing,      # 2026-07-23 신설 — 만들었다고 하고 실물 없는 것
         rule_content_folder_vanished,  # 2026-07-23 신설 — 콘텐츠 폴더·슬라이드 소실
+        rule_orphan_automation,        # 2026-07-23 신설 — 만들고 아무 실행 경로에도 안 이은 것
     ],
     "coo": [],
     "cpo": [],

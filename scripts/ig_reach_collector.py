@@ -228,6 +228,40 @@ def update_ledger(account_result: dict | None, media_results: list[dict], dry_ru
     return ledger
 
 
+# 1회 실행 시간 상한 — 크롤이 길어져도 본 수집 작업을 붙잡지 않는다. 미처리분은 다음 회차로.
+RECONCILE_MAX_SECONDS = 480      # 회수기 내부 상한(이 시간 넘으면 스스로 남은 건 이월 후 정상 저장)
+RECONCILE_HARD_TIMEOUT = 600     # 프로세스 강제 종료 백스톱(내부 상한이 안 먹을 때만 발동)
+
+
+def _run_reconcile_published() -> None:
+    """scripts/reconcile_published.py 를 별도 프로세스로 1회 실행(읽기 크롤 → URL 백필).
+
+    별도 프로세스인 이유: 회수기는 Playwright 비동기 크롤을 쓴다 — 같은 프로세스에 올리면
+    이 수집기의 종료·예외 처리에 얽힌다. 실패·타임아웃은 전부 삼키고 본 작업(도달 수집)에
+    영향 0. 결과 1줄 기록은 회수기 자신이 worklog 로 남긴다.
+    """
+    import subprocess  # noqa: PLC0415 — best-effort 경로에서만 필요
+
+    script = ROOT / "scripts" / "reconcile_published.py"
+    if not script.exists():
+        print("[WARN] reconcile_published.py 미존재 — 발행 주소 회수 건너뜀")
+        return
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(script), "--max-seconds", str(RECONCILE_MAX_SECONDS)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=RECONCILE_HARD_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        print(f"[WARN] 발행 주소 회수 {RECONCILE_HARD_TIMEOUT}초 초과 — 강제 종료(다음 회차 재시도)")
+        return
+    tail = [ln for ln in (proc.stdout or "").splitlines() if ln.strip()][-3:]
+    for ln in tail:
+        print(f"  [회수] {ln}")
+    if proc.returncode != 0:
+        print(f"[WARN] 발행 주소 회수 종료코드 {proc.returncode}(무해 — 다음 회차 재시도)")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="@wellperion IG 노출·도달 수집기 (배#546, 미검증 골격)")
     parser.add_argument("--dry-run", action="store_true", help="파일 저장 없이 결과만 출력")
@@ -242,6 +276,23 @@ def main() -> int:
         print(f"DONE: 네트워크 호출 없음 — 기존 ledger로 요약만 재생성 → {SUMMARY_PATH}")
         return 0
 
+    try:
+        return _collect_reach(args)
+    finally:
+        # 발행 주소 자동 회수 대조 편승(2026-07-23 배9578 — 회수기 reconcile_published.py 는
+        # 만들어져 있는데 어느 자동 실행 경로에도 안 붙어 '발행완료인데 주소 없음' 48건이 쌓였다).
+        # 위 반응 성적표와 같은 방식의 best-effort 편승 — 신규 예약작업·신규 스케줄러 없음.
+        # ★finally 인 이유: 위 수집이 토큰 만료(60일)로 BLOCKED 되어 조기 return 해도 회수는 돌아야 한다
+        #   (그렇지 않으면 '붙여놨는데 안 도는' 같은 고장을 반복한다).
+        if not args.dry_run:
+            try:
+                _run_reconcile_published()
+            except Exception as e:
+                print(f"[WARN] 발행 주소 회수 대조 연계 실패(IG 도달 수집 자체는 완료): {e}")
+
+
+def _collect_reach(args) -> int:
+    """IG 도달·노출 수집 본체 — 토큰 없으면 BLOCKED 로그만 남기고 종료(부작용 0)."""
     token, business_id = _get_credentials()
     if not token or not business_id:
         _save_summary(build_summary(_load_ledger()))

@@ -36,6 +36,13 @@ QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.js
 PROFILE_BASE = ROOT / "profiles" / "instagram"
 DEFAULT_ACCOUNT = "namuk.wellperion"
 TARGET_STATUS = "발행검증대기"
+# 주소 회수 대상 확대(2026-07-23 배9578): '발행완료'로 이미 굳었지만 url·post_url 이 빈 건도
+# 대조 대상에 넣는다. 기존엔 TARGET_STATUS 하드코딩이라 한번 발행완료가 되면 영구히 대상 밖이었고,
+# 그래서 인스타 14건이 주소 없이 방치됐다.
+# ★재발행 위험 0 근거: 이 스크립트는 페이지 이동(page.goto)과 텍스트 읽기(inner_text·
+#   get_attribute)만 한다 — click·fill·set_input_files·업로드 호출이 한 줄도 없다.
+#   쓰기는 review_queue.json 의 status·post_url·note 뿐(발행 경로 미접촉).
+URL_BACKFILL_STATUS = "발행완료"
 LOGIN_SIGNALS = ("instagram.com/accounts/login", "instagram.com/accounts/onetap", "/challenge/")
 POST_HREF_RE = re.compile(r"/(p|reel)/([A-Za-z0-9_-]+)/")
 
@@ -188,16 +195,27 @@ async def _launch(account: str):
     return p, context
 
 
+def _is_target(it: dict) -> bool:
+    """대조 대상 판정 — ① 발행검증대기(도장 대상) ② 발행완료인데 주소 빈 건(주소 백필 대상).
+    이미 주소가 있는 발행완료 건은 제외(불필요한 크롤 방지)."""
+    if "인스타그램" not in (it.get("channel") or ""):
+        return False
+    status = it.get("status")
+    if status == TARGET_STATUS:
+        return True
+    if status == URL_BACKFILL_STATUS:
+        return not (it.get("url") or it.get("post_url") or "").strip()
+    return False
+
+
 async def run(target_id: str | None, dry_run: bool) -> int:
     queue: list[dict] = json.loads(QUEUE.read_text(encoding="utf-8"))
     targets = [
         it for it in queue
-        if it.get("status") == TARGET_STATUS
-        and "인스타그램" in (it.get("channel") or "")
-        and (target_id is None or it.get("id") == target_id)
+        if _is_target(it) and (target_id is None or it.get("id") == target_id)
     ]
     if not targets:
-        print("✅ 대조할 발행검증대기 인스타그램 항목 없음.")
+        print("✅ 대조할 인스타그램 항목 없음(발행검증대기 0건 · 주소 빈 발행완료 0건).")
         return 0
 
     # 계정별 그룹 — 계정 1개 세션으로 해당 계정 건 일괄 대조
@@ -206,7 +224,11 @@ async def run(target_id: str | None, dry_run: bool) -> int:
         by_acct.setdefault((it.get("account") or DEFAULT_ACCOUNT).strip(), []).append(it)
 
     stamped = 0
-    changed = False
+    # ★저장은 '이번에 실제로 바꾼 항목'만 넘긴다(2026-07-23 배9578 실측 사고).
+    #   큐 전체를 넘기면 merge_save_review_queue 가 id 마다 이 프로세스의 스테일 사본으로
+    #   덮어써, 대조가 도는 몇 분 사이 다른 프로세스가 채운 값이 지워진다
+    #   (실측: 13:28 회수기가 채운 카카오 post_url 을 13:30 이 스윕이 되돌림).
+    changed_items: list[dict] = []
     for account, items in by_acct.items():
         if not _profile_dir(account).exists():
             print(f"[WARN] 프로필 미존재(account={account}) — 건너뜀 {len(items)}건")
@@ -220,14 +242,20 @@ async def run(target_id: str | None, dry_run: bool) -> int:
                        "notfound": "❓", "error": "💥"}.get(verdict, "?")
                 print(f"{tag} [{it.get('id')}] {verdict} — {reason}")
                 if verdict == "match" and not dry_run:
+                    was_backfill = it.get("status") == URL_BACKFILL_STATUS
                     it["status"] = "발행완료"
                     it["published_at"] = it.get("published_at") or datetime.now().isoformat(
                         timespec="seconds")
                     if post_url:
                         it["post_url"] = post_url
-                    it["note"] = f"[자동대조 발행완료 {datetime.now():%Y-%m-%d}] {reason}"
+                    # note 는 덮어쓰지 않고 뒤에 붙인다 — 이미 발행완료로 굳은 건(주소 백필 대상)의
+                    # 기존 이력을 지우지 않기 위함(2026-07-23 배9578).
+                    label = "주소 회수" if was_backfill else "발행완료"
+                    stamp = f"[자동대조 {label} {datetime.now():%Y-%m-%d}] {reason}"
+                    prev = (it.get("note") or "").strip()
+                    it["note"] = (prev + " | " + stamp) if prev else stamp
                     stamped += 1
-                    changed = True
+                    changed_items.append(it)
         finally:
             try:
                 if context:
@@ -237,9 +265,11 @@ async def run(target_id: str | None, dry_run: bool) -> int:
             except Exception:
                 pass
 
-    if changed:
+    if changed_items:
         # 락 안에서 최신본 재로드 후 id 병합 저장 — 대조(수 분) 사이 추가된 신규 항목 보존.
-        merge_save_review_queue(queue, holder="ig_publish_verify")
+        # id 없는 항목은 id 병합이 불가하므로 그때만 종전처럼 큐 전체를 넘긴다(변경 유실 방지).
+        payload = changed_items if all(it.get("id") for it in changed_items) else queue
+        merge_save_review_queue(payload, holder="ig_publish_verify")
     print(f"\n→ 대조 {len(targets)}건 / 발행완료 도장 {stamped}건"
           + (" (dry-run, 미반영)" if dry_run else ""))
     return stamped
