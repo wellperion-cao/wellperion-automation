@@ -55,6 +55,7 @@ except Exception:
 # 하드 임포트(실패 시 시끄럽게): 락 없이 무방비 커밋되면 동시성 손상 방지 목적이 무력화됨.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from git_lock import GitLock
+from safe_commit import safe_commit  # 스테일 트리 차단 커밋(2026-07-23 배9820)
 from publish_digest import send_publish_digest  # 발행완료→문의방 통합요약 자동발신(2026-07-15)
 # review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
 from review_queue_util import merge_save_review_queue
@@ -887,15 +888,24 @@ def _run_once_inner(dry_run: bool) -> int:
                 v = it.get(key)
                 if v:
                     content_paths.add(str(v))
-        with GitLock(holder="ig_review_publish:commit", repo_root=str(ROOT)):
-            git("add", str(QUEUE))
-            for rel in sorted(content_paths):
-                target = ROOT / rel
-                if target.exists():
-                    git("add", str(target))
-            git("commit", "-m", f"auto(cmo): 검수 승인 건 발행 {len(published)}건 / 수동대기 {len(manual)}건")
-            git("pull", "--rebase", "--autostash", "origin", "master")
-            git("push", "origin", "master")
+        # 안전 커밋터(2026-07-23 배9820) — 기존엔 라이브 인덱스에 add 후 pathspec 없는
+        # `git commit` 이라 그 순간 남이 stage 해둔 무관 파일까지 통째로 실렸고(이력 귀속
+        # 어긋남), 옛 트리 스냅샷 위에 커밋되면 그 사이 들어온 파일이 '삭제'로 기록됐다
+        # (2026-07-21 AI하루 190파일 삭제). safe_commit 은 임시 인덱스(read-tree HEAD)로
+        # 지정 경로만 담고, 커밋 직전 HEAD 재검증 + update-ref CAS 로 원자 커밋한다.
+        # push 는 기존 post_commit_push.py 를 그대로 호출(update-ref 는 post-commit 훅
+        # 미발화). pull --rebase 는 뺐다 — 매 사이클 시작의 pull_latest() 가 이미 동기화하고,
+        # 공용 작업트리에서의 rebase 자체가 사고 원인이었다.
+        commit_paths = [str(QUEUE)] + [
+            str(ROOT / rel) for rel in sorted(content_paths) if (ROOT / rel).exists()
+        ]
+        res = safe_commit(
+            commit_paths,
+            f"auto(cmo): 검수 승인 건 발행 {len(published)}건 / 수동대기 {len(manual)}건",
+            holder="ig_review_publish:commit",
+        )
+        _safe_print(f"[{'INFO' if res['ok'] else 'WARN'}] 커밋: {res['reason']}"
+                    + (f" · 혼입 {res['foreign']}" if res["foreign"] else ""))
 
         # 알림 라우팅 원칙(GM 지시 2026-06-24):
         # - 실패·수동대기 포함 → GM 채널 발송.

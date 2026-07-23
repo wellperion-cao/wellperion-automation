@@ -36,6 +36,8 @@ from pathlib import Path
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 REVIEW_QUEUE_PATH = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 SHIP_QUEUE_PATH = ROOT / "status" / "_queue.json"
+SHIP_QUEUE_ARCHIVE_PATH = ROOT / "status" / "_queue_archive.json"
+WORKLOG_PATH = ROOT / "status" / "worklog.jsonl"
 GAPS_PATH = ROOT / "status" / "worklog_gaps.json"
 GAPS_STATE_PATH = ROOT / "status" / "worklog_gaps_state.json"
 INSTAGRAM_DIR = ROOT / "instagram"
@@ -296,6 +298,178 @@ def rule_ig_only_no_siblings() -> list[dict]:
     return gaps
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# CMO 규칙 v2 — 2026-07-23 GM 지시("구조 탓 말고 본인 부주의로 정의") 반영.
+# 공용 워크트리 레이스가 원인이더라도 "내 산출물이 지금 살아있는지" 확인은 CMO 책임이다.
+# 계기 실측: 2026-07-21 「AI하루」 10편(190파일)이 무관 커밋에 삭제됐는데 이틀간 아무도
+#   못 알아챘다(status/briefs/시모_커밋스테일트리_제기_20260723.md). 아래 두 규칙이
+#   있었으면 당일에 걸렸다.
+# ─────────────────────────────────────────────────────────────────────────
+
+
+def _is_terminated(item: dict) -> bool:
+    """정상 종결(폐기·취소)인가 — 유실이 아니므로 소실 판정에서 제외.
+    ★판정은 신규 구현 없이 기존 _is_deprecated_folder(폐기 마커 파일 실존) 를 재사용하고,
+    큐 자체의 종결 상태(status='폐기' · terminal 필드)만 추가로 본다."""
+    if str(item.get("status", "")).strip() == "폐기":
+        return True
+    if item.get("terminal"):
+        return True
+    folder = str(item.get("folder", "")).strip()
+    if folder:
+        fpath = ROOT / folder
+        if fpath.is_dir() and _is_deprecated_folder(fpath):
+            return True
+    return False
+
+
+def _slide_exists(slide: str, folder_path: Path) -> bool:
+    """slides 항목은 실측상 두 형태가 공존한다 — 저장소 상대(예 'instagram/…/post_1.jpg')와
+    folder 상대(예 'ig_01.jpg', 골프 EP1~3 실측). 둘 중 하나로 존재하면 있는 것으로 본다
+    (이 구분을 안 하면 골프 3건이 통째로 오탐)."""
+    s = str(slide).strip()
+    if not s:
+        return True
+    return (ROOT / s).is_file() or (folder_path / s).is_file()
+
+
+def rule_content_folder_vanished() -> list[dict]:
+    """review_queue.json 항목이 가리키는 콘텐츠 폴더·슬라이드가 디스크에 실제로 있는지 대조.
+    "만들어서 큐에 올렸는데 원본이 사라진" 상태를 적발한다(2026-07-21 사고 유형).
+    정상 폐기(_is_terminated)는 제외. 같은 폴더를 가리키는 채널 형제 항목은 폴더 단위로 묶는다."""
+    queue = _load_review_queue()
+    today = datetime.now(tz=KST).date()
+    vanished: dict[str, list[dict]] = {}
+    gaps: list[dict] = []
+    for it in queue:
+        if _is_terminated(it):
+            continue
+        folder = str(it.get("folder", "")).strip()
+        if not folder:
+            continue
+        fpath = ROOT / folder
+        if not fpath.is_dir():
+            vanished.setdefault(folder, []).append(it)
+            continue
+        missing = [s for s in (it.get("slides") or []) if not _slide_exists(s, fpath)]
+        if missing:
+            title = it.get("title", it.get("id", "?"))
+            target_date = _parse_iso_date(it.get("published_at", "")) or _parse_folder_date(
+                Path(folder).name
+            )
+            gaps.append({
+                "role": "cmo",
+                "severity": "high",
+                "title": f"{_truncate_title(title)} — 슬라이드 {len(missing)}장 소실",
+                "detail": f"폴더는 있으나 파일 없음: {', '.join(missing[:3])}"
+                          + (" 외" if len(missing) > 3 else ""),
+                "hint": "원본 이미지 복구 또는 재생성 필요(발행물 원본 소실)",
+                "ref": f"{it.get('id', folder)}::slides",
+                "age": _classify_age(target_date, today),
+            })
+    for folder, items in vanished.items():
+        titles = [str(i.get("title", i.get("id", "?"))) for i in items]
+        target_date = _parse_folder_date(Path(folder).name)
+        for i in items:
+            target_date = target_date or _parse_iso_date(i.get("published_at", ""))
+        gaps.append({
+            "role": "cmo",
+            "severity": "high",
+            "title": f"{_truncate_title(titles[0])} — 콘텐츠 폴더 소실",
+            "detail": f"큐 {len(items)}건이 가리키는 폴더가 디스크에 없음: {folder}",
+            "hint": "git 이력에서 복구하거나(삭제 커밋 확인) 원본 재생성 필요",
+            "ref": folder,
+            "age": _classify_age(target_date, today),
+        })
+    return gaps
+
+
+# 큐 id 형태(review_queue id · _queue.json task_id 공통) — 예 'CMO-2026-07-01-SUMMER-CAMP-EP3'.
+_QUEUE_ID_RE = re.compile(r"^[A-Z]{2,4}-\d{4}-\d{2}-\d{2}-[A-Z0-9][A-Z0-9\-]*$")
+# 산출물을 "만들었다/올렸다"고 주장하는 area(worklog 고정 스키마의 짧은 한국어 분류).
+_CLAIM_AREAS = {"검수", "발행", "제작"}
+
+
+def _load_worklog() -> list[dict]:
+    """status/worklog.jsonl 을 읽어 레코드 리스트로. 파일 없음·깨진 줄은 조용히 건너뜀."""
+    records: list[dict] = []
+    try:
+        text = WORKLOG_PATH.read_text(encoding="utf-8")
+    except Exception:
+        return records
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except Exception:
+            continue
+        if isinstance(rec, dict):
+            records.append(rec)
+    return records
+
+
+def rule_claimed_but_missing() -> list[dict]:
+    """"만들었다고 기록해놓고 실제로는 없는 것" 적발 — worklog.jsonl 의 산출물 주장을
+    지금 실존하는 큐 항목과 대조한다. ref 가 어느 큐(검수큐·배큐·배아카이브)에도 없으면 유실 의심.
+
+    오탐 방지(실측 가능한 것만 본다):
+      - result='fail' 기록은 애초에 주장이 아니다 → 제외.
+      - ref 가 큐 id 형태가 아니면(자유 텍스트) 판정 보류 → 건너뜀(지어내지 않음).
+      - 배큐·배아카이브에 있는 task_id 는 산출물이 아니라 업무 id → 정상.
+      - 같은 url 을 가진 큐 항목이 살아있으면 재번호(id 만 바뀜)이므로 유실 아님.
+    """
+    records = _load_worklog()
+    if not records:
+        return []
+    queue = _load_review_queue()
+    review_ids = {str(it.get("id", "")).strip() for it in queue if it.get("id")}
+    review_urls = {
+        u for it in queue
+        if (u := str(it.get("url") or it.get("post_url") or "").strip())
+    }
+    ship_ids = {str(s.get("task_id", "")).strip() for s in _load_ship_queue() if s.get("task_id")}
+    archive = _load_json(SHIP_QUEUE_ARCHIVE_PATH, [])
+    if isinstance(archive, list):
+        ship_ids |= {str(s.get("task_id", "")).strip() for s in archive if isinstance(s, dict) and s.get("task_id")}
+    known_ids = review_ids | ship_ids
+
+    today = datetime.now(tz=KST).date()
+    seen_refs: set[str] = set()
+    gaps: list[dict] = []
+    for rec in records:
+        if str(rec.get("role", "")).strip().lower() != "cmo":
+            continue
+        if str(rec.get("result", "")).strip() == "fail":
+            continue
+        ref = str(rec.get("ref", "")).strip()
+        url = str(rec.get("url", "")).strip()
+        area = str(rec.get("area", "")).strip()
+        if not (area in _CLAIM_AREAS or url):
+            continue  # 산출물 주장이 아닌 일반 기록
+        if not _QUEUE_ID_RE.match(ref):
+            continue  # 판정 불가(자유 텍스트 ref) — 보류
+        if ref in known_ids:
+            continue
+        if url and url in review_urls:
+            continue  # 재번호 — 같은 산출물이 다른 id 로 살아있음
+        if ref in seen_refs:
+            continue  # 같은 ref 기록이 여러 줄이면 1건으로
+        seen_refs.add(ref)
+        gaps.append({
+            "role": "cmo",
+            "severity": "high",
+            "title": f"{_truncate_title(str(rec.get('event', ref)))} — 기록엔 있는데 실물 없음",
+            "detail": f"worklog 기록 ref={ref}(area={area or '-'})가 검수큐·배큐 어디에도 없음"
+                      + (f" · url={url}" if url else ""),
+            "hint": "검수큐 등록분 유실 의심 — git 이력 확인 후 재등록 필요",
+            "ref": ref,
+            "age": _classify_age(_parse_iso_date(str(rec.get("ts", ""))), today),
+        })
+    return gaps
+
+
 _NOTE_DATE_RE = re.compile(r"\[(\d{4}-\d{2}-\d{2})")
 _STALE_DAYS = 7
 
@@ -343,6 +517,8 @@ _RULES: dict[str, list] = {
         rule_published_without_url,
         rule_ig_only_no_siblings,
         rule_stale_ship_note,
+        rule_claimed_but_missing,      # 2026-07-23 신설 — 만들었다고 하고 실물 없는 것
+        rule_content_folder_vanished,  # 2026-07-23 신설 — 콘텐츠 폴더·슬라이드 소실
     ],
     "coo": [],
     "cpo": [],

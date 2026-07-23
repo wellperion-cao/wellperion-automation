@@ -256,13 +256,17 @@ def main() -> int:
     if args.commit and not args.dry_run and stamped > 0:
         try:
             sys.path.insert(0, str(Path(__file__).parent))
-            from git_lock import git_commit_push
-            git_commit_push(
+            # 안전 커밋터(2026-07-23 배9820) — 임시 인덱스(read-tree HEAD) + 커밋 직전 HEAD
+            # 재검증 + update-ref CAS. 공용 작업트리에서 남의 미커밋 변경분을 쓸어담거나
+            # 그 사이 들어온 파일을 '삭제'로 기록하는 스테일 트리 레이스를 구조적으로 차단.
+            from safe_commit import safe_commit
+            res = safe_commit(
                 [str(QUEUE)],
                 "auto(cmo): IG 발행검증 자동 대조 → 발행완료 도장",
                 holder="ig_publish_verify",
             )
-            print("[INFO] 변경 커밋·푸시 완료(GitLock)")
+            print(f"[{'INFO' if res['ok'] else 'WARN'}] 커밋: {res['reason']}"
+                  + (f" · 혼입 {res['foreign']}" if res["foreign"] else ""))
         except Exception as exc:
             print(f"[WARN] 커밋 실패(무해 — 다음 스윕 재시도): {type(exc).__name__}: {exc}")
     return 0
