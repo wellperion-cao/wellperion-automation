@@ -964,18 +964,23 @@ function _notifyNewInquiries_() {
         var content = idxContent >= 0 ? String(r[idxContent] || '').trim() : '';
         if (content.length > 300) content = content.substring(0, 300) + '…';
         var isTest = _isTestInquiryRow_(phone, name, content);
-        var msg = (isTest ? '🧪 [테스트] ' : '') + '🔔 [신규 문의]\n'
+        // ★ 2026-07-23 GM 지시 — 실무진 '문의 알림' 방에는 **자체폼(홈페이지 접수)** 건만 넣는다.
+        //   이 폴러가 잡는 행은 구조상 전부 '자체폼 외'다: 자체폼 유입분은 비고에 WEB_INTAKE_TAG
+        //   가 찍혀 위에서 이미 제외되고(중복 발송 방지), 자체폼 알림은 submit_inquiry /
+        //   intake_submit 핸들러가 접수 즉시 문의알림방으로 따로 보낸다.
+        //   따라서 여기 남는 건 = 구글폼 응답탭에 직접 들어온 건 → GM 개인 업무보고방으로 보낸다.
+        var msg = (isTest ? '🧪 [테스트] ' : '📥 [자체폼 외 유입] ') + '🔔 [신규 문의]\n'
           + '유형: ' + cfg.type + '\n'
           + (prog ? '종목: ' + _sportColor(prog) + _teamChip(prog) + prog + '\n' : '')
           + '이름: ' + name + '\n'
           + '연락처: ' + phone + '\n'
           + '유입채널: ' + chan
           + (content ? '\n내용: ' + content : '');
-        if (isTest) {
-          _notifyTelegram(msg);  // chatIdOverride 미지정 → CHAT_ID/TELEGRAM_CHAT_ID(GM 개인봇)로 우회
-        } else {
-          _notifyTelegram(msg, inquiryChatId);
-        }
+        // 테스트든 실건이든 여기 오는 건 전부 '자체폼 외' → chatIdOverride 미지정으로
+        // CHAT_ID/TELEGRAM_CHAT_ID(GM 개인 업무보고방)로 보낸다. 실무진 방(inquiryChatId)은
+        // 자체폼 접수 알림 전용으로 남긴다(GM 2026-07-23).
+        // 되돌리기: 아래 한 줄을 `_notifyTelegram(msg, isTest ? undefined : inquiryChatId)` 로.
+        _notifyTelegram(msg);
       });
 
       // 기준선 갱신 — 본 실행에서 관측한 최대 타임스탬프(단일값)로 저장. 키 집합 누적 금지(INC-014 재발방지).
