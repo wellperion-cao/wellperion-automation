@@ -5465,7 +5465,78 @@ function _processAction(body) {
         }
       }
     } catch (eJoin) { /* 조인 실패 → 횟수/유효기간 미표기(무중단) */ }
-    return _json({ ok: true, type: lrrType, total: lrrRoster.length, bySport: lrrBySport, roster: lrrRoster });
+
+    // ═══ 수강 기록을 '문의 SUC'로 축적 (2026-07-23 GM 확정) ═══
+    //   배경: 옛 팀시트는 수영만 살아 있고 나머지는 '진행 상황' 열만 남은 채 이름·연락처·종목·
+    //   타임스탬프가 통째로 비어 있다(실측 735명). 그 735명은 누구인지 확인할 방법이 없다.
+    //   GM 지시: "지금부터라도 따로 모아도 된다 — 새 문의에서 SUC 처리할 때 종목·횟수·유효기간을
+    //   기록해서 관리해도 된다." → 오늘부터 쌓이는 진실 = 문의 시트의 SUC 행(그 자리에 등록종목·
+    //   등록회수·유효기간을 이미 기록하고 있다).
+    //   ★옛 팀시트 기록은 지우지 않는다(과거 흔적 보존) — 대신 출처(src)를 붙여 화면이 구분하게 한다.
+    //   ★중복 방지 = 전화 정규화 키. 같은 사람이면 새로 추가하지 않고 빈 칸만 채워 넣는다.
+    var lrrByPhone = {};
+    lrrRoster.forEach(function (m) {
+      m.src = 'team';
+      var p = _normPhone_(m.phone);
+      if (p) lrrByPhone[p] = m;
+    });
+    try {
+      _lessonReadRowsMerged_({ type: lrrType }).forEach(function (r) {
+        if (String(r.status == null ? '' : r.status).trim() !== 'SUC') return;
+        var rp = _normPhone_(r.phone);
+        var rSport = String(r.regProgram || r.sport || '').trim() || '기타';
+        var hit = rp ? lrrByPhone[rp] : null;
+        if (hit) {   // 이미 명단에 있는 사람 → 빈 칸만 보강(중복 행 만들지 않는다)
+          if (!String(hit.name || '').trim())  hit.name = String(r.name || '');
+          if (!String(hit.phone || '').trim()) hit.phone = String(r.phone || '');
+          if (!String(hit.age || '').trim())      hit.age = String(r.age || '');
+          if (!String(hit.owner || '').trim())    hit.owner = String(r.owner || '');
+          if (!String(hit.inqDate || '').trim())  hit.inqDate = String(r.timestamp || '').slice(0, 10);
+          if (!String(hit.wishTime || '').trim()) hit.wishTime = String(r.wishTime || '');
+          return;
+        }
+        lrrRoster.push({
+          sport: rSport, name: String(r.name || ''), phone: String(r.phone || ''), status: 'SUC',
+          age: String(r.age || ''), owner: String(r.owner || ''),
+          inqDate: String(r.timestamp || '').slice(0, 10), wishTime: String(r.wishTime || ''),
+          src: 'inquiry'
+        });
+        if (rp) lrrByPhone[rp] = lrrRoster[lrrRoster.length - 1];
+      });
+    } catch (eInq) { /* 문의 소스 실패 → 팀시트분만(무중단) */ }
+
+    // 등록회수·유효기간을 문의 소스분에도 붙인다(위 조인은 팀시트분 기준이라 새로 들어온 행은 비어 있다).
+    try {
+      var lrrMainGid2 = (lrrType === '유소년강습' || lrrType === '유소년' || lrrType === 'youth') ? 268994754 : 111889422;
+      var lrrSh2 = _lessonSheet_(lrrMainGid2);
+      if (lrrSh2 && lrrSh2.getLastRow() >= 2) {
+        var lrrH2 = lrrSh2.getRange(1, 1, 1, lrrSh2.getLastColumn()).getValues()[0];
+        var p2 = _findCol_(lrrH2, ['연락처', '전화', '휴대폰']);
+        var c2 = _findCol_(lrrH2, ['등록회수']);
+        var e2 = _findCol_(lrrH2, ['유효기간']);
+        if (p2 >= 0 && (c2 >= 0 || e2 >= 0)) {
+          var md2 = lrrSh2.getRange(2, 1, lrrSh2.getLastRow() - 1, lrrSh2.getLastColumn()).getValues();
+          for (var q2 = 0; q2 < md2.length; q2++) {
+            var pk2 = _normPhone_(md2[q2][p2]); if (!pk2 || !lrrByPhone[pk2]) continue;
+            var tgt = lrrByPhone[pk2];
+            var cv2 = c2 >= 0 ? String(md2[q2][c2] == null ? '' : md2[q2][c2]).trim() : '';
+            var ev2 = e2 >= 0 ? (md2[q2][e2] instanceof Date ? Utilities.formatDate(md2[q2][e2], 'Asia/Seoul', 'yyyy-MM-dd') : String(md2[q2][e2] == null ? '' : md2[q2][e2]).trim()) : '';
+            if (cv2) tgt.regCount = cv2;
+            if (ev2) tgt.regExpire = ev2;
+          }
+        }
+      }
+    } catch (eRc) {}
+
+    // 정직 집계 — 이름이 있는 '확인된 회원'과 상태값만 남은 '정보 없음'을 나눠서 함께 내보낸다.
+    //   합계만 보내면 735명이 정상 회원인 것처럼 읽힌다(GM 2026-07-23 A안: 숨기지도 부풀리지도 않는다).
+    var lrrIdent = 0, lrrUnknown = 0;
+    lrrRoster.forEach(function (m) { if (String(m.name || '').trim()) lrrIdent++; else lrrUnknown++; });
+    return _json({
+      ok: true, type: lrrType, total: lrrRoster.length, bySport: lrrBySport, roster: lrrRoster,
+      identified: lrrIdent, unknown: lrrUnknown,
+      unknownNote: lrrUnknown ? '옛 팀시트에 진행 상황 값만 남고 이름·연락처가 비어 있는 기록입니다(실체 확인 불가).' : ''
+    });
   }
 
   // ─── 강습 등록 원장 명단 (금일 등록현황) — sync-on-load. 2026-06-27 시포 ───

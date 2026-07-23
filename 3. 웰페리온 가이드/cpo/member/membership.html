@@ -5367,12 +5367,23 @@ function lessonRegLoad(t) {
       if (!d || !d.ok) throw new Error((d && d.error) || 'GAS 응답 오류');
       st.roster = d.roster || [];
       st.bySport = d.bySport || [];   // 외부관리 프로그램(루프메소드 등) 정직 표기용
+      st.memIdentified = (typeof d.identified === 'number') ? d.identified : null;
+      st.memUnknown = (typeof d.unknown === 'number') ? d.unknown : 0;
       _lessonRosterChips(t, 'mem'); _lessonRosterRender(t, 'mem');
       _lessonMemStatus(t);   // 현황카드(#3) 수강 총원 갱신
+      // ★정직 집계(GM 2026-07-23 A안) — 옛 팀시트에 진행 상황 값만 남고 이름·연락처가 비어 있는
+      //   기록이 성인 372·유소년 363건 있다. 합계만 보이면 그들이 정상 회원처럼 읽히므로
+      //   대표 숫자는 '실체가 확인되는 회원'으로 두고, 정보 없음은 따로 밝힌다(숨기지도 부풀리지도 않는다).
+      var _ident = (st.memIdentified === null) ? (d.total || 0) : st.memIdentified;
       var ms = document.getElementById('lessonMemStatLine_' + t);
-      if (ms) ms.textContent = '수강 ' + (d.total || 0) + '명';
+      if (ms) ms.textContent = '확인 ' + _ident + '명' + (st.memUnknown ? ' · 정보없음 ' + st.memUnknown + '명' : '');
       var card = document.getElementById('lessonCardMem_' + t);   // 대시카드3(강습 회원 관리) 숫자 배선. 2026-07-07 시포
-      if (card) card.textContent = d.total || 0;
+      if (card) {
+        card.textContent = _ident;
+        card.title = st.memUnknown
+          ? ('실체가 확인되는 회원 ' + _ident + '명. 이 밖에 옛 팀시트에 진행 상황 값만 남고 이름·연락처가 비어 있는 기록이 ' + st.memUnknown + '건 더 있습니다(누구인지 확인 불가).')
+          : '';
+      }
     })
     .catch(function(e){ if (b) b.innerHTML = _lessonRegRow('데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
 }
@@ -5549,8 +5560,16 @@ function _lessonRosterChips(t, kind) {
 
   // 강습 '회원 관리' 명단은 원래 전원 SUC(등록 완료자만 올라온다) → 상태축이 한 종류면 박스를 숨긴다.
   // 고를 게 없는 칩이 자리만 먹는 걸 막는다(GM: 세로 스크롤 늘리지 말 것). 2026-07-23 실측 반영.
+  // 정보 없음(옛 팀시트 잔재)이 섞여 있으면 무엇인지 한 줄로 밝힌다 — 안 밝히면 회원 수로 오해된다.
+  var _unk = (kind === 'mem') ? (_lessonState[t].memUnknown || 0) : 0;
+  var unkNote = _unk
+    ? '<div style="font-size:11px;color:var(--dim);margin-top:5px;line-height:1.6">' +
+      '⚠️ 이 중 <b style="color:var(--text)">' + _unk + '건</b>은 옛 팀시트에 진행 상황 값만 남고 ' +
+      '이름·연락처가 비어 있는 기록입니다(누구인지 확인 불가 · 회원 수 대표값에서 제외). ' +
+      '오늘부터는 새 문의를 <b style="color:var(--text)">SUC</b>로 처리하며 종목·횟수·유효기간을 남기면 이 명단에 바로 쌓입니다.</div>'
+    : '';
   bar.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start">' +
-    _lessonChipBox('종목', sHtml) + (statuses.length > 1 ? _lessonChipBox('진행상태', vHtml) : '') + '</div>';
+    _lessonChipBox('종목', sHtml) + (statuses.length > 1 ? _lessonChipBox('진행상태', vHtml) : '') + '</div>' + unkNote;
 }
 
 function lessonRosterFilter(t, kind, btn) {
@@ -5595,7 +5614,11 @@ function _lessonRosterRender(t, kind) {
   rows.forEach(function(r){
     html += '<tr>' +
       '<td style="font-size:12px"><span style="' + _lessonSportChipStyle(r.sport) + '">' + esc(r.sport ? _lessonSportDisplay(r.sport, t === 'youth') : '—') + '</span></td>' +
-      '<td class="left" style="font-weight:700">' + esc(r.name || '—') + '</td>' +
+      // 이름이 없는 행 = 옛 팀시트에 진행 상황 값만 남은 기록. '—'로만 두면 단순 누락처럼 보여
+      // 회원 수에 그대로 섞인다 → 무엇인지 밝혀 준다(GM 2026-07-23 A안 · 정직 표기).
+      (String(r.name || '').trim()
+        ? '<td class="left" style="font-weight:700">' + esc(r.name) + '</td>'
+        : '<td class="left" style="font-weight:400;color:var(--dim)" title="옛 팀시트에 진행 상황 값만 남고 이름·연락처가 비어 있는 기록입니다. 누구인지 확인할 수 없어 회원 수 대표값에서 제외합니다.">정보 없음</td>') +
       '<td style="font-size:12px;color:var(--dim)">' + esc(r.phone || '—') + '</td>' +
       // 나이·담당·문의일·희망시간 — 문의 시트 전화매칭 조인(서버). 팀시트엔 없는 정보라 여기서만 보인다.
       // GM 2026-07-23: '정보가 너무 단출하다'. 값이 없으면 '—'로 정직 표기(빈칸으로 두면 누락인지 없는 건지 모른다).
