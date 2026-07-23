@@ -83,11 +83,7 @@ def pick_next_candidate() -> dict | None:
     return candidates[0]
 
 
-def main() -> int:
-    p = argparse.ArgumentParser(description="AI 개인계정 시리즈 — 매일 아침 카드 1장 드립")
-    p.add_argument("--dry-run", action="store_true", help="고를 항목만 출력, 실제 발송 안 함")
-    args = p.parse_args()
-
+def _run_card_dispatch(args) -> int:
     today = datetime.now()
     if today.weekday() >= 5:  # 5=토, 6=일
         print(f"[INFO] 오늘({today.strftime('%Y-%m-%d')})은 주말 — 드립 생략, 조용히 종료.")
@@ -106,12 +102,42 @@ def main() -> int:
 
     from send_review_card import send_card
 
+    try:  # 작업 현황 로그(best-effort) — 임포트 실패해도 카드 발송 무영향
+        from worklog import log as worklog_log
+    except Exception:
+        def worklog_log(*a, **k):
+            return False
+
     ok = send_card(candidate)
     if ok:
         print(f"[OK] 카드 발송 완료 — id={candidate.get('id')}")
+        worklog_log("cmo", "검수", f"{candidate.get('title', candidate.get('id'))} 검수카드 GM 발송",
+                    result="ok", ref=str(candidate.get("id", "")))
         return 0
     print(f"[ERROR] 카드 발송 실패 — id={candidate.get('id')}")
     return 1
+
+
+def _run_worklog_gaps_scan_best_effort() -> None:
+    """감지기 자동 실행(best-effort) — 기존 예약작업(07:30)에 편승, 신규 예약작업 미생성.
+    실패해도 카드 발송 결과(반환코드)에 절대 영향 없음(2026-07-23, CMO-2026-07-23-WORKLOG-PANEL)."""
+    try:
+        import worklog_gaps
+        result = worklog_gaps.scan()
+        print(f"[INFO] worklog_gaps 스캔 — 빠진 것 {len(result.get('gaps', []))}건 "
+              f"(status/worklog_gaps.json 갱신)")
+    except Exception as exc:
+        print(f"[WARN] worklog_gaps 스캔 예외(best-effort, 카드 발송 무영향): {exc}")
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(description="AI 개인계정 시리즈 — 매일 아침 카드 1장 드립")
+    p.add_argument("--dry-run", action="store_true", help="고를 항목만 출력, 실제 발송 안 함")
+    args = p.parse_args()
+
+    rc = _run_card_dispatch(args)
+    _run_worklog_gaps_scan_best_effort()
+    return rc
 
 
 if __name__ == "__main__":

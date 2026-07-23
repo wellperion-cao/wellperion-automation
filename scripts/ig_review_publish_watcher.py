@@ -45,6 +45,12 @@ except Exception:
     def pace(*a, **k):
         return None
 
+try:  # 작업 현황 로그(best-effort) — 임포트 실패해도 발행 흐름 무영향
+    from worklog import log as worklog_log
+except Exception:
+    def worklog_log(*a, **k):
+        return False
+
 # 동시커밋 직렬화 lock (P2, 2026-06-15) — git_lock.py는 같은 scripts/ 폴더.
 # 하드 임포트(실패 시 시끄럽게): 락 없이 무방비 커밋되면 동시성 손상 방지 목적이 무력화됨.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -592,6 +598,8 @@ def dispatch_publish(it: dict, events: list) -> None:
             it["note"] = block_reason
             telegram(f"🚫 [블로그] 공개 제목 가드 차단 — {title}\n사유: {block_reason}")
             events.append(f"🚫 {title} 블로그 발행 보류(제목확인) — {block_reason}")
+            worklog_log("cmo", "발행", f"{title} 블로그 발행 보류(제목확인)", result="fail",
+                        detail=block_reason, ref=it.get("id", ""))
         else:
             result, url = publish_blog(it, public_title)
             if result == PUBLISH_RESULT_DONE:
@@ -601,6 +609,8 @@ def dispatch_publish(it: dict, events: list) -> None:
                 it["published_at"] = datetime.now().isoformat(timespec="seconds")
                 it.pop("note", None)
                 events.append(f"✅ {title} 블로그 발행완료" + (f" — {url}" if url else " (URL 회수 불안정·본문 게시됨)"))
+                worklog_log("cmo", "발행", f"{title} 블로그 발행완료", result="ok",
+                            ref=it.get("id", ""), url=url or "")
             elif result == PUBLISH_RESULT_UNCONFIRMED:
                 # 게시는 진행됐으나 공개 URL 폴링(12초) 실패 — '발행실패' 아님. 재발행 절대 금지
                 # (중복 게시 방지). URL은 사람이 보강하거나 reconcile_published.py 로 재회수(배834).
@@ -610,10 +620,14 @@ def dispatch_publish(it: dict, events: list) -> None:
                 it["published_at"] = datetime.now().isoformat(timespec="seconds")
                 it["note"] = "[재발방지 2026-07-20] 블로그 게시는 진행됐으나 공개 URL 폴링 실패 — 재발행 금지, URL 수동 보강/재회수 필요"
                 events.append(f"⏳ {title} 블로그 발행됨(URL 미회수) — 확인필요, 재발행 안 함")
+                worklog_log("cmo", "발행", f"{title} 블로그 발행됨(URL 미회수)", result="warn",
+                            detail="확인필요·재발행 안 함", ref=it.get("id", ""), url=url or "")
             else:
                 it["status"] = "발행실패"
                 it["note"] = "블로그 발행 스크립트 exit≠0(무결성 게이트 차단 가능 — 초안 유지)"
                 events.append(f"⚠️ {title} 블로그 발행 실패 — exit code 비정상")
+                worklog_log("cmo", "발행", f"{title} 블로그 발행 실패", result="fail",
+                            detail="exit code 비정상", ref=it.get("id", ""))
 
     elif "카페" in ch:
         # 카페 자동 공개발행 (GM 승인 2026-07-13 — 전채널 자동발행 표준·요새화 안전망 라이브 후 활성)
@@ -624,6 +638,8 @@ def dispatch_publish(it: dict, events: list) -> None:
             it["note"] = block_reason
             telegram(f"🚫 [카페] 공개 제목 가드 차단 — {title}\n사유: {block_reason}")
             events.append(f"🚫 {title} 카페 발행 보류(제목확인) — {block_reason}")
+            worklog_log("cmo", "발행", f"{title} 카페 발행 보류(제목확인)", result="fail",
+                        detail=block_reason, ref=it.get("id", ""))
         else:
             result, url = publish_cafe(it, public_title)
             if result == PUBLISH_RESULT_DONE:
@@ -633,6 +649,8 @@ def dispatch_publish(it: dict, events: list) -> None:
                 it["published_at"] = datetime.now().isoformat(timespec="seconds")
                 it.pop("note", None)
                 events.append(f"✅ {title} 카페 발행완료" + (f" — {url}" if url else " (URL 회수 불안정·본문 게시됨)"))
+                worklog_log("cmo", "발행", f"{title} 카페 발행완료", result="ok",
+                            ref=it.get("id", ""), url=url or "")
             elif result == PUBLISH_RESULT_UNCONFIRMED:
                 # 게시는 진행됐으나 공개 URL 폴링(12초) 실패 — '발행실패' 아님. 재발행 절대 금지
                 # (중복 게시 방지). URL은 사람이 보강하거나 reconcile_published.py 로 재회수(배834).
@@ -642,10 +660,14 @@ def dispatch_publish(it: dict, events: list) -> None:
                 it["published_at"] = datetime.now().isoformat(timespec="seconds")
                 it["note"] = "[재발방지 2026-07-20] 카페 게시는 진행됐으나 공개 URL 폴링 실패 — 재발행 금지, URL 수동 보강/재회수 필요"
                 events.append(f"⏳ {title} 카페 발행됨(URL 미회수) — 확인필요, 재발행 안 함")
+                worklog_log("cmo", "발행", f"{title} 카페 발행됨(URL 미회수)", result="warn",
+                            detail="확인필요·재발행 안 함", ref=it.get("id", ""), url=url or "")
             else:
                 it["status"] = "발행실패"
                 it["note"] = "카페 발행 스크립트 exit≠0(무결성 게이트 차단 가능 — 초안 유지)"
                 events.append(f"⚠️ {title} 카페 발행 실패 — exit code 비정상")
+                worklog_log("cmo", "발행", f"{title} 카페 발행 실패", result="fail",
+                            detail="exit code 비정상", ref=it.get("id", ""))
 
     elif "당근" in ch:
         # 당근 실 발행 — 자동입력+이미지+게시(발레 2026-06-05 사진 7장 실증).
@@ -657,6 +679,7 @@ def dispatch_publish(it: dict, events: list) -> None:
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it.pop("note", None)
             events.append(f"✅ {title} 당근 발행 완료")
+            worklog_log("cmo", "발행", f"{title} 당근 발행완료", result="ok", ref=it.get("id", ""))
             _notify_published(it.get("folder", ""))
         else:
             it["status"] = "수동발행대기"
@@ -666,6 +689,8 @@ def dispatch_publish(it: dict, events: list) -> None:
                 f"폴더: {folder}\n본문: {it.get('body_file','(본문파일 미지정)')}"
             )
             events.append(f"📦 {title}: 당근 수동 업로드 대기(GM) — {reason}")
+            worklog_log("cmo", "발행", f"{title} 당근 수동 업로드 대기", result="warn",
+                        detail=reason, ref=it.get("id", ""))
 
     elif "카카오" in ch:
         # 카카오 채널 — 승인=바로 발행 (publish 실구현, GM 2026-06-05). 실패 시 수동 알림 폴백.
@@ -677,6 +702,7 @@ def dispatch_publish(it: dict, events: list) -> None:
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it.pop("note", None)
             events.append(f"✅ {title} 카카오 채널 발행 완료")
+            worklog_log("cmo", "발행", f"{title} 카카오 채널 발행완료", result="ok", ref=it.get("id", ""))
             _notify_published(it.get("folder", ""))
         else:
             it["status"] = "수동발행대기"
@@ -686,6 +712,8 @@ def dispatch_publish(it: dict, events: list) -> None:
                 f"폴더: {folder}\n본문: {it.get('body_file','(본문파일 미지정)')}"
             )
             events.append(f"📦 {title}: 카카오 수동 업로드 대기(GM) — {reason}")
+            worklog_log("cmo", "발행", f"{title} 카카오 수동 업로드 대기", result="warn",
+                        detail=reason, ref=it.get("id", ""))
 
     else:
         # [계정 가드 2026-06-16] IG 교차발행 차단 — 공식 콘텐츠가 account 누락으로 개인계정에
@@ -707,6 +735,8 @@ def dispatch_publish(it: dict, events: list) -> None:
                 f"교차발행 방지로 발행을 막았습니다. review_queue 의 account 를 바로잡고 다시 [승인]하세요."
             )
             events.append(f"⛔ {title}: 계정 가드 발동 — {mismatch}")
+            worklog_log("cmo", "발행", f"{title} 계정 가드 발동(발행 차단)", result="fail",
+                        detail=mismatch, ref=it.get("id", ""))
             return
         # 기존 IG 경로 — publish_item 결과(URL, exit code) 기준으로 성공 판정
         url, rc = publish_item(it)
@@ -716,6 +746,8 @@ def dispatch_publish(it: dict, events: list) -> None:
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it.pop("note", None)
             events.append(f"✅ {title} 발행 완료 — {url}")
+            worklog_log("cmo", "발행", f"{title} 인스타 발행완료", result="ok",
+                        ref=it.get("id", ""), url=url)
         elif rc == 9:
             # (CTO 2026-06-11) rc==9 = 성공 토스트 확인됨 = 발행 동작 자체는 성공.
             # 신규 shortcode(게시 URL) 회수만 캐시지연으로 윈도우 내 미확정 — 개인계정의
@@ -726,10 +758,14 @@ def dispatch_publish(it: dict, events: list) -> None:
             it["published_at"] = datetime.now().isoformat(timespec="seconds")
             it["note"] = "[봇 자동검증] pub 콜백 발행성공 → 발행검증대기(개인계정 URL회수 false-negative 무관)"
             events.append(f"✅ {title} 발행 완료 — 성공 토스트 확인(URL 캐시지연, 수동 보강 가능)")
+            worklog_log("cmo", "발행", f"{title} 인스타 발행", result="warn",
+                        detail="성공 토스트 확인·주소 미회수", ref=it.get("id", ""))
         else:
             it["status"] = "발행실패"
             it["note"] = "게시 URL 미회수 — 수동 점검 필요"
             events.append(f"⚠️ {title} 발행 실패 — 게시 URL 미회수")
+            worklog_log("cmo", "발행", f"{title} 인스타 발행 실패", result="fail",
+                        detail="게시 URL 미회수", ref=it.get("id", ""))
 
 
 def process_queue(items: list, dry_run: bool) -> tuple[list, list]:

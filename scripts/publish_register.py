@@ -48,6 +48,12 @@ except Exception:
     def muted(kind: str) -> bool:
         return False
 
+try:  # 작업 현황 로그(best-effort) — 임포트 실패해도 등록 무영향
+    from worklog import log as worklog_log
+except Exception:
+    def worklog_log(*a, **k):
+        return False
+
 # scripts/ 자기 자신을 sys.path 에 보장(호출부가 이미 넣어둔 경우가 대부분이지만,
 # register_channel_review 재사용 import 가 항상 되게 하는 안전망). (배834-A, 2026-07-20)
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -470,6 +476,9 @@ def register_publish(
         except Exception as exc:
             print(f"[WARN] review_queue upsert 예외 (제작은 완료): {exc}")
             matched, final_status = (False, "검수대기")
+
+        # 작업 현황 로그(best-effort) — "한 일" 기록 (2026-07-23, CMO-2026-07-23-WORKLOG-PANEL)
+        worklog_log("cmo", "검수", f"{title} 검수큐 등록", result="ok", ref=queue_id)
 
         # (b1) 채널 원고 자동 생성 — IG 본문은 있는데 블로그·카페·카카오·당근 원고가 아직
         # 없으면 여기서 채워 넣는다(배834-B, 발행 루프 마지막 구멍 — 2026-07-20 필라테스 L4

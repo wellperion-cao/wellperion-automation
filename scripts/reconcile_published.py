@@ -33,6 +33,16 @@ try:
 except Exception:
     pass
 
+_SCRIPTS_DIR_FOR_WORKLOG = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR_FOR_WORKLOG not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR_FOR_WORKLOG)
+
+try:  # 작업 현황 로그(best-effort) — 임포트 실패해도 대조·백필 흐름 무영향
+    from worklog import log as worklog_log
+except Exception:
+    def worklog_log(*a, **k):
+        return False
+
 ROOT        = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE_PATH  = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 SCRIPTS_DIR = ROOT / "scripts"
@@ -272,6 +282,9 @@ def main() -> int:
 
             modified_items[idx] = entry
             updated_count += 1
+
+            worklog_log("cmo", "발행", f"{item_id} 주소 회수·발행완료", result="ok",
+                        detail=f"채널={channel_name}", ref=str(item_id), url=found_url)
 
     # ── dry-run 결과 출력 ──────────────────────────────
     if args.dry_run:
