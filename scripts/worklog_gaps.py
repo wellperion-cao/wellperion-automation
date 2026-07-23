@@ -720,6 +720,167 @@ def rule_orphan_automation() -> list[dict]:
     return gaps
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# COO 규칙 v1 — 2026-07-23 시우, 배9959(GM 지시 "타 C-Level 확장" → 웰리 배정).
+# CMO(시모)가 먼저 적용·검증한 틀을 운영 도메인에 확장. 신규 로직 최소화 원칙에 따라
+# 가능한 곳은 기존 감사기(check_incomplete_detector)·기존 레지스트리(coo_registry)의
+# 판정 조건을 그대로 재사용한다(중복 로직 새로 안 만든다).
+#
+# ★네트워크 호출 주의: 아래 4개 규칙 中 3개(결재·마감·VOC)는 CMO 규칙(전부 로컬 파일)과 달리
+#   TODO_API·VOC_EXEC_URL(GAS)을 스캔 시점에 직접 조회한다. worklog_gaps.py --scan 이 아직
+#   예약작업에 배선되지 않아(2026-07-23 기준 미확인) 지금은 문제 없으나, 나중에 이 스캔이
+#   빈번한 자동화(예: 07:30 다이제스트)에 얹히면 네트워크 지연·실패가 그 자동화에 영향을 줄 수
+#   있다 — 배선 전 웰리 판단 필요(보고에 명시).
+# ─────────────────────────────────────────────────────────────────────────
+
+CHECK_INCOMPLETE_LEDGER_PATH = ROOT / "status" / "check_incomplete_ledger.json"
+
+
+def rule_recurring_check_incomplete() -> list[dict]:
+    """지원부 일일점검 반복 미완료 적발 — 신규 판정 로직 없음, scripts/check_incomplete_detector.py
+    (GM 2026-07-15 기존 감사기 · 23시 마감 원장 기반)의 detect_recurring() 그대로 재사용.
+    콜드스타트(원장 7일 미만)·반복 0건이면 그 모듈이 이미 []를 반환(가짜 제안 금지는 원 모듈 보장).
+    age는 판정 대상이 '오늘도 이어지는 패턴'이라 특정 발생일을 못 짚어 보수적으로 '누적' 고정."""
+    import check_incomplete_detector as cid  # noqa: PLC0415 — scripts/ 이미 sys.path(위에서 삽입)
+
+    today = datetime.now(tz=KST).date().isoformat()
+    ledger = cid.load_ledger(CHECK_INCOMPLETE_LEDGER_PATH)
+    recurring = cid.detect_recurring(ledger, today)
+    gaps: list[dict] = []
+    for r in recurring:
+        gaps.append({
+            "role": "coo",
+            "severity": "high" if r["days"] >= 6 else "mid",
+            "title": f"'{r['item']}' — 최근 7일 中 {r['days']}일 미완료({r['shift_label']})",
+            "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+            "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+            "ref": f"{r['item']}::{r['shift']}::recurring",
+            "age": "누적",
+        })
+    return gaps
+
+
+def rule_approval_stale_pending() -> list[dict]:
+    """업무·결재 SSOT(TODO_API) 결재대기 항목 중 마지막 갱신(수정일)이 오래된 것 적발.
+    ★결재 '요청 시점' 자체를 담는 필드가 시트에 없어(지어내기 금지) 수정일을 대리 신호로 쓴다
+    — rule_stale_ship_note와 동일 원리("기록이 일을 못 따라옴"). 판정 조건은
+    coo_registry.fetch_workapproval_status()의 pending 필터(결재상태 있고 결재완료 아니고
+    반려 아님)와 동일 — 그 함수는 집계값만 반환해 항목 단위가 필요한 여기선 같은 조건을
+    그대로 재적용한다(신규 판정 로직 아님)."""
+    import coo_registry  # noqa: PLC0415
+
+    data = coo_registry._http_get_json(f"{coo_registry.TODO_API}?action=todo_list")
+    rows = data.get("data", []) if isinstance(data, dict) else []
+    today = datetime.now(tz=KST).date()
+    gaps: list[dict] = []
+    for r in rows:
+        appr = str(r.get("결재상태") or "")
+        if not (r.get("결재상태") or r.get("결재요청")):
+            continue
+        if appr == "결재완료" or "반려" in appr:
+            continue
+        target_date = _parse_iso_date(str(r.get("수정일", "")))
+        if target_date is None:
+            continue  # 판정 불가(수정일 없음) — 지어내지 않고 건너뜀
+        days = (today - target_date).days
+        if days < _STALE_DAYS:
+            continue
+        title = r.get("업무명", r.get("id", "?"))
+        gaps.append({
+            "role": "coo",
+            "severity": "mid",
+            "title": f"{_truncate_title(str(title))} — 결재 대기 {days}일째",
+            "detail": f"결재요청={r.get('결재요청', '?')} · 결재상태={appr or '대기'}"
+                      f" · 최근 수정일={target_date.isoformat()}(그 뒤 갱신 없음)",
+            "hint": "업무&결재 현황 SSOT에서 결재요청 대상자 확인 후 후속 조치 필요",
+            "ref": f"{r.get('id', title)}::approval",
+            "age": _classify_age(target_date, today),
+        })
+    return gaps
+
+
+def rule_task_deadline_passed_active() -> list[dict]:
+    """업무·결재 SSOT(TODO_API) 활성 업무(완료·보류 아님) 중 종료일이 이미 지난 것 적발.
+    판정 조건은 coo_registry.fetch_workapproval_status()의 overdue 필터(활성 + 종료일<오늘)와
+    동일 — 그 함수는 건수만 반환해 항목 단위가 필요한 여기선 같은 조건을 그대로 재적용한다.
+    ★"전사 일정(법정점검) 기한 경과" 후보와는 다른 대상(전사 일정 페이지는 아직 검사일 데이터
+    자체가 없어 그 규칙은 만들 수 없었다 — 대신 실데이터가 있는 일반 업무 마감초과로 적는다)."""
+    import coo_registry  # noqa: PLC0415
+
+    data = coo_registry._http_get_json(f"{coo_registry.TODO_API}?action=todo_list")
+    rows = data.get("data", []) if isinstance(data, dict) else []
+    today_str = coo_registry._kst_today()
+    today = datetime.now(tz=KST).date()
+    gaps: list[dict] = []
+    for r in rows:
+        if r.get("상태") in ("완료", "보류"):
+            continue
+        end = str(r.get("종료일") or "")
+        if not end or end[:10] >= today_str:
+            continue
+        target_date = _parse_iso_date(end)
+        title = r.get("업무명", r.get("id", "?"))
+        days = (today - target_date).days if target_date else None
+        gaps.append({
+            "role": "coo",
+            "severity": "mid",
+            "title": f"{_truncate_title(str(title))} — 마감 {days if days is not None else '?'}일 경과",
+            "detail": f"종료일={end[:10]} · 상태={r.get('상태', '?')}(완료·보류 아님)",
+            "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+            "ref": f"{r.get('id', title)}::overdue",
+            "age": _classify_age(target_date, today),
+        })
+    return gaps
+
+
+_VOC_EXCLUDE_CATEGORY = "분실물 접수"  # 분실물=주인이 찾아갈 때까지 대기가 정상이라 미처리와 다름
+_VOC_DONE_STATUSES = {"완료", "처리완료", "해결"}
+
+
+def rule_voc_stale_unresolved() -> list[dict]:
+    """VOC·종합접수처(VOC_EXEC_URL reg_list) 중 분실물 제외 항목이 접수 후 오래 미처리인 것 적발.
+    ★분실물 접수 제외 근거(실측 2026-07-23): 미해결 26건 中 14건이 분실물 — 그대로 넣으면
+    "주인 대기 중"인 정상 상태가 진짜 이슈(컴플레인·청결·시설물고장 등)를 묻어버린다.
+    ★PII 미노출(공개 화면 규격): title·detail에 접수자 이름·연락처·본문(content)을 절대 넣지
+    않는다 — regId·category·dept·경과일만 사용."""
+    from collectors.ops_shared import VOC_EXEC_URL, gas_get  # noqa: PLC0415
+
+    resp = gas_get(VOC_EXEC_URL, {"action": "reg_list"}, label="VOC")
+    if resp is None:
+        return []
+    data = resp.json()
+    rows = data.get("data", []) if isinstance(data, dict) else []
+    today = datetime.now(tz=KST).date()
+    gaps: list[dict] = []
+    for r in rows:
+        category = str(r.get("category", "")).strip()
+        if category == _VOC_EXCLUDE_CATEGORY:
+            continue
+        status = str(r.get("status", "")).strip()
+        if status in _VOC_DONE_STATUSES:
+            continue
+        created = str(r.get("createdAt", ""))[:10]
+        target_date = _parse_iso_date(created)
+        if target_date is None:
+            continue
+        days = (today - target_date).days
+        if days < _STALE_DAYS:
+            continue
+        urgency = str(r.get("urgency") or r.get("severity") or "")
+        severity = "high" if urgency in ("긴급", "높음") else "mid"
+        reg_id = r.get("regId", "?")
+        gaps.append({
+            "role": "coo",
+            "severity": severity,
+            "title": f"{category} — 접수 {days}일째 미처리 (regId={reg_id})",
+            "detail": f"dept={r.get('dept', '?')} · status={status or '접수'} · 접수일={created}",
+            "hint": "종합접수처에서 처리 상태 갱신 필요",
+            "ref": f"{reg_id}::voc",
+            "age": _classify_age(target_date, today),
+        })
+    return gaps
+
+
 # role 별 규칙 등록부 — 다른 C-Level 은 자기 role 리스트에 함수만 추가하면 됨(공용 스캔 재사용).
 _RULES: dict[str, list] = {
     "ceo": [],
@@ -735,7 +896,12 @@ _RULES: dict[str, list] = {
         rule_orphan_automation,        # 2026-07-23 신설 — 만들고 아무 실행 경로에도 안 이은 것
         rule_publish_overclaim,        # 2026-07-23 신설 — 감사기 실측 '주소 죽음'(과대보고 재발방지)
     ],
-    "coo": [],
+    "coo": [
+        rule_recurring_check_incomplete,   # 2026-07-23 신설 — 지원부 반복 미완료(기존 감사기 재사용)
+        rule_approval_stale_pending,       # 2026-07-23 신설 — 결재 대기 N일 초과
+        rule_task_deadline_passed_active,  # 2026-07-23 신설 — 업무 마감(종료일) 경과인데 방치
+        rule_voc_stale_unresolved,         # 2026-07-23 신설 — VOC 접수 후 N일 미처리(분실물 제외)
+    ],
     "cpo": [],
     "cto": [],
 }
