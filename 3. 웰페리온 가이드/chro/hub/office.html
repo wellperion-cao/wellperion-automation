@@ -265,7 +265,7 @@
 
       <div class="bottom-row">
         <div class="counters">
-          <div class="counter" title="팀 단위로 중복 제거한 처리 건수 — 같은 대상(지원자 등)을 여러 에이전트가 나눠 처리해도 1건으로 집계(작업 로그에 공통 식별자가 없으면 개별 집계, 2026-07-23 신설)">
+          <div class="counter" title="팀 단위로 중복 제거한 처리 건수 — 같은 대상(지원자 행번호 rNN 또는 실명)을 여러 에이전트가 나눠 처리해도 1건으로 집계. 로그 노출 필드에 공통 식별자가 없으면 개별 집계(임의 병합 금지, 2026-07-23 정밀화)">
             <div class="lbl">팀 처리업무</div>
             <div class="num"><span id="todayTeam">0</span><span class="today-unit">건</span></div>
           </div>
@@ -2323,17 +2323,31 @@
   function agentSum(){ let s=0; agents.forEach(a=>{ s+=tally[a.id]||0; }); return s; }
   function renderTodayAgent(){ const el=document.getElementById('todayAgent'); if(el) el.textContent=agentSum(); }
   // "팀 처리업무" = 팀 단위(같은 대상)로 묶은 처리 건수. 로그 스키마에 업무그룹ID가 없어 결정적 그루핑 규칙을
-  // 채택: 오늘자 에이전트-매칭 행의 '작업' 문구에서 지원자 행번호 식별자(r숫자, 예 r96·r112·r97~99)를
-  // 추출해 같은 식별자를 공유하는 행들을 1건으로 묶는다. 식별자가 없는 행(대다수의 배포·감사·시스템 작업 등
-  // 대상 특정이 안 되는 로그)은 각각 1건으로 개별 집계(안전측 — 임의 병합 금지, 목업 금지 원칙과 동일하게
-  // 근거 없는 통합을 하지 않음). 결과적으로 팀 처리업무 ≤ 오늘 처리업무 항상 성립.
-  function extractTargetKey(work){ const m=String(work||'').match(/r\d{1,4}(~\d{1,4})?/); return m?m[0]:null; }
+  // 채택: 오늘자 에이전트-매칭 행에서 '대상 고유 식별자'를 추출해 같은 식별자를 공유하는 행들을 1건으로 묶는다.
+  // 식별자가 없는 행(대상 특정이 안 되는 배포·감사·시스템 작업 등)은 각각 1건으로 개별 집계(안전측 — 임의 병합
+  // 금지, 목업 금지 원칙과 동일하게 근거 없는 통합을 하지 않음). 결과적으로 팀 처리업무 ≤ 오늘 처리업무 항상 성립.
+  // ── 병합 키(결정적, 2026-07-23 정밀화) ──────────────────────────────────────────────
+  //  ① rNN(시트 행번호, 예 r112·r97~99) = 지원자/대상 행에 1:1 대응하는 충돌 없는 1순위 키. '작업'뿐 아니라
+  //     '결과' 필드까지 스캔(에이전트 요약 로그는 rNN을 결과에 싣는 경우가 있음). 백엔드 register 게이트①
+  //     자동로그도 규약상 작업="지원자 등록 · {이름} r{행}"으로 rNN을 노출 필드에 병기(2026-07-23 로그 규약).
+  //  ② 지원자 실명(2~4자 한글 + '님/씨' 표지) = rNN이 없을 때만 쓰는 보조 키. 이름 표지(님/씨)가 붙고 일반
+  //     직함어(지원자·담당자 등)가 아닐 때에 한해 병합 — 맥락 없는 우연한 한글 2~4자 오병합을 원천 차단.
+  //     office는 실명 무마스킹 화면(매니저 확정)이므로 노출 필드의 실명을 결정적 키로 쓴다.
+  const NAME_STOP=/^(지원자|이력서|서류|온보딩|담당자|매니저|관리자|평가자|감사자|팀장)$/;
+  function extractTargetKey(r){
+    const work=String(r&&r['작업']||''), result=String(r&&r['결과']||'');
+    const rm=(work+' '+result).match(/r\d{1,4}(~\d{1,4})?/);
+    if(rm) return 'r:'+rm[0];
+    const nm=work.match(/([가-힣]{2,4})\s*(?:님|씨)/);
+    if(nm && !NAME_STOP.test(nm[1])) return 'n:'+nm[1];
+    return null;
+  }
   function computeTeamCount(rows){
     const td=todayStr(); const seen={}; let n=0;
     (rows||[]).forEach(r=>{
       if(String(r['일시']).slice(0,10)!==td) return;
       if(!actorToAgent(r['주체'])) return;   // 팀 처리업무도 에이전트 매칭 행만 대상(오늘 처리업무와 동일 모집단)
-      const key=extractTargetKey(r['작업']);
+      const key=extractTargetKey(r);
       if(key){ if(!seen[key]){ seen[key]=true; n++; } } else { n++; }
     });
     return n;
