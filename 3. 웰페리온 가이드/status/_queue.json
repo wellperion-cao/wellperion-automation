@@ -1128,5 +1128,19 @@
     "artifact": "GM 2026-07-23 결재분 실행.\n- 삭제 2건 라이브 검증: 117→115건, 깨진 상태값 0 (원본 전문 백업·복원 가능)\n  · TODO-20260610205807325 테스트 찌꺼기(한글 깨짐 4칸)\n  · TODO-20260601160855927 퇴사자(이지영 사원 06-12 퇴사) 배정 진행중 '분실물 관리'\n  · 삭제는 id 대조키만 — INC 07-20 행번호삭제 사고 재발방지\n- 진단 ① 정정: 실무진 명단은 정상(퇴사자 제외). 진짜 결함은 퇴사자 배정건이 화면에서 안 보인 채 43일 방치\n- INC-027 (CLI ad-hoc · 커밋 ef17f75dc)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "ef17f75dc2600d8d7ab2c039657b439a2b4d49f4"
+  },
+  {
+    "task_id": "CTO-2026-07-23-ADHOC-0adb73339",
+    "clevel": "cto",
+    "title": "[시토] 죽은 ERP 문서 앵커 커밋 가드 + 담당자 표시 정합",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9827,
+    "artifact": "- precommit_erp_anchor_guard.py 신설: staged 파일이 참조한\n  wellperion_guide(main).html#<ID> 가 가이드 실제 앵커에 없으면 커밋 차단.\n  M5 사고(2026-07-03 리넘버 후 20일간 없는 문서 안내)를 구조로 차단.\n  fail-open(가이드 부재·git 실패 시 통과) · SKIP_ERP_ANCHOR_GUARD 우회.\n  .git/hooks/pre-commit 에 기존 가드와 동일 형태로 배선.\n- 자기차단 사고 처리: 가드 본문·자기 테스트는 설명·픽스처로 죽 (CLI ad-hoc · 커밋 0adb73339)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "0adb73339367372d0170f8d1cb0bb9ce800df711"
   }
 ]
