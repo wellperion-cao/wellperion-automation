@@ -1962,12 +1962,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
               <th style="min-width:76px">담당</th>
               <th style="min-width:96px">문의일</th>
               <th style="min-width:110px">희망 시간</th>
+              <th class="left" style="min-width:180px">연락 이력</th>
               <th style="min-width:80px">상태</th>
               <th style="min-width:64px">횟수</th>
               <th style="min-width:96px">유효기간</th>
             </tr></thead>
             <tbody id="lessonMemBody_adult">
-              <tr><td colspan="10"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+              <tr><td colspan="11"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -2151,12 +2152,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
               <th style="min-width:76px">담당</th>
               <th style="min-width:96px">문의일</th>
               <th style="min-width:110px">희망 시간</th>
+              <th class="left" style="min-width:180px">연락 이력</th>
               <th style="min-width:80px">상태</th>
               <th style="min-width:64px">횟수</th>
               <th style="min-width:96px">유효기간</th>
             </tr></thead>
             <tbody id="lessonMemBody_youth">
-              <tr><td colspan="10"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
+              <tr><td colspan="11"><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -2745,6 +2747,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div id="tapBody"><div class="tap-empty">불러오는 중…</div></div>
   </div>
 </div>
+
+<!-- 전 C-Level 공통 '작업 현황 로그' 패널 — 회원 도메인 주력 화면(멤버십·강습 통합 관리)에 배치.
+     실무진(임정은M)·AI가 같은 화면에서 회원 관리 자동화가 한 일·빠뜨린 일을 함께 본다(GM 2026-07-23 배9960).
+     데이터·스타일 = _assets/worklog_panel.js 단일 출처(이 페이지는 최초 부착이라 스크립트 태그 포함). -->
+<div data-worklog="cpo"></div>
+<script src="/wellperion-automation/_assets/worklog_panel.js"></script>
 
 <script>
 /* ── GAS URL (퍼널 Survey 웹앱 /exec — 2026-06-22 연결) ── */
@@ -5421,7 +5429,7 @@ function lessonRegLoad(t, force) {
   st.memLoaded = true;
   var b = document.getElementById('lessonMemBody_' + t);
   if (GAS_URL === GAS_PLACEHOLDER) { if (b) b.innerHTML = _lessonRegRow('미연동', 'GAS URL이 교체되면 자동으로 등록 회원이 표시됩니다.'); return; }
-  if (b) b.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="loading-spinner"></div>' +
+  if (b) b.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
   fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(st.type) + (force ? '&fresh=1' : '') + _wpKeyParam())
     .then(function(r){ return r.json(); })
@@ -5679,6 +5687,38 @@ function lessonRosterFilter(t, kind, btn) {
   _lessonRosterRender(t, kind);
 }
 
+/* 회원 명단의 연락 이력 셀(2026-07-23 GM '이 내용도 수정할 수 있게') — 문의 목록과 동일한 모달을 연다.
+ *   편집 가능 조건 = 서버가 원본 행 좌표(rowIndex)를 실어 준 행(문의에서 넘어온 회원).
+ *   옛 팀시트 유래 행은 고칠 원본이 없다 → '편집 불가'를 이유와 함께 밝힌다(그냥 비워두면 고장으로 보인다).
+ */
+function _lessonRosterContactCell(r, t) {
+  var list = _ctSort(_rowContacts(r));
+  var txt = list.length
+    ? list.slice().reverse().map(function (c) {
+        var d = c.date ? c.date.slice(5).replace('-', '/') : '';
+        return '<div style="margin-bottom:2px">' + ((d || c.time) ? '<span style="color:var(--dim);font-size:10px">' + esc((d + ' ' + (c.time || '')).trim()) + '</span> ' : '') + esc(c.note || '') + '</div>';
+      }).join('')
+    : '';
+  if (r.rowIndex === undefined || r.rowIndex === null) {
+    return '<td class="left" style="font-size:11.5px;color:var(--dim)" title="옛 팀시트에서 온 기록이라 고칠 원본 문의 행이 없습니다.">' +
+      (txt || '—') + '</td>';
+  }
+  var safeT = String(t).replace(/'/g, '');
+  return '<td class="left lesson-mem-contact" style="font-size:11.5px;cursor:pointer" ' +
+    'onclick="openRosterContact(\'' + safeT + '\',' + r.rowIndex + ')" title="클릭하면 연락 이력을 수정할 수 있습니다(옛 기록 포함)">' +
+    (txt || '<span style="color:var(--dim)">＋ 연락 내용 추가</span>') + '</td>';
+}
+// 명단 행 → 문의 목록과 같은 연락 이력 모달. 저장은 문의 행(rowIndex)에 들어가므로 두 화면이 같은 진실을 본다.
+function openRosterContact(t, rowIndex) {
+  var st = _lessonState[t]; if (!st) return;
+  var r = (st.roster || []).find(function (x) { return x.rowIndex === rowIndex; });
+  if (!r) { showToast('원본 문의 행을 찾을 수 없습니다', 'err'); return; }
+  openContactModal(
+    { rowIndex: r.rowIndex, name: r.name, phone: r.phone, contacts: r.contacts || [] },
+    { source: 'lesson', t: t, type: r.inqType || st.type, sport: '' }
+  );
+}
+
 function _lessonRosterRender(t, kind) {
   var tbody = document.getElementById((kind === 'reg' ? 'lessonRegBody_' : 'lessonMemBody_') + t);
   if (!tbody) return;
@@ -5696,14 +5736,14 @@ function _lessonRosterRender(t, kind) {
   if (kind === 'mem' && !filter && !vFilter) {
     (st.bySport || []).forEach(function(b){
       if (b && b.external) {
-        extNote += '<tr><td colspan="10" style="font-size:12px;color:var(--dim);background:var(--paper);' +
+        extNote += '<tr><td colspan="11" style="font-size:12px;color:var(--dim);background:var(--paper);' +
           'border-left:3px solid var(--border);padding:10px 12px;line-height:1.5">' +
           '🔗 <b>' + esc(b.명 || '외부 프로그램') + '</b> · ' + esc(b.note || '외부 파트너 유료 프로그램 · 회원 명단 외부관리(등록 명단 미표시)') +
           '</td></tr>';
       }
     });
   }
-  var _cs = (kind === 'mem') ? 10 : 4;   // 칸 수 = 표 헤더와 일치(안 맞으면 안내문이 표를 뚫고 나온다)
+  var _cs = (kind === 'mem') ? 11 : 4;   // 칸 수 = 표 헤더와 일치(안 맞으면 안내문이 표를 뚫고 나온다)
   if (!rows.length) {
     // 안내 문구는 화면에 실제로 있는 카드 이름을 써야 한다 — '강습 문의 목록'은 없는 이름이었다(GM 2026-07-23).
     //   실제 카드 = 상단 「🆕 새 문의」 · 그룹 안 「문의 현황」.
@@ -5743,7 +5783,11 @@ function _lessonRosterRender(t, kind) {
       (kind === 'mem' ? ('<td style="font-size:12px;color:var(--dim)">' + esc(r.age || '—') + '</td>' +
         '<td style="font-size:12px">' + esc(r.owner || '—') + '</td>' +
         '<td style="font-size:12px;color:var(--dim)">' + esc(r.inqDate || '—') + '</td>' +
-        '<td style="font-size:11.5px;color:var(--dim)">' + esc(r.wishTime || '—') + '</td>') : '') +
+        '<td style="font-size:11.5px;color:var(--dim)">' + esc(r.wishTime || '—') + '</td>' +
+        // 연락 이력(2026-07-23 GM) — 회원 관리가 읽기 전용이라 등록된 뒤엔 옛 메모를 고칠 방법이 없었다.
+        //   문의 목록과 '같은 모달'을 연다(따로 만들면 두 화면의 동작이 갈라진다). 옛 기록까지 전부 편집된다.
+        //   원본 행 좌표(rowIndex)가 없는 행 = 옛 팀시트 유래 → 고칠 대상이 없으므로 편집 불가라고 밝힌다.
+        _lessonRosterContactCell(r, t)) : '') +
       '<td style="font-size:12px">' + esc(r.status || '—') + '</td>' +
       // 등록 회수·유효기간(SUC 모달 입력) — 전화매칭 조인. '강습 회원 관리(mem)' 뷰에만 표시. GM 2026-07-22.
       (kind === 'mem' ? ('<td style="font-size:12px;color:var(--text);font-weight:600">' + esc(r.regCount || '—') + '</td>' +
@@ -8777,10 +8821,24 @@ function saveContactModal() {
   var saveBtn = document.getElementById('ctSaveBtn'); saveBtn.disabled = true;
   if (ctx.source === 'lesson') {
     var row = _lessonFindRow(ctx.t, rowIndex);
+    // ★회원 관리에서 열면 문의 목록(rows)이 아직 안 불려 있어 row 가 null 일 수 있다.
+    //   그대로 두면 대조키(keyPhone/rowKey) 없이 rowIndex 만으로 쓰게 된다 — 행이 밀렸을 때
+    //   엉뚱한 회원을 덮어쓰는 경로다(2026-07-20 오삭제 사고와 같은 뿌리). 명단 행에서 키를 채워 넣는다.
+    if (!row) {
+      var _rst = _lessonState[ctx.t];
+      row = ((_rst && _rst.roster) || []).find(function (x) { return x.rowIndex === rowIndex; }) || null;
+    }
+    if (!row || !String(row.phone || '').trim()) { showToast('대조키(연락처)를 찾을 수 없어 저장하지 않았습니다', 'err'); saveBtn.disabled = false; return; }
     var _ctSport = ctx.sport || '';   // 종목별 컨택 분리(GM 2026-07-22): 클릭한 종목 줄 sportKey → 백엔드 종목별관리 경로. 미기재행은 ''(flat 유지)
     var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: _ctSport, contacts: JSON.stringify(contacts), gid: (row && row.gid) || undefined };
     // 배1037: 낙관 즉시 반영 + 버퍼 enqueue(fieldset=종목별 독립 → 종목 간·상태·담당과 독립 큐).
     _lessonApplyLocalMgmt(row, _ctSport, { contacts: contacts });
+    // 명단(roster)에도 같은 행이 있으면 함께 갱신 — 회원 관리에서 고친 내용이 그 화면에 바로 보이게.
+    try {
+      var _rst2 = _lessonState[ctx.t];
+      var _rr = ((_rst2 && _rst2.roster) || []).find(function (x) { return x.rowIndex === rowIndex; });
+      if (_rr) { _rr.contacts = contacts; _lessonRosterRender(ctx.t, 'mem'); }
+    } catch (eR) {}
     closeContactModal();
     lessonRender(ctx.t);
     WriteBuffer.enqueue(payload, { scope: 'lesson', phoneKey: (row && row.phone) || '', fieldset: 'contacts:' + _ctSport, label: '연락이력', who: (row && row.name) || '', overlay: { contacts: contacts } });
@@ -8942,7 +9000,7 @@ function loadDbData() {
 function renderDbEmpty(title, desc) {
   var tbody = document.getElementById('dbBody');
   tbody.innerHTML =
-    '<tr><td colspan="10">' +
+    '<tr><td colspan="11">' +
     '<div class="empty-state" style="padding:24px 0">' +
     '<div class="empty-state-icon">📭</div>' +
     '<div class="empty-state-title">' + esc(title) + '</div>' +
