@@ -2200,7 +2200,7 @@
   {
     "task_id": "COO-2026-07-23-RECEPTION-HOLD-LINK",
     "clevel": "coo",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "from": "cpo",
     "origin": "gm",
@@ -2210,7 +2210,7 @@
     "surface": "autonomy",
     "title": "[시우] 종합접수처에 휴회 신청 진입 링크 1개 추가 (시포 인계)",
     "note": "시포 인계(GM 지시 2026-07-23). 회원 휴회 온라인 접수가 2026-07-23 GM go로 라이브 개통됨(배768) — 회원 신청 → ERP 직원 승인/반려까지 폐루프 완성. 종합접수처에서 진입만 열어주면 됨. 요청: 3. 웰페리온 가이드/coo/reception/reception_block.html 접수유형에 「휴회 신청」 1개 추가 → https://wellperion-cao.github.io/wellperion-automation/cpo/member/휴회접수.html 로 이동. ★처리 로직 0 — 저장·검증·승인은 전부 시포 백엔드(GAS v2 member_hold_apply/intake_list/approve)에서 끝남. 종합접수처 시트에는 아무것도 쌓이지 않게 할 것(중복 저장 금지). 기존 6종 접수유형 배선 무변경.",
-    "next": "[2026-07-23 시우] 리포 정본 반영 완료·로컬 실측 통과 — 커밋 8b5760672. 구현=접수유형 추가가 아니라 링크 1행(.lf-link 재사용·새 CSS 0). 처리 로직 0·종합접수처 시트 무기록. 로컬 검증: 휴회 링크 1개 · 접수유형 6종 유지 · 습득물 2버튼 유지 · JS 에러 0. 대상 URL 라이브 200 확인(cpo/member/휴회접수.html '웰페리온 · 휴회 신청'). 테스트 카드 업무보고방 발송 완료(msg 5798) — GM이 실제 신청 화면까지 눌러 테스트 가능. ▶🔴 막힘: WP 라이브(8434) 주입 미완 — 워드프레스 관리자 세션 만료. 자동 자격증명을 보관하지 않는 구조(GM 계정 수동 로그인 전용)라 시우가 진행 불가. ▶GM 액션 1회: 터미널에서 `! C:\\Python314\\python.exe scripts\\wordpress_admin_playwright.py --mode setup` 실행 후 열리는 창에서 워드프레스 로그인(감지되면 자동 저장·최대 10분 대기). 그 다음 시우가 swap-reception-text 로 리포와 동일 문자열 주입 → 시크릿 크롬 실측 → 시포 폐루프 검수 인계."
+    "next": "[2026-07-23 입항] 종합접수처 휴회 신청 링크 라이브 완료. 리포 정본(8b5760672) + WP 8434 주입 완료 — 리포↔WP 글자 단위 동일(드리프트 0). 라이브 실측(무캐시·비로그인): 휴회 링크 1개 · 습득물 2버튼 유지 · 접수유형 6종 유지 · JS 에러 0 · 링크 클릭 시 '웰페리온 · 휴회 신청' 페이지 이동 확인. 처리 로직 0·종합접수처 시트 무기록 유지. 교훈(재발방지): swap-reception-text 는 '교체 후 find 0건'을 요구한다 — 앵커 문자열이 치환문 안에 그대로 남으면 ABORT 된다. 삽입형 변경은 '직전 한 줄을 앵커로 잡고 그 줄까지 갈아끼우는' 방식으로 설계할 것. WP 원본 백업 scripts/poc-evidence/reception_page8434_content_backup_20260723_161934.txt. ▶다음: 시포(배768)가 회원 신청→승인 폐루프 검수. 진입 경로는 열렸음."
   },
   {
     "task_id": "CPO-2026-07-23-ADHOC-60639e889",
@@ -2393,5 +2393,19 @@
     "artifact": "- 처리 로직 0 — 링크만. 저장·검증·승인은 전부 시포 백엔드(휴회접수.html → GAS member_hold_apply).\n  종합접수처 시트에는 아무것도 쌓이지 않는다(중복 저장 금지).\n- 이미 정의돼 있으나 쓰이지 않던 .lf-link 스타일 재사용 → 새 CSS 추가 0.\n- 기존 배선 무변경 확인(로컬 실측): 접수유형 6종 유지 · 습득물 2버튼 유지 · JS 에러 0.\n- 대상 URL 라이브 확인: cpo/member/휴회접수.html 200 ('웰페리온 · 휴회 신청').\n- ⚠️ WP 라이브(8434) 주입은 (CLI ad-hoc · 커밋 8b5760672)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "8b5760672282d38cc879290cc016abb2a24e04ba"
+  },
+  {
+    "task_id": "CPO-2026-07-23-ADHOC-abcfc7a46",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9924,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 abcfc7a46)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "abcfc7a460e342a89542ecc2bfdf4a86f624f8b7"
   }
 ]
