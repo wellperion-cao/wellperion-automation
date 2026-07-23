@@ -1576,7 +1576,9 @@
   // 모듈 → automation_health 예약작업 매칭(마지막 발송·건강 실측 소스). 전용 잡이 있으면 그것, 없으면 cadence→공용 모듈리포터 잡, 그래도 없으면 측정불가.
   var MOD_AH = {
     'cto-kakao-sales-report':   { kakao:true, ah:'Wellperion-Kakao-Sales-Report-0930' },
-    'cto-kakao-check-share':    { ah:'Wellperion-Kakao-CheckStatus-Share-2300' },
+    // cto-kakao-check-share: 전용 예약작업 Wellperion-Kakao-CheckStatus-Share-2300 은
+    // 배10008(2026-07-24)로 삭제됨(카톡 23:00 중복 발송 경로 제거, 텔레그램 22:30/20:00만
+    // 존속). 전용 잡이 없어졌으므로 매핑 제거 — cadence 기반 공용 모듈리포터로 폴백.
     'cto-ops-morning-digest':   { ah:'Wellperion-Ops-Morning-Digest-0730' },
     'cto-aide-gap-detector':    { ah:'Wellperion-GM-Aide-Scan-0630' },
     'cmo-case-series-dispatch': { ah:'Wellperion-IG-Series-Produce-0730' },

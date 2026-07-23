@@ -205,8 +205,8 @@
       "class": "state-honor",
       "execution_ssot": {
         "kind": "gas",
-        "ref": "점검 GAS(today_live 지원·board+monthly 시설·weekly 주차) → scripts/support_check_summary.py(공용 렌더) → scripts/kakao_daily_check_share.py",
-        "note": "실측 확인(2026-07-22): support_check_summary.build_summary_lines 가 서버 today_live 를 단일 진실로 신뢰 — 주말은 서버가 오후조 total=0 을 반환하므로 분모>0 회차만 렌더(주말 유령행 자동 제거). 미점검 회차는 빠짐없이 짚음. LLM 없음(결정론 렌더)."
+        "ref": "점검 GAS(today_live 지원·board+monthly 시설·weekly 주차) → scripts/support_check_summary.py(공용 렌더) → telegram_bot/daily_scheduler.py(점검관리방 22:30/20:00 + 같은 크론 내 KAKAO_GO_STREAM2 게이트로 카톡 ★운영+시설+지원+주차 동시 발송, kakao_report_sender.py 경유)",
+        "note": "실측 확인(2026-07-22): support_check_summary.build_summary_lines 가 서버 today_live 를 단일 진실로 신뢰 — 주말은 서버가 오후조 total=0 을 반환하므로 분모>0 회차만 렌더(주말 유령행 자동 제거). 미점검 회차는 빠짐없이 짚음. LLM 없음(결정론 렌더). ★2026-07-24(배10008): 같은 렌더 결과를 카톡 같은 방에 23:00 별도 재발송하던 scripts/kakao_daily_check_share.py(독립 예약작업)는 중복 발신이라 삭제됨 — daily_scheduler.py 22:30/20:00 단일 경로만 남고, kakao_report_sender.py 에 방+내용 서명 기반 중복발신 가드를 신설해 재발 방지."
       },
       "decision_events": ["주말회차정합", "미점검존중"],
       "guard": {

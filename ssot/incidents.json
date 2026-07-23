@@ -505,6 +505,19 @@
       "검증증거": "격리 임시 저장소(scratchpad/safe_commit_test/repo, 실 저장소·실 커밋 무관 — 검증 후 폐기)에서 unittest.mock 으로 5개 시나리오 재현. (1)정상 파일 수정 커밋 → ok/committed=True, HEAD 이동. (2)디스크에서도 지운 정당한 삭제 커밋 → ok/committed=True(오탐 없음). (3)범위 밖(rel_paths 밖) 유령 삭제 주입(a.txt 디스크엔 존재·임시 인덱스만 강제 삭제) → ok=False·committed=False·HEAD 불변·a.txt 실제 보존. (4)범위 밖 파일 내용 변조 혼입 주입(subdir/d.txt) → 동일하게 ok=False·committed=False·HEAD 불변·내용 무손상. (5)범위 안(rel_paths 포함) 유령 삭제 주입(a.txt 를 rel_paths 에 포함시키고 디스크 실존 상태로 삭제 표시) → '유령 삭제(디스크엔 실존): a.txt' 분기로 정확히 차단, HEAD 불변. 5/5 통과 — 정상·정당한 삭제는 막지 않고 혼입·유령 삭제만 커밋 생성 전에 차단됨을 실측.",
       "gate": "",
       "watch_globs": ["scripts/safe_commit.py"]
+    },
+    {
+      "id": "INC-031",
+      "date": "2026-07-24",
+      "요약": "카톡 ★운영+시설+지원+주차 방에 점검현황이 22:30과 23:00 두 번 중복 발송 — 23:00 독립 경로를 삭제하고 공용 발신기에 중복발신 가드 신설",
+      "증상": "GM 지적: 카톡 점검현황이 22:30(주말 20:00)과 23:00 두 번 온다. 확인 결과 daily_scheduler.py(22:30/20:00, KAKAO_GO_STREAM2 게이트)와 독립 스크립트 kakao_daily_check_share.py(Windows 예약작업 Wellperion-Kakao-CheckStatus-Share-2300, 23:00)가 각자 같은 렌더 함수(support_check_summary.build_summary_lines)의 산출물을 같은 카톡방에 발송하고 있었다.",
+      "본질": "2026-07-22 KAKAO_GO_STREAM2=True 로 daily_scheduler.py 에 카톡 발신을 추가하면서, 2026-07-09부터 이미 돌던 kakao_daily_check_share.py(23:00 예약작업)를 끄지 않아 겹쳤다. 렌더 로직은 2026-07-19 support_check_summary.py 로 단일화됐지만 '발송을 트리거하는 코드'는 여전히 두 곳이라 — 새 발신 경로를 켤 때 기존 경로가 있는지 확인하는 지점이 없었다(약속 L01). report_stream_2_check.py docstring 의 중복 경고는 실제 사고 경로(daily_scheduler 게이트 vs 별도 스크립트)를 안 겨냥해 예방 실패.",
+      "뿌리분류": "정합어긋남",
+      "차단조치": "①GM 지시대로 '끄기'가 아니라 '삭제' — Windows 예약작업 Wellperion-Kakao-CheckStatus-Share-2300 삭제(Unregister-ScheduledTask, 재조회로 부재 확정), scripts/kakao_daily_check_share.py·scripts/kakao_daily_check_share.bat·launchers/kakao_check_share_hidden.vbs·status/heartbeats/cto-kakao-check-share.json 삭제. support_check_summary.py(공용 렌더, 22:30 경로가 재사용 중이라 절대 보존)는 무손상. ②22:30 경로(daily_scheduler.py)가 이 삭제된 스크립트를 import/호출하지 않음을 grep 전수로 사전 확인 후 삭제 진행(재사용 없음 확인됨 — daily_scheduler.py 는 kakao_report_sender.py 를 직접 호출). ③module_registry.json(cto-kakao-check-share)·ssot/decision_contracts.json(cto-kakao-check-share)·3. 웰페리온 가이드/자율현황.html(MOD_AH 매핑)의 삭제된 스크립트·예약작업 참조를 갱신(문서박제 방지). ④근본 가드 — scripts/kakao_report_sender.py(저장소의 모든 카톡 발신이 통과하는 단일 관문)에 (방, 내용[, 이미지]) 서명 기반 중복발신 원장(status/kakao_dedup_ledger.json, 2시간 창)을 신설해 send_message_to_room·send_to_room 양쪽에 배선 — 앞으로 어떤 새 발신 경로가 추가돼도 같은 방+같은 내용이 겹치면 자동 차단(개별 스크립트가 매번 챙길 필요 없이 근본 위치 1곳에서 방어). 우회: env SKIP_KAKAO_DEDUP_GUARD=1.",
+      "상태": "OPEN",
+      "검증증거": "①schtasks 실제 삭제 확인 — Unregister-ScheduledTask 실행 후 Get-ScheduledTask 재조회 결과 '찾을 수 없음'(부재 확정). ②grep 전수로 daily_scheduler.py 가 kakao_daily_check_share.py 를 참조하지 않음(주석 언급뿐, import·호출 0건) 확인 후 삭제. ③중복발신 가드 함수(check_and_record_dedup)를 실제 모듈 import 후 임시 원장 경로로 스와핑해 격리 재현 — (a)최초 실발송 통과 (b)같은 방+같은 내용 재시도 차단(실제 출력: '[dedup] 차단 — [★운영+시설+지원+주차] 동일 내용이 0분 전에 이미 발신됨') (c)다른 내용·다른 방은 통과 (d)dry-run 은 원장에 기록 안 해 스스로 오판 안 함 (e)env 우회 스위치 작동. 6/6 통과. ★미검증(정직 표기·미결): 지금은 아침이라 오늘 밤 22:30/20:00·23:00 실제 카톡방 발신을 라이브로 관찰하지 못했다 — 22:30 경로가 실제로 카톡까지 정상 도달하는지, 23:00 재발송이 정말 안 일어나는지는 오늘 밤 실관찰 후에만 GUARDED로 승격할 수 있다. 그 전까지 OPEN 유지.",
+      "gate": "",
+      "watch_globs": ["scripts/kakao_report_sender.py", "telegram_bot/daily_scheduler.py"]
     }
   ]
 }

@@ -228,10 +228,10 @@
       "id": "cto-kakao-check-share",
       "owner_role": "cto",
       "owner_nick": "시토",
-      "feature": "🌙 점검 현황 통일 발송 — 텔레그램 점검관리방(주말 20:00/평일 22:30) + 카톡 23:00 '운영+시설+지원+주차' 방에 시설·지원·주차 3섹션 핵심요약을 공용 모듈(support_check_summary.py)로 동일 포맷 무인 발송. 주말 회차 정합(오후조 유령행 제거)·남녀 구역 분리·미점검 회차 전부 짚기·시설 작업일지·반복이슈 승격. 2026-07-19 GM go 라이브 발효(v3)",
+      "feature": "🌙 점검 현황 통일 발송 — 텔레그램 점검관리방 + 카톡 ★운영+시설+지원+주차 방(둘 다 daily_scheduler.py 22:30/평일·20:00 주말 단일 크론 경유, KAKAO_GO_STREAM2 게이트)에 시설·지원·주차 3섹션 핵심요약을 공용 모듈(support_check_summary.py)로 동일 포맷 무인 발송. 주말 회차 정합(오후조 유령행 제거)·남녀 구역 분리·미점검 회차 전부 짚기·시설 작업일지·반복이슈 승격. 2026-07-19 GM go 라이브 발효(v3). ★2026-07-24(배10008): 같은 렌더 결과를 카톡 같은 방에 23:00 별도 예약작업(kakao_daily_check_share.py)으로 다시 발송하던 중복 경로를 삭제 — 22:30/20:00 단일 발송(텔레그램+카톡 둘 다 유지)만 남김(GM 지시). kakao_report_sender.py 에 중복발신 가드(방+내용 서명, 2시간 창) 신설.",
       "data_source": {
         "kind": "gas",
-        "ref": "점검 GAS(today_live 지원·board+monthly 시설·weekly 주차) + 공용 렌더 scripts/support_check_summary.py(텔레그램·카톡 단일 진실) + status/heartbeats/cto-kakao-check-share.json"
+        "ref": "점검 GAS(today_live 지원·board+monthly 시설·weekly 주차) + 공용 렌더 scripts/support_check_summary.py(텔레그램·카톡 단일 진실)"
       },
       "notify_spec": {
         "daily": true,
@@ -245,7 +245,7 @@
         "anchor": "layer-automation"
       },
       "autonomy": "auto",
-      "ai_free_fallback": "공용 렌더(support_check_summary.py)→ 텔레그램=daily_scheduler 크론(주말 20:00/평일 22:30 점검관리방)·카톡=점검 GAS→텍스트→카톡 PC UI 자동전송(예약 23:00 Wellperion-Kakao-CheckStatus-Share-2300). AI 세션 불요",
+      "ai_free_fallback": "공용 렌더(support_check_summary.py)→ daily_scheduler 크론(주말 20:00/평일 22:30) 단일 실행에서 텔레그램 점검관리방 + 카톡 ★운영+시설+지원+주차(kakao_report_sender.py 경유, 중복발신 가드 내장) 둘 다 발송. AI 세션 불요",
       "feedback": {
         "enabled": true,
         "audience": "gm+clevel",

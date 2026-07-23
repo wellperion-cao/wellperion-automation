@@ -93,8 +93,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
+import os
 import subprocess
 import sys
 import time
@@ -646,6 +648,94 @@ def build_caption(room: dict, base_caption: str) -> str:
     return f"{room.get('prefix', '')}{base_caption}"
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 중복 발신 가드(2026-07-24, 배10008) — 같은 방 + 같은 내용의 발신이 짧은 시간 안에
+# 두 번 들어오면 두 번째부터 차단한다.
+#
+# 배경: daily_scheduler.py(22:30/20:00, KAKAO_GO_STREAM2)와 kakao_daily_check_share.py
+#   (23:00, 배10008로 삭제)가 서로 완전히 다른 코드 경로에서 같은 렌더 함수
+#   (support_check_summary.build_summary_lines)의 결과를 같은 카톡방(★운영+시설+
+#   지원+주차)에 각자 발송해 하루 두 번 중복 배달됐다. 뿌리는 "새 발신 경로를 켤 때
+#   기존 경로가 있는지 확인하는 지점이 없음"(약속 L01) — 문서 경고(report_stream_2_
+#   check.py docstring)만으로는 실제 사고를 못 막았다.
+#
+# 이 스크립트(kakao_report_sender.py)는 저장소의 모든 카톡 발신이 통과하는 **단일
+# 관문**이라(daily_scheduler·kakao_daily_check_share·kakao_summary_card_auto 등 전부
+# subprocess로 이 파일을 호출), 여기서 (방, 내용) 서명 기반 원장 검사를 하면 앞으로
+# 어떤 새 발신 경로가 추가되더라도 자동으로 같이 방어된다(개별 스크립트마다 매번
+# 새로 챙길 필요 없음 — 근본 위치에 1회 박음).
+# ══════════════════════════════════════════════════════════════════════════
+DEDUP_LEDGER_PATH = ROOT / "status" / "kakao_dedup_ledger.json"
+DEDUP_WINDOW_SEC = float(os.environ.get("KAKAO_DEDUP_WINDOW_SEC", 7200))  # 2시간(22:30↔23:00류 30분 간격을 넉넉히 덮음)
+SKIP_DEDUP_ENV = "SKIP_KAKAO_DEDUP_GUARD"
+
+
+def _dedup_signature(room_name: str, text: str = "", image_path: Path | None = None) -> str:
+    """(방, 본문[, 이미지 내용]) 조합의 서명. 이미지가 있으면 파일 내용까지 해시에 포함해
+    "같은 이미지를 다른 파일명으로 두 번 보내는" 케이스도 같은 서명으로 잡는다."""
+    h = hashlib.sha256()
+    h.update(room_name.strip().encode("utf-8"))
+    h.update(b"\x00")
+    h.update((text or "").strip().encode("utf-8"))
+    if image_path is not None:
+        h.update(b"\x00")
+        try:
+            h.update(image_path.read_bytes())
+        except Exception:
+            h.update(str(image_path).encode("utf-8"))
+    return h.hexdigest()[:24]
+
+
+def _load_dedup_ledger() -> list[dict]:
+    try:
+        if DEDUP_LEDGER_PATH.exists():
+            return json.loads(DEDUP_LEDGER_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:
+        log(f"[dedup] 원장 읽기 실패(무시, 빈 원장으로 계속): {exc}")
+    return []
+
+
+def _save_dedup_ledger(entries: list[dict]) -> None:
+    try:
+        DEDUP_LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
+        DEDUP_LEDGER_PATH.write_text(
+            json.dumps(entries, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except Exception as exc:
+        log(f"[dedup] 원장 저장 실패(무시 — 가드는 best-effort, 발신 자체는 계속): {exc}")
+
+
+def check_and_record_dedup(
+    room_name: str, text: str = "", image_path: Path | None = None, dry_run: bool = False
+) -> bool:
+    """True 반환 = 중복(발신 차단해야 함). False = 신규(정상 진행, 실발송이면 원장에 기록).
+
+    dry-run 은 실제 발송이 아니므로 원장에 기록하지 않는다(검증용 dry-run 반복 실행이
+    스스로를 중복으로 오판하는 것 방지) — 다만 이미 실발송된 것과 겹치는지 검사는 한다.
+    우회: env SKIP_KAKAO_DEDUP_GUARD=1."""
+    if os.environ.get(SKIP_DEDUP_ENV) == "1":
+        return False
+    sig = _dedup_signature(room_name, text, image_path)
+    now = time.time()
+    entries = [e for e in _load_dedup_ledger() if now - e.get("ts", 0) < DEDUP_WINDOW_SEC]
+
+    hit = next((e for e in entries if e.get("sig") == sig), None)
+    if hit:
+        age_min = (now - hit["ts"]) / 60
+        log(f"[dedup] 차단 — [{room_name}] 동일 내용이 {age_min:.0f}분 전에 이미 발신됨"
+            f"(중복 발신 가드, 배10008). 의도된 재발송이면 env {SKIP_DEDUP_ENV}=1 로 우회.")
+        _save_dedup_ledger(entries)  # 창 밖 항목 정리만 반영
+        return True
+
+    if not dry_run:
+        entries.append({
+            "room": room_name, "sig": sig, "ts": now,
+            "at_kst": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        })
+    _save_dedup_ledger(entries)
+    return False
+
+
 def open_or_find_room(room_name: str):
     """방 창-제목 탐색(주 경로) → 실패 시 카톡 메인창 검색으로 자동 열기(폴백).
     send_to_room·send_message_to_room 공용 — 방 열기 로직 중복 방지."""
@@ -665,12 +755,18 @@ def open_or_find_room(room_name: str):
     return room_win
 
 
-def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> None:
+def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> bool:
     """이미지 없이 텍스트만 전송(휴관일 안내문 등). 이미지 팝업 경로를 전혀 타지 않고
-    채팅 입력창에 바로 paste_text → send_enter 한다."""
+    채팅 입력창에 바로 paste_text → send_enter 한다.
+
+    반환: True = 실제 발송(또는 dry-run 진행), False = 중복 발신 가드로 스킵."""
     room_name = room["name"]
     text = build_caption(room, base_message)
     log(f"── {room_name} 텍스트 전용 처리 시작 (dry_run={dry_run}, text={text!r}) ──")
+
+    if check_and_record_dedup(room_name, text=text, dry_run=dry_run):
+        log(f"[{room_name}] 중복 발신 가드로 스킵(전송 안 함)")
+        return False
 
     room_win = open_or_find_room(room_name)
     focus_window(room_win, room_name)
@@ -683,18 +779,24 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> None:
         screenshot(room_win, room_name, "dryrun_message_preview")
         clear_input(input_box)  # 실제 전송 안 하고 미리보기 텍스트만 지워 잔여물 방지
         log(f"[{room_name}] DRY-RUN: 텍스트 미리보기까지 확인, 전송 생략(안전) — {text!r}")
-        return
+        return True
 
     send_enter(input_box)
     time.sleep(0.5)
     screenshot(room_win, room_name, "message_sent")
     log(f"[{room_name}] 텍스트 전송 완료")
+    return True
 
 
-def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool) -> None:
+def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool) -> bool:
+    """반환: True = 실제 발송(또는 dry-run 진행), False = 중복 발신 가드로 스킵."""
     room_name = room["name"]
     caption = build_caption(room, base_caption)
     log(f"── {room_name} 처리 시작 (dry_run={dry_run}, caption={caption!r}) ──")
+
+    if check_and_record_dedup(room_name, text=caption, image_path=image_path, dry_run=dry_run):
+        log(f"[{room_name}] 중복 발신 가드로 스킵(전송 안 함)")
+        return False
 
     room_win = open_or_find_room(room_name)
     focus_window(room_win, room_name)
@@ -709,7 +811,7 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
         else:
             clear_input(input_box)  # 팝업 없이 인라인 미리보기였던 구버전 카톡용 폴백
         log(f"[{room_name}] DRY-RUN: 미리보기까지 확인, 전송 생략(안전) — 캡션 미리보기: {caption!r}")
-        return
+        return True
 
     if popup is not None:
         confirm_clipboard_popup(popup, room_name)  # 이미지 전송(팝업 캡션칸 Enter)
@@ -726,6 +828,7 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
 
     screenshot(room_win, room_name, "sent")
     log(f"[{room_name}] 전송 완료")
+    return True
 
 
 def resolve_image_path(cfg: dict, args) -> Path:
@@ -777,13 +880,15 @@ def main() -> int:
     room_names = [r["name"] for r in rooms]
 
     failures = []
+    dedup_skipped = []  # 중복 발신 가드로 스킵된 방(실패 아님 — 의도된 차단)
 
     if args.message:
         log(f"대상 방 {len(rooms)}개: {room_names} / message={args.message!r} / dry_run={args.dry_run}")
         for idx, room in enumerate(rooms):
             room_name = room["name"]
             try:
-                send_message_to_room(room, args.message, args.dry_run)
+                if not send_message_to_room(room, args.message, args.dry_run):
+                    dedup_skipped.append(room_name)
             except Exception as exc:
                 log(f"실패 [{room_name}]: {exc}")
                 failures.append((room_name, str(exc)))
@@ -792,7 +897,8 @@ def main() -> int:
         if failures:
             print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")
             return 1
-        print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료(텍스트) — {len(rooms)}개 방")
+        note = f" (중복 발신 가드 스킵 {len(dedup_skipped)}개: {dedup_skipped})" if dedup_skipped else ""
+        print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료(텍스트) — {len(rooms)}개 방{note}")
         return 0
 
     image_path = resolve_image_path(cfg, args)
@@ -805,7 +911,8 @@ def main() -> int:
     for idx, room in enumerate(rooms):
         room_name = room["name"]
         try:
-            send_to_room(room, image_path, args.caption, args.dry_run)
+            if not send_to_room(room, image_path, args.caption, args.dry_run):
+                dedup_skipped.append(room_name)
         except Exception as exc:
             log(f"실패 [{room_name}]: {exc}")
             failures.append((room_name, str(exc)))
@@ -816,7 +923,8 @@ def main() -> int:
         print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")
         return 1
 
-    print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료 — {len(rooms)}개 방")
+    note = f" (중복 발신 가드 스킵 {len(dedup_skipped)}개: {dedup_skipped})" if dedup_skipped else ""
+    print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료 — {len(rooms)}개 방{note}")
     return 0
 
 
