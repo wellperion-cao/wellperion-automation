@@ -1606,5 +1606,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 6963d23f6)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "6963d23f62ec5f442689771b1bd6cb8aec11b96e"
+  },
+  {
+    "task_id": "CEO-2026-07-23-ADHOC-ffe4f9296",
+    "clevel": "ceo",
+    "title": "[웰리] S0 개편(통합 소개서 주력 + 로드맵 축) & 오늘 넣은 북극성 스크립트 문법오류 수리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-23",
+    "processed_at": "2026-07-23",
+    "ship_no": 9861,
+    "artifact": "[수리 — 오늘 내가 넣은 결함]\n북극성 렌더 스크립트의 esc()에서 정규식 리터럴 안에 진짜 줄바꿈이 들어가\n(빌드 스크립트가 백슬래시-n 대신 개행을 출력) 블록 전체가 SyntaxError로 죽어 있었다.\n= 매트릭스 직독 렌더가 한 번도 실행되지 않았고, 화면에는 동기화해 둔 HTML 폴백만 보였다.\n값이 맞아 보여서 정상으로 오인했다(라이브 확인의 함정). 이제 인라인 스크립트 20개 전부 파싱 통과,\n7역할 북극성이 매트릭스에서 실제로 렌더됨을 실측 확인. (CLI ad-hoc · 커밋 ffe4f9296)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "ffe4f9296a7ca89ec2fe990bce2686bfec38ece9"
   }
 ]
