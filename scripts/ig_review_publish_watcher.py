@@ -243,8 +243,8 @@ def notify_pending_review(items: list) -> None:
         channel = it.get("channel", "")
         msg = (
             f"🔎 검수 대기 등록\n"
-            f"{title} ({channel}) — 웰페리온 ERP M5에서 미리보기·승인\n"
-            f"https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M5"
+            f"{title} ({channel}) — 웰페리온 ERP M1에서 미리보기·승인\n"
+            f"https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M1"
         )
         telegram(msg)
         newly_notified.append(item_id)

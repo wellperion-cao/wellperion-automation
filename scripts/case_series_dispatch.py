@@ -12,7 +12,7 @@
   ① 재고표 파싱 → 요일 게이트(월~금='평일' / 토·일='주말GM' 행 있을 때만) → 다음 편 선정
   ② 대본 불량 검증(html 6장·caption.md 존재) → 렌더(이미 6장+미리보기 있으면 재사용, 없으면
      render_hand_slides.py 호출)
-  ③ publish_register.register_publish → M5 review_queue '검수대기' 등록(+montage 텔레그램)
+  ③ publish_register.register_publish → M1 review_queue '검수대기' 등록(+montage 텔레그램)
   ④ send_review_card.py --id → GM 텔레그램 [✅승인]/[❌반려] 버튼 카드(무폴링 발행 트리거)
   ⑤ 재고표 해당 행 상태 → '검수발송(YYYY-MM-DD)' 마킹(다음날 중복 재선정 차단)
   재고 0건(대상 트랙에 '재고(대본완료)' 없음)이면 평일엔 "📭 재고 소진" 텔레그램만 내고 종료,
@@ -644,7 +644,7 @@ def run(dry_run: bool, plan_only: bool) -> int:
         telegram(msg)
         return 1
 
-    # 5) 등록 (M5 review_queue '검수대기')
+    # 5) 등록 (M1 review_queue '검수대기')
     queue_id = make_queue_id(nxt, today_iso)
     caption_text = caption_md.read_text(encoding="utf-8").strip()
     folder_path = ROOT / nxt["folder"]

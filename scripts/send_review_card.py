@@ -34,7 +34,7 @@ except Exception:
 
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
-M5_URL = "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M5"
+M1_URL = "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M1"
 
 # 형제 채널 id 접미사 — publish_register.py _SIBLING_CHANNEL_SPECS 와 동일 규칙(배834 계열).
 # 여기서 재정의(직접 import 안 함)하는 이유: 이 스크립트는 카드 발송 단독 진입점(빈번한
@@ -326,7 +326,7 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
         f"<b>{title}</b>\n"
         f"채널: {ch_label}\n"
         f"폴더: {folder}\n\n"
-        f"슬라이드 미리보기 ↑ · <a href=\"{M5_URL}\">M5에서 전체 보기</a>\n"
+        f"슬라이드 미리보기 ↑ · <a href=\"{M1_URL}\">M1에서 전체 보기</a>\n"
         f"확인 후 아래에서 바로 발행 승인하세요."
     )
     keyboard = {

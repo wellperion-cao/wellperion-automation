@@ -2,7 +2,7 @@
 # 제작완료 → 자동 등록·알림 범용 헬퍼 (FIX3, 2026-06-03 AI CTO)
 #
 # 빌드(build_slides.py 등)가 슬라이드/몽타주 제작을 끝낸 직후 1회 호출하면:
-#   (a) montage(검수 미리보기)를 웰페리온 ERP M5 review 폴더로 캐시우회 파일명으로 복사
+#   (a) montage(검수 미리보기)를 웰페리온 ERP M1 review 폴더로 캐시우회 파일명으로 복사
 #   (b) review_queue.json 을 id 기준 upsert (있으면 update·없으면 append)
 #       - status='검수대기' (단, 이미 '발행완료' 인 엔트리는 status 강등 금지)
 #       - preview/slides/caption/location/mentions/collaborators/account/folder/channel/title 세팅
@@ -189,8 +189,8 @@ def _telegram_send_message(text: str) -> None:
 def _copy_preview(montage_path: Path, slug: str) -> str | None:
     """montage 를 review 폴더로 캐시우회 파일명(타임스탬프)으로 복사.
 
-    반환: 배포루트(`3. 웰페리온 가이드`) 기준 정방향 슬래시 상대경로 (review_queue.preview = M5 img src 호환).
-    ※ ROOT 기준이면 '3. 웰페리온 가이드/' 접두사가 붙어 M5에서 404(미리보기 깨짐) — 배포루트 기준 필수.
+    반환: 배포루트(`3. 웰페리온 가이드`) 기준 정방향 슬래시 상대경로 (review_queue.preview = M1 img src 호환).
+    ※ ROOT 기준이면 '3. 웰페리온 가이드/' 접두사가 붙어 M1에서 404(미리보기 깨짐) — 배포루트 기준 필수.
     실패 시 None (등록은 계속 진행).
     """
     try:
@@ -416,7 +416,7 @@ def register_publish(
     collaborators: list[str] | None = None,
     send_card: bool = False,
 ) -> None:
-    """제작완료 → 자동 등록(M5 upsert) + 텔레그램(1줄+montage) 발송 범용 헬퍼.
+    """제작완료 → 자동 등록(M1 upsert) + 텔레그램(1줄+montage) 발송 범용 헬퍼.
 
     어떤 단계가 실패해도 빌드 자체는 깨지 않음(광범위 try/except 격리).
     review_queue 다른 엔트리·파일은 절대 삭제하지 않음 (id 매칭 1건만 손댐).
@@ -496,9 +496,9 @@ def register_publish(
         action = "갱신" if matched else "신규 등록"
         msg = (
             f"🎨 제작완료 — {title}\n"
-            f"M5 {action}(status={final_status}) · 채널 {channel}\n"
-            f"웰페리온 ERP M5에서 미리보기·검수\n"
-            f"https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M5"
+            f"M1 {action}(status={final_status}) · 채널 {channel}\n"
+            f"웰페리온 ERP M1에서 미리보기·검수\n"
+            f"https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M1"
         )
         try:
             skip_produce_done = muted("produce_done")
