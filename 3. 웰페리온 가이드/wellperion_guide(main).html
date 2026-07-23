@@ -1012,12 +1012,22 @@
       var GID_KO = '1902010032';
       var GID_EN = '1887747109';
       var BASE   = 'https://docs.google.com/spreadsheets/d/' + SS_ID + '/export?format=csv&gid=';
-      // 구글폼 타임스탬프 형식: "2026. N. N ..." — 날짜 부분만 추출 → 'YYYY-MM-DD'
-      var TS_RE = /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/;
+      // ★타임스탬프 2형식 혼재 — 날짜 부분만 뽑아 'YYYY-MM-DD'로 통일.
+      //   구글폼 접수: "2026. 7. 22 오후 6:20:59"  (실측 2건)
+      //   웹 접수    : "26-07-22 10:55:22"        (실측 634건 · 두 자리 연도)
+      //   구글폼형만 읽던 정규식 탓에 웹 접수 634건이 조용히 스킵돼 홈 카드가 636건을 2건으로
+      //   표시했다. 데이터는 멀쩡했고 읽는 쪽만 고장난 경우다(GM 2026-07-23 발견 · 배9879).
+      //   못 읽는 형식은 0으로 세지 말고 null로 남긴다 — 조용히 빠지면 또 못 찾는다.
+      var TS_RE_DOT = /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/;       // 2026. 7. 22
+      var TS_RE_ISO = /^\s*(\d{4})[-/](\d{1,2})[-/](\d{1,2})/;      // 2026-07-22
+      var TS_RE_YY  = /^\s*(\d{2})[-/](\d{1,2})[-/](\d{1,2})/;      // 26-07-22 → 2026-07-22
       function parseDs(s) {
-        var m = TS_RE.exec(String(s || ''));
-        if (!m) return null;
-        return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
+        var v = String(s || ''), m;
+        m = TS_RE_DOT.exec(v) || TS_RE_ISO.exec(v);
+        if (m) return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
+        m = TS_RE_YY.exec(v);
+        if (m) return '20' + m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
+        return null;
       }
       // RFC 4180 CSV 파서 — 멀티라인 셀(따옴표 내 개행) 정확히 처리
       function parseCSV(text) {
