@@ -3110,19 +3110,45 @@ def main():
     #   중간에 죽으면 잔해로 남는다. 2026-07-23 실측 22개(07-20부터 누적) — 동시 커밋
     #   경합으로 중단된 커밋들이 쌓인 것이다. 죽은 index.lock 이 남으면 그 뒤 **전
     #   C-Level 커밋이 전부 실패**하므로(시우 발견), 기동할 때 한 번 치우고 시작한다.
-    #   새 예약 슬롯을 만들지 않는 이유 = 기동은 어차피 매일 일어나고, 알림도 안 낸다.
-    #   ★안전은 청소기 쪽이 책임진다: 살아있는 git 프로세스가 있거나 파일이 점유 중이면
+    #   ★안전은 청소기 쪽이 책임진다: 잠금 주인이 살아있거나 파일이 점유 중이면
     #   아무것도 건드리지 않는다(오판 시 인덱스 손상). 실패해도 기동을 막지 않는다.
+    #
+    #   [2026-07-24 시토 보강] 처음엔 '기동할 때 1회'로만 돌렸다. 오늘 그게 부족하다는 게
+    #   드러났다 — 07:40 에 생긴 죽은 잠금이 09:04 까지 84분을 버텼다. 기동 이후에 생긴
+    #   잠금은 다음 재기동까지 아무도 안 치우기 때문이다(그 사이 전 세션의 git add 가 실패).
+    #   그래서 10분 간격 점검을 추가한다. 윈도우 예약 슬롯을 새로 만들지 않고 이미 도는
+    #   스케줄러 안에 얹으며, 알림은 여전히 0통이다(로그만).
+    def _sweep_git_locks(when: str) -> None:
+        try:
+            r = subprocess.run(
+                [sys.executable, "scripts/git_lock_janitor.py", "--apply"],
+                cwd=str(BASE.parent), timeout=120,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            )
+            tail = (r.stdout or b"").decode("utf-8", "replace").strip().splitlines()
+            line = " | ".join(tail[-2:]) if tail else "출력 없음"
+            # 치운 게 있을 때만 눈에 띄게 남긴다 — 10분마다 조용한 성공 로그로 도배하지 않는다.
+            if "정리 완료" in line:
+                logger.info(f"git 잠금 청소({when}): {line}")
+            else:
+                logger.debug(f"git 잠금 청소({when}): {line}")
+        except Exception as exc:
+            logger.warning(f"git 잠금 청소 건너뜀({when}): {type(exc).__name__}: {exc}")
+
+    _sweep_git_locks("기동")
     try:
-        _janitor = subprocess.run(
-            [sys.executable, "scripts/git_lock_janitor.py", "--apply"],
-            cwd=str(BASE.parent), timeout=120,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        scheduler.add_job(
+            _sweep_git_locks,
+            trigger=IntervalTrigger(minutes=10),
+            args=["주기"],
+            id="git_lock_janitor_10min",
+            replace_existing=True,
+            misfire_grace_time=300,
+            coalesce=True,
         )
-        _tail = (_janitor.stdout or b"").decode("utf-8", "replace").strip().splitlines()
-        logger.info("git 잠금 청소: " + (" | ".join(_tail[-2:]) if _tail else "출력 없음"))
+        logger.info("git 잠금 청소 등록 완료 — 10분 간격(알림 없음·로그만)")
     except Exception as _exc:
-        logger.warning(f"git 잠금 청소 건너뜀(기동은 계속): {type(_exc).__name__}: {_exc}")
+        logger.warning(f"git 잠금 청소 주기 등록 실패(기동은 계속): {_exc}")
 
     logger.info(f"스케줄러 기동 완료. PID={os.getpid()}")
     try:
