@@ -173,8 +173,8 @@
   .plus{opacity:0;color:var(--faint);font-size:16px;font-weight:400;transition:.15s}
   .wslot:hover .plus{opacity:.8}
   /* 휴무 = 칸 전체 옅은 배경 (요일 색·오늘 강조보다 우선 — 뒤에 선언) */
-  /* 배경색은 연차·휴관·반차·대휴만 — 휴·공휴는 배경 없이 글자만 */
-  .mcell.c-yc,.wslot.c-yc,.mcell.c-hg,.wslot.c-hg{background:#e3ddd3}
+  /* 휴무 계열(휴·연차·휴관·공휴)=회색 배경 동일, 반차·대휴는 고유색 */
+  .mcell.c-hu,.wslot.c-hu,.mcell.c-yc,.wslot.c-yc,.mcell.c-hg,.wslot.c-hg,.mcell.c-gh,.wslot.c-gh{background:#e3ddd3}
   .mcell.c-bc,.wslot.c-bc{background:#e2eef9}
   .mcell.c-dh,.wslot.c-dh{background:#e3f2ea}
 
