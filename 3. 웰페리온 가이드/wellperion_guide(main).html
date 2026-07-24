@@ -2593,6 +2593,12 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       <div class="tab-panel active" data-panel="common">
         <div class="callout accent" style="margin-bottom:18px;background:#1a1a2a;border-left:3px solid #7C3AED;">
           <strong>📍 이 가이드 한눈 요약</strong> — <strong>공통 원칙(이 탭)</strong> + <strong>역할탭 7개</strong>(CEO·CTO·CMO·COO·CPO·CHRO·CFO). 각 C-Level은 부팅 시 <strong>공통탭 + 본인 탭</strong>만 흡수한다.
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;line-height:1.7;">
+            <div><strong>⚖️ 절대 원칙 3</strong> — ① SSOT=웰페리온 ERP(Notion 아님) ② 중복 금지(신규는 진짜 새 것만, 아니면 기존 것 업데이트) ③ 현황 파악=GitHub commit·PR</div>
+            <div style="margin-top:6px;"><strong>🎯 GM 결재 5종</strong>(이 5종 외 자율 진행) — 💰결제 · 🔒보안 · 🚫금지 · 📐전략 · 🏷️공식값</div>
+            <div style="margin-top:6px;"><strong>✅ 완료 조건</strong> — 커밋 + 상태 DONE + 다음 한 줄 + <strong>라이브 실측 증거(--artifact-url) 없으면 완료 아님</strong></div>
+            <div style="margin-top:6px;"><strong>📋 보고 표 형식</strong> — 아래 '📋 보고·업무 흐름' 접기 안(할 일+진행 현황 표, 식별자 prefix 필수)</div>
+          </div>
         </div>
 
         <!-- ══ 📋 AI C-Level 운영 한 장 히어로 진입 (한눈 보드 · 2026-06-29) ══ -->
@@ -2606,6 +2612,9 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         </a>
 
         <!-- ══ 📌 우리의 약속 (ssot/약속.json native 렌더 · 2026-06-15) ══ -->
+        <details class="toggle" style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:16px;"><span class="ico">📌</span>우리의 약속 <span style="font-size:12px;color:var(--dim);font-weight:400;">— AI·실무진이 다같이 지키는 것</span></summary>
+          <div class="toggle-body" style="margin-top:12px;">
         <div id="common-promises" style="margin:16px 0 20px;">
           <h3 style="margin-top:0;margin-bottom:6px;"><span class="ico">📌</span>우리의 약속 <span style="font-size:13px;font-weight:400;color:var(--dim);">(AI·실무진이 다같이 지키는 것)</span></h3>
           <div style="font-size:13px;color:var(--dim);margin-bottom:12px;">우리가 한 곳에서 다같이 보고 지키는 약속입니다. 새 약속이 생기면 여기 모입니다.</div>
@@ -2675,9 +2684,14 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
             });
         })();
         </script>
+          </div>
+        </details>
         <!-- ══ /우리의 약속 ══ -->
 
         <!-- ══ 🛡️ 재발방지 현황 (ssot/incidents.json + canon_values.json native 렌더 · 2026-06-15) ══ -->
+        <details class="toggle" style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:16px;"><span class="ico">🛡️</span>재발방지 현황 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 같은 실수 두 번 안 나게 + 공식 값</span></summary>
+          <div class="toggle-body" style="margin-top:12px;">
         <div id="common-incidents" style="margin:16px 0 20px;">
           <h3 style="margin-top:0;margin-bottom:6px;"><span class="ico">🛡️</span>재발방지 현황 <span style="font-size:13px;font-weight:400;color:var(--dim);">(같은 실수 두 번 안 나게)</span></h3>
           <div id="common-incidents-count" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:13px;"></div>
@@ -2761,9 +2775,14 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
             });
         })();
         </script>
+          </div>
+        </details>
         <!-- ══ /재발방지 현황 ══ -->
 
         <!-- ══ ⚖️ 절대 원칙 (펼친 채 top — 핵심·짧음) ══ -->
+        <details class="toggle" style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:16px;"><span class="ico">⚖️</span>절대 원칙 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 항상 우선 적용 (한눈에 요약과 동일, 표로 다시 보기)</span></summary>
+          <div class="toggle-body" style="margin-top:12px;">
         <h3 id="con-absolute" style="margin-top:4px;"><span class="ico">⚖️</span>절대 원칙 (항상 우선 적용)</h3>
         <table>
           <tr><th style="width:80px">번호</th><th>원칙</th><th>핵심</th></tr>
@@ -2771,6 +2790,8 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
           <tr><td>2</td><td><strong>중복 금지</strong></td><td>기록·업무 모두 이미 존재/진행 중이면 새로 만들지 말고 기존 것을 업데이트. 신규일 때만 생성</td></tr>
           <tr><td>3</td><td><strong>현황 파악 = GitHub</strong></td><td>각 C-Level 진행 업무·프로젝트 상태는 GitHub commit·PR로 확인</td></tr>
         </table>
+          </div>
+        </details>
         <!-- ══ /절대 원칙 ══ -->
 
         <div class="callout tip" style="margin-top:12px;">🚀 각 역할은 부팅 시 공통 탭 'AI 부팅 6단계' 정본 + 본인 역할탭을 흡수한다.</div>
@@ -4202,7 +4223,10 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
     <p class="lead" style="margin-top:32px;border-top:2px solid var(--accent);padding-top:24px;">콘텐츠 제작부터 검수, 자동 업로드까지 한 곳에서 관리하는 전용 흐름입니다. 채널별 특성을 미리 학습해 기록하고, 제목만 입력하면 슬라이드와 캡션이 생성되며, 검수 후 승인 시 자동 발행됩니다. <span style="color:var(--dim);">(1단계는 골격·흐름 UI. 실제 자동 생성·업로드 풀가동은 다음 단계.)</span></p>
 
     <h3 id="m1-publish-scripts"><span class="ico">🚀</span>5채널 발행 방식 — 스크립트 레퍼런스</h3>
-    <table>
+    <!-- 표가 좁은 화면(390px)에서 페이지 전체를 밀어내지 않도록 자기 안에서만 가로 스크롤한다.
+         2026-07-24: 칸을 5개로 늘리면서 표 폭 673px → 문서 스크롤폭 697px 로 모바일이 터졌다(실측). -->
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+    <table style="min-width:640px;">
       <tr><th>채널</th><th>발행 방식</th><th>스크립트 / 명령</th><th>실패하면</th><th>주소 회수</th></tr>
       <tbody id="pubch-tbody">
       <!-- ↓ 아래 행은 ssot/publish_channels.json 이 안 불러와질 때만 보이는 폴백이다.
@@ -4215,6 +4239,7 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       <tr><td>당근채널</td><td>✅ 자동 발행</td><td><code>scripts/danggn_upload_playwright.py --mode publish</code></td><td>수동발행대기</td><td>없음</td></tr>
       </tbody>
     </table>
+    </div>
     <p style="font-size:12px;color:var(--dim);margin-top:6px;">
       이 표는 <strong>ssot/publish_channels.json</strong>(발행 방식 단일 출처)에서 그려집니다 —
       값을 바꾸려면 코드를 먼저 바꾸고 그 파일을 맞춘 뒤 <code>scripts/publish_channels_check.py</code> 로 대조하세요.
@@ -4259,11 +4284,13 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
 
     <h3 id="m1-completion-ssot"><span class="ico">🏁</span>콘텐츠 '제작 완료' 표준 종료 절차 <span style="font-size:12px;color:var(--dim);font-weight:400;">(2026-06-02 GM 표준)</span></h3>
     <p>슬라이드/콘텐츠 제작을 <strong>'완료'</strong>하면, GM의 별도 지시 없이도 아래 ①②를 <strong>항상 자동</strong> 수행한다. 이 두 단계까지가 "제작 완료"의 기본 종료 상태다.</p>
-    <table>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+    <table style="min-width:460px;">
       <tr><th>단계</th><th>동작</th><th>비고</th></tr>
       <tr><td><strong>① 텔레그램 알림</strong></td><td>1줄 보고(한줄 제목/한줄 내용) + montage 미리보기 송부</td><td>토큰 stdout 노출 금지</td></tr>
       <tr><td><strong>② 검수 큐 자동 등록</strong></td><td><code>cmo/review/review_queue.json</code>에 항목 추가, <code>status="검수대기"</code></td><td>review_set_status 호환 스키마 · 이 페이지(M1) 상단 검수 목록에 표시</td></tr>
     </table>
+    </div>
     <div class="callout"><strong>기본 종료 = 텔레그램 알림 + 검수대기 등록.</strong> 앞으로 GM이 "검수 큐에 올려라"라고 따로 지시하지 않아도, 제작 완료 시 ①+②가 기본이다. 발행 승인 게이트는 GM 텔레그램 [승인] (비가역).</div>
 
     <details class="toggle" style="margin-top:30px;">
