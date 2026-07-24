@@ -504,7 +504,9 @@
       "상태": "GUARDED",
       "검증증거": "격리 임시 저장소(scratchpad/safe_commit_test/repo, 실 저장소·실 커밋 무관 — 검증 후 폐기)에서 unittest.mock 으로 5개 시나리오 재현. (1)정상 파일 수정 커밋 → ok/committed=True, HEAD 이동. (2)디스크에서도 지운 정당한 삭제 커밋 → ok/committed=True(오탐 없음). (3)범위 밖(rel_paths 밖) 유령 삭제 주입(a.txt 디스크엔 존재·임시 인덱스만 강제 삭제) → ok=False·committed=False·HEAD 불변·a.txt 실제 보존. (4)범위 밖 파일 내용 변조 혼입 주입(subdir/d.txt) → 동일하게 ok=False·committed=False·HEAD 불변·내용 무손상. (5)범위 안(rel_paths 포함) 유령 삭제 주입(a.txt 를 rel_paths 에 포함시키고 디스크 실존 상태로 삭제 표시) → '유령 삭제(디스크엔 실존): a.txt' 분기로 정확히 차단, HEAD 불변. 5/5 통과 — 정상·정당한 삭제는 막지 않고 혼입·유령 삭제만 커밋 생성 전에 차단됨을 실측.",
       "gate": "",
-      "watch_globs": ["scripts/safe_commit.py"]
+      "watch_globs": [
+        "scripts/safe_commit.py"
+      ]
     },
     {
       "id": "INC-031",
@@ -517,7 +519,21 @@
       "상태": "OPEN",
       "검증증거": "①schtasks 실제 삭제 확인 — Unregister-ScheduledTask 실행 후 Get-ScheduledTask 재조회 결과 '찾을 수 없음'(부재 확정). ②grep 전수로 daily_scheduler.py 가 kakao_daily_check_share.py 를 참조하지 않음(주석 언급뿐, import·호출 0건) 확인 후 삭제. ③중복발신 가드 함수(check_and_record_dedup)를 실제 모듈 import 후 임시 원장 경로로 스와핑해 격리 재현 — (a)최초 실발송 통과 (b)같은 방+같은 내용 재시도 차단(실제 출력: '[dedup] 차단 — [★운영+시설+지원+주차] 동일 내용이 0분 전에 이미 발신됨') (c)다른 내용·다른 방은 통과 (d)dry-run 은 원장에 기록 안 해 스스로 오판 안 함 (e)env 우회 스위치 작동. 6/6 통과. ★미검증(정직 표기·미결): 지금은 아침이라 오늘 밤 22:30/20:00·23:00 실제 카톡방 발신을 라이브로 관찰하지 못했다 — 22:30 경로가 실제로 카톡까지 정상 도달하는지, 23:00 재발송이 정말 안 일어나는지는 오늘 밤 실관찰 후에만 GUARDED로 승격할 수 있다. 그 전까지 OPEN 유지.",
       "gate": "",
-      "watch_globs": ["scripts/kakao_report_sender.py", "telegram_bot/daily_scheduler.py"]
+      "watch_globs": [
+        "scripts/kakao_report_sender.py",
+        "telegram_bot/daily_scheduler.py"
+      ]
+    },
+    {
+      "id": "INC-032",
+      "date": "2026-07-24",
+      "요약": "죽은 index.lock 이 84분 잔존해 전 세션 인덱스 조작 실패 — 청소기의 '살아있는 git 프로세스 0개' 조건이 바쁜 저장소에서 동전던지기라 못 치웠다. 잠금 주인 귀속 판정으로 차단",
+      "증상": "2026-07-24 07:40 생성된 .git/index.lock 이 09:04 까지 84분 잔존. 주인 PID 3288 은 이미 종료. 그 사이 safe_commit 이 '라이브 인덱스 동기화 실패(index.lock: File exists)' 경고를 반복했고(임시 인덱스 우회로 커밋 자체는 성공), git add 계열은 계속 실패. 배9889 가 2026-07-23 정리로 기준선 0 을 만든 뒤의 첫 재발.",
+      "본질": "'살아있는 git 프로세스가 하나라도 있다' 를 '이 잠금의 주인이 살아있다' 로 근사한 것. 이 저장소는 워처·예약러너가 짧은 git 명령을 쉴 새 없이 돌려서, 청소기는 우연히 프로세스가 0인 순간에 걸려야만 치울 수 있었다. 실측: 연속 3회 조회에서 살아있는 git PID 가 [1504,1572] → [23800] → [] 로 매번 달랐다.",
+      "뿌리분류": "정합어긋남",
+      "차단조치": "scripts/git_lock_janitor.py 에 잠금 주인 귀속 판정 추가(attribute_owner) — index.lock 과 ±5초 안에 생긴 next-index-<PID>.lock 을 주인으로 귀속해 ①주인 살아있음=나이·프로세스 수 무관 무조건 보존(종전보다 엄격) ②주인 죽음=무관한 git 프로세스가 떠 있어도 스테일 판정 ③주인 불명=종전 보수적 판단 유지. 시간창 안 후보를 전부 훑어 하나라도 살아있으면 살아있는 쪽이 이기게 해(파일명 정렬 운에 좌우되지 않게) 산 주인의 잠금을 지우는 위험 방향을 막았다. 회귀 고정 = tests/test_git_lock_owner_attribution.py 7케이스.",
+      "상태": "GUARDED",
+      "검증증거": "①재현: 보강 전 청소기를 연속 3회 돌려 [1504,1572]/[23800]/[] 로 판정이 흔들리는 것을 확인(같은 잠금, 같은 순간, 다른 결론). ②차단 후: 연속 3회 모두 '주인 PID 3288 종료 확인 → 스테일 판정' 으로 동일(살아있는 git 프로세스 1개가 떠 있던 회차 포함). ③실제 해소: --apply 로 index.lock + next-index-3288.lock 정리(.git/lock-quarantine 백업), 이후 git add 정상 동작 확인. ④단위검증: tests/test_git_lock_owner_attribution.py 7/7 통과 — 특히 '죽은짝+산짝 공존 → 산 쪽이 이긴다', '짝이 스캔 중 사라짐 → 예외 아님' 포함. ⑤미해소 잔여: 왜 07:40 에 git 프로세스가 죽었는지(뿌리)는 미규명 — 배9226 ③ 커밋 직렬화로 수렴 예정. 청소기는 증상 차단이지 원인 제거가 아니다."
     }
   ]
 }

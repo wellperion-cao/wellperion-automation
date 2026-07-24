@@ -14,10 +14,24 @@
     2026-07-23 실측 23개(07-20부터 누적) — git 프로세스가 반복 강제종료된다는 신호.
 
 안전 규칙 (이 순서로 전부 통과해야만 지운다)
-  index.lock       : ①살아있는 git 프로세스 0개 ②파일 나이 > --min-age(기본 300초)
+  index.lock       : ①주인 판정 ②파일 나이 > --min-age(기본 300초)
                      ③배타적 열기 성공(아무도 점유 안 함)
   next-index-*.lock: 파일명의 PID 가 **죽어 있을 것**(살아있으면 건너뜀)
   공통             : 지우기 전 격리 폴더로 **백업**(되돌릴 유일한 근거)
+
+주인 판정 (2026-07-24 시토 보강 — 실측 재발로 드러난 구멍)
+  처음엔 "살아있는 git 프로세스가 하나라도 있으면 보존"으로 근사했다. 이 저장소는
+  워처·예약러너가 짧은 git 명령을 쉴 새 없이 돌려서, 그 근사가 **동전던지기**가 된다.
+  실측(2026-07-24 09:04, 연속 3회 조회): 살아있는 git PID 가 [1504,1572] → [23800] → [] 로
+  매번 달랐다. 그 사이 index.lock 은 **84분째** 남아 주인 PID 3288 은 이미 죽어 있었고,
+  청소기는 우연히 빈 순간에 걸려야만 치울 수 있었다. 그래서 84분을 버텼다.
+
+  본질 = "git 프로세스가 살아있다" ≠ "이 잠금의 주인이 살아있다".
+  보강 = index.lock 과 **같은 순간(±OWNER_WINDOW 초)** 에 생긴 `next-index-<PID>.lock` 을
+  주인으로 귀속시킨다. 우리 커밋 경로는 전부 임시 인덱스를 쓰므로 짝이 남는다.
+    · 주인 PID 살아있음 → 나이·프로세스 수와 무관하게 **무조건 보존**(더 엄격해진다)
+    · 주인 PID 죽음     → 무관한 git 프로세스가 떠 있어도 스테일로 판정
+    · 주인 못 찾음      → 종전대로 보수적 판단(살아있는 git 프로세스 있으면 보존)
 
 기본은 조회만 한다. 실제로 지우려면 --apply 를 명시해야 한다.
 
@@ -40,6 +54,7 @@ ROOT = Path(__file__).resolve().parent.parent
 GIT_DIR = ROOT / ".git"
 QUARANTINE = ROOT / ".git" / "lock-quarantine"
 DEFAULT_MIN_AGE = 300  # 초
+OWNER_WINDOW = 5  # 초 — index.lock 과 이만큼 안에 생긴 next-index-<PID>.lock 을 같은 주인으로 본다
 
 
 def live_git_pids() -> list[int]:
@@ -81,6 +96,40 @@ def backup(path: Path) -> Path:
     return dest
 
 
+def debris_pid(path: Path) -> int | None:
+    try:
+        return int(path.stem.rsplit("-", 1)[1])
+    except (ValueError, IndexError):
+        return None
+
+
+def attribute_owner(index_lock: Path, debris: list[Path]) -> tuple[str, int | None]:
+    """index.lock 의 주인을 임시 인덱스 잔해로 귀속. ('alive'|'dead'|'unknown', pid)."""
+    try:
+        il_mtime = index_lock.stat().st_mtime
+    except OSError:
+        return "unknown", None
+    # 시간창 안 후보를 **전부** 본다. 하나라도 살아있으면 살아있는 쪽이 이긴다 —
+    # 첫 짝만 보고 끊으면 파일명 정렬 운에 따라 산 주인을 놓치고 잠금을 지울 수 있다.
+    candidates = []
+    for f in debris:
+        pid = debris_pid(f)
+        if pid is None:
+            continue
+        try:
+            f_mtime = f.stat().st_mtime
+        except OSError:
+            continue  # 다른 세션이 그 사이 치웠다 — 귀속 근거로 못 쓴다
+        if abs(f_mtime - il_mtime) <= OWNER_WINDOW:
+            candidates.append(pid)
+    if not candidates:
+        return "unknown", None
+    for pid in candidates:
+        if pid_alive(pid):
+            return "alive", pid
+    return "dead", candidates[0]
+
+
 def scan() -> dict:
     index_lock = GIT_DIR / "index.lock"
     debris = sorted(GIT_DIR.glob("next-index-*.lock"))
@@ -109,9 +158,15 @@ def main() -> int:
         print("index.lock: 없음")
     else:
         age = time.time() - il.stat().st_mtime
+        owner, owner_pid = attribute_owner(il, found["debris"])
         reasons = []
-        if live:
-            reasons.append(f"살아있는 git 프로세스 {len(live)}개 — 진짜 작업 중일 수 있음")
+        if owner == "alive":
+            # 주인이 살아있으면 다른 조건과 무관하게 보존 — 종전보다 엄격하다.
+            reasons.append(f"주인 PID {owner_pid} 가 살아있음 — 진짜 작업 중")
+        elif owner == "dead":
+            print(f"index.lock: 주인 PID {owner_pid} 종료 확인(임시 인덱스 잔해로 귀속)")
+        elif live:
+            reasons.append(f"주인 불명 + 살아있는 git 프로세스 {len(live)}개 — 진짜 작업 중일 수 있음")
         if age < args.min_age:
             reasons.append(f"생긴 지 {int(age)}초(기준 {args.min_age}초 미만)")
         if not exclusively_openable(il):
