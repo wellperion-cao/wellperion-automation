@@ -9576,7 +9576,7 @@ function buildDbRow(row, isNew) {
   if (row.status === 'SUC' || row.status === '단기SUC') tr.classList.add('row-registered');  // 등록 회원 금색 강조
 
   // ── 문의일시 (읽기 전용) — 맨 앞 (2026-06-24 GM · 시:분 표시 2026-07-18 GM) ──
-  // 재문의 배지는 CONTACT 칸으로 이동(아래 [6]) — GM 지시 2026-07-20 2차.
+  // 재문의 배지는 문의내용 칸(아래 tdInq)에 있다 — 강습(_lessonRowHtml)과 같은 칸으로 통일(2026-07-24 GM 결정, 배10043 후속).
   var tdTs = document.createElement('td');
   tdTs.style.fontSize = '12px'; tdTs.style.color = 'var(--dim)';
   tdTs.textContent = _fmtInqDateTime(row.timestamp);
@@ -9654,31 +9654,30 @@ function buildDbRow(row, isNew) {
   tr.appendChild(tdOwner);
 
   // ── 문의 내용 (N열 자유서술) — Contact 앞, 편집 가능. 2026-07-02 시포·GM(#1) ──
+  // 재문의 배지 — 문의내용 칸에 표시(2026-07-24 GM 결정, 배10043 후속). 이전엔 CONTACT 칸([6])에 있었으나
+  // 강습(_lessonRowHtml)이 이미 문의내용 칸에 배지+이전 문의 인라인 요약을 얹는 방식이라 같은 칸·같은 순서
+  // (배지 → 현재 문의내용 → 이전 문의 인라인 요약)로 통일한다. 배지 클릭 시 여는 모달(openRepeatInquiryModal)은 그대로.
   var tdInq = document.createElement('td');
   tdInq.style.fontSize = '11px'; tdInq.style.color = 'var(--text)'; tdInq.style.lineHeight = '1.6';
   tdInq.style.maxWidth = '200px'; tdInq.style.whiteSpace = 'pre-wrap'; tdInq.style.wordBreak = 'break-word';
-  tdInq.textContent = row.inquiryContent || '—';
-  // 이전 문의 인라인 요약 — 강습(_lessonRowHtml)과 같은 모양(_riInlineSummaryHtml 공용). 배지는 CONTACT
-  // 칸(아래 [6])에 그대로 두고, 여기 문의내용 칸엔 내용까지 바로 보이게만 덧붙인다. GM 지시 2026-07-24(배10043).
   var _riGrp = _riGroupFor(row, _riIdx);
+  var _riHtml = _riBadgeHtml(row);
+  var _tdInqHtml = (_riHtml ? '<div style="margin-bottom:4px">' + _riHtml + '</div>' : '') + esc(row.inquiryContent || '—');
   if (_riGrp && _riGrp.priorSameName.length) {
-    tdInq.insertAdjacentHTML('beforeend', _riInlineSummaryHtml(_riGrp.priorSameName, 'riInline_m_' + row.rowIndex,
+    _tdInqHtml += _riInlineSummaryHtml(_riGrp.priorSameName, 'riInline_m_' + row.rowIndex,
       function (x) { return (_shortProgram(x.program) || '—') + (String(x.inquiryContent || '').trim() ? ' / ' + String(x.inquiryContent).trim() : ''); },
-      function (x) { return _memStatusDisplay(x.status) || '—'; }));
+      function (x) { return _memStatusDisplay(x.status) || '—'; });
   }
+  tdInq.innerHTML = _tdInqHtml;
   if (!READ_ONLY) { tdInq.className = 'editable-cell'; tdInq.addEventListener('click', function(){ _activateCellInquiry(this, row); }); }
   tr.appendChild(tdInq);
 
   // ── [6] Contact (연락 기록 1·2·3) — 체험1~3처럼 3칸 (2026-06-26 GM: 메모칸→Contact) ──
+  // 재문의 배지는 더 이상 이 칸에 없음 — 문의내용 칸으로 이동(2026-07-24 GM 결정, 위 tdInq 참고). 순수 연락 이력만.
   var tdContact = document.createElement('td');
   tdContact.style.fontSize = '11px'; tdContact.style.color = 'var(--text)'; tdContact.style.lineHeight = '1.6';
   tdContact.style.whiteSpace = 'pre-wrap'; tdContact.style.wordBreak = 'break-word';   // maxWidth 제거 — 이 칸이 남는 폭을 흡수한다(thead에 width 미지정)
   _renderContactCell(tdContact, row);
-  // 재문의(같은 연락처) 배지 — 문의일시 칸에서 이곳으로 이동(GM 지시 2026-07-20 2차).
-  //   ①성격상 '이력'이라 연락 이력과 같이 봐야 하고 ②120px 문의일시 칸에서 날짜를 밀어내 줄바꿈을 만들고 있었다.
-  //   _renderContactCell이 innerHTML을 통째로 덮으므로 반드시 그 뒤에 prepend한다.
-  var _riHtml = _riBadgeHtml(row);
-  if (_riHtml) tdContact.insertAdjacentHTML('afterbegin', '<div style="margin-bottom:5px">' + _riHtml + '</div>');
   if (!READ_ONLY) { tdContact.className = 'editable-cell'; tdContact.addEventListener('click', function(){ _activateCellContact(this, row); }); }
   tr.appendChild(tdContact);
 
