@@ -8409,6 +8409,7 @@ function crTab(btn, panelId) {
     var gm1SsotItems = [];   // SSOT(구글시트)에서 읽어온 GM 본인·결재 차례 항목 (항상 최신)
     var gm1InProgressCount = 0;   // 🚢 진행·상시 미션(_queue IN_PROGRESS) 개수 — 항로 제외·자율현황 위임 안내용 (2026-07-15 배237)
     var gm1ParkedCount = 0;       // ⚓ 정박·대기(_queue surface==autonomy) 개수 — 항로 대기 섹터 제외·자율현황 위임 안내용 (2026-07-15 배237)
+    var gm1QueueFetchFailed = false;  // ★_queue.json 원본+미러 둘 다 실패 — true면 "0건"이 실제 0이 아니라 로드 실패임을 배너로 경고 (2026-07-24 GM 지적)
     // ── 🟢 순항 중 안심 요약용 공유 카운트 (표현 전용 · 기존 계산값 재사용 · 새 fetch 금지 · 2026-07-18) ──
     //   gm1RenderToday(동기)에서 gmAppr·waitCount, gm1RenderAlertSignal(비동기 fetch)에서 reviewWait 채운 뒤 각자 gm1RenderCruiseSummary() 호출.
     var gm1CruiseGmAppr = 0;       // GM이 지금 결재할 차례(apprGmTotal)
@@ -8627,13 +8628,18 @@ function crTab(btn, panelId) {
     var GM1_QUEUE_MIRROR_URL      = '/wellperion-automation/status/_queue.json';
     var GM1_QUEUE_ARCH_RAW_URL    = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/_queue_archive.json';
     var GM1_QUEUE_ARCH_MIRROR_URL = '/wellperion-automation/status/_queue_archive.json';
+    // ★반환 형태 = {data, failed} — 원본·미러 둘 다 실패한 경우만 failed:true(부분 성공은 failed:false로 정상 취급).
+    //   빈 배열만 반환하면 호출부가 "정상인데 0건"과 "실패해서 0건"을 구분 못 해 빈 화면이 진짜 0건으로 위장된다
+    //   (2026-07-24 GM 지적 · 웰리 수정 — route interception 재현으로 실증: raw+미러 둘 다 차단 시 "오늘 진행 중인 항목이 없습니다"로 표시돼 있었음).
     function gm1FetchWithFallback(rawUrl, mirrorUrl) {
       return fetch(rawUrl + '?_=' + Date.now(), { cache:'no-store' })
         .then(function(r){ if (!r.ok) throw new Error('raw fail'); return r.json(); })
+        .then(function(data){ return { data: data, failed: false }; })
         .catch(function(){
           return fetch(mirrorUrl + '?_=' + Date.now(), { cache:'no-store' })
-            .then(function(r){ return r.ok ? r.json() : []; })
-            .catch(function(){ return []; });
+            .then(function(r){ if (!r.ok) throw new Error('mirror fail'); return r.json(); })
+            .then(function(data){ return { data: data, failed: false }; })
+            .catch(function(){ return { data: [], failed: true }; });
         });
     }
 
@@ -8669,7 +8675,13 @@ function crTab(btn, panelId) {
 
       Promise.all([sheetP, queueP, archP]).then(function(results){
         var json  = results[0];
-        var queue = (Array.isArray(results[1]) ? results[1] : []).concat(Array.isArray(results[2]) ? results[2] : []);
+        var queueResult = results[1] || { data: [], failed: true };
+        var archResult  = results[2] || { data: [], failed: true };
+        // ★활성 큐(_queue.json) 원본·미러 둘 다 실패한 경우만 경고 표시 대상 — 아카이브는 이력(지난 완료)용이라
+        //   실패해도 오늘 열린 배(대기·진행중) 표시엔 영향 없어 별도 경고 없이 console.warn만 남김.
+        gm1QueueFetchFailed = !!queueResult.failed;
+        if (archResult.failed) console.warn('[gm1] 큐 아카이브 fetch 실패 — 지난 완료 이력만 영향(오늘 항로엔 무영향)');
+        var queue = (Array.isArray(queueResult.data) ? queueResult.data : []).concat(Array.isArray(archResult.data) ? archResult.data : []);
         var items = [];
         var TD = todayStr();
 
@@ -9156,6 +9168,11 @@ function crTab(btn, panelId) {
       gm1SyncCatFilterChips();
 
       var html = '';
+
+      // ★큐 원본+미러 둘 다 fetch 실패 — "0건"이 진짜 0이 아니라 로드 실패임을 명시(빈 화면/위장 0 금지, 2026-07-24)
+      if (gm1QueueFetchFailed) {
+        html += '<div style="background:rgba(220,38,38,0.14);border:1px solid rgba(220,38,38,0.45);border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#e05a4f;font-weight:700;font-size:13px;">⚠️ 항로 큐를 불러오지 못했습니다(원본·미러 모두 실패) — 아래 목록이 비어 보여도 실제 0건이 아닐 수 있습니다. 새로고침해 주세요.</div>';
+      }
 
       // ── 🔴 결재 — 항로엔 카운트+포인터만(개별 표시 안 함). GM 차례 / 진행중(타 결재자 대기) 분리. 실제 결재는 결재현황 SSOT (GM 2026-06-07) ──
       if (apprGmTotal || apprInflightTotal) {
