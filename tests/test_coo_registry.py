@@ -16,11 +16,15 @@ def test_registry_schema_valid_for_coo_modules():
 
 
 def test_cto_modules_preserved_not_touched_by_coo_consumer():
+    # 2026-07-24 웰리 승인 병합(34→26): cto-aide-gap-detector→ceo-gm-aide 흡수,
+    # cto-check-gas→coo-check-status 흡수(둘 다 등록부 삭제, 코드 불변). 픽스처를
+    # 현재 생존 cto-* id로 갱신 — 테스트 취지(coo 소비자가 타 도메인 모듈을
+    # 훼손하지 않는지)는 그대로.
     reg = R.load_registry()
     ids = [m["id"] for m in reg["modules"]]
     assert "cto-automation-health" in ids
-    assert "cto-aide-gap-detector" in ids
-    assert "cto-check-gas" in ids
+    assert "cto-weekly-page-hygiene" in ids
+    assert "cto-inquiry-read-snapshot" in ids
 
 
 def test_iter_coo_returns_only_coo_owned_modules():

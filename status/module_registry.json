@@ -18,7 +18,7 @@
       "id": "cto-automation-health",
       "owner_role": "cto",
       "owner_nick": "시토",
-      "feature": "자동화 건강 점수판 — 예약작업 실행결과 30분 갱신. [2026-07-22 GM 지시·방4 승격] daily 추가 —collectors.cto_automation_health 가 라이브 상주 프로세스·오늘 스케줄 성공/실패·self_health_watchdog 자가건강(이상 0건도 상시노출)까지 병합해 자동화현황방(방4) '전체 자동화 현황' 단일 다이제스트로 발신(기존 weekly 유지, 새 모듈/새 방/새 예약작업 없음).",
+      "feature": "자동화 건강 점수판 — 예약작업 실행결과 30분 갱신. [2026-07-22 GM 지시·방4 승격] daily 추가 —collectors.cto_automation_health 가 라이브 상주 프로세스·오늘 스케줄 성공/실패·self_health_watchdog 자가건강(이상 0건도 상시노출)까지 병합해 자동화현황방(방4) '전체 자동화 현황' 단일 다이제스트로 발신(기존 weekly 유지, 새 모듈/새 방/새 예약작업 없음). [2026-07-24 웰리 승인 병합 34→26] 등록부 3건을 이 항목으로 흡수(코드·스크립트·게이트는 그대로 존치, 등록부 표기만 통합·비파괴) — ①`cto-module-silence-detector`: 등록부 전 모듈 신선도 감시, scripts/module_silence_detector.py::run_detector(), 예약작업 상시가동은 GM go 대기(CLI/드라이런 검증완료) ②`cto-gas-version-monitor`: GAS 5개 프로젝트(check·funnel·funnel-v2·todo·voc) 배포버전 조회, scripts/gas_version_monitor.py, 200 하드리밋 조기경고, 13시 telegram_health_check 편승 ③`cto-self-health-watchdog`: scripts/self_health_watchdog.py 애그리게이터 — 위 2건+erp_status.json+page_hygiene 제안서를 읽어 하루 1통 이상요약으로 조립하는 엔진, 게이트 SELF_HEALTH_WATCHDOG_LIVE 기본 OFF·dry-run 검증완료(2026-07-21). `cpo-sheet-contract-check`(시포 소유)는 §5 편입 제안 상태로 아직 별도 유지(도메인 소유주 동의 대기).",
       "data_source": {
         "kind": "json",
         "ref": "status/erp_status.json"
@@ -36,94 +36,6 @@
       },
       "autonomy": "mech",
       "ai_free_fallback": "예약작업이 사람 세션 없이 상시 가동·30분 갱신",
-      "feedback": {
-        "enabled": true,
-        "audience": "gm+clevel",
-        "entries": []
-      },
-      "reversible": true
-    },
-    {
-      "id": "cto-aide-gap-detector",
-      "owner_role": "cto",
-      "owner_nick": "시토",
-      "feature": "자율 틈 감지기 — 정체/재개가능 배 감시(재개=자율태그·정체=surface). [2026-07-22 표기정리 배9421 #3] ceo-gm-aide(웰리) 두뇌의 하위 감지 컴포넌트 — 같은 로그 status/gm_aide_scan_log.jsonl·같은 06:30 gm_aide_scan.bat 한 프로세스에서 함께 돎(엔진=감지 / 두뇌=학습·포착). 등록부상 2개로 보이나 단일 파이프라인. front_card 앵커도 layer-autonomy로 통일. 값만 정리(비파괴, 소비자 무영향)",
-      "data_source": {
-        "kind": "json",
-        "ref": "status/gm_aide_scan_log.jsonl"
-      },
-      "notify_spec": {
-        "daily": true,
-        "weekly": false,
-        "monthly": false,
-        "channel": "telegram",
-        "bot_id": "자동화현황방"
-      },
-      "front_card": {
-        "window": "자율현황",
-        "anchor": "layer-autonomy"
-      },
-      "autonomy": "auto",
-      "ai_free_fallback": "06:30 예약 스캔이 무인 가동(게이트 AIDE_RESUMABLE_APPLY)",
-      "feedback": {
-        "enabled": true,
-        "audience": "gm+clevel",
-        "entries": []
-      },
-      "reversible": true
-    },
-    {
-      "id": "cto-check-gas",
-      "owner_role": "cto",
-      "owner_nick": "시토",
-      "feature": "점검 GAS 파이프 — 시설/지원부 점검 today_live·monthly 집계. [2026-07-22 GM 지시·방4 정리] daily collector 미구현으로 매일 스킵되던 중 확인: coo-check-status(같은 CHECK_API·같은 자동화현황방)가 동일 데이터를 이미 daily 발신 — 중복발신 방지 위해 daily는 끔(collector 신설 안 함). monthly는 존치(별도 판단 보류).",
-      "data_source": {
-        "kind": "gas",
-        "ref": "CHECK_API weekly/monthly"
-      },
-      "notify_spec": {
-        "daily": false,
-        "weekly": false,
-        "monthly": true,
-        "channel": "telegram",
-        "bot_id": "자동화현황방"
-      },
-      "front_card": {
-        "window": "자율현황",
-        "anchor": "layer-automation"
-      },
-      "autonomy": "mech",
-      "ai_free_fallback": "GAS가 시트에서 자동 집계·12시 점검관리방 발송",
-      "feedback": {
-        "enabled": true,
-        "audience": "gm+clevel",
-        "entries": []
-      },
-      "reversible": true
-    },
-    {
-      "id": "cto-gas-version-monitor",
-      "owner_role": "cto",
-      "owner_nick": "시토",
-      "feature": "GAS 배포 버전 위생 모니터 — 5개 프로젝트(check·funnel·funnel-v2·todo·voc) 버전수 조회, 200 하드리밋 조기경고(funnel 200버전 배포막힘 재발방지)",
-      "data_source": {
-        "kind": "gas",
-        "ref": "Apps Script API projects.versions.list ×5 scriptId (scripts/gas_version_monitor.py) + status/heartbeats/cto-gas-version-monitor.json"
-      },
-      "notify_spec": {
-        "daily": false,
-        "weekly": false,
-        "monthly": false,
-        "channel": "telegram",
-        "bot_id": null,
-        "notify_wired": true
-      },
-      "front_card": {
-        "window": "자율현황",
-        "anchor": "layer-automation"
-      },
-      "autonomy": "mech",
-      "ai_free_fallback": "13시 기존 텔레그램 헬스체크(telegram_health_check.py)에 얹어 매일 무인 점검 — collect()·하트비트는 13시 유지. [2026-07-21 병합 배9420] 임계(≥180) 경보 발신은 cto-self-health-watchdog 일일 디제스트로 이관(중복발신 방지, 역롤백=telegram_health_check.py:249 주석해제). [2026-07-22 GM 지시·방4 정리] bot_id null이라 module_reporter로는 원래도 미발신 — daily를 꺼서 매일 collector_missing 스킵로그 소음만 제거(collector 신설 안 함, 실측·13시 흐름 불변).",
       "feedback": {
         "enabled": true,
         "audience": "gm+clevel",
@@ -494,15 +406,15 @@
       "id": "coo-check-status",
       "owner_role": "coo",
       "owner_nick": "시우",
-      "feature": "부서별 점검 완료율·이상 한눈에 (운영 점검 현황)",
+      "feature": "부서별 점검 완료율·이상 한눈에 (운영 점검 현황). [2026-07-24 웰리 승인 병합 34→26] `cto-check-gas`(점검 GAS 파이프 — CHECK_API weekly/monthly 집계, 12시 점검관리방 발송) 흡수 — 같은 CHECK_API·같은 자동화현황방 파이프라인. daily는 이미 이 모듈과 중복이라 2026-07-22에 꺼졌고 monthly만 잔존해 있던 것을 이 항목의 notify_spec.monthly로 편입(daily가 우선 판정이라 module_silence_detector.py::expected_max_silence_hours 침묵감지 로직 영향 없음 확인).",
       "data_source": {
         "kind": "gas",
-        "ref": "CHECK_API weekly&dept=facility / today_live&dept=support + status/heartbeats/coo-check-status.json"
+        "ref": "CHECK_API weekly&dept=facility / today_live&dept=support / monthly(구 cto-check-gas 흡수) + status/heartbeats/coo-check-status.json"
       },
       "notify_spec": {
         "daily": true,
         "weekly": false,
-        "monthly": false,
+        "monthly": true,
         "channel": "telegram",
         "bot_id": "자동화현황방"
       },
@@ -774,7 +686,7 @@
       "id": "ceo-gm-aide",
       "owner_role": "ceo",
       "owner_nick": "웰리",
-      "feature": "GM 보좌 자율화 두뇌 — GM 성향·놓친 것 학습·선제 포착(재개가능 배 자율태그·정체 surface·프로필 일일갱신)",
+      "feature": "GM 보좌 자율화 두뇌 — GM 성향·놓친 것 학습·선제 포착(재개가능 배 자율태그·정체 surface·프로필 일일갱신). [2026-07-24 웰리 승인 병합 34→26] `cto-aide-gap-detector`(자율 틈 감지기 — 정체/재개가능 배 감시, 재개=자율태그·정체=surface, 게이트 AIDE_RESUMABLE_APPLY) 흡수 — 같은 로그 status/gm_aide_scan_log.jsonl·같은 06:30 gm_aide_scan.bat 한 파이프라인이라 코드 변경 없이 등록부만 통합(2026-07-22 표기정리 배9421 #3에서 예고된 정리를 실행).",
       "data_source": {
         "kind": "json",
         "ref": "status/gm_aide_scan_log.jsonl + status/gm_profile.md"
@@ -855,165 +767,6 @@
       },
       "autonomy": "mech",
       "ai_free_fallback": "예약 Wellperion-CPO-Inquiry-Snapshot-3min(3분 간격) 무인 가동 — 읽기 전용, 실패해도 페이지 실시간 재검증 경로 무영향(fail-soft, 직전 값 carry-forward)",
-      "feedback": {
-        "enabled": true,
-        "audience": "gm+clevel",
-        "entries": []
-      },
-      "reversible": true,
-      "enabled": true,
-      "honesty_default": "measured"
-    },
-    {
-      "id": "chro-daily-integrity-sweep",
-      "owner_role": "chro",
-      "owner_nick": "시로",
-      "feature": "일일 정합성 스윕(설계만·미가동) — HR 허브·라이브 데이터 11항목 자동 점검(사진404·공고·KPI·배지·평점·PII·주경로 하트비트·폴더미등록·나이 교차검증·가산점 클램프) + 이력서 주경로 자가치유",
-      "data_source": {
-        "kind": "json",
-        "ref": "wellperion-hr/drafts/loops/ 스윕 결과(델타 보고) — 실체 없음"
-      },
-      "notify_spec": {
-        "daily": true,
-        "weekly": false,
-        "monthly": false,
-        "channel": null,
-        "bot_id": null,
-        "notify_wired": false
-      },
-      "front_card": {
-        "window": "자율현황",
-        "anchor": "sec-chro-autonomy"
-      },
-      "autonomy": "auto",
-      "ai_free_fallback": "2026-07-20 정정: 'Windows 예약작업 CHRO_DailyIntegritySweep(매일 09:33) 무인 가동' 이전 표기는 사실 아님으로 확인 — Get-ScheduledTask 전수조회 0건 + TaskScheduler 이벤트로그 0건 + 이 작업을 수행하는 스크립트 자체가 저장소에 존재하지 않음(wellperion-hr 디렉터리도 이 PC 어디에도 없음). 설계만 되고 실제 가동한 적이 없는 것으로 판단. INC-025 참조.",
-      "feedback": {
-        "enabled": true,
-        "audience": "gm+clevel",
-        "entries": []
-      },
-      "reversible": true,
-      "enabled": false,
-      "honesty_default": "measured"
-    },
-    {
-      "id": "chro-onboarding-weekly-watch",
-      "owner_role": "chro",
-      "owner_nick": "시로",
-      "feature": "온보딩 위클리 워치(주간 자동집계 레이어 미구축) — 하부 HR 백엔드 온보딩 체크인 API는 라이브 확인됨, 30-60-90 진척 주간 관찰·보고 자동화 자체는 없음",
-      "data_source": {
-        "kind": "gas",
-        "ref": "HR 백엔드 db:onbo — exec URL 라이브 확인됨(2026-07-20 read-only 프로브 성공), 주간 집계 레이어 없음"
-      },
-      "notify_spec": {
-        "daily": false,
-        "weekly": false,
-        "monthly": false,
-        "channel": null,
-        "bot_id": null,
-        "notify_wired": false
-      },
-      "front_card": {
-        "window": "자율현황",
-        "anchor": "sec-chro-autonomy"
-      },
-      "autonomy": "propose",
-      "ai_free_fallback": "2026-07-20 정정: 'Windows 예약작업 OnboardingWeeklyWatch(매주 목 10:03) 무인 가동' 이전 표기는 사실 아님 — Get-ScheduledTask·이벤트로그 0건. 단 하부 인프라는 진짜다: chro/hub/onboarding.html·onboarding-self.html 이 쓰는 GAS 웹앱(AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ, action=onbo-checkin-read/save)을 read-only로 직접 호출해 라이브 확인(pin_invalid 앱레벨 응답 수신, 시스템 오류 아님). 이건 사람이 쓰는 인터랙티브 체크인 도구이지 자동 주간 워치가 아님 — 그 위에 얹을 자동 집계·발신 레이어는 미구축. INC-025 참조.",
-      "feedback": {
-        "enabled": true,
-        "audience": "gm+clevel",
-        "entries": []
-      },
-      "reversible": true,
-      "enabled": false,
-      "honesty_default": "measured"
-    },
-    {
-      "id": "chro-weekly-efficiency-report",
-      "owner_role": "chro",
-      "owner_nick": "시로",
-      "feature": "주간 효율 리포트(설계만·미가동) — 위임률·홉 낭비·반복작업 회고(A-7) 구상. '7/17 정기 무인 완주 확증' 표기는 근거 없음으로 확인되어 철회",
-      "data_source": {
-        "kind": "json",
-        "ref": "wellperion-hr/drafts/loops/ 주간 리포트 — 실체 없음"
-      },
-      "notify_spec": {
-        "daily": false,
-        "weekly": false,
-        "monthly": false,
-        "channel": null,
-        "bot_id": null,
-        "notify_wired": false
-      },
-      "front_card": {
-        "window": "자율현황",
-        "anchor": "sec-chro-autonomy"
-      },
-      "autonomy": "propose",
-      "ai_free_fallback": "2026-07-20 정정: 47f6b8b1(7/17)이 'Windows 예약작업 WeeklyEfficiencyReport(매주 금 17:07) 무인 가동, 7/17 17:07 정기 무인 완주 확증'이라 기록했으나 — 이 예약작업은 Get-ScheduledTask 전수조회·TaskScheduler 이벤트로그 어디에도 흔적이 0건, 이를 수행할 스크립트도 저장소에 없음. '완주 확증'의 근거를 이 저장소·이 PC 어디서도 재현할 수 없어 허위 표기로 판단, enabled false로 되돌림. INC-025 참조.",
-      "feedback": {
-        "enabled": true,
-        "audience": "gm+clevel",
-        "entries": []
-      },
-      "reversible": true,
-      "enabled": false,
-      "honesty_default": "measured"
-    },
-    {
-      "id": "cto-module-silence-detector",
-      "owner_role": "cto",
-      "owner_nick": "시토",
-      "feature": "🔇 모듈 침묵 감지기 — 등록부 28개 모듈의 로컬 아티팩트 신선도를 감시, notify_spec 예상주기(daily/weekly/monthly) 초과 침묵만 하루 1통 묶어 발신(정상시 무발신). INC-018(KPI 집계기 6일 침묵) 재발방지를 등록부 전체로 확장(배1307 3차, INC-019).",
-      "data_source": {
-        "kind": "json",
-        "ref": "status/module_silence_log.jsonl"
-      },
-      "notify_spec": {
-        "daily": false,
-        "weekly": false,
-        "monthly": false,
-        "channel": "telegram",
-        "bot_id": null
-      },
-      "front_card": {
-        "window": "자율현황",
-        "anchor": "layer-automation"
-      },
-      "autonomy": "mech",
-      "ai_free_fallback": "스캔·판정·묶음발신 전부 결정론적(AI 세션 불요, scripts/module_silence_detector.py 단독 실행). bot_id 는 의도적으로 null — 발신은 module_reporter.py 의 범용 모듈별 파이프라인이 아니라 이 모듈 자체의 run_detector()가 자동화현황방(telegram_rooms.json 기존 배선)으로 직접 하루 1통 묶어 보낸다(module_reporter 이중 트리거 방지). 예약작업 등록은 GM go 대기 — 현재는 CLI 수동/드라이런만 검증 완료, 상시 무인가동 미시작. [2026-07-22 GM 지시·방4 정리] 이 결과는 이제 cto-automation-health 의 §자가건강(self_health_watchdog 재사용)에도 흡수돼 매일 노출된다 — module_reporter 로는 bot_id null이라 원래도 미발신이었으니 daily만 꺼서 영구 collector_missing 소음 제거(집계 로직·run_detector() 자체는 불변).",
-      "feedback": {
-        "enabled": true,
-        "audience": "gm+clevel",
-        "entries": []
-      },
-      "reversible": true,
-      "enabled": true,
-      "honesty_default": "measured"
-    },
-    {
-      "id": "cto-self-health-watchdog",
-      "owner_role": "cto",
-      "owner_nick": "시토",
-      "feature": "🩺 자가건강 감시 하네스 → 전사 무결성 감시 표준 — 흩어진 감시모듈 발신을 하루 1통 통합 이상요약으로 묶는 read-only 애그리게이터. 정상=무발신, 이상 섹션만 노출: §1침묵모듈(등록부 전수)/§2 GAS버전≥180/§3자동화건강이상/§4페이지위생 미조치/§5시트계약 위반(전사 편입·시포 cpo-sheet-contract 07:50, 미해소·미승인만·accepted 존중). 발신경로·방·토큰로더 단일화(notify.telegram_send→자동화현황방). 2026-07-21 GM '모듈 병합'(배9420 #1) → 2026-07-22 전사 무결성 표준 확장(배9420 #5·배9421). 소스 모듈 전부 존치·회귀 0(읽기 전용).",
-      "data_source": {
-        "kind": "json",
-        "ref": "scripts/self_health_watchdog.py (module_silence_detector.scan_registry + gas_version_monitor.collect + status/erp_status.json + status/page_hygiene_proposal_{date}.md 읽기 조합) + status/self_health_watchdog_log.jsonl"
-      },
-      "notify_spec": {
-        "daily": false,
-        "weekly": false,
-        "monthly": false,
-        "channel": "telegram",
-        "bot_id": "자동화현황방",
-        "notify_wired": true
-      },
-      "front_card": {
-        "window": "자율현황",
-        "anchor": "layer-automation"
-      },
-      "autonomy": "mech",
-      "ai_free_fallback": "소스 4모듈은 각자 그대로 가동·산출물 생성, 하네스는 그 산출물을 읽어 결정론적으로 묶음(AI 세션 불요). 게이트 SELF_HEALTH_WATCHDOG_LIVE 기본 OFF·dry-run 검증 완료(2026-07-21). 상시 무인가동(예약 1슬롯 편승)은 GM go 대기. GAS 버전경보는 telegram_health_check 13시에서 이 하네스로 이관(역롤백=주석해제). [2026-07-22 GM 지시·B→A 병합] 13:00 telegram_health_check.bat 의 --live 직접발신은 cto-automation-health 의 §자가건강(build_digest 재사용, 이상 0건도 상시노출)으로 흡수돼 09:10 하루 1통으로 합쳐짐 — 이 등록부 항목은 daily를 꺼서 module_reporter 이중발신을 막는다(collector 신설 안 함, self_health_watchdog.py 본체·13:00 .bat 호출 라인은 주석으로 보존해 역롤백 가능).",
       "feedback": {
         "enabled": true,
         "audience": "gm+clevel",

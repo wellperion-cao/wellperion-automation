@@ -1580,7 +1580,9 @@
     // 배10008(2026-07-24)로 삭제됨(카톡 23:00 중복 발송 경로 제거, 텔레그램 22:30/20:00만
     // 존속). 전용 잡이 없어졌으므로 매핑 제거 — cadence 기반 공용 모듈리포터로 폴백.
     'cto-ops-morning-digest':   { ah:'Wellperion-Ops-Morning-Digest-0730' },
-    'cto-aide-gap-detector':    { ah:'Wellperion-GM-Aide-Scan-0630' },
+    // cto-aide-gap-detector: 2026-07-24 웰리 승인 병합(34→26)으로 ceo-gm-aide 로 등록부 흡수됨
+    // (같은 06:30 gm_aide_scan.bat 한 파이프라인) — 키를 survivor id 로 이전, 삭제 아님.
+    'ceo-gm-aide':              { ah:'Wellperion-GM-Aide-Scan-0630' },
     'cmo-case-series-dispatch': { ah:'Wellperion-IG-Series-Produce-0730' },
     'cto-weekly-self-review':   { ah:'Wellperion-Weekly-Self-Review-Sunday' },
     'cto-weekly-page-hygiene':  { ah:'Wellperion-Weekly-Page-Hygiene-Sun-0900' }
