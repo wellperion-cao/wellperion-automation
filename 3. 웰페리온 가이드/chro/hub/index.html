@@ -1835,6 +1835,27 @@ function openPrintView(pageId, noQ){
   }
   var edu=((__pi.match(/학력\s*[:：]?\s*([^·|\n■]+)/)||[])[1]||"미기재").trim();
   var careerTot=((__pi.match(/(?:총\s*)?경력(?!사항)\s*[:：]?\s*([^·|\n■]+)/)||[])[1]||"미기재").trim();
+  // [추가 2026-07-24 A-5] 인쇄 2페이지화 — "면접관 메모란" 줄 수를 실측 잔여공간에 맞춰 동적 계산(page-fit script).
+  //   sigLines를 빈 채로 렌더한 뒤, 팝업 로드시 실제 렌더된 .foot 위치를 재보고 A4 2페이지 예산(2×269mm)에서
+  //   남는 높이만큼만 줄을 채운다(최소 2줄·최대 10줄 — 짧은 메모는 기존과 동일하게 10줄 유지).
+  var sigFitScript="<script>(function(){function f(){try{"+
+    "var p=document.querySelector('.page');"+
+    "var sl=document.getElementById('sigLines');"+
+    "var ft=document.getElementById('printFoot');"+
+    "if(!p||!sl||!ft)return;"+
+    "p.classList.add('__measure');"+
+    "var budget=2*(297-28)*(96/25.4);"+
+    "var top=p.getBoundingClientRect().top;"+
+    "var fb=ft.getBoundingClientRect().bottom-top;"+
+    "var unit=(14+8)*(96/72);"+
+    "var n=Math.floor((budget-fb)/unit);"+
+    "if(!isFinite(n))n=6; if(n>10)n=10; if(n<2)n=2;"+
+    "var h='';for(var i=0;i<n;i++){h+='<div class=\"line\"></div>';}"+
+    "sl.innerHTML=h;"+
+    "p.classList.remove('__measure');"+
+    "}catch(e){}}"+
+    "if(document.readyState==='complete'){f();}else{window.addEventListener('load',f);}"+
+    "})();<\/script>";
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8">'+
     '<title>'+esc(a["지원자명"])+' — 면접 평가지</title>'+
     '<style>'+
@@ -1854,7 +1875,8 @@ function openPrintView(pageId, noQ){
       '.q{display:flex;gap:6px;margin:9px 0 0;font-size:10pt;font-weight:600;color:#2a2823;padding-bottom:15pt;border-bottom:1px dashed #d3cebf}'+
       '.q-num{color:#a98a52;font-weight:700;white-space:nowrap;flex-shrink:0}'+
       '.q-part{font-size:9pt;color:#a98a52;font-weight:700;margin-top:10px;text-transform:uppercase;letter-spacing:.05em}'+
-      '.line{border-bottom:1px solid #c9c5b8;height:14pt;margin:4pt 0}'+
+      '.line{border-bottom:1px solid #c9c5b8;height:14pt;margin:4pt 0;page-break-inside:avoid}'+
+      '.page.__measure{padding:0!important;box-shadow:none!important;border-radius:0!important}'+
       '.foot{margin-top:18px;padding-top:8px;border-top:1px solid #efece4;font-size:8.5pt;color:#9a978e;display:flex;justify-content:space-between}'+
       '.print-btn{position:fixed;top:14px;right:14px;background:#a98a52;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:600;cursor:pointer;font-size:11pt;box-shadow:0 2px 8px rgba(0,0,0,.15)}'+
       '.print-btn:hover{background:#8a6f3f}'+
@@ -1874,14 +1896,11 @@ function openPrintView(pageId, noQ){
       '<div class="memo">'+fmtMemo(memo)+'</div>'+
       '<h2>3. AI 서류 평가 — 종합 등급</h2>'+
       '<p style="font-size:11pt;margin:8px 0">종합 등급: <span class="grade">'+esc(grade)+'</span> &nbsp;&nbsp; <span style="color:#6c6961;font-size:9.5pt">(인재상별 평가 근거·강점·확인사항은 위 \'이력 요약\'에 포함)</span></p>'+
-      (noQ?"":('<h2>4. 면접 질문지 (표준 10문항 · 부서 맞춤 조정 가능)</h2>'+wpQuestions((a["지원 포지션"]||a["연결 공고"]||""))))+(noQ?"":('<h2>5. 면접관 메모란</h2>'+
-      '<div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>'+
-      '<div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>'+
-      '<div class="line"></div><div class="line"></div>'))+'<div class="foot">'+
+      (noQ?"":('<h2>4. 면접 질문지 (표준 10문항 · 부서 맞춤 조정 가능)</h2>'+wpQuestions((a["지원 포지션"]||a["연결 공고"]||""))))+(noQ?"":('<div id="sigWrap"><h2>5. 면접관 메모란</h2><div id="sigLines"></div></div>'))+'<div class="foot" id="printFoot">'+
         '<span>평가일자: '+new Date().toISOString().slice(0,10)+' · AI CHRO 자동 생성</span>'+
         (noQ?"":'<span>면접관 서명: ______________________</span>')+
       '</div>'+
-    '</div>'+geoScript+'</body></html>';
+    '</div>'+geoScript+(noQ?"":sigFitScript)+'</body></html>';
   w.document.write(html);
   w.document.close();
 }
