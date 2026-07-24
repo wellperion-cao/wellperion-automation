@@ -93,8 +93,15 @@ function myShips(cwd, role) {
     //   완료한 배는 곧 _queue_archive.json 으로 옮겨진다 → 살아있는 큐만 보면 오늘 끝낸 배가
     //   보관되는 순간 사라져 이 칸이 사실상 항상 0이었다(죽은 칸).
     //   완료 날짜 칸은 배마다 제각각(processed_at·done_at·둘 다 없으면 enqueued_at)이라 셋 다 본다.
+    // ★기계가 찍어낸 배는 뺀다(GM 2026-07-24 '오늘🏁31이 부풀려졌다').
+    //   문의 스냅샷(3분마다)·주차매출 같은 무인 예약 스크립트가 만든 배까지 세면 실무 성과가 아니라
+    //   가동 횟수가 된다. 판별 규칙 정본 = scripts/kpi_collector.py `_is_machine_ship`
+    //   (adhoc_commit 존재 AND 제목에 "자동 발행") — KPI 완결률과 같은 잣대를 쓴다.
+    //   ※JS/파이썬이라 함수를 직접 못 쓴다. 규칙이 바뀌면 정본과 함께 여기도 고칠 것.
+    const isMachineShip = (s) => !!s.adhoc_commit && String(s.title || '').includes('자동 발행');
     const isDoneToday = (s) => (s.status === 'DONE' || s.status === '완료')
-      && String(s.processed_at || s.done_at || s.enqueued_at || '').startsWith(ymd);
+      && String(s.processed_at || s.done_at || s.enqueued_at || '').startsWith(ymd)
+      && !isMachineShip(s);
     let done = mine.filter(isDoneToday).length;
     // 보관함(2.4MB)은 읽는 값이 있을 때만 연다 — 오늘 아무것도 보관되지 않았으면 파일이
     // 오늘 바뀌지도 않았으므로 열 이유가 없다(실측: 열면 +100ms, 안 열면 0ms).
