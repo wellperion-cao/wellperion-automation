@@ -55,6 +55,55 @@ function _noticeText_(f) {
   return NOTICE_HEAD + '\n' + f.url + '\n\n' + f.tail + ' (이 양식으로도 접수하실 수 있습니다)';
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// 응답 마감 + 안내 (GM 2026-07-24 결정) — "질문 없이 안내만 보이게"
+// ───────────────────────────────────────────────────────────────────────────
+// 질문을 지우면 복구가 안 되므로(구글폼은 되돌리기 기록이 없다) 대신 폼을 '응답 마감'
+// 상태로 돌린다. 방문자에겐 제목 + 아래 안내 문구만 보이고, 질문·과거 응답은 그대로
+// 보존된다. 되돌리기 = reopenForms() 한 번.
+// ★마감 상태에선 폼 '설명'이 표시되지 않는다 → 링크를 반드시 마감 메시지에 넣는다.
+// ═══════════════════════════════════════════════════════════════════════════
+function _closedMsg_(f) {
+  return '문의 접수가 홈페이지로 옮겨졌습니다.\n\n'
+       + '아래 주소에서 접수해 주시면 담당자가 확인 후 연락드립니다.\n'
+       + f.url + '\n\n'
+       + f.tail;
+}
+
+function _closeOne_(f) {
+  var form = FormApp.openById(f.id);
+  form.setCustomClosedFormMessage(_closedMsg_(f));
+  form.setAcceptingResponses(false);
+  return f.name + ' — 응답 마감 + 안내 문구 적용';
+}
+
+/** 1단계: 멤버십 폼만 마감(가장 위험 작은 것부터 — 웹이 이미 4건 중 3건을 받는다). */
+function closeMembershipForm() {
+  var out = [_closeOne_(FORMS[0])];
+  Logger.log(out.join('\n'));
+  return out;
+}
+
+/** 2단계: 강습 2종(성인·유소년) 마감 — 1단계 화면 확인 후 실행. */
+function closeLessonForms() {
+  var out = [_closeOne_(FORMS[1]), _closeOne_(FORMS[2])];
+  Logger.log(out.join('\n'));
+  return out;
+}
+
+/** 되돌리기 — 3종 모두 다시 응답 받기. 질문·과거 응답은 애초에 손대지 않았다. */
+function reopenForms() {
+  var out = [];
+  for (var i = 0; i < FORMS.length; i++) {
+    try {
+      FormApp.openById(FORMS[i].id).setAcceptingResponses(true);
+      out.push(FORMS[i].name + ' — 다시 응답 받는 중');
+    } catch (e) { out.push(FORMS[i].name + ' — 실패: ' + e); }
+  }
+  Logger.log(out.join('\n'));
+  return out;
+}
+
 /** 읽기 전용 — 현재 상태만 본다. 아무것도 바꾸지 않는다. */
 function reportForms() {
   var out = [];
