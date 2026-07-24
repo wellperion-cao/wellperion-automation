@@ -41,13 +41,16 @@ DRIFT_OUT = ROOT / "status" / "notify_drift.json"
 # ★배10011(2026-07-24): '"18": (18, 0)'·CHECK_MORNING_1200_ENABLED·CHECK_2300_GM_DM_ENABLED
 #   3개는 의도적 삭제(18시→21시 흡수, 12/23시 킬스위치 삭제)라 목록에서도 함께 제거했다 —
 #   남겨두면 이 체커가 "코드에서 사라졌다"고 매번 오탐(CODE_MARKER_GONE)한다.
+# ★배10011 L21 정산(2026-07-24): 'nudge_map = {' 도 같은 이유로 제거 — 17:00/22:00 독려
+#   슬롯은 커밋 f36d56393(2026-07-23, GM 승인)로 코드가 실제 삭제됐고, 이를 전제하던
+#   등록부 항목(tg-1700-nudge-pm·tg-2200-nudge-close)도 이번에 함께 지웠다(끄기가
+#   아니라 삭제 — L21). 마커만 남기면 아무도 안 쓰는데 영구 오탐만 낸다.
 APSCHEDULER_MARKERS = [
     'schedule_map = {',
     '"06": (6, 0)',
     '"12": (12, 0)',
     '"21": (21, 0)',
     '"23": (23, 0)',
-    'nudge_map = {',
     'id="daily_digest_early"',
     'id="daily_digest_late"',
     'id="pre_task_notifier"',
@@ -65,6 +68,9 @@ NOTIFY_SHAPED_HINTS = (
 KNOWN_NON_NOTIFY = {
     'WellperionDailyScheduler', 'WellperionTelegramBot',
     'Wellperion-Telegram-HealthCheck-1300',  # 정상 시 침묵 — 등록부에 이미 포함됨
+    # 배10011(2026-07-24) — "Ops" 문자열이 NOTIFY_SHAPED_HINTS에 우연히 걸린 오탐 확인.
+    # monthly_ops_sync.py 코드 직접 확인: 텔레그램/알림 호출 0건(순수 데이터 동기화 작업).
+    'Wellperion-MonthlyOps-Sync-Daily',
 }
 
 
