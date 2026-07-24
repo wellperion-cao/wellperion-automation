@@ -30,6 +30,32 @@
         ".omc/**"
       ],
       "note": "2026-07-20 GM 승인으로 정본=scripts/cta_utm.py 파일 상단 'CTA 단일화 설계' 주석 1곳으로 확정(약속 L01). 이전엔 채널별 CTA 삽입 규칙이 5곳에 각각 서술돼 서로 어긋났고(폐기된 3번째 버전까지 살아있었음), 값 계층(canon_values)만 감시돼 '규칙' 계층은 조용히 번졌다. 브랜드가이드.html·FOUNDATION.md·SKILL.md는 오늘 정본을 가리키는 포인터로 교체 완료(재서술 아님, FP 허용). generate_channel_copy.py는 cta_utm.CLEAN_CTA_TEXT를 실제 import해 쓰는 소비자(재구현 아님). instagram/**·docs/**는 콘텐츠 소재·날짜박제 설계문서(살아있는 규정 아님, 재동기화 대상 아님). 새로운 곳에 규칙이 다시 서술되면 탐지 대상 — 실측 결과 wellperion_guide(main).html '채널별 CTA' 표(line 3536 부근)가 cta_utm.py 현행 규칙과 어긋난 채 남은 진짜 재서술로 확인됨(당근을 URL 미기재로 오기재·카카오 누락 등) — 후속 정리 대상, 이 감시장치는 발견만 하고 자동 수정하지 않는다."
+    },
+    {
+      "key": "gm_approval_gate_5",
+      "이름": "GM 결재 5종 게이트 (이 5종 외 전 C-Level 자율 진행)",
+      "source": "3. 웰페리온 가이드/wellperion_guide(main).html #con-gm5 (S2 공통탭 'GM 결재 영역') — 라벨 원문 그대로",
+      "categories": [
+        { "code": "결제", "icon": "💰", "label": "1원 이상 모든 결제",
+          "keywords": ["결제", "페이", "정산", "환불", "결재"],
+          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py(커밋가드)=신규 로직 없음, 결재현황 게이트를 재사용(자체 명시)" },
+        { "code": "보안", "icon": "🔒", "label": "비밀번호·결제·키값 등",
+          "keywords": ["보안", "차단", "발효", "jwt", "token_enforce"],
+          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py=TOKEN_ENFORCE를 켜는 staged diff 패턴만 좁게 감지(포괄적 '보안'은 커밋가드로 감지 불가)" },
+        { "code": "금지", "icon": "🚫", "label": "금지 항목 변경",
+          "keywords": ["금지", "블랙리스트"],
+          "layer_note": "sweep_classifier=2026-07-24 이전엔 이 카테고리 키워드가 부재였음(이번 A안에서 S2 원문 기반으로 신규 편입) / enforcement.py=FORBIDDEN_PATH_GLOBS(결재GAS·구버전 미끼 경로 3개)로 좁게 감지" },
+        { "code": "전략", "icon": "📐", "label": "전략·방향·포지셔닝 결정",
+          "keywords": ["전략", "북극성", "8차원"],
+          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py(커밋가드)=git diff로 판단 불가한 영역이라 감지 대상에서 명시적 제외(구현 누락 아님)" },
+        { "code": "공식값", "icon": "🏷️", "label": "브랜드·공식값 변경",
+          "keywords": ["공식값", "공식 링크", "공식링크", "대표 전화", "대표전화"],
+          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py=canon_values.json·약속.json 파일 자체의 staged 변경을 파일 단위로 감지" }
+      ],
+      "excluded": {
+        "콘텐츠 발행": "2026-07-24 GM 결정으로 5종에서 제외 — 자동발행이 표준 운영 중이며 배58에서 '임시저장·초안=자동 / 실제 publish만 승인'으로 이미 세분화됨. sweep_classifier가 발행·publish·게시·업로드·라이브 키워드로 발행 전체를 GM_GATE 처리하던 것은 그 이전 낡은 잔재였음 — 제거."
+      },
+      "note": "2026-07-24 웰리 실측 — S2 화면(사람용 정의)·welly_sweep_classifier.py(GATE_KEYWORDS)·precommit_enforcement_guard.py(→enforcement.py) 3곳이 각자 하드코딩되어 있었고 '금지' 키워드 부재·'콘텐츠 발행' 임의 추가·'전략' enforcement 미구현 등 불일치가 있었음(동기화 장치 0). GM 판단(A안): 판정 방식(글/키워드/파일감지)은 3개 층위가 각자 유지하되, '무엇을 막을지' 5종 목록만 이 canon 규칙이 정본. 층위가 감지 불가한 카테고리는 layer_note로 명시(목록에서 제외 아님)."
     }
   ],
   "values": [
