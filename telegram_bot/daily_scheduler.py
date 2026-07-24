@@ -3153,6 +3153,36 @@ def main():
         except Exception as exc:
             logger.warning(f"git 잠금 청소 건너뜀({when}): {type(exc).__name__}: {exc}")
 
+    # ── 매출보고 구글 세션 지킴이 (배10021 · INC-033 · GM 2026-07-24 B안) ──────────
+    #   구글 세션은 약 14일 주기로 반드시 만료되는데, 지금까지는 09:30 발송하려는 순간에야
+    #   알았고 그때는 이미 회장님·관리부·운영부 보고가 펑크난 뒤였다. 08:10 에 미리 확인해
+    #   만료면 **로그인 창만 띄운다** — 텔레그램·카톡 알림은 한 통도 보내지 않는다
+    #   (배10011 '알림 신설 금지' 준수. 화면에 뜬 창이 신호다).
+    def _guard_sales_session() -> None:
+        try:
+            r = subprocess.run(
+                [sys.executable, "scripts/sales_session_guard.py"],
+                cwd=str(BASE.parent), timeout=300,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            )
+            tail = (r.stdout or b"").decode("utf-8", "replace").strip().splitlines()
+            logger.info("매출보고 세션 점검: " + (tail[-1] if tail else "출력 없음"))
+        except Exception as exc:
+            logger.warning(f"매출보고 세션 점검 건너뜀: {type(exc).__name__}: {exc}")
+
+    try:
+        scheduler.add_job(
+            _guard_sales_session,
+            trigger=CronTrigger(hour=8, minute=10),
+            id="sales_session_guard_0810",
+            replace_existing=True,
+            misfire_grace_time=1800,
+            coalesce=True,
+        )
+        logger.info("매출보고 세션 지킴이 등록 완료 — 매일 08:10(알림 0통·만료 시 로그인 창만)")
+    except Exception as _exc:
+        logger.warning(f"매출보고 세션 지킴이 등록 실패(기동은 계속): {_exc}")
+
     _sweep_git_locks("기동")
     try:
         scheduler.add_job(

@@ -27,7 +27,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -139,9 +141,52 @@ def _launch_context(p):
         return p.chromium.launch_persistent_context(**launch_kwargs)
 
 
+def profile_chrome_pids() -> "list[int]":
+    """profiles/danggn 프로필을 쓰고 있는 크롬 PID 목록(GM 개인 크롬은 잡히지 않는다)."""
+    if sys.platform != "win32":
+        return []
+    ps = (
+        "Get-CimInstance Win32_Process -Filter \"Name='chrome.exe'\" | "
+        "Where-Object { $_.CommandLine -like '*profiles*danggn*' } | "
+        "ForEach-Object { $_.ProcessId }"
+    )
+    try:
+        out = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                             capture_output=True, text=True, timeout=60)
+        return [int(x) for x in (out.stdout or "").split() if x.strip().isdigit()]
+    except Exception:
+        return []
+
+
+def close_profile_chrome() -> int:
+    """이 프로필을 잡고 있는 크롬을 닫는다. 닫은 개수 반환.
+
+    왜 필요한가: profiles/danggn 로 크롬 창이 하나라도 열려 있으면 프로필이 잠겨,
+    같은 프로필을 쓰는 무인 작업(09:30 매출보고·당근 발행)이 통째로 실패한다.
+    2026-07-08 실사례 = 세션 복구용 로그인 창을 닫지 않아 09:30 이 죽었다.
+    2026-07-24 로그인창 자동 표출(B안)을 붙이면서 이 함정이 더 잘 밟히게 되므로,
+    무인 작업이 시작할 때 스스로 잠금을 풀고 들어간다. GM 개인 크롬은 프로필 경로가
+    달라 여기 걸리지 않는다.
+    """
+    pids = profile_chrome_pids()
+    if not pids:
+        return 0
+    log(f"프로필 잠금 해제 — danggn 프로필 크롬 {len(pids)}개 종료({pids})")
+    for pid in pids:
+        try:
+            subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"],
+                           capture_output=True, timeout=30)
+        except Exception as exc:
+            log(f"[경고] PID {pid} 종료 실패: {exc}")
+    time.sleep(2)  # 크롬이 프로필 락파일을 놓을 시간
+    return len(pids)
+
+
 def export_pdf(out_pdf: Path) -> "tuple[bool, str]":
     """Google Sheets export를 PDF로 받아 저장. 반환: (성공여부, 실패사유)."""
     from playwright.sync_api import sync_playwright
+
+    close_profile_chrome()  # 남아 있는 로그인 창 때문에 통째로 실패하지 않게
 
     with sync_playwright() as p:
         context = None
