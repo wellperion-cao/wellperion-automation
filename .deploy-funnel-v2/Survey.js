@@ -2211,6 +2211,35 @@ var LESSON_INTAKE_HEADERS = ['타임스탬프','성함','연락처','자녀 나�
 
 function _intakeToken_() { return _accessProp_('INTAKE_SUBMIT_TOKEN') || INTAKE_SUBMIT_TOKEN; }
 
+/** 봇 방어에 걸려 본 파이프라인에서 뺀 접수를 '접수 보류함' 탭에 남긴다(2026-07-24 시포).
+ *  ★왜: 방어가 사람을 잘못 잡는 순간, 그 문의는 아무 데도 안 남고 사라진다. 사라진 건 되찾을 수 없지만
+ *  남아 있으면 되찾을 수 있다. 봇에게는 성공처럼 보이게 두므로(정탐 시 재시도 유도 없음) 방어력은 그대로다.
+ *  ★실무진 방으로 보내지 않는다 — 봇 소음이 실무진 신뢰를 깎는다(INC-015 교훈). GM 개인방 1줄만.
+ *  ★고객 문의 시트에는 쓰지 않는다 — 보류함은 별도 탭이라 기존 집계·화면에 영향 0. */
+function _quarantineIntake_(body, reason) {
+  var ss = SpreadsheetApp.openById(_MI_SS_ID);
+  var sh = ss.getSheetByName('접수 보류함');
+  if (!sh) {
+    sh = ss.insertSheet('접수 보류함');
+    sh.appendRow(['보류시각', '사유', '유형', '성함', '연락처', '문의내용', '유입경로', '원본(JSON)']);
+    sh.setFrozenRows(1);
+  }
+  var name = String(body.name || body.contactName || body.company || '').slice(0, 60);
+  var phone = String(body.phone || '').slice(0, 30);
+  sh.appendRow([
+    new Date(), String(reason || ''), String(body.category || '').slice(0, 20),
+    name, phone, String(body.message || '').slice(0, 500),
+    String(body.channel || body.inflow || '').slice(0, 40),
+    JSON.stringify(body).slice(0, 4000)
+  ]);
+  try {
+    var esc = function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+    _notifyTelegram('🛑 <b>접수 보류함에 1건</b>(' + esc(reason) + ')\n'
+      + esc(name || '이름 미기재') + ' · ' + esc(phone || '연락처 미기재') + '\n'
+      + '봇 방어에 걸려 문의 목록엔 안 들어갔습니다. 실제 고객이면 보류함에서 옮겨주세요.');
+  } catch (e) { /* 알림 실패해도 보류함 기록은 남는다 */ }
+}
+
 // 강습 신규문의 스태프탭 핸들(옵션 생성). LESSON_SS_ID(1b0XU1o) 하위 신규 탭 — 기존 응답탭·팀시트 IMPORTRANGE 정렬 불변(새 탭 추가는 무영향).
 function _lessonIntakeSheet_(createIfMissing) {
   var ss = SpreadsheetApp.openById(LESSON_SS_ID);
@@ -2966,8 +2995,16 @@ function _processAction(body) {
   if (action === 'intake_submit') {
     // 1) 토큰(위조방지)
     if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
-    // 2) 허니팟 — 봇이 채운 hp 값 있으면 조용히 성공가장(무기록). 숨김필드라 사람 오탐 거의 없음. #2(2026-07-18): 드롭 추적 로그.
-    if (String(body.hp || '').trim() !== '') { try { Logger.log('[intake drop] honeypot phone=' + String(body.phone||'')); } catch(e){} return _json({ ok: true, id: 'HP', dedup: true }); }
+    // 2) 허니팟 — 봇이 채운 hp 값이 있으면 봇에겐 성공처럼 보이게 두되(정탐 시 재시도 유도 금지),
+    //    ★조용히 버리지는 않는다(2026-07-24 시포). 실측상 오탐 확률은 낮지만(화면 밖·autocomplete off·
+    //    tabindex -1·name 없음) 걸리는 순간 그 사람의 문의는 흔적 없이 사라진다 — 로그는 아무도 안 본다.
+    //    보류함에 남기고 GM 개인방에 1줄 알린다(실무진 방 아님 — 봇 소음이 실무진에게 가면 안 된다).
+    //    되찾을 수 있는 실패 > 조용한 성공가장. 오늘 사고(컨택 유실·INC-013/014)와 같은 뿌리를 막는다.
+    if (String(body.hp || '').trim() !== '') {
+      try { Logger.log('[intake drop] honeypot phone=' + String(body.phone || '')); } catch (e) {}
+      try { _quarantineIntake_(body, '허니팟'); } catch (e) {}
+      return _json({ ok: true, id: 'HP', dedup: true });
+    }
     // 3) 타이밍 게이트 — 너무 빠른 제출은 봇 의심이나 자동완성 등 정상 사용자 오탐 가능 → #2(2026-07-18 시포): 조용히 버리지 않고 저장하되 '검토' 플래그(비고)로 표면화(실사용자 유실 0).
     var _fillMs = parseInt(body.fillMs || '0', 10);
     var _iFastFlag = (_fillMs > 0 && _fillMs < 1500);
@@ -3238,6 +3275,25 @@ function _processAction(body) {
         + '\n\n' + _sfEsc(_sfBody.slice(0, 300)));
     } catch (e) { /* 알림 실패 무시 */ }
     return _json({ ok: true, id: _sfId });
+  }
+
+  // ─── 접수 보류함 조회 (토큰 게이트 · 읽기 전용 · 시포 2026-07-24) ──────────────
+  //   봇 방어에 걸려 본 파이프라인에서 뺀 접수를 사람이 확인해 되찾을 수 있게 한다.
+  //   ★쓰기 전용 보관함은 아무도 안 본다 = 사실상 삭제와 같다. 읽는 길을 같이 낸다.
+  if (action === 'quarantine_list') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _qSh = SpreadsheetApp.openById(_MI_SS_ID).getSheetByName('접수 보류함');
+    if (!_qSh) return _json({ ok: true, rows: [], note: '보류된 접수 없음(탭 미생성)' });
+    var _qLast = _qSh.getLastRow();
+    if (_qLast < 2) return _json({ ok: true, rows: [] });
+    var _qHdr = _qSh.getRange(1, 1, 1, _qSh.getLastColumn()).getDisplayValues()[0];
+    var _qVals = _qSh.getRange(2, 1, _qLast - 1, _qHdr.length).getDisplayValues();
+    var _qRows = _qVals.map(function (v) {
+      var o = {};
+      for (var c = 0; c < _qHdr.length; c++) o[String(_qHdr[c]).trim()] = v[c];
+      return o;
+    }).reverse();
+    return _json({ ok: true, count: _qRows.length, rows: _qRows });
   }
 
   // ─── 실무진 피드백 조회·처리 (토큰 게이트 · 시포 2026-07-24) ───────────────────
