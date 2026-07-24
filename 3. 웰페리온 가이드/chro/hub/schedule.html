@@ -367,7 +367,7 @@
         </div>
       </div>
       <div class="card">
-        <h3>✅ 결재함 <span id="rq_cnt" style="font-size:11px;color:var(--dim);font-weight:600"></span></h3>
+        <h3>✅ 결재함 <span id="rq_cnt" style="font-size:11px;color:var(--dim);font-weight:600"></span> <span id="rq_sync" style="font-size:11px;font-weight:600"></span></h3>
         <p class="sub">대기 건을 승인하면 보드에 즉시 적용됩니다. 반려 건은 적용되지 않습니다.</p>
         <div id="reqList"></div>
       </div>
@@ -1146,22 +1146,34 @@ function edClear(){edSet("");}
 const LS_Q="wp_att_req_v1";
 let REQS=JSON.parse(localStorage.getItem(LS_Q)||"[]");
 const saveQ=()=>localStorage.setItem(LS_Q,JSON.stringify(REQS));
-/* 7월 실측 연차·반차(IMPORT_LEAVE 정본) → 승인 완료 신청 더미 — 기기별 최초 1회 자동 시드.
-   결재일=대상일 3일 전 · 김남욱GM 본인 건만 이정헌소장 결재. 동일 인·일·종류 존재 시 건너뜀. */
-const SEED_FLAG="wp_att_req_seed_v1";
-if(!localStorage.getItem(SEED_FLAG)){
-  const SEED=[
-    {id:"RS7",emp:"임정은",type:"연차",date:"2026-07-27",appr:"김남욱GM",decidedAt:"2026-07-24"},
-    {id:"RS6",emp:"최준용",type:"연차",date:"2026-07-24",appr:"김남욱GM",decidedAt:"2026-07-21"},
-    {id:"RS5",emp:"김남욱",type:"반차오후",date:"2026-07-16",appr:"이정헌소장",decidedAt:"2026-07-13"},
-    {id:"RS4",emp:"나우열",type:"반차오후",date:"2026-07-10",appr:"김남욱GM",decidedAt:"2026-07-07"},
-    {id:"RS3",emp:"최준용",type:"연차",date:"2026-07-08",appr:"김남욱GM",decidedAt:"2026-07-05"},
-    {id:"RS2",emp:"이경연",type:"반차오전",date:"2026-07-03",appr:"김남욱GM",decidedAt:"2026-06-30"},
-    {id:"RS1",emp:"임정은",type:"연차",date:"2026-07-02",appr:"김남욱GM",decidedAt:"2026-06-29"}
-  ].map(r=>({...r,s:"",e:"",reason:"7월 실측 반영",status:"승인"}));
-  const add=SEED.filter(r=>!REQS.some(x=>x.emp===r.emp&&x.date===r.date&&x.type===r.type));
-  if(add.length){REQS=add.concat(REQS);saveQ();}
-  localStorage.setItem(SEED_FLAG,"1");
+/* ===== 공유 저장(구글시트 · GAS) 연동 — 서버가 정본, localStorage는 오프라인 캐시 ===== */
+const REQ_API="https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+let reqSynced=null; /* null=연결 중, true=연결됨, false=오프라인 */
+function reqSyncBadge(){
+  const el=document.getElementById("rq_sync"); if(!el)return;
+  el.textContent=reqSynced===null?"공유 저장 연결 중…":reqSynced?"● 공유 저장 연결됨":"● 오프라인 — 이 기기에만 저장 중";
+  el.style.color=reqSynced?"var(--green)":(reqSynced===null?"var(--dim)":"var(--rose)");
+}
+async function reqPull(){
+  try{
+    const j=await(await fetch(REQ_API+"?action=schedreq-list")).json();
+    if(!j||!j.ok||!Array.isArray(j.reqs))throw 0;
+    REQS=j.reqs.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
+    saveQ(); reqSynced=true;
+  }catch(err){ reqSynced=false; }
+  reqSyncBadge(); renderReq(); rqRemainInfo();
+}
+function reqPush(r){
+  fetch(REQ_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify({action:"schedreq-save",req:r})})
+    .then(res=>res.json()).then(j=>{if(!j||!j.ok)throw 0;reqSynced=true;reqSyncBadge();})
+    .catch(()=>{reqSynced=false;reqSyncBadge();});
+}
+function reqPushDelete(id){
+  fetch(REQ_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify({action:"schedreq-delete",id:id})})
+    .then(res=>res.json()).then(j=>{if(!j||!j.ok)throw 0;reqSynced=true;reqSyncBadge();})
+    .catch(()=>{reqSynced=false;reqSyncBadge();});
 }
 const REQ_W={"연차":1,"반차오전":0.5,"반차오후":0.5};
 function pendingUseOf(nm){return REQS.filter(r=>r.emp===nm&&r.status==="대기").reduce((a,r)=>a+(REQ_W[r.type]||0),0);}
@@ -1212,8 +1224,9 @@ function submitReq(){
     }
   }
   const appr=t==="근무변경"?"":document.getElementById("rq_appr").value;
-  REQS.unshift({id:"R"+Date.now(),emp:nm,type:t,date:dt,s,e,reason,appr,status:"대기"});
-  saveQ(); renderReq(); rqRemainInfo();
+  const item={id:"R"+Date.now(),emp:nm,type:t,date:dt,s,e,reason,appr,status:"대기"};
+  REQS.unshift(item);
+  saveQ(); reqPush(item); renderReq(); rqRemainInfo();
   document.getElementById("rq_reason").value="";
   alert(`${nm}님 ${t} 신청 완료 — 결재 대기로 등록되었습니다.`);
 }
@@ -1236,12 +1249,12 @@ function approveReq(id){
   else if(r.type.startsWith("반차")&&r.s)schedD[r.emp][r.date]=r.type+" "+r.s+(r.e?" "+r.e:"");   // 반차 + 근무시간 병기
   else schedD[r.emp][r.date]=r.type;
   saveS();
-  r.status="승인"; r.decidedAt=todayYmd(); saveQ();
+  r.status="승인"; r.decidedAt=todayYmd(); saveQ(); reqPush(r);
   renderReq(); renderMonth(); renderDay(); renderWeek(); rqRemainInfo();
 }
-function rejectReq(id){const r=REQS.find(x=>x.id===id);if(r&&r.status==="대기"){r.status="반려";r.decidedAt=todayYmd();saveQ();renderReq();rqRemainInfo();}}
+function rejectReq(id){const r=REQS.find(x=>x.id===id);if(r&&r.status==="대기"){r.status="반려";r.decidedAt=todayYmd();saveQ();reqPush(r);renderReq();rqRemainInfo();}}
 function todayYmd(){return ymdOf(new Date());}
-function delReq(id){REQS=REQS.filter(x=>x.id!==id);saveQ();renderReq();}
+function delReq(id){REQS=REQS.filter(x=>x.id!==id);saveQ();reqPushDelete(id);renderReq();}
 function renderReq(){
   const el=document.getElementById("reqList");
   const pending=REQS.filter(r=>r.status==="대기").length;
@@ -1407,11 +1420,12 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
   if(b.dataset.tab==="month")renderMonth();
   if(b.dataset.tab==="day")renderDay();
   if(b.dataset.tab==="week")renderWeek();
-  if(b.dataset.tab==="req"){fillReqEmp();rqRemainInfo();renderReq();}
+  if(b.dataset.tab==="req"){fillReqEmp();rqRemainInfo();renderReq();reqPull();}
 });
 applyImportSched(false);   // 7월 실측 스케줄 최초 1회 자동 반영
 renderFilter(); renderRoster(); renderMonth(); renderDay(); renderWeek(); fillReqEmp(); rqTypeChange(); renderReq();
 document.getElementById("rq_date").value=ymdOf(new Date());
+reqSyncBadge(); reqPull();   // 공유 저장(구글시트)에서 신청·결재 정본 로드
 </script>
 </body>
 </html>
