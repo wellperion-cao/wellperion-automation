@@ -1577,5 +1577,35 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 32d87297d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "32d87297d513260bd8993ce3d940a058e99987c7"
+  },
+  {
+    "task_id": "CTO-2026-07-24-같은-파일-동시편집으로-커밋이-남의-커밋에-실린다-",
+    "clevel": "cto",
+    "title": "[시토] 같은 파일 동시편집으로 커밋이 남의 커밋에 실린다 — 오늘만 3회",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-24",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-07-24] 2026-07-24 실측: 웰리 작업이 다른 세션 커밋에 통째로 실린 사례 3회. ①가이드 순서통일 9곳 → 0df99780a(시모 CTA 커밋)에 실림 ②S2 공통탭 A안 → bab211162(시모 M1 모바일 수리)에 실림 ③상태줄 제목표시는 시포가 먼저 같은 기능을 구현(03dfdedde)해 중복 작업 발생.\n본질: safe_commit 은 '다른 경로 혼입'은 막지만 **같은 파일을 여러 세션이 동시에 편집하는 것**은 못 막는다. 작업트리가 하나라 늦게 커밋하는 쪽 변경이 먼저 커밋하는 쪽에 딸려 들어간다. 내용은 살아남지만 ①누가 무엇을 했는지 이력이 어긋나고 ②같은 기능을 둘이 만드는 중복이 생기며 ③되돌릴 때 무엇을 되돌릴지 특정이 안 된다.\n피해 규모: 오늘은 내용 유실 0(전부 검증). 하지만 07-21 사고(190파일 삭제)와 같은 토양이다.\n대상 파일 편중: wellperion_guide(main).html(758,929자) 한 파일에 6개 세션이 몰린다.\n★약속 L21 준수 — 새 도구 만들지 말 것. 기존 safe_commit/git_lock 안에서 처리하거나, 그조차 과하면 '경고만' 하는 최소 장치로.",
+    "next": "시토: ①같은 파일 동시편집 감지 방법 조사(파일 단위 advisory lock vs 커밋 직전 해당 파일 변경 감지 후 경고) ②가장 가벼운 안 1개 제시 — 세션을 막지 않고 알리기만 하는 쪽 우선(막으면 6세션이 멈춘다) ③웰리 승인 후 구현 ④incidents 등재",
+    "depends_on": "",
+    "ship_no": 10059,
+    "short_no": 70,
+    "module": "home",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "CPO-2026-07-24-ADHOC-f3c269719",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-24",
+    "processed_at": "2026-07-24",
+    "ship_no": 10060,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 f3c269719)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f3c269719210d593537f792255d81f9464e59df8"
   }
 ]
