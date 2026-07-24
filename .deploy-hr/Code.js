@@ -3898,13 +3898,14 @@ function handleRegisterApplicant_(body) {
     body.phone || "", body.email || "", memo, ""
   ];
   sh.appendRow(row);
+  var __newRow = sh.getLastRow();   // appendRow 직후 = 신규 지원자 행번호(rNN 병합 키)
 
   // 게이트(i) autolog 강제: 어떤 호출자(루틴·A-1·직접등록 등)든 백엔드가 스스로 1건 기록
   //   → 유주연류 "직접등록 무계측" 재발 차단. 로그 실패는 등록 자체를 막지 않음(비파괴 원칙).
   try {
     handleLogAdd_({
       actor: (body._actor || "루틴·A-1"),
-      work: "지원자 등록",
+      work: "지원자 등록 · " + name + " r" + __newRow,
       detail: name + "/" + position + "/" + stage,
       result: flags.length ? ("등록·" + flags.join(",")) : "등록"
     });
