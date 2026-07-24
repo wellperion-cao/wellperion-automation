@@ -958,7 +958,9 @@
     "task_id": "CEO-2026-07-24-상태줄-STATUSLINE-주인-정하기-63분에-3",
     "clevel": "ceo",
     "title": "[웰리] 상태줄(statusline) 주인 정하기 — 63분에 3역할 6커밋·같은 기능 중복 구현",
-    "status": "PENDING",
+    "status": "완료",
+    "processed_at": "2026-07-25",
+    "artifact_url": "commit:424589da6",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-24",
     "from": "cto",
@@ -1376,5 +1378,33 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 2a617ca29)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "2a617ca29c78a5576f48f77564f812848feedb2e"
+  },
+  {
+    "task_id": "CPO-2026-07-25-ADHOC-f45ed22a1",
+    "clevel": "cpo",
+    "title": "[시포] 배정 독려 문안 소유 확인 완료 — 발신 주체 시모→시포 정정 확정 (배10013)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-25",
+    "processed_at": "2026-07-25",
+    "ship_no": 10167,
+    "artifact": "시포 도메인 검토: AI_INTRO='웰페리온 AI 회원 담당 시포입니다' 어조·표현 적정 판정.\n시토 커밋 e6ae8888c 정본 확정, 수정 없음. 실무진방 발송은 GM go 대기. (CLI ad-hoc · 커밋 f45ed22a1)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f45ed22a18577af353010f809f6bcba130365cdc"
+  },
+  {
+    "task_id": "CEO-2026-07-25-ADHOC-424589da6",
+    "clevel": "ceo",
+    "title": "[웰리] 상태줄 소유권 결정 박제 — 웰리(표시)·시토(기술) 분리, 동시편집 금지 규칙 헤더 기록",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-25",
+    "processed_at": "2026-07-25",
+    "ship_no": 10168,
+    "artifact": "- wellperion_hud.mjs 헤더에 소유권·편집 규칙 4항 추가\n  ① 표시 항목·문구·순서 = 웰리 단독 소유\n  ② 기술 배선(자가복구·잘림·성능) = 시토\n  ③ 변경 전 5역할 창 폭 실측(잘림 0 확인) 필수\n  ④ 동시 편집 금지 — 소유자에게 배로 올릴 것\n- 배경: 2026-07-24 63분·3역할·6커밋, INC-034 '조용한 덮어쓰기' 재발 방지\n- 코드 중복 실측 결과: CPO(11:53)+CEO(11:56) 제목 표시는 순차 정제(CPO 추가→CEO 12자로 수렴),\n  현 HEAD 기준 중복 없음  (CLI ad-hoc · 커밋 424589da6)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "424589da610c5b0ae2c124b456724ccfb947ff68"
   }
 ]
