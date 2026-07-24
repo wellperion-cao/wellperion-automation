@@ -1838,20 +1838,24 @@ function openPrintView(pageId, noQ){
   // [추가 2026-07-24 A-5] 인쇄 2페이지화 — "면접관 메모란" 줄 수를 실측 잔여공간에 맞춰 동적 계산(page-fit script).
   //   sigLines를 빈 채로 렌더한 뒤, 팝업 로드시 실제 렌더된 .foot 위치를 재보고 A4 2페이지 예산(2×269mm)에서
   //   남는 높이만큼만 줄을 채운다(최소 2줄·최대 10줄 — 짧은 메모는 기존과 동일하게 10줄 유지).
+  // [추가 2026-07-24 A-5 v2 — 매니저 방침] 최소 2줄로도 예산을 못 채우면(본문이 과도하게 긴 극단 케이스)
+  //   소견 섹션(제목 "5. 면접관 메모란" 포함) 자체를 인쇄에서 통째 제거해 2페이지를 노린다.
+  //   본문(이력서 요약·질문지)은 절대 축소·절삭하지 않음 — 매니저 확정 방침.
   var sigFitScript="<script>(function(){function f(){try{"+
     "var p=document.querySelector('.page');"+
     "var sl=document.getElementById('sigLines');"+
     "var ft=document.getElementById('printFoot');"+
-    "if(!p||!sl||!ft)return;"+
+    "var sw=document.getElementById('sigWrap');"+
+    "if(!p||!sl||!ft||!sw)return;"+
     "p.classList.add('__measure');"+
     "var budget=2*(297-28)*(96/25.4);"+
     "var top=p.getBoundingClientRect().top;"+
     "var fb=ft.getBoundingClientRect().bottom-top;"+
     "var unit=(14+8)*(96/72);"+
     "var n=Math.floor((budget-fb)/unit);"+
-    "if(!isFinite(n))n=6; if(n>10)n=10; if(n<2)n=2;"+
-    "var h='';for(var i=0;i<n;i++){h+='<div class=\"line\"></div>';}"+
-    "sl.innerHTML=h;"+
+    "if(!isFinite(n))n=6;"+
+    "if(n<2){ sw.style.display='none'; }"+
+    "else{ if(n>10)n=10; var h='';for(var i=0;i<n;i++){h+='<div class=\"line\"></div>';} sl.innerHTML=h; }"+
     "p.classList.remove('__measure');"+
     "}catch(e){}}"+
     "if(document.readyState==='complete'){f();}else{window.addEventListener('load',f);}"+
