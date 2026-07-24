@@ -246,7 +246,11 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
         btn.textContent = '사진 준비 중… (' + (pi + 1) + '/' + photoFiles.length + ')';
         photos.push(await shrinkPhoto(photoFiles[pi]));
       }
-      btn.textContent = '보내는 중…';
+      // 여기서부터가 긴 구간이다 — 사진을 줄여 보내도 구글 쪽에서 한 장씩 저장하느라
+      // 30초~1분이 걸린다(2026-07-24 실측 60초, 서버 처리가 병목이라 더 줄일 수 없다).
+      // 남은 건 '기다릴 수 있게' 만드는 것 — 몇 초쯤 걸리는지·닫지 말라고 분명히 알린다.
+      btn.textContent = '보내는 중… (30초~1분)';
+      $('msgEl').textContent = '📤 사진을 올리고 있어요 — 30초에서 1분쯤 걸립니다. 이 창을 닫지 말고 잠시만 기다려 주세요.';
 
       var videoFile = $('f_video').files[0];
       var video = null;
