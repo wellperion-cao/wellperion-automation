@@ -4203,14 +4203,54 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
 
     <h3 id="m1-publish-scripts"><span class="ico">🚀</span>5채널 발행 방식 — 스크립트 레퍼런스</h3>
     <table>
-      <tr><th>채널</th><th>발행 방식</th><th>스크립트 / 명령</th><th>비고</th></tr>
-      <tr><td>인스타그램</td><td>✅ 자동 발행</td><td><code>scripts/instagram_upload_playwright.py</code></td><td>M3 [승인] 후 봇이 자동 실행</td></tr>
-      <tr><td>네이버 블로그</td><td>✅ 자동 공개발행</td><td><code>scripts/naver_blog_upload_playwright.py</code></td><td>GM 텔레그램 [승인] 시 워처가 자동 공개발행(2026-07-13~) · 회수·정정만 GM 직접</td></tr>
-      <tr><td>네이버 카페</td><td>✅ 자동 공개발행</td><td><code>scripts/cafe_upload_playwright.py</code></td><td>동부이촌동 카페 자동 공개발행(등록 자동, 2026-07-13~) · 회수·정정만 GM 직접</td></tr>
-      <tr><td>카카오채널</td><td>✅ 스크립트 직접 발행</td><td><code>scripts/kakao_channel_upload_playwright.py --mode publish</code></td><td>승인 후 직접 실행</td></tr>
-      <tr><td>당근채널</td><td>✅ 스크립트 직접 발행</td><td><code>scripts/danggn_upload_playwright.py --mode publish</code></td><td>쿠키 TTL 8~9h · 당일 반자동(에디터 자동입력 선행)</td></tr>
+      <tr><th>채널</th><th>발행 방식</th><th>스크립트 / 명령</th><th>실패하면</th><th>주소 회수</th></tr>
+      <tbody id="pubch-tbody">
+      <!-- ↓ 아래 행은 ssot/publish_channels.json 이 안 불러와질 때만 보이는 폴백이다.
+           정상 상태에서는 아래 스크립트가 단일 출처에서 다시 그린다(손으로 고치지 말 것 —
+           고칠 값은 ssot/publish_channels.json 에 있다). 2026-07-24 배9964. -->
+      <tr><td>인스타그램</td><td>✅ 자동 발행</td><td><code>scripts/instagram_upload_playwright.py</code></td><td>발행실패</td><td>필수</td></tr>
+      <tr><td>네이버 블로그</td><td>✅ 자동 공개발행</td><td><code>scripts/naver_blog_upload_playwright.py</code></td><td>발행실패</td><td>필수</td></tr>
+      <tr><td>네이버 카페</td><td>✅ 자동 공개발행</td><td><code>scripts/cafe_upload_playwright.py</code></td><td>발행실패</td><td>필수</td></tr>
+      <tr><td>카카오채널</td><td>✅ 자동 발행</td><td><code>scripts/kakao_channel_upload_playwright.py --mode publish</code></td><td>수동발행대기</td><td>없음</td></tr>
+      <tr><td>당근채널</td><td>✅ 자동 발행</td><td><code>scripts/danggn_upload_playwright.py --mode publish</code></td><td>수동발행대기</td><td>없음</td></tr>
+      </tbody>
     </table>
-    <div class="callout tip"><strong>발행 원칙.</strong> 모든 채널은 M3 검수 큐 → GM [승인] 후에만 발행합니다. 우회·손편집 금지.</div>
+    <p style="font-size:12px;color:var(--dim);margin-top:6px;">
+      이 표는 <strong>ssot/publish_channels.json</strong>(발행 방식 단일 출처)에서 그려집니다 —
+      값을 바꾸려면 코드를 먼저 바꾸고 그 파일을 맞춘 뒤 <code>scripts/publish_channels_check.py</code> 로 대조하세요.
+      화면에서 손으로 고치면 다시 갈라집니다.
+      <span id="pubch-src" style="margin-left:6px;"></span>
+    </p>
+<!-- ══ 🚀 채널별 발행 방식 단일출처 렌더 (정본 = ssot/publish_channels.json · 사본 금지) ══ -->
+<script>
+(function(){
+  var URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/ssot/publish_channels.json';
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  fetch(URL+'?t='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var chs=(data&&data.channels)||[];
+      var tb=document.getElementById('pubch-tbody');
+      // 값이 비면 HTML 폴백을 그대로 둔다(빈 표·위장 0 금지 — kpi.json 렌더와 같은 규칙)
+      if(!tb||!chs.length) return;
+      tb.innerHTML=chs.map(function(c){
+        var how=c.auto_publish?'✅ 자동 발행':'⚠️ 수동';
+        var cmd=esc(c.publisher)+(c.publisher_mode?' --mode '+esc(c.publisher_mode):'');
+        var url=(c.url_recovery==='required')?'필수':'없음';
+        return '<tr><td>'+esc(c.label)+'</td><td>'+how+'</td><td><code>'+cmd+'</code></td>'+
+               '<td>'+esc(c.status_on_fail)+'</td><td>'+url+'</td></tr>';
+      }).join('');
+      var pol=(data['판정_중심축']||{})['미상채널_정책']||{};
+      var src=document.getElementById('pubch-src');
+      if(src&&pol.status){
+        src.innerHTML='· 목록에 없는 채널이 오면 발행하지 않고 <strong>'+esc(pol.status)+'</strong> 로 두고 경고합니다.';
+      }
+    })
+    .catch(function(){ /* fetch 실패 시 HTML 폴백 유지 */ });
+})();
+</script>
+<!-- ══ /채널별 발행 방식 단일출처 렌더 ══ -->
+    <div class="callout tip"><strong>발행 원칙.</strong> 모든 채널은 검수 큐 → GM [승인] 후에만 발행합니다. 우회·손편집 금지.</div>
     <div class="callout tip" style="margin-top:8px;"><strong>2026-07-20 완성 — 승인 카드 1장 → 5채널 동시 발행.</strong> IG+형제채널이 카드 1장으로 묶여 오며 [승인] 1번으로 5채널이 함께 나갑니다. 위 상태 배지의 <strong>🔎 확인필요</strong>는 "게시는 됐는데 링크만 못 받아온" 경우 — 재발행하지 않습니다. 형제채널이 안 갖춰진 채 IG만 등록되면 GM 업무보고방으로 경보가 갑니다. 상세 정의 = <strong>S2 AI-CMO 탭 '발행 루프 6단계'</strong> 참고.</div>
 
     <div class="source">SSOT: instagram/_README.md 기반 · 2026-05-23 GM 결재</div>
@@ -4222,9 +4262,9 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
     <table>
       <tr><th>단계</th><th>동작</th><th>비고</th></tr>
       <tr><td><strong>① 텔레그램 알림</strong></td><td>1줄 보고(한줄 제목/한줄 내용) + montage 미리보기 송부</td><td>토큰 stdout 노출 금지</td></tr>
-      <tr><td><strong>② M3 검수 큐 자동 등록</strong></td><td><code>cmo/review/review_queue.json</code>에 항목 추가, <code>status="검수 대기"</code></td><td>review_set_status 호환 스키마 · M3 페이지 참조</td></tr>
+      <tr><td><strong>② 검수 큐 자동 등록</strong></td><td><code>cmo/review/review_queue.json</code>에 항목 추가, <code>status="검수대기"</code></td><td>review_set_status 호환 스키마 · 이 페이지(M1) 상단 검수 목록에 표시</td></tr>
     </table>
-    <div class="callout"><strong>기본 종료 = 텔레그램 알림 + M3 검수 대기 등록.</strong> 앞으로 GM이 "검수 큐에 올려라"라고 따로 지시하지 않아도, 제작 완료 시 ①+②가 기본이다. 발행 승인 게이트는 GM 텔레그램 [승인] (비가역).</div>
+    <div class="callout"><strong>기본 종료 = 텔레그램 알림 + 검수대기 등록.</strong> 앞으로 GM이 "검수 큐에 올려라"라고 따로 지시하지 않아도, 제작 완료 시 ①+②가 기본이다. 발행 승인 게이트는 GM 텔레그램 [승인] (비가역).</div>
 
     <details class="toggle" style="margin-top:30px;">
       <summary style="font-weight:700;font-size:1.02rem;">📎 참고·규칙 <span style="color:var(--dim);font-weight:400;font-size:12px;">홈페이지 · 폴더 · output · 안내 가이드 — 펼쳐 보기</span></summary>

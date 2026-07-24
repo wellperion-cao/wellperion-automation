@@ -687,7 +687,8 @@ def dispatch_publish(it: dict, events: list) -> None:
     ch(channel 필드) 기준:
       블로그 → publish_blog (exit 0 = 완료, URL 있으면 기록)
       카페   → publish_cafe (exit 0 = 완료, URL 있으면 기록)
-      카카오·당근 → 자동발행 안 함, 텔레그램 수동 알림 + status='수동발행대기'
+      당근   → publish_danggn (성공=발행완료 / 실패·세션만료=수동발행대기 폴백)
+      카카오 → publish_kakao  (성공=발행완료 / 실패=수동발행대기 폴백)
       인스타그램 → 기존 publish_item (URL 회수 필수)
       그 외(알 수 없는 채널) → 발행하지 않고 경고 (2026-07-23 배9598)
 
