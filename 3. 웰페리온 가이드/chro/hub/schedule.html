@@ -129,7 +129,8 @@
   .mday,.mcov,.mcell{border-right:1px solid var(--line2)}
   .mname{border-right:1px solid var(--line)}
   .celledit{width:100%;height:38px;border:2px solid var(--bronze);border-radius:6px;text-align:center;font-size:13.5px;font-family:inherit;background:#fff;color:var(--ink);padding:0 2px}
-  .mcell.sat{background:#f0f4f9} .mcell.sun{background:#faf0ee} .mcell.hol{background:#f8f2e2}
+  /* 주말 = 배경 대신 근무시간 글자색 (토=파랑 · 일=빨강) */
+  .mcell.sat .tx-work{color:var(--blue)} .mcell.sun .tx-work{color:var(--red)}
   .mcell.today{border-left:2.5px solid #c0463d;border-right:2.5px solid #c0463d}
   .mrow:last-child .mcell.today{border-bottom:2.5px solid #c0463d}
   .mo-closed{color:#6b6156;font-weight:800;font-size:13.5px}
@@ -166,14 +167,14 @@
   .wday,.wcov,.wslot{border-right:1px solid var(--line2)}
   .wname{border-right:1px solid var(--line)}
   .wslot:hover{background:var(--raise)}
-  .wslot.sat{background:#f0f4f9} .wslot.sun{background:#faf0ee} .wslot.hol{background:#f8f2e2}
-  .wslot.sat:hover,.wslot.sun:hover,.wslot.hol:hover{background:var(--raise)}
+  .wslot.sat .tx-work{color:var(--blue)} .wslot.sun .tx-work{color:var(--red)}
   .wslot.today{border-left:2.5px solid #c0463d;border-right:2.5px solid #c0463d}
   .wrow:last-child .wslot.today{border-bottom:2.5px solid #c0463d}
   .plus{opacity:0;color:var(--faint);font-size:16px;font-weight:400;transition:.15s}
   .wslot:hover .plus{opacity:.8}
   /* 휴무 = 칸 전체 옅은 배경 (요일 색·오늘 강조보다 우선 — 뒤에 선언) */
-  .mcell.c-hu,.wslot.c-hu,.mcell.c-yc,.wslot.c-yc,.mcell.c-hg,.wslot.c-hg,.mcell.c-gh,.wslot.c-gh{background:#e3ddd3}
+  /* 배경색은 연차·휴관·반차·대휴만 — 휴·공휴는 배경 없이 글자만 */
+  .mcell.c-yc,.wslot.c-yc,.mcell.c-hg,.wslot.c-hg{background:#e3ddd3}
   .mcell.c-bc,.wslot.c-bc{background:#e2eef9}
   .mcell.c-dh,.wslot.c-dh{background:#e3f2ea}
 
