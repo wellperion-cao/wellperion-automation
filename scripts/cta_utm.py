@@ -73,7 +73,11 @@ _INQ_RE = re.compile(r"((?:https?://)?wellperion\.com/ko/inquiry)/?(?![\w./?=#-]
 # ─────────────────────────────────────────────────────────────
 
 # 텍스트 CTA 표준 1줄 (UTM 없음 — 사람 눈에 깨끗한 도메인만)
-CLEAN_CTA_TEXT = "문의 : wellperion.com/ko/inquiry"
+# 2026-07-24 GM 결재: 콜론 앞 공백 제거 — 약속 L07 표기('문의: …')와 통일.
+# 이전 값 "문의 : wellperion.com/ko/inquiry" (콜론 앞 공백). 이미 발행된 글은 손대지 않는다.
+# ※ CTA 인식·중복제거는 전부 URL 부분일치로 하므로(strip_inquiry_cta_lines·
+#   ensure_single_clean_cta) 이 문구가 바뀌어도 옛 CTA 줄을 못 잡아 중복 삽입되는 일은 없다.
+CLEAN_CTA_TEXT = "문의: wellperion.com/ko/inquiry"
 
 # IG 캡션 표준 유도 1줄 (원칙 ⑤-2) — URL 없이 프로필 링크만 가리킨다
 IG_BIO_CTA_TEXT = "프로필 링크로 편하게 문의해 주세요."

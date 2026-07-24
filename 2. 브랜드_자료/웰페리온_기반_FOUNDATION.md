@@ -91,7 +91,7 @@
 - **폰트:** **Pretendard** (Bold=한글 헤딩 · SemiBold=본문 · Medium=부가정보). 정본=`scripts/brand_constants.py` FONT_BOLD/FONT_SEMIBOLD/FONT_MEDIUM. (유료 ITC Avant Garde/Hudson NY의 승인된 자동화 대체)
 
 ### 3-6. CTA · 해시태그 [브리프]
-- **CTA(전 채널 공통·한 줄·한국어):** `문의 : wellperion.com/ko/inquiry`. 채널별 삽입 규칙(카드형/텍스트형/IG bio유도 등) 정본 = `scripts/cta_utm.py`(2026-07-20 GM 승인) — 여기서 재서술 안 함.
+- **CTA(전 채널 공통·한 줄·한국어):** `문의: wellperion.com/ko/inquiry`. 채널별 삽입 규칙(카드형/텍스트형/IG bio유도 등) 정본 = `scripts/cta_utm.py`(2026-07-20 GM 승인) — 여기서 재서술 안 함.
 - **해시태그 순서 고정:** ① 지역+종목(`#한남동골프`) → ② 종목·주제·타깃 → ③ `#웰페리온 #WELLPERION` 끝 2개 고정.
 
 ---
