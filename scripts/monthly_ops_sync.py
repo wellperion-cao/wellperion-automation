@@ -44,6 +44,16 @@ HOME_KPI_URL = (
 
 GATE = os.environ.get("MONTHLY_SYNC_APPLY", "0").strip() == "1"
 
+_SCRIPTS_DIR_FOR_WORKLOG = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR_FOR_WORKLOG not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR_FOR_WORKLOG)
+
+try:  # 작업 현황 로그(best-effort) — 임포트 실패해도 반영 흐름 무영향
+    from worklog import log as worklog_log
+except Exception:
+    def worklog_log(*a, **k):
+        return False
+
 
 def now_iso() -> str:
     return datetime.now().strftime("%Y-%m-%dT%H:%M")
@@ -294,8 +304,17 @@ def run(month: str | None, apply: bool) -> None:
         PLAN_FILE.write_text(
             json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"[반영] {PLAN_FILE.name} 저장 완료 — 커밋은 호출측/워처.")
+        # 작업 현황 로그(best-effort) — dry-run 시엔 남기지 않음(실행 1회당 1줄)
+        worklog_log(
+            "coo", "월간계획", f"월간 운영계획 진척 자동 반영 — {changed}개 목표 갱신",
+            result="ok", detail=f"{month} · 자동판정 {n_auto}건 중 변경 {changed}건", ref=month,
+        )
     elif live:
         print("[반영] 변경 없음 — 저장 생략.")
+        worklog_log(
+            "coo", "월간계획", "월간 운영계획 자동 반영 실행 — 갱신된 목표 없음",
+            result="warn", detail=f"{month} · 자동판정 {n_auto}건 모두 기존값과 동일", ref=month,
+        )
     else:
         print("[드라이런] 파일 무변경. 라이브=MONTHLY_SYNC_APPLY=1 + --apply")
 

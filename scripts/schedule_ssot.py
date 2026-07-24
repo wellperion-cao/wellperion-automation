@@ -4,10 +4,21 @@ SSOT = status/schedule_ssot.json (반복 의무·이벤트, type으로 종류 �
 정본은 JSON, 이 모듈은 소비자. gate.auto_workapproval=False(기본)면 '무엇을 만들지'만
 반환/로그하고 업무·결재를 건드리지 않는다."""
 import json
+import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 CAL_PATH = Path(__file__).resolve().parent.parent / "status" / "schedule_ssot.json"
+
+_SCRIPTS_DIR_FOR_WORKLOG = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR_FOR_WORKLOG not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR_FOR_WORKLOG)
+
+try:  # 작업 현황 로그(best-effort) — 임포트 실패해도 선별 흐름 무영향
+    from worklog import log as worklog_log
+except Exception:
+    def worklog_log(*a, **k):
+        return False
 
 REQUIRED_ITEM_KEYS = ["id", "name", "category", "dept", "cycle", "cycle_confirmed",
                        "legal_basis", "last_done", "next_due"]
@@ -132,3 +143,12 @@ if __name__ == "__main__":
           f"(gate.auto_workapproval={cal['gate']['auto_workapproval']})")
     for p in plan["proposals"]:
         print("  →", p["title"], f"(D-{p['dday']})" if p["dday"] is not None else "")
+
+    # 작업 현황 로그(best-effort) — 실행 1회당 선별 결과 요약 1줄
+    worklog_log(
+        "coo", "일정",
+        f"전사 일정 기한 도래 선별 — 임박·초과 {plan['count']}건 확인",
+        result=("warn" if errs else "ok"),
+        detail=("; ".join(errs[:3]) if errs else f"검증 통과 · 등록 {summarize(cal)['total']}건 대상"),
+        ref="schedule_ssot",
+    )

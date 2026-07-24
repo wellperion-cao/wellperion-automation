@@ -48,6 +48,16 @@ OUTS = [
     os.path.join(BASE, "3. 웰페리온 가이드", "coo", "todo", "업무판 채움 보드.html"),
     os.path.join(BASE, "status", "boards", "s3_cleanup_board.html"),
 ]
+_SCRIPTS_DIR_FOR_WORKLOG = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPTS_DIR_FOR_WORKLOG not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR_FOR_WORKLOG)
+
+try:  # 작업 현황 로그(best-effort) — 임포트 실패해도 보드 생성 흐름 무영향
+    from worklog import log as worklog_log
+except Exception:
+    def worklog_log(*a, **k):
+        return False
+
 PAGES = "https://wellperion-cao.github.io/wellperion-automation/coo/todo/"
 LINK_TODO = PAGES + "%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html"
 LINK_RULE = PAGES + "%EC%97%85%EB%AC%B4%C2%B7%EA%B2%B0%EC%9E%AC%20%EC%9A%B4%EC%98%81%20%EA%B8%B0%EC%A4%80.html"
@@ -448,6 +458,16 @@ def main():
         os.makedirs(os.path.dirname(out), exist_ok=True)
         with open(out, "w", encoding="utf-8") as f:
             f.write(html)
+
+    # 작업 현황 로그(best-effort) — 실행 1회당 보드 생성 요약 1줄
+    worklog_log(
+        "coo", "업무판",
+        f"업무판 채움 보드 갱신 — 진행 {S['act']}건 · 완비 {S['complete']}건 · "
+        f"미등록 {S['unlinked']}건 · 쉬는중 {S['rest']}건",
+        result="ok",
+        detail=f"마감일 미기재 {S['need_sched']}건 · 점수 미기재 {S['need_score']}건",
+        ref=S["date"],
+    )
 
     if a.json:
         print(json.dumps(S, ensure_ascii=False))
