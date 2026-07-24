@@ -14,7 +14,7 @@
     --border:#3d3835; --border-strong:#4d4845;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:13px; -webkit-font-smoothing:antialiased; padding:18px 16px 40px;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:13px; -webkit-font-smoothing:antialiased; padding:18px 16px 40px; overflow-x:hidden;}
   .wrap{max-width:100%; margin:0;}
 
   header.page-head{margin-bottom:14px; padding-bottom:12px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 16px;}
@@ -66,7 +66,7 @@
 
   /* ── 섹션1: 상시 자율 루틴 카드 ── */
   .routines{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:11px;}
-  .rcard{position:relative; background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--rc,var(--accent)); border-radius:11px; padding:12px 14px 13px;}
+  .rcard{position:relative; background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--rc,var(--accent)); border-radius:11px; padding:12px 14px 13px; min-width:0;}
   .rcard-top{display:flex; align-items:flex-start; gap:9px; margin-bottom:8px;}
   .rcard-ico{font-size:22px; line-height:1; flex-shrink:0;}
   .rcard-tt{flex:1; min-width:0;}
@@ -82,7 +82,7 @@
   .rrow{display:flex; gap:6px; font-size:11.5px; line-height:1.5; padding:2px 0; border-top:1px dashed var(--border); margin-top:2px;}
   .rrow:first-of-type{border-top:none;}
   .rrow .rk{color:var(--dim); min-width:56px; flex-shrink:0;}
-  .rrow .rv{color:var(--text-soft); flex:1;}
+  .rrow .rv{color:var(--text-soft); flex:1; min-width:0; word-break:keep-all; overflow-wrap:break-word;}
   .rrow .rv b{color:var(--text);}
 
   /* ── 섹션2: 통합 피드 ── */
@@ -155,7 +155,7 @@
   details.coo-details summary::-webkit-details-marker{display:none;}
   details.coo-details summary::before{content:'▸'; display:inline-block; margin-right:6px; color:var(--dim); transition:transform .15s;}
   details.coo-details[open] summary::before{transform:rotate(90deg);}
-  details.coo-details .coo-tbl-wrap{overflow-x:auto; margin-top:9px;}
+  details.coo-details .coo-tbl-wrap{overflow-x:auto; max-width:100%; margin-top:9px;}
   details.coo-details table{border-collapse:collapse; width:100%; min-width:480px; font-size:12px; background:var(--surface); border-radius:8px; overflow:hidden;}
   details.coo-details th, details.coo-details td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top; color:var(--text-soft);}
   details.coo-details th{background:var(--paper); font-weight:700; color:var(--text); font-size:11px;}
@@ -166,7 +166,7 @@
   .coo-tag.wait{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
 
   /* ── 🚢 진행·정박 미션 표뷰(카드 나열 → 표 전환 · GM 지시 2026-07-22) ── */
-  .gtbl-wrap{overflow-x:auto; margin:2px 0 4px;}
+  .gtbl-wrap{overflow-x:auto; max-width:100%; margin:2px 0 4px;}
   .gtbl{border-collapse:collapse; width:100%; min-width:520px; font-size:12.5px; background:var(--surface); border-radius:8px; overflow:hidden;}
   .gtbl th, .gtbl td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top; color:var(--text-soft);}
   .gtbl th{background:var(--paper); font-weight:700; color:var(--text); font-size:11.5px;}
@@ -254,7 +254,7 @@
   #layer-automation h3{font-size:14.5px; font-weight:800; letter-spacing:-0.01em; margin:22px 0 4px; color:var(--text);}
   #layer-automation h3:first-of-type{margin-top:4px;}
   #layer-automation h4{font-size:12.5px; font-weight:700; margin:14px 0 4px; color:var(--text-soft);}
-  #layer-automation .tbl-wrap{overflow-x:auto; margin:10px 0 16px;}
+  #layer-automation .tbl-wrap{overflow-x:auto; max-width:100%; margin:10px 0 16px;}
   #layer-automation table{border-collapse:collapse; width:100%; min-width:560px; margin:0; font-size:12.5px; background:var(--surface); border-radius:8px; overflow:hidden;}
   #layer-automation th,#layer-automation td{border:1px solid var(--border); padding:8px 11px; text-align:left; vertical-align:top; color:var(--text-soft);}
   #layer-automation th{background:var(--paper); font-weight:700; color:var(--text); font-size:11.5px;}
