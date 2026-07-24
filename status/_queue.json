@@ -1608,5 +1608,35 @@
     "short_no": 66,
     "module": "home",
     "surface": "autonomy"
+  },
+  {
+    "task_id": "CPO-2026-07-24-ADHOC-37a0077ad",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-24",
+    "processed_at": "2026-07-24",
+    "ship_no": 10048,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 37a0077ad)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "37a0077adf6af60aa2ff5c58075a88156751d114"
+  },
+  {
+    "task_id": "CTO-2026-07-24-전사-빠진-것-스캔이-마케팅-콘텐츠-발행-스크립트에",
+    "clevel": "cto",
+    "title": "[시토] 전사 '빠진 것' 스캔이 마케팅 콘텐츠 발행 스크립트에 얹혀 있음 — 자기 트리거 없음",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-24",
+    "from": "coo",
+    "note": "[시우 → 시토 전달 2026-07-24] 시우 2026-07-24 실측. 전 C-Level 공용 '빠진 것' 감지기(scripts/worklog_gaps.py)는 회사 전체 규칙 15개(cmo 8·coo 4·cpo 3)를 돌려 status/worklog_gaps.json 을 갱신한다. GM·각 C-Level 화면(O1·M1·회원 페이지)이 이 파일을 읽는다. ▶문제: 이 스캔을 부르는 곳이 저장소 전체에서 딱 한 군데다 — scripts/ai_daily_series_card.py:139 (AI하루 콘텐츠 카드 발송). 예약작업은 Wellperion-IG-Series-Produce-0730 하나. 즉 회사 전체의 '빠진 것' 적발이 마케팅 콘텐츠 1개 시리즈의 발행 스크립트에 얹혀 있다. ▶결과: 그 시리즈가 쉬거나·끝나거나·실패하면 전사 스캔이 조용히 멈춘다(예외를 삼키는 best-effort 호출이라 알림도 없다). 실제로 오늘 부팅 시 화면 숫자가 전날 20:41 것으로 멈춰 있었다. ▶성격: 특정 규칙의 버그가 아니라 트리거 소유가 잘못된 구조 문제. 스캔은 도메인 중립 공용 인프라인데 한 도메인 산출물의 부산물로 돌고 있다. ▶시우가 손대지 않은 이유: 내 예약작업(MonthlyOps-Sync 07:00 등)에 하나 더 얹으면 같은 안티패턴이 두 벌이 된다(점수리). 트리거 소유를 바로잡는 게 근본.",
+    "next": "스캔에 자기 트리거를 줄 것. 후보 2안: (A)전용 예약작업 1개 신설(예 Wellperion-Worklog-Gaps-0700, 다른 아침 보고들이 읽기 전에 먼저 돌게) — 소유가 명확해짐 (B)웰리 예약 러너(Wellperion-Welly-Auto-Runner-0730) 안에 편입 — 새 작업 없이 전사 성격에 맞음. 시우 의견=(A). 어느 쪽이든 ①ai_daily_series_card.py 안의 편승 호출은 제거(중복 실행·죽은 경로 방지) ②스캔 실패 시 조용히 넘어가지 말고 흔적을 남길 것(현재 예외를 통째로 삼킴). 완료 후 시우에 1줄 회신.",
+    "depends_on": "",
+    "ship_no": 10049,
+    "short_no": 67,
+    "module": "home",
+    "surface": "autonomy"
   }
 ]
