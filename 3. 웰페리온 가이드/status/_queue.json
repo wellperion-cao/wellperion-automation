@@ -1623,19 +1623,6 @@
     "adhoc_commit": "a4079bb00029a77cfe0187a30ca5bad6dfb2f258"
   },
   {
-    "task_id": "CPO-2026-07-24-PRODUCT-PLAN-SILENT-SAVE",
-    "ship_no": 10062,
-    "clevel": "cpo",
-    "status": "DONE",
-    "terminal": true,
-    "priority": "⛴️여객선",
-    "created_at": "2026-07-24 12:35",
-    "done_at": "2026-07-24 12:35",
-    "title": "[시포] 상품기획 페이지 조용한 저장실패 근본수리 — no-cors 제거",
-    "note": "오늘 컨택 유실 사고(FB260724-104742) 뒤 회원 도메인 전수 점검에서 발견. 회원관리·휴회접수·문의 GAS 는 이미 방어돼 있었고(대조키·응답 실판독·실패 표면화) 위험은 상품기획.html 한 곳에 몰려 있었다 — 이 파일만 옛 no-cors 패턴 잔존(INC-013 동일 뿌리). 실측 3건: ①savePolicyTable=서버 거부·네트워크 끊김에도 항상 '저장 완료' 문구(catch 조차 '저장 완료(응답 확인 불가)'라고 명시) ②savePlan=성공·실패 모두 900ms 뒤 목록 재조회만, 안내 0 → 실패 시 목록이 옛 상태로 조용히 되돌아감 ③deletePlan=백엔드가 실제로 {ok:false,'해당 id 없음'}을 반환하는데(이중클릭·동시편집서 도달) 보지도 않고 '삭제 완료' 표시. 수리: _todoPost 신설(text/plain+redirect:follow 로 {ok,error} 실판독 — membership.html apiPost 와 동일 검증된 방식, 새 방식 발명 없음) → 3경로 전환 + 실패를 화면에 표면화. ★submitPlan 이 저장 전에 closeModal() 하던 것을 성공 시에만 닫도록 수정(실패 시 공들여 쓴 기획안이 사라지던 구조 = 오늘 컨택 모달과 동일). 재현 검증(fetch 스텁): 서버거부→false+사유 안내 / 통신끊김→false+안내 / 정상→true+저장완료. JS 오류 0. no-cors 코드 잔존 0.",
-    "next": "회원 도메인 조용한 실패 경로는 정리 완료. 다음 후보=배1037 갈래B ①VOC·종합접수처 확산인데 그 두 곳은 시우(COO) 도메인 → 직접 수정 대신 이 _todoPost/실패표면화 패턴을 정리해 시우에게 배로 전달."
-  },
-  {
     "task_id": "COO-2026-07-24-GM-결재-5건-처리-58일-적체-해소-승인-2-정",
     "clevel": "coo",
     "title": "[시우] GM 결재 5건 처리 — 58일 적체 해소 (승인 2·정리 3)",
@@ -2231,5 +2218,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 f34d41631)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f34d416312b87ede3cfbb418ad23c31cdb4fe8a6"
+  },
+  {
+    "task_id": "CPO-2026-07-24-ADHOC-ea4e779af",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-24",
+    "processed_at": "2026-07-24",
+    "ship_no": 10105,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 ea4e779af)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "ea4e779afdc8ce38306baa407bfead8cf9c9e3e0"
   }
 ]
