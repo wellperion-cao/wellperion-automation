@@ -837,6 +837,37 @@
       },
       "reversible": true,
       "note": "생성=scripts/ops_fill_board.py (--json 수치만 · --send 카톡 발송 · --date 기준일 지정). 예약=Wellperion-COO-FillBoard-Mon-1000 (매주 월 10:00 · launchers/ops_fill_board_weekly_hidden.vbs → scripts/ops_fill_board_weekly.bat · 로그 logs/ops_fill_board.log · 역롤백=작업 비활성화). ★시각 선정 근거(2026-07-23 실측): 07:30은 이미 3개 예약이 겹쳐 git 락 경합 위험, 09:30은 카톡 매출보고가 카톡 창을 점유해 오발송 위험 → 그 뒤인 10:00. 실무진 착석 후라 실제로 읽힘. 출력 2곳: 3. 웰페리온 가이드/coo/todo/업무판 채움 보드.html(실무진 공개) · status/boards/s3_cleanup_board.html(GM 아티팩트 소스) — 같은 실행에서 함께 써 드리프트 0. ★빈칸·정체 합계가 0이면 발송을 자동 생략한다(채울 게 없는데 매주 보내면 잔소리가 된다). 발송은 --only-room '★ 운영부' 고정 — 회장님·관리부 방 오발송 차단. 경영진(김남욱GM·이정헌 소장) 건은 월간 운영계획 소관이라 보드에서 제외하고 사유를 화면에 명시. 완료 신호=완비 N/N 도달 시 보드 역할 축소(상시 위생 점검 전환)."
+    },
+    {
+      "id": "cmo-content-intake",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "강사·직원 콘텐츠 접수건 자동 수집 → 검수큐 등록 + GM 카드 발송 (별도 화면 없이 GM께 찾아옴)",
+      "data_source": {
+        "kind": "gas",
+        "ref": "instructor_intake GAS doGet(action=rows, 토큰가드) → scripts/cmo_intake_to_review.py → review_queue.json(status=접수검토) · exec URL 은 접수 페이지 HTML 에서 추출(단일 출처)"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "GM 업무보고봇"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "Wellperion-CMO-Content-Intake-15min 예약작업(15분)→launchers/cmo_intake_to_review_hidden.vbs. 멱등(.intake_card_sent.json)으로 재발송 0, 토큰 미설정이면 안내 후 정상 종료(조용한 실패 없음). AI 세션 불요",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
     }
   ]
 }
