@@ -107,14 +107,13 @@ function myShips(cwd, role) {
  *  시각은 '가장 최근 커밋'에서 가져오되, 배 번호는 제목에 번호가 없을 수도 있어
  *  번호가 나올 때까지 내 커밋을 거슬러 찾는다(제목이 '배 현황' 같은 말이면 번호가 없다). */
 /** 배 제목을 상태줄용으로 줄인다. 앞의 '[시포] ' 같은 역할 꼬리표는 이미 옆에 닉네임이 있어 군더더기라 뗀다.
- *  ★단어 중간에서 어색하게 자르지 않는다 — 구분자(— · ( /)가 한도 안에 있으면 거기서 끊는다(GM 품격 기준). */
-function shortTitle(t, max = 18) {
-  let s = String(t || '').replace(/^\s*\[[^\]]{1,10}\]\s*/, '').trim();
+ *  ★표시문자 12자 상한(GM 07-24 폭 사고 재발 방지) — 한글·이모지가 섞이므로 코드포인트 단위(Array.from)로
+ *  자른다. 바이트/UTF-16 slice 는 서로게이트 페어(일부 이모지)를 반으로 쪼개 깨질 수 있다. */
+function shortTitle(t, max = 12) {
+  const s = String(t || '').replace(/^\[[^\]]*\]\s*/, '').trim();
   if (!s) return '';
-  if (s.length <= max) return s;
-  const cut = s.slice(0, max);
-  const at = Math.max(cut.lastIndexOf(' — '), cut.lastIndexOf(' · '), cut.lastIndexOf(' ('), cut.lastIndexOf(' /'));
-  return (at >= max * 0.5 ? cut.slice(0, at) : cut.trimEnd()) + '…';
+  const chars = Array.from(s);
+  return chars.length > max ? chars.slice(0, max).join('') + '…' : s;
 }
 
 function myLastCommit(cwd, role) {
@@ -163,7 +162,7 @@ function main() {
     // 마지막 커밋에서 뽑은 번호로 폴백(그건 '방금 끝낸 배'일 수 있어 뒤로 뺀다).
     if (s && s.cur) {
       const n = (s.shortOf[s.cur.no] != null) ? s.shortOf[s.cur.no] : s.cur.no;
-      head += `${C}▶${n}${X}` + (s.cur.title ? ` ${s.cur.title} ` : '');   // 제목 뒤 한 칸 — '재설계…·7분전'처럼 붙어 읽히지 않게
+      head += `${C}▶${n}${X}` + (s.cur.title ? ` ${D}${s.cur.title}${X} ` : '');   // 제목=흐리게(번호·시간 먼저 눈에), 뒤 한 칸은 '재설계…·7분전'처럼 붙어 읽히지 않게
     } else if (lc && lc.ship != null) {
       const n = (s && s.shortOf[lc.ship] != null) ? s.shortOf[lc.ship] : lc.ship;
       head += `${D}✓${n}${X}`;   // 진행중 없음 = 방금 끝낸 배 표시(진행중과 헷갈리지 않게 다른 기호)
