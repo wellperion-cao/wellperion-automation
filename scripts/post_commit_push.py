@@ -65,6 +65,15 @@ def _telegram_warn(root: str, text: str) -> None:
                 chat_id = line.split("=", 1)[1].strip().strip('"').strip("'")
         if not token or not chat_id:
             return
+        # ★2026-07-24 GM 지시: 자동 push 실패 같은 기계 알림은 **확인방(자동화현황방)** 으로.
+        #   GM 이 손으로 할 일이 아니다(워처가 스스로 재시도해 대개 몇 분 안에 풀린다).
+        #   분류 판단은 scripts/alert_router.py 한 곳에서만 한다(약속 L01).
+        try:
+            sys.path.insert(0, str(Path(root) / "scripts"))
+            from alert_router import TECH_CHECK, route
+            chat_id = route(TECH_CHECK)
+        except Exception:
+            pass  # 라우터를 못 읽으면 기존 대상 유지 — 알림 자체를 잃지 않는다
         import urllib.parse
         import urllib.request
 

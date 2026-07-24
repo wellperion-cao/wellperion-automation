@@ -1770,5 +1770,32 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 dd22b737e)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "dd22b737ee5669eec02aaa82d3059d6600a922fa"
+  },
+  {
+    "task_id": "CTO-2026-07-24-MORNING-BRIEF-0800-SEND-FAIL",
+    "clevel": "cto",
+    "title": "[시토] 08:00 오늘의 항로 보고가 통째로 발송 실패 — GM 미수신 (토큰 로딩 공통 결함 의심)",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "from": "cto",
+    "origin": "incident",
+    "ship_no": 10072,
+    "enqueued_at": "2026-07-24",
+    "note": "2026-07-24 텔레그램 헬스체크 경보(13:00 \"발송 실패 6건\")를 파고들다 발견. ★GM이 오늘 아침 08:00 「오늘의 항로」 보고를 못 받았다 — 5조각 전부 발송 실패(08:00:37~42, logs/telegram_sent-2026-07-24.log ok:false). 예약작업 Wellperion-CEO-Morning-Brief-0800-Live 가 rc=1(실패)로 종료. 나머지 1건(09:15:26)은 시토가 이미 원인 규명·수리한 unassigned_nudge 토큰 미로드 건(09:17 재발송 성공). ★주의: 06:00·07:30 발신은 정상 성공했다 → 봇·토큰·방은 멀쩡하다. 08:00 경로만 죽는다. 유력 가설(미검증): telegram_notifier 가 import 시점에 load_dotenv() 를 인자 없이 불러 작업폴더에 .env 가 없으면 토큰이 빈 문자열이 되는 구조 결함 — 오늘 unassigned_nudge 에서 실증된 것과 같은 뿌리. 08:00 파이프라인이 저장소 루트에서 돌면 같은 함정을 밟는다. 확인 필요. ★영향: 하루 한 번뿐인 GM 아침 항로 보고가 조용히 누락된다(실패해도 아무도 모른다 — 오늘도 13:00 헬스체크가 아니었으면 못 잡았다).",
+    "next": "①Wellperion-CEO-Morning-Brief-0800-Live rc=1 원인 로그 확인 ②telegram_notifier 토큰 로딩을 경로 명시로 고정(공통 결함 — 다른 발신처도 전수 점검) ③실패 시 조용히 넘어가지 않게 — 발송 0건이면 확인방에 즉시 1통 ④내일 08:00 실수신으로 검증(관찰 전 완료 금지)"
+  },
+  {
+    "task_id": "CPO-2026-07-24-ADHOC-d2391bfa6",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-24",
+    "processed_at": "2026-07-24",
+    "ship_no": 10073,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 d2391bfa6)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d2391bfa689be90ea3dee7b7377cdceb99b576c9"
   }
 ]

@@ -327,12 +327,25 @@ def _read_env_token():
     return token, chat
 
 
-def _send_telegram(text):
-    """텔레그램 1줄 발송. 실패해도 발행에 영향 없게 전부 삼킴."""
+def _send_telegram(text, kind="tech_check"):
+    """텔레그램 1줄 발송. 실패해도 발행에 영향 없게 전부 삼킴.
+
+    ★2026-07-24 GM 지시: '연동 다리 끊김' 같은 점검 결과는 **확인방(자동화현황방)** 으로.
+      GM 이 손으로 할 일이 아니라 기계가 스스로 확인한 결과라, GM 업무보고방에 섞이면
+      정작 결정해야 할 건이 묻힌다. 분류 판단은 scripts/alert_router.py 한 곳(약속 L01).
+    """
     try:
         token, chat = _read_env_token()
         if not token or not chat:
             return False
+        try:
+            import sys as _sys
+            from pathlib import Path as _P
+            _sys.path.insert(0, str(_P(__file__).resolve().parent))
+            from alert_router import route
+            chat = route(kind)
+        except Exception:
+            pass  # 라우터를 못 읽으면 기존 대상 유지 — 알림 자체를 잃지 않는다
         data = urllib.parse.urlencode({"chat_id": chat, "text": text}).encode()
         req = urllib.request.Request(
             f"https://api.telegram.org/bot{token}/sendMessage", data=data

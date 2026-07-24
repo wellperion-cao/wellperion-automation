@@ -274,7 +274,18 @@ def _default_rooms(env: dict) -> list[tuple[str, int]]:
 
 # ── 경보 발송 ─────────────────────────────────────────────────────────────────
 def _send_alert(token: str, owner_id: int, message: str, dry_run: bool) -> None:
-    """OWNER DM으로 경보. dry_run=True 면 stdout만."""
+    """경보 발송. dry_run=True 면 stdout만.
+
+    ★2026-07-24 GM 지시로 **확인방(자동화현황방)** 으로 보낸다 — 예전엔 GM 업무보고방이었다.
+      헬스체크 경보는 'GM 이 손으로 할 일'이 아니라 '기계가 스스로 확인한 결과'다.
+      GM 업무보고방에 섞이면 정작 GM 이 결정해야 할 건이 묻힌다.
+      분류 판단은 scripts/alert_router.py 한 곳에서만 한다(약속 L01).
+    """
+    try:
+        from alert_router import TECH_CHECK, route
+        owner_id = route(TECH_CHECK)
+    except Exception as _exc:  # 라우터를 못 읽으면 원래 대상으로 보낸다(알림을 잃지 않는다)
+        print(f"[WARN] 알림 라우터 사용 불가 — 기존 대상 유지: {_exc}", flush=True)
     if dry_run:
         print(f"[DRY-RUN] 경보 발송 생략 → chat_id={owner_id}", flush=True)
         print(f"[DRY-RUN] 메시지:\n{message}", flush=True)
