@@ -1784,12 +1784,17 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
     <div class="card">
       <div class="card-title">
-        <span class="icon">👥</span>멤버십 회원관리
-        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">유효회원 시트 · 편집가능 · 연락처 표시</span>
+        <span class="icon">👥</span><span id="activeCardTitleText">멤버십 회원관리</span>
+        <span id="activeCardSubtitle" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">유효회원 시트 · 편집가능 · 연락처 표시</span>
       </div>
 
       <!-- 현황 요약 카드 (작업 3) -->
       <div id="activeSummary" class="card" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--teal)"></div>
+
+      <!-- 휴회 전용 보기 복귀 버튼(2026-07-24 GM 지시, 배10043 후속) — setHoldOnlyView(true)일 때만 노출.
+           막다른 길 금지: 휴회만 보이는 화면에서 나가는 길이 반드시 있어야 한다. -->
+      <button type="button" id="holdOnlyBackBtn" onclick="setHoldOnlyView(false)"
+        style="display:none;margin-bottom:10px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--paper);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">← 전체 회원 명단 보기</button>
 
       <!-- 휴회 현황 카드(2026-07-22 시포·GM) — 접수대기/진행중/완료/반려 상태별 리스트업(고리 닫기).
            read=라이브 표시(_activeRows 재사용) · write(상태전이=반영/승인)=HOLD_LIVE_T 게이트(GM go). -->
@@ -4309,6 +4314,7 @@ function _memHighlight(el){
   if (el && el.classList) el.classList.add('active');
 }
 function switchTab(id, btn) {
+  if (typeof setHoldOnlyView === 'function') setHoldOnlyView(false);   // 휴회 전용 보기는 다른 탭으로 이동하면 반드시 해제(막다른 길 금지, 2026-07-24 GM)
   document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('active'); });
   document.getElementById('pane-' + id).classList.add('active');
   // 내비 탭 강조: data-tab===id 인 항목만 current, 나머지 제거
@@ -6321,6 +6327,7 @@ function jumpToEndedMembers() {
 
 // 유효/종료 전환 토글 — 시각 갱신 후 해당 scope 재조회
 function setActiveScope(scope, btn) {
+  if (typeof setHoldOnlyView === 'function') setHoldOnlyView(false);   // 스코프 전환(유효/법인/LOSS/대기자 전부 경유)마다 휴회 전용 보기 자동 해제
   _activeScope = (scope === 'ended' || scope === 'corp') ? scope : 'valid';
   document.querySelectorAll('.active-toggle .seg-btn').forEach(function(b){
     b.style.background = 'var(--bg)'; b.style.color = 'var(--dim)'; b.style.borderColor = 'var(--border)';
@@ -7194,7 +7201,9 @@ function renderActiveSummary() {
   var overview = _memberOverviewHtml();
   var cross = _composeHtml();
   if (!overview && !cross) { el.style.display = 'none'; return; }
-  el.style.display = '';
+  // 휴회 전용 보기 중엔 백그라운드 fetch가 늦게 도착해도 계속 숨겨둔다 — setHoldOnlyView(false)가 복귀 시 이 함수를
+  // 다시 불러 최신 데이터로 재계산한다(2026-07-24 GM, 스냅샷 복원 대신 재계산으로 데이터 갱신과 어긋남 방지).
+  el.style.display = (typeof _holdOnlyView !== 'undefined' && _holdOnlyView) ? 'none' : '';
   el.innerHTML = overview + ((overview && cross) ? '<div style="height:1px;background:var(--border);margin:11px 0"></div>' : '') + cross;
 }
 
@@ -8120,14 +8129,58 @@ var _holdIntake = null, _holdIntakeLoading = false, _holdIntakeLoaded = false;
 var HOLD_INTAKE_ORDER = ['접수대기', '진행중', '완료', '반려'];
 var HOLD_INTAKE_STYLE = { '접수대기': { c: 'var(--orange,#c8912b)', i: '🕐' }, '진행중': { c: 'var(--teal)', i: '⏸' }, '완료': { c: 'var(--dim-mid,#8a8a8a)', i: '🏁' }, '반려': { c: 'var(--red)', i: '⛔' } };
 function _hbtn(color) { return 'padding:4px 9px;border-radius:6px;border:1px solid ' + color + ';background:transparent;color:' + color + ';font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit'; }
-// 휴회 회원 관리 진입(2026-07-23 GM) — 유효회원 화면으로 이동한 뒤 카드를 최신으로 불러오고 그 자리로 스크롤.
+// 휴회 전용 보기(2026-07-24 GM 지시, 배10043 후속) — #pane-active 안에서 휴회 카드만 남기고 나머지를 숨긴다.
+//   GM 불편: "멤버십 회원관리랑 휴회 회원 관리 카드랑 같이 묶인건가?" — 휴회 카드를 눌러도 유효회원 명단이
+//   먼저 크게 보이고 휴회 칸은 그 안에 묻혀 있었다. GM 선택 = '휴회 칸만 보이게'.
+//   끌 때는 저장해둔 원래 display 값으로 복원한다(그냥 ''로 되돌리면 원래 숨김이던 #activeSummary가 튀어나온다).
+//   단 #activeSummary는 예외 — 데이터 기반으로 스스로 보임/숨김을 계산하는 renderActiveSummary() 소관이라
+//   스냅샷 대신 그 함수를 다시 불러 최신 데이터 기준으로 재계산한다(숨겨진 동안 데이터가 갱신됐어도 어긋나지 않게).
+var _holdOnlyView = false;
+var _holdOnlyPlainSelectors = ['#activeCardSubtitle', '#pane-active .active-search-wrap', '#activeCount', '#pane-active .reg-table-wrap'];
+var _holdOnlySavedDisplay = null;
+function setHoldOnlyView(on) {
+  on = !!on;
+  if (on === _holdOnlyView) return;   // 이미 같은 상태 — 자동 해제 배선(switchTab·setActiveScope)이 중복 호출해도 안전
+  _holdOnlyView = on;
+  var titleEl = document.getElementById('activeCardTitleText');
+  var backBtn = document.getElementById('holdOnlyBackBtn');
+  var holdCard = document.getElementById('holdStatusCard');
+  var summaryEl = document.getElementById('activeSummary');
+  if (on) {
+    _holdOnlySavedDisplay = {};
+    _holdOnlyPlainSelectors.forEach(function (sel) {
+      var el = document.querySelector(sel);
+      if (!el) return;
+      _holdOnlySavedDisplay[sel] = el.style.display;
+      el.style.display = 'none';
+    });
+    if (summaryEl) summaryEl.style.display = 'none';   // renderActiveSummary()도 _holdOnlyView 가드로 재차 강제(비동기 재계산 방어)
+    if (holdCard) holdCard.style.display = '';
+    if (titleEl) titleEl.textContent = '⏸ 휴회 회원 관리';
+    if (backBtn) backBtn.style.display = '';
+  } else {
+    _holdOnlyPlainSelectors.forEach(function (sel) {
+      var el = document.querySelector(sel);
+      if (!el) return;
+      el.style.display = (_holdOnlySavedDisplay && sel in _holdOnlySavedDisplay) ? _holdOnlySavedDisplay[sel] : '';
+    });
+    _holdOnlySavedDisplay = null;
+    if (typeof renderActiveSummary === 'function') renderActiveSummary();   // 스냅샷 대신 재계산(위 주석 참고)
+    if (titleEl) titleEl.textContent = '멤버십 회원관리';
+    if (backBtn) backBtn.style.display = 'none';
+  }
+}
+// 휴회 회원 관리 진입(2026-07-23 GM) — 유효회원 화면으로 이동한 뒤 카드를 최신으로 불러오고 휴회 전용 보기로 전환.
 //   카드가 목록 안에 묻혀 있어 '만들지 않은 것'으로 보였다. 카드에서 한 번에 닿게 한다.
 function openHoldManage() {
   try { switchTab('active'); setActiveSeg('valid'); } catch (e) {}
+  setHoldOnlyView(true);   // setActiveSeg→setActiveScope가 위에서 이미 false로 리셋하므로 반드시 그 다음에 켠다(순서 어기면 켜자마자 꺼짐).
   _loadHoldIntake(true);
+  // 휴회 전용 보기에선 카드가 이미 상단(제목 바로 아래) 부근이라 명단으로 스크롤하던 옛 로직이 불필요 — 화면 맨 위로만 살짝.
   setTimeout(function(){
     var el = document.getElementById('holdStatusCard');
-    if (el) { el.style.display = ''; try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e2) { el.scrollIntoView(); } }
+    if (el) el.style.display = '';
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e2) { window.scrollTo(0, 0); }
   }, 250);
 }
 
