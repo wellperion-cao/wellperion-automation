@@ -121,7 +121,7 @@
     "from": "gm",
     "origin": "gm",
     "enqueued_at": "2026-07-22",
-    "note": "GM 2026-07-22 지시(시우64 입항 후속). GM 핵심포인트='구조는 좋으나 월간운영계획 내부내용이 계속 진행·자동 반영되고 돌아가는 구조가 되어야 한다 — 실무 및 업무 SSOT 내용 반영이 정말 중요'. 실측 문제=objectives·진척이 수동 PIN 편집이라 정본 파일 2026-07-14 이후 8일 미갱신(정체). 매출 등 라이브 지표는 home_kpi GAS 실시간 fetch로 반영되나, 운영 목표·진척은 사람 손 안 대면 멈춤. 시우 신역할=월간운영계획 페이지 진실검수만(4부서 내부 실무진행=준용M). ▶착수 전 설계·GM 접근 승인 필요.",
+    "note": "GM 2026-07-22 지시(시우64 입항 후속). GM 핵심포인트='구조는 좋으나 월간운영계획 내부내용이 계속 진행·자동 반영되고 돌아가는 구조가 되어야 한다 — 실무 및 업무 SSOT 내용 반영이 정말 중요'. 실측 문제=objectives·진척이 수동 PIN 편집이라 정본 파일 2026-07-14 이후 8일 미갱신(정체). 매출 등 라이브 지표는 home_kpi GAS 실시간 fetch로 반영되나, 운영 목표·진척은 사람 손 안 대면 멈춤. 시우 신역할=월간운영계획 페이지 진실검수만(4부서 내부 실무진행=준용M). ▶착수 전 설계·GM 접근 승인 필요.\n\n[2026-07-24 GM 확정 반영·라이브] GM 1번안='자동이 사람 값을 덮어쓰지 않는다'. ①status_map(진행중=일괄 50) 규칙이 진척률을 쓰지 않도록 변경 — 대신 관찰한 상태 분포만 objective.sync_observed 에 사실대로 기록(진행중 N·총 N·날짜). 실측 보존 확인: 쓰쿠루 70·밸류업 45·상담실 40·시설리뉴얼 15·오찬 20 전부 유지, 50 평탄화 0건. count_done·avg_progress·metric_live(매출)는 실측 신호라 그대로 갱신. 표기도 🔄자동/👀상태만 으로 분리해 '안 덮어썼음'이 한눈에 보이게. ②하루치 반영 유실 수리 — 07:00 실행이 .git/index.lock 때문에 커밋을 건너뛰고 그날 반영분이 사라지던 문제(재시도 없음). 5초 간격 최대 12회 대기 후에도 잠겨 있으면 [FAIL] 로 크게 남긴다(옛 [SKIP] 한 줄은 아무도 못 봄). 락 파일은 절대 삭제하지 않음. .bat 의 맨손 git commit 제거하고 커밋 소유를 파이썬으로 일원화(safe_commit 경유). 커밋 de7740a46·bb6152e9c. ▶남은 것: 수동 9건(연결할 소스 자체가 없음 — 준용M 업무기록 정착이 선행) · 매출은 간헐적 조회 실패(타임아웃) 관찰 필요.",
     "next": "[2026-07-23 시우 진실검수 1회차·자율] 계획/0% 정체 2건 정정 — 시설 리뉴얼 0→15%(업무현황 SSOT '야외 테라스 활용 방안' 진행중 실측·3항목 중 1착수), 회장님·파트너팀 오찬 0→20%(SSOT '파트너팀 부서별 오찬' 진행중·담당 나우열M·8/1~9/30·실행 미도래). 자동 status_map 50(평탄값)은 미채택·근거값만 기록(L05). 함께 수리: monthly_ops_sync.bat 실행로그 신설(logs/monthly_ops_sync.log — 이전엔 07:00 실행이 증거 0, 예약결과 0은 wscript 기동만 증명·INC-023 동류) + git add+commit → 경로한정 commit(공용 인덱스에 타 프로세스 staged 파일 쓸어담기 차단). 커밋 68ee57f8d, 라이브 로그 실측 확인(9:14 RUN 정상·미연동 0). ▶웰리 판단 요청: scripts/welly_auto_runner.py `_is_low_risk`가 note 본문에 '라이브·GAS' 단어가 있으면 배 전체를 자율후보에서 영구 제외 → 배9678은 실제 작업이 가역인데도 --boot-candidate 가 항상 '대기' 반환(COO 부팅 자율진행 상시 공회전). 판정 대상=작업 성격인데 배경 설명 문장을 매칭하는 오탐. 소유=시토/웰리(러너), 시우는 발견·보고만. [2026-07-22 단계1·2·3 완료·라이브 가동] GM '1번' 결재로 라이브 ON. 설계=docs/superpowers/specs/2026-07-22-monthly-ops-ssot-sync-design.md. 엔진 scripts/monthly_ops_sync.py(todo_ssot·queue·metric_live 소스 실구현). 연동 배선 6목표: 채용마무리·시설리뉴얼·밸류업·오찬(todo_ssot)·리셉션종합접수(queue 배9582·9580)·주차관리인채용(todo_ssot), 규칙 status_map(진행중=50·완료=100). 게이트 ON 라이브 1회 반영(progress 자동갱신)·★매출은 INC-001로 미저장(라이브 표시 전용). 일일 예약 Wellperion-MonthlyOps-Sync-Daily 07:00(vbs+bat·커밋만·역롤백=작업 비활성화). 커밋 1ca21af0. ▶상시운영: 시우=일일 페이지 진실검수(굵은신호 보정)·수동11건(장마·주차청결 등 SSOT 미등록분)은 준용M 업무기록 정착 시 자동 합류.",
     "ship_no": 9678,
     "module": "home",
@@ -1728,5 +1728,19 @@
     "short_no": 75,
     "module": "home",
     "surface": "autonomy"
+  },
+  {
+    "task_id": "CPO-2026-07-24-ADHOC-ed6fca8e5",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-24",
+    "processed_at": "2026-07-24",
+    "ship_no": 10069,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 ed6fca8e5)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "ed6fca8e5e4e990a47517d4185b7398d02bd5150"
   }
 ]
