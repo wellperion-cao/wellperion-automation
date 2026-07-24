@@ -1682,5 +1682,51 @@
     "short_no": 73,
     "module": "home",
     "surface": "autonomy"
+  },
+  {
+    "task_id": "CPO-2026-07-24-ADHOC-1722f4541",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-24",
+    "processed_at": "2026-07-24",
+    "ship_no": 10066,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 1722f4541)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "1722f45410819ebed9271a93f977c7a33c398c8b"
+  },
+  {
+    "task_id": "CTO-2026-07-24-카톡-전송-방-목록-저장-삭제가-실패해도-완료-로-",
+    "clevel": "cto",
+    "title": "[시토] 카톡 전송 방 목록 저장·삭제가 실패해도 '완료'로 표시됨 (no-cors)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-24",
+    "from": "cpo",
+    "note": "[시포 → 시토 전달 2026-07-24] 2026-07-24 시포 도메인 점검 중 발견(읽기만 함·수정 안 함). 3. 웰페리온 가이드/cto/automation/카톡전송관리.html saveRoom(264줄)·deleteRoom(279줄)이 fetch mode:'no-cors' 라 GAS 응답을 원천적으로 못 읽는데, .then 에서 무조건 '저장 완료'·'삭제 완료'를 띄운다(.catch 는 네트워크 실패만 잡음). 서버가 거부해도 화면은 성공으로 보인다. ★왜 중요한가: 이 목록(kakao_rooms)이 매출보고가 '어느 방으로 가는지'를 정한다 — 방 추가가 조용히 실패하면 그 방은 보고를 못 받고, 삭제가 조용히 실패하면 빼려던 방(예 차의주 회장님방)에 계속 나간다. 오발송·미발송으로 직결. 부수(낮음): wellperion_guide(main).html 8656줄 SSOT_API_URL 비콘도 no-cors + 빈 catch(단순 로깅이라 위험 낮음, 참고만). ★검증된 대체 방식 있음: text/plain + redirect:'follow' 로 보내고 r.text()→JSON.parse 로 {ok,error} 판독(응답 못 읽으면 성공 단정 금지). membership.html apiPost·상품기획.html _todoPost 가 같은 방식으로 오늘 라이브 검증 완료 — 새로 설계할 필요 없이 이식만 하면 된다. 같은 뿌리 사고 전력: INC-013(문의 저장 은폐)·INC-014(완료 알림 위장).",
+    "next": "saveRoom·deleteRoom 을 응답 판독 방식으로 전환하고 실패를 _roomsStatus 에 err 로 표면화",
+    "depends_on": "",
+    "ship_no": 10067,
+    "short_no": 74,
+    "module": "home",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "COO-2026-07-24-공지-저장이-서버에-실패해도-저장되었습니다-알림이-",
+    "clevel": "coo",
+    "title": "[시우] 공지 저장이 서버에 실패해도 '저장되었습니다' 알림이 뜸 (no-cors)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-24",
+    "from": "cpo",
+    "note": "[시포 → 시우 전달 2026-07-24] 2026-07-24 시포 도메인 점검 중 발견(읽기만 함·수정 안 함). 3. 웰페리온 가이드/coo/notice/notice_template.html ntServerSave(1011줄)가 fetch mode:'no-cors' + .catch(function(){}) 로 실패를 통째로 삼키고, ntSave(1014줄)는 결과와 무관하게 alert('저장되었습니다.')를 띄운다. 서버 저장이 실패해도 사용자는 저장된 줄 안다. ★완충 있음: 같은 함수가 localStorage 에 최근 20건 로컬 백업을 남겨 완전 유실은 아니다 — 그래서 우선순위는 낮게 잡았다. 다만 '전 PC 공유'가 목적인 서버 저장이 조용히 빠지면 다른 PC에서 공지가 안 보이는데 이유를 알 수 없다. ★검증된 대체 방식: text/plain + redirect:'follow' 로 보내고 r.text()→JSON.parse 로 {ok,error} 판독(응답 못 읽으면 성공 단정 금지) — membership.html apiPost·상품기획.html _todoPost 가 오늘 라이브 검증 완료. 같은 뿌리 사고 전력: INC-013·INC-014, 그리고 오늘 회원관리 컨택 기록 유실(실무진 신고).",
+    "next": "ntServerSave 를 응답 판독 방식으로 전환하고, 서버 저장 실패 시 alert 문구를 '로컬에만 저장됨'으로 구분 표기",
+    "depends_on": "",
+    "ship_no": 10068,
+    "short_no": 75,
+    "module": "home",
+    "surface": "autonomy"
   }
 ]
