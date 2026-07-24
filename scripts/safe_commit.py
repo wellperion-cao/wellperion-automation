@@ -149,17 +149,21 @@ def _tree_diff_status(tree_a: str, tree_b: str, root: Path) -> list[tuple[str, s
 # safe_commit 은 commit-tree/update-ref 라 git 훅(.git/hooks/pre-commit)이
 # 전혀 안 걸린다(위 _precheck_violations 주석 참조) — 그 훅 안 가드 10개가
 # 전부 이 경로에서 미발화한다는 게 조사로 확인됐다(status/briefs/
-# 웰리_가드모듈_병합지도_20260724.md §2). 그중 위험도 최상위 3개(비밀값·
-# 대량유실·공식값)만 1단계로 이식한다 — 로직은 복제하지 않고 기존 가드
+# 웰리_가드모듈_병합지도_20260724.md §2). 1단계(비밀값·대량유실·공식값)에
+# 이어 2단계로 계약이 같은 3개(활성 큐 항목 소멸·죽은 ERP 문서 앵커·알림 문구
+# 내 시트 원본 링크)를 추가 이식한다 — 로직은 복제하지 않고 기존 가드
 # 스크립트를 그대로 서브프로세스로 호출한다(L01, 단일 지점 재사용).
-# 나머지 7개(queue·incident·erp_anchor·sheet_link·chatid_drift·
-# reception_drift·phantom_delete)는 이번엔 이식하지 않는다 — phantom_delete
-# 는 이미 위 _precheck_violations 가 대체 판정 중이고, 나머지는 오탐 위험
-# 검증 전엔 동시 커밋 중인 다른 세션 전부를 막을 수 있어 2단계로 미룬다.
+# 나머지 4개(incident·chatid_drift·reception_drift — phantom_delete는 이미
+# 위 _precheck_violations 가 대체 판정 중)는 이번에도 이식하지 않는다 —
+# incident 는 미확인(안 읽고 이식 금지), chatid_drift·reception_drift 는
+# warn-only 라 지금 넣어도 득이 적고 잡음만 는다.
 _HOOK_GUARDS = (
     ("secret", "precommit_secret_guard.py"),
     ("truncation", "precommit_truncation_guard.py"),
     ("enforcement", "precommit_enforcement_guard.py"),
+    ("queue", "precommit_queue_guard.py"),
+    ("erp_anchor", "precommit_erp_anchor_guard.py"),
+    ("sheet_link", "precommit_sheet_link_guard.py"),
 )
 
 
