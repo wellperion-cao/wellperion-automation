@@ -3,8 +3,17 @@ import os
 import time
 import httpx
 from dotenv import load_dotenv
+from pathlib import Path as _Path
 
-load_dotenv()
+load_dotenv()  # 로컬 wellperion-agents/.env — CHAT_ID 등 기존 값 유지
+
+# ★봇 토큰 SSOT = telegram_bot/.env (CLAUDE.md §3). 2026-07-24 시토·INC 등재:
+#   토큰이 두 .env 에 복제돼 있어, 재발급 시 telegram_bot/.env 만 갱신되고
+#   wellperion-agents/.env 엔 죽은 토큰이 남아 08:00 아침 항로 보고가 매일 401 로 실패했다.
+#   복제본이 어긋나도 **정본이 이기게** override 로 덮어써 재발을 원천 차단한다(약속 L01).
+_canonical_env = _Path(__file__).resolve().parent.parent / "telegram_bot" / ".env"
+if _canonical_env.exists():
+    load_dotenv(_canonical_env, override=True)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
