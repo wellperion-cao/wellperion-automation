@@ -1277,8 +1277,33 @@ function clearAll(){
 }
 
 /* ===== 공통 ===== */
-function openOv(id){document.getElementById(id).classList.add("on");}
+/* ERP 임베드(iframe 자동 높이) 시 fixed 중앙 = iframe 전체 중앙이라 실제 화면 밖에 뜸 →
+   부모 창에서 보이는 영역을 계산해 그 중앙에 모달을 배치. 단독 열람 시엔 기본 중앙 유지. */
+function positionOv(ov){
+  const modal=ov.querySelector(".modal"); if(!modal)return;
+  let visTop=null,visH=null;
+  try{
+    const fe=window.frameElement;
+    if(fe){
+      const r=fe.getBoundingClientRect(), pvh=window.parent.innerHeight;
+      visTop=Math.max(0,-r.top);
+      visH=Math.min(r.height,pvh-r.top)-visTop;
+    }
+  }catch(e){}
+  if(visTop===null||!(visH>0)){ov.style.alignItems="";modal.style.marginTop="";modal.style.maxHeight="";return;}
+  modal.style.maxHeight=Math.max(200,visH-32)+"px";
+  ov.style.alignItems="flex-start";
+  modal.style.marginTop=(visTop+Math.max(16,(visH-modal.offsetHeight)/2))+"px";
+}
+function openOv(id){const ov=document.getElementById(id);ov.classList.add("on");positionOv(ov);}
 function closeOv(id){document.getElementById(id).classList.remove("on");}
+try{
+  if(window.frameElement){
+    const rp=()=>document.querySelectorAll(".ov.on").forEach(positionOv);
+    window.parent.document.addEventListener("scroll",rp,{capture:true,passive:true});
+    window.parent.addEventListener("resize",rp);
+  }
+}catch(e){}
 document.querySelectorAll(".ov").forEach(o=>o.onclick=e=>{if(e.target===o)o.classList.remove("on");});
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));
