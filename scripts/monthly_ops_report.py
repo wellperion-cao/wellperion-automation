@@ -42,6 +42,12 @@ from pathlib import Path
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
+try:
+    from honesty_gate import verdict as _honesty_verdict, summary_line as _honesty_summary_line
+except ImportError:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from honesty_gate import verdict as _honesty_verdict, summary_line as _honesty_summary_line
+
 # ── 경로 상수 ──
 BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
 PLAN_FILE = BASE_DIR / "status" / "monthly_ops_plan.json"
@@ -195,7 +201,10 @@ def build_start_card(plan: dict, now: datetime) -> str:
 # ═══════════════════════════════════════════
 def _measured_block(cur_objs: list, sales_month: int | None) -> list:
     """측정 목표 실측 블록. 매출=home_kpi 실값 vs target, ERP%=metric.current vs target.
-    정직(L05): current 없으면 상태만, 가짜 달성% 금지."""
+    정직(L05): current 없으면 상태만, 가짜 달성% 금지.
+    정직 게이트(honesty_gate, GM 2단계 2026-07-24): objective.honesty.level 을 honesty_gate.verdict()
+    로 판정해 비실측(manual/unmeasured) 수치 옆에 [미측정] 딱지를 붙인다(값 자체는 숨기지 않음).
+    '실측 미연동(상태만)' 문구도 honesty_gate 배지로 일원화(흩어진 하드코딩 표기 제거)."""
     e = html.escape
     out = ["<b>📈 측정 목표 실측</b>"]
     any_metric = False
@@ -207,6 +216,9 @@ def _measured_block(cur_objs: list, sales_month: int | None) -> list:
         name = e(str(metric.get("name", "")))
         target = metric.get("target")
         unit = str(metric.get("unit", ""))
+        level = str((o.get("honesty") or {}).get("level", ""))
+        v = _honesty_verdict(level)
+        stamp_suffix = f" {v['stamp']}" if v["stamp"] else ""
 
         # 매출은 home_kpi 라이브 실측으로 current 대체
         is_sales = unit == "원" or "매출" in str(metric.get("name", ""))
@@ -218,12 +230,12 @@ def _measured_block(cur_objs: list, sales_month: int | None) -> list:
                 cur_s, tgt_s = fmt_won(int(current)), fmt_won(int(target))
             else:
                 cur_s, tgt_s = f"{current}{unit}", f"{target}{unit}"
-            out.append(f"  • {name}: {cur_s} / 목표 {tgt_s} → <b>{rate:.0f}%</b>")
+            out.append(f"  • {name}: {cur_s} / 목표 {tgt_s} → <b>{rate:.0f}%</b>{stamp_suffix}")
         else:
-            # 측정 안 됨 — 상태만(정직)
+            # 측정 안 됨 — 상태만(정직) · 배지는 honesty_gate 일원화
             tgt_s = fmt_won(int(target)) if (unit == "원" and isinstance(target, (int, float))) \
                 else (f"{target}{unit}" if target is not None else "미정")
-            out.append(f"  • {name}: 목표 {tgt_s} · <i>실측 미연동(상태만)</i>")
+            out.append(f"  • {name}: 목표 {tgt_s} · <i>{v['badge']} 실측 미연동(상태만)</i>{stamp_suffix}")
     if not any_metric:
         out.append("  (측정 지표가 설정된 목표 없음)")
     return out
@@ -266,6 +278,10 @@ def build_end_card(plan: dict, now: datetime, sales_month: int | None) -> str:
 
     lines.append("👉 페이지에서 최종 검토·확정하세요:")
     lines.append(f"📊 {PLAN_WEB_URL}")
+
+    # 정직 게이트 요약(GM 2단계 2026-07-24): 이 카드에 실린 objective 전체의 실측/미측정 분포.
+    lines.append("")
+    lines.append(e(_honesty_summary_line(cur_objs)))
     return "\n".join(lines)
 
 
