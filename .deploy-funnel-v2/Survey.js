@@ -3236,6 +3236,51 @@ function _processAction(body) {
     return _json({ ok: true, id: _sfId });
   }
 
+  // ─── 실무진 피드백 조회·처리 (토큰 게이트 · 시포 2026-07-24) ───────────────────
+  //   list   : 접수된 피드백 전체를 최신순으로 반환(처리상태·처리메모 포함).
+  //   update : 처리상태·처리메모를 적는다. ★대조키 = 접수ID(FB…) — 행번호로 찾지 않는다.
+  //            행번호 기준은 중간에 행이 지워지면 엉뚱한 줄을 고친다(실고객 오삭제 사고와 동종).
+  if (action === 'staff_feedback_list' || action === 'staff_feedback_update') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _fbSh = SpreadsheetApp.openById(_MI_SS_ID).getSheetByName('실무진 피드백');
+    if (!_fbSh) return _json({ ok: true, rows: [], note: '아직 접수 없음(탭 미생성)' });
+    var _fbLast = _fbSh.getLastRow();
+    if (_fbLast < 2) return _json({ ok: true, rows: [] });
+    var _fbHdr = _fbSh.getRange(1, 1, 1, _fbSh.getLastColumn()).getDisplayValues()[0];
+    var _fbIx = function (name) { for (var i = 0; i < _fbHdr.length; i++) if (String(_fbHdr[i]).trim() === name) return i; return -1; };
+    var _cId = _fbIx('접수ID'), _cSt = _fbIx('처리상태'), _cMemo = _fbIx('처리메모');
+    if (_cId < 0) return _json({ ok: false, error: '접수ID 칸을 찾을 수 없습니다.' });
+    var _fbVals = _fbSh.getRange(2, 1, _fbLast - 1, _fbHdr.length).getDisplayValues();
+
+    if (action === 'staff_feedback_list') {
+      var _rows = [];
+      for (var i = 0; i < _fbVals.length; i++) {
+        var o = {};
+        for (var c = 0; c < _fbHdr.length; c++) o[String(_fbHdr[c]).trim()] = _fbVals[i][c];
+        _rows.push(o);
+      }
+      _rows.reverse();   // 최신 먼저
+      return _json({ ok: true, count: _rows.length, rows: _rows });
+    }
+
+    // update — [{id, status, memo}] 배열을 받아 접수ID 로 찾아 적는다(못 찾으면 건너뛰고 보고).
+    var _ups = body.updates;
+    if (!_ups || !_ups.length) return _json({ ok: false, error: 'updates 가 비어 있습니다.', noRetry: true });
+    if (_cSt < 0 || _cMemo < 0) return _json({ ok: false, error: '처리상태·처리메모 칸을 찾을 수 없습니다.' });
+    var _done = [], _miss = [];
+    for (var u = 0; u < _ups.length; u++) {
+      var wantId = String(_ups[u].id || '').trim();
+      var hit = -1;
+      for (var r = 0; r < _fbVals.length; r++) if (String(_fbVals[r][_cId]).trim() === wantId) { hit = r; break; }
+      if (hit < 0) { _miss.push(wantId); continue; }
+      var rowNo = hit + 2;   // 헤더 1줄 + 0-based → 실제 행. 대조로 찾은 행이라 어긋나지 않는다.
+      if (_ups[u].status !== undefined) _fbSh.getRange(rowNo, _cSt + 1).setValue(String(_ups[u].status));
+      if (_ups[u].memo   !== undefined) _fbSh.getRange(rowNo, _cMemo + 1).setValue(String(_ups[u].memo));
+      _done.push(wantId);
+    }
+    return _json({ ok: true, updated: _done, notFound: _miss });
+  }
+
   // ─── (관리) 유입언어(KO/EN) 칸 생성 + 검증 프로브 — 영문 자체폼 컷오버(배9674 시모, 2026-07-22). 토큰 게이트. ───
   //   op='addcol': 멤버십 '26년 신규문의' + 강습 응답탭(성인 111889422 · WSC 268994754)에 '유입언어' 헤더가 없으면
   //     맨 끝칸에 additive 추가(이름기반·행/기존칸 무변경). 이 칸이 생기면 intake_submit 의 _imSet/_lsSet(['유입언어'])가 기록 시작.
