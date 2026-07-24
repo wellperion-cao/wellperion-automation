@@ -76,10 +76,19 @@ def _send_kakao(parts: list[str]) -> None:
             print(f"[stream3] 카카오 {room} 예외: {e}", flush=True)
 
 
-def run(today: str | None = None, dry_run: bool = True, kakao_go: bool = False) -> list[str]:
-    """메시지 렌더 + 조건부 발송. 렌더된 파트 리스트 반환."""
+def run(today: str | None = None, dry_run: bool = True, kakao_go: bool = False,
+        prefix_parts: list[str] | None = None) -> list[str]:
+    """메시지 렌더 + 조건부 발송. 렌더된 파트 리스트 반환.
+
+    prefix_parts: 배10011(2026-07-24) — 09:10 모듈데일리(자동화현황방, GM 2인 전용이라
+    흡수 가능·GM 결정)에서 흡수한 텍스트를 맨 앞 파트로 얹는다. HTML 파싱 모드라 태그
+    깨짐 방지로 html.escape 후 붙인다. None/빈 리스트면 기존과 동일(무영향)."""
     today = today or datetime.now().strftime("%Y-%m-%d")
     parts = build_digest(today)
+    if prefix_parts:
+        escaped = [_html_mod.escape(p, quote=False) for p in prefix_parts]
+        header = "📊 자동화현황(09:10 흡수)\n" + "\n\n".join(escaped)
+        parts = [header] + parts
     if dry_run:
         print(f"[stream3] DRY-RUN — {len(parts)}파트 chat_id={TELEGRAM_CHAT_ID} 발송 안 함", flush=True)
         return parts

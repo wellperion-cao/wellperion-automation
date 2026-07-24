@@ -41,6 +41,16 @@ if _SCRIPTS_DIR not in sys.path:
 
 from module_registry import load_registry  # noqa: E402
 from clevel_colors import color_dot  # noqa: E402 — 부서 색동그라미 정본(단일 딕셔너리)
+import weekly_bundle_pending as _bundle  # noqa: E402 — 배10011 알림 묶기 공용 pending
+
+# ── 배10011(2026-07-24, GM 승인) — 자동화현황방(GM 2인 전용, 실측 확인) 직접 발신을
+#   다른 메시지로 흡수한다. (cadence, bot_id) → bundle_id 매핑. 직접 sender() 호출 대신
+#   weekly_bundle_pending 에 적재만 하고, 실제 발송은 흡수 대상 메시지(스트림#3·월요일
+#   주간묶음)가 소비(consume)+발송 후 mark_bundle_sent() 로 로그를 확정한다.
+ABSORB_BUNDLES = {
+    ("daily", "자동화현황방"): "stream3_daily",       # 09:10 모듈데일리 → 09:30 스트림#3에 흡수
+    ("weekly", "자동화현황방"): "monday_weekly_bundle",  # 월요일 모듈위클리 → AI자기학습제안에 흡수
+}
 
 _STATUS_DIR = os.path.join(_PROJECT_ROOT, "status")
 ROOMS_PATH = os.path.join(_STATUS_DIR, "telegram_rooms.json")
@@ -228,6 +238,16 @@ def run_report(cadence, *, dry_run=False, only_module=None,
                             "reason": "dedup", "dedup_key": key})
             continue
 
+        # ★배10011 — 흡수 대상(자동화현황방 등)이면 직접 발송 대신 pending에 적재만.
+        #   sent=True 기록은 흡수한 메시지가 실제 발송에 성공한 뒤 mark_bundle_sent()가 한다
+        #   (여기서 먼저 sent 처리하면 흡수측이 실패해도 "보낸 걸로" 착각 — 순서 중요).
+        bundle_id = ABSORB_BUNDLES.get((cadence, bot_id))
+        if bundle_id:
+            _bundle.append(bundle_id, source=key, text=text, now=now)
+            results.append({"module": mid, "action": "absorbed",
+                            "bundle": bundle_id, "dedup_key": key})
+            continue
+
         # 라이브 게이트: bot_id None(미발효) 또는 방 미해소 → 발송 스킵
         if chat_id is None:
             reason = "bot_id_null" if bot_id is None else "room_unresolved"
@@ -271,6 +291,19 @@ def run_report(cadence, *, dry_run=False, only_module=None,
             pass  # 회귀감시 실패가 본 리포터의 발송 결과를 막지 않는다
 
     return {"cadence": cadence, "date": date_str, "dry_run": dry_run, "results": results}
+
+
+def mark_bundle_sent(dedup_keys: list[str], *, cadence: str, log_path=REPORT_LOG_PATH, now=None) -> None:
+    """배10011 — weekly_bundle_pending 으로 흡수된 모듈들을, 흡수한 메시지가 실제로
+    발송 성공한 뒤 이 함수로 module_report_log.jsonl 에 sent=True 확정 기록한다.
+    이래야 다음 실행에서 _already_sent() 가 True 를 내어 재적재·중복을 막는다."""
+    now = now or datetime.now()
+    for key in dedup_keys:
+        mid = key.split("|", 1)[0]
+        _append_log(log_path, {
+            "ts": now.isoformat(), "module": mid, "cadence": cadence,
+            "dedup_key": key, "sent": True, "note": "absorbed_bundle(배10011)",
+        })
 
 
 def main(argv=None):

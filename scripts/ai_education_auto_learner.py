@@ -362,8 +362,20 @@ def run_full_pipeline(send: bool = True):
     if send:
         send_summary(summary)
     else:
-        print("[INFO] --no-send — 개별 텔레그램 발송 생략 "
-              "(일요일 통합 카드 weekly_self_review.py 로 흡수)")
+        # ★배10011(2026-07-24, GM 승인) — 예약작업이 이미 --no-send 로 실행되고 있었는데
+        # 그동안 이 텍스트를 실제로 받아 합쳐 보내는 쪽(weekly_self_review.py)이 없어서
+        # 매주 조용히 유실되고 있었다(발견 즉시 수리 — 배10011과 같은 배선이라 함께 처리).
+        text = (summary or {}).get("text", "")
+        if text:
+            try:
+                import weekly_bundle_pending as _bundle
+                _bundle.append("sunday_weekly_bundle", source="ai_education_auto_learner", text=text)
+                print("[INFO] --no-send — sunday_weekly_bundle에 적재(weekly_self_review.py가 흡수)")
+            except Exception as e:
+                print(f"[WARN] sunday_weekly_bundle 적재 실패 — 직접발송 폴백: {e}")
+                send_summary(summary)
+        else:
+            print("[INFO] --no-send — 요약 텍스트 없음, 적재할 것 없음")
 
     print(f"\n[완료] 파이프라인 종료 ({now_str()})")
 

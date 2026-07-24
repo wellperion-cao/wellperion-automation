@@ -1207,8 +1207,25 @@ def run(dry_run: bool):
                        clevel_before, clevel_after, archived_this_run,
                        stalled_detail, snap_path)
 
+    # ★배10011(2026-07-24, GM 승인) — 일요일 아침 자동화현황방/GM_DM 산발 발신 4건을
+    # 이 카드(가장 늦게 도는 10:30 슬롯) 뒤에 이어붙여 1통으로 합친다. 흡수 대상:
+    # weekly_page_hygiene·education_archive_weekly·ai_education_auto_learner(--no-send).
+    # 소스 없으면(적재 0건) 기존과 완전히 동일한 카드만 나간다(무변화).
+    absorbed_blocks: list[str] = []
+    if not dry_run:
+        try:
+            import weekly_bundle_pending as _bundle
+            absorbed = _bundle.consume("sunday_weekly_bundle")
+            absorbed_blocks = [it["text"] for it in absorbed if it.get("text")]
+        except Exception as e:
+            print(f"[WARN] sunday_weekly_bundle 소비 실패(무시 — 이 카드는 정상 발송): {e}")
+
+    full_card = card
+    if absorbed_blocks:
+        full_card = card + "\n\n" + "\n\n".join(absorbed_blocks)
+
     print("\n" + "=" * 60)
-    print(card)
+    print(full_card)
     print("=" * 60)
 
     if dry_run:
@@ -1227,7 +1244,7 @@ def run(dry_run: bool):
         "snapshot": str(snap_path) if snap_path else None,
     })
 
-    send_telegram(card)
+    send_telegram(full_card)
     print(f"\n[완료] ({now_str()})")
 
 

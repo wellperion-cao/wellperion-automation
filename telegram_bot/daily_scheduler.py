@@ -2573,13 +2573,29 @@ def run_daily_digest(early: bool = False) -> None:
 def run_stream_3_mgmt() -> None:
     """스트림 #3 매출+운영+인사 현황 보고 (매일 09:30 · 업무보고방) — CTO 2026-07-22.
     확정 포맷: report_stream_3_impl v3 (54% 압축 · GM ok). 카카오=GM go 후 활성화.
-    시우(COO) 최종목표 씨앗 — 자율화 완성 시 COO 인계 예정."""
+    시우(COO) 최종목표 씨앗 — 자율화 완성 시 COO 인계 예정.
+
+    ★배10011(2026-07-24, GM 승인): 09:10 모듈 데일리(자동화현황방 — GM 2인 전용 실측 확인,
+    수신자 손실 없음)를 이 메시지 맨 앞 섹션으로 흡수한다. 09:30 을 유지한 이유(09:10 대신) —
+    module_reporter 는 별도 Windows 예약작업(Wellperion-Module-Report-Daily, 09:10)이라
+    스트림#3(이 함수, daily_scheduler 상주 프로세스 내부)과 다른 프로세스다. 09:10에 정확히
+    맞춰 동시 실행하면 pending 파일 기록이 아직 안 끝났을 때 여기가 먼저 읽어버리는 경합이
+    생길 수 있어, 20분 버퍼를 주는 09:30 유지가 더 안전하다."""
     label = "[스트림 #3 매출+운영+인사]"
     logger.info(f"{label} 시작")
     try:
+        import weekly_bundle_pending as _bundle
+        import module_reporter as _mr
+        absorbed = _bundle.consume("stream3_daily")
+        prefix_parts = [it["text"] for it in absorbed if it.get("text")]
+
         import report_stream_3_mgmt as _s3
-        _s3.run(dry_run=False, kakao_go=False)
-        logger.info(f"{label} 완료 (업무보고방 발송 · 카카오=GM go 후속)")
+        _s3.run(dry_run=False, kakao_go=False, prefix_parts=prefix_parts)
+
+        if absorbed:
+            keys = [it["source"] for it in absorbed]
+            _mr.mark_bundle_sent(keys, cadence="daily")
+        logger.info(f"{label} 완료 (업무보고방 발송 · 흡수 {len(absorbed)}건 · 카카오=GM go 후속)")
     except Exception as e:
         logger.error(f"{label} 예외: {e}")
 

@@ -764,7 +764,25 @@ def run(max_proposals: int = 3, dry_run: bool = False, send: bool = True):
     all_cards, added_count, added_cards = append_new_cards(cards)
     print(f"\n[4/4] 저장 완료: {PROPOSALS_FILE} (누적 {len(all_cards)}개, 신규 {added_count}개)")
 
-    if added_count > 0:
+    # ★배10011(2026-07-24, GM 승인) — 월요일 모듈위클리(자동화현황방, module_reporter.py가
+    # weekly_bundle_pending "monday_weekly_bundle"에 적재)를 이 메시지에 흡수한다(월요일
+    # 09:45 = 이 클러스터에서 가장 늦게 도는 슬롯). 신규 제안이 0건이어도 흡수할 모듈 내용이
+    # 있으면 보낸다 — "제안 없음"과 "모듈 현황 없음"은 별개다.
+    #
+    # ★검증 중 발견해 함께 고침(배10011과 동일 배선이라 분리 안 함): --no-send(send=False,
+    # 예약작업 실제 실행값)일 때 예전엔 "흡수한다"는 주석만 있고 실제로 아무것도 안 보내
+    # 매주 월요일 이 내용이 조용히 유실되고 있었다(코드로 직접 확인). 이제 send 값과 무관하게
+    # (dry_run만 아니면) 항상 흡수+발송한다 — send 플래그는 더 이상 "보낼지 말지"가 아니라
+    # 과거 호환용으로만 남는다.
+    try:
+        import weekly_bundle_pending as _bundle
+        absorbed_items = _bundle.consume("monday_weekly_bundle")
+    except Exception as e:
+        print(f"[WARN] monday_weekly_bundle 소비 실패(무시): {e}")
+        absorbed_items = []
+    absorbed_blocks = [it["text"] for it in absorbed_items if it.get("text")]
+
+    if added_count > 0 or absorbed_blocks:
         # 신규 카드 번호목록: "N. 대상: 무엇을 앞부분(30자)"
         def _short(text: str, limit: int = 30) -> str:
             text = text.strip()
@@ -776,14 +794,13 @@ def run(max_proposals: int = 3, dry_run: bool = False, send: bool = True):
                     break
             return text[:limit] if len(text) > limit else text
 
-        lines = []
-        for i, card in enumerate(added_cards, 1):
-            clevel = card.get("대상_clevel", "?")
-            what = _short(card.get("무엇을", ""))
-            lines.append(f"{i}. {clevel}: {what}")
-        card_list = "\n".join(lines)
-
-        if send:
+        if added_count > 0:
+            lines = []
+            for i, card in enumerate(added_cards, 1):
+                clevel = card.get("대상_clevel", "?")
+                what = _short(card.get("무엇을", ""))
+                lines.append(f"{i}. {clevel}: {what}")
+            card_list = "\n".join(lines)
             tg_msg = (
                 f"[시토] AI 자기학습 — 개선제안 {added_count}건 (검토 대기)\n"
                 f"{card_list}\n"
@@ -791,12 +808,21 @@ def run(max_proposals: int = 3, dry_run: bool = False, send: bool = True):
                 f"👉 G1 'AI 자기학습 제안' 섹션에서 확인\n"
                 f"승인: python scripts/ai_learning_proposer.py --approve <id>"
             )
-            send_telegram(tg_msg)
         else:
-            print("[INFO] --no-send — 개별 텔레그램 발송 생략 "
-                  "(일요일 통합 카드 weekly_self_review.py 로 흡수)")
+            tg_msg = "[시토] AI 자기학습 — 이번 주 신규 개선제안 없음(중복)"
+
+        if absorbed_blocks:
+            tg_msg = tg_msg + "\n\n" + "\n\n".join(absorbed_blocks)
+
+        ok = send_telegram(tg_msg)
+        if ok and absorbed_items:
+            try:
+                import module_reporter as _mr
+                _mr.mark_bundle_sent([it["source"] for it in absorbed_items], cadence="weekly")
+            except Exception as e:
+                print(f"[WARN] monday_weekly_bundle mark_sent 실패(무시): {e}")
     else:
-        print("[INFO] 신규 제안 없음 (중복) — 텔레그램 생략")
+        print("[INFO] 신규 제안 없음(중복) + 흡수할 모듈 내용 없음 — 텔레그램 생략")
 
     # 관측 리포트 자동 갱신 — 일요일 자동사이클이 돌 때마다 루프 건강도 산출물 새로고침.
     try:

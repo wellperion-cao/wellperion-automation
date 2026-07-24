@@ -590,7 +590,15 @@ def run_pipeline(clevel: str | None = "coo", apply: bool | None = None, force_dr
 
     telegram_result = None
     if notify:
-        telegram_result = send_telegram_summary(summary_text)
+        # ★배10011(2026-07-24, GM 승인) — 직접 발송 대신 일요일 주간묶음(sunday_weekly_bundle)에
+        # 적재만 한다. 실제 발송은 weekly_self_review.py(일요일 10:30, 가장 늦게 도는 스크립트)가
+        # 이 pending을 소비해 한 통으로 합쳐 보낸다(수신방=GM_DM, 기존과 동일 — 방 변경 없음).
+        _scr_dir = os.path.dirname(os.path.abspath(__file__))
+        if _scr_dir not in sys.path:
+            sys.path.insert(0, _scr_dir)
+        import weekly_bundle_pending as _bundle  # noqa: E402
+        _bundle.append("sunday_weekly_bundle", source="weekly_page_hygiene", text=summary_text)
+        telegram_result = {"ok": True, "absorbed": "sunday_weekly_bundle"}
 
     _append_log({
         "event": "run_summary", "clevel": clevel_label, "apply_gate": apply_gate,

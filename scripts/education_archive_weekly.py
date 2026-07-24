@@ -125,6 +125,19 @@ def send_telegram(msg: str) -> bool:
         return False
 
 
+def _absorb_into_sunday_bundle(msg: str) -> None:
+    """★배10011(2026-07-24, GM 승인) — 직접 발송(send_telegram) 대신 일요일 주간묶음
+    (sunday_weekly_bundle)에 적재만 한다. 실제 발송은 weekly_self_review.py(일요일 10:30,
+    이 클러스터에서 가장 늦게 도는 스크립트)가 소비해 한 통으로 합쳐 보낸다 —
+    수신방은 원래도 OWNER_ID(GM_DM)라 방 변경 없음. send_telegram() 자체는 되돌림용 보존."""
+    try:
+        import weekly_bundle_pending as _bundle
+        _bundle.append("sunday_weekly_bundle", source="education_archive_weekly", text=msg)
+    except Exception as e:
+        print(f"[WARN] sunday_weekly_bundle 적재 실패 — 직접발송 폴백: {e}")
+        send_telegram(msg)
+
+
 def main():
     dry_run = "--dry-run" in sys.argv
     now = datetime.now(KST)
@@ -141,7 +154,7 @@ def main():
 
     if not targets:
         msg = f"[교육자료 주간 정리] {now.strftime('%Y-%m-%d')} 이관 0건 — 대상 없음"
-        send_telegram(msg)
+        _absorb_into_sunday_bundle(msg)
         print(msg)
         return
 
@@ -162,8 +175,8 @@ def main():
         f"이관 {len(moved)}건 → {now.strftime('%Y-%m')}\n"
         f"{top5}"
     )
-    ok = send_telegram(msg)
-    print(f"[발송 {'성공' if ok else '실패'}] {msg}")
+    _absorb_into_sunday_bundle(msg)
+    print(f"[적재] {msg}")
 
 
 if __name__ == "__main__":
