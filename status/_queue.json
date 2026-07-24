@@ -64,23 +64,6 @@
     "short_no": 36
   },
   {
-    "task_id": "CTO-2026-07-21-KAKAO-TRAY-AUTORESTORE",
-    "clevel": "cto",
-    "title": "[시토] 카톡 매출보고 발송기 하드닝 — 트레이 최소화 메인창 자가복원 + 포그라운드/검색창 견고화 (09:30 무인 자가복구)",
-    "status": "완료",
-    "priority": "⛴️여객선",
-    "enqueued_at": "2026-07-21",
-    "completed_at": "2026-07-24",
-    "from": "gm",
-    "origin": "gm",
-    "note": "2026-07-21 GM 확인. 오늘 09:30 카톡 3방(차의주 회장님·웰페리온 관리부·★운영부) 자동발송 전량 실패 — 예약작업 result=0(성공 위장)이나 내부 BLOCKED. watchdog(배9420)가 cto-kakao-sales-report 조용함으로 먼저 포착→GM 확인. 실측 원인체인: ①카톡 채팅목록 메인창(EVA_Window_Dblclk 제목'카카오톡')이 트레이 최소화(visible=0) → find_kakao_main_window()가 _enum_visible_top_level_windows() 즉 '보이는 창'만 뒤져 놓침 ②숨은 메인창 hwnd 강제복원(ShowWindow SW_SHOW+SW_RESTORE)해 visible=1 만들면 메인창은 찾으나, 그다음 '채팅'탭 전환·검색창(돋보기 Edit) 활성화가 백그라운드 창이라 실패('돋보기 클릭 후 Edit 못 찾음'). 로그인은 정상(EVA 메인창 존재). AI C-level 세션과 무관(카톡 창 안 건드림). 오늘분은 GM 수동발송으로 처리. 하드닝 범위=발송기 scripts/kakao_report_sender.py: (a)_find_room_window 실패시 메인창 검색 전에 트레이 최소화 메인창 자가복원(EVA 'カ카오톡' visible=0 → ShowWindow 복원) 편입 (b)복원 후 SetForegroundWindow+포커스 안정화(AttachThreadInput 등)로 검색창 조작 성공률 개선 (c)정직 한계: 백그라운드 UI자동화 태생적 취약 — 대안 주경로=3방 창을 열어두면 _find_room_window 직접탐지로 검색플로우 우회. 참고 메모리 reference_kakao_report_sender·reference_kakao_inapp. 예약작업 Kakao-Sales-Report-0930 Ready·킬스위치 enabled=true 그대로(내일 09:30 동일 자동발송).",
-    "next": "[2026-07-21 구현완료] kakao_report_sender.py 하드닝 additive(+50/-2, 정상경로 무회귀): ①find_kakao_main_window 폴백=트레이 최소화(visible=0) EVA메인창 전체열거→ShowWindow SHOW+RESTORE 자가복원 ②focus_window에 SetForegroundWindow 선행 ③검색창 클릭 직전 focus 재안정화. [2026-07-24 완료] (c) 한계 주석 누락분 추가 — 헤더 '한계(정직히 기록)' 섹션에 트레이 복원 후 백그라운드 UI 취약성 정직 표기 + 권장 주경로(3방 창 미리 열어두기) 문서화. 커밋 24d693874. ▶다음: 09:30 무인 실착 시 3방 창 열어두기 운영지침 시행 — 트레이 자가복원은 보조 경로, 창 상시 오픈이 가장 안정적.",
-    "depends_on": "",
-    "ship_no": 9423,
-    "module": "T1",
-    "surface": "autonomy"
-  },
-  {
     "task_id": "CTO-2026-07-21-MODULE-MERGE",
     "clevel": "cto",
     "title": "[시토] 자율화 모듈 병합 — 비슷한 맥락끼리 확장·통합(감시 4종→하네스1·운영 다이제스트 수집층 공유·타도메인 3건 제기)",
@@ -96,22 +79,6 @@
     "module": "T1",
     "surface": "autonomy",
     "short_no": 33
-  },
-  {
-    "task_id": "CEO-2026-07-21-MODULE-MERGE-AIDE-INTEGRITY",
-    "clevel": "ceo",
-    "title": "[웰리] 모듈 병합 제기(시토) — ①gap-detector↔gm-aide 이중등록 표기정리 ②전사 무결성 감시 표준화",
-    "status": "DONE",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-21",
-    "from": "cto",
-    "note": "2026-07-21 시토 배9420 스캔 제기. 상세=status/briefs/시토_모듈병합_제기_20260721.md. #3: cto-aide-gap-detector와 ceo-gm-aide가 같은 로그 gm_aide_scan_log.jsonl을 읽는 한 파이프라인인데 등록부에 2개로 쪼개짐 → 등록부 표기정리(gap-detector를 gm-aide 하위 컴포넌트로 명시 or 앵커 통일, 저위험·값만). #5: 시토 #1 하네스(cto-self-health-watchdog)를 전사 무결성 감시 표준으로 채택해 cpo-sheet-contract(07:50)·(살아있으면)chro를 같은 하네스로 편입, GM 하루1통 전사 이상요약 한판. 시토 #1 라이브 발효 후 표준안 제시 예정. 결재·오케스트레이션=웰리.\n\n[웰리 2026-07-24 · 이 배가 곧 그 일이다] GM 지적 \"매번 안전장치 걸다 보면 모듈·파이프라인만 늘어난다\" = 07-22 북극성 답변 '비슷한 맥락끼리 병합'과 같은 줄기. 6일 정박을 여기서 푼다.\n실측(07-24): 자동화 모듈 34 · scripts/*.py 190 · 그중 감시·가드성 35 · 사고기록 33(GUARDED 24).\nGM 결정 07-24: **규칙 + 전수 병합 둘 다. 전수 조사부터.**\n① 규칙 = 약속 L21 신설·커밋(1dd009875) — 장치는 늘리지 않는다(관문에만 박기·net-zero·꺼둔 것은 삭제·판정 로직 복제 금지).\n② 전수 조사 착수 = status/briefs/웰리_가드모듈_병합지도_20260724.md (관문 식별·가드35 분류·모듈34 클러스터·safe_commit 우회경로 재확인·믿는데 안 도는 가드 색출).\n\n\n[웰리 1단계 검증 통과 2026-07-24] 커밋 0fbe4278b (safe_commit.py 단일 · 이 커밋 자체가 새 가드 통과 실증).\n★최대 발견: safe_commit 은 commit-tree/update-ref 라 git 훅을 발화시키지 않아 **pre-commit 가드 10개 전부 + post-commit G1 자동기록이 미발화**였다. 07-23부터 safe_commit 경유를 전사 확산시킨 터라 방치하면 구멍이 커지는 상태였다(웰리 지시가 원인 — 책임 귀속 본인).\n1단계 = secret·truncation·enforcement 3개를 관문(safe_commit)에 이식. 방식 = 기존 가드 스크립트를 서브프로세스로 호출 + GIT_INDEX_FILE 을 임시 인덱스로 지정(로직 복제 0 · 새 파일 0 — 약속 L21 준수).\n검증: 격리 저장소 6/6 — 정상 커밋·정당한 삭제·한글 경로/내용 통과 / 비밀값·대량유실 차단(커밋 자체 미생성, git log 확인).\n잔여(정직): ①나머지 훅 가드 6개 미이식(queue·erp_anchor·sheet_link 는 같은 계약이라 난이도 낮음 / chatid_drift·reception_drift 는 warn-only / incident_guard 미확인) ②enforcement 의 GM 승인 우회 토큰이 safe_commit 경로에선 안 먹힐 수 있음 — 현재 mode 기본값 warn/off 라 실질 위험 0이나 **block 전환 전 반드시 보완**(ssot/enforcement.py 에 commit_message 인자 진입점 추가 권고) ③post-commit G1 자동기록 미발화 = safe_commit 경유 커밋은 G1 자동 기록 안 됨(현 호출자 3개: ig_publish_verify·ig_review_publish_watcher·publish_register). 오늘 웰리 작업은 배로 직접 기록했으므로 누락 없음 — 구조적 보완은 다음 회차.\n\n\n[웰리 2단계 완료·경고 2026-07-24] 커밋 2927fe13f — queue·erp_anchor·sheet_link 추가 이식. 현재 safe_commit 관문 = 가드 6종 커버(secret·truncation·enforcement·queue·erp_anchor·sheet_link). 격리 6/6·되돌림 0. 잔여 4종: incident(미확인) / chatid_drift·reception_drift(warn-only 보류) / phantom_delete(이미 대체됨).\n\n★다음 회차 경고 — post-commit auto_log_adhoc_to_queue(G1 자동기록)를 safe_commit 에 그대로 이식하지 말 것. 커밋마다 배를 생성하면 오늘 GM이 지적한 '문의 스냅샷이 항로를 도배' 와 정확히 같은 문제를 커밋 쪽에서 재현한다(오늘 완료 15건 중 14건이 기계발행이었던 그 현상). 설계가 먼저다 — 시포가 진행 중인 '모듈당 상설 배 1척 갱신' 방식과 같은 계약으로 맞춘 뒤에 이식한다. 그 전엔 손대지 않는다.\n★관문 없는 영역(텔레그램 발신 47파일 직접호출 · GAS 호출 18파일 직접호출)은 이번 회차 범위 밖. 관문 신설은 파일을 줄이는 병합이지 추가가 아니지만(L21 부합), 규모가 커서 GM 확인 후 별도 회차로 간다.\n\n\n[웰리 검수 통과 2026-07-24 · 병합 실행 완료] 커밋 bac77a07c(등록부) + 시크릿 크롬 라이브 육안 검증 통과.\n결과: 모듈 **34 → 26**(화면 렌더 26행 = json 26 일치). CHRO 3종 삭제(참조 0건 4중 확인) / 흡수 5건 — cto-aide-gap-detector→ceo-gm-aide · cto-check-gas→coo-check-status · cto-module-silence-detector+cto-gas-version-monitor+cto-self-health-watchdog→cto-automation-health. 흡수 노트가 화면에 그대로 렌더돼 정보 손실 0.\n가드 축: safe_commit 관문에 6종 이식 완료(secret·truncation·enforcement·queue·erp_anchor·sheet_link) — 훅에만 걸려 있어 관문 경로에선 안 돌던 사각지대 봉합.\n★회귀 1건 사전 차단: 자율현황 화면에 삭제된 id가 하드코딩(MOD_AH 룩업)돼 있어 그대로 뒀으면 ceo-gm-aide '발효' 표시가 조용히 사라질 뻔했다. 병합 시 **화면 하드코딩 참조**를 반드시 함께 훑어야 한다는 교훈.\n안 지운 것(정직): cpo-sheet-contract-check(시포 도메인 동의 대기) · chro-gmail-job-title-fetch(생사 증거 없음 — 추측 삭제 금지).\n",
-    "next": "완료(제기 2건 모두 해소: ①gap-detector 표기정리=ceo-gm-aide 흡수 ②전사 무결성 감시 표준화=감시 클러스터 5→2). 후속은 배2에서 이어간다.",
-    "depends_on": "",
-    "ship_no": 9421,
-    "module": "home",
-    "surface": "autonomy",
-    "short_no": 4
   },
   {
     "task_id": "CTO-2026-06-23-SELF-HOSTED-SERVER-SETUP",
@@ -419,19 +386,6 @@
     "short_no": 31
   },
   {
-    "task_id": "CEO-2026-07-20-G1-QUEUE-RAW-FETCH",
-    "clevel": "ceo",
-    "title": "[웰리] G1 항로 보드 큐 직독 전환 (배포 의존 제거)",
-    "status": "DONE",
-    "priority": "⛴️여객선",
-    "enqueued_at": "2026-07-20",
-    "note": "[2026-07-20 시우→웰리 인계] 인계문서 status/briefs/웰리_G1_큐직독_인계_20260720.md\nG1은 배포된 미러 사본(/wellperion-automation/status/_queue.json)을 읽는다(guide main L9138 부근). 그래서 배포가 밀리면 항로가 옛 데이터가 된다.\n권고: raw.githubusercontent 원본 직독 + 미러 폴백. 배포와 무관하게 항상 최신.\n확인필요: raw 약 5분 캐시 · CORS 허용됨 · ★비공개 저장소 전환 시 깨짐 · 실패 시 빈화면·위장0 금지.\nG1은 웰리 직접 소유라 시우가 손대지 않음.\n\n[웰리 검증 통과·종료 2026-07-24] 커밋 acac69171.\n★인계문서(status/briefs/웰리_G1_큐직독_인계_20260720.md)가 낡았다 — raw 직독+미러 폴백은 **2026-07-22에 이미 배선 완료**(gm1FetchWithFallback, L8622 '배9333' 주석). 인계문서는 07-20 시점 단일-URL 구조 기준이라 그대로 믿었으면 같은 걸 두 번 만들 뻔했다. 인계문서 읽는 사람은 코드 현황을 먼저 확인할 것.\n실제로 남아 있던 결함 = 원본·미러 둘 다 실패 시 조용히 []를 반환해 '오늘 진행 중인 항목이 없습니다'·'대기 0'으로 **위장**되던 것(INC-007과 같은 종류). {data,failed} 반환형으로 바꾸고 실패 시 상단 경고 배너 노출로 수리.\n검증(Playwright route 차단·데이터 무접촉): 정상 대기12 / raw만 차단→미러 폴백 정상 / 둘 다 차단(수정 전)→0건 위장 재현 성공 / 둘 다 차단(수정 후)→경고 배너 노출 확인. 화면 52 = 큐 52 일치.\n★부수 정정: 코드 주석의 'querystring으로 5분 캐시 우회'는 **사실이 아니다** — curl 4회 실측 전부 X-Cache HIT·Source-Age 동일. GitHub raw는 querystring을 캐시키에 안 쓴다. 실제 상한 = 최대 300초. 무해해서 제거는 안 했으나 기대를 사실로 믿지 말 것.\n비공개 전환 위험: raw 실패 시 미러 자동 폴백(검증된 경로). Pages까지 막히는 최악의 경우엔 이번 경고 배너가 뜬다(위장 없음).\n",
-    "next": "완료. 후속 = 미러 제거 검토는 비공개 전환 계획 확정 후(지금은 폴백으로 필요).",
-    "ship_no": 9333,
-    "surface": "g1",
-    "short_no": 3
-  },
-  {
     "task_id": "CTO-2026-07-21-VOC-REPO-LIVE-SYNC",
     "clevel": "cto",
     "title": "[시토] 종합접수처 서버 사본 apps_script_reception.js 라이브 정합 — 저장소가 라이브보다 구버전(handler·sms 칸 없음)",
@@ -530,23 +484,6 @@
     "processed_at": "2026-07-24"
   },
   {
-    "task_id": "CPO-2026-07-22-DECISION-GATE-A4",
-    "clevel": "cpo",
-    "title": "[시포] 결정정합 게이트 A4 — 해소/취소 문의 액션카드 제외 가드(대조키 필수)",
-    "status": "DONE",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-22",
-    "from": "cto",
-    "note": "결정정합 게이트(배9581) 도메인 라우팅. cpo-inquiry-daily-actions 의 해소/취소 문의를 일일 액션카드에서 제외하려면 ★대조키 기반 필수 — 행번호 삭제 금지(INC row-delete race, 실고객 오삭제 사고). 문의 원천=GAS Survey.js member_inquiry_list(시포 도메인). CTO 는 억지 배선하지 않음. 근거=ssot/decision_contracts.json(cpo-inquiry-daily-actions 블록). domain_review=시포.\n[2026-07-24 시포 완결] 해소·취소 문의 액션카드 제외 가드 라이브 반영. ★GM 지시(전화번호 단독 대조키)는 실측 근거로 정정 — 라이브 638행 대조 결과 재문의 고객은 같은 번호에 문의 행이 2줄 생기고(3건 확인: 010-9128-9137·010-4108-7735·010-8082-1027), 옛 행이 종결이라고 번호로 빼면 살아있는 새 문의까지 사라진다(고객 놓침·INC row-delete race 동류). 대안 채택=대조키 자체 불요 — 종결 표시가 문의 행 자체(status 칸)에 있어 그 행만 보고 제외한다(행번호·전화번호 어느 것도 키로 쓰지 않음 → 오제외 경로 원천 부재). 구현=cpo_report._is_closed_status(종결|취소|해소 정규식, Survey.js _lessonScopeFilter_ terminal 패턴과 동일 방식) → _is_active_status·todays_reservations 반영. 값 하드코딩 대신 키워드 판별(실무진이 상태값 늘려도 안 낡음). 라이브 실측: 이탈위험 181→178(종결 3건만 감소)·미컨택 46 무변화·같은 번호 살아있는 행(컨택중 2·SUC 1) 전부 생존. 수집기 재실행 정상. 커밋 c570d5d29.",
-    "next": "해소·취소 제외는 완결. 다음 한 수=같은 방식으로 강습 문의(lesson_inquiry_list)에도 종결행 제외 적용 여부 판단 — 현재 강습 미응대 집계는 별도 경로라 미적용.",
-    "depends_on": "CEO-2026-07-22-DECISION-CONSISTENCY-GATE",
-    "module": "문의회원",
-    "surface": "autonomy",
-    "ship_no": 9597,
-    "terminal": true,
-    "done_at": "2026-07-24 09:07"
-  },
-  {
     "task_id": "AIDE-2026-07-23-LONG-PENDING-9797",
     "clevel": "cto",
     "title": "[GM보좌 제안] [CTO-2026-06-23-SELF-HOSTED-SERVER-SETUP] 30일째 PENDING 장기 미착수",
@@ -639,22 +576,6 @@
     "surface": "autonomy",
     "ship_no": 9836,
     "short_no": 20
-  },
-  {
-    "task_id": "CEO-2026-07-23-COMMIT-STALE-TREE-GUARD",
-    "clevel": "ceo",
-    "title": "[웰리] 커밋 스테일 트리 TOCTOU 근본 차단 — 이미 2회 기록된 사고의 3번째 발생(시모 제기·GM 07-23 웰리 경유 지시)",
-    "status": "DONE",
-    "priority": "NORMAL",
-    "enqueued_at": "2026-07-23",
-    "from": "cmo",
-    "note": "2026-07-23 시모 제기(GM 지시=웰리 경유). 상세=status/briefs/시모_커밋스테일트리_제기_20260723.md. 2026-07-21 11:25 fe9be3f9d(AI하루 10편 190파일 추가) 4분 뒤 11:29 b96cac0ea(chore(cto): 종합접수처 apps_script_voc.js 라이브정합, 배9468 시토 작업, 세션 session_01DeysMM9YomN5abF2TyP7oc)가 189/190 파일 삭제. 판정=스테일 트리/인덱스 스냅샷(커밋 준비 시점 트리 상태를 나중 parent 위에 커밋) — autostash/rebase 가설은 reflog로 배제(4분 구간 rebase·stash·merge 이벤트 0, 단일 parent 순수 선형 커밋). 같은 날 e7b412fbc/e4af6cace로 자가복구됐으나 review_queue.json 등록 10건은 다음날 재작업됨(현 id가 CMO-2026-07-22-AIDAY* 인 이유). 4주 전수 스캔=20파일 이상 삭제 커밋 이 1건뿐. ★핵심=반복 3회차 — 이미 기억에 2건 박제(임시 인덱스 커밋→옛 blob 잔류 / 임시 인덱스는 read-tree HEAD로 시작)돼 있었으나 문서·기억만으로는 안 막힘(헌법 불변원리 2 미이행 사례). 지목하는 차단(구현은 웰리 판단)=커밋 확정 직전 \"트리를 읽은 시점 HEAD ≠ 커밋 시점 HEAD\" 재검증 후 재시도, 부차적으로 무관 경로 대량 삭제 시 경고. 시모가 직접 안 고친 이유=전 C-Level 공용 커밋 경로라 잘못 조이면 6명 커밋이 전부 막힘. GM 2026-07-23 \"웰리 통해\" 지시.\n\n[웰리 판단·배정 완료 2026-07-24] 조사 결과 = status/briefs/웰리_커밋TOCTOU_차단설계_20260724.md (sha 521d15d1a).\n판단: safe_commit.py 주경로(read-tree HEAD·HEAD 재검증·update-ref CAS)는 7/21형 스테일트리를 실제로 막는다 — 뼈대는 맞다. 진짜 구멍은 안전망 배선: 혼입검사가 push 뒤에 돌아 나쁜 커밋이 그대로 origin까지 간다(탐지O 차단X). 추가로 훅 미발화로 최강 삭제가드가 safe_commit 경로에서 안 돌고, 우회 bare 커밋 경로 7개+공용헬퍼1이 남아 있다.\n배정: 시토 배10009 (A안 — 혼입 판정을 update-ref 이전으로 앞당겨 선검증). 우회 7경로는 범위 폭발 방지로 이번 회차 제외·목록만 등재.\n웰리 역할 = 이후 검증(실제 혼입 재현으로 가드 발화 확인 · 문서로 닫기 금지).\n\n\n[웰리 검증 통과·종료 2026-07-24] 시토 배10009 실행분을 검증했다. safe_commit.py 선검증이 update-ref 이전으로 앞당겨졌고(커밋 c8b8efa9e), 격리 재현 5/5 통과 — 유령삭제·혼입 3종 차단, 정상 커밋·정당한 삭제는 통과(오탐 0). ssot/incidents.json INC-030 GUARDED 등재 확인(검증증거 = 실제 재현 출력). HEAD 실재 확인 완료.\n잔여(정직): safe_commit 우회 bare 커밋 경로 7개 + 공용헬퍼 1은 미차단으로 남았다 — INC-030 차단조치 칸에 '미차단 잔여'로 명시됨. 범위 폭발 방지로 이번 회차 제외했으며 다음 회차 대상이다.\n",
-    "next": "시토 배10009 진행 대기 → 웰리 검증(실제 혼입 재현으로 가드 발화 확인 후 incidents GUARDED 승인)",
-    "depends_on": "",
-    "ship_no": 9862,
-    "module": "home",
-    "surface": "autonomy",
-    "short_no": 6
   },
   {
     "task_id": "CTO-2026-07-23-BOT-QUEUE-NO-LOCK",
@@ -764,23 +685,6 @@
     "module": "home",
     "surface": "autonomy",
     "short_no": 21
-  },
-  {
-    "task_id": "CPO-2026-07-23-작업-현황-로그-회원-도메인-적용-한-일-기록-빠진",
-    "clevel": "cpo",
-    "title": "[시포] 작업 현황 로그 회원 도메인 적용 — 한 일 기록 + 빠진 것 자동 적발",
-    "status": "DONE",
-    "priority": "⛴️여객선",
-    "enqueued_at": "2026-07-23",
-    "from": "ceo",
-    "note": "[웰리 → 시포 전달 2026-07-23] [웰리 배정 · 배9958] 시모가 M1에 먼저 적용해 라이브 검증 완료(규칙 8종·첫 스캔 57건 적발). 같은 틀을 회원 도메인에 붙인다. 새 화면·새 파일·새 예약작업 불필요. 붙이는 법 3단계: (1) 회원 페이지(문의회원·강습회원관리 등 주력 1곳 먼저)에 <div data-worklog=\"cpo\"></div> + 공용 스크립트 1줄 (2) scripts/worklog_gaps.py 등록부에 cpo 규칙만 추가 (3) 기존 회원 자동화에 worklog.log(role='cpo', ...) best-effort 호출. ★설계 원칙 2개: ①평상시 조용(신규 0건=배지 없음) ②0건일 때도 '빠진 것 없음 ✅' 숨기지 않기. 규칙 후보(시포 판단으로 취사): 문의 접수 후 N시간 미응대 / 상담 예약일 지났는데 결과 미기록 / 등록됐는데 회원 원장 누락(문의↔등록 짝 불일치) / 만료 임박인데 갱신 컨택 기록 없음 / 휴회 종료일 지났는데 복귀 처리 없음. 회원 도메인은 실제 고객이 걸려 있으니 오탐을 특히 경계할 것 — 규칙은 적게 시작해 늘린다. 규격·질문은 시모 응대. 브리프=status/briefs/시모_작업현황로그_전사확장_제기_20260723.md\n[2026-07-24 시포 완결·라이브 검증] 회원 도메인 작업 현황 로그 패널 가동 확인. 구현체는 2026-07-23 선반영돼 있었고(membership.html 최상위 부착 + worklog_gaps.py cpo 규칙 3종: inquiry_loss_no_reason·lesson_owner_unassigned·registration_no_trace) 오늘 라이브 실측으로 완결. ★GM 질문(문의회원+강습 두 곳 다 붙이면 느려지나) 실측 답: 문의회원.html은 이미 폐기된 이동안내 페이지(56줄)이고 두 화면은 한 파일(membership.html ?manage=membership|lesson)이라 패널 하나로 양쪽 커버 — 중복 부착 불요. 패널은 body 최상위 자식이라 family 전환과 무관하게 상시 노출. 속도 실측: 스크립트 7.2KB + 한일로그 0.5KB + 빠진것 4.7KB(압축전 122KB) = 전송 12.4KB·91ms, 전부 화면 그린 뒤 백그라운드. 추가 조치=script에 defer 부여(파서 블로킹 제거). 라이브 검증(Playwright, ?manage=membership·lesson 양쪽): 패널 생성 OK·배지 ⚠️5·빠진것 5건 실데이터 렌더 확인. ※페이지가 보안 커튼(gate) 뒤라 미인증 자동 브라우저엔 body visibility:hidden — 정상 동작이며 패널 결함 아님. 커밋 c570d5d29.",
-    "next": "회원 도메인 패널 가동 완료. 다음 한 수=누적 228건(강습 담당자 미배정 160건 등) 실무 정리 계획을 임정은M과 합의 — 규칙은 도는데 사람 액션이 안 붙으면 배지가 무뎌진다.",
-    "depends_on": "",
-    "ship_no": 9960,
-    "module": "home",
-    "surface": "autonomy",
-    "terminal": true,
-    "done_at": "2026-07-24 09:07"
   },
   {
     "task_id": "CMO-2026-07-23-시모-SAFE-COMMIT-커밋-후-공용-인덱스-재",
@@ -1029,22 +933,6 @@
     "short_no": 48
   },
   {
-    "task_id": "CTO-2026-07-24-커밋-안전망-구멍-SAFE-COMMIT-혼입검사가-",
-    "clevel": "cto",
-    "title": "[시토] 커밋 안전망 구멍 — safe_commit 혼입검사가 push 뒤에 돌아 나쁜 커밋이 그대로 나감 (A안 적용)",
-    "status": "DONE",
-    "priority": "🛳️크루즈",
-    "enqueued_at": "2026-07-24",
-    "from": "ceo",
-    "note": "[웰리 → 시토 전달 2026-07-24] 웰리 배9862 조사 결과 배정. 상세=status/briefs/웰리_커밋TOCTOU_차단설계_20260724.md (sha 521d15d1a).\n\n★결함1(즉시): safe_commit.py:254-268 무관경로 혼입검사(삭제 포함)가 update-ref 성공 '이후'에 도는데, result['committed']가 249행에서 먼저 True로 세팅되고 맨끝 push 분기가 ok가 아니라 committed만 본다 → 혼입을 감지해도(ok=False) 이미 만들어진 나쁜 커밋이 origin까지 push된다. 탐지는 하나 차단을 못 한다.\n★결함2: safe_commit.py는 commit-tree+update-ref라 git 훅을 발화시키지 않음 → INC-029 직후 만든 최강 삭제가드 precommit_phantom_delete_guard.py(실존파일 삭제staged 차단)가 safe_commit 경로에서 아예 안 돈다(bare git commit 경로에만 걸림).\n★결함3: safe_commit 우회 경로 7개+공용헬퍼1 — auto_log_adhoc_to_queue.py:365 · commit_ig_reach.py:41 · commit_engagement.py:45 · erp_status_publisher.py:418 · git_lock.py:207-208(공용 git_commit_push, 자체 주석으로 'bare 커밋 못 막는다' 명시) · parking_revenue_crawler.py:191 · weekly_page_hygiene.py:362. 전부 pathspec bare commit이라 HEAD재검증+CAS 미경유.\n\n참고(정직): safe_commit.py의 주경로 3종(read-tree HEAD로 새 트리 · commit-tree 직전 HEAD 재검증 · update-ref CAS)은 7/21형 스테일트리 사고를 구조적으로 막는 게 코드로 확인됨. 즉 뼈대는 맞고 안전망 배선이 새는 것.\n앞선 GUARDED 선례 INC-017·INC-022(둘 다 07-20)는 매번 '그 사고 스크립트 1~5개'만 좁혀 막았고 INC-022 본문이 스스로 '터미널 bare 커밋은 못 막는다'고 명시 — 전사 범위를 표방한 첫 시도가 safe_commit.py(07-23)다. 그래서 이번엔 좁히지 말고 safe_commit 경로 자체를 굳혀야 한다.\n※시모 브리프가 말한 앞선 2건은 incidents.json에 문자 그대로 일치하는 ID가 없음(메모리에만 있고 미등재로 보임 · 확인불가) → 이번에 정식 등재할 것.\n\n[웰리 검수 통과·종료 2026-07-24] A안 구현 완료(커밋 c8b8efa9e) — 혼입/유령삭제 선검증을 update-ref 이전으로 앞당겨 나쁜 커밋 자체를 생성하지 않음. 격리 재현 5/5(차단 3·정상 통과 2, 오탐 0). ssot/incidents.json INC-030 GUARDED 등재 확인. 후속으로 관문 가드 6종까지 이식됨(0fbe4278b·2927fe13f — secret·truncation·enforcement·queue·erp_anchor·sheet_link). ★큐 닫힘 누락 정정: 08:41 구현 완료였는데 배가 PENDING으로 남아 '이미 끝난 일을 다시 하라'고 지시하고 있었다(낡은문서 색출에서 최대 위험으로 지목·status/briefs/웰리_낡은문서_색출_20260724.md). 웰리 누락이다.",
-    "next": "완료. 잔여=훅 가드 4종(incident 미확인·chatid_drift·reception_drift warn-only) 및 safe_commit 우회 bare 경로 7개는 미차단 — 배2·배4 병합 회차에서 다룬다.",
-    "depends_on": "",
-    "ship_no": 10009,
-    "module": "home",
-    "surface": "autonomy",
-    "short_no": 49
-  },
-  {
     "task_id": "CTO-2026-07-24-회사소개서-자산-경량화-4MB-BASE64-외부화-",
     "clevel": "cto",
     "title": "[시토] 회사소개서 자산 경량화 — 4MB base64 외부화·버전표기 통일",
@@ -1059,38 +947,6 @@
     "module": "home",
     "surface": "autonomy",
     "short_no": 50
-  },
-  {
-    "task_id": "CTO-2026-07-24-알림-묶기-1주차-하루-13-15통-압축-신설-금지",
-    "clevel": "cto",
-    "title": "[시토] 알림 묶기 1주차 — 하루 13~15통 압축 (신설 금지·정보 손실 0)",
-    "status": "DONE",
-    "priority": "⛴️여객선",
-    "enqueued_at": "2026-07-24",
-    "from": "ceo",
-    "note": "[웰리 → 시토 전달 2026-07-24] 웰리 배9806 C축 1주차 배정. GM 결정 2026-07-24 = '묶기. 신설은 가능하면 안 하기.'\n★상위 제약: **새 알림 만들지 말 것.** 지금 있는 발신만 가지고 통수를 줄인다. 기존 발신의 묶음·시각 이동·순서 조정은 허용(같은 정보 다른 배치), 없던 알림 신설은 금지 — 필요하면 웰리 경유 GM 결재.\n근거 실측 = status/briefs/웰리_텔레그램_발신전수_20260724.md (발신 약 30종 · 하루 13~15통 · GM 업무보고방 7~8통).\n\n묶기 대상 3:\n(1) GM 개인 DM 06·18·21시 3슬롯 → 1~2슬롯. 08:00 통합브리핑이 07·09·15·22시를 이미 흡수한 전례와 같은 방식으로 흡수하고 21:00 마감만 남기는 안 우선 검토.\n(2) 09:10 모듈 데일리 리포트 + 09:30 스트림#3(매출·운영·인사) → 한 슬롯(09:15 등) 통합. 둘 다 GM이 받는 하루 정리형.\n(3) 주간 리포트 4~6종(모듈위클리·페이지위생·CMO마케팅피드백·AI교육/학습제안)이 일~월 09시대에 몰려 주초 아침 5~6통 → 요일별 1통 로테이션.\n+ 게이트 OFF로 방치된 발신(CHECK_2300_GM_DM_ENABLED=False · CHECK_MORNING_1200_ENABLED=False)은 되살리지 말고 삭제 검토(배10008과 같은 원리 — 꺼두면 죽은 코드로 남아 누가 또 켠다).\n\n★완료 조건(둘 다 필요):\n- 정보 손실 0 — 묶기 전 각 발신이 담던 항목을 묶은 뒤에도 전부 담는지 항목 단위로 대조표를 남길 것. '요약했더니 빠졌다'는 실패다.\n- 하루 통수 전후 실측 — 묶기 전 13~15통이 몇 통이 됐는지 숫자로. 추정 금지, 실제 발신 관찰.\n\n[웰리 검수 통과·종료 2026-07-24] 커밋 b34c61058(타겟②③) + fb6766c51(net-zero 정산).\n결과: 평일 13~15 → 11~13통 / 일요일 4→1 / 월요일 5→2(설계안 예상 3통은 실측 5통으로 정정 — module_reporter 위클리 대상이 1개가 아니라 3개였음).\n실무진 공유방 3개(문의알림·점검현황·종합접수) 무변경 — git diff로 확인. 방 통합은 자동화현황방(2명)만.\n★부수 발견·수리 2건(이번 배 최대 성과): ai_education_auto_learner·ai_learning_proposer 가 --no-send 로 도는데 받아줄 쪽이 없어 **매주 조용히 유실**되고 있었다(교육자료 주간정리·자기학습 개선제안이 GM께 몇 주째 0통). 보내는 쪽만 살아있고 받는 쪽이 없으면 아무도 눈치 못 챈다 — 발신 인벤토리로도 안 잡히는 유형이다.\n★L21 net-zero 정산 완료: 신설 4파일(weekly_bundle_pending.py + 상태 json 3) ↔ 죽은 등록 2건 삭제(tg-1700-nudge-pm·tg-2200-nudge-close, 코드는 07-23 f36d56393로 이미 제거됨) + 오탐 억제(KNOWN_NON_NOTIFY).\n잔여: 09:30 통합 메시지가 텔레그램 글자수 제한으로 2파트 분할 발송 — 통수 계산상 1통으로 세었으나 실제 수신은 2건일 수 있다. 다음 회차에 길이 다이어트 검토.\n",
-    "next": "완료. 후속 = ①09:30 메시지 2파트 분할 해소(길이 다이어트) ②06:30 북극성 카드 중복 처리(GM 확인 대기) ③방 통합 잔여는 없음.",
-    "depends_on": "",
-    "ship_no": 10011,
-    "module": "home",
-    "surface": "autonomy",
-    "short_no": 51
-  },
-  {
-    "task_id": "CTO-2026-07-24-배-번호-짧게-재부여-열린-배만-1부터-GM-07-",
-    "clevel": "cto",
-    "title": "[시토] 배 번호 짧게 재부여 — 열린 배만 1부터 (GM 07-24 결정)",
-    "status": "DONE",
-    "priority": "⛴️여객선",
-    "enqueued_at": "2026-07-24",
-    "from": "ceo",
-    "note": "[웰리 → 시토 전달 2026-07-24] GM 2026-07-24 결정: 배 번호가 5자리(10011)까지 길어져 부르기 불편하다 → **열린 배(PENDING·IN_PROGRESS)만 1부터 재부여**. 닫힌 배·아카이브는 건드리지 않는다.\n\n★이건 식별자 전면 교체다. 참조가 끊기면 배가 통째로 사라져 보인다 — 반드시 조사 먼저, 구현은 그 다음.\n\n(1) 착수 전 필수 조사(결과를 웰리에 먼저 제시 · 승인 전 구현 금지):\n  - ship_no 를 읽거나 쓰는 곳 전수 grep — scripts/ 전체, G1 항로 보드(가이드 main HTML), status/*.json, GAS, 브리프 문서.\n  - queue_dispatch.py·assign_ship_numbers.py 의 번호 채번 로직이 '최대값+1'인지 확인. 재부여 후 새 배가 기존 번호와 충돌하지 않게 채번 기준도 같이 손봐야 한다.\n  - 브리프·노트 본문에 '배9862' 같은 번호가 문자열로 박혀 있는 곳 목록(본문 치환은 이번 범위 밖 — 목록만).\n  - 아카이브(_queue_archive.json)와 번호가 겹치면 어떻게 되는지 판정.\n\n(2) 구현 시 원칙:\n  - 열린 배만 재부여. 닫힌 배 번호는 불변.\n  - 기존 번호를 버리지 말고 각 배에 old_ship_no 로 보존(과거 기록·브리프 대조용).\n  - 재부여 전 status/_queue.json 백업 사본을 먼저 만들 것.\n  - 채번 로직이 재부여 후 최대값+1부터 나가도록 함께 수정.\n\n(3) 검증: 재부여 후 G1 항로 보드를 시크릿 크롬으로 열어 **열린 배 수가 재부여 전과 동일**한지 눈으로 확인. 한 척도 사라지면 안 된다. 숫자로 전후 대조표를 남길 것.\n\n[웰리 검수 통과·종료 2026-07-24] 2안(표시용 short_no) 구현 완료(커밋 19ceab6e2). 열린 배 전량 부여·중복 0·누락 0, 라이브 G1 렌더 확인. 내부 ship_no 불변(hangro 원장·northstar 조인·아카이브 충돌 원천 회피). 채번=최대값+1·닫힌 번호 재사용 금지. 실사용 확인(신규 배가 54번을 정상 수령).",
-    "next": "완료. 후속 없음.",
-    "depends_on": "",
-    "ship_no": 10012,
-    "module": "home",
-    "surface": "autonomy",
-    "short_no": 52
   },
   {
     "task_id": "CPO-2026-07-24-시포-배정-독려-안내-문안-소유-확인-발신-주체-시",
@@ -1367,22 +1223,6 @@
     "adhoc_commit": "9bcb4c6283b776255b2f31f42391688448bd82ad"
   },
   {
-    "task_id": "CEO-2026-07-24-자기학습-제안-적체-승인-3건-21일째-미반영-미검",
-    "clevel": "ceo",
-    "title": "[웰리] 자기학습 제안 적체 — 승인 3건 21일째 미반영 · 미검토 제안 14건",
-    "status": "DONE",
-    "priority": "⛴️여객선",
-    "enqueued_at": "2026-07-24",
-    "from": "cto",
-    "note": "[시토 → 웰리 전달 2026-07-24] 2026-07-24 시토 발견(GM '자율현황 문제점' 점검 중). 자율현황 헤드라인 '학습 반영 0건'을 파고든 결과 원인이 둘로 갈렸다. ▶절반은 시토가 처리 완료: 07-20 제안 생성기는 rc=0 으로 정상 실행됐는데 산출물이 autostash 에 갇혀 파일에 안 남았다(INC-034 같은 뿌리) → 6건 회수, 현재 21건(커밋 9efc7bc5c). ▶나머지 절반이 웰리 몫: 설계상 '승인 후 실제 반영(메모리·프롬프트 수정)은 웰리 수동'인데(자기수정 코드 0 = GM 결정 수위), 07-02 승인된 3건이 21일째 '승인' 상태로 멈춰 있다. 또 '제안' 상태 14건이 검토 대기다(06-29·07-06·07-10·07-13·07-20 회차 누적). 역할분리 정본 = G1=제안 검토·승인 / T1=반영·효과 회고. ▶승인 대기 3건 요지: ①AI CEO '두뇌-손 분리'에 핸드오프 명세 추가 ②텔레그램 13시 헬스체크에 명시적 evaluator 계약 추가 ③auto mode 안전 액션 화이트리스트를 발행 파이프라인에 도입. ▶시토가 직접 안 한 이유: 반영 대상이 웰리 프롬프트·전사 운영 원칙이라 CEO 도메인이다(침범 금지). 도구는 준비돼 있다 — scripts/ai_learning_proposer.py --list/--approve/--mark-applied. ▶정직: 파이프라인이 '멈춘 것처럼' 보인 건 절반은 유실, 절반은 사람 단계 적체였다. 자동화 결함으로만 보고하면 틀린다.\n\n[웰리 처리 완료 2026-07-24] 커밋 fbf2b3337. 미검토 제안 **0건**(처리 전 14건).\n판정 17건: 반영 3(웰리 프롬프트 핸드오프 3필드=ai-ceo.md §5 직접 반영 / 시토 헬스체크 판정계약=배57 / 시모 발행 권한분리=배58) · 신규 승인 3(배59 visual-verdict · 배60 주간 품질회귀 delta · 배61 M5 금지어·CTA 게이트) · 반려 11.\n반려 사유 요지: 자율 화이트리스트 5건=약속 L21 위반(새 JSON·새 게이트 신설). 자율 범위 정본은 CLAUDE.md §4·약속에 이미 있고 복사본은 L01 위반 / visual-verdict 2건·핸드오프 2건=중복 수렴 / model_router 사전체크=실장애 근거 없음 / brainstorming 절차=개선 아님·해당 배 비활성.\n★본질(기록): 이건 자동화 결함이 아니라 **사람 단계(웰리) 적체**였다. 설계상 승인 후 반영은 웰리 수동인데(자기수정 코드 0 = GM 결정 수위), 대상이 시토·시모·시우여도 웰리가 안 넘기면 당사자가 못 가져간다 → 병목이 웰리 1인. 반영이 멈추니 생성기가 매 회차 같은 제안을 다시 냈다(화이트리스트 5회·visual-verdict 3회 중복). **중복은 증상이고 적체가 원인이다.**\n★재발 방지 방향: 승인건은 웰리가 들고 있지 말고 **즉시 담당 C-Level 배로 띄운다**(오늘 배57~61 방식). 웰리는 판정만 하고 반영은 당사자가. 이 관례를 다음 회차 제안 검토에도 적용.\n",
-    "next": "완료. 후속 = ①배57~61 담당 진행 후 웰리 검수 ②반영된 3건의 효과 회고(--record-effect)는 T1 자기학습 탭 ③다음 회차(07-27 예정) 제안은 승인 즉시 담당 배로 띄워 적체 재발 차단.",
-    "depends_on": "",
-    "ship_no": 10032,
-    "short_no": 56,
-    "module": "home",
-    "surface": "autonomy"
-  },
-  {
     "task_id": "CPO-2026-07-24-ADHOC-eb0ac2891",
     "clevel": "cpo",
     "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
@@ -1519,38 +1359,6 @@
     "short_no": 62,
     "module": "home",
     "surface": "autonomy"
-  },
-  {
-    "task_id": "COO-2026-07-24-RECEPTION-BOARD-8CAT",
-    "clevel": "coo",
-    "title": "[시우] 종합접수처 현황 8종 통합 — 휴회 카드 합류(습득물 선례 방식)",
-    "status": "DONE",
-    "priority": "⛴️여객선",
-    "enqueued_at": "2026-07-24",
-    "from": "gm",
-    "note": "GM 2026-07-24 지시: '종합접수처 현황 페이지에 휴회접수까지 정리하는건 어때? 휴회접수는 종합접수처 시트로 통일'. ▶실측으로 밝혀진 것 2가지: ①시트 통합은 이미 끝나 있었다 — 휴회접수 탭은 종합접수처 시트(17ly)에 있고 접수 폼도 거기로만 쓴다. GM이 두 곳으로 보신 이유는 멤버십 문의 관리 시트의 옛 탭 링크(북마크)가 남아서인데, 그 탭은 이미 삭제돼 실재하지 않는다(탭 42개 전수 육안 확인 0건 + 해당 gid 서버 요청 400). ②진짜 어긋난 것은 시트가 아니라 체계였다 — 접수 6종은 공통 12칸(접수ID·부서·담당·SLA) 체계인데 휴회접수는 별개 11칸에 접수ID·부서·SLA가 없고, 상태어도 접수/처리중/완료 vs 접수대기/승인/반려로 달랐다. 게다가 뒤에서 도는 GAS 스크립트가 서로 다르다(접수처 apps_script_voc.js / 휴회 Survey.js). ▶채택: 무겁게 통합(휴회를 12칸 스키마로 재설계+승인로직 이관)하지 않고, 이 페이지에 이미 검증된 습득물 방식(다른 출처·다른 스키마를 상태만 번역해 얹고 _merge)을 그대로 복제. 스키마 변경 0·GAS 충돌 0.",
-    "next": "🔗 항로점 — 다음: 접수처=보는 곳(읽기전용)/회원화면=처리하는 곳 경계를 시포와 확정(배62 전달). 그 뒤 미처리 방치 알림(접수 후 N일) 검토 — 오늘 스캔에서 VOC 6건이 7~16일째 미처리인데 아무도 모르는 상태.",
-    "depends_on": "",
-    "ship_no": 10042,
-    "short_no": 63,
-    "module": "coo-reception",
-    "artifact": "3. 웰페리온 가이드/coo/reception/종합접수처_현황.html",
-    "artifact_url": "https://wellperion-cao.github.io/wellperion-automation/coo/reception/%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html",
-    "evidence": "라이브 시크릿 크롬 실측(2026-07-24): 필터 칩 전체+8종=9개 · ⏸️휴회 접수(2) · 콘솔 에러 0건 · 기존 7종 건수 무손상(분실물24·습득물24·시설8·청결7·컴플레인18·칭찬1·쓴소리0). 휴회 fetch 강제 차단 시에도 7종 정상 렌더(실패 격리 확인). 커밋 f86512d28.",
-    "done_at": "2026-07-24"
-  },
-  {
-    "task_id": "CPO-2026-07-24-LESSON-TS-AND-REINQUIRY",
-    "ship_no": 10043,
-    "clevel": "cpo",
-    "status": "DONE",
-    "priority": "⛴️여객선",
-    "terminal": true,
-    "created_at": "2026-07-24 11:11",
-    "title": "[시포] 강습 회원관리 — 문의일시 시간 표시 + 유소년 재문의 이전건 내용 정리(요구 재정의)",
-    "note": "GM 지시 2026-07-24. (1) 성인·유소년 강습 문의일시가 날짜만 보인다(실측 '2026-07-24' · 멤버십은 '2026-07-22 10:20:20'로 시각까지 있음) → 시간도 표시. ★선확인: 시트 원본에 시각이 남아있는데 표시에서 잘리는지, 애초에 날짜만 저장됐는지. 후자면 과거분 복구 불가 → 신규분부터 적용 + 정직 표기. (2) ★요구 재정의: 유소년 재문의 건이 '문의 일시에 최초 일자를 적는' 방식으로 구현돼 있으나 GM 본래 의도는 '문의 내용란에 이전 문의 건 내용까지 정리해 보여주기'였다. 기존 구현 색출 → 의도대로 교체.\n[2026-07-24 완결·라이브 검수 PASS] (1) 강습 문의일시 시각 표시 — 원인=2026-07-20 에 멤버십(_miReadRows_)만 _miToISOTime_ 로 고치고 강습·렌트비즈 3곳은 _miToISO_(날짜만) 그대로 둬 같은 개념이 화면마다 달랐음. 시트엔 시각이 원래 살아있었음(실측 성인 00:22:25·유소년 13:26:32). 3곳 전부 _miToISOTime_ 로 통일·라이브 @142. 실측 복원: 성인 3506/3544행·유소년 4595/4606행(나머지는 시트 원본에 시각 부재 — 지어내지 않고 날짜만 유지). (2) ★요구 재정의 반영: 2026-07-23 에 시포가 GM 요구를 잘못 읽어 문의일시 칸에 '최근접점 + 🔁최초일자' 를 병기했었음. GM 본래 의도는 문의일시엔 접수시각만 두고 이전 문의는 문의내용 칸에 내용까지 정리하는 것 → _lessonInqDateCell 원복(멤버십 tdTs 와 동일 한 줄), _lessonLastContactDate 는 유일 호출부 사라져 제거(죽은코드 금지). (3) 이전 문의 인라인 요약 신설 — 접수일·종목/문의내용·상태 + 연락이력, 최근 2건 노출·나머지 '+N건 더' 접기. 공용 _riInlineSummaryHtml 로 강습(_lessonRowHtml)·멤버십(buildDbRow tdInq) 양쪽 동일 적용(중복 구현 금지). 읽기 전용·시트 쓰기 0·기존 재문의 배지/모달 무회귀. 빈 값 세그먼트 제거('체조 · — —' 어색함 차단)·lineFn/statusFn 안전 기본값. 커밋 2db23c630. ★GM 지시 '일관성 체크' 성과: 오늘 하루에 한쪽만 고쳐 갈라진 사례 3건 확인(①저장 실패 가드=강습만 → 멤버십 컨택 유실 사고 ②문의일시 시각=멤버십만 ③이전문의 요약=이번엔 양쪽 동시). 두 화면은 한쪽 수정 시 반대쪽 동시 점검을 기본으로 한다.",
-    "next": "GM 판단 대기 — 멤버십·강습 잔여 불일치 3건 중 통일 방향 결정 필요: ①재문의 배지 위치(강습=문의내용 칸 / 멤버십=CONTACT 칸) ★가장 큼 ②이전 이력 상태 표시(강습=시트 원문 / 멤버십=_memStatusDisplay 변환) ③같은번호 문구(강습 '형제·동반' / 멤버십 '가족·동반'). 결정되면 즉시 통일. 별건 관찰: 강습 목록에 서버 캐시가 있어 방금 바뀐 값이 잠시 안 보임(시험행 삭제 후 재현) — 실무진이 '고쳤는데 그대로'로 오인할 수 있어 점검 대상.",
-    "done_at": "2026-07-24 11:27"
   },
   {
     "task_id": "CPO-2026-07-24-ADHOC-61d27cc65",
@@ -1700,5 +1508,21 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 3b9354a54)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "3b9354a54d545052f33b4eef74bbe594d7c75f95"
+  },
+  {
+    "task_id": "CEO-2026-07-24-상태줄-STATUSLINE-주인-정하기-63분에-3",
+    "clevel": "ceo",
+    "title": "[웰리] 상태줄(statusline) 주인 정하기 — 63분에 3역할 6커밋·같은 기능 중복 구현",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-24",
+    "from": "cto",
+    "note": "[시토 → 웰리 전달 2026-07-24] 2026-07-24 시토 제기. scripts/wellperion_hud.mjs 가 오늘 만들어진 지 1시간 만에 여러 세션의 공동 편집 대상이 됐다. ▶실측(커밋 이력): 10:53 cto(신설) → 11:04 cto(7역할 박제) → 11:09 cto(잘림 수리) → 11:28 ceo(역할 점 조정) → 11:53 cpo('지금 하는 일' 배 번호+제목) → 11:56 ceo('작업 내용' 배 제목 12자 요약). 63분·3역할·6커밋. ★11:53 시포와 11:56 웰리가 3분 간격으로 사실상 같은 기능(배 제목 표시)을 각자 구현했다 — 한쪽 노력이 그냥 버려진 형태다. 제기 시점에도 미커밋 수정(MM)이 떠 있었다. ▶왜 위험한가: 오늘 시토가 종일 잡은 INC-034 가 바로 '여러 세션이 같은 파일을 만지다 한쪽 작업이 조용히 사라지는' 문제였다(스태시 32개·로그 223줄 유실). 이 파일이 지금 정확히 그 조건에 있다. 게다가 상태줄은 전 C-Level 7창에 동시에 뜨는 공용 표면이라, 한 사람이 폭을 늘리면 다른 창이 잘린다(실제로 오늘 GM이 '시모·시우·시포는 잘리는데?'로 지적, OMC 줄 폭 135~161 실측). ▶시토 판단: 파일을 시토가 만들었지만 **표시 내용은 GM이 보는 화면**이라 소유는 웰리가 맞다. 시토는 기술 배선(자가복구·잘림·성능)만 맡는 게 경계상 자연스럽다. ▶제안(웰리 결정): ①표시 항목·문구·순서 = 웰리 단독 소유(변경 전 웰리 승인) ②기술 배선(자가복구 ensure_statusline.py·폭 관리·성능) = 시토 ③변경 전 반드시 5역할 창 폭 실측(잘림 0 확인) ④같은 파일 동시 편집 금지 — 고칠 게 있으면 소유자에게 배로. ▶현 상태 정리 필요: 시포·웰리가 각각 넣은 제목 표시가 중복인지 한쪽이 덮였는지 웰리가 확인해 하나로 수렴시킬 것.",
+    "next": "웰리: ①소유 경계 확정(표시=웰리 / 배선=시토) ②시포·웰리 중복 구현분 하나로 수렴 ③미커밋 수정 정리 ④확정 후 시토에 회신하면 시토가 자가복구 스크립트에 반영",
+    "depends_on": "",
+    "ship_no": 10054,
+    "short_no": 68,
+    "module": "home",
+    "surface": "autonomy"
   }
 ]
