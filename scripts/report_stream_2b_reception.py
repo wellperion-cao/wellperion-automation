@@ -41,7 +41,7 @@ DASHBOARD_URL = "https://wellperion-cao.github.io/wellperion-automation/coo/rece
 _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 _DIVIDER = "━" * 10
 
-# 카테고리(reg_list의 category=한글 라벨) → SLA 시간. SSOT=coo/voc/apps_script_voc.js
+# 카테고리(reg_list의 category=한글 라벨) → SLA 시간. SSOT=coo/reception/apps_script_reception.js
 # REG_CATEGORIES(:38-43). 보드·다른 소비자에 하드코딩 복사 금지 원칙과 동일하게 이 표는
 # GAS 응답 라벨 그대로를 키로 쓴다(코드 재구현 없이 라벨 정확일치). None=SLA 없음(집계 제외).
 _SLA_HOURS: dict[str, int | None] = {

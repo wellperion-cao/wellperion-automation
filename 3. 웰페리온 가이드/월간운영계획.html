@@ -2432,7 +2432,7 @@
       cards.push(
         '<div class="chk-card"><span class="cl">종합접수처 현황</span>' +
         '<div class="cv pending">측정 개통 전</div>' +
-        '<span class="csub">VOC 접수 조회 실패 — 가짜값 없음</span>' +
+        '<span class="csub">접수 조회 실패 — 가짜값 없음</span>' +
         '<a class="clink" href="coo/reception/종합접수처_현황.html" target="_blank">접수 현황 →</a></div>'
       );
     }
@@ -2457,13 +2457,13 @@
     var host = document.getElementById('issue-board');
     if(!host) return;
     if(!_vocBoard){
-      host.innerHTML = '<div class="issue-h">🗂️ 종합 접수처 <span style="font-weight:400;color:var(--dim);">— VOC 실시간</span></div>' +
-        '<div class="rep-empty">종합접수처 연동 예정 — VOC 접수 조회 실패(가짜값 없음). <code>coo/reception/종합접수처_현황.html</code>에서 직접 확인 가능.</div>';
+      host.innerHTML = '<div class="issue-h">🗂️ 종합 접수처 <span style="font-weight:400;color:var(--dim);">— 실시간</span></div>' +
+        '<div class="rep-empty">종합접수처 연동 예정 — 접수 조회 실패(가짜값 없음). <code>coo/reception/종합접수처_현황.html</code>에서 직접 확인 가능.</div>';
       return;
     }
     var total = _vocBoard.length;
     if(!total){
-      host.innerHTML = '<div class="issue-h">🗂️ 종합 접수처 <span style="font-weight:400;color:var(--dim);">— VOC 실시간</span></div>' +
+      host.innerHTML = '<div class="issue-h">🗂️ 종합 접수처 <span style="font-weight:400;color:var(--dim);">— 실시간</span></div>' +
         '<div class="rep-empty">현재 등록된 접수 이슈가 없습니다.</div>';
       return;
     }
@@ -2478,7 +2478,7 @@
         '<td><span class="istat 해결">완료 ' + byStat['완료'] + '</span></td>' +
         '<td>' + items.length + '건</td></tr>';
     }).join('');
-    host.innerHTML = '<div class="issue-h">🗂️ 종합 접수처 (' + total + ') <span style="font-weight:400;color:var(--dim);">— VOC 실시간 · PII 비노출(카테고리·부서·상태 집계만)</span></div>' +
+    host.innerHTML = '<div class="issue-h">🗂️ 종합 접수처 (' + total + ') <span style="font-weight:400;color:var(--dim);">— 실시간 · PII 비노출(카테고리·부서·상태 집계만)</span></div>' +
       '<div class="rpt-wrap"><table class="rpt issues"><thead><tr>' +
         '<th>유형</th><th>부서</th><th>접수</th><th>처리중</th><th>완료</th><th>합계</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table></div>';

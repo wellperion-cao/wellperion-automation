@@ -201,7 +201,7 @@ if __name__ == "__main__":
         {"clevel": "cto", "title": "텔레그램 알림 헬스체크", "note": "chat_id drift"},
         {"clevel": "cto", "title": "북극성 추천기 자동화 파이프라인", "note": ""},
         {"clevel": "cpo", "title": "강습 등록 원장", "note": ""},
-        {"clevel": "coo", "title": "VOC 접수 게이트", "note": "컴플레인"},
+        {"clevel": "coo", "title": "종합접수처 접수 게이트", "note": "컴플레인"},
         {"clevel": "cto", "title": "module 수동교정 예시", "note": "", "module": "T1"},
         {"clevel": "coo", "title": "정체불명 작업", "note": "xyz"},
     ]

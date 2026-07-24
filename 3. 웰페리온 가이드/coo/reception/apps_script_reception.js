@@ -567,7 +567,7 @@ function _vSubmit(body) {
 
   // 텔레그램 핵심멤버방 알림 (설정 시) — 사진 있으면 sendPhoto 로 실제 첨부
   _vNotifyTelegram(
-    '🙋 <b>[회원 VOC 접수]</b>\n' +
+    '🙋 <b>[회원 접수]</b>\n' +
     '유형: ' + (type || '-') + '\n' +
     '위치: ' + (loc || '-') + '\n' +
     '내용: ' + (content ? content.slice(0, 120) : '-') + '\n' +
@@ -576,7 +576,7 @@ function _vSubmit(body) {
     photoUrl
   );
 
-  return _vJson({ ok: true, id: id, photoUrl: photoUrl, message: 'VOC가 접수되었습니다.' });
+  return _vJson({ ok: true, id: id, photoUrl: photoUrl, message: '접수되었습니다.' });
 }
 
 // ─── voc_list — 현황 조회 ───
@@ -625,7 +625,7 @@ function _vUpdate(body) {
     ok: true, id: id,
     status: existing[VOC_HEADERS.indexOf('상태')],
     assignee: existing[VOC_HEADERS.indexOf('담당')],
-    message: 'VOC가 갱신되었습니다.'
+    message: '접수건이 갱신되었습니다.'
   });
 }
 

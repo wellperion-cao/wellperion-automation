@@ -1,14 +1,14 @@
 # 회원 종합 접수처 (QR + 사진) — GM 배포·QR·텔레그램 안내
 
 > 코드는 모두 준비 완료. 아래는 **GM 환경/게이트가 필요한 라이브 단계**입니다.
-> 라이브 '이슈 응답' 시트·점검 GAS 는 건드리지 않습니다(VOC 는 완전 별도).
+> 라이브 '이슈 응답' 시트·점검 GAS 는 건드리지 않습니다(접수는 완전 별도).
 
 ## 산출물 (레포 준비 완료)
 | 파일 | 역할 |
 |---|---|
-| `coo/voc/apps_script_voc.js` | VOC 전용 백엔드 GAS (submit·list·update·사진 base64→Drive·텔레그램 알림) |
+| `coo/reception/apps_script_reception.js` | 접수 전용 백엔드 GAS (submit·list·update·사진 base64→Drive·텔레그램 알림) |
 | `coo/reception/reception_block.html` | 회원용 모바일 폼 정본 (워드프레스 ko/reception 주입 소스. QR `?loc=` 프리필, 다크·모바일) |
-| `coo/check/운영부 체계.html` ▸ VOC 탭 | 운영부 현황 보드(접수/처리중/완료 칸반 + 담당배정·상태전환) |
+| `coo/check/운영부 체계.html` ▸ 접수 탭 | 운영부 현황 보드(접수/처리중/완료 칸반 + 담당배정·상태전환) |
 
 ---
 
@@ -32,9 +32,9 @@
 
 ## GM 설정 액션 (라이브화 필수)
 
-### 1) VOC 전용 GAS 프로젝트 생성·배포
+### 1) 접수 전용 GAS 프로젝트 생성·배포
 1. https://script.google.com → **새 프로젝트**. (점검·업무 GAS 와 **별도 프로젝트** — 절대 같은 스크립트에 얹지 말 것)
-2. `coo/voc/apps_script_voc.js` 전체 내용을 `Code.gs` 에 붙여넣기.
+2. `coo/reception/apps_script_reception.js` 전체 내용을 `Code.gs` 에 붙여넣기.
 3. **프로젝트 설정 → 스크립트 속성**에서 아래 키 등록:
 
 | 속성 키 | 값 |

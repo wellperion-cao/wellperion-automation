@@ -434,13 +434,13 @@
   {
     "task_id": "CTO-2026-07-21-VOC-REPO-LIVE-SYNC",
     "clevel": "cto",
-    "title": "[시토] 종합접수처 서버 사본 apps_script_voc.js 라이브 정합 — 저장소가 라이브보다 구버전(handler·sms 칸 없음)",
+    "title": "[시토] 종합접수처 서버 사본 apps_script_reception.js 라이브 정합 — 저장소가 라이브보다 구버전(handler·sms 칸 없음)",
     "status": "PENDING",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-21",
     "from": "coo",
-    "note": "[2026-07-21 시우 발견·인계] 배9334(O2 버그3건, 준용M 수리·시우 검수 PASS·DONE) 처리 중 확인된 잔여 별건. 저장소 사본 '3. 웰페리온 가이드/coo/voc/apps_script_voc.js' 가 실제 라이브 GAS 웹앱보다 옛 버전 — 처리자(handler)·문자(sms) 칸이 저장소 코드엔 아예 없음. 위험=저장소만 보고 판단 시 '처리자 기능이 없다'고 오판(시우도 그럴 뻔). 라이브는 정상 작동 중이므로 사용자 영향 없음, 순수 코드 정합(저장소↔라이브 드리프트). 조치=라이브 GAS 스크립트를 저장소에 반영(pull-down)해 SoT 일치. 관련 메모리 reference_wp_reception_inline_copy_drift 계열. 준용M 무관·프론트 무관.",
-    "next": "⚓ 대기 — 시토가 라이브 GAS(reg_update 계열 handler·sms 포함본)를 저장소 apps_script_voc.js에 동기화. 저위험 코드 정합, 라이브 미변경.",
+    "note": "[2026-07-21 시우 발견·인계] 배9334(O2 버그3건, 준용M 수리·시우 검수 PASS·DONE) 처리 중 확인된 잔여 별건. 저장소 사본 '3. 웰페리온 가이드/coo/reception/apps_script_reception.js' 가 실제 라이브 GAS 웹앱보다 옛 버전 — 처리자(handler)·문자(sms) 칸이 저장소 코드엔 아예 없음. 위험=저장소만 보고 판단 시 '처리자 기능이 없다'고 오판(시우도 그럴 뻔). 라이브는 정상 작동 중이므로 사용자 영향 없음, 순수 코드 정합(저장소↔라이브 드리프트). 조치=라이브 GAS 스크립트를 저장소에 반영(pull-down)해 SoT 일치. 관련 메모리 reference_wp_reception_inline_copy_drift 계열. 준용M 무관·프론트 무관. (2026-07-24 파일 2층 이관으로 저장소 경로가 coo/reception/apps_script_reception.js 로 변경됨 — 내용 무변경)",
+    "next": "⚓ 대기 — 시토가 라이브 GAS(reg_update 계열 handler·sms 포함본)를 저장소 apps_script_reception.js에 동기화. 저위험 코드 정합, 라이브 미변경.",
     "ship_no": 9468,
     "surface": "autonomy",
     "short_no": 34
@@ -1653,5 +1653,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 4d6680f9d)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "4d6680f9d369cc64c917123fb650d033cd683934"
+  },
+  {
+    "task_id": "CPO-2026-07-24-ADHOC-b093a4cf6",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-24",
+    "processed_at": "2026-07-24",
+    "ship_no": 10051,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 b093a4cf6)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "b093a4cf6712703a7649d3c5af2082bd34d7d19f"
   }
 ]
