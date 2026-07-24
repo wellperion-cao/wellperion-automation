@@ -8767,8 +8767,13 @@ function crTab(btn, panelId) {
         gm1ParkedCount = 0;
         queue.forEach(function(q){
           // ── ⚓ 정박·대기(surface==='autonomy') 항로 제외 → 자율현황.html#sec-parked-missions 위임 (2026-07-15 GM·배237) ──
-          //   명시 플래그로만 판정(status 무관). surface 우선 — IN_PROGRESS·DONE이어도 정박 패널로 일원화(양 페이지 배치 일치·중복 방지).
-          if (q.surface === 'autonomy') { gm1ParkedCount++; return; }
+          //   surface 로만 판정해 G1 3섹터에서는 항상 제외(양 페이지 배치 일치·중복 방지) — DONE·폐기여도 자율현황 위임 유지.
+          //   ★단, 배지 숫자(gm1ParkedCount)는 열린 배(PENDING·IN_PROGRESS)만 카운트 — status 무관 전량 합산 시
+          //   아카이브(_queue_archive.json)의 종결(DONE·완료·STANDBY)건까지 섞여 실제보다 부풀려짐(2026-07-24 GM 지적·웰리 수정).
+          if (q.surface === 'autonomy') {
+            if (q.status === 'PENDING' || q.status === 'IN_PROGRESS') gm1ParkedCount++;
+            return;
+          }
           if (q.status === 'IN_PROGRESS') { gm1InProgressCount++; return; }  // 진행·상시 미션 → 자율현황 위임
           var _qActive = (q.status === 'PENDING');
           var _qHist = (q.status === 'DONE' || q.status === '완료' || q.status === '폐기');
