@@ -1,0 +1,587 @@
+{
+  "_doc": "웰페리온 브랜드 기준 기계 원천(SSOT · 배64). AI가 콘텐츠·시각물 제작 시 한 번에 학습하는 단일 출처. colors/fonts/logo/account_separation 등은 scripts/brand_constants.py 공개 상수를 프로그램으로 그대로 덤프한 값 — brand_constants.py 는 이제 이 파일을 읽는 로더로 전환됨(값 원천 = 이 파일). brand_constants 에 없던 항목(hashtag·tone·cta 문구·account_separation 표)은 3. 웰페리온 가이드/cmo/brand/브랜드가이드.html 또는 scripts/cta_utm.py 에서 그대로 복사했고 각 필드에 _source 로 출처를 밝힌다. 값은 절대 손으로 옮겨 적지 않는다 — 고칠 땐 원천 파일(brand_constants.py 의 상수, 또는 여기 직접)부터 고치고 재생성 스크립트로 다시 덤프할 것. forbidden_terms 는 이 파일에 값을 복사하지 않고 ssot/forbidden_terms.json 을 가리키기만 한다.",
+  "정본": "ssot/brand.json (배64 GM 승인 — 브랜드 기준 기계 원천. scripts/brand_constants.py 가 이 파일을 로드)",
+  "colors": {
+    "core": {
+      "BEIGE": {
+        "rgb": [
+          183,
+          159,
+          138
+        ],
+        "hex": "#B79F8A"
+      },
+      "BLACK_BG": {
+        "rgb": [
+          34,
+          31,
+          32
+        ],
+        "hex": "#221F20"
+      },
+      "WHITE": {
+        "rgb": [
+          255,
+          255,
+          255
+        ],
+        "hex": "#FFFFFF"
+      },
+      "GRAY": {
+        "rgb": [
+          170,
+          160,
+          152
+        ],
+        "hex": "#AAA098"
+      },
+      "HIGHLIGHT": {
+        "rgb": [
+          237,
+          91,
+          63
+        ],
+        "hex": "#ED5B3F"
+      },
+      "CHIP_BEIGE": {
+        "rgb": [
+          186,
+          162,
+          140
+        ],
+        "hex": "#BAA28C"
+      },
+      "SEP_LINE": {
+        "rgb": [
+          171,
+          161,
+          151
+        ],
+        "hex": "#ABA197"
+      },
+      "DUOTONE_DARK": "#221F20",
+      "DUOTONE_LIGHT": "#B79F8A"
+    },
+    "account_tracks": {
+      "_source": "3. 웰페리온 가이드/cmo/brand/브랜드가이드.html §03 Color(Support 보조톤) · §08 Two Accounts(시그니처 색)",
+      "official": {
+        "라벨": "공식 @wellperion",
+        "시그니처_색": [
+          "#B79F8A (베이지)",
+          "#221F20 (블랙)"
+        ]
+      },
+      "personal": {
+        "라벨": "개인 @namuk.wellperion",
+        "시그니처_색": {
+          "에메랄드_다크": "#63BBA0",
+          "에메랄드_라이트": "#2E6E5B"
+        },
+        "note": "메인 팔레트와 별개 트랙 — 혼용 금지. 공식 계정 시각물에 에메랄드를 쓰지 않는다."
+      }
+    },
+    "department_presets": {
+      "main": {
+        "primary": {
+          "rgb": [
+            183,
+            159,
+            138
+          ],
+          "hex": "#B79F8A"
+        },
+        "background": {
+          "rgb": [
+            34,
+            31,
+            32
+          ],
+          "hex": "#221F20"
+        },
+        "accent": {
+          "rgb": [
+            237,
+            91,
+            63
+          ],
+          "hex": "#ED5B3F"
+        },
+        "text": {
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "hex": "#FFFFFF"
+        },
+        "text_secondary": {
+          "rgb": [
+            183,
+            159,
+            138
+          ],
+          "hex": "#B79F8A"
+        },
+        "wordmark": "W  WELLPERION"
+      },
+      "sports_club": {
+        "primary": {
+          "rgb": [
+            63,
+            113,
+            176
+          ],
+          "hex": "#3F71B0"
+        },
+        "background": {
+          "rgb": [
+            37,
+            59,
+            108
+          ],
+          "hex": "#253B6C"
+        },
+        "accent": {
+          "rgb": [
+            183,
+            159,
+            138
+          ],
+          "hex": "#B79F8A"
+        },
+        "text": {
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "hex": "#FFFFFF"
+        },
+        "text_secondary": {
+          "rgb": [
+            210,
+            220,
+            240
+          ],
+          "hex": "#D2DCF0"
+        },
+        "wordmark": "WELLPERION SPORTS CLUB"
+      },
+      "squash": {
+        "primary": {
+          "rgb": [
+            210,
+            210,
+            210
+          ],
+          "hex": "#D2D2D2"
+        },
+        "background": {
+          "rgb": [
+            119,
+            150,
+            142
+          ],
+          "hex": "#77968E"
+        },
+        "accent": {
+          "rgb": [
+            183,
+            159,
+            138
+          ],
+          "hex": "#B79F8A"
+        },
+        "text": {
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "hex": "#FFFFFF"
+        },
+        "text_secondary": {
+          "rgb": [
+            220,
+            230,
+            225
+          ],
+          "hex": "#DCE6E1"
+        },
+        "wordmark": "W  SQUASH"
+      },
+      "pt": {
+        "primary": {
+          "rgb": [
+            181,
+            72,
+            64
+          ],
+          "hex": "#B54840"
+        },
+        "background": {
+          "rgb": [
+            81,
+            43,
+            50
+          ],
+          "hex": "#512B32"
+        },
+        "accent": {
+          "rgb": [
+            183,
+            159,
+            138
+          ],
+          "hex": "#B79F8A"
+        },
+        "text": {
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "hex": "#FFFFFF"
+        },
+        "text_secondary": {
+          "rgb": [
+            220,
+            200,
+            195
+          ],
+          "hex": "#DCC8C3"
+        },
+        "wordmark": "W  PT"
+      },
+      "golf": {
+        "primary": {
+          "rgb": [
+            51,
+            115,
+            66
+          ],
+          "hex": "#337342"
+        },
+        "background": {
+          "rgb": [
+            19,
+            33,
+            23
+          ],
+          "hex": "#132117"
+        },
+        "accent": {
+          "rgb": [
+            183,
+            159,
+            138
+          ],
+          "hex": "#B79F8A"
+        },
+        "text": {
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "hex": "#FFFFFF"
+        },
+        "text_secondary": {
+          "rgb": [
+            200,
+            215,
+            200
+          ],
+          "hex": "#C8D7C8"
+        },
+        "wordmark": "W  GOLF"
+      },
+      "swimming": {
+        "primary": {
+          "rgb": [
+            33,
+            87,
+            104
+          ],
+          "hex": "#215768"
+        },
+        "background": {
+          "rgb": [
+            23,
+            44,
+            66
+          ],
+          "hex": "#172C42"
+        },
+        "accent": {
+          "rgb": [
+            183,
+            159,
+            138
+          ],
+          "hex": "#B79F8A"
+        },
+        "text": {
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "hex": "#FFFFFF"
+        },
+        "text_secondary": {
+          "rgb": [
+            200,
+            215,
+            225
+          ],
+          "hex": "#C8D7E1"
+        },
+        "wordmark": "W  SWIMMING"
+      },
+      "pilates": {
+        "primary": {
+          "rgb": [
+            196,
+            69,
+            88
+          ],
+          "hex": "#C44558"
+        },
+        "background": {
+          "rgb": [
+            130,
+            42,
+            55
+          ],
+          "hex": "#822A37"
+        },
+        "accent": {
+          "rgb": [
+            183,
+            159,
+            138
+          ],
+          "hex": "#B79F8A"
+        },
+        "text": {
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "hex": "#FFFFFF"
+        },
+        "text_secondary": {
+          "rgb": [
+            230,
+            200,
+            205
+          ],
+          "hex": "#E6C8CD"
+        },
+        "wordmark": "W  PILATES"
+      },
+      "gymnastic": {
+        "primary": {
+          "rgb": [
+            194,
+            186,
+            214
+          ],
+          "hex": "#C2BAD6"
+        },
+        "background": {
+          "rgb": [
+            86,
+            58,
+            97
+          ],
+          "hex": "#563A61"
+        },
+        "accent": {
+          "rgb": [
+            183,
+            159,
+            138
+          ],
+          "hex": "#B79F8A"
+        },
+        "text": {
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "hex": "#FFFFFF"
+        },
+        "text_secondary": {
+          "rgb": [
+            220,
+            215,
+            230
+          ],
+          "hex": "#DCD7E6"
+        },
+        "wordmark": "W  GYMNASTIC"
+      },
+      "spa": {
+        "primary": {
+          "rgb": [
+            201,
+            169,
+            110
+          ],
+          "hex": "#C9A96E"
+        },
+        "background": {
+          "rgb": [
+            250,
+            247,
+            242
+          ],
+          "hex": "#FAF7F2"
+        },
+        "accent": {
+          "rgb": [
+            139,
+            26,
+            47
+          ],
+          "hex": "#8B1A2F"
+        },
+        "text": {
+          "rgb": [
+            34,
+            31,
+            32
+          ],
+          "hex": "#221F20"
+        },
+        "text_secondary": {
+          "rgb": [
+            139,
+            26,
+            47
+          ],
+          "hex": "#8B1A2F"
+        },
+        "wordmark": "WELLPERION × Cinq Mondes"
+      }
+    },
+    "partner_exceptions": {
+      "_source": "scripts/brand_constants.py BRAND_PRESETS['spa'] (값) + 3. 웰페리온 가이드/cmo/brand/브랜드가이드.html §03 (결재 메모)",
+      "spa_cinq_mondes": {
+        "preset_key": "spa",
+        "note": "스파 팔레트만 유일하게 액센트가 베이지가 아닌 와인 버건디 #8B1A2F — 생크몽드 파트너 브랜드 전용 예외(2026-06-11 GM 결재)."
+      }
+    }
+  },
+  "fonts": {
+    "FONT_DIR": "C:\\Users\\jjky0\\welperion-automation\\2. 브랜드_자료\\02_로고&워터마크&FONT\\font",
+    "FONT_BOLD": "C:\\Users\\jjky0\\welperion-automation\\2. 브랜드_자료\\02_로고&워터마크&FONT\\font\\Pretendard-Bold.otf",
+    "FONT_SEMIBOLD": "C:\\Users\\jjky0\\welperion-automation\\2. 브랜드_자료\\02_로고&워터마크&FONT\\font\\Pretendard-SemiBold.otf",
+    "FONT_MEDIUM": "C:\\Users\\jjky0\\welperion-automation\\2. 브랜드_자료\\02_로고&워터마크&FONT\\font\\Pretendard-Medium.otf"
+  },
+  "logo": {
+    "LOGO_DIR": "C:\\Users\\jjky0\\welperion-automation\\instagram\\_assets\\logo",
+    "LOGO_WHITE_ALPHA": "C:\\Users\\jjky0\\welperion-automation\\instagram\\_assets\\logo\\wellperion_white_alpha.png",
+    "LOGO_BEIGE_ALPHA": "C:\\Users\\jjky0\\welperion-automation\\instagram\\_assets\\logo\\wellperion_beige_alpha.png",
+    "account_usage": {
+      "_source": "3. 웰페리온 가이드/cmo/brand/브랜드가이드.html §08 Two Accounts",
+      "personal": "W 심볼만 (미니멀)",
+      "official": "풀 로고 (W + WELLPERION)"
+    }
+  },
+  "hashtag": {
+    "_source": "3. 웰페리온 가이드/cmo/brand/브랜드가이드.html §07 Caption & CTA (Hashtag 해시태그 3규칙)",
+    "규칙": [
+      "① 지역 + 종목 — #한남동골프 처럼 앞 3개 안에 지역이 붙는다",
+      "② 종목 · 주제 · 타깃",
+      "③ #웰페리온 #WELLPERION 맨 끝 2개 고정"
+    ],
+    "예시": "#한남동골프 #유소년골프 #KPGA #스포츠클럽 #웰페리온 #WELLPERION",
+    "개인계정_추가금지": [
+      "#소상공인",
+      "#1인기업",
+      "#작은가게"
+    ]
+  },
+  "tone": {
+    "_source": "3. 웰페리온 가이드/cmo/brand/브랜드가이드.html §08 Two Accounts · §09 Never(금지어)",
+    "공식_wellperion": {
+      "콘텐츠": "시설 · 프로그램 · 공식 안내",
+      "디자인": "럭셔리 매거진 · 사진 중심",
+      "목소리": "3인칭 안내"
+    },
+    "개인_namuk_wellperion": {
+      "콘텐츠": "운영자 1인칭 실전 · 성찰 · AI 자동화 스토리",
+      "디자인": "종이 질감 + 손그림 마커 원 + 여백 (손글씨)",
+      "목소리": "1인칭 기록",
+      "금지_프레임": [
+        "혼자",
+        "작은가게",
+        "1인기업",
+        "소상공인"
+      ]
+    },
+    "혼용_금지_3가지": [
+      "색을 섞지 않는다 — 공식 시각물에 에메랄드를, 개인 시각물에 베이지 브랜드 락업을 쓰지 않는다.",
+      "목소리를 섞지 않는다 — 공식은 3인칭 안내, 개인은 1인칭 기록.",
+      "프레임을 섞지 않는다 — 개인 계정이라도 '혼자 · 작은가게' 프레임은 실체 왜곡."
+    ]
+  },
+  "cta": {
+    "_source": "scripts/cta_utm.py (CLEAN_CTA_TEXT · IG_BIO_CTA_TEXT 리터럴 — 값 변경은 GM 결재 사항, 여기서 임의 수정 금지)",
+    "CLEAN_CTA_TEXT": "문의: wellperion.com/ko/inquiry",
+    "IG_BIO_CTA_TEXT": "프로필 링크로 편하게 문의해 주세요.",
+    "official_account_cta": "문의: wellperion.com/ko/inquiry 한 줄 (한국어만 · 영문 /en/inquiry 및 litt.ly 폐기 2026-06-08)",
+    "personal_account_cta": "도달 유도형(📌저장 · 💬댓글(편별 질문) · 👀팔로우) · 인라인 문의 URL·litt.ly·개인 010 번호 절대 금지",
+    "채널별_삽입규칙_정본": "scripts/cta_utm.py (파일 상단 'CTA 단일화 설계' 주석, 2026-07-20 GM 승인) — 실행되는 코드가 곧 규칙",
+    "_note_2026_07_24": "GM 결재로 콜론 앞 공백 제거(이전 '문의 : …'). 이 값은 scripts/cta_utm.py CLEAN_CTA_TEXT 와 반드시 같아야 하며, brand_check 가 매 실행 대조한다."
+  },
+  "account_separation": {
+    "_source": "3. 웰페리온 가이드/cmo/brand/브랜드가이드.html §08 Two Accounts (두 계정 표)",
+    "표": [
+      {
+        "항목": "로고",
+        "개인_namuk": "W 심볼만 (미니멀)",
+        "공식_wellperion": "풀 로고 (W + WELLPERION)"
+      },
+      {
+        "항목": "시그니처 색",
+        "개인_namuk": "에메랄드 #2E6E5B / #63BBA0",
+        "공식_wellperion": "베이지 #B79F8A · 블랙 #221F20"
+      },
+      {
+        "항목": "콘텐츠",
+        "개인_namuk": "운영자 1인칭 실전 · 성찰 · AI 자동화 스토리",
+        "공식_wellperion": "시설 · 프로그램 · 공식 안내"
+      },
+      {
+        "항목": "디자인",
+        "개인_namuk": "종이 질감 + 손그림 마커 원 + 여백 (손글씨)",
+        "공식_wellperion": "럭셔리 매거진 · 사진 중심"
+      },
+      {
+        "항목": "채널 배분",
+        "개인_namuk": "보조",
+        "공식_wellperion": "우선 — 브랜드 힘을 여기에 집중"
+      },
+      {
+        "항목": "GUIDE 카드",
+        "개인_namuk": "자동 첨부 금지",
+        "공식_wellperion": "마지막 슬라이드 자동 첨부"
+      },
+      {
+        "항목": "CTA",
+        "개인_namuk": "도달 유도형(저장 · 댓글 · 팔로우) · 문의 URL 금지",
+        "공식_wellperion": "문의: wellperion.com/ko/inquiry 한 줄"
+      }
+    ]
+  },
+  "forbidden_terms": {
+    "정본": "ssot/forbidden_terms.json",
+    "설명": "외부 발행 콘텐츠 금지어 단일출처(약속 L08). 값은 이 파일에 복사하지 않는다 — forbidden_terms.json 을 직접 참조할 것."
+  }
+}
