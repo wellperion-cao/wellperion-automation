@@ -142,6 +142,18 @@ def _is_dirty(root: str) -> bool:
         return True
 
 
+def _stash_count(root: str) -> int:
+    """스태시 개수. 확인 불가면 -1(비교를 무의미하게 만들어 오탐을 막는다)."""
+    try:
+        r = subprocess.run(["git", "stash", "list"], cwd=root,
+                           capture_output=True, text=True, timeout=20)
+        if r.returncode != 0:
+            return -1
+        return len([x for x in (r.stdout or "").splitlines() if x.strip()])
+    except Exception:
+        return -1
+
+
 def _reconcile(root: str) -> bool:
     """원격이 앞섰을 때 fetch 후 로컬 커밋을 origin 위로 통합.
     워킹트리 dirty(GM 편집 중) → 곧장 merge / 깨끗 → rebase(실패 시 merge 폴백).
@@ -163,11 +175,29 @@ def _reconcile(root: str) -> bool:
         # reset 하다 잠긴 파일에서 죽는다 → 처음부터 merge 로 간다(열린 파일 안 건드림).
         # 깨끗하면 rebase 로 선형 히스토리 유지, 실패해도 아래 merge 폴백.
         if not _is_dirty(root):
+            # ★--autostash 를 쓰지 않는다 (2026-07-24 시토 · INC-034).
+            #   왜: 이 저장소는 자동화 6곳 이상이 쉴 새 없이 파일을 쓴다. _is_dirty() 확인과
+            #   rebase 사이 2초 안에도 트리가 더러워진다(실측 race). 그때 --autostash 가 붙어 있으면
+            #   git 이 미커밋 변경을 스태시했다가 rebase 뒤 되돌리는데, **파일 하나라도 충돌하면
+            #   되돌리기가 통째로 실패**한다. 그런데 `git rebase --autostash` 는 그 경우에도
+            #   **exit 0** 을 낸다 → 여기서 True 를 반환하고 "ok" 로 보고된다. 미커밋 변경은
+            #   스태시에 갇힌 채 작업트리는 옛 내용으로 돌아가고, 아무도 모른다.
+            #   실측 피해: 스태시 32개 적체(2026-05-28~), GM보좌 스캔 기록 07-20~24 전량 소실
+            #   → 자율현황 페이지가 '포착 0건'(거짓)으로 표시.
+            #   고침: --autostash 제거. 트리가 더러우면 rebase 가 **시작 전에 거부**하고(파일 무접촉)
+            #   아래 merge 폴백으로 내려간다. merge 는 작업트리를 건드리지 않아 유실이 0이다.
+            #   (.gitattributes 의 *.jsonl merge=union 은 그대로 유효 — merge 경로에서 동작한다.)
+            before = _stash_count(root)
             rb = subprocess.run(
-                ["git", "rebase", "--autostash", f"{REMOTE}/{BRANCH}"],
+                ["git", "rebase", f"{REMOTE}/{BRANCH}"],
                 cwd=root, capture_output=True, text=True, timeout=PUSH_TIMEOUT,
             )
             if rb.returncode == 0:
+                # 방어 2겹: 그래도 스태시가 늘었다면 미커밋 변경이 갇힌 것이다. 조용히 넘기지 않는다.
+                after = _stash_count(root)
+                if before >= 0 and after >= 0 and after > before:
+                    _log(f"POST_COMMIT_PUSH ★경고 스태시 증가 {before}->{after} — "
+                         f"미커밋 변경이 갇혔을 수 있음(git stash list 확인 필요)", root)
                 return True
             # rebase 실패 → 원상복구(커밋·작업트리 보존) + 고아 상태 강제정리
             subprocess.run(
