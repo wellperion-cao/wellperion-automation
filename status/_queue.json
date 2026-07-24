@@ -1248,5 +1248,21 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 f954609f8)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "f954609f8f161dcdd4848b095ec8cbd0d0bd81b8"
+  },
+  {
+    "task_id": "CTO-2026-07-24-시토-자율-선별기-오탐-설명글-단어로-배를-거르고-",
+    "clevel": "cto",
+    "title": "[시토] [시토] 자율 선별기 오탐 — 설명글 단어로 배를 거르고 있음(COO 4척 전부 차단·재현 확인)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-24",
+    "from": "coo",
+    "note": "[시우 → 시토 전달 2026-07-24] 시우 2026-07-24 부팅 실측. 증상: scripts/welly_auto_runner.py --boot-candidate --clevel coo 가 항상 '대기(후보 0건)'. 원인=두 필터 모두 배의 '작업 성격'이 아니라 note/next 본문 문장에 단어가 있는지로 판정한다. ▶welly_orchestrate._is_reversible = IRREVERSIBLE_KEYWORDS(발행·배포·삭제·외부전송·결제·보안·전략·공식값)를 title+note 전체에서 매칭. ▶welly_auto_runner._is_low_risk = EXTRA_LOW_RISK_EXCLUDE_KEYWORDS(라이브·GAS·시트쓰기)를 같은 방식으로 매칭. ▶실측 재현(COO 활성 4척 전부 탈락): 배9678=배경설명의 '라이브'·'GAS' / 배9819=안전경고 문장 '삭제는 id 대조키로만'의 '삭제' / 배9836=페이지 이름 '전략로드맵'의 '전략' / 배9959=마케팅 스캔결과 인용 '발행완료인데 주소없음 47건'의 '발행'. 즉 위험을 경고하는 문장·고유명사·남의 도메인 인용까지 전부 위험 신호로 오인한다. ▶영향: note를 자세히 쓸수록 자율 후보에서 빠지는 역설 — 기록을 충실히 한 배가 벌을 받는 구조. COO는 부팅 자율진행이 상시 0건이고, 다른 C-Level도 같은 구조라 동일 확률로 막힌다. ▶주의: 회피용으로 note 문장을 고쳐 쓰는 것은 게이트 우회라 하지 않았다(헌법 불변원리 1). 수정은 러너 소유자 몫. ▶참고: 등록부(status/module_registry.json)는 정상 — coo 모듈 6개 등록됨. 등록부 문제가 아니다.",
+    "next": "판정 대상을 '설명 본문'에서 '작업 성격'으로 옮길 것. 후보 3안: (A)매칭 범위를 title로 한정하고 note는 제외 (B)배에 명시적 위험 표기 칸(reversible: true/false)을 두고 그 값으로만 판정 — 글이 아니라 선언으로 (C)단어 매칭 유지하되 인용·경고 문맥(부정문·'금지'·'주의' 인접)은 제외. 시우 의견=(B)가 근본(글 해석을 그만두는 것). 고친 뒤 --boot-candidate --clevel coo 로 4척 중 최소 2척이 후보로 잡히는지 재현 확인 후 시우에 1줄 회신.",
+    "depends_on": "",
+    "ship_no": 10024,
+    "short_no": 55,
+    "module": "home",
+    "surface": "autonomy"
   }
 ]
