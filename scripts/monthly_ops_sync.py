@@ -11,6 +11,12 @@
   · todo_ssot   : 업무현황 SSOT(GAS todo_list) 실무 항목 → (미연동·정직 표기)
   · manual/없음 : 손 안 댐(현행 수동 값 보존)
 
+rule=status_map 은 진척률(progress)을 절대 쓰지 않는다(GM 확정 2026-07-24) — '진행중'류
+상태를 숫자 하나로 평균 내면 실무 실제와 무관하게 평탄값(예 50)이 나와, 사람이 실측하고
+넣은 진척률(예 70·45·40·15)을 통째로 지워버린다. 대신 관찰한 상태 분포만
+objective.sync_observed 에 사실대로 기록한다. count_done·avg_progress 등 실측 규칙은
+그대로 progress 를 갱신(자문 auto_value 기록)한다 — 실제 데이터라 덮어써도 의미가 있다.
+
 정직(L05): 소스 없음/조회 실패 = 값 무변경 + '미연동' 표기. 가짜 % 금지.
 게이트: 환경변수 MONTHLY_SYNC_APPLY=1 이고 --apply 일 때만 실제 쓰기·커밋.
 기본 = 드라이런(무엇이 바뀔지 표만 출력, 파일 무변경).
@@ -27,6 +33,7 @@ import io
 import json
 import os
 import sys
+import time
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -53,6 +60,15 @@ try:  # 작업 현황 로그(best-effort) — 임포트 실패해도 반영 흐�
 except Exception:
     def worklog_log(*a, **k):
         return False
+
+try:  # 안전 커밋터(배9820) — 임시 인덱스+CAS. 커밋은 반드시 이 경유(맨손 git 금지, 저장소 규칙)
+    from safe_commit import safe_commit as _safe_commit
+except Exception:
+    _safe_commit = None
+
+INDEX_LOCK_FILE = BASE_DIR / ".git" / "index.lock"
+_COMMIT_LOCK_RETRY_SEC = 5
+_COMMIT_LOCK_RETRIES = 12  # 5초 × 12 ≈ 1분(GM 확정 2026-07-24)
 
 
 def now_iso() -> str:
@@ -169,10 +185,33 @@ _STATUS_MAP = {
     "완료": 100, "진행중": 50, "이월": 50, "보류": 0, "계획": 0,
 }
 
+# status_map 관찰 기록용 — 배(영문 enum)·실무항목(한글 상태) 어느 쪽이든 4상태로 묶어
+# '사실'만 기록한다(GM 확정 2026-07-24). _STATUS_MAP 의 평탄 숫자와 달리 진척률에는 쓰지 않음.
+_STATUS_LABEL = {
+    "DONE": "완료", "완료": "완료",
+    "IN_PROGRESS": "진행중", "진행중": "진행중", "이월": "진행중",
+    "PENDING": "보류", "STANDBY": "보류", "BLOCKED": "보류", "보류": "보류",
+    "계획": "계획",
+}
+_STATUS_LABEL_ORDER = ["진행중", "완료", "보류", "계획"]
+
 
 def _stat(item: dict) -> str:
     """배(status) 또는 실무항목(상태) 공통 상태 읽기."""
     return str(item.get("status") or item.get("상태") or "")
+
+
+def observed_state(items: list) -> dict:
+    """status_map 소스의 실측 상태 분포(정직 기록 — 지어내기 금지). 0건 상태는 생략."""
+    counts: dict[str, int] = {}
+    for it in items:
+        raw = _stat(it)
+        label = _STATUS_LABEL.get(raw, raw or "미상")
+        counts[label] = counts.get(label, 0) + 1
+    out = dict(counts)
+    out["총"] = len(items)
+    out["at"] = datetime.now().strftime("%Y-%m-%d")
+    return out
 
 
 def apply_rule(rule: str, items: list) -> int | None:
@@ -191,6 +230,20 @@ def apply_rule(rule: str, items: list) -> int | None:
 
 
 # ── 엔진 ──────────────────────────────────
+def _observe_verdict(title: str, obj: dict, items: list, avg_val: int, src_label: str) -> dict:
+    """status_map 전용 판정(GM 확정 2026-07-24) — progress 는 절대 안 쓰고 관찰 상태만 기록.
+    avg_val=_STATUS_MAP 평탄 평균(참고용 sync.auto_value 에만 보존 — progress 미반영)."""
+    observed = observed_state(items)
+    old = obj.get("progress")
+    ordered = [f"{k} {observed[k]}" for k in _STATUS_LABEL_ORDER if k in observed]
+    extra = [f"{k} {v}" for k, v in observed.items()
+             if k not in _STATUS_LABEL_ORDER and k not in ("총", "at")]
+    old_disp = old if old is not None else "미설정"
+    detail = f"{' · '.join(ordered + extra)} (진척률은 사람 값 {old_disp} 유지)"
+    return {"title": title, "verdict": "OBSERVE", "old": old, "new": avg_val,
+            "observed": observed, "src": src_label, "detail": detail}
+
+
 def resolve(obj: dict, kpi: dict | None) -> dict:
     """objective 하나에 대해 자동값을 계산. 반환=판정 dict(쓰지는 않음)."""
     sync = obj.get("sync")
@@ -212,50 +265,102 @@ def resolve(obj: dict, kpi: dict | None) -> dict:
     if src == "queue":
         refs = sync.get("ref") or []
         ships = queue_ships_by_ref(refs if isinstance(refs, list) else [refs])
-        val = apply_rule(str(sync.get("rule", "avg_progress")), ships)
+        rule = str(sync.get("rule", "avg_progress"))
+        val = apply_rule(rule, ships)
         if val is None:
             return {"title": title, "verdict": "미연동", "detail": f"연결 배 없음({refs})"}
+        src_label = f"queue:{rule}({len(ships)}배)"
+        if rule == "status_map":
+            return _observe_verdict(title, obj, ships, val, src_label)
         return {"title": title, "verdict": "AUTO", "field": "progress",
-                "old": obj.get("progress"), "new": val,
-                "src": f"queue:{sync.get('rule')}({len(ships)}배)"}
+                "old": obj.get("progress"), "new": val, "src": src_label}
 
     if src == "todo_ssot":
         refs = sync.get("ref") or []
         items = todo_by_ref(refs if isinstance(refs, list) else [refs])
-        val = apply_rule(str(sync.get("rule", "count_done")), items)
+        rule = str(sync.get("rule", "count_done"))
+        val = apply_rule(rule, items)
         if val is None:
             return {"title": title, "verdict": "미연동", "detail": f"연결 실무항목 없음({refs})"}
+        src_label = f"todo_ssot:{rule}({len(items)}건)"
+        if rule == "status_map":
+            return _observe_verdict(title, obj, items, val, src_label)
         return {"title": title, "verdict": "AUTO", "field": "progress",
-                "old": obj.get("progress"), "new": val,
-                "src": f"todo_ssot:{sync.get('rule')}({len(items)}건)"}
+                "old": obj.get("progress"), "new": val, "src": src_label}
 
     if src == "job_status":
         refs = sync.get("ref") or []
         jobs = jobs_by_ref(refs if isinstance(refs, list) else [refs])
-        val = apply_rule(str(sync.get("rule", "status_map")), jobs)
+        rule = str(sync.get("rule", "status_map"))
+        val = apply_rule(rule, jobs)
         if val is None:
             return {"title": title, "verdict": "미연동", "detail": f"연결 공고 없음({refs})"}
         closed = sum(1 for j in jobs if j["closed"])
+        src_label = f"job_status:{closed}/{len(jobs)}마감"
+        if rule == "status_map":
+            return _observe_verdict(title, obj, jobs, val, src_label)
         return {"title": title, "verdict": "AUTO", "field": "progress",
-                "old": obj.get("progress"), "new": val,
-                "src": f"job_status:{closed}/{len(jobs)}마감"}
+                "old": obj.get("progress"), "new": val, "src": src_label}
 
     return {"title": title, "verdict": "미연동", "detail": f"알 수 없는 source={src}"}
 
 
 def write_back(obj: dict, v: dict) -> None:
-    """게이트 ON일 때만 반영 — ★자문(advisory) 전용: progress(사람 소유) 미변경.
-    자동값은 sync.auto_value·last_auto 에만 기록 → 페이지가 '🔄 자동 N%' 배지로 병기.
-    수기 진실 보존 최우선·드리프트 0(GM 2026-07-22): 자동이 사람 PIN 편집값을 덮지 않는다.
-    (구현 이전 버전이 status_map 평탄값 50으로 '계획 0%' 목표를 '50%'로 덮어 상태 모순
-     발생 → 자문 전용으로 정정. 사람 progress ↔ 자동 auto_value 를 페이지가 나란히 노출.)
+    """게이트 ON일 때만 반영.
+    ★status_map(OBSERVE 판정)은 progress(사람 소유)를 절대 안 쓴다(GM 확정 2026-07-24) —
+    '진행중'류를 숫자 하나로 평균 내면 실무 실제와 무관한 평탄값이 나와 사람이 실측해
+    넣은 진척률을 지워버린다. 대신 관찰한 상태 분포를 objective.sync_observed 에 사실대로
+    기록한다(추정 금지). sync.auto_value·last_auto 는 참고용으로만 계속 병기(페이지 배지).
+    나머지 규칙(count_done·avg_progress 등)은 기존 자문(advisory) 동작 그대로 —
+    auto_value·last_auto 에만 기록하고 progress 는 미변경(2026-07-22 자문 전환 유지).
     ★INC-001: 매출·지출 등 지표값(metric.current·metric_live)은 이 파일에 저장 금지."""
+    s = obj.setdefault("sync", {})
+    if v.get("verdict") == "OBSERVE":
+        s["last_auto"] = now_iso()
+        s["auto_value"] = v["new"]  # 참고용(페이지 배지)일 뿐 progress 아님
+        obj["sync_observed"] = v["observed"]
+        return
     if v.get("field") != "progress":
         return  # metric_live(매출 등)는 미저장·라이브 표시 전용(INC-001)
-    s = obj.setdefault("sync", {})
     s["last_auto"] = now_iso()
     s["auto_value"] = v["new"]
     # obj["progress"] 는 사람(시우 PIN 검수) 소유 — 자동 미개입. 페이지 배지로 auto_value 병기.
+
+
+def commit_plan(month: str, changed: int, n_observe_changed: int) -> None:
+    """status/monthly_ops_plan.json 반영분을 safe_commit 경유로 커밋한다(저장소 규칙 —
+    맨손 git add/commit 금지). .git/index.lock 이 있으면 지우지 않고 5초 간격 최대 12회
+    (약 1분) 대기 후 재시도한다 — 다른 세션이 실제 커밋 중일 수 있어서다. 그래도 안 풀리면
+    조용히 넘기지 않고 로그에 눈에 띄게 남긴다(GM 2026-07-24: 07:00 실행이 락 때문에 커밋을
+    건너뛰고 그날 반영분이 사라졌다 — 이전엔 [SKIP] 한 줄뿐이라 아무도 몰랐다)."""
+    if _safe_commit is None:
+        print("[FAIL] 커밋 실패 — 반영분이 커밋되지 않았습니다. safe_commit 모듈 로드 실패")
+        return
+    for attempt in range(1, _COMMIT_LOCK_RETRIES + 1):
+        if not INDEX_LOCK_FILE.exists():
+            break
+        print(f"[대기] .git/index.lock 존재 — 커밋 보류·재시도 {attempt}/{_COMMIT_LOCK_RETRIES}"
+              f"(락 파일은 지우지 않음 — 다른 세션이 커밋 중일 수 있음)")
+        time.sleep(_COMMIT_LOCK_RETRY_SEC)
+    else:
+        print("[FAIL] 커밋 실패 — 반영분이 커밋되지 않았습니다. 잠금 지속"
+              f"(.git/index.lock 이 {_COMMIT_LOCK_RETRIES * _COMMIT_LOCK_RETRY_SEC}초 대기 후에도 존재)")
+        return
+
+    message = (f"chore(coo): 월간계획 자동반영 — {month} 진척갱신 {changed}건·"
+               f"상태관찰갱신 {n_observe_changed}건 (ship9678)")
+    try:
+        res = _safe_commit([str(PLAN_FILE)], message, holder="monthly_ops_sync")
+    except Exception as exc:
+        print(f"[FAIL] 커밋 실패 — 반영분이 커밋되지 않았습니다. safe_commit 예외: "
+              f"{type(exc).__name__}: {exc}")
+        return
+    if res.get("ok") and res.get("committed"):
+        print(f"[커밋] {PLAN_FILE.name} 커밋 완료 sha={res['sha'][:9]}")
+    elif res.get("ok"):
+        print(f"[커밋] 변경 없음 — {res.get('reason')}")
+    else:
+        print(f"[FAIL] 커밋 실패 — 반영분이 커밋되지 않았습니다. {res.get('reason')}")
 
 
 def run(month: str | None, apply: bool) -> None:
@@ -274,7 +379,7 @@ def run(month: str | None, apply: bool) -> None:
         isinstance(o.get("sync"), dict) and o["sync"].get("source") == "metric_live" for o in objs
     ) else None
 
-    n_auto = n_manual = n_gap = changed = 0
+    n_auto = n_observe = n_manual = n_gap = changed = obs_changed = 0
     print(f"\n{'상태':<6} {'목표':<36} 내용")
     print("─" * 72)
     for o in objs:
@@ -291,6 +396,17 @@ def run(month: str | None, apply: bool) -> None:
             if live:
                 write_back(o, v)
             print(f"{mark:<6} {v['title']:<36} {delta}")
+        elif vd == "OBSERVE":
+            n_observe += 1
+            # 관찰 상태가 직전 기록과 달라졌을 때만 '변경'으로 카운트('at' 타임스탬프는 제외).
+            prior_observed = {k: val for k, val in (o.get("sync_observed") or {}).items()
+                               if k != "at"}
+            new_observed = {k: val for k, val in v["observed"].items() if k != "at"}
+            if new_observed != prior_observed:
+                obs_changed += 1
+            if live:
+                write_back(o, v)
+            print(f"{'👀상태만':<6} {v['title']:<36} {v['detail']}  [{v['src']}]")
         elif vd == "MANUAL":
             n_manual += 1
             print(f"{'✋수동':<6} {v['title']:<36} {v['detail']}")
@@ -298,16 +414,22 @@ def run(month: str | None, apply: bool) -> None:
             n_gap += 1
             print(f"{'⚠️미연동':<6} {v['title']:<36} {v['detail']}")
     print("─" * 72)
-    print(f"요약: 🔄자동 {n_auto}(변경 {changed}) · ✋수동 {n_manual} · ⚠️미연동 {n_gap}")
+    print(f"요약: 🔄자동 {n_auto}(변경 {changed}) · 👀상태만 {n_observe} · "
+          f"✋수동 {n_manual} · ⚠️미연동 {n_gap}")
 
-    if live and changed:
+    if live and (changed or obs_changed):
         PLAN_FILE.write_text(
             json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        print(f"[반영] {PLAN_FILE.name} 저장 완료 — 커밋은 호출측/워처.")
+        print(f"[반영] {PLAN_FILE.name} 저장 완료 — safe_commit 경유 커밋 시도.")
+        commit_plan(month, changed, obs_changed)
         # 작업 현황 로그(best-effort) — dry-run 시엔 남기지 않음(실행 1회당 1줄)
         worklog_log(
-            "coo", "월간계획", f"월간 운영계획 진척 자동 반영 — {changed}개 목표 갱신",
-            result="ok", detail=f"{month} · 자동판정 {n_auto}건 중 변경 {changed}건", ref=month,
+            "coo", "월간계획",
+            f"월간 운영계획 진척 자동 반영 — {changed}개 목표 갱신·상태관찰 {obs_changed}건 갱신",
+            result="ok",
+            detail=f"{month} · 자동판정 {n_auto}건 중 변경 {changed}건 · "
+                   f"상태만판정 {n_observe}건 중 관찰갱신 {obs_changed}건",
+            ref=month,
         )
     elif live:
         print("[반영] 변경 없음 — 저장 생략.")
