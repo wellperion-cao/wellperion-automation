@@ -4,11 +4,13 @@
 precommit_enforcement_guard.py — 화이트리스트 코드강제 pre-commit 가드 (AI 자율화 ③)
 
 ssot/enforcement.py 엔진을 pre-commit 길목에 연결한다.
-차단 대상 4종 중 pre-commit 으로 잡을 수 있는 3종을 감지:
-  1) 공식값·약속 무단 변경 (canon_values.json·약속.json)
-  2) 금지 경로·파일 변경    (결재 GAS·구버전 미끼 등 블랙리스트)
-  3) 보안 차단 라이브 발효  (TOKEN_ENFORCE on 류 staged 변경)
-  (4) 결제·지출 = 결재현황 게이트 재사용 — 신규 차단 없음)
+차단 대상 5종(정본=ssot/canon_values.json rules[].key=="gm_approval_gate_5") 중
+pre-commit 으로 잡을 수 있는 3종을 감지:
+  1) 공식값·약속 무단 변경 (canon_values.json·약속.json) — canon "공식값"
+  2) 금지 경로·파일 변경    (결재 GAS·구버전 미끼 등 블랙리스트) — canon "금지"
+  3) 보안 차단 라이브 발효  (TOKEN_ENFORCE on 류 staged 변경) — canon "보안"(좁은 부분집합)
+  (4) 결제·지출 = 결재현황 게이트 재사용 — 신규 차단 없음 — canon "결제")
+  (5) 전략 = 이 길목(git diff)에서 판단 불가 — canon layer_note 참조, 의도적 제외)
 
 【모드별 동작】
   - off   : 완전 무동작 → exit 0.

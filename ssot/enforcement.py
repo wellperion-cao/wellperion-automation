@@ -23,11 +23,15 @@ AI의 '생각'은 못 막으므로, 기계가 가로챌 수 있는 길목(pre-co
   위반이어도 통과. 우회 시 로그에 BYPASS 기록.
 
 【차단 대상 4종 — 길목별】
-  1) 공식값·약속 무단 변경 (pre-commit) : canon_values.json·약속.json staged 변경.
-  2) 금지 경로·파일 변경     (pre-commit) : 블랙리스트 경로(결재 GAS·구버전 미끼 등).
-  3) 보안 차단 라이브 발효   (deploy/env) : TOKEN_ENFORCE on 류 변경을 GM go 없이.
+  정본 = ssot/canon_values.json rules[].key=="gm_approval_gate_5"(GM 결재 5종·2026-07-24 A안 단일화).
+  이 파일은 그 5종 중 git diff로 감지 가능한 것만 구현한다 — 5종 전부를 이 계층이 다 잡지는 않는다.
+  1) 공식값·약속 무단 변경 (pre-commit) : canon_values.json·약속.json staged 변경. → canon "공식값" 대응.
+  2) 금지 경로·파일 변경     (pre-commit) : 블랙리스트 경로(결재 GAS·구버전 미끼 등). → canon "금지" 대응.
+  3) 보안 차단 라이브 발효   (deploy/env) : TOKEN_ENFORCE on 류 변경을 GM go 없이. → canon "보안" 대응(좁은 부분집합).
   4) 결제·지출 승인          (결재 흐름)  : 신규 구축 안 함 — 이미 결재현황(GM=유일
-     최종결재)에서 게이트됨. 여기서는 재사용만, 신규 차단 로직 없음.
+     최종결재)에서 게이트됨. 여기서는 재사용만, 신규 차단 로직 없음. → canon "결제" 대응(재사용).
+  ※ canon "전략"은 이 계층에서 의도적 제외 — git diff는 판단 영역(방향·포지셔닝 결정)을 감지할 수
+     없다(canon의 해당 layer_note 참조). 구현 누락이 아니라 이 길목의 한계로 명시.
 
 사용(헬퍼):
     from ssot.enforcement import (
@@ -321,6 +325,23 @@ def check_security_live_activation(files: list[str] | None = None) -> list[str]:
 # check_forbidden_path_change() 블랙리스트로 감지한다(결재 게이트 코드 보호).
 
 
+# ════════════════════════════════════════════════════════════════════════════
+#  canon 대조(진단 전용) — 아래 check_* 판정 로직에는 영향 없음(순수 읽기·표시용).
+# ════════════════════════════════════════════════════════════════════════════
+def get_canon_gate_categories() -> list[dict]:
+    """ssot/canon_values.json의 gm_approval_gate_5 카테고리 목록 반환(진단·자가점검 전용).
+    실패 시 빈 리스트(fail-open) — 이 함수 실패가 커밋 가드 동작에 영향 주지 않는다."""
+    try:
+        with open(_REPO_ROOT / "ssot" / "canon_values.json", encoding="utf-8") as f:
+            data = json.load(f)
+        for rule in data.get("rules", []):
+            if rule.get("key") == "gm_approval_gate_5":
+                return rule.get("categories", [])
+    except Exception:
+        pass
+    return []
+
+
 if __name__ == "__main__":
     # 진단용 자가점검 출력.
     m = get_mode()
@@ -330,3 +351,10 @@ if __name__ == "__main__":
     print(f"  2) 금지 경로 변경  : {check_forbidden_path_change(files)}")
     print(f"  3) 보안 라이브발효 : {check_security_live_activation(files)}")
     print(f"  4) 결제·지출       : 결재현황 게이트 재사용(신규 로직 없음)")
+    _cats = get_canon_gate_categories()
+    if _cats:
+        _codes = [c.get("code") for c in _cats]
+        print(f"  [canon 대조] gm_approval_gate_5 = {_codes} (정본: ssot/canon_values.json)")
+        print(f"  [canon 대조] 이 계층 미구현·제외 = 전략(git diff 감지 불가)")
+    else:
+        print("  [canon 대조] canon_values.json 로드 실패 — 진단 표시 생략(가드 동작엔 무관)")
