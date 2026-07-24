@@ -1214,7 +1214,7 @@
               "남자사우나 주임"
             ],
             "rule": "status_map",
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 50
           },
           "northstar": "chro",
@@ -1248,7 +1248,7 @@
               "골프 프로"
             ],
             "rule": "status_map",
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 50
           },
           "sync_observed": {
@@ -1300,7 +1300,7 @@
               "TODO-20260526173215570"
             ],
             "rule": "status_map",
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 50
           },
           "northstar": "coo",
@@ -1382,7 +1382,7 @@
             "ref": [
               "TODO-20260526173246953"
             ],
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 50
           },
           "sync_observed": {
@@ -1435,7 +1435,7 @@
               "TODO-20260526173331522"
             ],
             "rule": "status_map",
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 50
           },
           "northstar": "ceo",
@@ -1506,7 +1506,7 @@
               "TODO-20260714152744696"
             ],
             "rule": "status_map",
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 50
           },
           "northstar": "chro",
@@ -1540,7 +1540,7 @@
               9580
             ],
             "rule": "status_map",
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 0
           },
           "northstar": "coo",
@@ -1582,16 +1582,26 @@
           "owner": "coo",
           "dept": "주차관리부",
           "target": "주차 매출 크롤러→home KPI 자동 집계 안정화",
-          "metric": null,
+          "metric": {
+            "name": "어제 주차매출",
+            "target": null,
+            "unit": "원",
+            "current": null
+          },
           "status": "진행",
           "progress": 50,
           "progress_note": "ppark 주차 매출 자동화(크롤러→JSON→home_kpi) 연동 운영·일 매출 모니터링.",
           "northstar": "coo",
           "honesty": {
-            "level": "manual",
-            "label": "📝 사람값",
-            "basis": "연결된 소스 없음",
+            "level": "measured",
+            "label": "✅ 실측",
+            "basis": "home_kpi 실시간 지표 · metric_live:sales.yesterday.parking",
             "at": "2026-07-24"
+          },
+          "sync": {
+            "source": "metric_live",
+            "ref": "sales.yesterday.parking",
+            "rule": "metric_current"
           }
         },
         {
@@ -1611,7 +1621,7 @@
               "주차관리자 · 발렛파킹 (시설부)"
             ],
             "rule": "status_map",
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 50
           },
           "northstar": "coo",
@@ -1682,7 +1692,7 @@
               "TODO-20260526173336073"
             ],
             "rule": "status_map",
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 50
           },
           "northstar": "coo",
@@ -1720,7 +1730,7 @@
               "TODO-20260526173331522"
             ],
             "rule": "status_map",
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 50
           },
           "northstar": "cto",
@@ -1754,7 +1764,7 @@
               "TODO-20260526173233153"
             ],
             "rule": "status_map",
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 50
           },
           "northstar": "ceo",
@@ -1787,7 +1797,7 @@
               "TODO-20260526173326601"
             ],
             "rule": "status_map",
-            "last_auto": "2026-07-24T13:19",
+            "last_auto": "2026-07-24T18:03",
             "auto_value": 0
           },
           "northstar": "cto",
@@ -1894,11 +1904,11 @@
   },
   "honesty_summary": {
     "총": 22,
-    "실측": 1,
+    "실측": 2,
     "상태만": 12,
-    "사람값": 9,
+    "사람값": 8,
     "측정실패": 0,
-    "자동화율": 0.0455,
+    "자동화율": 0.0909,
     "at": "2026-07-24"
   }
 }
