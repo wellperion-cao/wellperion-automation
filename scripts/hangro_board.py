@@ -302,6 +302,9 @@ def fetch_queue_items() -> list[dict]:
             "board":    str(q.get("board") or "").strip(),
             # 담당 식별번호(약속 L16: 담당=닉네임+ship_no·배마다 고정). _queue 배만 보유.
             "ship_no":  q.get("ship_no", ""),
+            # 화면표시 전용 짧은 번호(배10012 2단계) — 내부 조인은 위 ship_no 그대로,
+            # _owner_label만 이 값을 우선 표시(없으면 ship_no 폴백).
+            "short_no": q.get("short_no", ""),
             "source":   "queue",
         })
     return items
@@ -433,9 +436,11 @@ def _nick(owner: str) -> str:
 
 
 def _owner_label(it: dict) -> str:
-    """담당 칸 = 닉네임+ship_no (약속 L16·배마다 고정 식별번호). ship_no 없으면(GAS 시트항목 등) 닉네임만."""
+    """담당 칸 = 닉네임+번호 (약속 L16·배마다 고정 식별번호).
+    표시는 short_no 우선(배10012 2단계 — 화면표시 전용 짧은 번호), 없으면 기존
+    ship_no로 폴백(옛 닫힌 배·GAS 시트항목 등), 둘 다 없으면 닉네임만."""
     nick = _nick(str(it.get("owner", "")))
-    sn = str(it.get("ship_no") or "").strip()
+    sn = str(it.get("short_no") or it.get("ship_no") or "").strip()
     return f"{nick} {sn}" if sn else nick
 
 

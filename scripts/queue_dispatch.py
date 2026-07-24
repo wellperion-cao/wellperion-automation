@@ -26,6 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from queue_lock import mutate_queue  # noqa: E402
+from assign_short_no import next_short_no  # noqa: E402  (배10012 — 표시용 짧은 번호)
 
 ROLES = {
     "ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
@@ -49,6 +50,9 @@ def build_ship(args, queue):
     nick = ROLES[role]
     nos = [x.get("ship_no") or 0 for x in queue if isinstance(x, dict)]
     ship_no = (max(nos) + 1) if nos else 1
+    # 배10012(2단계) — 화면표시 전용 짧은 번호. ship_no는 절대 안 건드림(내부 키·조인은
+    # 여전히 ship_no). 재사용 방지 로직은 assign_short_no.next_short_no() 단일 소스.
+    short_no = next_short_no(queue)
 
     sender = ROLES.get((args.sender or "").lower(), args.sender or "")
     note = args.note or ""
@@ -67,6 +71,7 @@ def build_ship(args, queue):
         "next": args.next or "담당 확인 후 진행 · 완료 시 전달자에게 1줄 회신",
         "depends_on": args.depends_on or "",
         "ship_no": ship_no,
+        "short_no": short_no,
         "module": args.module,
         "surface": args.surface,
     }
@@ -113,7 +118,7 @@ def main() -> int:
         q = load_queue()
         ship = build_ship(args, q)
         print("[미리보기 — 큐에 쓰지 않음]")
-        for k in ("task_id", "clevel", "title", "status", "priority", "ship_no", "next"):
+        for k in ("task_id", "clevel", "title", "status", "priority", "ship_no", "short_no", "next"):
             print("  %-10s %s" % (k, ship[k]))
         print("  note       %s" % (ship["note"][:160] or "(없음)"))
         return 0
@@ -122,13 +127,15 @@ def main() -> int:
 
     if "dup" in made:
         d = made["dup"]
+        disp = d.get("short_no") if d.get("short_no") is not None else d.get("ship_no")
         print("이미 같은 배가 떠 있습니다 — 새로 만들지 않았습니다.")
-        print("  배 %s · %s · %s" % (d.get("ship_no"), d.get("status"), d.get("title")))
+        print("  배 %s · %s · %s" % (disp, d.get("status"), d.get("title")))
         return 0
 
     s = made["ship"]
+    disp = s.get("short_no") if s.get("short_no") is not None else s.get("ship_no")
     print("배를 띄웠습니다 → %s(%s)" % (ROLES[s["clevel"]], s["clevel"]))
-    print("  배 번호 : %s" % s["ship_no"])
+    print("  배 번호 : %s" % disp)
     print("  제목    : %s" % s["title"])
     print("  다음    : %s" % s["next"])
     print("  기록    : status/_queue.json  (커밋·푸시하면 받는 쪽 항로에 뜹니다)")

@@ -87,6 +87,7 @@ def _new_bucket(mod: dict) -> dict:
 def _ship_entry(ship: dict) -> dict:
     return {
         "ship_no": ship.get("ship_no"),
+        "short_no": ship.get("short_no"),  # 배10012 — 화면표시 전용 짧은 번호(내부 조인은 ship_no 그대로)
         "title": ship.get("title", ""),
         "note": (ship.get("note", "") or "")[:80],
         "status": ship.get("status", ""),
@@ -235,6 +236,7 @@ def main() -> int:
                     "role": role,
                     "owner": nick,
                     "ship_no": ship.get("ship_no"),
+                    "short_no": ship.get("short_no"),  # 배10012 — 화면표시 전용 짧은 번호
                     "title": ship.get("title", ""),
                     "note": (ship.get("note", "") or "")[:80],
                     "status": ship.get("status", ""),

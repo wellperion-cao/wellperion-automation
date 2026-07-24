@@ -5156,7 +5156,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var cls = run ? 'run' : 'wait';
         var dot = run ? '✓' : '';
         var note = sh.note ? (' · ' + nsEsc(nsClip(sh.note, 46))) : '';
-        var no = (sh.ship_no!=null) ? ('<span class="no">#' + nsEsc(sh.ship_no) + '</span> · ') : '';
+        var shNo = (sh.short_no!=null) ? sh.short_no : sh.ship_no;  // 배10012: 표시=short_no 우선, 없으면 ship_no 폴백
+        var no = (shNo!=null) ? ('<span class="no">#' + nsEsc(shNo) + '</span> · ') : '';
         var stTxt = run ? '진행중' : '대기';
         return '<li class="ship ' + cls + '">' +
           '<span class="dot">' + dot + '</span>' +
@@ -5241,7 +5242,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         if (!etc || !etc.length) return '';
         var rows = etc.map(function(e){
           var run = nsIsRun(e.status);
-          var no = (e.ship_no!=null) ? ('<span class="no">#' + nsEsc(e.ship_no) + '</span> · ') : '';
+          var eNo = (e.short_no!=null) ? e.short_no : e.ship_no;  // 배10012: 표시=short_no 우선, 없으면 ship_no 폴백
+          var no = (eNo!=null) ? ('<span class="no">#' + nsEsc(eNo) + '</span> · ') : '';
           var who = e.owner ? (nsEsc(e.owner) + ' · ') : '';
           var stTxt = run ? '진행중' : '대기';
           var note = e.note ? (' · ' + nsEsc(nsClip(e.note, 60))) : '';
@@ -8780,7 +8782,8 @@ function crTab(btn, panelId) {
           var _clvKey  = String(q.clevel || '').toLowerCase();
           var clvLabel = CLEVEL_LABEL[_clvKey] || String(q.clevel || 'AI');
           var _nick    = CLEVEL_NICK[_clvKey]  || clvLabel;
-          var _shipDisp = _nick + (q.ship_no != null ? ' ' + q.ship_no : '');
+          var _qNo = (q.short_no != null) ? q.short_no : q.ship_no;  // 배10012: 표시=short_no 우선, 없으면 ship_no 폴백
+          var _shipDisp = _nick + (_qNo != null ? ' ' + _qNo : '');
           var statusMap = { PENDING:'대기', IN_PROGRESS:'진행중', DONE:'완료', '완료':'완료', '폐기':'폐기' };
           var _qDone = (q.status === 'DONE' || q.status === '완료');
           // IN_PROGRESS 는 위에서 전량 제외(자율현황 위임) → 여기는 PENDING(대기)·DONE(완료)·폐기만 도달.
