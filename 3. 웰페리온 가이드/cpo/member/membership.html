@@ -5135,10 +5135,6 @@ function _lriBadgeHtml(row, t) {
   return '<span class="ri-badge ri-badge-family" onclick="event.stopPropagation();openLessonRepeatModal(\'' + t + '\',' + row.rowIndex + ')" title="같은 번호로 접수된 다른 문의(형제·동반 추정)">👥 같은 번호 다른 문의 ' + g.diffName.length + '건</span>';
 }
 function _lriEntryHtml(r, t) {
-  var contactList = _ctSort(_rowContacts(r));
-  var contactTxt = contactList.length
-    ? contactList.slice().reverse().map(function (c) { var d = c.date ? c.date.slice(5).replace('-', '/') : ''; return ((d || c.time) ? (d + ' ' + (c.time || '')).trim() + ' — ' : '') + (c.note || ''); }).join(' / ')
-    : '—';
   var stCls = (String(r.status || '').trim() === 'LOSS') ? 'loss' : 'new';
   return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--bg)">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
@@ -5149,7 +5145,7 @@ function _lriEntryHtml(r, t) {
     '<div class="consult-row" style="margin-bottom:4px"><span class="ck">종목</span><span class="cv">' + esc(_lessonSportDisplay(r.sport, t === 'youth') || '—') + '</span></div>' +
     '<div class="consult-row" style="margin-bottom:4px"><span class="ck">경로</span><span class="cv">' + esc(r.channel || '—') + '</span></div>' +
     '<div class="consult-row" style="margin-bottom:4px"><span class="ck">문의사항</span><span class="cv" style="font-weight:400">' + esc(r.note || '—') + '</span></div>' +
-    '<div class="consult-row" style="margin-bottom:0"><span class="ck">Contact</span><span class="cv" style="font-weight:400">' + esc(contactTxt) + '</span></div>' +
+    '<div class="consult-row" style="margin-bottom:0"><span class="ck">Contact</span><span class="cv" style="font-weight:400">' + esc(_riContactSummary(r)) + '</span></div>' +
   '</div>';
 }
 function openLessonRepeatModal(t, rowIndex) {
@@ -5180,47 +5176,38 @@ function openLessonRepeatModal(t, rowIndex) {
   } else { summaryEl.textContent = ''; summaryEl.style.display = 'none'; }
   document.getElementById('repeatInquiryOverlay').classList.add('open');
 }
-/* 문의일시 칸(2026-07-23 GM 지시) — '최근 문의 시각'을 보여주고 최초 접수일은 이전문의건으로 남긴다.
- *   왜: 1/24 접수 건에 7/23 재컨택을 적어도 목록엔 계속 1/24 로만 떠서, 최근에 움직인 건인지
- *   반년 방치된 건인지 구분이 안 됐다(GM: 권은우/권세아 건).
- *   ★시트의 타임스탬프(최초 접수 시각)는 건드리지 않는다 — 덮어쓰면 '언제 처음 문의했나'가 영구히
- *     사라지고 문의→등록 소요 분석이 불가능해진다. 화면에서 최근일을 위로 올리고 최초일을 아래 병기한다.
- *   최근 접점 = 연락 이력 중 날짜가 있는 것들의 최대값. 없으면 기존처럼 접수일만 보여준다.
+/* 문의일시 칸(2026-07-24 GM 원복 지시, 배10043) — 접수 시각만 담백하게 보여준다.
+ *   2026-07-23에 '최근 접점'을 크게 띄우고 최초 접수일을 아래 병기하는 방식으로 바꿨었으나
+ *   GM 원래 의도를 잘못 읽고 넣은 것이었다(권은우/권세아 건 지적을 오독) — GM 본의는
+ *   문의일시 칸은 접수 시각만 보여주고, 이전 문의 건은 문의내용 칸에 내용까지 정리해
+ *   보여달라는 것이었다. 이전 문의 내용은 → _riInlineSummaryHtml(아래 _lessonRowHtml 참고).
+ *   멤버십(buildDbRow의 tdTs)과 동일하게 접수 시각 단독 표시로 맞춘다(2026-07-24 GM 일관성 지시).
  */
-function _lessonLastContactDate(r) {
-  var list = (r && r.contacts) || [];
-  var mx = '';
-  for (var i = 0; i < list.length; i++) {
-    var d = String((list[i] && list[i].date) || '').trim();
-    if (/^\d{4}-\d{2}-\d{2}/.test(d) && d > mx) mx = d.slice(0, 10);
-  }
-  return mx;
-}
 function _lessonInqDateCell(r) {
-  var first = _fmtInqDateTime(r.timestamp);
-  var last = _lessonLastContactDate(r);
-  var firstDay = String(r.timestamp || '').slice(0, 10);
-  if (!last || last <= firstDay) {   // 재컨택 없음(또는 접수 당일) → 기존 표시 그대로
-    return '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(first) + '</td>';
-  }
-  return '<td class="left" style="font-size:12px;color:var(--dim)" title="최근 접점 ' + esc(last) + ' · 최초 문의 ' + esc(first) + '">' +
-    '<div style="color:var(--text);font-weight:700">' + esc(last) + '</div>' +
-    '<div style="font-size:10.5px;color:var(--dim);margin-top:1px">🔁 최초 ' + esc(firstDay || first) + '</div>' +
-    '</td>';
+  return '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(_fmtInqDateTime(r.timestamp)) + '</td>';
 }
 
 // 강습 문의 행 HTML(문의 현황·LOSS 회원 관리 공용) — 상태/담당 편집 셀렉트·CONTACT 편집. 배973.
 function _lessonRowHtml(t, r, sportKey, sportLabel) {
   var mgmt = _lessonSportMgmt(r, sportKey), argSport = encodeURIComponent(sportKey);
   var riHtml = _lriBadgeHtml(r, t);   // 재문의 배지 — 성함 옆이 아니라 문의내용 칸에 얹는다(GM 지시 2026-07-22). 이전 문의는 이름의 속성이 아니라 문의 맥락이라 문의내용과 같이 봐야 함.
+  // 이전 문의 인라인 요약(문의내용 칸, GM 지시 2026-07-24 배10043) — 배지는 모달 진입 경로로 유지하고
+  // 그 아래 건별 내용까지 바로 보이게 한다. _lriGroupFor는 _lriBadgeHtml 내부에서도 호출하지만
+  // 인덱스가 캐시(_lriIdxCache)돼 있어 재계산 비용은 미미 — 새 fetch·새 로직 없이 그대로 재사용.
+  var _lriGrp = _lriGroupFor(r, t);
+  var lriSummary = (_lriGrp && _lriGrp.priorSameName.length)
+    ? _riInlineSummaryHtml(_lriGrp.priorSameName, 'lriInline_' + t + '_' + r.rowIndex,
+        function (x) { return (_lessonSportDisplay(x.sport, t === 'youth') || '—') + (String(x.note || '').trim() ? ' / ' + String(x.note).trim() : ''); },
+        function (x) { return String(x.status || '').trim() || '—'; })
+    : '';
   return '<tr data-row-index="' + r.rowIndex + '">' +
     _lessonInqDateCell(r) +
     // 나이 배지 — 성인·유소년 모두 표시(기존 유소년 전용 조건 제거, 값 있으면 노출). 2026-07-21 시포·GM.
     '<td class="left lesson-inq-cell-name" style="font-weight:700" title="' + esc(r.name || '') + '">' + esc(r.name || '—') + (String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
     '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
     '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '"><span style="' + _lessonSportChipStyle(sportLabel) + '">' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '</span></td>' +
-    // 문의내용 셀 — r.note(gvizLessonRows_ iNote 배선, 3105행) 그대로 노출. 재문의 배지가 있으면 문의내용 위 자기 줄로 먼저 표시(성함 칸에서 이동, 2026-07-22). 길면 title 툴팁·빈값 '—'.
-    '<td class="left" style="font-size:12.5px;color:var(--text);white-space:normal;max-width:220px" title="' + esc(r.note || '') + '">' + (riHtml ? '<div style="margin-bottom:4px">' + riHtml + '</div>' : '') + esc(r.note ? String(r.note).trim() || '—' : '—') + '</td>' +
+    // 문의내용 셀 — r.note(gvizLessonRows_ iNote 배선, 3105행) 그대로 노출. 재문의 배지가 있으면 문의내용 위 자기 줄로 먼저 표시(성함 칸에서 이동, 2026-07-22). 길면 title 툴팁·빈값 '—'. 이전 문의 요약은 아래(2026-07-24).
+    '<td class="left" style="font-size:12.5px;color:var(--text);white-space:normal;max-width:220px" title="' + esc(r.note || '') + '">' + (riHtml ? '<div style="margin-bottom:4px">' + riHtml + '</div>' : '') + esc(r.note ? String(r.note).trim() || '—' : '—') + lriSummary + '</td>' +
     // 희망 요일/시간 셀 — r.wishTime(gvizLessonRows_ iWish 배선, 3115행) 노출. 흰색·확대(성함/연락처 가독성 정합) GM 2026-07-22.
     '<td class="left" style="white-space:normal;word-break:break-word;font-size:12.5px;color:var(--text)" title="' + esc(r.wishTime || '') + '">' + esc(r.wishTime ? String(r.wishTime).trim() || '—' : '—') + '</td>' +
     '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, sportKey, mgmt.status) +
@@ -8534,16 +8521,61 @@ function _riDaysBetween(fromTs, toTs) {
   var f = _riParseDate(fromTs), t = _riParseDate(toTs);
   return (f && t) ? Math.round((t - f) / 86400000) : null;
 }
-// 이력 카드 1건 렌더 — 문의일·진행현황·프로그램·경로·문의사항·Contact(연락 이력). _renderContactCell과 동일 데이터소스(_rowContacts·_ctSort) 재사용.
-function _riEntryHtml(r) {
-  var statusCls = STATUS_CLASS[_memStatusDisplay(r.status)] || 'new';
+// 연락 이력 요약 텍스트(최신 우선, ' / '로 결합) — 재문의 모달 카드(_riEntryHtml·_lriEntryHtml)와
+// 인라인 요약(_riInlineSummaryHtml) 공용. 강습·멤버십 양쪽에서 중복 구현하던 것을 한 곳으로 모음(2026-07-24 시포).
+function _riContactSummary(r) {
   var contactList = _ctSort(_rowContacts(r));
-  var contactTxt = contactList.length
+  return contactList.length
     ? contactList.slice().reverse().map(function(c){
         var d = c.date ? c.date.slice(5).replace('-', '/') : '';
         return ((d || c.time) ? (d + ' ' + (c.time || '')).trim() + ' — ' : '') + (c.note || '');
       }).join(' / ')
     : '—';
+}
+// 이전 문의 인라인 요약(문의내용 칸) — GM 지시 2026-07-24(배10043): 재문의 배지는 모달 진입 경로로
+// 유지하되, 그 아래 이전 문의를 접수일·종목(프로그램)/문의내용·진행상태 + 연락이력 요약으로 그 자리에서
+// 바로 보여준다. 표시 전용·새 fetch 0. 기본 2건(최근)까지, 더 있으면 "+N건 더"로 접는다. 강습(_lessonRowHtml)·
+// 멤버십(buildDbRow) 공용 — 두 화면이 같은 개념을 다르게 보여주지 않도록 여기 한 곳에서만 구현한다.
+//   entries = priorSameName(과거→최근 정렬 배열), uid = 접기 토글용 행 고유 id,
+//   lineFn(r) = '종목·프로그램 / 문의내용' 한 줄, statusFn(r) = 진행상태 표시 문자열.
+function _riInlineSummaryHtml(entries, uid, lineFn, statusFn) {
+  if (!entries || !entries.length) return '';
+  // 안전 기본값 — 호출부가 lineFn/statusFn 을 빠뜨려도 요약이 터지지 않게(그 자리가 회원 화면이라
+  // 한 줄 실수로 목록 전체가 안 뜨면 실무진 업무가 멈춘다). 2026-07-24 시포.
+  if (typeof lineFn !== 'function') lineFn = function (r) { return r.program || r.inquiryContent || '—'; };
+  if (typeof statusFn !== 'function') statusFn = function (r) { return r.status || '—'; };
+  var recent = entries.slice(-2);
+  var older = entries.slice(0, entries.length - recent.length);
+  var mkLine = function (r) {
+    // 빈 값은 '—'로 채우지 않고 아예 뺀다 — '체조 · — —' 처럼 줄이 지저분해지면 읽히지 않는다.
+    var parts = [_fmtInqDateTime(r.timestamp), lineFn(r), statusFn(r)]
+      .map(function (v) { return String(v == null ? '' : v).trim(); })
+      .filter(function (v) { return v && v !== '—'; });
+    var ct = String(_riContactSummary(r) || '').trim();
+    if (ct === '—') ct = '';
+    return '<div style="margin-top:3px;padding-top:3px;border-top:1px dashed var(--border);font-size:10.5px;color:var(--dim)">' +
+      esc(parts.join(' · ')) + (ct ? '<br>' + esc(ct) : '') +
+    '</div>';
+  };
+  var html = recent.map(mkLine).join('');
+  if (older.length) {
+    html += '<div id="' + esc(uid) + '" style="display:none">' + older.map(mkLine).join('') + '</div>' +
+      '<div style="margin-top:2px"><a href="javascript:void(0)" onclick="event.stopPropagation();_riToggleInline(\'' + uid + '\')" style="font-size:10.5px;color:var(--dim);text-decoration:underline" data-count="' + older.length + '">+' + older.length + '건 더</a></div>';
+  }
+  return '<div>' + html + '</div>';
+}
+// "+N건 더" 접기/펼치기 토글 — 표시 전용, 데이터 변경 없음.
+function _riToggleInline(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var link = el.nextElementSibling ? el.nextElementSibling.querySelector('a') : null;
+  var willOpen = el.style.display === 'none';
+  el.style.display = willOpen ? '' : 'none';
+  if (link) link.textContent = willOpen ? '접기 ▲' : ('+' + link.getAttribute('data-count') + '건 더');
+}
+// 이력 카드 1건 렌더 — 문의일·진행현황·프로그램·경로·문의사항·Contact(연락 이력). _renderContactCell과 동일 데이터소스(_rowContacts·_ctSort) 재사용.
+function _riEntryHtml(r) {
+  var statusCls = STATUS_CLASS[_memStatusDisplay(r.status)] || 'new';
   return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--bg)">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
       '<span style="font-size:12px;color:var(--dim-mid);font-weight:700">' + esc(_fmtInqDateTime(r.timestamp)) + '</span>' +
@@ -8553,7 +8585,7 @@ function _riEntryHtml(r) {
     '<div class="consult-row" style="margin-bottom:4px"><span class="ck">프로그램</span><span class="cv">' + esc(_shortProgram(r.program) || '—') + '</span></div>' +
     '<div class="consult-row" style="margin-bottom:4px"><span class="ck">경로</span><span class="cv">' + esc(r.channel || '—') + '</span></div>' +
     '<div class="consult-row" style="margin-bottom:4px"><span class="ck">문의사항</span><span class="cv" style="font-weight:400">' + esc(r.inquiryContent || '—') + '</span></div>' +
-    '<div class="consult-row" style="margin-bottom:0"><span class="ck">Contact</span><span class="cv" style="font-weight:400">' + esc(contactTxt) + '</span></div>' +
+    '<div class="consult-row" style="margin-bottom:0"><span class="ck">Contact</span><span class="cv" style="font-weight:400">' + esc(_riContactSummary(r)) + '</span></div>' +
   '</div>';
 }
 function openRepeatInquiryModal(rowIndex) {
@@ -9573,6 +9605,14 @@ function buildDbRow(row, isNew) {
   tdInq.style.fontSize = '11px'; tdInq.style.color = 'var(--text)'; tdInq.style.lineHeight = '1.6';
   tdInq.style.maxWidth = '200px'; tdInq.style.whiteSpace = 'pre-wrap'; tdInq.style.wordBreak = 'break-word';
   tdInq.textContent = row.inquiryContent || '—';
+  // 이전 문의 인라인 요약 — 강습(_lessonRowHtml)과 같은 모양(_riInlineSummaryHtml 공용). 배지는 CONTACT
+  // 칸(아래 [6])에 그대로 두고, 여기 문의내용 칸엔 내용까지 바로 보이게만 덧붙인다. GM 지시 2026-07-24(배10043).
+  var _riGrp = _riGroupFor(row, _riIdx);
+  if (_riGrp && _riGrp.priorSameName.length) {
+    tdInq.insertAdjacentHTML('beforeend', _riInlineSummaryHtml(_riGrp.priorSameName, 'riInline_m_' + row.rowIndex,
+      function (x) { return (_shortProgram(x.program) || '—') + (String(x.inquiryContent || '').trim() ? ' / ' + String(x.inquiryContent).trim() : ''); },
+      function (x) { return _memStatusDisplay(x.status) || '—'; }));
+  }
   if (!READ_ONLY) { tdInq.className = 'editable-cell'; tdInq.addEventListener('click', function(){ _activateCellInquiry(this, row); }); }
   tr.appendChild(tdInq);
 
